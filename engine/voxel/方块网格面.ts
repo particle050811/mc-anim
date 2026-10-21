@@ -20,7 +20,17 @@ const faceCorner = (C: number[], d: number) => [0, 1, 2].map((i) => C[i] + (NORM
 export class BoxBuckets {
   private boxes: number[][]; // bin 坐标 [x0, y0, z0, x1, y1, z1]
   private buckets: (number[] | undefined)[];
-  constructor(modelBoxes: number[][], private gx0: number, private gz0: number, private nx: number, private nz: number, private o: number[]) {
+  private gx0: number;
+  private gz0: number;
+  private nx: number;
+  private nz: number;
+  private o: number[];
+  constructor(modelBoxes: number[][], gx0: number, gz0: number, nx: number, nz: number, o: number[]) {
+    this.gx0 = gx0;
+    this.gz0 = gz0;
+    this.nx = nx;
+    this.nz = nz;
+    this.o = o;
     // 参考模型 [x, y, z] = bin [x, −z, y]
     this.boxes = modelBoxes.map(([x0, y0, z0, x1, y1, z1]) => [x0, z0, -y1, x1, z1, -y0]);
     this.buckets = new Array(nx * nz);
