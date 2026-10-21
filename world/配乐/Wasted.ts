@@ -23,7 +23,7 @@ export const Wasted: Song = {
   名称: 'Wasted',
   版本: 'Huken x Murkish Nightcore（huken 上传，3:00）',
   音频: audioUrl,
-  文件: '../../杂项/音乐/Wasted（Huken x Murkish Nightcore）.m4a',
+  文件: '配乐/Wasted',
   节拍声: clickTrackUrl,
   fileOffsetSec: 0,
   分析: analysis,
