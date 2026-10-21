@@ -16,16 +16,15 @@
 - `预览/`：在主检出下，不进 Git；worktree 里生成的预览也写回主检出
 - 路径语言：结构层（顶层目录、固定层级）用英文 ASCII；场、段、资产 id、台词 id、角色名用中文
 
-## 常用命令（Mac/Linux 用 `sr`，Windows 用 `sr.cmd`；M1 期间陆续落地，以 `sr help` 为准）
+## 常用命令（Mac/Linux 用 `sr`，Windows 用 `sr.cmd`；以 `sr help` 为准）
 ```
 sr env | doctor | check [--快|--深] | studio
 sr render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章
 sr still <段> <帧…> --到预览 <主题>      sr stale [<选择器>]
 sr verify [<段>]  |  sr verify accept <段> --理由 …
-sr film <范围>  |  sr edit-package <交付目录>  |  sr jianying export|readback
-sr voice gen|pick|redo|lipsync <台词id|段|章>  |  sr extract  |  sr assets import|verify
-sr preview new <主题>
+sr film <范围>  |  sr assets add <id> <文件>  |  sr preview new <主题>
 ```
+还没实现（方案三-5）：`sr edit-package`、`sr jianying export|readback`（M3）；`sr extract`、`sr world`、`sr mcai`（M10）；`sr voice`、`sr music`、`sr assets import|verify|pull|gc`（没排阶段；字节核对现在用 `sr check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
 
 ## 两条元规则（用户 10-21）
 1. **看过的实现为准**：用户看过的已实现画面，优先于旧规矩、原设计和 Agent 写的规矩。冲突时留现状，列给用户，写清规矩出处和「现状是用户看过的」；用户这次点名才改。

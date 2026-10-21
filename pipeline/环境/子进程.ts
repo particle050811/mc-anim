@@ -43,3 +43,11 @@ export const 跑 = (cmd: readonly string[], opts: SpawnOptions & { 安静?: bool
     child.on('error', reject);
     child.on('close', (code) => (code === 0 ? resolve() : reject(new 子进程失败(cmd, code, stderr))));
   });
+
+/** 前台交互跑（stdin、stdout、stderr 都接终端），等它退出，返回退出码 */
+export const 前台跑 = (cmd: readonly string[], opts: SpawnOptions = {}): Promise<number> =>
+  new Promise((resolve, reject) => {
+    const child = spawn(cmd[0]!, cmd.slice(1), { ...opts, stdio: 'inherit' });
+    child.on('error', reject);
+    child.on('close', (code) => resolve(code ?? 1));
+  });
