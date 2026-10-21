@@ -14,90 +14,147 @@
   mcai game newinstance name=<实例名> [from=取材客户端]   复制出一个新实例（同一批模组，另一个端口），给另一个 Agent 用
   mcai game copyworld name=<存档名> from=<世界> [overwrite=1]   把世界复制成片场存档；from 写取材服务端下的世界名，或世界目录的路径
   mcai build                    编译 mod 并装进所有实例和取材服务端的 mods/（游戏开着的话要重启才生效）
+  mcai server stop server=<服务端目录名|路径> [timeout=300]
+                                停取材服务端：走 RCON 发 stop、等它存完盘退出；没开 RCON 时 Mac/Linux 发 SIGTERM（Forge 收到也会存盘退出）
 
 多个 Agent 同时取材：一个 Agent 一个实例，互不影响（各有各的镜头、世界、撤销栈）。
   MCAI_INSTANCE=<实例名> mcai ...   所有子命令都对这个实例生效（默认 取材客户端）
 几个 Agent 共用一个实例也行，动作会排队一个个做；要保证“摆机位 + 截图”不被别人插队，写进同一个 batch。
 
-路径都能用环境变量换（不设就用平台默认值，见下面 workspace_root、default_prism、default_java_home）：
-  MCAI_WORKSPACE 放 game/ 的工作区根（默认 git 主目录，worktree 里也指回主目录）；MCAI_PRISM Prism 启动器；MCAI_JAVA_HOME JDK 17
+只读环境变量，不推算本机路径（在 stress-rotation 仓库里用 sr mcai，按 sr 配置传）：
+  MCAI_GAME 游戏环境目录（实例/、取材服务端*/）；MCAI_PRISM Prism 启动器（不给就在 PATH 上找）；MCAI_JAVA_HOME JDK 17（不给就用 PATH 上的 java）
+  MCAI_MOD_DIR mod 工程（默认本文件旁的 ../mod）；MCAI_TIME_LOG 耗时记录（不给就只打到 stderr）
+  MCAI_ONE_CLIENT=1 已有别的实例的游戏开着就不再起（两个客户端同时开会抢内存显存）
 """
-import json, os, shlex, shutil, signal, struct, subprocess, sys, time, urllib.error, urllib.request
+import json, os, re, shlex, shutil, signal, socket, struct, subprocess, sys, time, urllib.error, urllib.request
 from pathlib import Path
 
 IS_MAC = sys.platform == "darwin"
 IS_WINDOWS = sys.platform == "win32"
 DEFAULT_PORT = 25590  # 和 mod 里 HttpApi.DEFAULT_PORT 一致
-MOD_DIR = Path(__file__).resolve().parent
+MOD_DIR = Path(os.environ.get("MCAI_MOD_DIR") or Path(__file__).resolve().parent.parent / "mod")
 
 
-def workspace_root():
-    """放 game/ 的工作区根（主目录）：MCAI_WORKSPACE > git 公共目录的上一级 > 代码根。
-    和 参考模型库/工具/公共/环境.py 同一套推算、同样的环境变量；mcai 要能单独分发，所以不 import 它，改一处要两处一起改。"""
-    if os.environ.get("MCAI_WORKSPACE"):
-        return Path(os.path.abspath(os.environ["MCAI_WORKSPACE"]))  # 只转绝对路径、不解软链，和 环境.py、环境.mjs 一样
-    root = MOD_DIR.parent
-    try:
-        out = subprocess.run(["git", "-C", str(root), "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-common-dir"],
-                             capture_output=True, text=True, encoding="utf-8", check=True).stdout.split("\n")
-    except (OSError, subprocess.CalledProcessError):
-        return root
-    if len(out) < 2 or Path(out[0]).resolve() != root:
-        return root
-    return Path(out[1]).resolve().parent
+def game_root():
+    if not os.environ.get("MCAI_GAME"):
+        sys.exit("要设环境变量 MCAI_GAME：游戏环境目录（里面有 实例/、取材服务端/）。在 stress-rotation 仓库里用 sr mcai，按配置 SR_GAME 传")
+    return Path(os.path.abspath(os.environ["MCAI_GAME"]))
 
 
 def default_prism():
-    """Prism Launcher：MCAI_PRISM > 平台默认安装位置 > PATH（同 环境.py 的 prism启动器）。"""
+    """Prism Launcher：MCAI_PRISM > PATH 上的 prismlauncher > Windows 的默认安装位置。"""
     if os.environ.get("MCAI_PRISM"):
         return os.environ["MCAI_PRISM"]
-    if IS_MAC:
-        return "/opt/homebrew/bin/prismlauncher"
+    found = shutil.which("prismlauncher")
+    if found:
+        return found
     if IS_WINDOWS:
         p = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData/Local")) / "Programs/PrismLauncher/prismlauncher.exe"
         if p.exists():
             return str(p)
-    return shutil.which("prismlauncher") or "prismlauncher"
+    sys.exit("找不到 Prism Launcher：设 MCAI_PRISM（sr 配置 SR_PRISM）")
 
 
 def default_java_home():
-    """编译 1.20.1 的 mod 必须 JDK 17：MCAI_JAVA_HOME > Mac 的 Homebrew openjdk@17（作者机器上 JAVA_HOME 和 PATH 上的都是 JDK 8）> JAVA_HOME > PATH 上的 java。"""
+    """编译 1.20.1 的 mod 必须 JDK 17：MCAI_JAVA_HOME > PATH 上的 java。不读 JAVA_HOME：作者机器上 JAVA_HOME 是 JDK 8。"""
     if os.environ.get("MCAI_JAVA_HOME"):
         return os.environ["MCAI_JAVA_HOME"]
-    if IS_MAC:
-        return "/opt/homebrew/opt/openjdk@17"
-    if os.environ.get("JAVA_HOME"):
-        return os.environ["JAVA_HOME"]
     java = shutil.which("java")
     return str(Path(java).resolve().parents[1]) if java else ""
 
 
-ROOT = workspace_root()
+def java_major(java_home):
+    """JDK 主版本号（跑 bin/java -version，1.8 算 8），跑不起来返回 0。Homebrew 的 JAVA_HOME 根下没有 release 文件，所以不读它。"""
+    java = Path(java_home) / "bin" / ("java.exe" if IS_WINDOWS else "java")
+    try:
+        out = subprocess.run([str(java), "-version"], capture_output=True, text=True, encoding="utf-8", errors="replace").stderr
+    except OSError:
+        return 0
+    m = re.search(r'version "(\d+)(?:\.(\d+))?', out)
+    if not m:
+        return 0
+    return int(m.group(2) or 0) if m.group(1) == "1" else int(m.group(1))
+
+
+ROOT = Path(os.environ["MCAI_GAME"]).absolute() if os.environ.get("MCAI_GAME") else None
 INSTANCE = os.environ.get("MCAI_INSTANCE", "取材客户端")
-INSTANCES_DIR = ROOT / "game" / "实例"
+INSTANCES_DIR = ROOT / "实例" if ROOT else Path("实例")
 INSTANCE_DIR = INSTANCES_DIR / INSTANCE
 MC_DIR = INSTANCE_DIR / ".minecraft"
-PRISM = default_prism()
 PRISM_LOG = INSTANCES_DIR / f"prism-{INSTANCE}.out"
-JAVA_HOME = default_java_home()
-SERVER_DIR = ROOT / "game" / "取材服务端"
-TIME_LOG = MOD_DIR / "耗时记录.tsv"  # 每个动作、每次启停游戏花了多久，一行一条
+SERVER_DIR = ROOT / "取材服务端" if ROOT else Path("取材服务端")
+TIME_LOG = Path(os.environ["MCAI_TIME_LOG"]) if os.environ.get("MCAI_TIME_LOG") else None  # 每个动作、每次启停游戏花了多久，一行一条
 
 
 # ---------- 平台差异：只有这几处分 macOS / Windows（Windows 分支没实测过） ----------
 
-def lock_file(f):
-    """独占锁住打开的文件，拿不到就等；文件关掉（进程退出）就放开。"""
-    if IS_WINDOWS:
-        import msvcrt
+class PidLock:
+    """独占锁：O_EXCL 建 <名>.lock、里面写 pid，放锁就是删掉；持有的进程死了、或空文件放了 10 秒以上算过期。
+    和 sr 资源闸（pipeline/闸/锁.ts）同一套协议：回收过期锁时先改名成只有自己知道的临时名，确认改走的还是那把死锁才删，否则改回去。拿不到就等。"""
+
+    def __init__(self, path):
+        self.path = Path(path)
+
+    @staticmethod
+    def _read(path):
+        try:
+            text = path.read_text(encoding="utf-8").strip()
+            return (int(text) if text.isdigit() else None), path.stat().st_mtime
+        except FileNotFoundError:
+            return None
+
+    @staticmethod
+    def _stale(seen):
+        pid, mtime = seen
+        return time.time() - mtime > 10 if pid is None else not pid_alive(pid)
+
+    def _reclaim(self, dead_pid):
+        tmp = self.path.with_name(f"{self.path.name}.过期-{os.getpid()}-{os.urandom(4).hex()}")
+        try:
+            os.rename(self.path, tmp)
+        except FileNotFoundError:
+            return  # 别人先改走了
+        now = self._read(tmp)
+        if not (now and now[0] == dead_pid and self._stale(now)):
+            try:
+                os.link(tmp, self.path)  # 改走的是别人刚建的新锁：改回原名，原名上又有了新锁就不覆盖
+            except FileExistsError:
+                pass
+        tmp.unlink(missing_ok=True)
+
+    def __enter__(self):
         while True:
             try:
-                msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
-                return
-            except OSError:
+                fd = os.open(self.path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                with os.fdopen(fd, "w", encoding="utf-8") as f:
+                    f.write(f"{os.getpid()}\n")
+                return self
+            except FileExistsError:
+                pass
+            seen = self._read(self.path)
+            if seen is None:
+                continue
+            if self._stale(seen):
+                self._reclaim(seen[0])
+            else:
                 time.sleep(0.5)
-    import fcntl
-    fcntl.flock(f, fcntl.LOCK_EX)
+
+    def __exit__(self, *exc):
+        seen = self._read(self.path)
+        if seen and seen[0] == os.getpid():
+            self.path.unlink(missing_ok=True)
+
+
+def pid_alive(pid):
+    if IS_WINDOWS:
+        return any(p == pid for p, _ in process_list())
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
 
 
 def process_list():
@@ -148,8 +205,11 @@ def activate_app(path):
 
 
 def log_time(what, secs, ok):
-    """耗时打到 stderr（不混进 stdout 的 JSON），并追加进 耗时记录.tsv。"""
+    """耗时打到 stderr（不混进 stdout 的 JSON），给了 MCAI_TIME_LOG 就追加进去。"""
     print(f"[耗时] {what}：{secs:.1f} 秒", file=sys.stderr)
+    if TIME_LOG is None:
+        return
+    TIME_LOG.parent.mkdir(parents=True, exist_ok=True)
     new = not TIME_LOG.exists()
     with open(TIME_LOG, "a", encoding="utf-8") as f:
         if new:
@@ -163,7 +223,7 @@ def port_of(instance):
     return int(f.read_text(encoding="utf-8").strip()) if f.is_file() else DEFAULT_PORT
 
 
-PORT = port_of(INSTANCE)
+PORT = port_of(INSTANCE) if ROOT else DEFAULT_PORT
 
 
 class NotRunning(Exception):
@@ -216,7 +276,7 @@ def run_action(tokens):
         name, args = parse_action(tokens)
     # input on 会把游戏窗口带到前台；记下当时的前台应用，input off 藏起窗口后把前台还给它
     # （否则前台会停在一个没有窗口的 java 上）
-    remembered = MOD_DIR / "build" / f"front-app-{INSTANCE}"
+    remembered = INSTANCE_DIR / "mcai-front-app"
     if name == "input" and args.get("state") == "on" and front_app()[0] not in processes()[0]:
         remembered.write_text(front_app()[1], encoding="utf-8")
     t0 = time.time()
@@ -285,8 +345,11 @@ def game_start(opts):
     if not INSTANCE_DIR.is_dir():
         sys.exit(f"没有实例「{INSTANCE}」。mcai game instances 看现有的，mcai game newinstance name={INSTANCE} 新建")
     # 两个 Agent 同时对同一个实例 start：后到的等前一个启动完，再走下面“已经在运行”的判断，不会起出两个游戏
-    lock = open(INSTANCE_DIR / "mcai-start.lock", "w", encoding="utf-8")
-    lock_file(lock)
+    with PidLock(INSTANCE_DIR / "mcai-start.lock"):
+        game_start_locked(opts)
+
+
+def game_start_locked(opts):
     game, _ = processes()
     if game:
         r = try_ready()
@@ -303,7 +366,11 @@ def game_start(opts):
         idle_file.write_text(f"{int(opts['idle'])}\n", encoding="utf-8")
     else:
         idle_file.unlink(missing_ok=True)
-    cmd = [PRISM, "--launch", INSTANCE]
+    if os.environ.get("MCAI_ONE_CLIENT") == "1" and not game:
+        others = [n for n in instances() if n != INSTANCE and processes(n)[0]]
+        if others:
+            sys.exit(f"实例「{others[0]}」的游戏还开着，两个客户端不能同时开：先 MCAI_INSTANCE={others[0]} mcai game stop")
+    cmd = [default_prism(), "--launch", INSTANCE]
     if "world" in opts:
         if not (MC_DIR / "saves" / opts["world"]).is_dir():
             have = sorted(p.name for p in (MC_DIR / "saves").iterdir() if p.is_dir())
@@ -350,7 +417,7 @@ def game_start(opts):
             # 这个界面上的「安全模式」只用原版数据：史诗地形和修整都被丢掉，之后补生成的区块是原版地形，存档也记成只开原版数据包。
             # 绝不能替用户点，也不往下等
             sys.exit(f"实例「{INSTANCE}」打不开这个存档：数据包读不进来（游戏停在“数据包错误”界面，千万别点安全模式）。"
-                     f"多半是 mods/ 里的 mcai 不含生成时修整：mcai game stop，再在 取材mod/ 下 ./mcai build 后重开。原因见 mcai game log")
+                     f"多半是 mods/ 里的 mcai 不含生成时修整：mcai game stop，再 mcai build 后重开。原因见 mcai game log")
         else:
             state = r["why"]
             if "screen" in r and r["screen"]["buttons"]:
@@ -423,7 +490,7 @@ def game_newinstance(opts):
     if dst.exists():
         sys.exit(f"实例「{opts['name']}」已存在")
     # 模组和配置照抄（约 150MB）；存档、日志不带，片场存档各实例自己 copyworld
-    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("saves", "logs", "crash-reports", "mcai-start.lock", "mcai.port"))
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("saves", "logs", "crash-reports", "mcai-start.lock", "mcai-front-app", "mcai.port"))
     (dst / ".minecraft" / "saves").mkdir()
     cfg = (dst / "instance.cfg").read_text(encoding="utf-8").splitlines()
     (dst / "instance.cfg").write_text("\n".join(f"name={opts['name']}" if l.startswith("name=") else l for l in cfg) + "\n", encoding="utf-8")
@@ -462,8 +529,11 @@ def game_copyworld(opts):
 
 
 def build():
-    env = dict(os.environ, JAVA_HOME=JAVA_HOME)
-    gradlew = str(MOD_DIR / "gradlew.bat") if IS_WINDOWS else "./gradlew"
+    java_home = default_java_home()
+    if java_major(java_home) < 17:
+        sys.exit(f"编译要 JDK 17，现在的是 {java_home or '（没找到 java）'}：设 MCAI_JAVA_HOME（sr 配置 SR_JAVA_HOME）")
+    env = dict(os.environ, JAVA_HOME=java_home, MCAI_GAME=str(game_root()))
+    gradlew = str(MOD_DIR / "gradlew.bat") if IS_WINDOWS else str(MOD_DIR / "gradlew")
     r = subprocess.run([gradlew, "build", "--console=plain", "-q"], cwd=MOD_DIR, env=env)
     if r.returncode != 0:
         sys.exit("编译失败")
@@ -478,12 +548,133 @@ def build():
         if processes(name)[0]:
             print(f"实例「{name}」的游戏正开着，要 mcai game stop 再 start 才会用上新版本")
     # 每个取材服务端（暮色的 取材服务端、主世界的 取材服务端-主世界）也装同一版：暮色放大 4 倍的世界由服务端预生成、客户端的集成服务端补生成，
-    # 两边的地标网格必须一致（见 手册.md「暮色森林放大 4 倍」）；读方块碰上调色板扩容就重读的修复对哪个世界的预生成都要有
-    for server_mods in sorted((ROOT / "game").glob("取材服务端*/mods")):
+    # 两边的地标网格必须一致（见 MANUAL.md「暮色森林放大 4 倍」）；读方块碰上调色板扩容就重读的修复对哪个世界的预生成都要有
+    for server_mods in sorted(ROOT.glob("取材服务端*/mods")):
         for old in server_mods.glob("mcai-*.jar"):
             old.unlink()
         shutil.copy2(jar, server_mods / jar.name)
         print(f"已安装 {jar.name} → {server_mods}（服务端开着的话要重启才会用上）")
+
+
+# ---------- 取材服务端 ----------
+
+def server_dir(opts):
+    if "server" not in opts:
+        sys.exit("要给服务端：server=取材服务端（MCAI_GAME 下的目录名）或服务端目录的路径")
+    d = Path(opts["server"]) if ("/" in opts["server"] or "\\" in opts["server"]) else ROOT / opts["server"]
+    if not (d / "server.properties").is_file():
+        sys.exit(f"{d} 不是服务端目录（没有 server.properties）")
+    return d.resolve()
+
+
+def server_properties(d):
+    props = {}
+    for line in (d / "server.properties").read_text(encoding="utf-8", errors="replace").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            k, v = line.split("=", 1)
+            props[k.strip()] = v.strip()
+    return props
+
+
+def rcon_command(port, password, command, timeout=10):
+    """RCON 协议（Source RCON）：登录包 type 3，命令包 type 2；返回服务端回的文本。"""
+    def packet(req_id, kind, body):
+        payload = struct.pack("<ii", req_id, kind) + body.encode("utf-8") + b"\0\0"
+        return struct.pack("<i", len(payload)) + payload
+
+    def read(sock):
+        head = b""
+        while len(head) < 4:
+            chunk = sock.recv(4 - len(head))
+            if not chunk:
+                raise ConnectionError("RCON 连接断了")
+            head += chunk
+        (length,) = struct.unpack("<i", head)
+        data = b""
+        while len(data) < length:
+            chunk = sock.recv(length - len(data))
+            if not chunk:
+                raise ConnectionError("RCON 连接断了")
+            data += chunk
+        req_id, _ = struct.unpack("<ii", data[:8])
+        return req_id, data[8:-2].decode("utf-8", errors="replace")
+
+    with socket.create_connection(("127.0.0.1", port), timeout=timeout) as sock:
+        sock.sendall(packet(1, 3, password))
+        if read(sock)[0] == -1:
+            raise PermissionError("RCON 密码不对")
+        sock.sendall(packet(2, 2, command))
+        try:
+            return read(sock)[1]
+        except (ConnectionError, socket.timeout):
+            return ""  # stop 时服务端可能不回就断开
+
+
+def server_pids(d):
+    """在这个目录里跑的 Forge 服务端 java 进程。Forge 的启动参数里没有目录，按进程的工作目录认。"""
+    pids = []
+    for pid, cmd in process_list():
+        if "unix_args.txt" not in cmd and "win_args.txt" not in cmd:
+            continue
+        if sys.platform.startswith("linux"):
+            try:
+                cwd = os.readlink(f"/proc/{pid}/cwd")
+            except OSError:
+                continue
+        elif IS_MAC:
+            out = subprocess.run(["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"], capture_output=True, text=True, encoding="utf-8").stdout
+            cwd = next((row[1:] for row in out.splitlines() if row.startswith("n")), "")
+        else:
+            continue  # Windows 上读不到别的进程的工作目录，只能走 RCON
+        if cwd and Path(cwd).resolve() == d:
+            pids.append(pid)
+    return pids
+
+
+def server_stop(opts):
+    d = server_dir(opts)
+    props = server_properties(d)
+    timeout = float(opts.get("timeout", 300))
+    pids = server_pids(d)
+    if props.get("enable-rcon") == "true":
+        try:
+            rcon_command(int(props.get("rcon.port", "25575")), props.get("rcon.password", ""), "stop")
+            print("已经 RCON 发了 stop，等它存完盘退出", flush=True)
+        except OSError as e:
+            if not pids:
+                print(f"服务端没在运行（RCON 连不上：{e}）")
+                return
+            print(f"RCON 连不上（{e}），改发 SIGTERM", flush=True)
+            sigterm(pids)
+    elif not pids:
+        print(f"服务端 {d.name} 没在运行" + ("" if not IS_WINDOWS else "（Windows 上没开 RCON 认不出进程）"))
+        return
+    else:
+        sigterm(pids)
+    # 不强杀：没存盘的区块会丢，预生成的进度却可能已记过它们
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if not (server_pids(d) if pids else rcon_alive(props)):
+            print("已停止")
+            return
+        time.sleep(2)
+    sys.exit(f"等了 {timeout:.0f} 秒服务端还没退，没有强杀（会丢没存盘的区块）；看 {d / 'logs' / 'latest.log'}")
+
+
+def sigterm(pids):
+    if IS_WINDOWS:
+        sys.exit("Windows 上停服务端要开 RCON（server.properties 里 enable-rcon=true、设 rcon.password）")
+    for pid in pids:
+        os.kill(pid, signal.SIGTERM)
+    print(f"已发 SIGTERM 给 {pids}（Forge 收到会存盘退出），等它退出", flush=True)
+
+
+def rcon_alive(props):
+    try:
+        with socket.create_connection(("127.0.0.1", int(props.get("rcon.port", "25575"))), timeout=2):
+            return True
+    except OSError:
+        return False
 
 
 def meta(path):
@@ -518,7 +709,10 @@ def main():
 def dispatch(argv):
     if not argv or argv[0] in ("-h", "--help"):
         print(__doc__)
-    elif argv[0] == "game":
+        return
+    if argv[0] != "meta":
+        game_root()  # 别的子命令都要游戏环境
+    if argv[0] == "game":
         sub = argv[1] if len(argv) > 1 else ""
         opts = parse_kv(argv[2:])
         if sub == "start":
@@ -539,6 +733,10 @@ def dispatch(argv):
             sys.exit("用法：mcai game start|stop|status|log|copyworld|instances|newinstance")
     elif argv[0] == "build":
         build()
+    elif argv[0] == "server":
+        if argv[1:2] != ["stop"]:
+            sys.exit("用法：mcai server stop server=<服务端目录名|路径> [timeout=300]")
+        server_stop(parse_kv(argv[2:]))
     elif argv[0] == "meta":
         meta(argv[1])
     else:
