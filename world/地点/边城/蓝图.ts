@@ -10,7 +10,11 @@ import atlasUri from 'asset:贴图/场景/边城/蓝图贴图';
 type BlockKind = { 盒: number[][]; 面: number[]; 合: number; 挡: boolean; 名: string };
 type BlueprintData = { 尺寸: [number, number, number]; 格: string; 门: '南' | '北' | '东' | '西'; 来源: string };
 const DATA = raw as unknown as { 列: number; 行: number; 种类: BlockKind[]; 蓝图: Record<string, BlueprintData> };
-export type BlueprintName = keyof typeof raw.蓝图;
+// 蓝图名照 蓝图.json 的键
+export type BlueprintName =
+  '橡木民居3' | '橡木民居5' | '橡木别居4' | '云杉民居3' | '云杉民居5' | '云杉别居4' | '深橡民居4' | '深橡别居5' | '运河楼橡木' | '运河楼橡木4' | '酒馆云杉' | '面包房橡木' | '铁匠铺云杉' | '铁匠铺深橡' | '厨房橡木'
+  | '染坊云杉' | '石匠铺深橡' | '花店橡木' | '建筑工坊云杉' | '送货站橡木' | '仓库橡木' | '仓库深橡' | '市政厅橡木' | '医院云杉' | '学校深橡' | '兵营要塞' | '箭塔要塞' | '箭塔要塞别式' | '兵营云杉' | '箭塔深橡' | '水井'
+  | '小水井' | '木料车' | '带篷马车' | '小马厩' | '路灯' | '喷泉' | '岗亭';
 export const blueprintTable = DATA.蓝图 as Record<BlueprintName, BlueprintData>;
 
 // ---------- 蓝图的格子（种类序号 + 1，0 = 空气），按 [z][y][x] 排 ----------
