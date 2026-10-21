@@ -2,6 +2,7 @@
 // 表里登记的例外代码里也都找得到（段或场还没搬进来的算待迁移）；默认值的落点（<路径> [符号、符号…]）文件和符号都在。
 // 落点以「旧:」或「待迁移:」开头的是还在旧项目里的，算待迁移，搬完改成新路径。
 import fs from 'node:fs';
+import path from 'node:path';
 import { 读内容 } from '../内容.ts';
 import { 代码后缀, 是渲染代码, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 声明的名字, 字面值, 属性名, 行号, 解析, 遍历, ts } from '../语法.ts';
@@ -17,16 +18,48 @@ export type 代码例外 = { 规矩: string; 段?: string; 场?: string; 值: un
 const 键 = (规矩: string, x: { 段?: string; 场?: string }) => `${规矩}|${x.段 !== undefined ? `段:${x.段}` : `场:${x.场}`}`;
 const 对象 = (x: { 段?: string; 场?: string }) => (x.段 !== undefined ? `段 ${x.段}` : `场 ${x.场}`);
 
-/** 渲染代码里的 例外(...) 调用；参数不是字面量的直接报 */
+const 例外模块 = 'engine/core/例外';
+/** import/export 的模块是不是 engine/core/例外(.ts)：只认相对路径 */
+const 指向例外模块 = (文件: string, spec: ts.Expression | undefined) => {
+  if (!spec || !ts.isStringLiteral(spec) || !spec.text.startsWith('.')) return false;
+  return path.posix.normalize(path.posix.join(path.posix.dirname(文件), spec.text)).replace(/\.[cm]?[jt]sx?$/, '') === 例外模块;
+};
+
+/**
+ * 渲染代码里的 例外(...) 调用；参数不是字面量的直接报。
+ * 只认字面上叫 例外 的调用（含 x.例外(...)），所以改名导入、命名空间导入、转出、把 例外 当值传都直接报，免得绕过登记。
+ */
 export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[] => {
   const r: 代码例外[] = [];
   for (const p of c.文件()) {
-    if (!是渲染代码(p) || !代码后缀.test(p)) continue;
+    if (!是渲染代码(p) || !代码后缀.test(p) || p === `${例外模块}.ts`) continue;
     const 源 = c.读(p);
     if (!源.includes('例外')) continue;
     const sf = 解析(p, 源);
+    for (const s of sf.statements) {
+      if (ts.isImportDeclaration(s) && 指向例外模块(p, s.moduleSpecifier)) {
+        const b = s.importClause?.namedBindings;
+        if (b && ts.isNamespaceImport(b)) 报.错(`不许用命名空间导入 ${例外模块}.ts：写 import { 例外 } from '…/例外.ts'`, p, 行号(sf, s));
+        if (b && ts.isNamedImports(b)) for (const e of b.elements) if (e.propertyName && e.name.text !== 属性名(e.propertyName)) 报.错(`不许给 ${属性名(e.propertyName)} 改名导入（sr check 只认叫 例外 的调用）`, p, 行号(sf, e));
+      }
+      if (ts.isExportDeclaration(s) && 指向例外模块(p, s.moduleSpecifier)) 报.错(`不许转出 ${例外模块}.ts：用到的文件直接 import { 例外 }`, p, 行号(sf, s));
+    }
     遍历(sf, (n) => {
-      if (!ts.isCallExpression(n) || !ts.isIdentifier(n.expression) || n.expression.text !== '例外') return;
+      if (ts.isIdentifier(n) && n.text === '例外') {
+        const 父 = n.parent;
+        const 是调用 = (ts.isCallExpression(父) && 父.expression === n) || (ts.isPropertyAccessExpression(父) && 父.name === n && ts.isCallExpression(父.parent) && 父.parent.expression === 父);
+        const 只是名字 =
+          (ts.isPropertyAccessExpression(父) && 父.name === n) ||
+          ((ts.isPropertyAssignment(父) || ts.isPropertySignature(父) || ts.isMethodDeclaration(父) || ts.isPropertyDeclaration(父)) && 父.name === n) ||
+          ts.isImportSpecifier(父) ||
+          ts.isTypeReferenceNode(父) ||
+          ts.isQualifiedName(父);
+        if (ts.isExportSpecifier(父)) 报.错('不许转出 例外：用到的文件直接从 engine/core/例外.ts import', p, 行号(sf, n));
+        else if (!是调用 && !只是名字) 报.错('例外 只能直接调用：不许赋给别的名字、当参数传、解构改名（sr check 只认叫 例外 的调用）', p, 行号(sf, n));
+      }
+      if (!ts.isCallExpression(n)) return;
+      const 名 = ts.isIdentifier(n.expression) ? n.expression.text : ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : undefined;
+      if (名 !== '例外') return;
       const 行 = 行号(sf, n);
       const [a, b, d] = n.arguments;
       const 规矩 = 字面值(a);

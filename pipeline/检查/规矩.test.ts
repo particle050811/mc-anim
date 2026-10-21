@@ -65,6 +65,28 @@ describe('规矩', () => {
     expect((await 跑('规矩', 根)).违规.join('\n')).toMatch(/规矩「打击停顿」对 段 7-甲 的例外没在 rules\/规矩.toml 登记/);
   });
 
+  it('改名导入、命名空间导入、转出、把 例外 当值传都拦，x.例外(...) 也算例外调用', async () => {
+    const 根 = 造仓库(基础(), {
+      'content/段/7-甲/画面.tsx': [
+        "import { 例外 as 豁免 } from '../../../engine/core/例外.ts';",
+        "import * as 核 from '../../../engine/core/例外';",
+        "export const a = 豁免('打击停顿', 6, { 段: '7-甲', 原因: 'x' });",
+        "export const b = 核.例外('打击停顿', 7, { 段: '7-甲', 原因: 'x' });",
+        'export default () => null;',
+        '',
+      ].join('\n'),
+      'content/段/7-甲/别名.ts': "import { 例外 } from '../../../engine/core/例外.ts';\nexport const 豁免 = 例外;\nexport { 例外 as 开口 };\n",
+      'world/转出.ts': "export * from '../engine/core/例外.ts';\n",
+    });
+    const v = (await 跑('规矩', 根)).违规.join('\n');
+    expect(v).toMatch(/画面.tsx:1 不许给 例外 改名导入/);
+    expect(v).toMatch(/画面.tsx:2 不许用命名空间导入 engine\/core\/例外.ts/);
+    expect(v).toMatch(/画面.tsx:4 规矩「打击停顿」对 段 7-甲 的例外没在 rules\/规矩.toml 登记/);
+    expect(v).toMatch(/别名.ts:2 例外 只能直接调用/);
+    expect(v).toMatch(/别名.ts:3 不许转出 例外/);
+    expect(v).toMatch(/world\/转出.ts:1 不许转出 engine\/core\/例外.ts/);
+  });
+
   it('落点格式', () => {
     expect(解析落点('engine/core/例外.ts 例外、例外依据')).toEqual({ 路径: 'engine/core/例外.ts', 符号: ['例外', '例外依据'] });
     expect(解析落点('world/角色/跑步.ts（照旧 跑步.ts） runPoseAt')).toEqual({ 路径: 'world/角色/跑步.ts', 符号: ['runPoseAt'] });
