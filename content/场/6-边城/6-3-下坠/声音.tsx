@@ -21,6 +21,7 @@
 // - 落进古城（`liYingShaft().landSec`）：同砸地，加落点那格（游戏 (-710, -51, 240)）深板岩的 block.deepslate.fall，再叠灾变的 cataclysm:heavy_smash（偏离游戏，用户 10-18 要这下更响）。翻身站起没有脚步声：`Entity.move` 只按水平位移攒步数。
 // 待导出：游戏音效.json 里还没有的事件，表里没有就先不放（不报错），导出以后自动响。
 // 响度分档（混音.ts）：砸地、落进古城那下「重」（落进古城的摔落声 −12，见下），其余（一路碾碎、风声、望远镜）都是「中」（用户 10-18）。
+import { 例外 } from '../../../../engine/core/例外.ts';
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
@@ -126,7 +127,7 @@ const storyEvents = () => {
   // 摔落声不给「重」：它文件峰值 −0.2 dBFS，按「重」要再加 1.8 dB，和 heavy_smash 叠着顶到 0 dBFS 削波。深板岩照旧「中」（按「重」要加 6～13 dB，也削波）
   const shaft = choreo.liYingShaft();
   const landPos: V3 = [shaftCenter[0], shaftCenter[1], choreo.ancientCityFloorZ];
-  out.push({ 名: '落地', 事件: 'entity.player.big_fall', 响度: -12, T: shaft.落地, 位置: liYingHip(shaft.落地), 音量: 1, 音高: 1, 选: rand() });
+  out.push({ 名: '落地', 事件: 'entity.player.big_fall', 响度: 例外('音效分档', -12, { 段: '6-举锤砸穿', 原因: '用户 10-18 嫌砸地小' }), T: shaft.落地, 位置: liYingHip(shaft.落地), 音量: 1, 音高: 1, 选: rand() });
   out.push({ 名: '落地·深板岩', 事件: 'block.deepslate.fall', T: shaft.落地, 位置: landPos, 音量: 0.5, 音高: 0.75, 选: rand() });
   out.push({ 名: '落地·重砸', 事件: 'cataclysm:heavy_smash', 档: '重', T: shaft.落地, 位置: landPos, 音量: 1, 音高: 1, 选: rand() });
   eventCache = { 城墙: wallEvents.filter((e) => hasEvent(e.事件)), 李樱: out.filter((e) => hasEvent(e.事件)) };

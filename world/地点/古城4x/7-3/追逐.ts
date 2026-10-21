@@ -3,6 +3,7 @@
 //   马在北墙头一跃 32 米跨过墙头的豁口落到东段、再一跃上墙上的塔顶，挨了音波一跃下到墙外大道往东冲；
 //   监守者在墙下，得钻城门洞、顺台阶上墙头再沿墙头追，追到塔脚就上不去了（塔顶比墙头高 7 格）。
 // 用户 10-18 定：马 50、监守者 60 米/秒，加速、刹车都按 `RAMP_SEC`（0.3 秒）到全速。
+import { 例外 } from '../../../../engine/core/例外.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { RAMP_SEC } from '../../../角色/跑步.ts';
 import { baseSpeed, eliteLeap, scene73, type 跳 } from '../布局.ts';
@@ -84,7 +85,7 @@ export const leapApex = { 一: 2.5, 二: 1.5, 三: 1.5 };
 export const leapFrom = (p0: V3, p1: V3, apex: number, t0: number, fps: number): 跳 => eliteLeap(p0, p1, apex, t0 * fps, fps);
 // 第一跃落在墙头东段，几乎不停（落地 2 帧就是第二跃的蓄力）；第二跃落在塔顶西沿，按落地时的水平速度刹住。
 // 刹车不按全片的 `RAMP_SEC`（跑步.ts）：塔顶只有 5 格宽，0.3 秒要滑 2.2 米，再挨音爆往东横滑会停到塔顶东沿外 1 米（悬空），所以这里是例外
-export const towerBrakeSec = 0.15;
+export const towerBrakeSec = 例外('起停', 0.15, { 场: '7-墙头追逐', 原因: '马落塔顶刹车：塔顶只有 5 格宽，0.3 秒会滑出塔沿；用户 10-21 定照留' });
 // 音爆的击退（原版 SonicBoom：水平 2.5 格/刻 × 方向的水平分量；之后每刻按地面摩擦 0.546 衰减）
 export const knockFriction = 0.6 * 0.91;
 export const knockSlide = (horizFraction: number) => (2.5 * horizFraction) / (1 - knockFriction);

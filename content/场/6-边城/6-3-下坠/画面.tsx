@@ -3,6 +3,7 @@
 // 地上用主世界-116 的真实地形（城址整平、竖井和古城挖掉，见 地形.ts）+ 边城 + 云，光照同 6-2-5、6-2-6（飞行镜头.tsx 的灯），地形加屏幕空间 AO；
 // 地下（竖井、古城）用这套灯、不投影，像开了夜视（用户 10-02），不画天空；雾同古城4x 满视距（竖井.tsx 的 `UnderFog`）。
 // 不画推力来源（用户 10-10 删了脚底鼓风机虚影和气流）。金光、望远镜视野（原版镜筒遮罩）、6-3-6 撞击的金白闪光是画面层。
+import { 例外 } from '../../../../engine/core/例外.ts';
 import { ThreeCanvas } from '@remotion/three';
 import React, { useMemo } from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
@@ -150,7 +151,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
   const g6 = timeline.段表['6-3-6'].起;
   const flash = segment === '6-3-6' ? Math.max(0, 1 - Math.abs(globalFrame - g6 - timeline.撞击段内帧 - 0.5) / 2) * 0.55 : 0;
   // 金光：锤头、光尾（沿走过的路往回取点，平移到锤头上）
-  const glowLevel = choreo.goldGlow(physSec);
+  const glowLevel = 例外('不加自制特效', choreo.goldGlow(physSec), { 段: '6-举锤砸穿', 原因: '剧情要的锤头金色光尾和撞击金光' });
   const head = choreo.maceHeadPos(ly);
   const off = [head[0] - ly.hip[0], head[1] - ly.hip[1], head[2] - ly.hip[2]];
   // 光尾往回取 0.3 秒，长度封顶 45 米（快时按速度缩）；钻进地里后只留 0.12 秒（再长会从井口一路拖到镜头身上）。用户 10-10 嫌太长，减半

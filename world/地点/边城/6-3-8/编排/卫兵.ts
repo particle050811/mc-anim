@@ -1,4 +1,5 @@
 // 6-3-8、6-3-10 的卫兵：城墙上放镜、低头、探身，出发从内沿跳进墙脚的落水池、上岸往西跑，坑口散开围住往下看。
+import { 例外 } from '../../../../../engine/core/例外.ts';
 import type { V3 } from '../../../../../engine/model/parts.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
 import pitSurfaceTable from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面'; // 古城4x 那一份（坑口形状和老片场那份一样，同一个种子）
@@ -80,8 +81,7 @@ const guardStanding = (t: number, i: number): GuardPose => {
 // 走道上原版疾跑 5.6 米/秒，起步 0.25 秒加到全速（离内沿两三米，要落进 4 米宽的池子不能冲快）。跳下去、落水、上岸见 编排/落水.ts，上了路 20 米/秒。
 // 跑的时候不举镜、抬头看路，披风往后扬（原版 CapeLayer 最多扬 75°）
 const sprintSpeed = 5.6;
-// 规矩例外（起停雾数）：不用默认的 `RAMP_SEC`（0.3），用户 10-21 定按看过的版本；RAMP_SEC 的原话是针对古城说的
-const walkwayRampSec = 0.25;
+const walkwayRampSec = 例外('起停', 0.25, { 段: '6-二人登场', 原因: '卫兵走道起步；用户 10-21 定按看过的版本，RAMP_SEC 的原话是针对古城说的' });
 const capeAt = (speed: number) => Math.min(75, (40 * speed) / sprintSpeed);
 const guardStartSec = (i: number) => cues.出发 + 0.3 * jitter01(i, 11) + 0.02 * i + (leaners.includes(i) ? 0.45 : 0); // 蹲着探身的先站起来
 const hoppers = [0, 2, 3, 4, 5, 6, 7, 8]; // 在内沿上一跳；1 号跑到沿上直接迈出去

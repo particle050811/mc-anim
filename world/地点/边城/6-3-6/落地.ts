@@ -3,6 +3,7 @@
 // 纯函数，输入 `s` = 物理时间 − 落地时刻（秒，见 ../6-3-下坠/编排.ts 的 `liYingShaft().landSec`；6-3-6 原速，1 物理秒 = 24 帧）。
 // 骨架约定同 骨架.tsx：pitch 负 = 前倾，腿、臂正 = 往前摆，膝 = 小腿往后折，headPitch 负 = 低头；ground = 1 时骨架自己把低的那只脚贴到脚底。
 // 末了的姿势就是段末站姿（手臂 20°、肘 30°、roll 18°、腿站直，6-4-1/跳搭.ts 的 `startStance` 抄的它），6-4-1 首帧接得上。
+import { 例外 } from '../../../../engine/core/例外.ts';
 import { type Key, sampleLag } from '../../../../engine/anim/anim.ts';
 import type { FigurePose } from '../../../角色/骨架.tsx';
 
@@ -12,8 +13,7 @@ const fps = 24; // 关键帧按「物理秒 × 24」写（帧）
 //   37～47 扭头往左（东，镜头这边）扫一眼、身子微拧，停到段末（6-3-6 末帧 = 锤砸地后 52 帧）。
 export const touchdownFrame = 8;
 export const settleFrame = 35;
-// 规矩例外（打击停顿）：停 2 帧，不用默认的 `HIT_STOP_FRAMES`（lib/anim.ts，1 帧），用户 10-21 定按看过的版本
-const stopEnd = 2;
+const stopEnd = 例外('打击停顿', 2, { 段: '6-举锤砸穿', 原因: '锤砸地；用户 10-21 定按看过的版本' });
 // 翻角（度）：155 头朝下 → 360 站直；着地那一刻冲过 6°（身子顺势往前栽一下），再回
 const flipKeys: Key[] = [[0, 155], [stopEnd, 155], [touchdownFrame, 366], [12, 360]];
 export const flipAngle = (s: number) => sampleLag(flipKeys, s * fps);

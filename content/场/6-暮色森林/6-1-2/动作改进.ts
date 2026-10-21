@@ -6,6 +6,7 @@
 // 3. 急停收势：120 米/秒急停时前倾、下沉、右臂前甩，按欠阻尼弹簧冲过再回弹；
 // 4. 微动：迅冲时身体随气流起伏，站定后呼吸、头左右看、重心左右挪。
 // 全部是剧情帧的纯函数（弹簧从固定起点积分打表），Remotion 每帧单独算也一样。
+import { 例外 } from '../../../../engine/core/例外.ts';
 import { type Key, rad, holdTime } from '../../../../engine/anim/anim.ts';
 import { springTable } from '../../../../engine/flight/真实飞行.ts';
 import type { FigurePose } from '../../../../world/角色/骨架.tsx';
@@ -16,8 +17,7 @@ const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return 
 
 // ---------- 1. 打击停顿 ----------
 // 停 3 帧：刀穿过脖子那一帧连放 4 次（1/6 秒）
-// 规矩例外（打击停顿）：不用默认的 `HIT_STOP_FRAMES`（lib/anim.ts，1 帧），用户 10-21 定按看过的版本
-export const nagaHitStop = 3;
+export const nagaHitStop = 例外('打击停顿', 3, { 段: '6-斩娜迦', 原因: '刀穿过脖子那帧连放 4 次；用户 10-21 定按看过的版本' });
 // 输出剧情帧 → 原剧情帧：在 CUT_FRAME 停住 n 帧，之后整体顺延 n 帧（人、娜迦、刀光、粒子、镜头一起停）
 export const hitStopFrames = (n: number) => (n > 0 ? holdTime([choreo.CUT_FRAME, n]) : (f: number) => f);
 
