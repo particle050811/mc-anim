@@ -1,0 +1,49 @@
+// sr 的入口（sr / sr.cmd 转到这里，Node 24 直接跑 TS）：按子命令分发，每条命令结束写运行记录、追加耗时。
+import { 用法错误 } from './参数.ts';
+import { 运行记录 } from '../运行记录/记录.ts';
+import type { 命令 } from './命令.ts';
+import { 环境命令 } from '../环境/命令.ts';
+import { 资产命令 } from '../资产/命令.ts';
+import { 渲染命令 } from '../渲/命令.ts';
+import { 指纹命令 } from '../指纹/命令.ts';
+import { 合成命令 } from '../合成/命令.ts';
+import { 预览命令 } from '../预览/命令.ts';
+
+const 命令表: Record<string, 命令> = { ...环境命令, ...资产命令, ...渲染命令, ...指纹命令, ...合成命令, ...预览命令 };
+
+const 帮助 = () => {
+  console.log('用法：sr <命令> [参数]\n');
+  for (const c of Object.values(命令表)) console.log(`  sr ${c.用法}\n      ${c.说明}`);
+};
+
+const main = async (argv: string[]): Promise<number> => {
+  const [名, ...args] = argv;
+  if (!名 || 名 === 'help' || 名 === '--help' || 名 === '-h') {
+    帮助();
+    return 名 ? 0 : 1;
+  }
+  const c = 命令表[名];
+  if (!c) {
+    console.error(`没有 ${名} 这个命令`);
+    帮助();
+    return 1;
+  }
+  const 记录 = new 运行记录(名, args);
+  let code = 1;
+  try {
+    code = (await c.跑(args, 记录)) ?? 0;
+  } catch (e) {
+    if (e instanceof 用法错误) {
+      console.error(`${e.message}\n用法：sr ${c.用法}`);
+      code = 2;
+    } else {
+      console.error(e instanceof Error ? (e.stack ?? e.message) : e);
+      记录.记('错误', e instanceof Error ? e.message : String(e));
+      code = 1;
+    }
+  }
+  if (!c.不记录) 记录.结束(code);
+  return code;
+};
+
+process.exitCode = await main(process.argv.slice(2));
