@@ -1,0 +1,28 @@
+# 资产表：配乐。人写；导入和资产锁由 assets/tools/导入旧项目.py 生成。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "配乐/Autumn"
+"类别" = "配乐"
+"来源" = "手工:来源没记录"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "杂项/音乐/Autumn.mp3"
+"说明" = "正式段没用到"
+
+[["资产"]]
+id = "配乐/Wasted"
+"类别" = "配乐"
+"来源" = "手工:Wasted（Huken x Murkish Nightcore），SoundCloud 上 huken 上传，3:00"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"旧路径" = "杂项/音乐/Wasted（Huken x Murkish Nightcore）.m4a"
+"说明" = "第三方音乐，不能分发；公开版缺了换同长静音（公开版.toml「配乐 Wasted」）"
+
+[["资产"]]
+id = "配乐/Wasted-节拍声"
+"类别" = "配乐"
+"来源" = "手工:项目工具生成或手写的数据（公开版.toml 放行「自制数据」）"
+"许可" = "MIT"
+"可见性" = "公开"
+"旧路径" = "参考模型库/src/配乐/Wasted.节拍声.wav"
