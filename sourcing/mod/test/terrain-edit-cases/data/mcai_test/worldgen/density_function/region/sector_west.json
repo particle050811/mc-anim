@@ -1,0 +1,15 @@
+{
+  "type": "mcai:region",
+  "shape": {
+    "type": "sector",
+    "center": [
+      -19000,
+      -9400
+    ],
+    "facing": 270,
+    "half_angle": 90,
+    "radius": 40000
+  },
+  "falloff": 3000,
+  "edge": "mcai_test:edge/b_clamped"
+}

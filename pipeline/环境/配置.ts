@@ -15,6 +15,13 @@ export type 配置值 = { 值: string; 来源: 来源; 变量: string; 键: stri
 
 type 项定义 = { 变量: string; 说明: string; 是路径: boolean; 默认: (已取: Record<string, string>) => string };
 
+/** Prism Launcher 默认的数据目录（各平台安装器的默认位置） */
+const prism数据默认 = () => {
+  if (isMac) return path.join(os.homedir(), 'Library', 'Application Support', 'PrismLauncher');
+  if (isWindows) return path.join(process.env.APPDATA ?? path.join(os.homedir(), 'AppData', 'Roaming'), 'PrismLauncher');
+  return path.join(process.env.XDG_DATA_HOME ?? path.join(os.homedir(), '.local', 'share'), 'PrismLauncher');
+};
+
 /** 旧项目退役前的位置：和本仓库主检出同级 */
 const 旧项目目录名 = '机械动力应力转动-AI漫画';
 
@@ -23,6 +30,11 @@ const 项表 = {
   数据根: { 变量: 'SR_DATA', 说明: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 'stress-rotation-data') },
   旧项目: { 变量: 'SR_LEGACY', 说明: '旧项目根（迁移期：旧项目执行器、基线、锁目录、游戏环境）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 旧项目目录名) },
   游戏: { 变量: 'SR_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）；迁移期是旧项目的 game/', 是路径: true, 默认: (v) => path.join(v.旧项目!, 'game') },
+  java_home: { 变量: 'SR_JAVA_HOME', 说明: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', 是路径: true, 默认: () => '' },
+  prism: { 变量: 'SR_PRISM', 说明: 'Prism Launcher 程序（sr mcai 起游戏用）；空就从 PATH 找', 是路径: false, 默认: () => '' },
+  prism数据: { 变量: 'SR_PRISM_DATA', 说明: 'Prism Launcher 的数据目录（原版 assets、库）', 是路径: true, 默认: () => prism数据默认() },
+  mc资源: { 变量: 'SR_MC_ASSETS', 说明: '原版资源目录（声音、语言文件的 objects/、indexes/）', 是路径: true, 默认: (v) => path.join(v.prism数据!, 'assets') },
+  python: { 变量: 'SR_PYTHON', 说明: '跑 mcai 和取材脚本的 Python（3.10 以上）', 是路径: false, 默认: () => (isWindows ? 'python' : 'python3') },
   锁目录: {
     变量: 'SR_LOCK_DIR',
     说明: '资源闸的锁目录；迁移期和旧项目共用 .资源闸/，两边的渲染一起排队',

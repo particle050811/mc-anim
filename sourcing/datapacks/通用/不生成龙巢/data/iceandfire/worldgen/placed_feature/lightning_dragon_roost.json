@@ -1,0 +1,9 @@
+{
+  "feature": "iceandfire:lightning_dragon_roost",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 0
+    }
+  ]
+}

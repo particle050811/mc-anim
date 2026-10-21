@@ -1,0 +1,286 @@
+{
+ "说明": "这些密度函数游戏（Java 的 codec）和离线版（生成修整.mjs）都必须报错、读不进来",
+ "错例": [
+  [
+   "没有这种形状",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "rect",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "多边形少于 3 点",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "polygon",
+     "points": [
+      [
+       0,
+       0
+      ],
+      [
+       10,
+       0
+      ]
+     ]
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "折线少于 2 点",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "path",
+     "points": [
+      [
+       0,
+       0
+      ]
+     ],
+     "width": 10
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "缺 falloff",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 10
+    }
+   }
+  ],
+  [
+   "falloff 是 0",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": 0
+   }
+  ],
+  [
+   "falloff 是负数",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": -5
+   }
+  ],
+  [
+   "edge 的类型写错（DFU 6 的 optionalFieldOf 会悄悄当成 0）",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": 10,
+    "edge": {
+     "type": "minecraft:noize",
+     "noise": "mcai_test:edge_a",
+     "xz_scale": 1,
+     "y_scale": 0
+    }
+   }
+  ],
+  [
+   "edge 引用了不存在的密度函数",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": 10,
+    "edge": "mcai_test:edge/没有这个"
+   }
+  ],
+  [
+   "半径是负数",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0
+     ],
+     "radius": -1
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "半角超过 360",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "sector",
+     "center": [
+      0,
+      0
+     ],
+     "facing": 0,
+     "half_angle": 400,
+     "radius": 10
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "扇形缺朝向",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "sector",
+     "center": [
+      0,
+      0
+     ],
+     "half_angle": 40,
+     "radius": 10
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "坐标写了 3 个数",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0,
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "坐标写成字符串",
+   {
+    "type": "mcai:region",
+    "shape": {
+     "type": "circle",
+     "center": [
+      "0",
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": 10
+   }
+  ],
+  [
+   "没有这种操作",
+   {
+    "type": "mcai:edit",
+    "input": 0,
+    "edits": [
+     {
+      "region": "mcai_test:region/circle",
+      "op": "towards",
+      "value": 1
+     }
+    ]
+   }
+  ],
+  [
+   "缺 edits",
+   {
+    "type": "mcai:edit",
+    "input": 0
+   }
+  ],
+  [
+   "缺 input",
+   {
+    "type": "mcai:edit",
+    "edits": []
+   }
+  ],
+  [
+   "修整缺 value",
+   {
+    "type": "mcai:edit",
+    "input": 0,
+    "edits": [
+     {
+      "region": "mcai_test:region/circle",
+      "op": "toward"
+     }
+    ]
+   }
+  ],
+  [
+   "修整缺 region",
+   {
+    "type": "mcai:edit",
+    "input": 0,
+    "edits": [
+     {
+      "op": "toward",
+      "value": 1
+     }
+    ]
+   }
+  ],
+  [
+   "类型名拼错",
+   {
+    "type": "mcai:regoin",
+    "shape": {
+     "type": "circle",
+     "center": [
+      0,
+      0
+     ],
+     "radius": 10
+    },
+    "falloff": 10
+   }
+  ]
+ ]
+}

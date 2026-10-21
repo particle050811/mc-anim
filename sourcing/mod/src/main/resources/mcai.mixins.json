@@ -1,0 +1,36 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "mcai.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "mcai.refmap.json",
+  "mixins": [
+    "ServerLevelMixin",
+    "LevelMixin",
+    "LevelTicksMixin",
+    "NaturalSpawnerMixin",
+    "MobMixin",
+    "LevelChunkMixin",
+    "LevelChunkSectionMixin",
+    "LegacyLandmarkPlacementsMixin",
+    "ChunkGeneratorTwilightMixin",
+    "FinalCastleStructureMixin",
+    "FinalCastleMazeTower13ComponentMixin",
+    "StructurePiecesBuilderAccessor",
+    "JigsawStructureAccessor",
+    "JigsawStructureMixin",
+    "ChunkGeneratorMixin",
+    "StructureManagerMixin",
+    "ChunkSerializerMixin",
+    "StructureManagerAccessor",
+    "NoiseBasedChunkGeneratorMixin"
+  ],
+  "client": [
+    "ClientLevelMixin",
+    "MouseHandlerMixin",
+    "KeyboardHandlerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

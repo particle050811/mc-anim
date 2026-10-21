@@ -1,0 +1,9 @@
+{
+  "feature": "iceandfire:myrmex_hive_desert",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 0
+    }
+  ]
+}

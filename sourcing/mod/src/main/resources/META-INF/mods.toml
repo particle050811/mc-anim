@@ -1,0 +1,32 @@
+modLoader="javafml"
+loaderVersion="[47,)"
+license="All Rights Reserved"
+
+[[mods]]
+modId="mcai"
+version="0.1.0"
+displayName="取材 mod (mcai)"
+description='''让 AI 用命令行控制游戏取材：摆机位、截图、冻结、放方块、撤销；装了「暮色放大4倍」数据包的世界里把暮色森林的地标网格放大 4 倍；放了「主世界修整」数据包的世界按区域修整主世界地形（mcai:region、mcai:edit 两种密度函数）。'''
+# 客户端和取材服务端都装（服务端用暮色地标网格和主世界生成时修整，见 TwilightGrid、mcai.terrain）。两端之间没有自己的网络包，
+# 所以不比对版本：哪一端没装都能进服，服务器列表里不因此打红叉
+displayTest="IGNORE_ALL_VERSION"
+
+[[dependencies.mcai]]
+    modId="forge"
+    mandatory=true
+    versionRange="[47,)"
+    ordering="NONE"
+    side="BOTH"
+[[dependencies.mcai]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.20.1,1.21)"
+    ordering="NONE"
+    side="BOTH"
+# mixin 改的是暮色 4.3.2508 的 LegacyLandmarkPlacements、ChunkGeneratorTwilight，换版本要先核对字节码
+[[dependencies.mcai]]
+    modId="twilightforest"
+    mandatory=true
+    versionRange="[4.3.2508,4.3.2509)"
+    ordering="NONE"
+    side="BOTH"

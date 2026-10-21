@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import type { 报告, 检查上下文 } from '../上下文.ts';
 import { 试跑 } from '../../环境/子进程.ts';
-import { isWindows } from '../../环境/配置.ts';
+import { isWindows, 配置 } from '../../环境/配置.ts';
 import { 代码根 } from '../../环境/路径.ts';
 
 const 包目录 = (包: string) => path.dirname(createRequire(import.meta.url).resolve(`${包}/package.json`));
@@ -45,7 +45,9 @@ export const 跑gradle = (c: 检查上下文, 报: 报告) => {
   const 改了 = [试跑(['git', '-C', c.根, 'diff', '--name-only', 'main...HEAD']), 试跑(['git', '-C', c.根, 'status', '--porcelain'])];
   const 不在git = 改了.some((x) => x.退出码 !== 0);
   if (!不在git && !改了.some((x) => x.stdout.includes(`${mod}/`))) return 报.跳过.push('gradle test：这次没改到 sourcing/mod/');
-  const r = 试跑([c.绝对(wrapper), 'test', '--console=plain'], { cwd: c.绝对(mod) });
+  // build.gradle 从 MCAI_GAME 读暮色森林的 jar；1.20.1 的 ForgeGradle 要 JDK 17，配了 SR_JAVA_HOME 就用它
+  const env = { ...process.env, MCAI_GAME: 配置('游戏'), ...(配置('java_home') ? { JAVA_HOME: 配置('java_home') } : {}) };
+  const r = 试跑([c.绝对(wrapper), 'test', '--console=plain'], { cwd: c.绝对(mod), env });
   if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'gradle test', /FAILED|error:/);
 };
 

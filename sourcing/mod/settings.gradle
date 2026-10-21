@@ -1,0 +1,10 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven { name = 'MinecraftForge'; url = 'https://maven.minecraftforge.net/' }
+        // MixinGradle 插件（给 mixin 生成 refmap）只在这个仓库里有
+        maven { name = 'Sponge'; url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    }
+}
+
+rootProject.name = 'mcai'

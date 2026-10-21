@@ -1,0 +1,20 @@
+{
+  "type": "mcai:edit",
+  "input": {
+    "type": "minecraft:noise",
+    "noise": "mcai_test:base",
+    "xz_scale": 1,
+    "y_scale": 0
+  },
+  "edits": [
+    {
+      "region": "mcai_test:region/circle_edge_neg",
+      "op": "add",
+      "value": {
+        "type": "minecraft:mul",
+        "argument1": "mcai_test:edge/c_3d",
+        "argument2": 0.5
+      }
+    }
+  ]
+}

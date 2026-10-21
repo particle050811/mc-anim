@@ -1,0 +1,22 @@
+{
+  "type": "mcai:region",
+  "shape": {
+    "type": "circle",
+    "center": [
+      -8000,
+      6000
+    ],
+    "radius": 3000
+  },
+  "falloff": 400,
+  "edge": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:noise",
+      "noise": "mcai_test:edge_a",
+      "xz_scale": 1,
+      "y_scale": 0
+    },
+    "argument2": 500
+  }
+}

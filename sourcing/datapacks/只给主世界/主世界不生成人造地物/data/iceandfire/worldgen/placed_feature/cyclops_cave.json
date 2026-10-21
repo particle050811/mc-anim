@@ -1,0 +1,9 @@
+{
+  "feature": "iceandfire:cyclops_cave",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 0
+    }
+  ]
+}

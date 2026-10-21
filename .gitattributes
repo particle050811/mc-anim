@@ -9,6 +9,7 @@
 *.bin binary
 *.jar binary
 *.cmd text eol=crlf
+*.bat text eol=crlf
 *.jpeg binary
 *.webp binary
 *.gif binary

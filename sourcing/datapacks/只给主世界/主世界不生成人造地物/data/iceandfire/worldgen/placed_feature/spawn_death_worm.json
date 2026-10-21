@@ -1,0 +1,9 @@
+{
+  "feature": "iceandfire:spawn_death_worm",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 0
+    }
+  ]
+}

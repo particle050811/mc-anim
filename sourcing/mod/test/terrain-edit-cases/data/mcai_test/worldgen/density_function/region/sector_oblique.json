@@ -1,0 +1,24 @@
+{
+  "type": "mcai:region",
+  "shape": {
+    "type": "sector",
+    "center": [
+      5000,
+      5000
+    ],
+    "facing": 33.3,
+    "half_angle": 47.5,
+    "radius": 12000
+  },
+  "falloff": 1500,
+  "edge": {
+    "type": "minecraft:mul",
+    "argument1": {
+      "type": "minecraft:noise",
+      "noise": "mcai_test:edge_a",
+      "xz_scale": 1,
+      "y_scale": 0
+    },
+    "argument2": 800
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:cache_2d",
+  "argument": {
+    "type": "mcai:edit",
+    "input": {
+      "type": "minecraft:noise",
+      "noise": "mcai_test:base",
+      "xz_scale": 1,
+      "y_scale": 0
+    },
+    "edits": [
+      {
+        "region": "mcai_test:region/sector_thin",
+        "op": "toward",
+        "value": 1
+      }
+    ]
+  }
+}

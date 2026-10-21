@@ -1,0 +1,9 @@
+{
+  "type": "mcai:region",
+  "shape": {
+    "type": "circle",
+    "center": [39680, -1216],
+    "radius": 8000
+  },
+  "falloff": 8000
+}

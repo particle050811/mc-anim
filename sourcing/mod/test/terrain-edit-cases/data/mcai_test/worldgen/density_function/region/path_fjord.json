@@ -1,0 +1,45 @@
+{
+  "type": "mcai:region",
+  "shape": {
+    "type": "path",
+    "points": [
+      [
+        20000,
+        -5000
+      ],
+      [
+        23000,
+        -4000
+      ],
+      [
+        24500,
+        -1000
+      ],
+      [
+        27000,
+        500
+      ],
+      [
+        30000,
+        0
+      ]
+    ],
+    "width": 900
+  },
+  "falloff": 300,
+  "edge": {
+    "type": "minecraft:clamp",
+    "input": {
+      "type": "minecraft:mul",
+      "argument1": {
+        "type": "minecraft:noise",
+        "noise": "mcai_test:edge_a",
+        "xz_scale": 1,
+        "y_scale": 0
+      },
+      "argument2": 200
+    },
+    "min": 0,
+    "max": 1000
+  }
+}

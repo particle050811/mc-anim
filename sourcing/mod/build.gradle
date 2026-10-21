@@ -1,0 +1,52 @@
+plugins {
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'org.spongepowered.mixin' version '0.7.+'
+}
+
+version = '0.1.0'
+group = 'mcai'
+base { archivesName = 'mcai' }
+
+// 直接用运行 gradle 的那个 JDK（mcai build 把 JAVA_HOME 指到 MCAI_JAVA_HOME 给的 JDK 17），不让 gradle 自己去下载工具链
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+minecraft {
+    // 官方 Mojmap，和游戏实例的 Forge 版本保持一致
+    mappings channel: 'official', version: '1.20.1'
+}
+
+mixin {
+    add sourceSets.main, 'mcai.refmap.json'
+    config 'mcai.mixins.json'
+}
+
+def mcaiGame() {
+    def g = System.getenv('MCAI_GAME')
+    if (!g) throw new GradleException('要设环境变量 MCAI_GAME：游戏环境目录（里面有 取材服务端/mods/）')
+    return g
+}
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.20.1-47.4.10'
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    // 暮色地标网格的 mixin 要引用暮色的类（TFLandmark、XZQuadrantIterator 等）；只编译时用，游戏里用实例自己装的那份。
+    // 用取材服务端里的 jar（和实例同一版），不另外下载；游戏环境目录由环境变量 MCAI_GAME 给（sr、mcai build 会传）
+    compileOnly files(mcaiGame() + '/取材服务端/mods/twilightforest-1.20.1-4.3.2508-universal.jar')
+}
+
+tasks.named('jar', Jar).configure {
+    // 实例里跑的是 SRG 名，必须重混淆
+    finalizedBy 'reobfJar'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+// test/twilight-grid-test.sh 用：运行时要的库（脚本把其中 Mojmap 名的 Forge 换成 SRG 名那份，好和重混淆后的 jar 对上）
+tasks.register('printRuntimeClasspath') {
+    doLast { println configurations.runtimeClasspath.asPath }
+}

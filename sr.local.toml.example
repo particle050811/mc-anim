@@ -11,6 +11,21 @@
 # 游戏环境（取材服务端、Prism 实例、jar 缓存）。环境变量 SR_GAME。默认：<旧项目>/game
 # game = "../stress-rotation-game"
 
+# JDK 17：编译取材 mod（sr mcai build、sr check 的 gradle test）、取材脚本里的 javap。环境变量 SR_JAVA_HOME。默认空：用 PATH 上的 java
+# java_home = "/opt/homebrew/opt/openjdk@17"
+
+# Prism Launcher 程序（sr mcai 起游戏）。环境变量 SR_PRISM。默认空：从 PATH 找
+# prism = 'C:\Users\me\AppData\Local\Programs\PrismLauncher\prismlauncher.exe'
+
+# Prism Launcher 的数据目录。环境变量 SR_PRISM_DATA。默认：Mac ~/Library/Application Support/PrismLauncher，Windows %APPDATA%\PrismLauncher，Linux ~/.local/share/PrismLauncher
+# prism_data = "/Users/me/Library/Application Support/PrismLauncher"
+
+# 原版资源目录（objects/、indexes/，导音效用）。环境变量 SR_MC_ASSETS。默认：<Prism 数据目录>/assets
+# mc_assets = "../mc-assets"
+
+# 跑 mcai 和取材脚本的 Python。环境变量 SR_PYTHON。默认：Windows 上 python，其余 python3
+# python = "python3"
+
 # 资源闸锁目录。环境变量 SR_LOCK_DIR。默认：旧项目在就用 <旧项目>/.资源闸（两个项目一起排队），否则 <数据根>/run/locks
 # lock_dir = "../机械动力应力转动-AI漫画/.资源闸"
 
