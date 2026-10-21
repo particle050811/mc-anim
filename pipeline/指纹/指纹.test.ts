@@ -41,7 +41,7 @@ describe('依赖闭包', () => {
     expect(视频.指纹).not.toBe(预览.指纹);
     expect(Object.keys(视频.项.闭包.文件)).toEqual(expect.arrayContaining(['content/核对/冒烟/画面.tsx', 'content/核对/冒烟/段.ts', 'content/设置.ts', 'content/注册.tsx']));
     expect(Object.keys(视频.项.资产).sort()).toEqual(['核对/冒烟色块', '核对/冒烟音']);
-    expect(视频.项.依赖版本).toMatchObject({ remotion: '4.0.530', react: '19.3.0', three: null });
+    expect(视频.项.依赖版本).toMatchObject({ remotion: '4.0.530', react: '19.3.0', three: '0.186.1' });
     expect(Object.keys(视频.项.打包规则)).toEqual(['pipeline/资产/ogg解码.cjs', 'pipeline/资产/webpack.ts', 'remotion.config.ts']);
     expect(指纹差异(视频.项, 预览.项).sort()).toEqual(['渲染设置 改了 imageFormat', '渲染设置 改了 inputProps', '渲染设置 改了 scale']);
     expect((await 算段指纹(冒烟!, 渲染参数('视频'))).指纹).toBe(视频.指纹);

@@ -15,10 +15,10 @@ describe('选择器', () => {
 
   it('清单里的冒烟段能读到段.ts，没有编号；对不上的选择器报错', async () => {
     const 全 = await 全部段();
-    expect(全.map((s) => s.键)).toEqual(['核对-冒烟']);
+    expect(全.map((s) => s.键)).toEqual(['核对-冒烟', '核对-角色包']);
     expect(全[0]!.段).toMatchObject({ 帧数: 48, fps: 24, 宽: 1280, 高: 720 });
     expect(编号('核对-冒烟')).toBeNull();
-    expect((await 选段(['核对'])).map((s) => s.键)).toEqual(['核对-冒烟']);
+    expect((await 选段(['核对'])).map((s) => s.键)).toEqual(['核对-冒烟', '核对-角色包']);
     await expect(选段(['没有这段'])).rejects.toThrow(/没对上任何段：没有这段/);
   });
 });
