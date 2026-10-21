@@ -1,0 +1,9 @@
+{
+  "feature": "iceandfire:spawn_wandering_cyclops",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 0
+    }
+  ]
+}

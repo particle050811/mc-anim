@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:cache_2d",
+  "argument": {
+    "type": "mcai:edit",
+    "input": {
+      "type": "minecraft:add",
+      "argument1": "etn:overworld/e/c/c",
+      "argument2": {
+        "type": "minecraft:add",
+        "argument1": {
+          "type": "minecraft:mul",
+          "argument1": "etn:overworld/factor/jungle/1",
+          "argument2": 20
+        },
+        "argument2": {
+          "type": "minecraft:mul",
+          "argument1": "etn:overworld/factor/desert/1",
+          "argument2": 12
+        }
+      }
+    },
+    "edits": [
+      {
+        "region": "mcai:region/base_island",
+        "op": "toward",
+        "value": -0.8
+      }
+    ]
+  }
+}

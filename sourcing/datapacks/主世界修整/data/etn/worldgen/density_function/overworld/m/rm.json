@@ -1,0 +1,25 @@
+{
+  "type": "minecraft:cache_2d",
+  "argument": {
+    "type": "mcai:edit",
+    "input": {
+      "type": "minecraft:mul",
+      "argument1": {
+        "type": "minecraft:range_choice",
+        "input": "etn:overworld/r/2/3",
+        "min_inclusive": -1,
+        "max_exclusive": -0.23,
+        "when_in_range": 0,
+        "when_out_of_range": "etn:overworld/r/1b"
+      },
+      "argument2": 1.3
+    },
+    "edits": [
+      {
+        "region": "mcai:region/base_island",
+        "op": "toward",
+        "value": 0.15
+      }
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "type": "mcai:edit",
+  "input": {
+    "type": "minecraft:add",
+    "argument1": "etn:overworld/temperature",
+    "argument2": {
+      "type": "minecraft:mul",
+      "argument1": "etn:overworld/excessive_biomes",
+      "argument2": 0.01
+    }
+  },
+  "edits": [
+    {
+      "region": {
+        "type": "minecraft:mul",
+        "argument1": 30,
+        "argument2": "mcai:region/base_sea"
+      },
+      "op": "max",
+      "value": -0.44
+    },
+    {
+      "region": {
+        "type": "minecraft:clamp",
+        "input": {
+          "type": "minecraft:add",
+          "argument1": -5.76,
+          "argument2": {
+            "type": "minecraft:mul",
+            "argument1": 8,
+            "argument2": "mcai:region/base_island"
+          }
+        },
+        "min": 0,
+        "max": 1
+      },
+      "op": "toward",
+      "value": 0.15
+    }
+  ]
+}

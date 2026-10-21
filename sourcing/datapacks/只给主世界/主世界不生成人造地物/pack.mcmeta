@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 15,
+    "description": "主世界存档用，和建世界时的 generate-structures=false 一起做到结构全禁。用户 2026-10-04：「把结构生成全部禁用了吧，不然的话地形上面突然出现结构有点突兀」。generate-structures 只管结构，下面这些是 feature，不归它管，所以把它们的 placed_feature 改成 count 0：原版的沙漠水井（desert_well）、地牢（monster_room、monster_room_deep）；冰火的独眼巨人洞、精灵村、塞壬岛、九头蛇洞、沙漠和丛林蚁巢、三种龙骨架（spawn_dragon_skeleton_*，是死龙实体）。冰火在生成区块时直接刷生物的 5 个 feature 也一起关（用户 2026-10-04 同意）：死亡蠕虫、海马、海蟒、铜羽泽鹗、游荡独眼巨人（spawn_death_worm、spawn_hippocampus、spawn_sea_serpent、spawn_stymphalian_bird、spawn_wandering_cyclops）。"
+  }
+}

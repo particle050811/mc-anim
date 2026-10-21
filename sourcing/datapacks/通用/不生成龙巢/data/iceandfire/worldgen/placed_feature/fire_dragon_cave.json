@@ -1,0 +1,9 @@
+{
+  "feature": "iceandfire:fire_dragon_cave",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 0
+    }
+  ]
+}

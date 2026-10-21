@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:cache_2d",
+  "argument": {
+    "type": "mcai:edit",
+    "input": {
+      "type": "minecraft:min",
+      "argument1": "etn:overworld/r/1/1",
+      "argument2": "etn:overworld/r/2/1"
+    },
+    "edits": [
+      {
+        "region": {
+          "type": "minecraft:mul",
+          "argument1": 4,
+          "argument2": "mcai:region/base_island"
+        },
+        "op": "max",
+        "value": 0
+      }
+    ]
+  }
+}

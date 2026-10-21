@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 15,
+    "description": "主世界生成时修整：基地小岛 + 朝海修成一望无际的海（mcai:region、mcai:edit，要配合取材mod；必须排在史诗地形数据包之上）。说明见 说明.md"
+  }
+}
