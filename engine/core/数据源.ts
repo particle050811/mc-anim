@@ -1,5 +1,6 @@
-// 取数据的唯一入口：Git 外的大数据（区段包、求解缓存，在数据根的 渲染/ 下，见 工具/公共/环境.mjs）一律经这里取，路径相对 渲染/ 写，如 `区段包/<名>/<版本>/包.json`
-// （区段包的路径用 lib/体素/区段包位置.ts 拼）。现在 渲染/ 就是 Remotion 的 public 目录（remotion.config.ts），dataUrl 走 staticFile；换本地文件服务只改 dataUrl。
+// 取数据的唯一入口：Git 外的大数据（区段包、求解缓存）一律经这里取，路径相对 Remotion 的 public 目录写，如 `terrain/<名>/<版本>/包.json`
+// （区段包的路径用 engine/voxel/区段包位置.ts 拼）。public 目录是 <数据根>/run/public/，里面只有链到 terrain/、cache/求解/ 的链接（pipeline/渲/public目录.ts）；
+// dataUrl 走 staticFile，换本地文件服务只改 dataUrl。
 // 换的服务要支持 Range（回 206）和同源的同步 GET（求解缓存在模块初始化时同步取）。
 import { staticFile } from 'remotion';
 
