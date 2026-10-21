@@ -11,11 +11,12 @@ import { 时长秒 } from '../../渲/探测.ts';
 import { 读资产锁, 解析资产 } from '../../资产/资产锁.ts';
 import { 上一段于, 台词头们, 开口表, 读台词表 } from '../../合成/台词落点.ts';
 
-export type 清单条 = { 名: string; 档?: string; 文件: string; 起帧: number; 帧数: number; 入点秒: number; 速率: number; 循环: boolean; 增益: number[] };
+export type 清单条 = { 名: string; 档?: string; 资产?: string; 文件: string; 起帧: number; 帧数: number; 入点秒: number; 速率: number; 循环: boolean; 增益: number[] };
 export type 段清单 = { 音效清单: 清单条[]; 配乐清单: 清单条[]; 台词清单: 清单条[] };
 type 段声音 = Pick<段定义, '声音' | 'fps' | '帧数'>;
 
-/** 段.ts 的 cue → 三份清单；文件写成相对数据根的路径（音效拆分.py 的 文件根 = 数据根） */
+/** 段.ts 的 cue → 三份清单；文件写成相对数据根的路径（音效拆分.py 的 文件根 = 数据根）。
+ *  音效、配乐另记 资产 id：库里的文件按 sha 命名，音效拆分.py 并「叠着的同种声」要从 id 认出是哪种声音 */
 export const 段的清单 = (
   s: 段信息,
   取文件: (资产id: string) => string,
@@ -31,6 +32,7 @@ export const 段的清单 = (
     const 条: 清单条 = {
       名: c.名,
       ...(c.档 !== undefined ? { 档: c.档 } : {}),
+      资产: c.资产,
       文件: 相对(取文件(c.资产)),
       起帧: c.帧,
       帧数: c.帧数,

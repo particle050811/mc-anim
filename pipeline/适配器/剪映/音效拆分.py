@@ -28,12 +28,12 @@ SAMPLE_RATE = 48000
 SAMPLES_PER_FRAME = SAMPLE_RATE // 24
 SILENT = 10 ** (-80 / 20)  # 整声都低于这个（−80 dBFS）的不出片段：离镜头太远、衰减到零的
 # 同一种声音叠在一起的并成一个片段：一个洞一下几十声碎方块、一队卫兵同时迈步，一声一个片段叠出几十条轨，剪映拖不动（用户 10-15）。
-# 种类 = 文件名去掉变体号；破坏方块（方块碎、钻头敲、挂画碎）算一种
+# 种类 = 文件名（新管线的清单给资产 id，没有 .ogg）去掉变体号；破坏方块（方块碎、钻头敲、挂画碎）算一种
 BLOCK_BREAK = re.compile(r'^(block\.[a-z_]+\.(break|hit)|entity\.painting\.break)$')
 
 
 def sound_kind(file: str) -> str:
-    kind = re.sub(r'(\.\d+)?\.ogg$', '', file.rsplit('/', 1)[-1])
+    kind = re.sub(r'(\.\d+)?(\.ogg)?$', '', file.rsplit('/', 1)[-1])
     return '破坏方块' if BLOCK_BREAK.match(kind) else kind
 
 
@@ -89,7 +89,7 @@ def build_clips(segment_offsets, total_frames: int, read_audio, kind: str = '音
             start = (global_start + a - comp_start) * SAMPLES_PER_FRAME
             total[start:start + len(audio)] += audio
             name = f"【{cue['档']}】{cue['名']}" if cue.get('档') else cue['名']  # 分了档的片段名前标档（用户 10-18 要在剪映里逐个听）
-            clips.append(dict(段=segment_id, 名=name, 档=cue.get('档'), 起帧=global_start + a - comp_start, 声音=audio, 种类=sound_kind(cue['文件'])))
+            clips.append(dict(段=segment_id, 名=name, 档=cue.get('档'), 起帧=global_start + a - comp_start, 声音=audio, 种类=sound_kind(cue.get('资产') or cue['文件'])))
     if kind == '音效清单':
         print(f'音效拆分：{len(clips)} 声（{silent} 声衰减到听不见，不出片段）', flush=True)
     return clips, total
