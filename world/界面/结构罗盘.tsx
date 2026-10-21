@@ -16,7 +16,7 @@ import 资_4 from 'asset:贴图/界面/结构罗盘/帧-04';
 import 资_5 from 'asset:贴图/界面/结构罗盘/帧-05';
 import 资_6 from 'asset:贴图/界面/结构罗盘/帧-06';
 import 资_7 from 'asset:贴图/界面/结构罗盘/帧-07';
-const frameTable = frameTable资产 as unknown as any; // 迁移：类型待补
+const frameTable = frameTable资产 as unknown as { 帧数: number; 点击: Record<string, number>; 帧: string[] };
 
 const ctx = 资产目录({ './帧-00.png': 资_0, './帧-01.png': 资_1, './帧-02.png': 资_2, './帧-03.png': 资_3, './帧-04.png': 资_4, './帧-05.png': 资_5, './帧-06.png': 资_6, './帧-07.png': 资_7 }) as unknown as { keys(): string[]; (k: string): string | { default: string } };
 const pngUrls: Record<string, string> = {};

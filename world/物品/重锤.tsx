@@ -22,7 +22,7 @@ import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw资产 from 'asset:模型/物品/重锤';
 import tex from 'asset:贴图/物品/重锤';
-const raw = raw资产 as unknown as any; // 迁移：类型待补
+const raw = raw资产 as unknown as object;
 
 const MODEL = { ...raw, texture: png(tex) } as unknown as BedrockModel;
 

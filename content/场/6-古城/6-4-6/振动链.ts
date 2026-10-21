@@ -13,7 +13,7 @@ import type { V3 } from '../../../../engine/model/parts.tsx';
 import { G4 } from '../../../../world/地点/古城4x.tsx';
 import { vanilla, type BlockPos } from '../../../../world/地点/古城4x/布局.ts';
 import blockData资产 from 'asset:碎块/镜头/6-4-6/振动方块';
-const blockData = blockData资产 as unknown as any; // 迁移：类型待补
+const blockData = blockData资产 as unknown as { 感测体: number[][]; 尖啸体: number[][]; 羊毛: number[][] };
 
 type VibrationEvent = { 名: string; t: number; p: V3 }; // p：场景坐标（脚底）
 export type Vibration = { from: V3; to: V3; t: number; 到: number; 收: string };

@@ -3,7 +3,7 @@ import { coarseHeightAt } from '../../../../../engine/voxel/区段包.ts';
 import { frozenCoarse } from '../../../../../engine/voxel/冻结粗高度.ts';
 import { overworldPackName } from '../../../主世界116.ts';
 import groundJson资产 from 'asset:数据/镜头/6-2-5/航线地面';
-const groundJson = groundJson资产 as unknown as any; // 迁移：类型待补
+const groundJson = groundJson资产 as unknown as { x0: number; y0: number; 格: number; nx: number; ny: number; 高: string };
 
 // ---------- 地面 ----------
 // 巡航高度的口径照暮色（用户 10-05：主世界巡航高度太高、下面看不清，改成和暮色差不多）：离方圆 250 米内地物顶面的中位 80 米（同 模型/场景/暮色新世界.tsx 的 `canopySurface` + `cruiseClearanceM`），

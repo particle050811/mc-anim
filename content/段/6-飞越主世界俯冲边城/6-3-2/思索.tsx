@@ -58,7 +58,7 @@ import 资_14 from 'asset:贴图/镜头/6-3-2/方块/裂纹7';
 import 资_15 from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
 import 资_16 from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
 import 资_17 from 'asset:贴图/镜头/6-3-2/方块/雪块';
-const ponderText = ponderText资产 as unknown as any; // 迁移：类型待补
+const ponderText = ponderText资产 as unknown as { 标题: string; 说明: string[] };
 
 const voiceWav = { 改字: voiceRevised, 原文: voiceOriginal, 五句: voiceFiveLines }[chosenVersion];
 

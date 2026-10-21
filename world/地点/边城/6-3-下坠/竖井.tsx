@@ -51,7 +51,7 @@ import 资_22 from 'asset:贴图/镜头/6-3-下坠/方块/银矿石';
 import 资_23 from 'asset:贴图/镜头/6-3-下坠/方块/锌矿石';
 import 资_24 from 'asset:贴图/镜头/6-3-下坠/方块/闪长岩';
 import 资_25 from 'asset:贴图/镜头/6-3-下坠/方块/黄色赤陶';
-const pitSurfaceRaw = pitSurfaceRaw资产 as unknown as any; // 迁移：类型待补
+const pitSurfaceRaw = pitSurfaceRaw资产 as unknown as { 半宽: number; 高: (number | null)[][] };
 
 export const pitSurfaceTable = pitSurfaceRaw;
 
