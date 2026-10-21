@@ -13,6 +13,7 @@ import type { 段信息 } from '../清单/清单.ts';
 import { 记耗时, 预计耗时, type 运行记录 } from '../运行记录/记录.ts';
 import { 母版路径, 写指纹 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
+import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
 import { 视频信息 } from './探测.ts';
 import { 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
 import type { 渲染级别 } from '../../content/设置值.ts';
@@ -46,6 +47,8 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const 参数 = 渲染参数(级别);
   const serveUrl = await 打包();
   const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' });
+  // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
+  收求解缓存(browser);
   try {
     const 组合 = await getCompositions(serveUrl, {
       inputProps: 参数.inputProps,
@@ -93,6 +96,7 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
   await 开会话(级别, async (h) => {
     for (const r of 待渲) {
       const composition = 找组合(h, r.段);
+      await 等求解缓存写完();
       await 过渲染闸(async () => {
         const t0 = Date.now();
         const tmp = r.母版.replace(/\.mkv$/, `.渲染中-${process.pid}.mkv`);
@@ -147,6 +151,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
     for (const f of 帧们) {
       if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.键} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
     }
+    await 等求解缓存写完();
     await 过渲染闸(async () => {
       for (const f of 帧们) {
         const file = path.join(出到, `${s.键}-第${String(f).padStart(4, '0')}帧.png`);
