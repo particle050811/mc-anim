@@ -21,6 +21,7 @@ export const 指纹命令: Record<string, 命令> = {
       const 段们 = p.位置.length ? await 选段(p.位置) : await 全部段();
       let 过期数 = 0;
       let 预计 = 0;
+      let 没记录 = 0;
       for (const s of 段们) {
         const fp = await 算段指纹(s, 渲染参数(级别));
         const 有 = fs.existsSync(母版路径(s.键, fp.指纹));
@@ -28,13 +29,15 @@ export const 指纹命令: Record<string, 命令> = {
         if (p.开关.has('--详细')) console.log(JSON.stringify(fp.项, null, 2).replace(/^/gm, '    '));
         if (有) continue;
         过期数++;
-        预计 += 预计耗时(渲染标签(s.键, 级别)) ?? 0;
+        const 估 = 预计耗时(渲染标签(s.键, 级别));
+        if (估 === null) 没记录++;
+        else 预计 += 估;
         // 和同一级别最近渲过的那份比
         const 上次 = 历史指纹(s.键).find((h) => 稳定JSON(h.项.渲染设置.inputProps) === 稳定JSON(fp.项.渲染设置.inputProps));
         if (!上次) console.log('    没渲过');
         else for (const d of 指纹差异(上次.项, fp.项).slice(0, 20)) console.log(`    ${d}`);
       }
-      console.log(`\n${段们.length} 段，过期 ${过期数} 段${过期数 ? `；按耗时表预计重渲约 ${Math.round(预计)} 秒（没记录的段不算）` : ''}`);
+      console.log(`\n${段们.length} 段，过期 ${过期数} 段${过期数 > 没记录 ? `；按耗时表预计重渲约 ${Math.round(预计)} 秒` : ''}${没记录 ? `；${没记录} 段耗时表里没有记录` : ''}`);
     },
   },
 };
