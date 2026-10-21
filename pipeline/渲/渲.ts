@@ -12,6 +12,7 @@ import { 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import { 记耗时, 预计耗时, type 运行记录 } from '../运行记录/记录.ts';
 import { 母版路径, 写指纹 } from './母版.ts';
+import { 备好public目录 } from './public目录.ts';
 import { 视频信息 } from './探测.ts';
 import { 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
 import type { 渲染级别 } from '../../content/设置值.ts';
@@ -25,6 +26,9 @@ export const 打包 = async () => {
     rootDir: 代码根(),
     webpackOverride: webpack改写,
     enableCaching: true,
+    publicDir: 备好public目录(),
+    // public 里只有指向数据根的链接，转发进包是预期的
+    onSymlinkDetected: () => {},
   });
   console.log(`打包 ${((Date.now() - t0) / 1000).toFixed(0)} 秒`);
   return serveUrl;

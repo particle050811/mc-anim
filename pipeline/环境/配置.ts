@@ -97,6 +97,10 @@ export const 全部配置 = () => 全部();
 export const 数据根 = () => 配置('数据根');
 export const 数据路径 = (...段: string[]) => path.join(数据根(), ...段);
 export const 母版目录 = (段键: string) => 数据路径('cache', '母版', 段键);
+export const 地形根 = () => 数据路径('terrain');
+export const 求解缓存目录 = () => 数据路径('cache', '求解');
+/** Remotion 的 public 目录：里面只放指向 terrain/、cache/求解/ 的链接（见 pipeline/渲/public目录.ts） */
+export const public目录 = () => 数据路径('run', 'public');
 export const 交付根 = () => 数据路径('交付');
 export const 运行目录 = () => 数据路径('run');
 export const 耗时表 = () => 数据路径('run', 'logs', '耗时.tsv');
