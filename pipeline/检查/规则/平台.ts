@@ -1,6 +1,7 @@
 // 平台卫生：仓库里的路径在 Windows 上合法（不用 <>:"\|?* 和控制字符、不以点或空格结尾、不用 CON/NUL/COM1 这类保留名、
 // 不靠大小写区分、Unicode 用 NFC）；结构层路径只用 ASCII（顶层目录、py/ 下的包、sourcing/mod/ 整棵树、verify/accepted/<平台>）；
-// 代码里不开 shell（JS/TS 的 shell 选项、Python 的 shell=True），Python 不用 fcntl（Windows 没有）。
+// 代码里不开 shell：JS/TS 的 shell 选项、exec/execSync（传字符串命令，Node 隐式起 sh/cmd.exe）、spawn/execFile 不带参数数组，
+// Python 的 shell=True、os.system/os.popen、subprocess.getoutput/getstatusoutput；Python 不用 fcntl（Windows 没有）。
 import { 代码后缀, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 属性名, 行号, 解析, 遍历, ts } from '../语法.ts';
 
@@ -46,6 +47,46 @@ export const 大小写冲突 = (路径们: readonly string[]) => {
   return r;
 };
 
+const 子进程模块 = new Set(['child_process', 'node:child_process', 'cross-spawn']);
+const 隐式shell = new Set(['exec', 'execSync']);
+const 要数组 = new Set(['spawn', 'spawnSync', 'execFile', 'execFileSync', 'sync']);
+
+/** child_process / cross-spawn 绑到本文件的名字：本地名 → 原函数名（default 和命名空间记 '*'） */
+const 子进程绑定 = (sf: ts.SourceFile) => {
+  const 名 = new Map<string, string>();
+  const 是require = (e: ts.Expression | undefined): boolean =>
+    !!e && ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'require' && !!e.arguments[0] && ts.isStringLiteral(e.arguments[0]) && 子进程模块.has(e.arguments[0].text);
+  遍历(sf, (n) => {
+    if (ts.isImportDeclaration(n) && ts.isStringLiteral(n.moduleSpecifier) && 子进程模块.has(n.moduleSpecifier.text) && n.importClause && !n.importClause.isTypeOnly) {
+      const 模块 = n.moduleSpecifier.text;
+      if (n.importClause.name) 名.set(n.importClause.name.text, 模块 === 'cross-spawn' ? 'spawn' : '*');
+      const b = n.importClause.namedBindings;
+      if (b && ts.isNamespaceImport(b)) 名.set(b.name.text, '*');
+      if (b && ts.isNamedImports(b)) for (const e of b.elements) 名.set(e.name.text, 属性名(e.propertyName ?? e.name) ?? e.name.text);
+    }
+    if (ts.isVariableDeclaration(n) && 是require(n.initializer)) {
+      if (ts.isIdentifier(n.name)) 名.set(n.name.text, '*');
+      else if (ts.isObjectBindingPattern(n.name))
+        for (const e of n.name.elements) if (ts.isIdentifier(e.name)) 名.set(e.name.text, e.propertyName ? (属性名(e.propertyName) ?? e.name.text) : e.name.text);
+    }
+  });
+  return 名;
+};
+
+/** 起子进程的调用里会经过 shell、或没给参数数组的：返回原因 */
+const 子进程毛病 = (n: ts.CallExpression, 绑定: Map<string, string>): string | null => {
+  let 函数: string | undefined;
+  if (ts.isIdentifier(n.expression)) 函数 = 绑定.get(n.expression.text);
+  else if (ts.isPropertyAccessExpression(n.expression) && ts.isIdentifier(n.expression.expression) && 绑定.get(n.expression.expression.text) === '*') 函数 = n.expression.name.text;
+  if (!函数) return null;
+  if (隐式shell.has(函数)) return `${函数} 传字符串命令，会隐式起 shell：改用 execFile/spawn 加参数数组`;
+  if (要数组.has(函数)) {
+    const 参 = n.arguments[1];
+    if (!参 || ts.isObjectLiteralExpression(参) || ts.isStringLiteral(参) || ts.isTemplateExpression(参) || ts.isNoSubstitutionTemplateLiteral(参)) return `${函数} 要带参数数组（没有参数也写 []）`;
+  }
+  return null;
+};
+
 export const 平台 = async (c: 检查上下文, 报: 报告) => {
   for (const p of c.文件()) {
     for (const 名 of p.split('/')) {
@@ -60,9 +101,12 @@ export const 平台 = async (c: 检查上下文, 报: 报告) => {
   for (const p of c.文件()) {
     if (代码后缀.test(p) && !/\.d\.[cm]?ts$/.test(p)) {
       const 源 = c.读(p);
-      if (!源.includes('shell')) continue;
+      if (!/shell|child_process|cross-spawn/.test(源)) continue;
       const sf = 解析(p, 源);
+      const 绑定 = 子进程绑定(sf);
       遍历(sf, (n) => {
+        const 毛病 = 绑定.size && ts.isCallExpression(n) ? 子进程毛病(n, 绑定) : null;
+        if (毛病) 报.错(`不开 shell：${毛病}（pipeline/环境/子进程.ts）`, p, 行号(sf, n));
         if (ts.isPropertyAssignment(n) && 属性名(n.name) === 'shell' && n.initializer.kind !== ts.SyntaxKind.FalseKeyword) {
           报.错('不开 shell：子进程用数组参数（pipeline/环境/子进程.ts；Windows 的 .cmd 交给 cross-spawn）', p, 行号(sf, n));
         }
@@ -74,6 +118,8 @@ export const 平台 = async (c: 检查上下文, 报: 报告) => {
         .forEach((l, i) => {
           const 码 = l.replace(/#.*$/, '');
           if (/\bshell\s*=\s*(?!False\b)\w/.test(码)) 报.错('不开 shell：subprocess 用列表参数', p, i + 1);
+          if (/\bos\.(system|popen)\s*\(|\bsubprocess\.(getoutput|getstatusoutput)\s*\(|^\s*from\s+(os\s+import\s+.*\b(system|popen)\b|subprocess\s+import\s+.*\bget(status)?output\b)/.test(码))
+            报.错('不开 shell：os.system、os.popen、subprocess.getoutput 都经过 shell，改用 subprocess.run 加列表参数', p, i + 1);
           if (/^\s*(import\s+([\w.]+\s*,\s*)*fcntl\b|from\s+fcntl\s+import\b)/.test(码)) 报.错('不用 fcntl（Windows 没有）：锁用 O_EXCL 建文件，照 pipeline/闸/锁.ts', p, i + 1);
         });
     }
