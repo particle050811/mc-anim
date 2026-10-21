@@ -1,6 +1,7 @@
 // 台词字幕排时间：每句开口前 0.15 秒出、说完 0.4 秒收，下一句出来上一句就收；一句切几屏时到配音响度的谷里找停顿换屏。
 // 照抄旧项目 工具/合成第六章/字幕.py（plan_subtitles、find_voiced_runs、screen_switch_times、verify_onsets），数值不改；
 // 落点不再从各段代码里扒，由 台词落点.ts 按段.ts 的声音 cue 算。产出 字幕表.tsv、SRT、字幕核对.tsv。
+// 接上段的落点（上一段说过来的后半截）不出字幕，字幕表末尾照旧另列一行，写它和开口那段差几帧。
 import { 互相关 } from './音频.ts';
 import type { 字幕位置, 屏 } from './字幕卡.ts';
 
@@ -25,6 +26,8 @@ export type 台词落点 = {
   角色: string;
   位置: 字幕位置;
   屏们: 屏[];
+  /** 上一段说过来的后半截（同一个文件在这一段接着放）：不出字幕、不核对开口，只拿来对两边接没接上 */
+  接上段?: true;
 };
 
 /** 10 毫秒一格的响度，响的连成一段，中间静不到 0.1 秒的并起来；返回 [起秒, 止秒] */
@@ -144,6 +147,7 @@ export const 换屏时刻 = (屏们: 屏[], x: Float32Array, 有声: [number, nu
 
 export type 字幕屏 = { 字: string; 位置: 字幕位置; 起帧: number; 止帧: number; 句: string; 角色: string; 段: string; 依据: string };
 export type 排好的句 = 台词落点 & { 有声: [number, number][]; 开: number; 完: number; 开口帧: number };
+export type 接着放 = { 落点: 台词落点; 差: number };
 
 // Python round（银行家舍入）：字幕.py 用 int(round(...))
 const 舍入 = (x: number) => {
@@ -159,6 +163,7 @@ export const 排字幕 = (落点们: 台词落点[], 总帧数: number, fps: num
   const 屏们: 字幕屏[] = [];
   const 换们 = new Map<string, [number, string][]>();
   for (const a of 落点们) {
+    if (a.接上段) continue;
     const x = 读声音(a.文件);
     const 有声 = 有声段(x);
     if (!有声.length) throw new Error(`字幕：${a.id} 的配音 ${a.文件} 没有声音`);
@@ -181,7 +186,13 @@ export const 排字幕 = (落点们: 台词落点[], 总帧数: number, fps: num
     p.止帧 = Math.min(总帧数, p.止帧);
     if (p.止帧 <= p.起帧) throw new Error(`字幕：「${p.字}」被下一句挤得没有了（${p.句}）`);
   }
-  return { 屏们, 句们 };
+  // 接着放的后半截：换到全片帧要和开口那一段对上（开口那段不在这次范围里的不列）
+  const 接着放们: 接着放[] = 落点们.flatMap((a) => {
+    const 主 = a.接上段 ? 句们.find((e) => e.id === a.id) : undefined;
+    return 主 ? [{ 落点: a, 差: a.文件头帧 - 主.文件头帧 }] : [];
+  });
+  for (const x of 接着放们) if (Math.abs(x.差) > 1.5) throw new Error(`字幕：${x.落点.id} 在 ${x.落点.段} 接着放的后半截和开口那段差 ${x.差.toFixed(1)} 帧`);
+  return { 屏们, 句们, 接着放们 };
 };
 
 const 时分 = (帧: number, fps: number) => {
@@ -190,8 +201,18 @@ const 时分 = (帧: number, fps: number) => {
   return `${m}:${(秒 - m * 60).toFixed(3).padStart(6, '0')}`;
 };
 
-export const 字幕表tsv = (屏们: 字幕屏[], fps: number) =>
-  ['句\t角色\t段\t字\t起帧\t止帧（不含）\t起\t止\t换上的依据', ...屏们.map((p) => `${p.句}\t${p.角色}\t${p.段}\t${p.字}\t${p.起帧}\t${p.止帧}\t${时分(p.起帧, fps)}\t${时分(p.止帧, fps)}\t${p.依据}`)].join('\n') + '\n';
+// 差的格式同 Python f'{差:+.2f}'；先舍到 0.01，免得 −0.00
+const 带号 = (x: number) => {
+  const r = Math.round(x * 100) / 100 + 0;
+  return (r >= 0 ? '+' : '') + r.toFixed(2);
+};
+
+export const 字幕表tsv = (屏们: 字幕屏[], fps: number, 接着放们: 接着放[] = []) =>
+  [
+    '句\t角色\t段\t字\t起帧\t止帧（不含）\t起\t止\t换上的依据',
+    ...屏们.map((p) => `${p.句}\t${p.角色}\t${p.段}\t${p.字}\t${p.起帧}\t${p.止帧}\t${时分(p.起帧, fps)}\t${时分(p.止帧, fps)}\t${p.依据}`),
+    ...接着放们.map(({ 落点: a, 差 }) => `${a.id}\t${a.角色}\t${a.段}\t（接着放的后半截，和开口那段差 ${带号(差)} 帧）\t\t\t\t\t`),
+  ].join('\n') + '\n';
 
 const srt时间 = (帧: number, fps: number) => {
   const ms = 舍入((帧 * 1000) / fps);

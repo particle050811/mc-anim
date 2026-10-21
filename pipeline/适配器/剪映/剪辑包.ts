@@ -1,7 +1,7 @@
 // sr edit-package：照一次 sr film 的交付（manifest.json 记的母版、叠层、增益和 台词落点.json）出剪辑包，放在 <交付目录>/剪辑包/，出完写进剪映草稿。
 // 照旧项目 导出剪辑包.py 的快路：画面 = 同一批母版 + 叠层、不带字幕，2K、CRF 32、每帧关键帧（用户 10-14 定，剪映里拖播放头哪帧都能直接解）；
 // 声音 = 母版接起来、拉响度之前的整片声音，各句台词和字幕现算（字幕.ts），轨道、核对交给 剪辑包.py。
-// 配乐、音效默认一条「去台词」；--拆音效 照段.ts 的 cue 出清单、一声一个片段（cue 还没有增益，和成片差多少看 核对.tsv）。
+// 配乐、音效默认一条「去台词」；--拆音效 照段.ts 的 cue 出清单、一声一个片段（和成片差多少看 核对.tsv）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 交付根, 配置, 数据根 } from '../../环境/配置.ts';
@@ -46,19 +46,22 @@ export const 找交付目录 = (arg: string) => {
 /** 剪辑包.py 的 段落 和 AI 配音行：段号用编号（6-1-2 这样），没有编号用段键 */
 export const 段落表 = (m: 交付manifest) => m.段.map((s) => ({ 段: s.编号 ?? s.键, Composition: s.键, 全片起帧: s.全片起帧, 段内起帧: 0, 帧数: s.帧数 }));
 
+/** 一句一个 AI 配音片段：接上段的后半截不另出，前半截不截到段尾（下一段接着放）；其余截到段尾（同旧 导出剪辑包.py 的 build_dialogue_lines） */
 export const 台词行 = (m: 交付manifest, 落点们: 台词落点[], 取文件: (id: string) => string) => {
   const 段 = new Map(m.段.map((s) => [s.键, s]));
-  return 落点们.map((a) => {
+  const 接着放 = new Set(落点们.filter((a) => a.接上段).map((a) => a.id));
+  return 落点们.flatMap((a) => {
+    if (a.接上段) return [];
     const s = 段.get(a.段);
     if (!s) throw new Error(`台词落点 ${a.id} 的段 ${a.段} 不在 manifest 里`);
-    return { id: a.id, 段: s.编号 ?? s.键, 字: a.字, 角色: a.角色, 文件: 取文件(a.配音), 起帧: a.文件头帧, 段尾: s.全片起帧 + s.帧数 };
+    return [{ id: a.id, 段: s.编号 ?? s.键, 字: a.字, 角色: a.角色, 文件: 取文件(a.配音), 起帧: a.文件头帧, 段尾: 接着放.has(a.id) ? null : s.全片起帧 + s.帧数 }];
   });
 };
 
 const 比字幕表 = (dir: string, 屏们: { 字: string; 起帧: number; 止帧: number }[], 记录: 运行记录) => {
   const file = path.join(dir, '字幕表.tsv');
   if (!fs.existsSync(file)) return;
-  const 旧 = fs.readFileSync(file, 'utf8').trim().split('\n').slice(1).map((l) => l.split('\t')).map((r) => `${r[3]}\t${r[4]}\t${r[5]}`);
+  const 旧 = fs.readFileSync(file, 'utf8').trim().split('\n').slice(1).map((l) => l.split('\t')).filter((r) => r[4]).map((r) => `${r[3]}\t${r[4]}\t${r[5]}`);
   const 新 = 屏们.map((p) => `${p.字}\t${p.起帧}\t${p.止帧}`);
   if (旧.join('\n') !== 新.join('\n')) 记录.记('警告', `现算的字幕和成片的字幕表对不上（表 ${旧.length} 屏、现算 ${新.length} 屏），台词或配音在出成片以后改过？`);
 };
@@ -130,7 +133,7 @@ export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boo
   if (opts.拆音效) {
     清单目录 = path.join(工作, '清单');
     const 段们 = await 选段(m.段.map((s) => s.键));
-    const 计数 = 写清单(段们, 清单目录);
+    const 计数 = await 写清单(段们, 清单目录);
     const 没有 = Object.entries(计数).filter(([, n]) => n === 0).map(([k]) => k);
     if (没有.length) opts.记录.记('警告', `这些段的 段.ts 没有音效、配乐 cue，剪辑包里它们没声音：${没有.join('、')}`);
   }
