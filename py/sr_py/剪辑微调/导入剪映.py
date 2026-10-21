@@ -1,27 +1,25 @@
-#!/usr/bin/env python3
-"""剪辑包（清单.json，格式见 剪辑包格式.md）→ 剪映专业版草稿，直接写进剪映的草稿目录，首页「本地草稿」里就有。
+"""剪辑包（清单.json，格式见 剪辑包.py）→ 剪映专业版草稿，直接写进剪映的草稿目录，首页「本地草稿」里就有。
 草稿名 = 清单的 项目名。轨道：画面、字幕（每屏一个文字片段）、AI 配音（每句一个）、配乐、音效（一声一个，分几条轨）；录音是剪映麦克风录在播放头处，文件在草稿目录 audio_record/。
 每句台词和它那几屏字幕编成一个「组合」；不放段标记；用户自己加的标记（默认青色）就是注释。素材硬链接进草稿目录的 素材/（剪映 Mac 版是沙盒）。
 草稿只给用户看：每次都按清单从头建，旧草稿里的片段、改动、标记一概不留（用户 10-18：要改会说，落实到代码里）；建之前旧草稿里有注释、录音就先存成 调整-<月日-时分>-更新前.json。
 片段名 → 草稿里的片段 id 记在 包/剪映-对照.json，读取调整.py 用它读回注释和录音。剪映开着这个草稿时不能写（会被内存版本覆盖）：先退出剪映，写完再打开。
-用法（在 参考模型库/ 下）：python3 工具/剪辑微调/导入剪映.py [第6章]   （导出剪辑包.py 出完包会自动调它）
+旧草稿解不开（剪映升级、没装编译器）不拦着写：旧草稿的原文件先整个拷进包的 剪映-更新前原文件-<月日-时分>/，再照样新建。
+用法：sr jianying export <包目录>（sr edit-package 出完包会自动调）；单独跑 python -m sr_py.剪辑微调.导入剪映 <包目录> [--草稿根 …] [--剪映 …] [--解密程序 …]
 """
+import argparse
 import json
 import math
 import os
 import re
+import shutil
 import subprocess
-import sys
 import time
 import uuid
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))  # 工具/：取 公共/环境
-import 剪映 as jianying  # noqa: E402
-from 公共 import 环境  # noqa: E402
+from . import 剪映 as jianying
+from .程序 import FFMPEG, FFPROBE
 
-MAIN_DIR = 环境.工作区根() / '参考模型库'  # 预览/ 不在 Git 里，worktree 里也读写主目录
-PACKAGES_DIR = MAIN_DIR.parent / '预览/剪辑微调'
 MANIFEST_TYPE_TO_KIND = {'视频': 'video', '音频': 'audio', '文字': 'text'}
 US_PER_SEC = jianying.US_PER_SEC
 # 字幕样式换算（对着成片 6-完整参考.mp4 在剪映里量的）：剪映字号 1 ≈ 画面高的 1/104；字距按 字距/字号 给会比成片宽 5%，乘 0.59 后整行一样宽；
@@ -75,12 +73,12 @@ def build_group(members: list[str], index: int) -> dict:
 
 # ---------- 素材 ----------
 def duration_us(path: Path) -> int:
-    result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(path)], capture_output=True, text=True, check=True, encoding='utf-8')
+    result = subprocess.run([FFPROBE, '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(path)], capture_output=True, text=True, check=True, encoding='utf-8')
     return round(float(result.stdout.strip()) * US_PER_SEC)
 
 
 def frame_size(path: Path) -> tuple[int, int]:
-    result = subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', str(path)],
+    result = subprocess.run([FFPROBE, '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', str(path)],
                        capture_output=True, text=True, check=True, encoding='utf-8')
     width, height = result.stdout.strip().split(',')[:2]
     return int(width), int(height)
@@ -96,12 +94,11 @@ def hard_link(source: Path, target: Path) -> bool:
     try:
         os.link(source, target)
     except OSError:
-        import shutil
         shutil.copy2(source, target)
     return True
 
 
-def build_media_material(file: str, kind: str, media_dir: Path, duration: int, size=None) -> dict:
+def build_media_material(file: str, kind: str, media_dir: Path, duration: int, size: tuple[int, int] = (0, 0)) -> dict:
     path = str(media_dir / file)
     name = Path(file).name
     if kind == 'video':
@@ -183,9 +180,32 @@ def write_json(path: Path, data: dict):
     os.replace(temp_path, path)
 
 
-def main():
-    package_name = next((arg for arg in sys.argv[1:] if not arg.startswith('--')), '第6章')
-    package_dir = PACKAGES_DIR / package_name if not Path(package_name).is_dir() else Path(package_name).resolve()
+def backup_raw_draft(draft_dir: Path, package_dir: Path, error: Exception) -> Path:
+    """旧草稿解不开时：草稿里的 json（含各时间线）和录音原样拷进包，用户的注释、录音不会因为重建丢掉"""
+    out = package_dir / f'剪映-更新前原文件-{time.strftime("%m%d-%H%M", time.gmtime())}'
+    out.mkdir(parents=True, exist_ok=True)
+    for file in [*draft_dir.glob('*.json'), *draft_dir.glob('Timelines/*/*.json')]:
+        (out / file.relative_to(draft_dir)).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(file, out / file.relative_to(draft_dir))
+    if (draft_dir / 'audio_record').is_dir():
+        shutil.copytree(draft_dir / 'audio_record', out / 'audio_record', dirs_exist_ok=True)
+    (out / '原因.txt').write_text(f'{type(error).__name__}: {error}\n', encoding='utf-8')
+    return out
+
+
+def parse_args(argv: list[str] | None):
+    parser = argparse.ArgumentParser(prog='导入剪映')
+    parser.add_argument('包目录', type=Path)
+    parser.add_argument('--草稿根', type=Path)
+    parser.add_argument('--剪映', type=Path)
+    parser.add_argument('--解密程序', type=Path)
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None):
+    args = parse_args(argv)
+    jianying.设路径(args.草稿根, args.剪映, args.解密程序)
+    package_dir = args.包目录.resolve()
     manifest = json.loads((package_dir / '清单.json').read_text(encoding='utf-8'))
     link_map_path = package_dir / jianying.LINK_MAP_FILENAME
     link_map = json.loads(link_map_path.read_text(encoding='utf-8')) if link_map_path.exists() else {}
@@ -204,10 +224,15 @@ def main():
 
     # 草稿只给用户看，每次按清单从头建、旧草稿里的东西一概不留（用户 10-18）；用户在剪映里加的注释、录音先存一份 调整-*-更新前.json
     draft_existed = (draft_dir / 'draft_info.json').exists()
-    draft = jianying.read_draft(draft_dir) if draft_existed else None
-    backup = None
-    if draft is not None and link_map.get('草稿名') == draft_name and link_map.get('片段') and jianying.has_user_changes(package_dir, draft):
-        backup = jianying.export_adjustments(package_dir, '-更新前')
+    draft, backup = None, None
+    try:
+        draft = jianying.read_draft(draft_dir) if draft_existed else None
+        if draft is not None and link_map.get('草稿名') == draft_name and link_map.get('片段') and jianying.has_user_changes(package_dir, draft):
+            backup = jianying.export_adjustments(package_dir, '-更新前')
+    except Exception as error:  # 读回解密和写草稿隔开：解不开只是不能在旧草稿上清空重建
+        draft = None
+        backup = backup_raw_draft(draft_dir, package_dir, error)
+        messages.append(f'!! 旧草稿读不出来（{error}），原文件存在 {backup}，按空草稿新建')
     if draft is not None and draft.get('new_version') != empty_draft_skeleton(width, height, fps)['new_version']:
         # 在剪映自己存过的草稿上清空再建，不换成 empty_draft_skeleton：它是 11.4 的结构，剪映 11.6 打开整份换成它的草稿会打不开
         draft['tracks'] = []
@@ -228,7 +253,7 @@ def main():
     cover_path = draft_dir / 'draft_cover.jpg'
     main_video_file = next((clip['文件'] for track in manifest['轨道'] if track['类型'] == '视频' for clip in track['片段']), None)
     if main_video_file and (not cover_path.exists() or main_video_file in relinked_files):
-        subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', '1', '-i', str(package_dir / main_video_file), '-frames:v', '1', '-vf', 'scale=480:-2', str(cover_path)])
+        subprocess.run([FFMPEG, '-v', 'error', '-y', '-ss', '1', '-i', str(package_dir / main_video_file), '-frames:v', '1', '-vf', 'scale=480:-2', str(cover_path)])
 
     mats = draft['materials']
     for k in ('videos', 'audios', 'texts', 'speeds'):
@@ -270,7 +295,7 @@ def main():
                 media_path = str(media_dir / clip['文件'])
                 material = materials_by_path.get(media_path)
                 if material is None:
-                    material = build_media_material(clip['文件'], kind, media_dir, durations_us[clip['文件']], frame_size(package_dir / clip['文件']) if kind == 'video' else None)
+                    material = build_media_material(clip['文件'], kind, media_dir, durations_us[clip['文件']], frame_size(package_dir / clip['文件']) if kind == 'video' else (0, 0))
                     mats['videos' if kind == 'video' else 'audios'].append(material)
                     materials_by_path[media_path] = material
                 speed_material = {'curve_speed': None, 'id': new_id(), 'mode': 0, 'speed': 1.0, 'type': 'speed'}

@@ -1,17 +1,29 @@
-"""音效一声一个片段（用户 10-15 要求每个音效分开导入剪映）、配乐整条：按 导出音效清单.mjs 收的各段放法（src/音效/音效清单.ts）合成，不用各段再渲声音。
+"""音效一声一个片段（用户 10-15 要求每个音效分开导入剪映）、配乐整条：按 pipeline/适配器/剪映/音效清单.ts 收的各段放法（engine/audio/音效清单.ts）合成，不用各段再渲声音。
 放法照 Remotion：从文件 入点秒 起按 速率 变速变调（线性插值）、循环的绕回文件开头，每帧乘一个音量（整帧内不变），两声道一样。
-导出剪辑包.py 用：export_cues() 重导清单，build_clips() 照拼接表把每一声截到它那一截里、换成整片帧，merge_stacked() 把叠着的同种声并成一个。"""
+剪辑包.py 用：build_clips() 照拼接表把每一声截到它那一截里、换成整片帧，merge_stacked() 把叠着的同种声并成一个。
+清单目录（<目录>/音效清单/<段键>.json 等）和清单里 文件 的相对起点由调用方 设路径() 给；清单由 sr 导，这里不导。"""
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
 
 import numpy as np
 
-from 公共 import 环境  # 导入方（只换声音.py、导出剪辑包.py）已把 工具/ 放进 sys.path
+FFMPEG = os.environ.get('SR_FFMPEG', 'ffmpeg')  # sr 按自己的配置传进来
+FFPROBE = os.environ.get('SR_FFPROBE', 'ffprobe')
 
-LIB = Path(__file__).resolve().parents[2]
-CUE_DIRS = {kind: LIB / f'工具/剪辑微调/out/{kind}' for kind in ('音效清单', '配乐清单', '台词清单')}
+KINDS = ('音效清单', '配乐清单', '台词清单')
+CUE_DIRS: dict[str, Path] = {}
+FILE_ROOT = Path('.')
+
+
+def 设路径(清单目录: Path, 文件根: Path):
+    global FILE_ROOT
+    CUE_DIRS.update({kind: 清单目录 / kind for kind in KINDS})
+    FILE_ROOT = 文件根
+
+
 SAMPLE_RATE = 48000
 SAMPLES_PER_FRAME = SAMPLE_RATE // 24
 SILENT = 10 ** (-80 / 20)  # 整声都低于这个（−80 dBFS）的不出片段：离镜头太远、衰减到零的
@@ -28,25 +40,19 @@ def sound_kind(file: str) -> str:
 def read_audio(path: Path, channels: int) -> np.ndarray:
     """任意音频 → 48 kHz float32，形状 (样本, 声道)。
     采样率是 48 kHz 整数分之一的（6-3-2 原文版是 24 kHz）每个样本重复几遍，不用插值重采样：Remotion 渲的时候就是这样升到 48 kHz 的（插值重采样和整片差得多）"""
-    source_rate = int(subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=sample_rate', '-of', 'csv=p=0', str(path)],
+    source_rate = int(subprocess.run([FFPROBE, '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=sample_rate', '-of', 'csv=p=0', str(path)],
                                      capture_output=True, text=True, check=True, encoding='utf-8').stdout.split()[0])
     repeat_factor = SAMPLE_RATE // source_rate if SAMPLE_RATE % source_rate == 0 else 1
-    raw = subprocess.run(['ffmpeg', '-v', 'error', '-i', str(path), '-vn', '-ac', str(channels), '-ar', str(SAMPLE_RATE // repeat_factor), '-f', 'f32le', '-'], capture_output=True, check=True).stdout
+    raw = subprocess.run([FFMPEG, '-v', 'error', '-i', str(path), '-vn', '-ac', str(channels), '-ar', str(SAMPLE_RATE // repeat_factor), '-f', 'f32le', '-'], capture_output=True, check=True).stdout
     samples = np.frombuffer(raw, np.float32).reshape(-1, channels)
     return np.repeat(samples, repeat_factor, axis=0) if repeat_factor > 1 else samples
 
 
-def export_cues(comps: list[str]):
-    """每次都把全部段的清单重导一遍（导出音效清单.mjs，过资源闸）：改了声音代码的段旧清单不会自己作废，沿用就把旧声音导进剪映（用户 10-18：全面替换，不沿用旧的）"""
-    print(f'== 导出音效清单：{len(comps)} 段', flush=True)
-    subprocess.run([*环境.低优先级前缀(), *环境.资源闸命令(*环境.node命令('工具/剪辑微调/导出音效清单.mjs', *comps), 渲染=True)], check=True, cwd=LIB)
-
-
 def synthesize(cue: dict, read_audio, file_cache: dict) -> np.ndarray:
-    path = LIB / 'src' / cue['文件']
+    path = FILE_ROOT / cue['文件']
     if path not in file_cache:
         # 单声道的文件读成单声道再复制到两声道：Remotion 就是这样放的；ffmpeg 直接 -ac 2 升声道会把每边压 3 dB
-        channels = int(subprocess.run(['ffprobe', '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=channels', '-of', 'csv=p=0', str(path)],
+        channels = int(subprocess.run([FFPROBE, '-v', 'error', '-select_streams', 'a:0', '-show_entries', 'stream=channels', '-of', 'csv=p=0', str(path)],
                                       capture_output=True, text=True, check=True, encoding='utf-8').stdout.split()[0])
         audio = read_audio(path, 1 if channels == 1 else 2).astype(np.float64)
         file_cache[path] = np.repeat(audio, 2, axis=1) if channels == 1 else audio

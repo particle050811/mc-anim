@@ -1,51 +1,29 @@
-#!/usr/bin/env python3
-"""读用户在剪辑软件里的调整（格式见 剪辑包格式.md），和同一个剪辑包的 清单.json 比，列出谁挪了多少。
+"""读用户在剪映里的调整，和同一个剪辑包的 清单.json 比，列出谁挪了多少。
 调整从哪来：包目录里有 剪映-对照.json 时从剪映草稿现拉一份 调整-<月日-时分>.json（剪映.py 的 export_adjustments，剪映开不开都行，录音转成 wav 拷到 录音/）；
---OpenChatCut 或包里只有 OpenChatCut-对照.json 时从 OpenChatCut 存盘的工程拉（OpenChatCut.py 的 export_adjustments）；--不拉 或直接给 调整-*.json 就只读已有的文件。
-只读、只列，不改代码：写回各段 编排.ts / 声音.tsx 由主会话按用户确认来做。片段按 名 对（名在整个包里唯一）。
+--不拉 或直接给 调整-*.json 就只读已有的文件。
+只读、只列，不改代码：写回各段 段.ts 由主会话按用户确认来做。片段按 名 对（名在整个包里唯一）。
 - 台词（AI 配音轨，元数据里有 句）：挪了多少按「文件开头」算（片段起点 − 入点），和清单的 起帧 − 入点帧 比；一句被切成几段就每段一行，删掉、静音、改过音量或变速的写在备注里。
-- 字幕（文字轨，跟随 一句台词）：每屏起止帧由台词落点和配音停顿现算（字幕.py 的 plan_subtitles），台词挪了字幕跟着挪；这里只列相对台词单独挪过、改过长短或改过字的屏。
+- 字幕（文字轨，跟随 一句台词）：每屏起止帧由台词落点和配音停顿现算（pipeline/合成/字幕.ts），台词挪了字幕跟着挪；这里只列相对台词单独挪过、改过长短或改过字的屏。
 - 注释（用户在剪映里加的标记，以前放的紫色段标记不算）单独一张表，按时间排：整片帧和时间、段号和 Composition、段内帧（按清单的 段落 换算）、注释文字，区间注释另有止帧。
 - 录音：用户自己的口播，只拿来对节奏，列出位置和文件。
-用法（在 参考模型库/ 下）：python3 工具/剪辑微调/读取调整.py [调整-xxxx.json | 剪辑包目录名（如 第6章）] [--不拉] [--OpenChatCut]
-  给目录名（或不给，默认最近导入过剪映的包）：先拉一份新的再读；给 调整 文件就读那个文件。结果打在屏幕上，另写 <调整文件名>-对比.tsv 和 <调整文件名>-注释.tsv。
+用法：sr jianying readback <包目录 | 调整-xxxx.json> [--不拉]；单独跑 python -m sr_py.剪辑微调.读取调整 <同上> [--不拉] [--草稿根 …] [--剪映 …] [--解密程序 …]
+  给包目录：先拉一份新的再读；给 调整 文件就读那个文件。结果打在屏幕上，另写 <调整文件名>-对比.tsv 和 <调整文件名>-注释.tsv。
 """
+import argparse
 import json
-import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))  # 工具/：取 公共/环境
-import OpenChatCut as openchatcut  # noqa: E402
-import 剪映 as jianying  # noqa: E402
-from 公共 import 环境  # noqa: E402
-
-MAIN_DIR = 环境.工作区根() / '参考模型库'  # 预览/ 不在 Git 里，worktree 里也读写主目录
-PACKAGES_DIR = MAIN_DIR.parent / '预览/剪辑微调'
+from . import 剪映 as jianying
 
 
-def find_adjustment_file() -> Path:
-    cli_args = [arg for arg in sys.argv[1:] if not arg.startswith('--')]
-    if cli_args:
-        path = Path(cli_args[0])
-        if not path.exists() and (PACKAGES_DIR / cli_args[0]).is_dir():
-            path = PACKAGES_DIR / cli_args[0]
-        if path.is_file():
-            return path.resolve()
-    else:
-        link_map_name = openchatcut.LINK_MAP_FILENAME if '--OpenChatCut' in sys.argv else jianying.LINK_MAP_FILENAME
-        packages_with_link_map = sorted((link_file.parent for link_file in PACKAGES_DIR.glob(f'*/{link_map_name}')), key=lambda package: (package / link_map_name).stat().st_mtime)
-        path = packages_with_link_map[-1] if packages_with_link_map else None
-    if path is not None and path.is_dir() and '--不拉' not in sys.argv:
-        if (path / jianying.LINK_MAP_FILENAME).exists() and '--OpenChatCut' not in sys.argv:
-            return jianying.export_adjustments(path)
-        if (path / openchatcut.LINK_MAP_FILENAME).exists():
-            return openchatcut.export_adjustments(path)
-    if cli_args:
-        candidates = sorted(path.glob('调整-*.json'), key=lambda file: file.stat().st_mtime)
-    else:
-        candidates = sorted(PACKAGES_DIR.glob('*/调整-*.json'), key=lambda file: file.stat().st_mtime)
+def find_adjustment_file(path: Path, pull: bool) -> Path:
+    if path.is_file():
+        return path.resolve()
+    if pull and (path / jianying.LINK_MAP_FILENAME).exists():
+        return jianying.export_adjustments(path)
+    candidates = sorted(path.glob('调整-*.json'), key=lambda file: file.stat().st_mtime)
     if not candidates:
-        raise SystemExit(f'{PACKAGES_DIR} 里还没有 调整-*.json（先跑 导入剪映.py 建草稿）')
+        raise SystemExit(f'{path} 里还没有 调整-*.json（先跑 sr jianying export 建草稿）')
     return candidates[-1]
 
 
@@ -57,12 +35,12 @@ def locate_segment(segments, frame: float):
 
 
 def check_segments(manifest):
-    """清单的段落和导出时的拼接表比：剪辑包导出以后整片重拼过，段内帧会对不上"""
+    """清单的段落和导出时的拼接表比：剪辑包导出以后整片重拼过，段内帧会对不上。拼接表是 sr film 写的（编号、段、指纹、段内起帧、段内止帧、全片起帧）"""
     table_path = manifest.get('元数据', {}).get('来源', {}).get('拼接表')
-    if not table_path or not (MAIN_DIR / table_path).exists():
+    if not table_path or not Path(table_path).exists():
         return
-    rows = [line.split('\t') for line in (MAIN_DIR / table_path).read_text(encoding='utf-8').splitlines()[1:] if line.strip()]
-    current = [(segment_id, comp, int(global_start), int(in_start), int(in_end) - int(in_start)) for segment_id, comp, in_start, in_end, global_start in rows]
+    rows = [line.split('\t') for line in Path(table_path).read_text(encoding='utf-8').splitlines()[1:] if line.strip()]
+    current = [(number or comp, comp, int(global_start), int(in_start), int(in_end) - int(in_start)) for number, comp, _, in_start, in_end, global_start in rows]
     in_package = [(segment['段'], segment.get('Composition'), segment['全片起帧'], segment['段内起帧'], segment['帧数']) for segment in manifest.get('段落', [])]
     if current != in_package:
         print(f'!! 剪辑包导出以后 {table_path} 变了（整片重拼过），注释的段内帧按剪辑包导出时的拼接表算；最好重出剪辑包')
@@ -95,8 +73,20 @@ def clip_remarks(clip, original) -> list[str]:
     return remarks
 
 
-def main():
-    adjustment_file = find_adjustment_file()
+def parse_args(argv: list[str] | None):
+    parser = argparse.ArgumentParser(prog='读取调整')
+    parser.add_argument('路径', type=Path, help='包目录或 调整-*.json')
+    parser.add_argument('--不拉', action='store_true')
+    parser.add_argument('--草稿根', type=Path)
+    parser.add_argument('--剪映', type=Path)
+    parser.add_argument('--解密程序', type=Path)
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None):
+    args = parse_args(argv)
+    jianying.设路径(args.草稿根, args.剪映, args.解密程序)
+    adjustment_file = find_adjustment_file(args.路径, not args.不拉)
     package_dir = adjustment_file.parent
     adjustment = json.loads(adjustment_file.read_text(encoding='utf-8'))
     manifest = json.loads((package_dir / '清单.json').read_text(encoding='utf-8'))

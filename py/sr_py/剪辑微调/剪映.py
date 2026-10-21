@@ -1,7 +1,7 @@
-"""剪映专业版（Mac，/Applications/VideoFusion-macOS.app，11.4.2）和剪辑包之间的公用部分：导入剪映.py、读取调整.py 用。
-- 草稿在 ~/Movies/JianyingPro/User Data/Projects/com.lveditor.draft/<草稿名>/：draft_info.json（时间线）、draft_meta_info.json（首页列表用的名字、时长）。
+"""剪映专业版（Mac 11.4.2）和剪辑包之间的公用部分：导入剪映.py、读取调整.py 用。剪映、草稿根、解密程序的位置由 sr 的配置给（设路径）。
+- 草稿在 <草稿根>/<草稿名>/：draft_info.json（时间线）、draft_meta_info.json（首页列表用的名字、时长）。
 - 写：程序写明文 JSON，剪映照样打开（打开后重存成密文）。剪映 Mac 版是沙盒只能读 ~/Movies，素材硬链接进草稿目录的 素材/，存盘时路径被改写成 ##_draftpath_placeholder_<id>_##/素材/…。
-- 读：密文用剪映自己的库解（剪映解密.cpp，编到 out/剪映解密）。草稿开着时（.locked 被占着）不能写，会被内存版本覆盖。
+- 读：密文用剪映自己的库解（剪映解密.cpp，第一次用时编到 sr 给的位置）。草稿开着时（.locked 被占着）不能写，会被内存版本覆盖。
 - 时间单位微秒；剪映只有整帧，打开草稿就把起点对齐到整帧（帧号 × 10⁶ / fps 向下取整），小数部分记在对照的 余 里。
 - 11.4 起多时间线：根目录和 Timelines/<当前时间线 id>/ 各一份 draft_info.json，读写都两份一起。
 - 录音在草稿目录 audio_record/（.aac），新开一条音频轨；标记在 time_marks（时间线上）和 materials.time_marks（挂在片段上），都算注释。
@@ -9,12 +9,14 @@
 import json
 import math
 import re
-import shutil
 import subprocess
 import tempfile
 import time
 from pathlib import Path
 
+from .程序 import FFMPEG
+
+# 默认值是 Mac 版剪映的位置；sr 调用时用 设路径() 换成它配置里的
 APP_PATH = Path('/Applications/VideoFusion-macOS.app')
 PROCESS_NAME = 'VideoFusion-macOS'
 DRAFT_ROOT = Path.home() / 'Movies/JianyingPro/User Data/Projects/com.lveditor.draft'
@@ -27,11 +29,18 @@ US_PER_SEC = 1_000_000
 TOLERANCE_US = 1000  # 微秒。剪映打开草稿会把时间规整到帧格（差 1 微秒）；用户真挪一下至少差一帧（41667 微秒）
 
 
+def 设路径(草稿根: Path | None = None, 剪映: Path | None = None, 解密程序: Path | None = None):
+    global DRAFT_ROOT, APP_PATH, DECRYPT_BINARY
+    DRAFT_ROOT = 草稿根 or DRAFT_ROOT
+    APP_PATH = 剪映 or APP_PATH
+    DECRYPT_BINARY = 解密程序 or DECRYPT_BINARY
+
+
 # ---------- 读草稿 ----------
 def ensure_decryptor():
     if DECRYPT_BINARY.exists() and DECRYPT_BINARY.stat().st_mtime >= DECRYPT_SOURCE.stat().st_mtime:
         return
-    DECRYPT_BINARY.parent.mkdir(exist_ok=True)
+    DECRYPT_BINARY.parent.mkdir(parents=True, exist_ok=True)
     subprocess.run(['clang++', '-std=c++17', '-O1', '-arch', 'arm64', str(DECRYPT_SOURCE), '-o', str(DECRYPT_BINARY),
                     f'-Wl,-rpath,{APP_PATH}/Contents/Frameworks'], check=True)
 
@@ -43,7 +52,7 @@ def read_draft_file(path: Path) -> dict:
     ensure_decryptor()
     with tempfile.TemporaryDirectory() as temp_dir:
         out_path = Path(temp_dir) / 'x.json'
-        result = subprocess.run([str(DECRYPT_BINARY), str(path), str(out_path)], capture_output=True, text=True, encoding='utf-8')
+        result = subprocess.run([str(DECRYPT_BINARY), str(path), str(out_path), str(APP_PATH)], capture_output=True, text=True, encoding='utf-8')
         if result.returncode != 0:
             raise RuntimeError(f'解不开 {path}：{result.stderr.strip()[-300:]}')
         return json.loads(out_path.read_text(encoding='utf-8'))
@@ -103,7 +112,7 @@ def quit_app(wait_sec: int = 60):
         time.sleep(0.5)
 
 
-# ---------- 草稿 → 剪辑调整（格式见 剪辑包格式.md，和 OpenChatCut.py 出的一样，读取调整.py 照旧比） ----------
+# ---------- 草稿 → 剪辑调整（格式见 剪辑包.py 的 清单，读取调整.py 照它比） ----------
 def format_time(frame: float, fps: int) -> str:
     total_sec = frame / fps
     return f'{int(total_sec // 60)}:{total_sec % 60:06.3f}'
@@ -162,7 +171,7 @@ def export_adjustments(package_dir: Path, suffix: str = '') -> Path:
     fps = manifest['帧率']
     draft_folder = draft_dir(link_map['草稿名'])
     if not (draft_folder / 'draft_info.json').exists():
-        raise SystemExit(f'剪映里找不到草稿「{link_map["草稿名"]}」（{draft_folder}），被删了？重跑 导入剪映.py')
+        raise SystemExit(f'剪映里找不到草稿「{link_map["草稿名"]}」（{draft_folder}），被删了？重跑 sr jianying export')
     draft = read_draft(draft_folder)
     materials = material_index(draft)
     id_to_name = {link['片段id']: k for k, link in link_map['片段'].items()}
@@ -186,7 +195,7 @@ def export_adjustments(package_dir: Path, suffix: str = '') -> Path:
             start_frame, length_frames, in_frame = us_to_frames(start_us, fps), us_to_frames(duration_us, fps), us_to_frames(in_point_us, fps)
             material = materials.get(seg['material_id'], {})
             adj_clip = dict(名=name or material.get('name') or material.get('material_name') or seg['id'], 轨道=track.get('name') or track['type'], 类型=kind, 起帧=start_frame, 长帧=length_frames, 入点帧=in_frame)
-            if original is not None:
+            if original is not None and link is not None:  # 清单里有的片段对照里一定有（导入时一起写的）
                 # 没挪过的（和放下时的微秒数一样）起帧用清单原值，带小数的逐位相同
                 # 放的时候起点对齐到了整帧（剪映只有整帧），小数部分补回来：没挪过的片段 起帧、文件开头帧 和清单逐位相同
                 adj_clip['起帧'] = round(round(start_frame) + link.get('余', 0), 6)
@@ -217,7 +226,7 @@ def export_adjustments(package_dir: Path, suffix: str = '') -> Path:
                 out_path = recording_dir / f'录音-{len(recordings) + 1:02d}-{int(start_frame)}帧.wav'
                 if source_path.exists():
                     # 只取片段用到的那一截，落点就是片段起帧
-                    subprocess.run(['ffmpeg', '-v', 'error', '-y', '-ss', f'{in_point_us / US_PER_SEC:.6f}', '-t', f'{duration_us / US_PER_SEC:.6f}',
+                    subprocess.run([FFMPEG, '-v', 'error', '-y', '-ss', f'{in_point_us / US_PER_SEC:.6f}', '-t', f'{duration_us / US_PER_SEC:.6f}',
                                     '-i', str(source_path), '-ac', '1', '-ar', '48000', str(out_path)], check=True)
                 recordings.append(dict(名=adj_clip['名'], 文件=str(out_path.relative_to(package_dir)) if source_path.exists() else f'（找不到 {source_path}）', 起帧=start_frame, 长帧=length_frames, 入点帧=0.0))
     present_ids = {seg['id'] for track in draft['tracks'] for seg in track['segments']}
