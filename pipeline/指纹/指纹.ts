@@ -8,6 +8,7 @@
 //   打包规则 remotion.config.ts 和它用的 webpack 改写、ogg 解码
 //   平台    process.platform-arch（跨平台不要求逐像素一致）
 // 指纹 = 这些项按键排序后的 JSON 的 sha256；.指纹.json 存逐项展开，sr stale 拿它说明是哪项变了。
+// 透明叠层（段.ts 的 叠层）同样算，入口换成叠层文件，段记成 `<段键>-<名>`。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,6 +17,7 @@ import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { esbuild资产插件, 非代码loader, type 资产记录 } from '../资产/esbuild插件.ts';
 import { 读资产锁 } from '../资产/资产锁.ts';
 import type { 段信息 } from '../清单/清单.ts';
+import type { 叠层定义 } from '../../content/段定义.ts';
 
 export type 指纹项 = {
   闭包: { 文件: Record<string, string>; 外部包: Record<string, string | null> };
@@ -101,8 +103,11 @@ export const 读地形版本表 = (): Record<string, string> => {
   return Object.fromEntries(Object.entries(包).map(([k, v]) => [k, v.版本]));
 };
 
-export const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, unknown>): Promise<段指纹> => {
-  const 闭包 = await 算闭包([相对代码根(s.画面), 相对代码根(s.段文件), 'content/设置.ts']);
+export const 叠层键 = (段键: string, l: 叠层定义) => `${段键}-${l.名}`;
+
+export const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, unknown>, 叠层?: 叠层定义): Promise<段指纹> => {
+  const 入口 = 叠层 ? path.join(s.目录, 叠层.入口) : s.画面;
+  const 闭包 = await 算闭包([相对代码根(入口), 相对代码根(s.段文件), 'content/设置.ts']);
   const 版本表 = 读地形版本表();
   const 地形 = Object.fromEntries(
     [...s.段.地形].sort().map((名) => {
@@ -119,7 +124,7 @@ export const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, un
     打包规则: 文件表(打包规则文件),
     平台: `${process.platform}-${process.arch}`,
   };
-  return { 段: s.键, 指纹: sha(稳定JSON(项)), 项 };
+  return { 段: 叠层 ? 叠层键(s.键, 叠层) : s.键, 指纹: sha(稳定JSON(项)), 项 };
 };
 
 /** 两份指纹哪些项变了（逐项，闭包和资产细到文件、id） */

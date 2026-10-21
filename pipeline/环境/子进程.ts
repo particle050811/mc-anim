@@ -23,6 +23,14 @@ export const 跑出 = (cmd: readonly string[], opts: SpawnOptions = {}): string 
   return String(r.stdout ?? '');
 };
 
+/** 跑完，返回 stdout 原始字节（ffmpeg 出 PCM、raw 帧用）；退出码非 0 抛 子进程失败 */
+export const 跑出字节 = (cmd: readonly string[], opts: SpawnOptions = {}): Buffer => {
+  const r = spawn.sync(cmd[0]!, cmd.slice(1), { ...opts, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 2 ** 32 });
+  if (r.error) throw r.error;
+  if (r.status !== 0) throw new 子进程失败(cmd, r.status, String(r.stderr ?? ''));
+  return r.stdout as Buffer;
+};
+
 /** 跑完，返回 { 退出码, stdout, stderr }，不抛 */
 export const 试跑 = (cmd: readonly string[], opts: SpawnOptions = {}) => {
   const r = spawn.sync(cmd[0]!, cmd.slice(1), { ...opts, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
