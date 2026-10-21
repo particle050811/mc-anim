@@ -1,19 +1,19 @@
-// 地形修整测试.sh 的离线一半：用离线版（参考模型库/工具/选种/生成修整.mjs，跑在 deepslate 上）算一批随机点上的值，
-// 写给 TerrainEditTest.java 拿游戏里的实现（取材 mod 的 mcai.terrain）逐位比。由 地形修整测试.sh 调，不单独用。
-//   node 地形修整对照.mjs <用例目录> <真包目录> <输出目录>
+// terrain-edit-test.sh 的离线一半：用离线版（选种工具的 生成修整.mjs，跑在 deepslate 上；目录由环境变量 MCAI_SEED_TOOLS 给，现在是旧项目 参考模型库/工具/选种/）算一批随机点上的值，
+// 写给 TerrainEditTest.java 拿游戏里的实现（取材 mod 的 mcai.terrain）逐位比。由 terrain-edit-test.sh 调，不单独用。
+//   node terrain-edit-reference.mjs <用例目录> <真包目录> <输出目录>
 // 输出两个文件，一行一个点「函数 x y z 值的 64 位十六进制」：
-//   用例.txt：<用例目录>（测试/地形修整用例/）里每个密度函数在 取点.json 的框里取点；
-//   真包.txt：<真包目录>（取材mod/数据包/主世界修整/）叠在史诗地形上（地形.mjs 的 MCAI_PACKS），每个密度函数在每个区域附近取点，种子 116；
+//   用例.txt：<用例目录>（test/terrain-edit-cases/）里每个密度函数在 points.json 的框里取点；
+//   真包.txt：<真包目录>（sourcing/datapacks/主世界修整/）叠在史诗地形上（地形.mjs 的 MCAI_PACKS），每个密度函数在每个区域附近取点，种子 116；
 //     也核对离线预览（地形.mjs）算的大陆度和游戏一致（只到 1e-5，原因见 TerrainEditTest 第 5 项）。
-// 错例.json 里的每一条离线版都必须报错，有一条读进来了就退出码 1。
+// bad-cases.json 里的每一条离线版都必须报错，有一条读进来了就退出码 1。
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { pathToFileURL } from 'node:url'
 
-const HERE = path.dirname(fileURLToPath(import.meta.url))
-const 选种 = path.resolve(HERE, '../../参考模型库/工具/选种')
+if (!process.env.MCAI_SEED_TOOLS) { console.error('要设 MCAI_SEED_TOOLS：选种工具目录（里面有 生成修整.mjs、地形.mjs，npm install 过 deepslate）'); process.exit(2) }
+const 选种 = path.resolve(process.env.MCAI_SEED_TOOLS)
 const [用例, 真包, 输出] = process.argv.slice(2)
-if (!输出) { console.error('用法：node 地形修整对照.mjs <用例目录> <真包目录> <输出目录>'); process.exit(2) }
+if (!输出) { console.error('用法：node terrain-edit-reference.mjs <用例目录> <真包目录> <输出目录>'); process.exit(2) }
 
 // 和 生成修整.mjs 里的裸名 'deepslate' 是同一个文件，才是同一份 DensityFunction（registerEditTypes() 改的是它的 fromJson）
 const { DensityFunction, Identifier, NoiseGeneratorSettings, NoiseParameters, RandomState, WorldgenRegistries } =
@@ -64,14 +64,14 @@ function 取点(框们, n, 随, 对齐 = false) {
 }
 fs.mkdirSync(输出, { recursive: true })
 
-const 取 = JSON.parse(fs.readFileSync(path.join(用例, '取点.json'), 'utf8'))
+const 取 = JSON.parse(fs.readFileSync(path.join(用例, 'points.json'), 'utf8'))
 {
   const settings = NoiseGeneratorSettings.create({})
   const rs = new RandomState(settings, BigInt(取.种子))
   const out = [], 随 = 随机(20261005)
   for (const [id] of 文件(用例, 'density_function')) {
     const 框们 = 取.框[id.replace(/^mcai_test:/, '')]
-    if (!框们) throw new Error('取点.json 里没有 ' + id + ' 的框')
+    if (!框们) throw new Error('points.json 里没有 ' + id + ' 的框')
     求值(rs, settings, id, 取点(框们, 取.每个函数点数, 随), out)
   }
   fs.writeFileSync(path.join(输出, '用例.txt'), out.join('\n') + '\n')
@@ -95,7 +95,7 @@ const 取 = JSON.parse(fs.readFileSync(path.join(用例, '取点.json'), 'utf8')
 }
 
 {
-  const { 错例 } = JSON.parse(fs.readFileSync(path.join(用例, '错例.json'), 'utf8'))
+  const { 错例 } = JSON.parse(fs.readFileSync(path.join(用例, 'bad-cases.json'), 'utf8'))
   let 漏 = 0
   for (const [名, j] of 错例) {
     try {

@@ -6,27 +6,30 @@
 - **mod**（`src/`）：Forge 1.20.1-47.4.10 的 mod，在游戏里开一个只监听本机的 HTTP 接口 `127.0.0.1:25590`（每个实例一个端口，默认实例是 25590）。
   客户端和取材服务端都装：服务端上只做两件事，给装了「暮色放大4倍」数据包的世界放大暮色森林的地标网格（见「暮色森林放大 4 倍」），
   给放了「主世界修整」数据包的世界提供生成时修整用的两种密度函数（见「主世界生成时修整」）。
-- **`mcai`**：单文件 Python 命令行（只用标准库），调这个接口，并负责游戏外的事：启停游戏、看日志、编译安装。
+- **`mcai`**（`sourcing/mcai/mcai.py`）：单文件 Python 命令行（只用标准库），调这个接口，并负责游戏外的事：启停游戏、看日志、编译安装、停服务端。
+  本仓库里用 `sr mcai <动作…>` 调：sr 先过资源闸（开游戏时），再把游戏环境、JDK 这些按 sr 配置用 `MCAI_*` 环境变量传给它。
+
+> 本手册从旧项目搬来。文中 `game/…` 指游戏环境目录（sr 配置 `SR_GAME`，mcai 读 `MCAI_GAME`，迁移期是旧项目的 `game/`）；
+> `参考模型库/…` 开头的工具（取材服务端.py、选种、预生成看守.py 等）还在旧项目里，`sr world` 做好后再搬。
 
 游戏只用来取材（参考图、量尺寸），不是成片。主用法是单人世界：把取材服务端的世界（`game/取材服务端/<世界>`）复制成客户端实例里的“片场存档”，只改复制品。服务端怎么建世界、预生成见「取材服务端」一节。
 
 ## 典型用法
 
 ```sh
-cd 取材mod
-./mcai build                                   # 编译并装进 game/实例/取材客户端/.minecraft/mods/
-./mcai game copyworld name=片场 from=<世界>       # 把 game/取材服务端/<世界> 复制成存档「片场」（from 必须写；已有则加 overwrite=1 重置）
-./mcai game start world=片场                    # 起游戏、直接进存档、等到可以接命令（约 30 秒）
+sr mcai build                                   # 编译并装进 game/实例/取材客户端/.minecraft/mods/
+sr mcai game copyworld name=片场 from=<世界>       # 把 game/取材服务端/<世界> 复制成存档「片场」（from 必须写；已有则加 overwrite=1 重置）
+sr mcai game start world=片场                    # 起游戏、直接进存档、等到可以接命令（约 30 秒）
 
-./mcai cam pos=264,100,488 pitch=90 yaw=180 dim=twilightforest:twilight_forest   # 娜迦庭院正上方俯视，画面上方朝北
-./mcai freeze                                   # 冻结世界
-./mcai cmd effect give @s night_vision infinite 0 true    # 暮色森林很暗，对照贴图先给夜视
-./mcai shoot out=../参考模型库/预览/实机对照/俯视.png
-./mcai batch "cam pos=222,52,548 look=264,0,488" "shoot out=../参考模型库/预览/实机对照/斜视.png size=3840x2160"
+sr mcai cam pos=264,100,488 pitch=90 yaw=180 dim=twilightforest:twilight_forest   # 娜迦庭院正上方俯视，画面上方朝北
+sr mcai freeze                                   # 冻结世界
+sr mcai cmd effect give @s night_vision infinite 0 true    # 暮色森林很暗，对照贴图先给夜视
+sr mcai shoot out=../参考模型库/预览/实机对照/俯视.png
+sr mcai batch "cam pos=222,52,548 look=264,0,488" "shoot out=../参考模型库/预览/实机对照/斜视.png size=3840x2160"
 
-./mcai fill from=250,1,490 to=262,12,500 block=minecraft:gold_block
-./mcai undo                                     # 撤销上一步
-./mcai game stop                                # 正常退出游戏（会存档）。忘了也会在空闲 30 分钟后自己退，见「空闲自动退出」
+sr mcai fill from=250,1,490 to=262,12,500 block=minecraft:gold_block
+sr mcai undo                                     # 撤销上一步
+sr mcai game stop                                # 正常退出游戏（会存档）。忘了也会在空闲 30 分钟后自己退，见「空闲自动退出」
 ```
 
 `mcai help` 列出全部动作和参数（游戏开着时，从 mod 的注册表实时生成）；`mcai --help` 是游戏外子命令的说明。
@@ -50,12 +53,12 @@ cd 取材mod
   python3 取材服务端.py --world <世界名> --new --seed <种子> --twilight-x4                                # 暮色：结构照常，放大 4 倍
   ```
   - `--type` 默认 `minecraft:normal`：地形模组改的是普通世界的地形，巨型生物群系（`minecraft:large_biomes`）和 Tectonic 互斥，配上它会悄悄得到原版巨型群系的地形。
-  - 数据包在第一次启动前放进新世界的 `datapacks/`。`参考模型库/工具/游戏取材/数据包/` 分两组：
+  - 数据包在第一次启动前放进新世界的 `datapacks/`。`sourcing/datapacks/` 下 `通用/`、`只给主世界/` 两组：
     `通用/`（两个世界都放）：`不生成龙巢`，冰火的地表龙巢、龙穴洞穴不生成；
     `只给主世界/`（`--no-structures` 才放）：`主世界不生成人造地物`，关掉不归 generate-structures 管的人造 feature（原版沙漠水井、地牢，冰火独眼巨人洞、精灵村、塞壬岛、九头蛇洞、蚁巢、龙骨架）
     和冰火生成区块时直接刷生物的 5 个 feature（死亡蠕虫、海马、海蟒、铜羽泽鹗、游荡独眼巨人），清单和原因写在它的 `pack.mcmeta` 里。
-    `--twilight-x4` 另放 `取材mod/数据包/暮色放大4倍`，要求服务端 `mods/` 里有 mcai 的 jar（见「暮色森林放大 4 倍」）。
-    `--no-structures` 默认另放 `取材mod/数据包/主世界修整`（生成时修整，见「主世界生成时修整」），要求服务端 `mods/` 里的 mcai 含修整；
+    `--twilight-x4` 另放 `sourcing/datapacks/暮色放大4倍`，要求服务端 `mods/` 里有 mcai 的 jar（见「暮色森林放大 4 倍」）。
+    `--no-structures` 默认另放 `sourcing/datapacks/主世界修整`（生成时修整，见「主世界生成时修整」），要求服务端 `mods/` 里的 mcai 含修整；
     `--no-terrain-edit` 不放，只给对照、测试用。世界里有用到修整的数据包时，启动前查 jar、开服后查 `/datapack list`（修整包要启用、排在史诗地形之上），
     日志里出现数据包读不进来的行（注册表加载出错、未知的密度函数类型、安全模式）就停服报错。
   - 主世界只能建在主世界专用服务端里，在 `取材服务端` 里加 `--no-structures` 会拒绝：那里没装地形模组，建出来是原版地形。
@@ -81,7 +84,7 @@ cd 取材mod
   `--gen-threads N` 把区块生成的后台线程（Worker-Main-N）限成 N 个（`-Dmax.bg.threads`，默认核数 − 1），几路同时渲染时给渲染留核。
   Chunky 1.3 除了方形、圆这些形状，还能按列表生成：`chunky pattern csv <名>` 读服务端 `config/chunky/<名>.csv`（一行一个区块 `cx,cz`，按文件里的顺序），
   名字只能是 ASCII 一个词；Chunky 仍拿选区的形状筛一遍（区块中心落在形状里才生成），选区要包住列表里的全部区块。斜着的走廊用它，比拿正方形拼省得多。
-- **复制成片场**：`./mcai game copyworld name=片场 from=<世界名>`。from 必须写：写世界名就到 `game/取材服务端/` 下找，也可以写世界目录的路径
+- **复制成片场**：`sr mcai game copyworld name=片场 from=<世界名>`。from 必须写：写世界名就到 `game/取材服务端/` 下找，也可以写世界目录的路径
   （主世界写路径，如 `from=../game/取材服务端-主世界/<世界名>`）。数据包、DH 的远景数据库都在世界目录里，会一起带过去。
 - 新世界里有夸克的方块，客户端没装夸克就打不开，所以两个客户端实例 2026-10-04 补装了和取材服务端同一版的 Quark-4.0-462、Zeta-1.0-31（jar 在 `game/缓存/mods/`）。
   `quark-common.toml`、`zeta-common.toml` 也从取材服务端的 `config/` 拷了过去，三处一字不差：夸克的世界生成开关都在 `quark-common.toml` 里，
@@ -96,7 +99,7 @@ cd 取材mod
 服务端 2026-10-04 已按第 1、3 步建好（`game/取材服务端-主世界/`）；客户端实例还没建。正式的主世界是 `主世界-116`（2026-10-05 建，见本节最后「正式主世界」），另外三个是测试世界：
 - `测试-种子116`（种子 116、结构全禁，不带修整，只预生成了 (3584, -3664) 周围 3 km 见方，给 `参考模型库/工具/选种/实测.py` 核对离线选种用）；
 - `测试-修整-种子116`（2026-10-05，带定稿的 `主世界修整`，预生成了基地小岛、扇面切口离岛最近的海岸、航线离修整区最近的一段三块，
-  给 `参考模型库/工具/选种/修整实测.py` 核对生成时修整用，结果见 `数据包/主世界修整/说明.md`「游戏核对」）；
+  给 `参考模型库/工具/选种/修整实测.py` 核对生成时修整用，结果见 `sourcing/datapacks/主世界修整/说明.md`「游戏核对」）；
 - `测试-无修整对照-种子116`（2026-10-05，`--no-terrain-edit`，预生成了上面航线那一块和 (3584, -3664) 周围 800 m 见方，给前两个当对照）。
 
 1. **复制服务端**：从 `game/取材服务端` 复制一份，世界（有 level.dat 的目录）、日志、Chunky 的任务进度都不带（项目根下执行）：
@@ -108,10 +111,10 @@ cd 取材mod
    ```
    预生成模组跟着带过去，`--pregen` 照常用。端口改成了 25598（暮色那个是 25599），两个能同时开。
    主世界服务端也装 mcai：读方块碰上调色板扩容就重读的修复对主世界预生成一样要有，生成时修整也要它（没有就读不进修整包，服务端起不来）。
-   `./mcai build` 会装进所有 `game/取材服务端*/mods/`。
-2. **建客户端实例**：`./mcai game newinstance name=取材客户端-主世界`（从 `取材客户端` 复制，夸克、Zeta 和它们的配置跟着带过去）。
-   拍主世界远景要用 DH 的话，再 `./mcai game newinstance name=取材客户端-主世界-远景 from=取材客户端-远景`。地形是数据包、跟着世界走，客户端实例不用另装；
-   但修整包要 mcai 认得，打开这个世界的实例都要装含修整的 mcai（`./mcai build` 装进所有实例），见「主世界生成时修整」。
+   `sr mcai build` 会装进所有 `game/取材服务端*/mods/`。
+2. **建客户端实例**：`sr mcai game newinstance name=取材客户端-主世界`（从 `取材客户端` 复制，夸克、Zeta 和它们的配置跟着带过去）。
+   拍主世界远景要用 DH 的话，再 `sr mcai game newinstance name=取材客户端-主世界-远景 from=取材客户端-远景`。地形是数据包、跟着世界走，客户端实例不用另装；
+   但修整包要 mcai 认得，打开这个世界的实例都要装含修整的 mcai（`sr mcai build` 装进所有实例），见「主世界生成时修整」。
 3. **装地形**（只装进这一套）：史诗地形 compatible 1.0.3 是数据包（`epicterrain_compatible1.20.zip`），不装进 mods/。
    zip 放在 `game/取材服务端-主世界/世界数据包/`（`game/缓存/数据包/` 另留一份），`--new` 在第一次启动前把它拷进新世界的 `datapacks/`；
    `世界数据包/` 里没有数据包时 `--no-structures` 会拒绝，免得建出原版地形。离线选种（`参考模型库/工具/选种/地形.mjs`）读的也是这一份，换包两边一起换。
@@ -120,7 +123,7 @@ cd 取材mod
    （默认带上 `主世界修整`；修整包的区域定稿以前别建正式的主世界：已经生成的区块不会跟着包变），
    建好后核对服务端的 `logs/latest.log` 里有 `Found new data pack file/主世界不生成人造地物`、`file/epicterrain_compatible1.20.zip` 和 `file/主世界修整`、
    level.dat 的 generate_features 是 0（修整包启用、排在史诗地形之上，脚本开服后自己查）；
-   片场用 `MCAI_INSTANCE=取材客户端-主世界 ./mcai game copyworld name=片场 from=../game/取材服务端-主世界/<世界名>`。
+   片场用 `MCAI_INSTANCE=取材客户端-主世界 sr mcai game copyworld name=片场 from=../game/取材服务端-主世界/<世界名>`。
 
 ### 正式主世界 `主世界-116`（2026-10-05）
 
@@ -178,25 +181,25 @@ cd 取材mod
   镜头只有一个，所以“摆机位 + 截图”要写进同一个 `batch`（整个 batch 算一个动作，别人插不进来）；分两条命令发，中间可能被别人的 `cam` 挪走。
   冻结状态和撤销栈也是共用的：`undo` 撤的是最近一次改动，不管是谁做的。
   `game start world=片场` 在游戏已经开着同一个存档时直接复用；存档不同会拒绝。`game stop` 会把别人正在用的游戏也关掉，关之前确认没人在用。
-- **一人一个实例**：`./mcai game newinstance name=<实例名>` 复制出一个新实例（同一批模组，约 150MB，端口自动分配，写在实例的 `config/mcai.port`），
-  之后所有子命令前加 `MCAI_INSTANCE=<实例名>`。各实例有各自的镜头、世界（各自 `copyworld`）、撤销栈。`./mcai game instances` 列出所有实例的端口和状态。
+- **一人一个实例**：`sr mcai game newinstance name=<实例名>` 复制出一个新实例（同一批模组，约 150MB，端口自动分配，写在实例的 `config/mcai.port`），
+  之后所有子命令前加 `MCAI_INSTANCE=<实例名>`。各实例有各自的镜头、世界（各自 `copyworld`）、撤销栈。`sr mcai game instances` 列出所有实例的端口和状态。
   **两个客户端同时开（其中一个带 DH）吃不消**（2026-09-30 实测：10 核的 1 分钟负载到 70，交换区用掉 5G）。无界面服务端轻得多，和别的任务能不能并行按资源闸看负载。
 - 现有实例：`取材客户端`（默认，日常取材）；`取材客户端-远景`（多装了 Distant Horizons 3.3.3，只在拍宏大远景时开，远景逐步生成、很吃 CPU）。
   远景实例刚启动的头十几秒，DH 还在把存好的远景一级级读进来，这时拍到的中景是粗色块；等一会儿再拍。
 - 两个实例都装了夸克和 Zeta（2026-10-04，见「取材服务端」一节最后一条）。
 - 两个实例都装了优化模组（2026-09-30）：Embeddium 0.3.31（区块渲染）、ModernFix 5.27.83、FerriteCore 6.0.1、Canary 0.3.3。
   装完后窗口隐藏空转时 CPU 从约 2 个核降到约 0.3 个核；截图、`mesh`、DH 都实测正常。新建实例（`newinstance`）会一起带上。
-- `./mcai build` 会把 mod 装进所有实例。
+- `sr mcai build` 会把 mod 装进所有实例。
 - 实测过（2026-09-30）：两个实例同时启动、同时摆机位截图互不影响；同一实例同时发 4 个 `batch`（cam + shoot），四张图的机位都和各自的参数一致。
 
 ## 构建和安装
 
-- `./mcai build` = 用 JDK 17（`MCAI_JAVA_HOME`，Mac 上默认 `/opt/homebrew/opt/openjdk@17`）跑 `./gradlew build`，再把 `build/libs/mcai-*.jar` 拷进所有实例和所有 `game/取材服务端*/` 的 `mods/`。
+- `sr mcai build` = 用 JDK 17（`MCAI_JAVA_HOME`，sr 从配置 `SR_JAVA_HOME` 传；不给就用 PATH 上的 java，不到 17 就拒绝）跑 `./gradlew build`，再把 `build/libs/mcai-*.jar` 拷进所有实例和所有 `game/取材服务端*/` 的 `mods/`。
   `game/` 是各 worktree 共用的（符号链接），在哪个 worktree 跑 build，装的就是那里的代码：还没合并某个功能的 worktree 跑一次，就把它从游戏里换掉了
   （比如不含生成时修整的 jar 装进去，主世界服务端会读不进修整包，取材服务端.py 启动前会拦）。
 - 编译要用到暮色森林的 jar（mixin 引用它的类），直接用 `game/取材服务端/mods/` 里那份，不另外下载。
-  PATH 上和 `JAVA_HOME` 里的 JDK 是 8，编不了（所以 mcai 不读 `JAVA_HOME`，读 `MCAI_JAVA_HOME`）；手动跑 gradle 要先 `export JAVA_HOME=/opt/homebrew/opt/openjdk@17`。
-- `game/` 在哪：mcai 按 `MCAI_WORKSPACE` > git 主目录 > 仓库根 找（和 `参考模型库/工具/公共/环境.py` 同一套），worktree 里也是主目录的 `game/`。
+  作者机器上 PATH 上和 `JAVA_HOME` 里的 JDK 是 8，编不了（所以 mcai 不读 `JAVA_HOME`，读 `MCAI_JAVA_HOME`）；手动跑 gradle 要先把 `JAVA_HOME` 指到 JDK 17、设好 `MCAI_GAME`。
+- `game/` 在哪：mcai 只读环境变量 `MCAI_GAME`（sr 按配置 `SR_GAME` 传），各 worktree 共用同一个游戏环境。
 - 第一次构建要下载 Gradle、Forge、反混淆 Minecraft，约 8 分钟（缓存在 `~/.gradle`）；之后十几秒。
 - 改了 mod 代码要重启游戏才生效（`mcai game stop` 再 `start`）。
 - 用的是官方 Mojmap；mixin 的 refmap 由 MixinGradle 生成。
@@ -296,8 +299,8 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 ## 导出场景网格（mesh）
 
 ```sh
-./mcai cam pos=8,120,232 pitch=90 yaw=180 dim=twilightforest:twilight_forest    # 先把镜头挪到区域附近，区块要在渲染距离内
-./mcai mesh from=-40,0,195 to=56,95,270 out=../参考模型库/src/模型/场景/巫妖怪塔.网格 mark=twilightforest:lich_boss_spawner
+sr mcai cam pos=8,120,232 pitch=90 yaw=180 dim=twilightforest:twilight_forest    # 先把镜头挪到区域附近，区块要在渲染距离内
+sr mcai mesh from=-40,0,195 to=56,95,270 out=../参考模型库/src/模型/场景/巫妖怪塔.网格 mark=twilightforest:lich_boss_spawner
 ```
 
 - 做法：不自己解析方块模型，让游戏的渲染器把区域里的东西画一遍，把它吐出来的面接住。所以拿到的就是游戏实际画的面：
@@ -332,7 +335,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 用户 2026-10-04 定：不再自己写 16 倍地形，「全面改成原版的巨型生物群系（4x）吧，在游戏里面生成真实的地貌，然后导入」，暮色森林也放大 4 倍。
 原版的巨型生物群系管不到暮色，所以分两半做，**两半缺一不可**：
 
-- **数据包** `数据包/暮色放大4倍/`：覆盖暮色的群系层栈 `random_forest_biomes`，在原层栈外面再包两层 zoom（盐 2000、2001，不模糊），群系边长放大 4 倍。
+- **数据包** `sourcing/datapacks/暮色放大4倍/`：覆盖暮色的群系层栈 `random_forest_biomes`，在原层栈外面再包两层 zoom（盐 2000、2001，不模糊），群系边长放大 4 倍。
   溪流层（`biomes_along_streams`）引用的就是它，所以溪流跟着新的群系边界走，宽度不变（用户 10-04 定：溪流先不加宽）。
 - **mod 里的 mixin**（`TwilightGrid`、`mixin/LegacyLandmarkPlacementsMixin`、`mixin/ChunkGeneratorTwilightMixin`，终焉城堡另有两个，见下面「mixin 改了哪些地方」）：暮色的地标（首领建筑、小丘、树篱迷宫）摆在写死的 16 区块网格上，数据包改不了。
   只放大群系的话，一个关键群系里会落进十几个网格点，同一种首领建筑重复十几座。mixin 把网格放大到 64 区块（1024 格），中心的抖动也乘 4，得到原版布局整体放大 4 倍；建筑本身大小不变。
@@ -347,7 +350,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 1752 的 7 座首领地标（游戏 x, z）：娜迦庭院 (-11191, -887)、巫妖塔 (-9015, 1032)、九头蛇巢 (-6327, 2184)、黑暗塔 (-7159, 5064)、
 雪怪洞 (-3959, 5192)、极光宫殿 (-2935, 5128)、终焉城堡 (-3127, 2120)。下面的命令都在项目根下执行。
 
-1. 服务端和所有客户端实例都装同一版 mod（`./mcai build` 一次装齐）。
+1. 服务端和所有客户端实例都装同一版 mod（`sr mcai build` 一次装齐）。
 2. 建世界，当场在暮色里查 7 座地标（不带预生成模组）：
    ```sh
    python3 参考模型库/工具/游戏取材/取材服务端.py --world 暮色放大-1752 --new --seed 1752 --twilight-x4 \
@@ -359,7 +362,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
      'execute in twilightforest:twilight_forest positioned -2935 64 5128 run locate structure twilightforest:aurora_palace' \
      'execute in twilightforest:twilight_forest positioned -3127 64 2120 run locate structure twilightforest:final_castle'
    ```
-   `--twilight-x4` 在第一次启动之前把 `取材mod/数据包/暮色放大4倍` 放进新世界的 `datapacks/`（连同 `数据包/通用/` 下的），服务端 `mods/` 里没有 mcai 的 jar 会拒绝。
+   `--twilight-x4` 在第一次启动之前把 `sourcing/datapacks/暮色放大4倍` 放进新世界的 `datapacks/`（连同 `sourcing/datapacks/通用/` 下的），服务端 `mods/` 里没有 mcai 的 jar 会拒绝。
    世界目录 `datapacks/` 里的数据包会自动启用，排在暮色自己的数据之上，同名文件以它为准。已经生成过的暮色区块不会跟着变，放晚了只能删掉新世界重来。旧的 `world/` 不动。
 3. 核对：
    - 服务端的 `logs/latest.log`（脚本不打印启动日志）：有 `Found new data pack file/暮色放大4倍, loading it automatically`（只在第一次）和「暮色地标网格：64 区块」，
@@ -382,7 +385,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
    - 读方块碰上调色板扩容的原版数据竞争（arm64 上容易碰）会让光照线程停掉、预生成卡死（见 `mixin/LevelChunkSectionMixin`，已修）。
    跑完以后同一个矩形再 `'chunky start'` 一遍：生成完的区块几秒就扫过去，只补中途卡住、强杀留下的空洞（这次补了 2 个停在
    initialize_light 的区块）。生成完的区块数可以拿 `Status` 是 `minecraft:full` 的数核对。
-5. 片场存档照常 `./mcai game copyworld name=<存档名> from=暮色放大-1752`，数据包跟着世界目录一起复制。
+5. 片场存档照常 `sr mcai game copyworld name=<存档名> from=暮色放大-1752`，数据包跟着世界目录一起复制。
 
 ### mixin 改了哪些地方
 
@@ -418,7 +421,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 - 其余 256、1024 是高度（结构扫描高度 `scan_elevation`、世界高度）、颜色位运算、物品耐久，和网格无关。
 
 暮色版本一换就要重新核对字节码，`mods.toml` 里把暮色版本钉死在 4.3.2508。
-离线核对（不开游戏）：`sh 测试/暮色网格测试.sh`，两部分：
+离线核对（不开游戏）：`sh test/twilight-grid-test.sh`，两部分：
 
 - `TwilightGridTest`：拿编好的 jar 对照暮色 jar 里的原函数，核对照抄没抄错、64 区块网格正好是原版放大 4 倍；
   终焉城堡的结构件离线造不出来，先从字节码核对 mixin 依据的原版写法，再按 mixin 的做法算主楼和迷宫塔的落点、外围的塔按引用半径的取舍。
@@ -430,7 +433,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 用户 2026-10-13：「这个古城很有问题啊 首先是做得太小了 发展不开 应该改成4x的」。建筑是原版的模板、原版大小，只是城的布局铺大：
 远古城市的拼图多拼几层、半径放大，不是把方块放大。也是两半缺一不可：
 
-- **数据包** `数据包/古城放大4倍/`：覆盖 `minecraft:ancient_city` 的结构定义，只改两个数：`size` 7 → 40（拼几层）、`max_distance_from_center` 116 → 440。
+- **数据包** `sourcing/datapacks/古城放大4倍/`：覆盖 `minecraft:ancient_city` 的结构定义，只改两个数：`size` 7 → 40（拼几层）、`max_distance_from_center` 116 → 440。
   别的拼图结构（村庄、堡垒遗迹、古迹等）一个字没动。试过 size 20、30、40、64（523、885、1311、1611 件），40 铺满 440 格半径时建筑密度和原版城最接近。
 - **mod 的 `BigJigsaw`**（加 `mixin/` 下的 `JigsawStructureMixin`、`JigsawStructureAccessor`、`ChunkGeneratorMixin`、`StructureManagerMixin`、`ChunkSerializerMixin`）：
   原版 1.20.1 有四处把拼图结构卡在 8 个区块（128 格）以内，详细见 `BigJigsaw.java` 文件头：
@@ -448,7 +451,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 
 用户 10-13 定：同一个种子 20260930（老片场 `片场` 那座古城），新世界 `古城放大-20260930`，城心还在 (-720, 240)。下面的命令在项目根下执行。
 
-1. 服务端和所有客户端实例都装同一版 mod（`./mcai build`）。
+1. 服务端和所有客户端实例都装同一版 mod（`sr mcai build`）。
 2. 建世界并查城：
    ```sh
    python3 参考模型库/工具/游戏取材/取材服务端.py --world 古城放大-20260930 --new --seed 20260930 --ancient-city-x4 \
@@ -463,14 +466,14 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
    ```
    起点在开头约 9 秒里算完（日志「大拼图结构起点 … 1311 件」）。10-13 第一遍有一个城外边上的区块存盘时撞上 ConcurrentModificationException、停在
    structure_starts，同一个矩形再 `chunky start` 一遍补上了（补完全是 full，重开服也没有「invalid structure reference」）。
-4. 片场存档：`./mcai game copyworld name=片场-古城4x from=古城放大-20260930`。导网格见 `参考模型库/src/模型/场景/古城4x.tsx` 文件头。
+4. 片场存档：`sr mcai game copyworld name=片场-古城4x from=古城放大-20260930`。导网格见 `参考模型库/src/模型/场景/古城4x.tsx` 文件头。
 
 ### 测试
 
-- `sh 测试/古城测试.sh`（经资源闸跑）：`AncientCityTest` 离线（不开游戏）核对放宽的编解码和原版逐项一致、数据包原版读不进而放宽后读得进、
+- `sh test/ancient-city-test.sh`（经资源闸跑）：`AncientCityTest` 离线（不开游戏）核对放宽的编解码和原版逐项一致、数据包原版读不进而放宽后读得进、
   1024 以外照样拒绝、没有大结构时引用半径是 8；再在种子 20260930 的起点区块 (-45, 15) 拼城：原版参数正好拼出老片场那座（74 件，包围盒逐格一样），
   数据包参数拼出 1311 件（约 5 秒），附近 1.6 km 内没有别的古城起点（大城不会和邻城叠在一起）。
-- `sh 测试/暮色网格测试.sh` 里的 `MixinApplyTest` 一起核对这几个 mixin 的注入点都找得到（按 SRG 名）。
+- `sh test/twilight-grid-test.sh` 里的 `MixinApplyTest` 一起核对这几个 mixin 的注入点都找得到（按 SRG 名）。
 
 ### 幽匿地形（mcai.FillBiome，10-13）
 
@@ -481,9 +484,9 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
   （只允许一种群系的，远古城市 → deep_dark）包围盒水平外扩 32 格、y ≤ 44、气候 depth ≥ 0.2 的群系格写成那个群系。起点照 BigJigsaw 的路子算（停服再开也对）。
 - 只改写进区块的群系：噪声地形、雕刻洞穴（applyCarvers 问 biomeSource）、结构起点不受影响；地表规则按群系分的只在预估地表 8 格内。变的只有地物
   （多了幽匿，少了滴水石、地下熔岩湖、泉、矿井件——矿井原版就不进深暗之域）。逐格对比：`参考模型库/工具/游戏取材/古城4x/新旧对比.py`。
-- 标签在 `数据包/古城放大4倍/data/mcai/tags/worldgen/structure/fill_biome.json`，10-13 起建的世界才有；开服日志「铺满群系：minecraft:ancient_city → minecraft:deep_dark」，
+- 标签在 `sourcing/datapacks/古城放大4倍/data/mcai/tags/worldgen/structure/fill_biome.json`，10-13 起建的世界才有；开服日志「铺满群系：minecraft:ancient_city → minecraft:deep_dark」，
   `取材服务端.py` 见到这个标签文件就查这一行。织入核对在 `MixinApplyTest`。
-- 世界 `古城放大幽匿-20260930`（同种子，命令同上面 2、3 步，世界名换掉），片场 `片场-古城4x幽匿`（`./mcai game copyworld name=片场-古城4x幽匿 from=古城放大幽匿-20260930`）。
+- 世界 `古城放大幽匿-20260930`（同种子，命令同上面 2、3 步，世界名换掉），片场 `片场-古城4x幽匿`（`sr mcai game copyworld name=片场-古城4x幽匿 from=古城放大幽匿-20260930`）。
   片场里另补了 4 格剧情要的感测体/尖啸体（`参考模型库/工具/古城4x布局/补块.py`，见 `src/镜头/古城4x布局.ts` 的 剧情补块）。旧世界 `古城放大-20260930`、`片场-古城4x` 留着。
 
 ## 主世界生成时修整（mcai:region、mcai:edit）
@@ -491,13 +494,13 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 用户 2026-10-04 定「不找天然的，直接修整」，以后还会要山、平地、峡湾、湖，所以做成通用的、加区域和操作就行的机制；
 2026-10-05 定用生成时修整：航线起点（李樱的基地）外一望无际的海由游戏自己生成。导入时修整（`参考模型库/工具/选种/修整.mjs`）不接导入管线，只留着离线选点。
 
-做法：mod 注册两种密度函数（`src/main/java/mcai/terrain/`），数据包 `数据包/主世界修整/` 覆盖史诗地形的某个密度函数文件，把原内容原样包进 `mcai:edit`，
+做法：mod 注册两种密度函数（`src/main/java/mcai/terrain/`），数据包 `sourcing/datapacks/主世界修整/` 覆盖史诗地形的某个密度函数文件，把原内容原样包进 `mcai:edit`，
 在区域里改这个量。海底、海岸、群系、地表方块、树都由游戏照常生成，游戏截图、`mcai mesh` 导出、DH 远景是同一片地。
 区域外权重正好是 0，原值原样返回，一格都不变。
 
 ### 数据包怎么配
 
-- `数据包/主世界修整/`：`pack.mcmeta`；`data/etn/worldgen/density_function/overworld/continents.json` 是覆盖文件；
+- `sourcing/datapacks/主世界修整/`：`pack.mcmeta`；`data/etn/worldgen/density_function/overworld/continents.json` 是覆盖文件；
   `data/mcai/worldgen/density_function/region/*.json` 是区域（单独成文件，几个覆盖文件可以共用一个区域）；`data/mcai/worldgen/noise/*.json` 是边界噪声。
   区域和修整的具体数值看文件本身（由岛与扇面的设计定）。
 - **区域** `mcai:region`，值是 0～1 的权重：形状里面离边界 `falloff` 格以上是 1，边界上和外面是 0，中间 smoothstep 过渡。
@@ -529,7 +532,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 - **读包是严格的**：字段写错、类型名拼错、数超范围，游戏读不进来（专用服务端起不来，客户端停在数据包错误界面），离线版也报同样的错。
   1.20.1 的 DFU 遇到「可省字段」写错会悄悄当成没写，`edge` 另写了严格的读法；deepslate 遇到写错的类型名会悄悄当成 0，`生成修整.mjs` 也拦了。
 - **许可**：覆盖文件里抄了史诗地形 compatible 1.0.3 的大陆度样条点，这个版本在 Modrinth 上标的是保留所有权利（All Rights Reserved）。
-  本机自用，这个数据包不公开分发；仓库将来推到公开远端，要把 `数据包/主世界修整/` 排除。
+  本机自用，这个数据包不公开分发；仓库将来推到公开远端，要把 `sourcing/datapacks/主世界修整/` 排除。
 
 ### 离线预览
 
@@ -537,7 +540,7 @@ HTTP 接口（`POST /动作名`，请求体 `{"args": {...}, "cwd": "调用方�
 两种 mcai 类型用 `生成修整.mjs`（和 Java 逐行对应）。同一条命令设、不设 `MCAI_PACKS` 各跑一次就是修整前后：
 ```sh
 cd 参考模型库/工具/选种
-MCAI_PACKS=../../../取材mod/数据包/主世界修整 node 出图.mjs 116 <前缀-修整后> --cx 38144 --cz -512 --half 40000 --step 128
+MCAI_PACKS=<本仓库>/sourcing/datapacks/主世界修整 node 出图.mjs 116 <前缀-修整后> --cx 38144 --cz -512 --half 40000 --step 128
 node 出图.mjs 116 <前缀-修整前> --cx 38144 --cz -512 --half 40000 --step 128
 ```
 网格格式、俯视和斜视出图见 `出图.mjs`、`斜视.py` 的文件头。和游戏比：修整本身逐位一致；大陆度差 1e-6 量级（deepslate 算原版的坐标偏移噪声约两成点差 1 ulp，
@@ -545,13 +548,13 @@ node 出图.mjs 116 <前缀-修整前> --cx 38144 --cz -512 --half 40000 --step 
 
 ### 测试
 
-在 `取材mod/` 下 `sh 测试/地形修整测试.sh`（约 20 秒，不开游戏）。改了 `mcai.terrain`、`生成修整.mjs` 或修整包都跑一遍；
+在 `sourcing/mod/` 下 `sh test/terrain-edit-test.sh`（约 20 秒，不开游戏）。改了 `mcai.terrain`、`生成修整.mjs` 或修整包都跑一遍；
 `--包 <目录>` 核对另一份修整包（改区域时先拷一份改，过了再换回去）。
 它引导原版注册表、把两种类型注册进去，用游戏读数据包的同一个 `RegistryDataLoader` 读 原版 + 史诗地形 + 修整包，再按种子接噪声（`RandomState`）：
 1. 整套世界生成注册表读得进，写了 `mcai:edit` 的覆盖文件读出来真的带着修整；
 2. 往返：每个密度函数文件读 JSON 再写回去和原文一致；
-3. 错例（`测试/地形修整用例/错例.json`）都读不进来，离线版那边也都报错；
-4. 用例（`测试/地形修整用例/`：四种形状各种参数、四种操作、链式和嵌套、区域值超出 0～1、边界噪声）在离线版取的同一批点上和 `生成修整.mjs` 逐位相同；
+3. 错例（`test/terrain-edit-cases/bad-cases.json`）都读不进来，离线版那边也都报错；
+4. 用例（`test/terrain-edit-cases/`：四种形状各种参数、四种操作、链式和嵌套、区域值超出 0～1、边界噪声）在离线版取的同一批点上和 `生成修整.mjs` 逐位相同；
 5. 真包里每个密度函数叠在史诗地形上（种子 116）和离线预览差不超过 1e-5（含 interpolated 的三维函数不比：游戏和离线版都按格角插值，测试里是逐点精确值）；
 6. 重混淆后的 jar（装进游戏的那个文件）实现了 DensityFunction 的全部方法；
 7. 同一个密度函数被引用两次，接上噪声后是同一个对象（见下面「性能」）。
@@ -561,7 +564,7 @@ node 出图.mjs 116 <前缀-修整前> --cx 38144 --cz -512 --half 40000 --step 
 ### 加一种形状、一种操作
 
 - 形状：`Shape.java` 加一个 record（`distance` 给有向距离、`box` 给包围盒、`type`），`permits` 和 `codecOf` 各加一处；`生成修整.mjs` 的 `parseShape()` 加同样一支
-  （三角函数只在解析时算一次，逐列只用加减乘除和 sqrt，两边才逐位一致）；`测试/地形修整用例/` 加一个用它的区域、`取点.json` 加它的框、`错例.json` 加它的错误写法。
+  （三角函数只在解析时算一次，逐列只用加减乘除和 sqrt，两边才逐位一致）；`test/terrain-edit-cases/` 加一个用它的区域、`points.json` 加它的框、`bad-cases.json` 加它的错误写法。
 - 操作：`TerrainEdit.Op` 加一个值、`compute` 的 switch 加一支、`minValue`/`maxValue` 按最宽的算；`生成修整.mjs` 的 `editOps` 列表、`Edit.compute` 和取值范围同样加；用例加一个用它的修整。
 - 新写的密度函数类：`mapAll` 先把 visitor 传给每个子密度函数、再 `visitor.apply(新对象)`（噪声才接得上）；`minValue`/`maxValue` 要是真的上下界，宁宽勿窄
   （原版拿它做 min/max 的短路和样条的取值范围，窄了会出怪地形）；`equals`/`hashCode` 按内容比；类型名登记在 `TerrainTypes.CODECS`。
@@ -569,10 +572,10 @@ node 出图.mjs 116 <前缀-修整前> --cx 38144 --cz -512 --half 40000 --step 
 ### 建世界、每一端都要装
 
 - 生成这个世界的每一端都要装含修整的 mcai：主世界专用服务端、打开这个世界的每个客户端实例（集成服务端补生成区块、DH 生成远景走的是同一套密度函数）。
-  `./mcai build` 一次装齐；2026-10-05 构建的 jar sha1 `00713382043939dff3f7bd7c099cdfc0c99031f7`，装进了两个客户端实例和两个取材服务端（jar 里有 `mcai/terrain/`），
+  `sr mcai build` 一次装齐；2026-10-05 构建的 jar sha1 `00713382043939dff3f7bd7c099cdfc0c99031f7`，装进了两个客户端实例和两个取材服务端（jar 里有 `mcai/terrain/`），
   主世界服务端用临时世界起过一次：修整包读进、排在史诗地形之上，临时世界已删。
 - 进游戏核对：带修整包建测试世界、Chunky 预生成要看的几块，`参考模型库/工具/选种/修整实测.py` 拿存档和离线（叠修整包 / 不叠）逐列比高度、水、群系、冰雪，
-  量修整出来的岛，出对比图（用法见它的文件头）。2026-10-05 定稿包的结果见 `数据包/主世界修整/说明.md`「游戏核对」。
+  量修整出来的岛，出对比图（用法见它的文件头）。2026-10-05 定稿包的结果见 `sourcing/datapacks/主世界修整/说明.md`「游戏核对」。
 - 专用服务端：jar 不含修整时读数据包失败，日志 `Registry loading errors` … `Unknown registry key in … density_function_type]: mcai:edit`，
   接着 `Failed to load datapacks, can't proceed with server load` 退出；不带 `--safeMode` 不会退回原版数据（2026-10-05 用一个类型名拼错的包实测）。
   取材服务端.py 启动前就查 jar，开服后查 `/datapack list`，日志出现这些行就停服报错。
@@ -586,7 +589,7 @@ node 出图.mjs 116 <前缀-修整前> --cx 38144 --cz -512 --half 40000 --step 
 ### 性能
 
 2026-10-05 离线实测（`--性能`，用游戏的 `NoiseBasedChunkGenerator`，单线程；游戏里区块分在几个线程上生成，每块的相对开销应当一样，未进游戏核实）。
-修整包是最终那一版（数据包/主世界修整，30°～240°，base_sea 是 209 个点的多边形）：
+修整包是最终那一版（sourcing/datapacks/主世界修整，30°～240°，base_sea 是 209 个点的多边形）：
 - 区域每次求值（点在形状的包围盒内外都有）：不带边界噪声的 7～13 ns，带边界噪声的 35～166 ns（边界噪声只在过渡带附近算，形状外和深处跳过）；多边形 4、64、256、1024 个点分别约 18、155、415、1421 ns，点数别上千。
 - 噪声路由的大陆度（不经区块缓存）每次 3232 ns → 加修整 4809 ns（+49%）。
 - 整块区块生成（群系 + 噪声两步，4×4 区块一组，加修整前后交替量）：
@@ -604,7 +607,7 @@ node 出图.mjs 116 <前缀-修整前> --cx 38144 --cz -512 --half 40000 --step 
 
 - **锁屏时能否截图：没有实测。** 做验收时用户正在用这台电脑，没有去锁他的屏。
   已实测的是：窗口隐藏、窗口在后台（VS Code 在前台、游戏窗口无焦点）、窗口在前台三种情况截图都正常。
-  原理上截图不经过屏幕（离屏帧缓冲），但锁屏后 macOS 是否会给进程降速没验证过；要验证就先 `sleep 20; ./mcai shoot out=x.png`，再按 Ctrl+Cmd+Q 锁屏。
+  原理上截图不经过屏幕（离屏帧缓冲），但锁屏后 macOS 是否会给进程降速没验证过；要验证就先 `sleep 20; sr mcai shoot out=x.png`，再按 Ctrl+Cmd+Q 锁屏。
 - 冻结只停服务端。客户端自己的动画照常：粒子、萤火虫、水面贴图、生物的待机摆动。所以同一机位连拍两张，这些地方会有像素差异。
 - undo 的边界：
   - 只改方块实体数据而不换方块的操作（`/data merge block`、往箱子里放东西）不记录；
@@ -612,7 +615,7 @@ node 出图.mjs 116 <前缀-修整前> --cx 38144 --cz -512 --half 40000 --step 
   - 被命令删掉的实体不会复活；撤销记录不跨游戏重启。
 - `batch` 不是“同一个 tick 内执行”（`shoot` 要跨很多帧），只是按顺序；需要画面静止就先 `freeze`。
 - `batch` 的每一步会按 shell 规则再拆一次词，步骤里的双引号（NBT 字符串）要写成 `\"`；不想转义就别放进 batch，单独调用。
-- zsh 里带方括号的选择器要加引号：`./mcai cmd 'kill @e[type=item]'`。
+- zsh 里带方括号的选择器要加引号：`sr mcai cmd 'kill @e[type=item]'`。
 - 发光描边（发光效果的实体轮廓）不会出现在截图里。
 - 游戏在跑但窗口隐藏时，它照样按正常帧率渲染，一个实例常驻占 2 个核左右和 GPU；不用时 `mcai game stop`（忘了的话空闲 30 分钟后自己退，见「空闲自动退出」）。
 - 进别的服务器（`server=`）时只能看和拍，摆机位要靠那边的权限自己发命令；没有实测过。

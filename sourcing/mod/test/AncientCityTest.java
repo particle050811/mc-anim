@@ -46,9 +46,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * 古城放大（mcai.BigJigsaw + 数据包 古城放大4倍）的离线核对，不开游戏：sh 测试/古城测试.sh [size:半径 ...]
+ * 古城放大（mcai.BigJigsaw + 数据包 sourcing/datapacks/古城放大4倍）的离线核对，不开游戏：sh test/ancient-city-test.sh [size:半径 ...]
  * 1. 编解码：原版 JSON 用原版 CODEC 和 `BigJigsaw.codec()` 读出来各字段一样；数据包的 ancient_city.json 原版读不进、放宽的读得进，除了 size、max_distance_from_center 其余和原版一字不差。
- * 2. 拼城：用游戏自己的代码按种子在起点区块拼一遍远古城市，报件数、范围、用时，每件模板和包围盒写成 JSON（给 参考模型库/工具/古城4x/ 画布局图、挑参数）；
+ * 2. 拼城：用游戏自己的代码按种子在起点区块拼一遍远古城市，报件数、范围、用时，每件模板和包围盒写成 JSON（给旧项目 参考模型库/工具/游戏取材/古城4x/ 画布局图、挑参数）；
  *    原版参数那次和片场存档里那座城的包围盒对照（古城.tsx 文件头）。群系判定用原版群系源（取材服务端还装了夸克等，地下群系可能有出入），离线只当参考，以游戏里 /locate 和存档为准。
  *
  * 用法：java AncientCityTest <原版数据 jar> <数据包目录> <种子> <起点区块 x> <起点区块 z> <输出目录> [size:半径 ...]

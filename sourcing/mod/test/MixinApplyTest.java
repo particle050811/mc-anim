@@ -31,7 +31,7 @@ import java.util.Map;
 
 /**
  * mixin 织入的离线核对，不开游戏：用 Forge 同版的 Mixin 0.8.5，把编好的 mcai jar 里「两端都织」的 mixin 真的织进暮色 jar 和 SRG 名的 Minecraft 类里。
- * mixin 配置要求每个注入点都找到，找不到游戏一启动就崩，这里先在离线时撞出来。跑法：sh 测试/暮色网格测试.sh（和 `TwilightGridTest` 一起跑）。
+ * mixin 配置要求每个注入点都找到，找不到游戏一启动就崩，这里先在离线时撞出来。跑法：sh test/twilight-grid-test.sh（和 `TwilightGridTest` 一起跑）。
  *
  * Mixin 平时由 ModLauncher 托管，这里换成最小的托管服务（`Service`），类字节码直接从类路径读，不经过 Forge 的访问转换和 coremod。
  * 环境的端是「未知」，所以只织配置里的 "mixins"，不织 "client" 那三个（只在客户端，早就在取材客户端里用着）。织完再看几处关键的：处理函数接在了该接的地方，该换的调用换掉、不该动的还在。

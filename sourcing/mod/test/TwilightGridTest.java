@@ -35,7 +35,7 @@ import java.util.Random;
 import java.util.TreeMap;
 
 /**
- * 暮色地标网格的离线核对，不开游戏。跑法：在 取材mod/ 下 sh 测试/暮色网格测试.sh。
+ * 暮色地标网格的离线核对，不开游戏。跑法：在 sourcing/mod/ 下 sh test/twilight-grid-test.sh。
  * 拿重混淆后的 build/libs/mcai-0.1.0.jar（和装进游戏的同一个文件）对照暮色 4.3.2508 jar 里的原函数：
  * 1. `TwilightGrid` 的照抄函数在 grid = 16 时和暮色原函数逐值相同；
  * 2. mixin 处理函数（反射调用，离线不织入）：开关关着时原样放行；开着时 64 区块网格和原版 16 区块网格满足「整体放大 4 倍」；

@@ -60,13 +60,13 @@ import java.util.concurrent.Executor;
 import java.util.stream.Stream;
 
 /**
- * 生成时修整（mcai.terrain：`mcai:region`、`mcai:edit`）的离线核对，不开游戏。跑法：在 取材mod/ 下 sh 测试/地形修整测试.sh（先 gradlew build、跑离线版 地形修整对照.mjs，最后跑这里）。
+ * 生成时修整（mcai.terrain：`mcai:region`、`mcai:edit`）的离线核对，不开游戏。跑法：在 sourcing/mod/ 下 sh test/terrain-edit-test.sh（先 gradlew build、跑离线版 terrain-edit-reference.mjs，最后跑这里）。
  *
  * 不开游戏也用游戏自己的代码：引导原版注册表、注册 mcai 的两种类型，用 RegistryDataLoader 读原版 + 史诗地形 + 修整包，RandomState 按种子接噪声，NoiseBasedChunkGenerator 生成区块。
  * 1. 真包整套世界生成注册表读得进，包里 `mcai:edit` 的覆盖文件真的带着修整（没被史诗地形同名文件盖掉）。
  * 2. 往返：每个密度函数文件 读 JSON → 写回 JSON，和原文一致（原版样条用 float 存，那几个数只比到 float）。
- * 3. 错例：测试/地形修整用例/错例.json 每条都读不进来（离线版也核对同一批）。
- * 4. 用例对照：测试/地形修整用例/ 的各种形状、操作、边界噪声，在离线版取的同一批点上和离线版逐位相同。
+ * 3. 错例：test/terrain-edit-cases/bad-cases.json 每条都读不进来（离线版也核对同一批）。
+ * 4. 用例对照：test/terrain-edit-cases/ 的各种形状、操作、边界噪声，在离线版取的同一批点上和离线版逐位相同。
  * 5. 真包对照：真包每个密度函数叠在史诗地形上、种子 116，和离线预览（地形.mjs）比，差不超过 1e-5。不要求逐位：
  *    deepslate 算 shift_a/shift_b 约两成点差 1 ulp，经史诗地形的 float 样条放大到 1e-6 左右，和修整无关（修整自己的部分由第 4 项逐位核对）。
  *    点取在 4 的倍数上：游戏里 flat_cache 只在 4 格格点上算（NoiseChunk），这里不经 NoiseChunk，对齐才是同一个值。
@@ -284,7 +284,7 @@ public class TerrainEditTest {
         System.out.println("往返：" + round + " 个文件");
 
         // ---------- 3. 错例 ----------
-        JsonObject bad = json(cases.resolve("错例.json")).getAsJsonObject();
+        JsonObject bad = json(cases.resolve("bad-cases.json")).getAsJsonObject();
         RegistryOps<JsonElement> testOps = RegistryOps.create(JsonOps.INSTANCE, test);
         int nBad = 0;
         for (JsonElement b : bad.getAsJsonArray("错例")) {
@@ -295,7 +295,7 @@ public class TerrainEditTest {
         System.out.println("错例：" + nBad + " 条");
 
         // ---------- 4、5. 和离线版逐位比 ----------
-        long seed = json(cases.resolve("取点.json")).getAsJsonObject().get("种子").getAsLong();
+        long seed = json(cases.resolve("points.json")).getAsJsonObject().get("种子").getAsLong();
         Map<String, List<Pt>> casePts = points(offline.resolve("用例.txt")), realPts = points(offline.resolve("真包.txt"));
         Map<String, DensityFunction> caseFns = compare("用例", test, seed, casePts, 0);
         compare("真包", real, 116, realPts, 1e-5);
