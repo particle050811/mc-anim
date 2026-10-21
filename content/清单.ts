@@ -3,7 +3,10 @@
 // 编号（<章>-<两位序号>）按这里的顺序现算，只出现在产物里。核对段（键以 核对- 开头）放 content/核对/，不进章节编号。
 export type 清单条目 = { 键: string; 章: number | '核对'; 集?: number };
 
-export const 清单: readonly 清单条目[] = [{ 键: '核对-冒烟', 章: '核对' }];
+export const 清单: readonly 清单条目[] = [
+  { 键: '核对-冒烟', 章: '核对' },
+  { 键: '核对-角色包', 章: '核对' },
+];
 
 /** 段目录（相对 content/） */
 export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice('核对-'.length)}` : `段/${键}`);

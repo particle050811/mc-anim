@@ -176,7 +176,7 @@ def 回读(锁: dict, 旧: Path, 数据根: Path) -> None:
 
 
 def 核对角色包(条目: list[dict]) -> None:
-    """kits/*.toml 里写的资产 id、匹配、文字源都要找得到，免得角色包指向已改名或没登记的资产"""
+    """kits/*.toml 里写的资产 id、匹配、文字源、渲染代码、已搬的代码都要找得到，免得角色包指向已改名或没登记的东西"""
     ids = {e['id'] for e in 条目}
     错 = []
     包们 = sorted((ASSETS / 'kits').glob('*.toml'))
@@ -196,6 +196,14 @@ def 核对角色包(条目: list[dict]) -> None:
                 for f in g.get('文字源', []):
                     if not (REPO / f).is_file():
                         错.append(f'{p.name} {节}「{g.get("用途")}」: 文字源 {f} 不在仓库里')
+        if '渲染代码' in k and not (REPO / k['渲染代码']).is_file():
+            错.append(f'{p.name}: 渲染代码 {k["渲染代码"]} 不在仓库里')
+        for c in k.get('代码', []):
+            # 不写状态当未搬：还没开始搬的角色包不用逐条补
+            if c.get('状态', '未搬') not in ('已搬', '未搬'):
+                错.append(f'{p.name} 代码「{c.get("旧位置")}」: 状态要写 已搬 或 未搬')
+            elif c.get('状态') == '已搬' and not (REPO / c['新位置']).exists():
+                错.append(f'{p.name} 代码「{c.get("旧位置")}」: 写了已搬，新位置 {c["新位置"]} 不在仓库里')
     if 错:
         sys.exit('角色包有错：\n' + '\n'.join(错))
     print(f'角色包 {len(包们)} 个，引用都找得到')
