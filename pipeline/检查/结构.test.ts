@@ -75,6 +75,8 @@ describe('结构', () => {
         'export const 乱 = Math.random() + Date.now();',
         "export const 路 = '/Users/particle/x.bin';",
         "export const 网 = 'http://192.168.1.5:8080/a';",
+        "export const 目录 = 资产目录({ './键.png': 0 });",
+        "export const 藏 = { './混进来.png': 0 };",
         'export default () => <img src={图} title={String(getInputProps())} />;',
       ].join('\n'),
       'content/段/7-甲/图.png': Buffer.from([0x89, 0x50]),
@@ -85,6 +87,8 @@ describe('结构', () => {
     expect(v.join('\n')).toMatch(/画面.tsx:3 渲染代码里不许用 Date.now/);
     expect(v.join('\n')).toMatch(/写死的路径："\/Users\/particle\/x.bin"/);
     expect(v.join('\n')).toMatch(/写死的主机或网址/);
+    expect(v.join('\n')).not.toMatch(/键\.png/); // 资产目录() 的键只是名字
+    expect(v.join('\n')).toMatch(/相对路径的资产："\.\/混进来\.png"/);
     expect(v.join('\n')).toMatch(/资产要写 asset:<id> 引用，不用相对路径：content\/段\/7-甲\/画面.tsx → content\/段\/7-甲\/图.png/);
   });
 
