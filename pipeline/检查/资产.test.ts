@@ -54,6 +54,26 @@ describe('资产', () => {
     expect(报.待迁移.map((q) => q.文本)).toEqual(['角色包 李樱 的代码 world/角色/李樱.tsx 还没搬']);
   });
 
+  it('私有资产 import 块顶上标了「待迁移（私有资产）」的算待迁移，没标的、隔了别的行的照拦', async () => {
+    const 根 = 造仓库(基础(), {
+      'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/私', '私有'), 条('贴图/私二', '私有')),
+      'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '贴图/私': 锁条('d'.repeat(64), '私有'), '贴图/私二': 锁条('e'.repeat(64), '私有') }),
+      'content/段/7-甲/画面.tsx': [
+        '// 待迁移（私有资产）：M5 改走 cue',
+        "import 图 from 'asset:贴图/甲';",
+        "import 私 from 'asset:贴图/私';",
+        '// 别的说明',
+        "import 私二 from 'asset:贴图/私二';",
+        'export default () => <img src={图 + 私 + 私二} />;',
+        '',
+      ].join('\n'),
+    });
+    const { 违规, 报 } = await 跑('资产', 根);
+    expect(报.待迁移.map((q) => q.文本)).toContain('content/段/7-甲/画面.tsx 还把私有资产 asset:贴图/私 打进包里（M5 改走 cue）');
+    expect(违规.join('\n')).toMatch(/公开构建的闭包里不能有私有资产：content\/段\/7-甲\/画面.tsx import 了 asset:贴图\/私二/);
+    expect(违规.join('\n')).not.toMatch(/import 了 asset:贴图\/私（/);
+  });
+
   it('没登记、私有进画面、许可不合规、锁和表对不上、库放错、角色包对不上都拦', async () => {
     const 根 = 造仓库(基础(), {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/乙', '公开', 'MIT 或 GPL'), 条('贴图/私', '私有')),

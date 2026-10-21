@@ -11,6 +11,21 @@ import { 读资产表, type 资产条目 } from '../../资产/资产表.ts';
 import { 字节路径, type 资产锁 } from '../../资产/资产锁.ts';
 import { 数据根 as 配置数据根 } from '../../环境/配置.ts';
 
+/**
+ * 搬来的代码还没改走 cue 的私有资产：import 那一行往上连着的 import 块顶上写一行「// 待迁移（私有资产）：原因」，算待迁移、不算违规。
+ * 照旧项目 7d077904「规矩例外」注释的做法，标记就在代码里，不另开白名单；返回原因，没标就是 undefined
+ */
+export const 私有待迁移 = (源: string, id: string): string | undefined => {
+  const 行们 = 源.split('\n');
+  const i = 行们.findIndex((l) => /^import\s/.test(l) && (l.includes(`'asset:${id}'`) || l.includes(`"asset:${id}"`)));
+  for (let j = i - 1; i >= 0 && j >= 0; j--) {
+    const m = /^\/\/ 待迁移（私有资产）：(.+)$/.exec(行们[j]!.trim());
+    if (m) return m[1];
+    if (!/^import\s/.test(行们[j]!)) return undefined;
+  }
+  return undefined;
+};
+
 /** SPDX 许可表达式：id [WITH 例外] 用 AND/OR 和括号连。LicenseRef- 后面允许中文（用户自制的 LicenseRef-用户保留） */
 export const SPDX合法 = (表达式: string): boolean => {
   const 词 = 表达式.match(/\(|\)|[^\s()]+/g) ?? [];
@@ -119,7 +134,9 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
     for (const id of ids) {
       const e = 查(id, 'asset:', 文件);
       if (e?.可见性 === '私有' && 是渲染代码(文件)) {
-        报.错(`公开构建的闭包里不能有私有资产：${文件} import 了 asset:${id}（私有的走 cue，缺了按规矩降级或报错，不打进包）`, 文件);
+        const 缓 = 私有待迁移(c.读(文件), id);
+        if (缓) 报.待(`${文件} 还把私有资产 asset:${id} 打进包里（${缓}）`, 文件);
+        else 报.错(`公开构建的闭包里不能有私有资产：${文件} import 了 asset:${id}（私有的走 cue，缺了按规矩降级或报错，不打进包）`, 文件);
       }
     }
   }
