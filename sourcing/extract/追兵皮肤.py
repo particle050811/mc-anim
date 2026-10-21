@@ -1,5 +1,5 @@
 # 追兵皮肤：给 模型/角色/追兵.tsx 的黄叛、刘心忠生成 Minecraft 皮肤式贴图（1 像素 = 模型 1 像素，最近邻）。
-# 用法（在 参考模型库/ 下）：npm run 取材 -- 追兵皮肤   或   uv run --with pillow 工具/游戏取材/追兵皮肤.py [核对图目录]
+# 用法：sr extract 追兵皮肤（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/），或在暂存目录里 uv run --with pillow <本文件> [核对图目录]
 #
 # 依据（优先级：设定图 > 原文 > 旧模型的配色和配件）：
 # - 黄叛：设定/角色/黄叛/黄叛三视图.png。三视图是 AI 生成的像素皮肤渲染图（网格没对齐、头被压扁），所以按「每个面在设定图上的矩形」切成 宽×高 个格子，
@@ -15,18 +15,18 @@
 #   贴图 128×64，布局见 `LX_UV`（追兵.tsx 里同一份数字）。
 # 输出：src/模型/角色/追兵.贴图/{黄叛,黄叛箭袋,刘心忠}.png（8 位 RGBA）。给了核对图目录时，另存放大的贴图和取样位置图。
 import io
+import os
 import sys
 import zipfile
 from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-ROOT = Path(__file__).resolve().parents[2]  # 参考模型库/
-PROJ = ROOT.parent
+ROOT = Path.cwd()
 OUT = ROOT / 'src/模型/角色/追兵.贴图'
-CLIENT_JAR = PROJ / 'game/缓存/client-1.20.1.jar'
-HP_SHEET = PROJ / '设定/角色/黄叛/黄叛三视图.png'
-LX_SHEET = PROJ / '设定/角色/刘心忠/刘心忠三视图.png'
+CLIENT_JAR = Path(os.environ['SR_GAME']) / '缓存/client-1.20.1.jar'
+HP_SHEET = ROOT / '设定/角色/黄叛/黄叛三视图.png'  # sr extract 按条目的「输入」从资产库摆进来
+LX_SHEET = ROOT / '设定/角色/刘心忠/刘心忠三视图.png'
 DEBUG = Path(sys.argv[1]) if len(sys.argv) > 1 else None
 
 T = (0, 0, 0, 0)

@@ -7,9 +7,9 @@ minecraft/sounds.json、minecraft/sounds/<路径>.ogg 映射到 objects/<hash �
 
 模组的声音在模组 jar 里：assets/<命名空间>/sounds.json 和 assets/<命名空间>/sounds/<路径>.ogg。
 
-用法（在 参考模型库/ 下）：python3 工具/游戏取材/导出音效.py <输出目录> [--jar <模组 jar>]... <事件名>...
-  例：python3 工具/游戏取材/导出音效.py src/音效 block.sculk_shrieker.shriek entity.warden.emerge
-      python3 工具/游戏取材/导出音效.py src/音效 --jar ../game/缓存/mods/EpicFight-Nightfall-3.4.0.jar efn:parry
+用法（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：python3 导出音效.py <输出目录> [--jar <模组 jar>]... <事件名>...
+  例：python3 导出音效.py src/音效 block.sculk_shrieker.shriek entity.warden.emerge
+      python3 导出音效.py src/音效 --jar <游戏环境>/缓存/mods/EpicFight-Nightfall-3.4.0.jar efn:parry
   原版事件不带命名空间（照旧）；模组事件写成 <命名空间>:<事件>，到给的 jar 里找。模组 sounds.json 里引用原版声音（名字不带命名空间）的，从资源索引取。
 输出：
   <输出目录>/<事件名>.ogg（事件只有一个声音时）或 <事件名>.<序号>.ogg（序号从 1 起，照 sounds.json 里的先后；模组事件的文件名
@@ -18,7 +18,7 @@ minecraft/sounds.json、minecraft/sounds/<路径>.ogg 映射到 objects/<hash �
   <输出目录>/游戏音效.json：每个事件的 subtitle 和每个声音的来源（索引路径、hash）、时长、volume、pitch、weight、
   attenuation_distance（sounds.json 没写的按游戏默认：volume 1、pitch 1、weight 1、attenuation_distance 16）。
   已有的表会合并（同名事件覆盖），所以可以分几次导。
-环境变量 MC_ASSETS 可以换资源目录。
+资源目录读环境变量 SR_MC_ASSETS（sr extract 按配置传，默认 Prism 数据目录下的 assets/）。
 """
 import hashlib
 import json
@@ -29,10 +29,9 @@ import sys
 import zipfile
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[1]))  # 工具/：取 公共/环境
-from 公共 import 环境  # noqa: E402
-
-ASSETS = 环境.mc资源目录()
+if not os.environ.get('SR_MC_ASSETS'):
+    sys.exit('要设 SR_MC_ASSETS：原版资源目录（indexes/、objects/），用 sr extract 跑会按配置传')
+ASSETS = Path(os.environ['SR_MC_ASSETS'])
 INDEX_ID = '5'  # 1.20.1 的 assetIndex.id（版本 json 里写的）
 
 if len(sys.argv) < 3:

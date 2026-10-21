@@ -2,15 +2,15 @@
 """从模组 jar 里导出 Java 版实体模型（生物）：用 javap -c 反汇编模型类的 create()，按栈机执行，得到部件树和方盒，原样照抄不改数值。
 只认下面列的几种调用，遇到不认识的直接报错，不猜。
 
-用法（在参考模型库目录下）：
-  uv run --with pillow 工具/游戏取材/导出实体模型.py <jar> <输出.json> <名字=类全名[:方法名]>... --贴图 <名字=jar内贴图.png>...
+用法（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：
+  uv run --with pillow 导出实体模型.py <jar> <输出.json> <名字=类全名[:方法名]>... --贴图 <名字=jar内贴图.png>...
   例：... twilightforest.jar src/模型/角色/巫妖.模型.json 巫妖=twilightforest.client.model.entity.LichModel \\
           --贴图 巫妖=assets/twilightforest/textures/model/twilightlich64.png
   方法名默认 create。只有 createMesh 的（原版玩家模型、盔甲层）写成 名字=类全名:方法名(参数,...)@贴图宽x高，参数按方法签名转换
   （CubeDeformation 写一个数，boolean 写 true/false），例：玩家=net.minecraft.client.model.PlayerModel:m_170825_(0,false)@64x64
   贴图存在输出 JSON 旁边：巫妖.模型.json → 巫妖.模型.png（只有一张）或 巫妖.模型.<名字>.png。
   jar 可写几个、逗号隔开，类和贴图按顺序找：原版 SRG 客户端 jar 只有类没有资源，贴图要从普通客户端 jar 取
-  （../game/缓存/client-1.20.1-srg.jar,../game/缓存/client-1.20.1.jar）。
+  （<游戏环境>/缓存/client-1.20.1-srg.jar,<游戏环境>/缓存/client-1.20.1.jar）。
 
 关键帧动画（1.19 起原版新生物用的 AnimationDefinition，如监守者、嗅探兽、骆驼）：再加一段
   --动画 <名字=类全名.静态字段>...   例：钻出=net.minecraft.client.animation.definitions.WardenAnimation.f_232343_
@@ -31,10 +31,8 @@ PartDefinition.addOrReplaceChild/getChild、MeshDefinition、CubeDeformation、H
 """
 import json, os, re, struct, subprocess, sys, tempfile, zipfile
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 工具/：取 公共/环境
-from 公共 import 环境  # noqa: E402
-
-JAVAP = 环境.jdk程序("javap")
+# javap 用 SR_JAVA_HOME 的（sr extract 按配置传），没给就从 PATH 找
+JAVAP = os.path.join(os.environ["SR_JAVA_HOME"], "bin", "javap") if os.environ.get("SR_JAVA_HOME") else "javap"
 
 
 # ---------- 模型对象 ----------

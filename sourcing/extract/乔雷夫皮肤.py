@@ -4,14 +4,14 @@
 做法：拿 卫兵.贴图/皮肤8-steve.png（npm run 取材 -- 边城贴图 从 1.20.1 客户端 jar 原样拷出的默认皮肤，64×64），
 身子、两臂、两腿（里外两层）上不是皮肤色的像素（衬衫的青、裤子的蓝紫、鞋的灰）按亮度换成深色：上衣深蓝灰、裤子近黑、鞋深棕；
 脸、头发、手（皮肤色）不动。皮肤色的判定：红 > 蓝 + 25 且 红 ≥ 绿（史蒂夫的肤色和头发都是暖棕色，衣服都是冷色）。
-用法（在 参考模型库/ 下）：uv run -q --with pillow 工具/游戏取材/乔雷夫皮肤.py
+用法：sr extract 乔雷夫皮肤（在暂存目录里跑，目录布局照旧项目的 参考模型库/；前置 边城贴图 先在同一个暂存目录里跑）
 输出：src/模型/角色/乔雷夫.png
 """
 from pathlib import Path
 
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path.cwd()
 src = Image.open(ROOT / 'src/模型/角色/卫兵.贴图/皮肤8-steve.png').convert('RGBA')
 im = src.copy()
 px = im.load()
