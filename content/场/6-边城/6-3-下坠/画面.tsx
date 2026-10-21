@@ -16,7 +16,7 @@ import { ScreenAo } from '../../../../engine/voxel/屏幕AO.tsx';
 import { VoxelWorld } from '../../../../engine/voxel/世界.tsx';
 import { FlightFog, FlightRig, overworldShadowOn, overworldShadowFar, OverworldSunLight } from '../../../../world/地点/飞行镜头.tsx';
 import { JIUHU, jiuhuMouthAttach } from '../../../../world/角色/九胡.tsx';
-import jiuhuRaw from 'asset:模型/角色/九胡';
+import jiuhuRaw资产 from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
 import { LiYing } from '../../../../world/角色/李樱.tsx';
 import { RideBroom } from '../../../../world/角色/骑扫帚.tsx';
@@ -45,6 +45,7 @@ import { JiuhuHandCompass } from '../../../../world/角色/九胡持指南针.ts
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
 import { mouthAt } from '../../../../world/角色/口型.ts';
 import { fallSoundTable } from './声音.tsx';
+const jiuhuRaw = jiuhuRaw资产 as unknown as any; // 迁移：类型待补
 
 const JIUHU_MODEL = { ...jiuhuRaw, texture: png(jiuhuSkin) } as unknown as BedrockModel;
 // 望远镜视野（原版 Gui.renderSpyglassOverlay）：misc/spyglass_scope.png 画成边长 = 画面高 × 1.125 的正方形放在正中，四周补黑

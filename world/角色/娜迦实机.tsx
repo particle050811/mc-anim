@@ -10,8 +10,13 @@ import { rad } from '../../engine/anim/anim.ts';
 import { V3 } from '../../engine/model/parts.tsx';
 import { EntityTexture, TexBox } from '../../engine/model/贴图方盒.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/角色/娜迦实机/charging';
+import 资_1 from 'asset:贴图/角色/娜迦实机/dazed';
+import 资_2 from 'asset:贴图/角色/娜迦实机/head';
+import 资_3 from 'asset:贴图/角色/娜迦实机/segment';
 
-const TEX = pngDir(import.meta.webpackContext('./娜迦实机.贴图', { regExp: /\.png$/ })) as Record<'head' | 'charging' | 'dazed' | 'segment', EntityTexture>;
+const TEX = pngDir(资产目录({ './charging.png': 资_0, './dazed.png': 资_1, './head.png': 资_2, './segment.png': 资_3 })) as Record<'head' | 'charging' | 'dazed' | 'segment', EntityTexture>;
 
 export const GAME_NAGA = {
   headSize: 2.01,

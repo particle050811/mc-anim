@@ -35,14 +35,34 @@ import { activeLine, voiceStart, uiOpen, chosenVersion } from '../../../../world
 import { glowCamAt, ponderCamAt, ponderLayerOpacity, tMatch, transitionW } from '../../../../world/地点/边城/6-3-2/转场.ts';
 import { lineVolume } from '../../../../engine/audio/混音.ts';
 import { 清单Audio } from '../../../../engine/audio/声音Sequence.tsx';
-import ponderText from 'asset:数据/镜头/6-3-2/文案';
+import ponderText资产 from 'asset:数据/镜头/6-3-2/文案';
 import voiceOriginal from 'asset:配音/镜头/6-3-2/李樱-压路机-原文';
 import voiceFiveLines from 'asset:配音/镜头/6-3-2/李樱-压路机-五句';
 import voiceRevised from 'asset:配音/镜头/6-3-2/李樱-压路机-改字';
+import { 资产目录 } from '../../../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/镜头/6-3-2/方块/平滑石台阶侧';
+import 资_1 from 'asset:贴图/镜头/6-3-2/方块/平滑石头';
+import 资_2 from 'asset:贴图/镜头/6-3-2/方块/泥土';
+import 资_3 from 'asset:贴图/镜头/6-3-2/方块/深板岩';
+import 资_4 from 'asset:贴图/镜头/6-3-2/方块/深板岩顶';
+import 资_5 from 'asset:贴图/镜头/6-3-2/方块/白色混凝土';
+import 资_6 from 'asset:贴图/镜头/6-3-2/方块/石头';
+import 资_7 from 'asset:贴图/镜头/6-3-2/方块/裂纹0';
+import 资_8 from 'asset:贴图/镜头/6-3-2/方块/裂纹1';
+import 资_9 from 'asset:贴图/镜头/6-3-2/方块/裂纹2';
+import 资_10 from 'asset:贴图/镜头/6-3-2/方块/裂纹3';
+import 资_11 from 'asset:贴图/镜头/6-3-2/方块/裂纹4';
+import 资_12 from 'asset:贴图/镜头/6-3-2/方块/裂纹5';
+import 资_13 from 'asset:贴图/镜头/6-3-2/方块/裂纹6';
+import 资_14 from 'asset:贴图/镜头/6-3-2/方块/裂纹7';
+import 资_15 from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
+import 资_16 from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
+import 资_17 from 'asset:贴图/镜头/6-3-2/方块/雪块';
+const ponderText = ponderText资产 as unknown as any; // 迁移：类型待补
 
 const voiceWav = { 改字: voiceRevised, 原文: voiceOriginal, 五句: voiceFiveLines }[chosenVersion];
 
-const TEX = pngDir(import.meta.webpackContext('./方块.贴图', { regExp: /\.png$/ })) as Record<string, Png>;
+const TEX = pngDir(资产目录({ './平滑石台阶侧.png': 资_0, './平滑石头.png': 资_1, './泥土.png': 资_2, './深板岩.png': 资_3, './深板岩顶.png': 资_4, './白色混凝土.png': 资_5, './石头.png': 资_6, './裂纹0.png': 资_7, './裂纹1.png': 资_8, './裂纹2.png': 资_9, './裂纹3.png': 资_10, './裂纹4.png': 资_11, './裂纹5.png': 资_12, './裂纹6.png': 资_13, './裂纹7.png': 资_14, './裂纹8.png': 资_15, './裂纹9.png': 资_16, './雪块.png': 资_17 })) as Record<string, Png>;
 
 // ---------- 场景板的方块 ----------
 // 每种方块每个面用哪张贴图（平滑石台阶的侧面只用下半张：原版 block/slab 的 side uv 是 [0, 8, 16, 16]）

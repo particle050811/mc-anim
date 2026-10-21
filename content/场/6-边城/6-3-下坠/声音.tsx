@@ -37,7 +37,7 @@ import { windFadeIn, 风起帧 } from '../../../../world/地点/边城/6-3-2/转
 
 const tickSec = 1 / 20;
 const FPS = timeline.FPS;
-const hasEvent = (event: string) => event in (sfxTableJson as Record<string, unknown>);
+const hasEvent = (event: string) => event in (sfxTableJson as unknown as Record<string, unknown>);
 export const pendingExport = ['block.stone.fall', 'block.deepslate.fall', 'block.gravel.break', 'block.calcite.break', 'block.tuff.break'].filter((e) => !hasEvent(e));
 
 // ---------- 物理时间 ↔ 全局帧（给 慢放.ts 用） ----------

@@ -29,7 +29,7 @@ const JH_ARRIVE = Math.round(choreo612.MAZE_ARRIVE - T0);
 //   李樱：扫帚冒出来停稳就说「坐好了，看我速通暮色！」（用户 10-20：骑扫帚这一下要说明白是速通暮色），两人跳上扫帚时说，坐稳时说完，不动段长；
 //   坐稳 `seatedHold` 帧就往下一沉、起飞。
 // 长度读 src/配音/台词表.json 的 有声长（开口到说完）。两句都在九胡跑到前后说完，唤出是她停稳后喘 1 秒、抬头看他（`JH_ARRIVE` + 24）。
-const voicedFrames = (id: string) => Math.ceil((lineTable as Record<string, { 有声长: number }>)[id].有声长 * 24);
+const voicedFrames = (id: string) => Math.ceil((lineTable as unknown as Record<string, { 有声长: number }>)[id].有声长 * 24);
 const seatedHold = 12;
 export const lineFrames = (() => {
   const nagaLine = officialLineStart - (officialFrames - 1);

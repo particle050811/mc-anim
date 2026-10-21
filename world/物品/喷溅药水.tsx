@@ -5,8 +5,11 @@
 import React from 'react';
 import { DISPLAY, ItemDisplay, ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/物品/喷溅药水/bottle';
+import 资_1 from 'asset:贴图/物品/喷溅药水/overlay';
 
-const TEXTURES = pngDir(import.meta.webpackContext('./喷溅药水.贴图', { regExp: /\.png$/ }));
+const TEXTURES = pngDir(资产目录({ './bottle.png': 资_0, './overlay.png': 资_1 }));
 export const HEALING_COLOR = '#F82423';
 const LAYERS = [{ tex: TEXTURES.overlay, tint: HEALING_COLOR }, { tex: TEXTURES.bottle }];
 export const POTION_TEX = TEXTURES;

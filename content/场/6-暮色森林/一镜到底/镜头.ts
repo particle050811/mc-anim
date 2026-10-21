@@ -12,7 +12,8 @@ import {
   mixFraming, riderAt, camPosOf, posToFraming, solveView, cruiseFraming, sampleKeys, clampToBore,
 } from './镜头构图.ts';
 import * as route from './路线.ts';
-import pullInData from 'asset:数据/镜头/一镜到底/收表';
+import pullInData资产 from 'asset:数据/镜头/一镜到底/收表';
+const pullInData = pullInData资产 as unknown as any; // 迁移：类型待补
 
 export { chaseSpans, camWindows } from './镜段.ts';
 

@@ -3,8 +3,20 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../../engine/model/parts.tsx';
 import { pngDir } from '../../../engine/model/贴图.ts';
+import { 资产目录 } from '../../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/特效/夜幕刀光/efn_parry_flash_main_render1';
+import 资_1 from 'asset:贴图/特效/夜幕刀光/efn_parry_flash_main_render2';
+import 资_2 from 'asset:贴图/特效/夜幕刀光/efn_parry_flash_main_render3';
+import 资_3 from 'asset:贴图/特效/夜幕刀光/efn_parry_flash_main_render4';
+import 资_4 from 'asset:贴图/特效/夜幕刀光/efn_parry_flash_main_render5';
+import 资_5 from 'asset:贴图/特效/夜幕刀光/efn_parry_flash_main_render6';
+import 资_6 from 'asset:贴图/特效/夜幕刀光/power3';
+import 资_7 from 'asset:贴图/特效/夜幕刀光/yamato_cut1_a';
+import 资_8 from 'asset:贴图/特效/夜幕刀光/yamato_cut2_a';
+import 资_9 from 'asset:贴图/特效/夜幕刀光/yamato_cut3_a';
+import 资_10 from 'asset:贴图/特效/夜幕刀光/yamato_cut4_a';
 
-export const nightfallPngs = pngDir(import.meta.webpackContext('../夜幕刀光.贴图', { regExp: /\.png$/ }));
+export const nightfallPngs = pngDir(资产目录({ './efn_parry_flash_main_render1.png': 资_0, './efn_parry_flash_main_render2.png': 资_1, './efn_parry_flash_main_render3.png': 资_2, './efn_parry_flash_main_render4.png': 资_3, './efn_parry_flash_main_render5.png': 资_4, './efn_parry_flash_main_render6.png': 资_5, './power3.png': 资_6, './yamato_cut1_a.png': 资_7, './yamato_cut2_a.png': 资_8, './yamato_cut3_a.png': 资_9, './yamato_cut4_a.png': 资_10 }));
 
 // 泛光离屏图收的东西放在这一层；主画面的镜头只看第 0 层，不会把它们直接画出来
 export const bloomLayer = 7;

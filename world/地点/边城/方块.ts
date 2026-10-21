@@ -1,6 +1,7 @@
 // 边城的方块：贴图图集（方块贴图.png，工具/游戏取材/边城贴图.py 从 1.20.1 客户端 jar 取），方块的六个面各贴哪张，方块的形状。
 // 体素.ts 用「方块 + 形状」的编号（1～255）记每一格，合并成长方体后交给 渲染.ts 画。
-import raw from 'asset:数据/场景/边城/方块贴图';
+import raw资产 from 'asset:数据/场景/边城/方块贴图';
+const raw = raw资产 as unknown as any; // 迁移：类型待补
 
 export type TextureName = keyof typeof raw.贴图;
 export const ATLAS = { cols: raw.列, rows: raw.行 };

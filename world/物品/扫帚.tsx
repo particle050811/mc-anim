@@ -12,8 +12,9 @@ import { useContext } from 'react';
 import { BedrockModel, BedrockModelView } from '../../engine/model/基岩模型.tsx';
 import { Ghost, rng } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
-import raw from 'asset:模型/物品/扫帚';
+import raw资产 from 'asset:模型/物品/扫帚';
 import tex from 'asset:贴图/物品/扫帚';
+const raw = raw资产 as unknown as any; // 迁移：类型待补
 
 export const BROOM_MODEL = { ...raw, texture: png(tex) } as unknown as BedrockModel;
 

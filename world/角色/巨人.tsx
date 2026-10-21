@@ -19,9 +19,16 @@ import { EntityModel, EntityModelData, PartPose } from '../../engine/model/实�
 import { ItemDisplay, ItemSprite, ItemTransform } from '../../engine/model/物品贴图.tsx';
 import { Png, pngDir } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/巨人';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/角色/巨人/取材账号';
+import 资_1 from 'asset:贴图/角色/巨人/史蒂夫';
+import 资_2 from 'asset:贴图/角色/巨人/石剑';
+import 资_3 from 'asset:贴图/角色/巨人/石镐';
+import 资_4 from 'asset:贴图/角色/巨人/铁甲1';
+import 资_5 from 'asset:贴图/角色/巨人/铁甲2';
 
 const MODELS = (raw as unknown as { models: Record<'宽' | '细' | '内甲' | '外甲', EntityModelData> }).models;
-const TEX = pngDir(import.meta.webpackContext('./巨人.贴图', { regExp: /\.png$/ })) as Record<'史蒂夫' | '取材账号' | '铁甲1' | '铁甲2' | '石剑' | '石镐', Png>;
+const TEX = pngDir(资产目录({ './取材账号.png': 资_0, './史蒂夫.png': 资_1, './石剑.png': 资_2, './石镐.png': 资_3, './铁甲1.png': 资_4, './铁甲2.png': 资_5 })) as Record<'史蒂夫' | '取材账号' | '铁甲1' | '铁甲2' | '石剑' | '石镐', Png>;
 
 export const GIANT = {
   scale: 4,

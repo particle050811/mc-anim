@@ -16,11 +16,22 @@ import { png, pngDir } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/特效/幽匿感测体';
 import atlasPng from 'asset:贴图/特效/幽匿感测体';
 import { interpPathPos, Particle, particleInitVel, particlePath, particleTexture, ParticleQuads } from './粒子面片.tsx';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_active';
+import 资_1 from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_inactive';
+import 资_2 from 'asset:贴图/特效/粒子/generic_0';
+import 资_3 from 'asset:贴图/特效/粒子/generic_1';
+import 资_4 from 'asset:贴图/特效/粒子/generic_2';
+import 资_5 from 'asset:贴图/特效/粒子/generic_3';
+import 资_6 from 'asset:贴图/特效/粒子/generic_4';
+import 资_7 from 'asset:贴图/特效/粒子/generic_5';
+import 资_8 from 'asset:贴图/特效/粒子/generic_6';
+import 资_9 from 'asset:贴图/特效/粒子/generic_7';
 
 const modelData = data as unknown as BlockModelData;
 const ATLAS = png(atlasPng);
-const STRIPS = pngDir(import.meta.webpackContext('./幽匿感测体.贴图', { regExp: /\.png$/ }));
-const GENERIC = pngDir(import.meta.webpackContext('./粒子.贴图', { regExp: /^\.\/generic_\d\.png$/ }));
+const STRIPS = pngDir(资产目录({ './sculk_sensor_tendril_active.png': 资_0, './sculk_sensor_tendril_inactive.png': 资_1 }));
+const GENERIC = pngDir(资产目录({ './generic_0.png': 资_2, './generic_1.png': 资_3, './generic_2.png': 资_4, './generic_3.png': 资_5, './generic_4.png': 资_6, './generic_5.png': 资_7, './generic_6.png': 资_8, './generic_7.png': 资_9 }));
 
 export const sensorParams = {
   activeTicks: 30, // ACTIVE

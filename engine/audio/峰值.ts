@@ -2,7 +2,7 @@
 // 给要预估「最坏情况下混音会冲到多高」的地方用：一镜到底/声音.tsx 的撞墙限幅按它把整条混音（配乐 + 全部音效）的峰值压在 −1 dBFS 以下。
 import peakJson from 'asset:数据/音效/音效峰值';
 
-const peakTable = peakJson as { 格秒: number; dB每级: number; dB起: number; 峰: Record<string, string> };
+const peakTable = peakJson as unknown as { 格秒: number; dB每级: number; dB起: number; 峰: Record<string, string> };
 const envelopeCache = new Map<string, Uint8Array>();
 const envelopeOf = (file: string) => {
   let envelope = envelopeCache.get(file);

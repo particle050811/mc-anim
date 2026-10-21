@@ -7,8 +7,25 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/物品/羊毛/black_wool';
+import 资_1 from 'asset:贴图/物品/羊毛/blue_wool';
+import 资_2 from 'asset:贴图/物品/羊毛/brown_wool';
+import 资_3 from 'asset:贴图/物品/羊毛/cyan_wool';
+import 资_4 from 'asset:贴图/物品/羊毛/gray_wool';
+import 资_5 from 'asset:贴图/物品/羊毛/green_wool';
+import 资_6 from 'asset:贴图/物品/羊毛/light_blue_wool';
+import 资_7 from 'asset:贴图/物品/羊毛/light_gray_wool';
+import 资_8 from 'asset:贴图/物品/羊毛/lime_wool';
+import 资_9 from 'asset:贴图/物品/羊毛/magenta_wool';
+import 资_10 from 'asset:贴图/物品/羊毛/orange_wool';
+import 资_11 from 'asset:贴图/物品/羊毛/pink_wool';
+import 资_12 from 'asset:贴图/物品/羊毛/purple_wool';
+import 资_13 from 'asset:贴图/物品/羊毛/red_wool';
+import 资_14 from 'asset:贴图/物品/羊毛/white_wool';
+import 资_15 from 'asset:贴图/物品/羊毛/yellow_wool';
 
-const TEXTURES = pngDir(import.meta.webpackContext('./羊毛.贴图', { regExp: /\.png$/ }));
+const TEXTURES = pngDir(资产目录({ './black_wool.png': 资_0, './blue_wool.png': 资_1, './brown_wool.png': 资_2, './cyan_wool.png': 资_3, './gray_wool.png': 资_4, './green_wool.png': 资_5, './light_blue_wool.png': 资_6, './light_gray_wool.png': 资_7, './lime_wool.png': 资_8, './magenta_wool.png': 资_9, './orange_wool.png': 资_10, './pink_wool.png': 资_11, './purple_wool.png': 资_12, './red_wool.png': 资_13, './white_wool.png': 资_14, './yellow_wool.png': 资_15 }));
 export type WoolColor =
   | 'white' | 'orange' | 'magenta' | 'light_blue' | 'yellow' | 'lime' | 'pink' | 'gray'
   | 'light_gray' | 'cyan' | 'purple' | 'blue' | 'brown' | 'green' | 'red' | 'black';

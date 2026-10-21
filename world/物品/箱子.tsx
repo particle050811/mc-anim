@@ -13,11 +13,16 @@ import { TexBox } from '../../engine/model/贴图方盒.tsx';
 import vanillaPng from 'asset:贴图/物品/箱子';
 import lootrPng from 'asset:贴图/物品/战利品箱';
 import lootrOpenedPng from 'asset:贴图/物品/战利品箱-已开';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/物品/暮色箱子/暗木';
+import 资_1 from 'asset:贴图/物品/暮色箱子/暮色橡木';
+import 资_2 from 'asset:贴图/物品/暮色箱子/林冠木';
+import 资_3 from 'asset:贴图/物品/暮色箱子/红树木';
 
 export const VANILLA_CHEST_TEX = png(vanillaPng);
 export const LOOTR_TEX = png(lootrPng);
 export const LOOTR_OPENED_TEX = png(lootrOpenedPng);
-const TF = pngDir(import.meta.webpackContext('./暮色箱子.贴图', { regExp: /\.png$/ }));
+const TF = pngDir(资产目录({ './暗木.png': 资_0, './暮色橡木.png': 资_1, './林冠木.png': 资_2, './红树木.png': 资_3 }));
 export type TwilightChestWood = '暮色橡木' | '林冠木' | '红树木' | '暗木';
 export const TWILIGHT_CHEST_TEX: Record<TwilightChestWood, Png> = { 暮色橡木: TF.暮色橡木, 林冠木: TF.林冠木, 红树木: TF.红树木, 暗木: TF.暗木 };
 export const lootrTex = (开过: boolean) => (开过 ? LOOTR_OPENED_TEX : LOOTR_TEX);

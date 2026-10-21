@@ -20,9 +20,23 @@ import { Png, pngDir } from '../../engine/model/贴图.ts';
 import { Spyglass } from '../物品/望远镜.tsx';
 import raw from 'asset:模型/角色/巨人';
 import { giantPose } from './巨人.tsx';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/角色/卫兵/披风';
+import 资_1 from 'asset:贴图/角色/卫兵/皮肤0-kai';
+import 资_2 from 'asset:贴图/角色/卫兵/皮肤1-noor';
+import 资_3 from 'asset:贴图/角色/卫兵/皮肤2-efe';
+import 资_4 from 'asset:贴图/角色/卫兵/皮肤3-makena';
+import 资_5 from 'asset:贴图/角色/卫兵/皮肤4-sunny';
+import 资_6 from 'asset:贴图/角色/卫兵/皮肤5-ari';
+import 资_7 from 'asset:贴图/角色/卫兵/皮肤6-zuri';
+import 资_8 from 'asset:贴图/角色/卫兵/皮肤7-alex';
+import 资_9 from 'asset:贴图/角色/卫兵/皮肤8-steve';
+import 资_10 from 'asset:贴图/角色/卫兵/钻石甲1';
+import 资_11 from 'asset:贴图/角色/卫兵/钻石甲2';
+import 资_12 from 'asset:贴图/角色/卫兵/附魔光泽';
 
 const MODELS = (raw as unknown as { models: Record<'宽' | '细' | '内甲' | '外甲', EntityModelData> }).models;
-const TEX = pngDir(import.meta.webpackContext('./卫兵.贴图', { regExp: /\.png$/ })) as Record<string, Png>;
+const TEX = pngDir(资产目录({ './披风.png': 资_0, './皮肤0-kai.png': 资_1, './皮肤1-noor.png': 资_2, './皮肤2-efe.png': 资_3, './皮肤3-makena.png': 资_4, './皮肤4-sunny.png': 资_5, './皮肤5-ari.png': 资_6, './皮肤6-zuri.png': 资_7, './皮肤7-alex.png': 资_8, './皮肤8-steve.png': 资_9, './钻石甲1.png': 资_10, './钻石甲2.png': 资_11, './附魔光泽.png': 资_12 })) as Record<string, Png>;
 // 皮肤：文件名 皮肤<号>-<原版皮肤名>，按号排
 const SKINS = Object.keys(TEX)
   .filter((k) => k.startsWith('皮肤'))

@@ -8,8 +8,25 @@ import * as THREE from 'three';
 import { rng, V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { POTION_TEX } from '../物品/喷溅药水.tsx';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/特效/药水粒子/effect_0';
+import 资_1 from 'asset:贴图/特效/药水粒子/effect_1';
+import 资_2 from 'asset:贴图/特效/药水粒子/effect_2';
+import 资_3 from 'asset:贴图/特效/药水粒子/effect_3';
+import 资_4 from 'asset:贴图/特效/药水粒子/effect_4';
+import 资_5 from 'asset:贴图/特效/药水粒子/effect_5';
+import 资_6 from 'asset:贴图/特效/药水粒子/effect_6';
+import 资_7 from 'asset:贴图/特效/药水粒子/effect_7';
+import 资_8 from 'asset:贴图/特效/药水粒子/spell_0';
+import 资_9 from 'asset:贴图/特效/药水粒子/spell_1';
+import 资_10 from 'asset:贴图/特效/药水粒子/spell_2';
+import 资_11 from 'asset:贴图/特效/药水粒子/spell_3';
+import 资_12 from 'asset:贴图/特效/药水粒子/spell_4';
+import 资_13 from 'asset:贴图/特效/药水粒子/spell_5';
+import 资_14 from 'asset:贴图/特效/药水粒子/spell_6';
+import 资_15 from 'asset:贴图/特效/药水粒子/spell_7';
 
-const spellPngs = pngDir(import.meta.webpackContext('./药水粒子.贴图', { regExp: /\.png$/ }));
+const spellPngs = pngDir(资产目录({ './effect_0.png': 资_0, './effect_1.png': 资_1, './effect_2.png': 资_2, './effect_3.png': 资_3, './effect_4.png': 资_4, './effect_5.png': 资_5, './effect_6.png': 资_6, './effect_7.png': 资_7, './spell_0.png': 资_8, './spell_1.png': 资_9, './spell_2.png': 资_10, './spell_3.png': 资_11, './spell_4.png': 资_12, './spell_5.png': 资_13, './spell_6.png': 资_14, './spell_7.png': 资_15 }));
 const VISUAL_SCALE = 1.4;
 
 const flipRows = (px: Uint8Array, width: number, height: number) => {

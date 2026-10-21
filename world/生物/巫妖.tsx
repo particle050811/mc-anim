@@ -15,10 +15,13 @@ import { png, pngDir } from '../../engine/model/贴图.ts';
 import { ScepterInHand } from '../物品/巫妖权杖.tsx';
 import raw from 'asset:模型/角色/巫妖';
 import skin from 'asset:贴图/角色/巫妖';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/角色/巫妖护盾/fill';
+import 资_1 from 'asset:贴图/角色/巫妖护盾/frame';
 
 const MODEL = (raw as unknown as { models: Record<string, EntityModelData> }).models.巫妖;
 const TEX = png(skin);
-const SHIELD = pngDir(import.meta.webpackContext('./巫妖护盾.贴图', { regExp: /\.png$/ })) as Record<'frame' | 'fill', ReturnType<typeof png>>;
+const SHIELD = pngDir(资产目录({ './fill.png': 资_0, './frame.png': 资_1 })) as Record<'frame' | 'fill', ReturnType<typeof png>>;
 
 export const LICH = {
   height: 2.0, // 头顶离脚底（模型最高点 y = -8 像素 → 1.501 + 0.5）

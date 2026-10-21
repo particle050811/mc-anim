@@ -8,8 +8,11 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { rng } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/角色/巫妖护盾/fill';
+import 资_1 from 'asset:贴图/角色/巫妖护盾/frame';
 
-const SHIELD = pngDir(import.meta.webpackContext('../角色/巫妖护盾.贴图', { regExp: /\.png$/ }));
+const SHIELD = pngDir(资产目录({ './fill.png': 资_0, './frame.png': 资_1 }));
 
 // 护盾两层叠起来的贴图（框盖在填充上）
 let shieldTex: THREE.DataTexture | null = null;

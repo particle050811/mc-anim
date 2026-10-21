@@ -11,6 +11,17 @@ import ancientCity4xMidAtlas from 'asset:网格/古城4x/中/图集';
 import type { DebrisData } from '../../../特效/方块飞溅.tsx';
 import { CataclysmQuake, quakeHideBlocks, type QuakeBoost } from '../../../特效/灾变震地.tsx';
 import groundSlamRaw from 'asset:碎块/镜头/6-3-6/震地方块';
+import { 资产目录 } from '../../../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/镜头/6-3-2/方块/裂纹0';
+import 资_1 from 'asset:贴图/镜头/6-3-2/方块/裂纹1';
+import 资_2 from 'asset:贴图/镜头/6-3-2/方块/裂纹2';
+import 资_3 from 'asset:贴图/镜头/6-3-2/方块/裂纹3';
+import 资_4 from 'asset:贴图/镜头/6-3-2/方块/裂纹4';
+import 资_5 from 'asset:贴图/镜头/6-3-2/方块/裂纹5';
+import 资_6 from 'asset:贴图/镜头/6-3-2/方块/裂纹6';
+import 资_7 from 'asset:贴图/镜头/6-3-2/方块/裂纹7';
+import 资_8 from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
+import 资_9 from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
 
 // 加强一档（用户 10-18：「震起来的方块有点小了 特效也有点小了」）：方块是整格、大小不变；用户 10-18 定：不加高，加密度——起跳照游戏，
 // 从 2 格到 11 格十圈、每圈环带里能蹦的格子七成都蹦（游戏只蹦圆上那几个点，稀稀拉拉；全蹦就没有留下来带裂纹的地面了）、往外飞一点好落到别的格；
@@ -23,7 +34,7 @@ const slamBoost: QuakeBoost = {
 };
 const slamData = groundSlamRaw as unknown as DebrisData;
 const atlas = png(ancientCity4xMidAtlas);
-const crackTex = pngDir(import.meta.webpackContext('../6-3-2/方块.贴图', { regExp: /^\.\/裂纹\d\.png$/ }));
+const crackTex = pngDir(资产目录({ './裂纹0.png': 资_0, './裂纹1.png': 资_1, './裂纹2.png': 资_2, './裂纹3.png': 资_3, './裂纹4.png': 资_4, './裂纹5.png': 资_5, './裂纹6.png': 资_6, './裂纹7.png': 资_7, './裂纹8.png': 资_8, './裂纹9.png': 资_9 }));
 const crackPngs = Array.from({ length: 10 }, (_, i) => crackTex[`裂纹${i}`]);
 const slamCenter: V3 = [GUCHENG4X.landingPos[0], GUCHENG4X.landingPos[1], 0]; // 落点那一格、地面的顶面
 

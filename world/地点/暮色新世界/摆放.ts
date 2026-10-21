@@ -1,8 +1,9 @@
 // 地标在新世界里怎么摆：每座的世界变换（`twilightLandmark`）、导入地形要挖的框和整平、按核心藏网格的方块。
 import type { V3 } from '../../../engine/model/parts.tsx';
 import type { LandmarkCutout, FlattenArea } from '../../../engine/voxel/导入地形.ts';
-import castleMesh from 'asset:网格/终焉高原城堡/头';
+import castleMesh资产 from 'asset:网格/终焉高原城堡/头';
 import { POX, POY, POZ, gameToWorld, plateauTopY, landmarkDefs, twilightLandmarkNames, type Rect, type CutoutEntry, type TwilightLandmarkName } from './地标表.ts';
+const castleMesh = castleMesh资产 as unknown as any; // 迁移：类型待补
 
 // ---------- 摆放 ----------
 const rot = (deg: number, point: number[]): V3 => {

@@ -91,7 +91,7 @@ export const debrisBursts = (t: number) => [
   { sec: t - T_NORTH, dir: AWAY, origin: [-29.6, 12, 175.2] as V3, speed: DEB.speed, spread: DEB.spread * 1.3, seed: 32, gravity: 16, stagger: 0.0004, chips: 18, spin: DEB.spin, hidden: t >= T_北藏, 管: northTube },
 ];
 // 洞的盒子各自外扩一格以后的范围（碎块.json 的 `hide`，南墙一个、北墙一个）：整块从网格里拿掉，由碎块和原地的外圈方块顶替。三种组合各用同一个数组对象
-const HIDES = (debrisRaw as { hide: number[][] }).hide;
+const HIDES = (debrisRaw as unknown as { hide: number[][] }).hide;
 const HIDE_BEFORE = [ROOM_CLEAR];
 const HIDE_SOUTH = [ROOM_CLEAR, HIDES[0]];
 const HIDE_ALL = [ROOM_CLEAR, ...HIDES];

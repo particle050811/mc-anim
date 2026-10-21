@@ -13,8 +13,17 @@ import type { V3 } from '../../engine/model/parts.tsx';
 import { hash2 } from '../../engine/core/噪声.ts';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { Particle, particleTexture, ParticleQuads } from './粒子面片.tsx';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/特效/粒子/generic_0';
+import 资_1 from 'asset:贴图/特效/粒子/generic_1';
+import 资_2 from 'asset:贴图/特效/粒子/generic_2';
+import 资_3 from 'asset:贴图/特效/粒子/generic_3';
+import 资_4 from 'asset:贴图/特效/粒子/generic_4';
+import 资_5 from 'asset:贴图/特效/粒子/generic_5';
+import 资_6 from 'asset:贴图/特效/粒子/generic_6';
+import 资_7 from 'asset:贴图/特效/粒子/generic_7';
 
-const GENERIC = pngDir(import.meta.webpackContext('./粒子.贴图', { regExp: /^\.\/generic_\d\.png$/ }));
+const GENERIC = pngDir(资产目录({ './generic_0.png': 资_0, './generic_1.png': 资_1, './generic_2.png': 资_2, './generic_3.png': 资_3, './generic_4.png': 资_4, './generic_5.png': 资_5, './generic_6.png': 资_6, './generic_7.png': 资_7 }));
 
 export const airFlowConsts = {
   color: [0xee / 255, 0xee / 255, 0xee / 255] as [number, number, number],

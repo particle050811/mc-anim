@@ -26,12 +26,14 @@ import { 剧情时间, 帧小数, 挥刀开始帧, 弹开帧, 斩击生成帧 } 
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import debrisRaw from 'asset:碎块/镜头/6-4-3/碎块';
 import atlasWest3 from 'asset:网格/古城4x/西3/图集';
+import { 资产目录 } from '../../../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/特效/粒子/critical_hit';
 
 // 只要击穿的那几格本身，外圈和取贴图用的那一格不画；崩掉以后露出来的洞壁另补（见 编排.ts 的 DEBRIS_HIDE、洞壁）
 const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < geom.击穿方块.length), lining: choreo.holeWalls };
 // 碎块的贴图取自击穿那几格所在的网格块（古城4x-西3，npm run 取材 -- 6-4-3碎块）
 const ATLAS_C = png(atlasWest3);
-const PT = pngDir(import.meta.webpackContext('../../模型/特效/粒子.贴图', { regExp: /^\.\/critical_hit\.png$/ }));
+const PT = pngDir(资产目录({ './critical_hit.png': 资_0 }));
 const critTexture = particleTexture(PT.critical_hit.px, PT.critical_hit.w, PT.critical_hit.h);
 // 挡箭的刀光（用户 10-10：不要雷霆碰撞箱，换成史诗战斗夜幕特效）：用 6-1-2 同一套夜幕阎魔刀刀光（模型/特效/夜幕刀光.tsx），拖尾跟着挥刀，弹开那刻放夜幕招架成功的闪光和火星（`EFNParryingSkill`）。
 // 三个时刻接 时间线.ts 导出的帧常量：挥刀开始帧（6-1-2 关键帧 98，几何.ts 的 `拔刀起`）、斩击生成帧（刀挥到正前方，关键帧 104，`挥刀`）、弹开帧（刀刃扫过箭路，关键帧 104.576，`弹开`，比挥刀晚 0.0043 秒）。

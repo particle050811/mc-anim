@@ -9,18 +9,30 @@
 import type { V3 } from '../../../engine/model/parts.tsx';
 import type { LandmarkCutout, FlattenArea } from '../../../engine/voxel/导入地形.ts';
 import { frozenOrigin } from '../../../engine/voxel/冻结粗高度.ts';
-import nagaMesh from 'asset:网格/娜迦庭院/头';
-import lichMesh from 'asset:网格/巫妖怪塔/头';
-import hydraMesh from 'asset:网格/九头蛇巢穴/头';
-import darkTowerMesh from 'asset:网格/幽冥高塔/头';
-import yetiMesh from 'asset:网格/雪怪洞窟/头';
-import auroraMesh from 'asset:网格/极光宫殿/头';
-import castleMesh from 'asset:网格/终焉高原城堡/头';
-import castleFlattenMask from 'asset:数据/场景/终焉高原城堡/平整罩';
-import cloudCottageMesh from 'asset:网格/云中小屋/头';
-import yetiEdgeFix from 'asset:数据/场景/雪怪洞窟/归边';
-import nagaEdgeFix from 'asset:数据/场景/娜迦庭院/归边';
-import nagaTakeoffHide from 'asset:数据/场景/娜迦庭院/起跳区藏';
+import nagaMesh资产 from 'asset:网格/娜迦庭院/头';
+import lichMesh资产 from 'asset:网格/巫妖怪塔/头';
+import hydraMesh资产 from 'asset:网格/九头蛇巢穴/头';
+import darkTowerMesh资产 from 'asset:网格/幽冥高塔/头';
+import yetiMesh资产 from 'asset:网格/雪怪洞窟/头';
+import auroraMesh资产 from 'asset:网格/极光宫殿/头';
+import castleMesh资产 from 'asset:网格/终焉高原城堡/头';
+import castleFlattenMask资产 from 'asset:数据/场景/终焉高原城堡/平整罩';
+import cloudCottageMesh资产 from 'asset:网格/云中小屋/头';
+import yetiEdgeFix资产 from 'asset:数据/场景/雪怪洞窟/归边';
+import nagaEdgeFix资产 from 'asset:数据/场景/娜迦庭院/归边';
+import nagaTakeoffHide资产 from 'asset:数据/场景/娜迦庭院/起跳区藏';
+const nagaMesh = nagaMesh资产 as unknown as any; // 迁移：类型待补
+const lichMesh = lichMesh资产 as unknown as any; // 迁移：类型待补
+const hydraMesh = hydraMesh资产 as unknown as any; // 迁移：类型待补
+const darkTowerMesh = darkTowerMesh资产 as unknown as any; // 迁移：类型待补
+const yetiMesh = yetiMesh资产 as unknown as any; // 迁移：类型待补
+const auroraMesh = auroraMesh资产 as unknown as any; // 迁移：类型待补
+const castleMesh = castleMesh资产 as unknown as any; // 迁移：类型待补
+const castleFlattenMask = castleFlattenMask资产 as unknown as any; // 迁移：类型待补
+const cloudCottageMesh = cloudCottageMesh资产 as unknown as any; // 迁移：类型待补
+const yetiEdgeFix = yetiEdgeFix资产 as unknown as any; // 迁移：类型待补
+const nagaEdgeFix = nagaEdgeFix资产 as unknown as any; // 迁移：类型待补
+const nagaTakeoffHide = nagaTakeoffHide资产 as unknown as any; // 迁移：类型待补
 
 // 区段包：另烘焙成 暮色放大-1752-扩展（npm run 导入:暮色放大1752扩展），预生成范围往四周补了一圈（工具/游戏取材/暮色范围.py），让一镜到底往前看 3 公里内都有地形；共用的 暮色放大-1752 不动
 export const twilightPackName = '暮色放大-1752-扩展';

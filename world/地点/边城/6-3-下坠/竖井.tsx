@@ -22,8 +22,36 @@ import { useThree } from '@react-three/fiber';
 import { FOG_4X, G4, Gucheng4x, GUCHENG4X, tilesInView } from '../../古城4x.tsx';
 import { shaftLayout as 竖井布局 } from '../../古城4x/布局.ts';
 import { ancientCity as 古城接口, ancientCityFloorZ, groundZ, caveCeilingZ, shaftHalfWidth } from './编排.ts';
-import pitSurfaceRaw from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
+import pitSurfaceRaw资产 from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
 import { SlamGround, slamHideBlocks } from '../6-3-6/震地.tsx';
+import { 资产目录 } from '../../../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/镜头/6-3-下坠/方块/凝灰岩';
+import 资_1 from 'asset:贴图/镜头/6-3-下坠/方块/安山岩';
+import 资_2 from 'asset:贴图/镜头/6-3-下坠/方块/平滑石台阶侧';
+import 资_3 from 'asset:贴图/镜头/6-3-下坠/方块/平滑石头';
+import 资_4 from 'asset:贴图/镜头/6-3-下坠/方块/幽匿块';
+import 资_5 from 'asset:贴图/镜头/6-3-下坠/方块/方解石';
+import 资_6 from 'asset:贴图/镜头/6-3-下坠/方块/橙色赤陶';
+import 资_7 from 'asset:贴图/镜头/6-3-下坠/方块/泥土';
+import 资_8 from 'asset:贴图/镜头/6-3-下坠/方块/深层金矿石';
+import 资_9 from 'asset:贴图/镜头/6-3-下坠/方块/深层铜矿石';
+import 资_10 from 'asset:贴图/镜头/6-3-下坠/方块/深板岩';
+import 资_11 from 'asset:贴图/镜头/6-3-下坠/方块/深板岩顶';
+import 资_12 from 'asset:贴图/镜头/6-3-下坠/方块/煤矿石';
+import 资_13 from 'asset:贴图/镜头/6-3-下坠/方块/皓蓝石';
+import 资_14 from 'asset:贴图/镜头/6-3-下坠/方块/石头';
+import 资_15 from 'asset:贴图/镜头/6-3-下坠/方块/砂砾';
+import 资_16 from 'asset:贴图/镜头/6-3-下坠/方块/红石矿石';
+import 资_17 from 'asset:贴图/镜头/6-3-下坠/方块/红色赤陶';
+import 资_18 from 'asset:贴图/镜头/6-3-下坠/方块/花岗岩';
+import 资_19 from 'asset:贴图/镜头/6-3-下坠/方块/赤陶';
+import 资_20 from 'asset:贴图/镜头/6-3-下坠/方块/金矿石';
+import 资_21 from 'asset:贴图/镜头/6-3-下坠/方块/铜矿石';
+import 资_22 from 'asset:贴图/镜头/6-3-下坠/方块/银矿石';
+import 资_23 from 'asset:贴图/镜头/6-3-下坠/方块/锌矿石';
+import 资_24 from 'asset:贴图/镜头/6-3-下坠/方块/闪长岩';
+import 资_25 from 'asset:贴图/镜头/6-3-下坠/方块/黄色赤陶';
+const pitSurfaceRaw = pitSurfaceRaw资产 as unknown as any; // 迁移：类型待补
 
 export const pitSurfaceTable = pitSurfaceRaw;
 
@@ -33,7 +61,7 @@ export type 方块贴图名 =
   | '煤矿石' | '铜矿石' | '金矿石' | '红石矿石' | '深层铜矿石' | '深层金矿石' | '皓蓝石'
   | '赤陶' | '橙色赤陶' | '黄色赤陶' | '红色赤陶' | '锌矿石' | '银矿石';
 export const blockPngs = Object.fromEntries(
-  Object.entries(pngDir(import.meta.webpackContext('./方块.贴图', { regExp: /\.png$/ }))).map(([k, png]) => [k, png.h > png.w ? { ...png, px: png.px.subarray(0, png.w * png.w * 4), h: png.w } : png]),
+  Object.entries(pngDir(资产目录({ './凝灰岩.png': 资_0, './安山岩.png': 资_1, './平滑石台阶侧.png': 资_2, './平滑石头.png': 资_3, './幽匿块.png': 资_4, './方解石.png': 资_5, './橙色赤陶.png': 资_6, './泥土.png': 资_7, './深层金矿石.png': 资_8, './深层铜矿石.png': 资_9, './深板岩.png': 资_10, './深板岩顶.png': 资_11, './煤矿石.png': 资_12, './皓蓝石.png': 资_13, './石头.png': 资_14, './砂砾.png': 资_15, './红石矿石.png': 资_16, './红色赤陶.png': 资_17, './花岗岩.png': 资_18, './赤陶.png': 资_19, './金矿石.png': 资_20, './铜矿石.png': 资_21, './银矿石.png': 资_22, './锌矿石.png': 资_23, './闪长岩.png': 资_24, './黄色赤陶.png': 资_25 }))).map(([k, png]) => [k, png.h > png.w ? { ...png, px: png.px.subarray(0, png.w * png.w * 4), h: png.w } : png]),
 ) as Record<方块贴图名, Png>;
 
 const texCache = new Map<Png, THREE.DataTexture>();

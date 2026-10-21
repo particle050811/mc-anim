@@ -21,6 +21,13 @@ import { pngDir, type Png } from '../../engine/model/贴图.ts';
 import { DIRS, debrisMat, face, fullFaces, newBuf, tintsOf, toGeo, atlasTex, type DebrisData, type DebrisFace } from './方块飞溅.tsx';
 import { BreakParticleQuads } from './方块破坏粒子.tsx';
 import { interpPathPos, particleInitVel, particlePath, type Particle } from './粒子面片.tsx';
+import { 资产目录 } from '../../engine/core/资产目录.ts';
+import 资_0 from 'asset:贴图/特效/灾变圆环/ring_0';
+import 资_1 from 'asset:贴图/特效/灾变圆环/ring_1';
+import 资_2 from 'asset:贴图/特效/灾变圆环/ring_2';
+import 资_3 from 'asset:贴图/特效/灾变圆环/ring_3';
+import 资_4 from 'asset:贴图/特效/灾变圆环/ring_4';
+import 资_5 from 'asset:贴图/特效/灾变圆环/ring_5';
 
 const ticksPerSec = 20;
 // REINFORCED_SMASH：砸地（方块粒子、圆环）在第 3 刻，震波第 5 刻起每 2 刻往外一圈，3～10 格
@@ -317,7 +324,7 @@ const planQuake = (data: DebrisData, center: V3, seed: number, boost: QuakeBoost
 export const quakeHideBlocks = (data: DebrisData, center: V3, boost: QuakeBoost, seed = 8631): number[][] =>
   (planQuake(data, center, seed, boost).displaced?.movers ?? []).map(({ cell: { p } }) => [p[0] - 0.45, p[1] - 0.45, p[2] - 0.45, p[0] + 0.45, p[1] + 0.45, p[2] + 0.45]);
 
-const ringFrames = Object.entries(pngDir(import.meta.webpackContext('./灾变圆环.贴图', { regExp: /\.png$/ })))
+const ringFrames = Object.entries(pngDir(资产目录({ './ring_0.png': 资_0, './ring_1.png': 资_1, './ring_2.png': 资_2, './ring_3.png': 资_3, './ring_4.png': 资_4, './ring_5.png': 资_5 })))
   .sort((a, b) => Number(a[0].replace(/\D/g, '')) - Number(b[0].replace(/\D/g, '')))
   .map(([, png]) => png);
 const ringTexCache = new Map<Png, THREE.DataTexture>();

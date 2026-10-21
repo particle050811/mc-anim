@@ -135,7 +135,7 @@ export const debrisBursts = (t: number) => [
 export const 碎块盒子 = [CUT_BOX, ...HOLE_BOXES.南, ...HOLE_BOXES.北];
 export const 碎块分组 = [1, 1 + HOLE_BOXES.南.length];
 // 盒子各自外扩一格以后的范围（碎块.json 的 hide，每个盒子一个，顺序同 碎块盒子）：整块从网格里拿掉，由碎块和原地的外圈方块顶替
-const HIDES = (debrisRaw as { hide: number[][] }).hide;
+const HIDES = (debrisRaw as unknown as { hide: number[][] }).hide;
 const HIDE_BEFORE: number[][] = [];
 const HIDE_CUT = [HIDES[0]];
 const HIDE_ALL = HIDES;

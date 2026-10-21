@@ -154,7 +154,7 @@ export const ROOM_CLEAR = [2.6, -1.4, 64.05, 12.4, 8.4, 72.9];
 // 场景网格里藏掉哪些盒子：固定的三种组合（`BlockMesh` 的 `hide` 一变就要重建整个网格，所以每种组合用同一个数组对象）。
 // 洞先藏掉、碎块在原位补画，撞到时再飞出去：撞北墙那一刻藏北墙那一截，矛尖快进南墙时再藏其余几截（`T_南藏`）。
 // 洞的盒子各自外扩一格以后的范围（碎块.json 的 `hide`，工具/游戏取材/网格碎块.py 算的）：整块从网格里拿掉，由碎块和原地的外圈方块顶替
-const HIDES = (debrisRaw as { hide: number[][] }).hide;
+const HIDES = (debrisRaw as unknown as { hide: number[][] }).hide;
 const HIDE_BEFORE = [ROOM_CLEAR];
 const HIDE_NORTH = [ROOM_CLEAR, ...HIDES.slice(0, 洞截边界[0])];
 const HIDE_ALL = [ROOM_CLEAR, ...HIDES];
