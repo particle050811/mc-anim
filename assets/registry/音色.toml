@@ -1,0 +1,2742 @@
+# 资产表：角色音色参考和原声。人写；导入和资产锁由 assets/tools/导入旧项目.py 生成。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "音色/九胡/Seedance口播"
+"类别" = "音色"
+"来源" = "手工:截自 Seedance 2.5 生成的娜迦白模视频 9.5–12.06 秒（见 九胡音色.txt）"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/九胡音色.wav"
+"说明" = "九胡音色不公开"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death16"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death16.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death19"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death19.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death20"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death20.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death21"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death21.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death22"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death22.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death23"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death23.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death24"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death24.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death25"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death25.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-death9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-death9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target16"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target16.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-find_target9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-find_target9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-hurt_fire9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-hurt_fire9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-item_get9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-item_get9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/ai-tamed9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-ai-tamed9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning16"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning16.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning19"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning19.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning20"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning20.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning21"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning21.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning22"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning22.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning23"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning23.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-morning9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-morning9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night16"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night16.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/environment-night9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-environment-night9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-attack9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-attack9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-farm1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-farm1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-farm2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-farm2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-farm3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-farm3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-farm4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-farm4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-farm5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-farm5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-farm6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-farm6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-feed9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-feed9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace16"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace16.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace19"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace19.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace20"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace20.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace21"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace21.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace22"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace22.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace23"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace23.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-furnace9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-furnace9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle16"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle16.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle19"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle19.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle20"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle20.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle21"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle21.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle22"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle22.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle23"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle23.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle24"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle24.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle25"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle25.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle26"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle26.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle27"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle27.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle28"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle28.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle29"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle29.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle30"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle30.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle31"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle31.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle32"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle32.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle33"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle33.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle34"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle34.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle35"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle35.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle36"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle36.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle37"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle37.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle38"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle38.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle39"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle39.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle40"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle40.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle41"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle41.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle42"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle42.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle43"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle43.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle44"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle44.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle45"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle45.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle46"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle46.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle47"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle47.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle48"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle48.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle49"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle49.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle50"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle50.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle51"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle51.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle52"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle52.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle53"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle53.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle54"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle54.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle55"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle55.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle56"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle56.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle57"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle57.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle58"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle58.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle59"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle59.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle60"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle60.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle61"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle61.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle62"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle62.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle63"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle63.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle64"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle64.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle65"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle65.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle66"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle66.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle67"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle67.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle68"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle68.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle69"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle69.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle70"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle70.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle71"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle71.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle72"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle72.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle73"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle73.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle74"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle74.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle75"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle75.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle76"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle76.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle77"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle77.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle78"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle78.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-idle9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-idle9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack16"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack16.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack19"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack19.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack20"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack20.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack21"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack21.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack22"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack22.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack23"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack23.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack24"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack24.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack25"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack25.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack26"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack26.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack27"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack27.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack28"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack28.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack29"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack29.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-range_attack9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-range_attack9.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch1"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch1.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch10"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch10.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch11"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch11.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch12"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch12.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch13"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch13.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch14"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch14.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch15"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch15.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch17"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch17.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch18"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch18.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch19"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch19.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch2"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch2.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch20"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch20.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch21"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch21.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch22"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch22.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch23"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch23.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch24"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch24.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch25"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch25.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch26"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch26.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch27"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch27.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch28"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch28.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch29"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch29.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch3"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch3.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch4"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch4.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch5"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch5.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch6"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch6.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch7"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch7.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch8"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch8.wav"
+
+[["资产"]]
+id = "音色/九胡/peco/mode-torch9"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 tlm_custom_pack 的 littlemaid_peco/sounds/maid，转 32kHz 单声道"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/peco原声/peco-mode-torch9.wav"
+
+[["资产"]]
+id = "音色/九胡/参考音频"
+"类别" = "音色"
+"来源" = "手工:AI（小云雀 Seedance）生成的口播，音色样本取自车万女仆 PECO 语音包的酒狐语音（声优 秋野かえで）"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/角色/九胡.参考音频.wav"
+
+[["资产"]]
+id = "音色/九胡/参考音频-去停顿"
+"类别" = "音色"
+"来源" = "手工:AI（小云雀 Seedance）生成的口播，音色样本取自车万女仆 PECO 语音包的酒狐语音（声优 秋野かえで）"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/角色/九胡.参考音频-去停顿.wav"
+
+[["资产"]]
+id = "音色/九胡/酒狐示例音声"
+"类别" = "音色"
+"来源" = "手工:酒狐示例语音，出处没记录（见 酒狐示例音声.txt）"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/酒狐示例音声.MP3"
+
+[["资产"]]
+id = "音色/九胡/酒狐语音8s"
+"类别" = "音色"
+"来源" = "派生:8c341567e57a+解包 littlemaid_peco 声音包 mode-furnace12"
+"许可" = "LicenseRef-待定"
+"可见性" = "私有"
+"旧路径" = "设定/角色/九胡/音色/酒狐语音8s.WAV"
+"说明" = "车万女仆 PECO 声音包（CV 秋野かえで，作者 tamemaru）"
+
+[["资产"]]
+id = "音色/刘心忠/参考音频"
+"类别" = "音色"
+"来源" = "手工:小说《机械动力应力转动》的台词；配音是 AI 语音合成（FireRedTTS3 / IndexTTS2）"
+"许可" = "LicenseRef-Adapted-Authorized"
+"可见性" = "公开"
+"旧路径" = "参考模型库/src/模型/角色/刘心忠.参考音频.wav"
+
+[["资产"]]
+id = "音色/刘心忠/参考音频B"
+"类别" = "音色"
+"来源" = "手工:FireRedTTS3 voice_design（魔搭创空间），cfg 1.2、30 步、种子 1234（见同名 txt）"
+"许可" = "LicenseRef-Adapted-Authorized"
+"可见性" = "公开"
+"旧路径" = "正篇/06-古城寻卷/3-边城/8-二人登场/配音/刘心忠-参考音频B.wav"
+"说明" = "备选 B，嗓音和黄叛太像，没用"
+
+[["资产"]]
+id = "音色/李樱/Seedance口播"
+"类别" = "音色"
+"来源" = "手工:截自 Seedance 2.5 生成的娜迦白模视频 6.0–9.64 秒（见 李樱音色.txt）"
+"许可" = "LicenseRef-用户保留"
+"可见性" = "公开"
+"旧路径" = "设定/角色/李樱/音色/李樱音色.wav"
+"说明" = "早期的李樱音色样本；现用的是 音色/李樱/参考音频"
+
+[["资产"]]
+id = "音色/李樱/参考音频"
+"类别" = "音色"
+"来源" = "手工:小说《机械动力应力转动》的台词；配音是 AI 语音合成（FireRedTTS3 / IndexTTS2）"
+"许可" = "LicenseRef-Adapted-Authorized"
+"可见性" = "公开"
+"旧路径" = "参考模型库/src/模型/角色/李樱.参考音频.wav"
+
+[["资产"]]
+id = "音色/黄叛/参考音频"
+"类别" = "音色"
+"来源" = "手工:小说《机械动力应力转动》的台词；配音是 AI 语音合成（FireRedTTS3 / IndexTTS2）"
+"许可" = "LicenseRef-Adapted-Authorized"
+"可见性" = "公开"
+"旧路径" = "参考模型库/src/模型/角色/黄叛.参考音频.wav"

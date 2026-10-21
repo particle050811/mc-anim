@@ -1,0 +1,2695 @@
+# 资产表：模型、物品、特效、界面、场景用的贴图。人写；导入和资产锁由 assets/tools/导入旧项目.py 生成。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "贴图/场景/关键帧/方块表"
+"类别" = "贴图"
+"来源" = "提取:网格图集@多个jar"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/场景/关键帧/方块表.png"
+"说明" = "图集按 网格 的 UV 排布，图集配方.py 能从 jar 重建"
+
+[["资产"]]
+id = "贴图/场景/基地工坊"
+"类别" = "贴图"
+"来源" = "提取:基地工坊@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/场景/基地工坊.模型.png"
+
+[["资产"]]
+id = "贴图/场景/天空/clouds"
+"类别" = "贴图"
+"来源" = "提取:天空@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/场景/天空.贴图/clouds.png"
+
+[["资产"]]
+id = "贴图/场景/天空/sun"
+"类别" = "贴图"
+"来源" = "提取:天空@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/场景/天空.贴图/sun.png"
+
+[["资产"]]
+id = "贴图/场景/边城/方块贴图"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/场景/边城/方块贴图.png"
+
+[["资产"]]
+id = "贴图/场景/边城/水面"
+"类别" = "贴图"
+"来源" = "提取:边城水面@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/场景/边城/水面.png"
+
+[["资产"]]
+id = "贴图/场景/边城/蓝图贴图"
+"类别" = "贴图"
+"来源" = "提取:边城蓝图@42524cf5ebb2+a5a46c0bcadb+8538f46fb32a+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/场景/边城/蓝图贴图.png"
+
+[["资产"]]
+id = "贴图/物品/下界合金长矛"
+"类别" = "贴图"
+"来源" = "提取:长矛@1473c9489ac5"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/下界合金长矛.png"
+
+[["资产"]]
+id = "贴图/物品/书/书与笔"
+"类别" = "贴图"
+"来源" = "提取:书贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/书.贴图/书与笔.png"
+
+[["资产"]]
+id = "贴图/物品/书/书界面"
+"类别" = "贴图"
+"来源" = "提取:书贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/书.贴图/书界面.png"
+
+[["资产"]]
+id = "贴图/物品/书/成书"
+"类别" = "贴图"
+"来源" = "提取:书贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/书.贴图/成书.png"
+
+[["资产"]]
+id = "贴图/物品/书/羽毛"
+"类别" = "贴图"
+"来源" = "提取:书贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/书.贴图/羽毛.png"
+
+[["资产"]]
+id = "贴图/物品/动力压路机"
+"类别" = "贴图"
+"来源" = "提取:动力压路机@6fbb910c367d"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/动力压路机.模型.png"
+
+[["资产"]]
+id = "贴图/物品/动力钻头"
+"类别" = "贴图"
+"来源" = "提取:动力钻头@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/动力钻头.模型.png"
+
+[["资产"]]
+id = "贴图/物品/匠师之杖"
+"类别" = "贴图"
+"来源" = "提取:匠师之杖@54b5aaa52887"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/匠师之杖.模型.png"
+
+[["资产"]]
+id = "贴图/物品/喷溅药水/bottle"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/喷溅药水.贴图/bottle.png"
+
+[["资产"]]
+id = "贴图/物品/喷溅药水/overlay"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/喷溅药水.贴图/overlay.png"
+
+[["资产"]]
+id = "贴图/物品/巫妖权杖"
+"类别" = "贴图"
+"来源" = "提取:巫妖@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/巫妖权杖.png"
+
+[["资产"]]
+id = "贴图/物品/弓/弓"
+"类别" = "贴图"
+"来源" = "提取:弓@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/弓.贴图/弓.png"
+
+[["资产"]]
+id = "贴图/物品/弓/弓拉0"
+"类别" = "贴图"
+"来源" = "提取:弓@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/弓.贴图/弓拉0.png"
+
+[["资产"]]
+id = "贴图/物品/弓/弓拉1"
+"类别" = "贴图"
+"来源" = "提取:弓@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/弓.贴图/弓拉1.png"
+
+[["资产"]]
+id = "贴图/物品/弓/弓拉2"
+"类别" = "贴图"
+"来源" = "提取:弓@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/弓.贴图/弓拉2.png"
+
+[["资产"]]
+id = "贴图/物品/战利品箱"
+"类别" = "贴图"
+"来源" = "提取:战利品箱@01200ee5889e"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/战利品箱.png"
+
+[["资产"]]
+id = "贴图/物品/战利品箱-已开"
+"类别" = "贴图"
+"来源" = "提取:战利品箱@01200ee5889e"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/战利品箱-已开.png"
+
+[["资产"]]
+id = "贴图/物品/扫帚"
+"类别" = "贴图"
+"来源" = "提取:扫帚@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/扫帚.模型.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/三发弓"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/三发弓.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/九头蛇肉排"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/九头蛇肉排.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/冰霜炸弹"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/冰霜炸弹.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/巨人剑"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/巨人剑.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/巨人镐"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/巨人镐.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/扫帚"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/扫帚.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/末影珍珠"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/末影珍珠.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/浮冰"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/浮冰.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/炽热之泪"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/炽热之泪.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/砷铅铁矿石"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/砷铅铁矿石.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/金剑"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/金剑.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/金胸甲"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/金胸甲.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/雪球"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/雪球.png"
+
+[["资产"]]
+id = "贴图/物品/掉落物/骨头"
+"类别" = "贴图"
+"来源" = "提取:掉落物@0bdc89263616+8c341567e57a+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/掉落物.贴图/骨头.png"
+
+[["资产"]]
+id = "贴图/物品/暮色箱子/暗木"
+"类别" = "贴图"
+"来源" = "提取:暮色箱子@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/暮色箱子.贴图/暗木.png"
+
+[["资产"]]
+id = "贴图/物品/暮色箱子/暮色橡木"
+"类别" = "贴图"
+"来源" = "提取:暮色箱子@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/暮色箱子.贴图/暮色橡木.png"
+
+[["资产"]]
+id = "贴图/物品/暮色箱子/林冠木"
+"类别" = "贴图"
+"来源" = "提取:暮色箱子@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/暮色箱子.贴图/林冠木.png"
+
+[["资产"]]
+id = "贴图/物品/暮色箱子/红树木"
+"类别" = "贴图"
+"来源" = "提取:暮色箱子@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/暮色箱子.贴图/红树木.png"
+
+[["资产"]]
+id = "贴图/物品/望远镜"
+"类别" = "贴图"
+"来源" = "提取:望远镜@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/望远镜.模型.png"
+
+[["资产"]]
+id = "贴图/物品/杂项物品/传送石"
+"类别" = "贴图"
+"来源" = "提取:杂项物品@c90b96f049d9+fd6fe3c64532+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/杂项物品.贴图/传送石.png"
+
+[["资产"]]
+id = "贴图/物品/杂项物品/火把箭"
+"类别" = "贴图"
+"来源" = "提取:杂项物品@c90b96f049d9+fd6fe3c64532+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/杂项物品.贴图/火把箭.png"
+
+[["资产"]]
+id = "贴图/物品/杂项物品/钻石护腿"
+"类别" = "贴图"
+"来源" = "提取:杂项物品@c90b96f049d9+fd6fe3c64532+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/杂项物品.贴图/钻石护腿.png"
+
+[["资产"]]
+id = "贴图/物品/杂项物品/铁剑"
+"类别" = "贴图"
+"来源" = "提取:杂项物品@c90b96f049d9+fd6fe3c64532+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/杂项物品.贴图/铁剑.png"
+
+[["资产"]]
+id = "贴图/物品/杂项物品/附魔光效"
+"类别" = "贴图"
+"来源" = "提取:杂项物品@c90b96f049d9+fd6fe3c64532+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/杂项物品.贴图/附魔光效.png"
+
+[["资产"]]
+id = "贴图/物品/火把"
+"类别" = "贴图"
+"来源" = "提取:火把@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/火把.模型.png"
+
+[["资产"]]
+id = "贴图/物品/炽热的血"
+"类别" = "贴图"
+"来源" = "提取:战利品贴图@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/炽热的血.png"
+
+[["资产"]]
+id = "贴图/物品/箭"
+"类别" = "贴图"
+"来源" = "提取:箭@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/箭.png"
+
+[["资产"]]
+id = "贴图/物品/箱子"
+"类别" = "贴图"
+"来源" = "提取:箱子@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/箱子.png"
+
+[["资产"]]
+id = "贴图/物品/结构指南针"
+"类别" = "贴图"
+"来源" = "提取:结构指南针@0d9a7705f39a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/结构指南针.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/black_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/black_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/blue_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/blue_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/brown_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/brown_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/cyan_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/cyan_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/gray_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/gray_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/green_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/green_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/light_blue_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/light_blue_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/light_gray_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/light_gray_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/lime_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/lime_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/magenta_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/magenta_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/orange_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/orange_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/pink_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/pink_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/purple_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/purple_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/red_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/red_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/white_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/white_wool.png"
+
+[["资产"]]
+id = "贴图/物品/羊毛/yellow_wool"
+"类别" = "贴图"
+"来源" = "提取:羊毛@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/yellow_wool.png"
+
+[["资产"]]
+id = "贴图/物品/重锤"
+"类别" = "贴图"
+"来源" = "手工:网上资源包「二创 3D重锤」转载"
+"许可" = "LicenseRef-Origin-Unverified"
+"可见性" = "公开"
+"旧路径" = "参考模型库/src/模型/物品/重锤.模型.png"
+"说明" = "来源不明，网上资源包「二创 3D重锤」转载，如原作者要求即撤下"
+
+[["资产"]]
+id = "贴图/物品/钻石"
+"类别" = "贴图"
+"来源" = "提取:钻石@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/钻石.png"
+
+[["资产"]]
+id = "贴图/物品/雪怪首领毛皮"
+"类别" = "贴图"
+"来源" = "提取:战利品贴图@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/雪怪首领毛皮.png"
+
+[["资产"]]
+id = "贴图/物品/鼓风机"
+"类别" = "贴图"
+"来源" = "提取:鼓风机@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/物品/鼓风机.模型.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/efn_parry_flash_main_render1"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/efn_parry_flash_main_render1.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/efn_parry_flash_main_render2"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/efn_parry_flash_main_render2.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/efn_parry_flash_main_render3"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/efn_parry_flash_main_render3.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/efn_parry_flash_main_render4"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/efn_parry_flash_main_render4.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/efn_parry_flash_main_render5"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/efn_parry_flash_main_render5.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/efn_parry_flash_main_render6"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/efn_parry_flash_main_render6.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/power3"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/power3.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/yamato_cut1_a"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/yamato_cut1_a.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/yamato_cut2_a"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/yamato_cut2_a.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/yamato_cut3_a"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/yamato_cut3_a.png"
+
+[["资产"]]
+id = "贴图/特效/夜幕刀光/yamato_cut4_a"
+"类别" = "贴图"
+"来源" = "提取:夜幕刀光@3bb5a7849436"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/夜幕刀光.贴图/yamato_cut4_a.png"
+
+[["资产"]]
+id = "贴图/特效/尖啸声波"
+"类别" = "贴图"
+"来源" = "提取:古城粒子@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/尖啸声波.png"
+
+[["资产"]]
+id = "贴图/特效/幽匿尖啸体"
+"类别" = "贴图"
+"来源" = "提取:幽匿尖啸体@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/幽匿尖啸体.模型.png"
+
+[["资产"]]
+id = "贴图/特效/幽匿感测体"
+"类别" = "贴图"
+"来源" = "提取:幽匿感测体@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/幽匿感测体.模型.png"
+
+[["资产"]]
+id = "贴图/特效/幽匿感测体/sculk_sensor_tendril_active"
+"类别" = "贴图"
+"来源" = "提取:幽匿感测体@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/幽匿感测体.贴图/sculk_sensor_tendril_active.png"
+
+[["资产"]]
+id = "贴图/特效/幽匿感测体/sculk_sensor_tendril_inactive"
+"类别" = "贴图"
+"来源" = "提取:幽匿感测体@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/幽匿感测体.贴图/sculk_sensor_tendril_inactive.png"
+
+[["资产"]]
+id = "贴图/特效/护盾术/护盾"
+"类别" = "贴图"
+"来源" = "提取:护盾术@54b5aaa52887+e2e940fe7ca0"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/护盾术.模型.护盾.png"
+
+[["资产"]]
+id = "贴图/特效/护盾术/边框"
+"类别" = "贴图"
+"来源" = "提取:护盾术@54b5aaa52887+e2e940fe7ca0"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/护盾术.模型.边框.png"
+
+[["资产"]]
+id = "贴图/特效/振动粒子"
+"类别" = "贴图"
+"来源" = "提取:古城粒子@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/振动粒子.png"
+
+[["资产"]]
+id = "贴图/特效/方块碎屑"
+"类别" = "贴图"
+"来源" = "提取:古城粒子@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/方块碎屑.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_1"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_1.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_2"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_2.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_3"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_3.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_4"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_4.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_5"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_5.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_6"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_6.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_7"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_7.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/blastwave_8"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/blastwave_8.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/flame"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/flame.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/glow"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/glow.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_a"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_a.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_b"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_b.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_c"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_c.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_d"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_d.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_e"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_e.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_f"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_f.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_g"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_g.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_h"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_h.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_i"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_i.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_j"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_j.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_k"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_k.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_l"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_l.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_m"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_m.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_n"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_n.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_o"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_o.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_p"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_p.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_q"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_q.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_r"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_r.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_s"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_s.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_t"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_t.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_u"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_u.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_v"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_v.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_w"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_w.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_x"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_x.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_y"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_y.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sga_z"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sga_z.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_0"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_0.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_1"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_1.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_10"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_10.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_11"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_11.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_12"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_12.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_13"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_13.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_14"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_14.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_15"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_15.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_2"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_2.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_3"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_3.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_4"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_4.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_5"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_5.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_6"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_6.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_7"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_7.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_8"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_8.png"
+
+[["资产"]]
+id = "贴图/特效/杂项粒子/sonic_boom_9"
+"类别" = "贴图"
+"来源" = "提取:杂项粒子@54b5aaa52887+56b71336d2b4"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/杂项粒子.贴图/sonic_boom_9.png"
+
+[["资产"]]
+id = "贴图/特效/灾变圆环/ring_0"
+"类别" = "贴图"
+"来源" = "提取:灾变圆环@c29dcf940168"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/灾变圆环.贴图/ring_0.png"
+
+[["资产"]]
+id = "贴图/特效/灾变圆环/ring_1"
+"类别" = "贴图"
+"来源" = "提取:灾变圆环@c29dcf940168"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/灾变圆环.贴图/ring_1.png"
+
+[["资产"]]
+id = "贴图/特效/灾变圆环/ring_2"
+"类别" = "贴图"
+"来源" = "提取:灾变圆环@c29dcf940168"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/灾变圆环.贴图/ring_2.png"
+
+[["资产"]]
+id = "贴图/特效/灾变圆环/ring_3"
+"类别" = "贴图"
+"来源" = "提取:灾变圆环@c29dcf940168"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/灾变圆环.贴图/ring_3.png"
+
+[["资产"]]
+id = "贴图/特效/灾变圆环/ring_4"
+"类别" = "贴图"
+"来源" = "提取:灾变圆环@c29dcf940168"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/灾变圆环.贴图/ring_4.png"
+
+[["资产"]]
+id = "贴图/特效/灾变圆环/ring_5"
+"类别" = "贴图"
+"来源" = "提取:灾变圆环@c29dcf940168"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/灾变圆环.贴图/ring_5.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/critical_hit"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/critical_hit.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/drip_hang"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/drip_hang.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_0"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_0.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_1"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_1.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_10"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_10.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_11"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_11.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_12"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_12.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_13"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_13.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_14"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_14.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_15"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_15.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_2"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_2.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_3"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_3.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_4"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_4.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_5"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_5.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_6"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_6.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_7"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_7.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_8"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_8.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/explosion_9"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/explosion_9.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_0"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_0.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_1"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_1.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_2"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_2.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_3"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_3.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_4"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_4.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_5"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_5.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_6"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_6.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/generic_7"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/generic_7.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_0"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_0.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_1"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_1.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_2"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_2.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_3"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_3.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_4"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_4.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_5"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_5.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_6"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_6.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/glitter_7"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/glitter_7.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/splash_0"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/splash_0.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/splash_1"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/splash_1.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/splash_2"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/splash_2.png"
+
+[["资产"]]
+id = "贴图/特效/粒子/splash_3"
+"类别" = "贴图"
+"来源" = "提取:粒子贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/粒子.贴图/splash_3.png"
+
+[["资产"]]
+id = "贴图/特效/苦力怕头"
+"类别" = "贴图"
+"来源" = "提取:苦力怕头@54b5aaa52887+e2e940fe7ca0"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/苦力怕头.模型.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_0"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_0.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_1"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_1.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_2"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_2.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_3"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_3.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_4"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_4.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_5"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_5.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_6"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_6.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/effect_7"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/effect_7.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_0"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_0.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_1"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_1.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_2"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_2.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_3"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_3.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_4"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_4.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_5"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_5.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_6"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_6.png"
+
+[["资产"]]
+id = "贴图/特效/药水粒子/spell_7"
+"类别" = "贴图"
+"来源" = "提取:药水@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/特效/药水粒子.贴图/spell_7.png"
+
+[["资产"]]
+id = "贴图/界面/JEI上一页"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/JEI上一页.png"
+
+[["资产"]]
+id = "贴图/界面/JEI下一页"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/JEI下一页.png"
+
+[["资产"]]
+id = "贴图/界面/JEI书签"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/JEI书签.png"
+
+[["资产"]]
+id = "贴图/界面/原版图标"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/原版图标.png"
+
+[["资产"]]
+id = "贴图/界面/古卷"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/古卷.png"
+
+[["资产"]]
+id = "贴图/界面/唱片残片"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/唱片残片.png"
+
+[["资产"]]
+id = "贴图/界面/回响碎片"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/回响碎片.png"
+
+[["资产"]]
+id = "贴图/界面/彩虹光效"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/彩虹光效.png"
+
+[["资产"]]
+id = "贴图/界面/思索控件"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/思索控件.png"
+
+[["资产"]]
+id = "贴图/界面/方块图标"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/方块图标.模型.png"
+
+[["资产"]]
+id = "贴图/界面/桶"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/桶.png"
+
+[["资产"]]
+id = "贴图/界面/桶液体遮罩"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/桶液体遮罩.png"
+
+[["资产"]]
+id = "贴图/界面/模具"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/模具.png"
+
+[["资产"]]
+id = "贴图/界面/灵魂火把"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/灵魂火把.png"
+
+[["资产"]]
+id = "贴图/界面/炖汤"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/炖汤.png"
+
+[["资产"]]
+id = "贴图/界面/炽热的液体"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/炽热的液体.png"
+
+[["资产"]]
+id = "贴图/界面/烈焰血"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/烈焰血.png"
+
+[["资产"]]
+id = "贴图/界面/煤炭"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/煤炭.png"
+
+[["资产"]]
+id = "贴图/界面/紫水晶碎片"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/紫水晶碎片.png"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-00"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-00.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-01"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-01.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-02"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-02.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-03"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-03.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-04"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-04.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-05"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-05.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-06"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-06.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/结构罗盘/帧-07"
+"类别" = "贴图"
+"来源" = "手工:游戏里 mcai ui op=shoot 截的 Explorer's Compass 界面（含原版 GUI 字体）"
+"许可" = "CC-BY-NC-SA-4.0 AND LicenseRef-Minecraft-EULA"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/界面/结构罗盘/帧-07.png"
+"说明" = "游戏截图，不能从 jar 直接提取；有游戏可按 工具/游戏取材/结构罗盘界面.py 重截"
+
+[["资产"]]
+id = "贴图/界面/蜡烛"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/蜡烛.png"
+
+[["资产"]]
+id = "贴图/界面/链甲基底"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/链甲基底.png"
+
+[["资产"]]
+id = "贴图/界面/链甲基底部件"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/链甲基底部件.png"
+
+[["资产"]]
+id = "贴图/界面/附魔之瓶"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/附魔之瓶.png"
+
+[["资产"]]
+id = "贴图/界面/附魔书"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/附魔书.png"
+
+[["资产"]]
+id = "贴图/界面/附魔光效"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/附魔光效.png"
+
+[["资产"]]
+id = "贴图/界面/雪怪首领毛皮"
+"类别" = "贴图"
+"来源" = "提取:基地界面@bb2f67fc423f+0bdc89263616+474bb3e14646+c90b96f049d9+6ca167d7cd73+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/雪怪首领毛皮.png"
+
+[["资产"]]
+id = "贴图/界面/骨头"
+"类别" = "贴图"
+"来源" = "提取:界面图标@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/界面/贴图/骨头.png"
+
+[["资产"]]
+id = "贴图/角色/乔雷夫"
+"类别" = "贴图"
+"来源" = "提取:乔雷夫皮肤@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/乔雷夫.png"
+
+[["资产"]]
+id = "贴图/角色/九头蛇"
+"类别" = "贴图"
+"来源" = "提取:九头蛇@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/九头蛇.模型.png"
+
+[["资产"]]
+id = "贴图/角色/九胡"
+"类别" = "贴图"
+"来源" = "提取:九胡模型@25b5e902b96f"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/九胡.模型.png"
+
+[["资产"]]
+id = "贴图/角色/冰雪女王"
+"类别" = "贴图"
+"来源" = "提取:冰雪女王@0bdc89263616+56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/冰雪女王.模型.png"
+
+[["资产"]]
+id = "贴图/角色/冰雪女王冰盾"
+"类别" = "贴图"
+"来源" = "提取:冰雪女王@0bdc89263616+56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/冰雪女王冰盾.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/披风"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/披风.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤0-kai"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤0-kai.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤1-noor"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤1-noor.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤2-efe"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤2-efe.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤3-makena"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤3-makena.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤4-sunny"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤4-sunny.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤5-ari"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤5-ari.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤6-zuri"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤6-zuri.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤7-alex"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤7-alex.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/皮肤8-steve"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/皮肤8-steve.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/钻石甲1"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/钻石甲1.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/钻石甲2"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/钻石甲2.png"
+
+[["资产"]]
+id = "贴图/角色/卫兵/附魔光泽"
+"类别" = "贴图"
+"来源" = "提取:边城贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/卫兵.贴图/附魔光泽.png"
+
+[["资产"]]
+id = "贴图/角色/娜迦实机/charging"
+"类别" = "贴图"
+"来源" = "提取:娜迦贴图@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/娜迦实机.贴图/charging.png"
+
+[["资产"]]
+id = "贴图/角色/娜迦实机/dazed"
+"类别" = "贴图"
+"来源" = "提取:娜迦贴图@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/娜迦实机.贴图/dazed.png"
+
+[["资产"]]
+id = "贴图/角色/娜迦实机/head"
+"类别" = "贴图"
+"来源" = "提取:娜迦贴图@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/娜迦实机.贴图/head.png"
+
+[["资产"]]
+id = "贴图/角色/娜迦实机/segment"
+"类别" = "贴图"
+"来源" = "提取:娜迦贴图@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/娜迦实机.贴图/segment.png"
+
+[["资产"]]
+id = "贴图/角色/巨人/取材账号"
+"类别" = "贴图"
+"来源" = "手工:作者 Minecraft 账号的皮肤（从启动器缓存拷的）"
+"许可" = "LicenseRef-用户保留"
+"可见性" = "私有"
+"旧路径" = "参考模型库/src/模型/角色/巨人.贴图/取材账号.png"
+"说明" = "作者账号皮肤，不公开"
+
+[["资产"]]
+id = "贴图/角色/巨人/史蒂夫"
+"类别" = "贴图"
+"来源" = "提取:巨人@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巨人.贴图/史蒂夫.png"
+
+[["资产"]]
+id = "贴图/角色/巨人/石剑"
+"类别" = "贴图"
+"来源" = "提取:巨人@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巨人.贴图/石剑.png"
+
+[["资产"]]
+id = "贴图/角色/巨人/石镐"
+"类别" = "贴图"
+"来源" = "提取:巨人@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巨人.贴图/石镐.png"
+
+[["资产"]]
+id = "贴图/角色/巨人/铁甲1"
+"类别" = "贴图"
+"来源" = "提取:巨人@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巨人.贴图/铁甲1.png"
+
+[["资产"]]
+id = "贴图/角色/巨人/铁甲2"
+"类别" = "贴图"
+"来源" = "提取:巨人@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巨人.贴图/铁甲2.png"
+
+[["资产"]]
+id = "贴图/角色/巫妖"
+"类别" = "贴图"
+"来源" = "提取:巫妖@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巫妖.模型.png"
+
+[["资产"]]
+id = "贴图/角色/巫妖护盾/fill"
+"类别" = "贴图"
+"来源" = "提取:巫妖@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巫妖护盾.贴图/fill.png"
+
+[["资产"]]
+id = "贴图/角色/巫妖护盾/frame"
+"类别" = "贴图"
+"来源" = "提取:巫妖@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/巫妖护盾.贴图/frame.png"
+
+[["资产"]]
+id = "贴图/角色/幽灵马"
+"类别" = "贴图"
+"来源" = "提取:幽灵马@54b5aaa52887+56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-All-Rights-Reserved AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/幽灵马.模型.png"
+
+[["资产"]]
+id = "贴图/角色/恼鬼/恼鬼"
+"类别" = "贴图"
+"来源" = "提取:恼鬼@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/恼鬼.模型.恼鬼.png"
+
+[["资产"]]
+id = "贴图/角色/恼鬼/蓄力"
+"类别" = "贴图"
+"来源" = "提取:恼鬼@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/恼鬼.模型.蓄力.png"
+
+[["资产"]]
+id = "贴图/角色/暮初恶魂/喷火"
+"类别" = "贴图"
+"来源" = "提取:暮初恶魂@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/暮初恶魂.模型.喷火.png"
+
+[["资产"]]
+id = "贴图/角色/暮初恶魂/睁眼"
+"类别" = "贴图"
+"来源" = "提取:暮初恶魂@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/暮初恶魂.模型.睁眼.png"
+
+[["资产"]]
+id = "贴图/角色/暮初恶魂/闭眼"
+"类别" = "贴图"
+"来源" = "提取:暮初恶魂@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/暮初恶魂.模型.闭眼.png"
+
+[["资产"]]
+id = "贴图/角色/监守者/心脏"
+"类别" = "贴图"
+"来源" = "提取:监守者@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/监守者.模型.心脏.png"
+
+[["资产"]]
+id = "贴图/角色/监守者/本体"
+"类别" = "贴图"
+"来源" = "提取:监守者@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/监守者.模型.本体.png"
+
+[["资产"]]
+id = "贴图/角色/监守者/生物发光"
+"类别" = "贴图"
+"来源" = "提取:监守者@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/监守者.模型.生物发光.png"
+
+[["资产"]]
+id = "贴图/角色/监守者/脉动斑纹1"
+"类别" = "贴图"
+"来源" = "提取:监守者@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/监守者.模型.脉动斑纹1.png"
+
+[["资产"]]
+id = "贴图/角色/监守者/脉动斑纹2"
+"类别" = "贴图"
+"来源" = "提取:监守者@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/监守者.模型.脉动斑纹2.png"
+
+[["资产"]]
+id = "贴图/角色/追兵/刘心忠"
+"类别" = "贴图"
+"来源" = "派生:用户画的追兵皮肤 + 原版村民头（同位拆分.py 可拆回两部分）"
+"许可" = "LicenseRef-用户保留 AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/追兵.贴图/刘心忠.png"
+"说明" = "自己画的部分和原版村民头 0,0,32,18 叠在同一张图里；公开版走 同位拆分"
+
+[["资产"]]
+id = "贴图/角色/追兵/黄叛"
+"类别" = "贴图"
+"来源" = "手工:用户自己画的追兵皮肤"
+"许可" = "MIT"
+"可见性" = "公开"
+"旧路径" = "参考模型库/src/模型/角色/追兵.贴图/黄叛.png"
+
+[["资产"]]
+id = "贴图/角色/追兵/黄叛箭袋"
+"类别" = "贴图"
+"来源" = "手工:用户自己画的追兵皮肤"
+"许可" = "MIT"
+"可见性" = "公开"
+"旧路径" = "参考模型库/src/模型/角色/追兵.贴图/黄叛箭袋.png"
+
+[["资产"]]
+id = "贴图/角色/雪怪首领"
+"类别" = "贴图"
+"来源" = "提取:雪怪首领@0bdc89263616+e2e940fe7ca0"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/模型/角色/雪怪首领.模型.png"
+
+[["资产"]]
+id = "贴图/镜头/6-1-9b/城堡砖"
+"类别" = "贴图"
+"来源" = "提取:城堡砖@0bdc89263616"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-1-9b/城堡砖.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/平滑石台阶侧"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/平滑石台阶侧.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/平滑石头"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/平滑石头.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/泥土"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/泥土.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/深板岩"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/深板岩.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/深板岩顶"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/深板岩顶.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/白色混凝土"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/白色混凝土.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/石头"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/石头.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹0"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹0.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹1"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹1.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹2"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹2.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹3"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹3.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹4"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹4.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹5"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹5.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹6"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹6.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹7"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹7.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹8"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹8.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/裂纹9"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/裂纹9.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-2/方块/雪块"
+"类别" = "贴图"
+"来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-2/方块.贴图/雪块.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/凝灰岩"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/凝灰岩.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/安山岩"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/安山岩.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/平滑石台阶侧"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/平滑石台阶侧.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/平滑石头"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/平滑石头.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/幽匿块"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/幽匿块.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/方解石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/方解石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/橙色赤陶"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/橙色赤陶.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/泥土"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/泥土.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/深层金矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/深层金矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/深层铜矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/深层铜矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/深板岩"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/深板岩.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/深板岩顶"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/深板岩顶.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/煤矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/煤矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/皓蓝石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/皓蓝石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/石头"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/石头.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/砂砾"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/砂砾.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/红石矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/红石矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/红色赤陶"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/红色赤陶.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/花岗岩"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/花岗岩.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/赤陶"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/赤陶.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/金矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/金矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/铜矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/铜矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/银矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/银矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/锌矿石"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/锌矿石.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/闪长岩"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/闪长岩.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/方块/黄色赤陶"
+"类别" = "贴图"
+"来源" = "提取:6-3方块贴图@6fbb910c367d+2b80245fc9b7+56b71336d2b4"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/方块.贴图/黄色赤陶.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/望远镜视野"
+"类别" = "贴图"
+"来源" = "提取:望远镜视野@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/望远镜视野.png"
+
+[["资产"]]
+id = "贴图/镜头/6-3-下坠/竖井4x.网格"
+"类别" = "贴图"
+"来源" = "提取:网格图集@多个jar"
+"许可" = "LicenseRef-待定"
+"可见性" = "提取"
+"旧路径" = "参考模型库/src/镜头/6-3-下坠/竖井4x.网格.png"
+"说明" = "图集按 网格 的 UV 排布，图集配方.py 能从 jar 重建"
