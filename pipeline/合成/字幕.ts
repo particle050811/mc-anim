@@ -19,6 +19,8 @@ export type 台词落点 = {
   /** 配音文件第 0 秒落在全片第几帧（= 段起帧 + cue 帧 − 开口秒 × fps） */
   文件头帧: number;
   文件: string;
+  /** 配音的资产 id（剪辑包按它取文件） */
+  配音: string;
   字: string;
   角色: string;
   位置: 字幕位置;
