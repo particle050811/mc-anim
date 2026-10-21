@@ -202,7 +202,7 @@ def 核对角色包(条目: list[dict]) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap = argparse.ArgumentParser(description=(__doc__ or '').splitlines()[0])
     ap.add_argument('--旧项目', type=Path, default=Path(os.environ.get('SR_OLD') or REPO.parent / '机械动力应力转动-AI漫画'))
     ap.add_argument('--数据根', type=Path, default=Path(os.environ.get('SR_DATA') or REPO.parent / 'stress-rotation-data'))
     ap.add_argument('--只核对', action='store_true')
@@ -214,6 +214,7 @@ def main() -> None:
             setattr(a, attr, REPO.parent.parent / name)
     锁路径 = ASSETS / '资产锁.json'
     现有锁 = json.loads(锁路径.read_text(encoding='utf-8')) if 锁路径.exists() else {}
+    对照: list[tuple[str, str]] = []
     if a.只核对:
         锁 = 现有锁
     else:
