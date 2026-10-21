@@ -59,3 +59,4 @@ export const GotItTeleport: React.FC = () => {
     </>
   );
 };
+export default GotItTeleport;

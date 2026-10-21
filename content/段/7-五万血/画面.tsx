@@ -55,3 +55,4 @@ export const FiftyKHp: React.FC = () => {
     </>
   );
 };
+export default FiftyKHp;

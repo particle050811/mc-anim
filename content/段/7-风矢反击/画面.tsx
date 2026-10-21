@@ -5,3 +5,4 @@ import * as choreo from '../../场/7-黑暗监守/7-1-5/编排.ts';
 
 export const c715FrameCount = choreo.END;
 export const C715: React.FC = () => <变速段 v={choreo.变速} camera={choreo.camera} segId={choreo.号} />;
+export default C715;

@@ -6,3 +6,4 @@ import * as choreo from '../../场/7-黑暗监守/7-1-7/编排.ts';
 export const c717FrameCount = choreo.END;
 // 下一段切到 7-2-1 李樱，响过段尾的（马蹄）淡掉
 export const C717: React.FC = () => <变速段 v={choreo.变速} camera={choreo.camera} segId={choreo.号} tailFade />;
+export default C717;

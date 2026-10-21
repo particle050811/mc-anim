@@ -5,3 +5,4 @@ import * as choreo from './编排.ts';
 
 export const c713FrameCount = choreo.END;
 export const C713: React.FC = () => <变速段 v={choreo.变速} camera={choreo.camera} segId={choreo.号} />;
+export default C713;

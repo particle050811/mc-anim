@@ -82,3 +82,4 @@ export const Kite: React.FC = () => {
     </>
   );
 };
+export default Kite;

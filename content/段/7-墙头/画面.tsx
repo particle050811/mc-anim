@@ -16,3 +16,4 @@ export const C731: React.FC = () => {
     </>
   );
 };
+export default C731;

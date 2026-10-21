@@ -88,3 +88,4 @@ export const AnotherOne: React.FC = () => {
     </>
   );
 };
+export default AnotherOne;

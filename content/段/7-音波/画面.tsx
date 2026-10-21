@@ -10,3 +10,4 @@ const Picture: React.FC<{ t: number; cam: Cam; width: number; height: number }> 
 const sounds = sceneSounds.map(({ T, ...s }) => ({ ...s, t: T }));
 export const c733FrameCount = choreo.END;
 export const C733: React.FC = () => <变速段 v={choreo.变速} camera={choreo.camera} Picture={Picture} sounds={sounds} lines={[]} tailFade />;
+export default C733;
