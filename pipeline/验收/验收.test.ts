@@ -142,6 +142,18 @@ describe('sr verify', () => {
     expect((await 扫母版(原, { 参照: 少帧, 阈值: 阈 })).尺寸变了).toMatch(/基线的是 64×36 49 帧/);
   });
 
+  it('抽一百多帧也行：分批起 ffmpeg，顺序和单帧抽的一样', async () => {
+    const 长 = path.join(目录, '长.mkv');
+    跑出([配置('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=64x36:rate=24:duration=8', '-c:v', 'libx264', '-qp', '0', '-pix_fmt', 'yuv420p', 长]);
+    const 帧们 = Array.from({ length: 192 }, (_, f) => f);
+    const 出: Buffer[] = [];
+    for await (const rgb of 帧流(长, 帧们, 64, 36)) 出.push(Buffer.from(rgb));
+    expect(出.length).toBe(192);
+    for (const f of [0, 89, 90, 91, 191]) {
+      for await (const 单 of 帧流(长, [f], 64, 36)) expect(出[f]!.equals(单)).toBe(true);
+    }
+  });
+
   it('帧数尺寸不一样直接算变了', async () => {
     const 认 = { ...(await 认可(原)), 帧数: 49 };
     const r = await 扫母版(原, { 认可: 认, 旧母版: 原, 阈值: 阈 });

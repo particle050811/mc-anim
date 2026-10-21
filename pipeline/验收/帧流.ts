@@ -57,16 +57,21 @@ async function* 读流(cmd: string[], 块大小: number | null): AsyncGenerator<
   }
 }
 
+// ffmpeg 的表达式一层最多连 100 项，select 超过就报「Cannot allocate memory」退出 244，所以分批各起一个 ffmpeg
+export const 每批帧数 = 90;
+
 /** 按帧号升序交出 rgb24 像素（宽×高×3 字节） */
-export const 帧流 = (file: string, 帧们: readonly number[], 宽: number, 高: number) =>
-  读流(
-    低优先级([
-      配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', file, '-map', '0:v:0',
-      '-vf', `select='${帧们.map((f) => `eq(n,${f})`).join('+')}'`, '-fps_mode', 'passthrough',
-      '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1',
-    ]),
-    宽 * 高 * 3,
-  );
+export async function* 帧流(file: string, 帧们: readonly number[], 宽: number, 高: number): AsyncGenerator<Buffer> {
+  for (let i = 0; i < 帧们.length; i += 每批帧数)
+    yield* 读流(
+      低优先级([
+        配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', file, '-map', '0:v:0',
+        '-vf', `select='${帧们.slice(i, i + 每批帧数).map((f) => `eq(n,${f})`).join('+')}'`, '-fps_mode', 'passthrough',
+        '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1',
+      ]),
+      宽 * 高 * 3,
+    );
+}
 
 /** 第一条音轨解成 48 kHz 双声道 s16le */
 export const 音频流 = (file: string) =>
