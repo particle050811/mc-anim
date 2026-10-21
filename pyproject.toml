@@ -21,11 +21,12 @@ packages = ["py/sr_py"]
 [tool.pytest.ini_options]
 testpaths = ["py/tests"]
 
-# sr check 的 Python 检查：ruff 和 pyright 只查自己写的工具（py/、assets/tools/）；assets/src/ 是资产的生成源（如 build_li_ying.py），原样保存，不查
+# sr check 的 Python 检查：ruff 和 pyright 只查自己写的工具（py/、assets/tools/、pipeline/适配器/）；assets/src/ 是资产的生成源（如 build_li_ying.py），原样保存，不查。
+# pipeline/适配器/旧项目/ 只过 ruff：它运行时才从旧项目 sys.path 引模块、numpy 由 uv 临时装，pyright 解析不到
 [tool.ruff]
 target-version = "py311"
 line-length = 160
-include = ["py/**/*.py", "assets/tools/**/*.py"]
+include = ["py/**/*.py", "assets/tools/**/*.py", "pipeline/适配器/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
