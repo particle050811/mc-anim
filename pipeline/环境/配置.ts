@@ -97,6 +97,8 @@ export const 全部配置 = () => 全部();
 export const 数据根 = () => 配置('数据根');
 export const 数据路径 = (...段: string[]) => path.join(数据根(), ...段);
 export const 母版目录 = (段键: string) => 数据路径('cache', '母版', 段键);
+/** 透明叠层的缓存：cache/叠层/<段键>-<名>/ */
+export const 叠层目录 = (叠层键: string) => 数据路径('cache', '叠层', 叠层键);
 export const 交付根 = () => 数据路径('交付');
 export const 运行目录 = () => 数据路径('run');
 export const 耗时表 = () => 数据路径('run', 'logs', '耗时.tsv');

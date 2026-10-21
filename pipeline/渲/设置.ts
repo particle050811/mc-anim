@@ -21,3 +21,16 @@ export const 渲染参数 = (级别: 渲染级别) => ({
 });
 
 export type 渲染参数表 = ReturnType<typeof 渲染参数>;
+
+// 透明叠层：照旧项目 透明层.py 出 ProRes 4444（yuva444p10le，带透明），PNG 帧、按成片的高放大（2K 成片 2 倍、720p 预览 1 倍），不带声音
+export const 叠层渲染参数 = (级别: 渲染级别) => ({
+  inputProps: 规范化设置({ 级别 }),
+  codec: 'prores' as const,
+  proResProfile: '4444' as const,
+  pixelFormat: 'yuva444p10le' as const,
+  imageFormat: 'png' as const,
+  scale: 级别 === '预览' ? 1 : 2,
+  gl: 配置('gl') as 'angle' | 'swangle' | 'egl' | 'swiftshader' | 'vulkan' | 'angle-egl',
+  concurrency: 1,
+  muted: true,
+});
