@@ -1,0 +1,14 @@
+{
+  "type": "mcai:region",
+  "shape": {
+    "type": "sector",
+    "center": [
+      0,
+      0
+    ],
+    "facing": 200,
+    "half_angle": 135,
+    "radius": 8000
+  },
+  "falloff": 600
+}

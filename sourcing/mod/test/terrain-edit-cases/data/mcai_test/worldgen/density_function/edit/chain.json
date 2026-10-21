@@ -1,0 +1,64 @@
+{
+  "type": "mcai:edit",
+  "input": {
+    "type": "minecraft:noise",
+    "noise": "mcai_test:base",
+    "xz_scale": 1,
+    "y_scale": 0
+  },
+  "edits": [
+    {
+      "region": "mcai_test:region/sector_west",
+      "op": "toward",
+      "value": -0.8
+    },
+    {
+      "region": "mcai_test:region/circle",
+      "op": "add",
+      "value": 0.25
+    },
+    {
+      "region": {
+        "type": "minecraft:mul",
+        "argument1": "mcai_test:region/circle",
+        "argument2": 2
+      },
+      "op": "max",
+      "value": 0.4
+    },
+    {
+      "region": {
+        "type": "minecraft:add",
+        "argument1": "mcai_test:region/sector_reflex",
+        "argument2": -0.5
+      },
+      "op": "toward",
+      "value": 1
+    },
+    {
+      "region": {
+        "type": "mcai:region",
+        "shape": {
+          "type": "polygon",
+          "points": [
+            [
+              10000,
+              10000
+            ],
+            [
+              14000,
+              10500
+            ],
+            [
+              11000,
+              15000
+            ]
+          ]
+        },
+        "falloff": 800
+      },
+      "op": "min",
+      "value": "mcai_test:edge/c_3d"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "type": "mcai:region",
+  "shape": {
+    "type": "path",
+    "points": [
+      [
+        -30000,
+        30000
+      ],
+      [
+        -25000,
+        31000
+      ]
+    ],
+    "width": 2000
+  },
+  "falloff": 1000
+}

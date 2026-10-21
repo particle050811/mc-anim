@@ -1,0 +1,16 @@
+{
+  "type": "mcai:edit",
+  "input": {
+    "type": "minecraft:noise",
+    "noise": "mcai_test:base",
+    "xz_scale": 1,
+    "y_scale": 0
+  },
+  "edits": [
+    {
+      "region": "mcai_test:region/path_fjord",
+      "op": "max",
+      "value": 0.6
+    }
+  ]
+}

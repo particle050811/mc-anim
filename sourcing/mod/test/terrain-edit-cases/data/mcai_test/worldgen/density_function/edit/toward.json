@@ -1,0 +1,16 @@
+{
+  "type": "mcai:edit",
+  "input": {
+    "type": "minecraft:noise",
+    "noise": "mcai_test:base",
+    "xz_scale": 1,
+    "y_scale": 0
+  },
+  "edits": [
+    {
+      "region": "mcai_test:region/sector_oblique",
+      "op": "toward",
+      "value": -0.8
+    }
+  ]
+}

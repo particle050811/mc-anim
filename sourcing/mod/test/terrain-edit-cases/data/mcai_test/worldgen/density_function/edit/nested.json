@@ -1,0 +1,11 @@
+{
+  "type": "mcai:edit",
+  "input": "mcai_test:edit/toward",
+  "edits": [
+    {
+      "region": "mcai_test:region/path_two",
+      "op": "toward",
+      "value": 0.9
+    }
+  ]
+}
