@@ -10,7 +10,7 @@
 //   坑口直接切书页，不拍屋里中景看他写（用户 10-19 定：那样看不到字）。
 // 手和书的接触（掀页、拿书、接书）用 模型/角色/手臂逆解.ts 让手上那一点落到书上；书拿起来以后跟着手走（拿起那一刻手和书的相对位置定住），不穿桌面、不穿手。
 import * as THREE from 'three';
-import { Key, sample } from '../../../../engine/anim/anim.ts';
+import { type Key, sample } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { handMatrix, hipMatrix, standPose, type FigurePose } from '../../../../world/角色/骨架.tsx';
 import { reachFigure, solveReach, type ReachParam } from '../../../../world/角色/手臂逆解.ts';
@@ -20,7 +20,7 @@ import { borderTownPos } from '../../../../world/地点/主世界116.ts';
 import { charPos, closedBookBox, guiPixel, pageCharCount, pageHeight, pageWidth, type BookPage } from '../../../../world/物品/书.tsx';
 import bookPageData资产 from 'asset:数据/镜头/7-4-3/书页.字';
 import { pitCam } from './坑口.ts';
-const bookPageData = bookPageData资产 as unknown as any; // 迁移：类型待补
+const bookPageData = bookPageData资产 as unknown as { 页: string[][]; 页码: string; 数字: string };
 
 export const FPS = 24;
 export const shot1End = 78; // 坑口 3.25 秒

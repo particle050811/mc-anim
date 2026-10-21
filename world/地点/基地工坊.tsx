@@ -17,7 +17,7 @@
 //   西墙偏北开 3 格宽、3 格高的敞口门（6-2-4 扫帚从这里飞出去，见 基地工坊.布局.ts）；墙脚外一圈磨制安山岩台阶当勒脚。东墙、南墙外不加东西（窗外的海不能挡）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { BlockModelData } from '../../engine/model/方块模型.tsx';
+import type { BlockModelData } from '../../engine/model/方块模型.tsx';
 import { makeTexture } from '../../engine/model/方块场景.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import { AlphaYetiFur, FieryBlood } from '../物品/战利品.tsx';

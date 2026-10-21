@@ -4,7 +4,7 @@
 // 套 spyglass_in_hand 的 head 显示变换 translation [0,0,-16]、rotation [90,0,0]、scale 1.6，再乘头部物品的 0.625），目镜贴眼睛、物镜顺着视线朝前，长约 0.7 格。
 // 坐标：BlockModel 的局部坐标（格，方块中心在原点），镜筒沿 Z 竖着（细的目镜那节在上）。挂到眼睛前面的摆法见 角色/卫兵.tsx。
 import React from 'react';
-import { BlockModel, BlockModelData } from '../../engine/model/方块模型.tsx';
+import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/物品/望远镜';
 import atlas from 'asset:贴图/物品/望远镜';

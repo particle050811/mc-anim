@@ -9,7 +9,7 @@
 // 起点：6-3-6 末帧他站在 `GUCHENG4X.落点`，面朝南、右手握重锤（手臂 20°、肘 30°、roll 18°、锤角 230°；数取自 6-3-下坠/编排.ts 的 李樱(w) 落地 0.35 秒后）。第 4 帧换到羊毛那一格（锤收进背包），转身往北蹲下起跳。
 //   G1 改 6-3-6 时落点、站姿不变，所以照抄数，不 import 下坠时间线。
 import type { V3 } from '../../../../engine/model/parts.tsx';
-import { FigurePose } from '../../../../world/角色/骨架.tsx';
+import type { FigurePose } from '../../../../world/角色/骨架.tsx';
 import { GUCHENG4X } from '../../../../world/地点/古城4x.tsx';
 import { allWool, elite, eliteLeap, leapFeetAt, feetOnWool, wool641, wool642, woolLeapApex, chestB, type 跳, type WoolName } from '../../../../world/地点/古城4x/布局.ts';
 import { FPS, PLACE_BEFORE, crouchPose, lootPose, mixPose, nearYaw, placeFrame, takeoffPose, yawTo } from '../../../../world/地点/古城4x/6-4-1/古城戏.ts';

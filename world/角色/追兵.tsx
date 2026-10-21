@@ -12,7 +12,7 @@ import { png, type Png } from '../../engine/model/贴图.ts';
 import { Arrow } from '../物品/箭.tsx';
 import { HeldBow, type BowTexture } from '../物品/弓.tsx';
 import { ArtificerCane, ARTIFICER_CANE_GRIP_Y } from '../物品/匠师之杖.tsx';
-import { bladeInHand, Figure, FigurePose, standPose, handMatrix } from './骨架.tsx';
+import { bladeInHand, Figure, type FigurePose, standPose, handMatrix } from './骨架.tsx';
 import { riderFeet, VANILLA_RIDE } from '../生物/幽灵马.tsx';
 import huangPanPng from 'asset:贴图/角色/追兵/黄叛';
 import quiverPng from 'asset:贴图/角色/追兵/黄叛箭袋';

@@ -1,6 +1,6 @@
 // 九胡：林道上被甩开的跑法，S3 起被传送进迷宫后顺通道跑向中心（6-1-3 接着用同一路线）。
 import { track } from '../../../../../engine/anim/anim.ts';
-import { FigurePose } from '../../../../../world/角色/骨架.tsx';
+import type { FigurePose } from '../../../../../world/角色/骨架.tsx';
 import { FPS, S3, END, real, ss, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
 import { makeTrail, trailOn } from './折线.ts';
 import { START_L } from './李樱.ts';

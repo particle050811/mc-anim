@@ -15,8 +15,8 @@
 import React from 'react';
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
-import { EntityModel, EntityModelData, MODEL_TO_ENTITY, PartPose } from '../../engine/model/实体模型.tsx';
-import { Png, pngDir } from '../../engine/model/贴图.ts';
+import { EntityModel, type EntityModelData, MODEL_TO_ENTITY, type PartPose } from '../../engine/model/实体模型.tsx';
+import { type Png, pngDir } from '../../engine/model/贴图.ts';
 import { Spyglass } from '../物品/望远镜.tsx';
 import raw from 'asset:模型/角色/巨人';
 import { giantPose } from './巨人.tsx';

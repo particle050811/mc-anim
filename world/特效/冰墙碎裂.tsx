@@ -3,7 +3,7 @@
 // 按时间参数算，没有模拟状态。sec = 撞开以后经过的秒数（< 0 不显示）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
 
 const triGeo = (rand: () => number) => {
   const geometry = new THREE.BufferGeometry();

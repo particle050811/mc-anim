@@ -4,7 +4,7 @@ import { borderTownPos } from '../../../主世界116.ts';
 import shaftMesh资产 from 'asset:网格/竖井4x/头';
 import { groundZ } from './地面.ts';
 import { liYingShaft } from './李樱.ts';
-const shaftMesh = shaftMesh资产 as unknown as any; // 迁移：类型待补
+const shaftMesh = shaftMesh资产 as unknown as { from: number[]; to: number[] };
 
 // ---------- 坑、竖井的画法参数 ----------
 // 井心：撞击点所在那格的格心。坑和竖井网格要和城的石半砖地面、主世界方块对齐，所以取整到格心（锤的落点离井轴不到半格，看不出）

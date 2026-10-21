@@ -21,18 +21,18 @@ import cloudCottageMesh资产 from 'asset:网格/云中小屋/头';
 import yetiEdgeFix资产 from 'asset:数据/场景/雪怪洞窟/归边';
 import nagaEdgeFix资产 from 'asset:数据/场景/娜迦庭院/归边';
 import nagaTakeoffHide资产 from 'asset:数据/场景/娜迦庭院/起跳区藏';
-const nagaMesh = nagaMesh资产 as unknown as any; // 迁移：类型待补
-const lichMesh = lichMesh资产 as unknown as any; // 迁移：类型待补
-const hydraMesh = hydraMesh资产 as unknown as any; // 迁移：类型待补
-const darkTowerMesh = darkTowerMesh资产 as unknown as any; // 迁移：类型待补
-const yetiMesh = yetiMesh资产 as unknown as any; // 迁移：类型待补
-const auroraMesh = auroraMesh资产 as unknown as any; // 迁移：类型待补
-const castleMesh = castleMesh资产 as unknown as any; // 迁移：类型待补
-const castleFlattenMask = castleFlattenMask资产 as unknown as any; // 迁移：类型待补
-const cloudCottageMesh = cloudCottageMesh资产 as unknown as any; // 迁移：类型待补
-const yetiEdgeFix = yetiEdgeFix资产 as unknown as any; // 迁移：类型待补
-const nagaEdgeFix = nagaEdgeFix资产 as unknown as any; // 迁移：类型待补
-const nagaTakeoffHide = nagaTakeoffHide资产 as unknown as any; // 迁移：类型待补
+const nagaMesh = nagaMesh资产 as unknown as MeshInfo;
+const lichMesh = lichMesh资产 as unknown as MeshInfo;
+const hydraMesh = hydraMesh资产 as unknown as MeshInfo;
+const darkTowerMesh = darkTowerMesh资产 as unknown as MeshInfo;
+const yetiMesh = yetiMesh资产 as unknown as MeshInfo;
+const auroraMesh = auroraMesh资产 as unknown as MeshInfo;
+const castleMesh = castleMesh资产 as unknown as MeshInfo;
+const castleFlattenMask = castleFlattenMask资产 as unknown as { x0: number; z0: number; nx: number; nz: number; 行: [number, number][][] };
+const cloudCottageMesh = cloudCottageMesh资产 as unknown as MeshInfo;
+const yetiEdgeFix = yetiEdgeFix资产 as unknown as EdgeFixData;
+const nagaEdgeFix = nagaEdgeFix资产 as unknown as EdgeFixData;
+const nagaTakeoffHide = nagaTakeoffHide资产 as unknown as { 藏: number[][] };
 
 // 区段包：另烘焙成 暮色放大-1752-扩展（npm run 导入:暮色放大1752扩展），预生成范围往四周补了一圈（工具/游戏取材/暮色范围.py），让一镜到底往前看 3 公里内都有地形；共用的 暮色放大-1752 不动
 export const twilightPackName = '暮色放大-1752-扩展';

@@ -4,10 +4,10 @@
 // 振动、怒气照原版（`VibrationSystem`、`Warden`）：脚步落地那刻发出，按 1 格/刻（取整）飞到监守者眼睛（离地 2.5）；听到一下以后 40 刻（`VIBRATION_COOLDOWN`）不再听，冷却里的脚步不算；
 //   每听到一下怒气 +35，三下过 80 就吼（6-4-8 刘心忠那一踏是第一下）。吼叫 ROAR 4.2 秒、第 25 刻出声。听到第三下到起吼隔 5 刻（大脑换到 ROAR 活动）。
 // 心跳（照原版，见 模型/角色/监守者.tsx 文件头）：游戏时间整 2 秒那刻跳（不生气的 40 刻）；怒气上来 getHeartBeatDelay 会变短，这里没做（同 6-4-8、7-1）。
-import { Key, sample, sampleV, VKey } from '../../../../engine/anim/anim.ts';
+import { type Key, sample, sampleV, type VKey } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { WARDEN } from '../../../生物/监守者.tsx';
-import { FigurePose } from '../../../角色/骨架.tsx';
+import type { FigurePose } from '../../../角色/骨架.tsx';
 import { bowTextureFor } from '../../../物品/弓.tsx';
 import type { Cam } from '../6-4-1/古城画面.tsx';
 import { nearYaw } from '../6-4-1/古城戏.ts';

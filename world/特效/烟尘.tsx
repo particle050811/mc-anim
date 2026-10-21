@@ -1,6 +1,6 @@
 // 烟雾、扬尘、碎屑：都是按时间参数算出来的低面数粒子，没有模拟状态，任意帧可单独渲染。
 import React from 'react';
-import { Box, Ball, V3, rng, pick } from '../../engine/model/parts.tsx';
+import { Box, Ball, type V3, rng, pick } from '../../engine/model/parts.tsx';
 
 export const FX = { smoke: '#c4c6bc', smokeDark: '#9ea096', dust: '#b8a888' };
 

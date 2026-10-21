@@ -16,8 +16,8 @@
 import React from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
-import { EntityLayer, EntityModel, EntityModelData, EntityPart, MODEL_TO_ENTITY } from '../../engine/model/实体模型.tsx';
-import { AnimDef, applyAnimation, mthCos, mthSin, restPose, toPartPoses } from '../../engine/anim/关键帧动画.ts';
+import { type EntityLayer, EntityModel, type EntityModelData, type EntityPart, MODEL_TO_ENTITY } from '../../engine/model/实体模型.tsx';
+import { type AnimDef, applyAnimation, mthCos, mthSin, restPose, toPartPoses } from '../../engine/anim/关键帧动画.ts';
 import { png } from '../../engine/model/贴图.ts';
 import { VanillaTopple } from '../特效/原版死亡.tsx';
 import raw from 'asset:模型/角色/监守者';

@@ -8,9 +8,9 @@
 // 不受光（夜视下满亮度），暗处由 黑暗效果.tsx 整体压暗。坐标是场景坐标（Z 朝上，格），速度 格/刻。参考视频机位远时原版大小会小到看不见，组件给整体放大 `size`（默认 1 = 原版）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
-import { Png, pngDir } from '../../engine/model/贴图.ts';
-import { Particle, ParticleQuads } from './粒子面片.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type Png, pngDir } from '../../engine/model/贴图.ts';
+import { type Particle, ParticleQuads } from './粒子面片.tsx';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/特效/粒子/critical_hit';
 import 资_1 from 'asset:贴图/特效/粒子/drip_hang';

@@ -11,7 +11,7 @@
 // 接口：<ArtificerCane />  手插槽坐标（骨架.tsx 的 handR，1 = 1 像素），原点 = 握持点，杖身沿本地 +Z（杖头在 +Z）。调用方用 rotation / quaternion 把 +Z 转到要的方向（追兵.tsx 的 `LiuXinzhong` 用 骨架.tsx 的 `bladeInHand` 让它一直朝上）。
 //       <ArtificerCaneModel />  物品模型原样（单位格、原点在方块中心 = 模型 (8, 8, 8)，游戏的上 = +Z），核对图用。
 import React from 'react';
-import { BlockModel, BlockModelData } from '../../engine/model/方块模型.tsx';
+import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/物品/匠师之杖';
 import atlasPng from 'asset:贴图/物品/匠师之杖';

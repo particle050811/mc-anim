@@ -7,7 +7,7 @@
 // 镜头（硬切）：1 得意（1a 刘心忠勒停在岛南头台面上、朝着它倒下的地方举杖，1b 黄叛在传送门顶上垂弓举拳；剧情时刻接着 7-4-1 末帧往下走）；2a 开箱（龛口外东边看进龛里：开盖 → 咔嗒 → 尖啸）；
 //   2b 第一只身后（它在前景钻出，二人扭头看过来，第二只在箱子跟前冒头，一激灵）；3 龛口往西（马受惊、第三只在马头前冒头、对视、掉头）；
 //   4 逃（南边过道口往回看：马 50、黄叛 30 米/秒冲下地台朝镜头跑来、从镜头底下过，第四只在路边钻出），硬切 7-4-3。
-import { Key, sample } from '../../../engine/anim/anim.ts';
+import { type Key, sample } from '../../../engine/anim/anim.ts';
 import type { V3 } from '../../../engine/model/parts.tsx';
 import { WARDEN } from '../../../world/生物/监守者.tsx';
 import { ridePose } from '../../../world/角色/追兵.tsx';

@@ -3,7 +3,7 @@ import React from 'react';
 import { png } from '../../../../engine/model/贴图.ts';
 import { Giant, GIANT } from '../../../../world/角色/巨人.tsx';
 import { CloudCottage, CloudCottage_ATLAS } from '../../../../world/地点/云中小屋.tsx';
-import { BlockDebris, DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
+import { BlockDebris, type DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
 import { PoofBurst, DeathTopple } from '../../../../world/特效/生物死亡.tsx';
 import debrisRaw from 'asset:碎块/镜头/6-1-8b/碎块';
 import * as choreo from './编排.ts';

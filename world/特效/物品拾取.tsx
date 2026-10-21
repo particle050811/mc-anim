@@ -6,8 +6,8 @@
 // 坐标：世界（场景）坐标，Z 朝上。目标点（玩家身上）由调用的地方按这一帧的扫帚位置给。
 import React from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
-import { DropItem, DropName } from '../物品/掉落物.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { DropItem, type DropName } from '../物品/掉落物.tsx';
 
 export type 拾取件 = { 名: DropName; p0: V3; v0: V3; spinAxis: V3; spinSpeed: number; 起吸: number; 吸完: number };
 export type BurstParams = {

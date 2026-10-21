@@ -1,7 +1,7 @@
 // 娜迦：贪吃蛇式爬行路线、被斩断后两截的速度、抬头盯李樱、受伤变红、逐节自毁，以及断口处的战利品箱。
-import { Key, sample, track } from '../../../../../engine/anim/anim.ts';
+import { type Key, sample, track } from '../../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../../engine/model/parts.tsx';
-import { GAME_NAGA, GameNagaPose } from '../../../../../world/角色/娜迦实机.tsx';
+import { GAME_NAGA, type GameNagaPose } from '../../../../../world/角色/娜迦实机.tsx';
 import { HURT_OVERLAY } from '../../../../../engine/model/贴图方盒.tsx';
 import { FPS, END, HOLD, warp } from './时间轴.ts';
 import { makeTrail, trailOn } from './折线.ts';

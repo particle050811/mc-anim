@@ -3,8 +3,8 @@
 // look = 'flat' 每种材质一个平均色，给纯色参考模型参考视频用（带 MC 贴图的参考会让 Seedance 出图变糊）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { Inst, Instanced } from './parts.tsx';
-import { Png, crop } from './贴图.ts';
+import { type Inst, Instanced } from './parts.tsx';
+import { type Png, crop } from './贴图.ts';
 
 export type BlockSceneData = {
   uvOffset: number[];

@@ -21,7 +21,7 @@ import { closestOnTube, type DebrisBurst, type DebrisData } from '../../../../..
 import * as chainPierceChoreo from '../../6-1-7/编排.ts';
 import wallBlocks资产 from 'asset:数据/镜头/一镜到底/撞墙方块';
 import drillTunnels from 'asset:数据/镜头/一镜到底/钻头隧道';
-const wallBlocks = wallBlocks资产 as unknown as any; // 迁移：类型待补
+const wallBlocks = wallBlocks资产 as unknown as Record<'巫妖' | '雪怪首领' | '冰雪女王' | '巨人', { 碎块: string; 格: (number | string)[][] }>;
 
 // 方块 → SoundType 的 break、hit 和 SoundType.pitch；钻不动 = 钻头不碰它（没有碰撞箱），无声 = 整格不响
 type SoundKind = { 破: string; hit: string; 音高: number; undrillable?: boolean; silent?: boolean };

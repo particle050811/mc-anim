@@ -9,7 +9,7 @@
 // 坐标：原点在脚底中心，Z 朝上，正面朝 -Y（同 贴图方盒.tsx、娜迦实机.tsx），单位格。
 import React from 'react';
 import * as THREE from 'three';
-import { EntityModel, EntityModelData } from '../../engine/model/实体模型.tsx';
+import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import { ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { png, pngDir } from '../../engine/model/贴图.ts';
 import { ScepterInHand } from '../物品/巫妖权杖.tsx';

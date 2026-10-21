@@ -5,10 +5,10 @@
 // 配乐对齐先不管，等画面定稿再统一对（用户定）。放平（翻过来）那一帧按巡航高度挑（见 `pathAngleKeys`）。
 // 场景坐标同 6-1-2（娜迦庭院中心为原点，Z 朝上，北 = +Y）。中心空地 x -5～9、y -9～5 是平地（z = 0），
 // 北边是围着火盆台的下沉环槽，西边是水池，东边 x 9 起（y 0 以南，5 格高）、南边 y -10 起是树篱。
-import { Key, sample } from '../../../../engine/anim/anim.ts';
+import { type Key, sample } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import type { FigurePose } from '../../../../world/角色/骨架.tsx';
-import { liYingFinalPose, RideLiYing } from '../../../../world/角色/骑扫帚.tsx';
+import { liYingFinalPose, type RideLiYing } from '../../../../world/角色/骑扫帚.tsx';
 import { twilightFogFar, twilightFogNear, clampFogToEdge, TWILIGHT_CRUISE_FOG_FAR } from '../../../../engine/light/暮色光照.tsx';
 import { VIEW_DISTANCE } from '../../../../engine/voxel/视距.ts';
 import { cruiseHeight, twilightLandmark, twilightHeightAboveGround, viewEdgeDistance } from '../../../../world/地点/暮色新世界.tsx';

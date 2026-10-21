@@ -13,7 +13,7 @@ import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { rng } from '../../engine/model/parts.tsx';
-import { interpPathPos, Particle, particleInitVel, particlePath } from './粒子面片.tsx';
+import { interpPathPos, type Particle, particleInitVel, particlePath } from './粒子面片.tsx';
 
 // 一镜到底近景慢放里的粒子时钟倍速（粒子速度按比例放大，撞击比日常挖方块猛得多）：
 // - 战利品箱：同 6-1-5 的药水炸开（倍速 55），慢放下一秒上下散干净，把画面让给飞出来的物品；

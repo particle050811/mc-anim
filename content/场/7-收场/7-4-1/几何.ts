@@ -9,7 +9,7 @@ import type { V3 } from '../../../../engine/model/parts.tsx';
 import { toScene } from '../../../../world/地点/古城4x/6-4-1/古城戏.ts';
 import { chest742, huangPanPortal741 } from '../../../../world/地点/古城4x/布局.ts';
 import heights资产 from 'asset:数据/镜头/7-4-1/高度';
-const heights = heights资产 as unknown as any; // 迁移：类型待补
+const heights = heights资产 as unknown as { 步: number; 马: number[]; 监守者: number[] };
 
 export const FPS = 24;
 export const relY = (rel: number) => rel - 51;

@@ -11,7 +11,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
-import { EntityModelData, ownPartGeometry } from '../../engine/model/实体模型.tsx';
+import { type EntityModelData, ownPartGeometry } from '../../engine/model/实体模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/特效/护盾术';
 import texOverlay from 'asset:贴图/特效/护盾术/护盾';

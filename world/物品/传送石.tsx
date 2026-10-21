@@ -17,7 +17,7 @@
 //   人是瞬间移走的，没有渐隐。
 // 坐标：场景坐标（Z 朝上），单位格；时间：刻（1 秒 20 刻）。
 import React from 'react';
-import { rng, V3 } from '../../engine/model/parts.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
 import { DISPLAY } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import type { ParticleSpawn } from '../特效/原版粒子.tsx';

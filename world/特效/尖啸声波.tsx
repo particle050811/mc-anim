@@ -8,7 +8,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
-import { BlockModel, BlockModelData } from '../../engine/model/方块模型.tsx';
+import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import shriekPng from 'asset:贴图/特效/尖啸声波';
 import shriekerData from 'asset:模型/特效/幽匿尖啸体';

@@ -7,10 +7,10 @@
 // 和游戏不同：地面当作 z = `center[2]` 的水平面；幽匿块贴图是 4 帧动画，这里只用第一帧；
 // 每刻个数可用 `perTick` 减（游戏 4.5 秒共 2700 个，近景糊成一片），单个粒子不改。不受光，见 粒子面片.tsx。
 import React, { useMemo } from 'react';
-import { rng, V3 } from '../../engine/model/parts.tsx';
-import { Png, png } from '../../engine/model/贴图.ts';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type Png, png } from '../../engine/model/贴图.ts';
 import sculkPng from 'asset:贴图/特效/方块碎屑';
-import { interpPathPos, Particle, particleInitVel, particlePath, particleTexture, ParticleQuads } from './粒子面片.tsx';
+import { interpPathPos, type Particle, particleInitVel, particlePath, particleTexture, ParticleQuads } from './粒子面片.tsx';
 
 export const SCULK_TEX: Png = png(sculkPng);
 

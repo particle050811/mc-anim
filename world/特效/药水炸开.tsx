@@ -5,7 +5,7 @@
 // 粒子是始终朝向镜头的贴片，不受光。sec = 砸中以后经过的秒数（< 0 不显示），1 秒 20 刻。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { POTION_TEX } from '../物品/喷溅药水.tsx';
 import { 资产目录 } from '../../engine/core/资产目录.ts';

@@ -10,7 +10,7 @@
 // 坐标：原点在九头蛇脚底中心，Z 朝上，正面朝 -Y（实体坐标，同 贴图方盒.tsx），单位格。
 import React from 'react';
 import { rad } from '../../engine/anim/anim.ts';
-import { EntityModel, EntityModelData } from '../../engine/model/实体模型.tsx';
+import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/九头蛇';

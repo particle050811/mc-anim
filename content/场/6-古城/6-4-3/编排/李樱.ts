@@ -1,6 +1,6 @@
 // 6-4-3 李樱：翻箱子 → 听到「哄」转身拔刀、居合挑箭 → 举刀戒备、抬头看碎石。
-import { Key, sample, track } from '../../../../../engine/anim/anim.ts';
-import { FigurePose } from '../../../../../world/角色/骨架.tsx';
+import { type Key, sample, track } from '../../../../../engine/anim/anim.ts';
+import type { FigurePose } from '../../../../../world/角色/骨架.tsx';
 import { lootPose, yawTo } from '../../../../../world/地点/古城4x/6-4-1/古城戏.ts';
 import { chestArchery } from '../../../../../world/地点/古城4x/布局.ts';
 import type { ChestOpening } from '../../../../../world/地点/古城4x/6-4-1/古城画面.tsx';

@@ -4,7 +4,7 @@
 //   ./mcai mesh from=481,0,177 to=591,185,311 out=../参考模型库/src/模型/场景/幽冥高塔.网格 mark=twilightforest:ur_ghast_boss_spawner
 // 坐标：原点在导出范围底面中心，南 = -Y；范围见 幽冥高塔.网格.json。三个 幽冥高塔.网格.* 不要手改。
 import React from 'react';
-import { BlockMesh, BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
 import raw from 'asset:网格/幽冥高塔/头';
 import bin from 'asset:网格/幽冥高塔/顶点';
 import atlas from 'asset:网格/幽冥高塔/图集';

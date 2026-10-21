@@ -2,7 +2,7 @@
 // 两排窗洞、苔藓；石板地砖；灌木树篱；泥土花坛；带火盆的水池；独立石柱。单位：格，迷宫中心在原点，地面 z=0。
 // 布局用 MazeLayout 传入，默认是 6-1 章娜迦迷宫的布局；换一座迷宫只需要换布局。
 import React, { useMemo } from 'react';
-import { Box, Cyl, Inst, Instanced, rng, pick, V3 } from '../../engine/model/parts.tsx';
+import { Box, Cyl, type Inst, Instanced, rng, pick, type V3 } from '../../engine/model/parts.tsx';
 
 export const MAZE = {
   wall: '#8c806a',

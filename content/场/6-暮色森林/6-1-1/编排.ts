@@ -4,9 +4,9 @@
 // 人不能停在传送门方块上（用户 10-01：站在门上会被传回去），所以带着往前上方的冲劲从门里跃出。台词见 声音.tsx。
 // 镜头：A（f1–128）海岛空中侧拍一镜到底；D1（f129–159）暮色直道上迎面看门；
 // D2（f160–169）九胡飞到最高点时切到 6-1-2 第 1 帧机位（门西边高处往东看），最后一帧接 6-1-2。
-import { Key, VKey, sample, sampleV, track } from '../../../../engine/anim/anim.ts';
+import { type Key, type VKey, sample, sampleV, track } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
-import { FigurePose, standPose } from '../../../../world/角色/骨架.tsx';
+import { type FigurePose, standPose } from '../../../../world/角色/骨架.tsx';
 import { PORTAL_ISLAND } from '../../../../world/地点/传送门海岛.tsx';
 import { NAGA_COURTYARD } from '../../../../world/地点/娜迦庭院.tsx';
 import * as choreo612 from '../6-1-2/编排.ts';

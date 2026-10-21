@@ -10,7 +10,7 @@ import { FPS, 撞击时刻, 段表, 物理时间, 撞击段内帧 } from './时�
 import { blockMaterial, blockPngs, type 方块贴图名 } from './竖井.tsx';
 import fillData资产 from 'asset:数据/镜头/6-3-下坠/竖井4x.填块';
 import { 渲染输入 } from '../../../../engine/core/渲染设置.ts';
-const fillData = fillData资产 as unknown as any; // 迁移：类型待补
+const fillData = fillData资产 as unknown as { 原点y: number; 石半砖y: number; 格: (number | string)[][] };
 
 // ---------- 锤底 ----------
 // 最先碰到方块的是锤头上压路机虚影的滚筒（锤竖直朝下、领在最前面），轴水平左右，所以最低点 = 滚筒中心往下一个半径，和 编排.ts 算撞击时刻的 `strikeDepth` 是同一个点。

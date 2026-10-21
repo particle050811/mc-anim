@@ -20,8 +20,8 @@
 //   马的叫声、脚步、死亡用原版马的（entity.horse.*）。
 // 坐标：原点在脚底中心，Z 朝上，正面朝 −Y（lib/实体模型.tsx）。
 import React from 'react';
-import { rng, V3 } from '../../engine/model/parts.tsx';
-import { EntityModel, EntityModelData } from '../../engine/model/实体模型.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import { mthCos, restPose, toPartPoses } from '../../engine/anim/关键帧动画.ts';
 import { png } from '../../engine/model/贴图.ts';
 import { VanillaTopple } from '../特效/原版死亡.tsx';

@@ -9,7 +9,7 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { rad } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
-import { BedrockModel, BedrockModelView } from '../../../../engine/model/基岩模型.tsx';
+import { type BedrockModel, BedrockModelView } from '../../../../engine/model/基岩模型.tsx';
 import { png } from '../../../../engine/model/贴图.ts';
 import { LevelParams, canvasDpr } from '../../../../engine/core/渲染级别.ts';
 import { ScreenAo } from '../../../../engine/voxel/屏幕AO.tsx';
@@ -45,7 +45,7 @@ import { JiuhuHandCompass } from '../../../../world/角色/九胡持指南针.ts
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
 import { mouthAt } from '../../../../world/角色/口型.ts';
 import { fallSoundTable } from './声音.tsx';
-const jiuhuRaw = jiuhuRaw资产 as unknown as any; // 迁移：类型待补
+const jiuhuRaw = jiuhuRaw资产 as unknown as object;
 
 const JIUHU_MODEL = { ...jiuhuRaw, texture: png(jiuhuSkin) } as unknown as BedrockModel;
 // 望远镜视野（原版 Gui.renderSpyglassOverlay）：misc/spyglass_scope.png 画成边长 = 画面高 × 1.125 的正方形放在正中，四周补黑

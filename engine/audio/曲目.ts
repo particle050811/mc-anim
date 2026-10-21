@@ -20,7 +20,7 @@ export type Song = {
   名称: string;
   版本: string; // 给人看的版本说明
   音频: string; // import 进来的音频文件地址
-  文件: string; // 音频文件相对 src/ 的路径（剪辑包照它合成配乐，见 src/音效/音效清单.ts）
+  文件: string; // 音频的资产 id，只记进配乐清单（剪辑包照它找配乐），不用来加载
   节拍声: string; // 和音频等长的节拍声音轨地址（工具/配乐分析.py 生成）
   fileOffsetSec: number; // 音频文件里的时间 = 歌曲时间 + 文件偏移。分析和播放用的是同一个文件时为 0
   分析: AnalysisData;

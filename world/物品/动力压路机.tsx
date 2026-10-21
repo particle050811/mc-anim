@@ -6,7 +6,7 @@
 // 坐标（局部，单位格）：原点在滚筒中心，滚筒轴沿 X，压地的那一面朝 -Z，外壳在滚筒上方（+Z）、偏 +Y。换算：obj 先挪到滚筒中心，再绕 X 转 90°（obj 上 → +Z，obj +z 前方 → -Y），行列式为正、面不会翻。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { objGeometry, ObjModel } from '../../engine/model/OBJ网格.tsx';
+import { objGeometry, type ObjModel } from '../../engine/model/OBJ网格.tsx';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/物品/动力压路机';

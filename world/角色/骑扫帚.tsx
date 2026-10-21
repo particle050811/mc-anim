@@ -22,7 +22,7 @@
 import React from 'react';
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
-import { BedrockModel, BedrockModelView, BonePose } from '../../engine/model/基岩模型.tsx';
+import { type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import { BROOM, Broom } from '../物品/扫帚.tsx';
@@ -32,7 +32,7 @@ import type { Mouth } from './口型.ts';
 import type { FigurePose } from './骨架.tsx';
 import jiuhuRaw资产 from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
-const jiuhuRaw = jiuhuRaw资产 as unknown as any; // 迁移：类型待补
+const jiuhuRaw = jiuhuRaw资产 as unknown as object;
 
 // 九胡的模型：和 九胡.tsx 同一份数据（那边的组件只做站立和跑步的骨骼映射，坐姿在这里另写，不改原文件）
 const JIUHU_MODEL = { ...jiuhuRaw, texture: png(jiuhuSkin) } as unknown as BedrockModel;

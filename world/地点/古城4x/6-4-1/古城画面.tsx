@@ -8,7 +8,7 @@ import * as THREE from 'three';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { LiYing } from '../../../角色/李樱.tsx';
 import type { Mouth } from '../../../角色/口型.ts';
-import { FigurePose, bladeInHand } from '../../../角色/骨架.tsx';
+import { type FigurePose, bladeInHand } from '../../../角色/骨架.tsx';
 import { DrawnKatana, WornSheath } from '../../../物品/拔刀剑.tsx';
 import { Chest, chestState, lootrTex, type 开关, type 箱子朝向 } from '../../../物品/箱子.tsx';
 import { WoolBlocks } from '../../../物品/羊毛.tsx';

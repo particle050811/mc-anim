@@ -6,7 +6,7 @@
 // 坐标：原点在脚底中心，Z 朝上，正面朝 -Y，单位格。
 import React from 'react';
 import * as THREE from 'three';
-import { EntityModel, EntityModelData } from '../../engine/model/实体模型.tsx';
+import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';

@@ -13,7 +13,7 @@
 //   6-4-6～6-4-8：二人回田里，A1 在二人脚边；刘心忠踩响田西尖啸体 (-695,-51,259)，监守者在其北 4.5 格钻出（尖啸体召唤监守者，落点在周围水平 ±5 格内）。
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { rad } from '../../../../engine/anim/anim.ts';
-import { FigurePose, standPose } from '../../../角色/骨架.tsx';
+import { type FigurePose, standPose } from '../../../角色/骨架.tsx';
 import { flightWarp } from '../布局/强者.ts';
 
 export const FPS = 24;

@@ -17,12 +17,12 @@
 // 镜头里李樱双手握柄、锤头顺着手臂往外伸（下锤击），挂到骨架手上时用 骨架.tsx 的 `bladeInHand` 指方向。
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { BedrockModel, BedrockModelView } from '../../engine/model/基岩模型.tsx';
+import { type BedrockModel, BedrockModelView } from '../../engine/model/基岩模型.tsx';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw资产 from 'asset:模型/物品/重锤';
 import tex from 'asset:贴图/物品/重锤';
-const raw = raw资产 as unknown as any; // 迁移：类型待补
+const raw = raw资产 as unknown as object;
 
 const MODEL = { ...raw, texture: png(tex) } as unknown as BedrockModel;
 

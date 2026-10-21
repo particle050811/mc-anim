@@ -279,7 +279,7 @@ const boxEntryDist = (origin: V3, dir: V3, box: { min: V3; max: V3 }) => {
 };
 // 一路击穿：沿挑飞方向打到地面的每块实心方块（游戏坐标、原版方块 id、进这一格的程），出地面程 = 冲出湖面；工具/挡箭/搜挑飞.py --一路 写的，改了挑飞方向要重跑
 export const 一路击穿 = (挑飞击穿Json as unknown as { 方块: [number, number, number, string, number][] }).方块.map(([x, y, z, id, dist]) => ({ 方块: [x, y, z] as V3, id, 程: dist }));
-export const 出地面程 = 挑飞击穿Json.出地面程;
+export const 出地面程 = (挑飞击穿Json as unknown as { 出地面程: number }).出地面程;
 // 洞顶击穿完：箭尖穿过腔顶第二块深板岩（`一路击穿`[7]）、实体位置进到它里面这一刻，时间线.ts 的慢放从这里回原速（以前箭钉在这块里，回原速的时刻不变）
 export const 洞顶程 = 一路击穿[7].程 + 0.225;
 export const 洞顶击穿完 = 弹开 + 洞顶程 / 箭速上限;

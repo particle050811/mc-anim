@@ -8,7 +8,7 @@ import { rng } from '../../engine/model/parts.tsx';
 import type { Png } from '../../engine/model/贴图.ts';
 import { Chest, LOOTR_TEX } from '../物品/箱子.tsx';
 import { spawnBlockBreak, collectBreakParticles, BreakParticleQuads } from './方块破坏粒子.tsx';
-import { Particle, particleTexture } from './粒子面片.tsx';
+import { type Particle, particleTexture } from './粒子面片.tsx';
 
 const halfSize = 7 / 16; // 箱子半边长、中心高度
 // boss 被矛尖碰到、死的那一刻起画成多透明（用户 10-02 定巫妖死的一瞬间虚化 50%）：箱子就冒在它身上（一镜到底/战利品.tsx），身子不透明会把箱子埋住；近景的几处（巫妖、冰雪女王、巨人）的 编排.ts 都用它

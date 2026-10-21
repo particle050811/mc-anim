@@ -16,7 +16,7 @@
 //   东北边是城门拱、对面东门楼和城墙。
 // - 城主府书房：中央广场南半边，外框 x −5..6、y −19..−10，地板顶面离地 6 格；北窗朝广场中央的传送石碑和对面的房子。
 import React from 'react';
-import { BlockMesh, BlockMeshInfo } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo } from '../../engine/voxel/方块网格.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import guardRoomRaw from 'asset:网格/城门卫兵室/头';
 import guardRoomBin from 'asset:网格/城门卫兵室/顶点';

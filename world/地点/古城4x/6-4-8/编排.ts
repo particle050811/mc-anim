@@ -11,11 +11,11 @@
 //   - 尖啸声波环：一次 10 个、每 5 刻一个，持续 3.75 秒（模型/特效/尖啸声波.tsx）；本段开头是第四次尖啸后约 1 秒。
 //   - 监守者钻出期间不听振动（`Warden$VibrationUser.canReceiveVibration` 要 !isDiggingOrEmerging），二人急退落地它听不到；站直后才收到刘心忠那一踏，触角抖、发亮一下（实体事件 61），之后 40 刻不再听。
 // 机位：一个连续镜头。二人身后（正东）离地 9 格的高机位（低了会被碎石和刘心忠挡住），越过头顶看刘心忠前方的地面；监守者往上爬时镜头往前推、往上仰，二人急退时镜头跟着往后退、往下压，最后二人一左一右在前景下方，监守者在画面中上站直，背后是北墙和中央台。
-import { Key, sample, sampleV, VKey } from '../../../../engine/anim/anim.ts';
+import { type Key, sample, sampleV, type VKey } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { WARDEN } from '../../../生物/监守者.tsx';
 import { walkPose } from '../../../角色/追兵.tsx';
-import { FigurePose } from '../../../角色/骨架.tsx';
+import type { FigurePose } from '../../../角色/骨架.tsx';
 import { bowTextureFor } from '../../../物品/弓.tsx';
 import type { Cam } from '../6-4-1/古城画面.tsx';
 import { FPS, blockCenter, nearYaw, yawTo } from '../6-4-1/古城戏.ts';

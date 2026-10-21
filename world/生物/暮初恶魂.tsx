@@ -12,7 +12,7 @@
 // - 渲染层：构造里都没加层，`ShieldLayer`、`IceLayer` 也不带。不是多部件实体，没有发光层、半透明层。游戏里另有、这里没做的：发脾气阶段身上往下掉 BOSS_TEAR 眼泪粒子；喷的火球是另一个实体（`UrGhastFireball`）。
 // 坐标：原点在脚底中心，Z 朝上，正面朝 -Y（同 贴图方盒.tsx、巫妖.tsx），单位格。
 import React from 'react';
-import { EntityModel, EntityModelData, findPart } from '../../engine/model/实体模型.tsx';
+import { EntityModel, type EntityModelData, findPart } from '../../engine/model/实体模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/暮初恶魂';
 import skinClosed from 'asset:贴图/角色/暮初恶魂/闭眼';

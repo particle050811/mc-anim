@@ -10,8 +10,8 @@
 // 坐标：场景坐标（Z 朝上），单位格；时间：刻。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
-import { BlockModel, BlockModelData } from '../../engine/model/方块模型.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { DISPLAY, ItemDisplay, ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import type { ParticleSpawn } from '../特效/原版粒子.tsx';

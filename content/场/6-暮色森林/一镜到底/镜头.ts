@@ -13,7 +13,7 @@ import {
 } from './镜头构图.ts';
 import * as route from './路线.ts';
 import pullInData资产 from 'asset:数据/镜头/一镜到底/收表';
-const pullInData = pullInData资产 as unknown as any; // 迁移：类型待补
+const pullInData = pullInData资产 as unknown as { 收: number[][] };
 
 export { chaseSpans, camWindows } from './镜段.ts';
 

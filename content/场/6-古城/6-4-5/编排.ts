@@ -12,7 +12,7 @@
 // 机位两镜：1. 0～`turnEndSec`：兵营东墙外他东南偏东的中景（`firstCam`），看得见他整个身子转（6-4-4 回放硬切过来，不接 6-4-3c 的机位）。
 //   2. `turnEndSec` 硬切到大道墙豁口（兵营东南 20 米、豁口 x −1078～−1067 正好空着）：低机位侧面看这一跳全程，镜头跟着摇，跟着他起跳升高（R1 矮屋顶在南边一排楼后面，
 //      机位不升就看不见他落上去、再起跳）；再一跳往东北从镜头南边飞过出画。机位和弹道对着新世界方块核过（工具/机位核对）。
-import { Key, sample, sampleV, track } from '../../../../engine/anim/anim.ts';
+import { type Key, sample, sampleV, track } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import type { FigurePose } from '../../../../world/角色/骨架.tsx';
 import { G4 } from '../../../../world/地点/古城4x.tsx';

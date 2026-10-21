@@ -8,7 +8,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
-import { ItemLayer, ItemTransform, itemMesh } from '../../engine/model/物品贴图.tsx';
+import { type ItemLayer, type ItemTransform, itemMesh } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import glintPng from 'asset:贴图/物品/杂项物品/附魔光效';
 
