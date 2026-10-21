@@ -1,10 +1,10 @@
 // 求解缓存：模块初始化时的重计算（一镜到底的航线求解）按「层」存成文件，下一个页面直接读（用户 10-11：做个类似 Docker 的分级缓存）。
 // Remotion 每渲一段至少开两个页面，每个页面都从头执行所有模块，古城这种用不到航线的段也照算（Root 一加载就 import 了全部镜头）。
-// 分层：缓存键 = 哈希(层名 + 各层的键部件)，调用方把每一层放进 键部件：代码层是求解代码的源码指纹（`solverFingerprint(moduleName)`：remotion.config.ts 打包时用 esbuild 列出模块依赖闭包、对源码算哈希，经 DefinePlugin 注入）；
+// 分层：缓存键 = 哈希(层名 + 各层的键部件)，调用方把每一层放进 键部件：代码层是求解代码的源码指纹（`solverFingerprint(moduleName)`：打包时 pipeline/资产/webpack.ts 用 esbuild 列出模块依赖闭包、算哈希，经 DefinePlugin 注入）；
 // 数据层、输入层由调用方按值给（地形粗高度图指纹、这一程的起止端态和参数……）。哪层变了键就变；别的改动不碰这些层，照样命中。代码层按依赖闭包自动算，不手列文件，免得漏写依赖而缓存过期不自知。
-// 读：同步取数据根 渲染/ 下的 求解缓存/<键>.json（lib/数据源.ts 的 fetchTextSync；模块初始化是同步的，等不了 fetch）。
-// 写：页面写不了盘，新算出来的挂在 window.__求解缓存待写，由 工具/批量渲染.mjs、工具/常驻渲染.mjs 在页面关掉前收走写进同一个目录（工具/公共/环境.mjs 的 求解缓存目录）。
-// Studio 里不用（配置文件只在 Studio 启动时算一次指纹）；Node 里（工具/一镜到底/跑.mjs）没注入指纹，也不用。
+// 读：同步取 public 目录下的 求解/<键>.json（链到 <数据根>/cache/求解/，见 pipeline/渲/public目录.ts；经 数据源.ts 的 fetchTextSync，模块初始化是同步的，等不了 fetch）。
+// 写：页面写不了盘，新算出来的挂在 window.__求解缓存待写，由 sr render 在页面关掉前收走写进同一个目录（pipeline/渲/求解缓存收集.ts）。
+// Studio 里不用（配置文件只在 Studio 启动时算一次指纹）；Node 里跑的工具没注入指纹，也不用。
 // 数值原样存：Float64Array 按字节，-0、NaN、±Infinity 单独标出（JSON 会把 -0 写成 0、NaN 写成 null），读回来和现算逐位一样。
 import { getRemotionEnvironment } from 'remotion';
 import { canFetchSync, fetchTextSync } from './数据源.ts';
@@ -70,7 +70,7 @@ const pendingWrites: Record<string, string> = cacheEnabled ? ((window as unknown
 export const cachedSolve = <Result>(layer: string, keyParts: unknown[], compute: () => Result): Result => {
   if (!cacheEnabled || keyParts.some((k) => k === null)) return compute();
   const fileName = `${hash64(layer + '|' + keyString(keyParts))}.json`;
-  const cached = fetchTextSync(`求解缓存/${fileName}`);
+  const cached = fetchTextSync(`求解/${fileName}`);
   try {
     if (cached !== null) return decode(cached).值 as Result;
   } catch {
