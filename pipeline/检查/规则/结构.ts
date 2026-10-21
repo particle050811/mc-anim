@@ -120,6 +120,14 @@ export const 写死了 = (s: string, 本机名 = os.hostname()): string | null =
   return null;
 };
 
+// 资产目录({ './a.png': 资_0 }) 的键只是查表用的名字（和 webpackContext 的键同形，见 engine/core/资产目录.ts），不是要加载的路径
+const 是资产目录键 = (n: ts.Node) => {
+  const 属性 = n.parent;
+  if (!ts.isPropertyAssignment(属性) || 属性.name !== n || !ts.isObjectLiteralExpression(属性.parent)) return false;
+  const 调用 = 属性.parent.parent;
+  return ts.isCallExpression(调用) && ts.isIdentifier(调用.expression) && 调用.expression.text === '资产目录';
+};
+
 export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostname()) => {
   for (const p of c.文件()) {
     if (!代码后缀.test(p) || /\.d\.[cm]?ts$/.test(p)) continue;
@@ -138,6 +146,7 @@ export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostna
       }
       if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n)) {
         if (ts.isImportDeclaration(n.parent) || ts.isExportDeclaration(n.parent)) return; // import 来源由依赖图查
+        if (是资产目录键(n)) return;
         const 毛病 = 写死了(n.text, 本机名);
         if (毛病) 报.错(`渲染代码里有${毛病}：${JSON.stringify(n.text.slice(0, 80))}（路径从数据源和资产 id 取）`, p, 行号(sf, n));
       }

@@ -49,7 +49,7 @@
 
 [["代码"]]
 "旧位置" = "参考模型库/src/lib/实体模型.tsx"
-"新位置" = "world/lib/实体模型.tsx"
+"新位置" = "engine/model/实体模型.tsx"
 "说明" = "EntityModel 和附魔光泽 GLINT"
 
 [["代码"]]
