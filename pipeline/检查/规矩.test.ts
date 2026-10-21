@@ -60,6 +60,18 @@ describe('规矩', () => {
     expect(v).toMatch(/落点「src\/lib\/anim.ts」要写成 <路径> \[符号、符号…\]/);
   });
 
+  it('搬家 R2-A 暂放在 world/地点/<地点>/<旧目录>/ 的剧情编排里可以写例外，别的 world 照拦', async () => {
+    const 根 = 造仓库(
+      基础(),
+      规矩表('[]', '[{ "段" = "7-甲", "值" = 2, "原因" = "看过的版本", "出处" = "用户 10-21" }]'),
+      { 'world/地点/边城/6-3-6/落地.ts': "import { 例外 } from '../../../../engine/core/例外.ts';\nexport const 停 = 例外('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
+      { 'world/地点/边城轮廓.ts': "import { 例外 } from '../../engine/core/例外.ts';\nexport const 停 = 例外('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
+    );
+    const v = (await 跑('规矩', 根)).违规;
+    expect(v.join('\n')).toMatch(/world\/地点\/边城轮廓.ts:2 例外 只写在 content\/段\/ 或 content\/场\//);
+    expect(v.filter((x) => x.includes('6-3-6'))).toEqual([]);
+  });
+
   it('代码例外没登记就拦', async () => {
     const 根 = 造仓库(基础(), 画面("例外('打击停顿', 3, { 段: '7-甲', 原因: '看过的版本' })"));
     expect((await 跑('规矩', 根)).违规.join('\n')).toMatch(/规矩「打击停顿」对 段 7-甲 的例外没在 rules\/规矩.toml 登记/);

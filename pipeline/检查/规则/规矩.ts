@@ -19,6 +19,8 @@ const 键 = (规矩: string, x: { 段?: string; 场?: string }) => `${规矩}|${
 const 对象 = (x: { 段?: string; 场?: string }) => (x.段 !== undefined ? `段 ${x.段}` : `场 ${x.场}`);
 
 const 例外模块 = 'engine/core/例外';
+/** 搬家 R2-A 暂放在 world/地点/<地点>/<旧目录>/ 的剧情编排（docs/迁移.md 差异表）：拆回 content/场 之前，例外 也可以写在这里 */
+const R2暂放 = /^world\/地点\/[^/]+\/\d+-[^/]+\//;
 /** import/export 的模块是不是 engine/core/例外(.ts)：只认相对路径 */
 const 指向例外模块 = (文件: string, spec: ts.Expression | undefined) => {
   if (!spec || !ts.isStringLiteral(spec) || !spec.text.startsWith('.')) return false;
@@ -72,7 +74,9 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
         return;
       }
       const 在 = /^content\/(段|场)\/([^/]+)\//.exec(p);
-      if (!在) 报.错('例外 只写在 content/段/ 或 content/场/ 里（共用代码不为某一段开口子）', p, 行);
+      if (!在) {
+        if (!R2暂放.test(p)) 报.错('例外 只写在 content/段/ 或 content/场/ 里（共用代码不为某一段开口子）', p, 行);
+      }
       else if (在[1] === '段' && 依据.段 !== 在[2]) 报.错(`content/段/${在[2]}/ 里的例外要写 段: '${在[2]}'`, p, 行);
       else if (在[1] === '场' && typeof 依据.场 === 'string' && 依据.场 !== 在[2]) 报.错(`content/场/${在[2]}/ 里的例外写的是 场: '${依据.场}'`, p, 行);
       r.push({ 规矩, 段: 依据.段 as string | undefined, 场: 依据.场 as string | undefined, 值: 字面值(b), 文件: p, 行 });
