@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 配置 } from '../环境/配置.ts';
 import { 内存够渲染, 读内存, 读数说明, 核数, 一分钟负载 } from '../环境/资源.ts';
-import { 试拿, 放, 锁文件, 进程在吗 } from './锁.ts';
+import { 持有者, 试拿, 放, 锁文件, 进程在吗 } from './锁.ts';
 
 const 票过期毫秒 = 60_000;
 const 放行间隔秒 = 60;
@@ -84,14 +84,14 @@ export const 排队拿 = async (名: string, opts: { 锁目录?: string; 本机?
   const 我的票 = 领票(票目录, 本机);
   const 删票 = () => fs.rmSync(我的票.文件, { force: true });
   const 撤 = 登记收尾(删票);
-  let 说过 = false;
+  let 上回 = '';
   try {
     for (;;) {
       if (轮到我(票目录, 我的票, 本机) && 试拿(file, 本机)) break;
-      if (!说过 && opts.等待提示) {
-        opts.等待提示(fs.existsSync(file) ? `锁在 pid ${fs.readFileSync(file, 'utf8').trim() || '?'} 手里` : '前面还有人排队');
-        说过 = true;
-      }
+      // 换了持有者再说一遍（旧项目的工具不认票，锁放开时可能被它抢先）
+      const 现在 = fs.existsSync(file) ? `锁在 pid ${持有者(file) ?? '?'} 手里` : '前面还有人排队';
+      if (现在 !== 上回 && opts.等待提示) opts.等待提示(现在);
+      上回 = 现在;
       await 睡(间隔);
     }
   } finally {
