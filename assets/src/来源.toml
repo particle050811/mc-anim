@@ -223,6 +223,12 @@
 "说明" = "同名 wav 的逐字稿和来历"
 
 [["源文件"]]
+"路径" = "assets/src/角色/黄叛/参考音频B.txt"
+"旧路径" = "正篇/06-古城寻卷/4-古城/3a-风矢思索/配音/黄叛-参考音频B.txt"
+"许可" = "LicenseRef-Adapted-Authorized"
+"可见性" = "公开"
+
+[["源文件"]]
 "路径" = "assets/src/配音参考/RoadRoller-参考-李樱+DIO.txt"
 "旧路径" = "正篇/06-古城寻卷/3-边城/5-举锤/配音/RoadRoller-参考-李樱+DIO.txt"
 "许可" = "LicenseRef-Adapted-Authorized"
