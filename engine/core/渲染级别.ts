@@ -1,4 +1,5 @@
-import { getInputProps, getRemotionEnvironment } from 'remotion';
+import { getRemotionEnvironment } from 'remotion';
+import { 渲染输入 } from './渲染设置.ts';
 
 // 渲染级别：同一个 Composition、同一帧，按级别切换；三级画的是同一套真实方块的体素世界（lib/体素/），只差 `LevelParams`：
 //   视频：成片用的级别，近处看得出一块块方块。
@@ -17,7 +18,7 @@ export type RenderLevel = '视频' | '关键帧' | '预览';
 export type LevelParams = { 像素: number; 远: number; dpr: number };
 const videoLevel: LevelParams = { 像素: 0.75, 远: 24000, dpr: 1 };
 const previewLevel: LevelParams = { 像素: 3, 远: 6000, dpr: 1 };
-const isPreview = (getInputProps() as { 级别?: string }).级别 === '预览';
+const isPreview = (渲染输入() as { 级别?: string }).级别 === '预览';
 export const LevelParams: Record<RenderLevel, LevelParams> = {
   视频: isPreview ? previewLevel : videoLevel,
   关键帧: { 像素: 0.375, 远: 24000, dpr: 1 },
@@ -28,6 +29,6 @@ export const LevelParams: Record<RenderLevel, LevelParams> = {
 // Studio 预览不乘（视网膜屏 devicePixelRatio 是 2，会平白多画 4 倍）。
 // 命令行 --props='{"supersample":1}' 盖掉各级的超采样。
 export const canvasDpr = (supersample: number) => {
-  const override = (getInputProps() as { supersample?: number }).supersample;
+  const override = (渲染输入() as { supersample?: number }).supersample;
   return (typeof override === 'number' ? override : supersample) * (getRemotionEnvironment().isRendering ? window.devicePixelRatio || 1 : 1);
 };

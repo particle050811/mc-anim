@@ -6,7 +6,7 @@ import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '../../../../engine/core/渲染级别.ts';
 import { useThree } from '@react-three/fiber';
 import React from 'react';
-import { getInputProps, useCurrentFrame, useVideoConfig } from 'remotion';
+import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { ScreenAo } from '../../../../engine/voxel/屏幕AO.tsx';
 import { PostFx } from '../../../../engine/post/后期.tsx';
 import * as THREE from 'three';
@@ -29,6 +29,7 @@ import * as choreo from './编排.ts';
 import * as motion from './动作改进.ts';
 import { nagaLineCues, NagaShotSound } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../../../world/角色/口型.ts';
+import { 渲染输入 } from '../../../../engine/core/渲染设置.ts';
 
 // 李樱用哪一版动作：原版（6-1-2-斩娜迦-旧动作）是 编排.ts 的 `liying`；正式的 6-1-2-斩娜迦（动作改进）换成 动作改进.ts 的 `liyingV2`（人、残影、刀光都跟着换）
 type LiyingVersion = (frame: number) => ReturnType<typeof choreo.liying>;
@@ -59,7 +60,7 @@ const mazeLightPresets: Record<MazeLightPreset, { 向: V3; 倍: number; remap: b
 };
 const defaultMazeLight: MazeLightPreset = '一镜';
 // 屏幕 AO 压不压导出网格（评估用：--props='{"meshAO":true}'）
-const meshAO = Boolean((getInputProps() as { meshAO?: boolean }).meshAO);
+const meshAO = Boolean((渲染输入() as { meshAO?: boolean }).meshAO);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);

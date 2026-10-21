@@ -3,7 +3,6 @@
 // 飞行镜头不要横滚（用户 10-01 定），各镜头不填 `roll`，留着只是接口兼容。扫帚转弯的内倾见 lib/飞行路径.ts 的 `bankAngle`。
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
-import { getInputProps } from 'remotion';
 import * as THREE from 'three';
 import { SunLight } from 'three/examples/jsm/lights/SunLight.js';
 import { CascadedShadow, quarterOctaveCeil } from '../../engine/light/级联阴影.ts';
@@ -11,6 +10,7 @@ import { rad } from '../../engine/anim/anim.ts';
 import { SKY, SkyDome } from '../../engine/light/天空.tsx';
 import { overworldMix } from '../../engine/light/光照配比.ts';
 import { OverworldSky, SUN_OW } from './主世界光照.tsx';
+import { 渲染输入 } from '../../engine/core/渲染设置.ts';
 
 export type CamPose = { pos: number[]; tgt: number[]; lens: number; roll?: number };
 
@@ -37,7 +37,7 @@ export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number }> = 
 // 远端取能见度的 1.5 倍、不超过 3 公里，按四分之一个八度取整（级联大小不每帧变，影子边不游动），最后 40% 淡掉；切分在 max(300, 2 × 离地) 米。
 // 体素地形要投影得在 `VoxelWorld` 上给同一个 `shadowLightDir`（见 lib/体素/材质.ts），画布要开 shadows。
 // 对比：--props='{"overworldShadow":false}' 换回不投影的日光
-export const overworldShadowOn = (getInputProps() as { overworldShadow?: boolean }).overworldShadow !== false;
+export const overworldShadowOn = (渲染输入() as { overworldShadow?: boolean }).overworldShadow !== false;
 export const overworldShadowFar = (visibility: number) => quarterOctaveCeil(Math.min(visibility * 1.5, 3000));
 export const OverworldSunLight: React.FC<{ sun?: [number, number, number]; shadowFar: number; aboveGround: number; intensity?: number }> = ({ sun = SUN_OW, shadowFar: shadowFar, aboveGround: heightAgl, intensity: intensity = overworldMix.直射 }) => {
   const light = useMemo(() => {

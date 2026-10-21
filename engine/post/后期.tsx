@@ -8,13 +8,13 @@
 // 不支持：画布上别的 useFrame 接管渲染、又不经过 gl.getRenderTarget() 的（目前没有）。
 import { useFrame } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
-import { getInputProps } from 'remotion';
 import * as THREE from 'three';
+import { 渲染输入 } from '../core/渲染设置.ts';
 
 // 挂了 <PostFx /> 的画布：屏幕 AO 的离屏图跟着换成半精度（lib/体素/屏幕AO.tsx），亮部不在那一步被量化成 8 位
 export const postFxRenderers = new WeakSet<THREE.WebGLRenderer>();
 
-const inputOverrides = getInputProps() as { 后期?: boolean };
+const inputOverrides = 渲染输入() as { 后期?: boolean };
 export const postFxEnabled = inputOverrides.后期 !== false;
 
 const VS = /* glsl */ `

@@ -12,7 +12,7 @@
 // - 拍：每段说明框对应那截话第一个字的起音（不按能量低谷切：会落在字间气口里，早晚不一）。
 // - 砸：思索里砸穿跟着第 ④ 截话的哪几个字演（编排.ts 的 轨迹）：撞 = 锤砸到石半砖，碎 = 泥土、石头两层各在哪个字碎，取字的韵母起来那刻。砸穿要踩在「将方块破坏」上、砸到底在「直达地下」开口时，不能早（用户 10-11「音画不同步」）。
 // - 完：最后一个字说完（响度从字上掉下去十几 dB 那一格，后面的气声不算）。Qwen3-ASR 核对过整句（「实际」常被认成同音的「十级」，听着是对的）。
-import { getInputProps } from 'remotion';
+import { 渲染输入 } from '../../../../engine/core/渲染设置.ts';
 
 export type LineVersion = '改字' | '原文' | '五句';
 // `增益dB`：拉到和 src/配音/ 的台词一样响（-18 LUFS，工具/配音/生成台词.py 的规矩）要加多少。这一句不走台词轨（没有 src/配音/ 的副本），文件原样放、在这里压（src/配音/台词表.json 的 6-3-2-李樱-压路机 也记了）
@@ -53,7 +53,7 @@ export const lineTable: Record<
 };
 const requested = (() => {
   try {
-    return (getInputProps() as { 台词?: LineVersion }).台词;
+    return (渲染输入() as { 台词?: LineVersion }).台词;
   } catch {
     return undefined; // 诊断脚本在 node 里跑，没有 Remotion 环境
   }

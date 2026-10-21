@@ -1,10 +1,10 @@
-import { getInputProps } from 'remotion';
+import { 渲染输入 } from '../core/渲染设置.ts';
 
 // 去台词开关（默认关）：只在 工具/剪辑微调/导出剪辑包.py --正式 / --渲去台词 时打开，渲染时给 --props='{"去台词":true}'，台词总线整条静音，别的原样。
 // 拼出来是整片去掉台词以后的声音，台词另按各句的落点和增益铺成片段，给用户在剪辑软件里拖着试节奏（用户 10-11 要求）
 function stripped(bus: '去台词'): boolean {
   try {
-    return Boolean((getInputProps() as Record<string, unknown>)[bus]);
+    return Boolean((渲染输入() as Record<string, unknown>)[bus]);
   } catch {
     return false; // 诊断脚本在 node 里跑，没有 Remotion 环境
   }

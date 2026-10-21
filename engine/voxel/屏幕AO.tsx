@@ -16,7 +16,6 @@
 // 不做 Voxy 以外的处理：不按距离截断，不模糊。镂空树叶：表层缝里看到内层，被 SSAO 压暗，正是原顶点 AO 干的事（材质里的缝色 `HOLE` 按这个定）。
 // 尺寸用画布实际像素（dpr、超采样跟着变）；半径按世界尺度。
 import { useFrame } from '@react-three/fiber';
-import { getInputProps } from 'remotion';
 import { voxelsPending } from './世界.tsx';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
@@ -26,6 +25,7 @@ import { PHOTON_CLOUD_COMMON_GLSL, PHOTON_CLOUD_SHADOW_GLSL, cloudUniforms, upda
 import { aoPassUniform } from './材质.ts';
 import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, type MidPassContext } from './中间步骤.ts';
+import { 渲染输入 } from '../core/渲染设置.ts';
 
 export type ScreenAoProps = {
   // 每个像素的采样数：Voxy BEST = 24、BETTER = 12；离线渲染用 24
@@ -178,7 +178,7 @@ void main() {
 }`;
 
 // 第 1 遍藏起来、留到第 3 遍画的：三维画布本来就按半透明另排一队的（transparent）、不是普通混合的（加色的特效之类）、标了不挡的
-const aoDisabled = (getInputProps() as { 屏幕AO?: boolean }).屏幕AO === false;
+const aoDisabled = (渲染输入() as { 屏幕AO?: boolean }).屏幕AO === false;
 const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.NormalBlending || m.userData.屏幕AO === '不挡';
 
 type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null };

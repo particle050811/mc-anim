@@ -4,12 +4,12 @@
 // 锤底（压路机虚影滚筒最低点，见 `maceBottomZ`）碰到这一格顶面，这一格才碎（`breakSecAt`），碎块（碎块.tsx）也从碎掉的格子、在那一刻崩出来。
 // 井里锤底一帧走 2.3～3.7 格（入井 88 米/秒、打穿洞顶 55 米/秒，编排.ts 的 `liYingShaft`），所以按每格自己的碎掉时刻算、不按帧：不漏层、不提前、任意一帧单独渲染结果一样。
 import React, { useMemo } from 'react';
-import { getInputProps } from 'remotion';
 import * as THREE from 'three';
 import * as choreo from './编排.ts';
 import { FPS, 撞击时刻, 段表, 物理时间, 撞击段内帧 } from './时间线.ts';
 import { blockMaterial, blockPngs, type 方块贴图名 } from './竖井.tsx';
 import fillData资产 from 'asset:数据/镜头/6-3-下坠/竖井4x.填块';
+import { 渲染输入 } from '../../../../engine/core/渲染设置.ts';
 const fillData = fillData资产 as unknown as any; // 迁移：类型待补
 
 // ---------- 锤底 ----------
@@ -163,7 +163,7 @@ export const breachByFrame = () => {
 
 // 命令行 --props='{"breachCheck":1}' 时把 `砸穿逐帧` 的结果分段打到控制台（console.warn，模块加载时打：渲染帧标签页的日志 remotion 不转出来），
 // 例：npx remotion still 6-3-5至6-举锤砸穿 x.png --frame=0 --props='{"breachCheck":1}' --log=verbose，把「砸穿核对段<7 位偏移>」后面的拼起来就是 JSON
-if ((getInputProps() as { breachCheck?: number }).breachCheck) {
+if ((渲染输入() as { breachCheck?: number }).breachCheck) {
   const js = JSON.stringify({ ...breachByFrame(), 撞击: 撞击时刻(), 下坠: choreo.fallStats() });
   for (let k = 0; k < js.length; k += 4000) console.warn('砸穿核对段' + String(k).padStart(7, '0') + js.slice(k, k + 4000));
 }

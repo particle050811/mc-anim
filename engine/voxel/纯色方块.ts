@@ -1,10 +1,10 @@
 // 纯色方块：方块网格（lib/方块网格.tsx）和体素世界（lib/真实方块图集.ts）共用。
-import { getInputProps } from 'remotion';
 import type { Png } from '../model/贴图.ts';
+import { 渲染输入 } from '../core/渲染设置.ts';
 
 // 纯色方块（渲染参数 --props='{"纯色方块":true}'）：图集里每张 16×16 贴图换成它不透明像素的平均色。
 // 给 AI 视频模型的参考视频用（用户 2026-10-13）：贴图太像游戏时模型照抄参考视频的画面，压成纯色后材质细节只能照写实关键帧去补
-export const flatColorBlocks = Boolean((getInputProps() as { 纯色方块?: boolean }).纯色方块);
+export const flatColorBlocks = Boolean((渲染输入() as { 纯色方块?: boolean }).纯色方块);
 // 层：'花草' = 方块网格的 plants 层（草、蕨这类灰色贴图整张抠掉，不管透明多少；花保留轮廓、不补实）；
 // '其他' = 方块网格的其余各层（大半不透明的补成实心，不抠）；'不分' = 体素世界（一张图集各层共用，补实和去草都按透明多少分）
 export const flattenAtlasColors = (atlas: Png, layer: '花草' | '其他' | '不分'): Png => {

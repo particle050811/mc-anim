@@ -4,7 +4,8 @@
 // 渲染时把放法打到浏览器日志，一声一行 `音效清单 {json}` / `配乐清单 {json}` / `台词清单 {json}`（台词轨.tsx）；工具/剪辑微调/导出音效清单.mjs 收集，导出剪辑包.py 照着合成。
 // 帧是 Composition 的绝对帧（外面包的 Sequence 的起点、长度已经算进去）。
 import { useContext } from 'react';
-import { getInputProps, Internals, useVideoConfig } from 'remotion';
+import { Internals, useVideoConfig } from 'remotion';
+import { 渲染输入 } from '../core/渲染设置.ts';
 
 export type SfxClipLog = {
   名: string;
@@ -20,7 +21,7 @@ export type SfxClipLog = {
 
 const exportOn = (() => {
   try {
-    return Boolean((getInputProps() as Record<string, unknown>).exportSfx);
+    return Boolean((渲染输入() as Record<string, unknown>).exportSfx);
   } catch {
     return false;
   }

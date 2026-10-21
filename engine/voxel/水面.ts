@@ -5,11 +5,11 @@
 // - 天光反射：反射方向上的天色，就是穹顶同一套按仰角的渐变（`SkyDome` 写进 `waterSky`），不用 PMREM 环境图，同走材质色调映射，倒影和天接得上；
 // - 太阳高光：粗糙度压到 0.12，主光高光照着波纹法线落出碎亮点（逆光最明显）。
 // 接口：`水面GLSL`（片元函数）、`patchWaterShader`(shader, 判水) 在 onBeforeCompile 里调；`waterSky` 是共用 uniform。
-import { getInputProps } from 'remotion';
 import * as THREE from 'three';
+import { 渲染输入 } from '../core/渲染设置.ts';
 
 // 试档用：--props='{"waterReflMax":0.3}'，给了就盖掉下面按天定的上限
-const cliReflMax = (getInputProps() as { waterReflMax?: number }).waterReflMax;
+const cliReflMax = (渲染输入() as { waterReflMax?: number }).waterReflMax;
 export const skyBandCount = 8;
 // 天色：穹顶按仰角正弦的渐变（线性颜色，同穹顶着色器里的 Color）；时间：秒（帧号 / fps）
 export const waterSky = {
