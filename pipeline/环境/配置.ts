@@ -35,6 +35,13 @@ const 项表 = {
   ffprobe: { 变量: 'SR_FFPROBE', 说明: 'ffprobe 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffprobe' },
   渲染内存下限: { 变量: 'SR_RENDER_FREE_MIN', 说明: '渲染放行要的空闲内存百分比（照旧资源闸 30%）', 是路径: false, 默认: () => '30' },
   主机: { 变量: 'SR_HOST', 说明: '本机名（写进锁和运行记录）', 是路径: false, 默认: () => os.hostname() },
+  剪映: { 变量: 'SR_JIANYING_APP', 说明: '剪映专业版（Mac 版的 .app；读回草稿时解密用它的库）', 是路径: true, 默认: () => '/Applications/VideoFusion-macOS.app' },
+  剪映草稿: {
+    变量: 'SR_JIANYING_DRAFTS',
+    说明: '剪映的草稿目录（sr jianying export 写进这里，首页「本地草稿」里就有）',
+    是路径: true,
+    默认: () => path.join(os.homedir(), 'Movies', 'JianyingPro', 'User Data', 'Projects', 'com.lveditor.draft'),
+  },
 } satisfies Record<string, 项定义>;
 
 export type 配置键 = keyof typeof 项表;
@@ -100,6 +107,8 @@ export const 母版目录 = (段键: string) => 数据路径('cache', '母版', 
 /** 透明叠层的缓存：cache/叠层/<段键>-<名>/ */
 export const 叠层目录 = (叠层键: string) => 数据路径('cache', '叠层', 叠层键);
 export const 交付根 = () => 数据路径('交付');
+/** 剪映解密.cpp 编出来的程序（按平台分，第一次读回草稿时编） */
+export const 剪映解密程序 = () => 数据路径('cache', '剪映解密', `${process.platform}-${process.arch}`, '剪映解密');
 export const 运行目录 = () => 数据路径('run');
 export const 耗时表 = () => 数据路径('run', 'logs', '耗时.tsv');
 export const 运行记录目录 = () => 数据路径('run', '运行记录');
