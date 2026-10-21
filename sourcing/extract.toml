@@ -1,0 +1,1083 @@
+# 取材清单：从游戏和模组 jar 导出资产的唯一一份登记（照旧项目 参考模型库/工具/取材/取材清单.toml 搬来）。jar 登记在 jars.toml。
+# 跑：sr extract <名称或组>...；--只打印 只列命令，--检查 查缺的 jar、程序、脚本和库里的字节（--校验 再核 jar 的 sha256），--全部 = 所有有步骤、不用开游戏、不待迁移的条目。
+# 每个条目在 <数据根>/run/extract/<名称>/ 这个暂存目录里跑（目录布局照旧项目的 参考模型库/，步骤里的相对路径不用改），
+# 跑完按「产物」逐个算 sha256 和 assets/资产锁.json 比：一样的放进库（库里已有就不动），不一样的报出来、不入库（资产锁只认登记过的那一版）。
+# 每条 [["取材"]]：
+#   名称      跑的时候用的名字
+#   需要      用到的 jar，写 jars.toml 里的 id
+#   前置      先要跑哪几条（在同一个暂存目录里先跑，后面的步骤读它们的产物）
+#   要开游戏  步骤要连着开着的取材客户端（sr mcai game start 先开），--全部 里不跑
+#   待迁移    步骤要的旧项目工具或输入还没搬过来，跑不了；写原因
+#   公开版    "提取"：公开版不带这些文件，用户按这条从 jar 提取；"不提取"：后面注明公开版怎么拿到
+#   公开版提取  公开版提取时不跑步骤、改用内置做法时写（内置:游戏音效、内置:网格图集）
+#   步骤      参数列表，不过 shell，在暂存目录里逐条跑，一条失败就停。第一个参数可以是下面「程序」里的简称，
+#             或 python（sr 配置 SR_PYTHON）、ts（旧项目的 一镜到底/跑.mjs，待迁移）、mcai（sourcing/mcai/mcai.py，经 sr mcai 同样的环境）、复制（拷一个文件）。
+#             参数里 {jar:id[,id]} 换成 jar 路径（逗号连接），{prism数据} 换成 Prism 的数据目录，{脚本} 换成 sourcing/extract/；
+#             { "输出" = [...] } 是先跑这条命令、把输出按空白拆开填在这里。
+#   ["取材"."输入"]  步骤要读的非 jar 文件：资产 id = 暂存目录里的位置，跑之前从资产库拷进去。
+#   ["取材"."产物"]  放在条目最后：资产 id = 暂存目录里的文件（相对暂存目录）。
+#             id 写成 <id 目录>/* 时指资产锁里这个目录下（一层）的全部 id，文件那边的 * 换成 id 的最后一段。
+#   脚本读 SR_GAME（游戏环境）、SR_JAVA_HOME（javap）、SR_MC_ASSETS（原版资源）这几个环境变量，sr extract 按配置传。
+
+["程序"]
+"导出模型" = ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出模型.py"]
+"导出实体模型" = ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出实体模型.py"]
+"网格碎块" = ["uv", "run", "-q", "--with", "numpy", "python", "{脚本}/网格碎块.py"]
+
+# 一组一起跑；另有 --全部
+["组"]
+"碎块" = ["6-1-5碎块", "6-1-7碎块", "6-1-8碎块", "6-1-8b碎块", "6-3-6震地方块", "6-4-3碎块"]
+
+[["取材"]]
+"名称" = "娜迦贴图"
+"需要" = ["twilightforest"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出模型", "{jar:twilightforest}", "src/模型/角色/娜迦实机.贴图", "head=assets/twilightforest/textures/model/nagahead.png", "charging=assets/twilightforest/textures/model/nagahead_charging.png", "dazed=assets/twilightforest/textures/model/nagahead_dazed.png", "segment=assets/twilightforest/textures/model/nagasegment.png"],
+]
+["取材"."产物"]
+"贴图/角色/娜迦实机/*" = "src/模型/角色/娜迦实机.贴图/*.png"
+
+[["取材"]]
+"名称" = "粒子贴图"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/粒子.贴图", "assets/minecraft/textures/particle/explosion_*.png", "assets/minecraft/textures/particle/generic_*.png", "assets/minecraft/textures/particle/critical_hit.png", "assets/minecraft/textures/particle/drip_hang.png", "assets/minecraft/textures/particle/glitter_*.png", "assets/minecraft/textures/particle/splash_*.png"],
+]
+["取材"."产物"]
+"贴图/特效/粒子/*" = "src/模型/特效/粒子.贴图/*.png"
+
+[["取材"]]
+"名称" = "夜幕刀光"
+"需要" = ["nightfall"]
+"公开版" = "提取"
+"来源" = "Epic Fight Nightfall 3.4.0"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出模型", "{jar:nightfall}", "src/模型/特效/夜幕刀光.贴图", "power3=assets/efn/textures/trail/power3.png", "assets/efn/textures/particle/yamato_cut*_a.png", "assets/efn/textures/particle/efn_parry_flash_main_render*.png"],
+]
+["取材"."产物"]
+"贴图/特效/夜幕刀光/*" = "src/模型/特效/夜幕刀光.贴图/*.png"
+
+[["取材"]]
+"名称" = "6-3-6震地方块"
+"需要" = []
+"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release（公开版.toml 外部取得「场景网格几何」）
+"步骤" = [
+  ["网格碎块", "--不推里层", "src/模型/场景/古城4x-中.网格", "src/镜头/6-3-6/震地方块.json", "0,-11.5,-2.9,21,10.5,0.9"],
+]
+["取材"."产物"]
+"碎块/镜头/6-3-6/震地方块" = "src/镜头/6-3-6/震地方块.json"
+
+[["取材"]]
+"名称" = "灾变圆环"
+"需要" = ["cataclysm"]
+"公开版" = "提取"
+"来源" = "L_Ender's Cataclysm 3.31"
+"许可" = "未声明（mods.toml 是占位符，按保留全部权利处理）"
+"步骤" = [
+  ["导出模型", "{jar:cataclysm}", "src/模型/特效/灾变圆环.贴图", "assets/cataclysm/textures/particle/ring_*.png"],
+]
+["取材"."产物"]
+"贴图/特效/灾变圆环/*" = "src/模型/特效/灾变圆环.贴图/*.png"
+
+[["取材"]]
+"名称" = "6-4-3碎块"
+"需要" = []
+"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"步骤" = [
+  ["网格碎块", "--不推里层", "src/模型/场景/古城4x-西3.网格", "src/镜头/6-4-3/碎块.json", "-364.8,46.2,19.2,-364.2,46.8,19.8", "-364.8,46.2,20.2,-364.2,46.8,20.8", "-364.8,46.2,21.2,-364.2,46.8,21.8", "-364.8,46.2,22.2,-364.2,46.8,22.8", "-364.8,46.2,23.2,-364.2,46.8,23.8", "-364.8,46.2,24.2,-364.2,46.8,24.8", "-363.8,46.2,35.2,-363.2,46.8,35.8", "-365.8,46.2,20.2,-365.2,46.8,20.8"],
+]
+["取材"."产物"]
+"碎块/镜头/6-4-3/碎块" = "src/镜头/6-4-3/碎块.json"
+
+[["取材"]]
+"名称" = "九胡模型"
+"需要" = ["ysm"]
+"公开版" = "提取"
+"来源" = "Yes Steve Model 2.6.5 内置模型 wine_fox"
+"许可" = "jar 标 All rights reserved；内置酒狐模型 CC BY-NC-SA 4.0"
+"步骤" = [
+  ["导出模型", "{jar:ysm}", "src/模型/角色/九胡.模型.json", "assets/yes_steve_model/builtin/wine_fox/01_taisho_maid/models/main.json", "assets/yes_steve_model/builtin/wine_fox/01_taisho_maid/textures/skin.png", "--去掉", "FOX,Backgrounds,molang,molang2,molang3"],
+]
+["取材"."产物"]
+"模型/角色/九胡" = "src/模型/角色/九胡.模型.json"
+"贴图/角色/九胡" = "src/模型/角色/九胡.模型.png"
+
+[["取材"]]
+"名称" = "李樱模型"
+"需要" = []
+"待迁移" = "要旧项目的 工具/李樱体素导出.py 和它读的体素源，还没搬"
+"公开版" = "不提取"  # 自制数据，随仓库发
+"步骤" = [
+  ["python", "工具/李樱体素导出.py"],
+]
+["取材"."产物"]
+"体素/李樱" = "src/模型/角色/李樱.体素.json"
+
+[["取材"]]
+"名称" = "战利品箱"
+"需要" = ["lootr"]
+"公开版" = "提取"
+"来源" = "Lootr 0.7.35"
+"许可" = "mods.toml 只给链接（仓库 LICENSE），未离线核"
+"步骤" = [
+  ["导出模型", "{jar:lootr}", "src/模型/物品/战利品箱.png", "chest=assets/lootr/textures/old_chest.png"],
+  ["导出模型", "{jar:lootr}", "src/模型/物品/战利品箱-已开.png", "chest=assets/lootr/textures/old_chest_opened.png"],
+]
+["取材"."产物"]
+"贴图/物品/战利品箱" = "src/模型/物品/战利品箱.png"
+"贴图/物品/战利品箱-已开" = "src/模型/物品/战利品箱-已开.png"
+
+[["取材"]]
+"名称" = "暮色箱子"
+"需要" = ["twilightforest"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出模型", "{jar:twilightforest}", "src/模型/物品/暮色箱子.贴图", "暮色橡木=assets/twilightforest/textures/model/chest/twilight/twilight.png", "林冠木=assets/twilightforest/textures/model/chest/canopy/canopy.png", "红树木=assets/twilightforest/textures/model/chest/mangrove/mangrove.png", "暗木=assets/twilightforest/textures/model/chest/darkwood/darkwood.png"],
+]
+["取材"."产物"]
+"贴图/物品/暮色箱子/*" = "src/模型/物品/暮色箱子.贴图/*.png"
+
+[["取材"]]
+"名称" = "钻石"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/钻石.png", "diamond=assets/minecraft/textures/item/diamond.png"],
+]
+["取材"."产物"]
+"贴图/物品/钻石" = "src/模型/物品/钻石.png"
+
+[["取材"]]
+"名称" = "结构指南针"
+"需要" = ["explorerscompass"]
+"公开版" = "提取"
+"来源" = "Explorer's Compass 1.4.0"
+"许可" = "CC BY-NC-SA 4.0"
+"步骤" = [
+  ["导出模型", "{jar:explorerscompass}", "src/模型/物品/结构指南针.png", "compass=assets/explorerscompass/textures/item/explorerscompass_16.png"],
+]
+["取材"."产物"]
+"贴图/物品/结构指南针" = "src/模型/物品/结构指南针.png"
+
+[["取材"]]
+"名称" = "鼓风机"
+"需要" = ["create", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "机械动力 Create 6.0.8"
+"许可" = "MIT"
+"步骤" = [
+  ["导出模型", "{jar:create,client-1.20.1}", "src/模型/物品/鼓风机.模型.json", "外壳=create:encased_fan[facing=north]", "叶片=create:block/encased_fan/propeller", "传动轴=create:block/shaft_half", "物品=create:block/encased_fan/item"],
+]
+["取材"."产物"]
+"模型/物品/鼓风机" = "src/模型/物品/鼓风机.模型.json"
+"贴图/物品/鼓风机" = "src/模型/物品/鼓风机.模型.png"
+
+[["取材"]]
+"名称" = "扫帚"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/扫帚.模型.json", "assets/touhou_little_maid/models/bedrock/entity/broom.json", "assets/touhou_little_maid/textures/bedrock/entity/broom.png"],
+]
+["取材"."产物"]
+"模型/物品/扫帚" = "src/模型/物品/扫帚.模型.json"
+"贴图/物品/扫帚" = "src/模型/物品/扫帚.模型.png"
+
+[["取材"]]
+"名称" = "天空"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/天空.贴图", "sun=assets/minecraft/textures/environment/sun.png", "clouds=assets/minecraft/textures/environment/clouds.png"],
+]
+["取材"."产物"]
+"贴图/场景/天空/*" = "src/模型/场景/天空.贴图/*.png"
+
+[["取材"]]
+"名称" = "巫妖"
+"需要" = ["twilightforest", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/巫妖.模型.json", "巫妖=twilightforest.client.model.entity.LichModel", "--贴图", "巫妖=assets/twilightforest/textures/model/twilightlich64.png"],
+  ["导出模型", "{jar:twilightforest}", "src/模型/角色/巫妖护盾.贴图", "frame=assets/twilightforest/textures/item/lich_shield_frame.png", "fill=assets/twilightforest/textures/item/lich_shield_fill.png"],
+  ["导出模型", "{jar:twilightforest}", "src/模型/物品/巫妖权杖.png", "scepter=assets/twilightforest/textures/item/twilight_scepter.png"],
+]
+["取材"."产物"]
+"模型/角色/巫妖" = "src/模型/角色/巫妖.模型.json"
+"贴图/物品/巫妖权杖" = "src/模型/物品/巫妖权杖.png"
+"贴图/角色/巫妖" = "src/模型/角色/巫妖.模型.png"
+"贴图/角色/巫妖护盾/*" = "src/模型/角色/巫妖护盾.贴图/*.png"
+
+[["取材"]]
+"名称" = "九头蛇"
+"需要" = ["twilightforest", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/九头蛇.模型.json", "身体=twilightforest.client.model.entity.HydraModel", "头=twilightforest.client.model.entity.HydraHeadModel", "颈=twilightforest.client.model.entity.HydraNeckModel", "--贴图", "九头蛇=assets/twilightforest/textures/model/hydra4.png"],
+]
+["取材"."产物"]
+"模型/角色/九头蛇" = "src/模型/角色/九头蛇.模型.json"
+"贴图/角色/九头蛇" = "src/模型/角色/九头蛇.模型.png"
+
+[["取材"]]
+"名称" = "冰雪女王"
+"需要" = ["twilightforest", "client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1；暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）；Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/冰雪女王.模型.json", "冰雪女王=twilightforest.client.model.entity.SnowQueenModel", "--贴图", "冰雪女王=assets/twilightforest/textures/model/snowqueen.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/角色/冰雪女王冰盾.png", "ice=assets/minecraft/textures/block/packed_ice.png"],
+]
+["取材"."产物"]
+"模型/角色/冰雪女王" = "src/模型/角色/冰雪女王.模型.json"
+"贴图/角色/冰雪女王" = "src/模型/角色/冰雪女王.模型.png"
+"贴图/角色/冰雪女王冰盾" = "src/模型/角色/冰雪女王冰盾.png"
+
+[["取材"]]
+"名称" = "长矛"
+"需要" = ["client-1.21.11"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.21.11"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.21.11}", "src/模型/物品/下界合金长矛.png", "spear=assets/minecraft/textures/item/netherite_spear_in_hand.png"],
+]
+["取材"."产物"]
+"贴图/物品/下界合金长矛" = "src/模型/物品/下界合金长矛.png"
+
+[["取材"]]
+"名称" = "药水"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/喷溅药水.贴图", "bottle=assets/minecraft/textures/item/splash_potion.png", "overlay=assets/minecraft/textures/item/potion_overlay.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/药水粒子.贴图", "assets/minecraft/textures/particle/spell_*.png", "assets/minecraft/textures/particle/effect_*.png"],
+]
+["取材"."产物"]
+"贴图/物品/喷溅药水/*" = "src/模型/物品/喷溅药水.贴图/*.png"
+"贴图/特效/药水粒子/*" = "src/模型/特效/药水粒子.贴图/*.png"
+
+[["取材"]]
+"名称" = "6-1-5碎块"
+"需要" = []
+"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"步骤" = [
+  ["网格碎块", "src/模型/场景/巫妖怪塔.网格", "src/镜头/6-1-5/碎块.json", { "输出" = ["ts", "工具/一镜到底/巫妖墙洞.ts"] }],
+  ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-5/碎块.json", { "输出" = ["ts", "工具/一镜到底/巫妖墙洞.ts", "--分组"] }],
+]
+["取材"."产物"]
+"碎块/镜头/6-1-5/碎块" = "src/镜头/6-1-5/碎块.json"
+
+[["取材"]]
+"名称" = "动力压路机"
+"需要" = ["create"]
+"公开版" = "提取"
+"来源" = "机械动力 Create 6.0.8"
+"许可" = "MIT"
+"步骤" = [
+  ["导出模型", "{jar:create}", "src/模型/物品/动力压路机.模型.json", "assets/create/models/block/mechanical_roller/item.obj", "roller_casing=assets/create/textures/block/roller_casing.png", "roller_metal=assets/create/textures/block/roller_metal.png", "roller_wheel=assets/create/textures/block/roller_wheel.png"],
+]
+["取材"."产物"]
+"模型/物品/动力压路机" = "src/模型/物品/动力压路机.模型.json"
+"贴图/物品/动力压路机" = "src/模型/物品/动力压路机.模型.png"
+
+[["取材"]]
+"名称" = "粉碎轮"
+"需要" = ["create", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "机械动力 Create 6.0.8 + 原版 Minecraft 1.20.1"
+"许可" = "MIT + Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:create,client-1.20.1}", "src/模型/物品/粉碎轮.模型.json", "assets/create/models/block/crushing_wheel/crushing_wheel.obj", "crushing_wheel_insert=assets/create/textures/block/crushing_wheel_insert.png", "crushing_wheel_plates=assets/create/textures/block/crushing_wheel_plates.png", "m_axis=assets/create/textures/block/axis.png", "m_axis_top=assets/create/textures/block/axis_top.png", "m_spruce_log_top=assets/minecraft/textures/block/spruce_log_top.png"],
+]
+["取材"."产物"]
+"模型/物品/粉碎轮" = "src/模型/物品/粉碎轮.模型.json"
+"贴图/物品/粉碎轮" = "src/模型/物品/粉碎轮.模型.png"
+
+[["取材"]]
+"名称" = "魂符"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/魂符.贴图", "空=assets/touhou_little_maid/textures/item/smart_slab_empty.png", "有女仆=assets/touhou_little_maid/textures/item/smart_slab_has_maid.png"],
+]
+["取材"."产物"]
+"贴图/物品/魂符/*" = "src/模型/物品/魂符.贴图/*.png"
+
+[["取材"]]
+"名称" = "望远镜"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/望远镜.模型.json", "望远镜=minecraft:item/spyglass_in_hand"],
+]
+["取材"."产物"]
+"模型/物品/望远镜" = "src/模型/物品/望远镜.模型.json"
+"贴图/物品/望远镜" = "src/模型/物品/望远镜.模型.png"
+
+[["取材"]]
+"名称" = "边城贴图"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/边城贴图.py"],
+]
+["取材"."产物"]
+"贴图/场景/边城/方块贴图" = "src/模型/场景/边城/方块贴图.png"
+"贴图/角色/卫兵/*" = "src/模型/角色/卫兵.贴图/*.png"
+
+[["取材"]]
+"名称" = "边城水面"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/边城/水面.png", "water_still=assets/minecraft/textures/block/water_still.png"],
+]
+["取材"."产物"]
+"贴图/场景/边城/水面" = "src/模型/场景/边城/水面.png"
+
+[["取材"]]
+"名称" = "追兵皮肤"
+"需要" = ["client-1.20.1"]
+"公开版" = "不提取"  # 黄叛的随仓库发；刘心忠照抄原版村民头的部分走 公开版.toml 派生「同位拆分」和「网格图集」
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/追兵皮肤.py"],
+]
+["取材"."输入"]
+"设定图/黄叛/三视图" = "设定/角色/黄叛/黄叛三视图.png"
+"设定图/刘心忠/三视图" = "设定/角色/刘心忠/刘心忠三视图.png"
+["取材"."产物"]
+"贴图/角色/追兵/*" = "src/模型/角色/追兵.贴图/*.png"
+
+[["取材"]]
+"名称" = "匠师之杖"
+"需要" = ["irons_spellbooks"]
+"公开版" = "提取"
+"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出模型", "{jar:irons_spellbooks}", "src/模型/物品/匠师之杖.模型.json", "杖=irons_spellbooks:item/artificer_cane"],
+]
+["取材"."产物"]
+"模型/物品/匠师之杖" = "src/模型/物品/匠师之杖.模型.json"
+"贴图/物品/匠师之杖" = "src/模型/物品/匠师之杖.模型.png"
+
+[["取材"]]
+"名称" = "铁链"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/铁链.png", "chain=assets/minecraft/textures/item/chain.png"],
+]
+["取材"."产物"]
+"贴图/物品/铁链" = "src/模型/物品/铁链.png"
+
+[["取材"]]
+"名称" = "边城蓝图"
+"需要" = ["structurize", "domum_ornamentum", "minecolonies", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "MineColonies 风格包（Carlansor、Aravan）"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/殖民地蓝图.py"],
+]
+["取材"."产物"]
+"数据/场景/边城/蓝图" = "src/模型/场景/边城/蓝图.json"
+"贴图/场景/边城/蓝图贴图" = "src/模型/场景/边城/蓝图贴图.png"
+
+[["取材"]]
+"名称" = "6-3方块贴图"
+"需要" = ["create", "iceandfire", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "冰与火之歌 Ice and Fire 2.1.13；原版 Minecraft 1.20.1；机械动力 Create 6.0.8"
+"许可" = "LGPL（mods.toml；美术是否同许可待核）；MIT；Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/镜头/6-3-下坠/方块.贴图", "平滑石头=assets/minecraft/textures/block/smooth_stone.png", "平滑石台阶侧=assets/minecraft/textures/block/smooth_stone_slab_side.png", "泥土=assets/minecraft/textures/block/dirt.png", "石头=assets/minecraft/textures/block/stone.png", "深板岩=assets/minecraft/textures/block/deepslate.png", "凝灰岩=assets/minecraft/textures/block/tuff.png", "深板岩顶=assets/minecraft/textures/block/deepslate_top.png", "花岗岩=assets/minecraft/textures/block/granite.png", "安山岩=assets/minecraft/textures/block/andesite.png", "闪长岩=assets/minecraft/textures/block/diorite.png", "砂砾=assets/minecraft/textures/block/gravel.png", "幽匿块=assets/minecraft/textures/block/sculk.png", "方解石=assets/minecraft/textures/block/calcite.png", "煤矿石=assets/minecraft/textures/block/coal_ore.png", "铜矿石=assets/minecraft/textures/block/copper_ore.png", "金矿石=assets/minecraft/textures/block/gold_ore.png", "红石矿石=assets/minecraft/textures/block/redstone_ore.png", "深层铜矿石=assets/minecraft/textures/block/deepslate_copper_ore.png", "深层金矿石=assets/minecraft/textures/block/deepslate_gold_ore.png"],
+  ["导出模型", "{jar:create}", "src/镜头/6-3-下坠/方块.贴图", "皓蓝石=assets/create/textures/block/palettes/stone_types/natural/asurine_0.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/镜头/6-3-下坠/方块.贴图", "赤陶=assets/minecraft/textures/block/terracotta.png", "橙色赤陶=assets/minecraft/textures/block/orange_terracotta.png", "黄色赤陶=assets/minecraft/textures/block/yellow_terracotta.png", "红色赤陶=assets/minecraft/textures/block/red_terracotta.png"],
+  ["导出模型", "{jar:create}", "src/镜头/6-3-下坠/方块.贴图", "锌矿石=assets/create/textures/block/zinc_ore.png"],
+  ["导出模型", "{jar:iceandfire}", "src/镜头/6-3-下坠/方块.贴图", "银矿石=assets/iceandfire/textures/block/silver_ore.png"],
+]
+["取材"."产物"]
+"贴图/镜头/6-3-下坠/方块/*" = "src/镜头/6-3-下坠/方块.贴图/*.png"
+
+[["取材"]]
+"名称" = "6-3竖井"
+"需要" = []
+"要开游戏" = true
+"待迁移" = "要旧项目的 挖竖井.py（开着游戏挖、导网格），还没搬"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」，坑面、填块表随仓库发
+"步骤" = [
+  ["python", "{脚本}/挖竖井.py", "导出", "世界=4x"],
+]
+["取材"."产物"]
+"数据/镜头/6-3-下坠/*" = "src/镜头/6-3-下坠/*.json"
+"网格/竖井4x/头" = "src/镜头/6-3-下坠/竖井4x.网格.json"
+"网格/竖井4x/顶点" = "src/镜头/6-3-下坠/竖井4x.网格.bin"
+"贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
+
+[["取材"]]
+"名称" = "6-3-2思索"
+"需要" = ["create", "client-1.20.1"]
+"待迁移" = "导出思索素材.py 读旧项目各镜头的 文案.json、*.字.json 收字，新仓库的镜头文案还没定位置"
+"公开版" = "提取"
+"来源" = "Ponder（Create）；原版 Minecraft；原版 Minecraft + GNU Unifont"
+"许可" = "MIT（随 Create）；Mojang EULA；位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出思索素材.py"],
+]
+["取材"."产物"]
+"字体/像素字" = "src/模型/界面/像素字.json"
+"贴图/界面/思索控件" = "src/模型/界面/贴图/思索控件.png"
+"贴图/镜头/6-3-2/方块/*" = "src/镜头/6-3-2/方块.贴图/*.png"
+"音效/镜头/6-3-2/点击" = "src/镜头/6-3-2/点击.wav"
+
+[["取材"]]
+"名称" = "音效"
+"需要" = ["irons_spellbooks"]
+"公开版" = "提取"
+"公开版提取" = "内置:游戏音效"
+"来源" = "Minecraft 1.20.1 原版声音（官方资源服务器）；机械动力等模组 jar 里的声音"
+"许可" = "Mojang EULA；模组声音按各模组许可"
+"说明" = "按 参考模型库/src/**/游戏音效.json 记的 hash，从官方资源服务器下载、或从模组 jar 原样取出"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效", "block.sculk_sensor.clicking", "block.sculk_sensor.clicking_stop", "block.sculk_shrieker.shriek", "entity.warden.emerge", "entity.warden.heartbeat", "entity.warden.tendril_clicks"],
+  ["python", "{脚本}/导出音效.py", "src/音效", "--jar", "{jar:irons_spellbooks}", "entity.evoker.prepare_summon", "entity.evoker.cast_spell", "entity.illusioner.prepare_mirror", "entity.illusioner.mirror_move", "entity.illusioner.cast_spell", "entity.creeper.hurt", "entity.generic.explode", "entity.vex.ambient", "entity.vex.charge", "entity.vex.hurt", "entity.vex.death", "entity.horse.ambient", "entity.horse.gallop", "entity.horse.step", "entity.horse.death", "entity.horse.hurt", "entity.horse.breathe", "entity.horse.jump", "entity.horse.land", "block.glass.break", "block.respawn_anchor.set_spawn", "irons_spellbooks:force_impact", "entity.arrow.shoot", "entity.arrow.hit", "block.wood.place", "block.portal.trigger", "block.portal.travel", "entity.warden.attack_impact", "entity.warden.sonic_charge", "entity.warden.sonic_boom", "entity.warden.roar", "entity.warden.death", "entity.warden.sniff", "entity.warden.step", "entity.warden.hurt", "entity.warden.angry", "entity.warden.agitated", "entity.warden.nearby_close", "entity.warden.nearby_closer", "entity.warden.nearby_closest", "entity.villager.work_cartographer"],
+]
+["取材"."产物"]
+"音效/*" = "src/音效/*.ogg"
+
+[["取材"]]
+"名称" = "基地工坊"
+"需要" = ["create", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 + 机械动力"
+"许可" = "Mojang EULA + MIT"
+"步骤" = [
+  ["导出模型", "{jar:create,client-1.20.1}", "src/模型/场景/基地工坊.模型.json", "云杉木板=minecraft:block/spruce_planks", "云杉原木=minecraft:spruce_log[axis=y]", "云杉横梁=minecraft:spruce_log[axis=x]", "磨制安山岩=minecraft:block/polished_andesite", "玻璃=minecraft:block/glass", "安山机壳=create:block/andesite_casing", "传动杆=create:shaft[axis=x]", "齿轮=create:cogwheel[axis=x]", "大齿轮=create:large_cogwheel[axis=x]", "木桶=minecraft:barrel[facing=up,open=false]", "工作台=minecraft:block/crafting_table", "灯笼=minecraft:lantern[hanging=true,waterlogged=false]", "栅栏柱=minecraft:block/spruce_fence_post", "书架=minecraft:block/bookshelf", "云杉台阶=minecraft:block/spruce_slab_top", "草方块=minecraft:grass_block[snowy=false]", "沙子=minecraft:block/sand", "铜瓦楼梯=create:copper_shingle_stairs[facing=east,half=bottom,shape=straight]", "铜瓦台阶=create:copper_shingle_slab[type=bottom]", "去皮云杉横梁=minecraft:stripped_spruce_log[axis=x]", "去皮云杉立柱=minecraft:stripped_spruce_log[axis=y]", "砖块=minecraft:block/bricks", "磨制安山岩台阶=minecraft:polished_andesite_slab[type=bottom]", "云杉门下=minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false]", "云杉门上=minecraft:spruce_door[facing=south,half=upper,hinge=left,open=false]", "云杉门下右=minecraft:spruce_door[facing=south,half=lower,hinge=right,open=false]", "云杉门上右=minecraft:spruce_door[facing=south,half=upper,hinge=right,open=false]", "风车轴承=create:windmill_bearing[facing=north]", "白帆=create:white_sail[facing=north]", "帆框=create:sail_frame[facing=north]", "黄铜机壳=create:block/brass_casing", "石砖台阶=minecraft:stone_brick_slab[type=bottom]", "圆石=minecraft:block/cobblestone", "--染色", "*grass_block_top=#91bd59,*grass_block_side_overlay=#91bd59"],
+]
+["取材"."产物"]
+"模型/场景/基地工坊" = "src/模型/场景/基地工坊.模型.json"
+"贴图/场景/基地工坊" = "src/模型/场景/基地工坊.模型.png"
+
+[["取材"]]
+"名称" = "战利品贴图"
+"需要" = ["twilightforest"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出模型", "{jar:twilightforest}", "src/模型/物品/炽热的血.png", "blood=assets/twilightforest/textures/item/fiery_blood.png"],
+  ["导出模型", "{jar:twilightforest}", "src/模型/物品/雪怪首领毛皮.png", "fur=assets/twilightforest/textures/item/alpha_yeti_fur.png"],
+]
+["取材"."产物"]
+"贴图/物品/炽热的血" = "src/模型/物品/炽热的血.png"
+"贴图/物品/雪怪首领毛皮" = "src/模型/物品/雪怪首领毛皮.png"
+
+[["取材"]]
+"名称" = "基地界面"
+"需要" = ["forge", "twilightforest", "tconstruct", "quark", "jei", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "Forge 47.4.10；JEI 15.62；Quark 4.0-462；匠魂 Tinkers Construct 3.12.1；原版 Minecraft 1.20.1；原版 Minecraft 1.20.1 + 匠魂 Tinkers Construct 3.12.1；暮色森林 Twilight Forest 4.3.2508"
+"许可" = "CC BY-NC-SA 3.0（mods.toml 指向仓库 LICENSE.md，未离线核）；LGPL-2.1；LGPL-2.1（mods.toml；美术是否同许可待核）；MIT；MIT + Mojang EULA；Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/界面/贴图", "附魔书=assets/minecraft/textures/item/enchanted_book.png", "附魔光效=assets/minecraft/textures/misc/enchanted_glint_item.png", "桶=assets/minecraft/textures/item/bucket.png"],
+  ["导出模型", "{jar:forge}", "src/模型/界面/贴图", "桶液体遮罩=assets/forge/textures/item/mask/bucket_fluid_drip.png"],
+  ["导出模型", "{jar:twilightforest}", "src/模型/界面/贴图", "雪怪首领毛皮=assets/twilightforest/textures/item/alpha_yeti_fur.png"],
+  ["导出模型", "{jar:tconstruct}", "src/模型/界面/贴图", "链甲基底=assets/tconstruct/textures/gui/tinker_pattern/maille.png", "炽热的液体=assets/tconstruct/textures/fluid/slime/fiery/still.png", "烈焰血=assets/tconstruct/textures/fluid/molten/blaze/still.png", "炖汤=assets/tconstruct/textures/fluid/food/stew/still.png", "模具=assets/tconstruct/textures/item/materials/pattern.png", "链甲基底部件=assets/tconstruct/textures/item/tool/parts/maille.png"],
+  ["导出模型", "{jar:quark}", "src/模型/界面/贴图", "古卷=assets/quark/textures/item/ancient_tome.png", "彩虹光效=assets/quark/textures/glint/enchanted_item_glint_rainbow.png"],
+  ["导出模型", "{jar:jei}", "src/模型/界面/贴图", "JEI上一页=assets/jei/textures/jei/atlas/gui/icons/arrow_previous.png", "JEI下一页=assets/jei/textures/jei/atlas/gui/icons/arrow_next.png", "JEI书签=assets/jei/textures/jei/atlas/gui/icons/recipe_bookmark.png"],
+  ["导出模型", "{jar:tconstruct,client-1.20.1}", "src/模型/界面/方块图标.模型.json", "铁砧=minecraft:block/anvil", "开裂的铁砧=minecraft:block/chipped_anvil", "损坏的铁砧=minecraft:block/damaged_anvil", "部件制造台=tconstruct:block/table/part_builder", "焦黑熔化炉=tconstruct:block/smeltery/controller/melter_inactive", "焦黑加热器=tconstruct:block/smeltery/controller/heater_inactive", "冶炼炉控制器=tconstruct:block/smeltery/controller/smeltery_inactive", "焦褐合金炉=tconstruct:block/foundry/controller/alloyer_inactive", "熔铸炉控制器=tconstruct:block/foundry/controller/foundry_inactive"],
+]
+["取材"."产物"]
+"模型/界面/方块图标" = "src/模型/界面/方块图标.模型.json"
+"贴图/界面/JEI上一页" = "src/模型/界面/贴图/JEI上一页.png"
+"贴图/界面/JEI下一页" = "src/模型/界面/贴图/JEI下一页.png"
+"贴图/界面/JEI书签" = "src/模型/界面/贴图/JEI书签.png"
+"贴图/界面/古卷" = "src/模型/界面/贴图/古卷.png"
+"贴图/界面/彩虹光效" = "src/模型/界面/贴图/彩虹光效.png"
+"贴图/界面/方块图标" = "src/模型/界面/方块图标.模型.png"
+"贴图/界面/桶" = "src/模型/界面/贴图/桶.png"
+"贴图/界面/桶液体遮罩" = "src/模型/界面/贴图/桶液体遮罩.png"
+"贴图/界面/模具" = "src/模型/界面/贴图/模具.png"
+"贴图/界面/炖汤" = "src/模型/界面/贴图/炖汤.png"
+"贴图/界面/炽热的液体" = "src/模型/界面/贴图/炽热的液体.png"
+"贴图/界面/烈焰血" = "src/模型/界面/贴图/烈焰血.png"
+"贴图/界面/链甲基底" = "src/模型/界面/贴图/链甲基底.png"
+"贴图/界面/链甲基底部件" = "src/模型/界面/贴图/链甲基底部件.png"
+"贴图/界面/附魔书" = "src/模型/界面/贴图/附魔书.png"
+"贴图/界面/附魔光效" = "src/模型/界面/贴图/附魔光效.png"
+"贴图/界面/雪怪首领毛皮" = "src/模型/界面/贴图/雪怪首领毛皮.png"
+
+[["取材"]]
+"名称" = "掉落物"
+"需要" = ["twilightforest", "touhoulittlemaid", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1；暮色森林 Twilight Forest 4.3.2508；车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）；MIT / CC BY-NC-SA 4.0（资产，非商用）；Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:twilightforest}", "src/模型/物品/掉落物.贴图", "九头蛇肉排=assets/twilightforest/textures/item/hydra_chop.png", "砷铅铁矿石=assets/twilightforest/textures/item/carminite.png", "炽热之泪=assets/twilightforest/textures/item/fiery_tears.png", "冰霜炸弹=assets/twilightforest/textures/item/ice_bomb.png", "三发弓=assets/twilightforest/textures/item/triple_bow.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/掉落物.贴图", "末影珍珠=assets/minecraft/textures/item/ender_pearl.png", "骨头=assets/minecraft/textures/item/bone.png", "金胸甲=assets/minecraft/textures/item/golden_chestplate.png", "金剑=assets/minecraft/textures/item/golden_sword.png", "雪球=assets/minecraft/textures/item/snowball.png", "浮冰=assets/minecraft/textures/block/packed_ice.png", "巨人镐=assets/minecraft/textures/item/stone_pickaxe.png", "巨人剑=assets/minecraft/textures/item/stone_sword.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/掉落物.贴图", "扫帚=assets/touhou_little_maid/textures/item/broom.png"],
+]
+["取材"."产物"]
+"贴图/物品/掉落物/*" = "src/模型/物品/掉落物.贴图/*.png"
+
+[["取材"]]
+"名称" = "动力钻头"
+"需要" = ["create", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "机械动力 Create 6.0.8"
+"许可" = "MIT"
+"步骤" = [
+  ["导出模型", "{jar:create,client-1.20.1}", "src/模型/物品/动力钻头.模型.json", "钻头=create:block/mechanical_drill/head"],
+]
+["取材"."产物"]
+"模型/物品/动力钻头" = "src/模型/物品/动力钻头.模型.json"
+"贴图/物品/动力钻头" = "src/模型/物品/动力钻头.模型.png"
+
+[["取材"]]
+"名称" = "关键帧方块"
+"需要" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta"]
+"公开版" = "不提取"  # 方块表.json 随仓库发（公开版.toml 第三方「体素方块表」），方块表.png 走「网格图集」
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "python", "{脚本}/关键帧方块.py"],
+]
+["取材"."产物"]
+"数据/场景/关键帧/*" = "src/模型/场景/关键帧/*.json"
+"贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
+
+[["取材"]]
+"名称" = "6-1-8碎块"
+"需要" = []
+"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"步骤" = [
+  ["网格碎块", "src/模型/场景/极光宫殿.网格", "src/镜头/6-1-8/碎块.json", "-30.6,-3.9,172.6,-26.4,-1.6,176.9", "-30.6,10.6,172.6,-26.4,12.9,176.9"],
+]
+["取材"."产物"]
+"碎块/镜头/6-1-8/碎块" = "src/镜头/6-1-8/碎块.json"
+
+[["取材"]]
+"名称" = "暮初恶魂"
+"需要" = ["twilightforest", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/暮初恶魂.模型.json", "暮初恶魂=twilightforest.client.model.entity.UrGhastModel", "--贴图", "闭眼=assets/twilightforest/textures/model/towerboss.png", "睁眼=assets/twilightforest/textures/model/towerboss_openeyes.png", "喷火=assets/twilightforest/textures/model/towerboss_fire.png"],
+]
+["取材"."产物"]
+"模型/角色/暮初恶魂" = "src/模型/角色/暮初恶魂.模型.json"
+"贴图/角色/暮初恶魂/喷火" = "src/模型/角色/暮初恶魂.模型.喷火.png"
+"贴图/角色/暮初恶魂/睁眼" = "src/模型/角色/暮初恶魂.模型.睁眼.png"
+"贴图/角色/暮初恶魂/闭眼" = "src/模型/角色/暮初恶魂.模型.闭眼.png"
+
+[["取材"]]
+"名称" = "雪怪首领"
+"需要" = ["twilightforest", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/雪怪首领.模型.json", "雪怪首领=twilightforest.client.model.entity.AlphaYetiModel", "--贴图", "雪怪首领=assets/twilightforest/textures/model/yetialpha.png"],
+]
+["取材"."产物"]
+"模型/角色/雪怪首领" = "src/模型/角色/雪怪首领.模型.json"
+"贴图/角色/雪怪首领" = "src/模型/角色/雪怪首领.模型.png"
+
+[["取材"]]
+"名称" = "乌鸦"
+"需要" = ["twilightforest", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "暮色森林 Twilight Forest 4.3.2508"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/乌鸦.模型.json", "乌鸦=twilightforest.client.model.entity.RavenModel", "--贴图", "乌鸦=assets/twilightforest/textures/model/raven.png"],
+]
+["取材"."产物"]
+"模型/角色/乌鸦" = "src/模型/角色/乌鸦.模型.json"
+"贴图/角色/乌鸦" = "src/模型/角色/乌鸦.模型.png"
+
+[["取材"]]
+"名称" = "巨人"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg}", "src/模型/角色/巨人.模型.json", "宽=net.minecraft.client.model.PlayerModel:m_170825_(0,false)@64x64", "细=net.minecraft.client.model.PlayerModel:m_170825_(0,true)@64x64", "内甲=net.minecraft.client.model.HumanoidModel:m_170681_(0.5,0)@64x32", "外甲=net.minecraft.client.model.HumanoidModel:m_170681_(1.0,0)@64x32", "--贴图"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/角色/巨人.贴图", "史蒂夫=assets/minecraft/textures/entity/player/wide/steve.png", "铁甲1=assets/minecraft/textures/models/armor/iron_layer_1.png", "铁甲2=assets/minecraft/textures/models/armor/iron_layer_2.png", "石剑=assets/minecraft/textures/item/stone_sword.png", "石镐=assets/minecraft/textures/item/stone_pickaxe.png"],
+  ["复制", "{prism数据}/assets/skins/83/83c47d9fcadfc8a56d81e110ce0b652f24a189b5", "src/模型/角色/巨人.贴图/取材账号.png"],
+]
+["取材"."产物"]
+"模型/角色/巨人" = "src/模型/角色/巨人.模型.json"
+"贴图/角色/巨人/史蒂夫" = "src/模型/角色/巨人.贴图/史蒂夫.png"
+"贴图/角色/巨人/石剑" = "src/模型/角色/巨人.贴图/石剑.png"
+"贴图/角色/巨人/石镐" = "src/模型/角色/巨人.贴图/石镐.png"
+"贴图/角色/巨人/铁甲1" = "src/模型/角色/巨人.贴图/铁甲1.png"
+"贴图/角色/巨人/铁甲2" = "src/模型/角色/巨人.贴图/铁甲2.png"
+
+[["取材"]]
+"名称" = "云中小屋"
+"需要" = []
+"要开游戏" = true
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=304,230,-264", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=254,158,-314", "to=354,198,-214", "out=src/模型/场景/云中小屋.网格"],
+]
+["取材"."产物"]
+"网格/云中小屋/图集" = "src/模型/场景/云中小屋.网格.png"
+"网格/云中小屋/头" = "src/模型/场景/云中小屋.网格.json"
+"网格/云中小屋/顶点" = "src/模型/场景/云中小屋.网格.bin"
+
+[["取材"]]
+"名称" = "6-1-7碎块"
+"需要" = []
+"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"步骤" = [
+  ["网格碎块", "src/模型/场景/雪怪洞窟.网格", "src/镜头/6-1-7/雪怪碎块.json", { "输出" = ["ts", "工具/一镜到底/雪怪管子.ts"] }],
+  ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-7/雪怪碎块.json", "16", "56"],
+]
+["取材"."产物"]
+"碎块/镜头/6-1-7/雪怪碎块" = "src/镜头/6-1-7/雪怪碎块.json"
+
+[["取材"]]
+"名称" = "6-1-8b碎块"
+"需要" = []
+"待迁移" = "网格碎块.py、碎块分组.py 和 工具/一镜到底/ 的 ts 工具读旧项目布局里的场景网格，还没搬"
+"公开版" = "不提取"  # 场景网格几何的碎块，公开版走 Release
+"步骤" = [
+  ["网格碎块", "src/模型/场景/云中小屋.网格", "src/镜头/6-1-8b/碎块.json", { "输出" = ["ts", "工具/一镜到底/巨人洞.ts"] }],
+  ["python", "{脚本}/碎块分组.py", "src/镜头/6-1-8b/碎块.json", { "输出" = ["ts", "工具/一镜到底/巨人洞.ts", "分组"] }],
+]
+["取材"."产物"]
+"碎块/镜头/6-1-8b/碎块" = "src/镜头/6-1-8b/碎块.json"
+
+[["取材"]]
+"名称" = "古城"
+"需要" = []
+"要开游戏" = true
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "batch", "cam pos=-710,10,238 pitch=90 yaw=180 dim=minecraft:overworld", "mesh from=-760,-56,186 to=-660,4,290 origin=-720,-50,240 out=src/模型/场景/古城.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-796,10,233 pitch=90 yaw=180", "mesh from=-832,-56,124 to=-761,4,342 origin=-720,-50,240 out=src/模型/场景/古城西.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-630,10,233 pitch=90 yaw=180", "mesh from=-659,-56,124 to=-600,4,342 origin=-720,-50,240 out=src/模型/场景/古城东.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-710,10,155 pitch=90 yaw=180", "mesh from=-760,-56,124 to=-660,4,185 origin=-720,-50,240 out=src/模型/场景/古城北.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate", "cam pos=-710,10,316 pitch=90 yaw=180", "mesh from=-760,-56,291 to=-660,4,342 origin=-720,-50,240 out=src/模型/场景/古城南.网格 mark=minecraft:chest,minecraft:sculk_shrieker,minecraft:sculk_sensor,minecraft:reinforced_deepslate"],
+]
+["取材"."产物"]
+"网格/古城/图集" = "src/模型/场景/古城.网格.png"
+"网格/古城/头" = "src/模型/场景/古城.网格.json"
+"网格/古城/顶点" = "src/模型/场景/古城.网格.bin"
+"网格/古城东/图集" = "src/模型/场景/古城东.网格.png"
+"网格/古城东/头" = "src/模型/场景/古城东.网格.json"
+"网格/古城东/顶点" = "src/模型/场景/古城东.网格.bin"
+"网格/古城北/图集" = "src/模型/场景/古城北.网格.png"
+"网格/古城北/头" = "src/模型/场景/古城北.网格.json"
+"网格/古城北/顶点" = "src/模型/场景/古城北.网格.bin"
+"网格/古城南/图集" = "src/模型/场景/古城南.网格.png"
+"网格/古城南/头" = "src/模型/场景/古城南.网格.json"
+"网格/古城南/顶点" = "src/模型/场景/古城南.网格.bin"
+"网格/古城西/图集" = "src/模型/场景/古城西.网格.png"
+"网格/古城西/头" = "src/模型/场景/古城西.网格.json"
+"网格/古城西/顶点" = "src/模型/场景/古城西.网格.bin"
+
+[["取材"]]
+"名称" = "监守者"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/监守者.模型.json", "监守者=net.minecraft.client.model.WardenModel:m_233537_", "--动画", "钻出=net.minecraft.client.animation.definitions.WardenAnimation.f_232343_", "挖地=net.minecraft.client.animation.definitions.WardenAnimation.f_232344_", "吼叫=net.minecraft.client.animation.definitions.WardenAnimation.f_232345_", "嗅=net.minecraft.client.animation.definitions.WardenAnimation.f_232346_", "攻击=net.minecraft.client.animation.definitions.WardenAnimation.f_232347_", "音爆=net.minecraft.client.animation.definitions.WardenAnimation.f_232348_", "--贴图", "本体=assets/minecraft/textures/entity/warden/warden.png", "生物发光=assets/minecraft/textures/entity/warden/warden_bioluminescent_layer.png", "心脏=assets/minecraft/textures/entity/warden/warden_heart.png", "脉动斑纹1=assets/minecraft/textures/entity/warden/warden_pulsating_spots_1.png", "脉动斑纹2=assets/minecraft/textures/entity/warden/warden_pulsating_spots_2.png"],
+]
+["取材"."产物"]
+"模型/角色/监守者" = "src/模型/角色/监守者.模型.json"
+"贴图/角色/监守者/心脏" = "src/模型/角色/监守者.模型.心脏.png"
+"贴图/角色/监守者/本体" = "src/模型/角色/监守者.模型.本体.png"
+"贴图/角色/监守者/生物发光" = "src/模型/角色/监守者.模型.生物发光.png"
+"贴图/角色/监守者/脉动斑纹1" = "src/模型/角色/监守者.模型.脉动斑纹1.png"
+"贴图/角色/监守者/脉动斑纹2" = "src/模型/角色/监守者.模型.脉动斑纹2.png"
+
+[["取材"]]
+"名称" = "羊毛"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/羊毛.贴图", "assets/minecraft/textures/block/*_wool.png"],
+]
+["取材"."产物"]
+"贴图/物品/羊毛/*" = "src/模型/物品/羊毛.贴图/*.png"
+
+[["取材"]]
+"名称" = "弓"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/弓.贴图", "弓=assets/minecraft/textures/item/bow.png", "弓拉0=assets/minecraft/textures/item/bow_pulling_0.png", "弓拉1=assets/minecraft/textures/item/bow_pulling_1.png", "弓拉2=assets/minecraft/textures/item/bow_pulling_2.png"],
+]
+["取材"."产物"]
+"贴图/物品/弓/*" = "src/模型/物品/弓.贴图/*.png"
+
+[["取材"]]
+"名称" = "箭"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/箭.png", "arrow=assets/minecraft/textures/entity/projectiles/arrow.png"],
+]
+["取材"."产物"]
+"贴图/物品/箭" = "src/模型/物品/箭.png"
+
+[["取材"]]
+"名称" = "箱子"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/箱子.png", "chest=assets/minecraft/textures/entity/chest/normal.png"],
+]
+["取材"."产物"]
+"贴图/物品/箱子" = "src/模型/物品/箱子.png"
+
+[["取材"]]
+"名称" = "幽匿感测体"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/幽匿感测体.模型.json", "不活跃=minecraft:sculk_sensor[sculk_sensor_phase=inactive]", "活跃=minecraft:sculk_sensor[sculk_sensor_phase=active]"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/幽匿感测体.贴图", "assets/minecraft/textures/block/sculk_sensor_tendril_*.png"],
+]
+["取材"."产物"]
+"模型/特效/幽匿感测体" = "src/模型/特效/幽匿感测体.模型.json"
+"贴图/特效/幽匿感测体" = "src/模型/特效/幽匿感测体.模型.png"
+"贴图/特效/幽匿感测体/*" = "src/模型/特效/幽匿感测体.贴图/*.png"
+
+[["取材"]]
+"名称" = "幽匿尖啸体"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/幽匿尖啸体.模型.json", "尖啸体=minecraft:sculk_shrieker[can_summon=true]"],
+]
+["取材"."产物"]
+"模型/特效/幽匿尖啸体" = "src/模型/特效/幽匿尖啸体.模型.json"
+"贴图/特效/幽匿尖啸体" = "src/模型/特效/幽匿尖啸体.模型.png"
+
+[["取材"]]
+"名称" = "伤害数字"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/界面/伤害数字.字体.png", "ascii=assets/minecraft/textures/font/ascii.png"],
+]
+["取材"."产物"]
+"字体/伤害数字" = "src/模型/界面/伤害数字.字体.png"
+
+[["取材"]]
+"名称" = "古城粒子"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/振动粒子.png", "vibration=assets/minecraft/textures/particle/vibration.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/尖啸声波.png", "shriek=assets/minecraft/textures/particle/shriek.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/方块碎屑.png", "sculk=assets/minecraft/textures/block/sculk.png"],
+]
+["取材"."产物"]
+"贴图/特效/尖啸声波" = "src/模型/特效/尖啸声波.png"
+"贴图/特效/振动粒子" = "src/模型/特效/振动粒子.png"
+"贴图/特效/方块碎屑" = "src/模型/特效/方块碎屑.png"
+
+[["取材"]]
+"名称" = "书贴图"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/书.贴图", "书界面=assets/minecraft/textures/gui/book.png", "书与笔=assets/minecraft/textures/item/writable_book.png", "成书=assets/minecraft/textures/item/written_book.png", "羽毛=assets/minecraft/textures/item/feather.png"],
+]
+["取材"."产物"]
+"贴图/物品/书/*" = "src/模型/物品/书.贴图/*.png"
+
+[["取材"]]
+"名称" = "乔雷夫皮肤"
+"需要" = ["client-1.20.1"]
+"前置" = ["边城贴图"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft（steve 改色）"
+"许可" = "Mojang EULA（衍生）"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/乔雷夫皮肤.py"],
+]
+["取材"."产物"]
+"贴图/角色/乔雷夫" = "src/模型/角色/乔雷夫.png"
+
+[["取材"]]
+"名称" = "界面图标"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/界面/贴图", "原版图标=assets/minecraft/textures/gui/icons.png", "唱片残片=assets/minecraft/textures/item/disc_fragment_5.png", "回响碎片=assets/minecraft/textures/item/echo_shard.png", "灵魂火把=assets/minecraft/textures/block/soul_torch.png", "煤炭=assets/minecraft/textures/item/coal.png", "紫水晶碎片=assets/minecraft/textures/item/amethyst_shard.png", "骨头=assets/minecraft/textures/item/bone.png", "蜡烛=assets/minecraft/textures/item/candle.png", "附魔之瓶=assets/minecraft/textures/item/experience_bottle.png"],
+]
+["取材"."产物"]
+"贴图/界面/原版图标" = "src/模型/界面/贴图/原版图标.png"
+"贴图/界面/唱片残片" = "src/模型/界面/贴图/唱片残片.png"
+"贴图/界面/回响碎片" = "src/模型/界面/贴图/回响碎片.png"
+"贴图/界面/灵魂火把" = "src/模型/界面/贴图/灵魂火把.png"
+"贴图/界面/煤炭" = "src/模型/界面/贴图/煤炭.png"
+"贴图/界面/紫水晶碎片" = "src/模型/界面/贴图/紫水晶碎片.png"
+"贴图/界面/蜡烛" = "src/模型/界面/贴图/蜡烛.png"
+"贴图/界面/附魔之瓶" = "src/模型/界面/贴图/附魔之瓶.png"
+"贴图/界面/骨头" = "src/模型/界面/贴图/骨头.png"
+
+[["取材"]]
+"名称" = "望远镜视野"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/镜头/6-3-下坠/望远镜视野.png", "scope=assets/minecraft/textures/misc/spyglass_scope.png"],
+]
+["取材"."产物"]
+"贴图/镜头/6-3-下坠/望远镜视野" = "src/镜头/6-3-下坠/望远镜视野.png"
+
+[["取材"]]
+"名称" = "城堡砖"
+"需要" = ["twilightforest"]
+"公开版" = "提取"
+"来源" = "暮色森林"
+"许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"步骤" = [
+  ["导出模型", "{jar:twilightforest}", "src/镜头/6-1-9b/城堡砖.png", "brick=assets/twilightforest/textures/block/castle_brick.png"],
+]
+["取材"."产物"]
+"贴图/镜头/6-1-9b/城堡砖" = "src/镜头/6-1-9b/城堡砖.png"
+
+[["取材"]]
+"名称" = "恼鬼"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/恼鬼.模型.json", "恼鬼=net.minecraft.client.model.VexModel:m_171046_", "--贴图", "恼鬼=assets/minecraft/textures/entity/illager/vex.png", "蓄力=assets/minecraft/textures/entity/illager/vex_charging.png"],
+]
+["取材"."产物"]
+"模型/角色/恼鬼" = "src/模型/角色/恼鬼.模型.json"
+"贴图/角色/恼鬼/恼鬼" = "src/模型/角色/恼鬼.模型.恼鬼.png"
+"贴图/角色/恼鬼/蓄力" = "src/模型/角色/恼鬼.模型.蓄力.png"
+
+[["取材"]]
+"名称" = "幽灵马"
+"需要" = ["irons_spellbooks", "client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1；铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"许可" = "All Rights Reserved；Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1,irons_spellbooks}", "src/模型/角色/幽灵马.模型.json", "幽灵马=net.minecraft.client.model.HorseModel:m_170669_(0)@64x64", "--贴图", "幽灵马=assets/irons_spellbooks/textures/entity/horse/spectral_steed.png"],
+]
+["取材"."产物"]
+"模型/角色/幽灵马" = "src/模型/角色/幽灵马.模型.json"
+"贴图/角色/幽灵马" = "src/模型/角色/幽灵马.模型.png"
+
+[["取材"]]
+"名称" = "护盾术"
+"需要" = ["irons_spellbooks", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出实体模型", "{jar:irons_spellbooks}", "src/模型/特效/护盾术.模型.json", "护盾=io.redspace.ironsspellbooks.entity.spells.shield.ShieldModel:createBodyLayer", "边框=io.redspace.ironsspellbooks.entity.spells.shield.ShieldTrimModel:createBodyLayer", "--贴图", "护盾=assets/irons_spellbooks/textures/entity/shield/shield_overlay.png", "边框=assets/irons_spellbooks/textures/entity/shield/shield_trim.png"],
+]
+["取材"."产物"]
+"模型/特效/护盾术" = "src/模型/特效/护盾术.模型.json"
+"贴图/特效/护盾术/护盾" = "src/模型/特效/护盾术.模型.护盾.png"
+"贴图/特效/护盾术/边框" = "src/模型/特效/护盾术.模型.边框.png"
+
+[["取材"]]
+"名称" = "苦力怕头"
+"需要" = ["irons_spellbooks", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出实体模型", "{jar:irons_spellbooks}", "src/模型/特效/苦力怕头.模型.json", "苦力怕头=io.redspace.ironsspellbooks.entity.spells.skull_projectile.SkullProjectileRenderer:createBodyLayer", "--贴图", "苦力怕头=assets/irons_spellbooks/textures/entity/creeper_head.png"],
+]
+["取材"."产物"]
+"模型/特效/苦力怕头" = "src/模型/特效/苦力怕头.模型.json"
+"贴图/特效/苦力怕头" = "src/模型/特效/苦力怕头.模型.png"
+
+[["取材"]]
+"名称" = "杂项粒子"
+"需要" = ["irons_spellbooks", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1；铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"许可" = "All Rights Reserved；Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/特效/杂项粒子.贴图", "assets/minecraft/textures/particle/flame.png", "assets/minecraft/textures/particle/sga_*.png", "assets/minecraft/textures/particle/sonic_boom_*.png", "assets/minecraft/textures/particle/glow.png"],
+  ["导出模型", "{jar:irons_spellbooks}", "src/模型/特效/杂项粒子.贴图", "assets/irons_spellbooks/textures/particle/blastwave_*.png"],
+]
+["取材"."产物"]
+"贴图/特效/杂项粒子/*" = "src/模型/特效/杂项粒子.贴图/*.png"
+
+[["取材"]]
+"名称" = "杂项物品"
+"需要" = ["quark", "waystones", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "Quark 4.0-462；Waystones 14.1.21；原版 Minecraft 1.20.1"
+"许可" = "All rights reserved；CC BY-NC-SA 3.0（mods.toml 指向仓库 LICENSE.md，未离线核）；Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/杂项物品.贴图", "钻石护腿=assets/minecraft/textures/item/diamond_leggings.png"],
+  ["导出模型", "{jar:quark}", "src/模型/物品/杂项物品.贴图", "火把箭=assets/quark/textures/item/torch_arrow.png", "古卷=assets/quark/textures/item/ancient_tome.png"],
+  ["导出模型", "{jar:waystones}", "src/模型/物品/杂项物品.贴图", "传送石=assets/waystones/textures/item/warp_stone.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/杂项物品.贴图", "铁剑=assets/minecraft/textures/item/iron_sword.png", "附魔光效=assets/minecraft/textures/misc/enchanted_glint_item.png"],
+]
+["取材"."产物"]
+"贴图/物品/杂项物品/*" = "src/模型/物品/杂项物品.贴图/*.png"
+
+[["取材"]]
+"名称" = "火把"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/火把.模型.json", "火把=minecraft:block/torch", "墙上火把=minecraft:wall_torch[facing=north]"],
+]
+["取材"."产物"]
+"模型/物品/火把" = "src/模型/物品/火把.模型.json"
+"贴图/物品/火把" = "src/模型/物品/火把.模型.png"
+
+[["取材"]]
+"名称" = "网格图集"
+"需要" = []
+"公开版" = "提取"
+"公开版提取" = "内置:网格图集"
+"来源" = "mcai mesh 从游戏方块图集抠出的场景贴图、体素方块表 方块表.png（原版和各模组的贴图）；刘心忠皮肤里照抄的原版村民头"
+"许可" = "Mojang EULA + 各模组许可（见 参考模型库/工具/取材/模组清单.json）"
+"说明" = "仓库里只有同名的 *.图集配方.json（每格取自哪个 jar 的哪张贴图；刘心忠.png 另有自己画的部分 刘心忠.自制.png），取材/重建图集.py 从下载的 jar 拼回原图，按像素 sha256 核对。私有仓库里由 mcai mesh（古城、云中小屋……）、关键帧方块、追兵皮肤 顺带导出，这条没有自己的步骤"
+["取材"."产物"]
+"网格/九头蛇巢穴/图集" = "src/模型/场景/九头蛇巢穴.网格.png"
+"网格/云中小屋/图集" = "src/模型/场景/云中小屋.网格.png"
+"网格/传送门海岛/图集" = "src/模型/场景/传送门海岛.网格.png"
+"网格/古城/图集" = "src/模型/场景/古城.网格.png"
+"网格/古城4x/东1/图集" = "src/模型/场景/古城4x-东1.网格.png"
+"网格/古城4x/东1北1/图集" = "src/模型/场景/古城4x-东1北1.网格.png"
+"网格/古城4x/东1北2/图集" = "src/模型/场景/古城4x-东1北2.网格.png"
+"网格/古城4x/东1北3/图集" = "src/模型/场景/古城4x-东1北3.网格.png"
+"网格/古城4x/东1南1/图集" = "src/模型/场景/古城4x-东1南1.网格.png"
+"网格/古城4x/东1南2/图集" = "src/模型/场景/古城4x-东1南2.网格.png"
+"网格/古城4x/东2/图集" = "src/模型/场景/古城4x-东2.网格.png"
+"网格/古城4x/东2北1/图集" = "src/模型/场景/古城4x-东2北1.网格.png"
+"网格/古城4x/东2北2/图集" = "src/模型/场景/古城4x-东2北2.网格.png"
+"网格/古城4x/东2北3/图集" = "src/模型/场景/古城4x-东2北3.网格.png"
+"网格/古城4x/东2南1/图集" = "src/模型/场景/古城4x-东2南1.网格.png"
+"网格/古城4x/东2南2/图集" = "src/模型/场景/古城4x-东2南2.网格.png"
+"网格/古城4x/东3/图集" = "src/模型/场景/古城4x-东3.网格.png"
+"网格/古城4x/东3北1/图集" = "src/模型/场景/古城4x-东3北1.网格.png"
+"网格/古城4x/东3北2/图集" = "src/模型/场景/古城4x-东3北2.网格.png"
+"网格/古城4x/东3南1/图集" = "src/模型/场景/古城4x-东3南1.网格.png"
+"网格/古城4x/中/图集" = "src/模型/场景/古城4x-中.网格.png"
+"网格/古城4x/中顶/图集" = "src/模型/场景/古城4x-中顶.网格.png"
+"网格/古城4x/北1/图集" = "src/模型/场景/古城4x-北1.网格.png"
+"网格/古城4x/北2/图集" = "src/模型/场景/古城4x-北2.网格.png"
+"网格/古城4x/北3/图集" = "src/模型/场景/古城4x-北3.网格.png"
+"网格/古城4x/南1/图集" = "src/模型/场景/古城4x-南1.网格.png"
+"网格/古城4x/南2/图集" = "src/模型/场景/古城4x-南2.网格.png"
+"网格/古城4x/南3/图集" = "src/模型/场景/古城4x-南3.网格.png"
+"网格/古城4x/西1/图集" = "src/模型/场景/古城4x-西1.网格.png"
+"网格/古城4x/西1北1/图集" = "src/模型/场景/古城4x-西1北1.网格.png"
+"网格/古城4x/西1北2/图集" = "src/模型/场景/古城4x-西1北2.网格.png"
+"网格/古城4x/西1北3/图集" = "src/模型/场景/古城4x-西1北3.网格.png"
+"网格/古城4x/西1南1/图集" = "src/模型/场景/古城4x-西1南1.网格.png"
+"网格/古城4x/西1南2/图集" = "src/模型/场景/古城4x-西1南2.网格.png"
+"网格/古城4x/西1南3/图集" = "src/模型/场景/古城4x-西1南3.网格.png"
+"网格/古城4x/西2/图集" = "src/模型/场景/古城4x-西2.网格.png"
+"网格/古城4x/西2北1/图集" = "src/模型/场景/古城4x-西2北1.网格.png"
+"网格/古城4x/西2北2/图集" = "src/模型/场景/古城4x-西2北2.网格.png"
+"网格/古城4x/西2北3/图集" = "src/模型/场景/古城4x-西2北3.网格.png"
+"网格/古城4x/西2南1/图集" = "src/模型/场景/古城4x-西2南1.网格.png"
+"网格/古城4x/西2南2/图集" = "src/模型/场景/古城4x-西2南2.网格.png"
+"网格/古城4x/西2南3/图集" = "src/模型/场景/古城4x-西2南3.网格.png"
+"网格/古城4x/西3/图集" = "src/模型/场景/古城4x-西3.网格.png"
+"网格/古城4x/西3北1/图集" = "src/模型/场景/古城4x-西3北1.网格.png"
+"网格/古城4x/西3北2/图集" = "src/模型/场景/古城4x-西3北2.网格.png"
+"网格/古城4x/西3北3/图集" = "src/模型/场景/古城4x-西3北3.网格.png"
+"网格/古城4x/西3南1/图集" = "src/模型/场景/古城4x-西3南1.网格.png"
+"网格/古城4x/西3南2/图集" = "src/模型/场景/古城4x-西3南2.网格.png"
+"网格/古城4x/西4/图集" = "src/模型/场景/古城4x-西4.网格.png"
+"网格/古城东/图集" = "src/模型/场景/古城东.网格.png"
+"网格/古城北/图集" = "src/模型/场景/古城北.网格.png"
+"网格/古城南/图集" = "src/模型/场景/古城南.网格.png"
+"网格/古城洞口/图集" = "src/模型/场景/古城洞口.网格.png"
+"网格/古城西/图集" = "src/模型/场景/古城西.网格.png"
+"网格/古城西洞/图集" = "src/模型/场景/古城西洞.网格.png"
+"网格/城主府书房/图集" = "src/模型/场景/城主府书房.网格.png"
+"网格/城门卫兵室/图集" = "src/模型/场景/城门卫兵室.网格.png"
+"网格/基地窗户/云杉窗户/图集" = "src/模型/场景/基地窗户-云杉窗户.网格.png"
+"网格/基地窗户/原版玻璃/图集" = "src/模型/场景/基地窗户-原版玻璃.网格.png"
+"网格/基地窗户/通透玻璃/图集" = "src/模型/场景/基地窗户-通透玻璃.网格.png"
+"网格/基地窗户/镶框玻璃/图集" = "src/模型/场景/基地窗户-镶框玻璃.网格.png"
+"网格/娜迦庭院/图集" = "src/模型/场景/娜迦庭院.网格.png"
+"网格/巫妖怪塔/图集" = "src/模型/场景/巫妖怪塔.网格.png"
+"网格/幽冥高塔/图集" = "src/模型/场景/幽冥高塔.网格.png"
+"网格/暮色传送门/图集" = "src/模型/场景/暮色传送门.网格.png"
+"网格/极光宫殿/图集" = "src/模型/场景/极光宫殿.网格.png"
+"网格/终焉高原城堡/图集" = "src/模型/场景/终焉高原城堡.网格.png"
+"网格/雪怪洞窟/图集" = "src/模型/场景/雪怪洞窟.网格.png"
+"贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
+"贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
+"贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
