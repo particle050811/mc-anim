@@ -14,5 +14,5 @@
     "erasableSyntaxOnly": true,
     "types": ["node"]
   },
-  "include": ["pipeline", "content", "assets/src", "remotion.config.ts", "vitest.config.ts"]
+  "include": ["pipeline", "engine", "world", "content", "assets/src", "remotion.config.ts", "vitest.config.ts"]
 }
