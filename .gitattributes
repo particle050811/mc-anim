@@ -9,3 +9,14 @@
 *.bin binary
 *.jar binary
 *.cmd text eol=crlf
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.m4a binary
+*.flac binary
+*.mov binary
+*.gz binary
+*.zip binary
+*.ttf binary
+*.otf binary
+*.blend binary
