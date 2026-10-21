@@ -26,10 +26,15 @@ testpaths = ["py/tests"]
 [tool.ruff]
 target-version = "py311"
 line-length = 160
-include = ["py/**/*.py", "assets/tools/**/*.py", "pipeline/适配器/**/*.py"]
+include = ["py/**/*.py", "assets/tools/**/*.py", "pipeline/适配器/**/*.py", "sourcing/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
+
+[tool.ruff.lint.per-file-ignores]
+# sourcing/ 的取材脚本照旧项目原样搬（不重排版），只查语法错和 pyflakes 那类真问题
+"sourcing/**/*.py" = ["E4", "E7"]
+"sourcing/extract/殖民地蓝图.py" = ["E4", "E7", "F401"]
 
 [tool.pyright]
 include = ["py", "assets/tools"]
