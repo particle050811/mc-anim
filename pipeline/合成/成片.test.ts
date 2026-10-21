@@ -84,7 +84,7 @@ const 取像素 = (file: string, n: number, x: number, y: number) => {
 
 const 记录 = () => {
   const 事件: string[] = [];
-  return { 记: (_: string, m: string) => 事件.push(m), 产物: [] as string[], 事件 } as unknown as 运行记录 & { 事件: string[] };
+  return { 记: (_: string, m: string) => 事件.push(m), 产物: [] as string[], 事件 } as unknown as 运行记录;
 };
 
 describe.skipIf(!有ffmpeg)('合成成片', () => {
@@ -144,7 +144,7 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     expect(视频信息(成片).帧数).toBe(58);
     expect(manifest.接缝.首帧重复).toEqual(['甲 → 丁']);
     expect(fs.readFileSync(path.join(dir, '接缝.tsv'), 'utf8')).toContain('甲\t丁\t首帧重复');
-    expect(r.事件.some((m) => m.includes('甲 → 丁'))).toBe(true);
+    expect((r.事件 as unknown as string[]).some((m) => m.includes('甲 → 丁'))).toBe(true);
   });
 
   it('分享版：720p、50 MB 以内', async () => {
