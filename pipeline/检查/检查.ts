@@ -11,7 +11,7 @@ import { 规矩 } from './规则/规矩.ts';
 import { 平台 } from './规则/平台.ts';
 
 export const 规则表: Record<规则类, { 说明: string; 跑: (c: 检查上下文, 报: 报告) => Promise<void> | void }> = {
-  类型: { 说明: 'tsc strict；Python 的 ruff、pyright；改到 mod 时 gradle test', 跑: 类型 },
+  类型: { 说明: 'tsc strict；Python 的 ruff、pyright；改到 mod 时编译 mod、跑暮色网格核对（test/twilight-grid-test.sh）', 跑: 类型 },
   结构: { 说明: '分层、段不互引、不引核对、纯模块闭包、getInputProps、渲染代码的确定性', 跑: 结构 },
   清单: { 说明: '段目录和清单一一对应、段键段名合规唯一、不撞旧名、连续段接帧', 跑: 清单 },
   加载: { 说明: '在 Node 里执行全部纯模块，断言都跑到', 跑: 加载 },

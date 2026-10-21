@@ -1,5 +1,5 @@
 // 类型：tsc（strict，按根下 tsconfig.json）；Python 用 ruff 和 pyright（范围在 pyproject.toml 的 [tool.ruff]、[tool.pyright]）；
-// 改到 sourcing/mod/ 时跑 gradle test。工具没装的记「跳过」并说怎么装，不算违规（sr doctor 另查）。
+// 改到 sourcing/mod/ 时编译 mod 并跑不开游戏的暮色网格核对。工具没装的记「跳过」并说怎么装，不算违规（sr doctor 另查）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -37,18 +37,28 @@ export const 跑pyright = (c: 检查上下文, 报: 报告) => {
   if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'pyright', / - error: /);
 };
 
-/** sourcing/mod/ 有改动（和 main 比、加上工作区）才跑 gradle test */
+/**
+ * sourcing/mod/ 有改动（和 main 比、加上工作区）才跑。mod 没有 gradle 的 test 源集，测试是 test/*.sh：
+ * 这里跑 twilight-grid-test.sh（先 gradlew build，再核对暮色网格和 mixin 织入）；ancient-city-test.sh 是重任务、
+ * terrain-edit-test.sh 要旧项目的选种工具，都不在这里跑。Windows 没有 sh，只编译。
+ */
 export const 跑gradle = (c: 检查上下文, 报: 报告) => {
   const mod = 'sourcing/mod';
   const wrapper = `${mod}/${isWindows ? 'gradlew.bat' : 'gradlew'}`;
-  if (!c.存在(wrapper)) return 报.跳过.push(`gradle test：还没有 ${wrapper}`);
+  if (!c.存在(wrapper)) return 报.跳过.push(`mod 编译：还没有 ${wrapper}`);
   const 改了 = [试跑(['git', '-C', c.根, 'diff', '--name-only', 'main...HEAD']), 试跑(['git', '-C', c.根, 'status', '--porcelain'])];
   const 不在git = 改了.some((x) => x.退出码 !== 0);
-  if (!不在git && !改了.some((x) => x.stdout.includes(`${mod}/`))) return 报.跳过.push('gradle test：这次没改到 sourcing/mod/');
+  if (!不在git && !改了.some((x) => x.stdout.includes(`${mod}/`))) return 报.跳过.push('mod 编译和核对：这次没改到 sourcing/mod/');
   // build.gradle 从 MCAI_GAME 读暮色森林的 jar；1.20.1 的 ForgeGradle 要 JDK 17，配了 SR_JAVA_HOME 就用它
-  const env = { ...process.env, MCAI_GAME: 配置('游戏'), ...(配置('java_home') ? { JAVA_HOME: 配置('java_home') } : {}) };
-  const r = 试跑([c.绝对(wrapper), 'test', '--console=plain'], { cwd: c.绝对(mod), env });
-  if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'gradle test', /FAILED|error:/);
+  const java = 配置('java_home');
+  const env = { ...process.env, MCAI_GAME: 配置('游戏'), ...(java ? { JAVA_HOME: java, MCAI_JAVA_HOME: java } : {}) };
+  if (isWindows) {
+    const r = 试跑([c.绝对(wrapper), 'build', '--console=plain'], { cwd: c.绝对(mod), env });
+    if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'mod 编译', /FAILED|error:/);
+    return 报.跳过.push('mod 核对：Windows 上没有 sh，只编译，test/twilight-grid-test.sh 没跑');
+  }
+  const r = 试跑(['sh', 'test/twilight-grid-test.sh'], { cwd: c.绝对(mod), env });
+  if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'mod 编译和暮色网格核对', /FAILED|error:|错误|Exception/);
 };
 
 export const 类型 = async (c: 检查上下文, 报: 报告) => {

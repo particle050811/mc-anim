@@ -11,7 +11,7 @@
 # 游戏环境（取材服务端、Prism 实例、jar 缓存）。环境变量 SR_GAME。默认：<旧项目>/game
 # game = "../stress-rotation-game"
 
-# JDK 17：编译取材 mod（sr mcai build、sr check 的 gradle test）、取材脚本里的 javap。环境变量 SR_JAVA_HOME。默认空：用 PATH 上的 java
+# JDK 17：编译取材 mod（sr mcai build、sr check 的 mod 编译和核对）、取材脚本里的 javap。环境变量 SR_JAVA_HOME。默认空：用 PATH 上的 java
 # java_home = "/opt/homebrew/opt/openjdk@17"
 
 # Prism Launcher 程序（sr mcai 起游戏）。环境变量 SR_PRISM。默认空：从 PATH 找
