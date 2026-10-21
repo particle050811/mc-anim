@@ -635,7 +635,7 @@ id = "巡航高度"
 "原话" = []
 "针对" = "暮色、主世界巡航（10-05 定，10-14 比过 30、50 米不变）"
 "出处" = ["用户 10-05、10-14", "M/flight-segments-previs.md"]
-"落点" = ["assets/registry/数据.toml", "engine/flight/真实飞行.ts"]
+"落点" = ["world/地点/边城/6-2-5/编排/地面.ts", "engine/flight/真实飞行.ts"]
 "例外" = []
 
 [["规矩"]]
