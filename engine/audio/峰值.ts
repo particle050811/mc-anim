@@ -1,4 +1,4 @@
-// 音效文件的峰值包络（工具/游戏取材/音效峰值.py 从 ogg 量出来的：每 10 毫秒一格的采样峰值，按 dB 往上取整到 0.5 dB，所以只会估高）。
+// 音效文件的峰值包络（资产 数据/音效/音效峰值，旧项目 工具/游戏取材/音效峰值.py 从 ogg 量出来的，这个工具待迁移：每 10 毫秒一格的采样峰值，按 dB 往上取整到 0.5 dB，所以只会估高）。
 // 给要预估「最坏情况下混音会冲到多高」的地方用：一镜到底/声音.tsx 的撞墙限幅按它把整条混音（配乐 + 全部音效）的峰值压在 −1 dBFS 以下。
 import peakJson from 'asset:数据/音效/音效峰值';
 
@@ -8,7 +8,7 @@ const envelopeOf = (file: string) => {
   let envelope = envelopeCache.get(file);
   if (!envelope) {
     const b64 = peakTable.峰[file];
-    if (!b64) throw new Error(`音效峰值.json 里没有 ${file}：导出音效以后在 参考模型库/ 下重跑 工具/游戏取材/音效峰值.py`);
+    if (!b64) throw new Error(`资产 数据/音效/音效峰值 里没有 ${file}：新加了音效要重算峰值（旧项目 工具/游戏取材/音效峰值.py，待迁移），再 sr assets add 数据/音效/音效峰值 <文件>`);
     const bin = atob(b64);
     envelope = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) envelope[i] = bin.charCodeAt(i);

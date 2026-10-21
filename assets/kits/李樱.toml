@@ -150,11 +150,11 @@ const 刃朝外 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0
 "产物" = "体素/李樱"
 "步骤" = [
   "改 assets/src/角色/李樱/3D模型/build_li_ying.py（唯一生成源，Blender 5.x 脚本；体素部分是纯 Python）",
-  "python3 李樱体素导出.py：把 bpy/bmesh/mathutils 换成空壳，调脚本的体素函数出面、合并同色同面，写 李樱.体素.json（不需要 Blender）",
+  "python3 assets/src/角色/李樱/3D模型/李樱体素导出.py <输出>：把 bpy/bmesh/mathutils 换成空壳，调脚本的体素函数出面、合并同色同面，写 李樱.体素.json（不需要 Blender），再 sr assets add 体素/李樱 <输出>",
 ]
 "可复现" = "是"
-"核对" = "10-21 用仓库里的 build_li_ying.py（sha256 前 12 位 5845bcafa3f9）重跑导出，产物和资产锁里 体素/李樱 的 sha256 逐字节相同"
-"说明" = "导出脚本在旧项目 参考模型库/工具/李樱体素导出.py，按相对路径找 设定/角色/李樱/3D模型/build_li_ying.py；搬进新仓库时要改这个路径"
+"核对" = "10-21 在本仓库用 assets/src/角色/李樱/3D模型/ 下的导出脚本和 build_li_ying.py（sha256 前 12 位 5845bcafa3f9）重跑导出，产物和资产锁里 体素/李樱 的 sha256 逐字节相同"
+"说明" = "导出脚本找同目录的 build_li_ying.py，输出路径由命令行给"
 
 [["生成链"]]
 "产物" = "设定图/李樱/3D/*"
