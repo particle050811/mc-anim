@@ -151,7 +151,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
   const g6 = timeline.段表['6-3-6'].起;
   const flash = segment === '6-3-6' ? Math.max(0, 1 - Math.abs(globalFrame - g6 - timeline.撞击段内帧 - 0.5) / 2) * 0.55 : 0;
   // 金光：锤头、光尾（沿走过的路往回取点，平移到锤头上）
-  const glowLevel = 例外('不加自制特效', choreo.goldGlow(physSec), { 段: '6-举锤砸穿', 原因: '剧情要的锤头金色光尾和撞击金光' });
+  const glowLevel = 例外('不加自制特效', choreo.goldGlow(physSec), { 段: ['6-飞越主世界俯冲边城', '6-城墙瞭望', '6-举锤砸穿'], 原因: '剧情要的锤头金色光尾和撞击金光' });
   const head = choreo.maceHeadPos(ly);
   const off = [head[0] - ly.hip[0], head[1] - ly.hip[1], head[2] - ly.hip[2]];
   // 光尾往回取 0.3 秒，长度封顶 45 米（快时按速度缩）；钻进地里后只留 0.12 秒（再长会从井口一路拖到镜头身上）。用户 10-10 嫌太长，减半

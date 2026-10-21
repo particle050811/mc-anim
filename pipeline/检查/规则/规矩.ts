@@ -66,20 +66,32 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
       const [a, b, d] = n.arguments;
       const 规矩 = 字面值(a);
       const 依据: Record<string, unknown> = {};
+      let 段数组 = false;
       if (d && ts.isObjectLiteralExpression(d)) {
-        for (const q of d.properties) if (ts.isPropertyAssignment(q) && 属性名(q.name)) 依据[属性名(q.name)!] = 字面值(q.initializer);
+        for (const q of d.properties) {
+          if (!ts.isPropertyAssignment(q) || !属性名(q.name)) continue;
+          const 值 = q.initializer;
+          // 段 可以是几个段键的字面量数组
+          if (属性名(q.name) === '段' && ts.isArrayLiteralExpression(值)) {
+            const 们 = 值.elements.map((e) => 字面值(e));
+            段数组 = true;
+            依据.段 = 们.length && 们.every((x) => typeof x === 'string') ? 们 : undefined;
+          } else 依据[属性名(q.name)!] = 字面值(值);
+        }
       }
-      if (typeof 规矩 !== 'string' || !d || !ts.isObjectLiteralExpression(d) || (typeof 依据.段 !== 'string') === (typeof 依据.场 !== 'string') || typeof 依据.原因 !== 'string') {
-        报.错("例外 要写成 例外('规矩id', 值, { 段: '<段键>' 或 场: '<场键>', 原因: '…' })，规矩 id、段/场、原因都用字面量", p, 行);
+      const 段们 = typeof 依据.段 === 'string' ? [依据.段] : Array.isArray(依据.段) ? (依据.段 as string[]) : null;
+      if (typeof 规矩 !== 'string' || !d || !ts.isObjectLiteralExpression(d) || (段们 === null) === (typeof 依据.场 !== 'string') || typeof 依据.原因 !== 'string') {
+        报.错("例外 要写成 例外('规矩id', 值, { 段: '<段键>'（或段键数组）或 场: '<场键>', 原因: '…' })，规矩 id、段/场、原因都用字面量", p, 行);
         return;
       }
       const 在 = /^content\/(段|场)\/([^/]+)\//.exec(p);
       if (!在) {
         if (!R2暂放.test(p)) 报.错('例外 只写在 content/段/ 或 content/场/ 里（共用代码不为某一段开口子）', p, 行);
       }
-      else if (在[1] === '段' && 依据.段 !== 在[2]) 报.错(`content/段/${在[2]}/ 里的例外要写 段: '${在[2]}'`, p, 行);
+      else if (在[1] === '段' && (段数组 || 依据.段 !== 在[2])) 报.错(`content/段/${在[2]}/ 里的例外要写 段: '${在[2]}'`, p, 行);
       else if (在[1] === '场' && typeof 依据.场 === 'string' && 依据.场 !== 在[2]) 报.错(`content/场/${在[2]}/ 里的例外写的是 场: '${依据.场}'`, p, 行);
-      r.push({ 规矩, 段: 依据.段 as string | undefined, 场: 依据.场 as string | undefined, 值: 字面值(b), 文件: p, 行 });
+      if (段们) for (const 段 of 段们) r.push({ 规矩, 段, 值: 字面值(b), 文件: p, 行 });
+      else r.push({ 规矩, 场: 依据.场 as string, 值: 字面值(b), 文件: p, 行 });
     });
   }
   return r;
