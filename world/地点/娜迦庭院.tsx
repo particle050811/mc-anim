@@ -13,8 +13,8 @@
 //   用户 10-08 要门挪近一半：不回游戏重导（客户端装了夸克，重导会让整片庭院的草叶被 Greener Grass 调绿），在这里把网格里传送门连花圈那块原样搬到东边 33 格画，见 `挪门`。
 // - 西边林地比庭院低一格（传送门一带草地在 z=-1），墙外有一道水沟（x -92～-66）。
 import React, { useMemo } from 'react';
-import { BlockMesh, BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
-import { V3 } from '../../engine/model/parts.tsx';
+import { BlockMesh, type BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
+import type { V3 } from '../../engine/model/parts.tsx';
 import { Flame } from './娜迦迷宫.tsx';
 import raw from 'asset:网格/娜迦庭院/头';
 import bin from 'asset:网格/娜迦庭院/顶点';

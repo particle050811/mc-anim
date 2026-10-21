@@ -10,7 +10,7 @@
 //   1 背影（0～镜1止）书房南头略高往前看，推近一点，交代他在屋里看东西；2 书（镜1止～镜2止）书上方往下看，两页摆正、字是正的，
 //   手顺着右页边往下、停在那一行，停一拍，攥紧捏皱；3 抬头（镜2止～END）回到背后近一点，攥着纸慢慢抬头看窗外，最后 1 秒黑场。
 //   用户 10-19：推近那镜太长，只留交代在屋里看书的 2 秒；原来肩后斜看书的那镜看不清字，换成正上方。
-import { Key, sample } from '../../../engine/anim/anim.ts';
+import { type Key, sample } from '../../../engine/anim/anim.ts';
 import type { V3 } from '../../../engine/model/parts.tsx';
 import * as THREE from 'three';
 import { standPose, handMatrix, type FigurePose } from '../../../world/角色/骨架.tsx';

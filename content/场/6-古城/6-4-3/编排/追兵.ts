@@ -1,6 +1,6 @@
 // 6-4-3 黄叛（拉弓、放箭、愣住）和刘心忠（高台上看）的姿势。
 import type { V3 } from '../../../../../engine/model/parts.tsx';
-import { FigurePose, standPose } from '../../../../../world/角色/骨架.tsx';
+import { type FigurePose, standPose } from '../../../../../world/角色/骨架.tsx';
 import { drawBowPose } from '../../../../../world/角色/追兵.tsx';
 import { bowTextureFor, type BowTexture } from '../../../../../world/物品/弓.tsx';
 import { yawTo } from '../../../../../world/地点/古城4x/6-4-1/古城戏.ts';

@@ -23,7 +23,7 @@
 // 夜视光照同老城（古城.tsx 的 `GuchengLight`）；雾照游戏最大视距，见 `FOG_4X`。
 import React from 'react';
 import * as THREE from 'three';
-import { BlockMesh, BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { VIEW_DISTANCE, VIEW_FOG } from '../../engine/voxel/视距.ts';
 import { 资产目录 } from '../../engine/core/资产目录.ts';

@@ -10,7 +10,7 @@
 //   到期（`onUnSummon`）原地放 25 个 poof（范围 0.4/0.8/0.4、速度 0.03）后消失；被打死是原版死亡（特效/原版死亡.tsx）。
 // 坐标：原点在脚底中心，Z 朝上，正面朝 −Y（lib/实体模型.tsx）。
 import React from 'react';
-import { EntityModel, EntityModelData } from '../../engine/model/实体模型.tsx';
+import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import { mthCos, restPose, toPartPoses } from '../../engine/anim/关键帧动画.ts';
 import { DISPLAY, HeldItem, ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';

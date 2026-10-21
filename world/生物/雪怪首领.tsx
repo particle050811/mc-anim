@@ -15,7 +15,7 @@
 //   没做的：暴走时身边绕圈的 SNOW 雪花粒子、疲惫时每刻 20 个粒子；扔的冰块（`IceBomb`）和暴走震落的冰柱（`FallingIce`）是别的实体。
 // 坐标：原点在脚底中心，Z 朝上，正面朝 -Y（和 贴图方盒.tsx、巫妖.tsx 一样），单位格。
 import React from 'react';
-import { EntityModel, EntityModelData } from '../../engine/model/实体模型.tsx';
+import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/雪怪首领';
 import skin from 'asset:贴图/角色/雪怪首领';

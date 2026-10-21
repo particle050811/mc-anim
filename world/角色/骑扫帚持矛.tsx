@@ -4,7 +4,7 @@
 import React from 'react';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { SpearInHand, SPEAR } from '../物品/下界合金长矛.tsx';
-import { broomMatrix, handAim, liYingFinalPose, liYingHand, RideLiYing, toScene } from './骑扫帚.tsx';
+import { broomMatrix, handAim, liYingFinalPose, liYingHand, type RideLiYing, toScene } from './骑扫帚.tsx';
 
 export const SPEAR_RIDER = { lean: 40, poseOverride: { armR: 55, armRRoll: 0, elbowR: 35 } };
 // 量出来的（扫帚本地坐标，格）：右手握持点、左手握持点

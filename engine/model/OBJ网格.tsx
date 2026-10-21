@@ -3,7 +3,7 @@
 import React, { useContext } from 'react';
 import * as THREE from 'three';
 import { Ghost } from './parts.tsx';
-import { EntityTexture, entityTexture } from './贴图方盒.tsx';
+import { type EntityTexture, entityTexture } from './贴图方盒.tsx';
 
 export type ObjGroup = { pos: number[]; uv: number[] };
 export type ObjModel = { tex: { w: number; h: number }; groups: Record<string, ObjGroup> };

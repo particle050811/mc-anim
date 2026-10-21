@@ -5,7 +5,7 @@
 //   （= mcai mesh from=-43,0,209 to=42,95,261 origin=0,0,235.5 merge=0 mark=twilightforest:lich_boss_spawner）
 // 坐标：原点 (0, 0, 235.5)，南 = -Y；范围见 巫妖怪塔.网格.json。三个 巫妖怪塔.网格.* 不要手改。
 import React from 'react';
-import { BlockMesh, BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
 import raw from 'asset:网格/巫妖怪塔/头';
 import bin from 'asset:网格/巫妖怪塔/顶点';
 import atlas from 'asset:网格/巫妖怪塔/图集';

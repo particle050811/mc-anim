@@ -8,7 +8,7 @@
 // 单位：格，原点在底面中心，正面（锁扣）朝 -Y（南）。场景里要和方块网格一样亮的给 自发光 0.4（同 lib/光照配比.ts 的打底）。
 import React from 'react';
 import type { V3 } from '../../engine/model/parts.tsx';
-import { Png, png, pngDir } from '../../engine/model/贴图.ts';
+import { type Png, png, pngDir } from '../../engine/model/贴图.ts';
 import { TexBox } from '../../engine/model/贴图方盒.tsx';
 import vanillaPng from 'asset:贴图/物品/箱子';
 import lootrPng from 'asset:贴图/物品/战利品箱';

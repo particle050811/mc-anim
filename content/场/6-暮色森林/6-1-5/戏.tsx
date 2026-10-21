@@ -3,13 +3,13 @@
 import React from 'react';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { png } from '../../../../engine/model/贴图.ts';
-import { handAim, RideLiYing } from '../../../../world/角色/骑扫帚.tsx';
+import { handAim, type RideLiYing } from '../../../../world/角色/骑扫帚.tsx';
 import { Lich, LICH, lichShieldMatrix } from '../../../../world/生物/巫妖.tsx';
 import { HEALING_COLOR, ThrownSplashPotion } from '../../../../world/物品/喷溅药水.tsx';
 import { EncasedFan } from '../../../../world/物品/鼓风机.tsx';
 import { LichTower, LichTower_ATLAS } from '../../../../world/地点/巫妖怪塔.tsx';
 import { LandmarkPlacement } from '../../../../world/地点/暮色新世界.tsx';
-import { BlockDebris, DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
+import { BlockDebris, type DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
 import { ShieldShatter } from '../../../../world/特效/护盾碎裂.tsx';
 import { PotionSplash } from '../../../../world/特效/药水炸开.tsx';
 import { PoofBurst, DeathTopple } from '../../../../world/特效/生物死亡.tsx';

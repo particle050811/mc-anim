@@ -4,7 +4,7 @@
 //   ./mcai mesh from=-250,-8,502 to=-150,50,602 out=../参考模型库/src/模型/场景/雪怪洞窟.网格 mark=twilightforest:alpha_yeti_boss_spawner
 // 坐标：原点在导出范围底面中心，南 = -Y；范围见 雪怪洞窟.网格.json。三个 雪怪洞窟.网格.* 不要手改。
 import React from 'react';
-import { BlockMesh, BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
 import raw from 'asset:网格/雪怪洞窟/头';
 import bin from 'asset:网格/雪怪洞窟/顶点';
 import atlas from 'asset:网格/雪怪洞窟/图集';

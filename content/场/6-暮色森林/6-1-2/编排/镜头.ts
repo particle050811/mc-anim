@@ -1,5 +1,5 @@
 // 6-1-2 各镜头的机位：1 身后跟拍助跑起跳、2 侧拍迅冲、2c 横穿俯拍、2b 庭院中心、3 迷宫里的九胡（6-1-3 镜头 1 接着用 mazeCam）。
-import { Key, VKey, rad, sample, sampleV } from '../../../../../engine/anim/anim.ts';
+import { type Key, type VKey, rad, sample, sampleV } from '../../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../../engine/model/parts.tsx';
 import { S2, S2C, S2B, S3, ss, lerp3, lanePt, laneZ, GO } from './时间轴.ts';
 import { TAKEOFF, DASH0, CUT_X, DASH_Y, lyL, lyLoc } from './李樱.ts';

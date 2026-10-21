@@ -11,7 +11,7 @@
 // 竖井网格放在 z = 0 是按城的地面 z = 10 写的（主世界116.ts 整平到顶面 z 10）；地面高度再变，这里和 6-3-下坠/画面.tsx 摆竖井网格的 z 要一起挪，下面的检查会报出来。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { BlockMesh, BlockMeshInfo } from '../../../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo } from '../../../../engine/voxel/方块网格.tsx';
 import { pngDir, type Png } from '../../../../engine/model/贴图.ts';
 import { BORDER_TOWN } from '../../边城轮廓.tsx';
 import { borderTownPos } from '../../主世界116.ts';

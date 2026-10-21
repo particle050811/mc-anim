@@ -11,7 +11,7 @@
 // 大土丘是空心的（地面 z 7、洞里空到 z 23 上下，顶上四五格厚的土壳）。扎穿九头蛇后冲进洞口，在洞里飞 30 米，a 31.5 撞上洞的东侧壁，a 52.5 从东坡钻出去（下面 `侧壁`，列段逐格查）。
 // 东侧壁这一截在 暮色新世界.tsx 九头蛇巢穴那一行挖成斜隧道，出口喷石块、土（戏.tsx）。隧道一直开着：出口在土丘背着来向的那面，镜头在西北边高处看不到。
 import type { V3 } from '../../../../engine/model/parts.tsx';
-import { HYDRA, HydraHead } from '../../../../world/生物/九头蛇.tsx';
+import { HYDRA, type HydraHead } from '../../../../world/生物/九头蛇.tsx';
 import { cruiseHeight, twilightLandmark } from '../../../../world/地点/暮色新世界.tsx';
 import { integrateProfile, profileLookup, descendTo, pierceProfileLimits } from '../../../../engine/flight/平顺航迹.ts';
 

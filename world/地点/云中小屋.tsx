@@ -10,7 +10,7 @@
 // - 两棵云树（giant_log 树干 + giant_leaves 树冠，顶到 y=196）在小屋北边一左一右。
 // 坐标：原点在导出范围底面中心（游戏 304.5, 158, -263.5），南 = -Y，Z 朝上；三个 云中小屋.网格.* 文件不要手改。
 import React from 'react';
-import { BlockMesh, BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import raw from 'asset:网格/云中小屋/头';
 import bin from 'asset:网格/云中小屋/顶点';

@@ -20,7 +20,7 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
-import { BlockModel, BlockModelData } from '../../engine/model/方块模型.tsx';
+import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { crop, png, type Png } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/物品/鼓风机';
 import atlasPng from 'asset:贴图/物品/鼓风机';

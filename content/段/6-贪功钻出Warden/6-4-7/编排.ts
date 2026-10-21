@@ -6,7 +6,7 @@
 //
 // 机位：开头硬切反打刘心忠（见下面「机位」），二人起跳时往左（西）摇着仰看这一跳，落地后镜头往东北挪到二人身后，越过肩头往西看（第四次尖啸体、监守者钻出处、北墙根羊毛 F1 都在画里），停在 6-4-8 首帧机位。
 // 最后 0.4 秒淡进 6-4-8 的 `pursuers`，末帧机位直接用它的 `camera(0)`；6-4-8 第 0 帧不在 `handoffs.六四八首` 上就在加载时报错。
-import { Key, VKey, sample, sampleV, track } from '../../../../engine/anim/anim.ts';
+import { type Key, type VKey, sample, sampleV, track } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import type { FigurePose } from '../../../../world/角色/骨架.tsx';
 import { G4 } from '../../../../world/地点/古城4x.tsx';

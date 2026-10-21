@@ -10,12 +10,12 @@
 // 坐标：p 是方块底面中心，场景坐标 Z 朝上；秒 是全局时间（决定触须动画帧）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
-import { BlockModel, BlockModelData } from '../../engine/model/方块模型.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { png, pngDir } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/特效/幽匿感测体';
 import atlasPng from 'asset:贴图/特效/幽匿感测体';
-import { interpPathPos, Particle, particleInitVel, particlePath, particleTexture, ParticleQuads } from './粒子面片.tsx';
+import { interpPathPos, type Particle, particleInitVel, particlePath, particleTexture, ParticleQuads } from './粒子面片.tsx';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_active';
 import 资_1 from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_inactive';

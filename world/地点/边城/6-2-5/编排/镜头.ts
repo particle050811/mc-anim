@@ -1,5 +1,5 @@
 // 镜头：首帧贴在草束后面，起飞 14 帧追到后上方，之后追拍（拉近、俯冲绕上、进城转向城），悬停时在扫帚上方往下看城。
-import { Key, sample } from '../../../../../engine/anim/anim.ts';
+import { type Key, sample } from '../../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../../engine/model/parts.tsx';
 import { WIDE_LENS, triangleSmooth } from '../../../../../engine/flight/飞行路径.ts';
 import { BROOM } from '../../../../物品/扫帚.tsx';

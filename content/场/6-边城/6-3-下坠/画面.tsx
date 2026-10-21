@@ -9,7 +9,7 @@ import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { rad } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
-import { BedrockModel, BedrockModelView } from '../../../../engine/model/基岩模型.tsx';
+import { type BedrockModel, BedrockModelView } from '../../../../engine/model/基岩模型.tsx';
 import { png } from '../../../../engine/model/贴图.ts';
 import { LevelParams, canvasDpr } from '../../../../engine/core/渲染级别.ts';
 import { ScreenAo } from '../../../../engine/voxel/屏幕AO.tsx';

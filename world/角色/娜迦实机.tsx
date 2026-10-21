@@ -7,8 +7,8 @@
 // 坐标：原点在脚底中心，脸朝 -Y，单位格。
 import React from 'react';
 import { rad } from '../../engine/anim/anim.ts';
-import { V3 } from '../../engine/model/parts.tsx';
-import { EntityTexture, TexBox } from '../../engine/model/贴图方盒.tsx';
+import type { V3 } from '../../engine/model/parts.tsx';
+import { type EntityTexture, TexBox } from '../../engine/model/贴图方盒.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/角色/娜迦实机/charging';

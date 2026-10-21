@@ -8,7 +8,7 @@ import { HuangPan } from '../../../../world/角色/追兵.tsx';
 import { Arrow } from '../../../../world/物品/箭.tsx';
 import { EncasedFan } from '../../../../world/物品/鼓风机.tsx';
 import { BlockDebris, type DebrisData } from '../../../../world/特效/方块飞溅.tsx';
-import { BladeTrail, BladePos, NightfallParry, NightfallBloom, liYingTrailPts } from '../../../../world/特效/夜幕刀光.tsx';
+import { BladeTrail, type BladePos, NightfallParry, NightfallBloom, liYingTrailPts } from '../../../../world/特效/夜幕刀光.tsx';
 import { bladeInHand, handMatrix } from '../../../../world/角色/骨架.tsx';
 import { bladeCenterY } from '../../../../world/物品/拔刀剑.tsx';
 import { SculkSensor } from '../../../../world/特效/幽匿感测体.tsx';

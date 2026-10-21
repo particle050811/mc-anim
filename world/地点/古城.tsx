@@ -31,7 +31,7 @@
 //   第 3 场换用这个模型时：<Gucheng 块={…} /> 外套一层 group，position = 竖井中心场景坐标 − `GUCHENG.落点`（xy），z 对齐 `ancientCityFloorZ`；然后 镜头/6-3-下坠/ 里的 `古城局部.网格.*` 占位可删。
 // 夜视（用户 10-02 嫌古城太黑）：一律按夜视药水画——光照亮度拉满、颜色照常。灯光见 `GuchengLight`：和地标场景同一套日光 + 天光 + 环境光但不投影（地下有洞顶，投影会整座城在阴影里），面朝向明暗和烘进去的环境光遮蔽照旧；幽匿块发光点、灵魂灯保留贴图本色。
 import React from 'react';
-import { BlockMesh, BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo, fromGame } from '../../engine/voxel/方块网格.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import rawC from 'asset:网格/古城/头';
 import binC from 'asset:网格/古城/顶点';

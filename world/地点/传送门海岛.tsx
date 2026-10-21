@@ -10,8 +10,8 @@
 // 坐标：原点在岛中央、海平面高度（游戏 y=63），南 = -Y。海面 z≈-0.11，草地顶 z=1～2。导出范围 161×161 格，范围外补一圈纯色海面。这六个 .网格.* 不要手改。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { BlockMesh, BlockMeshInfo } from '../../engine/voxel/方块网格.tsx';
-import { V3 } from '../../engine/model/parts.tsx';
+import { BlockMesh, type BlockMeshInfo } from '../../engine/voxel/方块网格.tsx';
+import type { V3 } from '../../engine/model/parts.tsx';
 import raw from 'asset:网格/传送门海岛/头';
 import bin from 'asset:网格/传送门海岛/顶点';
 import atlas from 'asset:网格/传送门海岛/图集';

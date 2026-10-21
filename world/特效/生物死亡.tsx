@@ -4,7 +4,7 @@
 // - `PoofBurst`：原版生物死亡消失时的白色烟团（poof）：20 个，8 帧贴图从大到小，慢慢上飘。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/特效/粒子/critical_hit';

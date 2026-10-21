@@ -22,7 +22,7 @@
 import React from 'react';
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
-import { BedrockModel, BedrockModelView, BonePose } from '../../engine/model/基岩模型.tsx';
+import { type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import { BROOM, Broom } from '../物品/扫帚.tsx';

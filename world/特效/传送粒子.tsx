@@ -11,7 +11,7 @@
 // 带上那一刻人的速度（vel），按每刻 0.8 的阻力很快慢下来——跟着人冲出去一小段，落在后面收拢、散掉。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/特效/粒子/critical_hit';

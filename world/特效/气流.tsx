@@ -12,7 +12,7 @@ import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { hash2 } from '../../engine/core/噪声.ts';
 import { pngDir } from '../../engine/model/贴图.ts';
-import { Particle, particleTexture, ParticleQuads } from './粒子面片.tsx';
+import { type Particle, particleTexture, ParticleQuads } from './粒子面片.tsx';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/特效/粒子/generic_0';
 import 资_1 from 'asset:贴图/特效/粒子/generic_1';

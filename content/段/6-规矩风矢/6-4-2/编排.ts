@@ -14,7 +14,7 @@
 //     再 `Warden.applyDarknessAround`：40 格内玩家 260 刻黑暗（模型/特效/黑暗效果.tsx：头尾各 1.1 秒渐入渐出，雾压到 15 格、亮度 4 秒一周期）。
 //   - 6-4-3 挡箭惹的是第二次警告：离这次远超 10 秒冷却，照样尖啸。
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
-import { FigurePose } from '../../../../world/角色/骨架.tsx';
+import type { FigurePose } from '../../../../world/角色/骨架.tsx';
 import { shriekToDarknessSec, darknessParams } from '../../../../world/特效/黑暗效果.tsx';
 import { G4 } from '../../../../world/地点/古城4x.tsx';
 import type { Cam, ChestOpening } from '../../../../world/地点/古城4x/6-4-1/古城画面.tsx';

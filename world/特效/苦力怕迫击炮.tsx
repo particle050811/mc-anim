@@ -8,11 +8,11 @@
 // 坐标：场景坐标（Z 朝上），单位格；时间：刻（1 秒 20 刻）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
-import { EntityModelData, ownPartGeometry } from '../../engine/model/实体模型.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type EntityModelData, ownPartGeometry } from '../../engine/model/实体模型.tsx';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png, pngDir } from '../../engine/model/贴图.ts';
-import { serverSendParticles, ParticleSpawn } from './原版粒子.tsx';
+import { serverSendParticles, type ParticleSpawn } from './原版粒子.tsx';
 import raw from 'asset:模型/特效/苦力怕头';
 import texHead from 'asset:贴图/特效/苦力怕头';
 import { 资产目录 } from '../../engine/core/资产目录.ts';

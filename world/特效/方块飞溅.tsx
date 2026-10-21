@@ -4,10 +4,10 @@
 // 穿墙分两部分（用户 10-02）：被动力钻头矛直接碰到的方块（矛尖连钻头虚影扫过的那一管，各段 编排.ts 给的 `管`）当场崩掉，原地画原版破坏粒子（方块破坏粒子.tsx；钻头再顺着离开矛轴的方向甩一把），矛尖扫到那刻崩；周围没被碰到的才整块飞出。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, V3 } from '../../engine/model/parts.tsx';
+import { rng, type V3 } from '../../engine/model/parts.tsx';
 import type { Png } from '../../engine/model/贴图.ts';
-import { spawnBlockBreak, BreakParticle, collectBreakParticles, BreakParticleQuads } from './方块破坏粒子.tsx';
-import { Particle, particleTexture } from './粒子面片.tsx';
+import { spawnBlockBreak, type BreakParticle, collectBreakParticles, BreakParticleQuads } from './方块破坏粒子.tsx';
+import { type Particle, particleTexture } from './粒子面片.tsx';
 
 export type DebrisFace = number[]; // [u0, v0, u1, v1, r, g, b]
 // cells：盒子里的格子是碎块；ring 的是盒子外扩一圈、留在原地的完整方块（洞壁）。hide：场景网格里要藏掉的范围（每个盒子一个，外扩以后的）。

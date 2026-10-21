@@ -7,7 +7,7 @@ import { AlphaYeti, ALPHA_YETI } from '../../../../world/生物/雪怪首领.tsx
 import { DarkTower } from '../../../../world/地点/幽冥高塔.tsx';
 import { LandmarkPlacement, landmarkHideOutsideCore } from '../../../../world/地点/暮色新世界.tsx';
 import { YetiCave, YetiCave_ATLAS } from '../../../../world/地点/雪怪洞窟.tsx';
-import { BlockDebris, DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
+import { BlockDebris, type DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
 import { ExplosionBurst, PoofBurst } from '../../../../world/特效/生物死亡.tsx';
 import { Debris } from '../../../../world/特效/烟尘.tsx';
 import yetiDebrisRaw from 'asset:碎块/镜头/6-1-7/雪怪碎块';

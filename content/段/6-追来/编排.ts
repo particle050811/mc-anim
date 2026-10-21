@@ -9,7 +9,7 @@
 //   3. 切C～切D：黄叛落地 0.6 秒后，二人脚边的尖啸体 (−855,−51,227) 喷声波环（第三次，振动链见 追兵.ts），切到尖啸体西边往东看：前景尖啸体喷声波环，二人在后面扭头低头看过来。
 //   4. 切D～末：黄叛开口前一刻切刘心忠的越肩、黄叛的近景：「等一下刘兄，你不觉得这个结构……有些奇怪吗？」，刘心忠看着他。末帧 = 6-4-7 首帧。
 // 机位对着新世界的方块逐帧核过（工具/机位核对：机位那格是空气、到二人的视线不挡）。
-import { Key, VKey, sample, sampleV, track } from '../../../engine/anim/anim.ts';
+import { type Key, type VKey, sample, sampleV, track } from '../../../engine/anim/anim.ts';
 import type { V3 } from '../../../engine/model/parts.tsx';
 import type { FigurePose } from '../../../world/角色/骨架.tsx';
 import { G4 } from '../../../world/地点/古城4x.tsx';

@@ -5,7 +5,7 @@ import { png } from '../../../../engine/model/贴图.ts';
 import { IceShieldBlock, SnowQueen } from '../../../../world/生物/冰雪女王.tsx';
 import { AuroraPalace, AuroraPalace_ATLAS } from '../../../../world/地点/极光宫殿.tsx';
 import { LandmarkPlacement, landmarkHideOutsideCore } from '../../../../world/地点/暮色新世界.tsx';
-import { BlockDebris, DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
+import { BlockDebris, type DebrisData, debrisNearHide } from '../../../../world/特效/方块飞溅.tsx';
 import { IceShards } from '../../../../world/特效/冰墙碎裂.tsx';
 import { PoofBurst, DeathTopple } from '../../../../world/特效/生物死亡.tsx';
 import debrisRaw from 'asset:碎块/镜头/6-1-8/碎块';

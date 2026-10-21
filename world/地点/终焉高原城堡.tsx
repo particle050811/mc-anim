@@ -4,7 +4,7 @@
 //   ./mcai mesh from=-600,-14,-640 to=425,205,-325 outside=1 'skip=<城堡导出去掉>' out=../参考模型库/src/模型/场景/终焉高原城堡.网格
 // 坐标：原点在导出范围底面中心，南 = -Y；范围见 终焉高原城堡.网格.json。三个 终焉高原城堡.网格.* 不要手改。
 import React from 'react';
-import { BlockMesh, BlockMeshInfo } from '../../engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo } from '../../engine/voxel/方块网格.tsx';
 import raw from 'asset:网格/终焉高原城堡/头';
 import bin from 'asset:网格/终焉高原城堡/顶点';
 import atlas from 'asset:网格/终焉高原城堡/图集';

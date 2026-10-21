@@ -5,8 +5,8 @@
 // 游戏里的北（-Z）= 这里的 +Y，游戏里的上 = 这里的 +Z。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { BlockSceneData, makeTexture } from './方块场景.tsx';
-import { Png } from './贴图.ts';
+import { type BlockSceneData, makeTexture } from './方块场景.tsx';
+import type { Png } from './贴图.ts';
 
 export type BlockModelData = {
   textures: BlockSceneData['textures'];

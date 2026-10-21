@@ -15,9 +15,9 @@
 import React from 'react';
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
-import { EntityModel, EntityModelData, PartPose } from '../../engine/model/实体模型.tsx';
-import { ItemDisplay, ItemSprite, ItemTransform } from '../../engine/model/物品贴图.tsx';
-import { Png, pngDir } from '../../engine/model/贴图.ts';
+import { EntityModel, type EntityModelData, type PartPose } from '../../engine/model/实体模型.tsx';
+import { ItemDisplay, ItemSprite, type ItemTransform } from '../../engine/model/物品贴图.tsx';
+import { type Png, pngDir } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/巨人';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/角色/巨人/取材账号';

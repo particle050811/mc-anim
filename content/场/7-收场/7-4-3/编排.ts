@@ -10,7 +10,7 @@
 //   坑口直接切书页，不拍屋里中景看他写（用户 10-19 定：那样看不到字）。
 // 手和书的接触（掀页、拿书、接书）用 模型/角色/手臂逆解.ts 让手上那一点落到书上；书拿起来以后跟着手走（拿起那一刻手和书的相对位置定住），不穿桌面、不穿手。
 import * as THREE from 'three';
-import { Key, sample } from '../../../../engine/anim/anim.ts';
+import { type Key, sample } from '../../../../engine/anim/anim.ts';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { handMatrix, hipMatrix, standPose, type FigurePose } from '../../../../world/角色/骨架.tsx';
 import { reachFigure, solveReach, type ReachParam } from '../../../../world/角色/手臂逆解.ts';

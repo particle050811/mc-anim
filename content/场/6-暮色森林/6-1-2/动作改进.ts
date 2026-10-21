@@ -6,7 +6,7 @@
 // 3. 急停收势：120 米/秒急停时前倾、下沉、右臂前甩，按欠阻尼弹簧冲过再回弹；
 // 4. 微动：迅冲时身体随气流起伏，站定后呼吸、头左右看、重心左右挪。
 // 全部是剧情帧的纯函数（弹簧从固定起点积分打表），Remotion 每帧单独算也一样。
-import { Key, rad, holdTime } from '../../../../engine/anim/anim.ts';
+import { type Key, rad, holdTime } from '../../../../engine/anim/anim.ts';
 import { springTable } from '../../../../engine/flight/真实飞行.ts';
 import type { FigurePose } from '../../../../world/角色/骨架.tsx';
 import * as choreo from './编排.ts';

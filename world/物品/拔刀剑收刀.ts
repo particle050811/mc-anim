@@ -9,7 +9,7 @@
 // 全部在髋坐标系（骨架 hip 插槽：脚底为原点、腰在 z=12、单位像素，跟着转身和前倾、不跟胸扭转）里算；纯函数，只看剧情帧和当帧姿态。
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
-import { bladeInHand, FigurePose, handMatrix, hipMatrix } from '../角色/骨架.tsx';
+import { bladeInHand, type FigurePose, handMatrix, hipMatrix } from '../角色/骨架.tsx';
 import { bladeCenterY, KATANA_DIMS as 尺, SHEATH_HANG_QUAT, SHEATHED_BLADE, sheathCenterY } from './拔刀剑.tsx';
 
 const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
