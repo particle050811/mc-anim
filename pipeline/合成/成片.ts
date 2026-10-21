@@ -11,7 +11,7 @@ import { 提交状态, 相对代码根 } from '../环境/路径.ts';
 import { 低优先级, 跑, 跑出, 试跑 } from '../环境/子进程.ts';
 import { 叠层目录, 数据路径 } from '../环境/配置.ts';
 import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
-import type { 段信息 } from '../清单/清单.ts';
+import { 全部段, type 段信息 } from '../清单/清单.ts';
 import { 读资产锁, 解析资产 } from '../资产/资产锁.ts';
 import { 叠层路径, 母版路径, 历史指纹, 原子写 } from '../渲/母版.ts';
 import { 叠层渲染参数, 渲染参数 } from '../渲/设置.ts';
@@ -22,7 +22,7 @@ import { 叠层滤镜, 展开段叠层, type 叠加层 } from './叠层.ts';
 import { 读单声道 } from './音频.ts';
 import { 核对开口, 排字幕, 字幕表tsv, srt } from './字幕.ts';
 import { 画字幕卡 } from './字幕卡.ts';
-import { 同步表, 算台词落点, 读台词表, 读开口表 } from './台词落点.ts';
+import { 上一段于, 同步表, 算台词落点, 读台词表, 读音效起音 } from './台词落点.ts';
 import { utc时间, utc月日时分, type 运行记录 } from '../运行记录/记录.ts';
 import type { 渲染级别 } from '../../content/设置值.ts';
 
@@ -175,7 +175,7 @@ export const 合成成片 = async (
   const 读声音缓存 = new Map<string, Float32Array>();
   const 读声音 = (f: string) => 读声音缓存.get(f) ?? 读声音缓存.set(f, 读单声道(f)).get(f)!;
   const 有台词 = 截们.some((c) => c.段.段.声音?.some((x) => x.台词 !== undefined));
-  const 落点们 = 有台词 ? 算台词落点(截们, 读台词表(), (id) => 解析资产(id, 锁).文件, 读开口表()) : [];
+  const 落点们 = 有台词 ? 算台词落点(截们, 读台词表(), (id) => 解析资产(id, 锁).文件, 上一段于(await 全部段())) : [];
   const 字幕 = 排字幕(落点们, 总帧数, fps, 读声音);
   if (落点们.length) console.log(`字幕：${字幕.句们.length} 句、${字幕.屏们.length} 屏${opts.不叠字幕 ? '（只排不叠）' : ''}`);
   else opts.记录.记('警告', '这些段的 段.ts 里没有台词 cue，成片没有字幕');
@@ -262,7 +262,7 @@ export const 合成成片 = async (
   let 开口最大差: number | null = null;
   let 同步: { 对上: number; 总: number } | null = null;
   if (落点们.length) {
-    原子写(path.join(dir, '字幕表.tsv'), 字幕表tsv(字幕.屏们, fps));
+    原子写(path.join(dir, '字幕表.tsv'), 字幕表tsv(字幕.屏们, fps, 字幕.接着放们));
     原子写(path.join(dir, `${opts.名}.srt`), srt(字幕.屏们, fps));
     原子写(path.join(dir, '台词落点.json'), JSON.stringify(落点们.map((a) => ({ ...a, 文件: path.basename(a.文件) })), null, 1) + '\n');
     Object.assign(文件, { 字幕表: '字幕表.tsv', SRT: `${opts.名}.srt`, 台词落点: '台词落点.json' });
@@ -277,7 +277,7 @@ export const 合成成片 = async (
       console.log(`字幕核对：字幕落点和成片里实际开口最多差 ${开口最大差?.toFixed(2) ?? '—'} 帧`);
       if (开口最大差 !== null && 开口最大差 > 1) opts.记录.记('警告', `有台词在成片里的开口和字幕落点差 ${开口最大差.toFixed(2)} 帧（> 1 帧），见 字幕核对.tsv`);
     }
-    const r = 同步表(截们, 混音, fps);
+    const r = 同步表(截们, 混音, fps, 读音效起音());
     原子写(path.join(dir, '同步表.tsv'), r.tsv);
     同步 = { 对上: r.对上, 总: r.总 };
     文件.同步表 = '同步表.tsv';
