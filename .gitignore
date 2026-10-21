@@ -1,0 +1,8 @@
+node_modules/
+/预览/
+sr.local.toml
+.venv/
+__pycache__/
+*.pyc
+/out/
+.DS_Store

@@ -1,0 +1,11 @@
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.wav binary
+*.ogg binary
+*.mp3 binary
+*.mp4 binary
+*.mkv binary
+*.bin binary
+*.jar binary
+*.cmd text eol=crlf
