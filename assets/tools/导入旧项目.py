@@ -75,10 +75,16 @@ def 库目录(数据根: Path, 库: str, sha: str) -> Path:
     return 数据根 / 库 / sha[:2] / sha
 
 
-def 导入(旧: Path, 数据根: Path) -> dict:
+def 导入(旧: Path, 数据根: Path, 现有锁: dict) -> dict:
     锁 = {}
     新拷 = 0
     for e in 读资产表():
+        if not e.get('旧路径'):
+            # 不是从旧项目来的（sr assets add 登记的），照现有锁保留，不重算
+            if e['id'] not in 现有锁:
+                sys.exit(f'{e["id"]}: 没写旧路径，资产锁里也没有，先用 sr assets add 入库')
+            锁[e['id']] = 现有锁[e['id']]
+            continue
         src = 旧 / e['旧路径']
         if not src.is_file():
             sys.exit(f'{e["id"]}: 旧文件不在 {src}')
@@ -158,7 +164,7 @@ def 回读(锁: dict, 旧: Path, 数据根: Path) -> None:
             对象[p] = sha256(p)
         if 对象[p] != v['sha256'] or p.stat().st_size != v['大小']:
             sys.exit(f'{id_}: 库里的对象 {p} 和锁不一致')
-        if sha256(旧 / 表[id_]['旧路径']) != v['sha256']:
+        if 表[id_].get('旧路径') and sha256(旧 / 表[id_]['旧路径']) != v['sha256']:
             sys.exit(f'{id_}: 旧文件 {表[id_]["旧路径"]} 和锁不一致')
         按可见性[表[id_]['可见性']][0] += 1
         按可见性[表[id_]['可见性']][1] += v['大小']
@@ -207,11 +213,12 @@ def main() -> None:
         if not p.exists() and (REPO.parent.parent / name).exists():
             setattr(a, attr, REPO.parent.parent / name)
     锁路径 = ASSETS / '资产锁.json'
+    现有锁 = json.loads(锁路径.read_text(encoding='utf-8')) if 锁路径.exists() else {}
     if a.只核对:
-        锁 = json.loads(锁路径.read_text(encoding='utf-8'))
+        锁 = 现有锁
     else:
-        锁 = 导入(a.旧项目, a.数据根)
-        对照 = [(e['旧路径'], e['id']) for e in 读资产表()] + 拷文字源(a.旧项目)
+        锁 = 导入(a.旧项目, a.数据根, 现有锁)
+        对照 = [(e['旧路径'], e['id']) for e in 读资产表() if e.get('旧路径')] + 拷文字源(a.旧项目)
     对照地形 = 地形(a.旧项目, a.数据根, a.只核对)
     if not a.只核对:
         锁路径.write_text(json.dumps(锁, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
