@@ -558,7 +558,7 @@ id = "余音淡出"
 "原话" = []
 "针对" = "用户批过 4～6 帧"
 "出处" = ["M/chapter6-sound-mix.md"]
-"落点" = ["engine/audio/游戏音效.tsx GameSoundTrack tailFade"]
+"落点" = ["engine/audio/游戏音效.tsx GameSoundTrack、cutFadeFrames（tailFade 是 GameSoundTrack 的参数）"]
 "例外" = []
 
 [["规矩"]]
@@ -623,7 +623,7 @@ id = "内倾上限"
 "原话" = []
 "针对" = "用户 10-01 嫌翻滚头晕"
 "出处" = ["用户 10-01", "M/flight-segments-previs.md"]
-"落点" = ["engine/flight/飞行路径.ts 内倾", "world/地点/飞行镜头.tsx"]
+"落点" = ["engine/flight/飞行路径.ts maxBankDeg、bankAngle（转弯内倾）", "world/地点/飞行镜头.tsx"]
 "例外" = []
 
 [["规矩"]]
