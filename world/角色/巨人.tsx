@@ -20,6 +20,7 @@ import { ItemDisplay, ItemSprite, type ItemTransform } from '../../engine/model/
 import { type Png, pngDir } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/巨人';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
+// 待迁移（私有资产）：取材账号皮肤私有（正式段用史蒂夫皮肤），公开构建怎么去掉这张还没定
 import 资_0 from 'asset:贴图/角色/巨人/取材账号';
 import 资_1 from 'asset:贴图/角色/巨人/史蒂夫';
 import 资_2 from 'asset:贴图/角色/巨人/石剑';

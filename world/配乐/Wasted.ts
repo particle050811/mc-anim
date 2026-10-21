@@ -6,6 +6,7 @@
 // - 段落和事件：看那个脚本 --表 打出来的逐拍频段能量（低频进出、响度、踩镲有无）标的
 // - 歌词：whisper-cli（large-v3-turbo）按 4 小节一块识别，时间吸附到拍；只留每句开头几个词，用来认位置，识别有误
 // 换版本：换下面三个 import，重跑分析脚本，再按新的逐拍表和歌词核对段落、事件、歌词的小节号。组件不用改。
+// 待迁移（私有资产）：配乐私有，M5 配乐改走 cue（缺了换静音）后不再打进包
 import audioUrl from 'asset:配乐/Wasted';
 import clickTrackUrl from 'asset:配乐/Wasted-节拍声';
 import analysis from '../../assets/配乐分析/Wasted.分析.json';

@@ -9,6 +9,7 @@ import lineTableJson from 'asset:数据/配音/台词表';
 import { lineVolume } from './混音.ts';
 import { useSfxLog } from './音效清单.ts';
 import { 资产目录 } from '../core/资产目录.ts';
+// 待迁移（私有资产）：九胡的配音私有，M5 台词改走段.ts 的声音 cue 后不再打进包
 import 资_0 from 'asset:配音/6-李樱-出征暮色';
 import 资_1 from 'asset:配音/6-李樱-不值一提';
 import 资_2 from 'asset:配音/6-九胡-等等我';

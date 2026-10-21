@@ -8,6 +8,7 @@ import React from 'react';
 import { AbsoluteFill, Img } from 'remotion';
 import frameTable资产 from 'asset:数据/界面/结构罗盘帧表';
 import { 资产目录 } from '../../engine/core/资产目录.ts';
+// 待迁移（私有资产）：结构罗盘界面是游戏截图、私有，公开构建缺了怎么降级还没定
 import 资_0 from 'asset:贴图/界面/结构罗盘/帧-00';
 import 资_1 from 'asset:贴图/界面/结构罗盘/帧-01';
 import 资_2 from 'asset:贴图/界面/结构罗盘/帧-02';
