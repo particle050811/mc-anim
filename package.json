@@ -1,0 +1,32 @@
+{
+  "name": "stress-rotation",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "sr": "node pipeline/cli/main.ts"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.530",
+    "@remotion/cli": "4.0.530",
+    "@remotion/media": "4.0.530",
+    "@remotion/renderer": "4.0.530",
+    "cross-spawn": "7.0.6",
+    "esbuild": "0.28.1",
+    "fast-png": "^8.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "remotion": "4.0.530",
+    "smol-toml": "1.9.0",
+    "webpack": "5.105.0"
+  },
+  "devDependencies": {
+    "@types/cross-spawn": "6.0.6",
+    "@types/node": "24.19.0",
+    "@types/react": "^19",
+    "typescript": "^5",
+    "vitest": "5.0.3"
+  }
+}
