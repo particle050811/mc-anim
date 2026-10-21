@@ -1,12 +1,14 @@
-// 认可记录 verify/accepted/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名和音频 sha。
+// 认可记录 verify/accepted/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
 // sr verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import { 代码根 } from '../环境/路径.ts';
+import { 起音串, 解起音串, type 起音 } from './比较.ts';
 
 export type 帧签名 = { 帧: number; 哈希: string; 块均值: string[] };
-export type 签名 = { 宽: number; 高: number; 帧数: number; 间隔: number; 帧: 帧签名[]; 音频sha: string | null };
+export type 声音签名 = { 音频sha: string | null; 响度: number | null; 起音: 起音[] | null };
+export type 签名 = { 宽: number; 高: number; 帧数: number; 间隔: number; 帧: 帧签名[] } & 声音签名;
 export type 认可记录 = 签名 & { 段: string; 指纹: string; 平台: string; 渲染级别: string; 认可于: string; 提交: string; 理由: string; 上一版指纹: string | null };
 
 export const 本平台 = () => `${process.platform}-${process.arch}`;
@@ -19,10 +21,18 @@ export const 读认可 = (file: string): 认可记录 | null => {
   const 要 = ['段', '指纹', '平台', '渲染级别', '认可于', '提交', '理由', '宽', '高', '帧数', '间隔', '帧'];
   const 缺 = 要.filter((k) => t[k] === undefined);
   if (缺.length) throw new Error(`${file} 缺 ${缺.join('、')}（这个文件由 sr verify accept 生成，别手改）`);
-  return { ...(t as unknown as 认可记录), 音频sha: (t['音频sha'] as string | undefined) ?? null, 上一版指纹: (t['上一版指纹'] as string | undefined) ?? null };
+  return {
+    ...(t as unknown as 认可记录),
+    音频sha: (t['音频sha'] as string | undefined) ?? null,
+    // 早先的记录没有响度和起音，比声音时只能靠 sha 或旧母版
+    响度: (t['响度'] as number | undefined) ?? null,
+    起音: Array.isArray(t['起音']) ? (t['起音'] as string[]).map(解起音串) : null,
+    上一版指纹: (t['上一版指纹'] as string | undefined) ?? null,
+  };
 };
 
 const 串 = (s: string) => JSON.stringify(s);
+const 分行 = <T>(xs: T[], n: number) => Array.from({ length: Math.ceil(xs.length / n) }, (_, i) => xs.slice(i * n, i * n + n));
 
 /** 手写 TOML：键的顺序固定，帧一帧一张表，diff 好读 */
 export const 认可文本 = (r: 认可记录) =>
@@ -41,6 +51,8 @@ export const 认可文本 = (r: 认可记录) =>
     `"帧数" = ${r.帧数}`,
     `"间隔" = ${r.间隔}`,
     ...(r.音频sha ? [`"音频sha" = ${串(r.音频sha)}`] : []),
+    ...(r.响度 !== null ? [`"响度" = ${r.响度}`] : []),
+    ...(r.起音 ? [`"起音" = [`, ...分行(r.起音.map((x) => 串(起音串(x))), 8).map((行) => `  ${行.join(', ')},`), ']'] : []),
     ...r.帧.flatMap((f) => ['', '[["帧"]]', `"帧" = ${f.帧}`, `"哈希" = ${串(f.哈希)}`, `"块均值" = [`, ...f.块均值.map((x) => `  ${串(x)},`), ']']),
   ].join('\n') + '\n';
 

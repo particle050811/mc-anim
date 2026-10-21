@@ -1,4 +1,6 @@
-// sr verify [<选择器…>] [--渲] [--到预览 <主题>]：指纹和认可记录不一样的段抽帧比，超过阈值就要 accept；
+// sr verify [<选择器…>] [--渲] [--对基线] [--到预览 <主题>]：指纹和认可记录不一样的段抽帧比，超过阈值就要 accept；
+//   --对基线：不看认可记录，直接和数据根 基线/<旧段号>/ 的旧项目基线比（迁移验收用，旧段号查 docs/旧名.tsv）。
+//   变了的帧出 旧|新|差 的并排图进预览（没给 --到预览 就新开一个「验收不过」）。
 // sr verify accept <段> --理由 <…> [--渲]：把现在的母版记成认可版，写 verify/accepted/<平台>/<段键>.toml（进 Git）。
 // 一律按视频级的母版比；抽帧解码过放行闸，缺母版加 --渲 时渲染过渲染闸。
 import fs from 'node:fs';
@@ -13,9 +15,10 @@ import { 算段指纹 } from '../指纹/指纹.ts';
 import { 过放行闸 } from '../闸/闸.ts';
 import { 新建预览目录 } from '../预览/预览.ts';
 import { utc时间, type 运行记录 } from '../运行记录/记录.ts';
+import { 基线参照, 基线目录, 旧段号 } from './基线.ts';
 import { 读阈值 } from './比较.ts';
 import { 本平台, 读认可, 写认可, 认可文件 } from './认可.ts';
-import { 扫母版, 变了 } from './验收.ts';
+import { 扫母版, 变了, type 扫描结果 } from './验收.ts';
 
 const 级别 = '视频' as const;
 
@@ -29,16 +32,29 @@ const 备母版 = async (段们: 段信息[], 渲: boolean, 记录: 运行记录
 };
 
 const 验: 命令 = {
-  用法: 'verify [<选择器…>] [--渲] [--到预览 <主题>]；verify accept <段> --理由 <…> [--渲]',
-  说明: '指纹变了的段抽帧和认可版比，超过阈值就要 sr verify accept',
+  用法: 'verify [<选择器…>] [--渲] [--对基线] [--到预览 <主题>]；verify accept <段> --理由 <…> [--渲]',
+  说明: '指纹变了的段抽帧和认可版比（--对基线 和旧项目基线比），超过阈值就要 sr verify accept',
   跑: async (args, 记录) => {
     if (args[0] === 'accept') return 认.跑(args.slice(1), 记录);
-    const p = 解析参数(args, { 值: ['--到预览'], 开关: ['--渲'] });
+    const p = 解析参数(args, { 值: ['--到预览'], 开关: ['--渲', '--对基线'] });
+    const 对基线 = p.开关.has('--对基线');
     const 段们 = p.位置.length ? await 选段(p.位置) : await 全部段();
     const 阈 = 读阈值();
     const 备 = await 备母版(段们, p.开关.has('--渲'), 记录);
-    const 预览目录 = p.值['--到预览'] ? 新建预览目录(p.值['--到预览']) : null;
+    const 预览 = { 目录: null as string | null };
+    const 取预览 = () => (预览.目录 ??= 新建预览目录(p.值['--到预览'] ?? '验收不过'));
     let 不过 = 0;
+    const 报 = (键: string, 比的: string, r: 扫描结果) => {
+      const 帧变 = r.帧结论.filter((f) => f.结论 === '变了');
+      const 容差内 = r.帧结论.filter((f) => f.结论 === '容差内').length;
+      if (!变了(r)) {
+        console.log(`✓ ${键}：和${比的}比在阈值内（${r.比法}；${容差内} 帧有微小差别；声音${r.音频结论}${r.音频说明 ? `，${r.音频说明}` : ''}）`);
+        return;
+      }
+      不过++;
+      const 项 = [r.尺寸变了, ...帧变.slice(0, 8).map((f) => `第 ${f.帧} 帧：${f.说明 ?? '变了'}`), 帧变.length > 8 ? `另 ${帧变.length - 8} 帧` : undefined, r.音频结论 === '变了' ? `声音：${r.音频说明}` : undefined];
+      记录.记('错误', `${键}：和${比的}比变了（${r.比法}）\n    ${项.filter(Boolean).join('\n    ')}`);
+    };
     await 过放行闸(async () => {
       for (const x of 备) {
         const 键 = x.段.键;
@@ -46,6 +62,18 @@ const 验: 命令 = {
         if (!x.有) {
           不过++;
           记录.记('错误', `${键}：没有现在指纹 ${x.指纹.slice(0, 16)} 的母版（sr render ${键}，或加 --渲）`);
+          continue;
+        }
+        if (对基线) {
+          const 旧号 = 旧段号(键);
+          const 目录 = 旧号 ? 基线目录(旧号) : null;
+          if (!目录 || !fs.existsSync(目录)) {
+            不过++;
+            记录.记('错误', `${键}：没有基线（${旧号 ? `${目录} 不在` : 'docs/旧名.tsv 里没有它的旧段号'}）`);
+            continue;
+          }
+          const r = await 扫母版(x.母版, { 参照: await 基线参照(目录), 阈值: 阈, fps: x.段.段.fps, 预览: { 目录: 取预览, 前缀: 键 } });
+          报(键, `基线 ${旧号}`, r);
           continue;
         }
         if (!认可) {
@@ -57,21 +85,13 @@ const 验: 命令 = {
           console.log(`✓ ${键}：指纹和认可版一样`);
           continue;
         }
-        const r = await 扫母版(x.母版, { 认可, 旧母版: 母版路径(键, 认可.指纹), 阈值: 阈, 预览: 预览目录 ? { 目录: 预览目录, 前缀: 键 } : undefined });
-        const 帧变 = r.帧结论.filter((f) => f.结论 === '变了');
-        const 容差内 = r.帧结论.filter((f) => f.结论 === '容差内').length;
-        if (!变了(r)) {
-          console.log(`✓ ${键}：指纹变了，画面声音在阈值内（${r.比法}；${容差内} 帧有微小差别，音频${r.音频结论}）`);
-          continue;
-        }
-        不过++;
-        const 项 = [r.尺寸变了, ...帧变.slice(0, 8).map((f) => `第 ${f.帧} 帧：${f.说明 ?? '变了'}`), 帧变.length > 8 ? `另 ${帧变.length - 8} 帧` : undefined, r.音频结论 === '变了' ? `声音：${r.音频说明}` : undefined];
-        记录.记('错误', `${键}：和认可版（${认可.指纹.slice(0, 16)}，${认可.认可于}）比变了（${r.比法}）\n    ${项.filter(Boolean).join('\n    ')}`);
+        const r = await 扫母版(x.母版, { 认可, 旧母版: 母版路径(键, 认可.指纹), 阈值: 阈, fps: x.段.段.fps, 预览: { 目录: 取预览, 前缀: 键 } });
+        报(键, `认可版（${认可.指纹.slice(0, 16)}，${认可.认可于}）`, r);
       }
     });
-    if (预览目录) {
-      记录.产物.push(预览目录);
-      console.log(`变了的帧在 ${预览目录}`);
+    if (预览.目录) {
+      记录.产物.push(预览.目录);
+      console.log(`变了的帧（旧|新|差 并排）在 ${预览.目录}`);
     }
     console.log(不过 ? `\n${不过} 段没过：缺母版的先渲；变了的看过画面、确认是要的改动，再 sr verify accept <段> --理由 …` : `\n${段们.length} 段都过了`);
     return 不过 ? 1 : 0;
