@@ -1,6 +1,6 @@
 // 主世界的云（照 Photon 光影，参考视频作者亲口说用的 photon-main，整合包里是提交 40adec3，默认设置）：积云、高积云（体积）、卷云和卷积云（平面），加云影。
 // 移植自 Photon include/sky/clouds.glsl、clouds/{common,constants,coverage_map,cumulus,altocumulus,cirrus}.glsl、include/weather/clouds.glsl、
-// include/lighting/cloud_shadows.glsl：Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 lib/大气/Photon-LICENSE.txt。
+// include/lighting/cloud_shadows.glsl：Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 engine/light/大气/Photon-LICENSE.txt。
 // 尺度：云在「云空间」里算，方块世界的位置、高度（离海平面）× CLOUDS_SCALE 进云空间（用户 10-14 定：云照视频，不迁就编排）。
 // 风停住（world_age = 0），云不随帧动：各段首尾帧接得上。积云的局部覆盖图不预先画成图，直接算（同 Photon 不开 CLOUDS_CUMULUS_PRECOMPUTE_LOCAL_COVERAGE 时的写法），
 // 视距照 Photon 开预计算时的覆盖图范围在云空间 67.5～75 公里外淡掉。浓积云（天气偏热、湿、大风才有）、夜光云、曙暮光、闪电没搬。

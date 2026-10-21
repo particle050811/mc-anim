@@ -1,6 +1,6 @@
 // 主世界的物理天空、空气雾、边界雾的共用状态（照 Photon 光影），主世界所有镜头经 lib/主世界光照.tsx 用（<Atmosphere /> 不在画布里时各处走原来的代码）。云在 大气/云.ts。
 // 移植自 Photon 光影 include/sky/atmosphere.glsl、include/fog/overworld/analytic.glsl、include/fog/simple_fog.glsl、include/lighting/colors/light_color.glsl：
-// Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 lib/大气/Photon-LICENSE.txt。
+// Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 engine/light/大气/Photon-LICENSE.txt。
 // - 天色：Photon 预积分的散射表（大气/散射.bin = Photon 的 scattering.dat），按太阳方向在 CPU 上展开成一张等距柱状天色图（线性 Rec.709），穹顶、云、水共用。
 // - 空气雾：三通道瑞利 + 米氏、按高度指数衰减的解析积分；边界雾：地形边上（远端 = 地形远，约 40 公里）融进这个方向的天色。
 // 接入：<Atmosphere /> 放进画布打开；带雾的材质（lib/高度雾.ts 的 fog_* 着色块）、屏幕AO 第 2 遍、云（大气/云.ts）、穹顶读这里的共用 uniform。
