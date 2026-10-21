@@ -153,6 +153,7 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     expect(视频信息(f)).toMatchObject({ 帧数: 85, 宽: 1280, 高: 720 });
     expect(fs.statSync(f).size).toBeLessThanOrEqual(50e6);
     expect(manifest.分享版?.视频kbps).toBe(760);
+    expect(manifest.分享版?.真峰值dBTP).toBeTypeOf('number');
   });
 
   it('帧率不一样、母版帧数和段.ts 对不上都拒绝', async () => {

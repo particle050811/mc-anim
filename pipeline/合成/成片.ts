@@ -133,7 +133,8 @@ const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) =>
   return 结果;
 };
 
-// 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 96k，50 MB 以内；超了按比例降码率重压，最多 3 次
+// 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 96k，50 MB 以内；超了按比例降码率重压，最多 3 次。
+// 真峰值只量、记进 manifest，超 −1 dBTP 报警不重做：96k 的超出是 AAC 编码噪声，压低限幅或增益重压实测不降反升（第 6、7 章 −0.8 dBTP）
 const 分享上限MB = 50;
 const 分享视频kbps = 760;
 const 分享音频kbps = 96;
@@ -283,10 +284,11 @@ export const 合成成片 = async (
     文件.同步表 = '同步表.tsv';
     console.log(`同步表：${r.总} 条 cue，成片声音里 ±1 帧内测到起音的 ${r.对上} 条`);
   }
-  let 分享: { kbps: number; MB: number } | null = null;
+  let 分享: { kbps: number; MB: number; 真峰值: number } | null = null;
   if (opts.分享版) {
     const 出 = path.join(dir, `${opts.名}-分享版${分享上限MB}MB.mp4`);
-    分享 = await 压分享版(成片, 拉好, 出, 工作, 时长秒(成片));
+    分享 = { ...(await 压分享版(成片, 拉好, 出, 工作, 时长秒(成片))), 真峰值: 量响度(出).真峰值 };
+    if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，超过 ${真峰值上限}（AAC ${分享音频kbps}k 的编码噪声，成片本身没超）`);
     文件.分享版 = path.basename(出);
     opts.记录.产物.push(出);
   }
@@ -311,7 +313,7 @@ export const 合成成片 = async (
     字幕: { 句数: 字幕.句们.length, 屏数: 字幕.屏们.length, 叠了: !opts.不叠字幕 && 字幕.屏们.length > 0, 开口最大差帧: 开口最大差 },
     同步表: 同步,
     接缝: { 处数: 接缝们.length, 首帧重复: 接缝们.filter((x) => x.判断 === '首帧重复').map((x) => `${x.前} → ${x.后}`) },
-    分享版: 分享 && { 视频kbps: 分享.kbps, 音频kbps: 分享音频kbps, MB: Number(分享.MB.toFixed(2)) },
+    分享版: 分享 && { 视频kbps: 分享.kbps, 音频kbps: 分享音频kbps, MB: Number(分享.MB.toFixed(2)), 真峰值dBTP: 分享.真峰值 },
     文件,
   };
   原子写(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
