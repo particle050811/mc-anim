@@ -114,6 +114,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
 
   // 代码里的 asset:
   const 图 = await c.依赖图();
+  if (图.错误.length) 报.错(`依赖图不全（打包失败 ${图.错误.length} 处，见 结构），打不进包的文件里引的 asset: 和私有资产没查到，修好再跑一遍`);
   for (const [文件, ids] of 图.资产) {
     for (const id of ids) {
       const e = 查(id, 'asset:', 文件);

@@ -128,16 +128,19 @@ export class 检查上下文 {
   /** 参与依赖图的代码文件：engine、world、content、pipeline 下的源码（不含测试和 .d.ts） */
   代码文件 = () => this.文件().filter((p) => /^(engine|world|content|pipeline)\//.test(p) && 代码后缀.test(p) && !是测试或声明(p));
 
-  /** 全仓库一次 esbuild（每个代码文件都当入口），从 metafile 拿真实的 import 边。类型导入被擦掉，不算依赖 */
+  /**
+   * 全仓库一次 esbuild（每个代码文件都当入口），从 metafile 拿真实的 import 边。类型导入被擦掉，不算依赖。
+   * 有打包错误时 esbuild 不给 metafile，就逐个入口重打，能打的照样收边，好一次把别的违规报全；错误记进 错误。
+   */
   依赖图(): Promise<依赖图> {
     return (this.#图 ??= (async () => {
       const 图: 依赖图 = { 边: new Map(), 资产: new Map(), 错误: [] };
       const 入口 = this.代码文件();
       if (!入口.length) return 图;
       const 资产记录 = new Map<string, string[]>();
-      try {
-        const r = await build({
-          entryPoints: 入口,
+      const 打 = (入: string[]) =>
+        build({
+          entryPoints: 入,
           absWorkingDir: this.根,
           bundle: true,
           write: false,
@@ -151,7 +154,8 @@ export class 检查上下文 {
           plugins: [宽松资产插件(资产记录)],
           logLevel: 'silent',
         });
-        for (const [p, info] of Object.entries(r.metafile.inputs)) {
+      const 收边 = (inputs: Record<string, { imports: { path: string; external?: boolean }[] }>) => {
+        for (const [p, info] of Object.entries(inputs)) {
           if (p.includes(':')) continue;
           const 从 = p.split(path.sep).join('/');
           图.边.set(
@@ -161,12 +165,25 @@ export class 检查上下文 {
               .map((i) => (i.external ? { 到: i.path.startsWith('node:') ? i.path : 包名(i.path), 外部: true } : { 到: i.path.split(path.sep).join('/'), 外部: false })),
           );
         }
-        for (const [abs, ids] of 资产记录) 图.资产.set(this.相对(abs), [...new Set(ids)]);
-      } catch (e) {
+      };
+      const 记错 = (e: unknown) => {
         const errs = (e as { errors?: { text: string; location?: { file: string; line: number } | null }[] }).errors;
-        if (errs?.length) for (const x of errs) 图.错误.push(x.location ? `${x.location.file}:${x.location.line}：${x.text}` : x.text);
-        else 图.错误.push((e as Error).message);
+        const 文 = errs?.length ? errs.map((x) => (x.location ? `${x.location.file}:${x.location.line}：${x.text}` : x.text)) : [(e as Error).message];
+        for (const t of 文) if (!图.错误.includes(t)) 图.错误.push(t);
+      };
+      try {
+        收边((await 打(入口)).metafile.inputs);
+      } catch (e) {
+        记错(e);
+        for (const 入 of 入口) {
+          try {
+            收边((await 打([入])).metafile.inputs);
+          } catch (e2) {
+            记错(e2);
+          }
+        }
       }
+      for (const [abs, ids] of 资产记录) 图.资产.set(this.相对(abs), [...new Set(ids)]);
       return 图;
     })());
   }

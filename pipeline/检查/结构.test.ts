@@ -42,6 +42,20 @@ describe('结构', () => {
     expect(v).toMatch(/pipeline 只许 import 纯模块.*pipeline\/读.ts → content\/段\/7-甲\/画面.tsx/);
   });
 
+  it('有一处打包错误时，别的文件照样收边：段互引、未登记 asset 照报，资产规则不显示通过', async () => {
+    const 文件 = {
+      'world/坏.ts': "import 没有 from './空.ts';\nexport const 坏 = 没有;\n",
+      'world/空.ts': 'export const 空 = 1;\n',
+      'content/段/7-乙/画面.tsx': "import 甲 from '../7-甲/画面.tsx';\nimport 图 from 'asset:不存在/某件';\nexport default () => [甲, 图];\n",
+    };
+    const 结 = (await 跑('结构', 造仓库(基础(), 两场, 文件))).违规.join('\n');
+    expect(结).toMatch(/打包失败，依赖图不全：world\/坏.ts:1/);
+    expect(结).toMatch(/段不许引用别的段：content\/段\/7-乙\/画面.tsx → content\/段\/7-甲\/画面.tsx/);
+    const 资 = (await 跑('资产', 造仓库(基础(), 两场, 文件))).违规.join('\n');
+    expect(资).toMatch(/依赖图不全/);
+    expect(资).toMatch(/asset:引用的「不存在\/某件」没在资产表登记/);
+  });
+
   it('纯模块闭包里有 react/remotion、asset: 都拦', async () => {
     const 根 = 造仓库(基础(), {
       'content/段/7-甲/段.ts': "import { 定义段 } from '../../段定义.ts';\nimport { 帧 } from './帮.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 帧, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
