@@ -44,3 +44,9 @@
 
 # 本机名（写进锁旁的 .主机 文件和运行记录）。环境变量 SR_HOST。默认取系统主机名
 # host = "笔记本"
+
+# 剪映专业版（Mac 版的 .app；sr jianying readback 解密草稿用它的库）。环境变量 SR_JIANYING_APP。默认 /Applications/VideoFusion-macOS.app
+# jianying_app = "/Applications/VideoFusion-macOS.app"
+
+# 剪映的草稿目录（sr edit-package、sr jianying export 写进这里）。环境变量 SR_JIANYING_DRAFTS。默认 ~/Movies/JianyingPro/User Data/Projects/com.lveditor.draft
+# jianying_drafts = "/Users/me/Movies/JianyingPro/User Data/Projects/com.lveditor.draft"
