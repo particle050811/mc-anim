@@ -25,8 +25,9 @@ sr verify [<段>]  |  sr verify accept <段> --理由 …
 sr film <范围>  |  sr assets add <id> <文件>  |  sr preview new <主题>
 sr extract <配方|组…> | --全部 [--只打印|--检查]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 sr mcai <动作…>                          取材 mod 的命令行；开游戏、编译过资源闸
+sr edit-package <交付目录>  |  sr jianying export|readback   剪辑包和剪映草稿
 ```
-还没实现（方案三-5）：`sr edit-package`、`sr jianying export|readback`（M3）；`sr world`（M10，现在只有模板 `sourcing/worlds/`）；`sr voice`、`sr music`、`sr assets import|verify|pull|gc`（没排阶段；字节核对现在用 `sr check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
+还没实现（方案三-5）：`sr world`（M10，现在只有模板 `sourcing/worlds/`）；`sr voice`、`sr music`、`sr assets import|verify|pull|gc`（没排阶段；字节核对现在用 `sr check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
 
 ## 两条元规则（用户 10-21）
 1. **看过的实现为准**：用户看过的已实现画面，优先于旧规矩、原设计和 Agent 写的规矩。冲突时留现状，列给用户，写清规矩出处和「现状是用户看过的」；用户这次点名才改。
