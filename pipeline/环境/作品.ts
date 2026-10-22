@@ -5,7 +5,7 @@ import path from 'node:path';
 import { 代码根 } from './路径.ts';
 import { 配置, 作品路径表 } from './配置.ts';
 
-/** 数据根里旧布局（不分作品）的缓存、交付、基线都是这部作品的；迁移多作品.ts 跑过以后旧位置就没了 */
+/** 从旧仓库搬来的那部作品（旧项目适配器按它取基线、作品根） */
 export const 旧布局作品 = '应力转动';
 
 export type 作品 = { 名: string; 根: string };

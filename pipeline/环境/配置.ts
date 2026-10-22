@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import { 代码根, 主检出 } from './路径.ts';
-import { 作品名, 旧布局作品 } from './作品.ts';
+import { 作品名 } from './作品.ts';
 
 export const isMac = process.platform === 'darwin';
 export const isWindows = process.platform === 'win32';
@@ -138,18 +138,8 @@ export const 作品路径表 = () => 全部().作品路径;
 export const 数据根 = () => 配置('数据根');
 export const 数据路径 = (...段: string[]) => path.join(数据根(), ...段);
 
-/**
- * 按作品分的位置：<数据根>/<类…>/<作品>/<键…>。
- * 过渡：迁移多作品.ts 跑之前，旧布局作品的东西还在不分作品的旧位置（<类…>/<键…>）；新位置没有、旧位置有就用旧的。迁移跑过以后删掉这段回落。
- */
-const 按作品 = (类: string[], 作品: string, 键: string[]) => {
-  const 新 = 数据路径(...类, 作品, ...键);
-  if (作品 === 旧布局作品 && !fs.existsSync(新)) {
-    const 旧 = 数据路径(...类, ...键);
-    if (fs.existsSync(旧)) return 旧;
-  }
-  return 新;
-};
+/** 按作品分的位置：<数据根>/<类…>/<作品>/<键…> */
+const 按作品 = (类: string[], 作品: string, 键: string[]) => 数据路径(...类, 作品, ...键);
 export const 母版目录 = (段键: string, 作品 = 作品名()) => 按作品(['cache', '母版'], 作品, [段键]);
 export const 地形根 = () => 数据路径('terrain');
 export const 求解缓存目录 = () => 数据路径('cache', '求解');

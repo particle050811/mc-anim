@@ -66,7 +66,7 @@ describe('剪辑包', () => {
   });
 
   it('交付目录给名字或路径都行，剪映命令也认交付目录', () => {
-    const dir = path.join(数据根, '交付', '1021-0000-测');
+    const dir = path.join(数据根, '交付', '应力转动', '1021-0000-测');
     fs.mkdirSync(path.join(dir, '剪辑包'), { recursive: true });
     expect(() => 找交付目录('1021-0000-测')).toThrow(/没有 manifest.json/);
     fs.writeFileSync(path.join(dir, 'manifest.json'), '{}');
