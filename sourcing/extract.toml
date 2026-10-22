@@ -111,6 +111,22 @@
 "模型/角色/九胡" = "src/模型/角色/九胡.模型.json"
 "贴图/角色/九胡" = "src/模型/角色/九胡.模型.png"
 
+# 隐世之境（万法皆通 maidspell）结构里那只女仆画的是 TLM 这份 geckolib 模型、_3 贴图（百花），不是 YSM 的 05_magical。
+# 只去掉永远不显示的：FOX 是血量低于 20% 才出的小狐狸形态，gui 是选模型界面用的（游戏里一直缩成 0），molang* 是空骨骼。
+# 法阵、手持法杖、帽子副本这些平时藏着的骨骼留在模型里由组件藏，以后拍别的镜头不用重新导出（store 只增不改，重导要 --替换）。
+[["取材"]]
+"名称" = "魔法酒狐模型"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3 内置 geckolib 模型 winefox_magical（星海ELIYA 做模型和材质、伊蕾娜教代行教皇做帽子），贴图 winefox_magical_3（百花）"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/角色/魔法酒狐.模型.json", "assets/touhou_little_maid/tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/models/entity/winefox_magical.json", "assets/touhou_little_maid/tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/textures/entity/winefox_magical_3.png", "--去掉", "FOX,gui,molang,molang2,molang3"],
+]
+["取材"."产物"]
+"模型/角色/魔法酒狐" = "src/模型/角色/魔法酒狐.模型.json"
+"贴图/角色/魔法酒狐/百花" = "src/模型/角色/魔法酒狐.模型.png"
+
 [["取材"]]
 "名称" = "李樱模型"
 "需要" = []
