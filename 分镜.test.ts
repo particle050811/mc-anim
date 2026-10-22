@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/1-一如既往/段.ts';
 import { 句们 } from './配乐/网格.ts';
-import { 原声增益, 原声淡入帧 } from './场/1-隐世之境一楼/参数.ts';
+import { 原声增益, 原声淡入帧, 咔哒增益, 咔哒声 } from './场/1-隐世之境一楼/参数.ts';
 import { 串们, 事件, 排段, 段内事件帧, 段时钟, 段窗口, 第几句, fps } from './分镜.ts';
 
 describe('分镜：从网格常数推帧号', () => {
@@ -35,6 +35,15 @@ describe('分镜：从网格常数推帧号', () => {
     for (let f = 1; f < 淡入.length; f++) expect(淡入[f]).toBeGreaterThan(淡入[f - 1]!);
     expect(淡入[0]).toBeGreaterThan(0);
     expect(new Set(增益.slice(原声淡入帧 - 1))).toEqual(new Set([原声增益]));
+  });
+
+  it('段.ts 的咔哒 cue：从分镜的咔哒定格往前提起音秒，主音落在定格那一帧；放满文件、不过段尾，增益取场参数', () => {
+    const cue = 段.声音?.find((c): c is 资产cue => c.资产 === '音效/车万女仆/item.camera_use');
+    const 定格 = 段内事件帧('1-一如既往').咔哒定格;
+    expect(cue).toMatchObject({ 帧: 定格 - 3, 帧数: 22, 增益: 咔哒增益, 名: '咔哒' });
+    expect(Math.floor(cue!.帧 + 咔哒声.起音秒 * fps)).toBe(定格);
+    expect(cue!.帧数 / fps).toBeGreaterThanOrEqual(咔哒声.时长秒);
+    expect(cue!.帧 + cue!.帧数).toBeLessThanOrEqual(段.帧数);
   });
 
   it('段起落在第 12 句止和第 13 句前导音之间的换气里', () => {
