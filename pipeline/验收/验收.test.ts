@@ -71,7 +71,7 @@ describe('anim verify', () => {
     const r = await 认可(原);
     const file = 认可文件('核对-样例', 'test', 目录);
     写认可(file, r);
-    expect(file).toBe(path.join(目录, '作品', '应力转动', '认可', 'test', '核对-样例.toml'));
+    expect(file).toBe(path.join(目录, '认可', 'test', '核对-样例.toml'));
     expect(读认可(file)).toEqual(r);
   });
 

@@ -1,9 +1,9 @@
-// 认可记录 作品/应力转动/认可/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
+// 认可记录 <作品根>/认可/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
 // anim verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
-import { 代码根 } from '../环境/路径.ts';
+import { 作品根 } from '../环境/作品.ts';
 import { 起音串, 解起音串, type 起音 } from './比较.ts';
 
 export type 帧签名 = { 帧: number; 哈希: string; 块均值: string[] };
@@ -13,7 +13,7 @@ export type 认可记录 = 签名 & { 段: string; 指纹: string; 平台: strin
 
 export const 本平台 = () => `${process.platform}-${process.arch}`;
 
-export const 认可文件 = (段键: string, 平台 = 本平台(), 根 = 代码根()) => path.join(根, '作品', '应力转动', '认可', 平台, `${段键}.toml`);
+export const 认可文件 = (段键: string, 平台 = 本平台(), 根 = 作品根()) => path.join(根, '认可', 平台, `${段键}.toml`);
 
 export const 读认可 = (file: string): 认可记录 | null => {
   if (!fs.existsSync(file)) return null;
