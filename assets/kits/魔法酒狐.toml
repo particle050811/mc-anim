@@ -1,0 +1,26 @@
+# 魔法酒狐角色包：做她的镜头、改模型时从这里找资产 id 和出处。字段见 assets/README.md「角色包」。
+# 渲染组件还没写；写好后补 渲染代码、用法、核对。
+"角色" = "魔法酒狐"
+"别名" = ["百花仙狐", "winefox_magical"]
+"出场" = "隐世之境（万法皆通 maidspell 的结构）里坐着的那只女仆；私有作品在用"
+"说明" = "车万女仆 1.5.3 内置的 geckolib 模型「魔法酒狐」，戴贴图 _3（YSM 语言文件里叫百花仙狐，粉色）。游戏里按 maid_model.json 的 render_entity_scale 0.65 缩放，不是九胡的 0.7。模型许可 CC BY-NC-SA 4.0，另禁止色情擦边和血腥内容（TartaricAcid/WineFoxModel 的 README）。3D 模型只能从 jar 提取，不进公开仓库"
+
+[["基准"]]
+"用途" = "3D 模型（游戏实机外观）"
+"资产" = "模型/角色/魔法酒狐"
+"状态" = "当前"
+"说明" = "几何是 TLM jar 里的原样，只去掉了永远不显示的 FOX、gui、molang* 骨骼；镜头里看到的她以它为准"
+
+[["资产组"]]
+"用途" = "3D 模型和贴图"
+"资产" = ["模型/角色/魔法酒狐", "贴图/角色/魔法酒狐/百花"]
+"说明" = "可见性 提取：公开版不带文件，按取材清单的「魔法酒狐模型」从 jar 导出。jar 里另有 _1、_2、_4、_5 四张贴图，没取"
+
+[["生成链"]]
+"产物" = "模型/角色/魔法酒狐、贴图/角色/魔法酒狐/百花"
+"步骤" = [
+  "取材清单「魔法酒狐模型」：从 touhoulittlemaid-1.5.3-forge+mc1.20.1.jar（sha256 前 12 位 8c341567e57a）取 tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/ 下的 models/entity/winefox_magical.json 和 textures/entity/winefox_magical_3.png",
+  "sourcing/extract/导出模型.py 导出时去掉 FOX、gui、molang、molang2、molang3 骨骼，写 魔法酒狐.模型.json / .png（277 根骨骼、1444 个 cube、贴图 256×256）",
+]
+"可复现" = "是"
+"核对" = "同一个 jar 两次导出 sha 一样；导出的贴图和 jar 里的 winefox_magical_3.png 逐像素相同（10-22 核过）。jar 的 sha256 登记在 sourcing/jars.toml"
