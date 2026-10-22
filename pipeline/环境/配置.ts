@@ -78,7 +78,7 @@ const 本地配置位置 = (): string | null => {
 
 let 缓存: { 值: Record<string, 配置值>; 本地文件: string | null; 作品路径: Record<string, string> } | undefined;
 
-/** [works] 表：私有作品名 → 目录。键是作品名（中文要加引号），相对路径相对这个 toml */
+/** [works] 表：放在 作品/ 外的作品名 → 目录。键是作品名（中文要加引号），相对路径相对这个 toml */
 const 作品路径键 = 'works';
 
 /** 读全部配置；env 给了就用它代替 process.env（测试用） */

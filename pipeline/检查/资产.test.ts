@@ -188,7 +188,7 @@ describe('作品资产表', () => {
     expect(v.filter((x) => x.includes('配乐/错侧'))).toHaveLength(1);
   });
 
-  it('私有作品（被 .gitignore 挡住、没放行）目录里 import 私有资产不报；engine/、库/ 照拦；放行了的作品照拦', async () => {
+  it('私有作品（被 .gitignore 挡住）目录里 import 私有资产不报；engine/、库/ 照拦；没挡的作品照拦', async () => {
     const 私有 = {
       ...示例('配乐/私曲', '配音/甲'),
       '作品/示例/资产表/配乐.toml': 表(条('配乐/私曲', '私有', 'LicenseRef-用户保留')),
@@ -202,12 +202,12 @@ describe('作品资产表', () => {
       execFileSync('git', ['-C', 根, 'init', '-q'], { stdio: 'ignore' });
       return 根;
     };
-    const 挡住 = await 跑('资产', 带git('/作品/*\n!/作品/应力转动/\n'), { 作品: '示例' });
+    const 挡住 = await 跑('资产', 带git('/作品/示例/\n'), { 作品: '示例' });
     expect(挡住.违规).toEqual(['库/界面/某.tsx 公开构建的闭包里不能有私有资产：库/界面/某.tsx import 了 asset:配音/甲（私有的走 cue，缺了按规矩降级或报错，不打进包）']);
     expect(挡住.报.跳过.join()).toMatch(/作品\/示例 被 .gitignore 挡住、是私有作品/);
 
-    const 放行 = (await 跑('资产', 带git('/作品/*\n!/作品/应力转动/\n!/作品/示例/\n'), { 作品: '示例' })).违规.join('\n');
-    expect(放行).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配乐\/私曲/);
-    expect(放行).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配音\/甲/);
+    const 没挡 = (await 跑('资产', 带git('/作品/别的/\n'), { 作品: '示例' })).违规.join('\n');
+    expect(没挡).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配乐\/私曲/);
+    expect(没挡).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配音\/甲/);
   });
 });
