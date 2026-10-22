@@ -57,6 +57,6 @@
 # 剪映的草稿目录（anim edit-package、anim jianying export 写进这里）。环境变量 ANIM_JIANYING_DRAFTS。默认 ~/Movies/JianyingPro/User Data/Projects/com.lveditor.draft
 # jianying_drafts = "/Users/me/Movies/JianyingPro/User Data/Projects/com.lveditor.draft"
 
-# 私有作品的位置：作品名 = 目录（中文名要加引号；相对路径相对本文件）。放在 作品/<名>/ 的私有作品也登记在这，worktree 里才找得到
+# 外部作品（放在 作品/ 以外）的位置：作品名 = 目录（中文名要加引号；相对路径相对本文件）。作品/<名>/ 下的私有作品不用登记，worktree 里用它嵌套仓库自己的 worktree（docs/决策/0004-多作品.md）
 # [works]
 # "私有甲" = "../私有甲"
