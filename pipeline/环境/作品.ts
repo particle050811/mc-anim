@@ -1,6 +1,5 @@
 // 作品：有哪几部、这次用哪部。作品是 <代码根>/作品/<名>/ 下有 清单.ts 的目录，外加 anim.local.toml [works] 登记的外部目录（私有作品，见 docs/决策/0004-多作品.md）。
 // 选哪部：--作品（cli/main.ts 解析后调 指定作品）> 当前目录在哪部作品里 > anim.local.toml 的 work（ANIM_WORK）> 只有一部就用它；都定不了就报错列出作品名。
-// 过渡：B 搬家前「应力转动」还在 content/，作品/应力转动/ 不在时就用它。B 搬完删掉 旧作品根 这段回落。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 代码根 } from './路径.ts';
@@ -8,7 +7,6 @@ import { 配置, 作品路径表 } from './配置.ts';
 
 /** 数据根里旧布局（不分作品）的缓存、交付、基线都是这部作品的；迁移多作品.ts 跑过以后旧位置就没了 */
 export const 旧布局作品 = '应力转动';
-const 旧作品根 = (根: string) => path.join(根, 'content');
 
 export type 作品 = { 名: string; 根: string };
 
@@ -38,8 +36,6 @@ export const 作品们 = (根 = 代码根(), 登记 = 作品路径表()): Map<st
     if (!fs.existsSync(path.join(dir, '清单.ts'))) throw new Error(`anim.local.toml [works] 的「${名}」指向 ${dir}，那里没有 清单.ts`);
     加(名, dir, `anim.local.toml [works]`);
   }
-  // 过渡回落（B 搬家后删）
-  if (!们.has(旧布局作品) && fs.existsSync(path.join(旧作品根(根), '清单.ts'))) 们.set(旧布局作品, 旧作品根(根));
   return 们;
 };
 
