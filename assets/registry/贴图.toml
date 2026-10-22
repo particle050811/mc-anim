@@ -582,6 +582,14 @@ id = "贴图/物品/羊毛/yellow_wool"
 "旧路径" = "参考模型库/src/模型/物品/羊毛.贴图/yellow_wool.png"
 
 [["资产"]]
+id = "贴图/物品/蛋糕"
+"类别" = "贴图"
+"来源" = "提取:蛋糕@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/cake.png，16×16，物品栏和手持用的平面图"
+
+[["资产"]]
 id = "贴图/物品/重锤"
 "类别" = "贴图"
 "来源" = "手工:网上资源包「二创 3D重锤」转载"
@@ -1264,6 +1272,14 @@ id = "贴图/特效/灾变圆环/ring_5"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "提取"
 "旧路径" = "参考模型库/src/模型/特效/灾变圆环.贴图/ring_5.png"
+
+[["资产"]]
+id = "贴图/特效/爱心粒子"
+"类别" = "贴图"
+"来源" = "提取:爱心粒子@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 particle/heart.png，8×8，驯服、繁殖时冒的爱心"
 
 [["资产"]]
 id = "贴图/特效/粒子/critical_hit"
