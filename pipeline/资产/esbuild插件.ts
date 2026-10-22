@@ -36,7 +36,7 @@ export const esbuild别名插件 = (代码根: string): Plugin => ({
     build.onResolve({ filter: 别名过滤 }, async (args) => {
       const 前缀 = Object.keys(别名表).find((k) => args.path.startsWith(k))!;
       const 相对 = `./${path.posix.join(别名表[前缀]!, args.path.slice(前缀.length))}`;
-      const r = await build.resolve(相对, { kind: args.kind, resolveDir: 代码根, importer: args.importer, with: args.with });
+      const r = await build.resolve(相对, { kind: args.kind, resolveDir: 代码根, importer: args.importer, with: args.with, pluginData: args.pluginData });
       return r.errors.length ? { errors: r.errors } : { path: r.path, external: r.external, namespace: r.namespace, sideEffects: r.sideEffects };
     });
   },

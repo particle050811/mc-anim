@@ -6,7 +6,7 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { 别名目录, 解析别名 } from './别名.ts';
 import { 代码根, 作品根 } from './路径.ts';
-import { 算闭包 } from '../指纹/指纹.ts';
+import { 算默克尔 } from '../指纹/默克尔.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 
 const 根 = 代码根();
@@ -32,9 +32,8 @@ describe('别名', () => {
   it('esbuild（指纹、检查用的依赖闭包）认得别名，不把它当 npm 包放过去', async () => {
     const d = 造外部文件();
     try {
-      const 闭包 = await 算闭包([path.relative(根, path.join(d, '甲.ts')).split(path.sep).join('/')]);
-      expect(Object.keys(闭包.文件)).toContain(目标);
-      expect(闭包.外部包).toEqual({});
+      const { 明细 } = await 算默克尔([path.relative(根, path.join(d, '甲.ts')).split(path.sep).join('/')]);
+      expect(Object.keys(明细.模块)).toContain(目标);
     } finally {
       fs.rmSync(d, { recursive: true });
     }
