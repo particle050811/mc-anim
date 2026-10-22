@@ -5,7 +5,7 @@
 import React from 'react';
 import type { V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import * as K647 from '../6-4-7/编排.ts';
 import { sounds as sounds647 } from '../6-4-7/声音.tsx';
 import * as K648 from '../../../../world/地点/古城4x/6-4-8/编排.ts';

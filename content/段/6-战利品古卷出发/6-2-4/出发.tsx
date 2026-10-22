@@ -15,8 +15,8 @@ import { FlightFog, FlightRig, FlightSky } from '../../../../world/地点/飞行
 import { SegmentMusic } from '../../../../world/配乐/配乐音轨.tsx';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
-import { mouthAt } from '../../../../world/角色/口型.ts';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
+import { mouthAt } from '../../../../world/配音/口型.ts';
 import { Jiuhu } from '../../../../world/角色/九胡.tsx';
 import { LiYing } from '../../../../world/角色/李樱.tsx';
 import { RideBroom } from '../../../../world/角色/骑扫帚.tsx';

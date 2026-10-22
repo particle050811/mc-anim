@@ -5,7 +5,7 @@
 import React from 'react';
 import type { V3 } from '../../../engine/model/parts.tsx';
 import { GameSoundTrack, resolveSound, type SoundCue } from '../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../world/配音/台词轨.tsx';
 import { FPS } from '../../../world/地点/古城4x/6-4-1/古城戏.ts';
 import { sceneSounds as scene1Sounds } from '../../../world/地点/古城4x/7-1/声音.tsx';
 import { sceneSounds } from '../../场/7-李樱撤离/7-2/声音.ts';

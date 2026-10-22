@@ -19,7 +19,7 @@ import { BowFans } from './弓前风扇.tsx';
 import * as K648 from '../6-4-8/编排.ts';
 import * as play from './戏.ts';
 import * as timeline from './时间线.ts';
-import { withTalkNod } from '../../../角色/口型.ts';
+import { withTalkNod } from '../../../配音/口型.ts';
 
 // 粒子（整场预先算好，刻 = t × 20）
 const particles: ParticleSpawn[] = (() => {

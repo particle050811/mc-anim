@@ -15,7 +15,7 @@ import { broomMatrix, jiuhuRideBones, liYingRidePose, RIDE } from '../../../../w
 import type { FigurePose } from '../../../../world/角色/骨架.tsx';
 import { JIUHU, JIUHU_TALK_BONES } from '../../../../world/角色/九胡.tsx';
 import { jiuhuCompassMatrix } from '../../../../world/角色/九胡持指南针.tsx';
-import { mouthAt, type Mouth } from '../../../../world/角色/口型.ts';
+import { mouthAt, type Mouth } from '../../../../world/配音/口型.ts';
 import jiuhuRaw from 'asset:模型/角色/九胡';
 import * as fallChoreo from '../../../../world/地点/边城/6-3-下坠/编排.ts';
 import { FPS, 段表, 物理时间, 起点 } from '../../../../world/地点/边城/6-3-下坠/时间线.ts';

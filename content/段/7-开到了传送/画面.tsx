@@ -4,7 +4,7 @@
 //   右边让开他的脸和身子。古卷那格往上拉一根思索引线，说明框在窗口上方（同 6-2-2 古卷的标注）。
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
-import { mouthAt } from '../../../world/角色/口型.ts';
+import { mouthAt } from '../../../world/配音/口型.ts';
 import { ScenePicture } from '../../场/7-李樱撤离/7-2/画面.tsx';
 import { ChestScreen, chestWindowOverLid } from '../../../world/界面/箱子界面.tsx';
 import { G4 } from '../../../world/地点/古城4x.tsx';

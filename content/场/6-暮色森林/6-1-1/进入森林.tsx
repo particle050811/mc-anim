@@ -32,7 +32,7 @@ import { VIEW_FOG } from '../../../../engine/voxel/视距.ts';
 import { OverworldSky, SUN_OW } from '../../../../world/地点/主世界光照.tsx';
 import * as choreo from './编排.ts';
 import { EnterForestSound, lineCues } from './声音.tsx';
-import { mouthAt, type Mouth } from '../../../../world/角色/口型.ts';
+import { mouthAt, type Mouth } from '../../../../world/配音/口型.ts';
 
 export const ENTER_FOREST_FRAMES = choreo.END - 1;
 

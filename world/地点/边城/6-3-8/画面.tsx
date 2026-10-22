@@ -23,7 +23,7 @@ import { ShaftFill } from '../6-3-下坠/填块.tsx';
 import { useFallTerrain } from '../6-3-下坠/地形.ts';
 import { BlockDebris, type FxParams } from '../6-3-下坠/碎块.tsx';
 import * as choreo from './编排.ts';
-import { withTalkNod } from '../../../角色/口型.ts';
+import { withTalkNod } from '../../../配音/口型.ts';
 
 
 // 特效参数：和 6-3-下坠/画面.tsx 的 `fx()` 同一份数（碎块按它生成）

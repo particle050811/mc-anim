@@ -16,7 +16,7 @@ import { VibrationSignal } from '../../../../world/特效/振动粒子.tsx';
 import { ShriekRings } from '../../../../world/特效/尖啸声波.tsx';
 import { AirFlowQuads } from '../../../../world/特效/气流.tsx';
 import { particleTexture, ParticleQuads } from '../../../../world/特效/粒子面片.tsx';
-import { withTalkNod, type Mouth } from '../../../../world/角色/口型.ts';
+import { withTalkNod, type Mouth } from '../../../../world/配音/口型.ts';
 import { shoutLine } from './声音.tsx';
 import { AncientCity4xCanvas, LiYingWithBlade, type Cam } from '../../../../world/地点/古城4x/6-4-1/古城画面.tsx';
 import { LiuXinzhong } from '../../../../world/角色/追兵.tsx';

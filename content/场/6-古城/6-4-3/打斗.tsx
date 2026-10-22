@@ -3,7 +3,7 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { GameSoundTrack, LoopSound } from '../../../../engine/audio/游戏音效.tsx';
 import { scheduleToScreen } from '../../../../engine/audio/慢放.ts';
-import { LineTrack, lineTable } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack, lineTable } from '../../../../world/配音/台词轨.tsx';
 import { DeflectView } from './画面.tsx';
 import { storyEvents, shoutLine } from './声音.tsx';
 import { 帧小数 as 主帧小数 } from './时间线.ts';

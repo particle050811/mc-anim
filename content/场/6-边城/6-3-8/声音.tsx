@@ -13,7 +13,7 @@ import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
 import { runStride } from '../../../../world/角色/跑步.ts';
 import { chaseSpeed } from '../../../../world/地点/古城4x/布局/强者.ts';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import { borderTownPos } from '../../../../world/地点/主世界116.ts';
 import { fallPool } from '../../../../world/地点/边城/布局/共用.ts';
 import type { PoolJump } from '../../../../world/地点/边城/6-3-8/编排/落水.ts';

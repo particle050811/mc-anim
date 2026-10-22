@@ -9,7 +9,7 @@ import React from 'react';
 import { rng, type V3 } from '../../../engine/model/parts.tsx';
 import { WARDEN } from '../../../world/生物/监守者.tsx';
 import { GameSoundTrack, randomPitch, type SoundCue } from '../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../world/配音/台词轨.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
 

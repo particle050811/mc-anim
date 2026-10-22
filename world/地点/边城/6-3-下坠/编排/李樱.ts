@@ -12,7 +12,7 @@ import { ROLLER } from '../../../../物品/动力压路机.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
 import { FPS, 刻, 撞击时刻, 撞击段内帧, 段表, 李樱下落, 设置撞击, 设置瞄准, 设置起跳, 起点, 鼓风机 } from '../时间线.ts';
 import { sample, type Key } from '../../../../../engine/anim/anim.ts';
-import { lineFrameCount } from '../../../../../engine/audio/台词轨.tsx';
+import { lineFrameCount } from '../../../../配音/台词轨.tsx';
 import lipTable from 'asset:数据/配音/口型';
 import { landingPose, flipAngle as 落地翻角, flipHipHeight, touchdownFrame } from '../../6-3-6/落地.ts';
 import { releasePose } from '../../6-3-3/下落攻击.ts';

@@ -29,7 +29,7 @@ import { GameSoundTrack, LoopSound } from '../../../../engine/audio/游戏音效
 import sfxTableJson from 'asset:数据/音效/游戏音效';
 import { acrossCut, distanceFeel, tierLoudness } from '../../../../engine/audio/混音.ts';
 import { scheduleToScreen, type StoryEvent, type 时间线 as 慢放时间线 } from '../../../../engine/audio/慢放.ts';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import * as choreo from '../../../../world/地点/边城/6-3-下坠/编排.ts';
 import * as timeline from '../../../../world/地点/边城/6-3-下坠/时间线.ts';
 import { fillCells } from '../../../../world/地点/边城/6-3-下坠/填块.tsx';

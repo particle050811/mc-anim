@@ -3,7 +3,7 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { PursuerScene } from '../../场/6-古城/6-4-6/场景.tsx';
 import * as choreo from './编排.ts';
-import { withTalkNod } from '../../../world/角色/口型.ts';
+import { withTalkNod } from '../../../world/配音/口型.ts';
 import { ChaseInSound } from './声音.tsx';
 
 export const chaseInFrames = choreo.frameCount;

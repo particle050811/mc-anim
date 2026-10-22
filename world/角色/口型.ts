@@ -1,10 +1,9 @@
-// 台词口型：资产 数据/配音/口型（旧项目 工具/配音/口型.py 按字对齐算的 Rhubarb 嘴型 A～F、X）对到画面上。
+// 台词口型：口型表（旧项目 工具/配音/口型.py 按字对齐算的 Rhubarb 嘴型 A～F、X）对到画面上。口型表、台词表是作品的资产，
+// 由作品传进 做口型（作品的 配音/口型.ts 绑好后导出 mouthAt、withTalkNod），本文件不 import 任何资产。
 // 用法：mouthAt(句们, '李樱', 帧) → { open, width }，这时没在说话返回 undefined（九胡说话时要藏起平常的 ω 嘴，得分得清）。句们就是传给 <LineTrack 句们> 的那份（帧 = 这句开口落在这段的第几帧），
 // 只看这个角色的句子（台词都说出口、都动嘴，用户 10-20 把内心独白全改成了说出口）。角色怎么画张嘴见 李樱.tsx、九胡.tsx 的 `嘴`；脸上没嘴的用 `withTalkNod`。
 // 不在几个嘴型之间硬切（用户 10-15 嫌切来切去），换形时张开、宽窄都连续过渡：张嘴快、合嘴慢。
 // 不引 台词轨.tsx（它带 Remotion 的音频组件），编排.ts 这种纯函数文件也能用。
-import mouthTable from 'asset:数据/配音/口型';
-import lineTable from 'asset:数据/配音/台词表';
 
 // open：张开多少（0 闭，1 张到最大）；width：嘴宽是平常的几倍（嘟嘴窄、大张略宽）
 export type Mouth = { open: number; width: number };
@@ -24,8 +23,8 @@ const CLOSE_S = 0.09; // 合嘴的过渡时长
 const LEAD_S = 0.03; // 嘴比声音略早到位，看着才对得上
 
 type Cue = { id: string; 帧: number };
-const cuesById = mouthTable as unknown as Record<string, { 嘴: [number, string][] }>;
-const lines = lineTable as unknown as Record<string, { 角色: string; 开口: number }>;
+/** 口型表：句 id → 嘴型关键帧 [文件里的秒, 嘴型]；台词表只用 角色、开口 */
+export type 口型数据 = { 口型: Readonly<Record<string, { 嘴: [number, string][] }>>; 台词: Readonly<Record<string, { 角色: string; 开口: number }>> };
 
 const mix = (a: Mouth, b: Mouth, k: number): Mouth => ({ open: a.open + (b.open - a.open) * k, width: a.width + (b.width - a.width) * k });
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -45,7 +44,7 @@ const sample = (keys: [number, string][], t: number): Mouth => {
   return mix(from, to, progress(t));
 };
 
-export const mouthAt = (cues: readonly Cue[], role: string, frame: number, fps = 24): Mouth | undefined => {
+export const mouthAt = ({ 口型: cuesById, 台词: lines }: 口型数据, cues: readonly Cue[], role: string, frame: number, fps = 24): Mouth | undefined => {
   for (const { id, 帧: lineFrame } of cues) {
     const entry = cuesById[id];
     if (!entry || lines[id].角色 !== role) continue;
@@ -62,20 +61,29 @@ export const mouthAt = (cues: readonly Cue[], role: string, frame: number, fps =
 const NOD_PITCH = 12; // 度：每个字点一下
 const NOD_DIP = 2; // 度：说话时整体低一点
 const NOD_YAW = 8;
-const smoothedOpen = (cues: readonly Cue[], role: string, frame: number, fps: number, tau: number) => {
+const smoothedOpen = (数据: 口型数据, cues: readonly Cue[], role: string, frame: number, fps: number, tau: number) => {
   let sum = 0;
   let weights = 0;
   for (let back = 0; back < 1.5 * fps; back += 0.25) {
     const w = Math.exp(-back / fps / tau);
-    sum += w * (mouthAt(cues, role, frame - back, fps)?.open ?? 0);
+    sum += w * (mouthAt(数据, cues, role, frame - back, fps)?.open ?? 0);
     weights += w;
   }
   return sum / weights;
 };
-export const withTalkNod = <P extends { headPitch: number; headYaw: number }>(pose: P, cues: readonly Cue[], role: string, frame: number, fps = 24): P => {
-  const slow = smoothedOpen(cues, role, frame, fps, 0.2);
+export const withTalkNod = <P extends { headPitch: number; headYaw: number }>(数据: 口型数据, pose: P, cues: readonly Cue[], role: string, frame: number, fps = 24): P => {
+  const slow = smoothedOpen(数据, cues, role, frame, fps, 0.2);
   if (slow === 0) return pose;
-  const fast = smoothedOpen(cues, role, frame, fps, 0.05);
-  const slower = smoothedOpen(cues, role, frame, fps, 0.5);
+  const fast = smoothedOpen(数据, cues, role, frame, fps, 0.05);
+  const slower = smoothedOpen(数据, cues, role, frame, fps, 0.5);
   return { ...pose, headPitch: pose.headPitch - NOD_PITCH * (fast - slow) - NOD_DIP * slow, headYaw: pose.headYaw + NOD_YAW * (slow - slower) };
+};
+
+/** 绑好一部作品的口型表、台词表（资产 数据/配音/口型、数据/配音/台词表 的内容），返回用法同上、不带表参数的 mouthAt、withTalkNod */
+export const 做口型 = (口型表: unknown, 台词表: unknown) => {
+  const 数据 = { 口型: 口型表, 台词: 台词表 } as 口型数据;
+  return {
+    mouthAt: (cues: readonly Cue[], role: string, frame: number, fps?: number) => mouthAt(数据, cues, role, frame, fps),
+    withTalkNod: <P extends { headPitch: number; headYaw: number }>(pose: P, cues: readonly Cue[], role: string, frame: number, fps?: number) => withTalkNod(数据, pose, cues, role, frame, fps),
+  };
 };

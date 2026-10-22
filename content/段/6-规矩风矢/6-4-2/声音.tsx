@@ -11,7 +11,7 @@
 import React from 'react';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, randomPitch, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import { storySounds as 跳搭声们 } from '../../../场/6-古城/6-4-1/声音.tsx';
 import { cellCenter } from '../../../../world/地点/古城4x/布局.ts';
 import { chestSound } from '../../../../world/物品/箱子.tsx';

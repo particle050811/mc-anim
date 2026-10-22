@@ -21,7 +21,7 @@ import { LandmarkPlacement, TwilightTerrain } from '../../../../world/地点/暮
 import { ScreenAo } from '../../../../engine/voxel/屏幕AO.tsx';
 import * as choreo from './编排.ts';
 import { TakeoffSound } from './声音.tsx';
-import { mouthAt } from '../../../../world/角色/口型.ts';
+import { mouthAt } from '../../../../world/配音/口型.ts';
 import { LichScene } from '../6-1-5/戏.tsx';
 import { 贯穿时刻 } from '../一镜到底/路线.ts';
 

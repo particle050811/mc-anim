@@ -11,7 +11,7 @@ import { type BedrockModel, BedrockModelView, type BonePose } from '../../../eng
 import { png } from '../../../engine/model/贴图.ts';
 import { Jiuhu, JIUHU, JIUHU_MOUTHS, JIUHU_TALK_BONES, jiuhuMouthAttach } from '../../../world/角色/九胡.tsx';
 import { LiYing } from '../../../world/角色/李樱.tsx';
-import { mouthAt, MOUTH_SHAPES, type Mouth } from '../../../world/角色/口型.ts';
+import { mouthAt, MOUTH_SHAPES, type Mouth } from '../../../world/配音/口型.ts';
 import { bladeInHand, type FigurePose, standPose } from '../../../world/角色/骨架.tsx';
 import { DrawnKatana, Sheath } from '../../../world/物品/拔刀剑.tsx';
 import jiuhuRaw from 'asset:模型/角色/九胡';

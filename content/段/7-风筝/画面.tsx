@@ -15,7 +15,7 @@ import { AncientCity4xCanvas, placedWoolThrough, type Cam } from '../../../world
 import { BowFans } from '../../../world/地点/古城4x/7-1/弓前风扇.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
-import { withTalkNod } from '../../../world/角色/口型.ts';
+import { withTalkNod } from '../../../world/配音/口型.ts';
 import { KiteSound } from './声音.tsx';
 
 const woolBlocks = placedWoolThrough('V');

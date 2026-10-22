@@ -44,7 +44,7 @@ import { onBroomState } from '../6-3-2/扫帚上.ts';
 import { HeldCompass } from '../6-3-1/指南针.tsx';
 import { JiuhuHandCompass } from '../../../../world/角色/九胡持指南针.tsx';
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
-import { mouthAt } from '../../../../world/角色/口型.ts';
+import { mouthAt } from '../../../../world/配音/口型.ts';
 import { fallSoundTable } from './声音.tsx';
 const jiuhuRaw = jiuhuRaw资产 as unknown as object;
 

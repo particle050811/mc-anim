@@ -35,7 +35,7 @@ import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, LoopSound, randomPitch } from '../../../../engine/audio/游戏音效.tsx';
 import { tierLoudness } from '../../../../engine/audio/混音.ts';
 import { scheduleToScreen, type StoryEvent } from '../../../../engine/audio/慢放.ts';
-import { LineTrack, lineTable } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack, lineTable } from '../../../../world/配音/台词轨.tsx';
 import { toScene } from '../../../../world/地点/古城4x/6-4-1/古城戏.ts';
 import { archery } from '../../../../world/地点/古城4x/布局.ts';
 import { chestSound } from '../../../../world/物品/箱子.tsx';
