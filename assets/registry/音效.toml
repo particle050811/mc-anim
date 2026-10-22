@@ -6500,6 +6500,14 @@ id = "音效/ui.button.click"
 "说明" = "原版资源索引 minecraft/sounds/random/click_stereo.ogg（对象 sha1 2fe092579d9637e2d160319820ee08e60a237bb7）"
 
 [["资产"]]
+id = "音效/车万女仆/item.camera_use"
+"类别" = "音效"
+"来源" = "提取:女仆相机@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "touhoulittlemaid-1.5.3-forge+mc1.20.1.jar!/assets/touhou_little_maid/sounds/item/camera_use.ogg（sha1 d5ca652a384fca0cbe49122f4c312292415cad15），0.88 秒；女仆相机拍照的咔哒，游戏里音量 1、音高 1"
+
+[["资产"]]
 id = "音效/镜头/6-3-2/点击"
 "类别" = "音效"
 "来源" = "提取:6-3-2思索@6fbb910c367d+56b71336d2b4"

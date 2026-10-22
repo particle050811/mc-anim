@@ -9011,6 +9011,12 @@
     "大小": 7046,
     "库": "store"
   },
+  "音效/车万女仆/item.camera_use": {
+    "sha256": "029dfcb981fdf375fb0ae4657962b3d470e1a073932c3d3aefb15d3d9ba38670",
+    "后缀": ".ogg",
+    "大小": 20520,
+    "库": "store"
+  },
   "音效/镜头/6-3-2/点击": {
     "sha256": "42dd96d7f3086d9ad9ab6c98af0dfc2d9c5b18eeb529493b57b7dece437bab8d",
     "后缀": ".wav",
