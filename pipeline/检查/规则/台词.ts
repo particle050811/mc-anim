@@ -37,7 +37,8 @@ export const 台词 = async (c: 检查上下文, 报: 报告) => {
   const 表 = 读台词表(c, 报);
   if (!表) return;
   const 旧名 = 读旧名(c);
-  const 锁 = (c.读json('assets/资产锁.json') ?? {}) as 资产锁;
+  const 两锁 = c.资产锁();
+  const 锁: 资产锁 = { ...两锁.作品, ...两锁.共用 };
   const 条目 = new Map<string, 台词条目>();
   for (const t of 表) {
     const 名 = `台词「${String(t.id)}」`;
