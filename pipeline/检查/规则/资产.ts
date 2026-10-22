@@ -1,11 +1,12 @@
 // 资产：资产表字段齐全（许可是 SPDX 表达式）、资产表和资产锁一一对应、私有的进 私有/ 库；
-// 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本；公开构建（全部渲染代码）的闭包里没有私有资产。
+// 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本、取了地形包的段都声明了；公开构建（全部渲染代码）的闭包里没有私有资产。
 // --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { 读内容 } from '../内容.ts';
-import { 是渲染代码, type 报告, type 检查上下文 } from '../上下文.ts';
+import { 是渲染代码, type 依赖图, type 报告, type 检查上下文 } from '../上下文.ts';
+import { 解析, 遍历, ts } from '../语法.ts';
 import { 读台词表 } from './台词.ts';
 import { 读资产表, type 资产条目 } from '../../资产/资产表.ts';
 import { 字节路径, type 资产锁 } from '../../资产/资产锁.ts';
@@ -99,6 +100,31 @@ export const 包清单 = async (目录: string) => {
   return { 清单sha256: h.digest('hex'), 文件数: 文件.length, 大小 };
 };
 
+/** 取区段包的模块（packDir 拼包的版本目录）：闭包里有它的段才会在渲染时取地形包 */
+const 取包模块 = 'engine/voxel/区段包位置.ts';
+
+/** 从入口们沿依赖图走到的全部仓库内文件 */
+const 闭包 = (图: 依赖图, 入口: string[]) => {
+  const 到过 = new Set(入口);
+  const 队 = [...入口];
+  while (队.length) for (const e of 图.边.get(队.shift()!) ?? []) if (!e.外部 && !到过.has(e.到)) 到过.add(e.到), 队.push(e.到);
+  return 到过;
+};
+
+/** 文件里的字符串字面量（不含 import 来源） */
+const 字符串们 = (c: 检查上下文, p: string, 缓存: Map<string, Set<string>>) => {
+  let r = 缓存.get(p);
+  if (!r) {
+    r = new Set();
+    const sf = 解析(p, c.读(p));
+    遍历(sf, (n) => {
+      if ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && !ts.isImportDeclaration(n.parent) && !ts.isExportDeclaration(n.parent)) r!.add(n.text);
+    });
+    缓存.set(p, r);
+  }
+  return r;
+};
+
 type 地形表 = { 包?: Record<string, { 版本: string; 清单sha256?: string; 文件数?: number; 大小?: number; 许可?: string; 可见性?: string }> };
 
 export const 资产 = async (c: 检查上下文, 报: 报告) => {
@@ -148,6 +174,21 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
     for (const s of 内容.段们) {
       for (const 名 of s.定义?.地形 ?? []) if (!地形.包?.[名]) 报.错(`${s.键} 用的地形包「${名}」没在 assets/地形版本.json 登记`, s.段文件);
       for (const cue of s.定义?.声音 ?? []) if (cue.资产 !== undefined) 查(cue.资产, `${s.键} 第 ${cue.帧} 帧的 cue `, s.段文件);
+    }
+  }
+  // 取了地形包的段（闭包里有 packDir）：闭包里写到的登记过的包名都要在 段.地形 里。指纹的地形项只按 段.地形 记版本，漏写了换版本这段不会过期
+  if (!('错误' in 内容) && !图.错误.length) {
+    const 包名们 = new Set(Object.keys(地形.包 ?? {}));
+    const 缓存 = new Map<string, Set<string>>();
+    for (const s of 内容.段们) {
+      if (!s.定义) continue;
+      const 入口 = [`${s.目录}/画面.tsx`, s.段文件, ...(s.定义.叠层 ?? []).map((l) => `${s.目录}/${l.入口}`)].filter((p) => 图.边.has(p));
+      const 文件们 = 闭包(图, 入口);
+      if (!文件们.has(取包模块)) continue;
+      const 用到 = new Set<string>();
+      for (const f of 文件们) if (/\.[cm]?[jt]sx?$/.test(f) && c.存在(f)) for (const t of 字符串们(c, f, 缓存)) if (包名们.has(t)) 用到.add(t);
+      const 漏 = [...用到].filter((名) => !s.定义!.地形.includes(名)).sort();
+      if (漏.length) 报.错(`${s.键} 的闭包会取地形包（${取包模块}），写到了 ${漏.join('、')}，段.ts 的 地形 里没有：地形包的版本只经 段.地形 进指纹`, s.段文件);
     }
   }
   for (const [名, v] of Object.entries(地形.包 ?? {})) {

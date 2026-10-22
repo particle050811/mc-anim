@@ -2,12 +2,12 @@
 import { coarseHeightAt, coarseHeightFingerprint } from '../../../engine/voxel/区段包.ts';
 import { frozenCoarse } from '../../../engine/voxel/冻结粗高度.ts';
 import { hash64 } from '../../../engine/core/求解缓存.ts';
-import { twilightPackName } from './地标表.ts';
+import { twilightFrozen } from './地标表.ts';
 import { frameByName, landmarkRanges } from './摆放.ts';
 
 // ---------- 高度 ----------
 // 粗高度图（16 米一格，每格里最高那块方块的顶，含树冠、水面、新世界的结构），烘焙时写进 包.json，编排用冻结进仓库的那份（lib/体素/冻结粗高度.ts）
-const coarse = frozenCoarse(twilightPackName);
+const coarse = frozenCoarse(twilightFrozen);
 // 一格的地物顶（世界 z）：地标范围里用地标的地面（那里粗高度图是新世界自己的结构，画的是旧网格）；补挖的巨树框里按 min(粗高度, 剩顶)。
 // 宽容（米）：格心离框不到这么远也算在框里（一镜到底/路线.ts 量离树用半格：补挖框只框那棵树，树冠压着的格格心常在框外几米，不算的话粗高度还当那棵树在）
 export const twilightCellTop = (x: number, y: number, toleranceM = 0) => {

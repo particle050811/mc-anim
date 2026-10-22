@@ -16,7 +16,7 @@ import { FinalCastle } from './终焉高原城堡.tsx';
 import { twilightPackName, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 import { frameByName, allCutouts, allFlattens, landmarkHideOutsideCore, castleMeshHide } from './暮色新世界/摆放.ts';
 
-export { twilightPackName, gameToWorld, yetiCore, twilightLandmarkNames, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
+export { twilightPackName, twilightFrozen, gameToWorld, yetiCore, twilightLandmarkNames, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 export {
   twilightLandmark,
   twilightCutouts,
