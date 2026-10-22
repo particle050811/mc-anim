@@ -1,17 +1,17 @@
-// 字幕表生成：断屏和排时间对旧项目基线（数据根 基线/_表/ 的 台词落点.json、拼接表.tsv、字幕表.tsv、字幕.srt）；
+// 字幕表生成：断屏和排时间对旧项目基线（数据根 基线/<作品>/_表/ 的 台词落点.json、拼接表.tsv、字幕表.tsv、字幕.srt）；
 // 配音从资产库取（旧台词 id 换新 id 查 作品/应力转动/旧名.tsv）。数据根不全时跳过基线那几条，合成的小例子照跑。
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
-import { 数据路径 } from '../环境/配置.ts';
+import { 数据路径, 基线根 } from '../环境/配置.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 读资产锁 } from '../资产/资产锁.ts';
 import { 有声段, 排字幕, 字幕表tsv, srt, 核对开口, type 台词落点 } from './字幕.ts';
 import { 断屏, 画字幕卡 } from './字幕卡.ts';
 import { 读单声道 } from './音频.ts';
 
-const 表目录 = 数据路径('基线', '_表');
+const 表目录 = path.join(基线根(), '_表');
 const 锁 = 读资产锁();
 const 有库 = (id: string) => !!锁[id] && fs.existsSync(数据路径(锁[id]!.库, 锁[id]!.sha256.slice(0, 2), 锁[id]!.sha256));
 const 有基线 = fs.existsSync(path.join(表目录, '台词落点.json')) && 有库('字体/像素字');
