@@ -96,36 +96,54 @@ export class 检查上下文 {
   读 = (p: string) => fs.readFileSync(this.绝对(p), 'utf8');
   相对 = (abs: string) => path.relative(this.根, abs).split(path.sep).join('/');
 
-  /** 仓库里的文件（git 跟踪的 + 没被忽略的新文件）；不在 git 里就整个目录走一遍（跳过 node_modules、.git、.venv） */
+  /** dir（相对 根）下 git 跟踪的 + 没被忽略的新文件；dir 不是 git 仓库的根就返回 null */
+  #git文件(dir: string): string[] | null {
+    try {
+      const abs = this.绝对(dir || '.');
+      const top = execFileSync('git', ['-C', abs, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+      if (fs.realpathSync(top) !== fs.realpathSync(abs)) return null;
+      const out = execFileSync('git', ['-C', abs, '-c', 'core.quotepath=false', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+        maxBuffer: 1 << 28,
+      });
+      return [...new Set(out.split('\0').filter(Boolean))].map((p) => (dir ? `${dir}/${p}` : p)).filter((p) => this.存在(p));
+    } catch {
+      return null;
+    }
+  }
+
+  /** dir 下整个走一遍（跳过 node_modules、.git、.venv） */
+  #走(dir: string, 表: string[]) {
+    for (const e of fs.readdirSync(this.绝对(dir || '.'), { withFileTypes: true })) {
+      const p = dir ? `${dir}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        if (!['node_modules', '.git', '.venv', '__pycache__'].includes(e.name)) this.#走(p, 表);
+      } else 表.push(p);
+    }
+  }
+
+  /**
+   * 仓库里的文件（git 跟踪的 + 没被忽略的新文件）；不在 git 里就整个目录走一遍。
+   * 作品/ 下被 .gitignore 挡住的私有作品（自己是 git 仓库或普通目录）也要查，按各自的根另列（方案批评补充二-1）。
+   */
   文件(): string[] {
     if (this.#文件) return this.#文件;
-    let 表: string[] | null = null;
-    try {
-      const top = execFileSync('git', ['-C', this.根, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-      if (fs.realpathSync(top) === this.根) {
-        const out = execFileSync('git', ['-C', this.根, '-c', 'core.quotepath=false', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
-          encoding: 'utf8',
-          stdio: ['ignore', 'pipe', 'ignore'],
-          maxBuffer: 1 << 28,
-        });
-        表 = [...new Set(out.split('\0').filter(Boolean))].filter((p) => this.存在(p));
-      }
-    } catch {
-      // 不是 git 仓库
-    }
+    let 表 = this.#git文件('');
     if (!表) {
       表 = [];
-      const 走 = (dir: string) => {
-        for (const e of fs.readdirSync(this.绝对(dir || '.'), { withFileTypes: true })) {
-          const p = dir ? `${dir}/${e.name}` : e.name;
-          if (e.isDirectory()) {
-            if (!['node_modules', '.git', '.venv', '__pycache__'].includes(e.name)) 走(p);
-          } else 表!.push(p);
-        }
-      };
-      走('');
+      this.#走('', 表);
     }
-    return (this.#文件 = 表.sort());
+    if (this.存在('作品')) {
+      for (const e of fs.readdirSync(this.绝对('作品'), { withFileTypes: true })) {
+        const d = `作品/${e.name}`;
+        if (!e.isDirectory() || 表.some((p) => p.startsWith(`${d}/`))) continue;
+        const 私有 = this.#git文件(d);
+        if (私有) 表.push(...私有);
+        else this.#走(d, 表);
+      }
+    }
+    return (this.#文件 = [...new Set(表)].sort());
   }
 
   /** 参与依赖图的代码文件：engine、world、content、pipeline 下的源码（不含测试和 .d.ts） */
