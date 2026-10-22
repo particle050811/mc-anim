@@ -1,15 +1,24 @@
-// 占位画面：灰色房间，她坐的位置放一个灰盒，第一人称固定机位；叠上帧号和 分镜.ts 的事件，用来核卡点。
-// 歌词、拍立得定格已经接上；房子、酒狐、第一人称的手、聊天栏做好后逐个换掉灰盒和占位。
-// 照片里只画 3D，按定格后的 fs 画；事件名、帧号、事件表、时间轴是核卡点用的标注，按真实帧走、不定格（照片里不留字）。
-// 四个要卡的事件用大字，画在闪白上面，咔哒那一帧也看得见；其余事件用小字，和歌词一样画在照片上面、闪白下面。
+// 验证片唯一的一段：第一人称固定机位，她坐在隐世之境一楼主厅的地毯上，玩家右键递蛋糕、驯服、微笑推镜、咔哒定格成拍立得。
+// 魔法酒狐接上之前她先是灰盒（和 核对-隐世之境一楼 的灰盒一样大）。
+// 照片里的东西都按定格后的 fs 画：世界画布（一楼、一楼灯光、她、驯服爱心），上面叠手画布，再上面是原版聊天栏；歌词是浮层，不定格、不跟着缩。
+// 事件帧全从 分镜.ts 取（段内帧 = 歌曲帧 − 段起），摆位、视角、种子这些 Agent 暂定的数在场参数，这里不写帧号。
+// 原版的东西按刻走（20 刻一秒）：手从右键那一帧起数，聊天栏、爱心从驯服那一帧起数。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
-import { clamp01, sample } from '@engine/anim/anim.ts';
+import { clamp01, rad, sample } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
+import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
+import { ChatOverlay } from '@库/界面/聊天栏.tsx';
+import { FirstPersonCanvas, FirstPersonHand, type HandScript, handTimeline, viewAngles } from '@库/角色/第一人称.tsx';
+import { LiYingFirstPersonArm } from '@库/角色/李樱第一人称.tsx';
+import { CAKE } from '@库/物品/蛋糕.tsx';
+import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
 import { 第一人称机位, 眼位 } from '../../地点/机位.tsx';
-import { 拍立得样式, 歌词样式, 视角 } from '../../场/1-隐世之境一楼/参数.ts';
+import { 一楼, 一楼灯光, 隐世之境一楼 } from '../../地点/隐世之境一楼.tsx';
+import { 拍立得样式, 机位, 歌词样式, 爱心种子, 聊天缩放, 视角 } from '../../场/1-隐世之境一楼/参数.ts';
+import { 驯服聊天行 } from '../../场/1-隐世之境一楼/聊天.ts';
 import { fps, 段时钟, 段内事件帧, 第几句, type 事件名 } from '../../分镜.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
@@ -22,7 +31,96 @@ const 起帧 = 段时钟(键).场窗口.起帧;
 const 事件帧 = 段内事件帧(键);
 const 事件们 = (Object.entries(事件帧) as [事件名, number][]).sort((a, b) => a[1] - b[1]);
 
-// 节点 1 给用户核卡点的四个事件。聊天栏弹出就是驯服那一下（爱心、两行消息同时出）
+/** 打开就在画面上叠帧号、事件表和四个要卡的事件的大字（节点 1 核卡点用的），成片关着 */
+const 核卡点 = false;
+
+// 这一段唱第 13–15 句，每句从开口（前导音，没有就是句首）淡入，第 15 句在咔哒定格时淡出
+const 歌词行们: readonly 歌词行[] = [
+  { 词: 第几句(13).词, 入: 事件帧.第13句开口 },
+  { 词: 第几句(14).词, 入: 事件帧.第14句开口 },
+  { 词: 第几句(15).词, 入: 事件帧.第15句开口 },
+];
+
+/** 段内帧 → 从某个事件那一帧起数的原版刻（可带小数） */
+const 刻 = (f: number, 起: number) => ((f - 起) / fps) * 20;
+
+// 摆位（网格本地坐标，Z 朝上）：她坐在模板里那只女仆的位置、面朝南，玩家站在她南边
+const 加 = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const 她 = 一楼.女仆;
+const 眼 = 眼位(加(她, 机位.玩家));
+const 起看 = 加(她, 机位.看);
+const 终看 = 加(她, 机位.推到底看);
+
+// 推镜：微笑推镜到咔哒定格缓入缓出，只收世界那一遍的视角（原版拉近时手那一遍固定 70° 不变）。
+// 视角按放大倍数的对数插值，推起来是匀匀地放大；看点跟着从起看挪到她脸上
+const 推镜进度 = (fs: number) => sample([[事件帧.微笑推镜, 0], [事件帧.咔哒定格, 1]], fs);
+const 半张角 = (度: number) => Math.tan(rad(度) / 2);
+const 推镜视角 = (p: number) => (2 * Math.atan(半张角(视角) * (半张角(机位.推到底视角) / 半张角(视角)) ** p) * 180) / Math.PI;
+const 推镜看 = (p: number): V3 => [0, 1, 2].map((i) => 起看[i]! + (终看[i]! - 起看[i]!) * p) as V3;
+
+// 女仆的碰撞箱 0.6 × 1.5（TLM `EntityMaid.TYPE`，坐下不变），爱心照它从脚底往上放
+const 爱心 = tamingHearts(她, 0.6, 1.5, 0, 爱心种子);
+const 聊天 = 驯服聊天行(0);
+
+// 右键在第 0 刻；第 1 刻手里的蛋糕被吃掉（生存模式，客户端这时收到物品栏更新），空手再按换手升上来
+const 手剧本: HandScript = { start: '蛋糕', swings: [0], changes: [{ tick: 1, to: null }] };
+
+// 窗外露出来的天，同 核对-隐世之境一楼
+const 天色 = '#9fc4ff';
+
+/** 魔法酒狐接上之前的她：脚底在地毯顶面 */
+const 灰盒她: React.FC = () => (
+  <mesh position={[她[0], 她[1], 她[2] + 0.425]} castShadow receiveShadow>
+    <boxGeometry args={[0.5, 0.5, 0.85]} />
+    <meshStandardMaterial color="#b5b5b5" />
+  </mesh>
+);
+
+const 世界: React.FC<{ fs: number; 看: V3; 视角: number }> = ({ fs, 看, 视角: v }) => {
+  const { width, height } = useVideoConfig();
+  return (
+    <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
+      <color attach="background" args={[天色]} />
+      <第一人称机位 眼={眼} 看={看} 视角={v} />
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        <一楼灯光 />
+        <隐世之境一楼 />
+        <灰盒她 />
+        <HeartParticles spawns={爱心} 刻={刻(fs, 事件帧.驯服)} />
+      </group>
+    </ThreeCanvas>
+  );
+};
+
+const 手: React.FC<{ fs: number; 看: V3 }> = ({ fs, 看 }) => {
+  const { width, height } = useVideoConfig();
+  const h = handTimeline(刻(fs, 事件帧.右键), 手剧本);
+  return (
+    <FirstPersonCanvas width={width} height={height} view={viewAngles(眼, 看)}>
+      <FirstPersonHand
+        held={h.item === '蛋糕' ? <ItemSprite layers={CAKE} emissive={0} shadow={false} /> : null}
+        arm={<LiYingFirstPersonArm />}
+        swing={h.swing}
+        equip={h.equip}
+      />
+    </FirstPersonCanvas>
+  );
+};
+
+// 照片里的画面：f 是定格后的 fs，定格以后每帧都画定格那一刻
+const 照片: React.FC<{ f: number }> = ({ f }) => {
+  const p = 推镜进度(f);
+  const 看 = 推镜看(p);
+  return (
+    <AbsoluteFill>
+      <世界 fs={f} 看={看} 视角={推镜视角(p)} />
+      <手 fs={f} 看={看} />
+      <ChatOverlay lines={聊天} 刻={刻(f, 事件帧.驯服)} s={聊天缩放} />
+    </AbsoluteFill>
+  );
+};
+
+// 下面两个是 核卡点 打开时才画的标注
 const 大字事件: readonly { 名: 事件名; 字: string }[] = [
   { 名: '右键', 字: '右键' },
   { 名: '驯服', 字: '聊天栏' },
@@ -34,61 +132,8 @@ const 大字名 = new Set<事件名>(大字事件.map((x) => x.名));
 const 标注留帧 = fps;
 const 大字淡出帧 = 6;
 
-// 这一段唱第 13–15 句，每句从开口（前导音，没有就是句首）淡入，第 15 句在咔哒定格时淡出
-const 歌词行们: readonly 歌词行[] = [
-  { 词: 第几句(13).词, 入: 事件帧.第13句开口 },
-  { 词: 第几句(14).词, 入: 事件帧.第14句开口 },
-  { 词: 第几句(15).词, 入: 事件帧.第15句开口 },
-];
-
-// 占位的摆位（场景坐标，Z 朝上，原点是她坐的地方、地毯顶面）：她面朝南，玩家站在她南边 2.25 格、面朝北
-const 她: V3 = [0, 0, 0];
-const 玩家脚: V3 = [0, -2.25, 0];
-const 看: V3 = [0, 0, 0.7];
-const 房 = { 西: -4.5, 东: 4.5, 南: -4, 北: 4, 高: 4 };
-
-const 盒: React.FC<{ 中: V3; 尺: V3; 色: string }> = ({ 中, 尺, 色 }) => (
-  <mesh position={中}>
-    <boxGeometry args={尺} />
-    <meshStandardMaterial color={色} />
-  </mesh>
-);
-
-const 房间: React.FC = () => {
-  const 宽 = 房.东 - 房.西;
-  const 深 = 房.北 - 房.南;
-  const 中x = (房.东 + 房.西) / 2;
-  const 中y = (房.北 + 房.南) / 2;
-  return (
-    <group rotation={[-Math.PI / 2, 0, 0]}>
-      <ambientLight intensity={0.9} />
-      <directionalLight position={[2, -3, 5]} intensity={1.6} />
-      <盒 中={[中x, 中y, -0.05]} 尺={[宽, 深, 0.1]} 色="#8a8a8a" />
-      <盒 中={[中x, 房.北 + 0.05, 房.高 / 2]} 尺={[宽, 0.1, 房.高]} 色="#9c9c9c" />
-      <盒 中={[房.西 - 0.05, 中y, 房.高 / 2]} 尺={[0.1, 深, 房.高]} 色="#7b7b7b" />
-      <盒 中={[房.东 + 0.05, 中y, 房.高 / 2]} 尺={[0.1, 深, 房.高]} 色="#7b7b7b" />
-      <盒 中={[中x, 中y, 房.高 + 0.05]} 尺={[宽, 深, 0.1]} 色="#6a6a6a" />
-      <盒 中={[她[0], 她[1], 她[2] + 0.425]} 尺={[0.5, 0.5, 0.85]} 色="#b5b5b5" />
-    </group>
-  );
-};
-
-// 照片里的画面：f 是定格后的 fs。灰房间是静的还用不上，换成房子、酒狐、手以后都按它画
-const 占位场景: React.FC<{ f: number }> = () => {
-  const { width, height } = useVideoConfig();
-  return (
-    <AbsoluteFill style={{ background: '#202226' }}>
-      <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
-        <color attach="background" args={['#202226']} />
-        <第一人称机位 眼={眼位(玩家脚)} 看={看} 视角={视角} />
-        <房间 />
-      </ThreeCanvas>
-    </AbsoluteFill>
-  );
-};
-
 // 核卡点的标注：按真实帧走，定格以后照常往下数
-const 占位标注: React.FC = () => {
+const 核卡点标注: React.FC = () => {
   const f = useCurrentFrame();
   const { durationInFrames } = useVideoConfig();
   const 歌帧 = 起帧 + f;
@@ -109,7 +154,7 @@ const 占位标注: React.FC = () => {
         )}
       </div>
       <div style={{ position: 'absolute', left: 24, bottom: 52, fontSize: 20, lineHeight: 1.5, textShadow: '0 1px 3px #000' }}>
-        <div>{键} · 占位</div>
+        <div>{键} · 核卡点</div>
         <div>
           段内 f{f} / {durationInFrames}　歌曲帧 {歌帧}　{(歌帧 / fps).toFixed(3)} 秒
         </div>
@@ -177,13 +222,13 @@ const 画面: React.FC = () => (
       浮层={
         <>
           <歌词 行们={歌词行们} 样式={歌词样式} 收={事件帧.咔哒定格} />
-          <占位标注 />
+          {核卡点 && <核卡点标注 />}
         </>
       }
     >
-      {(fs) => <占位场景 f={fs} />}
+      {(fs) => <照片 f={fs} />}
     </拍立得>
-    <事件大字 />
+    {核卡点 && <事件大字 />}
   </>
 );
 
