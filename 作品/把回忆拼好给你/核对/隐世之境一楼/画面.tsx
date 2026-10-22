@@ -1,6 +1,7 @@
 // 隐世之境一楼核对的画面：按视图表画网格，盖上游戏截图或灯位框。
 // 平光：方块材质的自发光关掉，只留 π 的环境光（three 的漫反射是 颜色 × 光 ÷ π），画出来就是 贴图 × 顶点色（染色和 AO；朝向明暗不在顶点色里）。
 // 成片灯的视图换成 地点 的 一楼灯光，和 一楼机位-游戏截图 比亮度、色温。
+// 待迁移（私有资产）：对照用的游戏截图私有（核对段，不进成片），公开构建缺了怎么降级还没定
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
