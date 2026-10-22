@@ -9,7 +9,8 @@ import { build, transform, type Loader, type Plugin } from 'esbuild';
 import ts from 'typescript';
 import { 代码根 } from '../环境/路径.ts';
 import { esbuild别名插件, esbuild资产插件, 非代码loader, type 资产记录 } from '../资产/esbuild插件.ts';
-import { 读资产锁 } from '../资产/资产锁.ts';
+import { 作品根 } from '../环境/作品.ts';
+import { 读作品资产锁 } from '../资产/资产锁.ts';
 
 export const 默克尔算法 = 'merkle-v1';
 const sha = (x: crypto.BinaryLike) => crypto.createHash('sha256').update(x).digest('hex');
@@ -91,7 +92,7 @@ export const 算默克尔 = async (入口: string[], 选项: 默克尔选项 = {
       packages: 'external',
       loader: 非代码loader,
       tsconfigRaw: { compilerOptions: 编译选项() as never },
-      plugins: [记边插件(边表), esbuild别名插件(根), esbuild资产插件(读资产锁(), 资产)],
+      plugins: [记边插件(边表), esbuild别名插件(根), esbuild资产插件(读作品资产锁(作品根()), 资产)],
       logLevel: 'silent',
     });
     输入 = Object.keys(r.metafile.inputs).filter((p) => !p.includes(':')).map((p) => path.resolve(根, p));
