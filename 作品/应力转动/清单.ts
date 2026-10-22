@@ -1,7 +1,8 @@
 // 段清单：进成片的段按剪辑顺序排，anim render、anim film、注册.tsx 都读它（唯一顺序表）。纯数据。
 // 段键是永久身份（<章>-<段名>，全片唯一，只用汉字、字母、数字和连字符），Composition id、目录名、母版缓存都用它；
 // 编号（<章>-<两位序号>）按这里的顺序现算，只出现在产物里。核对段（键以 核对- 开头）放 作品/应力转动/核对/，不进章节编号。
-export type 清单条目 = { 键: string; 章: number | '核对'; 集?: number };
+import type { 清单条目 } from '@engine/段/清单条目.ts';
+export type { 清单条目 };
 
 export const 清单: readonly 清单条目[] = [
   { 键: '核对-冒烟', 章: '核对' },

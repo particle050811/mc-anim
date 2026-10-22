@@ -1,9 +1,9 @@
 // pipeline 这边看段：按所选作品的 清单.ts 的顺序读各段的 段.ts（纯数据），以及选择器（anim render、anim film 的范围）。
-// 选择器全字匹配：段键、段名、编号、场键、章，或章的范围（6-7）；可以写成带作品的全名（应力转动/6-斩娜迦），作品要是所选的那部。几个选择器取并集，结果按清单顺序。
+// 选择器全字匹配：段键、段名、编号、场键、章，或章的范围（6-7）；可以写成带作品的全名（<作品>/<段键>），作品要是所选的那部。几个选择器取并集，结果按清单顺序。
 import path from 'node:path';
 import '../环境/别名注册.ts';
 import { pathToFileURL } from 'node:url';
-import type { 清单条目 } from '../../作品/应力转动/清单.ts';
+import type { 清单条目 } from '../../engine/段/清单条目.ts';
 import type { 段定义 } from '../../engine/段/段定义.ts';
 import { 拆全名, 作品名, 作品根 } from '../环境/作品.ts';
 
