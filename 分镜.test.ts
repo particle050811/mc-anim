@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/1-一如既往/段.ts';
 import { 句们 } from './配乐/网格.ts';
+import { 原声增益, 原声淡入帧 } from './场/1-隐世之境一楼/参数.ts';
 import { 串们, 事件, 排段, 段内事件帧, 段时钟, 段窗口, 第几句, fps } from './分镜.ts';
 
 describe('分镜：从网格常数推帧号', () => {
@@ -22,6 +24,17 @@ describe('分镜：从网格常数推帧号', () => {
     expect(段.fps).toBe(fps);
     expect(段.场窗口).toEqual({ 起帧: 994, 止帧: 1344 });
     expect(钟.原声).toEqual({ 帧: 0, 帧数: 350, 入点秒: 994 / 24 });
+  });
+
+  it('段.ts 的原声 cue：帧、帧数、入点取自分镜，增益逐帧，开头淡入到场参数的固定增益', () => {
+    const cue = 段.声音?.find((c): c is 资产cue => c.资产 === '配乐/把回忆拼好给你-抖音原声');
+    expect(cue).toMatchObject({ 帧: 0, 帧数: 350, 入点秒: 994 / 24, 名: '原声' });
+    const 增益 = cue!.增益 as readonly number[];
+    expect(增益).toHaveLength(350);
+    const 淡入 = 增益.slice(0, 原声淡入帧);
+    for (let f = 1; f < 淡入.length; f++) expect(淡入[f]).toBeGreaterThan(淡入[f - 1]!);
+    expect(淡入[0]).toBeGreaterThan(0);
+    expect(new Set(增益.slice(原声淡入帧 - 1))).toEqual(new Set([原声增益]));
   });
 
   it('段起落在第 12 句止和第 13 句前导音之间的换气里', () => {
