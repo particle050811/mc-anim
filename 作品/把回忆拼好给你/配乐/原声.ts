@@ -1,7 +1,7 @@
 // 原声的曲目数据（engine/audio/曲目.ts 的 Song）：配乐音轨.tsx 按它取音频，歌词可以按它的 歌词 取当前句（currentLyric）。
 // 网格、句起止、长音都从 网格.ts 来，这里只换成 Song 的格式，不另写数；拟合质量是同一次实测（原声人声分离加强制对齐，10-22）的结果。
 // 段.ts 是纯模块，不能 import 这里（有 asset: import），cue 的资产 id 另写在段里，配乐音轨.tsx 按 文件 对上。
-// 私有作品自己目录里可以 import 私有资产，不进公开构建（docs/决策/0004-多作品.md，用户 10-22 定）。
+// 待迁移（私有资产）：原声是第三方音乐、私有，不能分发；照应力转动 配乐/Wasted.ts 的先例，配乐改走 cue（缺了换同长静音）后不再打进包
 import 原声url from 'asset:配乐/把回忆拼好给你-抖音原声';
 import type { Song } from '@engine/audio/曲目.ts';
 import { 句们, 网格, 原声时长, 长音 } from './网格.ts';
