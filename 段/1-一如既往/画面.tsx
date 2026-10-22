@@ -1,30 +1,34 @@
-// 验证片唯一的一段：第一人称固定机位，她坐在隐世之境一楼主厅的地毯上，玩家右键递蛋糕、驯服、微笑推镜、咔哒定格成拍立得。
-// 魔法酒狐接上之前她先是灰盒（和 核对-隐世之境一楼 的灰盒一样大）。
+// 验证片唯一的一段：第一人称固定机位，魔法酒狐坐在隐世之境一楼主厅的地毯上，玩家右键递蛋糕、驯服、微笑推镜、咔哒定格成拍立得。
 // 照片里的东西都按定格后的 fs 画：世界画布（一楼、一楼灯光、她、驯服爱心），上面叠手画布，再上面是原版聊天栏；歌词是浮层，不定格、不跟着缩。
-// 事件帧全从 分镜.ts 取（段内帧 = 歌曲帧 − 段起），摆位、视角、种子这些 Agent 暂定的数在场参数，这里不写帧号。
-// 原版的东西按刻走（20 刻一秒）：手从右键那一帧起数，聊天栏、爱心从驯服那一帧起数。
+// 事件帧全从 分镜.ts 取（段内帧 = 歌曲帧 − 段起），摆位、视角、视线、种子这些 Agent 暂定的数在场参数，这里不写帧号。
+// 原版的东西按刻走（20 刻一秒）：手从右键那一帧起数，聊天栏、爱心从驯服那一帧起数。她的尾巴、环转、眨眼按歌上的秒走（场时间线就是歌）。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
-import { clamp01, rad, sample } from '@engine/anim/anim.ts';
+import { clamp01, rad, sample, sampleV, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { ChatOverlay } from '@库/界面/聊天栏.tsx';
 import { FirstPersonCanvas, FirstPersonHand, type HandScript, handTimeline, viewAngles } from '@库/角色/第一人称.tsx';
 import { LiYingFirstPersonArm } from '@库/角色/李樱第一人称.tsx';
+import { standPose } from '@库/角色/骨架.tsx';
+import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
+import { magicalWineFoxBlinkAt } from '@库/角色/魔法酒狐动作.ts';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
 import { 第一人称机位, 眼位 } from '../../地点/机位.tsx';
 import { 一楼, 一楼灯光, 隐世之境一楼 } from '../../地点/隐世之境一楼.tsx';
-import { 拍立得样式, 机位, 歌词样式, 爱心种子, 聊天缩放, 视角 } from '../../场/1-隐世之境一楼/参数.ts';
+import { 拍立得样式, 机位, 歌词样式, 爱心种子, 聊天缩放, 视角, 视线 } from '../../场/1-隐世之境一楼/参数.ts';
 import { 驯服聊天行 } from '../../场/1-隐世之境一楼/聊天.ts';
 import { fps, 段时钟, 段内事件帧, 第几句, type 事件名 } from '../../分镜.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
+import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 歌词, type 歌词行 } from '../../界面/歌词.tsx';
 import { 拍立得 } from '../../特效/拍立得.tsx';
 import 段 from './段.ts';
+import 咔哒url from 'asset:音效/车万女仆/item.camera_use';
 
 const 键 = '1-一如既往';
 const 起帧 = 段时钟(键).场窗口.起帧;
@@ -44,9 +48,10 @@ const 歌词行们: readonly 歌词行[] = [
 /** 段内帧 → 从某个事件那一帧起数的原版刻（可带小数） */
 const 刻 = (f: number, 起: number) => ((f - 起) / fps) * 20;
 
-// 摆位（网格本地坐标，Z 朝上）：她坐在模板里那只女仆的位置、面朝南，玩家站在她南边
+// 摆位（网格本地坐标，Z 朝上）：她坐在模板里那只女仆的位置（脚底在地毯顶面）、面朝南（yaw 180），玩家站在她南边
 const 加 = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const 她 = 一楼.女仆;
+const 她姿势 = { ...standPose(她), yaw: 180 };
 const 眼 = 眼位(加(她, 机位.玩家));
 const 起看 = 加(她, 机位.看);
 const 终看 = 加(她, 机位.推到底看);
@@ -68,13 +73,37 @@ const 手剧本: HandScript = { start: '蛋糕', swings: [0], changes: [{ tick: 
 // 窗外露出来的天，同 核对-隐世之境一楼
 const 天色 = '#9fc4ff';
 
-/** 魔法酒狐接上之前的她：脚底在地毯顶面 */
-const 灰盒她: React.FC = () => (
-  <mesh position={[她[0], 她[1], 她[2] + 0.425]} castShadow receiveShadow>
-    <boxGeometry args={[0.5, 0.5, 0.85]} />
-    <meshStandardMaterial color="#b5b5b5" />
-  </mesh>
-);
+// 视线（演绎）：驯服前看蛋糕 → 驯服起抬头看你 → 第 14 句轻轻别开 → 第 15 句转回来看你，之后一直看你（推镜只收视角，机位不动，看你的角度不变）。
+// 每段转头都是缓入缓出，停着的时候不动
+const 看你 = magicalWineFoxLookAt(她姿势, 眼);
+const 视线键: VKey[] = [
+  [事件帧.驯服, 视线.蛋糕],
+  [事件帧.抬头到位, 看你],
+  [事件帧.视线别开, 看你],
+  [事件帧.别开到位, 视线.别开],
+  [事件帧.视线转回, 视线.别开],
+  [事件帧.转回到位, 看你],
+];
+const 她的视线 = (fs: number) => sampleV(视线键, fs) as [number, number];
+
+/** 段内帧 → 歌上的秒（定格以后跟着 fs 停住） */
+const 歌秒 = (f: number) => (起帧 + f) / fps;
+// 手放的三次眨眼，每次是游戏眨眼曲线开头那 0.25 秒
+const 眨眼起秒 = [事件帧.眨眼一, 事件帧.眨眼二, 事件帧.眨眼三].map(歌秒);
+
+/** 魔法酒狐：帽子、背后法杖和三个环、发光照游戏原样（组件默认）；开头无嘴，微笑推镜那一帧硬切成微笑（游戏里换嘴也是硬切） */
+const 酒狐: React.FC<{ fs: number }> = ({ fs }) => {
+  const 秒 = 歌秒(fs);
+  return (
+    <MagicalWineFox
+      pose={她姿势}
+      看={她的视线(fs)}
+      表情={fs < 事件帧.微笑推镜 ? '无' : '微笑'}
+      眨眼={magicalWineFoxBlinkAt(秒, 眨眼起秒)}
+      秒={秒}
+    />
+  );
+};
 
 const 世界: React.FC<{ fs: number; 看: V3; 视角: number }> = ({ fs, 看, 视角: v }) => {
   const { width, height } = useVideoConfig();
@@ -85,7 +114,7 @@ const 世界: React.FC<{ fs: number; 看: V3; 视角: number }> = ({ fs, 看, �
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <一楼灯光 />
         <隐世之境一楼 />
-        <灰盒她 />
+        <酒狐 fs={fs} />
         <HeartParticles spawns={爱心} 刻={刻(fs, 事件帧.驯服)} />
       </group>
     </ThreeCanvas>
@@ -215,6 +244,7 @@ const 事件大字: React.FC = () => {
 const 画面: React.FC = () => (
   <>
     <配乐音轨 song={原声} 段={段} />
+    <音效轨 src={咔哒url} 资产="音效/车万女仆/item.camera_use" 段={段} />
     <拍立得
       定格帧={事件帧.咔哒定格}
       字="新存档的第一张"
