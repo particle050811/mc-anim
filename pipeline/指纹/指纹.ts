@@ -5,7 +5,7 @@
 //   地形    段声明的地形包和登记的版本（assets/地形版本.json）
 //   渲染设置 传给 Remotion 的全部渲染参数和 inputProps
 //   依赖版本 lockfile 里 remotion、three 等决定像素的包
-//   打包规则 remotion.config.ts 和它用的 webpack 改写、ogg 解码
+//   打包规则 webpack 改写、ogg 解码（remotion.config.ts 只给 studio 用，anim render 走 bundle 的 webpackOverride，不进）
 //   平台    process.platform-arch（跨平台不要求逐像素一致）
 // 指纹 = 这些项按键排序后的 JSON 的 sha256；.指纹.json 存逐项展开，anim stale 拿它说明是哪项变了。
 // 透明叠层（段.ts 的 叠层）同样算，入口换成叠层文件，段记成 `<段键>-<名>`。
@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { build } from 'esbuild';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
-import { esbuild资产插件, 非代码loader, type 资产记录 } from '../资产/esbuild插件.ts';
+import { esbuild别名插件, esbuild资产插件, 非代码loader, type 资产记录 } from '../资产/esbuild插件.ts';
 import { 读资产锁 } from '../资产/资产锁.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import type { 叠层定义 } from '../../content/段定义.ts';
@@ -32,8 +32,8 @@ export type 段指纹 = { 段: string; 指纹: string; 项: 指纹项 };
 
 /** 决定像素和声音的包，不管闭包里直接引没引都记版本 */
 const 关键依赖 = ['remotion', '@remotion/bundler', '@remotion/renderer', '@remotion/media', '@remotion/three', 'three', 'react', 'react-dom', 'webpack', 'esbuild'];
-const 外壳文件 = ['content/index.ts', 'content/注册.tsx'];
-const 打包规则文件 = ['remotion.config.ts', 'pipeline/资产/webpack.ts', 'pipeline/资产/ogg解码.cjs'];
+const 外壳文件 = ['content/index.ts', 'content/注册.tsx', 'content/注册工厂.tsx'];
+const 打包规则文件 = ['pipeline/资产/webpack.ts', 'pipeline/资产/ogg解码.cjs'];
 
 const sha = (buf: crypto.BinaryLike) => crypto.createHash('sha256').update(buf).digest('hex');
 
@@ -80,7 +80,7 @@ export const 算闭包 = async (入口: string[]) => {
     jsx: 'automatic',
     packages: 'external',
     loader: 非代码loader,
-    plugins: [esbuild资产插件(读资产锁(), 资产)],
+    plugins: [esbuild别名插件(代码根()), esbuild资产插件(读资产锁(), 资产)],
     logLevel: 'silent',
   });
   const 文件: string[] = [];

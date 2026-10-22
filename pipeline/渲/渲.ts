@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
 import { getCompositions, openBrowser, renderMedia, renderStill, type HeadlessBrowser } from '@remotion/renderer';
-import { 代码根 } from '../环境/路径.ts';
+import { 代码根, 作品根 } from '../环境/路径.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
@@ -26,9 +26,9 @@ export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${键
 export const 打包 = async () => {
   const t0 = Date.now();
   const serveUrl = await bundle({
-    entryPoint: path.join(代码根(), 'content', 'index.ts'),
+    entryPoint: path.join(作品根(), 'index.ts'),
     rootDir: 代码根(),
-    webpackOverride: webpack改写,
+    webpackOverride: webpack改写(作品根()),
     enableCaching: true,
     publicDir: 备好public目录(),
     // public 里只有指向数据根的链接，转发进包是预期的
@@ -68,7 +68,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
 
 const 找组合 = (h: 会话, s: 段信息, id = s.键) => {
   const c = h.组合.find((x) => x.id === id);
-  if (!c) throw new Error(`打包里没有 Composition ${id}（content/注册.tsx 按清单和 段.ts 的叠层登记，清单里有它吗？）`);
+  if (!c) throw new Error(`打包里没有 Composition ${id}（作品的 注册.tsx 按清单和 段.ts 的叠层登记，清单里有它吗？）`);
   if (c.durationInFrames !== s.段.帧数 || c.fps !== s.段.fps || c.width !== s.段.宽 || c.height !== s.段.高) {
     throw new Error(`${id} 的 Composition（${c.durationInFrames} 帧 ${c.fps}fps ${c.width}×${c.height}）和 段.ts 对不上`);
   }
