@@ -1,5 +1,6 @@
 // anim check 各条规则共用的上下文：仓库根下的文件表、esbuild 依赖图、纯模块的执行结果，都只算一次。
 // 根可以是任意目录（测试拿临时目录造一个小仓库），所以这里不调 代码根()，路径一律相对 根、用正斜杠。
+// 一次只查一部作品（作品/<名>/）：别的作品的文件不进依赖图、纯模块、例外扫描，作品自己的表（清单、规矩、台词、旧名）从 作品目录 取。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -9,6 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { build, type Plugin } from 'esbuild';
 import { parse } from 'smol-toml';
 import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts';
+import { 选作品错误 } from '../环境/作品.ts';
 
 export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台'] as const;
 export type 规则类 = (typeof 规则名)[number];
@@ -84,13 +86,36 @@ export class 检查上下文 {
   #图?: Promise<依赖图>;
   #加载 = new Map<string, Promise<加载结果>>();
   #tmp?: string;
+  #作品?: string;
 
-  constructor(根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string } = {}) {
+  constructor(根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string; 作品?: string } = {}) {
     this.根 = fs.realpathSync(根);
     this.深 = 选项.深 ?? false;
     this.数据根 = 选项.数据根;
     this.记忆根 = 选项.记忆根;
+    this.#作品 = 选项.作品;
   }
+
+  /** 查的是哪部作品：给了就用；没给时 作品/ 下只有一部（有 清单.ts 的目录）就用它，否则报错 */
+  get 作品名(): string {
+    if (this.#作品 === undefined) {
+      const 们 = this.存在('作品')
+        ? fs.readdirSync(this.绝对('作品'), { withFileTypes: true }).filter((e) => e.isDirectory() && this.存在(`作品/${e.name}/清单.ts`)).map((e) => e.name).sort()
+        : [];
+      if (们.length !== 1) throw new 选作品错误(们.length ? `有 ${们.length} 部作品（${们.join('、')}），用 --作品 <名> 指定查哪部` : '一部作品都没有（作品/<名>/清单.ts）');
+      this.#作品 = 们[0]!;
+    }
+    return this.#作品;
+  }
+  /** 作品目录（相对 根），如 作品/<名> */
+  get 作品目录() {
+    return `作品/${this.作品名}`;
+  }
+  作品路径 = (p: string) => `${this.作品目录}/${p}`;
+  /** 作品/ 下、不是这次查的作品的文件 */
+  是别的作品 = (p: string) => p.startsWith('作品/') && !p.startsWith(`${this.作品目录}/`);
+  /** 文件() 去掉别的作品的 */
+  本作品文件 = () => this.文件().filter((p) => !this.是别的作品(p));
 
   绝对 = (p: string) => path.join(this.根, ...p.split('/'));
   存在 = (p: string) => fs.existsSync(this.绝对(p));
@@ -147,8 +172,8 @@ export class 检查上下文 {
     return (this.#文件 = [...new Set(表)].sort());
   }
 
-  /** 参与依赖图的代码文件：engine、库、作品、pipeline 下的源码（不含测试和 .d.ts） */
-  代码文件 = () => this.文件().filter((p) => /^(engine|库|作品|pipeline)\//.test(p) && 代码后缀.test(p) && !是测试或声明(p));
+  /** 参与依赖图的代码文件：engine、库、本作品、pipeline 下的源码（不含测试和 .d.ts） */
+  代码文件 = () => this.本作品文件().filter((p) => /^(engine|库|作品|pipeline)\//.test(p) && 代码后缀.test(p) && !是测试或声明(p));
 
   /**
    * 全仓库一次 esbuild（每个代码文件都当入口），从 metafile 拿真实的 import 边。类型导入被擦掉，不算依赖。

@@ -61,7 +61,7 @@ export const 查分层 = async (c: 检查上下文, 报: 报告) => {
       }
       if (a.名 === '场' && b.名 === '场' && a.键 !== b.键) {
         const 上一场 = 场序 && a.键 ? 场序[场序.indexOf(a.键) - 1] : undefined;
-        if (!(到 === `作品/应力转动/场/${b.键}/末态.ts` && 上一场 === b.键)) {
+        if (!(到 === c.作品路径(`场/${b.键}/末态.ts`) && 上一场 === b.键)) {
           报.错(`场只许引用上一场的 末态.ts：${从} → ${到}${上一场 ? `（上一场是 ${上一场}）` : '（清单里排不出上一场）'}`, 从);
         }
         continue;
@@ -71,7 +71,7 @@ export const 查分层 = async (c: 检查上下文, 报: 报告) => {
   }
 
   // 纯模块的闭包
-  for (const 纯 of c.文件().filter(是纯模块)) {
+  for (const 纯 of c.本作品文件().filter(是纯模块)) {
     if (!图.边.has(纯)) continue;
     const 来自 = new Map<string, string>([[纯, '']]);
     const 队 = [纯];
@@ -129,7 +129,7 @@ const 是资产目录键 = (n: ts.Node) => {
 };
 
 export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostname()) => {
-  for (const p of c.文件()) {
+  for (const p of c.本作品文件()) {
     if (!代码后缀.test(p) || /\.d\.[cm]?ts$/.test(p)) continue;
     const 渲染 = 是渲染代码(p);
     const 源 = c.读(p);
