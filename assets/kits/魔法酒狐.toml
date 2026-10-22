@@ -1,9 +1,26 @@
 # 魔法酒狐角色包：做她的镜头、改模型时从这里找资产 id 和出处。字段见 assets/README.md「角色包」。
-# 渲染组件还没写；写好后补 渲染代码、用法、核对。
 "角色" = "魔法酒狐"
 "别名" = ["百花仙狐", "winefox_magical"]
 "出场" = "隐世之境（万法皆通 maidspell 的结构）里坐着的那只女仆；私有作品在用"
 "说明" = "车万女仆 1.5.3 内置的 geckolib 模型「魔法酒狐」，戴贴图 _3（YSM 语言文件里叫百花仙狐，粉色）。游戏里按 maid_model.json 的 render_entity_scale 0.65 缩放，不是九胡的 0.7。模型许可 CC BY-NC-SA 4.0，另禁止色情擦边和血腥内容（TartaricAcid/WineFoxModel 的 README）。3D 模型只能从 jar 提取，不进公开仓库"
+"渲染代码" = "库/角色/魔法酒狐.tsx"
+"核对" = "私有作品的核对段 核对-魔法酒狐：贴图正、背、仰视，坐姿正、侧、背，第一人称（南边 2 格、眼高 1.62）下看向俯仰 0°、15°、30°和看玩家。坐姿和隐世之境游戏截图（数据根 run/extract/隐世之境/ 的 01、03、04，同机位）叠在一起，身高、坐高、背后法杖和三个环、帽檐、贴图细节都对得上（10-22）；逐面 UV 没改写"
+# 最小用法：ThreeCanvas 里、外面套 <group rotation={[-Math.PI / 2, 0, 0]}>（Z 朝上），完整例子见私有作品的 核对/魔法酒狐/画面.tsx。
+# 公开版不带模型和贴图的字节（可见性 提取），使用者先按生成链从自己的 jar 导出入库
+"用法" = """
+import { MagicalWineFox, magicalWineFoxLookAt } from '库/角色/魔法酒狐.tsx';
+import { standPose } from '库/角色/骨架.tsx';
+
+// 默认就是游戏里平时的样子：坐着、戴魔女帽、背后法杖；pose 的 loc、yaw 定位置和朝向（yaw 180 = 面朝南），头往哪看用 看
+const 她 = { ...standPose([0, 0, 0]), yaw: 180 };
+<MagicalWineFox pose={她} />
+
+// 抬头：看 = [俯仰, 左右]（度，正 = 抬头、往她自己的左边）；对准玩家眼睛用 magicalWineFoxLookAt
+<MagicalWineFox pose={她} 看={magicalWineFoxLookAt(她, [0, -2, 1.62])} />
+
+// 骨骼：最后整条替换某根骨骼；右手：挂在 RightHandLocator 上的东西
+<MagicalWineFox pose={她} 骨骼={{ Tail2: { rot: [-25, 0, 0] } }} 右手={手里的东西} />
+"""
 
 [["基准"]]
 "用途" = "3D 模型（游戏实机外观）"
