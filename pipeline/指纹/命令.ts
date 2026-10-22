@@ -35,7 +35,7 @@ export const 指纹命令: Record<string, 命令> = {
         // 和同一级别最近渲过的那份比
         const 上次 = 历史指纹(s.键).find((h) => 稳定JSON(h.项.渲染设置.inputProps) === 稳定JSON(fp.项.渲染设置.inputProps));
         if (!上次) console.log('    没渲过');
-        else for (const d of 指纹差异(上次.项, fp.项).slice(0, 20)) console.log(`    ${d}`);
+        else for (const d of 指纹差异(上次, fp).slice(0, 20)) console.log(`    ${d}`);
       }
       console.log(`\n${段们.length} 段，过期 ${过期数} 段${过期数 > 没记录 ? `；按耗时表预计重渲约 ${Math.round(预计)} 秒` : ''}${没记录 ? `；${没记录} 段耗时表里没有记录` : ''}`);
     },
