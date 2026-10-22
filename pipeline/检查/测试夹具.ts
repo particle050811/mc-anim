@@ -49,7 +49,7 @@ export const 造仓库 = (...层: 文件表[]): string => {
 };
 
 /** 在样例仓库上跑一类规则，返回违规文本（带文件前缀，方便 toMatch）和整份报告 */
-export const 跑 = async (名: 规则类, 根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string } = {}) => {
+export const 跑 = async (名: 规则类, 根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string; 作品?: string } = {}) => {
   const c = new 检查上下文(根, 选项);
   const 报 = new 报告();
   try {

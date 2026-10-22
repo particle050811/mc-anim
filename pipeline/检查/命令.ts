@@ -1,7 +1,9 @@
-// anim check [<规则…>] [--快] [--深] [--详细]：合并前必须过。规则名见 规则表；不给就全跑。
+// anim [--作品 <名>] check [<规则…>] [--快] [--深] [--详细]：合并前必须过。规则名见 规则表；不给就全跑。只查选中的那部作品（环境/作品.ts）。
+import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 代码根 } from '../环境/路径.ts';
+import { 作品名, 作品根, 选作品错误 } from '../环境/作品.ts';
 import { utc时间 } from '../运行记录/记录.ts';
 import { 规则名, type 规则类 } from './上下文.ts';
 import { 规则表, 跑检查, 违规数 } from './检查.ts';
@@ -14,8 +16,13 @@ export const 检查命令: Record<string, 命令> = {
       const p = 解析参数(args, { 开关: ['--快', '--深', '--详细'] });
       const 不认识 = p.位置.filter((x) => !(规则名 as readonly string[]).includes(x));
       if (不认识.length) throw new 用法错误(`没有这类规则：${不认识.join('、')}（有：${规则名.join('、')}）`);
+      const 作品 = 作品名();
+      if (path.relative(path.join(代码根(), '作品', 作品), 作品根()) !== '') {
+        throw new 选作品错误(`作品「${作品}」不在 作品/${作品}/（anim.local.toml [works] 指到了别处），anim check 暂时只查 作品/<名>/ 下的作品`);
+      }
+      console.log(`作品：${作品}\n`);
       const t0 = performance.now();
-      const 结果 = await 跑检查(代码根(), { 只: p.位置 as 规则类[], 快: p.开关.has('--快'), 深: p.开关.has('--深') });
+      const 结果 = await 跑检查(代码根(), { 只: p.位置 as 规则类[], 快: p.开关.has('--快'), 深: p.开关.has('--深'), 作品 });
       for (const [名, r] of 结果) {
         const 状 = r.违规.length ? `✗ ${r.违规.length} 处违规` : '✓';
         console.log(`${状} ${名}：${规则表[名].说明}`);

@@ -4,7 +4,7 @@ import { 读内容 } from '../内容.ts';
 import { 是纯模块, type 报告, type 检查上下文 } from '../上下文.ts';
 
 export const 加载 = async (c: 检查上下文, 报: 报告) => {
-  const 纯们 = c.文件().filter(是纯模块);
+  const 纯们 = c.本作品文件().filter(是纯模块);
   for (const p of 纯们) {
     const r = await c.加载(p);
     if (r.错误) 报.错(`执行出错：${r.错误}`, p);

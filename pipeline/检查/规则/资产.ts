@@ -7,7 +7,7 @@ import path from 'node:path';
 import { 读内容 } from '../内容.ts';
 import { 是渲染代码, type 依赖图, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 解析, 遍历, ts } from '../语法.ts';
-import { 读台词表 } from './台词.ts';
+import { 台词表路径, 读台词表 } from './台词.ts';
 import { 读资产表, type 资产条目 } from '../../资产/资产表.ts';
 import { 字节路径, type 资产锁 } from '../../资产/资产锁.ts';
 import { 数据根 as 配置数据根 } from '../../环境/配置.ts';
@@ -197,7 +197,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
   }
 
   // 台词表的配音
-  for (const t of 读台词表(c) ?? []) if (typeof t.配音 === 'string') 查(t.配音, `台词「${t.id}」的配音`, '作品/应力转动/台词.toml');
+  for (const t of 读台词表(c) ?? []) if (typeof t.配音 === 'string') 查(t.配音, `台词「${t.id}」的配音`, 台词表路径(c));
 
   // 角色包
   const ids = [...登记.keys()];

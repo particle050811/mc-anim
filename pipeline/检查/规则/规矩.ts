@@ -1,7 +1,8 @@
-// 规矩：作品/应力转动/规矩.toml 的格式；代码里每个 例外('规矩id', 值, {段|场, 原因}) 都在表里那条规矩的 例外 里登记过、值对得上，
+// 规矩：所查作品的 规矩.toml 的格式（只管这部作品；全片通用的在 rules/通用.toml）；代码里每个 例外('规矩id', 值, {段|场, 原因}) 都在表里那条规矩的 例外 里登记过、值对得上，
 // 表里登记的例外代码里也都找得到（段或场还没搬进来的算待迁移）；默认值的落点（<路径> [符号、符号…]）文件和符号都在。
 // 落点以「旧:」或「待迁移:」开头的是还在旧项目里的，算待迁移，搬完改成新路径。
 // 出处里 M/<名>.md 指的记忆（根是配置 记忆，ANIM_MEMORY）要在；记忆仓库不在本机（别的机器、公开版）就跳过，不算违规。
+// 作品没有 规矩.toml 也没用 例外 就跳过；别的作品目录里的 例外 不归这里查。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 读内容 } from '../内容.ts';
@@ -9,7 +10,7 @@ import { 配置 } from '../../环境/配置.ts';
 import { 代码后缀, 是渲染代码, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 声明的名字, 字面值, 属性名, 行号, 解析, 遍历, ts } from '../语法.ts';
 
-export const 规矩表路径 = '作品/应力转动/规矩.toml';
+export const 规矩表路径 = (c: 检查上下文) => c.作品路径('规矩.toml');
 const 落点顶层 = ['engine', '库', '作品', 'pipeline', 'sourcing', 'py', 'assets', 'rules', 'docs', 'verify'];
 
 type 例外条目 = { 段?: string; 场?: string; 值?: unknown; 原因?: string; 出处?: string };
@@ -36,7 +37,7 @@ const 指向例外模块 = (文件: string, spec: ts.Expression | undefined) => 
  */
 export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[] => {
   const r: 代码例外[] = [];
-  for (const p of c.文件()) {
+  for (const p of c.本作品文件()) {
     if (!是渲染代码(p) || !代码后缀.test(p) || p === `${例外模块}.ts`) continue;
     const 源 = c.读(p);
     if (!源.includes('例外')) continue;
@@ -89,10 +90,10 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
       }
       const 在 = /^作品\/[^/]+\/(段|场)\/([^/]+)\//.exec(p);
       if (!在) {
-        if (!R2暂放.test(p)) 报.错('例外 只写在 作品/应力转动/段/ 或 作品/应力转动/场/ 里（共用代码不为某一段开口子）', p, 行);
+        if (!R2暂放.test(p)) 报.错(`例外 只写在 ${c.作品路径('段/')} 或 ${c.作品路径('场/')} 里（共用代码不为某一段开口子）`, p, 行);
       }
-      else if (在[1] === '段' && (段数组 || 依据.段 !== 在[2])) 报.错(`作品/应力转动/段/${在[2]}/ 里的例外要写 段: '${在[2]}'`, p, 行);
-      else if (在[1] === '场' && typeof 依据.场 === 'string' && 依据.场 !== 在[2]) 报.错(`作品/应力转动/场/${在[2]}/ 里的例外写的是 场: '${依据.场}'`, p, 行);
+      else if (在[1] === '段' && (段数组 || 依据.段 !== 在[2])) 报.错(`${c.作品路径(`段/${在[2]}`)}/ 里的例外要写 段: '${在[2]}'`, p, 行);
+      else if (在[1] === '场' && typeof 依据.场 === 'string' && 依据.场 !== 在[2]) 报.错(`${c.作品路径(`场/${在[2]}`)}/ 里的例外写的是 场: '${依据.场}'`, p, 行);
       if (段们) for (const 段 of 段们) r.push({ 规矩, 段, 值: 字面值(b), 文件: p, 行 });
       else r.push({ 规矩, 场: 依据.场 as string, 值: 字面值(b), 文件: p, 行 });
     });
@@ -115,6 +116,7 @@ export const 记忆引用 = (s: string): { 路径: string; 行?: number }[] =>
 
 /** 出处里 M/ 引用的记忆都在、带行号的没超出文件 */
 const 查记忆引用 = (c: 检查上下文, 报: 报告, 引用们: { 规矩: string; 出处: string }[]) => {
+  const 规矩表 = 规矩表路径(c);
   const 全部 = 引用们.flatMap((x) => 记忆引用(x.出处).map((m) => ({ ...m, 规矩: x.规矩 })));
   if (!全部.length) return;
   const 根 = c.记忆根 ?? 配置('记忆');
@@ -122,8 +124,8 @@ const 查记忆引用 = (c: 检查上下文, 报: 报告, 引用们: { 规矩: s
   for (const m of 全部) {
     const f = path.resolve(根, ...m.路径.split('/'));
     const 名 = `规矩「${m.规矩}」的出处 M/${m.路径}`;
-    if (!fs.existsSync(f) || !fs.statSync(f).isFile()) 报.错(`${名} 在记忆目录里找不到（记忆删了、改名或合并了就改出处）`, 规矩表路径);
-    else if (m.行 !== undefined && fs.readFileSync(f, 'utf8').split('\n').length < m.行) 报.错(`${名}:${m.行} 超出文件行数`, 规矩表路径);
+    if (!fs.existsSync(f) || !fs.statSync(f).isFile()) 报.错(`${名} 在记忆目录里找不到（记忆删了、改名或合并了就改出处）`, 规矩表);
+    else if (m.行 !== undefined && fs.readFileSync(f, 'utf8').split('\n').length < m.行) 报.错(`${名}:${m.行} 超出文件行数`, 规矩表);
   }
 };
 
@@ -135,14 +137,19 @@ const 有符号 = (c: 检查上下文, 路径: string, 符号: string) => {
 };
 
 export const 规矩 = async (c: 检查上下文, 报: 报告) => {
-  if (!c.存在(规矩表路径)) return 报.错(`没有 ${规矩表路径}`);
+  const 位 = 规矩表路径(c);
+  if (!c.存在(位)) {
+    const 代码 = 找代码例外(c, 报);
+    for (const x of 代码) 报.错(`例外用的规矩「${x.规矩}」，这部作品却没有 ${位}`, x.文件, x.行);
+    if (!代码.length) 报.跳过.push(`没有 ${位}，代码里也没有 例外`);
+    return;
+  }
   let doc: Record<string, unknown>;
   try {
-    doc = c.读toml(规矩表路径)!;
+    doc = c.读toml(位)!;
   } catch (e) {
-    return 报.错(`TOML 解析失败：${(e as Error).message.split('\n')[0]}`, 规矩表路径);
+    return 报.错(`TOML 解析失败：${(e as Error).message.split('\n')[0]}`, 位);
   }
-  const 位 = 规矩表路径;
   const 表 = new Map<string, 例外条目[]>();
   const 出处们: { 规矩: string; 出处: string }[] = [];
   for (const r of (doc['规矩'] ?? []) as 规矩条目[]) {
@@ -192,11 +199,11 @@ export const 规矩 = async (c: 检查上下文, 报: 报告) => {
     代码键.set(k, x);
     const 登记 = 表.get(x.规矩);
     if (!登记) {
-      报.错(`例外用的规矩「${x.规矩}」不在 ${规矩表路径} 里`, x.文件, x.行);
+      报.错(`例外用的规矩「${x.规矩}」不在 ${位} 里`, x.文件, x.行);
       continue;
     }
     const 条 = 登记.find((y) => 键(x.规矩, y) === k);
-    if (!条) 报.错(`规矩「${x.规矩}」对 ${对象(x)} 的例外没在 ${规矩表路径} 登记（例外列表里加一条，写值、原因、出处）`, x.文件, x.行);
+    if (!条) 报.错(`规矩「${x.规矩}」对 ${对象(x)} 的例外没在 ${位} 登记（例外列表里加一条，写值、原因、出处）`, x.文件, x.行);
     else if (['number', 'string', 'boolean'].includes(typeof x.值) && typeof 条.值 === typeof x.值 && 条.值 !== x.值) {
       报.错(`规矩「${x.规矩}」对 ${对象(x)} 的例外：代码里的值是 ${JSON.stringify(x.值)}，表里登记的是 ${JSON.stringify(条.值)}`, x.文件, x.行);
     }
@@ -209,7 +216,7 @@ export const 规矩 = async (c: 检查上下文, 报: 报告) => {
     for (const x of 例外们) {
       if ((typeof x.段 === 'string') === (typeof x.场 === 'string')) continue;
       if (代码键.has(键(id, x))) continue;
-      const 搬了 = x.段 !== undefined ? c.存在(`作品/应力转动/段/${x.段}`) : c.存在(`作品/应力转动/场/${x.场}`) || 场们.has(x.场!);
+      const 搬了 = x.段 !== undefined ? c.存在(c.作品路径(`段/${x.段}`)) : c.存在(c.作品路径(`场/${x.场}`)) || 场们.has(x.场!);
       if (搬了) 报.错(`规矩「${id}」登记了对 ${对象(x)} 的例外，代码里却没有 例外('${id}', …, { ${x.段 !== undefined ? '段' : '场'}: '${x.段 ?? x.场}', … })`, 位);
       else 报.待(`规矩「${id}」对 ${对象(x)} 的例外（${对象(x)} 还没搬）`, 位);
     }

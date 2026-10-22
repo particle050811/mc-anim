@@ -2,7 +2,7 @@
 // 第一个 import 注册 @engine/、@库/ 的解析钩子（见 环境/别名钩子.ts），之后 import() 进来的作品文件才认得这两个前缀。
 import '../环境/别名注册.ts';
 import { 用法错误 } from './参数.ts';
-import { 运行记录 } from '../运行记录/记录.ts';
+import { 运行记录, utc时间 } from '../运行记录/记录.ts';
 import type { 命令 } from './命令.ts';
 import { 环境命令 } from '../环境/命令.ts';
 import { 资产命令 } from '../资产/命令.ts';
@@ -14,7 +14,7 @@ import { 检查命令 } from '../检查/命令.ts';
 import { 验收命令 } from '../验收/命令.ts';
 import { 剪映命令 } from '../适配器/剪映/命令.ts';
 import { 取材命令 } from '../取材/命令.ts';
-import { 取作品参数, 当前作品, 指定作品 } from '../环境/作品.ts';
+import { 取作品参数, 当前作品, 指定作品, 选作品错误 } from '../环境/作品.ts';
 
 const 命令表: Record<string, 命令> = { ...环境命令, ...资产命令, ...渲染命令, ...指纹命令, ...合成命令, ...预览命令, ...检查命令, ...验收命令, ...剪映命令, ...取材命令 };
 
@@ -50,7 +50,11 @@ const main = async (argv: string[]): Promise<number> => {
   try {
     code = (await c.跑(args, 记录)) ?? 0;
   } catch (e) {
-    if (e instanceof 用法错误) {
+    if (e instanceof 选作品错误) {
+      console.error(e.message);
+      记录.事件.push({ 时间: utc时间(), 级别: '错误', 文本: e.message }); // 上面已打过，不经 记录.记 再打一遍
+      code = 2;
+    } else if (e instanceof 用法错误) {
       console.error(`${e.message}\n用法：anim ${c.用法}`);
       code = 2;
     } else {
