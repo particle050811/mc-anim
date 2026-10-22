@@ -68,7 +68,7 @@ def measure_anchor_offset(mix: np.ndarray, dialogue: np.ndarray, start_frame: fl
 
 
 # ---------- 字幕 ----------
-# 样式照 world/界面/字幕.tsx：1 个界面像素 = 画面高 / 90（1440p 16 像素）；字 8 个界面像素高、框四边各多 1 个、白字、黑底不透明度 0.5；
+# 样式照 pipeline/合成/字幕卡.ts：1 个界面像素 = 画面高 / 90（1440p 16 像素）；字 8 个界面像素高、框四边各多 1 个、白字、黑底不透明度 0.5；
 # 下方：框底离画面底 6 个界面像素；思索上：框底在思索按钮上沿（思索界面 240 高里的 240 − 54）以上 1 个界面像素
 def subtitle_style(position: str, height: int = HEIGHT) -> dict:
     ui_pixel = height / 90
