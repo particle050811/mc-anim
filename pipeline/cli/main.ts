@@ -14,16 +14,27 @@ import { 检查命令 } from '../检查/命令.ts';
 import { 验收命令 } from '../验收/命令.ts';
 import { 剪映命令 } from '../适配器/剪映/命令.ts';
 import { 取材命令 } from '../取材/命令.ts';
+import { 取作品参数, 当前作品, 指定作品 } from '../环境/作品.ts';
 
 const 命令表: Record<string, 命令> = { ...环境命令, ...资产命令, ...渲染命令, ...指纹命令, ...合成命令, ...预览命令, ...检查命令, ...验收命令, ...剪映命令, ...取材命令 };
 
 const 帮助 = () => {
-  console.log('用法：anim <命令> [参数]\n');
+  console.log('用法：anim [--作品 <名>] <命令> [参数]\n');
   for (const c of Object.values(命令表)) console.log(`  anim ${c.用法}\n      ${c.说明}`);
 };
 
 const main = async (argv: string[]): Promise<number> => {
-  const [名, ...args] = argv;
+  // --作品 对所有命令都有效，这里统一取走（选作品的顺序见 环境/作品.ts）
+  let 拆: ReturnType<typeof 取作品参数>;
+  try {
+    拆 = 取作品参数(argv);
+    指定作品(拆.作品);
+    if (拆.作品) 当前作品();
+  } catch (e) {
+    console.error((e as Error).message);
+    return 2;
+  }
+  const [名, ...args] = 拆.其余;
   if (!名 || 名 === 'help' || 名 === '--help' || 名 === '-h') {
     帮助();
     return 名 ? 0 : 1;

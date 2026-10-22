@@ -9,10 +9,11 @@ import path from 'node:path';
 import { 交付根, 配置, isMac } from '../环境/配置.ts';
 import { 提交状态, 相对代码根 } from '../环境/路径.ts';
 import { 低优先级, 跑, 跑出, 试跑 } from '../环境/子进程.ts';
-import { 叠层目录, 数据路径 } from '../环境/配置.ts';
+import { 叠层目录, 数据路径, 相对数据根 } from '../环境/配置.ts';
+import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import { 全部段, type 段信息 } from '../清单/清单.ts';
-import { 读资产锁, 解析资产 } from '../资产/资产锁.ts';
+import { 读作品资产锁, 解析资产 } from '../资产/资产锁.ts';
 import { 叠层路径, 母版路径, 历史指纹, 原子写 } from '../渲/母版.ts';
 import { 叠层渲染参数, 渲染参数 } from '../渲/设置.ts';
 import { 渲染叠层, 渲染母版 } from '../渲/渲.ts';
@@ -173,7 +174,7 @@ export const 合成成片 = async (
   const 接缝们 = 查接缝(截们, 每帧样本, opts.记录);
 
   // 字幕：段.ts 的台词 cue → 落点 → 排时间；不叠字幕时照样排、出表和 SRT
-  const 锁 = 读资产锁();
+  const 锁 = 读作品资产锁(作品根());
   const 读声音缓存 = new Map<string, Float32Array>();
   const 读声音 = (f: string) => 读声音缓存.get(f) ?? 读声音缓存.set(f, 读单声道(f)).get(f)!;
   const 有台词 = 截们.some((c) => c.段.段.声音?.some((x) => x.台词 !== undefined));
@@ -294,6 +295,7 @@ export const 合成成片 = async (
     opts.记录.产物.push(出);
   }
   const manifest = {
+    作品: 作品名(),
     名: opts.名,
     范围: opts.范围,
     级别: opts.级别,
@@ -309,8 +311,9 @@ export const 合成成片 = async (
     时长秒: 时长秒(成片),
     编码: { 视频: 视频编码, 音频: ['-c:a', 'aac', '-b:a', '192k'] },
     响度: { 原LUFS: 原.lufs, 增益dB: Number(增益.toFixed(2)), 限幅dBFS: Number((真峰值上限 - 余量).toFixed(2)), 成片LUFS: 终.lufs, 真峰值dBTP: 终.真峰值 },
-    段: 截们.map((c) => ({ 编号: c.段.编号, 键: c.段.键, 段文件: 相对代码根(c.段.段文件), 指纹: c.指纹, 过期: c.过期, 母版: c.母版, 帧数: c.帧数, 全片起帧: c.全片起帧 })),
-    叠层: 叠层们.map((l) => ({ 键: l.键, 段: l.截.段.键, 指纹: l.指纹, 过期: l.过期, 文件: l.文件, 全片起帧: l.截.全片起帧 })),
+    // 母版、叠层写相对数据根；段 仍记短名（剪辑微调/读取调整.py 只认短名）
+    段: 截们.map((c) => ({ 编号: c.段.编号, 键: c.段.键, 段文件: 相对代码根(c.段.段文件), 指纹: c.指纹, 过期: c.过期, 母版: 相对数据根(c.母版), 帧数: c.帧数, 全片起帧: c.全片起帧 })),
+    叠层: 叠层们.map((l) => ({ 键: l.键, 段: l.截.段.键, 指纹: l.指纹, 过期: l.过期, 文件: 相对数据根(l.文件), 全片起帧: l.截.全片起帧 })),
     字幕: { 句数: 字幕.句们.length, 屏数: 字幕.屏们.length, 叠了: !opts.不叠字幕 && 字幕.屏们.length > 0, 开口最大差帧: 开口最大差 },
     同步表: 同步,
     接缝: { 处数: 接缝们.length, 首帧重复: 接缝们.filter((x) => x.判断 === '首帧重复').map((x) => `${x.前} → ${x.后}`) },

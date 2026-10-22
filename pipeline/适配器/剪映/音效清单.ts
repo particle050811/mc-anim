@@ -8,7 +8,8 @@ import { cue增益, type 段定义 } from '../../../content/段定义.ts';
 import { 数据根 } from '../../环境/配置.ts';
 import { 全部段, type 段信息 } from '../../清单/清单.ts';
 import { 时长秒 } from '../../渲/探测.ts';
-import { 读资产锁, 解析资产 } from '../../资产/资产锁.ts';
+import { 读作品资产锁, 解析资产 } from '../../资产/资产锁.ts';
+import { 作品根 } from '../../环境/作品.ts';
 import { 上一段于, 台词头们, 开口表, 读台词表 } from '../../合成/台词落点.ts';
 
 export type 清单条 = { 名: string; 档?: string; 资产?: string; 文件: string; 起帧: number; 帧数: number; 入点秒: number; 速率: number; 循环: boolean; 增益: number[] };
@@ -60,7 +61,7 @@ export const 段的清单 = (
 
 /** 写 <目录>/{音效清单,配乐清单,台词清单}/<段键>.json 和 <目录>/段长.json；返回各段的声数 */
 export const 写清单 = async (段们: 段信息[], 目录: string) => {
-  const 锁 = 读资产锁();
+  const 锁 = 读作品资产锁(作品根());
   const 表 = 读台词表();
   const 台词配音 = new Map(表.flatMap((t) => (t.配音 ? [[t.id, t.配音] as const] : [])));
   const 开口 = 开口表(表);

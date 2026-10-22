@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { decode } from 'fast-png';
-import { 数据路径 } from '../环境/配置.ts';
+import { 基线根 } from '../环境/配置.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 扫声音, type 参照 } from './验收.ts';
 
@@ -19,7 +19,7 @@ export const 旧段号 = (段键: string, 根 = 代码根()): string | null => {
   return null;
 };
 
-export const 基线目录 = (旧号: string) => 数据路径('基线', 旧号);
+export const 基线目录 = (旧号: string) => path.join(基线根(), 旧号);
 
 /** PNG（rgb 或 rgba，8 位）→ rgb24 */
 const 读png = (file: string) => {

@@ -4,7 +4,8 @@
 // 台词落点、字幕表、SRT、音效清单有一条对不上就退出码 1。同步表旧的只有第 6 章、是从旧代码常数扒的，只按 ±1 帧配对列出差异，不拦。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 数据路径 } from '../../环境/配置.ts';
+import { 基线根, 数据路径 } from '../../环境/配置.ts';
+import { 旧布局作品, 指定作品 } from '../../环境/作品.ts';
 import { 代码根 } from '../../环境/路径.ts';
 import { 全部段 } from '../../清单/清单.ts';
 import { 读资产表 } from '../../资产/资产表.ts';
@@ -15,8 +16,10 @@ import { 排字幕, 字幕表tsv, srt } from '../../合成/字幕.ts';
 import { 上一段于, 同步表行, 开口表, 算台词落点, 读台词表, 读音效起音 } from '../../合成/台词落点.ts';
 import { 段的清单, type 清单条 } from '../剪映/音效清单.ts';
 
-const 旧表 = 数据路径('基线', '_表');
-const 出 = 数据路径('基线', '_声音对照');
+// 旧项目只对应 应力转动，段也从这部作品取
+指定作品(旧布局作品);
+const 旧表 = path.join(基线根(旧布局作品), '_表');
+const 出 = path.join(基线根(旧布局作品), '_声音对照');
 const 读 = (p: string) => fs.readFileSync(path.join(旧表, p), 'utf8');
 const 读json = <T>(p: string) => JSON.parse(读(p)) as T;
 

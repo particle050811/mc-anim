@@ -6,6 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import { 代码根, 主检出 } from './路径.ts';
+import { 作品名, 旧布局作品 } from './作品.ts';
 
 export const isMac = process.platform === 'darwin';
 export const isWindows = process.platform === 'win32';
@@ -28,6 +29,7 @@ const 旧项目目录名 = '机械动力应力转动-AI漫画';
 // 顺序有意义：后面的默认值可以用前面已经取到的值
 const 项表 = {
   数据根: { 变量: 'ANIM_DATA', 说明: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 'mc-anim-data') },
+  默认作品: { 变量: 'ANIM_WORK', 说明: '没给 --作品、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', 是路径: false, 默认: () => '' },
   旧项目: { 变量: 'ANIM_LEGACY', 说明: '旧项目根（迁移期：旧项目执行器、基线、锁目录、游戏环境）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 旧项目目录名) },
   游戏: { 变量: 'ANIM_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）；迁移期是旧项目的 game/', 是路径: true, 默认: (v) => path.join(v.旧项目!, 'game') },
   java_home: { 变量: 'ANIM_JAVA_HOME', 说明: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', 是路径: true, 默认: () => '' },
@@ -74,7 +76,10 @@ const 本地配置位置 = (): string | null => {
   return null;
 };
 
-let 缓存: { 值: Record<string, 配置值>; 本地文件: string | null } | undefined;
+let 缓存: { 值: Record<string, 配置值>; 本地文件: string | null; 作品路径: Record<string, string> } | undefined;
+
+/** [works] 表：私有作品名 → 目录。键是作品名（中文要加引号），相对路径相对这个 toml */
+const 作品路径键 = 'works';
 
 /** 读全部配置；env 给了就用它代替 process.env（测试用） */
 export const 读配置 = (env: NodeJS.ProcessEnv = process.env, 本地文件: string | null = 本地配置位置()) => {
@@ -86,6 +91,7 @@ export const 读配置 = (env: NodeJS.ProcessEnv = process.env, 本地文件: st
       throw new Error(`${本地文件} 解析失败：${(e as Error).message}`);
     }
     const 认识 = new Set(Object.values(项表).map((d) => toml键(d.变量)));
+    认识.add(作品路径键);
     const 不认识 = Object.keys(本地).filter((k) => !认识.has(k));
     if (不认识.length) throw new Error(`${本地文件} 里有不认识的项：${不认识.join('、')}（能写的见 anim.local.toml.example）`);
   }
@@ -109,26 +115,55 @@ export const 读配置 = (env: NodeJS.ProcessEnv = process.env, 本地文件: st
     已取[名] = v;
     值[名] = { 值: v, 来源: 从, 变量: 定义.变量, 键: toml键(定义.变量), 说明: 定义.说明 };
   }
-  return { 值, 本地文件 };
+  const 作品路径: Record<string, string> = {};
+  const 表 = 本地[作品路径键];
+  if (表 !== undefined) {
+    if (typeof 表 !== 'object' || Array.isArray(表) || 表 === null) throw new Error(`${本地文件} 的 ${作品路径键} 要写成表：[${作品路径键}] 下面 "名" = "目录"`);
+    for (const [名, dir] of Object.entries(表)) {
+      if (typeof dir !== 'string') throw new Error(`${本地文件} [${作品路径键}] 的「${名}」要是目录字符串`);
+      作品路径[名] = path.resolve(path.dirname(本地文件!), dir);
+    }
+  }
+  return { 值, 本地文件, 作品路径 };
 };
 
 const 全部 = () => (缓存 ??= 读配置());
 
 export const 配置 = (名: 配置键): string => 全部().值[名]!.值;
 export const 全部配置 = () => 全部();
+export const 作品路径表 = () => 全部().作品路径;
 
-// ---------- 数据根下的布局（方案「二、新项目总览」） ----------
+// ---------- 数据根下的布局（方案「二、新项目总览」）；按作品分：母版、叠层、交付、基线；共用：store、私有、terrain、cache/求解 ----------
 
 export const 数据根 = () => 配置('数据根');
 export const 数据路径 = (...段: string[]) => path.join(数据根(), ...段);
-export const 母版目录 = (段键: string) => 数据路径('cache', '母版', 段键);
+
+/**
+ * 按作品分的位置：<数据根>/<类…>/<作品>/<键…>。
+ * 过渡：迁移多作品.ts 跑之前，旧布局作品的东西还在不分作品的旧位置（<类…>/<键…>）；新位置没有、旧位置有就用旧的。迁移跑过以后删掉这段回落。
+ */
+const 按作品 = (类: string[], 作品: string, 键: string[]) => {
+  const 新 = 数据路径(...类, 作品, ...键);
+  if (作品 === 旧布局作品 && !fs.existsSync(新)) {
+    const 旧 = 数据路径(...类, ...键);
+    if (fs.existsSync(旧)) return 旧;
+  }
+  return 新;
+};
+export const 母版目录 = (段键: string, 作品 = 作品名()) => 按作品(['cache', '母版'], 作品, [段键]);
 export const 地形根 = () => 数据路径('terrain');
 export const 求解缓存目录 = () => 数据路径('cache', '求解');
 /** Remotion 的 public 目录：里面只放指向 terrain/、cache/求解/ 的链接（见 pipeline/渲/public目录.ts） */
 export const public目录 = () => 数据路径('run', 'public');
 /** 透明叠层的缓存：cache/叠层/<段键>-<名>/ */
-export const 叠层目录 = (叠层键: string) => 数据路径('cache', '叠层', 叠层键);
-export const 交付根 = () => 数据路径('交付');
+export const 叠层目录 = (叠层键: string, 作品 = 作品名()) => 按作品(['cache', '叠层'], 作品, [叠层键]);
+/** 交付/<作品>/，下面是 <UTC 月日-时分>-<名>/ */
+export const 交付根 = (作品 = 作品名()) => 按作品(['交付'], 作品, []);
+/** 旧项目对照的基线：基线/<作品>/（只有 应力转动 有） */
+export const 基线根 = (作品 = 作品名()) => 按作品(['基线'], 作品, []);
+/** manifest 里数据根下的路径写相对数据根（数据根挪了照样认）；读的时候两种都认 */
+export const 相对数据根 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
+export const 数据根下 = (p: string) => (path.isAbsolute(p) ? p : path.join(数据根(), ...p.split('/')));
 /** 剪映解密.cpp 编出来的程序（按平台分，第一次读回草稿时编） */
 export const 剪映解密程序 = () => 数据路径('cache', '剪映解密', `${process.platform}-${process.arch}`, '剪映解密');
 export const 运行目录 = () => 数据路径('run');
