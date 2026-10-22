@@ -10,3 +10,6 @@ __pycache__/
 /作品/*
 !/作品/应力转动/
 *.tsbuildinfo
+
+# image-flow 的 skill 是从 image-flow 仓库拷来的副本（rsync skills/image-flow/），不进本仓库
+/.claude/skills/image-flow/
