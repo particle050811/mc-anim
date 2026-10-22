@@ -1,0 +1,26 @@
+# 资产表：游戏里 mcai shoot 拍的对照截图，核对画面用，不进成片。人写；资产锁由 anim assets add 写。
+# 字段和取值见 assets/README.md。截图拍不出逐字节一样的第二张，来源都写手工，机位在取材配方里。
+
+[["资产"]]
+id = "截图/隐世之境/一楼机位"
+"类别" = "截图"
+"来源" = "手工:mcai shoot 拍取材客户端「隐世片场」存档（机位见 sourcing/extract.toml「隐世之境一楼网格」）"
+"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"可见性" = "私有"
+"说明" = "主楼一楼主厅：站在女仆南边 2 格的地毯上看她（眼高 1.62，视角 70），2560×1440；和 网格/隐世之境一楼 从同一机位画的比"
+
+[["资产"]]
+id = "截图/隐世之境/女仆参考"
+"类别" = "截图"
+"来源" = "手工:mcai shoot 拍取材客户端「隐世片场」存档（机位见 sourcing/extract.toml「隐世之境一楼网格」）"
+"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"可见性" = "私有"
+"说明" = "坐着的魔法酒狐右前方近景（视角 50），核身高、坐姿、帽檐；戴的是补上的原版头盔，魔女帽才显出来"
+
+[["资产"]]
+id = "截图/隐世之境/整体俯视"
+"类别" = "截图"
+"来源" = "手工:mcai shoot 拍取材客户端「隐世片场」存档（机位见 sourcing/extract.toml「隐世之境一楼网格」）"
+"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"可见性" = "私有"
+"说明" = "从东南方高处看整栋主楼（视角 70）"
