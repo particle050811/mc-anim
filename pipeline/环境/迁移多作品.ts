@@ -1,4 +1,4 @@
-// 数据根一次性迁移到按作品分的布局（重组方案 d 节）：cache/母版、cache/叠层、cache/核对、交付、基线 下的旧东西挪进 <类>/应力转动/，
+// 数据根一次性迁移到按作品分的布局（重组方案 d 节）：cache/母版、cache/叠层、交付、基线 下的旧东西挪进 <类>/应力转动/，
 // 改写 cache/接缝.json 的键、run/logs/耗时.tsv 的渲染标签、交付 manifest 的母版和叠层路径（改成相对数据根）、剪辑包/清单.json 的来源路径。
 // 用法：node pipeline/环境/迁移多作品.ts [--执行]；不加 --执行 只打印要做的事。要先把所有 worktree 合进 main 并删掉（旧代码会往旧位置重渲，缓存从此分叉）。
 // 过渲染闸拿锁再动；幂等：目标已有就跳过并报出来。改写前的文件和挪动日志存 迁移/多作品-<UTC>/。跑完删掉 配置.ts 的 按作品 回落和本文件。
@@ -99,8 +99,8 @@ const 迁移 = async () => {
   for (const 名 of 交付们) {
     const mf = path.join(交付根, 名, 'manifest.json');
     const m = JSON.parse(fs.readFileSync(mf, 'utf8')) as { 作品?: string; 段?: { 母版: string }[]; 叠层?: { 文件: string }[] };
-    if (m.作品) continue;
-    const 新 = { 作品, ...m, 段: m.段?.map((s) => ({ ...s, 母版: 新相对(s.母版) })), 叠层: m.叠层?.map((l) => ({ ...l, 文件: 新相对(l.文件) })) };
+    // 迁移前跑的 anim film 已记 作品 但路径还是旧布局，照样改写（新相对 幂等）
+    const 新 = { 作品: m.作品 ?? 作品, ...m, 段: m.段?.map((s) => ({ ...s, 母版: 新相对(s.母版) })), 叠层: m.叠层?.map((l) => ({ ...l, 文件: 新相对(l.文件) })) };
     写(mf, JSON.stringify(新, null, 2) + '\n');
     const 包 = path.join(交付根, 名, '剪辑包', '清单.json');
     if (fs.existsSync(包)) {
@@ -121,7 +121,7 @@ const 迁移 = async () => {
       if (JSON.stringify(改) !== JSON.stringify(原)) 写(包, JSON.stringify(改, null, 1));
     }
   }
-  for (const 类 of [['cache', '母版'], ['cache', '叠层'], ['cache', '核对'], ['交付'], ['基线']]) 挪(类);
+  for (const 类 of [['cache', '母版'], ['cache', '叠层'], ['交付'], ['基线']]) 挪(类);
   if (执行 && 日志.length) {
     fs.mkdirSync(备份目录, { recursive: true });
     fs.writeFileSync(path.join(备份目录, '迁移日志.txt'), 日志.join('\n') + '\n', 'utf8');
