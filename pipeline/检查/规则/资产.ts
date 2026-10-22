@@ -1,5 +1,6 @@
 // 资产：资产表字段齐全（许可是 SPDX 表达式）、资产表和资产锁一一对应、私有的进 私有/ 库；
-// 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本、取了地形包的段都声明了；公开构建（全部渲染代码）的闭包里没有私有资产。
+// 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁.json）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
+// 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本、取了地形包的段都声明了；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
 // --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -8,7 +9,7 @@ import { 读内容 } from '../内容.ts';
 import { 是渲染代码, type 依赖图, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 解析, 遍历, ts } from '../语法.ts';
 import { 台词表路径, 读台词表 } from './台词.ts';
-import { 读资产表, type 资产条目 } from '../../资产/资产表.ts';
+import { 合并资产表, 读资产表, type 侧, type 资产条目 } from '../../资产/资产表.ts';
 import { 字节路径, type 资产锁 } from '../../资产/资产锁.ts';
 import { 数据根 as 配置数据根 } from '../../环境/配置.ts';
 
@@ -128,20 +129,35 @@ const 字符串们 = (c: 检查上下文, p: string, 缓存: Map<string, Set<str
 type 地形表 = { 包?: Record<string, { 版本: string; 清单sha256?: string; 文件数?: number; 大小?: number; 许可?: string; 可见性?: string }> };
 
 export const 资产 = async (c: 检查上下文, 报: 报告) => {
-  const 表 = 读资产表(c.绝对('assets/registry'));
-  for (const q of 表.问题) 报.错(q, 'assets/registry');
-  const 锁 = (c.读json('assets/资产锁.json') ?? {}) as 资产锁;
-  const 登记 = 表.条目;
+  const 表目录: Record<侧, string> = { 共用: 'assets/registry', 作品: c.作品路径('资产表') };
+  const 锁文件: Record<侧, string> = { 共用: 'assets/资产锁.json', 作品: c.作品路径('资产锁.json') };
+  const 共用表 = 读资产表(c.绝对(表目录.共用));
+  const 作品表 = 读资产表(c.绝对(表目录.作品), '作品');
+  for (const q of 共用表.问题) 报.错(q, 表目录.共用);
+  for (const q of 作品表.问题) 报.错(q, 表目录.作品);
+  const 表位置 = (e: 资产条目) => `${表目录[e.侧]}/${e.表}`;
+  const { 条目: 登记, 重复 } = 合并资产表(共用表, 作品表);
+  for (const e of 重复) 报.错(`「${e.id}」在 ${表位置(共用表.条目.get(e.id)!)} 和 ${表位置(e)} 里都登记了（一个 id 只登记在一侧）`, 表位置(e));
+  const 两锁 = c.资产锁();
+  const 锁: 资产锁 = { ...两锁.作品, ...两锁.共用 };
+  const 两边都有 = new Set(Object.keys(两锁.作品).filter((id) => id in 两锁.共用));
+  for (const id of 两边都有) 报.错(`「${id}」在 ${锁文件.共用} 和 ${锁文件.作品} 里都有（一个 id 只写在登记它那一侧的锁里）`, 锁文件.作品);
 
   for (const e of 登记.values()) {
-    if (typeof e.许可 === 'string' && !SPDX合法(e.许可)) 报.错(`「${e.id}」的许可「${e.许可}」不是 SPDX 表达式（第三方照原协议，自制的 LicenseRef-用户保留，拿不准 LicenseRef-待定）`, `assets/registry/${e.表}`);
-    const l = 锁[e.id];
-    if (!l) 报.错(`「${e.id}」登记了但不在资产锁里（入库：anim assets add 或导入工具）`, `assets/registry/${e.表}`);
-    else if ((e.可见性 === '私有') !== (l.库 === '私有')) 报.错(`「${e.id}」可见性是 ${e.可见性}，资产锁里却在 ${l.库} 库（私有的只进 私有/，别的进 store/）`, 'assets/资产锁.json');
+    if (typeof e.许可 === 'string' && !SPDX合法(e.许可)) 报.错(`「${e.id}」的许可「${e.许可}」不是 SPDX 表达式（第三方照原协议，自制的 LicenseRef-用户保留，拿不准 LicenseRef-待定）`, 表位置(e));
+    const l = 两锁[e.侧][e.id];
+    if (!l) {
+      // 写错了一侧的，下面按锁报一次就够
+      if (!锁[e.id]) 报.错(`「${e.id}」登记了但不在资产锁里（入库：anim assets add 或导入工具）`, 表位置(e));
+    } else if ((e.可见性 === '私有') !== (l.库 === '私有')) 报.错(`「${e.id}」可见性是 ${e.可见性}，资产锁里却在 ${l.库} 库（私有的只进 私有/，别的进 store/）`, 锁文件[e.侧]);
   }
-  for (const [id, l] of Object.entries(锁)) {
-    if (!登记.has(id)) 报.错(`资产锁里的「${id}」没在资产表登记（资产锁是工具生成的，先登记再入库）`, 'assets/资产锁.json');
-    if (!/^[0-9a-f]{64}$/.test(l.sha256) || !Number.isInteger(l.大小) || !['store', '私有'].includes(l.库)) 报.错(`资产锁里「${id}」的 sha256、大小、库不完整`, 'assets/资产锁.json');
+  for (const s of ['共用', '作品'] as const) {
+    for (const [id, l] of Object.entries(两锁[s])) {
+      const e = 登记.get(id);
+      if (!e) 报.错(`资产锁里的「${id}」没在资产表登记（资产锁是工具生成的，先登记再入库）`, 锁文件[s]);
+      else if (e.侧 !== s && !两边都有.has(id)) 报.错(`「${id}」登记在 ${表位置(e)}，资产锁却写在 ${锁文件[s]}（anim assets add 写进登记它那一侧，重跑一次就挪过去）`, 锁文件[s]);
+      if (!/^[0-9a-f]{64}$/.test(l.sha256) || !Number.isInteger(l.大小) || !['store', '私有'].includes(l.库)) 报.错(`资产锁里「${id}」的 sha256、大小、库不完整`, 锁文件[s]);
+    }
   }
   const 待定 = [...登记.values()].filter((e) => e.许可 === 'LicenseRef-待定').length;
   if (待定) 报.信息.push(`${待定} 件许可待定（见 assets/待确认.md）`);
@@ -153,13 +169,15 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
     return e;
   };
 
-  // 代码里的 asset:
+  // 代码里的 asset:。私有作品不进公开构建，它自己目录里的不查「公开构建无私有资产」（0004 用户 10-22 定）；engine/、库/ 照查
   const 图 = await c.依赖图();
   if (图.错误.length) 报.错(`依赖图不全（打包失败 ${图.错误.length} 处，见 结构），打不进包的文件里引的 asset: 和私有资产没查到，修好再跑一遍`);
+  const 私有作品 = c.作品私有;
+  if (私有作品) 报.跳过.push(`${c.作品目录} 被 .gitignore 挡住、是私有作品，它目录里 import 私有资产不查（不进公开构建）`);
   for (const [文件, ids] of 图.资产) {
     for (const id of ids) {
       const e = 查(id, 'asset:', 文件);
-      if (e?.可见性 === '私有' && 是渲染代码(文件)) {
+      if (e?.可见性 === '私有' && 是渲染代码(文件) && !(私有作品 && 文件.startsWith(`${c.作品目录}/`))) {
         const 缓 = 私有待迁移(c.读(文件), id);
         if (缓) 报.待(`${文件} 还把私有资产 asset:${id} 打进包里（${缓}）`, 文件);
         else 报.错(`公开构建的闭包里不能有私有资产：${文件} import 了 asset:${id}（私有的走 cue，缺了按规矩降级或报错，不打进包）`, 文件);

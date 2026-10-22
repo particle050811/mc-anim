@@ -1,10 +1,12 @@
 // anim extract 的跑和查。每个条目在 <数据根>/run/extract/<名称>/ 里从空目录跑（前置条目先在同一个目录里跑），
 // 跑完按产物表逐个比资产锁：sha 一样就放进库（已有不动），不一样只报告、不入库、不改资产锁（锁里是用过的那一版，换版本要人定）。
+// 资产锁是共用锁并上所选作品（--作品）的锁，同 id 两边都有就报错；作品资产表登记的产物要带上那部作品跑。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 配置, 数据路径, isWindows } from '../环境/配置.ts';
 import { 跑, 跑出 } from '../环境/子进程.ts';
-import { 入库, 字节路径, 文件sha256, 读资产锁, type 资产锁 } from '../资产/资产锁.ts';
+import { 入库, 字节路径, 文件sha256, 读作品资产锁, type 资产锁 } from '../资产/资产锁.ts';
+import { 作品根 } from '../环境/作品.ts';
 import { mcai命令, mcai环境 } from './mcai.ts';
 import { 展开步骤, 展开产物, 脚本目录, type 取材条目, type 取材清单, type 展开环境, type 步骤 } from './清单.ts';
 
@@ -33,6 +35,8 @@ const 引 = (a: string) => (!a || /[\s'"$`\\|&;<>()*?[\]{}!#~]/.test(a) ? `'${a.
 export const 显示 = (argv: 步骤) => argv.map((a) => (typeof a === 'string' ? 引(a) : `$(${a.输出.map(引).join(' ')})`)).join(' ');
 
 export const 暂存目录 = (名称: string) => 数据路径('run', 'extract', 名称);
+
+const 取材锁 = () => 读作品资产锁(作品根());
 
 const 摆输入 = (e: 取材条目, 锁: 资产锁, dir: string) => {
   for (const [id, f] of Object.entries(e.输入)) {
@@ -66,7 +70,7 @@ export const 跑步骤 = async (q: 取材清单, e: 取材条目, dir: string, �
   if (!只打印) {
     const 缺 = e.需要.filter((i) => !fs.existsSync(jar路径(q, i)));
     if (缺.length) throw new Error(`「${e.名称}」缺 jar：${缺.map((i) => `${i}（${jar路径(q, i)}）`).join('、')}`);
-    const 锁 = 读资产锁();
+    const 锁 = 取材锁();
     摆输入(e, 锁, dir);
     // 脚本照旧项目写的，输出目录默认已经在（旧项目里产物就放在那）：先把产物所在的目录建好
     for (const [, f] of 展开产物(e.产物, 锁).对) fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
@@ -113,7 +117,7 @@ const 列文件 = (dir: string): string[] => {
 };
 
 /** 按条目（含前置）的产物表核对 dir 里的文件，sha 一样的入库 */
-export const 核对产物 = (q: 取材清单, es: 取材条目[], dir: string, 锁: 资产锁 = 读资产锁(), 入: boolean = true): 核对结果 => {
+export const 核对产物 = (q: 取材清单, es: 取材条目[], dir: string, 锁: 资产锁 = 取材锁(), 入: boolean = true): 核对结果 => {
   const r: 核对结果 = { 一致: [], 入库: [], 不一致: [], 缺文件: [], 未登记: [], 空模式: [] };
   const 用到 = new Set<string>();
   const 收 = (e: 取材条目, 见过: Set<string>) => {
@@ -166,7 +170,7 @@ const 找程序 = (名: string): boolean => {
 };
 
 /** --检查：jar、程序、脚本、产物和输入的字节；返回问题列表和待迁移的条目 */
-export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁: 资产锁 = 读资产锁()) => {
+export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁: 资产锁 = 取材锁()) => {
   const 问题: string[] = [];
   const 待迁移: string[] = [];
   for (const [g, ms] of Object.entries(q.组)) 问题.push(...ms.filter((m) => !q.条目.has(m)).map((m) => `组「${g}」里的「${m}」不是条目`));

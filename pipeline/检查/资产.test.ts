@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { 基础, 跑, 造仓库 } from './测试夹具.ts';
 import { SPDX合法, 包清单, 通配 } from './规则/资产.ts';
@@ -143,5 +144,70 @@ describe('资产', () => {
     expect(通配('模型/李樱-*').test('模型/李樱-手/左')).toBe(true);
     expect(通配('贴图/?').test('贴图/甲')).toBe(true);
     expect(通配('贴图/?').test('贴图/甲乙')).toBe(false);
+  });
+});
+
+/** 第二部作品 示例：一段 1-标题，画面 import 什么由参数定 */
+const 示例 = (...导入: string[]) => ({
+  '作品/示例/清单.ts': "export const 清单 = [{ 键: '1-标题', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",
+  '作品/示例/段/1-标题/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-片头', 帧数: 24, fps: 24, 宽: 640, 高: 360, 地形: [] });\n",
+  '作品/示例/段/1-标题/画面.tsx': `${导入.map((id, i) => `import a${i} from 'asset:${id}';`).join('\n')}\nexport default () => <div>{${导入.map((_, i) => `a${i}`).join(' + ') || "''"}}</div>;\n`,
+});
+
+describe('作品资产表', () => {
+  it('共用表锁并上作品的 资产表/、资产锁.json：作品自己的 id 引得到，别的作品看不到它', async () => {
+    const 文件 = {
+      ...示例('贴图/甲', '配乐/曲'),
+      '作品/示例/资产表/配乐.toml': 表(条('配乐/曲')),
+      '作品/示例/资产锁.json': JSON.stringify({ '配乐/曲': 锁条('f'.repeat(64)) }),
+    };
+    expect((await 跑('资产', 造仓库(基础(), 文件), { 作品: '示例' })).违规).toEqual([]);
+    // 查 应力转动 时不读 示例 的表和锁：示例 引的 配乐/曲 不归它管，示例 表里的毛病也不报
+    const 坏表 = { ...文件, '作品/示例/资产表/配乐.toml': '[["资产"]]\nid = "配乐/曲"\n' };
+    expect((await 跑('资产', 造仓库(基础(), 坏表), { 作品: '应力转动' })).违规).toEqual([]);
+  });
+
+  it('两侧都登记、两份锁都有、锁写错一侧、作品锁里没登记的、作品表缺字段都拦，报在作品那份文件上', async () => {
+    const 根 = 造仓库(基础(), 示例('贴图/甲'), {
+      '作品/示例/资产表/配乐.toml': [表(条('贴图/甲'), 条('配乐/错侧'), 条('配乐/没入库')), '[["资产"]]\nid = "配乐/缺字段"'].join('\n\n'),
+      'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '配乐/错侧': 锁条('b'.repeat(64)) }),
+      '作品/示例/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '配乐/孤': 锁条('c'.repeat(64)) }),
+    });
+    const v = (await 跑('资产', 根, { 作品: '示例' })).违规;
+    expect(v).toEqual(
+      expect.arrayContaining([
+        '作品/示例/资产表 配乐.toml 的「配乐/缺字段」：缺 类别',
+        '作品/示例/资产表/配乐.toml 「贴图/甲」在 assets/registry/贴图.toml 和 作品/示例/资产表/配乐.toml 里都登记了（一个 id 只登记在一侧）',
+        '作品/示例/资产锁.json 「贴图/甲」在 assets/资产锁.json 和 作品/示例/资产锁.json 里都有（一个 id 只写在登记它那一侧的锁里）',
+        '作品/示例/资产表/配乐.toml 「配乐/没入库」登记了但不在资产锁里（入库：anim assets add 或导入工具）',
+        'assets/资产锁.json 「配乐/错侧」登记在 作品/示例/资产表/配乐.toml，资产锁却写在 assets/资产锁.json（anim assets add 写进登记它那一侧，重跑一次就挪过去）',
+        '作品/示例/资产锁.json 资产锁里的「配乐/孤」没在资产表登记（资产锁是工具生成的，先登记再入库）',
+      ]),
+    );
+    // 写错一侧的只报一次（不再另报「登记了但不在资产锁里」）
+    expect(v.filter((x) => x.includes('配乐/错侧'))).toHaveLength(1);
+  });
+
+  it('私有作品（被 .gitignore 挡住、没放行）目录里 import 私有资产不报；engine/、库/ 照拦；放行了的作品照拦', async () => {
+    const 私有 = {
+      ...示例('配乐/私曲', '配音/甲'),
+      '作品/示例/资产表/配乐.toml': 表(条('配乐/私曲', '私有', 'LicenseRef-用户保留')),
+      '作品/示例/资产锁.json': JSON.stringify({ '配乐/私曲': 锁条('d'.repeat(64), '私有') }),
+      'assets/registry/配音.toml': 表(条('配音/甲', '私有', 'LicenseRef-用户保留')),
+      'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '配音/甲': 锁条('c'.repeat(64), '私有') }),
+      '库/界面/某.tsx': "import 私 from 'asset:配音/甲';\nexport const 某 = () => <div>{私}</div>;\n",
+    };
+    const 带git = (gitignore: string) => {
+      const 根 = 造仓库(基础(), 私有, { '.gitignore': gitignore });
+      execFileSync('git', ['-C', 根, 'init', '-q'], { stdio: 'ignore' });
+      return 根;
+    };
+    const 挡住 = await 跑('资产', 带git('/作品/*\n!/作品/应力转动/\n'), { 作品: '示例' });
+    expect(挡住.违规).toEqual(['库/界面/某.tsx 公开构建的闭包里不能有私有资产：库/界面/某.tsx import 了 asset:配音/甲（私有的走 cue，缺了按规矩降级或报错，不打进包）']);
+    expect(挡住.报.跳过.join()).toMatch(/作品\/示例 被 .gitignore 挡住、是私有作品/);
+
+    const 放行 = (await 跑('资产', 带git('/作品/*\n!/作品/应力转动/\n!/作品/示例/\n'), { 作品: '示例' })).违规.join('\n');
+    expect(放行).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配乐\/私曲/);
+    expect(放行).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配音\/甲/);
   });
 });

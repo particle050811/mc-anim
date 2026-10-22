@@ -14,7 +14,7 @@ export const esbuild资产插件 = (锁: 资产锁, 记录: 资产记录): Plugi
     build.onResolve({ filter: /^asset:/ }, (args) => {
       const id = args.path.slice('asset:'.length);
       const 条目 = 锁[id];
-      if (!条目) return { errors: [{ text: new 缺资产(`资产锁里没有「${id}」：先在 assets/registry/<类>.toml 登记，再跑 anim assets add ${id} <文件> 入库、写资产锁`).message }] };
+      if (!条目) return { errors: [{ text: new 缺资产(`资产锁里没有「${id}」：先在 assets/registry/<类>.toml（只有一部作品用的在 <作品根>/资产表/）登记，再跑 anim assets add ${id} <文件> 入库、写资产锁`).message }] };
       记录.set(id, 条目.sha256);
       return { path: id, namespace: 'anim-资产' };
     });

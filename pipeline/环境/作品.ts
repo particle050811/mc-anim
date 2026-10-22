@@ -1,4 +1,4 @@
-// 作品：有哪几部、这次用哪部。作品是 <代码根>/作品/<名>/ 下有 清单.ts 的目录，外加 anim.local.toml [works] 登记的外部目录（私有作品，见 docs/决策/0004-多作品.md）。
+// 作品：有哪几部、这次用哪部。作品是 <代码根>/作品/<名>/ 下有 清单.ts 的目录，外加 anim.local.toml [works] 登记的外部目录（见 docs/决策/0004-多作品.md）。
 // 选哪部：--作品（cli/main.ts 解析后调 指定作品）> 当前目录在哪部作品里 > anim.local.toml 的 work（ANIM_WORK）> 只有一部就用它；都定不了就报错列出作品名。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,7 +19,7 @@ const 查名 = (名: string, 来自: string) => {
   if (!名 || /[\\/:*?"<>|]/.test(名) || 名.startsWith('.')) throw new 选作品错误(`作品名「${名}」不合规（${来自}）：不能空、不能以 . 开头、不能有 / \\ : * ? " < > |`);
 };
 
-/** 全部作品：名 → 根（绝对路径）。作品/ 下的和 [works] 登记的同名时，以登记的为准（私有作品放在 作品/<名>/ 也登记，见方案批评补充二-2） */
+/** 全部作品：名 → 根（绝对路径）。作品/ 下的和 [works] 登记的同名时，以登记的为准（作品/<名>/ 下的私有作品不用登记，见 0004「私有作品」） */
 export const 作品们 = (根 = 代码根(), 登记 = 作品路径表()): Map<string, string> => {
   const 们 = new Map<string, string>();
   const 加 = (名: string, dir: string, 来自: string) => {
