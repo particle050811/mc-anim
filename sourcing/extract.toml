@@ -772,6 +772,40 @@
 "网格/古城西/头" = "src/模型/场景/古城西.网格.json"
 "网格/古城西/顶点" = "src/模型/场景/古城西.网格.bin"
 
+# 隐世之境主楼一楼：车万女仆附属 maidspell 1.9.3（MIT）的结构 hidden_retreat_1。取材客户端没装 maidspell，结构文件用数据包带进片场存档、
+# 在主世界高空手放（世界 = 模板 + (0,200,0)），没注册的铁魔法、农夫乐事方块读成空气。步骤要先开着这个存档：anim mcai game start world=隐世片场。
+# 存档已经放好主楼，别再 place（女仆、展示框这些实体会多一份）。存档丢了照这样重建，再跑步骤：
+#   1. anim mcai game copyworld name=隐世片场 from=<游戏环境>/实例/取材客户端/.minecraft/saves/片场
+#   2. 存档里建数据包 datapacks/hidden_retreat_ref/：pack.mcmeta 的 pack_format 15；结构文件取自 maidspell 1.9.3 的 -all.jar（sha256 a8d3f9ab68b8ddd9205baf16a1b19ac17fc91f740aab7325e73b9cec8fda2e90，
+#      https://cdn.modrinth.com/data/QHB4kBBS/versions/tYyJS9hO/touhou_little_maid_spell-1.9.3-forge%2Bmc1.20.1-all.jar）里层 META-INF/maidspell/maidspell-mod.jar 的
+#      data/touhou_little_maid_spell/structures/hidden_retreat/hidden_retreat_1.nbt（sha256 4cf790bed1ece61bded42cb813856706acbf512345e9aa94938cd53707817eb9），放成 data/mcanim/structures/hidden_retreat_1.nbt
+#   3. 开游戏，cam 到下面第一步的机位等区块加载，cmd execute in minecraft:overworld if blocks 0 200 0 20 247 25 0 270 0 all 核放置区全是空气
+#   4. cmd time set 2000、freeze；cmd execute in minecraft:overworld run place template mcanim:hidden_retreat_1 0 200 0；
+#      cmd execute in minecraft:overworld run setblock 20 200 25 air 清掉模板里唯一的拼图方块
+#   5. 女仆是模板自己生成的。她那顶铁魔法头盔读不进来，补一顶原版的魔女帽才显出来（geckolib 女仆不画护甲）：cmd execute in minecraft:overworld run
+#      item replace entity @e[type=touhou_little_maid:maid,limit=1] armor.head with minecraft:netherite_helmet；冻结时装备不同步给客户端，要 unfreeze 一两秒再 freeze
+[["取材"]]
+"名称" = "隐世之境一楼网格"
+"需要" = []
+"要开游戏" = true
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」，截图私有
+"步骤" = [
+  ["mcai", "cam", "pos=10.5,230,45", "look=10.5,205,13", "fov=70", "dim=minecraft:overworld"],
+  ["mcai", "cmd", "time", "set", "2000"],
+  ["mcai", "freeze"],
+  ["mcai", "batch", "cam pos=11.5,202.6825,12.5 look=11.5,201.8,10.5 fov=70", "shoot out=截图/隐世之境/01-一楼机位.png size=2560x1440", "cam pos=44,240,58 look=10.5,216,12.5 fov=70", "shoot out=截图/隐世之境/02-整体俯视.png size=2560x1440", "cam pos=13.1,202.15,12.4 look=11.5,201.62,10.5 fov=50", "shoot out=截图/隐世之境/03-女仆参考.png size=2560x1440"],
+  ["mcai", "cam", "pos=10.5,212,40", "look=10.5,205,13", "fov=70"],
+  ["mcai", "mesh", "from=0,200,0", "to=20,208,25", "origin=0,201,0", "out=src/模型/场景/隐世之境一楼.网格", "mark=minecraft:lantern,minecraft:candle,minecraft:soul_campfire,minecraft:light,minecraft:glow_lichen"],
+  ["mcai", "unfreeze"],
+]
+["取材"."产物"]
+"截图/隐世之境/一楼机位" = "截图/隐世之境/01-一楼机位.png"
+"截图/隐世之境/女仆参考" = "截图/隐世之境/03-女仆参考.png"
+"截图/隐世之境/整体俯视" = "截图/隐世之境/02-整体俯视.png"
+"网格/隐世之境一楼/图集" = "src/模型/场景/隐世之境一楼.网格.png"
+"网格/隐世之境一楼/头" = "src/模型/场景/隐世之境一楼.网格.json"
+"网格/隐世之境一楼/顶点" = "src/模型/场景/隐世之境一楼.网格.bin"
+
 [["取材"]]
 "名称" = "监守者"
 "需要" = ["client-1.20.1", "client-1.20.1-srg"]
@@ -1133,6 +1167,7 @@
 "网格/暮色传送门/图集" = "src/模型/场景/暮色传送门.网格.png"
 "网格/极光宫殿/图集" = "src/模型/场景/极光宫殿.网格.png"
 "网格/终焉高原城堡/图集" = "src/模型/场景/终焉高原城堡.网格.png"
+"网格/隐世之境一楼/图集" = "src/模型/场景/隐世之境一楼.网格.png"
 "网格/雪怪洞窟/图集" = "src/模型/场景/雪怪洞窟.网格.png"
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
