@@ -2,6 +2,16 @@
   "name": "mc-anim",
   "private": true,
   "type": "module",
+  "exports": {
+    "./库/*": "./库/*",
+    "./engine/*": "./engine/*",
+    "./接入/webpack": "./pipeline/资产/webpack.ts",
+    "./接入/esbuild": "./pipeline/资产/esbuild插件.ts",
+    "./接入/别名": "./pipeline/环境/别名.ts",
+    "./接入/资产锁": "./pipeline/资产/资产锁.ts",
+    "./接入/资产模块": "./pipeline/资产/资产模块.d.ts",
+    "./package.json": "./package.json"
+  },
   "engines": {
     "node": ">=24"
   },
