@@ -22,6 +22,9 @@ export const 代码根 = (): string => {
   const 起点 = (import.meta as { dirname?: string }).dirname ?? process.cwd();
   for (let dir = path.resolve(起点); ; dir = path.dirname(dir)) {
     if (是代码根(dir)) return (代码根缓存 = dir);
+    // 别的仓库把 mc-anim 当依赖、配置被打成 CJS 时，从它的根往上找 node_modules/mc-anim（见 docs/外部复用.md）
+    const 依赖 = path.join(dir, 'node_modules', 包名);
+    if (是代码根(依赖)) return (代码根缓存 = fs.realpathSync(依赖));
     if (path.dirname(dir) === dir) throw new Error(`从 ${起点} 往上找不到 package.json 名为 ${包名} 的目录，要在仓库里跑`);
   }
 };
