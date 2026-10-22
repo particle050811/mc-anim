@@ -19,8 +19,8 @@ import { 备好public目录 } from './public目录.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
 import { 视频信息 } from './探测.ts';
 import { 叠层渲染参数, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
-import type { 叠层定义 } from '../../content/段定义.ts';
-import type { 渲染级别 } from '../../content/设置值.ts';
+import type { 叠层定义 } from '../../engine/段/段定义.ts';
+import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 

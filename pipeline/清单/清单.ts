@@ -3,8 +3,8 @@
 import path from 'node:path';
 import '../环境/别名注册.ts';
 import { pathToFileURL } from 'node:url';
-import type { 清单条目 } from '../../content/清单.ts';
-import type { 段定义 } from '../../content/段定义.ts';
+import type { 清单条目 } from '../../作品/应力转动/清单.ts';
+import type { 段定义 } from '../../engine/段/段定义.ts';
 import { 拆全名, 作品名, 作品根 } from '../环境/作品.ts';
 
 export type 段信息 = 清单条目 & { 编号: string | null; 段名: string; 目录: string; 画面: string; 段文件: string; 段: 段定义 };

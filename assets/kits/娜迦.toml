@@ -40,5 +40,5 @@
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/娜迦实机.tsx"
-"新位置" = "world/角色/娜迦实机.tsx"
+"新位置" = "库/角色/娜迦实机.tsx"
 "说明" = "尺寸、头的缩放和眩晕姿态照 NagaModel、NagaRenderer、NagaSegmentRenderer"

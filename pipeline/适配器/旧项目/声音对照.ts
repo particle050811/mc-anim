@@ -1,11 +1,11 @@
-// 声音 cue 对照：照各段 段.ts 的声音 cue 和 story/台词.toml 现算台词落点、字幕表、SRT、音效清单、同步表，逐行和基线 _表（旧项目 7d077904 导出）比。
-// 旧名（台词 id、段号、Composition、旧文件路径）按 docs/旧名.tsv 和资产表的 旧路径 换成新的再比；不渲染、不读母版。
+// 声音 cue 对照：照各段 段.ts 的声音 cue 和 作品/应力转动/台词.toml 现算台词落点、字幕表、SRT、音效清单、同步表，逐行和基线 _表（旧项目 7d077904 导出）比。
+// 旧名（台词 id、段号、Composition、旧文件路径）按 作品/应力转动/旧名.tsv 和资产表的 旧路径 换成新的再比；不渲染、不读母版。
 // 用法：node pipeline/适配器/旧项目/声音对照.ts。新算的表和逐条差异写到 <数据根>/基线/_声音对照/；
 // 台词落点、字幕表、SRT、音效清单有一条对不上就退出码 1。同步表旧的只有第 6 章、是从旧代码常数扒的，只按 ±1 帧配对列出差异，不拦。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 基线根, 数据路径 } from '../../环境/配置.ts';
-import { 旧布局作品, 指定作品 } from '../../环境/作品.ts';
+import { 旧布局作品, 指定作品, 作品根 } from '../../环境/作品.ts';
 import { 代码根 } from '../../环境/路径.ts';
 import { 全部段 } from '../../清单/清单.ts';
 import { 读资产表 } from '../../资产/资产表.ts';
@@ -24,7 +24,7 @@ const 读 = (p: string) => fs.readFileSync(path.join(旧表, p), 'utf8');
 const 读json = <T>(p: string) => JSON.parse(读(p)) as T;
 
 // 旧名
-const 旧名行 = fs.readFileSync(path.join(代码根(), 'docs', '旧名.tsv'), 'utf8').trim().split('\n').slice(1).map((l) => l.split('\t'));
+const 旧名行 = fs.readFileSync(path.join(作品根(), '旧名.tsv'), 'utf8').trim().split('\n').slice(1).map((l) => l.split('\t'));
 const 新台词 = new Map(旧名行.filter((r) => r[0] === '台词').map((r) => [r[1]!, r[2]!]));
 const 新段键 = new Map(旧名行.filter((r) => r[0] === 'Composition').map((r) => [r[1]!, r[2]!]));
 const 旧段清单 = 读json<{ 段: { id: string; Composition: string }[] }>('段清单.json').段;

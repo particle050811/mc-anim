@@ -1,5 +1,5 @@
 // 平台卫生：仓库里的路径在 Windows 上合法（不用 <>:"\|?* 和控制字符、不以点或空格结尾、不用 CON/NUL/COM1 这类保留名、
-// 不靠大小写区分、Unicode 用 NFC）；结构层路径只用 ASCII（顶层目录、py/ 下的包、sourcing/mod/ 整棵树、verify/accepted/<平台>）；
+// 不靠大小写区分、Unicode 用 NFC）；结构层路径只用 ASCII（顶层目录（库、作品 除外，用户定的名字）、py/ 下的包、sourcing/mod/ 整棵树、作品/<名>/认可/<平台>）；
 // 代码里不开 shell：JS/TS 的 shell 选项、exec/execSync（传字符串命令，Node 隐式起 sh/cmd.exe）、spawn/execFile 不带参数数组，
 // Python 的 shell=True、os.system/os.popen、subprocess.getoutput/getstatusoutput；Python 不用 fcntl（Windows 没有）。
 import { 代码后缀, type 报告, type 检查上下文 } from '../上下文.ts';
@@ -19,11 +19,11 @@ export const 名字毛病 = (名: string): string | null => {
 export const 结构层非ASCII = (p: string): string | null => {
   const 段 = p.split('/');
   const 非 = (s: string) => /[^\x20-\x7e]/.test(s);
-  if (段.length > 1 && 非(段[0]!)) return 段[0]!;
+  if (段.length > 1 && 非(段[0]!) && !['库', '作品'].includes(段[0]!)) return 段[0]!;
   if (段.length === 1 && 非(段[0]!)) return 段[0]!; // 根目录下的文件
   if (段[0] === 'py' && 段.length > 2 && 非(段[1]!)) return 段[1]!;
   if (段[0] === 'sourcing' && 段[1] === 'mod') return 段.find(非) ?? null;
-  if (段[0] === 'verify' && 段[1] === 'accepted' && 段.length > 3 && 非(段[2]!)) return 段[2]!;
+  if (段[0] === '作品' && 段[2] === '认可' && 段.length > 4 && 非(段[3]!)) return 段[3]!;
   return null;
 };
 

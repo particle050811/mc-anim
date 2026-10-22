@@ -15,5 +15,5 @@
     "types": ["node"],
     "paths": { "@engine/*": ["./engine/*"], "@库/*": ["./库/*"] }
   },
-  "include": ["engine", "world", "pipeline", "content", "assets/src", "remotion.config.ts", "vitest.config.ts"]
+  "include": ["engine", "库", "作品", "pipeline", "assets/src", "remotion.config.ts", "vitest.config.ts"]
 }

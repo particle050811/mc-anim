@@ -32,17 +32,18 @@ export class 报告 {
 export const 代码后缀 = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
 export const 是测试或声明 = (p: string) => /\.test\.[cm]?[jt]sx?$/.test(p) || /\.d\.[cm]?ts$/.test(p);
 /** 渲染代码所在的层（打进 Remotion 包的） */
-export const 渲染层前缀 = ['engine/', 'world/', 'content/'];
+export const 渲染层前缀 = ['engine/', '库/', '作品/'];
 export const 是渲染代码 = (p: string) => 渲染层前缀.some((x) => p.startsWith(x)) && 代码后缀.test(p) && !是测试或声明(p);
 
 /**
- * 纯模块：pipeline 直接 import、Node 里直接执行的 content 文件，闭包里不许有 react、three、remotion。
+ * 纯模块：pipeline 直接 import、Node 里直接执行的作品文件和 engine/段 的框架，闭包里不许有 react、three、remotion。
  * 方案三-2 列的是 清单.ts、段.ts、时间线.ts、末态.ts；段定义.ts、设置值.ts 也被 pipeline import，一并算。
  */
 export const 是纯模块 = (p: string) =>
-  ['content/清单.ts', 'content/段定义.ts', 'content/设置值.ts'].includes(p) ||
-  /^content\/(段|核对)\/[^/]+\/段\.ts$/.test(p) ||
-  /^content\/场\/[^/]+\/(时间线|末态)\.ts$/.test(p);
+  ['engine/段/段定义.ts', 'engine/段/设置值.ts'].includes(p) ||
+  /^作品\/[^/]+\/清单\.ts$/.test(p) ||
+  /^作品\/[^/]+\/(段|核对)\/[^/]+\/段\.ts$/.test(p) ||
+  /^作品\/[^/]+\/场\/[^/]+\/(时间线|末态)\.ts$/.test(p);
 
 export type 边 = { 到: string; 外部: boolean };
 export type 依赖图 = {
@@ -146,8 +147,8 @@ export class 检查上下文 {
     return (this.#文件 = [...new Set(表)].sort());
   }
 
-  /** 参与依赖图的代码文件：engine、world、content、pipeline 下的源码（不含测试和 .d.ts） */
-  代码文件 = () => this.文件().filter((p) => /^(engine|world|content|pipeline)\//.test(p) && 代码后缀.test(p) && !是测试或声明(p));
+  /** 参与依赖图的代码文件：engine、库、作品、pipeline 下的源码（不含测试和 .d.ts） */
+  代码文件 = () => this.文件().filter((p) => /^(engine|库|作品|pipeline)\//.test(p) && 代码后缀.test(p) && !是测试或声明(p));
 
   /**
    * 全仓库一次 esbuild（每个代码文件都当入口），从 metafile 拿真实的 import 边。类型导入被擦掉，不算依赖。

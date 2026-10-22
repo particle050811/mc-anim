@@ -1,5 +1,5 @@
-// 检查用的内容视图：执行 content/清单.ts 和各段 段.ts（纯模块），按清单顺序给出每段的定义；场键的先后按清单里第一次出现排。
-import type { 段定义 } from '../../content/段定义.ts';
+// 检查用的内容视图：执行 作品/应力转动/清单.ts 和各段 段.ts（纯模块），按清单顺序给出每段的定义；场键的先后按清单里第一次出现排。
+import type { 段定义 } from '../../engine/段/段定义.ts';
 import type { 检查上下文 } from './上下文.ts';
 
 export type 清单行 = { 键: string; 章: number | '核对'; 集?: number };
@@ -12,15 +12,15 @@ export const 读内容 = (c: 检查上下文): Promise<内容> => {
   let r = 缓存.get(c);
   if (!r) {
     r = (async (): Promise<内容> => {
-      if (!c.存在('content/清单.ts')) return { 错误: '没有 content/清单.ts' };
-      const m = await c.加载('content/清单.ts');
-      if (!m.模块) return { 错误: `content/清单.ts 执行出错：${m.错误}` };
+      if (!c.存在('作品/应力转动/清单.ts')) return { 错误: '没有 作品/应力转动/清单.ts' };
+      const m = await c.加载('作品/应力转动/清单.ts');
+      if (!m.模块) return { 错误: `作品/应力转动/清单.ts 执行出错：${m.错误}` };
       const 清单 = m.模块.清单 as 清单行[] | undefined;
       const 段目录 = m.模块.段目录 as ((键: string) => string) | undefined;
-      if (!Array.isArray(清单) || typeof 段目录 !== 'function') return { 错误: 'content/清单.ts 要导出 清单 数组和 段目录 函数' };
+      if (!Array.isArray(清单) || typeof 段目录 !== 'function') return { 错误: '作品/应力转动/清单.ts 要导出 清单 数组和 段目录 函数' };
       const 段们: 段项[] = [];
       for (const t of 清单) {
-        const 目录 = `content/${段目录(t.键)}`;
+        const 目录 = `作品/应力转动/${段目录(t.键)}`;
         const 段文件 = `${目录}/段.ts`;
         const 项: 段项 = { ...t, 目录, 段文件 };
         if (!c.存在(段文件)) 项.错误 = `缺 ${段文件}`;
@@ -41,8 +41,8 @@ export const 读内容 = (c: 检查上下文): Promise<内容> => {
   return r;
 };
 
-/** content/段/、content/场/ 下实际有的目录名 */
+/** 作品/应力转动/段/、作品/应力转动/场/ 下实际有的目录名 */
 export const 实有目录 = (c: 检查上下文, 层: '段' | '场' | '核对') => {
-  const 前缀 = `content/${层}/`;
+  const 前缀 = `作品/应力转动/${层}/`;
   return [...new Set(c.文件().filter((p) => p.startsWith(前缀) && p.slice(前缀.length).includes('/')).map((p) => p.slice(前缀.length).split('/')[0]!))].sort();
 };

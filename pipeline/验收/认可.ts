@@ -1,4 +1,4 @@
-// 认可记录 verify/accepted/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
+// 认可记录 作品/应力转动/认可/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
 // anim verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -13,7 +13,7 @@ export type 认可记录 = 签名 & { 段: string; 指纹: string; 平台: strin
 
 export const 本平台 = () => `${process.platform}-${process.arch}`;
 
-export const 认可文件 = (段键: string, 平台 = 本平台(), 根 = 代码根()) => path.join(根, 'verify', 'accepted', 平台, `${段键}.toml`);
+export const 认可文件 = (段键: string, 平台 = 本平台(), 根 = 代码根()) => path.join(根, '作品', '应力转动', '认可', 平台, `${段键}.toml`);
 
 export const 读认可 = (file: string): 认可记录 | null => {
   if (!fs.existsSync(file)) return null;

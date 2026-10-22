@@ -33,9 +33,9 @@ const 段 = (键: string, 帧数: number, fps = 24, 叠层?: { 名: string; 入�
     章: 0,
     编号: null,
     段名: 键,
-    目录: path.join(代码根(), 'content', '核对', 键),
-    画面: path.join(代码根(), 'content', '核对', 键, '画面.tsx'),
-    段文件: path.join(代码根(), 'content', '核对', 键, '段.ts'),
+    目录: path.join(代码根(), '作品', '应力转动', '核对', 键),
+    画面: path.join(代码根(), '作品', '应力转动', '核对', 键, '画面.tsx'),
+    段文件: path.join(代码根(), '作品', '应力转动', '核对', 键, '段.ts'),
     段: { 场: '测试', 帧数, fps, 宽: 320, 高: 180, 地形: [], 叠层 },
   }) as unknown as 段信息;
 

@@ -4,16 +4,16 @@
 "别名" = ["Li Ying"]
 "出场" = "全片主角；第 6 章起漫剧每场都在"
 "说明" = "方块人造型（32 像素高），扳手在右手、拔刀剑在左腰。外观以设定图为准，3D 模型由 build_li_ying.py 一份脚本生成，不手改模型数据"
-"渲染代码" = "world/角色/李樱.tsx"
-"核对" = "content/核对/角色包（Composition 核对-角色包）：站姿正面、斜侧、持刀、嘴型、两人站着说话，10-21 和旧项目同机位静帧逐像素相同（最大差 0）"
+"渲染代码" = "库/角色/李樱.tsx"
+"核对" = "作品/应力转动/核对/角色包（Composition 核对-角色包）：站姿正面、斜侧、持刀、嘴型、两人站着说话，10-21 和旧项目同机位静帧逐像素相同（最大差 0）"
 # 最小用法：在 ThreeCanvas 里、外面套一层 <group rotation={[-Math.PI / 2, 0, 0]}>（场景坐标 Z 朝上、人朝 +Y、1 = 一格，转成 three 的 Y 朝上）。
-# 完整能跑的例子（机位、灯光、色调映射）见 content/核对/角色包/画面.tsx。import 路径按调用处相对写，这里写成从仓库根起
+# 完整能跑的例子（机位、灯光、色调映射）见 作品/应力转动/核对/角色包/画面.tsx。import 路径按调用处相对写，这里写成从仓库根起
 "用法" = """
-import { LiYing } from 'world/角色/李樱.tsx';
-import { standPose, bladeInHand } from 'world/角色/骨架.tsx';
-import { runPoseAt, speedProfile } from 'world/角色/跑步.ts';
-import { mouthAt } from 'world/配音/口型.ts'; // 本作品绑好口型表的；别的作品用 world/角色/口型.ts 的 做口型(口型表, 台词表) 绑自己的
-import { DrawnKatana, WornSheath } from 'world/物品/拔刀剑.tsx';
+import { LiYing } from '库/角色/李樱.tsx';
+import { standPose, bladeInHand } from '库/角色/骨架.tsx';
+import { runPoseAt, speedProfile } from '库/角色/跑步.ts';
+import { mouthAt } from '作品/应力转动/配音/口型.ts'; // 本作品绑好口型表的；别的作品用 库/角色/口型.ts 的 做口型(口型表, 台词表) 绑自己的
+import { DrawnKatana, WornSheath } from '库/物品/拔刀剑.tsx';
 
 // 站着，刀挂在左腰（WornSheath 是全片统一的挂法：刃口朝下、鞘尾上翘）
 <LiYing pose={standPose([0, 0, 0])} hipL={<WornSheath />} />
@@ -23,7 +23,7 @@ const 跑 = speedProfile([[0, 0], [0.3, 30]])(秒);
 <LiYing pose={runPoseAt([0, 跑.dist, 0], 0, 跑.cycles, 跑.speed)} hipL={<WornSheath />} />
 
 // 右手持出鞘的刀：bladeInHand(姿势, 刀在前后竖直面里的角, 往右偏的角) 把身体坐标里的刀向换到握持点，
-// 再绕刀身转 90° 让刃朝外（照 content/核对/角色包 的持刀视图；THREE 即 three）
+// 再绕刀身转 90° 让刃朝外（照 作品/应力转动/核对/角色包 的持刀视图；THREE 即 three）
 const 持刀 = { ...standPose([0, 0, 0]), armR: 55, armRRoll: -22, elbowR: 25 };
 const 刃朝外 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI / 2);
 <LiYing pose={持刀} hipL={<WornSheath sheathed={false} />} handR={<group quaternion={bladeInHand(持刀, 0, 42).multiply(刃朝外)}><DrawnKatana /></group>} />
@@ -138,7 +138,7 @@ const 刃朝外 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0
   "配音/参考/RoadRoller-李樱+DIO",
   "配音/参考/RoadRoller-DIO原音",
 ]
-"文字源" = ["assets/src/配音参考/RoadRoller-参考-李樱+DIO.txt"]
+"文字源" = ["作品/应力转动/资产源/配音参考/RoadRoller-参考-李樱+DIO.txt"]
 "说明" = "DIO 原音只当语气参考、不进成片，许可待定、私有"
 
 [["资产组"]]
@@ -185,59 +185,59 @@ const 刃朝外 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0
 # 状态：已搬 = 新位置的代码已在本仓库、和旧版逐像素或逐值核对过；未搬 = 还在旧项目，新位置是计划
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/李樱.tsx"
-"新位置" = "world/角色/李樱.tsx"
+"新位置" = "库/角色/李樱.tsx"
 "状态" = "已搬"
 "说明" = "读 体素/李樱 建带顶点色的网格；黄铜齿轮和左臂铜管按 extras 参数建平滑几何；配色常数 LIYING 给特效取色"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/骨架.tsx"
-"新位置" = "world/角色/骨架.tsx"
+"新位置" = "库/角色/骨架.tsx"
 "状态" = "已搬"
 "说明" = "李樱、追兵共用的骨架、插槽和姿势（Figure、FigurePose、standPose），手、髋矩阵和 bladeInHand"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/嘴.tsx"
-"新位置" = "world/角色/嘴.tsx"
+"新位置" = "库/角色/嘴.tsx"
 "状态" = "已搬"
 "说明" = "说话的嘴，九胡和李樱共用"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/lib/口型.ts"
-"新位置" = "world/角色/口型.ts"
+"新位置" = "库/角色/口型.ts"
 "状态" = "已搬"
-"说明" = "mouthAt（按口型表出嘴型）、withTalkNod（脸上没嘴的人说话点头）、做口型（绑一部作品的口型表、台词表；本作品绑在 world/配音/口型.ts）"
+"说明" = "mouthAt（按口型表出嘴型）、withTalkNod（脸上没嘴的人说话点头）、做口型（绑一部作品的口型表、台词表；本作品绑在 作品/应力转动/配音/口型.ts）"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/跑步.ts"
-"新位置" = "world/角色/跑步.ts"
+"新位置" = "库/角色/跑步.ts"
 "状态" = "已搬"
 "说明" = "runPoseAt、speedProfile：全片人跑都用它（步频、步长、前倾跟着速度走）"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/手臂逆解.ts"
-"新位置" = "world/角色/手臂逆解.ts"
+"新位置" = "库/角色/手臂逆解.ts"
 "状态" = "已搬"
 "说明" = "solveReach、reachFigure：手要够到某个点时反推肩、肘角"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/物品/拔刀剑.tsx"
-"新位置" = "world/物品/拔刀剑.tsx"
+"新位置" = "库/物品/拔刀剑.tsx"
 "状态" = "已搬"
-"说明" = "DrawnKatana、Sheath、WornSheath。刀和鞘往下凹、刀尖上翘、刃朝下朝外是全片规矩，挂腰、拔刀、收刀都改这里的共用定义；泛光在 world/物品/拔刀剑泛光.tsx"
+"说明" = "DrawnKatana、Sheath、WornSheath。刀和鞘往下凹、刀尖上翘、刃朝下朝外是全片规矩，挂腰、拔刀、收刀都改这里的共用定义；泛光在 库/物品/拔刀剑泛光.tsx"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/物品/重锤.tsx"
-"新位置" = "world/物品/重锤.tsx"
+"新位置" = "库/物品/重锤.tsx"
 "状态" = "已搬"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/骑扫帚.tsx"
-"新位置" = "world/角色/骑扫帚.tsx"
+"新位置" = "库/角色/骑扫帚.tsx"
 "状态" = "已搬"
 "说明" = "李樱在前、九胡在后的骑扫帚套件，6-1、6-2 共用；持矛版在 骑扫帚持矛.tsx。要 扫帚.tsx 一起搬；旧的核对画面（骑扫帚预览）带天空，等天空搬进 engine 再比"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/李樱对照.tsx"
-"新位置" = "content/核对/李樱对照/"
+"新位置" = "作品/应力转动/核对/李樱对照/"
 "状态" = "未搬"
 "说明" = "Composition「李樱对照」：模型和设定图并排量比例，配 参考模型库/工具/李樱对照.py；其中正面、斜侧两帧已收进 核对-角色包"

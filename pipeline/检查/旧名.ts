@@ -1,10 +1,10 @@
-// docs/旧名.tsv：类别、旧名、新键、备注四列。旧名永不复用：新段键、段名、场键、台词 id 不能等于表里的旧名，除非那一行的新键就是它自己（docs/命名.md）。
+// 作品/应力转动/旧名.tsv：类别、旧名、新键、备注四列。旧名永不复用：新段键、段名、场键、台词 id 不能等于表里的旧名，除非那一行的新键就是它自己（docs/命名.md）。
 import type { 报告, 检查上下文 } from './上下文.ts';
 
 export const 旧名类别 = ['场号', '段号', 'Composition', '拍号', '段名', '台词', '已删段', '已删台词'] as const;
 export type 旧名行 = { 类别: string; 旧名: string; 新键: string; 备注: string; 行: number };
 
-export const 旧名表路径 = 'docs/旧名.tsv';
+export const 旧名表路径 = '作品/应力转动/旧名.tsv';
 
 export const 读旧名 = (c: 检查上下文, 报?: 报告): 旧名行[] => {
   if (!c.存在(旧名表路径)) {

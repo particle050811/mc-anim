@@ -33,8 +33,8 @@ describe('资产', () => {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/李樱-脸', '公开', 'LicenseRef-待定')),
       'assets/registry/配音.toml': 表(条('配音/甲', '私有', 'LicenseRef-用户保留')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '贴图/李樱-脸': 锁条('b'.repeat(64)), '配音/甲': 锁条('c'.repeat(64), '私有') }),
-      'content/段/7-甲/段.ts':
-        "import { 定义段 } from '../../段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [], 声音: [{ 帧: 0, 资产: '配音/甲' }] });\n",
+      '作品/应力转动/段/7-甲/段.ts':
+        "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [], 声音: [{ 帧: 0, 资产: '配音/甲' }] });\n",
       'assets/kits/李樱.toml': [
         '"角色" = "李樱"',
         '[["基准"]]',
@@ -43,22 +43,22 @@ describe('资产', () => {
         '[["资产组"]]',
         '"用途" = "全部贴图"',
         '"匹配" = ["贴图/李樱-*"]',
-        '"文字源" = ["docs/旧名.tsv"]',
+        '"文字源" = ["作品/应力转动/旧名.tsv"]',
         '[["代码"]]',
-        '"新位置" = "world/角色/李樱.tsx"',
+        '"新位置" = "库/角色/李樱.tsx"',
       ].join('\n'),
     });
     const { 违规, 报 } = await 跑('资产', 根);
     expect(违规).toEqual([]);
     expect(报.信息).toContain('1 件许可待定（见 assets/待确认.md）');
-    expect(报.待迁移.map((q) => q.文本)).toEqual(['角色包 李樱 的代码 world/角色/李樱.tsx 还没搬']);
+    expect(报.待迁移.map((q) => q.文本)).toEqual(['角色包 李樱 的代码 库/角色/李樱.tsx 还没搬']);
   });
 
   it('私有资产 import 块顶上标了「待迁移（私有资产）」的算待迁移，没标的、隔了别的行的照拦', async () => {
     const 根 = 造仓库(基础(), {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/私', '私有'), 条('贴图/私二', '私有')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '贴图/私': 锁条('d'.repeat(64), '私有'), '贴图/私二': 锁条('e'.repeat(64), '私有') }),
-      'content/段/7-甲/画面.tsx': [
+      '作品/应力转动/段/7-甲/画面.tsx': [
         '// 待迁移（私有资产）：M5 改走 cue',
         "import 图 from 'asset:贴图/甲';",
         "import 私 from 'asset:贴图/私';",
@@ -69,8 +69,8 @@ describe('资产', () => {
       ].join('\n'),
     });
     const { 违规, 报 } = await 跑('资产', 根);
-    expect(报.待迁移.map((q) => q.文本)).toContain('content/段/7-甲/画面.tsx 还把私有资产 asset:贴图/私 打进包里（M5 改走 cue）');
-    expect(违规.join('\n')).toMatch(/公开构建的闭包里不能有私有资产：content\/段\/7-甲\/画面.tsx import 了 asset:贴图\/私二/);
+    expect(报.待迁移.map((q) => q.文本)).toContain('作品/应力转动/段/7-甲/画面.tsx 还把私有资产 asset:贴图/私 打进包里（M5 改走 cue）');
+    expect(违规.join('\n')).toMatch(/公开构建的闭包里不能有私有资产：作品\/应力转动\/段\/7-甲\/画面.tsx import 了 asset:贴图\/私二/);
     expect(违规.join('\n')).not.toMatch(/import 了 asset:贴图\/私（/);
   });
 
@@ -78,8 +78,8 @@ describe('资产', () => {
     const 根 = 造仓库(基础(), {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/乙', '公开', 'MIT 或 GPL'), 条('贴图/私', '私有')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '贴图/私': 锁条('d'.repeat(64)), '贴图/孤': 锁条('e'.repeat(64)) }),
-      'content/段/7-甲/画面.tsx': "import 图 from 'asset:贴图/甲';\nimport 私 from 'asset:贴图/私';\nimport 无 from 'asset:贴图/没登记';\nexport default () => <img src={图 + 私 + 无} />;\n",
-      'content/段/7-甲/段.ts': "import { 定义段 } from '../../段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: ['没登记的包'] });\n",
+      '作品/应力转动/段/7-甲/画面.tsx': "import 图 from 'asset:贴图/甲';\nimport 私 from 'asset:贴图/私';\nimport 无 from 'asset:贴图/没登记';\nexport default () => <img src={图 + 私 + 无} />;\n",
+      '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: ['没登记的包'] });\n",
       'assets/kits/九胡.toml': ['"角色" = "九胡"', '[["资产组"]]', '"用途" = "模型"', '"匹配" = ["模型/九胡-*"]', '"文字源" = ["docs/没有.md"]'].join('\n'),
     });
     const v = (await 跑('资产', 根)).违规.join('\n');
@@ -87,8 +87,8 @@ describe('资产', () => {
     expect(v).toMatch(/「贴图\/乙」登记了但不在资产锁里/);
     expect(v).toMatch(/「贴图\/私」可见性是 私有，资产锁里却在 store 库/);
     expect(v).toMatch(/资产锁里的「贴图\/孤」没在资产表登记/);
-    expect(v).toMatch(/content\/段\/7-甲\/画面.tsx asset:引用的「贴图\/没登记」没在资产表登记/);
-    expect(v).toMatch(/公开构建的闭包里不能有私有资产：content\/段\/7-甲\/画面.tsx import 了 asset:贴图\/私/);
+    expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/画面.tsx asset:引用的「贴图\/没登记」没在资产表登记/);
+    expect(v).toMatch(/公开构建的闭包里不能有私有资产：作品\/应力转动\/段\/7-甲\/画面.tsx import 了 asset:贴图\/私/);
     expect(v).toMatch(/7-甲 用的地形包「没登记的包」没在 assets\/地形版本.json 登记/);
     expect(v).toMatch(/角色包 九胡「模型」的匹配 模型\/九胡-\* 一件也没对上/);
     expect(v).toMatch(/角色包 九胡「模型」的文字源 docs\/没有.md 不在仓库里/);
@@ -125,15 +125,15 @@ describe('资产', () => {
     const 文件 = (地形: string) => ({
       'assets/地形版本.json': 地形表,
       'engine/voxel/区段包位置.ts': "export const packDir = (名: string) => `terrain/${名}`;\n",
-      'world/地点/名.ts': "export const 主世界名 = '主世界';\nexport const 暮色名 = '暮色';\n",
-      'content/段/7-甲/段.ts': `import { 定义段 } from '../../段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: ${地形} });\n`,
-      'content/段/7-甲/画面.tsx':
-        "import 图 from 'asset:贴图/甲';\nimport { packDir } from '../../../engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../../world/地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
+      '作品/应力转动/地点/名.ts': "export const 主世界名 = '主世界';\nexport const 暮色名 = '暮色';\n",
+      '作品/应力转动/段/7-甲/段.ts': `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: ${地形} });\n`,
+      '作品/应力转动/段/7-甲/画面.tsx':
+        "import 图 from 'asset:贴图/甲';\nimport { packDir } from '@engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
     });
     expect((await 跑('资产', 造仓库(基础(), 文件('["主世界"]')))).违规.filter((x) => x.includes('地形')).join('\n')).toMatch(/7-甲 的闭包会取地形包.*写到了 暮色/);
     expect((await 跑('资产', 造仓库(基础(), 文件('["主世界", "暮色"]')))).违规).toEqual([]);
     const 不取 = 文件('[]');
-    不取['content/段/7-甲/画面.tsx'] = "import 图 from 'asset:贴图/甲';\nimport { 主世界名 } from '../../../world/地点/名.ts';\nexport default () => <img src={图 + 主世界名} />;\n";
+    不取['作品/应力转动/段/7-甲/画面.tsx'] = "import 图 from 'asset:贴图/甲';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + 主世界名} />;\n";
     expect((await 跑('资产', 造仓库(基础(), 不取))).违规).toEqual([]);
   });
 

@@ -1,4 +1,4 @@
-// 台词：story/台词.toml 的格式（开口秒、字幕位置）；cue 里的台词 id 都登记了；每句恰好开口一次（接上段的后半截不算）或标了 未用，
+// 台词：作品/应力转动/台词.toml 的格式（开口秒、字幕位置）；cue 里的台词 id 都登记了；每句恰好开口一次（接上段的后半截不算）或标了 未用，
 // 接上段的 cue 前面（本段或清单里上一段）得有它开口；
 // 文本哈希对得上现在的文本、成品 sha 对得上资产锁，口型和口型手修绑定的成品 sha 也对得上（配音一换就报过期，不靠人记得重跑）。
 import crypto from 'node:crypto';
@@ -7,7 +7,7 @@ import { 撞旧名, 读旧名 } from '../旧名.ts';
 import type { 报告, 检查上下文 } from '../上下文.ts';
 import type { 资产锁 } from '../../资产/资产锁.ts';
 
-export const 台词表路径 = 'story/台词.toml';
+export const 台词表路径 = '作品/应力转动/台词.toml';
 export const 文本哈希 = (文本: string) => crypto.createHash('sha256').update(文本, 'utf8').digest('hex').slice(0, 12);
 
 export const 字幕位置们 = ['下', '思索上'];

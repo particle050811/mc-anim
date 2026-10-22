@@ -25,7 +25,7 @@ import { 核对开口, 排字幕, 字幕表tsv, srt } from './字幕.ts';
 import { 画字幕卡 } from './字幕卡.ts';
 import { 上一段于, 同步表, 算台词落点, 读台词表, 读音效起音 } from './台词落点.ts';
 import { utc时间, utc月日时分, type 运行记录 } from '../运行记录/记录.ts';
-import type { 渲染级别 } from '../../content/设置值.ts';
+import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 const 目标响度 = -16;
 const 真峰值上限 = -1;

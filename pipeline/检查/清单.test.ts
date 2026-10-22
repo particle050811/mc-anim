@@ -3,24 +3,24 @@ import { 基础, 跑, 造仓库 } from './测试夹具.ts';
 import { 段键合法 } from './规则/清单.ts';
 
 const 清单 = (...键: string[]) => ({
-  'content/清单.ts': [
+  '作品/应力转动/清单.ts': [
     `export const 清单 = [${键.map((k) => `{ 键: '${k}', 章: ${k.startsWith('核对-') ? "'核对'" : k.split('-')[0]} }`).join(', ')}];`,
     "export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
 });
 const 段 = (键: string, 定义: string) => ({
-  [`content/段/${键}/段.ts`]: `import { 定义段 } from '../../段定义.ts';\nexport default 定义段(${定义});\n`,
-  [`content/段/${键}/画面.tsx`]: 'export default () => null;\n',
+  [`作品/应力转动/段/${键}/段.ts`]: `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段(${定义});\n`,
+  [`作品/应力转动/段/${键}/画面.tsx`]: 'export default () => null;\n',
 });
 
 describe('清单', () => {
-  it('合规样例放行：两段同场连续、首尾正好差 1 帧，核对段在 content/核对/', async () => {
+  it('合规样例放行：两段同场连续、首尾正好差 1 帧，核对段在 作品/应力转动/核对/', async () => {
     const 根 = 造仓库(
       基础(),
       清单('7-甲', '7-乙', '核对-看看'),
       段('7-甲', "{ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [], 场窗口: { 起帧: 0, 止帧: 10 } }"),
       段('7-乙', "{ 场: '7-场一', 帧数: 5, fps: 24, 宽: 4, 高: 4, 地形: [], 场窗口: { 起帧: 10, 止帧: 15 }, 连续: true }"),
-      { 'content/核对/看看/段.ts': "import { 定义段 } from '../../段定义.ts';\nexport default 定义段({ 场: '核对', 帧数: 1, fps: 24, 宽: 4, 高: 4, 地形: [] });\n", 'content/核对/看看/画面.tsx': 'export default () => null;\n' },
+      { '作品/应力转动/核对/看看/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '核对', 帧数: 1, fps: 24, 宽: 4, 高: 4, 地形: [] });\n", '作品/应力转动/核对/看看/画面.tsx': 'export default () => null;\n' },
     );
     expect((await 跑('清单', 根)).违规).toEqual([]);
   });
@@ -36,7 +36,7 @@ describe('清单', () => {
       段('7-多余', "{ 场: '7-场一', 帧数: 1, fps: 24, 宽: 4, 高: 4, 地形: [] }"),
     );
     const v = (await 跑('清单', 根)).违规.join('\n');
-    expect(v).toMatch(/content\/段\/7-多余\/ 不在清单里/);
+    expect(v).toMatch(/作品\/应力转动\/段\/7-多余\/ 不在清单里/);
     expect(v).toMatch(/段键要是 7-<段名>.*7-丙_x/);
     expect(v).toMatch(/段名「甲」重复：7-甲 和 8-甲/);
     expect(v).toMatch(/段键 7-老名 撞了旧名表第 3 行的旧名「7-老名」/);
@@ -62,10 +62,10 @@ describe('加载', () => {
 
   it('段.ts、时间线.ts 里的断言 throw 了就拦', async () => {
     const 根 = 造仓库(基础(), 段('7-甲', "{ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [], 场窗口: { 起帧: 0, 止帧: 9 } }"), {
-      'content/场/7-场一/时间线.ts': "const 事件 = { 起: 30, 止: 20 };\nif (事件.止 < 事件.起) throw new Error('时间线：止 在 起 前面');\nexport default 事件;\n",
+      '作品/应力转动/场/7-场一/时间线.ts': "const 事件 = { 起: 30, 止: 20 };\nif (事件.止 < 事件.起) throw new Error('时间线：止 在 起 前面');\nexport default 事件;\n",
     });
     const v = (await 跑('加载', 根)).违规.join('\n');
-    expect(v).toMatch(/content\/段\/7-甲\/段.ts 执行出错：场窗口 \[0, 9\) 有 9 帧，段的帧数是 10/);
-    expect(v).toMatch(/content\/场\/7-场一\/时间线.ts 执行出错：时间线：止 在 起 前面/);
+    expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/段.ts 执行出错：场窗口 \[0, 9\) 有 9 帧，段的帧数是 10/);
+    expect(v).toMatch(/作品\/应力转动\/场\/7-场一\/时间线.ts 执行出错：时间线：止 在 起 前面/);
   });
 });

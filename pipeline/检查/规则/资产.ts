@@ -197,7 +197,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
   }
 
   // 台词表的配音
-  for (const t of 读台词表(c) ?? []) if (typeof t.配音 === 'string') 查(t.配音, `台词「${t.id}」的配音`, 'story/台词.toml');
+  for (const t of 读台词表(c) ?? []) if (typeof t.配音 === 'string') 查(t.配音, `台词「${t.id}」的配音`, '作品/应力转动/台词.toml');
 
   // 角色包
   const ids = [...登记.keys()];

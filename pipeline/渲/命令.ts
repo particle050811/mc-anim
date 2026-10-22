@@ -6,7 +6,7 @@ import { 配置 } from '../环境/配置.ts';
 import { 低优先级, 跑 } from '../环境/子进程.ts';
 import { 选段 } from '../清单/清单.ts';
 import { 新建预览目录 } from '../预览/预览.ts';
-import { 渲染级别取值, type 渲染级别 } from '../../content/设置值.ts';
+import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
 import { 渲染叠层, 渲染母版, 渲静帧 } from './渲.ts';
 
 const 取级别 = (v: string | undefined): 渲染级别 => {

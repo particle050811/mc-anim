@@ -4,7 +4,7 @@
 // 文件头在段开头之前的从文件里跳过那一截，放到文件完多 1 帧、段尾或同一句接着放的下一截为止。
 import fs from 'node:fs';
 import path from 'node:path';
-import { cue增益, type 段定义 } from '../../../content/段定义.ts';
+import { cue增益, type 段定义 } from '../../../engine/段/段定义.ts';
 import { 数据根 } from '../../环境/配置.ts';
 import { 全部段, type 段信息 } from '../../清单/清单.ts';
 import { 时长秒 } from '../../渲/探测.ts';
@@ -47,7 +47,7 @@ export const 段的清单 = (
   const 头们 = 台词头们(s.段, 开口, 上一段);
   头们.forEach((h, i) => {
     const id = 台词配音.get(h.cue.台词);
-    if (!id) throw new Error(`${s.键} 第 ${h.cue.帧} 帧的台词「${h.cue.台词}」在 story/台词.toml 里没写 配音`);
+    if (!id) throw new Error(`${s.键} 第 ${h.cue.帧} 帧的台词「${h.cue.台词}」在 作品/应力转动/台词.toml 里没写 配音`);
     const file = 取文件(id);
     const 起帧 = h.起帧;
     const 跳 = 起帧 - h.头;

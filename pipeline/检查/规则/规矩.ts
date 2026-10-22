@@ -1,4 +1,4 @@
-// 规矩：rules/规矩.toml 的格式；代码里每个 例外('规矩id', 值, {段|场, 原因}) 都在表里那条规矩的 例外 里登记过、值对得上，
+// 规矩：作品/应力转动/规矩.toml 的格式；代码里每个 例外('规矩id', 值, {段|场, 原因}) 都在表里那条规矩的 例外 里登记过、值对得上，
 // 表里登记的例外代码里也都找得到（段或场还没搬进来的算待迁移）；默认值的落点（<路径> [符号、符号…]）文件和符号都在。
 // 落点以「旧:」或「待迁移:」开头的是还在旧项目里的，算待迁移，搬完改成新路径。
 // 出处里 M/<名>.md 指的记忆（根是配置 记忆，ANIM_MEMORY）要在；记忆仓库不在本机（别的机器、公开版）就跳过，不算违规。
@@ -9,8 +9,8 @@ import { 配置 } from '../../环境/配置.ts';
 import { 代码后缀, 是渲染代码, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 声明的名字, 字面值, 属性名, 行号, 解析, 遍历, ts } from '../语法.ts';
 
-export const 规矩表路径 = 'rules/规矩.toml';
-const 落点顶层 = ['engine', 'world', 'content', 'pipeline', 'sourcing', 'py', 'assets', 'rules', 'story', 'docs', 'verify'];
+export const 规矩表路径 = '作品/应力转动/规矩.toml';
+const 落点顶层 = ['engine', '库', '作品', 'pipeline', 'sourcing', 'py', 'assets', 'rules', 'docs', 'verify'];
 
 type 例外条目 = { 段?: string; 场?: string; 值?: unknown; 原因?: string; 出处?: string };
 type 规矩条目 = { id?: unknown; 默认值?: unknown; 级别?: unknown; 原话?: unknown; 针对?: unknown; 出处?: unknown; 落点?: unknown; 例外?: unknown };
@@ -21,12 +21,13 @@ const 键 = (规矩: string, x: { 段?: string; 场?: string }) => `${规矩}|${
 const 对象 = (x: { 段?: string; 场?: string }) => (x.段 !== undefined ? `段 ${x.段}` : `场 ${x.场}`);
 
 const 例外模块 = 'engine/core/例外';
-/** 搬家 R2-A 暂放在 world/地点/<地点>/<旧目录>/ 的剧情编排（docs/迁移.md 差异表）：拆回 content/场 之前，例外 也可以写在这里 */
-const R2暂放 = /^world\/地点\/[^/]+\/\d+-[^/]+\//;
-/** import/export 的模块是不是 engine/core/例外(.ts)：只认相对路径 */
+/** 搬家 R2-A 暂放在 作品/<名>/地点/<地点>/<旧目录>/ 的剧情编排（docs/迁移.md 差异表）：拆回 场/ 之前，例外 也可以写在这里 */
+const R2暂放 = /^作品\/[^/]+\/地点\/[^/]+\/\d+-[^/]+\//;
+/** import/export 的模块是不是 engine/core/例外(.ts)：认相对路径和 @engine/ */
 const 指向例外模块 = (文件: string, spec: ts.Expression | undefined) => {
-  if (!spec || !ts.isStringLiteral(spec) || !spec.text.startsWith('.')) return false;
-  return path.posix.normalize(path.posix.join(path.posix.dirname(文件), spec.text)).replace(/\.[cm]?[jt]sx?$/, '') === 例外模块;
+  if (!spec || !ts.isStringLiteral(spec)) return false;
+  const 到 = spec.text.startsWith('@engine/') ? 'engine/' + spec.text.slice('@engine/'.length) : spec.text.startsWith('.') ? path.posix.normalize(path.posix.join(path.posix.dirname(文件), spec.text)) : null;
+  return 到 !== null && 到.replace(/\.[cm]?[jt]sx?$/, '') === 例外模块;
 };
 
 /**
@@ -86,12 +87,12 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
         报.错("例外 要写成 例外('规矩id', 值, { 段: '<段键>'（或段键数组）或 场: '<场键>', 原因: '…' })，规矩 id、段/场、原因都用字面量", p, 行);
         return;
       }
-      const 在 = /^content\/(段|场)\/([^/]+)\//.exec(p);
+      const 在 = /^作品\/[^/]+\/(段|场)\/([^/]+)\//.exec(p);
       if (!在) {
-        if (!R2暂放.test(p)) 报.错('例外 只写在 content/段/ 或 content/场/ 里（共用代码不为某一段开口子）', p, 行);
+        if (!R2暂放.test(p)) 报.错('例外 只写在 作品/应力转动/段/ 或 作品/应力转动/场/ 里（共用代码不为某一段开口子）', p, 行);
       }
-      else if (在[1] === '段' && (段数组 || 依据.段 !== 在[2])) 报.错(`content/段/${在[2]}/ 里的例外要写 段: '${在[2]}'`, p, 行);
-      else if (在[1] === '场' && typeof 依据.场 === 'string' && 依据.场 !== 在[2]) 报.错(`content/场/${在[2]}/ 里的例外写的是 场: '${依据.场}'`, p, 行);
+      else if (在[1] === '段' && (段数组 || 依据.段 !== 在[2])) 报.错(`作品/应力转动/段/${在[2]}/ 里的例外要写 段: '${在[2]}'`, p, 行);
+      else if (在[1] === '场' && typeof 依据.场 === 'string' && 依据.场 !== 在[2]) 报.错(`作品/应力转动/场/${在[2]}/ 里的例外写的是 场: '${依据.场}'`, p, 行);
       if (段们) for (const 段 of 段们) r.push({ 规矩, 段, 值: 字面值(b), 文件: p, 行 });
       else r.push({ 规矩, 场: 依据.场 as string, 值: 字面值(b), 文件: p, 行 });
     });
@@ -208,7 +209,7 @@ export const 规矩 = async (c: 检查上下文, 报: 报告) => {
     for (const x of 例外们) {
       if ((typeof x.段 === 'string') === (typeof x.场 === 'string')) continue;
       if (代码键.has(键(id, x))) continue;
-      const 搬了 = x.段 !== undefined ? c.存在(`content/段/${x.段}`) : c.存在(`content/场/${x.场}`) || 场们.has(x.场!);
+      const 搬了 = x.段 !== undefined ? c.存在(`作品/应力转动/段/${x.段}`) : c.存在(`作品/应力转动/场/${x.场}`) || 场们.has(x.场!);
       if (搬了) 报.错(`规矩「${id}」登记了对 ${对象(x)} 的例外，代码里却没有 例外('${id}', …, { ${x.段 !== undefined ? '段' : '场'}: '${x.段 ?? x.场}', … })`, 位);
       else 报.待(`规矩「${id}」对 ${对象(x)} 的例外（${对象(x)} 还没搬）`, 位);
     }

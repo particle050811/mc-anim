@@ -42,7 +42,7 @@ export const sample = (keys: Key[], frame: number): number => {
 export const sampleLag = (keys: Key[], f: number, lagFrames = 0, map: (frame: number) => number = (x) => x): number => sample(keys, map(f - lagFrames));
 
 // 时间停顿（通用时间重映射）：在 at 处停住 len 帧，之后整体顺延 len 帧；可给多处，按 at 从小到大，at 是停住前的时间。返回 输出时间 → 原时间。例：停顿([98, 12]) 把 98～110 都停在 98，110 以后 = f − 12。
-// 用处：关键帧按短动作调好、要在中间拉长一段，或打击停顿（`HIT_STOP_FRAMES`，在 world/默认.ts）
+// 用处：关键帧按短动作调好、要在中间拉长一段，或打击停顿（`HIT_STOP_FRAMES`，在 作品/应力转动/默认.ts）
 export const holdTime = (...holds: [at: number, len: number][]) => (frame: number): number => {
   let shift = 0;
   for (const [at, len] of [...holds].sort((a, b) => a[0] - b[0])) {

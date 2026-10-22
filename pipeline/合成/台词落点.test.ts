@@ -1,6 +1,6 @@
 // 台词落点、同步表：从段.ts 的声音 cue 算全片帧（字幕和同步表都不再从各段代码里扒）；叠层滤镜串。
 import { describe, expect, it } from 'vitest';
-import { cue增益, 定义段 } from '../../content/段定义.ts';
+import { cue增益, 定义段 } from '../../engine/段/段定义.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import { 同步表, 算台词落点 } from './台词落点.ts';
 import { 叠层滤镜 } from './叠层.ts';
@@ -32,7 +32,7 @@ describe('台词落点', () => {
 
   it('台词不在表里、没配音都报错', () => {
     const 截们 = [{ 段: 段('甲', 10, [{ 帧: 1, 台词: '6-李樱-无' }]), 全片起帧: 0 }];
-    expect(() => 算台词落点(截们, [], (x) => x)).toThrow(/不在 story\/台词.toml/);
+    expect(() => 算台词落点(截们, [], (x) => x)).toThrow(/不在 作品\/应力转动\/台词.toml/);
     expect(() => 算台词落点(截们, [{ id: '6-李樱-无', 角色: '李樱', 文本: '嗯' }], (x) => x)).toThrow(/还没配音/);
   });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { 全部段, 匹配, 选段 } from './清单.ts';
-import { 清单, 编号 } from '../../content/清单.ts';
+import { 清单, 编号 } from '../../作品/应力转动/清单.ts';
 import type { 段信息 } from './清单.ts';
 
 const 假段 = (键: string, 章: number, 序: string, 场: string): 段信息 =>

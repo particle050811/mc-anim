@@ -1,5 +1,5 @@
 // 字幕表生成：断屏和排时间对旧项目基线（数据根 基线/_表/ 的 台词落点.json、拼接表.tsv、字幕表.tsv、字幕.srt）；
-// 配音从资产库取（旧台词 id 换新 id 查 docs/旧名.tsv）。数据根不全时跳过基线那几条，合成的小例子照跑。
+// 配音从资产库取（旧台词 id 换新 id 查 作品/应力转动/旧名.tsv）。数据根不全时跳过基线那几条，合成的小例子照跑。
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -21,7 +21,7 @@ type 旧落点 = { id: string; 段: string; 起帧: number; 字: string; 角色:
 
 const 新台词id = () => {
   const m = new Map<string, string>();
-  for (const line of fs.readFileSync(path.join(代码根(), 'docs', '旧名.tsv'), 'utf8').split('\n')) {
+  for (const line of fs.readFileSync(path.join(代码根(), '作品', '应力转动', '旧名.tsv'), 'utf8').split('\n')) {
     const [类, 旧, 新] = line.split('\t');
     if (类 === '台词' && 旧 && 新) m.set(旧, 新);
   }

@@ -2,7 +2,7 @@
 // h264-mkv、CRF 1、PCM 声音（Remotion 直出 mp4 时 AAC 预填充没写进编辑列表，声音会晚约一帧，所以先出 PCM 再由 ffmpeg 压），
 // 视频级 PNG 帧、截图放大 2 倍出 2K；预览级 JPEG、不放大、inputProps 级别=预览。并发 1（用户 10-06 定）。
 import { 配置 } from '../环境/配置.ts';
-import { 规范化设置, type 渲染级别 } from '../../content/设置值.ts';
+import { 规范化设置, type 渲染级别 } from '../../engine/段/设置值.ts';
 
 export const 等帧超时毫秒 = 10 * 60 * 1000; // 体素世界第一帧要建几十秒的区段，默认 30 秒不够；不影响画面，不进指纹
 

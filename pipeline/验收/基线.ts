@@ -1,5 +1,5 @@
 // 旧项目基线作参照：数据根 基线/<旧段号>/段.json 列的帧（首帧、每 24 帧、末帧和台词音效落点）、帧/*.png、音频.wav，
-// 由 pipeline/适配器/旧项目/基线.ts 从冻结-1021 的母版抽出。旧段号 ↔ 段键查 docs/旧名.tsv（类别 段号）。
+// 由 pipeline/适配器/旧项目/基线.ts 从冻结-1021 的母版抽出。旧段号 ↔ 段键查 作品/应力转动/旧名.tsv（类别 段号）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { decode } from 'fast-png';
@@ -11,7 +11,7 @@ type 基线段 = { 段: string; 帧数: number; 帧: { 帧: number; 文件: stri
 
 /** 段键 → 旧段号；表里没有就是新段，没有基线 */
 export const 旧段号 = (段键: string, 根 = 代码根()): string | null => {
-  const 行们 = fs.readFileSync(path.join(根, 'docs', '旧名.tsv'), 'utf8').split('\n').slice(1);
+  const 行们 = fs.readFileSync(path.join(根, '作品', '应力转动', '旧名.tsv'), 'utf8').split('\n').slice(1);
   for (const l of 行们) {
     const [类别, 旧名, 新键] = l.split('\t');
     if (类别 === '段号' && 新键 === 段键) return 旧名!;

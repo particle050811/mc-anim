@@ -1,24 +1,24 @@
-// 结构：分层方向（engine ← world ← content/场 ← content/段 ← 注册.tsx）、段不互引、场只接上一场的 末态.ts、不许引 核对/、
-// pipeline 只 import 纯模块、纯模块闭包无 react/three/remotion、getInputProps 只在 content/设置.ts、渲染代码里不许有
+// 结构：分层方向（engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册.tsx）、段不互引、场只接上一场的 末态.ts、不许引 核对/、
+// pipeline 只 import 纯模块、纯模块闭包无 react/three/remotion、getInputProps 只在 engine/段/设置.ts、渲染代码里不许有
 // Math.random、Date.now、相对路径引的资产、写死的路径或主机名。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
 import os from 'node:os';
 import { 读内容 } from '../内容.ts';
 import { 代码后缀, 是渲染代码, 是纯模块, 是测试或声明, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 点路径, 行号, 解析, 遍历, ts } from '../语法.ts';
 
-type 层名 = 'engine' | 'world' | 'content公共' | '场' | '段' | '注册' | '核对' | 'pipeline' | '其他';
+type 层名 = 'engine' | '库' | '作品公共' | '场' | '段' | '注册' | '核对' | 'pipeline' | '其他';
 type 层 = { 名: 层名; 键?: string };
 
 /** 级数小的在左边：只能往级数小（或相等）的方向 import */
-const 级: Partial<Record<层名, number>> = { engine: 0, world: 1, content公共: 2, 场: 3, 段: 4, 注册: 5 };
+const 级: Partial<Record<层名, number>> = { engine: 0, 库: 1, 作品公共: 2, 场: 3, 段: 4, 注册: 5 };
 
 export const 分层 = (p: string): 层 => {
   if (p.startsWith('engine/')) return { 名: 'engine' };
-  if (p.startsWith('world/')) return { 名: 'world' };
-  const m = /^content\/(场|段|核对)\/([^/]+)\//.exec(p);
+  if (p.startsWith('库/')) return { 名: '库' };
+  const m = /^作品\/[^/]+\/(场|段|核对)\/([^/]+)\//.exec(p);
   if (m) return { 名: m[1] as '场' | '段' | '核对', 键: m[2] };
-  if (p === 'content/注册.tsx' || p === 'content/index.ts') return { 名: '注册' };
-  if (p.startsWith('content/')) return { 名: 'content公共' };
+  if (/^作品\/[^/]+\/(注册\.tsx|index\.ts)$/.test(p)) return { 名: '注册' };
+  if (p.startsWith('作品/')) return { 名: '作品公共' };
   if (p.startsWith('pipeline/')) return { 名: 'pipeline' };
   return { 名: '其他' };
 };
@@ -56,17 +56,17 @@ export const 查分层 = async (c: 检查上下文, 报: 报告) => {
       }
       if (a.名 === '核对' || b.名 === '其他') continue; // 核对可以引任何东西；其他 是进 Git 的数据文件（json）
       if (a.名 === '段' && b.名 === '段' && a.键 !== b.键) {
-        报.错(`段不许引用别的段：${从} → ${到}（两段共用的东西往下放到场或 world/）`, 从);
+        报.错(`段不许引用别的段：${从} → ${到}（两段共用的东西往下放到场或作品公共目录）`, 从);
         continue;
       }
       if (a.名 === '场' && b.名 === '场' && a.键 !== b.键) {
         const 上一场 = 场序 && a.键 ? 场序[场序.indexOf(a.键) - 1] : undefined;
-        if (!(到 === `content/场/${b.键}/末态.ts` && 上一场 === b.键)) {
+        if (!(到 === `作品/应力转动/场/${b.键}/末态.ts` && 上一场 === b.键)) {
           报.错(`场只许引用上一场的 末态.ts：${从} → ${到}${上一场 ? `（上一场是 ${上一场}）` : '（清单里排不出上一场）'}`, 从);
         }
         continue;
       }
-      if (级[b.名]! > 级[a.名]!) 报.错(`分层方向反了：${名字(a)} 不能引用 ${名字(b)}（${从} → ${到}；只能 engine ← world ← 场 ← 段 ← 注册）`, 从);
+      if (级[b.名]! > 级[a.名]!) 报.错(`分层方向反了：${名字(a)} 不能引用 ${名字(b)}（${从} → ${到}；只能 engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册）`, 从);
     }
   }
 
@@ -136,8 +136,8 @@ export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostna
     if (!渲染 && !源.includes('getInputProps')) continue;
     const sf = 解析(p, 源);
     遍历(sf, (n) => {
-      if (ts.isIdentifier(n) && n.text === 'getInputProps' && p !== 'content/设置.ts') {
-        报.错('getInputProps 只能在 content/设置.ts 里用（别处从 use设置() 取渲染设置）', p, 行号(sf, n));
+      if (ts.isIdentifier(n) && n.text === 'getInputProps' && p !== 'engine/段/设置.ts') {
+        报.错('getInputProps 只能在 engine/段/设置.ts 里用（别处从 use设置() 取渲染设置）', p, 行号(sf, n));
       }
       if (!渲染 || 是测试或声明(p)) return;
       if (ts.isPropertyAccessExpression(n)) {

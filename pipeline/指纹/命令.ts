@@ -7,7 +7,7 @@ import { 母版路径, 历史指纹 } from '../渲/母版.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 渲染标签 } from '../渲/渲.ts';
 import { 预计耗时 } from '../运行记录/记录.ts';
-import { 渲染级别取值, type 渲染级别 } from '../../content/设置值.ts';
+import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
 import { 算段指纹, 指纹差异, 稳定JSON } from './指纹.ts';
 
 export const 指纹命令: Record<string, 命令> = {

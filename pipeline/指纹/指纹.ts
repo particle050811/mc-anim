@@ -12,9 +12,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
+import { 作品根 } from '../环境/作品.ts';
 import { 算默克尔, 文本哈希, 编译选项, 锁定版本, 默克尔算法, type 默克尔明细 } from './默克尔.ts';
 import type { 段信息 } from '../清单/清单.ts';
-import type { 叠层定义 } from '../../content/段定义.ts';
+import type { 叠层定义 } from '../../engine/段/段定义.ts';
 
 export type 指纹项 = {
   代码: { 画面根: string; 段根: string; 设置根: string; 外壳根: string };
@@ -29,7 +30,8 @@ export { 锁定版本 };
 
 /** 决定像素和声音的包，不管闭包里直接引没引都记版本 */
 const 关键依赖 = ['remotion', '@remotion/bundler', '@remotion/renderer', '@remotion/media', '@remotion/three', 'three', 'react', 'react-dom', 'webpack', 'esbuild'];
-const 外壳入口 = 'content/index.ts';
+/** 外壳入口是所选作品的 index.ts（和 渲.ts 的 entryPoint 同一个） */
+const 外壳入口 = () => 相对代码根(path.join(作品根(), 'index.ts'));
 const 打包规则文件 = ['pipeline/资产/webpack.ts', 'pipeline/资产/ogg解码.cjs'];
 
 const sha = (buf: crypto.BinaryLike) => crypto.createHash('sha256').update(buf).digest('hex');
@@ -62,7 +64,7 @@ const 略过清单 = (importer: string, 目标: string) => path.basename(importe
 
 export const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, unknown>, 叠层?: 叠层定义): Promise<段指纹> => {
   const 入口 = 叠层 ? path.join(s.目录, 叠层.入口) : s.画面;
-  const { 根, 明细 } = await 算默克尔([相对代码根(入口), 相对代码根(s.段文件), 'content/设置.ts', 外壳入口], { 略过: 略过清单 });
+  const { 根, 明细 } = await 算默克尔([相对代码根(入口), 相对代码根(s.段文件), 'engine/段/设置.ts', 外壳入口()], { 略过: 略过清单 });
   const 版本表 = 读地形版本表();
   const 地形 = Object.fromEntries(
     [...s.段.地形].sort().map((名) => {

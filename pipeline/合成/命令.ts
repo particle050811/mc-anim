@@ -2,7 +2,7 @@
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 选段 } from '../清单/清单.ts';
-import { 渲染级别取值, type 渲染级别 } from '../../content/设置值.ts';
+import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
 import { 合成成片 } from './成片.ts';
 
 export const 合成命令: Record<string, 命令> = {

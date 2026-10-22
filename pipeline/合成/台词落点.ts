@@ -1,10 +1,10 @@
 // 台词落点：按清单顺序扫各段 段.ts 的声音 cue，台词 cue 换成全片帧、配音文件、要显示的字和断屏（给 字幕.ts 排时间）。
-// cue 的帧是开口落在段内第几帧（同 engine/audio/台词轨.tsx），文件头 = 帧 − 开口秒 × fps；开口秒、字幕位置取 story/台词.toml 那条（字幕位置没写是 下）。
+// cue 的帧是开口落在段内第几帧（同 engine/audio/台词轨.tsx），文件头 = 帧 − 开口秒 × fps；开口秒、字幕位置取 作品/应力转动/台词.toml 那条（字幕位置没写是 下）。
 // 接上段的 cue（上一段说过来的后半截）照旧项目 台词落点.ts：跨段的另记一条 接上段，只拿来核对；同一段里接着放的不另记。
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
-import type { 段定义, 台词cue } from '../../content/段定义.ts';
+import type { 段定义, 台词cue } from '../../engine/段/段定义.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 读作品资产锁, 解析资产 } from '../资产/资产锁.ts';
 import { 作品根 } from '../环境/作品.ts';
@@ -16,10 +16,10 @@ export type 台词条目 = { id: string; 角色: string; 文本: string; 配音?
 export type 截位置 = { 段: 段信息; 全片起帧: number };
 type 段声音 = Pick<段定义, '声音' | 'fps' | '帧数'>;
 
-export const 读台词表 = (file = path.join(代码根(), 'story', '台词.toml')): 台词条目[] =>
+export const 读台词表 = (file = path.join(作品根(), '台词.toml')): 台词条目[] =>
   fs.existsSync(file) ? (((parse(fs.readFileSync(file, 'utf8')) as { 台词?: 台词条目[] }).台词 ?? []) as 台词条目[]) : [];
 
-/** 台词 id → 开口秒（story/台词.toml 的 开口，没写按 0：文件开头就开口） */
+/** 台词 id → 开口秒（作品/应力转动/台词.toml 的 开口，没写按 0：文件开头就开口） */
 export const 开口表 = (表: 台词条目[]) => {
   const m = new Map(表.map((t) => [t.id, t.开口 ?? 0]));
   return (id: string) => m.get(id) ?? 0;
@@ -69,8 +69,8 @@ export const 算台词落点 = (
   for (const { 段: s, 全片起帧 } of 截们) {
     const 查 = (id: string) => {
       const t = 表.get(id);
-      if (!t) throw new Error(`${s.键} 的台词「${id}」不在 story/台词.toml 里`);
-      if (!t.配音) throw new Error(`台词「${t.id}」还没配音（story/台词.toml 没写 配音），出不了字幕`);
+      if (!t) throw new Error(`${s.键} 的台词「${id}」不在 作品/应力转动/台词.toml 里`);
+      if (!t.配音) throw new Error(`台词「${t.id}」还没配音（作品/应力转动/台词.toml 没写 配音），出不了字幕`);
       return t as 台词条目 & { 配音: string };
     };
     for (const c of s.段.声音 ?? []) if (c.台词 !== undefined) 查(c.台词);
