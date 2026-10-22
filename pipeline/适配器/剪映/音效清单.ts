@@ -47,7 +47,7 @@ export const 段的清单 = (
   const 头们 = 台词头们(s.段, 开口, 上一段);
   头们.forEach((h, i) => {
     const id = 台词配音.get(h.cue.台词);
-    if (!id) throw new Error(`${s.键} 第 ${h.cue.帧} 帧的台词「${h.cue.台词}」在 作品/应力转动/台词.toml 里没写 配音`);
+    if (!id) throw new Error(`${s.键} 第 ${h.cue.帧} 帧的台词「${h.cue.台词}」在 <作品根>/台词.toml 里没写 配音`);
     const file = 取文件(id);
     const 起帧 = h.起帧;
     const 跳 = 起帧 - h.头;

@@ -3,7 +3,7 @@
 // 改模型：改 Blender 脚本 → 重跑导出、按 assets/kits/李樱.toml「生成链」重新入库，这个文件不用动。
 // 三个黄铜齿轮（左胸、左肩、左腿外侧）和左臂铜管不是体素：json 的 extras 里是参数，这里建成平滑几何（梯形齿齿轮、沿曲线圆管），用方块堆圆只会有锯齿。
 // 没有背包：背面只有背带和胸带交叉。扳手和枯石太刀不在这里：手上、腰上的东西由 handR / handL / hipL 传入。尺寸单位见 骨架.tsx。
-// 核对：作品/应力转动/核对/角色包（新旧逐像素比）；量比例的「李樱对照」还在旧项目。
+// 核对：作品的核对段 核对-角色包（新旧逐像素比）；量比例的「李樱对照」还在旧项目。
 import React, { useContext, useMemo } from 'react';
 import * as THREE from 'three';
 import { Ghost } from '../../engine/model/parts.tsx';
