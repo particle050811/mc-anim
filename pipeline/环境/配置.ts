@@ -47,6 +47,12 @@ const 项表 = {
   ffprobe: { 变量: 'ANIM_FFPROBE', 说明: 'ffprobe 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffprobe' },
   渲染内存下限: { 变量: 'ANIM_RENDER_FREE_MIN', 说明: '渲染放行要的空闲内存百分比（照旧资源闸 30%）', 是路径: false, 默认: () => '30' },
   主机: { 变量: 'ANIM_HOST', 说明: '本机名（写进锁和运行记录）', 是路径: false, 默认: () => os.hostname() },
+  记忆: {
+    变量: 'ANIM_MEMORY',
+    说明: 'agent-context 里本作品的记忆目录（规矩表出处 M/ 的根；anim check 查引用的记忆在不在，不在本机就跳过）',
+    是路径: true,
+    默认: () => path.join(os.homedir(), 'Developer', 'company', 'agent-context', 'memory', 'projects', 'stress-rotation-comic'),
+  },
   剪映: { 变量: 'ANIM_JIANYING_APP', 说明: '剪映专业版（Mac 版的 .app；读回草稿时解密用它的库）', 是路径: true, 默认: () => '/Applications/VideoFusion-macOS.app' },
   剪映草稿: {
     变量: 'ANIM_JIANYING_DRAFTS',

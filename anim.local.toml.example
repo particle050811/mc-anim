@@ -45,6 +45,9 @@
 # 本机名（写进锁旁的 .主机 文件和运行记录）。环境变量 ANIM_HOST。默认取系统主机名
 # host = "笔记本"
 
+# agent-context 里本作品的记忆目录（规矩表出处 M/ 的根，anim check 查引用的记忆在不在；不在本机就跳过）。环境变量 ANIM_MEMORY。默认 ~/Developer/company/agent-context/memory/projects/stress-rotation-comic
+# memory = "/Users/me/Developer/company/agent-context/memory/projects/stress-rotation-comic"
+
 # 剪映专业版（Mac 版的 .app；anim jianying readback 解密草稿用它的库）。环境变量 ANIM_JIANYING_APP。默认 /Applications/VideoFusion-macOS.app
 # jianying_app = "/Applications/VideoFusion-macOS.app"
 

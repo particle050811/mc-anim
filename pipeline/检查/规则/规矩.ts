@@ -1,9 +1,11 @@
 // 规矩：rules/规矩.toml 的格式；代码里每个 例外('规矩id', 值, {段|场, 原因}) 都在表里那条规矩的 例外 里登记过、值对得上，
 // 表里登记的例外代码里也都找得到（段或场还没搬进来的算待迁移）；默认值的落点（<路径> [符号、符号…]）文件和符号都在。
 // 落点以「旧:」或「待迁移:」开头的是还在旧项目里的，算待迁移，搬完改成新路径。
+// 出处里 M/<名>.md 指的记忆（根是配置 记忆，ANIM_MEMORY）要在；记忆仓库不在本机（别的机器、公开版）就跳过，不算违规。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 读内容 } from '../内容.ts';
+import { 配置 } from '../../环境/配置.ts';
 import { 代码后缀, 是渲染代码, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 声明的名字, 字面值, 属性名, 行号, 解析, 遍历, ts } from '../语法.ts';
 
@@ -106,6 +108,24 @@ export const 解析落点 = (s: string): { 待迁移: true } | { 路径: string;
   return { 路径: 路径.replace(/\/$/, ''), 符号: 其余.join(' ').split(/[、，,\s]+/).filter(Boolean) };
 };
 
+/** 出处文本里的记忆引用：M/<相对记忆根的路径>.md，可带 :行号 */
+export const 记忆引用 = (s: string): { 路径: string; 行?: number }[] =>
+  [...s.matchAll(/(?<![\p{L}\p{N}_/])M\/([\p{L}\p{N}._/-]+?\.md)(?::(\d+))?/gu)].map((m) => ({ 路径: m[1]!, ...(m[2] ? { 行: Number(m[2]) } : {}) }));
+
+/** 出处里 M/ 引用的记忆都在、带行号的没超出文件 */
+const 查记忆引用 = (c: 检查上下文, 报: 报告, 引用们: { 规矩: string; 出处: string }[]) => {
+  const 全部 = 引用们.flatMap((x) => 记忆引用(x.出处).map((m) => ({ ...m, 规矩: x.规矩 })));
+  if (!全部.length) return;
+  const 根 = c.记忆根 ?? 配置('记忆');
+  if (!fs.existsSync(根)) return void 报.跳过.push(`出处的记忆引用（${全部.length} 处）：记忆目录 ${根} 不在本机（ANIM_MEMORY 指定）`);
+  for (const m of 全部) {
+    const f = path.resolve(根, ...m.路径.split('/'));
+    const 名 = `规矩「${m.规矩}」的出处 M/${m.路径}`;
+    if (!fs.existsSync(f) || !fs.statSync(f).isFile()) 报.错(`${名} 在记忆目录里找不到（记忆删了、改名或合并了就改出处）`, 规矩表路径);
+    else if (m.行 !== undefined && fs.readFileSync(f, 'utf8').split('\n').length < m.行) 报.错(`${名}:${m.行} 超出文件行数`, 规矩表路径);
+  }
+};
+
 const 有符号 = (c: 检查上下文, 路径: string, 符号: string) => {
   const 名 = 符号.split('.')[0]!;
   const 源 = c.读(路径);
@@ -123,6 +143,7 @@ export const 规矩 = async (c: 检查上下文, 报: 报告) => {
   }
   const 位 = 规矩表路径;
   const 表 = new Map<string, 例外条目[]>();
+  const 出处们: { 规矩: string; 出处: string }[] = [];
   for (const r of (doc['规矩'] ?? []) as 规矩条目[]) {
     const 名 = `规矩「${String(r.id)}」`;
     if (typeof r.id !== 'string' || !r.id) {
@@ -136,6 +157,7 @@ export const 规矩 = async (c: 检查上下文, 报: 报告) => {
     else if (r.级别 === '原话' && r.原话.length === 0) 报.错(`${名}：级别是 原话，原话却是空的`, 位);
     if (typeof r.针对 !== 'string' || !r.针对) 报.错(`${名}：要写 针对`, 位);
     if (!Array.isArray(r.出处) || r.出处.length === 0) 报.错(`${名}：出处 要是非空数组`, 位);
+    else for (const s of r.出处) if (typeof s === 'string') 出处们.push({ 规矩: r.id, 出处: s });
     if (!Array.isArray(r.落点) || r.落点.some((x) => typeof x !== 'string')) 报.错(`${名}：落点 要是字符串数组（没有共用落点写 []）`, 位);
     if (!Array.isArray(r.例外)) {
       报.错(`${名}：例外 要是数组（没有写 []）`, 位);
@@ -144,6 +166,7 @@ export const 规矩 = async (c: 检查上下文, 报: 报告) => {
       for (const x of r.例外 as 例外条目[]) {
         if ((typeof x.段 === 'string') === (typeof x.场 === 'string')) 报.错(`${名} 的例外要写 段 或 场（二选一）`, 位);
         if (x.值 === undefined || typeof x.原因 !== 'string' || !x.原因 || typeof x.出处 !== 'string' || !x.出处) 报.错(`${名} 的例外（${对象(x)}）要写 值、原因、出处`, 位);
+        else 出处们.push({ 规矩: r.id, 出处: x.出处 });
       }
       表.set(r.id, r.例外 as 例外条目[]);
     }
@@ -157,6 +180,8 @@ export const 规矩 = async (c: 检查上下文, 报: 报告) => {
       else for (const s of l.符号) if (!有符号(c, l.路径, s)) 报.错(`${名} 的落点 ${l.路径} 里找不到符号 ${s}`, 位);
     }
   }
+
+  查记忆引用(c, 报, 出处们);
 
   // 代码 → 表
   const 代码 = 找代码例外(c, 报);

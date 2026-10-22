@@ -1,6 +1,9 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { 基础, 跑, 造仓库 } from './测试夹具.ts';
-import { 解析落点 } from './规则/规矩.ts';
+import { 解析落点, 记忆引用 } from './规则/规矩.ts';
 
 const 规矩表 = (落点: string, 例外: string) => ({
   'rules/规矩.toml': [
@@ -110,6 +113,50 @@ describe('规矩', () => {
     expect(v).toMatch(/别名.ts:2 例外 只能直接调用/);
     expect(v).toMatch(/别名.ts:3 不许转出 例外/);
     expect(v).toMatch(/world\/转出.ts:1 不许转出 engine\/core\/例外.ts/);
+  });
+
+  it('出处里 M/ 引用的记忆要在、行号不超出；记忆目录不在本机就跳过', async () => {
+    const 表 = (出处: string, 例外出处: string) => ({
+      'rules/规矩.toml': [
+        '[["规矩"]]',
+        'id = "打击停顿"',
+        '"默认值" = 1',
+        '"级别" = "参考"',
+        '"原话" = []',
+        '"针对" = "打中"',
+        `"出处" = ${出处}`,
+        '"落点" = []',
+        `"例外" = [{ "段" = "6-斩娜迦", "值" = 2, "原因" = "看过的版本", "出处" = "${例外出处}" }]`,
+      ].join('\n'),
+    });
+    const 记忆 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-记忆-')));
+    try {
+      fs.mkdirSync(path.join(记忆, '..', path.basename(记忆) + '-旁'), { recursive: true });
+      fs.writeFileSync(path.join(记忆, '..', path.basename(记忆) + '-旁', '合并.md'), '一\n');
+      fs.writeFileSync(path.join(记忆, 'fight.md'), '一\n二\n三\n');
+      const 旁 = `M/../${path.basename(记忆)}-旁/合并.md`;
+      const 好 = await 跑('规矩', 造仓库(基础(), 表(`["用户 10-18", "M/fight.md", "M/fight.md:3", "${旁}"]`, 'M/fight.md；7d077904')), { 记忆根: 记忆 });
+      expect(好.违规).toEqual([]);
+      expect(好.报.跳过).toEqual([]);
+
+      const 坏 = (await 跑('规矩', 造仓库(基础(), 表('["M/fight.md:9", "M/删了.md"]', 'M/改名了.md')), { 记忆根: 记忆 })).违规.join('\n');
+      expect(坏).toMatch(/规矩「打击停顿」的出处 M\/fight.md:9 超出文件行数/);
+      expect(坏).toMatch(/规矩「打击停顿」的出处 M\/删了.md 在记忆目录里找不到/);
+      expect(坏).toMatch(/规矩「打击停顿」的出处 M\/改名了.md 在记忆目录里找不到/);
+
+      const 不在 = await 跑('规矩', 造仓库(基础(), 表('["M/删了.md"]', 'M/改名了.md')), { 记忆根: path.join(记忆, '没有这个目录') });
+      expect(不在.违规).toEqual([]);
+      expect(不在.报.跳过.join('\n')).toMatch(/出处的记忆引用（2 处）：记忆目录 .*没有这个目录 不在本机/);
+    } finally {
+      fs.rmSync(记忆, { recursive: true, force: true });
+      fs.rmSync(path.join(记忆, '..', path.basename(记忆) + '-旁'), { recursive: true, force: true });
+    }
+  });
+
+  it('记忆引用的写法', () => {
+    expect(记忆引用('M/manju-adaptation.md:18「可写」')).toEqual([{ 路径: 'manju-adaptation.md', 行: 18 }]);
+    expect(记忆引用('M/a.md、M/../image-flow/b-c.md')).toEqual([{ 路径: 'a.md' }, { 路径: '../image-flow/b-c.md' }]);
+    expect(记忆引用('CLAUDE.md 元规则 1；ANIM/x.md；docs/M/x.md')).toEqual([]);
   });
 
   it('落点格式', () => {

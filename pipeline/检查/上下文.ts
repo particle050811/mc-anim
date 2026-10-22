@@ -77,15 +77,18 @@ export class 检查上下文 {
   readonly 根: string;
   readonly 深: boolean;
   readonly 数据根: string | undefined;
+  /** 规矩表出处 M/ 的根；不给就用配置 记忆（ANIM_MEMORY） */
+  readonly 记忆根: string | undefined;
   #文件?: string[];
   #图?: Promise<依赖图>;
   #加载 = new Map<string, Promise<加载结果>>();
   #tmp?: string;
 
-  constructor(根: string, 选项: { 深?: boolean; 数据根?: string } = {}) {
+  constructor(根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string } = {}) {
     this.根 = fs.realpathSync(根);
     this.深 = 选项.深 ?? false;
     this.数据根 = 选项.数据根;
+    this.记忆根 = 选项.记忆根;
   }
 
   绝对 = (p: string) => path.join(this.根, ...p.split('/'));
