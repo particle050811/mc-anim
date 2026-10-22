@@ -1,4 +1,6 @@
 // anim 的入口（anim / anim.cmd 转到这里，Node 24 直接跑 TS）：按子命令分发，每条命令结束写运行记录、追加耗时。
+// 第一个 import 注册 @engine/、@库/ 的解析钩子（见 环境/别名钩子.ts），之后 import() 进来的作品文件才认得这两个前缀。
+import '../环境/别名注册.ts';
 import { 用法错误 } from './参数.ts';
 import { 运行记录 } from '../运行记录/记录.ts';
 import type { 命令 } from './命令.ts';

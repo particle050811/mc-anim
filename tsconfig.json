@@ -12,7 +12,8 @@
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
-    "types": ["node"]
+    "types": ["node"],
+    "paths": { "@engine/*": ["./engine/*"], "@库/*": ["./库/*"] }
   },
   "include": ["engine", "world", "pipeline", "content", "assets/src", "remotion.config.ts", "vitest.config.ts"]
 }

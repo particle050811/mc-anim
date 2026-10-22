@@ -1,6 +1,7 @@
 // pipeline 这边看段：按 content/清单.ts 的顺序读各段的 段.ts（纯数据），以及选择器（anim render、anim film 的范围）。
 // 选择器全字匹配：段键、段名、编号、场键、章，或章的范围（6-7）；几个选择器取并集，结果按清单顺序。
 import path from 'node:path';
+import '../环境/别名注册.ts';
 import { pathToFileURL } from 'node:url';
 import { 清单, 段目录, 段名, 编号, type 清单条目 } from '../../content/清单.ts';
 import type { 段定义 } from '../../content/段定义.ts';
