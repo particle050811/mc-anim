@@ -7,7 +7,7 @@ import { DamageNumberLayer, makePerspectiveCamera } from '../../../world/界面/
 import { windArrowHit } from '../../场/7-黑暗监守/7-1-5/伤害数字层.tsx';
 import { followArrowHits } from '../../场/7-黑暗监守/7-1-7/伤害数字层.tsx';
 import { JadeLeaderLine, JadeTooltip, jadeBoxHeight, jadeLineScalePerWidth, jadeScalePerWidth } from '../../../world/界面/Jade.tsx';
-import { mouthAt } from '../../../world/角色/口型.ts';
+import { mouthAt } from '../../../world/配音/口型.ts';
 import { ScenePicture } from '../../场/7-李樱撤离/7-2/画面.tsx';
 import * as choreo from './编排.ts';
 import { FiftyKHpSound } from './声音.tsx';

@@ -3,7 +3,7 @@
 // 台词「开到了！」开口帧在 编排.ts 的 台词；配音在 src/配音/（工具/配音/生成台词.py），按开口帧挂台词轨。
 import React from 'react';
 import { GameSoundTrack } from '../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../world/配音/台词轨.tsx';
 import { sceneSounds } from '../../场/7-李樱撤离/7-2/声音.ts';
 import * as choreo from './编排.ts';
 

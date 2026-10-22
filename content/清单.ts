@@ -43,6 +43,9 @@ export const 清单: readonly 清单条目[] = [
   { 键: '7-起疑', 章: 7, 集: 1 },
 ];
 
+/** 求解缓存的入口（名 → 相对本目录的模块）：打包时按它们的依赖闭包算代码层指纹（pipeline/指纹/求解指纹.ts、engine/core/求解缓存.ts） */
+export const 求解入口: Readonly<Record<string, string>> = { 航线求解: '场/6-暮色森林/一镜到底/航线求解.ts' };
+
 /** 段目录（相对 content/） */
 export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice('核对-'.length)}` : `段/${键}`);
 

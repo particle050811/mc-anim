@@ -8,7 +8,7 @@ import React from 'react';
 import { MusicAudio } from '../../../world/配乐/配乐音轨.tsx';
 import { halfGain, ch6FlightMusic } from '../../../world/配乐/第六章飞行.ts';
 import { GameSoundTrack } from '../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../world/配音/台词轨.tsx';
 import type { V3 } from '../../../engine/model/parts.tsx';
 import * as choreo from '../../场/6-暮色森林/6-1-9b/编排.ts';
 import { landingSounds } from '../../场/6-暮色森林/6-1-9b/落地编排.ts';

@@ -21,7 +21,7 @@
 import React from 'react';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import { 声音Sequence } from '../../../../engine/audio/声音Sequence.tsx';
 import * as choreo from './编排.ts';
 

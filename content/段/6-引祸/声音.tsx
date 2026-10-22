@@ -9,7 +9,7 @@
 import React from 'react';
 import { rng, type V3 } from '../../../engine/model/parts.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../world/配音/台词轨.tsx';
 import { woolBlockAt, wool645 } from '../../../world/地点/古城4x/布局.ts';
 import * as K644 from '../../场/6-古城/6-4-4/编排.ts';
 import { sounds as 声们644 } from '../../场/6-古城/6-4-4/声音.tsx';

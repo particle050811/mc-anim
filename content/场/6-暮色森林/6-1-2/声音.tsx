@@ -21,7 +21,7 @@
 // 听者 = 镜头机位（src/音效/游戏音效.tsx），坐标都是庭院本地坐标（同 6-1-1 暮色森林那一半、6-1-3）。
 import React from 'react';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import { GameSoundTrack, randomPitch, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
 import * as K11 from '../6-1-1/声音.tsx';
 import * as choreo from './编排.ts';

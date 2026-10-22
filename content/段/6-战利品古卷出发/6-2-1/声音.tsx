@@ -14,7 +14,7 @@
 import React from 'react';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
-import { lineFrameCount, LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { lineFrameCount, LineTrack } from '../../../../world/配音/台词轨.tsx';
 import { compassClickFrames } from '../../../../world/界面/结构罗盘.tsx';
 import type { WalkPath } from './动作.ts';
 import * as choreo from './编排.ts';

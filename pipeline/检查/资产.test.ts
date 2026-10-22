@@ -120,6 +120,23 @@ describe('资产', () => {
     }
   });
 
+  it('取地形包的段（闭包里有 区段包位置.ts）写到的登记包名都要在 段.地形 里；不取地形的段写到了也不管', async () => {
+    const 地形表 = JSON.stringify({ 包: { 主世界: { 版本: 'v1', 许可: 'MIT', 可见性: '发布' }, 暮色: { 版本: 'v2', 许可: 'MIT', 可见性: '发布' } } });
+    const 文件 = (地形: string) => ({
+      'assets/地形版本.json': 地形表,
+      'engine/voxel/区段包位置.ts': "export const packDir = (名: string) => `terrain/${名}`;\n",
+      'world/地点/名.ts': "export const 主世界名 = '主世界';\nexport const 暮色名 = '暮色';\n",
+      'content/段/7-甲/段.ts': `import { 定义段 } from '../../段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: ${地形} });\n`,
+      'content/段/7-甲/画面.tsx':
+        "import 图 from 'asset:贴图/甲';\nimport { packDir } from '../../../engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../../world/地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
+    });
+    expect((await 跑('资产', 造仓库(基础(), 文件('["主世界"]')))).违规.filter((x) => x.includes('地形')).join('\n')).toMatch(/7-甲 的闭包会取地形包.*写到了 暮色/);
+    expect((await 跑('资产', 造仓库(基础(), 文件('["主世界", "暮色"]')))).违规).toEqual([]);
+    const 不取 = 文件('[]');
+    不取['content/段/7-甲/画面.tsx'] = "import 图 from 'asset:贴图/甲';\nimport { 主世界名 } from '../../../world/地点/名.ts';\nexport default () => <img src={图 + 主世界名} />;\n";
+    expect((await 跑('资产', 造仓库(基础(), 不取))).违规).toEqual([]);
+  });
+
   it('SPDX 表达式和角色包通配', () => {
     for (const ok of ['MIT', 'CC-BY-4.0', 'LicenseRef-用户保留', 'GPL-2.0-only WITH Classpath-exception-2.0', '(MIT OR Apache-2.0) AND CC0-1.0']) expect(SPDX合法(ok)).toBe(true);
     for (const bad of ['', 'MIT OR', '(MIT', 'MIT GPL', 'MIT 或 GPL', 'AND']) expect(SPDX合法(bad)).toBe(false);

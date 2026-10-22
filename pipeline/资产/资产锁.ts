@@ -22,6 +22,15 @@ export const 读资产锁 = (file = 资产锁路径()): 资产锁 => {
   }
 };
 
+/** 打包一部作品用的锁：共用的 assets/资产锁.json 并上 <作品根>/资产锁.json（没有就只用共用的）；同一个 id 两边都有就报错 */
+export const 读作品资产锁 = (作品根: string): 资产锁 => {
+  const 共用 = 读资产锁();
+  const 作品 = 读资产锁(path.join(作品根, '资产锁.json'));
+  const 重 = Object.keys(作品).filter((id) => id in 共用);
+  if (重.length) throw new Error(`资产 id 在共用锁和 ${path.join(作品根, '资产锁.json')} 里都有：${重.join('、')}（一个 id 只登记在一侧）`);
+  return { ...共用, ...作品 };
+};
+
 export const 写资产锁 = (锁: 资产锁, file = 资产锁路径()) => {
   // 条目里的字段也排序，和 Python json.dumps(sort_keys=True, ensure_ascii=False, indent=2) 写出的逐字节一样
   const 排 = (o: object): object => Object.fromEntries(Object.keys(o).sort().map((k) => [k, (o as Record<string, unknown>)[k]]));

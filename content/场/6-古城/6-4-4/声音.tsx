@@ -7,7 +7,7 @@
 import React from 'react';
 import type { SoundCue } from '../../../../engine/audio/游戏音效.tsx';
 import { GameSoundTrack } from '../../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import * as choreo from './编排.ts';
 
 const FPS = choreo.FPS;

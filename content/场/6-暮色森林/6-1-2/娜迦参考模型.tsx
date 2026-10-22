@@ -28,7 +28,7 @@ import { LandmarkPlacement, twilightLandmark, TwilightTerrain } from '../../../.
 import * as choreo from './编排.ts';
 import * as motion from './动作改进.ts';
 import { nagaLineCues, NagaShotSound } from './声音.tsx';
-import { mouthAt, type Mouth } from '../../../../world/角色/口型.ts';
+import { mouthAt, type Mouth } from '../../../../world/配音/口型.ts';
 import { 渲染输入 } from '../../../../engine/core/渲染设置.ts';
 
 // 李樱用哪一版动作：原版（6-1-2-斩娜迦-旧动作）是 编排.ts 的 `liying`；正式的 6-1-2-斩娜迦（动作改进）换成 动作改进.ts 的 `liyingV2`（人、残影、刀光都跟着换）

@@ -8,7 +8,8 @@
 // 周边对不上的一律用新世界的（用户 10-06「就按照新世界的来」），只留编排离不开的结构本体：九头蛇巢穴用新世界自己那座（不摆网格），巫妖怪塔四周换稀树草原，娜迦庭院东南角、雪怪洞窟、极光宫殿缩核心，终焉城堡只压平占地。
 import type { V3 } from '../../../engine/model/parts.tsx';
 import type { LandmarkCutout, FlattenArea } from '../../../engine/voxel/导入地形.ts';
-import { frozenOrigin } from '../../../engine/voxel/冻结粗高度.ts';
+import { frozenOrigin, type 冻结粗高度文件 } from '../../../engine/voxel/冻结粗高度.ts';
+import twilightFrozenFile from '../../../assets/冻结粗高度/暮色放大-1752-扩展.json';
 import nagaMesh资产 from 'asset:网格/娜迦庭院/头';
 import lichMesh资产 from 'asset:网格/巫妖怪塔/头';
 import hydraMesh资产 from 'asset:网格/九头蛇巢穴/头';
@@ -36,8 +37,10 @@ const nagaTakeoffHide = nagaTakeoffHide资产 as unknown as { 藏: number[][] };
 
 // 区段包：另烘焙成 暮色放大-1752-扩展（npm run 导入:暮色放大1752扩展），预生成范围往四周补了一圈（工具/游戏取材/暮色范围.py），让一镜到底往前看 3 公里内都有地形；共用的 暮色放大-1752 不动
 export const twilightPackName = '暮色放大-1752-扩展';
-// 原点按冻结的那份（lib/体素/冻结粗高度.ts），和编排用的粗高度一致
-export const [POX, POY, POZ] = frozenOrigin(twilightPackName);
+// 这个包冻结进仓库的粗高度和原点（engine/voxel/冻结粗高度.ts）：编排用的粗高度、原点都从这份取
+export const twilightFrozen = twilightFrozenFile as 冻结粗高度文件;
+// 原点按冻结的那份，和编排用的粗高度一致
+export const [POX, POY, POZ] = frozenOrigin(twilightFrozen);
 // 游戏坐标（连续）→ 世界坐标
 export const gameToWorld = (g: number[]): V3 => [g[0] - POX, POZ - g[2], g[1] - POY];
 

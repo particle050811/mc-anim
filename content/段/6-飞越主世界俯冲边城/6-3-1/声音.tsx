@@ -5,7 +5,7 @@
 //   歌曲时间、渐弱从 6-2-5/编排.ts 的 段表、卡.停住 算：渐弱从悬停那刻起三小节，到第 169 帧淡到无声。不用 第六章飞行.ts 里的旧 淡出 [46,1]→[49,1]（旧卡点比现在的悬停早 4 秒，会一下跳）。
 // - 九胡把手里的指南针拿到身前、收回：没有声音，不加；高空没有风声；女仆模组的扫帚悬停、飞行都没有声音。
 import React from 'react';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import { FlightMusic } from '../../../../world/地点/边城/6-2-5/飞越主世界.tsx';
 import { segmentTable as 飞行段表 } from '../../../../world/地点/边城/6-2-5/编排.ts';
 import { lines } from '../../../场/6-边城/6-3-1/编排.ts';

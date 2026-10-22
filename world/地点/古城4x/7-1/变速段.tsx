@@ -5,7 +5,7 @@ import React from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
 import { GameSoundTrack, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
 import { scheduleToScreen } from '../../../../engine/audio/慢放.ts';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../配音/台词轨.tsx';
 import type { Cam } from '../6-4-1/古城画面.tsx';
 import type { 变速 } from './变速.ts';
 import { ScenePicture } from './画面.tsx';

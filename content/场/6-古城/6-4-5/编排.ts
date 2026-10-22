@@ -21,7 +21,7 @@ import { FPS, PLACE_BEFORE, airPose, groundPose, landPose, mixPose, nearYaw, piv
 import * as choreo643 from '../6-4-3/编排.ts';
 import * as timeline643 from '../6-4-3/时间线.ts';
 import { allWool, elite, eliteLeap, feetOnWool, withHang, woolBlockAt, wool645, woolLeapApex, liYingDeflectFeet, huangPanArcheryFeet, archery, woolOrder, type WoolName, type 跳 } from '../../../../world/地点/古城4x/布局.ts';
-import { lineTable } from '../../../../engine/audio/台词轨.tsx';
+import { lineTable } from '../../../../world/配音/台词轨.tsx';
 import type * as THREE from 'three';
 import { sheathConstraint as 收刀约束, type SheathTiming } from '../../../../world/物品/拔刀剑收刀.ts';
 

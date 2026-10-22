@@ -21,7 +21,7 @@ import { TomeRecipeWindow } from '../../../../world/界面/古卷.tsx';
 import { FuelWindow, MailleWindow } from '../../../../world/界面/匠魂.tsx';
 import { CompassUi } from '../../../../world/界面/结构罗盘.tsx';
 import * as choreo from './编排.ts';
-import { mouthAt } from '../../../../world/角色/口型.ts';
+import { mouthAt } from '../../../../world/配音/口型.ts';
 import { lineCues } from './声音.tsx';
 
 const mouthCues = lineCues.map(({ id, frame }) => ({ id, 帧: frame }));

@@ -4,7 +4,7 @@ import { useCurrentFrame } from 'remotion';
 import { DeflectView } from '../../场/6-古城/6-4-3/画面.tsx';
 import * as choreo from '../../场/6-古城/6-4-4/编排.ts';
 import { TwiceSound } from '../../场/6-古城/6-4-4/声音.tsx';
-import { mouthAt } from '../../../world/角色/口型.ts';
+import { mouthAt } from '../../../world/配音/口型.ts';
 
 export const twiceFrames = choreo.frameCount;
 

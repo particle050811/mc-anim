@@ -16,7 +16,7 @@ import { handoffs } from '../../../../world/地点/古城4x/布局.ts';
 import { lookToward } from '../../../场/6-古城/6-4-6/走位.ts';
 import { FPS, τ647, frameCount647, huangPanPose, liuXinzhongPose, liuStompJump, huangFollowJump, fourthShriek, startSec647 } from '../../../场/6-古城/6-4-6/追兵.ts';
 import * as K648 from '../../../../world/地点/古城4x/6-4-8/编排.ts';
-import { lineTable } from '../../../../engine/audio/台词轨.tsx';
+import { lineTable } from '../../../../world/配音/台词轨.tsx';
 
 export { FPS };
 export const frameCount = frameCount647;

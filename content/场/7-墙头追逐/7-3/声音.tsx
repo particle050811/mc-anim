@@ -10,7 +10,7 @@
 import React from 'react';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, LoopSound, randomPitch, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import type { Cam } from '../../../../world/地点/古城4x/6-4-1/古城画面.tsx';
 import * as play from '../../../../world/地点/古城4x/7-3/戏.ts';
 import * as timeline from '../../../../world/地点/古城4x/7-3/时间线.ts';

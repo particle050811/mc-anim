@@ -8,7 +8,7 @@ const envelopeOf = (file: string) => {
   let envelope = envelopeCache.get(file);
   if (!envelope) {
     const b64 = peakTable.峰[file];
-    if (!b64) throw new Error(`资产 数据/音效/音效峰值 里没有 ${file}：新加了音效要重算峰值（旧项目 工具/游戏取材/音效峰值.py，待迁移），再 sr assets add 数据/音效/音效峰值 <文件>`);
+    if (!b64) throw new Error(`资产 数据/音效/音效峰值 里没有 ${file}：新加了音效要重算峰值（旧项目 工具/游戏取材/音效峰值.py，待迁移），再 anim assets add 数据/音效/音效峰值 <文件>`);
     const bin = atob(b64);
     envelope = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) envelope[i] = bin.charCodeAt(i);

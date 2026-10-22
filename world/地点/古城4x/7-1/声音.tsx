@@ -15,7 +15,7 @@ import React from 'react';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
 import { GameSoundTrack, randomPitch, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
 import type { 音效档 } from '../../../../engine/audio/混音.ts';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../配音/台词轨.tsx';
 import type { Cam } from '../6-4-1/古城画面.tsx';
 import * as K649 from '../6-4-9/编排.ts';
 import { roarCue as roar649 } from '../6-4-9/声音.tsx';

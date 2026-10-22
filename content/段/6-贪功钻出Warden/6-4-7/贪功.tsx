@@ -2,7 +2,7 @@
 import React from 'react';
 import { PursuerScene } from '../../../场/6-古城/6-4-6/场景.tsx';
 import * as choreo from './编排.ts';
-import { withTalkNod } from '../../../../world/角色/口型.ts';
+import { withTalkNod } from '../../../../world/配音/口型.ts';
 
 // f：本段帧（6-4-7至9 的前一截，见 ../6-4-7至9/）
 export const GloryGrabView: React.FC<{ f: number }> = ({ f: frame }) => {

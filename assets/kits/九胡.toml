@@ -11,7 +11,7 @@
 import { Jiuhu } from 'world/角色/九胡.tsx';
 import { standPose } from 'world/角色/骨架.tsx';
 import { runPoseAt } from 'world/角色/跑步.ts';
-import { mouthAt } from 'world/角色/口型.ts';
+import { mouthAt } from 'world/配音/口型.ts'; // 本作品绑好口型表的；别的作品用 world/角色/口型.ts 的 做口型(口型表, 台词表) 绑自己的
 
 // 站着：tail 是尾巴轻摆的相位（弧度），按帧推进，例如 帧 / 12
 <Jiuhu pose={standPose([0, 0, 0])} tail={帧 / 12} />

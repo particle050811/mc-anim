@@ -12,7 +12,7 @@
 import { LiYing } from 'world/角色/李樱.tsx';
 import { standPose, bladeInHand } from 'world/角色/骨架.tsx';
 import { runPoseAt, speedProfile } from 'world/角色/跑步.ts';
-import { mouthAt } from 'world/角色/口型.ts';
+import { mouthAt } from 'world/配音/口型.ts'; // 本作品绑好口型表的；别的作品用 world/角色/口型.ts 的 做口型(口型表, 台词表) 绑自己的
 import { DrawnKatana, WornSheath } from 'world/物品/拔刀剑.tsx';
 
 // 站着，刀挂在左腰（WornSheath 是全片统一的挂法：刃口朝下、鞘尾上翘）
@@ -205,7 +205,7 @@ const 刃朝外 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0
 "旧位置" = "参考模型库/src/lib/口型.ts"
 "新位置" = "world/角色/口型.ts"
 "状态" = "已搬"
-"说明" = "mouthAt（按 数据/配音/口型 出嘴型）、withTalkNod（脸上没嘴的人说话点头）"
+"说明" = "mouthAt（按口型表出嘴型）、withTalkNod（脸上没嘴的人说话点头）、做口型（绑一部作品的口型表、台词表；本作品绑在 world/配音/口型.ts）"
 
 [["代码"]]
 "旧位置" = "参考模型库/src/模型/角色/跑步.ts"

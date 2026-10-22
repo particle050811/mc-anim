@@ -18,7 +18,7 @@ import { shrieks } from '../../../world/地点/古城4x/布局.ts';
 import * as K645 from '../../场/6-古城/6-4-5/编排.ts';
 import { FPS, τ646, frameCount646, headTrim646, huangPanPose, liuXinzhongPose, huangRoute, liuRoute, thirdShriekSec, chain } from '../../场/6-古城/6-4-6/追兵.ts';
 import { lookToward } from '../../场/6-古城/6-4-6/走位.ts';
-import { lineTable } from '../../../engine/audio/台词轨.tsx';
+import { lineTable } from '../../../world/配音/台词轨.tsx';
 
 export { FPS };
 export const frameCount = frameCount646;

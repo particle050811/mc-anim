@@ -8,7 +8,7 @@
 import React from 'react';
 import type { V3 } from '../../../engine/model/parts.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../engine/audio/游戏音效.tsx';
-import { LineTrack } from '../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../world/配音/台词轨.tsx';
 import * as choreo from './编排.ts';
 import { landingSounds, clickSounds } from '../../场/6-古城/6-4-6/追兵声.ts';
 

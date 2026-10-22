@@ -1,7 +1,7 @@
 // 航线下面的地物顶面：导入包的粗高度图，范围外退回 航线地面.json。
 import { coarseHeightAt } from '../../../../../engine/voxel/区段包.ts';
-import { frozenCoarse } from '../../../../../engine/voxel/冻结粗高度.ts';
-import { overworldPackName } from '../../../主世界116.ts';
+import { frozenCoarse, type 冻结粗高度文件 } from '../../../../../engine/voxel/冻结粗高度.ts';
+import overworldFrozen from '../../../../../assets/冻结粗高度/主世界-116.json';
 import groundJson资产 from 'asset:数据/镜头/6-2-5/航线地面';
 const groundJson = groundJson资产 as unknown as { x0: number; y0: number; 格: number; nx: number; ny: number; 高: string };
 
@@ -10,7 +10,7 @@ const groundJson = groundJson资产 as unknown as { x0: number; y0: number; 格:
 //   林子上是树冠、平原上是地面、雪山上是雪面；离近处最高的东西（所在那格和四周 8 格里最高的顶）至少 25 米（同 一镜到底/路线.ts 的 `treeClearance`）。
 // 地物顶面：导入范围里查导入包 主世界-116 的粗高度图（16 米一格里最高的方块顶，含树冠、水面，同 `twilightFeatureTop` 的来源），用冻结进仓库的那份（lib/体素/冻结粗高度.ts），重烘导入包航线不跟着变；
 // 导入范围外退回 航线地面.json（工具/导入/航线地面.ts 算的 64 米一格的最高顶，远景那边不含树）。航线全在导入走廊里，退回的只有走廊边上几格
-const coarse = frozenCoarse(overworldPackName);
+const coarse = frozenCoarse(overworldFrozen as 冻结粗高度文件);
 const groundGrid = (() => {
   const bytes = Uint8Array.from(atob(groundJson.高), (c) => c.charCodeAt(0));
   return { ...groundJson, 高: new Int16Array(bytes.buffer, 0, groundJson.nx * groundJson.ny) };

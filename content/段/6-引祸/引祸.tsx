@@ -22,7 +22,7 @@ import * as G3 from '../../场/6-古城/6-4-3/几何.ts';
 import debrisRaw from 'asset:碎块/镜头/6-4-3/碎块';
 import * as choreo from '../../场/6-古城/6-4-5/编排.ts';
 import { LureSound } from './声音.tsx';
-import { mouthAt, type Mouth } from '../../../world/角色/口型.ts';
+import { mouthAt, type Mouth } from '../../../world/配音/口型.ts';
 
 // 同 6-4-3/画面.tsx：只要击穿的那几格（外圈和取贴图用的那一格不画），洞壁另补；碎块贴图取自击穿那几格所在的网格块 古城4x-西3（同 6-4-3/画面.tsx 的 ATLAS_C）
 const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < G3.击穿方块.length), lining: K3.holeWalls };

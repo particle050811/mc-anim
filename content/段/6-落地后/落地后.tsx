@@ -13,7 +13,7 @@ import { OnerFrame, type Riders } from '../../场/6-暮色森林/一镜到底/�
 import * as choreo from '../../场/6-暮色森林/6-1-9b/编排.ts';
 import * as landing from '../../场/6-暮色森林/6-1-9b/落地编排.ts';
 import { AfterLandingSound } from './声音.tsx';
-import { mouthAt } from '../../../world/角色/口型.ts';
+import { mouthAt } from '../../../world/配音/口型.ts';
 import brickUri from 'asset:贴图/镜头/6-1-9b/城堡砖';
 
 const BRICK = png(brickUri); // twilightforest:block/castle_brick（城堡砖、符文城堡砖的 particle 贴图都是它）

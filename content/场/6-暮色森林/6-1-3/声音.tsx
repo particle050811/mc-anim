@@ -13,7 +13,7 @@
 // 听者 = 镜头机位（src/音效/游戏音效.tsx），坐标是庭院本地坐标（同 6-1-2）。起飞以后镜头跟扫帚飞走，地上的声音也就远了。
 import React from 'react';
 import { rng, type V3 } from '../../../../engine/model/parts.tsx';
-import { LineTrack } from '../../../../engine/audio/台词轨.tsx';
+import { LineTrack } from '../../../../world/配音/台词轨.tsx';
 import { GameSoundTrack, type SoundCue } from '../../../../engine/audio/游戏音效.tsx';
 import * as choreo612 from '../6-1-2/编排.ts';
 import { officialSounds as 斩娜迦声们, officialPortalSounds as 斩娜迦门户声们, mazeSteps } from '../6-1-2/声音.tsx';

@@ -1,8 +1,8 @@
 // 地形粗高度图上的「有效顶」和镜头离地：只给诊断量离树、镜头离地用，航线不让树。
 import { frozenCoarse } from '../../../../../engine/voxel/冻结粗高度.ts';
-import { isInTwilightLandmark, twilightCellTop, twilightPackName } from '../../../../../world/地点/暮色新世界.tsx';
+import { isInTwilightLandmark, twilightCellTop, twilightFrozen } from '../../../../../world/地点/暮色新世界.tsx';
 
-const coarse = frozenCoarse(twilightPackName);
+const coarse = frozenCoarse(twilightFrozen);
 const cellTop = (x: number, y: number) => twilightCellTop(x, y, coarse.格 / 2);
 const treeClearance = 25;
 const clearanceTop = (x: number, y: number, clearance: number, drop: number) => {

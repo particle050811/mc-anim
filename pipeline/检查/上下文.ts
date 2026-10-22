@@ -8,7 +8,7 @@ import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { build, type Plugin } from 'esbuild';
 import { parse } from 'smol-toml';
-import { 非代码loader } from '../资产/esbuild插件.ts';
+import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts';
 
 export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台'] as const;
 export type 规则类 = (typeof 规则名)[number];
@@ -154,7 +154,7 @@ export class 检查上下文 {
           jsx: 'automatic',
           packages: 'external',
           loader: { ...非代码loader, '.json': 'json' },
-          plugins: [宽松资产插件(资产记录)],
+          plugins: [esbuild别名插件(this.根), 宽松资产插件(资产记录)],
           logLevel: 'silent',
         });
       const 收边 = (inputs: Record<string, { imports: { path: string; external?: boolean }[] }>) => {
@@ -206,7 +206,7 @@ export class 检查上下文 {
             format: 'esm',
             jsx: 'automatic',
             loader: { ...非代码loader, '.json': 'json' },
-            plugins: [宽松资产插件()],
+            plugins: [esbuild别名插件(this.根), 宽松资产插件()],
             logLevel: 'silent',
           });
           this.#tmp ??= fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查-'));
