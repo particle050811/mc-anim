@@ -10,10 +10,13 @@ export const 旧布局作品 = '应力转动';
 
 export type 作品 = { 名: string; 根: string };
 
+/** 选不出作品（没指定、有好几部，或名字不对）：cli/main.ts 只打这一行提示，不打调用栈 */
+export class 选作品错误 extends Error {}
+
 /** 名字统一成 NFC；APFS、NTFS 默认不分大小写，查重按小写 */
 const 规范名 = (名: string) => 名.normalize('NFC');
 const 查名 = (名: string, 来自: string) => {
-  if (!名 || /[\\/:*?"<>|]/.test(名) || 名.startsWith('.')) throw new Error(`作品名「${名}」不合规（${来自}）：不能空、不能以 . 开头、不能有 / \\ : * ? " < > |`);
+  if (!名 || /[\\/:*?"<>|]/.test(名) || 名.startsWith('.')) throw new 选作品错误(`作品名「${名}」不合规（${来自}）：不能空、不能以 . 开头、不能有 / \\ : * ? " < > |`);
 };
 
 /** 全部作品：名 → 根（绝对路径）。作品/ 下的和 [works] 登记的同名时，以登记的为准（私有作品放在 作品/<名>/ 也登记，见方案批评补充二-2） */
@@ -23,7 +26,7 @@ export const 作品们 = (根 = 代码根(), 登记 = 作品路径表()): Map<st
     名 = 规范名(名);
     查名(名, 来自);
     const 撞 = [...们.keys()].find((k) => k !== 名 && k.toLowerCase() === 名.toLowerCase());
-    if (撞) throw new Error(`作品名「${名}」和「${撞}」只差大小写（${来自}）`);
+    if (撞) throw new 选作品错误(`作品名「${名}」和「${撞}」只差大小写（${来自}）`);
     们.set(名, dir);
   };
   const 作品目录 = path.join(根, '作品');
@@ -33,7 +36,7 @@ export const 作品们 = (根 = 代码根(), 登记 = 作品路径表()): Map<st
     }
   }
   for (const [名, dir] of Object.entries(登记)) {
-    if (!fs.existsSync(path.join(dir, '清单.ts'))) throw new Error(`anim.local.toml [works] 的「${名}」指向 ${dir}，那里没有 清单.ts`);
+    if (!fs.existsSync(path.join(dir, '清单.ts'))) throw new 选作品错误(`anim.local.toml [works] 的「${名}」指向 ${dir}，那里没有 清单.ts`);
     加(名, dir, `anim.local.toml [works]`);
   }
   return 们;
@@ -66,7 +69,7 @@ export const 选作品 = ({ 参数, cwd = process.cwd(), 默认 = '', 们 = 作�
   const 名单 = [...们.keys()];
   const 找 = (名: string, 来自: string): 作品 => {
     const 中 = 名单.find((k) => k.toLowerCase() === 规范名(名).toLowerCase());
-    if (!中) throw new Error(`没有作品「${名}」（${来自}）；有：${名单.join('、') || '（一部都没有）'}`);
+    if (!中) throw new 选作品错误(`没有作品「${名}」（${来自}）；有：${名单.join('、') || '（一部都没有）'}`);
     return { 名: 中, 根: 们.get(中)! };
   };
   if (参数) return 找(参数, '--作品');
@@ -75,7 +78,7 @@ export const 选作品 = ({ 参数, cwd = process.cwd(), 默认 = '', 们 = 作�
   if (所在) return { 名: 所在, 根: 们.get(所在)! };
   if (默认) return 找(默认, 'anim.local.toml 的 work 或 ANIM_WORK');
   if (名单.length === 1) return { 名: 名单[0]!, 根: 们.get(名单[0]!)! };
-  throw new Error(
+  throw new 选作品错误(
     名单.length
       ? `有 ${名单.length} 部作品（${名单.join('、')}），用 --作品 <名> 指定，或在作品目录里跑，或在 anim.local.toml 写 work = "<名>"`
       : '一部作品都没有（作品/<名>/清单.ts）',
@@ -108,7 +111,7 @@ export const 取作品参数 = (args: readonly string[]): { 作品?: string; 其
     }
     if (a === '--作品') {
       作品 = args[++i];
-      if (!作品) throw new Error('--作品 后面要跟作品名');
+      if (!作品) throw new 选作品错误('--作品 后面要跟作品名');
     } else if (a.startsWith('--作品=')) 作品 = a.slice('--作品='.length);
     else 其余.push(a);
   }
