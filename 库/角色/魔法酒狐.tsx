@@ -12,6 +12,7 @@ import type { V3 } from '../../engine/model/parts.tsx';
 import { type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import type { FigurePose } from './骨架.tsx';
 import { png } from '../../engine/model/贴图.ts';
+import { magicalWineFoxMotion, type 魔法酒狐表情 } from './魔法酒狐动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
 
@@ -118,19 +119,24 @@ const bonePose = (姿势: '坐' | '站', 看: [number, number] | undefined, 骨�
 // pose：只用 loc、yaw、pitch、squash，头往哪看用 看。姿势：默认坐；'站' 现在只是模型的静止姿势（四肢没接 FigurePose）。
 // 看：头的 [俯仰, 左右]（度，正 = 抬头、往左），对准某一点用 magicalWineFoxLookAt 算。
 // 骨骼：最后叠上的骨骼姿势，按骨骼整条替换。右手：挂在右手握持点（RightHandLocator）上的东西，坐标见 engine/model/基岩模型.tsx 的 attach
+// 表情、眨眼、秒：见 魔法酒狐动作.ts 的 magicalWineFoxMotion（不给 秒 就是静止姿势，表情不给就照坐姿表微笑）
 export const MagicalWineFox: React.FC<{
   pose: FigurePose;
   姿势?: '坐' | '站';
   看?: [number, number];
   骨骼?: Record<string, BonePose>;
   右手?: React.ReactNode;
-}> = ({ pose, 姿势 = '坐', 看, 骨骼, 右手 }) => (
+  表情?: 魔法酒狐表情;
+  眨眼?: number | 'auto';
+  秒?: number;
+}> = ({ pose, 姿势 = '坐', 看, 骨骼, 右手, 表情, 眨眼 = 'auto', 秒 }) => (
   <group position={pose.loc as V3} rotation={[0, 0, rad(pose.yaw ?? 0)]}>
     <group rotation={[rad(pose.pitch), 0, 0]} scale={[1, 1, pose.squash]}>
       <BedrockModelView
         model={MODEL}
         scale={MAGICAL_WINE_FOX.scale}
-        pose={bonePose(姿势, 看, 骨骼)}
+        // 表情、眨眼、尾巴和看向（只动 Head）不碰同一根骨骼，跟 骨骼 一起传进去，效果同放在坐姿表和看向之间
+        pose={bonePose(姿势, 看, { ...magicalWineFoxMotion({ 姿势, 表情, 眨眼, 秒 }), ...骨骼 })}
         attach={右手 ? { RightHandLocator: 右手 } : undefined}
       />
     </group>
