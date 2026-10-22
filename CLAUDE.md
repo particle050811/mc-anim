@@ -24,6 +24,7 @@ anim film <范围>  |  anim assets add <id> <文件>  |  anim preview new <主�
 anim extract <配方|组…> | --全部 [--只打印|--检查]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim mcai <动作…>                          取材 mod 的命令行；开游戏、编译过资源闸
 anim edit-package <交付目录>  |  anim jianying export|readback   剪辑包和剪映草稿
+anim bili 导入 <json>  |  anim bili 分析     B 站创作中心数据（浏览器里跑 pipeline/适配器/bili/取数.js 下载）收进数据根、对交付出报告
 ```
 还没实现（方案三-5）：`anim world`（M10，现在只有模板 `sourcing/worlds/`）；`anim voice`、`anim music`、`anim assets import|verify|pull|gc`（没排阶段；字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
 
