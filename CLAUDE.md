@@ -28,6 +28,8 @@ anim bili 导入 <json>  |  anim bili 分析     B 站创作中心数据（浏�
 ```
 还没实现（方案三-5）：`anim world`（M10，现在只有模板 `sourcing/worlds/`）；`anim voice`、`anim music`、`anim assets import|verify|pull|gc`（没排阶段；字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
 
+Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；新 worktree 里 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim render`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
+
 ## 两条元规则（用户 10-21）
 1. **看过的实现为准**：用户看过的已实现画面，优先于旧规矩、原设计和 Agent 写的规矩。冲突时留现状，列给用户，写清规矩出处和「现状是用户看过的」；用户这次点名才改。
 2. **Agent 不得把规矩推广到全片**：用户针对某一处说的话，只按那一处做。觉得该全片通用的，在预览的 `00-说明.md` 里提议，用户点头后再登记进 `作品/应力转动/规矩.toml`。
