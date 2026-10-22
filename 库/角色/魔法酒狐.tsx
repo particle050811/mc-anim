@@ -13,6 +13,7 @@ import type { V3 } from '../../engine/model/parts.tsx';
 import { type BedrockBone, type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import type { FigurePose } from './骨架.tsx';
 import { png } from '../../engine/model/贴图.ts';
+import { magicalWineFoxMotion, type 魔法酒狐表情 } from './魔法酒狐动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
 
@@ -187,8 +188,8 @@ export const magicalWineFoxHatOffBones = (秒: number): Record<string, BonePose>
 
 type 开关 = { 帽子: boolean; 背后法杖: boolean; 秒: number };
 
-// 组装顺序：隐藏表 → 坐姿表 → 看向 → 法杖和环 → 帽子、背后法杖的开关 → 骨骼。以后加的层按这个位置插：
-// 表情、眨眼、尾巴放在坐姿表和看向之间。
+// 组装顺序：隐藏表 → 坐姿表 → 看向 → 法杖和环 → 帽子、背后法杖的开关 → 骨骼。
+// 表情、眨眼、尾巴（魔法酒狐动作.ts）该在坐姿表和看向之间；它们和后面几层不碰同一根骨骼，组件里跟 骨骼 一起传进来，效果一样。
 const bonePose = (
   姿势: '坐' | '站',
   看: [number, number] | undefined,
@@ -207,19 +208,22 @@ const bonePose = (
 // pose：只用 loc、yaw、pitch、squash，头往哪看用 看。姿势：默认坐；'站' 现在只是模型的静止姿势（四肢没接 FigurePose）。
 // 看：头的 [俯仰, 左右]（度，正 = 抬头、往左），对准某一点用 magicalWineFoxLookAt 算。
 // 骨骼：最后叠上的骨骼姿势，按骨骼整条替换。右手：挂在右手握持点（RightHandLocator）上的东西，坐标见 engine/model/基岩模型.tsx 的 attach
-// 秒：驱动法杖浮动、三个环、耳朵抖（都按动画长度循环）。帽子、背后法杖、发光：默认都开，照游戏里那只女仆。
+// 秒：法杖浮动、三个环、耳朵抖按它取样（都按动画长度循环，不给按 0 秒算）。帽子、背后法杖、发光：默认都开，照游戏里那只女仆。
+// 表情、眨眼、秒：见 魔法酒狐动作.ts 的 magicalWineFoxMotion（不给 秒 就是静止姿势，表情不给就照坐姿表微笑）
 export const MagicalWineFox: React.FC<{
   pose: FigurePose;
   姿势?: '坐' | '站';
   看?: [number, number];
   骨骼?: Record<string, BonePose>;
   右手?: React.ReactNode;
+  表情?: 魔法酒狐表情;
+  眨眼?: number | 'auto';
   秒?: number;
   帽子?: boolean;
   背后法杖?: boolean;
   发光?: boolean;
-}> = ({ pose, 姿势 = '坐', 看, 骨骼, 右手, 秒 = 0, 帽子 = true, 背后法杖 = true, 发光 = true }) => {
-  const bones = bonePose(姿势, 看, 骨骼, { 帽子, 背后法杖, 秒 });
+}> = ({ pose, 姿势 = '坐', 看, 骨骼, 右手, 表情, 眨眼 = 'auto', 秒, 帽子 = true, 背后法杖 = true, 发光 = true }) => {
+  const bones = bonePose(姿势, 看, { ...magicalWineFoxMotion({ 姿势, 表情, 眨眼, 秒 }), ...骨骼 }, { 帽子, 背后法杖, 秒: 秒 ?? 0 });
   return (
     <group position={pose.loc as V3} rotation={[0, 0, rad(pose.yaw ?? 0)]}>
       <group rotation={[rad(pose.pitch), 0, 0]} scale={[1, 1, pose.squash]}>
