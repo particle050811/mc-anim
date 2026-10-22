@@ -57,6 +57,3 @@ export const 提交状态 = (): { 提交: string; 有改动: boolean } | null =>
 
 /** 相对代码根的正斜杠路径（指纹、manifest 里用，跨平台一致） */
 export const 相对代码根 = (p: string) => path.relative(代码根(), p).split(path.sep).join('/');
-
-/** 作品根：作品的 index.ts、注册.tsx、清单.ts 所在的目录，打包入口和 webpack改写(作品根) 都从它取。现在只有一部作品，就是 content/（多作品见重组方案 C） */
-export const 作品根 = () => path.join(代码根(), 'content');

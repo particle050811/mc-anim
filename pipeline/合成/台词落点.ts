@@ -6,7 +6,8 @@ import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { 段定义, 台词cue } from '../../content/段定义.ts';
 import { 代码根 } from '../环境/路径.ts';
-import { 读资产锁, 解析资产 } from '../资产/资产锁.ts';
+import { 读作品资产锁, 解析资产 } from '../资产/资产锁.ts';
+import { 作品根 } from '../环境/作品.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import type { 台词落点 } from './字幕.ts';
 import { 断屏, type 字幕位置 } from './字幕卡.ts';
@@ -99,7 +100,7 @@ export const 算台词落点 = (
 
 /** 资产 数据/音效/音效起音：文件名（音效 id 去掉 音效/ 加 .ogg）→ 文件开头静音几秒 */
 export const 读音效起音 = (): ((资产id: string) => number) => {
-  const 锁 = 读资产锁();
+  const 锁 = 读作品资产锁(作品根());
   if (!锁['数据/音效/音效起音']) return () => 0;
   const 表 = JSON.parse(fs.readFileSync(解析资产('数据/音效/音效起音', 锁).文件, 'utf8')) as Record<string, number>;
   return (id) => (id.startsWith('音效/') ? (表[`${id.slice('音效/'.length)}.ogg`] ?? 0) : 0);

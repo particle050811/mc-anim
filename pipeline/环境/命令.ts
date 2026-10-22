@@ -7,6 +7,7 @@ import { 读资产表 } from '../资产/资产表.ts';
 import { 字节路径, 读资产锁 } from '../资产/资产锁.ts';
 import { 全部配置, 配置, 数据路径, isMac } from './配置.ts';
 import { 代码根, 主检出 } from './路径.ts';
+import { 当前作品, 作品们 } from './作品.ts';
 import { 读内存, 读数说明 } from './资源.ts';
 import { 试跑 } from './子进程.ts';
 
@@ -66,6 +67,13 @@ export const 体检 = (): 结果[] => {
   const 锁目录 = 配置('锁目录');
   查('锁目录', fs.existsSync(锁目录) && 可写(锁目录), fs.existsSync(锁目录) ? 锁目录 : `${锁目录} 不在（第一次拿锁时会建）`, false);
   查('游戏环境', fs.existsSync(配置('游戏')), 配置('游戏'), false);
+  try {
+    const 们 = 作品们();
+    const 选 = 当前作品();
+    查('作品', true, `${[...们].map(([名, 根]) => `${名}（${path.relative(代码根(), 根) || '.'}）`).join('、')}；现在选的是 ${选.名}`);
+  } catch (e) {
+    查('作品', false, (e as Error).message, false);
+  }
 
   const 锁 = 读资产锁();
   const 缺字节 = Object.entries(锁).filter(([, e]) => !fs.existsSync(字节路径(e))).map(([id]) => id);

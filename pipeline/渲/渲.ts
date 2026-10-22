@@ -6,7 +6,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
 import { getCompositions, openBrowser, renderMedia, renderStill, type HeadlessBrowser } from '@remotion/renderer';
-import { 代码根, 作品根 } from '../环境/路径.ts';
+import { 代码根 } from '../环境/路径.ts';
+import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
@@ -21,7 +22,7 @@ import { 叠层渲染参数, 渲染参数, 等帧超时毫秒, type 渲染参数
 import type { 叠层定义 } from '../../content/段定义.ts';
 import type { 渲染级别 } from '../../content/设置值.ts';
 
-export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${键}:${级别}`;
+export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 
 export const 打包 = async () => {
   const t0 = Date.now();
@@ -146,7 +147,7 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
   return 结果;
 };
 
-export const 叠层渲染标签 = (键: string, 级别: 渲染级别) => `render-layer:${键}:${级别}`;
+export const 叠层渲染标签 = (键: string, 级别: 渲染级别) => `render-layer:${作品名()}/${键}:${级别}`;
 export type 叠层结果 = { 段: 段信息; 叠层: 叠层定义; 键: string; 指纹: 段指纹; 文件: string; 新渲: boolean };
 
 /** 渲这些段声明的透明叠层；指纹对得上就跳过 */

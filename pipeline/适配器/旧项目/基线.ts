@@ -2,11 +2,12 @@
 // 只调旧项目现成的工具（段清单.mjs、批量渲染.mjs、导出音效清单.mjs、台词落点.ts、同步表片段、字幕.py），不改它们；重任务过资源闸（锁目录和旧项目共用）。
 // 用法：node pipeline/适配器/旧项目/基线.ts <步骤>，步骤按顺序：检查 → 清单 → 声音清单 → 渲 A → 渲 B → 抽 → 表 → 底噪 → 对照 [门槛]
 //   对照 [门槛]：「差>16 的像素占比」超过多少算这一帧有差（缺省 0.001）。渲 A 是基线，渲 B 是同机同提交再渲一遍，只量底噪。已渲好的母版不重渲。
-// 路径都从 anim 的配置取：旧项目 = ANIM_LEGACY，产物在 <数据根>/基线/（anim env 看取值）。数值比较在同目录 比较.py、表.py（numpy 由 uv 临时装）。
+// 路径都从 anim 的配置取：旧项目 = ANIM_LEGACY，产物在 <数据根>/基线/应力转动/（旧项目只对应这部作品；anim env 看取值）。数值比较在同目录 比较.py、表.py（numpy 由 uv 临时装）。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { 配置, 数据路径 } from '../../环境/配置.ts';
+import { 配置, 基线根 } from '../../环境/配置.ts';
+import { 旧布局作品 } from '../../环境/作品.ts';
 import { 低优先级, 跑, 跑出 } from '../../环境/子进程.ts';
 import { 过放行闸, 过渲染闸 } from '../../闸/闸.ts';
 import { 记耗时 } from '../../运行记录/记录.ts';
@@ -15,7 +16,7 @@ const TAG = '冻结-1021';
 const 本目录 = import.meta.dirname;
 const OLD = 配置('旧项目');
 const LIB = path.join(OLD, '参考模型库');
-const BASE = 数据路径('基线');
+const BASE = 基线根(旧布局作品);
 const TABLES = path.join(BASE, '_表');
 const MASTERS = path.join(BASE, '_母版');
 // 已交付成片 第6-7章-1020-1306 用的母版：合成第六章.py 的缓存，克隆一份（APFS 写时复制），旧缓存以后被重渲盖掉也还在

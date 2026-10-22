@@ -4,7 +4,8 @@ import path from 'node:path';
 import { Config } from '@remotion/cli/config';
 import { webpack改写 } from './pipeline/资产/webpack.ts';
 import { 备好public目录 } from './pipeline/渲/public目录.ts';
-import { 代码根, 作品根 } from './pipeline/环境/路径.ts';
+import { 代码根 } from './pipeline/环境/路径.ts';
+import { 作品根 } from './pipeline/环境/作品.ts';
 
 Config.setEntryPoint(path.relative(代码根(), path.join(作品根(), 'index.ts')));
 Config.overrideWebpackConfig(webpack改写(作品根()));

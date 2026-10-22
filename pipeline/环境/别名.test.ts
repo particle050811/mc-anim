@@ -5,7 +5,8 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { 别名目录, 解析别名 } from './别名.ts';
-import { 代码根, 作品根 } from './路径.ts';
+import { 代码根 } from './路径.ts';
+import { 作品根 } from './作品.ts';
 import { 算闭包 } from '../指纹/指纹.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 

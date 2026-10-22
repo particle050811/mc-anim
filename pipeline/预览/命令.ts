@@ -2,7 +2,8 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
-import { 代码根 } from '../环境/路径.ts';
+import { 代码根, 相对代码根 } from '../环境/路径.ts';
+import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 前台跑 } from '../环境/子进程.ts';
 import { 新建预览目录 } from './预览.ts';
 
@@ -26,8 +27,10 @@ export const 预览命令: Record<string, 命令> = {
   },
   studio: {
     用法: 'studio [<remotion studio 的参数…>]',
-    说明: '开 Remotion Studio 在浏览器里预览（入口 content/index.ts，打包规则读 remotion.config.ts），参数原样转给 remotion studio',
+    说明: '开 Remotion Studio 在浏览器里预览所选作品（入口 <作品根>/index.ts，打包规则读 remotion.config.ts），参数原样转给 remotion studio',
     不记录: true,
-    跑: (args) => 前台跑([process.execPath, remotion入口(), 'studio', 'content/index.ts', ...args], { cwd: 代码根() }),
+    // remotion.config.ts 在 Remotion CLI 进程里求值，靠 ANIM_WORK 知道是哪部作品（资产锁、求解入口按它取）
+    跑: (args) =>
+      前台跑([process.execPath, remotion入口(), 'studio', 相对代码根(path.join(作品根(), 'index.ts')), ...args], { cwd: 代码根(), env: { ...process.env, ANIM_WORK: 作品名() } }),
   },
 };

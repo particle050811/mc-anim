@@ -2,6 +2,9 @@
 # 键是环境变量名去掉 ANIM_ 的小写。每项都可以不写；取值顺序是 环境变量 > anim.local.toml > 默认。相对路径相对本文件所在目录。
 # anim env 列出每一项现在的值和取自哪一层。
 
+# 默认作品：没给 --作品、当前目录也不在哪部作品里时用它；只有一部作品时不用写。环境变量 ANIM_WORK
+# work = "应力转动"
+
 # Git 外的数据根（store、私有、terrain、cache、交付、run）。环境变量 ANIM_DATA。默认：主检出同级的 mc-anim-data
 # data = "../mc-anim-data"
 
@@ -53,3 +56,7 @@
 
 # 剪映的草稿目录（anim edit-package、anim jianying export 写进这里）。环境变量 ANIM_JIANYING_DRAFTS。默认 ~/Movies/JianyingPro/User Data/Projects/com.lveditor.draft
 # jianying_drafts = "/Users/me/Movies/JianyingPro/User Data/Projects/com.lveditor.draft"
+
+# 私有作品的位置：作品名 = 目录（中文名要加引号；相对路径相对本文件）。放在 作品/<名>/ 的私有作品也登记在这，worktree 里才找得到
+# [works]
+# "私有甲" = "../私有甲"

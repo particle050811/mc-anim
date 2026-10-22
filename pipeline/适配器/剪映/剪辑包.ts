@@ -4,13 +4,14 @@
 // 配乐、音效默认一条「去台词」；--拆音效 照段.ts 的 cue 出清单、一声一个片段（和成片差多少看 核对.tsv）。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 交付根, 配置, 数据根 } from '../../环境/配置.ts';
+import { 交付根, 配置, 数据根, 数据根下 } from '../../环境/配置.ts';
 import { 代码根 } from '../../环境/路径.ts';
 import { 低优先级, 跑 } from '../../环境/子进程.ts';
 import { 过放行闸 } from '../../闸/闸.ts';
 import { 视频信息 } from '../../渲/探测.ts';
 import { 选段 } from '../../清单/清单.ts';
-import { 读资产锁, 解析资产 } from '../../资产/资产锁.ts';
+import { 读作品资产锁, 解析资产 } from '../../资产/资产锁.ts';
+import { 作品根 } from '../../环境/作品.ts';
 import { 叠层滤镜, 展开段叠层 } from '../../合成/叠层.ts';
 import { 排字幕, type 台词落点 } from '../../合成/字幕.ts';
 import { 读单声道 } from '../../合成/音频.ts';
@@ -105,7 +106,9 @@ export const py环境 = () => ({ ...process.env, ANIM_FFMPEG: 配置('ffmpeg'), 
 
 export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boolean; 重做画面?: boolean; 不导入?: boolean; 记录: 运行记录 }) => {
   const dir = 找交付目录(交付目录);
-  const m = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) as 交付manifest;
+  const 原 = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) as 交付manifest;
+  // 新 manifest 的母版、叠层是相对数据根的路径，旧的是绝对路径，两种都认
+  const m: 交付manifest = { ...原, 段: 原.段.map((s) => ({ ...s, 母版: 数据根下(s.母版) })), 叠层: (原.叠层 ?? []).map((l) => ({ ...l, 文件: 数据根下(l.文件) })) };
   const 缺 = [...m.段.map((s) => s.母版), ...m.叠层.map((l) => l.文件)].filter((f) => !fs.existsSync(f));
   if (缺.length) throw new Error(`这次成片用的母版或叠层不在了（缓存被清过？）：${缺.join('、')}；重出一次 anim film`);
   const 包 = path.join(dir, '剪辑包');
@@ -118,7 +121,7 @@ export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boo
   await 未拉响度(m, 未拉);
 
   // 台词和字幕：成片时写的落点 + 资产库里的配音，字幕和成片同一套排法现算
-  const 锁 = 读资产锁();
+  const 锁 = 读作品资产锁(作品根());
   const 取文件 = (id: string) => 解析资产(id, 锁).文件;
   const 落点文件 = path.join(dir, '台词落点.json');
   const 落点们 = fs.existsSync(落点文件) ? (JSON.parse(fs.readFileSync(落点文件, 'utf8')) as 台词落点[]) : [];
