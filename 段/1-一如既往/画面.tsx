@@ -8,6 +8,9 @@ import { uiFontFamily } from '@库/界面/基础.tsx';
 import { 第一人称机位, 眼位 } from '../../地点/机位.tsx';
 import { 视角 } from '../../场/1-隐世之境一楼/参数.ts';
 import { fps, 段时钟, 段内事件帧, type 事件名 } from '../../分镜.ts';
+import { 原声 } from '../../配乐/原声.ts';
+import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
+import 段 from './段.ts';
 
 const 键 = '1-一如既往';
 const 起帧 = 段时钟(键).场窗口.起帧;
@@ -54,6 +57,7 @@ const 画面: React.FC = () => {
   const 下一个 = 事件们.find(([, 帧]) => 帧 > f);
   return (
     <AbsoluteFill style={{ background: '#202226', fontFamily: uiFontFamily, color: '#f2f2f2' }}>
+      <配乐音轨 song={原声} 段={段} />
       <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
         <color attach="background" args={['#202226']} />
         <第一人称机位 眼={眼位(玩家脚)} 看={看} 视角={视角} />
