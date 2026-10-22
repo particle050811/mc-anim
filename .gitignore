@@ -13,3 +13,5 @@ __pycache__/
 
 # image-flow 的 skill 是从 image-flow 仓库拷来的副本（rsync skills/image-flow/），不进本仓库
 /.claude/skills/image-flow/
+# Remotion 官方 skill（remotion-dev/skills，仓库没写许可证）不进本仓库，来源和哈希记在 skills-lock.json，`npx skills experimental_install` 还原
+/.claude/skills/remotion-best-practices/

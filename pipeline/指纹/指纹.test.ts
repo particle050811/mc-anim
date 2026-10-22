@@ -65,7 +65,7 @@ describe('段指纹', () => {
     expect(Object.keys(视频.明细.模块)).toEqual(expect.arrayContaining(['作品/应力转动/核对/冒烟/画面.tsx', '作品/应力转动/核对/冒烟/段.ts', 'engine/段/设置.ts', '作品/应力转动/注册.tsx', 'engine/段/注册工厂.tsx']));
     expect(Object.keys(视频.明细.模块)).not.toContain('作品/应力转动/清单.ts');
     expect(Object.keys(视频.明细.资产).sort()).toEqual(['核对/冒烟色块', '核对/冒烟音']);
-    expect(视频.项.依赖版本).toMatchObject({ remotion: '4.0.530', react: '19.3.0', three: '0.186.1' });
+    expect(视频.项.依赖版本).toMatchObject({ remotion: '4.0.537', react: '19.3.0', three: '0.186.1' });
     expect(Object.keys(视频.项.打包规则).sort()).toEqual(['pipeline/资产/ogg解码.cjs', 'pipeline/资产/webpack.ts', 'tsconfig']);
     expect(指纹差异(视频, 预览).sort()).toEqual(['渲染设置 改了 imageFormat', '渲染设置 改了 inputProps', '渲染设置 改了 scale']);
     expect((await 算段指纹(冒烟!, 渲染参数('视频'))).指纹).toBe(视频.指纹);

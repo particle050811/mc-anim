@@ -28,6 +28,8 @@ anim bili 导入 <json>  |  anim bili 分析     B 站创作中心数据（浏�
 ```
 还没实现（方案三-5）：`anim world`（M10，现在只有模板 `sourcing/worlds/`）；`anim voice`、`anim music`、`anim assets import|verify|pull|gc`（没排阶段；字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
 
+Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；新 worktree 里 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim render`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
+
 ## 两条元规则（用户 10-21）
 1. **看过的实现为准**：用户看过的已实现画面，优先于旧规矩、原设计和 Agent 写的规矩。冲突时留现状，列给用户，写清规矩出处和「现状是用户看过的」；用户这次点名才改。
 2. **Agent 不得把规矩推广到全片**：用户针对某一处说的话，只按那一处做。觉得该全片通用的，在预览的 `00-说明.md` 里提议，用户点头后再登记进 `作品/应力转动/规矩.toml`。
@@ -37,7 +39,7 @@ anim bili 导入 <json>  |  anim bili 分析     B 站创作中心数据（浏�
 - 并行任务各开 worktree：`git worktree add ../mc-anim-wt/<名> -b <名> main`。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree；删之前先清点被忽略的文件。不留没合并的分支。
 - 合并前 `anim check` 必须过。说「改好了」之前在 main 上核对：用户这次定的每一条都要在代码里查到，或者出静帧确认。
 - 给用户看的东西放 `预览/<月日-时分>-<主题>/`，时间用 UTC（`date -u +%m%d-%H%M`，代码里用 `time.gmtime()`）。文件夹里一层平铺，文件名带编号，附一份 `00-说明.md`，末尾留「你的回复：」。不覆盖旧的；换了变量就另开一个文件夹。
-- **迁移不改画面**：搬迁期间不改任何画面、规矩数值、镜头、台词，不借机「顺手统一」。版本锁死 Remotion 4.0.530、three 0.186.1、react 19.3.0、esbuild 0.28.1、Node 24，旧项目退役前不升级。和旧版对不上时，只能按 `docs/迁移.md` 的两种情况接受，并逐条登记。
+- **迁移不改画面**：搬迁期间不改任何画面、规矩数值、镜头、台词，不借机「顺手统一」。版本锁死 Remotion 4.0.537（用户 10-22 定从 4.0.530 升上来）、three 0.186.1、react 19.3.0、esbuild 0.28.1、Node 24，旧项目退役前不再升级。和旧版对不上时，只能按 `docs/迁移.md` 的两种情况接受，并逐条登记。
 - 全片默认值改在共用的地方（`作品/应力转动/默认.ts` 或对应的共用模块），段里不覆盖。确实要例外的，写成 `例外('规矩id', 值, {段, 原因})`，同时登记进规矩表。
 - 渲染、烘焙地形、开游戏这类重任务，先过资源闸；迁移期间 `ANIM_LOCK_DIR` 指向旧项目的 `.资源闸/`。两个 MC 客户端不同时开。长任务开跑前，按 `run/logs/耗时.tsv` 报预计耗时。
 - 大文件复制用 `cp -c`（APFS 克隆）。`store/` 只增不改；不进 Git 的字节一律按资产 id 登记（见 `docs/决策/0002-资产标准.md`）。
