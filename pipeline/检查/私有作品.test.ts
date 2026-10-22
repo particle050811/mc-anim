@@ -16,7 +16,7 @@ describe('私有作品', () => {
   it('被忽略的 作品/<名>/ 也进文件表，嵌套仓库按它自己的 ls-files', () => {
     const 根 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-私有-')));
     git(根, 'init', '-q');
-    写(根, '.gitignore', '/作品/*\n!/作品/公开/\n');
+    写(根, '.gitignore', '/作品/私甲/\n/作品/私乙/\n');
     写(根, '作品/公开/清单.ts');
     写(根, '作品/私甲/清单.ts');
     写(根, '作品/私乙/清单.ts');
