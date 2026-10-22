@@ -16,7 +16,7 @@ const 本机 = os.hostname();
 let dir: string;
 let file: string;
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-锁测试-'));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-锁测试-'));
   file = path.join(dir, '渲染.lock');
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -140,7 +140,7 @@ describe('排队票', () => {
 });
 
 describe.skipIf(!有旧项目)('和旧项目 锁.py 互斥', () => {
-  it('旧 Python 拿着时 sr 拿不到；它死了 sr 能回收', async () => {
+  it('旧 Python 拿着时 anim 拿不到；它死了 anim 能回收', async () => {
     const 子 = await 起持锁进程(旧Python, py(`print(锁.试拿(Path(${JSON.stringify(file)})), flush=True)\nimport time\nwhile True: time.sleep(1)`), pyEnv);
     expect(子.输出).toBe('True');
     expect(试拿(file, 本机)).toBe(false);
@@ -149,7 +149,7 @@ describe.skipIf(!有旧项目)('和旧项目 锁.py 互斥', () => {
     放(file);
   });
 
-  it('sr 拿着时旧 Python 拿不到、读得出持有者 pid', () => {
+  it('anim 拿着时旧 Python 拿不到、读得出持有者 pid', () => {
     expect(试拿(file, 本机)).toBe(true);
     const r = spawnSync(旧Python, py(`p = Path(${JSON.stringify(file)}); print(锁.试拿(p), 锁.持有者(p))`), { env: { ...process.env, ...pyEnv }, encoding: 'utf8' });
     expect(r.stderr).toBe('');
@@ -157,13 +157,13 @@ describe.skipIf(!有旧项目)('和旧项目 锁.py 互斥', () => {
     放(file);
   });
 
-  it('sr 的持有者死了，旧 Python 能回收', async () => {
+  it('anim 的持有者死了，旧 Python 能回收', async () => {
     const 子 = await node持锁(file);
     await 子.杀();
     const r = spawnSync(旧Python, py(`p = Path(${JSON.stringify(file)}); print(锁.试拿(p)); 锁.放(p)`), { env: { ...process.env, ...pyEnv }, encoding: 'utf8' });
     expect(r.stdout.trim()).toBe('True');
     expect(fs.existsSync(file)).toBe(false);
-    // 它留下的 .主机 文件，sr 下次拿到锁时扫掉
+    // 它留下的 .主机 文件，anim 下次拿到锁时扫掉
     expect(fs.existsSync(`${file}.${子.pid}.主机`)).toBe(true);
     expect(试拿(file, 本机)).toBe(true);
     放(file);

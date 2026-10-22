@@ -59,14 +59,14 @@ export const 台词 = async (c: 检查上下文, 报: 报告) => {
       continue;
     }
     if (t.文本哈希 !== 文本哈希(t.文本)) {
-      报.错(`${名}：文本哈希 ${t.文本哈希 ?? '（没写）'} 和现在的文本（${文本哈希(t.文本)}）对不上：文本改过，配音过期，要重配（sr voice redo）或把文本改回去`, 位);
+      报.错(`${名}：文本哈希 ${t.文本哈希 ?? '（没写）'} 和现在的文本（${文本哈希(t.文本)}）对不上：文本改过，配音过期，要重配（anim voice redo）或把文本改回去`, 位);
     }
     const 成品 = 锁条目.sha256;
     const 对 = (s: string | undefined) => typeof s === 'string' && s.length >= 12 && 成品.startsWith(s);
     if (!对(t.成品sha)) 报.错(`${名}：成品sha ${t.成品sha ?? '（没写）'} 和资产锁里 ${t.配音} 的 ${成品.slice(0, 12)} 对不上：配音换过，表没跟上`, 位);
     for (const k of ['口型', '口型手修'] as const) {
       const v = t[k];
-      if (v && !对(v.成品sha)) 报.错(`${名}：${k} 是对着成品 ${v.成品sha ?? '（没写）'} 做的，现在的成品是 ${成品.slice(0, 12)}：配音换了，${k} 过期（sr voice lipsync）`, 位);
+      if (v && !对(v.成品sha)) 报.错(`${名}：${k} 是对着成品 ${v.成品sha ?? '（没写）'} 做的，现在的成品是 ${成品.slice(0, 12)}：配音换了，${k} 过期（anim voice lipsync）`, 位);
     }
   }
 

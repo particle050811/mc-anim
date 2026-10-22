@@ -1,4 +1,4 @@
-// pipeline 这边看段：按 content/清单.ts 的顺序读各段的 段.ts（纯数据），以及选择器（sr render、sr film 的范围）。
+// pipeline 这边看段：按 content/清单.ts 的顺序读各段的 段.ts（纯数据），以及选择器（anim render、anim film 的范围）。
 // 选择器全字匹配：段键、段名、编号、场键、章，或章的范围（6-7）；几个选择器取并集，结果按清单顺序。
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';

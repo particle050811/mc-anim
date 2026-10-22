@@ -1,4 +1,4 @@
-// 本仓库自己过 sr check（除了类型，类型由 npm run check 的 tsc 管）：零违规、没有白名单
+// 本仓库自己过 anim check（除了类型，类型由 npm run check 的 tsc 管）：零违规、没有白名单
 import { expect, it } from 'vitest';
 import { 代码根 } from '../环境/路径.ts';
 import { 跑检查 } from './检查.ts';

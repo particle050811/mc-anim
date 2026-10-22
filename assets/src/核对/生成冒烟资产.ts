@@ -1,5 +1,5 @@
 // 生成冒烟 Composition 用的两件测试资产（不含任何受许可内容）：8×8 的 RGBA 色块 png、1 秒 440 Hz 的正弦 ogg。
-// 用法：node assets/src/核对/生成冒烟资产.ts <输出目录>，再 sr assets add 核对/冒烟色块 <输出目录>/冒烟色块.png、sr assets add 核对/冒烟音 <输出目录>/冒烟音.ogg
+// 用法：node assets/src/核对/生成冒烟资产.ts <输出目录>，再 anim assets add 核对/冒烟色块 <输出目录>/冒烟色块.png、anim assets add 核对/冒烟音 <输出目录>/冒烟音.ogg
 // ogg 用 ffmpeg 自带的 vorbis 编码器（不依赖 libvorbis），编出来的字节不保证逐位可重现，以入库的 sha 为准。
 import fs from 'node:fs';
 import path from 'node:path';

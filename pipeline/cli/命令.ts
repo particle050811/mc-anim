@@ -4,6 +4,6 @@ export type 命令 = {
   用法: string;
   说明: string;
   跑: (args: string[], 记录: 运行记录) => Promise<number | void>;
-  /** sr env 这类只读、瞬间完成的命令不写运行记录 */
+  /** anim env 这类只读、瞬间完成的命令不写运行记录 */
   不记录?: boolean;
 };

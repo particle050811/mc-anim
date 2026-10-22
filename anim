@@ -1,4 +1,4 @@
 #!/bin/sh
-# sr：项目唯一的命令入口（Windows 用 sr.cmd），转给 node pipeline/cli/main.ts
+# anim：项目唯一的命令入口（Windows 用 anim.cmd），转给 node pipeline/cli/main.ts
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 exec node "$dir/pipeline/cli/main.ts" "$@"

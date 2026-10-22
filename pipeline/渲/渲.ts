@@ -136,7 +136,7 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
         } finally {
           fs.rmSync(tmp, { force: true });
           const 秒 = (Date.now() - t0) / 1000;
-          记耗时(渲染标签(r.段.键, 级别), t0, 秒, code, `sr render ${r.段.键}`);
+          记耗时(渲染标签(r.段.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
           if (code === 0) console.log(`   ${r.段.键}：${秒.toFixed(0)} 秒 → ${r.母版}`);
         }
       });
@@ -204,7 +204,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
         } finally {
           fs.rmSync(tmp, { force: true });
           const 秒 = (Date.now() - t0) / 1000;
-          记耗时(叠层渲染标签(r.键, 级别), t0, 秒, code, `sr render ${r.段.键}`);
+          记耗时(叠层渲染标签(r.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
           if (code === 0) console.log(`   ${r.键}：${秒.toFixed(0)} 秒 → ${r.文件}`);
         }
       });

@@ -33,7 +33,7 @@ dependencies {
     minecraft 'net.minecraftforge:forge:1.20.1-47.4.10'
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     // 暮色地标网格的 mixin 要引用暮色的类（TFLandmark、XZQuadrantIterator 等）；只编译时用，游戏里用实例自己装的那份。
-    // 用取材服务端里的 jar（和实例同一版），不另外下载；游戏环境目录由环境变量 MCAI_GAME 给（sr、mcai build 会传）
+    // 用取材服务端里的 jar（和实例同一版），不另外下载；游戏环境目录由环境变量 MCAI_GAME 给（anim、mcai build 会传）
     compileOnly files(mcaiGame() + '/取材服务端/mods/twilightforest-1.20.1-4.3.2508-universal.jar')
 }
 

@@ -63,7 +63,7 @@ export const 选条目 = (q: 取材清单, 名们: readonly string[], 全部: bo
   if (全部) out.push(...[...q.条目.values()].filter(可直接跑).map((e) => e.名称));
   for (const n of 名们) {
     const got = q.条目.has(n) ? [n] : q.组[n];
-    if (!got) throw new Error(`取材清单里没有「${n}」（条目或组）；sr extract --列出 看有哪些`);
+    if (!got) throw new Error(`取材清单里没有「${n}」（条目或组）；anim extract --列出 看有哪些`);
     for (const k of got) if (!out.includes(k)) out.push(k);
   }
   return out.map((k) => {

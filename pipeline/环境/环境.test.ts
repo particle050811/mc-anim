@@ -7,26 +7,26 @@ import { 代码根, 主检出 } from './路径.ts';
 import { 内存够渲染, 解析vm_stat, 解析交换区 } from './资源.ts';
 
 describe('配置', () => {
-  it('环境变量 > sr.local.toml > 默认，并记下来源', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-配置-'));
-    const toml = path.join(dir, 'sr.local.toml');
+  it('环境变量 > anim.local.toml > 默认，并记下来源', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-配置-'));
+    const toml = path.join(dir, 'anim.local.toml');
     fs.writeFileSync(toml, 'data = "数据"\nvideo_encoder = "libx264"\n');
-    const { 值 } = 读配置({ SR_VIDEO_ENCODER: 'h264_videotoolbox' }, toml);
-    expect(值.数据根).toMatchObject({ 值: path.join(dir, '数据'), 来源: 'sr.local.toml' });
+    const { 值 } = 读配置({ ANIM_VIDEO_ENCODER: 'h264_videotoolbox' }, toml);
+    expect(值.数据根).toMatchObject({ 值: path.join(dir, '数据'), 来源: 'anim.local.toml' });
     expect(值.编码器).toMatchObject({ 值: 'h264_videotoolbox', 来源: '环境变量' });
     expect(值.gl).toMatchObject({ 值: 'angle', 来源: '默认' });
     fs.rmSync(dir, { recursive: true });
   });
 
   it('默认值跟着前面取到的值走', () => {
-    const { 值 } = 读配置({ SR_LEGACY: '/不存在/旧项目', SR_DATA: '/数据' }, null);
+    const { 值 } = 读配置({ ANIM_LEGACY: '/不存在/旧项目', ANIM_DATA: '/数据' }, null);
     expect(值.游戏!.值).toBe(path.resolve('/不存在/旧项目/game'));
     expect(值.锁目录!.值).toBe(path.resolve('/数据/run/locks'));
   });
 
-  it('sr.local.toml 里写错项名就报错', () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-配置-'));
-    const toml = path.join(dir, 'sr.local.toml');
+  it('anim.local.toml 里写错项名就报错', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-配置-'));
+    const toml = path.join(dir, 'anim.local.toml');
     fs.writeFileSync(toml, 'dta = "x"\n');
     expect(() => 读配置({}, toml)).toThrow(/不认识的项：dta/);
     fs.rmSync(dir, { recursive: true });

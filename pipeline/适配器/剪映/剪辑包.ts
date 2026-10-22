@@ -1,4 +1,4 @@
-// sr edit-package：照一次 sr film 的交付（manifest.json 记的母版、叠层、增益和 台词落点.json）出剪辑包，放在 <交付目录>/剪辑包/，出完写进剪映草稿。
+// anim edit-package：照一次 anim film 的交付（manifest.json 记的母版、叠层、增益和 台词落点.json）出剪辑包，放在 <交付目录>/剪辑包/，出完写进剪映草稿。
 // 照旧项目 导出剪辑包.py 的快路：画面 = 同一批母版 + 叠层、不带字幕，2K、CRF 32、每帧关键帧（用户 10-14 定，剪映里拖播放头哪帧都能直接解）；
 // 声音 = 母版接起来、拉响度之前的整片声音，各句台词和字幕现算（字幕.ts），轨道、核对交给 剪辑包.py。
 // 配乐、音效默认一条「去台词」；--拆音效 照段.ts 的 cue 出清单、一声一个片段（和成片差多少看 核对.tsv）。
@@ -39,7 +39,7 @@ export type 交付manifest = {
 /** 给的是交付目录的名字（不是路径）就到 交付根 下找 */
 export const 找交付目录 = (arg: string) => {
   const dir = fs.existsSync(arg) ? path.resolve(arg) : path.join(交付根(), arg);
-  if (!fs.existsSync(path.join(dir, 'manifest.json'))) throw new Error(`${dir} 里没有 manifest.json（要给 sr film 出的交付目录）`);
+  if (!fs.existsSync(path.join(dir, 'manifest.json'))) throw new Error(`${dir} 里没有 manifest.json（要给 anim film 出的交付目录）`);
   return dir;
 };
 
@@ -101,13 +101,13 @@ const 未拉响度 = async (m: 交付manifest, 出: string) => {
 };
 
 export const uv带numpy = (script: string, args: string[]) => ['uv', 'run', '-q', '--no-project', '--with', 'numpy', 'python', path.join(本目录, script), ...args];
-export const py环境 = () => ({ ...process.env, SR_FFMPEG: 配置('ffmpeg'), SR_FFPROBE: 配置('ffprobe') });
+export const py环境 = () => ({ ...process.env, ANIM_FFMPEG: 配置('ffmpeg'), ANIM_FFPROBE: 配置('ffprobe') });
 
 export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boolean; 重做画面?: boolean; 不导入?: boolean; 记录: 运行记录 }) => {
   const dir = 找交付目录(交付目录);
   const m = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) as 交付manifest;
   const 缺 = [...m.段.map((s) => s.母版), ...m.叠层.map((l) => l.文件)].filter((f) => !fs.existsSync(f));
-  if (缺.length) throw new Error(`这次成片用的母版或叠层不在了（缓存被清过？）：${缺.join('、')}；重出一次 sr film`);
+  if (缺.length) throw new Error(`这次成片用的母版或叠层不在了（缓存被清过？）：${缺.join('、')}；重出一次 anim film`);
   const 包 = path.join(dir, '剪辑包');
   const 工作 = path.join(包, '_工作');
   fs.mkdirSync(工作, { recursive: true });
@@ -122,7 +122,7 @@ export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boo
   const 取文件 = (id: string) => 解析资产(id, 锁).文件;
   const 落点文件 = path.join(dir, '台词落点.json');
   const 落点们 = fs.existsSync(落点文件) ? (JSON.parse(fs.readFileSync(落点文件, 'utf8')) as 台词落点[]) : [];
-  if (落点们.some((a) => !a.配音)) throw new Error(`${落点文件} 没记配音的资产 id（旧版 sr film 出的），重出一次成片`);
+  if (落点们.some((a) => !a.配音)) throw new Error(`${落点文件} 没记配音的资产 id（旧版 anim film 出的），重出一次成片`);
   const 全路径落点 = 落点们.map((a) => ({ ...a, 文件: 取文件(a.配音) }));
   const 读声音缓存 = new Map<string, Float32Array>();
   const { 屏们 } = 排字幕(全路径落点, m.总帧数, m.帧率, (f) => 读声音缓存.get(f) ?? 读声音缓存.set(f, 读单声道(f)).get(f)!);
@@ -152,7 +152,7 @@ export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boo
     字幕屏: 屏们.map((p) => ({ 句: p.句, 字: p.字, 起帧: p.起帧, 止帧: p.止帧, 位置: p.位置, 依据: p.依据 })),
     清单目录,
     文件根: 清单目录 && 数据根(),
-    来源: { 交付: dir, 成片: path.join(dir, m.文件.成片!), 拼接表: path.join(dir, m.文件.拼接表!), 出法: `sr edit-package${opts.拆音效 ? ' --拆音效' : ''}` },
+    来源: { 交付: dir, 成片: path.join(dir, m.文件.成片!), 拼接表: path.join(dir, m.文件.拼接表!), 出法: `anim edit-package${opts.拆音效 ? ' --拆音效' : ''}` },
   };
   const 输入文件 = path.join(工作, '输入.json');
   fs.writeFileSync(输入文件, JSON.stringify(输入, null, 1));
@@ -165,7 +165,7 @@ export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boo
     try {
       await 导入剪映(包);
     } catch (e) {
-      opts.记录.记('警告', `剪辑包出好了，没写进剪映：${(e as Error).message.split('\n')[0]}（单独跑 sr jianying export ${包} 看原因）`);
+      opts.记录.记('警告', `剪辑包出好了，没写进剪映：${(e as Error).message.split('\n')[0]}（单独跑 anim jianying export ${包} 看原因）`);
     }
   }
   return 包;

@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-FFMPEG = os.environ.get('SR_FFMPEG', 'ffmpeg')  # 基线.ts 按 sr 的配置传进来
+FFMPEG = os.environ.get('ANIM_FFMPEG', 'ffmpeg')  # 基线.ts 按 anim 的配置传进来
 
 W, H = 2560, 1440
 FRAME_BYTES = W * H * 3

@@ -1,4 +1,4 @@
-// sr film 的多段拼接：两段小母版（48 帧、37 帧，声音都比画面长）接成一条，查总帧数、拼接表、manifest、声音按样本截；
+// anim film 的多段拼接：两段小母版（48 帧、37 帧，声音都比画面长）接成一条，查总帧数、拼接表、manifest、声音按样本截；
 // 再查透明叠层叠在对的帧和位置、接缝首帧重复只报警不丢帧、分享版。
 // 母版、叠层用 ffmpeg 现造在临时数据根里，指纹按键现编（算段指纹 要打包画面闭包，这里不测它）。
 import fs from 'node:fs';
@@ -11,8 +11,8 @@ import type { 段信息 } from '../清单/清单.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 
 // 配置读得懒，在下面动态 import 之前设好数据根就行
-const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-成片测试-'));
-process.env.SR_DATA = 数据根;
+const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-成片测试-'));
+process.env.ANIM_DATA = 数据根;
 
 const 指纹 = (键: string) => crypto.createHash('sha256').update(键).digest('hex');
 vi.mock('../指纹/指纹.ts', () => {
@@ -64,7 +64,7 @@ const 造重复母版 = () => {
   if (r.status !== 0) throw new Error(String(r.stderr));
 };
 
-/** 叠层：1280×720 透明底，左上角 (100, 50) 一块 200×100 的纯红，帧数 帧（ProRes 4444 带透明，同 sr render 出的） */
+/** 叠层：1280×720 透明底，左上角 (100, 50) 一块 200×100 的纯红，帧数 帧（ProRes 4444 带透明，同 anim render 出的） */
 const 盒 = 'between(X,100,299)*between(Y,50,149)';
 const 造叠层 = (键: string, 帧数: number) => {
   const f = 叠层路径(键, 指纹(键));

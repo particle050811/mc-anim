@@ -1,7 +1,7 @@
-"""剪映专业版（Mac 11.4.2）和剪辑包之间的公用部分：导入剪映.py、读取调整.py 用。剪映、草稿根、解密程序的位置由 sr 的配置给（设路径）。
+"""剪映专业版（Mac 11.4.2）和剪辑包之间的公用部分：导入剪映.py、读取调整.py 用。剪映、草稿根、解密程序的位置由 anim 的配置给（设路径）。
 - 草稿在 <草稿根>/<草稿名>/：draft_info.json（时间线）、draft_meta_info.json（首页列表用的名字、时长）。
 - 写：程序写明文 JSON，剪映照样打开（打开后重存成密文）。剪映 Mac 版是沙盒只能读 ~/Movies，素材硬链接进草稿目录的 素材/，存盘时路径被改写成 ##_draftpath_placeholder_<id>_##/素材/…。
-- 读：密文用剪映自己的库解（剪映解密.cpp，第一次用时编到 sr 给的位置）。草稿开着时（.locked 被占着）不能写，会被内存版本覆盖。
+- 读：密文用剪映自己的库解（剪映解密.cpp，第一次用时编到 anim 给的位置）。草稿开着时（.locked 被占着）不能写，会被内存版本覆盖。
 - 时间单位微秒；剪映只有整帧，打开草稿就把起点对齐到整帧（帧号 × 10⁶ / fps 向下取整），小数部分记在对照的 余 里。
 - 11.4 起多时间线：根目录和 Timelines/<当前时间线 id>/ 各一份 draft_info.json，读写都两份一起。
 - 录音在草稿目录 audio_record/（.aac），新开一条音频轨；标记在 time_marks（时间线上）和 materials.time_marks（挂在片段上），都算注释。
@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .程序 import FFMPEG
 
-# 默认值是 Mac 版剪映的位置；sr 调用时用 设路径() 换成它配置里的
+# 默认值是 Mac 版剪映的位置；anim 调用时用 设路径() 换成它配置里的
 APP_PATH = Path('/Applications/VideoFusion-macOS.app')
 PROCESS_NAME = 'VideoFusion-macOS'
 DRAFT_ROOT = Path.home() / 'Movies/JianyingPro/User Data/Projects/com.lveditor.draft'
@@ -171,7 +171,7 @@ def export_adjustments(package_dir: Path, suffix: str = '') -> Path:
     fps = manifest['帧率']
     draft_folder = draft_dir(link_map['草稿名'])
     if not (draft_folder / 'draft_info.json').exists():
-        raise SystemExit(f'剪映里找不到草稿「{link_map["草稿名"]}」（{draft_folder}），被删了？重跑 sr jianying export')
+        raise SystemExit(f'剪映里找不到草稿「{link_map["草稿名"]}」（{draft_folder}），被删了？重跑 anim jianying export')
     draft = read_draft(draft_folder)
     materials = material_index(draft)
     id_to_name = {link['片段id']: k for k, link in link_map['片段'].items()}

@@ -1,7 +1,7 @@
 [project]
-name = "sr-py"
+name = "mc-anim"
 version = "0.1.0"
-description = "stress-rotation 的 Python 叶子工具：JSON 进，文件和 JSON 出；路径由 sr 传进来，不自己推算"
+description = "mc-anim 的 Python 叶子工具：JSON 进，文件和 JSON 出；路径由 anim 传进来，不自己推算"
 requires-python = ">=3.11"
 dependencies = []
 
@@ -16,12 +16,12 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["py/sr_py"]
+packages = ["py/anim_py"]
 
 [tool.pytest.ini_options]
 testpaths = ["py/tests"]
 
-# sr check 的 Python 检查：ruff 和 pyright 只查自己写的工具（py/、assets/tools/、pipeline/适配器/）；assets/src/ 是资产的生成源（如 build_li_ying.py），原样保存，不查。
+# anim check 的 Python 检查：ruff 和 pyright 只查自己写的工具（py/、assets/tools/、pipeline/适配器/）；assets/src/ 是资产的生成源（如 build_li_ying.py），原样保存，不查。
 # pipeline/适配器/旧项目/ 只过 ruff：它运行时才从旧项目 sys.path 引模块、numpy 由 uv 临时装，pyright 解析不到
 [tool.ruff]
 target-version = "py311"

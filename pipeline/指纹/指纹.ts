@@ -7,7 +7,7 @@
 //   依赖版本 lockfile 里 remotion、three 等决定像素的包
 //   打包规则 remotion.config.ts 和它用的 webpack 改写、ogg 解码
 //   平台    process.platform-arch（跨平台不要求逐像素一致）
-// 指纹 = 这些项按键排序后的 JSON 的 sha256；.指纹.json 存逐项展开，sr stale 拿它说明是哪项变了。
+// 指纹 = 这些项按键排序后的 JSON 的 sha256；.指纹.json 存逐项展开，anim stale 拿它说明是哪项变了。
 // 透明叠层（段.ts 的 叠层）同样算，入口换成叠层文件，段记成 `<段键>-<名>`。
 import crypto from 'node:crypto';
 import fs from 'node:fs';

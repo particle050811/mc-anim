@@ -2,10 +2,10 @@
 """殖民地（MineColonies）的建筑蓝图 → 边城的房子（src/模型/场景/边城/蓝图.json + 蓝图贴图.png）。
 用户 10-05 要边城的房子好看一点、参考殖民地 mod：直接用它自带的建筑蓝图（玩家在游戏里一键放下的那些房子），不自己拼方盒子。
 
-用法：sr extract 边城蓝图（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）
+用法：anim extract 边城蓝图（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）
 
 来源和许可：
-- 殖民地 minecolonies-1.20.1-1.1.1301.jar、蓝图引擎 Structurize 1.0.818、装饰方块 Domum Ornamentum 1.0.296 放在游戏环境（SR_GAME）的 缓存/mods/，不装进服务端和客户端（CurseForge CDN 下的）。
+- 殖民地 minecolonies-1.20.1-1.1.1301.jar、蓝图引擎 Structurize 1.0.818、装饰方块 Domum Ornamentum 1.0.296 放在游戏环境（ANIM_GAME）的 缓存/mods/，不装进服务端和客户端（CurseForge CDN 下的）。
 - 代码是 GPL-3.0（殖民地、Structurize）和 LGPL-3.0（Domum Ornamentum）；殖民地 jar 里 assets/minecolonies/LICENSE 是 All Rights Reserved（蓝图、贴图），没有禁止用于 AI 的条款。
   和史诗地形一样照用，只在本项目里当参考，不往外发。注意：边城的参考视频（6-2-6、6-3）会交给第三方 AI 视频模型（Seedance）当输入，比「项目里自己当参考」更进一步，许可里没写这种用法，用户拍板前先照用。
 - 风格包作者：中世纪橡木 / 云杉 / 深色橡木是 Carlansor，要塞（fortress）是 Aravan，路灯、喷泉取自 Minecolonies Original。以后开源或公开发布要署名，或把蓝图.json、蓝图贴图.png 排除在外。
@@ -36,7 +36,7 @@ from 读区块 import _nbt
 from 资源包 import ResourcePack, VEC, UAX, VAX, rot, turn, rid
 
 ROOT = os.getcwd()
-GAME = os.path.join(os.environ["SR_GAME"], "缓存")
+GAME = os.path.join(os.environ["ANIM_GAME"], "缓存")
 MC_JAR = os.path.join(GAME, "mods", "minecolonies-1.20.1-1.1.1301.jar")
 JARS = [
     os.path.join(GAME, "client-1.20.1.jar"),

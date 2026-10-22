@@ -2,7 +2,7 @@
 """把旧项目的资产按 assets/registry/*.toml 导进数据根，生成 assets/资产锁.json 和 assets/旧路径.tsv。
 
 用法：python3 assets/tools/导入旧项目.py [--旧项目 <目录>] [--数据根 <目录>] [--只核对]
-  旧项目默认取环境变量 SR_OLD，没有就是本仓库同级的 机械动力应力转动-AI漫画/；数据根默认 SR_DATA，没有就是同级的 stress-rotation-data/。
+  旧项目默认取环境变量 ANIM_OLD，没有就是本仓库同级的 机械动力应力转动-AI漫画/；数据根默认 ANIM_DATA，没有就是同级的 mc-anim-data/。
   --只核对：不拷、不写锁，只按现有资产锁全量回读 store/私有 和旧文件核对 sha。
 只用标准库，可重跑：库里已有的对象不重拷（只增不改），拷进 assets/src/ 的文字源要和旧文件逐字节一致，地形按 地形版本.json 整目录拷。
 最后核对 assets/kits/ 角色包引用的资产 id 和文字源都在。字段和目录约定见 assets/README.md。
@@ -80,9 +80,9 @@ def 导入(旧: Path, 数据根: Path, 现有锁: dict) -> dict:
     新拷 = 0
     for e in 读资产表():
         if not e.get('旧路径'):
-            # 不是从旧项目来的（sr assets add 登记的），照现有锁保留，不重算
+            # 不是从旧项目来的（anim assets add 登记的），照现有锁保留，不重算
             if e['id'] not in 现有锁:
-                sys.exit(f'{e["id"]}: 没写旧路径，资产锁里也没有，先用 sr assets add 入库')
+                sys.exit(f'{e["id"]}: 没写旧路径，资产锁里也没有，先用 anim assets add 入库')
             锁[e['id']] = 现有锁[e['id']]
             continue
         src = 旧 / e['旧路径']
@@ -211,12 +211,12 @@ def 核对角色包(条目: list[dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=(__doc__ or '').splitlines()[0])
-    ap.add_argument('--旧项目', type=Path, default=Path(os.environ.get('SR_OLD') or REPO.parent / '机械动力应力转动-AI漫画'))
-    ap.add_argument('--数据根', type=Path, default=Path(os.environ.get('SR_DATA') or REPO.parent / 'stress-rotation-data'))
+    ap.add_argument('--旧项目', type=Path, default=Path(os.environ.get('ANIM_OLD') or REPO.parent / '机械动力应力转动-AI漫画'))
+    ap.add_argument('--数据根', type=Path, default=Path(os.environ.get('ANIM_DATA') or REPO.parent / 'mc-anim-data'))
     ap.add_argument('--只核对', action='store_true')
     a = ap.parse_args()
-    # worktree 在 stress-rotation-wt/<名>/ 下时，同级目录要再往上一层找
-    for attr, name in (('旧项目', '机械动力应力转动-AI漫画'), ('数据根', 'stress-rotation-data')):
+    # worktree 在 mc-anim-wt/<名>/ 下时，同级目录要再往上一层找
+    for attr, name in (('旧项目', '机械动力应力转动-AI漫画'), ('数据根', 'mc-anim-data')):
         p = getattr(a, attr)
         if not p.exists() and (REPO.parent.parent / name).exists():
             setattr(a, attr, REPO.parent.parent / name)

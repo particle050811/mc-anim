@@ -1,12 +1,12 @@
 {
-  "name": "stress-rotation",
+  "name": "mc-anim",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
-    "sr": "node pipeline/cli/main.ts"
+    "anim": "node pipeline/cli/main.ts"
   },
   "dependencies": {
     "@react-three/fiber": "9.8.1",

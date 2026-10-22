@@ -6,16 +6,16 @@ import { 缺资产, type 资产锁 } from './资产锁.ts';
 export type 资产记录 = Map<string, string>; // id → sha256
 
 export const esbuild资产插件 = (锁: 资产锁, 记录: 资产记录): Plugin => ({
-  name: 'sr-资产',
+  name: 'anim-资产',
   setup(build) {
     build.onResolve({ filter: /^asset:/ }, (args) => {
       const id = args.path.slice('asset:'.length);
       const 条目 = 锁[id];
-      if (!条目) return { errors: [{ text: new 缺资产(`资产锁里没有「${id}」：先在 assets/registry/<类>.toml 登记，再跑 sr assets add ${id} <文件> 入库、写资产锁`).message }] };
+      if (!条目) return { errors: [{ text: new 缺资产(`资产锁里没有「${id}」：先在 assets/registry/<类>.toml 登记，再跑 anim assets add ${id} <文件> 入库、写资产锁`).message }] };
       记录.set(id, 条目.sha256);
-      return { path: id, namespace: 'sr-资产' };
+      return { path: id, namespace: 'anim-资产' };
     });
-    build.onLoad({ filter: /.*/, namespace: 'sr-资产' }, (args) => ({ contents: `export default ${JSON.stringify('asset:' + 锁[args.path]!.sha256)};`, loader: 'js' }));
+    build.onLoad({ filter: /.*/, namespace: 'anim-资产' }, (args) => ({ contents: `export default ${JSON.stringify('asset:' + 锁[args.path]!.sha256)};`, loader: 'js' }));
   },
 });
 

@@ -1,10 +1,10 @@
-// 代码根（这份代码所在的检出，worktree 里就是 worktree 根）和主检出（git 公共目录的上一级，预览/、sr.local.toml 放这）。
+// 代码根（这份代码所在的检出，worktree 里就是 worktree 根）和主检出（git 公共目录的上一级，预览/、anim.local.toml 放这）。
 // 本文件会被 Remotion 用 esbuild 打进 remotion.config.ts 的 CJS 包里，那时 import.meta.dirname 不在，退回从当前目录往上找。
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const 包名 = 'stress-rotation';
+const 包名 = 'mc-anim';
 
 let 代码根缓存: string | undefined;
 let 主检出缓存: string | undefined;

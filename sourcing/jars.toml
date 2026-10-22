@@ -1,6 +1,6 @@
 # 全项目唯一的 jar 登记表（照旧项目 参考模型库/工具/取材/模组清单.json 搬来，字段照旧）：
-# sourcing/extract.toml 的「需要」和步骤里的 {jar:id} 按 id 在这里找；sr extract --检查 --校验 核 sha256。
-# 「到」是本机放的位置，相对游戏环境目录（sr 配置 SR_GAME，迁移期是旧项目的 game/）；旧表里相对工作区根、多一层 game/。
+# sourcing/extract.toml 的「需要」和步骤里的 {jar:id} 按 id 在这里找；anim extract --检查 --校验 核 sha256。
+# 「到」是本机放的位置，相对游戏环境目录（anim 配置 ANIM_GAME，迁移期是旧项目的 game/）；旧表里相对工作区根、多一层 game/。
 # 「下载」「sha256」给公开版下载校验用；Mojang 客户端的下载地址从官方版本清单取。
 
 ["Mojang"."资源索引"]

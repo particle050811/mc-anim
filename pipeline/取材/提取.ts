@@ -1,4 +1,4 @@
-// sr extract 的跑和查。每个条目在 <数据根>/run/extract/<名称>/ 里从空目录跑（前置条目先在同一个目录里跑），
+// anim extract 的跑和查。每个条目在 <数据根>/run/extract/<名称>/ 里从空目录跑（前置条目先在同一个目录里跑），
 // 跑完按产物表逐个比资产锁：sha 一样就放进库（已有不动），不一样只报告、不入库、不改资产锁（锁里是用过的那一版，换版本要人定）。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,9 +24,9 @@ export const 本机展开 = (q: 取材清单): 展开环境 => ({
 
 const 步骤环境 = (): NodeJS.ProcessEnv => ({
   ...mcai环境(),
-  SR_GAME: 配置('游戏'),
-  SR_MC_ASSETS: 配置('mc资源'),
-  ...(配置('java_home') ? { SR_JAVA_HOME: 配置('java_home') } : {}),
+  ANIM_GAME: 配置('游戏'),
+  ANIM_MC_ASSETS: 配置('mc资源'),
+  ...(配置('java_home') ? { ANIM_JAVA_HOME: 配置('java_home') } : {}),
 });
 
 const 引 = (a: string) => (!a || /[\s'"$`\\|&;<>()*?[\]{}!#~]/.test(a) ? `'${a.replaceAll("'", `'\\''`)}'` : a);

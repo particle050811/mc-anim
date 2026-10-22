@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """从游戏和模组的 jar 里导出模型、贴图的唯一入口。按「来源」的写法自动判断是哪种东西，原样照抄，不改数值。
 
-用法（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：
+用法（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：
   uv run --with pillow 导出模型.py <jar[,jar...]> <输出.json> <来源> [<来源>...] [选项]
 
 来源有四种写法，一次导出里只能用一种：

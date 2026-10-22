@@ -14,7 +14,7 @@ const sha = (s: string | Buffer) => crypto.createHash('sha256').update(s).digest
 
 /** 数据根：store/<前2>/<sha> 放字节、terrain/<名>/<版本>/ 放地形包 */
 const 造数据根 = (字节: Record<string, string>, 地形: Record<string, string>) => {
-  const 根 = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-检查数据根-'));
+  const 根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查数据根-'));
   for (const [库, 内容] of Object.entries(字节)) {
     const h = sha(内容);
     fs.mkdirSync(path.join(根, 库, h.slice(0, 2)), { recursive: true });

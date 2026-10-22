@@ -1,7 +1,7 @@
 """音效一声一个片段（用户 10-15 要求每个音效分开导入剪映）、配乐整条：按 pipeline/适配器/剪映/音效清单.ts 收的各段放法（engine/audio/音效清单.ts）合成，不用各段再渲声音。
 放法照 Remotion：从文件 入点秒 起按 速率 变速变调（线性插值）、循环的绕回文件开头，每帧乘一个音量（整帧内不变），两声道一样。
 剪辑包.py 用：build_clips() 照拼接表把每一声截到它那一截里、换成整片帧，merge_stacked() 把叠着的同种声并成一个。
-清单目录（<目录>/音效清单/<段键>.json 等）和清单里 文件 的相对起点由调用方 设路径() 给；清单由 sr 导，这里不导。"""
+清单目录（<目录>/音效清单/<段键>.json 等）和清单里 文件 的相对起点由调用方 设路径() 给；清单由 anim 导，这里不导。"""
 import json
 import os
 import re
@@ -10,8 +10,8 @@ from pathlib import Path
 
 import numpy as np
 
-FFMPEG = os.environ.get('SR_FFMPEG', 'ffmpeg')  # sr 按自己的配置传进来
-FFPROBE = os.environ.get('SR_FFPROBE', 'ffprobe')
+FFMPEG = os.environ.get('ANIM_FFMPEG', 'ffmpeg')  # anim 按自己的配置传进来
+FFPROBE = os.environ.get('ANIM_FFPROBE', 'ffprobe')
 
 KINDS = ('音效清单', '配乐清单', '台词清单')
 CUE_DIRS: dict[str, Path] = {}

@@ -1,5 +1,5 @@
-// sr mcai <动作…>：转给 sourcing/mcai/mcai.py（开游戏、编译前过资源闸）。
-// sr extract [<名称或组>…|--全部] [--只打印|--检查 [--校验]|--列出]：按 sourcing/extract.toml 从游戏和模组 jar 导出资产，产物和资产锁比对、入库。
+// anim mcai <动作…>：转给 sourcing/mcai/mcai.py（开游戏、编译前过资源闸）。
+// anim extract [<名称或组>…|--全部] [--只打印|--检查 [--校验]|--列出]：按 sourcing/extract.toml 从游戏和模组 jar 导出资产，产物和资产锁比对、入库。
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 前台跑 } from '../环境/子进程.ts';
@@ -22,7 +22,7 @@ const 等渲染让出 = async () => {
 export const 取材命令: Record<string, 命令> = {
   mcai: {
     用法: 'mcai <动作…>',
-    说明: '取材 mod 的命令行（sourcing/mcai/mcai.py，sr mcai --help 看全部）；game start、build 先过资源闸，开游戏还要等渲染让出',
+    说明: '取材 mod 的命令行（sourcing/mcai/mcai.py，anim mcai --help 看全部）；game start、build 先过资源闸，开游戏还要等渲染让出',
     跑: async (args, 记录) => {
       const argv = args.length ? [...args] : ['--help'];
       const 跑一下 = () => 前台跑([...mcai命令(), ...argv], { env: mcai环境() });

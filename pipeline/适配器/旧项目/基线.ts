@@ -2,7 +2,7 @@
 // 只调旧项目现成的工具（段清单.mjs、批量渲染.mjs、导出音效清单.mjs、台词落点.ts、同步表片段、字幕.py），不改它们；重任务过资源闸（锁目录和旧项目共用）。
 // 用法：node pipeline/适配器/旧项目/基线.ts <步骤>，步骤按顺序：检查 → 清单 → 声音清单 → 渲 A → 渲 B → 抽 → 表 → 底噪 → 对照 [门槛]
 //   对照 [门槛]：「差>16 的像素占比」超过多少算这一帧有差（缺省 0.001）。渲 A 是基线，渲 B 是同机同提交再渲一遍，只量底噪。已渲好的母版不重渲。
-// 路径都从 sr 的配置取：旧项目 = SR_LEGACY，产物在 <数据根>/基线/（sr env 看取值）。数值比较在同目录 比较.py、表.py（numpy 由 uv 临时装）。
+// 路径都从 anim 的配置取：旧项目 = ANIM_LEGACY，产物在 <数据根>/基线/（anim env 看取值）。数值比较在同目录 比较.py、表.py（numpy 由 uv 临时装）。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,11 +31,11 @@ type 声音条 = { 起帧: number; 名: string };
 
 const 旧跑 = (cmd: string[]) => 跑(cmd, { cwd: LIB });
 const 旧出 = (cmd: string[]) => 跑出(cmd, { cwd: LIB });
-// Python 叶子工具都过 uv 临时带上 numpy；ffmpeg 按 sr 的配置传进去
-const pyEnv = { ...process.env, SR_FFMPEG: ffmpeg };
+// Python 叶子工具都过 uv 临时带上 numpy；ffmpeg 按 anim 的配置传进去
+const pyEnv = { ...process.env, ANIM_FFMPEG: ffmpeg };
 const uvPython = (script: string, args: string[]) => ['uv', 'run', '-q', '--no-project', '--with', 'numpy', 'python', path.join(本目录, script), ...args];
 
-/** 重任务过闸（渲染走渲染锁，别的等放行），降优先级跑，耗时记进 sr 的耗时表 */
+/** 重任务过闸（渲染走渲染锁，别的等放行），降优先级跑，耗时记进 anim 的耗时表 */
 const 重 = async (标签: string, cmd: string[], { 渲染 = false, env = process.env } = {}) => {
   const 开始 = Date.now();
   let code = 1;

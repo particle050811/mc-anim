@@ -1,7 +1,7 @@
-// sr verify [<选择器…>] [--渲] [--对基线] [--到预览 <主题>]：指纹和认可记录不一样的段抽帧比，超过阈值就要 accept；
+// anim verify [<选择器…>] [--渲] [--对基线] [--到预览 <主题>]：指纹和认可记录不一样的段抽帧比，超过阈值就要 accept；
 //   --对基线：不看认可记录，直接和数据根 基线/<旧段号>/ 的旧项目基线比（迁移验收用，旧段号查 docs/旧名.tsv）。
 //   变了的帧出 旧|新|差 的并排图进预览（没给 --到预览 就新开一个「验收不过」）。
-// sr verify accept <段> --理由 <…> [--渲]：把现在的母版记成认可版，写 verify/accepted/<平台>/<段键>.toml（进 Git）。
+// anim verify accept <段> --理由 <…> [--渲]：把现在的母版记成认可版，写 verify/accepted/<平台>/<段键>.toml（进 Git）。
 // 一律按视频级的母版比；抽帧解码过放行闸，缺母版加 --渲 时渲染过渲染闸。
 import fs from 'node:fs';
 import type { 命令 } from '../cli/命令.ts';
@@ -33,7 +33,7 @@ const 备母版 = async (段们: 段信息[], 渲: boolean, 记录: 运行记录
 
 const 验: 命令 = {
   用法: 'verify [<选择器…>] [--渲] [--对基线] [--到预览 <主题>]；verify accept <段> --理由 <…> [--渲]',
-  说明: '指纹变了的段抽帧和认可版比（--对基线 和旧项目基线比），超过阈值就要 sr verify accept',
+  说明: '指纹变了的段抽帧和认可版比（--对基线 和旧项目基线比），超过阈值就要 anim verify accept',
   跑: async (args, 记录) => {
     if (args[0] === 'accept') return 认.跑(args.slice(1), 记录);
     const p = 解析参数(args, { 值: ['--到预览'], 开关: ['--渲', '--对基线'] });
@@ -61,7 +61,7 @@ const 验: 命令 = {
         const 认可 = 读认可(认可文件(键));
         if (!x.有) {
           不过++;
-          记录.记('错误', `${键}：没有现在指纹 ${x.指纹.slice(0, 16)} 的母版（sr render ${键}，或加 --渲）`);
+          记录.记('错误', `${键}：没有现在指纹 ${x.指纹.slice(0, 16)} 的母版（anim render ${键}，或加 --渲）`);
           continue;
         }
         if (对基线) {
@@ -78,7 +78,7 @@ const 验: 命令 = {
         }
         if (!认可) {
           不过++;
-          记录.记('错误', `${键}：还没认可过（看过母版后 sr verify accept ${键} --理由 …）`);
+          记录.记('错误', `${键}：还没认可过（看过母版后 anim verify accept ${键} --理由 …）`);
           continue;
         }
         if (认可.指纹 === x.指纹) {
@@ -93,7 +93,7 @@ const 验: 命令 = {
       记录.产物.push(预览.目录);
       console.log(`变了的帧（旧|新|差 并排）在 ${预览.目录}`);
     }
-    console.log(不过 ? `\n${不过} 段没过：缺母版的先渲；变了的看过画面、确认是要的改动，再 sr verify accept <段> --理由 …` : `\n${段们.length} 段都过了`);
+    console.log(不过 ? `\n${不过} 段没过：缺母版的先渲；变了的看过画面、确认是要的改动，再 anim verify accept <段> --理由 …` : `\n${段们.length} 段都过了`);
     return 不过 ? 1 : 0;
   },
 };
@@ -103,13 +103,13 @@ const 认: 命令 = {
   说明: '把现在的母版记成认可版（写 verify/accepted/<平台>/<段键>.toml）',
   跑: async (args, 记录) => {
     const p = 解析参数(args, { 值: ['--理由'], 开关: ['--渲'] });
-    if (p.位置.length !== 1) throw new 用法错误('一次认可一段：sr verify accept <段> --理由 …');
+    if (p.位置.length !== 1) throw new 用法错误('一次认可一段：anim verify accept <段> --理由 …');
     const 理由 = p.值['--理由']?.trim();
     if (!理由) throw new 用法错误('要写 --理由（这次画面为什么变、谁看过）');
     const 段们 = await 选段(p.位置);
     if (段们.length !== 1) throw new 用法错误(`「${p.位置[0]}」对上了 ${段们.length} 段，一次只认可一段`);
     const [x] = await 备母版(段们, p.开关.has('--渲'), 记录);
-    if (!x!.有) throw new Error(`${x!.段.键} 没有现在指纹 ${x!.指纹.slice(0, 16)} 的母版：先 sr render ${x!.段.键}，或加 --渲`);
+    if (!x!.有) throw new Error(`${x!.段.键} 没有现在指纹 ${x!.指纹.slice(0, 16)} 的母版：先 anim render ${x!.段.键}，或加 --渲`);
     const file = 认可文件(x!.段.键);
     const 旧 = 读认可(file);
     const r = await 过放行闸(() => 扫母版(x!.母版));

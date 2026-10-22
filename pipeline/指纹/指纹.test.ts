@@ -18,7 +18,7 @@ describe('稳定JSON', () => {
 
 describe('依赖闭包', () => {
   it('闭包里的文件改了指纹就变；asset: 记 sha；npm 包记 lockfile 版本', async () => {
-    const d = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'sr-指纹-')));
+    const d = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-指纹-')));
     fs.writeFileSync(path.join(d, '甲.ts'), "import { 乙 } from './乙.ts'; import 图 from 'asset:核对/冒烟色块'; import { interpolate } from 'remotion'; export default [乙, 图, interpolate];");
     fs.writeFileSync(path.join(d, '乙.ts'), 'export const 乙 = 1;');
     const 一 = await 算闭包([相对(path.join(d, '甲.ts'))]);

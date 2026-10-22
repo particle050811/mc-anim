@@ -1,4 +1,4 @@
-// 运行记录和耗时表：每条 sr 命令结束时写一份 run/运行记录/<UTC>-<命令>-<pid>.json（参数、提交、事件、退出码），
+// 运行记录和耗时表：每条 anim 命令结束时写一份 run/运行记录/<UTC>-<命令>-<pid>.json（参数、提交、事件、退出码），
 // 并往 run/logs/耗时.tsv 追加一行；渲染等长任务另按段追加，开跑前用它报预计耗时（用户要求长任务先报预计耗时）。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -66,9 +66,9 @@ export class 运行记录 {
 
   结束(退出码: number) {
     const 秒 = (Date.now() - this.开始ms) / 1000;
-    const 命令行 = ['sr', this.命令, ...this.参数].join(' ');
+    const 命令行 = ['anim', this.命令, ...this.参数].join(' ');
     try {
-      记耗时(`sr ${this.命令}`, this.开始ms, 秒, 退出码, 命令行);
+      记耗时(`anim ${this.命令}`, this.开始ms, 秒, 退出码, 命令行);
       const dir = 运行记录目录();
       fs.mkdirSync(dir, { recursive: true });
       const 名 = `${utc时间(this.开始ms).replace(/[-:]/g, '').replace('T', '-').replace('Z', '')}-${this.命令}-${process.pid}.json`;

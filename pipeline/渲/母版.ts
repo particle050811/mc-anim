@@ -19,7 +19,7 @@ export const 原子写 = (file: string, text: string) => {
 
 export const 写指纹 = (fp: 段指纹, 目录 = 母版目录(fp.段)) => 原子写(指纹文件(fp.段, fp.指纹, 目录), JSON.stringify({ ...fp, 算于: new Date().toISOString() }, null, 2) + '\n');
 
-/** 这段之前渲过的指纹（新的在前），sr stale 拿最近一份比差异 */
+/** 这段之前渲过的指纹（新的在前），anim stale 拿最近一份比差异 */
 export const 历史指纹 = (键: string, dir = 母版目录(键)): (段指纹 & { 算于?: string })[] => {
   if (!fs.existsSync(dir)) return [];
   return fs

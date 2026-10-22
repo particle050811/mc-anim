@@ -1,4 +1,4 @@
-// sr check 测试用的小仓库：在临时目录里按 { 相对路径: 内容 } 写文件。违规样例和合规样例都在测试里现造，不进 content/。
+// anim check 测试用的小仓库：在临时目录里按 { 相对路径: 内容 } 写文件。违规样例和合规样例都在测试里现造，不进 content/。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -37,7 +37,7 @@ export const 基础 = (): 文件表 => ({
 });
 
 export const 造仓库 = (...层: 文件表[]): string => {
-  const 根 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'sr-检查样例-')));
+  const 根 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查样例-')));
   const 合 = Object.assign({}, ...层) as 文件表;
   for (const [p, 内容] of Object.entries(合)) {
     if (内容 === null) continue;

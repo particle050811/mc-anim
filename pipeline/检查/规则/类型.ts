@@ -1,5 +1,5 @@
 // 类型：tsc（strict，按根下 tsconfig.json）；Python 用 ruff 和 pyright（范围在 pyproject.toml 的 [tool.ruff]、[tool.pyright]）；
-// 改到 sourcing/mod/ 时编译 mod 并跑不开游戏的暮色网格核对。工具没装的记「跳过」并说怎么装，不算违规（sr doctor 另查）。
+// 改到 sourcing/mod/ 时编译 mod 并跑不开游戏的暮色网格核对。工具没装的记「跳过」并说怎么装，不算违规（anim doctor 另查）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
@@ -49,7 +49,7 @@ export const 跑gradle = (c: 检查上下文, 报: 报告) => {
   const 改了 = [试跑(['git', '-C', c.根, 'diff', '--name-only', 'main...HEAD']), 试跑(['git', '-C', c.根, 'status', '--porcelain'])];
   const 不在git = 改了.some((x) => x.退出码 !== 0);
   if (!不在git && !改了.some((x) => x.stdout.includes(`${mod}/`))) return 报.跳过.push('mod 编译和核对：这次没改到 sourcing/mod/');
-  // build.gradle 从 MCAI_GAME 读暮色森林的 jar；1.20.1 的 ForgeGradle 要 JDK 17，配了 SR_JAVA_HOME 就用它
+  // build.gradle 从 MCAI_GAME 读暮色森林的 jar；1.20.1 的 ForgeGradle 要 JDK 17，配了 ANIM_JAVA_HOME 就用它
   const java = 配置('java_home');
   const env = { ...process.env, MCAI_GAME: 配置('游戏'), ...(java ? { JAVA_HOME: java, MCAI_JAVA_HOME: java } : {}) };
   if (isWindows) {

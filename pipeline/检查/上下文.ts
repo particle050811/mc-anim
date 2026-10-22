@@ -1,4 +1,4 @@
-// sr check 各条规则共用的上下文：仓库根下的文件表、esbuild 依赖图、纯模块的执行结果，都只算一次。
+// anim check 各条规则共用的上下文：仓库根下的文件表、esbuild 依赖图、纯模块的执行结果，都只算一次。
 // 根可以是任意目录（测试拿临时目录造一个小仓库），所以这里不调 代码根()，路径一律相对 根、用正斜杠。
 import fs from 'node:fs';
 import os from 'node:os';
@@ -57,7 +57,7 @@ const 包名 = (spec: string) => (spec.startsWith('@') ? spec.split('/').slice(0
 
 /** asset:<id> 一律解析成字符串模块，记下谁引了哪个 id；锁里有没有交给 资产 规则查，好一次报全 */
 const 宽松资产插件 = (记录?: Map<string, string[]>): Plugin => ({
-  name: 'sr-检查-资产',
+  name: 'anim-检查-资产',
   setup(b) {
     b.onResolve({ filter: /^asset:/ }, (args) => {
       const id = args.path.slice('asset:'.length);
@@ -65,9 +65,9 @@ const 宽松资产插件 = (记录?: Map<string, string[]>): Plugin => ({
         const k = args.importer;
         (记录.get(k) ?? 记录.set(k, []).get(k)!).push(id);
       }
-      return { path: id, namespace: 'sr-检查-资产' };
+      return { path: id, namespace: 'anim-检查-资产' };
     });
-    b.onLoad({ filter: /.*/, namespace: 'sr-检查-资产' }, (args) => ({ contents: `export default ${JSON.stringify('asset:' + args.path)};`, loader: 'js' }));
+    b.onLoad({ filter: /.*/, namespace: 'anim-检查-资产' }, (args) => ({ contents: `export default ${JSON.stringify('asset:' + args.path)};`, loader: 'js' }));
   },
 });
 
@@ -161,7 +161,7 @@ export class 检查上下文 {
           图.边.set(
             从,
             info.imports
-              .filter((i) => !i.path.startsWith('sr-检查-资产:'))
+              .filter((i) => !i.path.startsWith('anim-检查-资产:'))
               .map((i) => (i.external ? { 到: i.path.startsWith('node:') ? i.path : 包名(i.path), 外部: true } : { 到: i.path.split(path.sep).join('/'), 外部: false })),
           );
         }
@@ -206,7 +206,7 @@ export class 检查上下文 {
             plugins: [宽松资产插件()],
             logLevel: 'silent',
           });
-          this.#tmp ??= fs.mkdtempSync(path.join(os.tmpdir(), 'sr-检查-'));
+          this.#tmp ??= fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查-'));
           const file = path.join(this.#tmp, `${crypto.createHash('sha256').update(p).digest('hex').slice(0, 16)}.mjs`);
           fs.writeFileSync(file, out.outputFiles[0]!.text, 'utf8');
           return { 模块: (await import(pathToFileURL(file).href)) as Record<string, unknown> };

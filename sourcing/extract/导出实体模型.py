@@ -2,7 +2,7 @@
 """从模组 jar 里导出 Java 版实体模型（生物）：用 javap -c 反汇编模型类的 create()，按栈机执行，得到部件树和方盒，原样照抄不改数值。
 只认下面列的几种调用，遇到不认识的直接报错，不猜。
 
-用法（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：
+用法（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：
   uv run --with pillow 导出实体模型.py <jar> <输出.json> <名字=类全名[:方法名]>... --贴图 <名字=jar内贴图.png>...
   例：... twilightforest.jar src/模型/角色/巫妖.模型.json 巫妖=twilightforest.client.model.entity.LichModel \\
           --贴图 巫妖=assets/twilightforest/textures/model/twilightlich64.png
@@ -31,8 +31,8 @@ PartDefinition.addOrReplaceChild/getChild、MeshDefinition、CubeDeformation、H
 """
 import json, os, re, struct, subprocess, sys, tempfile, zipfile
 
-# javap 用 SR_JAVA_HOME 的（sr extract 按配置传），没给就从 PATH 找
-JAVAP = os.path.join(os.environ["SR_JAVA_HOME"], "bin", "javap") if os.environ.get("SR_JAVA_HOME") else "javap"
+# javap 用 ANIM_JAVA_HOME 的（anim extract 按配置传），没给就从 PATH 找
+JAVAP = os.path.join(os.environ["ANIM_JAVA_HOME"], "bin", "javap") if os.environ.get("ANIM_JAVA_HOME") else "javap"
 
 
 # ---------- 模型对象 ----------

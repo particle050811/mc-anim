@@ -7,9 +7,9 @@ import { spawnSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import type { 段信息 } from '../../清单/清单.ts';
 
-const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-剪辑包测试-'));
-process.env.SR_DATA = 数据根;
-process.env.SR_JIANYING_DRAFTS = path.join(数据根, '草稿');
+const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-剪辑包测试-'));
+process.env.ANIM_DATA = 数据根;
+process.env.ANIM_JIANYING_DRAFTS = path.join(数据根, '草稿');
 
 const { 段落表, 台词行, 找交付目录, uv带numpy, py环境 } = await import('./剪辑包.ts');
 const { 段的清单 } = await import('./音效清单.ts');
@@ -128,7 +128,7 @@ describe('剪辑包', () => {
     expect(差).toBeLessThan(1e-4);
 
     await 导入剪映(包);
-    const 草稿 = path.join(process.env.SR_JIANYING_DRAFTS!, '剪辑包测试');
+    const 草稿 = path.join(process.env.ANIM_JIANYING_DRAFTS!, '剪辑包测试');
     const info = JSON.parse(fs.readFileSync(path.join(草稿, 'draft_info.json'), 'utf8'));
     expect(info.tracks.map((t: { name: string }) => t.name)).toEqual(['画面', '字幕', 'AI 配音', '配乐和音效']);
     expect(info.group_container.groups).toHaveLength(1);

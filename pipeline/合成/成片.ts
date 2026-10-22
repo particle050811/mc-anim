@@ -39,7 +39,7 @@ export const 成片编码参数 = (级别: 渲染级别): string[] => {
   if (级别 === '预览') return ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23'];
   const 名 = 配置('编码器');
   const args = 编码参数表[名];
-  if (!args) throw new Error(`编码器 ${名} 不认识，只能是 ${Object.keys(编码参数表).join('、')}（SR_VIDEO_ENCODER）`);
+  if (!args) throw new Error(`编码器 ${名} 不认识，只能是 ${Object.keys(编码参数表).join('、')}（ANIM_VIDEO_ENCODER）`);
   return args;
 };
 
@@ -70,7 +70,7 @@ const 取母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 允�
       const 旧 = opts.允许过期 ? 历史指纹(s.键).find((h) => fs.existsSync(母版路径(s.键, h.指纹))) : undefined;
       if (!旧) {
         const 提示 = opts.允许过期 ? '连旧母版也没有' : '加 --重渲过期 先渲，或 --允许过期 用旧母版';
-        throw new Error(`${s.键} 没有当前指纹（${指纹.slice(0, 16)}）的母版：先 sr render ${s.键}，${提示}`);
+        throw new Error(`${s.键} 没有当前指纹（${指纹.slice(0, 16)}）的母版：先 anim render ${s.键}，${提示}`);
       }
       指纹 = 旧.指纹;
       过期 = true;
@@ -100,7 +100,7 @@ const 取叠层 = async (截们: 截[], 级别: 渲染级别, opts: { 允许过�
     let 过期 = false;
     if (!fs.existsSync(叠层路径(x.键, 指纹))) {
       const 旧 = opts.允许过期 ? 历史指纹(x.键, 叠层目录(x.键)).find((h) => fs.existsSync(叠层路径(x.键, h.指纹))) : undefined;
-      if (!旧) throw new Error(`叠层 ${x.键} 没有当前指纹（${指纹.slice(0, 16)}）的渲染：先 sr render ${x.截.段.键}，${opts.允许过期 ? '连旧的也没有' : '或加 --重渲过期 / --允许过期'}（不要叠层就 --不叠层）`);
+      if (!旧) throw new Error(`叠层 ${x.键} 没有当前指纹（${指纹.slice(0, 16)}）的渲染：先 anim render ${x.截.段.键}，${opts.允许过期 ? '连旧的也没有' : '或加 --重渲过期 / --允许过期'}（不要叠层就 --不叠层）`);
       指纹 = 旧.指纹;
       过期 = true;
       opts.记录.记('警告', `叠层 ${x.键} 用的是过期的 ${指纹.slice(0, 16)}`);

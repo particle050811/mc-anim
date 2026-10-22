@@ -1,10 +1,10 @@
 """剪辑包：给剪映专业版用的整片素材，让用户拖 AI 台词（字幕跟着走）、试听、录口播、加帧注释。照旧 导出剪辑包.py 的声音部分和清单写法。
-sr edit-package 已经备好：画面.mp4（母版 + 叠层、不带字幕、2K、CRF 32、每帧关键帧）、拉响度前的整片声音、各句落点、每屏字幕，写成 输入.json 交给这里。
+anim edit-package 已经备好：画面.mp4（母版 + 叠层、不带字幕、2K、CRF 32、每帧关键帧）、拉响度前的整片声音、各句落点、每屏字幕，写成 输入.json 交给这里。
 轨道：字幕（每屏一个片段，跟随它那句台词）、画面、AI 配音（每句一个 wav，按整片增益预乘好，起帧带小数）、配乐和音效、我的口播（空，供录音）。
 配乐、音效：有各段的音效清单（exportSfx 渲染收的，见 音效拆分.py）就照清单合成，配乐整条、音效一声一个片段（用户 10-15）；
 没有就是一条「去台词」：拉响度前的整片声音减掉按落点放的各句台词（旧快路的做法，台词和别的声音线性相加，减得干净）。
 最后核对（写进 清单 元数据.核对 和 核对.tsv，只记不拦）：剪辑包各轨相加 vs 成片声音；逐段的清单合成 vs 去台词；台词落点偏差。
-用法：uv run -q --no-project --with numpy python pipeline/适配器/剪映/剪辑包.py <输入.json>（sr edit-package 调）
+用法：uv run -q --no-project --with numpy python pipeline/适配器/剪映/剪辑包.py <输入.json>（anim edit-package 调）
 """
 import json
 import shutil
@@ -135,14 +135,14 @@ def main(input_file: Path):
         reference = np.concatenate([reference, np.zeros((total_frames * SAMPLES_PER_FRAME - len(reference), 2), np.float32)])
     print(f'成片声音比母版晚 {lag_samples} 个样本（{lag_samples / SAMPLE_RATE * 1000:.2f} 毫秒，整片限幅器的前瞻），核对时挪回来', flush=True)
 
-    # 整片增益：sr film 用的那个数（manifest 的 响度.增益dB）；顺带从成片声音反推一个对照
+    # 整片增益：anim film 用的那个数（manifest 的 响度.增益dB）；顺带从成片声音反推一个对照
     gain_db = spec['增益dB']
     unscaled_mix = no_dialogue.astype(np.float64).copy()
     for line in lines:
         mix_in(unscaled_mix, source_audio[line['id']][:line['播样本']] * 10 ** (line['增益dB'] / 20) * DIALOGUE_BUS_GAIN, line['起帧'])
     safe_mask = np.abs(reference) < 0.3
     fitted_gain = float(np.sum(reference[safe_mask] * unscaled_mix[safe_mask]) / max(np.sum(unscaled_mix[safe_mask] ** 2), 1e-30))
-    print(f'整片增益：sr film 用的 {gain_db} dB；从成片声音反推 {20 * np.log10(max(fitted_gain, 1e-9)):.3f} dB', flush=True)
+    print(f'整片增益：anim film 用的 {gain_db} dB；从成片声音反推 {20 * np.log10(max(fitted_gain, 1e-9)):.3f} dB', flush=True)
     gain = 10 ** (gain_db / 20)
 
     # 写配乐、音效、台词

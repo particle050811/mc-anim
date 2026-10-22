@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """边城（模型/场景/边城/）的方块贴图图集，和边城卫兵（模型/角色/卫兵.贴图/）的盔甲、披风、皮肤。全部取自 1.20.1 客户端 jar。
 
-用法：sr extract 边城贴图（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）
+用法：anim extract 边城贴图（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）
 
 1. 方块贴图：src/模型/场景/边城/方块贴图.png（16×16 一张，8 列）+ 方块贴图.json（名字 → 序号、来源、平均色）。
    大部分是 jar 里的原图原样拷贝；几张是按游戏的画法合成的：
@@ -24,7 +24,7 @@ import io, json, os, sys, zipfile
 from PIL import Image
 
 ROOT = os.getcwd()
-JAR = os.path.join(os.environ["SR_GAME"], "缓存", "client-1.20.1.jar")
+JAR = os.path.join(os.environ["ANIM_GAME"], "缓存", "client-1.20.1.jar")
 TOWN_DIR = os.path.join(ROOT, "src", "模型", "场景", "边城")
 GUARD_DIR = os.path.join(ROOT, "src", "模型", "角色", "卫兵.贴图")
 

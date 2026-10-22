@@ -1,6 +1,6 @@
 node_modules/
 /预览/
-sr.local.toml
+anim.local.toml
 .venv/
 __pycache__/
 *.pyc

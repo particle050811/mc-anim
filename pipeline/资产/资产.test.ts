@@ -8,7 +8,7 @@ import { esbuild资产插件 } from './esbuild插件.ts';
 import { 读资产表 } from './资产表.ts';
 import { id合法, 入库, 写资产锁, 解析资产, 读资产锁, 字节路径 } from './资产锁.ts';
 
-const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'sr-资产-'));
+const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'anim-资产-'));
 
 describe('资产锁', () => {
   it('写出来键排序、条目字段也排序、缩进 2、末尾换行（和 Python sort_keys 一致）', () => {
@@ -34,7 +34,7 @@ describe('资产锁', () => {
     expect(fs.readFileSync(字节路径(e, 根), 'utf8')).toBe('abc');
     expect(入库(源, 'store', 根)).toEqual(e);
     expect(解析资产('核对/x', { '核对/x': e }, 根).文件).toBe(字节路径(e, 根));
-    expect(() => 解析资产('核对/没有', {}, 根)).toThrow(/sr assets add 核对\/没有/);
+    expect(() => 解析资产('核对/没有', {}, 根)).toThrow(/anim assets add 核对\/没有/);
     expect(() => 解析资产('核对/x', { '核对/x': { ...e, sha256: 'f'.repeat(64) } }, 根)).toThrow(/字节不在/);
   });
 
@@ -81,7 +81,7 @@ describe('esbuild 的 asset: 解析', () => {
     expect([...记录]).toEqual([['核对/甲', 'a'.repeat(64)]]);
     fs.writeFileSync(path.join(d, 'b.ts'), "import x from 'asset:核对/乙'; console.log(x);");
     await expect(build({ entryPoints: [path.join(d, 'b.ts')], bundle: true, write: false, logLevel: 'silent', plugins: [esbuild资产插件(锁, 记录)] })).rejects.toThrow(
-      /资产锁里没有「核对\/乙」.*sr assets add/,
+      /资产锁里没有「核对\/乙」.*anim assets add/,
     );
   });
 });

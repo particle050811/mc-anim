@@ -1,4 +1,4 @@
-// sr env：列出每项配置的值和来源；sr doctor：查本机能不能跑（必需项不过就退出码 1，可选项只提示）。
+// anim env：列出每项配置的值和来源；anim doctor：查本机能不能跑（必需项不过就退出码 1，可选项只提示）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
@@ -43,11 +43,11 @@ export const 体检 = (): 结果[] => {
 
   for (const 名 of ['ffmpeg', 'ffprobe'] as const) {
     const v = 试跑([配置(名), '-version']);
-    查(名, v.退出码 === 0, v.退出码 === 0 ? v.stdout.split('\n')[0]! : `跑不起来：${配置(名)}（装上或设 SR_${名.toUpperCase()}）`);
+    查(名, v.退出码 === 0, v.退出码 === 0 ? v.stdout.split('\n')[0]! : `跑不起来：${配置(名)}（装上或设 ANIM_${名.toUpperCase()}）`);
   }
   const 编码器表 = 试跑([配置('ffmpeg'), '-hide_banner', '-encoders']).stdout;
   const 有编码器 = (名: string) => new RegExp(`\\s${名}\\s`).test(编码器表);
-  查('成片编码器', 有编码器(配置('编码器')), `${配置('编码器')}${有编码器(配置('编码器')) ? '' : ' 不在 ffmpeg 里（换 SR_VIDEO_ENCODER=libx264）'}`);
+  查('成片编码器', 有编码器(配置('编码器')), `${配置('编码器')}${有编码器(配置('编码器')) ? '' : ' 不在 ffmpeg 里（换 ANIM_VIDEO_ENCODER=libx264）'}`);
   查('libx264', 有编码器('libx264'), '预览、分享版要用', true);
   if (isMac) 查('videotoolbox', 有编码器('h264_videotoolbox'), 'Mac 成片默认用它', false);
 
@@ -61,7 +61,7 @@ export const 体检 = (): 结果[] => {
 
   for (const 子 of ['store', '私有', 'terrain', 'cache', '交付', 'run', '基线', 'archive']) {
     const d = 数据路径(子);
-    查(`数据根/${子}`, fs.existsSync(d) && 可写(d), fs.existsSync(d) ? (可写(d) ? d : `${d} 不可写`) : `${d} 不在（建好或设 SR_DATA）`);
+    查(`数据根/${子}`, fs.existsSync(d) && 可写(d), fs.existsSync(d) ? (可写(d) ? d : `${d} 不可写`) : `${d} 不在（建好或设 ANIM_DATA）`);
   }
   const 锁目录 = 配置('锁目录');
   查('锁目录', fs.existsSync(锁目录) && 可写(锁目录), fs.existsSync(锁目录) ? 锁目录 : `${锁目录} 不在（第一次拿锁时会建）`, false);
@@ -85,13 +85,13 @@ export const 体检 = (): 结果[] => {
 export const 环境命令: Record<string, 命令> = {
   env: {
     用法: 'env',
-    说明: '列出本机配置的值和来源（环境变量 > sr.local.toml > 默认）',
+    说明: '列出本机配置的值和来源（环境变量 > anim.local.toml > 默认）',
     不记录: true,
     跑: async (args) => {
       解析参数(args, {});
       const { 值, 本地文件 } = 全部配置();
-      console.log(`代码根：${代码根()}\n主检出：${主检出()}\n本地配置：${本地文件 ?? '（没有 sr.local.toml）'}\n`);
-      for (const [名, v] of Object.entries(值)) console.log(`${名}：${v.值}\n    取自${v.来源}；环境变量 ${v.变量}，sr.local.toml 键 ${v.键}。${v.说明}`);
+      console.log(`代码根：${代码根()}\n主检出：${主检出()}\n本地配置：${本地文件 ?? '（没有 anim.local.toml）'}\n`);
+      for (const [名, v] of Object.entries(值)) console.log(`${名}：${v.值}\n    取自${v.来源}；环境变量 ${v.变量}，anim.local.toml 键 ${v.键}。${v.说明}`);
     },
   },
   doctor: {

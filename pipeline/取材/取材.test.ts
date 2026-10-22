@@ -123,7 +123,7 @@ describe('仓库里的清单', () => {
   });
 });
 
-describe('sr mcai 过闸', () => {
+describe('anim mcai 过闸', () => {
   it('只有起游戏和编译过闸', () => {
     expect(要过闸(['game', 'start', 'world=片场'])).toBe(true);
     expect(要过闸(['build'])).toBe(true);

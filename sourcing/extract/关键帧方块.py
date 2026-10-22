@@ -13,7 +13,7 @@ blockstates → models → 每个面的贴图和 tintindex，解析照 资源包
     每个面 [朝向, 剔除方向, 贴图, 叠加贴图(-1 无), 染, 明暗, 四角 xyz, 四角 uv]：朝向 +x -x +y -y +z -z（场景坐标，北 = +y、上 = +z）或空串，坐标和 uv 以 1/16 格为单位。
   群系色.json：{群系: {草, 叶, 水, 草修饰?, 叶修饰?}}（#rrggbb），规则见 biome_colors()。
 
-用法：sr extract 关键帧方块（sr extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）
+用法：anim extract 关键帧方块（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）
 """
 import io, itertools, json, os, re, struct, sys, zipfile
 from collections import defaultdict
@@ -26,7 +26,7 @@ import 读区块 as RD
 
 ROOT = Path.cwd()
 OUTD = ROOT / "src/模型/场景/关键帧"
-GAME = Path(os.environ["SR_GAME"])
+GAME = Path(os.environ["ANIM_GAME"])
 CLIENT = GAME / "缓存/client-1.20.1.jar"
 
 

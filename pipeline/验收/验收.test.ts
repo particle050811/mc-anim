@@ -35,7 +35,7 @@ let 晚很多 = '';
 let 响了 = '';
 
 beforeAll(() => {
-  目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'sr-验收样例-'));
+  目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-验收样例-'));
   原 = 造('原.mkv', 'null');
   后半变 = 造('后半变.mkv', "drawbox=x=0:y=0:w=32:h=18:color=red:t=fill:enable='gte(n,30)'");
   小点 = 造('小点.mkv', "drawbox=x=0:y=0:w=2:h=2:color=white:t=fill:enable='gte(n,30)'"); // 四个像素，占 4/2304
@@ -50,7 +50,7 @@ const 认可 = async (母版: string): Promise<认可记录> => ({
   ...(await 扫母版(母版)).签名,
 });
 
-describe('sr verify', () => {
+describe('anim verify', () => {
   it('抽样：首帧、每 24 帧、末帧', () => {
     expect(抽样帧(48)).toEqual([0, 24, 47]);
     expect(抽样帧(50)).toEqual([0, 24, 48, 49]);

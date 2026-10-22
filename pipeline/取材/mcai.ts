@@ -1,4 +1,4 @@
-// sr mcai：把动作转给 sourcing/mcai/mcai.py。mcai 只读 MCAI_* 环境变量，这里按 sr 配置传；
+// anim mcai：把动作转给 sourcing/mcai/mcai.py。mcai 只读 MCAI_* 环境变量，这里按 anim 配置传；
 // 开游戏、编译前过放行闸，开游戏还要等渲染锁空出来（渲染和游戏抢同一块 GPU 和内存，用户 10-04 定的资源闸规矩）。
 import path from 'node:path';
 import fs from 'node:fs';

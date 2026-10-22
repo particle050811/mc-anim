@@ -1,5 +1,5 @@
 // 认可记录 verify/accepted/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
-// sr verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
+// anim verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
@@ -20,7 +20,7 @@ export const 读认可 = (file: string): 认可记录 | null => {
   const t = parse(fs.readFileSync(file, 'utf8')) as Record<string, unknown>;
   const 要 = ['段', '指纹', '平台', '渲染级别', '认可于', '提交', '理由', '宽', '高', '帧数', '间隔', '帧'];
   const 缺 = 要.filter((k) => t[k] === undefined);
-  if (缺.length) throw new Error(`${file} 缺 ${缺.join('、')}（这个文件由 sr verify accept 生成，别手改）`);
+  if (缺.length) throw new Error(`${file} 缺 ${缺.join('、')}（这个文件由 anim verify accept 生成，别手改）`);
   return {
     ...(t as unknown as 认可记录),
     音频sha: (t['音频sha'] as string | undefined) ?? null,
@@ -37,7 +37,7 @@ const 分行 = <T>(xs: T[], n: number) => Array.from({ length: Math.ceil(xs.leng
 /** 手写 TOML：键的顺序固定，帧一帧一张表，diff 好读 */
 export const 认可文本 = (r: 认可记录) =>
   [
-    '# sr verify accept 生成，别手改',
+    '# anim verify accept 生成，别手改',
     `"段" = ${串(r.段)}`,
     `"指纹" = ${串(r.指纹)}`,
     `"平台" = ${串(r.平台)}`,

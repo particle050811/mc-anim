@@ -2,7 +2,7 @@
 // 剪映 6.0 起保存草稿时把 draft_info.json、draft_meta_info.json 存成密文（Mac 11.4.2 实测也是），读回用户的调整只能这样解。
 // 做法同 Windows 上的 jy-draftc（调 videoeditor.dll）：构造库里的 draft_store::DraftIOFactoryBase，createIO(无密钥, 路径) 得到 DraftIO，
 // 调它的读（虚表第 5 项，返回 {路径, 16 字节, 内容, 加密类型}），明文、密文都能读。剪映升级后符号或虚表变了就要跟着改。
-// 编译（剪映.py 第一次用时自动编到 sr 给的位置，<数据根>/cache/剪映解密/）：clang++ -std=c++17 -O1 -arch arm64 剪映解密.cpp -o <出> -Wl,-rpath,<剪映>/Contents/Frameworks
+// 编译（剪映.py 第一次用时自动编到 anim 给的位置，<数据根>/cache/剪映解密/）：clang++ -std=c++17 -O1 -arch arm64 剪映解密.cpp -o <出> -Wl,-rpath,<剪映>/Contents/Frameworks
 // 用法：剪映解密 <草稿文件> <输出明文文件>    库加载时往 stdout 打几行日志，所以内容写文件不走 stdout。
 #include <dlfcn.h>
 #include <array>

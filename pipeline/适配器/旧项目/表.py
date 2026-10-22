@@ -12,7 +12,7 @@ from pathlib import Path
 
 import numpy as np
 
-FFMPEG = os.environ.get('SR_FFMPEG', 'ffmpeg')  # 基线.ts 按 sr 的配置传进来
+FFMPEG = os.environ.get('ANIM_FFMPEG', 'ffmpeg')  # 基线.ts 按 anim 的配置传进来
 
 LIB, TABLES, BASE = (Path(a) for a in sys.argv[1:4])
 sys.path.insert(0, str(LIB / '工具'))

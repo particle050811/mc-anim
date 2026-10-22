@@ -1,4 +1,4 @@
-// sr render <选择器…> [--级别 视频|预览] [--重渲] [--不叠层|--只叠层] [--到预览 <主题>]（段声明的透明叠层默认一起渲）；sr still <段> <帧…> --到预览 <主题> [--级别 …]
+// anim render <选择器…> [--级别 视频|预览] [--重渲] [--不叠层|--只叠层] [--到预览 <主题>]（段声明的透明叠层默认一起渲）；anim still <段> <帧…> --到预览 <主题> [--级别 …]
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
@@ -55,7 +55,7 @@ export const 渲染命令: Record<string, 命令> = {
     跑: async (args, 记录) => {
       const p = 解析参数(args, { 值: ['--级别', '--到预览'] });
       const [选择器, ...帧] = p.位置;
-      if (!选择器 || !帧.length || !p.值['--到预览']) throw new 用法错误('要 sr still <段> <帧…> --到预览 <主题>');
+      if (!选择器 || !帧.length || !p.值['--到预览']) throw new 用法错误('要 anim still <段> <帧…> --到预览 <主题>');
       const 段们 = await 选段([选择器]);
       if (段们.length !== 1) throw new 用法错误(`still 一次只渲一段，「${选择器}」对上了 ${段们.length} 段`);
       const 帧们 = 帧.map((f) => {

@@ -1,4 +1,4 @@
-// sr 的入口（sr / sr.cmd 转到这里，Node 24 直接跑 TS）：按子命令分发，每条命令结束写运行记录、追加耗时。
+// anim 的入口（anim / anim.cmd 转到这里，Node 24 直接跑 TS）：按子命令分发，每条命令结束写运行记录、追加耗时。
 import { 用法错误 } from './参数.ts';
 import { 运行记录 } from '../运行记录/记录.ts';
 import type { 命令 } from './命令.ts';
@@ -16,8 +16,8 @@ import { 取材命令 } from '../取材/命令.ts';
 const 命令表: Record<string, 命令> = { ...环境命令, ...资产命令, ...渲染命令, ...指纹命令, ...合成命令, ...预览命令, ...检查命令, ...验收命令, ...剪映命令, ...取材命令 };
 
 const 帮助 = () => {
-  console.log('用法：sr <命令> [参数]\n');
-  for (const c of Object.values(命令表)) console.log(`  sr ${c.用法}\n      ${c.说明}`);
+  console.log('用法：anim <命令> [参数]\n');
+  for (const c of Object.values(命令表)) console.log(`  anim ${c.用法}\n      ${c.说明}`);
 };
 
 const main = async (argv: string[]): Promise<number> => {
@@ -38,7 +38,7 @@ const main = async (argv: string[]): Promise<number> => {
     code = (await c.跑(args, 记录)) ?? 0;
   } catch (e) {
     if (e instanceof 用法错误) {
-      console.error(`${e.message}\n用法：sr ${c.用法}`);
+      console.error(`${e.message}\n用法：anim ${c.用法}`);
       code = 2;
     } else {
       console.error(e instanceof Error ? (e.stack ?? e.message) : e);

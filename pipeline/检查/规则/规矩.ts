@@ -42,7 +42,7 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
       if (ts.isImportDeclaration(s) && 指向例外模块(p, s.moduleSpecifier)) {
         const b = s.importClause?.namedBindings;
         if (b && ts.isNamespaceImport(b)) 报.错(`不许用命名空间导入 ${例外模块}.ts：写 import { 例外 } from '…/例外.ts'`, p, 行号(sf, s));
-        if (b && ts.isNamedImports(b)) for (const e of b.elements) if (e.propertyName && e.name.text !== 属性名(e.propertyName)) 报.错(`不许给 ${属性名(e.propertyName)} 改名导入（sr check 只认叫 例外 的调用）`, p, 行号(sf, e));
+        if (b && ts.isNamedImports(b)) for (const e of b.elements) if (e.propertyName && e.name.text !== 属性名(e.propertyName)) 报.错(`不许给 ${属性名(e.propertyName)} 改名导入（anim check 只认叫 例外 的调用）`, p, 行号(sf, e));
       }
       if (ts.isExportDeclaration(s) && 指向例外模块(p, s.moduleSpecifier)) 报.错(`不许转出 ${例外模块}.ts：用到的文件直接 import { 例外 }`, p, 行号(sf, s));
     }
@@ -57,7 +57,7 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
           ts.isTypeReferenceNode(父) ||
           ts.isQualifiedName(父);
         if (ts.isExportSpecifier(父)) 报.错('不许转出 例外：用到的文件直接从 engine/core/例外.ts import', p, 行号(sf, n));
-        else if (!是调用 && !只是名字) 报.错('例外 只能直接调用：不许赋给别的名字、当参数传、解构改名（sr check 只认叫 例外 的调用）', p, 行号(sf, n));
+        else if (!是调用 && !只是名字) 报.错('例外 只能直接调用：不许赋给别的名字、当参数传、解构改名（anim check 只认叫 例外 的调用）', p, 行号(sf, n));
       }
       if (!ts.isCallExpression(n)) return;
       const 名 = ts.isIdentifier(n.expression) ? n.expression.text : ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : undefined;

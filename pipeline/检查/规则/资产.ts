@@ -110,7 +110,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
   for (const e of 登记.values()) {
     if (typeof e.许可 === 'string' && !SPDX合法(e.许可)) 报.错(`「${e.id}」的许可「${e.许可}」不是 SPDX 表达式（第三方照原协议，自制的 LicenseRef-用户保留，拿不准 LicenseRef-待定）`, `assets/registry/${e.表}`);
     const l = 锁[e.id];
-    if (!l) 报.错(`「${e.id}」登记了但不在资产锁里（入库：sr assets add 或导入工具）`, `assets/registry/${e.表}`);
+    if (!l) 报.错(`「${e.id}」登记了但不在资产锁里（入库：anim assets add 或导入工具）`, `assets/registry/${e.表}`);
     else if ((e.可见性 === '私有') !== (l.库 === '私有')) 报.错(`「${e.id}」可见性是 ${e.可见性}，资产锁里却在 ${l.库} 库（私有的只进 私有/，别的进 store/）`, 'assets/资产锁.json');
   }
   for (const [id, l] of Object.entries(锁)) {

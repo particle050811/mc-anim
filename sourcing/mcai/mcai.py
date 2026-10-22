@@ -21,7 +21,7 @@
   MCAI_INSTANCE=<实例名> mcai ...   所有子命令都对这个实例生效（默认 取材客户端）
 几个 Agent 共用一个实例也行，动作会排队一个个做；要保证“摆机位 + 截图”不被别人插队，写进同一个 batch。
 
-只读环境变量，不推算本机路径（在 stress-rotation 仓库里用 sr mcai，按 sr 配置传）：
+只读环境变量，不推算本机路径（在 mc-anim 仓库里用 anim mcai，按 anim 配置传）：
   MCAI_GAME 游戏环境目录（实例/、取材服务端*/）；MCAI_PRISM Prism 启动器（不给就在 PATH 上找）；MCAI_JAVA_HOME JDK 17（不给就用 PATH 上的 java）
   MCAI_MOD_DIR mod 工程（默认本文件旁的 ../mod）；MCAI_TIME_LOG 耗时记录（不给就只打到 stderr）
   MCAI_ONE_CLIENT=1 已有别的实例的游戏开着就不再起（两个客户端同时开会抢内存显存）
@@ -37,7 +37,7 @@ MOD_DIR = Path(os.environ.get("MCAI_MOD_DIR") or Path(__file__).resolve().parent
 
 def game_root():
     if not os.environ.get("MCAI_GAME"):
-        sys.exit("要设环境变量 MCAI_GAME：游戏环境目录（里面有 实例/、取材服务端/）。在 stress-rotation 仓库里用 sr mcai，按配置 SR_GAME 传")
+        sys.exit("要设环境变量 MCAI_GAME：游戏环境目录（里面有 实例/、取材服务端/）。在 mc-anim 仓库里用 anim mcai，按配置 ANIM_GAME 传")
     return Path(os.path.abspath(os.environ["MCAI_GAME"]))
 
 
@@ -52,7 +52,7 @@ def default_prism():
         p = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData/Local")) / "Programs/PrismLauncher/prismlauncher.exe"
         if p.exists():
             return str(p)
-    sys.exit("找不到 Prism Launcher：设 MCAI_PRISM（sr 配置 SR_PRISM）")
+    sys.exit("找不到 Prism Launcher：设 MCAI_PRISM（anim 配置 ANIM_PRISM）")
 
 
 def default_java_home():
@@ -90,7 +90,7 @@ TIME_LOG = Path(os.environ["MCAI_TIME_LOG"]) if os.environ.get("MCAI_TIME_LOG") 
 
 class PidLock:
     """独占锁：O_EXCL 建 <名>.lock、里面写 pid，放锁就是删掉；持有的进程死了、或空文件放了 10 秒以上算过期。
-    和 sr 资源闸（pipeline/闸/锁.ts）同一套协议：回收过期锁时先改名成只有自己知道的临时名，确认改走的还是那把死锁才删，否则改回去。拿不到就等。"""
+    和 anim 资源闸（pipeline/闸/锁.ts）同一套协议：回收过期锁时先改名成只有自己知道的临时名，确认改走的还是那把死锁才删，否则改回去。拿不到就等。"""
 
     def __init__(self, path):
         self.path = Path(path)
@@ -531,7 +531,7 @@ def game_copyworld(opts):
 def build():
     java_home = default_java_home()
     if java_major(java_home) < 17:
-        sys.exit(f"编译要 JDK 17，现在的是 {java_home or '（没找到 java）'}：设 MCAI_JAVA_HOME（sr 配置 SR_JAVA_HOME）")
+        sys.exit(f"编译要 JDK 17，现在的是 {java_home or '（没找到 java）'}：设 MCAI_JAVA_HOME（anim 配置 ANIM_JAVA_HOME）")
     env = dict(os.environ, JAVA_HOME=java_home, MCAI_GAME=str(game_root()))
     gradlew = str(MOD_DIR / "gradlew.bat") if IS_WINDOWS else str(MOD_DIR / "gradlew")
     r = subprocess.run([gradlew, "build", "--console=plain", "-q"], cwd=MOD_DIR, env=env)

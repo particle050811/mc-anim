@@ -43,11 +43,11 @@ export const 解析资产 = (id: string, 锁: 资产锁, 根 = 数据根()) => {
   const 条目 = 锁[id];
   if (!条目) {
     throw new 缺资产(
-      `资产锁里没有「${id}」：先在 assets/registry/<类>.toml 登记，再跑 sr assets add ${id} <文件> 入库、写资产锁`,
+      `资产锁里没有「${id}」：先在 assets/registry/<类>.toml 登记，再跑 anim assets add ${id} <文件> 入库、写资产锁`,
     );
   }
   const file = 字节路径(条目, 根);
-  if (!fs.existsSync(file)) throw new 缺资产(`资产「${id}」的字节不在 ${file}：数据根不全（检查 SR_DATA，或从别的机器同步 store/、私有/）`);
+  if (!fs.existsSync(file)) throw new 缺资产(`资产「${id}」的字节不在 ${file}：数据根不全（检查 ANIM_DATA，或从别的机器同步 store/、私有/）`);
   return { 条目, 文件: file };
 };
 

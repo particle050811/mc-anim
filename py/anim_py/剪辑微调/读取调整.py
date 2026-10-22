@@ -6,7 +6,7 @@
 - 字幕（文字轨，跟随 一句台词）：每屏起止帧由台词落点和配音停顿现算（pipeline/合成/字幕.ts），台词挪了字幕跟着挪；这里只列相对台词单独挪过、改过长短或改过字的屏。
 - 注释（用户在剪映里加的标记，以前放的紫色段标记不算）单独一张表，按时间排：整片帧和时间、段号和 Composition、段内帧（按清单的 段落 换算）、注释文字，区间注释另有止帧。
 - 录音：用户自己的口播，只拿来对节奏，列出位置和文件。
-用法：sr jianying readback <包目录 | 调整-xxxx.json> [--不拉]；单独跑 python -m sr_py.剪辑微调.读取调整 <同上> [--不拉] [--草稿根 …] [--剪映 …] [--解密程序 …]
+用法：anim jianying readback <包目录 | 调整-xxxx.json> [--不拉]；单独跑 python -m anim_py.剪辑微调.读取调整 <同上> [--不拉] [--草稿根 …] [--剪映 …] [--解密程序 …]
   给包目录：先拉一份新的再读；给 调整 文件就读那个文件。结果打在屏幕上，另写 <调整文件名>-对比.tsv 和 <调整文件名>-注释.tsv。
 """
 import argparse
@@ -23,7 +23,7 @@ def find_adjustment_file(path: Path, pull: bool) -> Path:
         return jianying.export_adjustments(path)
     candidates = sorted(path.glob('调整-*.json'), key=lambda file: file.stat().st_mtime)
     if not candidates:
-        raise SystemExit(f'{path} 里还没有 调整-*.json（先跑 sr jianying export 建草稿）')
+        raise SystemExit(f'{path} 里还没有 调整-*.json（先跑 anim jianying export 建草稿）')
     return candidates[-1]
 
 
@@ -35,7 +35,7 @@ def locate_segment(segments, frame: float):
 
 
 def check_segments(manifest):
-    """清单的段落和导出时的拼接表比：剪辑包导出以后整片重拼过，段内帧会对不上。拼接表是 sr film 写的（编号、段、指纹、段内起帧、段内止帧、全片起帧）"""
+    """清单的段落和导出时的拼接表比：剪辑包导出以后整片重拼过，段内帧会对不上。拼接表是 anim film 写的（编号、段、指纹、段内起帧、段内止帧、全片起帧）"""
     table_path = manifest.get('元数据', {}).get('来源', {}).get('拼接表')
     if not table_path or not Path(table_path).exists():
         return

@@ -1,4 +1,4 @@
-// 本机资源读数（资源闸、sr doctor 用）。
+// 本机资源读数（资源闸、anim doctor 用）。
 // Mac 不用 memory_pressure：它把可压缩的页也算空闲，交换区快满时还报近一半空闲（全局记忆 resource-concurrency-preference，10-06）。
 // 这里按 vm_stat 的 free + inactive + speculative + purgeable 算空闲，另读交换区；交换区剩不到一成也当内存不够。
 // Windows 读 Win32_OperatingSystem（未在 Windows 实测），Linux 读 /proc/meminfo 的 MemAvailable。
