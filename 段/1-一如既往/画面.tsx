@@ -1,9 +1,11 @@
 // 占位画面：灰色房间，她坐的位置放一个灰盒，第一人称固定机位；叠上帧号和 分镜.ts 的事件，用来核卡点。
 // 歌词、拍立得定格已经接上；房子、酒狐、第一人称的手、聊天栏做好后逐个换掉灰盒和占位。
-// 照片里画的（3D、中间的事件名）按定格后的 fs 画；帧号、事件表、时间轴是核卡点用的标注，和歌词一样不定格、画在照片上面。
+// 照片里只画 3D，按定格后的 fs 画；事件名、帧号、事件表、时间轴是核卡点用的标注，按真实帧走、不定格（照片里不留字）。
+// 四个要卡的事件用大字，画在闪白上面，咔哒那一帧也看得见；其余事件用小字，和歌词一样画在照片上面、闪白下面。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { clamp01, sample } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { 第一人称机位, 眼位 } from '../../地点/机位.tsx';
@@ -19,6 +21,18 @@ const 键 = '1-一如既往';
 const 起帧 = 段时钟(键).场窗口.起帧;
 const 事件帧 = 段内事件帧(键);
 const 事件们 = (Object.entries(事件帧) as [事件名, number][]).sort((a, b) => a[1] - b[1]);
+
+// 节点 1 给用户核卡点的四个事件。聊天栏弹出就是驯服那一下（爱心、两行消息同时出）
+const 大字事件: readonly { 名: 事件名; 字: string }[] = [
+  { 名: '右键', 字: '右键' },
+  { 名: '驯服', 字: '聊天栏' },
+  { 名: '微笑推镜', 字: '微笑推镜' },
+  { 名: '咔哒定格', 字: '咔哒定格' },
+];
+const 大字名 = new Set<事件名>(大字事件.map((x) => x.名));
+/** 事件名从事件那一帧起留多久；大字之后再用几帧淡掉 */
+const 标注留帧 = fps;
+const 大字淡出帧 = 6;
 
 // 这一段唱第 13–15 句，每句从开口（前导音，没有就是句首）淡入，第 15 句在咔哒定格时淡出
 const 歌词行们: readonly 歌词行[] = [
@@ -59,27 +73,16 @@ const 房间: React.FC = () => {
   );
 };
 
-// 照片里的画面：按 f 画（定格以后 f 停在定格帧）
-const 占位场景: React.FC<{ f: number }> = ({ f }) => {
+// 照片里的画面：f 是定格后的 fs。灰房间是静的还用不上，换成房子、酒狐、手以后都按它画
+const 占位场景: React.FC<{ f: number }> = () => {
   const { width, height } = useVideoConfig();
-  const 最近 = 事件们.filter(([, 帧]) => 帧 <= f).at(-1);
-  const 下一个 = 事件们.find(([, 帧]) => 帧 > f);
   return (
-    <AbsoluteFill style={{ background: '#202226', fontFamily: uiFontFamily, color: '#f2f2f2' }}>
+    <AbsoluteFill style={{ background: '#202226' }}>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
         <color attach="background" args={['#202226']} />
         <第一人称机位 眼={眼位(玩家脚)} 看={看} 视角={视角} />
         <房间 />
       </ThreeCanvas>
-      <div style={{ position: 'absolute', left: 0, right: 0, top: 300, textAlign: 'center', textShadow: '0 2px 6px #000' }}>
-        {最近 && f - 最近[1] < fps ? (
-          <div style={{ fontSize: 64, color: '#ffd84a' }}>
-            {最近[0]}（f{最近[1]}）
-          </div>
-        ) : (
-          <div style={{ fontSize: 28, color: '#cccccc' }}>{下一个 ? `下一个：${下一个[0]}（f${下一个[1]}）` : '段尾'}</div>
-        )}
-      </div>
     </AbsoluteFill>
   );
 };
@@ -90,8 +93,21 @@ const 占位标注: React.FC = () => {
   const { durationInFrames } = useVideoConfig();
   const 歌帧 = 起帧 + f;
   const 最近 = 事件们.filter(([, 帧]) => 帧 <= f).at(-1);
+  // 小字：不是大字的事件里最近的那一帧（同一帧有几个就都列出来）。放在歌词下面，定格以后不挡照片下白边的字
+  const 小字帧 = 事件们.filter(([名, 帧]) => !大字名.has(名) && 帧 <= f).at(-1)?.[1];
+  const 小字们 = 事件们.filter(([名, 帧]) => !大字名.has(名) && 帧 === 小字帧).map(([名]) => 名);
+  const 下一个 = 事件们.find(([, 帧]) => 帧 > f);
   return (
     <AbsoluteFill style={{ fontFamily: uiFontFamily, color: '#f2f2f2' }}>
+      <div style={{ position: 'absolute', left: 0, right: 0, top: 118, textAlign: 'center', textShadow: '0 2px 6px #000' }}>
+        {小字帧 !== undefined && f - 小字帧 < 标注留帧 ? (
+          <div style={{ fontSize: 32, color: '#ffd84a' }}>
+            {小字们.join('、')}（f{小字帧}）
+          </div>
+        ) : (
+          <div style={{ fontSize: 24, color: '#cccccc' }}>{下一个 ? `下一个：${下一个[0]}（f${下一个[1]}）` : '段尾'}</div>
+        )}
+      </div>
       <div style={{ position: 'absolute', left: 24, bottom: 52, fontSize: 20, lineHeight: 1.5, textShadow: '0 1px 3px #000' }}>
         <div>{键} · 占位</div>
         <div>
@@ -116,6 +132,40 @@ const 占位标注: React.FC = () => {
   );
 };
 
+// 四个要卡的事件的大字：从事件那一帧起留 1 秒再淡掉；头两帧反色、略放大，看得出正好落在哪一帧
+const 事件大字: React.FC = () => {
+  const f = useCurrentFrame();
+  const 在显示 = 大字事件
+    .map((x) => ({ ...x, 帧: 事件帧[x.名], t: f - 事件帧[x.名] }))
+    .filter((x) => x.t >= 0 && x.t < 标注留帧 + 大字淡出帧);
+  return (
+    <AbsoluteFill style={{ pointerEvents: 'none', justifyContent: 'center', alignItems: 'center', gap: 14, fontFamily: uiFontFamily }}>
+      {在显示.map(({ 名, 字, 帧, t }) => {
+        const 刚到 = t < 2;
+        return (
+          <div
+            key={名}
+            style={{
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 18,
+              padding: '2px 30px',
+              borderRadius: 14,
+              background: 刚到 ? '#ffd84a' : 'rgba(20, 22, 26, 0.6)',
+              color: 刚到 ? '#202226' : '#ffd84a',
+              opacity: 1 - clamp01((t - 标注留帧 + 1) / 大字淡出帧),
+              transform: `scale(${sample([[0, 1.18], [3, 1]], t)})`,
+            }}
+          >
+            <span style={{ fontSize: 104, fontWeight: 700, lineHeight: 1.2 }}>{字}</span>
+            <span style={{ fontSize: 30 }}>{字 === 名 ? '' : `${名} `}f{帧}</span>
+          </div>
+        );
+      })}
+    </AbsoluteFill>
+  );
+};
+
 // 原声放在拍立得外面：声音不跟画面定格
 const 画面: React.FC = () => (
   <>
@@ -133,6 +183,7 @@ const 画面: React.FC = () => (
     >
       {(fs) => <占位场景 f={fs} />}
     </拍立得>
+    <事件大字 />
   </>
 );
 
