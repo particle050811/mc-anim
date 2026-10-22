@@ -1,4 +1,4 @@
-// 结构：分层方向（engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册.tsx）、段不互引、场只接上一场的 末态.ts、不许引 核对/、
+// 结构：分层方向（engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册.tsx）、作品不互引、段不互引、场只接上一场的 末态.ts、不许引 核对/、
 // pipeline 只 import 纯模块、纯模块闭包无 react/three/remotion、getInputProps 只在 engine/段/设置.ts、渲染代码里不许有
 // Math.random、Date.now、相对路径引的资产、写死的路径或主机名。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
 import os from 'node:os';
@@ -28,6 +28,8 @@ const 禁包 = (包: string) => ['react', 'react-dom', 'three', 'remotion'].incl
 export const 二进制资产后缀 = /\.(png|jpe?g|webp|gif|ogg|wav|mp3|m4a|flac|bin|ttf|otf|woff2?|mp4|mkv|mov|glb|gltf)$/i;
 
 const 名字 = (l: 层) => (l.键 ? `${l.名}/${l.键}` : l.名);
+/** 文件属于哪部作品（作品/<名>/ 下的才有） */
+const 所属作品 = (p: string) => /^作品\/([^/]+)\//.exec(p)?.[1];
 
 export const 查分层 = async (c: 检查上下文, 报: 报告) => {
   const 图 = await c.依赖图();
@@ -36,11 +38,19 @@ export const 查分层 = async (c: 检查上下文, 报: 报告) => {
   const 场序 = '场序' in 内容 ? 内容.场序 : null;
 
   for (const [从, 边们] of 图.边) {
+    if (c.是别的作品(从)) continue; // 别的作品的文件只会经下面报过的跨作品引用进图，它自己的边归它自己查
     const a = 分层(从);
+    const 从作品 = 所属作品(从);
     for (const e of 边们) {
       if (e.外部) continue;
       const 到 = e.到;
       const b = 分层(到);
+      // 放在别的层规则前面：两部作品的段键、场键可能同名，按层比键会当成自己的段、场放过去
+      const 到作品 = 所属作品(到);
+      if (从作品 && 到作品 && 从作品 !== 到作品) {
+        报.错(`作品不许引用别的作品：${从} → ${到}（两部作品共用的东西放 库/ 或 engine/）`, 从);
+        continue;
+      }
       if (b.名 === '核对' && !(a.名 === '核对' && a.键 === b.键)) {
         报.错(`不许引用 核对/：${从} → ${到}（核对可以引任何东西，反过来不行）`, 从);
         continue;

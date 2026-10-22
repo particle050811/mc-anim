@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { 基础, 跑, 造仓库 } from './测试夹具.ts';
+import { 基础, 跑, 造仓库, type 文件表 } from './测试夹具.ts';
 import { 写死了, 分层 } from './规则/结构.ts';
 
 const 两场 = {
@@ -11,6 +11,22 @@ const 两场 = {
   '作品/应力转动/段/7-乙/画面.tsx': 'export default () => null;\n',
   '作品/应力转动/场/7-场一/末态.ts': 'export const 末态 = { x: 1 };\n',
   '作品/应力转动/场/7-场一/布局.ts': 'export const 布局 = 1;\n',
+};
+
+/** 两部临时作品，段键、场键同名（1-开场、1-场一），只带 engine 里要用的两个文件 */
+const 两部作品 = (): 文件表 => {
+  const { 'engine/段/段定义.ts': 段定义, 'engine/core/例外.ts': 例外 } = 基础();
+  const 表: 文件表 = { 'engine/段/段定义.ts': 段定义!, 'engine/core/例外.ts': 例外! };
+  for (const 名 of ['夹具甲', '夹具乙']) {
+    Object.assign(表, {
+      [`作品/${名}/清单.ts`]: "export const 清单 = [{ 键: '1-开场', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",
+      [`作品/${名}/段/1-开场/段.ts`]: "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-场一', 帧数: 24, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+      [`作品/${名}/段/1-开场/画面.tsx`]: 'export default () => null;\n',
+      [`作品/${名}/场/1-场一/末态.ts`]: 'export const 末态 = { x: 1 };\n',
+      [`作品/${名}/角色.ts`]: 'export const 角色 = 1;\n',
+    });
+  }
+  return 表;
 };
 
 describe('结构', () => {
@@ -90,6 +106,42 @@ describe('结构', () => {
     expect(v.join('\n')).not.toMatch(/键\.png/); // 资产目录() 的键只是名字
     expect(v.join('\n')).toMatch(/相对路径的资产："\.\/混进来\.png"/);
     expect(v.join('\n')).toMatch(/资产要写 asset:<id> 引用，不用相对路径：作品\/应力转动\/段\/7-甲\/画面.tsx → 作品\/应力转动\/段\/7-甲\/图.png/);
+  });
+
+  it('作品引 engine/、库/ 和自己的东西放行，两部作品各查各的', async () => {
+    const 引共用 = {
+      '库/角色/路人.ts': "import { 例外 } from '@engine/core/例外.ts';\nexport const 路人 = 例外;\n",
+      '作品/夹具甲/段/1-开场/画面.tsx': [
+        "import { 例外 } from '@engine/core/例外.ts';",
+        "import { 路人 } from '@库/角色/路人.ts';",
+        "import { 路人 as 同一个 } from '../../../../库/角色/路人.ts';",
+        "import { 角色 } from '../../角色.ts';",
+        "import { 末态 } from '../../场/1-场一/末态.ts';",
+        'export default () => <div>{String([例外, 路人, 同一个, 角色, 末态])}</div>;',
+      ].join('\n'),
+    };
+    for (const 作品 of ['夹具甲', '夹具乙']) {
+      expect((await 跑('结构', 造仓库(两部作品(), 引共用), { 作品 })).违规).toEqual([]);
+    }
+  });
+
+  it('作品引别的作品一律拦：同名的段、场也拦，不再按段互引、场互引报；两个方向都查', async () => {
+    const 互引 = {
+      '作品/夹具甲/段/1-开场/画面.tsx': "import 乙 from '../../../夹具乙/段/1-开场/画面.tsx';\nexport default 乙;\n",
+      '作品/夹具甲/场/1-场一/时间线.ts': "import { 末态 } from '../../../夹具乙/场/1-场一/末态.ts';\nexport const 起 = 末态.x;\n",
+      '作品/夹具甲/角色.ts': "import { 角色 } from '../夹具乙/角色.ts';\nexport { 角色 };\n",
+      '作品/夹具甲/核对/看看/画面.tsx': "import { 角色 } from '../../../夹具乙/角色.ts';\nexport default () => <div>{角色}</div>;\n",
+      '作品/夹具乙/段/1-开场/画面.tsx': "import { 角色 } from '../../../夹具甲/角色.ts';\nexport default () => <div>{角色}</div>;\n",
+    };
+    const 甲 = (await 跑('结构', 造仓库(两部作品(), 互引), { 作品: '夹具甲' })).违规.join('\n');
+    expect(甲).toMatch(/作品不许引用别的作品：作品\/夹具甲\/段\/1-开场\/画面.tsx → 作品\/夹具乙\/段\/1-开场\/画面.tsx/);
+    expect(甲).toMatch(/作品不许引用别的作品：作品\/夹具甲\/场\/1-场一\/时间线.ts → 作品\/夹具乙\/场\/1-场一\/末态.ts/);
+    expect(甲).toMatch(/作品不许引用别的作品：作品\/夹具甲\/角色.ts → 作品\/夹具乙\/角色.ts/);
+    expect(甲).toMatch(/作品不许引用别的作品：作品\/夹具甲\/核对\/看看\/画面.tsx → 作品\/夹具乙\/角色.ts/);
+    expect(甲).not.toMatch(/段不许引用别的段|场只许引用上一场/);
+    expect(甲).not.toMatch(/作品\/夹具乙\/段\/1-开场\/画面.tsx →/); // 乙自己的边归查乙时报
+    const 乙 = (await 跑('结构', 造仓库(两部作品(), 互引), { 作品: '夹具乙' })).违规.join('\n');
+    expect(乙).toMatch(/作品不许引用别的作品：作品\/夹具乙\/段\/1-开场\/画面.tsx → 作品\/夹具甲\/角色.ts/);
   });
 
   it('分层按路径前缀；写死判断', () => {
