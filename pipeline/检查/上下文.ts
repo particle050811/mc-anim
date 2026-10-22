@@ -88,6 +88,7 @@ export class 检查上下文 {
   #加载 = new Map<string, Promise<加载结果>>();
   #tmp?: string;
   #作品?: string;
+  #私有?: boolean;
 
   constructor(根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string; 作品?: string } = {}) {
     this.根 = fs.realpathSync(根);
@@ -117,6 +118,19 @@ export class 检查上下文 {
   是别的作品 = (p: string) => p.startsWith('作品/') && !p.startsWith(`${this.作品目录}/`);
   /** 文件() 去掉别的作品的 */
   本作品文件 = () => this.文件().filter((p) => !this.是别的作品(p));
+  /** 本作品私有：作品目录被 .gitignore 挡住、没放行（0004）；根不在 git 里就当公开 */
+  get 作品私有(): boolean {
+    if (this.#私有 === undefined) {
+      try {
+        // 末尾带 /，.gitignore 里只认目录的放行规则（!/作品/<名>/）才对得上
+        execFileSync('git', ['-C', this.根, 'check-ignore', '-q', `${this.作品目录}/`], { stdio: 'ignore' });
+        this.#私有 = true;
+      } catch {
+        this.#私有 = false;
+      }
+    }
+    return this.#私有;
+  }
 
   绝对 = (p: string) => path.join(this.根, ...p.split('/'));
   存在 = (p: string) => fs.existsSync(this.绝对(p));

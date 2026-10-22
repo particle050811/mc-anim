@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { 基础, 跑, 造仓库 } from './测试夹具.ts';
 import { SPDX合法, 包清单, 通配 } from './规则/资产.ts';
@@ -185,5 +186,28 @@ describe('作品资产表', () => {
     );
     // 写错一侧的只报一次（不再另报「登记了但不在资产锁里」）
     expect(v.filter((x) => x.includes('配乐/错侧'))).toHaveLength(1);
+  });
+
+  it('私有作品（被 .gitignore 挡住、没放行）目录里 import 私有资产不报；engine/、库/ 照拦；放行了的作品照拦', async () => {
+    const 私有 = {
+      ...示例('配乐/私曲', '配音/甲'),
+      '作品/示例/资产表/配乐.toml': 表(条('配乐/私曲', '私有', 'LicenseRef-用户保留')),
+      '作品/示例/资产锁.json': JSON.stringify({ '配乐/私曲': 锁条('d'.repeat(64), '私有') }),
+      'assets/registry/配音.toml': 表(条('配音/甲', '私有', 'LicenseRef-用户保留')),
+      'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '配音/甲': 锁条('c'.repeat(64), '私有') }),
+      '库/界面/某.tsx': "import 私 from 'asset:配音/甲';\nexport const 某 = () => <div>{私}</div>;\n",
+    };
+    const 带git = (gitignore: string) => {
+      const 根 = 造仓库(基础(), 私有, { '.gitignore': gitignore });
+      execFileSync('git', ['-C', 根, 'init', '-q'], { stdio: 'ignore' });
+      return 根;
+    };
+    const 挡住 = await 跑('资产', 带git('/作品/*\n!/作品/应力转动/\n'), { 作品: '示例' });
+    expect(挡住.违规).toEqual(['库/界面/某.tsx 公开构建的闭包里不能有私有资产：库/界面/某.tsx import 了 asset:配音/甲（私有的走 cue，缺了按规矩降级或报错，不打进包）']);
+    expect(挡住.报.跳过.join()).toMatch(/作品\/示例 被 .gitignore 挡住、是私有作品/);
+
+    const 放行 = (await 跑('资产', 带git('/作品/*\n!/作品/应力转动/\n!/作品/示例/\n'), { 作品: '示例' })).违规.join('\n');
+    expect(放行).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配乐\/私曲/);
+    expect(放行).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配音\/甲/);
   });
 });
