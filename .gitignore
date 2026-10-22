@@ -6,9 +6,7 @@ __pycache__/
 *.pyc
 /out/
 .DS_Store
-# 作品默认不进 Git（新建的作品默认私有，公开仓库里也不出现私有作品的名字），公开的逐个放行（docs/决策/0004-多作品.md）
-/作品/*
-!/作品/应力转动/
+# 作品默认进 Git、开源（用户 10-22 定）；要私有的逐个挡：在这里加一行 /作品/<名>/，或放 作品/ 外、用 anim.local.toml 的 [works] 登记（docs/决策/0004-多作品.md）
 *.tsbuildinfo
 
 # image-flow 的 skill 是从 image-flow 仓库拷来的副本（rsync skills/image-flow/），不进本仓库
