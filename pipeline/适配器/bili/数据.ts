@@ -3,10 +3,8 @@
 // 播放分析 archive_diagnose/play_analyze；总览和观众画像 archive_diagnose/overview；转粉 trans_fans_analyze；按天/小时趋势 trend；
 // 留存 x/web/data/v2/archive/analyze/graph?cid=（viewer_quit：duration_key 秒处还在看的观众万分比，约 18 档；peer_ 前缀是同类稿件）；
 // 弹幕 api x/v2/dm/search（progress 毫秒）；评论 x/v2/reply/up/fulllist。比率字段都是万分制，*_med 是自己近期稿件中位数。
-import fs from 'node:fs';
-import path from 'node:path';
 import { 数据路径 } from '../../环境/配置.ts';
-import { utc月日时分 } from '../../运行记录/记录.ts';
+import { 导入包, 最新包 } from '../平台/存放.ts';
 
 type 档 = { duration_key: number; num: number };
 type 原始分P = { cid: number; 标题: string; 时长: number; 留存: { viewer_quit?: 档[]; peer_viewer_quit?: 档[]; dm?: 档[] } | null; 弹幕: { progress: number; msg: string }[] };
@@ -26,6 +24,8 @@ export type 原始包 = { 版本: number; 取于: string; 稿件: 原始稿件[]
 export type 留存点 = { 秒: number; 留存: number };
 export type 稿件 = {
   bvid: string;
+  /** 同 bvid，平台无关代码用 */
+  标识: string;
   标题: string;
   时长: number;
   发布: string;
@@ -79,6 +79,7 @@ export const 解析 = (包: 原始包): 稿件[] =>
     const 弹幕 = (p?.弹幕 ?? []).map((d) => ({ 秒: d.progress / 1000, 文本: d.msg })).sort((a, b) => a.秒 - b.秒);
     return {
       bvid: s.bvid,
+      标识: s.bvid,
       标题: s.标题,
       时长: s.时长,
       发布: new Date(s.发布 * 1000).toISOString(),
@@ -113,31 +114,10 @@ export const 解析 = (包: 原始包): 稿件[] =>
 
 export const bili根 = () => 数据路径('平台', 'bilibili');
 
-/** 把浏览器下载的包挪进数据根；目录名按包里的取数时间（UTC） */
-export const 导入 = (文件: string, 根 = bili根()) => {
-  const 包 = JSON.parse(fs.readFileSync(文件, 'utf8')) as 原始包;
-  if (!Array.isArray(包.稿件) || typeof 包.取于 !== 'string') throw new Error(`${文件} 不是 取数.js 打的包（缺 稿件 或 取于）`);
-  const dir = path.join(根, utc月日时分(Date.parse(包.取于)));
-  const 目标 = path.join(dir, '数据.json');
-  if (fs.existsSync(目标)) throw new Error(`${目标} 已经有了，不覆盖`);
-  fs.mkdirSync(dir, { recursive: true });
-  try {
-    fs.renameSync(文件, 目标);
-  } catch {
-    fs.copyFileSync(文件, 目标); // 跨卷时 rename 不行
-    fs.rmSync(文件);
-  }
-  return { 目标, 包 };
-};
+export const 导入 = (文件: string, 根 = bili根()) => 导入包<原始包>(文件, 根, (包) => Array.isArray(包.稿件));
 
 export const 最新数据 = (根 = bili根()) => {
-  const 有 = fs.existsSync(根) ? fs.readdirSync(根).filter((n) => fs.existsSync(path.join(根, n, '数据.json'))) : [];
-  if (!有.length) throw new Error(`${根} 下还没有数据：先在浏览器里跑 取数.js，再 anim bili 导入 <json>`);
-  // 目录名是 月日-时分，跨年时按包里的 取于 排才对
-  const 带时间 = 有.map((n) => {
-    const f = path.join(根, n, '数据.json');
-    return { f, 包: JSON.parse(fs.readFileSync(f, 'utf8')) as 原始包 };
-  });
-  带时间.sort((a, b) => Date.parse(a.包.取于) - Date.parse(b.包.取于));
-  return 带时间.at(-1)!;
+  const 有 = 最新包<原始包>(根);
+  if (!有) throw new Error(`${根} 下还没有数据：先在浏览器里跑 取数.js，再 anim 平台 导入 <json>`);
+  return 有;
 };

@@ -1,7 +1,7 @@
 // B 站创作中心取数：在用户已登录的浏览器里跑（Playwright MCP 扩展模式 browser_run_code_unsafe 的 filename），
 // 页面要先打开 member.bilibili.com。cookie 只由浏览器带（credentials:'include'），脚本不读、不存、不返回它。
 // 只发 GET、只取自己的稿件；请求间隔 ≥1.1 秒，遇到 -412/-352 或 HTTP 412 立刻停。
-// 结果打包成 bili-数据-<UTC 月日-时分>.json 经 a.download 存进浏览器的下载目录，再用 anim bili 导入 收进数据根。
+// 结果打包成 bili-数据-<UTC 月日-时分>.json 经 a.download 存进浏览器的下载目录，再用 anim 平台 导入 收进数据根。
 // 接口和字段含义见同目录 数据.ts 的类型注释（比率是万分制；留存曲线 viewer_quit 是 20 秒一档的留存万分比）。
 async (page) => {
   const 可见 = await page.evaluate(() => document.visibilityState);
