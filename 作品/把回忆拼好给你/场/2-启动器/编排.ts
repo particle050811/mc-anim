@@ -2,13 +2,27 @@
 // 纯计算（不 import react、three），测试直接引。时刻从 分镜.ts 的正片事件来，比例、帧数在 参数.ts。
 import { 正片事件 } from '../../分镜.ts';
 import { 散, 图标边 } from '../../界面/实例图标.ts';
-import { 光标, 取景中心, 尺, 布局, 碎片, 钻入, 片尾白, 回色弹 } from './参数.ts';
+import { 光标, 卡们, 取景中心, 尺, 布局, 碎片, 钻入, 片尾白, 回色弹, 署名 } from './参数.ts';
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const 平滑 = (q: number) => q * q * (3 - 2 * q);
 
-/** 六月樱那一格图标的界面像素框（布局.ts 里第 0 行） */
-export const 图标框 = { x: 布局.卡.左 + 布局.图标.x, y: 布局.行起 + 布局.图标.y, 边: 布局.图标.边 };
+/** 每张卡片（卡们 的顺序）的上沿、第一行行顶、下沿（界面像素） */
+export const 卡排: readonly { 上: number; 行起: number; 底: number }[] = (() => {
+  let 上: number = 布局.卡上;
+  return 卡们.map((卡) => {
+    const 行起 = 上 + 布局.卡头高;
+    const 底 = 行起 + 卡.实例们.length * 布局.行高 + 布局.卡底让;
+    const r = { 上, 行起, 底 };
+    上 = 底 + 布局.卡间;
+    return r;
+  });
+})();
+
+/** 六月樱那一行（第一张卡片的第一行）的行顶 */
+const 六月樱行顶 = 卡排[0]!.行起;
+/** 六月樱那一格图标的界面像素框 */
+export const 图标框 = { x: 布局.卡左 + 布局.图标.x, y: 六月樱行顶 + 布局.图标.y, 边: 布局.图标.边 };
 const 图标心 = { x: 图标框.x + 图标框.边 / 2, y: 图标框.y + 图标框.边 / 2 };
 
 /** 平常的取景（第 0 镜、片尾） */
@@ -30,7 +44,7 @@ export const 行态在 = (歌帧: number): 0 | 1 | 2 => {
   const c = 光标在(歌帧);
   if (!c) return 0;
   const r = 布局.悬停让;
-  const 在 = c.x >= 布局.卡.左 + r.左 && c.x < 布局.卡.右 - r.右 && c.y >= 布局.行起 + r.上 && c.y < 布局.行起 + 布局.行高 - r.下;
+  const 在 = c.x >= 布局.卡左 + r.左 && c.x < 布局.卡右 - r.右 && c.y >= 六月樱行顶 + r.上 && c.y < 六月樱行顶 + 布局.行高 - r.下;
   return 在 ? 1 : 0;
 };
 
@@ -65,12 +79,10 @@ export const 钻入回暖 = (q: number) => 平滑(clamp01(q / 钻入.透满));
 const 块数 = 图标边 / 碎片.碎块边;
 const 块界面边 = (图标框.边 * 碎片.碎块边) / 图标边;
 
-/** 一块碎片：第 (i, j) 块（从左上数），从 起 飞进图标框里它那一格；料 = 飞着时一开始是哪种方块的贴图（第 11 句碎掉的那片世界：门口的地、屋子） */
-export type 碎块 = { i: number; j: number; 起: { x: number; y: number }; 起倍: number; 起帧: number; 料: string };
+/** 一块碎片：第 (i, j) 块（从左上数），从 起 飞进图标框里它那一格；料 = 飞着时一开始是第 11 句碎掉的世界里的哪一块（碎片源图里那块正方形的左上角，按源图宽高的比例 0～1） */
+export type 碎块 = { i: number; j: number; 起: { x: number; y: number }; 起倍: number; 起帧: number; 料: { x: number; y: number } };
 
-const 料们 = ['oak_planks', 'grass_block_top', 'dirt', 'cobblestone', 'oak_log', 'cherry_leaves', 'stone', 'oak_planks'] as const;
-
-/** 64 块碎片，起点在图标框四周一圈（离图标中心 60～150 界面像素，方向、远近、起飞帧、大小都按散列定死） */
+/** 64 块碎片，起点在图标框四周一圈（离图标中心 60～150 界面像素，方向、远近、起飞帧、大小、料取哪块都按散列定死） */
 export const 碎块们: readonly 碎块[] = Array.from({ length: 块数 * 块数 }, (_, n) => {
   const i = n % 块数, j = Math.floor(n / 块数);
   const 角 = Math.atan2(j - (块数 - 1) / 2, i - (块数 - 1) / 2) + (散(i, j, 1) - 0.5) * 2.2;
@@ -81,7 +93,7 @@ export const 碎块们: readonly 碎块[] = Array.from({ length: 块数 * 块数
     起: { x: 图标心.x + Math.cos(角) * 远 * 1.6, y: 图标心.y + Math.sin(角) * 远 },
     起倍: 碎片.起倍[0] + (碎片.起倍[1] - 碎片.起倍[0]) * 散(i, j, 3),
     起帧: Math.floor(散(i, j, 4) * 碎片.错开帧),
-    料: 料们[Math.floor(散(i, j, 5) * 料们.length)]!,
+    料: { x: 散(i, j, 5), y: 散(i, j, 6) },
   };
 });
 
@@ -105,3 +117,10 @@ export const 片尾白光 = (f: number, 回色帧: number) => (f >= 回色帧 ? 
 
 /** 回色时图标弹出去几个界面像素 */
 export const 片尾弹 = (f: number, 回色帧: number) => (f >= 回色帧 && f < 回色帧 + 回色弹.弹帧 ? 回色弹.弹 : 0);
+
+/** 署名那一行字的行顶左上角（界面像素，整数，落在平常取景的界面像素格上）：右沿离画面右边 署名.边距 个界面像素；
+ *  竖着和最下面那张卡的卡片头（「常规版本」）同一行，两行字不高低错开 */
+export const 署名位 = (字宽: number, 宽: number) => {
+  const 末卡 = 卡排[卡排.length - 1]!;
+  return { x: Math.floor(取景中心.x + 宽 / 2 / 尺 - 署名.边距 - 字宽), y: 末卡.上 + 布局.卡头字.y };
+};

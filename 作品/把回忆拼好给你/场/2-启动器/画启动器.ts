@@ -1,4 +1,4 @@
-// 启动器的画法：在一张成片分辨率的 2D 画布上，按 取景（界面像素的中心点 + 尺）画浅底、白卡片、实例列表、悬停底色、六月樱的方形图标和鼠标光标。
+// 启动器的画法：在一张成片分辨率的 2D 画布上，按 取景（界面像素的中心点 + 尺）画浅底、白卡片、版本列表、悬停底色、六月樱的方形图标和鼠标光标。
 // 真 2D（05-画风「第 0 镜和片尾的 PCL」）；照全片的像素画法画成像素界面：平涂、1 界面像素的边、游戏像素字，界面像素的边落在整数成片像素上（尺 是整数时）。
 // 钻进图标时 尺 不是整数，边按四舍五入落到成片像素上，不抗锯齿。坐标、颜色都在 参数.ts。
 import { png, type Png } from '@engine/model/贴图.ts';
@@ -6,7 +6,8 @@ import { textureNames } from '@engine/voxel/真实方块表.ts';
 import atlasUri from 'asset:贴图/场景/关键帧/方块表';
 import { 图标边 } from '../../界面/实例图标.ts';
 import { 启动器字 } from '../../界面/启动器字.ts';
-import { 布局, 实例们, 色 } from './参数.ts';
+import { 卡们, 布局, 歌词带底, 色 } from './参数.ts';
+import { 卡排 } from './编排.ts';
 
 export type 取景 = { 中心: { x: number; y: number }; 尺: number };
 
@@ -29,9 +30,6 @@ export const 投 = (t: 取景, 宽: number, 高: number) => ({
   x: (u: number) => Math.round(宽 / 2 + (u - t.中心.x) * t.尺),
   y: (v: number) => Math.round(高 / 2 + (v - t.中心.y) * t.尺),
 });
-
-/** 第 k 行（从 0 数）的上沿 */
-export const 行顶 = (k: number) => 布局.行起 + k * 布局.行高;
 
 // ---------- 方块贴图（别的版本的图标） ----------
 let 图集: Png | null = null;
@@ -126,27 +124,36 @@ export const 画启动器 = (ctx: CanvasRenderingContext2D, 宽: number, 高: nu
   ctx.clearRect(0, 0, 宽, 高);
   ctx.fillStyle = 色.底;
   ctx.fillRect(0, 0, 宽, 高);
-  const 卡 = 布局.卡;
-  const 卡底 = 行顶(实例们.length) + 8;
-  圆角块(ctx, P, 色.卡, 色.卡边, 卡.左, 卡.上, 卡.右, 卡底);
   const 原点 = { x: P.x(0), y: P.y(0) };
-  启动器字.画(ctx, '常规版本', 原点, 布局.卡头字.x, 布局.卡头字.y, 色.卡头, s.取景.尺);
-  实例们.forEach((实例, k) => {
-    const top = 行顶(k);
-    if (k === 0 && s.行态) {
-      const r = 布局.悬停让;
-      圆角块(ctx, P, s.行态 === 2 ? 色.按下 : 色.悬停, 色.悬停边, 卡.左 + r.左, top + r.上, 卡.右 - r.右, top + 布局.行高 - r.下);
-    }
-    const ix = 卡.左 + 布局.图标.x, iy = top + 布局.图标.y, 边 = 布局.图标.边;
-    if (实例.图标 === '合照') {
-      const 弹 = s.图标弹 ?? 0;
-      // 图标外一圈 1 界面像素的淡灰边，衬出白边
-      填(ctx, P, 色.图标边, ix - 1 - 弹, iy - 1 - 弹, ix + 边 + 1 + 弹, iy + 边 + 1 + 弹);
-      ctx.clearRect(P.x(ix - 弹), P.y(iy - 弹), P.x(ix + 边 + 弹) - P.x(ix - 弹), P.y(iy + 边 + 弹) - P.y(iy - 弹));
-      画方图(ctx, P, s.图标, 图标边, ix - 弹, iy - 弹, 边 + 2 * 弹, s.图标透);
-    } else 画方图(ctx, P, 方块图标(实例.图标), 16, ix, iy, 边);
-    启动器字.画(ctx, 实例.标题, 原点, 卡.左 + 布局.标题.x, top + 布局.标题.y, 色.标题, s.取景.尺);
-    启动器字.画(ctx, 实例.副标题, 原点, 卡.左 + 布局.副标题.x, top + 布局.副标题.y, 色.副标题, s.取景.尺);
+  const 字线 = 歌词带底 * (高 / 1440);
+  /** 一行字（行顶 v）：上沿高过歌词那一行的下沿就不画 */
+  const 写 = (字: string, u: number, v: number, 字色: string) => {
+    if (P.y(v) < 字线) return;
+    启动器字.画(ctx, 字, 原点, u, v, 字色, s.取景.尺);
+  };
+  const 左 = 布局.卡左, 右 = 布局.卡右;
+  卡们.forEach((卡, k) => {
+    const 排 = 卡排[k]!;
+    圆角块(ctx, P, 色.卡, 色.卡边, 左, 排.上, 右, 排.底);
+    写(卡.头, 左 + 布局.卡头字.x, 排.上 + 布局.卡头字.y, 色.卡头);
+    卡.实例们.forEach((实例, n) => {
+      const top = 排.行起 + n * 布局.行高;
+      const 是合照 = 实例.图标 === '合照';
+      if (是合照 && s.行态) {
+        const r = 布局.悬停让;
+        圆角块(ctx, P, s.行态 === 2 ? 色.按下 : 色.悬停, 色.悬停边, 左 + r.左, top + r.上, 右 - r.右, top + 布局.行高 - r.下);
+      }
+      const ix = 左 + 布局.图标.x, iy = top + 布局.图标.y, 边 = 布局.图标.边;
+      if (是合照) {
+        const 弹 = s.图标弹 ?? 0;
+        // 图标外一圈 1 界面像素的淡灰边，衬出照片
+        填(ctx, P, 色.图标边, ix - 1 - 弹, iy - 1 - 弹, ix + 边 + 1 + 弹, iy + 边 + 1 + 弹);
+        ctx.clearRect(P.x(ix - 弹), P.y(iy - 弹), P.x(ix + 边 + 弹) - P.x(ix - 弹), P.y(iy + 边 + 弹) - P.y(iy - 弹));
+        画方图(ctx, P, s.图标, 图标边, ix - 弹, iy - 弹, 边 + 2 * 弹, s.图标透);
+      } else 画方图(ctx, P, 方块图标(实例.图标), 16, ix, iy, 边);
+      写(实例.标题, 左 + 布局.标题.x, top + 布局.标题.y, 色.标题);
+      写(实例.副标题, 左 + 布局.副标题.x, top + 布局.副标题.y, 色.副标题);
+    });
   });
   if (s.光标) 画光标(ctx, P, Math.round(s.光标.x), Math.round(s.光标.y));
 };
