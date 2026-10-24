@@ -131,10 +131,28 @@
     "大小": 360,
     "库": "store"
   },
+  "贴图/物品/樱花树苗": {
+    "sha256": "50493a5ff053395cea2bc186b3930f190ac885b58cb6cb1caf09d01293e932e6",
+    "后缀": ".png",
+    "大小": 434,
+    "库": "store"
+  },
   "贴图/物品/橡木告示牌": {
     "sha256": "f96339c6cd073c4afc93e07a11c7ff4de42c30c4405d6f9790da7bbf72438d85",
     "后缀": ".png",
     "大小": 938,
+    "库": "store"
+  },
+  "贴图/物品/橡木告示牌图标": {
+    "sha256": "7872fad0ea8aee02cbf2f1652f28fc1ec92b0ee202d9a28d62679f405ec0b71f",
+    "后缀": ".png",
+    "大小": 307,
+    "库": "store"
+  },
+  "贴图/物品/烟花火箭": {
+    "sha256": "2f9f1164a351d971f8fbbca41df57102fc9bd6798ed321589a506507de07093e",
+    "后缀": ".png",
+    "大小": 212,
     "库": "store"
   },
   "贴图/物品/祭坛材料/煤炭": {
@@ -269,6 +287,60 @@
     "大小": 90,
     "库": "store"
   },
+  "贴图/粒子/火花/0": {
+    "sha256": "81852551813bdd818b33b50b9f82932e3d1e40b2d158324aba68cb2d3c30c3e9",
+    "后缀": ".png",
+    "大小": 82,
+    "库": "store"
+  },
+  "贴图/粒子/火花/1": {
+    "sha256": "5c3b1726715c3a6ad6d87db3c70eb4daf7f9ee3d2097b41d98ef5de4cf2ff04a",
+    "后缀": ".png",
+    "大小": 89,
+    "库": "store"
+  },
+  "贴图/粒子/火花/2": {
+    "sha256": "2b03c180ec20a49c5efd90e187cf18706d3ccbfc18ba816846308cea5f7e7efd",
+    "后缀": ".png",
+    "大小": 98,
+    "库": "store"
+  },
+  "贴图/粒子/火花/3": {
+    "sha256": "5160e078e165ebb7fc2e35212a127fefdb05d3b5eda4c3768eb4f793d1bffe44",
+    "后缀": ".png",
+    "大小": 118,
+    "库": "store"
+  },
+  "贴图/粒子/火花/4": {
+    "sha256": "5a2d33505887011a6082a0f32f94280a8863311f2f1785c93a19dc89d5d8c82b",
+    "后缀": ".png",
+    "大小": 107,
+    "库": "store"
+  },
+  "贴图/粒子/火花/5": {
+    "sha256": "07479953adb0b4208180fdda9b970d75ac7637d9315cc2ccb74953e74d8bee80",
+    "后缀": ".png",
+    "大小": 125,
+    "库": "store"
+  },
+  "贴图/粒子/火花/6": {
+    "sha256": "6b0a0275290ed91dc64851342049f1331c359a671525c16d33f31a279f186858",
+    "后缀": ".png",
+    "大小": 101,
+    "库": "store"
+  },
+  "贴图/粒子/火花/7": {
+    "sha256": "07479953adb0b4208180fdda9b970d75ac7637d9315cc2ccb74953e74d8bee80",
+    "后缀": ".png",
+    "大小": 125,
+    "库": "store"
+  },
+  "贴图/粒子/闪光": {
+    "sha256": "a13d6f31099cdf4a38c854318e8218bf9c48e69f4dd352300511fe1528bbc010",
+    "后缀": ".png",
+    "大小": 944,
+    "库": "store"
+  },
   "配乐/把回忆拼好给你-抖音原声": {
     "sha256": "cf59eff8cbfa99743db00fc882f3332a6b1d8a07b0f29357c1dda7aded79869e",
     "后缀": ".m4a",
@@ -291,6 +363,42 @@
     "sha256": "a43ff1f9b22edbfcb47467f5060d47dc177394b4e1a0c4ffb36cc9006322f1b8",
     "后缀": ".ogg",
     "大小": 28634,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/block.cherry_sapling.place.1": {
+    "sha256": "c205bf475fc1d7d88e8c26cc85f5fadbe5e6878a863fa55be733e446a70389a8",
+    "后缀": ".ogg",
+    "大小": 13570,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/block.cherry_sapling.place.2": {
+    "sha256": "a77bb83ece0f5c08d8a91c41e91a2f670c2800065112886610631e3145b2b7d2",
+    "后缀": ".ogg",
+    "大小": 13978,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/block.cherry_sapling.place.3": {
+    "sha256": "22d60b9385b5c266e0fae89db073f56cc8963f585d8bdea40e1940ac25868a4d",
+    "后缀": ".ogg",
+    "大小": 13630,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/block.cherry_sapling.place.4": {
+    "sha256": "606ad89cbd72ad63a02ffc046cc4000ca4c18a10ff74ea61e84fbf415ed54fe0",
+    "后缀": ".ogg",
+    "大小": 13307,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/block.cherry_sapling.place.5": {
+    "sha256": "588c523012a3829c7300880364a0d8c82bc281c2659ace38865fabc13ec233c6",
+    "后缀": ".ogg",
+    "大小": 14242,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/block.cherry_sapling.place.6": {
+    "sha256": "ad7161d98bff950d82778b64ad4d0e28003df0ee32e1b570d710dcbd4d7b7db9",
+    "后缀": ".ogg",
+    "大小": 13918,
     "库": "store"
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.1": {
@@ -357,6 +465,30 @@
     "sha256": "f030e04458d0427f4555f94a62a6c6d068659a8de75271cf64b0fd4044e4a622",
     "后缀": ".ogg",
     "大小": 30263,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.firework_rocket.blast": {
+    "sha256": "9377171cf33d982af07afee8969bbb2211516c287d579bb1ba49ab75c06a9232",
+    "后缀": ".ogg",
+    "大小": 11071,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.firework_rocket.large_blast": {
+    "sha256": "f54e5fc9a0822cc562f1e7c1130fbcefbdc3f99f53c84879c05e79c3e57efb73",
+    "后缀": ".ogg",
+    "大小": 17306,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.firework_rocket.launch": {
+    "sha256": "1505700bf51d55c1b99505edc3e3d4cd2158376ef88885c9ea4544f36dbc618f",
+    "后缀": ".ogg",
+    "大小": 15598,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.firework_rocket.twinkle": {
+    "sha256": "0c2eaff9130e2ed5fec3543e0d7e156b5d4489245fb4a7c591fc6020aed8147d",
+    "后缀": ".ogg",
+    "大小": 14328,
     "库": "store"
   },
   "音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.1": {

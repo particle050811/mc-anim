@@ -101,6 +101,102 @@ id = "贴图/物品/女仆床"
 "说明" = "车万女仆 1.5.3 的 textures/bedrock/block/maid_bed/pink.png（128×128），粉色女仆床；第 12 句卧室里她那张床"
 
 [["资产"]]
+id = "贴图/粒子/火花/0"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_0.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/1"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_1.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/2"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_2.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/3"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_3.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/4"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_4.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/5"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_5.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/6"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_6.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/7"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_7.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/闪光"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/flash.png（32×32）；烟花炸开那一下的闪光粒子（FireworkParticles.OverlayParticle）。第 10、11 句门口之夜"
+
+[["资产"]]
+id = "贴图/物品/烟花火箭"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/item/firework_rocket.png（16×16）；烟花火箭的物品图标：手持和飞行中的火箭（FireworkEntityRenderer 画的就是物品）。第 10、11 句门口之夜"
+
+[["资产"]]
+id = "贴图/物品/樱花树苗"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/block/cherry_sapling.png（16×16）；models/item/cherry_sapling.json 的 layer0，手持樱花树苗用。第 9 句门口之夜你种树"
+
+[["资产"]]
+id = "贴图/物品/橡木告示牌图标"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/item/oak_sign.png（16×16）；橡木告示牌的物品图标（贴图/物品/橡木告示牌 是方块实体那张），手持用。第 9 句门口之夜你插牌子"
+
+[["资产"]]
 id = "贴图/物品/寻风之铃"
 "类别" = "贴图"
 "来源" = "提取:寻风之铃@a8d3f9ab68b8"
