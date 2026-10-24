@@ -2,6 +2,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 合照拍立得, 合照照片, 靠肩画面 } from '../../场/2-隐世之境/合照.tsx';
+import { 对视机位 } from '../../场/2-隐世之境/对视.tsx';
 import { 重逢画面 } from '../../场/2-隐世之境/重逢.tsx';
 import { 视图们, type 视图 } from './视图.ts';
 
@@ -13,9 +14,9 @@ const 一帧: React.FC<{ v: 视图 }> = ({ v }) => {
     case '拍立得':
       return <合照拍立得 后期={v.后期 ?? true} />;
     case '重逢':
-      return <重逢画面 帧={帧} 气泡字={v.气泡字} 后期={v.后期 ?? true} />;
+      return <重逢画面 帧={帧} 气泡字={v.气泡字} 机位={v.封面机位 ? 对视机位('片') : undefined} 后期={v.后期 ?? true} />;
     case '靠肩':
-      return <靠肩画面 帧={帧} 气泡={v.气泡} 褪色={v.褪色} 机位={v.机位} 后期={v.后期 ?? true} />;
+      return <靠肩画面 帧={帧} 气泡={v.气泡} 褪色={v.褪色} 机位={v.机位} 窗景={v.窗景} 后期={v.后期 ?? true} />;
   }
 };
 

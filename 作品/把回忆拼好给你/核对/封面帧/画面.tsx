@@ -1,4 +1,4 @@
-// 封面帧核对的画面：按视图表一帧画一个视图。片 的几帧整页就是成片那一帧，不写字；封面、竖版贴在左上角，视图名写在右边空着的黑地上。
+// 封面帧核对的画面：按视图表一帧画一个视图。成片画幅（片）的几帧铺满、不写字；B站封面、竖版贴在左上角，视图名写在右边空着的黑地上。
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { uiFontFamily } from '@库/界面/基础.tsx';
@@ -27,7 +27,7 @@ const 画面: React.FC = () => {
   const { 宽, 高 } = 对视取景[v.版];
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <对视画面 版={v.版} 后期={v.后期} 大字={v.大字} />
+      <对视画面 版={v.版} 后期={v.后期} 大字={v.大字} 气泡={v.字} 聊天={v.字} />
       {v.安全区 && <安全区层 宽={宽} 高={高} />}
       {v.版 !== '片' && (
         <div style={{ position: 'absolute', left: 宽 + 16, top: 12, right: 12, fontFamily: uiFontFamily, fontSize: 18, lineHeight: 1.5, color: '#ffffff' }}>
