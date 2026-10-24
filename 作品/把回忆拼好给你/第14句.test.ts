@@ -3,52 +3,33 @@ import type { 资产cue } from '@engine/段/段定义.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import 归隐段 from './段/2-归隐/段.ts';
 import { fps, 段窗口, 正片事件 } from './分镜.ts';
-import { 末帧速度, 镜 as 空床镜, 帧数 as 空床帧数 } from './段/2-空床/编排.ts';
-import { 分屏N, 分屏态, 成形, 成形偏于 } from './场/2-门口/分屏参数.ts';
+import { 分屏态 } from './场/2-门口/分屏参数.ts';
+import { 整屏镜头, 整屏镜头N } from './场/2-门口/参数.ts';
 import { 她于 } from './场/2-门口/归隐她.ts';
 import { 归隐歌词 } from './场/2-门口/归隐歌词.ts';
 import {
+  分屏线x,
+  取照站位,
+  合屏前偏,
   归隐N,
-  归隐风,
-  归隐风参数,
-  合屏照片墙边长,
-  左取景,
-  归隐刻,
-  归隐气泡字,
-  左太阳在,
-  左天弧,
-  化樱时,
-  散心,
+  按伸帧,
+  挂铃站位,
+  服务器中心x,
   照片墙边长,
-  考场钟,
   褪色起,
   褪色止,
-  铃在左屏,
-  飘纸时,
-  挂铃N,
-  挂铃取景,
-  挂铃站位,
-  她倍,
-  铃心,
-  风源,
-  风镜像,
-  飘瓣档,
+  走到,
 } from './场/2-门口/归隐参数.ts';
 import { 回色, 铃 } from './场/2-门口/第15句.ts';
-import { 侧投影 } from './地点/侧剖面.tsx';
+import { 纸声们 } from './场/2-门口/第8句参数.ts';
+import { 中线, 混起, 纸花们, 纸花参数, 纸花在, 看得见, 落完 } from './场/2-门口/纸花.ts';
+import { 第14句声音们 } from './场/2-门口/第14句声音.ts';
 import { 符文歌词默认, 字状态 } from './界面/符文排版.ts';
 import { 正片歌词行 } from './界面/符文歌词数据.ts';
-import { 正交顶面 } from './画风.ts';
-import { 气泡字 } from './场/2-隐世之境/参数.ts';
-import { 第14句声音们 } from './场/2-门口/第14句声音.ts';
-import { 天体位置 } from './地点/天体.ts';
 import { 照片墙格们, 照片墙格位 } from './地点/照片墙格.ts';
 import { 地图画像素, 地图调色板, 白边 } from './特效/地图画.ts';
 import { 第8句照片们 } from './特效/照片画.ts';
-import { 造风墙, 墙瓣在, 风墙底, 风墙盖满 } from './特效/樱花风参数.ts';
-import { 考场N } from './现实/考场布局.ts';
-import { 卷子顶框, 撕口框, 栏杆, 楼上N, 楼上态于, 楼上顶面 } from './现实/楼上布局.ts';
-import { 纸片在, 纸雨参数, 造纸片, 飘纸在 } from './现实/纸雨.ts';
+import { 撒纸窗们, 楼, 楼下N } from './现实/楼下布局.ts';
 
 // 特效/照片画.ts 顶上就解码四张照片（真帧资产，打包时才有 asset:），这里换成一张 1×1 的 RGBA（同 祭坛召唤.test.ts）
 const 一像素 = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
@@ -59,40 +40,103 @@ vi.mock('asset:贴图/照片/第7句光柱破云', () => ({ default: 一像素 }
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
+/** 左屏（合屏前）看得到的 x 范围（格）：整屏镜头往左挪 合屏前偏 格的左半边 */
+const 左屏格 = (() => {
+  const 半 = 640 / 2 / (整屏镜头.取景.每格 / 成片倍数);
+  const 中 = 整屏镜头.取景.中心[0] + 合屏前偏 - 半;
+  return [中 - 半, 中 + 半] as const;
+})();
 
 describe('第 14 句：窗口和事件', () => {
-  it('2-时差 [998, 1081)、2-归隐 [1081, 1167)，首尾相接、接 2-摇铃', () => {
+  it('2-时差 [998, 1081)、2-归隐 [1081, 1148)，首尾相接、接 2-摇铃（合屏到位，47.83）', () => {
     expect(段窗口('2-时差')).toMatchObject({ 起帧: 998, 止帧: 1081 });
-    expect(段窗口('2-归隐')).toMatchObject({ 起帧: 1081, 止帧: 1167, 帧数: 86 });
-    expect(段窗口('2-摇铃').起帧).toBe(1167);
-    expect(归隐段.帧数).toBe(86);
+    expect(段窗口('2-归隐')).toMatchObject({ 起帧: 1081, 止帧: 1148, 帧数: 67 });
+    expect(段窗口('2-摇铃').起帧).toBe(1148);
+    expect(事.合屏到位.帧).toBe(1148);
+    expect(归隐段.帧数).toBe(67);
   });
 
-  it('事件按三稿的拍排开：考场、收卷铃、抬头、楼上、按框、撕书、打框、撒手取照、切到挂铃、挂铃、起风、合屏', () => {
-    const 序 = [
-      事.第14句考场,
-      事.收卷铃,
-      事.抬头看合照,
-      事.楼上抱书,
-      事.手按合照,
-      事.撕书,
-      事.打框,
-      事.撒手取照,
-      事.挂铃切,
-      事.挂铃,
-      事.归隐起风,
-      事.归隐合屏,
-    ].map((e) => e.帧);
+  it('事件一拍一个动作：分屏、挂铃、走向照片墙、纸飘下、按框、打框、取照、她消失、合屏到位', () => {
+    const 序 = [事.第14句分屏, 事.挂铃, 事.走向照片墙, 事.纸飘下, 事.手按合照, 事.打框, 事.取照, 事.她消失, 事.合屏到位].map((e) => e.帧);
     expect(序[0]).toBe(1081);
     for (let i = 1; i < 序.length; i++) expect(序[i]!).toBeGreaterThan(序[i - 1]!);
-    expect(序[序.length - 1]!).toBeLessThan(1167);
     // 照片方案「拍前 2～3 帧她打一下框」
-    expect(事.撒手取照.帧 - 事.打框.帧).toBeGreaterThanOrEqual(2);
-    expect(事.撒手取照.帧 - 事.打框.帧).toBeLessThanOrEqual(3);
+    expect(事.取照.帧 - 事.打框.帧).toBeGreaterThanOrEqual(2);
+    expect(事.取照.帧 - 事.打框.帧).toBeLessThanOrEqual(3);
+    // 她一走就拉开，拉开用 10 帧上下（核查 10-24：同一台机位连续拉开，不是一刀）
+    expect(事.合屏起.帧).toBe(事.她消失.帧);
+    expect(事.合屏到位.帧 - 事.合屏起.帧).toBeGreaterThanOrEqual(8);
   });
 
-  it('两屏像素一样大：门口、考场、楼上都是分屏 N', () => {
-    expect([归隐N, 考场N, 楼上N]).toEqual([分屏N, 分屏N, 分屏N]);
+  it('两屏、2-摇铃 像素一样大：门口、教学楼下都是整屏镜头的 N（合屏只挪不缩）', () => {
+    expect([归隐N, 楼下N]).toEqual([整屏镜头N, 整屏镜头N]);
+  });
+});
+
+describe('合屏：同一台机位连续拉开', () => {
+  const 合屏帧们 = Array.from({ length: 事.合屏到位.帧 - 事.合屏起.帧 + 1 }, (_, i) => 事.合屏起.帧 + i);
+
+  it('合屏前：左屏就是整屏镜头往左挪 合屏前偏 格的左半边，分屏线在中线；合屏到位：整屏镜头、分屏线出画', () => {
+    expect(合屏前偏).toBe(4);
+    for (const f of [事.第14句分屏.帧, 事.合屏起.帧]) {
+      expect(服务器中心x(秒(f))).toBe(合屏前偏);
+      expect(分屏线x(秒(f))).toBe(中线);
+    }
+    expect(服务器中心x(秒(事.合屏到位.帧))).toBe(整屏镜头.取景.中心[0]);
+    expect(分屏线x(秒(事.合屏到位.帧))).toBe(1280);
+  });
+
+  it('每帧只挪整贴图像素、一路往一个方向，没有一帧跳得特别远（两头慢）', () => {
+    const 每贴图像素页 = 整屏镜头N / 成片倍数;
+    for (let i = 1; i < 合屏帧们.length; i++) {
+      const [a, b] = [合屏帧们[i - 1]!, 合屏帧们[i]!].map((f) => 服务器中心x(秒(f)));
+      const 挪页 = (a! - b!) * 16 * 每贴图像素页;
+      expect(挪页, `第 ${合屏帧们[i]} 帧`).toBeGreaterThanOrEqual(0);
+      expect(Math.abs(挪页 / 每贴图像素页 - Math.round(挪页 / 每贴图像素页))).toBeLessThan(1e-9);
+      const [la, lb] = [合屏帧们[i - 1]!, 合屏帧们[i]!].map((f) => 分屏线x(秒(f)));
+      expect(lb! - la!).toBeGreaterThanOrEqual(0);
+      // 线一帧不超过平均速度的 1.6 倍（smoothstep 峰值 1.5 倍）
+      expect(lb! - la!).toBeLessThanOrEqual((1.6 * 640) / (合屏帧们.length - 1));
+    }
+  });
+
+  it('合照格、告示牌在左屏里（告示牌 x −3.5 到合照格 x 3.5）', () => {
+    expect(照片墙格位.合照).toEqual([3, 1]);
+    expect(左屏格[0]).toBeLessThanOrEqual(-3.5);
+    expect(左屏格[1]).toBeGreaterThanOrEqual(3.5);
+  });
+});
+
+describe('她：挂铃 → 走进屋 → 取照 → 传送走', () => {
+  it('第一帧在告示牌旁举着铃，帽檐不压牌子（牌子右沿 x −2.5）；挂铃 以后才起步', () => {
+    const 起 = 她于(事.第14句分屏.帧)!;
+    expect([起.x, 起.yaw, 起.右手]).toEqual([挂铃站位, 180, null]);
+    expect(挂铃站位 - 0.5).toBeGreaterThanOrEqual(铃.挂点[0]);
+    expect(她于(事.走向照片墙.帧)!.x).toBe(挂铃站位);
+  });
+
+  it('走路：一路往东、原版走路到疾跑之间的速度（4.3～5.6 格/秒），手按合照 前 按伸帧 帧停在取照站位', () => {
+    const 止 = 事.手按合照.帧 - 按伸帧;
+    let 最快 = 0;
+    for (let f = 事.走向照片墙.帧 + 1; f <= 止; f++) {
+      const d = 走到(f).x - 走到(f - 1).x;
+      expect(d, `第 ${f} 帧`).toBeGreaterThanOrEqual(0);
+      最快 = Math.max(最快, d * fps);
+    }
+    expect(最快).toBeGreaterThan(4.3);
+    expect(最快).toBeLessThanOrEqual(5.6);
+    expect(走到(止).x).toBeCloseTo(取照站位, 9);
+    expect(她于(止)!.x).toBeCloseTo(取照站位, 9);
+    // 帽檐右沿不压合照格（x 2.5～3.5）
+    expect(取照站位 + 0.5).toBeLessThanOrEqual(照片墙格位.合照[0] - 0.5);
+    expect(取照站位 + 0.5).toBeLessThanOrEqual(左屏格[1]);
+  });
+
+  it('取照那一帧合照落进主手，之前手里没有；她消失 那一帧起不在了', () => {
+    expect(她于(事.取照.帧 - 1)!.右手).toBeNull();
+    expect(她于(事.取照.帧)!.右手).toBe('合照');
+    expect(她于(事.她消失.帧 - 1)).not.toBeNull();
+    for (let f = 事.她消失.帧; f < 段窗口('2-归隐').止帧; f++) expect(她于(f), `第 ${f} 帧`).toBeNull();
   });
 });
 
@@ -107,16 +151,8 @@ describe('照片墙', () => {
     expect(new Set(格).size).toBe(5);
   });
 
-  it('合照格正是原来火把那一格 (3, ·, 1)，在左屏取景里（告示牌 x −3.5 到合照格 x 3.5）', () => {
-    expect(照片墙格位.合照).toEqual([3, 1]);
-    const 半宽 = 640 / (左取景.每格 / 成片倍数);
-    expect(左取景.中心[0] - 半宽).toBeLessThanOrEqual(-3.5);
-    expect(左取景.中心[0] + 半宽).toBeGreaterThanOrEqual(3.5);
-  });
-
   it('地图画：一格的地图像素落在整成片像素上，外圈白边，里面全是原版地图色', () => {
     expect((16 * 归隐N) % 照片墙边长).toBe(0);
-    expect((16 * 10) % 合屏照片墙边长).toBe(0);
     // 合照（特效/合照.ts）是资产里的 PNG，测试引不进来；拿第 8 句四张核同一套算法
     for (const 边长 of [32, 64] as const)
       for (const 画 of 第8句照片们) {
@@ -136,85 +172,89 @@ describe('照片墙', () => {
   });
 });
 
-describe('调子、天', () => {
-  it('左屏从第 13 句末的褪色起，合屏那一拍到 2-摇铃 开头的调子', () => {
-    expect(分屏态(事.第14句考场.帧 - 1).褪色).toBeCloseTo(褪色起, 9);
+describe('调子', () => {
+  it('左屏从第 13 句末的褪色起，合屏到位那一拍到 2-摇铃 开头的调子', () => {
+    expect(分屏态(事.第14句分屏.帧 - 1).褪色).toBeCloseTo(褪色起, 9);
     expect(褪色止).toBeCloseTo(1 - 回色.起, 12);
-  });
-
-  it('左屏的太阳停在 左太阳在，不在歌词那一行后面（歌词页面 x 392～889、y 38～95）', () => {
-    const 每格页 = 左取景.每格 / 成片倍数;
-    const 日 = 天体位置(归隐刻, 左天弧).太阳;
-    expect(日.x).toBeCloseTo(左太阳在[0], 9);
-    expect(日.z).toBeCloseTo(左太阳在[1], 9);
-    // 太阳连光晕按一格见方算，左右沿都在歌词行左边
-    const 右沿 = 320 + (日.x + 0.5 - 左取景.中心[0]) * 每格页;
-    expect(右沿).toBeLessThanOrEqual(392);
-  });
-
-  it('撒手取照冒的气泡和第 15 句她头上那个是同一个颜文字', () => {
-    expect(归隐气泡字).toBe(气泡字);
   });
 });
 
-describe('挂铃那一镜（核查 10-24：原来干净的只有 4 帧、她压着牌子、铃在手机上认不出）', () => {
-  const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
-  const 投 = 侧投影(挂铃取景, 640, 720, 正交顶面);
-  // 人站的那一排（地点/门口小木屋.tsx 的 站排y；那边引了方块贴图，测试里引不进来）
-  const 站排y = 0.5;
-  // 她（帽檐半径 0.5 格 × 她倍）和铃在画面上占的框（页面像素）：她从脚底到帽顶按 2.6 格算
-  const 半宽 = 0.5 * 她倍;
-  const 左上 = 投(Math.min(挂铃站位 - 半宽, 铃心[0] - 铃.大小 / 2), 2.6, 站排y);
-  const 右下 = 投(挂铃站位 + 半宽, 0, 站排y);
-  const 框 = { x0: 左上.x * 成片倍数, x1: 右下.x * 成片倍数, y0: 左上.y * 成片倍数, y1: 右下.y * 成片倍数 };
+describe('教学楼下', () => {
+  it('撒纸的两扇窗是二楼的窗，整扇在右屏里（N = 10 半屏 9 格高）', () => {
+    const 斜 = 2 / 楼下N;
+    for (const 窗 of 撒纸窗们) {
+      expect(窗.z[0]).toBeGreaterThanOrEqual(楼.层高);
+      expect(窗.y).toBe(楼.j);
+      // 斜投影里窗顶的高度（地面线以上几格）不出画：地面线以上 720 页面像素里能放 (720 − 地面线离底) ÷ 每格页 格
+      const 地面线以上 = (720 / 2) / (整屏镜头.取景.每格 / 成片倍数) + 整屏镜头.取景.中心[1];
+      expect(窗.z[1] + 斜 * 窗.y).toBeLessThanOrEqual(地面线以上);
+      expect(窗.x[0]).toBeGreaterThanOrEqual(-4);
+      expect(窗.x[1]).toBeLessThanOrEqual(4);
+    }
+  });
+});
 
-  it('她站在牌子右边、整个人在左屏里，帽檐不压牌子（牌子 x −3.5～−2.5）', () => {
-    expect(挂铃站位 - 半宽).toBeGreaterThanOrEqual(铃.挂点[0]);
-    expect(框.x0).toBeGreaterThan(0);
-    expect(框.x1).toBeLessThan(640 * 成片倍数);
-    expect(框.y0).toBeGreaterThan(0);
+describe('纸和花瓣（用户 10-24：两边方向、速度、大小一样，合屏时混在一起）', () => {
+  const 全 = 纸花们();
+  const 纸们 = 全.filter((q) => q.种 === '纸');
+  /** 一片多大（页面像素）：纸 4×5、花瓣 3×3 个贴图像素，取高 */
+  const 边 = (q: { 种: '纸' | '瓣' }) => (q.种 === '纸' ? 5 : 3) * (纸花参数.档 / 成片倍数);
+  const 段帧们 = Array.from({ length: 段窗口('2-摇铃').止帧 - 事.第14句分屏.帧 }, (_, i) => 事.第14句分屏.帧 + i);
+
+  it('纸、花瓣的飘法从同一套分布里取（往下、往左的速度都在 纸花参数 的范围里，同一档像素）', () => {
+    for (const q of 全) {
+      expect(q.vx).toBeGreaterThanOrEqual(纸花参数.vx[0]);
+      expect(q.vx).toBeLessThanOrEqual(纸花参数.vx[1]);
+      expect(q.vy).toBeGreaterThanOrEqual(纸花参数.vy[0]);
+      expect(q.vy).toBeLessThanOrEqual(纸花参数.vy[1]);
+    }
+    expect(纸们.length).toBeGreaterThanOrEqual(10);
   });
 
-  it('寻风之铃缩到手机 390 宽有 18 像素以上；取景中心落在偶数成片像素上', () => {
-    expect(((铃.大小 * 16 * 挂铃N) / W) * 390).toBeGreaterThanOrEqual(18);
-    expect(Math.abs(挂铃取景.中心[0] * 挂铃取景.每格) % 2).toBe(0);
-    expect(Math.abs(挂铃取景.中心[1] * 挂铃取景.每格) % 2).toBe(0);
-  });
-
-  it('切过去以后至少 12 帧（0.5 秒）风墙碰不到她和铃（风往左吹：画布左右翻过来）', () => {
-    expect(事.归隐合屏.帧 - 事.挂铃切.帧).toBeGreaterThanOrEqual(12);
-    const 墙 = 造风墙(归隐风参数, W, H);
-    for (let f = 事.挂铃切.帧; f < 事.挂铃切.帧 + 12; f++) {
+  it('合屏起 以前：看得见的纸都在右屏、花瓣都在左屏（只差左右晃的那一点）', () => {
+    for (let f = 事.第14句分屏.帧; f < 事.合屏起.帧; f += 2) {
       const t = 秒(f);
-      const 底 = 风墙底(t, 归隐风, 归隐风参数, W);
-      // 翻过来以后补缝的底占 [W − 右, W − 左)
-      if (底) expect(W - 底[1], `第 ${f} 帧补缝的底`).toBeGreaterThanOrEqual(框.x1);
-      for (const q of 墙) {
-        const { x, y } = 墙瓣在(q, t, 归隐风, 归隐风参数, W, H, [风镜像(散心).x * 成片倍数, 散心.y * 成片倍数]);
-        const 边 = q.档 * 3;
-        const [x0, x1] = [W - x - 边, W - x];
-        const 碰 = x1 > 框.x0 && x0 < 框.x1 && y + 边 > 框.y0 && y < 框.y1;
-        expect(碰, `第 ${f} 帧`).toBe(false);
+      for (const q of 全) {
+        if (!看得见(q, t)) continue;
+        const { x } = 纸花在(q, t);
+        if (q.种 === '纸') expect(x + q.摆, `第 ${f} 帧的纸`).toBeGreaterThanOrEqual(中线);
+        else expect(x - q.摆, `第 ${f} 帧的花瓣`).toBeLessThan(中线);
       }
     }
   });
 
-  it('切过去那一帧她已经在牌子旁边，挂铃那一帧松手；铃声、风声跟着', () => {
-    expect(她于(事.挂铃切.帧)!.x).toBe(挂铃站位);
-    expect(她于(事.挂铃切.帧 - 1)!.x).not.toBe(挂铃站位);
-    expect(事.挂铃.帧).toBeGreaterThan(事.挂铃切.帧);
-    expect(事.归隐起风.帧).toBeGreaterThan(事.挂铃.帧);
+  it('不会凭空冒出来：头一帧看得见时，纸是刚从窗里扔出来，花瓣是从画面上沿外面或者现实那半后面（分屏线那边）出来', () => {
+    for (const f of 段帧们) {
+      const [t0, t1] = [秒(f - 1), 秒(f)];
+      for (const q of 全) {
+        if (看得见(q, t0) || !看得见(q, t1)) continue;
+        const { x, y } = 纸花在(q, t1);
+        const 刚扔 = q.种 === '纸' && t0 < q.生;
+        const 线后 = q.种 === '瓣' && t0 >= q.生;
+        expect(y + 边(q) <= 0 || 刚扔 || 线后, `第 ${f} 帧 (${x.toFixed(0)}, ${y.toFixed(0)})`).toBe(true);
+      }
+    }
   });
 
-  it('气泡从撒手取照一直挂到合屏前一帧（切到告示牌也在），合屏她不见了', () => {
-    for (let f = 事.撒手取照.帧; f < 事.归隐合屏.帧; f++) expect(她于(f)!.气泡, `第 ${f} 帧`).not.toBeNull();
-    expect(她于(事.撒手取照.帧 - 1)!.气泡).toBeNull();
-    expect(她于(事.归隐合屏.帧)).toBeNull();
+  it('混起 那一刻在右屏里的纸一直看得见，合屏到位以后 1.6 秒内（摇铃前后）全落出画面', () => {
+    const 留下 = 纸们.filter((q) => 看得见(q, 混起));
+    expect(留下.length).toBeGreaterThanOrEqual(10);
+    for (const q of 留下) {
+      for (const f of 段帧们.filter((g) => 秒(g) >= 混起)) expect(看得见(q, 秒(f))).toBe(true);
+      expect(落完(q, 事.合屏到位.秒 + 1.6)).toBe(true);
+    }
   });
 
-  it('风流、飘过线的花瓣按这一镜的 N 取 N、2N 两档', () => {
-    expect(new Set(归隐风参数.风流.档们)).toEqual(new Set([挂铃N, 2 * 挂铃N]));
-    expect(飘瓣档).toBe(2 * 挂铃N);
+  it('合屏到位那一帧纸和花瓣在同一块地方混着：原来现实那半（x 640～1280）里既有纸也有花瓣', () => {
+    const t = 事.合屏到位.秒;
+    for (const 种 of ['纸', '瓣'] as const) {
+      const 在 = 全.filter((q) => {
+        if (q.种 !== 种 || !看得见(q, t)) return false;
+        const { x, y } = 纸花在(q, t);
+        return x >= 中线 && x < 1280 && y + 边(q) > 0 && y < 720;
+      });
+      expect(在.length, 种).toBeGreaterThanOrEqual(3);
+    }
   });
 });
 
@@ -228,84 +268,20 @@ describe('歌词：第 15 句在底部', () => {
     expect(歌.下行们.map((r) => r.词)).toEqual([全[14]!.词]);
   });
 
-  it('第 14 句的退场和顶上还有第 15 句时逐帧一样', () => {
-    for (let f = 0; f < 段窗口('2-归隐').帧数; f++)
+  it('第 14 句的退场和顶上还有第 15 句时逐帧一样（2-归隐、2-摇铃 两段）', () => {
+    for (let f = 0; f < 段窗口('2-摇铃').止帧 - 起帧; f++)
       expect(字状态(歌.上行们, 13, f, 符文歌词默认, 歌.上收), `段内第 ${f} 帧`).toEqual(字状态(全, 13, f, 符文歌词默认));
   });
 
-  it('合屏那一帧顶上那一行已经退完（不压太阳、树冠）', () => {
-    const f = 事.归隐合屏.帧 - 起帧;
-    for (let i = 0; i < 14; i++) for (const z of 字状态(歌.上行们, i, f, 符文歌词默认, 歌.上收)) expect(z.显).toBe(0);
-  });
-});
-
-describe('2-时差 开头接 2-空床 末帧的速度', () => {
-  const v = 末帧速度();
-  // 2-空床 镜头往右下走，画面里的东西往左上走（页面像素/帧）
-  const 那边 = { 横: (v.右 * v.每格) / 成片倍数, 竖: (v.下 * v.每格) / 成片倍数 };
-  const n = 事.分屏成形到位.帧 - 事.分屏起.帧;
-
-  const 步 = (f: number) => {
-    const [p, q] = [成形偏于(f), 成形偏于(f + 1)];
-    return { 横: p.横 - q.横, 竖: p.竖 - q.竖 };
-  };
-
-  it('横竖比和 2-空床 末帧一样（画面往同一个方向走，不拐弯）', () => {
-    expect(成形.横 / 成形.竖).toBeCloseTo(那边.横 / 那边.竖, 2);
-  });
-
-  it('切过来第一步和 2-空床 末帧速度差不到 4 页面像素，不比那边最后一步慢；往后一步比一步慢，到位那一帧停稳', () => {
-    const [a, b] = [空床镜(空床帧数 - 2), 空床镜(空床帧数 - 1)];
-    const 末步 = { 横: ((b.中心[0] - a.中心[0]) * b.每格) / 成片倍数, 竖: ((a.中心[1] - b.中心[1]) * b.每格) / 成片倍数 };
-    const 首步 = 步(事.分屏起.帧);
-    expect(Math.abs(首步.横 - 那边.横)).toBeLessThan(4);
-    expect(Math.abs(首步.竖 - 那边.竖)).toBeLessThan(4);
-    expect(首步.横).toBeGreaterThanOrEqual(末步.横);
-    expect(首步.竖).toBeGreaterThanOrEqual(末步.竖);
-    for (let f = 事.分屏起.帧 + 1; f < 事.分屏成形到位.帧; f++) {
-      expect(步(f).横).toBeLessThan(步(f - 1).横);
-      expect(步(f).竖).toBeLessThan(步(f - 1).竖);
-    }
-    expect(成形偏于(事.分屏成形到位.帧)).toEqual({ 横: 0, 竖: 0 });
-    expect(n).toBe(5);
-  });
-});
-
-describe('樱花风：起风、合屏盖满、段尾散干净', () => {
-  const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
-  // 往左吹：樱花风画布左右翻过来画，散心按翻过来的给
-  const 心: [number, number] = [风镜像(散心).x * 成片倍数, 散心.y * 成片倍数];
-
-  it('分屏换合屏那一刀前后两帧（合屏 − 1、合屏）风墙整屏盖住', () => {
-    expect(风墙盖满(秒(事.归隐合屏.帧 - 1), 归隐风, 归隐风参数)).toBe(true);
-    expect(风墙盖满(秒(事.归隐合屏.帧), 归隐风, 归隐风参数)).toBe(true);
-  });
-
-  it('段尾最后一帧（2-摇铃 前一帧）风墙、风流一片不剩', () => {
-    const t = 秒(段窗口('2-归隐').止帧 - 1);
-    expect(风墙底(t, 归隐风, 归隐风参数, W)).toBeNull();
-    for (const q of 造风墙(归隐风参数, W, H)) {
-      const { x, y } = 墙瓣在(q, t, 归隐风, 归隐风参数, W, H, 心);
-      const 边 = q.档 * 3;
-      expect(x + 边 <= 0 || x >= W || y + 边 <= 0 || y >= H).toBe(true);
-    }
-    expect(归隐风.满 + 归隐风参数.风流.散完秒).toBeLessThan(t);
-  });
-
-  it('风从左屏的铃那里起（铃、风源在左半屏里，风源在铃左上）', () => {
-    for (const p of [铃在左屏, 风源]) {
-      expect(p.x).toBeGreaterThan(0);
-      expect(p.x).toBeLessThan(640);
-      expect(p.y).toBeGreaterThan(0);
-      expect(p.y).toBeLessThan(720);
-    }
-    expect(风源.x).toBeLessThan(铃在左屏.x);
-    expect(风源.y).toBeLessThan(铃在左屏.y);
+  it('文字一时只走一路：底部第 15 句冒头那一帧，顶上已经退完', () => {
+    let f = 0;
+    while (字状态(歌.下行们, 0, f, 符文歌词默认).every((z) => z.显 === 0)) f++;
+    for (let i = 0; i < 14; i++) for (const z of 字状态(歌.上行们, i, f, 符文歌词默认, 歌.上收)) expect(z.显, `第 ${i + 1} 句、段内第 ${f} 帧`).toBe(0);
   });
 });
 
 describe('声音', () => {
-  it('六个音效都在本段里放完（风声、铃声不拖进 2-摇铃）', () => {
+  it('三个音效都在本段里放完（铃声不拖进 2-摇铃）', () => {
     const 窗 = 段窗口('2-归隐');
     for (const 音 of 第14句声音们) {
       const 尾 = 音.起帧 + (音.帧数 ?? Math.ceil(音.时长秒 * fps));
@@ -316,58 +292,10 @@ describe('声音', () => {
     expect(名们).toEqual(['原声', ...第14句声音们.map((s) => s.名)]);
   });
 
-  it('收卷铃、撕书、撒手、取出、挂铃落在各自的事件帧上', () => {
+  it('纸声最响那一下在纸飘下、取出声在取照、铃声起音不晚于挂铃', () => {
     const 起 = Object.fromEntries(第14句声音们.map((s) => [s.名, s.起帧]));
-    expect(起.收卷铃).toBe(事.收卷铃.帧);
-    expect(起.荧光框取出).toBe(事.撒手取照.帧);
+    expect(起.纸飘下! + 纸声们[1]!.峰帧).toBe(事.纸飘下.帧);
+    expect(起.荧光框取出).toBe(事.取照.帧);
     expect(起.挂铃).toBeLessThanOrEqual(事.挂铃.帧);
-    expect(起.樱花风).toBe(事.归隐起风.帧);
-  });
-});
-
-describe('右屏：考场、楼上、纸雨', () => {
-  it('挂钟收卷铃前停在 11:59:59，收卷铃那一帧跳到 12:00', () => {
-    expect(考场钟(事.收卷铃.帧 - 1)).toEqual({ 时: 11, 分: 59, 秒: 59 });
-    expect(考场钟(事.收卷铃.帧)).toEqual({ 时: 12, 分: 0, 秒: 0 });
-  });
-
-  it('楼上态：撕书那一帧开始撕，撒手那一帧撒手；化樱合屏前化完', () => {
-    const 时 = { 撕书: 事.撕书.帧, 撒手: 事.撒手取照.帧, 化起: 化樱时.起, 化止: 化樱时.止 };
-    expect(楼上态于(事.撕书.帧 - 1, 时, fps).撕).toBe(0);
-    expect(楼上态于(事.撕书.帧, 时, fps).撕).toBeGreaterThan(0);
-    expect(楼上态于(事.撒手取照.帧 - 1, 时, fps).撒手秒).toBe(0);
-    expect(楼上态于(事.撒手取照.帧, 时, fps).撒手帧).toBe(0);
-    expect(楼上态于(化樱时.起 - 1, 时, fps).化樱).toBe(0);
-    expect(楼上态于(事.归隐合屏.帧 - 1, 时, fps).化樱).toBe(1);
-  });
-
-  it('纸从栏杆外撒出去：卷子顶面、撕口都在右屏里、栏杆顶线以上', () => {
-    const 栏杆顶 = 栏杆.顶 + 楼上顶面 / 楼上N;
-    for (const 框 of [卷子顶框, 撕口框]) {
-      expect(框.x0).toBeGreaterThan(0);
-      expect(框.x1).toBeLessThan(10);
-      expect(框.x0).toBeLessThan(框.x1);
-      expect(框.z0).toBeGreaterThan(栏杆顶);
-    }
-  });
-
-  it('撒手那一下纸是往下走的：撒手到合屏这段，纸的平均高度在往下掉', () => {
-    const 纸们 = 造纸片(纸雨参数.种子, 纸雨参数.撒手张数, 事.撒手取照.秒, 卷子顶框);
-    const 平均z = (t: number) => 纸们.reduce((s, q) => s + 纸片在(q, t, Infinity)!.z, 0) / 纸们.length;
-    expect(平均z(秒(事.归隐合屏.帧 - 1))).toBeLessThan(平均z(事.撒手取照.秒));
-  });
-
-  it('飘过分屏线的那张：过线前后位置接得上，过线那一刻在分屏线上', () => {
-    const 源 = { x: 卷子顶框.x0 + 0.3, z: (卷子顶框.z0 + 卷子顶框.z1) / 2 };
-    const 前 = 飘纸在(飘纸时.过线 - 1e-6, 飘纸时, 源)!;
-    const 后 = 飘纸在(飘纸时.过线, 飘纸时, 源)!;
-    expect(前.成瓣).toBe(false);
-    expect(后.成瓣).toBe(true);
-    expect(Math.abs(前.x)).toBeLessThan(1e-3);
-    expect(Math.abs(后.x)).toBeLessThan(1e-3);
-    expect(Math.abs(前.z - 后.z)).toBeLessThan(1e-3);
-    expect(飘纸在(飘纸时.起 - 1e-6, 飘纸时, 源)).toBeNull();
-    expect(飘纸时.起).toBeGreaterThan(事.撒手取照.秒);
-    expect(飘纸时.过线).toBeLessThan(事.归隐合屏.秒);
   });
 });

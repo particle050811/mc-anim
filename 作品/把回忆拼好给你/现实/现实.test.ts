@@ -1,71 +1,62 @@
 import { describe, expect, it } from 'vitest';
-import { 撕页本尺寸, 笔筒满度, 笔芯满根, 笔芯起根, 每页笔芯, 算撕页态, 翻页值, 页版式, 默认页们 } from './撕页.ts';
+import { 吹法, 日历尺寸, 日历数, 满页, 离开秒, 纸厚, 页版式, 飞姿, 飞页们, 飞走几页 } from './日历.ts';
 import { 找格, 星期们, 节们, 课表格们 } from './课表数据.ts';
 
-describe('撕页', () => {
-  it('整数翻页停在那一页、没有飞纸；越界夹到两头', () => {
-    expect(算撕页态(0)).toEqual({ 顶: 100, 飞: [] });
-    expect(算撕页态(2)).toEqual({ 顶: 31, 飞: [] });
-    expect(算撕页态(4)).toEqual({ 顶: 1, 飞: [] });
-    expect(算撕页态(-1)).toEqual({ 顶: 100, 飞: [] });
-    expect(算撕页态(9)).toEqual({ 顶: 1, 飞: [] });
-  });
+const 窗 = { 起: 10, 止: 12 };
 
-  it('撕的过程中飞走的纸印着从高到低的天数，底下露出来的跟着往下走，快撕完时露出的是下一页', () => {
-    const 早 = 算撕页态(1.05); // 62 → 31
-    expect(早.飞.map((x) => x.数)).toEqual([62]);
-    expect(早.顶).toBe(52);
-    const 中 = 算撕页态(1.5);
-    expect(中.飞.map((x) => x.数)).toEqual([62, 52, 41]);
-    expect(中.顶).toBe(31);
-    for (let p = 0.01; p < 1; p += 0.01) {
-      const 态 = 算撕页态(1 + p);
-      for (const x of 态.飞) expect(x.数).toBeGreaterThan(态.顶);
-      expect(态.飞.every((x) => x.t > 0 && x.t < 1)).toBe(true);
+describe('风吹日历', () => {
+  it('起风前停在 100，止 那一刻起停在 1；中间一路往下、不回头', () => {
+    expect(日历数(9.9, 窗)).toBe(满页);
+    expect(日历数(窗.止, 窗)).toBe(1);
+    expect(日历数(13, 窗)).toBe(1);
+    let 上 = 满页;
+    for (let i = 0; i < 480; i++) {
+      const 数 = 日历数(窗.起 + i / 240, 窗);
+      expect(数).toBeLessThanOrEqual(上);
+      expect(数).toBeGreaterThanOrEqual(2);
+      上 = 数;
     }
-    expect(算撕页态(1.999).飞.length).toBeLessThanOrEqual(1);
   });
 
-  it('只差一天时只飞一张', () => {
-    const 态 = 算撕页态(0.5, [2, 1]);
-    expect(态.飞).toEqual([{ 数: 2, t: 0.5 }]);
-    expect(态.顶).toBe(1);
+  it('越掉越快：每页离开的间隔一页比一页短，最后一页（2）正好在 止 飞走', () => {
+    for (let k = 2; k < 满页 - 1; k++) expect(离开秒(k + 1, 窗) - 离开秒(k, 窗)).toBeLessThan(离开秒(k, 窗) - 离开秒(k - 1, 窗) + 1e-12);
+    expect(离开秒(1, 窗)).toBe(窗.起);
+    expect(离开秒(满页 - 1, 窗)).toBeCloseTo(窗.止);
+    // 飞走几页 是 离开秒 的反函数：离开那一刻算飞走
+    for (let k = 1; k < 满页; k++) expect(飞走几页(离开秒(k, 窗) + 1e-9, 窗)).toBeGreaterThanOrEqual(k);
   });
 
-  it('翻页值：每页在自己的落帧撕完，撕帧数之前不动', () => {
-    const 落 = [10, 20, 30, 40, 50];
-    expect(翻页值(0, 落, 6)).toBe(0);
-    expect(翻页值(14, 落, 6)).toBe(0);
-    expect(翻页值(17, 落, 6)).toBeCloseTo(0.5);
-    expect(翻页值(20, 落, 6)).toBe(1);
-    expect(翻页值(50, 落, 6)).toBe(4);
-    expect(() => 翻页值(0, 落, 12)).toThrow(/重叠/);
-  });
-
-  it('笔筒满度跟着翻页一截一截涨，停在整数页上正好是整数根，不超过满', () => {
-    expect(笔筒满度(0) * 笔芯满根).toBeCloseTo(笔芯起根);
-    for (let k = 0; k < 默认页们.length; k++) {
-      const 根 = 笔筒满度(k) * 笔芯满根;
-      expect(Math.abs(根 - Math.round(根))).toBeLessThan(1e-9);
-      expect(根).toBeCloseTo(笔芯起根 + 每页笔芯 * k);
+  it('空中的纸：印的数比本子上的大、龄在 0～1，每帧新飞的不超过 每帧最多 太多（不糊成一团白）', () => {
+    for (let t = 窗.起; t < 窗.止 + 0.5; t += 1 / 24) {
+      const 顶 = 日历数(t, 窗);
+      const 飞 = 飞页们(t, 窗, 24);
+      for (const x of 飞) {
+        expect(x.数).toBeGreaterThan(顶);
+        expect(x.龄).toBeGreaterThanOrEqual(0);
+        expect(x.龄).toBeLessThan(1);
+      }
+      expect(飞.length).toBeLessThanOrEqual(Math.ceil(吹法.飞 * 24 * 吹法.每帧最多) + 2);
     }
-    expect(笔筒满度(默认页们.length - 1)).toBeLessThanOrEqual(1);
-    expect(笔筒满度(1.5)).toBeGreaterThan(笔筒满度(1));
   });
-});
 
-describe('撕页本的页面', () => {
-  it('每一页（连撕的时候飞过的中间天数）大数字和「天」都在页面里，「天」不碰右下角翻起来的那块', () => {
-    const 页高 = 撕页本尺寸.高 - 撕页本尺寸.装订高;
-    for (let 数 = 1; 数 <= 默认页们[0]!; 数++) {
+  it('飞姿往右上走，翻的高度在 1～页高；纸叠越吹越薄', () => {
+    for (let 龄 = 0; 龄 <= 1; 龄 += 0.05) {
+      const s = 飞姿(龄, 0.5);
+      expect(s.dx).toBeGreaterThanOrEqual(0);
+      expect(s.dz).toBeGreaterThanOrEqual(0);
+      expect(s.高).toBeGreaterThanOrEqual(1);
+      expect(s.高).toBeLessThanOrEqual(日历尺寸.页高);
+    }
+    expect(纸厚(满页)).toBe(日历尺寸.纸最厚);
+    expect(纸厚(1)).toBe(日历尺寸.纸最薄);
+  });
+
+  it('每一页的大数字和「天」都在页面里', () => {
+    for (let 数 = 1; 数 <= 满页; 数++) {
       const v = 页版式(数);
       expect(v.数.x).toBeGreaterThanOrEqual(0);
-      expect(v.天.x + v.天.宽).toBeLessThanOrEqual(撕页本尺寸.宽);
-      expect(v.数.y + v.数.高).toBeLessThan(页高);
-      // 翻角那块：从右下角量 i + j <= 翻角（i、j 是离右边、下边几个贴图像素）
-      const i = 撕页本尺寸.宽 - (v.天.x + v.天.宽);
-      const j = 页高 - (v.天.y + v.天.高);
-      expect(i + j).toBeGreaterThan(撕页本尺寸.翻角);
+      expect(v.天.x + v.天.宽).toBeLessThanOrEqual(日历尺寸.宽);
+      expect(v.数.y + v.数.高).toBeLessThanOrEqual(日历尺寸.页高);
     }
   });
 });
