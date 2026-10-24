@@ -110,5 +110,7 @@ export const 雨声们: readonly { 资产: string; 秒: number }[] = [
   { 资产: '音效/把回忆拼好给你/weather.rain.4', 秒: 2.165333 },
 ];
 export const 雨声增益 = 0.4;
+/** 雨声比第 6 句首字早进来几秒（2-抢龙蛋 最后这一截，淡入）：末地硬切雷雨，先听见雨再看见雨，两句接得上（核查 10-24「转场要丝滑」，Agent 暂定） */
+export const 雨声提前秒 = 0.35;
 /** 光柱起来：原版 block.beacon.activate（2.95 秒），接第 8 句之前截掉，最后几帧淡出 */
 export const 信标声 = { 资产: '音效/把回忆拼好给你/block.beacon.activate', 秒: 2.953292, 增益: 0.55, 淡出: 8 } as const;

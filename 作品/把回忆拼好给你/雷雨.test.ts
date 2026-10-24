@@ -6,12 +6,13 @@ import { describe, expect, it } from 'vitest';
 import { 设透视相机 } from '@engine/三渲二/机位.tsx';
 import 雷雨段 from './段/2-雷雨/段.ts';
 import 拨开阴霾段 from './段/2-拨开阴霾/段.ts';
+import 抢龙蛋段 from './段/2-抢龙蛋/段.ts';
 import { fps, 段窗口, 正片事件, type 正片事件名 } from './分镜.ts';
 import * as 参 from './场/2-雷雨/参数.ts';
 import { 坑, 小木屋, 掉落位, 玩家捡得到, 箱子格, 南墙 } from './场/2-雷雨/弹坑.ts';
 import { 四周方块, 地面高, 树们 } from './场/2-雷雨/地形.ts';
 import { 云格们 } from './场/2-雷雨/云.ts';
-import { 雨量, 雷 } from './场/2-雷雨/声音.ts';
+import { 雨声起帧, 雨量, 雷 } from './场/2-雷雨/声音.ts';
 import { 云色, 天色 } from './场/2-雷雨/天气.ts';
 import {
   云剩,
@@ -64,12 +65,23 @@ describe('串：第 6、7 句', () => {
   });
 
   it('事件按顺序；阳光铺地以后、切第 8 句之前留至少半秒看阳光照着屋子', () => {
-    const 序: 正片事件名[] = ['第6句开口', '第6句闷雷', '她看你', '你看她', '她站起', '阵起', '光柱起', '拨', '破云', '云洞开大', '阳光铺地', '照片-光柱破云', '光柱退', '第8句开口'];
+    const 序: 正片事件名[] = ['第6句开口', '她看你', '你看她', '她站起', '阵起', '光柱起', '拨', '破云', '云洞开大', '阳光铺地', '照片-光柱破云', '光柱退', '第8句开口'];
     const 帧们 = 序.map(帧);
     for (let k = 1; k < 帧们.length; k++) expect(帧们[k], 序[k]).toBeGreaterThan(帧们[k - 1]!);
     expect(帧('第6句开口')).toBeGreaterThanOrEqual(雷雨.起帧);
     expect(拨开.止帧 - 帧('阳光铺地')).toBeGreaterThanOrEqual(fps / 2);
     expect(帧('照片-光柱破云')).toBeLessThan(拨开.止帧);
+  });
+
+  it('5→6 接缝：闪电落在切点上（2-雷雨 第 0 帧就在闪），雨声在 2-抢龙蛋 段尾先淡进来、段尾那一帧已经满了', () => {
+    expect(帧('第6句闷雷')).toBe(雷雨.起帧);
+    expect(闪(雷雨.起帧)).toBe(true);
+    const 雨们 = (抢龙蛋段.声音 ?? []).filter((c) => (c as { 资产?: string }).资产?.includes('weather.rain'));
+    expect(雨们.length).toBeGreaterThan(0);
+    const 头 = 雨们[0] as { 帧: number; 增益: number[] };
+    expect(头.帧).toBeGreaterThan(段窗口('2-抢龙蛋').止帧 - 段窗口('2-抢龙蛋').起帧 - fps);
+    expect(头.增益[0]!).toBeLessThan(头.增益.at(-1)!);
+    expect(雨声起帧).toBeLessThan(雷雨.起帧);
   });
 
   it('她看你、你看她：两下转头各自留够一秒（看得懂的速度）', () => {
