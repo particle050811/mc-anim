@@ -1,10 +1,11 @@
 // 炸出来的掉落物（ItemEntity），照原版 1.20.1 ItemEntityRenderer 画：上下浮 sin((刻 + 帧内)/10 + bobOffs)·0.1 + 0.1，
 // 绕竖轴转 (刻 + 帧内)/20 + bobOffs 弧度；方块物品按 block/block 的 ground 显示变换缩到 1/4 格、往上抬 3/16 格。
 // 一堆不止一个时多画几份（原版 getRenderAmount：>1 两份、>16 三份、>32 四份、>48 五份），方块物品每份在 ±0.15 格里随机错开（种子 = 物品和个数，这里用列号）。
-// 这一场炸出来的全是方块（木板、泥土、原木、圆石、熔炉），所以只写了方块物品。
+// 这一场炸出来的全是方块（木板、圆石，和箱子本身），所以只写了方块物品；箱子的物品模型是方块实体（builtin/entity），同 block/block 的 ground 显示变换，画法照 库/物品/箱子.tsx。
 import React from 'react';
 import { 方块拼搭 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
+import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { Java随机 } from './弹坑.ts';
 
 /** 物品 id → 画成哪个方块状态（物品模型是方块的默认状态） */
@@ -30,7 +31,7 @@ const 一堆: React.FC<{ d: 掉落物; 刻: number }> = ({ d, 刻 }) => {
         const o = k === 0 ? [0, 0, 0] : [(r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15];
         return (
           <group key={k} position={[o[0]!, o[1]!, o[2]! + 3 / 16]} scale={0.25}>
-            <方块拼搭 方块们={[{ 状态, 位: [0, 0, 0] }]} 原点={[-0.5, -0.5, -0.5]} />
+            {d.物品 === 'minecraft:chest' ? <Chest 贴图={VANILLA_CHEST_TEX} p={[0, 0, -0.5]} 朝向="south" /> : <方块拼搭 方块们={[{ 状态, 位: [0, 0, 0] }]} 原点={[-0.5, -0.5, -0.5]} />}
           </group>
         );
       })}
