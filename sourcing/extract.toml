@@ -685,6 +685,27 @@
 "贴图/界面/银河字母" = "src/模型/歌词/银河字母.png"
 "贴图/特效/附魔光泽" = "src/模型/歌词/附魔光泽.png"
 
+# 把回忆拼好给你 第 12 句卧室的两张床（作品 物品/床.tsx、物品/女仆床.tsx）。原版床是方块实体：BedRenderer.createHeadLayer（m_173550_）、createFootLayer（m_173551_），
+# 各一块 16×16×6 的床身加两条 3×3×3 的腿，贴图 entity/bed/red.png（64×64，史蒂夫默认睡的红床）。
+# 女仆床是车万女仆的方块实体，基岩模型 models/bedrock/block/maid_bed/pink.json（TileEntityMaidBed 默认 PINK）。只有本作品用，产物登记在作品资产表：
+#   anim --作品 把回忆拼好给你 extract 卧室床
+[["取材"]]
+"名称" = "卧室床"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1", "client-1.20.1-srg", "touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1；车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "Mojang EULA；MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/物品/床.模型.json", "床头=net.minecraft.client.renderer.blockentity.BedRenderer:m_173550_", "床尾=net.minecraft.client.renderer.blockentity.BedRenderer:m_173551_", "--贴图", "红=assets/minecraft/textures/entity/bed/red.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/女仆床.模型.json", "assets/touhou_little_maid/models/bedrock/block/maid_bed/pink.json", "assets/touhou_little_maid/textures/bedrock/block/maid_bed/pink.png"],
+]
+["取材"."产物"]
+"模型/物品/床" = "src/模型/物品/床.模型.json"
+"贴图/物品/床/红" = "src/模型/物品/床.模型.png"
+"模型/物品/女仆床" = "src/模型/物品/女仆床.模型.json"
+"贴图/物品/女仆床" = "src/模型/物品/女仆床.模型.png"
+
 [["取材"]]
 "名称" = "基地工坊"
 "需要" = ["create", "client-1.20.1"]
