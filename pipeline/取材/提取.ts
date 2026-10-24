@@ -6,9 +6,9 @@ import path from 'node:path';
 import { 配置, 数据路径, isWindows } from '../环境/配置.ts';
 import { 跑, 跑出 } from '../环境/子进程.ts';
 import { 入库, 字节路径, 文件sha256, 读作品资产锁, type 资产锁 } from '../资产/资产锁.ts';
-import { 作品根 } from '../环境/作品.ts';
+import { 作品名, 作品根 } from '../环境/作品.ts';
 import { mcai命令, mcai环境 } from './mcai.ts';
-import { 展开步骤, 展开产物, 脚本目录, type 取材条目, type 取材清单, type 展开环境, type 步骤 } from './清单.ts';
+import { 属于作品, 展开步骤, 展开产物, 脚本目录, type 取材条目, type 取材清单, type 展开环境, type 步骤 } from './清单.ts';
 
 export const jar路径 = (q: 取材清单, id: string) => {
   const j = q.jars.get(id);
@@ -20,6 +20,7 @@ export const 本机展开 = (q: 取材清单): 展开环境 => ({
   jar路径: (id) => jar路径(q, id),
   prism数据: 配置('prism数据'),
   脚本: 脚本目录(),
+  作品根: 作品根(),
   python: 配置('python'),
   mcai: mcai命令(),
 });
@@ -62,6 +63,7 @@ export const 跑步骤 = async (q: 取材清单, e: 取材条目, dir: string, �
   }
   console.log(`== ${e.名称}`);
   if (e.待迁移) throw new Error(`「${e.名称}」待迁移：${e.待迁移}`);
+  if (!属于作品(e, 作品名())) throw new Error(`「${e.名称}」的产物登记在作品「${e.作品}」，带 --作品 ${e.作品} 跑`);
   if (!e.步骤.length) {
     console.log(`（没有自己的步骤：${e.说明 ?? ''}）`);
     return;
@@ -169,15 +171,20 @@ const 找程序 = (名: string): boolean => {
   return (process.env.PATH ?? '').split(path.delimiter).some((d) => d && 后缀们.some((s) => fs.existsSync(path.join(d, 名 + s))));
 };
 
-/** --检查：jar、程序、脚本、产物和输入的字节；返回问题列表和待迁移的条目 */
-export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁: 资产锁 = 取材锁()) => {
+/** --检查：jar、程序、脚本、产物和输入的字节；返回问题列表、待迁移的条目和属于别的作品、跳过的条目 */
+export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁: 资产锁 = 取材锁(), 作品 = 作品名()) => {
   const 问题: string[] = [];
   const 待迁移: string[] = [];
+  const 别的作品: string[] = [];
   for (const [g, ms] of Object.entries(q.组)) 问题.push(...ms.filter((m) => !q.条目.has(m)).map((m) => `组「${g}」里的「${m}」不是条目`));
   const jar好 = new Map<string, boolean>();
   const v = 本机展开(q);
   for (const e of es) {
     const n = e.名称;
+    if (!属于作品(e, 作品)) {
+      别的作品.push(`${n}：属于作品「${e.作品}」，带 --作品 ${e.作品} 查`);
+      continue;
+    }
     if (e.公开版 !== '提取' && e.公开版 !== '不提取') 问题.push(`${n}：公开版 要写 "提取" 或 "不提取"`);
     问题.push(...e.前置.filter((p) => !q.条目.has(p)).map((p) => `${n}：前置「${p}」不是条目`));
     // 产物、输入：id 在锁里、字节在库里
@@ -225,5 +232,5 @@ export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁
       }
     }
   }
-  return { 问题, 待迁移 };
+  return { 问题, 待迁移, 别的作品 };
 };
