@@ -18,9 +18,9 @@ export type 正交机位参数 = {
   看: V3;
   /** 镜头朝哪边看 */
   朝: 朝向;
-  /** 一个贴图像素在成片上几个像素（整数，取偶数） */
+  /** 一个贴图像素在成片上几个像素（正偶数：预览级不放大时一个贴图像素 N/2 个像素，奇数就落到半像素上） */
   N: number;
-  /** 顶面一个贴图像素在成片上几个像素高（整数，0～N）：0 = 纯侧面看不到顶面 */
+  /** 顶面一个贴图像素在成片上几个像素高（0～N 的偶数，道理同 N）：0 = 纯侧面看不到顶面 */
   顶面?: number;
   /** 剖面：看点往镜头方向多远开始画（格），不给 = 不剖 */
   剖?: number;
@@ -66,11 +66,15 @@ export type 正交取景 = {
   斜: number;
 };
 
-/** 算正交像素机位的取景。页面宽高是画布的 CSS 尺寸（取偶数），dpr 是画布像素对 CSS 像素的倍数 */
+const 是偶数 = (v: number) => Number.isInteger(v) && v % 2 === 0;
+
+/** 算正交像素机位的取景。页面宽高是画布的 CSS 尺寸，dpr 是画布像素对 CSS 像素的倍数。
+ *  N、顶面、页面宽高都要偶数：预览级（dpr 1）一个画布像素是两个成片像素，奇数会让贴图像素的边、画面中心落在半像素上 */
 export const 算正交取景 = (p: 正交机位参数, 页面宽: number, 页面高: number, dpr: number): 正交取景 => {
-  if (!Number.isInteger(p.N) || p.N <= 0) throw new Error(`正交机位的 N 要是正整数：${p.N}`);
+  if (!是偶数(p.N) || p.N <= 0) throw new Error(`正交机位的 N 要是正偶数：${p.N}`);
   const 顶面 = p.顶面 ?? 0;
-  if (!Number.isInteger(顶面) || 顶面 < 0 || 顶面 > p.N) throw new Error(`正交机位的 顶面 要是 0～N 的整数：${顶面}`);
+  if (!是偶数(顶面) || 顶面 < 0 || 顶面 > p.N) throw new Error(`正交机位的 顶面 要是 0～N 的偶数：${顶面}`);
+  if (!是偶数(页面宽) || !是偶数(页面高)) throw new Error(`正交机位的画布宽高要是偶数（CSS 像素）：${页面宽}×${页面高}`);
   const 每格 = 16 * p.N; // 成片像素 / 格
   const 网格 = 成片倍数 / (dpr * 每格); // 一个画布像素是多少格
   const 斜 = 顶面 / p.N;
@@ -142,6 +146,19 @@ export const 机位: React.FC<{ 参数: 机位参数 }> = ({ 参数 }) => {
 
 export const 正交像素机位: React.FC<Omit<正交机位参数, '种'>> = (p) => <机位 参数={{ 种: '正交', ...p }} />;
 export const 透视机位: React.FC<Omit<透视机位参数, '种'>> = (p) => <机位 参数={{ 种: '透视', ...p }} />;
+
+/** 在画布外面另建一台和画布里一样的相机，给 2D 叠层用 库/界面/投影.ts 的 投影到页面 算头顶气泡这类的位置（场景坐标先过 Z朝上转three）。
+ *  宽高、dpr 要和画布一样（三渲二画布 的 dpr 是 canvasDpr(1)），正交的吸附才对得上 */
+export const 做机位相机 = (p: 机位参数, 宽: number, 高: number, dpr: number): THREE.OrthographicCamera | THREE.PerspectiveCamera => {
+  if (p.种 === '正交') {
+    const cam = new THREE.OrthographicCamera();
+    设正交相机(cam, 算正交取景(p, 宽, 高, dpr));
+    return cam;
+  }
+  const cam = new THREE.PerspectiveCamera();
+  设透视相机(cam, p, 宽 / 高);
+  return cam;
+};
 
 /** 新建一个和参数种类对得上的相机（给 ThreeCanvas 的 camera） */
 export const 新相机 = (种: 机位参数['种']): THREE.OrthographicCamera | THREE.PerspectiveCamera => {
