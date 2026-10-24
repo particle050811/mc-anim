@@ -10,7 +10,6 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
-import { 描边 } from '@engine/三渲二/描边.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 做机位相机, type 正交机位参数 } from '@engine/三渲二/机位.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
@@ -20,7 +19,7 @@ import { magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角
 import { 女仆气泡, 女仆气泡锚高 } from '@库/界面/女仆气泡.tsx';
 import { 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import { fps, 画幅, 正片事件 } from '../../分镜.ts';
-import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
+import { 画布调子 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 拍立得 } from '../../特效/拍立得.tsx';
@@ -84,17 +83,13 @@ const 靠肩的你: React.FC = () => {
   );
 };
 
-const 靠肩场景: React.FC<{ 秒: number; 描边: boolean; 褪色: boolean }> = ({ 秒, 描边: 描, 褪色 }) => {
+const 靠肩场景: React.FC<{ 秒: number; 褪色: boolean }> = ({ 秒, 褪色 }) => {
   const 人 = (
     <>
-      <描边 开={描}>
-        <靠肩的你 />
-      </描边>
-      <描边 开={描}>
-        <贴图像素对齐 锚={合照站位.她}>
-          <靠肩的她 秒={秒} />
-        </贴图像素对齐>
-      </描边>
+      <靠肩的你 />
+      <贴图像素对齐 锚={合照站位.她}>
+        <靠肩的她 秒={秒} />
+      </贴图像素对齐>
     </>
   );
   const 布景 = (
@@ -123,17 +118,16 @@ export type 靠肩画面属性 = {
   褪色?: boolean;
   /** 换一个机位（核对里看大环境用），不给 = 靠肩机位 */
   机位?: 正交机位参数;
-  描边?: boolean;
   后期?: boolean;
 };
 
 /** 靠肩这一镜的一整帧（1280×720 页面），自己铺满 */
-export const 靠肩画面: React.FC<靠肩画面属性> = ({ 帧, 叠层, 气泡 = 靠肩气泡, 褪色 = false, 机位 = 靠肩机位, 描边: 描 = 描边默认.开, 后期 = true }) => {
+export const 靠肩画面: React.FC<靠肩画面属性> = ({ 帧, 叠层, 气泡 = 靠肩气泡, 褪色 = false, 机位 = 靠肩机位, 后期 = true }) => {
   const t = 色板[调子];
   return (
     <整片后期 调色={后期 ? t.调色 : null} 种子={帧}>
       <三渲二画布 宽={画幅.宽} 高={画幅.高} 机位={机位} {...画布调子(调子)} 色调={门光色调} 发光区={重逢发光区}>
-        <靠肩场景 秒={帧 / fps} 描边={描} 褪色={褪色} />
+        <靠肩场景 秒={帧 / fps} 褪色={褪色} />
       </三渲二画布>
       {气泡 && <靠肩气泡层 />}
       {叠层}

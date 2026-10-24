@@ -4,13 +4,12 @@
 //   这一帧就是封面帧（对视.tsx 同一套：机位、她、门光、气泡）；
 // - 之后蹲下（原版潜行眼高）、手里换上蛋糕从画面下沿升上来、右键、驯服（爱心、蛋糕被吃掉），哭脸气泡「啵」地换成台词，最后两拍推向她的脸。
 // 主会话 10-24 定：去掉第三人称的推门镜头，风散开直接是你的视角，这一句只剩屋外摇铃、进屋两个画面。
-// 三渲二透视（平涂、不抗锯齿、角色描边）、归隐之地的调子、门光色调，外面整片后期；叠层（聊天栏、樱花风）由段传进来，放在整片后期里面。
-// 手画在另一张三渲二画布上（原版手那一遍：竖直视角固定 70、不跟视角设置和推镜走），同样平涂、描边。
+// 三渲二透视（平涂、不抗锯齿、不描边）、归隐之地的调子、门光色调，外面整片后期；叠层（聊天栏、樱花风）由段传进来，放在整片后期里面。
+// 手画在另一张三渲二画布上（原版手那一遍：竖直视角固定 70、不跟视角设置和推镜走），同样平涂。
 import type React from 'react';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { clamp01 } from '@engine/anim/anim.ts';
-import { 描边 } from '@engine/三渲二/描边.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
@@ -23,14 +22,13 @@ import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/�
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
 import { fps, 画幅, 正片事件 } from '../../分镜.ts';
-import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
+import { 画布调子 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 她看你, 重逢发光区, 隐世之境重逢布景 } from './布景.tsx';
 import { 她, 气泡字 } from './参数.ts';
 import { 对视气泡, 对视门光, 背景褪色参数, 门光色调 } from './对视参数.ts';
 import { 拿着花的她, 空手拿 } from './对视.tsx';
-import { 西门描边挡板 } from './挡深度.tsx';
 import { 背身, 推门, 台词气泡字, 啵帧, 气泡露出门开, 风散心高, 驯服爱心种子 } from './重逢参数.ts';
 import { 回头进度, 重逢机位, 门开 } from './重逢动作.ts';
 import { 不褪色, 背景褪色 } from './褪色.tsx';
@@ -61,16 +59,12 @@ const 爱心 = tamingHearts(她.脚, 0.6, 1.5, 0, 驯服爱心种子);
 /** 段内帧那一套换成歌曲帧：从某个事件那一帧起数的原版刻 */
 const 刻 = (帧: number, 起帧: number) => ((帧 - 起帧) / fps) * 20;
 
-/** 三渲二画布里的东西：布景、门、门光同封面帧（隐世之境重逢布景，不放灯、门光不撒浮尘、光带关、不挖影子，背景褪色），西门照 门开。
- *  她整镜都描边；你在门外、门洞里时她有一截被门洞南墙挡着，西门描边挡板 让墙面上不透出那截的轮廓（挡深度.tsx） */
-const 场景: React.FC<{ 帧: number; 秒: number; 眼: V3; 描边: boolean; 她?: 换她 }> = ({ 帧, 秒, 眼, 描边: 描, 她: 换 }) => (
+/** 三渲二画布里的东西：布景、门、门光同封面帧（隐世之境重逢布景，不放灯、门光不撒浮尘、光带关、不挖影子，背景褪色），西门照 门开 */
+const 场景: React.FC<{ 帧: number; 秒: number; 眼: V3; 她?: 换她 }> = ({ 帧, 秒, 眼, 她: 换 }) => (
   <背景褪色 参数={背景褪色参数}>
     <隐世之境重逢布景 开={门开(秒)} 眼={眼} 秒={秒} 灯光={false} 门光参数={对视门光}>
       <不褪色>
-        <描边 开={描}>
-          {换 ? 换(秒, 眼) : <重逢她 秒={秒} 眼={眼} />}
-        </描边>
-        <西门描边挡板 开={门开(秒)} />
+        {换 ? 换(秒, 眼) : <重逢她 秒={秒} 眼={眼} />}
         <HeartParticles spawns={爱心} 刻={刻(帧, 事.第15句驯服.帧)} />
       </不褪色>
     </隐世之境重逢布景>
@@ -82,12 +76,11 @@ const 场景: React.FC<{ 帧: number; 秒: number; 眼: V3; 描边: boolean; 她
 const 换上蛋糕刻 = Math.round((事.换上蛋糕.秒 - 事.递蛋糕右键.秒) * 20);
 const 手剧本: HandScript = { start: null, swings: [0], changes: [{ tick: 换上蛋糕刻, to: '蛋糕' }, { tick: 1, to: null }] };
 
-const 手: React.FC<{ 帧: number; 描边: boolean }> = ({ 帧, 描边: 描 }) => {
+const 手: React.FC<{ 帧: number }> = ({ 帧 }) => {
   const k = 刻(帧, 事.递蛋糕右键.帧);
   const h = handTimeline(k, 手剧本);
   const 拿着 = h.item === '蛋糕';
   if (!拿着 && k < 1) return null;
-  const t = 色板[调子];
   // 手那一遍的视图坐标（Y 朝上、−Z 朝前）放进三渲二画布 Z 朝上的场景里：画布的看点朝 +y（北）就是视图的 −Z，再把画布里那层 −90° 转回来
   return (
     <三渲二画布
@@ -95,18 +88,15 @@ const 手: React.FC<{ 帧: number; 描边: boolean }> = ({ 帧, 描边: 描 }) =
       高={画幅.高}
       机位={{ 种: '透视', 眼: [0, 0, 0], 看: [0, 1, 0], 视角: HAND_FOV, 近: HAND_NEAR, 远: 16 }}
       色调={门光色调}
-      描边={描边默认.开 ? { 宽: 描边默认.宽, 色: t.描边 } : false}
       style={{ position: 'absolute', left: 0, top: 0 }}
     >
       <group rotation={[Math.PI / 2, 0, 0]}>
-        <描边 开={描}>
-          <FirstPersonHand
-            held={拿着 ? <ItemSprite layers={CAKE} emissive={0} shadow={false} /> : null}
-            arm={<SteveFirstPersonArm />}
-            swing={h.swing}
-            equip={h.equip}
-          />
-        </描边>
+        <FirstPersonHand
+          held={拿着 ? <ItemSprite layers={CAKE} emissive={0} shadow={false} /> : null}
+          arm={<SteveFirstPersonArm />}
+          swing={h.swing}
+          equip={h.equip}
+        />
       </group>
     </三渲二画布>
   );
@@ -135,7 +125,7 @@ export const 风散心 = (() => {
   return { x: p.x, y: p.y };
 })();
 
-/** 换掉画里的她（15 尾硬切到她的笑用）：按这一刻的秒、你的眼睛画，放在原来她的位置（描边、不褪色那一层里） */
+/** 换掉画里的她（15 尾硬切到她的笑用）：按这一刻的秒、你的眼睛画，放在原来她的位置（不褪色那一层里） */
 export type 换她 = (秒: number, 眼: V3) => React.ReactNode;
 
 export type 重逢画面属性 = {
@@ -147,21 +137,20 @@ export type 重逢画面属性 = {
   气泡字?: string;
   /** 叠在 3D 和气泡上面、整片后期里面的 2D（聊天栏、樱花风） */
   叠层?: React.ReactNode;
-  描边?: boolean;
   后期?: boolean;
 };
 
 /** 一整帧（1280×720 页面），自己铺满 */
-export const 重逢画面: React.FC<重逢画面属性> = ({ 帧, 她: 换, 气泡字: 字, 叠层, 描边: 描 = 描边默认.开, 后期 = true }) => {
+export const 重逢画面: React.FC<重逢画面属性> = ({ 帧, 她: 换, 气泡字: 字, 叠层, 后期 = true }) => {
   const 秒 = 帧 / fps;
   const t = 色板[调子];
   const 机 = 重逢机位(秒);
   return (
     <整片后期 调色={后期 ? t.调色 : null}>
       <三渲二画布 宽={画幅.宽} 高={画幅.高} 机位={机} {...画布调子(调子)} 色调={门光色调} 发光区={重逢发光区}>
-        <场景 帧={帧} 秒={秒} 眼={机.眼} 描边={描} 她={换} />
+        <场景 帧={帧} 秒={秒} 眼={机.眼} 她={换} />
       </三渲二画布>
-      <手 帧={帧} 描边={描} />
+      <手 帧={帧} />
       <气泡 帧={帧} 机={机} 字={字} />
       {叠层}
     </整片后期>

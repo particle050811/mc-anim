@@ -27,7 +27,7 @@ const 画面: React.FC = () => {
   const { 宽, 高 } = 对视取景[v.版];
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <对视画面 版={v.版} 描边={v.描边} 后期={v.后期} 大字={v.大字} />
+      <对视画面 版={v.版} 后期={v.后期} 大字={v.大字} />
       {v.安全区 && <安全区层 宽={宽} 高={高} />}
       {v.版 !== '片' && (
         <div style={{ position: 'absolute', left: 宽 + 16, top: 12, right: 12, fontFamily: uiFontFamily, fontSize: 18, lineHeight: 1.5, color: '#ffffff' }}>
