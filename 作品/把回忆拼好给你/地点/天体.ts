@@ -1,7 +1,7 @@
 // 太阳、月亮按游戏时间走：侧剖面里天球的那一圈画成画面上的一段圆弧（东在右、西在左，正午在弧顶），纯函数（段.ts 也能读）。
 // 时间照原版 1.20.1：刻 = 一天里的游戏刻（0 日出 6:00、6000 正午、12000 日落、18000 午夜，一天 24000 刻，可以超过 24000 往后数天）。
 // 天球角照 DimensionType.timeOfDay：d = frac(刻/24000 − 0.25)，角 = (2d + (0.5 − cos(dπ)/2)) / 3，0 是太阳在头顶；月亮在对面。
-// 月相照 DimensionType.moonPhase：(刻 / 24000 取整) % 8，贴图 moon_phases 4 列 2 行；天亮程度照 Level.getSkyDarken 里的 cos(角·2π)·2 + 0.5，夹 0～1。
+// 月相照 DimensionType.moonPhase：(刻 / 24000 取整) % 8，贴图 moon_phases 4 列 2 行；天亮程度照 ClientLevel.getSkyColor 里的 cos(角·2π)·2 + 0.5，夹 0～1（天色按它乘）。
 
 export const 一天刻数 = 24000;
 

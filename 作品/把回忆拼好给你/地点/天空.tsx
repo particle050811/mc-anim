@@ -1,87 +1,89 @@
-// 侧剖面的天：一块贴在机位最远处的平面，颜色从地平线往上渐变，一个贴图像素一行（和方块的像素一样大）；太阳、月亮用原版贴图按 天体.ts 的位置画。
-// 原版画太阳、月亮是叠加混合（RenderSystem.blendFuncSeparate(SRC_ALPHA, ONE, ...)），贴图黑底叠上去就没了；位置吸到贴图像素格上。
-// 放在 Z 朝上的 group 里用（同 侧剖面.tsx）。
-import { useThree } from '@react-three/fiber';
-import React, { useMemo } from 'react';
-import * as THREE from 'three';
-import { entityTexture } from '@engine/model/贴图方盒.tsx';
-import { png } from '@engine/model/贴图.ts';
+// 侧剖面的天：画在三维画布后面的一张 2D 画布（三维画布透明），颜色从地平线往上渐变，一个贴图像素一行；太阳、月亮用原版贴图按 天体.ts 的位置画，
+// 贴图像素对齐到方块的像素格上。原版画太阳、月亮是叠加混合（blendFuncSeparate(SRC_ALPHA, ONE, …)），这里用 lighter，贴图黑底叠上去就没了。
+// 画在 2D 里：三渲二的斜投影不影响它，房子、树照样挡在前面（三维画布不给 天，背景透明）；每帧重画同一张画布，不新建贴图。
+// 渐变、贴图像素格从剖面（y = 0）上的地面线、门洞西边数起。
+// 画布按成片分辨率建（页面尺寸 × 成片倍数），预览级由浏览器缩小（同 库/界面/像素聊天栏.tsx）。
+import React, { useLayoutEffect, useRef } from 'react';
+import { type Png, png } from '@engine/model/贴图.ts';
 import sunPng from 'asset:贴图/环境/太阳';
 import moonPng from 'asset:贴图/环境/月相';
-import { 出片倍数, type 侧取景 } from './侧剖面.tsx';
+import { 成片倍数 } from '@engine/三渲二/像素.ts';
+import type { 侧取景 } from './侧剖面.tsx';
 import { 天亮, 天体位置, type 天弧 } from './天体.ts';
-
-const 远 = 400;
-const 吸 = (v: number) => Math.round(v * 16) / 16;
 
 /** 天色：地平 = 地面线那里的颜色，顶 = 往上 渐变高 格以上的颜色（sRGB）；夜里两个都换成 夜 的颜色（按 天亮 混） */
 export type 天色 = { 地平: string; 顶: string; 渐变高: number; 夜地平: string; 夜顶: string };
 
-const 混 = (a: THREE.Color, b: THREE.Color, t: number) => a.clone().lerp(b, t);
+const 解色 = (s: string) => {
+  const n = parseInt(s.slice(1), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
+};
+// 按 sRGB 数值插（像素画的渐变）
+const 混 = (a: readonly number[], b: readonly number[], t: number) => a.map((v, i) => v + (b[i]! - v) * t);
 
-/** 刻：游戏时间（天体.ts）；弧：太阳月亮走的圆弧，不给就不画太阳月亮；明暗幅度：天随昼夜变暗的程度（1 照原版，0 一直白天的颜色），第 13 句快转时压低 */
-export const 侧剖面天空: React.FC<侧取景 & { 色: 天色; 刻?: number; 弧?: 天弧; 明暗幅度?: number }> = ({ 中心, 每格, 色, 刻 = 6000, 弧, 明暗幅度 = 1 }) => {
-  const size = useThree((s) => s.size);
-  const 半宽 = (size.width * 出片倍数) / 每格 / 2;
-  const 半高 = (size.height * 出片倍数) / 每格 / 2;
-  const 亮 = 1 - 明暗幅度 * (1 - 天亮(刻));
-  const 底 = Math.floor((中心[1] - 半高) * 16) / 16;
-  const 行数 = Math.ceil((中心[1] + 半高 - 底) * 16);
-  const key = `${色.地平}|${色.顶}|${色.夜地平}|${色.夜顶}|${色.渐变高}|${底}|${行数}|${亮.toFixed(3)}`;
-  const tex = useMemo(() => {
-    // 颜色按 sRGB 数值插（像素画的渐变），一行一个贴图像素
-    const c = (s: string) => new THREE.Color().setStyle(s, THREE.LinearSRGBColorSpace);
-    const 地平 = 混(c(色.夜地平), c(色.地平), 亮);
-    const 顶 = 混(c(色.夜顶), c(色.顶), 亮);
-    const data = new Uint8Array(行数 * 4);
-    for (let r = 0; r < 行数; r++) {
-      const z = 底 + (r + 0.5) / 16;
-      const t = Math.min(1, Math.max(0, z / 色.渐变高));
-      const k = 混(地平, 顶, Math.sqrt(t));
-      // 平面的 v = 0 在下边，DataTexture 第 0 行也在 v = 0，所以第 r 行（从下往上数）就放第 r 行
-      data.set([Math.round(k.r * 255), Math.round(k.g * 255), Math.round(k.b * 255), 255], r * 4);
+/** 太阳、月亮贴图一格 32×32 像素，画出来一个贴图像素 = 方块的一个贴图像素（2 格见方） */
+const 天体边 = 32;
+
+const 画天体 = (ctx: CanvasRenderingContext2D, tex: Png, u0: number, v0: number, x0: number, y0: number, n: number) => {
+  for (let v = 0; v < 天体边; v++)
+    for (let u = 0; u < 天体边; u++) {
+      const o = ((v0 + v) * tex.w + u0 + u) * 4;
+      const a = tex.px[o + 3]!;
+      if (!a || !(tex.px[o]! | tex.px[o + 1]! | tex.px[o + 2]!)) continue;
+      ctx.fillStyle = `rgba(${tex.px[o]},${tex.px[o + 1]},${tex.px[o + 2]},${a / 255})`;
+      ctx.fillRect(x0 + u * n, y0 + v * n, n, n);
     }
-    const t = new THREE.DataTexture(data, 1, 行数, THREE.RGBAFormat);
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.magFilter = t.minFilter = THREE.NearestFilter;
-    t.needsUpdate = true;
-    return t;
-  }, [key]);
-  const 高 = 行数 / 16;
-  const 位 = 弧 ? 天体位置(刻, 弧) : null;
-  return (
-    <group>
-      <mesh position={[中心[0], 远, 底 + 高 / 2]} rotation={[Math.PI / 2, 0, 0]} renderOrder={-2}>
-        <planeGeometry args={[半宽 * 2 + 2, 高]} />
-        <meshBasicMaterial map={tex} depthWrite={false} toneMapped={false} />
-      </mesh>
-      {位 && <天体片 种="太阳" x={位.太阳.x} z={位.太阳.z} />}
-      {位 && <天体片 种="月亮" x={位.月亮.x} z={位.月亮.z} 相={位.月亮.相} />}
-    </group>
-  );
 };
 
-const 太阳贴图 = () => entityTexture(png(sunPng));
-const 月亮贴图 = () => entityTexture(png(moonPng));
+export type 侧剖面天空属性 = {
+  取景: 侧取景;
+  /** 画布的页面尺寸（和三维画布一样） */
+  宽: number;
+  高: number;
+  色: 天色;
+  /** 游戏刻（天体.ts） */
+  刻?: number;
+  /** 太阳月亮走的弧，不给就不画太阳月亮 */
+  弧?: 天弧;
+  /** 天随昼夜变暗的程度（1 照原版，0 一直白天的颜色），第 13 句快转时压低 */
+  明暗幅度?: number;
+  style?: React.CSSProperties;
+};
 
-/** 太阳、月亮一张贴图 32×32 像素（月相图里一格），画成 2×2 格 */
-const 天体片: React.FC<{ 种: '太阳' | '月亮'; x: number; z: number; 相?: number }> = ({ 种, x, z, 相 = 0 }) => {
-  const geom = useMemo(() => {
-    const g = new THREE.PlaneGeometry(2, 2);
-    if (种 === '月亮') {
-      // 月相图 4 列 2 行；DataTexture 第 0 行在 v = 0（图的上边），所以 v 朝下数
-      const u0 = (相 % 4) / 4, v0 = Math.floor(相 / 4) / 2;
-      const uv = g.getAttribute('uv') as THREE.BufferAttribute;
-      for (let q = 0; q < uv.count; q++) uv.setXY(q, u0 + uv.getX(q) / 4, v0 + (1 - uv.getY(q)) / 2);
-    } else {
-      const uv = g.getAttribute('uv') as THREE.BufferAttribute;
-      for (let q = 0; q < uv.count; q++) uv.setY(q, 1 - uv.getY(q));
+/** 放在三维画布后面（同一个定位容器里、先画），自己铺满 宽 × 高 */
+export const 侧剖面天空: React.FC<侧剖面天空属性> = ({ 取景, 宽, 高, 色, 刻 = 6000, 弧, 明暗幅度 = 1, style }) => {
+  const ref = useRef<HTMLCanvasElement>(null);
+  const W = 宽 * 成片倍数, H = 高 * 成片倍数;
+  useLayoutEffect(() => {
+    const ctx = ref.current?.getContext('2d');
+    if (!ctx) return;
+    const { 中心, 每格 } = 取景;
+    const n = 每格 / 16; // 一个贴图像素几个画布像素
+    // 地面线、门洞西边（x = −0.5）在画布上的位置：贴图像素的格从这里数
+    const 地y = H / 2 + 中心[1] * 每格;
+    const 格x0 = W / 2 + (-0.5 - 中心[0]) * 每格;
+    const 亮 = 1 - 明暗幅度 * (1 - 天亮(刻));
+    const 地平 = 混(解色(色.夜地平), 解色(色.地平), 亮);
+    const 顶 = 混(解色(色.夜顶), 解色(色.顶), 亮);
+    ctx.globalCompositeOperation = 'source-over';
+    for (let r = -Math.ceil((H - 地y) / n); r * n < 地y; r++) {
+      const z = (r + 0.5) / 16;
+      const c = 混(地平, 顶, Math.sqrt(Math.min(1, Math.max(0, z / 色.渐变高))));
+      ctx.fillStyle = `rgb(${c.map(Math.round).join(',')})`;
+      ctx.fillRect(0, 地y - (r + 1) * n, W, n);
     }
-    return g;
-  }, [种, 相]);
-  const mat = useMemo(
-    () => new THREE.MeshBasicMaterial({ map: 种 === '太阳' ? 太阳贴图() : 月亮贴图(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }),
-    [种],
-  );
-  return <mesh geometry={geom} material={mat} position={[吸(x), 远 - 1, 吸(z)]} rotation={[Math.PI / 2, 0, 0]} renderOrder={-1} />;
+    if (!弧) return;
+    const 位 = 天体位置(刻, 弧);
+    const 吸 = (v: number, 原: number) => 原 + Math.round((v - 原) / n) * n;
+    ctx.globalCompositeOperation = 'lighter';
+    const 画 = (tex: Png, u0: number, v0: number, x: number, z: number) => {
+      const px = 吸(W / 2 + (x - 中心[0]) * 每格 - (天体边 * n) / 2, 格x0);
+      const py = 吸(H / 2 - (z - 中心[1]) * 每格 - (天体边 * n) / 2, 地y);
+      画天体(ctx, tex, u0, v0, px, py, n);
+    };
+    画(png(sunPng), 0, 0, 位.太阳.x, 位.太阳.z);
+    画(png(moonPng), (位.月亮.相 % 4) * 天体边, Math.floor(位.月亮.相 / 4) * 天体边, 位.月亮.x, 位.月亮.z);
+    ctx.globalCompositeOperation = 'source-over';
+  });
+  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, ...style }} />;
 };
