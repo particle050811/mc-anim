@@ -2,8 +2,7 @@
 // 一格多少地图像素按镜头的 N 取，地图像素才落在整成片像素上：N 是 4 的倍数用 64（第 8 句 16、第 14 句分屏 8），N = 10 的门口整屏镜头用 32（照片方案的核实）。
 // 原版地图一格是 128 个像素，这里是演绎：截图转地图画要靠插件或模组，有效分辨率压到 32、64，比方块贴图细 2、4 倍。
 // 纯模块（不 import react、three），测试能直接引；照片墙.tsx 按它做贴图。
-import { 照片像素, 相纸, type 像素画 } from './照片画.ts';
-import { 是现成图, type 照片源 } from './照片图.ts';
+import type { 照片源 } from './照片图.ts';
 
 /** 原版地图的基色（1.20.1 net.minecraft.world.level.material.MapColor，id 1～61；id 0 是透明），#rrggbb */
 export const 地图基色: readonly string[] = [
@@ -48,20 +47,9 @@ export type 地图边长 = 32 | 64;
 export const 白边 = (边长: 地图边长) => 边长 / 16;
 const 白: RGB = [255, 255, 255];
 
-/** 照片的画面（不带相纸白边）：宽、高、RGBA 一行行排 */
-const 画面 = (源: 照片源): { w: number; h: number; px: Uint8Array } => {
-  if (是现成图(源)) return { w: 源.图.w, h: 源.图.h, px: 源.图.px };
-  const 画: 像素画 = 源;
-  const 全 = 照片像素(画);
-  const 全宽 = 画.宽 + 2 * 相纸.边;
-  const px = new Uint8Array(画.宽 * 画.高 * 4);
-  for (let y = 0; y < 画.高; y++) px.set(全.subarray(((y + 相纸.边) * 全宽 + 相纸.边) * 4, ((y + 相纸.边) * 全宽 + 相纸.边 + 画.宽) * 4), y * 画.宽 * 4);
-  return { w: 画.宽, h: 画.高, px };
-};
-
 /** 一张照片的地图画（边长 × 边长 的 RGBA，从上往下一行行排）：画面居中裁成正方形，按面积平均缩到 边长 − 2·白边，每个像素压到最近的地图色，外面一圈白边 */
 export const 地图画像素 = (源: 照片源, 边长: 地图边长): Uint8Array => {
-  const { w, h, px } = 画面(源);
+  const { w, h, px } = 源.图;
   const 边 = Math.min(w, h);
   const [x0, y0] = [(w - 边) / 2, (h - 边) / 2];
   const 内 = 边长 - 2 * 白边(边长);

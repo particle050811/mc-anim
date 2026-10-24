@@ -1,5 +1,6 @@
 # 2-第一晚（第 2 句）用游戏像素字画的字：资产 字体/把回忆拼好给你/第一晚像素字 只收这里出现过的字（加字见 sourcing/extract.toml「第一晚像素字」那一条）。
 # 一行一句，以 # 开头的行是注释。只加不删。
+# 现在没有画面用（用户 10-24 定第 2 句只留挖三填一，死亡消息、死亡画面删了），留着给取材配方复现资产锁里那份字节。
 
 # 聊天栏三条死亡消息（原版 zh_cn：death.attack.explosion.player、death.attack.lava、death.fell.accident.generic）
 Steve被苦力怕炸死了

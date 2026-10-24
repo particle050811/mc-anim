@@ -8,6 +8,8 @@ import { 主厅门们 } from '../../地点/隐世之境主厅门数据.ts';
 import { 封面框能放, 封面能放, 封面聊天框 } from './封面.ts';
 import { 她, 头转范围, 气泡字 } from './参数.ts';
 import { 对视取景, 对视气泡, 对视脚, 对视视角, 封面大字, 片里聊天宽, 聊天年龄刻, type 对视版 } from './对视参数.ts';
+import { 笑 } from './重逢参数.ts';
+import { 视图们 as 合照视图们 } from '../../核对/合照/视图.ts';
 
 const 眼: [number, number, number] = [对视脚[0], 对视脚[1], 对视脚[2] + 1.62];
 
@@ -80,10 +82,10 @@ describe.skipIf(!有表)('49.96 对视的构图', () => {
     return 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], z]), 宽, 高);
   };
   // 气泡（库/界面/女仆气泡.tsx）：底边在锚点上，宽 = 字宽 + 10、高 19、尾巴往下 8；页面上一个气泡像素 = 缩放 / 2
-  const 气泡框 = (版: 对视版) => {
+  const 气泡框 = (版: 对视版, 文字 = 气泡字) => {
     const 锚 = 投(版, 对视气泡.锚高);
     const 页 = 对视气泡.缩放[版] / 2;
-    const 宽 = 字.字宽(气泡字) + 10;
+    const 宽 = 字.字宽(文字) + 10;
     return { x0: 锚.x - (宽 / 2) * 页, x1: 锚.x + (宽 / 2) * 页, y0: 锚.y - 19 * 页, y1: 锚.y + 8 * 页 };
   };
 
@@ -95,6 +97,15 @@ describe.skipIf(!有表)('49.96 对视的构图', () => {
       expect(b.x0).toBeGreaterThan((W * 240) / 1920);
       expect(b.x1).toBeLessThan((W * 1680) / 1920);
     }
+  });
+  it('B 站多封面第三张（核对-合照 最后一帧）：用封面「片」那一版的机位，笑的气泡整个在画里（离上沿至少 8）、在 4:3 里', () => {
+    const v = 合照视图们[合照视图们.length - 1]!;
+    expect(v.封面机位).toBe(true);
+    expect(v.气泡字).toBe(笑.气泡字);
+    const b = 气泡框('片', 笑.气泡字);
+    expect(b.y0).toBeGreaterThan(8);
+    expect(b.x0).toBeGreaterThan((1280 * 240) / 1920);
+    expect(b.x1).toBeLessThan((1280 * 1680) / 1920);
   });
   // 脸连两边头发宽 0.416 格（模型 x −4.42～5.82，按 0.65/16 缩）
   const 脸宽 = (10.24 * 0.65) / 16;
