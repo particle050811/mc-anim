@@ -15,15 +15,13 @@ const 取级别 = (v: string | undefined): 渲染级别 => {
   return 级别;
 };
 
-/** 母版压成给人看的 mp4（画面压法照旧项目 渲染带音频.py：视频级 x264 slower CRF 32，预览级 veryfast CRF 23）。
- *  声音用 Opus 192k 不用 AAC：VS Code 自带的解码库没有 AAC，在编辑器里点开预览只有画面没有歌（用户 10-24「不放歌我怎么听节奏呢」）；
- *  Opus 进 MP4 苹果的播放器也放得了。交平台的成片（合成/成片.ts）还是 AAC */
+/** 母版压成给人看的 mp4（压法照旧项目 渲染带音频.py：视频级 x264 slower CRF 32，预览级 veryfast CRF 23，AAC 192k） */
 export const 压成mp4 = (母版: string, 出: string, 级别: 渲染级别) =>
   跑(
     低优先级([
       配置('ffmpeg'), '-v', 'error', '-y', '-i', 母版,
       '-c:v', 'libx264', '-preset', 级别 === '预览' ? 'veryfast' : 'slower', '-crf', 级别 === '预览' ? '23' : '32',
-      '-pix_fmt', 'yuv420p', '-c:a', 'libopus', '-b:a', '192k', '-movflags', '+faststart', 出,
+      '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', 出,
     ]),
   );
 
