@@ -1,6 +1,7 @@
-// 史蒂夫苦力怕核对的画面：一帧一种姿势，并排三个正交机位（正面、右侧面、右前方四分之三俯 20°），左上角写视图名；最后一帧是第一人称的空手。
-// 模型都照原版实体光照画（mcLight 1，白天满亮度）；画布里没有灯，手里的蛋糕（ItemSprite 受场景光）靠 emissive 1 画出贴图原色。地面是 3×3 格的方块，顶面、南北面、东西面按 MC 的 1、0.8、0.6 平涂，看脚贴不贴地。
-// 正交缩放：页面上每格 128 像素，出片 scale 2 时每格 256 像素，史蒂夫一个贴图像素 15 像素、苦力怕 16 像素，都是整数。
+// 史蒂夫苦力怕核对的画面：一帧一种姿势，并排三个正交机位（正面、右侧面、右前方四分之三俯 20°），左上角写视图名；第 15 帧是第一人称的空手。
+// 模型默认照原版实体光照画（mcLight 1，白天满亮度），画布里没有灯，手里的蛋糕（ItemSprite 受场景光）靠 emissive 1 画出贴图原色；
+// 默认材质的帧不传 mcLight，画布只放一盏强度 π 的环境光（漫反射 = 贴图原色）。地面是方块，顶面、南北面、东西面按 MC 的 1、0.8、0.6 平涂，看脚贴不贴地。
+// 正交缩放：三视图页面上每格 128 像素（出片每格 256 像素），只为看清楚，史蒂夫一个贴图像素 15 像素、苦力怕 16 像素；成片的像素密度看「像素密度」那帧。
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
@@ -10,7 +11,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { FirstPersonCanvas, FirstPersonHand } from '@库/角色/第一人称.tsx';
-import { STEVE, Steve, type StevePose, steveHeldItemPosition, steveLookAt, stevePose, vanillaWalk } from '@库/角色/史蒂夫.tsx';
+import { STEVE, Steve, type StevePose, steveHeldItemPosition, steveLookAt, stevePose, steveSize, vanillaWalk } from '@库/角色/史蒂夫.tsx';
 import { SteveFirstPersonArm } from '@库/角色/史蒂夫第一人称.tsx';
 import { CREEPER, Creeper, type CreeperPose, creeperLookAt } from '@库/生物/苦力怕.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
@@ -56,14 +57,14 @@ const 看: V3 = [0, 0, 1];
 const 面板 = { 宽: 416, 高: 600, 顶: 80, 间: 8 };
 
 const toThree = ([x, y, z]: V3) => new THREE.Vector3(x, z, -y);
-const 正交机位: React.FC<{ 方向: V3 }> = ({ 方向 }) => {
+const 正交机位: React.FC<{ 方向: V3; 每格?: number }> = ({ 方向, 每格 = 每格像素 }) => {
   const { camera } = useThree();
   const cam = camera as THREE.OrthographicCamera;
   const target = toThree(看);
   cam.position.copy(target.clone().add(toThree(方向).normalize().multiplyScalar(30)));
   cam.up.set(0, 1, 0);
   cam.lookAt(target);
-  cam.zoom = 每格像素;
+  cam.zoom = 每格;
   cam.near = 0.1;
   cam.far = 100;
   cam.updateProjectionMatrix();
@@ -98,12 +99,13 @@ const 红点: React.FC<{ at: V3 }> = ({ at }) => (
   </mesh>
 );
 
-const 三视图: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const 三视图: React.FC<{ children: React.ReactNode; 灯?: boolean; 抗锯齿?: boolean }> = ({ children, 灯, 抗锯齿 }) => (
   <>
     {机位们.map((m, i) => (
       <div key={m.名} style={{ position: 'absolute', left: 面板.间 + i * (面板.宽 + 面板.间), top: 面板.顶, width: 面板.宽, height: 面板.高, background: '#8fa3b8' }}>
-        <ThreeCanvas orthographic flat width={面板.宽} height={面板.高} gl={{ antialias: false }}>
+        <ThreeCanvas orthographic flat width={面板.宽} height={面板.高} gl={{ antialias: !!抗锯齿 }}>
           <正交机位 方向={m.方向} />
+          {灯 && <ambientLight intensity={Math.PI} />}
           <group rotation={[-Math.PI / 2, 0, 0]}>
             <地面 />
             {children}
@@ -115,24 +117,80 @@ const 三视图: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   </>
 );
 
+// 像素密度对比：三渲二定的 N=6（成片一个贴图像素 6 个输出像素，三渲二底座 分支 engine/三渲二/像素.ts），一格 16 × 6 ÷ 成片倍数 2 = 48 页面像素。
+// 纯正面正交，看脚底 1 格高处，画面左边是场景 +X（正面看，人的右手在画面左边）；尺子柱是一格 16×16 的棋盘，一格棋盘一个贴图像素。
+// 两臂摆正（不轻晃），只看像素格对不对得上。
+const 密度 = { 每格: 48, 宽: 1264, 高: 600 };
+const 尺子材质 = (() => {
+  const d = new Uint8Array(16 * 16 * 4);
+  for (let i = 0; i < 256; i++) d.fill(((i % 16) + Math.floor(i / 16)) % 2 ? 0xd8 : 0x9a, i * 4, i * 4 + 3).fill(255, i * 4 + 3, i * 4 + 4);
+  const t = new THREE.DataTexture(d, 16, 16);
+  t.magFilter = t.minFilter = THREE.NearestFilter;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  return new THREE.MeshBasicMaterial({ map: t });
+})();
+const 立正 = (loc: V3, scale?: number): StevePose => ({ ...stevePose(loc, 0, { scale }), armR: 0, armL: 0, armRRoll: 0, armLRoll: 0 });
+const 密度站位: { 名: string; x: number }[] = [
+  { 名: '史蒂夫 0.9375 倍（原版）', x: 5 },
+  { 名: '史蒂夫 1 倍', x: 0 },
+  { 名: '苦力怕（原版 1 倍）', x: -5 },
+];
+const 像素密度: React.FC = () => (
+  <div style={{ position: 'absolute', left: 面板.间, top: 面板.顶, width: 密度.宽, height: 密度.高, background: '#8fa3b8' }}>
+    <ThreeCanvas orthographic flat width={密度.宽} height={密度.高} gl={{ antialias: false }}>
+      <正交机位 方向={[0, 1, 0]} 每格={密度.每格} />
+      <ambientLight intensity={Math.PI} />
+      <group rotation={[-Math.PI / 2, 0, 0]}>
+        {Array.from({ length: 15 }, (_, i) => (
+          <mesh key={i} position={[i - 7, 0, -0.5]} material={草[i % 2]}>
+            <boxGeometry args={[1, 1, 1]} />
+          </mesh>
+        ))}
+        {[6, 1].flatMap((x) =>
+          [0.5, 1.5].map((z) => (
+            <mesh key={`${x},${z}`} position={[x, 0, z]} material={尺子材质}>
+              <boxGeometry args={[1, 1, 1]} />
+            </mesh>
+          )),
+        )}
+        {密度站位.map((p, i) => (i === 2 ? <Creeper key={p.名} pose={{ loc: [p.x, 0, 0] }} /> : <Steve key={p.名} pose={立正([p.x, 0, 0], i === 1 ? 1 : undefined)} />))}
+      </group>
+    </ThreeCanvas>
+    {密度站位.map((p) => (
+      <div key={p.名} style={{ position: 'absolute', left: 密度.宽 / 2 - p.x * 密度.每格 - 110, width: 220, top: 密度.高 / 2 + 1.5 * 密度.每格, textAlign: 'center', fontSize: 16, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
+        {p.名}
+      </div>
+    ))}
+    <div style={{ position: 'absolute', left: 16, top: 16, fontSize: 16, lineHeight: 1.6, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
+      页面每格 {密度.每格} 像素，出片每格 96 像素：方块、苦力怕、1 倍史蒂夫的一个贴图像素 6 像素；0.9375 倍史蒂夫 5.625 像素，最近邻下一格宽一格窄。
+      <br />
+      两根尺子柱各 2 格高：1 倍史蒂夫头顶 {steveSize(1).height} 格、齐柱顶；0.9375 倍 {STEVE.height} 格。
+    </div>
+  </div>
+);
+
 const 画面: React.FC = () => {
   const v = 视图们[useCurrentFrame()]!;
   const { width, height } = useVideoConfig();
   let 内容: React.ReactNode = null;
   if (v.主体 === '史蒂夫') {
     const { pose, 蛋糕 } = 史蒂夫姿势表[v.姿势];
+    const mc = v.默认材质 ? undefined : 1;
     内容 = (
-      <三视图>
-        <Steve pose={pose} mcLight={1} handR={蛋糕 ? <ItemSprite layers={CAKE} emissive={1} shadow={false} /> : undefined} />
+      <三视图 灯={v.默认材质} 抗锯齿={v.抗锯齿}>
+        <Steve pose={pose} mcLight={mc} handR={蛋糕 ? <ItemSprite layers={CAKE} emissive={mc ? 1 : 0} shadow={false} /> : undefined} />
         {蛋糕 && <红点 at={steveHeldItemPosition(pose)} />}
       </三视图>
     );
   } else if (v.主体 === '苦力怕') {
     内容 = (
-      <三视图>
-        <Creeper pose={苦力怕姿势表[v.姿势]} mcLight={1} />
+      <三视图 灯={v.默认材质} 抗锯齿={v.抗锯齿}>
+        <Creeper pose={苦力怕姿势表[v.姿势]} mcLight={v.默认材质 ? undefined : 1} />
       </三视图>
     );
+  } else if (v.主体 === '像素密度') {
+    内容 = <像素密度 />;
   } else {
     内容 = (
       <FirstPersonCanvas width={width} height={height}>
