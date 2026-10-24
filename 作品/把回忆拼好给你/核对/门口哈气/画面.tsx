@@ -6,16 +6,16 @@ import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 正片事件 } from '../../分镜.ts';
 import { 哈气角色, 哈气气泡 } from '../../场/2-门口/哈气.tsx';
-import { 取景 as N6取景, 整屏镜头 } from '../../场/2-门口/参数.ts';
+import { 取景 as N6取景 } from '../../场/2-门口/参数.ts';
 import { 门口画布 } from '../../场/2-门口/门口.tsx';
-import { 第8句调子 } from '../../场/2-门口/第8句.ts';
+import { 第8句调子, 第8句镜头 } from '../../场/2-门口/第8句.ts';
 import { 视图们 } from './视图.ts';
 
 const 帧 = 正片事件.哈气.帧;
 
 const 画面: React.FC = () => {
   const v = 视图们[useCurrentFrame()]!;
-  const 镜 = v.N6 ? { 取景: N6取景, 描边宽: N6取景.每格 / 16 } : 整屏镜头;
+  const 镜 = v.N6 ? { 取景: N6取景, 描边宽: N6取景.每格 / 16 } : 第8句镜头;
   return (
     <整片后期 调色={v.后期 ? 第8句调子.调色 : null} 种子={帧}>
       <门口画布 门开 箱子开度={1} 调子={第8句调子} {...镜} 叠层={<哈气气泡 取景={镜.取景} />}>
