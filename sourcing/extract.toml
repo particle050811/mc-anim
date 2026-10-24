@@ -685,6 +685,71 @@
 "贴图/界面/银河字母" = "src/模型/歌词/银河字母.png"
 "贴图/特效/附魔光泽" = "src/模型/歌词/附魔光泽.png"
 
+# 把回忆拼好给你 第 12 句卧室的两张床（作品 物品/床.tsx、物品/女仆床.tsx）。原版床是方块实体：BedRenderer.createHeadLayer（m_173550_）、createFootLayer（m_173551_），
+# 各一块 16×16×6 的床身加两条 3×3×3 的腿，贴图 entity/bed/red.png（64×64，史蒂夫默认睡的红床）。
+# 女仆床是车万女仆的方块实体，基岩模型 models/bedrock/block/maid_bed/pink.json（TileEntityMaidBed 默认 PINK）。只有本作品用，产物登记在作品资产表：
+#   anim --作品 把回忆拼好给你 extract 卧室床
+[["取材"]]
+"名称" = "卧室床"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1", "client-1.20.1-srg", "touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1；车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "Mojang EULA；MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/物品/床.模型.json", "床头=net.minecraft.client.renderer.blockentity.BedRenderer:m_173550_", "床尾=net.minecraft.client.renderer.blockentity.BedRenderer:m_173551_", "--贴图", "红=assets/minecraft/textures/entity/bed/red.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/女仆床.模型.json", "assets/touhou_little_maid/models/bedrock/block/maid_bed/pink.json", "assets/touhou_little_maid/textures/bedrock/block/maid_bed/pink.png"],
+]
+["取材"."产物"]
+"模型/物品/床" = "src/模型/物品/床.模型.json"
+"贴图/物品/床/红" = "src/模型/物品/床.模型.png"
+"模型/物品/女仆床" = "src/模型/物品/女仆床.模型.json"
+"贴图/物品/女仆床" = "src/模型/物品/女仆床.模型.png"
+
+# 把回忆拼好给你 第 3 句祭坛召唤：车万女仆的女仆祭坛（多方块搭好以后整座由一个方块实体画这个基岩模型，TileEntityAltarRenderer）、
+# 召唤出来的蛋糕盒（EntityBox，贴图 cake_box_0～7 随机一张，这里取红底金花的 1，和樱花林的粉、草地的绿拉得开）、
+# 博丽的御币（手里拿着是 item/hakurei_gohei_in_hand 这个 Java 模型，forge:separate_transforms 只有物品栏和展示框用平面图），
+# 和祭坛合成、拆蛋糕盒的声音（sounds.json：block.altar_craft 两个随机一个，entity.box）。只有本作品用，登记在作品资产表：
+# anim --作品 把回忆拼好给你 extract 女仆祭坛
+[["取材"]]
+"名称" = "女仆祭坛"
+"作品" = "把回忆拼好给你"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/女仆祭坛.模型.json", "assets/touhou_little_maid/models/bedrock/block/altar.json", "assets/touhou_little_maid/textures/bedrock/block/altar.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/蛋糕盒.模型.json", "assets/touhou_little_maid/models/bedrock/entity/cake_box.json", "assets/touhou_little_maid/textures/bedrock/entity/cake_box/cake_box_1.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/御币.模型.json", "御币=touhou_little_maid:item/hakurei_gohei_in_hand"],
+  ["python", "-m", "zipfile", "-e", "{jar:touhoulittlemaid}", "外层"],
+]
+["取材"."产物"]
+"模型/场景/女仆祭坛" = "src/模型/祭坛/女仆祭坛.模型.json"
+"贴图/场景/女仆祭坛" = "src/模型/祭坛/女仆祭坛.模型.png"
+"模型/物品/蛋糕盒" = "src/模型/祭坛/蛋糕盒.模型.json"
+"贴图/物品/蛋糕盒" = "src/模型/祭坛/蛋糕盒.模型.png"
+"模型/物品/御币" = "src/模型/祭坛/御币.模型.json"
+"贴图/物品/御币" = "src/模型/祭坛/御币.模型.png"
+"音效/把回忆拼好给你/touhou_little_maid.entity.box" = "外层/assets/touhou_little_maid/sounds/entity/box.ogg"
+"音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.1" = "外层/assets/touhou_little_maid/sounds/block/altar_craft_1.ogg"
+"音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2" = "外层/assets/touhou_little_maid/sounds/block/altar_craft_2.ogg"
+
+# 第 3 句祭坛柱顶摆的材料：车万女仆 spawn_box 配方（data/touhou_little_maid/recipes/altar/spawn_box.json）的六样，钻石用共用的 贴图/物品/钻石，这里取另外五样。
+# 只有本作品用，登记在作品资产表：anim --作品 把回忆拼好给你 extract 祭坛材料
+[["取材"]]
+"名称" = "祭坛材料"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/祭坛材料", "青金石=assets/minecraft/textures/item/lapis_lazuli.png", "金锭=assets/minecraft/textures/item/gold_ingot.png", "红石=assets/minecraft/textures/item/redstone.png", "铁锭=assets/minecraft/textures/item/iron_ingot.png", "煤炭=assets/minecraft/textures/item/coal.png"],
+]
+["取材"."产物"]
+"贴图/物品/祭坛材料/*" = "src/模型/祭坛材料/*.png"
+
 [["取材"]]
 "名称" = "基地工坊"
 "需要" = ["create", "client-1.20.1"]
@@ -1362,6 +1427,57 @@
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
+
+# 把回忆拼好给你 第 0 镜、片尾的启动器（作品 场/2-启动器）用的像素字：只收作品 界面/启动器字文案.txt 里的字，格式、取法同「把回忆拼好给你像素字」。
+# 单开一张表：并进 像素字文案.txt 会让 字体/把回忆拼好给你/像素字 换版本，已有画面跟着重渲。
+[["取材"]]
+"名称" = "把回忆拼好给你启动器字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "启动器字.json", "{作品根}/界面/启动器字文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/启动器字" = "启动器字.json"
+
+# 原版 1.20 樱花木船（库/物品/船.tsx；把回忆拼好给你 第 4 句日落划船）。BoatModel.createBodyModel（m_246613_）调同类静态的 createChildren（m_246203_），
+# 自带 128×64 贴图尺寸；部件 bottom、back、front、right、left、left_paddle、right_paddle、water_patch，划桨的转角在 船.tsx 照 BoatModel.animatePaddle 算
+[["取材"]]
+"名称" = "樱花木船"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/物品/船.模型.json", "船=net.minecraft.client.model.BoatModel:m_246613_()", "--贴图", "樱花木=assets/minecraft/textures/entity/boat/cherry.png"],
+]
+["取材"."产物"]
+"模型/物品/船" = "src/模型/物品/船.模型.json"
+"贴图/物品/船/樱花木" = "src/模型/物品/船.模型.png"
+
+# 把回忆拼好给你 第 4 句日落划船：原版船桨划水声（Boat.tick 里桨转过 π/4 时 playSound(paddle_water)，音量 1、音高 0.8～1.2）。
+# 只有本作品用，登记在作品资产表；id 多一层 把回忆拼好给你/，不落进「音效」那条的 音效/* 通配。
+[["取材"]]
+"名称" = "日落划船音效"
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.boat.paddle_water"],
+]
+["取材"."产物"]
+"音效/把回忆拼好给你/entity.boat.paddle_water.1" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.1.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.2" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.2.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.3" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.3.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.4" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.4.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.5" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.5.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.6" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.6.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.7" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.7.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.8" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.8.ogg"
 
 # 把回忆拼好给你 第 6、7 句（场/2-雷雨）：雷雨夜的雨（WeatherEffectRenderer 用的 rain.png）、光柱（信标光柱贴图）、女仆界面里的空槽图标和玩家背包里几样东西。
 # 只有本作品用，产物登记在作品资产表：anim --作品 把回忆拼好给你 extract 雷雨破云原版贴图
