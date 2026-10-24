@@ -83,3 +83,139 @@ id = "贴图/特效/附魔光泽"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
+
+[["资产"]]
+id = "贴图/环境/雨"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 environment/rain.png（64×256，四列雨丝），第 6 句雷雨夜的雨照 WeatherEffectRenderer 一格一片地画"
+
+[["资产"]]
+id = "贴图/特效/信标光柱"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/beacon_beam.png（16×16 竖条纹），第 7 句她脚下射上云层的光柱（三稿：光柱往上射，借信标光柱的画法）"
+
+[["资产"]]
+id = "贴图/界面/空槽/剑"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/empty_slot_sword.png，女仆界面主手槽的空槽图标"
+
+[["资产"]]
+id = "贴图/界面/空槽/头盔"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/empty_armor_slot_helmet.png，女仆界面护甲槽"
+
+[["资产"]]
+id = "贴图/界面/空槽/胸甲"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/empty_armor_slot_chestplate.png，女仆界面护甲槽"
+
+[["资产"]]
+id = "贴图/界面/空槽/护腿"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/empty_armor_slot_leggings.png，女仆界面护甲槽"
+
+[["资产"]]
+id = "贴图/界面/空槽/靴子"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/empty_armor_slot_boots.png，女仆界面护甲槽"
+
+[["资产"]]
+id = "贴图/界面/空槽/盾牌"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/empty_armor_slot_shield.png，女仆界面副手槽（法术书放进这里）"
+
+[["资产"]]
+id = "贴图/物品/面包"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/bread.png，女仆界面下方玩家背包里的一格"
+
+[["资产"]]
+id = "贴图/物品/樱花树苗"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/cherry_sapling.png（物品图标就是这张），女仆界面下方玩家背包里的一格"
+
+[["资产"]]
+id = "贴图/物品/橡木门"
+"类别" = "贴图"
+"来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/oak_door.png，第 6 句弹坑里浮着的门掉落物"
+
+[["资产"]]
+id = "贴图/界面/女仆界面/主"
+"类别" = "贴图"
+"来源" = "提取:女仆界面贴图@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_main.png（256×256），女仆界面底板；许可照取材清单「资产 CC BY-NC-SA 4.0」"
+
+[["资产"]]
+id = "贴图/界面/女仆界面/侧"
+"类别" = "贴图"
+"来源" = "提取:女仆界面贴图@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_side.png：血量、护甲、经验三条的图标和条"
+
+[["资产"]]
+id = "贴图/界面/女仆界面/按钮"
+"类别" = "贴图"
+"来源" = "提取:女仆界面贴图@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_button.png：家、拾取、骑乘开关和任务按钮"
+
+[["资产"]]
+id = "贴图/界面/女仆界面/背包"
+"类别" = "贴图"
+"来源" = "提取:女仆界面贴图@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 textures/gui/maid_gui_backpack.png：没装背包时的护甲、手持、六格和锁"
+
+[["资产"]]
+id = "贴图/界面/女仆界面/背饰槽"
+"类别" = "贴图"
+"来源" = "提取:女仆界面贴图@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 textures/slot/empty_back_show_slot.png：六格里最后一格（背饰展示）的空槽图标"
+
+[["资产"]]
+id = "贴图/物品/学徒法术书"
+"类别" = "贴图"
+"来源" = "提取:学徒法术书@54b5aaa52887"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "铁魔法 3.16.3 的 item/gold_spell_book.png（16×16，物品模型 item/generated，中文名「学徒法术书」）；第 7 句你放进她副手槽的那本"

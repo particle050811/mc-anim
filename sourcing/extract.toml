@@ -1324,3 +1324,92 @@
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
+
+# 把回忆拼好给你 第 6、7 句（场/2-雷雨）：雷雨夜的雨（WeatherEffectRenderer 用的 rain.png）、光柱（信标光柱贴图）、女仆界面里的空槽图标和玩家背包里几样东西。
+# 只有本作品用，产物登记在作品资产表：anim --作品 把回忆拼好给你 extract 雷雨破云原版贴图
+[["取材"]]
+"名称" = "雷雨破云原版贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/雷雨破云", "雨=assets/minecraft/textures/environment/rain.png", "信标光柱=assets/minecraft/textures/entity/beacon_beam.png", "空剑槽=assets/minecraft/textures/item/empty_slot_sword.png", "空头盔槽=assets/minecraft/textures/item/empty_armor_slot_helmet.png", "空胸甲槽=assets/minecraft/textures/item/empty_armor_slot_chestplate.png", "空护腿槽=assets/minecraft/textures/item/empty_armor_slot_leggings.png", "空靴子槽=assets/minecraft/textures/item/empty_armor_slot_boots.png", "空盾牌槽=assets/minecraft/textures/item/empty_armor_slot_shield.png", "面包=assets/minecraft/textures/item/bread.png", "樱花树苗=assets/minecraft/textures/block/cherry_sapling.png", "橡木门=assets/minecraft/textures/item/oak_door.png"],
+]
+["取材"."产物"]
+"贴图/环境/雨" = "src/模型/雷雨破云/雨.png"
+"贴图/特效/信标光柱" = "src/模型/雷雨破云/信标光柱.png"
+"贴图/界面/空槽/剑" = "src/模型/雷雨破云/空剑槽.png"
+"贴图/界面/空槽/头盔" = "src/模型/雷雨破云/空头盔槽.png"
+"贴图/界面/空槽/胸甲" = "src/模型/雷雨破云/空胸甲槽.png"
+"贴图/界面/空槽/护腿" = "src/模型/雷雨破云/空护腿槽.png"
+"贴图/界面/空槽/靴子" = "src/模型/雷雨破云/空靴子槽.png"
+"贴图/界面/空槽/盾牌" = "src/模型/雷雨破云/空盾牌槽.png"
+"贴图/物品/面包" = "src/模型/雷雨破云/面包.png"
+"贴图/物品/樱花树苗" = "src/模型/雷雨破云/樱花树苗.png"
+"贴图/物品/橡木门" = "src/模型/雷雨破云/橡木门.png"
+
+# 第 6 句末到第 7 句浮出来的女仆界面（车万女仆 1.5.3 的 MaidMainContainerGui 背包页，按 EmptyBackpackContainerScreen 的 blit 坐标拼）。
+[["取材"]]
+"名称" = "女仆界面贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/女仆界面", "主=assets/touhou_little_maid/textures/gui/maid_gui_main.png", "侧=assets/touhou_little_maid/textures/gui/maid_gui_side.png", "按钮=assets/touhou_little_maid/textures/gui/maid_gui_button.png", "背包=assets/touhou_little_maid/textures/gui/maid_gui_backpack.png", "背饰槽=assets/touhou_little_maid/textures/slot/empty_back_show_slot.png"],
+]
+["取材"."产物"]
+"贴图/界面/女仆界面/主" = "src/模型/女仆界面/主.png"
+"贴图/界面/女仆界面/侧" = "src/模型/女仆界面/侧.png"
+"贴图/界面/女仆界面/按钮" = "src/模型/女仆界面/按钮.png"
+"贴图/界面/女仆界面/背包" = "src/模型/女仆界面/背包.png"
+"贴图/界面/女仆界面/背饰槽" = "src/模型/女仆界面/背饰槽.png"
+
+# 第 7 句你放进女仆副手槽的那本书：铁魔法的学徒法术书（gold_spell_book，物品模型 item/generated，图标就是这张）。
+[["取材"]]
+"名称" = "学徒法术书"
+"作品" = "把回忆拼好给你"
+"需要" = ["irons_spellbooks"]
+"公开版" = "提取"
+"来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出模型", "{jar:irons_spellbooks}", "src/模型/物品/学徒法术书.png", "书=assets/irons_spellbooks/textures/item/gold_spell_book.png"],
+]
+["取材"."产物"]
+"贴图/物品/学徒法术书" = "src/模型/物品/学徒法术书.png"
+
+# 第 6 句的雨声、第 7 句光柱起来那一下（原版信标激活）。铁魔法的烈阳射线、装书声是闭源的，不拿。
+[["取材"]]
+"名称" = "雷雨破云音效"
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "weather.rain", "block.beacon.activate"],
+]
+["取材"."产物"]
+"音效/把回忆拼好给你/weather.rain.1" = "src/音效/把回忆拼好给你/weather.rain.1.ogg"
+"音效/把回忆拼好给你/weather.rain.2" = "src/音效/把回忆拼好给你/weather.rain.2.ogg"
+"音效/把回忆拼好给你/weather.rain.3" = "src/音效/把回忆拼好给你/weather.rain.3.ogg"
+"音效/把回忆拼好给你/weather.rain.4" = "src/音效/把回忆拼好给你/weather.rain.4.ogg"
+"音效/把回忆拼好给你/block.beacon.activate" = "src/音效/把回忆拼好给你/block.beacon.activate.ogg"
+
+# 女仆界面上的字（模组版本号、当前任务「空闲」、血量护甲经验的数）：只收 界面/女仆界面字文案.txt 里的字，格式同「把回忆拼好给你像素字」。
+# 单开一张表：不并进 像素字文案.txt，免得那份资产换版本、别的段跟着变指纹。
+[["取材"]]
+"名称" = "把回忆拼好给你女仆界面字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "女仆界面字.json", "{作品根}/界面/女仆界面字文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/女仆界面字" = "女仆界面字.json"
