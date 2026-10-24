@@ -86,27 +86,26 @@ export const 钻入回暖 = (q: number) => 平滑(clamp01(q / 钻入.透满));
 const 块数 = 图标边 / 碎片.碎块边;
 const 块界面边 = (图标框.边 * 碎片.碎块边) / 图标边;
 
-/** 一块碎片：第 (i, j) 块（从左上数），从 起 飞进图标框里它那一格；料 = 飞着时一开始是第 11 句碎掉的世界里的哪一块（碎片源图里那块正方形的左上角，按源图宽高的比例 0～1） */
-export type 碎块 = { i: number; j: number; 起: { x: number; y: number }; 起倍: number; 起帧: number; 料: { x: number; y: number } };
+/** 一块碎片：第 (i, j) 块（从左上数），从 起 飞进图标框里它那一格 */
+export type 碎块 = { i: number; j: number; 起: { x: number; y: number }; 起倍: number; 起帧: number };
 
-/** 64 块碎片，起点在图标框四周一圈（离图标中心 60～150 界面像素，方向、远近、起飞帧、大小、料取哪块都按散列定死） */
+/** 16 块碎片，起点在图标框四周一圈（离图标中心 碎片.远 界面像素，横向拉宽 1.6 倍贴合宽画面；方向、远近、起飞帧、大小都按散列定死） */
 export const 碎块们: readonly 碎块[] = Array.from({ length: 块数 * 块数 }, (_, n) => {
   const i = n % 块数, j = Math.floor(n / 块数);
   const 角 = Math.atan2(j - (块数 - 1) / 2, i - (块数 - 1) / 2) + (散(i, j, 1) - 0.5) * 2.2;
-  const 远 = 60 + 90 * 散(i, j, 2);
+  const 远 = 碎片.远[0] + (碎片.远[1] - 碎片.远[0]) * 散(i, j, 2);
   return {
     i,
     j,
     起: { x: 图标心.x + Math.cos(角) * 远 * 1.6, y: 图标心.y + Math.sin(角) * 远 },
     起倍: 碎片.起倍[0] + (碎片.起倍[1] - 碎片.起倍[0]) * 散(i, j, 3),
     起帧: 碎片.首帧 + Math.floor(散(i, j, 4) * 碎片.错开帧),
-    料: { x: 散(i, j, 5), y: 散(i, j, 6) },
   };
 });
 
-export type 碎块态 = { x: number; y: number; 边: number; 换: number; 到: boolean };
+export type 碎块态 = { x: number; y: number; 边: number; 到: boolean };
 
-/** 片尾第 f 帧（段内，0 = 片尾白光）这块碎片在哪（左上角，界面像素）、多大、换成照片换了多少；还没起飞的不画（null）、到了的就在格子里 */
+/** 片尾第 f 帧（段内，0 = 片尾白光）这块碎片在哪（左上角，界面像素）、多大；还没起飞的不画（null）、到了的就在格子里 */
 export const 碎块在 = (块: 碎块, f: number): 碎块态 | null => {
   if (f < 块.起帧) return null;
   const p = clamp01((f - 块.起帧) / 碎片.飞帧);
@@ -117,7 +116,7 @@ export const 碎块在 = (块: 碎块, f: number): 碎块态 | null => {
   // 中心从起点直线飞到格子中心
   const cx = 块.起.x + (终.x + 块界面边 / 2 - 块.起.x) * q;
   const cy = 块.起.y + (终.y + 块界面边 / 2 - 块.起.y) * q;
-  return { x: cx - 边 / 2, y: cy - 边 / 2, 边, 换: clamp01(p / 碎片.换完), 到: p >= 1 };
+  return { x: cx - 边 / 2, y: cy - 边 / 2, 边, 到: p >= 1 };
 };
 
 /** 片尾第 f 帧（段内）的白光不透明度：第 0 帧 白起（纯白），线性淡到回色前一帧的 白止，回色那一帧起没有 */

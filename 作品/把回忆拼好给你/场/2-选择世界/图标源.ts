@@ -15,5 +15,3 @@ const 新裁: 裁框 | undefined = undefined;
 export const 旧图标 = 褪色蒙灰(取图标(旧图));
 /** 片尾拼回来的新图标 */
 export const 新图标 = 取图标(新图, 新裁);
-/** 片尾飞进图标框的碎片的料：第 11 句碎掉的那片世界，就是旧合照那一帧 */
-export const 碎片源图 = 旧图;
