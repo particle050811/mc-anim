@@ -1,6 +1,6 @@
-// 第 11 句「绽」以后（按歌曲帧画）：最大那发炸开、咔哒一声闪白，画面定格，缩成一张拍立得（F2 截图，不画按键）；37.61 照片完好、后面的世界碎成方块往下掉；
-// 37.61 照片裁成正中的正方形、褪色蒙灰，分辨率一路降到 64×64，缩成画面中间的方形图标（第 0 镜「选择世界」里「新的世界」那个存档的图标），
-// 同一帧聊天栏冒出黄字「Steve退出了游戏」；37.94 缩好，图标和聊天行一起定到第 12 句。
+// 第 11 句「绽」以后（按歌曲帧画）：最大那发炸开、咔哒一声闪白，画面定格，缩成一张拍立得（F2 截图，不画按键）；37.61 照片后面的世界碎成方块往下掉，
+// 同一拍照片裁成正中的正方形、褪色蒙灰，分辨率一路降到 64×64，缩成画面中间的方形图标（第 0 镜「选择世界」里「新的世界」那个存档的图标），
+// 同一帧聊天栏冒出黄字「Steve退出了游戏」；37.94 缩好，图标和聊天行一起定到第 12 句。F2 截图当存档图标、缩的过程都是演绎（见 门口之夜参数.ts 的 照片帧、下线图标）。
 // 画法：定格帧起世界停在 照片帧（比定格帧晚 5 帧，白闪盖着看不出，见 门口之夜参数.ts），门口之夜画布 照常画（同一帧画出来逐像素一样），
 // 每帧画完由 捕获 把各层拼进一张离屏画布，再画到上面两张合成画布上：底下那张是压暗、碎成方块的世界，上面那张是相纸、照片、闪白。
 // 聊天栏夹在两张中间：它是游戏画面里的东西，照片盖在它上面，照片缩走时字从照片后面露出来，不横穿照片里的你和树苗（核查 10-24）。
@@ -17,7 +17,7 @@ import { 像素字 } from '../../界面/像素字.ts';
 import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
 import { 投影 } from '../../特效/拍立得.tsx';
 import { 下线图标, 卡片, 碎裂, 定格帧, 照片帧, 照片版式, 聊天缩放 } from './门口之夜参数.ts';
-import { 门口之夜画布 } from './门口之夜画布.tsx';
+import { 门口之夜画布, type 捕获层 } from './门口之夜画布.tsx';
 
 const 黄 = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 const 定帧 = 定格帧;
@@ -25,6 +25,14 @@ const 碎帧 = 正片事件.第11句碎裂.帧;
 const 下帧 = 正片事件.第11句下线.帧;
 
 const 插 = (a: number, b: number, t: number) => a + (b - a) * t;
+/** 把 门口之夜画布 交出来的各层按位置拼进 W×H 的离屏画布（远景那块比画面高、不从顶边起） */
+const 拼层 = (离屏: HTMLCanvasElement, 层们: readonly 捕获层[], W: number, H: number) => {
+  if (离屏.width !== W || 离屏.height !== H) Object.assign(离屏, { width: W, height: H });
+  const o = 离屏.getContext('2d')!;
+  o.imageSmoothingEnabled = false;
+  o.clearRect(0, 0, W, H);
+  for (const { 图, 左, 上, 宽, 高 } of 层们) o.drawImage(图, Math.round(左 * W), Math.round(上 * H), Math.round(宽 * W), Math.round(高 * H));
+};
 // 碎块晚几帧掉：确定性的小抖动
 const 抖 = (i: number, j: number) => {
   const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
@@ -62,7 +70,8 @@ const 画底 = (ctx: CanvasRenderingContext2D, 世界: HTMLCanvasElement, 帧: n
   ctx.fillRect(0, 0, W, H);
 };
 
-/** 画布 c 缩到 pw×ph：每次最多缩一半（一步缩太多，浏览器的插值会丢细节、出摩尔纹），最后一步正好到目标 */
+/** 画布 c 缩到 pw×ph：每次最多缩一半（一步缩太多，浏览器的插值会丢细节、出摩尔纹），最后一步正好到目标。
+ *  演绎：原版 resizeSubRectTo 是一步缩到 64×64（STB），这里为了缩的过程和落定的图标不花才分几步 */
 const 逐级缩 = (c: CanvasImageSource & { width: number; height: number }, sx: number, sy: number, sw: number, sh: number, pw: number, ph: number, filter = 'none') => {
   let 源: CanvasImageSource = c, [x, y, w, h] = [sx, sy, sw, sh];
   for (;;) {
@@ -156,14 +165,10 @@ export const 门口之夜照片: React.FC<{ 帧: number; 宽?: number; 高?: num
   const 离屏 = useMemo(() => document.createElement('canvas'), []);
   const 定了 = 帧 >= 定帧;
   const 合成 = useCallback(
-    (层们: readonly CanvasImageSource[]) => {
+    (层们: readonly 捕获层[]) => {
       const 底 = ref底.current, c = ref.current;
       if (!底 || !c) return;
-      if (离屏.width !== W || 离屏.height !== H) Object.assign(离屏, { width: W, height: H });
-      const o = 离屏.getContext('2d')!;
-      o.imageSmoothingEnabled = false;
-      o.clearRect(0, 0, W, H);
-      for (const 层 of 层们) o.drawImage(层, 0, 0, W, H);
+      拼层(离屏, 层们, W, H);
       画底(底.getContext('2d')!, 离屏, 帧, W, H);
       画卡(c.getContext('2d')!, 离屏, 帧, W, H);
     },
@@ -196,13 +201,10 @@ export const 门口之夜图标: React.FC<{ 边: number; 宽?: number; 高?: num
   const W = Math.round(宽 * dpr), H = Math.round(高 * dpr);
   const 离屏 = useMemo(() => document.createElement('canvas'), []);
   const 合成 = useCallback(
-    (层们: readonly CanvasImageSource[]) => {
+    (层们: readonly 捕获层[]) => {
       const c = ref.current;
       if (!c) return;
-      Object.assign(离屏, { width: W, height: H });
-      const o = 离屏.getContext('2d')!;
-      o.imageSmoothingEnabled = false;
-      for (const 层 of 层们) o.drawImage(层, 0, 0, W, H);
+      拼层(离屏, 层们, W, H);
       const ctx = c.getContext('2d')!;
       ctx.fillStyle = '#000';
       ctx.fillRect(0, 0, W, H);
