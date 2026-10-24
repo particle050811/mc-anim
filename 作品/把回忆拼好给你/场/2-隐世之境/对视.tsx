@@ -74,14 +74,21 @@ export const 空手拿: 手持物 = { 物品: null, 朝向: '原样' };
 /** 拿花的手在 举 = 0 时的样子（大臂、前臂、手各再转多少度，同 拿花），举起来时从这里转到 拿花；不给就是组件原样（右手胸前） */
 export type 拿花起手 = { 大臂: readonly number[]; 前臂: readonly number[]; 手: readonly number[] };
 
-/** 她和她手里的花：骨骼照 对视她骨骼 改（举：手举起来多少，0～1；起：举 = 0 时手在哪），花的握点放在改完以后的右手握持点上，正面朝 对视眼 */
-export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: number; 起?: 拿花起手 }> = ({ p, 举 = 1, 起 }) => {
-  const 改 = 对视她骨骼(p, 举, 起);
+/** 她和她手里的花：骨骼照 对视她骨骼 改（举：手举起来多少，0～1；起：举 = 0 时手在哪），花的握点放在改完以后的右手握持点上，正面朝 眼（不给 = 对视眼）。
+ *  叠骨骼：改完以后再整条盖上去的骨骼（15 尾她的笑要歪头） */
+export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: number; 起?: 拿花起手; 叠骨骼?: Record<string, BonePose>; 眼?: V3 }> = ({
+  p,
+  举 = 1,
+  起,
+  叠骨骼,
+  眼 = 对视眼,
+}) => {
+  const 改 = 叠骨骼 ? { ...对视她骨骼(p, 举, 起), ...叠骨骼 } : 对视她骨骼(p, 举, 起);
   const 手 = magicalWineFoxBoneAt(p.pose, { ...magicalWineFoxExBones(p), ...改 }, 'RightHandLocator');
   return (
     <>
       <MagicalWineFoxEx {...p} 骨骼={改} />
-      <亮月铃兰 在={手} 眼={对视眼} 歪={拿花.歪} 轮廓色={描边默认.开 ? 色板[调子].描边 : undefined} />
+      <亮月铃兰 在={手} 眼={眼} 歪={拿花.歪} 轮廓色={描边默认.开 ? 色板[调子].描边 : undefined} />
     </>
   );
 };
