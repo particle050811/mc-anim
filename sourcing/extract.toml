@@ -1324,3 +1324,52 @@
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
+
+# 把回忆拼好给你 第 9～11 句门口之夜：你种樱花树苗、插告示牌、放烟花。火花 spark_0～7 照 particles/firework.json 倒着排（年轻的火花用 spark_7，越老越小）；
+# 闪光 flash 是烟花炸开那一下的白光；手持图标照 models/item/*.json 的 layer0（樱花树苗手持用方块贴图）。只有本作品用，产物登记在作品资产表。
+[["取材"]]
+"名称" = "门口之夜贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/门口之夜", "火花0=assets/minecraft/textures/particle/spark_0.png", "火花1=assets/minecraft/textures/particle/spark_1.png", "火花2=assets/minecraft/textures/particle/spark_2.png", "火花3=assets/minecraft/textures/particle/spark_3.png", "火花4=assets/minecraft/textures/particle/spark_4.png", "火花5=assets/minecraft/textures/particle/spark_5.png", "火花6=assets/minecraft/textures/particle/spark_6.png", "火花7=assets/minecraft/textures/particle/spark_7.png", "闪光=assets/minecraft/textures/particle/flash.png", "烟花火箭=assets/minecraft/textures/item/firework_rocket.png", "樱花树苗=assets/minecraft/textures/block/cherry_sapling.png", "橡木告示牌图标=assets/minecraft/textures/item/oak_sign.png"],
+]
+["取材"."产物"]
+"贴图/粒子/火花/0" = "src/模型/门口之夜/火花0.png"
+"贴图/粒子/火花/1" = "src/模型/门口之夜/火花1.png"
+"贴图/粒子/火花/2" = "src/模型/门口之夜/火花2.png"
+"贴图/粒子/火花/3" = "src/模型/门口之夜/火花3.png"
+"贴图/粒子/火花/4" = "src/模型/门口之夜/火花4.png"
+"贴图/粒子/火花/5" = "src/模型/门口之夜/火花5.png"
+"贴图/粒子/火花/6" = "src/模型/门口之夜/火花6.png"
+"贴图/粒子/火花/7" = "src/模型/门口之夜/火花7.png"
+"贴图/粒子/闪光" = "src/模型/门口之夜/闪光.png"
+"贴图/物品/烟花火箭" = "src/模型/门口之夜/烟花火箭.png"
+"贴图/物品/樱花树苗" = "src/模型/门口之夜/樱花树苗.png"
+"贴图/物品/橡木告示牌图标" = "src/模型/门口之夜/橡木告示牌图标.png"
+
+# 把回忆拼好给你 第 9～11 句门口之夜的声音：种树苗（樱花树苗的放置声，原版 SoundType.CHERRY_SAPLING）、烟花发射、炸开、闪烁。
+# 插告示牌用共用的 音效/block.wood.place.*，不另取。镜头离烟花不到 16 格，照原版 FireworkParticles.Starter 用近处那套（不带 _far）。
+[["取材"]]
+"名称" = "门口之夜音效"
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "block.cherry_sapling.place", "entity.firework_rocket.launch", "entity.firework_rocket.blast", "entity.firework_rocket.large_blast", "entity.firework_rocket.twinkle"],
+]
+["取材"."产物"]
+"音效/把回忆拼好给你/block.cherry_sapling.place.1" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.1.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.2" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.2.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.3" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.3.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.4" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.4.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.5" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.5.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.6" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.6.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.launch" = "src/音效/把回忆拼好给你/entity.firework_rocket.launch.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.blast" = "src/音效/把回忆拼好给你/entity.firework_rocket.blast.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.large_blast" = "src/音效/把回忆拼好给你/entity.firework_rocket.large_blast.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.twinkle" = "src/音效/把回忆拼好给你/entity.firework_rocket.twinkle.ogg"

@@ -24,3 +24,83 @@ id = "音效/把回忆拼好给你/entity.cat.hiss.3"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版资源索引 minecraft/sounds/mob/cat/hiss3.ogg（对象 sha1 ab8845c4f44fb336cde822ca458e4dc831b1b2cc），1.09 秒；sounds.json 里 volume 0.4"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.cherry_sapling.place.1"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bamboo/sapling_place1.ogg（对象 sha1 01c5ba2d1645698cc2f6e462982bd4513a3e0d93），0.40 秒；sounds.json 里 volume 1.0。樱花树苗的放置声（原版 SoundType.CHERRY_SAPLING，借竹子树苗那组）。第 9 句你种树苗"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.cherry_sapling.place.2"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bamboo/sapling_place2.ogg（对象 sha1 1d407e006a12bb9e2085bd131f5858faca224c04），0.40 秒；sounds.json 里 volume 1.0。樱花树苗的放置声（原版 SoundType.CHERRY_SAPLING，借竹子树苗那组）。第 9 句你种树苗"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.cherry_sapling.place.3"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bamboo/sapling_place3.ogg（对象 sha1 e307581ed3bf3a02b5cc4ce695d63cbdddc7d771），0.41 秒；sounds.json 里 volume 1.0。樱花树苗的放置声（原版 SoundType.CHERRY_SAPLING，借竹子树苗那组）。第 9 句你种树苗"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.cherry_sapling.place.4"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bamboo/sapling_place4.ogg（对象 sha1 a2c9a38685d6935d092ed3e3a028c36f188a419f），0.40 秒；sounds.json 里 volume 1.0。樱花树苗的放置声（原版 SoundType.CHERRY_SAPLING，借竹子树苗那组）。第 9 句你种树苗"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.cherry_sapling.place.5"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bamboo/sapling_place5.ogg（对象 sha1 711c7bffbff757323d96b35444b64e39706a66ed），0.43 秒；sounds.json 里 volume 1.0。樱花树苗的放置声（原版 SoundType.CHERRY_SAPLING，借竹子树苗那组）。第 9 句你种树苗"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.cherry_sapling.place.6"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bamboo/sapling_place6.ogg（对象 sha1 7397aec16ab142151a3dc45f544907f2b1be4459），0.40 秒；sounds.json 里 volume 1.0。樱花树苗的放置声（原版 SoundType.CHERRY_SAPLING，借竹子树苗那组）。第 9 句你种树苗"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.firework_rocket.launch"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/fireworks/launch1.ogg（对象 sha1 b1715242916d56140486c612056ea4d6dd5a4404），1.63 秒；sounds.json 里 volume 1.0。烟花火箭发射（FireworkRocketEntity 第 0 刻放，音量 3）。第 10、11 句门口之夜"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.firework_rocket.blast"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/fireworks/blast1.ogg（对象 sha1 d9d7511e8944da0c7ab4ed2d3e3d964f98dd6997），1.00 秒；sounds.json 里 volume 1.0。小型球状烟花炸开（FireworkParticles.Starter，音量 20、音高 0.95～1.05）。第 10 句门口之夜"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.firework_rocket.large_blast"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/fireworks/largeblast1.ogg（对象 sha1 ef59205829f09ac4855c614a0e7046db820df18b），2.00 秒；sounds.json 里 volume 1.0。大型球状烟花炸开（同上，爆炸数 ≥ 3 或大型球）。第 11 句最后那发"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.firework_rocket.twinkle"
+"类别" = "音效"
+"来源" = "提取:门口之夜音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/fireworks/twinkle1.ogg（对象 sha1 41b9c631e9c1c40800b3b02a0ac5855d6ad4846d），1.33 秒；sounds.json 里 volume 1.0。带闪烁的烟花炸完后那串噼啪（Starter 生命到头时放，音高 0.9～1.05）。第 10 句门口之夜"
