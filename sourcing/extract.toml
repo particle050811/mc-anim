@@ -1735,3 +1735,35 @@
 "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.4" = "src/音效/把回忆拼好给你/entity.glow_item_frame.remove_item.4.ogg"
 "音效/把回忆拼好给你/block.bell.use.1" = "src/音效/把回忆拼好给你/block.bell.use.1.ogg"
 "音效/把回忆拼好给你/block.bell.use.4" = "src/音效/把回忆拼好给你/block.bell.use.4.ogg"
+
+# 把回忆拼好给你 第 0 镜、片尾的原版「选择世界」界面（作品 场/2-选择世界）：泥土底（gui/options_background.png，16×16，界面上一个贴图像素 2 个界面像素，
+# 上下两条乘 0.25、列表区乘 0.125，AbstractSelectionList.render）和存档那一行图标上的播放箭头（gui/world_selection.png，256×256：u 0 v 0 平常、v 32 指着图标）。
+# 只有本作品用，登记在作品资产表：anim --作品 把回忆拼好给你 extract 选择世界贴图
+[["取材"]]
+"名称" = "选择世界贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/选择世界", "泥土底=assets/minecraft/textures/gui/options_background.png", "播放箭头=assets/minecraft/textures/gui/world_selection.png"],
+]
+["取材"."产物"]
+"贴图/界面/选项背景" = "src/模型/选择世界/泥土底.png"
+"贴图/界面/世界选择" = "src/模型/选择世界/播放箭头.png"
+
+# 把回忆拼好给你 第 0 镜、片尾原版「选择世界」界面上的字（存档名、上次游玩时间、游戏模式和版本、搜索框的光标）：只收作品 界面/选择世界字文案.txt 里的字，
+# 格式、取法同「把回忆拼好给你像素字」。单开一张表：不让别的字体资产换版本
+[["取材"]]
+"名称" = "把回忆拼好给你选择世界字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "选择世界字.json", "{作品根}/界面/选择世界字文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/选择世界字" = "选择世界字.json"
