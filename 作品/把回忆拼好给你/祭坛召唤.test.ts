@@ -5,7 +5,7 @@ import 段 from './段/2-祭坛召唤/段.ts';
 import { 正片事件, 段窗口, 第几句, fps } from './分镜.ts';
 import * as 参 from './场/2-祭坛/参数.ts';
 import { 事, 刻, 你眼, 关键机位, 她编排, 手里, 挥手进度, 末帧, 窗口, 镜头态, 浮物态们, 光柱, 蛋糕没帧, 转头起帧 } from './场/2-祭坛/编排.ts';
-import { 地面高, 祭坛地形方块 } from './场/2-祭坛/地形.ts';
+import { 地面高 } from './场/2-祭坛/地形.ts';
 import { 末她, 末机, 末距, 末速, 眼珠 } from './场/2-祭坛/末态.ts';
 
 // 爱心粒子.tsx 顶上就解码贴图（打包时才有 asset:），这里只要它的出生和运动，换成一张 1×1 的 RGBA
@@ -73,7 +73,7 @@ const 仰角 = (g: number) => {
 const L = (g: number) => Math.log(距(镜头态(g).眼, 眼珠.右));
 const 歌曲帧们 = (a: number, b: number, 步 = 1) => Array.from({ length: Math.floor((b - a) / 步) + 1 }, (_, i) => a + i * 步);
 
-describe('2-祭坛召唤：第 3 句（洞底升出来摇到祭坛的远景，「光」那一拍切近景，推到右眼）', () => {
+describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」那一拍切近景，推到右眼）', () => {
   it('窗口从第 3 句首字到第 4 句首字（歌曲帧 201～283）', () => {
     const w = 段窗口('2-祭坛召唤');
     expect([w.起帧, w.止帧]).toEqual([201, 283]);
@@ -155,27 +155,15 @@ describe('2-祭坛召唤：第 3 句（洞底升出来摇到祭坛的远景，�
     for (let x = -4; x <= 4; x++) for (let y = -4; y <= 4; y++) expect(Math.abs(地面高(x, y))).toBe(0);
   });
 
-  it('洞：接第 2 句「头顶那格挖开」，祭坛南边那一列挖空 深 格、底下石头，四边是草方块下两格泥土；段首镜头在洞底（原版眼高 1.62）往上看', () => {
-    const 方块们 = Object.values(祭坛地形方块()).flat();
-    const 在 = new Map(方块们.map((b) => [b.位.join(','), b.状态]));
-    const [hx, hy] = 参.洞.格;
-    for (let k = -参.洞.深; k <= 2; k++) expect(在.get(`${hx},${hy},${k}`), `洞里 k ${k}`).toBeUndefined();
-    expect(在.get(`${hx},${hy},${-参.洞.深 - 1}`)).toBe('minecraft:stone');
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      expect(在.get(`${hx + dx},${hy + dy},-1`)).toMatch(/^minecraft:grass_block/);
-      for (let k = 2; k <= 参.洞.深; k++) expect(在.get(`${hx + dx},${hy + dy},${-k}`)).toBe('minecraft:dirt');
+  it('段首切过来就是祭坛（核查 10-24：洞底仰看只来得及三帧，删了）：镜头在地面上、平看着，圈心、两根前柱子一直在画里到切，头半秒鸟居也整个在画里', () => {
+    for (let g = 窗口.起帧; g < 事.切; g++) {
+      expect(镜头态(g).眼[2], `歌曲帧 ${g}`).toBeGreaterThan(1.62);
+      expect(仰角(g), `歌曲帧 ${g}`).toBeLessThanOrEqual(0.5);
+      expect(在画里(投(g, [0, 0, 0.05])), `歌曲帧 ${g} 圈心`).toBe(true);
+      for (const x of [-1.5, 1.5]) expect(在画里(投(g, [x, -3.5, 3])), `歌曲帧 ${g} 前柱顶 ${x}`).toBe(true);
     }
-    const c = 镜头态(窗口.起帧);
-    expect(c.眼[0]).toBeCloseTo(hx + 0.5, 9);
-    expect(c.眼[1]).toBeCloseTo(hy + 0.5, 9);
-    expect(c.眼[2]).toBeCloseTo(-参.洞.深 + 1.62, 9);
-    expect(仰角(窗口.起帧)).toBeGreaterThan(60);
-    // 升出洞口之前一直在洞那一列里（不擦洞壁）
-    for (let g = 窗口.起帧; g < 事.切; g += 0.25) {
-      const e = 镜头态(g).眼;
-      if (e[2] >= 0) break;
-      expect(e[0] > hx + 0.2 && e[0] < hx + 0.8 && e[1] > hy + 0.2 && e[1] < hy + 0.8, `歌曲帧 ${g}`).toBe(true);
-    }
+    // 头半秒鸟居整个在画里（认得出是祭坛），往下俯以后鸟居顶出画
+    for (let g = 窗口.起帧; g < 窗口.起帧 + fps / 2; g++) expect(在画里(投(g, [0, 3.5, 5.9])), `歌曲帧 ${g} 鸟居顶`).toBe(true);
   });
 
   it('远景看得懂因果（核查 10-24）：点祭坛起你一直露在两根前柱子中间，光柱罩下来、她出现都在远景里，切之前光柱亮着 5 帧以上、她站着 5 帧以上', () => {
@@ -213,7 +201,7 @@ describe('2-祭坛召唤：第 3 句（洞底升出来摇到祭坛的远景，�
     expect(距(镜头态(事.切 - 1).眼, 镜头态(事.切).眼)).toBeGreaterThan(5);
   });
 
-  it('镜头不赶（规矩 看得懂的速度）：升出洞口那一下每帧不过 0.45 格、摇不过 8°；祭坛立住以后远景、近景各自一共走不到 2.5 格，每帧不过 0.12 格；视角只收不放', () => {
+  it('镜头不赶（规矩 看得懂的速度）：段首升起那一下每帧不过 0.45 格、摇不过 8°；祭坛立住以后远景、近景各自一共走不到 2.5 格，每帧不过 0.12 格；视角只收不放', () => {
     const 走 = (a: number, b: number, 每帧: number) => {
       let 共 = 0;
       for (let g = a; g < b; g++) {

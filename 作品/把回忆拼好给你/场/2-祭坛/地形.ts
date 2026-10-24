@@ -5,7 +5,7 @@
 // 不转方向：方块和祭坛都对着世界的格子，鸟居朝北。
 import type { 方块 } from '@engine/model/方块拼搭.tsx';
 import { fbm, hash2, simplex2, smoothstep } from '@engine/core/噪声.ts';
-import { 你, 柱顶材料, 洞, 祭坛位, 新世界地形 } from './参数.ts';
+import { 你, 柱顶材料, 祭坛位, 新世界地形 } from './参数.ts';
 
 const { 平原, 樱花林 } = 新世界地形;
 const 噪 = simplex2(平原.种子);
@@ -247,15 +247,8 @@ export const 祭坛地形方块 = (): 祭坛地形方块 => {
       const 林 = 樱花林群系(i, j);
       const 放 = 放到(林);
       const h = 地面高(x, y);
-      const 离洞 = Math.abs(x - 洞.格[0]) + Math.abs(y - 洞.格[1]);
-      // 洞（参数.ts 洞）：那一列挖空 深 格，底下一格石头；四边的墙是草方块下面两格泥土
-      if (离洞 === 0) {
-        放({ 状态: 'minecraft:stone', 位: [x, y, h - 1 - 洞.深] });
-        continue;
-      }
       let 底 = h;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) 底 = Math.min(底, 地面高(x + dx, y + dy));
-      if (离洞 === 1) 底 = Math.min(底, h + 1 - 洞.深);
       放({ 状态: 有树.has(`${x},${y}`) ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [x, y, h - 1] });
       for (let k = h - 2; k >= 底 - 1; k--) 放({ 状态: h - 1 - k > 3 ? 'minecraft:stone' : 'minecraft:dirt', 位: [x, y, k] });
       if (有树.has(`${x},${y}`)) continue;
