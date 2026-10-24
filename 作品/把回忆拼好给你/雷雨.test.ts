@@ -143,6 +143,19 @@ describe('四周的地（用户 10-24「怎么超平坦背景」）', () => {
     expect(m.平原.some((b) => b.状态.startsWith('minecraft:oak_leaves'))).toBe(true);
   });
 
+  it('东北（第 7 句仰机位的右半边）地平线不是一条直线：屋子右后方 80～130 格有一道比平地高 6 格以上的山梁，梁上长着橡树', () => {
+    const 眼 = 参.机位们.仰.眼;
+    let 最高 = 0;
+    for (let 角 = 30; 角 <= 50; 角 += 2)
+      for (let d = 80; d <= 130; d += 4) {
+        const r = (角 * Math.PI) / 180;
+        最高 = Math.max(最高, 地面高(Math.round(眼[0] + d * Math.sin(r)), Math.floor(眼[1] + d * Math.cos(r))));
+      }
+    expect(最高).toBeGreaterThanOrEqual(6);
+    const 梁上 = 树们().filter((t) => t.种 === '橡' && Math.atan2(t.i - 眼[0], t.j - 眼[1]) > (25 * Math.PI) / 180 && Math.hypot(t.i - 眼[0], t.j - 眼[1]) > 70);
+    expect(梁上.length).toBeGreaterThanOrEqual(5);
+  });
+
   it('屋前那块平地和四周接得上：平地边上一圈地面高 0～1', () => {
     for (let i = -17; i <= 17; i++) expect(Math.abs(地面高(i, 13)), `i ${i}`).toBeLessThanOrEqual(1);
   });

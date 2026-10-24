@@ -1,4 +1,4 @@
-// 第 6、7 句屋子四周的地：屋前屋后那块平地（弹坑.ts）往外起伏的平原，西北边一道缓坡上是樱花林，零星几棵橡树。纯计算（不 import react、three），测试直接引。
+// 第 6、7 句屋子四周的地：屋前屋后那块平地（弹坑.ts）往外起伏的平原，西北边一道缓坡上是樱花林，东北两道山梁（近的长着橡树），零星几棵橡树。纯计算（不 import react、three），测试直接引。
 // 用户 10-24「而且怎么超平坦背景 合理吗？」：地平线上要有起伏、樱花林、树，远处照原版的雾淡出；屋子盖在第 1 句远处那片樱花林的边上，长法同 场/2-新世界/地形.ts
 //   （平原起伏一两格、樱花树照原版 CherryTrunkPlacer、CherryFoliagePlacer，地上铺粉红花簇；树的长法在 地点/原版树.ts），看得出是同一片地。
 // 不是存档导出的，手搓；随机都用定死的噪声和散列，同一组参数每次出一样的方块。只铺镜头看得到的北边一扇（镜头一直朝北），背后的不铺。
@@ -20,7 +20,17 @@ export const 橡树们: readonly (readonly [number, number, number])[] = [
   [-44, 96, 5],
   [64, 34, 5],
   [12, 92, 4],
+  [30, 40, 5],
+  [48, 30, 4],
 ];
+/** 东北的山梁（屋子右后方）：只有樱花林那一道坡的话，第 7 句仰机位右半边的地平线还是一条直线（核查 10-24）。
+ *  每道梁是一段线（从、到），离线 脚宽 格起坡、顶宽 以内到 高，按噪声扭；近的那道 90～120 格、长着橡树，远的那道压在原版雾边上（172.8～192 格）只剩个淡影。Agent 摆的 */
+export const 山梁们: readonly { 从: readonly [number, number]; 到: readonly [number, number]; 高: number; 脚宽: number; 顶宽: number }[] = [
+  { 从: [34, 78], 到: [112, 46], 高: 9, 脚宽: 26, 顶宽: 6 },
+  { 从: [70, 150], 到: [150, 96], 高: 16, 脚宽: 34, 顶宽: 8 },
+];
+/** 山梁上的橡树：每 树距 见方一格，离梁的线 林宽 以内、这一格的散列小于 成树率 才长（Agent 暂定） */
+export const 梁上树 = { 树距: 8, 林宽: 16, 成树率: 0.6 } as const;
 /** 铺的范围：镜头在屋子南边、一直朝北看。从 扇心 往北张开（第 7 句仰机位的眼在 (2.5, −30)，画面宽 94°），离 扇心 不超过 半径（> 雾止 192，雾里不露地形的边） */
 export const 地形范围 = { 南: -40, 扇心: [2.5, -34] as const, 扇宽: 30, 扇张: 1.2, 半径: 205, 植物半径: 90 } as const;
 
@@ -39,11 +49,27 @@ const 山高在 = (i: number, j: number) => {
   return L.山高 * smoothstep(L.山半径 * 扰, L.顶半径 * 扰, 距);
 };
 
+/** (i, j) 离一段线多远 */
+const 离线 = (i: number, j: number, a: readonly [number, number], b: readonly [number, number]) => {
+  const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+  const t = Math.max(0, Math.min(1, ((i - a[0]) * dx + (j - a[1]) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(i - a[0] - t * dx, j - a[1] - t * dy);
+};
+/** 东北那几道山梁在 (i, j) 有多高（格，小数），几道取最高 */
+const 梁高在 = (i: number, j: number) => {
+  let h = 0;
+  for (const L of 山梁们) {
+    const 扰 = 1 + 樱花林.山扰 * fbm(噪山, i + 500, j, 樱花林.山扰尺度, 3);
+    h = Math.max(h, L.高 * smoothstep(L.脚宽 * 扰, L.顶宽 * 扰, 离线(i, j, L.从, L.到)));
+  }
+  return h;
+};
+
 /** (i, j) 那一列地面顶的高度（整数格，屋前平地 0）：平地外 坡宽 格里起伏慢慢长满，樱花林那道坡也从平地边上起 */
 export const 地面高 = (i: number, j: number): number => {
   const 坡 = smoothstep(0, 平原.坡宽, 离平地(i, j));
   const 起伏 = 平原.起伏 * fbm(噪, i, j, 平原.起伏尺度, 3) + 平原.细起伏 * fbm(噪2, i, j, 平原.细起伏尺度, 2);
-  return Math.round((起伏 + 山高在(i, j)) * 坡);
+  return Math.round((起伏 + 山高在(i, j) + 梁高在(i, j)) * 坡);
 };
 
 /** 这一列铺不铺：平地（弹坑.ts 铺）以外、扇面以内 */
@@ -71,6 +97,16 @@ export const 树们 = (): 树[] => {
       out.push({ i, j, 种: '樱', 高: 0, 种子: gx * 131 + gy });
     }
   for (const [i, j, 高] of 橡树们) out.push({ i, j, 种: '橡', 高, 种子: i * 7 + j });
+  // 近的那道山梁上撒橡树（远的那道在雾里，树看不出来，不长）
+  const 梁 = 山梁们[0]!;
+  const T = 梁上树;
+  for (let gx = Math.floor((Math.min(梁.从[0], 梁.到[0]) - T.林宽) / T.树距); gx <= Math.ceil((Math.max(梁.从[0], 梁.到[0]) + T.林宽) / T.树距); gx++)
+    for (let gy = Math.floor((Math.min(梁.从[1], 梁.到[1]) - T.林宽) / T.树距); gy <= Math.ceil((Math.max(梁.从[1], 梁.到[1]) + T.林宽) / T.树距); gy++) {
+      const i = Math.round(gx * T.树距 + (hash2(gx, gy, 21) - 0.5) * T.树距 * 0.7);
+      const j = Math.round(gy * T.树距 + (hash2(gx, gy, 22) - 0.5) * T.树距 * 0.7);
+      if (离线(i, j, 梁.从, 梁.到) > T.林宽 || hash2(gx, gy, 23) > T.成树率) continue;
+      out.push({ i, j, 种: '橡', 高: 4 + Math.floor(hash2(gx, gy, 24) * 3), 种子: gx * 977 + gy });
+    }
   return out;
 };
 
