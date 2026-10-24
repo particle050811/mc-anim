@@ -26,6 +26,46 @@ id = "音效/把回忆拼好给你/entity.cat.hiss.3"
 "说明" = "原版资源索引 minecraft/sounds/mob/cat/hiss3.ogg（对象 sha1 ab8845c4f44fb336cde822ca458e4dc831b1b2cc），1.09 秒；sounds.json 里 volume 0.4"
 
 [["资产"]]
+id = "音效/把回忆拼好给你/weather.rain.1"
+"类别" = "音效"
+"来源" = "提取:雷雨破云音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/ambient/weather/rain1.ogg，约 2 秒；LevelRenderer 下雨时按 0.2 音量一下一下放。第 6 句雷雨夜"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/weather.rain.2"
+"类别" = "音效"
+"来源" = "提取:雷雨破云音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/ambient/weather/rain2.ogg，约 2 秒；LevelRenderer 下雨时按 0.2 音量一下一下放。第 6 句雷雨夜"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/weather.rain.3"
+"类别" = "音效"
+"来源" = "提取:雷雨破云音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/ambient/weather/rain3.ogg，约 2 秒；LevelRenderer 下雨时按 0.2 音量一下一下放。第 6 句雷雨夜"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/weather.rain.4"
+"类别" = "音效"
+"来源" = "提取:雷雨破云音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/ambient/weather/rain4.ogg，约 2 秒；LevelRenderer 下雨时按 0.2 音量一下一下放。第 6 句雷雨夜"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.beacon.activate"
+"类别" = "音效"
+"来源" = "提取:雷雨破云音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/beacon/activate.ogg，2.95 秒。第 7 句光柱起来那一下（铁魔法的烈阳射线声闭源，不拿）"
+
+[["资产"]]
 id = "音效/把回忆拼好给你/block.cherry_sapling.place.1"
 "类别" = "音效"
 "来源" = "提取:门口之夜音效@63ae7e6587af"
