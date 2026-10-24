@@ -9,11 +9,14 @@ import { CREEPER, type CreeperPose } from '@库/生物/苦力怕.tsx';
 import { fps, 段内正片事件帧, 段窗口 } from '../../分镜.ts';
 import { 门口 } from '../../地点/门口小木屋.tsx';
 import * as 参 from '../../场/2-门口/第8句参数.ts';
+import * as 八 from '../../场/2-门口/第8句.ts';
 import { 第8句照片们, type 像素画 } from '../../特效/照片画.ts';
 
 const 键 = '2-收集快乐';
 export const 事 = 段内正片事件帧(键);
 const 起帧 = 段窗口(键).起帧;
+/** 段内帧 → 歌曲帧（颗粒的种子用它，和核对段的静帧同一颗粒） */
+export const 歌曲帧 = (f: number) => 起帧 + f;
 /** 段内帧 → 歌上的秒（她的呼吸、尾巴按它走） */
 export const 歌秒 = (f: number) => (起帧 + f) / fps;
 const 站 = 门口.站排y;
@@ -111,25 +114,25 @@ export const 她态 = (f: number): 她态 => {
     // 冲进门洞：先蹲一下，再跳过去（抛物线），哈气那一拍落地
     const 跳起 = 事.冲出 + 参.冲出蓄力帧;
     const t = clamp01((f - 跳起 + 1) / (事.哈气 - 跳起 + 1));
-    const x = 插(参.收照片站位, 参.哈气站位.她, t);
+    const x = 插(参.收照片站位, 八.哈气站位.她, t);
     const z = 4 * 参.冲出跳高 * t * (1 - t);
     return {
       loc: [x, 站, z],
-      yaw: 参.哈气朝向.她,
+      yaw: 八.哈气朝向.她,
       姿势: '哈气',
       表情: f < 跳起 ? '惊讶' : '哈气',
-      骨骼: { ...参.哈气头, ...参.哈气爪 },
+      骨骼: { ...八.哈气头, ...八.哈气爪 },
       眨眼: 0,
     };
   }
   if (f < 事.苦力怕逃) {
-    return { loc: [参.哈气站位.她, 站, 0], yaw: 参.哈气朝向.她, 姿势: '哈气', 表情: '哈气', 骨骼: { ...参.哈气头, ...参.哈气爪 }, 眨眼: 0 };
+    return { loc: [八.哈气站位.她, 站, 0], yaw: 八.哈气朝向.她, 姿势: '哈气', 表情: '哈气', 骨骼: { ...八.哈气头, ...八.哈气爪 }, 眨眼: 0 };
   }
   // 回头冲你得意地一歪头：转身朝镜头，头转向你、歪过去（三帧歪到位），闭眼笑
   const 歪 = 参.得意歪 * clamp01((f - 事.苦力怕逃 + 1) / 3);
   const [俯仰, 左右] = 参.得意看;
   return {
-    loc: [参.哈气站位.她, 站, 0],
+    loc: [八.哈气站位.她, 站, 0],
     yaw: 180,
     姿势: '站',
     表情: '微笑',
@@ -147,32 +150,37 @@ const 开逃 = 事.苦力怕掉头 + 参.苦力怕掉头帧;
 const 排y = (x: number) => 插(参.苦力怕草丛后y, 站, clamp01((x + 5.75) / 1));
 
 export const 苦力怕态 = (f: number): CreeperPose => {
-  const 停 = 参.哈气站位.苦力怕;
+  const 停 = 八.哈气站位.苦力怕;
   if (f < 事.哈气) {
     const x = 停 - (走速 * (事.哈气 - f)) / fps;
     // 一直在走（不是从站着起步）；腿的相位按到哈气那一帧还差几秒倒推
     const 腿 = vanillaWalk(走速, 10 - (事.哈气 - f) / fps);
-    return { loc: [x, 排y(x), 0], yaw: 参.哈气朝向.苦力怕, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
+    return { loc: [x, 排y(x), 0], yaw: 八.哈气朝向.苦力怕, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
   }
-  if (f < 事.苦力怕掉头) return { loc: [停, 站, 0], yaw: 参.哈气朝向.苦力怕, ...参.苦力怕停步 };
+  if (f < 事.苦力怕掉头) return { loc: [停, 站, 0], yaw: 八.哈气朝向.苦力怕, ...八.苦力怕停步 };
   if (f < 开逃) {
     // 往右（顺时针）转过来：先正脸朝镜头，再朝西
     const k = f - 事.苦力怕掉头 + 1;
-    return { loc: [停, 站, 0], yaw: 参.哈气朝向.苦力怕 - (180 * k) / 参.苦力怕掉头帧, limbSwing: 0, stride: 0, headYaw: 0 };
+    return { loc: [停, 站, 0], yaw: 八.哈气朝向.苦力怕 - (180 * k) / 参.苦力怕掉头帧, limbSwing: 0, stride: 0, headYaw: 0 };
   }
   const 秒 = (f - 开逃 + 1) / fps;
   const x = 停 - 逃速 * 秒;
   const 腿 = vanillaWalk(逃速, 秒, true);
-  return { loc: [x, 排y(x), 0], yaw: 参.哈气朝向.苦力怕 - 180, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
+  return { loc: [x, 排y(x), 0], yaw: 八.哈气朝向.苦力怕 - 180, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
 };
 
 // ---------- 你 ----------
-/** 你一直站在箱子右边，面朝镜头、头转过去看着她 */
-export const 你态 = () => ({ x: 参.哈气站位.你, yaw: 参.哈气朝向.你, headYaw: 参.你的头, 倍数: 参.史蒂夫倍数 });
+/** 你一直站在箱子右边、面朝镜头；她冲出去之前转头看着她收照片，哈气那一拍转回来（同静帧），两帧转完 */
+export const 你态 = (f: number) => ({
+  x: 八.哈气站位.你,
+  yaw: 八.哈气朝向.你,
+  headYaw: 插(参.你看她, 八.你的头, clamp01((f - 事.哈气 + 2) / 2)),
+  倍数: 八.史蒂夫倍数,
+});
 
 // ---------- 气泡 ----------
 export const 气泡态 = (f: number): { 字: string; x: number } | null => {
   if (f < 事.哈气) return null;
-  if (f < 事.苦力怕逃) return { 字: 参.哈气气泡字, x: 参.哈气站位.她 };
-  return { 字: 参.得意气泡字, x: 参.哈气站位.她 };
+  if (f < 事.苦力怕逃) return { 字: 八.哈气气泡字, x: 八.哈气站位.她 };
+  return { 字: 参.得意气泡字, x: 八.哈气站位.她 };
 };

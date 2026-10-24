@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/2-收集快乐/段.ts';
 import { 正片事件, 段内正片事件帧, 段窗口, 第几句, fps } from './分镜.ts';
-import { 哈气站位, 收照片站位, 照片举位, 苦力怕草丛后y } from './场/2-门口/第8句参数.ts';
-import { 整屏镜头, 整屏镜头N, 门外草丛 } from './场/2-门口/整屏镜头.ts';
+import { 收照片站位, 照片举位, 苦力怕草丛后y } from './场/2-门口/第8句参数.ts';
+import { 哈气站位 } from './场/2-门口/第8句.ts';
+import { 整屏镜头, 整屏镜头N } from './场/2-门口/参数.ts';
+import { 门外草丛 } from './场/2-门口/门外草丛.ts';
 import { 第8句照片们, 照片像素, 照片尺寸 } from './特效/照片画.ts';
 
 describe('2-收集快乐：第 8 句整句一个镜头', () => {
