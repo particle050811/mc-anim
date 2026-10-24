@@ -1,12 +1,40 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/2-收集快乐/段.ts';
+import { 她态, 取景在, 墙上几张, 气泡态, 苦力怕态, 调子在, 下摇进度 } from './段/2-收集快乐/编排.ts';
 import { 正片事件, 段内正片事件帧, 段窗口, 第几句, fps } from './分镜.ts';
-import { 收照片站位, 照片举位, 照片举缩放, 照片落拍前帧, 照片落帧, 苦力怕前沿, 苦力怕走速, 苦力怕逃倍率, 苦力怕掉头帧, 纸声们, 纸声峰值, 纸声顺序 } from './场/2-门口/第8句参数.ts';
-import { 哈气站位, 第8句镜头 } from './场/2-门口/第8句.ts';
-import { 第8句照片们, 照片像素, 照片尺寸, 照片细分 } from './特效/照片画.ts';
-import { 源像素, 源尺寸 } from './特效/照片图.ts';
-import { 照片态 } from './段/2-收集快乐/照片编排.ts';
+import { 天体位置 } from './地点/天体.ts';
+import { 白天刻 } from './场/2-门口/参数.ts';
+import { 哈气站位, 第8句调子, 第8句镜头 } from './场/2-门口/第8句.ts';
+import {
+  下摇高,
+  太阳在画面,
+  挂照片声,
+  第8句天弧,
+  第8句末态,
+  苦力怕前沿,
+  苦力怕走速,
+  苦力怕逃倍率,
+  苦力怕掉头帧,
+  原声让哈气,
+} from './场/2-门口/第8句参数.ts';
+import { 第8句照片们 } from './特效/照片画.ts';
+import { 色板 } from './色板.ts';
+
+// asset: 资产打包时才有，照片四张在测试里换成 1×1 的图。编排.ts 引的 vanillaWalk、CREEPER、门口.站排y 在 史蒂夫.tsx、苦力怕.tsx、门口小木屋.tsx 里，
+// 那几个顶层就读模型、贴图（一路引到方块图集），换成桩：腿怎么摆这里不测；逃的速度照抄 CREEPER.speed.flee（groundSpeed(1.2)），站排y 照抄
+const 一像素 = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+const 逃速原版 = vi.hoisted(() => ((0.3 ** 2 * 0.98) / (1 - 0.6 * 0.91)) * 20);
+vi.mock('@库/角色/史蒂夫.tsx', () => ({ vanillaWalk: () => ({ limbSwing: 0, stride: 0 }) }));
+vi.mock('@库/生物/苦力怕.tsx', () => ({ CREEPER: { speed: { flee: 逃速原版 } } }));
+vi.mock('./地点/门口小木屋.tsx', () => ({ 门口: { 站排y: 0.5 } }));
+vi.mock('asset:贴图/照片/第3句递蛋糕', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第4句日落划船', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第5句扑龙蛋', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第7句光柱破云', () => ({ default: 一像素 }));
+
+const 事 = 段内正片事件帧('2-收集快乐');
+const 半宽格 = 1280 / 第8句镜头.取景.每格;
 
 describe('2-收集快乐：第 8 句整句一个镜头', () => {
   it('窗口从第 8 句首字到第 9 句首字（歌曲帧 611～687）', () => {
@@ -17,96 +45,105 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     expect(段.场窗口).toEqual({ 起帧: 611, 止帧: 687 });
   });
 
-  it('三稿的拍：收照片 25.67、26.10、26.53、26.95，苦力怕 26.53、27.38，哈气 27.80，淘 28.23（差不到半帧）', () => {
+  it('拍：落镜 26.10，挂照片 26.53「收」，看见苦力怕 27.38，哈气 27.80，淘 28.23（差不到半帧）；一时一个焦点：挂上了苦力怕才冒头', () => {
     const 对 = [
-      [正片事件.收照片一, 25.67], [正片事件.收照片二, 26.1], [正片事件.收照片三, 26.53], [正片事件.收照片四, 26.95],
-      [正片事件.苦力怕冒头, 26.53], [正片事件.苦力怕摸到背后, 27.38], [正片事件.哈气, 27.8], [正片事件.苦力怕逃, 28.23],
+      [正片事件.第8句落镜, 26.1], [正片事件.挂照片, 26.53], [正片事件.她看见苦力怕, 27.38], [正片事件.哈气, 27.8], [正片事件.苦力怕逃, 28.23],
     ] as const;
     for (const [e, 秒] of 对) expect(Math.abs(e.秒 - 秒)).toBeLessThan(0.5 / fps + 0.01);
     expect(正片事件.哈气.帧).toBe(667);
+    expect(事.第8句落镜).toBeLessThan(事.挂照片);
+    expect(事.挂照片).toBeLessThan(事.苦力怕冒头);
+    expect(事.苦力怕冒头).toBeLessThan(事.她看见苦力怕);
   });
 
-  it('cue：原声铺满整段；四声纸声最响的那一下落在收照片那一拍上、峰值配到同一档；哈气声在哈气前 2 帧起放；都不过段尾', () => {
-    const 事 = 段内正片事件帧('2-收集快乐');
+  it('cue：原声铺满整段（哈气那一截让一让）；挂照片声在挂照片那一帧起放；哈气声在哈气前 2 帧起放；没有纸声；都不过段尾', () => {
     const 声 = 段.声音 as 资产cue[];
-    expect(声.find((c) => c.名 === '原声')).toMatchObject({ 帧: 0, 帧数: 76, 入点秒: 611 / 24 });
-    const 纸 = 声.filter((c) => c.资产.startsWith('音效/item.book.page_turn'));
-    const 拍们 = [事.收照片一, 事.收照片二, 事.收照片三, 事.收照片四];
-    纸.forEach((c, i) => {
-      const 文件 = 纸声们[纸声顺序[i]!]!;
-      expect(c.资产).toBe(文件.资产);
-      // 文件里最响那一帧在段内哪一帧：cue 起点 − 入点
-      expect(c.帧 - Math.round((c.入点秒 ?? 0) * fps) + 文件.峰帧).toBe(拍们[i]);
-      expect(20 * Math.log10(c.增益 as number) + 文件.峰值).toBeCloseTo(纸声峰值, 3);
-    });
+    const 原 = 声.find((c) => c.名 === '原声')!;
+    expect(原).toMatchObject({ 帧: 0, 帧数: 76, 入点秒: 611 / 24 });
+    const 增益 = 原.增益 as number[];
+    expect(增益[事.哈气]).toBeCloseTo(原声让哈气.增益, 6);
+    expect(增益[0]).toBeGreaterThan(原声让哈气.增益);
+    const 挂 = 声.find((c) => c.名 === '挂照片')!;
+    expect(挂).toMatchObject({ 帧: 事.挂照片, 资产: 挂照片声.资产, 增益: 挂照片声.增益 });
+    expect(挂.帧数).toBe(Math.ceil(挂照片声.秒 * fps));
     expect(声.find((c) => c.名 === '哈气')!.帧).toBe(事.哈气 - 2);
+    expect(声.some((c) => c.资产.startsWith('音效/item.book.page_turn'))).toBe(false);
     for (const c of 声) expect(c.帧 + c.帧数).toBeLessThanOrEqual(段.帧数);
   });
 
-  it('照片：每张举着满尺寸至少 5 帧；拍上那一帧已经在往下落，拍后第 2 帧不见；下一张在上一张不见那一帧拿出来', () => {
-    const 事 = 段内正片事件帧('2-收集快乐');
-    const 拍们 = [事.收照片一, 事.收照片二, 事.收照片三, 事.收照片四];
-    const 满 = 拍们.map(() => 0);
+  it('镜头：段首在落定的取景上面 下摇高 格，一路往下、落镜那一帧起停在 第8句镜头；每帧中心落在偶数成片像素上', () => {
+    const 每格 = 第8句镜头.取景.每格;
+    expect(取景在(0).中心[1]).toBeCloseTo(第8句镜头.取景.中心[1] + 下摇高, 1);
     for (let f = 0; f < 段.帧数; f++) {
-      const 照 = 照片态(f);
-      if (照 && (照.阶段 === '举' || (照.阶段 === '落' && 照.t === 0))) 满[第8句照片们.indexOf(照.源 as (typeof 第8句照片们)[number])]! += 1;
+      const 中 = 取景在(f).中心;
+      expect(中[0]).toBe(第8句镜头.取景.中心[0]);
+      expect((中[1] * 每格) % 2).toBe(0);
+      if (f > 0) expect(中[1]).toBeLessThanOrEqual(取景在(f - 1).中心[1]);
+      if (f >= 事.第8句落镜) expect(中).toEqual(第8句镜头.取景.中心);
     }
-    for (const n of 满) expect(n).toBeGreaterThanOrEqual(5);
-    拍们.forEach((拍, i) => {
-      expect(照片态(拍)).toMatchObject({ 阶段: '落', 源: 第8句照片们[i] });
-      expect(照片态(拍)!.t).toBeGreaterThan(0);
-      expect(拍 - 照片落拍前帧 + 照片落帧).toBe(拍 + 2);
-      const 下一 = 照片态(拍 + 2);
-      expect(下一?.源 ?? null).toBe(第8句照片们[i + 1] ?? null);
-    });
+    expect(下摇进度(事.第8句落镜)).toBe(1);
   });
 
-  it('站位：哈气时苦力怕离你四五格；她收照片时站在箱子右边、离门洞一步多', () => {
-    expect(哈气站位.你 - 哈气站位.苦力怕).toBeGreaterThanOrEqual(4);
-    expect(哈气站位.你 - 哈气站位.苦力怕).toBeLessThanOrEqual(5);
-    // 箱子 x 0.56～1.44；她身子（± 0.3 格）不压箱子，帽檐（± 0.5 格）不碰你的胳膊（± 0.5 格）
-    expect(收照片站位 - 0.3).toBeGreaterThanOrEqual(1 + 7 / 16);
-    expect(收照片站位 + 0.5).toBeLessThan(哈气站位.你 - 0.5);
-    expect(收照片站位 - 哈气站位.她).toBeGreaterThan(1.5);
-    // 照片举着时悬在箱子上方、不盖她的脸（她脚底 ± 0.13 格），下边高过箱子（15/16 格）
-    const 宽 = (照片尺寸(第8句照片们[0]!).宽 / 16 / 照片细分) * 照片举缩放;
-    expect(照片举位[0] + 宽 / 2).toBeLessThan(收照片站位 - 0.13 - 0.05);
-    expect(Math.abs(照片举位[0] - 1)).toBeLessThan(0.25);
-    expect(照片举位[2]).toBeGreaterThan(15 / 16);
-    // 举着不动时照片像素是整的成片像素（N = 16 时 5 像素）
-    expect(Number.isInteger(照片举缩放 * 照片细分)).toBe(true);
+  it('调子：段首是第 7 句末的雨后暖阳，落镜起是 第8句调子', () => {
+    expect(调子在(0)).toEqual(色板.雨后暖阳);
+    expect(调子在(事.第8句落镜)).toEqual(第8句调子);
+    expect(调子在(段.帧数 - 1)).toEqual(第8句调子);
   });
 
-  it('苦力怕 26.53 前脚进画框、哈气那一拍停住，走速和原版追人（2.7 米/秒）差不到一成；逃出画框在段尾之前', () => {
+  it('太阳：白天刻 时落在 太阳在画面（门左上方的天上），整个在屋檐（x −1.5 起）左边、画框里', () => {
+    const 日 = 天体位置(白天刻, 第8句天弧).太阳;
+    const [中x, 中z] = 第8句镜头.取景.中心;
+    expect(日.x - 中x).toBeCloseTo(太阳在画面[0], 6);
+    expect(日.z - 中z).toBeCloseTo(太阳在画面[1], 6);
+    // 看得见的是本体 8 个贴图像素加两圈光晕（地点/天空.tsx），共 10 个贴图像素见方
+    const 半 = 5 / 16;
+    expect(日.x + 半).toBeLessThan(-1.5);
+    expect(日.x - 半).toBeGreaterThan(中x - 半宽格);
+    expect(日.z + 半).toBeLessThan(中z + 720 / 第8句镜头.取景.每格);
+  });
+
+  it('照片墙：墙上已经挂着前三张、第四只框空着；挂照片那一帧光柱破云进框；她左手拿着它直到挂上', () => {
+    expect(第8句照片们.map((p) => p.名)).toEqual(['递蛋糕', '日落划船', '扑龙蛋', '光柱破云']);
+    for (let f = 0; f < 段.帧数; f++) {
+      expect(墙上几张(f)).toBe(f < 事.挂照片 ? 3 : 4);
+      expect(她态(f).拿照片).toBe(f < 事.挂照片);
+    }
+  });
+
+  it('她整句站在门洞里（哈气站位.她）：哈气那一截侧身朝苦力怕哈气，前后都朝镜头', () => {
+    for (let f = 0; f < 段.帧数; f++) {
+      const 她 = 她态(f);
+      expect(她.loc[0]).toBe(哈气站位.她);
+      const 哈 = f >= 事.哈气 && f < 事.苦力怕逃;
+      expect(她.姿势).toBe(哈 ? '哈气' : '站');
+      expect(她.yaw).toBe(哈 ? 90 : 180);
+    }
+    expect(她态(事.她看见苦力怕).表情).toBe('惊讶');
+  });
+
+  it('苦力怕：冒头那一帧前脚刚进画框左边，哈气那一拍停在 哈气站位.苦力怕；冒头前不在画里；逃出画框在段尾之前', () => {
+    const 左沿 = -半宽格;
+    const 前脚 = (f: number) => 苦力怕态(f).loc[0] + 苦力怕前沿;
+    expect(前脚(事.苦力怕冒头)).toBeGreaterThanOrEqual(左沿);
+    expect(前脚(事.苦力怕冒头 - 1)).toBeLessThan(左沿);
+    expect(苦力怕态(事.哈气).loc[0]).toBe(哈气站位.苦力怕);
+    // 走速比原版追人（2.70 米/秒）快，但不到一倍半
     const 追 = (((1 * 0.25) ** 2 * 0.98) / (1 - 0.6 * 0.91)) * 20;
-    expect(Math.abs(苦力怕走速 / 追 - 1)).toBeLessThan(0.1);
-    const 左沿 = -1280 / 第8句镜头.取景.每格;
-    const 进画帧 = 正片事件.哈气.帧 - ((哈气站位.苦力怕 - (左沿 - 苦力怕前沿)) / 苦力怕走速) * fps;
-    expect(进画帧).toBeCloseTo(正片事件.苦力怕冒头.帧, 6);
-    const 逃 = 3.89 * 苦力怕逃倍率;
-    const 出画帧 = 正片事件.苦力怕掉头.帧 + 苦力怕掉头帧 + ((哈气站位.苦力怕 - (左沿 - 苦力怕前沿)) / 逃) * fps;
-    expect(出画帧).toBeLessThan(段窗口('2-收集快乐').止帧);
+    expect(苦力怕走速 / 追).toBeGreaterThan(1);
+    expect(苦力怕走速 / 追).toBeLessThan(1.5);
+    const 逃 = 逃速原版 * 苦力怕逃倍率;
+    const 出画帧 = 事.苦力怕掉头 + 苦力怕掉头帧 + ((哈气站位.苦力怕 - (左沿 - 苦力怕前沿)) / 逃) * fps;
+    expect(出画帧).toBeLessThan(段.帧数 - 1);
+    expect(苦力怕态(段.帧数 - 1).loc[0] + 苦力怕前沿).toBeLessThan(左沿);
   });
 
-  it('照片：64×36 的画面（比方块贴图细 4 倍）加白边 68×46', () => {
-    for (const 画 of 第8句照片们) {
-      expect(照片尺寸(画)).toEqual({ 宽: 68, 高: 46 });
-      expect(照片像素(画)).toHaveLength(68 * 46 * 4); // 小图字符没颜色、颜色写错都会抛
-    }
-  });
-
-  it('照片也吃现成的图：16:9、宽 64 的倍数，白边按比例补（128×72 → 136×92），场景里的大小和像素画一样', () => {
-    const w = 128, h = 72;
-    const px = new Uint8Array(w * h * 4);
-    for (let p = 0; p < w * h; p++) px.set([10, 20, 30, 255], p * 4);
-    const 源 = { 名: '测试', 图: { w, h, px } };
-    expect(源尺寸(源)).toEqual({ 宽: 136, 高: 92, 每格像素: 128 });
-    const 画 = 第8句照片们[0]!;
-    expect(源尺寸(画).宽 / 源尺寸(画).每格像素).toBe(136 / 128);
-    const out = 源像素(源);
-    expect(out).toHaveLength(136 * 92 * 4);
-    expect([...out.subarray(0, 4)]).toEqual([0xfb, 0xfa, 0xf6, 255]); // 左上角是相纸
-    expect([...out.subarray((4 * 136 + 4) * 4, (4 * 136 + 4) * 4 + 4)]).toEqual([10, 20, 30, 255]); // 图从 (4, 4) 起
-    expect(() => 源尺寸({ 名: '歪', 图: { w: 100, h: 72, px } })).toThrow();
+  it('末帧就是 第8句末态（第 9 句同机位匹配剪从这里接）：她朝镜头得意歪头、头顶「(✿◠‿◠)」，四张都在墙上', () => {
+    const f = 段.帧数 - 1;
+    const 她 = 她态(f);
+    expect(她.yaw).toBe(第8句末态.她.yaw);
+    expect(她.骨骼.Head!.rot).toEqual([-第8句末态.她.看[0], -第8句末态.她.看[1], 第8句末态.她.歪]);
+    expect(气泡态(f)).toEqual({ 字: 第8句末态.她.气泡, x: 第8句末态.她.x });
+    expect(墙上几张(f)).toBe(4);
+    expect(取景在(f)).toEqual(第8句镜头.取景);
   });
 });
