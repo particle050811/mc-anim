@@ -617,6 +617,38 @@
 "音效/把回忆拼好给你/entity.cat.hiss.2" = "src/音效/把回忆拼好给你/entity.cat.hiss.2.ogg"
 "音效/把回忆拼好给你/entity.cat.hiss.3" = "src/音效/把回忆拼好给你/entity.cat.hiss.3.ogg"
 
+# 把回忆拼好给你 正片的歌词艺术字（作品 界面/符文歌词.tsx）用的汉字点阵：只收 界面/歌词文案.txt（正片 15 句歌词）里的字，格式同上一条。
+# 单开一张表、不并进 像素字文案.txt：歌词的字和气泡、聊天栏的字各管各的，改了一边不让另一边的资产换版本。加字的步骤同上一条。
+[["取材"]]
+"名称" = "把回忆拼好给你歌词字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "歌词字.json", "{作品根}/界面/歌词文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/歌词字" = "歌词字.json"
+
+# 歌词艺术字的银河字母和附魔光泽（作品 界面/符文歌词.tsx）。ascii_sga.png 是原版字体 minecraft:alt（font/alt.json：附魔台界面那串咒语用它）的位图，
+# 16×16 格、一格 8×8，a～z 在第 6、7 行（码位 0x61～0x7A，大写同形）；附魔台飞字粒子 textures/particle/sga_a～z.png 和这里逐像素一样（10-24 核过），不另取。
+# enchanted_glint_item.png 是附魔物品表面那层流动的紫光。只有本作品用，产物登记在作品资产表：anim --作品 把回忆拼好给你 extract 银河字母
+[["取材"]]
+"名称" = "银河字母"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/歌词", "银河字母=assets/minecraft/textures/font/ascii_sga.png", "附魔光泽=assets/minecraft/textures/misc/enchanted_glint_item.png"],
+]
+["取材"."产物"]
+"贴图/界面/银河字母" = "src/模型/歌词/银河字母.png"
+"贴图/特效/附魔光泽" = "src/模型/歌词/附魔光泽.png"
+
 [["取材"]]
 "名称" = "基地工坊"
 "需要" = ["create", "client-1.20.1"]
