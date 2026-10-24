@@ -1,13 +1,14 @@
 // 原版聊天栏（没打开聊天框时）的游戏像素字版：行为照 聊天栏.tsx（1.20.1 ChatComponent.render），字换成像素字表、带原版阴影，画在成片分辨率的画布上。
 // 几何（界面像素）：界面高 = ceil(成片高 / 缩放)（Window 算界面尺寸向上取整），最新一行下沿在界面高 − 40，往上每行 9，最多 10 行；
-//   底板 x 0～332，黑，不透明度 int(255 × 系数 × 0.5)；系统消息左边 x 0～2 一条 #D0D0D0；字从 x 4、行顶下 1 像素起，白色、原版阴影（往右下偏、颜色 × 0.25）。
+//   底板 x 0～聊天宽 + 12（聊天宽默认 320；原版设置「聊天栏宽度」可调，见 原版聊天宽），黑，不透明度 int(255 × 系数 × 0.5)；系统消息左边 x 0～2 一条 #D0D0D0；字从 x 4、行顶下 1 像素起，白色、原版阴影（往右下偏、颜色 × 0.25）。
 // 寿命：系数 = clamp((1 − 年龄/200) × 10, 0, 1)²，字的不透明度 int(255 × 系数 × (1.0 × 0.9F + 0.1F))（聊天不透明度默认 1，float 相加后满亮是 254），
-//   ≤ 3 整行不画。年龄按整刻。不折行：超过 320 宽直接报错（原版会折）。
+//   ≤ 3 整行不画。年龄按整刻。不折行：超过聊天宽直接报错（原版会折）。
 import React, { useLayoutEffect, useRef } from 'react';
 import type { ChatLine, ChatSpan } from './聊天栏.tsx';
 import { 成片倍数, 行高, type 像素字体, type 字段 } from './像素字表.ts';
 
-const 聊天宽 = 320;
+/** 原版设置「聊天栏宽度」（0～1）对应的聊天宽（界面像素）：ChatComponent.getWidth = floor(设置 × 280 + 40)，默认 1 → 320 */
+export const 原版聊天宽 = (设置: number) => Math.floor(设置 * 280 + 40);
 const 最多行 = 10;
 const 底边让出 = 40;
 // ChatComponent：chatOpacity × (double)0.9F + (double)0.1F，默认 chatOpacity 1
@@ -42,10 +43,12 @@ export type 像素聊天栏属性 = {
   /** 页面尺寸，默认 1280×720 */
   宽?: number;
   高?: number;
+  /** 聊天宽（界面像素），默认 320（原版设置「聊天栏宽度」100%）；别的设置用 原版聊天宽 换算 */
+  聊天宽?: number;
 };
 
 /** 放在铺满画面、position 不是 static 的容器里，自己贴左下角 */
-export const 像素聊天栏: React.FC<像素聊天栏属性> = ({ lines, 刻, 缩放: s, 字体, 宽 = 1280, 高 = 720 }) => {
+export const 像素聊天栏: React.FC<像素聊天栏属性> = ({ lines, 刻, 缩放: s, 字体, 宽 = 1280, 高 = 720, 聊天宽 = 原版聊天宽(1) }) => {
   if (!Number.isInteger(s) || s < 1) throw new Error(`像素聊天栏的缩放要是正整数（成片像素），给的是 ${s}`);
   const ref = useRef<HTMLCanvasElement>(null);
   const 界面高 = Math.ceil((高 * 成片倍数) / s);
