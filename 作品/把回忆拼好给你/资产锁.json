@@ -47,6 +47,12 @@
     "大小": 368,
     "库": "store"
   },
+  "贴图/物品/寻风之铃": {
+    "sha256": "0cfb7b990f3ddeec72b4465090c2f3fc6149b4a757dc00c904e0a1c084fc89b3",
+    "后缀": ".png",
+    "大小": 619,
+    "库": "store"
+  },
   "贴图/物品/月铃兰": {
     "sha256": "57634f6c76b7743a4b6b1c1b49e0eeb6afd279e02f91d91fe98695cddd5f4de4",
     "后缀": ".png",
@@ -99,6 +105,78 @@
     "sha256": "91d657654ca81565b86a41867be21f2b304987184cc6e73424e85619f86b1f2b",
     "后缀": ".png",
     "大小": 771,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_0": {
+    "sha256": "393dd3827c67eab44089a327bc1b060dd0aa6b04de166fc5068ac80439669f87",
+    "后缀": ".png",
+    "大小": 91,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_1": {
+    "sha256": "3485b3d06d0dce3f2f0dbfe2a3d1edd8689005a33b83e9f9fd7ad3102233faaf",
+    "后缀": ".png",
+    "大小": 89,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_10": {
+    "sha256": "26d6cfba1620b32df5b5e1282ef98f1ee0ad0bddc945cb6e6158a7aebbaca691",
+    "后缀": ".png",
+    "大小": 90,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_11": {
+    "sha256": "c8fb7b1601129dac1edf4e8624873f982ec5bc577bdef1e1e4776df51deed04b",
+    "后缀": ".png",
+    "大小": 89,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_2": {
+    "sha256": "01f164bff5fdc9fb69986dd04d09ea2bf5e0a3d9c574cba59d2ad0997b8bff21",
+    "后缀": ".png",
+    "大小": 91,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_3": {
+    "sha256": "a3ccdf05674837362335a5dcb61e7f5178776ee86de995f48e0c5ad550c62b77",
+    "后缀": ".png",
+    "大小": 89,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_4": {
+    "sha256": "8e50e7c7a052938607bfb6fbfd2fe211613c5e697d603c27c66efe7b32974157",
+    "后缀": ".png",
+    "大小": 89,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_5": {
+    "sha256": "dbca0f87044528f8313a484f8d38922833f8f609fa65bb881b79cf3dc21f990a",
+    "后缀": ".png",
+    "大小": 89,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_6": {
+    "sha256": "46e5cd6a78882dd67b34682b2404ad670ada2b62db90656ab43a12eb06c22158",
+    "后缀": ".png",
+    "大小": 93,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_7": {
+    "sha256": "3e856c9e0ebd1ed8ac3ec5327ba279a21c1d5bd7fb9358afaaadac40c2d0ae27",
+    "后缀": ".png",
+    "大小": 92,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_8": {
+    "sha256": "8bf26996be739ce17d3655743d465151e6b09fda4717dbc770e3ef2862a1ce8b",
+    "后缀": ".png",
+    "大小": 93,
+    "库": "store"
+  },
+  "贴图/粒子/樱花/cherry_9": {
+    "sha256": "f700046aa39316d6e099d9421aa993541118d44b7b53ff4cdcce5be8d12c3f41",
+    "后缀": ".png",
+    "大小": 90,
     "库": "store"
   },
   "贴图/粒子/火花/0": {
@@ -160,6 +238,24 @@
     "后缀": ".m4a",
     "大小": 452393,
     "库": "私有"
+  },
+  "音效/block.wooden_door.open.1": {
+    "sha256": "0f6799c9b410bfd11a44d185cc617e47316d885d6615b0882297af995c62959d",
+    "后缀": ".ogg",
+    "大小": 6820,
+    "库": "store"
+  },
+  "音效/block.wooden_door.open.2": {
+    "sha256": "d051a29e4469c1433744825b63185dbfb59d62b89151a38ab96bfd3aa5125432",
+    "后缀": ".ogg",
+    "大小": 7472,
+    "库": "store"
+  },
+  "音效/万法皆通/wind_seeking_bell": {
+    "sha256": "a43ff1f9b22edbfcb47467f5060d47dc177394b4e1a0c4ffb36cc9006322f1b8",
+    "后缀": ".ogg",
+    "大小": 28634,
+    "库": "store"
   },
   "音效/把回忆拼好给你/block.cherry_sapling.place.1": {
     "sha256": "c205bf475fc1d7d88e8c26cc85f5fadbe5e6878a863fa55be733e446a70389a8",

@@ -35,8 +35,14 @@ const 系统竖条 = [208, 208, 208]; // #D0D0D0，GuiMessageTag.system()
 /** 封面版聊天行的黑条（页面像素），按 像素字 量字宽 */
 export const 封面聊天行框 = (文字 = 'Steve加入了游戏', 布局 = 封面聊天): 框 => 封面聊天框(像素字.字宽(文字), 布局);
 
-/** 封面版聊天行：一行原版聊天（黑条半透明、左边系统竖条、字带原版阴影），刚出来那一刻的不透明度 */
-export const 封面聊天行: React.FC<{ 文字?: string; 色?: string; 布局?: typeof 封面聊天 }> = ({ 文字 = 'Steve加入了游戏', 色 = 黄, 布局 = 封面聊天 }) => {
+/** 封面版聊天行：一行原版聊天（黑条半透明、左边系统竖条、字带原版阴影），刚出来那一刻的不透明度。
+ *  竖条 = false 不画左边那根灰竖条（第 15 句封面，主会话 10-24 美术定稿：去掉 B 站封面左边那根灰竖条），黑条照旧从 0 起 */
+export const 封面聊天行: React.FC<{ 文字?: string; 色?: string; 布局?: typeof 封面聊天; 竖条?: boolean }> = ({
+  文字 = 'Steve加入了游戏',
+  色 = 黄,
+  布局 = 封面聊天,
+  竖条 = true,
+}) => {
   const s = 布局.缩放;
   if (!Number.isInteger(s) || s < 1) throw new Error(`封面聊天行的缩放要是正整数（成片像素），给的是 ${s}`);
   const ref = useRef<HTMLCanvasElement>(null);
@@ -48,8 +54,10 @@ export const 封面聊天行: React.FC<{ 文字?: string; 色?: string; 布局?:
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.fillStyle = `rgba(0,0,0,${a.底 / 255})`;
     ctx.fillRect(0, 0, 宽 * s, 9 * s);
-    ctx.fillStyle = `rgba(${系统竖条.join(',')},${a.字 / 255})`;
-    ctx.fillRect(0, 0, 2 * s, 9 * s);
+    if (竖条) {
+      ctx.fillStyle = `rgba(${系统竖条.join(',')},${a.字 / 255})`;
+      ctx.fillRect(0, 0, 2 * s, 9 * s);
+    }
     像素字.画(ctx, 文字, { x: 0, y: 0 }, 4, 1, 色, s, { 阴影: true, 不透明度: a.字 });
   });
   const b = 封面聊天框(像素字.字宽(文字), 布局);
