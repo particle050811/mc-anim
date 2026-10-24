@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/2-收集快乐/段.ts';
 import { 正片事件, 段内正片事件帧, 段窗口, 第几句, fps } from './分镜.ts';
-import { 收照片站位, 照片举位, 照片举缩放, 苦力怕走倍率, 苦力怕逃倍率, 苦力怕掉头帧 } from './场/2-门口/第8句参数.ts';
+import { 收照片站位, 照片举位, 照片举缩放, 苦力怕走倍率, 苦力怕逃倍率, 苦力怕掉头帧, 纸声们, 纸声峰值, 纸声顺序 } from './场/2-门口/第8句参数.ts';
 import { 哈气站位, 第8句镜头 } from './场/2-门口/第8句.ts';
 import { 第8句照片们, 照片像素, 照片尺寸, 照片细分 } from './特效/照片画.ts';
 
@@ -24,12 +24,19 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     expect(正片事件.哈气.帧).toBe(667);
   });
 
-  it('cue：原声铺满整段；四声纸声在四张照片落进去之前 3 帧起放；哈气声在哈气前 2 帧起放；都不过段尾', () => {
+  it('cue：原声铺满整段；四声纸声最响的那一下落在收照片那一拍上、峰值配到同一档；哈气声在哈气前 2 帧起放；都不过段尾', () => {
     const 事 = 段内正片事件帧('2-收集快乐');
     const 声 = 段.声音 as 资产cue[];
     expect(声.find((c) => c.名 === '原声')).toMatchObject({ 帧: 0, 帧数: 76, 入点秒: 611 / 24 });
     const 纸 = 声.filter((c) => c.资产.startsWith('音效/item.book.page_turn'));
-    expect(纸.map((c) => c.帧)).toEqual([事.收照片一, 事.收照片二, 事.收照片三, 事.收照片四].map((f) => f - 3));
+    const 拍们 = [事.收照片一, 事.收照片二, 事.收照片三, 事.收照片四];
+    纸.forEach((c, i) => {
+      const 文件 = 纸声们[纸声顺序[i]!]!;
+      expect(c.资产).toBe(文件.资产);
+      // 文件里最响那一帧在段内哪一帧：cue 起点 − 入点
+      expect(c.帧 - Math.round((c.入点秒 ?? 0) * fps) + 文件.峰帧).toBe(拍们[i]);
+      expect(20 * Math.log10(c.增益 as number) + 文件.峰值).toBeCloseTo(纸声峰值, 3);
+    });
     expect(声.find((c) => c.名 === '哈气')!.帧).toBe(事.哈气 - 2);
     for (const c of 声) expect(c.帧 + c.帧数).toBeLessThanOrEqual(段.帧数);
   });
