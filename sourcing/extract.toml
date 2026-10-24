@@ -706,6 +706,50 @@
 "模型/物品/女仆床" = "src/模型/物品/女仆床.模型.json"
 "贴图/物品/女仆床" = "src/模型/物品/女仆床.模型.png"
 
+# 把回忆拼好给你 第 3 句祭坛召唤：车万女仆的女仆祭坛（多方块搭好以后整座由一个方块实体画这个基岩模型，TileEntityAltarRenderer）、
+# 召唤出来的蛋糕盒（EntityBox，贴图 cake_box_0～7 随机一张，这里取红底金花的 1，和樱花林的粉、草地的绿拉得开）、
+# 博丽的御币（手里拿着是 item/hakurei_gohei_in_hand 这个 Java 模型，forge:separate_transforms 只有物品栏和展示框用平面图），
+# 和祭坛合成、拆蛋糕盒的声音（sounds.json：block.altar_craft 两个随机一个，entity.box）。只有本作品用，登记在作品资产表：
+# anim --作品 把回忆拼好给你 extract 女仆祭坛
+[["取材"]]
+"名称" = "女仆祭坛"
+"作品" = "把回忆拼好给你"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/女仆祭坛.模型.json", "assets/touhou_little_maid/models/bedrock/block/altar.json", "assets/touhou_little_maid/textures/bedrock/block/altar.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/蛋糕盒.模型.json", "assets/touhou_little_maid/models/bedrock/entity/cake_box.json", "assets/touhou_little_maid/textures/bedrock/entity/cake_box/cake_box_1.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/祭坛/御币.模型.json", "御币=touhou_little_maid:item/hakurei_gohei_in_hand"],
+  ["python", "-m", "zipfile", "-e", "{jar:touhoulittlemaid}", "外层"],
+]
+["取材"."产物"]
+"模型/场景/女仆祭坛" = "src/模型/祭坛/女仆祭坛.模型.json"
+"贴图/场景/女仆祭坛" = "src/模型/祭坛/女仆祭坛.模型.png"
+"模型/物品/蛋糕盒" = "src/模型/祭坛/蛋糕盒.模型.json"
+"贴图/物品/蛋糕盒" = "src/模型/祭坛/蛋糕盒.模型.png"
+"模型/物品/御币" = "src/模型/祭坛/御币.模型.json"
+"贴图/物品/御币" = "src/模型/祭坛/御币.模型.png"
+"音效/把回忆拼好给你/touhou_little_maid.entity.box" = "外层/assets/touhou_little_maid/sounds/entity/box.ogg"
+"音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.1" = "外层/assets/touhou_little_maid/sounds/block/altar_craft_1.ogg"
+"音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2" = "外层/assets/touhou_little_maid/sounds/block/altar_craft_2.ogg"
+
+# 第 3 句祭坛柱顶摆的材料：车万女仆 spawn_box 配方（data/touhou_little_maid/recipes/altar/spawn_box.json）的六样，钻石用共用的 贴图/物品/钻石，这里取另外五样。
+# 只有本作品用，登记在作品资产表：anim --作品 把回忆拼好给你 extract 祭坛材料
+[["取材"]]
+"名称" = "祭坛材料"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/祭坛材料", "青金石=assets/minecraft/textures/item/lapis_lazuli.png", "金锭=assets/minecraft/textures/item/gold_ingot.png", "红石=assets/minecraft/textures/item/redstone.png", "铁锭=assets/minecraft/textures/item/iron_ingot.png", "煤炭=assets/minecraft/textures/item/coal.png"],
+]
+["取材"."产物"]
+"贴图/物品/祭坛材料/*" = "src/模型/祭坛材料/*.png"
+
 [["取材"]]
 "名称" = "基地工坊"
 "需要" = ["create", "client-1.20.1"]
