@@ -859,7 +859,7 @@
 "来源" = "原版 Minecraft 1.20.1"
 "许可" = "Mojang EULA"
 "步骤" = [
-  ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/樱花林.贴图", "cherry_log=assets/minecraft/textures/block/cherry_log.png", "cherry_log_top=assets/minecraft/textures/block/cherry_log_top.png", "cherry_leaves=assets/minecraft/textures/block/cherry_leaves.png", "grass_block_top=assets/minecraft/textures/block/grass_block_top.png", "pink_petals=assets/minecraft/textures/block/pink_petals.png", "pink_petals_stem=assets/minecraft/textures/block/pink_petals_stem.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/樱花林.贴图", "cherry_log=assets/minecraft/textures/block/cherry_log.png", "cherry_log_top=assets/minecraft/textures/block/cherry_log_top.png", "cherry_leaves=assets/minecraft/textures/block/cherry_leaves.png", "grass_block_top=assets/minecraft/textures/block/grass_block_top.png", "pink_petals=assets/minecraft/textures/block/pink_petals.png"],
 ]
 ["取材"."产物"]
 "贴图/场景/樱花林/*" = "src/模型/场景/樱花林.贴图/*.png"

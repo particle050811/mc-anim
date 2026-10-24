@@ -35,10 +35,3 @@ id = "贴图/场景/樱花林/pink_petals"
 "来源" = "提取:樱花林贴图@56b71336d2b4"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
-
-[["资产"]]
-id = "贴图/场景/樱花林/pink_petals_stem"
-"类别" = "贴图"
-"来源" = "提取:樱花林贴图@56b71336d2b4"
-"许可" = "LicenseRef-Minecraft-EULA"
-"可见性" = "提取"
