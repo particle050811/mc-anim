@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { 正片事件 } from '../../分镜.ts';
-import { 地面高, 新世界方块 } from './地形.ts';
-import { 你, 地形雾, 张望, 机位们, 樱花林, 雾色 } from './参数.ts';
+import { 地面高, 平原花, 新世界方块 } from './地形.ts';
+import { 你, 地形范围, 地形雾, 机位们, 樱花林, 雾色 } from './参数.ts';
 import { 你在, 机位在, 走出 } from './编排.ts';
 
 describe('新世界的地形', () => {
@@ -26,6 +26,31 @@ describe('新世界的地形', () => {
     expect(a.樱花林.some((x) => x.状态.startsWith('minecraft:pink_petals'))).toBe(true);
     expect(a.平原.some((x) => x.状态.includes('cherry'))).toBe(false);
   });
+  it('樱花树照原版长出斜枝：有横着的樱花原木（axis=x 或 z），叶子团挂在枝头', () => {
+    const { 樱花林: 林 } = 新世界方块();
+    expect(林.some((x) => x.状态 === 'minecraft:cherry_log[axis=x]' || x.状态 === 'minecraft:cherry_log[axis=z]')).toBe(true);
+    const 木 = 林.filter((x) => x.状态.startsWith('minecraft:cherry_log'));
+    const 叶 = 林.filter((x) => x.状态 === 'minecraft:cherry_leaves');
+    expect(叶.length).toBeGreaterThan(木.length * 3);
+  });
+  it('树枝树叶不钻进地里', () => {
+    const { 樱花林: 林, 平原: 原 } = 新世界方块();
+    for (const b of [...林, ...原]) if (/log|leaves/.test(b.状态)) expect(b.位[2]).toBeGreaterThanOrEqual(地面高(b.位[0], b.位[1]));
+  });
+  it('平原的花照原版 flower_plain：出生点到樱花林这一路上有郁金香，也有别的花', () => {
+    const 花 = new Set<string>();
+    for (let j = 0; j <= 地形范围.植物半径; j += 2) for (let i = -40; i <= 60; i += 2) 花.add(平原花(i, j));
+    expect([...花].some((x) => x.endsWith('_tulip'))).toBe(true);
+    expect(花.has('minecraft:dandelion')).toBe(true);
+    expect([...花].some((x) => /poppy|azure_bluet|oxeye_daisy|cornflower/.test(x))).toBe(true);
+  });
+  it('樱花林的山不是同心圆：同一个离心距离上，各方向的高差得出两格以上', () => {
+    const 高们 = Array.from({ length: 24 }, (_, k) => {
+      const a = (k / 24) * Math.PI * 2;
+      return 地面高(Math.round(樱花林.心[0] + Math.cos(a) * 28), Math.round(樱花林.心[1] + Math.sin(a) * 28));
+    });
+    expect(Math.max(...高们) - Math.min(...高们)).toBeGreaterThanOrEqual(2);
+  });
 });
 
 describe('镜头和你', () => {
@@ -45,10 +70,5 @@ describe('镜头和你', () => {
     // 原版走速 4.317：走一秒（起步加速一点点）差不多 4 格
     expect(走出(1)).toBeGreaterThan(3.9);
     expect(走出(1)).toBeLessThan(4.317);
-  });
-  it('张望：转过去再转回来', () => {
-    expect(你在(正片事件.第1句张望.帧).头).toBe(0);
-    expect(Math.abs(你在(正片事件.第1句张望.帧 + 8).头)).toBeGreaterThan(30);
-    expect(你在(正片事件.第1句张望.帧 + 张望.帧 * 2 + 张望.停).头).toBe(0);
   });
 });

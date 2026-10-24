@@ -1,9 +1,9 @@
-// 新世界这一场每一帧的样子：镜头在哪（钻进图标时往前冲、落定后往粉色推）、你（史蒂夫）站哪、朝哪、头转没转、走了几步。纯计算（不 import react、three），测试直接引。
+// 新世界这一场每一帧的样子：镜头在哪（钻进图标时往前冲、落定后往粉色推）、你（史蒂夫）站哪、朝哪、走了几步。纯计算（不 import react、three），测试直接引。
 // 钻入、推镜的进度由段算好传进来（钻入的帧数在 场/2-启动器：场只接上一场的末态，这一场不引它）；你的动作按歌曲帧对正片事件。
 import type { V3 } from '@engine/model/parts.tsx';
 import { fps, 正片事件 } from '../../分镜.ts';
 import { 地面高 } from './地形.ts';
-import { 你, 张望, 推镜缓起, 机位们, 走速, type 机位帧 } from './参数.ts';
+import { 你, 推镜缓起, 机位们, 走速, type 机位帧 } from './参数.ts';
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const 平滑 = (q: number) => q * q * (3 - 2 * q);
@@ -31,20 +31,10 @@ export type 你的样子 = {
   脚: V3;
   /** 身子朝向（度，同 stevePose 的 yaw） */
   朝向: number;
-  /** 头相对身子转了多少（度，正 = 往左） */
-  头: number;
   /** 起步后走了几秒（给 vanillaWalk 算摆臂迈腿）；还没起步 = null */
   走秒: number | null;
   /** 游戏时间（秒），两臂的轻晃 */
   秒: number;
-};
-
-/** 张望：转过去 张望.帧 帧、停 张望.停 帧、再转回来 张望.帧 帧（转的那几帧缓入缓出） */
-const 头转 = (歌帧: number) => {
-  const t = 歌帧 - 正片事件.第1句张望.帧;
-  const 去 = 平滑(clamp01(t / 张望.帧));
-  const 回 = 平滑(clamp01((t - 张望.帧 - 张望.停) / 张望.帧));
-  return 张望.角 * (去 - 回);
 };
 
 /** 起步后走出去多远（格）：原版从站着起步，每刻速度往目标速度收 40%（同 库/角色/史蒂夫.tsx vanillaWalk 的 fromRest），位置是它的累加 */
@@ -54,12 +44,12 @@ export const 走出 = (秒: number) => {
   return (走速 / 20) * (刻 - (0.6 * (1 - 0.6 ** 刻)) / 0.4);
 };
 
-/** 第 歌帧 帧你的样子：站在出生点朝着樱花林，张望一下，起步往樱花林走 */
+/** 第 歌帧 帧你的样子：站在出生点朝着樱花林，起步往樱花林走。原来起步前有一拍转头张望，手机上你只有十几个像素高、背对镜头，看不出来（核查 10-24），删了 */
 export const 你在 = (歌帧: number): 你的样子 => {
   const 走秒 = 歌帧 >= 正片事件.第1句起步.帧 ? (歌帧 - 正片事件.第1句起步.帧) / fps : null;
   const d = 走出(走秒 ?? 0);
   const a = (你.朝向 * Math.PI) / 180;
   // yaw 正 = 往左（朝 −x），0 朝北（+y）
   const x = 你.脚[0] - Math.sin(a) * d, y = 你.脚[1] + Math.cos(a) * d;
-  return { 脚: [x, y, 地面高(Math.floor(x), Math.floor(y))], 朝向: 你.朝向, 头: 头转(歌帧), 走秒, 秒: 歌帧 / fps };
+  return { 脚: [x, y, 地面高(Math.floor(x), Math.floor(y))], 朝向: 你.朝向, 走秒, 秒: 歌帧 / fps };
 };

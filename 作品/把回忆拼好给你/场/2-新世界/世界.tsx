@@ -1,4 +1,4 @@
-// 第 1 句的新世界：透视三渲二（平涂、不抗锯齿、你描边）画 地形.ts 铺出来的平原和樱花林，后面一张 2D 画布画天。
+// 第 1 句的新世界：透视三渲二（平涂、不抗锯齿、不描边：全片不描边，用户 10-24 定）画 地形.ts 铺出来的平原和樱花林，后面一张 2D 画布画天。
 // 雾照原版 1.20.1（平原白天、渲染距离 12 区块）：地形按水平距离（柱形）从 172.8 格到 192 格 smoothstep 混进雾色；天按天幕（眼睛上方 16 格）那一点的距离（球形）
 //   从 0 到 192 混，所以只有地平线上方几度是雾色，往上很快就是天色。混色在 sRGB 数值上做（同原版着色器）。
 // 雾是自己补在材质上的（不用 three 的 fog）：平涂派生材质时先跑原材质的 onBeforeCompile，所以补在颜色编码之后，平涂的明暗、色调都在雾前面算好。
@@ -7,7 +7,6 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { 拼搭缓冲, type 方块 } from '@engine/model/方块拼搭.tsx';
 import { 做机位相机 } from '@engine/三渲二/机位.tsx';
-import { 描边 } from '@engine/三渲二/描边.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { blockAtlas } from '@engine/voxel/真实方块图集.ts';
@@ -158,24 +157,19 @@ export type 新世界参数 = {
   机位: 机位帧;
   /** 你（史蒂夫）的姿势；null = 不画 */
   你: StevePose | null;
-  /** 平涂色调、描边（照调子） */
+  /** 平涂色调（照调子） */
   色调: string;
-  描边: { 宽: number; 色: string } | false;
   宽: number;
   高: number;
 };
 
 /** 铺满画面的新世界（天 + 地形 + 你），放在 position 不是 static 的容器里，自己贴左上角；整片后期、聊天栏、歌词由段套 */
-export const 新世界: React.FC<新世界参数> = ({ 机位, 你, 色调, 描边: 描边参数, 宽, 高 }) => (
+export const 新世界: React.FC<新世界参数> = ({ 机位, 你, 色调, 宽, 高 }) => (
   <div style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, overflow: 'hidden' }}>
     <透视天 机位={机位} 宽={宽} 高={高} />
-    <三渲二画布 宽={宽} 高={高} 机位={{ 种: '透视', ...机位, 远: 640 }} 色调={色调} 描边={描边参数} style={{ position: 'absolute', left: 0, top: 0 }}>
+    <三渲二画布 宽={宽} 高={高} 机位={{ 种: '透视', ...机位, 远: 640 }} 色调={色调} style={{ position: 'absolute', left: 0, top: 0 }}>
       <地形 />
-      {你 && (
-        <描边>
-          <Steve pose={你} />
-        </描边>
-      )}
+      {你 && <Steve pose={你} />}
     </三渲二画布>
   </div>
 );
