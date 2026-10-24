@@ -226,3 +226,19 @@ id = "模型/角色/魔法酒狐"
 "来源" = "提取:魔法酒狐模型@8c341567e57a"
 "许可" = "CC-BY-NC-SA-4.0"
 "可见性" = "提取"
+
+[["资产"]]
+id = "模型/角色/僵尸"
+"类别" = "模型"
+"来源" = "提取:僵尸@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版 ZombieRenderer 的 ModelLayers.ZOMBIE：HumanoidModel.createMesh（膨胀 0、y 偏移 0）：头 8×8×8、帽子层（膨胀 0.5）、身 8×12×4、四肢 4×12×4（左臂、左腿镜像），贴图 64×64"
+
+[["资产"]]
+id = "模型/物品/船"
+"类别" = "模型"
+"来源" = "提取:樱花木船@56b71336d2b4+e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版 BoatModel.createBodyModel（1.20.1）：船底、船头、船尾、两舷、两支桨和 water_patch，贴图 128×64；木船都用这一个模型（竹筏另有 RaftModel）"

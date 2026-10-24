@@ -85,6 +85,214 @@ id = "贴图/特效/附魔光泽"
 "说明" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
 
 [["资产"]]
+id = "贴图/特效/方块裂纹/0"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_0.png，16×16，挖方块的第 1 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/1"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_1.png，16×16，挖方块的第 2 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/2"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_2.png，16×16，挖方块的第 3 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/3"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_3.png，16×16，挖方块的第 4 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/4"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_4.png，16×16，挖方块的第 5 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/5"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_5.png，16×16，挖方块的第 6 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/6"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_6.png，16×16，挖方块的第 7 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/7"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_7.png，16×16，挖方块的第 8 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/8"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_8.png，16×16，挖方块的第 9 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/9"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_9.png，16×16，挖方块的第 10 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/方块/泥土"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/dirt.png，16×16：第 2 句挖开草方块、泥土崩出的破坏粒子和掉在洞里的泥土物品"
+
+[["资产"]]
+id = "贴图/界面/原版按钮"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 gui/widgets.png，256×256：第 2 句死亡画面的「重生」「标题屏幕」按钮（200×20，v 46 不能按、66 平常、86 指着）"
+
+[["资产"]]
+id = "贴图/物品/床/红"
+"类别" = "贴图"
+"来源" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/bed/red.png（64×64），原版红床；第 12 句卧室里你那张床"
+
+[["资产"]]
+id = "贴图/物品/女仆床"
+"类别" = "贴图"
+"来源" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/bedrock/block/maid_bed/pink.png（128×128），粉色女仆床；第 12 句卧室里她那张床"
+
+[["资产"]]
+id = "贴图/粒子/火花/0"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_0.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/1"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_1.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/2"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_2.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/3"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_3.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/4"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_4.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/5"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_5.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/6"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_6.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/火花/7"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/spark_7.png（8×8）；烟花火花粒子的一帧，particles/firework.json 按年龄从 spark_7 放到 spark_0。第 10、11 句门口之夜的烟花"
+
+[["资产"]]
+id = "贴图/粒子/闪光"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/particle/flash.png（32×32）；烟花炸开那一下的闪光粒子（FireworkParticles.OverlayParticle）。第 10、11 句门口之夜"
+
+[["资产"]]
+id = "贴图/物品/烟花火箭"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/item/firework_rocket.png（16×16）；烟花火箭的物品图标：手持和飞行中的火箭（FireworkEntityRenderer 画的就是物品）。第 10、11 句门口之夜"
+
+[["资产"]]
+id = "贴图/物品/樱花树苗"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/block/cherry_sapling.png（16×16）；models/item/cherry_sapling.json 的 layer0，手持樱花树苗用。第 9 句门口之夜你种树"
+
+[["资产"]]
+id = "贴图/物品/橡木告示牌图标"
+"类别" = "贴图"
+"来源" = "提取:门口之夜贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/item/oak_sign.png（16×16）；橡木告示牌的物品图标（贴图/物品/橡木告示牌 是方块实体那张），手持用。第 9 句门口之夜你插牌子"
+
+[["资产"]]
 id = "贴图/物品/寻风之铃"
 "类别" = "贴图"
 "来源" = "提取:寻风之铃@a8d3f9ab68b8"
@@ -176,6 +384,110 @@ id = "贴图/粒子/樱花/cherry_11"
 "来源" = "提取:第15句原版@56b71336d2b4"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
+
+[["资产"]]
+id = "贴图/环境/末地天空"
+"类别" = "贴图"
+"来源" = "提取:末地贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 environment/end_sky.png，128×128；第 5 句末地的天（LevelRenderer.renderEndSky）和末地传送门星空的底层"
+
+[["资产"]]
+id = "贴图/特效/末地传送门"
+"类别" = "贴图"
+"来源" = "提取:末地贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/end_portal.png，256×256；第 5 句返回传送门的星空层（rendertype_end_portal 的 Sampler1）"
+
+[["资产"]]
+id = "贴图/特效/经验球"
+"类别" = "贴图"
+"来源" = "提取:末地贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/experience_orb.png，64×64，4×4 格一格 16 像素（ExperienceOrb.getIcon 0～10）；第 5 句龙死后落下的经验球"
+
+[["资产"]]
+id = "贴图/启动器/旧合照-占位"
+"类别" = "贴图"
+"来源" = "手工:本作品 2-收集快乐 第 41 帧的成片静帧（预览 工作-样片-第8句-交付静帧，2560×1440），ffmpeg crop=960:960:1360:440、scale=256:256:flags=area、format=rgba"
+"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"可见性" = "发布"
+"说明" = "第 0 镜、片尾启动器里六月樱那一行的旧图标（去年夏天那张合照）的占位：她和你站在门口箱子边。真图是第 11 句定格的那张截图，第 11 句做出来以后换成那一帧（藏起界面、不带歌词），改 场/2-启动器/图标源.ts 的 import"
+
+[["资产"]]
+id = "贴图/启动器/新合照-占位"
+"类别" = "贴图"
+"来源" = "手工:本作品 核对-封面帧 第 0 帧的成片静帧（预览 工作-样片-第15句-美术定稿-封面帧，2560×1440），ffmpeg crop=940:940:1480:330、scale=256:256:flags=area、format=rgba"
+"许可" = "LicenseRef-Minecraft-EULA AND MIT AND CC-BY-NC-SA-4.0"
+"可见性" = "发布"
+"说明" = "片尾拼回图标框的新合照的占位：她回头看你的脸。真图是第 15 句尾 54.65 闪白截下的那张，做出来以后换成那一帧，改 场/2-启动器/图标源.ts 的 import"
+
+[["资产"]]
+id = "贴图/场景/女仆祭坛"
+"类别" = "贴图"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/bedrock/block/altar.png（512×512），模型/场景/女仆祭坛 的贴图"
+
+[["资产"]]
+id = "贴图/物品/蛋糕盒"
+"类别" = "贴图"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/bedrock/entity/cake_box/cake_box_1.png（256×256，红底金花；游戏里八张随机一张）"
+
+[["资产"]]
+id = "贴图/物品/御币"
+"类别" = "贴图"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/item/hakurei_gohei_in_hand.png（64×64），模型/物品/御币 的贴图图集"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/青金石"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/lapis_lazuli.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/金锭"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/gold_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/红石"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/redstone.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/铁锭"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/iron_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/煤炭"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/coal.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
 
 [["资产"]]
 id = "贴图/物品/荧光物品展示框/背板"
