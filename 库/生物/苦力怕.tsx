@@ -72,7 +72,9 @@ export const creeperLookAt = (pose: CreeperPose, target: V3, turnBody = true): C
   return { ...pose, yaw, headYaw: rel, headPitch: pitch };
 };
 
-/** mcLight：给了就照原版实体光照画、不受场景光（见 实体模型.tsx），值是亮度 0～1；opacity、hurt 同 EntityModel */
+/** mcLight：给了就照原版实体光照画、不受场景光（见 实体模型.tsx），值是亮度 0～1。三渲二的平涂把 MeshBasicMaterial 当不受光的，
+ *  不乘面明暗和色调，所以三渲二镜头里不传 mcLight。opacity、hurt 同 EntityModel。
+ *  坑：没做 UV 内收，开多重采样抗锯齿的画布里轮廓会冒出贴图相邻格子的颜色，只放进不开抗锯齿的画布 */
 export const Creeper: React.FC<{ pose: CreeperPose; mcLight?: number; opacity?: number; hurt?: number }> = ({ pose, mcLight, opacity, hurt }) => (
   <group position={pose.loc} rotation={[0, 0, rad(pose.yaw ?? 0) + Math.PI]}>
     <EntityModel model={MODEL} tex={TEX} pose={creeperParts(pose)} mcLight={mcLight} opacity={opacity} hurt={hurt} />
