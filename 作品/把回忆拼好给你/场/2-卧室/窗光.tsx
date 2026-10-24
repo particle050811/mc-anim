@@ -6,8 +6,9 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { type 光条, type 受光面, 卧室光斑, type 卧室开口 } from './光斑.ts';
 
-/** 薄片离受光面多远（格）：盖过面、又不碰到前面的东西 */
-const 离面 = 0.004;
+/** 薄片离受光面多远（格）：盖过面、又不碰到前面的东西。她坐在床沿时裙摆斜着插进被面，插进去那条线上离面这么高的一截裙子也被乘亮，
+ *  0.004 时裙边透出一道亮线；正交机位深度是线性的，0.001 也不和被面抢深度 */
+const 离面 = 0.001;
 
 const 几何 = (片们: readonly { 面: 受光面; 条: 光条[] }[]) => {
   const pos: number[] = [];
