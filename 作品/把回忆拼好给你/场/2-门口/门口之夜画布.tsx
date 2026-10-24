@@ -1,5 +1,6 @@
-// 第 9–11 句门这个机位的夜里（按歌曲帧画）：后面是夜空（地点/天空.tsx，满月在右上）、星星、烟花的闪光，前面三渲二画布里小木屋、树苗、告示牌、你、她、
-// 烟花火箭和火花。烟花把近处照亮是演绎：平涂分三档（门口之夜参数.ts 的 亮档），树苗、牌子、你一组，门里的她一组，房子、地面一组，各亮各的。
+// 第 9–11 句门这个机位的夜里（按歌曲帧画，三句一个镜头）：后面是夜空（地点/天空.tsx，月亮在左上）、星星（跟着天慢慢挪）、烟花的闪光，
+// 前面三渲二画布里远景（地点/门口远景.ts：往里铺几排草地、门左边往西升高的坡和橡树，越远压得越暗）、小木屋（后墙挂着照片墙、门边没有箱子）、树苗、告示牌、你、她、
+// 烟花火箭和火花。烟花把近处照亮是演绎：平涂分三档（门口之夜参数.ts 的 亮档），树苗、牌子、你一组，门里的她一组，房子、地面、远景一组，各亮各的。
 // 火花、火箭用原版贴图画成朝镜头的方片（不吃平涂），一个贴图像素取偶数个成片像素、中心吸到偶数像素上。闪光（原版 FLASH）画在天上那层，
 // 不画平滑光晕：32×32 的光片按 N 的整数倍放大，透明度只留两档硬边（同美术定稿对太阳月亮的口径「最多一两圈硬边色阶」）。
 // 捕获：给了 捕获，每帧三维画完以后把天、星星、闪光、三维四层按顺序交给它（第 11 句定格成照片、碎裂用，见 门口之夜照片.tsx）。
@@ -17,7 +18,6 @@ import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { standPose } from '@库/角色/骨架.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { MagicalWineFoxEx } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { 女仆气泡, 女仆气泡锚高 } from '@库/界面/女仆气泡.tsx';
 import { ParticleQuads, particleTexture, type Particle } from '@库/特效/粒子面片.tsx';
 import { 火箭位置, 烟花染料色, 烟花火花们, 闪光 } from '@库/特效/烟花.ts';
 import { fps } from '../../分镜.ts';
@@ -26,14 +26,15 @@ import { 侧剖面天空 } from '../../地点/天空.tsx';
 import { 告示牌 } from '../../地点/告示牌.tsx';
 import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
 import { 樱花树方块, 樱花树阶段 } from '../../地点/樱花树.ts';
+import { 照片墙格们 } from '../../地点/照片墙格.ts';
+import { 门口远景层们 } from '../../地点/门口远景.ts';
 import { 格原点, 门口, 门口小木屋 } from '../../地点/门口小木屋.tsx';
+import { 第8句照片们 } from '../../特效/照片画.ts';
 import { 描边 as 描边默认, 像素N } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
-import { 像素字 } from '../../界面/像素字.ts';
-import { 得意气泡字 } from './第8句参数.ts';
 import { 天色, 群系 } from './参数.ts';
-import { 亮档, 亮档比, 夜刻, 夜天弧, 星星, 烟花们, 烟花光掺白, 牌上行, 牌字发光, 镜头, 镜头取景, type 门口之夜镜头 } from './门口之夜参数.ts';
-import { 你态, 加挥手, 她态, 摆设态, 气泡态, 站排y } from './门口之夜编排.ts';
+import { 亮档, 亮档比, 夜刻, 夜天弧, 天取景, 定格帧, 星星, 烟花们, 烟花光掺白, 牌字样式, 远景压暗, 镜头, 镜头取景, type 门口之夜镜头 } from './门口之夜参数.ts';
+import { 你态, 加挥手, 她态, 摆设态, 站排y } from './门口之夜编排.ts';
 import 火箭图 from 'asset:贴图/物品/烟花火箭';
 import 树苗图 from 'asset:贴图/物品/樱花树苗';
 import 牌图 from 'asset:贴图/物品/橡木告示牌图标';
@@ -80,6 +81,9 @@ const 组色调 = (档: 0 | 1 | 2, 色: V3 | null, 比: readonly number[]) => {
   }));
 };
 
+/** 两个色调相乘（远景每层在这一档的色调上再压暗） */
+const 乘 = (a: string, b: string) => 合(拆(a).map((v, i) => v * 拆(b)[i]!));
+
 // ---------- 像素吸附 ----------
 /** 场景点吸到镜头的偶数像素上：横 (x − 中心x)·16N、竖 (z + 斜·y − 中心z)·16N 都取偶数 */
 const 吸点 = (j: 门口之夜镜头, p: V3): V3 => {
@@ -120,29 +124,39 @@ const 烟花方片: React.FC<{ 秒: number; 镜: 门口之夜镜头; 火箭色: 
 // ---------- 2D 层：星星、闪光 ----------
 const 成宽 = (宽: number) => 宽 * 成片倍数;
 
-/** 星星：屏幕上固定的一层（确定性随机），躲开顶上歌词那条和月亮 */
-const 星星层: React.FC<{ 宽: number; 高: number; 月: { x: number; y: number } }> = ({ 宽, 高, 月 }) => {
+/** 星星：一张 W×H 的循环图（确定性随机），跟着天挪（偏 = 天取景 的中心比定格那一镜挪了多少成片像素），躲开月亮那一块（定格那一镜里月亮的位置） */
+const 星星层: React.FC<{ 宽: number; 高: number; 偏: { x: number; y: number }; 月: { x: number; y: number } }> = ({ 宽, 高, 偏, 月 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = 成宽(宽), H = 成宽(高);
-  useLayoutEffect(() => {
-    const ctx = ref.current?.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, W, H);
+  const 图 = useMemo(() => {
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d')!;
     let s = 星星.种子 >>> 0;
     const r = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
     let 放了 = 0;
     for (let 试 = 0; 放了 < 星星.个数 && 试 < 星星.个数 * 20; 试++) {
       const x = 2 * Math.floor((r() * W) / 2);
-      const y = 2 * Math.floor((r() * H * 0.62) / 2);
+      const y = 2 * Math.floor((r() * H) / 2);
       const 边 = r() < 0.5 ? 星星.边[0] : 星星.边[1];
       const a = 星星.亮[0] + r() * (星星.亮[1] - 星星.亮[0]);
-      if (y > 星星.躲歌词[0] - 边 && y < 星星.躲歌词[1] && Math.abs(x - W / 2) < W * 0.42) continue;
       if (Math.abs(x - 月.x) < 260 && Math.abs(y - 月.y) < 260) continue;
       ctx.fillStyle = `rgba(255, 255, 255, ${a.toFixed(3)})`;
       ctx.fillRect(x, y, 边, 边);
       放了++;
     }
+    return c;
   }, [W, H, 月.x, 月.y]);
+  useLayoutEffect(() => {
+    const ctx = ref.current?.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    // 偏移吸到偶数像素、按图的宽高取模，四张拼满
+    const 模 = (v: number, m: number) => ((2 * Math.round(v / 2)) % m + m) % m;
+    const ox = 模(-偏.x, W), oy = 模(偏.y, H);
+    for (const dx of [ox - W, ox]) for (const dy of [oy - H, oy]) ctx.drawImage(图, dx, dy);
+  });
   return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
 };
 
@@ -198,18 +212,15 @@ export type 门口之夜画布属性 = {
   帧: number;
   宽?: number;
   高?: number;
-  /** 画不画第 8 句留下来的气泡（照片那一帧、碎裂以后不画） */
-  气泡?: boolean;
   /** 每帧画完把各层（天、星星、闪光、三维）交出来 */
   捕获?: (层们: readonly CanvasImageSource[]) => void;
   style?: React.CSSProperties;
 };
 
-export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, 宽 = 1280, 高 = 720, 气泡 = true, 捕获, style }) => {
+export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, 宽 = 1280, 高 = 720, 捕获, style }) => {
   const 秒 = 帧 / fps;
   const 镜 = 镜头(帧);
   const 取景 = 镜头取景(镜);
-  const 投 = 侧投影(取景, 宽, 高, 镜.顶面);
   const 层 = useRef<HTMLDivElement>(null);
   const { 档, 发 } = 亮档(秒);
   // 照亮的颜色取这一发的第一种颜色（同原版闪光）
@@ -220,17 +231,24 @@ export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, �
   const 你 = 你态(帧);
   const 她 = 她态(帧);
   const 摆 = 摆设态(帧);
-  const 泡 = 气泡 ? 气泡态(帧) : 0;
-  const 月 = 投(夜天弧.心[0], 夜天弧.心[1] + 夜天弧.半径);
+  const 天 = 天取景(镜);
+  const 定天 = 天取景(镜头(定格帧));
+  const 月 = 侧投影(定天, 宽, 高)(夜天弧.心[0], 夜天弧.心[1] + 夜天弧.半径);
   const 树苗 = useMemo(() => 樱花树方块(樱花树阶段(0), [门口.树苗[0], 1, 0]), []);
+  const 远景 = useMemo(门口远景层们, []);
+  const 照片墙 = useMemo(() => 照片墙格们(第8句照片们), []);
   const 你姿 = 加挥手({ ...stevePose([你.x, 站排y, 0], 你.yaw, { headPitch: 你.头俯仰, holdR: !!你.拿 }), armRRoll: 0, armLRoll: 0 }, 你.挥);
   const 她loc: V3 = [她.x, 站排y, 0];
-  const 行们 = ['', '', '', ''].map((_, i) => (i === 牌上行 ? 摆.牌上 : ''));
   return (
     <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden', ...style }}>
       <div ref={层} style={{ position: 'absolute', inset: 0 }}>
-        <侧剖面天空 取景={取景} 宽={宽} 高={高} 色={天色} 刻={夜刻(秒)} 弧={夜天弧} />
-        <星星层 宽={宽} 高={高} 月={{ x: 月.x * 成片倍数, y: 月.y * 成片倍数 }} />
+        <侧剖面天空 取景={天} 宽={宽} 高={高} 色={天色} 刻={夜刻(秒)} 弧={夜天弧} />
+        <星星层
+          宽={宽}
+          高={高}
+          偏={{ x: (天.中心[0] - 定天.中心[0]) * 天.每格, y: (天.中心[1] - 定天.中心[1]) * 天.每格 }}
+          月={{ x: 月.x * 成片倍数, y: 月.y * 成片倍数 }}
+        />
         <闪光层 宽={宽} 高={高} 秒={秒} 镜={镜} />
         <三渲二画布
           宽={宽}
@@ -240,12 +258,18 @@ export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, �
           描边={描边默认.开 ? { 宽: (镜.N * 描边默认.宽) / 像素N, 色: 夜.描边 } : false}
           style={{ position: 'absolute', left: 0, top: 0 }}
         >
-          <门口小木屋 门开 箱子开度={0} 群系={群系} />
+          {远景.map((层, i) => (
+            <平涂 key={层.名} 色调={乘(远, 远景压暗[i]!)}>
+              <方块拼搭 方块们={层.方块们} 原点={格原点} 群系={群系} 正面花草 />
+            </平涂>
+          ))}
+          {/* 照片墙一格 64 个地图像素：镜头停下来的 N（16、84、12）都是 4 的倍数，一个地图像素是整数个成片像素 */}
+          <门口小木屋 门开 群系={群系} 照片墙={照片墙} 照片墙边长={64} />
           <平涂 色调={近}>
             {摆.树苗 && <方块拼搭 方块们={树苗} 原点={格原点} 群系={群系} 正面花草 />}
             {摆.告示牌 && (
               <告示牌 位={门口.告示牌}>
-                <告示牌像素字 行们={行们} 发光={牌字发光} />
+                <告示牌像素字 行们={摆.牌上} {...牌字样式} />
               </告示牌>
             )}
             {/* 描边组跟着 画风.ts 的 描边.开 走（全片不描边，用户 10-24 定），留着组是为了开关只改一处 */}
@@ -274,11 +298,6 @@ export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, �
           {捕获 && <捕获器 层={层} 交={捕获} />}
         </三渲二画布>
       </div>
-      {泡 > 0 && (
-        <div style={{ position: 'absolute', inset: 0, opacity: 泡 }}>
-          <女仆气泡 锚={投(她.x, 女仆气泡锚高(), 站排y)} 缩放={镜.N} 文字={得意气泡字} 字体={像素字} 锚对齐={镜.N} />
-        </div>
-      )}
     </div>
   );
 };
