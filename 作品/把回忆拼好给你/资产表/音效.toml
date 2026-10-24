@@ -352,6 +352,7 @@ id = "音效/把回忆拼好给你/block.bell.use.1"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版资源索引 minecraft/sounds/block/bell/bell_use01.ogg（对象 sha1 503833660c919c6a48c885b601fc95f66c56db1e），2.49 秒；sounds.json 音量 12、音高 0.93。原版钟敲响（第 14 句考场收卷铃）"
+# 更正（10-24 分屏那一路）：第 14 句的考场删掉了（用户 10-24），收卷铃现在没有段用；条目和字节留着（资产只增不改）
 
 [["资产"]]
 id = "音效/把回忆拼好给你/block.bell.use.4"
