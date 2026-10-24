@@ -1,21 +1,18 @@
-// 第 3 句祭坛召唤用到的模组模型和物品：车万女仆祭坛整座、蛋糕盒、御币（拿在手里那个立体的），柱顶的六样原版材料。都是 jar 里的原样（取材配方 女仆祭坛、祭坛材料）。
+// 第 3 句祭坛召唤用到的模组模型和物品：车万女仆祭坛整座、御币（拿在手里那个立体的），柱顶的六样原版材料。都是 jar 里的原样（取材配方 女仆祭坛、祭坛材料）。
 // 坐标照场景约定（Z 朝上，单位格）。几何的依据（TLM 1.5.3 反汇编）：
 // - TileEntityAltarRenderer：一个方块实体画整座 altar.json（转 180° 摆正，正面朝南），柱顶的材料各自在柱顶格上 (0.5, 1.25 + 浮动, 0.5)、绕竖轴转、按 GROUND 显示变换画；
-// - EntityBoxRenderer / EntityBoxModel：cake_box.json，第一下以后盖子不画，第二下以后四面墙 x1.xRot = +a、x2.xRot = −a、z1.zRot = +a、z2.zRot = −a 往外倒；
 // - 御币拿在手里：models/item/hakurei_gohei_in_hand.json，第三人称显示变换只有平移 [0, 2.75, 1.25]。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { rad } from '@engine/anim/anim.ts';
-import type { BedrockModel, BonePose } from '@engine/model/基岩模型.tsx';
+import type { BedrockModel } from '@engine/model/基岩模型.tsx';
 import { BedrockModelView } from '@engine/model/基岩模型.tsx';
 import { BlockModel, type BlockModelData } from '@engine/model/方块模型.tsx';
 import { DISPLAY, ItemDisplay, ItemSprite, type ItemLayer, type ItemTransform, itemMesh } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
-import type { 浮物态, 盒态 } from './编排.ts';
+import type { 浮物态 } from './编排.ts';
 import 祭坛数据 from 'asset:模型/场景/女仆祭坛';
 import 祭坛贴图 from 'asset:贴图/场景/女仆祭坛';
-import 盒数据 from 'asset:模型/物品/蛋糕盒';
-import 盒贴图 from 'asset:贴图/物品/蛋糕盒';
 import 御币数据 from 'asset:模型/物品/御币';
 import 御币贴图 from 'asset:贴图/物品/御币';
 import 钻石图 from 'asset:贴图/物品/钻石';
@@ -26,7 +23,6 @@ import 铁锭图 from 'asset:贴图/物品/祭坛材料/铁锭';
 import 煤炭图 from 'asset:贴图/物品/祭坛材料/煤炭';
 
 const 祭坛模型 = { ...(祭坛数据 as unknown as object), texture: png(祭坛贴图) } as unknown as BedrockModel;
-const 盒模型 = { ...(盒数据 as unknown as object), texture: png(盒贴图) } as unknown as BedrockModel;
 const 御币模型 = 御币数据 as unknown as BlockModelData;
 const 御币图集 = png(御币贴图);
 
@@ -70,24 +66,6 @@ export const 柱顶物: React.FC<{ 态: Extract<浮物态, { 样: '物' | '亮' 
       <group rotation={物品转场景}>
         <ItemDisplay t={DISPLAY.generated.ground}>{态.样 === '物' ? <ItemSprite layers={layers} /> : <白物品 layers={layers} 色={亮色} />}</ItemDisplay>
       </group>
-    </group>
-  );
-};
-
-const 藏: BonePose = { scale: 0 };
-/** 蛋糕盒：底面中心在 位，z 是离地高。墙 = 四面墙往外倒的弧度（原版 EntityBoxModel 的 a） */
-export const 蛋糕盒: React.FC<{ 位: readonly number[]; 态: 盒态 }> = ({ 位, 态 }) => {
-  const 度 = (态.墙 * 180) / Math.PI;
-  const pose: Record<string, BonePose> = {
-    x1: { rot: [度, 0, 0] },
-    x2: { rot: [-度, 0, 0] },
-    z1: { rot: [0, 0, 度] },
-    z2: { rot: [0, 0, -度] },
-    ...(态.盖 ? {} : { top: 藏 }),
-  };
-  return (
-    <group position={[位[0]!, 位[1]!, 位[2]! + 态.z]}>
-      <BedrockModelView model={盒模型} pose={pose} />
     </group>
   );
 };
