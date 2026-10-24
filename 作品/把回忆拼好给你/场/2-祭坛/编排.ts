@@ -142,20 +142,67 @@ const 单位 = (a: readonly number[]): 点 => {
   return [a[0]! / l, a[1]! / l, a[2]! / l];
 };
 
+/** 抬完头的那一帧（镜头的「抬头」机位落在这里） */
+export const 抬完帧 = 事.光 + 参.低头.抬头帧;
+
+/** 镜头的关键机位：段首、第一下拆盒、第三下、抬完头、推眼睛、末帧（末帧要她的骨骼才算得出，由 末 给） */
+export const 关键机位 = (末: 机): { 帧: number; 眼: 点; 看: 点 }[] => [
+  { 帧: 窗口.起帧, ...参.镜头.起 },
+  { 帧: 事.拆一, ...参.镜头.拆盒 },
+  { 帧: 事.拆三, ...参.镜头.拆完 },
+  { 帧: 抬完帧, ...参.镜头.抬头 },
+  { 帧: 事.推, ...参.镜头.推起 },
+  { 帧: 末帧, 眼: 末.眼, 看: 末.看 },
+];
+
+/** 三次埃尔米特：p0、p1 两头的值，m0、m1 两头每帧的变化率，h 这一段几帧，s 0～1 */
+const 埃尔米特 = (p0: number, p1: number, m0: number, m1: number, h: number, s: number) => {
+  const s2 = s * s;
+  const s3 = s2 * s;
+  return (2 * s3 - 3 * s2 + 1) * p0 + (s3 - 2 * s2 + s) * h * m0 + (-2 * s3 + 3 * s2) * p1 + (s3 - s2) * h * m1;
+};
+/** 各关键点的变化率（每帧）：段首 = 第一段的平均速度（接切过来就在动），末帧 = 0（停稳），中间按两边的平均速度。
+ *  保单调 = true 时中间取两边的加权调和平均（Fritsch–Carlson），两边同号时插出来不会冲过头，距离只减不增 */
+const 变化率们 = (t: readonly number[], y: readonly number[], 保单调: boolean): number[] => {
+  const n = t.length;
+  const h = t.slice(1).map((v, i) => v - t[i]!);
+  const d = h.map((hi, i) => (y[i + 1]! - y[i]!) / hi);
+  return t.map((_, k) => {
+    if (k === 0) return d[0]!;
+    if (k === n - 1) return 0;
+    const [a, b, ha, hb] = [d[k - 1]!, d[k]!, h[k - 1]!, h[k]!];
+    if (!保单调) return (hb * a + ha * b) / (ha + hb);
+    if (a * b <= 0) return 0;
+    const w1 = 2 * hb + ha;
+    const w2 = hb + 2 * ha;
+    return (w1 + w2) / (w1 / a + w2 / b);
+  });
+};
+
 /** 这一帧的镜头。末 = 末机位(…)（要她的骨骼才算得出，画的那边算好传进来）。
- *  段首到「推眼睛」：起 → 慢推止，两头缓；「推眼睛」到末帧：眼睛离她两眼中点的距离按对数插、方向在两头之间转，看点往她眼睛上收得更快 */
+ *  眼睛：以她两眼中点（末.看）为心，离心距离取对数用保单调的三次插值（一路越推越近，推眼睛那一段越推越快、末帧停稳），
+ *  方向用三次插值再归一；看点用三次插值。各段交界处速度连续，不会一帧里突然起速 */
 export const 镜头态 = (g: number, 末: 机): 机 => {
-  const { 起, 慢推止, 视角, 快推缓 } = 参.镜头;
-  if (g <= 事.推) {
-    const s = 缓(clamp01((g - 窗口.起帧) / (事.推 - 窗口.起帧)));
-    return { 眼: 插3(起.眼, 慢推止.眼, s), 看: 插3(起.看, 慢推止.看, s), 视角 };
-  }
-  const v = clamp01((g - 事.推) / (末帧 - 事.推));
-  const w = 1 - (1 - v) ** 快推缓;
-  const d0 = 减(慢推止.眼, 末.看);
-  const d1 = 减(末.眼, 末.看);
-  const 距 = Math.exp(插(Math.log(长(d0)), Math.log(长(d1)), w));
-  const 向 = 单位(插3(单位(d0), 单位(d1), w));
-  const 眼: 点 = [末.看[0] + 向[0] * 距, 末.看[1] + 向[1] * 距, 末.看[2] + 向[2] * 距];
-  return { 眼, 看: 插3(慢推止.看, 末.看, clamp01(w * 1.5)), 视角 };
+  const 键 = 关键机位(末);
+  const 心 = 末.看;
+  const t = 键.map((k) => k.帧);
+  const 距 = 键.map((k) => Math.log(长(减(k.眼, 心))));
+  const 向 = 键.map((k) => 单位(减(k.眼, 心)));
+  const 看 = 键.map((k) => k.看);
+  const x = Math.min(Math.max(g, t[0]!), t[t.length - 1]!);
+  const i = Math.min(t.findIndex((v, j) => j > 0 && x <= v) - 1, t.length - 2);
+  const h = t[i + 1]! - t[i]!;
+  const s = (x - t[i]!) / h;
+  const 插值 = (ys: readonly number[], 保单调 = false) => {
+    const m = 变化率们(t, ys, 保单调);
+    return 埃尔米特(ys[i]!, ys[i + 1]!, m[i]!, m[i + 1]!, h, s);
+  };
+  const L = 插值(距, true);
+  const u = 单位([0, 1, 2].map((c) => 插值(向.map((v) => v[c]!))));
+  const r = Math.exp(L);
+  return {
+    眼: [心[0] + u[0] * r, 心[1] + u[1] * r, 心[2] + u[2] * r],
+    看: [0, 1, 2].map((c) => 插值(看.map((v) => v[c]!))) as 点,
+    视角: 参.镜头.视角,
+  };
 };
