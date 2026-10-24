@@ -1,17 +1,32 @@
 // 第 1 句的新世界：你第一次进这个世界时脚下那片原版 1.20.1 平原，远处地平线上一座小山上是樱花林。纯计算（不 import react、three），测试直接引。
 // 不是存档导出的：按原版平原的样子手搓（起伏一两格的草地、短草、高草、原版 flower_plain 的九种花、零星几棵橡树；樱花林在山坡上，
-// 樱花树照原版 CherryTrunkPlacer、CherryFoliagePlacer 的长法，地上铺粉红花簇）。随机都用定死的噪声和散列（不是原版的随机数，长出来的样子同一套规则），
+// 樱花树照原版 CherryTrunkPlacer、CherryFoliagePlacer 的长法，地上铺粉红花簇；远处一道道缓坡，坡上两片橡树林）。随机都用定死的噪声和散列（不是原版的随机数，长出来的样子同一套规则），
 // 同一组参数每次出一样的方块。只铺镜头看得到的那一扇（参数.ts 的 地形范围），背后的不铺。
 // 第 1 句尾到 2-第一晚 镜头落到你挖坑那一格的地面剖面：剖面附近的列（剖面列）另铺到地下（剖面方块、剥排方块），新世界方块 本身不变（别的段拿它当远景）。
 // 坐标照场景约定：x 东、y 北、z 上，格 (i, j, k) 占 [i, i+1]×[j, j+1]×[k, k+1]；出生点那格地面顶在 z = 0（草方块是 k = −1 那格）。
 import type { 方块 } from '@engine/model/方块拼搭.tsx';
 import { fbm, hash2, simplex2, smoothstep } from '@engine/core/噪声.ts';
-import { 地形范围, 剖面, 坑, 樱花林, 平原 } from './参数.ts';
+import { 地形范围, 剖面, 坑, 樱花林, 平原, 远林们, 远山 } from './参数.ts';
 
 const 噪 = simplex2(平原.种子);
 const 噪2 = simplex2(平原.种子 + 7);
 const 噪山 = simplex2(平原.种子 + 13);
 const 噪花 = simplex2(平原.种子 + 29);
+const 噪远 = simplex2(平原.种子 + 41);
+
+const 度 = Math.PI / 180;
+/** 从出生点看樱花林的方位角（弧度，0 朝北、正 = 偏东） */
+const 林方位 = Math.atan2(樱花林.心[0], 樱花林.心[1]);
+
+/** 远山在 (i, j) 抬多高（格，小数）：离出生点 远山.起 以内是 0，到 远山.满 抬满；坡的形状是低频噪声，樱花林方向让开 */
+const 远山高在 = (i: number, j: number): number => {
+  const 距 = Math.hypot(i, j);
+  if (距 <= 远山.起) return 0;
+  const 偏角 = Math.abs(Math.atan2(i, j) - 林方位);
+  const 让 = smoothstep(远山.让林角[0] * 度, 远山.让林角[1] * 度, 偏角);
+  const 坡 = Math.min(1, Math.max(0, fbm(噪远, i, j, 远山.尺度, 3) + 远山.偏));
+  return 远山.高 * smoothstep(远山.起, 远山.满, 距) * 让 * 坡;
+};
 
 /** 樱花林那座山在 (i, j) 有多高（格，小数）：山脚、山顶的半径按噪声扭，坡上、顶上加一点起伏 */
 const 山高在 = (i: number, j: number): number => {
@@ -25,7 +40,7 @@ const 山高在 = (i: number, j: number): number => {
 /** (i, j) 那一列地面顶的高度（整数格，出生点 0） */
 export const 地面高 = (i: number, j: number): number => {
   const 起伏 = 平原.起伏 * fbm(噪, i, j, 平原.起伏尺度, 3) + 平原.细起伏 * fbm(噪2, i, j, 平原.细起伏尺度, 2);
-  const 山 = 山高在(i, j);
+  const 山 = 山高在(i, j) + 远山高在(i, j);
   // 出生点附近压平一点：你站的那块地是平的
   const 距出生 = Math.hypot(i, j);
   const 平 = smoothstep(平原.出生平半径, 平原.出生平半径 * 3, 距出生);
@@ -47,7 +62,7 @@ const 在林里 = (i: number, j: number) => Math.hypot(i - 樱花林.心[0], j -
 /** 高：橡树的树干高（樱花树的高按原版自己抽，写 0） */
 type 树 = { i: number; j: number; 种: '橡' | '樱'; 高: number; 种子: number };
 
-/** 树的位置：樱花林里按格子撒（每 樱花林.树距 见方一棵，抖一抖），平原上零星几棵橡树（平原.橡树们，Agent 摆的） */
+/** 树的位置：樱花林里按格子撒（每 樱花林.树距 见方一棵，抖一抖），平原上零星几棵橡树（平原.橡树们，Agent 摆的），远林里同样按格子撒橡树 */
 export const 树们 = (): 树[] => {
   const out: 树[] = [];
   const d = 樱花林.树距;
@@ -60,6 +75,17 @@ export const 树们 = (): 树[] => {
       out.push({ i, j, 种: '樱', 高: 0, 种子: gx * 131 + gy });
     }
   for (const [i, j, 高] of 平原.橡树们) out.push({ i, j, 种: '橡', 高, 种子: i * 7 + j });
+  远林们.forEach((林, n) => {
+    const [lx, ly] = 林.心;
+    const e = 林.树距;
+    for (let gx = Math.floor((lx - 林.半径) / e); gx <= Math.ceil((lx + 林.半径) / e); gx++)
+      for (let gy = Math.floor((ly - 林.半径) / e); gy <= Math.ceil((ly + 林.半径) / e); gy++) {
+        const i = Math.round(gx * e + (hash2(gx, gy, 21 + n) - 0.5) * e * 0.7);
+        const j = Math.round(gy * e + (hash2(gx, gy, 22 + n) - 0.5) * e * 0.7);
+        if (Math.hypot(i - lx, j - ly) > 林.半径) continue;
+        out.push({ i, j, 种: '橡', 高: 4 + Math.floor(hash2(gx, gy, 23 + n) * 3), 种子: i * 7 + j });
+      }
+  });
   return out;
 };
 
@@ -278,7 +304,7 @@ export const 剖面列 = (i: number, j: number): '剖' | '剥' | null => {
 };
 
 /** 坑这一排、后墙那一排（一张表）：照 新世界方块 的铺法铺到 剖面.底；坑那一格按坑态挖掉、填土，坑左右 让草 列内不长草、不开花；
- *  后墙（坑后面那一格）草方块以下压暗到 剖面.后墙亮 */
+ *  后墙（坑后面那一格）草方块以下压暗到 剖面.后墙亮（草方块的顶面在地面上看得见，不压，它朝洞里那面由 2-第一晚 另压） */
 export const 剖面方块 = (态: 坑态): 方块[] => {
   const out: 方块[] = [];
   for (const j of [坑.j, 坑.j + 1])

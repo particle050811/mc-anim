@@ -125,7 +125,7 @@ const 地形: React.FC<{ 坑: 坑态; 剥: number }> = ({ 坑, 剥 }) => {
 
 // ---------- 天 ----------
 
-/** 天的一格多大（成片像素）：和全片 像素N 一样 6，天的渐变一格一格地变，不是平滑的；一颗星也画成一格（大星两格见方） */
+/** 天的一格多大（成片像素）：和全片 像素N 一样 6，天的渐变一格一格地变，不是平滑的；一颗星至少 星.画格 格见方（参数.ts） */
 const 天格 = 6;
 
 /** 仰角 θ（弧度）处的天色：原版天幕在眼睛上方 天幕高 格，那一点离眼睛 天幕高 / sin θ，球形雾 smoothstep(0, 渲染距离)；地平线以下是雾色。
@@ -138,7 +138,7 @@ export const 天色在 = (θ: number, 亮 = 1): 色 => {
   return 混(天, 雾, t * t * (3 - 2 * t));
 };
 
-/** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线仰角取色；再把地平线以上的星星加上去（原版 SRC_ALPHA、ONE：加 星亮²，不吃雾） */
+/** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线仰角取色；再把地平线以上的星星加上去（原版 SRC_ALPHA、ONE：加 星亮²，这里乘 星.亮倍；不吃雾） */
 const 透视天: React.FC<{ 机位: 机位帧; 刻: number; 宽: number; 高: number }> = ({ 机位, 刻, 宽, 高 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const 画宽 = 宽 * 成片倍数, 画高 = 高 * 成片倍数;
@@ -164,7 +164,7 @@ const 透视天: React.FC<{ 机位: 机位帧; 刻: number; 宽: number; 高: nu
         img.data[o + 2] = Math.round(c[2] * 255);
         img.data[o + 3] = 255;
       }
-    const 加 = Math.round(星亮(刻) ** 2 * 255);
+    const 加 = Math.min(255, Math.round(星亮(刻) ** 2 * 星.亮倍 * 255));
     if (加 > 0) {
       const 前 = cam.getWorldDirection(new THREE.Vector3());
       const 每弧度 = 画高 / 2 / Math.tan((机位.视角 * Math.PI) / 360);
@@ -174,7 +174,7 @@ const 透视天: React.FC<{ 机位: 机位帧; 刻: number; 宽: number; 高: nu
         v.set(x, z, -y);
         if (v.dot(前) <= 0) continue;
         v.add(cam.position).project(cam);
-        const n = Math.max(1, Math.round(((2 * s.半边) / 星.距离) * 每弧度 / 天格));
+        const n = Math.max(星.画格, Math.round(((2 * s.半边) / 星.距离) * 每弧度 / 天格));
         const cx = Math.round((((v.x + 1) / 2) * 画宽) / 天格 - n / 2), cy = Math.round((((1 - v.y) / 2) * 画高) / 天格 - n / 2);
         for (let dy = 0; dy < n; dy++)
           for (let dx = 0; dx < n; dx++) {
