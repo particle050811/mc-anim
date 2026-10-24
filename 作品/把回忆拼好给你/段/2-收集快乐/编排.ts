@@ -52,11 +52,11 @@ export const 照片态 = (f: number): 照片态 | null => {
       const t = (f - 开落) / 参.照片落帧;
       const y = 插(参.照片举位[1], 参.照片落位[1], 缓出(t));
       const z = 插(参.照片举位[2], 参.照片落位[2], 缓入(t));
-      return { 画, 底: [插(参.照片举位[0], 参.照片落位[0], t), y, z], 缩放: 插(1, 参.照片落缩放, t), 阶段: '落', t };
+      return { 画, 底: [插(参.照片举位[0], 参.照片落位[0], t), y, z], 缩放: 插(参.照片举缩放, 参.照片落缩放, t), 阶段: '落', t };
     }
     const t = clamp01((f - 出) / 参.照片举帧);
-    if (t < 1) return { 画, 底: 插3(参.照片出位, 参.照片举位, 缓出(t)), 缩放: 插(参.照片出缩放, 1, 缓出(t)), 阶段: '升', t };
-    return { 画, 底: [...参.照片举位] as V3, 缩放: 1, 阶段: '举', t: 1 };
+    if (t < 1) return { 画, 底: 插3(参.照片出位, 参.照片举位, 缓出(t)), 缩放: 插(参.照片出缩放, 参.照片举缩放, 缓出(t)), 阶段: '升', t };
+    return { 画, 底: [...参.照片举位] as V3, 缩放: 参.照片举缩放, 阶段: '举', t: 1 };
   }
   return null;
 };
@@ -121,12 +121,13 @@ export const 她态 = (f: number): 她态 => {
       yaw: 八.哈气朝向.她,
       姿势: '哈气',
       表情: f < 跳起 ? '惊讶' : '哈气',
-      骨骼: { ...八.哈气头, ...八.哈气爪 },
+      看: 八.哈气看,
+      骨骼: { ...八.哈气爪, ...八.哈气尾 },
       眨眼: 0,
     };
   }
   if (f < 事.苦力怕逃) {
-    return { loc: [八.哈气站位.她, 站, 0], yaw: 八.哈气朝向.她, 姿势: '哈气', 表情: '哈气', 骨骼: { ...八.哈气头, ...八.哈气爪 }, 眨眼: 0 };
+    return { loc: [八.哈气站位.她, 站, 0], yaw: 八.哈气朝向.她, 姿势: '哈气', 表情: '哈气', 看: 八.哈气看, 骨骼: { ...八.哈气爪, ...八.哈气尾 }, 眨眼: 0 };
   }
   // 回头冲你得意地一歪头：转身朝镜头，头转向你、歪过去（三帧歪到位），闭眼笑
   const 歪 = 参.得意歪 * clamp01((f - 事.苦力怕逃 + 1) / 3);
@@ -146,8 +147,6 @@ export const 她态 = (f: number): 她态 => {
 const 走速 = CREEPER.speed.chase * 参.苦力怕走倍率;
 const 逃速 = CREEPER.speed.flee * 参.苦力怕逃倍率;
 const 开逃 = 事.苦力怕掉头 + 参.苦力怕掉头帧;
-/** 出了草丛并到人那排：草丛右沿（x −5.5）再往右一格里慢慢挪过来 */
-const 排y = (x: number) => 插(参.苦力怕草丛后y, 站, clamp01((x + 5.75) / 1));
 
 export const 苦力怕态 = (f: number): CreeperPose => {
   const 停 = 八.哈气站位.苦力怕;
@@ -155,7 +154,7 @@ export const 苦力怕态 = (f: number): CreeperPose => {
     const x = 停 - (走速 * (事.哈气 - f)) / fps;
     // 一直在走（不是从站着起步）；腿的相位按到哈气那一帧还差几秒倒推
     const 腿 = vanillaWalk(走速, 10 - (事.哈气 - f) / fps);
-    return { loc: [x, 排y(x), 0], yaw: 八.哈气朝向.苦力怕, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
+    return { loc: [x, 站, 0], yaw: 八.哈气朝向.苦力怕, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
   }
   if (f < 事.苦力怕掉头) return { loc: [停, 站, 0], yaw: 八.哈气朝向.苦力怕, ...八.苦力怕停步 };
   if (f < 开逃) {
@@ -166,17 +165,12 @@ export const 苦力怕态 = (f: number): CreeperPose => {
   const 秒 = (f - 开逃 + 1) / fps;
   const x = 停 - 逃速 * 秒;
   const 腿 = vanillaWalk(逃速, 秒, true);
-  return { loc: [x, 排y(x), 0], yaw: 八.哈气朝向.苦力怕 - 180, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
+  return { loc: [x, 站, 0], yaw: 八.哈气朝向.苦力怕 - 180, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
 };
 
 // ---------- 你 ----------
-/** 你一直站在箱子右边、面朝镜头；转头看着她收照片，哈气那一拍转回来脸朝镜头（同静帧，被那一声吓得一愣），
- *  她回头冲你歪头那一拍再转过去看她。每次两帧转完 */
-export const 你态 = (f: number) => {
-  const 回 = clamp01((f - 事.哈气 + 2) / 2);
-  const 再看 = clamp01((f - 事.苦力怕逃) / 2);
-  return { x: 八.哈气站位.你, yaw: 八.哈气朝向.你, headYaw: 插(插(参.你看她, 八.你的头, 回), 参.你看她, 再看), 倍数: 八.史蒂夫倍数 };
-};
+/** 你一直站在箱子右边、身子朝镜头，头转过去看着她（收照片、哈气、回头歪头都看着她；定稿：你在她身后看她或看苦力怕） */
+export const 你态 = (_f: number) => ({ x: 八.哈气站位.你, yaw: 八.哈气朝向.你, headYaw: 八.你的头, 倍数: 八.史蒂夫倍数 });
 
 // ---------- 气泡 ----------
 export const 气泡态 = (f: number): { 字: string; x: number } | null => {
