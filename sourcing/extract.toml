@@ -539,6 +539,20 @@
 ["取材"."产物"]
 "音效/车万女仆/item.camera_use" = "src/音效/车万女仆/touhou_little_maid.item.camera_use.ogg"
 
+# 女仆头顶气泡的底（库/界面/女仆气泡.tsx）：ChatBubbleRenderer 按 256×256 的 UV 从整张里切九宫格和尾巴，所以整张原样存。
+[["取材"]]
+"名称" = "女仆气泡"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/界面/女仆气泡.贴图", "type1=assets/touhou_little_maid/textures/entity/chat_bubble/type1.png", "type2=assets/touhou_little_maid/textures/entity/chat_bubble/type2.png"],
+]
+["取材"."产物"]
+"贴图/界面/女仆气泡/type1" = "src/模型/界面/女仆气泡.贴图/type1.png"
+"贴图/界面/女仆气泡/type2" = "src/模型/界面/女仆气泡.贴图/type2.png"
+
 [["取材"]]
 "名称" = "基地工坊"
 "需要" = ["create", "client-1.20.1"]
