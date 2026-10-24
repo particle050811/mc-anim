@@ -806,6 +806,33 @@
 "网格/隐世之境一楼/头" = "src/模型/场景/隐世之境一楼.网格.json"
 "网格/隐世之境一楼/顶点" = "src/模型/场景/隐世之境一楼.网格.bin"
 
+# 隐世之境一楼网格换成归隐之地的草色：归隐之地是固定群系 cherry_grove（maidspell 1.9.3 data/touhou_little_maid_spell/dimension/the_retreat.json），
+# 原版 1.20.1 OverworldBiomes.cherryGrove 的草和树叶都是 #B6DB61。片场存档那块地方染的三种颜色（草方块顶、花簇的茎、藤蔓）从网格顶点色里量出来。只给《把回忆拼好给你》用，登记在作品侧。
+[["取材"]]
+"名称" = "隐世之境一楼网格-归隐之地"
+"需要" = []
+"公开版" = "不提取"  # 同 隐世之境一楼网格：网格走 Release
+"步骤" = [
+  ["python", "{脚本}/网格换群系色.py", "src/模型/场景/隐世之境一楼.网格.bin", "src/模型/场景/隐世之境一楼-归隐之地.网格.bin", "#b6db61", "#6bd550", "#79c05a", "#4fc12a"],
+]
+["取材"."输入"]
+"网格/隐世之境一楼/顶点" = "src/模型/场景/隐世之境一楼.网格.bin"
+["取材"."产物"]
+"网格/隐世之境一楼/顶点-归隐之地" = "src/模型/场景/隐世之境一楼-归隐之地.网格.bin"
+
+# 归隐之地的樱花林（隐世之境窗外）：原版樱花树的木头、树叶，地上的草方块顶（灰的，按 cherry_grove 染 #B6DB61）和粉红色花簇。只给《把回忆拼好给你》用，登记在作品侧。
+[["取材"]]
+"名称" = "樱花林贴图"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/樱花林.贴图", "cherry_log=assets/minecraft/textures/block/cherry_log.png", "cherry_log_top=assets/minecraft/textures/block/cherry_log_top.png", "cherry_leaves=assets/minecraft/textures/block/cherry_leaves.png", "grass_block_top=assets/minecraft/textures/block/grass_block_top.png", "pink_petals=assets/minecraft/textures/block/pink_petals.png", "pink_petals_stem=assets/minecraft/textures/block/pink_petals_stem.png"],
+]
+["取材"."产物"]
+"贴图/场景/樱花林/*" = "src/模型/场景/樱花林.贴图/*.png"
+
 [["取材"]]
 "名称" = "监守者"
 "需要" = ["client-1.20.1", "client-1.20.1-srg"]
