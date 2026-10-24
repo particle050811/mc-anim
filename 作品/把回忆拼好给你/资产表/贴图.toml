@@ -69,6 +69,22 @@ id = "贴图/场景/樱花林/pink_petals"
 "可见性" = "提取"
 
 [["资产"]]
+id = "贴图/场景/樱花林远山/grass_block_side"
+"类别" = "贴图"
+"来源" = "提取:樱花林远山贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/grass_block_side.png（16×16）：归隐之地窗外远山的坡面（草方块侧面）"
+
+[["资产"]]
+id = "贴图/场景/樱花林远山/grass_block_side_overlay"
+"类别" = "贴图"
+"来源" = "提取:樱花林远山贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/grass_block_side_overlay.png（16×16，灰的草边）：按 cherry_grove 草色染了盖在 grass_block_side 上"
+
+[["资产"]]
 id = "贴图/界面/银河字母"
 "类别" = "贴图"
 "来源" = "提取:银河字母@56b71336d2b4"

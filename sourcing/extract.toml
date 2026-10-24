@@ -1047,6 +1047,21 @@
 ["取材"."产物"]
 "贴图/场景/樱花林/*" = "src/模型/场景/樱花林.贴图/*.png"
 
+# 归隐之地窗外的远山（隐世之境窗外.tsx）：草方块侧面（泥土 + 草边，草边那层是灰的，按 cherry_grove 染 #B6DB61 盖上去）。坡下面露出来的泥土用 第一晚贴图 的 贴图/方块/泥土。只给《把回忆拼好给你》用，登记在作品侧。
+[["取材"]]
+"名称" = "樱花林远山贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/樱花林远山.贴图", "grass_block_side=assets/minecraft/textures/block/grass_block_side.png", "grass_block_side_overlay=assets/minecraft/textures/block/grass_block_side_overlay.png"],
+]
+["取材"."产物"]
+"贴图/场景/樱花林远山/grass_block_side" = "src/模型/场景/樱花林远山.贴图/grass_block_side.png"
+"贴图/场景/樱花林远山/grass_block_side_overlay" = "src/模型/场景/樱花林远山.贴图/grass_block_side_overlay.png"
+
 [["取材"]]
 "名称" = "监守者"
 "需要" = ["client-1.20.1", "client-1.20.1-srg"]
