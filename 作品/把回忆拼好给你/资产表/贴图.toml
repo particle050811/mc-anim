@@ -1,0 +1,26 @@
+# 作品资产表：贴图。只有本作品用的资产登记在这里，锁是作品根的 资产锁.json（anim --作品 把回忆拼好给你 assets add 写，不手改）。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "贴图/物品/橡木告示牌"
+"类别" = "贴图"
+"来源" = "提取:门口贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/signs/oak.png，64×32，立着的橡木告示牌（门口机位第 9 句起插在门外）"
+
+[["资产"]]
+id = "贴图/环境/太阳"
+"类别" = "贴图"
+"来源" = "提取:门口贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 environment/sun.png，门口机位天上的太阳"
+
+[["资产"]]
+id = "贴图/环境/月相"
+"类别" = "贴图"
+"来源" = "提取:门口贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 environment/moon_phases.png，4×2 格八种月相，门口机位天上的月亮"
