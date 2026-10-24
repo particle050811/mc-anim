@@ -4,7 +4,7 @@
 // 两种花瓣：
 // - 风流：从 源（铃在画面上的位置）一路往外打着旋卷，越卷越大、越往右飘；
 // - 风墙：盖满画面的那一层，一整片大花瓣（按抖动的格子排，挨着的互相盖住）从画面左边扫进来、到 满 时整屏盖住（后面垫一块同色的底补缝），
-//   然后底撤掉，花瓣一片片从画面中心往外吹走（风散开）。
+//   然后底撤掉，花瓣从 散心（转场后那一镜要先露出来的地方）往外一圈圈吹走（风散开）。
 // 时间都按歌上的秒（两段各自传自己的秒，转场前后接得上：同一个 秒 两边画的一模一样）。参数全是 Agent 暂定，见 樱花风参数.ts。
 import React, { useLayoutEffect, useRef } from 'react';
 import { rng } from '@engine/model/parts.tsx';
@@ -63,15 +63,15 @@ const 画瓣 = (ctx: CanvasRenderingContext2D, 图: Png, x: number, y: number, �
     }
 };
 
-/** 风墙：满 之前整块从左往右扫进来（底跟着补缝），满 之后停住、底撤掉，花瓣一片片往外吹走 */
-const 画墙 = (ctx: CanvasRenderingContext2D, 墙: readonly 墙瓣[], 秒: number, 时刻: 樱花风时刻, p: 樱花风参数, W: number, H: number) => {
+/** 风墙：满 之前整块从左往右扫进来（底跟着补缝），满 之后停住、底撤掉，花瓣从 心（成片像素）往外吹走 */
+const 画墙 = (ctx: CanvasRenderingContext2D, 墙: readonly 墙瓣[], 秒: number, 时刻: 樱花风时刻, p: 樱花风参数, W: number, H: number, 心: readonly [number, number]) => {
   const 底 = 风墙底(秒, 时刻, p, W);
   if (底) {
     ctx.fillStyle = p.风墙.底色;
     ctx.fillRect(Math.round(底[0] / 2) * 2, 0, Math.round((底[1] - 底[0]) / 2) * 2, H);
   }
   for (const q of 墙) {
-    const { x, y } = 墙瓣在(q, 秒, 时刻, p, W, H);
+    const { x, y } = 墙瓣在(q, 秒, 时刻, p, W, H, 心);
     const 边 = q.档 * 3;
     if (x < -边 || x > W || y < -边 || y > H) continue;
     画瓣(ctx, 贴图们[q.图]!, x, y, q.档, q.转, q.翻);
@@ -81,15 +81,17 @@ const 画墙 = (ctx: CanvasRenderingContext2D, 墙: readonly 墙瓣[], 秒: numb
 /**
  * 盖在画面上的樱花风。放在铺满画面、position 不是 static 的容器里。秒：歌上的秒；源：风起的地方（页面坐标，铃在画面上的位置），
  * 只影响风流；转场后的镜头里 源 照传摇铃那一镜的，花瓣接着上一镜的位置飞。
+ * 散心：满 以后花瓣从这里往外吹散（页面坐标，默认画面中心），转场后那一镜要先看清的地方（第 15 句：推开的门里她的背影）
  */
-export const 樱花风: React.FC<{ 秒: number; 时刻: 樱花风时刻; 源: { x: number; y: number }; 参数?: 樱花风参数; 宽?: number; 高?: number }> = ({
-  秒,
-  时刻,
-  源,
-  参数: p = 樱花风默认,
-  宽 = 1280,
-  高 = 720,
-}) => {
+export const 樱花风: React.FC<{
+  秒: number;
+  时刻: 樱花风时刻;
+  源: { x: number; y: number };
+  散心?: { x: number; y: number };
+  参数?: 樱花风参数;
+  宽?: number;
+  高?: number;
+}> = ({ 秒, 时刻, 源, 散心, 参数: p = 樱花风默认, 宽 = 1280, 高 = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = 宽 * 成片倍数;
   const H = 高 * 成片倍数;
@@ -103,8 +105,9 @@ export const 樱花风: React.FC<{ 秒: number; 时刻: 樱花风时刻; 源: { 
     if (!物) 缓存.set(键, (物 = { 流: 造风流(p, 时刻), 墙: 造风墙(p, W, H) }));
     const f = p.风流;
     const 满后 = Math.max(0, 秒 - 时刻.满);
-    // 风流：从源往外打着旋卷，越老越往外、越往右上飘；满了以后从画面中心往四边加速吹散，散完秒 以后一片不留
-    if (满后 >= f.散完秒) return 画墙(ctx, 物.墙, 秒, 时刻, p, W, H);
+    const 心: [number, number] = 散心 ? [散心.x * 成片倍数, 散心.y * 成片倍数] : [W / 2, H / 2];
+    // 风流：从源往外打着旋卷，越老越往外、越往右上飘；满了以后从散心往四边加速吹散，散完秒 以后一片不留
+    if (满后 >= f.散完秒) return 画墙(ctx, 物.墙, 秒, 时刻, p, W, H, 心);
     for (const b of 物.流) {
       if (秒 < b.生) continue;
       const 龄 = 秒 - b.生;
@@ -113,7 +116,7 @@ export const 樱花风: React.FC<{ 秒: number; 时刻: 樱花风时刻; 源: { 
       let x = 源.x * 成片倍数 + Math.cos(角) * 半径 + f.右飘 * 龄 * b.速 * 成片倍数;
       let y = 源.y * 成片倍数 + Math.sin(角) * 半径 * f.散开 * 2 - f.上飘 * 龄 * 成片倍数;
       if (满后 > 0) {
-        const [dx, dy] = [x - W / 2, y - H / 2];
+        const [dx, dy] = [x - 心[0], y - 心[1]];
         const d = Math.hypot(dx, dy) || 1;
         const 推 = f.散加速 * b.速 * 满后 * 满后 * 成片倍数;
         x += (dx / d) * 推;
@@ -123,7 +126,7 @@ export const 樱花风: React.FC<{ 秒: number; 时刻: 樱花风时刻; 源: { 
       if (x < -边 || x > W || y < -边 || y > H) continue;
       画瓣(ctx, 贴图们[b.图]!, x, y, b.档, b.转, b.翻);
     }
-    画墙(ctx, 物.墙, 秒, 时刻, p, W, H);
+    画墙(ctx, 物.墙, 秒, 时刻, p, W, H, 心);
   });
   return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, imageRendering: 'pixelated' }} />;
 };
