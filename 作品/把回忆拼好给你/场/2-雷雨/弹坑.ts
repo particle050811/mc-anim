@@ -25,6 +25,13 @@ export class Java随机 {
   nextFloat() {
     return this.next(24) / (1 << 24);
   }
+  nextDouble() {
+    return (this.next(26) * 2 ** 27 + this.next(27)) * 2 ** -53;
+  }
+  /** RandomSource.triangle：a + b ×（两次 nextDouble 之差） */
+  triangle(a: number, b: number) {
+    return a + b * (this.nextDouble() - this.nextDouble());
+  }
   nextInt(n: number) {
     // 只用到 2 的幂以外的小 n，照 Random.nextInt(bound) 的拒绝采样
     if ((n & -n) === n) return Number((BigInt(n) * BigInt(this.next(31))) >> 31n);
@@ -238,7 +245,7 @@ export const 地表高 = (留下: readonly 方块[], i: number, j: number, 从z 
 /** 爆炸：普通苦力怕（威力 3）溜进开着的门，在门里那格（箱子南边）炸。种子挑的样子：箱子炸没、掉出箱子本身；
  *  南墙西半截（i 0～3）连西南角那根原木炸穿，门炸没；后墙炸开的两格（2,2,0）、（1,2,2）都在第 8 句补过的那块（i 1～2、k 0～2）里；
  *  屋里东边的工作台、熔炉、木桶、东墙都留着；外面看屋顶完好（天花板那层炸了几格，从南边看不见）；地板炸开一层，掉落物浮在这个浅坑里。
- *  门不掉（种子挑的）：橡木门的物品是平面图标，这一场的掉落物只画方块。Agent 暂定 */
+ *  门不掉（种子挑的）。Agent 暂定 */
 export const 坑爆炸: 爆炸 = { 心: [0.7, 0.5, 0], 威力: 3, 种子: 91 };
 
 let 坑缓存: 炸后 | undefined;
@@ -263,4 +270,60 @@ export const 玩家捡得到 = (位: readonly [number, number, number], 脚: rea
     位[2] + 0.25 > 脚[2] - 0.5 &&
     位[2] < 脚[2] + 高 + 0.5
   );
+};
+
+// ---------- 箱子里的东西 ----------
+/** 箱子里放着的东西（演绎，Agent 暂定）：第 9 句门口种下的樱花树苗就从这只箱子里来，还有一块蛋糕、一把虞美人。
+ *  原版箱子被炸掉时里面的东西全掉出来（ChestBlock.onRemove → Containers.dropContents），不受 1/威力 的衰减；树苗、花、蛋糕的物品是平面图（item/generated），掉在地上半格大，比方块物品大一倍 */
+export const 箱里: readonly { 物品: string; 个数: number }[] = [
+  { 物品: 'minecraft:cherry_sapling', 个数: 3 },
+  { 物品: 'minecraft:cake', 个数: 1 },
+  { 物品: 'minecraft:poppy', 个数: 5 },
+];
+/** 箱子里的东西洒出来用的随机数种子（种子挑的是三样都落在坑底、彼此和炸出来的几堆都隔开半格以上、偏缺口这边看得见，Agent 暂定） */
+export const 箱里种子 = 1450;
+
+/** 一个掉落物实体最后停在哪（场景坐标，脚底那点）：照 Containers.dropItemStack 生成（箱子那格里随机一点、带一点往上往外的初速），
+ *  再照 ItemEntity.tick 走：每刻先 −0.04、移动，在地上横向乘 0.6 × 0.98、空中乘 0.98，竖直乘 0.98，落地竖直速度归零。
+ *  碰撞只看物品中心那一列：落到那一列最高的实心顶面上，横着撞进实心格就停下那个方向（原版按 0.25 见方的碰撞箱算，这里差不到一格的几分之一） */
+const 洒出 = (留下: readonly 方块[], 格: readonly [number, number, number], r: Java随机): [number, number, number] => {
+  const 实心 = new Set(留下.filter((b) => 抗爆值(b.状态) > 0).map((b) => 键(...b.位)));
+  const 占 = (x: number, y: number, z: number) => 实心.has(键(...格于(x, y, z)));
+  // Containers.dropItemStack：floor + nextDouble × 0.75 + 0.125（物品宽 0.25），竖直不加 0.125；MC 的 x、y、z 依次对场景的 x、z、y
+  let x = 格[0] - 0.5 + r.nextDouble() * 0.75 + 0.125;
+  let z = 格[2] + r.nextDouble() * 0.75;
+  let y = 格[1] + r.nextDouble() * 0.75 + 0.125;
+  r.nextInt(21); // stack.split(nextInt(21) + 10)：这几堆都不到 10 个，不分堆
+  let vx = r.triangle(0, 0.11485000171139836), vz = r.triangle(0.2, 0.11485000171139836), vy = r.triangle(0, 0.11485000171139836);
+  for (let t = 0; t < 200; t++) {
+    vz -= 0.04;
+    if (!占(x + vx, y, z)) x += vx;
+    else vx = 0;
+    if (!占(x, y + vy, z)) y += vy;
+    else vy = 0;
+    let 地上 = false;
+    if (!占(x, y, z + vz)) z += vz;
+    else {
+      // 竖直撞上方块：往下就落在那格顶上，速度归零（Block.updateEntityAfterFallOn），往上就顶住
+      if (vz < 0) {
+        z = Math.floor(z + vz) + 1;
+        地上 = true;
+      }
+      vz = 0;
+    }
+    const f = 地上 ? 0.6 * 0.98 : 0.98;
+    vx *= f;
+    vy *= f;
+    vz *= 0.98;
+  }
+  return [x, y, z];
+};
+
+/** 箱子里的东西洒在坑里停住的样子（位 = 实体脚底那点；浮动偏 = ItemEntity.bobOffs） */
+export const 箱里掉落们 = (留下: readonly 方块[], 种子 = 箱里种子) => {
+  const r = new Java随机(种子);
+  return 箱里.map(({ 物品, 个数 }) => {
+    const 位 = 洒出(留下, 箱子格, r);
+    return { 物品, 个数, 位, 浮动偏: r.nextFloat() * Math.PI * 2 };
+  });
 };
