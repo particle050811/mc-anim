@@ -1,27 +1,30 @@
 // 放进 3D 场景里的一张照片（05-画风 原则 8：平面的东西当一张片放进 3D）：正面朝南（朝侧剖面的镜头）、竖着，白边照 照片画.ts 的 相纸。
 // 用法：放进三渲二画布的场景内容里（Z 朝上，单位格），<照片 画={…} 底={[x, y, z]} />；要描边就包在 <描边> 里。
-// 内容可换：画 给一张 像素画（现在是 照片画.ts 的四张顶替画），以后那几句做出来换成真帧。
-// 缩放 1 时一个照片像素 = 1/64 格（方块贴图像素的四分之一，照片画.ts 的 照片细分）。缩放 × 照片细分 是整数时（一个照片像素是整的四分之一贴图像素）
-// 左下角吸到 1/16 格上，正交机位里照片像素落在成片的整像素上（N 是 4 的倍数时）；在动的时候不吸。
+// 内容可换：画 给一张 像素画（现在是 照片画.ts 的四张顶替画），或一张现成的图（照片图.ts：以后那几句渲出来的真帧，白边按比例补）。
+// 缩放 1 时画面 1 格宽（像素画一个照片像素 = 1/64 格，方块贴图像素的四分之一，照片画.ts 的 照片细分）。缩放 × 照片细分 是整数时
+// 左下角吸到 1/16 格上，正交机位里像素画的像素落在成片的整像素上（N 是 4 的倍数时）；在动的时候不吸。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { sRGB转线性 } from '@engine/model/方块拼搭.tsx';
 import { MC面明暗 } from '@engine/三渲二/平涂.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 照片像素, 照片尺寸, 照片细分, type 像素画 } from './照片画.ts';
+import { 照片细分 } from './照片画.ts';
+import { 源像素, 源尺寸, 是现成图, type 照片源 } from './照片图.ts';
 
-const 贴图缓存 = new Map<像素画, THREE.DataTexture>();
-const 贴图 = (画: 像素画) => {
-  let t = 贴图缓存.get(画);
+const 贴图缓存 = new Map<照片源, THREE.DataTexture>();
+const 贴图 = (源: 照片源) => {
+  let t = 贴图缓存.get(源);
   if (!t) {
-    const { 宽, 高 } = 照片尺寸(画);
-    t = new THREE.DataTexture(照片像素(画), 宽, 高, THREE.RGBAFormat);
+    const { 宽, 高 } = 源尺寸(源);
+    t = new THREE.DataTexture(源像素(源), 宽, 高, THREE.RGBAFormat);
     t.colorSpace = THREE.SRGBColorSpace;
-    t.magFilter = t.minFilter = THREE.NearestFilter;
+    // 像素画放大、缩小都取最近的像素；现成的图比画面上的像素多时按线性取（不然缩小了满是噪点）
+    t.magFilter = THREE.NearestFilter;
+    t.minFilter = 是现成图(源) ? THREE.LinearFilter : THREE.NearestFilter;
     t.generateMipmaps = false;
     t.flipY = false;
     t.needsUpdate = true;
-    贴图缓存.set(画, t);
+    贴图缓存.set(源, t);
   }
   return t;
 };
@@ -29,7 +32,8 @@ const 贴图 = (画: 像素画) => {
 const 吸 = (v: number) => Math.round(v * 16) / 16;
 
 export type 照片属性 = {
-  画: 像素画;
+  /** 像素画或现成的图（照片图.ts） */
+  画: 照片源;
   /** 照片下边的中点（场景坐标，格） */
   底: V3;
   /** 整张缩放（1 = 一个照片像素 1/64 格），往箱子里放时缩小 */
@@ -37,9 +41,9 @@ export type 照片属性 = {
 };
 
 export const 照片: React.FC<照片属性> = ({ 画, 底, 缩放 = 1 }) => {
-  const { 宽, 高 } = 照片尺寸(画);
-  const w = (宽 / 16 / 照片细分) * 缩放;
-  const h = (高 / 16 / 照片细分) * 缩放;
+  const { 宽, 高, 每格像素 } = 源尺寸(画);
+  const w = (宽 / 每格像素) * 缩放;
+  const h = (高 / 每格像素) * 缩放;
   const mat = useMemo(() => {
     // 朝南的面平涂会乘 0.8（MC 面明暗），相纸就成了灰的；照片是拿在手里的物件，材质色补回去，平涂后还是贴图原色乘色调
     const m = new THREE.MeshStandardMaterial({ map: 贴图(画), roughness: 1, metalness: 0 });
