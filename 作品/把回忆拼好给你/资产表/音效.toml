@@ -136,3 +136,27 @@ id = "音效/把回忆拼好给你/entity.boat.paddle_water.8"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water8.ogg（对象 sha1 7181418daf6f2afa35460ddbe0702cf12d9d63ce），0.90 秒；sounds.json 里 volume 0.8"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/touhou_little_maid.entity.box"
+"类别" = "音效"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 sounds/entity/box.ogg（0.71 秒）：右键蛋糕盒每一下（EntityBox.interact 放 InitSounds.BOX_OPEN），第 3 句拆盒三下"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.1"
+"类别" = "音效"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 sounds/block/altar_craft_1.ogg（3.09 秒）：祭坛合成的声音（block.altar_craft 两个随机一个）"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2"
+"类别" = "音效"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 sounds/block/altar_craft_2.ogg（1.72 秒）：祭坛合成的声音，第 3 句点祭坛那一下用这个"
