@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import 归隐段 from './段/2-归隐/段.ts';
@@ -31,6 +31,13 @@ import { 照片墙格们, 照片墙格位 } from './地点/照片墙格.ts';
 import { 地图画像素, 地图调色板, 白边 } from './特效/地图画.ts';
 import { 第8句照片们 } from './特效/照片画.ts';
 import { 楼下N } from './现实/楼下布局.ts';
+
+// 特效/照片画.ts 顶上就解码四张照片（真帧资产，打包时才有 asset:），这里换成一张 1×1 的 RGBA（同 祭坛召唤.test.ts）
+const 一像素 = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+vi.mock('asset:贴图/照片/第3句递蛋糕', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第4句日落划船', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第5句扑龙蛋', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第7句光柱破云', () => ({ default: 一像素 }));
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
