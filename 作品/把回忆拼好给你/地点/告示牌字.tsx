@@ -1,12 +1,13 @@
 // 告示牌上的字（门口小木屋 的 告示牌字 传它）：原版 SignRenderer 的排法，四行、行高 10 个字像素、一个字像素 1/96 格（告示牌尺寸），
-// 每行水平居中；默认黑字（DyeColor.BLACK，不发光的字原版按 0.4 压暗，黑还是黑）。字形用本作品的像素字（像素字文案.txt 里要有这些字）。
+// 每行水平居中（原版 −width / 2 按整数除）；默认黑字（DyeColor.BLACK，不发光的字原版按 0.4 压暗，黑还是黑）。字形用 告示牌字表（告示牌字文案.txt 里要有这些字）。
 // 画法：字画进一张小画布（一个字像素 2 个画布像素，unihex 的半像素点也画得下），贴在一片朝南的薄片上，最近邻、不透明的点才画（alphaTest）。
-// 第 9 句写下「明年六月见」以后，第 13、14、15 句告示牌上一直有这行字。N = 6 时一个字像素只有 1 个成片像素，只看得出一行字，读不出来。
-// 发光（可选，默认不发光）：原版用发光墨囊涂过的字（SignRenderer：黑字的描边换成 #F0EBCC，八个方向各偏一个字像素先画一遍描边色，再画字，满亮度）。
+// 一个 unihex 点 = 1/192 格 = N/12 个成片像素：N 取 12 的倍数，点的边才都落在整像素上。
+// 发光（可选，默认不发光）：原版用发光墨囊涂过的字满亮度画字色；描边（SignRenderer.isOutlineVisible）黑字总画、别的颜色离镜头 16 格以内才画，
+// 先八个方向各偏一个字像素画一遍描边色（黑字用 #F0EBCC，别的颜色是字色 × 0.4），再画字。汉字笔画细，描边会把笔画缝填满（用户 10-24 嫌「字怎么这么脏」）。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { 像素字 } from '../界面/像素字.ts';
 import { 告示牌尺寸 } from './告示牌.tsx';
+import { 告示牌字表 } from './告示牌字表.ts';
 
 /** 一个字像素几个画布像素 */
 const 画布倍 = 2;
@@ -19,7 +20,18 @@ const 发光描边色 = (色: string) => {
 };
 const 八方 = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]] as const;
 
-export const 告示牌像素字: React.FC<{ 行们: readonly string[]; 色?: string; 发光?: boolean }> = ({ 行们, 色 = '#000000', 发光 = false }) => {
+export type 告示牌像素字属性 = {
+  行们: readonly string[];
+  /** 字色（原版 DyeColor 的 textColor） */
+  色?: string;
+  /** 涂过发光墨囊 */
+  发光?: boolean;
+  /** 发光字画不画描边：不写照原版（黑字画；别的颜色当作镜头在 16 格外，不画） */
+  描边?: boolean;
+};
+
+export const 告示牌像素字: React.FC<告示牌像素字属性> = ({ 行们, 色 = '#000000', 发光 = false, 描边 }) => {
+  const 画描边 = 发光 && (描边 ?? 色.toLowerCase() === '#000000');
   const 键 = 行们.join('\n');
   const { 材质, 宽, 高 } = useMemo(() => {
     const 行 = 键.split('\n');
@@ -32,11 +44,10 @@ export const 告示牌像素字: React.FC<{ 行们: readonly string[]; 色?: str
     const ctx = c.getContext('2d')!;
     行.forEach((t, i) => {
       if (!t) return;
-      const w = 像素字.字宽(t);
-      // 原版：第 i 行顶在 i·10 − 20（以字面中心为 0），每行按字宽居中
-      const x = W / 2 - w / 2, y = H / 2 + i * 10 - 20;
-      if (发光) for (const [dx, dy] of 八方) 像素字.画(ctx, t, { x: 0, y: 0 }, x + dx, y + dy, 发光描边色(色), 画布倍);
-      像素字.画(ctx, t, { x: 0, y: 0 }, x, y, 色, 画布倍);
+      // 原版：第 i 行顶在 i·10 − 20、左边在 −width / 2（Java 整数除，往 0 取整；以字面中心为 0）
+      const x = W / 2 + Math.trunc(-告示牌字表.字宽(t) / 2), y = H / 2 + i * 10 - 20;
+      if (画描边) for (const [dx, dy] of 八方) 告示牌字表.画(ctx, t, { x: 0, y: 0 }, x + dx, y + dy, 发光描边色(色), 画布倍);
+      告示牌字表.画(ctx, t, { x: 0, y: 0 }, x, y, 色, 画布倍);
     });
     const tex = new THREE.CanvasTexture(c);
     tex.magFilter = tex.minFilter = THREE.NearestFilter;
@@ -44,7 +55,7 @@ export const 告示牌像素字: React.FC<{ 行们: readonly string[]; 色?: str
     tex.colorSpace = THREE.SRGBColorSpace;
     const m = new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: 0.5, depthWrite: false });
     return { 材质: m, 宽: W * 告示牌尺寸.字像素, 高: H * 告示牌尺寸.字像素 };
-  }, [键, 色, 发光]);
+  }, [键, 色, 画描边]);
   useEffect(
     () => () => {
       材质.map?.dispose();
