@@ -8,7 +8,7 @@ const 画面: React.FC = () => {
   const v = 视图们[useCurrentFrame()]!;
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <日落划船画面 歌曲帧={v.帧} 浪={v.浪 ?? true} 后期={v.后期 ?? true} 描边={v.描边 ?? true} />
+      <日落划船画面 歌曲帧={v.帧} 浪={v.浪 ?? true} 后期={v.后期 ?? true} />
     </AbsoluteFill>
   );
 };

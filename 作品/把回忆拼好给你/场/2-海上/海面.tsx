@@ -1,7 +1,7 @@
 // 第 4 句的海：一整片原版水面，从镜头脚下一直铺到视距，远处那一圈分档淡进雾色（天色.ts 的 地平色），再往外是天（天.tsx 画在三维画布后面）。
 // 照原版：贴图 water_still（贴图/场景/边城/水面，原版 1.20.1 jar 里的那张，16×512 竖排 32 帧，每 2 刻换一帧、不插值），乘海洋群系水色；
 // 贴图自带透明度 180/255，原版是半透明画在海底上，这里把海底当成一个暗色直接混进去、整片不透明：不透明才写深度，
-// 船身在水下的那截被挡住，描边那遍也挡（描边.tsx：半透明不写深度的会被当成不存在，船的轮廓就会描到水下去）。
+// 船身在水下的那截被挡住（半透明不写深度，船底会透出来）。
 // 不做反光、菲涅尔、波浪起伏（五家评审 10-24 说 CG 反光不像 MC）。船舱那一块挖掉（原版 water_patch 只写深度、挡掉船里的水，同一个意思）。
 // 颜色在 sRGB 数值上乘（同 平涂.tsx），色调自己乘：平涂把 MeshBasicMaterial 当不受光的、不乘色调。
 import React, { useMemo } from 'react';
@@ -45,7 +45,7 @@ const 雾表 = () => {
 
 const sRGB数 = (hex: string) => new THREE.Color().setStyle(hex, THREE.LinearSRGBColorSpace);
 
-// 平涂、描边派生的材质都跑同一个 onBeforeCompile，统一量是这一份对象，改一次全跟着变
+// 平涂派生的材质也跑同一个 onBeforeCompile，统一量是这一份对象，改一次全跟着变
 const 统一量 = {
   seaTex: { value: null as THREE.Texture | null },
   seaFog: { value: null as THREE.Texture | null },

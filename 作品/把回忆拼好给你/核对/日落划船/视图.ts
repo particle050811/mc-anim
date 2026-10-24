@@ -8,7 +8,6 @@ export type 视图 = {
   帧: number;
   /** 整片后期，不给 = 开 */
   后期?: boolean;
-  描边?: boolean;
   /** 画不画浪，不给 = 画 */
   浪?: boolean;
 };

@@ -15,11 +15,10 @@ import {
   浪进,
   海平线y,
   海机位,
-  海描边宽,
   游戏刻,
   照片帧,
-  眼起机位,
   眼机位,
+  眼起机位,
   眼珠,
   窗,
   船态,
@@ -90,13 +89,17 @@ describe('原版木船', () => {
     for (let i = 1; i < 声.length; i++) expect(声[i]! - 声[i - 1]!).toBeCloseTo(0.8, 6);
     expect(开划秒 + 2 / 20 + 0.8).toBeCloseTo(正片事件.桨入水.秒, 6);
   });
-  it('海平线那一刻船在原点、往西走；你在前、她在后，她侧坐朝南', () => {
+  it('海平线那一刻船在原点、往南偏西走；你在前、她在后，她侧坐朝东偏南', () => {
     expect(船态(事.海平线.帧).loc[0]).toBeCloseTo(0, 9);
-    expect(船态(事.拉远到位.帧).loc[0]).toBeLessThan(0);
+    expect(船态(事.海平线.帧).loc[1]).toBeCloseTo(0, 9);
+    const 到 = 船态(事.拉远到位.帧).loc;
+    expect(到[1]).toBeLessThan(0);
+    expect(到[0]).toBeLessThan(0);
+    expect(Math.abs(到[0])).toBeLessThan(Math.abs(到[1]));
     const g = 照片帧;
-    expect(你位(g).loc[0]).toBeLessThan(她位(g).loc[0]);
-    expect(她位(g).yaw).toBe(180);
-    expect(你位(g).yaw).toBe(90);
+    expect(你位(g).loc[1]).toBeLessThan(她位(g).loc[1]);
+    expect(你位(g).yaw).toBe(160);
+    expect(她位(g).yaw).toBe(250);
   });
 });
 
@@ -138,17 +141,37 @@ describe('海上的镜头', () => {
     expect(船[1]).toBeLessThan(720);
     expect(她[1]).toBeGreaterThan(海平线y(机) - 40);
   });
-  it('描边是偶数、至少 2', () => {
-    for (const g of 海上帧们) {
-      const w = 海描边宽(g);
-      expect(w % 2).toBe(0);
-      expect(w).toBeGreaterThanOrEqual(2);
+  it('拉远到位以后你露侧脸、她正对镜头（核查 10-24：原来你一直背着镜头）', () => {
+    // 人朝向和「人 → 镜头」的夹角（度）；yaw 同 FigurePose：朝向 (−sin, cos)
+    const 夹角 = (人: { loc: readonly number[]; yaw: number }, 眼: readonly number[]) => {
+      const 朝 = [-Math.sin((人.yaw * Math.PI) / 180), Math.cos((人.yaw * Math.PI) / 180)];
+      const 到镜 = [眼[0]! - 人.loc[0]!, 眼[1]! - 人.loc[1]!];
+      return (Math.acos((朝[0]! * 到镜[0]! + 朝[1]! * 到镜[1]!) / Math.hypot(到镜[0]!, 到镜[1]!)) * 180) / Math.PI;
+    };
+    for (const g of [事.拉远到位.帧, 照片帧, 事.浪起.帧]) {
+      const 眼 = 海机位(g).眼;
+      expect(夹角(你位(g), 眼), `歌曲帧 ${g}`).toBeLessThan(80);
+      expect(夹角(她位(g), 眼), `歌曲帧 ${g}`).toBeLessThan(30);
     }
-    expect(每格像素(海机位(照片帧), 船态(照片帧).loc)).toBeGreaterThan(0);
+  });
+  it('照片帧上人船够大：船那里一格在手机 390 宽上至少 60 像素（坐着的人一格半高，至少 90 像素）', () => {
+    const 机 = 海机位(照片帧);
+    expect((每格像素(机, 船态(照片帧).loc) * 390) / 1280).toBeGreaterThan(60);
   });
 });
 
 describe('匹配剪辑', () => {
+  it('推镜起点正对右眼、脸宽是画面的 眼起脸宽 倍（右眼的特写，不是整张脸）', () => {
+    const 机 = 眼起机位();
+    expect(机).toEqual(眼机位(窗.起帧));
+    const 珠 = 投影点(机, 眼珠.右)!;
+    expect(珠[0]).toBeCloseTo(640, 3);
+    expect(珠[1]).toBeCloseTo(360, 3);
+    const 左 = 投影点(机, [眼珠.右[0] - 眼珠.脸宽 / 2, 眼珠.右[1], 眼珠.右[2]])!;
+    const 右 = 投影点(机, [眼珠.右[0] + 眼珠.脸宽 / 2, 眼珠.右[1], 眼珠.右[2]])!;
+    expect(Math.abs(右[0] - 左[0]) / 1280).toBeCloseTo(眼起脸宽, 3);
+    expect(眼起脸宽).toBeGreaterThanOrEqual(1);
+  });
   it('眼化日那一刻右眼眼珠落在太阳上、一样高', () => {
     const g = 事.眼化日.帧;
     const 机 = 眼机位(g);
@@ -161,17 +184,6 @@ describe('匹配剪辑', () => {
     expect(下[1] - 上[1]).toBeCloseTo(日.边, 1);
   });
   it('眼睛特写一路往里推（眼珠越来越大）', () => {
-  it('推镜起点正对右眼、脸宽是画面的 眼起脸宽 倍（右眼的特写，不是整张脸）', () => {
-    const 机 = 眼起机位();
-    expect(机).toEqual(眼机位(窗.起帧));
-    const 珠 = 投影点(机, 眼珠.右)!;
-    expect(珠[0]).toBeCloseTo(640, 3);
-    expect(珠[1]).toBeCloseTo(360, 3);
-    const 左 = 投影点(机, [眼珠.右[0] - 眼珠.脸宽 / 2, 眼珠.右[1], 眼珠.右[2]])!;
-    const 右 = 投影点(机, [眼珠.右[0] + 眼珠.脸宽 / 2, 眼珠.右[1], 眼珠.右[2]])!;
-    expect(Math.abs(右[0] - 左[0]) / 1280).toBeCloseTo(眼起脸宽, 3);
-    expect(眼起脸宽).toBeGreaterThanOrEqual(1);
-  });
     let 前 = 0;
     for (let g = 窗.起帧; g <= 事.眼化日.帧; g++) {
       const 机 = 眼机位(g);
