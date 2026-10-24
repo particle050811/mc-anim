@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { 设透视相机 } from '@engine/三渲二/机位.tsx';
+import type { 资产cue } from '@engine/段/段定义.ts';
 import 雷雨段 from './段/2-雷雨/段.ts';
 import 拨开阴霾段 from './段/2-拨开阴霾/段.ts';
 import 抢龙蛋段 from './段/2-抢龙蛋/段.ts';
@@ -76,11 +77,13 @@ describe('串：第 6、7 句', () => {
   it('5→6 接缝：闪电落在切点上（2-雷雨 第 0 帧就在闪），雨声在 2-抢龙蛋 段尾先淡进来、段尾那一帧已经满了', () => {
     expect(帧('第6句闷雷')).toBe(雷雨.起帧);
     expect(闪(雷雨.起帧)).toBe(true);
-    const 雨们 = (抢龙蛋段.声音 ?? []).filter((c) => (c as { 资产?: string }).资产?.includes('weather.rain'));
+    const 雨们 = (抢龙蛋段.声音 ?? []).filter((c): c is 资产cue => c.资产?.includes('weather.rain') === true);
     expect(雨们.length).toBeGreaterThan(0);
-    const 头 = 雨们[0] as { 帧: number; 增益: number[] };
+    const 头 = 雨们[0]!;
     expect(头.帧).toBeGreaterThan(段窗口('2-抢龙蛋').止帧 - 段窗口('2-抢龙蛋').起帧 - fps);
-    expect(头.增益[0]!).toBeLessThan(头.增益.at(-1)!);
+    const 增益 = 头.增益 as readonly number[];
+    expect(Array.isArray(增益)).toBe(true);
+    expect(增益[0]!).toBeLessThan(增益.at(-1)!);
     expect(雨声起帧).toBeLessThan(雷雨.起帧);
   });
 
