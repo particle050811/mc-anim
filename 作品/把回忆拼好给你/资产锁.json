@@ -5,6 +5,12 @@
     "大小": 19718,
     "库": "store"
   },
+  "字体/把回忆拼好给你/启动器字": {
+    "sha256": "ef766a37129538a62ef04a27eff0e74e3bdb1a6fdfe43827f315195aa45cf5b8",
+    "后缀": ".json",
+    "大小": 4632,
+    "库": "store"
+  },
   "字体/把回忆拼好给你/歌词字": {
     "sha256": "17100ca50cf4eb7c1bc6e50a2b40850a005807849327de4c7f76d7d951d58cb1",
     "后缀": ".json",
@@ -15,6 +21,18 @@
     "sha256": "2b3d7f4614af4b9fe43eb124498cd41ff837b9fdb29caa743020aedea53491f4",
     "后缀": ".bin",
     "大小": 146986,
+    "库": "store"
+  },
+  "贴图/启动器/新合照-占位": {
+    "sha256": "6e28586fe337744687d41ddb86c6d7cd9c58a00c36805d84a307531304580469",
+    "后缀": ".png",
+    "大小": 71676,
+    "库": "store"
+  },
+  "贴图/启动器/旧合照-占位": {
+    "sha256": "7886bee357c86480dba348920af33d32bb64179cb8c496f91a96f2378e3f404a",
+    "后缀": ".png",
+    "大小": 61650,
     "库": "store"
   },
   "贴图/场景/樱花林/cherry_leaves": {
@@ -291,6 +309,54 @@
     "sha256": "ad7161d98bff950d82778b64ad4d0e28003df0ee32e1b570d710dcbd4d7b7db9",
     "后缀": ".ogg",
     "大小": 13918,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.1": {
+    "sha256": "bad9396e5d3cda334ffa7b9205bd677672d0c8605d5cc44ebc1435b578081212",
+    "后缀": ".ogg",
+    "大小": 11088,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.2": {
+    "sha256": "9c9dcd0edb8f1ceb50ca50bb28d2f9624b85f498ea026390189901ac9237c935",
+    "后缀": ".ogg",
+    "大小": 10525,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.3": {
+    "sha256": "9190aec97afaabdfab69c45c53e027bb027105e40dd454dccd16490698220dd7",
+    "后缀": ".ogg",
+    "大小": 12560,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.4": {
+    "sha256": "0c785a74ee0b3398ffb8bc971a4558c58fda65fe65078f939038963bd6f99485",
+    "后缀": ".ogg",
+    "大小": 12127,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.5": {
+    "sha256": "174cc208d7adbd472e1c31ed21a92a3674787c987bc6ba2879dd96f29042fcfc",
+    "后缀": ".ogg",
+    "大小": 14006,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.6": {
+    "sha256": "6ced6b6c1e6da2f198d6c09c07c00bac9bcc0835affb4466bba57570b48882fb",
+    "后缀": ".ogg",
+    "大小": 12755,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.7": {
+    "sha256": "1dbea8ed84a5e24d636f76fd5ed3cb59e1b071234ea367ee74327d27d06e5cf3",
+    "后缀": ".ogg",
+    "大小": 10165,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.8": {
+    "sha256": "eca7161b759404fb0058d046f5d7f8a56a4ed0d24335c28f971ba1f17128345d",
+    "后缀": ".ogg",
+    "大小": 11071,
     "库": "store"
   },
   "音效/把回忆拼好给你/entity.cat.hiss.1": {

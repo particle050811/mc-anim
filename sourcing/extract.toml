@@ -1411,3 +1411,54 @@
 "音效/把回忆拼好给你/entity.firework_rocket.blast" = "src/音效/把回忆拼好给你/entity.firework_rocket.blast.ogg"
 "音效/把回忆拼好给你/entity.firework_rocket.large_blast" = "src/音效/把回忆拼好给你/entity.firework_rocket.large_blast.ogg"
 "音效/把回忆拼好给你/entity.firework_rocket.twinkle" = "src/音效/把回忆拼好给你/entity.firework_rocket.twinkle.ogg"
+
+# 把回忆拼好给你 第 0 镜、片尾的启动器（作品 场/2-启动器）用的像素字：只收作品 界面/启动器字文案.txt 里的字，格式、取法同「把回忆拼好给你像素字」。
+# 单开一张表：并进 像素字文案.txt 会让 字体/把回忆拼好给你/像素字 换版本，已有画面跟着重渲。
+[["取材"]]
+"名称" = "把回忆拼好给你启动器字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "启动器字.json", "{作品根}/界面/启动器字文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/启动器字" = "启动器字.json"
+
+# 原版 1.20 樱花木船（库/物品/船.tsx；把回忆拼好给你 第 4 句日落划船）。BoatModel.createBodyModel（m_246613_）调同类静态的 createChildren（m_246203_），
+# 自带 128×64 贴图尺寸；部件 bottom、back、front、right、left、left_paddle、right_paddle、water_patch，划桨的转角在 船.tsx 照 BoatModel.animatePaddle 算
+[["取材"]]
+"名称" = "樱花木船"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/物品/船.模型.json", "船=net.minecraft.client.model.BoatModel:m_246613_()", "--贴图", "樱花木=assets/minecraft/textures/entity/boat/cherry.png"],
+]
+["取材"."产物"]
+"模型/物品/船" = "src/模型/物品/船.模型.json"
+"贴图/物品/船/樱花木" = "src/模型/物品/船.模型.png"
+
+# 把回忆拼好给你 第 4 句日落划船：原版船桨划水声（Boat.tick 里桨转过 π/4 时 playSound(paddle_water)，音量 1、音高 0.8～1.2）。
+# 只有本作品用，登记在作品资产表；id 多一层 把回忆拼好给你/，不落进「音效」那条的 音效/* 通配。
+[["取材"]]
+"名称" = "日落划船音效"
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.boat.paddle_water"],
+]
+["取材"."产物"]
+"音效/把回忆拼好给你/entity.boat.paddle_water.1" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.1.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.2" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.2.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.3" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.3.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.4" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.4.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.5" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.5.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.6" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.6.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.7" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.7.ogg"
+"音效/把回忆拼好给你/entity.boat.paddle_water.8" = "src/音效/把回忆拼好给你/entity.boat.paddle_water.8.ogg"
