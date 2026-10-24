@@ -52,11 +52,11 @@ const 朝向 = (在: V3, 眼: V3, 歪: number) => {
 };
 
 /**
- * 她手里的月铃兰，场景坐标（Z 朝上）：握点在 在（她右手握持点），正面朝 眼。轮廓色 用这一镜调子的描边色。
+ * 她手里的月铃兰，场景坐标（Z 朝上）：握点在 在（她右手握持点），正面朝 眼。轮廓色 用这一镜调子的描边色，不给就不画外轮廓（全片不描边时）。
  * 放在她的 描边 组里也不描（里面自己关掉），外轮廓自己画。
  */
-export const 亮月铃兰: React.FC<{ 在: V3; 眼: V3; 歪?: number; 轮廓色: string }> = ({ 在, 眼, 歪 = 0, 轮廓色 }) => {
-  const 轮廓 = useMemo(() => 轮廓贴图(轮廓色), [轮廓色]);
+export const 亮月铃兰: React.FC<{ 在: V3; 眼: V3; 歪?: number; 轮廓色?: string }> = ({ 在, 眼, 歪 = 0, 轮廓色 }) => {
+  const 轮廓 = useMemo(() => (轮廓色 ? 轮廓贴图(轮廓色) : null), [轮廓色]);
   const 轮廓大 = 大 * ((16 + 2 * 轮廓参数.边) / 16);
   const q = 朝向(在, 眼, 歪);
   return (
@@ -67,10 +67,12 @@ export const 亮月铃兰: React.FC<{ 在: V3; 眼: V3; 歪?: number; 轮廓色:
             <ItemSprite layers={月铃兰层} emissive={0} shadow={false} />
           </平涂>
           {/* 外轮廓贴在正面前面一点点（挤出厚 1/16，正面在 +1/32） */}
-          <mesh position={[0, 0, 1 / 32 + 0.004]} scale={轮廓大 / 大}>
-            <planeGeometry args={[1, 1]} />
-            <meshBasicMaterial map={轮廓} alphaTest={0.5} toneMapped={false} />
-          </mesh>
+          {轮廓 && (
+            <mesh position={[0, 0, 1 / 32 + 0.004]} scale={轮廓大 / 大}>
+              <planeGeometry args={[1, 1]} />
+              <meshBasicMaterial map={轮廓} alphaTest={0.5} toneMapped={false} />
+            </mesh>
+          )}
         </描边>
       </group>
     </group>
