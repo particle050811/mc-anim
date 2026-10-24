@@ -5,7 +5,7 @@
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 光束色阶 } from './参数.ts';
+import { 光束色阶, 龙朝向 } from './参数.ts';
 import { 死亡光束 as 算光束 } from './光束.ts';
 
 const 顶点 = /* glsl */ `
@@ -27,7 +27,7 @@ void main() {
 
 /** 死刻：龙死了多少刻（连续）；龙位：这一刻龙在哪（场景坐标） */
 export const 死亡光束: React.FC<{ 死刻: number; 龙位: V3 }> = ({ 死刻, 龙位 }) => {
-  const 束 = useMemo(() => 算光束(死刻), [死刻]);
+  const 束 = useMemo(() => 算光束(死刻, 龙朝向), [死刻]);
   const 材质 = useMemo(
     () =>
       new THREE.ShaderMaterial({
