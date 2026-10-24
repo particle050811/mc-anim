@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { 读资产锁, type 资产锁 } from '../资产/资产锁.ts';
+import { 作品们 } from '../环境/作品.ts';
+import { 读作品资产锁, 读资产锁, type 资产锁 } from '../资产/资产锁.ts';
 import { 要过闸 } from './mcai.ts';
 import { 核对产物 } from './提取.ts';
 import { 可直接跑, 填, 展开产物, 展开步骤, 解析清单, 读清单, 选条目, type 展开环境 } from './清单.ts';
@@ -32,6 +33,11 @@ const 清单文本 = `
 "待迁移" = "还没搬"
 "公开版" = "不提取"
 "步骤" = [["ts", "x.ts"]]
+[["取材"]]
+"名称" = "丁"
+"作品" = "乙作"
+"公开版" = "提取"
+"步骤" = [["python", "{脚本}/x.py", "{作品根}/文案.txt"]]
 `;
 const jar文本 = `
 [["Mojang"."客户端"]]
@@ -41,26 +47,29 @@ const jar文本 = `
 "id" = "b"
 "到" = "mods/b.jar"
 `;
-const v: 展开环境 = { jar路径: (id) => `/游戏/${id}.jar`, prism数据: '/prism', 脚本: '/仓库/sourcing/extract', python: 'python3', mcai: ['python3', '/仓库/mcai.py'] };
+const v: 展开环境 = { jar路径: (id) => `/游戏/${id}.jar`, prism数据: '/prism', 脚本: '/仓库/sourcing/extract', 作品根: '/仓库/作品/乙作', python: 'python3', mcai: ['python3', '/仓库/mcai.py'] };
 
 describe('取材清单', () => {
   const q = 解析清单(清单文本, jar文本);
 
   it('读出条目、组、jar', () => {
-    expect([...q.条目.keys()]).toEqual(['甲', '乙', '丙']);
+    expect([...q.条目.keys()]).toEqual(['甲', '乙', '丙', '丁']);
+    expect(q.条目.get('丁')?.作品).toBe('乙作');
     expect(q.jars.get('b')?.到).toBe('mods/b.jar');
     expect(q.条目.get('乙')?.前置).toEqual(['甲']);
   });
 
-  it('--全部 只选有步骤、不用开游戏、不待迁移的；组按组里的先后', () => {
-    expect(选条目(q, [], true).map((e) => e.名称)).toEqual(['甲']);
+  it('--全部 只选有步骤、不用开游戏、不待迁移的，写了别的作品的不选；组按组里的先后', () => {
+    expect(选条目(q, [], true).map((e) => e.名称)).toEqual(['甲', '丁']);
+    expect(选条目(q, [], true, '甲作').map((e) => e.名称)).toEqual(['甲']);
+    expect(选条目(q, [], true, '乙作').map((e) => e.名称)).toEqual(['甲', '丁']);
     expect(选条目(q, ['一组', '甲'], false).map((e) => e.名称)).toEqual(['乙', '甲']);
     expect(() => 选条目(q, ['没有'], false)).toThrow('没有「没有」');
     expect(可直接跑(q.条目.get('丙')!)).toBe(false);
   });
 
   it('展开简称、占位符和 {输出}', () => {
-    expect(填('{jar:a,b}|{prism数据}/x|{脚本}/y.py', v)).toBe('/游戏/a.jar,/游戏/b.jar|/prism/x|/仓库/sourcing/extract/y.py');
+    expect(填('{jar:a,b}|{prism数据}/x|{脚本}/y.py|{作品根}/z', v)).toBe('/游戏/a.jar,/游戏/b.jar|/prism/x|/仓库/sourcing/extract/y.py|/仓库/作品/乙作/z');
     expect(展开步骤(q, q.条目.get('甲')!.步骤[0]!, v)).toEqual([
       'uv',
       'run',
@@ -110,10 +119,14 @@ describe('核对产物', () => {
 });
 
 describe('仓库里的清单', () => {
-  it('extract.toml、jars.toml 能读，「需要」都在 jars.toml，产物都在资产锁里', () => {
+  it('extract.toml、jars.toml 能读，「需要」都在 jars.toml，产物都在资产锁里（写了作品的在那部作品的锁里）', () => {
     const q = 读清单();
-    const 锁 = 读资产锁();
+    const 共用锁 = 读资产锁();
+    const 们 = 作品们();
     for (const e of q.条目.values()) {
+      const 根 = e.作品 === undefined ? undefined : 们.get(e.作品);
+      if (e.作品 !== undefined) expect(根, `${e.名称} 的作品 ${e.作品}`).toBeDefined();
+      const 锁 = 根 ? 读作品资产锁(根) : 共用锁;
       for (const i of e.需要) expect(q.jars.has(i), `${e.名称} 需要 ${i}`).toBe(true);
       for (const p of e.前置) expect(q.条目.has(p)).toBe(true);
       const { 对, 空 } = 展开产物(e.产物, 锁);
