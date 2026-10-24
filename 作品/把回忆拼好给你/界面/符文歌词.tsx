@@ -22,8 +22,8 @@ import { png, type Png } from '@engine/model/贴图.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import type { 字形表 } from '@库/界面/像素字表.ts';
 import { fps } from '../分镜.ts';
-import { 光明, 光明圈数, 刹那, 刹那块, 放下, 放下块, 时差, 烟花, 烟花火花, 在词里 } from './歌词字效.ts';
-import { 分块, 字种, 飞们, 飞位, type 块 } from './符文拼字.ts';
+import { 光明, 光明档数, 刹那, 刹那块, 放下, 放下块, 时差, 烟花, 烟花火花, 在词里 } from './歌词字效.ts';
+import { 分块, 字种, 收拢, 符文倍, 飞们, 飞位, type 块 } from './符文拼字.ts';
 import { 做字源, 合样式, 字状态, 排一句, 解码时段, type 一字状态, type 摆字, type 符文歌词样式, type 符文歌词行 } from './符文排版.ts';
 
 export { 符文歌词默认 } from './符文排版.ts';
@@ -127,8 +127,8 @@ const 亮点 = (层: 点层, 格: 摆字, 解后: number, 可见: (X: number, Y:
     }
 };
 
-/** 一块落定后这一帧怎么画：挪几点、什么颜色（关键词效果改它），冰 = 刹那冻住的两档冰色 */
-type 块样 = { dx: number; dy: number; 色: readonly number[]; 冰?: boolean };
+/** 一块落定后这一帧怎么画：挪几点、什么颜色（关键词效果改它）；冰 = 刹那：1 闪（整块冰亮色、外一圈冰色），2 冰（冰色、朝上的点亮一档） */
+type 块样 = { dx: number; dy: number; 色: readonly number[]; 冰?: 0 | 1 | 2 };
 
 type 一字 = { 格: 摆字; 音: string; 状: 一字状态; 时: { 起: number; 完: number }; 种: number; 块们: readonly 块[] };
 
@@ -138,50 +138,56 @@ const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式,
   const 符色 = 色(样式.符文色);
   const 飞 = 飞们(块们, 音, { ...时, 入: 状.入 }, 样式.飞帧, 种);
   const 画 = (X: number, Y: number, c: readonly number[], 光 = 0) => 点(层, X, Y, 调 ? 调(c) : c, 光);
-  // 符文先画（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）
+  // 符文先画（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）。一个字母像素画成 倍 × 倍 个点，最后一截缩回 1 倍
   飞.forEach((一, k) => {
     const 位 = 飞位(一, f);
     if (!位) return;
     const 留 = 1 - 状.出;
     const 现 = f - 一.起 < 1 ? 0.5 : 1;
+    const 倍 = (f - 一.起) / (一.落 - 一.起) < 收拢 ? 符文倍 : 1;
     const 阵 = 源.符文(一.字母);
     const 心 = 块们[k]!.心;
-    const x0 = Math.round(格.x + 心[0] + 位[0] - 阵.宽 / 2);
-    const y0 = Math.round(格.y + 心[1] + 位[1] - 3.5);
+    const x0 = Math.round(格.x + 心[0] + 位[0] - (阵.宽 * 倍) / 2);
+    const y0 = Math.round(格.y + 心[1] + 位[1] - 3.5 * 倍);
     const c = 符色.map((v) => v * 一.亮);
-    for (const [x, y] of 阵.点) {
-      const X = x0 + x;
-      const Y = y0 + y;
-      if (留 * 现 > 阈(X, Y)) 画(X, Y, c, 1);
-    }
+    for (const [x, y] of 阵.点)
+      for (let sy = 0; sy < 倍; sy++)
+        for (let sx = 0; sx < 倍; sx++) {
+          const X = x0 + x * 倍 + sx;
+          const Y = y0 + y * 倍 + sy;
+          if (留 * 现 > 阈(X, Y)) 画(X, Y, c, 1);
+        }
   });
-  // 落定那一帧：外面一圈闪圈色、笔画是闪色
+  // 刚落定的块：头一帧外面一圈闪圈色，闪帧 帧内笔画是闪色；刹那冻住、裂开那一下外面一圈冰色、笔画冰亮色
   const 闪圈 = 色(样式.闪圈色);
   const 闪 = 色(样式.闪色);
   const 落着 = 飞.map((一) => f >= 一.落);
+  const 样们 = 飞.map((_, k) => (落着[k] ? 块样(k) : null));
   飞.forEach((一, k) => {
-    if (!落着[k] || f - 一.落 >= 1) return;
-    const s = 块样(k);
+    const s = 样们[k];
+    if (!s) return;
+    const 圈 = s.冰 === 1 ? 色(刹那.冰色) : f - 一.落 < 1 ? 闪圈 : null;
+    if (!圈) return;
     const 有 = new Set(块们[k]!.点.map(([x, y]) => `${x},${y}`));
     for (const [x, y] of 块们[k]!.点)
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
         if (有.has(`${x + dx},${y + dy}`)) continue;
         const X = Math.round(格.x + x + dx + s.dx);
         const Y = Math.round(格.y + y + dy + s.dy);
-        if (状.显 > 阈(X, Y)) 画(X, Y, 闪圈);
+        if (状.显 > 阈(X, Y)) 画(X, Y, 圈);
       }
   });
   飞.forEach((一, k) => {
-    if (!落着[k]) return;
-    const s = 块样(k);
-    const 刚落 = f - 一.落 < 1;
+    const s = 样们[k];
+    if (!s) return;
+    const 刚落 = f - 一.落 < 样式.闪帧;
     // 冰：笔画朝上露着的点亮一档（上面一点不是这个字的笔画）
-    const 字点集 = s.冰 ? new Set(源.汉字(格.字).点.map(([x, y]) => `${x},${y}`)) : null;
+    const 字点集 = s.冰 === 2 ? new Set(源.汉字(格.字).点.map(([x, y]) => `${x},${y}`)) : null;
     for (const [x, y] of 块们[k]!.点) {
       const X = Math.round(格.x + x + s.dx);
       const Y = Math.round(格.y + y + s.dy);
       if (!(状.显 > 阈(X, Y))) continue;
-      const c = 刚落 ? 闪 : 字点集 ? (字点集.has(`${x},${y - 1}`) ? 色(刹那.冰色) : 色(刹那.冰亮色)) : s.色;
+      const c = s.冰 === 1 ? 色(刹那.冰亮色) : 刚落 ? 闪 : 字点集 ? (字点集.has(`${x},${y - 1}`) ? 色(刹那.冰色) : 色(刹那.冰亮色)) : s.色;
       画(X, Y, c);
     }
   });
@@ -222,20 +228,19 @@ const 上光泽 = (层: 点层, f: number) => {
   }
 };
 
-/** 把 影 垫在 层 底下：层 空着的点取 影 的点，不透明度乘 a（时差的残影） */
-const 垫底 = (层: 点层, 影: 点层, a: number) => {
+/** 把 影 垫在 层 底下：层 空着的点取 影 的点（时差的残影） */
+const 垫底 = (层: 点层, 影: 点层) => {
   for (let k = 0; k < 层.宽 * 层.高; k++) {
     if (层.px[k * 4 + 3] || !影.px[k * 4 + 3]) continue;
-    for (let ch = 0; ch < 3; ch++) 层.px[k * 4 + ch] = 影.px[k * 4 + ch]!;
-    层.px[k * 4 + 3] = Math.round(影.px[k * 4 + 3]! * a);
+    for (let ch = 0; ch < 4; ch++) 层.px[k * 4 + ch] = 影.px[k * 4 + ch]!;
   }
 };
 
-/** 光明的光圈：到这个词笔画的曼哈顿距离一档一档亮（描边在时从描边外面起），只画在空处 */
-const 光圈 = (层: 点层, 点们: readonly (readonly [number, number])[], 圈数: number, 有描边: boolean, 显: number) => {
-  if (!圈数 || !点们.length) return;
+/** 光明的光：到这个词笔画的曼哈顿距离分档，每档 光明.档宽 点、一档一个实色（描边在时从描边外面起），只画在空处 */
+const 光圈 = (层: 点层, 点们: readonly (readonly [number, number])[], 档数: number, 有描边: boolean, 显: number) => {
+  if (!档数 || !点们.length) return;
   const 起 = 有描边 ? 2 : 1;
-  const R = 起 + 圈数 - 1;
+  const R = 起 + 档数 * 光明.档宽 - 1;
   const xs = 点们.map(([x]) => x);
   const ys = 点们.map(([, y]) => y);
   const x0 = Math.min(...xs) - R;
@@ -267,13 +272,12 @@ const 光圈 = (层: 点层, 点们: readonly (readonly [number, number])[], 圈
       队.push(nk);
     }
   }
-  const c = 色(光明.光色);
   for (let k = 0; k < w * h; k++) {
     const d = 距[k]!;
     if (d < 起 || d > R) continue;
     const X = x0 + (k % w);
     const Y = y0 + Math.floor(k / w);
-    if (显 > 阈(X, Y)) 空点(层, X, Y, c, 光明.档们[d - 起]!);
+    if (显 > 阈(X, Y)) 空点(层, X, Y, 色(光明.档色们[Math.floor((d - 起) / 光明.档宽)]!));
   }
 };
 
@@ -302,15 +306,17 @@ const 画一句 = (行们: readonly 符文歌词行[], i: number, f: number, 底
   const 行 = 行们[i]!;
   const 样式 = 合样式(底样式, 行.版);
   if (!Number.isInteger(样式.字点) || 样式.字点 <= 0) throw new Error(`符文歌词的字点要是正整数：${样式.字点}`);
-  // 进场前（符文最早在进场那一帧起飞）、退场完都不画
+  // 进场前（符文最早在进场那一帧起飞）、退场完（时差的残影晚半拍退）都不画
   if (f < 行.入) return null;
+  const 效 = 行.字效;
   const 状们 = 字状态(行们, i, f, 样式, 收);
-  if (状们.every((s) => s.出 >= 1)) return null;
+  const 迟 = 效?.效 === '时差' ? f - 效.半拍 : null;
+  const 迟状们 = 迟 === null ? null : 字状态(行们, i, 迟, 样式, 收);
+  if (状们.every((s) => s.出 >= 1) && (!迟状们 || 迟状们.every((s) => s.出 >= 1))) return null;
   const 时段 = 解码时段(行, 样式);
   const 格们 = 排一句(源, 行.词, 样式, 宽, 高, 行.版).格们;
   const 字们: 一字[] = 格们.map((格, j) => ({ 格, 音: 行.拼音[j]!, 状: 状们[j]!, 时: 时段[j]!, 种: 字种(行.序 ?? 0, j), 块们: 分块(格.字, 源.汉字(格.字)) }));
   const 层 = 新层(Math.ceil(宽 / 样式.字点), Math.ceil(高 / 样式.字点));
-  const 效 = 行.字效;
   const 齐 = 效 ? Math.max(...时段.slice(效.从, 效.到 + 1).map((d) => d.完)) : Infinity;
   const 字色 = 色(样式.字色);
   const 块样法 = (j: number) => (k: number): 块样 => {
@@ -327,7 +333,7 @@ const 画一句 = (行们: readonly 符文歌词行[], i: number, f: number, 底
         const 中x = (词格[0]!.x + 词格[词格.length - 1]!.x + 16) / 2;
         const 中y = 词格[0]!.y + 8;
         const 块 = 字们[j]!.块们[k]!;
-        const r = 刹那块(f, 齐, 效.裂, [字们[j]!.格.x + 块.心[0] - 中x, 字们[j]!.格.y + 块.心[1] - 中y], 种);
+        const r = 刹那块(f, 字们[j]!.时.完, 效.裂, [字们[j]!.格.x + 块.心[0] - 中x, 字们[j]!.格.y + 块.心[1] - 中y], 种);
         return { dx: r.dx, dy: r.dy, 色: 字色, 冰: r.冰 };
       }
       case '放下': {
@@ -346,29 +352,22 @@ const 画一句 = (行们: readonly 符文歌词行[], i: number, f: number, 底
     const 留 = 1 - 状们[效.从]!.出;
     if (效.效 === '光明') {
       const 点们 = 词们.flatMap((z) => 源.汉字(z.格.字).点.map(([x, y]) => [z.格.x + x, z.格.y + y] as const));
-      光圈(层, 点们, 光明圈数(f, 齐), !!样式.描边色, 状们[效.从]!.显);
+      光圈(层, 点们, 光明档数(f, 齐), !!样式.描边色, 状们[效.从]!.显);
     }
     if (效.效 === '烟花') {
       const 心: [number, number] = [(词们[0]!.格.x + 词们[词们.length - 1]!.格.x + 16) / 2, 词们[0]!.格.y + 8];
       画火花(层, 心, [(词们[词们.length - 1]!.格.x + 16 - 词们[0]!.格.x) / 2 + 1, 9], f, 齐, 字们[效.从]!.种, 留);
     }
-    if (效.效 === '时差') {
-      // 残影另画一层（晚半拍的拼字、错开、自己带描边），再垫到本体底下；颜色按原色的亮度染成冷色
-      const 迟 = f - 效.半拍;
-      const 迟状们 = 字状态(行们, i, 迟, 样式, 收);
+    if (迟 !== null && 迟状们) {
+      // 残影另画一层：晚半拍的拼字（进场、符文、落定、退场都晚半拍），错开、一档实色冷蓝、不描边，再垫到本体底下
       const 影 = 新层(层.宽, 层.高);
       const 冷 = 色(时差.色);
-      const 调 = (c: readonly number[]) => {
-        const 亮 = 0.5 + (0.5 * (c[0]! * 0.3 + c[1]! * 0.59 + c[2]! * 0.11)) / 255;
-        return 冷.map((v) => v * 亮);
-      };
       词们.forEach((z, n) => {
         const j = 效.从 + n;
         const 格 = { ...z.格, x: z.格.x + 时差.偏[0], y: z.格.y + 时差.偏[1] };
-        画字(影, { ...z, 格, 状: { ...迟状们[j]!, 出: 状们[j]!.出, 显: 迟状们[j]!.显 * (1 - 状们[j]!.出) } }, 迟, 样式, () => ({ dx: 0, dy: 0, 色: 字色 }), 调);
+        画字(影, { ...z, 格, 状: 迟状们[j]! }, 迟, 样式, () => ({ dx: 0, dy: 0, 色: 字色 }), () => 冷);
       });
-      描边(影, 样式.描边色);
-      垫底(层, 影, 时差.透);
+      垫底(层, 影);
     }
   }
   return { 层, 字点: 样式.字点 };
