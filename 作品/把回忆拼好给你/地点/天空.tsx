@@ -24,13 +24,13 @@ const 混 = (a: readonly number[], b: readonly number[], t: number) => a.map((v,
 /** 太阳、月亮贴图一格 32×32 像素，画出来一个贴图像素 = 方块的一个贴图像素（2 格见方） */
 const 天体边 = 32;
 
-const 画天体 = (ctx: CanvasRenderingContext2D, tex: Png, u0: number, v0: number, x0: number, y0: number, n: number) => {
+const 画天体 = (ctx: CanvasRenderingContext2D, tex: Png, u0: number, v0: number, x0: number, y0: number, n: number, 透 = 1) => {
   for (let v = 0; v < 天体边; v++)
     for (let u = 0; u < 天体边; u++) {
       const o = ((v0 + v) * tex.w + u0 + u) * 4;
       const a = tex.px[o + 3]!;
       if (!a || !(tex.px[o]! | tex.px[o + 1]! | tex.px[o + 2]!)) continue;
-      ctx.fillStyle = `rgba(${tex.px[o]},${tex.px[o + 1]},${tex.px[o + 2]},${a / 255})`;
+      ctx.fillStyle = `rgba(${tex.px[o]},${tex.px[o + 1]},${tex.px[o + 2]},${(a / 255) * 透})`;
       ctx.fillRect(x0 + u * n, y0 + v * n, n, n);
     }
 };
@@ -47,11 +47,13 @@ export type 侧剖面天空属性 = {
   弧?: 天弧;
   /** 天随昼夜变暗的程度（1 照原版，0 一直白天的颜色），第 13 句快转时压低 */
   明暗幅度?: number;
+  /** 快转时太阳、月亮身后的残影：再画 张 个早 刻差、2·刻差…刻的位置，最近的不透明度 首透，往后按张数线性变淡；不给不画 */
+  残影?: { 张: number; 刻差: number; 首透: number };
   style?: React.CSSProperties;
 };
 
 /** 放在三维画布后面（同一个定位容器里、先画），自己铺满 宽 × 高 */
-export const 侧剖面天空: React.FC<侧剖面天空属性> = ({ 取景, 宽, 高, 色, 刻 = 6000, 弧, 明暗幅度 = 1, style }) => {
+export const 侧剖面天空: React.FC<侧剖面天空属性> = ({ 取景, 宽, 高, 色, 刻 = 6000, 弧, 明暗幅度 = 1, 残影, style }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = 宽 * 成片倍数, H = 高 * 成片倍数;
   useLayoutEffect(() => {
@@ -73,16 +75,21 @@ export const 侧剖面天空: React.FC<侧剖面天空属性> = ({ 取景, 宽, 
       ctx.fillRect(0, 地y - (r + 1) * n, W, n);
     }
     if (!弧) return;
-    const 位 = 天体位置(刻, 弧);
     const 吸 = (v: number, 原: number) => 原 + Math.round((v - 原) / n) * n;
     ctx.globalCompositeOperation = 'lighter';
-    const 画 = (tex: Png, u0: number, v0: number, x: number, z: number) => {
+    const 画 = (tex: Png, u0: number, v0: number, x: number, z: number, 透?: number) => {
       const px = 吸(W / 2 + (x - 中心[0]) * 每格 - (天体边 * n) / 2, 格x0);
       const py = 吸(H / 2 - (z - 中心[1]) * 每格 - (天体边 * n) / 2, 地y);
-      画天体(ctx, tex, u0, v0, px, py, n);
+      画天体(ctx, tex, u0, v0, px, py, n, 透);
     };
-    画(png(sunPng), 0, 0, 位.太阳.x, 位.太阳.z);
-    画(png(moonPng), (位.月亮.相 % 4) * 天体边, Math.floor(位.月亮.相 / 4) * 天体边, 位.月亮.x, 位.月亮.z);
+    const 画两个 = (t: number, 透?: number) => {
+      const 位 = 天体位置(t, 弧);
+      画(png(sunPng), 0, 0, 位.太阳.x, 位.太阳.z, 透);
+      画(png(moonPng), (位.月亮.相 % 4) * 天体边, Math.floor(位.月亮.相 / 4) * 天体边, 位.月亮.x, 位.月亮.z, 透);
+    };
+    // 残影从最远（最淡）的画起
+    if (残影) for (let i = 残影.张; i >= 1; i--) 画两个(刻 - i * 残影.刻差, (残影.首透 * (残影.张 - i + 1)) / 残影.张);
+    画两个(刻);
     ctx.globalCompositeOperation = 'source-over';
   });
   return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, ...style }} />;
