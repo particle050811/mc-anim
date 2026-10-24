@@ -1,0 +1,32 @@
+// 现实部分的画布：三渲二画布（平涂、正交侧剖面机位朝北、描边），像素 N、俯角、描边宽和右屏门口同一套（画风.ts），调子默认色板「现实」。
+// 场景内容放 children（现实课桌、撕页手；以后第 14 句的考场、楼上也放这里）；整片后期在外面包。
+import type React from 'react';
+import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
+import type { 调子 } from '@engine/三渲二/调子.ts';
+import { 侧机位, type 侧取景 } from '../地点/侧剖面.tsx';
+import { 描边 as 描边默认, 正交顶面 } from '../画风.ts';
+import { 色板, type 调子名 } from '../色板.ts';
+
+/** 场景没盖住的地方（不该露出来，露了也是暗的） */
+const 底色 = '#1b2027';
+
+export type 现实画布属性 = {
+  /** 画布的页面尺寸（成片 scale 2），要偶数 */
+  宽: number;
+  高: number;
+  /** 取景：中心 = 画面中心对着剖面 y = 0 上的 [x, z]（格），每格 = 16N 成片像素 */
+  取景: 侧取景;
+  调子?: 调子名 | 调子;
+  /** 描边开关（默认照 画风.ts） */
+  描边?: boolean;
+  children: React.ReactNode;
+};
+
+export const 现实画布: React.FC<现实画布属性> = ({ 宽, 高, 取景, 调子: 调 = '现实', 描边 = 描边默认.开, children }) => {
+  const t = typeof 调 === 'string' ? 色板[调] : 调;
+  return (
+    <三渲二画布 宽={宽} 高={高} 机位={侧机位(取景, 正交顶面)} 天={底色} 色调={t.色调} 描边={描边 ? { 宽: 描边默认.宽, 色: t.描边 } : false}>
+      {children}
+    </三渲二画布>
+  );
+};

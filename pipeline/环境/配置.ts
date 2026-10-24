@@ -157,5 +157,7 @@ export const 数据根下 = (p: string) => (path.isAbsolute(p) ? p : path.join(�
 /** 剪映解密.cpp 编出来的程序（按平台分，第一次读回草稿时编） */
 export const 剪映解密程序 = () => 数据路径('cache', '剪映解密', `${process.platform}-${process.arch}`, '剪映解密');
 export const 运行目录 = () => 数据路径('run');
+/** Agent 的中间稿：run/草稿/<UTC 月日-时分>-工作-<主题>/（见 pipeline/预览/预览.ts） */
+export const 草稿根 = () => 数据路径('run', '草稿');
 export const 耗时表 = () => 数据路径('run', 'logs', '耗时.tsv');
 export const 运行记录目录 = () => 数据路径('run', '运行记录');

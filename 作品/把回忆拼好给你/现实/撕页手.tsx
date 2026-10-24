@@ -1,88 +1,46 @@
-// 撕页的那只手（SVG 片段，要放在 <svg> 里）：右手从画面下方伸过来，拇指压在最上面那页的右下角正面、食指绕到纸后面，捏住了要往上撕；
-// 页角被捏得往前翻起一小角（露出纸背），看得出是要撕。
-// 第 13 句「只画手和物件」：现实这边的人只露这只手，穿校服的袖口；扁平平涂，皮肤一层底色加一层背光面，不描边（同课桌上的东西）。
-// 画法：先在「手的坐标」里画（单位 = 手背宽，手指朝上、手背朝镜头，右手所以拇指在左），再整只转到指尖朝左上、捏点对到页角。
-// 食指、蜷着的三根指头、手背在纸的后面或旁边，用页面的方框挖掉（纸挡住它们）；只有拇指压在纸前面。形状、颜色都是 Agent 暂定。
+// 撕页的手：史蒂夫第一人称的方块手臂（库/角色/史蒂夫第一人称.tsx：原版宽手臂、steve 皮肤，肩那头四行青色袖子），从画面右下伸过来，手那头顶在撕页本那页的右下角上。
+// 放在 <像素空间> 里（单位贴图像素）、包在 <描边> 里，和桌上的东西同一套平涂、描边。不画脸，人只露这只手。
+// 大小：原版第一人称的手比世界里的方块大得多（手那一遍单独画、贴着镜头）；这里一个皮肤像素 = 倍 个贴图像素（整数倍，边还落在同一张像素网格上），
+//   倍 6 时手臂 24 个贴图像素宽，手那头比撕页本的角大一圈，从桌沿伸到画面底边，肩那头的青色袖子露在画面里。
+// 摆法：手臂沿 斜（离竖直往右偏几度）从右下往左上伸，绕手臂自己的轴 滚 几度露出内侧那面，手那头往里 俯 几度（离镜头远、肩那头近）。数都在 分屏参数.ts。
 import type React from 'react';
-import { useId } from 'react';
-import { 现实色 } from './色板.ts';
+import * as THREE from 'three';
+import { SteveFirstPersonArm } from '@库/角色/史蒂夫第一人称.tsx';
 
-export type 撕页手参数 = {
-  /** 页面的方框（撕页本几何(…).页，页面像素）：右下角是捏的地方，方框里的手指算在纸后面 */
-  页: { x: number; y: number; 宽: number; 高: number };
-  /** 手背宽（页面像素） */
-  宽: number;
-  /** 指尖朝哪：从正上方往左转几度 */
-  转?: number;
-  /** 页角翻起来多大（页面像素，0 = 不翻） */
-  翻角?: number;
+export type 手摆法 = {
+  /** 一个皮肤像素几个贴图像素（整数） */
+  倍: number;
+  /** 手臂离竖直往右偏几度：0 = 从正下方竖着伸上来 */
+  斜: number;
+  /** 绕手臂的轴转几度（正 = 把小臂内侧那面转向镜头） */
+  滚: number;
+  /** 手那头往里（离镜头）低几度 */
+  俯: number;
 };
 
-// 手的坐标：原点在手背中心，y 朝下（腕在下），x 朝右（小指那边）。捏点 = 拇指尖和食指尖碰在一起的地方
-const 捏点: readonly [number, number] = [-0.42, -1.02];
+// 史蒂夫第一人称手臂的部件坐标（像素）：宽手臂方块占 x −3..1、y −2..10、z −2..2，y 往下是手那头，正面朝 −z
+const 手端 = new THREE.Vector3(-1, 10, 0);
 
-/** 圆头长条：从 a 到 b、粗 w 的手指（两头半圆） */
-const 指 = (a: readonly [number, number], b: readonly [number, number], w: number) => {
-  const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
-  const L = Math.hypot(dx, dy);
-  const [nx, ny] = [(-dy / L) * (w / 2), (dx / L) * (w / 2)];
-  const r = w / 2;
-  return `M${a[0] + nx} ${a[1] + ny} L${b[0] + nx} ${b[1] + ny} A${r} ${r} 0 0 0 ${b[0] - nx} ${b[1] - ny} L${a[0] - nx} ${a[1] - ny} A${r} ${r} 0 0 0 ${a[0] + nx} ${a[1] + ny} Z`;
+/** 手臂的摆放矩阵：手那头端面的中心落在 到（贴图像素，场景坐标 Z 朝上） */
+export const 手臂矩阵 = (到: readonly [number, number, number], 摆: 手摆法): THREE.Matrix4 => {
+  const r = Math.PI / 180;
+  const [a, b] = [摆.斜 * r, 摆.俯 * r];
+  // 部件 +y（肩 → 手）在场景里朝左上、往里：竖直往右偏 斜（从肩看手就是往左上），再往 +y（北，离镜头）低 俯
+  const Y = new THREE.Vector3(-Math.sin(a) * Math.cos(b), Math.sin(b), Math.cos(a) * Math.cos(b)).normalize();
+  // 部件 +z（手背朝的反面，正面朝 −z 对着镜头）先取场景 +y 去掉沿手臂的分量
+  const Z = new THREE.Vector3(0, 1, 0).addScaledVector(Y, -Y.y).normalize();
+  Z.applyAxisAngle(Y, 摆.滚 * r);
+  const X = new THREE.Vector3().crossVectors(Y, Z);
+  const 转 = new THREE.Matrix4().makeBasis(X, Y, Z);
+  return new THREE.Matrix4()
+    .makeTranslation(到[0], 到[1], 到[2])
+    .multiply(转)
+    .multiply(new THREE.Matrix4().makeScale(摆.倍, 摆.倍, 摆.倍))
+    .multiply(new THREE.Matrix4().makeTranslation(-手端.x, -手端.y, -手端.z));
 };
 
-export const 撕页手: React.FC<撕页手参数> = ({ 页, 宽: w, 转 = 38, 翻角: c = 0 }) => {
-  const id = `hand${useId().replace(/[^A-Za-z0-9]/g, '')}`;
-  const 角x = 页.x + 页.宽;
-  const 角y = 页.y + 页.高;
-  // 捏点落在页角往里一点（拇指尖压在纸面上）；翻了角就压在翻起来的那块上
-  const [捏x, 捏y] = c > 0 ? [角x - 0.75 * c, 角y - 0.5 * c] : [角x - w * 0.16, 角y - w * 0.09];
-  const 摆 = `translate(${捏x} ${捏y}) rotate(${-转}) scale(${w}) translate(${-捏点[0]} ${-捏点[1]})`;
-  // 页面以外（纸后面的东西只露出这一块）：整个画布减去页面方框
-  const 外 = `M-10000 -10000 H10000 V10000 H-10000 Z M${页.x} ${页.y} V${角y} H${角x} V${页.y} Z`;
-  const 皮 = 现实色.手;
-  const 影 = 现实色.手影;
-  // 指缝线宽（手的单位）：约一个页面像素
-  const 缝 = 1 / w;
-  return (
-    <g>
-      <defs>
-        <clipPath id={id}>
-          <path d={外} clipRule="evenodd" />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${id})`}>
-        <g transform={摆}>
-          {/* 袖子：校服外套，袖口一道白条；背光的一侧压一层 */}
-          <path d="M-0.62 0.86 L0.6 0.86 L1.0 6 L-1.1 6 Z" fill={现实色.袖} />
-          <path d="M0.3 1.0 L0.6 0.86 L1.0 6 L0.55 6 Z" fill={现实色.袖影} />
-          <path d="M-0.62 0.86 L0.6 0.86 L0.62 1.0 L-0.64 1.0 Z" fill={现实色.袖条} />
-          {/* 手腕（袖口里露出一截） */}
-          <path d="M-0.38 0.5 L0.4 0.5 L0.44 0.9 L-0.42 0.9 Z" fill={皮} />
-          {/* 食指：从指根往前伸到纸后面，纸外面只露出指根那一截 */}
-          <path d={指([-0.3, -0.36], 捏点, 0.25)} fill={皮} stroke={影} strokeWidth={缝} />
-          {/* 蜷起来的中指、无名指、小指：从手背上看是一排短短的指节，一根一根分开 */}
-          {[
-            [-0.05, -0.36, -0.08, -0.6],
-            [0.19, -0.32, 0.18, -0.55],
-            [0.4, -0.25, 0.42, -0.45],
-          ].map(([x0, y0, x1, y1], i) => (
-            <path key={i} d={指([x0!, y0!], [x1!, y1!], 0.24)} fill={皮} stroke={影} strokeWidth={缝} />
-          ))}
-          {/* 手背：盖住指节的根 */}
-          <path d="M-0.46 -0.34 L0.5 -0.24 L0.42 0.42 Q0.4 0.56 0.24 0.56 L-0.28 0.56 Q-0.44 0.56 -0.46 0.42 Z" fill={皮} />
-          {/* 小指那侧背光 */}
-          <path d="M0.5 -0.24 L0.42 0.42 Q0.4 0.56 0.24 0.56 L0.22 0.56 L0.32 -0.24 Z" fill={影} />
-        </g>
-      </g>
-      {/* 页角往前翻起一小角：沿 45° 折，翻过来的那块露纸背 */}
-      {c > 0 && <path d={`M${角x - c} ${角y} L${角x} ${角y - c} L${角x - c} ${角y - c} Z`} fill={现实色.纸背} stroke={现实色.纸边} strokeWidth={0.5} strokeLinejoin="round" />}
-      {/* 拇指：压在纸前面，不挖；指根连着手背，内侧一道背光 */}
-      <g transform={摆}>
-        <path d={指([-0.36, 0.26], [-0.62, -0.42], 0.3)} fill={皮} />
-        <path d={指([-0.62, -0.42], [捏点[0] - 0.02, 捏点[1] + 0.08], 0.23)} fill={皮} stroke={影} strokeWidth={缝} />
-        <path d={指([-0.62, -0.42], [-0.6, -0.4], 0.27)} fill={皮} />
-        <path d="M-0.3 0.2 Q-0.42 -0.1 -0.5 -0.36" fill="none" stroke={影} strokeWidth={缝 * 1.5} strokeLinecap="round" />
-      </g>
-    </g>
-  );
-};
+export const 撕页手: React.FC<{ 到: readonly [number, number, number]; 摆: 手摆法 }> = ({ 到, 摆 }) => (
+  <group matrix={手臂矩阵(到, 摆)} matrixAutoUpdate={false}>
+    <SteveFirstPersonArm />
+  </group>
+);
