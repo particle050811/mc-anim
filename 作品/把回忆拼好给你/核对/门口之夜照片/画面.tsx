@@ -1,4 +1,4 @@
-// 门口之夜照片的画面：门口之夜画布停在 第11句照片 那一帧、不画气泡；第 0 帧原样，第 1 帧包夜的整片后期（颗粒种子 = 那一帧的歌曲帧，同成片）。
+// 门口之夜照片的画面：门口之夜画布停在 照片帧（第11句照片 后 5 帧，见 门口之夜参数.ts）、不画气泡；第 0 帧原样，第 1 帧包夜的整片后期（颗粒种子 = 那一帧的歌曲帧，同成片）。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
