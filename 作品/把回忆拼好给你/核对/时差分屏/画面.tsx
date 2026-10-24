@@ -10,7 +10,7 @@ const 画面: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <Freeze frame={v.帧}>
-        <时差分屏 帧={v.帧} 描边={v.描边} 后期={v.后期} />
+        <时差分屏 帧={v.帧} 描边={v.描边} 后期={v.后期} 她={v.她} />
       </Freeze>
     </AbsoluteFill>
   );

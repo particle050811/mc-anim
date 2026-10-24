@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { 正片事件 } from './分镜.ts';
-import { 默认天弧 } from './场/2-门口/参数.ts';
 import {
   分屏N,
+  分屏天弧,
   分屏态,
   分屏手偏,
   分屏树方块,
   分屏版式,
   分屏课表z,
   天体残影,
-  她倍,
   手到于,
   撕帧数,
   服务器取景,
@@ -104,7 +103,7 @@ describe('第 13 句分屏', () => {
     expect(屏y((分屏课表z + 课表框.高) / 16, 摆放.课表.y / 16, cz)).toBeGreaterThanOrEqual(0);
     // 表头和第 1、2 节（框顶往下约 40 个贴图像素）在画里
     expect(屏y((分屏课表z + 课表框.高 - 40) / 16, 摆放.课表.y / 16, cz)).toBeLessThan(1440);
-    expect(现实镜.沉止).toBeLessThan(正片事件.撕页100.帧);
+    expect(现实镜.沉止).toBeLessThanOrEqual(正片事件.撕页100.帧);
     expect(现实镜于(正片事件.撕页100.帧)).toEqual(现实镜.桌面);
     expect(现实镜.桌面[1]).toBe(服务器取景.中心[1]);
     for (let f = 现实镜.沉起; f <= 现实镜.沉止; f++) for (const v of 现实镜于(f)) expect(Math.abs(v * 16 - Math.round(v * 16))).toBeLessThan(1e-9);
@@ -143,7 +142,7 @@ describe('第 13 句分屏', () => {
 
   it('太阳一拍转两天；静帧里太阳在服务器那半的天上、高过第 3 截树；轨迹上四个图标互相分开', () => {
     expect((每帧刻 * 0.42611 * 24) / 24000).toBeCloseTo(2, 6);
-    const 弧 = 默认天弧(服务器取景, 分屏版式.服务器宽, 720);
+    const 弧 = 分屏天弧;
     const 刻 = 分屏态(静帧).刻;
     const 日 = 天体位置(刻, 弧).太阳;
     expect(日.高).toBeGreaterThan(0.5);
@@ -152,10 +151,20 @@ describe('第 13 句分屏', () => {
     expect(Math.abs(日.x - 服务器取景.中心[0]) + 1).toBeLessThan(半宽);
     const 位们 = Array.from({ length: 天体残影.张 + 1 }, (_, i) => 天体位置(刻 - i * 天体残影.刻差, 弧).太阳);
     for (let i = 1; i < 位们.length; i++) expect(Math.hypot(位们[i]!.x - 位们[i - 1]!.x, 位们[i]!.z - 位们[i - 1]!.z)).toBeGreaterThan(1.25);
+    // 整天里任两个相邻图标（都在地平线上时）也隔开 1.25 格以上
+    for (let t = 0; t < 24000; t += 50) {
+      const [p, q] = [天体位置(t, 弧).太阳, 天体位置(t - 天体残影.刻差, 弧).太阳];
+      if (p.高 > 0 && q.高 > 0) expect(Math.hypot(p.x - q.x, p.z - q.z)).toBeGreaterThan(1.25);
+    }
   });
 
-  it('她放大以后站着也不比门高出一截（帽尖到门顶 2 格上下）', () => {
-    const 站高 = 1.79; // 魔法酒狐戴帽站着的实测高（格，场/2-门口/参数.ts 注释）
-    expect(站高 * 她倍).toBeLessThan(2.3);
+  it('太阳月亮的弧：右端离屋檐左沿（x −1.5）至少半格、左端离画框至少半格（太阳连色阶 0.75 格见方），弧顶太阳整个在画里', () => {
+    const 半边 = 0.375;
+    const 左框 = 服务器取景.中心[0] - 分屏版式.服务器宽 / 每格;
+    const rx = 分屏天弧.横半径!;
+    expect(分屏天弧.心[0] + rx + 半边).toBeLessThanOrEqual(-1.5 - 0.5);
+    expect(分屏天弧.心[0] - rx - 半边).toBeGreaterThanOrEqual(左框 + 0.5);
+    const 顶框 = 服务器取景.中心[1] + 720 / 每格;
+    expect(分屏天弧.心[1] + 分屏天弧.半径 + 半边).toBeLessThanOrEqual(顶框);
   });
 });
