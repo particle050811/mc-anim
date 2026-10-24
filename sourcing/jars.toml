@@ -161,6 +161,19 @@
 "许可" = "代码 OSI；资源 CC-NC-SA"
 "来源页" = "https://modrinth.com/mod/touhou-little-maid"
 
+# 万法皆通是 jar 套 jar：外层 -all.jar 只有引导类，模组本体在里层 META-INF/maidspell/maidspell-mod.jar，取材条目先解出里层再读
+[["模组"]]
+"id" = "maidspell"
+"名称" = "车万女仆附属 万法皆通 Touhou Little Maid: Spell"
+"文件" = "touhou_little_maid_spell-1.9.3-forge+mc1.20.1-all.jar"
+"版本" = "1.9.3"
+"到" = "缓存/mods/touhou_little_maid_spell-1.9.3-forge+mc1.20.1-all.jar"
+"下载" = "https://cdn.modrinth.com/data/QHB4kBBS/versions/tYyJS9hO/touhou_little_maid_spell-1.9.3-forge%2Bmc1.20.1-all.jar"
+"sha256" = "a8d3f9ab68b8ddd9205baf16a1b19ac17fc91f740aab7325e73b9cec8fda2e90"
+"sha1" = "99c663935e516dd7c270f48ec2bdabe6da99ddcd"
+"许可" = "MIT"
+"来源页" = "https://modrinth.com/mod/QHB4kBBS"
+
 [["模组"]]
 "id" = "irons_spellbooks"
 "名称" = "铁魔法 Iron's Spells 'n Spellbooks"
