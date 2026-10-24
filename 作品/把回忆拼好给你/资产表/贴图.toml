@@ -176,3 +176,19 @@ id = "贴图/粒子/樱花/cherry_11"
 "来源" = "提取:第15句原版@56b71336d2b4"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
+
+[["资产"]]
+id = "贴图/物品/荧光物品展示框/背板"
+"类别" = "贴图"
+"来源" = "提取:照片墙原版@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/block/glow_item_frame.png，16×16，荧光物品展示框空框的背板（template_item_frame.json 的 #back）。照片墙"
+
+[["资产"]]
+id = "贴图/物品/荧光物品展示框/木框"
+"类别" = "贴图"
+"来源" = "提取:照片墙原版@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 textures/block/birch_planks.png，16×16，展示框的木框（template_item_frame.json 的 #wood）"

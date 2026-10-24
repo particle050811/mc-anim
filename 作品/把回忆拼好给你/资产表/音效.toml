@@ -48,3 +48,83 @@ id = "音效/block.wooden_door.open.2"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版资源索引 minecraft/sounds/block/wooden_door/open2.ogg（对象 sha1 21464f4cfb0163f9071d2a84d818bd5ac5b6eee6），0.42 秒"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.add_item.1"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/add_item1.ogg（对象 sha1 cf44e74d49ef2793fb01143a37fd27ee50d0e727），0.09 秒；sounds.json 音量 1、音高 1。荧光物品展示框放入物品（照片墙：她把地图画照片挂进框）"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.add_item.2"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/add_item2.ogg（对象 sha1 281f889e8eadcb21e2bb664d4f337192fab3a139），0.08 秒；sounds.json 音量 1、音高 1"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.add_item.3"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/add_item3.ogg（对象 sha1 e2b2464a1507c129e4fd8aa2447f92cfe1bd61bb），0.10 秒；sounds.json 音量 1、音高 1"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.add_item.4"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/add_item4.ogg（对象 sha1 285196110d802aed2f6797eb436d70e36716edaa），0.13 秒；sounds.json 音量 1、音高 1"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/remove_item1.ogg（对象 sha1 83c8daabf4016b4a69a0aff792629776e646477a），0.07 秒；sounds.json 音量 1、音高 1。荧光物品展示框里的物品被打掉（第 14 句「放」：她把合照从框里取下）"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.2"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/remove_item2.ogg（对象 sha1 35a5c6a402a0f0091c1221a245ea9cc180975cc8），0.10 秒；sounds.json 音量 1、音高 1"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.3"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/remove_item3.ogg（对象 sha1 54ae8bae3da40ea9a80739d7b36106bffaf8854c），0.09 秒；sounds.json 音量 1、音高 1"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.4"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/itemframe/remove_item4.ogg（对象 sha1 7c58d79a33c20c776c6f592b80e96305034c6dbe），0.08 秒；sounds.json 音量 1、音高 1"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.bell.use.1"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bell/bell_use01.ogg（对象 sha1 503833660c919c6a48c885b601fc95f66c56db1e），2.49 秒；sounds.json 音量 12、音高 0.93。原版钟敲响（第 14 句考场收卷铃）"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/block.bell.use.4"
+"类别" = "音效"
+"来源" = "提取:照片墙原版@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/block/bell/bell_use02.ogg（对象 sha1 371dddf142071e187d535c454744c77fde9e1142），2.49 秒；sounds.json 音量 12、音高 0.93"

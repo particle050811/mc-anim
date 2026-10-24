@@ -1362,3 +1362,31 @@
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
+
+# 把回忆拼好给你的照片墙（照片方案 10-24：照片做成地图画，挂在后墙的原版荧光物品展示框里）和第 14 句的原版声音。
+# 荧光框的模型是 models/block/template_item_frame.json（空框）、template_item_frame_map.json（放了地图），贴图 #back = block/glow_item_frame、#wood = block/birch_planks；
+# 形状照模型写在 地点/照片墙.tsx 里，这里只取两张贴图。声音：荧光框放入、取出（sounds.json 里四个都指 entity/itemframe/*），考场收卷铃用原版钟 block.bell.use
+# （bell_use01、02 各登记一个；sounds.json 里同一个文件按音高 0.93/0.95/0.97 列了三遍）。只有 把回忆拼好给你 用：anim --作品 把回忆拼好给你 extract 照片墙原版
+[["取材"]]
+"名称" = "照片墙原版"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/荧光物品展示框", "背板=assets/minecraft/textures/block/glow_item_frame.png", "木框=assets/minecraft/textures/block/birch_planks.png"],
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.glow_item_frame.add_item", "entity.glow_item_frame.remove_item", "block.bell.use"],
+]
+["取材"."产物"]
+"贴图/物品/荧光物品展示框/*" = "src/模型/物品/荧光物品展示框/*.png"
+"音效/把回忆拼好给你/entity.glow_item_frame.add_item.1" = "src/音效/把回忆拼好给你/entity.glow_item_frame.add_item.1.ogg"
+"音效/把回忆拼好给你/entity.glow_item_frame.add_item.2" = "src/音效/把回忆拼好给你/entity.glow_item_frame.add_item.2.ogg"
+"音效/把回忆拼好给你/entity.glow_item_frame.add_item.3" = "src/音效/把回忆拼好给你/entity.glow_item_frame.add_item.3.ogg"
+"音效/把回忆拼好给你/entity.glow_item_frame.add_item.4" = "src/音效/把回忆拼好给你/entity.glow_item_frame.add_item.4.ogg"
+"音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1" = "src/音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1.ogg"
+"音效/把回忆拼好给你/entity.glow_item_frame.remove_item.2" = "src/音效/把回忆拼好给你/entity.glow_item_frame.remove_item.2.ogg"
+"音效/把回忆拼好给你/entity.glow_item_frame.remove_item.3" = "src/音效/把回忆拼好给你/entity.glow_item_frame.remove_item.3.ogg"
+"音效/把回忆拼好给你/entity.glow_item_frame.remove_item.4" = "src/音效/把回忆拼好给你/entity.glow_item_frame.remove_item.4.ogg"
+"音效/把回忆拼好给你/block.bell.use.1" = "src/音效/把回忆拼好给你/block.bell.use.1.ogg"
+"音效/把回忆拼好给你/block.bell.use.4" = "src/音效/把回忆拼好给你/block.bell.use.4.ogg"
