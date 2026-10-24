@@ -8,7 +8,6 @@ import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
 import { serverSendParticles, VanillaParticles } from '@库/特效/原版粒子.tsx';
 import { 成就聊天行, type ChatLine } from '@库/界面/聊天栏.tsx';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 成片倍数 } from '@库/界面/像素字表.ts';
 import { 画幅 } from '../../分镜.ts';
 import { 画布调子 } from '../../画风.ts';
 import { 像素字 } from '../../界面/像素字.ts';
@@ -29,7 +28,8 @@ const 爱心 = tamingHearts(参.她.脚, 参.爱心.宽, 参.爱心.高, 刻(事
 
 /** 聊天栏那一行：成就广播「Steve达成了目标[欢迎回家，主人]」，递蛋糕那一刻进来（第 4 句接着用同一行，起刻不变） */
 export const 第3句聊天行: ChatLine = 成就聊天行('Steve', '欢迎回家，主人', 'goal', 刻(事.递));
-/** 聊天框宽（界面像素）：原版「聊天栏宽度」设置收到刚好放下这一行（getWidth = floor(设置 × 280 + 40)，设置连续可调） */
+/** 聊天宽（界面像素）：原版「聊天栏宽度」设置收到刚好放下这一行（库/界面/像素聊天栏.tsx 的 原版聊天宽，设置连续可调）。
+ *  第 15 句那两镜的 110（界面/聊天栏宽.ts）放不下这一行（144），原版会折成两行，这里另取 */
 export const 第3句聊天宽 = 像素字.字宽(第3句聊天行.text as never);
 
 /** 画布里的东西（场景坐标，画布已经转好 Z 朝上） */
@@ -60,15 +60,10 @@ export const 祭坛画布: React.FC<{ g: number }> = ({ g }) => {
   );
 };
 
-/** 左下角的原版聊天栏（缩放 参.聊天.缩放），横向只露出 聊天框宽 + 12 的底板 */
-export const 祭坛聊天: React.FC<{ g: number; 行们?: readonly ChatLine[] }> = ({ g, 行们 = [第3句聊天行] }) => {
-  const s = 参.聊天.缩放;
-  return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: ((第3句聊天宽 + 12) * s) / 成片倍数, height: 画幅.高, overflow: 'hidden' }}>
-      <像素聊天栏 lines={行们} 刻={刻(g)} 缩放={s} 字体={像素字} 宽={画幅.宽} 高={画幅.高} />
-    </div>
-  );
-};
+/** 左下角的原版聊天栏（缩放 参.聊天.缩放、聊天宽 第3句聊天宽） */
+export const 祭坛聊天: React.FC<{ g: number; 行们?: readonly ChatLine[] }> = ({ g, 行们 = [第3句聊天行] }) => (
+  <像素聊天栏 lines={行们} 刻={刻(g)} 缩放={参.聊天.缩放} 字体={像素字} 宽={画幅.宽} 高={画幅.高} 聊天宽={第3句聊天宽} />
+);
 
 /** 整个画面（不含歌词、整片后期）：界面 = false 时不画聊天栏（照片用） */
 export const 祭坛画面: React.FC<{ g: number; 界面?: boolean }> = ({ g, 界面 = true }) => (
