@@ -3,10 +3,12 @@ import type { 声音cue, 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/2-第一晚/段.ts';
 import {
   事,
+  僵尸态,
   坑态,
   天刻,
   快进起,
   快进止,
+  苦力怕x,
   捡起帧,
   掉落物们,
   挖的出手,
@@ -22,11 +24,13 @@ import {
 } from './段/2-第一晚/编排.ts';
 import { 正片事件, 段窗口, 第几句, fps, 拍 } from './分镜.ts';
 import { 天亮, 天体位置 } from './地点/天体.ts';
-import { 光标, 地层, 死亡消息们, 界面缩放, 聊天宽, 近景, 近景天弧, 远景, 远景天弧, 音效们 } from './场/2-第一晚/参数.ts';
+import { 光标, 地层, 死亡消息们, 界面缩放, 聊天宽, 聊天缩放, 落点x, 近景, 近景天弧, 远景, 远景天弧, 音效们 } from './场/2-第一晚/参数.ts';
 import { 近景地形 } from './场/2-第一晚/地形.ts';
 import { 按钮框, 界面宽, 界面高, 在按钮上 } from './场/2-第一晚/界面布局.ts';
 
 const 帧数 = 段.帧数;
+/** 库/生物/僵尸.tsx、苦力怕.tsx 的 speed.wander 和僵尸碰撞箱宽（那两个 tsx 引资产，vitest 里引不了，照抄） */
+const 僵速 = 2.284, 怕速 = 1.727, 僵宽 = 0.6;
 /** 页面坐标 y（0 在顶）→ 剖面 z（格） */
 const 页y到z = (镜: typeof 远景 | typeof 近景, y: number) => 镜.取景.中心[1] + ((360 - y) * 2) / 镜.取景.每格;
 /** 歌词那一条的下沿（页面 y）：界面/符文排版.ts 的 符文歌词默认，边距 77 成片像素起、字点 7 × 16 点高，再加一点描边 */
@@ -101,6 +105,9 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     expect(死亡画面态(事.点重生)?.重生).toBe('不能按');
     expect(死亡画面态(事.点重生 + 1)).toBeNull();
     expect(在按钮上(0, ...光标.到)).toBe(true);
+    // 倒下的你（脚在 落点x，头朝画面右边约 1.9 格）整个在「标题屏幕」按钮左沿左边，看得见倒地
+    const 头成片x = 1280 + (落点x + 1.9 - 远景.取景.中心[0]) * 远景.取景.每格;
+    expect(头成片x).toBeLessThan(按钮框(1).x * 界面缩放);
     expect([界面宽(), 界面高()]).toEqual([427, 240]);
     expect(按钮框(0)).toEqual({ x: 113, y: 132, w: 200, h: 20 });
   });
@@ -111,7 +118,7 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     for (const l of 聊天行们) expect(聊天刻(快进起 - 1) - l.起刻).toBeLessThan(180);
     expect(聊天刻(快进止) - 聊天行们[2]!.起刻).toBeCloseTo(200, 6);
     // 窄成 聊天宽 的底板盖不到近景的坑（坑在画面正中 x −0.5～0.5）
-    expect(((聊天宽 + 12) * 界面缩放) / 2).toBeLessThan(640 - 近景.取景.每格 / 4);
+    expect(((聊天宽 + 12) * 聊天缩放) / 2).toBeLessThan(640 - 近景.取景.每格 / 4);
   });
 
   it('挖三填一：三拍各挖掉一格、掉一格，填土以后头顶有土、两格高的洞装得下你，挖开天窗那一帧土没了', () => {
@@ -146,16 +153,41 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
       }
   });
 
-  it('天：快进前是夜（天亮 0），挖开天窗时满亮；天上的刻不往回走；洞里的暗只在封顶那段', () => {
+  it('天：快进前是夜（天亮 0），挖开天窗前一帧才亮起来、挖开那一帧满亮；天上的刻不往回走', () => {
     for (let f = 0; f < 快进起; f++) expect(天亮(天刻(f))).toBe(0);
+    expect(天亮(天刻(事.挖开天窗 - 2))).toBeLessThan(0.1);
+    expect(天亮(天刻(事.挖开天窗 - 1))).toBeLessThan(0.7);
     expect(天亮(天刻(事.挖开天窗))).toBe(1);
     for (let f = 1; f < 帧数; f++) expect(天刻(f)).toBeGreaterThanOrEqual(天刻(f - 1));
+  });
+
+  it('洞里的暗只在封顶那段；后墙比你暗', () => {
     for (let f = 0; f < 帧数; f++) {
-      const a = 洞暗(f);
-      if (f < 事.填土 || f >= 事.挖开天窗) expect(a).toBe(0);
-      else expect(a).toBeGreaterThan(0.4);
-      expect(a).toBeLessThan(1);
+      const { 前, 后 } = 洞暗(f);
+      if (f < 事.填土 || f >= 事.挖开天窗) {
+        expect([前, 后]).toEqual([0, 0]);
+        continue;
+      }
+      expect(前).toBeGreaterThan(0.2);
+      expect(后).toBeGreaterThan(0.4);
+      expect(1 - (1 - 前) * (1 - 后)).toBeLessThan(1);
     }
+  });
+
+  it('生物：苦力怕不踩空坑，按原速从封好的坑顶走过至少 6 帧再快进；僵尸、苦力怕近景里不叠在一起，僵尸天亮前走出画', () => {
+    const 怕 = (f: number) => 苦力怕x(f, 怕速);
+    const 僵 = (f: number) => 僵尸态(f, 僵速);
+    // 填土前它的中心不在坑口上（坑口 x −0.5～0.5）
+    for (let f = 0; f < 事.填土; f++) expect(怕(f)).toBeLessThan(-0.45);
+    let 坑顶帧 = 0;
+    for (let f = 事.填土; f < 快进起; f++) if (Math.abs(怕(f)) <= 0.5) 坑顶帧++;
+    expect(坑顶帧).toBeGreaterThanOrEqual(6);
+    // 填土前僵尸盯着你、走到坑东边；快进前站着
+    expect(僵(事.填土 - 1).盯).toBe(true);
+    expect(僵(事.填土)).toMatchObject({ x: 1.1, 走: false, 盯: false });
+    for (let f = 事.挖一; f < 帧数; f++) expect(Math.abs(僵(f).x - 怕(f))).toBeGreaterThan(僵宽);
+    const 近景右沿 = 640 / (近景.取景.每格 / 2);
+    expect(僵(事.挖开天窗).x - 僵宽 / 2).toBeGreaterThan(近景右沿);
   });
 
   it('太阳、月亮不进歌词那一条（本体 8 + 两圈光 = 12 个贴图像素见方，上沿 = 中心 + 6/16 格）', () => {
