@@ -83,3 +83,27 @@ id = "贴图/特效/附魔光泽"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
+
+[["资产"]]
+id = "贴图/环境/末地天空"
+"类别" = "贴图"
+"来源" = "提取:末地贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 environment/end_sky.png，128×128；第 5 句末地的天（LevelRenderer.renderEndSky）和末地传送门星空的底层"
+
+[["资产"]]
+id = "贴图/特效/末地传送门"
+"类别" = "贴图"
+"来源" = "提取:末地贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/end_portal.png，256×256；第 5 句返回传送门的星空层（rendertype_end_portal 的 Sampler1）"
+
+[["资产"]]
+id = "贴图/特效/经验球"
+"类别" = "贴图"
+"来源" = "提取:末地贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/experience_orb.png，64×64，4×4 格一格 16 像素（ExperienceOrb.getIcon 0～10）；第 5 句龙死后落下的经验球"

@@ -1308,3 +1308,20 @@
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
+
+# 把回忆拼好给你 第 5 句末地（场/2-末地）：末地的天（renderEndSky 铺六面）、末地传送门的星空层（rendertype_end_portal 的 Sampler0 是 end_sky、Sampler1 是 end_portal）、经验球（4×4 格 16 像素一格）。
+# 末地石、基岩、龙蛋、火把、黑曜石方块表里都有，不另取。只有本作品用，产物登记在作品资产表：anim --作品 把回忆拼好给你 extract 末地贴图
+[["取材"]]
+"名称" = "末地贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/末地", "末地天空=assets/minecraft/textures/environment/end_sky.png", "末地传送门=assets/minecraft/textures/entity/end_portal.png", "经验球=assets/minecraft/textures/entity/experience_orb.png"],
+]
+["取材"."产物"]
+"贴图/环境/末地天空" = "src/模型/末地/末地天空.png"
+"贴图/特效/末地传送门" = "src/模型/末地/末地传送门.png"
+"贴图/特效/经验球" = "src/模型/末地/经验球.png"
