@@ -170,7 +170,7 @@ id = "贴图/物品/橡木门"
 "来源" = "提取:雷雨破云原版贴图@56b71336d2b4"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
-"说明" = "client jar 的 item/oak_door.png，第 6 句弹坑里浮着的门掉落物"
+"说明" = "client jar 的 item/oak_door.png，第 7 句女仆界面里你快捷栏的那扇门（第 6 句炸成掉落物、被你捡走）"
 
 [["资产"]]
 id = "贴图/界面/女仆界面/主"
