@@ -1,15 +1,15 @@
-// 第 6 句的弹坑：门口小木屋（地点/门口小木屋.tsx，只读，这里照抄它的布局）被闪电劈过的苦力怕炸掉以后剩下的方块，和炸出来浮在坑里的掉落物。纯数据。
+// 第 6、7 句的弹坑：门口小木屋（地点/门口小木屋.tsx，只读，这里照抄它的布局、补上南墙）西南角被苦力怕炸掉以后剩下的方块，和炸出来浮在坑里的掉落物。纯数据。
+// 用户 10-24「应该是炸掉房子一角 爆掉箱子 不然炸空地有什么好伤心的」：炸的是门边那个角，箱子炸没了，后墙炸开的口子就是第 8 句补过的那块（i 1～2、k 0～2）。
 // 爆炸照 1.20.1 的 Explosion.explode（javap 核过的算法）：16³ 立方体表面上的每个方向一条射线，强度 威力 ×（0.7～1.3 随机），每 0.3 格减 0.225，
-//   碰到方块再减（抗爆 + 0.3）× 0.3，强度还大于 0 时这一格炸掉。闪电苦力怕的威力 6（普通 3 × 2）。随机数用 Java 的线性同余（种子在 参数.ts 挑，挑的是坑的样子好看）。
+//   碰到方块再减（抗爆 + 0.3）× 0.3，强度还大于 0 时这一格炸掉。普通苦力怕威力 3。随机数用 Java 的线性同余（种子挑的是缺口的样子，条件见 坑爆炸）。
 // 掉落照 DESTROY_WITH_DECAY（mobExplosionDropDecay 默认开）：每格按 1/威力 的概率掉，同种东西合成一堆（Explosion.addBlockDrops），堆在第一次掉的那格。
 //   游戏里炸掉的格先洗牌再掉（Util.shuffle），这里按射线找到的先后，只影响哪一格先掉、堆在哪，种子照样能挑。
-// 不画焦痕、不画烟熏的暗圈：原版爆炸只是把方块拿掉（用户 10-24 删过门口那圈焦痕）。坑里浮着没炸掉的屋顶、墙柱，原版就是这样（方块不受重力）。
-// 坐标同 门口小木屋：格 (i, j, k) 占 x ∈ [i − 0.5, i + 0.5]、y ∈ [j, j + 1]、z ∈ [k, k + 1]；剖面切在 y = 0。
+// 不画焦痕、不画烟熏的暗圈：原版爆炸只是把方块拿掉（用户 10-24 删过门口那圈焦痕）。没炸掉的方块浮着照原样留（原版方块不受重力）。
+// 坐标同 门口小木屋：格 (i, j, k) 占 x ∈ [i − 0.5, i + 0.5]、y ∈ [j, j + 1]、z ∈ [k, k + 1]。
 import type { 方块 } from '@engine/model/方块拼搭.tsx';
 
-// 同 地点/门口小木屋.tsx 的 小木屋、门口亮度（那个文件带组件和贴图，纯数据模块引不了；它改了这里跟着改，测试里对过）
+// 同 地点/门口小木屋.tsx 的 小木屋（那个文件带组件和贴图，测试引不了；它改了这里跟着改，测试里对过）
 export const 小木屋 = { 西墙: 0, 东墙: 7, 后墙: 2 } as const;
-export const 门口亮度 = { 摆设: 0.85, 后墙: 0.75 } as const;
 
 // ---------- Java 的随机数（java.util.Random） ----------
 const 乘 = 0x5deece66dn, 加 = 0xbn, 掩 = (1n << 48n) - 1n;
@@ -37,16 +37,14 @@ export class Java随机 {
   }
 }
 
-// ---------- 地面和屋子（照抄 门口小木屋 的布局，炸之前的样子） ----------
-/** 爆炸会碰到的地面排（j）：剖面镜头（第 6 句）只画 j ≥ 0（同门口那个机位，剖面切在 y = 0）；第 7 句的透视镜头从南边看，前面几排也要有。
- *  威力 6 的射线在空气里最远约 10 格，j −10～11 以外的地不会被炸到，远处的地另铺（远地方块），不进爆炸（进了只会改掉落的随机数） */
-export const 地面排 = { 前: -10, 后: 11 } as const;
-/** 地下：草方块 k −1，泥土 k −2～−3，石头 k −4 往下（门口剖面那排一样） */
+// ---------- 地面和屋子（照抄 门口小木屋 的布局，补上南墙；炸之前的样子） ----------
+/** 屋子：同 地点/门口小木屋.tsx 的 小木屋（西墙 i 0、东墙 i 7、后墙 j 2），补一面南墙 j −1：第 8 句门口那个剖面切在 y = 0，朝镜头的南墙在剖面外面不画，
+ *  第 6、7 句从南边透视看过来要有这面墙，房子才是房子（南墙、屋顶往南多一排都在剖面外，第 8 句看不见，两边对得上） */
+export const 南墙 = -1;
+/** 平地（屋子四周、爆炸碰得到的这一块，地面顶 z 0）：i、j 的范围。外面的地形在 地形.ts，接缝处那边从 0 起坡 */
+export const 平地 = { 西: -16, 东: 16, 南: -12, 北: 12 } as const;
+/** 地下：草方块 k −1，泥土 k −2～−3，石头到 k −8（同门口剖面那排） */
 export const 地下 = { 泥土: [-3, -2], 石头底: -8 } as const;
-/** 左右铺到哪（格），宽过画面 */
-export const 地面横 = [-16, 16] as const;
-/** 远地：透视镜头往北看到地平线、往两边看到画外，铺一层草方块和一层泥土（不进爆炸） */
-export const 远地 = { 横: [-48, 56], 后: 72 } as const;
 
 const 花草: readonly [string, number][] = [
   ['minecraft:grass', -8],
@@ -65,50 +63,52 @@ const 花草: readonly [string, number][] = [
 ];
 const 两格高 = new Set(['minecraft:tall_grass', 'minecraft:large_fern', 'minecraft:lilac']);
 
-/** 炸之前：门口小木屋的方块（不含门、箱子：门是两格的 oak_door，箱子是方块实体，这里也当方块放进去参与爆炸） */
+/** 炸之前：门口小木屋（补了南墙）和四周的平地。门、箱子在游戏里是方块（箱子是方块实体），这里都当方块放进去参与爆炸（这一场两样都炸没了，见 坑爆炸；方块拼搭 画不了箱子，种子换了要另画） */
 export const 炸前方块 = (): 方块[] => {
   const out: 方块[] = [];
-  const 放 = (状态: string, i: number, j: number, k: number, 亮?: number) => out.push({ 状态, 位: [i, j, k], 亮 });
+  const 放 = (状态: string, i: number, j: number, k: number) => out.push({ 状态, 位: [i, j, k] });
   const { 西墙: W, 东墙: E, 后墙: N } = 小木屋;
-  for (let i: number = 地面横[0]; i <= 地面横[1]; i++) {
-    for (let j: number = 地面排.前; j <= 地面排.后; j++) {
-      const 屋下 = i >= W && i <= E && j >= 0 && j <= N;
+  const S = 南墙;
+  for (let i: number = 平地.西; i <= 平地.东; i++)
+    for (let j: number = 平地.南; j <= 平地.北; j++) {
+      const 屋下 = i >= W && i <= E && j >= S && j <= N;
       if (!屋下) 放('minecraft:grass_block', i, j, -1);
-      else 放(i === W || i === E || j === N ? 'minecraft:cobblestone' : 'minecraft:oak_planks', i, j, -1);
+      else 放(i === W || i === E || j === N || j === S ? 'minecraft:cobblestone' : 'minecraft:oak_planks', i, j, -1);
       for (let k = 地下.泥土[0]; k <= 地下.泥土[1]; k++) 放('minecraft:dirt', i, j, k);
       for (let k = 地下.石头底; k < 地下.泥土[0]; k++) 放('minecraft:stone', i, j, k);
     }
+  for (let k = 0; k < 3; k++) {
+    // 西墙：j 0 是门（门口剖面那格），j 1 木板；东墙两格木板；四个墙角原木
+    放('minecraft:oak_planks', W, 1, k);
+    for (let j = 0; j <= 1; j++) 放('minecraft:oak_planks', E, j, k);
+    for (const [i, j] of [[W, S], [E, S], [W, N], [E, N]] as const) 放('minecraft:oak_log[axis=y]', i, j, k);
+    // 后墙（炸之前还没补过，整面旧木板）、南墙，各开一扇窗（南墙的窗和后墙的对着）
+    for (let i = W + 1; i < E; i++) {
+      放(i === 窗位[0] && k === 窗位[1] ? 'minecraft:glass' : 'minecraft:oak_planks', i, N, k);
+      放(i === 窗位[0] && k === 窗位[1] ? 'minecraft:glass' : 'minecraft:oak_planks', i, S, k);
+    }
   }
   放('minecraft:oak_planks', W, 0, 2);
-  for (let k = 0; k < 3; k++) {
-    放('minecraft:oak_planks', W, 1, k, 门口亮度.后墙);
-    放('minecraft:oak_log[axis=y]', W, N, k, 门口亮度.后墙);
-    放('minecraft:oak_planks', E, 0, k);
-    放('minecraft:oak_planks', E, 1, k, 门口亮度.后墙);
-    放('minecraft:oak_log[axis=y]', E, N, k, 门口亮度.后墙);
-  }
-  // 后墙（炸之前还没补过，整面旧木板；窗）
-  for (let i = W + 1; i < E; i++) for (let k = 0; k < 3; k++) 放(i === 5 && k === 1 ? 'minecraft:glass' : 'minecraft:oak_planks', i, N, k, 门口亮度.后墙);
-  for (let j = 0; j <= N; j++) {
-    const 亮 = j === 0 ? undefined : 门口亮度.后墙;
+  // 屋顶：每层两头台阶、中间木板，最上一排下半砖（同 门口小木屋），南北各排一样，往南多铺一排盖住南墙
+  for (let j = S; j <= N; j++) {
     const 层 = (k: number, 西: number, 东: number) => {
-      放('minecraft:spruce_stairs[facing=east,half=bottom,shape=straight]', 西, j, k, 亮);
-      for (let i = 西 + 1; i < 东; i++) 放('minecraft:spruce_planks', i, j, k, 亮);
-      放('minecraft:spruce_stairs[facing=west,half=bottom,shape=straight]', 东, j, k, 亮);
+      放('minecraft:spruce_stairs[facing=east,half=bottom,shape=straight]', 西, j, k);
+      for (let i = 西 + 1; i < 东; i++) 放('minecraft:spruce_planks', i, j, k);
+      放('minecraft:spruce_stairs[facing=west,half=bottom,shape=straight]', 东, j, k);
     };
     层(3, W - 1, E + 1);
     层(4, W, E);
     层(5, W + 1, E - 1);
-    for (let i = W + 2; i <= E - 2; i++) 放('minecraft:spruce_slab[type=bottom]', i, j, 6, 亮);
+    for (let i = W + 2; i <= E - 2; i++) 放('minecraft:spruce_slab[type=bottom]', i, j, 6);
   }
-  放('minecraft:crafting_table', 4, 1, 0, 门口亮度.摆设);
-  放('minecraft:furnace[facing=south,lit=false]', 5, 1, 0, 门口亮度.摆设);
-  放('minecraft:barrel[facing=up,open=false]', 6, 1, 0, 门口亮度.摆设);
+  放('minecraft:crafting_table', 4, 1, 0);
+  放('minecraft:furnace[facing=south,lit=false]', 5, 1, 0);
+  放('minecraft:barrel[facing=up,open=false]', 6, 1, 0);
   放('minecraft:wall_torch[facing=south]', 3, 1, 1);
   放('minecraft:wall_torch[facing=south]', 6, 1, 2);
-  放('minecraft:chest', 1, 1, 0);
-  放('minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]', 0, 0, 0);
-  放('minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]', 0, 0, 1);
+  放('minecraft:chest[facing=south]', ...箱子格);
+  放('minecraft:oak_door[facing=east,half=lower,hinge=left,open=true]', W, 0, 0);
+  放('minecraft:oak_door[facing=east,half=upper,hinge=left,open=true]', W, 0, 1);
   for (const [状态, i] of 花草) {
     if (两格高.has(状态)) {
       放(`${状态}[half=lower]`, i, 1, 0);
@@ -117,6 +117,10 @@ export const 炸前方块 = (): 方块[] => {
   }
   return out;
 };
+/** 窗：后墙、南墙 (5, ·, 1) */
+const 窗位 = [5, 1] as const;
+/** 箱子那格（同 门口小木屋 的 门口.箱子：屋里紧挨着门） */
+export const 箱子格 = [1, 1, 0] as const;
 
 // ---------- 抗爆、掉落（1.20.1 方块属性和战利品表） ----------
 const 名 = (状态: string) => 状态.replace(/\[.*$/, '');
@@ -227,50 +231,19 @@ export const 落地高 = (留下: readonly 方块[], i: number, j: number, 从z:
   return 顶;
 };
 
-/** 剖面那排（j = 0）每一列的地表高（最高的实心方块顶面，没炸到的列是 0）；给站位、雨落到哪用 */
-export const 地表高 = (留下: readonly 方块[], i: number, j = 0, 从z = 2) => 落地高(留下, i, j, 从z);
+/** 某一列的地表高（从屋檐下往下找第一个实心方块顶面）；雨落到哪用 */
+export const 地表高 = (留下: readonly 方块[], i: number, j: number, 从z = 2.5) => 落地高(留下, i, j, 从z);
 
 // ---------- 这一场用的坑 ----------
-/** 爆炸：苦力怕在屋里正中（工作台前面那格）炸，威力 6（闪电苦力怕）；种子 690 挑的是剖面那排（j = 0）的样子：
- *  西边门那格的圆石墙脚留着（她坐的坑沿，顶 z 0），往东一格是泥土台阶（顶 z −1，你蹲的地方），再往东 i 2～5 炸到 z −3，东边 i 6 只剩地板。
- *  东墙角（i 7 后两排）哪个种子都留着三格高的一截，剖面镜头把它挤出画面；i 6 往上也留东西的种子（如 54）那截就戳进歌词那条了。
- *  门掉成了物品、落在她坐的那格上，被蹲在旁边的你捡走（女仆界面里你的快捷栏有一扇橡木门）。Agent 暂定 */
-export const 坑爆炸: 爆炸 = { 心: [3, 1.5, 0], 威力: 6, 种子: 690 };
-
-/** 屋顶（k ≥ 3）炸剩的残块拿掉（演绎）：原版方块不受重力，种子挑来挑去，剖面那排上头总还浮着一截屋顶，正好替两人挡雨，帽子当伞就没意思了。
- *  记作演绎（第 6 句 decisions）：冲击波把整片屋顶掀了。墙、屋里的东西照原版留着 */
-export const 拿掉屋顶残块 = (b: 方块) => b.位[2] >= 3;
+/** 爆炸：普通苦力怕（威力 3）溜进开着的门，在门里那格（箱子南边）炸。种子挑的样子：箱子炸没、掉出箱子本身；
+ *  南墙西半截（i 0～3）连西南角那根原木炸穿，门炸没；后墙炸开的两格（2,2,0）、（1,2,2）都在第 8 句补过的那块（i 1～2、k 0～2）里；
+ *  屋里东边的工作台、熔炉、木桶、东墙都留着；外面看屋顶完好（天花板那层炸了几格，从南边看不见）；地板炸开一层，掉落物浮在这个浅坑里。
+ *  门不掉（种子挑的）：橡木门的物品是平面图标，这一场的掉落物只画方块。Agent 暂定 */
+export const 坑爆炸: 爆炸 = { 心: [0.7, 0.5, 0], 威力: 3, 种子: 91 };
 
 let 坑缓存: 炸后 | undefined;
-/** 炸完的坑（含拿掉的屋顶残块；掉落物照原版算） */
-export const 坑 = (): 炸后 => {
-  if (!坑缓存) {
-    const r = 炸(炸前方块(), 坑爆炸);
-    坑缓存 = { ...r, 留下: r.留下.filter((b) => !拿掉屋顶残块(b)) };
-  }
-  return 坑缓存;
-};
-
-/** 远地：爆炸碰不到的地（地面排、地面横 外面），一层草方块、一层泥土；透视镜头才要 */
-export const 远地方块 = (): 方块[] => {
-  const out: 方块[] = [];
-  for (let i = 远地.横[0]; i <= 远地.横[1]; i++)
-    for (let j = 地面排.前; j <= 远地.后; j++) {
-      if (i >= 地面横[0] && i <= 地面横[1] && j <= 地面排.后) continue;
-      out.push({ 状态: 'minecraft:grass_block', 位: [i, j, -1] }, { 状态: 'minecraft:dirt', 位: [i, j, -2] });
-    }
-  return out;
-};
-
-/** 剖面镜头只画 j ≥ 0 */
-export const 剖面里 = (b: 方块) => b.位[1] >= 0;
-
-/** 坑壁：剖面镜头从坑口看进去的方块（j ≥ 1，南、上、东、西有一面挨着炸掉的格）。剖面那排（j = 0）是切口，不算 */
-export const 坑壁 = (炸掉: ReadonlySet<string>, b: 方块) => {
-  const [i, j, k] = b.位;
-  if (j < 1) return false;
-  return 炸掉.has(键(i, j - 1, k)) || 炸掉.has(键(i, j, k + 1)) || 炸掉.has(键(i + 1, j, k)) || 炸掉.has(键(i - 1, j, k));
-};
+/** 炸完的屋子和地（掉落物照原版算） */
+export const 坑 = (): 炸后 => (坑缓存 ??= 炸(炸前方块(), 坑爆炸));
 
 // ---------- 掉落物落在哪、被谁捡走 ----------
 /** 掉落物实体的位置（脚底那点，格）：生成在那一格中心偏一点（Block.popResource 的 ±0.25），落到下面第一个实心方块顶上 */
@@ -279,10 +252,10 @@ export const 掉落位 = (留下: readonly 方块[], d: 掉落): [number, number
   return [i + d.偏[0], j + 0.5 + d.偏[1], 落地高(留下, i, j, k + 1)];
 };
 
-/** 玩家捡得到这堆吗：原版 Player.aiStep 把碰撞箱（潜行 0.6 × 1.5，站着 0.6 × 1.8）横向扩 1 格、上下扩 0.5 格，碰到的掉落物（0.25 见方）都捡走。
- *  脚 = 玩家脚底中心。这一场你蹲在台阶上，落在她坐的那格上的门照原版早被你捡走了，不画 */
-export const 玩家捡得到 = (位: readonly [number, number, number], 脚: readonly [number, number, number], 潜行 = true) => {
-  const 高 = 潜行 ? 1.5 : 1.8;
+/** 玩家捡得到这堆吗：原版 Player.aiStep 把碰撞箱（站着 0.6 × 1.8）横向扩 1 格、上下扩 0.5 格，碰到的掉落物（0.25 见方）都捡走。
+ *  脚 = 玩家脚底中心。你坐在坑边，坑里浮着的东西得离你够远，不然照原版早被你捡走了（测试里对过） */
+export const 玩家捡得到 = (位: readonly [number, number, number], 脚: readonly [number, number, number]) => {
+  const 高 = 1.8;
   const 半 = 0.125;
   return (
     Math.abs(位[0] - 脚[0]) < 0.3 + 1 + 半 &&
