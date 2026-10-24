@@ -1359,7 +1359,7 @@
 "来源" = "车万女仆 Touhou Little Maid 1.5.3"
 "许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
 "步骤" = [
-  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/女仆界面", "主=assets/touhou_little_maid/textures/gui/maid_gui_main.png", "侧=assets/touhou_little_maid/textures/gui/maid_gui_side.png", "按钮=assets/touhou_little_maid/textures/gui/maid_gui_button.png", "背包=assets/touhou_little_maid/textures/gui/maid_gui_backpack.png", "背饰槽=assets/touhou_little_maid/textures/slot/empty_back_show_slot.png"],
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/女仆界面", "主=assets/touhou_little_maid/textures/gui/maid_gui_main.png", "侧=assets/touhou_little_maid/textures/gui/maid_gui_side.png", "按钮=assets/touhou_little_maid/textures/gui/maid_gui_button.png", "背包=assets/touhou_little_maid/textures/gui/maid_gui_backpack.png", "背饰槽=assets/touhou_little_maid/textures/slot/empty_back_show_slot.png", "饰品按钮=assets/touhou_little_maid/textures/gui/bauble_button.png"],
 ]
 ["取材"."产物"]
 "贴图/界面/女仆界面/主" = "src/模型/女仆界面/主.png"
@@ -1367,6 +1367,7 @@
 "贴图/界面/女仆界面/按钮" = "src/模型/女仆界面/按钮.png"
 "贴图/界面/女仆界面/背包" = "src/模型/女仆界面/背包.png"
 "贴图/界面/女仆界面/背饰槽" = "src/模型/女仆界面/背饰槽.png"
+"贴图/界面/女仆界面/饰品按钮" = "src/模型/女仆界面/饰品按钮.png"
 
 # 第 7 句你放进女仆副手槽的那本书：铁魔法的学徒法术书（gold_spell_book，物品模型 item/generated，图标就是这张）。
 [["取材"]]
