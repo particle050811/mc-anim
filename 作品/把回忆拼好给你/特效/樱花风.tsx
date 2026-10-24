@@ -3,13 +3,14 @@
 // 最近邻画在成片分辨率的画布上，和三渲二的像素一样硬（05-画风 原则 3）；原版粒子 0.1～0.15 格大、慢慢飘，这里是演绎：大、快、成团。
 // 两种花瓣：
 // - 风流：从 源（铃在画面上的位置）一路往外打着旋卷，越卷越大、越往右飘；
-// - 风墙：盖满画面的那一层，一整片大花瓣（按抖动的格子排，挨着的互相盖住）从画面左边扫进来、到 满 时整屏盖住、再往右扫出去，后面垫一块同色的底补缝。
+// - 风墙：盖满画面的那一层，一整片大花瓣（按抖动的格子排，挨着的互相盖住）从画面左边扫进来、到 满 时整屏盖住（后面垫一块同色的底补缝），
+//   然后底撤掉，花瓣一片片从画面中心往外吹走（风散开）。
 // 时间都按歌上的秒（两段各自传自己的秒，转场前后接得上：同一个 秒 两边画的一模一样）。参数全是 Agent 暂定，见 樱花风参数.ts。
 import React, { useLayoutEffect, useRef } from 'react';
 import { rng } from '@engine/model/parts.tsx';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
-import { type 樱花风参数, type 樱花风时刻, 樱花风默认, 风墙沿 } from './樱花风参数.ts';
+import { type 樱花风参数, type 樱花风时刻, type 墙瓣, 樱花风默认, 造风墙, 墙瓣在, 风墙底 } from './樱花风参数.ts';
 import c0 from 'asset:贴图/粒子/樱花/cherry_0';
 import c1 from 'asset:贴图/粒子/樱花/cherry_1';
 import c2 from 'asset:贴图/粒子/樱花/cherry_2';
@@ -39,18 +40,7 @@ const 造风流 = (p: 樱花风参数, t: 樱花风时刻): 瓣[] => {
   });
 };
 
-/** 风墙的花瓣：按 格距 排满一块比画面宽一倍的长方形（抖动半格），整块往右扫 */
-const 造风墙 = (p: 樱花风参数, 宽: number, 高: number) => {
-  const r = rng(p.种子 * 31 + 7);
-  const { 格距, 档们 } = p.风墙;
-  const out: { x: number; y: number; 档: number; 图: number; 转: number; 翻: boolean }[] = [];
-  for (let y = -格距; y < 高 + 格距; y += 格距)
-    for (let x = -格距; x < 宽 * 2 + 格距; x += 格距)
-      out.push({ x: x + (r() - 0.5) * 格距 + p.风墙.波幅 * Math.sin((2 * Math.PI * y) / p.风墙.波长), y: y + (r() - 0.5) * 格距, 档: 档们[Math.floor(r() * 档们.length)]!, 图: Math.floor(r() * 12), 转: Math.floor(r() * 4), 翻: r() < 0.5 });
-  return out;
-};
-
-const 缓存 = new Map<string, { 流: 瓣[]; 墙: ReturnType<typeof 造风墙> }>();
+const 缓存 = new Map<string, { 流: 瓣[]; 墙: 墙瓣[] }>();
 
 /** 3×3 贴图转 转×90°、翻了再左右翻以后，第 (i, j) 格取原图哪一格 */
 const 取格 = (i: number, j: number, 转: number, 翻: boolean): [number, number] => {
@@ -73,20 +63,18 @@ const 画瓣 = (ctx: CanvasRenderingContext2D, 图: Png, x: number, y: number, �
     }
 };
 
-/** 风墙：整块从左往右扫，右沿在 满 前 扫过秒/2 进画，左沿在 满 后 扫过秒/2 出画；整屏盖住的那一小段正好以 满 为中心 */
-const 画墙 = (ctx: CanvasRenderingContext2D, 墙: ReturnType<typeof 造风墙>, 秒: number, 时刻: 樱花风时刻, p: 樱花风参数, W: number, H: number) => {
-  const { 右沿, 左沿 } = 风墙沿(秒, 时刻, p, W);
-  if (右沿 <= 0 || 左沿 >= W) return;
-  const 内缩 = p.风墙.格距 * 1.5 + p.风墙.波幅;
-  ctx.fillStyle = p.风墙.底色;
-  const a = Math.max(0, 左沿 + 内缩);
-  const b = Math.min(W, 右沿 - 内缩);
-  if (b > a) ctx.fillRect(Math.round(a / 2) * 2, 0, Math.round((b - a) / 2) * 2, H);
+/** 风墙：满 之前整块从左往右扫进来（底跟着补缝），满 之后停住、底撤掉，花瓣一片片往外吹走 */
+const 画墙 = (ctx: CanvasRenderingContext2D, 墙: readonly 墙瓣[], 秒: number, 时刻: 樱花风时刻, p: 樱花风参数, W: number, H: number) => {
+  const 底 = 风墙底(秒, 时刻, p, W);
+  if (底) {
+    ctx.fillStyle = p.风墙.底色;
+    ctx.fillRect(Math.round(底[0] / 2) * 2, 0, Math.round((底[1] - 底[0]) / 2) * 2, H);
+  }
   for (const q of 墙) {
-    const x = 左沿 + q.x;
+    const { x, y } = 墙瓣在(q, 秒, 时刻, p, W, H);
     const 边 = q.档 * 3;
-    if (x < -边 || x > W) continue;
-    画瓣(ctx, 贴图们[q.图]!, x - 边 / 2, q.y - 边 / 2, q.档, q.转, q.翻);
+    if (x < -边 || x > W || y < -边 || y > H) continue;
+    画瓣(ctx, 贴图们[q.图]!, x, y, q.档, q.转, q.翻);
   }
 };
 
