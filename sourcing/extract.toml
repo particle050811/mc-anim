@@ -219,6 +219,22 @@
 ["取材"."产物"]
 "贴图/物品/蛋糕" = "src/模型/物品/蛋糕.png"
 
+# 把回忆拼好给你 门口那个机位：告示牌（方块实体，方块表里查不到，形状照 SignRenderer 手搭）、天上的太阳和月相。产物登记在作品资产表，所以写了「作品」。
+[["取材"]]
+"名称" = "门口贴图"
+"需要" = ["client-1.20.1"]
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/门口", "橡木告示牌=assets/minecraft/textures/entity/signs/oak.png", "太阳=assets/minecraft/textures/environment/sun.png", "月相=assets/minecraft/textures/environment/moon_phases.png"],
+]
+["取材"."产物"]
+"贴图/物品/橡木告示牌" = "src/模型/门口/橡木告示牌.png"
+"贴图/环境/太阳" = "src/模型/门口/太阳.png"
+"贴图/环境/月相" = "src/模型/门口/月相.png"
+
 [["取材"]]
 "名称" = "结构指南针"
 "需要" = ["explorerscompass"]
