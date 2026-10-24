@@ -23,7 +23,7 @@ import { 侧投影 } from '../../地点/侧剖面.tsx';
 import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
 import { 照片墙格们, 手持地图画 } from '../../地点/照片墙.tsx';
 import { 门口 } from '../../地点/门口小木屋.tsx';
-import { 合照 } from '../../特效/合照画.ts';
+import { 合照 } from '../../特效/合照.ts';
 import { 第8句照片们 } from '../../特效/照片画.ts';
 import { 樱花风 } from '../../特效/樱花风.tsx';
 import { 像素字 } from '../../界面/像素字.ts';

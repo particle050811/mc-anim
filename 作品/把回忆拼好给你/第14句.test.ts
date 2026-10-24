@@ -28,7 +28,6 @@ import { 气泡字 } from './场/2-隐世之境/参数.ts';
 import { 第14句声音们 } from './场/2-门口/第14句声音.ts';
 import { 天体位置 } from './地点/天体.ts';
 import { 照片墙格们, 照片墙格位 } from './地点/照片墙格.ts';
-import { 合照 } from './特效/合照画.ts';
 import { 地图画像素, 地图调色板, 白边 } from './特效/地图画.ts';
 import { 第8句照片们 } from './特效/照片画.ts';
 import { 造风墙, 墙瓣在, 风墙底, 风墙盖满 } from './特效/樱花风参数.ts';
@@ -95,7 +94,7 @@ describe('照片墙', () => {
     expect((16 * 归隐N) % 照片墙边长).toBe(0);
     expect((16 * 10) % 合屏照片墙边长).toBe(0);
     for (const 边长 of [32, 64] as const) {
-      const px = 地图画像素(合照, 边长);
+      const px = 地图画像素(第8句照片们[0]!, 边长); // 合照是资产里的 PNG，测试引不进来
       expect(px.length).toBe(边长 * 边长 * 4);
       const 边 = 白边(边长);
       const 调色板 = new Set(地图调色板.map((c) => c.join(',')));

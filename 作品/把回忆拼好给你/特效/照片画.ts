@@ -35,7 +35,7 @@ const 哈希 = (x: number, y: number, s: number) => {
 
 // ---------- 小图 ----------
 /** 你（史蒂夫）正面，8×16 */
-export const 史蒂夫图 = [
+const 史蒂夫图 = [
   '.hhhhhh.',
   '.hhhhhh.',
   '.hssssh.',
@@ -54,7 +54,7 @@ export const 史蒂夫图 = [
   '.BB..BB.',
 ];
 /** 她正面，10×18：黑魔女帽带玫红箍、粉发、粉白衣服、玫红裙、白袜 */
-export const 她图 = [
+const 她图 = [
   '....KK....',
   '...KKKK...',
   '..KkkkkK..',
@@ -74,7 +74,7 @@ export const 她图 = [
   '...l..l...',
   '...D..D...',
 ];
-export const 人色 = {
+const 人色 = {
   h: '#3b2614', s: '#c48a68', e: '#3d3a8c', m: '#6b4a3a', c: '#19a3a3', b: '#3a3794', B: '#2a2a2a',
   K: '#2b2233', k: '#e05a86', P: '#f2a3c6', f: '#fbe2d4', r: '#c0306a', d: '#fbe4ee', D: '#b04a86', l: '#ffffff',
 } as const;
