@@ -11,8 +11,8 @@ import { vanillaParticleAtlas } from '@库/特效/原版粒子.tsx';
 import * as 参 from './参数.ts';
 import { 事, 浮物态们, 光柱, 祭坛亮, 秒 } from './编排.ts';
 
-const 叠加材质 = (色: string, 强: number) =>
-  new THREE.MeshBasicMaterial({ color: 色, transparent: true, opacity: 强, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.FrontSide });
+const 叠加材质 = (色: string, 强: number, side: THREE.Side = THREE.FrontSide) =>
+  new THREE.MeshBasicMaterial({ color: 色, transparent: true, opacity: 强, blending: THREE.AdditiveBlending, depthWrite: false, side });
 
 /** 法阵那一层的高（altar.json 的 A1～A11 在 2 像素高），再抬一点免得和它打架 */
 const 地光高 = 2 / 16 + 0.01;
@@ -47,9 +47,10 @@ const 方柱 = (w: number) => {
   return g;
 };
 
+/** 光柱只画方柱的背面：光罩在她身后、被她挡住，不叠在她身上（她头发、帽子本来近白，叠上去脸和抬头就看不出了） */
 const 光柱层: React.FC<{ g: number }> = ({ g }) => {
   const 层 = 光柱(g);
-  const mats = useMemo(() => new Map(参.光.光柱.宽.map((w, i) => [w as number, 叠加材质(参.光.色, 参.光.光柱.强[i]!)])), []);
+  const mats = useMemo(() => new Map(参.光.光柱.宽.map((w, i) => [w as number, 叠加材质(参.光.色, 参.光.光柱.强[i]!, THREE.BackSide)])), []);
   return (
     <group position={[参.她.脚[0], 参.她.脚[1], 0]}>
       {层.map(([w]) => (
