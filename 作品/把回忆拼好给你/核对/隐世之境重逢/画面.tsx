@@ -85,13 +85,13 @@ const 机位于 = (v: 视图) => v.机位 ?? { 眼: 门口眼, 看: 机位.看, 
 const 世界: React.FC<{ v: 视图 }> = ({ v }) => {
   const 机 = 机位于(v);
   const 姿势 = { ...standPose(她.脚), yaw: v.身子朝向 ?? 她.身子朝向 };
-  const 看 = v.头 === '正' ? undefined : 她看你(门口眼, 姿势);
+  const 看 = 她看你(门口眼, 姿势);
   return (
     <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
       <color attach="background" args={[天色]} />
       <第一人称机位 眼={机.眼} 看={机.看} 视角={机.视角} near={'近' in 机 ? 机.近 : undefined} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <隐世之境重逢布景 眼={机.眼} 开={v.开} 门光={v.门光 ?? true} 光带={v.光带}>
+        <隐世之境重逢布景 眼={机.眼} 门光={v.门光 ?? true}>
           {v.她 && <MagicalWineFox pose={姿势} 姿势="站" 看={看} 表情="无" />}
           {v.标注 && <标注 身子朝向={姿势.yaw} />}
         </隐世之境重逢布景>
@@ -115,7 +115,7 @@ const 画面: React.FC = () => {
       {v.安全区 && <安全区层 />}
       <div style={{ position: 'absolute', right: 12, bottom: 8, textAlign: 'right', fontFamily: uiFontFamily, fontSize: 15, lineHeight: 1.35, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
         <div>核对-隐世之境重逢 · {v.名}</div>
-        {v.她 && v.头 !== '正' && (
+        {v.她 && (
           <div style={{ fontSize: 12 }}>
             身子朝向 {姿势.yaw}°，头比身子多转 {左右.toFixed(1)}°（正对你要 {正对.toFixed(1)}°）、抬头 {俯仰.toFixed(1)}°
           </div>
