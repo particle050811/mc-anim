@@ -20,7 +20,7 @@ import {
 import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
 import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 画布调子 } from '../../画风.ts';
+import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 眼位 } from '../../地点/机位.tsx';
@@ -81,7 +81,7 @@ export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: nu
   return (
     <>
       <MagicalWineFoxEx {...p} 骨骼={改} />
-      <亮月铃兰 在={手} 眼={对视眼} 歪={拿花.歪} 轮廓色={色板[调子].描边} />
+      <亮月铃兰 在={手} 眼={对视眼} 歪={拿花.歪} 轮廓色={描边默认.开 ? 色板[调子].描边 : undefined} />
     </>
   );
 };
