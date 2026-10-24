@@ -15,6 +15,8 @@ export type 取材条目 = {
   要开游戏: boolean;
   待迁移?: string;
   公开版?: string;
+  /** 产物登记在这部作品的资产表：只在选了它时跑、查 */
+  作品?: string;
   步骤: 步骤[];
   输入: Record<string, string>;
   产物: Record<string, string>;
@@ -37,6 +39,7 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
       要开游戏: raw['要开游戏'] === true,
       待迁移: raw['待迁移'] as string | undefined,
       公开版: raw['公开版'] as string | undefined,
+      作品: raw['作品'] as string | undefined,
       步骤: (raw['步骤'] as 步骤[] | undefined) ?? [],
       输入: (raw['输入'] as Record<string, string> | undefined) ?? {},
       产物: (raw['产物'] as Record<string, string> | undefined) ?? {},
@@ -57,10 +60,13 @@ export const 读清单 = () =>
 /** 能直接跑的：有步骤、不用开游戏、不待迁移（--全部 就是这些） */
 export const 可直接跑 = (e: 取材条目) => e.步骤.length > 0 && !e.要开游戏 && !e.待迁移;
 
-/** 名称或组名 → 条目（去重、保持先后）；--全部 见 可直接跑 */
-export const 选条目 = (q: 取材清单, 名们: readonly string[], 全部: boolean): 取材条目[] => {
+/** 条目属于所选作品（没写「作品」的各作品都算） */
+export const 属于作品 = (e: 取材条目, 作品: string) => e.作品 === undefined || e.作品 === 作品;
+
+/** 名称或组名 → 条目（去重、保持先后）；--全部 见 可直接跑，给了 作品 时不选写了别的作品的 */
+export const 选条目 = (q: 取材清单, 名们: readonly string[], 全部: boolean, 作品?: string): 取材条目[] => {
   const out: string[] = [];
-  if (全部) out.push(...[...q.条目.values()].filter(可直接跑).map((e) => e.名称));
+  if (全部) out.push(...[...q.条目.values()].filter((e) => 可直接跑(e) && (作品 === undefined || 属于作品(e, 作品))).map((e) => e.名称));
   for (const n of 名们) {
     const got = q.条目.has(n) ? [n] : q.组[n];
     if (!got) throw new Error(`取材清单里没有「${n}」（条目或组）；anim extract --列出 看有哪些`);
@@ -73,14 +79,15 @@ export const 选条目 = (q: 取材清单, 名们: readonly string[], 全部: bo
   });
 };
 
-export type 展开环境 = { jar路径: (id: string) => string; prism数据: string; 脚本: string; python: string; mcai: string[] };
+export type 展开环境 = { jar路径: (id: string) => string; prism数据: string; 脚本: string; 作品根: string; python: string; mcai: string[] };
 
-/** 参数里的 {jar:a,b}、{prism数据}、{脚本} 换成本机路径 */
+/** 参数里的 {jar:a,b}、{prism数据}、{脚本}、{作品根} 换成本机路径 */
 export const 填 = (a: string, v: 展开环境) =>
   a
     .replace(/\{jar:([^}]+)\}/g, (_, ids: string) => ids.split(',').map((i) => v.jar路径(i).split(path.sep).join('/')).join(','))
     .replaceAll('{prism数据}', v.prism数据.split(path.sep).join('/'))
-    .replaceAll('{脚本}', v.脚本.split(path.sep).join('/'));
+    .replaceAll('{脚本}', v.脚本.split(path.sep).join('/'))
+    .replaceAll('{作品根}', v.作品根.split(path.sep).join('/'));
 
 /** 一步 → 参数（简称、python、mcai 换成真的命令；ts 是旧项目的工具，还没搬） */
 export const 展开步骤 = (q: 取材清单, 步: 步骤, v: 展开环境): 步骤 => {

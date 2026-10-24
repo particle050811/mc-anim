@@ -8,6 +8,8 @@ __pycache__/
 .DS_Store
 # 作品默认进 Git、开源（用户 10-22 定）；要私有的逐个挡：在这里加一行 /作品/<名>/，或放 作品/ 外、用 anim.local.toml 的 [works] 登记（docs/决策/0004-多作品.md）
 *.tsbuildinfo
+# VS Code 的 Java 插件（Buildship）打开 Gradle 项目时自动生成的，不进 Git；留着未跟踪会让 anim check 当成改了 sourcing/mod/、去编译 mod
+.settings/
 
 # image-flow 的 skill 是从 image-flow 仓库拷来的副本（rsync skills/image-flow/），不进本仓库
 /.claude/skills/image-flow/
