@@ -89,6 +89,54 @@
     "大小": 452393,
     "库": "私有"
   },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.1": {
+    "sha256": "bad9396e5d3cda334ffa7b9205bd677672d0c8605d5cc44ebc1435b578081212",
+    "后缀": ".ogg",
+    "大小": 11088,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.2": {
+    "sha256": "9c9dcd0edb8f1ceb50ca50bb28d2f9624b85f498ea026390189901ac9237c935",
+    "后缀": ".ogg",
+    "大小": 10525,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.3": {
+    "sha256": "9190aec97afaabdfab69c45c53e027bb027105e40dd454dccd16490698220dd7",
+    "后缀": ".ogg",
+    "大小": 12560,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.4": {
+    "sha256": "0c785a74ee0b3398ffb8bc971a4558c58fda65fe65078f939038963bd6f99485",
+    "后缀": ".ogg",
+    "大小": 12127,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.5": {
+    "sha256": "174cc208d7adbd472e1c31ed21a92a3674787c987bc6ba2879dd96f29042fcfc",
+    "后缀": ".ogg",
+    "大小": 14006,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.6": {
+    "sha256": "6ced6b6c1e6da2f198d6c09c07c00bac9bcc0835affb4466bba57570b48882fb",
+    "后缀": ".ogg",
+    "大小": 12755,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.7": {
+    "sha256": "1dbea8ed84a5e24d636f76fd5ed3cb59e1b071234ea367ee74327d27d06e5cf3",
+    "后缀": ".ogg",
+    "大小": 10165,
+    "库": "store"
+  },
+  "音效/把回忆拼好给你/entity.boat.paddle_water.8": {
+    "sha256": "eca7161b759404fb0058d046f5d7f8a56a4ed0d24335c28f971ba1f17128345d",
+    "后缀": ".ogg",
+    "大小": 11071,
+    "库": "store"
+  },
   "音效/把回忆拼好给你/entity.cat.hiss.1": {
     "sha256": "ca87ec7af77239b10d6e3529dab9b77cd5440a20e3b82e7d147f11db10365b11",
     "后缀": ".ogg",

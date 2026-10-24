@@ -24,3 +24,67 @@ id = "音效/把回忆拼好给你/entity.cat.hiss.3"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版资源索引 minecraft/sounds/mob/cat/hiss3.ogg（对象 sha1 ab8845c4f44fb336cde822ca458e4dc831b1b2cc），1.09 秒；sounds.json 里 volume 0.4"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.1"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water1.ogg（对象 sha1 7c7d7bf29ea726cd547bff1e168e6417d62a0bbe），0.90 秒；sounds.json 里 volume 0.8。第 4 句日落划船你划桨"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.2"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water2.ogg（对象 sha1 1f10aaff008cddb25dada8d8caa796624307c8f9），0.85 秒；sounds.json 里 volume 0.8"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.3"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water3.ogg（对象 sha1 289c721e6cc8f20a6fefff411af7f5a2b0c49ec4），1.00 秒；sounds.json 里 volume 0.8"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.4"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water4.ogg（对象 sha1 8550b5025cfd04a18402c3bbcd145f701d1a4e17），1.04 秒；sounds.json 里 volume 0.8"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.5"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water5.ogg（对象 sha1 032893949d88ab82fc1f69f9c4ea14d83d05387e），1.21 秒；sounds.json 里 volume 0.8"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.6"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water6.ogg（对象 sha1 e77d2f25077b7db70639744279c6019777c5c9af），1.05 秒；sounds.json 里 volume 0.8"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.7"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water7.ogg（对象 sha1 559e74952ee4642bf5619670ee0f9eeceb503bfa），0.80 秒；sounds.json 里 volume 0.8"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.boat.paddle_water.8"
+"类别" = "音效"
+"来源" = "提取:日落划船音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/entity/boat/paddle_water8.ogg（对象 sha1 7181418daf6f2afa35460ddbe0702cf12d9d63ce），0.90 秒；sounds.json 里 volume 0.8"
