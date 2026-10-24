@@ -3,6 +3,7 @@
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 前台跑 } from '../环境/子进程.ts';
+import { 作品名 } from '../环境/作品.ts';
 import { 过放行闸 } from '../闸/闸.ts';
 import { mcai命令, mcai环境, 渲染中, 要过闸 } from './mcai.ts';
 import { 读清单, 选条目 } from './清单.ts';
@@ -48,15 +49,16 @@ export const 取材命令: Record<string, 命令> = {
         return 0;
       }
       if (p.开关.has('--检查')) {
-        const es = p.位置.length || p.开关.has('--全部') ? 选条目(q, p.位置, p.开关.has('--全部')) : [...q.条目.values()];
-        const { 问题, 待迁移 } = 检查(q, es, p.开关.has('--校验'));
+        const es = p.位置.length || p.开关.has('--全部') ? 选条目(q, p.位置, p.开关.has('--全部'), 作品名()) : [...q.条目.values()];
+        const { 问题, 待迁移, 别的作品 } = 检查(q, es, p.开关.has('--校验'));
         for (const x of 问题) console.log(x);
         if (待迁移.length) console.log(`\n待迁移、跑不了的 ${待迁移.length} 条：\n  ${待迁移.join('\n  ')}`);
+        if (别的作品.length) console.log(`\n属于别的作品、没查的 ${别的作品.length} 条：\n  ${别的作品.join('\n  ')}`);
         console.log(`查了 ${es.length} 条：${问题.length ? `有 ${问题.length} 处缺` : '都齐'}`);
         return 问题.length ? 1 : 0;
       }
       if (!p.位置.length && !p.开关.has('--全部')) throw new 用法错误('要给条目名、组名或 --全部（--列出 看有哪些）');
-      const es = 选条目(q, p.位置, p.开关.has('--全部'));
+      const es = 选条目(q, p.位置, p.开关.has('--全部'), 作品名());
       if (p.开关.has('--只打印')) {
         for (const e of es) await 跑步骤(q, e, 暂存目录(e.名称), true).catch((err: Error) => console.log(`（${err.message}）`));
         return 0;

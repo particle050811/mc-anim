@@ -10,9 +10,10 @@
 #   待迁移    步骤要的旧项目工具或输入还没搬过来，跑不了；写原因
 #   公开版    "提取"：公开版不带这些文件，用户按这条从 jar 提取；"不提取"：后面注明公开版怎么拿到
 #   公开版提取  公开版提取时不跑步骤、改用内置做法时写（内置:游戏音效、内置:网格图集）
+#   作品      产物登记在这部作品的资产表（<作品根>/资产表/）时写：只在选了这部作品（--作品）时跑、查，别的作品下 --检查 跳过
 #   步骤      参数列表，不过 shell，在暂存目录里逐条跑，一条失败就停。第一个参数可以是下面「程序」里的简称，
 #             或 python（anim 配置 ANIM_PYTHON）、ts（旧项目的 一镜到底/跑.mjs，待迁移）、mcai（sourcing/mcai/mcai.py，经 anim mcai 同样的环境）、复制（拷一个文件）。
-#             参数里 {jar:id[,id]} 换成 jar 路径（逗号连接），{prism数据} 换成 Prism 的数据目录，{脚本} 换成 sourcing/extract/；
+#             参数里 {jar:id[,id]} 换成 jar 路径（逗号连接），{prism数据} 换成 Prism 的数据目录，{脚本} 换成 sourcing/extract/，{作品根} 换成所选作品的根目录；
 #             { "输出" = [...] } 是先跑这条命令、把输出按空白拆开填在这里。
 #   ["取材"."输入"]  步骤要读的非 jar 文件：资产 id = 暂存目录里的位置，跑之前从资产库拷进去。
 #   ["取材"."产物"]  放在条目最后：资产 id = 暂存目录里的文件（相对暂存目录）。
@@ -538,6 +539,36 @@
 ["取材"."产物"]
 "音效/车万女仆/item.camera_use" = "src/音效/车万女仆/touhou_little_maid.item.camera_use.ogg"
 
+# 女仆头顶气泡的底（库/界面/女仆气泡.tsx）：ChatBubbleRenderer 按 256×256 的 UV 从整张里切九宫格和尾巴，所以整张原样存。
+[["取材"]]
+"名称" = "女仆气泡"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["导出模型", "{jar:touhoulittlemaid}", "src/模型/界面/女仆气泡.贴图", "type1=assets/touhou_little_maid/textures/entity/chat_bubble/type1.png", "type2=assets/touhou_little_maid/textures/entity/chat_bubble/type2.png"],
+]
+["取材"."产物"]
+"贴图/界面/女仆气泡/type1" = "src/模型/界面/女仆气泡.贴图/type1.png"
+"贴图/界面/女仆气泡/type2" = "src/模型/界面/女仆气泡.贴图/type2.png"
+
+# 把回忆拼好给你 的游戏像素字（库/界面/像素字表.ts 吃它）：只收作品 界面/像素字文案.txt 里的字。产物登记在作品资产表，所以写了「作品」。
+# 加字：文案加一行 → anim --作品 把回忆拼好给你 extract 把回忆拼好给你像素字（报「不一样」，新表在暂存目录 run/extract/把回忆拼好给你像素字/像素字.json）
+#   → anim --作品 把回忆拼好给你 assets add 字体/把回忆拼好给你/像素字 <那个文件> --替换 → 再跑一次 extract，应当全一样。
+[["取材"]]
+"名称" = "把回忆拼好给你像素字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "像素字.json", "{作品根}/界面/像素字文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/像素字" = "像素字.json"
+
 [["取材"]]
 "名称" = "基地工坊"
 "需要" = ["create", "client-1.20.1"]
@@ -1036,6 +1067,20 @@
 "模型/角色/恼鬼" = "src/模型/角色/恼鬼.模型.json"
 "贴图/角色/恼鬼/恼鬼" = "src/模型/角色/恼鬼.模型.恼鬼.png"
 "贴图/角色/恼鬼/蓄力" = "src/模型/角色/恼鬼.模型.蓄力.png"
+
+# 原版苦力怕（把回忆拼好给你 正片要用，库/生物/苦力怕.tsx）。CreeperModel.createBodyLayer（m_170525_，膨胀 0）自带 64×32 贴图尺寸
+[["取材"]]
+"名称" = "苦力怕"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/苦力怕.模型.json", "苦力怕=net.minecraft.client.model.CreeperModel:m_170525_(0)", "--贴图", "苦力怕=assets/minecraft/textures/entity/creeper/creeper.png"],
+]
+["取材"."产物"]
+"模型/角色/苦力怕" = "src/模型/角色/苦力怕.模型.json"
+"贴图/角色/苦力怕" = "src/模型/角色/苦力怕.模型.png"
 
 [["取材"]]
 "名称" = "幽灵马"
