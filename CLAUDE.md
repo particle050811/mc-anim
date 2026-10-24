@@ -11,7 +11,7 @@
 - `sourcing/`：取材 mod、mcai、世界声明、jar 和提取配方
 - `assets/registry/*.toml`：资产表（人写）；`assets/资产锁.json`：工具生成，不手改
 - 数据根 `../mc-anim-data/`（环境变量 `ANIM_DATA`，Git 外，各 worktree 共用这一份）：`store/ 私有/ terrain/ cache/ 基线/ 交付/ archive/ run/`，缓存、交付按作品分子目录
-- `预览/`：在主检出下，不进 Git；worktree 里生成的预览也写回主检出
+- `预览/`：在主检出下，不进 Git；worktree 里生成的预览也写回主检出。Agent 自己看的中间稿，主题以「工作-」开头，`anim` 写到数据根 `run/草稿/`，不进 `预览/`（用户 10-24 定）
 - 路径语言：结构层（顶层目录、固定层级）用英文 ASCII；场、段、资产 id、台词 id、角色名用中文
 
 ## 常用命令（Mac/Linux 用 `anim`，Windows 用 `anim.cmd`；以 `anim help` 为准）

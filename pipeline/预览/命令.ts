@@ -16,7 +16,7 @@ const remotion入口 = () => {
 export const 预览命令: Record<string, 命令> = {
   preview: {
     用法: 'preview new <主题>',
-    说明: '在主检出的 预览/ 下建 <UTC 月日-时分>-<主题>/，打印路径',
+    说明: '在主检出的 预览/ 下建 <UTC 月日-时分>-<主题>/，打印路径；主题以「工作-」开头的是中间稿，建在数据根 run/草稿/ 下',
     跑: async (args, 记录) => {
       const p = 解析参数(args, {});
       if (p.位置[0] !== 'new' || p.位置.length !== 2) throw new 用法错误('要 anim preview new <主题>');
