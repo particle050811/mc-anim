@@ -33,10 +33,10 @@ import { 撒纸窗们, 楼, 楼下N } from './现实/楼下布局.ts';
 
 // 特效/照片画.ts 顶上就解码四张照片（真帧资产，打包时才有 asset:），这里换成一张 1×1 的 RGBA（同 祭坛召唤.test.ts）
 const 一像素 = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
-vi.mock('asset:贴图/照片/第3句递蛋糕', () => ({ default: 一像素 }));
-vi.mock('asset:贴图/照片/第4句日落划船', () => ({ default: 一像素 }));
-vi.mock('asset:贴图/照片/第5句扑龙蛋', () => ({ default: 一像素 }));
-vi.mock('asset:贴图/照片/第7句光柱破云', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第3句递蛋糕-二版', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第4句日落划船-二版', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第5句扑龙蛋-二版', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第7句光柱破云-二版', () => ({ default: 一像素 }));
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
