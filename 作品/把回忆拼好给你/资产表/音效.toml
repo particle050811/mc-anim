@@ -1,5 +1,29 @@
 # 作品资产表：音效。只有本作品用的资产登记在这里，锁是作品根的 资产锁.json（anim --作品 把回忆拼好给你 assets add 写，不手改）。
-# 字段和取值见 assets/README.md。
+# 字段和取值见 assets/README.md。原版声音的 @ 后面是 1.20.1 资源索引 indexes/5.json 的 sha256 前 12 位。
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.cat.hiss.1"
+"类别" = "音效"
+"来源" = "提取:把回忆拼好给你音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/mob/cat/hiss1.ogg（对象 sha1 06d087c7afeb3c26fe37cd38b247a7c91d2c58eb），1.17 秒；sounds.json 里 volume 0.4。第 8 句她冲苦力怕哈气"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.cat.hiss.2"
+"类别" = "音效"
+"来源" = "提取:把回忆拼好给你音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/mob/cat/hiss2.ogg（对象 sha1 6dfd0785da0beb8f6eb1efa4bcb7fdc6ba85c492），1.13 秒；sounds.json 里 volume 0.4"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.cat.hiss.3"
+"类别" = "音效"
+"来源" = "提取:把回忆拼好给你音效@63ae7e6587af"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/mob/cat/hiss3.ogg（对象 sha1 ab8845c4f44fb336cde822ca458e4dc831b1b2cc），1.09 秒；sounds.json 里 volume 0.4"
 
 [["资产"]]
 id = "音效/万法皆通/wind_seeking_bell"
