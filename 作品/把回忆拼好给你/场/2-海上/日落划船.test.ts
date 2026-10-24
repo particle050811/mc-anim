@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { 桨姿, 划船行程, 船数 } from '@库/物品/船原版.ts';
+import { 桨姿, 划船行程, 船上, 船数 } from '@库/物品/船原版.ts';
 import { 正片事件, 段时钟, 第几句, fps } from '../../分镜.ts';
 import {
   事,
@@ -18,8 +18,7 @@ import {
   游戏刻,
   照片帧,
   眼机位,
-  眼起机位,
-  眼珠,
+  接帧,
   窗,
   船态,
   投影点,
@@ -27,8 +26,10 @@ import {
   投影方向,
   仰角方位差,
 } from './编排.ts';
-import { 太阳高, 眼起脸宽 } from './参数.ts';
+import { 光路, 远档, 太阳高 } from './参数.ts';
+import { 光路色, 海面图案, 远混 } from './光路.ts';
 import { 地平色, 天色在 } from './天色.ts';
+import { 末机, 末距, 末速, 眼珠 } from '../2-祭坛/末态.ts';
 
 // 第 4 句 2 行歌词在 2560×1440 上占 y 77～329（界面/符文排版.ts，字点 7），换成页面像素
 const 歌词底 = 329 / 2;
@@ -45,10 +46,12 @@ describe('第 4 句的窗口和事件', () => {
     expect(序.at(-1)!).toBeLessThan(窗.止帧);
     expect(照片帧).toBe(正片事件['照片-日落划船'].帧);
   });
-  it('干净的镜头都不短于 0.5 秒：眼睛特写、海；浪从起到盖满至少 0.5 秒', () => {
+  it('干净的镜头都不短于 0.5 秒：眼睛特写、海；浪从起到盖满至少 0.5 秒；拉远 0.8 秒以上，拉完停稳 0.8 秒以上才起浪（核查 10-24：原来只停 11 帧）', () => {
     expect((事.眼化日.帧 - 窗.起帧) / fps).toBeGreaterThan(0.5);
     expect((事.浪起.帧 - 事.海平线.帧) / fps).toBeGreaterThan(0.5);
     expect((窗.止帧 - 事.浪起.帧) / fps).toBeGreaterThan(0.5);
+    expect((事.拉远到位.帧 - 事.海平线.帧) / fps).toBeGreaterThanOrEqual(0.8);
+    expect((事.浪起.帧 - 事.拉远到位.帧) / fps).toBeGreaterThanOrEqual(0.8);
   });
   it('叠化、浪：起止对', () => {
     expect(叠化(事.眼化日.帧)).toBe(0);
@@ -161,16 +164,39 @@ describe('海上的镜头', () => {
 });
 
 describe('匹配剪辑', () => {
-  it('推镜起点正对右眼、脸宽是画面的 眼起脸宽 倍（右眼的特写，不是整张脸）', () => {
-    const 机 = 眼起机位();
-    expect(机).toEqual(眼机位(窗.起帧));
-    const 珠 = 投影点(机, 眼珠.右)!;
-    expect(珠[0]).toBeCloseTo(640, 3);
-    expect(珠[1]).toBeCloseTo(360, 3);
-    const 左 = 投影点(机, [眼珠.右[0] - 眼珠.脸宽 / 2, 眼珠.右[1], 眼珠.右[2]])!;
-    const 右 = 投影点(机, [眼珠.右[0] + 眼珠.脸宽 / 2, 眼珠.右[1], 眼珠.右[2]])!;
-    expect(Math.abs(右[0] - 左[0]) / 1280).toBeCloseTo(眼起脸宽, 3);
-    expect(眼起脸宽).toBeGreaterThanOrEqual(1);
+  it('眼睛特写接着第 3 句最后一帧推：接帧的镜头就是 末机，推的速度就是 末速（接缝上推镜不停、不跳）', () => {
+    const 机 = 眼机位(接帧);
+    for (const i of [0, 1, 2]) expect(机.眼[i]).toBeCloseTo(末机.眼[i], 9);
+    expect(机.视角).toBe(末机.视角);
+    const 向 = (m: { 眼: readonly number[]; 看: readonly number[] }) => {
+      const d = [0, 1, 2].map((i) => m.看[i]! - m.眼[i]!);
+      const l = Math.hypot(d[0]!, d[1]!, d[2]!);
+      return d.map((v) => v / l);
+    };
+    for (const i of [0, 1, 2]) expect(向(机)[i]).toBeCloseTo(向(末机)[i]!, 9);
+    const L = (g: number) => Math.log(Math.hypot(...[0, 1, 2].map((i) => 眼机位(g).眼[i]! - 眼珠.右[i]!)));
+    expect(L(接帧)).toBeCloseTo(Math.log(末距), 9);
+    const ε = 1e-4;
+    expect((L(接帧 + ε) - L(接帧)) / ε).toBeCloseTo(末速, 3);
+    // 第 4 句第 0 帧（歌曲帧 窗.起帧）已经往里推了一帧
+    expect(L(窗.起帧)).toBeLessThan(L(接帧));
+  });
+  it('叠化的时候（眼化日到海平线）画里只有太阳、光路和海：船身和你们俩的头都在画框右边、下边外头（一次一个看点）', () => {
+    for (let g = 事.眼化日.帧; g <= 事.海平线.帧; g++) {
+      const 机 = 海机位(g);
+      const b = 船态(g);
+      // 船身：船本地 长 ±0.9、宽 ±0.65，高到船帮；头：你（玩家模型 15/16）实体脚底往上 1.4～1.9 格、她 0.6～1.4 格，±0.25 格见方。
+      // 盒子里外按 6 × 6 × 6 取点。桨伸出船外，桨梢会在右下角露一点（出静帧看过，二十来个成片像素）
+      const 档 = (a: number, b: number) => Array.from({ length: 6 }, (_, i) => a + ((b - a) * i) / 5);
+      const 点们: [number, number, number][] = [];
+      for (const x of 档(-0.65, 0.65)) for (const y of 档(-0.9, 0.9)) for (const z of 档(0, 0.6)) 点们.push(船上(b.loc, b.yaw, [x, y, z]));
+      for (const [人, 低, 高] of [[你位(g), 1.4, 1.9], [她位(g), 0.6, 1.4]] as const)
+        for (const dx of 档(-0.25, 0.25)) for (const dy of 档(-0.25, 0.25)) for (const dz of 档(低, 高)) 点们.push([人.loc[0] + dx, 人.loc[1] + dy, 人.loc[2] + dz]);
+      for (const q of 点们) {
+        const p = 投影点(机, q);
+        if (p) expect(p[0] > 1280 || p[1] > 720, `歌曲帧 ${g} (${p.map((v) => v.toFixed(0))})`).toBe(true);
+      }
+    }
   });
   it('眼化日那一刻右眼眼珠落在太阳上、一样高', () => {
     const g = 事.眼化日.帧;
@@ -192,6 +218,61 @@ describe('匹配剪辑', () => {
       expect(下[1] - 上[1]).toBeGreaterThanOrEqual(前 - 1e-9);
       前 = 下[1] - 上[1];
     }
+  });
+});
+
+describe('光路、远档（Agent 加的，原版没有）', () => {
+  const 日半 = (Math.atan(7.5 / 100) * 180) / Math.PI;
+  /** 光路离太阳方位最远能到多少度：最宽处半宽 ×（抖 + 一截最长的半长） */
+  const 最偏 = 日半 * (光路.宽 + 光路.张 * 光路.近) * (光路.抖 + 0.55);
+  it('只在海平线以下、太阳正下方那一条里；近过 近 就没有了；同一处同一刻每次一样', () => {
+    for (let 刻 = 0; 刻 < 200; 刻 += 7)
+      for (let 差 = -40; 差 <= 40; 差 += 0.5) {
+        expect(光路色(0, 差, 刻)).toBeNull();
+        expect(光路色(-1, 差, 刻)).toBeNull();
+        expect(光路色(光路.近 + 0.1, 差, 刻)).toBeNull();
+        for (const 下 of [0.3, 1, 3, 8, 15]) {
+          const c = 光路色(下, 差, 刻);
+          if (Math.abs(差) > 最偏) expect(c).toBeNull();
+          expect(光路色(下, 差, 刻)).toEqual(c);
+        }
+      }
+  });
+  it('贴着海平线那一道连成一片、和太阳差不多宽；一行一行隔开；光路在闪（隔几刻有的截换了位置）', () => {
+    expect(光路色(0.2, 0, 0)).not.toBeNull();
+    expect(光路色(0.2, 日半 * 光路.宽 * 1.01, 0)).toBeNull();
+    // 往下一行一行：同一刻同一方位，有亮的行也有空的行
+    const 一列 = Array.from({ length: 200 }, (_, i) => 光路.贴 + (i * (光路.近 - 光路.贴)) / 200).map((下) =>
+      Array.from({ length: 41 }, (_, j) => 光路色(下, -最偏 + (j * 2 * 最偏) / 40, 10)).some((c) => c !== null),
+    );
+    expect(一列.filter((v) => v).length).toBeGreaterThan(20);
+    expect(一列.filter((v) => !v).length).toBeGreaterThan(20);
+    let 变 = 0;
+    for (let 刻 = 0; 刻 < 40; 刻++)
+      for (let 差 = -5; 差 <= 5; 差 += 0.25) if (JSON.stringify(光路色(3, 差, 刻)) !== JSON.stringify(光路色(3, 差, 刻 + 1))) 变++;
+    expect(变).toBeGreaterThan(0);
+  });
+  it('远档：海平线以上不混，越往近混得越少，最近一档以外是原样的水', () => {
+    expect(远混(0)).toBe(0);
+    expect(远混(-2)).toBe(0);
+    let 前 = 1;
+    for (let 下 = 0.01; 下 < 10; 下 += 0.01) {
+      expect(远混(下)).toBeLessThanOrEqual(前);
+      前 = 远混(下);
+    }
+    expect(远混(远档.at(-1)![0] + 0.01)).toBe(0);
+  });
+  it('整帧的图：海平线以上一块都不盖（天归 天.tsx），太阳底下贴着海平线有光路', () => {
+    const 机 = 海机位(照片帧);
+    const 块 = 4;
+    const { 字节, 列, 行 } = 海面图案(机, 游戏刻(照片帧), 1280, 720, 块);
+    const 线 = 海平线y(机);
+    for (let j = 0; j < 行; j++)
+      if ((j + 0.5) * 块 < 线 - 1) for (let i = 0; i < 列; i++) expect(字节[(j * 列 + i) * 4 + 3]).toBe(0);
+    const 日 = 太阳屏幕(机, 游戏刻(照片帧))!;
+    const j = Math.floor((线 + 2) / 块);
+    const i = Math.floor(日.x / 块);
+    expect(字节[(j * 列 + i) * 4 + 3]).toBe(255);
   });
 });
 
