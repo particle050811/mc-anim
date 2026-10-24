@@ -83,3 +83,67 @@ id = "贴图/特效/附魔光泽"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
+
+[["资产"]]
+id = "贴图/场景/女仆祭坛"
+"类别" = "贴图"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/bedrock/block/altar.png（512×512），模型/场景/女仆祭坛 的贴图"
+
+[["资产"]]
+id = "贴图/物品/蛋糕盒"
+"类别" = "贴图"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/bedrock/entity/cake_box/cake_box_1.png（256×256，红底金花；游戏里八张随机一张）"
+
+[["资产"]]
+id = "贴图/物品/御币"
+"类别" = "贴图"
+"来源" = "提取:女仆祭坛@8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/item/hakurei_gohei_in_hand.png（64×64），模型/物品/御币 的贴图图集"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/青金石"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/lapis_lazuli.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/金锭"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/gold_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/红石"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/redstone.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/铁锭"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/iron_ingot.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
+
+[["资产"]]
+id = "贴图/物品/祭坛材料/煤炭"
+"类别" = "贴图"
+"来源" = "提取:祭坛材料@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 item/coal.png（16×16）：第 3 句祭坛柱顶的材料（车万女仆 spawn_box 配方）"
