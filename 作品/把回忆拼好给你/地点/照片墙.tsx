@@ -10,14 +10,11 @@ import * as THREE from 'three';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 地图画像素, type 地图边长 } from '../特效/地图画.ts';
 import type { 照片源 } from '../特效/照片图.ts';
-import type { 照片墙格 } from './照片墙格.ts';
+import { 地图离墙, 照片墙面y, type 照片墙格 } from './照片墙格.ts';
 import 背板url from 'asset:贴图/物品/荧光物品展示框/背板';
 import 木框url from 'asset:贴图/物品/荧光物品展示框/木框';
 
 export { 照片墙格们, 照片墙格位, type 照片墙格 } from './照片墙格.ts';
-
-/** 后墙里侧那面（j = 2 的南面） */
-const 墙面y = 2;
 
 // ---------- 贴图、材质 ----------
 const 新贴图 = (px: Uint8Array, w: number, h: number) => {
@@ -79,10 +76,9 @@ const 满格几何 = 片几何(-0.5, 0.5, 0, 1, 0, 0, 1, 1);
 export const 荧光框: React.FC<{ i: number; k: number; 画: 照片源 | null; 边长?: 地图边长 }> = ({ i, k, 画, 边长 = 32 }) => {
   const 地图 = useMemo(() => (画 ? 地图材质(画, 边长) : null), [画, 边长]);
   return (
-    <group position={[i, 墙面y, k]}>
+    <group position={[i, 照片墙面y, k]}>
       {地图 ? (
-        // 地图贴在薄框（一个像素厚）外面，再往外让开一点免得和墙面打架
-        <mesh geometry={满格几何} material={地图} position={[0, -1 / 16 - 1 / 256, 0]} />
+        <mesh geometry={满格几何} material={地图} position={[0, -地图离墙, 0]} />
       ) : (
         空框片们.map((p, n) => <mesh key={n} geometry={空框几何[n]} material={框材质(p.图 === 'back' ? 背板url : 木框url)} position={[0, -p.离墙 / 16, 0]} />)
       )}
@@ -100,6 +96,12 @@ const 手持片 = (() => {
   return g;
 })();
 export const 手持地图画: React.FC<{ 画: 照片源; 边长?: 地图边长 }> = ({ 画, 边长 = 32 }) => <mesh geometry={手持片} material={地图材质(画, 边长)} />;
+
+/** 一张不在框里、也不挂在手上的地图画（场景内容，Z 朝上）：正面朝南、边 格见方，角 = 左下角（场景坐标）。
+ *  第 8 句她把照片往空框里放的那几帧用它（从手边挪进框，最后一帧和框里那张重合）；同框里一样满亮 */
+export const 地图画片: React.FC<{ 画: 照片源; 边长?: 地图边长; 角: readonly [number, number, number]; 边: number }> = ({ 画, 边长 = 32, 角, 边 }) => (
+  <mesh geometry={满格几何} material={地图材质(画, 边长)} position={[角[0] + 边 / 2, 角[1], 角[2]]} scale={边} />
+);
 
 /** 一面照片墙：每格一只荧光框。边长 = 一格几个地图像素（特效/地图画.ts：N 是 4 的倍数给 64，N = 10 给 32） */
 export const 照片墙: React.FC<{ 格们: readonly 照片墙格[]; 边长?: 地图边长 }> = ({ 格们, 边长 }) => (
