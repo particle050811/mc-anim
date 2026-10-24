@@ -82,18 +82,22 @@ const 对准 = (pose: FigurePose, 表: Record<string, BonePose>, 点: V3): numbe
  * 显示：物品模型 json 的第三人称显示变换，默认 item/generated 的 thirdperson_righthand（左手照原版镜像）。
  * 朝向：'原样' = 握持点照姿势表（游戏里没有专门动作时就是这样，坐姿的握持点 TLM 自己转过）；
  *   给数就把握持点转到让物品在她身体坐标系里立着：偏 = 物品正面从她正前方往她左边转几度，倾 = 绕正面法线逆时针歪几度（从正面看），
- *   仰 = 顶端往正面那边倒几度。不给 = 立着、正面朝她正前方。
+ *   仰 = 顶端往正面那边倒几度。不给 = 立着、正面朝她正前方。显示 带转角（比如 item/handheld）也照样立着；
+ *   朝向 只管转角，显示 的平移是在转过的握持点里挪的，所以换了 显示 东西离手的位置会跟着变。
  */
 export type 手持物 = { 物品: React.ReactNode; 显示?: ItemTransform; 朝向?: '原样' | { 偏?: number; 倾?: number; 仰?: number } };
 
-/** 握持点（Right/LeftHandLocator）要转多少，物品才按 朝向 立在她身体坐标系里 */
+/**
+ * 握持点（Right/LeftHandLocator）要转多少，物品才按 朝向 立在她身体坐标系里。
+ * 物品的朝向链（TlmHeld）= 手 · 握 · Rx(−90°) · 显示转，令它等于 目标，解出 握 = 手⁻¹ · 目标 · 显示转⁻¹ · Rx(+90°)。
+ */
 const 握持转角 = (表: Record<string, BonePose>, 左: boolean, 显示: ItemTransform, 朝向: { 偏?: number; 倾?: number; 仰?: number }): number[] => {
   const 手 = new THREE.Quaternion();
   骨骼矩阵(表, 左 ? 'LeftHand' : 'RightHand').decompose(new THREE.Vector3(), 手, new THREE.Vector3());
   const 目标 = new THREE.Quaternion().setFromEuler(new THREE.Euler((朝向.仰 ?? 0) * 度, (180 + (朝向.偏 ?? 0)) * 度, (朝向.倾 ?? 0) * 度, 'YZX'));
   const [rx, ry, rz] = 显示.rotation ?? [0, 0, 0];
   const 显示转 = new THREE.Quaternion().setFromEuler(new THREE.Euler(rx! * 度, (左 ? -ry! : ry!) * 度, (左 ? -rz! : rz!) * 度, 'XYZ'));
-  const 握 = 手.invert().multiply(目标).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2)).multiply(显示转.invert());
+  const 握 = 手.invert().multiply(目标).multiply(显示转.invert()).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2));
   const e = new THREE.Euler().setFromQuaternion(握, 'ZYX');
   return [-e.x / 度, -e.y / 度, e.z / 度]; // 握持点没有自带转角
 };
