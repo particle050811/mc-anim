@@ -71,9 +71,12 @@ export const 对视她: React.FC<{ 秒?: number }> = ({ 秒 = 对视秒 }) => {
 /** 组件按「右手拿着东西」摆手，东西本身不挂在握持点上（花另画，见 铃兰.tsx） */
 export const 空手拿: 手持物 = { 物品: null, 朝向: '原样' };
 
-/** 她和她手里的花：骨骼照 对视她骨骼 改（举：手举起来多少，0～1），花的握点放在改完以后的右手握持点上，正面朝 对视眼 */
-export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: number }> = ({ p, 举 = 1 }) => {
-  const 改 = 对视她骨骼(p, 举);
+/** 拿花的手在 举 = 0 时的样子（大臂、前臂、手各再转多少度，同 拿花），举起来时从这里转到 拿花；不给就是组件原样（右手胸前） */
+export type 拿花起手 = { 大臂: readonly number[]; 前臂: readonly number[]; 手: readonly number[] };
+
+/** 她和她手里的花：骨骼照 对视她骨骼 改（举：手举起来多少，0～1；起：举 = 0 时手在哪），花的握点放在改完以后的右手握持点上，正面朝 对视眼 */
+export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: number; 起?: 拿花起手 }> = ({ p, 举 = 1, 起 }) => {
+  const 改 = 对视她骨骼(p, 举, 起);
   const 手 = magicalWineFoxBoneAt(p.pose, { ...magicalWineFoxExBones(p), ...改 }, 'RightHandLocator');
   return (
     <>
@@ -85,7 +88,7 @@ export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: nu
 
 /** 对视那一帧起她在组件摆好的姿势上再改的几根骨骼（重逢.tsx 回头以后也用）：
  *  拿花（拿花：大臂、前臂、手）；瞳孔放回眼睛中间（瞳孔挪）、眉毛挪到刘海前面（眉毛往前），认出你才挪；帽子抬高（帽子抬） */
-export const 对视她骨骼 = (p: 魔法酒狐新动作Props, 举 = 1): Record<string, BonePose> => {
+export const 对视她骨骼 = (p: 魔法酒狐新动作Props, 举 = 1, 起?: 拿花起手): Record<string, BonePose> => {
   const 表 = magicalWineFoxExBones(p);
   const 加 = (b: string, rot: readonly number[], pos: readonly number[] = [0, 0, 0]): BonePose => {
     const [x = 0, y = 0, z = 0] = 表[b]?.rot ?? [];
@@ -93,10 +96,11 @@ export const 对视她骨骼 = (p: 魔法酒狐新动作Props, 举 = 1): Record<
     return { ...表[b], rot: [x + rot[0]!, y + rot[1]!, z + rot[2]!], pos: [px + pos[0]!, py + pos[1]!, pz + pos[2]!] };
   };
   const 认出 = p.表情 === '认出你';
+  const 插 = (b: readonly number[], a: readonly number[] = [0, 0, 0]) => b.map((v, i) => a[i]! * (1 - 举) + v * 举);
   return {
-    RightArm: 加('RightArm', 拿花.大臂.map((v) => v * 举)),
-    RightForeArm: 加('RightForeArm', 拿花.前臂.map((v) => v * 举)),
-    RightHand: 加('RightHand', 拿花.手.map((v) => v * 举)),
+    RightArm: 加('RightArm', 插(拿花.大臂, 起?.大臂)),
+    RightForeArm: 加('RightForeArm', 插(拿花.前臂, 起?.前臂)),
+    RightHand: 加('RightHand', 插(拿花.手, 起?.手)),
     witchcap: 加('witchcap', [0, 0, 0], [0, 帽子抬, 0]),
     ...(认出
       ? {

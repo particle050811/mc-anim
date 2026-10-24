@@ -12,7 +12,7 @@ import { 对视脚 } from './场/2-隐世之境/对视参数.ts';
 import { 你的脚, 回头进度, 门开, 对视那帧秒, 推近视角, 重逢机位 } from './场/2-隐世之境/重逢动作.ts';
 import { 对视取景, 对视气泡, 对视视角 } from './场/2-隐世之境/对视参数.ts';
 import { 她, 气泡字 } from './场/2-隐世之境/参数.ts';
-import { 台词气泡字 } from './场/2-隐世之境/重逢参数.ts';
+import { 台词气泡字, 推门, 风散心高 } from './场/2-隐世之境/重逢参数.ts';
 import fs from 'node:fs';
 import path from 'node:path';
 import { 做像素字 } from '@库/界面/像素字表.ts';
@@ -65,6 +65,29 @@ describe('樱花风转场', () => {
       expect(x + 边 <= 0 || x >= W || y + 边 <= 0 || y >= H).toBe(true);
     }
     expect(事.风散开.秒 + 樱花风默认.风流.散完秒).toBeLessThan(t);
+  });
+
+  it('推开的门里她的背影那块先散开：散心方圆 200 页面像素，转场后第 3 帧起一片花瓣都没有', () => {
+    const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
+    const 机 = 重逢机位(事.推门.秒 + 推门.开秒);
+    const cam = 做透视相机({ 眼: Z朝上转three(机.眼), 看: Z朝上转three(机.看), 视角: 机.视角, 宽: 1280, 高: 720 });
+    const c = 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + 风散心高]), 1280, 720);
+    const 心: [number, number] = [c.x * 成片倍数, c.y * 成片倍数];
+    const 墙 = 造风墙(樱花风默认, W, H);
+    const 挨着 = (帧: number) =>
+      墙.filter((q) => {
+        const { x, y } = 墙瓣在(q, 秒(帧), 风时刻, 樱花风默认, W, H, 心);
+        const 边 = q.档 * 3;
+        const [nx, ny] = [Math.max(x, Math.min(心[0], x + 边)), Math.max(y, Math.min(心[1], y + 边))];
+        return Math.hypot(nx - 心[0], ny - 心[1]) < 200 * 成片倍数;
+      }).length;
+    expect(挨着(事.风散开.帧)).toBeGreaterThan(0);
+    for (let 帧 = 事.风散开.帧 + 3; 帧 <= 事.第15句对视.帧; 帧++) expect(挨着(帧), `帧 ${帧}`).toBe(0);
+  });
+
+  it('她回头之前，背影干净地露 4 帧（散心那块第 3 帧散完，第 7 帧才开始转）', () => {
+    const 起 = 事.风散开.帧 + 3;
+    for (let 帧 = 起; 帧 < 起 + 4; 帧++) expect(回头进度(秒(帧)), `帧 ${帧}`).toEqual({ 身: 0, 头: 0 });
   });
 
   it('风散开那一下不是一下散光：转场后第 3 帧还有一半以上的花瓣在画里', () => {
