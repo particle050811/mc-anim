@@ -1,30 +1,29 @@
-// 启动器画面：成片分辨率的 2D 画布（同 库/界面/像素聊天栏.tsx：预览级由浏览器缩一半），画 画启动器.ts 的启动器；片尾的碎片、署名各一张透明画布，段叠在上面。
+// 「选择世界」画面：成片分辨率的 2D 画布（同 库/界面/像素聊天栏.tsx：预览级由浏览器缩一半），画 画界面.ts 的界面；片尾的碎片另一张透明画布，段叠在上面。
 // 钻进图标时图标里透掉的照片像素是透明的，段把新世界垫在这张画布下面，就从图标框里露出来。
 import type { Png } from '@engine/model/贴图.ts';
 import React, { useLayoutEffect, useRef } from 'react';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
-import { 启动器字 } from '../../界面/启动器字.ts';
 import { 取图标, 图标边 } from '../../界面/实例图标.ts';
-import { 碎片, 署名, 色 } from './参数.ts';
-import { 图标框, 平常取景, 碎块们, 碎块在, 署名位, 阈 } from './编排.ts';
-import { 投, 画启动器, type 启动器状态, type 取景 } from './画启动器.ts';
+import { 碎片 } from './参数.ts';
+import { 图标框, 平常取景, 碎块们, 碎块在, 阈 } from './编排.ts';
+import { 投, 画选择世界, type 界面状态, type 取景 } from './画界面.ts';
 
 const 块 = 碎片.碎块边;
 
-export type 启动器属性 = {
-  状态: 启动器状态;
+export type 选择世界属性 = {
+  状态: 界面状态;
   /** 页面尺寸，默认 1280×720 */
   宽?: number;
   高?: number;
 };
 
 /** 铺满画面，放在 position 不是 static 的容器里 */
-export const 启动器: React.FC<启动器属性> = ({ 状态, 宽 = 1280, 高 = 720 }) => {
+export const 选择世界: React.FC<选择世界属性> = ({ 状态, 宽 = 1280, 高 = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = 宽 * 成片倍数, H = 高 * 成片倍数;
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
-    if (ctx) 画启动器(ctx, W, H, 状态);
+    if (ctx) 画选择世界(ctx, W, H, 状态);
   });
   return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
 };
@@ -52,7 +51,7 @@ export type 碎片层属性 = {
   高?: number;
 };
 
-/** 片尾的碎片：已经到位的一块画成新图标那一格，还在飞的按 换 的比例一个像素一个像素地（Bayer）从世界的碎片换成新图标那一块。透明底，叠在启动器上面 */
+/** 片尾的碎片：已经到位的一块画成新图标那一格，还在飞的按 换 的比例一个像素一个像素地（Bayer）从世界的碎片换成新图标那一块；还没起飞的不画。透明底，叠在界面上面 */
 export const 碎片层: React.FC<碎片层属性> = ({ f, 新, 源, 取景: t = 平常取景, 宽 = 1280, 高 = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = 宽 * 成片倍数, H = 高 * 成片倍数;
@@ -64,6 +63,7 @@ export const 碎片层: React.FC<碎片层属性> = ({ f, 新, 源, 取景: t = 
     const 料 = 料们(源);
     碎块们.forEach((b, n) => {
       const s = 碎块在(b, f);
+      if (!s) return;
       const 格 = s.到 ? { x: 图标框.x + (b.i * 图标框.边 * 块) / 图标边, y: 图标框.y + (b.j * 图标框.边 * 块) / 图标边, 边: (图标框.边 * 块) / 图标边 } : { x: s.x, y: s.y, 边: s.边 };
       const 步 = 格.边 / 块;
       for (let y = 0; y < 块; y++)
@@ -76,21 +76,6 @@ export const 碎片层: React.FC<碎片层属性> = ({ f, 新, 源, 取景: t = 
           ctx.fillRect(x0, y0, P.x(格.x + (x + 1) * 步) - x0, P.y(格.y + (y + 1) * 步) - y0);
         }
     });
-  });
-  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
-};
-
-/** 片尾署名（措辞未定，参数.ts 的 署名.字 是占位）：右下角一行灰色小字，和启动器的字同一个界面像素格、一样大；单独一张画布，段把它放在白光上面（不被白光盖住） */
-export const 署名层: React.FC<{ 宽?: number; 高?: number }> = ({ 宽 = 1280, 高 = 720 }) => {
-  const ref = useRef<HTMLCanvasElement>(null);
-  const W = 宽 * 成片倍数, H = 高 * 成片倍数;
-  useLayoutEffect(() => {
-    const ctx = ref.current?.getContext('2d');
-    if (!ctx) return;
-    ctx.clearRect(0, 0, W, H);
-    const P = 投(平常取景, W, H);
-    const 位 = 署名位(启动器字.字宽(署名.字), W);
-    启动器字.画(ctx, 署名.字, { x: P.x(0), y: P.y(0) }, 位.x, 位.y, 色.署名, 平常取景.尺);
   });
   return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
 };
