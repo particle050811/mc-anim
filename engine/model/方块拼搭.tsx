@@ -1,10 +1,11 @@
 // 方块拼搭：在代码里一格一格声明原版方块（方块状态字符串 + 格坐标），照 voxel/真实方块表.ts 的面表、真实方块图集.ts 的贴图拼成网格。
 // 不用开游戏导网格：小场景（侧剖面的小屋、坑）直接写方块。表里查不到的方块实体（箱子、告示牌）照旧手搭。
 // 格 (i, j, k) 占 [i, i+1]×[j, j+1]×[k, k+1]，再加 原点；场景坐标 Z 朝上（x 东、y 北、z 上），和面表一样。
-// 明暗不烤进网格，交给灯（材质受光）；顶点色只放群系染色 × 亮（亮按 sRGB 数值乘，游戏里光照也是直接乘贴图的 sRGB 值）。
+//   想让格 i 的中心落在 x = i（格 i 占 [i − 0.5, i + 0.5]），传 原点 [−0.5, 0, 0]。
+// 明暗不烤进网格，交给灯（材质受光）或三渲二的平涂（按面朝向乘）；顶点色只放群系染色 × 亮（亮按 sRGB 数值乘，游戏里光照也是直接乘贴图的 sRGB 值）。
 // 面剔除：贴着整格不透明方块的面不画（树叶之间照游戏「高品质」不剔）。草方块侧面的草边是叠加贴图，另画一层镂空面。
 // 正面花草：十字模型（树苗、草、花）换成一张朝南的正面片，正交侧视时贴图像素和方块一样大、不被斜着压窄（侧剖面用；透视镜头别开）。
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from './parts.tsx';
 import { blockAtlas } from '../voxel/真实方块图集.ts';
@@ -118,16 +119,22 @@ export const 拼搭缓冲 = (方块们: readonly 方块[], 选项: 拼搭选项 
 
 const 空 = (): 缓冲 => ({ pos: [], nor: [], uv: [], col: [], idx: [] });
 
+// 材质各类一份、全模块共用（贴图是同一张图集），不随网格释放
+const 材质们 = new Map<类, THREE.Material>();
 const 材质 = (c: 类) => {
+  let m = 材质们.get(c);
+  if (m) return m;
   const map = blockAtlas().original;
-  if (c === '发光') return new THREE.MeshBasicMaterial({ map, vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide });
   const common = { map, vertexColors: true, roughness: 1, metalness: 0 };
-  if (c === '镂空') return new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide });
-  if (c === '半透明') return new THREE.MeshStandardMaterial({ ...common, transparent: true, depthWrite: false, side: THREE.DoubleSide });
-  return new THREE.MeshStandardMaterial(common);
+  if (c === '发光') m = new THREE.MeshBasicMaterial({ map, vertexColors: true, alphaTest: 0.5, side: THREE.DoubleSide });
+  else if (c === '镂空') m = new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide });
+  else if (c === '半透明') m = new THREE.MeshStandardMaterial({ ...common, transparent: true, depthWrite: false, side: THREE.DoubleSide });
+  else m = new THREE.MeshStandardMaterial(common);
+  材质们.set(c, m);
+  return m;
 };
 
-/** 方块们 → 网格（每类一个）。几何每次新建，调用的地方按方块表不变就别重建（useMemo） */
+/** 方块们 → 网格（每类一个）。几何每次新建，用完要 geometry.dispose()（材质是共用的，别释放）；组件 方块拼搭 自己管 */
 export const 拼搭网格 = (方块们: readonly 方块[], 选项: 拼搭选项 = {}): THREE.Mesh[] => {
   const 缓冲们 = 拼搭缓冲(方块们, 选项);
   const out: THREE.Mesh[] = [];
@@ -148,9 +155,10 @@ export const 拼搭网格 = (方块们: readonly 方块[], 选项: 拼搭选项 
   return out;
 };
 
-/** 方块们要各帧同一个数组（或按内容 useMemo），换了就重建网格 */
+/** 方块们要各帧同一个数组（或按内容 useMemo），换了就重建网格（旧几何随即释放，R3F 不替 primitive 释放） */
 export const 方块拼搭: React.FC<{ 方块们: readonly 方块[] } & 拼搭选项> = ({ 方块们, 原点, 群系, 正面花草 }) => {
   const meshes = useMemo(() => 拼搭网格(方块们, { 原点, 群系, 正面花草 }), [方块们, 原点?.[0], 原点?.[1], 原点?.[2], 群系, 正面花草]);
+  useEffect(() => () => meshes.forEach((m) => m.geometry.dispose()), [meshes]);
   return (
     <group>
       {meshes.map((m) => (
