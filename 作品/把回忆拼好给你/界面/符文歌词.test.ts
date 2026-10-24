@@ -12,7 +12,8 @@ import { 逐字问题 } from '../配乐/逐字.ts';
 import { 正片事件 } from '../分镜.ts';
 import { 网格 } from '../配乐/网格.ts';
 import { 光明, 光明档数, 刹那, 刹那块, 放下块, 烟花火花 } from './歌词字效.ts';
-import { 关键词们, 分屏让, 歌词排版表 } from './歌词排版表.ts';
+import { 分屏版式 } from '../场/2-门口/分屏参数.ts';
+import { 关键词们, 分屏线, 分屏让, 歌词排版表 } from './歌词排版表.ts';
 import { 拼音, 正片歌词行, 进场 } from './符文歌词数据.ts';
 import { 分块, 块数, 字种, 符文倍, 飞们, 飞位, 飞法 } from './符文拼字.ts';
 import { 做字源, 合样式, 字状态, 字格, 排一句, 符文歌词默认, 解码时段, 错距, type 时间样式 } from './符文排版.ts';
@@ -149,8 +150,9 @@ describe.skipIf(!表字节 || !sga字节)('歌词艺术字的排版', () => {
     expect(右[6]!.x).toBe(右[14]!.x);
   });
 
-  it('分屏两句（第 13、14 句）：一段在左屏、一段在右屏，同一行，连描边离分屏线（成片 1280～1288）都还有 分屏让 − 2 点（取整）；第 14 句左段在左屏太阳右边（第14句.test：太阳右沿在页面 392 以左）', () => {
+  it('分屏两句（第 13、14 句）：一段在左屏、一段在右屏，同一行，连描边离分屏线（成片 1280～1288）都还有 分屏让 − 2 点（取整），两段只画在自己那一屏；第 14 句左段在左屏太阳右边（第14句.test：太阳右沿在页面 392 以左）', () => {
     const 样 = 符文歌词默认;
+    expect(分屏线).toEqual([分屏版式.服务器宽 / 1280, (分屏版式.服务器宽 + 分屏版式.线宽) / 1280]);
     for (const 序 of [13, 14]) {
       const s = 句们.find((x) => x.序 === 序)!;
       const 版 = 歌词排版表[序]!;
@@ -162,6 +164,8 @@ describe.skipIf(!表字节 || !sga字节)('歌词艺术字的排版', () => {
       expect(右段左 - 1288, `第 ${序} 句`).toBeGreaterThanOrEqual((分屏让 - 2) * 样.字点);
       expect(new Set(格们.map((g) => g.y)).size).toBe(1);
       expect(格们[0]!.y).toBe(11);
+      for (const g of 格们.slice(0, k)) expect([g.界![0], g.界![1] * 样.字点]).toEqual([0, expect.closeTo(1280)]);
+      for (const g of 格们.slice(k)) expect([g.界![0] * 样.字点, g.界![1] * 样.字点]).toEqual([expect.closeTo(1288), expect.closeTo(2560)]);
     }
     const 十四 = 排一句(源, '也为你骗自己放下', 符文歌词默认, 2560, 1440, 歌词排版表[14]);
     expect((十四.格们[0]!.x - 1) * 符文歌词默认.字点).toBeGreaterThanOrEqual(392 * 2);

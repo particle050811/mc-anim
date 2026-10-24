@@ -137,7 +137,11 @@ const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式,
   const { 格, 音, 状, 时, 种, 块们 } = 字;
   const 符色 = 色(样式.符文色);
   const 飞 = 飞们(块们, 音, { ...时, 入: 状.入 }, 样式.飞帧, 种);
-  const 画 = (X: number, Y: number, c: readonly number[], 光 = 0) => 点(层, X, Y, 调 ? 调(c) : c, 光);
+  const 界 = 格.界;
+  const 画 = (X: number, Y: number, c: readonly number[], 光 = 0) => {
+    if (界 && !(X >= 界[0] && X + 1 <= 界[1])) return;
+    点(层, X, Y, 调 ? 调(c) : c, 光);
+  };
   // 符文先画（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）。一个字母像素画成 倍 × 倍 个点，最后一截缩回 1 倍
   飞.forEach((一, k) => {
     const 位 = 飞位(一, f);
