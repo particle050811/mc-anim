@@ -21,7 +21,9 @@ export const 发光方块 = new Set(['minecraft:torch', 'minecraft:wall_torch', 
 type 类 = '实心' | '镂空' | '半透明' | '发光';
 type 缓冲 = { pos: number[]; nor: number[]; uv: number[]; col: number[]; idx: number[] };
 const ATLAS_COLS = 16;
-const 线性 = (sRGB: number) => THREE.SRGBToLinear(sRGB);
+/** sRGB 数值 → 线性（three 0.186 不再导出 SRGBToLinear） */
+export const sRGB转线性 = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+const 线性 = sRGB转线性;
 const 键 = (i: number, j: number, k: number) => `${i},${j},${k}`;
 const 邻 = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 
