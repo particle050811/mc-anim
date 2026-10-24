@@ -15,6 +15,8 @@ import { 雨量, 雷 } from './场/2-雷雨/声音.ts';
 import { 云色, 天色 } from './场/2-雷雨/天气.ts';
 import {
   云剩,
+  云飘,
+  天晴在,
   光柱透,
   光柱顶,
   发光区,
@@ -232,6 +234,24 @@ describe('第 7 句：魔法阵、光柱、云洞、阳光', () => {
     expect(阳光半径(帧('阳光铺地'))).toBeGreaterThanOrEqual(屋子最远());
     expect(阳光半径(帧('云洞开大'))).toBeLessThan(屋子最远());
     for (const f of 全部帧) expect(发光区(f).length, `帧 ${f}`).toBeLessThanOrEqual(16);
+  });
+
+  it('洞里的天跟着散完的云格变蓝：破云 前没有；云还在（剩 > 0）的那一格底下透不出满的晴天，散完的格底下是晴天', () => {
+    expect(天晴在(帧('破云') - 1)).toBeNull();
+    const 全 = 云格们(() => true);
+    for (const f of [帧('破云'), 帧('破云') + 2, 帧('云洞开大'), 末]) {
+      const 晴 = 天晴在(f)!;
+      const 飘 = 云飘(f);
+      let 有剩 = 0, 有散完 = 0;
+      for (const c of 全) {
+        const 剩 = 云剩(c, f);
+        const v = 晴(c.a * 12 + 6 + 飘, c.b * 12 + 6);
+        expect(v, `帧 ${f} 格 ${c.a},${c.b}`).toBeCloseTo(1 - 剩, 6);
+        if (剩 > 0 && 剩 < 1) 有剩++;
+        if (剩 === 0) 有散完++;
+      }
+      if (f === 帧('破云') + 2) expect(有剩 + 有散完).toBeGreaterThan(0);
+    }
   });
 
   it('转晴：破云 那一帧还是雷雨，阳光铺地 走完', () => {

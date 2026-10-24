@@ -1,5 +1,5 @@
 // 第 6、7 句的天和雾：透视镜头后面一张 2D 画布画天（同 场/2-新世界/世界.tsx 的 透视天：成片分辨率、每 天格 见方一格、按视线仰角取原版天色和球形雾），
-// 加上云洞：视线在云底那一层落在洞里的，画晴天的天色（演绎：雨天的天色是整片一起变的，这里让蓝天只从洞里露出来）。
+// 加上云洞：视线在云底那一层落到的那一格云散完了，画晴天的天色（演绎：雨天的天色是整片一起变的，这里让蓝天只从散开的云格里露出来，见 编排.ts 的 天晴在）。
 // 地形、云的雾照原版柱形雾（同 新世界 的 补雾：颜色编码之后按到相机的水平距离 smoothstep 混雾色），雾色每帧跟着天气变（统一量是共用的，画之前改）。
 import React, { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
@@ -7,7 +7,7 @@ import { 做机位相机 } from '@engine/三渲二/机位.tsx';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import type { 机位 } from './编排.ts';
 import * as 参 from './参数.ts';
-import { 地形雾, 天在, type RGB } from './天气.ts';
+import { 地形雾, 天在, 混, type RGB } from './天气.ts';
 
 // ---------- 雾 ----------
 const 雾统一量 = {
@@ -53,13 +53,12 @@ export type 天参数 = {
   雾: RGB;
   晴天: RGB;
   晴雾: RGB;
-  /** 云洞：心（场景 x、y）、半径（格），半径 0 = 没洞 */
-  洞心: readonly [number, number];
-  洞半径: number;
+  /** 云底那一层 (x, y) 处透出多少晴天（0～1，编排.ts 的 天晴在）；null = 没洞 */
+  晴在: ((x: number, y: number) => number) | null;
 };
 
 /** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线取色 */
-export const 透视天: React.FC<天参数> = ({ 机位, 宽, 高, 天, 雾, 晴天, 晴雾, 洞心, 洞半径 }) => {
+export const 透视天: React.FC<天参数> = ({ 机位, 宽, 高, 天, 雾, 晴天, 晴雾, 晴在 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const 画宽 = 宽 * 成片倍数, 画高 = 高 * 成片倍数;
   useLayoutEffect(() => {
@@ -78,12 +77,13 @@ export const 透视天: React.FC<天参数> = ({ 机位, 宽, 高, 天, 雾, 晴
       for (let x = 0; x < nx; x++) {
         v.set((((x + 0.5) * 参.天格) / 画宽) * 2 - 1, 1 - (((y + 0.5) * 参.天格) / 画高) * 2, 0.5).unproject(cam).sub(cam.position).normalize();
         // three 世界 (x, y, z) = 场景 (x, z, −y)
-        let 洞里 = false;
-        if (洞半径 > 0 && v.y > 0) {
+        let 晴 = 0;
+        if (晴在 && v.y > 0) {
           const t = 云高 / v.y;
-          洞里 = Math.hypot(机位.眼[0] + t * v.x - 洞心[0], 机位.眼[1] - t * v.z - 洞心[1]) < 洞半径;
+          晴 = 晴在(机位.眼[0] + t * v.x, 机位.眼[1] - t * v.z);
         }
-        const c = 洞里 ? 天在(Math.asin(v.y), 晴天, 晴雾) : 天在(Math.asin(v.y), 天, 雾);
+        const 仰 = Math.asin(v.y);
+        const c = 晴 >= 1 ? 天在(仰, 晴天, 晴雾) : 晴 <= 0 ? 天在(仰, 天, 雾) : 混(天在(仰, 天, 雾), 天在(仰, 晴天, 晴雾), 晴);
         const o = (y * nx + x) * 4;
         img.data[o] = Math.round(c[0] * 255);
         img.data[o + 1] = Math.round(c[1] * 255);

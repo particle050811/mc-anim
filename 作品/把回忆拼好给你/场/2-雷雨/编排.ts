@@ -7,7 +7,7 @@ import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
 import { fps, 段窗口, 正片事件 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
 import * as 参 from './参数.ts';
-import { 散起半径, type 云格子 } from './云.ts';
+import { 云格, 散起半径, type 云格子 } from './云.ts';
 import { 坑, 小木屋, 抗爆, 掉落位, 南墙, type 掉落 } from './弹坑.ts';
 import { 四周方块 } from './地形.ts';
 import { 雨量 } from './声音.ts';
@@ -111,6 +111,23 @@ export const 云剩 = (c: 云格子, 帧: number) => {
   while (起 <= 帧 && 洞半径(起) < r0) 起++;
   if (起 > 帧) return 1;
   return 1 - clamp01((帧 - 起 + 1) / 参.云洞.散帧);
+};
+/** 天从哪里透出晴天：视线在云底那一层落到的那一格（同云的格子，跟着云飘）散了多少，0 = 雷雨天、1 = 晴天；破云 前没有（null）。
+ *  跟着云格一格一格变（核查 10-24：按正圆判断的话，云还没散、0.8 透明的云后面先透出一块正圆的蓝天）；clouds.png 上空着的格照同一个 散起半径 算 */
+export const 天晴在 = (帧: number): ((x: number, y: number) => number) | null => {
+  if (帧 < 事('破云')) return null;
+  const 飘 = 云飘(帧);
+  const 表 = new Map<string, number>();
+  return (x, y) => {
+    const a = Math.floor((x - 飘) / 云格), b = Math.floor(y / 云格);
+    const k = `${a},${b}`;
+    let v = 表.get(k);
+    if (v === undefined) {
+      v = 1 - 云剩({ a, b }, 帧);
+      表.set(k, v);
+    }
+    return v;
+  };
 };
 
 // ---------- 天气、调子 ----------
