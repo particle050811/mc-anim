@@ -5,7 +5,9 @@
 // - 浮尘：光带里飘着的小方块，一个贴图像素大。
 // 坐标：场景坐标（Z 朝上：x 东、y 北、z 上，单位格），放进 rotation [−π/2, 0, 0] 的 group。门洞是一个竖直的长方形：底边从 a 到 b，高从 底 到 顶。
 // 都是不受光照、不过色调映射的平涂（MeshBasicMaterial），混合方式可选：加（往亮里加）、盖（普通透明叠）。
-import { useThree } from '@react-three/fiber';
+// 材质都打上 userData.平涂：三渲二的 <平涂> 见到就原样放过、不克隆（克隆了以后每帧按 亮 改的是原材质，网格上挂的那份冻在第一帧）。
+// 正交镜头（三渲二的正交像素机位）也能用：浮尘按视体高算像素大小；光带朝哪转用 朝 给（正交没有眼睛的位置）。
+import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { rng, type V3 } from '@engine/model/parts.tsx';
@@ -109,8 +111,13 @@ const 调亮 = (m: THREE.MeshBasicMaterial | THREE.PointsMaterial, 混: 混合, 
   else m.opacity = 强 * 亮;
 };
 
+const 已平涂 = <M extends THREE.Material>(m: M): M => {
+  m.userData.平涂 = true;
+  return m;
+};
+
 const 材质 = (混: 混合, 色: string, 强: number, map?: THREE.Texture) =>
-  new THREE.MeshBasicMaterial({
+  已平涂(new THREE.MeshBasicMaterial({
     color: 混 === '加' ? 颜色(色).multiplyScalar(强) : 颜色(色),
     opacity: 混 === '加' ? 1 : 强,
     map: map ?? null,
@@ -123,7 +130,8 @@ const 材质 = (混: 混合, 色: string, 强: number, map?: THREE.Texture) =>
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -8,
-  });
+    fog: false,
+  }));
 
 type 地块层 = { 高: number; 宽: number; 长: number; 原点: [number, number]; 贴图: THREE.DataTexture };
 
@@ -132,7 +140,9 @@ const 画地块 = (p: 门光参数, 洞: 门洞, 台面们: readonly 台面[], �
   const d = 光向(p.方位, p.仰角);
   const 高们 = [0, ...台面们.map((t) => t.高)];
   const 外们 = 高们.map((h) => 投影(洞, d, h, 0));
-  const 内们 = 高们.map((h) => 投影(洞, d, h, p.地块.内缩));
+  // 门缝比两倍内缩还窄（推门那一下）就只有外档
+  const 有内 = Math.hypot(洞.b[0] - 洞.a[0], 洞.b[1] - 洞.a[1]) > 2 * p.地块.内缩 && 洞.顶 - 洞.底 > 2 * p.地块.内缩;
+  const 内们 = 有内 ? 高们.map((h) => 投影(洞, d, h, p.地块.内缩)) : [];
   const 全 = 外们.flat();
   const n = p.地块.每格像素;
   const 原点: [number, number] = [Math.floor(Math.min(...全.map((q) => q[0])) * n) / n, Math.floor(Math.min(...全.map((q) => q[1])) * n) / n];
@@ -156,7 +166,7 @@ const 画地块 = (p: 门光参数, 洞: 门洞, 台面们: readonly 台面[], �
         if (台 + 1 !== li) continue;
         if (!在凸多边形里(q, 外们[li]!)) continue;
         if (人 && 在人影里(q, 人, d, h)) continue;
-        if (在凸多边形里(q, 内们[li]!)) 写(px, j * 宽 + i, 内, p.地块.内);
+        if (有内 && 在凸多边形里(q, 内们[li]!)) 写(px, j * 宽 + i, 内, p.地块.内);
         else 写(px, j * 宽 + i, 外, p.地块.外);
       }
     const t = new THREE.DataTexture(px, 宽, 长, THREE.RGBAFormat);
@@ -191,18 +201,22 @@ export const 门光地块: React.FC<{ 参数: 门光参数; 洞: 门洞; 台面�
   );
 };
 
-/** 空气里的光带：每条是一张顺着光、正对镜头那边转的长条，从门洞上沿（沿门宽 u 处）斜插到地上 */
-export const 门光光带: React.FC<{ 参数: 门光参数; 洞: 门洞; 眼: V3; 亮?: number }> = ({ 参数, 洞, 眼, 亮 = 1 }) => {
+/** 空气里的光带：每条是一张顺着光、正对镜头那边转的长条，从门洞上沿（沿门宽 u 处）斜插到地上。
+ *  朝：从场景指向镜头的方向（正交镜头用，比如镜头朝北看就是 [0, −1, 0]）；不给就朝 眼 转 */
+export const 门光光带: React.FC<{ 参数: 门光参数; 洞: 门洞; 眼: V3; 朝?: V3; 亮?: number }> = ({ 参数, 洞, 眼, 朝, 亮 = 1 }) => {
   const d = 光向(参数.方位, 参数.仰角);
   const 带们 = useMemo(() => {
     const dv = new THREE.Vector3(...d);
-    return 参数.光带.条们.map(({ u, 宽, 强, 起, 止 }) => {
+    const 洞宽 = Math.hypot(洞.b[0] - 洞.a[0], 洞.b[1] - 洞.a[1]);
+    return 参数.光带.条们.map(({ u, 宽: 条宽, 强, 起, 止 }) => {
+      // 门缝窄的时候光带不比门缝宽
+      const 宽 = Math.min(条宽, 洞宽);
       const 顶 = new THREE.Vector3(...洞上(洞, u, 洞.顶));
       const 长 = 洞.顶 / -d[2];
       const [a, b] = [顶.clone().addScaledVector(dv, 长 * 起), 顶.clone().addScaledVector(dv, 长 * 止)];
       const 中 = a.clone().add(b).multiplyScalar(0.5);
       // 带面含光的方向，法向取朝镜头那边（去掉沿光的分量）
-      const 向眼 = new THREE.Vector3(...眼).sub(中);
+      const 向眼 = 朝 ? new THREE.Vector3(...朝) : new THREE.Vector3(...眼).sub(中);
       const 法 = 向眼.addScaledVector(dv, -向眼.dot(dv)).normalize();
       const 横 = new THREE.Vector3().crossVectors(dv, 法).normalize().multiplyScalar(宽 / 2);
       const pos = new Float32Array([
@@ -214,7 +228,7 @@ export const 门光光带: React.FC<{ 参数: 门光参数; 洞: 门洞; 眼: V3
       return { g, m: 材质(参数.光带.混合, 参数.光带.色, 强), 强 };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [参数, 洞, 眼[0], 眼[1], 眼[2]]);
+  }, [参数, 洞, 眼[0], 眼[1], 眼[2], 朝?.[0], 朝?.[1], 朝?.[2]]);
   useEffect(
     () => () => {
       for (const { g, m } of 带们) {
@@ -239,7 +253,7 @@ export const 门光光带: React.FC<{ 参数: 门光参数; 洞: 门洞; 眼: V3
 export const 门光浮尘: React.FC<{ 参数: 门光参数; 洞: 门洞; 秒: number; 亮?: number }> = ({ 参数, 洞, 秒, 亮 = 1 }) => {
   const { 数, 色, 强, 种子, 大小, 漂速, 起: 撒起 } = 参数.浮尘;
   const d = 光向(参数.方位, 参数.仰角);
-  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera;
+  const 页高 = useThree((s) => s.size.height);
   const 粒们 = useMemo(() => {
     const r = rng(种子);
     return Array.from({ length: 数 }, () => [r(), r(), r()] as const);
@@ -249,20 +263,28 @@ export const 门光浮尘: React.FC<{ 参数: 门光参数; 洞: 门洞; 秒: nu
     g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(数 * 3), 3));
     return g;
   }, [数]);
-  // three 的点精灵按 size × 画面半高 ÷ 深度 算像素，没乘视角；乘上 tan(半视角) 才是 大小 格
   const 料 = useMemo(
     () =>
-      new THREE.PointsMaterial({
-        color: 颜色(色).multiplyScalar(强),
-        size: 大小 / Math.tan(rad(camera.fov / 2)),
-        sizeAttenuation: true,
-        transparent: true,
-        depthWrite: false,
-        toneMapped: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    [色, 强, 大小, camera.fov],
+      已平涂(
+        new THREE.PointsMaterial({
+          color: 颜色(色).multiplyScalar(强),
+          sizeAttenuation: true,
+          transparent: true,
+          depthWrite: false,
+          toneMapped: false,
+          fog: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      ),
+    [色, 强],
   );
+  // 点的大小在画之前按当时的相机算（机位组件在渲染时才设好相机）：
+  // 透视：three 按 size × 画面半高 ÷ 深度 算像素、没乘视角，size 取 大小 ÷ tan(半视角) 才是 大小 格；
+  // 正交：three 不按深度缩，size 就是页面像素，= 大小 × 页面高 × zoom ÷ 视体高
+  useFrame(({ camera }) => {
+    const c = camera as THREE.PerspectiveCamera & THREE.OrthographicCamera;
+    料.size = c.isOrthographicCamera ? (大小 * 页高 * c.zoom) / (c.top - c.bottom) : 大小 / Math.tan(rad(c.fov / 2));
+  });
   useEffect(
     () => () => {
       几何.dispose();
@@ -283,11 +305,13 @@ export const 门光浮尘: React.FC<{ 参数: 门光参数; 洞: 门洞; 秒: nu
   return <points geometry={几何} material={料} renderOrder={7} />;
 };
 
-/** 三样一起：地块、光带、浮尘。亮：0～1 一起乘（推门时跟着门开大）。光带：镜头站在门洞里时光带从头顶掠过、只看得见落地那截楔形，关掉 */
-export const 门光: React.FC<{ 参数: 门光参数; 洞: 门洞; 眼: V3; 秒?: number; 台面们?: readonly 台面[]; 人影?: 人影; 亮?: number; 光带?: boolean }> = ({
+/** 三样一起：地块、光带、浮尘。亮：0～1 一起乘（推门时跟着门开大）。光带：镜头站在门洞里时光带从头顶掠过、只看得见落地那截楔形，关掉。
+ *  朝：见 门光光带（正交镜头给） */
+export const 门光: React.FC<{ 参数: 门光参数; 洞: 门洞; 眼: V3; 朝?: V3; 秒?: number; 台面们?: readonly 台面[]; 人影?: 人影; 亮?: number; 光带?: boolean }> = ({
   参数,
   洞,
   眼,
+  朝,
   秒 = 0,
   台面们,
   人影: 人,
@@ -296,7 +320,7 @@ export const 门光: React.FC<{ 参数: 门光参数; 洞: 门洞; 眼: V3; 秒?
 }) => (
   <>
     <门光地块 参数={参数} 洞={洞} 台面们={台面们} 人影={人} 亮={亮} />
-    {光带 && <门光光带 参数={参数} 洞={洞} 眼={眼} 亮={亮} />}
+    {光带 && <门光光带 参数={参数} 洞={洞} 眼={眼} 朝={朝} 亮={亮} />}
     {参数.浮尘.数 > 0 && <门光浮尘 参数={参数} 洞={洞} 秒={秒} 亮={亮} />}
   </>
 );
