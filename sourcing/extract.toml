@@ -1041,6 +1041,20 @@
 "贴图/角色/恼鬼/恼鬼" = "src/模型/角色/恼鬼.模型.恼鬼.png"
 "贴图/角色/恼鬼/蓄力" = "src/模型/角色/恼鬼.模型.蓄力.png"
 
+# 原版苦力怕（把回忆拼好给你 正片要用，库/生物/苦力怕.tsx）。CreeperModel.createBodyLayer（m_170525_，膨胀 0）自带 64×32 贴图尺寸
+[["取材"]]
+"名称" = "苦力怕"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/苦力怕.模型.json", "苦力怕=net.minecraft.client.model.CreeperModel:m_170525_(0)", "--贴图", "苦力怕=assets/minecraft/textures/entity/creeper/creeper.png"],
+]
+["取材"."产物"]
+"模型/角色/苦力怕" = "src/模型/角色/苦力怕.模型.json"
+"贴图/角色/苦力怕" = "src/模型/角色/苦力怕.模型.png"
+
 [["取材"]]
 "名称" = "幽灵马"
 "需要" = ["irons_spellbooks", "client-1.20.1", "client-1.20.1-srg"]
