@@ -2,7 +2,7 @@
 // 字节复用巨人那条取材（模型/角色/巨人 的「宽」、贴图/角色/巨人/史蒂夫，client 1.20.1 entity/player/wide/steve.png，64×64）。
 // 依据（1.20.1 SRG 客户端 jar，javap 反汇编）：
 // - PlayerRenderer.scale 整体 0.9375：站直头顶 1.875 格。潜行时 getRenderOffset 整个人往下 0.125 格（在缩放之前，脚会陷进地里约 2 像素，游戏里就这样）。
-// - HumanoidModel.setupAnim：走路摆臂 cos(步×0.6662+π)×步幅、摆腿 cos(步×0.6662)×1.4×步幅；拿着东西（ArmPose.ITEM）那只手 xRot×0.5 − π/10；
+// - HumanoidModel.setupAnim：走路摆臂 cos(步×0.6662+π)×步幅、摆腿 cos(步×0.6662)×1.4×步幅，两腿另有 yRot、zRot ±0.005；拿着东西（ArmPose.ITEM）那只手 xRot×0.5 − π/10；
 //   潜行：身子 xRot 0.5、两臂 xRot +0.4，身子 y 3.2、头 y 4.2、两臂 y 5.2、两腿 y 12.2 z 4；最后两臂 bobModelPart 轻晃。外层各 copyFrom 对应部件。
 // - LivingEntity.tickHeadTurn：头偏离身子超过 50° 时身子跟着转，头最多偏 50°；俯仰 ±90°。
 // - 手里的东西：ItemInHandLayer（物品贴图.tsx 的 HeldItem）+ 物品模型的第三人称显示变换。
@@ -24,12 +24,20 @@ import skinImg from 'asset:贴图/角色/巨人/史蒂夫';
 export const STEVE_MODEL = (raw as unknown as { models: { 宽: EntityModelData } }).models.宽;
 export const STEVE_SKIN: Png = png(skinImg);
 
+/** 整体倍数 s 时的高度（格，脚底起）：头顶（头方块顶，不算帽子层）、潜行头顶（含往下 0.125 格）、眼高。
+ *  眼高照 Player 的站、潜行尺寸（1.62、1.27，对应 0.9375 倍），别的倍数按比例换算，潜行往下的 0.125 格不跟着缩 */
+export const steveSize = (s: number) => ({
+  height: (32 * s) / 16,
+  crouchHeight: ((32 - 4.2) * s) / 16 - 0.125,
+  eye: (1.62 * s) / 0.9375,
+  eyeCrouch: ((1.27 + 0.125) * s) / 0.9375 - 0.125,
+});
+
 export const STEVE = {
+  // 原版 PlayerRenderer 的整体缩放，StevePose.scale 不给时用它。三渲二正交镜头里一个贴图像素就成了 0.9375 × N 个输出像素，
+  // 最近邻下一格宽一格窄，和 05-画风 原则 3（像素密度对齐）冲突，要不要改 1 倍待用户定（核对-史蒂夫苦力怕 的对比帧）
   scale: 0.9375,
-  height: 1.875, // 站直头顶离脚底（格）
-  crouchHeight: 1.505, // 潜行头顶离脚底（含往下 0.125 格）
-  eye: 1.62, // 眼高：站、潜行（Player 的 STANDING / CROUCHING 尺寸）
-  eyeCrouch: 1.27,
+  ...steveSize(0.9375), // height 1.875、crouchHeight 1.504、eye 1.62、eyeCrouch 1.27
   box: [0.6, 1.8] as [number, number],
   boxCrouch: [0.6, 1.5] as [number, number],
   headYawMax: 50,
@@ -37,11 +45,12 @@ export const STEVE = {
   // 平地上的速度（米/秒）：原版移动速度 0.1、疾跑 ×1.3、潜行 ×0.3 推出来的
   speed: { walk: 4.317, sprint: 5.612, sneak: 1.295 },
   // 贴图取色，给碎屑、粒子、剪影用
-  colors: { shirt: '#00afaf', pants: '#3a3189', skin: '#aa7259', hair: '#3f2a15', shoe: '#4a4a4a' },
+  colors: { shirt: '#00afaf', pants: '#463aa5', skin: '#aa7259', hair: '#332411', shoe: '#4a4a4a' },
 };
 
-/** FigurePose 再加潜行：0 站、1 原版潜行（游戏里一刻切过去，中间值按比例插，给过渡用） */
-export type StevePose = FigurePose & { crouch?: number };
+/** FigurePose 再加两样：crouch 潜行，0 站、1 原版潜行（游戏里一刻切过去，中间值按比例插，给过渡用）；
+ *  scale 整体倍数，不给按 STEVE.scale（0.9375）。放在姿势里是为了 steveLookAt、steveHeldItemMatrix 都跟着同一个倍数走 */
+export type StevePose = FigurePose & { crouch?: number; scale?: number };
 
 const DEG = 180 / Math.PI;
 const wrap180 = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
@@ -67,6 +76,7 @@ export type SteveMotion = {
   headPitch?: number; // 度，负 = 低头（同 FigurePose）
   holdR?: boolean; // 右手拿着东西（ArmPose.ITEM）
   holdL?: boolean;
+  scale?: number; // 整体倍数，原样放进 StevePose.scale
 };
 
 /** 原版 HumanoidModel.setupAnim 的姿势（不骑、不游泳、不鞘翅、不出手），换成 FigurePose。yaw：身子朝向（度，0 朝 +Y，正 = 往左）。
@@ -99,14 +109,16 @@ export const stevePose = (loc: V3, yaw: number, m: SteveMotion = {}): StevePose 
     legR: -rLeg * DEG,
     legL: -lLeg * DEG,
     crouch: m.crouch ?? 0,
+    ...(m.scale === undefined ? {} : { scale: m.scale }),
   };
 };
 
-/** 看向 target（场景坐标）：从眼睛（站 1.62、潜行 1.27）算头的偏航和俯仰。头偏离身子超过 50° 时，turnBody 就照原版让身子跟着转过去，
+/** 看向 target（场景坐标）：从眼睛（0.9375 倍时站 1.62、潜行 1.27，见 steveSize）算头的偏航和俯仰。头偏离身子超过 50° 时，turnBody 就照原版让身子跟着转过去，
  *  否则头停在 50°。只认 yaw、twist（头相对胸），不管整体前倾 pitch */
 export const steveLookAt = (pose: StevePose, target: V3, turnBody = true): StevePose => {
   const c = clamp(pose.crouch ?? 0, 0, 1);
-  const eye = STEVE.eye + (STEVE.eyeCrouch - STEVE.eye) * c;
+  const size = steveSize(pose.scale ?? STEVE.scale);
+  const eye = size.eye + (size.eyeCrouch - size.eye) * c;
   const [x, y, z] = pose.loc;
   const dx = target[0] - x;
   const dy = target[1] - y;
@@ -135,7 +147,7 @@ const toPart = (slotRot: THREE.Matrix4, extraX = 0) => {
   const m = chain(SLOT_TO_MODEL, slotRot, SLOT_TO_MODEL);
   if (extraX) m.multiply(new THREE.Matrix4().makeRotationX(extraX));
   const e = new THREE.Euler().setFromRotationMatrix(m, 'ZYX');
-  return [e.x, e.y, e.z];
+  return [e.x, e.y, e.z] as [number, number, number];
 };
 // 关节转动，同 骨架.tsx 的 joint：先抬（绕 X）再 roll（绕 Y），最外层绕竖轴
 const jointRot = (angle: number, roll: number, yaw = 0) => chain(rotZ(yaw), rotY(roll), rotX(angle));
@@ -153,8 +165,10 @@ export const steveParts = (pose: StevePose): Record<string, PartPose> => {
   };
   const armR = { rot: toPart(chain(rotZ(twist), jointRot(pose.armR, pose.armRRoll, pose.armRYaw ?? 0)), 0.4 * c), offset: shoulder(-5) };
   const armL = { rot: toPart(chain(rotZ(twist), jointRot(pose.armL, -pose.armLRoll, pose.armLYaw ?? 0)), 0.4 * c), offset: shoulder(5) };
-  const legR = { rot: toPart(jointRot(pose.legR, pose.legRRoll ?? 0, -(pose.legRYaw ?? 0))), offset: [-1.9, 12 + 0.2 * c, 4 * c] };
-  const legL = { rot: toPart(jointRot(pose.legL, -(pose.legLRoll ?? 0), pose.legLYaw ?? 0)), offset: [1.9, 12 + 0.2 * c, 4 * c] };
+  // 原版两腿的 yRot、zRot 固定 ±0.005（不给侧摆、外张时和原版一模一样；给了就叠在上面）
+  const leg = ([x, y, z]: [number, number, number], k: number) => [x, y + 0.005 * k, z + 0.005 * k];
+  const legR = { rot: leg(toPart(jointRot(pose.legR, pose.legRRoll ?? 0, -(pose.legRYaw ?? 0))), 1), offset: [-1.9, 12 + 0.2 * c, 4 * c] };
+  const legL = { rot: leg(toPart(jointRot(pose.legL, -(pose.legLRoll ?? 0), pose.legLYaw ?? 0)), -1), offset: [1.9, 12 + 0.2 * c, 4 * c] };
   return {
     head,
     hat: head,
@@ -180,15 +194,16 @@ const hipHeight = (pose: StevePose) => {
   return 12 + (pose.ground ?? 1) * (grounded - 12);
 };
 
-/** EntityModel 外面那一层：落脚点、转身、潜行下移、0.9375 倍、以髋为轴前倾和压扁（同 Figure），再把 EntityModel 的正面 −Y 转成 +Y */
+/** EntityModel 外面那一层：落脚点、转身、潜行下移、整体倍数（默认 0.9375）、以髋为轴前倾和压扁（同 Figure），再把 EntityModel 的正面 −Y 转成 +Y */
 export const steveRootMatrix = (pose: StevePose) => {
   const c = clamp(pose.crouch ?? 0, 0, 1);
   const [x, y, z] = pose.loc;
   const hip = hipHeight(pose);
+  const s = (pose.scale ?? STEVE.scale) / 16;
   return chain(
     new THREE.Matrix4().makeTranslation(x, y, z - 0.125 * c),
     rotZ(pose.yaw ?? 0),
-    new THREE.Matrix4().makeScale(STEVE.scale / 16, STEVE.scale / 16, STEVE.scale / 16),
+    new THREE.Matrix4().makeScale(s, s, s),
     new THREE.Matrix4().makeTranslation(0, 0, hip * pose.squash),
     rotX(pose.pitch),
     new THREE.Matrix4().makeScale(1, 1, pose.squash),
@@ -228,7 +243,11 @@ export const steveHeldItemPosition = (pose: StevePose, hand: 'R' | 'L' = 'R', di
 
 /** handR / handL：手里的物品（物品坐标，比如 <ItemSprite/>），照 ItemInHandLayer 挂到手上；displayR / displayL：物品模型的第三人称显示变换，
  *  不给按 item/generated（蛋糕、树苗这类平面物品；剑、镐这类用 DISPLAY.handheld）。拿着东西时手臂姿势用 stevePose 的 holdR / holdL。
- *  skin：换皮肤（宽手臂的 64×64）；mcLight：给了就照原版实体光照画、不受场景光（见 实体模型.tsx），值是亮度 0～1；opacity、hurt 同 EntityModel */
+ *  和 李樱 / Figure 的 handR 不是一个坐标：那边是 Figure 握持点插槽（像素），这里是挂上手、过了显示变换的物品坐标；bladeInHand、handMatrix、
+ *  hipMatrix 对史蒂夫不适用（手臂转轴差 1 像素），手里东西的世界位置用 steveHeldItemMatrix 算。没有腰挂（hip）和头、身插槽。
+ *  skin：换皮肤（宽手臂的 64×64）；mcLight：给了就照原版实体光照画、不受场景光（见 实体模型.tsx），值是亮度 0～1。三渲二的平涂把 MeshBasicMaterial
+ *  当不受光的，不乘面明暗和色调，所以三渲二镜头里不传 mcLight。opacity、hurt 同 EntityModel。
+ *  坑：没做 UV 内收（第一人称那边做了），开多重采样抗锯齿的画布里轮廓会冒出贴图相邻格子的颜色，只放进不开抗锯齿的画布 */
 export const Steve: React.FC<{
   pose: StevePose;
   handR?: React.ReactNode;
