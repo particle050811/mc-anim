@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { 正片事件 } from '../../分镜.ts';
 import { 天亮 } from '../../地点/天体.ts';
-import { 剖面列, 剖面方块, 剥排方块, 地面高, 平原花, 新世界方块 } from './地形.ts';
-import { 你, 剖面, 地形范围, 地形雾, 坑, 机位们, 樱花林, 雾色, type 机位帧 } from './参数.ts';
+import { 剖面列, 剖面方块, 剥排方块, 地面高, 平原花, 树们, 新世界方块 } from './地形.ts';
+import { 你, 剖面, 地形范围, 地形雾, 坑, 机位们, 樱花林, 聊天, 远山, 远林们, 雾色, type 机位帧 } from './参数.ts';
 import { 你在, 停稳帧, 天刻在, 剥了, 机位在, 聊天刻在, 走 } from './编排.ts';
 import { 星亮, 星们, 星向在 } from './星.ts';
 
@@ -63,6 +63,20 @@ describe('新世界的地形', () => {
     expect([...花].some((x) => x.endsWith('_tulip'))).toBe(true);
     expect(花.has('minecraft:dandelion')).toBe(true);
     expect([...花].some((x) => /poppy|azure_bluet|oxeye_daisy|cornflower/.test(x))).toBe(true);
+  });
+  it('地平线不是一条直线（用户 10-24「超平坦背景 合理吗？」）：远处一圈起伏的山，樱花林那个方向让开；远处有两片树林', () => {
+    const 圈 = (r: number) =>
+      Array.from({ length: 72 }, (_, k) => {
+        const a = (k / 72) * Math.PI * 2;
+        return 地面高(Math.round(Math.sin(a) * r), Math.round(Math.cos(a) * r));
+      });
+    // 起点以内是平原，远山不碰出生点那片
+    expect(Math.max(...圈(远山.起 - 2).map(Math.abs))).toBeLessThanOrEqual(3);
+    const 远 = 圈(120);
+    expect(Math.max(...远) - Math.min(...远)).toBeGreaterThanOrEqual(6);
+    expect(远.filter((h) => h >= 4).length).toBeGreaterThan(10);
+    const 树 = 树们();
+    for (const 林 of 远林们) expect(树.filter((t) => Math.hypot(t.i - 林.心[0], t.j - 林.心[1]) <= 林.半径).length).toBeGreaterThanOrEqual(5);
   });
   it('樱花林的山不是同心圆：同一个离心距离上，各方向的高差得出两格以上', () => {
     const 高们 = Array.from({ length: 24 }, (_, k) => {
@@ -136,22 +150,25 @@ describe('镜头、时间', () => {
       expect(机.视角).toBeCloseTo(机位们.剖面.视角, 9);
     }
   });
-  it('天：入夜前天亮 1；入夜那一截天亮缓起缓停地掉，第 2 句首字正好黑透（星星满亮），之后照真时间走，不往回走', () => {
-    for (let f = 正片事件.第1句加入游戏.帧; f <= 正片事件.第1句入夜.帧; f++) expect(天亮(天刻在(f))).toBe(1);
-    expect(天亮(天刻在(正片事件.第1句入夜.帧 + 1))).toBeLessThan(1);
-    // 天黑铺满入夜那一截：中间那一帧天亮一半左右，不是挤在最后几帧
-    expect(天亮(天刻在(Math.round((正片事件.第1句入夜.帧 + 句2) / 2)))).toBeCloseTo(0.5, 1);
-    expect(天亮(天刻在(句2 - 1))).toBeGreaterThan(0);
-    expect(天亮(天刻在(句2))).toBe(0);
-    expect(星亮(天刻在(句2))).toBeCloseTo(0.5, 6);
-    // 入夜前看不见星星：加到天上的 星亮² × 255 四舍五入是 0
-    expect(Math.round(星亮(天刻在(正片事件.第1句入夜.帧)) ** 2 * 255)).toBe(0);
-    for (let f = 正片事件.第1句加入游戏.帧 + 1; f < 句2 + 40; f++) expect(天刻在(f)).toBeGreaterThan(天刻在(f - 1));
+  it('天：第 1 句整句天亮 1（看不见星星）；第 2 句首字起天亮缓起缓停地掉，填土那一拍黑透（星星满亮），之后照真时间走，不往回走', () => {
+    const 填土 = 正片事件.填土.帧;
+    for (let f = 正片事件.第1句加入游戏.帧; f <= 句2; f++) expect(天亮(天刻在(f))).toBe(1);
+    expect(天亮(天刻在(句2 + 1))).toBeLessThan(1);
+    // 天黑铺满第 2 句首字到填土：中间那一帧天亮一半左右，挖第一格时还亮
+    expect(天亮(天刻在(Math.round((句2 + 填土) / 2)))).toBeCloseTo(0.5, 1);
+    expect(天亮(天刻在(正片事件.挖一.帧))).toBeGreaterThan(0.8);
+    expect(天亮(天刻在(填土 - 1))).toBeGreaterThan(0);
+    expect(天亮(天刻在(填土))).toBe(0);
+    expect(星亮(天刻在(填土))).toBeCloseTo(0.5, 6);
+    // 第 1 句看不见星星：加到天上的 星亮² × 255 四舍五入是 0
+    expect(Math.round(星亮(天刻在(句2)) ** 2 * 255)).toBe(0);
+    for (let f = 正片事件.第1句加入游戏.帧 + 1; f < 填土 + 40; f++) expect(天刻在(f)).toBeGreaterThan(天刻在(f - 1));
   });
-  it('聊天栏的钟：「Steve加入了游戏」第 2 句首字前一帧正好 200 刻（原版那一行消失），之前一直在走', () => {
+  it('聊天栏的钟：「Steve加入了游戏」剖开那一帧正好 200 刻（原版那一行消失），淡掉的 20 刻铺在剖开前 聊天.淡帧 帧；之前一直在走', () => {
+    const 剖开 = 正片事件.第1句剖开.帧;
     expect(聊天刻在(正片事件.第1句加入游戏.帧)).toBe(0);
-    expect(聊天刻在(句2 - 1)).toBeCloseTo(200, 9);
-    expect(聊天刻在(正片事件.第1句入夜.帧)).toBeLessThan(180);
+    expect(聊天刻在(剖开)).toBeCloseTo(200, 9);
+    expect(聊天刻在(剖开 - 聊天.淡帧)).toBeCloseTo(180, 9);
     for (let f = 正片事件.第1句加入游戏.帧 + 1; f < 句2; f++) expect(聊天刻在(f)).toBeGreaterThan(聊天刻在(f - 1));
   });
 });
