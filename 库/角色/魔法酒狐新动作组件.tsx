@@ -117,47 +117,64 @@ export const TlmHeld: React.FC<{ 物: 手持物; 左?: boolean }> = ({ 物, 左 
 
 // ---------- 叠加模型：新画的方块 ----------
 // 认出你：眼皮抬一格以后，下面补一排——眼白取眼皮贴图的下排，虹膜取虹膜贴图的下格（淡紫），挂在各自骨骼下，眨眼时一起压扁。
-// 只画正面（north），和眼皮、虹膜同一个深度。虹膜那块是发光的（ysmGlow 开头，同游戏里的虹膜）。
+// 只画正面（north）。虹膜那块是发光的（ysmGlow 开头，同游戏里的虹膜）。
+// 坑：原来眼皮、虹膜方块的下沿，开抗锯齿时会取到贴图下一行（虹膜下面是 f0b9de 粉、左眼皮下面是 ab468a 玫红），
+// 以前挨着皮肤看不出，补了一排以后成了横穿眼睛的一条细线。所以补的这排往上多盖 补盖（和被盖住的那行同色），放在原方块前面一点，
+// UV 上下各往格子里收 1/4 格：补块自己的上下沿再怎么外插也取不出这一格。
 const 格 = 魔法酒狐一格;
 const 正面 = (u: number, v: number, w = 1, h = 1): BedrockCube['uv'] => ({ north: { uv: [u, v], uv_size: [w, h] } });
 const 片 = (x0: number, y0: number, x1: number, y1: number, z: number, uv: BedrockCube['uv']): BedrockCube => ({ origin: [x0, y0, z], size: [x1 - x0, y1 - y0, 0.05], uv });
 const 眼底 = 29.26648; // 眼皮方块的下沿
+const 补盖 = 0.1;
+const 补前 = 0.002;
+const 补块 = (x0: number, 宽: number, z: number, u: number, v: number, w: number): BedrockCube =>
+  ({ origin: [x0, 眼底 - 格, z - 补前], size: [宽, 格 + 补盖, 0.9], uv: 正面(u, v + 0.25, w, 0.5) });
 const 眼补: BedrockBone[] = [
-  { name: 'mcanim右眼补', parent: 'RightEyelid', pivot: 骨.get('RightEyelid')!.pivot, cubes: [{ origin: [-2.35936, 眼底 - 格, -1.67858], size: [1.8, 格, 0.9], uv: 正面(79, 87, 2, 1) }] },
-  { name: 'mcanim左眼补', parent: 'LeftEyelid', pivot: 骨.get('LeftEyelid')!.pivot, cubes: [{ origin: [1.96064, 眼底 - 格, -1.67858], size: [1.8, 格, 0.9], uv: 正面(123, 2, 2, 1) }] },
-  { name: 'ysmGlowmcanim右虹膜补', parent: 'ysmGlowRightEyelidBase', pivot: 骨.get('ysmGlowRightEyelidBase')!.pivot, cubes: [{ origin: [-1.93186, 眼底 - 格, -1.71458], size: [1.26, 格, 0.9], uv: 正面(127, 73) }] },
-  { name: 'ysmGlowmcanim左虹膜补', parent: 'ysmGlowLeftEyelidBase', pivot: 骨.get('ysmGlowLeftEyelidBase')!.pivot, cubes: [{ origin: [2.07314, 眼底 - 格, -1.71458], size: [1.26, 格, 0.9], uv: 正面(127, 73) }] },
+  { name: 'mcanim右眼补', parent: 'RightEyelid', pivot: 骨.get('RightEyelid')!.pivot, cubes: [补块(-2.35936, 1.8, -1.67858, 79, 87, 2)] },
+  { name: 'mcanim左眼补', parent: 'LeftEyelid', pivot: 骨.get('LeftEyelid')!.pivot, cubes: [补块(1.96064, 1.8, -1.67858, 123, 2, 2)] },
+  { name: 'ysmGlowmcanim右虹膜补', parent: 'ysmGlowRightEyelidBase', pivot: 骨.get('ysmGlowRightEyelidBase')!.pivot, cubes: [补块(-1.93186, 1.26, -1.71458, 127, 73, 1)] },
+  { name: 'ysmGlowmcanim左虹膜补', parent: 'ysmGlowLeftEyelidBase', pivot: 骨.get('ysmGlowLeftEyelidBase')!.pivot, cubes: [补块(2.07314, 1.26, -1.71458, 127, 73, 1)] },
 ];
 
 // 新画的嘴：照模型自己画嘴的办法（脸上没画嘴，嘴是贴在脸前面的几块平片，嘴里取嘴用的粉 f1b4b3），坐标是模型文件里的（x 往她右手边是负），
-// 脸的正面在 z = −1.66958，几层依次往前一点点免得打架。中线 x = 0.70064，脸的下沿 y = 28.36648，按半格（0.45）对齐。
-// 认出你：抿着的一小道（一格宽、三分之一格高），不哭也不笑（Agent 暂定：不画嘴脸太空，画了哪种现成的嘴都带情绪）。
-// 哈气：比惊讶（jingya，约 2.3 格宽、1.3 格高）更大：三层台阶拼成的大张嘴（下窄、中宽、上收到两眼之间），
-// 粉边、里面填她衣服上的玫红 ab468a（贴图里现成的颜色），上沿两颗小白牙（Agent 暂定）。
+// 脸的正面在 z = −1.66958，几层依次往前一点点免得打架。
+// 对格：模型自带的几种嘴比贴图一格还细、也不对格；新嘴的边一律落在脸的格线上再细分成四分之一格（一格 0.9 的 1/4）：
+// 横线 y = 脸的下沿 28.36648 + k/4 格，竖线在中线 x = 0.70064（正好是脸正中那一格的中线）两边 ± i/4 格。
+// 认出你：抿着的一小道（一格宽、1/4 格高，正好是脸正中那一格的宽），不哭也不笑（Agent 暂定：不画嘴脸太空，画了哪种现成的嘴都带情绪）。
+// 哈气：比惊讶（jingya，约 2.3 格宽、1.3 格高）更大：下窄、中间最宽的大张嘴，1/4 格的粉边，里面填她衣服上的玫红 ab468a（贴图里现成的颜色），
+// 上沿挂两颗小白牙（Agent 暂定）。下沿就是下巴（嘴张到底）；最宽那两行在眼睛下面，上两行收窄夹在两眼之间（两眼内侧相距 ±1.26）。
 const 中 = 0.70064;
-const 粉 = 正面(14, 124);
-const 玫红 = 正面(123, 3);
-const 白 = 正面(67, 0);
-const 宽窄 = (y0: number, y1: number, 半宽: number, z: number, uv: BedrockCube['uv']) => 片(中 - 半宽, y0, 中 + 半宽, y1, z, uv);
+const 脸底 = 28.36648;
+const 四分 = 魔法酒狐一格 / 4;
+// 纯色块只取这一格的中间（同眼补的坑：边上外插不到旁边的格子）
+const 纯色 = (u: number, v: number) => 正面(u + 0.25, v + 0.25, 0.5, 0.5);
+const 粉 = 纯色(14, 124);
+const 玫红 = 纯色(123, 3);
+const 白 = 纯色(67, 0);
+/** 第 k0～k1 条横线之间、中线两边各 半宽 个四分之一格 */
+const 横条 = (k0: number, k1: number, 半宽: number, z: number, uv: BedrockCube['uv']) =>
+  片(中 - 半宽 * 四分, 脸底 + k0 * 四分, 中 + 半宽 * 四分, 脸底 + k1 * 四分, z, uv);
+/** 第 k0～k1 条横线之间、中线右边第 i0～i1 条竖线（负的在她右手边） */
+const 方格 = (k0: number, k1: number, i0: number, i1: number, z: number, uv: BedrockCube['uv']) =>
+  片(中 + i0 * 四分, 脸底 + k0 * 四分, 中 + i1 * 四分, 脸底 + k1 * 四分, z, uv);
 const 认出你嘴: BedrockBone = {
   name: 'mcanim认出你嘴',
   parent: 'Mouth',
   pivot: 骨.get('Mouth')!.pivot,
-  cubes: [宽窄(28.7, 28.97, 0.45, -1.68, 粉)],
+  cubes: [横条(2, 3, 2, -1.68, 粉)],
 };
+// 哈气嘴自下往上每行的半宽（四分之一格）：粉的外形 3、4、6、6、5、5；玫红是外形往里收一圈 → 2、3、4、4（第 1～4 行）
+const 哈气外形 = [3, 4, 6, 6, 5, 5];
+const 哈气里面 = [0, 2, 3, 4, 4, 0];
 const 哈气嘴: BedrockBone = {
   name: 'mcanim哈气嘴',
   parent: 'Mouth',
   pivot: 骨.get('Mouth')!.pivot,
   cubes: [
-    宽窄(28.45, 28.9, 0.9, -1.68, 粉),
-    宽窄(28.9, 29.35, 1.25, -1.68, 粉),
-    宽窄(29.35, 29.8, 1.1, -1.68, 粉),
-    宽窄(28.63, 28.9, 0.72, -1.69, 玫红),
-    宽窄(28.9, 29.35, 1.07, -1.69, 玫红),
-    宽窄(29.35, 29.62, 0.92, -1.69, 玫红),
-    片(中 - 0.8, 29.2, 中 - 0.55, 29.62, -1.7, 白),
-    片(中 + 0.55, 29.2, 中 + 0.8, 29.62, -1.7, 白),
+    ...哈气外形.map((w, k) => 横条(k, k + 1, w, -1.68, 粉)),
+    ...哈气里面.flatMap((w, k) => (w ? [横条(k, k + 1, w, -1.69, 玫红)] : [])),
+    方格(3, 5, -3, -2, -1.7, 白),
+    方格(3, 5, 2, 3, -1.7, 白),
   ],
 };
 const 新骨骼 = [...眼补, 认出你嘴, 哈气嘴];
