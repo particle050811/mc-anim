@@ -9,7 +9,15 @@ import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { 铃声, 铃声文件, 风 } from './场/2-门口/第15句声音.ts';
 import { 推门声 } from './场/2-隐世之境/重逢声音.ts';
 import { 对视脚 } from './场/2-隐世之境/对视参数.ts';
-import { 你的脚, 回头进度, 门开, 对视那帧秒 } from './场/2-隐世之境/重逢动作.ts';
+import { 你的脚, 回头进度, 门开, 对视那帧秒, 推近视角, 重逢机位 } from './场/2-隐世之境/重逢动作.ts';
+import { 对视取景, 对视气泡, 对视视角 } from './场/2-隐世之境/对视参数.ts';
+import { 她, 气泡字 } from './场/2-隐世之境/参数.ts';
+import { 台词气泡字 } from './场/2-隐世之境/重逢参数.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import { 做像素字 } from '@库/界面/像素字表.ts';
+import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
+import { 字节路径, 读作品资产锁 } from '../../pipeline/资产/资产锁.ts';
 
 const 事 = 正片事件;
 const 风时刻 = { 起: 事.摇铃.秒, 满: 事.风散开.秒 };
@@ -125,5 +133,39 @@ describe('声音：跨段的那几截首尾相接', () => {
     expect(c.帧).toBe(段内正片事件帧('2-重逢').推门);
     expect(c.帧数 / fps).toBeGreaterThanOrEqual(推门声.时长秒);
     expect(找(摇铃段, '推门')).toBeUndefined();
+  });
+});
+
+describe('隐世之境一镜到底：机位', () => {
+  it('对视那一帧的机位就是封面帧（片）的：眼、看点、视角', () => {
+    const 机 = 重逢机位(秒(事.第15句对视.帧));
+    expect(机.眼).toEqual([对视脚[0], 对视脚[1], 对视脚[2] + 1.62]);
+    expect(机.看).toEqual(对视取景.片.看);
+    expect(机.视角).toBe(对视视角);
+  });
+  it('风散开到蹲下一路推近（视角一直收），蹲下以后到推向她的脸停住，最后两拍再收', () => {
+    const 角 = (帧: number) => 重逢机位(秒(帧)).视角;
+    for (let 帧 = 事.风散开.帧 + 1; 帧 <= 事.蹲下.帧; 帧++) expect(角(帧)).toBeLessThan(角(帧 - 1));
+    for (let 帧 = 事.蹲下.帧 + 1; 帧 <= 事.推向她的脸.帧; 帧++) expect(角(帧)).toBeCloseTo(推近视角(事.蹲下.秒), 9);
+    expect(角(事.第15句段尾.帧 - 1)).toBeLessThan(角(事.推向她的脸.帧));
+    expect(角(事.第15句段尾.帧 - 1)).toBeGreaterThanOrEqual(30);
+  });
+});
+
+// 气泡（库/界面/女仆气泡.tsx）每一帧都整个在画里：宽 = 字宽 + 10、高 19、尾巴往下 8 个气泡像素，片里一个气泡像素 = 缩放 / 2 页面像素。像素字表在数据根里，没有就跳过
+const 字条 = 读作品资产锁(path.resolve(import.meta.dirname))['字体/把回忆拼好给你/像素字'];
+describe.skipIf(!字条 || !fs.existsSync(字节路径(字条)))('隐世之境一镜到底：气泡每一帧都在画里', () => {
+  it('2-重逢 每一帧，气泡离上沿至少 8、左右都在画里', () => {
+    const 字 = 做像素字(JSON.parse(fs.readFileSync(字节路径(字条!), 'utf8')), '字体/把回忆拼好给你/像素字');
+    const 页 = 对视气泡.缩放.片 / 2;
+    for (let 帧 = 事.风散开.帧; 帧 < 事.第15句段尾.帧; 帧++) {
+      const 机 = 重逢机位(秒(帧));
+      const cam = 做透视相机({ 眼: Z朝上转three(机.眼), 看: Z朝上转three(机.看), 视角: 机.视角, 宽: 1280, 高: 720 });
+      const 锚 = 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + 对视气泡.锚高]), 1280, 720);
+      const 宽 = 字.字宽(帧 >= 事.第15句驯服.帧 ? 台词气泡字 : 气泡字) + 10;
+      expect(锚.y - 19 * 页, `帧 ${帧}`).toBeGreaterThan(8);
+      expect(锚.x - (宽 / 2) * 页, `帧 ${帧}`).toBeGreaterThan(0);
+      expect(锚.x + (宽 / 2) * 页, `帧 ${帧}`).toBeLessThan(1280);
+    }
   });
 });

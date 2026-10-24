@@ -8,16 +8,15 @@
 import type React from 'react';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { clamp01, rad } from '@engine/anim/anim.ts';
+import { clamp01 } from '@engine/anim/anim.ts';
 import { 描边 } from '@engine/三渲二/描边.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { HAND_FOV, HAND_NEAR, FirstPersonHand, handTimeline, type HandScript } from '@库/角色/第一人称.tsx';
 import { SteveFirstPersonArm } from '@库/角色/史蒂夫第一人称.tsx';
-import { magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { magicalWineFoxBlinkAt } from '@库/角色/魔法酒狐动作.ts';
-import { MagicalWineFoxEx, magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
+import type { 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
 import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import { CAKE } from '@库/物品/蛋糕.tsx';
@@ -26,33 +25,19 @@ import { fps, 画幅, 正片事件 } from '../../分镜.ts';
 import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
-import { 月铃兰 } from '../../物品/月铃兰.tsx';
 import { 她看你, 重逢发光区, 隐世之境重逢布景 } from './布景.tsx';
 import { 她, 气泡字 } from './参数.ts';
-import { 对视气泡, 对视门光, 抬手, 门光色调 } from './对视参数.ts';
-import { 背身, 推脸, 台词气泡字, 啵帧, 对视镜, 蹲下, 驯服爱心种子 } from './重逢参数.ts';
-import { 你的脚, 回头进度, 眼高, 门开 } from './重逢动作.ts';
+import { 对视气泡, 对视门光, 背景褪色参数, 门光色调 } from './对视参数.ts';
+import { 拿着花的她, 空手拿 } from './对视.tsx';
+import { 背身, 台词气泡字, 啵帧, 驯服爱心种子 } from './重逢参数.ts';
+import { 回头进度, 重逢机位, 门开 } from './重逢动作.ts';
+import { 不褪色, 背景褪色 } from './褪色.tsx';
 
 const 调子 = '归隐之地' as const;
 const 事 = 正片事件;
-const 缓 = (t: number) => t * t * (3 - 2 * t);
-const 插 = (a: readonly number[], b: readonly number[], k: number) => a.map((v, i) => v + (b[i]! - v) * k) as V3;
 
-/** 这一刻的机位：看点、视角同对视那一帧（对视参数.ts），眼睛跟着你走进门；蹲下后看点抬高，推向她的脸时视角收窄、看点挪到她脸上 */
-export const 重逢机位 = (秒: number) => {
-  const 脚 = 你的脚(秒);
-  const 眼: V3 = [脚[0], 脚[1], 眼高(秒)];
-  const 抬 = 蹲下.看点抬高 * 缓(clamp01((秒 - 事.蹲下.秒) / 蹲下.抬头秒));
-  const 看0: V3 = [对视镜.看[0], 对视镜.看[1], 对视镜.看[2] + 抬];
-  const 推 = 缓(clamp01((秒 - 事.推向她的脸.秒) / (事.第15句段尾.秒 - 事.推向她的脸.秒)));
-  // 视角按放大倍数的对数插值（同 1-一如既往 的推镜），推起来是匀匀地放大
-  const 半 = (度: number) => Math.tan(rad(度) / 2);
-  const 视角 = (2 * Math.atan(半(对视镜.视角) * (半(推脸.视角) / 半(对视镜.视角)) ** 推) * 180) / Math.PI;
-  return { 种: '透视' as const, 眼, 看: 插(看0, 推脸.看, 推), 视角 };
-};
-
-/** 她：回头之前背对着门（背身），回头时头先转、身子跟着转，对视那一帧起同 对视.tsx 的 对视她（站、侧身、头转过来看你、认出你、月铃兰抬到嘴边），
- *  只是头跟着你的眼睛走（你蹲下她就低头看你），中间眨一次眼 */
+/** 她：回头之前背对着门（背身），回头时头先转、身子跟着转，对视那一帧起同 对视.tsx 的 对视她（站、侧身、头转过来看你、认出你、举着月铃兰），
+ *  只是头跟着你的眼睛走（你蹲下她就低头看你），中间眨一次眼。花跟着身子转一起举起来 */
 const 重逢她: React.FC<{ 秒: number; 眼: V3 }> = ({ 秒, 眼 }) => {
   const { 身: 身k, 头: 头k } = 回头进度(秒);
   const pose: FigurePose = { ...standPose(她.脚), yaw: 身k >= 1 ? 她.身子朝向 : 背身.朝向 + (她.身子朝向 - 背身.朝向) * 身k };
@@ -64,14 +49,9 @@ const 重逢她: React.FC<{ 秒: number; 眼: V3 }> = ({ 秒, 眼 }) => {
     看: 头k >= 1 ? 末看 : [背身.看[0] + (末看[0] - 背身.看[0]) * 头k, 背身.看[1] + (末看[1] - 背身.看[1]) * 头k],
     眨眼: magicalWineFoxBlinkAt(秒, [事.第15句眨眼.秒]),
     秒,
-    右手: { 物品: <月铃兰 />, 朝向: { 偏: magicalWineFoxLookAt(pose, 眼, '站')[1] } },
+    右手: 空手拿,
   };
-  const 表 = magicalWineFoxExBones(p);
-  const 加x = (b: string, 度: number) => {
-    const [x = 0, y = 0, z = 0] = 表[b]?.rot ?? [];
-    return { ...表[b], rot: [x + 度, y, z] };
-  };
-  return <MagicalWineFoxEx {...p} 骨骼={{ RightForeArm: 加x('RightForeArm', -抬手), RightHand: 加x('RightHand', 抬手) }} />;
+  return <拿着花的她 p={p} 举={身k} />;
 };
 
 /** 驯服的 7 颗爱心（碰撞箱 0.6 × 1.5，同 1-一如既往） */
@@ -83,14 +63,18 @@ const 刻 = (帧: number, 起帧: number) => ((帧 - 起帧) / fps) * 20;
  *  （engine/三渲二/描边.tsx 归全片画风那一路），墙面上会画出被挡住那截的轮廓线。眼睛走过这里（x）以后墙不挡她了，描边照开 */
 const 进门描边起x = 6.8;
 
-/** 三渲二画布里的东西：布景、门、门光同封面帧（隐世之境重逢布景，不放灯、门光不撒浮尘、光带关、不挖影子），西门照 门开 */
+/** 三渲二画布里的东西：布景、门、门光同封面帧（隐世之境重逢布景，不放灯、门光不撒浮尘、光带关、不挖影子，背景褪色），西门照 门开 */
 const 场景: React.FC<{ 帧: number; 秒: number; 眼: V3; 描边: boolean }> = ({ 帧, 秒, 眼, 描边: 描 }) => (
-  <隐世之境重逢布景 开={门开(秒)} 眼={眼} 秒={秒} 灯光={false} 门光参数={对视门光}>
-    <描边 开={描 && 眼[0] >= 进门描边起x}>
-      <重逢她 秒={秒} 眼={眼} />
-    </描边>
-    <HeartParticles spawns={爱心} 刻={刻(帧, 事.第15句驯服.帧)} />
-  </隐世之境重逢布景>
+  <背景褪色 参数={背景褪色参数}>
+    <隐世之境重逢布景 开={门开(秒)} 眼={眼} 秒={秒} 灯光={false} 门光参数={对视门光}>
+      <不褪色>
+        <描边 开={描 && 眼[0] >= 进门描边起x}>
+          <重逢她 秒={秒} 眼={眼} />
+        </描边>
+        <HeartParticles spawns={爱心} 刻={刻(帧, 事.第15句驯服.帧)} />
+      </不褪色>
+    </隐世之境重逢布景>
+  </背景褪色>
 );
 
 // 手：右键在第 0 刻；换上蛋糕在右键前 8 刻（分镜的 换上蛋糕）；第 1 刻蛋糕被吃掉（同 1-一如既往）。
