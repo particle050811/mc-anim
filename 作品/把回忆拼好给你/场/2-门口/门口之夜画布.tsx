@@ -1,8 +1,8 @@
 // 第 9–11 句门这个机位的夜里（按歌曲帧画）：后面是夜空（地点/天空.tsx，满月在右上）、星星、烟花的闪光，前面三渲二画布里小木屋、树苗、告示牌、你、她、
 // 烟花火箭和火花。烟花把近处照亮是演绎：平涂分三档（门口之夜参数.ts 的 亮档），树苗、牌子、你一组，门里的她一组，房子、地面一组，各亮各的。
-// 火花、火箭用原版贴图画成朝镜头的方片（不吃平涂、不描边），一个贴图像素取偶数个成片像素、中心吸到偶数像素上。闪光（原版 FLASH）画在天上那层，
+// 火花、火箭用原版贴图画成朝镜头的方片（不吃平涂），一个贴图像素取偶数个成片像素、中心吸到偶数像素上。闪光（原版 FLASH）画在天上那层，
 // 不画平滑光晕：32×32 的光片按 N 的整数倍放大、透明度切成几档硬边。
-// 捕获：给了 捕获，每帧画完（描边那遍之后）把天、星星、闪光、三维四层按顺序交给它（第 11 句定格成照片、碎裂用，见 门口之夜照片.tsx）。
+// 捕获：给了 捕获，每帧三维画完以后把天、星星、闪光、三维四层按顺序交给它（第 11 句定格成照片、碎裂用，见 门口之夜照片.tsx）。
 import { useFrame } from '@react-three/fiber';
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
@@ -183,7 +183,7 @@ const 闪光层: React.FC<{ 宽: number; 高: number; 秒: number; 镜: 门口�
 
 // ---------- 捕获 ----------
 const 捕获器: React.FC<{ 层: React.RefObject<HTMLDivElement | null>; 交: (层们: readonly CanvasImageSource[]) => void }> = ({ 层, 交 }) => {
-  // 优先级 2：在 描边渲染（优先级 1，画完整幅）之后，这一帧的三维已经在画布上
+  // 优先级 2：在 描边渲染（优先级 1，接管画布的渲染，描边关着也是它画）之后，这一帧的三维已经在画布上
   useFrame(({ gl }) => {
     const 底们 = [...(层.current?.querySelectorAll('canvas') ?? [])].filter((c) => c !== gl.domElement);
     交([...底们, gl.domElement]);
@@ -247,6 +247,7 @@ export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, �
                 <告示牌像素字 行们={行们} 发光={牌字发光} />
               </告示牌>
             )}
+            {/* 描边组跟着 画风.ts 的 描边.开 走（全片不描边，用户 10-24 定），留着组是为了开关只改一处 */}
             <描边>
               <贴图像素对齐 锚={你姿.loc as V3}>
                 <Steve pose={你姿} handR={你.拿 ? <ItemSprite layers={[{ tex: 手持图[你.拿] }]} emissive={0} shadow={false} /> : undefined} />
