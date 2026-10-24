@@ -46,10 +46,12 @@ describe('第 4 句的窗口和事件', () => {
     expect(序.at(-1)!).toBeLessThan(窗.止帧);
     expect(照片帧).toBe(正片事件['照片-日落划船'].帧);
   });
-  it('干净的镜头都不短于 0.5 秒：眼睛特写、海；浪从起到盖满至少 0.5 秒', () => {
+  it('干净的镜头都不短于 0.5 秒：眼睛特写、海；浪从起到盖满至少 0.5 秒；拉远 0.8 秒以上，拉完停稳 0.8 秒以上才起浪（核查 10-24：原来只停 11 帧）', () => {
     expect((事.眼化日.帧 - 窗.起帧) / fps).toBeGreaterThan(0.5);
     expect((事.浪起.帧 - 事.海平线.帧) / fps).toBeGreaterThan(0.5);
     expect((窗.止帧 - 事.浪起.帧) / fps).toBeGreaterThan(0.5);
+    expect((事.拉远到位.帧 - 事.海平线.帧) / fps).toBeGreaterThanOrEqual(0.8);
+    expect((事.浪起.帧 - 事.拉远到位.帧) / fps).toBeGreaterThanOrEqual(0.8);
   });
   it('叠化、浪：起止对', () => {
     expect(叠化(事.眼化日.帧)).toBe(0);
