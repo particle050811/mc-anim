@@ -12,7 +12,9 @@ import type React from 'react';
 import { 方块拼搭, type 方块 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
+import type { 地图边长 } from '../特效/地图画.ts';
 import { 告示牌, 告示牌尺寸 } from './告示牌.tsx';
+import { 照片墙, type 照片墙格 } from './照片墙.tsx';
 import { 樱花树方块, 樱花树阶段 } from './樱花树.ts';
 
 /** 方块拼搭 的原点：让格 i 的中心落在 x = i（樱花树方块 的输出也按这个画） */
@@ -79,7 +81,8 @@ const 两格高 = new Set(['minecraft:tall_grass', 'minecraft:large_fern', 'mine
 const 补墙 = { i: [1, 2], k: [0, 2] } as const;
 const 窗位 = [5, 1] as const;
 
-const 屋方块 = (): 方块[] => {
+/** 屋子的方块；照片墙 = 开着照片墙（后墙那支 (3, 1, 1) 的火把挪走，照片墙.tsx 的合照格在那儿） */
+const 屋方块 = (照片墙 = false): 方块[] => {
   const out: 方块[] = [];
   const 放 = (状态: string, i: number, j: number, k: number, 亮?: number) => out.push({ 状态, 位: [i, j, k], 亮 });
   const { 西墙: W, 东墙: E, 后墙: N } = 小木屋;
@@ -127,7 +130,7 @@ const 屋方块 = (): 方块[] => {
   放('minecraft:crafting_table', 4, 1, 0, 门口亮度.摆设);
   放('minecraft:furnace[facing=south,lit=false]', 5, 1, 0, 门口亮度.摆设);
   放('minecraft:barrel[facing=up,open=false]', 6, 1, 0, 门口亮度.摆设);
-  放('minecraft:wall_torch[facing=south]', 3, 1, 1);
+  if (!照片墙) 放('minecraft:wall_torch[facing=south]', 3, 1, 1);
   放('minecraft:wall_torch[facing=south]', 6, 1, 2);
   for (const [状态, i] of 花草) {
     if (两格高.has(状态)) {
@@ -139,6 +142,7 @@ const 屋方块 = (): 方块[] => {
 };
 
 const 屋 = 屋方块();
+const 照片墙屋 = 屋方块(true);
 const 屋格 = new Set(屋.map((x) => x.位.join(',')));
 
 // 门板：门那格的模型用 facing=south（门板贴在格的北边、正面朝南，合页在右边）。合页定在门洞外沿 x = −0.5：
@@ -173,19 +177,23 @@ export type 门口小木屋属性 = {
   /** 告示牌上的字：放在字面中心、Z 朝上的 group 里（x 右、z 上，单位格，见 告示牌尺寸） */
   告示牌字?: React.ReactNode;
   群系?: string;
+  /** 照片墙（照片方案 10-24，地点/照片墙.tsx）：给了就撤掉箱子、挪走后墙那支火把，画这些荧光框；不给 = 箱子照旧 */
+  照片墙?: readonly 照片墙格[];
+  /** 照片墙一格几个地图像素：镜头 N 是 4 的倍数给 64，N = 10 给 32（默认，特效/地图画.ts） */
+  照片墙边长?: 地图边长;
 };
 
 /** Z 朝上的场景内容（不带灯、机位）；放进三渲二画布（它自己套好 rotation [−π/2, 0, 0] 的 group 和平涂） */
-export const 门口小木屋: React.FC<门口小木屋属性> = ({ 门开 = false, 箱子开度 = 0, 树进度, 告示牌: 插牌 = false, 告示牌字, 群系 = 'minecraft:plains' }) => {
+export const 门口小木屋: React.FC<门口小木屋属性> = ({ 门开 = false, 箱子开度 = 0, 树进度, 告示牌: 插牌 = false, 告示牌字, 群系 = 'minecraft:plains', 照片墙: 墙, 照片墙边长 }) => {
   const 阶段 = 树进度 === undefined ? null : 樱花树阶段(树进度);
   const 树 = 阶段 === null ? null : 树方块(阶段);
   return (
     <group>
-      <方块拼搭 方块们={屋} 原点={格原点} 群系={群系} 正面花草 />
+      <方块拼搭 方块们={墙 ? 照片墙屋 : 屋} 原点={格原点} 群系={群系} 正面花草 />
       <group position={[门开 ? 门口.门.开着的门板.x0 + 0.5 : 0, 0, 0]} scale={[门开 ? 1 : -1, 1, 1]}>
         <方块拼搭 方块们={门方块} 原点={格原点} />
       </group>
-      <Chest 贴图={VANILLA_CHEST_TEX} 开度={箱子开度} p={门口.箱子} 朝向="south" />
+      {墙 ? <照片墙 格们={墙} 边长={照片墙边长} /> : <Chest 贴图={VANILLA_CHEST_TEX} 开度={箱子开度} p={门口.箱子} 朝向="south" />}
       {树 && <方块拼搭 方块们={树} 原点={格原点} 群系={群系} 正面花草 />}
       {插牌 && <告示牌 位={门口.告示牌}>{告示牌字}</告示牌>}
     </group>
