@@ -83,3 +83,19 @@ id = "贴图/特效/附魔光泽"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
+
+[["资产"]]
+id = "贴图/物品/床/红"
+"类别" = "贴图"
+"来源" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 entity/bed/red.png（64×64），原版红床；第 12 句卧室里你那张床"
+
+[["资产"]]
+id = "贴图/物品/女仆床"
+"类别" = "贴图"
+"来源" = "提取:卧室床@56b71336d2b4+e2e940fe7ca0+8c341567e57a"
+"许可" = "CC-BY-NC-SA-4.0"
+"可见性" = "提取"
+"说明" = "车万女仆 1.5.3 的 textures/bedrock/block/maid_bed/pink.png（128×128），粉色女仆床；第 12 句卧室里她那张床"
