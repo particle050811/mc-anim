@@ -3,7 +3,7 @@ import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/1-一如既往/段.ts';
 import { 句们 } from './配乐/网格.ts';
 import { 原声增益, 原声淡入帧, 咔哒增益, 咔哒声 } from './场/1-隐世之境一楼/参数.ts';
-import { 串们, 事件, 排段, 段内事件帧, 段时钟, 段窗口, 第几句, fps } from './分镜.ts';
+import { 串们, 事件, 排段, 段内事件帧, 段时钟, 段窗口, 第几句, 正片事件, fps } from './分镜.ts';
 
 describe('分镜：从网格常数推帧号', () => {
   it('验证片：段起 994、驯服 1025、微笑 1271、咔哒 1312、段止 1344', () => {
@@ -62,6 +62,14 @@ describe('分镜：从网格常数推帧号', () => {
   it('事件表按时间排', () => {
     const 帧们 = Object.values(事件).map((e) => e.帧);
     expect(帧们).toEqual([...帧们].sort((a, b) => a - b));
+  });
+
+  it('正片事件按时间排，第 8 句的几拍和三稿写的秒数差不到 0.01 秒', () => {
+    const 帧们 = Object.values(正片事件).map((e) => e.帧);
+    expect(帧们).toEqual([...帧们].sort((a, b) => a - b));
+    const 三稿 = { 收照片一: 25.67, 收照片二: 26.1, 收照片三: 26.53, 苦力怕冒头: 26.53, 收照片四: 26.95, 苦力怕摸到背后: 27.38, 哈气: 27.8, 苦力怕逃: 28.23 } as const;
+    for (const [名, 秒] of Object.entries(三稿)) expect(Math.abs(正片事件[名 as keyof typeof 三稿].秒 - 秒)).toBeLessThan(0.01);
+    expect(正片事件.哈气.帧).toBe(667);
   });
 
   it('网格的 15 句按序、起止不反', () => {
