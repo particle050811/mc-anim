@@ -1,7 +1,7 @@
 // 第 9–11 句门这个机位的夜里（按歌曲帧画）：后面是夜空（地点/天空.tsx，满月在右上）、星星、烟花的闪光，前面三渲二画布里小木屋、树苗、告示牌、你、她、
 // 烟花火箭和火花。烟花把近处照亮是演绎：平涂分三档（门口之夜参数.ts 的 亮档），树苗、牌子、你一组，门里的她一组，房子、地面一组，各亮各的。
 // 火花、火箭用原版贴图画成朝镜头的方片（不吃平涂），一个贴图像素取偶数个成片像素、中心吸到偶数像素上。闪光（原版 FLASH）画在天上那层，
-// 不画平滑光晕：32×32 的光片按 N 的整数倍放大、透明度切成几档硬边。
+// 不画平滑光晕：32×32 的光片按 N 的整数倍放大，透明度只留两档硬边（同美术定稿对太阳月亮的口径「最多一两圈硬边色阶」）。
 // 捕获：给了 捕获，每帧三维画完以后把天、星星、闪光、三维四层按顺序交给它（第 11 句定格成照片、碎裂用，见 门口之夜照片.tsx）。
 import { useFrame } from '@react-three/fiber';
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
@@ -146,8 +146,9 @@ const 星星层: React.FC<{ 宽: number; 高: number; 月: { x: number; y: numbe
   return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
 };
 
-/** 闪光透明度切成几档（硬边）：一档 0.18，最亮 0.725 也只有三四圈 */
-const 闪光档 = 0.18;
+/** 闪光透明度只留两档硬边：原版透明度（光片 alpha × 0.6～0.725）过 门[i] 就画 值[i]，低于 0.3 的外圈整片不画。
+ *  原来按 0.18 一档切，三圈加一个亮心，手机上一眼是一团圆形光晕（核查 10-24）。值 Agent 暂定 */
+const 闪光档 = { 门: [0.5, 0.3], 值: [0.34, 0.17] } as const;
 const 闪光层: React.FC<{ 宽: number; 高: number; 秒: number; 镜: 门口之夜镜头 }> = ({ 宽, 高, 秒, 镜 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   const W = 成宽(宽), H = 成宽(高);
@@ -171,7 +172,7 @@ const 闪光层: React.FC<{ 宽: number; 高: number; 秒: number; 镜: 门口�
       for (let y = 0; y < 闪光片.h; y++)
         for (let x = 0; x < 闪光片.w; x++) {
           const a = (闪光片.px[(y * 闪光片.w + x) * 4 + 3]! / 255) * alpha;
-          const 档 = Math.floor(a / 闪光档) * 闪光档;
+          const 档 = a >= 闪光档.门[0] ? 闪光档.值[0] : a >= 闪光档.门[1] ? 闪光档.值[1] : 0;
           if (档 <= 0) continue;
           ctx.fillStyle = `rgba(${r}, ${gg}, ${b}, ${档.toFixed(3)})`;
           ctx.fillRect(Math.round(cx + (x - 闪光片.w / 2) * 格), Math.round(cy + (y - 闪光片.h / 2) * 格), 格, 格);
