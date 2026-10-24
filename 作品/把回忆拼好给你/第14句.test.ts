@@ -3,7 +3,10 @@ import type { 资产cue } from '@engine/段/段定义.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import 归隐段 from './段/2-归隐/段.ts';
 import { fps, 段窗口, 正片事件 } from './分镜.ts';
-import { 分屏N, 分屏态 } from './场/2-门口/分屏参数.ts';
+import { 末帧速度, 镜 as 空床镜, 帧数 as 空床帧数 } from './段/2-空床/编排.ts';
+import { 分屏N, 分屏态, 成形, 成形偏于 } from './场/2-门口/分屏参数.ts';
+import { 她于 } from './场/2-门口/归隐她.ts';
+import { 归隐歌词 } from './场/2-门口/归隐歌词.ts';
 import {
   归隐N,
   归隐风,
@@ -22,8 +25,20 @@ import {
   褪色止,
   铃在左屏,
   飘纸时,
+  挂铃N,
+  挂铃取景,
+  挂铃站位,
+  她倍,
+  铃心,
+  风源,
+  风镜像,
+  飘瓣档,
 } from './场/2-门口/归隐参数.ts';
-import { 回色 } from './场/2-门口/第15句.ts';
+import { 回色, 铃 } from './场/2-门口/第15句.ts';
+import { 侧投影 } from './地点/侧剖面.tsx';
+import { 符文歌词默认, 字状态 } from './界面/符文排版.ts';
+import { 正片歌词行 } from './界面/符文歌词数据.ts';
+import { 正交顶面 } from './画风.ts';
 import { 气泡字 } from './场/2-隐世之境/参数.ts';
 import { 第14句声音们 } from './场/2-门口/第14句声音.ts';
 import { 天体位置 } from './地点/天体.ts';
@@ -46,7 +61,7 @@ describe('第 14 句：窗口和事件', () => {
     expect(归隐段.帧数).toBe(86);
   });
 
-  it('事件按三稿的拍排开：考场、收卷铃、抬头、楼上、按框、撕书、打框、撒手取照、挂铃、合屏', () => {
+  it('事件按三稿的拍排开：考场、收卷铃、抬头、楼上、按框、撕书、打框、撒手取照、切到挂铃、挂铃、起风、合屏', () => {
     const 序 = [
       事.第14句考场,
       事.收卷铃,
@@ -56,7 +71,9 @@ describe('第 14 句：窗口和事件', () => {
       事.撕书,
       事.打框,
       事.撒手取照,
+      事.挂铃切,
       事.挂铃,
+      事.归隐起风,
       事.归隐合屏,
     ].map((e) => e.帧);
     expect(序[0]).toBe(1081);
@@ -93,20 +110,22 @@ describe('照片墙', () => {
   it('地图画：一格的地图像素落在整成片像素上，外圈白边，里面全是原版地图色', () => {
     expect((16 * 归隐N) % 照片墙边长).toBe(0);
     expect((16 * 10) % 合屏照片墙边长).toBe(0);
-    for (const 边长 of [32, 64] as const) {
-      const px = 地图画像素(第8句照片们[0]!, 边长); // 合照是资产里的 PNG，测试引不进来
-      expect(px.length).toBe(边长 * 边长 * 4);
-      const 边 = 白边(边长);
-      const 调色板 = new Set(地图调色板.map((c) => c.join(',')));
-      for (let y = 0; y < 边长; y++)
-        for (let x = 0; x < 边长; x++) {
-          const k = (y * 边长 + x) * 4;
-          const c = `${px[k]},${px[k + 1]},${px[k + 2]}`;
-          const 在边上 = x < 边 || y < 边 || x >= 边长 - 边 || y >= 边长 - 边;
-          if (在边上) expect(c).toBe('255,255,255');
-          else expect(调色板.has(c), `(${x}, ${y}) ${c}`).toBe(true);
-        }
-    }
+    // 合照（特效/合照.ts）是资产里的 PNG，测试引不进来；拿第 8 句四张核同一套算法
+    for (const 边长 of [32, 64] as const)
+      for (const 画 of 第8句照片们) {
+        const px = 地图画像素(画, 边长);
+        expect(px.length).toBe(边长 * 边长 * 4);
+        const 边 = 白边(边长);
+        const 调色板 = new Set(地图调色板.map((c) => c.join(',')));
+        for (let y = 0; y < 边长; y++)
+          for (let x = 0; x < 边长; x++) {
+            const k = (y * 边长 + x) * 4;
+            const c = `${px[k]},${px[k + 1]},${px[k + 2]}`;
+            const 在边上 = x < 边 || y < 边 || x >= 边长 - 边 || y >= 边长 - 边;
+            if (在边上) expect(c).toBe('255,255,255');
+            else expect(调色板.has(c), `${画.名} (${x}, ${y}) ${c}`).toBe(true);
+          }
+      }
   });
 });
 
@@ -131,9 +150,124 @@ describe('调子、天', () => {
   });
 });
 
-describe('樱花风：挂铃起、合屏盖满、段尾散干净', () => {
+describe('挂铃那一镜（核查 10-24：原来干净的只有 4 帧、她压着牌子、铃在手机上认不出）', () => {
   const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
-  const 心: [number, number] = [散心.x * 成片倍数, 散心.y * 成片倍数];
+  const 投 = 侧投影(挂铃取景, 640, 720, 正交顶面);
+  // 人站的那一排（地点/门口小木屋.tsx 的 站排y；那边引了方块贴图，测试里引不进来）
+  const 站排y = 0.5;
+  // 她（帽檐半径 0.5 格 × 她倍）和铃在画面上占的框（页面像素）：她从脚底到帽顶按 2.6 格算
+  const 半宽 = 0.5 * 她倍;
+  const 左上 = 投(Math.min(挂铃站位 - 半宽, 铃心[0] - 铃.大小 / 2), 2.6, 站排y);
+  const 右下 = 投(挂铃站位 + 半宽, 0, 站排y);
+  const 框 = { x0: 左上.x * 成片倍数, x1: 右下.x * 成片倍数, y0: 左上.y * 成片倍数, y1: 右下.y * 成片倍数 };
+
+  it('她站在牌子右边、整个人在左屏里，帽檐不压牌子（牌子 x −3.5～−2.5）', () => {
+    expect(挂铃站位 - 半宽).toBeGreaterThanOrEqual(铃.挂点[0]);
+    expect(框.x0).toBeGreaterThan(0);
+    expect(框.x1).toBeLessThan(640 * 成片倍数);
+    expect(框.y0).toBeGreaterThan(0);
+  });
+
+  it('寻风之铃缩到手机 390 宽有 18 像素以上；取景中心落在偶数成片像素上', () => {
+    expect(((铃.大小 * 16 * 挂铃N) / W) * 390).toBeGreaterThanOrEqual(18);
+    expect(Math.abs(挂铃取景.中心[0] * 挂铃取景.每格) % 2).toBe(0);
+    expect(Math.abs(挂铃取景.中心[1] * 挂铃取景.每格) % 2).toBe(0);
+  });
+
+  it('切过去以后至少 12 帧（0.5 秒）风墙碰不到她和铃（风往左吹：画布左右翻过来）', () => {
+    expect(事.归隐合屏.帧 - 事.挂铃切.帧).toBeGreaterThanOrEqual(12);
+    const 墙 = 造风墙(归隐风参数, W, H);
+    for (let f = 事.挂铃切.帧; f < 事.挂铃切.帧 + 12; f++) {
+      const t = 秒(f);
+      const 底 = 风墙底(t, 归隐风, 归隐风参数, W);
+      // 翻过来以后补缝的底占 [W − 右, W − 左)
+      if (底) expect(W - 底[1], `第 ${f} 帧补缝的底`).toBeGreaterThanOrEqual(框.x1);
+      for (const q of 墙) {
+        const { x, y } = 墙瓣在(q, t, 归隐风, 归隐风参数, W, H, [风镜像(散心).x * 成片倍数, 散心.y * 成片倍数]);
+        const 边 = q.档 * 3;
+        const [x0, x1] = [W - x - 边, W - x];
+        const 碰 = x1 > 框.x0 && x0 < 框.x1 && y + 边 > 框.y0 && y < 框.y1;
+        expect(碰, `第 ${f} 帧`).toBe(false);
+      }
+    }
+  });
+
+  it('切过去那一帧她已经在牌子旁边，挂铃那一帧松手；铃声、风声跟着', () => {
+    expect(她于(事.挂铃切.帧)!.x).toBe(挂铃站位);
+    expect(她于(事.挂铃切.帧 - 1)!.x).not.toBe(挂铃站位);
+    expect(事.挂铃.帧).toBeGreaterThan(事.挂铃切.帧);
+    expect(事.归隐起风.帧).toBeGreaterThan(事.挂铃.帧);
+  });
+
+  it('气泡从撒手取照一直挂到合屏前一帧（切到告示牌也在），合屏她不见了', () => {
+    for (let f = 事.撒手取照.帧; f < 事.归隐合屏.帧; f++) expect(她于(f)!.气泡, `第 ${f} 帧`).not.toBeNull();
+    expect(她于(事.撒手取照.帧 - 1)!.气泡).toBeNull();
+    expect(她于(事.归隐合屏.帧)).toBeNull();
+  });
+
+  it('风流、飘过线的花瓣按这一镜的 N 取 N、2N 两档', () => {
+    expect(new Set(归隐风参数.风流.档们)).toEqual(new Set([挂铃N, 2 * 挂铃N]));
+    expect(飘瓣档).toBe(2 * 挂铃N);
+  });
+});
+
+describe('歌词：第 15 句在底部', () => {
+  const 起帧 = 段窗口('2-归隐').起帧;
+  const 歌 = 归隐歌词(起帧);
+  const 全 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
+
+  it('顶上只有第 1～14 句，底部只有第 15 句', () => {
+    expect(歌.上行们.map((r) => r.词)).toEqual(全.slice(0, 14).map((r) => r.词));
+    expect(歌.下行们.map((r) => r.词)).toEqual([全[14]!.词]);
+  });
+
+  it('第 14 句的退场和顶上还有第 15 句时逐帧一样', () => {
+    for (let f = 0; f < 段窗口('2-归隐').帧数; f++)
+      expect(字状态(歌.上行们, 13, f, 符文歌词默认, 歌.上收), `段内第 ${f} 帧`).toEqual(字状态(全, 13, f, 符文歌词默认));
+  });
+
+  it('合屏那一帧顶上那一行已经退完（不压太阳、树冠）', () => {
+    const f = 事.归隐合屏.帧 - 起帧;
+    for (let i = 0; i < 14; i++) for (const z of 字状态(歌.上行们, i, f, 符文歌词默认, 歌.上收)) expect(z.显).toBe(0);
+  });
+});
+
+describe('2-时差 开头接 2-空床 末帧的速度', () => {
+  const v = 末帧速度();
+  // 2-空床 镜头往右下走，画面里的东西往左上走（页面像素/帧）
+  const 那边 = { 横: (v.右 * v.每格) / 成片倍数, 竖: (v.下 * v.每格) / 成片倍数 };
+  const n = 事.分屏成形到位.帧 - 事.分屏起.帧;
+
+  const 步 = (f: number) => {
+    const [p, q] = [成形偏于(f), 成形偏于(f + 1)];
+    return { 横: p.横 - q.横, 竖: p.竖 - q.竖 };
+  };
+
+  it('横竖比和 2-空床 末帧一样（画面往同一个方向走，不拐弯）', () => {
+    expect(成形.横 / 成形.竖).toBeCloseTo(那边.横 / 那边.竖, 2);
+  });
+
+  it('切过来第一步和 2-空床 末帧速度差不到 4 页面像素，不比那边最后一步慢；往后一步比一步慢，到位那一帧停稳', () => {
+    const [a, b] = [空床镜(空床帧数 - 2), 空床镜(空床帧数 - 1)];
+    const 末步 = { 横: ((b.中心[0] - a.中心[0]) * b.每格) / 成片倍数, 竖: ((a.中心[1] - b.中心[1]) * b.每格) / 成片倍数 };
+    const 首步 = 步(事.分屏起.帧);
+    expect(Math.abs(首步.横 - 那边.横)).toBeLessThan(4);
+    expect(Math.abs(首步.竖 - 那边.竖)).toBeLessThan(4);
+    expect(首步.横).toBeGreaterThanOrEqual(末步.横);
+    expect(首步.竖).toBeGreaterThanOrEqual(末步.竖);
+    for (let f = 事.分屏起.帧 + 1; f < 事.分屏成形到位.帧; f++) {
+      expect(步(f).横).toBeLessThan(步(f - 1).横);
+      expect(步(f).竖).toBeLessThan(步(f - 1).竖);
+    }
+    expect(成形偏于(事.分屏成形到位.帧)).toEqual({ 横: 0, 竖: 0 });
+    expect(n).toBe(5);
+  });
+});
+
+describe('樱花风：起风、合屏盖满、段尾散干净', () => {
+  const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
+  // 往左吹：樱花风画布左右翻过来画，散心按翻过来的给
+  const 心: [number, number] = [风镜像(散心).x * 成片倍数, 散心.y * 成片倍数];
 
   it('分屏换合屏那一刀前后两帧（合屏 − 1、合屏）风墙整屏盖住', () => {
     expect(风墙盖满(秒(事.归隐合屏.帧 - 1), 归隐风, 归隐风参数)).toBe(true);
@@ -151,11 +285,15 @@ describe('樱花风：挂铃起、合屏盖满、段尾散干净', () => {
     expect(归隐风.满 + 归隐风参数.风流.散完秒).toBeLessThan(t);
   });
 
-  it('风从左屏的铃那里起（铃在左半屏里）', () => {
-    expect(铃在左屏.x).toBeGreaterThan(0);
-    expect(铃在左屏.x).toBeLessThan(640);
-    expect(铃在左屏.y).toBeGreaterThan(0);
-    expect(铃在左屏.y).toBeLessThan(720);
+  it('风从左屏的铃那里起（铃、风源在左半屏里，风源在铃左上）', () => {
+    for (const p of [铃在左屏, 风源]) {
+      expect(p.x).toBeGreaterThan(0);
+      expect(p.x).toBeLessThan(640);
+      expect(p.y).toBeGreaterThan(0);
+      expect(p.y).toBeLessThan(720);
+    }
+    expect(风源.x).toBeLessThan(铃在左屏.x);
+    expect(风源.y).toBeLessThan(铃在左屏.y);
   });
 });
 
@@ -177,7 +315,6 @@ describe('声音', () => {
     expect(起.荧光框取出).toBe(事.撒手取照.帧);
     expect(起.挂铃).toBeLessThanOrEqual(事.挂铃.帧);
     expect(起.樱花风).toBe(事.归隐起风.帧);
-    expect(事.归隐起风.帧 - 事.挂铃.帧).toBe(4);
   });
 });
 
