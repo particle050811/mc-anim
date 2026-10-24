@@ -1428,6 +1428,72 @@
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
 
+# 把回忆拼好给你 第 9～11 句门口之夜：你种樱花树苗、插告示牌、放烟花。火花 spark_0～7 照 particles/firework.json 倒着排（年轻的火花用 spark_7，越老越小）；
+# 闪光 flash 是烟花炸开那一下的白光；手持图标照 models/item/*.json 的 layer0（樱花树苗手持用方块贴图）。只有本作品用，产物登记在作品资产表。
+[["取材"]]
+"名称" = "门口之夜贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/门口之夜", "火花0=assets/minecraft/textures/particle/spark_0.png", "火花1=assets/minecraft/textures/particle/spark_1.png", "火花2=assets/minecraft/textures/particle/spark_2.png", "火花3=assets/minecraft/textures/particle/spark_3.png", "火花4=assets/minecraft/textures/particle/spark_4.png", "火花5=assets/minecraft/textures/particle/spark_5.png", "火花6=assets/minecraft/textures/particle/spark_6.png", "火花7=assets/minecraft/textures/particle/spark_7.png", "闪光=assets/minecraft/textures/particle/flash.png", "烟花火箭=assets/minecraft/textures/item/firework_rocket.png", "樱花树苗=assets/minecraft/textures/block/cherry_sapling.png", "橡木告示牌图标=assets/minecraft/textures/item/oak_sign.png"],
+]
+["取材"."产物"]
+"贴图/粒子/火花/0" = "src/模型/门口之夜/火花0.png"
+"贴图/粒子/火花/1" = "src/模型/门口之夜/火花1.png"
+"贴图/粒子/火花/2" = "src/模型/门口之夜/火花2.png"
+"贴图/粒子/火花/3" = "src/模型/门口之夜/火花3.png"
+"贴图/粒子/火花/4" = "src/模型/门口之夜/火花4.png"
+"贴图/粒子/火花/5" = "src/模型/门口之夜/火花5.png"
+"贴图/粒子/火花/6" = "src/模型/门口之夜/火花6.png"
+"贴图/粒子/火花/7" = "src/模型/门口之夜/火花7.png"
+"贴图/粒子/闪光" = "src/模型/门口之夜/闪光.png"
+"贴图/物品/烟花火箭" = "src/模型/门口之夜/烟花火箭.png"
+"贴图/物品/樱花树苗" = "src/模型/门口之夜/樱花树苗.png"
+"贴图/物品/橡木告示牌图标" = "src/模型/门口之夜/橡木告示牌图标.png"
+
+# 把回忆拼好给你 第 9～11 句门口之夜的声音：种树苗（樱花树苗的放置声，原版 SoundType.CHERRY_SAPLING）、烟花发射、炸开、闪烁。
+# 插告示牌用共用的 音效/block.wood.place.*，不另取。镜头离烟花不到 16 格，照原版 FireworkParticles.Starter 用近处那套（不带 _far）。
+[["取材"]]
+"名称" = "门口之夜音效"
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "block.cherry_sapling.place", "entity.firework_rocket.launch", "entity.firework_rocket.blast", "entity.firework_rocket.large_blast", "entity.firework_rocket.twinkle"],
+]
+["取材"."产物"]
+"音效/把回忆拼好给你/block.cherry_sapling.place.1" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.1.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.2" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.2.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.3" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.3.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.4" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.4.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.5" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.5.ogg"
+"音效/把回忆拼好给你/block.cherry_sapling.place.6" = "src/音效/把回忆拼好给你/block.cherry_sapling.place.6.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.launch" = "src/音效/把回忆拼好给你/entity.firework_rocket.launch.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.blast" = "src/音效/把回忆拼好给你/entity.firework_rocket.blast.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.large_blast" = "src/音效/把回忆拼好给你/entity.firework_rocket.large_blast.ogg"
+"音效/把回忆拼好给你/entity.firework_rocket.twinkle" = "src/音效/把回忆拼好给你/entity.firework_rocket.twinkle.ogg"
+
+# 把回忆拼好给你 第 5 句末地（场/2-末地）：末地的天（renderEndSky 铺六面）、末地传送门的星空层（rendertype_end_portal 的 Sampler0 是 end_sky、Sampler1 是 end_portal）、经验球（4×4 格 16 像素一格）。
+# 末地石、基岩、龙蛋、火把、黑曜石方块表里都有，不另取。只有本作品用，产物登记在作品资产表：anim --作品 把回忆拼好给你 extract 末地贴图
+[["取材"]]
+"名称" = "末地贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/末地", "末地天空=assets/minecraft/textures/environment/end_sky.png", "末地传送门=assets/minecraft/textures/entity/end_portal.png", "经验球=assets/minecraft/textures/entity/experience_orb.png"],
+]
+["取材"."产物"]
+"贴图/环境/末地天空" = "src/模型/末地/末地天空.png"
+"贴图/特效/末地传送门" = "src/模型/末地/末地传送门.png"
+"贴图/特效/经验球" = "src/模型/末地/经验球.png"
+
 # 把回忆拼好给你 第 0 镜、片尾的启动器（作品 场/2-启动器）用的像素字：只收作品 界面/启动器字文案.txt 里的字，格式、取法同「把回忆拼好给你像素字」。
 # 单开一张表：并进 像素字文案.txt 会让 字体/把回忆拼好给你/像素字 换版本，已有画面跟着重渲。
 [["取材"]]
@@ -1481,6 +1547,7 @@
 
 # 把回忆拼好给你 第 6、7 句（场/2-雷雨）：雷雨夜的雨（WeatherEffectRenderer 用的 rain.png）、光柱（信标光柱贴图）、女仆界面里的空槽图标和玩家背包里几样东西。
 # 只有本作品用，产物登记在作品资产表：anim --作品 把回忆拼好给你 extract 雷雨破云原版贴图
+# 背包里的樱花树苗和第 9 句共用「门口之夜贴图」那条取的 贴图/物品/樱花树苗（同一张 block/cherry_sapling.png），这里不另取。
 [["取材"]]
 "名称" = "雷雨破云原版贴图"
 "作品" = "把回忆拼好给你"
@@ -1489,7 +1556,7 @@
 "来源" = "原版 Minecraft 1.20.1"
 "许可" = "Mojang EULA"
 "步骤" = [
-  ["导出模型", "{jar:client-1.20.1}", "src/模型/雷雨破云", "雨=assets/minecraft/textures/environment/rain.png", "信标光柱=assets/minecraft/textures/entity/beacon_beam.png", "空剑槽=assets/minecraft/textures/item/empty_slot_sword.png", "空头盔槽=assets/minecraft/textures/item/empty_armor_slot_helmet.png", "空胸甲槽=assets/minecraft/textures/item/empty_armor_slot_chestplate.png", "空护腿槽=assets/minecraft/textures/item/empty_armor_slot_leggings.png", "空靴子槽=assets/minecraft/textures/item/empty_armor_slot_boots.png", "空盾牌槽=assets/minecraft/textures/item/empty_armor_slot_shield.png", "面包=assets/minecraft/textures/item/bread.png", "樱花树苗=assets/minecraft/textures/block/cherry_sapling.png", "橡木门=assets/minecraft/textures/item/oak_door.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/雷雨破云", "雨=assets/minecraft/textures/environment/rain.png", "信标光柱=assets/minecraft/textures/entity/beacon_beam.png", "空剑槽=assets/minecraft/textures/item/empty_slot_sword.png", "空头盔槽=assets/minecraft/textures/item/empty_armor_slot_helmet.png", "空胸甲槽=assets/minecraft/textures/item/empty_armor_slot_chestplate.png", "空护腿槽=assets/minecraft/textures/item/empty_armor_slot_leggings.png", "空靴子槽=assets/minecraft/textures/item/empty_armor_slot_boots.png", "空盾牌槽=assets/minecraft/textures/item/empty_armor_slot_shield.png", "面包=assets/minecraft/textures/item/bread.png", "橡木门=assets/minecraft/textures/item/oak_door.png"],
 ]
 ["取材"."产物"]
 "贴图/环境/雨" = "src/模型/雷雨破云/雨.png"
@@ -1501,7 +1568,6 @@
 "贴图/界面/空槽/靴子" = "src/模型/雷雨破云/空靴子槽.png"
 "贴图/界面/空槽/盾牌" = "src/模型/雷雨破云/空盾牌槽.png"
 "贴图/物品/面包" = "src/模型/雷雨破云/面包.png"
-"贴图/物品/樱花树苗" = "src/模型/雷雨破云/樱花树苗.png"
 "贴图/物品/橡木门" = "src/模型/雷雨破云/橡木门.png"
 
 # 第 6 句末到第 7 句浮出来的女仆界面（车万女仆 1.5.3 的 MaidMainContainerGui 背包页，按 EmptyBackpackContainerScreen 的 blit 坐标拼）。
@@ -1568,3 +1634,76 @@
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/女仆界面字" = "女仆界面字.json"
+
+# 原版僵尸（库/生物/僵尸.tsx；把回忆拼好给你 第 2 句第一晚地面上晃过去的那只）。ZombieRenderer 吃 ModelLayers.ZOMBIE，
+# LayerDefinitions 里它是 HumanoidModel.createMesh（m_170681_，CubeDeformation.NONE、y 偏移 0）配 64×64（javap 10-24 核过）；贴图 entity/zombie/zombie.png
+[["取材"]]
+"名称" = "僵尸"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/僵尸.模型.json", "僵尸=net.minecraft.client.model.HumanoidModel:m_170681_(0,0)@64x64", "--贴图", "僵尸=assets/minecraft/textures/entity/zombie/zombie.png"],
+]
+["取材"."产物"]
+"模型/角色/僵尸" = "src/模型/角色/僵尸.模型.json"
+"贴图/角色/僵尸" = "src/模型/角色/僵尸.模型.png"
+
+# 把回忆拼好给你 第 2 句「挖三填一」：挖方块的十级裂纹（destroy_stage_0～9，原版 crumbling 叠在方块上）、泥土（破坏粒子和掉落物的贴图；草方块的粒子贴图也是泥土）、
+# 死亡画面「重生」「标题屏幕」两个按钮（gui/widgets.png，按钮底 200×20 在 v 46/66/86：不能按、平常、指着）。只有本作品用，登记在作品资产表：anim --作品 把回忆拼好给你 extract 第一晚贴图
+[["取材"]]
+"名称" = "第一晚贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/第一晚", "裂纹0=assets/minecraft/textures/block/destroy_stage_0.png", "裂纹1=assets/minecraft/textures/block/destroy_stage_1.png", "裂纹2=assets/minecraft/textures/block/destroy_stage_2.png", "裂纹3=assets/minecraft/textures/block/destroy_stage_3.png", "裂纹4=assets/minecraft/textures/block/destroy_stage_4.png", "裂纹5=assets/minecraft/textures/block/destroy_stage_5.png", "裂纹6=assets/minecraft/textures/block/destroy_stage_6.png", "裂纹7=assets/minecraft/textures/block/destroy_stage_7.png", "裂纹8=assets/minecraft/textures/block/destroy_stage_8.png", "裂纹9=assets/minecraft/textures/block/destroy_stage_9.png", "泥土=assets/minecraft/textures/block/dirt.png", "按钮=assets/minecraft/textures/gui/widgets.png"],
+]
+["取材"."产物"]
+"贴图/特效/方块裂纹/0" = "src/模型/第一晚/裂纹0.png"
+"贴图/特效/方块裂纹/1" = "src/模型/第一晚/裂纹1.png"
+"贴图/特效/方块裂纹/2" = "src/模型/第一晚/裂纹2.png"
+"贴图/特效/方块裂纹/3" = "src/模型/第一晚/裂纹3.png"
+"贴图/特效/方块裂纹/4" = "src/模型/第一晚/裂纹4.png"
+"贴图/特效/方块裂纹/5" = "src/模型/第一晚/裂纹5.png"
+"贴图/特效/方块裂纹/6" = "src/模型/第一晚/裂纹6.png"
+"贴图/特效/方块裂纹/7" = "src/模型/第一晚/裂纹7.png"
+"贴图/特效/方块裂纹/8" = "src/模型/第一晚/裂纹8.png"
+"贴图/特效/方块裂纹/9" = "src/模型/第一晚/裂纹9.png"
+"贴图/方块/泥土" = "src/模型/第一晚/泥土.png"
+"贴图/界面/原版按钮" = "src/模型/第一晚/按钮.png"
+
+# 把回忆拼好给你 第 2 句的游戏像素字（聊天栏三条死亡消息、死亡画面）：只收 场/2-第一晚/像素字文案.txt 里的字，格式同「把回忆拼好给你像素字」那一条。
+# 单开一张表、不并进 界面/像素字文案.txt：那张表别的段在用，加字会让它换版本、别的段指纹跟着变。加字的步骤同那一条。
+[["取材"]]
+"名称" = "第一晚像素字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "第一晚像素字.json", "{作品根}/场/2-第一晚/像素字文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/第一晚像素字" = "第一晚像素字.json"
+
+# 把回忆拼好给你 第 2 句地面上晃过去的僵尸的低吼。挖、填土、捡东西、点按钮、摔死的声音用共用的（block.grass.break、block.gravel.break、
+# entity.item.pickup、ui.button.click、entity.player.big_fall、entity.player.hurt），不另取：原版 block.gravel.place 和 block.gravel.break、
+# entity.player.death 和 entity.player.hurt 在 sounds.json 里是同一组文件。id 多一层 把回忆拼好给你/，不落进「音效」那条的 音效/* 通配。
+[["取材"]]
+"名称" = "第一晚音效"
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.zombie.ambient"],
+]
+["取材"."产物"]
+"音效/把回忆拼好给你/entity.zombie.ambient.1" = "src/音效/把回忆拼好给你/entity.zombie.ambient.1.ogg"
+"音效/把回忆拼好给你/entity.zombie.ambient.2" = "src/音效/把回忆拼好给你/entity.zombie.ambient.2.ogg"
+"音效/把回忆拼好给你/entity.zombie.ambient.3" = "src/音效/把回忆拼好给你/entity.zombie.ambient.3.ogg"
