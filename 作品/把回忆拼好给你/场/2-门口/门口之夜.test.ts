@@ -4,7 +4,7 @@ import { 烟花火花们, 炸开秒, 炸点, 球半径 } from '@库/特效/烟�
 import { fps, 段窗口, 正片事件, 第几句, 歌曲帧 } from '../../分镜.ts';
 import { 本段音效, 门口之夜音效 } from './门口之夜声音.ts';
 import { 你态, 她态, 摆设态, 气泡态 } from './门口之夜编排.ts';
-import { 亮档, 夜天弧, 烟花们, 牌字面, 照片帧, 镜头, 你站, 推近档 } from './门口之夜参数.ts';
+import { 亮档, 夜天弧, 烟花们, 牌字面, 照片帧, 镜头, 你站, 推近档, 聊天缩放, 下线图标 } from './门口之夜参数.ts';
 
 const 窗们 = ['2-明年六月见', '2-烟花', '2-截图下线'].map(段窗口);
 const 起 = 窗们[0]!.起帧;
@@ -149,6 +149,14 @@ describe('人', () => {
     const p = { loc: [0, 0, 0], pitch: 0, squash: 0, headPitch: 0, headYaw: 0, legR: 0, legL: 0, armR: 0, armRRoll: 0, armL: 0, armLRoll: 0 };
     expect(加挥手(p, 0)).toBe(p);
     expect(加挥手(p, 0.3).armR).toBeGreaterThan(p.armR + 60);
+  });
+});
+
+describe('手机 390 宽', () => {
+  it('下线那行聊天字（原版字高 8 个界面像素）缩到 390 宽至少 11 像素高，右沿到不了图标', () => {
+    expect((8 * 聊天缩放 * 390) / 2560).toBeGreaterThanOrEqual(11);
+    const 图标左沿 = 1280 - (下线图标.高 * 1440) / 2;
+    expect((73 + 12) * 聊天缩放).toBeLessThan(图标左沿);
   });
 });
 
