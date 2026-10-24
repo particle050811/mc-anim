@@ -1,0 +1,10 @@
+# 作品资产表：网格。只有本作品用的资产登记在这里，锁是作品根的 资产锁.json（anim --作品 把回忆拼好给你 assets add 写，不手改）。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "网格/隐世之境一楼/顶点-归隐之地"
+"类别" = "网格"
+"来源" = "派生:37a7290c41e5+sourcing/extract/网格换群系色.py #b6db61 #6bd550 #79c05a #4fc12a"
+"许可" = "LicenseRef-Minecraft-Derived"
+"可见性" = "发布"
+"说明" = "网格/隐世之境一楼/顶点 的草色、花簇茎、藤蔓换成归隐之地（cherry_grove）的 #B6DB61，别的字节不变；头、图集照用 网格/隐世之境一楼/头、图集。步骤见 sourcing/extract.toml「隐世之境一楼网格-归隐之地」"

@@ -1,4 +1,46 @@
 {
+  "网格/隐世之境一楼/顶点-归隐之地": {
+    "sha256": "2b3d7f4614af4b9fe43eb124498cd41ff837b9fdb29caa743020aedea53491f4",
+    "后缀": ".bin",
+    "大小": 146986,
+    "库": "store"
+  },
+  "贴图/场景/樱花林/cherry_leaves": {
+    "sha256": "b66ef1644bf5fd62de74d74a70058e89d92b6d0cdb8224f511cb86d831e58940",
+    "后缀": ".png",
+    "大小": 609,
+    "库": "store"
+  },
+  "贴图/场景/樱花林/cherry_log": {
+    "sha256": "4e744b8f37f12156dabb9b230ab774e22aba2fb941a54eb89009243786e9b3ae",
+    "后缀": ".png",
+    "大小": 354,
+    "库": "store"
+  },
+  "贴图/场景/樱花林/cherry_log_top": {
+    "sha256": "103315251a95b46ba792e8eda5b4b745f56553620608d3d6192d91dcb601e325",
+    "后缀": ".png",
+    "大小": 419,
+    "库": "store"
+  },
+  "贴图/场景/樱花林/grass_block_top": {
+    "sha256": "5de9318a607309a036d08d64c22a2725cea23de099c84887e4f4d655516fa376",
+    "后缀": ".png",
+    "大小": 661,
+    "库": "store"
+  },
+  "贴图/场景/樱花林/pink_petals": {
+    "sha256": "562d670d5fa8d2b28105c3b4dc94260a71d7451bba4d1f9ccfe9fb7d893bc455",
+    "后缀": ".png",
+    "大小": 368,
+    "库": "store"
+  },
+  "贴图/场景/樱花林/pink_petals_stem": {
+    "sha256": "833a58ca76c6dca2a2fde4264b4ba01e1d589b165a70d9b8ccb7afc7eb41f634",
+    "后缀": ".png",
+    "大小": 91,
+    "库": "store"
+  },
   "配乐/把回忆拼好给你-抖音原声": {
     "sha256": "cf59eff8cbfa99743db00fc882f3332a6b1d8a07b0f29357c1dda7aded79869e",
     "后缀": ".m4a",

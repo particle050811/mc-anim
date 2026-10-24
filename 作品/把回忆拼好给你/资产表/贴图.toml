@@ -1,0 +1,44 @@
+# 作品资产表：贴图。只有本作品用的资产登记在这里，锁是作品根的 资产锁.json（anim --作品 把回忆拼好给你 assets add 写，不手改）。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "贴图/场景/樱花林/cherry_log"
+"类别" = "贴图"
+"来源" = "提取:樱花林贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+
+[["资产"]]
+id = "贴图/场景/樱花林/cherry_log_top"
+"类别" = "贴图"
+"来源" = "提取:樱花林贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+
+[["资产"]]
+id = "贴图/场景/樱花林/cherry_leaves"
+"类别" = "贴图"
+"来源" = "提取:樱花林贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+
+[["资产"]]
+id = "贴图/场景/樱花林/grass_block_top"
+"类别" = "贴图"
+"来源" = "提取:樱花林贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+
+[["资产"]]
+id = "贴图/场景/樱花林/pink_petals"
+"类别" = "贴图"
+"来源" = "提取:樱花林贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+
+[["资产"]]
+id = "贴图/场景/樱花林/pink_petals_stem"
+"类别" = "贴图"
+"来源" = "提取:樱花林贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
