@@ -1,5 +1,6 @@
 // 整片后期：包住整帧（3D 画布、2D 界面、现实部分一起），盖同一层质感，3D 和 2D 的接缝藏在这一层里（05-画风 原则 4、9）。
-// 三层：调色（SVG feColorMatrix，在 sRGB 数值上做，见 调子.ts 的 调色矩阵）→ 暗角（径向渐变压黑）→ 颗粒（feTurbulence 分形噪声，种子 = 帧号，叠加混合）。
+// 三层：调色（SVG feColorMatrix，在 sRGB 数值上做，见 调子.ts 的 调色矩阵）→ 暗角（径向渐变压黑）→ 颗粒（feTurbulence 分形噪声，种子默认 = 帧号，叠加混合）。
+// 核对段一帧一个视图时给 种子（取片子里那一帧的帧号），各视图的颗粒才一样，逐像素比只差要比的那个变量。
 // 参数是调子里的 调色，从作品的色板取；不给 = 原样输出（核对时对比用）。
 import React, { useId } from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
@@ -10,8 +11,9 @@ const 颗粒频率 = 0.65;
 // 噪声取灰度、绕 0.5 拉开 2 倍，alpha 置 1（分形噪声的 alpha 也是噪声，不置 1 会透）
 const 颗粒矩阵 = [...[0, 1, 2].flatMap(() => [2 / 3, 2 / 3, 2 / 3, 0, -0.5]), 0, 0, 0, 0, 1].join(' ');
 
-export const 整片后期: React.FC<{ 调色?: 调色 | null; children: React.ReactNode }> = ({ 调色: t, children }) => {
-  const frame = useCurrentFrame();
+export const 整片后期: React.FC<{ 调色?: 调色 | null; 种子?: number; children: React.ReactNode }> = ({ 调色: t, 种子, children }) => {
+  const 帧 = useCurrentFrame();
+  const frame = 种子 ?? 帧;
   const id = `grade${useId().replace(/[^A-Za-z0-9]/g, '')}`;
   if (!t) return <AbsoluteFill>{children}</AbsoluteFill>;
   return (
