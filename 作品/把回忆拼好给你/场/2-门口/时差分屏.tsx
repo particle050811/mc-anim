@@ -1,5 +1,6 @@
 // 第 13 句「我们的爱总有时差」分屏的一帧（1280×720 整页）：左屏现实的课桌，右屏门这个机位的半屏，中间一条分屏线，外面盖整片后期。
-// 按歌曲帧画（分屏参数.ts 的 分屏态）：左边撕页、笔筒跟着翻页，右边樱花树一页长一截、她一页换一个姿势，天上太阳月亮快转。
+// 两屏同一种画法（用户 10-24 看了矢量现实的静帧说「画风太不一致了吧 太出戏了」）：左屏也是 MC 方块和像素物件、三渲二平涂描边，像素一样大，网格连着。
+// 按歌曲帧画（分屏参数.ts 的 分屏态）：左边先看墙上课表亮两格、再沉到桌面，撕页、笔筒跟着翻页，史蒂夫的手捏着页角；右边樱花树一页长一截、她一页换一个姿势，天上太阳月亮快转。
 // 调色两边各用色板里自己的那套（左 现实、右 褪色：三稿「现实冷，你下线后她那边褪色」）；颗粒、暗角整页只盖一层，两屏的接缝藏在这层里（05-画风 原则 1、4）。
 // 用法：段里 <时差分屏 帧={歌曲帧} />；核对时 描边、后期 可以关掉比。
 import type React from 'react';
@@ -7,7 +8,6 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { 描边 as 描边组 } from '@engine/三渲二/描边.tsx';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { 插调子, type 调色 } from '@engine/三渲二/调子.ts';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx } from '@库/角色/魔法酒狐新动作组件.tsx';
@@ -16,16 +16,14 @@ import { fps, 画幅 } from '../../分镜.ts';
 import { 门口 } from '../../地点/门口小木屋.tsx';
 import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
 import { 月铃兰 } from '../../物品/月铃兰.tsx';
-import { 现实课桌, 课桌布局 } from '../../现实/课桌.tsx';
-import { 撕页本几何 } from '../../现实/撕页本.tsx';
+import { 现实画布 } from '../../现实/画布.tsx';
+import { 现实课桌 } from '../../现实/课桌.tsx';
+import { 像素空间 } from '../../现实/像素块.tsx';
 import { 撕页手 } from '../../现实/撕页手.tsx';
-import { 齐 } from '../../现实/像素.ts';
-import { 现实色 } from '../../现实/色板.ts';
-import { 侧投影 } from '../../地点/侧剖面.tsx';
 import { 描边 as 描边默认 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
-import { 半屏取景, 分屏门在, 告示牌行们 } from './参数.ts';
-import { 分屏态, 分屏版式, 天体残影, 手宽比, 手转, 明暗幅度, 桌面镜, 翻角比 } from './分屏参数.ts';
+import { 告示牌行们 } from './参数.ts';
+import { 分屏态, 分屏版式, 右取景, 天体残影, 左镜, 手到于, 手摆, 明暗幅度 } from './分屏参数.ts';
 import { 门口画布 } from './门口.tsx';
 
 /** 她这一页的样子：x 是脚底（人那排 y = 门口.站排y），朝 是身子朝哪（正交只能取正方向，贴图像素才是整数），看 同 MagicalWineFoxEx */
@@ -83,27 +81,19 @@ export const 时差分屏: React.FC<时差分屏属性> = ({ 帧, 描边 = 描�
   );
   const 右调子 = 插调子(插调子(色板.夏日白天, 色板.褪色, 态.褪色), 色板.夜, 态.夜);
   const 套 = (t: 调色, 内容: React.ReactNode) => (后期 ? <整片后期 调色={只调色(t)}>{内容}</整片后期> : 内容);
-  const { 景高, 推, 移x } = 桌面镜;
-  const [桌宽, 桌高] = [左宽 * 推, 景高 * 推];
-  const 布局 = 课桌布局(桌宽, 桌高);
-  const 本 = 布局.撕页本;
-  const 右取景 = 半屏取景(右宽 * 成片倍数, 分屏门在);
-  // 桌子前沿对到右屏的地面线（剖面上 z = 0 那条）
-  const 移y = 布局.桌前 - 侧投影(右取景, 右宽, 高)(0, 0).y;
-  // 撕页本 画的时候把 x、底、宽 吸到成片像素，手挖纸的方框跟着吸，右下角才严丝合缝
-  const 几何 = 撕页本几何(齐(本.x), 齐(本.底), 齐(本.宽)).页;
-  const 页框 = { x: 几何.x, y: 齐(几何.y), 宽: 几何.宽, 高: 齐(本.底) - 齐(几何.y) };
   const 页 = (
     <div style={{ position: 'absolute', inset: 0, background: '#000' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 左宽, height: 高, overflow: 'hidden', background: 现实色.桌下 }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, width: 左宽, height: 高, overflow: 'hidden' }}>
         {套(
           色板.现实.调色,
-          <div style={{ position: 'absolute', left: -移x, top: -移y }}>
-            <现实课桌 宽={桌宽} 高={桌高} 翻页={态.翻页} />
-            <svg width={桌宽} height={桌高} viewBox={`0 0 ${桌宽} ${桌高}`} style={{ position: 'absolute', left: 0, top: 0, overflow: 'visible' }}>
-              <撕页手 页={页框} 宽={本.宽 * 手宽比} 转={手转} 翻角={本.宽 * 翻角比} />
-            </svg>
-          </div>,
+          <现实画布 宽={左宽} 高={高} 取景={{ 中心: [左镜.x, 态.左z], 每格: 右取景.每格 }} 描边={描边}>
+            <现实课桌 翻页={态.翻页} 亮格={态.亮格} />
+            <像素空间 位={[0, 0, 0]}>
+              <描边组 开={描边}>
+                <撕页手 到={手到于(态.翻页)} 摆={手摆} />
+              </描边组>
+            </像素空间>
+          </现实画布>,
         )}
       </div>
       <div style={{ position: 'absolute', left: 左宽, top: 0, width: 右宽, height: 高, overflow: 'hidden' }}>

@@ -1,119 +1,114 @@
-// 透明笔筒（SVG 片段，要放在 <svg> 里）：立着两支在用的笔，底下攒着用空的笔芯，满度 0～1 越堆越高（撕页.ts 的 笔筒满度）。
-// 位置按底边给：x 是左边，底 是筒底最低点落在桌面上的 y；高由宽算（笔筒高）。
-// 笔芯的摆放是按序号用哈希取的固定值：满度涨的时候只往上加新的，已经在里面的不动；根数的小数部分是正在落进去的那一根，从筒口上方掉下来
-// （满度 × 笔芯满根 是整数时没有落着的，撕页.ts 的 笔筒满度 停在整数页上就是整数）。
+// 玻璃笔筒，按原版的样子搭（放在 <像素空间> 里，单位贴图像素）：筒身照原版玻璃方块、玻璃瓶的画法，只有边框和几道高光是实的，中间透明（镂空），里面的东西看得见。
+// 里面立着一支在用的笔，底下攒着用空的笔芯：笔芯是照原版木棍画的物品（16×16，一道斜的两像素宽），挤出成薄片（物品贴图.tsx），满度 0～1 越堆越高（撕页.ts 的 笔筒满度）。
+// 笔芯的摆放按序号哈希取固定值：满度涨的时候只往上加新的，已经在里面的不动；根数的小数部分是正在落进去的那一根，从筒口上方掉下来。
 import type React from 'react';
+import type * as THREE from 'three';
 import { hash2 } from '@engine/core/噪声.ts';
+import type { Png } from '@engine/model/贴图.ts';
+import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { 现实色 } from './色板.ts';
-import { 齐, 线宽 } from './像素.ts';
+import { 新像素画, 成贴图, type 像素画 } from './像素图.ts';
+import { 正面, 顶面 } from './像素块.tsx';
 import { 笔芯满根 } from './撕页.ts';
 
-// 单位是筒宽。Agent 暂定：筒高 1.15，口和底的椭圆半高 0.12；笔芯长 0.95 个内宽、斜 28°～62°（再平就伸出筒壁）
-const 比 = { 高: 1.15, 椭圆: 0.12, 壁: 0.05, 芯长: 0.95, 芯粗: 0.034, 根数: 笔芯满根 };
+/** 尺寸（贴图像素）：筒宽 30、高 34、深 14（顶面在斜投影里只有 28 个成片像素高，筒口不至于压住里面）；筒底厚 2。Agent 暂定 */
+export const 笔筒尺寸 = { 宽: 30, 高: 34, 深: 14, 底厚: 2 } as const;
+const S = 笔筒尺寸;
 
-export const 笔筒高 = (宽: number) => 宽 * 比.高;
+const 拆 = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 
-type 芯 = { cx: number; cy: number; 角: number; 反: boolean };
+/** 空笔芯的物品贴图（16×16）：照原版 stick.png 那样一道 45° 两像素宽的斜条，靠下一端是金属笔头、接着一截剩下的墨，往上是空管；反 = 左右翻过来 */
+const 笔芯图 = (反: boolean): Png => {
+  const px = new Uint8Array(16 * 16 * 4);
+  const 点 = (x: number, y: number, 色: string) => {
+    const xx = 反 ? 15 - x : x;
+    px.set([...拆(色), 255], (y * 16 + xx) * 4);
+  };
+  for (let t = 0; t <= 12; t++) {
+    const [x, y] = [2 + t, 13 - t];
+    const 芯 = t < 2 ? 现实色.笔头 : t < 5 ? 现实色.余墨 : 现实色.笔芯;
+    点(x, y, 芯);
+    点(x + 1, y, t < 2 ? 现实色.笔头 : 现实色.笔芯边);
+  }
+  点(1, 14, 现实色.笔头);
+  return { w: 16, h: 16, px };
+};
+const 笔芯层 = [[{ tex: 笔芯图(false) }], [{ tex: 笔芯图(true) }]];
 
-/** 第 i 根笔芯在筒里的位置（筒内坐标：内宽 1，y 从筒底往上量，单位内宽）；层 = 这根落在第几层（0～1） */
-const 摆 = (i: number, 内高: number): 芯 => {
-  const 角度 = 28 + 34 * hash2(i, 7, 1);
-  const 角 = (角度 * Math.PI) / 180;
-  const 横 = 比.芯长 * Math.cos(角);
-  const cx = 横 / 2 + (1 - 横) * hash2(i, 7, 2);
-  const 层 = (i + 0.5) / 比.根数;
-  const cy = 层 * 内高 * 0.96 + 0.06 * (hash2(i, 7, 3) - 0.5);
-  return { cx, cy, 角: hash2(i, 7, 4) < 0.5 ? 角 : Math.PI - 角, 反: hash2(i, 7, 5) < 0.5 };
+// 筒身正面：一圈亮边，左上两道斜高光（原版玻璃的那两道），筒底两像素厚；中间透明
+const 画筒前 = (): 像素画 => {
+  const p = 新像素画(S.宽, S.高);
+  const { 宽: w, 高: h } = S;
+  p.方(0, 0, w, 1, 现实色.玻璃边);
+  p.方(0, 0, 1, h, 现实色.玻璃边);
+  p.方(w - 1, 0, 1, h, 现实色.玻璃暗边);
+  p.方(0, h - S.底厚, w, S.底厚, 现实色.玻璃暗边);
+  p.方(1, h - S.底厚, w - 2, 1, 现实色.玻璃边);
+  for (let i = 0; i < 5; i++) p.点(3 + i, 8 - i, 现实色.玻璃光);
+  for (let i = 0; i < 3; i++) p.点(3 + i, 12 - i, 现实色.玻璃光);
+  p.方(2, 14, 1, h - 18, 现实色.玻璃边);
+  return p;
+};
+// 筒口（顶面）：一圈边，里面透明
+const 画筒口 = (): 像素画 => {
+  const p = 新像素画(S.宽, S.深);
+  p.方(0, 0, S.宽, 1, 现实色.玻璃暗边);
+  p.方(0, S.深 - 1, S.宽, 1, 现实色.玻璃边);
+  p.方(0, 0, 1, S.深, 现实色.玻璃边);
+  p.方(S.宽 - 1, 0, 1, S.深, 现实色.玻璃暗边);
+  return p;
+};
+// 立着的笔：三像素宽，略往右斜（每 8 行挪一列），笔夹一条
+const 笔长 = 46;
+const 画笔 = (): 像素画 => {
+  const 宽 = 3 + Math.ceil(笔长 / 8);
+  const p = 新像素画(宽, 笔长);
+  for (let y = 0; y < 笔长; y++) {
+    const x = Math.floor((笔长 - 1 - y) / 8);
+    p.点(x, y, 现实色.笔身);
+    p.点(x + 1, y, y < 4 ? 现实色.笔光 : 现实色.笔身);
+    p.点(x + 2, y, 现实色.笔光);
+    if (y >= 3 && y < 14) p.点(x + 2, y, 现实色.笔夹);
+  }
+  return p;
 };
 
-export const 笔筒: React.FC<{ x: number; 底: number; 宽: number; 满度: number }> = ({ x, 底, 宽, 满度 }) => {
-  const X = 齐(x);
-  const B = 齐(底);
-  const W = 齐(宽);
-  const H = 齐(笔筒高(宽));
-  const ry = 宽 * 比.椭圆;
-  const 口y = B - H; // 筒口椭圆的中心
-  const 底y = B - ry; // 筒底椭圆的中心
-  const 壁 = 宽 * 比.壁;
-  const 内x = X + 壁;
-  const 内宽 = W - 2 * 壁;
-  const 内高 = (底y - 口y) / 内宽; // 以内宽为单位
-  const 细 = 线宽(0.5);
-  const 边 = 线宽(Math.max(0.5, 宽 / 110));
-  const 芯粗 = Math.max(1.5, 宽 * 比.芯粗);
-  const 芯长 = 比.芯长 * 内宽;
-  const id = `bitong-${Math.round(X * 2)}-${Math.round(B * 2)}`;
+let 图: { 前: THREE.Texture; 口: THREE.Texture; 笔: THREE.Texture; 笔宽: number } | null = null;
+const 取图 = () => (图 ??= { 前: 成贴图(画筒前()), 口: 成贴图(画筒口()), 笔: 成贴图(画笔()), 笔宽: 3 + Math.ceil(笔长 / 8) });
 
-  const 筒身 = `M${X} ${口y} L${X} ${底y} A${W / 2} ${ry} 0 0 0 ${X + W} ${底y} L${X + W} ${口y} A${W / 2} ${ry} 0 0 1 ${X} ${口y} Z`;
-  // 里面能看见的范围：筒壁以内，往上开口（落下来的笔芯在口上方也看得见）
-  const 里面 = `M${内x} ${口y - H} L${内x} ${底y} A${内宽 / 2} ${ry * 0.85} 0 0 0 ${内x + 内宽} ${底y} L${内x + 内宽} ${口y - H} Z`;
-
-  const n = Math.max(0, Math.min(比.根数, Math.round(满度 * 比.根数 * 1e6) / 1e6)); // 去掉浮点尾数，整数根时不冒出一根落着的
-  const 满根 = Math.floor(n);
-  const 落 = n - 满根; // 第 满根 根落到一半
-  const 芯们: { 芯: 芯; 落差: number; 透: number }[] = [];
-  for (let i = 0; i < 满根; i++) 芯们.push({ 芯: 摆(i, 内高), 落差: 0, 透: 1 });
-  if (落 > 0 && 满根 < 比.根数) 芯们.push({ 芯: 摆(满根, 内高), 落差: (1 - 落) ** 2 * (内高 + 0.6) * 内宽, 透: Math.min(1, 落 * 4) });
-
-  const 画芯 = ({ 芯: c, 落差, 透 }: (typeof 芯们)[number], i: number) => {
-    const cx = 内x + c.cx * 内宽;
-    const cy = 底y - c.cy * 内宽 - 落差;
-    const dx = (Math.cos(c.角) * 芯长) / 2;
-    const dy = (Math.sin(c.角) * 芯长) / 2;
-    // 笔头那端：反 = 朝左下
-    const [hx, hy, tx, ty] = c.反 ? [cx - dx, cy + dy, cx + dx, cy - dy] : [cx + dx, cy - dy, cx - dx, cy + dy];
-    const 沿 = (k: number) => [hx + (tx - hx) * k, hy + (ty - hy) * k] as const;
-    const [a1x, a1y] = 沿(0.06);
-    const [b1x, b1y] = 沿(0.1);
-    const [b2x, b2y] = 沿(0.3);
-    return (
-      <g key={i} opacity={透}>
-        <line x1={hx} y1={hy} x2={tx} y2={ty} stroke={现实色.笔芯边} strokeWidth={芯粗 + 2 * 细} strokeLinecap="round" />
-        <line x1={hx} y1={hy} x2={tx} y2={ty} stroke={现实色.笔芯} strokeWidth={芯粗} strokeLinecap="round" />
-        <line x1={b1x} y1={b1y} x2={b2x} y2={b2y} stroke={现实色.余墨} strokeWidth={芯粗 * 0.5} strokeLinecap="round" />
-        <line x1={hx} y1={hy} x2={a1x} y2={a1y} stroke={现实色.笔头} strokeWidth={芯粗 * 0.8} strokeLinecap="round" />
-      </g>
-    );
+type 芯 = { x: number; y: number; z: number; 反: number };
+/** 第 i 根笔芯的中心（筒内坐标，贴图像素，原点在筒的左下前角）。层 = 第几根 / 满根，越后放的越高 */
+const 摆 = (i: number): 芯 => {
+  const 内高 = S.高 - S.底厚 - 4;
+  const 层 = i / 笔芯满根;
+  return {
+    x: 9 + Math.floor(hash2(i, 13, 1) * (S.宽 - 18)),
+    y: 3 + Math.floor(hash2(i, 13, 2) * (S.深 - 6)),
+    z: S.底厚 + 7 + Math.round(层 * (内高 - 14) + (hash2(i, 13, 3) - 0.5) * 3),
+    反: hash2(i, 13, 4) < 0.5 ? 0 : 1,
   };
+};
 
-  // 两支立着的笔：从筒底斜靠到筒口外面
-  const 笔们 = [
-    { 底x: 0.38, 角: -9, 长: 1.5, 色: 现实色.笔一 },
-    { 底x: 0.6, 角: 11, 长: 1.38, 色: 现实色.笔二 },
-  ];
-  const 笔粗 = 宽 * 0.085;
-
+export const 笔筒: React.FC<{ x: number; y: number; z: number; 满度: number }> = ({ x, y, z, 满度 }) => {
+  const g = 取图();
+  const n = Math.max(0, Math.min(笔芯满根, Math.round(满度 * 笔芯满根 * 1e6) / 1e6)); // 去掉浮点尾数，整数根时没有落着的
+  const 满根 = Math.floor(n);
+  const 落 = n - 满根;
+  const 芯们: (芯 & { 落差: number })[] = [];
+  for (let i = 0; i < 满根; i++) 芯们.push({ ...摆(i), 落差: 0 });
+  if (落 > 0 && 满根 < 笔芯满根) 芯们.push({ ...摆(满根), 落差: Math.round((1 - 落) ** 2 * S.高) });
   return (
-    <g>
-      {/* 桌面上的平涂投影 */}
-      <ellipse cx={X + W * 0.72} cy={B - ry * 1.3} rx={W * 0.62} ry={ry * 1.25} fill={现实色.桌影} />
-      {/* 里壁和筒口里面 */}
-      <path d={筒身} fill={现实色.玻璃里} />
-      <ellipse cx={X + W / 2} cy={口y} rx={W / 2} ry={ry} fill={现实色.玻璃里} />
-      <path d={`M${X} ${口y} A${W / 2} ${ry} 0 0 1 ${X + W} ${口y}`} fill="none" stroke={现实色.玻璃边} strokeWidth={边} />
-      {笔们.map((p, i) => {
-        const bx = 内x + p.底x * 内宽;
-        const by = 底y - ry * 0.3;
-        const 长 = p.长 * H;
-        return (
-          <g key={`笔${i}`} transform={`rotate(${p.角} ${bx} ${by})`}>
-            <rect x={bx - 笔粗 / 2} y={by - 长} width={笔粗} height={长} rx={笔粗 * 0.3} fill={p.色} />
-            <rect x={bx - 笔粗 / 2} y={by - 长} width={笔粗} height={笔粗 * 1.6} rx={笔粗 * 0.3} fill={现实色.笔夹} opacity={0.35} />
-            <rect x={bx + 笔粗 * 0.18} y={by - 长 + 笔粗 * 0.6} width={笔粗 * 0.22} height={长 * 0.22} rx={笔粗 * 0.1} fill={现实色.笔夹} />
-          </g>
-        );
-      })}
-      <defs>
-        <clipPath id={id}>
-          <path d={里面} />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${id})`}>{芯们.map(画芯)}</g>
-      {/* 前面的玻璃：一层淡青、一道竖高光、轮廓和筒口前沿 */}
-      <path d={筒身} fill={现实色.玻璃} />
-      <rect x={X + W * 0.12} y={口y + ry * 1.4} width={W * 0.07} height={底y - 口y - ry * 1.6} rx={W * 0.035} fill={现实色.玻璃光} />
-      <path d={`M${X} ${口y} L${X} ${底y} A${W / 2} ${ry} 0 0 0 ${X + W} ${底y} L${X + W} ${口y}`} fill="none" stroke={现实色.玻璃边} strokeWidth={边} />
-      <path d={`M${X} ${口y} A${W / 2} ${ry} 0 0 0 ${X + W} ${口y}`} fill="none" stroke={现实色.玻璃边} strokeWidth={边} />
-    </g>
+    <group position={[x, y, z]}>
+      {/* 笔：立在筒底靠右，探出筒口 */}
+      <正面 x={S.宽 - g.笔宽 - 6} y={S.深 - 3} z={S.底厚} 宽={g.笔宽} 高={笔长} 图={g.笔} />
+      {芯们.map((c, i) => (
+        // 物品空间的正面朝 +Z、上是 +Y：绕 x 转 90° 让正面朝南、上朝上
+        <group key={i} position={[c.x, c.y, c.z + c.落差]} rotation={[Math.PI / 2, 0, 0]} scale={16}>
+          <ItemSprite layers={笔芯层[c.反]!} emissive={0} shadow={false} />
+        </group>
+      ))}
+      <正面 x={0} y={0} z={0} 宽={S.宽} 高={S.高} 图={g.前} />
+      <顶面 x={0} y={0} z={S.高} 宽={S.宽} 深={S.深} 图={g.口} />
+    </group>
   );
 };
