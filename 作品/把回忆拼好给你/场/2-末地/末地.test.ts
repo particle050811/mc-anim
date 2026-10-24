@@ -93,10 +93,14 @@ describe('第 5 句的时间线', () => {
     expect(最多).toBeGreaterThan(0);
   });
 
-  it('转场：再点那一帧 0、段尾盖满；机位整句推一次', () => {
+  it('转场：再点那一帧 0、段尾盖满；机位从段首推到再点那一帧停住', () => {
     expect(转场进度(事.再点龙蛋)).toBe(0);
     expect(转场进度(帧数 - 1)).toBe(1);
     expect(机位(0).眼).toEqual(参.机位.眼起);
-    expect(机位(帧数 - 1).眼).toEqual(参.机位.眼止);
+    expect(机位(0).看).toEqual(参.机位.看起);
+    for (const f of [事.再点龙蛋, 帧数 - 1]) {
+      expect(机位(f).眼).toEqual(参.机位.眼止);
+      expect(机位(f).看).toEqual(参.机位.看止);
+    }
   });
 });
