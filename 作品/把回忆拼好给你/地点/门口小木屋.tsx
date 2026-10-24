@@ -1,14 +1,14 @@
 // 史蒂夫的小木屋门口（三稿「地点」一段，第 8、9、10、13、14、15 句同一个机位）：侧剖面，门在正中，左边门外，右边屋里。
-// 第 6 句炸成坑、第 8 句原地盖回来：后墙补过的那片换成白桦木板（比橡木浅一截），边上的旧橡木板留着焦痕（游戏里没有焦痕，演绎）。
+// 第 6 句炸成坑、第 8 句原地盖回来：后墙补过的那片换成白桦木板（比橡木浅一截）。不画焦痕：游戏里没有，做出来是一圈随机的暗像素，
+//   用户 10-24 看了问「这个奇怪的阴影是什么」，主会话 10-24 定删掉，只留浅一截的补墙。
 // 坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格）：门那一格的中心 x = 0，地面 z = 0；剖面切在 y = 0，朝镜头的南墙和它前面的都去掉。
 // 格 (i, j, k) 占 x ∈ [i − 0.5, i + 0.5]、y ∈ [j, j + 1]、z ∈ [k, k + 1]（方块拼搭 都传 原点 = 格原点）。人走的那排是 j = 0（站在 y = 0.5），
 //   箱子、树、告示牌、花草在 j = 1（人身后），后墙 j = 2。屋外 j = 0 不放东西：花草的正面片在格中心，放在人那排会和人穿插。
 // 门是剖面演绎：游戏里门是墙里 3 像素厚的一片，侧着看只剩一条，关着反倒像个洞。这里关着画成正对镜头的门板堵住门洞；
 //   开着门板绕门外那条边甩出去，正对镜头立在门洞左边那格，门洞空出来。游戏里门是一下开合的，不做中间的转动（斜着转贴图像素会被压窄）。
 // 画法：放进三渲二画布（平涂，不吃灯；场/2-门口/门口.tsx 的 门口画布）。布局、亮度档都是 Agent 暂定的；机位、天在 场/2-门口/参数.ts。
-import React, { useEffect, useMemo } from 'react';
-import * as THREE from 'three';
-import { sRGB转线性, 方块拼搭, type 方块 } from '@engine/model/方块拼搭.tsx';
+import type React from 'react';
+import { 方块拼搭, type 方块 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { 告示牌, 告示牌尺寸 } from './告示牌.tsx';
@@ -157,74 +157,6 @@ const 树方块 = (阶段: number) => {
   return b;
 };
 
-// ---------- 焦痕 ----------
-// 补墙四周的旧橡木板上，离白桦木板越近越黑；一个贴图像素一个格子，按位置哈希决定涂不涂（不用随机数，各帧一样）
-const 焦痕范围 = { i0: 1, i1: 5, k0: 0, k1: 2, 宽: 8 } as const;
-const 哈希 = (x: number, y: number) => {
-  let h = (x * 374761393 + y * 668265263) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
-const 焦痕贴图 = (() => {
-  const { i0, i1, k0, k1, 宽 } = 焦痕范围;
-  const w = (i1 - i0 + 1) * 16, h = (k1 - k0 + 1) * 16;
-  const 格 = (px: number, py: number) => [i0 + Math.floor(px / 16), k1 - Math.floor(py / 16)] as const;
-  const 是补 = (px: number, py: number) => {
-    const [i, k] = 格(px, py);
-    return 补墙.some(([a, b]) => a === i && b === k);
-  };
-  const 是窗 = (px: number, py: number) => {
-    const [i, k] = 格(px, py);
-    return i === 窗位[0] && k === 窗位[1];
-  };
-  const data = new Uint8Array(w * h * 4);
-  for (let py = 0; py < h; py++)
-    for (let px = 0; px < w; px++) {
-      if (是补(px, py) || 是窗(px, py)) continue;
-      let d = Infinity;
-      for (let qy = Math.max(0, py - 宽); qy <= Math.min(h - 1, py + 宽); qy++)
-        for (let qx = Math.max(0, px - 宽); qx <= Math.min(w - 1, px + 宽); qx++) if (是补(qx, qy)) d = Math.min(d, Math.max(Math.abs(qx - px), Math.abs(qy - py)));
-      if (d > 宽) continue;
-      const 浓 = (1 - (d - 1) / 宽) ** 1.4;
-      if (哈希(px, py) > 浓 * 0.9) continue;
-      const 深 = 哈希(px + 101, py + 37) < 浓 * 0.6;
-      data.set(深 ? [34, 24, 18, 235] : [62, 44, 30, 190], (py * w + px) * 4);
-    }
-  const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.magFilter = t.minFilter = THREE.NearestFilter;
-  t.flipY = false;
-  t.needsUpdate = true;
-  return { t, w: w / 16, h: h / 16 };
-})();
-
-const 焦痕: React.FC = () => {
-  const { i0, k0 } = 焦痕范围;
-  const mat = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({ map: 焦痕贴图.t, transparent: true, depthWrite: false, roughness: 1, metalness: 0 });
-    m.color.setScalar(sRGB转线性(门口亮度.后墙));
-    return m;
-  }, []);
-  // 贴图第 0 行在上（flipY 关着，v = 0 是第一行），所以 v 朝下
-  const geom = useMemo(() => {
-    const g = new THREE.PlaneGeometry(焦痕贴图.w, 焦痕贴图.h);
-    const uv = g.getAttribute('uv') as THREE.BufferAttribute;
-    for (let q = 0; q < uv.count; q++) uv.setY(q, 1 - uv.getY(q));
-    return g;
-  }, []);
-  useEffect(
-    () => () => {
-      mat.dispose();
-      geom.dispose();
-    },
-    [mat, geom],
-  );
-  const cx = i0 - 0.5 + 焦痕贴图.w / 2;
-  const cz = k0 + 焦痕贴图.h / 2;
-  // 贴在后墙南面前面一点点
-  return <mesh geometry={geom} material={mat} position={[cx, 小木屋.后墙 - 1 / 512, cz]} rotation={[Math.PI / 2, 0, 0]} renderOrder={2} />;
-};
-
 // ---------- 组件 ----------
 export type 门口小木屋属性 = {
   /** 门开着没有（默认关） */
@@ -247,7 +179,6 @@ export const 门口小木屋: React.FC<门口小木屋属性> = ({ 门开 = fals
   return (
     <group>
       <方块拼搭 方块们={屋} 原点={格原点} 群系={群系} 正面花草 />
-      <焦痕 />
       <group position={[门开 ? 门口.门.开着的门板.x0 + 0.5 : 0, 0, 0]} scale={[门开 ? 1 : -1, 1, 1]}>
         <方块拼搭 方块们={门方块} 原点={格原点} />
       </group>

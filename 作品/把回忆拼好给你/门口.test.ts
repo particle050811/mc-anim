@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { 分屏门在, 半屏取景, 取景, 地面线离底, 整屏取景, 树顶屏, 每格, 像素N, 默认天弧 } from './场/2-门口/参数.ts';
+import { 分屏门在, 半屏取景, 取景, 地面线离底, 整屏取景, 整屏镜头, 整屏镜头N, 树顶屏, 正交顶面, 每格, 像素N, 默认天弧 } from './场/2-门口/参数.ts';
 import { 天亮, 天体位置, 天球角, 月相 } from './地点/天体.ts';
 import { 侧机位, 侧投影 } from './地点/侧剖面.tsx';
 import { 樱花树方块, 樱花树阶段 } from './地点/樱花树.ts';
@@ -89,6 +89,28 @@ describe('门口取景：贴图像素落在整像素上', () => {
     const h = 半屏取景(1280, 分屏门在);
     expect(-9.5).toBeGreaterThanOrEqual(h.中心[0] - 640 / 每格);
     expect(门口箱子右).toBeLessThanOrEqual(h.中心[0] + 640 / 每格 - 0.5);
+  });
+});
+
+describe('门这个机位的整屏镜头（第 8、9、10 句，第 15 句开头）', () => {
+  it('N = 10；门在画面正中，地面线离底 1.5 格、落在偶数成片像素上；描边一个贴图像素宽', () => {
+    expect(整屏镜头N).toBe(10);
+    const 取 = 整屏镜头.取景;
+    expect(取.每格).toBe(16 * 整屏镜头N);
+    const 投 = 侧投影(取, 1280, 720);
+    expect(投(0, 0).x).toBe(640);
+    const 离底 = (720 - 投(0, 0).y) * 2;
+    expect(离底).toBe(240);
+    expect(离底 % 2).toBe(0);
+    expect(整屏镜头.描边宽).toBe(整屏镜头N);
+    expect(像素N).toBe(6); // 分屏右半屏、核对-门口 还是 6
+  });
+
+  it('屋脊（斜投影里往里 3 格的屋顶）还在画里，屋子西边的屋檐也在', () => {
+    const 取 = 整屏镜头.取景;
+    const 顶 = 取.中心[1] + 720 / 取.每格;
+    expect(6.5 + (3 * 正交顶面) / 整屏镜头N).toBeLessThan(顶);
+    expect(-1.5).toBeGreaterThan(取.中心[0] - 1280 / 取.每格);
   });
 });
 
