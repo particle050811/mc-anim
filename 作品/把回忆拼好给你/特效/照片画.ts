@@ -1,12 +1,12 @@
 // 照片墙上夏天那四张照片：第 3、4、5、7 句渲出来的真帧（主会话 10-24 UTC 10:15「照片里的画面不再手画」），挂在门口后墙的荧光框里做成地图画（特效/地图画.ts）。
-// 资产是那几句核对段的干净帧裁成的正方形（256×256），怎么裁、怎么重出见 assets/tools/照片底片.py：那几句改了画面就重跑它。
+// 资产是 核对-照片底片 那几帧干净帧裁成的正方形（256×256），怎么裁、怎么出见 assets/tools/照片底片.py：那几句改了画面就重跑它、登新 id（store 只增不改），改这里的 import。
 // 测试引不进资产（打包时才有 asset:），引这个文件的测试要 vi.mock 这四个资产（见 收集快乐.test.ts）。
 import { png } from '@engine/model/贴图.ts';
 import type { 照片图 } from './照片图.ts';
-import 递蛋糕uri from 'asset:贴图/照片/第3句递蛋糕';
-import 日落划船uri from 'asset:贴图/照片/第4句日落划船';
-import 扑龙蛋uri from 'asset:贴图/照片/第5句扑龙蛋';
-import 光柱破云uri from 'asset:贴图/照片/第7句光柱破云';
+import 递蛋糕uri from 'asset:贴图/照片/第3句递蛋糕-二版';
+import 日落划船uri from 'asset:贴图/照片/第4句日落划船-二版';
+import 扑龙蛋uri from 'asset:贴图/照片/第5句扑龙蛋-二版';
+import 光柱破云uri from 'asset:贴图/照片/第7句光柱破云-二版';
 
 /** 按前面出场的先后：第 8 句开头墙上已经挂着前三张，她把最新那张（光柱破云）挂进最后一只空框（主会话 10-24 按用户「需要取舍」定）。
  *  照片墙格.ts 的 照片墙格位.夏天 按这个顺序排 */

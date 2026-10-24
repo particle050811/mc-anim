@@ -33,10 +33,10 @@ const 逃速原版 = vi.hoisted(() => ((0.3 ** 2 * 0.98) / (1 - 0.6 * 0.91)) * 2
 vi.mock('@库/角色/史蒂夫.tsx', () => ({ vanillaWalk: () => ({ limbSwing: 0, stride: 0 }) }));
 vi.mock('@库/生物/苦力怕.tsx', () => ({ CREEPER: { speed: { flee: 逃速原版 } } }));
 vi.mock('./地点/门口小木屋.tsx', () => ({ 门口: { 站排y: 0.5 } }));
-vi.mock('asset:贴图/照片/第3句递蛋糕', () => ({ default: 一像素 }));
-vi.mock('asset:贴图/照片/第4句日落划船', () => ({ default: 一像素 }));
-vi.mock('asset:贴图/照片/第5句扑龙蛋', () => ({ default: 一像素 }));
-vi.mock('asset:贴图/照片/第7句光柱破云', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第3句递蛋糕-二版', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第4句日落划船-二版', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第5句扑龙蛋-二版', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第7句光柱破云-二版', () => ({ default: 一像素 }));
 
 const 事 = 段内正片事件帧('2-收集快乐');
 const 半宽格 = 1280 / 第8句镜头.取景.每格;
