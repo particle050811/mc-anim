@@ -2,9 +2,10 @@
 // - 尾笑（52.94）：2-重逢 推脸那个机位不动（重逢.tsx 的 重逢画面），她换成笑（同第 8 句的得意：闭眼、歪头），气泡换成「(✿◠‿◠)」；
 // - 靠肩（53.80）：切回侧面——正交侧剖面（同门这个机位那套画法），朝东看主厅东墙那扇窗，你和她面朝镜头并排站，她歪头靠在你肩上；
 // - 合照咔哒（54.65）起整屏白，白到段尾（片尾从白里接 PCL）。
-// 截下来的新合照就是咔哒那一帧的靠肩（合照照片：藏起聊天、不带歌词、不闪白），片尾拼回的 PCL 新图标从它取；合照拍立得 是它套上相纸白边的样子。
+// 截下来的新合照就是咔哒那一帧的靠肩（合照照片：藏起聊天、不带歌词、不闪白），片尾拼回的 PCL 新图标从它取；合照拍立得 是它套成第 11 句那样的拍立得（片里没露）。
 // 叠层（聊天栏、歌词）由段传进来，放在整片后期里面；白盖在最上面。参数见 合照参数.ts，哪一帧是哪一镜、靠肩的机位见 合照动作.ts。
 import type React from 'react';
+import { useCurrentFrame } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
@@ -22,13 +23,13 @@ import { fps, 画幅, 正片事件 } from '../../分镜.ts';
 import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
-import { 相纸 } from '../../特效/照片画.ts';
+import { 拍立得 } from '../../特效/拍立得.tsx';
 import { 她看你, 重逢发光区, 隐世之境重逢布景 } from './布景.tsx';
 import { 她 } from './参数.ts';
 import { 对视门光, 门光色调, 背景褪色参数 } from './对视参数.ts';
 import { 拿着花的她, 空手拿 } from './对视.tsx';
 import { 合照镜头, 靠肩机位 } from './合照动作.ts';
-import { 合照站位, 合照朝向, 合照镜, 史蒂夫倍数, 你的头, 笑, 靠肩, 靠肩气泡, 闪白色 } from './合照参数.ts';
+import { 合照站位, 合照朝向, 合照镜, 史蒂夫倍数, 你的头, 第11句拍立得样式, 笑, 靠肩, 靠肩气泡, 闪白色 } from './合照参数.ts';
 import { 重逢画面, type 换她 } from './重逢.tsx';
 import { 不褪色, 背景褪色 } from './褪色.tsx';
 
@@ -148,31 +149,19 @@ export const 合照照片: React.FC<{ 后期?: boolean; 气泡?: boolean }> = ({
   <靠肩画面 帧={事['照片-合照'].帧} 后期={后期} 气泡={气泡} />
 );
 
-/** 新合照套上相纸白边（三边 边、下边 下边，按画面宽的比例，相纸色同 特效/照片画.ts 的 相纸，第 11 句、第 8 句的照片同一种白边），
- *  整张卡片缩到 缩放 倍、居中放在一个整页上，底色 底。核对、片尾要拍立得样子时用 */
-export const 合照拍立得: React.FC<{ 缩放?: number; 底?: string; 后期?: boolean }> = ({ 缩放 = 0.62, 底 = '#e6dfd2', 后期 }) => {
-  const W = 画幅.宽, H = 画幅.高;
-  const 边 = (相纸.边 / 64) * W;
-  const 下边 = (相纸.下边 / 64) * W;
+/** 拍立得缩小、转斜、字淡入都走完的那一帧（相对定格帧） */
+const 拍立得停稳帧 = Math.max(第11句拍立得样式.闪白帧, 第11句拍立得样式.缩小帧, 第11句拍立得样式.字延迟帧 + 第11句拍立得样式.字淡入帧);
+
+/** 新合照套成第 11 句那样的拍立得：特效/拍立得.tsx 停稳以后的样子（斜放、三边窄白边下边宽、投影、纸纹底），样式 = 合照参数 的 第11句拍立得样式，整页。
+ *  片里没露（见 合照参数 的 闪白色）；核对、以后要露这张照片的地方用。字：下白边那一行，不给不写。
+ *  定格帧取「这一帧往前 停稳帧」，拍立得 每一帧都画成停稳的样子；坑：不能用 remotion 的 Freeze 把它冻在停稳帧上，
+ *  里面的 ThreeCanvas 在 renderStill 单出这一帧时一直等不到放行（anim still 超时），renderMedia 整段渲却没事 */
+export const 合照拍立得: React.FC<{ 后期?: boolean; 字?: string }> = ({ 后期 = true, 字 }) => {
+  const f = useCurrentFrame();
   return (
-    <div style={{ position: 'absolute', inset: 0, background: 底, overflow: 'hidden' }}>
-      <div
-        style={{
-          position: 'absolute',
-          left: (W - (W + 2 * 边) * 缩放) / 2,
-          top: (H - (H + 边 + 下边) * 缩放) / 2,
-          width: W + 2 * 边,
-          height: H + 边 + 下边,
-          transform: `scale(${缩放})`,
-          transformOrigin: '0 0',
-          background: 相纸.色,
-        }}
-      >
-        <div style={{ position: 'absolute', left: 边, top: 边, width: W, height: H, overflow: 'hidden' }}>
-          <合照照片 后期={后期} />
-        </div>
-      </div>
-    </div>
+    <拍立得 定格帧={f - 拍立得停稳帧} 样式={第11句拍立得样式} 字={字}>
+      {() => <合照照片 后期={后期} />}
+    </拍立得>
   );
 };
 
