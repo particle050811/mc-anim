@@ -1,14 +1,12 @@
-// 2-抢龙蛋 每一帧谁在哪、什么样：她、她头顶的气泡、你、龙蛋、龙的死亡进度、经验球、龙蛋瞬移的传送粒子、机位、转场进度。
+// 2-抢龙蛋 每一帧谁在哪、什么样：她、你、龙蛋、龙蛋瞬移的传送粒子、机位、开头从第 4 句的浪里出来。
 // 按段内帧算，时刻取 分镜.ts 的正片事件，位置和分寸取 参数.ts、姿势.ts。纯模块（测试能引，不 import 组件）。
-// 游戏钟：段首是第 0 刻，每帧 20/24 刻；粒子、经验球、挥手都按刻走，同游戏。
+// 游戏钟：段首是第 0 刻，每帧 20/24 刻；粒子、挥手都按刻走，同游戏。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import type { 魔法酒狐全部表情, 魔法酒狐新姿势 } from '@库/角色/魔法酒狐新动作.ts';
 import type { ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { fps, 段内正片事件帧, 段窗口 } from '../../分镜.ts';
+import { fps, 段内正片事件帧, 段窗口, 正片事件 } from '../../分镜.ts';
 import { 网格 } from '../../配乐/网格.ts';
-import { java随机 } from './光束.ts';
-import { 龙掉经验, 模拟经验球, type 球态 } from './经验球.ts';
 import * as 参 from './参数.ts';
 import * as 姿 from './姿势.ts';
 
@@ -42,42 +40,21 @@ const 格心 = (c: readonly number[], 高 = 姿.蛋心高): V3 => [c[0]! + 0.5, 
 const 前 = (yaw: number): [number, number] => [-Math.sin((yaw * Math.PI) / 180), Math.cos((yaw * Math.PI) / 180)];
 
 // ---------- 你 ----------
-const 蹲切: readonly (readonly [number, number])[] = [
-  [事.蹲一, 1],
-  [事.起一, 0],
-  [事.蹲二, 1],
-  [事.起二, 0],
-  [事.蹲三, 1],
-  [事.再点龙蛋, 0],
-];
-/** 潜行（原版按下潜行键那一刻模型就切过去，0 / 1） */
-export const 你蹲 = (f: number) => {
-  let c = 0;
-  for (const [at, v] of 蹲切) if (f >= at) c = v;
-  return c;
-};
 const 挥帧 = (参.挥手刻 / 20) * fps;
 const 挥提前帧 = (参.挥手提前刻 / 20) * fps;
 /** 挥手进度（原版 attackTime 0～1，6 刻挥完）：比蛋瞬移早 挥手提前刻 起挥；没在挥 = null */
 export const 你挥 = (f: number): number | null => {
-  for (const e of [事.点龙蛋, 事.再点龙蛋]) {
-    const a = (f - e + 挥提前帧) / 挥帧;
-    if (a >= 0 && a < 1) return a;
-  }
-  return null;
+  const a = (f - 事.点龙蛋 + 挥提前帧) / 挥帧;
+  return a >= 0 && a < 1 ? a : null;
 };
 const 提前帧 = 参.看蛋提前秒 * fps;
-export const 你眼 = (f: number): V3 => [参.你.位[0], 参.你.位[1], 姿.你眼高(你蹲(f) > 0.5)];
+export const 你眼 = (): V3 => [参.你.位[0], 参.你.位[1], 姿.你眼高];
 
-export type 你态 = { loc: V3; yaw: number; 蹲: number; 看: V3; 挥: number | null; 秒: number };
+export type 你态 = { loc: V3; yaw: number; 看: V3; 挥: number | null; 秒: number };
+/** 你一直站着：看她，点蛋前转头看蛋，蛋没了、她摔下去以后再看回她 */
 export const 你态 = (f: number): 你态 => {
-  let 看: V3;
-  if (f < 事.点龙蛋 - 提前帧) 看 = 她头位(f);
-  else if (f < 事.扑空 + 2) 看 = 格心(参.蛋位们.起);
-  else if (f < 事.再点龙蛋 - 提前帧) 看 = 她头位(f);
-  else if (f < 事.再点龙蛋 + 3) 看 = 格心(参.蛋位们.一);
-  else 看 = 格心(参.蛋位们.二, 1);
-  return { loc: 参.你.位, yaw: 参.你.朝向, 蹲: 你蹲(f), 看, 挥: 你挥(f), 秒: 歌秒(f) };
+  const 看 = f >= 事.点龙蛋 - 提前帧 && f < 事.扑空 + 2 ? 格心(参.蛋位们.起) : 她头位(f);
+  return { loc: 参.你.位, yaw: 参.你.朝向, 看, 挥: 你挥(f), 秒: 歌秒(f) };
 };
 
 // ---------- 她 ----------
@@ -199,7 +176,7 @@ export const 她态 = (f: number): 她态 => {
     // 扑在蛋上抱住：落上去那几帧胸口弹起一点再贴下去；抬头看你（得意）
     const k = clamp01((f - 事.落蛋) / 参.落地弹帧);
     const 倾 = -90 + Math.sin(Math.PI * k) * 姿.落地弹;
-    const 骨骼 = { ...姿.蛋上, Head: 抬头(倾, 腰(姿.蛋上), 头, 你眼(f)) };
+    const 骨骼 = { ...姿.蛋上, Head: 抬头(倾, 腰(姿.蛋上), 头, 你眼()) };
     return { pose: 站姿(参.她.蛋上位, 倾, 参.她.趴朝向), 姿势: '静站', 表情: '大笑', 骨骼, 眨眼: 0, 秒 };
   }
   if (f < 事.坐起) {
@@ -210,23 +187,24 @@ export const 她态 = (f: number): 她态 => {
     const 骨骼 = { ...身, Head: 抬头(-90, 腰(身), 头, 格心(参.蛋位们.起, 0)) };
     return { pose: 站姿([趴位[0], 趴位[1], z], -90, 参.她.趴朝向), 姿势: '静站', 表情: '惊讶', 骨骼, 眨眼: 0, 秒 };
   }
-  // 坐起来（TLM 的待命坐）：一下切过去，身子半朝镜头；先抬头冲你噘嘴，她看蛋 起扭头盯着蛋，再点龙蛋 起猛回头看飞到镜头背后的蛋
-  const pose = 站姿(参.她.坐位, 0, 参.她.坐朝向);
-  if (f < 事.她看蛋) return { pose, 姿势: '坐', 表情: '难过', 看: 参.她.噘嘴看, 骨骼: {}, 眨眼: 'auto', 秒 };
-  if (f < 事.再点龙蛋 + 1) return { pose, 姿势: '坐', 表情: '认出你', 看向: 格心(参.蛋位们.一), 骨骼: {}, 眨眼: 0, 秒 };
-  return { pose, 姿势: '坐', 表情: '惊讶', 看: 参.她.回头看, 骨骼: {}, 眨眼: 0, 秒 };
-};
-
-/** 她头顶的女仆气泡：坐起来那一刻冒出来，之后一直在（原版气泡 15 秒才消失）。锚 = 气泡底边的中点（场景坐标），在她脚底正上方 气泡锚高 处 */
-export type 气泡态 = { 字: string; 弹出: number; 锚: V3 };
-export const 气泡态 = (f: number): 气泡态 | null => {
-  if (f < 事.坐起) return null;
-  return { 字: 参.气泡字, 弹出: clamp01((f - 事.坐起 + 1) / 参.气泡弹出帧), 锚: [参.她.坐位[0], 参.她.坐位[1], 参.气泡锚高] };
+  // 坐起来（TLM 的待命坐）：一下切过去，身子半朝镜头，抬头冲你噘嘴，一直到段尾
+  return { pose: 站姿(参.她.坐位, 0, 参.她.坐朝向), 姿势: '坐', 表情: '难过', 看: 参.她.噘嘴看, 骨骼: {}, 眨眼: 'auto', 秒 };
 };
 
 // ---------- 龙蛋 ----------
-/** 龙蛋在哪一格：点一下之前在 起，点完在 一，再点在 二（镜头背后） */
-export const 蛋格 = (f: number): readonly [number, number, number] => (f < 事.点龙蛋 ? 参.蛋位们.起 : f < 事.再点龙蛋 ? 参.蛋位们.一 : 参.蛋位们.二);
+/** 龙蛋在哪一格：点一下之前在 起，点完在 一 */
+export const 蛋格 = (f: number): readonly [number, number, number] => (f < 事.点龙蛋 ? 参.蛋位们.起 : 参.蛋位们.一);
+
+/** Java Random（LegacyRandomSource）的 nextFloat 序列 */
+export const java随机 = (种子: number) => {
+  const 乘 = 0x5deece66dn;
+  const 模 = (1n << 48n) - 1n;
+  let s = (BigInt(种子) ^ 乘) & 模;
+  return () => {
+    s = (s * 乘 + 0xbn) & 模;
+    return Number(s >> 24n) / 16777216;
+  };
+};
 
 /**
  * 龙蛋瞬移的 128 颗传送粒子（DragonEggBlock.teleport 客户端那段，javap 核过）：沿新旧两格的连线随机撒，
@@ -245,16 +223,7 @@ const 瞬移粒子 = (帧: number, 旧: readonly number[], 新: readonly number[
     return { 种: 'portal' as const, 刻: 刻(帧), p: [x, -z, y] as V3, v: [fx, -fz, fy] as V3, 种子: 种子 * 1000 + n };
   });
 };
-export const 传送粒子们: ParticleSpawn[] = [
-  ...瞬移粒子(事.点龙蛋, 参.蛋位们.起, 参.蛋位们.一, 5),
-  ...瞬移粒子(事.再点龙蛋, 参.蛋位们.一, 参.蛋位们.二, 6),
-];
-
-// ---------- 龙、经验球 ----------
-/** 这一帧龙死了多少刻（连续） */
-export const 死刻 = (f: number) => 参.段首龙死刻 + 刻(f);
-/** 死亡第 t 刻龙在哪（每刻上飘 0.1） */
-export const 龙位 = (t: number): V3 => [参.段首龙位[0], 参.段首龙位[1], 参.段首龙位[2] + (t - 参.段首龙死刻) * 参.龙每刻上飘];
+export const 传送粒子们: ParticleSpawn[] = 瞬移粒子(事.点龙蛋, 参.蛋位们.起, 参.蛋位们.一, 5);
 
 /** 出口传送门：传送门方块的格（原点格四周 5×5 去掉四角和中间柱子，EndPodiumFeature 的 closerThan 2.5） */
 export const 门格们: readonly (readonly [number, number])[] = (() => {
@@ -262,37 +231,14 @@ export const 门格们: readonly (readonly [number, number])[] = (() => {
   for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) if (i * i + j * j < 6.25 && (i || j)) r.push([i, j]);
   return r;
 })();
-const 是门 = (x: number, y: number) => 门格们.some(([i, j]) => i === Math.floor(x) && j === Math.floor(y));
 
-const 球起刻 = 参.段首龙死刻;
-const 球止刻 = 参.段首龙死刻 + Math.ceil(刻(帧数)) + 1;
-const 球表 = 模拟经验球(
-  龙掉经验(参.龙经验, 龙位),
-  球起刻,
-  球止刻,
-  { 位: () => 参.你.位, 蹲: (t) => 你蹲(((t - 参.段首龙死刻) * fps) / 20) > 0.5 },
-  { 高: () => 0, 门: (x, y) => (是门(x, y) ? { 面: -0.25 } : null) },
-  3,
-);
-/** 这一帧看得见的经验球（在相邻两刻之间插值，同游戏渲染）；龄 带小数，颜色闪烁按它算 */
-export const 经验球们 = (f: number): 球态[] => {
-  const t = 刻(f);
-  const k = Math.floor(t), s = t - k;
-  const out: 球态[] = [];
-  for (const 行 of 球表) {
-    const a = 行[k], b = 行[k + 1];
-    if (!a) continue;
-    out.push(b ? { ...a, 位: 插3(a.位, b.位, s), 龄: a.龄 + s } : a);
-  }
-  return out;
-};
-
-// ---------- 机位、转场 ----------
-/** 透视机位：从段首推到 再点龙蛋（缓起缓停），之后停住（粒子盖画面） */
+// ---------- 机位、开头的浪 ----------
+/** 透视机位：从段首一路推到段尾（缓起缓停） */
 export const 机位 = (f: number) => {
-  const k = clamp01(f / 事.再点龙蛋);
+  const k = clamp01(f / (帧数 - 1));
   const t = k * k * (3 - 2 * k);
   return { 种: '透视' as const, 眼: 插3(参.机位.眼起, 参.机位.眼止, t), 看: 插3(参.机位.看起, 参.机位.看止, t), 视角: 参.机位.视角 };
 };
-/** 粒子带走画面的进度：再点龙蛋那一帧 0，段尾最后一帧 1（盖满） */
-export const 转场进度 = (f: number) => clamp01((f - 事.再点龙蛋) / (帧数 - 1 - 事.再点龙蛋));
+/** 第 4 句末盖满画面的那道浪（场/2-海上/浪.tsx 的 进）接着往上退：段首 1（盖满），照第 4 句涌上来的速度（浪起 到第 5 句起那一段走完 0 → 1）退到 2，露出末地 */
+const 浪一程帧 = 窗.起帧 - 正片事件.浪起.帧;
+export const 浪进 = (f: number) => Math.min(2, 1 + f / 浪一程帧);
