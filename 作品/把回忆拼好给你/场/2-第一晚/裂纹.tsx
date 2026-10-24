@@ -1,7 +1,7 @@
 // 挖方块的裂纹：原版 destroy_stage_0～9 叠在被挖的方块上（ModelBlockRenderer 按方块模型画一遍，RenderType.crumbling）。
 // 混合照原版 crumbling：DST_COLOR × src + SRC_COLOR × dst = 2·src·dst（灰 0.5 不变、深的压暗、浅的提亮），alpha < 0.1 丢掉、不写深度。
 // 画布的 alpha 不动（三维画布背景透明、后面垫着天）。描边那遍里它是不写深度的半透明，不画（engine/三渲二/描边.tsx）。
-// 画在剖面看得见的面上：比方块大一丝的盒子，朝镜头的南面和斜投影里露出的顶面。
+// 画在剖面看得见的面上：比方块大一丝的盒子，朝镜头的南面和露出来的顶面。
 import React from 'react';
 import * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
@@ -41,7 +41,7 @@ const 材质 = (级: number) => {
   return m;
 };
 
-/** 级：0～9（原版 destroyProgress × 10 取整）；格：被挖方块的中心（场景坐标） */
+/** 级：0～9（原版 destroyProgress × 10 取整）；格：被挖方块的中心（剖面坐标） */
 export const 裂纹: React.FC<{ 格: readonly [number, number, number]; 级: number }> = ({ 格, 级 }) => {
   盒 ??= new THREE.BoxGeometry(1.002, 1.002, 1.002);
   const 级整 = Math.max(0, Math.min(9, Math.floor(级)));
