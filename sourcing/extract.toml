@@ -157,6 +157,42 @@
 ["取材"."产物"]
 "贴图/物品/月铃兰" = "src/模型/物品/月铃兰.png"
 
+# 寻风之铃：万法皆通的铃（第 14 句她挂到告示牌上，第 15 句你摇响它进归隐之地）。物品模型 item/wind_seeking_bell.json 是 item/generated、layer0 用 item/wind_seeking_bell；
+# 声音事件 touhou_little_maid_spell:wind_seeking_bell（sounds.json：players 类、音量 1、音高 1，字幕「寻风之铃响起」）。只有 把回忆拼好给你 用：anim --作品 把回忆拼好给你 extract 寻风之铃
+[["取材"]]
+"名称" = "寻风之铃"
+"作品" = "把回忆拼好给你"
+"需要" = ["maidspell"]
+"公开版" = "提取"
+"来源" = "车万女仆附属 万法皆通 Touhou Little Maid: Spell 1.9.3（yimeng261）"
+"许可" = "MIT"
+"步骤" = [
+  ["python", "-m", "zipfile", "-e", "{jar:maidspell}", "外层"],
+  ["导出模型", "外层/META-INF/maidspell/maidspell-mod.jar", "src/模型/物品/寻风之铃.png", "寻风之铃=assets/touhou_little_maid_spell/textures/item/wind_seeking_bell.png"],
+  ["python", "{脚本}/导出音效.py", "src/音效/万法皆通", "--jar", "外层/META-INF/maidspell/maidspell-mod.jar", "touhou_little_maid_spell:wind_seeking_bell"],
+]
+["取材"."产物"]
+"贴图/物品/寻风之铃" = "src/模型/物品/寻风之铃.png"
+"音效/万法皆通/wind_seeking_bell" = "src/音效/万法皆通/touhou_little_maid_spell.wind_seeking_bell.ogg"
+
+# 第 15 句的原版声音和粒子：隐世之境西门（深色橡木门）推开的声音 block.wooden_door.open（1.20.1 深色橡木门的 BlockSetType 用的就是它）；
+# 樱花风的花瓣照原版 cherry_leaves 粒子的 12 张贴图（particles/cherry_leaves.json，每张 3×3）。只有 把回忆拼好给你 用：anim --作品 把回忆拼好给你 extract 第15句原版
+[["取材"]]
+"名称" = "第15句原版"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效", "block.wooden_door.open"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/粒子/樱花", "cherry_0=assets/minecraft/textures/particle/cherry_0.png", "cherry_1=assets/minecraft/textures/particle/cherry_1.png", "cherry_2=assets/minecraft/textures/particle/cherry_2.png", "cherry_3=assets/minecraft/textures/particle/cherry_3.png", "cherry_4=assets/minecraft/textures/particle/cherry_4.png", "cherry_5=assets/minecraft/textures/particle/cherry_5.png", "cherry_6=assets/minecraft/textures/particle/cherry_6.png", "cherry_7=assets/minecraft/textures/particle/cherry_7.png", "cherry_8=assets/minecraft/textures/particle/cherry_8.png", "cherry_9=assets/minecraft/textures/particle/cherry_9.png", "cherry_10=assets/minecraft/textures/particle/cherry_10.png", "cherry_11=assets/minecraft/textures/particle/cherry_11.png"],
+]
+["取材"."产物"]
+"音效/block.wooden_door.open.1" = "src/音效/block.wooden_door.open.1.ogg"
+"音效/block.wooden_door.open.2" = "src/音效/block.wooden_door.open.2.ogg"
+"贴图/粒子/樱花/*" = "src/模型/粒子/樱花/*.png"
+
 [["取材"]]
 "名称" = "李樱模型"
 "需要" = []
@@ -965,6 +1001,7 @@
 # 原版 1.20.1 OverworldBiomes.cherryGrove 的草和树叶都是 #B6DB61。片场存档那块地方染的三种颜色（草方块顶、花簇的茎、藤蔓）从网格顶点色里量出来。只给《把回忆拼好给你》用，登记在作品侧。
 [["取材"]]
 "名称" = "隐世之境一楼网格-归隐之地"
+"作品" = "把回忆拼好给你"
 "需要" = []
 "公开版" = "不提取"  # 同 隐世之境一楼网格：网格走 Release
 "步骤" = [
@@ -978,6 +1015,7 @@
 # 归隐之地的樱花林（隐世之境窗外）：原版樱花树的木头、树叶，地上的草方块顶（灰的，按 cherry_grove 染 #B6DB61）和粉红色花簇。只给《把回忆拼好给你》用，登记在作品侧。
 [["取材"]]
 "名称" = "樱花林贴图"
+"作品" = "把回忆拼好给你"
 "需要" = ["client-1.20.1"]
 "公开版" = "提取"
 "来源" = "原版 Minecraft 1.20.1"
