@@ -15,6 +15,9 @@ import { 四周方块, 地面高, 树们 } from './场/2-雷雨/地形.ts';
 import { 云格们 } from './场/2-雷雨/云.ts';
 import { 近雷, 雨声起帧, 雨量, 雷 } from './场/2-雷雨/声音.ts';
 import { 云色, 天色 } from './场/2-雷雨/天气.ts';
+import { 句们 } from './配乐/网格.ts';
+import { 拨开缝, 歌词排版表, 歌词框 } from './界面/歌词排版表.ts';
+import { 符文歌词默认 } from './界面/符文排版.ts';
 import {
   云剩,
   云飘,
@@ -53,6 +56,7 @@ const 屏 = (f: number) => {
     return { 上: (1 - v.y) / 2, 左: (1 + v.x) / 2 };
   };
 };
+const 句词 = (序: number) => 句们.find((x) => x.序 === 序)!.词;
 /** 歌词那条的下沿（占画面高的比例） */
 const 歌词比 = 参.歌词下沿 / 1440;
 
@@ -234,16 +238,26 @@ describe('镜头：一个镜头不切', () => {
     }
   });
 
-  it('第 6 句：两个人的头、屋檐都在歌词那条下面、画面里', () => {
+  it('第 6 句：两个人的头、屋檐都在顶上那条下面、画面里；第 6 句放在右下（歌词排版表），两个人的头和脚都在那块字外面（左边）', () => {
+    const 框 = 歌词框(句词(6), 歌词排版表[6]!);
     for (const f of 全部帧.filter((x) => x < 帧('她站起'))) {
       const p = 屏(f);
-      for (const q of [[参.站位.她[0], 参.站位.她[1], 1.3], [参.站位.你[0], 参.站位.你[1], 1.3]]) {
-        const s = p(q);
-        expect(s.上, `帧 ${f}`).toBeGreaterThan(歌词比);
-        expect(s.上, `帧 ${f}`).toBeLessThan(1);
-        expect(s.左, `帧 ${f}`).toBeGreaterThan(0);
-        expect(s.左, `帧 ${f}`).toBeLessThan(1);
-      }
+      for (const [x, y] of [参.站位.她, 参.站位.你])
+        for (const z of [0, 1.3]) {
+          const s = p([x, y, z]);
+          if (z > 0) expect(s.上, `帧 ${f}`).toBeGreaterThan(歌词比);
+          expect(s.上, `帧 ${f}`).toBeLessThan(1);
+          expect(s.左, `帧 ${f}`).toBeGreaterThan(0);
+          expect(s.左, `帧 ${f}`).toBeLessThan(框.左 - 0.03);
+        }
+    }
+  });
+
+  it('第 7 句被光柱劈成两半（歌词排版表 拨开缝）：光柱起以后，光柱那一竖在两半中间的缝里、碰不到描边', () => {
+    const 半缝 = ((拨开缝 / 2 - 1) * 符文歌词默认.字点) / 2560;
+    for (const f of 全部帧.filter((x) => x >= 帧('光柱起'))) {
+      const p = 屏(f);
+      for (const z of [0, 参.云底高]) expect(Math.abs(p([洞心()[0], 洞心()[1], z]).左 - 0.5), `帧 ${f}`).toBeLessThan(半缝 - 0.004);
     }
   });
 

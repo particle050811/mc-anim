@@ -13,7 +13,7 @@ import { 正片事件 } from '../分镜.ts';
 import { 网格 } from '../配乐/网格.ts';
 import { 光明, 光明档数, 刹那, 刹那块, 放下块, 烟花火花 } from './歌词字效.ts';
 import { 分屏版式 } from '../场/2-门口/分屏参数.ts';
-import { 关键词们, 分屏线, 分屏让, 歌词排版表 } from './歌词排版表.ts';
+import { 关键词们, 分屏线, 分屏让, 拨开缝, 歌词排版表, 歌词框 } from './歌词排版表.ts';
 import { 拼音, 正片歌词行, 进场 } from './符文歌词数据.ts';
 import { 分块, 块数, 字种, 符文倍, 飞们, 飞位, 飞法 } from './符文拼字.ts';
 import { 做字源, 合样式, 字状态, 字格, 排一句, 符文歌词默认, 解码时段, 错距, type 时间样式 } from './符文排版.ts';
@@ -127,14 +127,41 @@ describe.skipIf(!表字节 || !sga字节)('歌词艺术字的排版', () => {
     expect(两行下.格们[14]!.y + 字格).toBe(底点);
   });
 
-  it('一行居中的句和改排版表前一样（第 2、3、5～7、9～12 句位置照旧：那几场按这一条让开了画面）', () => {
+  it('逐句排版（核查 10-24：每句按意思排，不是一律一行顶在上面）：第 3、11 句照旧顶上居中一行；第 2、6、9 句在底部、第 12 句在中段；第 7 句被光柱劈开，两半同一行、缝在画面正中', () => {
     const 样 = 符文歌词默认;
-    for (const 序 of [2, 3, 5, 6, 7, 9, 10, 11, 12]) {
+    const 排 = (序: number) => {
       const s = 句们.find((x) => x.序 === 序)!;
-      const { 格们 } = 排一句(源, s.词, 合样式(样, 歌词排版表[序]), 2560, 1440, 歌词排版表[序]);
-      const w = [...s.词].length * 18 - 2;
-      expect(格们[0]!.x, `第 ${序} 句`).toBe(Math.round((2560 / 7 - w) / 2));
-      expect(格们[0]!.y).toBe(11);
+      const 版 = 歌词排版表[序]!;
+      return { ...排一句(源, s.词, 合样式(样, 版), 2560, 1440, 版), n: [...s.词].length };
+    };
+    for (const 序 of [3, 11]) {
+      const { 格们, n } = 排(序);
+      expect(格们[0]!.x, `第 ${序} 句`).toBe(Math.round((2560 / 7 - (n * 18 - 2)) / 2));
+      expect(new Set(格们.map((g) => g.y))).toEqual(new Set([11]));
+    }
+    const 底点 = Math.floor(1440 / 样.字点) - Math.round(样.边距 / 样.字点);
+    for (const 序 of [2, 6, 9]) expect(Math.max(...排(序).格们.map((g) => g.y)) + 字格, `第 ${序} 句`).toBe(底点);
+    // 第 12 句：上沿在画面 1/7 以下、下沿在一半以上（她坐在床沿，头在画面上半）
+    const 十二 = 排(12).格们;
+    expect(Math.min(...十二.map((g) => g.y)) * 样.字点).toBeGreaterThan(1440 / 7);
+    expect((Math.max(...十二.map((g) => g.y)) + 字格) * 样.字点).toBeLessThan(720);
+    // 第 7 句：前 5 个字一段、后 6 个字一段，同一行；两段字格之间 拨开缝 点，缝的中线在画面正中（点格取整差半点）
+    const { 格们: 七, 行宽 } = 排(7);
+    expect(new Set(七.map((g) => g.y))).toEqual(new Set([11]));
+    const 缝左 = 七[0]!.x + 行宽[0]!;
+    const 缝右 = 七[5]!.x;
+    expect(缝右 - 缝左).toBeGreaterThanOrEqual(拨开缝 - 1);
+    expect(Math.abs(((缝左 + 缝右) / 2) * 样.字点 - 1280)).toBeLessThanOrEqual(样.字点);
+  });
+
+  it('歌词框：和 排一句 排出来的字格（连描边）一样大', () => {
+    for (const s of 句们) {
+      const 版 = 歌词排版表[s.序]!;
+      const 合 = 合样式(符文歌词默认, 版);
+      const { 格们 } = 排一句(源, s.词, 合, 2560, 1440, 版);
+      const 框 = 歌词框(s.词, 版);
+      expect(框.左 * 2560, `第 ${s.序} 句`).toBeCloseTo((Math.min(...格们.map((g) => g.x)) - 1) * 合.字点, 6);
+      expect(框.下 * 1440, `第 ${s.序} 句`).toBeCloseTo((Math.max(...格们.map((g) => g.y)) + 字格 + 1) * 合.字点, 6);
     }
   });
 
@@ -343,9 +370,11 @@ describe('五个关键词的效果', () => {
     const 时段 = 解码时段(行, 符文歌词默认);
     const 裂 = 正片事件.第11句碎裂.帧;
     expect(裂 - 时段[效.从]!.完).toBeGreaterThanOrEqual(10);
-    // 整句从下一句入帧前 出帧 帧退（字状态）
-    const 退起 = 行们[11]!.入 - 符文歌词默认.出帧;
+    // 第 12 句让聊天、切进卧室才进，第 11 句照原来的时刻（收）退，不跟着拖到接缝
+    const 退起 = 行.收!;
+    expect(退起).toBeLessThan(行们[11]!.入 - 符文歌词默认.出帧);
     expect(字状态(行们, 10, 退起 - 1, 符文歌词默认).every((s) => s.显 === 1)).toBe(true);
+    expect(字状态(行们, 10, 退起 + 符文歌词默认.出帧, 符文歌词默认).every((s) => s.显 === 0)).toBe(true);
     for (let j = 效.从; j <= 效.到; j++)
       for (let k = 0; k < 8; k++) expect(刹那块(退起, 时段[j]!.完, 裂, [1, 0], 字种(11, j) * 8 + k).dy, `第 ${j} 个字`).toBeGreaterThanOrEqual(字格);
   });

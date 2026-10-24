@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/2-空床/段.ts';
-import { 光档, 光态, 她态, 她色调, 帧数, 抚平姿, 末帧速度, 镜, 横移进度, 事, 转身起, 后期调色, 屋外态 } from './段/2-空床/编排.ts';
+import { 光档, 光态, 她态, 她色调, 帧数, 抚平姿, 末帧速度, 镜, 横移进度, 事, 转身起, 后期调色, 屋外态, 歌曲帧 } from './段/2-空床/编排.ts';
 import { 服务器调子于 } from './场/2-门口/分屏参数.ts';
 import { fps, 正片事件, 段窗口, 第几句 } from './分镜.ts';
 import { 侧投影 } from './地点/侧剖面.tsx';
@@ -11,6 +11,9 @@ import { 坐床沿骨骼, 抚平手位 } from './场/2-卧室/姿势.ts';
 import { 光斑, 卧室受光面, 卧室开口 } from './场/2-卧室/光斑.ts';
 import { 正片原声增益 } from './配乐/正片.ts';
 import { 床面高 } from './物品/床尺寸.ts';
+import { 歌词排版表, 歌词框 } from './界面/歌词排版表.ts';
+import { 正片歌词行 } from './界面/符文歌词数据.ts';
+import { 字状态, 符文歌词默认 } from './界面/符文排版.ts';
 
 describe('2-空床：第 12 句卧室整句一个镜头', () => {
   it('窗口从第 12 句首字到第 13 句前导（歌曲帧 922～998），段尾就是分屏起', () => {
@@ -30,6 +33,22 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     expect([...序].sort((a, b) => a - b)).toEqual(序);
     expect(序[0]).toBeGreaterThanOrEqual(0);
     expect(序.at(-1)).toBeLessThan(帧数);
+  });
+
+  it('第 12 句「我却已 / 无法自拔」在她左边（歌词排版表）：字露着的每一帧，她（帽檐左沿约 0.45 格：坐着时静帧量的）都在那块字右边 15 像素以外；横移起那一帧字退完，切进来那一帧才进（让开「Steve退出了游戏」）', () => {
+    const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 歌曲帧(0)));
+    const 框 = 歌词框(行们[11]!.词, 歌词排版表[12]!);
+    let 露 = 0;
+    for (let f = 0; f < 帧数; f++) {
+      if (字状态(行们, 11, f, 符文歌词默认).every((z) => z.显 === 0)) continue;
+      露++;
+      const s = 她态(f);
+      const 投 = 侧投影(镜(f), 1280, 720, 参.卧室顶面);
+      expect(投(s.loc[0] - 0.45, s.loc[2], s.loc[1]).x - 框.右 * 1280, `段内第 ${f} 帧`).toBeGreaterThan(15);
+    }
+    expect(露).toBeGreaterThan(fps * 2);
+    expect(行们[11]!.入).toBe(0);
+    expect(行们[11]!.收! + 符文歌词默认.出帧).toBeCloseTo(正片事件.横移起.帧 - 歌曲帧(0), 6);
   });
 
   it('cue：只有原声，铺满整段、固定增益、不淡', () => {
