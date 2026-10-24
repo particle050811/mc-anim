@@ -67,6 +67,12 @@ export const 对视她: React.FC<{ 秒?: number }> = ({ 秒 = 对视秒 }) => {
   return <拿着花的她 p={p} />;
 };
 
+/** 骨骼的转角上再加一个滚转（度）：她笑、靠肩时歪头（重逢.tsx、合照.tsx） */
+export const 加滚 = (b: BonePose | undefined, 滚: number): BonePose => {
+  const [x = 0, y = 0, z = 0] = b?.rot ?? [];
+  return { ...b, rot: [x, y, z + 滚] };
+};
+
 /** 组件按「右手拿着东西」摆手，东西本身不挂在握持点上（花另画，见 铃兰.tsx） */
 export const 空手拿: 手持物 = { 物品: null, 朝向: '原样' };
 
@@ -74,7 +80,7 @@ export const 空手拿: 手持物 = { 物品: null, 朝向: '原样' };
 export type 拿花起手 = { 大臂: readonly number[]; 前臂: readonly number[]; 手: readonly number[] };
 
 /** 她和她手里的花：骨骼照 对视她骨骼 改（举：手举起来多少，0～1；起：举 = 0 时手在哪），花的握点放在改完以后的右手握持点上，正面朝 眼（不给 = 对视眼）。
- *  叠骨骼：改完以后再整条盖上去的骨骼（15 尾她的笑要歪头） */
+ *  叠骨骼：改完以后再整条盖上去的骨骼（她笑、靠肩要歪头） */
 export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: number; 起?: 拿花起手; 叠骨骼?: Record<string, BonePose>; 眼?: V3 }> = ({
   p,
   举 = 1,
