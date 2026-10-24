@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/2-空床/段.ts';
-import { 光档, 光态, 她态, 她色调, 帧数, 抚平姿, 末帧速度, 镜, 下沉进度, 事, 转身起 } from './段/2-空床/编排.ts';
+import { 光档, 光态, 她态, 她色调, 帧数, 抚平姿, 末帧速度, 镜, 横移进度, 事, 转身起, 后期调色, 屋外态 } from './段/2-空床/编排.ts';
+import { 服务器调子于 } from './场/2-门口/分屏参数.ts';
 import { fps, 正片事件, 段窗口, 第几句 } from './分镜.ts';
 import { 侧投影 } from './地点/侧剖面.tsx';
 import { 卧室, 卧室墙 } from './地点/小木屋卧室布局.ts';
@@ -25,7 +26,7 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
   it('三稿的时刻：抚平 38.46、坐床沿 39.31、天亮转头 41.01（差不到半帧）；事件按顺序、都在段里', () => {
     for (const [e, 秒] of [[正片事件.抚平被子, 38.46], [正片事件.坐床沿, 39.31], [正片事件.天亮转头, 41.01]] as const)
       expect(Math.abs(e.秒 - 秒)).toBeLessThan(0.5 / fps + 0.01);
-    const 序 = [事.抚平被子, 事.坐床沿, 事.窗光二, 事.窗光三, 事.月落, 事.天亮转头, 事.下沉起];
+    const 序 = [事.抚平被子, 事.坐床沿, 事.窗光二, 事.窗光三, 事.月落, 事.天亮转头, 事.横移起];
     expect([...序].sort((a, b) => a - b)).toEqual(序);
     expect(序[0]).toBeGreaterThanOrEqual(0);
     expect(序.at(-1)).toBeLessThan(帧数);
@@ -142,27 +143,39 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
           }
   });
 
-  it('镜头：下沉起之前不动，段尾最后一帧走完、还在加速；取景中心落在成片偶数像素上；最后一帧屋里的东西（地面线往上）全出画', () => {
-    for (let f = 0; f < 事.下沉起; f++) expect(镜(f)).toEqual(镜(0));
-    expect(下沉进度(事.下沉起 - 1)).toBe(0);
-    expect(下沉进度(帧数 - 1)).toBe(1);
-    const 步 = (f: number) => 下沉进度(f) - 下沉进度(f - 1);
-    for (let f = 事.下沉起 + 1; f < 帧数; f++) expect(步(f)).toBeGreaterThan(步(f - 1));
+  it('镜头：横移起之前不动，之后只往右（东）挪、越挪越快，段尾最后一帧走完、还在最快；取景中心落在成片偶数像素上；最后一帧屋里全出画，只剩东墙一格', () => {
+    for (let f = 0; f < 事.横移起; f++) expect(镜(f)).toEqual(镜(0));
+    expect(横移进度(事.横移起 - 1)).toBe(0);
+    expect(横移进度(帧数 - 1)).toBe(1);
+    const 步 = (f: number) => 横移进度(f) - 横移进度(f - 1);
+    for (let f = 事.横移起 + 1; f < 帧数; f++) expect(步(f)).toBeGreaterThan(步(f - 1));
+    for (let f = 0; f < 帧数; f++) expect(镜(f).中心[1]).toBe(镜(0).中心[1]);
     const 离整 = (x: number) => Math.abs(x - Math.round(x));
     for (let f = 0; f < 帧数; f++) for (const v of 镜(f).中心) expect(离整((v * 镜(f).每格) / 2)).toBeLessThan(1e-6);
     const 末 = 镜(帧数 - 1), 前 = 镜(帧数 - 2);
-    const v = 末帧速度();
-    // 最后两帧之间实际挪的，和段尾的瞬时速度（二次方的导数）差不到一成
-    expect((前.中心[1] - 末.中心[1]) / v.下).toBeGreaterThan(0.9);
-    expect((末.中心[0] - 前.中心[0]) / v.右).toBeGreaterThan(0.9);
-    // 剖面上 y = 0、z = 0 的地面线（屋里最低、离镜头最近的一点）在画面上沿之外；开头那帧在画面里
+    // 最后两帧之间实际挪的，和段尾的瞬时速度（t^幂 的导数）差不到一成
+    expect((末.中心[0] - 前.中心[0]) / 末帧速度().右).toBeGreaterThan(0.9);
+    // 最后一帧：东墙内面（x 4.5）在画面左沿外，外面（x 5.5）在画里、离左沿不到一格半
     const 投 = (取: typeof 末) => 侧投影(取, 1280, 720, 参.卧室顶面);
-    expect(投(末)(卧室墙.西墙, 0, 0).y).toBeLessThan(0);
+    expect(投(末)(卧室墙.东墙 - 0.5, 0, 0).x).toBeLessThanOrEqual(0);
+    expect(投(末)(卧室墙.东墙 + 0.5, 0, 0).x).toBeGreaterThan(0);
+    expect(投(末)(卧室墙.东墙 + 0.5, 0, 0).x).toBeLessThan((1.5 * 末.每格) / 2);
     expect(投(镜(0))(卧室墙.西墙, 0, 0).y).toBeGreaterThan(600);
     expect(投(镜(0))(卧室墙.西墙, 0, 0).y).toBeLessThan(720);
     // 开头那帧：门板（x −1.5）的右沿、后窗都在画面里
     expect(投(镜(0))(卧室.门.开着的门板.x1, 1).x).toBeGreaterThan(0);
     expect(投(镜(0))(卧室.后窗[0] + 0.5, 卧室.后窗[1] + 1, 卧室墙.后墙).x).toBeLessThan(1280);
     expect(投(镜(0))(卧室.后窗[0], 卧室.后窗[1] + 1, 卧室墙.后墙).y).toBeGreaterThan(0);
+  });
+
+  it('屋外（用户 10-24「怎么超平坦背景 合理吗？」）：横移起 以前不画；横移时后窗那块天色跟着淡掉，末帧淡完；整片后期末帧到 2-时差 第一帧服务器那半的调子（接缝不跳亮度）', () => {
+    expect(屋外态(事.横移起 - 1)).toBeUndefined();
+    expect(屋外态(事.横移起)!.亮).toBeGreaterThan(0);
+    expect(屋外态(帧数 - 1)!.亮).toBe(1);
+    expect(后期调色(事.横移起 - 1)).toEqual(光态(事.横移起 - 1).调子.调色);
+    const 接 = 服务器调子于(正片事件.分屏起.帧).调色;
+    const 末 = 后期调色(帧数 - 1);
+    for (const k of ['饱和', '对比', '暗角', '颗粒'] as const) expect(末[k], k).toBeCloseTo(接[k], 6);
+    expect([末.乘, 末.抬]).toEqual([接.乘, 接.抬]);
   });
 });
