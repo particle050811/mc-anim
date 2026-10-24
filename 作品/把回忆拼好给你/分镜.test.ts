@@ -73,6 +73,16 @@ describe('分镜：从网格常数推帧号', () => {
     expect(Math.round(刻)).toBe(27);
   });
 
+  it('正片事件按时间排；第 13 句五页撕页落在三稿的秒数上（差不到半帧），分屏静帧在 31 和 7 之间', () => {
+    const 帧们 = Object.values(正片事件).map((e) => e.帧);
+    expect(帧们).toEqual([...帧们].sort((a, b) => a - b));
+    const 撕 = [正片事件.撕页100, 正片事件.撕页62, 正片事件.撕页31, 正片事件.撕页7, 正片事件.撕页1];
+    [42.72, 43.14, 43.57, 44.0, 44.42].forEach((秒, i) => expect(Math.abs(撕[i]!.秒 - 秒)).toBeLessThan(0.5 / fps));
+    expect(撕.map((e) => e.帧)).toEqual([1025, 1035, 1046, 1056, 1066]);
+    expect(正片事件.分屏静帧.帧).toBe(1051);
+    expect(正片事件.分屏起.秒).toBe(第几句(13).前导);
+  });
+
   it('网格的 15 句按序、起止不反', () => {
     expect(句们.map((s) => s.序)).toEqual(Array.from({ length: 15 }, (_, i) => i + 1));
     for (const s of 句们) {
