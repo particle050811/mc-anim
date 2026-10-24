@@ -120,6 +120,17 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     expect(光态(事.月落).光).toEqual([]);
     expect([0, 1, 2, 3, 4].map((i) => 参.窗光档们[i]!.length)).toEqual([1, 1, 1, 0, 2]);
     expect([0, 事.月落, 事.天亮转头 - 1, 事.天亮转头, 帧数 - 1].map((f) => 光态(f).门外亮)).toEqual([false, false, false, true, true]);
+    // 天亮不一帧跳（核查 10-24）：月落那一档里屋里的调子、后窗的天一帧一帧往天亮走，每帧走的不到总差的三成
+    const 亮 = (f: number) => 光态(f).调子.调色.乘;
+    const 拆 = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)).reduce((a, b) => a + b, 0);
+    const 总差 = 拆(亮(事.天亮转头)) - 拆(亮(事.月落 - 1));
+    expect(总差).toBeGreaterThan(0);
+    for (let f = 事.月落; f <= 事.天亮转头; f++) {
+      expect(拆(亮(f)) - 拆(亮(f - 1)), `段内第 ${f} 帧`).toBeGreaterThanOrEqual(0);
+      expect(拆(亮(f)) - 拆(亮(f - 1)), `段内第 ${f} 帧`).toBeLessThan(0.3 * 总差);
+    }
+    expect(光态(事.天亮转头).天).toBe(参.天们[4]);
+    expect(光态(事.月落).天).toBe(参.天们[3]);
     /** 一束光在各受光面上的面积（格²）和场景里的重心 [x, y] */
     const 量 = (b: 参.光束) => {
       const 面积: Record<string, number> = {};
