@@ -1,5 +1,7 @@
 // 窗外的归隐之地：结构四周铺一片樱花林（归隐之地是固定群系 cherry_grove，见 参数.ts 的 归隐之地）。网格只导出了结构本身（模板 21×26），
-// 外面原本是空的，从东窗、西窗看出去只有天，所以这里补：一大块草地（草方块顶按 cherry_grove 染色）、地上的粉红色花簇、一圈樱花树。
+// 外面原本是空的，从东窗、西窗看出去只有天，所以这里补：草地（草方块顶按 cherry_grove 染色）、地上的粉红色花簇、一圈樱花树。
+// 草地铺在 z −0.01（藏在方块顶面底下），结构地面层（模板 y 0）真有的缺口不铺，底下再垫一层压到 z −1.01（地洞底的暗色封底在 z −0.99，垫层在它下面）。
+// 地面层别的空格是片场存档导出时掉下去的混凝土粉末（结构手放在 y 200 的半空，有重力的方块落走了），游戏里不会掉，照铺。
 // 樱花树照原版 1.20.1 的形状简化搭（CherryTrunkPlacer 主干 7 格上下、一两根斜出的枝；CherryFoliagePlacer 半径 4、高 5 的树冠，
 // 底层边上有缺口、往下挂一两格叶子），用种子定死，每帧一样。方块都是受光的标准材质（套进三渲二平涂照样换成平涂），树叶镂空。
 // 坐标同网格本地（Z 朝上）；结构占 x 0～21、y −26～0，地面顶在 z 0。
@@ -16,18 +18,44 @@ import petalsUri from 'asset:贴图/场景/樱花林/pink_petals';
 
 type 格 = [number, number, number];
 
-/** 方块贴图：最近邻放大；远处按多级纹理缩（同 方块网格.tsx，免得出摩尔纹）。平铺的地面要重复 */
-const 贴图 = (uri: string, 平铺 = 1) => {
+/** 结构占地 [x0, y0, x1, y1]（模板 21×26） */
+const 结构占地 = [0, -26, 21, 0] as const;
+/** 结构地面层真有的缺口（hidden_retreat_1.nbt 的 y 0 层，换成场景坐标 [x0, y0, x1, y1]）：南头楼梯口（模板 (11, 0, 16) 的橡木楼梯和 (12..15, 0, 16) 的空气，
+ *  就是 主厅.地洞 加楼梯那一格）、两块下半砖（(2, 0, 15)、(0, 0, 24)，顶面在 z −0.5）、西南角 (0, 0, 25) 一格空气 */
+const 地面缺口: readonly (readonly [number, number, number, number])[] = [
+  [11, -17, 16, -16],
+  [2, -16, 3, -15],
+  [0, -26, 1, -24],
+];
+
+/** 占地里去掉缺口剩下的格子，按行并成长方形 */
+const 占地铺面 = () => {
+  const [x0, y0, x1, y1] = 结构占地;
+  const 缺 = (x: number, y: number) => 地面缺口.some(([a, b, c, d]) => x >= a && x < c && y >= b && y < d);
+  const out: [number, number, number, number][] = [];
+  for (let y = y0; y < y1; y++) {
+    let 起: number | null = null;
+    for (let x = x0; x <= x1; x++) {
+      const 铺 = x < x1 && !缺(x, y);
+      if (铺 && 起 === null) 起 = x;
+      if (!铺 && 起 !== null) {
+        out.push([起, y, x, y + 1]);
+        起 = null;
+      }
+    }
+  }
+  return out;
+};
+
+/** 方块贴图：最近邻放大；远处按多级纹理缩（同 方块网格.tsx，免得出摩尔纹）。地面按场景坐标取 uv，要重复 */
+const 贴图 = (uri: string, 重复 = false) => {
   const p = png(uri);
   const t = new THREE.DataTexture(p.px, p.w, p.h, THREE.RGBAFormat);
   t.colorSpace = THREE.SRGBColorSpace;
   t.magFilter = THREE.NearestFilter;
   t.minFilter = THREE.NearestMipmapLinearFilter;
   t.generateMipmaps = true;
-  if (平铺 !== 1) {
-    t.wrapS = t.wrapT = THREE.RepeatWrapping;
-    t.repeat.set(平铺, 平铺);
-  }
+  if (重复) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.needsUpdate = true;
   return t;
 };
@@ -108,6 +136,24 @@ const 布林 = () => {
   return { 木, 叶, 花 };
 };
 
+/** 几块水平的长方形 [x0, y0, x1, y1]（高 z）拼成一个几何，uv 就是场景 x、y：贴图每格一张、和方块格子对齐（RepeatWrapping） */
+const 平面们 = (矩形们: readonly (readonly [number, number, number, number])[], z: number) => {
+  const pos: number[] = [];
+  const uv: number[] = [];
+  const idx: number[] = [];
+  矩形们.forEach(([x0, y0, x1, y1], i) => {
+    pos.push(x0, y0, z, x1, y0, z, x1, y1, z, x0, y1, z);
+    uv.push(x0, y0, x1, y0, x1, y1, x0, y1);
+    idx.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4, i * 4 + 2, i * 4 + 3);
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(pos.map((_, i) => (i % 3 === 2 ? 1 : 0)), 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  return g;
+};
+
 const 摆 = (mesh: THREE.InstancedMesh, 格们: 格[]) => {
   const m = new THREE.Matrix4();
   格们.forEach(([x, y, z], i) => mesh.setMatrixAt(i, m.makeTranslation(x + 0.5, y + 0.5, z + 0.5)));
@@ -119,18 +165,33 @@ const 摆 = (mesh: THREE.InstancedMesh, 格们: 格[]) => {
 export const 窗外樱花林: React.FC = () => {
   const 物 = useMemo(() => {
     const { 木, 叶, 花 } = 布林();
-    const 方块 = new THREE.BoxGeometry(1, 1, 1);
-    // BoxGeometry 六个面的顺序 +x −x +y −y +z −z；Z 朝上，所以后两个是顶、底
+    // BoxGeometry 的四个侧面贴图竖着朝 +y（three 的 Y 朝上），绕 x 转 90° 让它朝 +z，原木的树皮纹才是竖的。
+    // 转完六个面的顺序：+x −x 顶 底 南 北
+    const 方块 = new THREE.BoxGeometry(1, 1, 1).rotateX(Math.PI / 2);
     const 木侧 = new THREE.MeshStandardMaterial({ map: 贴图(logUri), roughness: 1 });
     const 木顶 = new THREE.MeshStandardMaterial({ map: 贴图(logTopUri), roughness: 1 });
-    const 木网 = 摆(new THREE.InstancedMesh(方块, [木侧, 木侧, 木侧, 木侧, 木顶, 木顶], 木.length), 木);
+    const 木网 = 摆(new THREE.InstancedMesh(方块, [木侧, 木侧, 木顶, 木顶, 木侧, 木侧], 木.length), 木);
     const 叶料 = new THREE.MeshStandardMaterial({ map: 贴图(leavesUri), alphaTest: 0.5, side: THREE.DoubleSide, roughness: 1 });
     const 叶网 = 摆(new THREE.InstancedMesh(方块, 叶料, 叶.length), 叶);
-    const 地宽 = 樱花林.地半径 * 2;
-    const 地料 = new THREE.MeshStandardMaterial({ map: 贴图(grassUri, 地宽), color: new THREE.Color(归隐之地.草), roughness: 1 });
-    const 地 = new THREE.Mesh(new THREE.PlaneGeometry(地宽, 地宽), 地料);
-    // 结构自己的地面顶在 z 0，草地压低一点藏在它下面；中心对齐整格，贴图格子和方块格子对上
-    地.position.set(樱花林.地中心[0], 樱花林.地中心[1], -0.01);
+    const [cx, cy] = 樱花林.地中心;
+    const r = 樱花林.地半径;
+    const [ox0, oy0, ox1, oy1] = [cx - r, cy - r, cx + r, cy + r];
+    const [sx0, sy0, sx1, sy1] = 结构占地;
+    const 地料 = new THREE.MeshStandardMaterial({ map: 贴图(grassUri, true), color: new THREE.Color(归隐之地.草), roughness: 1 });
+    // 占地外面四条加占地里去掉缺口的格子，顶面压低 0.01 藏在方块顶面底下；占地里整块再垫在 z −1.01
+    const 外圈 = 平面们(
+      [
+        [ox0, oy0, sx0, oy1],
+        [sx1, oy0, ox1, oy1],
+        [sx0, oy0, sx1, sy0],
+        [sx0, sy1, sx1, oy1],
+        ...占地铺面(),
+      ],
+      -0.01,
+    );
+    const 垫层 = 平面们([[sx0, sy0, sx1, sy1]], -1.01);
+    const 地 = new THREE.Mesh(外圈, 地料);
+    const 垫 = new THREE.Mesh(垫层, 地料);
     const 花料 = new THREE.MeshStandardMaterial({ map: 贴图(petalsUri), alphaTest: 0.5, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
     const 花片 = new THREE.PlaneGeometry(1, 1);
     const 花网 = new THREE.InstancedMesh(花片, 花料, 花.length);
@@ -142,9 +203,9 @@ export const 窗外樱花林: React.FC = () => {
     });
     花网.instanceMatrix.needsUpdate = true;
     花网.computeBoundingSphere();
-    for (const o of [木网, 叶网, 地, 花网]) o.receiveShadow = true;
+    for (const o of [木网, 叶网, 地, 垫, 花网]) o.receiveShadow = true;
     木网.castShadow = 叶网.castShadow = true;
-    return { 木网, 叶网, 地, 花网, 料们: [木侧, 木顶, 叶料, 地料, 花料], 几何们: [方块, 花片, 地.geometry] };
+    return { 木网, 叶网, 地, 垫, 花网, 料们: [木侧, 木顶, 叶料, 地料, 花料], 几何们: [方块, 花片, 外圈, 垫层] };
   }, []);
   useEffect(
     () => () => {
@@ -159,6 +220,7 @@ export const 窗外樱花林: React.FC = () => {
   return (
     <>
       <primitive object={物.地} />
+      <primitive object={物.垫} />
       <primitive object={物.花网} />
       <primitive object={物.木网} />
       <primitive object={物.叶网} />
