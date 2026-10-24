@@ -1,5 +1,5 @@
 // 描边：给角色、物件加整数像素宽的暗色外轮廓（05-画风 原则 5）。用 <描边> 包住要描的东西，画布里放一个 <描边渲染> 接管渲染：
-// 1. 照常画整个场景；2. 再画一遍到遮罩：描边对象写 1，别的东西只写深度（挡在前面的会把描边对象挡掉），半透明的、线、点不画；
+// 1. 照常画整个场景；2. 再画一遍到遮罩：描边对象写 1，别的东西写 0（挡在前面的会把描边对象擦掉），半透明的、线、点不画；
 // 3. 全屏一遍：遮罩外、方圆 宽 个画布像素内有遮罩像素，而且这里的东西比那个遮罩像素远（在它后面）的，涂描边色。
 // 所以只描外轮廓，同一个描边对象内部、两个描边对象挨着的地方不描；前面挡着的墙上不出线。宽按成片像素给，预览级（不放大）减半。
 // 遮罩那遍的材质从当前材质派生（平涂过的就从平涂材质派生），镂空的头发、树叶照样按贴图透明度挖掉。
@@ -50,9 +50,12 @@ const 变体 = (m: THREE.Material, 遮罩: boolean): THREE.Material => {
       };
       v.customProgramCacheKey = () => `${m.customProgramCacheKey()}|描边遮罩`;
     } else {
-      v.colorWrite = false;
-      v.onBeforeCompile = m.onBeforeCompile;
-      v.customProgramCacheKey = () => m.customProgramCacheKey();
+      // 写 0 而不是 colorWrite = false：three 按 renderOrder、材质 id 排序，挡在前面的墙可能排在描边对象后面画，只写深度就擦不掉它的遮罩，墙边会透出轮廓线
+      v.onBeforeCompile = (shader, renderer) => {
+        m.onBeforeCompile(shader, renderer);
+        shader.fragmentShader = shader.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n\tgl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );');
+      };
+      v.customProgramCacheKey = () => `${m.customProgramCacheKey()}|描边深度`;
     }
     e[键] = v;
   }

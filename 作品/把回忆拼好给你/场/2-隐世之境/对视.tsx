@@ -5,22 +5,29 @@
 // 50.39 递蛋糕时手从画面下沿升上来（原版换手就是从下面升起），这一帧手在画外看着也顺。
 import React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
+import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { 描边 } from '@engine/三渲二/描边.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
-import { magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
-import { MagicalWineFoxEx, magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
+import {
+  MagicalWineFoxEx,
+  magicalWineFoxBoneAt,
+  magicalWineFoxExBones,
+  type 手持物,
+  type 魔法酒狐新动作Props,
+} from '@库/角色/魔法酒狐新动作组件.tsx';
 import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
 import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 画布调子 } from '../../画风.ts';
+import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 眼位 } from '../../地点/机位.tsx';
-import { 月铃兰 } from '../../物品/月铃兰.tsx';
 import { 她看你, 隐世之境重逢布景, 重逢发光区 } from './布景.tsx';
 import { 封面聊天行 } from './叠层.tsx';
+import { 亮月铃兰 } from './铃兰.tsx';
+import { 不褪色, 背景褪色 } from './褪色.tsx';
 import { 她, 气泡字 } from './参数.ts';
 import {
   对视取景,
@@ -30,8 +37,13 @@ import {
   对视视角,
   对视门光,
   封面大字,
+  背景褪色参数,
+  片里聊天宽,
   片里聊天缩放,
-  抬手,
+  拿花,
+  帽子抬,
+  瞳孔挪,
+  眉毛往前,
   聊天年龄刻,
   门光色调,
   type 对视版,
@@ -49,34 +61,69 @@ export const 对视机位 = (版: 对视版) => ({ 种: '透视' as const, 眼: 
 /** 她这一帧的姿势（脚底、身子朝向） */
 export const 对视姿势: FigurePose = { ...standPose(她.脚), yaw: 她.身子朝向 };
 
-/** 她这一帧的样子：站着（TLM 待机站姿）、身子侧着、头转过来看你（夹在 头转范围 上限）、认出你、睁着眼，右手拿月铃兰、花正面朝你、手抬到嘴边（对视参数.ts 的 抬手） */
+/** 她这一帧的样子：站着（TLM 待机站姿）、身子侧着、头转过来看你（夹在 头转范围 上限）、认出你、睁着眼，右手举着月铃兰（拿花、铃兰.tsx） */
 export const 对视她: React.FC<{ 秒?: number }> = ({ 秒 = 对视秒 }) => {
   const pose = 对视姿势;
-  const p: 魔法酒狐新动作Props = {
-    pose,
-    姿势: '站',
-    表情: '认出你',
-    看: 她看你(对视眼, pose),
-    眨眼: 0,
-    秒,
-    右手: { 物品: <月铃兰 />, 朝向: { 偏: magicalWineFoxLookAt(pose, 对视眼, '站')[1] } },
-  };
-  // 在组件摆好的拿花姿势（右手胸前）上，前臂往上抬、手腕反着转回
-  const 表 = magicalWineFoxExBones(p);
-  const 加x = (b: string, 度: number) => {
-    const [x = 0, y = 0, z = 0] = 表[b]?.rot ?? [];
-    return { ...表[b], rot: [x + 度, y, z] };
-  };
-  return <MagicalWineFoxEx {...p} 骨骼={{ RightForeArm: 加x('RightForeArm', -抬手), RightHand: 加x('RightHand', 抬手) }} />;
+  const p: 魔法酒狐新动作Props = { pose, 姿势: '站', 表情: '认出你', 看: 她看你(对视眼, pose), 眨眼: 0, 秒, 右手: 空手拿 };
+  return <拿着花的她 p={p} />;
 };
 
-/** 三渲二画布里的东西（网格本地坐标，画布已经转好 Z 朝上）：布景不放灯（平涂不吃灯），她描边；描边 = false 时不描 */
+/** 组件按「右手拿着东西」摆手，东西本身不挂在握持点上（花另画，见 铃兰.tsx） */
+export const 空手拿: 手持物 = { 物品: null, 朝向: '原样' };
+
+/** 拿花的手在 举 = 0 时的样子（大臂、前臂、手各再转多少度，同 拿花），举起来时从这里转到 拿花；不给就是组件原样（右手胸前） */
+export type 拿花起手 = { 大臂: readonly number[]; 前臂: readonly number[]; 手: readonly number[] };
+
+/** 她和她手里的花：骨骼照 对视她骨骼 改（举：手举起来多少，0～1；起：举 = 0 时手在哪），花的握点放在改完以后的右手握持点上，正面朝 对视眼 */
+export const 拿着花的她: React.FC<{ p: 魔法酒狐新动作Props; 举?: number; 起?: 拿花起手 }> = ({ p, 举 = 1, 起 }) => {
+  const 改 = 对视她骨骼(p, 举, 起);
+  const 手 = magicalWineFoxBoneAt(p.pose, { ...magicalWineFoxExBones(p), ...改 }, 'RightHandLocator');
+  return (
+    <>
+      <MagicalWineFoxEx {...p} 骨骼={改} />
+      <亮月铃兰 在={手} 眼={对视眼} 歪={拿花.歪} 轮廓色={描边默认.开 ? 色板[调子].描边 : undefined} />
+    </>
+  );
+};
+
+/** 对视那一帧起她在组件摆好的姿势上再改的几根骨骼（重逢.tsx 回头以后也用）：
+ *  拿花（拿花：大臂、前臂、手）；瞳孔放回眼睛中间（瞳孔挪）、眉毛挪到刘海前面（眉毛往前），认出你才挪；帽子抬高（帽子抬） */
+export const 对视她骨骼 = (p: 魔法酒狐新动作Props, 举 = 1, 起?: 拿花起手): Record<string, BonePose> => {
+  const 表 = magicalWineFoxExBones(p);
+  const 加 = (b: string, rot: readonly number[], pos: readonly number[] = [0, 0, 0]): BonePose => {
+    const [x = 0, y = 0, z = 0] = 表[b]?.rot ?? [];
+    const [px = 0, py = 0, pz = 0] = 表[b]?.pos ?? [];
+    return { ...表[b], rot: [x + rot[0]!, y + rot[1]!, z + rot[2]!], pos: [px + pos[0]!, py + pos[1]!, pz + pos[2]!] };
+  };
+  const 认出 = p.表情 === '认出你';
+  const 插 = (b: readonly number[], a: readonly number[] = [0, 0, 0]) => b.map((v, i) => a[i]! * (1 - 举) + v * 举);
+  return {
+    RightArm: 加('RightArm', 插(拿花.大臂, 起?.大臂)),
+    RightForeArm: 加('RightForeArm', 插(拿花.前臂, 起?.前臂)),
+    RightHand: 加('RightHand', 插(拿花.手, 起?.手)),
+    witchcap: 加('witchcap', [0, 0, 0], [0, 帽子抬, 0]),
+    ...(认出
+      ? {
+          // pos 的 x 是模型里的 x（她右手边是负），右眼在负的那边
+          ysmGlowRightEyePublic: 加('ysmGlowRightEyePublic', [0, 0, 0], [-瞳孔挪.往外, -瞳孔挪.下, 0]),
+          ysmGlowLeftEyePublic: 加('ysmGlowLeftEyePublic', [0, 0, 0], [瞳孔挪.往外, -瞳孔挪.下, 0]),
+          EyeBrow: 加('EyeBrow', [0, 0, 0], [0, 0, -眉毛往前]),
+        }
+      : {}),
+  };
+};
+
+/** 三渲二画布里的东西（网格本地坐标，画布已经转好 Z 朝上）：布景不放灯（平涂不吃灯）、褪色（背景褪色参数），她描边；描边 = false 时不描 */
 export const 对视场景: React.FC<{ 描边?: boolean; 秒?: number }> = ({ 描边: 描 = true, 秒 = 对视秒 }) => (
-  <隐世之境重逢布景 眼={对视眼} 秒={秒} 灯光={false} 门光参数={对视门光}>
-    <描边 开={描}>
-      <对视她 秒={秒} />
-    </描边>
-  </隐世之境重逢布景>
+  <背景褪色 参数={背景褪色参数}>
+    <隐世之境重逢布景 眼={对视眼} 秒={秒} 灯光={false} 门光参数={对视门光}>
+      <不褪色>
+        <描边 开={描}>
+          <对视她 秒={秒} />
+        </描边>
+      </不褪色>
+    </隐世之境重逢布景>
+  </背景褪色>
 );
 
 /** 气泡挂在哪（页面像素）：她脚底正上方 对视气泡.锚高 那一点按这一版的机位投到画面上 */
@@ -114,9 +161,17 @@ export const 对视画面: React.FC<{ 版: 对视版; 描边?: boolean; 后期?:
         </三渲二画布>
         <气泡 版={版} />
         {版 === '片' ? (
-          <像素聊天栏 lines={[{ text: 'Steve加入了游戏', color: 黄, 起刻: 0 }]} 刻={聊天年龄刻} 缩放={片里聊天缩放} 字体={像素字} 宽={宽} 高={高} />
+          <像素聊天栏
+            lines={[{ text: 'Steve加入了游戏', color: 黄, 起刻: 0 }]}
+            刻={聊天年龄刻}
+            缩放={片里聊天缩放}
+            字体={像素字}
+            宽={宽}
+            高={高}
+            聊天宽={片里聊天宽}
+          />
         ) : (
-          <封面聊天行 布局={大字 ?? 封面大字[版]} />
+          <封面聊天行 布局={大字 ?? 封面大字[版]} 竖条={false} />
         )}
       </整片后期>
     </div>
