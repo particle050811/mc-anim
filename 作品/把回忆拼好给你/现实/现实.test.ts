@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { 笔筒满度, 笔芯满根, 笔芯起根, 每页笔芯, 算撕页态, 翻页值, 默认页们 } from './撕页.ts';
+import { 撕页本尺寸, 笔筒满度, 笔芯满根, 笔芯起根, 每页笔芯, 算撕页态, 翻页值, 页版式, 默认页们 } from './撕页.ts';
 import { 找格, 星期们, 节们, 课表格们 } from './课表数据.ts';
 
 describe('撕页', () => {
@@ -51,6 +51,22 @@ describe('撕页', () => {
     }
     expect(笔筒满度(默认页们.length - 1)).toBeLessThanOrEqual(1);
     expect(笔筒满度(1.5)).toBeGreaterThan(笔筒满度(1));
+  });
+});
+
+describe('撕页本的页面', () => {
+  it('每一页（连撕的时候飞过的中间天数）大数字和「天」都在页面里，「天」不碰右下角翻起来的那块', () => {
+    const 页高 = 撕页本尺寸.高 - 撕页本尺寸.装订高;
+    for (let 数 = 1; 数 <= 默认页们[0]!; 数++) {
+      const v = 页版式(数);
+      expect(v.数.x).toBeGreaterThanOrEqual(0);
+      expect(v.天.x + v.天.宽).toBeLessThanOrEqual(撕页本尺寸.宽);
+      expect(v.数.y + v.数.高).toBeLessThan(页高);
+      // 翻角那块：从右下角量 i + j <= 翻角（i、j 是离右边、下边几个贴图像素）
+      const i = 撕页本尺寸.宽 - (v.天.x + v.天.宽);
+      const j = 页高 - (v.天.y + v.天.高);
+      expect(i + j).toBeGreaterThan(撕页本尺寸.翻角);
+    }
   });
 });
 
