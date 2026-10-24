@@ -4,6 +4,7 @@ import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 做机位相机 } from '@engine/三渲二/机位.tsx';
 import { 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import 合照段 from '../../段/2-合照/段.ts';
+import 拼回段 from '../../段/2-拼回/段.ts';
 import { fps, 段内正片事件帧, 段窗口, 画幅, 正片事件 } from '../../分镜.ts';
 import { 正片原声增益 } from '../../配乐/正片.ts';
 import { 段里那截 } from '../../声音/跨段音效.ts';
@@ -15,7 +16,7 @@ import { 重逢机位 } from './重逢动作.ts';
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
-const 找 = (名: string) => 合照段.声音?.find((c): c is 资产cue => c.资产 !== undefined && c.名 === 名);
+const 找 = (名: string, 段 = 合照段) => 段.声音?.find((c): c is 资产cue => c.资产 !== undefined && c.名 === 名);
 
 describe('15 尾（2-合照）：窗口和事件', () => {
   it('窗口 [1271, 1322)：接在 2-重逢 后面，止在 55.08（第 129 拍，2-拼回 从这里起）', () => {
@@ -23,6 +24,14 @@ describe('15 尾（2-合照）：窗口和事件', () => {
     expect(段窗口('2-重逢').止帧).toBe(段窗口('2-合照').起帧);
     expect(Math.round(55.08 * fps)).toBe(1322);
     expect(合照段.帧数).toBe(51);
+  });
+
+  it('和前后两段交接的时刻是同一刻：尾笑 = 2-重逢 止；咔哒 = 片尾歌词收；段尾 = 片尾白光 = 2-拼回 起', () => {
+    expect(事.尾笑.帧).toBe(事.第15句段尾.帧);
+    expect(事.尾笑.帧).toBe(段窗口('2-重逢').止帧);
+    expect(事.合照咔哒.帧).toBe(事.片尾歌词收.帧);
+    expect(段窗口('2-合照').止帧).toBe(事.片尾白光.帧);
+    expect(段窗口('2-合照').止帧).toBe(段窗口('2-拼回').起帧);
   });
 
   it('段内帧：尾笑 0、靠肩 20、咔哒 41；照片就是咔哒那一帧', () => {
@@ -95,6 +104,15 @@ describe('15 尾：声音、歌词', () => {
     expect(b.帧).toBe(0);
     expect(b.入点秒).toBeCloseTo(a.帧数 / fps, 12);
     expect(a.帧数 + b.帧数).toBe(Math.ceil(咔哒声文件.时长秒 * fps));
+  });
+
+  it('剩下那截（卷片声）真的放在 2-拼回 段头，增益同一个', () => {
+    const a = 找('咔哒')!;
+    const b = 找('咔哒', 拼回段)!;
+    expect(b).toMatchObject({ 帧: 0, 资产: 咔哒声文件.资产 });
+    expect(b.入点秒).toBeCloseTo(a.帧数 / fps, 12);
+    expect(a.帧数 + b.帧数).toBe(Math.ceil(咔哒声文件.时长秒 * fps));
+    expect(new Set([...(a.增益 as number[]), ...(b.增益 as number[])])).toEqual(new Set([合照咔哒声.增益(0)]));
   });
 
   it('「爱炙热的你却忘了爱自己」段头已经在场，咔哒前最后一个字已经唱出', () => {

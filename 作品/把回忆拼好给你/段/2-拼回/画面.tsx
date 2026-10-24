@@ -8,12 +8,14 @@ import { 段内正片事件帧, 段窗口 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
+import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 启动器, 碎片层, 署名层 } from '../../场/2-启动器/启动器.tsx';
 import { 平常取景, 片尾弹, 片尾白光 } from '../../场/2-启动器/编排.ts';
 import { 碎片源图, 新图标, 旧图标 } from '../../场/2-启动器/图标源.ts';
 import 段 from './段.ts';
+import 咔哒url from 'asset:音效/车万女仆/item.camera_use';
 
 const 起帧 = 段窗口('2-拼回').起帧;
 const 事 = 段内正片事件帧('2-拼回');
@@ -42,6 +44,7 @@ const 画面: React.FC = () => {
       )}
       <署名层 />
       <配乐音轨 song={原声} 段={段} />
+      <音效轨 src={咔哒url} 资产="音效/车万女仆/item.camera_use" 段={段} />
     </>
   );
 };
