@@ -1,6 +1,8 @@
 // 魔法酒狐新动作核对的画面：按视图表一帧画一个视图，左上角写视图名。地面、灯同 核对-魔法酒狐表情（看清贴图用，颜色是近似的）。
 // 机位按姿势表现算：头、手在哪由 magicalWineFoxBoneAt 量出来，再按她身体的正面、右前方、右边、左边摆相机；花的正面转向相机（偏 = 相机在她哪个方位）。
-// 正交的帧：相机沿机位方向平行看过去，每格 正交每格 页面像素，不开抗锯齿（三渲二的画法）。
+// 正交的帧：相机沿机位方向平行看过去，每格 正交每格 页面像素，不开抗锯齿。
+// 三渲二的帧：成片的画法（engine/三渲二 的画布、本作品的正交像素机位和调子），她套 贴图像素对齐（只吸附）和描边；
+// 画布只开 320×180 页面像素，CSS 最近邻放大 4 倍铺满，看得清成片上的每个像素。
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
@@ -10,6 +12,10 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
+import { 描边 } from '@engine/三渲二/描边.tsx';
+import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
+import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
+import { 画布调子, 正交机位 as 成片正交机位 } from '../../画风.ts';
 import { magicalWineFoxTurnTo } from '@库/角色/魔法酒狐新动作.ts';
 import { MagicalWineFoxEx, magicalWineFoxBoneAt, magicalWineFoxExBones, type 手持物, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { 画幅 } from '../../分镜.ts';
@@ -84,9 +90,41 @@ const 摆 = (v: 视图) => {
   return { props, 眼: 眼!, 看, 视角 };
 };
 
+const 三渲二放大 = 4;
+const 三渲二朝: Record<视图['机位'], '北' | '东' | '西'> = { 正面: '北', 四分之三: '北', 封面: '北', 侧面: '东', 左侧面: '西' };
+const 三渲二地面: React.FC = () => (
+  <mesh position={[0, 0, -0.5]}>
+    <boxGeometry args={[6, 3, 1]} />
+    <meshStandardMaterial color="#7fb238" />
+  </mesh>
+);
+
+const 三渲二画面: React.FC<{ v: 视图; props: 魔法酒狐新动作Props }> = ({ v, props }) => (
+  <div style={{ position: 'absolute', left: 0, top: 0, width: 画幅.宽 / 三渲二放大, height: 画幅.高 / 三渲二放大, transform: `scale(${三渲二放大})`, transformOrigin: '0 0', imageRendering: 'pixelated' }}>
+    <三渲二画布 宽={画幅.宽 / 三渲二放大} 高={画幅.高 / 三渲二放大} 机位={成片正交机位({ 看: [0, 0, 0.9], 朝: 三渲二朝[v.机位] })} {...画布调子('夏日白天')}>
+      <三渲二地面 />
+      <描边>
+        <贴图像素对齐 锚={props.pose.loc as V3}>
+          <MagicalWineFoxEx {...props} />
+        </贴图像素对齐>
+      </描边>
+    </三渲二画布>
+  </div>
+);
+
 const 画面: React.FC = () => {
   const v = 视图们[useCurrentFrame()]!;
   const { props, 眼, 看, 视角 } = 摆(v);
+  if (v.三渲二)
+    return (
+      <AbsoluteFill style={{ background: '#000000' }}>
+        <三渲二画面 v={v} props={props} />
+        <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
+          <div>{v.名}</div>
+          <div style={{ fontSize: 16 }}>成片像素密度，最近邻放大 {三渲二放大} 倍</div>
+        </div>
+      </AbsoluteFill>
+    );
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
       <ThreeCanvas key={v.正交 ? '正交' : '透视'} orthographic={!!v.正交} width={画幅.宽} height={画幅.高} gl={{ antialias: !v.正交 }}>
