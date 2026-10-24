@@ -1,11 +1,12 @@
-// 第 1 句的新世界：你第一次进六月樱服务器时脚下那片原版 1.20.1 平原，远处地平线上一座小山上是樱花林。纯计算（不 import react、three），测试直接引。
+// 第 1 句的新世界：你第一次进这个世界时脚下那片原版 1.20.1 平原，远处地平线上一座小山上是樱花林。纯计算（不 import react、three），测试直接引。
 // 不是存档导出的：按原版平原的样子手搓（起伏一两格的草地、短草、高草、原版 flower_plain 的九种花、零星几棵橡树；樱花林在山坡上，
 // 樱花树照原版 CherryTrunkPlacer、CherryFoliagePlacer 的长法，地上铺粉红花簇）。随机都用定死的噪声和散列（不是原版的随机数，长出来的样子同一套规则），
 // 同一组参数每次出一样的方块。只铺镜头看得到的那一扇（参数.ts 的 地形范围），背后的不铺。
+// 第 1 句尾到 2-第一晚 镜头落到你挖坑那一格的地面剖面：剖面附近的列（剖面列）另铺到地下（剖面方块、剥排方块），新世界方块 本身不变（别的段拿它当远景）。
 // 坐标照场景约定：x 东、y 北、z 上，格 (i, j, k) 占 [i, i+1]×[j, j+1]×[k, k+1]；出生点那格地面顶在 z = 0（草方块是 k = −1 那格）。
 import type { 方块 } from '@engine/model/方块拼搭.tsx';
 import { fbm, hash2, simplex2, smoothstep } from '@engine/core/噪声.ts';
-import { 地形范围, 樱花林, 平原 } from './参数.ts';
+import { 地形范围, 剖面, 坑, 樱花林, 平原 } from './参数.ts';
 
 const 噪 = simplex2(平原.种子);
 const 噪2 = simplex2(平原.种子 + 7);
@@ -200,6 +201,37 @@ const 樱花叶团 = (p: readonly [number, number, number], r: () => number, 放
   带垂一层(R - 1, -2);
 };
 
+/** 这一列的群系是不是樱花林（草色、树叶色按它染）：林子和山坡下半截 */
+const 是林 = (i: number, j: number) => 在林里(i, j) || Math.hypot(i - 樱花林.心[0], j - 樱花林.心[1]) <= 樱花林.山半径 * 0.8;
+
+/** 一列地：顶上草方块（树干底下原版换成泥土，TrunkPlacer.setDirtAt），往下泥土三格、再往下石头，填到 底（不给 = 侧面露出来的那么深：四邻里最低的那格顶往下一格）；
+ *  长草时地上铺草、花。新世界方块 和剖面共用这一个铺法，同一列铺出来一样 */
+const 一列 = (i: number, j: number, 放: (b: 方块) => void, o: { 有树: boolean; 底?: number; 长草?: boolean }) => {
+  const 林 = 是林(i, j);
+  const h = 地面高(i, j);
+  let 底 = h;
+  for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) 底 = Math.min(底, 地面高(i + di, j + dj));
+  const 最底 = o.底 ?? 底 - 1;
+  放({ 状态: o.有树 ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [i, j, h - 1] });
+  for (let k = h - 2; k >= 最底; k--) 放({ 状态: h - 1 - k > 3 ? 'minecraft:stone' : 'minecraft:dirt', 位: [i, j, k] });
+  if (o.有树 || o.长草 === false) return;
+  // 地上的东西：平原上只铺到离出生点 植物半径（再远一株草不到几个像素，原版远处也一样有，这里省掉）
+  if (Math.hypot(i, j) > 地形范围.植物半径 && !林) return;
+  const u = hash2(i, j, 11);
+  if (林) {
+    if (u < 樱花林.花簇率) 放({ 状态: `minecraft:pink_petals[facing=${花簇朝向[Math.floor(hash2(i, j, 12) * 4)]},flower_amount=${1 + Math.floor(hash2(i, j, 13) * 4)}]`, 位: [i, j, h] });
+    else if (u < 樱花林.花簇率 + 0.12) 放({ 状态: 'minecraft:grass', 位: [i, j, h] });
+    return;
+  }
+  // 平原：草丛成片（噪声），高草夹在里面，花零星
+  const 草密 = 平原.草率 * (0.55 + 0.9 * Math.max(0, fbm(噪2, i + 300, j, 14, 2) + 0.3));
+  if (u < 平原.花率) 放({ 状态: 平原花(i, j), 位: [i, j, h] });
+  else if (u < 平原.花率 + 草密 * 平原.高草占) {
+    放({ 状态: 'minecraft:tall_grass[half=lower]', 位: [i, j, h] });
+    放({ 状态: 'minecraft:tall_grass[half=upper]', 位: [i, j, h + 1] });
+  } else if (u < 平原.花率 + 草密) 放({ 状态: 'minecraft:grass', 位: [i, j, h] });
+};
+
 export type 新世界方块 = { 平原: 方块[]; 樱花林: 方块[] };
 
 /** 铺出来的全部方块：平原（群系 plains）、樱花林（群系 cherry_grove：草色、树叶色按它染）分两份 */
@@ -227,31 +259,48 @@ export const 新世界方块 = (): 新世界方块 => {
   for (let j = r.南; j <= r.北; j++)
     for (let i = r.西; i <= r.东; i++) {
       if (!铺(i, j)) continue;
-      const 林 = 在林里(i, j) || Math.hypot(i - 樱花林.心[0], j - 樱花林.心[1]) <= 樱花林.山半径 * 0.8;
-      const 放 = 放到(林);
-      const h = 地面高(i, j);
-      // 侧面露出来的要填：往下填到四邻里最低的那格顶
-      let 底 = h;
-      for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) 底 = Math.min(底, 地面高(i + di, j + dj));
-      // 树干底下原版换成泥土（TrunkPlacer.setDirtAt）
-      放({ 状态: 有树.has(`${i},${j}`) ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [i, j, h - 1] });
-      for (let k = h - 2; k >= 底 - 1; k--) 放({ 状态: h - 1 - k > 3 ? 'minecraft:stone' : 'minecraft:dirt', 位: [i, j, k] });
-      if (有树.has(`${i},${j}`)) continue;
-      // 地上的东西：平原上只铺到离出生点 植物半径（再远一株草不到几个像素，原版远处也一样有，这里省掉）
-      if (Math.hypot(i, j) > r.植物半径 && !林) continue;
-      const u = hash2(i, j, 11);
-      if (林) {
-        if (u < 樱花林.花簇率) 放({ 状态: `minecraft:pink_petals[facing=${花簇朝向[Math.floor(hash2(i, j, 12) * 4)]},flower_amount=${1 + Math.floor(hash2(i, j, 13) * 4)}]`, 位: [i, j, h] });
-        else if (u < 樱花林.花簇率 + 0.12) 放({ 状态: 'minecraft:grass', 位: [i, j, h] });
-        continue;
-      }
-      // 平原：草丛成片（噪声），高草夹在里面，花零星
-      const 草密 = 平原.草率 * (0.55 + 0.9 * Math.max(0, fbm(噪2, i + 300, j, 14, 2) + 0.3));
-      if (u < 平原.花率) 放({ 状态: 平原花(i, j), 位: [i, j, h] });
-      else if (u < 平原.花率 + 草密 * 平原.高草占) {
-        放({ 状态: 'minecraft:tall_grass[half=lower]', 位: [i, j, h] });
-        放({ 状态: 'minecraft:tall_grass[half=upper]', 位: [i, j, h + 1] });
-      } else if (u < 平原.花率 + 草密) 放({ 状态: 'minecraft:grass', 位: [i, j, h] });
+      一列(i, j, 放到(是林(i, j)), { 有树: 有树.has(`${i},${j}`) });
     }
+  return out;
+};
+
+// ---------- 剖面（第 1 句尾到 2-第一晚：你挖坑那一格的地面剖面） ----------
+
+/** 坑挖到哪一步：挖掉 = 从草方块往下挖掉了几格（0～坑.深），顶土 = 头顶填上的那格（放在草方块原来的位置）。2-第一晚 的编排算 */
+export type 坑态 = { 挖掉: number; 顶土: boolean };
+
+/** 这一列归剖面的哪一截：'剖' = 坑这一排和后墙那一排（按坑态重铺），'剥' = 坑和镜头之间撤掉的那几排，null = 不归剖面（新世界方块 照常铺）。
+ *  这两截从 新世界方块 里拿掉，另外铺到 剖面.底（世界.tsx 分开建网格） */
+export const 剖面列 = (i: number, j: number): '剖' | '剥' | null => {
+  if ((j === 坑.j || j === 坑.j + 1) && Math.abs(i - 坑.i) <= 剖面.半宽) return '剖';
+  if (j >= 坑.j - 剖面.剥排 && j < 坑.j && Math.abs(i - 坑.i) <= 剖面.剥半宽) return '剥';
+  return null;
+};
+
+/** 坑这一排、后墙那一排（一张表）：照 新世界方块 的铺法铺到 剖面.底；坑那一格按坑态挖掉、填土，坑左右 让草 列内不长草、不开花；
+ *  后墙（坑后面那一格）草方块以下压暗到 剖面.后墙亮 */
+export const 剖面方块 = (态: 坑态): 方块[] => {
+  const out: 方块[] = [];
+  for (const j of [坑.j, 坑.j + 1])
+    for (let i = 坑.i - 剖面.半宽; i <= 坑.i + 剖面.半宽; i++) {
+      if (!铺(i, j)) continue;
+      const 坑格 = i === 坑.i && j === 坑.j;
+      const 后墙 = i === 坑.i && j === 坑.j + 1;
+      const h = 地面高(i, j);
+      一列(i, j, (b) => {
+        const k = b.位[2];
+        if (坑格 && k < h && k >= h - 态.挖掉) return;
+        out.push(后墙 && k < h - 1 ? { ...b, 亮: 剖面.后墙亮 } : b);
+      }, { 有树: false, 底: 剖面.底, 长草: Math.abs(i - 坑.i) > 剖面.让草 });
+      if (坑格 && 态.顶土) out.push({ 状态: 'minecraft:dirt', 位: [i, j, h - 1] });
+    }
+  return out;
+};
+
+/** 坑和镜头之间还没撤掉的那几排（一张表）：撤了 剥了 排（从镜头那头撤起），剩下的照 新世界方块 的铺法铺到 剖面.底，最前面那排的南面就是切面 */
+export const 剥排方块 = (剥了: number): 方块[] => {
+  const out: 方块[] = [];
+  for (let j = 坑.j - 剖面.剥排 + 剥了; j < 坑.j; j++)
+    for (let i = 坑.i - 剖面.剥半宽; i <= 坑.i + 剖面.剥半宽; i++) if (铺(i, j)) 一列(i, j, (b) => out.push(b), { 有树: false, 底: 剖面.底 });
   return out;
 };
