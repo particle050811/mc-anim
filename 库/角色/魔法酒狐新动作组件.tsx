@@ -227,9 +227,6 @@ export type 魔法酒狐新动作Props = {
   左手?: 手持物;
   /** 最后叠上的骨骼姿势，按骨骼整条替换 */
   骨骼?: Record<string, BonePose>;
-  /** 手里东西的 朝向 按叠上 骨骼 以后的手臂算：骨骼 改了拿东西那条胳膊时给 true，东西才真照 朝向 立着。
-   *  默认 false 照旧按叠 骨骼 之前的姿势算（坑：胳膊改了东西就跟着歪；出过片的段靠这个不变） */
-  朝向按骨骼?: boolean;
   帽子?: boolean;
   背后法杖?: boolean;
   发光?: boolean;
@@ -252,7 +249,7 @@ export const magicalWineFoxExBones = (p: 魔法酒狐新动作Props): Record<str
   for (const [手, 左] of [[p.右手, false], [p.左手, true]] as const) {
     if (!手 || 手.朝向 === '原样') continue;
     const 显示 = 手.显示 ?? DISPLAY.generated.thirdperson_righthand;
-    表[左 ? 'LeftHandLocator' : 'RightHandLocator'] = { rot: 握持转角(p.朝向按骨骼 ? { ...表, ...p.骨骼 } : 表, 左, 显示, 手.朝向 ?? {}) };
+    表[左 ? 'LeftHandLocator' : 'RightHandLocator'] = { rot: 握持转角(表, 左, 显示, 手.朝向 ?? {}) };
   }
   for (const n of 新骨骼名) 表[n] = HIDE;
   if (新.叠加.眼睛加一排) for (const n of ['mcanim右眼补', 'mcanim左眼补', 'ysmGlowmcanim右虹膜补', 'ysmGlowmcanim左虹膜补']) 表[n] = {};
