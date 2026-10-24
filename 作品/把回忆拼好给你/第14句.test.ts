@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import 归隐段 from './段/2-归隐/段.ts';
@@ -49,6 +49,13 @@ import { 造风墙, 墙瓣在, 风墙底, 风墙盖满 } from './特效/樱花�
 import { 考场N } from './现实/考场布局.ts';
 import { 卷子顶框, 撕口框, 栏杆, 楼上N, 楼上态于, 楼上顶面 } from './现实/楼上布局.ts';
 import { 纸片在, 纸雨参数, 造纸片, 飘纸在 } from './现实/纸雨.ts';
+
+// 特效/照片画.ts 顶上就解码四张照片（真帧资产，打包时才有 asset:），这里换成一张 1×1 的 RGBA（同 祭坛召唤.test.ts）
+const 一像素 = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
+vi.mock('asset:贴图/照片/第3句递蛋糕', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第4句日落划船', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第5句扑龙蛋', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第7句光柱破云', () => ({ default: 一像素 }));
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
