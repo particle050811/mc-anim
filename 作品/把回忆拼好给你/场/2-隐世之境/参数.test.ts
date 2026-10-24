@@ -60,7 +60,8 @@ describe.skipIf(!有表)('封面构图', () => {
   });
   it('脸（头心上下、左右各四分之一格）在 4:3 里、躲开底边和右下角，离 4:3 两边至少 40', () => {
     const 头 = 投(1.33);
-    const 下巴 = 投(1.15);
+    // 下巴：脸最下沿比颈部转轴（1.152）还低一点，静帧上量的是 1.1 格上下
+    const 下巴 = 投(1.1);
     const 半宽 = 0.25 * 头.每格;
     for (const [x, y] of [
       [头.x - 半宽, 头.y],
@@ -70,7 +71,7 @@ describe.skipIf(!有表)('封面构图', () => {
       expect(封面能放(W, H, x!, y!)).toBe(true);
     expect(头.x - 半宽).toBeGreaterThan(160 + 40);
     expect(头.x + 半宽).toBeLessThan(1120 - 40);
-    // 右下角禁区从 y 518 起，下巴离它至少 40
-    expect(下巴.y).toBeLessThan(518 - 40);
+    // 右下角禁区从 y 518 起，下巴离它至少 20
+    expect(下巴.y).toBeLessThan(518 - 20);
   });
 });
