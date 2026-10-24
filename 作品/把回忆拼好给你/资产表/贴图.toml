@@ -83,3 +83,99 @@ id = "贴图/特效/附魔光泽"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "client jar 的 misc/enchanted_glint_item.png（128×128），附魔物品表面流动的紫光；歌词艺术字做法 B 的符文上走它"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/0"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_0.png，16×16，挖方块的第 1 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/1"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_1.png，16×16，挖方块的第 2 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/2"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_2.png，16×16，挖方块的第 3 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/3"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_3.png，16×16，挖方块的第 4 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/4"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_4.png，16×16，挖方块的第 5 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/5"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_5.png，16×16，挖方块的第 6 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/6"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_6.png，16×16，挖方块的第 7 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/7"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_7.png，16×16，挖方块的第 8 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/8"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_8.png，16×16，挖方块的第 9 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/特效/方块裂纹/9"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/destroy_stage_9.png，16×16，挖方块的第 10 级裂纹（第 2 句挖三填一）"
+
+[["资产"]]
+id = "贴图/方块/泥土"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/dirt.png，16×16：第 2 句挖开草方块、泥土崩出的破坏粒子和掉在洞里的泥土物品"
+
+[["资产"]]
+id = "贴图/界面/原版按钮"
+"类别" = "贴图"
+"来源" = "提取:第一晚贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 gui/widgets.png，256×256：第 2 句死亡画面的「重生」「标题屏幕」按钮（200×20，v 46 不能按、66 平常、86 指着）"

@@ -24,3 +24,27 @@ id = "音效/把回忆拼好给你/entity.cat.hiss.3"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版资源索引 minecraft/sounds/mob/cat/hiss3.ogg（对象 sha1 ab8845c4f44fb336cde822ca458e4dc831b1b2cc），1.09 秒；sounds.json 里 volume 0.4"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.zombie.ambient.1"
+"类别" = "音效"
+"来源" = "提取:第一晚音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/mob/zombie/say1.ogg（对象 sha1 b5bc9775243437d87317ab3a66ec8a4d5b96c83d），1.50 秒；sounds.json 里 volume 1。第 2 句地面上晃过去的僵尸"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.zombie.ambient.2"
+"类别" = "音效"
+"来源" = "提取:第一晚音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/mob/zombie/say2.ogg（对象 sha1 bf5086623d5c6735271074b263116fb914ed79b5），1.38 秒；sounds.json 里 volume 1"
+
+[["资产"]]
+id = "音效/把回忆拼好给你/entity.zombie.ambient.3"
+"类别" = "音效"
+"来源" = "提取:第一晚音效@f59b7cfef660"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版资源索引 minecraft/sounds/mob/zombie/say3.ogg（对象 sha1 7eb3affa45f47f919e74523a55185e65c2081d12），2.13 秒；sounds.json 里 volume 1"

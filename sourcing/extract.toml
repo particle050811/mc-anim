@@ -1324,3 +1324,76 @@
 "贴图/场景/关键帧/方块表" = "src/模型/场景/关键帧/方块表.png"
 "贴图/角色/追兵/刘心忠" = "src/模型/角色/追兵.贴图/刘心忠.png"
 "贴图/镜头/6-3-下坠/竖井4x.网格" = "src/镜头/6-3-下坠/竖井4x.网格.png"
+
+# 原版僵尸（库/生物/僵尸.tsx；把回忆拼好给你 第 2 句第一晚地面上晃过去的那只）。ZombieRenderer 吃 ModelLayers.ZOMBIE，
+# LayerDefinitions 里它是 HumanoidModel.createMesh（m_170681_，CubeDeformation.NONE、y 偏移 0）配 64×64（javap 10-24 核过）；贴图 entity/zombie/zombie.png
+[["取材"]]
+"名称" = "僵尸"
+"需要" = ["client-1.20.1", "client-1.20.1-srg"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/角色/僵尸.模型.json", "僵尸=net.minecraft.client.model.HumanoidModel:m_170681_(0,0)@64x64", "--贴图", "僵尸=assets/minecraft/textures/entity/zombie/zombie.png"],
+]
+["取材"."产物"]
+"模型/角色/僵尸" = "src/模型/角色/僵尸.模型.json"
+"贴图/角色/僵尸" = "src/模型/角色/僵尸.模型.png"
+
+# 把回忆拼好给你 第 2 句「挖三填一」：挖方块的十级裂纹（destroy_stage_0～9，原版 crumbling 叠在方块上）、泥土（破坏粒子和掉落物的贴图；草方块的粒子贴图也是泥土）、
+# 死亡画面「重生」「标题屏幕」两个按钮（gui/widgets.png，按钮底 200×20 在 v 46/66/86：不能按、平常、指着）。只有本作品用，登记在作品资产表：anim --作品 把回忆拼好给你 extract 第一晚贴图
+[["取材"]]
+"名称" = "第一晚贴图"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/第一晚", "裂纹0=assets/minecraft/textures/block/destroy_stage_0.png", "裂纹1=assets/minecraft/textures/block/destroy_stage_1.png", "裂纹2=assets/minecraft/textures/block/destroy_stage_2.png", "裂纹3=assets/minecraft/textures/block/destroy_stage_3.png", "裂纹4=assets/minecraft/textures/block/destroy_stage_4.png", "裂纹5=assets/minecraft/textures/block/destroy_stage_5.png", "裂纹6=assets/minecraft/textures/block/destroy_stage_6.png", "裂纹7=assets/minecraft/textures/block/destroy_stage_7.png", "裂纹8=assets/minecraft/textures/block/destroy_stage_8.png", "裂纹9=assets/minecraft/textures/block/destroy_stage_9.png", "泥土=assets/minecraft/textures/block/dirt.png", "按钮=assets/minecraft/textures/gui/widgets.png"],
+]
+["取材"."产物"]
+"贴图/特效/方块裂纹/0" = "src/模型/第一晚/裂纹0.png"
+"贴图/特效/方块裂纹/1" = "src/模型/第一晚/裂纹1.png"
+"贴图/特效/方块裂纹/2" = "src/模型/第一晚/裂纹2.png"
+"贴图/特效/方块裂纹/3" = "src/模型/第一晚/裂纹3.png"
+"贴图/特效/方块裂纹/4" = "src/模型/第一晚/裂纹4.png"
+"贴图/特效/方块裂纹/5" = "src/模型/第一晚/裂纹5.png"
+"贴图/特效/方块裂纹/6" = "src/模型/第一晚/裂纹6.png"
+"贴图/特效/方块裂纹/7" = "src/模型/第一晚/裂纹7.png"
+"贴图/特效/方块裂纹/8" = "src/模型/第一晚/裂纹8.png"
+"贴图/特效/方块裂纹/9" = "src/模型/第一晚/裂纹9.png"
+"贴图/方块/泥土" = "src/模型/第一晚/泥土.png"
+"贴图/界面/原版按钮" = "src/模型/第一晚/按钮.png"
+
+# 把回忆拼好给你 第 2 句的游戏像素字（聊天栏三条死亡消息、死亡画面）：只收 场/2-第一晚/像素字文案.txt 里的字，格式同「把回忆拼好给你像素字」那一条。
+# 单开一张表、不并进 界面/像素字文案.txt：那张表别的段在用，加字会让它换版本、别的段指纹跟着变。加字的步骤同那一条。
+[["取材"]]
+"名称" = "第一晚像素字"
+"作品" = "把回忆拼好给你"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
+"许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "第一晚像素字.json", "{作品根}/场/2-第一晚/像素字文案.txt"],
+]
+["取材"."产物"]
+"字体/把回忆拼好给你/第一晚像素字" = "第一晚像素字.json"
+
+# 把回忆拼好给你 第 2 句地面上晃过去的僵尸的低吼。挖、填土、捡东西、点按钮、摔死的声音用共用的（block.grass.break、block.gravel.break、
+# entity.item.pickup、ui.button.click、entity.player.big_fall、entity.player.hurt），不另取：原版 block.gravel.place 和 block.gravel.break、
+# entity.player.death 和 entity.player.hurt 在 sounds.json 里是同一组文件。id 多一层 把回忆拼好给你/，不落进「音效」那条的 音效/* 通配。
+[["取材"]]
+"名称" = "第一晚音效"
+"作品" = "把回忆拼好给你"
+"公开版" = "提取"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/把回忆拼好给你", "entity.zombie.ambient"],
+]
+["取材"."产物"]
+"音效/把回忆拼好给你/entity.zombie.ambient.1" = "src/音效/把回忆拼好给你/entity.zombie.ambient.1.ogg"
+"音效/把回忆拼好给你/entity.zombie.ambient.2" = "src/音效/把回忆拼好给你/entity.zombie.ambient.2.ogg"
+"音效/把回忆拼好给你/entity.zombie.ambient.3" = "src/音效/把回忆拼好给你/entity.zombie.ambient.3.ogg"
