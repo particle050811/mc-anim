@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/2-收集快乐/段.ts';
 import { 正片事件, 段内正片事件帧, 段窗口, 第几句, fps } from './分镜.ts';
-import { 收照片站位, 照片举位, 照片举缩放, 苦力怕走倍率, 苦力怕逃倍率, 苦力怕掉头帧, 纸声们, 纸声峰值, 纸声顺序 } from './场/2-门口/第8句参数.ts';
+import { 收照片站位, 照片举位, 照片举缩放, 照片落拍前帧, 照片落帧, 苦力怕前沿, 苦力怕走速, 苦力怕逃倍率, 苦力怕掉头帧, 纸声们, 纸声峰值, 纸声顺序 } from './场/2-门口/第8句参数.ts';
 import { 哈气站位, 第8句镜头 } from './场/2-门口/第8句.ts';
 import { 第8句照片们, 照片像素, 照片尺寸, 照片细分 } from './特效/照片画.ts';
+import { 源像素, 源尺寸 } from './特效/照片图.ts';
+import { 照片态 } from './段/2-收集快乐/照片编排.ts';
 
 describe('2-收集快乐：第 8 句整句一个镜头', () => {
   it('窗口从第 8 句首字到第 9 句首字（歌曲帧 611～687）', () => {
@@ -41,27 +43,48 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     for (const c of 声) expect(c.帧 + c.帧数).toBeLessThanOrEqual(段.帧数);
   });
 
-  it('站位：哈气时苦力怕离你四五格；她收照片时站在门洞和箱子之间', () => {
+  it('照片：每张举着满尺寸至少 5 帧；拍上那一帧已经在往下落，拍后第 2 帧不见；下一张在上一张不见那一帧拿出来', () => {
+    const 事 = 段内正片事件帧('2-收集快乐');
+    const 拍们 = [事.收照片一, 事.收照片二, 事.收照片三, 事.收照片四];
+    const 满 = 拍们.map(() => 0);
+    for (let f = 0; f < 段.帧数; f++) {
+      const 照 = 照片态(f);
+      if (照 && (照.阶段 === '举' || (照.阶段 === '落' && 照.t === 0))) 满[第8句照片们.indexOf(照.源 as (typeof 第8句照片们)[number])]! += 1;
+    }
+    for (const n of 满) expect(n).toBeGreaterThanOrEqual(5);
+    拍们.forEach((拍, i) => {
+      expect(照片态(拍)).toMatchObject({ 阶段: '落', 源: 第8句照片们[i] });
+      expect(照片态(拍)!.t).toBeGreaterThan(0);
+      expect(拍 - 照片落拍前帧 + 照片落帧).toBe(拍 + 2);
+      const 下一 = 照片态(拍 + 2);
+      expect(下一?.源 ?? null).toBe(第8句照片们[i + 1] ?? null);
+    });
+  });
+
+  it('站位：哈气时苦力怕离你四五格；她收照片时站在箱子右边、离门洞一步多', () => {
     expect(哈气站位.你 - 哈气站位.苦力怕).toBeGreaterThanOrEqual(4);
     expect(哈气站位.你 - 哈气站位.苦力怕).toBeLessThanOrEqual(5);
-    expect(收照片站位).toBeGreaterThanOrEqual(0);
-    expect(收照片站位).toBeLessThan(1 - 7 / 16);
-    // 照片举着时横在她的脸（她脚底 ± 0.25 格）和你的左臂中间，下边高过箱子（15/16 格）
+    // 箱子 x 0.56～1.44；她身子（± 0.3 格）不压箱子，帽檐（± 0.5 格）不碰你的胳膊（± 0.5 格）
+    expect(收照片站位 - 0.3).toBeGreaterThanOrEqual(1 + 7 / 16);
+    expect(收照片站位 + 0.5).toBeLessThan(哈气站位.你 - 0.5);
+    expect(收照片站位 - 哈气站位.她).toBeGreaterThan(1.5);
+    // 照片举着时悬在箱子上方、不盖她的脸（她脚底 ± 0.13 格），下边高过箱子（15/16 格）
     const 宽 = (照片尺寸(第8句照片们[0]!).宽 / 16 / 照片细分) * 照片举缩放;
-    expect(照片举位[0] - 宽 / 2).toBeGreaterThan(收照片站位 + 0.25);
-    expect(照片举位[0] + 宽 / 2).toBeLessThan(哈气站位.你 - 0.5);
+    expect(照片举位[0] + 宽 / 2).toBeLessThan(收照片站位 - 0.13 - 0.05);
+    expect(Math.abs(照片举位[0] - 1)).toBeLessThan(0.25);
     expect(照片举位[2]).toBeGreaterThan(15 / 16);
     // 举着不动时照片像素是整的成片像素（N = 16 时 5 像素）
     expect(Number.isInteger(照片举缩放 * 照片细分)).toBe(true);
   });
 
-  it('苦力怕按原版追人速度（2.7 米/秒）走，从画框左边走进来（26.53 前后）；逃出画框在段尾之前', () => {
+  it('苦力怕 26.53 前脚进画框、哈气那一拍停住，走速和原版追人（2.7 米/秒）差不到一成；逃出画框在段尾之前', () => {
     const 追 = (((1 * 0.25) ** 2 * 0.98) / (1 - 0.6 * 0.91)) * 20;
+    expect(Math.abs(苦力怕走速 / 追 - 1)).toBeLessThan(0.1);
     const 左沿 = -1280 / 第8句镜头.取景.每格;
-    const 进画帧 = 正片事件.哈气.帧 - ((哈气站位.苦力怕 - (左沿 - 6 / 16)) / (追 * 苦力怕走倍率)) * fps;
-    expect(Math.abs(进画帧 - 正片事件.苦力怕冒头.帧)).toBeLessThan(4);
+    const 进画帧 = 正片事件.哈气.帧 - ((哈气站位.苦力怕 - (左沿 - 苦力怕前沿)) / 苦力怕走速) * fps;
+    expect(进画帧).toBeCloseTo(正片事件.苦力怕冒头.帧, 6);
     const 逃 = 3.89 * 苦力怕逃倍率;
-    const 出画帧 = 正片事件.苦力怕掉头.帧 + 苦力怕掉头帧 + ((哈气站位.苦力怕 - (左沿 - 6 / 16)) / 逃) * fps;
+    const 出画帧 = 正片事件.苦力怕掉头.帧 + 苦力怕掉头帧 + ((哈气站位.苦力怕 - (左沿 - 苦力怕前沿)) / 逃) * fps;
     expect(出画帧).toBeLessThan(段窗口('2-收集快乐').止帧);
   });
 
@@ -70,5 +93,20 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
       expect(照片尺寸(画)).toEqual({ 宽: 68, 高: 46 });
       expect(照片像素(画)).toHaveLength(68 * 46 * 4); // 小图字符没颜色、颜色写错都会抛
     }
+  });
+
+  it('照片也吃现成的图：16:9、宽 64 的倍数，白边按比例补（128×72 → 136×92），场景里的大小和像素画一样', () => {
+    const w = 128, h = 72;
+    const px = new Uint8Array(w * h * 4);
+    for (let p = 0; p < w * h; p++) px.set([10, 20, 30, 255], p * 4);
+    const 源 = { 名: '测试', 图: { w, h, px } };
+    expect(源尺寸(源)).toEqual({ 宽: 136, 高: 92, 每格像素: 128 });
+    const 画 = 第8句照片们[0]!;
+    expect(源尺寸(画).宽 / 源尺寸(画).每格像素).toBe(136 / 128);
+    const out = 源像素(源);
+    expect(out).toHaveLength(136 * 92 * 4);
+    expect([...out.subarray(0, 4)]).toEqual([0xfb, 0xfa, 0xf6, 255]); // 左上角是相纸
+    expect([...out.subarray((4 * 136 + 4) * 4, (4 * 136 + 4) * 4 + 4)]).toEqual([10, 20, 30, 255]); // 图从 (4, 4) 起
+    expect(() => 源尺寸({ 名: '歪', 图: { w: 100, h: 72, px } })).toThrow();
   });
 });
