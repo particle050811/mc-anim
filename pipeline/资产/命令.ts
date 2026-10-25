@@ -2,6 +2,7 @@
 // 共用表 assets/registry/ 登记的写 assets/资产锁.json，作品资产表 <作品根>/资产表/ 登记的写 <作品根>/资产锁.json（作品按 --作品 选）。
 // 从旧项目批量导入走 M2 的导入工具；这里只管单件（自制的、新生成的）。
 // anim assets vendor [--检查]：照 <作品根>/随仓库.toml 重写 <作品根>/字节/（随仓库发的字节，资产/随仓库.ts）；anim assets seed：把 字节/ 补进数据根 store/。
+// anim assets pack [--上传]：照 <作品根>/随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json；anim assets pull：按发布锁下载进数据根（资产/发布.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
@@ -10,6 +11,8 @@ import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 数据根 } from '../环境/配置.ts';
 import { 检查上下文 } from '../检查/上下文.ts';
+import { 上传发布, 打包发布, 拉发布, 读随发布表, 随发布表名 } from './发布.ts';
+import { 写发布锁, 读发布锁, 发布锁名 } from './发布锁.ts';
 import { 补字节, 写随仓库, 算随仓库, 读随仓库表, 随仓库表名, 字节目录 } from './随仓库.ts';
 import { 库名, 读两侧资产表 } from './资产表.ts';
 import { 作品资产锁路径, 入库, 写资产锁, 资产锁路径, 读资产锁, type 锁条目 } from './资产锁.ts';
@@ -64,20 +67,48 @@ const 写字节 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) 
   }
 };
 
+/** anim assets pack：照 随发布.toml 打附件、写发布锁；--上传 建 Release、传附件 */
+const 打发布 = async (上传: boolean, 记录: Parameters<命令['跑']>[1]) => {
+  const 根 = 作品根();
+  const 表文件 = path.join(根, 随发布表名);
+  if (!fs.existsSync(表文件)) throw new Error(`${相对代码根(表文件)} 不存在：这部作品没定挂 Release 发哪些段（写 "仓库"、"标签"、"段"）`);
+  const 表 = 读随发布表(fs.readFileSync(表文件, 'utf8'));
+  const c = new 检查上下文(代码根(), { 作品: 作品名() });
+  try {
+    const { 锁, 新打, 应 } = await 打包发布(c, 表, 根, 数据根());
+    写发布锁(锁, 根);
+    记录.产物.push(path.join(根, 发布锁名), ...新打);
+    const 大 = 锁.附件.reduce((s, a) => s + a.大小, 0);
+    console.log(`${应.段数} 段：${应.字节.length} 件字节、${应.地形.length} 个地形包，${锁.附件.length} 个附件共 ${(大 / 1e9).toFixed(2)} GB；新打 ${新打.length} 个${应.私有.length ? `；私有不发 ${应.私有.length} 件：${应.私有.join('、')}` : ''}`);
+    console.log(`写了 ${相对代码根(path.join(根, 发布锁名))}`);
+    if (上传) await 上传发布(锁, 数据根());
+    else if (新打.length) console.log(`传上去：anim assets pack --上传（要 gh 登录），或手动 gh release upload ${锁.标签} <cache/发布/ 里的附件> --repo ${锁.仓库}`);
+  } finally {
+    c.收尾();
+  }
+};
+
 export const 资产命令: Record<string, 命令> = {
   assets: {
-    用法: 'assets add <id> <文件> [--替换] | assets vendor [--检查] | assets seed',
-    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（render、still、film、studio 开头会自动做）',
+    用法: 'assets add <id> <文件> [--替换] | assets vendor [--检查] | assets seed | assets pack [--上传] | assets pull',
+    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（render、still、film、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--上传 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根',
     跑: async (args, 记录) => {
-      const p = 解析参数(args, { 开关: ['--替换', '--检查'] });
+      const p = 解析参数(args, { 开关: ['--替换', '--检查', '--上传'] });
       const [子, id, 文件] = p.位置;
       if (子 === 'vendor' && p.位置.length === 1 && !p.开关.has('--替换')) return 写字节(p.开关.has('--检查'), 记录);
+      if (子 === 'pack' && p.位置.length === 1 && [...p.开关].every((k) => k === '--上传')) return 打发布(p.开关.has('--上传'), 记录);
+      if (子 === 'pull' && p.位置.length === 1 && !p.开关.size) {
+        const 锁 = 读发布锁(作品根());
+        if (!锁) throw new Error(`${作品名()} 没有 ${发布锁名}：这部作品没有挂 Release 发的字节`);
+        await 拉发布(锁, 数据根());
+        return;
+      }
       if (子 === 'seed' && p.位置.length === 1 && !p.开关.size) {
         const r = 补字节(作品根(), 数据根());
         console.log(`${相对代码根(字节目录(作品根()))}：${r.共} 件，补进 ${path.join(数据根(), 'store')} ${r.补} 件（其余已有）`);
         return;
       }
-      if (子 !== 'add' || !id || !文件 || p.位置.length !== 3 || p.开关.has('--检查')) throw new 用法错误('要 anim assets add <id> <文件> [--替换]、anim assets vendor [--检查] 或 anim assets seed');
+      if (子 !== 'add' || !id || !文件 || p.位置.length !== 3 || p.开关.has('--检查')) throw new 用法错误('要 anim assets add <id> <文件> [--替换]、anim assets vendor [--检查]、anim assets seed、anim assets pack [--上传] 或 anim assets pull');
       const { 条目: 新, 锁文件, 挪自 } = 登记入库(id, 文件, { 作品根: 作品根(), 替换: p.开关.has('--替换') });
       记录.产物.push(`${id} → ${新.库}/${新.sha256}`);
       console.log(`${id}：${新.库}/${新.sha256.slice(0, 2)}/${新.sha256}（${新.大小} 字节，${新.后缀}）→ ${相对代码根(锁文件)}`);

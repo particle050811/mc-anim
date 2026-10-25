@@ -14,6 +14,7 @@ import { 读内容 } from '../检查/内容.ts';
 import { 读台词表 } from '../检查/规则/台词.ts';
 import { 音效起音资产 } from '../合成/台词落点.ts';
 import { 像素字资产 } from '../合成/字幕卡.ts';
+import { 提示发布缺 } from './发布锁.ts';
 import { 字节路径, type 资产锁, type 锁条目 } from './资产锁.ts';
 
 export const 随仓库表名 = '随仓库.toml';
@@ -36,6 +37,8 @@ export type 随仓库集合 = {
   件: Map<string, 随仓库件>;
   /** 用到了、但私有不带的 id */
   私有: string[];
+  /** 这些段声明的地形包（随仓库不带，挂 Release 的才发，见 资产/发布.ts） */
+  地形: string[];
   /** 选中的段键 */
   段们: string[];
   问题: string[];
@@ -43,7 +46,7 @@ export type 随仓库集合 = {
 
 /** 按 随仓库.toml 的段现算要随仓库发的资产（用 anim check 的依赖图和纯模块执行结果） */
 export const 算随仓库 = async (c: 检查上下文, 选择器: string[]): Promise<随仓库集合> => {
-  const 集合: 随仓库集合 = { 件: new Map(), 私有: [], 段们: [], 问题: [] };
+  const 集合: 随仓库集合 = { 件: new Map(), 私有: [], 段们: [], 地形: [], 问题: [] };
   const 内容 = await 读内容(c);
   if ('错误' in 内容) {
     集合.问题.push(内容.错误);
@@ -64,6 +67,7 @@ export const 算随仓库 = async (c: 检查上下文, 选择器: string[]): Pro
       集合.问题.push(`${s.键}：${s.错误 ?? '段.ts 读不出来'}`);
       continue;
     }
+    for (const 名 of s.定义.地形) if (!集合.地形.includes(名)) 集合.地形.push(名);
     const 入口 = [`${s.目录}/画面.tsx`, s.段文件, 'engine/段/设置.ts', c.作品路径('index.ts'), ...(s.定义.叠层 ?? []).map((l) => `${s.目录}/${l.入口}`)];
     for (const f of 闭包(图, 入口.filter((p) => 图.边.has(p)))) for (const id of 图.资产.get(f) ?? []) ids.add(id);
     for (const cue of s.定义.声音 ?? []) {
@@ -77,6 +81,7 @@ export const 算随仓库 = async (c: 检查上下文, 选择器: string[]): Pro
   }
   // anim film 自己读的：没登记就是这部作品不用（读音效起音 缺了按 0 算）
   for (const id of [音效起音资产, ...(有台词 ? [像素字资产] : [])]) if (锁[id]) ids.add(id);
+  集合.地形.sort();
   for (const id of [...ids].sort()) {
     const 条目 = 锁[id];
     if (!条目) {
@@ -211,9 +216,10 @@ export const 补字节 = (作品根: string, 根: string): 补字节结果 => {
   return r;
 };
 
-/** 补字节，补了才打一行 */
+/** 补字节，补了才打一行；挂 Release 发的还没下，提示 anim assets pull */
 export const 补字节并报 = (作品根: string, 根: string) => {
   const r = 补字节(作品根, 根);
+  提示发布缺(作品根, 根);
   if (r.补) console.log(`从 ${path.relative(process.cwd(), 字节目录(作品根)) || 字节目录(作品根)} 补了 ${r.补} 件字节进 ${path.join(根, 'store')}（共 ${r.共} 件，其余已有）`);
   return r;
 };

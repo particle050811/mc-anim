@@ -2,6 +2,7 @@
 // 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁.json）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
 // 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本、取了地形包的段都声明了；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
 // 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（资产/随仓库.ts）。
+// 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（资产/发布.ts）。
 // --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -14,6 +15,8 @@ import { 合并资产表, 读资产表, type 侧, type 资产条目 } from '../.
 import { 字节路径, type 资产锁 } from '../../资产/资产锁.ts';
 import { 数据根 as 配置数据根 } from '../../环境/配置.ts';
 import { 比对字节, 算随仓库, 读随仓库表, 随仓库表名, 字节目录名 } from '../../资产/随仓库.ts';
+import { 比对发布锁, 算应发, 读随发布表, 随发布表名 } from '../../资产/发布.ts';
+import { 发布锁名 } from '../../资产/发布锁.ts';
 
 /**
  * 搬来的代码还没改走 cue 的私有资产：import 那一行往上连着的 import 块顶上写一行「// 待迁移（私有资产）：原因」，算待迁移、不算违规。
@@ -153,6 +156,30 @@ const 查随仓库 = async (c: 检查上下文, 报: 报告, 锁: 资产锁) => 
   }
 };
 
+/** 挂 Release 发的：写了 随发布.toml 的，发布锁.json 要和现算的一致；没写的不该有发布锁 */
+const 查随发布 = async (c: 检查上下文, 报: 报告) => {
+  const 表 = c.作品路径(随发布表名);
+  const 锁文件 = c.作品路径(发布锁名);
+  if (!c.存在(表)) {
+    if (c.存在(锁文件)) 报.错(`有 ${锁文件} 却没有 ${随发布表名}`, 锁文件);
+    return;
+  }
+  let 发布表;
+  try {
+    发布表 = 读随发布表(c.读(表));
+  } catch (e) {
+    报.错((e as Error).message, 表);
+    return;
+  }
+  const 应 = await 算应发(c, 发布表);
+  for (const q of 应.问题) 报.错(`随发布：${q}`, 表);
+  if (应.问题.length) return;
+  const 锁 = c.存在(锁文件) ? (JSON.parse(c.读(锁文件)) as Parameters<typeof 比对发布锁>[0]) : undefined;
+  const 差 = 比对发布锁(锁, 应, 发布表);
+  for (const q of 差) 报.错(`随发布：${q}（anim assets pack --上传 照当前代码重打、传上去）`, 锁文件);
+  if (!差.length) 报.信息.push(`随发布：${应.段数} 段要的 ${应.字节.length} 件字节、${应.地形.length} 个地形包和 ${锁文件} 对得上${应.私有.length ? `；私有不发 ${应.私有.length} 件` : ''}`);
+};
+
 type 地形表 = { 包?: Record<string, { 版本: string; 清单sha256?: string; 文件数?: number; 大小?: number; 许可?: string; 可见性?: string }> };
 
 export const 资产 = async (c: 检查上下文, 报: 报告) => {
@@ -266,6 +293,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
   }
 
   await 查随仓库(c, 报, 锁);
+  await 查随发布(c, 报);
 
   if (!c.深) return;
   const 根 = c.数据根 ?? 配置数据根();
