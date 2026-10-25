@@ -28,21 +28,32 @@ describe('小木屋四周的地（用户 10-24「而且怎么超平坦背景 合
     }
   });
 
-  it('第 6、7 句那一扇和门口屋后那一扇是同一片地：两边都铺到的格，方块一样', () => {
-    const 键 = (b: { 状态: string; 位: readonly number[] }) => `${b.位.join(',')}=${b.状态}`;
+  it('第 6、7 句那一扇和门口屋后那一扇是同一片地：两边都铺到的格，地面一样高（只比地面以下有没有方块：门口那一扇不长樱花林，树干底下不变泥土）', () => {
+    const 键 = (b: { 位: readonly number[] }) => b.位.join(',');
     const 取 = (r: typeof 地形范围) => {
       const 块 = 四周方块(r);
-      return new Set([...块.平原, ...块.樱花林].filter((b) => b.位[1]! >= 30 && b.位[1]! <= 50 && Math.abs(b.位[0]!) <= 20).map(键));
+      return new Set(
+        [...块.平原, ...块.樱花林]
+          .filter((b) => b.位[1]! >= 30 && b.位[1]! <= 50 && Math.abs(b.位[0]!) <= 20 && b.位[2]! < 地面高(b.位[0]!, b.位[1]!))
+          .map(键),
+      );
     };
     const 七 = 取(地形范围), 八 = 取(屋后远景范围);
     expect(八.size).toBeGreaterThan(500);
     expect([...八].filter((k) => !七.has(k))).toEqual([]);
   });
 
+  it('门口那一扇（第 8～11 句）没有樱花林：用户 10-25「背景从什么都没有到长成一片樱花林」，第 13 句才一棵棵冒；第 6、7 句那一扇照旧有', () => {
+    const 八 = 四周方块(屋后远景范围);
+    expect(八.樱花林).toEqual([]);
+    expect(八.平原.filter((b) => /cherry|pink_petals/.test(b.状态))).toEqual([]);
+    const 七 = 四周方块(地形范围);
+    expect(七.樱花林.some((b) => b.状态.startsWith('minecraft:cherry_leaves'))).toBe(true);
+  });
+
   it('同一份种子铺出来的一样（每个渲染页面各铺一遍，帧和帧不能差）', () => {
     const a = 四周方块(屋后远景范围), b = 四周方块(屋后远景范围);
     expect(a.平原.length).toBe(b.平原.length);
-    expect(a.樱花林.length).toBe(b.樱花林.length);
-    expect(a.樱花林.slice(0, 50)).toEqual(b.樱花林.slice(0, 50));
+    expect(a.平原.slice(0, 50)).toEqual(b.平原.slice(0, 50));
   });
 });

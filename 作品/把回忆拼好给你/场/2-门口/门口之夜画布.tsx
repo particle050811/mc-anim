@@ -26,7 +26,7 @@ import { 侧机位, 侧投影 } from '../../地点/侧剖面.tsx';
 import { 侧剖面天空 } from '../../地点/天空.tsx';
 import { 告示牌 } from '../../地点/告示牌.tsx';
 import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
-import { 樱花树方块, 樱花树阶段 } from '../../地点/樱花树.ts';
+import { 樱花树方块 } from '../../地点/樱花树.ts';
 import { 照片墙格们 } from '../../地点/照片墙格.ts';
 import { 屋后远景 } from '../../地点/屋后远景.tsx';
 import { 格原点, 门口, 门口小木屋 } from '../../地点/门口小木屋.tsx';
@@ -241,7 +241,7 @@ export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, �
   const 天 = 天取景(镜);
   const 开天 = 天取景(镜头(正片事件.第9句入夜.帧));
   const 月 = 侧投影(开天, 宽, 高)(夜天弧.心[0], 夜天弧.心[1] + 夜天弧.半径);
-  const 树苗 = useMemo(() => 樱花树方块(樱花树阶段(0), [门口.树苗[0], 1, 0]), []);
+  const 树苗 = useMemo(() => 樱花树方块(false, [门口.树苗[0], 1, 0]), []);
   const 照片墙 = useMemo(() => 照片墙格们(第8句照片们), []);
   const 你姿 = 加挥手({ ...stevePose([你.x, 站排y, 0], 你.yaw, { headPitch: 你.头俯仰, holdR: !!你.拿 }), armRRoll: 0, armLRoll: 0 }, 你.挥);
   const 她loc: V3 = [她.x, 站排y, 0];

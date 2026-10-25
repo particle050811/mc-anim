@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { 分屏门在, 半屏取景, 取景, 地面线离底, 整屏取景, 整屏镜头, 整屏镜头N, 树顶屏, 正交顶面, 每格, 像素N, 默认天弧 } from './场/2-门口/参数.ts';
 import { 天亮, 天体位置, 天球角, 月相 } from './地点/天体.ts';
 import { 侧机位, 侧投影 } from './地点/侧剖面.tsx';
-import { 樱花树方块, 樱花树阶段 } from './地点/樱花树.ts';
+import { 樱花树方块, 樱花树长成 } from './地点/樱花树.ts';
 
 const 门口箱子右 = 2; // 地点/门口小木屋.tsx 门口.站位.箱子右（那边是 tsx，测试不引）
 
@@ -40,26 +40,18 @@ describe('天体：照原版 timeOfDay', () => {
   });
 });
 
-describe('樱花树：进度 → 五截', () => {
-  it('0 是树苗，每 1/5 长一截，1 是整棵', () => {
-    expect([0, 0.19, 0.2, 0.4, 0.6, 0.8, 0.99, 1].map(樱花树阶段)).toEqual([0, 0, 1, 2, 3, 4, 4, 5]);
+describe('樱花树：树苗或整棵（用户 10-25 起不再一截截长）', () => {
+  it('不到 1 是树苗，到 1 才长成', () => {
+    expect([0, 0.5, 0.99, 1].map(樱花树长成)).toEqual([false, false, false, true]);
+    expect(樱花树方块(false, [-5, 1, 0])).toEqual([{ 状态: 'minecraft:cherry_sapling', 位: [-5, 1, 0] }]);
   });
 
-  it('一截比一截高，整棵树顶 9 格（比屋脊 6.5 格高），格子不重复', () => {
-    const 顶 = (s: number) => Math.max(...樱花树方块(s, [-5, 1, 0]).map((b) => b.位[2] + 1));
-    expect([1, 2, 3, 4, 5].map(顶)).toEqual([3, 4, 5, 7, 9]);
-    for (let s = 0; s <= 5; s++) {
-      const 格 = 樱花树方块(s, [-5, 1, 0]).map((b) => b.位.join(','));
-      expect(new Set(格).size).toBe(格.length);
-    }
-    expect(樱花树方块(0, [-5, 1, 0])).toEqual([{ 状态: 'minecraft:cherry_sapling', 位: [-5, 1, 0] }]);
-  });
-
-  it('前四截叶子少，第 5 截叶子多出一大截、地上有花簇', () => {
-    const 叶 = (s: number) => 樱花树方块(s, [-5, 1, 0]).filter((b) => b.状态 === 'minecraft:cherry_leaves').length;
-    expect(叶(5)).toBeGreaterThan(2.5 * 叶(4));
-    expect(樱花树方块(5, [-5, 1, 0]).some((b) => b.状态.startsWith('minecraft:pink_petals'))).toBe(true);
-    expect(樱花树方块(4, [-5, 1, 0]).some((b) => b.状态.startsWith('minecraft:pink_petals'))).toBe(false);
+  it('整棵树顶 9 格（比屋脊 6.5 格高），格子不重复，地上有花簇', () => {
+    const 树 = 樱花树方块(true, [-5, 1, 0]);
+    expect(Math.max(...树.map((b) => b.位[2] + 1))).toBe(9);
+    const 格 = 树.map((b) => b.位.join(','));
+    expect(new Set(格).size).toBe(格.length);
+    expect(树.some((b) => b.状态.startsWith('minecraft:pink_petals'))).toBe(true);
   });
 });
 
