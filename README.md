@@ -3,7 +3,7 @@
 用 [Remotion](https://www.remotion.dev/) + [three.js](https://threejs.org/) 逐帧渲 Minecraft 动画：模型、贴图、音效、地形都取自原版和模组里的真实资源，不重画。仓库里有两部作品：
 
 - `作品/把回忆拼好给你/`：MC 短片，配歌「把回忆拼好给你」。**clone 下来就能渲**，渲片要用的贴图、模型、音效都在 `作品/把回忆拼好给你/字节/` 里，只有歌不带（见下面「加上歌」）。
-- `作品/应力转动/`：小说《机械动力应力转动》改编的漫剧。**公开仓库渲不了**：配音等私有素材不发，地形包太大，以后放 Release。
+- `作品/应力转动/`：小说《机械动力应力转动》改编的漫剧（第 6、7 章）。要的字节和地形包太大，挂在 GitHub Release，先 `anim assets pull` 拉下来（2.39 GB）再渲，见下面「渲「应力转动」」。
 
 ## 要装的
 
@@ -59,6 +59,19 @@ npm ci
    sha256 对不上会被拒，说明不是同一份文件（开头可能差几十毫秒，歌词和画面的卡点就错开了）。不要加 `--替换`，那会改掉资产锁。
 3. 重新 `render 2`、`film 2`。歌的有无记在段指纹里，加上歌以后用到它的段会自动重渲。
 
+## 渲「应力转动」
+
+```
+./anim --作品 应力转动 assets pull
+./anim --作品 应力转动 render 6
+./anim --作品 应力转动 film 6
+```
+
+- `assets pull` 从 Release `assets-v1` 下 4 个 tar（共 2.39 GB：字节 224 MB，三个地形包），核过 sha256 解进数据根的 `store/`、`terrain/`；断了重跑会接着下，已经有的跳过。走代理就先设 `HTTPS_PROXY`。
+- 没 pull 就渲，开头会提示一行缺多少；用到缺的东西的段渲不了。
+- 只想先看一眼：`./anim --作品 应力转动 still 6-飞越主世界俯冲边城 60 --到预览 试渲`。
+- 耗时参考：MacBook Air（M 系列）上 `render 6-7` 连同核对段约 43 分钟，单个地形段 10～17 分钟。
+
 ## 素材来源和版权
 
 - Minecraft 的贴图、模型、音效、字体和从游戏世界导出的场景版权归 Mojang。本项目是非官方作品，与 Mojang 无关。NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
@@ -74,3 +87,4 @@ npm ci
 
 - 架构、命名、决策记录在 `docs/`，先看 `docs/架构.md`。
 - `作品/把回忆拼好给你/字节/` 由 `anim assets vendor` 照 `作品/把回忆拼好给你/随仓库.toml` 现算重写，`anim check` 核对它和代码的引用一致，见 `docs/决策/0005-随仓库发字节.md`。
+- 应力转动 挂 Release 的附件由 `anim assets pack --上传` 照 `作品/应力转动/随发布.toml` 打、传，`作品/应力转动/发布锁.json` 记每个附件的 sha256，`anim check` 核对它和代码要的一致，见 `docs/决策/0006-挂Release发字节.md`。

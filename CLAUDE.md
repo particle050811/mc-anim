@@ -21,12 +21,13 @@ anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段�
 anim still <段> <帧…> --到预览 <主题>      anim stale [<选择器>]
 anim verify [<段>]  |  anim verify accept <段> --理由 …
 anim film <范围>  |  anim assets add <id> <文件>  |  anim preview new <主题>
+anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（0005）、挂 Release 发的字节和地形包（0006）
 anim extract <配方|组…> | --全部 [--只打印|--检查]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim mcai <动作…>                          取材 mod 的命令行；开游戏、编译过资源闸
 anim edit-package <交付目录>  |  anim jianying export|readback   剪辑包和剪映草稿
 anim bili 导入 <json>  |  anim bili 分析     B 站创作中心数据（浏览器里跑 pipeline/适配器/bili/取数.js 下载）收进数据根、对交付出报告
 ```
-还没实现（方案三-5）：`anim world`（M10，现在只有模板 `sourcing/worlds/`）；`anim voice`、`anim music`、`anim assets import|verify|pull|gc`（没排阶段；字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
+还没实现（方案三-5）：`anim world`（M10，现在只有模板 `sourcing/worlds/`）；`anim voice`、`anim music`、`anim assets import|verify|gc`（没排阶段；字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。
 
 Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；新 worktree 里 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim render`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
 
