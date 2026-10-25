@@ -1,17 +1,19 @@
 // 资产：资产表字段齐全（许可是 SPDX 表达式）、资产表和资产锁一一对应、私有的进 私有/ 库；
 // 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁.json）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
 // 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本、取了地形包的段都声明了；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
+// 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（资产/随仓库.ts）。
 // --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { 读内容 } from '../内容.ts';
-import { 是渲染代码, type 依赖图, type 报告, type 检查上下文 } from '../上下文.ts';
+import { 是渲染代码, 闭包, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 解析, 遍历, ts } from '../语法.ts';
 import { 台词表路径, 读台词表 } from './台词.ts';
 import { 合并资产表, 读资产表, type 侧, type 资产条目 } from '../../资产/资产表.ts';
 import { 字节路径, type 资产锁 } from '../../资产/资产锁.ts';
 import { 数据根 as 配置数据根 } from '../../环境/配置.ts';
+import { 比对字节, 算随仓库, 读随仓库表, 随仓库表名, 字节目录名 } from '../../资产/随仓库.ts';
 
 /**
  * 搬来的代码还没改走 cue 的私有资产：import 那一行往上连着的 import 块顶上写一行「// 待迁移（私有资产）：原因」，算待迁移、不算违规。
@@ -104,14 +106,6 @@ export const 包清单 = async (目录: string) => {
 /** 取区段包的模块（packDir 拼包的版本目录）：闭包里有它的段才会在渲染时取地形包 */
 const 取包模块 = 'engine/voxel/区段包位置.ts';
 
-/** 从入口们沿依赖图走到的全部仓库内文件 */
-const 闭包 = (图: 依赖图, 入口: string[]) => {
-  const 到过 = new Set(入口);
-  const 队 = [...入口];
-  while (队.length) for (const e of 图.边.get(队.shift()!) ?? []) if (!e.外部 && !到过.has(e.到)) 到过.add(e.到), 队.push(e.到);
-  return 到过;
-};
-
 /** 文件里的字符串字面量（不含 import 来源） */
 const 字符串们 = (c: 检查上下文, p: string, 缓存: Map<string, Set<string>>) => {
   let r = 缓存.get(p);
@@ -124,6 +118,39 @@ const 字符串们 = (c: 检查上下文, p: string, 缓存: Map<string, Set<str
     缓存.set(p, r);
   }
   return r;
+};
+
+/** 随仓库发的字节：没写 随仓库.toml 的作品不该有 字节/；写了的，字节/ 要和现算的集合一致 */
+const 查随仓库 = async (c: 检查上下文, 报: 报告, 锁: 资产锁) => {
+  const 表 = c.作品路径(随仓库表名);
+  const 字节 = c.作品路径(字节目录名);
+  if (!c.存在(表)) {
+    if (c.存在(字节)) 报.错(`有 ${字节}/ 却没有 ${随仓库表名}：随仓库发哪些段的字节要写在 ${表}（"段" = ["<段键或章>", …]）`, 字节);
+    return;
+  }
+  let 选择器: string[];
+  try {
+    选择器 = 读随仓库表(c.读(表)).段;
+  } catch (e) {
+    报.错((e as Error).message.split('\n')[0]!, 表);
+    return;
+  }
+  const 集合 = await 算随仓库(c, 选择器);
+  for (const q of 集合.问题) 报.错(`随仓库：${q}`, 表);
+  if (集合.问题.length) return;
+  const r = 比对字节(集合, c.绝对(c.作品目录));
+  const 私有sha = new Map(Object.entries(锁).filter(([, l]) => l.库 === '私有').map(([id, l]) => [l.sha256, id]));
+  const 修 = '（anim assets vendor 照当前代码重写）';
+  if (r.添.length) 报.错(`${字节}/ 缺 ${r.添.length} 件：${r.添.slice(0, 5).map((rel) => 集合.件.get(rel.split('/')[1]!)!.ids.join('、')).join('；')}${r.添.length > 5 ? ' 等' : ''}${修}`, 字节);
+  for (const rel of r.改) 报.错(`${字节}/${rel} 的内容 sha256 和文件名对不上${修}`, `${字节}/${rel}`);
+  for (const rel of r.删) {
+    const 私 = 私有sha.get(rel.split('/').at(-1)!);
+    if (私) 报.错(`${字节}/${rel} 是私有资产「${私}」的字节，不能随仓库发${修}`, `${字节}/${rel}`);
+    else 报.错(`${字节}/${rel} 多余：${随仓库表名} 的段现在用不到，或不是 <sha 前两位>/<sha256>${修}`, `${字节}/${rel}`);
+  }
+  if (!r.添.length && !r.改.length && !r.删.length) {
+    报.信息.push(`随仓库：${集合.段们.length} 段要的 ${r.件数} 件字节（${(r.大小 / 1e6).toFixed(1)} MB）都在 ${字节}/、sha 对；私有不带 ${集合.私有.length} 件`);
+  }
 };
 
 type 地形表 = { 包?: Record<string, { 版本: string; 清单sha256?: string; 文件数?: number; 大小?: number; 许可?: string; 可见性?: string }> };
@@ -237,6 +264,8 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
     }
     for (const k of (doc['代码'] ?? []) as { 新位置?: string }[]) if (k.新位置 && !c.存在(k.新位置)) 报.待(`角色包 ${名} 的代码 ${k.新位置} 还没搬`, p);
   }
+
+  await 查随仓库(c, 报, 锁);
 
   if (!c.深) return;
   const 根 = c.数据根 ?? 配置数据根();

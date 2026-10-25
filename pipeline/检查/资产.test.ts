@@ -211,3 +211,39 @@ describe('作品资产表', () => {
     expect(没挡).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配音\/甲/);
   });
 });
+
+describe('随仓库发的字节', () => {
+  // 7-甲 的画面 import 贴图/甲，cue 放私有配乐 配乐/私曲：字节/ 里该有且只有 贴图/甲 那一件
+  const 甲 = '甲的字节';
+  const 私 = '私曲的字节';
+  const 位置 = (s: string) => `作品/应力转动/字节/${sha(s).slice(0, 2)}/${sha(s)}`;
+  const 仓库 = (...层: Record<string, string | null>[]) =>
+    造仓库(
+      基础(),
+      {
+        'assets/registry/配乐.toml': 表(条('配乐/私曲', '私有', 'LicenseRef-All-Rights-Reserved')),
+        'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条(sha(甲)), '配乐/私曲': 锁条(sha(私), '私有') }),
+        '作品/应力转动/段/7-甲/段.ts':
+          "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [], 声音: [{ 帧: 0, 资产: '配乐/私曲', 名: '歌', 帧数: 10 }] });\n",
+        '作品/应力转动/随仓库.toml': '"段" = ["7"]',
+        [位置(甲)]: 甲,
+      },
+      ...层,
+    );
+
+  it('字节/ 和集合一致放行，报件数；私有的不算', async () => {
+    const r = await 跑('资产', 仓库());
+    expect(r.违规).toEqual([]);
+    expect(r.报.信息.join('\n')).toMatch(/随仓库：1 段要的 1 件字节（0.0 MB）都在 作品\/应力转动\/字节\/、sha 对；私有不带 1 件/);
+  });
+
+  it('缺的、改坏的、多余的、私有的、没有 随仓库.toml 的 字节/、表里写了不存在的段都拦', async () => {
+    expect((await 跑('资产', 仓库({ [位置(甲)]: null }))).违规).toEqual(['作品/应力转动/字节 作品/应力转动/字节/ 缺 1 件：贴图/甲（anim assets vendor 照当前代码重写）']);
+    expect((await 跑('资产', 仓库({ [位置(甲)]: '改过' }))).违规.join()).toMatch(/的内容 sha256 和文件名对不上/);
+    const 多 = (await 跑('资产', 仓库({ [位置(私)]: 私, [位置('别的')]: '别的' }))).违规.join('\n');
+    expect(多).toMatch(/是私有资产「配乐\/私曲」的字节，不能随仓库发/);
+    expect(多).toMatch(/多余：随仓库.toml 的段现在用不到/);
+    expect((await 跑('资产', 仓库({ '作品/应力转动/随仓库.toml': null }))).违规.join()).toMatch(/有 作品\/应力转动\/字节\/ 却没有 随仓库.toml/);
+    expect((await 跑('资产', 仓库({ '作品/应力转动/随仓库.toml': '"段" = ["8"]' }))).违规.join()).toMatch(/「8」没对上清单里的段/);
+  });
+});

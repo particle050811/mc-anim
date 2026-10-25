@@ -63,7 +63,7 @@ export const 渲染命令: Record<string, 命令> = {
         return Number(f);
       });
       const dir = 新建预览目录(p.值['--到预览']);
-      const 出 = await 渲静帧(段们[0]!, 帧们, 取级别(p.值['--级别']), dir);
+      const 出 = await 渲静帧(段们[0]!, 帧们, 取级别(p.值['--级别']), dir, 记录);
       记录.产物.push(...出);
       console.log(`静帧在 ${dir}`);
     },

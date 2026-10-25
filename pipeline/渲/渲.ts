@@ -1,6 +1,8 @@
 // 渲母版：整个工程只打包一次、开一个浏览器，逐段 renderMedia（旧项目 批量渲染.mjs 的链路）。
 // 指纹对得上的母版直接用；每段渲之前排队过渲染闸，渲完核帧数、改名、写 .指纹.json，耗时按段记进耗时表。
 // 段.ts 声明的透明叠层（<段键>-<名>）同样按指纹缓存，渲成 ProRes 4444 放 cache/叠层/。
+// 打包前把作品随仓库发的字节补进数据根（资产/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
+// 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（资产/缺字节.ts）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,8 +13,12 @@ import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
-import { 叠层目录 } from '../环境/配置.ts';
-import type { 段信息 } from '../清单/清单.ts';
+import { 叠层目录, 数据根 } from '../环境/配置.ts';
+import { 全部段, type 段信息 } from '../清单/清单.ts';
+import { 读作品资产锁 } from '../资产/资产锁.ts';
+import { 补字节并报 } from '../资产/随仓库.ts';
+import { 补缺字节占位 } from '../资产/缺字节.ts';
+import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
 import { 记耗时, 预计耗时, type 运行记录 } from '../运行记录/记录.ts';
 import { 叠层路径, 母版路径, 写指纹 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
@@ -24,12 +30,18 @@ import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 
-export const 打包 = async () => {
+export const 打包 = async (记录?: 运行记录) => {
+  const 根 = 作品根();
+  补字节并报(根, 数据根());
+  for (const x of 备好私有配乐(await 全部段(), 读作品资产锁(根), 数据根())) {
+    if (记录) 记录.记('警告', 缺配乐提示(x));
+    else console.error(`!! ${缺配乐提示(x)}`);
+  }
   const t0 = Date.now();
   const serveUrl = await bundle({
     entryPoint: path.join(作品根(), 'index.ts'),
     rootDir: 代码根(),
-    webpackOverride: webpack改写(作品根()),
+    webpackOverride: 补缺字节占位(webpack改写(根), 根),
     enableCaching: true,
     publicDir: 备好public目录(),
     // public 里只有指向数据根的链接，转发进包是预期的
@@ -42,14 +54,14 @@ export const 打包 = async () => {
 type 会话 = { serveUrl: string; browser: HeadlessBrowser; 参数: 渲染参数表; 组合: Awaited<ReturnType<typeof getCompositions>> };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承 */
-export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>): Promise<T> => {
+export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {
     // 没权限改优先级就照常跑
   }
   const 参数 = 渲染参数(级别);
-  const serveUrl = await 打包();
+  const serveUrl = await 打包(记录);
   const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' });
   // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
   收求解缓存(browser);
@@ -143,7 +155,7 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
       });
       opts.记录.产物.push(r.母版);
     }
-  });
+  }, opts.记录);
   return 结果;
 };
 
@@ -211,12 +223,12 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
       });
       opts.记录.产物.push(r.文件);
     }
-  });
+  }, opts.记录);
   return 结果;
 };
 
 /** 单帧静帧（PNG），给预览核对用 */
-export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string) => {
+export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录) => {
   const 出: string[] = [];
   await 开会话(级别, async (h) => {
     const composition = 找组合(h, s);
@@ -244,6 +256,6 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
         出.push(file);
       }
     });
-  });
+  }, 记录);
   return 出;
 };

@@ -6,7 +6,7 @@
 // 产出 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、接缝、字幕表、SRT、台词落点、同步表、字幕核对、manifest.json。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 交付根, 配置, isMac } from '../环境/配置.ts';
+import { 交付根, 配置, isMac, 数据根 } from '../环境/配置.ts';
 import { 提交状态, 相对代码根 } from '../环境/路径.ts';
 import { 低优先级, 跑, 跑出, 试跑 } from '../环境/子进程.ts';
 import { 叠层目录, 数据路径, 相对数据根 } from '../环境/配置.ts';
@@ -14,6 +14,7 @@ import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import { 全部段, type 段信息 } from '../清单/清单.ts';
 import { 读作品资产锁, 解析资产 } from '../资产/资产锁.ts';
+import { 补字节并报 } from '../资产/随仓库.ts';
 import { 叠层路径, 母版路径, 历史指纹, 原子写 } from '../渲/母版.ts';
 import { 叠层渲染参数, 渲染参数 } from '../渲/设置.ts';
 import { 渲染叠层, 渲染母版 } from '../渲/渲.ts';
@@ -167,6 +168,8 @@ export const 合成成片 = async (
   if (段们.some((s) => s.段.fps !== fps)) throw new Error(`各段帧率不一样：${段们.map((s) => `${s.键} ${s.段.fps}`).join('、')}`);
   const 每帧样本 = 采样率 / fps;
   if (!Number.isInteger(每帧样本)) throw new Error(`帧率 ${fps} 下每帧不是整数个样本`);
+  // 同步表要读资产锁里的字节（音效起音）：公开仓库 clone 下来、母版都在别处渲好的，也先把随仓库的字节补进数据根
+  补字节并报(作品根(), 数据根());
   const 截们 = await 取母版(段们, opts.级别, opts);
   const 叠层们 = opts.不叠层 ? [] : await 取叠层(截们, opts.级别, opts);
   const 总帧数 = 截们.reduce((a, c) => a + c.帧数, 0);
