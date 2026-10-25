@@ -1,0 +1,5 @@
+# 挂 GitHub Release 发的字节（docs/决策/0006-挂Release发字节.md）：这些段渲片要用的字节和它们声明的地形包，anim assets pack 打附件、写 发布锁.json，
+# anim assets pull 下载进数据根。用户 10-25 定「应力转动所有素材都公开」。章写成字符串；改了这里或段的引用，重跑 anim assets pack --上传，anim check 核对。
+"仓库" = "particle050811/mc-anim"
+"标签" = "assets-v1"
+"段" = ["6", "7", "核对"]
