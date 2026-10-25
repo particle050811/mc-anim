@@ -1,0 +1,443 @@
+{
+ "说明": "工具/游戏取材/关键帧方块.py 从各 jar 的群系 JSON 算出来的草、树叶、水色，规则见 lib/体素/群系色.ts，不要手改",
+ "群系": {
+  "minecraft:badlands": {
+   "草": "#90814d",
+   "叶": "#9e814d",
+   "水": "#3f76e4"
+  },
+  "minecraft:bamboo_jungle": {
+   "草": "#59c93c",
+   "叶": "#30bb0b",
+   "水": "#3f76e4"
+  },
+  "minecraft:basalt_deltas": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:beach": {
+   "草": "#91bd59",
+   "叶": "#77ab2f",
+   "水": "#3f76e4"
+  },
+  "minecraft:birch_forest": {
+   "草": "#88bb66",
+   "叶": "#6ba940",
+   "水": "#3f76e4"
+  },
+  "minecraft:cherry_grove": {
+   "草": "#b6db61",
+   "叶": "#b6db61",
+   "水": "#5db7ef"
+  },
+  "minecraft:cold_ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3d57d6"
+  },
+  "minecraft:crimson_forest": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:dark_forest": {
+   "草": "#507a32",
+   "叶": "#59ae30",
+   "水": "#3f76e4"
+  },
+  "minecraft:deep_cold_ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3d57d6"
+  },
+  "minecraft:deep_dark": {
+   "草": "#91bd59",
+   "叶": "#77ab2f",
+   "水": "#3f76e4"
+  },
+  "minecraft:deep_frozen_ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3938c9"
+  },
+  "minecraft:deep_lukewarm_ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#45adf2"
+  },
+  "minecraft:deep_ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:desert": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:dripstone_caves": {
+   "草": "#91bd59",
+   "叶": "#77ab2f",
+   "水": "#3f76e4"
+  },
+  "minecraft:end_barrens": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:end_highlands": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:end_midlands": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:eroded_badlands": {
+   "草": "#90814d",
+   "叶": "#9e814d",
+   "水": "#3f76e4"
+  },
+  "minecraft:flower_forest": {
+   "草": "#79c05a",
+   "叶": "#59ae30",
+   "水": "#3f76e4"
+  },
+  "minecraft:forest": {
+   "草": "#79c05a",
+   "叶": "#59ae30",
+   "水": "#3f76e4"
+  },
+  "minecraft:frozen_ocean": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3938c9"
+  },
+  "minecraft:frozen_peaks": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3f76e4"
+  },
+  "minecraft:frozen_river": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3938c9"
+  },
+  "minecraft:grove": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3f76e4"
+  },
+  "minecraft:ice_spikes": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3f76e4"
+  },
+  "minecraft:jagged_peaks": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3f76e4"
+  },
+  "minecraft:jungle": {
+   "草": "#59c93c",
+   "叶": "#30bb0b",
+   "水": "#3f76e4"
+  },
+  "minecraft:lukewarm_ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#45adf2"
+  },
+  "minecraft:lush_caves": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:mangrove_swamp": {
+   "草": "#6ac44e",
+   "叶": "#8db127",
+   "水": "#3a7a6a",
+   "草修饰": "minecraft:swamp"
+  },
+  "minecraft:meadow": {
+   "草": "#83bb6d",
+   "叶": "#63a948",
+   "水": "#0e4ecf"
+  },
+  "minecraft:mushroom_fields": {
+   "草": "#55c93f",
+   "叶": "#2bbb0f",
+   "水": "#3f76e4"
+  },
+  "minecraft:nether_wastes": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:old_growth_birch_forest": {
+   "草": "#88bb66",
+   "叶": "#6ba940",
+   "水": "#3f76e4"
+  },
+  "minecraft:old_growth_pine_taiga": {
+   "草": "#86b87f",
+   "叶": "#68a55f",
+   "水": "#3f76e4"
+  },
+  "minecraft:old_growth_spruce_taiga": {
+   "草": "#86b783",
+   "叶": "#68a464",
+   "水": "#3f76e4"
+  },
+  "minecraft:plains": {
+   "草": "#91bd59",
+   "叶": "#77ab2f",
+   "水": "#3f76e4"
+  },
+  "minecraft:river": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:savanna": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:savanna_plateau": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:small_end_islands": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:snowy_beach": {
+   "草": "#83b593",
+   "叶": "#64a278",
+   "水": "#3d57d6"
+  },
+  "minecraft:snowy_plains": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3f76e4"
+  },
+  "minecraft:snowy_slopes": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3f76e4"
+  },
+  "minecraft:snowy_taiga": {
+   "草": "#80b497",
+   "叶": "#60a17b",
+   "水": "#3d57d6"
+  },
+  "minecraft:soul_sand_valley": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:sparse_jungle": {
+   "草": "#64c73f",
+   "叶": "#3eb80f",
+   "水": "#3f76e4"
+  },
+  "minecraft:stony_peaks": {
+   "草": "#9abe4b",
+   "叶": "#82ac1e",
+   "水": "#3f76e4"
+  },
+  "minecraft:stony_shore": {
+   "草": "#8ab689",
+   "叶": "#6da36b",
+   "水": "#3f76e4"
+  },
+  "minecraft:sunflower_plains": {
+   "草": "#91bd59",
+   "叶": "#77ab2f",
+   "水": "#3f76e4"
+  },
+  "minecraft:swamp": {
+   "草": "#6ac44e",
+   "叶": "#6a7039",
+   "水": "#617b64",
+   "草修饰": "minecraft:swamp"
+  },
+  "minecraft:taiga": {
+   "草": "#86b783",
+   "叶": "#68a464",
+   "水": "#3f76e4"
+  },
+  "minecraft:the_end": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:the_void": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "minecraft:warm_ocean": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#43d5ee"
+  },
+  "minecraft:warped_forest": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:windswept_forest": {
+   "草": "#8ab689",
+   "叶": "#6da36b",
+   "水": "#3f76e4"
+  },
+  "minecraft:windswept_gravelly_hills": {
+   "草": "#8ab689",
+   "叶": "#6da36b",
+   "水": "#3f76e4"
+  },
+  "minecraft:windswept_hills": {
+   "草": "#8ab689",
+   "叶": "#6da36b",
+   "水": "#3f76e4"
+  },
+  "minecraft:windswept_savanna": {
+   "草": "#bfb755",
+   "叶": "#aea42a",
+   "水": "#3f76e4"
+  },
+  "minecraft:wooded_badlands": {
+   "草": "#90814d",
+   "叶": "#9e814d",
+   "水": "#3f76e4"
+  },
+  "twilightforest:clearing": {
+   "草": "#91bd59",
+   "叶": "#77ab2f",
+   "水": "#3f76e4"
+  },
+  "twilightforest:dark_forest": {
+   "草": "#4b6754",
+   "叶": "#3b5e3f",
+   "水": "#3f76e4"
+  },
+  "twilightforest:dark_forest_center": {
+   "草": "#667540",
+   "叶": "#f9821e",
+   "水": "#3f76e4",
+   "草修饰": "twilightforest:dark_forest_center",
+   "叶修饰": "twilightforest:dark_forest_center"
+  },
+  "twilightforest:dense_forest": {
+   "草": "#79c05a",
+   "叶": "#59ae30",
+   "水": "#005522"
+  },
+  "twilightforest:dense_mushroom_forest": {
+   "草": "#61c64b",
+   "叶": "#3bb61e",
+   "水": "#3f76e4"
+  },
+  "twilightforest:enchanted_forest": {
+   "草": "#00ffff",
+   "叶": "#00ffff",
+   "水": "#3f76e4",
+   "草修饰": "twilightforest:enchanted_forest",
+   "叶修饰": "twilightforest:enchanted_forest"
+  },
+  "twilightforest:final_plateau": {
+   "草": "#a6bb4e",
+   "叶": "#91a922",
+   "水": "#3f76e4"
+  },
+  "twilightforest:fire_swamp": {
+   "草": "#572e23",
+   "叶": "#64260f",
+   "水": "#6c2c2c"
+  },
+  "twilightforest:firefly_forest": {
+   "草": "#7cbd6b",
+   "叶": "#5bab46",
+   "水": "#3f76e4"
+  },
+  "twilightforest:forest": {
+   "草": "#8eb971",
+   "叶": "#71a74d",
+   "水": "#3f76e4"
+  },
+  "twilightforest:glacier": {
+   "草": "#85b591",
+   "叶": "#66a275",
+   "水": "#3f76e4"
+  },
+  "twilightforest:highlands": {
+   "草": "#88b977",
+   "叶": "#6aa755",
+   "水": "#3f76e4"
+  },
+  "twilightforest:lake": {
+   "草": "#70c15b",
+   "叶": "#4cb031",
+   "水": "#3f76e4"
+  },
+  "twilightforest:mushroom_forest": {
+   "草": "#72c250",
+   "叶": "#4eb224",
+   "水": "#3f76e4"
+  },
+  "twilightforest:oak_savannah": {
+   "草": "#b9b75b",
+   "叶": "#a6a432",
+   "水": "#3f76e4"
+  },
+  "twilightforest:snowy_forest": {
+   "草": "#ffffff",
+   "叶": "#ffffff",
+   "水": "#3f76e4"
+  },
+  "twilightforest:spooky_forest": {
+   "草": "#c45123",
+   "叶": "#ff8501",
+   "水": "#bc8857",
+   "草修饰": "twilightforest:spooky_forest",
+   "叶修饰": "twilightforest:spooky_forest"
+  },
+  "twilightforest:stream": {
+   "草": "#9cb774",
+   "叶": "#83a352",
+   "水": "#3f76e4"
+  },
+  "twilightforest:swamp": {
+   "草": "#5c694e",
+   "叶": "#496137",
+   "水": "#95b55f"
+  },
+  "twilightforest:thornlands": {
+   "草": "#90b682",
+   "叶": "#74a362",
+   "水": "#3f76e4"
+  },
+  "twilightforest:underground": {
+   "草": "#acb668",
+   "叶": "#97a342",
+   "水": "#3f76e4"
+  },
+  "quark:glimmering_weald": {
+   "草": "#91bd59",
+   "叶": "#77ab2f",
+   "水": "#3f76e4"
+  }
+ }
+}

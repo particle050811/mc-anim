@@ -21,3 +21,5 @@
 *.ttf binary
 *.otf binary
 *.blend binary
+# 随仓库发的字节（内容寻址、文件名就是 sha256，没有扩展名）：一律按二进制，不转换行、不做文本 diff，checkout 出来 sha 才对得上
+/作品/*/字节/** binary
