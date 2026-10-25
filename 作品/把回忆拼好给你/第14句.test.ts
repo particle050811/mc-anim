@@ -22,7 +22,26 @@ import {
 } from './场/2-门口/归隐参数.ts';
 import { 回色, 铃 } from './场/2-门口/第15句.ts';
 import { 纸声们 } from './场/2-门口/第8句参数.ts';
-import { 中线, 混起, 片框, 纸图们, 纸花们, 纸花参数, 纸花在, 纸落完秒, 看得见, 落完 } from './场/2-门口/纸花.ts';
+import {
+  中线,
+  变完秒,
+  变档数,
+  变法,
+  挡她,
+  档位,
+  混起,
+  片框,
+  瓣形,
+  看得见,
+  碎图们,
+  纸花们,
+  纸花参数,
+  纸花在,
+  让开,
+  风,
+  风力,
+  type 纸花片,
+} from './场/2-门口/纸花.ts';
 import { 第14句声音们 } from './场/2-门口/第14句声音.ts';
 import { 符文歌词默认, 字状态 } from './界面/符文排版.ts';
 import { 正片歌词行 } from './界面/符文歌词数据.ts';
@@ -198,86 +217,160 @@ describe('教学楼下', () => {
   });
 });
 
-describe('纸和花瓣（用户 10-24：两边方向、速度一样，合屏时混在一起；用户 10-25：纸要认得出是撕下来的、多到漫天飘）', () => {
+describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 10-25：撕碎、被风横着吹过去、一边飘一边变成樱花瓣）', () => {
   const 全 = 纸花们();
   const 纸们 = 全.filter((q) => q.种 === '纸');
+  const 瓣们 = 全.filter((q) => q.种 === '瓣');
   const 段帧们 = Array.from({ length: 段窗口('2-摇铃').止帧 - 事.第14句分屏.帧 }, (_, i) => 事.第14句分屏.帧 + i);
   /** 这一刻露在 [左, 1280) × [0, 720) 里的 */
-  const 画里 = (qs: readonly typeof 全[number][], t: number, 左: number) =>
+  const 画里 = (qs: readonly 纸花片[], t: number, 左 = 0) =>
     qs.filter((q) => {
       if (!看得见(q, t)) return false;
       const { x, y } = 纸花在(q, t);
       const k = 片框(q);
       return x + k.宽 > 左 && x < 1280 && y + k.高 > 0 && y < 720;
     });
+  const 中心x = (q: 纸花片, t: number) => 纸花在(q, t).x + 片框(q).宽 / 2;
 
-  it('纸、花瓣的飘法从同一套分布里取（往下、往左的速度都在 纸花参数 的范围里）', () => {
+  it('碎纸、花瓣的飘法从同一套分布里取（没风时往下、往左的速度，吃风多少都在范围里）', () => {
     for (const q of 全) {
       expect(q.vx).toBeGreaterThanOrEqual(纸花参数.vx[0]);
       expect(q.vx).toBeLessThanOrEqual(纸花参数.vx[1]);
       expect(q.vy).toBeGreaterThanOrEqual(纸花参数.vy[0]);
       expect(q.vy).toBeLessThanOrEqual(纸花参数.vy[1]);
+      expect(q.吃风).toBeGreaterThanOrEqual(风.吃[0]);
+      expect(q.吃风).toBeLessThanOrEqual(风.吃[1]);
     }
   });
 
-  it('纸的样子：每张都有撕掉的缺口、至少两道字行，字行总是横的（只正着、倒着放）', () => {
-    for (const 图 of 纸图们) {
+  it('碎纸的样子：小块（3～5 格）、每张都有撕掉的缺口、至少一道字行，字行总是横的（只正着、倒着放）', () => {
+    for (const 图 of 碎图们) {
       expect(new Set(图.map((行) => 行.length)).size).toBe(1);
+      for (const n of [图.length, 图[0]!.length]) {
+        expect(n).toBeGreaterThanOrEqual(3);
+        expect(n).toBeLessThanOrEqual(5);
+      }
       expect(图.join('')).toContain('.');
-      expect(图.filter((行) => 行.includes('L')).length).toBeGreaterThanOrEqual(2);
+      expect(图.some((行) => 行.includes('LL'))).toBe(true);
     }
     for (const q of 纸们) expect(q.转 % 2).toBe(0);
   });
 
-  it('漫天飘：分屏里有一刻右屏里飘着三十张以上，上、中、下三截都有', () => {
-    const 好 = 段帧们
-      .filter((f) => f < 事.合屏起.帧)
-      .some((f) => {
-        const 在 = 画里(纸们, 秒(f), 中线);
-        const 截 = [0, 1, 2].map((i) => 在.filter((q) => Math.floor(Math.max(0, 纸花在(q, 秒(f)).y) / 240) === i).length);
-        return 在.length >= 30 && 截.every((n) => n >= 5);
-      });
-    expect(好).toBe(true);
+  it('风：纸飘下 那一拍前后刮起来，一直刮到转向铃，摇铃那一拍停住（樱花风从铃那里接手）', () => {
+    expect(风力(事.纸飘下.秒 - 0.2)).toBe(0);
+    for (let t = 事.纸飘下.秒 + 0.3; t <= 事.转向铃.秒; t += 0.05) expect(风力(t)).toBeCloseTo(1, 9);
+    expect(风力(事.摇铃.秒)).toBe(0);
   });
 
-  it('合屏起 以前：看得见的纸露在右屏、花瓣在左屏（只差左右晃的那一点）', () => {
-    for (let f = 事.第14句分屏.帧; f < 事.合屏起.帧; f += 2) {
-      const t = 秒(f);
+  it('起风以后两边一个方向：每一片都在往左飘，横着走（往左比往下快得多）', () => {
+    for (let f = 事.纸飘下.帧 + 8; f < 事.转向铃.帧; f += 2) {
+      const [t0, t1] = [秒(f), 秒(f + 1)];
       for (const q of 全) {
-        if (!看得见(q, t)) continue;
-        const { x } = 纸花在(q, t);
-        if (q.种 === '纸') expect(x + q.摆 + 片框(q).宽, `第 ${f} 帧的纸`).toBeGreaterThan(中线);
-        else expect(x - q.摆, `第 ${f} 帧的花瓣`).toBeLessThan(中线);
+        if (t0 < q.生 + 纸花参数.拽秒 * 3) continue;
+        const [a, b] = [纸花在(q, t0), 纸花在(q, t1)];
+        expect(b.x - a.x, `第 ${f} 帧`).toBeLessThan(0);
+        expect(Math.abs(b.x - a.x), `第 ${f} 帧`).toBeGreaterThan(1.5 * Math.abs(b.y - a.y));
       }
     }
   });
 
-  it('不会凭空冒出来：头一帧看得见时，纸是刚扔出来（窗里、上沿外），花瓣是从画面上沿外面或者现实那半后面（分屏线那边）出来', () => {
+  it('碎、多：分屏里有一刻右屏里飘着六十片以上碎纸，上、中两截都有十几片', () => {
+    const 好 = 段帧们
+      .filter((f) => f < 事.合屏起.帧)
+      .some((f) => {
+        const 在 = 画里(纸们, 秒(f), 中线);
+        const 截 = [0, 1].map((i) => 在.filter((q) => Math.floor(Math.max(0, 纸花在(q, 秒(f)).y) / 240) === i).length);
+        return 在.length >= 60 && 截.every((n) => n >= 15);
+      });
+    expect(好).toBe(true);
+    expect(片框(纸们.find((q) => q.档 === 纸花参数.近档)!).宽).toBeLessThanOrEqual(50);
+  });
+
+  it('碎纸越过分屏线飘到她那边：合屏起 以前过了线的超过一半', () => {
+    const 过线 = 纸们.filter((q) => {
+      for (let t = q.生; t < 混起; t += 1 / 24) if (中心x(q, t) < 中线) return true;
+      return false;
+    });
+    expect(过线.length / 纸们.length).toBeGreaterThan(0.5);
+  });
+
+  it('一张一张变：每片先当至少 纸秒 的碎纸，一档至少 3 帧，变完秒 以前变成樱花瓣；换到同一档的时刻前后错开半秒以上，同一帧里换档的不到三分之一（不是整片一起）', () => {
+    for (const q of 纸们) {
+      expect(q.变).toHaveLength(变档数);
+      expect(q.变[0]! - q.生).toBeGreaterThanOrEqual(变法.纸秒 - 1e-9);
+      for (let k = 1; k < 变档数; k++) expect(q.变[k]! - q.变[k - 1]!).toBeGreaterThanOrEqual(3 / fps - 1e-9);
+      expect(q.变[变档数 - 1]!).toBeLessThanOrEqual(变完秒);
+    }
+    for (let k = 0; k < 变档数; k++) {
+      const 时们 = 纸们.map((q) => q.变[k]!);
+      expect(Math.max(...时们) - Math.min(...时们), `第 ${k + 1} 档`).toBeGreaterThan(0.5);
+    }
+    for (const f of 段帧们) {
+      const 换 = 纸们.filter((q) => 档位(q, 秒(f)) !== 档位(q, 秒(f - 1))).length;
+      expect(换, `第 ${f} 帧`).toBeLessThan(纸们.length / 3);
+    }
+  });
+
+  it('越往左越像樱花：分屏里过了线的碎纸，平均档位比还在右屏的高', () => {
+    let 比过 = 0;
+    for (let f = 事.纸飘下.帧 + 12; f < 事.合屏起.帧; f++) {
+      const t = 秒(f);
+      const 在 = 画里(纸们, t);
+      const [左, 右] = [在.filter((q) => 中心x(q, t) < 中线), 在.filter((q) => 中心x(q, t) >= 中线)];
+      if (左.length < 5 || 右.length < 5) continue;
+      const 均 = (qs: 纸花片[]) => qs.reduce((n, q) => n + 档位(q, t), 0) / qs.length;
+      expect(均(左), `第 ${f} 帧`).toBeGreaterThan(均(右));
+      比过++;
+    }
+    expect(比过).toBeGreaterThanOrEqual(10);
+  });
+
+  it('形状按像素格一步步来：第 1、2 档只掉碎纸多出来的格（离瓣心远的先掉），第 2 档里樱花瓣形状的格都在，格数一档比一档少', () => {
+    const 格数 = (g: readonly string[]) => g.join('').replace(/\./g, '').length;
+    for (const q of 纸们) {
+      const [g0, g1, g2] = q.格们 as [string[], string[], string[]];
+      expect(g0).toEqual([...碎图们[q.图]!]);
+      expect(格数(g0)).toBeGreaterThan(格数(g1));
+      expect(格数(g1)).toBeGreaterThan(格数(g2));
+      expect(格数(g2)).toBeGreaterThan(7);
+      for (let j = 0; j < g0.length; j++)
+        for (let i = 0; i < g0[0]!.length; i++) if (g1[j]![i] !== '.') expect(g1[j]![i]).toBe(g0[j]![i]);
+      const 形 = 瓣形(q.瓣);
+      const [ox, oy] = [Math.floor((g0[0]!.length - 3) / 2), Math.floor((g0.length - 3) / 2)];
+      for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) if (形[j]![i] === 'X') expect(g2[oy + j]![ox + i]).not.toBe('.');
+    }
+  });
+
+  it('合屏起 以后飘着的已经全是樱花瓣（用户 10-25：合成一整屏的时候已经都是樱花瓣）', () => {
+    for (const f of 段帧们.filter((g) => 秒(g) >= 混起)) for (const q of 画里(纸们, 秒(f))) expect(档位(q, 秒(f))).toBe(变档数);
+  });
+
+  it('她按框、取下合照、传送走那几拍（手按合照 前 0.1 秒到 合屏起），她和照片墙那块没有碎纸、花瓣挡着', () => {
+    expect(让开.起).toBeLessThan(事.手按合照.秒);
+    expect(让开.止).toBeGreaterThanOrEqual(事.她消失.秒 + 0.3);
+    // 让开框盖住取照时的她：取照站位在左屏 x = 320 + 80 × 站位 页面像素
+    const 她x = 640 / 2 + 取照站位 * (整屏镜头.取景.每格 / 成片倍数);
+    expect(让开.左).toBeLessThan(她x - 40);
+    expect(让开.右).toBeGreaterThan(她x + 40);
+    for (const q of 全) expect(挡她(q), `${q.种} ${q.生.toFixed(2)}`).toBe(false);
+  });
+
+  it('不会凭空冒出来：头一帧看得见时，碎纸是刚扔出窗、或者在画面外；花瓣在画面上沿外面，或者是合屏时分屏线推过去露出来的', () => {
     for (const f of 段帧们) {
       const [t0, t1] = [秒(f - 1), 秒(f)];
       for (const q of 全) {
         if (看得见(q, t0) || !看得见(q, t1)) continue;
         const { x, y } = 纸花在(q, t1);
-        const 刚扔 = q.种 === '纸' && t0 < q.生;
-        const 线后 = q.种 === '瓣' && t0 >= q.生;
-        expect(y + 片框(q).高 <= 0 || 刚扔 || 线后, `第 ${f} 帧 (${x.toFixed(0)}, ${y.toFixed(0)})`).toBe(true);
+        const k = 片框(q);
+        const 画外 = y + k.高 <= 0 || y >= 720 || x + k.宽 <= 0 || x >= 1280;
+        if (q.种 === '纸') expect(t0 < q.生, `第 ${f} 帧的碎纸`).toBe(true);
+        else expect(画外 || t0 >= 混起, `第 ${f} 帧的花瓣 (${x.toFixed(0)}, ${y.toFixed(0)})`).toBe(true);
       }
     }
-  });
-
-  it('混起 那一刻露在右屏里的纸一直看得见；纸都在 2-摇铃 最后一帧以前落出画面（2-重逢 不画纸，不会一刀没了）', () => {
-    const 留下 = 纸们.filter((q) => 看得见(q, 混起));
-    expect(留下.length).toBeGreaterThanOrEqual(20);
-    for (const q of 留下) for (const f of 段帧们.filter((g) => 秒(g) >= 混起)) expect(看得见(q, 秒(f))).toBe(true);
-    expect(纸落完秒).toBeLessThan(段窗口('2-摇铃').止帧 / fps);
-    for (const q of 纸们) expect(落完(q, 纸落完秒), `${q.生.toFixed(2)} 秒扔的`).toBe(true);
-  });
-
-  it('合屏到位那一帧纸和花瓣在同一块地方混着：原来现实那半（x 640～1280）里既有纸也有花瓣', () => {
-    const t = 事.合屏到位.秒;
-    for (const 种 of ['纸', '瓣'] as const) {
-      const 在 = 画里(全.filter((q) => q.种 === 种 && 纸花在(q, t).x >= 中线), t, 中线);
-      expect(在.length, 种).toBeGreaterThanOrEqual(3);
+    // 碎纸出发点：窗洞里（右屏）或者画面外
+    for (const q of 纸们) {
+      const 画外 = q.y0 + 片框(q).高 <= 0 || q.x0 >= 1280;
+      expect(画外 || q.x0 > 中线).toBe(true);
     }
   });
 });
