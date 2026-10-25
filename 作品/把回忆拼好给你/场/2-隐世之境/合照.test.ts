@@ -1,8 +1,12 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 做机位相机 } from '@engine/三渲二/机位.tsx';
 import { 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
+import { 做像素字 } from '@库/界面/像素字表.ts';
+import { 字节路径, 读作品资产锁 } from '../../../../pipeline/资产/资产锁.ts';
 import 合照段 from '../../段/2-合照/段.ts';
 import 拼回段 from '../../段/2-拼回/段.ts';
 import { fps, 段内正片事件帧, 段窗口, 画幅, 正片事件 } from '../../分镜.ts';
@@ -11,7 +15,8 @@ import { 段里那截 } from '../../声音/跨段音效.ts';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 靠肩机位, 靠肩进度 } from './合照动作.ts';
 import { 合照咔哒声, 咔哒声文件 } from './合照声音.ts';
-import { 合照站位, 合照镜 } from './合照参数.ts';
+import { 合照站位, 合照镜, 台词气泡接过来 } from './合照参数.ts';
+import { 台词气泡 } from './重逢参数.ts';
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
@@ -104,5 +109,33 @@ describe('15 尾：声音、歌词', () => {
     const 行 = 正片歌词行(15, 段窗口('2-合照').起帧);
     expect(行.入).toBeLessThan(0);
     expect(Math.max(...行.解)).toBeLessThan(段内正片事件帧('2-合照').合照咔哒);
+  });
+});
+
+describe('15 尾：接过来的台词气泡（用户 10-25 要「您的手艺，一如既往呢」多留一会儿）', () => {
+  it('段头起挂着，她靠好那一帧（段内 20）收，咔哒那张新合照里没有；和 2-重逢 里一样大（12）', () => {
+    expect(段内正片事件帧('2-合照').第15句台词收).toBe(20);
+    expect(事.第15句台词收.帧).toBe(事.靠肩.帧);
+    expect(事.第15句台词收.帧).toBeLessThan(事.合照咔哒.帧);
+    expect([台词气泡接过来.缩放, 台词气泡.缩放]).toEqual([12, 12]);
+  });
+});
+
+// 气泡框：像素字表在数据根里，没有就跳过（同 对视参数.test.ts）
+const 作品根 = path.resolve(import.meta.dirname, '../..');
+const 字条 = 读作品资产锁(作品根)['字体/把回忆拼好给你/像素字'];
+const 有表 = !!字条 && fs.existsSync(字节路径(字条));
+
+describe.skipIf(!有表)('15 尾：接过来的台词气泡的落点', () => {
+  const 字 = 做像素字(JSON.parse(fs.readFileSync(字节路径(字条!), 'utf8')), '字体/把回忆拼好给你/像素字');
+  it('整个在画里（离上沿至少 14、左右至少 16），尾巴尖在底部歌词（页面 y 623 起）上面', () => {
+    const cam = 做机位相机(靠肩机位, 画幅.宽, 画幅.高, canvasDpr(1));
+    // 锚点同 合照.tsx 的 靠肩气泡锚：脚底 + 女仆气泡锚高()（= 2，库/界面/女仆气泡.tsx 带贴图，这里不引）
+    const 锚 = 投影到页面(cam, Z朝上转three([合照站位.她[0], 合照站位.她[1], 合照站位.她[2] + 2]), 画幅.宽, 画幅.高);
+    const [页, 宽] = [台词气泡接过来.缩放 / 2, 字.字宽(台词气泡.字) + 10];
+    expect(锚.y - 19 * 页).toBeGreaterThanOrEqual(14);
+    expect(锚.x - (宽 / 2) * 页).toBeGreaterThanOrEqual(16);
+    expect(锚.x + (宽 / 2) * 页).toBeLessThanOrEqual(画幅.宽 - 16);
+    expect(锚.y + 8 * 页).toBeLessThan(623);
   });
 });
