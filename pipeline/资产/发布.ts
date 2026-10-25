@@ -196,8 +196,17 @@ export const 拉发布 = async (锁: 发布锁, 根: string) => {
       const url = `https://github.com/${锁.仓库}/releases/download/${encodeURIComponent(锁.标签)}/${encodeURIComponent(a.名)}`;
       console.log(`下 ${a.名}（${(a.大小 / 1e6).toFixed(0)} MB）`);
       const tmp = `${f}.下载中`;
-      // -C - 断点续传：上回没下完的接着下
-      await 跑(['curl', '-fL', '--retry', '3', '-C', '-', '-o', tmp, url]);
+      // -C - 断点续传：上回没下完的接着下。走代理时连接会半路断（Windows 上见过 schannel「server closed abruptly」），
+      // curl 的 --retry 默认不重试这种，加 --retry-all-errors；整个 curl 失败了再从断点接着跑几次
+      for (let 次 = 1; ; 次++) {
+        try {
+          await 跑(['curl', '-fL', '-#', '--retry', '5', '--retry-all-errors', '-C', '-', '-o', tmp, url]);
+          break;
+        } catch (e) {
+          if (次 >= 5) throw e;
+          console.error(`!! 第 ${次} 次没下完（已有 ${((fs.existsSync(tmp) ? fs.statSync(tmp).size : 0) / 1e6).toFixed(0)} MB），接着下`);
+        }
+      }
       const 实 = await 流sha(tmp);
       if (实 !== a.sha256) {
         fs.rmSync(tmp, { force: true });
