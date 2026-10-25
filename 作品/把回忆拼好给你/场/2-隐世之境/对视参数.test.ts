@@ -7,7 +7,7 @@ import { 字节路径, 读作品资产锁 } from '../../../../pipeline/资产/�
 import { 主厅门们 } from '../../地点/隐世之境主厅门数据.ts';
 import { 封面框能放, 封面能放, 封面聊天框 } from './封面.ts';
 import { 她, 头转范围, 气泡字 } from './参数.ts';
-import { 对视取景, 对视气泡, 对视脚, 对视视角, 封面大字, 片里聊天宽, 聊天年龄刻, type 对视版 } from './对视参数.ts';
+import { 对视取景, 对视气泡, 对视脚, 对视视角, 封面台词, 封面大字, 片里聊天宽, 聊天年龄刻, type 对视版 } from './对视参数.ts';
 import { 笑 } from './重逢参数.ts';
 import { 视图们 as 合照视图们 } from '../../核对/合照/视图.ts';
 
@@ -54,12 +54,16 @@ describe('49.96 对视的站位', () => {
     expect(聊天年龄刻).toBeGreaterThan(25);
     expect(聊天年龄刻).toBeLessThan(180);
   });
-  it('气泡缩放都是偶数、一个气泡像素都是画幅高的 1/90（三个画幅里气泡和她的头一样大）；封面大字也是偶数倍', () => {
-    for (const 版 of ['片', 'B站封面', '竖版'] as const) {
-      expect(对视气泡.缩放[版] % 2).toBe(0);
-      expect(对视气泡.缩放[版] * 90).toBe(对视取景[版].高 * 2);
-    }
+  it('气泡缩放都是偶数，片那一版一个气泡像素是画幅高的 1/90；封面黄字也是偶数倍', () => {
+    for (const 版 of ['片', 'B站封面', '竖版'] as const) expect(对视气泡.缩放[版] % 2).toBe(0);
+    expect(对视气泡.缩放.片 * 90).toBe(对视取景.片.高 * 2);
     for (const 版 of ['B站封面', '竖版'] as const) expect(封面大字[版].缩放 % 2).toBe(0);
+  });
+  it('封面两张（B站封面、竖版）气泡里是「您的手艺，一如既往呢」（用户 10-25 定），片那一版还是哭脸', () => {
+    expect(封面台词).toBe('您的手艺，一如既往呢');
+    expect(对视气泡.字.B站封面).toBe(封面台词);
+    expect(对视气泡.字.竖版).toBe(封面台词);
+    expect(对视气泡.字.片).toBe(气泡字);
   });
   it('片里聊天栏的宽是原版设置「聊天栏宽度」调得出的（floor(设置 × 280 + 40)，设置 0～1）', () => {
     const 设置 = (片里聊天宽 - 40) / 280;
@@ -81,12 +85,18 @@ describe.skipIf(!有表)('49.96 对视的构图', () => {
     const cam = 做透视相机({ 眼: Z朝上转three(眼), 看: Z朝上转three(看), 视角: 对视视角, 宽, 高 });
     return 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], z]), 宽, 高);
   };
-  // 气泡（库/界面/女仆气泡.tsx）：底边在锚点上，宽 = 字宽 + 10、高 19、尾巴往下 8；页面上一个气泡像素 = 缩放 / 2
-  const 气泡框 = (版: 对视版, 文字 = 气泡字) => {
-    const 锚 = 投(版, 对视气泡.锚高);
+  // 气泡（库/界面/女仆气泡.tsx）：盒子底边在锚点上，宽 = 字宽 + 10、高 19（一行）；中：盒子从 −trunc(宽/2) 起、尾巴在锚点左右各 8；
+  // 左：盒子在 −1−宽 ～ −1、尾巴往下指的那一竖在 −2 ～ −1。尾巴往下 8。页面上一个气泡像素 = 缩放 / 2。
+  // 锚点：居中的那几版横着挪到让盒子居中（对视.tsx 的 对视气泡锚），高都是帽顶；画的时候再吸到一个气泡像素的格子上（这里不吸，差不到一个气泡像素）
+  const 气泡框 = (版: 对视版, 文字 = 对视气泡.字[版]) => {
     const 页 = 对视气泡.缩放[版] / 2;
     const 宽 = 字.字宽(文字) + 10;
-    return { x0: 锚.x - (宽 / 2) * 页, x1: 锚.x + (宽 / 2) * 页, y0: 锚.y - 19 * 页, y1: 锚.y + 8 * 页 };
+    const 位置 = 对视气泡.位置[版];
+    const 盒x = 位置 === '中' ? -Math.trunc(宽 / 2) : -1 - 宽;
+    const 投点 = 投(版, 对视气泡.锚高);
+    const 锚x = 对视气泡.居中[版] ? 对视取景[版].宽 / 2 - (盒x + 宽 / 2) * 页 : 投点.x;
+    const 尾x = 位置 === '中' ? 锚x : 锚x - 1.5 * 页;
+    return { x0: 锚x + 盒x * 页, x1: 锚x + (盒x + 宽) * 页, y0: 投点.y - 19 * 页, y1: 投点.y + 8 * 页, 尾x };
   };
 
   it('片、B站封面：气泡整个在画里（离上沿至少 8）、在 4:3 里', () => {
@@ -112,7 +122,17 @@ describe.skipIf(!有表)('49.96 对视的构图', () => {
   it('B站封面：脸连头发至少占 16:9 卡片宽的 20%（主会话 10-24 美术定稿）', () => {
     expect(投('B站封面', 1.33).每格 * 脸宽).toBeGreaterThanOrEqual(对视取景.B站封面.宽 * 0.2);
   });
-  it('B站封面：脸在 4:3 里、躲开底边和右下角；大字在 4:3 里、离 4:3 左沿至少 60 像素（1920 宽计）、不碰气泡、在底边 20% 上面，像素格是整数', () => {
+  // 封面上气泡是 C 位（用户 10-25 定）：盒子左右居中、尾巴压在她帽顶（帽冠半宽约 0.3 格，静帧上量的）、整个在她眉眼（脚底以上 1.45 格）上面
+  const C位 = (版: 'B站封面' | '竖版') => {
+    const W = 对视取景[版].宽;
+    const g = 气泡框(版);
+    const 头 = 投(版, 1.33);
+    expect(Math.abs((g.x0 + g.x1) / 2 - W / 2)).toBeLessThanOrEqual(对视气泡.缩放[版] / 2);
+    expect(Math.abs(g.尾x - 头.x)).toBeLessThanOrEqual(0.3 * 头.每格);
+    expect(g.y1).toBeLessThan(投(版, 1.45).y);
+    return g;
+  };
+  it('B站封面：脸在 4:3 里、躲开底边和右下角；气泡居中、在 4:3 里、尾巴压在帽顶；黄字在左下：4:3 里、离 4:3 左沿至少 60 像素（1920 宽计）、在底边 20% 上面、在脸左边，像素格是整数', () => {
     const [W, H] = [对视取景.B站封面.宽, 对视取景.B站封面.高];
     const 头 = 投('B站封面', 1.33);
     const 下巴 = 投('B站封面', 1.1);
@@ -123,25 +143,27 @@ describe.skipIf(!有表)('49.96 对视的构图', () => {
       [下巴.x, 下巴.y],
     ])
       expect(封面能放(W, H, x!, y!)).toBe(true);
+    const g = C位('B站封面');
+    expect(g.x0).toBeGreaterThan((W * 240) / 1920);
+    expect(g.x1).toBeLessThan((W * 1680) / 1920);
     const b = 封面聊天框(字.字宽('Steve加入了游戏'), 封面大字.B站封面);
     expect(封面框能放(W, H, b)).toBe(true);
     expect(b.x0 - (W * 240) / 1920).toBeGreaterThanOrEqual((60 * W) / 1920);
-    // 气泡盒子（不含尾巴）在锚点以上；尾巴只在锚点左右几个气泡像素宽
-    const g = 气泡框('B站封面');
-    const 锚 = 投('B站封面', 对视气泡.锚高);
-    expect(b.x1 <= g.x0 || b.y0 >= 锚.y).toBe(true);
-    expect(b.x1).toBeLessThan(锚.x - 8 * (对视气泡.缩放.B站封面 / 2));
+    expect(b.y0).toBeGreaterThan(H / 2);
+    expect(b.x1).toBeLessThan(头.x - 半宽);
     for (const v of [b.x0 * 2, b.y0 * 2, b.x1 * 2, b.y1 * 2]) expect(Number.isInteger(v)).toBe(true);
   });
-  it('竖版：气泡、大字都在画里，大字左右居中、在下巴底下', () => {
+  it('竖版：气泡在画里、居中、尾巴压在帽顶；黄字在左下角（离左边、下边不到画幅的 5%）、在下巴底下', () => {
     const { 宽: W, 高: H } = 对视取景.竖版;
-    const g = 气泡框('竖版');
+    const g = C位('竖版');
     expect(g.x0).toBeGreaterThan(0);
     expect(g.x1).toBeLessThan(W);
     expect(g.y0).toBeGreaterThan(8);
     const b = 封面聊天框(字.字宽('Steve加入了游戏'), 封面大字.竖版);
-    expect(Math.abs(b.x0 - (W - b.x1))).toBeLessThanOrEqual(1);
+    expect(b.x0).toBeGreaterThan(0);
+    expect(b.x0).toBeLessThanOrEqual(W * 0.05);
     expect(b.y1).toBeLessThan(H);
+    expect(H - b.y1).toBeLessThanOrEqual(H * 0.05);
     expect(b.y0).toBeGreaterThan(投('竖版', 1.1).y);
   });
 });
