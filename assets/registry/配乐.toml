@@ -15,9 +15,9 @@ id = "配乐/Wasted"
 "类别" = "配乐"
 "来源" = "手工:Wasted（Huken x Murkish Nightcore），SoundCloud 上 huken 上传，3:00"
 "许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "私有"
+"可见性" = "发布"
 "旧路径" = "杂项/音乐/Wasted（Huken x Murkish Nightcore）.m4a"
-"说明" = "第三方音乐，不能分发；公开版缺了换同长静音（公开版.toml「配乐 Wasted」）"
+"说明" = "用户 10-25 定应力转动的素材全部公开（「应力转动所有素材都公开 可能有版权问题的 等找上门来了再删掉」），挂 GitHub Release 发；原来：第三方音乐，不能分发；公开版缺了换同长静音（公开版.toml「配乐 Wasted」）"
 
 [["资产"]]
 id = "配乐/Wasted-节拍声"
