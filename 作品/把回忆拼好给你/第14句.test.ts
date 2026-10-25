@@ -22,7 +22,7 @@ import {
 } from './场/2-门口/归隐参数.ts';
 import { 回色, 铃 } from './场/2-门口/第15句.ts';
 import { 纸声们 } from './场/2-门口/第8句参数.ts';
-import { 中线, 混起, 纸花们, 纸花参数, 纸花在, 看得见, 落完 } from './场/2-门口/纸花.ts';
+import { 中线, 混起, 片框, 纸图们, 纸花们, 纸花参数, 纸花在, 纸落完秒, 看得见, 落完 } from './场/2-门口/纸花.ts';
 import { 第14句声音们 } from './场/2-门口/第14句声音.ts';
 import { 符文歌词默认, 字状态 } from './界面/符文排版.ts';
 import { 正片歌词行 } from './界面/符文歌词数据.ts';
@@ -182,10 +182,12 @@ describe('调子', () => {
 });
 
 describe('教学楼下', () => {
-  it('撒纸的两扇窗是二楼的窗，整扇在右屏里（N = 10 半屏 9 格高）', () => {
+  it('扔纸的窗是一楼、二楼的窗，整扇在右屏里（N = 10 半屏 9 格高）', () => {
     const 斜 = 2 / 楼下N;
     for (const 窗 of 撒纸窗们) {
-      expect(窗.z[0]).toBeGreaterThanOrEqual(楼.层高);
+      // 楼下.tsx 的窗：每层 层高 格，层里第 1、2 格是窗
+      expect(窗.z[0] % 楼.层高).toBe(1);
+      expect(窗.z[1] - 窗.z[0]).toBe(2);
       expect(窗.y).toBe(楼.j);
       // 斜投影里窗顶的高度（地面线以上几格）不出画：地面线以上 720 页面像素里能放 (720 − 地面线离底) ÷ 每格页 格
       const 地面线以上 = (720 / 2) / (整屏镜头.取景.每格 / 成片倍数) + 整屏镜头.取景.中心[1];
@@ -196,36 +198,61 @@ describe('教学楼下', () => {
   });
 });
 
-describe('纸和花瓣（用户 10-24：两边方向、速度、大小一样，合屏时混在一起）', () => {
+describe('纸和花瓣（用户 10-24：两边方向、速度一样，合屏时混在一起；用户 10-25：纸要认得出是撕下来的、多到漫天飘）', () => {
   const 全 = 纸花们();
   const 纸们 = 全.filter((q) => q.种 === '纸');
-  /** 一片多大（页面像素）：纸 3×4、花瓣 3×3 个贴图像素，取高 */
-  const 边 = (q: { 种: '纸' | '瓣' }) => (q.种 === '纸' ? 4 : 3) * (纸花参数.档 / 成片倍数);
   const 段帧们 = Array.from({ length: 段窗口('2-摇铃').止帧 - 事.第14句分屏.帧 }, (_, i) => 事.第14句分屏.帧 + i);
+  /** 这一刻露在 [左, 1280) × [0, 720) 里的 */
+  const 画里 = (qs: readonly typeof 全[number][], t: number, 左: number) =>
+    qs.filter((q) => {
+      if (!看得见(q, t)) return false;
+      const { x, y } = 纸花在(q, t);
+      const k = 片框(q);
+      return x + k.宽 > 左 && x < 1280 && y + k.高 > 0 && y < 720;
+    });
 
-  it('纸、花瓣的飘法从同一套分布里取（往下、往左的速度都在 纸花参数 的范围里，同一档像素）', () => {
+  it('纸、花瓣的飘法从同一套分布里取（往下、往左的速度都在 纸花参数 的范围里）', () => {
     for (const q of 全) {
       expect(q.vx).toBeGreaterThanOrEqual(纸花参数.vx[0]);
       expect(q.vx).toBeLessThanOrEqual(纸花参数.vx[1]);
       expect(q.vy).toBeGreaterThanOrEqual(纸花参数.vy[0]);
       expect(q.vy).toBeLessThanOrEqual(纸花参数.vy[1]);
     }
-    expect(纸们.length).toBeGreaterThanOrEqual(10);
   });
 
-  it('合屏起 以前：看得见的纸都在右屏、花瓣都在左屏（只差左右晃的那一点）', () => {
+  it('纸的样子：每张都有撕掉的缺口、至少两道字行，字行总是横的（只正着、倒着放）', () => {
+    for (const 图 of 纸图们) {
+      expect(new Set(图.map((行) => 行.length)).size).toBe(1);
+      expect(图.join('')).toContain('.');
+      expect(图.filter((行) => 行.includes('L')).length).toBeGreaterThanOrEqual(2);
+    }
+    for (const q of 纸们) expect(q.转 % 2).toBe(0);
+  });
+
+  it('漫天飘：分屏里有一刻右屏里飘着三十张以上，上、中、下三截都有', () => {
+    const 好 = 段帧们
+      .filter((f) => f < 事.合屏起.帧)
+      .some((f) => {
+        const 在 = 画里(纸们, 秒(f), 中线);
+        const 截 = [0, 1, 2].map((i) => 在.filter((q) => Math.floor(Math.max(0, 纸花在(q, 秒(f)).y) / 240) === i).length);
+        return 在.length >= 30 && 截.every((n) => n >= 5);
+      });
+    expect(好).toBe(true);
+  });
+
+  it('合屏起 以前：看得见的纸露在右屏、花瓣在左屏（只差左右晃的那一点）', () => {
     for (let f = 事.第14句分屏.帧; f < 事.合屏起.帧; f += 2) {
       const t = 秒(f);
       for (const q of 全) {
         if (!看得见(q, t)) continue;
         const { x } = 纸花在(q, t);
-        if (q.种 === '纸') expect(x + q.摆, `第 ${f} 帧的纸`).toBeGreaterThanOrEqual(中线);
+        if (q.种 === '纸') expect(x + q.摆 + 片框(q).宽, `第 ${f} 帧的纸`).toBeGreaterThan(中线);
         else expect(x - q.摆, `第 ${f} 帧的花瓣`).toBeLessThan(中线);
       }
     }
   });
 
-  it('不会凭空冒出来：头一帧看得见时，纸是刚从窗里扔出来，花瓣是从画面上沿外面或者现实那半后面（分屏线那边）出来', () => {
+  it('不会凭空冒出来：头一帧看得见时，纸是刚扔出来（窗里、上沿外），花瓣是从画面上沿外面或者现实那半后面（分屏线那边）出来', () => {
     for (const f of 段帧们) {
       const [t0, t1] = [秒(f - 1), 秒(f)];
       for (const q of 全) {
@@ -233,28 +260,23 @@ describe('纸和花瓣（用户 10-24：两边方向、速度、大小一样，�
         const { x, y } = 纸花在(q, t1);
         const 刚扔 = q.种 === '纸' && t0 < q.生;
         const 线后 = q.种 === '瓣' && t0 >= q.生;
-        expect(y + 边(q) <= 0 || 刚扔 || 线后, `第 ${f} 帧 (${x.toFixed(0)}, ${y.toFixed(0)})`).toBe(true);
+        expect(y + 片框(q).高 <= 0 || 刚扔 || 线后, `第 ${f} 帧 (${x.toFixed(0)}, ${y.toFixed(0)})`).toBe(true);
       }
     }
   });
 
-  it('混起 那一刻在右屏里的纸一直看得见，合屏到位以后 1.6 秒内（摇铃前后）全落出画面', () => {
+  it('混起 那一刻露在右屏里的纸一直看得见；纸都在 2-摇铃 最后一帧以前落出画面（2-重逢 不画纸，不会一刀没了）', () => {
     const 留下 = 纸们.filter((q) => 看得见(q, 混起));
-    expect(留下.length).toBeGreaterThanOrEqual(10);
-    for (const q of 留下) {
-      for (const f of 段帧们.filter((g) => 秒(g) >= 混起)) expect(看得见(q, 秒(f))).toBe(true);
-      expect(落完(q, 事.合屏到位.秒 + 1.6)).toBe(true);
-    }
+    expect(留下.length).toBeGreaterThanOrEqual(20);
+    for (const q of 留下) for (const f of 段帧们.filter((g) => 秒(g) >= 混起)) expect(看得见(q, 秒(f))).toBe(true);
+    expect(纸落完秒).toBeLessThan(段窗口('2-摇铃').止帧 / fps);
+    for (const q of 纸们) expect(落完(q, 纸落完秒), `${q.生.toFixed(2)} 秒扔的`).toBe(true);
   });
 
   it('合屏到位那一帧纸和花瓣在同一块地方混着：原来现实那半（x 640～1280）里既有纸也有花瓣', () => {
     const t = 事.合屏到位.秒;
     for (const 种 of ['纸', '瓣'] as const) {
-      const 在 = 全.filter((q) => {
-        if (q.种 !== 种 || !看得见(q, t)) return false;
-        const { x, y } = 纸花在(q, t);
-        return x >= 中线 && x < 1280 && y + 边(q) > 0 && y < 720;
-      });
+      const 在 = 画里(全.filter((q) => q.种 === 种 && 纸花在(q, t).x >= 中线), t, 中线);
       expect(在.length, 种).toBeGreaterThanOrEqual(3);
     }
   });
