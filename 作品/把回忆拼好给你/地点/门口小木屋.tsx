@@ -15,7 +15,7 @@ import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import type { 地图边长 } from '../特效/地图画.ts';
 import { 告示牌, 告示牌尺寸 } from './告示牌.tsx';
 import { 照片墙, type 照片墙格 } from './照片墙.tsx';
-import { 樱花树方块, 樱花树阶段 } from './樱花树.ts';
+import { 樱花树方块, 樱花树长成 } from './樱花树.ts';
 
 /** 方块拼搭 的原点：让格 i 的中心落在 x = i（樱花树方块 的输出也按这个画） */
 export const 格原点: V3 = [-0.5, 0, 0];
@@ -152,14 +152,14 @@ const 门方块: 方块[] = [
   { 状态: 'minecraft:oak_door[facing=south,half=upper,hinge=left,open=false]', 位: [0, 0, 1] },
 ];
 
-const 树方块缓存 = new Map<number, 方块[]>();
-const 树方块 = (阶段: number) => {
-  let b = 树方块缓存.get(阶段);
+const 树方块缓存 = new Map<boolean, 方块[]>();
+const 树方块 = (长成: boolean) => {
+  let b = 树方块缓存.get(长成);
   if (!b) {
-    b = 樱花树方块(阶段, 树根);
+    b = 樱花树方块(长成, 树根);
     const 撞 = b.find((x) => 屋格.has(x.位.join(',')) || x.位.join(',') === `${门口.告示牌[0]},1,0`);
-    if (撞) throw new Error(`樱花树第 ${阶段} 阶段的 ${撞.状态} 撞上了屋子、花草或告示牌的格 ${撞.位.join(',')}`);
-    树方块缓存.set(阶段, b);
+    if (撞) throw new Error(`樱花树（${长成 ? '长成' : '树苗'}）的 ${撞.状态} 撞上了屋子、花草或告示牌的格 ${撞.位.join(',')}`);
+    树方块缓存.set(长成, b);
   }
   return b;
 };
@@ -170,7 +170,7 @@ export type 门口小木屋属性 = {
   门开?: boolean;
   /** 箱子 openness 0～1（库/物品/箱子.tsx 的 chestState、chestOpenness 算），盖子角度照原版换算 */
   箱子开度?: number;
-  /** 樱花树进度 0～1（樱花树阶段：0 树苗、每 1/5 长一截、1 开满花）；不给 = 还没种 */
+  /** 樱花树进度：1 长成，不到 1 是树苗（地点/樱花树.ts，用户 10-25 以后不再一截截长）；不给 = 还没种 */
   树进度?: number;
   /** 插没插告示牌 */
   告示牌?: boolean;
@@ -185,8 +185,7 @@ export type 门口小木屋属性 = {
 
 /** Z 朝上的场景内容（不带灯、机位）；放进三渲二画布（它自己套好 rotation [−π/2, 0, 0] 的 group 和平涂） */
 export const 门口小木屋: React.FC<门口小木屋属性> = ({ 门开 = false, 箱子开度 = 0, 树进度, 告示牌: 插牌 = false, 告示牌字, 群系 = 'minecraft:plains', 照片墙: 墙, 照片墙边长 }) => {
-  const 阶段 = 树进度 === undefined ? null : 樱花树阶段(树进度);
-  const 树 = 阶段 === null ? null : 树方块(阶段);
+  const 树 = 树进度 === undefined ? null : 树方块(樱花树长成(树进度));
   return (
     <group>
       <方块拼搭 方块们={墙 ? 照片墙屋 : 屋} 原点={格原点} 群系={群系} 正面花草 />

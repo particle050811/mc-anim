@@ -4,7 +4,6 @@ import {
   亮格于,
   分屏N,
   分屏态,
-  分屏树方块,
   分屏版式,
   成形,
   成形偏于,
@@ -12,14 +11,14 @@ import {
   日历窗,
   服务器取景,
   现实取景,
-  第3截形状,
-  长帧们,
-  长了几截,
+  门口长成帧,
+  林生长,
 } from './场/2-门口/分屏参数.ts';
 import { 末帧速度 } from './段/2-空床/编排.ts';
+import { 中景方块, 中景树们, 冒出, 远景方块, 远景树们 } from './地点/樱花林.ts';
 import { 樱花树方块 } from './地点/樱花树.ts';
 import { 正交顶面 } from './画风.ts';
-import { 日历尺寸 } from './现实/日历.ts';
+import { 日历尺寸, 满页 } from './现实/日历.ts';
 import { 摆放, 课表框 } from './现实/课桌布局.ts';
 
 const 事 = 正片事件;
@@ -36,22 +35,49 @@ const 现实x = (x: number) => 分屏版式.服务器宽 * 2 + 分屏版式.现�
 const 屏y = (z: number, y: number) => 720 - (z + 斜 * y - 现实取景.中心[1]) * 每格;
 
 describe('第 13 句分屏', () => {
-  it('分屏起：还是树苗、日历 100、坐着、不褪色；日历到一：长满五截、停在 1、褪到 0.2', () => {
+  it('分屏起：坡上没有樱花树、门口是树苗、日历 100、坐着、不褪色；日历到一：林子长满、树苗长成、停在 1、褪到 0.2', () => {
     const a = 分屏态(起);
-    expect([a.长了几截, a.生长, a.日历, a.姿势, a.褪色]).toEqual([0, 0, 100, 0, 0]);
+    expect([a.生长, a.门口长成, a.日历, a.姿势, a.褪色]).toEqual([0, false, 100, 0, 0]);
     const b = 分屏态(事.日历到一.帧);
-    expect([b.长了几截, b.生长, b.日历, b.姿势]).toEqual([5, 1, 1, 1]);
+    expect([b.生长, b.门口长成, b.日历, b.姿势]).toEqual([1, true, 1, 1]);
     expect(b.褪色).toBeCloseTo(0.2, 9);
     expect(分屏态(止 - 1).日历).toBe(1);
   });
 
-  it('树跟着日历长：风吹日历 那一拍长第一截、日历到一 那一拍长满；日历窗就是这两拍', () => {
-    expect(长帧们[0]).toBe(事.风吹日历.帧);
-    expect(长帧们.at(-1)).toBe(事.日历到一.帧);
-    expect(长帧们.map(长了几截)).toEqual([1, 2, 3, 4, 5]);
+  it('林子跟着日历冒：生长 = 吹走的页数 ÷ 99；日历窗就是 风吹日历 到 日历到一 两拍；门口树苗在 日历到一 那一拍长成', () => {
+    expect([林生长(满页), 林生长(1)]).toEqual([0, 1]);
+    expect(冒出.页数).toBe(满页 - 1);
     expect(日历窗).toEqual({ 起: 事.风吹日历.帧 / 24, 止: 事.日历到一.帧 / 24 });
     expect(分屏态(事.风吹日历.帧 - 1).日历).toBe(100);
     expect(分屏态(事.风吹日历.帧).日历).toBe(99);
+    expect(门口长成帧).toBe(事.日历到一.帧);
+    expect(分屏态(门口长成帧 - 1).门口长成).toBe(false);
+  });
+
+  it('樱花树一棵棵冒出来、越冒越快（用户 10-25「应该是樱花树越来越多才对」）：起风前一棵没有，起风那一帧头一棵，停在 1 时都在', () => {
+    const 樱 = [...中景树们, ...远景树们].filter((t) => t.种 === '樱');
+    const 几棵 = (帧: number, ts = 樱) => ts.filter((t) => 分屏态(帧).生长 >= t.出).length;
+    expect(几棵(事.风吹日历.帧 - 1)).toBe(0);
+    expect(几棵(事.风吹日历.帧)).toBe(1);
+    expect(几棵(事.日历到一.帧)).toBe(樱.length);
+    // 左屏看得见的（出 不到 1；树干在左屏外的都等到 日历到一）一棵棵错开：每帧顶多冒两棵，前半个日历窗冒的比后半个少
+    const 看得见 = 樱.filter((t) => t.出 < 1);
+    expect(看得见.length).toBeGreaterThanOrEqual(20);
+    for (let f = 事.风吹日历.帧; f < 事.日历到一.帧; f++) expect(几棵(f + 1, 看得见) - 几棵(f, 看得见)).toBeLessThanOrEqual(2);
+    const 中 = Math.round((事.风吹日历.帧 + 事.日历到一.帧) / 2);
+    expect(几棵(中, 看得见) - 几棵(事.风吹日历.帧, 看得见)).toBeLessThan(几棵(事.日历到一.帧 - 1, 看得见) - 几棵(中, 看得见));
+    expect(几棵(事.日历到一.帧 - 1, 看得见)).toBe(看得见.length);
+    // 起风前、停在 1 后方块不跟着变：0 没有樱花原木和樱花叶，1 和长满（第 14、15 句）是同一份
+    const 有樱 = (bs: { 状态: string }[]) => bs.some((b) => /cherry_(log|leaves)/.test(b.状态));
+    expect(有樱(中景方块(0)) || 有樱(远景方块(0))).toBe(false);
+    expect(有樱(中景方块(1)) && 有樱(远景方块(1))).toBe(true);
+  });
+
+  it('冒出 的近景和 分屏N、树苗 一致；看得见 正是左屏（门贴着分屏线、往左 10 格）', () => {
+    expect(冒出.近N).toBe(分屏N);
+    expect(冒出.树苗x).toBe(树根[0]);
+    expect(服务器x(冒出.看得见[0])).toBe(0);
+    expect(服务器x(冒出.看得见[1])).toBe(分屏版式.服务器宽 * 2);
   });
 
   it('她只换一次姿势，每个姿势至少 1 秒（用户 10-24「画面转太快就删」）', () => {
@@ -60,23 +86,9 @@ describe('第 13 句分屏', () => {
     expect(换姿帧们).toHaveLength(1);
   });
 
-  it('第 3 截是 3 格宽的小冠（不是满树冠），其余照樱花树.ts，一截比一截高', () => {
-    const 宽 = (bs: { 位: readonly number[] }[]) => {
-      const xs = bs.map((b) => b.位[0]!);
-      return Math.max(...xs) - Math.min(...xs) + 1;
-    };
-    const 顶 = (bs: { 位: readonly number[] }[]) => Math.max(...bs.map((b) => b.位[2]! + 1));
-    const 三 = 分屏树方块(3 / 5, 树根);
-    expect(宽(三)).toBe(3);
-    expect(顶(三)).toBe(第3截形状.length);
-    const 顶们 = [1, 2, 3, 4, 5].map((k) => 顶(分屏树方块(k / 5, 树根)));
-    for (let k = 1; k < 顶们.length; k++) expect(顶们[k]!).toBeGreaterThan(顶们[k - 1]!);
-    for (const k of [0, 1, 2, 4, 5]) expect(分屏树方块(k / 5, 树根)).toEqual(樱花树方块(k, 树根));
-  });
-
   it('服务器那半：门贴着分屏线，长成的樱花树冠整个在画里', () => {
     expect(服务器x(0.5)).toBe(分屏版式.服务器宽 * 2);
-    const 树 = 樱花树方块(5, 树根);
+    const 树 = 樱花树方块(true, 树根);
     expect(服务器x(Math.min(...树.map((b) => b.位[0]!)) - 0.5)).toBeGreaterThanOrEqual(0);
   });
 
