@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { 画幅, 段窗口, 正片事件 } from '../../分镜.ts';
+import { fps, 画幅, 段窗口, 正片事件 } from '../../分镜.ts';
 import { 图标边 } from '../../界面/实例图标.ts';
-import { 光标, 取景中心, 尺, 界面, 碎片, 钻入 } from './参数.ts';
-import { 上次游玩字, 光标在, 图标框, 指着在, 框光标亮, 行字, 选中在, 钻入取景, 钻入进度, 钻入透, 碎块们, 碎块在, 片尾白光 } from './编排.ts';
+import { 光标, 取景中心, 尺, 界面, 碎片, 钻入, 片尾白, 片尾拉回 } from './参数.ts';
+import { 上次游玩字, 光标在, 图标框, 指着在, 框光标亮, 行字, 选中在, 钻入取景, 钻入进度, 钻入透, 碎块们, 碎块在, 片尾白光, 片尾取景, 平常取景, 重逢行字 } from './编排.ts';
 
 const 鼓点 = 正片事件.开场鼓点.帧;
 
@@ -14,6 +14,10 @@ describe('存档那一项的字（原版 WorldListEntry、SimpleDateFormat zh_CN
   });
   it('第三行是模式和版本', () => {
     expect(行字[2]).toBe('生存模式, 版本： 1.20.1');
+  });
+  it('片尾回色起第二行换成这次重逢玩过的时间（核查 10-24），别的两行不变', () => {
+    expect(重逢行字[1]).toBe('新的世界 (2026/6/10 下午9:16)');
+    expect([重逢行字[0], 重逢行字[2]]).toEqual([行字[0], 行字[2]]);
   });
 });
 
@@ -91,10 +95,31 @@ describe('钻进图标', () => {
   });
 });
 
-describe('片尾碎片', () => {
+describe('片尾：闪白、拉回、碎片（核查 10-24）', () => {
   const 回色 = 正片事件.片尾回色.帧 - 正片事件.片尾白光.帧;
-  it('片尾从片尾白光起（= 2-合照 的止）', () => {
+  it('片尾从咔哒那一帧起（片尾白光 = 合照咔哒 = 2-合照 的止）', () => {
     expect(段窗口('2-拼回').起帧).toBe(正片事件.片尾白光.帧);
+    expect(正片事件.片尾白光.帧).toBe(正片事件.合照咔哒.帧);
+  });
+  it('第一帧整屏纯白，同第 11 句截图那一闪几帧就退：白过三成的不超过 3 帧，闪白帧 起没有白', () => {
+    expect(片尾白光(0)).toBe(1);
+    expect(Array.from({ length: 20 }, (_, f) => 片尾白光(f)).filter((a) => a > 0.3).length).toBeLessThanOrEqual(3);
+    expect(片尾白光(片尾白.闪白帧)).toBe(0);
+  });
+  it('镜头从图标跟前往外拉（钻入那条路倒着走）：第一帧尺 起尺、越拉越慢，拉回帧 起是平常取景（第 0 镜），回色前已经停住', () => {
+    expect(片尾取景(0).尺).toBeCloseTo(片尾拉回.起尺, 9);
+    for (let f = 1; f <= 片尾拉回.帧; f++) {
+      expect(片尾取景(f).尺, `第 ${f} 帧`).toBeLessThan(片尾取景(f - 1).尺);
+      if (f >= 2) expect(片尾取景(f - 1).尺 - 片尾取景(f).尺, `第 ${f} 帧`).toBeLessThanOrEqual(片尾取景(f - 2).尺 - 片尾取景(f - 1).尺 + 1e-9);
+    }
+    expect(片尾取景(片尾拉回.帧)).toEqual(平常取景);
+    expect(片尾拉回.帧).toBeLessThan(回色);
+  });
+  it('碎片大、飞得够久：起飞那一帧一块不小于 120 页面像素宽，第一块起飞到最后一块到位不短于 0.8 秒；回色后定格不短于 0.5 秒', () => {
+    for (const b of 碎块们) expect((碎块在(b, b.起帧)!.边 * 片尾取景(b.起帧).尺) / 2).toBeGreaterThanOrEqual(120);
+    const 到们 = 碎块们.map((b) => b.起帧 + 碎片.飞帧);
+    expect((Math.max(...到们) - Math.min(...碎块们.map((b) => b.起帧)) + 1) / fps).toBeGreaterThanOrEqual(0.8);
+    expect((段窗口('2-拼回').帧数 - 回色) / fps).toBeGreaterThanOrEqual(0.5);
   });
   it('16 块碎片正好铺满图标，一格一块', () => {
     const 块数 = 图标边 / 碎片.碎块边;
@@ -102,12 +127,8 @@ describe('片尾碎片', () => {
     expect(碎块们.length).toBe(16);
     expect(new Set(碎块们.map((b) => `${b.i},${b.j}`)).size).toBe(碎块们.length);
   });
-  it('第一帧整屏纯白、一块碎片都还没出来（接 2-合照 的闪白）', () => {
-    expect(片尾白光(0, 回色)).toBe(1);
-    for (const b of 碎块们) expect(碎块在(b, 0)).toBeNull();
-  });
   it('回色前一帧全部到位，回色那一帧没有白光', () => {
     for (const b of 碎块们) expect(碎块在(b, 回色 - 1)?.到).toBe(true);
-    expect(片尾白光(回色, 回色)).toBe(0);
+    expect(片尾白光(回色)).toBe(0);
   });
 });

@@ -5,7 +5,7 @@ import { 天体位置 } from '../../地点/天体.ts';
 import { 四周方块, 屋后远景范围 } from '../../地点/小木屋四周地形.ts';
 import { fps, 拍, 段窗口, 正片事件, 第几句, 歌曲帧 } from '../../分镜.ts';
 import { 逐字 } from '../../配乐/逐字.ts';
-import { 告示牌行们 } from './参数.ts';
+import { 告示牌行们, 告示牌词们 } from './参数.ts';
 import { 第8句镜头, 第8句镜头N } from './第8句.ts';
 import { 本段音效, 门口之夜音效 } from './门口之夜声音.ts';
 import { 你态, 她态, 摆设态 } from './门口之夜编排.ts';
@@ -37,6 +37,8 @@ import {
 
 const 窗们 = ['2-明年六月见', '2-烟花', '2-截图下线'].map(段窗口);
 const 起 = 窗们[0]!.起帧;
+/** 牌上写字的四个事件，按写的顺序（一行两个词） */
+const 写字们 = ['写字一', '写字一续', '写字二', '写字二续'] as const;
 const 止 = 窗们[2]!.止帧;
 const 帧们 = Array.from({ length: 止 - 起 }, (_, i) => 起 + i);
 const 种下帧 = Math.round(种下秒 * fps);
@@ -87,10 +89,11 @@ describe('门口之夜的段（第 9–11 句）', () => {
     expect(正片事件.第9句入夜.帧).toBe(起);
   });
 
-  it('一行一写：两行落在第 9 句那段里、隔两拍；照片、碎裂、下线落在最后一段里', () => {
-    const 字 = (['写字一', '写字二'] as const).map((k) => 正片事件[k].帧);
+  it('按词写：四个词落在第 9 句那段里、按顺序，两行隔两拍；照片、碎裂、下线落在最后一段里', () => {
+    const 字 = 写字们.map((k) => 正片事件[k].帧);
     for (const f of 字) expect(f >= 窗们[0]!.起帧 && f < 窗们[0]!.止帧).toBe(true);
-    expect(字[1]! - 字[0]!).toBe(Math.round(拍(72.5) * fps) - Math.round(拍(70.5) * fps));
+    expect([...字].sort((a, b) => a - b)).toEqual(字);
+    expect(字[2]! - 字[0]!).toBe(Math.round(拍(72.5) * fps) - Math.round(拍(70.5) * fps));
     for (const k of ['第11句照片', '第11句碎裂', '第11句下线'] as const) {
       const f = 正片事件[k].帧;
       expect(f >= 窗们[2]!.起帧 && f < 窗们[2]!.止帧).toBe(true);
@@ -101,17 +104,19 @@ describe('门口之夜的段（第 9–11 句）', () => {
 
   it('牌上写字和歌词的字错开：写上一行那一帧离第 9、10 句每个字唱到的那一帧（和前一帧拼齐）至少 3 帧', () => {
     const 唱 = [...逐字[9]!, ...逐字[10]!].map(歌曲帧);
-    for (const k of ['写字一', '写字二'] as const) {
+    for (const k of 写字们) {
       const f = 正片事件[k].帧;
       for (const g of 唱) expect(Math.min(Math.abs(f - g), Math.abs(f - (g - 1))), `${k} 和第 ${g} 帧`).toBeGreaterThanOrEqual(3);
     }
   });
 
-  it('牌上的字只有 参数.ts 告示牌行们 一处：写字一之前空着，写字一写上第一行，写字二写全', () => {
+  it('牌上的字只有 参数.ts 告示牌行们 一处：写字一之前空着，之后一个词一个词写上（核查 10-24：原来一行整行冒出来），写字二续写全', () => {
     const 一 = 正片事件.写字一.帧;
     expect(牌上行们((一 - 1) / fps)).toEqual(['', '', '', '']);
-    expect(摆设态(一).牌上).toEqual([告示牌行们[0], 告示牌行们[1], '', 告示牌行们[3]]);
-    expect(摆设态(正片事件.写字二.帧).牌上).toEqual(告示牌行们);
+    expect(摆设态(一).牌上).toEqual(['', 告示牌词们[0]![0], '', '']);
+    expect(摆设态(正片事件.写字一续.帧).牌上).toEqual([告示牌行们[0], 告示牌行们[1], '', 告示牌行们[3]]);
+    expect(摆设态(正片事件.写字二.帧).牌上).toEqual(['', 告示牌行们[1], 告示牌词们[1]![0], '']);
+    expect(摆设态(正片事件.写字二续.帧).牌上).toEqual(告示牌行们);
     expect(摆设态(止 - 1).牌上).toEqual(告示牌行们);
   });
 });
@@ -205,7 +210,7 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     for (let f = 种下帧; f <= 正片事件.第9句推近.帧; f++) expect(投(f, 树苗x - 0.5, 0).x, `第 ${f} 帧`).toBeGreaterThanOrEqual(64);
   });
 
-  it('两行字都在牌子特写里写上（N 84）：牌字在画面正中、你在画外；写完的两行在特写里留 0.5 秒以上', () => {
+  it('两行字都在牌子特写里写上（N 84）：牌字在画面正中、你在画外；写完的两行在特写里留 0.35 秒以上（按词写只留得出这么多），拉开头 3 帧 N 还在 60 以上', () => {
     for (let f = 正片事件.写字一.帧; f < 镜头段.跟起 * fps; f++) {
       expect(镜头(f).N, `第 ${f} 帧`).toBe(牌近N);
       const 牌 = 投(f, 牌字面.x, 牌字面.z, 牌字面.y);
@@ -214,7 +219,8 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       // 你朝西侧身：胳膊往前伸到 x − 0.375
       expect(投(f, 你态(f).x - 0.375, 1).x, `第 ${f} 帧`).toBeGreaterThan(2560);
     }
-    expect(镜头段.跟起 - 正片事件.写字二.帧 / fps).toBeGreaterThanOrEqual(0.5);
+    expect(镜头段.跟起 - 正片事件.写字二续.帧 / fps).toBeGreaterThanOrEqual(0.35);
+    for (let f = Math.ceil(镜头段.跟起 * fps); f < 镜头段.跟起 * fps + 3; f++) expect(镜头(f).N, `第 ${f} 帧`).toBeGreaterThanOrEqual(60);
   });
 
   it('火箭到手时镜头已经拉开（N 36 以内），你整个人和伸出去的手都在画里，不从画框边戳进来', () => {

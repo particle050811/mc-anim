@@ -10,11 +10,14 @@ import 拨开阴霾段 from './段/2-拨开阴霾/段.ts';
 import 抢龙蛋段 from './段/2-抢龙蛋/段.ts';
 import { fps, 段窗口, 正片事件, type 正片事件名 } from './分镜.ts';
 import * as 参 from './场/2-雷雨/参数.ts';
-import { 坑, 小木屋, 掉落位, 玩家捡得到, 箱子格, 南墙 } from './场/2-雷雨/弹坑.ts';
+import { 坑, 小木屋, 掉落位, 玩家捡得到, 箱子格, 南墙, 箱里, 箱里掉落们 } from './场/2-雷雨/弹坑.ts';
 import { 四周方块, 地面高, 树们 } from './场/2-雷雨/地形.ts';
 import { 云格们 } from './场/2-雷雨/云.ts';
-import { 雨声起帧, 雨量, 雷 } from './场/2-雷雨/声音.ts';
+import { 近雷, 雨声起帧, 雨量, 雷 } from './场/2-雷雨/声音.ts';
 import { 云色, 天色 } from './场/2-雷雨/天气.ts';
+import { 句们 } from './配乐/网格.ts';
+import { 拨开缝, 歌词排版表, 歌词框 } from './界面/歌词排版表.ts';
+import { 符文歌词默认 } from './界面/符文排版.ts';
 import {
   云剩,
   云飘,
@@ -53,6 +56,7 @@ const 屏 = (f: number) => {
     return { 上: (1 - v.y) / 2, 左: (1 + v.x) / 2 };
   };
 };
+const 句词 = (序: number) => 句们.find((x) => x.序 === 序)!.词;
 /** 歌词那条的下沿（占画面高的比例） */
 const 歌词比 = 参.歌词下沿 / 1440;
 
@@ -66,7 +70,7 @@ describe('串：第 6、7 句', () => {
   });
 
   it('事件按顺序；阳光铺地以后、切第 8 句之前留至少半秒看阳光照着屋子', () => {
-    const 序: 正片事件名[] = ['第6句开口', '她看你', '你看她', '她站起', '阵起', '光柱起', '拨', '破云', '云洞开大', '阳光铺地', '照片-光柱破云', '光柱退', '第8句开口'];
+    const 序: 正片事件名[] = ['第6句开口', '她看你', '你看她', '雷照缺口', '她站起', '阵起', '光柱起', '拨', '破云', '云洞开大', '阳光铺地', '照片-光柱破云', '光柱退', '第8句开口'];
     const 帧们 = 序.map(帧);
     for (let k = 1; k < 帧们.length; k++) expect(帧们[k], 序[k]).toBeGreaterThan(帧们[k - 1]!);
     expect(帧('第6句开口')).toBeGreaterThanOrEqual(雷雨.起帧);
@@ -85,6 +89,27 @@ describe('串：第 6、7 句', () => {
     expect(Array.isArray(增益)).toBe(true);
     expect(增益[0]!).toBeLessThan(增益.at(-1)!);
     expect(雨声起帧).toBeLessThan(雷雨.起帧);
+  });
+
+  it('推到缺口近景那一帧又闪一道电，停住的近景里炸掉的格占画面四分之一以上、两个人整个在画面里（核查 10-24）', () => {
+    expect(闪(帧('雷照缺口'))).toBe(true);
+    expect(全部帧.filter(闪).length).toBe(2 * 参.闪帧们.reduce((n, [a, b]) => n + b - a, 0));
+    for (const f of [帧('雷照缺口'), 帧('她站起') - 1]) expect(机位(f)).toEqual(机位(帧('雷照缺口')));
+    const p = 屏(帧('雷照缺口'));
+    const 角们 = [...坑().炸掉].flatMap((s) => {
+      const [i, j, k] = s.split(',').map(Number) as [number, number, number];
+      return [-0.5, 0.5].flatMap((dx) => [0, 1].flatMap((dy) => [0, 1].map((dz) => p([i + dx, j + dy, k + dz]))));
+    });
+    const 夹 = (v: number) => Math.min(1, Math.max(0, v));
+    const [左们, 上们] = [角们.map((s) => 夹(s.左)), 角们.map((s) => 夹(s.上))];
+    expect((Math.max(...左们) - Math.min(...左们)) * (Math.max(...上们) - Math.min(...上们))).toBeGreaterThanOrEqual(0.25);
+    for (const [x, y] of [参.站位.她, 参.站位.你])
+      for (const q of [[x! - 0.45, y!, 0], [x! + 0.45, y!, 0], [x!, y!, 1.5]]) {
+        const s = p(q);
+        expect(s.左).toBeGreaterThan(0.02);
+        expect(s.左).toBeLessThan(0.98);
+        expect(s.上).toBeLessThan(0.98);
+      }
   });
 
   it('她看你、你看她：两下转头各自留够一秒（看得懂的速度）', () => {
@@ -133,6 +158,18 @@ describe('炸掉一角的屋子（种子 91）', () => {
       expect(Number.isFinite(位[2]), d.物品).toBe(true);
       expect(玩家捡得到(位, 参.站位.你), `你 ${d.物品}`).toBe(false);
       expect(玩家捡得到(位, 参.站位.她), `她 ${d.物品}`).toBe(false);
+    }
+  });
+
+  it('箱子里的东西全洒出来（不受衰减）、都停在坑底，和炸出来的几堆隔开半格以上，也不会被捡走（核查 10-24「掉落物多一点、大一点」）', () => {
+    const 洒 = 箱里掉落们(留下);
+    expect(洒.map((d) => d.物品)).toEqual(箱里.map((d) => d.物品));
+    const 全 = [...掉落们.map((d) => 掉落位(留下, d)), ...洒.map((d) => d.位)];
+    for (const d of 洒) {
+      expect(d.位[2], d.物品).toBe(-1);
+      expect(玩家捡得到(d.位, 参.站位.你), `你 ${d.物品}`).toBe(false);
+      expect(玩家捡得到(d.位, 参.站位.她), `她 ${d.物品}`).toBe(false);
+      for (const p of 全) if (p !== d.位) expect(Math.hypot(p[0] - d.位[0], p[1] - d.位[1]), d.物品).toBeGreaterThan(0.5);
     }
   });
 
@@ -201,16 +238,26 @@ describe('镜头：一个镜头不切', () => {
     }
   });
 
-  it('第 6 句：两个人的头、屋檐都在歌词那条下面、画面里', () => {
+  it('第 6 句：两个人的头、屋檐都在顶上那条下面、画面里；第 6 句放在右下（歌词排版表），两个人的头和脚都在那块字外面（左边）', () => {
+    const 框 = 歌词框(句词(6), 歌词排版表[6]!);
     for (const f of 全部帧.filter((x) => x < 帧('她站起'))) {
       const p = 屏(f);
-      for (const q of [[参.站位.她[0], 参.站位.她[1], 1.3], [参.站位.你[0], 参.站位.你[1], 1.3]]) {
-        const s = p(q);
-        expect(s.上, `帧 ${f}`).toBeGreaterThan(歌词比);
-        expect(s.上, `帧 ${f}`).toBeLessThan(1);
-        expect(s.左, `帧 ${f}`).toBeGreaterThan(0);
-        expect(s.左, `帧 ${f}`).toBeLessThan(1);
-      }
+      for (const [x, y] of [参.站位.她, 参.站位.你])
+        for (const z of [0, 1.3]) {
+          const s = p([x, y, z]);
+          if (z > 0) expect(s.上, `帧 ${f}`).toBeGreaterThan(歌词比);
+          expect(s.上, `帧 ${f}`).toBeLessThan(1);
+          expect(s.左, `帧 ${f}`).toBeGreaterThan(0);
+          expect(s.左, `帧 ${f}`).toBeLessThan(框.左 - 0.03);
+        }
+    }
+  });
+
+  it('第 7 句被光柱劈成两半（歌词排版表 拨开缝）：光柱起以后，光柱那一竖在两半中间的缝里、碰不到描边', () => {
+    const 半缝 = ((拨开缝 / 2 - 1) * 符文歌词默认.字点) / 2560;
+    for (const f of 全部帧.filter((x) => x >= 帧('光柱起'))) {
+      const p = 屏(f);
+      for (const z of [0, 参.云底高]) expect(Math.abs(p([洞心()[0], 洞心()[1], z]).左 - 0.5), `帧 ${f}`).toBeLessThan(半缝 - 0.004);
     }
   });
 
@@ -321,10 +368,11 @@ describe('天气、雨、声音', () => {
     const 资产们 = (段: typeof 雷雨段) => (段.声音 ?? []).map((c) => (c as { 资产?: string }).资产);
     expect(资产们(雷雨段).filter((a) => a?.includes('weather.rain')).length).toBeGreaterThan(0);
     expect(资产们(拨开阴霾段).filter((a) => a?.includes('weather.rain')).length).toBeGreaterThan(0);
-    expect(资产们(雷雨段)).toContain(参.雷声.资产);
+    expect(资产们(雷雨段).filter((a) => a === 参.雷声.资产).length).toBe(2);
     expect(资产们(拨开阴霾段)).toContain(参.信标声.资产);
     // 雷声文件前 0.25 秒几乎没声（参.雷声.提前秒），起点可以早于段首被切掉；滚雷那一下（闪）和结尾都在 2-雷雨 里
     expect(帧('第6句闷雷')).toBeGreaterThanOrEqual(雷雨.起帧);
     expect(雷.起帧 + (雷.帧数 ?? Infinity)).toBeLessThanOrEqual(雷雨.止帧);
+    expect(近雷.起帧 + (近雷.帧数 ?? Infinity)).toBeLessThanOrEqual(雷雨.止帧);
   });
 });

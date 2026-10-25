@@ -1,6 +1,6 @@
 // 飘的纸和樱花瓣的叠层（算法在 纸花.ts）：一块 2D 画布，按贴图像素画（一个贴图像素 = 纸花参数.档 个成片像素），最近邻、只转 90° 的整数倍，同 特效/樱花风.tsx 的花瓣。
-// 花瓣照原版 cherry_leaves 粒子的 12 张 3×3 贴图；纸是自画的 4×5 一张带横线的纸（W 纸、L 横线、S 侧着看的纸边、H 翻过来朝着光的纸背，白得发亮），
-// 翻着飘时八个样子轮着换：正面 → 斜 → 侧成一条线 → 背面斜 → 背面一闪白 → …（核查 10-24：原来 3×3 的纸认不出是纸）。
+// 花瓣照原版 cherry_leaves 粒子的 12 张 3×3 贴图；纸是自画的 3×4 一张带横线的纸（W 纸、L 横线、S 侧着看的纸边、H 翻过来朝着光的纸背，白得发亮），
+// 翻着飘时八个样子轮着换：正面 → 斜 → 侧成一条线 → 背面斜 → 背面一闪白 → …（核查 10-24：3×3 的纸认不出是纸；4×5 又比花瓣大两倍多，纸变不成花瓣，取 3×4）。
 // 画布盖 页面 x [左, 左 + 宽)：分屏时两半各画一块（各自的调子包在外面，纸飘到分屏线哪边就是哪边的调子），合屏以后整页一块。放在 position 不是 static 的容器里，左上角对齐那一块。
 import type React from 'react';
 import { useLayoutEffect, useRef } from 'react';
@@ -22,28 +22,28 @@ import c11 from 'asset:贴图/粒子/樱花/cherry_11';
 
 const 瓣图们: readonly Png[] = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11].map((u) => png(u));
 
-/** 纸翻一圈的八个样子（居中在 4×5 里）。横轴翻：高度 5 → 3 → 1 → 3 → 5 → …；竖轴翻：宽度 4 → 2 → 1 → 2 → 4 → … */
-const 纸宽 = 4;
-const 纸高 = 5;
+/** 纸翻一圈的八个样子（居中在 3×4 里）。横轴翻：高度 4 → 2 → 1 → 2 → 4 → …；竖轴翻：宽度 3 → 2 → 1 → 2 → 3 → … */
+const 纸宽 = 3;
+const 纸高 = 4;
 const 横翻: Record<纸形, readonly string[]> = {
-  0: ['WWWW', 'LLLL', 'WWWW', 'LLLL', 'WWWW'],
-  1: ['WWWW', 'LLLL', 'WWWW'],
-  2: ['SSSS'],
-  3: ['HHHH', 'HHHH', 'HHHH'],
-  4: ['HHHH', 'HHHH', 'HHHH', 'HHHH', 'HHHH'],
-  5: ['HHHH', 'HHHH', 'HHHH'],
-  6: ['SSSS'],
-  7: ['WWWW', 'LLLL', 'WWWW'],
+  0: ['WWW', 'LLL', 'WWW', 'LLL'],
+  1: ['WWW', 'LLL'],
+  2: ['SSS'],
+  3: ['HHH', 'HHH'],
+  4: ['HHH', 'HHH', 'HHH', 'HHH'],
+  5: ['HHH', 'HHH'],
+  6: ['SSS'],
+  7: ['WWW', 'LLL'],
 };
 const 竖翻: Record<纸形, readonly string[]> = {
   0: 横翻[0],
-  1: ['WW', 'LL', 'WW', 'LL', 'WW'],
-  2: ['S', 'S', 'S', 'S', 'S'],
-  3: ['HH', 'HH', 'HH', 'HH', 'HH'],
+  1: ['WW', 'LL', 'WW', 'LL'],
+  2: ['S', 'S', 'S', 'S'],
+  3: ['HH', 'HH', 'HH', 'HH'],
   4: 横翻[4],
-  5: ['HH', 'HH', 'HH', 'HH', 'HH'],
-  6: ['S', 'S', 'S', 'S', 'S'],
-  7: ['WW', 'LL', 'WW', 'LL', 'WW'],
+  5: ['HH', 'HH', 'HH', 'HH'],
+  6: ['S', 'S', 'S', 'S'],
+  7: ['WW', 'LL', 'WW', 'LL'],
 };
 const 纸色: Record<string, string> = { W: '#eef1f3', L: '#9aa6b2', S: '#b8c0c8', H: '#ffffff' };
 

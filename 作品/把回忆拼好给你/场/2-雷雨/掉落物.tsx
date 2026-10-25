@@ -1,12 +1,32 @@
 // 炸出来的掉落物（ItemEntity），照原版 1.20.1 ItemEntityRenderer 画：上下浮 sin((刻 + 帧内)/10 + bobOffs)·0.1 + 0.1，
 // 绕竖轴转 (刻 + 帧内)/20 + bobOffs 弧度；方块物品按 block/block 的 ground 显示变换缩到 1/4 格、往上抬 3/16 格。
 // 一堆不止一个时多画几份（原版 getRenderAmount：>1 两份、>16 三份、>32 四份、>48 五份），方块物品每份在 ±0.15 格里随机错开（种子 = 物品和个数，这里用列号）。
-// 这一场炸出来的全是方块（木板、圆石，和箱子本身），所以只写了方块物品；箱子的物品模型是方块实体（builtin/entity），同 block/block 的 ground 显示变换，画法照 库/物品/箱子.tsx。
+// 炸出来的是方块（木板、圆石，和箱子本身）：箱子的物品模型是方块实体（builtin/entity），同 block/block 的 ground 显示变换，画法照 库/物品/箱子.tsx。
+// 箱子里洒出来的树苗、花、蛋糕是平面物品（item/generated）：挤出 1 像素厚的薄片（engine/model/物品贴图.tsx），ground 显示变换抬 2/16、缩到 1/2，往上抬 0.25 × 0.5 格；
+//   几份前后错开 0.09375 格、横竖在 ±0.075 里错开（ItemEntityRenderer 不是 3D 物品的那一支）。树苗、花的物品图就是方块贴图（item/poppy.json 的 layer0 = block/poppy），从方块图集里切。
 import React from 'react';
 import { 方块拼搭 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
+import { ItemSprite, type ItemLayer } from '@engine/model/物品贴图.tsx';
+import { png, type Png } from '@engine/model/贴图.ts';
+import { textureNames } from '@engine/voxel/真实方块表.ts';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
+import { CAKE } from '@库/物品/蛋糕.tsx';
+import 方块表图 from 'asset:贴图/场景/关键帧/方块表';
 import { Java随机 } from './弹坑.ts';
+
+/** 方块图集里的一张贴图（图集是 16 宽的竖条，一张 16×16 接一张，顺序同 textureNames） */
+const 方块贴图 = (名: string): Png => {
+  const k = textureNames.indexOf(名);
+  if (k < 0) throw new Error(`方块图集里没有 ${名}`);
+  return { w: 16, h: 16, px: png(方块表图).px.subarray(k * 1024, (k + 1) * 1024) };
+};
+/** 平面物品的贴图层 */
+const 平面物品: Record<string, () => ItemLayer[]> = {
+  'minecraft:cherry_sapling': () => [{ tex: 方块贴图('minecraft:block/cherry_sapling') }],
+  'minecraft:poppy': () => [{ tex: 方块贴图('minecraft:block/poppy') }],
+  'minecraft:cake': () => CAKE,
+};
 
 /** 物品 id → 画成哪个方块状态（物品模型是方块的默认状态） */
 const 物品方块: Record<string, string> = {
@@ -25,6 +45,27 @@ const 一堆: React.FC<{ d: 掉落物; 刻: number }> = ({ d, 刻 }) => {
   const 状态 = 物品方块[d.物品] ?? d.物品;
   const r = new Java随机(Math.round(d.位[0] * 1000) * 31 + d.个数);
   const n = 份数(d.个数);
+  const 平面 = 平面物品[d.物品];
+  if (平面) {
+    const 层 = 平面();
+    return (
+      <group position={[d.位[0], d.位[1], d.位[2] + 浮 + 0.25 * 0.5]} rotation={[0, 0, 转]}>
+        {/* 物品空间（Y 上、Z 朝前）转到场景（Z 上） */}
+        <group rotation={[Math.PI / 2, 0, 0]}>
+          <group position={[0, 0, (-0.09375 * (n - 1)) / 2]}>
+            {Array.from({ length: n }, (_, k) => {
+              const o = k === 0 ? [0, 0] : [(r.nextFloat() * 2 - 1) * 0.075, (r.nextFloat() * 2 - 1) * 0.075];
+              return (
+                <group key={k} position={[o[0]!, o[1]! + 2 / 16, 0.09375 * k]} scale={0.5}>
+                  <ItemSprite layers={层} emissive={0} shadow={false} />
+                </group>
+              );
+            })}
+          </group>
+        </group>
+      </group>
+    );
+  }
   return (
     <group position={[d.位[0], d.位[1], d.位[2] + 浮 + 0.25 * 0.25]} rotation={[0, 0, 转]}>
       {Array.from({ length: n }, (_, k) => {
