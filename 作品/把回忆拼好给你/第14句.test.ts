@@ -217,7 +217,7 @@ describe('教学楼下', () => {
   });
 });
 
-describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 10-25：撕碎、被风横着吹过去、一边飘一边变成樱花瓣）', () => {
+describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 10-25：撕碎、被风吹过去、一边飘一边变成樱花瓣，落的路线斜着往左下）', () => {
   const 全 = 纸花们();
   const 纸们 = 全.filter((q) => q.种 === '纸');
   const 瓣们 = 全.filter((q) => q.种 === '瓣');
@@ -231,6 +231,17 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
       return x + k.宽 > 左 && x < 1280 && y + k.高 > 0 && y < 720;
     });
   const 中心x = (q: 纸花片, t: number) => 纸花在(q, t).x + 片框(q).宽 / 2;
+  /** 去掉晃（摆 = 0）：看这一片走的大势 */
+  const 不晃 = (q: 纸花片): 纸花片 => ({ ...q, 摆: 0 });
+  /** t 起 dt 秒里往哪走：往下斜几度（往左走时 0 = 水平、90 = 直着往下；往右走会大于 90） */
+  const 斜度 = (q: 纸花片, t: number, dt = 1 / 48) => {
+    const [a, b] = [纸花在(q, t), 纸花在(q, t + dt)];
+    return (Math.atan2(b.y - a.y, a.x - b.x) * 180) / Math.PI;
+  };
+  /** 这一片从哪一刻起被风带满（纸花.ts 的 揽起 + 升） */
+  const 带满 = (q: 纸花片) => Math.max(q.生, 事.纸飘下.秒) + q.迟 + q.升;
+  /** 窗里扔出来的（出发时有抛的初速）；其余的（楼上落下来、右沿外刮进来的碎纸，花瓣）出发时就在往下飘 */
+  const 抛的 = (q: 纸花片) => q.种 === '纸' && q.y0 >= 0 && q.x0 < 1280;
 
   it('碎纸、花瓣的飘法从同一套分布里取（没风时往下、往左的速度，吃风多少都在范围里）', () => {
     for (const q of 全) {
@@ -262,16 +273,58 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
     expect(风力(事.摇铃.秒)).toBe(0);
   });
 
-  it('起风以后两边一个方向：每一片都在往左飘，横着走（往左比往下快得多）', () => {
-    for (let f = 事.纸飘下.帧 + 8; f < 事.转向铃.帧; f += 2) {
-      const [t0, t1] = [秒(f), 秒(f + 1)];
+  it('起风以后两边一个方向：被风带满以后，碎纸、花瓣都斜着往左下飘（大势往下斜 10°～28°；带上晃，每四分之一秒也都是往左、往下）', () => {
+    let 查过 = 0;
+    for (let f = 事.纸飘下.帧; f < 事.转向铃.帧; f += 2) {
+      const t = 秒(f);
       for (const q of 全) {
-        if (t0 < q.生 + 纸花参数.拽秒 * 3) continue;
-        const [a, b] = [纸花在(q, t0), 纸花在(q, t1)];
-        expect(b.x - a.x, `第 ${f} 帧`).toBeLessThan(0);
-        expect(Math.abs(b.x - a.x), `第 ${f} 帧`).toBeGreaterThan(1.5 * Math.abs(b.y - a.y));
+        if (t < 带满(q) || t < q.生 + 纸花参数.拽秒 * 3) continue;
+        const d = 斜度(不晃(q), t);
+        expect(d, `第 ${f} 帧 ${q.种}`).toBeGreaterThan(10);
+        expect(d, `第 ${f} 帧 ${q.种}`).toBeLessThan(28);
+        const [a, b] = [纸花在(q, t), 纸花在(q, t + 0.25)];
+        expect(b.x - a.x, `第 ${f} 帧 ${q.种}`).toBeLessThan(0);
+        expect(b.y - a.y, `第 ${f} 帧 ${q.种}`).toBeGreaterThan(0);
+        查过++;
       }
     }
+    expect(查过).toBeGreaterThan(1000);
+  });
+
+  it('每片走一道弧（用户 10-25「至少应该是斜着向左吧」画的那道）：先往下落，越往下越被吹向左，往下斜的角度一路变小；窗里扔出来的抛一下以后也是先落后吹', () => {
+    for (const q of 全) {
+      const 起 = Math.max(q.生, 事.纸飘下.秒);
+      if (带满(q) > 事.转向铃.秒) continue;
+      const 平 = 斜度(不晃(q), 带满(q));
+      expect(平, `${q.种} ${q.生.toFixed(2)}`).toBeLessThan(28);
+      if (抛的(q)) {
+        // 抛出去以后有一阵是在往下落的（比带满时陡得多）
+        let 最陡 = -90;
+        for (let t = q.生; t < 带满(q); t += 1 / 48) 最陡 = Math.max(最陡, 斜度(不晃(q), t));
+        expect(最陡, `窗里扔的 ${q.生.toFixed(2)}`).toBeGreaterThan(平 + 15);
+        continue;
+      }
+      const 陡 = 斜度(不晃(q), 起);
+      const 中 = 斜度(不晃(q), 起 + q.迟 + q.升 / 2);
+      expect(陡, `${q.种} ${q.生.toFixed(2)}`).toBeGreaterThan(60);
+      expect(中, `${q.种} ${q.生.toFixed(2)}`).toBeLessThan(陡);
+      expect(中, `${q.种} ${q.生.toFixed(2)}`).toBeGreaterThan(平);
+    }
+  });
+
+  it('大势同用户画的那道弧：合屏起 以前过分屏线的碎纸，过线时大多在画面上半（她屋檐以上），中间那一片在画面 25%～45% 高', () => {
+    const 过线高们: number[] = [];
+    for (const q of 纸们)
+      for (let t = q.生; t < 混起; t += 1 / 48)
+        if (中心x(q, t) < 中线) {
+          过线高们.push(纸花在(q, t).y + 片框(q).高 / 2);
+          break;
+        }
+    过线高们.sort((a, b) => a - b);
+    expect(过线高们.filter((y) => y < 360).length / 过线高们.length).toBeGreaterThan(0.8);
+    const 中 = 过线高们[Math.floor(过线高们.length / 2)]!;
+    expect(中).toBeGreaterThan(0.25 * 720);
+    expect(中).toBeLessThan(0.45 * 720);
   });
 
   it('碎、多：分屏里有一刻右屏里飘着六十片以上碎纸，上、中两截都有十几片', () => {
@@ -286,12 +339,14 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
     expect(片框(纸们.find((q) => q.档 === 纸花参数.近档)!).宽).toBeLessThanOrEqual(50);
   });
 
-  it('碎纸越过分屏线飘到她那边：合屏起 以前过了线的超过一半', () => {
+  it('碎纸越过分屏线飘到她那边：合屏起 以前过了线的四成以上（先落再吹，路比横着走长，余下的合屏时随拉开的画面过去）；合屏起 那一刻左屏里飘着四十片以上', () => {
     const 过线 = 纸们.filter((q) => {
       for (let t = q.生; t < 混起; t += 1 / 24) if (中心x(q, t) < 中线) return true;
       return false;
     });
-    expect(过线.length / 纸们.length).toBeGreaterThan(0.5);
+    expect(过线.length / 纸们.length).toBeGreaterThan(0.4);
+    const 左屏里 = 画里(纸们, 混起).filter((q) => 中心x(q, 混起) < 中线);
+    expect(左屏里.length).toBeGreaterThanOrEqual(40);
   });
 
   it('一张一张变：每片先当至少 纸秒 的碎纸，一档至少 3 帧，变完秒 以前变成樱花瓣；换到同一档的时刻前后错开半秒以上，同一帧里换档的不到三分之一（不是整片一起）', () => {
