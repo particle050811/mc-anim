@@ -57,6 +57,14 @@ export type 依赖图 = {
   错误: string[];
 };
 
+/** 从入口们沿依赖图走到的全部仓库内文件 */
+export const 闭包 = (图: 依赖图, 入口: string[]) => {
+  const 到过 = new Set(入口);
+  const 队 = [...入口];
+  while (队.length) for (const e of 图.边.get(队.shift()!) ?? []) if (!e.外部 && !到过.has(e.到)) 到过.add(e.到), 队.push(e.到);
+  return 到过;
+};
+
 const 包名 = (spec: string) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]!);
 
 /** asset:<id> 一律解析成字符串模块，记下谁引了哪个 id；锁里有没有交给 资产 规则查，好一次报全 */

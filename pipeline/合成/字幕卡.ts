@@ -11,9 +11,11 @@ export type 字幕位置 = '下' | '思索上';
 
 type 字形 = { w: number; h: number; scale: number; adv: number; shadow: number; top: number; rows: number[] };
 let 字库: Record<string, 字形> | undefined;
+/** 字幕卡的点阵（共用资产表登记）；有台词的段随仓库发字节时也带上它（资产/随仓库.ts） */
+export const 像素字资产 = '字体/像素字';
 /** 像素字点阵（资产 字体/像素字）；测试可以先 设字库 */
 export const 设字库 = (x: Record<string, 字形>) => (字库 = x);
-const 取字库 = () => (字库 ??= JSON.parse(fs.readFileSync(解析资产('字体/像素字', 读资产锁()).文件, 'utf8')) as Record<string, 字形>);
+const 取字库 = () => (字库 ??= JSON.parse(fs.readFileSync(解析资产(像素字资产, 读资产锁()).文件, 'utf8')) as Record<string, 字形>);
 const 取字 = (ch: string): 字形 => {
   const g = 取字库()[ch];
   if (!g) throw new Error(`像素字（资产 字体/像素字）里没有「${ch}」：字幕用到的字要先取进点阵`);

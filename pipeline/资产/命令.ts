@@ -1,12 +1,16 @@
 // anim assets add <id> <文件>：把一件已在资产表登记的资产按 sha 放进 store/（私有的进 私有/），写进登记它那一侧的资产锁：
 // 共用表 assets/registry/ 登记的写 assets/资产锁.json，作品资产表 <作品根>/资产表/ 登记的写 <作品根>/资产锁.json（作品按 --作品 选）。
 // 从旧项目批量导入走 M2 的导入工具；这里只管单件（自制的、新生成的）。
+// anim assets vendor [--检查]：照 <作品根>/随仓库.toml 重写 <作品根>/字节/（随仓库发的字节，资产/随仓库.ts）；anim assets seed：把 字节/ 补进数据根 store/。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
-import { 作品根 } from '../环境/作品.ts';
-import { 相对代码根 } from '../环境/路径.ts';
+import { 作品名, 作品根 } from '../环境/作品.ts';
+import { 代码根, 相对代码根 } from '../环境/路径.ts';
+import { 数据根 } from '../环境/配置.ts';
+import { 检查上下文 } from '../检查/上下文.ts';
+import { 补字节, 写随仓库, 算随仓库, 读随仓库表, 随仓库表名, 字节目录 } from './随仓库.ts';
 import { 库名, 读两侧资产表 } from './资产表.ts';
 import { 作品资产锁路径, 入库, 写资产锁, 资产锁路径, 读资产锁, type 锁条目 } from './资产锁.ts';
 
@@ -37,14 +41,43 @@ export const 登记入库 = (id: string, 文件: string, o: 登记入库选项):
   return { 条目: 新, 锁文件, 挪自: 另一份 };
 };
 
+/** anim assets vendor：照 随仓库.toml 重算集合、重写 字节/；--检查 只报要改什么，有改动返回 1 */
+const 写字节 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => {
+  const 根 = 作品根();
+  const 表 = path.join(根, 随仓库表名);
+  if (!fs.existsSync(表)) throw new Error(`${相对代码根(表)} 不存在：这部作品没定随仓库发哪些段的字节（写 "段" = ["<段键或章>", …]）`);
+  if (path.relative(path.join(代码根(), '作品', 作品名()), 根) !== '') throw new Error(`${作品名()} 不在 作品/ 下，随仓库发字节只管仓库里的作品`);
+  const c = new 检查上下文(代码根(), { 作品: 作品名() });
+  try {
+    const 集合 = await 算随仓库(c, 读随仓库表(fs.readFileSync(表, 'utf8')).段);
+    if (集合.问题.length) throw new Error(`算不出随仓库的集合：\n  ${集合.问题.join('\n  ')}`);
+    const r = 写随仓库(集合, 根, 数据根(), 只查);
+    const 位 = 相对代码根(字节目录(根));
+    console.log(`${集合.段们.length} 段要 ${r.件数} 件字节（${(r.大小 / 1e6).toFixed(1)} MB）；私有不带 ${集合.私有.length} 件${集合.私有.length ? `：${集合.私有.join('、')}` : ''}`);
+    const 改 = r.添.length + r.改.length + r.删.length;
+    if (!改) console.log(`${位} 已经一致`);
+    else console.log(`${位}${只查 ? ' 要' : ' '}添 ${r.添.length} 件、重拷 ${r.改.length} 件、删 ${r.删.length} 件${只查 ? '（anim assets vendor 写进去）' : ''}`);
+    if (!只查 && 改) 记录.产物.push(字节目录(根));
+    return 只查 && 改 ? 1 : 0;
+  } finally {
+    c.收尾();
+  }
+};
+
 export const 资产命令: Record<string, 命令> = {
   assets: {
-    用法: 'assets add <id> <文件> [--替换]',
-    说明: '一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁（共用的或作品的）',
+    用法: 'assets add <id> <文件> [--替换] | assets vendor [--检查] | assets seed',
+    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（render、still、film、studio 开头会自动做）',
     跑: async (args, 记录) => {
-      const p = 解析参数(args, { 开关: ['--替换'] });
+      const p = 解析参数(args, { 开关: ['--替换', '--检查'] });
       const [子, id, 文件] = p.位置;
-      if (子 !== 'add' || !id || !文件 || p.位置.length !== 3) throw new 用法错误('要 anim assets add <id> <文件>');
+      if (子 === 'vendor' && p.位置.length === 1 && !p.开关.has('--替换')) return 写字节(p.开关.has('--检查'), 记录);
+      if (子 === 'seed' && p.位置.length === 1 && !p.开关.size) {
+        const r = 补字节(作品根(), 数据根());
+        console.log(`${相对代码根(字节目录(作品根()))}：${r.共} 件，补进 ${path.join(数据根(), 'store')} ${r.补} 件（其余已有）`);
+        return;
+      }
+      if (子 !== 'add' || !id || !文件 || p.位置.length !== 3 || p.开关.has('--检查')) throw new 用法错误('要 anim assets add <id> <文件> [--替换]、anim assets vendor [--检查] 或 anim assets seed');
       const { 条目: 新, 锁文件, 挪自 } = 登记入库(id, 文件, { 作品根: 作品根(), 替换: p.开关.has('--替换') });
       记录.产物.push(`${id} → ${新.库}/${新.sha256}`);
       console.log(`${id}：${新.库}/${新.sha256.slice(0, 2)}/${新.sha256}（${新.大小} 字节，${新.后缀}）→ ${相对代码根(锁文件)}`);

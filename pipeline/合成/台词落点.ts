@@ -98,11 +98,14 @@ export const 算台词落点 = (
   return out;
 };
 
+/** 同步表要读的资产（anim film 有声音 cue 就读）；随仓库发的字节也带上它（资产/随仓库.ts） */
+export const 音效起音资产 = '数据/音效/音效起音';
+
 /** 资产 数据/音效/音效起音：文件名（音效 id 去掉 音效/ 加 .ogg）→ 文件开头静音几秒 */
 export const 读音效起音 = (): ((资产id: string) => number) => {
   const 锁 = 读作品资产锁(作品根());
-  if (!锁['数据/音效/音效起音']) return () => 0;
-  const 表 = JSON.parse(fs.readFileSync(解析资产('数据/音效/音效起音', 锁).文件, 'utf8')) as Record<string, number>;
+  if (!锁[音效起音资产]) return () => 0;
+  const 表 = JSON.parse(fs.readFileSync(解析资产(音效起音资产, 锁).文件, 'utf8')) as Record<string, number>;
   return (id) => (id.startsWith('音效/') ? (表[`${id.slice('音效/'.length)}.ogg`] ?? 0) : 0);
 };
 

@@ -6,6 +6,9 @@
 //   依赖版本 lockfile 里 remotion、three 等决定像素的包
 //   打包规则 webpack 改写、ogg 解码各自规范化文本的哈希（不跟它们的闭包），和影响输出的 tsconfig 编译选项
 //   平台    process.platform-arch（跨平台不要求逐像素一致）
+//   私有配乐 闭包里有 engine/audio/私有配乐.ts 的段（按 cue 现取、不打进包）：本段 cue 里的私有配乐记 sha 或「缺:静音」（资产/私有配乐.ts）；
+//           没有这一项的段不写这个键，指纹和加这项之前一样
+//   缺字节  闭包里 import 的资产字节不在数据根（公开仓库只带 随仓库.toml 的段要用的）、打进的是占位的（资产/缺字节.ts）：记这些 id；都在就不写这个键
 // 指纹 = 项按键排序后的 JSON 的 sha256；.指纹.json 另存 明细（路径 → 模块哈希、asset id → sha），不进指纹，只给 anim stale 说明是哪个文件变了。
 // 透明叠层（段.ts 的 叠层）同样算，入口换成叠层文件，段记成 `<段键>-<名>`。
 import crypto from 'node:crypto';
@@ -14,6 +17,10 @@ import path from 'node:path';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品根 } from '../环境/作品.ts';
 import { 算默克尔, 文本哈希, 编译选项, 锁定版本, 默克尔算法, type 默克尔明细 } from './默克尔.ts';
+import { 数据根 } from '../环境/配置.ts';
+import { 读作品资产锁 } from '../资产/资产锁.ts';
+import { 段私有配乐, 私有配乐模块 } from '../资产/私有配乐.ts';
+import { 缺字节 } from '../资产/缺字节.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import type { 叠层定义 } from '../../engine/段/段定义.ts';
 
@@ -24,6 +31,8 @@ export type 指纹项 = {
   依赖版本: Record<string, string | null>;
   打包规则: Record<string, string>;
   平台: string;
+  私有配乐?: Record<string, string>;
+  缺字节?: string[];
 };
 export type 段指纹 = { 段: string; 指纹: string; 算法: typeof 默克尔算法; 项: 指纹项; 明细: 默克尔明细 };
 export { 锁定版本 };
@@ -82,6 +91,14 @@ export const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, un
     打包规则,
     平台: `${process.platform}-${process.arch}`,
   };
+  const 锁 = 读作品资产锁(作品根());
+  // 叠层不出声，不记
+  if (!叠层 && 私有配乐模块 in 明细.模块) {
+    const 配乐 = 段私有配乐(s.段, 锁, 数据根());
+    if (Object.keys(配乐).length) 项.私有配乐 = 配乐;
+  }
+  const 缺 = 缺字节(Object.keys(明细.资产), 锁, 数据根());
+  if (缺.length) 项.缺字节 = 缺;
   return { 段: 叠层 ? 叠层键(s.键, 叠层) : s.键, 指纹: sha(稳定JSON(项)), 算法: 默克尔算法, 项, 明细 };
 };
 
@@ -116,5 +133,8 @@ export const 指纹差异 = (旧: Pick<段指纹, '项'> & { 明细?: 默克尔�
   比表('依赖版本', 旧.项.依赖版本, 新.项.依赖版本);
   比表('打包规则', 旧.项.打包规则, 新.项.打包规则);
   if (旧.项.平台 !== 新.项.平台) 差.push(`平台 ${旧.项.平台} → ${新.项.平台}`);
+  比表('私有配乐', 旧.项.私有配乐 ?? {}, 新.项.私有配乐 ?? {});
+  const 缺表 = (x?: string[]) => Object.fromEntries((x ?? []).map((id) => [id, '缺字节']));
+  比表('缺字节', 缺表(旧.项.缺字节), 缺表(新.项.缺字节));
   return 差;
 };
