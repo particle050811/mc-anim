@@ -2,10 +2,9 @@
 // linear、catmullrom 照车万女仆（TLM）1.5.3 自带的 GeckoLib 3 分支（MathUtil.lerpValues、MathUtil.catmullRom 反汇编）；
 // 游戏里结果转 float（joml Vector3f），这里全程 double：和库里的手抄版逐位一致，和游戏差在 1e-6 量级。
 // step、bezier、缓动名是「通用」口径（Blockbench、GeckoLib 4 的写法），没有对着 jar 核过，见各自的注释。
+import { easeInSine } from '../core/数学.ts';
 
 export type 插值方式 = 'linear' | 'step' | 'catmullrom' | 'bezier';
-
-export const 线性 = (a: number, b: number, u: number): number => a + u * (b - a);
 
 /**
  * TLM 的 catmullrom：u 是段内按时间均匀的进度 0～1，p1→p2 是这一段，p0、p3 是两边相邻关键帧的值。
@@ -62,7 +61,7 @@ const 弹跳出 = (u: number) => {
   return n * (u -= 2.625 / d) * u + 0.984375;
 };
 const 进: Record<string, (u: number, a?: number) => number> = {
-  Sine: (u) => 1 - Math.cos((u * Math.PI) / 2),
+  Sine: easeInSine,
   Quad: (u) => u ** 2,
   Cubic: (u) => u ** 3,
   Quart: (u) => u ** 4,

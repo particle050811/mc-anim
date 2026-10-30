@@ -113,8 +113,8 @@ export const 基岩实体: React.FC<基岩实体属性> = ({
 }) => {
   const { 主体, 发光: 发光份 } = useMemo(() => 按发光拆分(模型, 发光骨骼), [模型, 发光骨骼]);
   const 动画骨骼 = 动画 ? 动画姿势(动画, 秒) : {};
-  const pose: Record<string, BonePose> = { ...动画骨骼 };
-  for (const [k, v] of Object.entries(姿势 ?? {})) pose[k] = { ...pose[k], ...v };
+  // 姿势按通道盖在动画上：TLM 口径的覆盖层就是逐字段盖（库/角色/骨骼表.ts 的 合并骨骼表 同义，engine 不能 import 库）
+  const pose: Record<string, BonePose> = 混合层([{ 骨骼: 动画骨骼 }, { 骨骼: 姿势 ?? {} }], 'TLM');
   // 基岩模型.tsx 的材质贴图就是这张（entityTexture 按像素对象缓存，主体、发光两份共用）
   const 贴图 = entityTexture(模型.texture);
   return (

@@ -5,7 +5,8 @@
 //          魔法酒狐的手抄版都按这个口径对过（作品/把回忆拼好给你/核对/基岩动画/对照.test.ts）。
 //   '通用'：Blockbench / 基岩版 / GeckoLib 4 的写法（step、bezier、缓动名、hold_on_last_frame 停在末帧、blend_weight 权重），没对着 jar 核过。
 // 输出的骨骼姿势同 engine/model/基岩模型.tsx 的 BonePose（度、像素，数值约定同动画文件），这里不 import 它，免得带上 three。
-import { catmullRom, 线性, 缓动, 贝塞尔, 阶跃, type 插值方式 } from './插值.ts';
+import { lerp } from '../core/数学.ts';
+import { catmullRom, 缓动, 贝塞尔, 阶跃, type 插值方式 } from './插值.ts';
 import { 烘焙, 取值, 编译, 求值, type Molang式, type Molang环境 } from './Molang.ts';
 
 export type 口径 = 'TLM' | '通用';
@@ -202,7 +203,7 @@ export const 取样通道 = (帧们: readonly 关键帧[], t: number, 环境: Mo
     return [0, 1, 2].map((j) => catmullRom(u, 左[j]!, 起[j]!, 终[j]!, 右[j]!)) as [number, number, number];
   }
   if (口 === '通用') {
-    if (a.插值 === 'step') return 起.map((x, j) => 线性(x, 终[j]!, 阶跃(u))) as [number, number, number];
+    if (a.插值 === 'step') return 起.map((x, j) => lerp(x, 终[j]!, 阶跃(u))) as [number, number, number];
     if (a.插值 === 'bezier' || b.插值 === 'bezier') {
       return [0, 1, 2].map((j) =>
         贝塞尔(
@@ -213,9 +214,9 @@ export const 取样通道 = (帧们: readonly 关键帧[], t: number, 环境: Mo
       ) as [number, number, number];
     }
     const e = 缓动(b.缓动?.名, u, b.缓动?.参数);
-    return 起.map((x, j) => 线性(x, 终[j]!, e)) as [number, number, number];
+    return 起.map((x, j) => lerp(x, 终[j]!, e)) as [number, number, number];
   }
-  return 起.map((x, j) => 线性(x, 终[j]!, u)) as [number, number, number];
+  return 起.map((x, j) => lerp(x, 终[j]!, u)) as [number, number, number];
 };
 
 export type 播放选项 = {
@@ -331,8 +332,8 @@ export const 混合层 = (层们: readonly 动画层[], 口: 口径 = 默认口�
       } else {
         const 合 = (下: number[] | undefined, 值: number[], 原位: number, 乘: boolean) => {
           const d = 下 ?? [原位, 原位, 原位];
-          if (模式 === '覆盖') return d.map((x, j) => 线性(x, 值[j]!, w));
-          return d.map((x, j) => (乘 ? x * 线性(1, 值[j]!, w) : x + w * 值[j]!));
+          if (模式 === '覆盖') return d.map((x, j) => lerp(x, 值[j]!, w));
+          return d.map((x, j) => (乘 ? x * lerp(1, 值[j]!, w) : x + w * 值[j]!));
         };
         if (姿.rot) 新.rot = 合(旧.rot, 姿.rot, 0, false);
         if (姿.pos) 新.pos = 合(旧.pos, 姿.pos, 0, false);

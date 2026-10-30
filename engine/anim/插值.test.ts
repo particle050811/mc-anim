@@ -1,9 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { catmullRom, 线性, 缓动, 缓动名们, 贝塞尔, 阶跃 } from './插值.ts';
+import { catmullRom, 缓动, 缓动名们, 贝塞尔, 阶跃 } from './插值.ts';
 
 describe('插值', () => {
   it('linear、catmullrom 过端点', () => {
-    expect(线性(2, 6, 0.25)).toBe(3);
     expect(catmullRom(0, 9, 1, 5, -3)).toBe(1);
     expect(catmullRom(1, 9, 1, 5, -3)).toBe(5);
     // 等距直线上的 catmullrom 退化成线性
