@@ -83,6 +83,22 @@ npm ci
 
 本仓库自己的代码用什么开源协议还没定，暂时不写，以后再决定。
 
+## 改地形、看地形
+
+地形从 Minecraft 存档烘成区段包再渲染，世界的来龙去脉写在 `sourcing/worlds/<世界>.toml`，不开游戏改地形写在同名的 `.编辑.toml`（MC 命令写法：fill、setblock、clone、摆 .nbt / .schem 结构）。要有取材服务端的存档（`ANIM_GAME`），只看烘好的地形包加 `--包 <名>`。
+
+```
+./anim world list                                   列世界声明、要烘的包、登记的版本
+./anim world bake <世界> [--包 <名>] [--不登记]       读存档、套编辑、烘区段包、登记版本
+./anim world edit check|replay <世界>                校验编辑；生成游戏里重放的命令
+./anim world map <世界> <x1> <z1> <x2> <z2>          俯视图（PNG，带坐标网格）
+./anim world slice <世界> x|z <位置> <起> <止>        切面图
+./anim world block|heightmap …                       查方块、高度图
+./anim world pregen <世界>                           打印预生成（Chunky）命令
+```
+
+详见 `docs/世界.md`。
+
 ## 再往下
 
 - 架构、命名、决策记录在 `docs/`，先看 `docs/架构.md`。
