@@ -94,11 +94,12 @@ const 打发布 = async (上传: boolean, 记录: Parameters<命令['跑']>[1]) 
   }
 };
 
-/** anim assets measure：共用锁和每部作品的锁里，缺 时长/峰值/响度 的音频条目量了补上；--检查 只报，有能补的返回 1 */
+/** anim assets measure：共用锁和每部作品的锁里，没量过的音频条目量了补上；--检查 只报，有能补的返回 1；有量不出的也返回 1 */
 const 补量 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => {
   const 锁们 = [资产锁路径(), ...[...作品们().values()].map(作品资产锁路径).filter((f) => fs.existsSync(f))];
   const 跑 = async () => {
     let 能补 = 0;
+    let 量不出 = 0;
     for (const 锁文件 of 锁们) {
       const 位 = 相对代码根(锁文件);
       const r = 补音频元数据(读资产锁(锁文件), {
@@ -110,6 +111,7 @@ const 补量 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => 
       });
       能补 += r.缺.length - r.没字节.length;
       console.log(`${位}：音频 ${r.音频} 件，缺数 ${r.缺.length} 件${r.没字节.length ? `，字节不在本机跳过 ${r.没字节.length} 件` : ''}${只查 ? '' : `，补了 ${r.补了.length} 件`}`);
+      量不出 += r.量不出.length;
       for (const x of r.量不出) console.log(`  量不出 ${x.id}：${x.原因}`);
       if (r.仍缺.length) console.log(`  量完还缺字段 ${r.仍缺.length} 件（静音没有峰值、太短没有积分响度）：${r.仍缺.slice(0, 10).map((x) => `${x.id}（${x.字段.join('、')}）`).join('、')}${r.仍缺.length > 10 ? ' …' : ''}`);
       if (!只查 && r.补了.length) {
@@ -118,7 +120,8 @@ const 补量 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => 
       }
     }
     if (只查 && 能补) console.log(`能补 ${能补} 件：anim assets measure`);
-    return 只查 && 能补 ? 1 : 0;
+    // 量不出的（字节坏了、ffmpeg 解不开）补了别的照样写锁，但退出码 1，别让批处理当成全补齐了
+    return (只查 && 能补) || 量不出 ? 1 : 0;
   };
   // 一千来件挨个解码，重任务过放行闸；只查不解码
   return 只查 ? 跑() : 过放行闸(跑);
