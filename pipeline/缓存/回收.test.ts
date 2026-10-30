@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { 历史指纹 } from '../渲/母版.ts';
 import { 认可文本, type 认可记录 } from '../验收/认可.ts';
 import { 加当前指纹 } from './当前指纹.ts';
 import { 执行回收, type 回收计划 } from './计划.ts';
@@ -105,6 +106,21 @@ describe('保留集：母版', () => {
     expect(删的(规划(new 保留集(), 10))).toEqual([]);
   });
 
+  it('最近一份按 .指纹.json 的时间排：删完以后 film --允许过期（历史指纹）取的还是原来那份', () => {
+    // 迁移时把 aaaa 的母版硬链接到新指纹 bbbb 名下：bbbb.mkv 是旧时间，bbbb.指纹.json 是新的
+    const a = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9, 100);
+    母版('6-甲', 'cccccccccccccccc', '视频', 8, 200);
+    const b = path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mkv');
+    fs.linkSync(a, b);
+    写('cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.指纹.json', JSON.stringify({ 段: '6-甲', 指纹: 'b'.repeat(64), 项: { 渲染设置: { inputProps: { 级别: '视频' } } } }), 现在 - 3 * 天);
+    const 取 = () => 历史指纹('6-甲', 母版目录('6-甲')).find((h) => fs.existsSync(path.join(母版目录('6-甲'), `${h.指纹.slice(0, 16)}.mkv`)))?.指纹.slice(0, 16);
+    expect(取()).toBe('bbbbbbbbbbbbbbbb');
+    const r = 规划(new 保留集());
+    expect(删的(r)).toEqual(['aaaaaaaaaaaaaaaa', 'cccccccccccccccc']);
+    for (const f of r) if (!f.理由.length) fs.rmSync(f.路径);
+    expect(取()).toBe('bbbbbbbbbbbbbbbb');
+  });
+
   it('当前指纹算不出的段整个目录留着', () => {
     母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
@@ -143,7 +159,9 @@ describe('保留集：母版', () => {
   it('硬链接：名字全删了才算腾出空间，留下的同一 inode 只算一次', () => {
     const a = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     fs.linkSync(a, path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mkv'));
-    fs.copyFileSync(a.replace(/\.mkv$/, '.指纹.json'), path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.指纹.json'));
+    const bjson = path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.指纹.json');
+    fs.copyFileSync(a.replace(/\.mkv$/, '.指纹.json'), bjson);
+    fs.utimesSync(bjson, new Date(现在 - 9 * 天), new Date(现在 - 9 * 天));
     母版('6-甲', 'cccccccccccccccc', '视频', 7);
     const 全删 = 小计(规划(new 保留集()).filter((f) => f.指纹 !== 'cccccccccccccccc'));
     expect(全删).toMatchObject({ 删数: 2, 删大小: 100, 硬链接未腾: 0 });

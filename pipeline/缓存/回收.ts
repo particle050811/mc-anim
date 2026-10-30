@@ -65,6 +65,11 @@ export type 媒体文件 = {
   指纹: string;
   大小: number;
   改于: number;
+  /**
+   * 旁边 .指纹.json 的修改时间（没有 json 用媒体文件的）。「最近一份」按它排，和 film --允许过期 用的 历史指纹 同序：
+   * 迁移时硬链接到新指纹名下的母版，媒体文件还是旧的修改时间，json 是新的
+   */
+  记于: number;
   /** 旁边 .指纹.json 里 渲染设置.inputProps.级别；没有 json 或读不出是 null */
   级别: string | null;
   /** 设备-inode 和硬链接数：迁移时有过把同一份母版硬链接到新指纹名下，删掉一个名字不腾空间 */
@@ -113,7 +118,11 @@ export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string):
       const m = 媒体名.exec(名);
       if (m && `.${m[2]}` === 媒体后缀[种]) {
         const json = path.join(dir, `${m[1]}.指纹.json`);
-        r.媒体.push({ 路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 级别: fs.existsSync(json) ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink });
+        const 有json = fs.existsSync(json);
+        r.媒体.push({
+          路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 记于: 有json ? fs.statSync(json).mtimeMs : st.mtimeMs,
+          级别: 有json ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink,
+        });
       } else if (是临时名(名)) r.临时.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
       else if (!名.endsWith('.指纹.json')) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
     }
@@ -122,15 +131,15 @@ export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string):
 };
 
 /**
- * 给每个媒体文件定留不留：保留集里有的留；另外每个（种、作品、键、级别）最近改的一份留（理由「最近一份」），
- * 近 近期天数 天里改过的留（「近期」）。理由为空的就是要删的。
+ * 给每个媒体文件定留不留：保留集里有的留；另外每个（种、作品、键、级别）记于最新的一份留（理由「最近一份」；
+ * 每个级别的都留，不分级别的 历史指纹 取的那份也就在里面），近 近期天数 天里改过的留（「近期」）。理由为空的就是要删的。
  */
 export const 规划媒体 = (文件们: readonly 媒体文件[], 保留: 保留集, o: { 现在: number; 近期天数: number }): 带理由<媒体文件>[] => {
   const 最近 = new Map<string, 媒体文件>();
   for (const f of 文件们) {
     const k = [f.种, f.作品, f.键, f.级别 ?? '?'].join('\0');
     const 已 = 最近.get(k);
-    if (!已 || f.改于 > 已.改于) 最近.set(k, f);
+    if (!已 || f.记于 > 已.记于) 最近.set(k, f);
   }
   const 最近集 = new Set([...最近.values()]);
   return 文件们.map((f) => {
