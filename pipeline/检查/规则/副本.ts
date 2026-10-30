@@ -3,6 +3,7 @@
 // - 代码里某个文件的副本比表里登记的多 → 违规（新写的副本，改成 import 正本）。
 // - 比登记的少、文件没了 → 违规（把表改小：表只许减少，删掉的副本不许再加回来）。
 // - 表本身和 main 的分叉点比，每个正本的总处数只许减少；改名、挪文件不加总数就行。不在 git 里（测试的样例仓库）就不比。
+//   例外：分叉点的 正本表.ts 里还没有的正本（这次新加的），它的旧副本可以第一次登记进表。
 // 只查 engine、库 和这次查的作品（渲染代码，不含测试）；别的作品的行留给查那部作品时比。pipeline 不能 import 渲染层，不查。
 import { execFileSync } from 'node:child_process';
 import { 是渲染代码, type 报告, type 检查上下文 } from '../上下文.ts';
@@ -121,14 +122,26 @@ export const 现状 = async (c: 检查上下文, 报: 报告): Promise<副本现
   return 全;
 };
 
-/** 表在 git 里和 main 的分叉点上的样子；拿不到（不在 git、没有 main、那时还没这张表）给 null */
-const 基线表 = (c: 检查上下文): string | null => {
+export const 正本表路径 = 'pipeline/检查/正本表.ts';
+
+/**
+ * 表在 git 里和 main 的分叉点上的样子；拿不到（不在 git、没有 main、那时还没这张表）给 null。
+ * 正本们：分叉点的 正本表.ts 里有的 id（读不到给 null，这时每个 id 都当老的，从严）
+ */
+const 基线 = (c: 检查上下文): { 表: string; 正本们: Set<string> | null } | null => {
   const git = (...a: string[]) => execFileSync('git', ['-C', c.根, '-c', 'core.quotepath=false', ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+  let 基: string;
+  let 表: string;
   try {
-    const 基 = git('merge-base', 'HEAD', 'main').trim();
-    return git('show', `${基}:${副本表路径}`);
+    基 = git('merge-base', 'HEAD', 'main').trim();
+    表 = git('show', `${基}:${副本表路径}`);
   } catch {
     return null;
+  }
+  try {
+    return { 表, 正本们: new Set([...git('show', `${基}:${正本表路径}`).matchAll(/\bid: '([^']+)'/g)].map((m) => m[1]!)) };
+  } catch {
+    return { 表, 正本们: null };
   }
 };
 
@@ -161,14 +174,16 @@ export const 副本 = async (c: 检查上下文, 报: 报告) => {
     for (const [p, n] of 表里) if (在查(p)) 登记 += n;
   }
 
-  const 旧文本 = 基线表(c);
-  if (旧文本 === null) 报.信息.push('和 main 的分叉点比不了（不在 git、没有 main，或那时还没有副本表），不查表只减不增');
+  const 基 = 基线(c);
+  if (基 === null) 报.信息.push('和 main 的分叉点比不了（不在 git、没有 main，或那时还没有副本表），不查表只减不增');
   else {
-    const 旧 = 读副本表(旧文本).表;
+    const 旧 = 读副本表(基.表).表;
     const 总 = (m: Map<string, number> | undefined) => [...(m?.values() ?? [])].reduce((a, b) => a + b, 0);
     for (const [id, m] of 表) {
       const [新数, 旧数] = [总(m), 总(旧.get(id))];
-      if (新数 > 旧数) 报.错(`副本表里 ${id} 从 ${旧数} 处加到 ${新数} 处：表只许减少，新代码改成 import 正本`, 副本表路径);
+      if (新数 <= 旧数) continue;
+      if (旧数 === 0 && 基.正本们 && !基.正本们.has(id)) 报.信息.push(`新正本 ${id}：第一次登记 ${新数} 处旧副本`);
+      else 报.错(`副本表里 ${id} 从 ${旧数} 处加到 ${新数} 处：表只许减少，新代码改成 import 正本`, 副本表路径);
     }
   }
   报.信息.push(`副本表里 engine、库、${c.作品名} 登记 ${登记} 处旧副本`);

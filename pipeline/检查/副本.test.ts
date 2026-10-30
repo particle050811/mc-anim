@@ -94,4 +94,32 @@ describe('副本', () => {
     expect(v).toMatch(/副本表里 smoothstep01 从 1 处加到 2 处：表只许减少/);
     expect(v).not.toMatch(/lerp/);
   });
+
+  it('分叉点的正本表里还没有的正本（这次新加的）：旧副本可以第一次登记；老正本照样只许减少', async () => {
+    /** 样例仓库：main 上的正本表只有 lerp、smoothstep01（规则只读里面的 id），切到分支后 改 */
+    const 分支上 = (改: (根: string) => void) => {
+      const 根 = 造仓库(基础(), 正本(), 旧段, 表('lerp\t作品/应力转动/段/7-甲/编排.ts\t1', 'smoothstep01\t作品/应力转动/段/7-甲/编排.ts\t1'), {
+        'pipeline/检查/正本表.ts': "export const 正本表 = [\n  { id: 'lerp' },\n  { id: 'smoothstep01' },\n];\n",
+        '库/夹.ts': 'export const 夹 = (x: number) => Math.min(1, Math.max(0, x));\n',
+      });
+      const git = (...a: string[]) => execFileSync('git', ['-C', 根, '-c', 'user.name=测试', '-c', 'user.email=t@t', ...a], { stdio: 'ignore' });
+      git('init', '-q', '-b', 'main');
+      fs.writeFileSync(path.join(根, '.gitignore'), 'node_modules/\n');
+      git('add', '-A');
+      git('commit', '-q', '-m', '基线');
+      git('checkout', '-q', '-b', '分支');
+      fs.appendFileSync(path.join(根, 'docs', '副本表.tsv'), 'clamp01\t库/夹.ts\t1\n');
+      改(根);
+      return 根;
+    };
+    const { 违规, 报 } = await 跑('副本', 分支上(() => {}));
+    expect(违规, 违规.join('\n')).toEqual([]);
+    expect(报.信息.join('\n')).toMatch(/新正本 clamp01：第一次登记 1 处旧副本/);
+    // 老正本加一处还是拦
+    const 根 = 分支上((r) => {
+      fs.writeFileSync(path.join(r, '库', '多.ts'), 'export const 缓 = (t: number) => t * t * (3 - 2 * t);\n');
+      fs.appendFileSync(path.join(r, 'docs', '副本表.tsv'), 'smoothstep01\t库/多.ts\t1\n');
+    });
+    expect((await 跑('副本', 根)).违规.join('\n')).toMatch(/副本表里 smoothstep01 从 1 处加到 2 处：表只许减少/);
+  });
 });
