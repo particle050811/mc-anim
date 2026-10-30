@@ -58,7 +58,7 @@ TOML 里中文键必须加引号（`"类别" = ...`），裸写会解析失败�
   - 用户自己做的默认 `LicenseRef-用户保留`。
   - `LicenseRef-LGPL-Unversioned`：mods.toml 只写了「LGPL」没写版本（冰与火、Citadel 的代码）。
   - 拿不准写 `LicenseRef-待定`，同时在 `待确认.md` 加一行。`jars.toml` 里知道大概、版本没核的写 `LicenseRef-待核-<大概>`（如 `LicenseRef-待核-CC-BY-NC-SA`），按 jar 继承时当没定。
-  - 从 jar 提取的（来源 `提取:`）不用手填：`anim extract --许可 --写` 按 `jars.toml` 每个 jar 的「许可」（代码、资源，可选 声音、结构、模型）继承，几个 jar 拼的用 `AND` 连；`anim extract <配方> --登记` 登记新产物时同样继承。
+  - 从 jar 提取的（来源 `提取:`）不用手填：`anim extract --许可 --写` 按 `jars.toml` 每个 jar 的「许可」（代码、资源，可选 声音、结构、模型）继承，几个 jar 拼的用 `AND` 连；`anim extract <配方> --登记` 登记新产物时同样继承。脚本写了 `{产物来源}` 的配方（音效），每件只记字节真正取自的那个 jar 或资源索引；按锁反推的配方要导锁里还没有的新件，加 `--新 <id>`（如 `anim extract 音效 --新 音效/block.anvil.land --登记`）。
   - 一张图里叠了两种来源的，用 `AND` 连起来。
 - **可见性**：
   - `公开`：可以随公开仓库发。
