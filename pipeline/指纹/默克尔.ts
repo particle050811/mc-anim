@@ -68,24 +68,37 @@ const 新URL = /new\s+URL\(\s*(["'])((?:\.\.?\/)[^"'\n]*)\1\s*,\s*import\.meta\.
 export type 默克尔明细 = { 模块: Record<string, string>; 资产: Record<string, string> };
 export type 默克尔结果 = { 根: string[]; 明细: 默克尔明细 };
 export type 默克尔选项 = { /** 这条边不跟进去，换成固定占位（外壳到 清单.ts） */ 略过?: (importer: string, 目标: string) => boolean };
+/** 一次打包得到的全图：按任意一组入口取结果，和只拿这组入口单独打包算的一样（指纹.test.ts 有等值测试） */
+export type 默克尔图 = { 取: (入口: string[]) => 默克尔结果 };
 
 /** 入口（相对代码根）各自的默克尔哈希，和一份「路径 → 模块哈希」的明细（只给解释差异用） */
-export const 算默克尔 = async (入口: string[], 选项: 默克尔选项 = {}): Promise<默克尔结果> => {
+export const 算默克尔 = async (入口: string[], 选项: 默克尔选项 = {}): Promise<默克尔结果> => (await 建默克尔图(入口, 选项)).取(入口);
+
+/**
+ * 一次 esbuild 打包拿到所有入口的依赖图、算好闭包里每个模块的哈希，之后按段取（anim stale 不再逐段打包）。
+ * 模块哈希只看它自己和它跟进的下游，环按强连通分量算，所以和从哪组入口出发无关；
+ * 明细的 资产、非代码文件按「单独打包这组入口时 esbuild 会读到的文件」取：边全跟（含略过的边），加原文里 Worker 的 new URL。
+ */
+export const 建默克尔图 = async (全部入口: string[], 选项: 默克尔选项 = {}): Promise<默克尔图> => {
   const 根 = 代码根();
   const 资产: 资产记录 = new Map();
   const 边表 = new Map<string, 边[]>();
   const 额外入口 = new Set<string>();
-  let 输入: string[] = [];
-  // Worker 的 new URL 目标 esbuild 不跟，当额外入口再 build，直到不再多出文件
-  for (;;) {
-    边表.clear();
+  /** 代码文件原文里 new URL 指向的文件：单独打包时它们会被当额外入口，读到的文件要算进那组入口 */
+  const 原文新URL = new Map<string, string[]>();
+  const 入口们 = [...new Set(全部入口)];
+  const 输入集 = new Set<string>();
+  // Worker 的 new URL 目标 esbuild 不跟，当额外入口再 build（只 build 新多出来的，边和输入并进来），直到不再多出文件
+  for (let 这轮 = 入口们; 这轮.length; ) {
     const r = await build({
-      entryPoints: [...入口, ...[...额外入口].map((p) => path.relative(根, p))],
+      entryPoints: 这轮,
       absWorkingDir: 根,
       bundle: true,
       write: false,
       metafile: true,
       outdir: 'out',
+      // 只要依赖图不要产物：拆共用块省掉每个入口各出一份整包（几十个段入口时产物从 80 MB 降到 10 MB），不影响解析和 metafile.inputs
+      splitting: true,
       platform: 'browser',
       format: 'esm',
       jsx: 'automatic',
@@ -95,21 +108,23 @@ export const 算默克尔 = async (入口: string[], 选项: 默克尔选项 = {
       plugins: [记边插件(边表), esbuild别名插件(根), esbuild资产插件(读作品资产锁(作品根()), 资产)],
       logLevel: 'silent',
     });
-    输入 = Object.keys(r.metafile.inputs).filter((p) => !p.includes(':')).map((p) => path.resolve(根, p));
-    const 有 = new Set(输入);
-    let 多了 = false;
-    for (const f of 输入) {
-      if (!代码loader[path.extname(f)]) continue;
+    for (const p of Object.keys(r.metafile.inputs)) if (!p.includes(':')) 输入集.add(path.resolve(根, p));
+    const 新入口: string[] = [];
+    for (const f of 输入集) {
+      if (!代码loader[path.extname(f)] || 原文新URL.has(f)) continue;
+      const 目标们: string[] = [];
       for (const m of fs.readFileSync(f, 'utf8').matchAll(新URL)) {
         const 目标 = path.resolve(path.dirname(f), m[2]!);
         if (!fs.existsSync(目标)) throw new Error(`${path.relative(根, f)}：new URL('${m[2]}', import.meta.url) 指向的文件不存在`);
-        if (!有.has(目标) && !额外入口.has(目标)) {
+        目标们.push(目标);
+        if (!输入集.has(目标) && !额外入口.has(目标)) {
           额外入口.add(目标);
-          多了 = true;
+          新入口.push(path.relative(根, 目标));
         }
       }
+      原文新URL.set(f, 目标们);
     }
-    if (!多了) break;
+    这轮 = 新入口;
   }
 
   const 模块哈希 = new Map<string, string>();
@@ -213,24 +228,54 @@ export const 算默克尔 = async (入口: string[], 选项: 默克尔选项 = {
     const h = sha(`anim-${默克尔算法}-环\0${文本们.join('\0')}`);
     for (const g of 分量) 模块哈希.set(g, h);
   };
-
-  const 根哈希: string[] = [];
-  for (const e of 入口) {
+  for (const e of 入口们) {
     const f = path.resolve(根, e);
-    if (!代码loader[path.extname(f)]) {
-      根哈希.push(`file:${sha(fs.readFileSync(f))}`);
-      continue;
+    if (代码loader[path.extname(f)] && !序号.has(f)) await 访(f);
+  }
+
+  const 相对 = (f: string) => path.relative(根, f).split(path.sep).join('/');
+  const 文件哈希 = new Map<string, string>();
+  const 文件sha = (f: string) => {
+    let h = 文件哈希.get(f);
+    if (h === undefined) 文件哈希.set(f, (h = `file:${sha(fs.readFileSync(f))}`));
+    return h;
+  };
+  const 取 = (入口: string[]): 默克尔结果 => {
+    const 绝对 = 入口.map((e) => path.resolve(根, e));
+    for (const f of 绝对) if (代码loader[path.extname(f)] && !模块哈希.has(f)) throw new Error(`${相对(f)} 不在建图时给的入口里`);
+    const 根哈希 = 绝对.map((f) => (代码loader[path.extname(f)] ? 模块哈希.get(f)! : 文件sha(f)));
+    // 跟进的闭包（进哈希的代码模块）
+    const 跟到 = new Set<string>();
+    const 待跟 = 绝对.filter((f) => 代码loader[path.extname(f)]);
+    while (待跟.length) {
+      const f = 待跟.pop()!;
+      if (跟到.has(f)) continue;
+      跟到.add(f);
+      for (const r of 模块们.get(f)!.引用) if (跟进(f, r.目标)) 待跟.push(r.目标.路径);
     }
-    if (!序号.has(f)) await 访(f);
-    根哈希.push(模块哈希.get(f)!);
-  }
-  const 模块: Record<string, string> = {};
-  for (const f of [...模块哈希.keys()].sort()) 模块[path.relative(根, f).split(path.sep).join('/')] = 模块哈希.get(f)!;
-  for (const f of 输入.sort()) {
-    const 相对 = path.relative(根, f).split(path.sep).join('/');
-    if (!代码loader[path.extname(f)] && !(相对 in 模块)) 模块[相对] = `file:${sha(fs.readFileSync(f))}`;
-  }
-  return { 根: 根哈希, 明细: { 模块, 资产: Object.fromEntries([...资产].sort(([a], [b]) => (a < b ? -1 : 1))) } };
+    // 单独打包时 esbuild 读到的文件和 asset:（边全跟，加原文的 new URL）
+    const 读到 = new Set<string>();
+    const 用到资产 = new Set<string>();
+    const 待读 = [...绝对];
+    while (待读.length) {
+      const f = 待读.pop()!;
+      if (读到.has(f)) continue;
+      读到.add(f);
+      for (const e of 边表.get(f) ?? []) {
+        if (e.目标.命名空间 === 'anim-资产') 用到资产.add(e.目标.路径);
+        else if (e.目标.命名空间 === 'file' && !e.目标.外部) 待读.push(e.目标.路径);
+      }
+      待读.push(...(原文新URL.get(f) ?? []));
+    }
+    const 模块: Record<string, string> = {};
+    for (const f of [...跟到].sort()) 模块[相对(f)] = 模块哈希.get(f)!;
+    for (const f of [...读到].sort()) {
+      if (!代码loader[path.extname(f)] && !(相对(f) in 模块)) 模块[相对(f)] = 文件sha(f);
+    }
+    const 资产表 = [...用到资产].sort().map((id) => [id, 资产.get(id)!] as const);
+    return { 根: 根哈希, 明细: { 模块, 资产: Object.fromEntries(资产表) } };
+  };
+  return { 取 };
 };
 
 const 稳定串 = (t: 目标) => `${t.命名空间}:${t.外部}:${t.路径}`;

@@ -30,6 +30,16 @@
 "sha256" = "1473c9489ac50fda3c435049a76a70d61a10b8610db27f5ba9d8756b686cd3bd"
 "许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
+# 官方映射（client.txt，官方名 → 混淆名）：动作翻译（py/anim_py/动作翻译）读混淆的客户端 jar 时把类名、成员名换回官方名。
+# 版本清单 downloads.client_mappings 给的地址；文件头写明可以拿来开发用、不许原样再分发，所以不进仓库、不进资产库
+[["Mojang"."映射"]]
+"id" = "client-1.20.1-mappings"
+"版本" = "1.20.1"
+"到" = "缓存/client-1.20.1-mappings.txt"
+"下载" = "https://piston-data.mojang.com/v1/objects/6c48521eed01fe2e8ecdadbd5ae348415f3c47da/client.txt"
+"sha256" = "67bfc33ef0c7103f002d6ac134f8eddd3d67e2ce45d266e83816d1a2e2c9b01d"
+"sha1" = "6c48521eed01fe2e8ecdadbd5ae348415f3c47da"
+
 [["Mojang"."要自己生成"]]
 "id" = "client-1.20.1-srg"
 "到" = "缓存/client-1.20.1-srg.jar"

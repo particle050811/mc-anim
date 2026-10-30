@@ -34,6 +34,7 @@
 "导出模型" = ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出模型.py"]
 "导出实体模型" = ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出实体模型.py"]
 "网格碎块" = ["uv", "run", "-q", "--with", "numpy==2.4.6", "python", "{脚本}/网格碎块.py"]
+"动作翻译" = ["uv", "run", "-q", "{脚本}/翻译动作.py"]
 
 # 一组一起跑；另有 --全部
 ["组"]
@@ -150,6 +151,20 @@
 ["取材"."产物"]
 "模型/角色/魔法酒狐" = "src/模型/角色/魔法酒狐.模型.json"
 "贴图/角色/魔法酒狐/百花" = "src/模型/角色/魔法酒狐.模型.png"
+
+# 魔法酒狐动画：同一个 jar 里的 geckolib 动画文件，原样拷出来（字节不动），engine/anim/基岩动画.ts 直接读。
+# 现在只有 把回忆拼好给你 的核对（核对/基岩动画/）和对照测试用；库/角色/ 里魔法酒狐的手抄动作照旧。
+[["取材"]]
+"名称" = "魔法酒狐动画"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3 内置 geckolib 动画 winefox_magical.main.animation.json（星海ELIYA 做动作）"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["python", "{脚本}/拷jar文件.py", "{jar:touhoulittlemaid}", "assets/touhou_little_maid/tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/animation/winefox_magical.main.animation.json", "src/动画/角色/魔法酒狐.animation.json"],
+]
+["取材"."产物"]
+"动画/角色/魔法酒狐" = "src/动画/角色/魔法酒狐.animation.json"
 
 # 月铃兰：万法皆通的花（第 13、15 句她手里那一枝）。物品模型 item/yue_linglan.json 是 item/generated、layer0 用方块贴图 block/yue_linglan，
 # 手里画法照 item/generated 挤出（engine/model/物品贴图.tsx）。只有 把回忆拼好给你 用，产物登记在作品资产表，所以写了「作品」：anim --作品 把回忆拼好给你 extract 月铃兰
@@ -1818,6 +1833,32 @@
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/告示牌字" = "告示牌字.json"
+
+# 原版生物的 setupAnim 自动翻成姿态程序（docs/决策/0007-字节码翻译动作.md）：混淆客户端 + 官方映射，engine/anim/姿态程序.ts 求值。
+# 只给新内容用；库/生物 里已有的手抄版不动（对照见 库/生物/姿态程序对照.test.ts）
+[["取材"]]
+"名称" = "苦力怕动作"
+"需要" = ["client-1.20.1", "client-1.20.1-mappings"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["动作翻译", "src/动作/角色/苦力怕.动作.json", "net.minecraft.client.model.CreeperModel", "--jar", "{jar:client-1.20.1}", "--映射", "proguard:{jar:client-1.20.1-mappings}"],
+]
+["取材"."产物"]
+"动作/角色/苦力怕" = "src/动作/角色/苦力怕.动作.json"
+
+[["取材"]]
+"名称" = "僵尸动作"
+"需要" = ["client-1.20.1", "client-1.20.1-mappings"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["动作翻译", "src/动作/角色/僵尸.动作.json", "net.minecraft.client.model.ZombieModel", "--jar", "{jar:client-1.20.1}", "--映射", "proguard:{jar:client-1.20.1-mappings}"],
+]
+["取材"."产物"]
+"动作/角色/僵尸" = "src/动作/角色/僵尸.动作.json"
 
 # 地标网格（anim extract --补网格配方 按网格头反填，不重导：只记范围，不跑）
 

@@ -39,6 +39,7 @@ npm ci
 - 刚 clone 下来跑 `doctor`，「数据根/…不在」「资产字节：…件不在数据根」这几项会报 ✗、退出码 1：数据根第一次渲染时自动建，第 2 章要的字节渲染前从 `字节/` 补进去，剩下缺的是别的段和《应力转动》的，不影响第 2 章。其余几项（Node、npm 依赖、ffmpeg、git 设置）要过。
 - `render 2` 把第 2 章各段渲成母版，`film 2` 接成成片，出到数据根的 `交付/把回忆拼好给你/<UTC 月日-时分>-2/2.mp4`（`--名 <名>` 换掉文件夹和文件名里的 `2`）。
 - 母版、成片这些大文件放在 Git 外的数据根，默认是仓库旁边的 `mc-anim-data/`，用环境变量 `ANIM_DATA` 可以换。`anim env` 列出本机各项配置。
+- 改一次代码重渲一次，旧版本母版会越攒越多：`./anim cache gc` 列出能删的旧母版、旧草稿、旧 webpack 缓存和能省多少，看过再加 `--执行` 删。
 - 渲染前会把 `作品/把回忆拼好给你/字节/` 里的文件核过 sha256 补进数据根的 `store/`，也可以手动跑 `anim assets seed`。
 - 仓库只带第 2 章和封面帧要用的字节。别的段（`1-一如既往` 和几个核对画面）要的九胡、李樱模型、私有截图等不带，打包时每段提示一行「这段打进包的是占位」，渲它们才报错，不影响第 2 章。
 - 只想先看一眼：`./anim --作品 把回忆拼好给你 still 选择世界 30 --到预览 试渲`（Windows 把 `./anim` 换成 `.\anim.cmd`，下同），静帧写到 `预览/` 下。
@@ -72,6 +73,22 @@ npm ci
 - 只想先看一眼：`./anim --作品 应力转动 still 6-飞越主世界俯冲边城 60 --到预览 试渲`。
 - 耗时参考：MacBook Air（M 系列）上 `render 6-7` 连同核对段约 43 分钟，单个地形段 10～17 分钟。
 
+## 给台词配音（anim voice）
+
+作品的 `台词.toml` 是台词的唯一来源；配音、口型由 `anim voice` 从它出。要 [uv](https://docs.astral.sh/uv/)（Python 工具用它临时装依赖），TTS 和对齐模型在各自的仓库里自己装，位置写进 `anim.local.toml`（见 `anim.local.toml.example`）。
+
+```
+./anim voice backends                       有哪些 TTS 后端、这台机器上缺什么
+./anim voice gen <台词 id> --dry-run        看要发给后端的请求，不合成
+./anim voice gen <台词 id>                  按 [配音] 的种子各出一个候选，进数据根 run/草稿/配音/
+./anim voice use <台词 id> <候选.wav>       定稿：裁静音、拉响度、登记成私有资产、写回 台词.toml、出 台词/<id>.ts
+./anim voice lip [前缀]                     重出口型（字的起止 → 嘴型）
+./anim voice check [前缀]                   核对配音、句模块、口型能不能按字重算出来
+```
+
+- 云端后端要加 `--允许云端`，按次收费的要加 `--允许付费`；本机模型和渲染一样排队过资源闸。
+- 细节见 `docs/架构.md`「配音」。
+
 ## 素材来源和版权
 
 - Minecraft 的贴图、模型、音效、字体和从游戏世界导出的场景版权归 Mojang。本项目是非官方作品，与 Mojang 无关。NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
@@ -86,5 +103,6 @@ npm ci
 ## 再往下
 
 - 架构、命名、决策记录在 `docs/`，先看 `docs/架构.md`。
+- 新段、新作品怎么写看 `docs/新段.md`：`anim new work <作品名>`、`anim new seg <段键> --场 <场键>` 照模板建文件，`anim cues` 按 `段.ts` 的声音 cue 生成本段的声音表和地址表。
 - `作品/把回忆拼好给你/字节/` 由 `anim assets vendor` 照 `作品/把回忆拼好给你/随仓库.toml` 现算重写，`anim check` 核对它和代码的引用一致，见 `docs/决策/0005-随仓库发字节.md`。
 - 应力转动 挂 Release 的附件由 `anim assets pack --上传` 照 `作品/应力转动/随发布.toml` 打、传，`作品/应力转动/发布锁.json` 记每个附件的 sha256，`anim check` 核对它和代码要的一致，见 `docs/决策/0006-挂Release发字节.md`。

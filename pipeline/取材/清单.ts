@@ -64,11 +64,12 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
     条目.set(e.名称, e);
   }
   type 原jar = Omit<jar登记, '许可'> & { 许可?: unknown };
-  const j = parse(jar文本) as { Mojang?: { 资源索引?: 原jar[] | 原jar; 客户端?: 原jar[]; 要自己生成?: 原jar[] }; 模组?: 原jar[] };
+  // 映射：官方 client.txt 这类非 jar 文件，登记、查 sha 和 jar 一样
+  const j = parse(jar文本) as { Mojang?: { 资源索引?: 原jar[] | 原jar; 客户端?: 原jar[]; 映射?: 原jar[]; 要自己生成?: 原jar[] }; 模组?: 原jar[] };
   const jars = new Map<string, jar登记>();
   // 资源索引旧写法是单张表、没有 id，只给人看，不进 jar 表
   const 索引 = Array.isArray(j.Mojang?.资源索引) ? j.Mojang.资源索引 : [];
-  for (const x of [...索引, ...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) {
+  for (const x of [...索引, ...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.映射 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) {
     if (jars.has(x.id)) throw new Error(`jars.toml 里 id「${x.id}」写了两条`);
     jars.set(x.id, { ...x, 许可: x.许可 === undefined ? undefined : 读jar许可(x.许可) });
   }
