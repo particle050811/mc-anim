@@ -21,6 +21,7 @@ import { 补字节并报 } from '../资产/随仓库.ts';
 import { 补缺字节占位 } from '../资产/缺字节.ts';
 import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
 import { 记耗时, 预计耗时, type 运行记录 } from '../运行记录/记录.ts';
+import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记录 } from '../运行记录/阶段.ts';
 import { 叠层路径, 母版路径, 写指纹 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
@@ -62,25 +63,37 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
     // 没权限改优先级就照常跑
   }
   const 参数 = 渲染参数(级别);
-  const serveUrl = await 打包(记录);
-  const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' });
+  const 标签 = `会话:${作品名()}:${级别}`;
+  const 收 = 记录?.阶段;
+  const 起 = 收?.length ?? 0;
+  const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录));
+  const browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
   // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
   收求解缓存(browser);
   try {
-    const 组合 = await getCompositions(serveUrl, {
-      inputProps: 参数.inputProps,
-      puppeteerInstance: browser,
-      chromiumOptions: { gl: 参数.gl },
-      timeoutInMilliseconds: 等帧超时毫秒,
-      logLevel: 'error',
-    });
+    const 组合 = await 量阶段(收, 标签, '读组合', () =>
+      getCompositions(serveUrl, {
+        inputProps: 参数.inputProps,
+        puppeteerInstance: browser,
+        chromiumOptions: { gl: 参数.gl },
+        timeoutInMilliseconds: 等帧超时毫秒,
+        logLevel: 'error',
+      }),
+    );
+    if (收) console.log(`会话就绪：${阶段小结(收.slice(起))}`);
     return await fn({ serveUrl, browser, 参数, 组合 });
   } finally {
     await browser.close({ silent: true });
   }
 };
 
-const 找组合 = (h: 会话, s: 段信息, id = s.键) => {
+const 记出帧编码 = (收: 阶段记录[], 标签: string, t0: number, 计: ReturnType<typeof 出帧编码计时>) => {
+  const { 出帧秒, 编码秒 } = 计.拆(Date.now() - t0);
+  记阶段(收, 标签, '出帧', t0, 出帧秒);
+  记阶段(收, 标签, '编码', t0 + 出帧秒 * 1000, 编码秒);
+};
+
+export const 找组合 = (h: Pick<会话, '组合'>, s: 段信息, id = s.键) => {
   const c = h.组合.find((x) => x.id === id);
   if (!c) throw new Error(`打包里没有 Composition ${id}（作品的 注册.tsx 按清单和 段.ts 的叠层登记，清单里有它吗？）`);
   if (c.durationInFrames !== s.段.帧数 || c.fps !== s.段.fps || c.width !== s.段.宽 || c.height !== s.段.高) {
@@ -117,8 +130,12 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
     for (const r of 待渲) {
       const composition = 找组合(h, r.段);
       await 等求解缓存写完();
+      const 标签 = 渲染标签(r.段.键, 级别);
+      const 排队起 = Date.now();
       await 过渲染闸(async () => {
         const t0 = Date.now();
+        记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
+        const 计 = 出帧编码计时();
         const tmp = r.母版.replace(/\.mkv$/, `.渲染中-${process.pid}.mkv`);
         fs.mkdirSync(path.dirname(tmp), { recursive: true });
         console.log(`== 渲 ${r.段.键}`);
@@ -143,7 +160,9 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
             timeoutInMilliseconds: 等帧超时毫秒,
             overwrite: true,
             logLevel: 'error',
+            onProgress: 计.onProgress,
           });
+          记出帧编码(opts.记录.阶段, 标签, t0, 计);
           const 帧 = 视频信息(tmp).帧数;
           if (帧 !== r.段.段.帧数) throw new Error(`${r.段.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
           fs.renameSync(tmp, r.母版);
@@ -184,8 +203,12 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
     for (const r of 待渲) {
       const composition = 找组合(h, r.段, r.键);
       await 等求解缓存写完();
+      const 标签 = 叠层渲染标签(r.键, 级别);
+      const 排队起 = Date.now();
       await 过渲染闸(async () => {
         const t0 = Date.now();
+        记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
+        const 计 = 出帧编码计时();
         const tmp = r.文件.replace(/\.mov$/, `.渲染中-${process.pid}.mov`);
         fs.mkdirSync(path.dirname(tmp), { recursive: true });
         console.log(`== 渲叠层 ${r.键}`);
@@ -208,7 +231,9 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
             timeoutInMilliseconds: 等帧超时毫秒,
             overwrite: true,
             logLevel: 'error',
+            onProgress: 计.onProgress,
           });
+          记出帧编码(opts.记录.阶段, 标签, t0, 计);
           const 帧 = 视频信息(tmp).帧数;
           if (帧 !== r.段.段.帧数) throw new Error(`${r.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
           fs.renameSync(tmp, r.文件);
@@ -237,7 +262,12 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.键} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
     }
     await 等求解缓存写完();
+    const 标签 = `still:${作品名()}/${s.键}:${级别}`;
+    const 排队起 = Date.now();
     await 过渲染闸(async () => {
+      const t0 = Date.now();
+      const 收 = 记录?.阶段;
+      const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
       for (const f of 帧们) {
         const file = path.join(出到, `${s.键}-第${String(f).padStart(4, '0')}帧.png`);
         await renderStill({
@@ -256,6 +286,8 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
         });
         出.push(file);
       }
+      const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
+      console.log(`${阶段小结([等闸, 出帧])}（${帧们.length} 帧）`);
     });
   }, 记录);
   return 出;

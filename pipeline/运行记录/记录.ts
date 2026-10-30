@@ -1,9 +1,11 @@
 // 运行记录和耗时表：每条 anim 命令结束时写一份 run/运行记录/<UTC>-<命令>-<pid>.json（参数、提交、事件、退出码），
 // 并往 run/logs/耗时.tsv 追加一行；渲染等长任务另按段追加，开跑前用它报预计耗时（用户要求长任务先报预计耗时）。
+// still、render 的分阶段耗时另记（阶段.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 耗时表, 运行记录目录, 配置 } from '../环境/配置.ts';
 import { 提交状态 } from '../环境/路径.ts';
+import type { 阶段记录 } from './阶段.ts';
 
 const 表头 = '开始（UTC）\t标签\t秒\t退出码\t主机\t命令\n';
 
@@ -53,6 +55,8 @@ export class 运行记录 {
   开始ms = Date.now();
   事件: 事件[] = [];
   产物: string[] = [];
+  /** still、render 的分阶段耗时（阶段.ts）；没有就不写进记录 */
+  阶段: 阶段记录[] = [];
 
   constructor(命令: string, 参数: string[]) {
     this.命令 = 命令;
@@ -84,6 +88,7 @@ export class 运行记录 {
         工作目录: process.cwd(),
         事件: this.事件,
         产物: this.产物,
+        ...(this.阶段.length ? { 阶段: this.阶段 } : {}),
       };
       fs.writeFileSync(path.join(dir, 名), JSON.stringify(记录, null, 2) + '\n', 'utf8');
     } catch (e) {
