@@ -13,11 +13,17 @@
 #   作品      产物登记在这部作品的资产表（<作品根>/资产表/）时写：只在选了这部作品（--作品）时跑、查，别的作品下 --检查 跳过
 #   步骤      参数列表，不过 shell，在暂存目录里逐条跑，一条失败就停。第一个参数可以是下面「程序」里的简称，
 #             或 python（anim 配置 ANIM_PYTHON）、ts（旧项目的 一镜到底/跑.mjs，待迁移）、mcai（sourcing/mcai/mcai.py，经 anim mcai 同样的环境）、复制（拷一个文件）。
-#             参数里 {jar:id[,id]} 换成 jar 路径（逗号连接），{prism数据} 换成 Prism 的数据目录，{脚本} 换成 sourcing/extract/，{作品根} 换成所选作品的根目录；
+#             参数里 {jar:id[,id]} 换成 jar 路径（逗号连接），{prism数据} 换成 Prism 的数据目录，{脚本} 换成 sourcing/extract/，{作品根} 换成所选作品的根目录，
+#             {产物清单} 换成一个 JSON 文件：这条按资产锁展开的产物 [{id, 文件}]（脚本照它反推要导什么，见「音效」）；
 #             { "输出" = [...] } 是先跑这条命令、把输出按空白拆开填在这里。
+#   可见性    anim extract --登记 给新产物写进资产表的可见性；公开版 = "提取" 的默认「提取」，别的要写
+#   许可部分  产物的许可按 jar 继承时取 jars.toml「许可」的哪几部分（代码、资源、声音、结构、模型），默认按类别：音效取声音、模型取模型、别的取资源；
+#             写数组管全部产物，写表按类别分开写（导出实体模型 从模组 Java 代码读几何的，写 { "模型" = ["模型", "代码"] }）
 #   ["取材"."输入"]  步骤要读的非 jar 文件：资产 id = 暂存目录里的位置，跑之前从资产库拷进去。
 #   ["取材"."产物"]  放在条目最后：资产 id = 暂存目录里的文件（相对暂存目录）。
 #             id 写成 <id 目录>/* 时指资产锁里这个目录下（一层）的全部 id，文件那边的 * 换成 id 的最后一段。
+# anim extract <条目> --登记：跑完把锁里还没有的产物（通配按暂存目录里的文件展开）登记进资产表（配方写了「作品」的进作品资产表）、入库、写锁，
+#   来源 = 提取:<名称>@<需要的各 jar sha 前 12 位>，许可按 jar 继承（pipeline/取材/许可.ts）；anim extract --许可 [--写] 只补资产表里待定的许可。
 #   脚本读 ANIM_GAME（游戏环境）、ANIM_JAVA_HOME（javap）、ANIM_MC_ASSETS（原版资源）这几个环境变量，anim extract 按配置传。
 
 ["程序"]
@@ -327,6 +333,7 @@
 "公开版" = "提取"
 "来源" = "暮色森林 Twilight Forest 4.3.2508"
 "许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/巫妖.模型.json", "巫妖=twilightforest.client.model.entity.LichModel", "--贴图", "巫妖=assets/twilightforest/textures/model/twilightlich64.png"],
   ["导出模型", "{jar:twilightforest}", "src/模型/角色/巫妖护盾.贴图", "frame=assets/twilightforest/textures/item/lich_shield_frame.png", "fill=assets/twilightforest/textures/item/lich_shield_fill.png"],
@@ -344,6 +351,7 @@
 "公开版" = "提取"
 "来源" = "暮色森林 Twilight Forest 4.3.2508"
 "许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/九头蛇.模型.json", "身体=twilightforest.client.model.entity.HydraModel", "头=twilightforest.client.model.entity.HydraHeadModel", "颈=twilightforest.client.model.entity.HydraNeckModel", "--贴图", "九头蛇=assets/twilightforest/textures/model/hydra4.png"],
 ]
@@ -357,6 +365,7 @@
 "公开版" = "提取"
 "来源" = "原版 Minecraft 1.20.1；暮色森林 Twilight Forest 4.3.2508"
 "许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）；Mojang EULA"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/冰雪女王.模型.json", "冰雪女王=twilightforest.client.model.entity.SnowQueenModel", "--贴图", "冰雪女王=assets/twilightforest/textures/model/snowqueen.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/模型/角色/冰雪女王冰盾.png", "ice=assets/minecraft/textures/block/packed_ice.png"],
@@ -581,15 +590,14 @@
 
 [["取材"]]
 "名称" = "音效"
-"需要" = ["irons_spellbooks"]
+"需要" = ["资源索引-1.20.1", "create", "twilightforest", "nightfall", "epicfight", "cataclysm", "irons_spellbooks"]
 "公开版" = "提取"
 "公开版提取" = "内置:游戏音效"
-"来源" = "Minecraft 1.20.1 原版声音（官方资源服务器）；机械动力等模组 jar 里的声音"
+"来源" = "Minecraft 1.20.1 原版声音（资源索引 5）；机械动力、暮色森林、夜幕、史诗战斗、灾变、铁魔法 jar 里的声音"
 "许可" = "Mojang EULA；模组声音按各模组许可"
-"说明" = "按 参考模型库/src/**/游戏音效.json 记的 hash，从官方资源服务器下载、或从模组 jar 原样取出"
+"说明" = "按资产锁反推：音效/<事件>[.<序号>] 的事件名由 导出音效.py --按产物 从 id 反推（第一段是模组命名空间的到那个 jar 的 sounds.json 找，别的是原版），序号照 sounds.json 的先后；锁里 音效/ 下一层加了新 id，这条自己就会去导"
 "步骤" = [
-  ["python", "{脚本}/导出音效.py", "src/音效", "block.sculk_sensor.clicking", "block.sculk_sensor.clicking_stop", "block.sculk_shrieker.shriek", "entity.warden.emerge", "entity.warden.heartbeat", "entity.warden.tendril_clicks"],
-  ["python", "{脚本}/导出音效.py", "src/音效", "--jar", "{jar:irons_spellbooks}", "entity.evoker.prepare_summon", "entity.evoker.cast_spell", "entity.illusioner.prepare_mirror", "entity.illusioner.mirror_move", "entity.illusioner.cast_spell", "entity.creeper.hurt", "entity.generic.explode", "entity.vex.ambient", "entity.vex.charge", "entity.vex.hurt", "entity.vex.death", "entity.horse.ambient", "entity.horse.gallop", "entity.horse.step", "entity.horse.death", "entity.horse.hurt", "entity.horse.breathe", "entity.horse.jump", "entity.horse.land", "block.glass.break", "block.respawn_anchor.set_spawn", "irons_spellbooks:force_impact", "entity.arrow.shoot", "entity.arrow.hit", "block.wood.place", "block.portal.trigger", "block.portal.travel", "entity.warden.attack_impact", "entity.warden.sonic_charge", "entity.warden.sonic_boom", "entity.warden.roar", "entity.warden.death", "entity.warden.sniff", "entity.warden.step", "entity.warden.hurt", "entity.warden.angry", "entity.warden.agitated", "entity.warden.nearby_close", "entity.warden.nearby_closer", "entity.warden.nearby_closest", "entity.villager.work_cartographer"],
+  ["python", "{脚本}/导出音效.py", "src/音效", "--jar", "{jar:create}", "--jar", "{jar:twilightforest}", "--jar", "{jar:nightfall}", "--jar", "{jar:epicfight}", "--jar", "{jar:cataclysm}", "--jar", "{jar:irons_spellbooks}", "--按产物", "{产物清单}"],
 ]
 ["取材"."产物"]
 "音效/*" = "src/音效/*.ogg"
@@ -696,6 +704,7 @@
 "公开版" = "提取"
 "来源" = "原版 Minecraft 1.20.1；车万女仆 Touhou Little Maid 1.5.3"
 "许可" = "Mojang EULA；MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1}", "src/模型/物品/床.模型.json", "床头=net.minecraft.client.renderer.blockentity.BedRenderer:m_173550_", "床尾=net.minecraft.client.renderer.blockentity.BedRenderer:m_173551_", "--贴图", "红=assets/minecraft/textures/entity/bed/red.png"],
   ["导出模型", "{jar:touhoulittlemaid}", "src/模型/物品/女仆床.模型.json", "assets/touhou_little_maid/models/bedrock/block/maid_bed/pink.json", "assets/touhou_little_maid/textures/bedrock/block/maid_bed/pink.png"],
@@ -867,6 +876,7 @@
 "公开版" = "提取"
 "来源" = "暮色森林 Twilight Forest 4.3.2508"
 "许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/暮初恶魂.模型.json", "暮初恶魂=twilightforest.client.model.entity.UrGhastModel", "--贴图", "闭眼=assets/twilightforest/textures/model/towerboss.png", "睁眼=assets/twilightforest/textures/model/towerboss_openeyes.png", "喷火=assets/twilightforest/textures/model/towerboss_fire.png"],
 ]
@@ -882,6 +892,7 @@
 "公开版" = "提取"
 "来源" = "暮色森林 Twilight Forest 4.3.2508"
 "许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/雪怪首领.模型.json", "雪怪首领=twilightforest.client.model.entity.AlphaYetiModel", "--贴图", "雪怪首领=assets/twilightforest/textures/model/yetialpha.png"],
 ]
@@ -895,6 +906,7 @@
 "公开版" = "提取"
 "来源" = "暮色森林 Twilight Forest 4.3.2508"
 "许可" = "LGPL-2.1（mods.toml；美术是否同许可待核）"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:twilightforest}", "src/模型/角色/乌鸦.模型.json", "乌鸦=twilightforest.client.model.entity.RavenModel", "--贴图", "乌鸦=assets/twilightforest/textures/model/raven.png"],
 ]
@@ -1286,6 +1298,7 @@
 "公开版" = "提取"
 "来源" = "原版 Minecraft 1.20.1；铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
 "许可" = "All Rights Reserved；Mojang EULA"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:client-1.20.1-srg,client-1.20.1,irons_spellbooks}", "src/模型/角色/幽灵马.模型.json", "幽灵马=net.minecraft.client.model.HorseModel:m_170669_(0)@64x64", "--贴图", "幽灵马=assets/irons_spellbooks/textures/entity/horse/spectral_steed.png"],
 ]
@@ -1299,6 +1312,7 @@
 "公开版" = "提取"
 "来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
 "许可" = "All Rights Reserved"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:irons_spellbooks}", "src/模型/特效/护盾术.模型.json", "护盾=io.redspace.ironsspellbooks.entity.spells.shield.ShieldModel:createBodyLayer", "边框=io.redspace.ironsspellbooks.entity.spells.shield.ShieldTrimModel:createBodyLayer", "--贴图", "护盾=assets/irons_spellbooks/textures/entity/shield/shield_overlay.png", "边框=assets/irons_spellbooks/textures/entity/shield/shield_trim.png"],
 ]
@@ -1313,6 +1327,7 @@
 "公开版" = "提取"
 "来源" = "铁魔法 Iron's Spells 'n Spellbooks 3.16.3"
 "许可" = "All Rights Reserved"
+"许可部分" = { "模型" = ["模型", "代码"] }  # 几何是 导出实体模型 从模组 Java 代码里读的
 "步骤" = [
   ["导出实体模型", "{jar:irons_spellbooks}", "src/模型/特效/苦力怕头.模型.json", "苦力怕头=io.redspace.ironsspellbooks.entity.spells.skull_projectile.SkullProjectileRenderer:createBodyLayer", "--贴图", "苦力怕头=assets/irons_spellbooks/textures/entity/creeper_head.png"],
 ]

@@ -7,10 +7,14 @@ minecraft/sounds.json、minecraft/sounds/<路径>.ogg 映射到 objects/<hash �
 
 模组的声音在模组 jar 里：assets/<命名空间>/sounds.json 和 assets/<命名空间>/sounds/<路径>.ogg。
 
-用法（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：python3 导出音效.py <输出目录> [--jar <模组 jar>]... <事件名>...
+用法（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）：
+  python3 导出音效.py <输出目录> [--jar <模组 jar>]... [--按产物 <产物清单.json>] <事件名>...
   例：python3 导出音效.py src/音效 block.sculk_shrieker.shriek entity.warden.emerge
       python3 导出音效.py src/音效 --jar <游戏环境>/缓存/mods/EpicFight-Nightfall-3.4.0.jar efn:parry
   原版事件不带命名空间（照旧）；模组事件写成 <命名空间>:<事件>，到给的 jar 里找。模组 sounds.json 里引用原版声音（名字不带命名空间）的，从资源索引取。
+  --按产物：从资产 id 反推事件（anim extract 的 {产物清单}，[{id, 文件}]）。id 最后一段是输出文件名去掉 .ogg：
+    <事件>（事件只有一个声音）或 <事件>.<序号>；第一段是给了 jar 的模组命名空间的算模组事件（create.cogs → create:cogs），
+    别的算原版事件。反推不出的打到 stderr、不中断，anim extract 核对时会报缺。
 输出：
   <输出目录>/<事件名>.ogg（事件只有一个声音时）或 <事件名>.<序号>.ogg（序号从 1 起，照 sounds.json 里的先后；模组事件的文件名
   把「:」换成「.」，如 efn.parry.1.ogg），
@@ -39,10 +43,14 @@ if len(sys.argv) < 3:
 out = Path(sys.argv[1])
 jars: list[Path] = []
 names: list[str] = []
+products_file: Path | None = None
 rest_args = sys.argv[2:]
 while rest_args:
     if rest_args[0] == '--jar':
         jars.append(Path(rest_args[1]))
+        rest_args = rest_args[2:]
+    elif rest_args[0] == '--按产物':
+        products_file = Path(rest_args[1])
         rest_args = rest_args[2:]
     else:
         names.append(rest_args.pop(0))
@@ -115,6 +123,43 @@ def expand_event(ev: dict, ns: str, volume_mul=1.0, pitch_mul=1.0, weight_overri
     return out
 
 
+def count_sounds(ns: str, ev: dict) -> int:
+    return len(expand_event(ev, ns))
+
+
+def reverse(tail: str) -> str | None:
+    """输出文件名（去掉 .ogg）→ 事件名（模组的带命名空间）；对不上 sounds.json 的返回 None"""
+    head, _, rest = tail.partition('.')
+    if head in mod_sounds and rest:
+        ns, table, ev_tail, prefix = head, mod_sounds[head][1], rest, f'{head}:'
+    else:
+        ns, table, ev_tail, prefix = 'minecraft', sounds, tail, ''
+    if ev_tail in table and count_sounds(ns, table[ev_tail]) == 1:
+        return prefix + ev_tail
+    base, _, n = ev_tail.rpartition('.')
+    if n.isdigit() and base in table:
+        c = count_sounds(ns, table[base])
+        if c > 1 and 1 <= int(n) <= c:
+            return prefix + base
+    return None
+
+
+wanted: set[str] | None = None  # --按产物 时只写产物清单里的文件（同一事件别的序号不写）
+if products_file:
+    bad = []
+    wanted = set()
+    for p in json.loads(products_file.read_text(encoding='utf-8')):
+        wanted.add(Path(p['文件']).name)
+        tail = p['id'].rsplit('/', 1)[1]
+        ev = reverse(tail)
+        if ev is None:
+            bad.append(p['id'])
+        elif ev not in names:
+            names.append(ev)
+    for b in bad:
+        print(f'反推不出事件：{b}（不是原版事件，第一段也不是给了 jar 的模组命名空间；或序号超出 sounds.json 里的个数）', file=sys.stderr)
+    print(f'按产物反推出 {len(names)} 个事件', file=sys.stderr)
+
 for name in names:
     if ':' in name:
         ns, ev_name = name.split(':', 1)
@@ -130,6 +175,8 @@ for name in names:
     for i, e in enumerate(entries):
         data, key, h = fetch_sound(e['name'], ns)
         fn = f'{file_prefix}.ogg' if len(entries) == 1 else f'{file_prefix}.{i + 1}.ogg'
+        if wanted is not None and fn not in wanted:
+            continue
         (out / fn).write_bytes(data)
         assert hashlib.sha1((out / fn).read_bytes()).hexdigest() == h
         items.append({
