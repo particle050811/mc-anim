@@ -104,8 +104,9 @@ final class ForgeBlocks implements BlockSource {
         int light = state.getLightEmission();
         FluidState fluid = state.getFluidState();
         if (state.getRenderShape() != RenderShape.MODEL) {
-            if (!fluid.isEmpty()) {
-                // 液体方块（水、岩浆、气泡柱、模组流体）：方块渲染器不画，液体渲染器画
+            if (!fluid.isEmpty() && state.getRenderShape() == RenderShape.INVISIBLE) {
+                // 方块本身不画、只剩流体（水、岩浆、气泡柱、含水的光源方块、模组流体）：液体渲染器画。
+                // 方块实体画的（含水的箱子、机械动力的轴）不算液体，记不画，免得把一根轴当成一格水
                 IClientFluidTypeExtensions ext = IClientFluidTypeExtensions.of(fluid);
                 ResourceLocation still = ext.getStillTexture(fluid, new ProbeLevel(0, state), ProbeLevel.POS[0]);
                 String tint = TintProbe.route(set -> ext.getTintColor(fluid, new ProbeLevel(set, state), ProbeLevel.POS[set]), className(ext));

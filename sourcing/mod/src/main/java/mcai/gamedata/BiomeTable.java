@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * 群系色表：和手写的 群系色.json（sourcing/extract/关键帧方块.py 的 biome_colors）同结构，多出天空、雾、气候和采样。
  * 草、叶、水：在固定的一批采样点上问游戏的取色函数；各点都一样就是定值，不一样的记「草随位置 / 叶随位置」和各点的颜色，
- * 这时 草 / 叶 写修饰之前的底色，并照手写表的约定写 草修饰（草色修饰的序列化名）/ 叶修饰（群系 id，暮色的树叶色钩子按群系改），
+ * 这时 草 / 叶 写修饰之前的底色，并照手写表的约定写 草修饰（草色修饰的序列化名，原版的不带命名空间，补成 minecraft:swamp）/ 叶修饰（群系 id，暮色的树叶色钩子按群系改），
  * engine/voxel/群系色.ts 照这两个键挑复刻好的规则；表里出现它没复刻的修饰时要先补规则。
  */
 public final class BiomeTable {
@@ -49,7 +49,7 @@ public final class BiomeTable {
             b.addProperty("草", hex(grassVaries ? info.grassBase() : grass[0]));
             b.addProperty("叶", hex(leafVaries ? info.foliageBase() : leaf[0]));
             b.addProperty("水", hex(water[0]));
-            if (grassVaries) b.addProperty("草修饰", info.grassModifier());
+            if (grassVaries) b.addProperty("草修饰", modifierId(info.grassModifier()));
             if (leafVaries) b.addProperty("叶修饰", id);
             b.addProperty("天空", hex(info.sky()));
             b.addProperty("雾", hex(info.fog()));
@@ -58,7 +58,7 @@ public final class BiomeTable {
             b.addProperty("降水量", info.downfall());
             b.addProperty("降水", info.precipitation());
             if (!"none".equals(info.temperatureModifier())) b.addProperty("温度修正", info.temperatureModifier());
-            if (!"none".equals(info.grassModifier())) b.addProperty("草修饰名", info.grassModifier());
+            if (!"none".equals(info.grassModifier())) b.addProperty("草修饰名", modifierId(info.grassModifier()));
             if (info.grassOverride() != null) b.addProperty("草覆盖", hex(info.grassOverride()));
             if (info.foliageOverride() != null) b.addProperty("叶覆盖", hex(info.foliageOverride()));
             // 原版和现有模组的水色都不随位置变；真遇上了记下来，手写表的结构里没有这一项
@@ -98,6 +98,10 @@ public final class BiomeTable {
     private static boolean varies(int[] v) {
         for (int c : v) if (c != v[0]) return true;
         return false;
+    }
+
+    static String modifierId(String name) {
+        return name.indexOf(':') < 0 ? "minecraft:" + name : name;
     }
 
     static String hex(int c) {

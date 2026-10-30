@@ -220,7 +220,7 @@ public class GameDataTest {
         JsonObject t = BiomeTable.build(NO_GAME, src, 32, null);
         JsonObject plain = t.getAsJsonObject("群系").getAsJsonObject("a:plain"), swamp = t.getAsJsonObject("群系").getAsJsonObject("a:swamp");
         check(plain.get("草").getAsString().equals("#91bd59") && !plain.has("草修饰") && !plain.has("采样"), "定值群系：" + plain);
-        check(swamp.get("草修饰").getAsString().equals("swamp") && swamp.get("草").getAsString().equals("#91bd59"), "随位置的草写底色和修饰：" + swamp);
+        check(swamp.get("草修饰").getAsString().equals("minecraft:swamp") && swamp.get("草").getAsString().equals("#91bd59"), "随位置的草写底色和修饰：" + swamp);
         check(swamp.getAsJsonObject("采样").getAsJsonArray("草").size() == 32 && t.getAsJsonArray("采样点").size() == 32, "采样个数");
         check(!swamp.has("叶修饰"), "树叶不随位置变就不写叶修饰");
         int[][] a = BiomeTable.samplePoints(64), b = BiomeTable.samplePoints(64);
