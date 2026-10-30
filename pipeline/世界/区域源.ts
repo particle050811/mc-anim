@@ -55,6 +55,12 @@ export class 区域源 {
     return path.join(this.缓存目录, h.slice(0, 2), h);
   }
 
+  /** 列段缓存里已经有了（读它不用解存档） */
+  已缓存(rx: number, rz: number) {
+    const c = this.缓存文件(rx, rz);
+    return !!c && (fs.existsSync(`${c}.列段`) || fs.existsSync(`${c}.空`));
+  }
+
   /** 读一个区域（不套编辑）：先看缓存，没有就解存档并写缓存 */
   原样(rx: number, rz: number): 解开的列段 | null {
     const f = this.文件(rx, rz);
