@@ -249,7 +249,8 @@ export const 基岩控制器 = (控制器: 动画控制器, 选项: 基岩控制
 
 // ======== GeckoLib 的控制器（代码驱动 + transitionLength） ========
 /**
- * RawAnimation 里的一段：播一段动画（循环：once / loop / hold，或播几遍；不写按动画文件自己的 loop），或等几刻（thenWait）
+ * RawAnimation 里的一段：播一段动画（循环：once / loop / hold，或播几遍；不写按动画文件自己的 loop），或等几刻（thenWait）。
+ * 几遍 n 同 GeckoLib 4 的 thenPlayXTimes：排成 n 段，前 n−1 段 once、最后一段按动画文件自己的 loop，段间照样过渡；n ≤ 0 不播
  */
 export type 播放项 = { 名: string; 循环?: 循环方式 | number } | { 等刻: number };
 export type GeckoLib安排 = readonly { 秒: number; 播: string | readonly 播放项[] | null }[];
@@ -268,16 +269,24 @@ export type GeckoLib控制器设定 = {
 
 type 阶段 =
   | { 种: '过渡'; 起: number; 止: number; 长: number; 名: string }
-  | { 种: '播放'; 起: number; 止: number; 名: string; 循环: 循环方式 | number }
+  | { 种: '播放'; 起: number; 止: number; 名: string; 循环: 循环方式 }
   | { 种: '空'; 起: number; 止: number };
 
 const 统一 = (播: string | readonly 播放项[]): readonly 播放项[] => (typeof 播 === 'string' ? [{ 名: 播 }] : 播);
+/** 几遍 展开成一段段（RawAnimation.thenPlayXTimes 原文：前 n−1 段 PLAY_ONCE，最后一段 DEFAULT） */
+const 展开 = (项们: readonly 播放项[]): ({ 名: string; 循环?: 循环方式 } | { 等刻: number })[] =>
+  项们.flatMap((项) => {
+    if ('等刻' in 项 || typeof 项.循环 !== 'number') return [项 as { 名: string; 循环?: 循环方式 } | { 等刻: number }];
+    const n = Math.trunc(项.循环);
+    return Array.from({ length: Math.max(0, n) }, (_, k) => (k < n - 1 ? { 名: 项.名, 循环: 'once' as const } : { 名: 项.名 }));
+  });
 
 /**
  * GeckoLib 4 的控制器（照 geckolib-forge-1.20.1-4.8.4 的 AnimationController.process、AnimationProcessor.tickAnimation 原文，MIT）：
  * - handler 换了动画：进入过渡，过渡刻 内从「切换那一刻的姿势」线性插到新动画第 0 刻的姿势，只插新动画有关键帧的骨骼和通道；
  *   过渡完从 0 开播。过渡刻 是 0 就直接开播。开头第一段也从原位过渡（GeckoLib 也是）。
- * - 播完一遍（once、几遍）的：队列里还有就过渡到下一段，没有就停；停了、等刻、STOP 时这个控制器不给骨骼（GeckoLib 里骨骼回原位）。
+ * - 播完一遍（once）的：队列里还有就过渡到下一段，没有就停；停了、等刻、STOP 时这个控制器不给骨骼（GeckoLib 里骨骼回原位）。
+ * - 等刻（thenWait）在 GeckoLib 里是一段没有骨骼的动画，前面也要过渡，所以空 过渡刻 + 等刻。
  * - hold 停在末帧。
  * 简化：切换那一刻的姿势取本控制器自己给的值（GeckoLib 取的是骨骼当时的总值，含别的控制器）；没给过的按原位。
  * 不支持 overrideEasingType、triggerableAnim、声音粒子关键帧
@@ -309,10 +318,10 @@ export const GeckoLib控制器 = (设定: GeckoLib控制器设定): 控制器播
       continue;
     }
     let t = T;
-    for (const 项 of 统一(播)) {
+    for (const 项 of 展开(统一(播))) {
       if (t >= 到) break;
       if ('等刻' in 项) {
-        const 止 = Math.min(到, t + 项.等刻 / 20 / 速);
+        const 止 = Math.min(到, t + 过渡秒 + 项.等刻 / 20 / 速);
         阶段们.push({ 种: '空', 起: t, 止 });
         t = 止;
         continue;
@@ -326,7 +335,7 @@ export const GeckoLib控制器 = (设定: GeckoLib控制器设定): 控制器播
       }
       const 循环 = 项.循环 ?? a.循环;
       const 长 = 动画长度(a, 口) / 速;
-      const 时长 = 循环 === 'loop' || 循环 === 'hold' ? Infinity : typeof 循环 === 'number' ? 长 * Math.max(1, 循环) : 长;
+      const 时长 = 循环 === 'loop' || 循环 === 'hold' ? Infinity : 长;
       const 止 = Math.min(到, t + 时长);
       阶段们.push({ 种: '播放', 起: t, 止, 名: 项.名, 循环 });
       t = 止;
@@ -346,10 +355,9 @@ export const GeckoLib控制器 = (设定: GeckoLib控制器设定): 控制器播
     return lo;
   };
 
-  const 播放时间 = (a: 基岩动画, 循环: 循环方式 | number, 已过: number): number => {
+  const 播放时间 = (a: 基岩动画, 循环: 循环方式, 已过: number): number => {
     const t = 已过 * 速;
     const 长 = 动画长度(a, 口);
-    if (typeof 循环 === 'number') return Number.isFinite(长) && 长 > 0 ? (t >= 长 * 循环 ? 长 : t % 长) : t;
     if (循环 === 'hold') return Math.min(t, 长);
     return 动画时间({ ...a, 循环 }, t, 口).时;
   };

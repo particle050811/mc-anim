@@ -243,6 +243,24 @@ describe('GeckoLib 控制器（transitionLength）', () => {
     expect(c.姿势(10)).toEqual({});
   });
 
+  it('几遍、等刻有过渡时同 GeckoLib 4：每遍之间过渡（thenPlayXTimes 是 n 段），等刻前也过渡', () => {
+    const c = GeckoLib控制器({
+      名: 'm',
+      过渡刻: 10,
+      安排: [{ 秒: 0, 播: [{ 名: '挥手', 循环: 2 }, { 等刻: 10 }, { 名: '挥手' }] }],
+      动画们,
+    });
+    // [0, 0.5) 过渡、[0.5, 1.5) 第 1 遍、[1.5, 2) 从末帧 −90 插回第 0 刻 −30、[2, 3) 第 2 遍
+    expect(c.姿势(1.75).arm!.rot![0]).toBeCloseTo(-60, 12);
+    expect(c.姿势(2.5).arm!.rot![0]).toBeCloseTo(-60, 12);
+    // [3, 3.5) 过渡到等待（没骨骼）、[3.5, 4) 等 10 刻，再 [4, 4.5) 从原位过渡
+    expect(c.姿势(3.2)).toEqual({});
+    expect(c.姿势(3.7)).toEqual({});
+    expect(c.姿势(4.25).arm!.rot![0]).toBeCloseTo(-15, 12);
+    // 0 遍不播
+    expect(GeckoLib控制器({ 名: 'm', 过渡刻: 0, 安排: [{ 秒: 0, 播: [{ 名: '挥手', 循环: 0 }] }], 动画们 }).姿势(0.5)).toEqual({});
+  });
+
   it('速度：过渡和播放一起快', () => {
     const c = GeckoLib控制器({ 名: 'm', 过渡刻: 10, 速度: 2, 安排: [{ 秒: 0, 播: '挥手' }], 动画们 });
     expect(c.姿势(0.125).arm!.rot![0]).toBeCloseTo(-15, 12);
