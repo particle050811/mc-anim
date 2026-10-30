@@ -72,4 +72,19 @@ describe('Molang', () => {
     expect(() => 编译('1 +')).toThrow();
     expect(() => 编译('1 2')).toThrow(/多余|这里要/);
   });
+
+  it('数值精度：float 每步舍入到 32 位（mocha、基岩版），默认 double（GeckoLib 4 的 mclib）', () => {
+    const 式 = 编译('0.1 + 0.2');
+    expect(求值(式)).toBe(0.1 + 0.2);
+    const f = Math.fround;
+    expect(求值(式, { 数值: 'float' })).toBe(f(f(0.1) + f(0.2)));
+    expect(求值(式, { 数值: 'float' })).not.toBe(0.1 + 0.2);
+    // 读到的查询、变量、函数结果也舍入
+    expect(求值(编译('q.x * 3'), { 数值: 'float', 查询: { x: 0.1 } })).toBe(f(f(0.1) * 3));
+    expect(求值(编译('math.sin(30)'), { 数值: 'float' })).toBe(f(Math.sin(Math.PI / 6)));
+    // 比较在 float 上做：0.1 + 0.2 == 0.3 在 float 里成立，double 里不成立
+    expect(求值(编译('0.1 + 0.2 == 0.3'), { 数值: 'float' })).toBe(1);
+    expect(求值(编译('0.1 + 0.2 == 0.3'))).toBe(0);
+    expect(烘焙('0.1 + 0.2', 'float')).toBe(f(f(0.1) + f(0.2)));
+  });
 });
