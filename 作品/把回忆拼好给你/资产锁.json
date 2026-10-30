@@ -668,277 +668,415 @@
   "配乐/把回忆拼好给你-抖音原声": {
     "sha256": "cf59eff8cbfa99743db00fc882f3332a6b1d8a07b0f29357c1dda7aded79869e",
     "后缀": ".m4a",
+    "响度": -9.3,
     "大小": 452393,
-    "库": "私有"
+    "峰值": 0.5,
+    "库": "私有",
+    "时长": 56.005011
   },
   "音效/block.wooden_door.open.1": {
     "sha256": "0f6799c9b410bfd11a44d185cc617e47316d885d6615b0882297af995c62959d",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 6820,
-    "库": "store"
+    "峰值": -0.3,
+    "库": "store",
+    "时长": 0.348
   },
   "音效/block.wooden_door.open.2": {
     "sha256": "d051a29e4469c1433744825b63185dbfb59d62b89151a38ab96bfd3aa5125432",
     "后缀": ".ogg",
+    "响度": -24.9,
     "大小": 7472,
-    "库": "store"
+    "峰值": -0.4,
+    "库": "store",
+    "时长": 0.423
   },
   "音效/万法皆通/wind_seeking_bell": {
     "sha256": "a43ff1f9b22edbfcb47467f5060d47dc177394b4e1a0c4ffb36cc9006322f1b8",
     "后缀": ".ogg",
+    "响度": -11.9,
     "大小": 28634,
-    "库": "store"
+    "峰值": -4.3,
+    "库": "store",
+    "时长": 2.069313
   },
   "音效/把回忆拼好给你/block.beacon.activate": {
     "sha256": "cff5ac29875be8ff351c83c88dadbb9df034d7103f13d9e0876667e5795b553c",
     "后缀": ".ogg",
+    "响度": -25.6,
     "大小": 39927,
-    "库": "store"
+    "峰值": -13.5,
+    "库": "store",
+    "时长": 2.953292
   },
   "音效/把回忆拼好给你/block.bell.use.1": {
     "sha256": "6bd07b1fb962b256746128a5e30d18f11ade43fd3b571e0323ab36c4b1d67712",
     "后缀": ".ogg",
+    "响度": -33.2,
     "大小": 10846,
-    "库": "store"
+    "峰值": -14.2,
+    "库": "store",
+    "时长": 2.491678
   },
   "音效/把回忆拼好给你/block.bell.use.4": {
     "sha256": "76c52304b81b358cae6aeb4b02838c558fc862871b1f54ce2e4203080d24d79a",
     "后缀": ".ogg",
+    "响度": -32.2,
     "大小": 10714,
-    "库": "store"
+    "峰值": -13.5,
+    "库": "store",
+    "时长": 2.491678
   },
   "音效/把回忆拼好给你/block.cherry_sapling.place.1": {
     "sha256": "c205bf475fc1d7d88e8c26cc85f5fadbe5e6878a863fa55be733e446a70389a8",
     "后缀": ".ogg",
+    "响度": -30,
     "大小": 13570,
-    "库": "store"
+    "峰值": -14.4,
+    "库": "store",
+    "时长": 0.403125
   },
   "音效/把回忆拼好给你/block.cherry_sapling.place.2": {
     "sha256": "a77bb83ece0f5c08d8a91c41e91a2f670c2800065112886610631e3145b2b7d2",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 13978,
-    "库": "store"
+    "峰值": -13.2,
+    "库": "store",
+    "时长": 0.399375
   },
   "音效/把回忆拼好给你/block.cherry_sapling.place.3": {
     "sha256": "22d60b9385b5c266e0fae89db073f56cc8963f585d8bdea40e1940ac25868a4d",
     "后缀": ".ogg",
+    "响度": -31.2,
     "大小": 13630,
-    "库": "store"
+    "峰值": -8.4,
+    "库": "store",
+    "时长": 0.405917
   },
   "音效/把回忆拼好给你/block.cherry_sapling.place.4": {
     "sha256": "606ad89cbd72ad63a02ffc046cc4000ca4c18a10ff74ea61e84fbf415ed54fe0",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 13307,
-    "库": "store"
+    "峰值": -3.6,
+    "库": "store",
+    "时长": 0.396104
   },
   "音效/把回忆拼好给你/block.cherry_sapling.place.5": {
     "sha256": "588c523012a3829c7300880364a0d8c82bc281c2659ace38865fabc13ec233c6",
     "后缀": ".ogg",
+    "响度": -32.4,
     "大小": 14242,
-    "库": "store"
+    "峰值": -11.8,
+    "库": "store",
+    "时长": 0.43275
   },
   "音效/把回忆拼好给你/block.cherry_sapling.place.6": {
     "sha256": "ad7161d98bff950d82778b64ad4d0e28003df0ee32e1b570d710dcbd4d7b7db9",
     "后缀": ".ogg",
+    "响度": -32.2,
     "大小": 13918,
-    "库": "store"
+    "峰值": -11.4,
+    "库": "store",
+    "时长": 0.401146
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.1": {
     "sha256": "bad9396e5d3cda334ffa7b9205bd677672d0c8605d5cc44ebc1435b578081212",
     "后缀": ".ogg",
+    "响度": -40.7,
     "大小": 11088,
-    "库": "store"
+    "峰值": -21.9,
+    "库": "store",
+    "时长": 0.901333
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.2": {
     "sha256": "9c9dcd0edb8f1ceb50ca50bb28d2f9624b85f498ea026390189901ac9237c935",
     "后缀": ".ogg",
+    "响度": -38.7,
     "大小": 10525,
-    "库": "store"
+    "峰值": -23.1,
+    "库": "store",
+    "时长": 0.850667
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.3": {
     "sha256": "9190aec97afaabdfab69c45c53e027bb027105e40dd454dccd16490698220dd7",
     "后缀": ".ogg",
+    "响度": -36.1,
     "大小": 12560,
-    "库": "store"
+    "峰值": -19.4,
+    "库": "store",
+    "时长": 1.001333
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.4": {
     "sha256": "0c785a74ee0b3398ffb8bc971a4558c58fda65fe65078f939038963bd6f99485",
     "后缀": ".ogg",
+    "响度": -41.8,
     "大小": 12127,
-    "库": "store"
+    "峰值": -26.7,
+    "库": "store",
+    "时长": 1.037333
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.5": {
     "sha256": "174cc208d7adbd472e1c31ed21a92a3674787c987bc6ba2879dd96f29042fcfc",
     "后缀": ".ogg",
+    "响度": -39.8,
     "大小": 14006,
-    "库": "store"
+    "峰值": -22.2,
+    "库": "store",
+    "时长": 1.213333
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.6": {
     "sha256": "6ced6b6c1e6da2f198d6c09c07c00bac9bcc0835affb4466bba57570b48882fb",
     "后缀": ".ogg",
+    "响度": -41.8,
     "大小": 12755,
-    "库": "store"
+    "峰值": -25.7,
+    "库": "store",
+    "时长": 1.050667
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.7": {
     "sha256": "1dbea8ed84a5e24d636f76fd5ed3cb59e1b071234ea367ee74327d27d06e5cf3",
     "后缀": ".ogg",
+    "响度": -39.6,
     "大小": 10165,
-    "库": "store"
+    "峰值": -21.4,
+    "库": "store",
+    "时长": 0.8
   },
   "音效/把回忆拼好给你/entity.boat.paddle_water.8": {
     "sha256": "eca7161b759404fb0058d046f5d7f8a56a4ed0d24335c28f971ba1f17128345d",
     "后缀": ".ogg",
+    "响度": -39.4,
     "大小": 11071,
-    "库": "store"
+    "峰值": -18.7,
+    "库": "store",
+    "时长": 0.901333
   },
   "音效/把回忆拼好给你/entity.cat.hiss.1": {
     "sha256": "ca87ec7af77239b10d6e3529dab9b77cd5440a20e3b82e7d147f11db10365b11",
     "后缀": ".ogg",
+    "响度": -13.3,
     "大小": 34535,
-    "库": "store"
+    "峰值": -0.4,
+    "库": "store",
+    "时长": 1.169
   },
   "音效/把回忆拼好给你/entity.cat.hiss.2": {
     "sha256": "b4fe0718b2c5e432fdfcc917cbdfe96d34b4ea3d36bfb9003073d3308ecc6522",
     "后缀": ".ogg",
+    "响度": -10.3,
     "大小": 32637,
-    "库": "store"
+    "峰值": -0.1,
+    "库": "store",
+    "时长": 1.12675
   },
   "音效/把回忆拼好给你/entity.cat.hiss.3": {
     "sha256": "f030e04458d0427f4555f94a62a6c6d068659a8de75271cf64b0fd4044e4a622",
     "后缀": ".ogg",
+    "响度": -16.6,
     "大小": 30263,
-    "库": "store"
+    "峰值": -2.9,
+    "库": "store",
+    "时长": 1.088792
   },
   "音效/把回忆拼好给你/entity.firework_rocket.blast": {
     "sha256": "9377171cf33d982af07afee8969bbb2211516c287d579bb1ba49ab75c06a9232",
     "后缀": ".ogg",
+    "响度": -25.1,
     "大小": 11071,
-    "库": "store"
+    "峰值": 1.1,
+    "库": "store",
+    "时长": 1
   },
   "音效/把回忆拼好给你/entity.firework_rocket.large_blast": {
     "sha256": "f54e5fc9a0822cc562f1e7c1130fbcefbdc3f99f53c84879c05e79c3e57efb73",
     "后缀": ".ogg",
+    "响度": -21.7,
     "大小": 17306,
-    "库": "store"
+    "峰值": 0.5,
+    "库": "store",
+    "时长": 2
   },
   "音效/把回忆拼好给你/entity.firework_rocket.launch": {
     "sha256": "1505700bf51d55c1b99505edc3e3d4cd2158376ef88885c9ea4544f36dbc618f",
     "后缀": ".ogg",
+    "响度": -24.6,
     "大小": 15598,
-    "库": "store"
+    "峰值": -7.4,
+    "库": "store",
+    "时长": 1.625011
   },
   "音效/把回忆拼好给你/entity.firework_rocket.twinkle": {
     "sha256": "0c2eaff9130e2ed5fec3543e0d7e156b5d4489245fb4a7c591fc6020aed8147d",
     "后缀": ".ogg",
+    "响度": -18.9,
     "大小": 14328,
-    "库": "store"
+    "峰值": 1.4,
+    "库": "store",
+    "时长": 1.333878
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.add_item.1": {
     "sha256": "047c950cb8e0205e6fb6da8b84d19e078b62856697acc173aa6c926e75b044e0",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4404,
-    "库": "store"
+    "峰值": -4.3,
+    "库": "store",
+    "时长": 0.092833
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.add_item.2": {
     "sha256": "b81d00daa43880eff6cf939c7eb892f90172ced89ba61f9229059cf4ab0f7966",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4303,
-    "库": "store"
+    "峰值": -6.9,
+    "库": "store",
+    "时长": 0.0825
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.add_item.3": {
     "sha256": "3937392b76bee53c17462976cb91a2aa6cc2d8a4af475cee3a4be36dfdfb61dd",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4488,
-    "库": "store"
+    "峰值": -7.4,
+    "库": "store",
+    "时长": 0.104333
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.add_item.4": {
     "sha256": "2cd3e69f5c0341ee035181d2289455a01b4881a9b162d5b9750c30ba7d33e9b3",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4581,
-    "库": "store"
+    "峰值": -6,
+    "库": "store",
+    "时长": 0.130833
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1": {
     "sha256": "8dac5bc8df9d4157b32849f4d79f58daa78b3da52ff3976ad27f89d9595210be",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4179,
-    "库": "store"
+    "峰值": -0.3,
+    "库": "store",
+    "时长": 0.068333
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.2": {
     "sha256": "acdf8a4812136ea960753036b764866fe1d8d690bb76ef21a768d424cb6b1e47",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4439,
-    "库": "store"
+    "峰值": -3.4,
+    "库": "store",
+    "时长": 0.098667
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.3": {
     "sha256": "81e88fcb46b1f960d3f2c93cb2a80a684324b4921a518e0a447687dee19836b7",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4347,
-    "库": "store"
+    "峰值": -3.3,
+    "库": "store",
+    "时长": 0.088
   },
   "音效/把回忆拼好给你/entity.glow_item_frame.remove_item.4": {
     "sha256": "9bba0de4f6bed39bbb2b9c5ecc134bcd25876a18006a23a68faf66c8e4c27358",
     "后缀": ".ogg",
+    "响度": -70,
     "大小": 4311,
-    "库": "store"
+    "峰值": 0.2,
+    "库": "store",
+    "时长": 0.075833
   },
   "音效/把回忆拼好给你/entity.zombie.ambient.1": {
     "sha256": "b1f2b64cc2639c869d57955aabf9d46206ae7a8def97ebb68865b1743c5528e2",
     "后缀": ".ogg",
+    "响度": -22,
     "大小": 16877,
-    "库": "store"
+    "峰值": -7.2,
+    "库": "store",
+    "时长": 1.5
   },
   "音效/把回忆拼好给你/entity.zombie.ambient.2": {
     "sha256": "626e0f7a5bb15fb82729bf7d1abee398bda35fdce29f369d554061c96be38d1c",
     "后缀": ".ogg",
+    "响度": -19.3,
     "大小": 15423,
-    "库": "store"
+    "峰值": -6.6,
+    "库": "store",
+    "时长": 1.375011
   },
   "音效/把回忆拼好给你/entity.zombie.ambient.3": {
     "sha256": "d0e981ec22dd8a6927d1621c990b182789a712f30ad00108ab4f01f974fe6383",
     "后缀": ".ogg",
+    "响度": -22.9,
     "大小": 19806,
-    "库": "store"
+    "峰值": -7.5,
+    "库": "store",
+    "时长": 2.125011
   },
   "音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.1": {
     "sha256": "88f12f31d14edd2dd051092ed9fda8cbd1d38190adeedbaed6289ebfc68b7994",
     "后缀": ".ogg",
+    "响度": -12.6,
     "大小": 126777,
-    "库": "store"
+    "峰值": -0.1,
+    "库": "store",
+    "时长": 3.086848
   },
   "音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2": {
     "sha256": "a7ebd396ef425062757e725d3526be1db3931d09ebd1d78692d3dd1bcecb6dae",
     "后缀": ".ogg",
+    "响度": -11.8,
     "大小": 77541,
-    "库": "store"
+    "峰值": -1.5,
+    "库": "store",
+    "时长": 1.718753
   },
   "音效/把回忆拼好给你/touhou_little_maid.entity.box": {
     "sha256": "d7615d9d701006bc026a72edaf0d6a09a53e669b37346e9097dd871324d026a4",
     "后缀": ".ogg",
+    "响度": -17.8,
     "大小": 50205,
-    "库": "store"
+    "峰值": 0,
+    "库": "store",
+    "时长": 0.714082
   },
   "音效/把回忆拼好给你/weather.rain.1": {
     "sha256": "44d72c5a4419724c327aa375ac813d5af3c0f3ca7d3fe94f80dec433631735f3",
     "后缀": ".ogg",
+    "响度": -25.2,
     "大小": 22230,
-    "库": "store"
+    "峰值": -9.1,
+    "库": "store",
+    "时长": 2.010667
   },
   "音效/把回忆拼好给你/weather.rain.2": {
     "sha256": "5f754e4c7e647b6324eab08637775086a9fee93c0f01ac05f7b5b58fd9fe96a5",
     "后缀": ".ogg",
+    "响度": -24.8,
     "大小": 23292,
-    "库": "store"
+    "峰值": -3.2,
+    "库": "store",
+    "时长": 1.978667
   },
   "音效/把回忆拼好给你/weather.rain.3": {
     "sha256": "4cafe2fcec6aca9e9d1ba48627e7260f66a18decce556e4516d761504b863741",
     "后缀": ".ogg",
+    "响度": -25,
     "大小": 23967,
-    "库": "store"
+    "峰值": -4.5,
+    "库": "store",
+    "时长": 2.085333
   },
   "音效/把回忆拼好给你/weather.rain.4": {
     "sha256": "94a3c04d5b5162b6cde1caa68a3dfc6c648ab6c5e246288879abfe2e7bcd2dcc",
     "后缀": ".ogg",
+    "响度": -24.5,
     "大小": 23963,
-    "库": "store"
+    "峰值": -6.4,
+    "库": "store",
+    "时长": 2.165333
   }
 }
