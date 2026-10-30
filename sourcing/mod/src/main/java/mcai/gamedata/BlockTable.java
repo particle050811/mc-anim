@@ -74,6 +74,12 @@ public final class BlockTable {
         // 体素网格（engine/voxel/网格.ts）把贴图号塞进 12 位、体素值是 16 位：全量表超了不能直接给它用，要先按世界里出现的状态裁
         if (b.textures.size() >= 4096) warnings.add("贴图 " + b.textures.size() + " 张，超过体素网格贴图号的 4095");
         if (b.blocks.size() >= 65535) warnings.add("方块状态 " + b.blocks.size() + " 种，超过 16 位体素值");
+        if (!b.errors.isEmpty()) {
+            warnings.add("取模型出错的状态 " + b.errors.size() + " 个（记成不画）：" + String.join("；", b.errors.entrySet().stream().limit(20).map(e -> e.getKey() + " " + e.getValue()).toList()));
+            JsonObject err = new JsonObject();
+            b.errors.forEach(err::addProperty);
+            extra.add("出错", err);
+        }
         if (!b.missingTextures.isEmpty()) warnings.add("取不到像素的贴图 " + b.missingTextures.size() + " 张（这些面不导）：" + String.join("、", b.missingTextures));
         return new Result(out, b.textures, b.pixels, warnings);
     }
@@ -90,6 +96,7 @@ public final class BlockTable {
         final Set<String> drawnBlocks = new HashSet<>();
         final Set<String> seenBlocks = new LinkedHashSet<>();
         final Map<String, Integer> renderers = new TreeMap<>();
+        final Map<String, String> errors = new TreeMap<>();
         int notDrawnStates;
 
         Builder(BlockSource src) {
@@ -123,7 +130,16 @@ public final class BlockTable {
         void add(String state) {
             String block = blockId(state);
             seenBlocks.add(block);
-            BlockSource.Model m = src.model(state);
+            BlockSource.Model m;
+            try {
+                m = src.model(state);
+            } catch (RuntimeException | LinkageError e) {
+                // 模组的模型在假世界、空 ModelData 下可能抛：这个状态记成不画，不让一个状态拖垮整张表
+                errors.put(state, e.getClass().getSimpleName() + ": " + e.getMessage());
+                renderers.merge("出错:" + e.getClass().getSimpleName(), 1, Integer::sum);
+                skip();
+                return;
+            }
             renderers.merge(m.renderer(), 1, Integer::sum);
             List<Integer> ids = new ArrayList<>();
             int cls;

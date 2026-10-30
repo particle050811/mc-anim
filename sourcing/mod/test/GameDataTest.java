@@ -21,7 +21,7 @@ import java.util.Set;
 /**
  * mcai biomes / blocks 出表部分（mcai.gamedata，不碰游戏类）的离线核对：sh test/game-data-test.sh。
  * 用假的 GameData 喂数据，查：面的坐标换算、顶点顺序和手写方块表一致（石头的六个面逐字对上旧表）；草方块的叠加层合并；
- * 随机转只认 4 个朝向且不镜像；染色路的暗号判断；群系定值 / 随位置；PNG 能读回同样的像素；贴图缩到 16×16 是面积平均。
+ * 取模型抛错的状态记成不画、不拖垮整张表；随机转只认 4 个朝向且不镜像；染色路的暗号判断；群系定值 / 随位置；PNG 能读回同样的像素；贴图缩到 16×16 是面积平均。
  */
 public class GameDataTest {
     static int failed;
@@ -29,6 +29,7 @@ public class GameDataTest {
     public static void main(String[] args) throws Exception {
         cubeMatchesHandTable();
         grassOverlayMerges();
+        brokenStateSkipped();
         spinNeedsFourTurnsWithoutMirror();
         tintRoutes();
         biomeTable();
@@ -73,7 +74,9 @@ public class GameDataTest {
         }
 
         public Model model(String state) {
-            return models.get(state);
+            Model m = models.get(state);
+            if (m == null) throw new IllegalStateException("模组模型抛了");
+            return m;
         }
 
         public Texture texture(String sprite) {
@@ -144,6 +147,20 @@ public class GameDataTest {
         check(faces.get(1).getAsJsonArray().get(4).getAsInt() == 1, "顶面染色");
         check(r.json().getAsJsonObject("方块").getAsJsonArray("minecraft:grass_block[snowy=false]").get(1).getAsString().equals("grass"), "染色路 grass");
         check(r.warnings().stream().anyMatch(w -> w.contains("missingno")), "缺贴图进提醒");
+    }
+
+    static void brokenStateSkipped() {
+        List<BlockSource.Quad> quads = new ArrayList<>();
+        for (int d = 0; d < 6; d++) quads.add(cubeFace(d, "minecraft:block/stone", -1));
+        Map<String, BlockSource.Model> models = new java.util.LinkedHashMap<>();
+        models.put("minecraft:stone", solid(quads, Map.of(), List.of(quads)));
+        models.put("mod:broken", null);
+        BlockTable.Result r = BlockTable.build(NO_GAME, new FakeBlocks(models), s -> true, null);
+        JsonObject j = r.json();
+        check(j.getAsJsonObject("方块").has("minecraft:stone") && !j.getAsJsonObject("方块").has("mod:broken"), "抛错的状态不进表、别的照导");
+        check(j.getAsJsonObject("附加").getAsJsonArray("不画").toString().contains("mod:broken"), "抛错的方块记进不画");
+        check(j.getAsJsonObject("附加").getAsJsonObject("出错").has("mod:broken"), "附加.出错 记原因");
+        check(r.warnings().stream().anyMatch(w -> w.contains("出错")), "出错进提醒");
     }
 
     /** 朝上的面，uv 绕中心转 k 个 90°（mirror 时左右翻） */
