@@ -2812,3 +2812,11 @@ id = "贴图/物品/船/樱花木"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "client jar 的 entity/boat/cherry.png，128×64，1.20 樱花木船"
+
+[["资产"]]
+id = "贴图/场景/月相"
+"类别" = "贴图"
+"来源" = "提取:月相@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 environment/moon_phases.png，128×64，4×2 格一格一个月相（<环境> 主世界画法的月亮）"

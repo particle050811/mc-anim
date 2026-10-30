@@ -62,7 +62,7 @@ export const 合并环境 = (底: Molang环境 = {}, 上: Molang环境 = {}): Mo
 });
 
 export const 定义生物 = <const V extends 变体表 = Record<never, never>>(定义: 生物定义<V>) => {
-  const 动画文件: Readonly<Record<string, 基岩动画>> | undefined = 定义.动画 ? 解析动画文件(定义.动画.文件) : undefined;
+  const 动画文件: Readonly<Record<string, 基岩动画>> | undefined = 定义.动画 ? 解析动画文件(定义.动画.文件, 定义.动画.口径) : undefined;
   const 几何 = 定义.模型 as Omit<BedrockModel, 'texture'>;
   if (!Array.isArray(几何?.bones)) throw new Error(`定义生物「${定义.名}」：模型不是基岩几何（缺 bones）`);
   const 变体键 = Object.keys(定义.变体 ?? {}) as (keyof V & string)[];

@@ -29,3 +29,18 @@ export const 历史指纹 = (键: string, dir = 母版目录(键)): (段指纹 &
     .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)
     .map((f) => JSON.parse(fs.readFileSync(f, 'utf8')));
 };
+
+/** 指纹记录里的渲染级别（项.渲染设置.inputProps.级别）；读不出是 null */
+export const 指纹级别 = (h: { 项?: { 渲染设置?: Record<string, unknown> } }): string | null => {
+  const v = (h.项?.渲染设置?.inputProps as { 级别?: unknown } | undefined)?.级别;
+  return typeof v === 'string' ? v : null;
+};
+
+/**
+ * film --允许过期 能用的旧渲染：同一渲染级别、文件还在的最近一份（历史 新的在前）。视频级成片接上预览级母版，分辨率、画质都不对；
+ * 读不出级别的旧记录不用。另返回别的级别有没有能用的，报错时说清楚
+ */
+export const 最近同级别 = <T extends { 指纹: string; 项?: { 渲染设置?: Record<string, unknown> } }>(历史: readonly T[], 级别: string, 文件: (指纹: string) => string) => {
+  const 在 = 历史.filter((h) => fs.existsSync(文件(h.指纹)));
+  return { 旧: 在.find((h) => 指纹级别(h) === 级别), 别的级别: [...new Set(在.map(指纹级别).filter((x) => x !== 级别).map((x) => x ?? '级别不明'))] };
+};

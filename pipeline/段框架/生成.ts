@@ -2,7 +2,7 @@
 //   声音表.生成.ts   纯数据：本段 cue 用到的音频的时长、峰值、响度，台词的配音、开口、时长。段.ts 交给 窗口段，放() 按它算默认帧数和增益
 //   声音地址.生成.ts 资产 id → 打包后的地址（asset: import；私有配乐走 engine/audio/私有配乐.ts 现取）再带上声音表。画面.tsx 交给 定义画面
 // 按段分开生成：一段只依赖自己用到的那几个声音，加一声不让别的段过期（全作品一张大表的话，加一声全部过期）。
-// 生成要先执行 段.ts 才知道用到哪些声音，可 放() 又要表里的数：所以先在「收集」模式下执行一遍（表里没有的记下、给占位），量完写表，再正常执行一遍取最终 cue。
+// 生成要先执行 段.ts 才知道用到哪些声音，可 放() 又要表里的数：所以先在「收集」模式下执行一遍（要过的 id 都记下，表里没有的给占位），量完写表，再正常执行一遍取最终 cue。
 // 每次执行都用 esbuild 连依赖打成一个新的临时文件再 import，不吃 Node 的模块缓存（同 检查/上下文.ts 的 加载）。
 import fs from 'node:fs';
 import os from 'node:os';
@@ -60,11 +60,11 @@ const 执行段 = async (段文件: string, 根: string): Promise<段定义> => 
   return m.default as 段定义;
 };
 
-/** 收集模式执行：表里缺的 id 记下来、不报错 */
-export const 收集执行 = async (段文件: string, 根: string): Promise<{ 段: 段定义; 缺: Set<string> }> => {
-  const 缺 = 开始收集();
+/** 收集模式执行：要过数的 id 都记下来（表里没有的不报错） */
+export const 收集执行 = async (段文件: string, 根: string): Promise<{ 段: 段定义; 要过: Set<string> }> => {
+  const 要过 = 开始收集();
   try {
-    return { 段: await 执行段(段文件, 根), 缺 };
+    return { 段: await 执行段(段文件, 根), 要过 };
   } finally {
     结束收集();
   }
@@ -102,7 +102,7 @@ const 盘上的数 = (盘上: 声音表 | undefined, id: string, 条目: 锁条�
 };
 
 /**
- * 按段的 cue（和收集到的缺数 id）算声音表。一件的数先用锁里的，再用盘上声音表里 sha 对得上的（换机器重跑不重量，
+ * 按段的 cue（和收集时要过数的 id）算声音表。一件的数先用锁里的，再用盘上声音表里 sha 对得上的（换机器重跑不重量，
  * 免得 ffmpeg 版本不同量出差 0.01 的数、改了生成的文件），最后才 环境.取数（缓存或现量）。
  */
 export const 算声音表 = async (段: 段定义, 额外资产: Iterable<string>, 环境: 生成环境, 盘上?: 声音表): Promise<声音表> => {
@@ -207,7 +207,7 @@ export const 生成一段 = async (段文件: string, 根: string, 环境: 生�
     if (新建) fs.rmSync(表位);
     throw new Error(`${段文件} 不是段框架的段（默认导出不是 窗口段 做的），anim cues 不管它`);
   }
-  const 表 = await 算声音表(收.段, 收.缺, 环境, 盘上);
+  const 表 = await 算声音表(收.段, 收.要过, 环境, 盘上);
   if (写如果变(表位, 声音表文本(表)) && !改了.includes(声音表文件)) 改了.push(声音表文件);
   const 段 = await 执行段(段文件, 根);
   // 正常执行的 cue 要放的文件都得在表里；段.ts 要是按声音的数分了支、用到收集时没碰到的声音，这里会缺

@@ -50,6 +50,8 @@ export type 找重复选项 = {
   进度?: (s: string) => void;
   /** 只看不删时：这次计划里要删掉的名字数（按 inode），从硬链接数里扣掉，估的是删完以后的样子 */
   另删?: ReadonlyMap<string, number>;
+  /** 账本里没有的先查这里再算（只看不删时账本不写，sha 记在这里，下次不重算） */
+  sha缓存?: { 算: (p: string, st: fs.Stats) => Promise<string> };
 };
 
 export const 找重复 = async (文件们: readonly 去重文件[], 账: 去重账, 键: (p: string) => string, o: 找重复选项 = {}): Promise<去重组[]> => {
@@ -68,7 +70,7 @@ export const 找重复 = async (文件们: readonly 去重文件[], 账: 去重�
     const k = 键(f.路径);
     let e = 账.文件[k];
     if (!账还对(e, st)) {
-      e = { 大小: st.size, 改于: st.mtimeMs, ino: st.ino, sha: 已算.get(inode) ?? (await 文件sha(f.路径)) };
+      e = { 大小: st.size, 改于: st.mtimeMs, ino: st.ino, sha: 已算.get(inode) ?? (await (o.sha缓存 ? o.sha缓存.算(f.路径, st) : 文件sha(f.路径))) };
       账.文件[k] = e;
     }
     已算.set(inode, e.sha);

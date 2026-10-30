@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 提交状态 } from '../环境/路径.ts';
-import { 全部段, 匹配, 选段, type 段信息 } from '../清单/清单.ts';
+import { 全部段, 选中, 选段, type 段信息 } from '../清单/清单.ts';
 import { 母版路径 } from '../渲/母版.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 渲染母版 } from '../渲/渲.ts';
@@ -111,7 +111,7 @@ const 认: 命令 = {
     const 理由 = p.值['--理由']?.trim();
     if (!理由) throw new 用法错误('要写 --理由（这次画面为什么变、谁看过）');
     const 段们 = await 选段(p.位置);
-    const 不唯一 = 点名不唯一(p.位置, 段们, 匹配);
+    const 不唯一 = 点名不唯一(p.位置, 段们, 选中);
     if (不唯一.length) {
       throw new 用法错误(`认可要逐段点名：${不唯一.map((y) => `「${y.选择器}」对上了 ${y.段.length} 段`).join('、')}；都看过的话写 anim verify accept ${[...new Set(不唯一.flatMap((y) => y.段))].join(' ')} --理由 …`);
     }

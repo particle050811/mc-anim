@@ -16,7 +16,8 @@ import type { 段定义 } from '../../engine/段/段定义.ts';
 import { 声音表文件, 新鲜执行, 收集执行, 核对一段, 生成一段, type 生成环境 } from './生成.ts';
 import { 是框架段 } from '../../engine/段/窗口段.ts';
 import { 取音频数, 已知音频数 } from './音频数.ts';
-import { 新作品, 新段 } from './新作品.ts';
+import { 新作品, 新段, type 场里老段 } from './新作品.ts';
+import { 全部段 } from '../清单/清单.ts';
 
 type 作品清单 = { 清单: readonly 清单条目[]; 段目录: (键: string) => string; 段名: (t: 清单条目) => string; 编号: (键: string) => string | null };
 
@@ -88,7 +89,16 @@ export const 段框架命令: Record<string, 命令> = {
       const p = 解析参数(args, { 值: ['--场', '--起', '--止'] });
       const [种, 名] = p.位置;
       if (p.位置.length !== 2 || (种 !== 'work' && 种 !== 'seg')) throw new 用法错误('要 anim new work <作品名> 或 anim new seg <段键> [--场 <场键>]');
-      const 写了 = 种 === 'work' ? 新作品(代码根(), 名!) : 新段(作品根(), 名!, { 场: p.值['--场'], 起: p.值['--起'], 止: p.值['--止'] });
+      const 场 = p.值['--场'];
+      // 场时间线还没有、本场有老段（定义段 写的）的：照清单找出来，新时间线用 接老段 把它们摆上去，新段接在后面
+      let 老段: 场里老段[] | undefined;
+      if (种 === 'seg' && 场 && !fs.existsSync(path.join(作品根(), '场', 场, '时间线.ts'))) {
+        老段 = (await 全部段())
+          .filter((s) => s.章 !== '核对' && s.段.场 === 场 && !是框架段(s.段))
+          .map((s) => ({ 键: s.键, 帧数: s.段.帧数, ...(s.段.场窗口 ? { 起帧: s.段.场窗口.起帧 } : {}), fps: s.段.fps, 宽: s.段.宽, 高: s.段.高 }));
+        if (老段.length) console.log(`场 ${场} 有 ${老段.length} 个老段（${老段.map((x) => x.键).join('、')}），场时间线用 接老段 摆上去，新段接在后面`);
+      }
+      const 写了 = 种 === 'work' ? 新作品(代码根(), 名!) : 新段(作品根(), 名!, { 场, 起: p.值['--起'], 止: p.值['--止'], 老段 });
       for (const f of 写了) {
         记录.产物.push(相对代码根(f));
         console.log(`+ ${相对代码根(f)}`);
