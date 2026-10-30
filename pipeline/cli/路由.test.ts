@@ -38,6 +38,11 @@ describe('预期内的错', () => {
     const 仓库外 = new Error('仓库外');
     仓库外.stack = 栈('/别处/a.ts');
     expect(是预期错误(仓库外)).toBe(false);
+    // fs 报的 ENOENT 第一帧在 node:fs：不管 cwd 在哪都不算
+    const 内置模块 = new Error("ENOENT: no such file or directory, open 'x'");
+    内置模块.stack = `Error: ENOENT\n    at Object.readFileSync (node:fs:441:20)\n    at 读 (${pathToFileURL(path.join(根, 'pipeline', 'a.ts')).href}:1:1)`;
+    expect(首帧文件(内置模块.stack)).toBe('node:fs');
+    expect(是预期错误(内置模块)).toBe(false);
   });
 });
 

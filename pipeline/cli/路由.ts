@@ -47,7 +47,8 @@ export const 是预期错误 = (e: unknown, 根 = 代码根()): boolean => {
   // esbuild 构建失败：报错文本里已经有文件和行号
   if (Array.isArray((e as { errors?: unknown }).errors) && Array.isArray((e as { warnings?: unknown }).warnings)) return true;
   const f = 首帧文件(e.stack);
-  if (!f) return false;
+  // node:fs 这类内置模块的帧不是路径（按相对路径算会随 cwd 落进仓库里），算库里抛的
+  if (!f || !path.isAbsolute(f)) return false;
   const 相对 = path.relative(根, f);
   return !相对.startsWith('..') && !path.isAbsolute(相对) && !相对.split(path.sep).includes('node_modules');
 };
