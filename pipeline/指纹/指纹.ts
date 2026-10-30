@@ -16,7 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品根 } from '../环境/作品.ts';
-import { 算默克尔, 文本哈希, 编译选项, 锁定版本, 默克尔算法, type 默克尔明细 } from './默克尔.ts';
+import { 建默克尔图, 文本哈希, 编译选项, 锁定版本, 默克尔算法, type 默克尔明细 } from './默克尔.ts';
 import { 数据根 } from '../环境/配置.ts';
 import { 读作品资产锁 } from '../资产/资产锁.ts';
 import { 段私有配乐, 私有配乐模块 } from '../资产/私有配乐.ts';
@@ -71,36 +71,53 @@ export const 叠层键 = (段键: string, l: 叠层定义) => `${段键}-${l.名
 /** 外壳到作品 清单.ts 的边不跟（加段、改顺序不影响已有段的像素） */
 const 略过清单 = (importer: string, 目标: string) => path.basename(importer) === '注册.tsx' && path.basename(目标) === '清单.ts';
 
-export const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, unknown>, 叠层?: 叠层定义): Promise<段指纹> => {
-  const 入口 = 叠层 ? path.join(s.目录, 叠层.入口) : s.画面;
-  const { 根, 明细 } = await 算默克尔([相对代码根(入口), 相对代码根(s.段文件), 'engine/段/设置.ts', 外壳入口()], { 略过: 略过清单 });
-  const 版本表 = 读地形版本表();
-  const 地形 = Object.fromEntries(
-    [...s.段.地形].sort().map((名) => {
-      if (!版本表[名]) throw new Error(`${s.键} 用的地形包 ${名} 没在 assets/地形版本.json 登记版本`);
-      return [名, 版本表[名]!];
-    }),
+/** 段（或叠层）的默克尔入口：画面或叠层文件、段.ts、设置.ts、外壳 */
+const 段入口 = (s: 段信息, 叠层?: 叠层定义) => [相对代码根(叠层 ? path.join(s.目录, 叠层.入口) : s.画面), 相对代码根(s.段文件), 'engine/段/设置.ts', 外壳入口()];
+
+export type 指纹任务 = { 段: 段信息; 渲染设置: Record<string, unknown>; 叠层?: 叠层定义 };
+
+/** 一批段、叠层一次打包算指纹（建一张默克尔图，按段取闭包），顺序和任务一样；每一份都和单独 算段指纹 的一样 */
+export const 算全部段指纹 = async (任务: readonly 指纹任务[]): Promise<段指纹[]> => {
+  if (!任务.length) return [];
+  const 图 = await 建默克尔图(
+    任务.flatMap((t) => 段入口(t.段, t.叠层)),
+    { 略过: 略过清单 },
   );
+  const 版本表 = 读地形版本表();
   const 打包规则: Record<string, string> = { tsconfig: sha(稳定JSON(编译选项())) };
   for (const f of 打包规则文件) 打包规则[f] = await 文本哈希(f);
-  const 项: 指纹项 = {
-    代码: { 画面根: 根[0]!, 段根: 根[1]!, 设置根: 根[2]!, 外壳根: 根[3]! },
-    地形,
-    渲染设置: { ...渲染设置, 帧数: s.段.帧数, fps: s.段.fps, 宽: s.段.宽, 高: s.段.高 },
-    依赖版本: Object.fromEntries(关键依赖.map((k) => [k, 锁定版本(k)])),
-    打包规则,
-    平台: `${process.platform}-${process.arch}`,
-  };
+  const 依赖版本 = Object.fromEntries(关键依赖.map((k) => [k, 锁定版本(k)]));
   const 锁 = 读作品资产锁(作品根());
-  // 叠层不出声，不记
-  if (!叠层 && 私有配乐模块 in 明细.模块) {
-    const 配乐 = 段私有配乐(s.段, 锁, 数据根());
-    if (Object.keys(配乐).length) 项.私有配乐 = 配乐;
-  }
-  const 缺 = 缺字节(Object.keys(明细.资产), 锁, 数据根());
-  if (缺.length) 项.缺字节 = 缺;
-  return { 段: 叠层 ? 叠层键(s.键, 叠层) : s.键, 指纹: sha(稳定JSON(项)), 算法: 默克尔算法, 项, 明细 };
+  // 先把整把锁里缺的挑出来，各段再按自己闭包里的 id 取（和逐段 缺字节(闭包 id) 同一个判据，只是不重复查盘）
+  const 锁里缺的 = new Set(缺字节(Object.keys(锁), 锁, 数据根()));
+  return 任务.map(({ 段: s, 渲染设置, 叠层 }) => {
+    const { 根, 明细 } = 图.取(段入口(s, 叠层));
+    const 地形 = Object.fromEntries(
+      [...s.段.地形].sort().map((名) => {
+        if (!版本表[名]) throw new Error(`${s.键} 用的地形包 ${名} 没在 assets/地形版本.json 登记版本`);
+        return [名, 版本表[名]!];
+      }),
+    );
+    const 项: 指纹项 = {
+      代码: { 画面根: 根[0]!, 段根: 根[1]!, 设置根: 根[2]!, 外壳根: 根[3]! },
+      地形,
+      渲染设置: { ...渲染设置, 帧数: s.段.帧数, fps: s.段.fps, 宽: s.段.宽, 高: s.段.高 },
+      依赖版本: { ...依赖版本 },
+      打包规则: { ...打包规则 },
+      平台: `${process.platform}-${process.arch}`,
+    };
+    // 私有配乐、缺字节都按本段的闭包判（明细是本段单独打包时的那份）；叠层不出声，不记配乐
+    if (!叠层 && 私有配乐模块 in 明细.模块) {
+      const 配乐 = 段私有配乐(s.段, 锁, 数据根());
+      if (Object.keys(配乐).length) 项.私有配乐 = 配乐;
+    }
+    const 缺 = Object.keys(明细.资产).filter((id) => 锁里缺的.has(id)).sort();
+    if (缺.length) 项.缺字节 = 缺;
+    return { 段: 叠层 ? 叠层键(s.键, 叠层) : s.键, 指纹: sha(稳定JSON(项)), 算法: 默克尔算法, 项, 明细 };
+  });
 };
+
+export const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, unknown>, 叠层?: 叠层定义): Promise<段指纹> => (await 算全部段指纹([{ 段: s, 渲染设置, 叠层 }]))[0]!;
 
 /** 两份指纹哪些项变了；给了明细就细到文件（只挪了路径的记成「挪了」）。旧算法的记录不逐项比 */
 export const 指纹差异 = (旧: Pick<段指纹, '项'> & { 明细?: 默克尔明细; 算法?: string }, 新: Pick<段指纹, '项'> & { 明细?: 默克尔明细; 算法?: string }): string[] => {
