@@ -39,6 +39,7 @@
 "下载" = "https://piston-data.mojang.com/v1/objects/6c48521eed01fe2e8ecdadbd5ae348415f3c47da/client.txt"
 "sha256" = "67bfc33ef0c7103f002d6ac134f8eddd3d67e2ce45d266e83816d1a2e2c9b01d"
 "sha1" = "6c48521eed01fe2e8ecdadbd5ae348415f3c47da"
+"许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA", "原文" = "文件头：可以拷贝、使用于开发，不许完整原样再分发", "依据" = "client.txt 文件头；产物（动作/）照资产表已记的 LicenseRef-Minecraft-EULA，和客户端 jar 一致" }
 
 [["Mojang"."要自己生成"]]
 "id" = "client-1.20.1-srg"
