@@ -1,14 +1,15 @@
 // anim verify [<选择器…>] [--渲] [--对基线] [--到预览 <主题>]：指纹和认可记录不一样的段抽帧比，超过阈值就要 accept；
 //   --对基线：不看认可记录，直接和数据根 基线/<旧段号>/ 的旧项目基线比（迁移验收用，旧段号查 作品/应力转动/旧名.tsv）。
 //   变了的帧出 旧|新|差 的并排图进预览（没给 --到预览 就新开一个「验收不过」）。
-// anim verify accept <段…> --理由 <…> [--渲]：把现在的母版记成认可版，写 <作品根>/认可/<平台>/<段键>.toml（进 Git）；一次可认可多段、共用一个理由。
+// anim verify accept <段…> --理由 <…> [--渲]：把现在的母版记成认可版，写 <作品根>/认可/<平台>/<段键>.toml（进 Git）；一次可认可多段、共用一个理由，
+//   但要逐段点名（一个选择器对上多段就拒，见 认可.ts 的 点名不唯一）。
 // 一律按视频级的母版比；真要抽帧解码时才过放行闸（一次命令只过一次；指纹和认可版一样的段不解码、不等闸，用户 10-30 授权），
 // 缺母版加 --渲 时渲染照旧过渲染闸。
 import fs from 'node:fs';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 提交状态 } from '../环境/路径.ts';
-import { 全部段, 选段, type 段信息 } from '../清单/清单.ts';
+import { 全部段, 匹配, 选段, type 段信息 } from '../清单/清单.ts';
 import { 母版路径 } from '../渲/母版.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 渲染母版 } from '../渲/渲.ts';
@@ -18,7 +19,7 @@ import { 新建预览目录 } from '../预览/预览.ts';
 import { utc时间, type 运行记录 } from '../运行记录/记录.ts';
 import { 基线参照, 基线目录, 旧段号 } from './基线.ts';
 import { 读阈值 } from './比较.ts';
-import { 本平台, 读认可, 写认可, 认可文件 } from './认可.ts';
+import { 本平台, 点名不唯一, 读认可, 写认可, 认可文件 } from './认可.ts';
 import { 扫母版, 变了, type 扫描结果 } from './验收.ts';
 
 const 级别 = '视频' as const;
@@ -103,13 +104,17 @@ const 验: 命令 = {
 
 const 认: 命令 = {
   用法: 'verify accept <段…> --理由 <…> [--渲]',
-  说明: '把现在的母版记成认可版（写 <作品根>/认可/<平台>/<段键>.toml）；一次可认可多段，共用一个理由',
+  说明: '把现在的母版记成认可版（写 <作品根>/认可/<平台>/<段键>.toml）；一次可认可多段、共用一个理由，要逐段点名',
   跑: async (args, 记录) => {
     const p = 解析参数(args, { 值: ['--理由'], 开关: ['--渲'] });
     if (!p.位置.length) throw new 用法错误('要给段：anim verify accept <段…> --理由 …');
     const 理由 = p.值['--理由']?.trim();
     if (!理由) throw new 用法错误('要写 --理由（这次画面为什么变、谁看过）');
     const 段们 = await 选段(p.位置);
+    const 不唯一 = 点名不唯一(p.位置, 段们, 匹配);
+    if (不唯一.length) {
+      throw new 用法错误(`认可要逐段点名：${不唯一.map((y) => `「${y.选择器}」对上了 ${y.段.length} 段`).join('、')}；都看过的话写 anim verify accept ${[...new Set(不唯一.flatMap((y) => y.段))].join(' ')} --理由 …`);
+    }
     const 备 = await 备母版(段们, p.开关.has('--渲'), 记录);
     // 先查齐再写：有一段缺母版就一段都不认可
     const 缺 = 备.filter((x) => !x.有);
@@ -117,11 +122,14 @@ const 认: 命令 = {
     if (备.length > 1) console.log(`== 认可 ${备.length} 段：${备.map((x) => x.段.键).join('、')}`);
     // 签名要解码母版：整批过一次放行闸
     await 过放行闸(async () => {});
+    // 每段都签好了再写：中途哪段解码失败，一个认可文件都不改
+    const 签名们: 扫描结果['签名'][] = [];
+    for (const x of 备) 签名们.push((await 扫母版(x.母版)).签名);
     const 提交 = 提交状态();
-    for (const x of 备) {
+    for (const [i, x] of 备.entries()) {
       const file = 认可文件(x.段.键);
       const 旧 = 读认可(file);
-      const r = await 扫母版(x.母版);
+      const 签 = 签名们[i]!;
       写认可(file, {
         段: x.段.键,
         指纹: x.指纹,
@@ -131,10 +139,10 @@ const 认: 命令 = {
         提交: 提交 ? `${提交.提交}${提交.有改动 ? '+未提交改动' : ''}` : '不在 git 里',
         理由,
         上一版指纹: 旧?.指纹 ?? null,
-        ...r.签名,
+        ...签,
       });
       记录.产物.push(file);
-      console.log(`已认可 ${x.段.键}（${x.指纹.slice(0, 16)}，${r.签名.帧.length} 帧签名）→ ${file}`);
+      console.log(`已认可 ${x.段.键}（${x.指纹.slice(0, 16)}，${签.帧.length} 帧签名）→ ${file}`);
     }
     console.log('记得把认可文件和这次的改动一起提交');
   },
