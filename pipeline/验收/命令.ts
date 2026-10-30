@@ -11,7 +11,7 @@ import { 全部段, 选段, type 段信息 } from '../清单/清单.ts';
 import { 母版路径 } from '../渲/母版.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 渲染母版 } from '../渲/渲.ts';
-import { 算段指纹 } from '../指纹/指纹.ts';
+import { 算全部段指纹 } from '../指纹/指纹.ts';
 import { 过放行闸 } from '../闸/闸.ts';
 import { 新建预览目录 } from '../预览/预览.ts';
 import { utc时间, type 运行记录 } from '../运行记录/记录.ts';
@@ -25,7 +25,8 @@ const 级别 = '视频' as const;
 /** 每段现在的指纹和母版；缺母版时 --渲 就渲，不渲就记下 */
 const 备母版 = async (段们: 段信息[], 渲: boolean, 记录: 运行记录) => {
   const 参数 = 渲染参数(级别);
-  const r = await Promise.all(段们.map(async (s) => ({ 段: s, 指纹: (await 算段指纹(s, 参数)).指纹 })));
+  const 指纹们 = await 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 参数 })));
+  const r = 段们.map((s, i) => ({ 段: s, 指纹: 指纹们[i]!.指纹 }));
   const 缺 = r.filter((x) => !fs.existsSync(母版路径(x.段.键, x.指纹)));
   if (缺.length && 渲) await 渲染母版(缺.map((x) => x.段), 级别, { 记录 });
   return r.map((x) => ({ ...x, 母版: 母版路径(x.段.键, x.指纹), 有: fs.existsSync(母版路径(x.段.键, x.指纹)) }));

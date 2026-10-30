@@ -12,7 +12,7 @@ import { 代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
-import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
+import { 叠层键, 算全部段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import { 叠层目录, 数据根 } from '../环境/配置.ts';
 import { 全部段, type 段信息 } from '../清单/清单.ts';
 import { 读作品资产锁 } from '../资产/资产锁.ts';
@@ -96,8 +96,9 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
   const 参数 = 渲染参数(级别);
   const 结果: 母版结果[] = [];
   const 待渲: 母版结果[] = [];
-  for (const s of 段们) {
-    const fp = await 算段指纹(s, 参数);
+  const 指纹们 = await 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 参数 })));
+  for (const [i, s] of 段们.entries()) {
+    const fp = 指纹们[i]!;
     const 母版 = 母版路径(s.键, fp.指纹);
     const r = { 段: s, 指纹: fp, 母版, 新渲: false };
     结果.push(r);
@@ -168,13 +169,9 @@ export type 叠层结果 = { 段: 段信息; 叠层: 叠层定义; 键: string; 
 export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 记录: 运行记录 }): Promise<叠层结果[]> => {
   补字节并报(作品根(), 数据根());
   const 参数 = 叠层渲染参数(级别);
-  const 结果: 叠层结果[] = [];
-  for (const s of 段们) {
-    for (const l of s.段.叠层 ?? []) {
-      const fp = await 算段指纹(s, 参数, l);
-      结果.push({ 段: s, 叠层: l, 键: 叠层键(s.键, l), 指纹: fp, 文件: 叠层路径(叠层键(s.键, l), fp.指纹), 新渲: false });
-    }
-  }
+  const 各层 = 段们.flatMap((s) => (s.段.叠层 ?? []).map((l) => ({ 段: s, 叠层: l })));
+  const 指纹们 = await 算全部段指纹(各层.map((x) => ({ 段: x.段, 渲染设置: 参数, 叠层: x.叠层 })));
+  const 结果: 叠层结果[] = 各层.map(({ 段: s, 叠层: l }, i) => ({ 段: s, 叠层: l, 键: 叠层键(s.键, l), 指纹: 指纹们[i]!, 文件: 叠层路径(叠层键(s.键, l), 指纹们[i]!.指纹), 新渲: false }));
   const 待渲 = 结果.filter((r) => {
     const 有 = fs.existsSync(r.文件) && !opts.重渲;
     if (有) console.log(`✓ ${r.键}：叠层已是最新（${r.指纹.指纹.slice(0, 16)}）`);
