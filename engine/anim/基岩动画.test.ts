@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  TLM控制器模式, 默认口径, 动画时间, 动画长度, 动画权重, 取样动画, 取样通道, 播放到, 混合层, 解析动画文件,
+  TLM控制器模式, 默认口径, 动画时间, 动画长度, 动画权重, 取样动画, 取样通道, 取样骨骼, 口径数值, 播放到, 混合层, 解析动画文件,
 } from './基岩动画.ts';
 
 const 文件 = {
@@ -170,5 +170,16 @@ describe('多层混合', () => {
   it('blend_weight 按环境求值', () => {
     expect(动画权重(A.权重!, { 变量: { w: 0.25 } })).toBe(0.25);
     expect(动画权重(A.线性!)).toBe(1);
+  });
+});
+
+describe('口径的 Molang 精度', () => {
+  it('TLM 按 float（mocha），通用按 double（GeckoLib 4），环境写了 数值 听环境的', () => {
+    const 文件 = { animations: { a: { loop: true, bones: { b: { position: ['0.1 + 0.2 + q.anim_time', 0, 0] } } } } };
+    const f = Math.fround;
+    expect(口径数值('TLM')).toBe('float');
+    expect(取样骨骼(解析动画文件(文件, 'TLM').a!, 0, { 口径: 'TLM' }).b!.pos![0]).toBe(f(f(f(0.1) + f(0.2)) + 0));
+    expect(取样骨骼(解析动画文件(文件).a!, 0).b!.pos![0]).toBe(0.1 + 0.2);
+    expect(取样骨骼(解析动画文件(文件).a!, 0, { 环境: { 数值: 'float' } }).b!.pos![0]).toBe(f(f(0.1) + f(0.2)));
   });
 });

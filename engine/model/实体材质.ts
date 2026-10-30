@@ -59,8 +59,50 @@ const 注入 = (mat: THREE.Material, uniforms: Record<string, { value: unknown }
   mat.customProgramCacheKey = () => 程序名;
 };
 
+// 缓存按最近使用排（Map 的插入顺序，取到就挪到最后）。两种释放：
+// - 超过上限从最久没用的丢（受伤渐变这类每帧一个新键的会攒很多）；
+// - 持有实体贴图：组件挂上时持有、卸载时放手，一张贴图没人持有了就把它的材质全丢。
+// 丢的同时 dispose（释放 GPU 上的着色器程序）；还挂在 mesh 上的被丢了也不出错，下次画时 three 会重新编译，组件下一帧取到的是新对象。
 const 缓存 = new Map<string, THREE.Material>();
+let 上限 = 512;
+const 持有数 = new Map<string, number>();
 const 取整 = (x: number) => Math.round(x * 1000) / 1000;
+
+const 丢 = (键: string) => {
+  缓存.get(键)?.dispose();
+  缓存.delete(键);
+};
+
+/** 缓存上限（条），默认 512；改小时立刻丢多出来的 */
+export const 设实体材质缓存上限 = (n: number) => {
+  上限 = Math.max(1, Math.floor(n));
+  for (const 键 of 缓存.keys()) {
+    if (缓存.size <= 上限) break;
+    丢(键);
+  }
+};
+export const 实体材质缓存数 = () => 缓存.size;
+
+/** 丢掉一张贴图的全部材质（不管有没有人持有） */
+export const 释放实体材质 = (贴图: THREE.Texture) => {
+  for (const 键 of [...缓存.keys()]) if (键.startsWith(`${贴图.uuid}|`)) 丢(键);
+};
+
+/** 持有一张贴图的材质（组件挂上时调），返回放手的函数（卸载时调）；最后一个放手时 释放实体材质 */
+export const 持有实体贴图 = (贴图: THREE.Texture): (() => void) => {
+  持有数.set(贴图.uuid, (持有数.get(贴图.uuid) ?? 0) + 1);
+  let 已放 = false;
+  return () => {
+    if (已放) return;
+    已放 = true;
+    const n = (持有数.get(贴图.uuid) ?? 1) - 1;
+    if (n > 0) 持有数.set(贴图.uuid, n);
+    else {
+      持有数.delete(贴图.uuid);
+      释放实体材质(贴图);
+    }
+  };
+};
 
 /** 按选项取材质（同贴图、同选项返回同一个对象，可以放心每帧调） */
 export const 实体材质 = (贴图: THREE.Texture, 选项: 实体材质选项 = {}): THREE.Material => {
@@ -71,7 +113,11 @@ export const 实体材质 = (贴图: THREE.Texture, 选项: 实体材质选项 =
   const 镂空 = 选项.镂空 ?? (场景光 ? 0.5 : 0.1);
   const 键 = [贴图.uuid, 受伤, 透明度, 选项.发光 ? '发光' : 光照 === '场景' ? '场景' : 取整(光照), 镂空].join('|');
   let mat = 缓存.get(键);
-  if (mat) return mat;
+  if (mat) {
+    缓存.delete(键);
+    缓存.set(键, mat);
+    return mat;
+  }
   const 透 = 透明度 < 1;
   const 共同 = { map: 贴图, alphaTest: 镂空, side: THREE.DoubleSide, transparent: 透, opacity: 透明度, depthWrite: !透 };
   const 受伤u = { mcHurt: { value: 受伤 } };
@@ -86,6 +132,7 @@ export const 实体材质 = (贴图: THREE.Texture, 选项: 实体材质选项 =
     注入(mat, { ...受伤u, mcLight0: { value: MC_LIGHT0 }, mcLight1: { value: MC_LIGHT1 }, mcBright: { value: 取整(光照 as number) } }, true, '实体-原版光照');
   }
   缓存.set(键, mat);
+  if (缓存.size > 上限) 丢(缓存.keys().next().value!);
   return mat;
 };
 

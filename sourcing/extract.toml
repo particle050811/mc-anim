@@ -346,6 +346,20 @@
 ["取材"."产物"]
 "贴图/场景/天空/*" = "src/模型/场景/天空.贴图/*.png"
 
+# <环境> 主世界画法的月亮（engine/light/星月.tsx）：moon_phases.png 4×2 格，一格一个月相（LevelRenderer.renderSky 按 DimensionType.moonPhase 取格）。
+# 单开一条不并进「天空」：那条的产物是 贴图/场景/天空/* 通配，加一件会让它的产物表变。
+[["取材"]]
+"名称" = "月相"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/场景/月相.贴图", "moon_phases=assets/minecraft/textures/environment/moon_phases.png"],
+]
+["取材"."产物"]
+"贴图/场景/月相" = "src/模型/场景/月相.贴图/moon_phases.png"
+
 [["取材"]]
 "名称" = "巫妖"
 "需要" = ["twilightforest", "client-1.20.1-srg"]

@@ -6,7 +6,10 @@
 // 其他命名空间（ysm.has_helmet 这类模组自己的）、函数调用、三元和二元条件（a ? b 不成立时得 0）、多句（; 分隔，return）。
 // 不支持：loop、for_each、break、continue、数组、-> 箭头（遇到就报错，不静默算错）。
 // 名字不分大小写（Molang 规范），一律转小写；字符串字面量保留原样。
-// 数值：mocha 用 float 算（ExpressionEvaluatorImpl 反汇编），这里用 double，差在 1e-7 相对量级。
+// 数值精度看环境的 数值（默认 double）：
+//   float：车万女仆 1.5.3 打包的 mocha（ExpressionEvaluatorImpl 的算术、比较 lambda 签名都是 float，javap 看的）；基岩版官方文档也说 Molang 的数都是 float。
+//   double：GeckoLib 4 用的 mclib（IValue.get()、Operation.calculate 都是 double，geckolib-forge-1.20.1-4.8.4 的 jarjar/mclib-20.jar，javap 看的）。
+// float 做法：字面量、读到的数、每步算术和函数结果都过 Math.fround（Java 的 float 运算就是每步舍入到 float）。
 
 export type Molang值 = number | string;
 
@@ -36,6 +39,8 @@ export type Molang环境 = {
   变量?: Record<string, Molang值>;
   上下文?: Readonly<Record<string, number>>;
   外部?: Readonly<Record<string, number | ((...参: number[]) => number)>>;
+  /** 'float' 每步舍入到 32 位（mocha、基岩版），'double'（默认）不舍入（GeckoLib 4 的 mclib） */
+  数值?: 'float' | 'double';
   /** math.random、math.die_roll 用的随机源（0～1）；不给按 0 算，保证可复现 */
   随机?: () => number;
   未知?: Set<string>;
@@ -284,10 +289,15 @@ const 取名 = (名: string, 环境: Molang环境, 临时: Record<string, Molang
   return typeof x === 'function' ? x() : x;
 };
 
+const 不舍入 = (x: number) => x;
+const 舍入 = (环境: Molang环境) => (环境.数值 === 'float' ? Math.fround : 不舍入);
+
 const 求 = (n: 节点, 环境: Molang环境, 临时: Record<string, Molang值>): Molang值 => {
+  const r = 舍入(环境);
+  const 数 = (v: Molang值): Molang值 => (typeof v === 'number' ? r(v) : v);
   switch (n.k) {
     case '数':
-      return n.v;
+      return r(n.v);
     case '串':
       return n.v;
     case '名': {
@@ -296,24 +306,24 @@ const 求 = (n: 节点, 环境: Molang环境, 临时: Record<string, Molang值>)
         环境.未知?.add(n.名);
         return 0;
       }
-      return v;
+      return 数(v);
     }
     case '调': {
       const 参 = n.参.map((a) => 转数(求(a, 环境, 临时)));
       if (n.名.startsWith('math.')) {
         const f = 数学[n.名.slice(5)];
-        if (f) return f(参, 环境);
+        if (f) return r(f(参, 环境));
       } else {
         const f = n.名.startsWith('q.') ? 环境.查询?.[n.名.slice(2)] : 环境.外部?.[n.名];
-        if (typeof f === 'function') return f(...参);
-        if (typeof f === 'number') return f;
+        if (typeof f === 'function') return r(f(...参));
+        if (typeof f === 'number') return r(f);
       }
       环境.未知?.add(n.名);
       return 0;
     }
     case '一元': {
       const a = 求(n.a, 环境, 临时);
-      return n.op === '-' ? -转数(a) : 真(a) ? 0 : 1;
+      return n.op === '-' ? -转数(a) : 真(a) ? 0 : 1; // 取负、取非不会多出精度
     }
     case '二元': {
       if (n.op === '&&') return 真(求(n.a, 环境, 临时)) && 真(求(n.b, 环境, 临时)) ? 1 : 0;
@@ -329,10 +339,10 @@ const 求 = (n: 节点, 环境: Molang环境, 临时: Record<string, Molang值>)
       if (n.op === '!=') return a !== b ? 1 : 0;
       const [x, y] = [转数(a), 转数(b)];
       switch (n.op) {
-        case '+': return x + y;
-        case '-': return x - y;
-        case '*': return x * y;
-        case '/': return y === 0 ? 0 : x / y; // mocha：除数是 0 得 0（魔法酒狐第一帧 v.s 还没赋值就要除它）
+        case '+': return r(x + y);
+        case '-': return r(x - y);
+        case '*': return r(x * y);
+        case '/': return y === 0 ? 0 : r(x / y); // mocha：除数是 0 得 0（魔法酒狐第一帧 v.s 还没赋值就要除它）
         case '<': return x < y ? 1 : 0;
         case '<=': return x <= y ? 1 : 0;
         case '>': return x > y ? 1 : 0;
@@ -369,11 +379,11 @@ export const 求值 = (式: Molang式, 环境: Molang环境 = {}): number => {
   }
 };
 
-/** 数或 Molang 源文 → 数（常量直接算掉）或编译好的式子。动画文件里的值都过这一步，取材时就把能算的算成数 */
-export const 烘焙 = (值: number | string): number | Molang式 => {
+/** 数或 Molang 源文 → 数（常量直接算掉）或编译好的式子。动画文件里的值都过这一步，取材时就把能算的算成数；数值 同 Molang环境 */
+export const 烘焙 = (值: number | string, 数值?: Molang环境['数值']): number | Molang式 => {
   if (typeof 值 === 'number') return 值;
   const 式 = 编译(值);
-  return 式.常量 ? 求值(式) : 式;
+  return 式.常量 ? 求值(式, { 数值 }) : 式;
 };
 
 /** 值（数或式子）在环境里取数 */

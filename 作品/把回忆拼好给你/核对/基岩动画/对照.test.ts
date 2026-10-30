@@ -1,5 +1,5 @@
 // 对照：TLM 1.5.3 jar 里原样的 winefox_magical.main.animation.json 跑 engine/anim/基岩动画.ts（TLM 口径），
-// 和库里照它手抄的魔法酒狐动作逐骨骼比（容差 1e-6）：坐姿、坐船、隐藏、法杖和环、摘帽耳朵、眨眼、表情、尾巴（弹簧稳态）。
+// 和库里照它手抄的魔法酒狐动作逐骨骼比（容差 1e-6，尾巴 1e-3 度：TLM 的 Molang 是 float）：坐姿、坐船、隐藏、法杖和环、摘帽耳朵、眨眼、表情、尾巴（弹簧稳态）。
 // 动画、模型字节在数据根 store（资产 动画/角色/魔法酒狐、模型/角色/魔法酒狐，anim extract 魔法酒狐动画 导出）；没有就整组跳过。
 import fs from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
@@ -25,23 +25,25 @@ vi.mock('asset:贴图/角色/魔法酒狐/百花', () => ({
 const 动画字节 = 读字节('动画/角色/魔法酒狐');
 const 模型字节 = 读字节('模型/角色/魔法酒狐');
 const 容差 = 1e-6;
+// 尾巴的 Molang 连算很多步、中间有几千度的角，TLM 口径按 mocha 的 float 算（engine/anim/Molang.ts），和手抄版（double）差到 1e-4 度量级
+const 尾巴容差 = 1e-3;
 
 type 差 = string;
 const 三 = (x: number | number[]): number[] => (typeof x === 'number' ? [x, x, x] : x);
 // 一边没给这个通道时按原位算（手抄版不抄 position: [0, 0, 0] 这种原位值）
-const 比向量 = (位置: string, 手: number[] | number | undefined, 播: number[] | number | undefined, 出: 差[], 原位 = 0) => {
+const 比向量 = (位置: string, 手: number[] | number | undefined, 播: number[] | number | undefined, 出: 差[], 原位 = 0, 容 = 容差) => {
   if (手 === undefined && 播 === undefined) return;
   手 ??= 原位;
   播 ??= 原位;
   const [a, b] = [三(手), 三(播)];
-  if (a.some((x, i) => !(Math.abs(x - b[i]!) <= 容差))) 出.push(`${位置}：手抄 ${JSON.stringify(a)}，播放器 ${JSON.stringify(b)}`);
+  if (a.some((x, i) => !(Math.abs(x - b[i]!) <= 容))) 出.push(`${位置}：手抄 ${JSON.stringify(a)}，播放器 ${JSON.stringify(b)}`);
 };
 const 藏着 = (p: 骨骼姿势 | undefined) => p?.scale !== undefined && 三(p.scale).every((x) => x === 0);
-const 比姿势 = (位置: string, 手: 骨骼姿势 | undefined, 播: 骨骼姿势 | undefined, 出: 差[]) => {
-  比向量(`${位置}.scale`, 手?.scale, 播?.scale, 出, 1);
+const 比姿势 = (位置: string, 手: 骨骼姿势 | undefined, 播: 骨骼姿势 | undefined, 出: 差[], 容 = 容差) => {
+  比向量(`${位置}.scale`, 手?.scale, 播?.scale, 出, 1, 容);
   if (藏着(手) && 藏着(播)) return; // 两边都缩成 0 看不见，转角、位置不用比（parallel5 还在转藏着的法阵）
-  比向量(`${位置}.rot`, 手?.rot, 播?.rot, 出);
-  比向量(`${位置}.pos`, 手?.pos, 播?.pos, 出);
+  比向量(`${位置}.rot`, 手?.rot, 播?.rot, 出, 0, 容);
+  比向量(`${位置}.pos`, 手?.pos, 播?.pos, 出, 0, 容);
 };
 const 是原位 = (p: 骨骼姿势) =>
   (!p.rot || p.rot.every((x) => x === 0)) && (!p.pos || p.pos.every((x) => x === 0)) && (p.scale === undefined || 三(p.scale).every((x) => x === 1));
@@ -50,7 +52,7 @@ const 是原位 = (p: 骨骼姿势) =>
 const 时刻们 = [...Array.from({ length: 24 * 30 + 1 }, (_, i) => i / 24), ...Array.from({ length: 400 }, (_, i) => i * 0.0731 + 0.003)];
 
 describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手抄版', async () => {
-  const 动画们 = 解析动画文件(JSON.parse(动画字节!.toString('utf8')));
+  const 动画们 = 解析动画文件(JSON.parse(动画字节!.toString('utf8')), 'TLM');
   const 模型骨骼 = new Set((JSON.parse(模型字节!.toString('utf8')) as { bones: { name: string }[] }).bones.map((b) => b.name));
   const 帧 = (名: string, 秒: number, 外部: Record<string, number> = {}, 变量: Record<string, number | string> = {}) =>
     取样动画(动画们[名]!, 秒, { 环境: { 外部, 变量 }, 口径: 'TLM' }).骨骼;
@@ -153,7 +155,7 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
     // 坑：kongju 的条件是 0.8+food_level<=6（+ 先算），food_level 正好 6 时嘴不推出来、眉毛照样耷拉
     const 饿6 = 帧('idle', 0.1, { 'ysm.food_level': 6 });
     expect(饿6.kongju!.pos).toEqual([0, 0, 0]);
-    expect(饿6.EyeBrow!.pos).toEqual([0, -0.6, 0]);
+    expect(饿6.EyeBrow!.pos).toEqual([0, Math.fround(-0.6), 0]); // 值是 Molang 三元式，按 float 算
   });
 
   it('站着的呼吸 UpBody（idle，线性）', () => {
@@ -170,7 +172,7 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
     const 出: 差[] = [];
     for (const t of 时刻们.filter((_, i) => i % 5 === 0)) {
       const 播 = 尾巴稳态(t);
-      for (const [骨, p] of Object.entries(magicalWineFoxTail(t, '站'))) 比姿势(`${t}/${骨}`, p, 播[骨], 出);
+      for (const [骨, p] of Object.entries(magicalWineFoxTail(t, '站'))) 比姿势(`${t}/${骨}`, p, 播[骨], 出, 尾巴容差);
     }
     expect(出).toEqual([]);
   });

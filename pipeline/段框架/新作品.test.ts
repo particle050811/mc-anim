@@ -54,6 +54,26 @@ describe('新段', () => {
     expect(读(根, '段/1-开门/画面.tsx')).not.toContain('1-开门');
   });
 
+  it('老场（只有定义段写的老段、没有场时间线）：用 接老段 摆上老段，新段接在最后一个老段后面，老段文件不动', async () => {
+    新作品(临时, '试作');
+    const 根 = path.join(临时, '作品', '试作');
+    const 老文本 = (帧数: number) => `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-老场', 帧数: ${帧数}, fps: 24, 宽: 1280, 高: 720, 地形: [] });\n`;
+    for (const [k, n] of [['1-老一', 30], ['1-老二', 18]] as const) {
+      fs.mkdirSync(path.join(根, '段', k), { recursive: true });
+      fs.writeFileSync(path.join(根, '段', k, '段.ts'), 老文本(n));
+    }
+    const 格式 = { fps: 24, 宽: 1280, 高: 720 };
+    const 写了 = 新段(根, '1-新', { 场: '1-老场', 老段: [{ 键: '1-老一', 帧数: 30, ...格式 }, { 键: '1-老二', 帧数: 18, ...格式 }] });
+    expect(写了.map((f) => path.relative(根, f))).toContain('场/1-老场/时间线.ts');
+    expect(读(根, '场/1-老场/时间线.ts')).toMatch(/export default 接老段\(/);
+    expect(读(根, '场/1-老场/时间线.ts')).not.toMatch(/import .*段\.ts/);
+    const 段 = (await 新鲜执行(path.join(根, '段/1-新/段.ts'), 代码根())).default as 段定义 & { 场窗口: unknown };
+    expect([段.场, 段.帧数, 段.场窗口]).toEqual(['1-老场', 72, { 起帧: 48, 止帧: 120 }]);
+    expect(读(根, '段/1-老一/段.ts')).toBe(老文本(30));
+    // 同场再加一段：认得 接老段 做的时间线
+    新段(根, '1-再新', { 场: '1-老场', 起: '结束', 止: '结束' });
+  });
+
   it('参数不对、老写法的时间线：报错不写', () => {
     新作品(临时, '试作');
     const 根 = path.join(临时, '作品', '试作');
