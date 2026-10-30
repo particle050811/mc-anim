@@ -2,6 +2,7 @@
 // linear、catmullrom 照车万女仆（TLM）1.5.3 自带的 GeckoLib 3 分支（MathUtil.lerpValues、MathUtil.catmullRom 反汇编）；
 // 游戏里结果转 float（joml Vector3f），这里全程 double：和库里的手抄版逐位一致，和游戏差在 1e-6 量级。
 // step、bezier 是基岩版 / Blockbench 的写法（没对过实现，见各自的注释）；缓动名照 GeckoLib 4 源码，见 缓动。
+import { easeInSine } from '../core/数学.ts';
 
 export type 插值方式 = 'linear' | 'step' | 'catmullrom' | 'bezier';
 
@@ -97,7 +98,7 @@ const 分级 = (a?: number): 曲线 => {
   };
 };
 const 基本: Record<string, (a?: number) => 曲线> = {
-  sine: () => (n) => 1 - Math.cos((n * Math.PI) / 2),
+  sine: () => easeInSine, // 1 − cos(nπ/2)，同 GeckoLib 4（它会把输入夹到 0～1，段内进度本来就在里面）
   quad: () => (n) => n * n,
   cubic: () => (n) => n * n * n,
   quart: () => 幂(4),
