@@ -82,11 +82,13 @@ export class 编辑套用器 {
     if (体积(b) > 快照上限) throw new Error(`${s.出处}：clone 的源盒 ${体积(b)} 格，超过 ${快照上限}`);
     const sx = b.x2 - b.x1 + 1, sy = b.y2 - b.y1 + 1, sz = b.z2 - b.z1 + 1;
     const out = new Uint32Array(sx * sy * sz).fill(未知);
+    let 缺列 = 0, 首个: [number, number] | null = null;
     for (let z = b.z1; z <= b.z2; z++)
       for (let x = b.x1; x <= b.x2; x++) {
         const c = this.原样列(x, z);
         if (!c) {
-          this.警告.add(`${s.出处}：clone 的源 (${x}, ${z}) 那一列区块没生成，按没有方块处理（不复制）`);
+          缺列++;
+          首个 ??= [x, z];
           continue;
         }
         this.套列(c.格, c.y底, x, z, i);
@@ -95,6 +97,8 @@ export class 编辑套用器 {
           if (k >= 0 && k < c.格.length) out[((y - b.y1) * sz + (z - b.z1)) * sx + (x - b.x1)] = c.格[k]!;
         }
       }
+    // 一步只记一条（源盒大时逐列记会刷出成千上万行）
+    if (首个) this.警告.add(`${s.出处}：clone 的源有 ${缺列} 列区块没生成（第一列在 (${首个[0]}, ${首个[1]})），按没有方块处理（不复制）`);
     this.快照们.set(i, out);
     return out;
   }

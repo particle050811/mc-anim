@@ -177,6 +177,12 @@ describe('套用', () => {
     expect(状(区, 30, 61, 30)).toBeUndefined();
     expect([...器.警告].join()).toMatch(/区块没生成/);
   });
+
+  it('clone 的源在没生成的区块：一步只警告一条，不复制', () => {
+    const { 区, 器 } = 套(`[["步"]]\n"命令" = "clone 0 61 20 9 62 29 0 70 0"`);
+    expect(状(区, 0, 70, 0)).toBe('minecraft:air');
+    expect([...器.警告]).toEqual(['测试.编辑.toml 第 1 步：clone 的源有 100 列区块没生成（第一列在 (0, 20)），按没有方块处理（不复制）']);
+  });
 });
 
 describe('重放', () => {
