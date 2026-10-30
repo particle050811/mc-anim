@@ -3,7 +3,8 @@
 // 播放分两种口径：
 //   'TLM'：照车万女仆 1.5.3 自带的 GeckoLib 3 分支（JsonKeyFrameUtils、BoneKeyFrameProcessor、AnimationProcessor、AnimationController 反汇编），
 //          魔法酒狐的手抄版都按这个口径对过（作品/把回忆拼好给你/核对/基岩动画/对照.test.ts）。
-//   '通用'：Blockbench / 基岩版 / GeckoLib 4 的写法（step、bezier、缓动名、hold_on_last_frame 停在末帧、blend_weight 权重），没对着 jar 核过。
+//   '通用'：Blockbench / 基岩版 / GeckoLib 4 的写法（step、bezier、缓动名、hold_on_last_frame 停在末帧、blend_weight 权重）。
+//          缓动名照 GeckoLib 4.8.4 源码（插值.ts）；catmullrom 的控制点、lerp_mode step、pre/post 按基岩版写法，和 GeckoLib 4 不一样（docs/新生物.md）。
 // 输出的骨骼姿势同 engine/model/基岩模型.tsx 的 BonePose（度、像素，数值约定同动画文件），这里不 import 它，免得带上 three。
 import { lerp } from '../core/数学.ts';
 import { catmullRom, 缓动, 贝塞尔, 阶跃, type 插值方式 } from './插值.ts';
@@ -12,6 +13,9 @@ import { 烘焙, 取值, 编译, 求值, type Molang式, type Molang环境 } fro
 export type 口径 = 'TLM' | '通用';
 /** 不给口径时用 '通用'（各 GeckoLib / Blockbench 文件的写法）；TLM 自带的分支有怪处，要显式写 'TLM' */
 export const 默认口径: 口径 = '通用';
+/** Molang 按口径的精度：TLM 的 mocha 是 float，'通用' 照 GeckoLib 4 的 mclib 是 double（出处见 Molang.ts 文件头）。环境里写了 数值 就听环境的 */
+export const 口径数值 = (口: 口径): 'float' | 'double' => (口 === 'TLM' ? 'float' : 'double');
+export const 按口径 = (环境: Molang环境, 口: 口径): Molang环境 => (环境.数值 ? 环境 : { ...环境, 数值: 口径数值(口) });
 export type 循环方式 = 'once' | 'loop' | 'hold';
 export type 轴值 = number | Molang式;
 export type 向量值 = readonly [轴值, 轴值, 轴值];
@@ -36,6 +40,9 @@ export type 基岩动画 = {
   长度?: number;
   动画时间更新?: Molang式;
   混合权重?: 轴值;
+  /** start_delay、loop_delay（秒，基岩版写法，见 动画进度）；TLM、GeckoLib 4 都不读 */
+  开始延迟?: 轴值;
+  循环延迟?: 轴值;
   /** 骨骼按文件里的顺序：Molang 里的赋值按这个顺序执行 */
   骨骼: Readonly<Record<string, 骨骼轨道>>;
   时间线: readonly { 时: number; 句: readonly Molang式[] }[];
@@ -49,9 +56,10 @@ type 原值 = number | string | readonly (number | string)[];
 const 是对象 = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
 
 // 向量：≥3 个元素逐轴；1～2 个元素取第一个当三轴同值；数、字符串三轴同值（TLM JsonKeyFrameUtils）
-const 解析向量 = (v: unknown, 位置: string): 向量值 => {
+type 数值 = Molang环境['数值'];
+const 解析向量 = (v: unknown, 位置: string, 精: 数值): 向量值 => {
   const 轴 = (x: unknown): 轴值 => {
-    if (typeof x === 'number' || typeof x === 'string') return 烘焙(x);
+    if (typeof x === 'number' || typeof x === 'string') return 烘焙(x, 精);
     throw new Error(`动画：${位置} 的值不是数也不是 Molang：${JSON.stringify(x)}`);
   };
   if (Array.isArray(v)) {
@@ -61,7 +69,7 @@ const 解析向量 = (v: unknown, 位置: string): 向量值 => {
       return [a, a, a];
     }
   }
-  if (是对象(v) && 'vector' in v) return 解析向量(v.vector, 位置);
+  if (是对象(v) && 'vector' in v) return 解析向量(v.vector, 位置, 精);
   if (typeof v === 'number' || typeof v === 'string') {
     const a = 轴(v);
     return [a, a, a];
@@ -71,16 +79,16 @@ const 解析向量 = (v: unknown, 位置: string): 向量值 => {
 
 const 插值名 = (x: unknown): 插值方式 => (x === 'catmullrom' || x === 'step' || x === 'bezier' ? x : 'linear');
 
-const 解析关键帧 = (时: number, v: unknown, 位置: string): 关键帧 => {
+const 解析关键帧 = (时: number, v: unknown, 位置: string, 精: 数值): 关键帧 => {
   if (!是对象(v)) {
-    const 值 = 解析向量(v as 原值, 位置);
+    const 值 = 解析向量(v as 原值, 位置, 精);
     return { 时, 前: 值, 后: 值, 插值: 'linear' };
   }
   // 只有 post 时当成 pre 用（TLM 如此）；pre、post 都没有时是 { vector, easing } 写法
   const 前原 = v.pre ?? v.post ?? v.vector;
   const 后原 = v.post ?? v.pre ?? v.vector;
-  const 前 = 解析向量(前原, 位置);
-  const 后 = 后原 === 前原 ? 前 : 解析向量(后原, 位置);
+  const 前 = 解析向量(前原, 位置, 精);
+  const 后 = 后原 === 前原 ? 前 : 解析向量(后原, 位置, 精);
   const 方式名 = String(v.lerp_mode ?? v.easing ?? 'linear').toLowerCase();
   const 帧: 关键帧 = { 时, 前, 后, 插值: 插值名(方式名) };
   if (typeof v.easing === 'string' && 插值名(方式名) === 'linear' && v.easing !== 'linear') {
@@ -94,22 +102,23 @@ const 解析关键帧 = (时: number, v: unknown, 位置: string): 关键帧 => 
   return 帧;
 };
 
-const 解析通道 = (v: unknown, 位置: string): 关键帧[] => {
+const 解析通道 = (v: unknown, 位置: string, 精: 数值): 关键帧[] => {
   // 数、字符串、数组、{ vector }：常量，一个 0 秒的关键帧
-  if (!是对象(v) || ('vector' in v && !Object.keys(v).some((k) => /^[\d.]+$/.test(k)))) return [解析关键帧(0, v, 位置)];
+  if (!是对象(v) || ('vector' in v && !Object.keys(v).some((k) => /^[\d.]+$/.test(k)))) return [解析关键帧(0, v, 位置, 精)];
   return Object.entries(v)
     .map(([k, kv]) => {
       const 时 = Number.parseFloat(k);
       if (!Number.isFinite(时)) throw new Error(`动画：${位置} 的时间写法不认识：${k}`);
-      return 解析关键帧(时, kv, `${位置}@${k}`);
+      return 解析关键帧(时, kv, `${位置}@${k}`, 精);
     })
     .sort((a, b) => a.时 - b.时);
 };
 
 const 解析循环 = (x: unknown): 循环方式 => (x === true ? 'loop' : x === 'hold_on_last_frame' ? 'hold' : 'once');
 
-/** 解析一个 .animation.json（已经 JSON.parse 过的对象）→ 动画名 → 动画 */
-export const 解析动画文件 = (文件: unknown): Record<string, 基岩动画> => {
+/** 解析一个 .animation.json（已经 JSON.parse 过的对象）→ 动画名 → 动画。口径 决定解析时烘掉的常量按 float 还是 double 算（见 口径数值） */
+export const 解析动画文件 = (文件: unknown, 口: 口径 = 默认口径): Record<string, 基岩动画> => {
+  const 精 = 口径数值(口);
   if (!是对象(文件) || !是对象(文件.animations)) throw new Error('动画：不是基岩动画文件（缺 animations）');
   const 出: Record<string, 基岩动画> = {};
   for (const [名, a] of Object.entries(文件.animations)) {
@@ -118,7 +127,7 @@ export const 解析动画文件 = (文件: unknown): Record<string, 基岩动画
     for (const [骨, b] of Object.entries(是对象(a.bones) ? a.bones : {})) {
       if (!是对象(b)) continue;
       const 轨: 骨骼轨道 = {};
-      for (const [ch, v] of Object.entries(b)) if ((通道名们 as string[]).includes(ch)) 轨[ch as 通道名] = 解析通道(v, `${名}/${骨}/${ch}`);
+      for (const [ch, v] of Object.entries(b)) if ((通道名们 as string[]).includes(ch)) 轨[ch as 通道名] = 解析通道(v, `${名}/${骨}/${ch}`, 精);
       骨骼[骨] = 轨;
     }
     const 时间线 = Object.entries(是对象(a.timeline) ? a.timeline : {})
@@ -130,7 +139,9 @@ export const 解析动画文件 = (文件: unknown): Record<string, 基岩动画
       循环: 解析循环(a.loop),
       长度,
       动画时间更新: a.anim_time_update === undefined ? undefined : 编译(String(a.anim_time_update)),
-      混合权重: a.blend_weight === undefined ? undefined : 烘焙(a.blend_weight as number | string),
+      混合权重: a.blend_weight === undefined ? undefined : 烘焙(a.blend_weight as number | string, 精),
+      开始延迟: a.start_delay === undefined ? undefined : 烘焙(a.start_delay as number | string, 精),
+      循环延迟: a.loop_delay === undefined ? undefined : 烘焙(a.loop_delay as number | string, 精),
       骨骼,
       时间线,
     };
@@ -229,8 +240,8 @@ const 带动画时间 = (环境: Molang环境, 时: number): Molang环境 => ({ 
 
 /** 动画时间 时（秒，已经按循环折算过）的全部骨骼。骨骼、通道按文件顺序求值（Molang 赋值有先后） */
 export const 取样骨骼 = (动画: 基岩动画, 时: number, 选项: 播放选项 = {}): 骨骼表 => {
-  const 环境 = 带动画时间(选项.环境 ?? {}, 时);
   const 口 = 选项.口径 ?? 默认口径;
+  const 环境 = 带动画时间(按口径(选项.环境 ?? {}, 口), 时);
   const 出: 骨骼表 = {};
   for (const [骨, 轨] of Object.entries(动画.骨骼)) {
     const 姿: 骨骼姿势 = {};
@@ -246,10 +257,43 @@ export const 取样骨骼 = (动画: 基岩动画, 时: number, 选项: 播放�
   return 出;
 };
 
-/** 播放了 秒 秒时的骨骼（不带 anim_time_update、时间线；要这两样用 推进）。停了就是空表 */
+const 循环延迟上限 = 100000;
+
+/**
+ * 带 start_delay、loop_delay 的 动画时间（'通用' 口径；TLM 不读这两个，同 动画时间）。
+ * 基岩版文档：start_delay 开播前求一次；loop_delay 每遍播完求一次、只对循环动画。
+ * 等开播时 等待 是 true（这段动画不给骨骼）；两遍之间的 loop_delay 里停在末帧（anim_time = 长度）。
+ * 这两处「等的时候给什么姿势」是推断的，没在游戏里核过（docs/新生物.md）。求值时 q.anim_time 是 0（开播前）或长度（每遍末）
+ */
+export const 动画进度 = (动画: 基岩动画, 秒: number, 选项: 播放选项 = {}): { 时: number; 停止: boolean; 等待: boolean } => {
+  const 口 = 选项.口径 ?? 默认口径;
+  if (口 === 'TLM' || (动画.开始延迟 === undefined && 动画.循环延迟 === undefined)) return { ...动画时间(动画, 秒, 口), 等待: false };
+  const 环境 = 按口径(选项.环境 ?? {}, 口);
+  const 起 = 动画.开始延迟 === undefined ? 0 : 取值(动画.开始延迟, 带动画时间(环境, 0));
+  if (秒 < 起) return { 时: 0, 停止: false, 等待: true };
+  const t = 秒 - 起;
+  const 长 = 动画长度(动画, 口);
+  const 延 = 动画.循环延迟;
+  if (动画.循环 !== 'loop' || 延 === undefined || !Number.isFinite(长)) return { ...动画时间(动画, t, 口), 等待: false };
+  if (typeof 延 === 'number') {
+    const 周期 = 长 + Math.max(0, 延);
+    if (!(周期 > 0)) return { 时: 0, 停止: false, 等待: false };
+    return { 时: Math.min(t % 周期, 长), 停止: false, 等待: false };
+  }
+  let 始 = 0;
+  for (let i = 0; i < 循环延迟上限; i++) {
+    if (t < 始 + 长) return { 时: t - 始, 停止: false, 等待: false };
+    const d = Math.max(0, 取值(延, 带动画时间(环境, 长)));
+    if (t < 始 + 长 + d || 长 + d <= 0) return { 时: 长, 停止: false, 等待: false };
+    始 += 长 + d;
+  }
+  throw new Error(`动画「${动画.名}」：loop_delay 推了 ${循环延迟上限} 遍还没到 ${秒} 秒`);
+};
+
+/** 播放了 秒 秒时的骨骼（不带 anim_time_update、时间线；要这两样用 推进）。停了、还在 start_delay 里就是空表 */
 export const 取样动画 = (动画: 基岩动画, 秒: number, 选项: 播放选项 = {}): { 骨骼: 骨骼表; 时: number; 停止: boolean } => {
-  const { 时, 停止 } = 动画时间(动画, 秒, 选项.口径);
-  return { 骨骼: 停止 ? {} : 取样骨骼(动画, 时, 选项), 时, 停止 };
+  const { 时, 停止, 等待 } = 动画进度(动画, 秒, 选项);
+  return { 骨骼: 停止 || 等待 ? {} : 取样骨骼(动画, 时, 选项), 时, 停止 };
 };
 
 // ---- 逐步推进（anim_time_update、时间线） ----
@@ -267,7 +311,7 @@ const 执行时间线 = (动画: 基岩动画, 从: number, 到: number, 含起�
 export const 推进 = (动画: 基岩动画, 状态: 播放状态, dt: number, 选项: 播放选项 = {}): 播放状态 => {
   if (状态.停止) return 状态;
   const 口 = 选项.口径 ?? 默认口径;
-  const 基 = 选项.环境 ?? {};
+  const 基 = 按口径(选项.环境 ?? {}, 口);
   const 长 = 动画长度(动画, 口);
   if (!状态.已开始) 执行时间线(动画, 0, 0, true, 带动画时间(基, 0));
   const 旧 = 状态.时;
