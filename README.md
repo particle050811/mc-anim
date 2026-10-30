@@ -103,5 +103,6 @@ npm ci
 ## 再往下
 
 - 架构、命名、决策记录在 `docs/`，先看 `docs/架构.md`。
+- 新段、新作品怎么写看 `docs/新段.md`：`anim new work <作品名>`、`anim new seg <段键> --场 <场键>` 照模板建文件，`anim cues` 按 `段.ts` 的声音 cue 生成本段的声音表和地址表。
 - `作品/把回忆拼好给你/字节/` 由 `anim assets vendor` 照 `作品/把回忆拼好给你/随仓库.toml` 现算重写，`anim check` 核对它和代码的引用一致，见 `docs/决策/0005-随仓库发字节.md`。
 - 应力转动 挂 Release 的附件由 `anim assets pack --上传` 照 `作品/应力转动/随发布.toml` 打、传，`作品/应力转动/发布锁.json` 记每个附件的 sha256，`anim check` 核对它和代码要的一致，见 `docs/决策/0006-挂Release发字节.md`。
