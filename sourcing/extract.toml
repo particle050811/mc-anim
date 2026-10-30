@@ -24,6 +24,7 @@
 "导出模型" = ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出模型.py"]
 "导出实体模型" = ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出实体模型.py"]
 "网格碎块" = ["uv", "run", "-q", "--with", "numpy", "python", "{脚本}/网格碎块.py"]
+"动作翻译" = ["uv", "run", "-q", "{脚本}/翻译动作.py"]
 
 # 一组一起跑；另有 --全部
 ["组"]
@@ -1813,3 +1814,29 @@
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/告示牌字" = "告示牌字.json"
+
+# 原版生物的 setupAnim 自动翻成姿态程序（docs/决策/0007-字节码翻译动作.md）：混淆客户端 + 官方映射，engine/anim/姿态程序.ts 求值。
+# 只给新内容用；库/生物 里已有的手抄版不动（对照见 库/生物/姿态程序对照.test.ts）
+[["取材"]]
+"名称" = "苦力怕动作"
+"需要" = ["client-1.20.1", "client-1.20.1-mappings"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["动作翻译", "src/动作/角色/苦力怕.动作.json", "net.minecraft.client.model.CreeperModel", "--jar", "{jar:client-1.20.1}", "--映射", "proguard:{jar:client-1.20.1-mappings}"],
+]
+["取材"."产物"]
+"动作/角色/苦力怕" = "src/动作/角色/苦力怕.动作.json"
+
+[["取材"]]
+"名称" = "僵尸动作"
+"需要" = ["client-1.20.1", "client-1.20.1-mappings"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["动作翻译", "src/动作/角色/僵尸.动作.json", "net.minecraft.client.model.ZombieModel", "--jar", "{jar:client-1.20.1}", "--映射", "proguard:{jar:client-1.20.1-mappings}"],
+]
+["取材"."产物"]
+"动作/角色/僵尸" = "src/动作/角色/僵尸.动作.json"
