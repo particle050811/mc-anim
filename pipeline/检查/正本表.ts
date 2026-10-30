@@ -25,6 +25,7 @@ export type 正本项 = {
 
 const 数学 = 'engine/core/数学.ts';
 const 坐标 = 'engine/core/坐标.ts';
+const three换算 = 'engine/core/three换算.ts';
 const 机位 = 'engine/core/机位.ts';
 
 const 零到一 = [[0], [0.1], [0.25], [0.5], [0.62], [0.9], [1]] as const;
@@ -122,8 +123,8 @@ export const 正本表: readonly 正本项[] = [
   },
   { id: 'pick', 位置: 数学, 导出: 'pick', 名字: ['pick'], 行为: [{ 探针: [[假随机(0.37), ['a', 'b', 'c', 'd']], [假随机(0.99), [1, 2, 3]], [假随机(0), [9, 8]]] }] },
 
-  // ---------- engine/core/坐标.ts ----------
-  { id: '场景到three', 位置: 坐标, 导出: '场景到three', 名字: ['toThree', '场景到three'], 行为: [{ 探针: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
+  // ---------- engine/core/坐标.ts、three换算.ts ----------
+  { id: '场景到three', 位置: three换算, 导出: '场景到three', 名字: ['toThree', '场景到three'], 行为: [{ 探针: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
   { id: 'three到场景', 位置: 坐标, 导出: 'three到场景', 名字: ['fromThree', 'three到场景'], 行为: [{ 探针: [[{ x: 1, y: 2, z: 3 }], [{ x: -4.5, y: 0.25, z: 7 }]] }] },
   // 不带原点的 游戏 → 场景 也就是 three 数组 → 场景
   { id: '游戏到场景', 位置: 坐标, 导出: '游戏到场景', 名字: ['fromGame', 'gameToScene', '游戏到场景'], 行为: [{ 探针: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },

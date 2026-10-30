@@ -9,17 +9,16 @@
 //
 // 副本差别：toThree 的 16 份都是 (x, z, −y)，参数有 V3 和 number[] 两种；engine/voxel/方块网格.tsx 的 fromGame、6-3-2 的 toScene/toGame 不带原点，
 // 带原点的（gameToScene、cityFromGame、toGame…）把原点写死在各自文件里。
-import * as THREE from 'three';
+//
+// 纯模块（只有类型 import）：段.ts、时间线.ts、末态.ts 和它们引的编排也能用（那些文件的闭包里不许有 three）。
+// 要 three 对象的（toThree 的正本 场景到three，给 Vector3）在 three换算.ts；要 three 轴的数组用不带原点的 场景到游戏（库/界面/投影.ts 的 Z朝上转three）。
 import type { V3 } from '../model/parts.tsx';
 
 /** 游戏或场景的原点：游戏坐标 (ox, oy, oz) 落在场景 (0, 0, 0) */
 export type 原点 = readonly [number, number, number];
 const 零: 原点 = [0, 0, 0];
 
-/** 场景 → three（toThree） */
-export const 场景到three = ([x, y, z]: readonly number[]) => new THREE.Vector3(x, z, -y!);
-
-/** three → 场景 */
+/** three → 场景（three 的 Vector3 或任何带 x、y、z 的对象） */
 export const three到场景 = (v: { x: number; y: number; z: number }): V3 => [v.x, -v.z, v.y];
 
 /** 游戏 → 场景（连续坐标；fromGame 带原点的版本） */

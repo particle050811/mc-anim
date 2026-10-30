@@ -7,10 +7,12 @@ import { 基础, 跑, 造仓库, type 文件表 } from './测试夹具.ts';
 import { 读副本表 } from './规则/副本.ts';
 
 const 真 = (p: string) => fs.readFileSync(path.join(代码根(), ...p.split('/')), 'utf8');
-/** 正本（行为认法要执行 数学.ts、坐标.ts）；样例仓库里没有 node_modules，给一个只有 Vector3 的 three */
+/** 正本（行为认法要执行 数学.ts、坐标.ts、three换算.ts）；样例仓库里没有 node_modules，给一个只有 Vector3 的 three */
 const 正本 = (): 文件表 => ({
   'engine/core/数学.ts': 真('engine/core/数学.ts'),
   'engine/core/坐标.ts': 真('engine/core/坐标.ts'),
+  'engine/core/机位.ts': 真('engine/core/机位.ts'),
+  'engine/core/three换算.ts': 真('engine/core/three换算.ts'),
   'node_modules/three/package.json': '{ "name": "three", "type": "module", "main": "index.js" }',
   'node_modules/three/index.js': 'export class Vector3 { constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; } }\n',
 });

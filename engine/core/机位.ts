@@ -1,5 +1,6 @@
-// 透视机位的正本（10-30 整体优化方案 0.6）：Cam 类型、焦距和视角换算、机位插值、把 three 相机摆到机位上。新代码一律从这里 import；
+// 透视机位的正本（10-30 整体优化方案 0.6）：Cam 类型、焦距和视角换算、机位插值。新代码一律从这里 import；
 // 旧代码里的 `type Cam`、lerpCam、aimCamera 一类副本原样不动，登记在 docs/副本表.tsv。三渲二的正交像素机位在 engine/三渲二/机位.tsx。
+// 纯模块（只有类型 import，不碰 three）：段.ts、时间线.ts 和它们引的编排也能用。把 three 相机摆到机位上（aimCamera 的正本 摆相机）、投到画面在 three换算.ts。
 //
 // 约定（照应力转动各镜头的 Rig，例如 作品/应力转动/地点/古城4x/6-4-1/古城画面.tsx 的 aimCamera）：
 // - pos、tgt 是场景坐标（Z 朝上，见 坐标.ts）；相机的上方是场景 +z（three +Y）。
@@ -7,10 +8,9 @@
 // - roll（度）在 lookAt 之后绕视线转：cam.rotateZ(+roll)，正 = 相机逆时针转、画面里的东西顺时针转。
 //   副本差别：作品/应力转动/地点/飞行镜头.tsx 是 rotateZ(−roll)；现有镜头的 roll 只填过 0 和 180，两种写法画出来一样。
 // 把回忆拼好给你的透视机位写成 { 眼, 看, 视角（竖直，度） }（engine/三渲二/机位.tsx 的 透视机位参数），用 转透视参数 / 从透视参数 换。
-import * as THREE from 'three';
 import type { V3 } from '../model/parts.tsx';
 import type { 透视机位参数 } from '../三渲二/机位.tsx';
-import { 场景到three, 游戏到场景, 游戏朝向到场景, type 原点 } from './坐标.ts';
+import { 游戏到场景, 游戏朝向到场景, type 原点 } from './坐标.ts';
 import { clamp01, lerp, lerpV, rad } from './数学.ts';
 
 export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
@@ -31,12 +31,32 @@ export const 视线 = (c: Pick<Cam, 'pos' | 'tgt'>): V3 => {
   return [d[0]! / n, d[1]! / n, d[2]! / n];
 };
 
-/** 两个单位向量之间球面插值（沿大圆匀角速转过去） */
+/**
+ * 两个单位向量之间球面插值：沿大圆匀角速从 a 转到 b，k 不夹。和 6-3-8 的 slerpDir（three 的 Quaternion.setFromUnitVectors + slerp）
+ * 末位舍入以内一样；正好反向时同 three 取一根和 a 垂直的轴转（|ax| > |az| 取 (−ay, ax, 0)，否则 (0, −az, ay)）。
+ */
 export const 球面插方向 = (a: readonly number[], b: readonly number[], k: number): V3 => {
-  const va = new THREE.Vector3(a[0], a[1], a[2]);
-  const q = new THREE.Quaternion().setFromUnitVectors(va, new THREE.Vector3(b[0], b[1], b[2]));
-  const r = va.applyQuaternion(new THREE.Quaternion().slerp(q, k));
-  return [r.x, r.y, r.z];
+  const [ax, ay, az] = [a[0]!, a[1]!, a[2]!];
+  const [bx, by, bz] = [b[0]!, b[1]!, b[2]!];
+  const 余 = ax * bx + ay * by + az * bz;
+  if (余 + 1 < Number.EPSILON) {
+    const [nx, ny, nz] = Math.abs(ax) > Math.abs(az) ? [-ay, ax, 0] : [0, -az, ay];
+    const n长 = Math.hypot(nx, ny, nz);
+    const [ux, uy, uz] = [nx / n长, ny / n长, nz / n长];
+    // 绕和 a 垂直的单位轴 u 转 kπ：a·cos + (u × a)·sin
+    const [c, s] = [Math.cos(k * Math.PI), Math.sin(k * Math.PI)];
+    return [ax * c + (uy * az - uz * ay) * s, ay * c + (uz * ax - ux * az) * s, az * c + (ux * ay - uy * ax) * s];
+  }
+  const 正 = Math.hypot(ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx);
+  const 角 = Math.atan2(正, 余);
+  if (正 < 1e-9) {
+    // 几乎同向：线性插再归一
+    const v = [ax + (bx - ax) * k, ay + (by - ay) * k, az + (bz - az) * k];
+    const 长 = Math.hypot(v[0]!, v[1]!, v[2]!) || 1;
+    return [v[0]! / 长, v[1]! / 长, v[2]! / 长];
+  }
+  const [wa, wb] = [Math.sin((1 - k) * 角) / 正, Math.sin(k * 角) / 正];
+  return [ax * wa + bx * wb, ay * wa + by * wb, az * wa + bz * wb];
 };
 
 export type 插机位选项 = {
@@ -78,33 +98,8 @@ export const 机位轨 = (关键: readonly (readonly [帧: number, 机位: Cam])
   return 关键[关键.length - 1]![1];
 };
 
+/** 近、远裁剪面（格）。three换算.ts 的 摆相机 默认 0.05、900（古城画面的 Rig） */
 export type 摆相机选项 = { 近?: number; 远?: number };
-
-/** 把 three 的透视相机摆到机位上（视角、宽高比、裁剪面、位置、lookAt、roll），更新投影和世界矩阵。近、远默认 0.05、900（古城画面的 Rig） */
-export const 摆相机 = (cam: THREE.PerspectiveCamera, c: Cam, 宽高比: number, 选项: 摆相机选项 = {}) => {
-  cam.fov = 焦距到视角(c.lens, 宽高比);
-  cam.aspect = 宽高比;
-  cam.near = 选项.近 ?? 0.05;
-  cam.far = 选项.远 ?? 900;
-  cam.position.copy(场景到three(c.pos));
-  cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three(c.tgt));
-  if (c.roll) cam.rotateZ(rad(c.roll));
-  cam.updateProjectionMatrix();
-  cam.updateMatrixWorld();
-  return cam;
-};
-
-/** 新建一台摆好的透视相机（画布外算投影用，比如伤害数字、头顶气泡；同 库/界面/伤害数字.tsx 的 makePerspectiveCamera，那边近、远是 0.1、1200） */
-export const 做相机 = (c: Cam, 宽: number, 高: number, 选项?: 摆相机选项) => 摆相机(new THREE.PerspectiveCamera(), c, 宽 / 高, 选项);
-
-/** 场景点投到画面上：返回像素坐标（左上角原点）和深度（相机前方为正，格） */
-export const 投到画面 = (cam: THREE.PerspectiveCamera, 点: readonly number[], 宽: number, 高: number) => {
-  const v = 场景到three(点);
-  const 深 = -v.clone().applyMatrix4(cam.matrixWorldInverse).z;
-  v.project(cam);
-  return { x: ((v.x + 1) / 2) * 宽, y: ((1 - v.y) / 2) * 高, 深 };
-};
 
 /** Cam → 三渲二的透视机位参数（竖直视角按宽高比换；roll 那边没有，给了非 0 的 roll 就报错） */
 export const 转透视参数 = (c: Cam, 宽高比: number, 选项: 摆相机选项 = {}): 透视机位参数 => {

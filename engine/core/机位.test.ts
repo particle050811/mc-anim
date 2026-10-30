@@ -4,6 +4,7 @@ import path from 'node:path';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { 取函数, type 编选项 } from '../../pipeline/检查/副本识别.ts';
+import { 摆相机, 做相机, 投到画面 } from './three换算.ts';
 import { lerpV, rad } from './数学.ts';
 import * as J from './机位.ts';
 
@@ -49,14 +50,14 @@ describe('机位正本', () => {
     expect(J.机位轨(轨, 15, (t) => t * t).lens).toBeCloseTo(26 + 34 * 0.25, 12);
   });
   it('摆相机 + 投到画面：看点投在画面正中，相机朝 −Z（three）看向看点', () => {
-    const cam = J.做相机(甲, 1920, 1080);
-    const p = J.投到画面(cam, 甲.tgt, 1920, 1080);
+    const cam = 做相机(甲, 1920, 1080);
+    const p = 投到画面(cam, 甲.tgt, 1920, 1080);
     expect(p.x).toBeCloseTo(960, 6);
     expect(p.y).toBeCloseTo(540, 6);
     expect(p.深).toBeGreaterThan(0);
     expect(cam.fov).toBeCloseTo(J.焦距到视角(26, 16 / 9), 12);
     // 场景上方（+z）的点在画面上半
-    expect(J.投到画面(cam, [甲.tgt[0], 甲.tgt[1], 甲.tgt[2] + 1], 1920, 1080).y).toBeLessThan(540);
+    expect(投到画面(cam, [甲.tgt[0], 甲.tgt[1], 甲.tgt[2] + 1], 1920, 1080).y).toBeLessThan(540);
   });
   it('转透视参数、从透视参数来回不变；roll 非 0 报错', () => {
     const p = J.转透视参数(甲, 16 / 9);
@@ -82,10 +83,42 @@ describe('机位正本和旧副本对得上', () => {
         const 旧 = new THREE.PerspectiveCamera();
         aim(旧, c, 比, 900);
         旧.updateMatrixWorld();
-        const 新 = J.摆相机(new THREE.PerspectiveCamera(), c, 比);
+        const 新 = 摆相机(new THREE.PerspectiveCamera(), c, 比);
         近(旧.projectionMatrix.elements, 新.projectionMatrix.elements, 9);
         近(旧.matrixWorld.elements, 新.matrixWorld.elements, 9);
       }
+    }
+  });
+  it('6-3-8 的 slerpDir（three 四元数）和 camLerp（球面 + 对数，看点放在视线 100 格处）', () => {
+    const 工具 = fs.readFileSync(path.join(根, '作品/应力转动/地点/边城/6-3-8/编排/工具.ts'), 'utf8');
+    // slerpDir 要 new THREE.Quaternion，副本识别 不编；照它的三行在这里用真的 three 写一遍
+    expect(工具).toMatch(/setFromUnitVectors\(va, new THREE\.Vector3\(\.\.\.dirB\)\)[^]*va\.applyQuaternion\(new THREE\.Quaternion\(\)\.slerp\(quat, k\)\)/);
+    const slerpDir = (a: number[], b: number[], k: number) => {
+      const va = new THREE.Vector3(...a);
+      const quat = new THREE.Quaternion().setFromUnitVectors(va, new THREE.Vector3(...b));
+      const r = va.applyQuaternion(new THREE.Quaternion().slerp(quat, k));
+      return [r.x, r.y, r.z];
+    };
+    const 单位 = (v: number[]) => v.map((x) => x / Math.hypot(...v));
+    const 对们: [number[], number[]][] = [
+      [[1, 0, 0], [0, 1, 0]],
+      [单位([0.3, -0.8, 0.2]), 单位([-0.5, 0.1, -0.7])],
+      [单位([1, 2, 3]), 单位([1, 2, 3.0000001])],
+      [[1, 0, 0], [1, 0, 0]],
+      // 正好反向：两边都绕和 a 垂直的同一根轴转
+      [单位([0.6, 0.8, 0]), 单位([-0.6, -0.8, 0])],
+      [[0, 0, 1], [0, 0, -1]],
+    ];
+    for (const [a, b] of 对们) for (const k of [0, 0.2, 0.5, 0.9, 1, 1.3]) 近(J.球面插方向(a, b, k), slerpDir(a, b, k), 12);
+    const camLerp = 副本('作品/应力转动/地点/边城/6-3-8/编排/机位.ts', 'camLerp', {
+      额外: { ...Object.fromEntries(['lerp3', 'lerp', 'add', 'sub', 'norm'].map((n) => [n, 取函数('工具.ts', 工具, n)])), slerpDir },
+    });
+    for (const k of [0, 0.3, 0.75, 1]) {
+      const 旧 = camLerp(甲, 乙, k) as J.Cam;
+      const 新 = J.插机位(甲, 乙, k, { 转向: '球面', 焦距: '对数' });
+      近(旧.pos, 新.pos);
+      近(J.视线(旧), J.视线(新));
+      expect(旧.lens).toBeCloseTo(新.lens, 12);
     }
   });
   it('fovOf（6-3-2 转场，16:9）', () => {

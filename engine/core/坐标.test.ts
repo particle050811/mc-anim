@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { 取函数, 规范 } from '../../pipeline/检查/副本识别.ts';
+import { 场景到three } from './three换算.ts';
 import * as C from './坐标.ts';
 
 const 根 = path.resolve(import.meta.dirname, '../..');
@@ -13,13 +14,13 @@ const 近 = (a: readonly number[], b: readonly number[]) => a.forEach((x, i) => 
 
 describe('坐标正本', () => {
   it('场景 ↔ three：x 东不变、场景 z（上）是 three y、场景 y（北）是 three −z', () => {
-    expect(C.场景到three([1, 2, 3]).toArray()).toEqual([1, 3, -2]);
-    for (const p of 点们) expect(C.three到场景(C.场景到three(p))).toEqual(p.map((x) => x + 0));
+    expect(场景到three([1, 2, 3]).toArray()).toEqual([1, 3, -2]);
+    for (const p of 点们) expect(C.three到场景(场景到three(p))).toEqual(p.map((x) => x + 0));
   });
   it('游戏 ↔ 场景：东、北、上；带原点时来回不变', () => {
     expect(C.游戏到场景([1, 2, 3])).toEqual([1, -3, 2]);
     // 游戏 (gx, gy, gz) 换到 three 就是去掉原点后的 (gx, gy, gz)：游戏和 three 的轴本来就一样
-    for (const g of 点们) 近(C.场景到three(C.游戏到场景(g, 原点)).toArray(), [g[0] - 原点[0], g[1] - 原点[1], g[2] - 原点[2]]);
+    for (const g of 点们) 近(场景到three(C.游戏到场景(g, 原点)).toArray(), [g[0] - 原点[0], g[1] - 原点[1], g[2] - 原点[2]]);
     for (const g of 点们) 近(C.场景到游戏(C.游戏到场景(g, 原点), 原点), g);
   });
   it('方块 ↔ 场景格：方块 (x, y, z) 占游戏 [x, x+1)×[y, y+1)×[z, z+1)，场景格是它在场景里的最小角', () => {
@@ -50,7 +51,7 @@ describe('坐标正本和旧副本对得上', () => {
   it('toThree（engine/三渲二/机位.tsx、库/界面/箱子界面.tsx、应力转动 飞行镜头）', () => {
     for (const [文件, 名] of [['engine/三渲二/机位.tsx', 'toThree'], ['库/界面/箱子界面.tsx', 'toThree'], ['作品/应力转动/地点/飞行镜头.tsx', 'toThree']] as const) {
       const f = 副本(文件, 名);
-      for (const p of 点们) expect(规范(f(p))).toEqual(规范(C.场景到three(p)));
+      for (const p of 点们) expect(规范(f(p))).toEqual(规范(场景到three(p)));
     }
   });
   it('fromMc（库/生物/九头蛇.tsx）= 不带原点的 游戏到场景；Z朝上转three（库/界面/投影.ts）= 不带原点的 场景到游戏', () => {
