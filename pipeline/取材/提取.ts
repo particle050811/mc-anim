@@ -8,15 +8,20 @@ import { 跑, 跑出 } from '../环境/子进程.ts';
 import { 入库, 字节路径, 文件sha256, 读作品资产锁, type 资产锁 } from '../资产/资产锁.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { mcai命令, mcai环境 } from './mcai.ts';
-import { 属于作品, 展开步骤, 展开产物, 脚本目录, type 取材条目, type 取材清单, type 展开环境, type 步骤 } from './清单.ts';
+import { 属于作品, 展开步骤, 展开产物, 按文件展开产物, 脚本目录, type 取材条目, type 取材清单, type 展开环境, type 步骤 } from './清单.ts';
+import { 像素一致 } from './像素.ts';
 
 export const jar路径 = (q: 取材清单, id: string) => {
   const j = q.jars.get(id);
   if (!j) throw new Error(`jars.toml 里没有 ${id}`);
-  return path.join(配置('游戏'), j.到);
+  return path.join(配置(j.根 === 'mc资源' ? 'mc资源' : '游戏'), j.到);
 };
 
-export const 本机展开 = (q: 取材清单): 展开环境 => ({
+/** 产物清单文件放在暂存目录外面，不混进「没登记成产物的文件」 */
+export const 产物清单路径 = (名称: string) => 数据路径('run', 'extract', '.产物清单', `${名称}.json`);
+
+export const 本机展开 = (q: 取材清单, 名称?: string): 展开环境 => ({
+  ...(名称 ? { 产物清单: 产物清单路径(名称) } : {}),
   jar路径: (id) => jar路径(q, id),
   prism数据: 配置('prism数据'),
   脚本: 脚本目录(),
@@ -68,14 +73,17 @@ export const 跑步骤 = async (q: 取材清单, e: 取材条目, dir: string, �
     console.log(`（没有自己的步骤：${e.说明 ?? ''}）`);
     return;
   }
-  const v = 本机展开(q);
+  const v = 本机展开(q, e.名称);
   if (!只打印) {
     const 缺 = e.需要.filter((i) => !fs.existsSync(jar路径(q, i)));
     if (缺.length) throw new Error(`「${e.名称}」缺 jar：${缺.map((i) => `${i}（${jar路径(q, i)}）`).join('、')}`);
     const 锁 = 取材锁();
     摆输入(e, 锁, dir);
     // 脚本照旧项目写的，输出目录默认已经在（旧项目里产物就放在那）：先把产物所在的目录建好
-    for (const [, f] of 展开产物(e.产物, 锁).对) fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
+    const 对 = 展开产物(e.产物, 锁).对;
+    for (const [, f] of 对) fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
+    fs.mkdirSync(path.dirname(v.产物清单!), { recursive: true });
+    fs.writeFileSync(v.产物清单!, JSON.stringify(对.map(([id, 文件]) => ({ id, 文件 })), null, 1) + '\n');
   }
   const env = 步骤环境();
   for (const [i, 原] of e.步骤.entries()) {
@@ -103,7 +111,18 @@ export const 跑步骤 = async (q: 取材清单, e: 取材条目, dir: string, �
   }
 };
 
-export type 核对结果 = { 一致: string[]; 入库: string[]; 不一致: { id: string; 文件: string; 锁: string; 新: string }[]; 缺文件: { id: string; 文件: string }[]; 未登记: string[]; 空模式: string[] };
+/** 像素一致：文件 sha 和锁不一样、但都是 PNG 且像素一样（编码器版本不同），算一致，锁里留原来那份字节 */
+export type 核对结果 = {
+  一致: string[];
+  入库: string[];
+  像素一致: string[];
+  不一致: { id: string; 文件: string; 锁: string; 新: string }[];
+  缺文件: { id: string; 文件: string }[];
+  未登记: string[];
+  空模式: string[];
+  /** 按暂存目录里的文件展开、锁里还没有的产物（--登记 时交给 登记产物） */
+  新产物: { id: string; 文件: string }[];
+};
 
 const 列文件 = (dir: string): string[] => {
   const out: string[] = [];
@@ -120,7 +139,8 @@ const 列文件 = (dir: string): string[] => {
 
 /** 按条目（含前置）的产物表核对 dir 里的文件，sha 一样的入库 */
 export const 核对产物 = (q: 取材清单, es: 取材条目[], dir: string, 锁: 资产锁 = 取材锁(), 入: boolean = true): 核对结果 => {
-  const r: 核对结果 = { 一致: [], 入库: [], 不一致: [], 缺文件: [], 未登记: [], 空模式: [] };
+  const r: 核对结果 = { 一致: [], 入库: [], 像素一致: [], 不一致: [], 缺文件: [], 未登记: [], 空模式: [], 新产物: [] };
+  const 文件们 = 列文件(dir);
   const 用到 = new Set<string>();
   const 收 = (e: 取材条目, 见过: Set<string>) => {
     if (见过.has(e.名称)) return;
@@ -128,7 +148,15 @@ export const 核对产物 = (q: 取材清单, es: 取材条目[], dir: string, �
     for (const p of e.前置) 收(q.条目.get(p)!, 见过);
     for (const f of Object.values(e.输入)) 用到.add(f);
     const { 对, 空 } = 展开产物(e.产物, 锁);
-    r.空模式.push(...空.map((k) => `${e.名称}：${k}`));
+    // 锁里还没有的按暂存目录里的文件展开，记成新产物（--登记 时登记、入库；通配只展开出新产物的不算空）
+    const 新 = 按文件展开产物(e.产物, 文件们).filter(([id]) => !锁[id]);
+    const 新模式 = new Set(新.map(([id]) => Object.keys(e.产物).find((k) => (k.endsWith('/*') ? id.startsWith(k.slice(0, -1)) : k === id))));
+    r.空模式.push(...空.filter((k) => !新模式.has(k)).map((k) => `${e.名称}：${k}`));
+    for (const [id, f] of 新) {
+      if (用到.has(f)) continue;
+      用到.add(f);
+      r.新产物.push({ id, 文件: f });
+    }
     for (const [id, f] of 对) {
       if (用到.has(f)) continue;
       用到.add(f);
@@ -140,7 +168,9 @@ export const 核对产物 = (q: 取材清单, es: 取材条目[], dir: string, �
       const sha = 文件sha256(文件);
       const 条目 = 锁[id];
       if (!条目 || 条目.sha256 !== sha) {
-        r.不一致.push({ id, 文件: f, 锁: 条目?.sha256 ?? '（锁里没有）', 新: sha });
+        const 库里 = 条目 && 字节路径(条目);
+        if (库里 && fs.existsSync(库里) && 像素一致(fs.readFileSync(文件), fs.readFileSync(库里))) r.像素一致.push(id);
+        else r.不一致.push({ id, 文件: f, 锁: 条目?.sha256 ?? '（锁里没有）', 新: sha });
         continue;
       }
       r.一致.push(id);
@@ -178,9 +208,9 @@ export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁
   const 别的作品: string[] = [];
   for (const [g, ms] of Object.entries(q.组)) 问题.push(...ms.filter((m) => !q.条目.has(m)).map((m) => `组「${g}」里的「${m}」不是条目`));
   const jar好 = new Map<string, boolean>();
-  const v = 本机展开(q);
   for (const e of es) {
     const n = e.名称;
+    const v = 本机展开(q, n);
     if (!属于作品(e, 作品)) {
       别的作品.push(`${n}：属于作品「${e.作品}」，带 --作品 ${e.作品} 查`);
       continue;

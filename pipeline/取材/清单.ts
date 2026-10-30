@@ -5,6 +5,8 @@ import path from 'node:path';
 import { parse } from 'smol-toml';
 import { 代码根 } from '../环境/路径.ts';
 import type { 资产锁 } from '../资产/资产锁.ts';
+import type { 可见性 } from '../资产/资产表.ts';
+import { 读jar许可, 许可部分取值, type jar许可, type 许可部分 } from './许可.ts';
 
 export type 输出参数 = { 输出: string[] };
 export type 步骤 = (string | 输出参数)[];
@@ -21,8 +23,13 @@ export type 取材条目 = {
   输入: Record<string, string>;
   产物: Record<string, string>;
   说明?: string;
+  /** --登记 写进资产表的可见性；不写时 公开版="提取" 的取「提取」，别的要写 */
+  可见性?: 可见性;
+  /** 产物的许可取 jar 的哪几部分：数组 = 全部产物，表 = 按 id 第一段（类别）分别写；没写的按类别默认（许可.ts 默认部分） */
+  许可部分?: 许可部分[] | Record<string, 许可部分[]>;
 };
-export type jar登记 = { id: string; 到: string; sha256?: string };
+/** 根：「到」相对哪个目录，游戏 = anim 配置 ANIM_GAME，mc资源 = ANIM_MC_ASSETS（资源索引在那） */
+export type jar登记 = { id: string; 到: string; sha256?: string; 根?: '游戏' | 'mc资源'; 许可?: jar许可; 旧sha256前缀?: string[] };
 export type 取材清单 = { 程序: Record<string, string[]>; 组: Record<string, string[]>; 条目: Map<string, 取材条目>; jars: Map<string, jar登记> };
 
 export const 取材目录 = () => path.join(代码根(), 'sourcing');
@@ -44,13 +51,24 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
       输入: (raw['输入'] as Record<string, string> | undefined) ?? {},
       产物: (raw['产物'] as Record<string, string> | undefined) ?? {},
       说明: raw['说明'] as string | undefined,
+      可见性: raw['可见性'] as 可见性 | undefined,
+      许可部分: raw['许可部分'] as 取材条目['许可部分'],
     };
+    const 部分们 = Array.isArray(e.许可部分) ? e.许可部分 : Object.values(e.许可部分 ?? {}).flat();
+    const 坏部分 = 部分们.filter((p) => !(许可部分取值 as readonly string[]).includes(p));
+    if (坏部分.length) throw new Error(`取材清单「${e.名称}」的 许可部分 只认 ${许可部分取值.join('、')}：${坏部分.join('、')}`);
     if (条目.has(e.名称)) throw new Error(`取材清单里「${e.名称}」写了两条`);
     条目.set(e.名称, e);
   }
-  const j = parse(jar文本) as { Mojang?: { 客户端?: jar登记[]; 要自己生成?: jar登记[] }; 模组?: jar登记[] };
+  type 原jar = Omit<jar登记, '许可'> & { 许可?: unknown };
+  const j = parse(jar文本) as { Mojang?: { 资源索引?: 原jar[] | 原jar; 客户端?: 原jar[]; 要自己生成?: 原jar[] }; 模组?: 原jar[] };
   const jars = new Map<string, jar登记>();
-  for (const x of [...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) jars.set(x.id, x);
+  // 资源索引旧写法是单张表、没有 id，只给人看，不进 jar 表
+  const 索引 = Array.isArray(j.Mojang?.资源索引) ? j.Mojang.资源索引 : [];
+  for (const x of [...索引, ...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) {
+    if (jars.has(x.id)) throw new Error(`jars.toml 里 id「${x.id}」写了两条`);
+    jars.set(x.id, { ...x, 许可: x.许可 === undefined ? undefined : 读jar许可(x.许可) });
+  }
   return { 程序: (d['程序'] as Record<string, string[]>) ?? {}, 组: (d['组'] as Record<string, string[]>) ?? {}, 条目, jars };
 };
 
@@ -79,11 +97,16 @@ export const 选条目 = (q: 取材清单, 名们: readonly string[], 全部: bo
   });
 };
 
-export type 展开环境 = { jar路径: (id: string) => string; prism数据: string; 脚本: string; 作品根: string; python: string; mcai: string[] };
+/** 产物清单：这条配方按资产锁展开的产物（[{id, 文件}] 的 JSON 文件），给按锁反推要导什么的脚本用（导出音效.py --按产物） */
+export type 展开环境 = { jar路径: (id: string) => string; prism数据: string; 脚本: string; 作品根: string; python: string; mcai: string[]; 产物清单?: string };
 
-/** 参数里的 {jar:a,b}、{prism数据}、{脚本}、{作品根} 换成本机路径 */
+/** 参数里的 {jar:a,b}、{prism数据}、{脚本}、{作品根}、{产物清单} 换成本机路径 */
 export const 填 = (a: string, v: 展开环境) =>
   a
+    .replace(/\{产物清单\}/g, () => {
+      if (!v.产物清单) throw new Error('步骤用了 {产物清单}，这里没有（只在 anim extract 跑条目时有）');
+      return v.产物清单.split(path.sep).join('/');
+    })
     .replace(/\{jar:([^}]+)\}/g, (_, ids: string) => ids.split(',').map((i) => v.jar路径(i).split(path.sep).join('/')).join(','))
     .replaceAll('{prism数据}', v.prism数据.split(path.sep).join('/'))
     .replaceAll('{脚本}', v.脚本.split(path.sep).join('/'))
@@ -119,4 +142,22 @@ export const 展开产物 = (表: Record<string, string>, 锁: 资产锁): { 对
     for (const id of ids) 对.push([id, f.replace('*', id.slice(前缀.length))]);
   }
   return { 对, 空 };
+};
+
+/** --登记 用：<id 目录>/* 再按暂存目录里实有的文件展开（新产物还不在锁里）；文件那边的 * 只匹配一层 */
+export const 按文件展开产物 = (表: Record<string, string>, 文件们: readonly string[]): [string, string][] => {
+  const 对: [string, string][] = [];
+  for (const [k, f] of Object.entries(表)) {
+    if (!k.endsWith('/*')) {
+      if (文件们.includes(f)) 对.push([k, f]);
+      continue;
+    }
+    const [前, 后] = f.split('*') as [string, string];
+    for (const x of 文件们) {
+      if (!x.startsWith(前) || !x.endsWith(后) || x.length < 前.length + 后.length + 1) continue;
+      const 名 = x.slice(前.length, x.length - 后.length);
+      if (!名.includes('/')) 对.push([k.slice(0, -1) + 名, x]);
+    }
+  }
+  return 对.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 };
