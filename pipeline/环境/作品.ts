@@ -1,5 +1,5 @@
 // 作品：有哪几部、这次用哪部。作品是 <代码根>/作品/<名>/ 下有 清单.ts 的目录，外加 anim.local.toml [works] 登记的外部目录（见 docs/决策/0004-多作品.md）。
-// 选哪部：--作品（cli/main.ts 解析后调 指定作品）> 当前目录在哪部作品里 > anim.local.toml 的 work（ANIM_WORK）> 只有一部就用它；都定不了就报错列出作品名。
+// 选哪部：--作品（cli/路由.ts 解析后调 指定作品）> 当前目录在哪部作品里 > anim.local.toml 的 work（ANIM_WORK）> 只有一部就用它；都定不了就报错列出作品名。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 代码根 } from './路径.ts';
@@ -10,7 +10,7 @@ export const 旧布局作品 = '应力转动';
 
 export type 作品 = { 名: string; 根: string };
 
-/** 选不出作品（没指定、有好几部，或名字不对）：cli/main.ts 只打这一行提示，不打调用栈 */
+/** 选不出作品（没指定、有好几部，或名字不对）：cli/路由.ts 只打这一行提示，不打调用栈 */
 export class 选作品错误 extends Error {}
 
 /** 名字统一成 NFC；APFS、NTFS 默认不分大小写，查重按小写 */
@@ -88,7 +88,7 @@ export const 选作品 = ({ 参数, cwd = process.cwd(), 默认 = '', 们 = 作�
 let 指定: string | undefined;
 let 当前: 作品 | undefined;
 
-/** cli/main.ts 解析出 --作品 后调；测试也用它切换 */
+/** cli/路由.ts 解析出 --作品 后调；测试也用它切换 */
 export const 指定作品 = (名: string | undefined) => {
   指定 = 名;
   当前 = undefined;

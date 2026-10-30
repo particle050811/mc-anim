@@ -11,7 +11,7 @@ import { 提交状态, 相对代码根 } from '../环境/路径.ts';
 import { 低优先级, 跑, 跑出, 试跑 } from '../环境/子进程.ts';
 import { 叠层目录, 数据路径, 相对数据根 } from '../环境/配置.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
-import { 叠层键, 算段指纹, type 段指纹 } from '../指纹/指纹.ts';
+import { 叠层键, 算全部段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import { 全部段, type 段信息 } from '../清单/清单.ts';
 import { 读作品资产锁, 解析资产 } from '../资产/资产锁.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
@@ -59,8 +59,7 @@ type 截 = { 段: 段信息; 指纹: string; 母版: string; 帧数: number; 过
 /** 每段取母版：当前指纹的；没有就按选项重渲或用旧的 */
 const 取母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 允许过期?: boolean; 重渲过期?: boolean; 记录: 运行记录 }) => {
   const 参数 = 渲染参数(级别);
-  const 指纹们: 段指纹[] = [];
-  for (const s of 段们) 指纹们.push(await 算段指纹(s, 参数));
+  const 指纹们: 段指纹[] = await 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 参数 })));
   const 缺 = 段们.filter((s, i) => !fs.existsSync(母版路径(s.键, 指纹们[i]!.指纹)));
   if (缺.length && opts.重渲过期) await 渲染母版(缺, 级别, { 记录: opts.记录 });
   const 截们: 截[] = [];
@@ -92,8 +91,9 @@ type 叠层截 = { 键: string; 指纹: string; 文件: string; 过期: boolean;
 /** 各段声明的透明叠层：和母版一样按指纹取，过期的按选项重渲或用旧的 */
 const 取叠层 = async (截们: 截[], 级别: 渲染级别, opts: { 允许过期?: boolean; 重渲过期?: boolean; 记录: 运行记录 }) => {
   const 参数 = 叠层渲染参数(级别);
-  const 要: { 截: 截; 键: string; 指纹: string }[] = [];
-  for (const c of 截们) for (const l of c.段.段.叠层 ?? []) 要.push({ 截: c, 键: 叠层键(c.段.键, l), 指纹: (await 算段指纹(c.段, 参数, l)).指纹 });
+  const 各层 = 截们.flatMap((c) => (c.段.段.叠层 ?? []).map((l) => ({ 截: c, 叠层: l })));
+  const 指纹们 = await 算全部段指纹(各层.map((x) => ({ 段: x.截.段, 渲染设置: 参数, 叠层: x.叠层 })));
+  const 要 = 各层.map((x, i) => ({ 截: x.截, 键: 叠层键(x.截.段.键, x.叠层), 指纹: 指纹们[i]!.指纹 }));
   const 缺段 = [...new Set(要.filter((x) => !fs.existsSync(叠层路径(x.键, x.指纹))).map((x) => x.截.段))];
   if (缺段.length && opts.重渲过期) await 渲染叠层(缺段, 级别, { 记录: opts.记录 });
   const out: 叠层截[] = [];
