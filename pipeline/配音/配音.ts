@@ -2,8 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 台词句 } from '../../engine/audio/台词句.ts';
-import type { 资产锁 } from '../资产/资产锁.ts';
-import { 念的字, 配音文本哈希, type 台词行 } from './台词表.ts';
+import { 字节路径, type 资产锁 } from '../资产/资产锁.ts';
+import { 念的字, 配音文本哈希, type 作品台词, type 台词行 } from './台词表.ts';
 
 export type 测量 = { 开口: number; 有声长: number; 时长: number };
 export type 字们 = [string, number, number][];
@@ -90,4 +90,42 @@ export type 候选说明 = { 后端: string; 种子: number; 参考: string; 参
 export const 读候选说明 = (wav: string): 候选说明 | null => {
   const f = wav.replace(/\.wav$/i, '.json');
   return fs.existsSync(f) ? (JSON.parse(fs.readFileSync(f, 'utf8')) as 候选说明) : null;
+};
+
+/** 一句的克隆参考：这句的 合成.参考/逐字稿 > [音色.<角色>] */
+export const 音色参考 = (表: 作品台词, 行: 台词行, 锁: 资产锁, 数据根: string) => {
+  const 音 = 表.音色[行.角色];
+  const id = 行.合成?.参考 ?? 音?.参考;
+  const 逐字稿 = 行.合成?.逐字稿 ?? 音?.逐字稿;
+  if (!id || !逐字稿) throw new Error(`${行.id}：没有 ${行.角色} 的音色参考（台词.toml 写 [音色."${行.角色}"] 参考 = "<资产 id>"、逐字稿 = "…"，或这句的 合成.参考、合成.逐字稿）`);
+  if (!锁[id]) throw new Error(`${行.id}：音色参考「${id}」不在资产锁里`);
+  return { id, 文件: 字节路径(锁[id]!, 数据根), 逐字稿 };
+};
+
+/** 命令行给的、盖过 台词.toml 的合成设置（语气参考 是 wav 的绝对路径） */
+export type 合成覆盖 = { 后端?: string; 种子?: number[]; 语气参考?: string; 强度?: number };
+export type 合成批 = { 请求: Record<string, unknown>[]; 说明们: Map<string, Omit<候选说明, '参数'>> };
+
+/** gen 的请求按后端分批（一批只起一次模型）：后端取 命令行 > 这句的 合成.后端 > [配音]；交给 TTS 的字取 合成.念 > 念 > 文本。请求的形状同 py/anim_py/配音/后端 的 合成请求 */
+export const 排合成批 = (表: 作品台词, 行们: readonly 台词行[], 覆盖: 合成覆盖, 锁: 资产锁, 根: { 数据根: string; 作品: string }): Map<string, 合成批> => {
+  const 批们 = new Map<string, 合成批>();
+  for (const 行 of 行们) {
+    const 后端名 = 覆盖.后端 ?? 行.合成?.后端 ?? 表.配音.后端;
+    const 批: 合成批 = 批们.get(后端名) ?? { 请求: [], 说明们: new Map() };
+    批们.set(后端名, 批);
+    const r = 音色参考(表, 行, 锁, 根.数据根);
+    const 语气参考id = 行.合成?.语气参考;
+    if (!覆盖.语气参考 && 语气参考id && !锁[语气参考id]) throw new Error(`${行.id}：语气参考「${语气参考id}」不在资产锁里`);
+    const 念 = 行.合成?.念 ?? 念的字(行);
+    for (const 种子 of 覆盖.种子 ?? 行.合成?.种子 ?? 表.配音.种子) {
+      const 输出 = path.join(候选目录(根.数据根, 根.作品, 行.id), `${后端名}-种子${种子}.wav`);
+      批.请求.push({
+        id: 行.id, 角色: 行.角色, 念, 语言: 行.语言 ?? '中文', 参考音频: r.文件, 参考逐字稿: r.逐字稿, 种子, 输出,
+        语气: 行.语气 ?? '', 语气参考: 覆盖.语气参考 ?? (语气参考id ? 字节路径(锁[语气参考id]!, 根.数据根) : ''),
+        语气强度: 覆盖.强度 ?? 行.合成?.强度 ?? null, 参数: 行.合成?.参数 ?? {},
+      });
+      批.说明们.set(输出, { 后端: 后端名, 种子, 参考: r.id, 念, 时间: new Date().toISOString() });
+    }
+  }
+  return 批们;
 };

@@ -11,6 +11,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+from .后端 import 语言名
+
 _跑 = Path(__file__).with_name('_对齐跑.py')
 
 
@@ -31,10 +33,10 @@ def 缺什么(目录: str, 模型: str = '') -> list[str]:
 
 
 def 对齐(目录: str, 句们: list[dict], 模型: str = '') -> dict[str, list]:
-    """句们：[{id, wav, 念, 语言}]（语言：中文、日语）；返回 id → 字"""
+    """句们：[{id, wav, 念, 语言}]（语言：台词.toml 的写法，中文、日语、英语、粤语）；返回 id → 字"""
     if not 句们:
         return {}
-    批 = {'模型': str(模型 or Path(目录) / 'Qwen3-ForcedAligner-0.6B'), '句': [{**s, '语言': 'Japanese' if s.get('语言') == '日语' else 'Chinese'} for s in 句们]}
+    批 = {'模型': str(模型 or Path(目录) / 'Qwen3-ForcedAligner-0.6B'), '句': [{**s, '语言': 语言名.get(s.get('语言') or '中文', 'Chinese')} for s in 句们]}
     with tempfile.TemporaryDirectory() as t:
         f = Path(t) / '批.json'
         f.write_text(json.dumps(批, ensure_ascii=False), encoding='utf-8')

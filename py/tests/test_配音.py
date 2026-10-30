@@ -31,7 +31,7 @@ def test_汉字句():
 
 
 def _请求(tmp: Path) -> 合成请求:
-    return 合成请求(id='7-黄叛-受死', 念='怪物受死！', 语言='中文', 参考音频=str(tmp / '参考.wav'), 参考逐字稿='怪物受死', 种子=7, 输出=str(tmp / '出.wav'), 语气='怒喝')
+    return 合成请求(id='7-黄叛-受死', 念='怪物受死！', 语言='中文', 参考音频=str(tmp / '参考.wav'), 参考逐字稿='怪物受死', 种子=7, 输出=str(tmp / '出.wav'), 语气='怒喝', 角色='黄叛')
 
 
 def test_后端都登记了且_dry_run_不碰网络和模型(tmp_path):
@@ -48,6 +48,8 @@ def test_后端都登记了且_dry_run_不碰网络和模型(tmp_path):
     assert 本机.记录参数(_请求(tmp_path)) == {'cfg': 1.2, '步数': 30, '精度': 'fp32', '设备': ''}
     assert '地址' not in 取后端('gpt-sovits', {'地址': 'http://127.0.0.1:1'}).记录参数(_请求(tmp_path))
     assert any('venv 没建' in x for x in 本机.缺什么())
+    # 按名字取音色的服务：没配 音色 就用台词的角色
+    assert 取后端('openai-speech', {}).描述(_请求(tmp_path))['json']['voice'] == '黄叛'
     assert 取后端('firered-本机', {}).缺什么() == ['没给 FireRedTTS3 目录（anim 配置 firered，环境变量 ANIM_FIRERED）']
     with pytest.raises(SystemExit):
         取后端('没有这个')

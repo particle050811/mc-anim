@@ -19,7 +19,7 @@ class OpenAI语音(后端):
 
     def _体(self, q: 合成请求) -> dict:
         p = self.参数(q)
-        return {'model': p['model'], 'input': q.念, 'voice': p['音色'] or q.id.split('-')[1], 'response_format': 'wav', 'language': 语言码.get(q.语言, 'zh'), 'seed': q.种子,
+        return {'model': p['model'], 'input': q.念, 'voice': p['音色'] or q.角色, 'response_format': 'wav', 'language': 语言码.get(q.语言, 'zh'), 'seed': q.种子,
                 **({'instructions': q.语气} if q.语气 and 'instruct' in p['model'] else {})}
 
     def _头(self) -> dict:

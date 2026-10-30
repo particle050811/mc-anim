@@ -6,8 +6,8 @@ import { parse } from 'smol-toml';
 import type { 台词条目 } from '../检查/规则/台词.ts';
 
 export type 口型手修 = { 成品sha?: string; 字?: [string, number, number][]; 注?: string };
-/** 一句的合成设置（都可选，覆盖 [配音] 和 [音色.<角色>]） */
-export type 合成设置 = { 后端?: string; 参考?: string; 逐字稿?: string; 种子?: number[]; 语气参考?: string; 强度?: number; 不裁?: boolean; 参数?: Record<string, unknown> };
+/** 一句的合成设置（都可选，覆盖 [配音] 和 [音色.<角色>]）。念：只交给 TTS 的字，和对口型的 念 不同时写（如数字写成读法，口型手修 却按字面标的） */
+export type 合成设置 = { 后端?: string; 念?: string; 参考?: string; 逐字稿?: string; 种子?: number[]; 语气参考?: string; 强度?: number; 不裁?: boolean; 参数?: Record<string, unknown> };
 export type 台词行 = Omit<台词条目, '口型手修'> & {
   /** 交给 TTS、对口型的字（和字幕的 文本 不同时写，如数字写成读法、日语念法） */
   念?: string;

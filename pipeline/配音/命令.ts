@@ -15,7 +15,7 @@ import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
 import { 列句模块, 句模块目录, 句模块路径, 写句模块文本, 读句模块 } from './句模块.ts';
 import { 跑配音py } from './python.ts';
 import { 改台词字段, 念的字, 配音文本哈希, 读作品台词, type 作品台词, type 台词行 } from './台词表.ts';
-import { 候选目录, 句问题, 成品sha, 手修可用, 拼句, 读候选说明, wav秒数, type 候选说明, type 字们, type 测量 } from './配音.ts';
+import { 候选目录, 句问题, 成品sha, 手修可用, 拼句, 排合成批, 读候选说明, wav秒数, type 字们, type 测量 } from './配音.ts';
 
 const 台词文件 = () => path.join(作品根(), '台词.toml');
 const 两锁 = (): 资产锁 => ({ ...读资产锁(资产锁路径()), ...读资产锁(作品资产锁路径(作品根())) });
@@ -146,58 +146,58 @@ const 核对 = async (表: 作品台词, 行们: 台词行[], 对旧表: boolean
 
 // ---------- gen / use ----------
 
-const 参考 = (表: 作品台词, 行: 台词行, 锁: 资产锁) => {
-  const 音 = 表.音色[行.角色];
-  const id = 行.合成?.参考 ?? 音?.参考;
-  const 逐字稿 = 行.合成?.逐字稿 ?? 音?.逐字稿;
-  if (!id || !逐字稿) throw new Error(`${行.id}：没有 ${行.角色} 的音色参考（台词.toml 写 [音色."${行.角色}"] 参考 = "<资产 id>"、逐字稿 = "…"，或这句的 合成.参考、合成.逐字稿）`);
-  if (!锁[id]) throw new Error(`${行.id}：音色参考「${id}」不在资产锁里`);
-  return { id, 文件: 字节路径(锁[id]!, 数据根()), 逐字稿 };
-};
-
 const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<typeof 解析参数>, 记录: Parameters<命令['跑']>[1]) => {
   const 锁 = 两锁();
-  const 后端名 = p.值['--后端'] ?? 表.配音.后端;
-  const 种子们 = p.值['--种子'] ? p.值['--种子'].split(',').map(Number) : null;
-  const 请求: Record<string, unknown>[] = [];
-  const 说明们 = new Map<string, Omit<候选说明, '参数'>>();
-  for (const 行 of 行们) {
-    const r = 参考(表, 行, 锁);
-    const 目录 = 候选目录(数据根(), 作品名(), 行.id);
-    for (const 种子 of 种子们 ?? 行.合成?.种子 ?? 表.配音.种子) {
-      const 输出 = path.join(目录, `${后端名}-种子${种子}.wav`);
-      请求.push({
-        id: 行.id, 念: 念的字(行), 语言: 行.语言 ?? '中文', 参考音频: r.文件, 参考逐字稿: r.逐字稿, 种子, 输出,
-        语气: 行.语气 ?? '', 语气参考: p.值['--语气参考'] ? path.resolve(p.值['--语气参考']) : (行.合成?.语气参考 ? 字节路径(锁[行.合成.语气参考]!, 数据根()) : ''),
-        语气强度: p.值['--强度'] ? Number(p.值['--强度']) : (行.合成?.强度 ?? null), 参数: 行.合成?.参数 ?? {},
-      });
-      说明们.set(输出, { 后端: 后端名, 种子, 参考: r.id, 念: 念的字(行), 时间: new Date().toISOString() });
-    }
-  }
-  const 配 = 后端配置(表, 后端名);
+  const 数 = (名: string) => {
+    const v = p.值[名];
+    if (v === undefined) return undefined;
+    const n = Number(v);
+    if (!v.trim() || !Number.isFinite(n)) throw new 用法错误(`${名} 要写数：${v}`);
+    return n;
+  };
+  const 种子们 = p.值['--种子']?.split(',').map((s) => s.trim());
+  if (种子们?.some((s) => !/^\d+$/.test(s))) throw new 用法错误(`--种子 要写非负整数，逗号分开：${p.值['--种子']}`);
+  const 强度 = 数('--强度');
+  const 批们 = 排合成批(表, 行们, {
+    ...(p.值['--后端'] ? { 后端: p.值['--后端'] } : {}),
+    ...(种子们 ? { 种子: 种子们.map(Number) } : {}),
+    ...(p.值['--语气参考'] ? { 语气参考: path.resolve(p.值['--语气参考']) } : {}),
+    ...(强度 !== undefined ? { 强度 } : {}),
+  }, 锁, { 数据根: 数据根(), 作品: 作品名() });
   if (p.开关.has('--dry-run')) {
-    const d = await 跑配音py<{ 缺: string[]; 描述: unknown[] }>('合成', { 后端: 后端名, 配置: 配, 请求, 只描述: true });
-    for (const x of d.描述) console.log(JSON.stringify(x, null, 1));
-    console.log(`dry-run：${后端名} ${请求.length} 个候选，没合成。${d.缺.length ? `真跑前要补：${d.缺.join('；')}` : '这台机器上能跑'}`);
+    for (const [后端名, { 请求 }] of 批们) {
+      const d = await 跑配音py<{ 缺: string[]; 描述: unknown[] }>('合成', { 后端: 后端名, 配置: 后端配置(表, 后端名), 请求, 只描述: true });
+      for (const x of d.描述) console.log(JSON.stringify(x, null, 1));
+      console.log(`dry-run：${后端名} ${请求.length} 个候选，没合成。${d.缺.length ? `真跑前要补：${d.缺.join('；')}` : '这台机器上能跑'}`);
+    }
     return 0;
   }
-  const 信息 = (await 跑配音py<后端信息[]>('后端', { 配置: { [后端名]: 配 } })).find((b) => b.名 === 后端名);
-  if (!信息) throw new 用法错误(`没有 TTS 后端「${后端名}」（anim voice backends 看有哪些）`);
-  if (信息.付费 && !p.开关.has('--允许付费')) throw new 用法错误(`${后端名} 按次收费，确实要用加 --允许付费（先 --dry-run 看请求）`);
-  if (信息.云端 && !p.开关.has('--允许云端') && !p.开关.has('--允许付费')) throw new 用法错误(`${后端名} 要把参考音频和台词发到外部服务，确实要用加 --允许云端`);
-  if (信息.缺.length) throw new Error(`${后端名} 在这台机器上跑不了：${信息.缺.join('；')}`);
-  const 跑 = () => 跑配音py<{ id: string; 种子: number; 输出: string; 成功: boolean; 说明: string; 参数: Record<string, unknown> }[]>('合成', { 后端: 后端名, 配置: 配, 请求 });
-  // 本机模型吃 GPU 和十几 GB 统一内存，和渲染一样排队；云端的不占本机
-  const 结果 = 信息.本机 ? await 过渲染闸(跑) : await 跑();
-  let 坏 = 0;
-  for (const r of 结果) {
-    const 说明 = 说明们.get(r.输出);
-    if (r.成功 && 说明) fs.writeFileSync(r.输出.replace(/\.wav$/i, '.json'), JSON.stringify({ ...说明, 参数: r.参数 }, null, 1) + '\n');
-    if (r.成功) 记录.产物.push(r.输出);
-    else 坏++;
-    console.log(`${r.id} 种子 ${r.种子}：${r.成功 ? r.输出 : '失败'}${r.说明 ? `（${r.说明}）` : ''}`);
+  // 先把每个后端都核一遍（收费、云端、缺东西），都过了再开跑，免得跑了一半才停
+  const 要跑: { 后端名: string; 配: Record<string, unknown>; 本机: boolean }[] = [];
+  for (const 后端名 of 批们.keys()) {
+    const 配 = 后端配置(表, 后端名);
+    const 信息 = (await 跑配音py<后端信息[]>('后端', { 配置: { [后端名]: 配 } })).find((b) => b.名 === 后端名);
+    if (!信息) throw new 用法错误(`没有 TTS 后端「${后端名}」（anim voice backends 看有哪些）`);
+    if (信息.付费 && !p.开关.has('--允许付费')) throw new 用法错误(`${后端名} 按次收费，确实要用加 --允许付费（先 --dry-run 看请求）`);
+    if (信息.云端 && !p.开关.has('--允许云端') && !p.开关.has('--允许付费')) throw new 用法错误(`${后端名} 要把参考音频和台词发到外部服务，确实要用加 --允许云端`);
+    if (信息.缺.length) throw new Error(`${后端名} 在这台机器上跑不了：${信息.缺.join('；')}`);
+    要跑.push({ 后端名, 配, 本机: 信息.本机 });
   }
-  console.log(`候选在 ${path.dirname(结果[0]?.输出 ?? 候选目录(数据根(), 作品名(), ''))}；试听挑一个后 anim voice use <id> <候选.wav>`);
+  let 坏 = 0;
+  for (const { 后端名, 配, 本机 } of 要跑) {
+    const { 请求, 说明们 } = 批们.get(后端名)!;
+    const 跑 = () => 跑配音py<{ id: string; 种子: number; 输出: string; 成功: boolean; 说明: string; 参数: Record<string, unknown> }[]>('合成', { 后端: 后端名, 配置: 配, 请求 });
+    // 本机模型吃 GPU 和十几 GB 统一内存，和渲染一样排队；云端的不占本机
+    const 结果 = 本机 ? await 过渲染闸(跑) : await 跑();
+    for (const r of 结果) {
+      const 说明 = 说明们.get(r.输出);
+      if (r.成功 && 说明) fs.writeFileSync(r.输出.replace(/\.wav$/i, '.json'), JSON.stringify({ ...说明, 参数: r.参数 }, null, 1) + '\n');
+      if (r.成功) 记录.产物.push(r.输出);
+      else 坏++;
+      console.log(`${r.id} 种子 ${r.种子}（${后端名}）：${r.成功 ? r.输出 : '失败'}${r.说明 ? `（${r.说明}）` : ''}`);
+    }
+  }
+  console.log(`候选在 ${候选目录(数据根(), 作品名(), '<台词 id>')}；试听挑一个后 anim voice use <id> <候选.wav>`);
   return 坏 ? 1 : 0;
 };
 

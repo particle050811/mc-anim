@@ -27,6 +27,7 @@ class 合成请求:
     语气: str = ''  # 这句的情境和语气描述（只给支持文字控制语气的后端）
     语气参考: str = ''  # 情绪参考 wav（IndexTTS2 这类分开音色和语气的后端）
     语气强度: float | None = None
+    角色: str = ''  # 台词.toml 的角色（按名字取音色的后端用）
     参数: dict = field(default_factory=dict)  # 后端自己的参数，覆盖默认
 
 
