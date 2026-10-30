@@ -126,31 +126,49 @@ class ProGuard映射(恒等映射):
 
 
 class SRG映射(恒等映射):
-    """tsrg / tsrg2（mcp_config 的 config/joined.tsrg 或 forge 安装器生成的 mappings.txt，混淆名 → SRG 名）+ client.txt"""
+    """tsrg / tsrg2 表，两种方向都认：
+    - 混淆名 → SRG：mcp_config 的 obf_to_srg.tsrg（tsrg）、config/joined.tsrg（tsrg2「obf srg id」），要配 client.txt 经混淆名接到官方名
+    - 官方名 → SRG：ForgeGradle 的 build/createMcpToSrg/output.tsrg（tsrg2「left right」），直接反过来，不要 client.txt
+    方向按整个文件定：tsrg2 头写 obf 的是前一种；否则看第一个改了名的类，第一列在 client.txt 的混淆类名里就是前一种。
+    成员行按第二列是不是描述符分字段、方法：tsrg2 的字段行也是三列（多一列 id），不能按列数分"""
 
     名称 = "SRG"
 
-    def __init__(self, tsrg文件: str, 官方: ProGuard映射):
+    def __init__(self, tsrg文件: str, 官方: ProGuard映射 | None = None):
         self.srg到官: dict[str, str] = {}
         当前 = ""
+        混方向: bool | None = False if 官方 is None else None
+        混字段: dict[str, str] = {}
         with open(tsrg文件, encoding="utf-8") as f:
             for 行 in f:
-                if 行.startswith("tsrg2") or not 行.strip():
+                if not 行.strip():
+                    continue
+                if 行.startswith("tsrg2"):
+                    if 混方向 is None and 行.split()[1:2] == ["obf"]:
+                        混方向 = True
                     continue
                 if not 行[0].isspace():
                     当前 = 行.split()[0]
+                    if 混方向 is None and 官方 is not None and 官方.混到官.get(当前, 当前) != 当前:
+                        混方向 = True
+                    elif 混方向 is None and 官方 is not None and 官方.官到混.get(当前, 当前) != 当前:
+                        混方向 = False
+                    if 混方向 and 官方 is not None:
+                        混字段 = {混名: 官 for (混名, _d), 官 in 官方.字段表.get(当前, {}).items()}
                     continue
                 if 行.startswith("\t\t"):
                     continue  # tsrg2 的参数、static 标记
                 parts = 行.split()
-                if len(parts) == 2:  # 字段：混淆名 srg名
-                    for (混名, _d), 官 in 官方.字段表.get(当前, {}).items():
-                        if 混名 == parts[0]:
-                            self.srg到官[parts[1]] = 官
-                elif len(parts) >= 3:  # 方法：混淆名 混淆描述 srg名
-                    官 = 官方.方法表.get(当前, {}).get((parts[0], parts[1]))
-                    if 官 is not None:
-                        self.srg到官[parts[2]] = 官
+                是方法 = len(parts) >= 3 and parts[1].startswith("(")
+                srg = parts[2] if 是方法 else parts[1]
+                if srg == parts[0]:
+                    continue  # <init>、没改名的覆写（toString 等）
+                if not 混方向 or 官方 is None:
+                    self.srg到官[srg] = parts[0]
+                    continue
+                官 = 官方.方法表.get(当前, {}).get((parts[0], parts[1])) if 是方法 else 混字段.get(parts[0])
+                if 官 is not None:
+                    self.srg到官[srg] = 官
 
     def 字段(self, 所属: str, 名: str, 描述: str) -> str:
         return self.srg到官.get(名, 名)
@@ -160,13 +178,13 @@ class SRG映射(恒等映射):
 
 
 def 读映射(说明: str | None):
-    """命令行写法：不给 = 恒等；proguard:<client.txt>；srg:<tsrg>,<client.txt>"""
+    """命令行写法：不给 = 恒等；proguard:<client.txt>；srg:<tsrg>[,<client.txt>]（混淆名 → SRG 的表要带 client.txt）"""
     if not 说明 or 说明 == "恒等":
         return 恒等映射()
     kind, _, rest = 说明.partition(":")
     if kind == "proguard":
         return ProGuard映射(rest)
     if kind == "srg":
-        tsrg, client = rest.split(",", 1)
-        return SRG映射(tsrg, ProGuard映射(client))
-    raise ValueError(f"不认识的映射：{说明}（恒等 | proguard:<client.txt> | srg:<tsrg>,<client.txt>）")
+        tsrg, _, client = rest.partition(",")
+        return SRG映射(tsrg, ProGuard映射(client) if client else None)
+    raise ValueError(f"不认识的映射：{说明}（恒等 | proguard:<client.txt> | srg:<tsrg>[,<client.txt>]）")

@@ -1,6 +1,6 @@
 """命令行：把一个生物模型类的 setupAnim（连同 prepareMobModel）翻成姿态程序 JSON。
 
-  python -m anim_py.动作翻译 <输出.json> <模型类全名> --jar <jar>[,<jar>...] [--映射 proguard:<client.txt> | srg:<tsrg>,<client.txt>]
+  python -m anim_py.动作翻译 <输出.json> <模型类全名> --jar <jar>[,<jar>...] [--映射 proguard:<client.txt> | srg:<tsrg>[,<client.txt>]]
       [--模型 <模型.json>:<名字>] [--固定 <输入名>=<值>]... [--不带prepare]
 
   --模型   导出实体模型.py 的输出，给了就按它的部件树核对 getChild、做子树复位
