@@ -183,7 +183,10 @@ export class 文件函数 {
         try {
           const 全局 = { ...可用全局, ...this.#选项.全局 };
           const 全局名 = Object.keys(全局);
-          const js = 编成JS(f.节点.getText(this.sf));
+          // 函数声明前面的 export、default 去掉，剩下的当函数表达式编
+          const 节 = f.节点;
+          const 源 = ts.isFunctionDeclaration(节) && 节.modifiers?.length ? this.sf.text.slice(节.modifiers.end, 节.end).trim() : 节.getText(this.sf);
+          const js = 编成JS(源);
           r = new Function(...全局名, ...名们, `"use strict"; return (${js});`)(...全局名.map((k) => 全局[k]), ...值们) as (...a: unknown[]) => unknown;
         } catch {
           r = null;
