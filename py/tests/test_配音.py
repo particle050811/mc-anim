@@ -44,6 +44,9 @@ def test_后端都登记了且_dry_run_不碰网络和模型(tmp_path):
         assert d['后端'] == 名
     本机 = 取后端('firered-本机', {'目录': str(tmp_path / '没有')})
     assert 本机.描述(_请求(tmp_path))['参数']['cfg'] == 1.2
+    # 本机目录、服务地址不进候选说明和资产表（仓库公开）
+    assert 本机.记录参数(_请求(tmp_path)) == {'cfg': 1.2, '步数': 30, '精度': 'fp32', '设备': ''}
+    assert '地址' not in 取后端('gpt-sovits', {'地址': 'http://127.0.0.1:1'}).记录参数(_请求(tmp_path))
     assert any('venv 没建' in x for x in 本机.缺什么())
     assert 取后端('firered-本机', {}).缺什么() == ['没给 FireRedTTS3 目录（anim 配置 firered，环境变量 ANIM_FIRERED）']
     with pytest.raises(SystemExit):

@@ -46,6 +46,8 @@ class 后端:
     云端: ClassVar[bool] = False  # 要把参考音频和台词发到外部服务
     付费: ClassVar[bool] = False  # 按次收费
     默认参数: ClassVar[dict] = {}
+    # 只跟这台机器有关的设置（程序目录、服务地址、密钥位置）：不写进候选说明和资产表的 来源（仓库公开）
+    本机键: ClassVar[frozenset[str]] = frozenset({'目录', '地址', '接口', '令牌文件', '密钥文件'})
 
     def __init__(self, 配置: dict | None = None):
         """配置：后端的全局设置（程序目录、服务地址等，anim 从配置取了传进来），和 默认参数 合并"""
@@ -53,6 +55,10 @@ class 后端:
 
     def 参数(self, 请求: 合成请求) -> dict:
         return {**self.配置, **请求.参数}
+
+    def 记录参数(self, 请求: 合成请求) -> dict:
+        """这个候选是用什么参数出的（写进候选旁的 .json，定稿时进资产表的 来源）"""
+        return {k: v for k, v in self.参数(请求).items() if k not in self.本机键}
 
     def 缺什么(self) -> list[str]:
         """跑不了的原因（程序、模型、密钥不在），空表示能跑；不联网、不加载模型"""

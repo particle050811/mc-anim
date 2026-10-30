@@ -7,7 +7,7 @@ import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 配置, 数据根 } from '../环境/配置.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 相对代码根 } from '../环境/路径.ts';
-import { 读旧配音表 } from '../适配器/旧项目/配音表.ts';
+import { 旧台词改名, 旧表资产, 读旧配音表 } from '../适配器/旧项目/配音表.ts';
 import { 登记入库 } from '../资产/命令.ts';
 import { 作品资产表目录, 读两侧资产表 } from '../资产/资产表.ts';
 import { 作品资产锁路径, 字节路径, 读资产锁, 资产锁路径, type 资产锁 } from '../资产/资产锁.ts';
@@ -15,7 +15,7 @@ import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
 import { 列句模块, 句模块目录, 句模块路径, 写句模块文本, 读句模块 } from './句模块.ts';
 import { 跑配音py } from './python.ts';
 import { 改台词字段, 念的字, 文本哈希, 读作品台词, type 作品台词, type 台词行 } from './台词表.ts';
-import { 候选目录, 句问题, 成品sha, 手修可用, 拼句, 读候选说明, wav秒数, type 字们, type 测量 } from './配音.ts';
+import { 候选目录, 句问题, 成品sha, 手修可用, 拼句, 读候选说明, wav秒数, type 候选说明, type 字们, type 测量 } from './配音.ts';
 
 const 台词文件 = () => path.join(作品根(), '台词.toml');
 const 两锁 = (): 资产锁 => ({ ...读资产锁(资产锁路径()), ...读资产锁(作品资产锁路径(作品根())) });
@@ -160,7 +160,7 @@ const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<type
   const 后端名 = p.值['--后端'] ?? 表.配音.后端;
   const 种子们 = p.值['--种子'] ? p.值['--种子'].split(',').map(Number) : null;
   const 请求: Record<string, unknown>[] = [];
-  const 说明们: [string, object][] = [];
+  const 说明们 = new Map<string, Omit<候选说明, '参数'>>();
   for (const 行 of 行们) {
     const r = 参考(表, 行, 锁);
     const 目录 = 候选目录(数据根(), 作品名(), 行.id);
@@ -171,7 +171,7 @@ const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<type
         语气: 行.语气 ?? '', 语气参考: p.值['--语气参考'] ? path.resolve(p.值['--语气参考']) : (行.合成?.语气参考 ? 字节路径(锁[行.合成.语气参考]!, 数据根()) : ''),
         语气强度: p.值['--强度'] ? Number(p.值['--强度']) : (行.合成?.强度 ?? null), 参数: 行.合成?.参数 ?? {},
       });
-      说明们.push([输出, { 后端: 后端名, 种子, 参考: r.id, 参数: { ...后端配置(表, 后端名), ...(行.合成?.参数 ?? {}) }, 念: 念的字(行), 时间: new Date().toISOString() }]);
+      说明们.set(输出, { 后端: 后端名, 种子, 参考: r.id, 念: 念的字(行), 时间: new Date().toISOString() });
     }
   }
   const 配 = 后端配置(表, 后端名);
@@ -186,13 +186,13 @@ const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<type
   if (信息.付费 && !p.开关.has('--允许付费')) throw new 用法错误(`${后端名} 按次收费，确实要用加 --允许付费（先 --dry-run 看请求）`);
   if (信息.云端 && !p.开关.has('--允许云端') && !p.开关.has('--允许付费')) throw new 用法错误(`${后端名} 要把参考音频和台词发到外部服务，确实要用加 --允许云端`);
   if (信息.缺.length) throw new Error(`${后端名} 在这台机器上跑不了：${信息.缺.join('；')}`);
-  const 跑 = () => 跑配音py<{ id: string; 种子: number; 输出: string; 成功: boolean; 说明: string }[]>('合成', { 后端: 后端名, 配置: 配, 请求 });
+  const 跑 = () => 跑配音py<{ id: string; 种子: number; 输出: string; 成功: boolean; 说明: string; 参数: Record<string, unknown> }[]>('合成', { 后端: 后端名, 配置: 配, 请求 });
   // 本机模型吃 GPU 和十几 GB 统一内存，和渲染一样排队；云端的不占本机
   const 结果 = 信息.本机 ? await 过渲染闸(跑) : await 跑();
   let 坏 = 0;
   for (const r of 结果) {
-    const 说明 = 说明们.find(([f]) => f === r.输出)?.[1];
-    if (r.成功 && 说明) fs.writeFileSync(r.输出.replace(/\.wav$/i, '.json'), JSON.stringify(说明, null, 1) + '\n');
+    const 说明 = 说明们.get(r.输出);
+    if (r.成功 && 说明) fs.writeFileSync(r.输出.replace(/\.wav$/i, '.json'), JSON.stringify({ ...说明, 参数: r.参数 }, null, 1) + '\n');
     if (r.成功) 记录.产物.push(r.输出);
     else 坏++;
     console.log(`${r.id} 种子 ${r.种子}：${r.成功 ? r.输出 : '失败'}${r.说明 ? `（${r.说明}）` : ''}`);
@@ -215,6 +215,10 @@ const 补登记 = (id: string, 来源: string, 许可: string) => {
 
 const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: ReturnType<typeof 解析参数>, 记录: Parameters<命令['跑']>[1]) => {
   if (!fs.existsSync(候选)) throw new 用法错误(`没有 ${候选}`);
+  // 第 6、7 章的旧段还从旧项目的两份表（数据/配音/台词表、口型）取开口、时长、嘴，换了成品它们不跟着变：声音和嘴会对不上
+  if (!p.开关.has('--不管旧表') && [...旧台词改名(作品根()).values()].includes(行.id)) {
+    throw new 用法错误(`${行.id} 还被旧段的 台词轨.tsx、配音/口型.ts 经旧表（${旧表资产.台词表}、${旧表资产.口型}）用着，换了成品旧段的开口、时长、嘴不跟着变；用到它的段改用句模块后再换，确实要换加 --不管旧表`);
+  }
   const 说明 = 读候选说明(候选);
   const 来源 = 说明
     ? `手工:${说明.后端} 克隆 ${行.角色}（参考 ${说明.参考}），种子 ${说明.种子}${Object.keys(说明.参数).length ? `，${JSON.stringify(说明.参数)}` : ''}，anim voice gen 的候选里挑的`
@@ -241,12 +245,12 @@ const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: Retu
 
 export const 配音命令: Record<string, 命令> = {
   voice: {
-    用法: 'voice list [前缀…] | check [前缀…] [--对旧表] | gen <id…> [--后端 名] [--种子 a,b] [--语气参考 wav] [--强度 x] [--dry-run] [--允许云端] [--允许付费] | use <id> <候选.wav> [--不裁] [--替换] [--来源 说明] | lip [前缀…] [--重对齐] [--从旧表] | backends',
+    用法: 'voice list [前缀…] | check [前缀…] [--对旧表] | gen <id…> [--后端 名] [--种子 a,b] [--语气参考 wav] [--强度 x] [--dry-run] [--允许云端] [--允许付费] | use <id> <候选.wav> [--不裁] [--替换] [--不管旧表] [--来源 说明] | lip [前缀…] [--重对齐] [--从旧表] | backends',
     说明: '配音链：台词.toml 一句 → gen 出候选（run/草稿/配音/）→ use 定稿（裁静音拉响度、登记私有资产、写回 台词.toml、出句模块 台词/<id>.ts）；lip 重出口型；check 核对配音、句模块、口型可复现',
     跑: async (args, 记录) => {
       const [动作, ...余] = args;
       const p = 解析参数(余, {
-        开关: ['--对旧表', '--dry-run', '--允许云端', '--允许付费', '--不裁', '--替换', '--重对齐', '--从旧表'],
+        开关: ['--对旧表', '--dry-run', '--允许云端', '--允许付费', '--不裁', '--替换', '--不管旧表', '--重对齐', '--从旧表'],
         值: ['--后端', '--种子', '--语气参考', '--强度', '--来源'],
       });
       if (动作 === 'backends') {

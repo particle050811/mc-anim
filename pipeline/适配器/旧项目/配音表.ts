@@ -10,6 +10,18 @@ export type 旧配音 = { 旧id: string; 台词: 旧台词行; 口型?: 旧口�
 
 export const 旧表资产 = { 台词表: '数据/配音/台词表', 口型: '数据/配音/口型' } as const;
 
+/** 旧名.tsv 的 台词 行：旧 id → 新 id（旧表就是这些句子的） */
+export const 旧台词改名 = (作品根: string): Map<string, string> => {
+  const 新id = new Map<string, string>();
+  const 旧名 = path.join(作品根, '旧名.tsv');
+  if (!fs.existsSync(旧名)) return 新id;
+  for (const l of fs.readFileSync(旧名, 'utf8').split('\n')) {
+    const [类别, 旧, 新] = l.split('\t');
+    if (类别 === '台词' && 旧 && 新) 新id.set(旧, 新);
+  }
+  return 新id;
+};
+
 export const 读旧配音表 = (作品根: string, 锁: 资产锁, 数据根?: string): Map<string, 旧配音> => {
   const 读 = (id: string) => {
     const e = 锁[id];
@@ -18,14 +30,7 @@ export const 读旧配音表 = (作品根: string, 锁: 资产锁, 数据根?: s
   };
   const 台词表 = 读(旧表资产.台词表) as Record<string, 旧台词行>;
   const 口型 = 读(旧表资产.口型) as Record<string, 旧口型行>;
-  const 新id = new Map<string, string>();
-  const 旧名 = path.join(作品根, '旧名.tsv');
-  if (fs.existsSync(旧名)) {
-    for (const l of fs.readFileSync(旧名, 'utf8').split('\n')) {
-      const [类别, 旧, 新] = l.split('\t');
-      if (类别 === '台词' && 旧 && 新) 新id.set(旧, 新);
-    }
-  }
+  const 新id = 旧台词改名(作品根);
   const r = new Map<string, 旧配音>();
   for (const [旧id, 行] of Object.entries(台词表)) r.set(新id.get(旧id) ?? 旧id, { 旧id, 台词: 行, ...(口型[旧id] ? { 口型: 口型[旧id] } : {}) });
   return r;
