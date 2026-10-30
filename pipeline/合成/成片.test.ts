@@ -1,6 +1,6 @@
 // anim film 的多段拼接：两段小母版（48 帧、37 帧，声音都比画面长）接成一条，查总帧数、拼接表、manifest、声音按样本截；
 // 再查透明叠层叠在对的帧和位置、接缝首帧重复只报警不丢帧、分享版。
-// 母版、叠层用 ffmpeg 现造在临时数据根里，指纹按键现编（算段指纹 要打包画面闭包，这里不测它）。
+// 母版、叠层用 ffmpeg 现造在临时数据根里，指纹按键现编（算指纹要打包画面闭包，这里不测它）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -17,7 +17,9 @@ process.env.ANIM_DATA = 数据根;
 const 指纹 = (键: string) => crypto.createHash('sha256').update(键).digest('hex');
 vi.mock('../指纹/指纹.ts', () => {
   const 叠层键 = (段键: string, l: { 名: string }) => `${段键}-${l.名}`;
-  return { 叠层键, 算段指纹: async (s: { 键: string }, _: unknown, l?: { 名: string }) => ({ 段: l ? 叠层键(s.键, l) : s.键, 指纹: 指纹(l ? 叠层键(s.键, l) : s.键), 项: {} }) };
+  const 算段指纹 = async (s: { 键: string }, _: unknown, l?: { 名: string }) => ({ 段: l ? 叠层键(s.键, l) : s.键, 指纹: 指纹(l ? 叠层键(s.键, l) : s.键), 项: {} });
+  const 算全部段指纹 = (任务: { 段: { 键: string }; 渲染设置: unknown; 叠层?: { 名: string } }[]) => Promise.all(任务.map((t) => 算段指纹(t.段, t.渲染设置, t.叠层)));
+  return { 叠层键, 算段指纹, 算全部段指纹 };
 });
 
 const { 合成成片 } = await import('./成片.ts');

@@ -13,7 +13,7 @@ import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts
 import type { 资产锁 } from '../资产/资产锁.ts';
 import { 选作品错误 } from '../环境/作品.ts';
 
-export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台'] as const;
+export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本'] as const;
 export type 规则类 = (typeof 规则名)[number];
 
 export type 问题 = { 文件?: string; 行?: number; 文本: string };
@@ -40,10 +40,12 @@ export const 是渲染代码 = (p: string) => 渲染层前缀.some((x) => p.star
 
 /**
  * 纯模块：pipeline 直接 import、Node 里直接执行的作品文件和 engine/段 的框架，闭包里不许有 react、three、remotion。
- * 方案三-2 列的是 清单.ts、段.ts、时间线.ts、末态.ts；段定义.ts、设置值.ts 也被 pipeline import，一并算。
+ * 方案三-2 列的是 清单.ts、段.ts、时间线.ts、末态.ts；段定义.ts、设置值.ts 也被 pipeline import，一并算；
+ * 段框架（docs/新段.md）的 时间线、歌网格、声音助手、窗口段、清单工具 是 段.ts、清单.ts 引的，anim cues 也直接 import。
  */
+const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '清单工具'].map((x) => `engine/段/${x}.ts`);
 export const 是纯模块 = (p: string) =>
-  ['engine/段/段定义.ts', 'engine/段/设置值.ts'].includes(p) ||
+  engine纯模块.includes(p) ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||
   /^作品\/[^/]+\/(段|核对)\/[^/]+\/段\.ts$/.test(p) ||
   /^作品\/[^/]+\/场\/[^/]+\/(时间线|末态)\.ts$/.test(p);
