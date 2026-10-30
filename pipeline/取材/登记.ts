@@ -6,6 +6,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 作品资产表目录, 资产表目录, 库名, type 可见性, type 资产条目 } from '../资产/资产表.ts';
 import { 入库, 写资产锁, 读资产锁, 作品资产锁路径, 资产锁路径, 文件sha256, type 资产锁 } from '../资产/资产锁.ts';
+import { 带音频元数据 } from '../资产/音频量.ts';
 import type { 取材条目, 取材清单 } from './清单.ts';
 import { 默认部分, 继承许可, 许可表, 待定许可, type 继承结果 } from './许可.ts';
 
@@ -107,7 +108,7 @@ export const 登记产物 = (
   e: 取材条目,
   dir: string,
   产物: 待登记[],
-  o: { 作品根: string; 已登记: Map<string, 资产条目>; 锁: 资产锁; jar路径: (id: string) => string; 共用表目录?: string; 共用锁?: string; 数据根?: string },
+  o: { 作品根: string; 已登记: Map<string, 资产条目>; 锁: 资产锁; jar路径: (id: string) => string; 共用表目录?: string; 共用锁?: string; 数据根?: string; 量音频?: boolean },
 ): 登记结果 => {
   const r: 登记结果 = { 新登记: [], 补许可: [], 仍待定: [], 入锁: [], 表文件: [] };
   const 侧 = e.作品 === undefined ? '共用' : '作品';
@@ -138,7 +139,9 @@ export const 登记产物 = (
   const 锁 = 读资产锁(锁文件);
   for (const p of 新) {
     const 登记 = o.已登记.get(p.id);
-    锁[p.id] = 入库(path.join(dir, p.文件), 库名(登记?.可见性 ?? 可见), o.数据根);
+    const 文件 = path.join(dir, p.文件);
+    const 字节 = 入库(文件, 库名(登记?.可见性 ?? 可见), o.数据根);
+    锁[p.id] = o.量音频 === false ? 字节 : 带音频元数据(字节, 文件);
     r.入锁.push(p.id);
   }
   写资产锁(锁, 锁文件);

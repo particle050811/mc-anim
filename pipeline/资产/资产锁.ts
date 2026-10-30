@@ -9,7 +9,8 @@ import { 数据根 } from '../环境/配置.ts';
 import { 代码根 } from '../环境/路径.ts';
 
 export type 库 = 'store' | '私有';
-export type 锁条目 = { sha256: string; 大小: number; 库: 库; 后缀: string };
+/** 时长（秒）、峰值（采样峰值 dBFS）、响度（积分响度 LUFS）：音频入库时量的可选字段（资产/音频量.ts），不进指纹 */
+export type 锁条目 = { sha256: string; 大小: number; 库: 库; 后缀: string; 时长?: number; 峰值?: number; 响度?: number };
 export type 资产锁 = Record<string, 锁条目>;
 
 export const 资产锁路径 = () => path.join(代码根(), 'assets', '资产锁.json');
