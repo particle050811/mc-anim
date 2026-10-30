@@ -1,4 +1,4 @@
-// anim check 的八类规则（方案三-6）：类型、结构、清单、加载、台词、资产、规矩、平台。没有白名单：违规就改代码或改表。
+// anim check 的九类规则（方案三-6，副本是 10-30 整体优化方案 0.6 加的）：类型、结构、清单、加载、台词、资产、规矩、平台、副本。没有白名单：违规就改代码或改表。
 // 一次查一部作品（选项 作品；不给且只有一部就查它）；漫剧专属的表（台词、旧名、规矩）作品里没有、也没用到就跳过。
 // 「待迁移」不算违规：落点、例外还在旧项目、对应的段或场没搬进来的，列出来提醒，搬完自然消失。
 import { 报告, 检查上下文, 规则名, type 规则类 } from './上下文.ts';
@@ -10,6 +10,7 @@ import { 台词 } from './规则/台词.ts';
 import { 资产 } from './规则/资产.ts';
 import { 规矩 } from './规则/规矩.ts';
 import { 平台 } from './规则/平台.ts';
+import { 副本 } from './规则/副本.ts';
 
 export const 规则表: Record<规则类, { 说明: string; 跑: (c: 检查上下文, 报: 报告) => Promise<void> | void }> = {
   类型: { 说明: 'tsc strict；Python 的 ruff、pyright；改到 mod 时编译 mod、跑暮色网格核对（test/twilight-grid-test.sh）', 跑: 类型 },
@@ -20,6 +21,7 @@ export const 规则表: Record<规则类, { 说明: string; 跑: (c: 检查上�
   资产: { 说明: '引用的 id 都登记、共用和作品两侧的表锁对得上、许可来源可见性齐全、公开构建无私有资产、角色包；--深 逐个核 sha', 跑: 资产 },
   规矩: { 说明: '例外 和 作品的 规矩.toml 双向对得上、默认值落点在、出处引用的记忆在', 跑: 规矩 },
   平台: { 说明: 'Windows 合法文件名、结构层 ASCII、不开 shell、不用 fcntl', 跑: 平台 },
+  副本: { 说明: 'lerp、toThree、Cam 这类共用函数不许新写副本（import engine/core、库 的正本）；旧副本冻在 docs/副本表.tsv，只许减少', 跑: 副本 },
 };
 
 export type 检查选项 = { 只?: readonly 规则类[]; 快?: boolean; 深?: boolean; 数据根?: string; 作品?: string };
