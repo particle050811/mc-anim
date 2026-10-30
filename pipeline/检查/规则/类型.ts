@@ -39,7 +39,7 @@ export const 跑pyright = (c: 检查上下文, 报: 报告) => {
 
 /**
  * sourcing/mod/ 有改动（和 main 比、加上工作区）才跑。mod 没有 gradle 的 test 源集，测试是 test/*.sh：
- * 这里跑 twilight-grid-test.sh（先 gradlew build，再核对暮色网格和 mixin 织入）；ancient-city-test.sh 是重任务、
+ * 这里跑 twilight-grid-test.sh（先 gradlew build，再核对暮色网格和 mixin 织入）和 game-data-test.sh（游戏导表的出表，不开游戏）；ancient-city-test.sh 是重任务、
  * terrain-edit-test.sh 要旧项目的选种工具，都不在这里跑。Windows 没有 sh，只编译。
  */
 export const 跑gradle = (c: 检查上下文, 报: 报告) => {
@@ -59,6 +59,8 @@ export const 跑gradle = (c: 检查上下文, 报: 报告) => {
   }
   const r = 试跑(['sh', 'test/twilight-grid-test.sh'], { cwd: c.绝对(mod), env });
   if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'mod 编译和暮色网格核对', /FAILED|error:|错误|Exception/);
+  const g = 试跑(['sh', 'test/game-data-test.sh'], { cwd: c.绝对(mod), env });
+  if (g.退出码 !== 0) 收错(c, g.stdout + g.stderr, 报, '游戏导表出表核对', /没过|error:|Exception/);
 };
 
 export const 类型 = async (c: 检查上下文, 报: 报告) => {
