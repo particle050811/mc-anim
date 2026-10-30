@@ -14,7 +14,7 @@ import { 作品资产锁路径, 字节路径, 读资产锁, 资产锁路径, typ
 import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
 import { 列句模块, 句模块目录, 句模块路径, 写句模块文本, 读句模块 } from './句模块.ts';
 import { 跑配音py } from './python.ts';
-import { 改台词字段, 念的字, 文本哈希, 读作品台词, type 作品台词, type 台词行 } from './台词表.ts';
+import { 改台词字段, 念的字, 配音文本哈希, 读作品台词, type 作品台词, type 台词行 } from './台词表.ts';
 import { 候选目录, 句问题, 成品sha, 手修可用, 拼句, 读候选说明, wav秒数, type 候选说明, type 字们, type 测量 } from './配音.ts';
 
 const 台词文件 = () => path.join(作品根(), '台词.toml');
@@ -235,7 +235,7 @@ const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: Retu
   登记入库(原件id, 候选, { 作品根: 作品根(), 替换 });
   const { 条目 } = 登记入库(成品id, 不裁 ? 候选 : 成品, { 作品根: 作品根(), 替换 });
   let toml = fs.readFileSync(台词文件(), 'utf8');
-  toml = 改台词字段(toml, 行.id, { 配音: 成品id, 开口: m.开口, 文本哈希: 文本哈希(行.文本), 成品sha: 条目.sha256.slice(0, 12) });
+  toml = 改台词字段(toml, 行.id, { 配音: 成品id, 开口: m.开口, 文本哈希: 配音文本哈希(行), 成品sha: 条目.sha256.slice(0, 12) });
   fs.writeFileSync(台词文件(), toml);
   console.log(`${行.id}：成品 ${条目.sha256.slice(0, 12)}，开口 ${m.开口} 秒、有声 ${m.有声长} 秒、共 ${m.时长} 秒，增益 ${m.增益dB} dB`);
   const 新表 = 读表();

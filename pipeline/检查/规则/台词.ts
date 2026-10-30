@@ -1,6 +1,6 @@
 // 台词：作品的 台词.toml 的格式（开口秒、字幕位置）；cue 里的台词 id 都登记了；每句恰好开口一次（接上段的后半截不算）或标了 未用，
 // 接上段的 cue 前面（本段或清单里上一段）得有它开口；
-// 文本哈希对得上现在的文本、成品 sha 对得上资产锁，口型和口型手修绑定的成品 sha 也对得上（配音一换就报过期，不靠人记得重跑）；
+// 文本哈希对得上现在念的字（念，没写就是文本；只改字幕的写 念 = 原来的字）、成品 sha 对得上资产锁，口型和口型手修绑定的成品 sha 也对得上（配音一换就报过期，不靠人记得重跑）；
 // 作品有 台词/ 目录（anim voice 的句模块）的，有配音的每句都要有句模块、跟得上表和成品、是工具写的原样（嘴能不能按字重算出来归 anim voice check，要跑 Python）。
 // 没有台词表、段里也没有台词 cue 的作品不查。
 import fs from 'node:fs';
@@ -10,13 +10,13 @@ import type { 报告, 检查上下文 } from '../上下文.ts';
 import type { 资产锁 } from '../../资产/资产锁.ts';
 import { 写句模块文本, 解析句模块 } from '../../配音/句模块.ts';
 import { 句模块问题 } from '../../配音/配音.ts';
-import { 文本哈希 } from '../../配音/台词表.ts';
+import { 文本哈希, 配音文本哈希 } from '../../配音/台词表.ts';
 
 export const 台词表路径 = (c: 检查上下文) => c.作品路径('台词.toml');
 export { 文本哈希 };
 
 export const 字幕位置们 = ['下', '思索上'];
-export type 台词条目 = { id: string; 角色: string; 文本: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; 未用?: boolean };
+export type 台词条目 = { id: string; 角色: string; 文本: string; 念?: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; 未用?: boolean };
 
 export const 读台词表 = (c: 检查上下文, 报?: 报告): 台词条目[] | null => {
   const 位 = 台词表路径(c);
@@ -58,6 +58,10 @@ export const 台词 = async (c: 检查上下文, 报: 报告) => {
     for (const x of 撞旧名(旧名, t.id)) 报.错(`${名} 撞了旧名表第 ${x.行} 行的旧名（${x.类别}）：旧名永不复用`, 位);
     if (t.未用 !== undefined && typeof t.未用 !== 'boolean') 报.错(`${名}：未用 只能写 true 或 false`, 位);
     if (t.字幕位置 !== undefined && !字幕位置们.includes(t.字幕位置)) 报.错(`${名}：字幕位置 只能是 ${字幕位置们.join('、')}（不写是 下）`, 位);
+    if (t.念 !== undefined && (typeof t.念 !== 'string' || !t.念)) {
+      报.错(`${名}：念 要写非空的字（交给 TTS、对口型的字）`, 位);
+      continue;
+    }
     if (t.开口 !== undefined && !(typeof t.开口 === 'number' && Number.isFinite(t.开口) && t.开口 >= 0)) 报.错(`${名}：开口 是配音文件里第几秒开口，要写不小于 0 的数`, 位);
     if (t.配音 === undefined) {
       if (t.文本哈希 || t.成品sha || t.口型 || t.口型手修 || t.开口 !== undefined) 报.错(`${名}：没写 配音，却写了 文本哈希/成品sha/口型/开口`, 位);
@@ -69,8 +73,8 @@ export const 台词 = async (c: 检查上下文, 报: 报告) => {
       报.错(`${名}：配音「${t.配音}」不在资产锁里（先登记、入库）`, 位);
       continue;
     }
-    if (t.文本哈希 !== 文本哈希(t.文本)) {
-      报.错(`${名}：文本哈希 ${t.文本哈希 ?? '（没写）'} 和现在的文本（${文本哈希(t.文本)}）对不上：文本改过，配音过期，要重配（anim voice gen 出候选、anim voice use 定稿）或把文本改回去；只改字幕、念法不变的写 念 = 原来的字`, 位);
+    if (t.文本哈希 !== 配音文本哈希(t)) {
+      报.错(`${名}：文本哈希 ${t.文本哈希 ?? '（没写）'} 和现在念的字（念，没写就是文本：${配音文本哈希(t)}）对不上：念的字改过，配音过期，要重配（anim voice gen 出候选、anim voice use 定稿）或把文本改回去；只改字幕、念法不变的写 念 = 原来的字`, 位);
     }
     const 成品 = 锁条目.sha256;
     const 对 = (s: string | undefined) => typeof s === 'string' && s.length >= 12 && 成品.startsWith(s);

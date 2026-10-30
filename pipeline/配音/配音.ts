@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { 台词句 } from '../../engine/audio/台词句.ts';
 import type { 资产锁 } from '../资产/资产锁.ts';
-import { 念的字, 文本哈希, type 台词行 } from './台词表.ts';
+import { 念的字, 配音文本哈希, type 台词行 } from './台词表.ts';
 
 export type 测量 = { 开口: number; 有声长: number; 时长: number };
 export type 字们 = [string, number, number][];
@@ -45,7 +45,7 @@ export const 句问题 = (行: 台词行, 锁: 资产锁, 句: 台词句 | null)
   const sha = 成品sha(行, 锁);
   if (!sha) return [`配音「${行.配音}」不在资产锁里`];
   const 问题: string[] = [];
-  if (行.文本哈希 !== 文本哈希(行.文本)) 问题.push('文本改过、配音没重出（anim voice gen 再 use；只改字幕不改念法的，写 念 = 原来的字）');
+  if (行.文本哈希 !== 配音文本哈希(行)) 问题.push('念的字改过、配音没重出（anim voice gen 再 use；只改字幕不改念法的，写 念 = 原来的字）');
   if (!行.成品sha || !sha.startsWith(行.成品sha)) 问题.push(`台词.toml 的 成品sha ${行.成品sha ?? '（没写）'} 和资产锁 ${sha} 对不上`);
   if (行.口型手修?.字 && !手修可用(行, sha)) 问题.push(`口型手修 是对着成品 ${行.口型手修.成品sha ?? '（没写）'} 标的，现在是 ${sha}：重标或删掉`);
   return [...问题, ...句模块问题(行, sha, 句)];

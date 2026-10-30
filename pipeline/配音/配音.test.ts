@@ -107,7 +107,7 @@ describe('句模块', () => {
     expect(句问题(齐, 锁, 句)).toEqual([]);
     expect(句问题(齐, 锁, null)).toEqual(['没有句模块（anim voice lip）']);
     const 问题 = 句问题({ ...齐, 文本: '五万血！', 口型手修: { 成品sha: 'cccccccccccc', 字: [['五', 0, 1]] } }, 锁, { ...句, 念: '五万血？', 开口: 0 });
-    expect(问题.join('\n')).toMatch(/文本改过、配音没重出/);
+    expect(问题.join('\n')).toMatch(/念的字改过、配音没重出/);
     expect(问题.join('\n')).toMatch(/口型手修 是对着成品 cccccccccccc 标的/);
     expect(问题.join('\n')).toMatch(/念的字改了/);
     expect(问题.join('\n')).toMatch(/句模块的 开口 0 和 台词.toml 的 0.03 不同/);

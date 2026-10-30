@@ -24,10 +24,13 @@ export type 作品台词 = { 台词: 台词行[]; 配音: 配音设置; 音色: 
 
 export const 默认配音: 配音设置 = { 后端: 'firered-本机', 种子: [1234, 20261010, 7, 42], 目标响度: -18, 峰值上限: -1.5, 许可: 'LicenseRef-待定', 后端参数: {} };
 
-/** 配音时文本的 sha256 前 12 位（台词.toml 的 文本哈希；文本改了对不上 = 配音过期） */
+/** 字的 sha256 前 12 位 */
 export const 文本哈希 = (文本: string) => crypto.createHash('sha256').update(文本, 'utf8').digest('hex').slice(0, 12);
 
 export const 念的字 = (t: Pick<台词行, '念' | '文本'>) => t.念 ?? t.文本;
+
+/** 台词.toml 的 文本哈希 该是的值：配音念的字（念，没写同 文本）的哈希。念的字改了对不上 = 配音过期；只改字幕时写 念 = 原来的字，哈希照旧对得上 */
+export const 配音文本哈希 = (t: Pick<台词行, '念' | '文本'>) => 文本哈希(念的字(t));
 
 export const 解析作品台词 = (文本: string): 作品台词 => {
   const d = parse(文本) as { 台词?: 台词行[]; 配音?: Partial<配音设置>; 音色?: Record<string, 音色> };
