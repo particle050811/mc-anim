@@ -190,6 +190,31 @@ def _wrap_deg_f(x: float) -> float:
     return f
 
 
+def _jvm(f: Any) -> Any:
+    """Python 的 math 遇到定义域外、溢出抛异常，JVM 给 NaN、无穷"""
+
+    def g(*a: float) -> float:
+        try:
+            return f(*a)
+        except ValueError:
+            return math.nan
+        except OverflowError:
+            return math.inf
+
+    return g
+
+
+def _pow(a: float, b: float) -> float:
+    try:
+        return math.pow(a, b)
+    except ValueError:
+        if a == 0 and b < 0:  # Math.pow(±0, 负)：±无穷（负零配奇数次方才是负的）
+            return -math.inf if math.copysign(1, a) < 0 and b.is_integer() and b % 2 == 1 else math.inf
+        return math.nan
+    except OverflowError:
+        return math.inf if a > 0 or b.is_integer() and b % 2 == 0 else -math.inf
+
+
 内建: dict[str, tuple[str, Any]] = {
     # 类型, 实现（参数已是对应 JVM 类型的值）
     "net/minecraft/util/Mth.sin(F)F": ("f", _mth_sin),
@@ -205,8 +230,8 @@ def _wrap_deg_f(x: float) -> float:
     "net/minecraft/util/Mth.wrapDegrees(F)F": ("f", _wrap_deg_f),
     "net/minecraft/util/Mth.square(F)F": ("f", lambda x: f32(x * x)),
     "net/minecraft/util/Mth.floor(F)I": ("i", lambda x: _转整(math.floor(x), -(2**31), 2**31 - 1) if not math.isnan(x) else 0),
-    "java/lang/Math.sin(D)D": ("d", math.sin),
-    "java/lang/Math.cos(D)D": ("d", math.cos),
+    "java/lang/Math.sin(D)D": ("d", _jvm(math.sin)),
+    "java/lang/Math.cos(D)D": ("d", _jvm(math.cos)),
     "java/lang/Math.sqrt(D)D": ("d", lambda x: math.sqrt(x) if x >= 0 else math.nan),
     "java/lang/Math.abs(F)F": ("f", lambda x: abs(x)),
     "java/lang/Math.abs(D)D": ("d", lambda x: abs(x)),
@@ -217,9 +242,9 @@ def _wrap_deg_f(x: float) -> float:
     "java/lang/Math.max(DD)D": ("d", _jmax),
     "java/lang/Math.min(II)I": ("i", min),
     "java/lang/Math.max(II)I": ("i", max),
-    "java/lang/Math.pow(DD)D": ("d", lambda a, b: math.pow(a, b)),
-    "java/lang/Math.atan2(DD)D": ("d", math.atan2),
-    "java/lang/Math.exp(D)D": ("d", math.exp),
+    "java/lang/Math.pow(DD)D": ("d", _pow),
+    "java/lang/Math.atan2(DD)D": ("d", _jvm(math.atan2)),
+    "java/lang/Math.exp(D)D": ("d", _jvm(math.exp)),
     "java/lang/Math.signum(F)F": ("f", lambda x: x if x == 0 or math.isnan(x) else math.copysign(1.0, x)),
 }
 
@@ -410,6 +435,8 @@ class 图:
 def _json值(x: Any) -> Any:
     if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
         return "NaN" if math.isnan(x) else ("Infinity" if x > 0 else "-Infinity")
+    if isinstance(x, int) and not isinstance(x, bool) and abs(x) > 2**53:
+        return str(x)  # long 常量：JS 的 JSON.parse 读成 double 会丢位，写成串
     if isinstance(x, list):
         return [_json值(v) for v in x]
     return x
@@ -422,6 +449,8 @@ def _读值(x: Any) -> Any:
         return math.inf
     if x == "-Infinity":
         return -math.inf
+    if isinstance(x, str):
+        return int(x)
     return x
 
 
@@ -444,9 +473,9 @@ def 求值(节点们: list[list[Any]], 输入: dict[str, Any], 初始: dict[str,
             r = 比较(op, v[e[2]], v[e[3]])
         elif op == "not":
             r = not v[e[2]]
-        elif op == "and":
+        elif op == "and" and t == "z":  # 逻辑与；int / long 的 and 是按位与，走 算术
             r = v[e[2]] and v[e[3]]
-        elif op == "or":
+        elif op == "or" and t == "z":
             r = v[e[2]] or v[e[3]]
         elif op == "sel":
             r = v[e[3]] if v[e[2]] else v[e[4]]
