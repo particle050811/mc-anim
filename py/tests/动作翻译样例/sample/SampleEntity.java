@@ -19,4 +19,8 @@ public class SampleEntity extends Entity {
     public float getHealth() {
         return health;
     }
+
+    public SampleEntity getRider() {
+        return null;
+    }
 }

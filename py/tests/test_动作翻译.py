@@ -19,7 +19,7 @@ import pytest
 
 from anim_py.动作翻译.图 import f32, 内建, 图, 求值, 转换
 from anim_py.动作翻译.执行 import 不支持, 翻译器
-from anim_py.动作翻译.映射 import 恒等映射
+from anim_py.动作翻译.映射 import 恒等映射, 读映射
 from anim_py.动作翻译.类文件 import 类路径
 
 样例 = Path(__file__).parent / "动作翻译样例"
@@ -206,6 +206,27 @@ def test_符号条件的循环翻译不了(编译好: tuple[Path, Path]) -> None
     jar, _ = 编译好
     with pytest.raises(不支持, match="条件是符号的循环.*LoopModel"):
         翻译器(类路径([str(jar)], 恒等映射()), "sample.LoopModel", 模型树=模型树).翻译()
+
+
+def test_映射对不上时报错_空的setupAnim照常翻(编译好: tuple[Path, Path], tmp_path: Path) -> None:
+    """映射和 jar 对不上时 ModelPart.xRot 认不出来，以前会静默翻出空程序；setupAnim 本来就空的（原版史莱姆）照常出空程序"""
+    jar, _ = 编译好
+    client = tmp_path / "client.txt"
+    client.write_text("net.minecraft.client.model.geom.ModelPart -> zzz:\n    float xRot -> a\n", encoding="utf-8")
+    with pytest.raises(不支持, match="认不出.*ModelPart.xRot"):
+        翻译器(类路径([str(jar)], 读映射(f"proguard:{client}")), "sample.SampleModel", 模型树=模型树).翻译()
+    assert 翻译器(类路径([str(jar)], 恒等映射()), "sample.EmptyModel", 模型树=模型树).翻译()["输出"] == {}
+
+
+def test_实体上取的东西判null当输入(编译好: tuple[Path, Path]) -> None:
+    jar, _ = 编译好
+    prog = 翻译器(类路径([str(jar)], 恒等映射()), "sample.NullModel", 模型树=模型树).翻译()
+    assert prog["输入"]["entity.getRider() == null"] == {"类型": "i", "来源": "实体"}
+    i = prog["输出"]["head"]["xRot"]
+    初始 = {"head": dict.fromkeys(("x", "y", "z", "xRot", "yRot", "zRot"), 0.0)}
+    有 = 求值(prog["节点"], {"entity.getRider() == null": 0, "entity.getRider().getHealth()": 10.0}, 初始)[i]
+    没有 = 求值(prog["节点"], {"entity.getRider() == null": 1, "entity.getRider().getHealth()": 10.0}, 初始)[i]
+    assert (有, 没有) == (f32(f32(10.0) * f32(0.1)), -1.0)
 
 
 def test_图的常量折叠按JVM语义() -> None:

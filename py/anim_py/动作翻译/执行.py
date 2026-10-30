@@ -954,8 +954,12 @@ class 翻译器:
             raise 不支持("multianewarray")
         elif op in (198, 199):
             v = st.pop()
+            if isinstance(v, 不透明) and v.路径.startswith("entity"):
+                # 从实体取的东西可能是 null（getVehicle()、getTarget()）：是不是 null 当输入，不给按非 null 算
+                c = g.比("!=", self.输入(f"{v.路径} == null", "i", "实体").id, g.常("i", 0))
+                return self.条件跳(fr, c if op == 198 else g.非(c), arg[0], nxt)
             if isinstance(v, 不透明):
-                isnull = False
+                isnull = False  # 注册表对象（Items.BOW）、构造参数这些不会是 null
             elif isinstance(v, 条件引用):
                 isnull = None
                 c = g.假()
@@ -1360,6 +1364,10 @@ class 翻译器:
         self.构造后堆 = {k: v for k, v in 态.堆.items() if k[0] != ("模型",)}
 
     def 翻译(self, 带prepare: bool = True) -> dict:
+        # 映射和 jar 对不上时 ModelPart.xRot 这些字段名认不出来，写进去的姿态会被当成别的字段丢掉，静默翻出空程序
+        mp = self.类(部件类)
+        if mp is None or mp.找字段("xRot") is None:
+            raise 不支持(f"类路径里认不出 {部件类}.xRot：映射和 jar 对不上（混淆的客户端配 proguard:，SRG 名的 jar 配 srg:），或者没带客户端 jar")
         self.构造()
         ent = 不透明("entity", 实体类)
         态 = 堆态()
