@@ -62,3 +62,10 @@ export const 写认可 = (file: string, r: 认可记录) => {
   fs.writeFileSync(tmp, 认可文本(r), 'utf8');
   fs.renameSync(tmp, file);
 };
+
+/**
+ * accept 的选择器每个只许点名一段，返回对上不止一段的（选择器和它对上的段键）。
+ * 原来一次只认可一段；能不能按场、章一次认可整批还没让用户定，先只放开「逐段点名多段」，免得一个章号把整章都记成看过。
+ */
+export const 点名不唯一 = <S extends { 键: string }>(选择器: readonly string[], 段们: readonly S[], 匹配: (s: S, 选: string) => boolean) =>
+  选择器.map((x) => ({ 选择器: x, 段: 段们.filter((s) => 匹配(s, x)).map((s) => s.键) })).filter((y) => y.段.length > 1);
