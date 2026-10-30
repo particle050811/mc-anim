@@ -16,6 +16,8 @@ export type VoxelSource = {
   // 预取：这一帧要用的区段，没取到的开始取，返回取齐的 Promise；都在手上返回 undefined（体素世界据此决定同步建还是先等）
   区段: (section: SectionId) => VoxelGrid | null;
   prefetch?: (qs: SectionId[]) => Promise<void> | undefined;
+  // 转交：`区段` 每次返回新建的体素块、自己不留着，体素世界把它转交给网格工人（不拷贝，交完这边就用不了了）
+  转交?: boolean;
 };
 // 色板：体素值 + 染色（sRGB 0～255，游戏在 sRGB 上乘染色；不染色的方块是白色）
 export type PaletteEntry = { v: number; c: RGB };

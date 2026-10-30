@@ -159,7 +159,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           for (const section of qs) {
             if (inFlight.length >= windowSize) await collectOne();
             const voxels = source.区段(section);
-            inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1) : null });
+            inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.转交) : null });
             if (performance.now() - t > 1000) break; // 隔一会儿回头看一次要建的变没变
           }
           while (inFlight.length) await collectOne();
