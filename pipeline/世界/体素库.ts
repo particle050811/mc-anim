@@ -1,7 +1,7 @@
 // anim world 用到的 engine/voxel 模块：区段包格式（区段包.ts、区段.ts）、合并规则（生成.ts）、方块表（真实方块表.ts）、群系抖动（群系色.ts）。
 // 格式和规则只有 engine 里那一份，这里不抄。它们 import 了 asset:（方块表、群系色 JSON），Node 里要先注册 资产/node资产钩子.ts 才执行得了，
 // 所以按路径动态 import（静态 import 会在注册前就解析）；类型照常静态引，tsc 照查。
-// 这几个模块的闭包不许有 react、three、remotion（体素库.test.ts 用 esbuild 守）。
+// 这几个模块的闭包不许有 react、three、remotion（存档.test.ts 的「体素库」用 esbuild 守）。
 import { register } from 'node:module';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
