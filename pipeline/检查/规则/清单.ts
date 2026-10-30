@@ -3,6 +3,7 @@
 import { 读内容, 实有目录 } from '../内容.ts';
 import { 撞旧名, 撞旧段名, 读旧名 } from '../旧名.ts';
 import type { 报告, 检查上下文 } from '../上下文.ts';
+import { 注册收的目录, 缺目录提示 } from '../../段框架/注册目录.ts';
 
 /** Remotion 的 Composition id 只认 a-z A-Z 0-9 - 和 CJK（validate-composition-id.js） */
 const 名字符 = '[A-Za-z0-9\\u4e00-\\u9fff]';
@@ -48,6 +49,15 @@ export const 清单 = async (c: 检查上下文, 报: 报告) => {
     const 清单里 = new Set(段们.filter((s) => s.目录.startsWith(前缀)).map((s) => s.目录.slice(前缀.length)));
     for (const d of 实有目录(c, 层)) if (!清单里.has(d)) 报.错(`${前缀}${d}/ 不在清单里（加进 ${清单文件}，或删掉这个目录）`, `${前缀}${d}`);
     for (const d of 清单里) if (!c.存在(`${前缀}${d}`)) 报.错(`清单里有 ${层 === '核对' ? `核对-${d}` : d}，但没有 ${前缀}${d}/`, 清单文件);
+  }
+
+  // 注册.tsx 用 webpackContext 收的目录要有文件（git 不记空目录，没有文件别处 clone 下来就打不了包）
+  const 注册文件 = c.作品路径('注册.tsx');
+  if (c.存在(注册文件)) {
+    const 有文件 = c.本作品文件();
+    for (const d of 注册收的目录(c.读(注册文件))) {
+      if (!有文件.some((p) => p.startsWith(c.作品路径(`${d}/`)))) 报.错(缺目录提示(c.作品目录, d), 注册文件);
+    }
   }
 
   // 场键：清单里用到的和 场/ 下的目录

@@ -7,6 +7,7 @@ import type { 段定义 } from '../../engine/段/段定义.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 声音地址文本, 声音表文本, 新鲜执行 } from './生成.ts';
 import { 注册模板, 清单加一段, 新作品, 新段 } from './新作品.ts';
+import { 缺的注册目录, 注册收的目录 } from './注册目录.ts';
 
 let 临时: string;
 beforeEach(() => {
@@ -26,7 +27,7 @@ describe('新作品', () => {
     const 写了 = 新作品(临时, '试作');
     const 根 = path.join(临时, '作品', '试作');
     expect(写了.map((f) => path.relative(根, f)).sort()).toEqual(
-      ['index.ts', '注册.tsx', '清单.ts', '核对/起步/段.ts', '核对/起步/画面.tsx', '核对/起步/声音表.生成.ts', '核对/起步/声音地址.生成.ts'].sort(),
+      ['index.ts', '注册.tsx', '清单.ts', '段/说明.md', '核对/起步/段.ts', '核对/起步/画面.tsx', '核对/起步/声音表.生成.ts', '核对/起步/声音地址.生成.ts'].sort(),
     );
     expect(读(根, '核对/起步/声音表.生成.ts')).toBe(声音表文本({ 资产: {}, 台词: {} }));
     expect(读(根, '核对/起步/声音地址.生成.ts')).toBe(声音地址文本([], {}));
@@ -34,6 +35,12 @@ describe('新作品', () => {
     expect([段.帧数, 段.fps, 段.宽, 段.高, 段.声音]).toEqual([48, 24, 1280, 720, undefined]);
     const 清单 = await 新鲜执行(path.join(根, '清单.ts'), 代码根());
     expect((清单.段目录 as (k: string) => string)('核对-起步')).toBe('核对/起步');
+    // 还没有正片段时 段/ 也在（注册.tsx 的 webpackContext('./段') 要它），占位文件不会被注册.tsx 的正则当成段
+    expect(注册收的目录(注册模板)).toEqual(['段', '核对']);
+    expect(缺的注册目录(根)).toEqual([]);
+    expect(注册模板).not.toMatch(/说明/);
+    fs.rmSync(path.join(根, '段'), { recursive: true });
+    expect(缺的注册目录(根)).toEqual(['段']);
     expect(() => 新作品(临时, '试作')).toThrow(/已经有了/);
     expect(() => 新作品(临时, '../外面')).toThrow(/只能用/);
   });

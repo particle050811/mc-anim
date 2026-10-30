@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { 声音地址文件, 声音地址文本, 声音表文件, 声音表文本 } from './生成.ts';
+import { 占位文件名, 段目录占位文本 } from './注册目录.ts';
 
 const 名字符 = '[A-Za-z0-9\\u4e00-\\u9fff]';
 const 作品名合法 = (名: string) => new RegExp(`^${名字符}+$`).test(名);
@@ -67,7 +68,7 @@ export default 定义画面(段, 声音, () => {
 });
 `;
 
-/** 起一部新作品：作品/<名>/ 下的 清单.ts、注册.tsx、index.ts 和一个能渲的 核对-起步 段 */
+/** 起一部新作品：作品/<名>/ 下的 清单.ts、注册.tsx、index.ts、一个能渲的 核对-起步 段，和撑住 段/ 目录的 段/说明.md（注册目录.ts） */
 export const 新作品 = (代码根: string, 名: string): string[] => {
   if (!作品名合法(名)) throw new Error(`作品名「${名}」只能用汉字、字母、数字`);
   const 根 = path.join(代码根, '作品', 名);
@@ -76,6 +77,7 @@ export const 新作品 = (代码根: string, 名: string): string[] => {
   写新文件(path.join(根, '清单.ts'), 清单模板('核对-起步'), 写了);
   写新文件(path.join(根, '注册.tsx'), 注册模板, 写了);
   写新文件(path.join(根, 'index.ts'), index模板, 写了);
+  写新文件(path.join(根, '段', 占位文件名), 段目录占位文本, 写了);
   const 段目录 = path.join(根, '核对', '起步');
   写新文件(
     path.join(段目录, '段.ts'),

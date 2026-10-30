@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
 import { getCompositions, openBrowser, renderMedia, renderStill, type HeadlessBrowser } from '@remotion/renderer';
-import { 代码根 } from '../环境/路径.ts';
+import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 import { 稳定缓存名 } from '../资产/缓存名.ts';
@@ -20,6 +20,7 @@ import { 读作品资产锁 } from '../资产/资产锁.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
 import { 补缺字节占位 } from '../资产/缺字节.ts';
 import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
+import { 缺的注册目录, 缺目录提示 } from '../段框架/注册目录.ts';
 import { 记耗时, 预计耗时, type 运行记录 } from '../运行记录/记录.ts';
 import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记录 } from '../运行记录/阶段.ts';
 import { 叠层路径, 母版路径, 写指纹 } from './母版.ts';
@@ -34,6 +35,8 @@ export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作
 
 export const 打包 = async (记录?: 运行记录) => {
   const 根 = 作品根();
+  const 缺目录 = 缺的注册目录(根);
+  if (缺目录.length) throw new Error(缺目录.map((d) => 缺目录提示(相对代码根(根), d)).join('\n'));
   补字节并报(根, 数据根());
   for (const x of 备好私有配乐(await 全部段(), 读作品资产锁(根), 数据根())) {
     if (记录) 记录.记('警告', 缺配乐提示(x));
