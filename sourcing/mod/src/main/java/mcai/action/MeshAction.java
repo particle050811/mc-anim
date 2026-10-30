@@ -32,6 +32,7 @@ import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.resources.ResourceLocation;
@@ -40,13 +41,18 @@ import net.minecraft.world.entity.ExperienceOrb;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ColorResolver;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.lighting.LevelLightEngine;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.level.levelgen.structure.Structure;
+import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.storage.LevelResource;
 import net.minecraft.world.phys.AABB;
@@ -111,8 +117,10 @@ public class MeshAction implements Action {
 
     public List<Param> params() {
         return List.of(
-                Param.must("from", "x,y,z", "一个角"),
-                Param.must("to", "x,y,z", "对角（含）"),
+                Param.opt("from", "x,y,z", "一个角（和 to 一起写；不写就要写 structure）"),
+                Param.opt("to", "x,y,z", "对角（含）"),
+                Param.opt("structure", "结构id", "范围取这个结构的包围盒（含结构为贴合地形外扩的部分），代替 from/to；如 twilightforest:lich_tower"),
+                Param.opt("at", "x,y,z", "structure 取哪一处：水平方向包含这一点的那个结构；默认玩家（镜头）所在位置"),
                 Param.must("out", "路径", "不带扩展名，会写出 .json、.bin、.png 三个文件"),
                 Param.opt("origin", "x,y,z", "导出坐标的原点（游戏坐标）。不写就是区域底面的中心"),
                 Param.opt("outside", "0|1", "1 = 只要从外面看得到的：从区域顶上往里灌，灌不到的封闭洞穴和房间不导出（大范围地形用）。默认 0"),
@@ -132,7 +140,8 @@ public class MeshAction implements Action {
 
     public JsonElement run(Args args) throws Exception {
         long t0 = System.nanoTime();
-        Job job = Game.onClient(() -> new Job(args));
+        BlockPos[] box = range(args);
+        Job job = Game.onClient(() -> new Job(args, box[0], box[1]));
         boolean loaded = Game.onClient(() -> job.missing(job.rx0, job.rz0, job.rx1, job.rz1) == 0);
         if (loaded) {
             long c0 = System.nanoTime();
@@ -183,6 +192,31 @@ public class MeshAction implements Action {
         return r;
     }
 
+    /** 导出范围的两个角：from/to 直接给，或 structure 按结构包围盒算。结构起点只在服务端有，到集成服务端线程上查 */
+    private static BlockPos[] range(Args args) throws Exception {
+        boolean corners = args.has("from") || args.has("to");
+        if (args.has("structure") == corners) throw new ActionException("范围要么写 from 和 to，要么写 structure（二选一）");
+        if (corners) {
+            if (!args.has("from") || !args.has("to")) throw new ActionException("from 和 to 要一起写");
+            return new BlockPos[]{BlockPos.containing(args.vec("from")), BlockPos.containing(args.vec("to"))};
+        }
+        return Game.onServer(() -> {
+            ServerLevel sl = Game.player().serverLevel();
+            ResourceLocation id = ResourceLocation.tryParse(args.str("structure"));
+            Structure s = id == null ? null : sl.registryAccess().registryOrThrow(Registries.STRUCTURE).get(id);
+            if (s == null) throw new ActionException("没有这个结构：" + args.str("structure"));
+            BlockPos at = args.has("at") ? BlockPos.containing(args.vec("at")) : Game.player().blockPosition();
+            // 结构起点挂在起点区块上，别的区块只记引用；按 at 所在区块的引用找，水平方向含 at 的才算（at 常在结构上空的镜头位置，不比 y）
+            for (StructureStart st : sl.structureManager().startsForStructure(new ChunkPos(at), x -> x == s)) {
+                BoundingBox bb = st.getBoundingBox();
+                if (st.isValid() && bb.minX() <= at.getX() && at.getX() <= bb.maxX() && bb.minZ() <= at.getZ() && at.getZ() <= bb.maxZ()) {
+                    return new BlockPos[]{new BlockPos(bb.minX(), bb.minY(), bb.minZ()), new BlockPos(bb.maxX(), bb.maxY(), bb.maxZ())};
+                }
+            }
+            throw new ActionException("(" + at.getX() + "," + at.getZ() + ") 不在 " + id + " 里（这一区块没有它的引用；用 at= 指到结构里，或先 /locate structure " + id + "）");
+        });
+    }
+
     /** 一次导出的全部状态。范围大时分多块导，每一块的面都攒在这里，最后一起写文件。 */
     private static final class Job {
         final Minecraft mc = Minecraft.getInstance();
@@ -219,11 +253,10 @@ public class MeshAction implements Action {
         int blocks, tiles;
         long waitNs, captureNs;
 
-        Job(Args args) {
+        Job(Args args, BlockPos a, BlockPos b) {
             this.args = args;
             level = mc.level;
             if (level == null) throw new ActionException("还没进入世界");
-            BlockPos a = BlockPos.containing(args.vec("from")), b = BlockPos.containing(args.vec("to"));
             rx0 = Math.min(a.getX(), b.getX());
             rz0 = Math.min(a.getZ(), b.getZ());
             rx1 = Math.max(a.getX(), b.getX());
