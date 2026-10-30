@@ -13,7 +13,7 @@ import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts
 import type { 资产锁 } from '../资产/资产锁.ts';
 import { 选作品错误 } from '../环境/作品.ts';
 
-export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台'] as const;
+export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本'] as const;
 export type 规则类 = (typeof 规则名)[number];
 
 export type 问题 = { 文件?: string; 行?: number; 文本: string };
