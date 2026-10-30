@@ -46,7 +46,7 @@ export const 烘焙世界 = async (w: 世界声明, o: 烘焙选项): Promise<�
     if (!文件们.length) throw new Error(`包 ${b.名}：${源.区域目录} 里没有范围内的区域文件`);
     const 区域们 = await 源.预读(文件们, o.线程 ?? 默认线程(), o.日志);
     if (!区域们.length) throw new Error(`包 ${b.名}：范围内 ${文件们.length} 个区域文件里没有生成完的区块`);
-    if (套) o.日志(`套编辑 ${path.relative(代码根(), 套.文件)}：${套.步.length} 步`);
+    if (套) o.日志(`套编辑 ${path.relative(代码根(), 套.文件)}：${套.步.length} 条命令`);
     const 暂存 = 新暂存(b.名);
     let 版本: string, dir: string;
     let r: Awaited<ReturnType<typeof 烘焙>>;
@@ -59,14 +59,14 @@ export const 烘焙世界 = async (w: 世界声明, o: 烘焙选项): Promise<�
       暂存.放();
     }
     const 原 = 读地形表().包[b.名];
-    const 来源 = `${b.来源 ?? `${w.服务端} ${w.存档} 存档，anim world bake ${w.名称} 烘焙`}${套 ? `，套编辑 ${path.relative(代码根(), 套.文件).split(path.sep).join('/')}（${套.步.length} 步，sha256 ${套.sha256.slice(0, 12)}）` : ''}`;
+    const 来源 = `${b.来源 ?? `${w.服务端} ${w.存档} 存档，anim world bake ${w.名称} 烘焙`}${套 ? `，套编辑 ${path.relative(代码根(), 套.文件).split(path.sep).join('/')}（${套.步.length} 条命令，sha256 ${套.sha256.slice(0, 12)}）` : ''}`;
     const 条目 = await 登记条目(b.名, 版本, { 来源, 许可: 'LicenseRef-Minecraft-Derived', 可见性: '发布' });
     const 一样 = 原?.版本 === 版本;
-    const 要登记 = !一样 && !o.不登记;
+    const 要登记 = !一样 && !o.不登记 && b.登记;
     if (要登记) 登记(b.名, 条目);
     o.日志(
       `地形包 ${b.名}：版本 ${版本}（${dir}）` +
-        (一样 ? '，和 assets/地形版本.json 登记的一样' : 要登记 ? `，已登记进 assets/地形版本.json（原来是 ${原?.版本 ?? '没有'}），要随代码提交；用这个包的段都会过期` : `，没登记（--不登记；登记的是 ${原?.版本 ?? '没有'}）`),
+        (一样 ? '，和 assets/地形版本.json 登记的一样' : 要登记 ? `，已登记进 assets/地形版本.json（原来是 ${原?.版本 ?? '没有'}），要随代码提交；用这个包的段都会过期` : `，没登记（${b.登记 ? '--不登记' : '声明里 登记 = false'}；登记的是 ${原?.版本 ?? '没有'}）`),
     );
     for (const x of 器?.警告 ?? []) o.日志(`  编辑：${x}`);
     提醒冻结粗高度(b.名, r.包, 库, o.日志);

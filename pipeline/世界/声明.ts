@@ -17,6 +17,8 @@ export type 包声明 = {
   来源?: string;
   /** false = 这个包不套编辑层（默认套） */
   套编辑: boolean;
+  /** false = 烘了也不登记进 assets/地形版本.json（演示、试验用的包；登记会让所有用地形的段过期） */
+  登记: boolean;
 };
 export type 预生成块 = { 名: string; 两角?: [number, number, number, number]; 中心?: [number, number]; 半边?: [number, number]; 依据?: string };
 export type 世界声明 = {
@@ -96,7 +98,7 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
       const 原点 = 原点于(b.原点, `包 ${b.名} 的 原点`) ?? 默认原点;
       if (!原点) throw 错(`包 ${b.名} 没有原点（写在 [烘焙] 原点 或包里）`);
       if (已知 && 原点[1] !== 已知.oy) throw 错(`包 ${b.名} 的 oy 是 ${原点[1]}，${维度} 一律 ${已知.oy}（engine 按这个换竖直坐标）`);
-      return { 名: b.名, 区域: 范围(b.区域, `包 ${b.名} 的 区域`), 原点, 来源: typeof b.来源 === 'string' ? b.来源 : undefined, 套编辑: b.套编辑 !== false };
+      return { 名: b.名, 区域: 范围(b.区域, `包 ${b.名} 的 区域`), 原点, 来源: typeof b.来源 === 'string' ? b.来源 : undefined, 套编辑: b.套编辑 !== false, 登记: b.登记 !== false };
     });
     const 重名 = 包们.map((b) => b.名).filter((n, i, a) => a.indexOf(n) !== i);
     if (重名.length) throw 错(`包重名：${重名.join('、')}`);

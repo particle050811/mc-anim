@@ -39,7 +39,7 @@ const 子命令们: Record<string, 子命令> = {
       const 线程 = p.值['--线程'] ? Number(p.值['--线程']) : undefined;
       if (线程 !== undefined && !(Number.isInteger(线程) && 线程 > 0)) throw new 用法错误('--线程 要是正整数');
       const 编辑 = p.开关.has('--不套编辑') ? null : await 载入编辑(w); // 编辑文件写错了，排队前就报
-      if (编辑) console.log(`编辑层 ${相对(编辑.文件)}：${编辑.步.length} 步`);
+      if (编辑) console.log(`编辑层 ${相对(编辑.文件)}：${编辑.步.length} 条命令`);
       const 结果 = await 过放行闸(() =>
         烘焙世界(w, { 包: p.值['--包'], 存档: p.值['--存档'], 不套编辑: p.开关.has('--不套编辑'), 不登记: p.开关.has('--不登记'), 线程, 日志: (s) => console.log(s) }),
       );
@@ -62,7 +62,7 @@ const 子命令们: Record<string, 子命令> = {
         return 动作 === 'check' ? 0 : 1;
       }
       if (动作 === 'check') {
-        console.log(`${相对(e.文件)}：${e.步.length} 步，都过了方块表校验；sha256 ${e.sha256.slice(0, 12)}`);
+        console.log(`${相对(e.文件)}：${e.步.length} 条命令，都过了方块表校验；sha256 ${e.sha256.slice(0, 12)}`);
         for (const s of e.步) console.log(`  ${s.出处}：${s.原文}`);
         for (const [k, v] of Object.entries(e.结构缺状态)) console.log(`  注意：结构 ${k} 里 ${v.length} 种状态方块表没有（烘焙时进 缺失.tsv，画不出来）：${v.slice(0, 8).join('、')}${v.length > 8 ? '…' : ''}`);
         return 0;
@@ -72,7 +72,7 @@ const 子命令们: Record<string, 子命令> = {
       fs.mkdirSync(dir, { recursive: true });
       const 前 = path.join(dir, `${名}.重放`);
       fs.writeFileSync(`${前}.mcfunction`, [...r.加载, ...r.命令, ...r.卸载].join('\n') + '\n');
-      fs.writeFileSync(`${前}.sh`, 重放脚本(r, `anim world edit replay ${名} 生成：在游戏里重放 ${相对(e.文件)}（${e.步.length} 步，sha256 ${e.sha256.slice(0, 12)}）`), { mode: 0o755 });
+      fs.writeFileSync(`${前}.sh`, 重放脚本(r, `anim world edit replay ${名} 生成：在游戏里重放 ${相对(e.文件)}（${e.步.length} 条命令，sha256 ${e.sha256.slice(0, 12)}）`), { mode: 0o755 });
       for (const x of r.警告) console.log(`注意：${x}`);
       console.log(`${r.命令.length} 条命令（另 ${r.加载.length} 条 forceload），只生成不执行：\n  ${前}.sh（anim mcai batch，游戏要开着）\n  ${前}.mcfunction（放进数据包 /function 跑也行）`);
       记录.产物.push(`${前}.sh`, `${前}.mcfunction`);
