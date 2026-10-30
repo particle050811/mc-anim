@@ -196,6 +196,28 @@ def _wrap_deg_f(x: float) -> float:
     return f
 
 
+_PI_F = f32(math.pi)
+_TAU_F = f32(math.pi * 2)
+
+
+def _rotlerp_rad(a: float, b: float, t: float) -> float:
+    """ModelUtils.rotlerpRad(FFF)F（1.20.1）：d = b - a；while (d < -π) d += 2π；while (d >= π) d -= 2π；return a + t * d。
+    循环次数取决于输入，翻译器跑不了，所以做成内建。差太大（|d| 过 2^25 左右，加减 2π 不动了）或是无穷、NaN 时 JVM 永远不返回，这里给 NaN"""
+    d = f32(b - a)
+    n = 0
+    while d < -_PI_F:
+        e = f32(d + _TAU_F)
+        if e == d or n >= 1 << 24:
+            return math.nan
+        d, n = e, n + 1
+    while d >= _PI_F:
+        e = f32(d - _TAU_F)
+        if e == d or n >= 1 << 24:
+            return math.nan
+        d, n = e, n + 1
+    return f32(a + f32(t * d))
+
+
 def _jvm(f: Any) -> Any:
     """Python 的 math 遇到定义域外、溢出抛异常，JVM 给 NaN、无穷"""
 
@@ -237,6 +259,7 @@ def _pow(a: float, b: float) -> float:
     "net/minecraft/util/Mth.wrapDegrees(F)F": ("f", _wrap_deg_f),
     "net/minecraft/util/Mth.square(F)F": ("f", lambda x: f32(x * x)),
     "net/minecraft/util/Mth.floor(F)I": ("i", _mth_floor_f),
+    "net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F": ("f", _rotlerp_rad),
     "java/lang/Math.sin(D)D": ("d", _jvm(math.sin)),
     "java/lang/Math.cos(D)D": ("d", _jvm(math.cos)),
     "java/lang/Math.sqrt(D)D": ("d", lambda x: math.sqrt(x) if x >= 0 else math.nan),
