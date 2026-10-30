@@ -2,6 +2,7 @@
 // anim extract [<名称或组>…|--全部] [--只打印|--检查 [--校验]|--列出] [--登记] [--新 <id>…]：按 sourcing/extract.toml 从游戏和模组 jar 导出资产，产物和资产锁比对、入库；
 //   --登记 另把锁里没有的产物登记进资产表、写锁（取材/登记.ts）。--新 把锁里还没有的 id 加进产物清单，给按锁反推要导什么的配方（音效）导新件。anim extract --许可 [--写]：资产表里待定的许可按 jar 继承补上（取材/许可.ts）。
 //   anim extract --补网格配方 [--写]：锁里没有配方的场景网格按网格头反填配方，标不重导（取材/网格配方.ts）。
+//   anim extract --下载 [<id>…]：jars.toml 里 根 = 数据 的（官方映射这类本机自取的）下到数据根、核 sha（取材/下载.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
@@ -16,7 +17,8 @@ import { 过放行闸 } from '../闸/闸.ts';
 import { mcai命令, mcai环境, 渲染中, 要过闸 } from './mcai.ts';
 import { 取材目录, 读清单, 选条目 } from './清单.ts';
 import { 分组, 缺配方网格, 补网格配方文本 } from './网格配方.ts';
-import { jar路径, 提取一条, 新id归属, 暂存目录, 检查, 跑步骤 } from './提取.ts';
+import { 下载, 下载清单 } from './下载.ts';
+import { jar登记路径, jar路径, 提取一条, 新id归属, 暂存目录, 检查, 跑步骤 } from './提取.ts';
 
 const 睡 = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -44,14 +46,30 @@ export const 取材命令: Record<string, 命令> = {
     },
   },
   extract: {
-    用法: 'extract [<名称或组>…] [--全部] [--只打印 | --检查 [--校验] | --列出] [--登记] [--新 <id>…] | extract --许可 [--写] | extract --补网格配方 [--写]',
+    用法: 'extract [<名称或组>…] [--全部] [--只打印 | --检查 [--校验] | --列出] [--登记] [--新 <id>…] | extract --许可 [--写] | extract --补网格配方 [--写] | extract --下载 [<id>…]',
     说明:
-      '按 sourcing/extract.toml 从 jar 导出资产，产物 sha 和资产锁一样的放进库（PNG 像素一样也算一样），不一样的报出来；--全部 = 有步骤、不用开游戏、不待迁移的条目；--登记 把锁里没有的产物登记进资产表、写锁，许可按 jar 继承（脚本写了产物来源的按件记用到的 jar）；--新 <id> 把锁里还没有的 id 加进产物清单（按锁反推的配方如 音效 照它导新件），可写多次；--许可 列出资产表里能按 jar 补上的待定许可，--写 写回；--补网格配方 给锁里没有配方的场景网格按网格头反填配方（标不重导），--写 追加进 extract.toml',
+      '按 sourcing/extract.toml 从 jar 导出资产，产物 sha 和资产锁一样的放进库（PNG 像素一样也算一样），不一样的报出来；--全部 = 有步骤、不用开游戏、不待迁移的条目；--登记 把锁里没有的产物登记进资产表、写锁，许可按 jar 继承（脚本写了产物来源的按件记用到的 jar）；--新 <id> 把锁里还没有的 id 加进产物清单（按锁反推的配方如 音效 照它导新件），可写多次；--许可 列出资产表里能按 jar 补上的待定许可，--写 写回；--补网格配方 给锁里没有配方的场景网格按网格头反填配方（标不重导），--写 追加进 extract.toml；--下载 把 jars.toml 里 根 = 数据 的（官方映射这类不许再分发、本机自取的）按地址下到数据根并核 sha，不给 id 就是全部这一类',
     跑: async (args, 记录) => {
-      const p = 解析参数(args, { 开关: ['--全部', '--只打印', '--检查', '--校验', '--列出', '--登记', '--许可', '--写', '--补网格配方'], 多值: ['--新'] });
+      const p = 解析参数(args, { 开关: ['--全部', '--只打印', '--检查', '--校验', '--列出', '--登记', '--许可', '--写', '--补网格配方', '--下载'], 多值: ['--新'] });
       const 新ids = p.多值['--新'] ?? [];
       if (新ids.length && ['--补网格配方', '--许可', '--检查', '--列出', '--只打印'].some((k) => p.开关.has(k))) throw new 用法错误('--新 只配跑条目（可加 --登记）');
       const q = 读清单();
+      if (p.开关.has('--下载')) {
+        if (p.开关.size > 1 || 新ids.length) throw new 用法错误('--下载 后面只跟 jars.toml 的 id');
+        const 项们 = 下载清单(q, p.位置, jar登记路径);
+        // 不点名时，「也认」的位置（比如早先放进游戏目录的）已经有了就不下
+        const 别处有 = p.位置.length ? [] : 项们.filter((x) => jar路径(q, x.id) !== x.到 && fs.existsSync(jar路径(q, x.id)));
+        for (const x of 别处有) console.log(`已有（在别处）：${x.id} ${jar路径(q, x.id)}`);
+        const 要 = 项们.filter((x) => !别处有.includes(x));
+        if (!要.length) {
+          if (!项们.length) console.log('jars.toml 里没有能自动下的（根 = "数据"、写了 下载 和 sha256 的）');
+          return 0;
+        }
+        const r = 下载(要);
+        for (const x of r) console.log(`${x.状态}：${x.id} ${x.到}${x.说明 ? `（${x.说明}）` : ''}`);
+        记录.产物.push(...r.filter((x) => x.状态 === '下好').map((x) => x.到));
+        return r.some((x) => x.状态 === '失败') ? 1 : 0;
+      }
       if (p.开关.has('--补网格配方')) {
         if (p.位置.length || [...p.开关].some((k) => k !== '--补网格配方' && k !== '--写')) throw new 用法错误('--补网格配方 只配 --写');
         const 根 = 作品根();

@@ -3,18 +3,31 @@
 // 资产锁是共用锁并上所选作品（--作品）的锁，同 id 两边都有就报错；作品资产表登记的产物要带上那部作品跑。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 配置, 数据路径, isWindows } from '../环境/配置.ts';
+import { 配置, 数据根, 数据路径, isWindows } from '../环境/配置.ts';
 import { 跑, 跑出 } from '../环境/子进程.ts';
 import { 入库, 字节路径, 文件sha256, 读作品资产锁, type 资产锁 } from '../资产/资产锁.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { mcai命令, mcai环境 } from './mcai.ts';
-import { 属于作品, 展开步骤, 展开产物, 按id展开产物, 按文件展开产物, 脚本目录, type 取材条目, type 取材清单, type 展开环境, type 步骤 } from './清单.ts';
+import { 拆位置, 属于作品, 展开步骤, 展开产物, 按id展开产物, 按文件展开产物, 脚本目录, type jar根, type jar登记, type 取材条目, type 取材清单, type 展开环境, type 步骤 } from './清单.ts';
 import { 像素一致 } from './像素.ts';
 
+const 根目录 = (根: jar根 | undefined) => (根 === '数据' ? 数据根() : 配置(根 === 'mc资源' ? 'mc资源' : '游戏'));
+
+/** 这件 jar 登记的位置（「到」）在本机的路径，不管在不在 */
+export const jar登记路径 = (j: jar登记) => path.join(根目录(j.根), j.到);
+
+/** 本机用的路径：「到」在就用它，不在依次找「也认」的位置，都没有返回「到」（报缺、下载都按它） */
 export const jar路径 = (q: 取材清单, id: string) => {
   const j = q.jars.get(id);
   if (!j) throw new Error(`jars.toml 里没有 ${id}`);
-  return path.join(配置(j.根 === 'mc资源' ? 'mc资源' : '游戏'), j.到);
+  const 主 = jar登记路径(j);
+  if (fs.existsSync(主)) return 主;
+  for (const x of j.也认 ?? []) {
+    const [根, 到] = 拆位置(x);
+    const p = path.join(根目录(根), 到);
+    if (fs.existsSync(p)) return p;
+  }
+  return 主;
 };
 
 /** 产物清单、产物来源文件放在暂存目录外面，不混进「没登记成产物的文件」 */

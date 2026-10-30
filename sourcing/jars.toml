@@ -1,6 +1,8 @@
 # 全项目唯一的 jar 登记表（照旧项目 参考模型库/工具/取材/模组清单.json 搬来，字段照旧）：
 # sourcing/extract.toml 的「需要」和步骤里的 {jar:id} 按 id 在这里找；anim extract --检查 --校验 核 sha256。
 # 「到」是本机放的位置，相对游戏环境目录（anim 配置 ANIM_GAME，迁移期是旧项目的 game/）；旧表里相对工作区根、多一层 game/。
+# 「根」改「到」相对的目录：mc资源 = ANIM_MC_ASSETS，数据 = 数据根（ANIM_DATA）。不许再分发、本机按「下载」自取的（官方映射）放数据根 cache/映射/，
+#   anim extract --下载 按「下载」取、核 sha256（和 sha1）；「也认」是「到」没有时再找的位置（「<根>:<路径>」，早先放进游戏目录 缓存/ 的照样认）。
 # 「下载」「sha256」给公开版下载校验用；Mojang 客户端的下载地址从官方版本清单取。
 # 「许可」是结构化的 SPDX：代码、资源两项必写，声音、结构、模型和资源不一样时另写；原文是旧模组清单的一句话，依据是从哪核的（mods.toml、jar 里的 LICENSE）。
 #   版本或条款核不了的写 LicenseRef-待核-<大意>，按 jar 继承的产物仍算待定。anim extract --许可 按这里补资产表里待定的许可（pipeline/取材/许可.ts）。
@@ -31,11 +33,13 @@
 "许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
 # 官方映射（client.txt，官方名 → 混淆名）：动作翻译（py/anim_py/动作翻译）读混淆的客户端 jar 时把类名、成员名换回官方名。
-# 版本清单 downloads.client_mappings 给的地址；文件头写明可以拿来开发用、不许原样再分发，所以不进仓库、不进资产库
+# 版本清单 downloads.client_mappings 给的地址；文件头写明可以拿来开发用、不许原样再分发，所以不进仓库、不进资产库，本机 anim extract --下载 自取
 [["Mojang"."映射"]]
 "id" = "client-1.20.1-mappings"
 "版本" = "1.20.1"
-"到" = "缓存/client-1.20.1-mappings.txt"
+"根" = "数据"
+"到" = "cache/映射/client-1.20.1-mappings.txt"
+"也认" = ["游戏:缓存/client-1.20.1-mappings.txt"]
 "下载" = "https://piston-data.mojang.com/v1/objects/6c48521eed01fe2e8ecdadbd5ae348415f3c47da/client.txt"
 "sha256" = "67bfc33ef0c7103f002d6ac134f8eddd3d67e2ce45d266e83816d1a2e2c9b01d"
 "sha1" = "6c48521eed01fe2e8ecdadbd5ae348415f3c47da"

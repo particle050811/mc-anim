@@ -30,8 +30,22 @@ export type 取材条目 = {
   /** 产物的许可取 jar 的哪几部分：数组 = 全部产物，表 = 按 id 第一段（类别）分别写；没写的按类别默认（许可.ts 默认部分） */
   许可部分?: 许可部分[] | Record<string, 许可部分[]>;
 };
-/** 根：「到」相对哪个目录，游戏 = anim 配置 ANIM_GAME，mc资源 = ANIM_MC_ASSETS（资源索引在那） */
-export type jar登记 = { id: string; 到: string; sha256?: string; 根?: '游戏' | 'mc资源'; 许可?: jar许可; 旧sha256前缀?: string[] };
+/**
+ * 根：「到」相对哪个目录，游戏 = anim 配置 ANIM_GAME，mc资源 = ANIM_MC_ASSETS（资源索引在那），
+ * 数据 = 数据根（ANIM_DATA；官方映射这类不许再分发、本机按「下载」自取的放 cache/映射/，anim extract --下载 取）。
+ * 也认：「到」没有时依次再找的位置，写成「<根>:<相对路径>」（早先放在游戏目录里的照样认）
+ */
+export const jar根取值 = ['游戏', 'mc资源', '数据'] as const;
+export type jar根 = (typeof jar根取值)[number];
+export type jar登记 = { id: string; 到: string; sha256?: string; sha1?: string; 下载?: string; 根?: jar根; 也认?: string[]; 许可?: jar许可; 旧sha256前缀?: string[] };
+
+/** 「<根>:<相对路径>」→ [根, 相对路径]；没写根的按游戏 */
+export const 拆位置 = (x: string): [jar根, string] => {
+  const m = /^([^:/\\]+):(.+)$/.exec(x);
+  if (!m) return ['游戏', x];
+  if (!(jar根取值 as readonly string[]).includes(m[1]!)) throw new Error(`jars.toml 的位置「${x}」：根只认 ${jar根取值.join('、')}`);
+  return [m[1] as jar根, m[2]!];
+};
 export type 取材清单 = { 程序: Record<string, string[]>; 组: Record<string, string[]>; 条目: Map<string, 取材条目>; jars: Map<string, jar登记> };
 
 export const 取材目录 = () => path.join(代码根(), 'sourcing');
@@ -71,6 +85,8 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
   const 索引 = Array.isArray(j.Mojang?.资源索引) ? j.Mojang.资源索引 : [];
   for (const x of [...索引, ...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.映射 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) {
     if (jars.has(x.id)) throw new Error(`jars.toml 里 id「${x.id}」写了两条`);
+    if (x.根 !== undefined && !(jar根取值 as readonly string[]).includes(x.根)) throw new Error(`jars.toml 的 ${x.id}：根只认 ${jar根取值.join('、')}，写的是「${x.根}」`);
+    for (const y of x.也认 ?? []) 拆位置(y);
     jars.set(x.id, { ...x, 许可: x.许可 === undefined ? undefined : 读jar许可(x.许可) });
   }
   return { 程序: (d['程序'] as Record<string, string[]>) ?? {}, 组: (d['组'] as Record<string, string[]>) ?? {}, 条目, jars };
