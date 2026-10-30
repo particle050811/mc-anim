@@ -31,15 +31,14 @@ const 选行 = (表: 作品台词, 前缀们: string[], 要配音 = false) => {
 };
 const 成品文件 = (行: 台词行, 锁: 资产锁) => 字节路径(锁[行.配音!]!, 数据根());
 
-/** 后端的本机设置：程序位置取 anim 配置，其余取 台词.toml 的 [配音.后端参数.<后端>] */
-const 后端配置 = (表: 作品台词, 名: string): Record<string, unknown> => {
-  const 本机: Record<string, Record<string, unknown>> = {
-    'firered-本机': { 目录: 配置('firered') },
-    'indextts2-本机': { 目录: 配置('indextts') },
-    'gpt-sovits': { 地址: 配置('gpt_sovits') },
-  };
-  return { ...(本机[名] ?? {}), ...(表.配音.后端参数[名] ?? {}) };
-};
+/** 要这台机器的位置的后端：程序位置取 anim 配置（anim.local.toml、环境变量）。别的后端不用在这登记，用 Python 那边的默认参数 */
+const 本机设置 = (): Record<string, Record<string, unknown>> => ({
+  'firered-本机': { 目录: 配置('firered') },
+  'indextts2-本机': { 目录: 配置('indextts') },
+  'gpt-sovits': { 地址: 配置('gpt_sovits') },
+});
+/** 后端的设置：本机设置，再盖上 台词.toml 的 [配音.后端参数.<后端>] */
+const 后端配置 = (表: 作品台词 | null, 名: string): Record<string, unknown> => ({ ...(本机设置()[名] ?? {}), ...(表?.配音.后端参数[名] ?? {}) });
 
 type 后端信息 = { 名: string; 说明: string; 本机: boolean; 云端: boolean; 付费: boolean; 缺: string[] };
 
@@ -255,8 +254,9 @@ export const 配音命令: Record<string, 命令> = {
       });
       if (动作 === 'backends') {
         const 表 = 读作品台词(台词文件());
-        const 名们 = ['firered-本机', 'firered-魔搭', 'indextts2-本机', 'indextts2-runninghub', 'gpt-sovits', 'openai-speech'];
-        const 信息们 = await 跑配音py<后端信息[]>('后端', { 配置: Object.fromEntries(名们.map((n) => [n, 表 ? 后端配置(表, n) : {}])) });
+        // Python 那边列出登记了的全部后端；这里只给有设置的那几个传设置
+        const 名们 = new Set([...Object.keys(本机设置()), ...Object.keys(表?.配音.后端参数 ?? {})]);
+        const 信息们 = await 跑配音py<后端信息[]>('后端', { 配置: Object.fromEntries([...名们].map((n) => [n, 后端配置(表, n)])) });
         for (const b of 信息们) {
           const 标 = [b.本机 ? '本机' : '', b.云端 ? '云端' : '', b.付费 ? '付费' : ''].filter(Boolean).join('、');
           console.log(`${b.名}${表?.配音.后端 === b.名 ? '（本作品默认）' : ''}  [${标}]  ${b.说明}\n    ${b.缺.length ? '缺：' + b.缺.join('；') : '能跑'}`);
