@@ -27,9 +27,9 @@
 #   脚本读 ANIM_GAME（游戏环境）、ANIM_JAVA_HOME（javap）、ANIM_MC_ASSETS（原版资源）这几个环境变量，anim extract 按配置传。
 
 ["程序"]
-"导出模型" = ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出模型.py"]
-"导出实体模型" = ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出实体模型.py"]
-"网格碎块" = ["uv", "run", "-q", "--with", "numpy", "python", "{脚本}/网格碎块.py"]
+"导出模型" = ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出模型.py"]
+"导出实体模型" = ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出实体模型.py"]
+"网格碎块" = ["uv", "run", "-q", "--with", "numpy==2.4.6", "python", "{脚本}/网格碎块.py"]
 
 # 一组一起跑；另有 --全部
 ["组"]
@@ -471,7 +471,7 @@
 "来源" = "原版 Minecraft"
 "许可" = "Mojang EULA"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/边城贴图.py"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/边城贴图.py"],
 ]
 ["取材"."产物"]
 "贴图/场景/边城/方块贴图" = "src/模型/场景/边城/方块贴图.png"
@@ -495,7 +495,7 @@
 "需要" = ["client-1.20.1"]
 "公开版" = "不提取"  # 黄叛的随仓库发；刘心忠照抄原版村民头的部分走 公开版.toml 派生「同位拆分」和「网格图集」
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/追兵皮肤.py"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/追兵皮肤.py"],
 ]
 ["取材"."输入"]
 "设定图/黄叛/三视图" = "设定/角色/黄叛/黄叛三视图.png"
@@ -535,7 +535,7 @@
 "来源" = "MineColonies 风格包（Carlansor、Aravan）"
 "许可" = "All Rights Reserved"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/殖民地蓝图.py"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/殖民地蓝图.py"],
 ]
 ["取材"."产物"]
 "数据/场景/边城/蓝图" = "src/模型/场景/边城/蓝图.json"
@@ -580,7 +580,7 @@
 "来源" = "Ponder（Create）；原版 Minecraft；原版 Minecraft + GNU Unifont"
 "许可" = "MIT（随 Create）；Mojang EULA；位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出思索素材.py"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出思索素材.py"],
 ]
 ["取材"."产物"]
 "字体/像素字" = "src/模型/界面/像素字.json"
@@ -640,7 +640,7 @@
 "来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
 "许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "像素字.json", "{作品根}/界面/像素字文案.txt"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "像素字.json", "{作品根}/界面/像素字文案.txt"],
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/像素字" = "像素字.json"
@@ -671,7 +671,7 @@
 "来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
 "许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "歌词字.json", "{作品根}/界面/歌词文案.txt"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "歌词字.json", "{作品根}/界面/歌词文案.txt"],
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/歌词字" = "歌词字.json"
@@ -853,7 +853,7 @@
 "需要" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta"]
 "公开版" = "不提取"  # 方块表.json 随仓库发（公开版.toml 第三方「体素方块表」），方块表.png 走「网格图集」
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "python", "{脚本}/关键帧方块.py"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "python", "{脚本}/关键帧方块.py"],
 ]
 ["取材"."产物"]
 "数据/场景/关键帧/*" = "src/模型/场景/关键帧/*.json"
@@ -1215,7 +1215,7 @@
 "来源" = "原版 Minecraft（steve 改色）"
 "许可" = "Mojang EULA（衍生）"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/乔雷夫皮肤.py"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/乔雷夫皮肤.py"],
 ]
 ["取材"."产物"]
 "贴图/角色/乔雷夫" = "src/模型/角色/乔雷夫.png"
@@ -1535,7 +1535,7 @@
 "来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
 "许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "启动器字.json", "{作品根}/界面/启动器字文案.txt"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "启动器字.json", "{作品根}/界面/启动器字文案.txt"],
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/启动器字" = "启动器字.json"
@@ -1661,7 +1661,7 @@
 "来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
 "许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "女仆界面字.json", "{作品根}/界面/女仆界面字文案.txt"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "女仆界面字.json", "{作品根}/界面/女仆界面字文案.txt"],
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/女仆界面字" = "女仆界面字.json"
@@ -1718,7 +1718,7 @@
 "来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
 "许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "第一晚像素字.json", "{作品根}/场/2-第一晚/像素字文案.txt"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "第一晚像素字.json", "{作品根}/场/2-第一晚/像素字文案.txt"],
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/第一晚像素字" = "第一晚像素字.json"
@@ -1795,7 +1795,7 @@
 "来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
 "许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "选择世界字.json", "{作品根}/界面/选择世界字文案.txt"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "选择世界字.json", "{作品根}/界面/选择世界字文案.txt"],
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/选择世界字" = "选择世界字.json"
@@ -1810,7 +1810,7 @@
 "来源" = "原版 Minecraft 1.20.1 默认字体；GNU Unifont 15.0.06（资源索引 5 里的 unifont.zip）"
 "许可" = "位图字 Mojang EULA；Unifont OFL-1.1 / GPL-2+ 带字体例外"
 "步骤" = [
-  ["uv", "run", "-q", "--with", "pillow", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "告示牌字.json", "{作品根}/地点/告示牌字文案.txt"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出像素字.py", "{jar:client-1.20.1}", "告示牌字.json", "{作品根}/地点/告示牌字文案.txt"],
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/告示牌字" = "告示牌字.json"
