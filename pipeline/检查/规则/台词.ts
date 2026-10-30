@@ -1,15 +1,19 @@
 // 台词：作品的 台词.toml 的格式（开口秒、字幕位置）；cue 里的台词 id 都登记了；每句恰好开口一次（接上段的后半截不算）或标了 未用，
 // 接上段的 cue 前面（本段或清单里上一段）得有它开口；
-// 文本哈希对得上现在的文本、成品 sha 对得上资产锁，口型和口型手修绑定的成品 sha 也对得上（配音一换就报过期，不靠人记得重跑）。
+// 文本哈希对得上现在的文本、成品 sha 对得上资产锁，口型和口型手修绑定的成品 sha 也对得上（配音一换就报过期，不靠人记得重跑）；
+// 作品有 台词/ 目录（anim voice 的句模块）的，有配音的每句都要有句模块、跟得上表和成品、是工具写的原样（嘴能不能按字重算出来归 anim voice check，要跑 Python）。
 // 没有台词表、段里也没有台词 cue 的作品不查。
-import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { 读内容 } from '../内容.ts';
 import { 撞旧名, 读旧名 } from '../旧名.ts';
 import type { 报告, 检查上下文 } from '../上下文.ts';
 import type { 资产锁 } from '../../资产/资产锁.ts';
+import { 写句模块文本, 解析句模块 } from '../../配音/句模块.ts';
+import { 句模块问题 } from '../../配音/配音.ts';
+import { 文本哈希 } from '../../配音/台词表.ts';
 
 export const 台词表路径 = (c: 检查上下文) => c.作品路径('台词.toml');
-export const 文本哈希 = (文本: string) => crypto.createHash('sha256').update(文本, 'utf8').digest('hex').slice(0, 12);
+export { 文本哈希 };
 
 export const 字幕位置们 = ['下', '思索上'];
 export type 台词条目 = { id: string; 角色: string; 文本: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; 未用?: boolean };
@@ -66,14 +70,41 @@ export const 台词 = async (c: 检查上下文, 报: 报告) => {
       continue;
     }
     if (t.文本哈希 !== 文本哈希(t.文本)) {
-      报.错(`${名}：文本哈希 ${t.文本哈希 ?? '（没写）'} 和现在的文本（${文本哈希(t.文本)}）对不上：文本改过，配音过期，要重配（anim voice redo）或把文本改回去`, 位);
+      报.错(`${名}：文本哈希 ${t.文本哈希 ?? '（没写）'} 和现在的文本（${文本哈希(t.文本)}）对不上：文本改过，配音过期，要重配（anim voice gen 出候选、anim voice use 定稿）或把文本改回去；只改字幕、念法不变的写 念 = 原来的字`, 位);
     }
     const 成品 = 锁条目.sha256;
     const 对 = (s: string | undefined) => typeof s === 'string' && s.length >= 12 && 成品.startsWith(s);
     if (!对(t.成品sha)) 报.错(`${名}：成品sha ${t.成品sha ?? '（没写）'} 和资产锁里 ${t.配音} 的 ${成品.slice(0, 12)} 对不上：配音换过，表没跟上`, 位);
     for (const k of ['口型', '口型手修'] as const) {
       const v = t[k];
-      if (v && !对(v.成品sha)) 报.错(`${名}：${k} 是对着成品 ${v.成品sha ?? '（没写）'} 做的，现在的成品是 ${成品.slice(0, 12)}：配音换了，${k} 过期（anim voice lipsync）`, 位);
+      if (v && !对(v.成品sha)) 报.错(`${名}：${k} 是对着成品 ${v.成品sha ?? '（没写）'} 做的，现在的成品是 ${成品.slice(0, 12)}：配音换了，${k} 过期（anim voice lip）`, 位);
+    }
+  }
+
+  // 句模块（<作品根>/台词/<id>.ts）
+  const 句目录 = c.作品路径('台词');
+  if (c.存在(句目录)) {
+    const 有 = new Set(fs.readdirSync(c.绝对(句目录)).filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts')).map((f) => f.slice(0, -3)));
+    for (const id of 有) if (!条目.has(id)) 报.错(`${句目录}/${id}.ts：${位} 里没有这一句（删掉，或把这句写回 ${位}）`, `${句目录}/${id}.ts`);
+    for (const t of 条目.values()) {
+      const f = `${句目录}/${t.id}.ts`;
+      const 锁条目 = t.配音 === undefined ? undefined : 锁[t.配音];
+      if (!锁条目) {
+        if (有.has(t.id)) 报.错(`台词「${t.id}」没有可用的配音，却有句模块`, f);
+        continue;
+      }
+      let 句 = null;
+      if (有.has(t.id)) {
+        const 文本 = c.读(f);
+        try {
+          句 = 解析句模块(文本, f);
+        } catch (e) {
+          报.错((e as Error).message, f);
+          continue;
+        }
+        if (写句模块文本(句) !== 文本) 报.错(`句模块被手改过（改 ${位} 后 anim voice lip ${t.id}）`, f);
+      }
+      for (const x of 句模块问题(t, 锁条目.sha256.slice(0, 12), 句)) 报.错(`台词「${t.id}」：${x}`, 有.has(t.id) ? f : 位);
     }
   }
 
