@@ -67,8 +67,6 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -671,19 +669,25 @@ public class MeshAction implements Action {
             ModList.get().getMods().stream().sorted(Comparator.comparing(IModInfo::getModId))
                     .forEach(m -> mods.addProperty(m.getModId(), m.getVersion().toString()));
             p.add("模组", mods);
-            // mods.toml 里的版本号不跟着改代码变，再记一份 jar 的指纹
-            var self = ModList.get().getModFileById("mcai");
-            if (self != null && Files.isRegularFile(self.getFile().getFilePath())) {
-                try {
-                    byte[] sha = MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(self.getFile().getFilePath()));
-                    p.addProperty("mcai.jar sha256", HexFormat.of().formatHex(sha));
-                } catch (Exception ignored) {
-                }
-            }
+            // mods.toml 里的版本号不跟着改代码变，再记源码版本（build.gradle 写进 jar 的 mcai-source.txt：sourcing/mod 最后一次提交，
+            // 有没提交的改动带 -dirty）。不记 jar 的 sha：同一份源码换台机器构建，jar 的 sha 也该一样，记提交才对得上、能重导
+            p.addProperty("mcai 源码", mcaiSource());
             JsonArray packs = new JsonArray();
             mc.getResourcePackRepository().getSelectedIds().forEach(packs::add);
             p.add("资源包", packs);
             return p;
+        }
+    }
+
+    /** jar 里 mcai-source.txt 的一行；读不到（开发环境直接跑、老 jar）写 unknown */
+    private static String mcaiSource() {
+        var self = ModList.get().getModFileById("mcai");
+        if (self == null) return "unknown";
+        try {
+            Path f = self.getFile().findResource("mcai-source.txt");
+            return Files.isRegularFile(f) ? Files.readString(f).trim() : "unknown";
+        } catch (Exception e) {
+            return "unknown";
         }
     }
 
