@@ -37,13 +37,15 @@ describe('方块表核对', () => {
   it('分出一致、贴图不同、几何不同、标志和染色差异、多出的状态', () => {
     const 手写: 方块表 = {
       贴图: ['minecraft:block/stone', 'minecraft:block/dirt'],
-      面组: [[顶(0)], [顶(1)], [顶(0).map((v, i) => (i === 8 ? 8 : v))]],
+      面组: [[顶(0)], [顶(1)], [顶(0).map((v, i) => (i === 8 ? 8 : v))], [顶(0).map((v, i) => (i === 8 ? 16.004 : v))], [顶(0).map((v, i) => (i === 18 ? 1 : v))]],
       方块: {
         'minecraft:stone': [28, null, 0],
         'minecraft:dirt': [28, null, 0],
         'minecraft:slab[type=bottom]': [1, null, 2],
         'minecraft:grass': [1, 'grass', 0],
         'minecraft:gone': [28, null, 0],
+        'minecraft:bars': [1, null, 3],
+        'minecraft:uv': [1, null, 4],
       },
     };
     const 导出: 方块表 = {
@@ -56,11 +58,15 @@ describe('方块表核对', () => {
         'minecraft:slab[type=bottom,waterlogged=true]': [1, null, 0],
         'minecraft:grass': [2, '#123456', 0],
         'mymod:thing': [28, null, 0],
+        'minecraft:bars': [1, null, 0],
+        'minecraft:uv': [1, null, 0],
       },
       附加: { 不画: [] },
     };
     const r = 核对方块(导出, 手写);
-    expect(r.对上).toBe(4);
+    expect(r.对上).toBe(6);
+    expect(r.面.几何微差).toBe(1); // bars：防 z 冲突的小偏移
+    expect(r.面.只差uv).toBe(1);
     expect(r.面.一致).toBe(2); // stone 只差起头角；grass 面一样、标志和染色不同
     expect(r.面.贴图不同).toBe(1); // dirt：手写写成了 stone
     expect(r.面.几何不同).toBe(1); // slab

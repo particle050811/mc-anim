@@ -117,12 +117,14 @@ const 比角 = (a: number[], b: number[]) => {
   for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i]! - b[i]!;
   return 0;
 };
-/** 只看几何：四个角的位置排好序 */
-const 几何 = (f: 面) => {
+/** 只看几何：四个角的位置排好序；粗 = 位置取到 0.1 像素（防 z 冲突的 0.001、0.01 这类偏移算一样） */
+const 几何 = (f: 面, 粗 = false) => {
   const 角: string[] = [];
-  for (let i = 0; i < 4; i++) 角.push((f.slice(6 + i * 3, 9 + i * 3) as number[]).join(','));
+  for (let i = 0; i < 4; i++) 角.push((f.slice(6 + i * 3, 9 + i * 3) as number[]).map((v) => (粗 ? Math.round(v * 10) / 10 : v)).join(','));
   return 角.sort().join(';');
 };
+/** 去掉 uv 的面（朝向不算） */
+const 无uv = (f: 面, 贴图: string[]) => JSON.stringify([f[1], 贴图[f[2] as number], (f[3] as number) >= 0 ? 贴图[f[3] as number] : '', f[4], f[5], 几何(f)]);
 
 const 面们 = (表: 方块表, 条目: 方块条目) => (条目.slice(2) as number[]).flatMap((g) => 表.面组[g] as 面[]);
 const 同多重集 = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join('\n') === [...b].sort().join('\n');
@@ -139,7 +141,7 @@ export type 方块报告 = {
   手写状态对不上: string[];
   导出不画: string[];
   对上: number;
-  面: { 一致: number; 只差朝向: number; 贴图不同: number; 其余不同: number; 几何不同: number; 例: Record<string, { 手写键: string; 导出键: string; 说明: string }[]> };
+  面: { 一致: number; 只差朝向: number; 贴图不同: number; 只差uv: number; 其余不同: number; 几何微差: number; 几何不同: number; 例: Record<string, { 手写键: string; 导出键: string; 说明: string }[]> };
   标志不同: Record<string, { 数: number; 组合: Record<string, number>; 例: string[] }>;
   染色不同: { 数: number; 组合: Record<string, number>; 例: string[] };
   多出的状态: { 数: number; 按命名空间: Record<string, number>; 最多的方块: [string, number][] };
@@ -161,7 +163,7 @@ export const 核对方块 = (导出: 方块表, 手写: 方块表): 方块报告
     手写状态对不上: [],
     导出不画: [...手写方块].filter((b) => !分.has(b) && 不画.has(b)).sort(),
     对上: 0,
-    面: { 一致: 0, 只差朝向: 0, 贴图不同: 0, 其余不同: 0, 几何不同: 0, 例: {} },
+    面: { 一致: 0, 只差朝向: 0, 贴图不同: 0, 只差uv: 0, 其余不同: 0, 几何微差: 0, 几何不同: 0, 例: {} },
     标志不同: {},
     染色不同: { 数: 0, 组合: {}, 例: [] },
     多出的状态: { 数: 0, 按命名空间: {}, 最多的方块: [] },
@@ -200,15 +202,20 @@ export const 核对方块 = (导出: 方块表, 手写: 方块表): 方块报告
     else if (同多重集(旧面.map((f) => 标准面(f, 手写.贴图, false)), 新面.map((f) => 标准面(f, 导出.贴图, false)))) {
       r.面.只差朝向++;
       记例('只差朝向', 键, 新键, '');
-    } else if (!同多重集(旧面.map(几何), 新面.map(几何))) {
-      r.面.几何不同++;
-      记例('几何不同', 键, 新键, `手写 ${旧面.length} 面、导出 ${新面.length} 面`);
+    } else if (!同多重集(旧面.map((f) => 几何(f)), 新面.map((f) => 几何(f)))) {
+      const 微 = 同多重集(旧面.map((f) => 几何(f, true)), 新面.map((f) => 几何(f, true)));
+      if (微) r.面.几何微差++;
+      else r.面.几何不同++;
+      记例(微 ? '几何微差' : '几何不同', 键, 新键, `手写 ${旧面.length} 面、导出 ${新面.length} 面`);
     } else {
       const 贴 = (t: 方块表, fs: 面[]) => fs.map((f) => `${几何(f)}|${t.贴图[f[2] as number]}`);
       if (!同多重集(贴(手写, 旧面), 贴(导出, 新面))) {
         r.面.贴图不同++;
         const a = new Set(旧面.map((f) => 手写.贴图[f[2] as number])), b = new Set(新面.map((f) => 导出.贴图[f[2] as number]));
         记例('贴图不同', 键, 新键, `手写 ${[...a].join('、')}；导出 ${[...b].join('、')}`);
+      } else if (同多重集(旧面.map((f) => 无uv(f, 手写.贴图)), 新面.map((f) => 无uv(f, 导出.贴图)))) {
+        r.面.只差uv++;
+        记例('只差uv', 键, 新键, 第一处不同(旧面.map((f) => 标准面(f, 手写.贴图, false)), 新面.map((f) => 标准面(f, 导出.贴图, false))));
       } else {
         r.面.其余不同++;
         记例('其余不同', 键, 新键, 第一处不同(旧面.map((f) => 标准面(f, 手写.贴图, false)), 新面.map((f) => 标准面(f, 导出.贴图, false))));
@@ -267,7 +274,7 @@ export const 报告文本 = (群系?: 群系报告, 方块?: 方块报告) => {
     if (方块.导出不画.length) l.push(`导出不画（游戏的方块渲染器不出面）：${方块.导出不画.join('、')}`, '');
     if (方块.手写状态对不上.length) l.push(`对不上的手写键（前 30）：${方块.手写状态对不上.slice(0, 30).join('、')}`, '');
     const m = 方块.面;
-    l.push(`面：一致 ${m.一致}，只差朝向 ${m.只差朝向}，几何不同 ${m.几何不同}，几何一样贴图不同 ${m.贴图不同}，其余不同（uv、叠加层、染色、明暗、剔除）${m.其余不同}。`, '');
+    l.push(`面：一致 ${m.一致}，只差朝向 ${m.只差朝向}，几何不同 ${m.几何不同}，几何微差（0.1 像素以内）${m.几何微差}，几何一样贴图不同 ${m.贴图不同}，只差 uv ${m.只差uv}，其余不同（叠加层、染色、明暗、剔除）${m.其余不同}。`, '');
     for (const [类, es] of Object.entries(m.例)) {
       l.push(`${类}的例子：`, '');
       for (const e of es) l.push(`- ${e.手写键} → ${e.导出键}${e.说明 ? `：${e.说明}` : ''}`);
