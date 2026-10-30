@@ -2,7 +2,7 @@
 // 指纹对得上的母版直接用；每段渲之前排队过渲染闸，渲完核帧数、改名、写 .指纹.json，耗时按段记进耗时表。
 // 段.ts 声明的透明叠层（<段键>-<名>）同样按指纹缓存，渲成 ProRes 4444 放 cache/叠层/。
 // 打包前把作品随仓库发的字节补进数据根（资产/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
-// 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（资产/缺字节.ts）。
+// 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（资产/缺字节.ts）；webpack 缓存名不随资产锁变（资产/缓存名.ts）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +11,7 @@ import { getCompositions, openBrowser, renderMedia, renderStill, type HeadlessBr
 import { 代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
+import { 稳定缓存名 } from '../资产/缓存名.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 叠层键, 算全部段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import { 叠层目录, 数据根 } from '../环境/配置.ts';
@@ -41,7 +42,7 @@ export const 打包 = async (记录?: 运行记录) => {
   const serveUrl = await bundle({
     entryPoint: path.join(作品根(), 'index.ts'),
     rootDir: 代码根(),
-    webpackOverride: 补缺字节占位(webpack改写(根), 根),
+    webpackOverride: 稳定缓存名(补缺字节占位(webpack改写(根), 根)),
     enableCaching: true,
     publicDir: 备好public目录(),
     // public 里只有指向数据根的链接，转发进包是预期的
