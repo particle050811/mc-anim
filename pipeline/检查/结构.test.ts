@@ -47,6 +47,8 @@ describe('结构', () => {
       '库/角色/甲.ts': 'export const 甲 = 1;\n',
       '作品/应力转动/核对/看看/画面.tsx': 'export default () => null;\n',
       '作品/应力转动/段/7-甲/编排.ts': "import 看 from '../../核对/看看/画面.tsx';\nexport default 看;\n",
+      '作品/应力转动/核对/看看/时间线.ts': 'export default 1;\n',
+      '作品/应力转动/核对/再看/画面.tsx': "import 看 from '../看看/画面.tsx';\nimport 线 from '../看看/时间线.ts';\nexport default () => [看, 线];\n",
       '作品/应力转动/场/7-场二/时间线.ts': "import { 布局 } from '../7-场一/布局.ts';\nexport const 起 = 布局;\n",
       'pipeline/读.ts': "import 画 from '../作品/应力转动/段/7-甲/画面.tsx';\nexport const n = 画;\n",
     });
@@ -54,6 +56,9 @@ describe('结构', () => {
     expect(v).toMatch(/段不许引用别的段：作品\/应力转动\/段\/7-乙\/画面.tsx → 作品\/应力转动\/段\/7-甲\/画面.tsx/);
     expect(v).toMatch(/分层方向反了：engine 不能引用 库/);
     expect(v).toMatch(/不许引用 核对\/：作品\/应力转动\/段\/7-甲\/编排.ts/);
+    // 核对段之间只许引别的核对段的 时间线.ts
+    expect(v).toMatch(/不许引用 核对\/：作品\/应力转动\/核对\/再看\/画面.tsx → 作品\/应力转动\/核对\/看看\/画面.tsx/);
+    expect(v).not.toMatch(/核对\/看看\/时间线.ts/);
     expect(v).toMatch(/场只许引用上一场的 末态.ts：作品\/应力转动\/场\/7-场二\/时间线.ts → 作品\/应力转动\/场\/7-场一\/布局.ts/);
     expect(v).toMatch(/pipeline 只许 import 纯模块.*pipeline\/读.ts → 作品\/应力转动\/段\/7-甲\/画面.tsx/);
   });

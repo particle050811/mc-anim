@@ -11,6 +11,7 @@ import { 新建预览目录 } from '../预览/预览.ts';
 import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
 import { 渲染叠层, 渲染母版, 渲静帧 } from './渲.ts';
 import { 测速 } from './测速.ts';
+import { 查所选段cues, 渲前跑cues } from '../段框架/自动.ts';
 
 const 取级别 = (v: string | undefined): 渲染级别 => {
   const 级别 = (v ?? '视频') as 渲染级别;
@@ -37,7 +38,10 @@ export const 渲染命令: Record<string, 命令> = {
       if (!p.位置.length) throw new 用法错误('要给选择器（段键、段名、编号、场键、章）');
       if (p.开关.has('--不叠层') && p.开关.has('--只叠层')) throw new 用法错误('--不叠层 和 --只叠层 只能给一个');
       const 级别 = 取级别(p.值['--级别']);
+      // 段框架的段：生成的声音表、地址表先和 cue 对齐（要在 选段 之前：表过期时 段.ts 加载就抛错）
+      const cues = await 渲前跑cues();
       const 段们 = await 选段(p.位置);
+      查所选段cues(cues, 段们);
       if (!p.开关.has('--不叠层')) await 渲染叠层(段们, 级别, { 重渲: p.开关.has('--重渲'), 记录 });
       if (p.开关.has('--只叠层')) return;
       const 结果 = await 渲染母版(段们, 级别, { 重渲: p.开关.has('--重渲'), 记录 });
@@ -59,8 +63,10 @@ export const 渲染命令: Record<string, 命令> = {
       const p = 解析参数(args, { 值: ['--级别', '--到预览'] });
       const [选择器, ...帧] = p.位置;
       if (!选择器 || !帧.length || !p.值['--到预览']) throw new 用法错误('要 anim still <段> <帧…> --到预览 <主题>');
+      const cues = await 渲前跑cues();
       const 段们 = await 选段([选择器]);
       if (段们.length !== 1) throw new 用法错误(`still 一次只渲一段，「${选择器}」对上了 ${段们.length} 段`);
+      查所选段cues(cues, 段们);
       const 帧们 = 帧.map((f) => {
         if (!/^\d+$/.test(f)) throw new 用法错误(`帧号要是非负整数：${f}`);
         return Number(f);
