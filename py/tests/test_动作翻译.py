@@ -223,7 +223,7 @@ def test_实体上取的东西判null当输入(编译好: tuple[Path, Path]) -> 
     prog = 翻译器(类路径([str(jar)], 恒等映射()), "sample.NullModel", 模型树=模型树).翻译()
     assert prog["输入"]["entity.getRider() == null"] == {"类型": "i", "来源": "实体"}
     i = prog["输出"]["head"]["xRot"]
-    初始 = {"head": dict.fromkeys(("x", "y", "z", "xRot", "yRot", "zRot"), 0.0)}
+    初始: dict[str, dict[str, float]] = {"head": {f: 0.0 for f in 字段[:6]}}
     有 = 求值(prog["节点"], {"entity.getRider() == null": 0, "entity.getRider().getHealth()": 10.0}, 初始)[i]
     没有 = 求值(prog["节点"], {"entity.getRider() == null": 1, "entity.getRider().getHealth()": 10.0}, 初始)[i]
     assert (有, 没有) == (f32(f32(10.0) * f32(0.1)), -1.0)
