@@ -51,11 +51,12 @@ const 打报告 = (计划: 回收计划, 详细: boolean) => {
     const 排 = [...只因交付].sort((a, b) => b[1] - a[1]);
     console.log(`         只因为交付 manifest 引用才留的约 ${大小文本(排.reduce((n, [, v]) => n + v, 0))}，占得多的：${排.slice(0, 5).map(([d, v]) => `${d} ${大小文本(v)}`).join('、')}`);
   }
-  if (计划.去重) {
+  if (计划.去重 && !计划.去重.能做) console.log('去重     本平台不做（只在 Mac 的 APFS 上克隆）');
+  else if (计划.去重) {
     const 省 = 可省(计划.去重.组);
     const 组数 = 计划.去重.组.filter((g) => g.待克隆.length).length;
-    console.log(`去重     留下的里内容相同的 ${组数} 组，克隆成共享块能再省 ${大小文本(省)}${计划.去重.能做 ? '' : '（本平台不做：只在 Mac 的 APFS 上克隆）'}`);
-    if (计划.去重.能做) 合计 += 省;
+    console.log(`去重     留下的里内容相同的 ${组数} 组，克隆成共享块能再省 ${大小文本(省)}`);
+    合计 += 省;
   }
   for (const x of 计划.不认识) console.log(`不认识（只报告不删）${x.位置}：${x.条目.map((e) => `${e.名} ${大小文本(e.大小)}`).join('、')}`);
   console.log(`\n合计能省约 ${大小文本(合计)}（按文件大小算；已经是克隆的共享块删了不一定腾出空间）`);
@@ -75,13 +76,16 @@ const 打报告 = (计划: 回收计划, 详细: boolean) => {
 
 export const 缓存命令: Record<string, 命令> = {
   cache: {
-    用法: `cache gc [--执行] [--只 ${回收类.join('|')}…] [--近期天数 ${默认天数.近期}] [--草稿天数 ${默认天数.草稿}] [--webpack天数 ${默认天数.webpack}] [--详细]`,
+    用法: `cache gc [--执行] [--只 <类>[,<类>…]] [--近期天数 ${默认天数.近期}] [--草稿天数 ${默认天数.草稿}] [--webpack天数 ${默认天数.webpack}] [--详细]（类：${回收类.join('、')}）`,
     说明:
       '缓存回收，默认只打印要删什么、能省多少，--执行 才删。母版、叠层只删旧指纹的媒体文件（.指纹.json 留着），留各级别当前指纹、认可那版、交付 manifest 引用的、每段每级别最近一份、近期渲的；' +
       '留下的内容相同的克隆成共享块（Mac）；草稿超过天数的删；webpack 缓存旧 Remotion 版本的整个删、超过天数没用的删；run/、cache/ 下不认识的只报告。--作品 只限定母版、叠层、去重',
     跑: async (args, 记录) => {
       const p = 解析参数(args, { 开关: ['--执行', '--详细'], 值: ['--近期天数', '--草稿天数', '--webpack天数'], 多值: ['--只'] });
-      if (p.位置[0] !== 'gc' || p.位置.length !== 1) throw new 用法错误('要 anim cache gc [--执行] …');
+      if (p.位置[0] !== 'gc' || p.位置.length !== 1) {
+        const 像类 = p.位置.slice(1).some((x) => (回收类 as readonly string[]).includes(x));
+        throw new 用法错误(像类 ? '--只 的几类用逗号分开（--只 母版,叠层），或者重复写 --只' : '要 anim cache gc [--执行] …');
+      }
       const 只 = (p.多值['--只'] ?? []).flatMap((x) => x.split(/[,，、]/)).filter(Boolean);
       const 不认识 = 只.filter((x) => !(回收类 as readonly string[]).includes(x));
       if (不认识.length) throw new 用法错误(`--只 不认识 ${不认识.join('、')}（有：${回收类.join('、')}）`);

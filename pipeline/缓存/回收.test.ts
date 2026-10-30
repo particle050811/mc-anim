@@ -9,7 +9,7 @@ import { 认可文本, type 认可记录 } from '../验收/认可.ts';
 import { 加当前指纹 } from './当前指纹.ts';
 import { 执行回收, type 回收计划 } from './计划.ts';
 import {
-  保留集, 加交付, 加认可, 交付引用, 扫媒体, 扫webpack, 列目录, 是临时名, 规划媒体, 规划临时, 规划草稿, 规划webpack, 读认可指纹, 小计, 主要理由,
+  保留集, 加交付, 加认可, 交付引用, 扫媒体, 扫webpack, 列目录, 是临时名, 规划媒体, 规划临时, 规划草稿, 规划webpack, 读认可指纹, 小计, 主要理由, 不认识条目,
 } from './回收.ts';
 
 const 天 = 24 * 3600 * 1000;
@@ -192,6 +192,14 @@ describe('残留、草稿、webpack', () => {
     for (const e of 列目录(path.join(根, 'run', '草稿'))) fs.utimesSync(e.路径, new Date(现在 - 30 * 天), new Date(现在 - 30 * 天));
     const r = 规划草稿(列目录(path.join(根, 'run', '草稿')), { 现在, 天数: 14 });
     expect(r.filter((x) => !x.理由.length).map((x) => x.名)).toEqual(['1001-0000-工作-旧']);
+  });
+
+  it('不认识的条目只列出来（带大小），认识的不列', () => {
+    写('run/草稿/a/01.png', 'xx');
+    写('run/会话交接-1024/b.bin', 'xxxx');
+    写('run/零散.txt', 'x');
+    expect(不认识条目(path.join(根, 'run'), ['草稿']).map((e) => [e.名, e.大小]).sort()).toEqual([['会话交接-1024', 4], ['零散.txt', 1]]);
+    expect(不认识条目(path.join(根, '没有'), [])).toEqual([]);
   });
 
   it('webpack：旧 Remotion 版本整个删；同版本每个环境留最近 N 份，其余超过天数的删；认不得的只报告', () => {

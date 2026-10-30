@@ -257,15 +257,18 @@ export const 最近改于 = (p: string, 深 = 2): number => {
   return t;
 };
 
-export const 列目录 = (根: string, 深 = 2): 目录条目[] =>
-  fs.existsSync(根) ? fs.readdirSync(根).map((名) => ({ 路径: path.join(根, 名), 名, 大小: 目录大小(path.join(根, 名)), 改于: 最近改于(path.join(根, 名), 深) })) : [];
+/** 根下各条目的大小和最近改动；给了 要 就只算它挑中的（大小要整棵走一遍，cache/母版 这类大目录不该白走） */
+export const 列目录 = (根: string, 深 = 2, 要: (名: string) => boolean = () => true): 目录条目[] =>
+  fs.existsSync(根)
+    ? fs.readdirSync(根).filter(要).map((名) => ({ 路径: path.join(根, 名), 名, 大小: 目录大小(path.join(根, 名)), 改于: 最近改于(path.join(根, 名), 深) }))
+    : [];
 
 /** 草稿：最近改动超过 天数 天的删 */
 export const 规划草稿 = (条目们: readonly 目录条目[], o: { 现在: number; 天数: number }): 带理由<目录条目>[] =>
   条目们.map((e) => ({ ...e, 理由: o.现在 - e.改于 < o.天数 * 天 ? [{ 类: '近期' as const, 说明: `${o.天数} 天内` }] : [] }));
 
 /** 只报不删：根下不在 认识 里的条目 */
-export const 不认识条目 = (根: string, 认识: readonly string[]): 目录条目[] => 列目录(根, 1).filter((e) => !认识.includes(e.名));
+export const 不认识条目 = (根: string, 认识: readonly string[]): 目录条目[] => 列目录(根, 1, (名) => !认识.includes(名));
 
 // webpack 缓存：Remotion 按 remotion-<environment>-<VERSION>/<webpack 配置的 md5> 起名（@remotion/bundler 的 webpack-cache.js）
 
