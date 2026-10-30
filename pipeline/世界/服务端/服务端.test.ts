@@ -4,7 +4,7 @@ import path from 'node:path';
 import { deflateRawSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { 解析启用包, 开服前核对, 排序核对 } from './核对.ts';
-import { 启动参数, 撤临时模组 } from './服务端.ts';
+import { 启动参数, 撤临时模组, 服务端 } from './服务端.ts';
 import { 只读zip } from './zip.ts';
 
 /** 测试用的最小 zip 写入器：第一个条目 stored，其余 deflate */
@@ -101,4 +101,48 @@ describe('服务端', () => {
     fs.rmSync(服, { recursive: true });
     fs.rmSync(世, { recursive: true });
   });
+
+  // 假的 java（node 脚本）当服务端：起服等 Done、发命令等回话、停服后 pid 文件和临时模组都撤掉，--universe/--world/--port 传对
+  it.skipIf(process.platform === 'win32')('起服、发命令、停服：临时模组只在开着时在 mods/', async () => {
+    const jdk = 临时(), 服 = 临时(), 根 = 临时();
+    fs.mkdirSync(path.join(jdk, 'bin'));
+    fs.writeFileSync(
+      path.join(jdk, '假服.mjs'),
+      `import fs from 'node:fs';
+import readline from 'node:readline';
+console.log('ARGS ' + process.argv.slice(2).join(' '));
+console.log('MODS ' + fs.readdirSync('mods').join(','));
+console.log('[Server thread/INFO]: Done (0.1s)! For help, type "help"');
+readline.createInterface({ input: process.stdin }).on('line', (l) => {
+  if (l === 'stop') { console.log('Stopping the server'); process.exit(0); }
+  console.log('收到 ' + l);
+});
+`,
+    );
+    fs.writeFileSync(path.join(jdk, 'bin', 'java'), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/../假服.mjs" "$@"\n`, { mode: 0o755 });
+    process.env.ANIM_JAVA_HOME = jdk;
+    fs.writeFileSync(path.join(服, 'eula.txt'), 'eula=true\n');
+    fs.writeFileSync(path.join(服, 'server.jar'), '');
+    fs.mkdirSync(path.join(服, 'mods'));
+    const 世 = path.join(根, '某世界');
+    fs.mkdirSync(世);
+    fs.writeFileSync(path.join(世, 'level.dat'), '');
+    const jar = path.join(根, 'Chunky-test.jar');
+    fs.writeFileSync(jar, 'x');
+    const 行们: string[] = [];
+    const s = await 服务端.起({ 目录: 服, 存档: 世, 临时模组: [jar], 每行: (l) => 行们.push(l), 提示: () => {}, 就绪超时秒: 20 });
+    expect(行们.find((l) => l.startsWith('ARGS '))).toBe(`ARGS -Xmx12G -jar server.jar nogui --universe ${根} --world 某世界 --port ${s.端口}`);
+    expect(行们).toContain('MODS Chunky-test.jar');
+    expect(fs.existsSync(path.join(服, '.anim-服务端.pid'))).toBe(true);
+    s.发('chunky start');
+    expect(await s.等('收到 chunky start', 10)).toBe('收到 chunky start');
+    expect(await s.等('不会出现', 0.2)).toBeNull();
+    expect(await s.停()).toBe(0);
+    expect(s.在跑).toBe(false);
+    expect(fs.readdirSync(path.join(服, 'mods'))).toEqual([]);
+    expect(fs.existsSync(path.join(服, '.anim-服务端.pid'))).toBe(false);
+    expect(fs.existsSync(path.join(服, '.anim-临时模组.json'))).toBe(false);
+    delete process.env.ANIM_JAVA_HOME;
+    for (const d of [jdk, 服, 根]) fs.rmSync(d, { recursive: true });
+  }, 30_000);
 });
