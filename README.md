@@ -73,6 +73,22 @@ npm ci
 - 只想先看一眼：`./anim --作品 应力转动 still 6-飞越主世界俯冲边城 60 --到预览 试渲`。
 - 耗时参考：MacBook Air（M 系列）上 `render 6-7` 连同核对段约 43 分钟，单个地形段 10～17 分钟。
 
+## 给台词配音（anim voice）
+
+作品的 `台词.toml` 是台词的唯一来源；配音、口型由 `anim voice` 从它出。要 [uv](https://docs.astral.sh/uv/)（Python 工具用它临时装依赖），TTS 和对齐模型在各自的仓库里自己装，位置写进 `anim.local.toml`（见 `anim.local.toml.example`）。
+
+```
+./anim voice backends                       有哪些 TTS 后端、这台机器上缺什么
+./anim voice gen <台词 id> --dry-run        看要发给后端的请求，不合成
+./anim voice gen <台词 id>                  按 [配音] 的种子各出一个候选，进数据根 run/草稿/配音/
+./anim voice use <台词 id> <候选.wav>       定稿：裁静音、拉响度、登记成私有资产、写回 台词.toml、出 台词/<id>.ts
+./anim voice lip [前缀]                     重出口型（字的起止 → 嘴型）
+./anim voice check [前缀]                   核对配音、句模块、口型能不能按字重算出来
+```
+
+- 云端后端要加 `--允许云端`，按次收费的要加 `--允许付费`；本机模型和渲染一样排队过资源闸。
+- 细节见 `docs/架构.md`「配音」。
+
 ## 素材来源和版权
 
 - Minecraft 的贴图、模型、音效、字体和从游戏世界导出的场景版权归 Mojang。本项目是非官方作品，与 Mojang 无关。NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
