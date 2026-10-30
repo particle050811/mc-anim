@@ -4,6 +4,7 @@
 // 输入名照程序的「输入」表：setupAnim 参数（limbSwing、limbSwingAmount、ageInTicks、netHeadYaw、headPitch，单位同原版：度、刻）、
 // 实体上的查询（entity.isAggressive()）、模型字段（model.attackTime）；没给的取「默认」，再没有取 0。枚举给常量名或序号，布尔给 true/false。
 import type { EntityPart, PartPose } from '../model/实体模型.tsx';
+import { clamp } from '../core/数学.ts';
 import { restPose, toPartPoses, type MutablePose } from './关键帧动画.ts';
 
 export type 姿态节点 = [string, string, ...unknown[]];
@@ -39,9 +40,10 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
   'net/minecraft/util/Mth.sqrt(F)F': (x) => f32(Math.sqrt(x)),
   'net/minecraft/util/Mth.abs(F)F': (x) => Math.abs(x),
   'net/minecraft/util/Mth.abs(I)I': (x) => Math.abs(x) | 0,
-  'net/minecraft/util/Mth.clamp(FFF)F': (v, lo, hi) => (v < lo ? lo : jmin(v, hi)),
-  'net/minecraft/util/Mth.clamp(III)I': (v, lo, hi) => Math.min(Math.max(v, lo), hi), // lo > hi 时取 hi，和 1.20.1 一样
-  'net/minecraft/util/Mth.clamp(DDD)D': (v, lo, hi) => (v < lo ? lo : jmin(v, hi)),
+  // 浮点版是 v < lo ? lo : Math.min(v, hi)：lo > hi、v = -0 落在 lo = 0 上时和正本 clamp 不一样，所以下界自己判，上界交给正本
+  'net/minecraft/util/Mth.clamp(FFF)F': (v, lo, hi) => (v < lo ? lo : clamp(v, -Infinity, hi)),
+  'net/minecraft/util/Mth.clamp(III)I': clamp, // 1.20.1 是 Math.min(Math.max(v, lo), hi)，lo > hi 时取 hi，整数上和正本一样
+  'net/minecraft/util/Mth.clamp(DDD)D': (v, lo, hi) => (v < lo ? lo : clamp(v, -Infinity, hi)),
   'net/minecraft/util/Mth.lerp(FFF)F': (t, a, b) => f32(a + f32(t * f32(b - a))),
   'net/minecraft/util/Mth.lerp(DDD)D': (t, a, b) => a + t * (b - a),
   'net/minecraft/util/Mth.wrapDegrees(F)F': (x) => {
