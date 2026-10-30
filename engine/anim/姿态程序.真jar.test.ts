@@ -1,5 +1,5 @@
-// 姿态求值器跑真 jar 翻出的程序（监守者、骆驼的关键帧动画）：程序、部件树和 JVM 真值由 py/tests/test_动作翻译真jar.py 写到 ANIM_REAL_POSE_DUMP 目录。
-// 那些东西来自 Mojang 的 jar，不进仓库；没设这个环境变量就跳过。
+// 姿态求值器跑真 jar 翻出的程序（原版监守者、骆驼、烈焰人、蜜蜂，暮色森林的松鼠、狗头人）：程序、部件树和 JVM 真值由 py/tests/test_动作翻译真jar.py 写到 ANIM_REAL_POSE_DUMP 目录。
+// 那些东西来自 Mojang 和模组作者的 jar，不进仓库；没设这个环境变量就跳过。
 // 跑法：ANIM_REAL_POSE_DUMP=<目录> uv run pytest py/tests/test_动作翻译真jar.py && ANIM_REAL_POSE_DUMP=<目录> npx vitest run engine/anim/姿态程序.真jar.test.ts
 import fs from 'node:fs';
 import path from 'node:path';

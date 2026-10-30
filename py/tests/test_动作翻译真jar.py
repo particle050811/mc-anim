@@ -1,6 +1,7 @@
 """动作翻译拿真 jar 对照：游戏客户端里的模型类在 JVM 上真跑 setupAnim（动作翻译真跑/RealPose.java，反射调，名字由这里按映射换成 jar 里的），
 和翻译出的姿态程序逐位比。样例桩（test_动作翻译.py）验的是翻译规则，这里验的是原版、模组的真代码（关键帧动画、集合、照跑的 AnimationState）。
-要的东西缺一样就跳过：JDK 17、客户端 jar、映射、Prism 下载的 1.20.1 库（Bootstrap 要 guava、fastutil 这些）。
+要的东西缺一样就跳过：JDK 17、客户端 jar、映射、Prism 下载的 1.20.1 库（Bootstrap 要 guava、fastutil 这些）；模组那组另要模组 jar、SRG 名客户端、obf_to_srg.tsrg。
+设 ANIM_REAL_POSE_DUMP=<目录> 时把程序和真值写出去，engine/anim/姿态程序.真jar.test.ts 拿 TS 求值器再比一遍。
 路径照 anim env 的取法：环境变量 > anim.local.toml > 默认（数据根在主检出旁边，游戏目录在旧项目 game/，Prism 数据在 ~/Library/Application Support/PrismLauncher）。
 """
 
@@ -125,6 +126,15 @@ class 反查:
         return self.映射.类(jar描述[1:-1]) if jar描述.startswith("L") else jar描述
 
 
+def _值串(t: str, v: object) -> str:
+    """给 TS 的输入：f 写 float 位，d 写 repr（十进制来回不丢位），i、j 写十进制"""
+    if t == "f":
+        return 位(f32(float(v)))  # type: ignore[arg-type]
+    if t == "d":
+        return repr(float(v))  # type: ignore[arg-type]
+    return str(int(v))  # type: ignore[call-overload]
+
+
 def 点(c: str) -> str:
     return c.replace("/", ".")
 
@@ -142,6 +152,7 @@ class 生物:
     # setupAnim / prepareMobModel 擦除后的实体参数类型（BlazeModel<T extends Entity> 是 Entity），默认同 实体类
     实体参数: str | None = None
     带prepare: bool = False
+    层方法: str = "createBodyLayer"
 
 
 def 设字段路径(查: 反查, 起类: str, 路径: list[str], 值: object) -> str:
@@ -253,6 +264,21 @@ def 随机参数(r: random.Random) -> dict:
     }
 
 
+def _狗头人每组(r: random.Random, 查: 反查, x: dict) -> tuple[list[str], dict, list[tuple[str, str]]]:
+    dm, dmd = 查.方法("net/minecraft/world/entity/Entity", "setDeltaMovement", "(DDD)V")
+    vy = r.choice([0.0, r.uniform(-0.6, 0.6)])
+    双 = lambda d: format(struct.unpack(">Q", struct.pack(">d", d))[0], "x")  # noqa: E731
+    return [f"call {dm} {dmd} {双(0.0)} {双(vy)} {双(0.0)}"], {"entity.getDeltaMovement().y()": vy}, []
+
+
+# Forge 1.20.1 的模组（运行时 SRG 名）：模组 jar + SRG 名客户端 + mcp_config 的 obf_to_srg.tsrg 配 client.txt
+模组生物们 = {
+    "暮色松鼠": 生物("twilightforest/client/model/entity/SquirrelModel", "twilightforest/entity/passive/Squirrel", 层方法="create"),
+    # HumanoidModel 的子类，父类从 SRG 客户端里找；prepareMobModel 读实体的竖直速度
+    "暮色狗头人": 生物("twilightforest/client/model/entity/KoboldModel", "twilightforest/entity/monster/Kobold", 每组=_狗头人每组, 带prepare=True, 层方法="create"),
+}
+
+
 @dataclass
 class 真跑环境:
     jdk: Path
@@ -260,6 +286,8 @@ class 真跑环境:
     jar们: list[str]
     库们: list[str]
     映射: str
+    # 只给 JVM 的：SRG 名客户端只有类，Bootstrap 要的语言文件这些从原版客户端 jar 里拿（放最后，同名类以前面的为准）
+    资源们: list[str] = field(default_factory=list)
 
 
 @pytest.fixture(scope="module")
@@ -278,9 +306,20 @@ def 原版(tmp_path_factory: pytest.TempPathFactory) -> 真跑环境:
     return 真跑环境(jdk, out, [str(client)], libs, f"proguard:{映射}")
 
 
+@pytest.fixture(scope="module")
+def 暮色(原版: 真跑环境) -> 真跑环境:
+    env = 环境()
+    tf = env["游戏"] / "取材服务端/mods/twilightforest-1.20.1-4.3.2508-universal.jar"
+    srg客户端 = env["游戏"] / "缓存/client-1.20.1-srg.jar"
+    tsrg = Path(os.environ.get("ANIM_MCP_TSRG") or Path.home() / ".gradle/caches/forge_gradle/mcp_repo/de/oceanlabs/mcp/mcp_config/1.20.1/mcp_config-1.20.1-obf_to_srg.tsrg")
+    if not (tf.exists() and srg客户端.exists() and tsrg.exists()):
+        pytest.skip(f"缺暮色森林 jar / SRG 名客户端 / obf_to_srg.tsrg（{tf}、{srg客户端}、{tsrg}；tsrg 在 ForgeGradle 缓存里，可用 ANIM_MCP_TSRG 指定）")
+    return 真跑环境(原版.jdk, 原版.类目录, [str(tf), str(srg客户端)], 原版.库们, f"srg:{tsrg},{原版.映射.partition(':')[2]}", 资源们=原版.jar们)
+
+
 def JVM跑(环: 真跑环境, 命令们: list[str]) -> list[str]:
-    cp = os.pathsep.join([str(环.类目录), *环.jar们, *环.库们])
-    r = subprocess.run([str(环.jdk / "java"), "-cp", cp, "mcanim.RealPose"], input="\n".join(命令们) + "\n", capture_output=True, text=True, timeout=600)
+    cp = os.pathsep.join([str(环.类目录), *环.jar们, *环.库们, *环.资源们])
+    r = subprocess.run([str(环.jdk / "java"), "-cp", cp, "mcanim.RealPose"], input="\n".join(命令们) + "\n", capture_output=True, text=True, timeout=600, cwd=环.类目录)  # 游戏的 Bootstrap 会在当前目录建 logs/
     if r.returncode != 0 or "ERR " in r.stdout:
         raise AssertionError(f"JVM 跑挂了：{r.stdout[-3000:]}{r.stderr[-2000:]}")
     return r.stdout.splitlines()
@@ -291,7 +330,7 @@ def 头命令(查: 反查, 物: 生物) -> list[str]:
     tv, _ = 查.方法("net/minecraft/SharedConstants", "tryDetectVersion", "()V")
     bb, _ = 查.方法("net/minecraft/server/Bootstrap", "bootStrap", "()V")
     LD, MP = "net/minecraft/client/model/geom/builders/LayerDefinition", "net/minecraft/client/model/geom/ModelPart"
-    cl, cld = 查.方法(物.模型类, "createBodyLayer", f"()L{LD};")
+    cl, cld = 查.方法(物.模型类, 物.层方法, f"()L{LD};")
     br, brd = 查.方法(LD, "bakeRoot", f"()L{MP};")
     部件字段 = [查.字段(MP, f)[1] for f in (*字段, "visible")]
     ch = 查.字段(MP, "children")[1]
@@ -320,8 +359,16 @@ def 读姿态(行们: list[str], i: int) -> tuple[dict, int]:
 
 @pytest.mark.parametrize("名", list(生物们))
 def test_原版生物和JVM逐位相同(原版: 真跑环境, 名: str) -> None:
-    物 = 生物们[名]
-    路径 = 类路径(原版.jar们, 读映射(原版.映射))
+    对照(原版, 名, 生物们[名])
+
+
+@pytest.mark.parametrize("名", list(模组生物们))
+def test_模组生物和JVM逐位相同(暮色: 真跑环境, 名: str) -> None:
+    对照(暮色, 名, 模组生物们[名])
+
+
+def 对照(环: 真跑环境, 名: str, 物: 生物) -> None:
+    路径 = 类路径(环.jar们, 读映射(环.映射))
     查 = 反查(路径)
     r = random.Random(名)
     组们 = []
@@ -335,7 +382,7 @@ def test_原版生物和JVM逐位相同(原版: 真跑环境, 名: str) -> None:
         组们.append((x, 入, [n for n, _ in 询]))
         预备 = [f"prepare {pname} {pd} {' '.join(位(x[k]) for k in ('limbSwing', 'limbSwingAmount', 'partialTick'))}"] if 物.带prepare else []
         命令 += cmds + [q for _, q in 询] + ["reset", *预备, f"setup {sname} {sd} {' '.join(位(x[k]) for k in ('limbSwing', 'limbSwingAmount', 'ageInTicks', 'netHeadYaw', 'headPitch'))}", "dump"]
-    行们 = JVM跑(原版, 命令)
+    行们 = JVM跑(环, 命令)
     # 部件树（翻译器按名字找部件要它）、初始姿态
     树: dict[str, list[str]] = {}
     i = 0
@@ -368,7 +415,7 @@ def test_原版生物和JVM逐位相同(原版: 真跑环境, 名: str) -> None:
             if k not in 给:
                 raise AssertionError(f"程序要输入 {k}，样例没给：{meta}")
         v = 求值(prog["节点"], 给, 初始)
-        留.append({"输入": {k: [prog["输入"][k]["类型"], 位(f32(float(给[k]))) if prog["输入"][k]["类型"] == "f" else str(int(给[k]))] for k in prog["输入"]}, "真值": {n: " ".join([*(d[f] for f in 字段), str(d["visible"])]) for n, d in 真.items()}})
+        留.append({"输入": {k: [prog["输入"][k]["类型"], _值串(prog["输入"][k]["类型"], 给[k])] for k in prog["输入"]}, "真值": {n: " ".join([*(d[f] for f in 字段), str(d["visible"])]) for n, d in 真.items()}})
         for 部件名, d in 真.items():
             算 = {**{f: 初始位[部件名][f] for f in 字段[:6]}, **{f: 位(1.0) for f in 字段[6:]}, "visible": 1}
             for f, j in prog["输出"].get(部件名, {}).items():
