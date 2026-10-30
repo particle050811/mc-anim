@@ -10,6 +10,12 @@ const 表: 声音表 = {
       "响度": -9.3,
       "sha": "cf59eff8cbfa"
     },
+    "音效/把回忆拼好给你/entity.firework_rocket.blast": {
+      "时长": 1,
+      "峰值": 1.1,
+      "响度": -25.1,
+      "sha": "9377171cf33d"
+    },
     "音效/把回忆拼好给你/entity.firework_rocket.large_blast": {
       "时长": 2,
       "峰值": 0.5,
