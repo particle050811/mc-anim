@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
+import { 缺的注册目录, 缺目录提示 } from '../段框架/注册目录.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
@@ -41,6 +42,8 @@ export const 预览命令: Record<string, 命令> = {
     // 开着 Studio 时改了 段.ts 的声音不会自动重生成，要手跑 anim cues
     跑: async (args) => {
       const 根 = 作品根();
+      const 缺目录 = 缺的注册目录(根);
+      if (缺目录.length) throw new Error(缺目录.map((d) => 缺目录提示(相对代码根(根), d)).join('\n'));
       for (const [k, x] of (await 渲前跑cues()).失败) console.error(`!! ${k} 的 anim cues 没跑通，Studio 里这段会报错：${x}`);
       补字节并报(根, 数据根());
       for (const x of 备好私有配乐(await 全部段(), 读作品资产锁(根), 数据根())) console.error(`!! ${缺配乐提示(x)}`);
