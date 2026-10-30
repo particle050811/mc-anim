@@ -48,9 +48,10 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
     if (条目.has(e.名称)) throw new Error(`取材清单里「${e.名称}」写了两条`);
     条目.set(e.名称, e);
   }
-  const j = parse(jar文本) as { Mojang?: { 客户端?: jar登记[]; 要自己生成?: jar登记[] }; 模组?: jar登记[] };
+  // 映射：官方 client.txt 这类非 jar 文件，登记、查 sha 和 jar 一样
+  const j = parse(jar文本) as { Mojang?: { 客户端?: jar登记[]; 映射?: jar登记[]; 要自己生成?: jar登记[] }; 模组?: jar登记[] };
   const jars = new Map<string, jar登记>();
-  for (const x of [...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) jars.set(x.id, x);
+  for (const x of [...(j.Mojang?.客户端 ?? []), ...(j.Mojang?.映射 ?? []), ...(j.Mojang?.要自己生成 ?? []), ...(j.模组 ?? [])]) jars.set(x.id, x);
   return { 程序: (d['程序'] as Record<string, string[]>) ?? {}, 组: (d['组'] as Record<string, string[]>) ?? {}, 条目, jars };
 };
 
