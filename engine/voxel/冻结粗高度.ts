@@ -1,7 +1,7 @@
 // 冻结的粗高度：编排（航线、巡航高度、地标原点）在模块加载时同步要用区段包的 包.json 里的原点和粗高度图，这份拷进仓库（assets/冻结粗高度/<包名>.json），
 // 不在打包时 import Git 外的区段包：没有地形包也能打包、渲古城这类不用地形的段；别人重烘地形、换平台重烘，已经卡好配乐的航线也不跟着变（报告第 5 条）。
 // 用到哪个包的编排自己 import 那一份交进来，engine 不登记有哪些包：加一份不用改 engine，也不让没用到它的段跟着过期。
-// 重新生成：旧项目工具 工具/导入/更新冻结粗高度.ts（待迁移），从登记的那版区段包拷。渲染时导入地形取到 包.json 后和这里比指纹，对不上只报警。
+// 重新生成：anim world freeze --写（pipeline/世界/冻结.ts），从登记的那版区段包拷。渲染时导入地形取到 包.json 后和这里比指纹，对不上只报警。
 import { coarseHeightFingerprint, decodeCoarseHeight, type 包信息, type 粗高度图 } from './区段包.ts';
 
 export type 冻结粗高度文件 = { 说明: string; 包: string; 版本: string; 指纹: string; 维度: string; 原点: [number, number, number]; 粗高度: 包信息['粗高度'] };

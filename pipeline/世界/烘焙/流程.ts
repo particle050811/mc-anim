@@ -81,5 +81,5 @@ const 提醒冻结粗高度 = (包: string, info: Parameters<Awaited<ReturnType<
   if (!fs.existsSync(f)) return;
   const 冻 = JSON.parse(fs.readFileSync(f, 'utf8')).指纹 as string;
   const 新 = 库.区段包.coarseHeightFingerprint(库.区段包.decodeCoarseHeight(info));
-  if (冻 !== 新) 日志(`  粗高度变了（冻结的 ${冻} → ${新}），编排还按冻结的那份排；要跟上新地形得重新冻结（旧项目 更新冻结粗高度.ts，待迁移）并核对航线`);
+  if (冻 !== 新) 日志(`  粗高度变了（冻结的 ${冻} → ${新}），编排还按冻结的那份排；要跟上新地形得重新冻结（anim world freeze --写）并核对航线`);
 };
