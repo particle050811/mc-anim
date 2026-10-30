@@ -51,6 +51,11 @@ def test_后端都登记了且_dry_run_不碰网络和模型(tmp_path):
     # 按名字取音色的服务：没配 音色 就用台词的角色
     assert 取后端('openai-speech', {}).描述(_请求(tmp_path))['json']['voice'] == '黄叛'
     assert 取后端('firered-本机', {}).缺什么() == ['没给 FireRedTTS3 目录（anim 配置 firered，环境变量 ANIM_FIRERED）']
+    # 合成.参数 的采样参数盖到 RunningHub 的 IndexTTS2Run 节点上；节点里没有的键、连线的输入不动
+    q = _请求(tmp_path)
+    q.参数 = {'top_k': 20, '没有这个键': 1, 'audio': 'x'}
+    节点 = 取后端('indextts2-runninghub', {}).描述(q)['workflow']['tts0']['inputs']
+    assert 节点['top_k'] == 20 and '没有这个键' not in 节点 and 节点['audio'] == ['timbre', 0]
     with pytest.raises(SystemExit):
         取后端('没有这个')
 

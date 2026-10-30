@@ -5,12 +5,15 @@
 # pyright: reportMissingImports=false
 import json
 import os
+import random
 import sys
 
 sys.path.insert(0, os.getcwd())
 
 
 def main():
+    import numpy as np
+    import torch
     from indextts.infer_v2 import IndexTTS2
 
     批 = json.load(open(sys.argv[1], encoding='utf-8'))
@@ -21,7 +24,11 @@ def main():
         try:
             os.makedirs(os.path.dirname(q['输出']), exist_ok=True)
             kw = {'emo_audio_prompt': q['语气参考'], 'emo_alpha': float(q['强度'])} if q.get('语气参考') else {}
-            tts.infer(spk_audio_prompt=q['参考音频'], text=q['念'], output_path=q['输出'], **kw)
+            # 种子定住采样，同种子重跑出同一个候选（候选按种子起名）
+            random.seed(int(q['种子']))
+            np.random.seed(int(q['种子']) % 2**32)
+            torch.manual_seed(int(q['种子']))
+            tts.infer(spk_audio_prompt=q['参考音频'], text=q['念'], output_path=q['输出'], **kw, **q.get('生成参数', {}))
             结果.append({'成功': os.path.exists(q['输出']), '说明': ''})
         except Exception as e:  # noqa: BLE001
             结果.append({'成功': False, '说明': f'{type(e).__name__}: {e}'})

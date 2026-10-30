@@ -2,6 +2,7 @@
 
 两种跑法：本机（IndexTTS 仓库自己的 venv，checkpoints_2）和 RunningHub 云端（按次收费；第 6 章 6-1-3、6-4-3a 那几句是它出的，旧项目 工具/配音/语气参考.py）。
 强度缺省 0.6（用户 10-15 在 0.6/0.8/1.0 里挑的）。RunningHub 那边借公开工作流的 id 提交自拼的图，节点参数照它的 IndexTTS2Run。
+合成.参数 里的采样参数（top_k、top_p、temperature、num_beams 等）两边都照传：本机给 infer，云端盖到 IndexTTS2Run 节点同名的输入上。
 """
 from __future__ import annotations
 
@@ -40,7 +41,8 @@ class IndexTTS2本机(后端):
         return 缺
 
     def 合成(self, 请求们: list[合成请求]) -> list[合成结果]:
-        批 = {'模型目录': self.配置['模型目录'], '请求': [{'念': r.念, '参考音频': r.参考音频, '语气参考': r.语气参考, '强度': r.语气强度 or 默认强度, '输出': r.输出} for r in 请求们]}
+        批 = {'模型目录': self.配置['模型目录'], '请求': [{'念': r.念, '参考音频': r.参考音频, '语气参考': r.语气参考, '强度': r.语气强度 or 默认强度, '输出': r.输出, '种子': r.种子,
+                                                  '生成参数': {k: v for k, v in self.参数(r).items() if k not in ('目录', '模型目录')}} for r in 请求们]}
         with tempfile.TemporaryDirectory() as t:
             批文件 = Path(t) / '批.json'
             批文件.write_text(json.dumps(批, ensure_ascii=False), encoding='utf-8')
@@ -63,8 +65,8 @@ class IndexTTS2RunningHub(后端):
         p = Path(os.path.expanduser(self.配置['密钥文件']))
         return [] if p.is_file() else [f'没有 RunningHub 密钥 {p}']
 
-    def _图(self, 音色名: str, 语气名: str, 念: str, 强度: float) -> dict:
-        return {
+    def _图(self, 音色名: str, 语气名: str, 念: str, 强度: float, 参数: dict | None = None) -> dict:
+        图 = {
             'timbre': {'class_type': 'LoadAudio', 'inputs': {'audio': 音色名, 'audioUI': ''}},
             'emotion': {'class_type': 'LoadAudio', 'inputs': {'audio': 语气名, 'audioUI': ''}},
             'text': {'class_type': 'CR Prompt Text', 'inputs': {'prompt': 念}},
@@ -77,11 +79,16 @@ class IndexTTS2RunningHub(后端):
             }},
             'save0': {'class_type': 'SaveAudio', 'inputs': {'audio': ['tts0', 0], 'filename_prefix': 'audio/ComfyUI', 'audioUI': ''}},
         }
+        节点 = 图['tts0']['inputs']
+        for k, v in (参数 or {}).items():  # 只盖节点里本来就有、不是连线的输入
+            if k in 节点 and not isinstance(节点[k], list):
+                节点[k] = v
+        return 图
 
     def 描述(self, 请求: 合成请求) -> dict:
         p = self.参数(请求)
         return {'后端': self.名, 'POST': p['接口'] + '/task/openapi/create', '工作流': p['工作流'],
-                'workflow': self._图(f'<上传 {请求.参考音频}>', f'<上传 {请求.语气参考 or "（缺语气参考）"}>', 请求.念, 请求.语气强度 or 默认强度), '输出': 请求.输出}
+                'workflow': self._图(f'<上传 {请求.参考音频}>', f'<上传 {请求.语气参考 or "（缺语气参考）"}>', 请求.念, 请求.语气强度 or 默认强度, p), '输出': 请求.输出}
 
     def _key(self) -> str:
         return Path(os.path.expanduser(self.配置['密钥文件'])).read_text(encoding='utf-8').strip()
@@ -108,7 +115,7 @@ class IndexTTS2RunningHub(后端):
                 out.append(合成结果(q.id, q.种子, q.输出, False, 'IndexTTS2 要语气参考录音（--语气参考）'))
                 continue
             try:
-                图 = self._图(self._上传(q.参考音频), self._上传(q.语气参考), q.念, q.语气强度 or 默认强度)
+                图 = self._图(self._上传(q.参考音频), self._上传(q.语气参考), q.念, q.语气强度 or 默认强度, self.参数(q))
                 r = self._post('/task/openapi/create', {'apiKey': self._key(), 'workflowId': self.配置['工作流'], 'workflow': json.dumps(图, ensure_ascii=False)})
                 if r.get('code') != 0:
                     raise RuntimeError(f'提交失败：{r}')
