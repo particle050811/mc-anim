@@ -100,16 +100,23 @@ export const 选条目 = (q: 取材清单, 名们: readonly string[], 全部: bo
   });
 };
 
-/** 产物清单：这条配方按资产锁展开的产物（[{id, 文件}] 的 JSON 文件），给按锁反推要导什么的脚本用（导出音效.py --按产物） */
-export type 展开环境 = { jar路径: (id: string) => string; prism数据: string; 脚本: string; 作品根: string; python: string; mcai: string[]; 产物清单?: string };
+/**
+ * 产物清单：这条配方按资产锁展开的产物（[{id, 文件}] 的 JSON 文件；--新 要的 id 也在里面），给按锁反推要导什么的脚本用（导出音效.py --按产物）。
+ * 产物来源：脚本写的 JSON {文件: [用到的 jar 路径…]}（文件相对暂存目录），--登记 照它给每件产物记真正用到的 jar；不写就记配方「需要」的全部 jar
+ */
+export type 展开环境 = { jar路径: (id: string) => string; prism数据: string; 脚本: string; 作品根: string; python: string; mcai: string[]; 产物清单?: string; 产物来源?: string };
 
-/** 参数里的 {jar:a,b}、{prism数据}、{脚本}、{作品根}、{产物清单} 换成本机路径 */
+const 只在跑时 = (名: '产物清单' | '产物来源', v: 展开环境) => {
+  const f = v[名];
+  if (!f) throw new Error(`步骤用了 {${名}}，这里没有（只在 anim extract 跑条目时有）`);
+  return f.split(path.sep).join('/');
+};
+
+/** 参数里的 {jar:a,b}、{prism数据}、{脚本}、{作品根}、{产物清单}、{产物来源} 换成本机路径 */
 export const 填 = (a: string, v: 展开环境) =>
   a
-    .replace(/\{产物清单\}/g, () => {
-      if (!v.产物清单) throw new Error('步骤用了 {产物清单}，这里没有（只在 anim extract 跑条目时有）');
-      return v.产物清单.split(path.sep).join('/');
-    })
+    .replace(/\{产物清单\}/g, () => 只在跑时('产物清单', v))
+    .replace(/\{产物来源\}/g, () => 只在跑时('产物来源', v))
     .replace(/\{jar:([^}]+)\}/g, (_, ids: string) => ids.split(',').map((i) => v.jar路径(i).split(path.sep).join('/')).join(','))
     .replaceAll('{prism数据}', v.prism数据.split(path.sep).join('/'))
     .replaceAll('{脚本}', v.脚本.split(path.sep).join('/'))
@@ -163,4 +170,17 @@ export const 按文件展开产物 = (表: Record<string, string>, 文件们: re
     }
   }
   return 对.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+};
+
+/** --新：锁里还没有的 id 按产物表找文件（先找写死的那一项，再找 <id 目录>/*：文件把 * 换成 id 最后一段）；对不上任何一项的放进 不认 */
+export const 按id展开产物 = (表: Record<string, string>, ids: readonly string[]): { 对: [string, string][]; 不认: string[] } => {
+  const 对: [string, string][] = [];
+  const 不认: string[] = [];
+  for (const id of ids) {
+    const 项们 = Object.entries(表);
+    const 中 = 项们.find(([k]) => k === id) ?? 项们.find(([k]) => k.endsWith('/*') && id.startsWith(k.slice(0, -1)) && id.length > k.length - 1 && !id.slice(k.length - 1).includes('/'));
+    if (!中) 不认.push(id);
+    else 对.push([id, 中[0].endsWith('/*') ? 中[1].replace('*', id.slice(中[0].length - 1)) : 中[1]]);
+  }
+  return { 对, 不认 };
 };

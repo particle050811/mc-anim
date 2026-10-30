@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -7,9 +8,9 @@ import { 读资产表 } from '../资产/资产表.ts';
 import { 读资产锁 } from '../资产/资产锁.ts';
 import { SPDX合法 } from '../检查/规则/资产.ts';
 import { 像素sha, 像素一致 } from './像素.ts';
-import { 改许可, 条目文本, 登记产物, 算补许可, 追加条目 } from './登记.ts';
+import { 反查jar, 改许可, 来源串, 条目文本, 登记产物, 算补许可, 追加条目 } from './登记.ts';
 import { 合取, 继承许可, 许可表, 读jar许可 } from './许可.ts';
-import { 按文件展开产物, 填, 解析清单, 读清单 } from './清单.ts';
+import { 按id展开产物, 按文件展开产物, 填, 解析清单, 读清单 } from './清单.ts';
 
 const jar文本 = `
 [["Mojang"."资源索引"]]
@@ -157,6 +158,118 @@ describe('--登记', () => {
     const v = { jar路径: (i: string) => i, prism数据: '', 脚本: '', 作品根: '', python: 'python3', mcai: [] };
     expect(填('--按产物 {产物清单}', { ...v, 产物清单: '/数据/音效.json' })).toBe('--按产物 /数据/音效.json');
     expect(() => 填('{产物清单}', v)).toThrow('产物清单');
+  });
+});
+
+describe('--新、产物来源', () => {
+  const 音清单 = 解析清单(
+    `
+[["取材"]]
+"名称" = "音"
+"需要" = ["索引", "机械"]
+"公开版" = "提取"
+"步骤" = [["python", "x.py", "--按产物", "{产物清单}", "--来源", "{产物来源}"]]
+["取材"."产物"]
+"音效/*" = "src/音效/*.ogg"
+"音效/表" = "src/音效/表.json"
+`,
+    jar文本,
+  );
+  const 音 = 音清单.条目.get('音')!;
+
+  it('按id展开产物：通配换最后一段，精确的照写；多一层、对不上的进 不认', () => {
+    expect(按id展开产物(音.产物, ['音效/block.x.1', '音效/表', '音效/深/y', '贴图/z', '音效/'])).toEqual({
+      对: [
+        ['音效/block.x.1', 'src/音效/block.x.1.ogg'],
+        ['音效/表', 'src/音效/表.json'],
+      ],
+      不认: ['音效/深/y', '贴图/z', '音效/'],
+    });
+  });
+
+  it('{产物来源} 只在跑条目时有', () => {
+    const v = { jar路径: (i: string) => i, prism数据: '', 脚本: '', 作品根: '', python: 'python3', mcai: [] };
+    expect(填('--来源 {产物来源}', { ...v, 产物来源: '/数据/音.json' })).toBe('--来源 /数据/音.json');
+    expect(() => 填('{产物来源}', v)).toThrow('产物来源');
+  });
+
+  it('来源按件只记用到的 jar；没记 sha256 的资源索引按本机文件现算，许可照样认', () => {
+    const 根 = fs.mkdtempSync(path.join(os.tmpdir(), '登记-'));
+    const 索引 = path.join(根, 'indexes', '5.json');
+    fs.mkdirSync(path.dirname(索引), { recursive: true });
+    fs.writeFileSync(索引, '{"objects":{}}');
+    const 现 = crypto.createHash('sha256').update('{"objects":{}}').digest('hex').slice(0, 12);
+    const jar路径 = (id: string) => (id === '索引' ? 索引 : path.join(根, 'mods', `${id}.jar`));
+    expect(反查jar(音, jar路径, [path.join(根, 'mods', '..', 'mods', '机械.jar')])).toEqual(['机械']);
+    expect(() => 反查jar(音, jar路径, ['/别处/x.jar'])).toThrow('不是「需要」里');
+    expect(来源串(音清单, 音, jar路径)).toBe(`提取:音@${现}+${'c'.repeat(12)}`);
+
+    const 暂存 = path.join(根, '暂存');
+    fs.mkdirSync(path.join(暂存, 'src/音效'), { recursive: true });
+    fs.writeFileSync(path.join(暂存, 'src/音效/a.ogg'), '原版');
+    fs.writeFileSync(path.join(暂存, 'src/音效/create.b.ogg'), '模组');
+    const 表目录 = path.join(根, 'registry');
+    const 锁文件 = path.join(根, '资产锁.json');
+    fs.writeFileSync(锁文件, '{}\n');
+    const r = 登记产物(
+      音清单,
+      音,
+      暂存,
+      [
+        { id: '音效/a', 文件: 'src/音效/a.ogg' },
+        { id: '音效/create.b', 文件: 'src/音效/create.b.ogg' },
+      ],
+      {
+        作品根: path.join(根, '作品'),
+        已登记: new Map(),
+        锁: {},
+        jar路径,
+        产物来源: { 'src/音效/a.ogg': [索引], 'src/音效/create.b.ogg': [jar路径('机械')] },
+        共用表目录: 表目录,
+        共用锁: 锁文件,
+        数据根: path.join(根, '数据'),
+        量音频: false,
+      },
+    );
+    expect(r.仍待定).toEqual([]);
+    const 表 = 读资产表(表目录).条目;
+    expect(表.get('音效/a')).toMatchObject({ 来源: `提取:音@${现}`, 许可: 'LicenseRef-Minecraft-EULA' });
+    expect(表.get('音效/create.b')).toMatchObject({ 来源: `提取:音@${'c'.repeat(12)}`, 许可: 'LicenseRef-All-Rights-Reserved' });
+    for (const x of Object.values(读资产锁(锁文件))) fs.chmodSync(path.join(根, '数据', 'store', x.sha256.slice(0, 2), x.sha256), 0o644);
+    fs.rmSync(根, { recursive: true, force: true });
+  });
+
+  it('已在作品资产表登记、只是没进锁的，写进作品那份锁', () => {
+    const 根 = fs.mkdtempSync(path.join(os.tmpdir(), '登记-'));
+    const 暂存 = path.join(根, '暂存');
+    fs.mkdirSync(path.join(暂存, 'out'), { recursive: true });
+    fs.writeFileSync(path.join(暂存, 'out/作品的.png'), 'PNG');
+    const 作品根 = path.join(根, '作品');
+    fs.mkdirSync(作品根);
+    const 共用锁 = path.join(根, '资产锁.json');
+    fs.writeFileSync(共用锁, '{}\n');
+    const 已登记 = new Map([['贴图/图/作品的', { id: '贴图/图/作品的', 类别: '贴图', 来源: '手工:x', 许可: 'MIT', 可见性: '公开' as const, 表: '贴图.toml', 侧: '作品' as const }]]);
+    const r = 登记产物(q, q.条目.get('图')!, 暂存, [{ id: '贴图/图/作品的', 文件: 'out/作品的.png' }], {
+      作品根,
+      已登记,
+      锁: {},
+      jar路径: () => '/没有',
+      共用表目录: path.join(根, 'registry'),
+      共用锁,
+      数据根: path.join(根, '数据'),
+    });
+    expect(r.新登记).toEqual([]);
+    expect(Object.keys(读资产锁(共用锁))).toEqual([]);
+    const 作品锁 = 读资产锁(path.join(作品根, '资产锁.json'));
+    expect(Object.keys(作品锁)).toEqual(['贴图/图/作品的']);
+    fs.chmodSync(path.join(根, '数据', 'store', 作品锁['贴图/图/作品的']!.sha256.slice(0, 2), 作品锁['贴图/图/作品的']!.sha256), 0o644);
+    fs.rmSync(根, { recursive: true, force: true });
+  });
+
+  it('许可表：没记 sha256 的按 现算 的前缀也认', () => {
+    const 表2 = 许可表(q.jars.values(), (id) => (id === '索引' ? 'bbbbbbbbbbbb' : undefined));
+    expect(继承许可('提取:x@bbbbbbbbbbbb', ['声音'], 表2).许可).toBe('LicenseRef-Minecraft-EULA');
+    expect(继承许可('提取:x@bbbbbbbbbbbb', ['声音'], 表).许可).toBeUndefined();
   });
 });
 

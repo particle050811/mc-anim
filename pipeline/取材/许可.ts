@@ -39,13 +39,18 @@ export const 合取 = (式们: readonly string[]): string => {
 };
 
 export type 许可表项 = { id: string; 许可: jar许可 };
-/** sha256 前 12 位 → jar；资源索引另认 jars.toml 里记的历史前缀（Mojang 会更新同一个索引文件） */
-export const 许可表 = (jars: Iterable<jar登记>): Map<string, 许可表项> => {
+/**
+ * sha256 前 12 位 → jar；资源索引另认 jars.toml 里记的历史前缀（Mojang 会更新同一个索引文件）。
+ * 现算：jars.toml 没记 sha256 的（资源索引），按本机文件现算的前缀也认（登记时来源就是这么算的，见 登记.ts 来源串）；算不出返回 undefined
+ */
+export const 许可表 = (jars: Iterable<jar登记>, 现算?: (id: string) => string | undefined): Map<string, 许可表项> => {
   const m = new Map<string, 许可表项>();
   for (const j of jars) {
     const 项 = { id: j.id, 许可: j.许可 ?? {} };
     if (j.sha256) m.set(j.sha256.slice(0, 12), 项);
     for (const p of j.旧sha256前缀 ?? []) m.set(p, 项);
+    const 本机 = j.sha256 ? undefined : 现算?.(j.id);
+    if (本机 && !m.has(本机)) m.set(本机, 项);
   }
   return m;
 };

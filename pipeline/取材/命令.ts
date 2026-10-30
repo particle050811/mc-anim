@@ -1,6 +1,6 @@
 // anim mcai <动作…>：转给 sourcing/mcai/mcai.py（开游戏、编译前过资源闸）。
-// anim extract [<名称或组>…|--全部] [--只打印|--检查 [--校验]|--列出] [--登记]：按 sourcing/extract.toml 从游戏和模组 jar 导出资产，产物和资产锁比对、入库；
-//   --登记 另把锁里没有的产物登记进资产表、写锁（取材/登记.ts）。anim extract --许可 [--写]：资产表里待定的许可按 jar 继承补上（取材/许可.ts）。
+// anim extract [<名称或组>…|--全部] [--只打印|--检查 [--校验]|--列出] [--登记] [--新 <id>…]：按 sourcing/extract.toml 从游戏和模组 jar 导出资产，产物和资产锁比对、入库；
+//   --登记 另把锁里没有的产物登记进资产表、写锁（取材/登记.ts）。--新 把锁里还没有的 id 加进产物清单，给按锁反推要导什么的配方（音效）导新件。anim extract --许可 [--写]：资产表里待定的许可按 jar 继承补上（取材/许可.ts）。
 //   anim extract --补网格配方 [--写]：锁里没有配方的场景网格按网格头反填配方，标不重导（取材/网格配方.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -16,7 +16,7 @@ import { 过放行闸 } from '../闸/闸.ts';
 import { mcai命令, mcai环境, 渲染中, 要过闸 } from './mcai.ts';
 import { 取材目录, 读清单, 选条目 } from './清单.ts';
 import { 分组, 缺配方网格, 补网格配方文本 } from './网格配方.ts';
-import { jar路径, 提取一条, 暂存目录, 检查, 跑步骤 } from './提取.ts';
+import { jar路径, 提取一条, 新id归属, 暂存目录, 检查, 跑步骤 } from './提取.ts';
 
 const 睡 = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -44,11 +44,13 @@ export const 取材命令: Record<string, 命令> = {
     },
   },
   extract: {
-    用法: 'extract [<名称或组>…] [--全部] [--只打印 | --检查 [--校验] | --列出] [--登记] | extract --许可 [--写] | extract --补网格配方 [--写]',
+    用法: 'extract [<名称或组>…] [--全部] [--只打印 | --检查 [--校验] | --列出] [--登记] [--新 <id>…] | extract --许可 [--写] | extract --补网格配方 [--写]',
     说明:
-      '按 sourcing/extract.toml 从 jar 导出资产，产物 sha 和资产锁一样的放进库（PNG 像素一样也算一样），不一样的报出来；--全部 = 有步骤、不用开游戏、不待迁移的条目；--登记 把锁里没有的产物登记进资产表、写锁，许可按 jar 继承；--许可 列出资产表里能按 jar 补上的待定许可，--写 写回；--补网格配方 给锁里没有配方的场景网格按网格头反填配方（标不重导），--写 追加进 extract.toml',
+      '按 sourcing/extract.toml 从 jar 导出资产，产物 sha 和资产锁一样的放进库（PNG 像素一样也算一样），不一样的报出来；--全部 = 有步骤、不用开游戏、不待迁移的条目；--登记 把锁里没有的产物登记进资产表、写锁，许可按 jar 继承（脚本写了产物来源的按件记用到的 jar）；--新 <id> 把锁里还没有的 id 加进产物清单（按锁反推的配方如 音效 照它导新件），可写多次；--许可 列出资产表里能按 jar 补上的待定许可，--写 写回；--补网格配方 给锁里没有配方的场景网格按网格头反填配方（标不重导），--写 追加进 extract.toml',
     跑: async (args, 记录) => {
-      const p = 解析参数(args, { 开关: ['--全部', '--只打印', '--检查', '--校验', '--列出', '--登记', '--许可', '--写', '--补网格配方'] });
+      const p = 解析参数(args, { 开关: ['--全部', '--只打印', '--检查', '--校验', '--列出', '--登记', '--许可', '--写', '--补网格配方'], 多值: ['--新'] });
+      const 新ids = p.多值['--新'] ?? [];
+      if (新ids.length && ['--补网格配方', '--许可', '--检查', '--列出', '--只打印'].some((k) => p.开关.has(k))) throw new 用法错误('--新 只配跑条目（可加 --登记）');
       const q = 读清单();
       if (p.开关.has('--补网格配方')) {
         if (p.位置.length || [...p.开关].some((k) => k !== '--补网格配方' && k !== '--写')) throw new 用法错误('--补网格配方 只配 --写');
@@ -74,7 +76,7 @@ export const 取材命令: Record<string, 命令> = {
       }
       if (p.开关.has('--许可')) {
         if (p.位置.length || [...p.开关].some((k) => k !== '--许可' && k !== '--写')) throw new 用法错误('--许可 只配 --写');
-        const r = 算补许可(q, 读两侧资产表(作品根()).条目.values());
+        const r = 算补许可(q, 读两侧资产表(作品根()).条目.values(), (i) => jar路径(q, i));
         const 按许可 = new Map<string, number>();
         for (const x of r.能补) 按许可.set(x.许可, (按许可.get(x.许可) ?? 0) + 1);
         console.log(`能按 jar 补上的待定许可 ${r.能补.length} 件：`);
@@ -119,15 +121,19 @@ export const 取材命令: Record<string, 命令> = {
       // 不重导的在进资源闸之前就拒：闸可能要排几分钟队
       const 不跑 = es.filter((e) => e.不重导);
       if (不跑.length) throw new Error(`${不跑.map((e) => `「${e.名称}」`).join('')}不重导（步骤只是记录）：--只打印 看步骤；真要重导，先删掉配方里的「不重导」`);
+      // --新 的 id 分给产物表对得上的条目；哪条都对不上的也在进闸前拒
+      const 新归 = new Map(es.map((e) => [e.名称, 新id归属(e, 新ids).对.map(([id]) => id)]));
+      const 没归 = 新ids.filter((id) => ![...新归.values()].some((xs) => xs.includes(id)));
+      if (没归.length) throw new 用法错误(`--新 的 ${没归.join('、')} 不是所选条目的产物（对不上产物表的哪一项）`);
       return 过放行闸(async () => {
         let 坏 = 0;
         const 登记 = p.开关.has('--登记');
         for (const e of es) {
-          const { dir, 结果: r } = await 提取一条(q, e);
+          const { dir, 结果: r, 产物来源 } = await 提取一条(q, e, 新归.get(e.名称));
           const 行 = `${e.名称}：${r.一致.length + r.像素一致.length} 件和资产锁一样（新入库 ${r.入库.length}${r.像素一致.length ? `，其中 ${r.像素一致.length} 件 PNG 字节不同、像素一样，锁里留原来那份` : ''}）`;
           console.log(`${行}${r.不一致.length ? `，${r.不一致.length} 件不一样` : ''}${r.缺文件.length ? `，缺 ${r.缺文件.length} 件` : ''}`);
           if (登记 && r.新产物.length) {
-            const g = 登记产物(q, e, dir, r.新产物, { 作品根: 作品根(), 已登记: 读两侧资产表(作品根()).条目, 锁: 读作品资产锁(作品根()), jar路径: (i) => jar路径(q, i) });
+            const g = 登记产物(q, e, dir, r.新产物, { 作品根: 作品根(), 已登记: 读两侧资产表(作品根()).条目, 锁: 读作品资产锁(作品根()), jar路径: (i) => jar路径(q, i), 产物来源 });
             console.log(`  登记 ${g.新登记.length} 件进 ${g.表文件.map(相对代码根).join('、') || '（都已登记过）'}，写锁 ${g.入锁.length} 件`);
             for (const x of g.仍待定) console.log(`  许可待定：${x.id}（${x.缺.join('；')}）`);
             记录.产物.push(...g.表文件, ...g.入锁.map((id) => `入库 ${id}`));
