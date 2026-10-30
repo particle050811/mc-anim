@@ -42,6 +42,47 @@ tasks.named('jar', Jar).configure {
     finalizedBy 'reobfJar'
 }
 
+// 可复现打包：同一份源码两次构建，jar 逐字节一样（条目不带文件时间、按固定顺序），取材产物的头里记源码提交就能对上是哪一版
+tasks.withType(AbstractArchiveTask).configureEach {
+    preserveFileTimestamps = false
+    reproducibleFileOrder = true
+}
+
+// 源码版本写进 jar（mcai-source.txt，网格头的「mcai 源码」读它）：只看 sourcing/mod 这个目录最后一次提交，仓库别处改了不影响；
+// 这个目录有没提交的改动就加 -dirty。没有 git（比如从压缩包构建）写 unknown
+def mcaiSource() {
+    def git = { List<String> a ->
+        try {
+            def p = (['git', '-C', projectDir.absolutePath] + a).execute()
+            def out = p.text.trim()
+            return p.waitFor() == 0 ? out : null
+        } catch (Exception ignored) {
+            return null
+        }
+    }
+    def commit = git(['log', '-1', '--format=%H', '--', '.'])
+    if (!commit) return 'unknown'
+    def describe = git(['describe', '--always', '--abbrev=12', commit]) ?: commit.take(12)
+    def dirty = git(['status', '--porcelain', '--', '.'])
+    return describe + (dirty ? '-dirty' : '')
+}
+
+def generatedRes = layout.buildDirectory.dir('generated/mcai-source')
+def writeMcaiSource = tasks.register('writeMcaiSource') {
+    def out = generatedRes.get().file('mcai-source.txt').asFile
+    outputs.file(out)
+    // 每次都重算（提交、改动不是 gradle 能看见的输入）；内容没变就不重写，jar 不跟着重打
+    outputs.upToDateWhen { false }
+    doLast {
+        def v = mcaiSource() + '\n'
+        if (!out.exists() || out.getText('UTF-8') != v) {
+            out.parentFile.mkdirs()
+            out.setText(v, 'UTF-8')
+        }
+    }
+}
+sourceSets.main.resources.srcDir(files(generatedRes).builtBy(writeMcaiSource))
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
