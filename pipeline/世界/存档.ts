@@ -107,6 +107,8 @@ export const 读区域 = (文件: string, rx: number, rz: number, 种子: string
   const chunks = new Map<number, 区块段>();
 
   for (const [lcx, lcz, chunk] of 区块们(data, 文件, 只要)) {
+    // 1.17 及以前的区块包在 Level 里、方块另一种存法；不认就会全当没生成，悄悄烘出空洞，所以直接报错
+    if (chunk.Level !== undefined) throw new Error(`${文件} 区块 ${lcx},${lcz} 是 1.17 及以前的格式（DataVersion ${String(chunk.DataVersion ?? '?')}），只认 1.18+；先用 1.18+ 的游戏把存档整个升级（--forceUpgrade）`);
     if (chunk.Status !== 'minecraft:full') continue;
     const secs = (chunk.sections as 复合[]).filter((s) => s.block_states);
     const lo = (chunk.yPos as number) * 16;

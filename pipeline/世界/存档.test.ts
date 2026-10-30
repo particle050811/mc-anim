@@ -7,7 +7,7 @@ import { 读NBT带名, 写NBT } from './nbt.ts';
 import { 方块于, 解码列段, 编码列段, 摊开列, 列号 } from './列段.ts';
 import { 世界种子, 状态串, 解紧凑, 读区域 } from './存档.ts';
 import { 区域源 } from './区域源.ts';
-import { 压紧凑, 造世界 } from './测试夹具.ts';
+import { 压紧凑, 造世界, 造区域文件 } from './测试夹具.ts';
 import { 目录指纹 } from './版本.ts';
 import { 体素模块 } from './体素库.ts';
 
@@ -66,6 +66,12 @@ describe('读存档', () => {
     const col = 摊开列(d, 列号(0, 0, 7, 7))!;
     expect(d.状态表[col.状态[59 + 64]!]).toBe('minecraft:stone');
     expect(d.状态表[col.状态[61 + 64]!]).toBe('minecraft:air');
+  });
+
+  it('1.17 及以前的区块格式直接报错，不当成没生成', () => {
+    const f = path.join(临时, 'r.0.0.mca');
+    fs.writeFileSync(f, 造区域文件(new Map([[0, 写NBT({ DataVersion: { t: 'int', v: 2730 }, Level: { t: 'compound', v: { Status: { t: 'string', v: 'full' } } } })]])));
+    expect(() => 读区域(f, 0, 0, '1')).toThrow(/1\.17 及以前.*DataVersion 2730/);
   });
 
   it('只要几个区块就只解那几个', () => {
