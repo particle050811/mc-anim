@@ -63,19 +63,20 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
     return x < f32(i) ? (i - 1) | 0 : i;
   },
   // ModelUtils.rotlerpRad(FFF)F（1.20.1，蜜蜂）：两个 while 把差归到 [-π, π)，循环次数看输入所以做成内建。
-  // 差大到加减 2π 不动了（或是无穷）时 JVM 永远不返回，这里给 NaN；和 py 的 图._rotlerp_rad 一致
+  // 差大到加减 2π 不动了（|差| 过 2^27，或是无穷）时 JVM 永远不返回，这里给 NaN；和 py 的 图._rotlerp_rad 一致。
+  // 不设次数上限：只要还在动就单调逼近，一定会停；2^27 以内 JVM 要转近 1810 万圈才出来，照样算
   'net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F': (a, b, t) => {
     const PI = f32(Math.PI);
     const TAU = f32(Math.PI * 2);
     let d = f32(b - a);
-    for (let n = 0; d < -PI; n++) {
+    while (d < -PI) {
       const e = f32(d + TAU);
-      if (e === d || n >= 1 << 24) return NaN;
+      if (e === d) return NaN;
       d = e;
     }
-    for (let n = 0; d >= PI; n++) {
+    while (d >= PI) {
       const e = f32(d - TAU);
-      if (e === d || n >= 1 << 24) return NaN;
+      if (e === d) return NaN;
       d = e;
     }
     return f32(a + f32(t * d));

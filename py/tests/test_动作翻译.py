@@ -332,3 +332,6 @@ def test_rotlerpRad差太大给NaN() -> None:
     f = 内建["net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F"][1]
     assert math.isnan(f(0.0, 1e10, 0.5)) and math.isnan(f(0.0, math.inf, 0.5)) and math.isnan(f(math.nan, 0.0, 0.5))
     assert f(0.0, f32(7.0), 1.0) == f32(f32(7.0) - f32(math.pi * 2))
+    # 2^27 以内的大差 JVM 转一千多万圈后照样出来，不能当 NaN（真值是 JDK 17 跑的）；之上减 2π 舍回原值才卡住
+    assert 位(f(0.0, f32(1.2e8), 1.0)) == "c023e0fc"
+    assert math.isnan(f(0.0, f32(2.0**27 + 16), 1.0))

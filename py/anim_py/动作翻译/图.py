@@ -211,19 +211,19 @@ _TAU_F = f32(math.pi * 2)
 
 def _rotlerp_rad(a: float, b: float, t: float) -> float:
     """ModelUtils.rotlerpRad(FFF)F（1.20.1）：d = b - a；while (d < -π) d += 2π；while (d >= π) d -= 2π；return a + t * d。
-    循环次数取决于输入，翻译器跑不了，所以做成内建。差太大（|d| 过 2^25 左右，加减 2π 不动了）或是无穷、NaN 时 JVM 永远不返回，这里给 NaN"""
+    循环次数取决于输入，翻译器跑不了，所以做成内建。差太大（|d| 过 2^27，加减 2π 不动了）或是无穷时 JVM 永远不返回，这里给 NaN；
+    差是 NaN 时两个比较都不成立，照 JVM 直接返回 NaN。不设次数上限：还在动就单调逼近、一定会停（2^27 以内最多约 1810 万圈，照样算）"""
     d = f32(b - a)
-    n = 0
     while d < -_PI_F:
         e = f32(d + _TAU_F)
-        if e == d or n >= 1 << 24:
+        if e == d:
             return math.nan
-        d, n = e, n + 1
+        d = e
     while d >= _PI_F:
         e = f32(d - _TAU_F)
-        if e == d or n >= 1 << 24:
+        if e == d:
             return math.nan
-        d, n = e, n + 1
+        d = e
     return f32(a + f32(t * d))
 
 

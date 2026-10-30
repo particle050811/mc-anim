@@ -133,5 +133,8 @@ describe('姿态程序求值器', () => {
     expect(f(0, 7, 1)).toBe(Math.fround(Math.fround(7) - Math.fround(Math.PI * 2)));
     expect(f(0, 1e10, 0.5)).toBeNaN();
     expect(f(0, Infinity, 0.5)).toBeNaN();
+    // 2^27 以内的大差 JVM 转一千多万圈后照样出来（不是死循环），不能当 NaN；2^27 之上（ulp 16，减 2π 舍回原值）才卡住
+    expect(f(0, 1.2e8, 1)).toBe(Math.fround(-2.5606069564819336));
+    expect(f(0, 2 ** 27 + 16, 1)).toBeNaN();
   });
 });
