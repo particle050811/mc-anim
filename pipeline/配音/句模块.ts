@@ -1,5 +1,6 @@
 // 句模块：<作品根>/台词/<台词 id>.ts，一句一个，由 anim voice 生成（进 Git，别手改），默认导出 engine/audio/台词句.ts 的 台词句。
 // 段只 import 自己用的几句，加一句、改一句不让别的段过期。文本是确定的：同样的数据写出同样的字节（anim voice check 比这个）。
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 台词句 } from '../../engine/audio/台词句.ts';
@@ -23,8 +24,10 @@ export const 写句模块文本 = (句: 台词句): string => {
       行们.push(`  ${JSON.stringify(k)}: [`, ...项们, '  ],');
     } else 行们.push(`  ${JSON.stringify(k)}: ${JSON.stringify(v)},`);
   }
+  // 校验码是数据的哈希：手改了数据却没改它，anim check 就认出来（格式对得上也认得出）
+  const 校验 = crypto.createHash('sha256').update(行们.join('\n'), 'utf8').digest('hex').slice(0, 12);
   return [
-    `// 由 anim voice 生成，别手改：改 作品的 台词.toml 后跑 anim voice lip ${句.id}（换配音跑 anim voice use）。`,
+    `// 由 anim voice 生成（校验 ${校验}），别手改：改 作品的 台词.toml 后跑 anim voice lip ${句.id}（换配音跑 anim voice use）。`,
     "import type { 台词句 } from '@engine/audio/台词句.ts';",
     '',
     `${开头}{`,

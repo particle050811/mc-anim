@@ -1,4 +1,4 @@
-// 由 anim voice 生成，别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-风筝（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 c940a5880d38），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-风筝（换配音跑 anim voice use）。
 import type { 台词句 } from '@engine/audio/台词句.ts';
 
 const 句: 台词句 = {

@@ -1,4 +1,4 @@
-// 由 anim voice 生成，别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-古城寻宝（换配音跑 anim voice use）。
+// 由 anim voice 生成（校验 8a872f5feb3e），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-古城寻宝（换配音跑 anim voice use）。
 import type { 台词句 } from '@engine/audio/台词句.ts';
 
 const 句: 台词句 = {
