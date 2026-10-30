@@ -56,6 +56,15 @@ export const 是预期错误 = (e: unknown, 根 = 代码根()): boolean => {
 export const 帮助文本 = (命令表: Record<string, 命令>) =>
   ['用法：anim [--作品 <名>] [--调试] <命令> [参数]\n', ...Object.values(命令表).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
 
+/** 一条命令的帮助：自带的详细帮助，没有就是 用法 和 说明 */
+export const 命令帮助 = (c: 命令) => c.帮助?.() ?? `用法：anim ${c.用法}\n      ${c.说明}`;
+
+/** 子命令后面带了 --help 或 -h（-- 之后的不算）：段键、段名都不以 - 开头，不会和选择器撞 */
+export const 要帮助 = (args: readonly string[]) => {
+  const 停 = args.indexOf('--');
+  return (停 < 0 ? args : args.slice(0, 停)).some((a) => a === '--help' || a === '-h');
+};
+
 /** 跑一条 anim 命令，返回退出码 */
 export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Promise<number> => {
   const 出 = o.输出 ?? { log: (s) => console.log(s), error: (s) => console.error(s) };
@@ -73,7 +82,8 @@ export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Pr
   }
   const [名, ...args] = 拆.其余;
   if (!名 || 名 === 'help' || 名 === '--help' || 名 === '-h') {
-    出.log(帮助文本(o.命令表));
+    const 问 = 名 === 'help' && args[0] !== undefined ? o.命令表[args[0]] : undefined;
+    出.log(问 ? 命令帮助(问) : 帮助文本(o.命令表));
     return 名 ? 0 : 1;
   }
   const c = o.命令表[名];
@@ -81,6 +91,10 @@ export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Pr
     出.error(`没有 ${名} 这个命令`);
     出.log(帮助文本(o.命令表));
     return 1;
+  }
+  if (!c.透传 && 要帮助(args)) {
+    出.log(命令帮助(c));
+    return 0;
   }
   const 记录 = (o.新记录 ?? ((n, a) => new 运行记录(n, a)))(名, args);
   let code = 1;

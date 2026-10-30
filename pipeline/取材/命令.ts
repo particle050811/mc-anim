@@ -34,6 +34,7 @@ const 等渲染让出 = async () => {
 export const 取材命令: Record<string, 命令> = {
   mcai: {
     用法: 'mcai <动作…>',
+    透传: true,
     说明: '取材 mod 的命令行（sourcing/mcai/mcai.py，anim mcai --help 看全部）；game start、build 先过资源闸，开游戏还要等渲染让出',
     跑: async (args, 记录) => {
       const argv = args.length ? [...args] : ['--help'];
