@@ -38,7 +38,7 @@ export type 生物属性<V extends 变体表> = {
   /** 动画时钟（秒） */
   秒?: number;
   层们?: readonly 动画层设定[];
-  /** 合到定义里的环境上（变量表、模组命名空间如 ysm.has_helmet） */
+  /** 合到定义里的环境上：查询、上下文、外部（模组命名空间如 ysm.has_helmet）按名字逐个盖，变量表给了就整张换 */
   环境?: Molang环境;
   /** 叠在动画上面，按通道覆盖 */
   姿势?: Record<string, BonePose>;
@@ -50,6 +50,16 @@ export type 生物属性<V extends 变体表> = {
 };
 
 const 读 = (t: 贴图源): Png => (typeof t === 'string' ? png(t) : t);
+
+/** 两个环境按命名空间合并（后面的盖前面的同名项）：只给 外部: { 'ysm.food_level': 5 } 不会把定义里的 ysm.has_helmet 冲掉 */
+export const 合并环境 = (底: Molang环境 = {}, 上: Molang环境 = {}): Molang环境 => ({
+  ...底,
+  ...上,
+  查询: { ...底.查询, ...上.查询 },
+  上下文: { ...底.上下文, ...上.上下文 },
+  外部: { ...底.外部, ...上.外部 },
+  变量: 上.变量 ?? 底.变量,
+});
 
 export const 定义生物 = <const V extends 变体表 = Record<never, never>>(定义: 生物定义<V>) => {
   const 动画文件: Readonly<Record<string, 基岩动画>> | undefined = 定义.动画 ? 解析动画文件(定义.动画.文件) : undefined;
@@ -92,7 +102,7 @@ export const 定义生物 = <const V extends 变体表 = Record<never, never>>(�
         缩放: 定义.缩放,
         动画:
           动画文件 && 定义.动画
-            ? { 文件: 动画文件, 层们: p.层们 ?? 定义.动画.默认层们, 口径: 定义.动画.口径, 环境: { ...定义.动画.环境, ...p.环境 } }
+            ? { 文件: 动画文件, 层们: p.层们 ?? 定义.动画.默认层们, 口径: 定义.动画.口径, 环境: 合并环境(定义.动画.环境, p.环境) }
             : undefined,
         秒: p.秒,
         姿势: p.姿势,

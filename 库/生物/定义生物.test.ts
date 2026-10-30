@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Png } from '@engine/model/贴图.ts';
-import { 定义生物 } from './定义生物.ts';
+import { 合并环境, 定义生物 } from './定义生物.ts';
 
 // 一只假的「村民」：2×1 的贴图，群系底图 × 职业层，看合成和缓存
 const 纯色 = (r: number, a = 255): Png => ({ w: 2, h: 1, px: new Uint8Array([r, 0, 0, a, r, 0, 0, a]) });
@@ -39,6 +39,15 @@ describe('定义生物', () => {
   it('动画文件在定义时解析', () => {
     expect(Object.keys(村民.动画文件!)).toEqual(['待机']);
     expect(村民.displayName).toBe('假村民');
+  });
+
+  it('环境按命名空间合并：只给一个模组变量不冲掉定义里的别的', () => {
+    const 变量 = { x: 1 };
+    const 合 = 合并环境({ 外部: { 'ysm.has_helmet': 1 }, 查询: { health: 20 } }, { 外部: { 'ysm.food_level': 5 }, 变量 });
+    expect(合.外部).toEqual({ 'ysm.has_helmet': 1, 'ysm.food_level': 5 });
+    expect(合.查询).toEqual({ health: 20 });
+    expect(合.变量).toBe(变量);
+    expect(合并环境({ 外部: { a: 1 } }, { 外部: { a: 2 } }).外部).toEqual({ a: 2 });
   });
 
   it('模型不是基岩几何时报错', () => {
