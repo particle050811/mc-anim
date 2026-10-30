@@ -2,6 +2,8 @@ package mcai;
 
 import com.google.gson.JsonElement;
 import mcai.action.BatchAction;
+import mcai.action.BiomesAction;
+import mcai.action.BlocksAction;
 import mcai.action.CamAction;
 import mcai.action.ClickAction;
 import mcai.action.CloseScreenAction;
@@ -48,6 +50,8 @@ public final class Actions {
         register(new KeyAction());
         register(new QuitAction());
         register(new UiAction());
+        register(new BiomesAction());
+        register(new BlocksAction());
     }
 
     private Actions() {
