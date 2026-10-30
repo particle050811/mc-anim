@@ -23,6 +23,9 @@ const prism数据默认 = () => {
   return path.join(process.env.XDG_DATA_HOME ?? path.join(os.homedir(), '.local', 'share'), 'PrismLauncher');
 };
 
+/** 用户本机放外部模型仓库的地方（~/Developer/personal/<名>，旧项目 工具/公共/环境.py 同样的默认） */
+const 个人仓库 = (名: string) => path.join(os.homedir(), 'Developer', 'personal', 名);
+
 /** 旧项目退役前的位置：和本仓库主检出同级 */
 const 旧项目目录名 = '机械动力应力转动-AI漫画';
 
@@ -37,6 +40,11 @@ const 项表 = {
   prism数据: { 变量: 'ANIM_PRISM_DATA', 说明: 'Prism Launcher 的数据目录（原版 assets、库）', 是路径: true, 默认: () => prism数据默认() },
   mc资源: { 变量: 'ANIM_MC_ASSETS', 说明: '原版资源目录（声音、语言文件的 objects/、indexes/）', 是路径: true, 默认: (v) => path.join(v.prism数据!, 'assets') },
   python: { 变量: 'ANIM_PYTHON', 说明: '跑 mcai 和取材脚本的 Python（3.10 以上）', 是路径: false, 默认: () => (isWindows ? 'python' : 'python3') },
+  // anim voice 的外部模型：各在自己的仓库和 venv 里，缺了只影响用到它的那个后端
+  firered: { 变量: 'ANIM_FIRERED', 说明: 'FireRedTTS3 仓库（带 .venv、pretrained_models；anim voice 的 firered-本机 后端）', 是路径: true, 默认: () => 个人仓库('FireRedTTS3') },
+  indextts: { 变量: 'ANIM_INDEXTTS', 说明: 'IndexTTS 仓库（带 .venv、checkpoints_2；anim voice 的 indextts2-本机 后端）', 是路径: true, 默认: () => 个人仓库('IndexTTS') },
+  gpt_sovits: { 变量: 'ANIM_GPT_SOVITS', 说明: 'GPT-SoVITS api_v2 服务地址（anim voice 的 gpt-sovits 后端；服务由人起好）', 是路径: false, 默认: () => 'http://127.0.0.1:9880' },
+  对齐器: { 变量: 'ANIM_ALIGNER', 说明: 'Qwen3-ForcedAligner 的 uv 工程（.venv 和模型目录；anim voice lip 对齐字用）', 是路径: true, 默认: () => 个人仓库('qwen-aligner') },
   锁目录: {
     变量: 'ANIM_LOCK_DIR',
     说明: '资源闸的锁目录；迁移期和旧项目共用 .资源闸/，两边的渲染一起排队',

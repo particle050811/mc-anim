@@ -19,7 +19,7 @@ describe('选择器', () => {
     expect(全.slice(0, 2).map((s) => s.键)).toEqual(['核对-冒烟', '核对-角色包']);
     expect(全[0]!.段).toMatchObject({ 帧数: 48, fps: 24, 宽: 1280, 高: 720 });
     expect(编号('核对-冒烟')).toBeNull();
-    expect((await 选段(['核对'])).map((s) => s.键)).toEqual(['核对-冒烟', '核对-角色包']);
+    expect((await 选段(['核对'])).map((s) => s.键)).toEqual(['核对-冒烟', '核对-角色包', '核对-环境']);
     await expect(选段(['没有这段'])).rejects.toThrow(/没对上任何段：没有这段/);
   });
 });

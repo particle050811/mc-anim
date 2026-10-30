@@ -43,6 +43,9 @@ const jar文本 = `
 [["Mojang"."客户端"]]
 "id" = "a"
 "到" = "缓存/a.jar"
+[["Mojang"."映射"]]
+"id" = "a-mappings"
+"到" = "缓存/a.txt"
 [["模组"]]
 "id" = "b"
 "到" = "mods/b.jar"
@@ -56,6 +59,7 @@ describe('取材清单', () => {
     expect([...q.条目.keys()]).toEqual(['甲', '乙', '丙', '丁']);
     expect(q.条目.get('丁')?.作品).toBe('乙作');
     expect(q.jars.get('b')?.到).toBe('mods/b.jar');
+    expect(q.jars.get('a-mappings')?.到).toBe('缓存/a.txt');
     expect(q.条目.get('乙')?.前置).toEqual(['甲']);
   });
 
