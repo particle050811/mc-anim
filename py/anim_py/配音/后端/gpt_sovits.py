@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from ...网络 import 打开
 from . import 合成结果, 合成请求, 后端, 语言码
 
 
@@ -23,7 +24,7 @@ class GPTSoVITS(后端):
 
     def 缺什么(self) -> list[str]:
         try:
-            urllib.request.urlopen(self.配置['地址'] + '/docs', timeout=3)
+            打开(self.配置['地址'] + '/docs', timeout=3)
             return []
         except (urllib.error.URLError, OSError) as e:
             return [f'GPT-SoVITS 服务 {self.配置["地址"]} 没起（{e}）']
@@ -37,7 +38,7 @@ class GPTSoVITS(后端):
             try:
                 r = urllib.request.Request(self.参数(q)['地址'] + '/tts', json.dumps(self._体(q)).encode(), {'Content-Type': 'application/json'})
                 Path(q.输出).parent.mkdir(parents=True, exist_ok=True)
-                Path(q.输出).write_bytes(urllib.request.urlopen(r, timeout=600).read())
+                Path(q.输出).write_bytes(打开(r, timeout=600).read())
                 out.append(合成结果(q.id, q.种子, q.输出, True))
             except Exception as e:  # noqa: BLE001
                 out.append(合成结果(q.id, q.种子, q.输出, False, f'{type(e).__name__}: {e}'))

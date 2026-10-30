@@ -43,6 +43,16 @@ describe('清单', () => {
     expect(v).toMatch(/7-乙 标了 连续：上一段 7-甲 末帧是场时间线第 9 帧，本段起帧是第 11 帧/);
   });
 
+  it('注册.tsx 收的目录没有文件：报出来（新作品还没有正片段、段/ 没占位）', async () => {
+    const 注册 = {
+      '作品/应力转动/注册.tsx': "export const 模块 = { 段: import.meta.webpackContext('./段', { regExp: /x/ }), 核对: import.meta.webpackContext('./核对', { regExp: /x/ }) };\n",
+    };
+    const v = (await 跑('清单', 造仓库(基础(), 注册))).违规.join('\n');
+    expect(v).toMatch(/作品\/应力转动\/核对\/ 没有文件/);
+    expect(v).not.toMatch(/作品\/应力转动\/段\/ 没有文件/);
+    expect((await 跑('清单', 造仓库(基础(), 注册, { '作品/应力转动/核对/说明.md': '占位\n' }))).违规).toEqual([]);
+  });
+
   it('段键规则', () => {
     expect(段键合法('6-斩娜迦', 6)).toBe(true);
     expect(段键合法('6-贪功钻出Warden', 6)).toBe(true);

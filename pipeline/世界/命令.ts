@@ -218,8 +218,11 @@ const 子命令们: Record<string, 子命令> = {
   ...查询子命令,
 };
 
+const 世界帮助 = () => Object.values(子命令们).map((c) => `  anim world ${c.用法}`).join('\n');
+
 export const 世界命令: Record<string, 命令> = {
   world: {
+    帮助: 世界帮助,
     用法: `world ${Object.values(子命令们)
       .map((c) => c.用法.split(' ')[0])
       .join('|')} …`,
@@ -227,7 +230,7 @@ export const 世界命令: Record<string, 命令> = {
     跑: async (args, 记录) => {
       const [子, ...rest] = args;
       if (!子 || 子 === 'help' || 子 === '--help') {
-        for (const c of Object.values(子命令们)) console.log(`  anim world ${c.用法}`);
+        console.log(世界帮助());
         return 子 ? 0 : 1;
       }
       const c = 子命令们[子];

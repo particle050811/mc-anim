@@ -15,6 +15,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from ...网络 import 打开
 from . import 合成结果, 合成请求, 后端
 
 _跑本机 = Path(__file__).with_name('_indextts本机.py')
@@ -95,7 +96,7 @@ class IndexTTS2RunningHub(后端):
 
     def _post(self, path: str, body: dict) -> dict:
         req = urllib.request.Request(self.配置['接口'] + path, data=json.dumps(body).encode(), headers={'Content-Type': 'application/json'})
-        return json.load(urllib.request.urlopen(req, timeout=120))
+        return json.load(打开(req, timeout=120))
 
     def _上传(self, 文件: str) -> str:
         boundary = uuid.uuid4().hex
@@ -103,7 +104,7 @@ class IndexTTS2RunningHub(后端):
         body = fields + (f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="{uuid.uuid4().hex}.wav"\r\nContent-Type: audio/wav\r\n\r\n'.encode()
                          + Path(文件).read_bytes() + f'\r\n--{boundary}--\r\n'.encode())
         req = urllib.request.Request(self.配置['接口'] + '/task/openapi/upload', data=body, headers={'Content-Type': f'multipart/form-data; boundary={boundary}'})
-        r = json.load(urllib.request.urlopen(req, timeout=300))
+        r = json.load(打开(req, timeout=300))
         if r.get('code') != 0:
             raise RuntimeError(f'RunningHub 上传失败：{r}')
         return r['data']['fileName']

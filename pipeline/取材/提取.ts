@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 配置, 数据根, 数据路径, isWindows } from '../环境/配置.ts';
 import { 跑, 跑出 } from '../环境/子进程.ts';
+import { 本机壳, 命令行文本, 引参数, type 壳 } from '../环境/命令文本.ts';
 import { 入库, 字节路径, 文件sha256, 读作品资产锁, type 资产锁 } from '../资产/资产锁.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { mcai命令, mcai环境 } from './mcai.ts';
@@ -51,8 +52,9 @@ const 步骤环境 = (): NodeJS.ProcessEnv => ({
   ...(配置('java_home') ? { ANIM_JAVA_HOME: 配置('java_home') } : {}),
 });
 
-const 引 = (a: string) => (!a || /[\s'"$`\\|&;<>()*?[\]{}!#~]/.test(a) ? `'${a.replaceAll("'", `'\\''`)}'` : a);
-export const 显示 = (argv: 步骤) => argv.map((a) => (typeof a === 'string' ? 引(a) : `$(${a.输出.map(引).join(' ')})`)).join(' ');
+/** 步骤的命令行文本（给人照抄）：按本机的壳加引号；先跑一条命令取输出的参数，POSIX 写成 $(…)，cmd 没有这种写法，写成 [… 的输出] */
+export const 显示 = (argv: 步骤, 用: 壳 = 本机壳()) =>
+  argv.map((a) => (typeof a === 'string' ? 引参数(a, 用) : 用 === 'windows' ? `[${命令行文本(a.输出, 用)} 的输出]` : `$(${命令行文本(a.输出, 用)})`)).join(' ');
 
 export const 暂存目录 = (名称: string) => 数据路径('run', 'extract', 名称);
 

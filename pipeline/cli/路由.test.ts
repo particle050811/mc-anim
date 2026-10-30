@@ -5,7 +5,7 @@ import { 代码根 } from '../环境/路径.ts';
 import { 运行记录 } from '../运行记录/记录.ts';
 import { 用法错误 } from './参数.ts';
 import type { 命令 } from './命令.ts';
-import { 取调试参数, 是预期错误, 首帧文件, 跑命令行 } from './路由.ts';
+import { 取调试参数, 是预期错误, 要帮助, 首帧文件, 跑命令行 } from './路由.ts';
 
 describe('全局参数', () => {
   it('--调试 在哪都取走，-- 之后的原样留给命令', () => {
@@ -74,12 +74,28 @@ describe('跑命令行', () => {
     业务: { 用法: '业务', 说明: '业务错', 跑: async () => { throw new Error('母版不在'); } },
     坏: { 用法: '坏', 说明: '程序错', 跑: async () => { throw new TypeError('读不了 undefined 的属性'); } },
     只读: { 用法: '只读', 说明: '不写记录', 不记录: true, 跑: async () => {} },
+    详: { 用法: '详 <子>', 说明: '有详细帮助', 帮助: () => '  anim 详 甲\n  anim 详 乙', 跑: async () => {} },
+    转: { 用法: '转 <参数…>', 说明: '原样转给别的程序', 透传: true, 跑: async (a) => void 收参数.push(a) },
   };
 
   it('没给命令打帮助退出 1，help 退出 0，不认识的命令退出 1', async () => {
     expect(await 跑([], 表)).toMatchObject({ code: 1, log: expect.stringContaining('anim 好 [x]') });
     expect((await 跑(['help'], 表)).code).toBe(0);
     expect(await 跑(['没有'], 表)).toMatchObject({ code: 1, error: '没有 没有 这个命令' });
+  });
+
+  it('子命令带 --help、-h 或 anim help <命令>：打这条命令的帮助、退出 0，不跑命令、不写记录；透传的命令照常收参数', async () => {
+    // Windows 实机：anim bench --help 原来报「不认识的选项 --help」退出 2
+    const 前 = 收参数.length;
+    for (const argv of [['好', '--help'], ['好', 'a', '-h'], ['help', '好']]) {
+      expect(await 跑(argv, 表)).toMatchObject({ code: 0, log: '用法：anim 好 [x]\n      返回 0', 记录们: [] });
+    }
+    expect(收参数.length).toBe(前);
+    expect((await 跑(['详', '--help'], 表)).log).toBe('  anim 详 甲\n  anim 详 乙');
+    expect((await 跑(['help', '没有'], 表)).log).toContain('anim 好 [x]');
+    expect((await 跑(['转', '--help'], 表)).code).toBe(0);
+    expect(收参数.at(-1)).toEqual(['--help']);
+    expect(要帮助(['server', '--', 'say', '--help'])).toBe(false);
   });
 
   it('按命令分发，返回值就是退出码（没返回算 0）；--调试 不传给命令；写运行记录', async () => {
