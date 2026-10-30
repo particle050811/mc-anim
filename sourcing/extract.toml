@@ -8,6 +8,7 @@
 #   前置      先要跑哪几条（在同一个暂存目录里先跑，后面的步骤读它们的产物）
 #   要开游戏  步骤要连着开着的取材客户端（anim mcai game start 先开），--全部 里不跑
 #   待迁移    步骤要的旧项目工具或输入还没搬过来，跑不了；写原因
+#   不重导    步骤只是记录、不跑（--只打印 照样列）：锁里那一版重导对不上；写原因。--检查 只查产物在锁里、字节在库里
 #   公开版    "提取"：公开版不带这些文件，用户按这条从 jar 提取；"不提取"：后面注明公开版怎么拿到
 #   公开版提取  公开版提取时不跑步骤、改用内置做法时写（内置:游戏音效、内置:网格图集）
 #   作品      产物登记在这部作品的资产表（<作品根>/资产表/）时写：只在选了这部作品（--作品）时跑、查，别的作品下 --检查 跳过
@@ -24,6 +25,7 @@
 #             id 写成 <id 目录>/* 时指资产锁里这个目录下（一层）的全部 id，文件那边的 * 换成 id 的最后一段。
 # anim extract <条目> --登记：跑完把锁里还没有的产物（通配按暂存目录里的文件展开）登记进资产表（配方写了「作品」的进作品资产表）、入库、写锁，
 #   来源 = 提取:<名称>@<需要的各 jar sha 前 12 位>，许可按 jar 继承（pipeline/取材/许可.ts）；anim extract --许可 [--写] 只补资产表里待定的许可。
+# anim extract --补网格配方 [--写]：锁里有、没有配方产出的场景网格（网格/<名>/头），按网格头的 dim、from、to、origin、markers 反填配方，标不重导，追加在本文件末尾。
 #   脚本读 ANIM_GAME（游戏环境）、ANIM_JAVA_HOME（javap）、ANIM_MC_ASSETS（原版资源）这几个环境变量，anim extract 按配置传。
 
 ["程序"]
@@ -1814,3 +1816,465 @@
 ]
 ["取材"."产物"]
 "字体/把回忆拼好给你/告示牌字" = "告示牌字.json"
+
+# 地标网格（anim extract --补网格配方 按网格头反填，不重导：只记范围，不跑）
+
+[["取材"]]
+"名称" = "九头蛇巢穴网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=-727.5,80,1288.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=-778,-8,1238", "to=-678,50,1338", "origin=-727.5,-8,1288.5", "mark=twilightforest:hydra_boss_spawner", "out=src/模型/场景/九头蛇巢穴.网格"],
+]
+["取材"."产物"]
+"网格/九头蛇巢穴/图集" = "src/模型/场景/九头蛇巢穴.网格.png"
+"网格/九头蛇巢穴/头" = "src/模型/场景/九头蛇巢穴.网格.json"
+"网格/九头蛇巢穴/顶点" = "src/模型/场景/九头蛇巢穴.网格.bin"
+
+[["取材"]]
+"名称" = "传送门海岛网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=1373.5,130,192.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=1293,40,112", "to=1453,100,272", "origin=1373.5,63,192.5", "out=src/模型/场景/传送门海岛.网格"],
+]
+["取材"."产物"]
+"网格/传送门海岛/图集" = "src/模型/场景/传送门海岛.网格.png"
+"网格/传送门海岛/头" = "src/模型/场景/传送门海岛.网格.json"
+"网格/传送门海岛/顶点" = "src/模型/场景/传送门海岛.网格.bin"
+
+[["取材"]]
+"名称" = "古城4x网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=-592,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-656,-60,176", "to=-529,4,303", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东1.网格"],
+  ["mcai", "cam", "pos=-592,34,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-656,-60,48", "to=-529,4,175", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东1北1.网格"],
+  ["mcai", "cam", "pos=-592,34,-16", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-656,-60,-80", "to=-529,4,47", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东1北2.网格"],
+  ["mcai", "cam", "pos=-592,56,-144", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-656,-60,-208", "to=-529,26,-81", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东1北3.网格"],
+  ["mcai", "cam", "pos=-592,49,368", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-656,-60,304", "to=-529,19,431", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东1南1.网格"],
+  ["mcai", "cam", "pos=-592,34,496", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-656,-60,432", "to=-529,4,559", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东1南2.网格"],
+  ["mcai", "cam", "pos=-464,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-528,-60,176", "to=-401,4,303", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东2.网格"],
+  ["mcai", "cam", "pos=-464,35,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-528,-60,48", "to=-401,5,175", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东2北1.网格"],
+  ["mcai", "cam", "pos=-464,38,-16", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-528,-60,-80", "to=-401,8,47", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东2北2.网格"],
+  ["mcai", "cam", "pos=-464,34,-144", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-528,-60,-208", "to=-401,4,-81", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东2北3.网格"],
+  ["mcai", "cam", "pos=-464,36,368", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-528,-60,304", "to=-401,6,431", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东2南1.网格"],
+  ["mcai", "cam", "pos=-464,34,496", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-528,-60,432", "to=-401,4,559", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东2南2.网格"],
+  ["mcai", "cam", "pos=-336,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-400,-60,176", "to=-273,4,303", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东3.网格"],
+  ["mcai", "cam", "pos=-336,34,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-400,-60,48", "to=-273,4,175", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东3北1.网格"],
+  ["mcai", "cam", "pos=-336,34,-16", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-400,-60,-80", "to=-273,4,47", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东3北2.网格"],
+  ["mcai", "cam", "pos=-336,34,368", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-400,-60,304", "to=-273,4,431", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-东3南1.网格"],
+  ["mcai", "cam", "pos=-720,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-784,-60,176", "to=-657,4,303", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:reinforced_deepslate,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-中.网格"],
+  ["mcai", "cam", "pos=-704,54,275", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-728,5,246", "to=-681,24,303", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker", "out=src/模型/场景/古城4x-中顶.网格"],
+  ["mcai", "cam", "pos=-720,58,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-784,-60,48", "to=-657,28,175", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-北1.网格"],
+  ["mcai", "cam", "pos=-720,34,-16", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-784,-60,-80", "to=-657,4,47", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-北2.网格"],
+  ["mcai", "cam", "pos=-720,37,-144", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-784,-60,-208", "to=-657,7,-81", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-北3.网格"],
+  ["mcai", "cam", "pos=-720,34,368", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-784,-60,304", "to=-657,4,431", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-南1.网格"],
+  ["mcai", "cam", "pos=-720,34,496", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-784,-60,432", "to=-657,4,559", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-南2.网格"],
+  ["mcai", "cam", "pos=-720,34,624", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-784,-60,560", "to=-657,4,687", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-南3.网格"],
+  ["mcai", "cam", "pos=-848,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-912,-60,176", "to=-785,4,303", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西1.网格"],
+  ["mcai", "cam", "pos=-848,49,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-912,-60,48", "to=-785,19,175", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西1北1.网格"],
+  ["mcai", "cam", "pos=-848,64,-16", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-912,-60,-80", "to=-785,34,47", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西1北2.网格"],
+  ["mcai", "cam", "pos=-848,34,-144", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-912,-60,-208", "to=-785,4,-81", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西1北3.网格"],
+  ["mcai", "cam", "pos=-848,34,368", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-912,-60,304", "to=-785,4,431", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西1南1.网格"],
+  ["mcai", "cam", "pos=-848,36,496", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-912,-60,432", "to=-785,6,559", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西1南2.网格"],
+  ["mcai", "cam", "pos=-848,34,624", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-912,-60,560", "to=-785,4,687", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西1南3.网格"],
+  ["mcai", "cam", "pos=-976,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1040,-60,176", "to=-913,4,303", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西2.网格"],
+  ["mcai", "cam", "pos=-976,45,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1040,-60,48", "to=-913,15,175", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西2北1.网格"],
+  ["mcai", "cam", "pos=-976,64,-16", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1040,-60,-80", "to=-913,34,47", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西2北2.网格"],
+  ["mcai", "cam", "pos=-976,34,-144", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1040,-60,-208", "to=-913,4,-81", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西2北3.网格"],
+  ["mcai", "cam", "pos=-976,34,368", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1040,-60,304", "to=-913,4,431", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西2南1.网格"],
+  ["mcai", "cam", "pos=-976,34,496", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1040,-60,432", "to=-913,4,559", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西2南2.网格"],
+  ["mcai", "cam", "pos=-976,34,624", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1040,-60,560", "to=-913,4,687", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西2南3.网格"],
+  ["mcai", "cam", "pos=-1104,34,240", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1168,-60,176", "to=-1041,4,303", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西3.网格"],
+  ["mcai", "cam", "pos=-1104,34,112", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1168,-60,48", "to=-1041,4,175", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker", "out=src/模型/场景/古城4x-西3北1.网格"],
+  ["mcai", "cam", "pos=-1104,34,-16", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1168,-60,-80", "to=-1041,4,47", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西3北2.网格"],
+  ["mcai", "cam", "pos=-1104,72,-144", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1168,-60,-208", "to=-1041,42,-81", "origin=-720,-50,240", "mark=minecraft:chest,minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西3北3.网格"],
+  ["mcai", "cam", "pos=-1104,34,368", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1168,-60,304", "to=-1041,4,431", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西3南1.网格"],
+  ["mcai", "cam", "pos=-1104,34,496", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1168,-60,432", "to=-1041,4,559", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker,quark:ancient_chest", "out=src/模型/场景/古城4x-西3南2.网格"],
+  ["mcai", "cam", "pos=-1200,-10,235.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1232,-60,170", "to=-1169,-40,300", "origin=-720,-50,240", "mark=minecraft:sculk_sensor", "out=src/模型/场景/古城4x-西4.网格"],
+]
+["取材"."产物"]
+"网格/古城4x/东1/图集" = "src/模型/场景/古城4x-东1.网格.png"
+"网格/古城4x/东1/头" = "src/模型/场景/古城4x-东1.网格.json"
+"网格/古城4x/东1/顶点" = "src/模型/场景/古城4x-东1.网格.bin"
+"网格/古城4x/东1北1/图集" = "src/模型/场景/古城4x-东1北1.网格.png"
+"网格/古城4x/东1北1/头" = "src/模型/场景/古城4x-东1北1.网格.json"
+"网格/古城4x/东1北1/顶点" = "src/模型/场景/古城4x-东1北1.网格.bin"
+"网格/古城4x/东1北2/图集" = "src/模型/场景/古城4x-东1北2.网格.png"
+"网格/古城4x/东1北2/头" = "src/模型/场景/古城4x-东1北2.网格.json"
+"网格/古城4x/东1北2/顶点" = "src/模型/场景/古城4x-东1北2.网格.bin"
+"网格/古城4x/东1北3/图集" = "src/模型/场景/古城4x-东1北3.网格.png"
+"网格/古城4x/东1北3/头" = "src/模型/场景/古城4x-东1北3.网格.json"
+"网格/古城4x/东1北3/顶点" = "src/模型/场景/古城4x-东1北3.网格.bin"
+"网格/古城4x/东1南1/图集" = "src/模型/场景/古城4x-东1南1.网格.png"
+"网格/古城4x/东1南1/头" = "src/模型/场景/古城4x-东1南1.网格.json"
+"网格/古城4x/东1南1/顶点" = "src/模型/场景/古城4x-东1南1.网格.bin"
+"网格/古城4x/东1南2/图集" = "src/模型/场景/古城4x-东1南2.网格.png"
+"网格/古城4x/东1南2/头" = "src/模型/场景/古城4x-东1南2.网格.json"
+"网格/古城4x/东1南2/顶点" = "src/模型/场景/古城4x-东1南2.网格.bin"
+"网格/古城4x/东2/图集" = "src/模型/场景/古城4x-东2.网格.png"
+"网格/古城4x/东2/头" = "src/模型/场景/古城4x-东2.网格.json"
+"网格/古城4x/东2/顶点" = "src/模型/场景/古城4x-东2.网格.bin"
+"网格/古城4x/东2北1/图集" = "src/模型/场景/古城4x-东2北1.网格.png"
+"网格/古城4x/东2北1/头" = "src/模型/场景/古城4x-东2北1.网格.json"
+"网格/古城4x/东2北1/顶点" = "src/模型/场景/古城4x-东2北1.网格.bin"
+"网格/古城4x/东2北2/图集" = "src/模型/场景/古城4x-东2北2.网格.png"
+"网格/古城4x/东2北2/头" = "src/模型/场景/古城4x-东2北2.网格.json"
+"网格/古城4x/东2北2/顶点" = "src/模型/场景/古城4x-东2北2.网格.bin"
+"网格/古城4x/东2北3/图集" = "src/模型/场景/古城4x-东2北3.网格.png"
+"网格/古城4x/东2北3/头" = "src/模型/场景/古城4x-东2北3.网格.json"
+"网格/古城4x/东2北3/顶点" = "src/模型/场景/古城4x-东2北3.网格.bin"
+"网格/古城4x/东2南1/图集" = "src/模型/场景/古城4x-东2南1.网格.png"
+"网格/古城4x/东2南1/头" = "src/模型/场景/古城4x-东2南1.网格.json"
+"网格/古城4x/东2南1/顶点" = "src/模型/场景/古城4x-东2南1.网格.bin"
+"网格/古城4x/东2南2/图集" = "src/模型/场景/古城4x-东2南2.网格.png"
+"网格/古城4x/东2南2/头" = "src/模型/场景/古城4x-东2南2.网格.json"
+"网格/古城4x/东2南2/顶点" = "src/模型/场景/古城4x-东2南2.网格.bin"
+"网格/古城4x/东3/图集" = "src/模型/场景/古城4x-东3.网格.png"
+"网格/古城4x/东3/头" = "src/模型/场景/古城4x-东3.网格.json"
+"网格/古城4x/东3/顶点" = "src/模型/场景/古城4x-东3.网格.bin"
+"网格/古城4x/东3北1/图集" = "src/模型/场景/古城4x-东3北1.网格.png"
+"网格/古城4x/东3北1/头" = "src/模型/场景/古城4x-东3北1.网格.json"
+"网格/古城4x/东3北1/顶点" = "src/模型/场景/古城4x-东3北1.网格.bin"
+"网格/古城4x/东3北2/图集" = "src/模型/场景/古城4x-东3北2.网格.png"
+"网格/古城4x/东3北2/头" = "src/模型/场景/古城4x-东3北2.网格.json"
+"网格/古城4x/东3北2/顶点" = "src/模型/场景/古城4x-东3北2.网格.bin"
+"网格/古城4x/东3南1/图集" = "src/模型/场景/古城4x-东3南1.网格.png"
+"网格/古城4x/东3南1/头" = "src/模型/场景/古城4x-东3南1.网格.json"
+"网格/古城4x/东3南1/顶点" = "src/模型/场景/古城4x-东3南1.网格.bin"
+"网格/古城4x/中/图集" = "src/模型/场景/古城4x-中.网格.png"
+"网格/古城4x/中/头" = "src/模型/场景/古城4x-中.网格.json"
+"网格/古城4x/中/顶点" = "src/模型/场景/古城4x-中.网格.bin"
+"网格/古城4x/中顶/图集" = "src/模型/场景/古城4x-中顶.网格.png"
+"网格/古城4x/中顶/头" = "src/模型/场景/古城4x-中顶.网格.json"
+"网格/古城4x/中顶/顶点" = "src/模型/场景/古城4x-中顶.网格.bin"
+"网格/古城4x/北1/图集" = "src/模型/场景/古城4x-北1.网格.png"
+"网格/古城4x/北1/头" = "src/模型/场景/古城4x-北1.网格.json"
+"网格/古城4x/北1/顶点" = "src/模型/场景/古城4x-北1.网格.bin"
+"网格/古城4x/北2/图集" = "src/模型/场景/古城4x-北2.网格.png"
+"网格/古城4x/北2/头" = "src/模型/场景/古城4x-北2.网格.json"
+"网格/古城4x/北2/顶点" = "src/模型/场景/古城4x-北2.网格.bin"
+"网格/古城4x/北3/图集" = "src/模型/场景/古城4x-北3.网格.png"
+"网格/古城4x/北3/头" = "src/模型/场景/古城4x-北3.网格.json"
+"网格/古城4x/北3/顶点" = "src/模型/场景/古城4x-北3.网格.bin"
+"网格/古城4x/南1/图集" = "src/模型/场景/古城4x-南1.网格.png"
+"网格/古城4x/南1/头" = "src/模型/场景/古城4x-南1.网格.json"
+"网格/古城4x/南1/顶点" = "src/模型/场景/古城4x-南1.网格.bin"
+"网格/古城4x/南2/图集" = "src/模型/场景/古城4x-南2.网格.png"
+"网格/古城4x/南2/头" = "src/模型/场景/古城4x-南2.网格.json"
+"网格/古城4x/南2/顶点" = "src/模型/场景/古城4x-南2.网格.bin"
+"网格/古城4x/南3/图集" = "src/模型/场景/古城4x-南3.网格.png"
+"网格/古城4x/南3/头" = "src/模型/场景/古城4x-南3.网格.json"
+"网格/古城4x/南3/顶点" = "src/模型/场景/古城4x-南3.网格.bin"
+"网格/古城4x/西1/图集" = "src/模型/场景/古城4x-西1.网格.png"
+"网格/古城4x/西1/头" = "src/模型/场景/古城4x-西1.网格.json"
+"网格/古城4x/西1/顶点" = "src/模型/场景/古城4x-西1.网格.bin"
+"网格/古城4x/西1北1/图集" = "src/模型/场景/古城4x-西1北1.网格.png"
+"网格/古城4x/西1北1/头" = "src/模型/场景/古城4x-西1北1.网格.json"
+"网格/古城4x/西1北1/顶点" = "src/模型/场景/古城4x-西1北1.网格.bin"
+"网格/古城4x/西1北2/图集" = "src/模型/场景/古城4x-西1北2.网格.png"
+"网格/古城4x/西1北2/头" = "src/模型/场景/古城4x-西1北2.网格.json"
+"网格/古城4x/西1北2/顶点" = "src/模型/场景/古城4x-西1北2.网格.bin"
+"网格/古城4x/西1北3/图集" = "src/模型/场景/古城4x-西1北3.网格.png"
+"网格/古城4x/西1北3/头" = "src/模型/场景/古城4x-西1北3.网格.json"
+"网格/古城4x/西1北3/顶点" = "src/模型/场景/古城4x-西1北3.网格.bin"
+"网格/古城4x/西1南1/图集" = "src/模型/场景/古城4x-西1南1.网格.png"
+"网格/古城4x/西1南1/头" = "src/模型/场景/古城4x-西1南1.网格.json"
+"网格/古城4x/西1南1/顶点" = "src/模型/场景/古城4x-西1南1.网格.bin"
+"网格/古城4x/西1南2/图集" = "src/模型/场景/古城4x-西1南2.网格.png"
+"网格/古城4x/西1南2/头" = "src/模型/场景/古城4x-西1南2.网格.json"
+"网格/古城4x/西1南2/顶点" = "src/模型/场景/古城4x-西1南2.网格.bin"
+"网格/古城4x/西1南3/图集" = "src/模型/场景/古城4x-西1南3.网格.png"
+"网格/古城4x/西1南3/头" = "src/模型/场景/古城4x-西1南3.网格.json"
+"网格/古城4x/西1南3/顶点" = "src/模型/场景/古城4x-西1南3.网格.bin"
+"网格/古城4x/西2/图集" = "src/模型/场景/古城4x-西2.网格.png"
+"网格/古城4x/西2/头" = "src/模型/场景/古城4x-西2.网格.json"
+"网格/古城4x/西2/顶点" = "src/模型/场景/古城4x-西2.网格.bin"
+"网格/古城4x/西2北1/图集" = "src/模型/场景/古城4x-西2北1.网格.png"
+"网格/古城4x/西2北1/头" = "src/模型/场景/古城4x-西2北1.网格.json"
+"网格/古城4x/西2北1/顶点" = "src/模型/场景/古城4x-西2北1.网格.bin"
+"网格/古城4x/西2北2/图集" = "src/模型/场景/古城4x-西2北2.网格.png"
+"网格/古城4x/西2北2/头" = "src/模型/场景/古城4x-西2北2.网格.json"
+"网格/古城4x/西2北2/顶点" = "src/模型/场景/古城4x-西2北2.网格.bin"
+"网格/古城4x/西2北3/图集" = "src/模型/场景/古城4x-西2北3.网格.png"
+"网格/古城4x/西2北3/头" = "src/模型/场景/古城4x-西2北3.网格.json"
+"网格/古城4x/西2北3/顶点" = "src/模型/场景/古城4x-西2北3.网格.bin"
+"网格/古城4x/西2南1/图集" = "src/模型/场景/古城4x-西2南1.网格.png"
+"网格/古城4x/西2南1/头" = "src/模型/场景/古城4x-西2南1.网格.json"
+"网格/古城4x/西2南1/顶点" = "src/模型/场景/古城4x-西2南1.网格.bin"
+"网格/古城4x/西2南2/图集" = "src/模型/场景/古城4x-西2南2.网格.png"
+"网格/古城4x/西2南2/头" = "src/模型/场景/古城4x-西2南2.网格.json"
+"网格/古城4x/西2南2/顶点" = "src/模型/场景/古城4x-西2南2.网格.bin"
+"网格/古城4x/西2南3/图集" = "src/模型/场景/古城4x-西2南3.网格.png"
+"网格/古城4x/西2南3/头" = "src/模型/场景/古城4x-西2南3.网格.json"
+"网格/古城4x/西2南3/顶点" = "src/模型/场景/古城4x-西2南3.网格.bin"
+"网格/古城4x/西3/图集" = "src/模型/场景/古城4x-西3.网格.png"
+"网格/古城4x/西3/头" = "src/模型/场景/古城4x-西3.网格.json"
+"网格/古城4x/西3/顶点" = "src/模型/场景/古城4x-西3.网格.bin"
+"网格/古城4x/西3北1/图集" = "src/模型/场景/古城4x-西3北1.网格.png"
+"网格/古城4x/西3北1/头" = "src/模型/场景/古城4x-西3北1.网格.json"
+"网格/古城4x/西3北1/顶点" = "src/模型/场景/古城4x-西3北1.网格.bin"
+"网格/古城4x/西3北2/图集" = "src/模型/场景/古城4x-西3北2.网格.png"
+"网格/古城4x/西3北2/头" = "src/模型/场景/古城4x-西3北2.网格.json"
+"网格/古城4x/西3北2/顶点" = "src/模型/场景/古城4x-西3北2.网格.bin"
+"网格/古城4x/西3北3/图集" = "src/模型/场景/古城4x-西3北3.网格.png"
+"网格/古城4x/西3北3/头" = "src/模型/场景/古城4x-西3北3.网格.json"
+"网格/古城4x/西3北3/顶点" = "src/模型/场景/古城4x-西3北3.网格.bin"
+"网格/古城4x/西3南1/图集" = "src/模型/场景/古城4x-西3南1.网格.png"
+"网格/古城4x/西3南1/头" = "src/模型/场景/古城4x-西3南1.网格.json"
+"网格/古城4x/西3南1/顶点" = "src/模型/场景/古城4x-西3南1.网格.bin"
+"网格/古城4x/西3南2/图集" = "src/模型/场景/古城4x-西3南2.网格.png"
+"网格/古城4x/西3南2/头" = "src/模型/场景/古城4x-西3南2.网格.json"
+"网格/古城4x/西3南2/顶点" = "src/模型/场景/古城4x-西3南2.网格.bin"
+"网格/古城4x/西4/图集" = "src/模型/场景/古城4x-西4.网格.png"
+"网格/古城4x/西4/头" = "src/模型/场景/古城4x-西4.网格.json"
+"网格/古城4x/西4/顶点" = "src/模型/场景/古城4x-西4.网格.bin"
+
+[["取材"]]
+"名称" = "古城洞口网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=-788.5,33,217", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-832,-30,207", "to=-746,3,226", "origin=-720,-50,240", "out=src/模型/场景/古城洞口.网格"],
+]
+["取材"."产物"]
+"网格/古城洞口/图集" = "src/模型/场景/古城洞口.网格.png"
+"网格/古城洞口/头" = "src/模型/场景/古城洞口.网格.json"
+"网格/古城洞口/顶点" = "src/模型/场景/古城洞口.网格.bin"
+
+[["取材"]]
+"名称" = "古城西洞网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=-916,100,215.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-1000,-40,150", "to=-833,70,280", "origin=-720,-50,240", "mark=minecraft:sculk_sensor,minecraft:sculk_shrieker", "out=src/模型/场景/古城西洞.网格"],
+]
+["取材"."产物"]
+"网格/古城西洞/图集" = "src/模型/场景/古城西洞.网格.png"
+"网格/古城西洞/头" = "src/模型/场景/古城西洞.网格.json"
+"网格/古城西洞/顶点" = "src/模型/场景/古城西洞.网格.bin"
+
+[["取材"]]
+"名称" = "城主府书房网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=25.5,217,4.5", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=20,180,0", "to=30,187,8", "origin=20,181,0", "out=src/模型/场景/城主府书房.网格"],
+]
+["取材"."产物"]
+"网格/城主府书房/图集" = "src/模型/场景/城主府书房.网格.png"
+"网格/城主府书房/头" = "src/模型/场景/城主府书房.网格.json"
+"网格/城主府书房/顶点" = "src/模型/场景/城主府书房.网格.bin"
+
+[["取材"]]
+"名称" = "城门卫兵室网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=44.5,216,3", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=40,180,0", "to=48,186,5", "origin=40,181,0", "out=src/模型/场景/城门卫兵室.网格"],
+]
+["取材"."产物"]
+"网格/城门卫兵室/图集" = "src/模型/场景/城门卫兵室.网格.png"
+"网格/城门卫兵室/头" = "src/模型/场景/城门卫兵室.网格.json"
+"网格/城门卫兵室/顶点" = "src/模型/场景/城门卫兵室.网格.bin"
+
+[["取材"]]
+"名称" = "基地窗户网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=0.5,271,0", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-7,230,-9", "to=7,241,8", "origin=0,230,0", "out=src/模型/场景/基地窗户-云杉窗户.网格"],
+  ["mcai", "cam", "pos=0.5,271,0", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-7,230,-9", "to=7,241,8", "origin=0,230,0", "out=src/模型/场景/基地窗户-原版玻璃.网格"],
+  ["mcai", "cam", "pos=0.5,271,0", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-7,230,-9", "to=7,241,8", "origin=0,230,0", "out=src/模型/场景/基地窗户-通透玻璃.网格"],
+  ["mcai", "cam", "pos=0.5,271,0", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=-7,230,-9", "to=7,241,8", "origin=0,230,0", "out=src/模型/场景/基地窗户-镶框玻璃.网格"],
+]
+["取材"."产物"]
+"网格/基地窗户/云杉窗户/图集" = "src/模型/场景/基地窗户-云杉窗户.网格.png"
+"网格/基地窗户/云杉窗户/头" = "src/模型/场景/基地窗户-云杉窗户.网格.json"
+"网格/基地窗户/云杉窗户/顶点" = "src/模型/场景/基地窗户-云杉窗户.网格.bin"
+"网格/基地窗户/原版玻璃/图集" = "src/模型/场景/基地窗户-原版玻璃.网格.png"
+"网格/基地窗户/原版玻璃/头" = "src/模型/场景/基地窗户-原版玻璃.网格.json"
+"网格/基地窗户/原版玻璃/顶点" = "src/模型/场景/基地窗户-原版玻璃.网格.bin"
+"网格/基地窗户/通透玻璃/图集" = "src/模型/场景/基地窗户-通透玻璃.网格.png"
+"网格/基地窗户/通透玻璃/头" = "src/模型/场景/基地窗户-通透玻璃.网格.json"
+"网格/基地窗户/通透玻璃/顶点" = "src/模型/场景/基地窗户-通透玻璃.网格.bin"
+"网格/基地窗户/镶框玻璃/图集" = "src/模型/场景/基地窗户-镶框玻璃.网格.png"
+"网格/基地窗户/镶框玻璃/头" = "src/模型/场景/基地窗户-镶框玻璃.网格.json"
+"网格/基地窗户/镶框玻璃/顶点" = "src/模型/场景/基地窗户-镶框玻璃.网格.bin"
+
+[["取材"]]
+"名称" = "娜迦庭院网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=180,100,497", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=0,-6,393", "to=359,70,600", "origin=264.5,5,488.5", "mark=minecraft:fire,twilightforest:naga_boss_spawner,twilightforest:twilight_portal", "out=src/模型/场景/娜迦庭院.网格"],
+]
+["取材"."产物"]
+"网格/娜迦庭院/图集" = "src/模型/场景/娜迦庭院.网格.png"
+"网格/娜迦庭院/头" = "src/模型/场景/娜迦庭院.网格.json"
+"网格/娜迦庭院/顶点" = "src/模型/场景/娜迦庭院.网格.bin"
+
+[["取材"]]
+"名称" = "巫妖怪塔网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=0,125,235.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=-43,0,209", "to=42,95,261", "origin=0,0,235.5", "mark=twilightforest:lich_boss_spawner", "out=src/模型/场景/巫妖怪塔.网格"],
+]
+["取材"."产物"]
+"网格/巫妖怪塔/图集" = "src/模型/场景/巫妖怪塔.网格.png"
+"网格/巫妖怪塔/头" = "src/模型/场景/巫妖怪塔.网格.json"
+"网格/巫妖怪塔/顶点" = "src/模型/场景/巫妖怪塔.网格.bin"
+
+[["取材"]]
+"名称" = "幽冥高塔网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=536.5,215,244.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=481,0,177", "to=591,185,311", "origin=536.5,0,244.5", "mark=twilightforest:ur_ghast_boss_spawner", "out=src/模型/场景/幽冥高塔.网格"],
+]
+["取材"."产物"]
+"网格/幽冥高塔/图集" = "src/模型/场景/幽冥高塔.网格.png"
+"网格/幽冥高塔/头" = "src/模型/场景/幽冥高塔.网格.json"
+"网格/幽冥高塔/顶点" = "src/模型/场景/幽冥高塔.网格.bin"
+
+[["取材"]]
+"名称" = "暮色传送门网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=1373,94,200", "pitch=90", "yaw=180", "dim=minecraft:overworld"],
+  ["mcai", "mesh", "from=1372,64,199", "to=1373,64,200", "origin=1373.5,63,192.5", "out=src/模型/场景/暮色传送门.网格"],
+]
+["取材"."产物"]
+"网格/暮色传送门/图集" = "src/模型/场景/暮色传送门.网格.png"
+"网格/暮色传送门/头" = "src/模型/场景/暮色传送门.网格.json"
+"网格/暮色传送门/顶点" = "src/模型/场景/暮色传送门.网格.bin"
+
+[["取材"]]
+"名称" = "极光宫殿网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=-482,226,478.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=-534,0,436", "to=-431,196,520", "origin=-482,0,478.5", "mark=twilightforest:snow_queen_boss_spawner", "out=src/模型/场景/极光宫殿.网格"],
+]
+["取材"."产物"]
+"网格/极光宫殿/图集" = "src/模型/场景/极光宫殿.网格.png"
+"网格/极光宫殿/头" = "src/模型/场景/极光宫殿.网格.json"
+"网格/极光宫殿/顶点" = "src/模型/场景/极光宫殿.网格.bin"
+
+[["取材"]]
+"名称" = "终焉高原城堡网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=-87,235,-482", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=-600,-14,-640", "to=425,205,-325", "origin=-87,-14,-482", "out=src/模型/场景/终焉高原城堡.网格"],
+]
+["取材"."产物"]
+"网格/终焉高原城堡/图集" = "src/模型/场景/终焉高原城堡.网格.png"
+"网格/终焉高原城堡/头" = "src/模型/场景/终焉高原城堡.网格.json"
+"网格/终焉高原城堡/顶点" = "src/模型/场景/终焉高原城堡.网格.bin"
+
+[["取材"]]
+"名称" = "雪怪洞窟网格"
+"需要" = []
+"要开游戏" = true
+"不重导" = "步骤按网格头（dim、from、to、origin、markers）反填，只记范围；锁里是旧项目导的那一版，当时的存档、mcai 都变了，重导字节对不上（docs/迁移.md 旧网格不重导）"
+"公开版" = "不提取"  # 网格走 Release、图集走「网格图集」
+"步骤" = [
+  ["mcai", "cam", "pos=-199.5,80,552.5", "pitch=90", "yaw=180", "dim=twilightforest:twilight_forest"],
+  ["mcai", "mesh", "from=-250,-8,502", "to=-150,50,602", "origin=-199.5,-8,552.5", "mark=twilightforest:alpha_yeti_boss_spawner", "out=src/模型/场景/雪怪洞窟.网格"],
+]
+["取材"."产物"]
+"网格/雪怪洞窟/图集" = "src/模型/场景/雪怪洞窟.网格.png"
+"网格/雪怪洞窟/头" = "src/模型/场景/雪怪洞窟.网格.json"
+"网格/雪怪洞窟/顶点" = "src/模型/场景/雪怪洞窟.网格.bin"
