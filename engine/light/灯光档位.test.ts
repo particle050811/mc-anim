@@ -3,6 +3,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { overworldMix, twilightMix } from './光照配比.ts';
 import { 档位配比, 灯光档位表 } from './灯光档位.ts';
+import { 档位名们 } from './环境.ts';
 
 // 光照配比.ts 的 presets 没导出，灯光档位.ts 抄了一份：这里按源文件逐个核对，那边改了数这里就红
 const 源 = readFileSync(path.join(import.meta.dirname, '光照配比.ts'), 'utf8');
@@ -20,6 +21,9 @@ describe('灯光档位', () => {
     const 源表 = 源档位();
     expect(Object.keys(源表).sort()).toEqual(['中档', '柔档', '柔档提亮', '强档', '硬档', '黄昏'].sort());
     for (const [名, mix] of Object.entries(源表)) expect(灯光档位表[名 as keyof typeof 灯光档位表]).toEqual(mix);
+  });
+  it('环境.ts 的 档位名们（定义环境 拿它查档位名）和表一一对应', () => {
+    expect([...档位名们].sort()).toEqual(Object.keys(灯光档位表).sort());
   });
   it('暮色、主世界就是那边导出的那份', () => {
     expect(灯光档位表.暮色).toBe(twilightMix);

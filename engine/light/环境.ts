@@ -8,16 +8,18 @@ import type { 维度信息 } from './维度.ts';
 
 export type V3 = [number, number, number];
 
-/** 天空、灯、云的画法（环境组件.tsx 的画法表）：
- *  主世界 = Photon 物理天空和空气雾 + Photon 云 + 方形太阳（作品/应力转动/地点/飞行镜头.tsx 的 FlightSky 那套）；
- *  暮色 = 暮色森林实拍取色的穹顶和星星 + 线性雾、高度雾、余晖方向雾 + Photon 云配暮色光照（暮色光照.tsx 的 TwilightLighting 那套） */
-export type 画法 = '主世界' | '暮色';
+/** 天空、灯、云的画法：engine/light/画法/<名>.tsx 那个模块的名字，段自己引那个模块传给 <环境 画法>（环境组件.tsx）。现有：
+ *  主世界 = Photon 物理天空和空气雾 + Photon 云 + 方形太阳，按时刻时加原版月亮星星（作品/应力转动/地点/飞行镜头.tsx 的 FlightSky 那套）；
+ *  暮色 = 暮色森林实拍取色的穹顶和星星 + 线性雾、高度雾、余晖方向雾 + Photon 云配暮色光照（暮色光照.tsx 的 TwilightLighting 那套）。
+ *  这里不列全集：加画法只加模块，不改这个文件（改了用到 <环境> 的段全部过期）；名字对不对 anim check 照目录查 */
+export type 画法 = string;
 
 /** 一套灯的强度（同 光照配比.ts 的 LightMix） */
 export type 灯光配比 = { 直射: number; 天光: number; 环境光: number; 自发光: number };
 
 /** 灯光档位（数在 灯光档位.ts）：前六个是 光照配比.ts 的档；暮色 = 暮色森林现用的（黄昏档 × 光倍 2），主世界 = 主世界现用的 */
-export type 档位名 = '柔档' | '柔档提亮' | '中档' | '强档' | '硬档' | '黄昏' | '暮色' | '主世界';
+export const 档位名们 = ['柔档', '柔档提亮', '中档', '强档', '硬档', '黄昏', '暮色', '主世界'] as const;
+export type 档位名 = (typeof 档位名们)[number];
 
 /** 天气：雨、雷各 0～1（游戏里 rainLevel、thunderLevel）。雷只在下雨时起作用（getThunderLevel 乘了雨） */
 export type 天气 = { 雨: number; 雷: number };
@@ -223,6 +225,8 @@ export const 定义环境 = (e: 环境描述, 名 = '环境'): 环境描述 => {
     if (!d.every(Number.isFinite) || Math.hypot(...d) === 0) throw new Error(`${名}：太阳 ${JSON.stringify(e.太阳)} 不是有效方向`);
   } else if (e.时刻 === undefined && 固定 === undefined) throw new Error(`${名}：${e.维度.id} 要写 时刻 或 太阳`);
   if (e.天气) 查天气(e.天气, 名);
+  if (typeof e.画法 !== 'string' || !/^[^/\\.\s]+$/.test(e.画法)) throw new Error(`${名}：画法 ${JSON.stringify(e.画法)} 要是 engine/light/画法/ 下的模块名`);
+  if ('档位' in e.灯光 && !(档位名们 as readonly string[]).includes(e.灯光.档位)) throw new Error(`${名}：没有灯光档位「${e.灯光.档位}」（有：${档位名们.join('、')}；表里没有的写 配比）`);
   if (e.灯光.倍 !== undefined && !(e.灯光.倍 > 0)) throw new Error(`${名}：灯光.倍 ${e.灯光.倍} 要大于 0`);
   if ('配比' in e.灯光) for (const [k, v] of Object.entries(e.灯光.配比)) if (!(v >= 0)) throw new Error(`${名}：灯光.配比.${k} = ${v}，不能是负的`);
   const f = e.雾;
