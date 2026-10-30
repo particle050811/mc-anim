@@ -294,7 +294,7 @@ def 内建样例(每个: int = 400) -> list[tuple[str, list[str]]]:
     for 函数 in 内建:
         ps, _ = _参数类型(函数)
         for _ in range(每个):
-            out.append((函数, [_写值(t, 取角(t) if "rotlerpRad" in 函数 else 取(t)) for t in ps]))
+            out.append((函数, [_写值(t, 取角(t) if "rotlerprad" in 函数.lower() else 取(t)) for t in ps]))
     return out
 
 

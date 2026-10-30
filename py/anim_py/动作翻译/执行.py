@@ -19,6 +19,7 @@ from .类文件 import ACC_ABSTRACT, ACC_ENUM, ACC_STATIC, 动态调用, 引用,
 
 部件类 = "net/minecraft/client/model/geom/ModelPart"
 实体类 = "net/minecraft/world/entity/Entity"
+渲染状态类 = "net/minecraft/client/renderer/entity/state/EntityRenderState"
 姿态字段 = ("x", "y", "z", "xRot", "yRot", "zRot", "xScale", "yScale", "zScale", "visible", "skipDraw")
 setupAnim参数 = ("limbSwing", "limbSwingAmount", "ageInTicks", "netHeadYaw", "headPitch")
 prepare参数 = ("limbSwing", "limbSwingAmount", "partialTick")
@@ -1358,6 +1359,11 @@ class 翻译器(库模拟):
                 if h.类 == 部件类 and h.名 == "resetPose":
                     return None, self.全部复位(态, recv.根)
             raise 不支持(f"部件流上的 {sig}")
+        if isinstance(recv, 模型实例) and ref.名 == "resetPose" and ref.描述 == "()V":
+            # 1.21.2 起 EntityModel.setupAnim 先 Model.resetPose()：对造模型时 root.getAllParts() 存下的表逐个 resetPose，等于整棵复位
+            found = self.找方法(self.模型类, ref.名, ref.描述)
+            if found is not None and found[0].名 == "net/minecraft/client/model/Model":
+                return None, self.全部复位(态, self.根部件)
         if isinstance(recv, 模型实例) and ref.名 == "getAnyDescendantWithName" and ref.描述 == "(Ljava/lang/String;)Ljava/util/Optional;":
             found = self.找方法(self.模型类, ref.名, ref.描述)
             if found is not None and found[0].名 == "net/minecraft/client/model/HierarchicalModel":
@@ -1615,12 +1621,34 @@ class 翻译器(库模拟):
                 _, 态 = self.跑(found[0], found[1], args, 态)
                 方法们.append(f"{found[0].名}.prepareMobModel")
         found = self.找方法(self.模型类, "setupAnim", f"(L{实体类};FFFFF)V")
-        if found is None:
-            raise 不支持(f"{self.模型类} 找不到 setupAnim")
-        args = [self.模型, ent] + [self.输入(n, "f", "参数") for n in setupAnim参数]
+        if found is not None:
+            args = [self.模型, ent] + [self.输入(n, "f", "参数") for n in setupAnim参数]
+        else:
+            # 1.21.2 起 setupAnim(渲染状态)：状态是不透明对象，读它的字段、调它的方法都成输入（state.walkAnimationPos 这样）
+            found = self.找渲染状态入口()
+            if found is None:
+                raise 不支持(f"{self.模型类} 找不到 setupAnim（老签名 实体 + 5 个 float，或 1.21.2 起收 EntityRenderState 子类的）")
+            状态类 = 拆描述(found[1].描述)[0][0][1:-1]
+            args = [self.模型, 不透明("state", 状态类)]
         _, 态 = self.跑(found[0], found[1], args, 态)
         方法们.append(f"{found[0].名}.setupAnim")
         return self.导出(态, 方法们)
+
+    def 找渲染状态入口(self) -> tuple[类文件, 方法] | None:
+        """模型类（沿父类）里 setupAnim(X)V、X 是 EntityRenderState 子类的那个：编译器另生成的 setupAnim(Object) 桥方法不算"""
+        名 = self.模型类
+        while 名:
+            c = self.类(名)
+            if c is None:
+                return None
+            for m in c.方法们:
+                if m.名 != "setupAnim" or m.访问 & ACC_ABSTRACT:
+                    continue
+                ps, r = 拆描述(m.描述)
+                if r == "V" and len(ps) == 1 and ps[0].startswith("L") and self.是子类(ps[0][1:-1], 渲染状态类):
+                    return c, m
+            名 = c.父类 or ""
+        return None
 
     def 导出(self, 态: 堆态, 方法们: list[str]) -> dict:
         outs: dict[str, dict[str, int]] = {}

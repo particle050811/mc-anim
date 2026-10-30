@@ -40,6 +40,9 @@ public final class Builtins {
         return switch (s[0]) {
             case "net/minecraft/util/Mth.sin(F)F" -> f(Mth.sin(F(s[1])));
             case "net/minecraft/util/Mth.cos(F)F" -> f(Mth.cos(F(s[1])));
+            case "net/minecraft/util/Mth.sin(D)F" -> f(Mth.sin(D(s[1])));
+            case "net/minecraft/util/Mth.rotLerpRad(FFF)F" -> f(Mth.rotLerpRad(F(s[1]), F(s[2]), F(s[3])));
+            case "net/minecraft/util/Mth.cos(D)F" -> f(Mth.cos(D(s[1])));
             case "net/minecraft/util/Mth.sqrt(F)F" -> f(Mth.sqrt(F(s[1])));
             case "net/minecraft/util/Mth.abs(F)F" -> f(Mth.abs(F(s[1])));
             case "net/minecraft/util/Mth.abs(I)I" -> i(Mth.abs(I(s[1])));

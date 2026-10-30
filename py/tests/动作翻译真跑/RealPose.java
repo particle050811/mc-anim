@@ -20,6 +20,7 @@ public class RealPose {
     static Object model;
     static Object entity;
     static Object root;
+    static Object state;
     static String childrenField;
     static String resetPose;
     static String[] poseFields;
@@ -50,9 +51,9 @@ public class RealPose {
                     call(Class.forName(t[1]), null, t[2], "()V");
                     call(Class.forName(t[3]), null, t[4], "()V");
                 }
-                case "model" -> { // model <模型类> <createBodyLayer> <描述符> <LayerDefinition.bakeRoot> <描述符>
+                case "model" -> { // model <模型类> <createBodyLayer> <描述符> <LayerDefinition.bakeRoot> <描述符> [<所属类>:<静态字段>]（层定义方法的参数，如 1.21 的 CubeDeformation.NONE）
                     Class<?> mc = Class.forName(t[1]);
-                    Object def = find(mc, t[2], t[3]).invoke(null);
+                    Object def = t.length > 6 ? find(mc, t[2], t[3]).invoke(null, field(t[6]).get(null)) : find(mc, t[2], t[3]).invoke(null);
                     root = call(def.getClass(), def, t[4], t[5]);
                     Constructor<?> ctor = null;
                     for (Constructor<?> c : mc.getDeclaredConstructors())
@@ -84,6 +85,12 @@ public class RealPose {
                     Method m = find(entity.getClass(), t[1], t[2]);
                     m.invoke(entity, parseArgs(m, t, 3));
                 }
+                case "state" -> state = construct(Class.forName(t[1])); // 1.21.2 起的渲染状态：无参构造
+                case "sets" -> { // sets <所属类>:<字段> <值>：设渲染状态的字段（float 给位）
+                    Field f = field(t[1]);
+                    f.set(state, parse(f.getType(), t[2]));
+                }
+                case "setups" -> find(model.getClass(), t[1], t[2]).invoke(model, state); // setups <方法名> <描述符>：model.setupAnim(state)
                 case "reset" -> reset(root);
                 case "query" -> { // query <方法名> <描述符> <参数…>：在实体上调，打出返回值
                     Method m = find(entity.getClass(), t[1], t[2]);
@@ -112,6 +119,12 @@ public class RealPose {
                 default -> throw new IllegalArgumentException(line);
             }
         }
+    }
+
+    static Object construct(Class<?> c) throws Exception {
+        Constructor<?> k = c.getDeclaredConstructor();
+        k.setAccessible(true);
+        return k.newInstance();
     }
 
     static sun.misc.Unsafe unsafe() throws Exception {

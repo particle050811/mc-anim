@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from anim_py.动作翻译.图 import f32, 求值
-from anim_py.动作翻译.执行 import 翻译器
+from anim_py.动作翻译.执行 import 拆描述, 翻译器
 from anim_py.动作翻译.映射 import 换描述符, 读映射
 from anim_py.动作翻译.类文件 import 类路径
 
@@ -153,6 +153,10 @@ class 生物:
     实体参数: str | None = None
     带prepare: bool = False
     层方法: str = "createBodyLayer"
+    # 层定义方法的参数：<类>:<静态字段>（1.21 苦力怕的 createBodyLayer(CubeDeformation.NONE)）
+    层参数: str | None = None
+    # 1.21.2 起 setupAnim(渲染状态)：输入全是状态的字段，样例照程序的输入表随机给
+    渲染状态: bool = False
 
 
 def 设字段路径(查: 反查, 起类: str, 路径: list[str], 值: object) -> str:
@@ -279,6 +283,13 @@ def _狗头人每组(r: random.Random, 查: 反查, x: dict) -> tuple[list[str],
 }
 
 
+# 1.21.11（最后一个混淆的版本）：setupAnim 收渲染状态；JDK 21
+新版生物们 = {
+    "苦力怕-1.21.11": 生物("net/minecraft/client/model/monster/creeper/CreeperModel", "", 层参数="net/minecraft/client/model/geom/builders/CubeDeformation:NONE", 渲染状态=True),
+    "烈焰人-1.21.11": 生物("net/minecraft/client/model/monster/blaze/BlazeModel", "", 渲染状态=True),
+}
+
+
 @dataclass
 class 真跑环境:
     jdk: Path
@@ -317,6 +328,18 @@ def 暮色(原版: 真跑环境) -> 真跑环境:
     return 真跑环境(原版.jdk, 原版.类目录, [str(tf), str(srg客户端)], 原版.库们, f"srg:{tsrg},{原版.映射.partition(':')[2]}", 资源们=原版.jar们)
 
 
+@pytest.fixture(scope="module")
+def 新版(原版: 真跑环境) -> 真跑环境:
+    env = 环境()
+    jdk = next((Path(d) / "bin" for d in (os.environ.get("JAVA21_HOME", ""), "/opt/homebrew/opt/openjdk@21", "/usr/lib/jvm/java-21-openjdk") if d and (Path(d) / "bin/java").exists()), None)
+    client = env["游戏"] / "缓存/client-1.21.11.jar"
+    映射 = env["数据"] / "cache/动作翻译映射/client-1.21.11-mappings.txt"
+    libs = 库类路径(env, "1.21.11")
+    if jdk is None or not client.exists() or not 映射.exists() or libs is None:
+        pytest.skip(f"缺 JDK 21 / client-1.21.11.jar / 1.21.11 官方映射 / Prism 的 1.21.11 库（{client}、{映射}）")
+    return 真跑环境(jdk, 原版.类目录, [str(client)], libs, f"proguard:{映射}")
+
+
 def JVM跑(环: 真跑环境, 命令们: list[str]) -> list[str]:
     cp = os.pathsep.join([str(环.类目录), *环.jar们, *环.库们, *环.资源们])
     r = subprocess.run([str(环.jdk / "java"), "-cp", cp, "mcanim.RealPose"], input="\n".join(命令们) + "\n", capture_output=True, text=True, timeout=600, cwd=环.类目录)  # 游戏的 Bootstrap 会在当前目录建 logs/
@@ -330,16 +353,18 @@ def 头命令(查: 反查, 物: 生物) -> list[str]:
     tv, _ = 查.方法("net/minecraft/SharedConstants", "tryDetectVersion", "()V")
     bb, _ = 查.方法("net/minecraft/server/Bootstrap", "bootStrap", "()V")
     LD, MP = "net/minecraft/client/model/geom/builders/LayerDefinition", "net/minecraft/client/model/geom/ModelPart"
-    cl, cld = 查.方法(物.模型类, 物.层方法, f"()L{LD};")
+    参类, _, 参字段 = (物.层参数 or "").partition(":")
+    cl, cld = 查.方法(物.模型类, 物.层方法, f"({f'L{参类};' if 参类 else ''})L{LD};")
+    层参 = [f"{点(o)}:{jn}" for o, jn, _ in [查.字段(参类, 参字段)]] if 参类 else []
     br, brd = 查.方法(LD, "bakeRoot", f"()L{MP};")
     部件字段 = [查.字段(MP, f)[1] for f in (*字段, "visible")]
     ch = 查.字段(MP, "children")[1]
     rp, _ = 查.方法(MP, "resetPose", "()V")
     return [
         f"boot {点(sc)} {tv} {点(bs)} {bb}",
-        f"model {点(查.类(物.模型类))} {cl} {cld} {br} {brd}",
+        " ".join(["model", 点(查.类(物.模型类)), cl, cld, br, brd, *层参]),
         f"part {ch} {rp} {' '.join(部件字段)}",
-        f"entity {点(查.类(物.实体类))}",
+        *([f"entity {点(查.类(物.实体类))}"] if 物.实体类 else []),
         *物.准备(查),
         "tree",
         "reset",
@@ -367,21 +392,46 @@ def test_模组生物和JVM逐位相同(暮色: 真跑环境, 名: str) -> None:
     对照(暮色, 名, 模组生物们[名])
 
 
+@pytest.mark.parametrize("名", list(新版生物们))
+def test_新版渲染状态入口和JVM逐位相同(新版: 真跑环境, 名: str) -> None:
+    对照(新版, 名, 新版生物们[名])
+
+
 def 对照(环: 真跑环境, 名: str, 物: 生物) -> None:
     路径 = 类路径(环.jar们, 读映射(环.映射))
     查 = 反查(路径)
     r = random.Random(名)
-    组们 = []
+    组们: list[tuple[dict, dict, list[str]]] = []
     命令 = 头命令(查, 物)
-    参 = 物.实体参数 or 物.实体类
-    sname, sd = 查.方法(物.模型类, "setupAnim", f"(L{参};FFFFF)V")
-    pname, pd = 查.方法(物.模型类, "prepareMobModel", f"(L{参};FFF)V") if 物.带prepare else ("", "")
-    for _ in range(150):
-        x = 随机参数(r)
-        cmds, 入, 询 = 物.每组(r, 查, x)
-        组们.append((x, 入, [n for n, _ in 询]))
-        预备 = [f"prepare {pname} {pd} {' '.join(位(x[k]) for k in ('limbSwing', 'limbSwingAmount', 'partialTick'))}"] if 物.带prepare else []
-        命令 += cmds + [q for _, q in 询] + ["reset", *预备, f"setup {sname} {sd} {' '.join(位(x[k]) for k in ('limbSwing', 'limbSwingAmount', 'ageInTicks', 'netHeadYaw', 'headPitch'))}", "dump"]
+    # 先翻：渲染状态入口的样例照程序的输入表给；部件树要不要取也看翻译时用没用到
+    t = 翻译器(路径, 物.模型类, 物.固定)
+    prog = t.翻译()
+    if 物.渲染状态:
+        入口 = t.找渲染状态入口()
+        assert 入口 is not None
+        状态类 = 拆描述(入口[1].描述)[0][0][1:-1]
+        sname, sd = 查.方法(物.模型类, "setupAnim", f"(L{状态类};)V")
+        命令.append(f"state {点(查.类(状态类))}")
+        for _ in range(150):
+            x: dict = {}
+            cmds = []
+            for k, meta in prog["输入"].items():
+                assert k.startswith("state.") and k.count(".") == 1 and "(" not in k, f"样例只会设状态的字段：{k}"
+                owner, jn, d = 查.字段(状态类, k[6:])
+                x[k] = f32(r.choice([0.0, r.uniform(-1.5, 1.5), r.uniform(-300, 300)])) if meta["类型"] == "f" else r.randrange(2)
+                cmds.append(f"sets {点(owner)}:{jn} {位(x[k]) if d == 'F' else x[k]}")
+            组们.append((x, {}, []))
+            命令 += cmds + ["reset", f"setups {sname} {sd}", "dump"]
+    else:
+        参 = 物.实体参数 or 物.实体类
+        sname, sd = 查.方法(物.模型类, "setupAnim", f"(L{参};FFFFF)V")
+        pname, pd = 查.方法(物.模型类, "prepareMobModel", f"(L{参};FFF)V") if 物.带prepare else ("", "")
+        for _ in range(150):
+            x = 随机参数(r)
+            cmds, 入, 询 = 物.每组(r, 查, x)
+            组们.append((x, 入, [n for n, _ in 询]))
+            预备 = [f"prepare {pname} {pd} {' '.join(位(x[k]) for k in ('limbSwing', 'limbSwingAmount', 'partialTick'))}"] if 物.带prepare else []
+            命令 += cmds + [q for _, q in 询] + ["reset", *预备, f"setup {sname} {sd} {' '.join(位(x[k]) for k in ('limbSwing', 'limbSwingAmount', 'ageInTicks', 'netHeadYaw', 'headPitch'))}", "dump"]
     行们 = JVM跑(环, 命令)
     # 部件树（翻译器按名字找部件要它）、初始姿态
     树: dict[str, list[str]] = {}
@@ -395,12 +445,11 @@ def 对照(环: 真跑环境, 名: str, 物: 生物) -> None:
     初始位, i = 读姿态(行们, i + 1)
     初始 = {n: {f: 浮(d[f]) for f in 字段[:6]} for n, d in 初始位.items()}
     # 不给部件树：翻译器从 createBodyLayer 具体跑出来（部件树.py），和 JVM 烤出来的树应该一样
-    t = 翻译器(路径, 物.模型类, 物.固定)
-    prog = t.翻译()
     if t.模型树 is not None:  # 只有按名字找部件（关键帧动画）时才去取
         assert {k: sorted(v) for k, v in t.模型树.items()} == {k: sorted(v) for k, v in 树.items()}
     # 关键帧动画的（HierarchicalModel）先整棵复位；蜜蜂那种「只在部分分支里写」的警告在这里不碍事：JVM 每组前也复位了，上一帧就是初始姿态
-    assert prog["复位"] == any(k.endswith(".lastTime") for k in prog["输入"]), prog["复位"]
+    # 1.21.2 起 EntityModel.setupAnim 一开头就 resetPose，整棵复位
+    assert prog["复位"] == (物.渲染状态 or any(k.endswith(".lastTime") for k in prog["输入"])), prog["复位"]
     assert all("只在部分分支里写" in w for w in prog["警告"]), prog["警告"]
     动画起作用 = 0
     留: list[dict] = []

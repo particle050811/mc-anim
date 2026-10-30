@@ -38,6 +38,9 @@ const jmax = (a: number, b: number) => (Number.isNaN(a) || Number.isNaN(b) ? NaN
 export const 内建函数: Record<string, (...a: number[]) => number> = {
   'net/minecraft/util/Mth.sin(F)F': (x) => SIN[f2i(f32(x * SIN_SCALE)) & 65535],
   'net/minecraft/util/Mth.cos(F)F': (x) => SIN[f2i(f32(f32(x * SIN_SCALE) + 16384)) & 65535],
+  // 1.21.x：参数是 double，乘 double 常量、(long) 强转再 & 65535
+  'net/minecraft/util/Mth.sin(D)F': (x) => SIN[Number(BigInt.asUintN(16, f2l(x * 10430.378350470453)))],
+  'net/minecraft/util/Mth.cos(D)F': (x) => SIN[Number(BigInt.asUintN(16, f2l(x * 10430.378350470453 + 16384)))],
   'net/minecraft/util/Mth.sqrt(F)F': (x) => f32(Math.sqrt(x)),
   'net/minecraft/util/Mth.abs(F)F': (x) => Math.abs(x),
   'net/minecraft/util/Mth.abs(I)I': (x) => Math.abs(x) | 0,
@@ -77,6 +80,8 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
     }
     return f32(a + f32(t * d));
   },
+  // 1.21.x 挪进 Mth、参数次序改成 (t, 从, 到)，算法一样
+  'net/minecraft/util/Mth.rotLerpRad(FFF)F': (t, a, b) => 内建函数['net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F'](a, b, t),
   'java/lang/Math.sin(D)D': Math.sin,
   'java/lang/Math.cos(D)D': Math.cos,
   'java/lang/Math.sqrt(D)D': Math.sqrt,
