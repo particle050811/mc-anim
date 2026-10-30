@@ -367,3 +367,18 @@
 "sha1" = "4f1165cb39521292e826b471b4808bb89f0f4f3f"
 "许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "CC-NC-ND（实际按 ARR）", "依据" = "旧模组清单 CC-NC-ND（实际按 ARR）；mods.toml 的 license 是没填的占位符" }
 "来源页" = "https://modrinth.com/mod/l_enders-cataclysm"
+
+# 预生成用：anim world pregen --执行 开服前临时拷进服务端 mods/、停服后删掉（pipeline/世界/服务端/服务端.ts），平时不装：
+# Distant Horizons 3.3.3 会绑 Chunky 的事件而 Chunky 还没初始化，两个一起装启动必崩
+[["模组"]]
+"id" = "chunky"
+"名称" = "Chunky（预生成区块）"
+"文件" = "Chunky-1.3.146.jar"
+"版本" = "1.3.146"
+"到" = "取材服务端-主世界/预生成模组/Chunky-1.3.146.jar"
+"下载" = "https://cdn.modrinth.com/data/fALzjamp/versions/4FTDk9wv/Chunky-1.3.146.jar"
+"sha256" = "996a3c9b53e6c0e0850fb9e78d3546d2c37a1b789ddaf529b17e4fe62ab23141"
+"sha1" = "0b782d12b4ac3b03a94c28f32e9b2d5587d1dd50"
+"许可" = { "代码" = "GPL-3.0-only", "资源" = "GPL-3.0-only", "原文" = "GNU GPLv3", "依据" = "jar 里 META-INF/mods.toml license = GNU GPLv3（没写 or later）；Modrinth 按 sha1 查到的同一个文件" }
+"来源页" = "https://modrinth.com/plugin/chunky"
+"用途" = "anim world pregen --执行"
