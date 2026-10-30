@@ -254,10 +254,12 @@ anim mcai game stop                                # 正常退出游戏（会存
 | `key` | 模拟按一下键（走真实键盘的入口，`input off` 时同样被挡，可用来验证锁定） | 客户端 |
 | `quit` | 正常退出游戏 | 客户端 |
 | `ui` | 游戏界面：`op=size` 设虚拟窗口和界面尺寸、`use` 右键用主手物品（打开物品的界面，要先切出旁观模式）、`click`/`scroll`/`type`/`key` 直接调当前界面的输入、`info` 列控件坐标、`shoot` 只拍界面（黑白两底解出透明度存成透明 PNG，`cursor=on/off` 定输入框光标亮灭）。2026-10-12 为 6-2-3 录结构罗盘界面加的，用法见 `参考模型库/工具/游戏取材/结构罗盘界面.py` | 客户端 |
+| `biomes` | 导出群系色表：每个注册群系的草、叶、水、天空、雾色，温度、降水、修饰规则；随位置变的记采样点上的值。`out`（不带扩展名）必填，`samples` 采样点数（默认 64）。结构见 `docs/游戏导表.md` | 客户端 |
+| `blocks` | 导出方块表：每个方块状态烘焙好的面（贴图、染色索引、剔除）、层、发光、偏移，写 `<out>.json` 和 `<out>.png`。`out` 必填，`only=minecraft:*,create:*` 只导一部分。和手写方块表同结构，见 `docs/游戏导表.md` | 渲染线程取面，HTTP 线程写文件 |
 | `help` | 列出以上内容 | — |
 
 “服务端”指单人世界的集成服务端线程，所以 `cam`、`cmd`、`freeze`、`setblock`、`fill`、`undo` 只能在单人世界里用；
-连别的服务器时只有 `state`、`shoot`、`ready`、`closescreen`、`click`、`input`、`key`、`quit` 可用。
+连别的服务器时只有 `state`、`shoot`、`ready`、`closescreen`、`click`、`input`、`key`、`quit`、`biomes`、`blocks` 可用。
 
 游戏外：`mcai game start [world=<存档>|server=<地址>] [offline=<玩家名>] [timeout=300] [idle=30]`、`game stop`、`game status`、
 `game log [n=40]`、`game copyworld name=<存档> from=<世界> [overwrite=1]`、`mcai build`、`mcai meta <png>`。
