@@ -165,7 +165,7 @@ export const decodeSection = (raw: Uint8Array): SectionData => {
 
 // 包里的状态号、群系号 → 体素值、染色（每个包建一次）
 export type 包表 = { 值: Uint16Array; 色: (stateIdx: number, biomeIdx: number) => PaletteEntry['c'] };
-export const buildPackTables = (info: 包信息): 包表 => {
+export const buildPackTables = (info: Pick<包信息, '状态' | '群系'>): 包表 => {
   const voxelByState = Uint16Array.from(info.状态, (s) => voxelFromState(s));
   const { t, C: tintRoutes } = buildTintTable();
   const globalBiome = info.群系.map(biomeIndex);

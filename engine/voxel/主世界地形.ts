@@ -267,6 +267,7 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
       return mergeColumns(voxels, distantSection(grid, origin, section, (c) => emptyCols[c] === 1, correction), emptyCols);
     },
     prefetch: baseSource.prefetch,
+    转交: true, // 导入的体素块（来源 转交）就地改完交出去，远景、并列都是新建的
   };
   // 竖直范围：导入的（维度下界 ～ 最高的方块顶）和远景网格最高处 + 最高的树
   let maxHeight = -Infinity;

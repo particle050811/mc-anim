@@ -1,5 +1,5 @@
 // 网格池：几个 Web Worker 并行跑 区段出网格（纯函数，在哪个线程算结果都一样）；建好的网格交回主线程后仍按原先后建 three 网格（见 世界.tsx），画面逐像素不变。
-// 体素块拷给工人、不转交：来源要是缓存了体素块，转交会把缓存清空；建好的网格是工人新建的数组，转交回来。
+// 体素块默认拷给工人：来源要是缓存了体素块，转交会把缓存清空；来源声明了 `转交`（生成.ts，`区段` 每次给新的）才转交。建好的网格是工人新建的数组，转交回来。
 import type { SectionMesh } from './网格.ts';
 import type { VoxelGrid } from './生成.ts';
 
@@ -31,12 +31,13 @@ const openPool = () => {
 };
 
 // 交给下一个工人（轮流派；区段大小差不多，不按忙闲挑）
-export const buildMeshInPool = (voxels: VoxelGrid, solidLeaves: boolean): Promise<SectionMesh> => {
+export const buildMeshInPool = (voxels: VoxelGrid, solidLeaves: boolean, transfer = false): Promise<SectionMesh> => {
   const ws = openPool();
   const id = nextId++;
   const worker = ws[nextWorker++ % ws.length];
   return new Promise((resolve, reject) => {
     pendingJobs.set(id, { resolve: resolve, reject: reject });
-    worker.postMessage({ id, V: voxels, 实心树叶: solidLeaves });
+    const transfers = transfer ? [voxels.vox.buffer as ArrayBuffer, ...(voxels.挖空 ? [voxels.挖空.buffer as ArrayBuffer] : [])] : [];
+    worker.postMessage({ id, V: voxels, 实心树叶: solidLeaves }, transfers);
   });
 };
