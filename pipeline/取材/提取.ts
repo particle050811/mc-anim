@@ -68,6 +68,7 @@ export const 跑步骤 = async (q: 取材清单, e: 取材条目, dir: string, �
   }
   console.log(`== ${e.名称}`);
   if (e.待迁移) throw new Error(`「${e.名称}」待迁移：${e.待迁移}`);
+  if (e.不重导 && !只打印) throw new Error(`「${e.名称}」不重导：${e.不重导}（--只打印 看步骤；真要重导，先删掉这条的「不重导」）`);
   if (!属于作品(e, 作品名())) throw new Error(`「${e.名称}」的产物登记在作品「${e.作品}」，带 --作品 ${e.作品} 跑`);
   if (!e.步骤.length) {
     console.log(`（没有自己的步骤：${e.说明 ?? ''}）`);
@@ -188,6 +189,7 @@ export const 核对产物 = (q: 取材清单, es: 取材条目[], dir: string, �
 
 /** 跑一个条目：清空暂存目录、跑步骤、核对入库 */
 export const 提取一条 = async (q: 取材清单, e: 取材条目) => {
+  if (e.不重导) throw new Error(`「${e.名称}」不重导：${e.不重导}（--只打印 看步骤；真要重导，先删掉这条的「不重导」）`);
   const dir = 暂存目录(e.名称);
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
@@ -201,10 +203,11 @@ const 找程序 = (名: string): boolean => {
   return (process.env.PATH ?? '').split(path.delimiter).some((d) => d && 后缀们.some((s) => fs.existsSync(path.join(d, 名 + s))));
 };
 
-/** --检查：jar、程序、脚本、产物和输入的字节；返回问题列表、待迁移的条目和属于别的作品、跳过的条目 */
+/** --检查：jar、程序、脚本、产物和输入的字节；返回问题列表、待迁移的条目、不重导的条目和属于别的作品、跳过的条目 */
 export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁: 资产锁 = 取材锁(), 作品 = 作品名()) => {
   const 问题: string[] = [];
   const 待迁移: string[] = [];
+  const 不重导: string[] = [];
   const 别的作品: string[] = [];
   for (const [g, ms] of Object.entries(q.组)) 问题.push(...ms.filter((m) => !q.条目.has(m)).map((m) => `组「${g}」里的「${m}」不是条目`));
   const jar好 = new Map<string, boolean>();
@@ -227,6 +230,11 @@ export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁
     }
     if (e.待迁移) {
       待迁移.push(`${n}：${e.待迁移}`);
+      continue;
+    }
+    // 不重导的只查产物在锁里、字节在库里；步骤只是记录，不查程序
+    if (e.不重导) {
+      不重导.push(n);
       continue;
     }
     for (const i of e.需要) {
@@ -262,5 +270,5 @@ export const 检查 = (q: 取材清单, es: 取材条目[], 校验: boolean, 锁
       }
     }
   }
-  return { 问题, 待迁移, 别的作品 };
+  return { 问题, 待迁移, 不重导, 别的作品 };
 };

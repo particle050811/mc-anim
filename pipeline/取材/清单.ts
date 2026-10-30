@@ -16,6 +16,8 @@ export type 取材条目 = {
   前置: string[];
   要开游戏: boolean;
   待迁移?: string;
+  /** 步骤只是记录（网格头反填的范围，网格配方.ts）：锁里那一版重导对不上，anim extract 不跑，--只打印 照样列 */
+  不重导?: string;
   公开版?: string;
   /** 产物登记在这部作品的资产表：只在选了它时跑、查 */
   作品?: string;
@@ -45,6 +47,7 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
       前置: (raw['前置'] as string[] | undefined) ?? [],
       要开游戏: raw['要开游戏'] === true,
       待迁移: raw['待迁移'] as string | undefined,
+      不重导: raw['不重导'] as string | undefined,
       公开版: raw['公开版'] as string | undefined,
       作品: raw['作品'] as string | undefined,
       步骤: (raw['步骤'] as 步骤[] | undefined) ?? [],
@@ -75,8 +78,8 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
 export const 读清单 = () =>
   解析清单(fs.readFileSync(path.join(取材目录(), 'extract.toml'), 'utf8'), fs.readFileSync(path.join(取材目录(), 'jars.toml'), 'utf8'));
 
-/** 能直接跑的：有步骤、不用开游戏、不待迁移（--全部 就是这些） */
-export const 可直接跑 = (e: 取材条目) => e.步骤.length > 0 && !e.要开游戏 && !e.待迁移;
+/** 能直接跑的：有步骤、不用开游戏、不待迁移、不是不重导（--全部 就是这些） */
+export const 可直接跑 = (e: 取材条目) => e.步骤.length > 0 && !e.要开游戏 && !e.待迁移 && !e.不重导;
 
 /** 条目属于所选作品（没写「作品」的各作品都算） */
 export const 属于作品 = (e: 取材条目, 作品: string) => e.作品 === undefined || e.作品 === 作品;
