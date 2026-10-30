@@ -3,13 +3,15 @@
 //   留：各渲染级别的当前指纹、认可记录那版（verify 拿它逐像素比；没了只能退回去比块均值）、交付 manifest 引用的（edit-package 要读）、
 //   每段每级别最近渲的一份（film --允许过期 取它）、近 N 天渲的（别的 worktree 正在用的指纹这边算不出来）、这段当前指纹算不出时整个目录。
 // 草稿（run/草稿/<目录>）超过 N 天删；webpack 缓存（<检出>/node_modules/.cache/webpack/remotion-<环境>-<版本>/<哈希>/）换了 Remotion 版本的整个删，
-// 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。不认识的目录只报告。
+// 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。地形烘焙的暂存目录（run/暂存/terrain/<包>）写入锁没人拿、1 天没动的删。
+// 列段、音频数这类认得但不自动删的只报大小（计划.ts 的 只报目录）；不认识的目录只报告。
 import fs from 'node:fs';
 import path from 'node:path';
+import { 持有者, 持有者主机, 进程在吗 } from '../闸/锁.ts';
 
-export type 保留类 = '当前' | '认可' | '交付' | '最近一份' | '近期' | '算不出';
+export type 保留类 = '当前' | '认可' | '交付' | '最近一份' | '近期' | '在用' | '算不出';
 /** 报告里按这个顺序算「主要因为什么留」 */
-export const 保留类顺序: readonly 保留类[] = ['当前', '认可', '交付', '最近一份', '近期', '算不出'];
+export const 保留类顺序: readonly 保留类[] = ['当前', '认可', '交付', '最近一份', '近期', '在用', '算不出'];
 export type 保留理由 = { 类: 保留类; 说明: string };
 
 const 天 = 24 * 3600 * 1000;
@@ -269,6 +271,30 @@ export const 规划草稿 = (条目们: readonly 目录条目[], o: { 现在: nu
 
 /** 只报不删：根下不在 认识 里的条目 */
 export const 不认识条目 = (根: string, 认识: readonly string[]): 目录条目[] => 列目录(根, 1, (名) => !认识.includes(名));
+
+// ---------- 地形暂存 ----------
+
+/** 锁文件有没有活着的持有者（协议见 闸/锁.ts：空文件、别的主机的都当有人拿着） */
+export const 锁有人拿 = (锁: string, 本机: string): boolean => {
+  if (!fs.existsSync(锁)) return false;
+  const pid = 持有者(锁);
+  if (pid === null) return true;
+  const 主机 = 持有者主机(锁, pid);
+  return (主机 !== null && 主机 !== 本机) || 进程在吗(pid);
+};
+
+export type 暂存条目 = 目录条目 & { 锁在用: boolean };
+
+/** run/暂存/terrain 下各包的暂存目录（世界/版本.ts 的 新暂存：锁是旁边的 <包>.写入.lock） */
+export const 扫暂存 = (根: string, 本机 = ''): 暂存条目[] =>
+  列目录(根, 3, (名) => !名.includes('.lock')).filter((e) => fs.statSync(e.路径).isDirectory()).map((e) => ({ ...e, 锁在用: 锁有人拿(`${e.路径}.写入.lock`, 本机) }));
+
+/** 暂存目录：锁有人拿着的留（正在烘焙）；1 天内动过的留；别的是烘焙中断留下的（下次烘焙同一个包也会先删它） */
+export const 规划暂存 = (条目们: readonly 暂存条目[], 现在: number): 带理由<目录条目>[] =>
+  条目们.map(({ 锁在用, ...e }) => ({
+    ...e,
+    理由: 锁在用 ? [{ 类: '在用' as const, 说明: '写入锁有人拿着' }] : 现在 - e.改于 < 天 ? [{ 类: '近期' as const, 说明: '1 天内，可能还在写' }] : [],
+  }));
 
 // webpack 缓存：Remotion 按 remotion-<environment>-<VERSION>/<webpack 配置的 md5> 起名（@remotion/bundler 的 webpack-cache.js）
 

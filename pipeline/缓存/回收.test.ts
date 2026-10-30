@@ -7,9 +7,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { 历史指纹 } from '../渲/母版.ts';
 import { 认可文本, type 认可记录 } from '../验收/认可.ts';
 import { 加当前指纹 } from './当前指纹.ts';
-import { 执行回收, type 回收计划 } from './计划.ts';
+import { 执行回收, cache认识, run认识, 只报目录, type 回收计划 } from './计划.ts';
 import {
-  保留集, 加交付, 加认可, 交付引用, 扫媒体, 扫webpack, 列目录, 是临时名, 规划媒体, 规划临时, 规划草稿, 规划webpack, 读认可指纹, 小计, 主要理由, 不认识条目,
+  保留集, 加交付, 加认可, 交付引用, 扫媒体, 扫webpack, 列目录, 是临时名, 规划媒体, 规划临时, 规划草稿, 规划webpack, 读认可指纹, 小计, 主要理由, 不认识条目, 扫暂存, 规划暂存,
 } from './回收.ts';
 
 const 天 = 24 * 3600 * 1000;
@@ -145,7 +145,7 @@ describe('保留集：母版', () => {
     const 旧 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     const 刚改 = 母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 草稿: [], webpack: [], 不认识: [], 去重: null, 警告: [] };
+    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 草稿: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
     expect(删的(计划.媒体)).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
     fs.utimesSync(刚改, new Date(), new Date());
     const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3 });
@@ -219,5 +219,30 @@ describe('残留、草稿、webpack', () => {
     // 不知道装的版本：不按版本删，各版本各留最近的
     const 不知 = 规划webpack(扫webpack(wp, null).条目, { 当前版本: null, 现在, 天数: 3 });
     expect(不知.filter((e) => !e.理由.length).map((e) => e.名).sort()).toEqual(['remotion-production-4.0.537/h2', 'remotion-production-4.0.537/h3', 'remotion-production-4.0.537/h4']);
+  });
+});
+
+describe('地形暂存', () => {
+  it('锁有活着的持有者的留；1 天内动过的留；别的（烘焙中断留下的）删；.lock 文件不算目录', () => {
+    写('run/暂存/terrain/甲/a.bin', 'x', 现在 - 3 * 天);
+    写('run/暂存/terrain/乙/a.bin', 'x', 现在 - 3 * 天);
+    写('run/暂存/terrain/乙.写入.lock', `${process.pid}\n`);
+    写('run/暂存/terrain/丙/a.bin', 'x', 现在 - 3600 * 1000);
+    写('run/暂存/terrain/丁/a.bin', 'x', 现在 - 3 * 天);
+    写('run/暂存/terrain/丁.写入.lock', '999999999\n');
+    const r = 规划暂存(扫暂存(path.join(根, 'run', '暂存', 'terrain'), '本机'), 现在);
+    const 理由 = Object.fromEntries(r.map((e) => [e.名, e.理由.map((x) => x.类).join(',')]));
+    expect(理由).toEqual({ 甲: '', 乙: '在用', 丙: '近期', 丁: '' });
+  });
+});
+
+describe('认得的目录', () => {
+  it('列段、核对、音频数、映射、sha缓存.json、run/暂存 不再报不认识；只报目录都在 cache 认得的里', () => {
+    for (const 名 of ['列段', '核对', '音频数', '映射', 'sha缓存.json', '会话交接']) 写(`cache/${名}/x`, 'x');
+    写('run/暂存/terrain/x', 'x');
+    写('run/会话交接-1024/x', 'x');
+    expect(不认识条目(path.join(根, 'cache'), cache认识).map((e) => e.名)).toEqual(['会话交接']);
+    expect(不认识条目(path.join(根, 'run'), run认识).map((e) => e.名)).toEqual(['会话交接-1024']);
+    for (const k of Object.keys(只报目录)) expect(cache认识).toContain(k.replace(/^cache\//, ''));
   });
 });
