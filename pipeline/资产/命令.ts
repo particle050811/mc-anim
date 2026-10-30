@@ -2,12 +2,14 @@
 // 共用表 assets/registry/ 登记的写 assets/资产锁.json，作品资产表 <作品根>/资产表/ 登记的写 <作品根>/资产锁.json（作品按 --作品 选）。
 // 从旧项目批量导入走 M2 的导入工具；这里只管单件（自制的、新生成的）。
 // anim assets vendor [--检查]：照 <作品根>/随仓库.toml 重写 <作品根>/字节/（随仓库发的字节，资产/随仓库.ts）；anim assets seed：把 字节/ 补进数据根 store/。
+// anim assets measure [--检查]：早先入库的音频条目补 时长/峰值/响度（资产/补量.ts）。
 // anim assets pack [--上传]：照 <作品根>/随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json；anim assets pull：按发布锁下载进数据根（资产/发布.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
-import { 作品名, 作品根 } from '../环境/作品.ts';
+import { 作品们, 作品名, 作品根 } from '../环境/作品.ts';
+import { 过放行闸 } from '../闸/闸.ts';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 数据根 } from '../环境/配置.ts';
 import { 检查上下文 } from '../检查/上下文.ts';
@@ -17,6 +19,7 @@ import { 补字节, 写随仓库, 算随仓库, 读随仓库表, 随仓库表名
 import { 库名, 读两侧资产表 } from './资产表.ts';
 import { 作品资产锁路径, 入库, 写资产锁, 资产锁路径, 读资产锁, type 锁条目 } from './资产锁.ts';
 import { 带音频元数据 } from './音频量.ts';
+import { 补音频元数据 } from './补量.ts';
 
 /** 量音频：音频文件顺手量时长、峰值、响度写进锁（默认量，false 不量） */
 export type 登记入库选项 = { 作品根: string; 替换?: boolean; 共用表目录?: string; 共用锁?: string; 数据根?: string; 量音频?: boolean };
@@ -91,13 +94,47 @@ const 打发布 = async (上传: boolean, 记录: Parameters<命令['跑']>[1]) 
   }
 };
 
+/** anim assets measure：共用锁和每部作品的锁里，没量过的音频条目量了补上；--检查 只报，有能补的返回 1；有量不出的也返回 1 */
+const 补量 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => {
+  const 锁们 = [资产锁路径(), ...[...作品们().values()].map(作品资产锁路径).filter((f) => fs.existsSync(f))];
+  const 跑 = async () => {
+    let 能补 = 0;
+    let 量不出 = 0;
+    for (const 锁文件 of 锁们) {
+      const 位 = 相对代码根(锁文件);
+      const r = 补音频元数据(读资产锁(锁文件), {
+        数据根: 数据根(),
+        只查,
+        进度: (i, n) => {
+          if (i % 100 === 0 || i === n) console.error(`  ${位}：量到 ${i}/${n}`);
+        },
+      });
+      能补 += r.缺.length - r.没字节.length;
+      console.log(`${位}：音频 ${r.音频} 件，缺数 ${r.缺.length} 件${r.没字节.length ? `，字节不在本机跳过 ${r.没字节.length} 件` : ''}${只查 ? '' : `，补了 ${r.补了.length} 件`}`);
+      量不出 += r.量不出.length;
+      for (const x of r.量不出) console.log(`  量不出 ${x.id}：${x.原因}`);
+      if (r.仍缺.length) console.log(`  量完还缺字段 ${r.仍缺.length} 件（静音没有峰值、太短没有积分响度）：${r.仍缺.slice(0, 10).map((x) => `${x.id}（${x.字段.join('、')}）`).join('、')}${r.仍缺.length > 10 ? ' …' : ''}`);
+      if (!只查 && r.补了.length) {
+        写资产锁(r.锁, 锁文件);
+        记录.产物.push(锁文件);
+      }
+    }
+    if (只查 && 能补) console.log(`能补 ${能补} 件：anim assets measure`);
+    // 量不出的（字节坏了、ffmpeg 解不开）补了别的照样写锁，但退出码 1，别让批处理当成全补齐了
+    return (只查 && 能补) || 量不出 ? 1 : 0;
+  };
+  // 一千来件挨个解码，重任务过放行闸；只查不解码
+  return 只查 ? 跑() : 过放行闸(跑);
+};
+
 export const 资产命令: Record<string, 命令> = {
   assets: {
-    用法: 'assets add <id> <文件> [--替换] | assets vendor [--检查] | assets seed | assets pack [--上传] | assets pull',
-    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（render、still、film、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--上传 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根',
+    用法: 'assets add <id> <文件> [--替换] | assets measure [--检查] | assets vendor [--检查] | assets seed | assets pack [--上传] | assets pull',
+    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--检查 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（render、still、film、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--上传 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根',
     跑: async (args, 记录) => {
       const p = 解析参数(args, { 开关: ['--替换', '--检查', '--上传'] });
       const [子, id, 文件] = p.位置;
+      if (子 === 'measure' && p.位置.length === 1 && [...p.开关].every((k) => k === '--检查')) return 补量(p.开关.has('--检查'), 记录);
       if (子 === 'vendor' && p.位置.length === 1 && !p.开关.has('--替换')) return 写字节(p.开关.has('--检查'), 记录);
       if (子 === 'pack' && p.位置.length === 1 && [...p.开关].every((k) => k === '--上传')) return 打发布(p.开关.has('--上传'), 记录);
       if (子 === 'pull' && p.位置.length === 1 && !p.开关.size) {
@@ -111,7 +148,7 @@ export const 资产命令: Record<string, 命令> = {
         console.log(`${相对代码根(字节目录(作品根()))}：${r.共} 件，补进 ${path.join(数据根(), 'store')} ${r.补} 件（其余已有）`);
         return;
       }
-      if (子 !== 'add' || !id || !文件 || p.位置.length !== 3 || p.开关.has('--检查')) throw new 用法错误('要 anim assets add <id> <文件> [--替换]、anim assets vendor [--检查]、anim assets seed、anim assets pack [--上传] 或 anim assets pull');
+      if (子 !== 'add' || !id || !文件 || p.位置.length !== 3 || p.开关.has('--检查')) throw new 用法错误('要 anim assets add <id> <文件> [--替换]、anim assets measure [--检查]、anim assets vendor [--检查]、anim assets seed、anim assets pack [--上传] 或 anim assets pull');
       const { 条目: 新, 锁文件, 挪自 } = 登记入库(id, 文件, { 作品根: 作品根(), 替换: p.开关.has('--替换') });
       记录.产物.push(`${id} → ${新.库}/${新.sha256}`);
       const 音 = 新.时长 !== undefined ? `，${新.时长} 秒、峰值 ${新.峰值 ?? '-inf'} dBFS、响度 ${新.响度 ?? '?'} LUFS` : '';

@@ -1,11 +1,14 @@
 // 环境核对的画面：一块草地上的小木屋、一棵橡树、李樱，四周一大片草色地面铺到天边（看雾和天边），机位朝西南偏西、略仰（看得到天、云和主世界的太阳）。
 // 偶数帧（0、2、4）用现有组件，下一帧用 <环境> 预设，其余一字不差（不叠字，好逐像素比）；画布按视图换（key），每帧新的 WebGL 上下文，共用 uniform 卸下时各自复位。
+// 仰望的视图同一个镜头位置、抬到仰角约 80°（午夜月亮在天顶）。
 import { ThreeCanvas } from '@remotion/three';
 import React, { useEffect, useMemo } from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { TwilightLighting, twilightFogNear } from '@engine/light/暮色光照.tsx';
 import { 环境 } from '@engine/light/环境组件.tsx';
+import 主世界画法 from '@engine/light/画法/主世界.tsx';
+import 暮色画法 from '@engine/light/画法/暮色.tsx';
 import { 暮色环境 } from '@engine/light/环境预设.ts';
 import { 拼搭网格, type 方块 } from '@engine/model/方块拼搭.tsx';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
@@ -18,6 +21,7 @@ import 环境轨 from './环境.ts';
 import { 视图们, 能见度 } from './视图.ts';
 
 const 机位: CamPose = { pos: [22, 10, 3.5], tgt: [0, 2, 5], lens: 24 };
+const 仰望机位: CamPose = { pos: [22, 10, 3.5], tgt: [20.6, 9.5, 11.9], lens: 24 };
 const 暮色雾远 = VIEW_DISTANCE;
 
 const 场景方块 = (() => {
@@ -80,14 +84,14 @@ const 灯天: React.FC<{ 帧: number }> = ({ 帧 }) => {
     return v.用 === '现有' ? (
       <TwilightLighting camPos={cam.pos} fogFar={暮色雾远} fogNear={twilightFogNear(暮色雾远)} />
     ) : (
-      <环境 描述={暮色环境({ 雾远: 暮色雾远, 雾近: twilightFogNear(暮色雾远) })} 镜头={cam.pos} />
+      <环境 描述={暮色环境({ 雾远: 暮色雾远, 雾近: twilightFogNear(暮色雾远) })} 画法={暮色画法} 镜头={cam.pos} />
     );
-  if (v.套 === '时刻') return <环境 描述={环境轨} 镜头={cam.pos} />;
+  if (v.套 === '时刻') return <环境 描述={环境轨} 画法={主世界画法} 镜头={cam.pos} />;
   const 投影 = v.套 === '主世界投影';
   return v.用 === '现有' ? (
     <FlightFog visibility={能见度} />
   ) : (
-    <环境 描述={主世界环境({ 能见度, 投影远: 投影 ? overworldShadowFar(能见度) : undefined })} 镜头={cam.pos} 离地={cam.pos[2]} />
+    <环境 描述={主世界环境({ 能见度, 投影远: 投影 ? overworldShadowFar(能见度) : undefined })} 画法={主世界画法} 镜头={cam.pos} 离地={cam.pos[2]} />
   );
 };
 
@@ -100,7 +104,7 @@ const 画面: React.FC = () => {
     <AbsoluteFill>
       <ThreeCanvas key={frame} width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
         <灯天 帧={frame} />
-        <FlightRig c={机位} />
+        <FlightRig c={v.套 === '时刻' && v.仰望 ? 仰望机位 : 机位} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {主世界现有 && (
