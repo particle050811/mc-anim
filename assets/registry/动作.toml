@@ -1,0 +1,18 @@
+# 资产表：姿态程序（py/anim_py/动作翻译 从生物模型类 setupAnim 字节码自动翻出的表达式图，engine/anim/姿态程序.ts 求值；格式见 docs/决策/0007-字节码翻译动作.md）。
+# 人写；字节由 anim extract 按 sourcing/extract.toml 的配方生成。字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "动作/角色/苦力怕"
+"类别" = "动作"
+"来源" = "提取:苦力怕动作@56b71336d2b4+67bfc33ef0c7"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版 CreeperModel.setupAnim：头随视线、四条腿对角同相摆；和 库/生物/苦力怕.tsx 的手抄版对照见 库/生物/姿态程序对照.test.ts"
+
+[["资产"]]
+id = "动作/角色/僵尸"
+"类别" = "动作"
+"来源" = "提取:僵尸动作@56b71336d2b4+67bfc33ef0c7"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版 ZombieModel（HumanoidModel.prepareMobModel + AbstractZombieModel.setupAnim）：举臂、出手、骑乘、蹲、游泳、鞘翅飞都在；和 库/生物/僵尸.tsx 的手抄版对照见 库/生物/姿态程序对照.test.ts"
