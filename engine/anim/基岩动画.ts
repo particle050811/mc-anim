@@ -15,7 +15,7 @@ export type 口径 = 'TLM' | '通用';
 export const 默认口径: 口径 = '通用';
 /** Molang 按口径的精度：TLM 的 mocha 是 float，'通用' 照 GeckoLib 4 的 mclib 是 double（出处见 Molang.ts 文件头）。环境里写了 数值 就听环境的 */
 export const 口径数值 = (口: 口径): 'float' | 'double' => (口 === 'TLM' ? 'float' : 'double');
-const 按口径 = (环境: Molang环境, 口: 口径): Molang环境 => (环境.数值 ? 环境 : { ...环境, 数值: 口径数值(口) });
+export const 按口径 = (环境: Molang环境, 口: 口径): Molang环境 => (环境.数值 ? 环境 : { ...环境, 数值: 口径数值(口) });
 export type 循环方式 = 'once' | 'loop' | 'hold';
 export type 轴值 = number | Molang式;
 export type 向量值 = readonly [轴值, 轴值, 轴值];
@@ -40,6 +40,9 @@ export type 基岩动画 = {
   长度?: number;
   动画时间更新?: Molang式;
   混合权重?: 轴值;
+  /** start_delay、loop_delay（秒，基岩版写法，见 动画进度）；TLM、GeckoLib 4 都不读 */
+  开始延迟?: 轴值;
+  循环延迟?: 轴值;
   /** 骨骼按文件里的顺序：Molang 里的赋值按这个顺序执行 */
   骨骼: Readonly<Record<string, 骨骼轨道>>;
   时间线: readonly { 时: number; 句: readonly Molang式[] }[];
@@ -137,6 +140,8 @@ export const 解析动画文件 = (文件: unknown, 口: 口径 = 默认口径):
       长度,
       动画时间更新: a.anim_time_update === undefined ? undefined : 编译(String(a.anim_time_update)),
       混合权重: a.blend_weight === undefined ? undefined : 烘焙(a.blend_weight as number | string, 精),
+      开始延迟: a.start_delay === undefined ? undefined : 烘焙(a.start_delay as number | string, 精),
+      循环延迟: a.loop_delay === undefined ? undefined : 烘焙(a.loop_delay as number | string, 精),
       骨骼,
       时间线,
     };
@@ -252,10 +257,43 @@ export const 取样骨骼 = (动画: 基岩动画, 时: number, 选项: 播放�
   return 出;
 };
 
-/** 播放了 秒 秒时的骨骼（不带 anim_time_update、时间线；要这两样用 推进）。停了就是空表 */
+const 循环延迟上限 = 100000;
+
+/**
+ * 带 start_delay、loop_delay 的 动画时间（'通用' 口径；TLM 不读这两个，同 动画时间）。
+ * 基岩版文档：start_delay 开播前求一次；loop_delay 每遍播完求一次、只对循环动画。
+ * 等开播时 等待 是 true（这段动画不给骨骼）；两遍之间的 loop_delay 里停在末帧（anim_time = 长度）。
+ * 这两处「等的时候给什么姿势」是推断的，没在游戏里核过（docs/新生物.md）。求值时 q.anim_time 是 0（开播前）或长度（每遍末）
+ */
+export const 动画进度 = (动画: 基岩动画, 秒: number, 选项: 播放选项 = {}): { 时: number; 停止: boolean; 等待: boolean } => {
+  const 口 = 选项.口径 ?? 默认口径;
+  if (口 === 'TLM' || (动画.开始延迟 === undefined && 动画.循环延迟 === undefined)) return { ...动画时间(动画, 秒, 口), 等待: false };
+  const 环境 = 按口径(选项.环境 ?? {}, 口);
+  const 起 = 动画.开始延迟 === undefined ? 0 : 取值(动画.开始延迟, 带动画时间(环境, 0));
+  if (秒 < 起) return { 时: 0, 停止: false, 等待: true };
+  const t = 秒 - 起;
+  const 长 = 动画长度(动画, 口);
+  const 延 = 动画.循环延迟;
+  if (动画.循环 !== 'loop' || 延 === undefined || !Number.isFinite(长)) return { ...动画时间(动画, t, 口), 等待: false };
+  if (typeof 延 === 'number') {
+    const 周期 = 长 + Math.max(0, 延);
+    if (!(周期 > 0)) return { 时: 0, 停止: false, 等待: false };
+    return { 时: Math.min(t % 周期, 长), 停止: false, 等待: false };
+  }
+  let 始 = 0;
+  for (let i = 0; i < 循环延迟上限; i++) {
+    if (t < 始 + 长) return { 时: t - 始, 停止: false, 等待: false };
+    const d = Math.max(0, 取值(延, 带动画时间(环境, 长)));
+    if (t < 始 + 长 + d || 长 + d <= 0) return { 时: 长, 停止: false, 等待: false };
+    始 += 长 + d;
+  }
+  throw new Error(`动画「${动画.名}」：loop_delay 推了 ${循环延迟上限} 遍还没到 ${秒} 秒`);
+};
+
+/** 播放了 秒 秒时的骨骼（不带 anim_time_update、时间线；要这两样用 推进）。停了、还在 start_delay 里就是空表 */
 export const 取样动画 = (动画: 基岩动画, 秒: number, 选项: 播放选项 = {}): { 骨骼: 骨骼表; 时: number; 停止: boolean } => {
-  const { 时, 停止 } = 动画时间(动画, 秒, 选项.口径);
-  return { 骨骼: 停止 ? {} : 取样骨骼(动画, 时, 选项), 时, 停止 };
+  const { 时, 停止, 等待 } = 动画进度(动画, 秒, 选项);
+  return { 骨骼: 停止 || 等待 ? {} : 取样骨骼(动画, 时, 选项), 时, 停止 };
 };
 
 // ---- 逐步推进（anim_time_update、时间线） ----
