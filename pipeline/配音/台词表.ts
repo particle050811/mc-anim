@@ -57,6 +57,21 @@ export const toml值 = (v: TOML值): string => {
 };
 
 const 键行 = /^\s*("(?:[^"\\]|\\.)*"|[A-Za-z0-9_-]+)\s*=/;
+// 表头 [a."b"] / [[a]]：整行是键路径、又不在多行数组里（数组里的 [2]、["等", 0.03, 0.19] 不算）
+const 键段 = String.raw`(?:"(?:[^"\\]|\\.)*"|'[^']*'|[A-Za-z0-9_-]+)`;
+const 表头行 = new RegExp(String.raw`^\s*\[\[?\s*${键段}(?:\s*\.\s*${键段})*\s*\]\]?\s*(?:#.*)?$`);
+const 括号差 = (l: string) => {
+  const 去串 = l.replace(/"(?:[^"\\]|\\.)*"|'[^']*'/g, '').replace(/#.*/, '');
+  return (去串.match(/\[/g)?.length ?? 0) - (去串.match(/\]/g)?.length ?? 0);
+};
+const 表头们 = (行们: readonly string[]) => {
+  let 深 = 0;
+  return 行们.map((l) => {
+    const 是 = 深 === 0 && 表头行.test(l);
+    if (!是) 深 = Math.max(0, 深 + 括号差(l));
+    return 是;
+  });
+};
 const 键名 = (行: string) => {
   const m = 键行.exec(行);
   return m ? (m[1]!.startsWith('"') ? (JSON.parse(m[1]!) as string) : m[1]!) : null;
@@ -65,12 +80,12 @@ const 键名 = (行: string) => {
 /** 把 id 那一句的这些项改成给的值（undefined = 删掉这一行）；没有的项插在这一句的最后一个键后面（子表头之前） */
 export const 改台词字段 = (文本: string, id: string, 字段: Record<string, TOML值 | undefined>): string => {
   const 行们 = 文本.split('\n');
-  const 头 = (l: string) => /^\s*\[/.test(l);
+  const 是头 = 表头们(行们);
   let 起 = -1;
   for (let i = 0; i < 行们.length; i++) {
-    if (!/^\s*\[\[\s*"?台词"?\s*\]\]\s*$/.test(行们[i]!)) continue;
+    if (!是头[i] || !/^\s*\[\[\s*"?台词"?\s*\]\]\s*$/.test(行们[i]!)) continue;
     let j = i + 1;
-    while (j < 行们.length && !头(行们[j]!)) {
+    while (j < 行们.length && !是头[j]) {
       if (键名(行们[j]!) === 'id' && parse(行们[j]!).id === id) 起 = i;
       j++;
     }
@@ -78,7 +93,7 @@ export const 改台词字段 = (文本: string, id: string, 字段: Record<strin
   }
   if (起 < 0) throw new Error(`台词.toml 里没有 id = "${id}" 这一句`);
   let 止 = 起 + 1;
-  while (止 < 行们.length && !头(行们[止]!)) 止++;
+  while (止 < 行们.length && !是头[止]) 止++;
   for (const [k, v] of Object.entries(字段)) {
     const 新行 = v === undefined ? null : `${键文本(k)} = ${toml值(v)}`;
     let 在 = -1;
@@ -89,11 +104,37 @@ export const 改台词字段 = (文本: string, id: string, 字段: Record<strin
         止--;
       } else 行们[在] = 新行;
     } else if (新行 !== null) {
+      // 插在最后一项的值写完的那行后面（多行数组的收括号之后）
       let 末键 = 起;
-      for (let i = 起 + 1; i < 止; i++) if (键名(行们[i]!)) 末键 = i;
+      let 深 = 0;
+      for (let i = 起 + 1; i < 止; i++) {
+        const l = 行们[i]!;
+        深 = Math.max(0, 深 + 括号差(l));
+        if (深 === 0 && l.trim() && !l.trim().startsWith('#')) 末键 = i;
+      }
       行们.splice(末键 + 1, 0, 新行);
       止++;
     }
   }
-  return 行们.join('\n');
+  const 结果 = 行们.join('\n');
+  // 按行改是为了不动注释和排版；改完整份重新解析，和「只改了这一句这几项」逐项比，对不上就不写（宁可报错也不弄坏人写的源）
+  const 期望 = parse(文本) as { 台词?: Record<string, unknown>[] };
+  const 行 = 期望.台词?.find((x) => x.id === id);
+  if (!行) throw new Error(`台词.toml 里没有 id = "${id}" 这一句`);
+  for (const [k, v] of Object.entries(字段)) {
+    if (v === undefined) delete 行[k];
+    else 行[k] = v;
+  }
+  let 改后: unknown = null;
+  try {
+    改后 = parse(结果);
+  } catch {
+    // 改坏了，下面报
+  }
+  if (改后 === null || 规范(改后) !== 规范(期望)) throw new Error(`台词.toml 的 ${id} 按行改不了（这一句的写法超出了写回认得的格式），请手改：${JSON.stringify(字段)}`);
+  return 结果;
 };
+
+/** 比内容用：键排序后的 JSON */
+const 规范 = (v: unknown): string =>
+  JSON.stringify(v, (_k, x: unknown) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x));
