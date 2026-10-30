@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { GeckoLib控制器 } from '../anim/动画控制器.ts';
 import { 解析动画文件 } from '../anim/基岩动画.ts';
 import { 动画姿势, 按发光拆分, 换模型材质 } from './基岩实体.tsx';
 import type { BedrockModel } from './基岩模型.tsx';
@@ -72,6 +73,13 @@ describe('动画姿势', () => {
     const 环境 = { 变量: { w: 0.5 } };
     expect(动画姿势({ 文件: 带权, 层们: [{ 名: '底' }, { 名: '半' }], 环境 }, 0).head!.rot).toEqual([15, 0, 0]);
     expect(动画姿势({ 文件: 带权, 层们: [{ 名: '底' }, { 名: '半' }], 环境, 口径: 'TLM' }, 0).head!.rot).toEqual([20, 0, 0]);
+  });
+
+  it('一层可以是控制器：按它自己的时钟给骨骼，和别的层照常混合', () => {
+    const 控 = GeckoLib控制器({ 名: 'main', 过渡刻: 0, 安排: [{ 秒: 0, 播: '点头' }, { 秒: 1, 播: '走' }], 动画们: 文件 });
+    expect(动画姿势({ 文件, 层们: [{ 控制器: 控 }] }, 0.5).head!.rot).toEqual([5, 0, 0]);
+    expect(动画姿势({ 文件, 层们: [{ 控制器: 控 }] }, 2).head!.rot).toEqual([10, 0, 0]);
+    expect(动画姿势({ 文件, 层们: [{ 控制器: 控, 秒: 0.2 }, { 名: '点头', 模式: '叠加' }] }, 9).head!.rot).toEqual([10, 0, 0]);
   });
 });
 
