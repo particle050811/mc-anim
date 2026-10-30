@@ -16,8 +16,10 @@ import { 写发布锁, 读发布锁, 发布锁名 } from './发布锁.ts';
 import { 补字节, 写随仓库, 算随仓库, 读随仓库表, 随仓库表名, 字节目录 } from './随仓库.ts';
 import { 库名, 读两侧资产表 } from './资产表.ts';
 import { 作品资产锁路径, 入库, 写资产锁, 资产锁路径, 读资产锁, type 锁条目 } from './资产锁.ts';
+import { 带音频元数据 } from './音频量.ts';
 
-export type 登记入库选项 = { 作品根: string; 替换?: boolean; 共用表目录?: string; 共用锁?: string; 数据根?: string };
+/** 量音频：音频文件顺手量时长、峰值、响度写进锁（默认量，false 不量） */
+export type 登记入库选项 = { 作品根: string; 替换?: boolean; 共用表目录?: string; 共用锁?: string; 数据根?: string; 量音频?: boolean };
 
 /** 一件资产入库、写锁；返回锁条目、写的是哪份锁、有没有从另一份锁挪过来 */
 export const 登记入库 = (id: string, 文件: string, o: 登记入库选项): { 条目: 锁条目; 锁文件: string; 挪自?: string } => {
@@ -30,7 +32,8 @@ export const 登记入库 = (id: string, 文件: string, o: 登记入库选项):
   const [锁文件, 另一份] = e.侧 === '作品' ? [作品资产锁路径(o.作品根), 共用锁] : [共用锁, 作品资产锁路径(o.作品根)];
   const 锁 = 读资产锁(锁文件);
   const 另锁 = 读资产锁(另一份);
-  const 新 = 入库(path.resolve(文件), 库名(e.可见性), o.数据根);
+  const 字节 = 入库(path.resolve(文件), 库名(e.可见性), o.数据根);
+  const 新 = o.量音频 === false ? 字节 : 带音频元数据(字节, 文件);
   const 旧 = 锁[id] ?? 另锁[id];
   if (旧 && 旧.sha256 !== 新.sha256 && !o.替换) {
     throw new Error(`「${id}」资产锁里已有另一份（sha ${旧.sha256.slice(0, 12)}），确实要换成新的加 --替换（旧字节留在库里）`);
@@ -111,7 +114,8 @@ export const 资产命令: Record<string, 命令> = {
       if (子 !== 'add' || !id || !文件 || p.位置.length !== 3 || p.开关.has('--检查')) throw new 用法错误('要 anim assets add <id> <文件> [--替换]、anim assets vendor [--检查]、anim assets seed、anim assets pack [--上传] 或 anim assets pull');
       const { 条目: 新, 锁文件, 挪自 } = 登记入库(id, 文件, { 作品根: 作品根(), 替换: p.开关.has('--替换') });
       记录.产物.push(`${id} → ${新.库}/${新.sha256}`);
-      console.log(`${id}：${新.库}/${新.sha256.slice(0, 2)}/${新.sha256}（${新.大小} 字节，${新.后缀}）→ ${相对代码根(锁文件)}`);
+      const 音 = 新.时长 !== undefined ? `，${新.时长} 秒、峰值 ${新.峰值 ?? '-inf'} dBFS、响度 ${新.响度 ?? '?'} LUFS` : '';
+      console.log(`${id}：${新.库}/${新.sha256.slice(0, 2)}/${新.sha256}（${新.大小} 字节，${新.后缀}${音}）→ ${相对代码根(锁文件)}`);
       if (挪自) console.log(`  从 ${相对代码根(挪自)} 挪过来（登记换了一侧）`);
     },
   },

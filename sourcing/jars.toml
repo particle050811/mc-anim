@@ -2,23 +2,33 @@
 # sourcing/extract.toml 的「需要」和步骤里的 {jar:id} 按 id 在这里找；anim extract --检查 --校验 核 sha256。
 # 「到」是本机放的位置，相对游戏环境目录（anim 配置 ANIM_GAME，迁移期是旧项目的 game/）；旧表里相对工作区根、多一层 game/。
 # 「下载」「sha256」给公开版下载校验用；Mojang 客户端的下载地址从官方版本清单取。
+# 「许可」是结构化的 SPDX：代码、资源两项必写，声音、结构、模型和资源不一样时另写；原文是旧模组清单的一句话，依据是从哪核的（mods.toml、jar 里的 LICENSE）。
+#   版本或条款核不了的写 LicenseRef-待核-<大意>，按 jar 继承的产物仍算待定。anim extract --许可 按这里补资产表里待定的许可（pipeline/取材/许可.ts）。
 
-["Mojang"."资源索引"]
+# 原版资源（声音、字体）不在 jar 里，在资源索引：「根」= mc资源 表示「到」相对 anim 配置 ANIM_MC_ASSETS。没写 sha256：Mojang 会改同一个索引文件，
+# 资产表里记过的旧版本 sha 前缀写在「旧sha256前缀」，按 jar 继承许可时也认。
+[["Mojang"."资源索引"]]
+"id" = "资源索引-1.20.1"
 "版本" = "1.20.1"
-"到" = "assets"
+"根" = "mc资源"
+"到" = "indexes/5.json"
 "另需" = ["minecraft/font/unifont.zip", "minecraft/font/include/unifont.json", "minecraft/sounds/random/click.ogg"]
+"旧sha256前缀" = ["f59b7cfef660"]
+"许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
 [["Mojang"."客户端"]]
 "id" = "client-1.20.1"
 "版本" = "1.20.1"
 "到" = "缓存/client-1.20.1.jar"
 "sha256" = "56b71336d2b4fdffd197f56595b0da93e32a946f78f382a299b8f4b92758bb0f"
+"许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
 [["Mojang"."客户端"]]
 "id" = "client-1.21.11"
 "版本" = "1.21.11"
 "到" = "缓存/client-1.21.11.jar"
 "sha256" = "1473c9489ac50fda3c435049a76a70d61a10b8610db27f5ba9d8756b686cd3bd"
+"许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
 # 官方映射（client.txt，官方名 → 混淆名）：动作翻译（py/anim_py/动作翻译）读混淆的客户端 jar 时把类名、成员名换回官方名。
 # 版本清单 downloads.client_mappings 给的地址；文件头写明可以拿来开发用、不许原样再分发，所以不进仓库、不进资产库
@@ -29,6 +39,7 @@
 "下载" = "https://piston-data.mojang.com/v1/objects/6c48521eed01fe2e8ecdadbd5ae348415f3c47da/client.txt"
 "sha256" = "67bfc33ef0c7103f002d6ac134f8eddd3d67e2ce45d266e83816d1a2e2c9b01d"
 "sha1" = "6c48521eed01fe2e8ecdadbd5ae348415f3c47da"
+"许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA", "原文" = "文件头：可以拷贝、使用于开发，不许完整原样再分发", "依据" = "client.txt 文件头；产物（动作/）照资产表已记的 LicenseRef-Minecraft-EULA，和客户端 jar 一致" }
 
 [["Mojang"."要自己生成"]]
 "id" = "client-1.20.1-srg"
@@ -37,6 +48,7 @@
 "sha256" = "e2e940fe7ca0a9fba5a5c11ad2cf3e2f7df91bbf51d12af22cdde7af18adc344"
 "自动" = { "安装器" = "取材服务端/forge-installer.jar", "产物" = "libraries/net/minecraft/client/1.20.1-20230612.114412/client-1.20.1-20230612.114412-srg.jar" }
 "用途" = "导出实体模型.py 用 javap 读 SRG 名的客户端类（监守者、巨人等实体模型）"
+"许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
 [["模组"]]
 "id" = "forge"
@@ -47,7 +59,7 @@
 "下载" = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.10/forge-1.20.1-47.4.10-universal.jar"
 "sha256" = "bb2f67fc423f09c30ac3d83ab629fa5cc6743a0ce1c2febae46602530f17c8f1"
 "sha1" = "41747347bacead85302e07082073fb46c2f69361"
-"许可" = "OSI"
+"许可" = { "代码" = "LGPL-2.1-only", "资源" = "LGPL-2.1-only", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；jar 里 LICENSE.txt：全部按 LGPL 2.1" }
 "来源页" = "https://files.minecraftforge.net/net/minecraftforge/forge/index_1.20.1.html"
 
 [["模组"]]
@@ -59,7 +71,7 @@
 "下载" = "https://maven.minecraftforge.net/net/minecraftforge/forge/1.20.1-47.4.10/forge-1.20.1-47.4.10-installer.jar"
 "sha256" = "1912760b4cb6b803d8a826de603c9076b1da71ec2765e9a1f8c1ca78f65278e3"
 "sha1" = "66bfea9963bfa60d88bab6b2750e74a958392715"
-"许可" = "OSI"
+"许可" = { "代码" = "LGPL-2.1-only", "资源" = "LGPL-2.1-only", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；jar 里 LICENSE.txt：全部按 LGPL 2.1" }
 "来源页" = "https://files.minecraftforge.net/net/minecraftforge/forge/index_1.20.1.html"
 
 [["模组"]]
@@ -71,7 +83,7 @@
 "下载" = "https://mediafilez.forgecdn.net/files/5468/648/twilightforest-1.20.1-4.3.2508-universal.jar"
 "sha256" = "0bdc89263616d1b35c32ef82c5e9c14cbd20368e2fe8b468c72a28320be7a778"
 "sha1" = "fa3b506a45d3e9c465551cd533fd50c899496e9f"
-"许可" = "代码 OSI；资源 CC-NC-SA；声音/结构 ARR"
+"许可" = { "代码" = "LGPL-2.1-only", "资源" = "LicenseRef-待核-CC-BY-NC-SA", "声音" = "LicenseRef-All-Rights-Reserved", "结构" = "LicenseRef-All-Rights-Reserved", "原文" = "代码 OSI；资源 CC-NC-SA；声音/结构 ARR", "依据" = "mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE Version 2.1；资源 CC BY-NC-SA 照旧模组清单，版本 jar 里没写、没核；声音、结构照旧模组清单 ARR" }
 "来源页" = "https://www.curseforge.com/minecraft/mc-mods/the-twilight-forest/files/5468648"
 
 [["模组"]]
@@ -83,7 +95,7 @@
 "下载" = "https://cdn.modrinth.com/data/LNytGWDc/versions/8amzvn9x/create-1.20.1-6.0.8.jar"
 "sha256" = "6fbb910c367dbce8e4fc7e5bf64b6edd4de980906ed00af8e47e4af843c0d9b0"
 "sha1" = "b13d912b9247a38d66d11598c121442585a1c1e9"
-"许可" = "代码 OSI；资源 ARR"
+"许可" = { "代码" = "MIT", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "代码 OSI；资源 ARR", "依据" = "mods.toml license = MIT；资源 ARR 照旧模组清单" }
 "来源页" = "https://modrinth.com/mod/create"
 
 [["模组"]]
@@ -95,7 +107,7 @@
 "下载" = "https://cdn.modrinth.com/data/LVnvHVBp/versions/EzN8KQYF/iceandfire-2.1.13-1.20.1-beta-5.jar"
 "sha256" = "2b80245fc9b7d6fdc61d71f9892f4c6114eb7f303f65634845aaab25f84d1e82"
 "sha1" = "7e828cbb046ca3d622e92c68f956bd1c0155dc6f"
-"许可" = "OSI"
+"许可" = { "代码" = "LicenseRef-LGPL-Unversioned", "资源" = "LicenseRef-LGPL-Unversioned", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE，没写版本" }
 "来源页" = "https://modrinth.com/mod/ice-and-fire-dragons"
 
 [["模组"]]
@@ -107,7 +119,7 @@
 "下载" = "https://cdn.modrinth.com/data/jJfV67b1/versions/lTAAe4sZ/citadel-2.6.3-1.20.1.jar"
 "sha256" = "56c7ab87348a5292583aac787b6cf11b5193e77f02af1d17ea75a96f8640b3ce"
 "sha1" = "fb0b1fa96ce28e4be77b38ad95d83c3da7ec8316"
-"许可" = "OSI"
+"许可" = { "代码" = "LicenseRef-LGPL-Unversioned", "资源" = "LicenseRef-LGPL-Unversioned", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE，没写版本" }
 "来源页" = "https://modrinth.com/mod/citadel"
 "用途" = "冰火传说的前置库，取材客户端、服务端跟着装"
 
@@ -120,7 +132,7 @@
 "下载" = "https://cdn.modrinth.com/data/rxIIYO6c/versions/Fv0zTUuh/TConstruct-1.20.1-3.12.1.231.jar"
 "sha256" = "474bb3e14646be1b4e343aa0d3a8482ff5db6350da19355fac6c5ddd2050ac19"
 "sha1" = "8a9a09e625ee106cf8befa953c372af4e955116c"
-"许可" = "OSI"
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml license = MIT" }
 "来源页" = "https://modrinth.com/mod/tinkers-construct"
 
 [["模组"]]
@@ -132,7 +144,7 @@
 "下载" = "https://cdn.modrinth.com/data/Cg6Uc79H/versions/37ccXi7G/Mantle-1.20.1-1.11.117.jar"
 "sha256" = "bcb9681f78dde0da7e63e92abb341dc0dc09503fc1ab78c96f9d40571edc240d"
 "sha1" = "0d6af73ad4f11fe685aa466cedd2786b7bc57245"
-"许可" = "OSI"
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml license = MIT" }
 "来源页" = "https://modrinth.com/mod/mantle"
 
 [["模组"]]
@@ -144,7 +156,7 @@
 "下载" = "https://cdn.modrinth.com/data/qnQsVE2z/versions/DijQLauD/Quark-4.0-462.jar"
 "sha256" = "c90b96f049d92825c4a103721988c80d72e5ad380d17be46a0f53e114874c478"
 "sha1" = "9b0fb82995622a0070c00827c698c43b49d9d14b"
-"许可" = "CC-NC-SA"
+"许可" = { "代码" = "LicenseRef-待核-CC-BY-NC-SA", "资源" = "LicenseRef-待核-CC-BY-NC-SA", "原文" = "CC-NC-SA", "依据" = "旧模组清单整包 CC-NC-SA；mods.toml 只给仓库 LICENSE.md 链接，版本离线核不了（旧 待确认.md 记的是 3.0）" }
 "来源页" = "https://modrinth.com/mod/quark"
 
 [["模组"]]
@@ -156,7 +168,7 @@
 "下载" = "https://cdn.modrinth.com/data/MVARlG2f/versions/mSER3jBI/Zeta-1.0-31.jar"
 "sha256" = "cd1786902a79434f8fd762d741019d9c8a79725fef7e30a89c153c934e1e6a9e"
 "sha1" = "8c4a8ef0444b53ff408d5b89126285031081d92f"
-"许可" = "CC-NC-SA"
+"许可" = { "代码" = "LicenseRef-待核-CC-BY-NC-SA", "资源" = "LicenseRef-待核-CC-BY-NC-SA", "原文" = "CC-NC-SA", "依据" = "旧模组清单整包 CC-NC-SA；mods.toml 只给仓库 LICENSE.md 链接，版本离线核不了" }
 "来源页" = "https://modrinth.com/mod/zeta"
 
 [["模组"]]
@@ -168,7 +180,7 @@
 "下载" = "https://cdn.modrinth.com/data/R0bDWFAW/versions/g1SKoGQJ/touhoulittlemaid-1.5.3-forge%2Bmc1.20.1.jar"
 "sha256" = "8c341567e57aa3c006f9fa85c7a5e3bc36a53b1cca4e3538c3db705eeeea1bbc"
 "sha1" = "9097a2a57e7ed639bca072dd62e4a9257e86db89"
-"许可" = "代码 OSI；资源 CC-NC-SA"
+"许可" = { "代码" = "MIT", "资源" = "CC-BY-NC-SA-4.0", "原文" = "代码 OSI；资源 CC-NC-SA", "依据" = "mods.toml license = MIT / CC BY-NC-SA 4.0；旧模组清单 代码 OSI、资源 CC-NC-SA" }
 "来源页" = "https://modrinth.com/mod/touhou-little-maid"
 
 # 万法皆通是 jar 套 jar：外层 -all.jar 只有引导类，模组本体在里层 META-INF/maidspell/maidspell-mod.jar，取材条目先解出里层再读
@@ -181,7 +193,7 @@
 "下载" = "https://cdn.modrinth.com/data/QHB4kBBS/versions/tYyJS9hO/touhou_little_maid_spell-1.9.3-forge%2Bmc1.20.1-all.jar"
 "sha256" = "a8d3f9ab68b8ddd9205baf16a1b19ac17fc91f740aab7325e73b9cec8fda2e90"
 "sha1" = "99c663935e516dd7c270f48ec2bdabe6da99ddcd"
-"许可" = "MIT"
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "MIT", "依据" = "旧模组清单 MIT" }
 "来源页" = "https://modrinth.com/mod/QHB4kBBS"
 
 [["模组"]]
@@ -193,7 +205,7 @@
 "下载" = "https://cdn.modrinth.com/data/s4OWxYQQ/versions/hZaEegS9/irons_spellbooks-1.20.1-3.16.3.jar"
 "sha256" = "54b5aaa52887c38f570fbd820288171234d8541c17a5e953f9271189fdd480fb"
 "sha1" = "726345aa215756bd30b7cf8c338c9ae6bbc59799"
-"许可" = "ARR"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "ARR", "依据" = "旧模组清单 ARR；mods.toml license = All Rights Reserved" }
 "来源页" = "https://modrinth.com/mod/irons-spells-n-spellbooks"
 
 [["模组"]]
@@ -205,7 +217,7 @@
 "下载" = "https://cdn.modrinth.com/data/sc69VpnK/versions/pBF5CHay/epicterrain_compatible1.20.zip"
 "sha256" = "563a7f6e02f18c88f3a487bbdb9b81f5e20838271bdcb15b4a0f56f5f56d1ff4"
 "sha1" = "b05d40ee5a34adf1e8e29c6a715bad6e6927ca0b"
-"许可" = "ARR"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "ARR", "依据" = "旧模组清单 ARR" }
 "来源页" = "https://modrinth.com/datapack/epic-terrain_compatible"
 
 [["模组"]]
@@ -217,7 +229,7 @@
 "下载" = "https://cdn.modrinth.com/data/vu3NZ5Ma/versions/KEBfkBat/epic-fight-20.14.17-mc1.20.1-forge.jar"
 "sha256" = "69566cf70ae2d91d3f2564c608f014c87e290cef6215c2a27719851165485f73"
 "sha1" = "faa8eddad9d80adb9c4ba81fd0a8a21c81989d3d"
-"许可" = "代码 OSI；资源 ARR"
+"许可" = { "代码" = "GPL-3.0-only", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "代码 OSI；资源 ARR", "依据" = "jar 里 LICENSE 是 GPL v3 全文（没写 or later）；LICENSE-ASSETS：assets 全部 All rights reserved" }
 "来源页" = "https://modrinth.com/mod/epic-fight"
 
 [["模组"]]
@@ -229,7 +241,7 @@
 "下载" = "https://cdn.modrinth.com/data/86xjpqqS/versions/Zqooxsd2/ysm-2.6.5-forge%2Bmc1.20.1-release.jar"
 "sha256" = "25b5e902b96f4c298690208f8b433cbc31737c23f87590354dbd86f00207bc8f"
 "sha1" = "151ac7b24da8beeca1a20864565743cfd77af286"
-"许可" = "jar ARR；所用模型 CC-NC-SA"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "模型" = "CC-BY-NC-SA-4.0", "原文" = "jar ARR；所用模型 CC-NC-SA", "依据" = "旧模组清单 jar ARR、所用模型 CC-NC-SA；mods.toml license = All rights reserved；内置酒狐模型 CC BY-NC-SA 4.0（docs/决策/0002，用户 10-21）" }
 "来源页" = "https://modrinth.com/mod/yes-steve-model"
 
 [["模组"]]
@@ -241,7 +253,7 @@
 "下载" = "https://mediafilez.forgecdn.net/files/8610/456/structurize-1.20.1-1.0.818.jar"
 "sha256" = "42524cf5ebb2152ee07d412e9c9e10e311fee9768d0dabbaedb093304d7bbb9c"
 "sha1" = "432c949c9023aedc84f8c40b8b629e2357e506de"
-"许可" = "OSI"
+"许可" = { "代码" = "GPL-3.0-only", "资源" = "GPL-3.0-only", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml license = GPL 3.0" }
 "来源页" = "https://www.curseforge.com/minecraft/mc-mods/structurize/files/8610456"
 
 [["模组"]]
@@ -253,7 +265,7 @@
 "下载" = "https://mediafilez.forgecdn.net/files/7585/567/domum_ornamentum-1.20.1-1.0.296-universal.jar"
 "sha256" = "a5a46c0bcadbcaa36a69b8be32f6eeec0c655b2990f6f6c0c8c61ddb569e809f"
 "sha1" = "f0052adb170e5f73f0f5b625c411bc5b99183c00"
-"许可" = "OSI"
+"许可" = { "代码" = "LGPL-3.0-only", "资源" = "LGPL-3.0-only", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml license = LGPLv3" }
 "来源页" = "https://www.curseforge.com/minecraft/mc-mods/domum-ornamentum/files/7585567"
 
 [["模组"]]
@@ -265,7 +277,7 @@
 "下载" = "https://mediafilez.forgecdn.net/files/9058/213/minecolonies-1.20.1-1.1.1301.jar"
 "sha256" = "8538f46fb32abd638767a021240e4c9a5a1413a820b01caec1113fea2eeb9196"
 "sha1" = "33c10d6a9a6cb5d1f515a366e2286366eb68069d"
-"许可" = "代码 OSI；资源 ARR"
+"许可" = { "代码" = "GPL-3.0-only", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "代码 OSI；资源 ARR", "依据" = "mods.toml license = GPL 3.0；assets/minecolonies/LICENSE：All Rights Reserved；旧模组清单 代码 OSI、资源 ARR" }
 "来源页" = "https://www.curseforge.com/minecraft/mc-mods/minecolonies/files/9058213"
 
 [["模组"]]
@@ -277,7 +289,7 @@
 "下载" = "https://cdn.modrinth.com/data/u6dRKJwZ/versions/HcUiurg6/jei-1.20.1-forge-15.62.0.217.jar"
 "sha256" = "6ca167d7cd730c437618e6795971bdb451b84500883b0a5d0155af70bdc32b25"
 "sha1" = "2ce77e29e2828010ea61ad6c4b10defae764dfe4"
-"许可" = "OSI"
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml license = The MIT License (MIT)" }
 "来源页" = "https://modrinth.com/mod/jei"
 
 [["模组"]]
@@ -289,7 +301,7 @@
 "下载" = "https://cdn.modrinth.com/data/8T53F0sy/versions/pdMMavGH/SlashBladeResharped-1.20.1-1.9.65.jar"
 "sha256" = "2a6eb8d2ead295cb3838b551b9f3cf0e81de97966dbc91b84cf2c7589f3a4361"
 "sha1" = "a7cf7ac8caad062df8495b50a0a99485c1f36de2"
-"许可" = "代码 OSI；资源 ARR"
+"许可" = { "代码" = "MIT", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "代码 OSI；资源 ARR", "依据" = "mods.toml license = MIT License, Art Resources: All Rights Reserved." }
 "来源页" = "https://modrinth.com/mod/slashblade-resharped"
 
 [["模组"]]
@@ -301,7 +313,7 @@
 "下载" = "https://mediafilez.forgecdn.net/files/8366/962/EpicFight%20Nightfall-3.4.0.jar"
 "sha256" = "3bb5a7849436aa81fab8f8020a36a0d50a308739d67b28d74b74c02327c4d219"
 "sha1" = "f4a2051e0977e03dfa81b55f849c940b03e17970"
-"许可" = "ARR"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "ARR", "依据" = "旧模组清单 ARR；mods.toml license = All Rights Reserved" }
 "来源页" = "https://www.curseforge.com/minecraft/mc-mods/epicfight-nightfall/files/8366962"
 
 [["模组"]]
@@ -313,7 +325,7 @@
 "下载" = "https://cdn.modrinth.com/data/EltpO5cN/versions/mWTXC1ZX/lootr-forge-1.20-0.7.35.94.jar"
 "sha256" = "01200ee5889e6bcc3c5fa8f32b7b49a4bd58e653699eeb655c6f2dd314e3ce51"
 "sha1" = "1ec77a7df8adbf3290a296bf25b8f99f37a60020"
-"许可" = "OSI"
+"许可" = { "代码" = "LicenseRef-待核-OSI", "资源" = "LicenseRef-待核-OSI", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml 只给仓库 LICENSE 链接，具体许可离线核不了" }
 "来源页" = "https://modrinth.com/mod/lootr"
 
 [["模组"]]
@@ -325,7 +337,7 @@
 "下载" = "https://cdn.modrinth.com/data/RV1qfVQ8/versions/7ZdJbCOx/ExplorersCompass-1.20.1-1.4.0-forge.jar"
 "sha256" = "0d9a7705f39a9eac19c33e0fbe5422280048991a341dc0d9471bff32111c502c"
 "sha1" = "23b7544ab3ebd1ab9c88255434ff9dc7f217766b"
-"许可" = "CC-NC-SA"
+"许可" = { "代码" = "CC-BY-NC-SA-4.0", "资源" = "CC-BY-NC-SA-4.0", "原文" = "CC-NC-SA", "依据" = "旧模组清单 CC-NC-SA；mods.toml license = CC BY-NC-SA 4.0" }
 "来源页" = "https://modrinth.com/mod/explorers-compass"
 
 [["模组"]]
@@ -337,7 +349,7 @@
 "下载" = "https://cdn.modrinth.com/data/LOpKHB2A/versions/Y0IgdaoP/waystones-forge-1.20.1-14.1.21.jar"
 "sha256" = "fd6fe3c645328ea7be5bc6723d02c881e34650e0cbd4527ba59e42fa4cbe3c80"
 "sha1" = "61952fb248a9689fe46d5ffb223fcc41e31fef1a"
-"许可" = "ARR（所用图标 CC-BY-SA）"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "ARR（所用图标 CC-BY-SA）", "依据" = "jar 里 LICENSE_waystones：All Rights Reserved，其中 returnScroll、warpStone 两个物品图标是 CC-BY-SA 3.0（按更严的 ARR 继承）" }
 "来源页" = "https://modrinth.com/mod/waystones"
 
 [["模组"]]
@@ -349,5 +361,5 @@
 "下载" = "https://cdn.modrinth.com/data/46KJle7n/versions/C3H0azzB/L_Enders_Cataclysm-3.31.jar"
 "sha256" = "c29dcf940168208517b72f2d9965828b106a6b94cbea55d5001558c69a27b362"
 "sha1" = "4f1165cb39521292e826b471b4808bb89f0f4f3f"
-"许可" = "CC-NC-ND（实际按 ARR）"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "CC-NC-ND（实际按 ARR）", "依据" = "旧模组清单 CC-NC-ND（实际按 ARR）；mods.toml 的 license 是没填的占位符" }
 "来源页" = "https://modrinth.com/mod/l_enders-cataclysm"
