@@ -8,7 +8,10 @@ export type 音频数 = { 时长: number; 峰值?: number; 响度?: number };
 /** 一句台词：配音资产 id、配音文件里第几秒开口（作品的 台词.toml）、文件时长秒；
  *  上段开口帧：这句是清单里上一段说过来的（本段只有 接上段 的 cue），它的开口落在本段第几帧（负数），anim cues 照上一段推 */
 export type 台词数 = { 配音: string; 开口: number; 时长: number; 上段开口帧?: number };
-export type 声音表 = { 资产: Readonly<Record<string, 音频数>>; 台词: Readonly<Record<string, 台词数>> };
+/** 声音表里的一件：数，加上量的是哪份字节（锁里 sha256 的前 12 位）。同一个 id 换了字节（重配的配音、换过的音效）sha 就对不上，
+ *  anim check 报、anim cues 重量；不记 sha 的话核对只看 id，换了字节也查不出来 */
+export type 表里音频数 = 音频数 & { sha?: string };
+export type 声音表 = { 资产: Readonly<Record<string, 表里音频数>>; 台词: Readonly<Record<string, 台词数>> };
 
 export const 空声音表: 声音表 = { 资产: {}, 台词: {} };
 
@@ -59,7 +62,7 @@ export const 做声音助手 = (o: { fps: number; 帧数: number; 表?: 声音�
       收.add(id);
       return undefined;
     }
-    throw new 缺声音数(`${出处}声音表里没有「${id}」的时长、峰值：跑 anim cues（段.ts 加了声音要重新生成 声音表.生成.ts、地址表.生成.ts）`);
+    throw new 缺声音数(`${出处}声音表里没有「${id}」的时长、峰值：跑 anim cues（段.ts 加了声音要重新生成 声音表.生成.ts、声音地址.生成.ts）`);
   };
 
   const 放 = (资产: string, 帧: number, 目标?: number | 放选项): 资产cue => {

@@ -9,11 +9,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
-import { 开始收集, 结束收集, type 声音表, type 音频数, type 台词数 } from '../../engine/段/声音助手.ts';
+import { 开始收集, 结束收集, type 声音表, type 表里音频数, type 音频数, type 台词数 } from '../../engine/段/声音助手.ts';
 import type { 段定义 } from '../../engine/段/段定义.ts';
+import { 是框架段 } from '../../engine/段/窗口段.ts';
 import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts';
 import { 是私有配乐 } from '../资产/私有配乐.ts';
-import type { 资产锁 } from '../资产/资产锁.ts';
+import type { 资产锁, 锁条目 } from '../资产/资产锁.ts';
+import { 已知音频数 } from './音频数.ts';
 import { 台词头们, 开口表 } from '../合成/台词落点.ts';
 
 export const 声音表文件 = '声音表.生成.ts';
@@ -59,7 +61,7 @@ const 执行段 = async (段文件: string, 根: string): Promise<段定义> => 
 };
 
 /** 收集模式执行：表里缺的 id 记下来、不报错 */
-const 收集执行 = async (段文件: string, 根: string): Promise<{ 段: 段定义; 缺: Set<string> }> => {
+export const 收集执行 = async (段文件: string, 根: string): Promise<{ 段: 段定义; 缺: Set<string> }> => {
   const 缺 = 开始收集();
   try {
     return { 段: await 执行段(段文件, 根), 缺 };
@@ -88,8 +90,22 @@ export type 生成环境 = {
   上一段?: () => Promise<段定义 | undefined>;
 };
 
-/** 按段的 cue（和收集到的缺数 id）算声音表 */
-export const 算声音表 = async (段: 段定义, 额外资产: Iterable<string>, 环境: 生成环境): Promise<声音表> => {
+/** 声音表里记的字节标识：锁里 sha256 的前 12 位 */
+export const 短sha = (条目: 锁条目) => 条目.sha256.slice(0, 12);
+
+/** 盘上声音表里这件的数，字节没换（sha 和锁对得上）才算 */
+const 盘上的数 = (盘上: 声音表 | undefined, id: string, 条目: 锁条目): 音频数 | undefined => {
+  const x = 盘上?.资产[id];
+  if (!x || x.sha !== 短sha(条目)) return undefined;
+  const { sha: _, ...数 } = x;
+  return 数;
+};
+
+/**
+ * 按段的 cue（和收集到的缺数 id）算声音表。一件的数先用锁里的，再用盘上声音表里 sha 对得上的（换机器重跑不重量，
+ * 免得 ffmpeg 版本不同量出差 0.01 的数、改了生成的文件），最后才 环境.取数（缓存或现量）。
+ */
+export const 算声音表 = async (段: 段定义, 额外资产: Iterable<string>, 环境: 生成环境, 盘上?: 声音表): Promise<声音表> => {
   const { 资产, 台词 } = cue引用(段);
   const 台词条 = new Map(环境.台词表.map((t) => [t.id, t]));
   const 台词们: Record<string, 台词数> = {};
@@ -118,10 +134,11 @@ export const 算声音表 = async (段: 段定义, 额外资产: Iterable<string
     if (先接.has(id) && 上段开口帧 === undefined) throw new Error(`台词「${id}」标了 接上段，清单里上一段没有它开口`);
     台词们[id] = { 配音: t.配音, 开口: t.开口 ?? 0, 时长: 0, ...(上段开口帧 !== undefined ? { 上段开口帧 } : {}) };
   }
-  const 资产们: Record<string, 音频数> = {};
+  const 资产们: Record<string, 表里音频数> = {};
   for (const id of [...要数].sort()) {
-    if (!环境.锁[id]) throw new Error(`资产锁里没有「${id}」：先在资产表登记、anim assets add 入库`);
-    资产们[id] = 环境.取数(id);
+    const 条目 = 环境.锁[id];
+    if (!条目) throw new Error(`资产锁里没有「${id}」：先在资产表登记、anim assets add 入库`);
+    资产们[id] = { ...(已知音频数(条目) ?? 盘上的数(盘上, id, 条目) ?? 环境.取数(id)), sha: 短sha(条目) };
   }
   for (const t of Object.values(台词们)) t.时长 = 资产们[t.配音]!.时长;
   return { 资产: 资产们, 台词: 台词们 };
@@ -130,7 +147,7 @@ export const 算声音表 = async (段: 段定义, 额外资产: Iterable<string
 const 文件头 = '// anim cues 生成，不要手改（段.ts 的声音改了就重跑 anim cues）。';
 
 export const 声音表文本 = (表: 声音表) =>
-  `${文件头}\n// 本段 cue 用到的声音的数：资产 = 时长秒、采样峰值 dBFS、积分响度 LUFS；台词 = 配音资产、开口秒、时长秒。段.ts 交给 窗口段 的 声音表。\n` +
+  `${文件头}\n// 本段 cue 用到的声音的数：资产 = 时长秒、采样峰值 dBFS、积分响度 LUFS、量的是哪份字节（sha256 前 12 位）；台词 = 配音资产、开口秒、时长秒。段.ts 交给 窗口段 的 声音表。\n` +
   `import type { 声音表 } from '@engine/段/声音助手.ts';\n\nconst 表: 声音表 = ${JSON.stringify(表, null, 2)};\nexport default 表;\n`;
 
 /** 本段要放的文件：资产 cue 的资产、台词的配音 */
@@ -182,9 +199,15 @@ export const 生成一段 = async (段文件: string, 根: string, 环境: 生�
   const 表位 = path.join(目录, 声音表文件);
   const 改了: string[] = [];
   // 第一次生成时 段.ts import 的表还不存在：先放一张空的
-  if (!fs.existsSync(表位) && 写如果变(表位, 声音表文本({ 资产: {}, 台词: {} }))) 改了.push(声音表文件);
+  const 新建 = !fs.existsSync(表位);
+  if (新建 && 写如果变(表位, 声音表文本({ 资产: {}, 台词: {} }))) 改了.push(声音表文件);
+  const 盘上 = 新建 ? undefined : ((await 新鲜执行(表位, 根)).default as 声音表);
   const 收 = await 收集执行(段文件, 根);
-  const 表 = await 算声音表(收.段, 收.缺, 环境);
+  if (!是框架段(收.段)) {
+    if (新建) fs.rmSync(表位);
+    throw new Error(`${段文件} 不是段框架的段（默认导出不是 窗口段 做的），anim cues 不管它`);
+  }
+  const 表 = await 算声音表(收.段, 收.缺, 环境, 盘上);
   if (写如果变(表位, 声音表文本(表)) && !改了.includes(声音表文件)) 改了.push(声音表文件);
   const 段 = await 执行段(段文件, 根);
   // 正常执行的 cue 要放的文件都得在表里；段.ts 要是按声音的数分了支、用到收集时没碰到的声音，这里会缺
@@ -196,7 +219,7 @@ export const 生成一段 = async (段文件: string, 根: string, 环境: 生�
 
 /**
  * 核对（anim check、anim cues --检查 用，不写文件、不量音频）：照段现在的 cue 算出两份文件该是什么样，和盘上的比。
- * 数从 取数 来；锁里、缓存里都没有的（老资产、没量过），沿用盘上声音表里的数，只核对 id 齐不齐。返回问题列表，空 = 对得上。
+ * 数先取锁里的，再取盘上声音表里 sha 对得上的，最后 取数（缓存）；都没有（新加的声音、字节换了）就报。返回问题列表，空 = 对得上。
  */
 export const 核对一段 = async (段: 段定义, 目录: string, 根: string, 环境: Omit<生成环境, '取数'> & { 取数: (id: string) => 音频数 | undefined }): Promise<string[]> => {
   const 表位 = path.join(目录, 声音表文件);
@@ -205,14 +228,20 @@ export const 核对一段 = async (段: 段定义, 目录: string, 根: string, 
   const 盘上 = (await 新鲜执行(表位, 根)).default as 声音表;
   let 该是: 声音表;
   try {
-    该是 = await 算声音表(段, [], {
-      ...环境,
-      取数: (id) => {
-        const x = 环境.取数(id) ?? 盘上.资产[id];
-        if (!x) throw new Error(`声音表里没有「${id}」`);
-        return x;
+    该是 = await 算声音表(
+      段,
+      [],
+      {
+        ...环境,
+        取数: (id) => {
+          const x = 环境.取数(id);
+          if (x) return x;
+          const 旧 = 盘上.资产[id];
+          throw new Error(旧 ? `「${id}」的字节换了（锁里 sha ${短sha(环境.锁[id]!)}，声音表里 ${旧.sha ?? '没记'}）` : `声音表里没有「${id}」`);
+        },
       },
-    });
+      盘上,
+    );
   } catch (e) {
     return [`${(e as Error).message}：跑 anim cues`];
   }

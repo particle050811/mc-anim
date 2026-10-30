@@ -13,13 +13,14 @@ import { 读作品资产锁 } from '../资产/资产锁.ts';
 import { 读台词表 } from '../合成/台词落点.ts';
 import type { 清单条目 } from '../../engine/段/清单条目.ts';
 import type { 段定义 } from '../../engine/段/段定义.ts';
-import { 声音表文件, 新鲜执行, 核对一段, 生成一段, type 生成环境 } from './生成.ts';
+import { 声音表文件, 新鲜执行, 收集执行, 核对一段, 生成一段, type 生成环境 } from './生成.ts';
+import { 是框架段 } from '../../engine/段/窗口段.ts';
 import { 取音频数, 已知音频数 } from './音频数.ts';
 import { 新作品, 新段 } from './新作品.ts';
 
 type 作品清单 = { 清单: readonly 清单条目[]; 段目录: (键: string) => string; 段名: (t: 清单条目) => string; 编号: (键: string) => string | null };
 
-/** 段框架的段：段.ts 引了 窗口段，或目录里已经有生成的声音表 */
+/** 一眼看得出的段框架的段：段.ts 直接引了 窗口段，或目录里已经有生成的声音表。看不出的（经场里的工厂间接用 窗口段）要执行一遍才知道 */
 export const 是框架段目录 = (目录: string) => {
   const 段文件 = path.join(目录, '段.ts');
   return fs.existsSync(path.join(目录, 声音表文件)) || (fs.existsSync(段文件) && /@engine\/段\/窗口段(\.ts)?['"]/.test(fs.readFileSync(段文件, 'utf8')));
@@ -39,8 +40,20 @@ export const 段框架命令: Record<string, 命令> = {
       const 片 = m.清单.filter((t) => t.章 !== '核对');
       const 目录于 = (键: string) => path.join(作根, ...m.段目录(键).split('/'));
       const 选中 = (t: 清单条目) => !p.位置.length || p.位置.some((x) => [t.键, m.段名(t), m.编号(t.键), String(t.章), `${作品名()}/${t.键}`].includes(x));
-      const 候选 = m.清单.filter((t) => 选中(t) && 是框架段目录(目录于(t.键)));
-      if (p.位置.length && !候选.length) throw new 用法错误(`选择器没对上段框架的段：${p.位置.join('、')}（只认段键、段名、编号、章；段.ts 要用 @engine/段/窗口段.ts）`);
+      // 看不出的在收集模式下执行一遍判断（表过期时 放() 也不抛），老段执行完不是框架段就跳过
+      const 候选: 清单条目[] = [];
+      for (const t of m.清单.filter(选中)) {
+        const 目录 = 目录于(t.键);
+        if (是框架段目录(目录)) 候选.push(t);
+        else if (fs.existsSync(path.join(目录, '段.ts'))) {
+          try {
+            if (是框架段((await 收集执行(path.join(目录, '段.ts'), 根)).段)) 候选.push(t);
+          } catch {
+            // 执行出错的老段由 anim check 的 加载 规则报，这里不管
+          }
+        }
+      }
+      if (p.位置.length && !候选.length) throw new 用法错误(`选择器没对上段框架的段：${p.位置.join('、')}（只认段键、段名、编号、章；段.ts 的默认导出要是 窗口段 做的）`);
       let 问题数 = 0;
       for (const t of 候选) {
         const 段文件 = path.join(目录于(t.键), '段.ts');
@@ -64,13 +77,13 @@ export const 段框架命令: Record<string, 命令> = {
           console.log(`✗ ${t.键}：${(e as Error).message}`);
         }
       }
-      if (!候选.length) console.log('没有段框架的段（段.ts 用 @engine/段/窗口段.ts 的才算）');
+      if (!候选.length) console.log('没有段框架的段（段.ts 的默认导出是 窗口段 做的才算）');
       return 问题数 ? 1 : 0;
     },
   },
   new: {
     用法: 'new work <作品名> | new seg <段键> [--场 <场键>] [--起 <事件>] [--止 <事件>]',
-    说明: 'work：照模板起一部作品（清单.ts、注册.tsx、index.ts，带一个能渲的 核对-起步 段）；seg：在所选作品里加一个窗口段（段.ts、画面.tsx，场时间线没有就建一条），排进清单末尾，再生成声音表',
+    说明: 'work：照模板起一部作品（清单.ts、注册.tsx、index.ts，带一个能渲的 核对-起步 段）；seg：在所选作品里加一个窗口段（段.ts、画面.tsx、空的声音表和地址表，场时间线没有就建一条），排进清单末尾',
     跑: async (args, 记录) => {
       const p = 解析参数(args, { 值: ['--场', '--起', '--止'] });
       const [种, 名] = p.位置;

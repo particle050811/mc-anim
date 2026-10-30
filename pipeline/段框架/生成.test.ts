@@ -78,6 +78,28 @@ describe('生成一段', () => {
     expect(await 核对一段(段, 目录, 根, 不量)).toEqual([`缺 ${声音表文件} 或 ${声音地址文件}：跑 anim cues`]);
   });
 
+  it('声音表记 sha：换机器重跑沿用盘上 sha 对得上的数、不重量；字节换了（同 id 新 sha）核对报、重跑重量', async () => {
+    写段(`放('音效/门', 事件.响, -12)`);
+    const r = await 生成一段(path.join(目录, '段.ts'), 根, 环境());
+    expect(r.表.资产['音效/门']).toEqual({ 时长: 1, 峰值: -6, sha: 'a'.repeat(12) });
+    量过 = [];
+    await 生成一段(path.join(目录, '段.ts'), 根, 环境({ 取数: () => ({ 时长: 1.01, 峰值: -6.01 }) }));
+    expect((await 新鲜执行(path.join(目录, 声音表文件), 根)).default).toEqual(r.表);
+    const 段 = (await 新鲜执行(path.join(目录, '段.ts'), 根)).default as 段定义;
+    const 新锁 = { ...锁, '音效/门': { ...锁['音效/门']!, sha256: 'd'.repeat(64) } };
+    const 不量 = { ...环境(), 锁: 新锁, 取数: () => undefined };
+    expect((await 核对一段(段, 目录, 根, 不量)).join('\n')).toMatch(/「音效\/门」的字节换了（锁里 sha d{12}，声音表里 a{12}）/);
+    const 再 = await 生成一段(path.join(目录, '段.ts'), 根, 环境({ 锁: 新锁, 取数: () => ({ 时长: 3, 峰值: -6 }) }));
+    expect(再.表.资产['音效/门']).toEqual({ 时长: 3, 峰值: -6, sha: 'd'.repeat(12) });
+    expect(再.段.声音?.[0]).toMatchObject({ 帧数: 36 });
+  });
+
+  it('不是窗口段做的段：报错，起步时写的空表删掉', async () => {
+    fs.writeFileSync(path.join(目录, '段.ts'), `export default { 场: '核对', 帧数: 10, fps: 24, 宽: 1, 高: 1, 地形: [] };\n`);
+    await expect(生成一段(path.join(目录, '段.ts'), 根, 环境())).rejects.toThrow(/不是段框架的段/);
+    expect(fs.existsSync(path.join(目录, 声音表文件))).toBe(false);
+  });
+
   it('跨段的接上段：从上一段算 上段开口帧；没有上一段就报错', async () => {
     写段(`接着说('甲', 0)`);
     const 上: 段定义 = { 帧数: 48, fps: 24, 声音: [{ 帧: 40, 台词: '甲' }] } as unknown as 段定义;
