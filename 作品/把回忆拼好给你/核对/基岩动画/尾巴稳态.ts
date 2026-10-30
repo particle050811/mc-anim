@@ -6,14 +6,14 @@ import { 取样骨骼, 播放到, type 基岩动画 } from '@engine/anim/基岩�
 /** 变量表：v.s、v.f（molang3）、L1～L13 的弹簧常数（parallel3 时间线）、tail 目标和 L13_P0… 弹簧输出（稳态） */
 export const 尾巴稳态变量 = (动画们: Readonly<Record<string, 基岩动画>>, 秒: number): Record<string, number | string> => {
   const 变量: Record<string, number | string> = {};
-  const 环境 = { 变量 };
-  播放到(动画们.parallel3!, 0.5, 0.01, { 环境 });
-  取样骨骼(动画们.pre_parallel2!, 0, { 环境 }); // molang3 排在 molang2 后面，第一遍才给 v.s、v.f
+  const 选项 = { 环境: { 变量 }, 口径: 'TLM' } as const;
+  播放到(动画们.parallel3!, 0.5, 0.01, 选项);
+  取样骨骼(动画们.pre_parallel2!, 0, 选项); // molang3 排在 molang2 后面，第一遍才给 v.s、v.f
   const [K1, K2, K3] = ['l13_k1', 'l13_k2', 'l13_k3'].map((k) => 变量[k] as number);
   const ω = (2 * Math.PI * 24) / (变量.s as number); // 目标 sin(t·360/(s/24)) 的角频率
   const 增益 = K3! / Math.hypot(1 - K2! * ω * ω, K1! * ω);
   const 滞后 = Math.atan2(K1! * ω, 1 - K2! * ω * ω) / ω; // 秒
-  取样骨骼(动画们.pre_parallel2!, 秒 - 滞后, { 环境 }); // 目标 v.tail1y… 取在滞后的时刻
+  取样骨骼(动画们.pre_parallel2!, 秒 - 滞后, 选项); // 目标 v.tail1y… 取在滞后的时刻
   for (const k of [1, 2, 3, 4, 5, 6]) for (const a of ['y', 'z']) 变量[`l13_p0${k}${a}`] = 增益 * ((变量[`tail${k}${a}`] as number | undefined) ?? 0);
   return 变量;
 };

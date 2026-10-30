@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  TLM控制器模式, 动画时间, 动画长度, 动画权重, 取样动画, 取样通道, 播放到, 混合层, 解析动画文件,
+  TLM控制器模式, 默认口径, 动画时间, 动画长度, 动画权重, 取样动画, 取样通道, 播放到, 混合层, 解析动画文件,
 } from './基岩动画.ts';
 
 const 文件 = {
@@ -43,6 +43,7 @@ const 文件 = {
   },
 };
 const A = 解析动画文件(文件);
+const TLM = { 口径: 'TLM' } as const;
 const 轨 = (名: string, ch: 'rotation' | 'position' | 'scale') => A[名]!.骨骼.a![ch]!;
 
 describe('解析', () => {
@@ -57,6 +58,8 @@ describe('解析', () => {
   });
 
   it('长度：写了照写的；TLM 没写取倒数第二个关键帧，通用取最后一个；只有 0 秒帧是无限长', () => {
+    expect(默认口径).toBe('通用');
+    expect(动画长度(A.跳变!)).toBe(2);
     expect(动画长度(A.线性!)).toBe(2);
     expect(动画长度(A.跳变!, 'TLM')).toBe(1);
     expect(动画长度(A.跳变!, '通用')).toBe(2);
@@ -66,34 +69,34 @@ describe('解析', () => {
 
 describe('取样（TLM 口径）', () => {
   it('常量和 q.anim_time', () => {
-    const r = 取样动画(A.常量!, 3).骨骼.a!;
+    const r = 取样动画(A.常量!, 3, TLM).骨骼.a!;
     expect(r.rot).toEqual([10, 20, 30]);
     expect(r.pos).toEqual([6, 0, 0]);
   });
 
   it('线性、循环取余', () => {
-    expect(取样动画(A.线性!, 0.5).骨骼.a!.rot).toEqual([5, 0, 0]);
-    expect(取样动画(A.线性!, 2.5).骨骼.a!.rot).toEqual([5, 0, 0]);
-    expect(取样动画(A.线性!, 1.5).骨骼.a!.rot).toEqual([5, 0, 0]);
+    expect(取样动画(A.线性!, 0.5, TLM).骨骼.a!.rot).toEqual([5, 0, 0]);
+    expect(取样动画(A.线性!, 2.5, TLM).骨骼.a!.rot).toEqual([5, 0, 0]);
+    expect(取样动画(A.线性!, 1.5, TLM).骨骼.a!.rot).toEqual([5, 0, 0]);
   });
 
   it('pre/post：段终点取 pre，过了关键帧取 post', () => {
     const k = 轨('跳变', 'position');
-    expect(取样通道(k, 0.5)).toEqual([0.5, 0.5, 0.5]);
-    expect(取样通道(k, 1)).toEqual([5, 5, 5]);
-    expect(取样通道(k, 0.999995)).toEqual([5, 5, 5]); // TLM 段内进度 > 0.99999 就取 post
+    expect(取样通道(k, 0.5, {}, 'TLM')).toEqual([0.5, 0.5, 0.5]);
+    expect(取样通道(k, 1, {}, 'TLM')).toEqual([5, 5, 5]);
+    expect(取样通道(k, 0.999995, {}, 'TLM')).toEqual([5, 5, 5]); // TLM 段内进度 > 0.99999 就取 post
     expect(取样通道(k, 0.999995, {}, '通用')[0]).toBeCloseTo(0.999995, 9);
   });
 
   it('catmullrom 冲过头、超出末帧取最后的 post', () => {
     const k = 轨('曲线', 'scale');
-    expect(取样通道(k, 1.5)[0]).toBeCloseTo(-0.125, 12);
-    expect(取样通道(k, 9)).toEqual([1, 1, 1]);
+    expect(取样通道(k, 1.5, {}, 'TLM')[0]).toBeCloseTo(-0.125, 12);
+    expect(取样通道(k, 9, {}, 'TLM')).toEqual([1, 1, 1]);
   });
 
   it('once 和 TLM 的 hold 到头都停；通用的 hold 停在末帧', () => {
-    expect(动画时间(A.跳变!, 1.2)).toEqual({ 时: 1, 停止: true });
-    expect(取样动画(A.跳变!, 1.2).骨骼).toEqual({});
+    expect(动画时间(A.跳变!, 1.2, 'TLM')).toEqual({ 时: 1, 停止: true });
+    expect(取样动画(A.跳变!, 1.2, TLM).骨骼).toEqual({});
     expect(动画时间(A.曲线!, 5, 'TLM').停止).toBe(true);
     expect(动画时间(A.曲线!, 5, '通用')).toEqual({ 时: 3, 停止: false });
   });
@@ -149,8 +152,10 @@ describe('多层混合', () => {
   it('TLM：覆盖层只取自己，parallel_ 层取所有层转角的和；位置一律覆盖', () => {
     expect(TLM控制器模式('parallel_3_controller')).toBe('叠加');
     expect(TLM控制器模式('pre_parallel_3_controller')).toBe('覆盖');
-    expect(混合层([{ 骨骼: 下 }, { 骨骼: 上 }])).toEqual({ a: { rot: [5, 0, 0], pos: [3, 0, 0] }, b: { scale: [2, 2, 2] } });
-    expect(混合层([{ 骨骼: 下 }, { 骨骼: 上 }, { 骨骼: { a: { rot: [1, 0, 0] } }, 模式: '叠加' }]).a!.rot).toEqual([16, 0, 0]);
+    expect(混合层([{ 骨骼: 下 }, { 骨骼: 上 }], 'TLM')).toEqual({ a: { rot: [5, 0, 0], pos: [3, 0, 0] }, b: { scale: [2, 2, 2] } });
+    expect(混合层([{ 骨骼: 下 }, { 骨骼: 上 }, { 骨骼: { a: { rot: [1, 0, 0] } }, 模式: '叠加' }], 'TLM').a!.rot).toEqual([16, 0, 0]);
+    // 通用：叠加层只加在下面那层的结果上
+    expect(混合层([{ 骨骼: 下 }, { 骨骼: 上 }, { 骨骼: { a: { rot: [1, 0, 0] } }, 模式: '叠加' }]).a!.rot).toEqual([6, 0, 0]);
   });
 
   it('通用：覆盖按权重插值，叠加按权重相加、缩放相乘', () => {

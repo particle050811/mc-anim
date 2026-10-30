@@ -9,6 +9,8 @@ import { catmullRom, 线性, 缓动, 贝塞尔, 阶跃, type 插值方式 } from
 import { 烘焙, 取值, 编译, 求值, type Molang式, type Molang环境 } from './Molang.ts';
 
 export type 口径 = 'TLM' | '通用';
+/** 不给口径时用 '通用'（各 GeckoLib / Blockbench 文件的写法）；TLM 自带的分支有怪处，要显式写 'TLM' */
+export const 默认口径: 口径 = '通用';
 export type 循环方式 = 'once' | 'loop' | 'hold';
 export type 轴值 = number | Molang式;
 export type 向量值 = readonly [轴值, 轴值, 轴值];
@@ -141,7 +143,7 @@ export const 解析动画文件 = (文件: unknown): Record<string, 基岩动画
  * TLM：没写 animation_length 时取各通道「倒数第二个关键帧」时间的最大值（GeckoLib 3 calculateLength 取的是最后一段的起点，算是它的怪处），
  * 结果是 0（只有 0 秒的常量帧）就当无限长。'通用'：取最后一个关键帧和时间线的最大时间，0 也当无限长
  */
-export const 动画长度 = (动画: 基岩动画, 口: 口径 = 'TLM'): number => {
+export const 动画长度 = (动画: 基岩动画, 口: 口径 = 默认口径): number => {
   if (动画.长度 !== undefined) return 动画.长度;
   let 长 = 0;
   for (const 轨 of Object.values(动画.骨骼)) {
@@ -159,7 +161,7 @@ export const 动画长度 = (动画: 基岩动画, 口: 口径 = 'TLM'): number 
  * 播放了 秒 秒时的动画时间（q.anim_time）。loop 按长度取余；once 到头就停（停止：骨骼不再由这段动画给，TLM 里会慢慢回到原位）。
  * hold_on_last_frame：TLM 的 GeckoLib 3 分支没有特别处理（isRepeatingAfterEnd 是 false），和 once 一样停；'通用' 停在末帧
  */
-export const 动画时间 = (动画: 基岩动画, 秒: number, 口: 口径 = 'TLM'): { 时: number; 停止: boolean } => {
+export const 动画时间 = (动画: 基岩动画, 秒: number, 口: 口径 = 默认口径): { 时: number; 停止: boolean } => {
   const t = Math.max(0, 秒);
   const 长 = 动画长度(动画, 口);
   if (!Number.isFinite(长)) return { 时: t, 停止: false };
@@ -177,7 +179,7 @@ const 求向量 = (v: 向量值, 环境: Molang环境): [number, number, number]
  * TLM：t 在 [K(i−1), K(i)) 内取第 i 段，起点值是 K(i−1) 的 post、终点是 K(i) 的 pre；段内进度 < 1e-5 取起点，> 0.99999 取 K(i) 的 post；
  * 两头有一个是 catmullrom 就按 catmullrom，控制点取 K(i−2) 的 post、K(i+1) 的 pre（下标夹在两端）；第一个关键帧之前取它的 pre，最后一个之后取它的 post
  */
-export const 取样通道 = (帧们: readonly 关键帧[], t: number, 环境: Molang环境 = {}, 口: 口径 = 'TLM'): [number, number, number] => {
+export const 取样通道 = (帧们: readonly 关键帧[], t: number, 环境: Molang环境 = {}, 口: 口径 = 默认口径): [number, number, number] => {
   const n = 帧们.length;
   const i = 帧们.findIndex((k) => k.时 > t);
   if (i === 0) {
@@ -227,7 +229,7 @@ const 带动画时间 = (环境: Molang环境, 时: number): Molang环境 => ({ 
 /** 动画时间 时（秒，已经按循环折算过）的全部骨骼。骨骼、通道按文件顺序求值（Molang 赋值有先后） */
 export const 取样骨骼 = (动画: 基岩动画, 时: number, 选项: 播放选项 = {}): 骨骼表 => {
   const 环境 = 带动画时间(选项.环境 ?? {}, 时);
-  const 口 = 选项.口径 ?? 'TLM';
+  const 口 = 选项.口径 ?? 默认口径;
   const 出: 骨骼表 = {};
   for (const [骨, 轨] of Object.entries(动画.骨骼)) {
     const 姿: 骨骼姿势 = {};
@@ -263,7 +265,7 @@ const 执行时间线 = (动画: 基岩动画, 从: number, 到: number, 含起�
  */
 export const 推进 = (动画: 基岩动画, 状态: 播放状态, dt: number, 选项: 播放选项 = {}): 播放状态 => {
   if (状态.停止) return 状态;
-  const 口 = 选项.口径 ?? 'TLM';
+  const 口 = 选项.口径 ?? 默认口径;
   const 基 = 选项.环境 ?? {};
   const 长 = 动画长度(动画, 口);
   if (!状态.已开始) 执行时间线(动画, 0, 0, true, 带动画时间(基, 0));
@@ -310,7 +312,7 @@ const 三 = (x: number | number[]): number[] => (typeof x === 'number' ? [x, x, 
  * TLM：转角在所有层上累加，叠加层取累加和、覆盖层只取自己这层的值；位置、缩放一律后来的盖前面；权重不读。
  * '通用'：覆盖层按权重从下面的值（没有就是原位：转角、位置 0，缩放 1）插到自己的值；叠加层转角、位置加 权重×值，缩放乘 lerp(1, 值, 权重)
  */
-export const 混合层 = (层们: readonly 动画层[], 口: 口径 = 'TLM'): 骨骼表 => {
+export const 混合层 = (层们: readonly 动画层[], 口: 口径 = 默认口径): 骨骼表 => {
   const 出: 骨骼表 = {};
   const 累计转角: Record<string, number[]> = {};
   for (const 层 of 层们) {

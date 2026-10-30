@@ -53,7 +53,7 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
   const 动画们 = 解析动画文件(JSON.parse(动画字节!.toString('utf8')));
   const 模型骨骼 = new Set((JSON.parse(模型字节!.toString('utf8')) as { bones: { name: string }[] }).bones.map((b) => b.name));
   const 帧 = (名: string, 秒: number, 外部: Record<string, number> = {}, 变量: Record<string, number | string> = {}) =>
-    取样动画(动画们[名]!, 秒, { 环境: { 外部, 变量 } }).骨骼;
+    取样动画(动画们[名]!, 秒, { 环境: { 外部, 变量 }, 口径: 'TLM' }).骨骼;
   const { magicalWineFoxSitBones, magicalWineFoxHidden, magicalWineFoxStaffBones, magicalWineFoxHatOffBones } = await import('@库/角色/魔法酒狐.tsx');
 
   /** 常量姿势表：手抄的每根骨骼逐通道相等；播放器多出来的只能是模型里没有的骨骼，或原位值（转 0、移 0、缩放 1） */
@@ -77,7 +77,7 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
 
   it('平时藏着的骨骼（pre_parallel0、1、3，戴头盔）', () => {
     const 头盔 = { 'ysm.has_helmet': 1 };
-    const 合 = 混合层(['pre_parallel0', 'pre_parallel1', 'pre_parallel3'].map((n) => ({ 骨骼: 帧(n, 0.5, 头盔) })));
+    const 合 = 混合层(['pre_parallel0', 'pre_parallel1', 'pre_parallel3'].map((n) => ({ 骨骼: 帧(n, 0.5, 头盔) })), 'TLM');
     const 藏 = Object.entries(合).filter(([骨, p]) => 模型骨骼.has(骨) && p.scale !== undefined && 三(p.scale).every((x) => x === 0)).map(([骨]) => 骨);
     expect(藏.sort()).toEqual(Object.keys(magicalWineFoxHidden).sort());
     expect(合.witchcap!.scale).toEqual([1, 1, 1]);
@@ -103,7 +103,7 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
         ...['pre_parallel0', 'pre_parallel1', 'pre_parallel3'].map((n) => ({ 骨骼: 帧(n, t, 头盔) })),
         { 骨骼: 帧('sit', t) },
         { 骨骼: 帧('parallel5', t), 模式: '叠加' as const },
-      ]);
+      ], 'TLM');
       const 手: 骨骼表 = { ...magicalWineFoxHidden, ...magicalWineFoxSitBones, ...magicalWineFoxStaffBones(t, '坐') };
       for (const [骨, p] of Object.entries(手)) 比姿势(`${t}/${骨}`, p, 合[骨], 出);
     }
@@ -164,7 +164,7 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
 
   // 尾巴：pre_parallel2 的目标是 molang2 里的正弦（变量 v.s、v.f 由 molang3 给），parallel3 的时间线给弹簧常数，parallel4 每步推 0.01 秒。
   // 手抄版用弹簧稳态解；这里从文件里求出常数和目标（尾巴稳态.ts），按稳态代回 pre_parallel2 的 Tail 表达式，再和手抄版比
-  const 尾巴稳态 = (秒: number) => 取样骨骼(动画们.pre_parallel2!, 秒, { 环境: { 变量: 尾巴稳态变量(动画们, 秒) } });
+  const 尾巴稳态 = (秒: number) => 取样骨骼(动画们.pre_parallel2!, 秒, { 环境: { 变量: 尾巴稳态变量(动画们, 秒) }, 口径: 'TLM' });
 
   it('尾巴（pre_parallel2 + parallel3 + parallel4）：弹簧稳态和手抄版一致', () => {
     const 出: 差[] = [];
@@ -177,14 +177,14 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
 
   it('尾巴：真按时间线一步步推弹簧（每步 0.01 秒），20 秒后贴近稳态（时间线、变量跨帧保留能跑通）', () => {
     const 变量: Record<string, number | string> = {};
-    const 环境 = { 变量 };
-    播放到(动画们.parallel3!, 0.5, 0.01, { 环境 });
+    const 选项 = { 环境: { 变量 }, 口径: 'TLM' } as const;
+    播放到(动画们.parallel3!, 0.5, 0.01, 选项);
     let 态: 播放状态 = 开始播放;
     let 骨骼: 骨骼表 = {};
     const 步数 = 2000;
     for (let i = 0; i <= 步数; i++) {
-      骨骼 = 取样骨骼(动画们.pre_parallel2!, i * 0.01, { 环境 });
-      态 = 推进(动画们.parallel4!, 态, 0.01, { 环境 });
+      骨骼 = 取样骨骼(动画们.pre_parallel2!, i * 0.01, 选项);
+      态 = 推进(动画们.parallel4!, 态, 0.01, 选项);
     }
     const 稳 = 尾巴稳态(步数 * 0.01);
     for (const 骨 of ['Tail', 'Tail3', 'Tail5']) {
