@@ -2,6 +2,7 @@ package sample;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import net.minecraft.client.model.ModelUtils;
 import net.minecraft.util.Mth;
 
 /**
@@ -50,6 +51,7 @@ public final class Builtins {
             case "net/minecraft/util/Mth.wrapDegrees(F)F" -> f(Mth.wrapDegrees(F(s[1])));
             case "net/minecraft/util/Mth.square(F)F" -> f(Mth.square(F(s[1])));
             case "net/minecraft/util/Mth.floor(F)I" -> i(Mth.floor(F(s[1])));
+            case "net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F" -> f(ModelUtils.rotlerpRad(F(s[1]), F(s[2]), F(s[3])));
             case "java/lang/Math.sin(D)D" -> d(Math.sin(D(s[1])));
             case "java/lang/Math.cos(D)D" -> d(Math.cos(D(s[1])));
             case "java/lang/Math.sqrt(D)D" -> d(Math.sqrt(D(s[1])));

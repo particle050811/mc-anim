@@ -286,11 +286,15 @@ def 内建样例(每个: int = 400) -> list[tuple[str, list[str]]]:
         x = r.choice(特殊) if r.random() < 0.25 else r.uniform(-1, 1) * 10 ** r.uniform(-3, 5)
         return f32(x) if t == "F" else x
 
+    def 取角(t: str):
+        # rotlerpRad 差太大、是无穷时 JVM 永远不返回，样例只取能返回的：几圈之内的角，外加正好落在 ±π 边上的
+        return f32(r.choice([0.0, -0.0, math.pi, -math.pi, 2 * math.pi]) if r.random() < 0.2 else r.uniform(-60, 60))
+
     out = []
     for 函数 in 内建:
         ps, _ = _参数类型(函数)
         for _ in range(每个):
-            out.append((函数, [_写值(t, 取(t)) for t in ps]))
+            out.append((函数, [_写值(t, 取角(t) if "rotlerpRad" in 函数 else 取(t)) for t in ps]))
     return out
 
 
@@ -321,3 +325,10 @@ def test_内建函数和JVM逐位相同(编译好: tuple[Path, Path]) -> None:
         data = {"说明": "py/tests/test_动作翻译.py 生成（ANIM_UPDATE_POSE_SAMPLE=1）：内建函数的参数和 JVM 结果（F、D 是十六进制位，I 是十进制）", "超越函数": sorted(超越函数), "样例": 留}
         p = 仓库 / "engine/anim/姿态程序.内建样例.json"
         p.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
+def test_rotlerpRad差太大给NaN() -> None:
+    # JVM 里差大到加减 2π 不动（或是无穷）时两个 while 永远不出来；内建给 NaN，不卡住。差是 NaN 时 JVM 两个比较都不成立，直接返回 NaN
+    f = 内建["net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F"][1]
+    assert math.isnan(f(0.0, 1e10, 0.5)) and math.isnan(f(0.0, math.inf, 0.5)) and math.isnan(f(math.nan, 0.0, 0.5))
+    assert f(0.0, f32(7.0), 1.0) == f32(f32(7.0) - f32(math.pi * 2))
