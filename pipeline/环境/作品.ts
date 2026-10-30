@@ -94,6 +94,9 @@ export const 指定作品 = (名: string | undefined) => {
   当前 = undefined;
 };
 
+/** --作品 给的名字（没给是 undefined）：anim cache gc 没给就处理全部作品 */
+export const 指定的作品 = () => 指定;
+
 export const 当前作品 = (): 作品 => (当前 ??= 选作品({ 参数: 指定, 默认: 配置('默认作品') }));
 /** 作品根：作品的 index.ts、注册.tsx、清单.ts 所在的目录，打包入口和 webpack改写(作品根) 都从它取 */
 export const 作品根 = () => 当前作品().根;
