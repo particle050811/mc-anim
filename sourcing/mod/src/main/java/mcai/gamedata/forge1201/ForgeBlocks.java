@@ -30,6 +30,7 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.minecraftforge.client.model.data.ModelData;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.InputStream;
@@ -258,18 +259,24 @@ final class ForgeBlocks implements BlockSource {
         return null;
     }
 
-    /** 染色函数的类名（lambda 去掉每次启动都变的后缀）；反射拿不到就写方块 id */
+    /**
+     * 染色函数的类名（lambda 去掉每次启动都变的后缀）；反射拿不到就写方块 id。
+     * Forge 把 BlockColors 的表换成了以 ForgeRegistries.BLOCKS.getDelegateOrThrow(方块) 为键的 Map（同 BlockColors.getColor），
+     * 键要和它取的一样；拿 builtInRegistryHolder() 查一个都查不到，染色路会全写成方块 id
+     */
     private String colorName(BlockState state) {
+        Block block = state.getBlock();
+        Object key = ForgeRegistries.BLOCKS.getDelegateOrThrow(block);
         for (Field f : BlockColors.class.getDeclaredFields()) {
             if (!Map.class.isAssignableFrom(f.getType())) continue;
             try {
                 f.setAccessible(true);
-                Object c = ((Map<?, ?>) f.get(colors)).get(state.getBlock().builtInRegistryHolder());
+                Object c = ((Map<?, ?>) f.get(colors)).get(key);
                 if (c instanceof BlockColor) return className(c);
             } catch (ReflectiveOperationException | RuntimeException ignored) {
             }
         }
-        return BuiltInRegistries.BLOCK.getKey(state.getBlock()).toString();
+        return BuiltInRegistries.BLOCK.getKey(block).toString();
     }
 
     private static String className(Object o) {
