@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { 取函数 } from '../pipeline/检查/副本识别.ts';
-import { 原版运动, 下落一刻, 下落表, 下落高度, 按刻取, 落地刻 } from './原版物理.ts';
+import { 原版运动, 下落一刻, 下落表, 下落高度, 按刻取, 物品下落, 落地刻 } from './原版物理.ts';
 
 const 根 = path.resolve(import.meta.dirname, '..');
 const 副本 = (文件: string, 名: string, 额外?: Record<string, unknown>) =>
@@ -25,6 +25,16 @@ describe('原版下落正本', () => {
     const 速 = 下落高度(400) - 下落高度(399);
     expect(速).toBeCloseTo(-3.92, 2);
     expect(下落高度(400, { 重力: 原版运动.物品重力 }) - 下落高度(399, { 重力: 原版运动.物品重力 })).toBeCloseTo(-1.96, 2);
+  });
+  it('物品、下落方块先加重力再挪：第一刻就掉 0.04，往后 −0.04 − 0.0792……', () => {
+    let s = { 高: 0, 速: 0 };
+    const 高们 = [0];
+    for (let i = 0; i < 3; i++) 高们.push((s = 下落一刻(s.高, s.速, 原版运动.物品重力, 原版运动.竖直阻力, true)).高);
+    expect(高们.map((x) => +x.toFixed(6))).toEqual([0, -0.04, -0.1192, -0.236816]);
+    expect(下落高度(2, 物品下落)).toBeCloseTo(-0.1192, 12);
+    expect(下落高度(1.5, { ...物品下落, 初速: 0.2 })).toBeCloseTo(0.16 + 0.5 * (0.16 * 0.98 - 0.04), 12);
+    expect(下落表(1, 物品下落).at(-1)).toBe(-1);
+    expect(下落高度(落地刻(3, 物品下落), 物品下落)).toBeCloseTo(-3, 9);
   });
   it('下落表 末项正好 −落差，落地刻 落在表的最后一段里', () => {
     for (const h of 落差们) {
