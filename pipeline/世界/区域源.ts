@@ -12,10 +12,12 @@ const 读法版本 = 'mca-列段v2';
 
 export type 区域变换 = (r: 解开的列段) => 解开的列段;
 
+// 缓存键（区域文件 sha256 接种子、读法版本）按「路径、大小、修改时间、种子」记在进程里：同一个存档常有两个区域源（套编辑的和编辑读原样的），共用一份
+const 键表 = new Map<string, string>();
+
 export class 区域源 {
   private 内存 = new Map<string, 解开的列段 | null>();
   private 内存上限 = 40;
-  private 键缓存 = new Map<string, string>();
 
   readonly 区域目录: string;
   readonly 种子: string;
@@ -44,15 +46,50 @@ export class 区域源 {
     return path.join(this.区域目录, 区域文件名(rx, rz));
   }
 
-  private 缓存文件(rx: number, rz: number) {
-    if (!this.缓存目录) return null;
+  private get 键后缀() {
+    return `\0${this.种子}\0${读法版本}`;
+  }
+
+  /** 区域文件的戳；文件不在返回 null */
+  private 戳(rx: number, rz: number) {
     const f = this.文件(rx, rz);
     if (!fs.existsSync(f)) return null;
     const st = fs.statSync(f);
-    const 戳 = `${f}\0${st.size}\0${st.mtimeMs}`;
-    let h = this.键缓存.get(戳);
-    if (!h) this.键缓存.set(戳, (h = createHash('sha256').update(fs.readFileSync(f)).update(`\0${this.种子}\0${读法版本}`).digest('hex')));
+    return { f, 戳: `${f}\0${st.size}\0${st.mtimeMs}\0${this.种子}` };
+  }
+
+  private 缓存文件(rx: number, rz: number) {
+    if (!this.缓存目录) return null;
+    const s = this.戳(rx, rz);
+    if (!s) return null;
+    let h = 键表.get(s.戳);
+    if (!h) 键表.set(s.戳, (h = createHash('sha256').update(fs.readFileSync(s.f)).update(this.键后缀).digest('hex')));
     return path.join(this.缓存目录, h.slice(0, 2), h);
+  }
+
+  /** 在工作线程里先把这些区域的缓存键算好（之后 缓存文件 直接查表）；没缓存目录、文件不在的跳过 */
+  async 算键们(区域们: readonly [number, number][], 线程数: number) {
+    if (!this.缓存目录) return;
+    const 待 = 区域们.map(([rx, rz]) => this.戳(rx, rz)).filter((s): s is { f: string; 戳: string } => !!s && !键表.has(s.戳));
+    if (待.length <= 2) return; // 一两个文件起线程不划算，留给 缓存文件 当场算
+    let 下一个 = 0;
+    const 跑一个线程 = () =>
+      new Promise<void>((resolve, reject) => {
+        const w = new Worker(new URL('./算键工人.ts', import.meta.url));
+        let 当前: { f: string; 戳: string } | undefined;
+        const 发 = () => {
+          当前 = 待[下一个++];
+          if (当前) w.postMessage({ 文件: 当前.f, 后缀: this.键后缀 });
+          else void w.terminate().then(() => resolve());
+        };
+        w.on('message', (h: string) => {
+          键表.set(当前!.戳, h);
+          发();
+        });
+        w.on('error', reject);
+        发();
+      });
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(线程数, 待.length)) }, 跑一个线程));
   }
 
   /** 列段缓存里已经有了（读它不用解存档） */
@@ -106,6 +143,7 @@ export class 区域源 {
   /** 并行把没缓存的区域读进缓存；返回有数据的区域 */
   async 预读(区域们: [number, number][], 线程数: number, 日志?: (s: string) => void): Promise<[number, number][]> {
     if (!this.缓存目录) throw new Error('预读要有缓存目录');
+    await this.算键们(区域们, 线程数);
     const 待: { rx: number; rz: number; 缓存: string }[] = [];
     const 有数据: [number, number][] = [];
     for (const [rx, rz] of 区域们) {

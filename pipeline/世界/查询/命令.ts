@@ -57,9 +57,16 @@ export const 建源 = async (w: 世界声明, p: 已解析): Promise<{ 源: 方�
   return { 源: 存档, 存档, 区域, 标: 编辑 ? '编辑后' : '原样' };
 };
 
+const 范围内区域 = (r: 范围) => {
+  const out: [number, number][] = [];
+  for (let rz = r.z1 >> 9; rz <= r.z2 >> 9; rz++) for (let rx = r.x1 >> 9; rx <= r.x2 >> 9; rx++) out.push([rx, rz]);
+  return out;
+};
+
 /** 范围要解的区域多就过资源闸并行预读进缓存，少就只解要的区块 */
 const 备好 = async <T>(s: Awaited<ReturnType<typeof 建源>>, r: 范围, fn: () => Promise<T> | T): Promise<T> => {
   if (!s.存档 || !s.区域) return fn();
+  await s.区域.算键们(范围内区域(r), 默认线程());
   const 待 = s.存档.没缓存的区域(r);
   if (待.length <= 2) {
     s.存档.载入(r);
