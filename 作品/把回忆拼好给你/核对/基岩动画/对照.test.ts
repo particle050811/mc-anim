@@ -8,6 +8,7 @@ import { 取样动画, 取样骨骼, 播放到, 推进, 开始播放, 混合层,
 import { magicalWineFoxBlink, magicalWineFoxBlinkBones, magicalWineFoxFace, magicalWineFoxTail } from '@库/角色/魔法酒狐动作.ts';
 import { magicalWineFoxBoatBones } from '@库/角色/魔法酒狐坐船.ts';
 import { magicalWineFoxBreath } from '@库/角色/魔法酒狐新动作.ts';
+import { 尾巴稳态变量 } from './尾巴稳态.ts';
 
 // 魔法酒狐.tsx 顶上 import 了模型和贴图资产（打包时由 webpack 内联），测试里换成 store 里的字节
 const 读字节 = (id: string): Buffer | undefined => {
@@ -162,19 +163,8 @@ describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手
   });
 
   // 尾巴：pre_parallel2 的目标是 molang2 里的正弦（变量 v.s、v.f 由 molang3 给），parallel3 的时间线给弹簧常数，parallel4 每步推 0.01 秒。
-  // 手抄版用弹簧稳态解；这里从文件里求出常数和目标，按稳态代回 pre_parallel2 的 Tail 表达式，再和手抄版比
-  const 尾巴稳态 = (秒: number) => {
-    const 变量: Record<string, number | string> = {};
-    播放到(动画们.parallel3!, 0.5, 0.01, { 环境: { 变量 } }); // 时间线把 L1…L13 的 K1、K2、K3 算进变量表
-    const 环境 = { 变量 };
-    取样骨骼(动画们.pre_parallel2!, 0, { 环境 }); // 第一次 molang3 在 molang2 后面才给 v.s，先跑一遍
-    const [K1, K2, K3] = ['l13_k1', 'l13_k2', 'l13_k3'].map((k) => 变量[k] as number);
-    const ω = (2 * Math.PI * 24) / (变量.s as number); // sin(t·360/(s/24)) 的角频率
-    const r = { 增益: K3! / Math.hypot(1 - K2! * ω * ω, K1! * ω), 滞后: Math.atan2(K1! * ω, 1 - K2! * ω * ω) / ω };
-    取样骨骼(动画们.pre_parallel2!, 秒 - r.滞后, { 环境 }); // 目标 v.tail1y… 取在滞后的时刻
-    for (const k of [1, 2, 3, 4, 5, 6]) for (const a of ['y', 'z']) 变量[`l13_p0${k}${a}`] = r.增益 * ((变量[`tail${k}${a}`] as number | undefined) ?? 0);
-    return 取样骨骼(动画们.pre_parallel2!, 秒, { 环境 });
-  };
+  // 手抄版用弹簧稳态解；这里从文件里求出常数和目标（尾巴稳态.ts），按稳态代回 pre_parallel2 的 Tail 表达式，再和手抄版比
+  const 尾巴稳态 = (秒: number) => 取样骨骼(动画们.pre_parallel2!, 秒, { 环境: { 变量: 尾巴稳态变量(动画们, 秒) } });
 
   it('尾巴（pre_parallel2 + parallel3 + parallel4）：弹簧稳态和手抄版一致', () => {
     const 出: 差[] = [];
