@@ -1,8 +1,7 @@
 // 基岩 / GeckoLib 动画关键帧之间的插值。纯函数，不 import react、three。
 // linear、catmullrom 照车万女仆（TLM）1.5.3 自带的 GeckoLib 3 分支（MathUtil.lerpValues、MathUtil.catmullRom 反汇编）；
 // 游戏里结果转 float（joml Vector3f），这里全程 double：和库里的手抄版逐位一致，和游戏差在 1e-6 量级。
-// step、bezier、缓动名是「通用」口径（Blockbench、GeckoLib 4 的写法），没有对着 jar 核过，见各自的注释。
-import { easeInSine } from '../core/数学.ts';
+// step、bezier 是基岩版 / Blockbench 的写法（没对过实现，见各自的注释）；缓动名照 GeckoLib 4 源码，见 缓动。
 
 export type 插值方式 = 'linear' | 'step' | 'catmullrom' | 'bezier';
 
@@ -48,44 +47,92 @@ export const 贝塞尔 = (
   return 取(y, (低 + 高) / 2);
 };
 
-// 缓动：GeckoLib 4 关键帧 "easing" 的名字（easeInSine…easeInOutBounce），公式是通用的 Penner 缓动（easings.net 的定义）。
-// 参数（easingArgs）只有 Back（回弹量，默认 1.70158）、Elastic（周期系数，默认 1）、step（步数）用到
-const 出 = (f: (u: number, a?: number) => number) => (u: number, a?: number) => 1 - f(1 - u, a);
-const 进出 = (f: (u: number, a?: number) => number) => (u: number, a?: number) => (u < 0.5 ? f(2 * u, a) / 2 : 1 - f(2 - 2 * u, a) / 2);
-const 弹跳出 = (u: number) => {
-  const n = 7.5625;
-  const d = 2.75;
-  if (u < 1 / d) return n * u * u;
-  if (u < 2 / d) return n * (u -= 1.5 / d) * u + 0.75;
-  if (u < 2.5 / d) return n * (u -= 2.25 / d) * u + 0.9375;
-  return n * (u -= 2.625 / d) * u + 0.984375;
+// 缓动：GeckoLib 4 关键帧 "easing" 的名字和公式，照 geckolib-forge-1.20.1-4.8.4 的 EasingType.java（MIT，源码包原文）。
+// 和 easings.net 的 Penner 公式不一样的地方都照 GeckoLib 4：
+//   easeInQuint 是 n⁴（它注册时写成 pow(4)，Out、InOut 才是 5 次）；Expo 是 2^(10(n−1))，0 处不是 0；
+//   Elastic 是 1 − cos³(nπ/2)·cos(n·k·π)（k = 参数，默认 1）；Bounce 是四段抛物线取最小（参数 = 弹性，默认 0.5）；
+//   Back 的参数是 1.70158 的倍数（默认 1 倍）；step 默认 2 级（只到 0.5），级数 < 2 报错。
+// 名字不分大小写（GeckoLib 4 先转小写再查表），不认识的按 linear（同 GeckoLib 4 的 fromString）。
+// 段末（进度到 1）GeckoLib 4 直接取终点值，不过缓动（EasingType.apply），所以 Expo 这类 1 处不等于 1 的也不跳
+type 曲线 = (n: number) => number;
+const 出 = (f: 曲线): 曲线 => (n) => 1 - f(1 - n);
+const 进出 = (f: 曲线): 曲线 => (n) => (n < 0.5 ? f(n * 2) / 2 : 1 - f((1 - n) * 2) / 2);
+const 幂 = (k: number): 曲线 => (n) => n ** k;
+const f32 = Math.fround;
+const 弹跳 = (a?: number): 曲线 => {
+  const n2 = a ?? 0.5;
+  // 6f/11f 这些是 Java 的 float 除法
+  const [c1, c2, c3] = [f32(6 / 11), f32(9 / 11), f32(10.5 / 11)];
+  return (x) =>
+    Math.min(
+      Math.min((121 / 16) * x * x, (121 / 4) * n2 * (x - c1) ** 2 + 1 - n2),
+      Math.min(121 * n2 * n2 * (x - c2) ** 2 + 1 - n2 * n2, 484 * n2 * n2 * n2 * (x - c3) ** 2 + 1 - n2 * n2 * n2),
+    );
 };
-const 进: Record<string, (u: number, a?: number) => number> = {
-  Sine: easeInSine,
-  Quad: (u) => u ** 2,
-  Cubic: (u) => u ** 3,
-  Quart: (u) => u ** 4,
-  Quint: (u) => u ** 5,
-  Expo: (u) => (u === 0 ? 0 : 2 ** (10 * u - 10)),
-  Circ: (u) => 1 - Math.sqrt(1 - u * u),
-  Back: (u, a = 1.70158) => (a + 1) * u ** 3 - a * u ** 2,
-  Elastic: (u, a = 1) => (u === 0 || u === 1 ? u : -(2 ** (10 * u - 10)) * Math.sin(((u * 10 - 10.75) * (2 * Math.PI)) / (3 * a))),
-  Bounce: (u) => 1 - 弹跳出(1 - u),
+const 回弹 = (a?: number): 曲线 => {
+  const n2 = a === undefined ? 1.70158 : a * 1.70158;
+  return (t) => t * t * ((n2 + 1) * t - n2);
 };
+const 弹性 = (a?: number): 曲线 => {
+  const n2 = a ?? 1;
+  return (t) => 1 - Math.cos((t * Math.PI) / 2) ** 3 * Math.cos(t * n2 * Math.PI);
+};
+/** GeckoLib 4 的 step：级数 n（默认 2）时取 0、1/n … (n−1)/n 里不超过 t 的最大一级（原文是二分查找，这里照抄） */
+const 分级 = (a?: number): 曲线 => {
+  const n2 = a ?? 2;
+  if (n2 < 2) throw new Error(`缓动 step：级数要 ≥ 2，给的是 ${n2}`);
+  const 级 = Math.trunc(n2);
+  const 长 = 1 / 级;
+  return (t) => {
+    if (t < 0) return 0;
+    const 顶 = (级 - 1) * 长;
+    if (t > 顶) return 顶;
+    let [左, 右] = [0, 级 - 1];
+    while (右 - 左 !== 1) {
+      const 中 = 左 + Math.trunc((右 - 左) / 2);
+      if (t >= 中 * 长) 左 = 中;
+      else 右 = 中;
+    }
+    return 左 * 长;
+  };
+};
+const 基本: Record<string, (a?: number) => 曲线> = {
+  sine: () => (n) => 1 - Math.cos((n * Math.PI) / 2),
+  quad: () => (n) => n * n,
+  cubic: () => (n) => n * n * n,
+  quart: () => 幂(4),
+  quint: () => 幂(5),
+  expo: () => (n) => 2 ** (10 * (n - 1)),
+  circ: () => (n) => 1 - Math.sqrt(1 - n * n),
+  back: 回弹,
+  elastic: 弹性,
+  bounce: 弹跳,
+};
+const 缓动表 = new Map<string, (a?: number) => 曲线>([
+  ['linear', () => (n) => n],
+  ['none', () => (n) => n],
+  ['step', 分级],
+]);
+for (const [名, f] of Object.entries(基本)) {
+  缓动表.set(`easein${名}`, 名 === 'quint' ? () => 幂(4) : f);
+  缓动表.set(`easeout${名}`, (a) => 出(f(a)));
+  缓动表.set(`easeinout${名}`, (a) => 进出(f(a)));
+}
 
-/** 缓动名 → 0～1 的进度映射；不认识的名字按线性（TLM 也是：不是 catmullrom 的一律当 linear） */
+/**
+ * 缓动名 → 0～1 的进度映射（GeckoLib 4 口径）；不认识的名字按线性。
+ * catmullrom 不在这里：GeckoLib 4 的 catmullrom 是样条（控制点要相邻关键帧），由 基岩动画.ts 的取样处理
+ */
 export const 缓动 = (名: string | undefined, u: number, 参数?: readonly number[]): number => {
-  if (!名 || 名 === 'linear' || 名 === 'catmullrom') return u;
-  if (名 === 'step') return 阶跃(u, 参数?.[0]);
-  const m = /^ease(In|Out|InOut)([A-Z][a-z]+)$/.exec(名);
-  const f = m && 进[m[2]!];
-  if (!f) return u;
-  const g = m[1] === 'In' ? f : m[1] === 'Out' ? 出(f) : 进出(f);
-  return g(u, 参数?.[0]);
+  const f = 名 && 缓动表.get(名.toLowerCase());
+  return f ? f(参数?.[0])(u) : u;
 };
 
-/** 认识的缓动名（文档和检查用） */
+/** 认识的缓动名（文档和检查用；大小写随意） */
 export const 缓动名们: readonly string[] = [
-  'linear', 'step', 'catmullrom',
-  ...Object.keys(进).flatMap((k) => [`easeIn${k}`, `easeOut${k}`, `easeInOut${k}`]),
+  'linear', 'none', 'step', 'catmullrom',
+  ...Object.keys(基本).flatMap((k) => {
+    const K = k[0]!.toUpperCase() + k.slice(1);
+    return [`easeIn${K}`, `easeOut${K}`, `easeInOut${K}`];
+  }),
 ];

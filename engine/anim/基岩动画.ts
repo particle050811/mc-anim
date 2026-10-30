@@ -3,7 +3,8 @@
 // 播放分两种口径：
 //   'TLM'：照车万女仆 1.5.3 自带的 GeckoLib 3 分支（JsonKeyFrameUtils、BoneKeyFrameProcessor、AnimationProcessor、AnimationController 反汇编），
 //          魔法酒狐的手抄版都按这个口径对过（作品/把回忆拼好给你/核对/基岩动画/对照.test.ts）。
-//   '通用'：Blockbench / 基岩版 / GeckoLib 4 的写法（step、bezier、缓动名、hold_on_last_frame 停在末帧、blend_weight 权重），没对着 jar 核过。
+//   '通用'：Blockbench / 基岩版 / GeckoLib 4 的写法（step、bezier、缓动名、hold_on_last_frame 停在末帧、blend_weight 权重）。
+//          缓动名照 GeckoLib 4.8.4 源码（插值.ts）；catmullrom 的控制点、lerp_mode step、pre/post 按基岩版写法，和 GeckoLib 4 不一样（docs/新生物.md）。
 // 输出的骨骼姿势同 engine/model/基岩模型.tsx 的 BonePose（度、像素，数值约定同动画文件），这里不 import 它，免得带上 three。
 import { lerp } from '../core/数学.ts';
 import { catmullRom, 缓动, 贝塞尔, 阶跃, type 插值方式 } from './插值.ts';
