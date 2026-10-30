@@ -8,7 +8,7 @@ import { 渲染参数 } from '../渲/设置.ts';
 import { 渲染标签 } from '../渲/渲.ts';
 import { 预计耗时 } from '../运行记录/记录.ts';
 import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
-import { 算段指纹, 指纹差异, 稳定JSON } from './指纹.ts';
+import { 算全部段指纹, 指纹差异, 稳定JSON } from './指纹.ts';
 
 export const 指纹命令: Record<string, 命令> = {
   stale: {
@@ -22,8 +22,9 @@ export const 指纹命令: Record<string, 命令> = {
       let 过期数 = 0;
       let 预计 = 0;
       let 没记录 = 0;
-      for (const s of 段们) {
-        const fp = await 算段指纹(s, 渲染参数(级别));
+      const 指纹们 = await 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 渲染参数(级别) })));
+      for (const [i, s] of 段们.entries()) {
+        const fp = 指纹们[i]!;
         const 有 = fs.existsSync(母版路径(s.键, fp.指纹));
         console.log(`${有 ? '✓' : '✗'} ${(s.编号 ?? '').padEnd(5)} ${s.键}  ${fp.指纹.slice(0, 16)}${有 ? '' : '  过期'}`);
         if (p.开关.has('--详细')) console.log(JSON.stringify(fp.项, null, 2).replace(/^/gm, '    '));
