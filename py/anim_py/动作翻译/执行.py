@@ -15,7 +15,7 @@ from typing import Any
 
 from .图 import _json值, 内建, 图
 from .库类 import 库模拟
-from .类文件 import ACC_ABSTRACT, ACC_ENUM, ACC_STATIC, 动态调用, 引用, 方法, 方法句柄, 类文件, 类路径
+from .类文件 import ACC_ABSTRACT, ACC_BRIDGE, ACC_ENUM, ACC_STATIC, 动态调用, 引用, 方法, 方法句柄, 类文件, 类路径
 
 部件类 = "net/minecraft/client/model/geom/ModelPart"
 实体类 = "net/minecraft/world/entity/Entity"
@@ -1609,9 +1609,9 @@ class 翻译器(库模拟):
         self.构造()
         ent = 不透明("entity", 实体类)
         态 = 堆态()
-        # 构造函数里改过的部件字段（少见）带进来
+        # 构造函数里改过的部件字段（少见）、建的对象（存部件的 ArrayList、Vector3f 这些，内容在堆里）带进来
         for k, v in getattr(self, "构造后堆", {}).items():
-            if k[0][0] == "部件":
+            if k[0][0] in ("部件", "对象"):
                 态.堆[k] = v
         方法们 = []
         if 带prepare:
@@ -1635,14 +1635,15 @@ class 翻译器(库模拟):
         return self.导出(态, 方法们)
 
     def 找渲染状态入口(self) -> tuple[类文件, 方法] | None:
-        """模型类（沿父类）里 setupAnim(X)V、X 是 EntityRenderState 子类的那个：编译器另生成的 setupAnim(Object) 桥方法不算"""
+        """模型类（沿父类）里 setupAnim(X)V、X 是 EntityRenderState 子类的那个。桥方法不算：除了 setupAnim(Object)，
+        子类收窄状态类型时（1.21.11 的 SkeletonModel 收 SkeletonRenderState、父类 HumanoidModel 收 HumanoidRenderState）桥方法的参数也是渲染状态"""
         名 = self.模型类
         while 名:
             c = self.类(名)
             if c is None:
                 return None
             for m in c.方法们:
-                if m.名 != "setupAnim" or m.访问 & ACC_ABSTRACT:
+                if m.名 != "setupAnim" or m.访问 & (ACC_ABSTRACT | ACC_BRIDGE):
                     continue
                 ps, r = 拆描述(m.描述)
                 if r == "V" and len(ps) == 1 and ps[0].startswith("L") and self.是子类(ps[0][1:-1], 渲染状态类):
