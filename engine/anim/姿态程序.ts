@@ -8,6 +8,7 @@ import { clamp } from '../core/数学.ts';
 import { restPose, toPartPoses, type MutablePose } from './关键帧动画.ts';
 
 export type 姿态节点 = [string, string, ...unknown[]];
+// 默认：枚举给常量名；long 超出 2^53 的写成十进制串（AnimationState.lastTime 的 Long.MAX_VALUE）
 export type 输入说明 = { 类型: 'i' | 'j' | 'f' | 'd'; 来源: string; 枚举?: string[]; 枚举类?: string; 默认?: number | string };
 export type 姿态程序 = {
   格式: '姿态程序/1';
@@ -20,7 +21,7 @@ export type 姿态程序 = {
   输出: Record<string, Record<string, number>>;
   警告: string[];
 };
-export type 姿态输入 = Record<string, number | boolean | string | undefined>;
+export type 姿态输入 = Record<string, number | bigint | boolean | string | undefined>;
 type 值 = number | boolean | bigint;
 
 const f32 = Math.fround;
@@ -57,6 +58,24 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
   'net/minecraft/util/Mth.floor(F)I': (x) => {
     const i = f2i(x);
     return x < f32(i) ? (i - 1) | 0 : i;
+  },
+  // ModelUtils.rotlerpRad(FFF)F（1.20.1，蜜蜂）：两个 while 把差归到 [-π, π)，循环次数看输入所以做成内建。
+  // 差大到加减 2π 不动了（或是无穷）时 JVM 永远不返回，这里给 NaN；和 py 的 图._rotlerp_rad 一致
+  'net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F': (a, b, t) => {
+    const PI = f32(Math.PI);
+    const TAU = f32(Math.PI * 2);
+    let d = f32(b - a);
+    for (let n = 0; d < -PI; n++) {
+      const e = f32(d + TAU);
+      if (e === d || n >= 1 << 24) return NaN;
+      d = e;
+    }
+    for (let n = 0; d >= PI; n++) {
+      const e = f32(d - TAU);
+      if (e === d || n >= 1 << 24) return NaN;
+      d = e;
+    }
+    return f32(a + f32(t * d));
   },
   'java/lang/Math.sin(D)D': Math.sin,
   'java/lang/Math.cos(D)D': Math.cos,
@@ -170,8 +189,10 @@ const 部件初始 = (根: EntityPart) => {
 const 初始字段: Record<string, ['offset' | 'rot', number]> = { x: ['offset', 0], y: ['offset', 1], z: ['offset', 2], xRot: ['rot', 0], yRot: ['rot', 1], zRot: ['rot', 2] };
 
 const 输入值 = (名: string, 说明: 输入说明, 给: 姿态输入): 值 => {
-  let v: number | boolean | string | undefined = 给[名];
+  let v: number | bigint | boolean | string | undefined = 给[名];
   if (v === undefined) v = 说明.默认 ?? 0;
+  if (说明.类型 === 'j' && !说明.枚举) return BigInt.asIntN(64, typeof v === 'bigint' || typeof v === 'string' ? BigInt(v) : BigInt(Math.trunc(Number(v))));
+  if (typeof v === 'bigint') v = Number(v);
   if (typeof v === 'string') {
     const i = 说明.枚举?.indexOf(v) ?? -1;
     if (i < 0) throw new Error(`输入 ${名} 的值 ${v} 不在枚举 ${说明.枚举?.join('/') ?? '（不是枚举）'} 里`);
@@ -183,6 +204,17 @@ const 输入值 = (名: string, 说明: 输入说明, 给: 姿态输入): 值 =>
   if (说明.类型 === 'i') return v | 0;
   return v;
 };
+
+/**
+ * 1.20.1 的 AnimationState（关键帧动画的播放状态，监守者吼叫、骆驼坐下这些）在姿态程序里是两个 long 输入：`<名>.lastTime`、`<名>.accumulatedTime`。
+ * 这里按「第 开始刻 刻 start()，之后每帧照常 updateTime、速度 1」给出它们：程序里那次 updateTime 一步补齐，和游戏逐帧累加的结果一样
+ * （每帧差值在 2^24 毫秒内 float 不丢位）。速度不是 1 的动画逐帧取整跟历史有关，对不上。不给开始刻 = 没开始（游戏里 stop() 的状态）。
+ * 名 照程序的输入名写，如 'entity.roarAnimationState'。
+ */
+export const 动画状态 = (名: string, 开始刻?: number): 姿态输入 =>
+  开始刻 === undefined
+    ? { [`${名}.lastTime`]: 9223372036854775807n, [`${名}.accumulatedTime`]: 0n }
+    : { [`${名}.lastTime`]: (BigInt(Math.trunc(开始刻)) * 1000n) / 20n, [`${名}.accumulatedTime`]: 0n };
 
 /** 编译一次、按帧求：返回 (输入) → 每个节点的值（测试和调试用；画面用 姿态求值器） */
 export const 节点求值器 = (程序: 姿态程序, 根: EntityPart) => {
