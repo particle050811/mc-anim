@@ -55,7 +55,7 @@ describe('Molang', () => {
 
   it('没给的名字得 0 并记下来', () => {
     const 未知 = new Set<string>();
-    expect(算('q.health / q.max_health + ysm.head_yaw', { 未知 })).toBeNaN(); // 0/0
+    expect(算('q.health / q.max_health + ysm.head_yaw', { 未知 })).toBe(0); // 除数是 0 得 0（mocha）
     expect([...未知].sort()).toEqual(['q.health', 'q.max_health', 'ysm.head_yaw']);
   });
 

@@ -6,6 +6,7 @@
 // 其他命名空间（ysm.has_helmet 这类模组自己的）、函数调用、三元和二元条件（a ? b 不成立时得 0）、多句（; 分隔，return）。
 // 不支持：loop、for_each、break、continue、数组、-> 箭头（遇到就报错，不静默算错）。
 // 名字不分大小写（Molang 规范），一律转小写；字符串字面量保留原样。
+// 数值：mocha 用 float 算（ExpressionEvaluatorImpl 反汇编），这里用 double，差在 1e-7 相对量级。
 
 export type Molang值 = number | string;
 
@@ -331,7 +332,7 @@ const 求 = (n: 节点, 环境: Molang环境, 临时: Record<string, Molang值>)
         case '+': return x + y;
         case '-': return x - y;
         case '*': return x * y;
-        case '/': return x / y;
+        case '/': return y === 0 ? 0 : x / y; // mocha：除数是 0 得 0（魔法酒狐第一帧 v.s 还没赋值就要除它）
         case '<': return x < y ? 1 : 0;
         case '<=': return x <= y ? 1 : 0;
         case '>': return x > y ? 1 : 0;
