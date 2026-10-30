@@ -159,6 +159,15 @@ def _mth_cos(x: float) -> float:
     return _SIN[_转整(f32(f32(x * f32(10430.378)) + 16384.0), -(2**31), 2**31 - 1) & 65535]
 
 
+def _mth_sin_d(x: float) -> float:
+    """1.21.x 的 Mth.sin(D)F：乘的是 double 常量、(long) 强转再 & 65535（1.20.1 是 float 乘、(int)）"""
+    return _SIN[_转整(x * 10430.378350470453, -(2**63), 2**63 - 1) & 65535]
+
+
+def _mth_cos_d(x: float) -> float:
+    return _SIN[_转整(x * 10430.378350470453 + 16384.0, -(2**63), 2**63 - 1) & 65535]
+
+
 def _jmin(a: float, b: float) -> float:
     if math.isnan(a) or math.isnan(b):
         return math.nan
@@ -196,6 +205,28 @@ def _wrap_deg_f(x: float) -> float:
     return f
 
 
+_PI_F = f32(math.pi)
+_TAU_F = f32(math.pi * 2)
+
+
+def _rotlerp_rad(a: float, b: float, t: float) -> float:
+    """ModelUtils.rotlerpRad(FFF)F（1.20.1）：d = b - a；while (d < -π) d += 2π；while (d >= π) d -= 2π；return a + t * d。
+    循环次数取决于输入，翻译器跑不了，所以做成内建。差太大（|d| 过 2^27，加减 2π 不动了）或是无穷时 JVM 永远不返回，这里给 NaN；
+    差是 NaN 时两个比较都不成立，照 JVM 直接返回 NaN。不设次数上限：还在动就单调逼近、一定会停（2^27 以内最多约 1810 万圈，照样算）"""
+    d = f32(b - a)
+    while d < -_PI_F:
+        e = f32(d + _TAU_F)
+        if e == d:
+            return math.nan
+        d = e
+    while d >= _PI_F:
+        e = f32(d - _TAU_F)
+        if e == d:
+            return math.nan
+        d = e
+    return f32(a + f32(t * d))
+
+
 def _jvm(f: Any) -> Any:
     """Python 的 math 遇到定义域外、溢出抛异常，JVM 给 NaN、无穷"""
 
@@ -211,6 +242,9 @@ def _jvm(f: Any) -> Any:
 
 
 def _pow(a: float, b: float) -> float:
+    # Java 的 Math.pow(±1, ±无穷 或 NaN) 是 NaN，C 的 pow 给 1
+    if abs(a) == 1 and not math.isfinite(b):
+        return math.nan
     try:
         return math.pow(a, b)
     except ValueError:
@@ -225,6 +259,8 @@ def _pow(a: float, b: float) -> float:
     # 类型, 实现（参数已是对应 JVM 类型的值）
     "net/minecraft/util/Mth.sin(F)F": ("f", _mth_sin),
     "net/minecraft/util/Mth.cos(F)F": ("f", _mth_cos),
+    "net/minecraft/util/Mth.sin(D)F": ("f", _mth_sin_d),
+    "net/minecraft/util/Mth.cos(D)F": ("f", _mth_cos_d),
     "net/minecraft/util/Mth.sqrt(F)F": ("f", lambda x: f32(math.sqrt(x)) if x >= 0 else math.nan),
     "net/minecraft/util/Mth.abs(F)F": ("f", lambda x: abs(x)),
     "net/minecraft/util/Mth.abs(I)I": ("i", lambda x: i32(abs(x))),
@@ -237,6 +273,9 @@ def _pow(a: float, b: float) -> float:
     "net/minecraft/util/Mth.wrapDegrees(F)F": ("f", _wrap_deg_f),
     "net/minecraft/util/Mth.square(F)F": ("f", lambda x: f32(x * x)),
     "net/minecraft/util/Mth.floor(F)I": ("i", _mth_floor_f),
+    "net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F": ("f", _rotlerp_rad),
+    # 1.21.x 挪进 Mth、参数次序改成 (t, 从, 到)，算法一样
+    "net/minecraft/util/Mth.rotLerpRad(FFF)F": ("f", lambda t, a, b: _rotlerp_rad(a, b, t)),
     "java/lang/Math.sin(D)D": ("d", _jvm(math.sin)),
     "java/lang/Math.cos(D)D": ("d", _jvm(math.cos)),
     "java/lang/Math.sqrt(D)D": ("d", lambda x: math.sqrt(x) if x >= 0 else math.nan),

@@ -286,11 +286,15 @@ def 内建样例(每个: int = 400) -> list[tuple[str, list[str]]]:
         x = r.choice(特殊) if r.random() < 0.25 else r.uniform(-1, 1) * 10 ** r.uniform(-3, 5)
         return f32(x) if t == "F" else x
 
+    def 取角(t: str):
+        # rotlerpRad 差太大、是无穷时 JVM 永远不返回，样例只取能返回的：几圈之内的角，外加正好落在 ±π 边上的
+        return f32(r.choice([0.0, -0.0, math.pi, -math.pi, 2 * math.pi]) if r.random() < 0.2 else r.uniform(-60, 60))
+
     out = []
     for 函数 in 内建:
         ps, _ = _参数类型(函数)
         for _ in range(每个):
-            out.append((函数, [_写值(t, 取(t)) for t in ps]))
+            out.append((函数, [_写值(t, 取角(t) if "rotlerprad" in 函数.lower() else 取(t)) for t in ps]))
     return out
 
 
@@ -321,3 +325,51 @@ def test_内建函数和JVM逐位相同(编译好: tuple[Path, Path]) -> None:
         data = {"说明": "py/tests/test_动作翻译.py 生成（ANIM_UPDATE_POSE_SAMPLE=1）：内建函数的参数和 JVM 结果（F、D 是十六进制位，I 是十进制）", "超越函数": sorted(超越函数), "样例": 留}
         p = 仓库 / "engine/anim/姿态程序.内建样例.json"
         p.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+
+
+def test_rotlerpRad差太大给NaN() -> None:
+    # JVM 里差大到加减 2π 不动（或是无穷）时两个 while 永远不出来；内建给 NaN，不卡住。差是 NaN 时 JVM 两个比较都不成立，直接返回 NaN
+    f = 内建["net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F"][1]
+    assert math.isnan(f(0.0, 1e10, 0.5)) and math.isnan(f(0.0, math.inf, 0.5)) and math.isnan(f(math.nan, 0.0, 0.5))
+    assert f(0.0, f32(7.0), 1.0) == f32(f32(7.0) - f32(math.pi * 2))
+    # 2^27 以内的大差 JVM 转一千多万圈后照样出来，不能当 NaN（真值是 JDK 17 跑的）；之上减 2π 舍回原值才卡住
+    assert 位(f(0.0, f32(1.2e8), 1.0)) == "c023e0fc"
+    assert math.isnan(f(0.0, f32(2.0**27 + 16), 1.0))
+
+
+def test_渲染状态入口跳过桥方法_构造里的集合(编译好: tuple[Path, Path]) -> None:
+    """1.21.2 起 setupAnim(渲染状态) 的入口（StateModel）：子类收窄状态类型时 javac 生成的桥方法 setupAnim(HumanState) 参数也是渲染状态，
+    要跳过它；构造里 ArrayList(Arrays.asList(…))、add、Arrays.setAll + lambda 存部件（库类.py）。真 jar 的对照缺 jar 就跳过，这里不靠游戏 jar"""
+    from anim_py.动作翻译.类文件 import ACC_BRIDGE
+
+    jar, jdk = 编译好
+    t = 翻译器(类路径([str(jar)], 恒等映射()), "sample.StateModel", 模型树=模型树)
+    prog = t.翻译()
+    入口 = t.找渲染状态入口()
+    assert 入口 is not None and 入口[1].描述 == "(Lsample/SubState;)V" and not 入口[1].访问 & ACC_BRIDGE
+    c = t.类("sample/StateModel")
+    assert c is not None and any(m.名 == "setupAnim" and m.描述 == "(Lsample/HumanState;)V" and m.访问 & ACC_BRIDGE for m in c.方法们)
+    assert prog["方法"] == ["sample/StateModel.setupAnim"]
+    assert set(prog["输入"]) == {"state.walk", "state.headPitch", "state.ageInTicks", "state.flag"}
+    assert {"head", "leg0", "leg1", "leg2", "left_arm", "right_arm"} == set(prog["输出"])
+    r = random.Random(5)
+    输入们 = [
+        {
+            "state.walk": f32(r.uniform(0, 500)),
+            "state.headPitch": f32(r.uniform(-90, 90)),
+            "state.ageInTicks": f32(r.uniform(0, 24000)),
+            "state.flag": int(r.random() < 0.5),
+        }
+        for _ in range(200)
+    ]
+    行 = [" ".join([位(x["state.walk"]), 位(x["state.headPitch"]), 位(x["state.ageInTicks"]), str(x["state.flag"])]) for x in 输入们]
+    r2 = subprocess.run([str(jdk / "java"), "-cp", str(jar), "sample.StateRun"], input="\n".join(行) + "\n", capture_output=True, text=True, check=True)
+    # 初始姿态和部件顺序同 Run（共用 Run.PARTS、Run.REST），借 Run 的第一行取
+    初始, _ = JVM跑(jar, jdk, 随机输入(1))
+    部件们 = list(初始)
+    for x, line in zip(输入们, r2.stdout.strip().split("\n"), strict=True):
+        v = line.split()
+        真 = {名: {**{f: v[j * 10 + k] for k, f in enumerate(字段)}, "visible": int(v[j * 10 + 9])} for j, 名 in enumerate(部件们)}
+        算 = 程序求值(prog, 初始, x)
+        for 名 in 真:
+            assert 算[名] == 真[名], f"{名}：翻译 {算[名]} ≠ JVM {真[名]}，输入 {x}"

@@ -2,6 +2,7 @@ package sample;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import net.minecraft.client.model.ModelUtils;
 import net.minecraft.util.Mth;
 
 /**
@@ -39,6 +40,9 @@ public final class Builtins {
         return switch (s[0]) {
             case "net/minecraft/util/Mth.sin(F)F" -> f(Mth.sin(F(s[1])));
             case "net/minecraft/util/Mth.cos(F)F" -> f(Mth.cos(F(s[1])));
+            case "net/minecraft/util/Mth.sin(D)F" -> f(Mth.sin(D(s[1])));
+            case "net/minecraft/util/Mth.rotLerpRad(FFF)F" -> f(Mth.rotLerpRad(F(s[1]), F(s[2]), F(s[3])));
+            case "net/minecraft/util/Mth.cos(D)F" -> f(Mth.cos(D(s[1])));
             case "net/minecraft/util/Mth.sqrt(F)F" -> f(Mth.sqrt(F(s[1])));
             case "net/minecraft/util/Mth.abs(F)F" -> f(Mth.abs(F(s[1])));
             case "net/minecraft/util/Mth.abs(I)I" -> i(Mth.abs(I(s[1])));
@@ -50,6 +54,7 @@ public final class Builtins {
             case "net/minecraft/util/Mth.wrapDegrees(F)F" -> f(Mth.wrapDegrees(F(s[1])));
             case "net/minecraft/util/Mth.square(F)F" -> f(Mth.square(F(s[1])));
             case "net/minecraft/util/Mth.floor(F)I" -> i(Mth.floor(F(s[1])));
+            case "net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F" -> f(ModelUtils.rotlerpRad(F(s[1]), F(s[2]), F(s[3])));
             case "java/lang/Math.sin(D)D" -> d(Math.sin(D(s[1])));
             case "java/lang/Math.cos(D)D" -> d(Math.cos(D(s[1])));
             case "java/lang/Math.sqrt(D)D" -> d(Math.sqrt(D(s[1])));

@@ -1,9 +1,10 @@
 """命令行：把一个生物模型类的 setupAnim（连同 prepareMobModel）翻成姿态程序 JSON。
 
   python -m anim_py.动作翻译 <输出.json> <模型类全名> --jar <jar>[,<jar>...] [--映射 proguard:<client.txt> | srg:<tsrg>[,<client.txt>]]
-      [--模型 <模型.json>:<名字>] [--固定 <输入名>=<值>]... [--不带prepare]
+      [--模型 <模型.json>:<名字> | --层 <方法名>] [--固定 <输入名>=<值>]... [--不带prepare]
 
-  --模型   导出实体模型.py 的输出，给了就按它的部件树核对 getChild、做子树复位
+  --模型   导出实体模型.py 的输出，给了就按它的部件树核对 getChild、做子树复位、按名字找部件（关键帧动画）
+  --层     不给 --模型 时，部件树从模型类的哪个无参层定义方法跑出来（默认取唯一的 static LayerDefinition xxx()）
   --固定   翻译时就定死的输入（部分求值），如 --固定 model.riding=0 --固定 model.rightArmPose=EMPTY；值是数或枚举常量名
 例（原版苦力怕，混淆客户端 + 官方映射）：
   python -m anim_py.动作翻译 苦力怕.动作.json net.minecraft.client.model.CreeperModel --jar client-1.20.1.jar --映射 proguard:client-1.20.1.txt
@@ -57,12 +58,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--jar", required=True)
     ap.add_argument("--映射")
     ap.add_argument("--模型")
+    ap.add_argument("--层")
     ap.add_argument("--固定", action="append", default=[])
     ap.add_argument("--不带prepare", action="store_true")
     a = ap.parse_args(argv)
     映射 = 读映射(a.映射)
     路径 = 类路径(a.jar.split(","), 映射)
-    t = 翻译器(路径, a.类, 解析固定(a.固定), 读模型树(a.模型) if a.模型 else None)
+    t = 翻译器(路径, a.类, 解析固定(a.固定), 读模型树(a.模型) if a.模型 else None, 层=a.层)
     try:
         prog = t.翻译(带prepare=not a.不带prepare)
     except 不支持 as e:

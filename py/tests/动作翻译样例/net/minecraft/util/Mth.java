@@ -1,6 +1,6 @@
 package net.minecraft.util;
 
-/** 测试桩：实现照 1.20.1 的 Mth（翻译器把这些当内建函数，这里给 JVM 跑出真值） */
+/** 测试桩：实现照 1.20.1 的 Mth（double 版的 sin、cos 和 rotLerpRad 照 1.21.11）；翻译器把这些当内建函数，这里给 JVM 跑出真值 */
 public class Mth {
     private static final float[] SIN = new float[65536];
 
@@ -14,6 +14,23 @@ public class Mth {
 
     public static float cos(float value) {
         return SIN[(int) (value * 10430.378F + 16384.0F) & '￿'];
+    }
+
+    // 1.21.x 的 double 版（1.20.1 没有）：照 1.21.11 字节码，d2l 再 & 65535L
+    public static float sin(double value) {
+        return SIN[(int) ((long) (value * 10430.378350470453D) & 65535L)];
+    }
+
+    public static float cos(double value) {
+        return SIN[(int) ((long) (value * 10430.378350470453D + 16384.0D) & 65535L)];
+    }
+
+    // 1.21.11 的 Mth.rotLerpRad：照字节码（fcmpg / fcmpl，float 的 π、2π）
+    public static float rotLerpRad(float t, float from, float to) {
+        float d = to - from;
+        while (d < -(float) Math.PI) d += (float) Math.PI * 2F;
+        while (d >= (float) Math.PI) d -= (float) Math.PI * 2F;
+        return from + t * d;
     }
 
     public static float sqrt(float value) {

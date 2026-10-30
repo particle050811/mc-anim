@@ -13,14 +13,27 @@ import struct
 from dataclasses import dataclass, field
 from typing import Any
 
-from .图 import 内建, 图
-from .类文件 import ACC_ABSTRACT, ACC_ENUM, ACC_STATIC, 动态调用, 引用, 方法, 方法句柄, 类文件, 类路径
+from .图 import _json值, 内建, 图
+from .库类 import 库模拟
+from .类文件 import ACC_ABSTRACT, ACC_BRIDGE, ACC_ENUM, ACC_STATIC, 动态调用, 引用, 方法, 方法句柄, 类文件, 类路径
 
 部件类 = "net/minecraft/client/model/geom/ModelPart"
 实体类 = "net/minecraft/world/entity/Entity"
+渲染状态类 = "net/minecraft/client/renderer/entity/state/EntityRenderState"
 姿态字段 = ("x", "y", "z", "xRot", "yRot", "zRot", "xScale", "yScale", "zScale", "visible", "skipDraw")
 setupAnim参数 = ("limbSwing", "limbSwingAmount", "ageInTicks", "netHeadYaw", "headPitch")
 prepare参数 = ("limbSwing", "limbSwingAmount", "partialTick")
+向量类 = ("org/joml/Vector3f", "org/joml/Vector3fc")
+# 从实体上取到的这些类的对象，方法照字节码跑：字段读成输入（默认值取无参构造跑完的值），写进去的本次求值里记着。
+# AnimationState：HierarchicalModel.animate 先 updateTime 再 ifStarted，累计时间写了马上又读
+照跑类默认 = ("net/minecraft/world/entity/AnimationState",)
+# 静态字段是这些类型的，具体跑所属类的 <clinit>（关键帧动画定义、插值方式、通道目标）；注册表对象（Items.BOW）这类照旧当不透明
+具体初始化类型默认 = (
+    "net/minecraft/client/animation/AnimationDefinition",
+    "net/minecraft/client/animation/AnimationChannel$Interpolation",
+    "net/minecraft/client/animation/AnimationChannel$Target",
+    "org/joml/Vector3f",
+)
 
 
 class 不支持(Exception):
@@ -156,7 +169,14 @@ class 方法码:
     类: 类文件
     方法: 方法
     指令: dict
-    汇合: dict
+    _汇合: dict | None = None
+
+    @property
+    def 汇合(self) -> dict:
+        # 用到符号分支才算：后必经是 n² 位运算，关键帧动画定义的 <clinit> 上万条指令、全是常量分支，算它要几分钟
+        if self._汇合 is None:
+            self._汇合 = 后必经(self.指令)
+        return self._汇合
 
 
 # ---------- 解码 ----------
@@ -320,8 +340,18 @@ def 后必经(指令: dict) -> dict:
     return out
 
 
-class 翻译器:
-    def __init__(self, 路径: 类路径, 模型类: str, 固定: dict[str, Any] | None = None, 模型树: dict[str, list[str]] | None = None, 步数上限: int = 3_000_000):
+class 翻译器(库模拟):
+    def __init__(
+        self,
+        路径: 类路径,
+        模型类: str,
+        固定: dict[str, Any] | None = None,
+        模型树: dict[str, list[str]] | None = None,
+        步数上限: int = 3_000_000,
+        照跑类: tuple[str, ...] = 照跑类默认,
+        具体初始化类型: tuple[str, ...] = 具体初始化类型默认,
+        层: str | None = None,
+    ):
         self.g = 图()
         self.路径 = 路径
         self.模型类 = 模型类.replace(".", "/")
@@ -345,6 +375,11 @@ class 翻译器:
         self._链: list[str] = []
         self.用到的类: set[str] = set()
         self._静态堆 = 堆态()
+        self.照跑类 = set(照跑类)
+        self.具体初始化类型 = set(具体初始化类型)
+        self._照跑默认: dict[str, dict[str, Any]] = {}
+        # 没给 模型树 又要按名字找部件时，从这个无参层定义方法跑出树（None = 模型类里唯一的那个）
+        self.层 = 层
 
     # ---------- 类和方法 ----------
     def 类(self, 名: str) -> 类文件 | None:
@@ -400,7 +435,7 @@ class 翻译器:
             if m.代码 is None:
                 raise 不支持(f"{c.名}.{m.名}{m.描述} 没有字节码（抽象或 native）")
             ins = 解码(m.代码)
-            self._码[k] = 方法码(c, m, ins, 后必经(ins))
+            self._码[k] = 方法码(c, m, ins)
         return self._码[k]
 
     # ---------- 值的工具 ----------
@@ -444,7 +479,38 @@ class 翻译器:
             return ("模型",)
         if isinstance(obj, 对象):
             return ("对象", obj.号)
+        if isinstance(obj, 不透明) and self.是照跑(obj):
+            return ("不透明", obj.路径, obj.类)
         raise 不支持(f"不能当对象读写字段：{obj!r}")
+
+    def 是照跑(self, obj: Any) -> bool:
+        return isinstance(obj, 不透明) and any(self.是子类(obj.类, c) for c in self.照跑类)
+
+    def 照跑默认(self, 类名: str) -> dict[str, Any]:
+        """照跑类的字段默认值：对一个新对象具体跑无参构造，常量字段记下来（AnimationState.lastTime = Long.MAX_VALUE，即没开始）"""
+        if 类名 not in self._照跑默认:
+            out: dict[str, Any] = {}
+            self._照跑默认[类名] = out
+            found = self.找方法(类名, "<init>", "()V")
+            if found is not None:
+                o = 对象(类名, self.新对象号())
+                try:
+                    _, 态 = self.跑(found[0], found[1], [o], 堆态())
+                    for (k, 字段), v in 态.堆.items():
+                        if k == ("对象", o.号) and isinstance(v, N) and self.g.是常量(v.id):
+                            out[字段] = self.g.常量值(v.id)
+                except 不支持 as e:
+                    self.警告.append(f"{类名} 的无参构造跑不了（{e}），字段默认按 0")
+        return self._照跑默认[类名]
+
+    def 字段描述(self, 类名: str | None, 字段: str) -> str | None:
+        c = self.类(类名) if 类名 else None
+        while c is not None:
+            f = c.找字段(字段)
+            if f is not None:
+                return f.描述
+            c = self.类(c.父类) if c.父类 else None
+        return None
 
     def 初值(self, k: tuple, 字段: str, 描述: str) -> Any:
         if k[0] == "部件":
@@ -463,6 +529,8 @@ class 翻译器:
             if 字段 in self.结构字段:
                 return self.结构字段[字段]
             return self.按描述输入(f"model.{字段}", 描述, "模型字段", 默认=self.字段默认.get(字段))
+        if k[0] == "不透明":
+            return self.按描述输入(f"{k[1]}.{字段}", 描述, "实体", 默认=self.照跑默认(k[2]).get(字段))
         t = 基本类型(描述)
         return self.常(t, 0) if t else None
 
@@ -479,9 +547,11 @@ class 翻译器:
             if 字段 in ("xScale", "yScale", "zScale"):
                 return self.常("f", 1.0)
             raise 不支持(f"PartPose.{字段}")
-        if isinstance(obj, 不透明):
+        if isinstance(obj, 不透明) and not self.是照跑(obj):
             return self.按描述输入(f"{obj.路径}.{字段}", 描述, "实体")
-        k = self.键(obj)
+        return self._堆读(态, self.键(obj), 字段, 描述)
+
+    def _堆读(self, 态: 堆态, k: tuple, 字段: str, 描述: str) -> Any:
         if (k, 字段) in 态.堆:
             return 态.堆[(k, 字段)]
         if k[0] == "对象" and (k, 字段) in self._静态堆.堆:
@@ -494,7 +564,7 @@ class 翻译器:
                 old = self.读字段(态, o, 字段, 描述)
                 self.写字段(态, o, 字段, self.合值(c, 值, old), 描述)
             return
-        if isinstance(obj, 不透明):
+        if isinstance(obj, 不透明) and not self.是照跑(obj):
             self.警告.append(f"写了实体字段 {obj.路径}.{字段}，忽略")
             return
         态.堆[(self.键(obj), 字段)] = 值
@@ -546,7 +616,8 @@ class 翻译器:
         nan = g.常("i", v.nan)
         return N(g.选(lt, g.常("i", -1), g.选(gt, g.常("i", 1), g.选(eq, g.常("i", 0), nan))), "i")
 
-    def 合帧(self, c: int, f1: 帧, f2: 帧) -> 帧:
+    def 合帧(self, c: int, f1: 帧, f2: 帧, 起号: int | None = None) -> 帧:
+        """起号：分叉前的对象号。分叉后才建的对象只有建它的那边有，它的字段照那边取（另一边引用不到它）"""
         if f1.态.死:
             return f2
         if f2.态.死:
@@ -569,8 +640,13 @@ class 翻译器:
             desc = "F" if 字段 not in ("visible", "skipDraw") else "Z"
             if obj[0] == "模型" and 字段 not in self.结构字段:
                 desc = self._模型字段描述(字段)
-            a = f1.态.堆[k] if k in f1.态.堆 else self.初值(obj, 字段, desc)
-            b = f2.态.堆[k] if k in f2.态.堆 else self.初值(obj, 字段, desc)
+            if obj[0] == "不透明":
+                desc = self.字段描述(obj[2], 字段) or desc
+            if obj[0] == "对象" and 起号 is not None and obj[1] > 起号 and (k not in f1.态.堆 or k not in f2.态.堆):
+                态.堆[k] = f1.态.堆[k] if k in f1.态.堆 else f2.态.堆[k]
+                continue
+            a = f1.态.堆[k] if k in f1.态.堆 else self._堆读(f1.态, obj, 字段, desc)
+            b = f2.态.堆[k] if k in f2.态.堆 else self._堆读(f2.态, obj, 字段, desc)
             if obj[0] == "部件" and (k not in f1.态.堆 and not f1.态.复位 or k not in f2.态.堆 and not f2.态.复位):
                 w = f"部件 {obj[1]}.{字段} 只在部分分支里写：没写的那支游戏里沿用上一帧的值，这里按初始姿态算"
                 if w not in self.警告:
@@ -671,6 +747,7 @@ class 翻译器:
                 if key in self._分叉中:
                     raise 不支持(f"条件是符号的循环（{mc.类.名}.{mc.方法.名} pc={pc}）")
                 self._分叉中.add(key)
+                起号 = self._对象号
                 try:
                     结果: list[tuple[int, 帧]] = []
                     其余 = g.真()
@@ -688,7 +765,7 @@ class 翻译器:
                     self._分叉中.discard(key)
                 合 = 结果[-1][1]
                 for c2, f2 in reversed(结果[:-1]):
-                    合 = self.合帧(c2, f2, 合)
+                    合 = self.合帧(c2, f2, 合, 起号)
                 fr = 合
                 if j == _出口 or fr.已返回:
                     if j != _出口:
@@ -1017,7 +1094,28 @@ class 翻译器:
         if a.元素 and all(isinstance(e, N) and g.是常量(e.id) for e in a.元素):
             t = a.元素[0].t
             return N(g.查表(t, [g.常量值(e.id) for e in a.元素], i.id), t)
-        raise 不支持("符号下标读引用数组")
+        if not a.元素:
+            raise 不支持("符号下标读空数组")
+        # 符号下标：数合成 sel 链，引用合成条件引用（关键帧数组 kfs[i]，同一个对象的几格并成一支）。越界在 JVM 是异常，这里按最后一格算
+        if all(isinstance(e, N) for e in a.元素) and len({e.t for e in a.元素}) == 1:
+            r = a.元素[-1]
+            for k in range(len(a.元素) - 2, -1, -1):
+                r = N(g.选(g.比("==", i.id, g.常("i", k)), a.元素[k].id, r.id), r.t)
+            return r
+        if any(isinstance(e, (N, 条件引用)) for e in a.元素):
+            raise 不支持("符号下标读到数和引用混着的数组")
+        组: list[list] = []
+        for k, e in enumerate(a.元素):
+            c = g.比("==", i.id, g.常("i", k))
+            for x in 组:
+                if x[1] is e or (not isinstance(e, (对象, 数组)) and x[1] == e):
+                    x[0] = g.或(x[0], c)
+                    break
+            else:
+                组.append([c, e])
+        if len(组) == 1:
+            return 组[0][1]
+        return 条件引用(tuple((c, e) for c, e in 组))
 
     def 是实例(self, v: Any, cls: str) -> Any:
         if v is None:
@@ -1073,6 +1171,8 @@ class 翻译器:
         """只为枚举、数值和数组（SwitchMap 这类表）、模型自己类层级的静态字段跑 <clinit>；
         Items.BOW、Blocks.X 这类注册表对象当不透明，不然要具体跑整个注册表（SkeletonModel 卡几分钟）"""
         if self.是枚举(c.名) or 基本类型(ref.描述) or ref.描述.startswith("["):
+            return True
+        if ref.描述.startswith("L") and ref.描述[1:-1] in self.具体初始化类型:
             return True
         return self.是子类(self.模型类, c.名)
 
@@ -1150,6 +1250,11 @@ class 翻译器:
                 ids = [self.数(a).id for a in args]
                 t = 内建[sig][0]
                 return N(g.调(sig, ids), t), 态
+            ok, rv, 态 = self.库静态(态, ref.类, ref.名, ref.描述, args)
+            if ok:
+                return rv, 态
+            if sig == "net/minecraft/util/Mth.binarySearch(IILjava/util/function/IntPredicate;)I":
+                return self.二分查找(态, args), 态
             if ref.名 == "values" and self.是枚举(ref.类) and ref.描述 == f"()[L{ref.类};":
                 return 数组([self.常("i", i) for i in range(len(self.枚举常量(ref.类)))], "i"), 态
             if ret != "V" and any(isinstance(a, 不透明) for a in args) and not any(isinstance(a, (部件, 条件引用, 模型实例)) for a in args):
@@ -1159,8 +1264,11 @@ class 翻译器:
             if found is None:
                 raise 不支持(f"不认识的静态方法 {sig}")
             return self.跑(found[0], found[1], args, 态)
+        if ref.类 in 向量类 and self._是向量(recv):
+            return self.向量方法(态, ref, recv, args)
         if isinstance(recv, 条件引用):
             结果 = []
+            起号 = self._对象号
             for ci, vi in recv.分支:
                 s2 = 态.复制()
                 if not g.是常量(ci):
@@ -1169,25 +1277,36 @@ class 翻译器:
                 结果.append((ci, 帧([], [], s2, r, True)))
             合 = 结果[-1][1]
             for ci, f2 in reversed(结果[:-1]):
-                合 = self.合帧(ci, f2, 合)
+                合 = self.合帧(ci, f2, 合, 起号)
             return 合.返回, 合.态
         # 构造函数
         if ref.名 == "<init>":
-            if ref.类 in ("java/lang/Object", "java/lang/Enum"):
+            if ref.类 in ("java/lang/Object", "java/lang/Enum", "java/lang/Record"):
                 return None, 态
-            if ref.类 == "org/joml/Vector3f" and isinstance(recv, 对象):
-                if ref.描述 == "(FFF)V":
-                    for f, a in zip("xyz", args):
-                        self.写字段(态, recv, f, a, "F")
-                    return None, 态
-                if ref.描述 == "()V":
-                    return None, 态
+            if self.库构造(态, ref.类, ref.描述, recv, args):
+                return None, 态
             found = self.找方法(ref.类, "<init>", ref.描述)
             if found is None:
                 if isinstance(recv, 模型实例):
                     return None, 态  # 父类构造在 jar 外（不影响部件字段）
                 raise 不支持(f"不认识的构造 {sig}")
             return self.跑(found[0], found[1], [recv, *args], 态)
+        if isinstance(recv, 闭包):
+            found = self.找方法(ref.类, ref.名, ref.描述)  # 函数式接口的默认方法（andThen 这类）照字节码跑
+            if found is not None:
+                return self.跑(found[0], found[1], [recv, *args], 态)
+            return self.调闭包(态, recv, args)
+        if self.是库对象(recv):
+            return self.库方法(态, ref.名, ref.描述, recv, args)
+        if isinstance(recv, str):
+            if ref.名 == "equals" and ref.描述 == "(Ljava/lang/Object;)Z":
+                return self.常("i", int(isinstance(args[0], str) and args[0] == recv)), 态
+            if ref.名 == "hashCode" and ref.描述 == "()I":
+                from .库类 import java_hash
+
+                h = java_hash(recv)
+                return self.常("i", h - (1 << 32) if h & 0x80000000 else h), 态
+            raise 不支持(f"字符串方法 {sig}")
         # 枚举（按序号）上的方法：对每个常量具体跑，查表
         if isinstance(recv, N):
             if ref.名 == "ordinal" and ref.描述 == "()I":
@@ -1219,6 +1338,11 @@ class 翻译器:
                     r = N(g.选(g.比("==", recv.id, g.常("i", k)), vals[k].id, r.id), r.t)
                 return r, 态
             raise 不支持(f"符号枚举上 {sig} 返回引用")
+        if self.是照跑(recv):
+            found = self.找方法(ref.类 if kind == "special" else recv.类 or ref.类, ref.名, ref.描述)
+            if found is None:
+                raise 不支持(f"照跑类上找不到方法 {sig}")
+            return self.跑(found[0], found[1], [recv, *args], 态)
         if isinstance(recv, 不透明):
             if ref.名 in ("equals",) and ret == "Z":
                 return self.常("i", int(len(args) == 1 and args[0] == recv)), 态
@@ -1235,12 +1359,15 @@ class 翻译器:
                 if h.类 == 部件类 and h.名 == "resetPose":
                     return None, self.全部复位(态, recv.根)
             raise 不支持(f"部件流上的 {sig}")
-        if isinstance(recv, 对象) and recv.类 == "org/joml/Vector3f":
-            if ref.名 in ("x", "y", "z") and ref.描述 == "()F":
-                return self.读字段(态, recv, ref.名, "F"), 态
-            raise 不支持(f"Vector3f.{ref.名}{ref.描述}")
-        if isinstance(recv, str):
-            raise 不支持(f"字符串方法 {sig}")
+        if isinstance(recv, 模型实例) and ref.名 == "resetPose" and ref.描述 == "()V":
+            # 1.21.2 起 EntityModel.setupAnim 先 Model.resetPose()：对造模型时 root.getAllParts() 存下的表逐个 resetPose，等于整棵复位
+            found = self.找方法(self.模型类, ref.名, ref.描述)
+            if found is not None and found[0].名 == "net/minecraft/client/model/Model":
+                return None, self.全部复位(态, self.根部件)
+        if isinstance(recv, 模型实例) and ref.名 == "getAnyDescendantWithName" and ref.描述 == "(Ljava/lang/String;)Ljava/util/Optional;":
+            found = self.找方法(self.模型类, ref.名, ref.描述)
+            if found is not None and found[0].名 == "net/minecraft/client/model/HierarchicalModel":
+                return self.按名找部件(态, args[0])
         if isinstance(recv, (模型实例, 对象)):
             cls = self.模型类 if isinstance(recv, 模型实例) else recv.类
             start = ref.类 if kind == "special" else cls
@@ -1249,6 +1376,117 @@ class 翻译器:
                 raise 不支持(f"找不到方法 {sig}（{cls}）")
             return self.跑(found[0], found[1], [recv, *args], 态)
         raise 不支持(f"在 {recv!r} 上调用 {sig}")
+
+    def 调闭包(self, 态: 堆态, f: Any, args: list) -> tuple[Any, 堆态]:
+        """调用 lambda、方法引用（invokedynamic 造的 闭包）：捕获的值在前，调用的实参在后，按句柄种类派发"""
+        if not isinstance(f, 闭包):
+            raise 不支持(f"当函数调用的不是 lambda：{f!r}")
+        h, 全 = f.句柄, [*f.捕获, *args]
+        t = h.目标
+        if h.种类 == 6:  # REF_invokeStatic
+            return self.派发(态, "static", t, None, 全)
+        if h.种类 in (5, 7, 9):  # REF_invokeVirtual、invokeSpecial、invokeInterface
+            return self.派发(态, {5: "virtual", 7: "special", 9: "interface"}[h.种类], t, 全[0], 全[1:])
+        if h.种类 == 8:  # REF_newInvokeSpecial：构造器引用
+            o = 对象(t.类, self.新对象号())
+            _, 态 = self.派发(态, "special", t, o, 全)
+            return o, 态
+        raise 不支持(f"方法句柄种类 {h.种类}")
+
+    def 二分查找(self, 态: 堆态, args: list) -> N:
+        """Mth.binarySearch(lo, hi, 谓词)：循环次数看谓词，谓词是符号的就把整棵判定树展开（每个 mid 判一次，共 hi - lo 个节点），
+        和 JVM 一样不假定谓词单调。关键帧动画拿它找当前时刻落在哪两帧之间"""
+        g = self.g
+        lo, hi, p = self.数(args[0]), self.数(args[1]), args[2]
+        if not (g.是常量(lo.id) and g.是常量(hi.id)):
+            raise 不支持("binarySearch 的范围是符号")
+
+        def 搜(lo: int, n: int) -> N:
+            if n <= 0:
+                return self.常("i", lo)
+            half = n // 2
+            mid = lo + half
+            r, 态2 = self.调闭包(态, p, [self.常("i", mid)])
+            if 态2.堆 != 态.堆:
+                raise 不支持("binarySearch 的谓词改了状态")
+            c = self.条件("!=", r)
+            a, b = 搜(lo, half), 搜(mid + 1, n - half - 1)
+            return N(g.选(c, a.id, b.id), "i")
+
+        return 搜(g.常量值(lo.id), g.常量值(hi.id) - g.常量值(lo.id))
+
+    def 按名找部件(self, 态: 堆态, 名: Any) -> tuple[Any, 堆态]:
+        """HierarchicalModel.getAnyDescendantWithName：根叫 root；其余在部件树里找（模型里没有的名字给空 Optional，游戏里同样跳过）"""
+        from .库类 import 可选
+
+        if not isinstance(名, str):
+            raise 不支持("按名字找部件，名字不是常量")
+        if 名 == "root":
+            found = self.找方法(self.模型类, "root", f"()L{部件类};")
+            if found is None:
+                raise 不支持("模型没有 root()")
+            p, 态 = self.跑(found[0], found[1], [self.模型], 态)
+            return self.新库对象(态, 可选, (True, p)), 态
+        if self.模型树 is None:
+            from .部件树 import 从层定义取树
+
+            try:
+                self.模型树 = 从层定义取树(self, self.层)
+            except 不支持 as e:
+                raise 不支持(f"按名字找部件 {名}（HierarchicalModel.getAnyDescendantWithName，关键帧动画用）要知道部件树：{e}") from e
+        有 = any(名 in cs for cs in self.模型树.values())
+        return self.新库对象(态, 可选, (有, 部件(名) if 有 else None)), 态
+
+    def _是向量(self, v: Any) -> bool:
+        if isinstance(v, 条件引用):
+            return all(self._是向量(o) for _, o in v.分支)
+        return isinstance(v, 对象) and v.类 == 向量类[0]
+
+    def 向量方法(self, 态: 堆态, ref: 引用, v: Any, args: list) -> tuple[Any, 堆态]:
+        """org.joml.Vector3f 照 JOML 1.10.5（1.20.1 带的）的语义算，不跑它的字节码（不在游戏 jar 里）。
+        lerp 里的 Math.fma 在没开 joml.useMathFma（默认）时是 a * b + c，两次舍入"""
+        名, d = ref.名, ref.描述
+        读 = lambda o, f: self.数(self.读字段(态, o, f, "F"))  # noqa: E731
+        写 = lambda o, f, x: self.写字段(态, o, f, x, "F")  # noqa: E731
+        if 名 == "<init>":
+            if d == "(FFF)V":
+                for f, a in zip("xyz", args):
+                    写(v, f, a)
+                return None, 态
+            if d in ("()V", "(F)V"):
+                for f in "xyz":
+                    写(v, f, args[0] if args else self.常("f", 0.0))
+                return None, 态
+            if d == "(Lorg/joml/Vector3fc;)V":
+                for f in "xyz":
+                    写(v, f, 读(args[0], f))
+                return None, 态
+        if 名 in ("x", "y", "z") and d == "()F":
+            return 读(v, 名), 态
+        if 名 == "set" and d == "(FFF)Lorg/joml/Vector3f;":
+            for f, a in zip("xyz", args):
+                写(v, f, a)
+            return v, 态
+        if 名 == "set" and d == "(Lorg/joml/Vector3fc;)Lorg/joml/Vector3f;":
+            for f in "xyz":
+                写(v, f, 读(args[0], f))
+            return v, 态
+        if 名 == "lerp" and d in ("(Lorg/joml/Vector3fc;FLorg/joml/Vector3f;)Lorg/joml/Vector3f;", "(Lorg/joml/Vector3fc;F)Lorg/joml/Vector3f;"):
+            other, t = args[0], args[1]
+            dest = args[2] if len(args) > 2 else v
+            for f in "xyz":
+                a = 读(v, f)
+                写(dest, f, self.算("+", "f", self.算("*", "f", self.算("-", "f", 读(other, f), a), t), a))
+            return dest, 态
+        if 名 == "mul" and d == "(F)Lorg/joml/Vector3f;":
+            for f in "xyz":
+                写(v, f, self.算("*", "f", 读(v, f), args[0]))
+            return v, 态
+        if 名 in ("mul", "add") and d == "(FFF)Lorg/joml/Vector3f;":
+            for f, a in zip("xyz", args):
+                写(v, f, self.算("*" if 名 == "mul" else "+", "f", 读(v, f), a))
+            return v, 态
+        raise 不支持(f"Vector3f.{名}{d}")
 
     def 参数名(self, a: Any) -> str:
         if isinstance(a, 不透明):
@@ -1371,9 +1609,9 @@ class 翻译器:
         self.构造()
         ent = 不透明("entity", 实体类)
         态 = 堆态()
-        # 构造函数里改过的部件字段（少见）带进来
+        # 构造函数里改过的部件字段（少见）、建的对象（存部件的 ArrayList、Vector3f 这些，内容在堆里）带进来
         for k, v in getattr(self, "构造后堆", {}).items():
-            if k[0][0] == "部件":
+            if k[0][0] in ("部件", "对象"):
                 态.堆[k] = v
         方法们 = []
         if 带prepare:
@@ -1383,12 +1621,35 @@ class 翻译器:
                 _, 态 = self.跑(found[0], found[1], args, 态)
                 方法们.append(f"{found[0].名}.prepareMobModel")
         found = self.找方法(self.模型类, "setupAnim", f"(L{实体类};FFFFF)V")
-        if found is None:
-            raise 不支持(f"{self.模型类} 找不到 setupAnim")
-        args = [self.模型, ent] + [self.输入(n, "f", "参数") for n in setupAnim参数]
+        if found is not None:
+            args = [self.模型, ent] + [self.输入(n, "f", "参数") for n in setupAnim参数]
+        else:
+            # 1.21.2 起 setupAnim(渲染状态)：状态是不透明对象，读它的字段、调它的方法都成输入（state.walkAnimationPos 这样）
+            found = self.找渲染状态入口()
+            if found is None:
+                raise 不支持(f"{self.模型类} 找不到 setupAnim（老签名 实体 + 5 个 float，或 1.21.2 起收 EntityRenderState 子类的）")
+            状态类 = 拆描述(found[1].描述)[0][0][1:-1]
+            args = [self.模型, 不透明("state", 状态类)]
         _, 态 = self.跑(found[0], found[1], args, 态)
         方法们.append(f"{found[0].名}.setupAnim")
         return self.导出(态, 方法们)
+
+    def 找渲染状态入口(self) -> tuple[类文件, 方法] | None:
+        """模型类（沿父类）里 setupAnim(X)V、X 是 EntityRenderState 子类的那个。桥方法不算：除了 setupAnim(Object)，
+        子类收窄状态类型时（1.21.11 的 SkeletonModel 收 SkeletonRenderState、父类 HumanoidModel 收 HumanoidRenderState）桥方法的参数也是渲染状态"""
+        名 = self.模型类
+        while 名:
+            c = self.类(名)
+            if c is None:
+                return None
+            for m in c.方法们:
+                if m.名 != "setupAnim" or m.访问 & (ACC_ABSTRACT | ACC_BRIDGE):
+                    continue
+                ps, r = 拆描述(m.描述)
+                if r == "V" and len(ps) == 1 and ps[0].startswith("L") and self.是子类(ps[0][1:-1], 渲染状态类):
+                    return c, m
+            名 = c.父类 or ""
+        return None
 
     def 导出(self, 态: 堆态, 方法们: list[str]) -> dict:
         outs: dict[str, dict[str, int]] = {}
@@ -1403,7 +1664,8 @@ class 翻译器:
         nodes, 新号 = self.g.导出(roots)
         输出 = {p: {f: 新号[i] for f, i in fs.items()} for p, fs in outs.items()}
         用到 = {e[2] for e in nodes if e[0] == "in"}
-        输入 = {k: v for k, v in self.输入表.items() if k in 用到}
+        # 默认值过一遍 JSON 规矩：AnimationState.lastTime 的 Long.MAX_VALUE 这类超出 2^53 的写成串
+        输入 = {k: ({**v, "默认": _json值(v["默认"])} if "默认" in v else v) for k, v in self.输入表.items() if k in 用到}
         return {
             "格式": "姿态程序/1",
             "模型类": self.模型类.replace("/", "."),

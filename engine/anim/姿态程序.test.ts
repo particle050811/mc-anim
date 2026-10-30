@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { EntityPart } from '../model/实体模型.tsx';
-import { 内建函数, 求部件姿态, 姿态求值器, 节点求值器, type 姿态程序 } from './姿态程序.ts';
+import { 内建函数, 动画状态, 求部件姿态, 姿态求值器, 节点求值器, type 姿态程序 } from './姿态程序.ts';
 
 const 位转浮 = (h: string) => {
   const dv = new DataView(new ArrayBuffer(4));
@@ -116,5 +116,25 @@ describe('姿态程序求值器', () => {
   it('程序要的内建函数、部件不在时编译就报错', () => {
     expect(() => 节点求值器(程序([['call', 'f', 'x/Y.z(F)F']], {}), 根)).toThrow(/没实现的内建函数/);
     expect(() => 节点求值器(程序([['rest', 'f', 'b', 'x']], {}), 根)).toThrow(/模型里没有/);
+  });
+
+  it('long 输入收 bigint、十进制串（Long.MAX_VALUE 默认值）；动画状态 给出没开始 / 第几刻开始', () => {
+    const p = 程序([['in', 'j', 's.lastTime'], ['in', 'j', 's.accumulatedTime'], ['c', 'j', 1], ['+', 'j', 0, 2]], {}, { 's.lastTime': { 类型: 'j', 来源: '实体', 默认: '9223372036854775807' }, 's.accumulatedTime': { 类型: 'j', 来源: '实体' } });
+    const 求 = 节点求值器(p, 根);
+    expect(求({}).slice(0, 2)).toEqual([9223372036854775807n, 0n]);
+    expect(求({}).at(-1)).toBe(-9223372036854775808n);
+    expect(求(动画状态('s', 30)).slice(0, 2)).toEqual([1500n, 0n]);
+    expect(求(动画状态('s')).slice(0, 2)).toEqual([9223372036854775807n, 0n]);
+    expect(求({ 's.lastTime': '123' })[0]).toBe(123n);
+  });
+
+  it('rotlerpRad：差归到 [-π, π)；差大到加减 2π 不动（JVM 里死循环）给 NaN', () => {
+    const f = 内建函数['net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F'];
+    expect(f(0, 7, 1)).toBe(Math.fround(Math.fround(7) - Math.fround(Math.PI * 2)));
+    expect(f(0, 1e10, 0.5)).toBeNaN();
+    expect(f(0, Infinity, 0.5)).toBeNaN();
+    // 2^27 以内的大差 JVM 转一千多万圈后照样出来（不是死循环），不能当 NaN；2^27 之上（ulp 16，减 2π 舍回原值）才卡住
+    expect(f(0, 1.2e8, 1)).toBe(Math.fround(-2.5606069564819336));
+    expect(f(0, 2 ** 27 + 16, 1)).toBeNaN();
   });
 });
