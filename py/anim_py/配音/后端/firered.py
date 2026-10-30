@@ -13,6 +13,7 @@ import urllib.request
 import uuid
 from pathlib import Path
 
+from ...网络 import 打开
 from . import 合成结果, 合成请求, 后端, 语言名
 
 _跑本机 = Path(__file__).with_name('_firered本机.py')
@@ -79,13 +80,13 @@ class FireRed魔搭(后端):
         body = (f'--{boundary}\r\nContent-Disposition: form-data; name="files"; filename="{os.path.basename(路径).encode().hex()}.wav"\r\n'
                 'Content-Type: audio/wav\r\n\r\n').encode() + Path(路径).read_bytes() + f'\r\n--{boundary}--\r\n'.encode()
         r = urllib.request.Request(self.配置['接口'] + '/upload', body, {**self._头(), 'Content-Type': f'multipart/form-data; boundary={boundary}'})
-        return json.load(urllib.request.urlopen(r, timeout=120))[0]
+        return json.load(打开(r, timeout=120))[0]
 
     def _调(self, data: list, 输出: str) -> tuple[bool, str]:
         api = self.配置['接口']
         r = urllib.request.Request(api + '/call/voice_clone', json.dumps({'data': data}).encode(), {**self._头(), 'Content-Type': 'application/json'})
-        eid = json.load(urllib.request.urlopen(r, timeout=60))['event_id']
-        s = urllib.request.urlopen(urllib.request.Request(api + f'/call/voice_clone/{eid}', headers=self._头()), timeout=900).read().decode()
+        eid = json.load(打开(r, timeout=60))['event_id']
+        s = 打开(urllib.request.Request(api + f'/call/voice_clone/{eid}', headers=self._头()), timeout=900).read().decode()
         ev = None
         for line in s.splitlines():
             if line.startswith('event:'):
@@ -93,7 +94,7 @@ class FireRed魔搭(后端):
             elif line.startswith('data:') and ev == 'complete':
                 f = json.loads(line[5:])[0]
                 url = api + '/file=' + f['path']  # 返回的 url 指向要登录的 ms.show，改从 API 域名取
-                Path(输出).write_bytes(urllib.request.urlopen(urllib.request.Request(url, headers=self._头()), timeout=120).read())
+                Path(输出).write_bytes(打开(urllib.request.Request(url, headers=self._头()), timeout=120).read())
                 return True, ''
             elif line.startswith('data:') and ev == 'error':
                 return False, f'魔搭报错 {line[:300]}'
