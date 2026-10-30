@@ -3,6 +3,7 @@
 // MC 的量照 1.20.1 client（srg jar 里 javap 对过）：DimensionType.timeOfDay、moonPhase，ClientLevel.getSkyDarken、getStarBrightness、getSkyColor，
 //   DimensionSpecialEffects.getSunriseColor；日月星的透明度 = 1 − 雨（LevelRenderer.renderSky）。Mth.cos 是查表近似，这里用 Math.cos，差在 1e-4 以内。
 // 场景坐标：x 东、y 北、z 上（同 engine/light/ 各模块）。原版太阳绕南北轴转：东升、正午在头顶、西落。
+import { clamp01, smoothstep } from '../core/数学.ts';
 import type { 维度信息 } from './维度.ts';
 
 export type V3 = [number, number, number];
@@ -74,12 +75,7 @@ export const 一天 = 24000;
 /** 游戏每秒 20 刻 */
 export const 每秒刻数 = 20;
 const 双π = Math.PI * 2;
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const frac = (x: number) => x - Math.floor(x);
-const smoothstep = (a: number, b: number, x: number) => {
-  const t = clamp01((x - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
 
 /** DimensionType.timeOfDay：游戏时间 → 天角（0～1；0 = 太阳在头顶，0.25 = 西边地平线，0.75 = 东边地平线）。日出日落比匀速快一点（余弦修正） */
 export const 天角 = (时刻: number) => {
