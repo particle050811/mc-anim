@@ -4,10 +4,11 @@
 // 模型拆成主体、发光两份，各画一个 BedrockModelView、共用一张姿势表，提交后把里面的 mesh 换成对应材质。
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import type * as THREE from 'three';
-import { 取样动画, 混合层, type 口径, type 基岩动画, type 混合模式, type 骨骼表 } from '../anim/基岩动画.ts';
+import { 动画权重, 取样动画, 混合层, 默认口径, type 口径, type 基岩动画, type 混合模式, type 骨骼表 } from '../anim/基岩动画.ts';
 import type { Molang环境 } from '../anim/Molang.ts';
 import { type BedrockBone, type BedrockModel, BedrockModelView, type BonePose } from './基岩模型.tsx';
 import { 实体材质, type 实体光照 } from './实体材质.ts';
+import { entityTexture } from './贴图方盒.tsx';
 
 export const 默认发光骨骼 = (名: string) => 名.startsWith('ysmGlow');
 
@@ -45,16 +46,25 @@ export type 动画设定 = {
   口径?: 口径;
 };
 
-/** 按控制器顺序取样各层、混合成一张骨骼表；文件里没有的动画名直接报错（拼写错不静默） */
-export const 动画姿势 = (动画: 动画设定, 秒: number): 骨骼表 =>
-  混合层(
+/**
+ * 按控制器顺序取样各层、混合成一张骨骼表；文件里没有的动画名直接报错（拼写错不静默）。
+ * 环境：q.life_time 不给时按 秒 算；没给变量表时这一帧用一张新表（各层的 v.x = … 照顺序写进去、后面的层读得到，不跨帧）。
+ * '通用' 口径下层的权重再乘动画文件的 blend_weight（TLM 不读它）
+ */
+export const 动画姿势 = (动画: 动画设定, 秒: number): 骨骼表 => {
+  const 口 = 动画.口径 ?? 默认口径;
+  const 原 = 动画.环境 ?? {};
+  const 环境 = { ...原, 查询: { life_time: 秒, ...原.查询 }, 变量: 原.变量 ?? {} };
+  return 混合层(
     动画.层们.map((层) => {
       const a = 动画.文件[层.名];
       if (!a) throw new Error(`基岩实体：动画文件里没有 ${层.名}`);
-      return { 骨骼: 取样动画(a, 层.秒 ?? 秒, { 环境: 动画.环境, 口径: 动画.口径 }).骨骼, 模式: 层.模式, 权重: 层.权重 };
+      const 权重 = 口 === '通用' && a.混合权重 !== undefined ? (层.权重 ?? 1) * 动画权重(a, 环境) : 层.权重;
+      return { 骨骼: 取样动画(a, 层.秒 ?? 秒, { 环境, 口径: 口 }).骨骼, 模式: 层.模式, 权重 };
     }),
-    动画.口径,
+    口,
   );
+};
 
 export type 基岩实体属性 = {
   模型: BedrockModel;
@@ -74,16 +84,26 @@ export type 基岩实体属性 = {
   挂载?: Record<string, React.ReactNode>;
 };
 
-// 套住一份模型：每次提交后把里面的 mesh 换成要的材质（显隐一变会挂上新 mesh，所以不写依赖、每次都跑；结果一样）
-const 换材质: React.FC<{ 取: (原: THREE.Material) => THREE.Material; children: React.ReactNode }> = ({ 取, children }) => {
+/**
+ * 把 根 下面这份模型自己的 mesh（原材质的贴图是 贴图 的）换成 取 给的材质。
+ * 挂载进来的东西（手里的物品、别的模型）贴图不一样，不动：它们有自己的材质，有的根本没有贴图
+ */
+export const 换模型材质 = (根: THREE.Object3D, 贴图: THREE.Texture, 取: () => THREE.Material) => {
+  根.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    if (!mesh.isMesh) return;
+    const 原 = (mesh.userData.原材质 ?? mesh.material) as THREE.MeshStandardMaterial;
+    if (原.map !== 贴图) return;
+    mesh.userData.原材质 = 原;
+    mesh.material = 取();
+  });
+};
+
+// 套住一份模型：每次提交后换材质（显隐一变会挂上新 mesh，所以不写依赖、每次都跑；结果一样）
+const 换材质: React.FC<{ 贴图: THREE.Texture; 取: () => THREE.Material; children: React.ReactNode }> = ({ 贴图, 取, children }) => {
   const ref = useRef<THREE.Group>(null);
   useLayoutEffect(() => {
-    ref.current?.traverse((o) => {
-      const mesh = o as THREE.Mesh;
-      if (!mesh.isMesh) return;
-      const 原 = (mesh.userData.原材质 ??= mesh.material) as THREE.Material;
-      mesh.material = 取(原);
-    });
+    if (ref.current) 换模型材质(ref.current, 贴图, 取);
   });
   return <group ref={ref}>{children}</group>;
 };
@@ -95,14 +115,15 @@ export const 基岩实体: React.FC<基岩实体属性> = ({
   const 动画骨骼 = 动画 ? 动画姿势(动画, 秒) : {};
   const pose: Record<string, BonePose> = { ...动画骨骼 };
   for (const [k, v] of Object.entries(姿势 ?? {})) pose[k] = { ...pose[k], ...v };
-  const 贴图 = (原: THREE.Material) => (原 as THREE.MeshStandardMaterial).map!;
+  // 基岩模型.tsx 的材质贴图就是这张（entityTexture 按像素对象缓存，主体、发光两份共用）
+  const 贴图 = entityTexture(模型.texture);
   return (
     <>
-      <换材质 取={(原) => 实体材质(贴图(原), { 受伤, 光照, 透明度 })}>
+      <换材质 贴图={贴图} 取={() => 实体材质(贴图, { 受伤, 光照, 透明度 })}>
         <BedrockModelView model={主体} scale={缩放} pose={pose} attach={挂载} />
       </换材质>
       {发光份 && (
-        <换材质 取={(原) => 实体材质(贴图(原), 发光 ? { 发光: true, 受伤, 透明度 } : { 受伤, 光照, 透明度 })}>
+        <换材质 贴图={贴图} 取={() => 实体材质(贴图, 发光 ? { 发光: true, 受伤, 透明度 } : { 受伤, 光照, 透明度 })}>
           <BedrockModelView model={发光份} scale={缩放} pose={pose} />
         </换材质>
       )}
