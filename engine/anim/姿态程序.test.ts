@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { EntityPart } from '../model/实体模型.tsx';
-import { 求部件姿态, 姿态求值器, 节点求值器, type 姿态程序 } from './姿态程序.ts';
+import { 内建函数, 求部件姿态, 姿态求值器, 节点求值器, type 姿态程序 } from './姿态程序.ts';
 
 const 位转浮 = (h: string) => {
   const dv = new DataView(new ArrayBuffer(4));
@@ -75,6 +75,42 @@ describe('姿态程序求值器', () => {
     expect(求({ show: false }).隐藏).toEqual(['a']);
     expect(求部件姿态(p, 根, { show: false }).a.hide).toBe(true);
     expect(求部件姿态(p, 根, {}).a.hide).toBeUndefined();
+  });
+
+  it('内建函数逐个对 JVM 真值（夹具 姿态程序.内建样例.json；java/lang/Math 的超越函数按 1 ulp 比，JDK 本身只保证这么多）', () => {
+    const 内建夹具 = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '姿态程序.内建样例.json'), 'utf8')) as {
+      超越函数: string[];
+      样例: [string, string[], string][];
+    };
+    const 读 = (t: string, s: string) => {
+      if (t === 'F') return 位转浮(s);
+      if (t === 'I') return Number(s);
+      const dv = new DataView(new ArrayBuffer(8));
+      dv.setBigUint64(0, BigInt('0x' + s));
+      return dv.getFloat64(0);
+    };
+    const 写 = (t: string, x: number) => {
+      if (t === 'I') return String(x);
+      if (Number.isNaN(x)) return t === 'F' ? '7fc00000' : '7ff8000000000000';
+      if (t === 'F') return 浮转位(x);
+      const dv = new DataView(new ArrayBuffer(8));
+      dv.setFloat64(0, x);
+      return dv.getBigUint64(0).toString(16);
+    };
+    const 函数们 = new Set<string>();
+    for (const [函数, 参数, 真值] of 内建夹具.样例) {
+      函数们.add(函数);
+      const 描述 = 函数.slice(函数.indexOf('('));
+      const 参数类型 = 描述.slice(1, 描述.indexOf(')'));
+      const 返回类型 = 描述.slice(描述.indexOf(')') + 1);
+      const 算 = 内建函数[函数](...参数.map((a, i) => 读(参数类型[i], a)));
+      if (内建夹具.超越函数.includes(函数) && 写(返回类型, 算) !== 真值) {
+        const 真 = 读('D', 真值);
+        expect(Math.abs(算 - 真), `${函数}(${参数.join(', ')})`).toBeLessThanOrEqual(Math.abs(真) * 2 ** -52);
+      } else expect(写(返回类型, 算), `${函数}(${参数.join(', ')})`).toBe(真值);
+    }
+    // 夹具和 内建函数 一一对应（py/anim_py/动作翻译/图.py 加了函数，这边也要加）
+    expect([...函数们].sort()).toEqual(Object.keys(内建函数).sort());
   });
 
   it('程序要的内建函数、部件不在时编译就报错', () => {

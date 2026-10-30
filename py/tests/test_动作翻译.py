@@ -1,6 +1,6 @@
 """动作翻译对着 JVM 验：把 动作翻译样例/ 的 Java（桩 + 样例模型）编译、翻译，随机输入下 Python 参考求值和 JVM 真跑逐位相同。
 没有 JDK（javac / java）时跳过。样例和桩都是自己写的，不含 Mojang 代码；包名照 1.20.1 官方名，所以走恒等映射（26.1 起、NeoForge 的情形）。
-设 ANIM_UPDATE_POSE_SAMPLE=1 跑时，顺带重写 engine/anim/姿态程序.样例.json（TS 求值器的测试拿它和 JVM 真值比）。
+设 ANIM_UPDATE_POSE_SAMPLE=1 跑时，顺带重写 engine/anim/姿态程序.样例.json、姿态程序.内建样例.json（TS 求值器的测试拿它们和 JVM 真值比）。
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from anim_py.动作翻译.图 import f32, 图, 求值, 转换
+from anim_py.动作翻译.图 import f32, 内建, 图, 求值, 转换
 from anim_py.动作翻译.执行 import 不支持, 翻译器
 from anim_py.动作翻译.映射 import 恒等映射
 from anim_py.动作翻译.类文件 import 类路径
@@ -226,3 +226,77 @@ def test_图的常量折叠按JVM语义() -> None:
     assert g.算("+", "f", x, g.常("f", 1.0)) == g.算("+", "f", x, g.常("f", 1.0))
     # sel 两边相同直接取
     assert g.选(g.比("<", x, g.常("f", 0.0)), x, x) == x
+
+
+# ---------- 内建函数：每个都对着 JVM 逐位比（Mth 走照 1.20.1 字节码写的桩，java/lang/Math 走 JDK） ----------
+# JDK 的 Math.sin 这类超越函数规范只保证 1 ulp，各平台、各 JVM 可以差一位；这几个按 1 ulp 比，其余逐位
+超越函数 = {"java/lang/Math.sin(D)D", "java/lang/Math.cos(D)D", "java/lang/Math.pow(DD)D", "java/lang/Math.atan2(DD)D", "java/lang/Math.exp(D)D"}
+
+
+def _参数类型(函数: str) -> tuple[str, str]:
+    d = 函数[函数.index("(") :]
+    return d[1 : d.index(")")], d[d.index(")") + 1 :]
+
+
+def _写值(t: str, x) -> str:
+    if t == "F":
+        return 位(x) if not math.isnan(x) else "7fc00000"
+    if t == "D":
+        return format(struct.unpack(">Q", struct.pack(">d", x))[0], "x") if not math.isnan(x) else "7ff8000000000000"
+    return str(x)
+
+
+def _读值(t: str, s: str):
+    if t == "F":
+        return 浮(s)
+    if t == "D":
+        return struct.unpack(">d", struct.pack(">Q", int(s, 16)))[0]
+    return int(s)
+
+
+def 内建样例(每个: int = 400) -> list[tuple[str, list[str]]]:
+    r = random.Random(11)
+    特殊 = [0.0, -0.0, math.nan, math.inf, -math.inf, 1e10, -1e10, 3.4e38, -3.4e38, 1e-45, 0.5, -0.5, 1.0, -1.0, 2.0, 180.0, -180.0, 360.0, -2147483648.0, -2147483904.0, 2147483648.0]
+    特殊整 = [0, 1, -1, 2, 2**31 - 1, -(2**31), 65535, -65536]
+
+    def 取(t: str):
+        if t == "I":
+            return r.choice(特殊整) if r.random() < 0.25 else r.randint(-5000, 5000)
+        x = r.choice(特殊) if r.random() < 0.25 else r.uniform(-1, 1) * 10 ** r.uniform(-3, 5)
+        return f32(x) if t == "F" else x
+
+    out = []
+    for 函数 in 内建:
+        ps, _ = _参数类型(函数)
+        for _ in range(每个):
+            out.append((函数, [_写值(t, 取(t)) for t in ps]))
+    return out
+
+
+def test_内建函数和JVM逐位相同(编译好: tuple[Path, Path]) -> None:
+    jar, jdk = 编译好
+    样 = 内建样例()
+    r = subprocess.run(
+        [str(jdk / "java"), "-cp", str(jar), "sample.Builtins"], input="\n".join(f"{f} {' '.join(a)}" for f, a in 样) + "\n", capture_output=True, text=True, check=True
+    )
+    真 = r.stdout.split()
+    assert len(真) == len(样)
+    for (函数, 参数), 真值 in zip(样, 真):
+        ps, rt = _参数类型(函数)
+        算 = _写值(rt, 内建[函数][1](*[_读值(t, a) for t, a in zip(ps, 参数)]))
+        if 算 != 真值 and 函数 in 超越函数:
+            a, b = _读值("D", 算), _读值("D", 真值)
+            assert math.isfinite(a) and math.isfinite(b) and abs(a - b) <= math.ulp(b), f"{函数}{参数}：Python {算} ≠ JVM {真值}"
+            continue
+        assert 算 == 真值, f"{函数}{参数}：Python {算} ≠ JVM {真值}"
+    if os.environ.get("ANIM_UPDATE_POSE_SAMPLE"):
+        # TS 求值器的 内建函数 拿这份比（engine/anim/姿态程序.test.ts）；每个函数取 60 组，省篇幅
+        计数: dict[str, int] = {}
+        留 = []
+        for (函数, 参数), 真值 in zip(样, 真):
+            计数[函数] = 计数.get(函数, 0) + 1
+            if 计数[函数] <= 60:
+                留.append([函数, 参数, 真值])
+        data = {"说明": "py/tests/test_动作翻译.py 生成（ANIM_UPDATE_POSE_SAMPLE=1）：内建函数的参数和 JVM 结果（F、D 是十六进制位，I 是十进制）", "超越函数": sorted(超越函数), "样例": 留}
+        p = 仓库 / "engine/anim/姿态程序.内建样例.json"
+        p.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")

@@ -28,6 +28,35 @@ public class Mth {
         return start + delta * (end - start);
     }
 
+    public static double lerp(double delta, double start, double end) {
+        return start + delta * (end - start);
+    }
+
+    public static int clamp(int value, int min, int max) {
+        return Math.min(Math.max(value, min), max);
+    }
+
+    public static double clamp(double value, double min, double max) {
+        return value < min ? min : Math.min(value, max);
+    }
+
+    public static int floor(float value) {
+        int i = (int) value;
+        return value < (float) i ? i - 1 : i;
+    }
+
+    public static float abs(float value) {
+        return Math.abs(value);
+    }
+
+    public static int abs(int value) {
+        return Math.abs(value);
+    }
+
+    public static float square(float value) {
+        return value * value;
+    }
+
     public static float wrapDegrees(float degrees) {
         float f = degrees % 360.0F;
         if (f >= 180.0F) f -= 360.0F;

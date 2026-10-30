@@ -40,7 +40,7 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
   'net/minecraft/util/Mth.abs(F)F': (x) => Math.abs(x),
   'net/minecraft/util/Mth.abs(I)I': (x) => Math.abs(x) | 0,
   'net/minecraft/util/Mth.clamp(FFF)F': (v, lo, hi) => (v < lo ? lo : jmin(v, hi)),
-  'net/minecraft/util/Mth.clamp(III)I': (v, lo, hi) => (v < lo ? lo : Math.min(v, hi)),
+  'net/minecraft/util/Mth.clamp(III)I': (v, lo, hi) => Math.min(Math.max(v, lo), hi), // lo > hi 时取 hi，和 1.20.1 一样
   'net/minecraft/util/Mth.clamp(DDD)D': (v, lo, hi) => (v < lo ? lo : jmin(v, hi)),
   'net/minecraft/util/Mth.lerp(FFF)F': (t, a, b) => f32(a + f32(t * f32(b - a))),
   'net/minecraft/util/Mth.lerp(DDD)D': (t, a, b) => a + t * (b - a),
@@ -51,7 +51,11 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
     return f;
   },
   'net/minecraft/util/Mth.square(F)F': (x) => f32(x * x),
-  'net/minecraft/util/Mth.floor(F)I': (x) => f2i(Math.floor(x)),
+  // i = (int) x；x < (float) i ? i - 1 : i：比 -2^31 还小时溢出成 2^31 - 1，照 1.20.1 抄
+  'net/minecraft/util/Mth.floor(F)I': (x) => {
+    const i = f2i(x);
+    return x < f32(i) ? (i - 1) | 0 : i;
+  },
   'java/lang/Math.sin(D)D': Math.sin,
   'java/lang/Math.cos(D)D': Math.cos,
   'java/lang/Math.sqrt(D)D': Math.sqrt,

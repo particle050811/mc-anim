@@ -176,8 +176,14 @@ def _jmax(a: float, b: float) -> float:
 
 
 def _clampf(v: float, lo: float, hi: float) -> float:
-    # 1.20.1 Mth.clamp(FFF)F：v < lo ? lo : Math.min(v, hi)
+    # 1.20.1 Mth.clamp(FFF)F、clamp(DDD)D：v < lo ? lo : Math.min(v, hi)
     return lo if v < lo else _jmin(v, hi)
+
+
+def _mth_floor_f(x: float) -> int:
+    # 1.20.1 Mth.floor(F)I：i = (int) x；x < (float) i ? i - 1 : i。比 -2^31 还小时 i - 1 溢出成 2^31 - 1，照抄
+    i = _转整(x, -(2**31), 2**31 - 1)
+    return i32(i - 1) if x < f32(float(i)) else i
 
 
 def _wrap_deg_f(x: float) -> float:
@@ -223,13 +229,14 @@ def _pow(a: float, b: float) -> float:
     "net/minecraft/util/Mth.abs(F)F": ("f", lambda x: abs(x)),
     "net/minecraft/util/Mth.abs(I)I": ("i", lambda x: i32(abs(x))),
     "net/minecraft/util/Mth.clamp(FFF)F": ("f", _clampf),
-    "net/minecraft/util/Mth.clamp(III)I": ("i", lambda v, lo, hi: lo if v < lo else min(v, hi)),
-    "net/minecraft/util/Mth.clamp(DDD)D": ("d", lambda v, lo, hi: lo if v < lo else _jmin(v, hi)),
+    # 1.20.1 是 Math.min(Math.max(v, lo), hi)：lo > hi 时取 hi
+    "net/minecraft/util/Mth.clamp(III)I": ("i", lambda v, lo, hi: min(max(v, lo), hi)),
+    "net/minecraft/util/Mth.clamp(DDD)D": ("d", _clampf),
     "net/minecraft/util/Mth.lerp(FFF)F": ("f", lambda t, a, b: f32(a + f32(t * f32(b - a)))),
     "net/minecraft/util/Mth.lerp(DDD)D": ("d", lambda t, a, b: a + t * (b - a)),
     "net/minecraft/util/Mth.wrapDegrees(F)F": ("f", _wrap_deg_f),
     "net/minecraft/util/Mth.square(F)F": ("f", lambda x: f32(x * x)),
-    "net/minecraft/util/Mth.floor(F)I": ("i", lambda x: _转整(math.floor(x), -(2**31), 2**31 - 1) if not math.isnan(x) else 0),
+    "net/minecraft/util/Mth.floor(F)I": ("i", _mth_floor_f),
     "java/lang/Math.sin(D)D": ("d", _jvm(math.sin)),
     "java/lang/Math.cos(D)D": ("d", _jvm(math.cos)),
     "java/lang/Math.sqrt(D)D": ("d", lambda x: math.sqrt(x) if x >= 0 else math.nan),
