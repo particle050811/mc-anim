@@ -48,7 +48,7 @@ TOML 里中文键必须加引号（`"类别" = ...`），裸写会解析失败�
 - **来源**：三种开头。
   - `提取:<配方>@<jar sha256 前 12 位>`：从游戏或模组 jar 按取材配方导出，可以重新导出。
     - 用到几个 jar 就把各自的前 12 位用 `+` 连起来，`anim check` 只认这种写法。
-    - 原版声音不在 jar 里，`@` 后面写 1.20.1 资源索引 `indexes/5.json` 的 sha256 前 12 位（`f59b7cfef660`），文件按索引里的 hash 取。
+    - 原版声音不在 jar 里，`@` 后面写 1.20.1 资源索引 `indexes/5.json` 的 sha256 前 12 位（`f59b7cfef660`），文件按索引里的 hash 取。Mojang 会更新同一个索引文件，`jars.toml` 的 `[["Mojang"."资源索引"]]` 在 `旧sha256前缀` 里记着历史前缀，许可继承照样认得。
     - `网格图集` 是 mcai mesh 顺带导出的图集，`@` 后面是这张图集里实际出现的贴图所在的 jar（按旧项目 `工具/开源/图集配方.py` 逐格反查的结果）。
   - `手工:<说明>`：人做的，包括用户画的、录的，以及 AI 出图、AI 配音这类不可复现的成品。
   - `派生:<输入>+<工具>`：由仓库里的脚本从别的东西算出来，可以重跑。
@@ -56,7 +56,9 @@ TOML 里中文键必须加引号（`"类别" = ...`），裸写会解析失败�
   - 第三方照原许可，例如 `CC-BY-NC-SA-4.0`、`MIT`。
   - 自定义的有：`LicenseRef-Minecraft-EULA`（原版游戏文件）、`LicenseRef-Minecraft-Derived`（从游戏世界导出的网格、地形）、`LicenseRef-All-Rights-Reserved`、`LicenseRef-Adapted-Authorized`（小说改编，作者授权）、`LicenseRef-Photon-Shaders`、`LicenseRef-Origin-Unverified`（来源核实不了，原作者要求就撤下）。
   - 用户自己做的默认 `LicenseRef-用户保留`。
-  - 拿不准写 `LicenseRef-待定`，同时在 `待确认.md` 加一行。
+  - `LicenseRef-LGPL-Unversioned`：mods.toml 只写了「LGPL」没写版本（冰与火、Citadel 的代码）。
+  - 拿不准写 `LicenseRef-待定`，同时在 `待确认.md` 加一行。`jars.toml` 里知道大概、版本没核的写 `LicenseRef-待核-<大概>`（如 `LicenseRef-待核-CC-BY-NC-SA`），按 jar 继承时当没定。
+  - 从 jar 提取的（来源 `提取:`）不用手填：`anim extract --许可 --写` 按 `jars.toml` 每个 jar 的「许可」（代码、资源，可选 声音、结构、模型）继承，几个 jar 拼的用 `AND` 连；`anim extract <配方> --登记` 登记新产物时同样继承。
   - 一张图里叠了两种来源的，用 `AND` 连起来。
 - **可见性**：
   - `公开`：可以随公开仓库发。
@@ -70,6 +72,7 @@ TOML 里中文键必须加引号（`"类别" = ...`），裸写会解析失败�
 ## 资产锁
 
 `资产锁.json`：`{id: {"sha256", "大小", "库", "后缀"}}`，键排好序，UTF-8，缩进 2。库是 `store` 或 `私有`。代码按 id 查锁，再到 `<数据根>/<库>/<sha 前两位>/<sha256>` 取字节；后缀给要按扩展名判断类型的地方用。
+音频另有可选的 `时长`（秒）、`峰值`（采样峰值 dBFS）、`响度`（积分响度 LUFS），`anim assets add` 和 `anim extract --登记` 入库时用 ffmpeg 量出来写上（量不出只警告）；早先入库的没有。指纹只认 sha256。
 
 ## 角色包
 
