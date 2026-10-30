@@ -16,10 +16,10 @@ export const 灯光档位表: Readonly<Record<档位名, LightMix>> = {
   主世界: overworldMix,
 };
 
-/** 描述的灯光档位 × 倍（倍不写时原样返回表里那份，数一个不动） */
+/** 描述的灯光档位（或自定的 配比）× 倍（倍不写时原样返回那份，数一个不动） */
 export const 档位配比 = (灯光: 环境描述['灯光']): LightMix => {
-  const mix = 灯光档位表[灯光.档位];
-  if (!mix) throw new Error(`没有灯光档位「${灯光.档位}」（有：${Object.keys(灯光档位表).join('、')}）`);
+  const mix = '配比' in 灯光 ? 灯光.配比 : 灯光档位表[灯光.档位];
+  if (!mix) throw new Error(`没有灯光档位「${'档位' in 灯光 ? 灯光.档位 : ''}」（有：${Object.keys(灯光档位表).join('、')}）`);
   const k = 灯光.倍;
   if (k === undefined || k === 1) return mix;
   return { 直射: mix.直射 * k, 天光: mix.天光 * k, 环境光: mix.环境光 * k, 自发光: mix.自发光 * k };
