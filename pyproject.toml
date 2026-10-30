@@ -3,12 +3,23 @@ name = "mc-anim"
 version = "0.1.0"
 description = "mc-anim 的 Python 叶子工具：JSON 进，文件和 JSON 出；路径由 anim 传进来，不自己推算"
 requires-python = ">=3.11"
-dependencies = []
+# pypinyin 钉版本：口型按拼音拆音素，换版本可能改嘴（第 6、7 章的口型是 0.55.0 算的）；pipeline/配音/python.ts 的 pypinyin版本 要一样
+dependencies = ["pypinyin==0.55.0"]
 
 [dependency-groups]
 dev = [
     "pytest>=8",
     "ruff==0.16.10",
+]
+# anim voice 的本机复核（音色相似度、音高和响度起伏，py/anim_py/配音/复核.py）：要 torch，单独一组，anim 跑复核时才装（uv run --group voice-review）。
+# resemblyzer 运行时 import pkg_resources，所以带 setuptools（81 起没有 pkg_resources，钉在 81 以下）。版本照旧项目 参考模型库 voice 组用过的
+voice-review = [
+    "numpy",
+    "librosa",
+    "soundfile",
+    "praat-parselmouth",
+    "resemblyzer==0.1.4",
+    "setuptools<81",
 ]
 
 [build-system]
