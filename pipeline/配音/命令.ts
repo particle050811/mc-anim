@@ -13,9 +13,10 @@ import { 作品资产表目录, 读两侧资产表 } from '../资产/资产表.t
 import { 作品资产锁路径, 字节路径, 读资产锁, 资产锁路径, type 资产锁 } from '../资产/资产锁.ts';
 import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
 import { 列句模块, 句模块目录, 句模块路径, 写句模块文本, 读句模块 } from './句模块.ts';
-import { 跑配音py } from './python.ts';
+import { 复核组, 跑配音py } from './python.ts';
+import { 列候选, 复核报告文本, 写进候选说明, 拆回包, type 复核回包, type 复核请求, type 一条 } from './复核.ts';
 import { 改台词字段, 念的字, 配音文本哈希, 读作品台词, type 作品台词, type 台词行 } from './台词表.ts';
-import { 候选目录, 句问题, 成品sha, 手修可用, 拼句, 排合成批, 读候选说明, wav秒数, type 字们, type 测量 } from './配音.ts';
+import { 候选目录, 句问题, 成品sha, 手修可用, 拼句, 排合成批, 读候选说明, 音色参考, wav秒数, type 字们, type 测量 } from './配音.ts';
 
 const 台词文件 = () => path.join(作品根(), '台词.toml');
 const 两锁 = (): 资产锁 => ({ ...读资产锁(资产锁路径()), ...读资产锁(作品资产锁路径(作品根())) });
@@ -143,6 +144,64 @@ const 核对 = async (表: 作品台词, 行们: 台词行[], 对旧表: boolean
   return 问题;
 };
 
+// ---------- review ----------
+
+type 复核项信息 = { 名: string; 说明: string; 云端: boolean; 付费: boolean; 默认: boolean; 缺: string[] };
+
+/** 复核这几句的全部候选（现成品一起量，当对照）：结果并进候选旁的 .json，每句写 <候选目录>/复核.md。项们空 = 默认的本机项 */
+const 复核 = async (表: 作品台词, 行们: 台词行[], o: { 项们: string[]; 只描述: boolean; 允许付费: boolean }) => {
+  const 信息们 = await 跑配音py<复核项信息[]>('复核项', {});
+  for (const 名 of o.项们) {
+    const 信息 = 信息们.find((x) => x.名 === 名);
+    if (!信息) throw new 用法错误(`没有复核项「${名}」，有：${信息们.map((x) => x.名).join('、')}`);
+    if (信息.付费 && !o.只描述 && !o.允许付费) throw new 用法错误(`复核项 ${名} 按次收费、要把候选音频发到外部服务，确实要用加 --允许付费（先 --dry-run 看要发什么）`);
+  }
+  const 锁 = 两锁();
+  const 请求们: 复核请求[] = [];
+  const 句们: { 行: 台词行; 候选们: string[]; 对照?: string }[] = [];
+  for (const 行 of 行们) {
+    const 候选们 = 列候选(候选目录(数据根(), 作品名(), 行.id));
+    if (!候选们.length) {
+      console.log(`${行.id}：没有候选（先 anim voice gen ${行.id}）`);
+      continue;
+    }
+    const 对照 = 行.配音 && 锁[行.配音] ? 成品文件(行, 锁) : undefined;
+    // 没配音色参考的角色照样量起伏：音色项拿到空参考自己记「没给参考音频」，不让整句复核报错
+    let 参考 = '';
+    try {
+      参考 = 音色参考(表, 行, 锁, 数据根()).文件;
+    } catch (e) {
+      console.log(`${行.id}：${(e as Error).message}，音色项跳过`);
+    }
+    for (const wav of [...候选们, ...(对照 && fs.existsSync(对照) ? [对照] : [])]) {
+      请求们.push({ wav, id: 行.id, 念: 念的字(行), 语言: 行.语言 ?? '中文', 语气: 行.语气 ?? '', 参考音频: 参考 });
+    }
+    句们.push({ 行, 候选们, ...(对照 && fs.existsSync(对照) ? { 对照 } : {}) });
+  }
+  if (!请求们.length) return 0;
+  // 音色要加载 Resemblyzer（torch，CPU）：和对齐一样过放行闸
+  const 跑 = () => 跑配音py<复核回包>('复核', { 项: o.项们, 请求: 请求们, 只描述: o.只描述 }, [复核组]);
+  const 回 = o.只描述 ? await 跑() : await 过放行闸(跑);
+  if (o.只描述) {
+    for (const [名, r] of Object.entries(回)) {
+      console.log(JSON.stringify(r.描述, null, 1));
+      console.log(`dry-run：复核项 ${名}，${请求们.length} 个 wav，没跑。${r.缺?.length ? `真跑前要补：${r.缺.join('；')}` : '这台机器上能跑'}`);
+    }
+    return 0;
+  }
+  const 各个 = 拆回包(请求们, 回);
+  const 时间 = new Date().toISOString();
+  for (const { 行, 候选们, 对照 } of 句们) {
+    const 条们: 一条[] = 候选们.map((wav) => ({ 名: path.basename(wav, '.wav'), wav, 复核: 各个.get(wav)! }));
+    for (const t of 条们) 写进候选说明(t.wav, t.复核);
+    const 报告 = path.join(候选目录(数据根(), 作品名(), 行.id), '复核.md');
+    fs.writeFileSync(报告, 复核报告文本({ id: 行.id, 念: 念的字(行), 语气: 行.语气 ?? '', 条们, ...(对照 ? { 对照: { 名: `现成品 ${行.配音}`, wav: 对照, 复核: 各个.get(对照)! } } : {}), 时间 }));
+    console.log(`${行.id}：复核了 ${条们.length} 个候选${对照 ? '和现成品' : ''}，报告 ${报告}`);
+    for (const t of 条们) console.log(`  ${t.名}  ${JSON.stringify(t.复核)}`);
+  }
+  return 0;
+};
+
 // ---------- gen / use ----------
 
 const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<typeof 解析参数>, 记录: Parameters<命令['跑']>[1]) => {
@@ -196,6 +255,14 @@ const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<type
       console.log(`${r.id} 种子 ${r.种子}（${后端名}）：${r.成功 ? r.输出 : '失败'}${r.说明 ? `（${r.说明}）` : ''}`);
     }
   }
+  if (记录.产物.length && !p.开关.has('--不复核')) {
+    // 复核只是辅助：没跑成（比如装不上 torch）不让 gen 算失败，候选照样能试听、use
+    try {
+      await 复核(表, 行们, { 项们: [], 只描述: false, 允许付费: false });
+    } catch (e) {
+      console.error(`复核没跑成（候选不受影响，可以之后 anim voice review）：${(e as Error).message}`);
+    }
+  }
   console.log(`候选在 ${候选目录(数据根(), 作品名(), '<台词 id>')}；试听挑一个后 anim voice use <id> <候选.wav>`);
   return 坏 ? 1 : 0;
 };
@@ -244,13 +311,13 @@ const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: Retu
 
 export const 配音命令: Record<string, 命令> = {
   voice: {
-    用法: 'voice list [前缀…] | check [前缀…] [--对旧表] | gen <id…> [--后端 名] [--种子 a,b] [--语气参考 wav] [--强度 x] [--dry-run] [--允许云端] [--允许付费] | use <id> <候选.wav> [--不裁] [--替换] [--不管旧表] [--来源 说明] | lip [前缀…] [--重对齐] [--从旧表] | backends',
-    说明: '配音链：台词.toml 一句 → gen 出候选（run/草稿/配音/）→ use 定稿（裁静音拉响度、登记私有资产、写回 台词.toml、出句模块 台词/<id>.ts）；lip 重出口型；check 核对配音、句模块、口型可复现',
+    用法: 'voice list [前缀…] | check [前缀…] [--对旧表] | gen <id…> [--后端 名] [--种子 a,b] [--语气参考 wav] [--强度 x] [--dry-run] [--允许云端] [--允许付费] [--不复核] | review <id…> [--项 起伏,音色,听写,语气] [--dry-run] [--允许付费] | use <id> <候选.wav> [--不裁] [--替换] [--不管旧表] [--来源 说明] | lip [前缀…] [--重对齐] [--从旧表] | backends',
+    说明: '配音链：台词.toml 一句 → gen 出候选（run/草稿/配音/，顺带本机复核音色、起伏，见 复核.md；review 单独重跑）→ use 定稿（裁静音拉响度、登记私有资产、写回 台词.toml、出句模块 台词/<id>.ts）；lip 重出口型；check 核对配音、句模块、口型可复现',
     跑: async (args, 记录) => {
       const [动作, ...余] = args;
       const p = 解析参数(余, {
-        开关: ['--对旧表', '--dry-run', '--允许云端', '--允许付费', '--不裁', '--替换', '--不管旧表', '--重对齐', '--从旧表'],
-        值: ['--后端', '--种子', '--语气参考', '--强度', '--来源'],
+        开关: ['--对旧表', '--dry-run', '--允许云端', '--允许付费', '--不裁', '--替换', '--不管旧表', '--重对齐', '--从旧表', '--不复核'],
+        值: ['--后端', '--种子', '--语气参考', '--强度', '--来源', '--项'],
       });
       if (动作 === 'backends') {
         const 表 = 读作品台词(台词文件());
@@ -292,6 +359,11 @@ export const 配音命令: Record<string, 命令> = {
         if (!p.位置.length) throw new 用法错误('要给台词 id（或前缀）');
         return 生成(表, 选行(表, p.位置), p, 记录);
       }
+      if (动作 === 'review') {
+        if (!p.位置.length) throw new 用法错误('要给台词 id（或前缀）');
+        const 项们 = p.值['--项']?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+        return 复核(表, 选行(表, p.位置), { 项们, 只描述: p.开关.has('--dry-run'), 允许付费: p.开关.has('--允许付费') });
+      }
       if (动作 === 'use') {
         const [id, 候选] = p.位置;
         if (!id || !候选) throw new 用法错误('要给 <台词 id> <候选.wav>');
@@ -300,7 +372,7 @@ export const 配音命令: Record<string, 命令> = {
         await 定稿(表, 行, path.resolve(候选), p, 记录);
         return 0;
       }
-      throw new 用法错误(`voice 后面要跟 list、check、gen、use、lip 或 backends`);
+      throw new 用法错误(`voice 后面要跟 list、check、gen、review、use、lip 或 backends`);
     },
   },
 };

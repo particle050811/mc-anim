@@ -1,5 +1,5 @@
 """anim_py.配音：口型规则、后端 dry-run、成品处理。期望值取自第 6、7 章的句模块（作品/应力转动/台词/，和旧 口型.json 一致）。
-汉字句要 pypinyin（anim 跑时用 uv 临时装 0.55.0；本地 uv run --with pypinyin==0.55.0 pytest），没装就跳过。
+汉字句要 pypinyin（项目依赖，钉 0.55.0：uv run pytest）。
 """
 import math
 import shutil
@@ -23,9 +23,9 @@ def test_日语句不靠拼音():
 
 
 def test_汉字句():
-    pypinyin = pytest.importorskip('pypinyin')
-    if pypinyin.__version__ != '0.55.0':
-        pytest.skip(f'pypinyin {pypinyin.__version__}，期望值是 0.55.0 算的')
+    import pypinyin  # pyright: ignore[reportMissingImports]
+
+    assert pypinyin.__version__ == '0.55.0', '期望值是 pypinyin 0.55.0 算的'
     字 = [['怪', 0, 0.24], ['物', 0.24, 0.32], ['受', 0.32, 0.48], ['死', 0.48, 0.8]]
     assert 算嘴('怪物受死！', 1.007, 字) == [[0, 'B'], [0.09, 'C'], [0.17, 'B'], [0.24, 'F'], [0.32, 'E'], [0.44, 'F'], [0.51, 'B'], [0.8, 'X']]
 

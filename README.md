@@ -75,12 +75,13 @@ npm ci
 
 ## 给台词配音（anim voice）
 
-作品的 `台词.toml` 是台词的唯一来源；配音、口型由 `anim voice` 从它出。要 [uv](https://docs.astral.sh/uv/)（Python 工具用它临时装依赖），TTS 和对齐模型在各自的仓库里自己装，位置写进 `anim.local.toml`（见 `anim.local.toml.example`）。
+作品的 `台词.toml` 是台词的唯一来源；配音、口型由 `anim voice` 从它出。要 [uv](https://docs.astral.sh/uv/)（Python 工具跑在它管的项目 venv 里，版本按 `uv.lock`；复核第一次跑会装 torch），TTS 和对齐模型在各自的仓库里自己装，位置写进 `anim.local.toml`（见 `anim.local.toml.example`）。
 
 ```
 ./anim voice backends                       有哪些 TTS 后端、这台机器上缺什么
 ./anim voice gen <台词 id> --dry-run        看要发给后端的请求，不合成
 ./anim voice gen <台词 id>                  按 [配音] 的种子各出一个候选，进数据根 run/草稿/配音/
+./anim voice review <台词 id>               复核候选：音色相似度、音高和响度起伏（gen 完自动跑），报告在候选目录的 复核.md
 ./anim voice use <台词 id> <候选.wav>       定稿：裁静音、拉响度、登记成私有资产、写回 台词.toml、出 台词/<id>.ts
 ./anim voice lip [前缀]                     重出口型（字的起止 → 嘴型）
 ./anim voice check [前缀]                   核对配音、句模块、口型能不能按字重算出来
