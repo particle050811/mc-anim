@@ -141,6 +141,20 @@
 "模型/角色/魔法酒狐" = "src/模型/角色/魔法酒狐.模型.json"
 "贴图/角色/魔法酒狐/百花" = "src/模型/角色/魔法酒狐.模型.png"
 
+# 魔法酒狐动画：同一个 jar 里的 geckolib 动画文件，原样拷出来（字节不动），engine/anim/基岩动画.ts 直接读。
+# 现在只有 把回忆拼好给你 的核对（核对/基岩动画/）和对照测试用；库/角色/ 里魔法酒狐的手抄动作照旧。
+[["取材"]]
+"名称" = "魔法酒狐动画"
+"需要" = ["touhoulittlemaid"]
+"公开版" = "提取"
+"来源" = "车万女仆 Touhou Little Maid 1.5.3 内置 geckolib 动画 winefox_magical.main.animation.json（星海ELIYA 做动作）"
+"许可" = "MIT / CC BY-NC-SA 4.0（资产，非商用）"
+"步骤" = [
+  ["python", "{脚本}/拷jar文件.py", "{jar:touhoulittlemaid}", "assets/touhou_little_maid/tlm_custom_pack/touhou_little_maid-1.0.0/assets/geckolib/animation/winefox_magical.main.animation.json", "src/动画/角色/魔法酒狐.animation.json"],
+]
+["取材"."产物"]
+"动画/角色/魔法酒狐" = "src/动画/角色/魔法酒狐.animation.json"
+
 # 月铃兰：万法皆通的花（第 13、15 句她手里那一枝）。物品模型 item/yue_linglan.json 是 item/generated、layer0 用方块贴图 block/yue_linglan，
 # 手里画法照 item/generated 挤出（engine/model/物品贴图.tsx）。只有 把回忆拼好给你 用，产物登记在作品资产表，所以写了「作品」：anim --作品 把回忆拼好给你 extract 月铃兰
 [["取材"]]
