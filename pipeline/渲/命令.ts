@@ -1,4 +1,6 @@
-// anim render <选择器…> [--级别 视频|预览] [--重渲] [--不叠层|--只叠层] [--到预览 <主题>]（段声明的透明叠层默认一起渲）；anim still <段> <帧…> --到预览 <主题> [--级别 …]
+// anim render <选择器…> [--级别 视频|预览] [--重渲] [--不叠层|--只叠层] [--到预览 <主题>]（段声明的透明叠层默认一起渲）；anim still <段> <帧…> --到预览 <主题> [--级别 …]；anim bench（测速.ts）
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
@@ -8,6 +10,7 @@ import { 选段 } from '../清单/清单.ts';
 import { 新建预览目录 } from '../预览/预览.ts';
 import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
 import { 渲染叠层, 渲染母版, 渲静帧 } from './渲.ts';
+import { 测速 } from './测速.ts';
 
 const 取级别 = (v: string | undefined): 渲染级别 => {
   const 级别 = (v ?? '视频') as 渲染级别;
@@ -66,6 +69,29 @@ export const 渲染命令: Record<string, 命令> = {
       const 出 = await 渲静帧(段们[0]!, 帧们, 取级别(p.值['--级别']), dir, 记录);
       记录.产物.push(...出);
       console.log(`静帧在 ${dir}`);
+    },
+  },
+  bench: {
+    用法: 'bench <段> [--帧 <起>-<止>] [--级别 视频|预览] [--次 <n>] [--详细] [--输出 <json>] [--关共享内存] [--浏览器 <chrome-headless-shell>]',
+    说明: '测速：照母版参数渲一段帧（默认前 100 帧），按打包、开浏览器、首帧、出帧、收尾计时，不写缓存（docs/渲染性能.md）',
+    跑: async (args) => {
+      const p = 解析参数(args, { 值: ['--帧', '--级别', '--次', '--输出', '--浏览器'], 开关: ['--详细', '--关共享内存'] });
+      if (p.位置.length !== 1) throw new 用法错误('要给一段（段键、段名或编号）');
+      const 帧串 = p.值['--帧'];
+      const m = 帧串 ? /^(\d+)-(\d+)$/.exec(帧串) : null;
+      if (帧串 && (!m || Number(m[1]) > Number(m[2]))) throw new 用法错误(`--帧 写成 <起>-<止>：${帧串}`);
+      const 次 = Number(p.值['--次'] ?? 1);
+      if (!Number.isInteger(次) || 次 < 1) throw new 用法错误(`--次 要是正整数：${p.值['--次']}`);
+      const 输出 = p.值['--输出'];
+      const 详细 = p.开关.has('--详细');
+      const r = await 测速({
+        段: p.位置[0]!, 帧: m ? [Number(m[1]), Number(m[2])] : undefined, 级别: p.值['--级别'] ? 取级别(p.值['--级别']) : undefined, 次, 详细,
+        关共享内存: p.开关.has('--关共享内存'), 浏览器: p.值['--浏览器'],
+        日志: 详细 ? (输出 ? 输出.replace(/\.json$/, '') : path.join(os.tmpdir(), `mc-anim-测速-${process.pid}`)) + '.log' : undefined,
+      });
+      const text = JSON.stringify(r, null, 2);
+      console.log(text);
+      if (输出) fs.writeFileSync(输出, text + '\n', 'utf8');
     },
   },
 };
