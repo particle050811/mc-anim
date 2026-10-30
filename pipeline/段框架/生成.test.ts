@@ -94,6 +94,36 @@ describe('生成一段', () => {
     expect(再.段.声音?.[0]).toMatchObject({ 帧数: 36 });
   });
 
+  it('场声音：生成时收进表和地址表；一定不沾边的不进表；要过数但没落进窗口的留在表里，再跑不来回翻', async () => {
+    const 写场段 = (门秒: number) =>
+      fs.writeFileSync(
+        path.join(目录, '段.ts'),
+        `import { 定义场时间线, 窗口段 } from '@engine/段/窗口段.ts';
+import 声音表 from './声音表.生成.ts';
+const 线 = 定义场时间线({
+  场: '核对',
+  事件: { 起: { 在: { 秒: 0 } }, 切: { 在: { 秒: 2 } }, 止: { 在: { 秒: 4 } } },
+  声音: [{ 资产: '音效/门', 在: { 秒: ${门秒} }, 峰值: -12 }, { 资产: '配乐/私', 在: { 秒: 3 }, 增益: 0.5 }],
+});
+export default 窗口段(线, { 起: '切', 止: { 帧数: 24 }, 声音表 });
+`,
+      );
+    // 窗口 [48, 72)：门 从 36 起放 24 帧，剩 12 帧落进来；私 从 72 起，一定不沾边
+    写场段(1.5);
+    const r = await 生成一段(path.join(目录, '段.ts'), 根, 环境());
+    expect(r.段.声音).toEqual([{ 帧: 0, 资产: '音效/门', 名: '门', 帧数: 12, 入点秒: 0.5, 增益: 0.501187 }]);
+    expect(Object.keys(r.表.资产)).toEqual(['音效/门']);
+    expect(fs.readFileSync(path.join(目录, 声音地址文件), 'utf8')).toContain('asset:音效/门');
+    // 门 改在第 0 秒：起在窗口前、要过数才知道放多长，放完（24 帧）也没到窗口：留在表里，地址表里没有它；再跑一次不改
+    写场段(0);
+    const 前 = await 生成一段(path.join(目录, '段.ts'), 根, 环境());
+    expect([前.段.声音, Object.keys(前.表.资产)]).toEqual([undefined, ['音效/门']]);
+    expect(fs.readFileSync(path.join(目录, 声音地址文件), 'utf8')).not.toContain('asset:');
+    expect((await 生成一段(path.join(目录, '段.ts'), 根, 环境())).改了).toEqual([]);
+    const 段 = (await 新鲜执行(path.join(目录, '段.ts'), 根)).default as 段定义;
+    expect(await 核对一段(段, 目录, 根, { ...环境(), 取数: () => undefined })).toEqual([]);
+  });
+
   it('不是窗口段做的段：报错，起步时写的空表删掉', async () => {
     fs.writeFileSync(path.join(目录, '段.ts'), `export default { 场: '核对', 帧数: 10, fps: 24, 宽: 1, 高: 1, 地形: [] };\n`);
     await expect(生成一段(path.join(目录, '段.ts'), 根, 环境())).rejects.toThrow(/不是段框架的段/);

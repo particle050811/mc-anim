@@ -23,7 +23,7 @@ vi.mock('../指纹/指纹.ts', () => {
 });
 
 const { 合成成片 } = await import('./成片.ts');
-const { 母版路径, 叠层路径 } = await import('../渲/母版.ts');
+const { 母版路径, 叠层路径, 指纹文件 } = await import('../渲/母版.ts');
 const { 视频信息 } = await import('../渲/探测.ts');
 const { 代码根 } = await import('../环境/路径.ts');
 
@@ -156,6 +156,18 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     expect(fs.statSync(f).size).toBeLessThanOrEqual(50e6);
     expect(manifest.分享版?.视频kbps).toBe(760);
     expect(manifest.分享版?.真峰值dBTP).toBeTypeOf('number');
+  });
+
+  it('--允许过期 只取同一渲染级别的旧母版：视频级成片不接预览级母版', async () => {
+    // 戊 的当前指纹（mock 成 sha(键)）没渲；只有一份预览级的旧母版
+    const 旧 = 指纹('戊-旧');
+    const 母 = 母版路径('戊', 旧);
+    fs.mkdirSync(path.dirname(母), { recursive: true });
+    fs.copyFileSync(母版路径('甲', 指纹('甲')), 母);
+    fs.writeFileSync(指纹文件('戊', 旧), JSON.stringify({ 段: '戊', 指纹: 旧, 项: { 渲染设置: { inputProps: { 级别: '预览' } } } }));
+    await expect(合成成片([段('戊', 48)], { 级别: '视频', 名: '视频接预览', 范围: [], 允许过期: true, 记录: 记录() })).rejects.toThrow(/连视频级的旧母版也没有（只有预览级的/);
+    const { manifest } = await 合成成片([段('戊', 48)], { 级别: '预览', 名: '预览接预览', 范围: [], 允许过期: true, 记录: 记录() });
+    expect(manifest.段.map((x) => [x.键, x.指纹, x.过期])).toEqual([['戊', 旧, true]]);
   });
 
   it('帧率不一样、母版帧数和段.ts 对不上都拒绝', async () => {

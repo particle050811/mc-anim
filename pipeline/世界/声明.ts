@@ -20,7 +20,18 @@ export type 包声明 = {
   /** false = 烘了也不登记进 assets/地形版本.json（演示、试验用的包；登记会让所有用地形的段过期） */
   登记: boolean;
 };
-export type 预生成块 = { 名: string; 两角?: [number, number, number, number]; 中心?: [number, number]; 半边?: [number, number]; 依据?: string };
+/** 矩形写 两角，或 中心 加 半边；走廊写 折线、半宽，可选 去掉（已在别的矩形块里的区块不重复生成）。怎么算区块见 预生成/范围.ts */
+export type 预生成块 = {
+  名: string;
+  形状: '矩形' | '走廊';
+  两角?: [number, number, number, number];
+  中心?: [number, number];
+  半边?: [number, number];
+  折线?: [number, number][];
+  半宽?: number;
+  去掉?: string[];
+  依据?: string;
+};
 export type 世界声明 = {
   名称: string;
   文件: string;
@@ -106,11 +117,25 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
     const 块们 = ((预.块 ?? []) as Record<string, unknown>[]).map((k, i): 预生成块 => {
       const 何 = `预生成.块 第 ${i + 1} 个`;
       if (typeof k.名 !== 'string') throw 错(`${何} 要写 名`);
+      const 依据 = typeof k.依据 === 'string' ? k.依据 : undefined;
+      const 形状 = k.形状 ?? (k.折线 !== undefined ? '走廊' : '矩形');
+      if (形状 === '走廊') {
+        const 线 = k.折线;
+        if (!Array.isArray(线) || 线.length < 2) throw 错(`${何}（${k.名}）是走廊，折线 要写至少两个 [x, z]`);
+        const 折线 = 线.map((p, j) => 数对(p, `${何}.折线 第 ${j + 1} 点`));
+        if (typeof k.半宽 !== 'number' || !(k.半宽 > 0)) throw 错(`${何}（${k.名}）是走廊，要写 半宽（米，正数）`);
+        return { 名: k.名, 形状, 折线, 半宽: k.半宽, 去掉: 字符串组(k.去掉, `${何}.去掉`), 依据 };
+      }
+      if (形状 !== '矩形') throw 错(`${何} 的 形状 只认 矩形、走廊`);
       const 两角 = k.两角 as number[] | undefined;
       if (两角 !== undefined && (!Array.isArray(两角) || 两角.length !== 4 || !两角.every(Number.isInteger))) throw 错(`${何} 的 两角 要写 [x1, z1, x2, z2]`);
-      if (!两角 && (k.中心 === undefined || k.半边 === undefined)) throw 错(`${何} 要写 两角，或 中心 加 半边`);
-      return { 名: k.名, 两角: 两角 as 预生成块['两角'], 中心: k.中心 === undefined ? undefined : 数对(k.中心, `${何}.中心`), 半边: k.半边 === undefined ? undefined : 数对(k.半边, `${何}.半边`), 依据: typeof k.依据 === 'string' ? k.依据 : undefined };
+      if (!两角 && (k.中心 === undefined || k.半边 === undefined)) throw 错(`${何} 要写 两角，或 中心 加 半边（走廊写 折线、半宽）`);
+      return { 名: k.名, 形状, 两角: 两角 as 预生成块['两角'], 中心: k.中心 === undefined ? undefined : 数对(k.中心, `${何}.中心`), 半边: k.半边 === undefined ? undefined : 数对(k.半边, `${何}.半边`), 依据 };
     });
+    const 块名 = 块们.map((k) => k.名);
+    const 块重名 = 块名.filter((n, i) => 块名.indexOf(n) !== i);
+    if (块重名.length) throw 错(`预生成块重名：${块重名.join('、')}`);
+    for (const k of 块们) for (const n of k.去掉 ?? []) if (!块们.some((b) => b.名 === n && b.形状 === '矩形')) throw 错(`走廊 ${k.名} 的 去掉 写了 ${n}，没有这个矩形块`);
     return {
       名称: 名,
       文件,

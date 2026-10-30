@@ -61,8 +61,12 @@ def 环境() -> dict[str, Path]:
 
 
 def 找映射(env: dict[str, Path]) -> Path | None:
-    # 官方映射先放在数据根 cache/动作翻译映射/（不进仓库、不进资产库）；游戏目录 缓存/ 是 sourcing/jars.toml 登记的位置
-    for p in (env["数据"] / "cache/动作翻译映射/client-1.20.1-mappings.txt", env["游戏"] / "缓存/client-1.20.1-mappings.txt"):
+    # 官方映射不进仓库、不进资产库：anim extract --下载 放数据根 cache/映射/；早先临时下的 cache/动作翻译映射/、游戏目录 缓存/ 也认
+    for p in (
+        env["数据"] / "cache/映射/client-1.20.1-mappings.txt",
+        env["数据"] / "cache/动作翻译映射/client-1.20.1-mappings.txt",
+        env["游戏"] / "缓存/client-1.20.1-mappings.txt",
+    ):
         if p.exists():
             return p
     return None
@@ -333,7 +337,11 @@ def 新版(原版: 真跑环境) -> 真跑环境:
     env = 环境()
     jdk = next((Path(d) / "bin" for d in (os.environ.get("JAVA21_HOME", ""), "/opt/homebrew/opt/openjdk@21", "/usr/lib/jvm/java-21-openjdk") if d and (Path(d) / "bin/java").exists()), None)
     client = env["游戏"] / "缓存/client-1.21.11.jar"
-    映射 = env["数据"] / "cache/动作翻译映射/client-1.21.11-mappings.txt"
+    # 1.21.11 的映射没在 jars.toml 登记，临时放 cache/动作翻译映射/；以后登记进 cache/映射/ 也认
+    映射 = next(
+        (p for p in (env["数据"] / f"cache/{d}/client-1.21.11-mappings.txt" for d in ("映射", "动作翻译映射")) if p.exists()),
+        env["数据"] / "cache/动作翻译映射/client-1.21.11-mappings.txt",
+    )
     libs = 库类路径(env, "1.21.11")
     if jdk is None or not client.exists() or not 映射.exists() or libs is None:
         pytest.skip(f"缺 JDK 21 / client-1.21.11.jar / 1.21.11 官方映射 / Prism 的 1.21.11 库（{client}、{映射}）")

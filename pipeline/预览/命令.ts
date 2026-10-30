@@ -11,6 +11,7 @@ import { 全部段 } from '../清单/清单.ts';
 import { 读作品资产锁 } from '../资产/资产锁.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
 import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
+import { 渲前跑cues } from '../段框架/自动.ts';
 
 /** Remotion CLI 的 js 入口：用 node 直接跑，不经 npx（Windows 上 npx 是 .cmd） */
 const remotion入口 = () => {
@@ -35,9 +36,11 @@ export const 预览命令: Record<string, 命令> = {
     说明: '开 Remotion Studio 在浏览器里预览所选作品（入口 <作品根>/index.ts，打包规则读 remotion.config.ts），参数原样转给 remotion studio',
     不记录: true,
     // remotion.config.ts 在 Remotion CLI 进程里求值，靠 ANIM_WORK 知道是哪部作品（资产锁、求解入口按它取）。
-    // 随仓库的字节、私有配乐（缺了换静音）先在这边备好，和 anim render 打包前一样（渲/渲.ts 的 打包）
+    // 随仓库的字节、私有配乐（缺了换静音）先在这边备好，和 anim render 打包前一样（渲/渲.ts 的 打包）；段框架的段先对齐生成的声音文件（段框架/自动.ts）。
+    // 开着 Studio 时改了 段.ts 的声音不会自动重生成，要手跑 anim cues
     跑: async (args) => {
       const 根 = 作品根();
+      for (const [k, x] of (await 渲前跑cues()).失败) console.error(`!! ${k} 的 anim cues 没跑通，Studio 里这段会报错：${x}`);
       补字节并报(根, 数据根());
       for (const x of 备好私有配乐(await 全部段(), 读作品资产锁(根), 数据根())) console.error(`!! ${缺配乐提示(x)}`);
       return 前台跑([process.execPath, remotion入口(), 'studio', 相对代码根(path.join(根, 'index.ts')), ...args], { cwd: 代码根(), env: { ...process.env, ANIM_WORK: 作品名() } });

@@ -75,12 +75,13 @@ npm ci
 
 ## 给台词配音（anim voice）
 
-作品的 `台词.toml` 是台词的唯一来源；配音、口型由 `anim voice` 从它出。要 [uv](https://docs.astral.sh/uv/)（Python 工具用它临时装依赖），TTS 和对齐模型在各自的仓库里自己装，位置写进 `anim.local.toml`（见 `anim.local.toml.example`）。
+作品的 `台词.toml` 是台词的唯一来源；配音、口型由 `anim voice` 从它出。要 [uv](https://docs.astral.sh/uv/)（Python 工具跑在它管的项目 venv 里，版本按 `uv.lock`；复核第一次跑会装 torch），TTS 和对齐模型在各自的仓库里自己装，位置写进 `anim.local.toml`（见 `anim.local.toml.example`）。
 
 ```
 ./anim voice backends                       有哪些 TTS 后端、这台机器上缺什么
 ./anim voice gen <台词 id> --dry-run        看要发给后端的请求，不合成
 ./anim voice gen <台词 id>                  按 [配音] 的种子各出一个候选，进数据根 run/草稿/配音/
+./anim voice review <台词 id>               复核候选：音色相似度、音高和响度起伏（gen 完自动跑），报告在候选目录的 复核.md
 ./anim voice use <台词 id> <候选.wav>       定稿：裁静音、拉响度、登记成私有资产、写回 台词.toml、出 台词/<id>.ts
 ./anim voice lip [前缀]                     重出口型（字的起止 → 嘴型）
 ./anim voice check [前缀]                   核对配音、句模块、口型能不能按字重算出来
@@ -119,6 +120,6 @@ npm ci
 ## 再往下
 
 - 架构、命名、决策记录在 `docs/`，先看 `docs/架构.md`。
-- 新段、新作品怎么写看 `docs/新段.md`：`anim new work <作品名>`、`anim new seg <段键> --场 <场键>` 照模板建文件，`anim cues` 按 `段.ts` 的声音 cue 生成本段的声音表和地址表。
+- 新段、新作品怎么写看 `docs/新段.md`：`anim new work <作品名>`、`anim new seg <段键> --场 <场键>` 照模板建文件，`anim cues` 按 `段.ts` 的声音 cue 生成本段的声音表和地址表（render、still、studio 开跑前自动跑）；跨段的声音写在场时间线上。
 - `作品/把回忆拼好给你/字节/` 由 `anim assets vendor` 照 `作品/把回忆拼好给你/随仓库.toml` 现算重写，`anim check` 核对它和代码的引用一致，见 `docs/决策/0005-随仓库发字节.md`。
 - 应力转动 挂 Release 的附件由 `anim assets pack --上传` 照 `作品/应力转动/随发布.toml` 打、传，`作品/应力转动/发布锁.json` 记每个附件的 sha256，`anim check` 核对它和代码要的一致，见 `docs/决策/0006-挂Release发字节.md`。

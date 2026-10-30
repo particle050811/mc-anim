@@ -103,8 +103,38 @@ export const 清单加一段 = (文本: string, 键: string, 章: number | '核�
   return `${文本.slice(0, 止)}\n  { 键: '${键}', 章: ${typeof 章 === 'number' ? 章 : `'核对'`} },${文本.slice(止)}`;
 };
 
-/** 在作品里加一个窗口段：段目录、段.ts、画面.tsx、空声音文件，排进清单末尾；场时间线没有就建一条（两个事件，先给 3 秒） */
-export const 新段 = (作品根: string, 键: string, o: { 场?: string; 起?: string; 止?: string }): string[] => {
+/** 本场已有的老段（定义段 写的，不是窗口段），清单顺序：段键、帧数，有 场窗口 的带起帧；fps、画幅不是默认的也带上 */
+export type 场里老段 = { 键: string; 帧数: number; 起帧?: number; fps: number; 宽: number; 高: number };
+
+/** 老场的场时间线：老段的帧数抄成数摆上来（engine/段/老段接续.ts；场不许 import 段），新段的起止事件接在最后一个老段后面 */
+const 老场时间线模板 = (场: string, 老段: readonly 场里老段[], 起: string, 止: string) => {
+  const 头 = 老段[0]!;
+  const 格式 = [
+    ...(头.fps !== 24 ? [`  fps: ${头.fps},`] : []),
+    ...(头.宽 !== 1280 || 头.高 !== 720 ? [`  画幅: { 宽: ${头.宽}, 高: ${头.高} },`] : []),
+  ];
+  return `// ${场} 的场时间线：本场的老段（定义段 写的）一个不改，帧数抄过来按清单顺序首尾相接摆上，事件 <段键>.起、<段键>.止（engine/段/老段接续.ts）；
+// 新段（窗口段）从这条线取窗口，跨段的声音写在 声音 里（只放进新段，老段照旧）。抄的帧数 anim check 和老段的 段.ts 对；老段中间有跳过的，给那一段写 起帧。纯模块。
+import { 接老段 } from '@engine/段/老段接续.ts';
+
+export default 接老段({
+  场: '${场}',
+${格式.join('\n')}${格式.length ? '\n' : ''}  老段: [
+${老段.map((x) => `    { 键: '${x.键}', 帧数: ${x.帧数}${x.起帧 !== undefined ? `, 起帧: ${x.起帧}` : ''} },`).join('\n')}
+  ],
+  事件: {
+    ${起}: { 在: { 接: '${老段.at(-1)!.键}.止' }, 依据: '暂定：接在本场最后一个老段后面' },
+    ${止}: { 在: { 接: '${起}', 加秒: 3 }, 依据: '暂定' },
+  },
+});
+`;
+};
+
+/**
+ * 在作品里加一个窗口段：段目录、段.ts、画面.tsx、空声音文件，排进清单末尾。场时间线没有就建一条：
+ * 本场没有老段时两个事件、先给 3 秒；有老段（老段，命令里照清单找出来）时用 接老段 把它们摆上去，新段接在后面。
+ */
+export const 新段 = (作品根: string, 键: string, o: { 场?: string; 起?: string; 止?: string; 老段?: readonly 场里老段[] }): string[] => {
   const 核对 = /^核对-(.+)$/.exec(键);
   const 正片 = /^(\d+)-(.+)$/.exec(键);
   if (!核对 && !正片) throw new Error(`段键要是 <章>-<段名> 或 核对-<名>：${键}`);
@@ -123,7 +153,8 @@ export const 新段 = (作品根: string, 键: string, o: { 场?: string; 起?: 
     if (!场) throw new Error('正片的段要给 --场 <场键>（同一场的段共用 场/<场键>/时间线.ts）');
     if (!new RegExp(`^\\d+-${名字符}+$`).test(场)) throw new Error(`场键要是 <章>-<场名>：${场}`);
     const 线文件 = path.join(作品根, '场', 场, '时间线.ts');
-    if (!fs.existsSync(线文件)) {
+    if (!fs.existsSync(线文件) && o.老段?.length) 写新文件(线文件, 老场时间线模板(场, o.老段, 起, 止), 写了);
+    else if (!fs.existsSync(线文件)) {
       写新文件(
         线文件,
         `// ${场} 的场时间线：本场的事件（秒、帧，或接在别的事件后面），本场各段按 [起事件, 止事件) 取窗口（engine/段/窗口段.ts）。纯模块。
@@ -139,8 +170,8 @@ export default 定义场时间线({
 `,
         写了,
       );
-    } else if (!/export default 定义场时间线/.test(fs.readFileSync(线文件, 'utf8'))) {
-      throw new Error(`${线文件} 不是 定义场时间线 做的（老写法的时间线），新段接不上；先给这场写一条 export default 定义场时间线(…)`);
+    } else if (!/export default (定义场时间线|接老段)\(/.test(fs.readFileSync(线文件, 'utf8'))) {
+      throw new Error(`${线文件} 不是 定义场时间线 或 接老段 做的（老写法的时间线），新段接不上；先给这场写一条 export default 定义场时间线(…)（老段要接上的用 接老段，见 docs/新段.md）`);
     }
     线导入 = `import { 窗口段 } from '@engine/段/窗口段.ts';\nimport 线 from '../../场/${场}/时间线.ts';\nimport 声音表 from './声音表.生成.ts';\n`;
   }
