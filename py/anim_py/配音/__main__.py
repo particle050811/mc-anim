@@ -58,9 +58,7 @@ def 跑(动作: str, 请求: dict):
 
         return 跑复核(请求.get('项') or list(默认项), [复核请求(**q) for q in 请求['请求']], bool(请求.get('只描述')))
     if 动作 == '复核项':
-        from .复核 import 复核表
-
-        from .复核 import 默认项
+        from .复核 import 复核表, 默认项
 
         return [{'名': c.名, '说明': c.说明, '云端': c.云端, '付费': c.付费, '默认': c.名 in 默认项, '缺': c().缺什么()} for c in 复核表().values()]
     raise SystemExit(f'没有动作「{动作}」')
