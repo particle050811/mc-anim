@@ -230,12 +230,16 @@ class NotRunning(Exception):
     pass
 
 
+# 连游戏里的接口一律直连：urllib 照 HTTP_PROXY 走代理，没设 NO_PROXY 时 127.0.0.1 也交给代理，游戏开着也报连不上（同 py/anim_py/网络.py）
+_DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
 def call(action, args=None, timeout=600, port=None):
     """POST /动作名。游戏没开（连不上）抛 NotRunning。"""
     body = json.dumps({"args": args or {}, "cwd": os.getcwd()}).encode()
     req = urllib.request.Request(f"http://127.0.0.1:{port or PORT}/{action}", data=body, headers={"Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with _DIRECT.open(req, timeout=timeout) as resp:
             return json.loads(resp.read().decode())
     except (urllib.error.URLError, ConnectionError) as e:
         raise NotRunning(str(e))
