@@ -25,7 +25,7 @@ def 本机服务():
             self.end_headers()
             self.wfile.write(b'ok')
 
-        def log_message(self, *a):
+        def log_message(self, format, *args):  # noqa: A002  照基类的签名
             pass
 
     s = http.server.HTTPServer(('127.0.0.1', 0), 答)
