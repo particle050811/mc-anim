@@ -93,7 +93,19 @@ const 转向 = (d: string, r: 旋转) => {
 };
 const 镜向 = (d: string, m: 镜像) => (m === 'left_right' ? ({ north: 'south', south: 'north' } as Record<string, string>)[d] ?? d : m === 'front_back' ? ({ east: 'west', west: 'east' } as Record<string, string>)[d] ?? d : d);
 
-/** 方块状态跟着转：facing、axis、rotation（0～15）、四个水平方向的连接属性。楼梯 shape、铁轨 shape 这类跟镜像的左右没换（记在 docs/世界.md） */
+// 铁轨的 shape（RailShape）由方向词拼成，跟着转、跟着镜像后按游戏的写法取回（south_east 不写成 east_south）
+const 轨形们 = ['north_south', 'east_west', 'ascending_east', 'ascending_west', 'ascending_north', 'ascending_south', 'south_east', 'south_west', 'north_west', 'north_east'];
+const 变换轨形 = (v: string, r: 旋转, m: 镜像) => {
+  if (!轨形们.includes(v)) return v;
+  const [a, b] = v.split('_') as [string, string];
+  const 变 = (d: string) => 转向(镜向(d, m), r);
+  if (a === 'ascending') return `ascending_${变(b)}`;
+  const [p, q] = [变(a), 变(b)];
+  return 轨形们.find((s) => s === `${p}_${q}` || s === `${q}_${p}`) ?? v;
+};
+
+/** 方块状态跟着转：facing、axis、rotation（0～15）、四个水平方向的连接属性、铁轨 shape；镜像时门的 hinge 左右对调（照 DoorBlock.mirror）。
+ * 楼梯 shape 镜像时左右没换（游戏里分朝向轴有特例，没照搬；记在 docs/世界.md） */
 export const 变换状态 = (s: string, r: 旋转, m: 镜像) => {
   if ((r === 'none' && m === 'none') || !s.includes('[')) return s;
   const i = s.indexOf('[');
@@ -103,6 +115,8 @@ export const 变换状态 = (s: string, r: 旋转, m: 镜像) => {
   for (const [k, v] of Object.entries(属性)) {
     if (k === 'facing' || k === 'horizontal_facing') 新[k] = 转向(镜向(v, m), r);
     else if (k === 'axis' && (r === 'clockwise_90' || r === 'counterclockwise_90')) 新[k] = v === 'x' ? 'z' : v === 'z' ? 'x' : v;
+    else if (k === 'shape') 新[k] = 变换轨形(v, r, m);
+    else if (k === 'hinge' && m !== 'none') 新[k] = v === 'left' ? 'right' : v === 'right' ? 'left' : v;
     else if (k === 'rotation' && /^\d+$/.test(v)) {
       let n = Number(v);
       // 照 Mirror.mirror(rotation, 16)：rotation 0 南、4 西、8 北、12 东；left_right 南北对调，front_back 东西对调

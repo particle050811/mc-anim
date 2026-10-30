@@ -97,6 +97,18 @@ describe('编辑文件', () => {
     expect(变换状态('minecraft:oak_log[axis=x]', 'counterclockwise_90', 'none')).toBe('minecraft:oak_log[axis=z]');
     expect(变换状态('minecraft:white_banner[rotation=4]', '180', 'none')).toBe('minecraft:white_banner[rotation=12]');
   });
+
+  it('铁轨 shape 跟着转、镜像，门的 hinge 镜像时对调', () => {
+    expect(变换状态('minecraft:rail[shape=north_south]', 'clockwise_90', 'none')).toBe('minecraft:rail[shape=east_west]');
+    expect(变换状态('minecraft:rail[shape=ascending_east]', 'clockwise_90', 'none')).toBe('minecraft:rail[shape=ascending_south]');
+    expect(变换状态('minecraft:rail[shape=south_east]', 'clockwise_90', 'none')).toBe('minecraft:rail[shape=south_west]');
+    expect(变换状态('minecraft:rail[shape=north_east]', 'none', 'left_right')).toBe('minecraft:rail[shape=south_east]');
+    expect(变换状态('minecraft:powered_rail[powered=false,shape=ascending_west]', 'none', 'front_back')).toBe('minecraft:powered_rail[powered=false,shape=ascending_east]');
+    expect(变换状态('minecraft:oak_door[facing=east,half=lower,hinge=left,open=false]', 'none', 'front_back')).toBe('minecraft:oak_door[facing=west,half=lower,hinge=right,open=false]');
+    expect(变换状态('minecraft:oak_door[facing=east,half=lower,hinge=left,open=false]', 'clockwise_90', 'none')).toBe('minecraft:oak_door[facing=south,half=lower,hinge=left,open=false]');
+    // 楼梯的 shape 不是方向词，转的时候不动
+    expect(变换状态('minecraft:oak_stairs[facing=north,half=bottom,shape=inner_left]', 'clockwise_90', 'none')).toBe('minecraft:oak_stairs[facing=east,half=bottom,shape=inner_left]');
+  });
 });
 
 describe('套用', () => {
