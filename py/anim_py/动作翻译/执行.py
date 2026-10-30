@@ -1059,11 +1059,18 @@ class 翻译器:
                 return self.常(t, f.常量) if t else f.常量
         if k in self.静态:
             return self.静态[k]
-        if c is not None and ref.类 not in self._已初始化:
+        if c is not None and ref.类 not in self._已初始化 and self._跑静态初始化(c, ref):
             self.初始化类(ref.类)
             if k in self.静态:
                 return self.静态[k]
         return 不透明(f"{ref.类.split('/')[-1]}.{ref.名}", ref.描述[1:-1] if ref.描述.startswith("L") else None)
+
+    def _跑静态初始化(self, c: 类文件, ref: 引用) -> bool:
+        """只为枚举、数值和数组（SwitchMap 这类表）、模型自己类层级的静态字段跑 <clinit>；
+        Items.BOW、Blocks.X 这类注册表对象当不透明，不然要具体跑整个注册表（SkeletonModel 卡几分钟）"""
+        if self.是枚举(c.名) or 基本类型(ref.描述) or ref.描述.startswith("["):
+            return True
+        return self.是子类(self.模型类, c.名)
 
     def 初始化类(self, 类名: str) -> None:
         self._已初始化.add(类名)
