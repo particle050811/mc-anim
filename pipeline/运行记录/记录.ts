@@ -47,7 +47,7 @@ export const 预计耗时 = (标签: string, 表 = 耗时表()): number | null =
   return 秒.length ? 秒[Math.floor(秒.length / 2)]! : null;
 };
 
-export type 事件 = { 时间: string; 级别: '信息' | '警告' | '错误'; 文本: string };
+export type 事件 = { 时间: string; 级别: '信息' | '警告' | '错误'; 文本: string; /** 命令抛出的错（cli/路由.ts）：屏幕上不一定打，这里总记 */ 调用栈?: string };
 
 export class 运行记录 {
   命令: string;
