@@ -15,7 +15,7 @@ export type 声音表 = { 资产: Readonly<Record<string, 表里音频数>>; 台
 
 export const 空声音表: 声音表 = { 资产: {}, 台词: {} };
 
-// 收集模式的开关：anim cues 执行 段.ts 前在 globalThis 上放一个 Set，助手把表里缺的 id 记进去。用 Symbol.for，esbuild 各打一份也认得同一个
+// 收集模式的开关：anim cues 执行 段.ts 前在 globalThis 上放一个 Set，助手把要过的 id 记进去。用 Symbol.for，esbuild 各打一份也认得同一个
 const 收集键 = Symbol.for('mc-anim.段框架.收集声音');
 type 带收集 = { [收集键]?: Set<string> };
 export const 开始收集 = (): Set<string> => ((globalThis as 带收集)[收集键] = new Set());
@@ -54,14 +54,13 @@ const 默认名 = (id: string) => id.slice(id.lastIndexOf('/') + 1);
 export const 做声音助手 = (o: { fps: number; 帧数: number; 表?: 声音表; 段名?: string }) => {
   const 表 = o.表 ?? 空声音表;
   const 出处 = o.段名 ? `${o.段名} 的` : '本段';
+  /** 查本段声音表里一件的数。收集模式下要过的 id 全记下（表里有的也记：生成的表要含它们，否则下一轮它不在表里又被当成缺的，表来回翻），缺的给 undefined */
   const 数 = (id: string): 音频数 | undefined => {
+    const 收 = 收集中();
+    收?.add(id);
     const x = 表.资产[id];
     if (x) return x;
-    const 收 = 收集中();
-    if (收) {
-      收.add(id);
-      return undefined;
-    }
+    if (收) return undefined;
     throw new 缺声音数(`${出处}声音表里没有「${id}」的时长、峰值：跑 anim cues（段.ts 加了声音要重新生成 声音表.生成.ts、声音地址.生成.ts）`);
   };
 
@@ -114,7 +113,7 @@ export const 做声音助手 = (o: { fps: number; 帧数: number; 表?: 声音�
   /** 一句话的后半截（前面本段或上一段已经开口）：从本段第 帧 帧（整帧）接着放 */
   const 接着说 = (台词: string, 帧: number, s: { 帧数?: number } = {}): 台词cue => ({ 帧, 台词, 接上段: true, ...(s.帧数 !== undefined ? { 帧数: s.帧数 } : {}) });
 
-  return { 放, 说, 接着说 };
+  return { 放, 说, 接着说, 数 };
 };
 
 export type 声音助手 = ReturnType<typeof 做声音助手>;
