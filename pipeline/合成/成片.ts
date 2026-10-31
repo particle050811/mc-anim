@@ -172,12 +172,28 @@ const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) =>
   return 结果;
 };
 
-// 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 96k，50 MB 以内；超了按比例降码率重压，最多 3 次。
-// 真峰值只量、记进 manifest，超 −1 dBTP 报警不重做：96k 的超出是 AAC 编码噪声，压低限幅或增益重压实测不降反升（第 6、7 章 −0.8 dBTP）
+// 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 128k，50 MB 以内；超了按比例降码率重压，最多 3 次。
 const 分享上限MB = 50;
 const 分享视频kbps = 760;
-// 96k 编码比成片多冲 0.5 dB、真峰超规矩，用户 10-31 定 128k
+// 96k 真峰超规矩，用户 10-31 定 128k
 const 分享音频kbps = 128;
+// AAC 的过冲不随码率、限幅单调变，声音差几十个样本也会差 0.5 dB（第 6-7 章量过），只能压完量：超 −1 dBTP 就压低限幅重压。只动分享版的声音，成片不变
+const 压分享声音 = (拉: (余量: number, 出: string) => void, 起余量: number, 工作: string) => {
+  const ffmpeg = 配置('ffmpeg');
+  const 中间 = path.join(工作, '分享声音.wav');
+  const 出 = path.join(工作, '分享声音.m4a');
+  let 余量 = 起余量;
+  let 真峰值 = Infinity;
+  for (let i = 0; i < 6; i++) {
+    拉(余量, 中间);
+    跑出([ffmpeg, '-v', 'error', '-y', '-i', 中间, '-c:a', 'aac', '-b:a', `${分享音频kbps}k`, 出]);
+    真峰值 = 量响度(出).真峰值;
+    console.log(`分享版声音：限幅 ${(真峰值上限 - 余量).toFixed(1)} dBFS → 真峰值 ${真峰值.toFixed(1)} dBTP`);
+    if (真峰值 <= 真峰值上限) break;
+    余量 += 真峰值 - 真峰值上限 + 0.1;
+  }
+  return { 声音: 出, 限幅dBFS: 真峰值上限 - 余量 };
+};
 const 压分享版 = async (成片: string, 声音: string, 出: string, 工作: string, 时长: number) => {
   const ffmpeg = 配置('ffmpeg');
   let kbps = Math.min(分享视频kbps, Math.floor((分享上限MB * 8e3 * 0.97) / 时长 - 分享音频kbps));
@@ -186,7 +202,7 @@ const 压分享版 = async (成片: string, 声音: string, 出: string, 工作:
   for (let i = 0; i < 3; i++) {
     await 跑(低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, ...视频, '-b:v', `${kbps}k`, '-pass', '1', '-passlogfile', log, '-an', '-f', 'null', '-']));
     await 跑(
-      低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, '-i', 声音, ...视频, '-map', '1:a', '-b:v', `${kbps}k`, '-pass', '2', '-passlogfile', log, '-c:a', 'aac', '-b:a', `${分享音频kbps}k`, '-movflags', '+faststart', 出]),
+      低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, '-i', 声音, ...视频, '-map', '1:a', '-b:v', `${kbps}k`, '-pass', '2', '-passlogfile', log, '-c:a', 'copy', '-movflags', '+faststart', 出]),
     );
     const mb = fs.statSync(出).size / 1e6;
     console.log(`分享版 ${mb.toFixed(1)} MB（视频 ${kbps} kbps）`);
@@ -277,11 +293,14 @@ export const 合成成片 = async (
   const 增益 = 静音 ? 0 : 目标响度 - 原.lufs;
   const 拉好 = path.join(工作, '全片声音.wav');
   const 成品音 = path.join(工作, '全片声音.m4a');
+  const 拉 = (余量: number, 出: string) => {
+    const limit = 10 ** ((真峰值上限 - 余量) / 20);
+    跑出([ffmpeg, '-v', 'error', '-y', '-i', 未拉, '-vn', '-af', `volume=${增益.toFixed(2)}dB,alimiter=limit=${limit.toFixed(4)}:attack=1:release=50:level=disabled:asc=0`, '-ar', String(采样率), '-c:a', 'pcm_s24le', 出]);
+  };
   let 余量 = 0.5;
   let 终 = 原;
   for (let i = 0; i < 4; i++) {
-    const limit = 10 ** ((真峰值上限 - 余量) / 20);
-    跑出([ffmpeg, '-v', 'error', '-y', '-i', 未拉, '-vn', '-af', `volume=${增益.toFixed(2)}dB,alimiter=limit=${limit.toFixed(4)}:attack=1:release=50:level=disabled:asc=0`, '-ar', String(采样率), '-c:a', 'pcm_s24le', 拉好]);
+    拉(余量, 拉好);
     跑出([ffmpeg, '-v', 'error', '-y', '-i', 拉好, '-c:a', 'aac', '-b:a', '192k', 成品音]);
     终 = 量响度(成品音);
     console.log(`响度：原 ${原.lufs.toFixed(1)} LUFS → 加 ${增益.toFixed(1)} dB、限幅 ${(真峰值上限 - 余量).toFixed(1)} dBFS → ${终.lufs.toFixed(1)} LUFS、真峰值 ${终.真峰值.toFixed(1)} dBTP`);
@@ -368,11 +387,12 @@ export const 合成成片 = async (
     console.log(`同步表：${r.总} 条 cue，成片声音里 ±1 帧内测到起音的 ${r.对上} 条`);
   }
   点('核对声音');
-  let 分享: { kbps: number; MB: number; 真峰值: number } | null = null;
+  let 分享: { kbps: number; MB: number; 真峰值: number; 限幅dBFS: number } | null = null;
   if (opts.分享版) {
     const 出 = path.join(dir, `${opts.名}-分享版${分享上限MB}MB.mp4`);
-    分享 = { ...(await 压分享版(成片, 拉好, 出, 工作, 时长秒(成片))), 真峰值: 量响度(出).真峰值 };
-    if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，超过 ${真峰值上限}（AAC ${分享音频kbps}k 的编码噪声，成片本身没超）`);
+    const 分享声音 = 压分享声音(拉, 余量, 工作);
+    分享 = { ...(await 压分享版(成片, 分享声音.声音, 出, 工作, 时长秒(成片))), 真峰值: 量响度(出).真峰值, 限幅dBFS: 分享声音.限幅dBFS };
+    if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，压低限幅 6 次还超过 ${真峰值上限}`);
     文件.分享版 = path.basename(出);
     opts.记录.产物.push(出);
     点('分享版');
@@ -405,7 +425,7 @@ export const 合成成片 = async (
     字幕: { 句数: 字幕.句们.length, 屏数: 字幕.屏们.length, 叠了: !opts.不叠字幕 && 字幕.屏们.length > 0, 开口最大差帧: 开口最大差 },
     同步表: 同步,
     接缝: { 处数: 接缝们.length, 首帧重复: 接缝们.filter((x) => x.判断 === '首帧重复').map((x) => `${x.前} → ${x.后}`) },
-    分享版: 分享 && { 视频kbps: 分享.kbps, 音频kbps: 分享音频kbps, MB: Number(分享.MB.toFixed(2)), 真峰值dBTP: 分享.真峰值 },
+    分享版: 分享 && { 视频kbps: 分享.kbps, 音频kbps: 分享音频kbps, MB: Number(分享.MB.toFixed(2)), 限幅dBFS: Number(分享.限幅dBFS.toFixed(2)), 真峰值dBTP: 分享.真峰值 },
     文件,
   };
   原子写(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
