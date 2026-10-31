@@ -4,12 +4,13 @@
 import type { SectionData } from './区段包.ts';
 import type { CutBox, FlattenArea, 区段包信息 } from './导入区段.ts';
 import type { VoxelGrid } from './生成.ts';
+import { 桩 } from './桩.ts';
 
 export type 工人消息 =
   | { type: '来源'; ctx: number; info: 区段包信息; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
   | { type: '取'; id: number; url: string; start: number; len: number; parts: { off: number; len: number; ctx?: number }[] };
 export type 区段结果 = { data: SectionData; voxels: VoxelGrid | null };
-export type 工人回信 = { id: number; out: 区段结果[]; transfers: ArrayBuffer[] };
+export type 工人回信 = { id: number; out: 区段结果[]; transfers: ArrayBuffer[]; 桩?: Record<string, number> };
 
 // 工人数：取、解大半在等网络和解压，三个够；网格池另有自己的工人
 const workerCount = Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 4) - 2));
@@ -25,7 +26,8 @@ const openPool = () => {
   if (workers) return workers;
   workers = Array.from({ length: workerCount }, () => {
     const worker = new Worker(new URL('./区段工人.ts', import.meta.url));
-    worker.onmessage = (event: MessageEvent<{ id: number; out?: 区段结果[]; err?: string }>) => {
+    worker.onmessage = (event: MessageEvent<{ id: number; out?: 区段结果[]; err?: string; 桩?: Record<string, number> }>) => {
+      for (const [k, v] of Object.entries(event.data.桩 ?? {})) 桩.加(k, v);
       const job = pendingJobs.get(event.data.id);
       pendingJobs.delete(event.data.id);
       if (event.data.err !== undefined) job?.reject(new Error(`区段工人：${event.data.err}`));

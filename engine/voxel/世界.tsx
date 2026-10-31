@@ -12,7 +12,8 @@
 // 挑区段时视野往背着光的方向多留 300 米：画面外、光源那边的块（树、山）也会把影子投进画面。
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
-import { cancelRender, continueRender, delayRender } from 'remotion';
+import { cancelRender, continueRender, delayRender, useCurrentFrame } from 'remotion';
+import { 桩, 桩开 } from './桩.ts';
 import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
@@ -111,6 +112,9 @@ const distToBox = (b: number[], p: number[]) =>
   Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[3]), Math.max(b[1] - p[1], 0, p[1] - b[4]), Math.max(b[2] - p[2], 0, p[2] - b[5]));
 
 export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: source, 中心: camPos, 像素: splitPixels, 远: farM, 高度: heightRange = [-30, 140], shadowLightDir }) => {
+  const curFrame = useCurrentFrame();
+  桩.帧(curFrame);
+  const 桩起 = useRef(0);
   const camera = useThree((st) => st.camera) as THREE.PerspectiveCamera;
   const size = useThree((st) => st.size);
   const advance = useThree((st) => st.advance);
@@ -134,6 +138,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const sx = lh ? (-shadowLightDir![0] / lh) * shadowMarginM : 0;
   const sy = lh ? (-shadowLightDir![1] / lh) * shadowMarginM : 0;
   const backlit = shadowLightDir ? backlitDirs(shadowLightDir) : null;
+  const 桩挑 = performance.now();
   const list: SectionId[] = pickSections({
     camPos: camPos,
     pixelAngle: (camera.fov * Math.PI) / 180 / size.height,
@@ -145,6 +150,9 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
       return probe.z + probe.crown + 5;
     },
   });
+  桩.加('挑区段ms', performance.now() - 桩挑);
+  桩.加('渲染次n', 1);
+  桩.取最大('区段n', list.length);
   const putEntry = (section: SectionId, entry: Entry) => {
     const k = sectionKey(section);
     if (cache.has(k)) return;
@@ -155,12 +163,19 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   // 导入的地形要先从包里取区段（fetch），没取到的等取齐了再建
   const unbuilt = list.filter((q) => !cache.has(sectionKey(q)));
   const unkept = unbuilt.filter((q) => !kept.has(keptKey(worldKey, q)));
+  if (桩开) {
+    桩.取最大('未建n', unbuilt.length);
+    桩.取最大('未建未留n', unkept.length);
+  }
+  const 桩预取 = performance.now();
   if (unkept.length) source.prefetch?.(unkept);
+  桩.加('预取同步ms', performance.now() - 桩预取);
   // 后台建的是最近一次渲染要的（每次渲染都换成这一次的 `unbuilt`）：后台还没建完、要的区段变了，新的照样排进去，不会一直等到超时。
   // 后台每建一小批就回头看一次要建什么、要的齐不齐（`prefetch` 可能把没建的丢了要重取），都建完了重画一次，还有没建的就再开后台，都齐了才放行截图（见下面的 useEffect）
   toBuild.current = unbuilt;
   if (unbuilt.length) {
     if (delayHandle.current === null) {
+      桩起.current = performance.now();
       delayHandle.current = delayRender(`体素世界：还有 ${unbuilt.length} 块区段`, { timeoutInMilliseconds: 30 * 60 * 1000 });
       voxelsPending.add(delayHandle);
     }
@@ -179,7 +194,9 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           const toFetch = keptNow.size ? qs.filter((q) => !keptNow.has(sectionKey(q))) : qs;
           const prefetching = toFetch.length ? source.prefetch?.(toFetch) : undefined;
           if (prefetching) {
+            const 桩t = performance.now();
             await prefetching;
+            桩.加('等取ms', performance.now() - 桩t);
             continue;
           }
           // 主线程按 qs 的先后取体素块、交给网格池；建好的按同样的先后建 three 网格、进缓存（three 的物体编号跟着建的先后走，
@@ -188,9 +205,16 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           const inFlight: { q: SectionId; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null; m: Promise<SectionMesh> | null; rec: Kept | null }[] = [];
           const collectOne = async () => {
             const x = inFlight.shift()!;
+            const 桩t = performance.now();
             const mesh = x.m && (await x.m);
+            桩.加('等网格ms', performance.now() - 桩t);
+            const 桩t2 = performance.now();
             const rec = x.rec ?? keep(keptKey(worldKey, x.q), { mesh, V: x.V, used: keptClock });
             putEntry(x.q, x.V && mesh ? meshToEntry(mesh, x.V, x.q, rec) : emptyEntry(rec));
+            桩.加('建three网格ms', performance.now() - 桩t2);
+            桩.加('入缓存n', 1);
+            if (x.rec) 桩.加('留着命中n', 1);
+            if (mesh) 桩.加('入缓存面', mesh.面数);
           };
           const t = performance.now();
           for (const section of qs) {
@@ -200,12 +224,18 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
               inFlight.push({ q: section, V: rec.V, m: rec.mesh && Promise.resolve(rec.mesh), rec });
               continue;
             }
+            const 桩t = performance.now();
             const voxels = source.区段(section);
+            桩.加('主线程取体素ms', performance.now() - 桩t);
+            if (voxels) 桩.建过(keptKey(worldKey, section));
+            else 桩.加('空区段n', 1);
             inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.转交) : null, rec: null });
             if (performance.now() - t > 1000) break; // 隔一会儿回头看一次要建的变没变
           }
           while (inFlight.length) await collectOne();
+          const 桩t3 = performance.now();
           await new Promise((r) => setTimeout(r, 0));
+          桩.加('让路ms', performance.now() - 桩t3);
         }
         building.current = false;
         forceRedraw((v) => v + 1);
@@ -251,19 +281,26 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     for (const [k, entry] of all) {
       if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
       for (const mesh of [...entry.meshes, ...entry.shadowMeshes]) mesh.geometry.dispose();
+      桩.加('挤掉n', 1);
       world.faceCount -= entry.faceCount;
       cache.delete(k);
     }
   }
+  const 桩kept = kept.size;
   trimKept();
+  桩.加('留着挤掉n', 桩kept - kept.size);
   // 异步建完、这一次全都挂上了：手动再画一次，画完才放行截图
   const allBuilt = unbuilt.length === 0;
   useEffect(() => () => void voxelsPending.delete(delayHandle), []);
   useEffect(() => {
     if (!allBuilt || delayHandle.current === null) return;
     voxelsPending.delete(delayHandle);
+    桩.加('体素等待到建齐ms', performance.now() - 桩起.current);
+    const 桩t = performance.now();
     advance(performance.now());
+    桩.加('建齐后重画ms', performance.now() - 桩t);
     continueRender(delayHandle.current);
+    桩.写();
     delayHandle.current = null;
   });
   return <primitive object={group} />;

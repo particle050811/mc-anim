@@ -12,24 +12,35 @@ const contexts = new Map<number, 区段上下文>();
 const gunzip = (bytes: Uint8Array<ArrayBuffer>) => new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
 
 const run = async (msg: Extract<工人消息, { type: '取' }>): Promise<工人回信> => {
+  const 桩0 = performance.now();
+  const 桩t: Record<string, number> = { 取字节工人ms: 0, 解压工人ms: 0, 解码工人ms: 0, 换体素工人ms: 0, 取字节: msg.len, 解开字节: 0, 取区段n: msg.parts.length, 取请求n: 1 };
   const res = await fetch(msg.url, { headers: { Range: `bytes=${msg.start}-${msg.start + msg.len - 1}` } });
   if (res.status !== 206) throw new Error(`按 Range 取 ${msg.url} 的 ${msg.start}～${msg.start + msg.len} 字节，回的是 ${res.status}（要 206）`);
   const bytes = new Uint8Array(await res.arrayBuffer());
+  桩t.取字节工人ms = performance.now() - 桩0;
   const out: { data: SectionData; voxels: VoxelGrid | null }[] = [];
   const transfers: ArrayBuffer[] = [];
   for (const part of msg.parts) {
-    const data = decodeSection(new Uint8Array(await gunzip(bytes.subarray(part.off, part.off + part.len))));
+    let 桩a = performance.now();
+    const 桩解 = new Uint8Array(await gunzip(bytes.subarray(part.off, part.off + part.len)));
+    桩t.解压工人ms += performance.now() - 桩a;
+    桩t.解开字节 += 桩解.byteLength;
+    桩a = performance.now();
+    const data = decodeSection(桩解);
+    桩t.解码工人ms += performance.now() - 桩a;
     transfers.push(data.palette.buffer as ArrayBuffer); // 四个数组同一块缓冲（decodeSection）
     let voxels: VoxelGrid | null = null;
     const ctx = part.ctx === undefined ? undefined : contexts.get(part.ctx);
     if (ctx) {
+      桩a = performance.now();
       voxels = importedSectionVoxels(data, ctx);
+      桩t.换体素工人ms += performance.now() - 桩a;
       transfers.push(voxels.vox.buffer as ArrayBuffer);
       if (voxels.挖空) transfers.push(voxels.挖空.buffer as ArrayBuffer);
     }
     out.push({ data, voxels });
   }
-  return { id: msg.id, out, transfers };
+  return { id: msg.id, out, transfers, 桩: 桩t };
 };
 
 self.onmessage = (event: MessageEvent<工人消息>) => {
@@ -39,7 +50,7 @@ self.onmessage = (event: MessageEvent<工人消息>) => {
     return;
   }
   run(msg).then(
-    (reply) => (self as unknown as Worker).postMessage({ id: reply.id, out: reply.out }, reply.transfers),
+    (reply) => (self as unknown as Worker).postMessage({ id: reply.id, out: reply.out, 桩: reply.桩 }, reply.transfers),
     (err) => (self as unknown as Worker).postMessage({ id: msg.id, err: String((err as Error)?.stack ?? err) }),
   );
 };

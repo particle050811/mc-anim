@@ -2,6 +2,7 @@
 // 体素块默认拷给工人：来源要是缓存了体素块，转交会把缓存清空；来源声明了 `转交`（生成.ts，`区段` 每次给新的）才转交。建好的网格是工人新建的数组，转交回来。
 import type { SectionMesh } from './网格.ts';
 import type { VoxelGrid } from './生成.ts';
+import { 桩 } from './桩.ts';
 
 // 工人数：留两个核给主线程和 GPU 进程。Remotion 开几个并发标签页就有几个池，几个池抢同一批核，并发 1（remotion.config.ts）时正合适
 const workerCount = Math.max(1, Math.min(8, (navigator.hardwareConcurrency || 4) - 2));
@@ -16,7 +17,10 @@ const openPool = () => {
   if (workers) return workers;
   workers = Array.from({ length: workerCount }, () => {
     const worker = new Worker(new URL('./网格工人.ts', import.meta.url));
-    worker.onmessage = (event: MessageEvent<{ id: number; m: SectionMesh }>) => {
+    worker.onmessage = (event: MessageEvent<{ id: number; m: SectionMesh; 桩ms?: number }>) => {
+      桩.加('建网格工人ms', event.data.桩ms ?? 0);
+      桩.加('建网格面', event.data.m.面数);
+      桩.加('网格字节', event.data.m.面数 * 88);
       const job = pendingJobs.get(event.data.id);
       pendingJobs.delete(event.data.id);
       job?.resolve(event.data.m);

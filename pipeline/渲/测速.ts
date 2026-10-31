@@ -81,6 +81,9 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
               imageFormat: 参数.imageFormat, jpegQuality: 参数.jpegQuality, scale: 参数.scale, concurrency: 参数.concurrency,
               timeoutInMilliseconds: 等帧超时毫秒, overwrite: true, logLevel: 渲染日志, frameRange: 帧,
               ...(opts.关共享内存 ? { disableSharedMemoryCapture: true } : {}),
+              // 临时插桩：ANIM_Z=<级别> 时打开页面里的桩（engine/voxel/桩.ts），日志行写到 ANIM_ZF
+              ...(process.env.ANIM_Z ? { envVariables: { ANIM_Z: process.env.ANIM_Z, ...JSON.parse(process.env.ANIM_ZE ?? '{}') } } : {}),
+              ...(process.env.ANIM_ZF ? { onBrowserLog: (log: { text: string }) => { if (log.text.startsWith('@桩')) fs.appendFileSync(process.env.ANIM_ZF!, log.text + '\n'); } } : {}),
               onProgress: (p) => {
                 if (p.renderedFrames === 上次帧数) return;
                 const now = Date.now();

@@ -4,6 +4,7 @@
 // 坐标：导出时减去 origin，这里再从游戏坐标（Y 朝上、南 = +Z）换成参考模型坐标（Z 朝上、南 = -Y），1 = 一格。
 import React, { useEffect, useMemo, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
+import { 桩 } from './桩.ts';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { selfLight } from '../light/光照配比.ts';
@@ -338,22 +339,32 @@ export const BlockMesh: React.FC<{
   useEffect(() => {
     if (handle === null) return;
     // bin 是打包进来的文件地址（不在数据根），直接 fetch
+    const 桩0 = performance.now();
+    let 桩解 = 0, 桩长 = 0;
     fetch(bin)
       .then((r) => r.arrayBuffer())
       // .bin 是 gzip 压过的（开头两个字节 1f 8b）；没压过的旧文件原样用
       .then((buf) => {
+        桩解 = performance.now();
+        桩长 = buf.byteLength;
         const head = new Uint8Array(buf, 0, 2);
         return head[0] !== 0x1f || head[1] !== 0x8b ? buf : gunzip(buf);
       })
       .then((buf) => {
         const bytes = new Uint8Array(buf);
+        桩.事件('方块网格取', { bin: bin.slice(-24), 压缩字节: 桩长, 解开字节: bytes.byteLength, 取ms: 桩解 - 桩0, 解压ms: performance.now() - 桩解 });
         loaded.set(bin, bytes);
         setData(bytes);
       })
       .catch((e) => cancelRender(e));
   }, [bin, handle]);
   const meshes = useMemo(
-    () => (data ? build(info, data, acquireAtlas(atlas), { clearPlants, hide, hideBlocks, patchEdges, glow, fullbright }) : null),
+    () => {
+      const 桩0 = performance.now();
+      const 建成 = data ? build(info, data, acquireAtlas(atlas), { clearPlants, hide, hideBlocks, patchEdges, glow, fullbright }) : null;
+      if (建成) 桩.事件('方块网格建', { bin: bin.slice(-24), 建ms: performance.now() - 桩0, 面: info.layers.reduce((s, l) => s + l.quads, 0) });
+      return 建成;
+    },
     [info, data, atlas, clearPlants, hide, hideBlocks, patchEdges, glow, fullbright],
   );
   // 卸载、重建（块出了视野、换了 hide）时释放这份网格的显存；R3F 不替 primitive 释放
@@ -368,7 +379,9 @@ export const BlockMesh: React.FC<{
   const advance = useThree((s) => s.advance);
   useEffect(() => {
     if (!meshes || handle === null) return;
+    const 桩t = performance.now();
     advance(performance.now());
+    桩.事件('方块网格重画', { bin: bin.slice(-24), ms: performance.now() - 桩t });
     continueRender(handle);
   }, [meshes, handle, advance]);
   if (!meshes) return null;

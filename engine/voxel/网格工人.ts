@@ -6,9 +6,11 @@ const materialKeys = ['实心', '镂空', '实心树叶', '水', '花草'] as co
 
 self.onmessage = (event: MessageEvent<{ id: number; V: VoxelGrid; 实心树叶: boolean }>) => {
   const { id, V: voxels, 实心树叶: solidLeaves } = event.data;
+  const 桩0 = performance.now();
   const mesh: SectionMesh = buildSectionMesh(voxels, solidLeaves);
+  const 桩ms = performance.now() - 桩0;
   // 同一块缓冲只能转交一次；空的不转交
   const transfers = new Set<ArrayBuffer>();
   for (const k of materialKeys) for (const array of [mesh[k].pos, mesh[k].uv, mesh[k].tex, mesh[k].col]) if (array.byteLength) transfers.add(array.buffer as ArrayBuffer);
-  (self as unknown as Worker).postMessage({ id, m: mesh }, [...transfers]);
+  (self as unknown as Worker).postMessage({ id, m: mesh, 桩ms }, [...transfers]);
 };

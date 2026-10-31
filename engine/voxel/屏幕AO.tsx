@@ -17,6 +17,7 @@
 // 尺寸用画布实际像素（dpr、超采样跟着变）；半径按世界尺度。
 import { useFrame } from '@react-three/fiber';
 import { voxelsPending } from './世界.tsx';
+import { 桩, 桩级别 } from './桩.ts';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { DIR_FOG_GLSL, HEIGHT_FOG_GLSL, dirFog, heightFog } from '../light/高度雾.ts';
@@ -241,7 +242,11 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       return;
     }
     // 体素世界还在后台建区段：这一遍画出来也是半截的，截图前建齐了会再画一次，这一遍不画
-    if (voxelsPending.size) return;
+    if (voxelsPending.size) {
+      桩.加('AO跳过n', 1);
+      return;
+    }
+    const 桩t = performance.now();
     const { rt, mat, bufSize: bufSize, saved: saved } = resources;
     gl.getDrawingBufferSize(bufSize);
     const width = Math.max(1, Math.floor(bufSize.x));
@@ -380,6 +385,16 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     [gl.autoClearColor, gl.autoClearDepth, gl.autoClearStencil] = ac;
     gl.shadowMap.autoUpdate = shadowAuto;
     saved.length = 0;
+    桩.加('AO画CPUms', performance.now() - 桩t);
+    桩.加('AO画n', 1);
+    if (桩级别 >= 2) {
+      // 等 GPU 画完：只有量分解的时候开，算 GPU 时间用，不和正式数比
+      const c = gl.getContext();
+      const 桩g = performance.now();
+      c.readPixels(0, 0, 1, 1, c.RGBA, c.UNSIGNED_BYTE, new Uint8Array(4));
+      桩.加('等GPUms', performance.now() - 桩g);
+    }
+    桩.写();
   }, 1);
   return null;
 };
