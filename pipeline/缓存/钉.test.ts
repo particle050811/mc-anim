@@ -20,7 +20,8 @@ const 新 = 'a'.repeat(64);
 const 旧 = 'b'.repeat(64);
 const 旧16 = 旧.slice(0, 16);
 const 键 = '甲';
-const 现在 = Date.parse('2026-10-30T12:00:00Z');
+// 取真实时间：列文件判「正在写」用的是 Date.now()，写死的时间过一天就对不上
+const 现在 = Date.now();
 const 小时 = 3600e3;
 const 目录 = () => 母版目录(键, '假');
 

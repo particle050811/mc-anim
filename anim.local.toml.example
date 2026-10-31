@@ -29,13 +29,11 @@
 # 跑 mcai 和取材脚本的 Python。环境变量 ANIM_PYTHON。默认：Windows 上 python，其余 python3
 # python = "python3"
 
-# anim voice 的外部模型仓库（各带自己的 .venv 和模型；缺了只影响用到它的后端）。环境变量 ANIM_FIRERED、ANIM_INDEXTTS、ANIM_ALIGNER。默认 ~/Developer/personal/ 下的 FireRedTTS3、IndexTTS、qwen-aligner
-# firered = "/Users/me/Developer/personal/FireRedTTS3"
-# indextts = "/Users/me/Developer/personal/IndexTTS"
-# aligner = "/Users/me/Developer/personal/qwen-aligner"
+# anim voice 合成用的 image-flow 命令行壳。环境变量 ANIM_IMAGE_FLOW。默认 ~/Developer/personal/image-flow/skills/image-flow/imgflow.mjs
+# image_flow = "/Users/me/Developer/personal/image-flow/skills/image-flow/imgflow.mjs"
 
-# GPT-SoVITS api_v2 服务地址（anim voice 的 gpt-sovits 后端；服务由人起好、换好角色权重）。环境变量 ANIM_GPT_SOVITS。默认 http://127.0.0.1:9880
-# gpt_sovits = "http://127.0.0.1:9880"
+# anim voice lip 对字用的对齐器（uv 工程，带自己的 .venv 和模型）。环境变量 ANIM_ALIGNER。默认 ~/Developer/personal/qwen-aligner
+# aligner = "/Users/me/Developer/personal/qwen-aligner"
 
 # 资源闸锁目录。环境变量 ANIM_LOCK_DIR。默认：<数据根>/run/locks
 # lock_dir = "../mc-anim-data/run/locks"
