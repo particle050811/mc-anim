@@ -124,7 +124,7 @@ const 清命中的旧 = async (种: '母版' | '叠层', 项们: { 键: string; 
   });
 };
 
-export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 记录: 运行记录 }): Promise<母版结果[]> => {
+export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 留CRF1?: boolean; 记录: 运行记录 }): Promise<母版结果[]> => {
   // 先补字节再算指纹：空数据根时指纹的「缺字节」项要按补完的算，不然母版落在错的指纹下、film 认不出
   补字节并报(作品根(), 数据根());
   const 参数 = 渲染参数(级别);
@@ -216,7 +216,8 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
           const t2 = Date.now();
           try {
             const z = await 存成压缩(r.段.键, r.指纹.指纹, 级别, { 记录: opts.记录 });
-            fs.rmSync(原, { force: true });
+            // 留CRF1：verify --对基线 要逐帧比，只有 CRF1 能比；留下的已被取代，下次 film 或 gc 就删
+            if (!opts.留CRF1) fs.rmSync(原, { force: true });
             r.母版 = z.文件;
             console.log(`   ${r.段.键}：CRF1 ${(z.原大小 / 1e9).toFixed(2)} GB → CRF12 ${(z.新大小 / 1e9).toFixed(2)} GB`);
           } catch (e) {
