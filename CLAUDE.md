@@ -30,7 +30,7 @@ anim cache gc [--执行]                     缓存回收，默认只看；--执
 anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转 CRF12（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
-anim world list|bake|edit|pregen|server|freeze|block|heightmap|map|slice   世界（docs/世界.md）
+anim world list|bake|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行（开游戏、编译过资源闸）、从游戏导群系色和方块表
 anim edit-package <交付目录>  |  anim jianying export|readback   剪辑包和剪映草稿
 anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心数据（浏览器里跑 pipeline/适配器/<平台>/取数.js 下载）收进数据根、对交付出报告；旧名 anim bili

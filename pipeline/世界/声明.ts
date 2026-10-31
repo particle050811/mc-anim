@@ -41,6 +41,10 @@ export type 世界声明 = {
   /** 包.json 的 维度：主世界 / 暮色 … */
   包维度: string;
   种子?: string;
+  /** 建新世界时写进 server.properties 的 level-type；不写 minecraft:normal（地形模组改的是普通世界，large_biomes 和 Tectonic 互斥） */
+  世界类型: string;
+  /** 建新世界时写 generate-structures；不写 true。主世界取材一律 false（结构全禁，用户 10-04 定），它在 level.dat 里管所有维度，所以主世界和暮色各建各的存档 */
+  生成结构: boolean;
   Forge?: string;
   模组: string[];
   另需模组文件: string[];
@@ -144,6 +148,8 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
       维度,
       包维度,
       种子: d.种子 === undefined ? undefined : String(d.种子),
+      世界类型: typeof d.世界类型 === 'string' ? d.世界类型 : 'minecraft:normal',
+      生成结构: d.生成结构 !== false,
       Forge: typeof d.Forge === 'string' ? d.Forge : undefined,
       模组: 字符串组(d.模组, '模组'),
       另需模组文件: 字符串组(d.另需模组文件, '另需模组文件'),

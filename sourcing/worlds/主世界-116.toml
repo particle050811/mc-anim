@@ -8,6 +8,7 @@
 "维度" = "minecraft:overworld"
 "种子" = 116
 "Forge" = "1.20.1-47.4.10"
+"生成结构" = false                       # 主世界取材结构全禁（取材服务端.py --no-structures，用户 10-04 定）；anim world new 写进 server.properties
 # 照 取材服务端-主世界/mods/ 和世界 datapacks/ 列的，和 测试-修整-种子116 同一套；建世界时是不是正好这一套没核过
 "模组" = ["twilightforest", "create", "iceandfire", "citadel", "tconstruct", "mantle", "quark", "zeta", "touhoulittlemaid", "mcai"]
 "数据包" = ["通用/不生成龙巢", "主世界修整", "只给主世界/主世界不生成人造地物", "epicterrain_compatible1.20.zip"]
