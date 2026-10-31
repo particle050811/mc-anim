@@ -50,7 +50,7 @@ const 备母版 = async (段们: 段信息[], 渲: boolean, 记录: 运行记录
 
 const 验: 命令 = {
   用法: 'verify [<选择器…>] [--渲] [--对基线] [--到预览 <主题>]；verify accept <段…> --理由 <…> [--渲]；verify 补参考 [<选择器…>]',
-  说明: '指纹变了的段抽帧和认可版比（--对基线 和旧项目基线比），超过阈值就要 anim verify accept',
+  说明: '指纹变了的段抽帧和认可版比（--对基线 和旧项目基线比，只剩 CRF12 的加 --渲 重渲并留下 CRF1），超过阈值就要 anim verify accept',
   跑: async (args, 记录) => {
     if (args[0] === 'accept') return 认.跑(args.slice(1), 记录);
     if (args[0] === '补参考') return 补.跑(args.slice(1), 记录);

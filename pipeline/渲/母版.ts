@@ -25,7 +25,7 @@ export const 现母版 = (键: string, 指纹: string, 作品?: string): string 
 export const 叠层路径 = (叠层键: string, 指纹: string) => path.join(叠层目录(叠层键), `${指纹.slice(0, 16)}.mov`);
 export const 指纹文件 = (键: string, 指纹: string, 目录 = 母版目录(键)) => path.join(目录, `${指纹.slice(0, 16)}.指纹.json`);
 
-/** render 渲完自动删旧母版时，近这么久被用过的不删（film、verify、edit-package 正在用的，别的 worktree 刚渲的） */
+/** 删旧母版时，近这么久被用过的不删（film、verify、edit-package 正在用的） */
 export const 近期用过毫秒 = 2 * 3600 * 1000;
 export const 用过文件 = (目录: string, 指纹: string) => path.join(目录, `${指纹.slice(0, 16)}.用过`);
 export const 检出记号文件 = (目录: string, 指纹: string, 检出 = 本检出()) => path.join(目录, `${指纹.slice(0, 16)}.检出-${crypto.createHash('sha256').update(检出).digest('hex').slice(0, 8)}`);
