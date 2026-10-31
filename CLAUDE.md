@@ -18,9 +18,10 @@
 ```
 anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）；子命令都认 --help
 anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章（都不中才当章范围）
+anim render [<选择器>] --只派生 [--重做]   从现有母版补段签（段签/，母版删了 film、verify、edit-package 照样用）
 anim still <段> <帧…> --到预览 <主题>      anim stale [<选择器>] [--严格]     anim bench <段> [--帧 a-b]
-anim verify [<段>]  |  anim verify accept <段…> --理由 …
-anim film <范围>  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题>
+anim verify [<段>]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
+anim film <范围>  |  anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题>
 anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（0005）、挂 Release 发的字节和地形包（0006）
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）
