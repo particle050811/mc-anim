@@ -13,7 +13,8 @@
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender, useCurrentFrame } from 'remotion';
-import { 桩, 桩开 } from './桩.ts';
+import { 桩, 桩开, 桩级别 } from './桩.ts';
+import { 桩当前网格 } from './桩可见.ts';
 import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
@@ -255,6 +256,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i, j: q.j + 1 })),
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i, j: q.j - 1 })),
   ];
+  if (桩级别 === 3) 桩当前网格.length = 0;
   for (const section of list) {
     const entry = cache.get(sectionKey(section));
     if (!entry) continue;
@@ -268,6 +270,14 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
       const dirs = mesh.geometry.drawRange.count / 6 > drawAllMaxFaces ? facingDirs : allWithSkirts;
       pickDirs(mesh, farPlants && mesh === entry.plants ? dirs.map((x, k) => x && k !== 6) : dirs);
       if (mesh.visible) group.add(mesh);
+    }
+    if (桩级别 === 3) {
+      const 类 = materialClasses.filter((c) => (entry.kept.mesh?.[c].n ?? 0) > 0);
+      entry.meshes.forEach((mesh, mi) => {
+        const cls = 类[mi];
+        const sm = cls === '花草' || cls === '水' ? null : entry.shadowMeshes[类.slice(0, mi).filter((c) => c !== '花草' && c !== '水').length];
+        桩当前网格.push({ k: sectionKey(section), cls, mesh, shadow: sm ?? null });
+      });
     }
     if (backlit)
       for (const mesh of entry.shadowMeshes) {

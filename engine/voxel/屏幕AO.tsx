@@ -18,6 +18,7 @@
 import { useFrame } from '@react-three/fiber';
 import { voxelsPending } from './世界.tsx';
 import { 桩, 桩级别 } from './桩.ts';
+import { 量可见 } from './桩可见.ts';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { DIR_FOG_GLSL, HEIGHT_FOG_GLSL, dirFog, heightFog } from '../light/高度雾.ts';
@@ -387,7 +388,8 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     saved.length = 0;
     桩.加('AO画CPUms', performance.now() - 桩t);
     桩.加('AO画n', 1);
-    if (桩级别 >= 2) {
+    if (桩级别 === 3) 量可见(gl, scene, camera);
+    if (桩级别 === 2) {
       // 等 GPU 画完：只有量分解的时候开，算 GPU 时间用，不和正式数比
       const c = gl.getContext();
       const 桩g = performance.now();
