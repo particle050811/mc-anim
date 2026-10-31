@@ -2,7 +2,7 @@
 和翻译出的姿态程序逐位比。样例桩（test_动作翻译.py）验的是翻译规则，这里验的是原版、模组的真代码（关键帧动画、集合、照跑的 AnimationState）。
 要的东西缺一样就跳过：JDK 17、客户端 jar、映射、Prism 下载的 1.20.1 库（Bootstrap 要 guava、fastutil 这些）；模组那组另要模组 jar、SRG 名客户端、obf_to_srg.tsrg。
 设 ANIM_REAL_POSE_DUMP=<目录> 时把程序和真值写出去，engine/anim/姿态程序.真jar.test.ts 拿 TS 求值器再比一遍。
-路径照 anim env 的取法：环境变量 > anim.local.toml > 默认（数据根在主检出旁边，游戏目录在旧项目 game/，Prism 数据在 ~/Library/Application Support/PrismLauncher）。
+路径照 anim env 的取法：环境变量 > anim.local.toml > 默认（数据根在主检出旁边，游戏目录在数据根 game/，Prism 数据在 ~/Library/Application Support/PrismLauncher）。
 """
 
 from __future__ import annotations
@@ -54,8 +54,7 @@ def _主检出() -> Path:
 def 环境() -> dict[str, Path]:
     主 = _主检出()
     数据 = Path(_配置("data", "ANIM_DATA") or 主.parent / "mc-anim-data")
-    旧 = Path(_配置("legacy", "ANIM_LEGACY") or 主.parent / "机械动力应力转动-AI漫画")
-    游戏 = Path(_配置("game", "ANIM_GAME") or 旧 / "game")
+    游戏 = Path(_配置("game", "ANIM_GAME") or 数据 / "game")
     prism = Path(_配置("prism_data", "ANIM_PRISM_DATA") or Path.home() / "Library/Application Support/PrismLauncher")
     return {"数据": 数据, "游戏": 游戏, "prism": prism}
 

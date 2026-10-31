@@ -22,7 +22,8 @@ export type 配音设置 = { 后端: string; 种子: number[]; 目标响度: num
 export type 音色 = { 参考: string; 逐字稿: string };
 export type 作品台词 = { 台词: 台词行[]; 配音: 配音设置; 音色: Record<string, 音色> };
 
-export const 默认配音: 配音设置 = { 后端: 'firered-本机', 种子: [1234, 20261010, 7, 42], 目标响度: -18, 峰值上限: -1.5, 许可: 'LicenseRef-待定', 后端参数: {} };
+// 用户 10-31 定：统一默认 IndexTTS2 云端，本机模型占内存太多
+export const 默认配音: 配音设置 = { 后端: 'indextts2-runninghub', 种子: [1234, 20261010, 7, 42], 目标响度: -18, 峰值上限: -1.5, 许可: 'LicenseRef-待定', 后端参数: {} };
 
 /** 字的 sha256 前 12 位 */
 export const 文本哈希 = (文本: string) => crypto.createHash('sha256').update(文本, 'utf8').digest('hex').slice(0, 12);
