@@ -198,10 +198,10 @@ describe('保留集：母版', () => {
     const 旧 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     const 刚改 = 母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 草稿: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
+    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
     expect(删的(计划.媒体)).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
     fs.utimesSync(刚改, new Date(), new Date());
-    const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3 });
+    const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 });
     expect(r).toMatchObject({ 删数: 1, 删大小: 100, 失败: [] });
     expect(r.跳过).toHaveLength(1);
     expect(fs.existsSync(旧)).toBe(false);
@@ -286,6 +286,19 @@ describe('地形暂存', () => {
     const r = 规划暂存(扫暂存(path.join(根, 'run', '暂存', 'terrain'), '本机'), 现在);
     const 理由 = Object.fromEntries(r.map((e) => [e.名, e.理由.map((x) => x.类).join(',')]));
     expect(理由).toEqual({ 甲: '', 乙: '在用', 丙: '近期', 丁: '' });
+  });
+});
+
+describe('列段', () => {
+  it('超过天数没读过的才删，新近用过的留着（文件在 <sha 前 2>/ 下一层）', async () => {
+    写('cache/列段/ab/ab旧.列段', 'xx', 现在 - 100 * 天);
+    写('cache/列段/ab/ab新.列段', 'x', 现在 - 10 * 天);
+    const 计划 = { 媒体: [], 临时: [], 暂存: [], 草稿: [], 列段: 规划草稿(列目录(path.join(根, 'cache', '列段')).flatMap((d) => 列目录(d.路径)), { 现在, 天数: 90 }), webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] } as 回收计划;
+    expect(计划.列段.filter((f) => !f.理由.length).map((f) => f.名)).toEqual(['ab旧.列段']);
+    const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 }, 现在);
+    expect(r.删数).toBe(1);
+    expect(fs.existsSync(path.join(根, 'cache/列段/ab/ab旧.列段'))).toBe(false);
+    expect(fs.existsSync(path.join(根, 'cache/列段/ab/ab新.列段'))).toBe(true);
   });
 });
 

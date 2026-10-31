@@ -88,7 +88,7 @@ export const 迁移转存 = async (作品们: readonly string[], o: { 执行: bo
 
   // 只打印时按「都转完了」算；真转了就看段签实记
   const 计划 = await 算回收计划({
-    作品: [...作品们], 类: new Set(['母版', '叠层'] as const), 近期天数: 默认天数.近期, 草稿天数: 默认天数.草稿, webpack天数: 默认天数.webpack, 现在: Date.now(),
+    作品: [...作品们], 类: new Set(['母版', '叠层'] as const), 近期天数: 默认天数.近期, 草稿天数: 默认天数.草稿, webpack天数: 默认天数.webpack, 列段天数: 默认天数.列段, 现在: Date.now(),
     ...(o.执行 ? {} : { 假定已转码: new Set(要转.map((x) => x.原)) }),
   });
   for (const w of 计划.警告) 警告(w);

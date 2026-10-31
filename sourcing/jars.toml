@@ -87,7 +87,7 @@
 "下载" = "https://mediafilez.forgecdn.net/files/5468/648/twilightforest-1.20.1-4.3.2508-universal.jar"
 "sha256" = "0bdc89263616d1b35c32ef82c5e9c14cbd20368e2fe8b468c72a28320be7a778"
 "sha1" = "fa3b506a45d3e9c465551cd533fd50c899496e9f"
-"许可" = { "代码" = "LGPL-2.1-only", "资源" = "LicenseRef-待核-CC-BY-NC-SA", "声音" = "LicenseRef-All-Rights-Reserved", "结构" = "LicenseRef-All-Rights-Reserved", "原文" = "代码 OSI；资源 CC-NC-SA；声音/结构 ARR", "依据" = "mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE Version 2.1；资源 CC BY-NC-SA 照旧模组清单，版本 jar 里没写、没核；声音、结构照旧模组清单 ARR" }
+"许可" = { "代码" = "LGPL-2.1-only", "资源" = "CC-BY-NC-SA-4.0", "声音" = "LicenseRef-All-Rights-Reserved", "结构" = "LicenseRef-All-Rights-Reserved", "原文" = "代码 OSI；资源 CC-NC-SA；声音/结构 ARR", "依据" = "mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE Version 2.1；资源：TeamTwilight/twilightforest 1.20.x 分支 ASSET_LICENSE 是 CC BY-NC-SA 4.0，README 写声音 ARR（10-31 核）；结构照旧模组清单 ARR" }
 "来源页" = "https://www.curseforge.com/minecraft/mc-mods/the-twilight-forest/files/5468648"
 
 [["模组"]]
@@ -160,7 +160,7 @@
 "下载" = "https://cdn.modrinth.com/data/qnQsVE2z/versions/DijQLauD/Quark-4.0-462.jar"
 "sha256" = "c90b96f049d92825c4a103721988c80d72e5ad380d17be46a0f53e114874c478"
 "sha1" = "9b0fb82995622a0070c00827c698c43b49d9d14b"
-"许可" = { "代码" = "LicenseRef-待核-CC-BY-NC-SA", "资源" = "LicenseRef-待核-CC-BY-NC-SA", "原文" = "CC-NC-SA", "依据" = "旧模组清单整包 CC-NC-SA；mods.toml 只给仓库 LICENSE.md 链接，版本离线核不了（旧 待确认.md 记的是 3.0）" }
+"许可" = { "代码" = "CC-BY-NC-SA-3.0", "资源" = "CC-BY-NC-SA-3.0", "原文" = "CC-NC-SA", "依据" = "VazkiiMods/Quark 1.20 分支 LICENSE.md 是 CC BY-NC-SA 3.0 Unported，代码和资源同一份（10-31 核）" }
 "来源页" = "https://modrinth.com/mod/quark"
 
 [["模组"]]
@@ -172,7 +172,7 @@
 "下载" = "https://cdn.modrinth.com/data/MVARlG2f/versions/mSER3jBI/Zeta-1.0-31.jar"
 "sha256" = "cd1786902a79434f8fd762d741019d9c8a79725fef7e30a89c153c934e1e6a9e"
 "sha1" = "8c4a8ef0444b53ff408d5b89126285031081d92f"
-"许可" = { "代码" = "LicenseRef-待核-CC-BY-NC-SA", "资源" = "LicenseRef-待核-CC-BY-NC-SA", "原文" = "CC-NC-SA", "依据" = "旧模组清单整包 CC-NC-SA；mods.toml 只给仓库 LICENSE.md 链接，版本离线核不了" }
+"许可" = { "代码" = "CC-BY-NC-SA-3.0", "资源" = "CC-BY-NC-SA-3.0", "原文" = "CC-NC-SA", "依据" = "VazkiiMods/Zeta 1.20 分支 LICENSE.md 是 CC BY-NC-SA 3.0 Unported，代码和资源同一份（10-31 核）" }
 "来源页" = "https://modrinth.com/mod/zeta"
 
 [["模组"]]
@@ -329,7 +329,7 @@
 "下载" = "https://cdn.modrinth.com/data/EltpO5cN/versions/mWTXC1ZX/lootr-forge-1.20-0.7.35.94.jar"
 "sha256" = "01200ee5889e6bcc3c5fa8f32b7b49a4bd58e653699eeb655c6f2dd314e3ce51"
 "sha1" = "1ec77a7df8adbf3290a296bf25b8f99f37a60020"
-"许可" = { "代码" = "LicenseRef-待核-OSI", "资源" = "LicenseRef-待核-OSI", "原文" = "OSI", "依据" = "旧模组清单整包 OSI；mods.toml 只给仓库 LICENSE 链接，具体许可离线核不了" }
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "OSI", "依据" = "LootrMinecraft/Lootr 1.20 分支 LICENSE 是 MIT，没有单独的资源许可（10-31 核）" }
 "来源页" = "https://modrinth.com/mod/lootr"
 
 [["模组"]]
