@@ -9,7 +9,9 @@ process.env.ANIM_DATA = 数据根;
 const 作品根 = path.join(数据根, '假作品');
 vi.mock('../环境/作品.ts', async (原) => ({ ...(await 原<typeof import('../环境/作品.ts')>()), 作品们: () => new Map([['假', 作品根]]), 作品名: () => '假' }));
 
-const { 删旧, 删已取代 } = await import('./钉.ts');
+const { 删旧, 删已取代, 有要删的旧 } = await import('./钉.ts');
+const { 检出记号文件 } = await import('../渲/母版.ts');
+const { 本检出 } = await import('../环境/路径.ts');
 const { 规划媒体, 扫媒体, 保留集, 加交付, 加认可 } = await import('./回收.ts');
 const { 认可参考文件, 母版目录, 叠层目录, 段签目录 } = await import('../环境/配置.ts');
 const { 抽样键, 写认可, 认可文件 } = await import('../验收/认可.ts');
@@ -40,7 +42,7 @@ const 旧母版 = (o: { 原?: boolean; 压?: boolean; 转过?: boolean; 级别?:
   }
 };
 const 在 = (后缀: string) => fs.existsSync(path.join(目录(), `${旧16}${后缀}`));
-const 删 = (种: '母版' | '叠层' = '母版', k = 键) => 删旧(种, k, '视频', 新, { 作品: '假', 现在 });
+const 删 = (种: '母版' | '叠层' = '母版', k = 键) => 删旧(种, k, '视频', 新, { 作品: '假', 现在, 主检出: true });
 
 const 交付 = (名: string, o: { 自足?: boolean; 有画面?: boolean } = {}) => {
   const dir = path.join(数据根, '交付', '假', 名);
@@ -157,6 +159,48 @@ describe('render 渲完删旧', () => {
     删();
     expect(在('.crf12.mkv')).toBe(false);
     expect(fs.existsSync(记)).toBe(true);
+  });
+
+  it('worktree 里不自动删旧（可能是主检出的当前指纹）：CRF1、CRF12 都在，报留着', () => {
+    旧母版({ 原: true });
+    const r = 删旧('母版', 键, '视频', 新, { 作品: '假', 现在, 主检出: false });
+    expect(r.删).toEqual([]);
+    expect(r.留.map((x) => x.理由)).toEqual(['worktree 不自动删', 'worktree 不自动删']);
+    expect(在('.mkv') && 在('.crf12.mkv')).toBe(true);
+    expect(有要删的旧('母版', 键, '视频', 新, { 作品: '假', 现在, 主检出: false })).toBe(false);
+  });
+
+  it('命中时先问有没有要删的：没旧的、旧的都钉着都是 false，不用等闸', () => {
+    const 问 = () => 有要删的旧('母版', 键, '视频', 新, { 作品: '假', 现在, 主检出: true });
+    expect(问()).toBe(false);
+    旧母版();
+    expect(问()).toBe(true);
+    交付('未自足');
+    expect(问()).toBe(false);
+  });
+
+  it('别的检出用过的不删（它的当前指纹这边算不出）；那个检出删了就不算；自己的记号不算', () => {
+    旧母版();
+    const 别的 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-别的检出-'));
+    fs.writeFileSync(检出记号文件(目录(), 旧, 别的), `${别的}\n`);
+    expect(删().留[0]!.理由).toContain(`别的检出用过：${别的}`);
+    expect(在('.crf12.mkv')).toBe(true);
+    fs.rmSync(别的, { recursive: true });
+    fs.writeFileSync(检出记号文件(目录(), 旧), `${本检出()}\n`);
+    删();
+    expect(在('.crf12.mkv')).toBe(false);
+  });
+
+  it('已被取代的 CRF1 用过也删（读者都读 CRF12），别的检出用过也删；CRF12 照留', () => {
+    旧母版({ 原: true, 转过: true });
+    const 别的 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-别的检出-'));
+    fs.writeFileSync(path.join(目录(), `${旧16}.用过`), '');
+    fs.utimesSync(path.join(目录(), `${旧16}.用过`), new Date(现在 - 小时), new Date(现在 - 小时));
+    fs.writeFileSync(检出记号文件(目录(), 旧, 别的), `${别的}\n`);
+    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(100);
+    expect(在('.mkv')).toBe(false);
+    expect(在('.crf12.mkv')).toBe(true);
+    fs.rmSync(别的, { recursive: true });
   });
 
   it('叠层同一套', () => {

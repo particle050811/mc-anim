@@ -1,6 +1,6 @@
 // 渲母版：整个工程只打包一次、开一个浏览器，逐段 renderMedia（旧项目 批量渲染.mjs 的链路）。
 // 指纹对得上的母版直接用；每段渲之前排队过渲染闸，渲完核帧数、改名、写 .指纹.json，耗时按段记进耗时表，再从 CRF1 派生段签（pipeline/段签/，不计进耗时表），
-// 转存 CRF12（用户 10-30 定，转码.ts）、删掉 CRF1，最后删同段同级别的旧母版（缓存/钉.ts，叠层同样）。
+// 转存 CRF12（用户 10-30 定，转码.ts）、删掉 CRF1，最后删同段同级别的旧母版（缓存/钉.ts，叠层同样；只有主检出删，worktree 只新增）。
 // 段.ts 声明的透明叠层（<段键>-<名>）同样按指纹缓存，渲成 ProRes 4444 放 cache/叠层/。
 // 打包前把作品随仓库发的字节补进数据根（资产/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
 // 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（资产/缺字节.ts）；webpack 缓存名不随资产锁变（资产/缓存名.ts）。
@@ -30,7 +30,7 @@ import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts'
 import { 视频信息 } from './探测.ts';
 import { 出段签 } from '../段签/段签.ts';
 import { 漂移提示 } from '../段签/补.ts';
-import { 删旧 } from '../缓存/钉.ts';
+import { 删旧, 有要删的旧 } from '../缓存/钉.ts';
 import { 存成压缩 } from './转存.ts';
 import { 叠层渲染参数, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
 import type { 叠层定义 } from '../../engine/段/段定义.ts';
@@ -112,6 +112,18 @@ export const 找组合 = (h: Pick<会话, '组合'>, s: 段信息, id = s.键) =
 
 export type 母版结果 = { 段: 段信息; 指纹: 段指纹; 母版: string; 新渲: boolean };
 
+/**
+ * 没重渲、已是最新的这些键也清一遍旧的：worktree 里渲的新指纹合进主检出后，第一次 render 走这里（worktree 里 有要删的旧 总是 false）。
+ * 有要删的才过闸
+ */
+const 清命中的旧 = async (种: '母版' | '叠层', 项们: { 键: string; 指纹: string }[], 级别: 渲染级别, 记录: 运行记录) => {
+  const 要清 = 项们.filter((x) => 有要删的旧(种, x.键, 级别, x.指纹));
+  if (!要清.length) return;
+  await 过渲染闸(async () => {
+    for (const x of 要清) 删旧(种, x.键, 级别, x.指纹, { 记录 });
+  });
+};
+
 export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 记录: 运行记录 }): Promise<母版结果[]> => {
   // 先补字节再算指纹：空数据根时指纹的「缺字节」项要按补完的算，不然母版落在错的指纹下、film 认不出
   补字节并报(作品根(), 数据根());
@@ -123,9 +135,12 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
     const fp = 指纹们[i]!;
     const r = { 段: s, 指纹: fp, 母版: 现母版(s.键, fp.指纹) ?? 压缩母版路径(s.键, fp.指纹), 新渲: false };
     结果.push(r);
-    if (有母版(s.键, fp.指纹) && !opts.重渲) console.log(`✓ ${s.键}：母版已是最新（${fp.指纹.slice(0, 16)}）`);
-    else 待渲.push(r);
+    if (有母版(s.键, fp.指纹) && !opts.重渲) {
+      console.log(`✓ ${s.键}：母版已是最新（${fp.指纹.slice(0, 16)}）`);
+      记用过(母版目录(s.键), fp.指纹);
+    } else 待渲.push(r);
   }
+  await 清命中的旧('母版', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.段.键, 指纹: r.指纹.指纹 })), 级别, opts.记录);
   if (!待渲.length) return 结果;
   const 估 = 待渲.map((r) => 预计耗时(渲染标签(r.段.键, 级别)));
   const 已知 = 估.filter((x): x is number => x !== null);
@@ -230,9 +245,13 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
   const 结果: 叠层结果[] = 各层.map(({ 段: s, 叠层: l }, i) => ({ 段: s, 叠层: l, 键: 叠层键(s.键, l), 指纹: 指纹们[i]!, 文件: 叠层路径(叠层键(s.键, l), 指纹们[i]!.指纹), 新渲: false }));
   const 待渲 = 结果.filter((r) => {
     const 有 = fs.existsSync(r.文件) && !opts.重渲;
-    if (有) console.log(`✓ ${r.键}：叠层已是最新（${r.指纹.指纹.slice(0, 16)}）`);
+    if (有) {
+      console.log(`✓ ${r.键}：叠层已是最新（${r.指纹.指纹.slice(0, 16)}）`);
+      记用过(叠层目录(r.键), r.指纹.指纹);
+    }
     return !有;
   });
+  await 清命中的旧('叠层', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.键, 指纹: r.指纹.指纹 })), 级别, opts.记录);
   if (!待渲.length) return 结果;
   console.log(`== 要渲 ${待渲.length} 个叠层：${待渲.map((r) => r.键).join('、')}`);
   await 开会话(级别, async (h) => {

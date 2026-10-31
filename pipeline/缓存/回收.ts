@@ -1,8 +1,8 @@
 // anim cache gc 的规划：数据根和代码检出里各类缓存哪些删、哪些留、为什么留。这里只有纯规划和扫描（不删东西），删在 执行.ts。
 // 母版、叠层（cache/{母版,叠层}/<作品>/<键>/<指纹前 16 位>{.mkv,.crf12.mkv,.mov}）：只删媒体文件，旁边的 .指纹.json、.用过 一律留（stale 拿它说明哪项变了）。
 //   留：各渲染级别的当前指纹、还没有认可参考的认可那版（verify 拿它的 CRF1 逐像素比）、还没自足的交付 manifest 引用的（edit-package 要读）、
-//   每段每级别最近渲的一份（film --允许过期 取它）、近 N 天渲的（别的 worktree 正在用的指纹这边算不出来）、近 2 小时用过的（.用过）、这段当前指纹算不出时整个目录。
-//   同一指纹有 CRF12 时 CRF1 已被取代（用户 10-30 定母版改存 CRF12），只有「要原母版」的理由（没有认可参考的认可、待补画面的交付）才留它；
+//   每段每级别最近渲的一份（film --允许过期 取它）、近 N 天渲的、近 2 小时用过的（.用过）、别的还在的检出用过的（.检出-*，它的当前指纹这边算不出来）、这段当前指纹算不出时整个目录。
+//   同一指纹有 CRF12 时 CRF1 已被取代（用户 10-30 定母版改存 CRF12），只有「要原母版」的理由（没有认可参考的认可、待补画面的交付、读不出的记录）和正在写才留它，用过不算：读者都读 CRF12，verify 只从段签取；
 //   CRF12 按同名 CRF1 的路径找理由（钉的时候都按 CRF1 名记），认可的理由对 CRF12 不算（verify 不比 CRF12 的像素）。
 // 草稿（run/草稿/<目录>）超过 N 天删；webpack 缓存（<检出>/node_modules/.cache/webpack/remotion-<环境>-<版本>/<哈希>/）换了 Remotion 版本的整个删，
 // 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。地形烘焙的暂存目录（run/暂存/terrain/<包>）写入锁没人拿、1 天没动的删。
@@ -11,6 +11,7 @@
 // 认可有了认可参考（文件名绑定认可记录的抽样哈希）才不再钉认可那版的母版。用户 10-30 定「这个未来用不到的就删」，gc 和 render 自动删旧母版都开着解钉（钉.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
+import { 本检出 } from '../环境/路径.ts';
 import { 持有者, 持有者主机, 进程在吗 } from '../闸/锁.ts';
 import { 近期用过毫秒 } from '../渲/母版.ts';
 
@@ -92,6 +93,8 @@ export type 媒体文件 = {
   用过于: number | null;
   /** 同目录里有这个指纹正在写的临时文件（.渲染中、.转码中，1 天内动过的） */
   正在写: boolean;
+  /** 用过这个指纹、路径还在的别的检出（旁边的 .检出-*） */
+  别的检出: string[];
 };
 export type 带理由<T> = T & { 理由: 保留理由[] };
 
@@ -99,6 +102,7 @@ export type 带理由<T> = T & { 理由: 保留理由[] };
 export const 是临时名 = (名: string) => /\.(渲染中|写入中|转码中)-\d+/.test(名);
 const 媒体名 = /^([0-9a-f]{16})(\.crf12)?\.(mkv|mov)$/;
 const 用过名 = /^[0-9a-f]{16}\.用过$/;
+const 检出记号名 = /^[0-9a-f]{16}\.检出-[0-9a-f]{8}$/;
 
 /** 同目录里 CRF1 名 ↔ 钉的时候用的逻辑名（CRF12 按同指纹的 CRF1 名找理由） */
 export const 逻辑名 = (路径: string) => (路径.endsWith(压缩后缀) ? 路径.slice(0, -压缩后缀.length) + '.mkv' : 路径);
@@ -139,6 +143,12 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
   const 现在 = o.现在 ?? Date.now();
   const 名们 = fs.readdirSync(dir);
   const 写着 = new Set(名们.filter(是临时名).filter((n) => 现在 - fs.statSync(path.join(dir, n)).mtimeMs < 天).map((n) => n.slice(0, 16)));
+  const 这个检出 = 本检出();
+  const 别的检出 = new Map<string, string[]>();
+  for (const 名 of 名们.filter((n) => 检出记号名.test(n))) {
+    const 路径 = fs.readFileSync(path.join(dir, 名), 'utf8').trim();
+    if (路径 && 路径 !== 这个检出 && fs.existsSync(路径)) 别的检出.set(名.slice(0, 16), [...(别的检出.get(名.slice(0, 16)) ?? []), 路径]);
+  }
   const 起 = r.媒体.length;
   for (const 名 of 名们) {
     const f = path.join(dir, 名);
@@ -161,10 +171,10 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
       r.媒体.push({
         路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 记于: 有json ? fs.statSync(json).mtimeMs : st.mtimeMs,
         级别: 有json ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink,
-        存法: 种 === '母版' ? (是压缩 ? 'crf12' : 'crf1') : null, 已被取代: false, 用过于, 正在写: 写着.has(m[1]!),
+        存法: 种 === '母版' ? (是压缩 ? 'crf12' : 'crf1') : null, 已被取代: false, 用过于, 正在写: 写着.has(m[1]!), 别的检出: 别的检出.get(m[1]!) ?? [],
       });
     } else if (是临时名(名)) r.临时.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
-    else if (!名.endsWith('.指纹.json') && !用过名.test(名)) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
+    else if (!名.endsWith('.指纹.json') && !用过名.test(名) && !检出记号名.test(名)) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
   }
   if (种 !== '母版' || !o.段签目录) return;
   const 这批 = r.媒体.slice(起);
@@ -193,13 +203,16 @@ export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string, 
 
 /**
  * 一个媒体文件身上的钉（gc、render 自动删旧共用）：保留集里按它自己、CRF12 再按同名 CRF1 找；CRF12 不认「认可」（verify 不比 CRF12 像素）；
- * 已被取代的 CRF1 只认「要原母版」的；近 2 小时用过的、正在写的都留
+ * 已被取代的 CRF1 只认「要原母版」的和正在写；别的还要看近 2 小时用过、别的检出用过、正在写
  */
 export const 钉理由 = (f: 媒体文件, 保留: 保留集, 现在: number): 保留理由[] => {
   let 理由 = [...保留.查(f.路径), ...(f.存法 === 'crf12' ? 保留.查(逻辑名(f.路径)) : [])];
   if (f.存法 === 'crf12') 理由 = 理由.filter((x) => x.类 !== '认可');
   if (f.已被取代) 理由 = 理由.filter((x) => x.要原母版);
-  if (f.用过于 !== null && 现在 - f.用过于 < 近期用过毫秒) 理由.push({ 类: '在用', 说明: '2 小时内用过' });
+  else {
+    if (f.用过于 !== null && 现在 - f.用过于 < 近期用过毫秒) 理由.push({ 类: '在用', 说明: '2 小时内用过' });
+    for (const 检出 of f.别的检出) 理由.push({ 类: '在用', 说明: `别的检出用过：${检出}` });
+  }
   if (f.正在写) 理由.push({ 类: '在用', 说明: '这个指纹正在写' });
   return 理由;
 };
