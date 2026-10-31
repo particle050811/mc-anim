@@ -10,6 +10,8 @@ __pycache__/
 *.tsbuildinfo
 # VS Code 的 Java 插件（Buildship）打开 Gradle 项目时自动生成的，不进 Git；留着未跟踪会让 anim check 当成改了 sourcing/mod/、去编译 mod
 .settings/
+# Playwright 插件写的浏览器控制台日志
+.playwright-mcp/
 
 # image-flow 的 skill 是从 image-flow 仓库拷来的副本（rsync skills/image-flow/），不进本仓库
 /.claude/skills/image-flow/
