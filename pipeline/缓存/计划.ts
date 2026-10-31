@@ -15,7 +15,7 @@ import {
   type 带理由, type 媒体文件, type 普通文件, type 目录条目, type webpack条目, type 缓存种,
 } from './回收.ts';
 
-export const 回收类 = ['母版', '叠层', '残留', '草稿', 'webpack', '去重'] as const;
+export const 回收类 = ['母版', '叠层', '残留', '草稿', '列段', 'webpack', '去重'] as const;
 export type 回收类名 = (typeof 回收类)[number];
 
 export type 回收选项 = {
@@ -25,17 +25,20 @@ export type 回收选项 = {
   近期天数: number;
   草稿天数: number;
   webpack天数: number;
+  列段天数: number;
   现在: number;
   /** 一次性迁移的只打印：这些 CRF1 按「已经转存完了」算（anim cache 转存 用它列转存后能删什么） */
   假定已转码?: ReadonlySet<string>;
 };
-export const 默认天数 = { 近期: 2, 草稿: 14, webpack: 3 };
+// 列段重解存档要几分钟到几十分钟，留得比草稿久
+export const 默认天数 = { 近期: 2, 草稿: 14, webpack: 3, 列段: 90 };
 
 export type webpack根计划 = { 根: string; 当前版本: string | null; 条目: 带理由<webpack条目>[] };
 export type 回收计划 = {
   媒体: 带理由<媒体文件>[];
   临时: 带理由<普通文件>[];
   草稿: 带理由<目录条目>[];
+  列段: 带理由<目录条目>[];
   webpack: webpack根计划[];
   /** 地形烘焙中断留下的暂存目录（run/暂存/terrain/<包>），归在「残留」一类 */
   暂存: 带理由<目录条目>[];
@@ -48,11 +51,9 @@ export type 回收计划 = {
 };
 
 /**
- * 认得、不自动删的缓存和它们的用途（gc 只报大小）。删了能重建，但要么重建很贵、要么本来就小、要么是人留的对照：
- * 列段按区域文件 sha 寻址，用没用过看不出来（读不改修改时间），删了下次烘焙、查询要重解存档。
+ * 认得、不自动删的缓存和它们的用途（gc 只报大小）。删了能重建，但要么本来就小、要么是人留的对照。
  */
 export const 只报目录: Record<string, string> = {
-  'cache/列段': '存档区域解码缓存（按区域 sha、种子寻址；删了下次烘焙、查询重解存档）',
   'cache/音频数': '音频时长、峰值、响度（按 sha 寻址，anim cues 用）',
   'cache/核对': '迁移时新旧画面的对照图（人看的，不自动删）',
   'cache/映射': '官方映射等本机自取、不许再分发的文件（anim extract 用，删了下次按 jars.toml 重下）',
@@ -63,7 +64,7 @@ export const 只报目录: Record<string, string> = {
 /** 数据根 run/、cache/ 下 anim 认得的条目（别的只报告） */
 export const run认识 = ['草稿', '运行记录', 'logs', 'locks', 'queue', 'public', 'extract', '暂存'];
 export const cache认识 = [
-  '母版', '叠层', '求解', '私有配乐', '剪映解密', '发布', '缺字节', '接缝.json', '去重账.json', 'sha缓存.json',
+  '母版', '叠层', '求解', '私有配乐', '剪映解密', '发布', '缺字节', '接缝.json', '去重账.json', 'sha缓存.json', '列段',
   ...Object.keys(只报目录).filter((k) => k.startsWith('cache/')).map((k) => k.slice('cache/'.length)),
 ];
 export const 去重账文件 = () => 数据路径('cache', '去重账.json');
@@ -98,7 +99,7 @@ const 要删的名字数 = (计划: 回收计划) => {
 };
 
 export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => void = () => {}): Promise<回收计划> => {
-  const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 草稿: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
+  const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
   const 警告 = (s: string) => 计划.警告.push(s);
   const 要 = (c: 回收类名) => o.类.has(c);
 
@@ -136,6 +137,8 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
 
   if (要('残留')) 计划.暂存 = 规划暂存(扫暂存(暂存根(), 配置('主机')), o.现在);
   if (要('草稿')) 计划.草稿 = 规划草稿(列目录(草稿根()), { 现在: o.现在, 天数: o.草稿天数 });
+  // 区域源 读时记用过；按区域 sha 寻址，一个文件一个文件算
+  if (要('列段')) 计划.列段 = 规划草稿(列目录(数据路径('cache', '列段')).flatMap((d) => 列目录(d.路径)), { 现在: o.现在, 天数: o.列段天数 });
 
   if (要('webpack')) {
     for (const 检出 of 各检出()) {
@@ -173,7 +176,7 @@ export type 执行结果 = { 删数: number; 删大小: number; 跳过: string[]
 const 天 = 24 * 3600 * 1000;
 
 /** 照计划删、克隆。删之前再看一眼：文件这会儿又被改过（近期天数内）就跳过；去重在删完以后按现状重找一遍（sha 用账本里的，不重算） */
-export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '近期天数' | '草稿天数' | 'webpack天数'>, 现在 = Date.now()): Promise<执行结果> => {
+export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '近期天数' | '草稿天数' | 'webpack天数' | '列段天数'>, 现在 = Date.now()): Promise<执行结果> => {
   const r: 执行结果 = { 删数: 0, 删大小: 0, 跳过: [], 失败: [], 克隆数: 0, 克隆省: 0 };
   const 删 = (p: string, 大小: number, 新近: (改于: number) => boolean, 递归: boolean) => {
     try {
@@ -197,6 +200,7 @@ export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '
   // 计划算完到删之间可能有人开始烘焙同一个包：删前再看一眼锁
   for (const d of 计划.暂存) if (!d.理由.length) 删(d.路径, d.大小, (改于) => 未满(1)(改于) || 锁有人拿(`${d.路径}.写入.lock`, 配置('主机')), true);
   for (const d of 计划.草稿) if (!d.理由.length) 删(d.路径, d.大小, 未满(o.草稿天数), true);
+  for (const d of 计划.列段) if (!d.理由.length) 删(d.路径, d.大小, 未满(o.列段天数), false);
   for (const w of 计划.webpack) for (const e of w.条目) if (!e.理由.length) 删(e.路径, e.大小, e.哈希 === null ? () => false : 未满(o.webpack天数), true);
   if (计划.去重?.能做 && 计划.去重.组.length) {
     const 缓存 = new sha缓存(sha缓存文件(), 数据根());
