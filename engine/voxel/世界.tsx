@@ -14,7 +14,8 @@ import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender, useCurrentFrame } from 'remotion';
 import { 桩, 桩开, 桩级别 } from './桩.ts';
-import { 桩当前网格 } from './桩可见.ts';
+import { 桩世界网格, type 桩网格 } from './桩可见.ts';
+import { 缓存模式, 有缓存, 取网格, 存网格 } from './网格缓存.ts';
 import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
@@ -163,7 +164,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   // 没建的区段都交给网格池在后台建（见 网格池.ts）：这一帧先不画、用 delayRender 拦住截图，建齐了重画一次再放行。
   // 导入的地形要先从包里取区段（fetch），没取到的等取齐了再建
   const unbuilt = list.filter((q) => !cache.has(sectionKey(q)));
-  const unkept = unbuilt.filter((q) => !kept.has(keptKey(worldKey, q)));
+  const unkept = unbuilt.filter((q) => !kept.has(keptKey(worldKey, q)) && !(缓存模式 === 'read' && 有缓存(keptKey(worldKey, q))));
   if (桩开) {
     桩.取最大('未建n', unbuilt.length);
     桩.取最大('未建未留n', unkept.length);
@@ -192,6 +193,19 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
             const rec = kept.get(keptKey(worldKey, q));
             if (rec) keptNow.set(sectionKey(q), rec);
           }
+          if (缓存模式 === 'read') {
+            const 要 = qs.filter((q) => !keptNow.has(sectionKey(q)) && 有缓存(keptKey(worldKey, q)));
+            if (要.length) {
+              const 桩t = performance.now();
+              const 取到 = await 取网格(要.map((q) => keptKey(worldKey, q)));
+              for (const q of 要) {
+                const k = keptKey(worldKey, q);
+                const r = 取到.get(k)!;
+                keptNow.set(sectionKey(q), keep(k, { mesh: r.mesh, V: r.V, used: keptClock }));
+              }
+              桩.加('等缓存ms', performance.now() - 桩t);
+            }
+          }
           const toFetch = keptNow.size ? qs.filter((q) => !keptNow.has(sectionKey(q))) : qs;
           const prefetching = toFetch.length ? source.prefetch?.(toFetch) : undefined;
           if (prefetching) {
@@ -210,6 +224,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
             const mesh = x.m && (await x.m);
             桩.加('等网格ms', performance.now() - 桩t);
             const 桩t2 = performance.now();
+            if (缓存模式 === 'fill' && !x.rec) await 存网格(keptKey(worldKey, x.q), mesh, x.V);
             const rec = x.rec ?? keep(keptKey(worldKey, x.q), { mesh, V: x.V, used: keptClock });
             putEntry(x.q, x.V && mesh ? meshToEntry(mesh, x.V, x.q, rec) : emptyEntry(rec));
             桩.加('建three网格ms', performance.now() - 桩t2);
@@ -256,7 +271,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i, j: q.j + 1 })),
     !drawnKeys.has(sectionKey({ L: q.L, i: q.i, j: q.j - 1 })),
   ];
-  if (桩级别 === 3) 桩当前网格.length = 0;
+  const 桩这世界: 桩网格[] = [];
+  if (桩级别 === 3) 桩世界网格.set(worldKey, { gl, 帧: curFrame, 表: 桩这世界 });
   for (const section of list) {
     const entry = cache.get(sectionKey(section));
     if (!entry) continue;
@@ -276,7 +292,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
       entry.meshes.forEach((mesh, mi) => {
         const cls = 类[mi];
         const sm = cls === '花草' || cls === '水' ? null : entry.shadowMeshes[类.slice(0, mi).filter((c) => c !== '花草' && c !== '水').length];
-        桩当前网格.push({ k: sectionKey(section), cls, mesh, shadow: sm ?? null });
+        桩这世界.push({ k: keptKey(worldKey, section), cls, mesh, shadow: sm ?? null });
       });
     }
     if (backlit)

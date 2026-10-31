@@ -15,6 +15,7 @@ import { 选段 } from '../清单/清单.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 打包 } from './渲.ts';
+import { 开网格缓存服务 } from './网格缓存服务.ts';
 import { 渲染参数, 等帧超时毫秒 } from './设置.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
@@ -75,6 +76,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           const t0 = Date.now();
           let 首帧 = 0, 末帧 = 0, 上次帧数 = 0;
           const 明细 = new 明细收集(标签, 帧[0]);
+          const 缓存服务 = process.env.ANIM_MC_DIR ? await 开网格缓存服务(process.env.ANIM_MC_DIR) : null;
           const 跑 = () => renderMedia({
               serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
               codec: 参数.codec, audioCodec: 参数.audioCodec, enforceAudioTrack: 参数.enforceAudioTrack, crf: 参数.crf, x264Preset: 参数.x264Preset,
@@ -82,7 +84,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
               timeoutInMilliseconds: 等帧超时毫秒, overwrite: true, logLevel: 渲染日志, frameRange: 帧,
               ...(opts.关共享内存 ? { disableSharedMemoryCapture: true } : {}),
               // 临时插桩：ANIM_Z=<级别> 时打开页面里的桩（engine/voxel/桩.ts），日志行写到 ANIM_ZF
-              ...(process.env.ANIM_Z ? { envVariables: { ANIM_Z: process.env.ANIM_Z, ...JSON.parse(process.env.ANIM_ZE ?? '{}') } } : {}),
+              ...(process.env.ANIM_Z || 缓存服务 ? { envVariables: { ANIM_Z: process.env.ANIM_Z ?? '', ...JSON.parse(process.env.ANIM_ZE ?? '{}'), ...(缓存服务 ? { ANIM_MC_URL: 缓存服务.url } : {}), ...(process.env.ANIM_MC ? { ANIM_MC: process.env.ANIM_MC } : {}) } } : {}),
               ...(process.env.ANIM_ZF ? { onBrowserLog: (log: { text: string }) => { if (log.text.startsWith('@桩')) fs.appendFileSync(process.env.ANIM_ZF!, log.text + '\n'); } } : {}),
               onProgress: (p) => {
                 if (p.renderedFrames === 上次帧数) return;
@@ -98,6 +100,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
             else await 明细.包(跑, 日志流 ? (文本) => void 日志流.write(文本 + '\n') : undefined);
           } finally {
             if (!opts.留输出) fs.rmSync(out, { force: true });
+            await 缓存服务?.关();
           }
           const end = Date.now();
           const { 文件, 明细: d } = await 明细.写出([], { remotion, 浏览器: 浏览器版本(opts.浏览器), 日志级别: 渲染日志, 共享内存: String(!opts.关共享内存), 第几轮: String(i + 1) });
