@@ -1,5 +1,6 @@
 // 认可记录 <作品根>/认可/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
 // anim verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
@@ -10,6 +11,20 @@ export type 帧签名 = { 帧: number; 哈希: string; 块均值: string[] };
 export type 声音签名 = { 音频sha: string | null; 响度: number | null; 起音: 起音[] | null };
 export type 签名 = { 宽: number; 高: number; 帧数: number; 间隔: number; 帧: 帧签名[] } & 声音签名;
 export type 认可记录 = 签名 & { 段: string; 指纹: string; 平台: string; 渲染级别: string; 认可于: string; 提交: string; 理由: string; 上一版指纹: string | null };
+
+/**
+ * 一组抽样帧的身份：尺寸、帧数、间隔、各抽样帧的哈希（不含声音）。认可参考按它起名：同一指纹重渲后再 accept，
+ * 哈希变了就是另一个参考文件，旧参考不会被当成新认可的
+ */
+export const 抽样键 = (s: Pick<签名, '宽' | '高' | '帧数' | '间隔' | '帧'>) =>
+  crypto.createHash('sha256').update(JSON.stringify([s.宽, s.高, s.帧数, s.间隔, s.帧.map((f) => [f.帧, f.哈希])])).digest('hex').slice(0, 12);
+
+/** 段签的签名和认可记录是不是同一版：两边都有的抽样帧哈希全一样、声音 sha 一样、尺寸帧数一样 */
+export const 同一版 = (a: 签名, b: 签名) => {
+  if (a.宽 !== b.宽 || a.高 !== b.高 || a.帧数 !== b.帧数 || (a.音频sha ?? null) !== (b.音频sha ?? null)) return false;
+  const 哈希 = new Map(a.帧.map((f) => [f.帧, f.哈希]));
+  return b.帧.every((f) => !哈希.has(f.帧) || 哈希.get(f.帧) === f.哈希);
+};
 
 export const 本平台 = () => `${process.platform}-${process.arch}`;
 

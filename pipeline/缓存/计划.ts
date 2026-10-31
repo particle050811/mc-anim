@@ -4,6 +4,7 @@ import path from 'node:path';
 import { 代码根, 主检出 } from '../环境/路径.ts';
 import { 作品们 } from '../环境/作品.ts';
 import { 配置, 数据根, 数据路径, 母版目录, 草稿根, 运行目录, 认可参考文件 } from '../环境/配置.ts';
+import { 抽样键, 读认可 } from '../验收/认可.ts';
 import { 跑出 } from '../环境/子进程.ts';
 import { 加当前指纹 } from './当前指纹.ts';
 import { 找重复, 执行去重, 读账, 写账, 能克隆, type 去重组, type 去重账 } from './去重.ts';
@@ -112,7 +113,15 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
         for (const 种 of 种们) 保留.加目录(数据路径('cache', 种, 作品), { 类: '算不出', 说明: '代码里没有这部作品' });
         continue;
       }
-      加认可(保留, 根, (键) => 母版目录(键, 作品), 警告, { 参考文件: (键, 指纹, 平台) => 认可参考文件(键, 指纹, 平台, 作品) });
+      const 参考文件 = (file: string, 平台: string) => {
+        try {
+          const r = 读认可(file);
+          return r ? 认可参考文件(r.段, r.指纹, 抽样键(r), 平台, 作品) : null;
+        } catch {
+          return null;
+        }
+      };
+      加认可(保留, 根, (键) => 母版目录(键, 作品), 警告, { 参考文件 });
       if (要('母版') || 要('叠层') || 要('去重')) await 加当前指纹(保留, 作品, 警告, 进度);
     }
     for (const 作品 of 这次) {

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { 历史指纹 } from '../渲/母版.ts';
-import { 认可文本, type 认可记录 } from '../验收/认可.ts';
+import { 抽样键, 认可文本, 读认可, type 认可记录 } from '../验收/认可.ts';
 import { 加当前指纹 } from './当前指纹.ts';
 import { 执行回收, cache认识, run认识, 只报目录, type 回收计划 } from './计划.ts';
 import {
@@ -126,18 +126,25 @@ describe('保留集：母版', () => {
     expect(解()).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
   });
 
-  it('认可：有认可参考才可解钉；解钉默认关，照钉、说明里标出', () => {
+  it('认可：有这条认可记录的认可参考才可解钉（参考按记录的抽样哈希起名，同一指纹旧记录的参考不算）；解钉默认关，照钉、说明里标出', () => {
     母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     母版('6-甲', 'cccccccccccccccc', '视频', 1);
-    写('作品/作品甲/认可/darwin-arm64/6-甲.toml', 认可文本(认可记录('6-甲', 'a'.repeat(16) + 'f'.repeat(48))));
-    const 参考文件 = (段: string, 指纹: string, 平台: string) => path.join(根, '认可参考', '作品甲', 平台, 段, `${指纹.slice(0, 16)}.mkv`);
+    const 认 = 认可记录('6-甲', 'a'.repeat(16) + 'f'.repeat(48));
+    写('作品/作品甲/认可/darwin-arm64/6-甲.toml', 认可文本(认));
+    const 参考文件 = (file: string, 平台: string) => {
+      const r = 读认可(file);
+      return r && path.join(根, '认可参考', '作品甲', 平台, r.段, `${r.指纹.slice(0, 16)}-${抽样键(r)}.mkv`);
+    };
     const 跑 = (解钉: boolean) => {
       const 保留 = new 保留集();
       加认可(保留, path.join(根, '作品', '作品甲'), 母版目录, () => {}, { 解钉, 参考文件 });
       return { 删: 删的(规划(保留)), 说明: 保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mkv')).map((x) => x.说明) };
     };
     expect(跑(true)).toEqual({ 删: [], 说明: ['darwin-arm64'] }); // 没参考：解钉也照钉
-    写('认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa.mkv', '');
+    // 同一指纹上一次认可的参考（哈希不一样）不算这条记录的
+    写(`认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-${抽样键({ ...认, 帧: 认.帧.map((f) => ({ ...f, 哈希: '9'.repeat(64) })) })}.mkv`, '');
+    expect(跑(true)).toEqual({ 删: [], 说明: ['darwin-arm64'] });
+    写(`认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-${抽样键(认)}.mkv`, '');
     expect(跑(false)).toEqual({ 删: [], 说明: ['darwin-arm64（有认可参考）'] });
     expect(跑(true)).toEqual({ 删: ['aaaaaaaaaaaaaaaa'], 说明: [] });
   });

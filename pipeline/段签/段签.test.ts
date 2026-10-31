@@ -1,5 +1,5 @@
 // 段签：从 ffmpeg 现造的小母版（有损 x264，和真母版一样有编码噪声）派生，查签名和 verify 逐位相同、FLAC 和 FFV1 无损、
-// 重渲自查、扫段签 和 扫母版 结论一样、认可参考。数据根是临时目录，不碰真数据。
+// 重渲自查（旧的一套挪进 历史/）、母版转码改记、扫段签 和 扫母版 结论一样、认可参考（按认可记录的抽样哈希起名）。数据根是临时目录，不碰真数据。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -9,13 +9,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-段签测试-'));
 process.env.ANIM_DATA = 数据根;
 
-const { 配置, 认可参考文件 } = await import('../环境/配置.ts');
+const { 配置 } = await import('../环境/配置.ts');
 const { 跑出 } = await import('../环境/子进程.ts');
 const { 灰度帧 } = await import('../合成/接缝.ts');
-const { 出段签, 读段签, 段签齐, 对得上母版, 声音路径, 抽样路径, 小图, 段签文件, 历史文件名 } = await import('./段签.ts');
-const { 扫母版, 扫段签, 抽样里没有 } = await import('../验收/验收.ts');
+const { 出段签, 读段签, 读历史段签, 记转码, 段签齐, 对得上母版, 声音路径, 抽样路径, 小图, 段签文件, 历史文件名, 文件sha } = await import('./段签.ts');
+const { 取段签, 同指纹重渲过 } = await import('./补.ts');
+const { 扫母版, 扫段签, 抽样里没有, 参考对不上 } = await import('../验收/验收.ts');
 const { 抽样流, 音频流, sha } = await import('../验收/帧流.ts');
-const { 备参考 } = await import('../验收/参考.ts');
+const { 备参考, 参考文件 } = await import('../验收/参考.ts');
+const { 同一版 } = await import('../验收/认可.ts');
 type 认可记录 = import('../验收/认可.ts').认可记录;
 
 const 阈 = { 差像素门槛: 16, 差像素占比: 1e-3, 块均值容差: 1, 响度容差LU: 0.5, 起音容差帧: 1 };
@@ -97,6 +99,34 @@ describe('段签', () => {
     expect(b.自查!.结论).toBe('漂移');
     const 史 = fs.readFileSync(段签文件(b.签, 历史文件名), 'utf8').trim().split('\n').map((l) => JSON.parse(l));
     expect(史.map((x) => x.结论)).toEqual([a.自查!.结论, '漂移']);
+    // 重渲前的两套原样挪进 历史/（抽样帧无损，不丢），现在的是后半变那份
+    const 历史 = 读历史段签('核对-重渲', fp);
+    expect(历史.map((h) => h.签.母版.字节sha).sort()).toEqual([史[0].上次字节sha, 史[1].上次字节sha].sort());
+    for (const h of 历史) expect(await 文件sha(h.抽样)).toBe(h.签.抽样.sha);
+    expect(史.map((x) => x.存于)).toEqual(史.map((x) => `历史/${x.上次字节sha.slice(0, 16)}`));
+    expect(读段签('核对-重渲', fp)!.母版.字节sha).toBe(await 文件sha(母版));
+  });
+
+  it('母版原地转码：记转码 后段签留着转码前的抽样帧和签名，取段签 不重新派生；转码前不是这份母版派生的不改', async () => {
+    const fp = 指纹('转码');
+    const 母版 = path.join(目录, '转码.mkv');
+    fs.copyFileSync(原, 母版);
+    const 前 = (await 出段签(母版, { 段键: '核对-转码', 指纹: fp, 级别: '视频', 派生: '回填' })).签;
+    const 原sha = 前.母版.字节sha;
+    const 转 = path.join(目录, '转码.写入中.mkv');
+    跑出([配置('ffmpeg'), '-v', 'error', '-y', '-i', 母版, '-map', '0', '-c:v', 'libx264', '-crf', '35', '-pix_fmt', 'yuv420p', '-c:a', 'copy', 转]);
+    fs.renameSync(转, 母版);
+    await expect(记转码('核对-转码', fp, 母版, { 原字节sha: 'f'.repeat(64) })).rejects.toThrow(/对不上/);
+    const 后 = await 记转码('核对-转码', fp, 母版, { 原字节sha: 原sha });
+    expect(后.母版.转码自!.字节sha).toBe(原sha);
+    expect(后.母版.字节sha).toBe(await 文件sha(母版));
+    expect({ ...后, 母版: null }).toEqual({ ...前, 母版: null });
+    expect(await 对得上母版(后, 母版)).toBe(true);
+    const 取 = await 取段签('核对-转码', fp, '视频', { 等放行: async () => {}, 母版 });
+    expect(取!.抽样.sha).toBe(前.抽样.sha);
+    expect(读历史段签('核对-转码', fp)).toEqual([]);
+    // 转码后的像素和签名不一样（压缩过），段签没被它冲掉
+    expect((await 扫母版(母版)).签名.帧.map((f) => f.哈希)).not.toEqual(前.签名.帧.map((f) => f.哈希));
   });
 });
 
@@ -114,7 +144,7 @@ describe('扫段签：和 扫母版 结论一样', () => {
     expect(母块.比法).toBe('块均值');
     expect(结论(await 扫段签(来源, { 认可: 认, 旧母版: null, 阈值: 阈 }))).toEqual(结论(母块));
 
-    const 参考 = 认可参考文件(认.段, 认.指纹, 'test');
+    const 参考 = 参考文件(认, 'test');
     // 认可那版的段签不在，从认可母版抽
     expect(await 备参考(认, 原, 'test')).toBe('从认可母版');
     expect(await 备参考(认, 原, 'test')).toBe('已有');
@@ -136,9 +166,43 @@ describe('扫段签：和 扫母版 结论一样', () => {
     expect(await 备参考(认, path.join(目录, '不在.mkv'), 'test')).toBe('从段签');
     const 坏 = { ...认, 指纹: 指纹('坏'), 帧: 认.帧.map((f, i) => (i === 1 ? { ...f, 哈希: '0'.repeat(64) } : f)) };
     expect(await 备参考(坏, 原, 'test')).toBe('对不上');
-    expect(fs.existsSync(认可参考文件(坏.段, 坏.指纹, 'test'))).toBe(false);
-    expect(fs.readdirSync(path.dirname(认可参考文件(坏.段, 坏.指纹, 'test'))).filter((n) => n.includes('写入中'))).toEqual([]);
+    expect(fs.existsSync(参考文件(坏, 'test'))).toBe(false);
+    expect(fs.readdirSync(path.dirname(参考文件(坏, 'test'))).filter((n) => n.includes('写入中'))).toEqual([]);
     expect(await 备参考({ ...认, 指纹: 指纹('都不在') }, path.join(目录, '不在.mkv'), 'test')).toBe('没有来源');
+  });
+
+  it('同一指纹重渲后再认可：新记录对应新参考文件（不拿旧参考冒充），旧认可的参考从 历史/ 里的段签也备得上；参考坏了抛 参考对不上', async () => {
+    const fp = 指纹('再认可');
+    const 母版 = path.join(目录, '再认可.mkv');
+    fs.copyFileSync(原, 母版);
+    await 出段签(母版, { 段键: '核对-再认可', 指纹: fp, 级别: '视频', 派生: '渲染' });
+    const 认一 = { ...(await 认可(母版, fp)), 段: '核对-再认可' };
+    // 同一指纹重渲成后半变（字节、画面都变），再认可
+    fs.copyFileSync(后半变, 母版);
+    const 新 = (await 出段签(母版, { 段键: '核对-再认可', 指纹: fp, 级别: '视频', 派生: '渲染' })).签;
+    const 认二 = { ...认一, ...新.签名 };
+    expect(同一版(新.签名, 认一)).toBe(false);
+    expect(同一版(新.签名, 认二)).toBe(true);
+    // verify 同一指纹：段签和认可记录不一样要真比（漂移提示让跑 verify，不能直接打 ✓）；一样就不比；母版又换了字节、段签没跟上也要比
+    expect(同指纹重渲过(新, 认一, 母版)).toBe('段签的签名和认可记录不一样');
+    expect(同指纹重渲过(新, 认二, 母版)).toBeNull();
+    expect(同指纹重渲过(null, 认一, 母版)).toBeNull();
+    const t = new Date(Date.now() + 5000);
+    fs.utimesSync(母版, t, t);
+    expect(同指纹重渲过(新, 认二, 母版)).toBe('母版和段签记的不是同一份');
+    expect(await 备参考(认二, 母版, 'test')).toBe('从段签');
+    expect(参考文件(认二, 'test')).not.toBe(参考文件(认一, 'test'));
+    // 认一的段签已挪进 历史/，母版也不是它了，照样备得上
+    expect(await 备参考(认一, 母版, 'test')).toBe('从段签');
+    expect(await 备参考(认一, 母版, 'test')).toBe('已有');
+    const 来源 = { 签名: 新.签名, 抽样: 抽样路径(新) };
+    const 和认一 = await 扫段签(来源, { 认可: 认一, 旧母版: null, 参考: 参考文件(认一, 'test'), 阈值: 阈 });
+    expect(和认一.像素来源).toBe('认可参考');
+    expect(和认一.帧结论.map((f) => f.结论)).toEqual(['一样', '容差内', '变了']);
+    const 和认二 = await 扫段签(来源, { 认可: 认二, 旧母版: null, 参考: 参考文件(认二, 'test'), 阈值: 阈 });
+    expect(和认二.帧结论.every((f) => f.结论 === '一样')).toBe(true);
+    // 参考和记录配错（以前同名时就会这样）：逐帧核哈希不过，抛 参考对不上，verify 只记这一段不过
+    await expect(扫段签(来源, { 认可: 认一, 旧母版: null, 参考: 参考文件(认二, 'test'), 阈值: 阈 })).rejects.toBeInstanceOf(参考对不上);
   });
 });
 

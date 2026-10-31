@@ -48,6 +48,9 @@ export const 扫声音 = async (file: string): Promise<声音签名> => {
   return { 音频sha: h.digest('hex'), 响度: 响度(file), 起音: 找起音(包.完()) };
 };
 
+/** 认可参考解出来和认可记录的哈希对不上（文件坏了）：verify 只让这一段不过，别的段照验 */
+export class 参考对不上 extends Error {}
+
 /**
  * 认可记录作参照。像素按这个顺序取：认可参考（认可那版的抽样帧，无损；解出来逐帧核对认可记录的哈希）、认可那版的母版（尺寸帧数一样才用）、都没有就只比块均值。
  * 记录里没响度、起音的从认可那版的母版补
@@ -69,7 +72,7 @@ export const 认可参照 = async (认可: 认可记录, 旧母版?: string | nu
         for await (const rgb of 抽样流(参考在, 帧们, 要的, 认可.宽, 认可.高)) {
           const f = 要的[i++]!;
           const 记 = 签名.get(f);
-          if (记 && sha(rgb) !== 记.哈希) throw new Error(`认可参考 ${参考在} 的第 ${f} 帧和认可记录的哈希对不上（参考坏了？删掉它再 anim verify 补参考）`);
+          if (记 && sha(rgb) !== 记.哈希) throw new 参考对不上(`认可参考 ${参考在} 的第 ${f} 帧和认可记录的哈希对不上（参考坏了？删掉它再 anim verify 补参考）`);
           yield rgb;
         }
       }
