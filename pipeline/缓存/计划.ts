@@ -56,6 +56,8 @@ export const 只报目录: Record<string, string> = {
   'cache/音频数': '音频时长、峰值、响度（按 sha 寻址，anim cues 用）',
   'cache/核对': '迁移时新旧画面的对照图（人看的，不自动删）',
   'cache/映射': '官方映射等本机自取、不许再分发的文件（anim extract 用，删了下次按 jars.toml 重下）',
+  'cache/动作翻译映射': '动作翻译早先临时下的官方映射（新的进 cache/映射/，1.21.11 的还靠这份）',
+  'cache/浏览器': '对照实验用的旧版 chrome-headless-shell（anim bench --浏览器，母版不用；删了要重下）',
 };
 
 /** 数据根 run/、cache/ 下 anim 认得的条目（别的只报告） */
