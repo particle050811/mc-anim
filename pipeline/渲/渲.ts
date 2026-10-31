@@ -146,7 +146,20 @@ const 清命中的旧 = async (种: '母版' | '叠层', 项们: { 键: string; 
   });
 };
 
-export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 留CRF1?: boolean; 记录: 运行记录 }): Promise<母版结果[]> => {
+/** 段目录下的 本机地形.txt 写着这段要的、没登记发布的区段包（核对-世界编辑）。换台机器没有这个包就跳过：不让一条批量渲染死在核对段上（用户 10-31 定）。放段外的文件不进指纹 */
+export const 缺的本机地形 = (s: Pick<段信息, '目录'>, 地形根 = path.join(数据根(), 'terrain')): string | null => {
+  const f = path.join(s.目录, '本机地形.txt');
+  if (!fs.existsSync(f)) return null;
+  const 包 = fs.readFileSync(f, 'utf8').trim();
+  return fs.existsSync(path.join(地形根, 包)) ? null : 包;
+};
+
+export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 留CRF1?: boolean; 记录: 运行记录 }): Promise<母版结果[]> => {
+  const 段们 = 全部.filter((s) => {
+    const 包 = 缺的本机地形(s);
+    if (包) console.log(`跳过 ${s.键}：本机没有区段包 ${包}（anim world bake 烘出来才能渲）`);
+    return !包;
+  });
   // 先补字节再算指纹：空数据根时指纹的「缺字节」项要按补完的算，不然母版落在错的指纹下、film 认不出
   const 总标签 = `批:${作品名()}:${级别}`;
   await 量阶段(opts.记录.阶段, 总标签, '准备', async () => 补字节并报(作品根(), 数据根()));
