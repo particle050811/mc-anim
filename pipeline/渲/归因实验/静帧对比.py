@@ -15,6 +15,7 @@ for r in range(1, int(轮)+1):
         帧们 = 帧.split(',')
         # 每例内部先后交替：奇数轮先现状，偶数轮先批量
         for 模式 in (['现状','批量'] if r % 2 else ['批量','现状']):
+            if os.environ.get('ANIM_ONLY') and 模式 != os.environ['ANIM_ONLY']: continue
             dst = os.path.join(out, 名, f'{模式}-{r}')
             if os.path.exists(os.path.join(dst, '.好')): continue
             env = dict(os.environ)

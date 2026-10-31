@@ -374,6 +374,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
           composition,
           outputDir: null,
           frames: [...帧们],
+          ...(process.env.ANIM_X ? { envVariables: { ANIM_X: process.env.ANIM_X } } : {}),
           inputProps: h.参数.inputProps,
           puppeteerInstance: h.browser,
           chromiumOptions: { gl: h.参数.gl },

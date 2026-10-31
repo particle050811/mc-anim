@@ -30,6 +30,7 @@ import type { VoxelGrid, VoxelSource } from './生成.ts';
 // 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）
 const maxCachedFaces = 6_000_000;
 const 实验索引 = (桩环境.ANIM_X ?? '').includes('i');
+const 实验镜 = (桩环境.ANIM_X ?? '').includes('f'); // 实验 f（不合并）：挑区段用的视锥是不是这一帧的；不是就拦住截图，按新视锥再挑一次
 const materialClasses: MaterialClass[] = ['实心', '镂空', '实心树叶', '水', '花草'];
 
 // 区段网格（CPU 这边的数组）按世界键跨渲染器留着：拼段的下一截是新的 Canvas、新的 WebGL 上下文，前一截建过的区段不用再取、再换体素块、再建网格，只重新上传。
@@ -136,6 +137,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   if (!maybeWorld) glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0 }));
   const world = maybeWorld;
   const { cache, group } = world;
+  const 挑时镜 = 实验镜 ? camera.matrixWorldInverse.elements.join() : '';
   const inView = makeFrustumTest(camera);
   // 区段往背着光的方向扫 投影余量 米以后还碰得到视野，它的影子就可能落进画面
   const lh = shadowLightDir ? Math.hypot(shadowLightDir[0], shadowLightDir[1]) : 0;
@@ -326,6 +328,20 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const allBuilt = unbuilt.length === 0;
   useEffect(() => () => void voxelsPending.delete(delayHandle), []);
   useEffect(() => {
+    if (实验镜) {
+      camera.updateMatrixWorld();
+      if (camera.matrixWorldInverse.elements.join() !== 挑时镜) {
+        桩.加('视锥过期重挑n', 1);
+        console.log('@镜 视锥过期，帧', curFrame);
+        if (delayHandle.current === null) {
+          桩起.current = performance.now();
+          delayHandle.current = delayRender('体素世界：视锥过期重挑', { timeoutInMilliseconds: 30 * 60 * 1000 });
+          voxelsPending.add(delayHandle);
+        }
+        forceRedraw((n) => n + 1);
+        return;
+      }
+    }
     if (!allBuilt || delayHandle.current === null) return;
     voxelsPending.delete(delayHandle);
     桩.加('体素等待到建齐ms', performance.now() - 桩起.current);
