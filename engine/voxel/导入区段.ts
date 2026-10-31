@@ -158,9 +158,9 @@ const tintByPosition = (voxels: VoxelGrid, data: SectionData, info: 区段包信
 };
 
 // 一个区段 → 体素块：先整平、再挖（竖井那一块在城里，整平垫的地基也要一起挖开），最后按位置重算群系色
-export const importedSectionVoxels = (data: SectionData, ctx: 区段上下文): VoxelGrid => {
+export const importedSectionVoxels = (data: SectionData, ctx: 区段上下文, 预摊?: Uint16Array): VoxelGrid => {
   const { info, tables, cutBoxes, flattenAreas } = ctx;
-  const voxels = flattenAreas.length ? flatten(sectionToVoxels(data, tables), info, flattenAreas) : sectionToVoxels(data, tables);
+  const voxels = flattenAreas.length ? flatten(sectionToVoxels(data, tables, 预摊), info, flattenAreas) : sectionToVoxels(data, tables, 预摊);
   // 记下整列挖空的列（`体素块` 的 `挖空`）：主世界地形把整列空气当成「区块没生成」拿远景补上，不记的话地标网格里会长出远景的草地和树
   const filledBefore = cutBoxes.length ? filledColumns(voxels) : null;
   carveOut(voxels, data, info, cutBoxes);

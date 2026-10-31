@@ -21,7 +21,7 @@ import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
 import { variesByPos } from './群系色.ts';
 import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type 区段上下文 } from './导入区段.ts';
-import { fetchSectionsInPool, registerSource, type 区段结果 } from './区段工人池.ts';
+import { fetchSectionsInPool, registerSource, 工时累计, type 区段结果 } from './区段工人池.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 
 export type { LandmarkCutout, FlattenArea } from './导入区段.ts';
@@ -104,7 +104,7 @@ const loadSections = (pack: 包, sections: SectionId[], requestRound: number, ct
       const url = absoluteUrl(`${pack.dir}/${fileName}`);
       return Promise.all(
         jobs.map((job) =>
-          fetchSectionsInPool(url, job.start, job.len, job.parts.map((part) => ({ off: part.off - job.start, len: part.len, ctx }))).then((out: 区段结果[]) =>
+          fetchSectionsInPool(url, job.start, job.len, job.parts.map((part) => ({ off: part.off - job.start, len: part.len, ctx, id: { L: part.section.L, i: part.section.i, j: part.section.j } }))).then((out: 区段结果[]) =>
             job.parts.forEach((part, i) => {
               storeSection(pack, part.section, out[i].data, requestRound);
               if (out[i].voxels) ready.set(sectionKey(part.section), { voxels: out[i].voxels!, lastRound: requestRound });
@@ -145,6 +145,7 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
   // 工人那边只要换体素块用的几项，粗高度图不发
   const workerCtx = registerSource({ 原点: pack.info.原点, 状态: pack.info.状态, 群系: pack.info.群系 }, cutBoxes, flattenAreas);
   const ready = new Map<string, ReadyVoxels>();
+  const 量取 = { 忙: 0, 起: 0, 底: { ...工时累计 }, 清单: [] as string[] };
   const source: VoxelSource = {
     采样: sample,
     区段: (section) => {
@@ -179,7 +180,21 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
         else toLoad.push(section);
       }
       if (toLoad.length) {
+        // 实验计时：同一个包连续在取的一段时间算一次，取齐了打一行（清单只打这一次取的区段，比较方案、回放用）
+        if (量取.忙 === 0) {
+          量取.起 = performance.now();
+          量取.底 = { ...工时累计 };
+          量取.清单 = [];
+        }
+        量取.忙++;
+        量取.清单.push(...toLoad.map((q) => `${q.L}/${q.i}/${q.j}`));
         const loading = loadSections(pack, toLoad, round, workerCtx, ready);
+        void Promise.all(new Set(loading.values())).then(() => {
+          if (--量取.忙) return;
+          const 底 = 量取.底;
+          console.log(`[地形量时] 包=${pack.name} 区段=${工时累计.区段 - 底.区段} 字节=${工时累计.字节 - 底.字节} 墙钟=${(performance.now() - 量取.起).toFixed(1)} 取=${(工时累计.取 - 底.取).toFixed(1)} 解压=${(工时累计.解压 - 底.解压).toFixed(1)} 解码=${(工时累计.解码 - 底.解码).toFixed(1)} 换=${(工时累计.换 - 底.换).toFixed(1)}`);
+          if (量取.清单.length > 500) console.log(`[地形量时清单] 包=${pack.name} ${量取.清单.join(',')}`);
+        });
         for (const [k, promise] of loading) pack.inflight.set(k, promise);
         for (const promise of new Set(loading.values())) {
           promise.catch((err) => cancelRender(err));

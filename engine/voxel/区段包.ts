@@ -182,7 +182,8 @@ export const buildPackTables = (info: Pick<包信息, '状态' | '群系'>): 包
 };
 
 // 区段数据 → 体素块（lib/体素/生成.ts 的格式：x、y 两边各带一圈相邻格，原点是下标 (1, 1, 0) 那一格的最小角）
-export const sectionToVoxels = (data: SectionData, tables: 包表): VoxelGrid => {
+// 预摊：解码时已经摊开的格子（算术编码的区段，见 区段编码.ts），给了就不再按行程摊一遍；数组归体素块所有
+export const sectionToVoxels = (data: SectionData, tables: 包表, 预摊?: Uint16Array): VoxelGrid => {
   const cellM = 2 ** data.L;
   const cols = paddedSectionCols;
   const palette: PaletteEntry[] = [];
@@ -190,6 +191,7 @@ export const sectionToVoxels = (data: SectionData, tables: 包表): VoxelGrid =>
     const st = data.palette[idx];
     palette.push({ v: tables.值[st], c: tables.色(st, data.palette[idx + 1]) });
   }
+  if (预摊) return { nx: cols, ny: cols, nz: data.nz, 格: cellM, 原点: [data.i * sectionCells * cellM, data.j * sectionCells * cellM, data.kBottom * cellM], vox: 预摊, 色板: palette };
   const vox = new Uint16Array(cols * cols * data.nz);
   let run = 0;
   for (let column = 0; column < cols * cols; column++) {

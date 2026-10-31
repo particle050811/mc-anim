@@ -2,6 +2,7 @@
 // 活里登记了来源的区段再换成体素块（导入区段.ts，和主线程同一份纯函数）。类型数组都转交回去，不拷贝。
 // 为什么放工人：一帧要新取上百个区段，放主线程上逐个取、解会和建网格、画抢主线程（docs/渲染性能.md）。
 import { decodeSection, buildPackTables, type SectionData } from './区段包.ts';
+import { 列间魔数, 算术标记, 解列间区段, 解算术区段 } from './区段编码.ts';
 import { variesByPos } from './群系色.ts';
 import { importedSectionVoxels, type 区段上下文 } from './导入区段.ts';
 import type { 工人消息, 工人回信 } from './区段工人池.ts';
@@ -12,24 +13,44 @@ const contexts = new Map<number, 区段上下文>();
 const gunzip = (bytes: Uint8Array<ArrayBuffer>) => new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
 
 const run = async (msg: Extract<工人消息, { type: '取' }>): Promise<工人回信> => {
+  const 时 = { 取: 0, 解压: 0, 解码: 0, 换: 0, 字节: msg.len, 区段: msg.parts.length };
+  let t = performance.now();
   const res = await fetch(msg.url, { headers: { Range: `bytes=${msg.start}-${msg.start + msg.len - 1}` } });
   if (res.status !== 206) throw new Error(`按 Range 取 ${msg.url} 的 ${msg.start}～${msg.start + msg.len} 字节，回的是 ${res.status}（要 206）`);
   const bytes = new Uint8Array(await res.arrayBuffer());
+  时.取 += performance.now() - t;
   const out: { data: SectionData; voxels: VoxelGrid | null }[] = [];
   const transfers: ArrayBuffer[] = [];
   for (const part of msg.parts) {
-    const data = decodeSection(new Uint8Array(await gunzip(bytes.subarray(part.off, part.off + part.len))));
-    transfers.push(data.palette.buffer as ArrayBuffer); // 四个数组同一块缓冲（decodeSection）
+    const raw = bytes.subarray(part.off, part.off + part.len);
+    let data: SectionData;
+    let 预摊: Uint16Array | undefined;
+    t = performance.now();
+    if (raw[0] === 算术标记) {
+      const r = 解算术区段(raw, part.id);
+      data = r.data;
+      预摊 = r.vox;
+      时.解码 += performance.now() - t;
+    } else {
+      const un = new Uint8Array(await gunzip(raw));
+      const t2 = performance.now();
+      时.解压 += t2 - t;
+      data = new DataView(un.buffer, un.byteOffset, 4).getUint32(0, true) === 列间魔数 ? 解列间区段(un, part.id) : decodeSection(un);
+      时.解码 += performance.now() - t2;
+    }
+    transfers.push(data.palette.buffer as ArrayBuffer); // 四个数组同一块缓冲（decodeSection、区段编码.ts）
     let voxels: VoxelGrid | null = null;
     const ctx = part.ctx === undefined ? undefined : contexts.get(part.ctx);
     if (ctx) {
-      voxels = importedSectionVoxels(data, ctx);
+      t = performance.now();
+      voxels = importedSectionVoxels(data, ctx, 预摊);
+      时.换 += performance.now() - t;
       transfers.push(voxels.vox.buffer as ArrayBuffer);
       if (voxels.挖空) transfers.push(voxels.挖空.buffer as ArrayBuffer);
     }
     out.push({ data, voxels });
   }
-  return { id: msg.id, out, transfers };
+  return { id: msg.id, out, transfers, 时 };
 };
 
 self.onmessage = (event: MessageEvent<工人消息>) => {
@@ -39,7 +60,7 @@ self.onmessage = (event: MessageEvent<工人消息>) => {
     return;
   }
   run(msg).then(
-    (reply) => (self as unknown as Worker).postMessage({ id: reply.id, out: reply.out }, reply.transfers),
+    (reply) => (self as unknown as Worker).postMessage({ id: reply.id, out: reply.out, 时: reply.时 }, reply.transfers),
     (err) => (self as unknown as Worker).postMessage({ id: msg.id, err: String((err as Error)?.stack ?? err) }),
   );
 };

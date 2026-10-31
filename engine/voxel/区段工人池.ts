@@ -2,14 +2,18 @@
 // 活里的区段按给的先后回来，主线程照旧按体素世界要的先后建网格，画面不变。
 // 来源（挖法、平整不同的同一个包）先 `登记来源` 广播给每个工人，之后的活带上它的号，工人顺手把区段换成体素块。
 import type { SectionData } from './区段包.ts';
+import type { 区段号 } from './区段编码.ts';
 import type { CutBox, FlattenArea, 区段包信息 } from './导入区段.ts';
 import type { VoxelGrid } from './生成.ts';
 
 export type 工人消息 =
   | { type: '来源'; ctx: number; info: 区段包信息; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
-  | { type: '取'; id: number; url: string; start: number; len: number; parts: { off: number; len: number; ctx?: number }[] };
+  | { type: '取'; id: number; url: string; start: number; len: number; parts: { off: number; len: number; ctx?: number; id: 区段号 }[] };
 export type 区段结果 = { data: SectionData; voxels: VoxelGrid | null };
-export type 工人回信 = { id: number; out: 区段结果[]; transfers: ArrayBuffer[] };
+export type 工时 = { 取: number; 解压: number; 解码: number; 换: number; 字节: number; 区段: number };
+export type 工人回信 = { id: number; out: 区段结果[]; transfers: ArrayBuffer[]; 时: 工时 };
+// 实验计时（地形压缩方案比较用）：各工人报回来的累计，导入地形.ts 打日志时取差
+export const 工时累计: 工时 = { 取: 0, 解压: 0, 解码: 0, 换: 0, 字节: 0, 区段: 0 };
 
 // 工人数：取、解大半在等网络和解压，三个够；网格池另有自己的工人
 const workerCount = Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 4) - 2));
@@ -25,9 +29,11 @@ const openPool = () => {
   if (workers) return workers;
   workers = Array.from({ length: workerCount }, () => {
     const worker = new Worker(new URL('./区段工人.ts', import.meta.url));
-    worker.onmessage = (event: MessageEvent<{ id: number; out?: 区段结果[]; err?: string }>) => {
+    worker.onmessage = (event: MessageEvent<{ id: number; out?: 区段结果[]; err?: string; 时?: 工时 }>) => {
       const job = pendingJobs.get(event.data.id);
       pendingJobs.delete(event.data.id);
+      const 时 = event.data.时;
+      if (时) for (const k of Object.keys(工时累计) as (keyof 工时)[]) 工时累计[k] += 时[k];
       if (event.data.err !== undefined) job?.reject(new Error(`区段工人：${event.data.err}`));
       else job?.resolve(event.data.out!);
     };
@@ -48,7 +54,7 @@ export const registerSource = (info: 区段包信息, cutBoxes: CutBox[], flatte
 };
 
 /** 按 Range 取 [start, start + len) 这一段，parts 是段里各区段（off 相对 start）；回来的和 parts 一一对应 */
-export const fetchSectionsInPool = (url: string, start: number, len: number, parts: { off: number; len: number; ctx?: number }[]): Promise<区段结果[]> => {
+export const fetchSectionsInPool = (url: string, start: number, len: number, parts: { off: number; len: number; ctx?: number; id: 区段号 }[]): Promise<区段结果[]> => {
   const ws = openPool();
   const id = nextId++;
   const worker = ws[nextWorker++ % ws.length];

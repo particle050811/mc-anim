@@ -19,7 +19,7 @@ import { makeFrustumTest } from './视锥.ts';
 import type { V3 } from '../model/parts.tsx';
 import { shadowMesh, pickDirs, backlitDirs, voxelMaterial, faceGroupMesh, type VoxelMesh, type MaterialClass } from './材质.ts';
 import { visibleDirs, type SectionMesh } from './网格.ts';
-import { buildMeshInPool } from './网格池.ts';
+import { buildMeshInPool, 网格工时 } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 
@@ -167,6 +167,9 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     if (!building.current) {
       building.current = true;
       (async () => {
+        // 实验计时：这一轮后台从开始到建齐，分等取、主线程取体素块（含补水面这些）、其余（等网格工人、建 three 网格）
+        const 量起 = performance.now(), 量底 = { ...网格工时 };
+        let 量等取 = 0, 量换 = 0, 量块 = 0;
         for (;;) {
           const qs = toBuild.current.filter((q) => !cache.has(sectionKey(q)));
           if (!qs.length) break;
@@ -179,7 +182,9 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           const toFetch = keptNow.size ? qs.filter((q) => !keptNow.has(sectionKey(q))) : qs;
           const prefetching = toFetch.length ? source.prefetch?.(toFetch) : undefined;
           if (prefetching) {
+            const t等 = performance.now();
             await prefetching;
+            量等取 += performance.now() - t等;
             continue;
           }
           // 主线程按 qs 的先后取体素块、交给网格池；建好的按同样的先后建 three 网格、进缓存（three 的物体编号跟着建的先后走，
@@ -200,13 +205,17 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
               inFlight.push({ q: section, V: rec.V, m: rec.mesh && Promise.resolve(rec.mesh), rec });
               continue;
             }
+            const t换 = performance.now();
             const voxels = source.区段(section);
+            量换 += performance.now() - t换;
+            量块++;
             inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.转交) : null, rec: null });
             if (performance.now() - t > 1000) break; // 隔一会儿回头看一次要建的变没变
           }
           while (inFlight.length) await collectOne();
           await new Promise((r) => setTimeout(r, 0));
         }
+        if (量块 > 100) console.log(`[世界量时] 世界=${worldKey} 块=${量块} 墙钟=${(performance.now() - 量起).toFixed(1)} 等取=${量等取.toFixed(1)} 主线程取体素=${量换.toFixed(1)} 网格工人累计=${(网格工时.毫秒 - 量底.毫秒).toFixed(1)}`);
         building.current = false;
         forceRedraw((v) => v + 1);
       })().catch((err) => cancelRender(err));

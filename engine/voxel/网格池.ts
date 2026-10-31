@@ -9,6 +9,7 @@ const workerCount = Math.max(1, Math.min(8, (navigator.hardwareConcurrency || 4)
 type PendingJob = { resolve: (mesh: SectionMesh) => void; reject: (err: unknown) => void };
 let workers: Worker[] | null = null;
 const pendingJobs = new Map<number, PendingJob>();
+export const 网格工时 = { 毫秒: 0, 块: 0 }; // 实验计时：网格工人里 buildSectionMesh 的累计（世界.tsx 打日志时取差）
 let nextId = 0;
 let nextWorker = 0;
 
@@ -16,7 +17,9 @@ const openPool = () => {
   if (workers) return workers;
   workers = Array.from({ length: workerCount }, () => {
     const worker = new Worker(new URL('./网格工人.ts', import.meta.url));
-    worker.onmessage = (event: MessageEvent<{ id: number; m: SectionMesh }>) => {
+    worker.onmessage = (event: MessageEvent<{ id: number; m: SectionMesh; 毫秒: number }>) => {
+      网格工时.毫秒 += event.data.毫秒;
+      网格工时.块++;
       const job = pendingJobs.get(event.data.id);
       pendingJobs.delete(event.data.id);
       job?.resolve(event.data.m);
