@@ -119,7 +119,7 @@ const 走 = (包: 包读, sx: number, sy: number, sz: number, dx: number, dy: nu
       序.push(-2);
       return 序;
     }
-    if (v !== 0) {
+    if (Math.floor(v / 65536) !== 0) { // 空气的群系号是 65535，不能只比 0
       序.push(v);
       if (full[值[Math.floor(v / 65536)]!]) return 序;
     }
