@@ -1,15 +1,16 @@
-// 取段签、补段签：film、verify 要段签时用 取段签（缺了或和母版对不上、母版又在，就当场派生）；anim render --只派生 用 补段签 从现有母版回填。
+// 取段签、补段签：film、verify 要段签时用 取段签（缺了或和母版对不上、CRF1 母版又在，就当场派生）；anim render --只派生 用 补段签 从现有 CRF1 母版回填。
+// 只从 CRF1 派生：只剩 CRF12 的段，段签缺了就补不了（verify 报要重渲，不拿 CRF12 的像素顶）。
 // 派生要解码母版，调用方传「等放行」（懒放行闸），真要派生时才过闸、一条命令只过一次。
 import fs from 'node:fs';
 import { 段签目录 } from '../环境/配置.ts';
-import { 母版路径 } from '../渲/母版.ts';
+import { 压缩母版路径, 原母版路径 } from '../渲/母版.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 算全部段指纹 } from '../指纹/指纹.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
 import { 同一版, type 签名 } from '../验收/认可.ts';
-import { 出段签, 对得上母版, 读段签, 段签齐, type 段签, type 自查 } from './段签.ts';
+import { 出段签, 对得上母版, 对得上原母版, 读段签, 段签齐, type 段签, type 自查 } from './段签.ts';
 
 export const 漂移提示 = (键: string, 查: 自查) => `重渲漂移：${键} 同一指纹重渲出来和上次派生的段签不一样（${查.说明}），对这段跑 anim verify ${键}`;
 
@@ -27,43 +28,43 @@ export const 同指纹重渲过 = (签: 段签 | null, 认可: 签名, 母版: s
 };
 
 /**
- * 这个指纹的段签：齐全且是现在这份母版派生的就直接用；母版不在时有段签就用段签（字节对不上也只能用它）；
- * 缺了、或母版换过字节，母版在就派生（派生 '补'），母版也不在返回 null
+ * 这个指纹的段签：齐全且对得上现有的母版（CRF12 那份，或派生它的 CRF1）就直接用；母版都不在时有段签就用段签（字节对不上也只能用它）；
+ * 缺了、或 CRF1 换过字节，CRF1 在就从它派生（派生 '补'）；只剩 CRF12 的，有齐全的段签就用（同一指纹的另一次渲染），没有返回 null
  */
-export const 取段签 = async (
-  段键: string,
-  指纹: string,
-  级别: string | null,
-  opts: { 等放行: () => Promise<void>; 记录?: 运行记录; 母版?: string },
-): Promise<段签 | null> => {
-  const 母版 = opts.母版 ?? 母版路径(段键, 指纹);
+export const 取段签 = async (段键: string, 指纹: string, 级别: string | null, opts: { 等放行: () => Promise<void>; 记录?: 运行记录 }): Promise<段签 | null> => {
+  const 原 = 原母版路径(段键, 指纹);
+  const 压 = 压缩母版路径(段键, 指纹);
   const 签 = 读段签(段键, 指纹);
-  const 有母版 = fs.existsSync(母版);
-  if (段签齐(签) && (!有母版 || (await 对得上母版(签, 母版)))) return 签;
-  if (!有母版) return null;
+  const 有原 = fs.existsSync(原);
+  const 有压 = fs.existsSync(压);
+  if (段签齐(签) && ((!有原 && !有压) || (有压 && (await 对得上母版(签, 压))) || (有原 && (await 对得上原母版(签, 原))))) return 签;
+  if (!有原) return 有压 && 段签齐(签) ? 签 : null;
   await opts.等放行();
   console.log(`== 补段签 ${段键}（${指纹.slice(0, 16)}）`);
-  const r = await 出段签(母版, { 段键, 指纹, 级别, 派生: '补' });
+  const r = await 出段签(原, { 段键, 指纹, 级别, 派生: '补' });
   if (r.自查?.结论 === '漂移') opts.记录?.记('警告', 漂移提示(段键, r.自查));
   return r.签;
 };
 
-/** anim render --只派生：这些段在这些级别下当前指纹的母版在、段签缺（或和母版对不上）的，补段签；--重做 全部重新派生 */
+/** anim render --只派生：这些段在这些级别下当前指纹的 CRF1 母版在、段签缺（或和它对不上）的，补段签；--重做 全部重新派生。只剩 CRF12 的补不了，单独报 */
 export const 补段签 = async (段们: 段信息[], 级别们: readonly 渲染级别[], opts: { 重做?: boolean; 记录: 运行记录; 等放行: () => Promise<void> }) => {
   let 补 = 0;
   let 有 = 0;
   let 缺母版 = 0;
+  const 只剩压缩: string[] = [];
   for (const 级别 of 级别们) {
     const 指纹们 = await 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 渲染参数(级别) })));
     for (const [i, s] of 段们.entries()) {
       const 指纹 = 指纹们[i]!.指纹;
-      const 母版 = 母版路径(s.键, 指纹);
+      const 母版 = 原母版路径(s.键, 指纹);
+      const 签 = 读段签(s.键, 指纹);
       if (!fs.existsSync(母版)) {
-        缺母版++;
+        if (!fs.existsSync(压缩母版路径(s.键, 指纹))) 缺母版++;
+        else if (段签齐(签) && (await 对得上母版(签, 压缩母版路径(s.键, 指纹)))) 有++;
+        else 只剩压缩.push(`${s.键}（${级别}）`);
         continue;
       }
-      const 签 = 读段签(s.键, 指纹);
-      if (!opts.重做 && 段签齐(签) && (await 对得上母版(签, 母版))) {
+      if (!opts.重做 && 段签齐(签) && (await 对得上原母版(签, 母版))) {
         有++;
         continue;
       }
@@ -77,4 +78,5 @@ export const 补段签 = async (段们: 段信息[], 级别们: readonly 渲染�
     }
   }
   console.log(`\n补了 ${补} 份段签，${有} 份本来就齐${缺母版 ? `，${缺母版} 段×级别没有当前指纹的母版（没渲过或已删，跳过）` : ''}`);
+  if (只剩压缩.length) opts.记录.记('警告', `这些段只剩 CRF12 母版、段签缺或对不上，补不了（段签只从 CRF1 派生），要验收就重渲：${只剩压缩.join('、')}`);
 };

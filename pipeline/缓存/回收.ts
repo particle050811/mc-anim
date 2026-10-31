@@ -1,20 +1,24 @@
 // anim cache gc 的规划：数据根和代码检出里各类缓存哪些删、哪些留、为什么留。这里只有纯规划和扫描（不删东西），删在 执行.ts。
-// 母版、叠层（cache/{母版,叠层}/<作品>/<键>/<指纹前 16 位>.{mkv,mov}）：只删媒体文件，旁边的 .指纹.json 一律留（stale 拿它说明哪项变了）。
-//   留：各渲染级别的当前指纹、认可记录那版（verify 拿它逐像素比；没了只能退回去比块均值）、交付 manifest 引用的（edit-package 要读）、
-//   每段每级别最近渲的一份（film --允许过期 取它）、近 N 天渲的（别的 worktree 正在用的指纹这边算不出来）、这段当前指纹算不出时整个目录。
+// 母版、叠层（cache/{母版,叠层}/<作品>/<键>/<指纹前 16 位>{.mkv,.crf12.mkv,.mov}）：只删媒体文件，旁边的 .指纹.json、.用过 一律留（stale 拿它说明哪项变了）。
+//   留：各渲染级别的当前指纹、还没有认可参考的认可那版（verify 拿它的 CRF1 逐像素比）、还没自足的交付 manifest 引用的（edit-package 要读）、
+//   每段每级别最近渲的一份（film --允许过期 取它）、近 N 天渲的（别的 worktree 正在用的指纹这边算不出来）、近 2 小时用过的（.用过）、这段当前指纹算不出时整个目录。
+//   同一指纹有 CRF12 时 CRF1 已被取代（用户 10-30 定母版改存 CRF12），只有「要原母版」的理由（没有认可参考的认可、待补画面的交付）才留它；
+//   CRF12 按同名 CRF1 的路径找理由（钉的时候都按 CRF1 名记），认可的理由对 CRF12 不算（verify 不比 CRF12 的像素）。
 // 草稿（run/草稿/<目录>）超过 N 天删；webpack 缓存（<检出>/node_modules/.cache/webpack/remotion-<环境>-<版本>/<哈希>/）换了 Remotion 版本的整个删，
 // 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。地形烘焙的暂存目录（run/暂存/terrain/<包>）写入锁没人拿、1 天没动的删。
 // 列段、音频数这类认得但不自动删的只报大小（计划.ts 的 只报目录）；不认识的目录只报告。
 // 解钉（01-推荐方案.md 第四节 D 的顺序）：交付自足了（有 全片-未拉响度.flac 和 剪辑包/画面.mp4，edit-package 不再读母版）才不再钉它引用的母版、叠层；
-// 认可有了认可参考（文件名绑定认可记录的抽样哈希）才不再钉认可那版的母版。这一步 解钉 默认关（gc 删什么不变），只在报告的说明里标出「已自足」「有认可参考」。
+// 认可有了认可参考（文件名绑定认可记录的抽样哈希）才不再钉认可那版的母版。用户 10-30 定「这个未来用不到的就删」，gc 和 render 自动删旧母版都开着解钉（钉.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 持有者, 持有者主机, 进程在吗 } from '../闸/锁.ts';
+import { 近期用过毫秒 } from '../渲/母版.ts';
 
 export type 保留类 = '当前' | '认可' | '交付' | '最近一份' | '近期' | '在用' | '算不出';
 /** 报告里按这个顺序算「主要因为什么留」 */
 export const 保留类顺序: readonly 保留类[] = ['当前', '认可', '交付', '最近一份', '近期', '在用', '算不出'];
-export type 保留理由 = { 类: 保留类; 说明: string };
+/** 要原母版：这个理由要的是 CRF1 那份字节（verify 的无损像素、补交付要出片时那份），CRF1 被 CRF12 取代了也照留 */
+export type 保留理由 = { 类: 保留类; 说明: string; 要原母版?: true };
 
 const 天 = 24 * 3600 * 1000;
 
@@ -58,6 +62,7 @@ export class 保留集 {
 
 export type 缓存种 = '母版' | '叠层';
 export const 媒体后缀: Record<缓存种, string> = { 母版: '.mkv', 叠层: '.mov' };
+export const 压缩后缀 = '.crf12.mkv';
 
 export type 媒体文件 = {
   路径: string;
@@ -79,12 +84,34 @@ export type 媒体文件 = {
   /** 设备-inode 和硬链接数：迁移时有过把同一份母版硬链接到新指纹名下，删掉一个名字不腾空间 */
   inode: string;
   链数: number;
+  /** 母版的存法：crf1（Remotion 直出）、crf12（转码存的）；叠层是 null */
+  存法: 'crf1' | 'crf12' | null;
+  /** CRF1 且同一指纹的 CRF12 在、段签记着是从它转的 */
+  已被取代: boolean;
+  /** 旁边 .用过 的修改时间（render、film、verify、edit-package 最后一次用），没有是 null */
+  用过于: number | null;
+  /** 同目录里有这个指纹正在写的临时文件（.渲染中、.转码中，1 天内动过的） */
+  正在写: boolean;
 };
 export type 带理由<T> = T & { 理由: 保留理由[] };
 
 /** 渲染中途崩掉留下的临时文件（渲.ts 的 .渲染中-<pid>、母版.ts 原子写 的 .写入中-<pid>） */
-export const 是临时名 = (名: string) => /\.(渲染中|写入中)-\d+/.test(名);
-const 媒体名 = /^([0-9a-f]{16})\.(mkv|mov)$/;
+export const 是临时名 = (名: string) => /\.(渲染中|写入中|转码中)-\d+/.test(名);
+const 媒体名 = /^([0-9a-f]{16})(\.crf12)?\.(mkv|mov)$/;
+const 用过名 = /^[0-9a-f]{16}\.用过$/;
+
+/** 同目录里 CRF1 名 ↔ 钉的时候用的逻辑名（CRF12 按同指纹的 CRF1 名找理由） */
+export const 逻辑名 = (路径: string) => (路径.endsWith(压缩后缀) ? 路径.slice(0, -压缩后缀.length) + '.mkv' : 路径);
+
+/** 段签记着这个指纹的 CRF12 是从这么大的 CRF1 转的、转出来这么大（只比大小，不读整个文件） */
+export const 段签说已转码 = (段签目录: string, 指纹16: string, 原大小: number, 压缩大小: number) => {
+  try {
+    const j = JSON.parse(fs.readFileSync(path.join(段签目录, '签.json'), 'utf8')) as { 指纹?: string; 母版?: { 大小?: number; 转码自?: { 大小?: number } } };
+    return !!j.指纹?.startsWith(指纹16) && j.母版?.大小 === 压缩大小 && j.母版?.转码自?.大小 === 原大小;
+  } catch {
+    return false;
+  }
+};
 
 export type 普通文件 = { 路径: string; 大小: number; 改于: number };
 
@@ -101,8 +128,55 @@ export const 读级别 = (json文件: string): string | null => {
   }
 };
 
+export type 扫描选项 = {
+  /** 段签目录（判 CRF1 是不是已被取代）；不给就都不算已被取代 */
+  段签目录?: (键: string, 指纹16: string) => string;
+  现在?: number;
+};
+
+/** 扫一个键目录（cache/<种>/<作品>/<键>/），结果追加进 r */
+export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: string, r: 媒体扫描, o: 扫描选项 = {}) => {
+  const 现在 = o.现在 ?? Date.now();
+  const 名们 = fs.readdirSync(dir);
+  const 写着 = new Set(名们.filter(是临时名).filter((n) => 现在 - fs.statSync(path.join(dir, n)).mtimeMs < 天).map((n) => n.slice(0, 16)));
+  const 起 = r.媒体.length;
+  for (const 名 of 名们) {
+    const f = path.join(dir, 名);
+    const st = fs.lstatSync(f);
+    if (!st.isFile()) {
+      r.不认识.push({ 路径: f, 大小: 0, 改于: st.mtimeMs });
+      continue;
+    }
+    const m = 媒体名.exec(名);
+    const 是压缩 = !!m?.[2];
+    if (m && (种 === '母版' ? m[3] === 'mkv' : !是压缩 && `.${m[3]}` === 媒体后缀[种])) {
+      const json = path.join(dir, `${m[1]}.指纹.json`);
+      const 有json = fs.existsSync(json);
+      let 用过于: number | null = null;
+      try {
+        用过于 = fs.statSync(path.join(dir, `${m[1]}.用过`)).mtimeMs;
+      } catch {
+        // 没用过
+      }
+      r.媒体.push({
+        路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 记于: 有json ? fs.statSync(json).mtimeMs : st.mtimeMs,
+        级别: 有json ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink,
+        存法: 种 === '母版' ? (是压缩 ? 'crf12' : 'crf1') : null, 已被取代: false, 用过于, 正在写: 写着.has(m[1]!),
+      });
+    } else if (是临时名(名)) r.临时.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
+    else if (!名.endsWith('.指纹.json') && !用过名.test(名)) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
+  }
+  if (种 !== '母版' || !o.段签目录) return;
+  const 这批 = r.媒体.slice(起);
+  for (const f of 这批) {
+    if (f.存法 !== 'crf1') continue;
+    const 压 = 这批.find((x) => x.存法 === 'crf12' && x.指纹 === f.指纹);
+    f.已被取代 = !!压 && 段签说已转码(o.段签目录(键, f.指纹), f.指纹, f.大小, 压.大小);
+  }
+};
+
 /** 扫 cache/<种>/<作品>/ 下各键目录 */
-export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string): 媒体扫描 => {
+export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string, o: 扫描选项 = {}): 媒体扫描 => {
   const r: 媒体扫描 = { 媒体: [], 临时: [], 不认识: [] };
   if (!fs.existsSync(作品目录)) return r;
   for (const 键 of fs.readdirSync(作品目录)) {
@@ -112,31 +186,27 @@ export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string):
       r.不认识.push({ 路径: dir, 大小: 目录st.size, 改于: 目录st.mtimeMs });
       continue;
     }
-    for (const 名 of fs.readdirSync(dir)) {
-      const f = path.join(dir, 名);
-      const st = fs.lstatSync(f);
-      if (!st.isFile()) {
-        r.不认识.push({ 路径: f, 大小: 0, 改于: st.mtimeMs });
-        continue;
-      }
-      const m = 媒体名.exec(名);
-      if (m && `.${m[2]}` === 媒体后缀[种]) {
-        const json = path.join(dir, `${m[1]}.指纹.json`);
-        const 有json = fs.existsSync(json);
-        r.媒体.push({
-          路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 记于: 有json ? fs.statSync(json).mtimeMs : st.mtimeMs,
-          级别: 有json ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink,
-        });
-      } else if (是临时名(名)) r.临时.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
-      else if (!名.endsWith('.指纹.json')) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
-    }
+    扫键目录(dir, 种, 作品, 键, r, o);
   }
   return r;
 };
 
 /**
- * 给每个媒体文件定留不留：保留集里有的留；另外每个（种、作品、键、级别）记于最新的一份留（理由「最近一份」；
- * 每个级别的都留，不分级别的 历史指纹 取的那份也就在里面），近 近期天数 天里改过的留（「近期」）。理由为空的就是要删的。
+ * 一个媒体文件身上的钉（gc、render 自动删旧共用）：保留集里按它自己、CRF12 再按同名 CRF1 找；CRF12 不认「认可」（verify 不比 CRF12 像素）；
+ * 已被取代的 CRF1 只认「要原母版」的；近 2 小时用过的、正在写的都留
+ */
+export const 钉理由 = (f: 媒体文件, 保留: 保留集, 现在: number): 保留理由[] => {
+  let 理由 = [...保留.查(f.路径), ...(f.存法 === 'crf12' ? 保留.查(逻辑名(f.路径)) : [])];
+  if (f.存法 === 'crf12') 理由 = 理由.filter((x) => x.类 !== '认可');
+  if (f.已被取代) 理由 = 理由.filter((x) => x.要原母版);
+  if (f.用过于 !== null && 现在 - f.用过于 < 近期用过毫秒) 理由.push({ 类: '在用', 说明: '2 小时内用过' });
+  if (f.正在写) 理由.push({ 类: '在用', 说明: '这个指纹正在写' });
+  return 理由;
+};
+
+/**
+ * 给每个媒体文件定留不留：钉理由 有的留；另外每个（种、作品、键、级别）记于最新的那个指纹留（理由「最近一份」；
+ * 每个级别的都留，不分级别的 历史指纹 取的那份也就在里面），近 近期天数 天里改过的留（「近期」）；已被取代的 CRF1 不算这两条。理由为空的就是要删的。
  */
 export const 规划媒体 = (文件们: readonly 媒体文件[], 保留: 保留集, o: { 现在: number; 近期天数: number }): 带理由<媒体文件>[] => {
   const 最近 = new Map<string, 媒体文件>();
@@ -145,11 +215,13 @@ export const 规划媒体 = (文件们: readonly 媒体文件[], 保留: 保留�
     const 已 = 最近.get(k);
     if (!已 || f.记于 > 已.记于) 最近.set(k, f);
   }
-  const 最近集 = new Set([...最近.values()]);
+  const 最近指纹 = new Set([...最近.values()].map((f) => [f.种, f.作品, f.键, f.指纹].join('\0')));
   return 文件们.map((f) => {
-    const 理由 = 保留.查(f.路径);
-    if (最近集.has(f)) 理由.push({ 类: '最近一份', 说明: f.级别 ?? '级别不明' });
-    if (o.现在 - f.改于 < o.近期天数 * 天) 理由.push({ 类: '近期', 说明: `${o.近期天数} 天内` });
+    const 理由 = 钉理由(f, 保留, o.现在);
+    if (!f.已被取代) {
+      if (最近指纹.has([f.种, f.作品, f.键, f.指纹].join('\0'))) 理由.push({ 类: '最近一份', 说明: f.级别 ?? '级别不明' });
+      if (o.现在 - f.改于 < o.近期天数 * 天) 理由.push({ 类: '近期', 说明: `${o.近期天数} 天内` });
+    }
     return { ...f, 理由 };
   });
 };
@@ -169,8 +241,10 @@ export const 读认可指纹 = (file: string): { 段: string; 指纹: string } |
 };
 
 export type 解钉选项 = {
-  /** true：自足的交付、有认可参考的认可不再钉母版。默认 false */
+  /** true：自足的交付、有认可参考的认可不再钉母版（gc、render 自动删旧都传 true，钉.ts）。不给是 false，只在说明里标 */
   解钉?: boolean;
+  /** 交付的作品开没开剪辑包：开了、交付又缺 剪辑包/画面.mp4 的，补交付 要出片时那份 CRF1，钉的理由带 要原母版。不给按没开算 */
+  开剪辑包?: (作品: string) => boolean;
   /** 认可记录文件 → 它在这个平台的认可参考（验收/参考.ts 的 参考文件，按记录的抽样哈希起名）；读不出记录返回 null。不给就当都没有参考 */
   参考文件?: (认可文件: string, 平台: string) => string | null;
 };
@@ -194,7 +268,7 @@ export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (�
       const 参考 = o.参考文件?.(file, 平台);
       const 有参考 = !!参考 && fs.existsSync(参考);
       if (有参考 && o.解钉) continue;
-      保留.加(path.join(母版目录(r.段), `${r.指纹.slice(0, 16)}${媒体后缀.母版}`), { 类: '认可', 说明: 有参考 ? `${平台}（有认可参考）` : 平台 });
+      保留.加(path.join(母版目录(r.段), `${r.指纹.slice(0, 16)}${媒体后缀.母版}`), { 类: '认可', 说明: 有参考 ? `${平台}（有认可参考）` : 平台, 要原母版: true });
     }
   }
 };
@@ -255,8 +329,9 @@ export const 加交付 = (保留: 保留集, 交付根: string, 数据根: strin
     }
     const 自足 = 交付自足(path.dirname(m));
     if (自足 && o.解钉) continue;
-    const 说明 = path.relative(交付根, path.dirname(m)).split(path.sep).join('/') + (自足 ? '（已自足）' : '');
-    for (const p of 引用) 保留.加(path.isAbsolute(p) ? p : path.join(数据根, ...p.split('/')), { 类: '交付', 说明 });
+    const 待补画面 = !自足 && !!o.开剪辑包?.(作品) && !fs.existsSync(path.join(path.dirname(m), '剪辑包', '画面.mp4'));
+    const 说明 = path.relative(交付根, path.dirname(m)).split(path.sep).join('/') + (自足 ? '（已自足）' : 待补画面 ? '（待补画面）' : '');
+    for (const p of 引用) 保留.加(path.isAbsolute(p) ? p : path.join(数据根, ...p.split('/')), { 类: '交付', 说明, ...(待补画面 ? { 要原母版: true as const } : {}) });
   }
 };
 

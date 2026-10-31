@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 全部段, 选段 } from '../清单/清单.ts';
-import { 母版路径, 历史指纹, 指纹文件 } from '../渲/母版.ts';
+import { 压缩母版路径, 有母版, 历史指纹, 指纹文件 } from '../渲/母版.ts';
 import { 读段签, 段签齐 } from '../段签/段签.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 渲染标签 } from '../渲/渲.ts';
@@ -35,11 +35,11 @@ export const 指纹命令: Record<string, 命令> = {
       const 指纹们 = await 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 渲染参数(级别) })));
       for (const [i, s] of 段们.entries()) {
         const fp = 指纹们[i]!;
-        const 有 = fs.existsSync(母版路径(s.键, fp.指纹));
+        const 有 = 有母版(s.键, fp.指纹);
         const 签 = 读段签(s.键, fp.指纹);
         const 渲过 = 有 || !!签 || fs.existsSync(指纹文件(s.键, fp.指纹));
         const 头 = `${(s.编号 ?? '').padEnd(5)} ${s.键}  ${fp.指纹.slice(0, 16)}`;
-        if (有) console.log(`✓ ${头}${段签齐(签) ? '' : '  缺段签'}`);
+        if (有) console.log(`✓ ${头}${段签齐(签) ? '' : '  缺段签'}${fs.existsSync(压缩母版路径(s.键, fp.指纹)) ? '' : '  未转存 CRF12'}`);
         else if (渲过) {
           母版不在++;
           const 估 = 加预计(s.键);

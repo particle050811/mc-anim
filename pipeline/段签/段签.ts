@@ -3,10 +3,11 @@
 //     签.json    母版字节 sha、大小、改于；verify 的签名（扫母版 算的那份，抽样帧 sha、16×9 块均值、声音 sha/响度/起音）；首尾帧 160×90 灰度（接缝用）
 //     声音.flac  母版 PCM 无损（解回来的 PCM sha 要等于签名里的 音频sha 才收）
 //     抽样.mkv   抽样帧（首帧、每 24 帧、末帧）全分辨率 yuv420p FFV1 无损（解成 rgb24 逐帧 sha 要等于签名才收）
-//     历史.jsonl 同一指纹重渲：上一份的字节 sha 和自查结论；母版转码的改记
+//     历史.jsonl 同一指纹重渲：上一份的字节 sha 和自查结论；母版转码（CRF1 → CRF12）的改记
 //     历史/<上一份母版字节 sha 前 16 位>/  重渲前那一套（签.json、抽样.mkv、声音.flac）原样挪进来，无损抽样帧不丢（认可参考还能从这里备）
 // 渲染本身不确定，同一指纹重渲字节会变：自查比抽样帧 sha，不一样再比块均值（阈值.toml 的 块均值容差），超了算「重渲漂移」，要对这段跑 verify。
-// 母版原地转码（用户 10-30 定 CRF1 转 CRF12）不是重渲：转码的那一步调 记转码，段签留着转码前无损抽的帧，不重新派生。
+// 母版转码（用户 10-30 定 CRF1 转 CRF12，渲/转存.ts）不是重渲：转码的那一步调 记转码，段签留着转码前从 CRF1 无损抽的帧，不重新派生；
+// 段签只从 CRF1 派生，给 CRF12 就拒（verify 不拿 CRF12 的像素当新这一版）。
 // 签.json 最后原子写，有它就是一整套；旧的一套只挪不删，不删母版。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -17,6 +18,7 @@ import { 低优先级, 跑 } from '../环境/子进程.ts';
 import { 视频信息, 有音轨 } from '../渲/探测.ts';
 import { 灰度帧 } from '../合成/接缝.ts';
 import { 原子写 } from '../渲/母版.ts';
+import { 是压缩母版, type 存法 } from '../渲/转码.ts';
 import { 抽样帧, 抽样流, 抽样滤镜, 音频流, sha, 默认间隔 } from '../验收/帧流.ts';
 import { 比块均值, 读阈值 } from '../验收/比较.ts';
 import { 扫母版 } from '../验收/验收.ts';
@@ -37,8 +39,8 @@ export type 段签 = {
   段: string;
   指纹: string;
   级别: string | null;
-  /** 派生时母版的样子：大小、改于对得上就当字节没变，不重算 sha。转码自：母版原地转码过，签名、抽样是从转码前这份抽的 */
-  母版: 母版样子 & { 转码自?: 母版样子 };
+  /** 现在的母版的样子：大小、改于对得上就当字节没变，不重算 sha。转码过的：母版 是 CRF12 那份、存法 是怎么转的，签名、抽样是从 转码自（CRF1）抽的 */
+  母版: 母版样子 & { 转码自?: 母版样子; 存法?: 存法 };
   签名: 签名;
   /** 母版没有音轨是 null */
   声音: { 文件: string; sha: string; 大小: number } | null;
@@ -77,13 +79,21 @@ export const 文件sha = async (file: string) => {
   return h.digest('hex');
 };
 
-/** 段签是不是这份母版派生的：大小、改于一样就是；不一样再算字节 sha */
-export const 对得上母版 = async (签: 段签, 母版: string) => {
-  const st = fs.statSync(母版);
-  if (st.size !== 签.母版.大小) return false;
-  if (st.mtimeMs === 签.母版.改于) return true;
-  return (await 文件sha(母版)) === 签.母版.字节sha;
+const 对得上样子 = async (样: 母版样子, 文件: string) => {
+  if (!fs.existsSync(文件)) return false;
+  const st = fs.statSync(文件);
+  if (st.size !== 样.大小) return false;
+  if (st.mtimeMs === 样.改于) return true;
+  return (await 文件sha(文件)) === 样.字节sha;
 };
+
+/** 段签记的母版是不是这个文件（转码过的就是 CRF12 那份）：大小、改于一样就是；不一样再算字节 sha */
+export const 对得上母版 = (签: 段签, 母版: string) => 对得上样子(签.母版, 母版);
+
+/** 段签是从哪份 CRF1 派生的（转码过的看 转码自） */
+export const 原样子 = (签: 段签): 母版样子 => 签.母版.转码自 ?? 签.母版;
+/** 段签是不是这份 CRF1 派生的 */
+export const 对得上原母版 = (签: 段签, 原: string) => 对得上样子(原样子(签), 原);
 
 /** 段签齐不齐：签.json 里登记的声音、抽样文件都在 */
 export const 段签齐 = (签: 段签 | null): 签 is 段签 => !!签 && fs.existsSync(抽样路径(签)) && (!签.声音 || fs.existsSync(声音路径(签)!));
@@ -155,6 +165,7 @@ const 临时名 = (dir: string, 名: string) => {
  */
 export const 出段签 = async (母版: string, o: { 段键: string; 指纹: string; 级别: string | null; 派生: 段签['派生']; 作品?: string }): Promise<{ 签: 段签; 自查: 自查 | null }> => {
   const 作品 = o.作品 ?? 作品名();
+  if (是压缩母版(母版)) throw new Error(`${母版} 是 CRF12，段签只从 CRF1 派生（verify 比的是 CRF1 的无损抽样帧）：这段要重渲（anim render ${o.段键} --重渲）`);
   const dir = 段签目录(o.段键, o.指纹, 作品);
   fs.mkdirSync(dir, { recursive: true });
   const st = fs.statSync(母版);
@@ -210,15 +221,16 @@ export const 出段签 = async (母版: string, o: { 段键: string; 指纹: str
 };
 
 /**
- * 母版原地转码之后调（转码那一步负责先有段签、再转码、再调这里）：段签记的母版改成转码后的字节，签名、抽样帧、声音不动
- * （09-补充-能不能用压缩版.md：验收用转码前从 CRF1 抽的无损抽样帧）。要求段签齐全、是 原字节sha 那份母版派生的，
+ * 转码之后调（渲/转存.ts 负责先有段签、再转码、再调这里、最后改名）：段签记的母版改成转码后的字节和存法，签名、抽样帧、声音不动
+ * （09-补充-能不能用压缩版.md：验收用转码前从 CRF1 抽的无损抽样帧）。要求段签齐全、是 原字节sha 那份 CRF1 派生的（同一份 CRF1 再转一次也认），
  * 转码后尺寸帧数一样、声音 PCM 和签名一样；不然抛错，不改。不过闸（解声音要过放行闸，调用方过）
  */
-export const 记转码 = async (段键: string, 指纹: string, 新母版: string, o: { 原字节sha: string; 作品?: string }): Promise<段签> => {
+export const 记转码 = async (段键: string, 指纹: string, 新母版: string, o: { 原字节sha: string; 存法?: 存法; 作品?: string }): Promise<段签> => {
   const 作品 = o.作品 ?? 作品名();
   const 签 = 读段签(段键, 指纹, 作品);
   if (!段签齐(签)) throw new Error(`${段键}（${指纹.slice(0, 16)}）没有齐全的段签，转码前先 anim render ${段键} --只派生`);
-  if (签.母版.字节sha !== o.原字节sha) throw new Error(`${段键} 的段签是字节 ${签.母版.字节sha.slice(0, 12)} 的母版派生的，转码前的母版是 ${o.原字节sha.slice(0, 12)}，对不上`);
+  const 原 = 原样子(签);
+  if (原.字节sha !== o.原字节sha) throw new Error(`${段键} 的段签是字节 ${原.字节sha.slice(0, 12)} 的母版派生的，转码前的母版是 ${o.原字节sha.slice(0, 12)}，对不上`);
   const v = 视频信息(新母版);
   if (v.宽 !== 签.签名.宽 || v.高 !== 签.签名.高 || v.帧数 !== 签.签名.帧数) throw new Error(`${新母版} 转码后是 ${v.宽}×${v.高} ${v.帧数} 帧，段签是 ${签.签名.宽}×${签.签名.高} ${签.签名.帧数} 帧`);
   if (签.签名.音频sha) {
@@ -227,9 +239,12 @@ export const 记转码 = async (段键: string, 指纹: string, 新母版: strin
     if (h.digest('hex') !== 签.签名.音频sha) throw new Error(`${新母版} 转码后声音 PCM 和段签不一样（声音要原样拷）`);
   }
   const st = fs.statSync(新母版);
-  const 新: 段签 = { ...签, 母版: { 字节sha: await 文件sha(新母版), 大小: st.size, 改于: st.mtimeMs, 转码自: 签.母版.转码自 ?? { 字节sha: 签.母版.字节sha, 大小: 签.母版.大小, 改于: 签.母版.改于 } } };
+  const 新: 段签 = {
+    ...签,
+    母版: { 字节sha: await 文件sha(新母版), 大小: st.size, 改于: st.mtimeMs, 转码自: { 字节sha: 原.字节sha, 大小: 原.大小, 改于: 原.改于 }, ...(o.存法 ? { 存法: o.存法 } : {}) },
+  };
   const dir = 段签目录(段键, 指纹, 作品);
-  fs.appendFileSync(path.join(dir, 历史文件名), JSON.stringify({ 记于: new Date().toISOString(), 转码: true, 上次字节sha: 签.母版.字节sha, 这次字节sha: 新.母版.字节sha }) + '\n', 'utf8');
+  fs.appendFileSync(path.join(dir, 历史文件名), JSON.stringify({ 记于: new Date().toISOString(), 转码: true, 上次字节sha: 签.母版.字节sha, 这次字节sha: 新.母版.字节sha, 存法: o.存法?.标签 ?? null }) + '\n', 'utf8');
   原子写(path.join(dir, 签文件名), JSON.stringify(新, null, 1) + '\n');
   return 新;
 };

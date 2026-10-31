@@ -1,12 +1,14 @@
 // 交付目录（anim film 出的 交付/<作品>/<UTC>-<名>/）的约定：manifest 的两个版本、作品的交付选项、「自足」的判断。
 // 自足 = edit-package 不用再读母版：有 全片-未拉响度.flac（拉响度之前的整片声音，无损）和 剪辑包/画面.mp4。
 //   作品没开剪辑包（交付.toml）的 film 不出画面，这种交付不自足，母版一直钉着（edit-package 要拿母版现做画面）。
-// manifest v1（10-30 以前）每段记 母版（相对数据根，更早的是绝对路径）；v2 不记母版，记 指纹、字节sha、段签（相对数据根），母版路径按作品、段键、指纹现算。
+// manifest v1（10-30 以前）每段记 母版（相对数据根，更早的是绝对路径）；v2 不记母版，记 指纹、字节sha、存法、段签（相对数据根），母版路径按作品、段键、指纹现算。
+// 读回来的 母版 都是 CRF1 那个名字（同一目录的 .crf12.mkv 是转存后的那份，渲/母版.ts）；要读画面用 渲/转存.ts 的 备好母版，比「是不是出片时那份」按字节 sha。
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import { 数据根下, 母版目录, 配置 } from '../环境/配置.ts';
 import { 低优先级, 跑 } from '../环境/子进程.ts';
+import { 压缩名 } from '../渲/母版.ts';
 import { 声音路径, 读段签 } from '../段签/段签.ts';
 
 export const 未拉响度文件 = '全片-未拉响度.flac';
@@ -52,7 +54,7 @@ export type 交付manifest = {
 
 type 原段 = { 编号?: string | null; 键: string; 指纹: string; 帧数: number; 全片起帧: number; 母版?: string; 声音?: string | null; 字节sha?: string | null };
 
-/** 母版在数据根里的位置（v2 不记，按 cache/母版/<作品>/<段键>/<指纹前 16 位>.mkv 现算） */
+/** 母版在数据根里的位置（v2 不记，按 cache/母版/<作品>/<段键>/<指纹前 16 位>.mkv 现算；转存后这个名字可能已经没了，同目录是 .crf12.mkv） */
 export const 交付母版 = (作品: string, 键: string, 指纹: string) => path.join(母版目录(键, 作品), `${指纹.slice(0, 16)}.mkv`);
 
 /** 交付目录 → manifest（v1、v2 都认；早先的 v1 没有 作品，按交付目录的上一级算） */
@@ -85,11 +87,11 @@ export const 交付缺 = (dir: string): string[] => [未拉响度文件, 剪辑�
 
 const 采样率 = 48000;
 
-/** 各段声音从哪读：manifest 记的段签声音 > 现有段签的 声音.flac > 母版；都不在是 null */
+/** 各段声音从哪读：manifest 记的段签声音 > 现有段签的 声音.flac > 母版（CRF1，或 CRF12：PCM 是原样拷的）；都不在是 null */
 export const 段声音源 = (m: 交付manifest & { 作品: string }) =>
   m.段.map((s) => {
     const 签 = 读段签(s.键, s.指纹, m.作品);
-    for (const f of [s.声音, 签 && 声音路径(签), s.母版]) if (f && fs.existsSync(f)) return f;
+    for (const f of [s.声音, 签 && 声音路径(签), s.母版, 压缩名(s.母版)]) if (f && fs.existsSync(f)) return f;
     return null;
   });
 

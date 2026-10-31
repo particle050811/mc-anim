@@ -3,15 +3,17 @@
 //   剪辑包/画面.mp4（作品开了剪辑包、交付里还没有的）：和 edit-package 现做的同一套（剪辑包.ts 的 做剪辑画面）。没开剪辑包的作品不补，交付照旧不自足。
 // 补出来的文件解钉后就是这份交付唯一的来源，所以源要是出片时那一份：v2 比 manifest 记的母版字节 sha；v1 没记，母版、叠层、段签派生时的母版
 // 改于都不能晚于 manifest.json（晚了就是出片以后重渲或转码过）。补了什么、从哪补的记进 补做.json。要的源都不在或对不上的交付报出来跳过。
+// 母版转存 CRF12 以后（渲/转存.ts）：出片时读的 CRF1 转存后不算「出片时那份」的画面（像素变了），但声音是原样拷的 PCM，算；出片时读的就是 CRF12 的两样都算。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 交付根 } from '../环境/配置.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import { 做剪辑画面 } from '../适配器/剪映/剪辑包.ts';
-import { 文件sha, 段签文件, 读段签, 读历史段签, 对得上母版, 段签齐, type 段签 } from '../段签/段签.ts';
+import { 文件sha, 段签文件, 读段签, 读历史段签, 对得上母版, 对得上原母版, 段签齐, type 段签 } from '../段签/段签.ts';
 import { 交付缺, 剪辑画面文件, 未拉响度文件, 拼未拉响度, 读交付manifest, 读交付设置, type 交付段 } from './交付.ts';
 import { 量响度 } from './成片.ts';
+import { 压缩名 } from '../渲/母版.ts';
 
 export const 补做文件 = '补做.json';
 
@@ -39,8 +41,27 @@ export const 母版是出片时的 = async (s: 交付段, 片: 出片时) => {
   if (!fs.existsSync(s.母版)) return false;
   if (!s.字节sha) return fs.statSync(s.母版).mtimeMs <= 片.改于;
   const 签 = 读段签(s.键, s.指纹, 片.作品);
-  if (签 && (await 对得上母版(签, s.母版))) return 签.母版.字节sha === s.字节sha;
+  if (签 && (await 对得上原母版(签, s.母版))) return (签.母版.转码自 ?? 签.母版).字节sha === s.字节sha;
   return (await 文件sha(s.母版)) === s.字节sha;
+};
+
+/** 出片时读的就是现在这份 CRF12（manifest 记的字节 sha 是它）：是就返回 CRF12 的路径，这时画面、声音都是出片时那份 */
+const 出片时的压缩母版 = async (s: 交付段, 片: 出片时): Promise<string | null> => {
+  const 压 = 压缩名(s.母版);
+  if (!s.字节sha || !fs.existsSync(压)) return null;
+  const 签 = 读段签(s.键, s.指纹, 片.作品);
+  if (签 && (await 对得上母版(签, 压))) return 签.母版.字节sha === s.字节sha ? 压 : null;
+  return (await 文件sha(压)) === s.字节sha ? 压 : null;
+};
+
+/** 补画面的源：出片时读的那份母版（CRF1 或 CRF12）；都不是 null */
+export const 出片时画面 = async (s: 交付段, 片: 出片时): Promise<string | null> => (await 母版是出片时的(s, 片)) ? s.母版 : 出片时的压缩母版(s, 片);
+
+/** CRF12 里的 PCM 是这份出片时的（段签记着它转自出片时那份 CRF1，或者出片时读的就是它） */
+const 声音同出片时的压缩母版 = (s: 交付段, 片: 出片时): string | null => {
+  const 压 = 压缩名(s.母版);
+  const 签 = 读段签(s.键, s.指纹, 片.作品);
+  return fs.existsSync(压) && 签 && 签.母版.转码自 && 签是出片时的(签, s, 片) ? 压 : null;
 };
 
 /** 一段的声音从哪补：出片时那份母版派生的段签 声音.flac（现在的、历史/ 里的）> 出片时那份母版；都没有是 null */
@@ -48,7 +69,7 @@ export const 出片时声音 = async (s: 交付段, 片: 出片时): Promise<str
   const 现 = 读段签(s.键, s.指纹, 片.作品);
   const 候选 = [...(段签齐(现) ? [{ 签: 现, 声音: 现.声音 ? 段签文件(现, 现.声音.文件) : null }] : []), ...读历史段签(s.键, s.指纹, 片.作品).map((h) => ({ 签: h.签, 声音: h.签.声音 ? path.join(path.dirname(h.抽样), h.签.声音.文件) : null }))];
   for (const c of 候选) if (c.声音 && fs.existsSync(c.声音) && 签是出片时的(c.签, s, 片)) return c.声音;
-  return (await 母版是出片时的(s, 片)) ? s.母版 : null;
+  return (await 出片时画面(s, 片)) ?? 声音同出片时的压缩母版(s, 片);
 };
 
 const 记补做 = (dir: string, 文件: string, 说明: Record<string, unknown>) => {
@@ -113,9 +134,14 @@ export const 补交付 = async (dirs: string[], opts: { 只看?: boolean; 记录
     }
     if (不补画面) console.log(`· ${名}：作品没开剪辑包，${剪辑画面文件} 不补，这份交付照旧钉着母版`);
     else if (缺.includes(剪辑画面文件)) {
-      const 不在 = [...m.段.map((s) => s.母版), ...m.叠层.map((l) => l.文件)].filter((f) => !fs.existsSync(f));
+      const 不在 = [...m.段.filter((s) => !fs.existsSync(s.母版) && !fs.existsSync(压缩名(s.母版))).map((s) => s.母版), ...m.叠层.map((l) => l.文件).filter((f) => !fs.existsSync(f))];
       const 变过: string[] = [];
-      for (const s of m.段) if (fs.existsSync(s.母版) && !(await 母版是出片时的(s, 片))) 变过.push(s.键);
+      const 段们: 交付段[] = [];
+      for (const s of m.段) {
+        const 源 = await 出片时画面(s, 片);
+        if (源) 段们.push({ ...s, 母版: 源 });
+        else if (fs.existsSync(s.母版) || fs.existsSync(压缩名(s.母版))) 变过.push(s.键);
+      }
       for (const l of m.叠层) if (fs.existsSync(l.文件) && fs.statSync(l.文件).mtimeMs > 片.改于) 变过.push(l.键);
       if (不在.length || 变过.length) {
         补不了++;
@@ -129,7 +155,7 @@ export const 补交付 = async (dirs: string[], opts: { 只看?: boolean; 记录
       await opts.等放行();
       const 出 = path.join(dir, 剪辑画面文件);
       fs.mkdirSync(path.dirname(出), { recursive: true });
-      await 做剪辑画面(m, 出);
+      await 做剪辑画面({ ...m, 段: 段们 }, 出);
       记补做(dir, 剪辑画面文件, { 核对: m.版本 >= 2 ? '母版字节 sha' : '母版、叠层改于不晚于 manifest' });
       补了++;
       opts.记录.产物.push(出);

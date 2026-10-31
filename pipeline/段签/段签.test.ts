@@ -1,5 +1,5 @@
 // 段签：从 ffmpeg 现造的小母版（有损 x264，和真母版一样有编码噪声）派生，查签名和 verify 逐位相同、FLAC 和 FFV1 无损、
-// 重渲自查（旧的一套挪进 历史/）、母版转码改记、扫段签 和 扫母版 结论一样、认可参考（按认可记录的抽样哈希起名）。数据根是临时目录，不碰真数据。
+// 重渲自查（旧的一套挪进 历史/）、母版转存改记、扫段签 和 扫母版 结论一样、认可参考（按认可记录的抽样哈希起名）。数据根是临时目录，不碰真数据。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -17,6 +17,8 @@ const { 取段签, 同指纹重渲过 } = await import('./补.ts');
 const { 扫母版, 扫段签, 抽样里没有, 参考对不上 } = await import('../验收/验收.ts');
 const { 抽样流, 音频流, sha } = await import('../验收/帧流.ts');
 const { 备参考, 参考文件 } = await import('../验收/参考.ts');
+const { 原母版路径, 压缩母版路径 } = await import('../渲/母版.ts');
+const { 转码 } = await import('../渲/转码.ts');
 const { 同一版 } = await import('../验收/认可.ts');
 type 认可记录 = import('../验收/认可.ts').认可记录;
 
@@ -107,26 +109,48 @@ describe('段签', () => {
     expect(读段签('核对-重渲', fp)!.母版.字节sha).toBe(await 文件sha(母版));
   });
 
-  it('母版原地转码：记转码 后段签留着转码前的抽样帧和签名，取段签 不重新派生；转码前不是这份母版派生的不改', async () => {
+  it('转存：记转码 后段签留着转码前从 CRF1 抽的帧和签名，记下存法，取段签 不重新派生；转码前不是这份母版派生的不改', async () => {
     const fp = 指纹('转码');
-    const 母版 = path.join(目录, '转码.mkv');
+    const 母版 = 原母版路径('核对-转码', fp);
+    fs.mkdirSync(path.dirname(母版), { recursive: true });
     fs.copyFileSync(原, 母版);
     const 前 = (await 出段签(母版, { 段键: '核对-转码', 指纹: fp, 级别: '视频', 派生: '回填' })).签;
     const 原sha = 前.母版.字节sha;
-    const 转 = path.join(目录, '转码.写入中.mkv');
-    跑出([配置('ffmpeg'), '-v', 'error', '-y', '-i', 母版, '-map', '0', '-c:v', 'libx264', '-crf', '35', '-pix_fmt', 'yuv420p', '-c:a', 'copy', 转]);
-    fs.renameSync(转, 母版);
-    await expect(记转码('核对-转码', fp, 母版, { 原字节sha: 'f'.repeat(64) })).rejects.toThrow(/对不上/);
-    const 后 = await 记转码('核对-转码', fp, 母版, { 原字节sha: 原sha });
+    const 压 = 压缩母版路径('核对-转码', fp);
+    const 法 = await 转码(母版, 压);
+    await expect(记转码('核对-转码', fp, 压, { 原字节sha: 'f'.repeat(64) })).rejects.toThrow(/对不上/);
+    const 后 = await 记转码('核对-转码', fp, 压, { 原字节sha: 原sha, 存法: 法 });
     expect(后.母版.转码自!.字节sha).toBe(原sha);
-    expect(后.母版.字节sha).toBe(await 文件sha(母版));
+    expect(后.母版.字节sha).toBe(await 文件sha(压));
+    expect(后.母版.存法!.标签).toBe('x264-crf12-veryfast-t4');
     expect({ ...后, 母版: null }).toEqual({ ...前, 母版: null });
-    expect(await 对得上母版(后, 母版)).toBe(true);
-    const 取 = await 取段签('核对-转码', fp, '视频', { 等放行: async () => {}, 母版 });
+    expect(await 对得上母版(后, 压)).toBe(true);
+    // CRF1 删了也照样取（CRF1 不在、CRF12 对得上），抽样帧没换
+    fs.rmSync(母版);
+    const 取 = await 取段签('核对-转码', fp, '视频', { 等放行: async () => {} });
     expect(取!.抽样.sha).toBe(前.抽样.sha);
     expect(读历史段签('核对-转码', fp)).toEqual([]);
     // 转码后的像素和签名不一样（压缩过），段签没被它冲掉
-    expect((await 扫母版(母版)).签名.帧.map((f) => f.哈希)).not.toEqual(前.签名.帧.map((f) => f.哈希));
+    expect((await 扫母版(压)).签名.帧.map((f) => f.哈希)).not.toEqual(前.签名.帧.map((f) => f.哈希));
+  });
+
+  it('只剩 CRF12、抽样帧丢了：取段签 返回 null，不从 CRF12 派生；出段签 也拒收 CRF12', async () => {
+    const fp = 指纹('丢抽样');
+    const 母版 = 原母版路径('核对-丢抽样', fp);
+    fs.mkdirSync(path.dirname(母版), { recursive: true });
+    fs.copyFileSync(原, 母版);
+    const 前 = (await 出段签(母版, { 段键: '核对-丢抽样', 指纹: fp, 级别: '视频', 派生: '回填' })).签;
+    const 压 = 压缩母版路径('核对-丢抽样', fp);
+    const 法 = await 转码(母版, 压);
+    await 记转码('核对-丢抽样', fp, 压, { 原字节sha: 前.母版.字节sha, 存法: 法 });
+    fs.rmSync(母版);
+    fs.rmSync(抽样路径(前));
+    expect(await 取段签('核对-丢抽样', fp, '视频', { 等放行: async () => {} })).toBeNull();
+    await expect(出段签(压, { 段键: '核对-丢抽样', 指纹: fp, 级别: '视频', 派生: '补' })).rejects.toThrow(/CRF12/);
+    // 改了名的 CRF12 看文件里的标签也认得出来
+    const 改名 = path.join(目录, '改名.mkv');
+    fs.copyFileSync(压, 改名);
+    await expect(出段签(改名, { 段键: '核对-丢抽样', 指纹: fp, 级别: '视频', 派生: '补' })).rejects.toThrow(/CRF12/);
   });
 });
 

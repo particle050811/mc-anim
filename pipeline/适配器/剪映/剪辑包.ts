@@ -1,7 +1,7 @@
 // anim edit-package：照一次 anim film 的交付（manifest.json 的增益、各段帧数和 台词落点.json）出剪辑包，放在 <交付目录>/剪辑包/，出完写进剪映草稿。
 // 照旧项目 导出剪辑包.py 的快路：画面 = 同一批母版 + 叠层、不带字幕，2K、CRF 32、每帧关键帧（用户 10-14 定，剪映里拖播放头哪帧都能直接解）；
 // 声音 = 拉响度之前的整片声音，各句台词和字幕现算（字幕.ts），轨道、核对交给 剪辑包.py。
-// 只读交付目录：画面.mp4 film 已经出了（作品开了剪辑包）就不碰母版，声音读交付的 全片-未拉响度.flac；旧交付没有这两样才退回段签的 声音.flac、母版现做（合成/交付.ts）。
+// 只读交付目录：画面.mp4 film 已经出了（作品开了剪辑包）就不碰母版，声音读交付的 全片-未拉响度.flac；旧交付没有这两样才退回段签的 声音.flac、CRF12 母版现做（合成/交付.ts、渲/转存.ts）。
 // 配乐、音效默认一条「去台词」；--拆音效 照段.ts 的 cue 出清单、一声一个片段（和成片差多少看 核对.tsv）。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,7 +9,9 @@ import { 交付根, 配置, 数据根 } from '../../环境/配置.ts';
 import { 代码根 } from '../../环境/路径.ts';
 import { 低优先级, 跑 } from '../../环境/子进程.ts';
 import { 过放行闸 } from '../../闸/闸.ts';
+import { 记用过 } from '../../渲/母版.ts';
 import { 视频信息 } from '../../渲/探测.ts';
+import { 备好母版 } from '../../渲/转存.ts';
 import { 选段 } from '../../清单/清单.ts';
 import { 读作品资产锁, 解析资产 } from '../../资产/资产锁.ts';
 import { 作品根 } from '../../环境/作品.ts';
@@ -110,7 +112,13 @@ export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boo
   fs.mkdirSync(工作, { recursive: true });
 
   const 画面文件 = path.join(包, '画面.mp4');
-  if (opts.重做画面 || !fs.existsSync(画面文件)) await 做剪辑画面(m, 画面文件);
+  if (opts.重做画面 || !fs.existsSync(画面文件)) {
+    // 只有 CRF1 的旧母版先转存（和 film 读同一份画面）；不在数据根按段键能找到的位置（早先的绝对路径）照 manifest 记的读
+    const 段 = [];
+    for (const s of m.段) 段.push({ ...s, 母版: (await 备好母版(s.键, s.指纹, m.级别 ?? null, { 作品: m.作品, 记录: opts.记录 })) ?? s.母版 });
+    for (const l of m.叠层) 记用过(path.dirname(l.文件), path.basename(l.文件));
+    await 做剪辑画面({ ...m, 段 }, 画面文件);
+  }
   const 未拉 = path.join(工作, '全片-未拉响度.wav');
   await 未拉响度(m, dir, 未拉);
 

@@ -1,11 +1,11 @@
 // 分阶段计时（still、render）：打包、开浏览器、读组合（getCompositions）、等闸、出帧、编码各花多久，看清时间花在哪。
 // 写进这条命令运行记录的「阶段」字段，另追加到 run/logs/阶段耗时.tsv；耗时.tsv 的列不动（预计耗时还按它算）。
-// 编码 = renderMedia 出完最后一帧到返回（Remotion 边出帧边编码，这里只剩收尾编码和混音）；派生段签 = render 渲完从母版派生段签（pipeline/段签/）。
+// 编码 = renderMedia 出完最后一帧到返回（Remotion 边出帧边编码，这里只剩收尾编码和混音）；派生段签 = render 渲完从 CRF1 派生段签（pipeline/段签/）；转存 = 转成 CRF12（渲/转码.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 耗时表, 配置 } from '../环境/配置.ts';
 
-export type 阶段名 = '打包' | '开浏览器' | '读组合' | '等闸' | '出帧' | '编码' | '派生段签';
+export type 阶段名 = '打包' | '开浏览器' | '读组合' | '等闸' | '出帧' | '编码' | '派生段签' | '转存';
 export type 阶段记录 = { 标签: string; 阶段: 阶段名; 开始: string; 秒: number };
 
 const 表头 = '开始（UTC）\t标签\t阶段\t秒\t主机\tpid\n';
