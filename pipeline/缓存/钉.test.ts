@@ -203,6 +203,31 @@ describe('render 渲完删旧', () => {
     fs.rmSync(别的, { recursive: true });
   });
 
+  it('交付 manifest 读不出：不知道引用了谁，整部作品的母版、叠层留着（CRF1 也留）；已自足的不钉', () => {
+    旧母版({ 原: true, 转过: true });
+    交付('坏了');
+    const m = path.join(数据根, '交付', '假', '坏了', 'manifest.json');
+    fs.writeFileSync(m, '{"段": [');
+    const r = 删();
+    expect(r.删).toEqual([]);
+    expect(r.留[0]!.理由).toContain('交付 manifest 读不出：假/坏了');
+    expect(在('.mkv') && 在('.crf12.mkv')).toBe(true);
+    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(0);
+    fs.writeFileSync(path.join(path.dirname(m), '全片-未拉响度.flac'), '');
+    fs.writeFileSync(path.join(path.dirname(m), '剪辑包', '画面.mp4'), '');
+    删();
+    expect(在('.mkv') || 在('.crf12.mkv')).toBe(false);
+  });
+
+  it('认可记录读不出：整段留着，已被取代的 CRF1 也留（说的和做的一样，它可能是 verify 唯一的像素来源）', () => {
+    旧母版({ 原: true, 转过: true });
+    const f = 认可文件(键, 'darwin-arm64', 作品根);
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, '坏了\n');
+    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(0);
+    expect(在('.mkv')).toBe(true);
+  });
+
   it('叠层同一套', () => {
     const k = '甲-层';
     const dir = 叠层目录(k, '假');

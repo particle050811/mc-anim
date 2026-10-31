@@ -13,6 +13,8 @@ import { 大小文本, 小计, type 带理由, type 媒体文件 } from './回�
 import { 当前母版们, type 当前母版 } from './当前指纹.ts';
 import { 默认天数, 算回收计划 } from './计划.ts';
 
+/** 只打印时估 CRF12 要新占多少：决策 0008 实测 62 个母版 9.6 GB → 3.9 GB */
+const 估压缩比 = 0.4;
 const 比 = (新: number, 原: number) => (原 ? `${((新 / 原) * 100).toFixed(0)}%` : '-');
 const 相对 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
 
@@ -92,6 +94,10 @@ export const 迁移转存 = async (作品们: readonly string[], o: { 执行: bo
   for (const w of 计划.警告) 警告(w);
   console.log(`\n${o.执行 ? '现在' : '转完以后'} anim cache gc 能删（CRF1 转完才算已被取代；交付已自足、认可有参考的才算解钉）：`);
   const 合计 = 打删除计划(计划.媒体, o.详细);
-  console.log(`  合计腾出约 ${大小文本(合计)}。${o.执行 ? '真删：' : '先 anim cache 转存 --执行，再真删：'}anim cache gc --执行 --只 母版,叠层`);
+  if (o.执行) console.log(`  合计腾出约 ${大小文本(合计)}。真删：anim cache gc --执行 --只 母版,叠层`);
+  else {
+    const 新增 = 要转.reduce((n, x) => n + x.原大小, 0) * 估压缩比;
+    console.log(`  合计删约 ${大小文本(合计)}，转存新占约 ${大小文本(新增)}（按实测 CRF12 约 CRF1 的 ${估压缩比 * 100}% 估），净省约 ${大小文本(Math.max(0, 合计 - 新增))}。先 anim cache 转存 --执行，再真删：anim cache gc --执行 --只 母版,叠层`);
+  }
   return 失败 ? 1 : 0;
 };

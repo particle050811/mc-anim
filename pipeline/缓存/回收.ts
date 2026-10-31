@@ -275,7 +275,7 @@ export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (�
       const 段键 = 名.slice(0, -'.toml'.length);
       if (!r) {
         警告(`${file} 读不出 段 和 指纹，${段键} 的母版整个留着`);
-        保留.加目录(母版目录(段键), { 类: '算不出', 说明: '认可记录读不出' });
+        保留.加目录(母版目录(段键), { 类: '算不出', 说明: '认可记录读不出', 要原母版: true });
         continue;
       }
       const 参考 = o.参考文件?.(file, 平台);
@@ -337,7 +337,15 @@ export const 加交付 = (保留: 保留集, 交付根: string, 数据根: strin
       作品 = typeof j?.作品 === 'string' ? j.作品 : path.basename(path.dirname(path.dirname(m)));
       引用 = 交付引用(j, 作品);
     } catch (e) {
-      警告(`${m} 读不出（${(e as Error).message}），它引用的母版不知道，按没有算`);
+      // 自足的交付本来就不读母版；别的不知道引用了谁，和认可记录读不出一样整个留着（render 自动删旧也看这里，不能当没引用）
+      if (o.解钉 && 交付自足(path.dirname(m))) {
+        警告(`${m} 读不出（${(e as Error).message}），交付已自足，不钉母版`);
+        continue;
+      }
+      const 层 = path.relative(交付根, path.dirname(m)).split(path.sep);
+      const 哪部 = 层.length >= 2 ? [层[0]!] : [];
+      警告(`${m} 读不出（${(e as Error).message}），它引用的母版不知道，${哪部[0] ?? '各作品'}的母版、叠层整个留着`);
+      for (const 种 of ['母版', '叠层']) 保留.加目录(path.join(数据根, 'cache', 种, ...哪部), { 类: '算不出', 说明: `交付 manifest 读不出：${层.join('/')}`, 要原母版: true });
       continue;
     }
     const 自足 = 交付自足(path.dirname(m));
