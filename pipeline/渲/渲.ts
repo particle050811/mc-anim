@@ -28,6 +28,7 @@ import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记�
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 压缩母版路径, 原母版路径, 叠层路径, 写指纹, 有母版, 现母版, 记用过 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
+import { 删打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
 import { 视频信息 } from './探测.ts';
 import { 出段签 } from '../段签/段签.ts';
@@ -97,6 +98,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
     return await fn({ serveUrl, browser, 参数, 组合 });
   } finally {
     await browser.close({ silent: true });
+    删打包(serveUrl);
   }
 };
 

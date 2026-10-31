@@ -14,6 +14,7 @@ import { 代码根 } from '../环境/路径.ts';
 import { 选段 } from '../清单/清单.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 明细收集 } from '../运行记录/渲染明细.ts';
+import { 删打包 } from './打包残留.ts';
 import { 打包 } from './渲.ts';
 import { 渲染参数, 等帧超时毫秒 } from './设置.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
@@ -116,6 +117,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
       return { remotion, 浏览器: 浏览器版本(opts.浏览器), 共享内存: !opts.关共享内存, 日志级别: 渲染日志, 段: `${作品名()}/${s.键}`, 帧, 打包秒, 开浏览器秒, 读组合秒, 轮 };
     } finally {
       await browser.close({ silent: true });
+      删打包(serveUrl);
     }
   } finally {
     console.log = 原log;
