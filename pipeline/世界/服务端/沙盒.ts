@@ -16,17 +16,34 @@ const 克隆 = (源: string, 到: string) => {
 
 export type 沙盒 = { 根: string; 服务端: string; 存档: string };
 
-export const 建沙盒 = (服务端目录: string, 存档: string, 名: string, 根 = 数据路径('run', '沙盒')): 沙盒 => {
+const 新沙盒目录 = (名: string, 根: string) => {
   const dir = path.join(根, `${utc月日时分(Date.now())}-${名}`);
   if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了（同一分钟建了两次？）`);
-  const 服 = path.join(dir, '服务端');
-  fs.mkdirSync(服, { recursive: true });
+  return dir;
+};
+
+/** 服务端程序和配置克隆到 到（不带里面的世界、日志） */
+const 克隆服务端 = (服务端目录: string, 到: string) => {
+  fs.mkdirSync(到, { recursive: true });
   for (const e of fs.readdirSync(服务端目录, { withFileTypes: true })) {
     if (不拷.has(e.name)) continue;
     const f = path.join(服务端目录, e.name);
     if (e.isDirectory() && fs.existsSync(path.join(f, 'level.dat'))) continue;
-    克隆(f, path.join(服, e.name));
+    克隆(f, path.join(到, e.name));
   }
+};
+
+/** 建新世界用的沙盒：只克隆服务端，存档路径给出来但还不存在（anim world new --沙盒 在里面建） */
+export const 建新世界沙盒 = (服务端目录: string, 存档名: string, 名: string, 根 = 数据路径('run', '沙盒')): 沙盒 => {
+  const dir = 新沙盒目录(名, 根);
+  克隆服务端(服务端目录, path.join(dir, '服务端'));
+  return { 根: dir, 服务端: path.join(dir, '服务端'), 存档: path.join(dir, 存档名) };
+};
+
+export const 建沙盒 = (服务端目录: string, 存档: string, 名: string, 根 = 数据路径('run', '沙盒')): 沙盒 => {
+  const dir = 新沙盒目录(名, 根);
+  const 服 = path.join(dir, '服务端');
+  克隆服务端(服务端目录, 服);
   const 世 = path.join(dir, path.basename(存档));
   克隆(存档, 世);
   fs.rmSync(path.join(世, 'session.lock'), { force: true });

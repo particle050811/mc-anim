@@ -1,6 +1,5 @@
 // 本机配置：每一项按「环境变量 > anim.local.toml > 默认值」取，并记下取自哪一层（anim env 打出来）。
 // anim.local.toml 里的键是环境变量名去掉 ANIM_ 的小写（TOML 的裸键只能是 ASCII）。不进 Git，先找代码根、再找主检出（worktree 里没有就用主检出那份）；里面的相对路径相对这个文件所在目录。模板见 anim.local.toml.example。
-// 迁移期默认值指向旧项目（拍板第 1 条和方案「四、迁移计划」）：游戏环境和资源闸锁目录都还在旧项目下，旧项目退役时改这里的默认值。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -26,30 +25,28 @@ const prism数据默认 = () => {
 /** 用户本机放外部模型仓库的地方（~/Developer/personal/<名>，旧项目 工具/公共/环境.py 同样的默认） */
 const 个人仓库 = (名: string) => path.join(os.homedir(), 'Developer', 'personal', 名);
 
-/** 旧项目退役前的位置：和本仓库主检出同级 */
+/** 旧项目 10-31 退役、打包进外置硬盘；要跑 pipeline/适配器/旧项目/ 就先解回主检出同级，或用 ANIM_LEGACY 指过去 */
 const 旧项目目录名 = '机械动力应力转动-AI漫画';
 
 // 顺序有意义：后面的默认值可以用前面已经取到的值
 const 项表 = {
   数据根: { 变量: 'ANIM_DATA', 说明: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 'mc-anim-data') },
   默认作品: { 变量: 'ANIM_WORK', 说明: '没给 --作品、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', 是路径: false, 默认: () => '' },
-  旧项目: { 变量: 'ANIM_LEGACY', 说明: '旧项目根（迁移期：旧项目执行器、基线、锁目录、游戏环境）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 旧项目目录名) },
-  游戏: { 变量: 'ANIM_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）；迁移期是旧项目的 game/', 是路径: true, 默认: (v) => path.join(v.旧项目!, 'game') },
+  旧项目: { 变量: 'ANIM_LEGACY', 说明: '旧项目根（已退役，只有 pipeline/适配器/旧项目/ 的基线工具用）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 旧项目目录名) },
+  游戏: { 变量: 'ANIM_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）', 是路径: true, 默认: (v) => path.join(v.数据根!, 'game') },
   java_home: { 变量: 'ANIM_JAVA_HOME', 说明: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', 是路径: true, 默认: () => '' },
   prism: { 变量: 'ANIM_PRISM', 说明: 'Prism Launcher 程序（anim mcai 起游戏用）；空就从 PATH 找', 是路径: false, 默认: () => '' },
   prism数据: { 变量: 'ANIM_PRISM_DATA', 说明: 'Prism Launcher 的数据目录（原版 assets、库）', 是路径: true, 默认: () => prism数据默认() },
   mc资源: { 变量: 'ANIM_MC_ASSETS', 说明: '原版资源目录（声音、语言文件的 objects/、indexes/）', 是路径: true, 默认: (v) => path.join(v.prism数据!, 'assets') },
   python: { 变量: 'ANIM_PYTHON', 说明: '跑 mcai 和取材脚本的 Python（3.10 以上）', 是路径: false, 默认: () => (isWindows ? 'python' : 'python3') },
-  // anim voice 的外部模型：各在自己的仓库和 venv 里，缺了只影响用到它的那个后端
-  firered: { 变量: 'ANIM_FIRERED', 说明: 'FireRedTTS3 仓库（带 .venv、pretrained_models；anim voice 的 firered-本机 后端）', 是路径: true, 默认: () => 个人仓库('FireRedTTS3') },
-  indextts: { 变量: 'ANIM_INDEXTTS', 说明: 'IndexTTS 仓库（带 .venv、checkpoints_2；anim voice 的 indextts2-本机 后端）', 是路径: true, 默认: () => 个人仓库('IndexTTS') },
-  gpt_sovits: { 变量: 'ANIM_GPT_SOVITS', 说明: 'GPT-SoVITS api_v2 服务地址（anim voice 的 gpt-sovits 后端；服务由人起好）', 是路径: false, 默认: () => 'http://127.0.0.1:9880' },
+  // 调模型的事归 image-flow（用户 10-31 定，docs/决策/0009）
+  image_flow: { 变量: 'ANIM_IMAGE_FLOW', 说明: 'image-flow 的命令行壳 imgflow.mjs（anim voice 合成用）', 是路径: true, 默认: () => path.join(个人仓库('image-flow'), 'skills', 'image-flow', 'imgflow.mjs') },
   对齐器: { 变量: 'ANIM_ALIGNER', 说明: 'Qwen3-ForcedAligner 的 uv 工程（.venv 和模型目录；anim voice lip 对齐字用）', 是路径: true, 默认: () => 个人仓库('qwen-aligner') },
   锁目录: {
     变量: 'ANIM_LOCK_DIR',
-    说明: '资源闸的锁目录；迁移期和旧项目共用 .资源闸/，两边的渲染一起排队',
+    说明: '资源闸的锁目录',
     是路径: true,
-    默认: (v) => (fs.existsSync(v.旧项目!) ? path.join(v.旧项目!, '.资源闸') : path.join(v.数据根!, 'run', 'locks')),
+    默认: (v) => path.join(v.数据根!, 'run', 'locks'),
   },
   编码器: { 变量: 'ANIM_VIDEO_ENCODER', 说明: '成片视频编码器：h264_videotoolbox（Mac 默认）或 libx264', 是路径: false, 默认: () => (isMac ? 'h264_videotoolbox' : 'libx264') },
   gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU；Docker 里没有 GPU 用 swangle）', 是路径: false, 默认: () => 'angle' },

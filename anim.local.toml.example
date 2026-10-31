@@ -8,10 +8,10 @@
 # Git 外的数据根（store、私有、terrain、cache、交付、run）。环境变量 ANIM_DATA。默认：主检出同级的 mc-anim-data
 # data = "../mc-anim-data"
 
-# 旧项目根（迁移期：旧项目执行器、基线）。环境变量 ANIM_LEGACY。默认：主检出同级的 机械动力应力转动-AI漫画
+# 旧项目根（已退役，只有 pipeline/适配器/旧项目/ 的基线工具用）。环境变量 ANIM_LEGACY。默认：主检出同级的 机械动力应力转动-AI漫画
 # legacy = "../机械动力应力转动-AI漫画"
 
-# 游戏环境（取材服务端、Prism 实例、jar 缓存）。环境变量 ANIM_GAME。默认：<旧项目>/game
+# 游戏环境（取材服务端、Prism 实例、jar 缓存）。环境变量 ANIM_GAME。默认：<数据根>/game
 # game = "../mc-anim-game"
 
 # JDK 17：编译取材 mod（anim mcai build、anim check 的 mod 编译和核对）、取材脚本里的 javap。环境变量 ANIM_JAVA_HOME。默认空：用 PATH 上的 java
@@ -29,16 +29,14 @@
 # 跑 mcai 和取材脚本的 Python。环境变量 ANIM_PYTHON。默认：Windows 上 python，其余 python3
 # python = "python3"
 
-# anim voice 的外部模型仓库（各带自己的 .venv 和模型；缺了只影响用到它的后端）。环境变量 ANIM_FIRERED、ANIM_INDEXTTS、ANIM_ALIGNER。默认 ~/Developer/personal/ 下的 FireRedTTS3、IndexTTS、qwen-aligner
-# firered = "/Users/me/Developer/personal/FireRedTTS3"
-# indextts = "/Users/me/Developer/personal/IndexTTS"
+# anim voice 合成用的 image-flow 命令行壳。环境变量 ANIM_IMAGE_FLOW。默认 ~/Developer/personal/image-flow/skills/image-flow/imgflow.mjs
+# image_flow = "/Users/me/Developer/personal/image-flow/skills/image-flow/imgflow.mjs"
+
+# anim voice lip 对字用的对齐器（uv 工程，带自己的 .venv 和模型）。环境变量 ANIM_ALIGNER。默认 ~/Developer/personal/qwen-aligner
 # aligner = "/Users/me/Developer/personal/qwen-aligner"
 
-# GPT-SoVITS api_v2 服务地址（anim voice 的 gpt-sovits 后端；服务由人起好、换好角色权重）。环境变量 ANIM_GPT_SOVITS。默认 http://127.0.0.1:9880
-# gpt_sovits = "http://127.0.0.1:9880"
-
-# 资源闸锁目录。环境变量 ANIM_LOCK_DIR。默认：旧项目在就用 <旧项目>/.资源闸（两个项目一起排队），否则 <数据根>/run/locks
-# lock_dir = "../机械动力应力转动-AI漫画/.资源闸"
+# 资源闸锁目录。环境变量 ANIM_LOCK_DIR。默认：<数据根>/run/locks
+# lock_dir = "../mc-anim-data/run/locks"
 
 # 成片视频编码器：h264_videotoolbox 或 libx264。环境变量 ANIM_VIDEO_ENCODER。默认：Mac 用 h264_videotoolbox，其余 libx264
 # video_encoder = "libx264"

@@ -10,6 +10,15 @@ import { 区域文件名, 解析区域文件名, 读区域 } from './存档.ts';
 /** 列段缓存的键随它变：读存档的写法（状态串、并段规则）改了就换一版 */
 const 读法版本 = 'mca-列段v2';
 
+/** 读缓存时把修改时间推到现在（超过 1 天才动，省系统调用）：anim cache gc 按它算多久没用过 */
+const 记用过 = (f: string, 现在 = Date.now()) => {
+  try {
+    if (现在 - fs.statSync(f).mtimeMs > 24 * 3600 * 1000) fs.utimesSync(f, new Date(现在), new Date(现在));
+  } catch {
+    // 别的进程刚回收了，或只读盘：不影响这次读
+  }
+};
+
 export type 区域变换 = (r: 解开的列段) => 解开的列段;
 
 // 缓存键（区域文件 sha256 接种子、读法版本）按「路径、大小、修改时间、种子」记在进程里：同一个存档常有两个区域源（套编辑的和编辑读原样的），共用一份
@@ -103,8 +112,14 @@ export class 区域源 {
     const f = this.文件(rx, rz);
     if (!fs.existsSync(f)) return null;
     const c = this.缓存文件(rx, rz);
-    if (c && fs.existsSync(`${c}.列段`)) return 解码列段(fs.readFileSync(`${c}.列段`));
-    if (c && fs.existsSync(`${c}.空`)) return null;
+    if (c && fs.existsSync(`${c}.列段`)) {
+      记用过(`${c}.列段`);
+      return 解码列段(fs.readFileSync(`${c}.列段`));
+    }
+    if (c && fs.existsSync(`${c}.空`)) {
+      记用过(`${c}.空`);
+      return null;
+    }
     const r = 读区域(f, rx, rz, this.种子);
     if (c) 写缓存(c, r ? 编码列段(r.列段) : null);
     return r ? 解码列段(编码列段(r.列段)) : null;

@@ -34,9 +34,7 @@ const 成品文件 = (行: 台词行, 锁: 资产锁) => 字节路径(锁[行.�
 
 /** 要这台机器的位置的后端：程序位置取 anim 配置（anim.local.toml、环境变量）。别的后端不用在这登记，用 Python 那边的默认参数 */
 const 本机设置 = (): Record<string, Record<string, unknown>> => ({
-  'firered-本机': { 目录: 配置('firered') },
-  'indextts2-本机': { 目录: 配置('indextts') },
-  'gpt-sovits': { 地址: 配置('gpt_sovits') },
+  'image-flow': { imgflow: 配置('image_flow') },
 });
 /** 后端的设置：本机设置，再盖上 台词.toml 的 [配音.后端参数.<后端>] */
 const 后端配置 = (表: 作品台词 | null, 名: string): Record<string, unknown> => ({ ...(本机设置()[名] ?? {}), ...(表?.配音.后端参数[名] ?? {}) });
@@ -268,13 +266,13 @@ const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<type
 };
 
 /** 资产表里没有这件就在作品资产表 <作品根>/资产表/配音.toml 末尾补一条（新配音只给这部作品用；私有） */
-const 补登记 = (id: string, 来源: string, 许可: string) => {
+const 补登记 = (id: string, 来源: string, 许可: string, 可见性: string) => {
   const { 条目 } = 读两侧资产表(作品根());
   if (条目.has(id)) return false;
   const f = path.join(作品资产表目录(作品根()), '配音.toml');
   fs.mkdirSync(path.dirname(f), { recursive: true });
   const 头 = fs.existsSync(f) ? '' : '# 作品资产表：配音成品和原件（anim voice use 补的条目，可手改 来源、许可、说明）。字段见 assets/README.md。\n';
-  const 条 = ['', '[["资产"]]', `id = ${JSON.stringify(id)}`, '"类别" = "配音"', `"来源" = ${JSON.stringify(来源)}`, `"许可" = ${JSON.stringify(许可)}`, '"可见性" = "私有"', ''].join('\n');
+  const 条 = ['', '[["资产"]]', `id = ${JSON.stringify(id)}`, '"类别" = "配音"', `"来源" = ${JSON.stringify(来源)}`, `"许可" = ${JSON.stringify(许可)}`, `"可见性" = ${JSON.stringify(可见性)}`, ''].join('\n');
   fs.appendFileSync(f, 头 + 条);
   return true;
 };
@@ -295,7 +293,7 @@ const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: Retu
   const 原件id = `配音/原件/${行.id}`;
   const 成品id = 行.配音 ?? `配音/${行.id}`;
   for (const [id, 源] of [[原件id, 来源], [成品id, `派生:${原件id}+anim voice use（裁静音、拉到 ${表.配音.目标响度} LUFS）`]] as const) {
-    if (补登记(id, 源, 表.配音.许可)) console.log(`资产表补了 ${id}（${相对代码根(path.join(作品资产表目录(作品根()), '配音.toml'))}，私有）`);
+    if (补登记(id, 源, 表.配音.许可, 表.配音.可见性)) console.log(`资产表补了 ${id}（${相对代码根(path.join(作品资产表目录(作品根()), '配音.toml'))}，${表.配音.可见性}）`);
   }
   const 替换 = p.开关.has('--替换');
   登记入库(原件id, 候选, { 作品根: 作品根(), 替换 });

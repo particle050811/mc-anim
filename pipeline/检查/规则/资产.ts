@@ -17,6 +17,7 @@ import { 数据根 as 配置数据根 } from '../../环境/配置.ts';
 import { 比对字节, 算随仓库, 读随仓库表, 随仓库表名, 字节目录名 } from '../../资产/随仓库.ts';
 import { 比对发布锁, 算应发, 读随发布表, 随发布表名 } from '../../资产/发布.ts';
 import { 发布锁名 } from '../../资产/发布锁.ts';
+import { 缺音频元数据 } from '../../资产/补量.ts';
 
 /**
  * 搬来的代码还没改走 cue 的私有资产：import 那一行往上连着的 import 块顶上写一行「// 待迁移（私有资产）：原因」，算待迁移、不算违规。
@@ -213,6 +214,8 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
       if (!/^[0-9a-f]{64}$/.test(l.sha256) || !Number.isInteger(l.大小) || !['store', '私有'].includes(l.库)) 报.错(`资产锁里「${id}」的 sha256、大小、库不完整`, 锁文件[s]);
     }
   }
+  const 没量 = Object.entries(锁).filter(([, l]) => 缺音频元数据(l)).map(([id]) => id);
+  if (没量.length) 报.错(`${没量.length} 件音频的锁里没有时长、峰值、响度（如 ${没量.slice(0, 3).join('、')}）：anim assets measure 补上；anim cues 要用这些数`, 锁文件.共用);
   const 待定 = [...登记.values()].filter((e) => e.许可 === 'LicenseRef-待定').length;
   if (待定) 报.信息.push(`${待定} 件许可待定（见 assets/待确认.md）`);
 

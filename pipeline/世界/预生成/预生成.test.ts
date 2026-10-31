@@ -2,11 +2,11 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { 读声明 } from '../声明.ts';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { 读声明, type 预生成块 } from '../声明.ts';
 import { csv文本, 预生成计划们 } from './计划.ts';
 import { 外包方形, 矩形区块 } from './范围.ts';
-import { 任务文件, 完成行, 是这一块, 读任务, 进度行 } from './看守.ts';
+import { 任务文件, 完成行, 是这一块, 连续无进度, 读任务, 进度行, 跑一块 } from './看守.ts';
 
 describe('预生成范围', () => {
   it('矩形照 Chunky：中心对齐区块，半边向上取整到区块', () => {
@@ -54,4 +54,101 @@ describe('预生成看守', () => {
     expect(是这一块({ 'center-x': '32', 'center-z': '16', radius: '32', 'radius-z': '32', pattern: 'region' }, 矩)).toBe(false);
     fs.rmSync(d, { recursive: true });
   });
+});
+
+describe('预生成看守：连着没进度就放弃', () => {
+  const 起 = (区块: number | null, o: { 完成?: boolean; 阶段?: '主' | '补洞'; 结束?: boolean } = {}) => ({
+    阶段: o.阶段 ?? ('主' as const),
+    开始: 't',
+    结束: o.结束 === false ? undefined : 't',
+    命令: [],
+    最后进度: 区块 === null ? null : { 区块, 百分比: 0, 速度: 0, 时间: 't' },
+    完成: o.完成 ? { 区块: 区块 ?? 0, 百分比: 100, 用时: '0:00:01', 时间: 't' } : null,
+  });
+
+  it('进度比之前最高值大就清零，不大（含没有进度行）每次加一', () => {
+    expect(连续无进度([], '主')).toBe(0);
+    expect(连续无进度([起(100), 起(100), 起(90), 起(null)], '主')).toBe(3);
+    expect(连续无进度([起(100), 起(100), 起(200)], '主')).toBe(0);
+    expect(连续无进度([起(null), 起(null)], '主')).toBe(2);
+    // 跑完算有进度；补洞是另一个阶段，从自己的最高值数起
+    expect(连续无进度([起(100), 起(100), 起(100, { 完成: true }), 起(50, { 阶段: '补洞' }), 起(50, { 阶段: '补洞' })], '补洞')).toBe(1);
+    expect(连续无进度([起(100), 起(100, { 阶段: '补洞' }), 起(100, { 阶段: '补洞' })], '主')).toBe(0);
+    // 看守被杀留下的、没有结束的记录不算一次失败
+    expect(连续无进度([起(100), 起(null, { 结束: false })], '主')).toBe(0);
+  });
+
+  // 假的 java 当服务端：按 FAKE_MODE 打进度行。stuck = 每次起服都停在 100 个区块不动；progress = 每次多 100，第三次起服跑完
+  // 配置读一次就缓存，ANIM_JAVA_HOME 要在第一次读之前设好：假 java 建一份各用例共用，模式走环境变量 FAKE_MODE
+  const jdk = fs.mkdtempSync(path.join(os.tmpdir(), '看守假java-'));
+  beforeAll(() => {
+    process.env.ANIM_JAVA_HOME = jdk;
+  });
+  afterAll(() => {
+    delete process.env.ANIM_JAVA_HOME;
+    fs.rmSync(jdk, { recursive: true, force: true });
+  });
+
+  const 搭 = (模式: 'stuck' | 'progress') => {
+    process.env.FAKE_MODE = 模式;
+    const 服 = fs.mkdtempSync(path.join(os.tmpdir(), '看守假服-')), 根 = fs.mkdtempSync(path.join(os.tmpdir(), '看守假根-'));
+    fs.mkdirSync(path.join(jdk, 'bin'), { recursive: true });
+    fs.writeFileSync(
+      path.join(jdk, '假服.mjs'),
+      `import fs from 'node:fs';
+import readline from 'node:readline';
+const 模式 = process.env.FAKE_MODE;
+const 次 = fs.existsSync('启动次数') ? Number(fs.readFileSync('启动次数', 'utf8')) + 1 : 1;
+fs.writeFileSync('启动次数', String(次));
+console.log('[Server thread/INFO]: Done (0.1s)! For help, type "help"');
+const 回 = { 'chunky world': 'World changed to', 'chunky shape': 'Shape changed to square', 'chunky center': 'Center changed to', 'chunky radius': 'Radius changed to', 'chunky pattern': 'Pattern changed to region' };
+readline.createInterface({ input: process.stdin }).on('line', (l) => {
+  if (l === 'stop') process.exit(0);
+  const k = Object.keys(回).find((k) => l.startsWith(k));
+  if (k) return console.log(回[k]);
+  if (l === 'chunky start') {
+    console.log('Task started in minecraft:overworld');
+    const n = 模式 === 'stuck' ? 100 : 100 * 次;
+    console.log('[Chunky] Task running for minecraft:overworld. Processed: ' + n + ' chunks (1.00%), ETA: 1:00:00, Rate: 5.0 cps, Current: 0, 0');
+    if (模式 === 'progress' && 次 >= 3) console.log('[Chunky] Task finished for minecraft:overworld. Processed: ' + n + ' chunks (100.00%), Total time: 0:00:09');
+  }
+});
+`,
+    );
+    fs.writeFileSync(path.join(jdk, 'bin', 'java'), `#!/bin/sh\nexec "${process.execPath}" "$(dirname "$0")/../假服.mjs" "$@"\n`, { mode: 0o755 });
+    fs.writeFileSync(path.join(服, 'eula.txt'), 'eula=true\n');
+    fs.writeFileSync(path.join(服, 'server.jar'), '');
+    fs.mkdirSync(path.join(服, 'mods'));
+    const 世 = path.join(根, '某世界');
+    fs.mkdirSync(世);
+    fs.writeFileSync(path.join(世, 'level.dat'), '');
+    fs.writeFileSync(path.join(根, 'Chunky-test.jar'), 'x');
+    const 块: 预生成块 = { 名: '小', 形状: '矩形', 两角: [0, 0, 64, 64] };
+    const 计划 = 预生成计划们({ ...读声明('主世界-116'), 预生成: { 块: [块] } })[0]!;
+    const 选项 = { 世界: '某世界', 维度: 'minecraft:overworld', 服务端目录: 服, 存档: 世, chunky: path.join(根, 'Chunky-test.jar'), 日志目录: path.join(根, '日志'), 不过闸: true, 不补洞: true, 盯间隔秒: 0.2, 卡住分钟: 0.015, 说: () => {} };
+    return { 计划, 选项, 清理: () => { for (const d of [服, 根]) fs.rmSync(d, { recursive: true, force: true }); } };
+  };
+
+  it.skipIf(process.platform === 'win32')('每次起服都停在同一个区块数：到上限就报错放弃，状态留着，起服次数不超过上限', async () => {
+    const { 计划, 选项, 清理 } = 搭('stuck');
+    try {
+      await expect(跑一块(计划, { ...选项, 最多无进度重启: 2 })).rejects.toThrow(/连着 2 次重启都没有新进度（Chunky 停在 100 个区块/);
+      const st = JSON.parse(fs.readFileSync(path.join(选项.日志目录, '小.状态.json'), 'utf8'));
+      expect(st.起服).toHaveLength(3); // 第一次有进度（0 → 100），后两次没有
+      expect(st.起服.every((r: { 停服原因: string }) => r.停服原因.startsWith('卡住'))).toBe(true);
+    } finally {
+      清理();
+    }
+  }, 60_000);
+
+  it.skipIf(process.platform === 'win32')('每次起服都多跑一点：不受上限影响，跑完为止', async () => {
+    const { 计划, 选项, 清理 } = 搭('progress');
+    try {
+      const st = await 跑一块(计划, { ...选项, 最多无进度重启: 1 });
+      expect(st.阶段).toBe('完');
+      expect(st.完成['主']?.区块).toBe(300);
+    } finally {
+      清理();
+    }
+  }, 60_000);
 });

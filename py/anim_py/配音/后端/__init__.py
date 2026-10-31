@@ -74,12 +74,9 @@ class 后端:
 
 
 def 后端表() -> dict[str, type[后端]]:
-    from . import firered, gpt_sovits, indextts, openai_speech
+    from . import image_flow
 
-    表: dict[str, type[后端]] = {}
-    for c in (firered.FireRed本机, firered.FireRed魔搭, indextts.IndexTTS2本机, indextts.IndexTTS2RunningHub, gpt_sovits.GPTSoVITS, openai_speech.OpenAI语音):
-        表[c.名] = c
-    return 表
+    return {c.名: c for c in (image_flow.ImageFlow,)}
 
 
 def 取后端(名: str, 配置: dict | None = None) -> 后端:

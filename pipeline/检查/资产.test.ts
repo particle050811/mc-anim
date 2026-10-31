@@ -29,6 +29,19 @@ const 造数据根 = (字节: Record<string, string>, 地形: Record<string, str
 };
 
 describe('资产', () => {
+  it('音频条目的锁里没量过时长要报，量过的和非音频不报', async () => {
+    const 根 = 造仓库(基础(), {
+      'assets/registry/音效.toml': 表(条('音效/没量'), 条('音效/量过'), 条('贴图/图')),
+      'assets/资产锁.json': JSON.stringify({
+        '音效/没量': { ...锁条('a'.repeat(64)), 后缀: '.wav' },
+        '音效/量过': { ...锁条('b'.repeat(64)), 后缀: '.wav', 时长: 1.5 },
+        '贴图/图': { ...锁条('c'.repeat(64)), 后缀: '.png' },
+      }),
+    });
+    const { 违规 } = await 跑('资产', 根);
+    expect(违规.join('\n')).toMatch(/1 件音频的锁里没有时长、峰值、响度（如 音效\/没量）/);
+  });
+
   it('合规样例放行：代码 asset: 引公开资产、私有配音只走 cue、角色包引用都对上、许可待定只记数', async () => {
     const 根 = 造仓库(基础(), {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/李樱-脸', '公开', 'LicenseRef-待定')),

@@ -11,8 +11,11 @@ import { 列出世界, 读声明, 编辑文件, 存档目录 as 声明存档目�
 import { 冻结 } from './冻结.ts';
 import { 打印命令, csv文本, 预生成计划们 } from './预生成/计划.ts';
 import { 跑一块 } from './预生成/看守.ts';
+import { 按顺序发命令 } from './服务端/发命令.ts';
 import { 服务端 } from './服务端/服务端.ts';
-import { 建沙盒 } from './服务端/沙盒.ts';
+import { 建新世界沙盒, 建沙盒 } from './服务端/沙盒.ts';
+import { 装服务端 } from './服务端/安装.ts';
+import { 建世界 } from './服务端/建世界.ts';
 import { 取jar } from '../取材/取jar.ts';
 import { 配置, 数据路径 } from '../环境/配置.ts';
 import { 读地形表 } from './版本.ts';
@@ -30,22 +33,11 @@ const 两角块 = (s: string): 预生成块 => {
   return { 名: `临时-${v.join('_')}`, 形状: '矩形', 两角: v as [number, number, number, number], 依据: '命令行 --两角' };
 };
 
-/** anim world server 的命令：普通命令发出去；sleep:秒 只等；wait:话 一直等到日志出现；expect:话 30 秒内没出现就停服报错 */
+/** anim world server 的命令（逐条的写法见 发命令.ts） */
 const 跑服务端命令 = async (目录: string, 存档: string, 版本: string | undefined, 堆: string | undefined, 命令们: string[]) => {
   const s = await 服务端.起({ 目录, 存档, 加载器版本: 版本, 堆, 每行: (l) => console.log(l) });
   try {
-    for (const c of 命令们) {
-      if (c.startsWith('sleep:')) await new Promise((r) => setTimeout(r, Number(c.slice(6)) * 1000));
-      else if (c.startsWith('wait:')) {
-        if (!(await s.等(c.slice(5), Infinity))) throw s.出错 ?? new Error(`等到「${c.slice(5)}」之前服务端退出了`);
-      } else if (c.startsWith('expect:')) {
-        if (!(await s.等(c.slice(7), 30))) throw new Error(`上一条命令以后 30 秒内日志里没有「${c.slice(7)}」，停服（后面的命令不发）`);
-      } else {
-        console.log(`== > ${c}`);
-        s.发(c);
-        await new Promise((r) => setTimeout(r, 3000));
-      }
-    }
+    await 按顺序发命令(s, 命令们);
   } finally {
     await s.停();
   }
@@ -123,9 +115,9 @@ const 子命令们: Record<string, 子命令> = {
     },
   },
   pregen: {
-    用法: 'pregen <世界> [--块 <名> | --两角 <x1,z1,x2,z2>] [--执行 [--沙盒] [--存档 <世界目录>] [--服务端 <服务端目录>] [--堆 12G] [--生成线程 <n>] [--卡住分钟 10] [--老年代上限 90] [--不补洞] [--重来]]',
+    用法: 'pregen <世界> [--块 <名> | --两角 <x1,z1,x2,z2>] [--执行 [--沙盒] [--存档 <世界目录>] [--服务端 <服务端目录>] [--堆 12G] [--生成线程 <n>] [--卡住分钟 10] [--老年代上限 90] [--最多无进度重启 3] [--不补洞] [--重来]]',
     跑: async (args, 记录) => {
-      const p = 解析参数(args, { 值: ['--块', '--两角', '--存档', '--服务端', '--堆', '--生成线程', '--卡住分钟', '--老年代上限'], 开关: ['--执行', '--沙盒', '--不补洞', '--重来'] });
+      const p = 解析参数(args, { 值: ['--块', '--两角', '--存档', '--服务端', '--堆', '--生成线程', '--卡住分钟', '--老年代上限', '--最多无进度重启'], 开关: ['--执行', '--沙盒', '--不补洞', '--重来'] });
       if (p.位置.length !== 1) throw new 用法错误('要给一个世界名');
       const w = 读声明(p.位置[0]!);
       if (p.值['--块'] && p.值['--两角']) throw new 用法错误('--块 和 --两角 只给一个');
@@ -158,6 +150,8 @@ const 子命令们: Record<string, 子命令> = {
       };
       const 生成线程 = 数('--生成线程');
       if (生成线程 !== undefined && !Number.isInteger(生成线程)) throw new 用法错误('--生成线程 要是正整数');
+      const 无进度 = 数('--最多无进度重启');
+      if (无进度 !== undefined && !Number.isInteger(无进度)) throw new 用法错误('--最多无进度重启 要是正整数');
       let 服务端目录 = p.值['--服务端'] ? path.resolve(p.值['--服务端']) : path.join(配置('游戏'), w.服务端);
       let 存档 = 声明存档目录(w, p.值['--存档']);
       let 日志目录 = 数据路径('run', '预生成', w.名称);
@@ -181,6 +175,7 @@ const 子命令们: Record<string, 子命令> = {
           生成线程,
           卡住分钟: 数('--卡住分钟'),
           老年代上限: 数('--老年代上限'),
+          最多无进度重启: 无进度,
           不补洞: p.开关.has('--不补洞'),
           重来: p.开关.has('--重来'),
           说: (s) => console.log(s),
@@ -202,6 +197,47 @@ const 子命令们: Record<string, 子命令> = {
       let 存档 = 声明存档目录(w, p.值['--存档']);
       if (p.开关.has('--沙盒')) ({ 服务端: 目录, 存档 } = 建沙盒(目录, 存档, w.名称));
       return 过放行闸(() => 跑服务端命令(目录, 存档, 加载器版本(w), p.值['--堆'], 命令们));
+    },
+  },
+  'install-server': {
+    用法: 'install-server <世界> [--服务端 <服务端目录>] [--同意EULA] [--不装加载器]',
+    跑: async (args) => {
+      const p = 解析参数(args, { 值: ['--服务端'], 开关: ['--同意EULA', '--不装加载器'] });
+      if (p.位置.length !== 1) throw new 用法错误('要给一个世界名（装它声明的 服务端 目录、Forge、模组、第三方数据包）');
+      const w = 读声明(p.位置[0]!);
+      const 目录 = p.值['--服务端'] ? path.resolve(p.值['--服务端']) : path.join(配置('游戏'), w.服务端);
+      const r = await 装服务端({ 声明: w, 目录, 同意EULA: p.开关.has('--同意EULA'), 不装加载器: p.开关.has('--不装加载器'), 说: (s) => console.log(s) });
+      console.log(`${目录}：${r.已装加载器 ? `装了 Forge ${w.Forge}` : 'Forge 原来就装着'}；新拷模组 ${r.新拷模组.length} 个${r.新拷模组.length ? `（${r.新拷模组.join('、')}）` : ''}；新拷数据包 ${r.新拷数据包.join('、') || '无'}`);
+      for (const m of r.缺模组) console.log(`  缺模组 ${m}`);
+      if (r.eula === '没写') console.log(`eula.txt 还没同意：读过 Minecraft EULA（https://aka.ms/MinecraftEULA）后自己把 ${path.join(目录, 'eula.txt')} 写成 eula=true，或重跑时加 --同意EULA（anim 不替人同意）`);
+      return r.缺模组.length ? 1 : 0;
+    },
+  },
+  new: {
+    用法: 'new <世界> [--服务端 <服务端目录>] [--存档 <世界目录>] [--沙盒] [--堆 <G>] [--生成线程 <n>] [-- <命令…>]（按声明的种子、世界类型、生成结构、数据包建新存档）',
+    跑: async (args, 记录) => {
+      const 分 = args.indexOf('--');
+      const p = 解析参数(分 < 0 ? args : args.slice(0, 分), { 值: ['--服务端', '--存档', '--堆', '--生成线程'], 开关: ['--沙盒'] });
+      const 命令们 = 分 < 0 ? [] : args.slice(分 + 1);
+      if (p.位置.length !== 1) throw new 用法错误('要给一个世界名，建完要接着发的命令写在 -- 后面');
+      const w = 读声明(p.位置[0]!);
+      const 线程 = p.值['--生成线程'] ? Number(p.值['--生成线程']) : undefined;
+      if (线程 !== undefined && !(Number.isInteger(线程) && 线程 > 0)) throw new 用法错误('--生成线程 要是正整数');
+      let 服务端目录 = p.值['--服务端'] ? path.resolve(p.值['--服务端']) : path.join(配置('游戏'), w.服务端);
+      // 给了 --服务端 又没给 --存档：新世界建在那个服务端目录下，不去动 ANIM_GAME 里同名的正式存档
+      let 存档 = p.值['--存档'] || !p.值['--服务端'] ? 声明存档目录(w, p.值['--存档']) : path.join(服务端目录, path.basename(声明存档目录(w)));
+      if (fs.existsSync(path.join(存档, 'level.dat'))) throw new Error(`世界已经有了（${存档}）；要重建先删掉它`);
+      if (!fs.existsSync(服务端目录)) throw new Error(`${服务端目录} 不存在；anim world install-server ${w.名称} 先装服务端`);
+      if (p.开关.has('--沙盒')) {
+        const b = 建新世界沙盒(服务端目录, path.basename(存档), w.名称);
+        console.log(`沙盒 ${b.根}：服务端是克隆，新世界建在里面，原服务端不动`);
+        [服务端目录, 存档] = [b.服务端, b.存档];
+        记录.产物.push(b.根);
+      }
+      const r = await 过放行闸(() => 建世界({ 声明: w, 服务端目录, 存档, 堆: p.值['--堆'], 生成线程: 线程, 命令们, 说: (s) => console.log(s) }));
+      for (const x of r.核对) console.log(`核对：${x}`);
+      console.log(`世界已建：${r.存档}（种子 ${w.种子}，${w.世界类型}，${w.生成结构 ? '生成结构' : '结构全禁'}；数据包 ${r.数据包.join('、') || '无'}）\n下一步：anim world pregen ${w.名称} 看预生成命令，--执行 开服跑`);
+      记录.产物.push(r.存档);
     },
   },
   freeze: {
@@ -232,7 +268,7 @@ export const 世界命令: Record<string, 命令> = {
     用法: `world ${Object.values(子命令们)
       .map((c) => c.用法.split(' ')[0])
       .join('|')} …`,
-    说明: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度。anim world help 看各子命令',
+    说明: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度。anim world help 看各子命令',
     跑: async (args, 记录) => {
       const [子, ...rest] = args;
       if (!子 || 子 === 'help' || 子 === '--help') {

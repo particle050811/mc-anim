@@ -35,6 +35,7 @@ import { 画字幕卡 } from './字幕卡.ts';
 import { 上一段于, 同步表, 算台词落点, 读台词表, 读音效起音 } from './台词落点.ts';
 import { utc时间, utc月日时分, type 运行记录 } from '../运行记录/记录.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
+import { 分段计时 } from '../运行记录/阶段.ts';
 
 const 目标响度 = -16;
 const 真峰值上限 = -1;
@@ -171,11 +172,28 @@ const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) =>
   return 结果;
 };
 
-// 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 96k，50 MB 以内；超了按比例降码率重压，最多 3 次。
-// 真峰值只量、记进 manifest，超 −1 dBTP 报警不重做：96k 的超出是 AAC 编码噪声，压低限幅或增益重压实测不降反升（第 6、7 章 −0.8 dBTP）
+// 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 128k，50 MB 以内；超了按比例降码率重压，最多 3 次。
 const 分享上限MB = 50;
 const 分享视频kbps = 760;
-const 分享音频kbps = 96;
+// 96k 真峰超规矩，用户 10-31 定 128k
+const 分享音频kbps = 128;
+// AAC 的过冲不随码率、限幅单调变，声音差几十个样本也会差 0.5 dB（第 6-7 章量过），只能压完量：超 −1 dBTP 就压低限幅重压。只动分享版的声音，成片不变
+const 压分享声音 = (拉: (余量: number, 出: string) => void, 起余量: number, 工作: string) => {
+  const ffmpeg = 配置('ffmpeg');
+  const 中间 = path.join(工作, '分享声音.wav');
+  const 出 = path.join(工作, '分享声音.m4a');
+  let 余量 = 起余量;
+  let 真峰值 = Infinity;
+  for (let i = 0; i < 6; i++) {
+    拉(余量, 中间);
+    跑出([ffmpeg, '-v', 'error', '-y', '-i', 中间, '-c:a', 'aac', '-b:a', `${分享音频kbps}k`, 出]);
+    真峰值 = 量响度(出).真峰值;
+    console.log(`分享版声音：限幅 ${(真峰值上限 - 余量).toFixed(1)} dBFS → 真峰值 ${真峰值.toFixed(1)} dBTP`);
+    if (真峰值 <= 真峰值上限) break;
+    余量 += 真峰值 - 真峰值上限 + 0.1;
+  }
+  return { 声音: 出, 限幅dBFS: 真峰值上限 - 余量 };
+};
 const 压分享版 = async (成片: string, 声音: string, 出: string, 工作: string, 时长: number) => {
   const ffmpeg = 配置('ffmpeg');
   let kbps = Math.min(分享视频kbps, Math.floor((分享上限MB * 8e3 * 0.97) / 时长 - 分享音频kbps));
@@ -184,7 +202,7 @@ const 压分享版 = async (成片: string, 声音: string, 出: string, 工作:
   for (let i = 0; i < 3; i++) {
     await 跑(低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, ...视频, '-b:v', `${kbps}k`, '-pass', '1', '-passlogfile', log, '-an', '-f', 'null', '-']));
     await 跑(
-      低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, '-i', 声音, ...视频, '-map', '1:a', '-b:v', `${kbps}k`, '-pass', '2', '-passlogfile', log, '-c:a', 'aac', '-b:a', `${分享音频kbps}k`, '-movflags', '+faststart', 出]),
+      低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, '-i', 声音, ...视频, '-map', '1:a', '-b:v', `${kbps}k`, '-pass', '2', '-passlogfile', log, '-c:a', 'copy', '-movflags', '+faststart', 出]),
     );
     const mb = fs.statSync(出).size / 1e6;
     console.log(`分享版 ${mb.toFixed(1)} MB（视频 ${kbps} kbps）`);
@@ -205,9 +223,13 @@ export const 合成成片 = async (
   if (!Number.isInteger(每帧样本)) throw new Error(`帧率 ${fps} 下每帧不是整数个样本`);
   // 同步表要读资产锁里的字节（音效起音）：公开仓库 clone 下来、母版都在别处渲好的，也先把随仓库的字节补进数据根
   补字节并报(作品根(), 数据根());
+  const 点 = 分段计时(opts.记录.阶段, `film:${作品名()}/${opts.名}:${opts.级别}`);
   const 截们 = await 取母版(段们, opts.级别, opts);
+  点('取母版');
   await 取段签们(截们, opts.级别, opts.记录);
+  点('取段签');
   const 叠层们 = opts.不叠层 ? [] : await 取叠层(截们, opts.级别, opts);
+  点('取叠层');
   const 总帧数 = 截们.reduce((a, c) => a + c.帧数, 0);
   const [宽, 高] = opts.级别 === '预览' ? [1280, 720] : [2560, 1440];
   const 接缝们 = 查接缝(截们, 每帧样本, opts.记录);
@@ -222,6 +244,7 @@ export const 合成成片 = async (
   if (落点们.length) console.log(`字幕：${字幕.句们.length} 句、${字幕.屏们.length} 屏${opts.不叠字幕 ? '（只排不叠）' : ''}`);
   else opts.记录.记('警告', '这些段的 段.ts 里没有台词 cue，成片没有字幕');
 
+  点('排字幕');
   const dir = path.join(交付根(), `${utc月日时分(开始)}-${opts.名}`);
   if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --名）`);
   const 工作 = path.join(dir, '_工作');
@@ -255,11 +278,13 @@ export const 合成成片 = async (
   }
 
   const 层们 = [...段层们, ...卡层们];
+  点('做字幕层');
 
   // 声音：各段 声音.flac（没段签的读母版）按样本截、接，存成交付里的 全片-未拉响度.flac（edit-package 用）
   const 未拉 = path.join(dir, 未拉响度文件);
   console.log('== 拼声音');
   await 拼未拉响度(截们.map((c) => (c.签 && 声音路径(c.签)) ?? c.母版), { 段: 截们, 帧率: fps }, 未拉);
+  点('拼声音');
 
   // 响度：固定增益 + 限幅，压成 AAC 后真峰值还超就压低限幅重做
   const 原 = 量响度(未拉);
@@ -268,17 +293,21 @@ export const 合成成片 = async (
   const 增益 = 静音 ? 0 : 目标响度 - 原.lufs;
   const 拉好 = path.join(工作, '全片声音.wav');
   const 成品音 = path.join(工作, '全片声音.m4a');
+  const 拉 = (余量: number, 出: string) => {
+    const limit = 10 ** ((真峰值上限 - 余量) / 20);
+    跑出([ffmpeg, '-v', 'error', '-y', '-i', 未拉, '-vn', '-af', `volume=${增益.toFixed(2)}dB,alimiter=limit=${limit.toFixed(4)}:attack=1:release=50:level=disabled:asc=0`, '-ar', String(采样率), '-c:a', 'pcm_s24le', 出]);
+  };
   let 余量 = 0.5;
   let 终 = 原;
   for (let i = 0; i < 4; i++) {
-    const limit = 10 ** ((真峰值上限 - 余量) / 20);
-    跑出([ffmpeg, '-v', 'error', '-y', '-i', 未拉, '-vn', '-af', `volume=${增益.toFixed(2)}dB,alimiter=limit=${limit.toFixed(4)}:attack=1:release=50:level=disabled:asc=0`, '-ar', String(采样率), '-c:a', 'pcm_s24le', 拉好]);
+    拉(余量, 拉好);
     跑出([ffmpeg, '-v', 'error', '-y', '-i', 拉好, '-c:a', 'aac', '-b:a', '192k', 成品音]);
     终 = 量响度(成品音);
     console.log(`响度：原 ${原.lufs.toFixed(1)} LUFS → 加 ${增益.toFixed(1)} dB、限幅 ${(真峰值上限 - 余量).toFixed(1)} dBFS → ${终.lufs.toFixed(1)} LUFS、真峰值 ${终.真峰值.toFixed(1)} dBTP`);
     if (终.真峰值 <= 真峰值上限) break;
     余量 += 终.真峰值 - 真峰值上限 + 0.2;
   }
+  点('拉响度');
 
   // 画面：截、缩放、接，和声音一起压成片
   const 视频编码 = 成片编码参数(opts.级别);
@@ -326,11 +355,13 @@ export const 合成成片 = async (
     fs.mkdirSync(path.join(dir, path.dirname(剪辑画面文件)), { recursive: true });
     fs.renameSync(剪辑写入中, path.join(dir, 剪辑画面文件));
   }
+  点('压成片');
 
   const 拼接表 = path.join(dir, '拼接表.tsv');
   原子写(拼接表, '编号\t段\t指纹\t段内起帧\t段内止帧（不含）\t全片起帧\n' + 截们.map((c) => `${c.段.编号 ?? ''}\t${c.段.键}\t${c.指纹.slice(0, 16)}\t0\t${c.帧数}\t${c.全片起帧}\n`).join(''));
   const 文件: Record<string, string> = { 成片: path.basename(成片), 拼接表: path.basename(拼接表), 接缝: '接缝.tsv', 未拉响度: 未拉响度文件, ...(剪辑包 ? { 剪辑画面: '剪辑包/画面.mp4' } : {}) };
   原子写(path.join(dir, '接缝.tsv'), '前\t后\t判断\n' + 接缝们.map((x) => `${x.前}\t${x.后}\t${x.判断}\n`).join(''));
+  点('写表');
   let 开口最大差: number | null = null;
   let 同步: { 对上: number; 总: number } | null = null;
   if (落点们.length) {
@@ -355,13 +386,16 @@ export const 合成成片 = async (
     文件.同步表 = '同步表.tsv';
     console.log(`同步表：${r.总} 条 cue，成片声音里 ±1 帧内测到起音的 ${r.对上} 条`);
   }
-  let 分享: { kbps: number; MB: number; 真峰值: number } | null = null;
+  点('核对声音');
+  let 分享: { kbps: number; MB: number; 真峰值: number; 限幅dBFS: number } | null = null;
   if (opts.分享版) {
     const 出 = path.join(dir, `${opts.名}-分享版${分享上限MB}MB.mp4`);
-    分享 = { ...(await 压分享版(成片, 拉好, 出, 工作, 时长秒(成片))), 真峰值: 量响度(出).真峰值 };
-    if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，超过 ${真峰值上限}（AAC ${分享音频kbps}k 的编码噪声，成片本身没超）`);
+    const 分享声音 = 压分享声音(拉, 余量, 工作);
+    分享 = { ...(await 压分享版(成片, 分享声音.声音, 出, 工作, 时长秒(成片))), 真峰值: 量响度(出).真峰值, 限幅dBFS: 分享声音.限幅dBFS };
+    if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，压低限幅 6 次还超过 ${真峰值上限}`);
     文件.分享版 = path.basename(出);
     opts.记录.产物.push(出);
+    点('分享版');
   }
   const manifest = {
     版本: manifest版本,
@@ -391,11 +425,12 @@ export const 合成成片 = async (
     字幕: { 句数: 字幕.句们.length, 屏数: 字幕.屏们.length, 叠了: !opts.不叠字幕 && 字幕.屏们.length > 0, 开口最大差帧: 开口最大差 },
     同步表: 同步,
     接缝: { 处数: 接缝们.length, 首帧重复: 接缝们.filter((x) => x.判断 === '首帧重复').map((x) => `${x.前} → ${x.后}`) },
-    分享版: 分享 && { 视频kbps: 分享.kbps, 音频kbps: 分享音频kbps, MB: Number(分享.MB.toFixed(2)), 真峰值dBTP: 分享.真峰值 },
+    分享版: 分享 && { 视频kbps: 分享.kbps, 音频kbps: 分享音频kbps, MB: Number(分享.MB.toFixed(2)), 限幅dBFS: Number(分享.限幅dBFS.toFixed(2)), 真峰值dBTP: 分享.真峰值 },
     文件,
   };
   原子写(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
   fs.rmSync(工作, { recursive: true, force: true });
+  点('写清单');
   opts.记录.产物.push(成片);
   console.log(`成片 ${成片}：${manifest.时长秒.toFixed(2)} 秒，${总帧数} 帧，${终.lufs.toFixed(1)} LUFS`);
   if (isMac && opts.级别 === '视频' && 配置('编码器') !== 'h264_videotoolbox') console.log('（这台是 Mac，但编码器设成了 ' + 配置('编码器') + '）');

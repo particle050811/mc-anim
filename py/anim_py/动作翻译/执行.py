@@ -1507,6 +1507,9 @@ class 翻译器(库模拟):
             name = args[0]
             if not isinstance(name, str):
                 raise 不支持("getChild 的名字不是常量")
+            if name == "root" and p.名 == "root":
+                # 构造参数是网格根，模型的 root 是它底下同名的那个（部件树.py 把外面一层去掉了，两层都叫 root）
+                return 部件(name), 态
             if self.模型树 is not None and name not in self.模型树.get(p.名, []):
                 raise 不支持(f"模型里 {p.名} 下没有 {name}")
             return 部件(name), 态

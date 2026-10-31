@@ -44,6 +44,8 @@ export type 模组要求 = {
   /** 用到它的包要排在它覆盖的包之上（后加载的盖前面的） */
   要盖住别人: boolean;
   缺了: string;
+  /** 开服后启动日志里模组认出这个包时打的话（没有就是模组没生效，数据包白放）；条件省了 = 总要有 */
+  开服日志?: { 行: string; 条件?: (条目: Map<string, () => Buffer>) => boolean }[];
 };
 
 export const 模组要求表: 模组要求[] = [
@@ -54,6 +56,30 @@ export const 模组要求表: 模组要求[] = [
     类: 'mcai/terrain/TerrainTypes.class',
     要盖住别人: true,
     缺了: '取材 mod 没有修整（mcai:region、mcai:edit）：专用服务端读不进修整包会起不来。anim mcai build 装上含修整的 jar（别的分支 build 的可能不含）',
+  },
+  {
+    // 暮色放大 4 倍：mod 认包里的标记文件才放大地标网格，只有数据包的话首领建筑会重复十几座（sourcing/mod/MANUAL.md「暮色森林放大 4 倍」）
+    名: '暮色放大 4 倍',
+    用到: (e) => e.has('data/mcai/twilight_x4.json'),
+    jar: /^mcai-.*\.jar$/,
+    类: 'mcai/TwilightGrid.class',
+    要盖住别人: false,
+    缺了: '取材 mod 没有暮色地标网格（TwilightGrid）：只有数据包的话暮色首领建筑会重复十几座。anim mcai build 装上',
+    开服日志: [{ 行: '暮色地标网格：64 区块' }],
+  },
+  {
+    // 古城放大 4 倍（第 6 章第 4 场、第 7 章）：mod 的 BigJigsaw 放开原版拼图 8 区块上限，没有的话服务端读不进放大的古城
+    名: '古城放大 4 倍',
+    用到: (e) => e.has('data/minecraft/worldgen/structure/ancient_city.json') && [...e.keys()].some((k) => k.startsWith('data/mcai/')),
+    jar: /^mcai-.*\.jar$/,
+    类: 'mcai/BigJigsaw.class',
+    要盖住别人: false,
+    缺了: '取材 mod 没有 BigJigsaw：读不进放大的远古城市。anim mcai build 装上',
+    开服日志: [
+      { 行: '大拼图结构：minecraft:ancient_city' },
+      // 带结构标签 mcai:fill_biome 的包，城底下那一层铺成深暗之域（mcai.FillBiome）
+      { 行: '铺满群系：minecraft:ancient_city → minecraft:deep_dark', 条件: (e) => e.has('data/mcai/tags/worldgen/structure/fill_biome.json') },
+    ],
   },
 ];
 
@@ -73,6 +99,16 @@ export const 开服前核对 = (服务端目录: string, 存档: string) => {
     }
   }
   return { 问题, 要盖 };
+};
+
+/** 开服后启动日志里该有哪几句：世界里的数据包用到的模组功能，模组认出来时会打 */
+export const 开服要有的日志 = (存档: string): { 包: string; 行: string }[] => {
+  const o: { 包: string; 行: string }[] = [];
+  for (const p of 世界数据包(存档)) {
+    const e = 包条目(p.路径);
+    for (const r of 模组要求表) if (r.用到(e)) for (const l of r.开服日志 ?? []) if (!l.条件 || l.条件(e)) o.push({ 包: p.名, 行: l.行 });
+  }
+  return o;
 };
 
 /** 开服后：/datapack list enabled 那一行解析出启用的包（按加载顺序） */
