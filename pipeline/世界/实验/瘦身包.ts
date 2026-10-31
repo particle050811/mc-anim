@@ -1,6 +1,6 @@
 // 实验工具（不接 anim）：现成的地形包 → 瘦身过的包，写到给定目录，不发布、不登记。包.json、缺失.tsv 原样拷。
-//   node pipeline/世界/实验/瘦身包.ts <包目录> <出目录> [--档 0|1|2] [--保留盒 <json>] [--进程 3] [--只块 a.b.块,…]
-// 第 0、1 档见 烘焙/瘦身.ts，第 2 档是封闭空洞填实（烘焙/封洞.ts）再第 0 档。
+//   node pipeline/世界/实验/瘦身包.ts <包目录> <出目录> [--档 0|1|2|3] [--定底 米] [--保留盒 <json>] [--进程 3] [--只块 a.b.块,…]
+// 第 0、1 档见 烘焙/瘦身.ts，第 2 档是封闭空洞填实（烘焙/封洞.ts）再第 0 档，第 3 档是按列定底（瘦身.ts）再第 0 档，画面会变。
 // 保留盒的 json：[[x0, y0, x1, y1], …]（场景坐标，米）；和盒子碰上的区段（连 apron 一圈）原样拷字节。
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import zlib from 'node:zlib';
 import { 载入体素库 } from '../体素库.ts';
 import { 建封洞 } from '../烘焙/封洞.ts';
-import { 建瘦身表, 摊开, 换隐藏格, 收拢, 碰保留盒 } from '../烘焙/瘦身.ts';
+import { 建瘦身表, 按列定底, 摊开, 换隐藏格, 收拢, 碰保留盒 } from '../烘焙/瘦身.ts';
 import type { 包信息, SectionData } from '../../../engine/voxel/区段包.ts';
 
 const 取值 = (名: string, 缺省?: string) => {
@@ -18,6 +18,7 @@ const 取值 = (名: string, 缺省?: string) => {
 };
 const 目录 = process.argv[2]!, 出 = process.argv[3]!;
 const 档 = Number(取值('--档', '0'));
+const 定底米 = Number(取值('--定底', '4'));
 const 盒文件 = 取值('--保留盒');
 const 进程 = Number(取值('--进程', '3'));
 const 只块 = 取值('--只块')?.split(',');
@@ -66,6 +67,7 @@ if (分片) {
         }
         const vox = 摊开(x.d);
         if (封) 填格 += 封.填(i, vox);
+        if (档 === 3) 按列定底(x.d, vox, 表, 值, L, 定底米);
         换隐藏格(x.d, vox, 表, 选项(L));
         新块.set(x.slot, zlib.gzipSync(P.encodeSection(收拢(x.d, vox)), { level: 6 }));
         换++;
@@ -89,7 +91,7 @@ if (分片) {
   fs.mkdirSync(出, { recursive: true });
   for (const f of ['包.json', '缺失.tsv']) if (fs.existsSync(path.join(目录, f))) fs.copyFileSync(path.join(目录, f), path.join(出, f));
   const t0 = Date.now();
-  const 参数 = ['--档', String(档), ...(盒文件 ? ['--保留盒', 盒文件] : []), ...(只块 ? ['--只块', 只块.join(',')] : [])];
+  const 参数 = ['--档', String(档), '--定底', String(定底米), ...(盒文件 ? ['--保留盒', 盒文件] : []), ...(只块 ? ['--只块', 只块.join(',')] : [])];
   await Promise.all(
     Array.from({ length: 进程 }, (_, me) =>
       new Promise<void>((ok, no) => {

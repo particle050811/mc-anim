@@ -173,6 +173,46 @@ export const 换隐藏格 = (d: SectionData, vox: Uint16Array, 表: 瘦身表, o
   return { 核心动, 环动, 贴边动 };
 };
 
+/**
+ * 按列定底（实验，用户 10-31「只导入顶层，空洞往下导一点」的字面做法，画面会变，只拿来量字节和差多少）：
+ * 一列的地表 = 从上往下最后一个「上面有 ≥ 16 米空当（或就是最上面）」的整格；底 = 自己和四邻最低的地表 − 米。底以下全换成地表那格的号。
+ * 粗高度、k底、nz 都不动；留在 k底 上面的格只是并成一段。
+ */
+export const 按列定底 = (d: SectionData, vox: Uint16Array, 表: 瘦身表, 值: ArrayLike<number>, L: number, 米: number) => {
+  const P = d.palette.length / 2;
+  const 整 = new Uint8Array(P);
+  for (let p = 1; p < P; p++) 整[p] = 表.掩[值[d.palette[2 * p]!]!]! & 1;
+  const 格 = 2 ** L, 空当 = Math.ceil(16 / 格), 留 = Math.ceil(米 / 格);
+  const s = new Int32Array(列数).fill(-1);
+  for (let c = 0; c < 列数; c++) {
+    let gap = 1 << 20;
+    for (let k = d.nz - 1; k >= 0; k--) {
+      if (整[vox[k * 列数 + c]!]) {
+        if (gap >= 空当) s[c] = k;
+        gap = 0;
+      } else gap++;
+    }
+    if (gap >= 空当 && s[c]! >= 0) s[c] = -2; // 最低的整格下面还有大空当，到底都是开的：这列不填
+  }
+  for (let y = 0; y < 列边; y++)
+    for (let x = 0; x < 列边; x++) {
+      const c = y * 列边 + x;
+      if (s[c]! < 0) continue;
+      let 低 = s[c]!;
+      const 看 = (n: number) => {
+        低 = Math.min(低, s[n]! < 0 ? 0 : s[n]!);
+      };
+      if (x > 0) 看(c - 1);
+      if (x < 列边 - 1) 看(c + 1);
+      if (y > 0) 看(c - 列边);
+      if (y < 列边 - 1) 看(c + 列边);
+      const f = 低 - 留;
+      if (f <= 0) continue;
+      const p = vox[s[c]! * 列数 + c]!;
+      for (let k = 0; k < f; k++) vox[k * 列数 + c] = p;
+    }
+};
+
 /** 烘焙时的瘦身参数（实验，默认不瘦）：档 0、1 见文件头；保留盒是场景坐标的水平框 [x0, y0, x1, y1] */
 export type 烘焙瘦身 = { 档: 0 | 1; 保留盒: number[][] };
 
