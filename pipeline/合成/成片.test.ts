@@ -15,6 +15,8 @@ const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-成片测试-'));
 process.env.ANIM_DATA = 数据根;
 
 const 指纹 = (键: string) => crypto.createHash('sha256').update(键).digest('hex');
+// 只有主检出才删 CRF1：测试在 worktree 里跑也按主检出算
+vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('../环境/路径.ts')>()), 在主检出: () => true }));
 vi.mock('../指纹/指纹.ts', () => {
   const 叠层键 = (段键: string, l: { 名: string }) => `${段键}-${l.名}`;
   const 算段指纹 = async (s: { 键: string }, _: unknown, l?: { 名: string }) => ({ 段: l ? 叠层键(s.键, l) : s.键, 指纹: 指纹(l ? 叠层键(s.键, l) : s.键), 项: {} });
