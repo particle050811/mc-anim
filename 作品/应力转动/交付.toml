@@ -1,0 +1,3 @@
+# anim film 出交付时的选项（pipeline/合成/交付.ts 的 读交付设置）。
+# 剪辑包：film 同一遍多出一路不带字幕的 剪辑包/画面.mp4（2K、CRF 32、每帧关键帧），anim edit-package 不再读母版。
+"剪辑包" = true

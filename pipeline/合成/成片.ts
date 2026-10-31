@@ -3,7 +3,9 @@
 //   画面 trim/scale/concat 和压成片一遍做完。Mac 默认 videotoolbox q38，其他平台 x264 slower CRF 32（用户 10-15 定）。
 // 过期的母版（和段声明的透明叠层）默认拒绝：--重渲过期 先渲，--允许过期 用同一渲染级别最近一份旧的并逐段写进 manifest。
 // 叠层在下、字幕（按段.ts 的台词 cue 排，见 字幕.ts）在上，和画面一起压；接缝只查不改（接缝.ts）；--分享版 另压一份 50 MB 内的 720p。
-// 产出 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、接缝、字幕表、SRT、台词落点、同步表、字幕核对、manifest.json。
+// 声音和接缝读各段的段签（pipeline/段签/：声音.flac、首尾帧小图，缺了从母版当场派生），画面读母版。
+// 产出 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、接缝、字幕表、SRT、台词落点、同步表、字幕核对、全片-未拉响度.flac、manifest.json（v2，见 交付.ts）；
+// 作品开了剪辑包（<作品根>/交付.toml）的，同一遍 ffmpeg 在叠完段叠层、叠字幕之前 split 出 剪辑包/画面.mp4。交付因此自足，edit-package 不再读母版。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 交付根, 配置, isMac, 数据根 } from '../环境/配置.ts';
@@ -19,7 +21,12 @@ import { 叠层路径, 母版路径, 历史指纹, 原子写, 最近同级别 } 
 import { 叠层渲染参数, 渲染参数 } from '../渲/设置.ts';
 import { 渲染叠层, 渲染母版 } from '../渲/渲.ts';
 import { 时长秒, 视频信息 } from '../渲/探测.ts';
-import { 判接缝, type 接缝判断 } from './接缝.ts';
+import { 判接缝, 母版端, 一帧声音, type 接缝判断, type 接缝端 } from './接缝.ts';
+import { 剪辑画面编码, 剪辑画面宽, 剪辑画面高, 剪辑画面文件, 未拉响度文件, 拼未拉响度, 读交付设置, manifest版本 } from './交付.ts';
+import { 取段签 } from '../段签/补.ts';
+import { 声音路径, 小图, type 段签 } from '../段签/段签.ts';
+import { 段签目录 } from '../环境/配置.ts';
+import { 懒放行闸 } from '../闸/闸.ts';
 import { 叠层滤镜, 展开段叠层, type 叠加层 } from './叠层.ts';
 import { 读单声道 } from './音频.ts';
 import { 核对开口, 排字幕, 字幕表tsv, srt } from './字幕.ts';
@@ -54,7 +61,7 @@ export const 量响度 = (file: string) => {
   return { lufs, 真峰值: peak };
 };
 
-type 截 = { 段: 段信息; 指纹: string; 母版: string; 帧数: number; 过期: boolean; 全片起帧: number };
+type 截 = { 段: 段信息; 指纹: string; 母版: string; 帧数: number; 过期: boolean; 全片起帧: number; 签: 段签 | null };
 
 /** 每段取母版：当前指纹的；没有就按选项重渲或用旧的 */
 const 取母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 允许过期?: boolean; 重渲过期?: boolean; 记录: 运行记录 }) => {
@@ -82,7 +89,7 @@ const 取母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 允�
     const 母版 = 母版路径(s.键, 指纹);
     const { 帧数 } = 视频信息(母版);
     if (帧数 !== s.段.帧数) throw new Error(`${s.键} 的母版 ${帧数} 帧，段.ts 写的是 ${s.段.帧数} 帧`);
-    截们.push({ 段: s, 指纹, 母版, 帧数, 过期, 全片起帧: 起 });
+    截们.push({ 段: s, 指纹, 母版, 帧数, 过期, 全片起帧: 起, 签: null });
     起 += 帧数;
   }
   return 截们;
@@ -118,7 +125,27 @@ const 取叠层 = async (截们: 截[], 级别: 渲染级别, opts: { 允许过�
   return out;
 };
 
-// 判接缝要把前一段母版解到最后一帧，慢；母版文件名就是指纹，判过的记在 cache/接缝.json 里不再判。键用相对数据根的路径，数据根挪了照样认
+/** 各段的段签：缺了、或和母版字节对不上就当场从母版派生（要解码，过放行闸）；派生失败只报警，这段的声音、接缝退回读母版 */
+const 取段签们 = async (截们: 截[], 级别: 渲染级别, 记录: 运行记录) => {
+  const 等放行 = 懒放行闸();
+  for (const c of 截们) {
+    try {
+      c.签 = await 取段签(c.段.键, c.指纹, 级别, { 等放行, 记录, 母版: c.母版 });
+    } catch (e) {
+      记录.记('警告', `${c.段.键} 的段签派生不出来（${(e as Error).message.split('\n')[0]}），声音、接缝读母版`);
+    }
+  }
+};
+
+/** 接缝一头：有段签读首尾帧小图和 声音.flac（和母版逐位相同），没有读母版 */
+const 接缝头 = (c: 截, 哪头: '首帧' | '末帧'): 接缝端 => {
+  const 帧 = 哪头 === '首帧' ? 0 : c.帧数 - 1;
+  const 签 = c.签;
+  if (!签) return 母版端(c.母版, 帧);
+  return { 灰度: () => 小图(签, 哪头), 声音: (n) => 一帧声音(声音路径(签) ?? c.母版, 帧, n) };
+};
+
+// 判过的接缝记在 cache/接缝.json 里不再判。键用两段母版的字节 sha（段签里记的；同一指纹重渲字节变了会重判），没段签的用相对数据根的母版路径
 const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) => {
   const 记忆文件 = 数据路径('cache', '接缝.json');
   const 相对 = (f: string) => path.relative(数据路径(), f).split(path.sep).join('/');
@@ -132,8 +159,8 @@ const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) =>
   for (let k = 1; k < 截们.length; k++) {
     const a = 截们[k - 1]!;
     const b = 截们[k]!;
-    const key = `${相对(a.母版)}|${a.帧数 - 1}|${相对(b.母版)}|0`;
-    记忆[key] ??= 判接缝({ 文件: a.母版, 帧: a.帧数 - 1 }, { 文件: b.母版, 帧: 0 }, 每帧样本);
+    const key = `${a.签?.母版.字节sha ?? 相对(a.母版)}|${a.帧数 - 1}|${b.签?.母版.字节sha ?? 相对(b.母版)}|0`;
+    记忆[key] ??= 判接缝(接缝头(a, '末帧'), 接缝头(b, '首帧'), 每帧样本);
     结果.push({ 前: a.段.键, 后: b.段.键, 判断: 记忆[key]! });
     if (记忆[key] === '首帧重复') 记录.记('警告', `接缝 ${a.段.键} → ${b.段.键}：后一段首帧和前一段末帧画面、声音都重复（两帧都留）`);
   }
@@ -177,6 +204,7 @@ export const 合成成片 = async (
   // 同步表要读资产锁里的字节（音效起音）：公开仓库 clone 下来、母版都在别处渲好的，也先把随仓库的字节补进数据根
   补字节并报(作品根(), 数据根());
   const 截们 = await 取母版(段们, opts.级别, opts);
+  await 取段签们(截们, opts.级别, opts.记录);
   const 叠层们 = opts.不叠层 ? [] : await 取叠层(截们, opts.级别, opts);
   const 总帧数 = 截们.reduce((a, c) => a + c.帧数, 0);
   const [宽, 高] = opts.级别 === '预览' ? [1280, 720] : [2560, 1440];
@@ -198,13 +226,15 @@ export const 合成成片 = async (
   fs.mkdirSync(工作, { recursive: true });
   const ffmpeg = 配置('ffmpeg');
   const 输入 = 截们.flatMap((c) => ['-i', c.母版]);
+  const 剪辑包 = 读交付设置(作品根()).剪辑包;
 
   // 叠层们（段叠层在下、字幕卡在上）
-  const 层们: 叠加层[] = 叠层们.map((l) => {
+  const 段层们: 叠加层[] = 叠层们.map((l) => {
     const 层帧 = 视频信息(l.文件);
     if (层帧.宽 !== 宽 || 层帧.高 !== 高) throw new Error(`叠层 ${l.键} 是 ${层帧.宽}×${层帧.高}，成片是 ${宽}×${高}（叠层要按成片的级别渲）`);
     return 展开段叠层(l.文件, 层帧.帧数, l.截.帧数, l.截.全片起帧);
   });
+  const 卡层们: 叠加层[] = [];
   if (!opts.不叠字幕 && 字幕.屏们.length) {
     const 卡目录 = path.join(工作, '字幕卡');
     fs.mkdirSync(卡目录, { recursive: true });
@@ -218,16 +248,16 @@ export const 合成成片 = async (
         卡.set(key, { 文件, x: c.x, y: c.y });
       }
       const c = 卡.get(key)!;
-      层们.push({ 文件: c.文件, 起帧: p.起帧, 帧数: p.止帧 - p.起帧, x: c.x, y: c.y, 静图: true, 取自帧: 0 });
+      卡层们.push({ 文件: c.文件, 起帧: p.起帧, 帧数: p.止帧 - p.起帧, x: c.x, y: c.y, 静图: true, 取自帧: 0 });
     }
   }
 
-  // 声音：按样本截、接
-  const 未拉 = path.join(工作, '全片-未拉响度.wav');
-  const 音频滤镜 = 截们.map((c, k) => `[${k}:a]atrim=start_sample=0:end_sample=${c.帧数 * 每帧样本},asetpts=PTS-STARTPTS,aresample=${采样率},aformat=channel_layouts=stereo[a${k}]`);
-  音频滤镜.push(`${截们.map((_, k) => `[a${k}]`).join('')}concat=n=${截们.length}:v=0:a=1[a]`);
+  const 层们 = [...段层们, ...卡层们];
+
+  // 声音：各段 声音.flac（没段签的读母版）按样本截、接，存成交付里的 全片-未拉响度.flac（edit-package 用）
+  const 未拉 = path.join(dir, 未拉响度文件);
   console.log('== 拼声音');
-  await 跑(低优先级([ffmpeg, '-v', 'error', '-y', ...输入, '-filter_complex', 音频滤镜.join(';'), '-map', '[a]', '-c:a', 'pcm_s16le', 未拉]));
+  await 拼未拉响度(截们.map((c) => (c.签 && 声音路径(c.签)) ?? c.母版), { 段: 截们, 帧率: fps }, 未拉);
 
   // 响度：固定增益 + 限幅，压成 AAC 后真峰值还超就压低限幅重做
   const 原 = 量响度(未拉);
@@ -254,22 +284,50 @@ export const 合成成片 = async (
   const 写入中 = path.join(工作, `${opts.名}.写入中.mp4`);
   const 视频滤镜 = 截们.map((c, k) => `[${k}:v]trim=start_frame=0:end_frame=${c.帧数},setpts=PTS-STARTPTS,scale=${宽}:${高}:flags=lanczos,setsar=1,fps=${fps}[v${k}]`);
   视频滤镜.push(`${截们.map((_, k) => `[v${k}]`).join('')}concat=n=${截们.length}:v=1:a=0[cat]`);
-  const [层输入, 层滤镜, 出标签] = 叠层滤镜(层们, 截们.length + 1, 'cat', fps);
-  if (层滤镜) 视频滤镜.push(层滤镜);
-  console.log(`== 拼画面、叠 ${层们.length} 层、压成片（${视频编码[1]}）`);
+  let 层输入: string[];
+  let 出标签: string;
+  // 放子目录里：成片的临时名是 <名>.写入中.mp4，名可以是任何字，同一层会撞
+  const 剪辑写入中 = path.join(工作, '剪辑包', '画面.写入中.mp4');
+  if (剪辑包) fs.mkdirSync(path.dirname(剪辑写入中), { recursive: true });
+  const 剪辑出: string[] = [];
+  if (剪辑包) {
+    // 段叠层叠完 split：一路接着叠字幕卡压成片，一路缩到 2K 压剪辑包画面（edit-package 原来从母版现做的同一套滤镜）
+    const [段输入, 段滤镜, 段标签] = 叠层滤镜(段层们, 截们.length + 1, 'cat', fps, 'd');
+    const [卡输入, 卡滤镜, 卡标签] = 叠层滤镜(卡层们, 截们.length + 1 + 段层们.length, 'pre', fps, 'c');
+    if (段滤镜) 视频滤镜.push(段滤镜);
+    视频滤镜.push(`[${段标签}]split=2[pre][pkgsrc]`, `[pkgsrc]scale=${剪辑画面宽}:${剪辑画面高}:flags=lanczos[pkg]`);
+    if (卡滤镜) 视频滤镜.push(卡滤镜);
+    层输入 = [...段输入, ...卡输入];
+    出标签 = 卡标签;
+    剪辑出.push('-map', '[pkg]', '-an', ...剪辑画面编码(fps), 剪辑写入中);
+  } else {
+    const [输入们, 滤镜, 标签] = 叠层滤镜(层们, 截们.length + 1, 'cat', fps);
+    if (滤镜) 视频滤镜.push(滤镜);
+    层输入 = 输入们;
+    出标签 = 标签;
+  }
+  console.log(`== 拼画面、叠 ${层们.length} 层、压成片（${视频编码[1]}）${剪辑包 ? '，另出剪辑包画面（不带字幕）' : ''}`);
   await 跑(
     低优先级([
       ffmpeg, '-v', 'error', '-y', ...输入, '-i', 成品音, ...层输入, '-filter_complex', 视频滤镜.join(';'), '-map', `[${出标签}]`, '-map', `${截们.length}:a`,
-      ...视频编码, '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', 写入中,
+      ...视频编码, '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', 写入中, ...剪辑出,
     ]),
   );
   const 出帧 = 视频信息(写入中).帧数;
   if (出帧 !== 总帧数) throw new Error(`成片 ${出帧} 帧，各段加起来是 ${总帧数} 帧（接缝丢帧或多帧）`);
+  if (剪辑包) {
+    const n = 视频信息(剪辑写入中).帧数;
+    if (n !== 总帧数) throw new Error(`剪辑包画面 ${n} 帧，各段加起来是 ${总帧数} 帧`);
+  }
   fs.renameSync(写入中, 成片);
+  if (剪辑包) {
+    fs.mkdirSync(path.join(dir, path.dirname(剪辑画面文件)), { recursive: true });
+    fs.renameSync(剪辑写入中, path.join(dir, 剪辑画面文件));
+  }
 
   const 拼接表 = path.join(dir, '拼接表.tsv');
   原子写(拼接表, '编号\t段\t指纹\t段内起帧\t段内止帧（不含）\t全片起帧\n' + 截们.map((c) => `${c.段.编号 ?? ''}\t${c.段.键}\t${c.指纹.slice(0, 16)}\t0\t${c.帧数}\t${c.全片起帧}\n`).join(''));
-  const 文件: Record<string, string> = { 成片: path.basename(成片), 拼接表: path.basename(拼接表), 接缝: '接缝.tsv' };
+  const 文件: Record<string, string> = { 成片: path.basename(成片), 拼接表: path.basename(拼接表), 接缝: '接缝.tsv', 未拉响度: 未拉响度文件, ...(剪辑包 ? { 剪辑画面: '剪辑包/画面.mp4' } : {}) };
   原子写(path.join(dir, '接缝.tsv'), '前\t后\t判断\n' + 接缝们.map((x) => `${x.前}\t${x.后}\t${x.判断}\n`).join(''));
   let 开口最大差: number | null = null;
   let 同步: { 对上: number; 总: number } | null = null;
@@ -304,6 +362,7 @@ export const 合成成片 = async (
     opts.记录.产物.push(出);
   }
   const manifest = {
+    版本: manifest版本,
     作品: 作品名(),
     名: opts.名,
     范围: opts.范围,
@@ -320,8 +379,12 @@ export const 合成成片 = async (
     时长秒: 时长秒(成片),
     编码: { 视频: 视频编码, 音频: ['-c:a', 'aac', '-b:a', '192k'] },
     响度: { 原LUFS: 原.lufs, 增益dB: Number(增益.toFixed(2)), 限幅dBFS: Number((真峰值上限 - 余量).toFixed(2)), 成片LUFS: 终.lufs, 真峰值dBTP: 终.真峰值 },
-    // 母版、叠层写相对数据根；段 仍记短名（剪辑微调/读取调整.py 只认短名）
-    段: 截们.map((c) => ({ 编号: c.段.编号, 键: c.段.键, 段文件: 相对代码根(c.段.段文件), 指纹: c.指纹, 过期: c.过期, 母版: 相对数据根(c.母版), 帧数: c.帧数, 全片起帧: c.全片起帧 })),
+    // v2：段不记母版（按作品、段键、指纹现算，交付.ts），记母版字节 sha 和段签（相对数据根）；叠层写相对数据根；段 仍记短名（剪辑微调/读取调整.py 只认短名）
+    段: 截们.map((c) => ({
+      编号: c.段.编号, 键: c.段.键, 段文件: 相对代码根(c.段.段文件), 指纹: c.指纹, 过期: c.过期,
+      字节sha: c.签?.母版.字节sha ?? null, 段签: c.签 ? 相对数据根(段签目录(c.段.键, c.指纹)) : null, 声音: c.签 && 声音路径(c.签) ? 相对数据根(声音路径(c.签)!) : null,
+      帧数: c.帧数, 全片起帧: c.全片起帧,
+    })),
     叠层: 叠层们.map((l) => ({ 键: l.键, 段: l.截.段.键, 指纹: l.指纹, 过期: l.过期, 文件: 相对数据根(l.文件), 全片起帧: l.截.全片起帧 })),
     字幕: { 句数: 字幕.句们.length, 屏数: 字幕.屏们.length, 叠了: !opts.不叠字幕 && 字幕.屏们.length > 0, 开口最大差帧: 开口最大差 },
     同步表: 同步,

@@ -22,7 +22,14 @@ vi.mock('../指纹/指纹.ts', () => {
   return { 叠层键, 算段指纹, 算全部段指纹 };
 });
 
+// 派生段签要过放行闸：测试不碰真的锁目录
+vi.mock('../闸/闸.ts', async (原) => ({ ...(await 原<typeof import('../闸/闸.ts')>()), 懒放行闸: () => async () => {}, 过放行闸: <T>(fn: () => Promise<T>) => fn() }));
+
 const { 合成成片 } = await import('./成片.ts');
+const { 做剪辑画面 } = await import('../适配器/剪映/剪辑包.ts');
+const { 读交付manifest, 未拉响度文件, 剪辑画面文件 } = await import('./交付.ts');
+const { 读段签, 声音路径 } = await import('../段签/段签.ts');
+const { 音频流 } = await import('../验收/帧流.ts');
 const { 母版路径, 叠层路径, 指纹文件 } = await import('../渲/母版.ts');
 const { 视频信息 } = await import('../渲/探测.ts');
 const { 代码根 } = await import('../环境/路径.ts');
@@ -78,6 +85,19 @@ const 造叠层 = (键: string, 帧数: number) => {
   if (r.status !== 0) throw new Error(String(r.stderr));
 };
 
+/** 逐帧解码后的 md5（-f framemd5），比两份视频画面是否逐位相同 */
+const 帧md5 = (file: string) =>
+  spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-map', '0:v:0', '-f', 'framemd5', '-'], { encoding: 'utf8' })
+    .stdout.split('\n')
+    .filter((l) => l && !l.startsWith('#'))
+    .map((l) => l.split(',').at(-1)!.trim());
+
+const pcm = async (file: string) => {
+  const h = crypto.createHash('sha256');
+  for await (const c of 音频流(file)) h.update(c);
+  return h.digest('hex');
+};
+
 /** 成片第 n 帧 (x, y) 的 RGB */
 const 取像素 = (file: string, n: number, x: number, y: number) => {
   const r = spawnSync('ffmpeg', ['-v', 'error', '-i', file, '-vf', `select=eq(n\\,${n}),format=rgb24,crop=1:1:${x}:${y}`, '-vframes', '1', '-f', 'rawvideo', '-pix_fmt', 'rgb24', '-']);
@@ -118,6 +138,32 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     expect(fs.readFileSync(path.join(dir, '接缝.tsv'), 'utf8')).toBe('前\t后\t判断\n甲\t乙\t正常\n');
   });
 
+  it('交付自足：manifest v2 记段签，存了未拉响度的 FLAC（PCM 和各段母版按样本截、接的一样），应力转动开了剪辑包就同一遍出画面', async () => {
+    const { dir, manifest } = await 合成成片([段('甲', 48), 段('乙', 37)], { 级别: '预览', 名: '自足', 范围: [], 记录: 记录() });
+    expect(manifest.版本).toBe(2);
+    for (const s of manifest.段) {
+      expect(s.段签).toMatch(/^段签\//);
+      expect(s.字节sha).toMatch(/^[0-9a-f]{64}$/);
+      expect('母版' in s).toBe(false);
+    }
+    const 签甲 = 读段签('甲', 指纹('甲'))!;
+    expect(await pcm(声音路径(签甲)!)).toBe(await pcm(母版路径('甲', 指纹('甲'))));
+    // 未拉响度 = 各段母版直接按样本截、接（原来 edit-package 的做法）
+    const 对照 = path.join(dir, '对照.wav');
+    const r = spawnSync('ffmpeg', [
+      '-v', 'error', '-y', '-i', 母版路径('甲', 指纹('甲')), '-i', 母版路径('乙', 指纹('乙')), '-filter_complex',
+      '[0:a]atrim=end_sample=96000,asetpts=PTS-STARTPTS[a];[1:a]atrim=end_sample=74000,asetpts=PTS-STARTPTS[b];[a][b]concat=n=2:v=0:a=1[o]', '-map', '[o]', '-c:a', 'pcm_s16le', 对照,
+    ]);
+    expect(r.status).toBe(0);
+    expect(await pcm(path.join(dir, 未拉响度文件))).toBe(await pcm(对照));
+    expect(manifest.文件.未拉响度).toBe(未拉响度文件);
+    expect(manifest.文件.剪辑画面).toBe('剪辑包/画面.mp4');
+    expect(视频信息(path.join(dir, 剪辑画面文件))).toMatchObject({ 帧数: 85, 宽: 2560, 高: 1440 });
+    // 读回来：v2 的母版路径按作品、段键、指纹现算
+    const m = 读交付manifest(dir);
+    expect(m.段.map((s) => s.母版)).toEqual([母版路径('甲', 指纹('甲')), 母版路径('乙', 指纹('乙'))]);
+  });
+
   it('透明叠层叠在本段对应的帧和位置上，比段短就只叠前面几帧，别的段不受影响', async () => {
     造叠层('甲-层', 30);
     const 甲 = 段('甲', 48, 24, [{ 名: '层', 入口: '叠层.tsx' }]);
@@ -130,6 +176,17 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     expect(红(取像素(成片, 37 + 30, 200, 100))).toBe(false);
     expect(红(取像素(成片, 20, 200, 100))).toBe(false);
     expect(红(取像素(成片, 37 + 5, 400, 300))).toBe(false);
+  });
+
+  it('film split 出的剪辑包画面和 edit-package 从母版现做的逐帧相同（叠了段叠层、不带字幕）', async () => {
+    造叠层('甲-层', 30);
+    const 甲 = 段('甲', 48, 24, [{ 名: '层', 入口: '叠层.tsx' }]);
+    const { dir } = await 合成成片([段('乙', 37), 甲], { 级别: '预览', 名: '剪辑画面', 范围: [], 记录: 记录() });
+    const 现做 = path.join(dir, '现做.mp4');
+    await 做剪辑画面(读交付manifest(dir), 现做);
+    const a = 帧md5(path.join(dir, 剪辑画面文件));
+    expect(a).toHaveLength(85);
+    expect(a).toEqual(帧md5(现做));
   });
 
   it('叠层没渲（指纹对不上）就拒绝，--不叠层 跳过', async () => {

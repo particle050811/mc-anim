@@ -23,8 +23,8 @@ export const 展开段叠层 = (文件: string, 层帧数: number, 段帧数: nu
   取自帧: 0,
 });
 
-/** ffmpeg 输入参数和 filter_complex 片段：从 基 标签起一层层 overlay；返回 [输入, 滤镜, 最后的标签] */
-export const 叠层滤镜 = (层们: 叠加层[], 首个输入号: number, 基: string, fps: number): [string[], string, string] => {
+/** ffmpeg 输入参数和 filter_complex 片段：从 基 标签起一层层 overlay；返回 [输入, 滤镜, 最后的标签]。同一张图里分两截叠时给不同的 前缀，标签不撞 */
+export const 叠层滤镜 = (层们: 叠加层[], 首个输入号: number, 基: string, fps: number, 前缀 = ''): [string[], string, string] => {
   const 输入: string[] = [];
   const 段: string[] = [];
   let 当前 = 基;
@@ -38,9 +38,9 @@ export const 叠层滤镜 = (层们: 叠加层[], 首个输入号: number, 基: 
       输入.push('-i', l.文件);
       源 = `[${k}:v]trim=start_frame=${l.取自帧}:end_frame=${l.取自帧 + l.帧数}`;
     }
-    段.push(`${源},setpts=N/(${fps}*TB)+${l.起帧}/(${fps}*TB)[l${i}]`);
-    段.push(`[${当前}][l${i}]overlay=x=${l.x}:y=${l.y}:eof_action=pass[o${i}]`);
-    当前 = `o${i}`;
+    段.push(`${源},setpts=N/(${fps}*TB)+${l.起帧}/(${fps}*TB)[${前缀}l${i}]`);
+    段.push(`[${当前}][${前缀}l${i}]overlay=x=${l.x}:y=${l.y}:eof_action=pass[${前缀}o${i}]`);
+    当前 = `${前缀}o${i}`;
   });
   return [输入, 段.join(';'), 当前];
 };

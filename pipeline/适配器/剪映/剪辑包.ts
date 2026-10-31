@@ -1,10 +1,11 @@
-// anim edit-package：照一次 anim film 的交付（manifest.json 记的母版、叠层、增益和 台词落点.json）出剪辑包，放在 <交付目录>/剪辑包/，出完写进剪映草稿。
+// anim edit-package：照一次 anim film 的交付（manifest.json 的增益、各段帧数和 台词落点.json）出剪辑包，放在 <交付目录>/剪辑包/，出完写进剪映草稿。
 // 照旧项目 导出剪辑包.py 的快路：画面 = 同一批母版 + 叠层、不带字幕，2K、CRF 32、每帧关键帧（用户 10-14 定，剪映里拖播放头哪帧都能直接解）；
-// 声音 = 母版接起来、拉响度之前的整片声音，各句台词和字幕现算（字幕.ts），轨道、核对交给 剪辑包.py。
+// 声音 = 拉响度之前的整片声音，各句台词和字幕现算（字幕.ts），轨道、核对交给 剪辑包.py。
+// 只读交付目录：画面.mp4 film 已经出了（作品开了剪辑包）就不碰母版，声音读交付的 全片-未拉响度.flac；旧交付没有这两样才退回段签的 声音.flac、母版现做（合成/交付.ts）。
 // 配乐、音效默认一条「去台词」；--拆音效 照段.ts 的 cue 出清单、一声一个片段（和成片差多少看 核对.tsv）。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 交付根, 配置, 数据根, 数据根下 } from '../../环境/配置.ts';
+import { 交付根, 配置, 数据根 } from '../../环境/配置.ts';
 import { 代码根 } from '../../环境/路径.ts';
 import { 低优先级, 跑 } from '../../环境/子进程.ts';
 import { 过放行闸 } from '../../闸/闸.ts';
@@ -16,26 +17,13 @@ import { 叠层滤镜, 展开段叠层 } from '../../合成/叠层.ts';
 import { 排字幕, type 台词落点 } from '../../合成/字幕.ts';
 import { 读单声道 } from '../../合成/音频.ts';
 import type { 运行记录 } from '../../运行记录/记录.ts';
+import { 剪辑画面编码, 剪辑画面宽, 剪辑画面高, 未拉响度文件, 段声音源, 拼未拉响度, 读交付manifest, type 交付manifest } from '../../合成/交付.ts';
 import { 写清单 } from './音效清单.ts';
 import { 导入剪映 } from './剪映.ts';
 
-const 宽 = 2560;
-const 高 = 1440;
-const 采样率 = 48000;
 const 本目录 = path.join(代码根(), 'pipeline', '适配器', '剪映');
 
-export type 交付段 = { 编号: string | null; 键: string; 指纹: string; 母版: string; 帧数: number; 全片起帧: number };
-export type 交付manifest = {
-  名: string;
-  帧率: number;
-  宽: number;
-  高: number;
-  总帧数: number;
-  响度: { 增益dB: number };
-  段: 交付段[];
-  叠层: { 键: string; 段: string; 文件: string; 全片起帧: number }[];
-  文件: Record<string, string>;
-};
+export type { 交付段, 交付manifest } from '../../合成/交付.ts';
 
 /** 给的是交付目录的名字（不是路径）就到 交付根 下找 */
 export const 找交付目录 = (arg: string) => {
@@ -67,7 +55,10 @@ const 比字幕表 = (dir: string, 屏们: { 字: string; 起帧: number; 止帧
   if (旧.join('\n') !== 新.join('\n')) 记录.记('警告', `现算的字幕和成片的字幕表对不上（表 ${旧.length} 屏、现算 ${新.length} 屏），台词或配音在出成片以后改过？`);
 };
 
-const 画面 = async (m: 交付manifest, 出: string) => {
+/** 剪辑包画面：各段母版 + 段叠层、不带字幕，缩到 2K（film 开了剪辑包时同一遍 split 出同样的画面；这里给旧交付现做）。过放行闸 */
+export const 做剪辑画面 = async (m: 交付manifest, 出: string) => {
+  const 缺 = [...m.段.map((s) => s.母版), ...m.叠层.map((l) => l.文件)].filter((f) => !fs.existsSync(f));
+  if (缺.length) throw new Error(`交付里没有剪辑包画面，现做要的母版或叠层又不在了（缓存被清过？）：${缺.join('、')}；重出一次 anim film`);
   const ffmpeg = 配置('ffmpeg');
   const fps = m.帧率;
   const 输入 = m.段.flatMap((s) => ['-i', s.母版]);
@@ -77,14 +68,13 @@ const 画面 = async (m: 交付manifest, 出: string) => {
   const 层们 = m.叠层.map((l) => 展开段叠层(l.文件, 视频信息(l.文件).帧数, 段.get(l.段)!.帧数, l.全片起帧));
   const [层输入, 层滤镜, 出标签] = 叠层滤镜(层们, m.段.length, 'cat', fps);
   if (层滤镜) 滤镜.push(层滤镜);
-  滤镜.push(`[${出标签}]scale=${宽}:${高}:flags=lanczos[out]`);
+  滤镜.push(`[${出标签}]scale=${剪辑画面宽}:${剪辑画面高}:flags=lanczos[out]`);
   const 写入中 = 出.replace(/\.mp4$/, '.写入中.mp4');
   console.log(`== 画面：${m.段.length} 段母版、叠 ${层们.length} 层，压成 2K 每帧关键帧`);
   await 过放行闸(() =>
     跑(
       低优先级([
-        ffmpeg, '-v', 'error', '-y', ...输入, ...层输入, '-filter_complex', 滤镜.join(';'), '-map', '[out]', '-an',
-        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '32', '-g', '1', '-keyint_min', '1', '-sc_threshold', '0', '-pix_fmt', 'yuv420p', '-r', String(fps), '-movflags', '+faststart', 写入中,
+        ffmpeg, '-v', 'error', '-y', ...输入, ...层输入, '-filter_complex', 滤镜.join(';'), '-map', '[out]', '-an', ...剪辑画面编码(fps), 写入中,
       ]),
     ),
   );
@@ -93,12 +83,20 @@ const 画面 = async (m: 交付manifest, 出: string) => {
   fs.renameSync(写入中, 出);
 };
 
-/** 拉响度之前的整片声音：和 成片.ts 一样按样本截、接（32 位浮点，减台词时不多一层量化） */
-const 未拉响度 = async (m: 交付manifest, 出: string) => {
-  const 每帧样本 = 采样率 / m.帧率;
-  const 滤镜 = m.段.map((s, k) => `[${k}:a]atrim=start_sample=0:end_sample=${s.帧数 * 每帧样本},asetpts=PTS-STARTPTS,aresample=${采样率},aformat=channel_layouts=stereo[a${k}]`);
-  滤镜.push(`${m.段.map((_, k) => `[a${k}]`).join('')}concat=n=${m.段.length}:v=0:a=1[a]`);
-  await 跑(低优先级([配置('ffmpeg'), '-v', 'error', '-y', ...m.段.flatMap((s) => ['-i', s.母版]), '-filter_complex', 滤镜.join(';'), '-map', '[a]', '-c:a', 'pcm_f32le', 出]));
+/**
+ * 拉响度之前的整片声音，解成 32 位浮点（减台词时不多一层量化；s16 转 f32 是精确的）。
+ * 交付里有 全片-未拉响度.flac 就解它；旧交付没有，按 成片.ts 一样按样本截、接各段的段签 声音.flac，段签也没有的读母版
+ */
+const 未拉响度 = async (m: ReturnType<typeof 读交付manifest>, dir: string, 出: string) => {
+  const 存的 = path.join(dir, 未拉响度文件);
+  if (!fs.existsSync(存的)) {
+    const 源 = 段声音源(m);
+    const 缺 = m.段.filter((_, i) => !源[i]).map((s) => s.母版);
+    if (缺.length) throw new Error(`交付里没有 ${未拉响度文件}，各段的段签声音和母版也不在了：${缺.join('、')}；重出一次 anim film`);
+    await 拼未拉响度(源 as string[], m, 出 + '.flac');
+  }
+  await 跑(低优先级([配置('ffmpeg'), '-v', 'error', '-y', '-i', fs.existsSync(存的) ? 存的 : 出 + '.flac', '-map', '0:a:0', '-c:a', 'pcm_f32le', 出]));
+  fs.rmSync(出 + '.flac', { force: true });
 };
 
 export const uv带numpy = (script: string, args: string[]) => ['uv', 'run', '-q', '--no-project', '--with', 'numpy', 'python', path.join(本目录, script), ...args];
@@ -106,19 +104,15 @@ export const py环境 = () => ({ ...process.env, ANIM_FFMPEG: 配置('ffmpeg'), 
 
 export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boolean; 重做画面?: boolean; 不导入?: boolean; 记录: 运行记录 }) => {
   const dir = 找交付目录(交付目录);
-  const 原 = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) as 交付manifest;
-  // 新 manifest 的母版、叠层是相对数据根的路径，旧的是绝对路径，两种都认
-  const m: 交付manifest = { ...原, 段: 原.段.map((s) => ({ ...s, 母版: 数据根下(s.母版) })), 叠层: (原.叠层 ?? []).map((l) => ({ ...l, 文件: 数据根下(l.文件) })) };
-  const 缺 = [...m.段.map((s) => s.母版), ...m.叠层.map((l) => l.文件)].filter((f) => !fs.existsSync(f));
-  if (缺.length) throw new Error(`这次成片用的母版或叠层不在了（缓存被清过？）：${缺.join('、')}；重出一次 anim film`);
+  const m = 读交付manifest(dir);
   const 包 = path.join(dir, '剪辑包');
   const 工作 = path.join(包, '_工作');
   fs.mkdirSync(工作, { recursive: true });
 
   const 画面文件 = path.join(包, '画面.mp4');
-  if (opts.重做画面 || !fs.existsSync(画面文件)) await 画面(m, 画面文件);
+  if (opts.重做画面 || !fs.existsSync(画面文件)) await 做剪辑画面(m, 画面文件);
   const 未拉 = path.join(工作, '全片-未拉响度.wav');
-  await 未拉响度(m, 未拉);
+  await 未拉响度(m, dir, 未拉);
 
   // 台词和字幕：成片时写的落点 + 资产库里的配音，字幕和成片同一套排法现算
   const 锁 = 读作品资产锁(作品根());
