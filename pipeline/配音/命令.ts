@@ -34,9 +34,7 @@ const 成品文件 = (行: 台词行, 锁: 资产锁) => 字节路径(锁[行.�
 
 /** 要这台机器的位置的后端：程序位置取 anim 配置（anim.local.toml、环境变量）。别的后端不用在这登记，用 Python 那边的默认参数 */
 const 本机设置 = (): Record<string, Record<string, unknown>> => ({
-  'firered-本机': { 目录: 配置('firered') },
-  'indextts2-本机': { 目录: 配置('indextts') },
-  'gpt-sovits': { 地址: 配置('gpt_sovits') },
+  'image-flow': { imgflow: 配置('image_flow') },
 });
 /** 后端的设置：本机设置，再盖上 台词.toml 的 [配音.后端参数.<后端>] */
 const 后端配置 = (表: 作品台词 | null, 名: string): Record<string, unknown> => ({ ...(本机设置()[名] ?? {}), ...(表?.配音.后端参数[名] ?? {}) });

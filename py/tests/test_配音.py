@@ -1,6 +1,7 @@
 """anim_py.配音：口型规则、后端 dry-run、成品处理。期望值取自第 6、7 章的句模块（作品/应力转动/台词/，和旧 口型.json 一致）。
 汉字句要 pypinyin（项目依赖，钉 0.55.0：uv run pytest）。
 """
+import json
 import math
 import shutil
 import struct
@@ -34,30 +35,64 @@ def _请求(tmp: Path) -> 合成请求:
     return 合成请求(id='7-黄叛-受死', 念='怪物受死！', 语言='中文', 参考音频=str(tmp / '参考.wav'), 参考逐字稿='怪物受死', 种子=7, 输出=str(tmp / '出.wav'), 语气='怒喝', 角色='黄叛')
 
 
-def test_后端都登记了且_dry_run_不碰网络和模型(tmp_path):
+def test_后端只有_image_flow_且_dry_run_不碰网络和模型(tmp_path):
     表 = 后端表()
-    assert set(表) == {'firered-本机', 'firered-魔搭', 'indextts2-本机', 'indextts2-runninghub', 'gpt-sovits', 'openai-speech'}
-    assert 表['indextts2-runninghub'].付费 and 表['indextts2-runninghub'].云端 and 表['firered-魔搭'].云端
-    assert not any(表[n].云端 for n in ('firered-本机', 'indextts2-本机', 'gpt-sovits', 'openai-speech'))
-    for 名 in 表:
-        d = 取后端(名, {}).描述(_请求(tmp_path))
-        assert d['后端'] == 名
-    本机 = 取后端('firered-本机', {'目录': str(tmp_path / '没有')})
-    assert 本机.描述(_请求(tmp_path))['参数']['cfg'] == 1.2
-    # 本机目录、服务地址不进候选说明和资产表（仓库公开）
-    assert 本机.记录参数(_请求(tmp_path)) == {'cfg': 1.2, '步数': 30, '精度': 'fp32', '设备': ''}
-    assert '地址' not in 取后端('gpt-sovits', {'地址': 'http://127.0.0.1:1'}).记录参数(_请求(tmp_path))
-    assert any('venv 没建' in x for x in 本机.缺什么())
-    # 按名字取音色的服务：没配 音色 就用台词的角色
-    assert 取后端('openai-speech', {}).描述(_请求(tmp_path))['json']['voice'] == '黄叛'
-    assert 取后端('firered-本机', {}).缺什么() == ['没给 FireRedTTS3 目录（anim 配置 firered，环境变量 ANIM_FIRERED）']
-    # 合成.参数 的采样参数盖到 RunningHub 的 IndexTTS2Run 节点上；节点里没有的键、连线的输入不动
+    assert set(表) == {'image-flow'}
+    assert 表['image-flow'].付费 and 表['image-flow'].云端
     q = _请求(tmp_path)
-    q.参数 = {'top_k': 20, '没有这个键': 1, 'audio': 'x'}
-    节点 = 取后端('indextts2-runninghub', {}).描述(q)['workflow']['tts0']['inputs']
-    assert 节点['top_k'] == 20 and '没有这个键' not in 节点 and 节点['audio'] == ['timbre', 0]
+    q.语气参考 = '/语气.wav'
+    q.语气强度 = 0.65
+    q.参数 = {'top_k': 20}
+    后 = 取后端('image-flow', {'imgflow': str(tmp_path / '没有.mjs')})
+    命令 = 后.描述(q)['命令']
+    assert 命令[1:3] == ['speak', '--text'] and 命令[命令.index('--voice_ref') + 1] == q.参考音频
+    assert 命令[命令.index('--emotion_ref') + 1] == '/语气.wav'
+    assert 'emo_alpha=0.65' in 命令 and 'top_k=20' in 命令
+    # 壳的位置是这台机器的事，不进候选说明和资产表（仓库公开）
+    assert 'imgflow' not in 后.记录参数(q)
+    assert any('ANIM_IMAGE_FLOW' in x for x in 后.缺什么())
+    # 种子不发给模型：IndexTTS2 的节点没有这个输入
+    assert not any('seed' in x for x in 命令)
     with pytest.raises(SystemExit):
         取后端('没有这个')
+
+
+def test_image_flow_没语气参考不传语气也不传强度(tmp_path):
+    q = _请求(tmp_path)
+    q.语气强度 = 0.8
+    命令 = 取后端('image-flow', {}).描述(q)['命令']
+    assert '--emotion_ref' not in 命令 and not any('emo_alpha' in x for x in 命令)
+
+
+def test_image_flow_合成(tmp_path, monkeypatch):
+    """假 image-flow：查它收到的命令；成功转 wav、任务失败和非 JSON 输出都记成这个候选失败，不抛出去"""
+    from anim_py.配音.后端 import image_flow
+
+    跑过: list[list[str]] = []
+    回 = {'stdout': json.dumps({'gen_status': 'success', 'submit_id': '261031/1', 'outputs': [{'path': '/任务/a.flac'}]}), 'returncode': 0}
+
+    def 假跑(命令, **_):
+        跑过.append(命令)
+        return subprocess.CompletedProcess(命令, 回['returncode'], 回['stdout'], '')
+
+    monkeypatch.setattr(image_flow.subprocess, 'run', 假跑)
+    q = _请求(tmp_path)
+    # 资产按 sha 存、没有后缀：交给 image-flow 的要带 .wav，有后缀的原样给
+    (tmp_path / '6818727b').write_bytes(b'RIFF')
+    (tmp_path / '参考.wav').write_bytes(b'RIFF')
+    q.语气参考 = str(tmp_path / '6818727b')
+    q.输出 = str(tmp_path / '这句第一次出' / '候选.wav')
+    结果 = 取后端('image-flow', {}).合成([q])[0]
+    assert 结果.成功 and '261031/1' in 结果.说明
+    assert Path(q.输出).parent.is_dir()
+    assert 跑过[0][跑过[0].index('--voice_ref') + 1] == q.参考音频
+    assert 跑过[0][跑过[0].index('--emotion_ref') + 1].endswith('语气.wav')
+    assert 跑过[0][2] == 'speak' and 跑过[1][-3:] == ['-i', '/任务/a.flac', q.输出]
+    回['stdout'] = json.dumps({'gen_status': 'fail', 'submit_id': '261031/2', 'fail_reason': '余额不足'})
+    结果 = 取后端('image-flow', {}).合成([q])[0]
+    assert not 结果.成功 and '余额不足' in 结果.说明 and '261031/2' in 结果.说明
+    回.update(stdout='', returncode=3)
+    assert not 取后端('image-flow', {}).合成([q])[0].成功
 
 
 def _写wav(p: Path, 段: list[tuple[float, float]], 采样率=48000):
