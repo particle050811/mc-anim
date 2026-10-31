@@ -16,6 +16,7 @@ const { 存成压缩, 备好母版 } = await import('./转存.ts');
 const { 压缩母版路径, 原母版路径, 用过于 } = await import('./母版.ts');
 const { 母版目录 } = await import('../环境/配置.ts');
 const { 文件sha, 读段签 } = await import('../段签/段签.ts');
+const { 取段签 } = await import('../段签/补.ts');
 const { 音频流 } = await import('../验收/帧流.ts');
 
 const 指纹 = (键: string) => crypto.createHash('sha256').update(键).digest('hex');
@@ -109,5 +110,25 @@ describe.skipIf(!有ffmpeg)('转码', () => {
     expect(await 备好母版('备', 指纹('没有'), '视频')).toBeNull();
     // 记用过以前调的 删已取代：已被取代的 CRF1，这个键没有别的理由留就没了
     expect(fs.existsSync(文件)).toBe(false);
+  });
+  it('同一指纹重渲出新 CRF1、CRF12 和段签没跟上：备好母版 从新 CRF1 重新派生、转码，不再用旧 CRF12；取段签 也不返回旧签', async () => {
+    const fp = 指纹('重渲');
+    const 原 = 造(原母版路径('重渲', fp));
+    await 存成压缩('重渲', fp, '视频');
+    const 旧压sha = await 文件sha(压缩母版路径('重渲', fp));
+    const r = spawnSync('ffmpeg', [
+      '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc=size=320x180:rate=24:duration=2', '-f', 'lavfi', '-i', 'sine=frequency=880:duration=2.1:sample_rate=48000',
+      '-c:v', 'libx264', '-crf', '1', '-pix_fmt', 'yuv420p', '-c:a', 'pcm_s16le', '-ac', '2', 原,
+    ]);
+    expect(r.status).toBe(0);
+    const 新原sha = await 文件sha(原);
+    const 签 = await 取段签('重渲', fp, '视频', { 等放行: async () => {} });
+    expect(签!.母版.字节sha).toBe(新原sha);
+    const 得 = await 备好母版('重渲', fp, '视频');
+    expect(await 文件sha(得!)).not.toBe(旧压sha);
+    const 新签 = 读段签('重渲', fp)!;
+    expect(新签.母版.转码自?.字节sha).toBe(新原sha);
+    expect(新签.母版.字节sha).toBe(await 文件sha(得!));
+    expect(fs.existsSync(原)).toBe(false);
   });
 });

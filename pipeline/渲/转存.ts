@@ -40,8 +40,9 @@ export const 存成压缩 = async (键: string, 指纹: string, 级别: string |
 };
 
 /**
- * 要读这个指纹的母版出片：CRF12 在、段签也认它就用它；只有 CRF1（10-30 以前渲的），或 CRF12 和段签对不上而 CRF1 又在（CRF1 是后来重渲的），
- * 先照同样参数转码（过渲染闸；已被取代的 CRF1 没有理由留就删），保证同一指纹出同样的片。都没有 null。记一笔「用过」
+ * 要读这个指纹的母版出片：CRF12 在、段签也认它、在的 CRF1 就是段签记的那份，就用 CRF12；只有 CRF1（10-30 以前渲的），
+ * 或 CRF12、CRF1 有一个和段签对不上而 CRF1 又在（CRF1 是后来重渲的），先从 CRF1 重新派生段签、照同样参数转码（过渲染闸；已被取代的 CRF1 没有理由留就删），
+ * 保证同一指纹出同样的片。都没有 null。记一笔「用过」
  */
 export const 备好母版 = async (键: string, 指纹: string, 级别: string | null, o: { 作品?: string; 记录?: 运行记录; 在闸里?: boolean } = {}): Promise<string | null> => {
   const 作品 = o.作品 ?? 作品名();
@@ -51,17 +52,17 @@ export const 备好母版 = async (键: string, 指纹: string, 级别: string |
   const 有原 = fs.existsSync(原);
   if (!有压 && !有原) return null;
   const 目录 = 母版目录(键, 作品);
-  if (有压) {
+  const 都对得上 = async () => {
     const 签 = 读段签(键, 指纹, 作品);
-    if (!有原 || (段签齐(签) && (await 对得上母版(签, 压)))) {
-      记用过(目录, 指纹);
-      return 压;
-    }
+    return fs.existsSync(压) && 段签齐(签) && (await 对得上母版(签, 压)) && (await 对得上原母版(签, 原));
+  };
+  if (有压 && (!有原 || (await 都对得上()))) {
+    记用过(目录, 指纹);
+    return 压;
   }
   const 做 = async () => {
     // 排队等闸的时候别的进程可能已经转好了
-    const 签 = 读段签(键, 指纹, 作品);
-    if (fs.existsSync(压) && 段签齐(签) && (await 对得上母版(签, 压))) return;
+    if (await 都对得上()) return;
     console.log(`== 转存 CRF12 ${键}（${指纹.slice(0, 16)}，${(fs.statSync(原).size / 1e9).toFixed(2)} GB 的 CRF1）`);
     const r = await 存成压缩(键, 指纹, 级别, { 作品, 记录: o.记录 });
     console.log(`   ${键}：${(r.原大小 / 1e9).toFixed(2)} GB → ${(r.新大小 / 1e9).toFixed(2)} GB，${r.秒.toFixed(0)} 秒`);

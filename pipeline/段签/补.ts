@@ -10,35 +10,34 @@ import type { 段信息 } from '../清单/清单.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
 import { 同一版, type 签名 } from '../验收/认可.ts';
-import { 出段签, 对得上母版, 对得上原母版, 读段签, 段签齐, type 段签, type 自查 } from './段签.ts';
+import { 出段签, 原样子, 对得上母版, 对得上原母版, 读段签, 段签齐, type 段签, type 自查 } from './段签.ts';
 
 export const 漂移提示 = (键: string, 查: 自查) => `重渲漂移：${键} 同一指纹重渲出来和上次派生的段签不一样（${查.说明}），对这段跑 anim verify ${键}`;
 
 /**
  * verify 碰上指纹和认可版一样的段：只读 签.json、stat 母版（不解码、不过闸），看同一指纹是不是重渲过。
- * 段签的签名和认可记录不一样，或母版大小改于和段签记的不一样（重渲了、段签还没跟上），返回原因，要真比一次；没有段签、都一样返回 null
+ * 段签的签名和认可记录不一样，或母版（给了原母版时连 CRF1）大小改于和段签记的不一样（重渲了、段签还没跟上），返回原因，要真比一次；没有段签、都一样返回 null
  */
-export const 同指纹重渲过 = (签: 段签 | null, 认可: 签名, 母版: string): string | null => {
+export const 同指纹重渲过 = (签: 段签 | null, 认可: 签名, 母版: string, 原母版?: string): string | null => {
   if (!段签齐(签)) return null;
-  if (fs.existsSync(母版)) {
-    const st = fs.statSync(母版);
-    if (st.size !== 签.母版.大小 || st.mtimeMs !== 签.母版.改于) return '母版和段签记的不是同一份';
-  }
+  const 变了 = (文件: string, 样: { 大小: number; 改于: number }) => {
+    if (!fs.existsSync(文件)) return false;
+    const st = fs.statSync(文件);
+    return st.size !== 样.大小 || st.mtimeMs !== 样.改于;
+  };
+  if (变了(母版, 签.母版) || (原母版 && 变了(原母版, 原样子(签)))) return '母版和段签记的不是同一份';
   return 同一版(签.签名, 认可) ? null : '段签的签名和认可记录不一样';
 };
 
 /**
- * 这个指纹的段签：齐全且对得上现有的母版（CRF12 那份，或派生它的 CRF1）就直接用；母版都不在时有段签就用段签（字节对不上也只能用它）；
- * 缺了、或 CRF1 换过字节，CRF1 在就从它派生（派生 '补'）；只剩 CRF12 的，有齐全的段签就用（同一指纹的另一次渲染），没有返回 null
+ * 这个指纹的段签：CRF1 在就看它（只有它是段签的来源，同一指纹重渲出新 CRF1 时 CRF12、段签都还是旧的），对得上直接用，缺了或对不上从它派生（派生 '补'）；
+ * 只剩 CRF12 的、母版都不在的，有齐全的段签就用（同一指纹的另一次渲染，字节对不上也只能用它），没有返回 null
  */
 export const 取段签 = async (段键: string, 指纹: string, 级别: string | null, opts: { 等放行: () => Promise<void>; 记录?: 运行记录 }): Promise<段签 | null> => {
   const 原 = 原母版路径(段键, 指纹);
-  const 压 = 压缩母版路径(段键, 指纹);
   const 签 = 读段签(段键, 指纹);
-  const 有原 = fs.existsSync(原);
-  const 有压 = fs.existsSync(压);
-  if (段签齐(签) && ((!有原 && !有压) || (有压 && (await 对得上母版(签, 压))) || (有原 && (await 对得上原母版(签, 原))))) return 签;
-  if (!有原) return 有压 && 段签齐(签) ? 签 : null;
+  if (!fs.existsSync(原)) return 段签齐(签) ? 签 : null;
+  if (段签齐(签) && (await 对得上原母版(签, 原))) return 签;
   await opts.等放行();
   console.log(`== 补段签 ${段键}（${指纹.slice(0, 16)}）`);
   const r = await 出段签(原, { 段键, 指纹, 级别, 派生: '补' });

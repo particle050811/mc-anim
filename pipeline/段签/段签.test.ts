@@ -214,6 +214,13 @@ describe('扫段签：和 扫母版 结论一样', () => {
     const t = new Date(Date.now() + 5000);
     fs.utimesSync(母版, t, t);
     expect(同指纹重渲过(新, 认二, 母版)).toBe('母版和段签记的不是同一份');
+    // CRF12 和段签对得上，但又重渲出了新 CRF1（段签记的 转码自 不是它）
+    const 另一份 = path.join(目录, '再认可-另一份.mkv');
+    fs.copyFileSync(后半变, 另一份);
+    const 现在的样子 = { ...新.母版, 大小: fs.statSync(母版).size, 改于: fs.statSync(母版).mtimeMs };
+    const 跟上的 = { ...新, 母版: { ...现在的样子, 转码自: 新.母版 } };
+    expect(同指纹重渲过(跟上的, 认二, 母版)).toBeNull();
+    expect(同指纹重渲过(跟上的, 认二, 母版, 另一份)).toBe('母版和段签记的不是同一份');
     expect(await 备参考(认二, 母版, 'test')).toBe('从段签');
     expect(参考文件(认二, 'test')).not.toBe(参考文件(认一, 'test'));
     // 认一的段签已挪进 历史/，母版也不是它了，照样备得上
