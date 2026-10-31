@@ -7,6 +7,7 @@
 "维度" = "minecraft:overworld"
 "种子" = 116
 "Forge" = "1.20.1-47.4.10"
+"生成结构" = false                       # 主世界取材结构全禁（取材服务端.py --no-structures，用户 10-04 定）；anim world new 写进 server.properties
 # 照 取材服务端-主世界/mods/ 列的；建世界时是不是正好这一套没核过
 "模组" = ["twilightforest", "create", "iceandfire", "citadel", "tconstruct", "mantle", "quark", "zeta", "touhoulittlemaid", "mcai"]
 # 世界 datapacks/ 里的：前三个相对 sourcing/datapacks/，史诗地形是 取材服务端-主世界/世界数据包/ 的 zip
