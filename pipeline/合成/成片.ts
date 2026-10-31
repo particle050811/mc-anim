@@ -176,7 +176,8 @@ const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) =>
 // 真峰值只量、记进 manifest，超 −1 dBTP 报警不重做：96k 的超出是 AAC 编码噪声，压低限幅或增益重压实测不降反升（第 6、7 章 −0.8 dBTP）
 const 分享上限MB = 50;
 const 分享视频kbps = 760;
-const 分享音频kbps = 96;
+// 96k 编码比成片多冲 0.5 dB、真峰超规矩，用户 10-31 定 128k
+const 分享音频kbps = 128;
 const 压分享版 = async (成片: string, 声音: string, 出: string, 工作: string, 时长: number) => {
   const ffmpeg = 配置('ffmpeg');
   let kbps = Math.min(分享视频kbps, Math.floor((分享上限MB * 8e3 * 0.97) / 时长 - 分享音频kbps));
