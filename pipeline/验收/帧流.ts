@@ -19,7 +19,7 @@ export const 抽样帧 = (帧数: number, 间隔 = 默认间隔): number[] => {
 };
 
 /** 起 ffmpeg，把 stdout 按 块大小 切块交出；退出码非 0 抛错（带 stderr 末尾） */
-async function* 读流(cmd: string[], 块大小: number | null): AsyncGenerator<Buffer> {
+export async function* 读流(cmd: string[], 块大小: number | null): AsyncGenerator<Buffer> {
   const child = spawn(cmd[0]!, cmd.slice(1), { stdio: ['ignore', 'pipe', 'pipe'] });
   let stderr = '';
   child.stderr!.setEncoding('utf8');
@@ -71,6 +71,30 @@ export async function* 帧流(file: string, 帧们: readonly number[], 宽: numb
       ]),
       宽 * 高 * 3,
     );
+}
+
+/** 只留抽样帧的 select 滤镜（和 抽样帧 同一组帧；一条 mod 表达式，不受 每批帧数 的限制） */
+export const 抽样滤镜 = (帧数: number, 间隔 = 默认间隔) => `select='not(mod(n,${间隔}))+eq(n,${帧数 - 1})'`;
+
+/**
+ * 只存了抽样帧的文件（段签、认可参考的 抽样.mkv：第 i 帧是原片的第 文件里的帧[i] 帧）按原片帧号交出 rgb24。
+ * 要的 必须是 文件里的帧 的子集、升序；整份解一遍（抽样只有原片的 1/24）
+ */
+export async function* 抽样流(file: string, 文件里的帧: readonly number[], 要的: readonly number[], 宽: number, 高: number): AsyncGenerator<Buffer> {
+  const 位置 = new Map(文件里的帧.map((f, i) => [f, i]));
+  for (const f of 要的) if (!位置.has(f)) throw new Error(`${file} 里没有原片第 ${f} 帧（只存了 ${文件里的帧.length} 个抽样帧）`);
+  if (!要的.length) return;
+  const 要 = new Set(要的);
+  let i = 0;
+  let 交了 = 0;
+  for await (const rgb of 读流(低优先级([配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', file, '-map', '0:v:0', '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1']), 宽 * 高 * 3)) {
+    const f = 文件里的帧[i++];
+    if (f === undefined) throw new Error(`${file} 的帧比记的 ${文件里的帧.length} 帧多`);
+    if (!要.has(f)) continue;
+    yield rgb;
+    if (++交了 === 要.size) return;
+  }
+  throw new Error(`${file} 只解出 ${i} 帧，记的是 ${文件里的帧.length} 帧`);
 }
 
 /** 第一条音轨解成 48 kHz 双声道 s16le */
