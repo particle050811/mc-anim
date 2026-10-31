@@ -5,6 +5,8 @@
 // 草稿（run/草稿/<目录>）超过 N 天删；webpack 缓存（<检出>/node_modules/.cache/webpack/remotion-<环境>-<版本>/<哈希>/）换了 Remotion 版本的整个删，
 // 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。地形烘焙的暂存目录（run/暂存/terrain/<包>）写入锁没人拿、1 天没动的删。
 // 列段、音频数这类认得但不自动删的只报大小（计划.ts 的 只报目录）；不认识的目录只报告。
+// 解钉（01-推荐方案.md 第四节 D 的顺序）：交付自足了（有 全片-未拉响度.flac，作品开了剪辑包的还有 剪辑包/画面.mp4）才不再钉它引用的母版、叠层；
+// 认可有了认可参考才不再钉认可那版的母版。这一步 解钉 默认关（gc 删什么不变），只在报告的说明里标出「已自足」「有认可参考」。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 持有者, 持有者主机, 进程在吗 } from '../闸/锁.ts';
@@ -166,8 +168,17 @@ export const 读认可指纹 = (file: string): { 段: string; 指纹: string } |
   return 段 && 指纹 ? { 段, 指纹 } : null;
 };
 
+export type 解钉选项 = {
+  /** true：自足的交付、有认可参考的认可不再钉母版。默认 false */
+  解钉?: boolean;
+  /** 认可参考的位置（配置.ts 的 认可参考文件）；不给就当都没有参考 */
+  参考文件?: (段键: string, 指纹: string, 平台: string) => string;
+  /** 这部作品的交付要不要 剪辑包/画面.mp4 才算自足；不给按要（宁可多钉） */
+  要剪辑包?: (作品: string) => boolean;
+};
+
 /** 认可记录里各段那版的母版进保留集（各平台的都算；别的平台的指纹本机本来就没有，加了也无妨）。读不出的记录整段目录留下 */
-export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (段键: string) => string, 警告: (s: string) => void = () => {}) => {
+export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (段键: string) => string, 警告: (s: string) => void = () => {}, o: 解钉选项 = {}) => {
   const 根 = path.join(作品根, '认可');
   if (!fs.existsSync(根)) return;
   for (const 平台 of fs.readdirSync(根)) {
@@ -182,16 +193,26 @@ export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (�
         保留.加目录(母版目录(段键), { 类: '算不出', 说明: '认可记录读不出' });
         continue;
       }
-      保留.加(path.join(母版目录(r.段), `${r.指纹.slice(0, 16)}${媒体后缀.母版}`), { 类: '认可', 说明: 平台 });
+      const 有参考 = !!o.参考文件 && fs.existsSync(o.参考文件(r.段, r.指纹, 平台));
+      if (有参考 && o.解钉) continue;
+      保留.加(path.join(母版目录(r.段), `${r.指纹.slice(0, 16)}${媒体后缀.母版}`), { 类: '认可', 说明: 有参考 ? `${平台}（有认可参考）` : 平台 });
     }
   }
 };
 
-/** 一份交付 manifest.json 引用的母版、叠层（anim film 写的：段[].母版、叠层[].文件；新的相对数据根，早先的是绝对路径） */
-export const 交付引用 = (manifest: unknown): string[] => {
-  const m = (manifest ?? {}) as { 段?: { 母版?: unknown }[]; 叠层?: { 文件?: unknown }[] };
+/**
+ * 一份交付 manifest.json 引用的母版、叠层（anim film 写的：v1 段[].母版，相对数据根，早先的是绝对路径；
+ * v2 段不记母版，按 cache/母版/<作品>/<键>/<指纹前 16 位>.mkv 算，和 合成/交付.ts 的 交付母版 同一条规则；叠层[].文件 两版都有）。
+ * 作品 是 manifest 没写作品时的兜底（交付目录的上一级）
+ */
+export const 交付引用 = (manifest: unknown, 作品?: string): string[] => {
+  const m = (manifest ?? {}) as { 作品?: unknown; 段?: { 母版?: unknown; 键?: unknown; 指纹?: unknown }[]; 叠层?: { 文件?: unknown }[] };
+  const 品 = typeof m.作品 === 'string' ? m.作品 : 作品;
   const r: string[] = [];
-  for (const s of Array.isArray(m.段) ? m.段 : []) if (typeof s?.母版 === 'string') r.push(s.母版);
+  for (const s of Array.isArray(m.段) ? m.段 : []) {
+    if (typeof s?.母版 === 'string') r.push(s.母版);
+    else if (品 && typeof s?.键 === 'string' && typeof s?.指纹 === 'string') r.push(['cache', '母版', 品, s.键, `${s.指纹.slice(0, 16)}${媒体后缀.母版}`].join('/'));
+  }
   for (const l of Array.isArray(m.叠层) ? m.叠层 : []) if (typeof l?.文件 === 'string') r.push(l.文件);
   return r;
 };
@@ -213,17 +234,26 @@ export const 找交付manifest = (交付根: string, 深 = 3): string[] => {
   return r.sort();
 };
 
+/** 交付自足：edit-package 要的都在交付目录里了，不再读母版（文件名同 合成/交付.ts） */
+export const 交付自足 = (交付目录: string, 要剪辑包: boolean) =>
+  fs.existsSync(path.join(交付目录, '全片-未拉响度.flac')) && (!要剪辑包 || fs.existsSync(path.join(交付目录, '剪辑包', '画面.mp4')));
+
 /** 交付 manifest 引用的母版、叠层进保留集，说明写交付目录（相对交付根） */
-export const 加交付 = (保留: 保留集, 交付根: string, 数据根: string, 警告: (s: string) => void = () => {}) => {
+export const 加交付 = (保留: 保留集, 交付根: string, 数据根: string, 警告: (s: string) => void = () => {}, o: 解钉选项 = {}) => {
   for (const m of 找交付manifest(交付根)) {
     let 引用: string[];
+    let 作品: string;
     try {
-      引用 = 交付引用(JSON.parse(fs.readFileSync(m, 'utf8')));
+      const j = JSON.parse(fs.readFileSync(m, 'utf8')) as { 作品?: unknown };
+      作品 = typeof j?.作品 === 'string' ? j.作品 : path.basename(path.dirname(path.dirname(m)));
+      引用 = 交付引用(j, 作品);
     } catch (e) {
       警告(`${m} 读不出（${(e as Error).message}），它引用的母版不知道，按没有算`);
       continue;
     }
-    const 说明 = path.relative(交付根, path.dirname(m)).split(path.sep).join('/');
+    const 自足 = 交付自足(path.dirname(m), o.要剪辑包?.(作品) ?? true);
+    if (自足 && o.解钉) continue;
+    const 说明 = path.relative(交付根, path.dirname(m)).split(path.sep).join('/') + (自足 ? '（已自足）' : '');
     for (const p of 引用) 保留.加(path.isAbsolute(p) ? p : path.join(数据根, ...p.split('/')), { 类: '交付', 说明 });
   }
 };

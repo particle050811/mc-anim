@@ -3,7 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 代码根, 主检出 } from '../环境/路径.ts';
 import { 作品们 } from '../环境/作品.ts';
-import { 配置, 数据根, 数据路径, 母版目录, 草稿根, 运行目录 } from '../环境/配置.ts';
+import { 配置, 数据根, 数据路径, 母版目录, 草稿根, 运行目录, 认可参考文件 } from '../环境/配置.ts';
+import { 读交付设置 } from '../合成/交付.ts';
 import { 跑出 } from '../环境/子进程.ts';
 import { 加当前指纹 } from './当前指纹.ts';
 import { 找重复, 执行去重, 读账, 写账, 能克隆, type 去重组, type 去重账 } from './去重.ts';
@@ -102,7 +103,8 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
     const 缓存里的 = new Set(种们.flatMap((种) => (fs.existsSync(数据路径('cache', 种)) ? fs.readdirSync(数据路径('cache', 种)) : [])));
     const 这次 = o.作品.length ? o.作品 : [...new Set([...已知.keys(), ...缓存里的])].sort();
     const 保留 = new 保留集();
-    加交付(保留, 数据路径('交付'), 数据根(), 警告);
+    // 解钉这一步不开（gc 删什么不变），只把自足、有参考的标进说明
+    加交付(保留, 数据路径('交付'), 数据根(), 警告, { 要剪辑包: (作品) => (已知.has(作品) ? 读交付设置(已知.get(作品)!).剪辑包 : true) });
     for (const 作品 of 这次) {
       if (!缓存里的.has(作品)) continue;
       const 根 = 已知.get(作品);
@@ -111,7 +113,7 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
         for (const 种 of 种们) 保留.加目录(数据路径('cache', 种, 作品), { 类: '算不出', 说明: '代码里没有这部作品' });
         continue;
       }
-      加认可(保留, 根, (键) => 母版目录(键, 作品), 警告);
+      加认可(保留, 根, (键) => 母版目录(键, 作品), 警告, { 参考文件: (键, 指纹, 平台) => 认可参考文件(键, 指纹, 平台, 作品) });
       if (要('母版') || 要('叠层') || 要('去重')) await 加当前指纹(保留, 作品, 警告, 进度);
     }
     for (const 作品 of 这次) {

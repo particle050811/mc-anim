@@ -96,6 +96,53 @@ describe('保留集：母版', () => {
     expect(交付引用(null)).toEqual([]);
   });
 
+  it('v2 交付（段不记母版）按作品、段键、指纹算出母版钉住；解钉默认关，自足的只在说明里标出', () => {
+    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    母版('6-甲', 'cccccccccccccccc', '视频', 1);
+    const 段们 = [{ 键: '6-甲', 指纹: 'a'.repeat(16) + 'f'.repeat(48) }];
+    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 2, 作品: '作品甲', 段: 段们, 叠层: [] }));
+    写('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
+    const 保留 = new 保留集();
+    加交付(保留, path.join(根, '交付'), 根, () => {}, { 要剪辑包: () => false });
+    expect(删的(规划(保留))).toEqual(['bbbbbbbbbbbbbbbb']);
+    expect(保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mkv')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
+  });
+
+  it('解钉打开：自足的交付不再钉母版；作品要剪辑包而画面还没有的照钉；不知道要不要剪辑包按要', () => {
+    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    母版('6-甲', 'cccccccccccccccc', '视频', 1);
+    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 2, 作品: '作品甲', 段: [{ 键: '6-甲', 指纹: 'a'.repeat(64) }], 叠层: [] }));
+    写('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
+    const 解 = (o: { 要剪辑包?: (作品: string) => boolean }) => {
+      const 保留 = new 保留集();
+      加交付(保留, path.join(根, '交付'), 根, () => {}, { 解钉: true, ...o });
+      return 删的(规划(保留));
+    };
+    expect(解({ 要剪辑包: () => false })).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
+    expect(解({ 要剪辑包: () => true })).toEqual(['bbbbbbbbbbbbbbbb']);
+    expect(解({})).toEqual(['bbbbbbbbbbbbbbbb']);
+    写('交付/作品甲/1030-0000-新/剪辑包/画面.mp4', '');
+    expect(解({ 要剪辑包: () => true })).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
+  });
+
+  it('认可：有认可参考才可解钉；解钉默认关，照钉、说明里标出', () => {
+    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    母版('6-甲', 'cccccccccccccccc', '视频', 1);
+    写('作品/作品甲/认可/darwin-arm64/6-甲.toml', 认可文本(认可记录('6-甲', 'a'.repeat(16) + 'f'.repeat(48))));
+    const 参考文件 = (段: string, 指纹: string, 平台: string) => path.join(根, '认可参考', '作品甲', 平台, 段, `${指纹.slice(0, 16)}.mkv`);
+    const 跑 = (解钉: boolean) => {
+      const 保留 = new 保留集();
+      加认可(保留, path.join(根, '作品', '作品甲'), 母版目录, () => {}, { 解钉, 参考文件 });
+      return { 删: 删的(规划(保留)), 说明: 保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mkv')).map((x) => x.说明) };
+    };
+    expect(跑(true)).toEqual({ 删: [], 说明: ['darwin-arm64'] }); // 没参考：解钉也照钉
+    写('认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa.mkv', '');
+    expect(跑(false)).toEqual({ 删: [], 说明: ['darwin-arm64（有认可参考）'] });
+    expect(跑(true)).toEqual({ 删: ['aaaaaaaaaaaaaaaa'], 说明: [] });
+  });
+
   it('每个级别留最近一份，近期天数里渲的都留', () => {
     母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8); // 视频最近一份
