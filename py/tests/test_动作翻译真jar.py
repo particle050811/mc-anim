@@ -112,6 +112,20 @@ class 反查:
             c = raw.父类
         raise KeyError(f"{官类}.{名}")
 
+    def 方法所属(self, 官类: str, 名: str, 官描述: str) -> tuple[str, str, str]:
+        """(声明它的 jar 类, jar 方法名, jar 描述符)，沿父类找；混淆后不同类的方法可能同名同描述符，得带上类才指得准"""
+        d = self.描述(官描述)
+        c = self.类(官类)
+        while c:
+            raw = self.路径.原始类(c)
+            if raw is None:
+                break
+            for m in raw.方法们:
+                if m.描述 == d and self.映射.方法(c, m.名, m.描述) == 名:
+                    return c, m.名, d
+            c = raw.父类
+        raise KeyError(f"{官类}.{名}{官描述}")
+
     def 方法(self, 官类: str, 名: str, 官描述: str) -> tuple[str, str]:
         d = self.描述(官描述)
         c = self.类(官类)
@@ -250,7 +264,54 @@ def _蜜蜂每组(r: random.Random, 查: 反查, x: dict) -> tuple[list[str], di
     return cmds, 入, [("entity.getRollAmount(…)", f"query {名} {d} {位(x['partialTick'])}")]
 
 
+def _青蛙每组(r: random.Random, 查: 反查, x: dict) -> tuple[list[str], dict, list[tuple[str, str]]]:
+    E = "net/minecraft/world/entity/animal/frog/Frog"
+    水 = r.random() < 0.5
+    cmds, 入 = 动画状态们(r, 查, E, ["jumpAnimationState", "croakAnimationState", "tongueAnimationState", "swimIdleAnimationState"], x["ageInTicks"])
+    cmds.append(设字段路径(查, "net/minecraft/world/entity/Entity", ["wasTouchingWater"], int(水)))
+    入["entity.isInWaterOrBubble()"] = int(水)
+    return cmds, 入, []
+
+
+def _青蛙准备(查: 反查) -> list[str]:
+    # 不在水里时 Entity.isInBubbleColumn 要读脚下方块，没有世界：换一个只有维度高度的空壳（见 RealPose 的 fakelevel），原版代码照样真跑出 false
+    Ent = "net/minecraft/world/entity/Entity"
+    Lv = "net/minecraft/world/level/Level"
+    Dim = "net/minecraft/world/level/dimension/DimensionType"
+    el, eln, _ = 查.字段(Ent, "level")
+    lo, lreg, _ = 查.字段(Lv, "dimensionTypeRegistration")
+    eo, ebp, _ = 查.字段(Ent, "blockPosition")
+    hold, hdir = 点(查.类("net/minecraft/core/Holder")), 查.方法("net/minecraft/core/Holder", "direct", "(Ljava/lang/Object;)Lnet/minecraft/core/Holder;")[0]
+    return [
+        f"fakelevel {点(el)}:{eln} {点(查.类('net/minecraft/client/multiplayer/ClientLevel'))} {点(lo)}:{lreg} {hold} {hdir} {点(查.类(Dim))} {点(eo)}:{ebp} {点(查.类('net/minecraft/core/BlockPos'))}"
+    ]
+
+
+def _嗅探兽状态(查: 反查, 搜: bool) -> list[str]:
+    # 状态数据项是构造函数里 define 的（Unsafe 造的实体不跑构造），数据表每组重造、直接 define 成要的状态：
+    # 走 setState 会触发 onSyncedDataUpdated → setPose，而姿势这些 Entity 构造里 define 的项我们没有
+    E, St = "net/minecraft/world/entity/animal/sniffer/Sniffer", "net/minecraft/world/entity/animal/sniffer/Sniffer$State"
+    owner, jn, _ = 查.字段(E, "entityData")
+    so, sj, _ = 查.字段(E, "DATA_STATE")
+    名, d = 查.方法("net/minecraft/network/syncher/SynchedEntityData", "define", "(Lnet/minecraft/network/syncher/EntityDataAccessor;Ljava/lang/Object;)V")
+    dc, dn, dd = 查.方法所属(E, "defineSynchedData", "()V")
+    return [f"newe {点(owner)}:{jn}", f"callin {点(dc)} {dn} {dd}", f"defenum {点(owner)}:{jn} {名} {d} {点(so)}:{sj} {点(查.类(St))} {'SEARCHING' if 搜 else 'IDLING'}"]
+
+
+def _嗅探兽每组(r: random.Random, 查: 反查, x: dict) -> tuple[list[str], dict, list[tuple[str, str]]]:
+    E = "net/minecraft/world/entity/animal/sniffer/Sniffer"
+    搜 = r.random() < 0.4
+    cmds, 入 = 动画状态们(r, 查, E, ["diggingAnimationState", "sniffingAnimationState", "risingAnimationState", "feelingHappyAnimationState", "scentingAnimationState"], x["ageInTicks"])
+    cmds += _嗅探兽状态(查, 搜)
+    # model.young：EntityModel 的字段，构造完就是 true，JVM 里没人改；isSearching() 是原版代码按 SynchedEntityData 里的状态算的，值就是我们设的
+    入.update({"model.young": 1, "entity.isSearching()": int(搜)})
+    return cmds, 入, []
+
+
 生物们 = {
+    # 网格根底下只有一个同样叫 root 的部件（模型的 root() 取里面这个），部件树.py 去掉外面一层
+    "青蛙": 生物("net/minecraft/client/model/FrogModel", "net/minecraft/world/entity/animal/frog/Frog", 准备=_青蛙准备, 每组=_青蛙每组),
+    "嗅探兽": 生物("net/minecraft/client/model/SnifferModel", "net/minecraft/world/entity/animal/sniffer/Sniffer", 每组=_嗅探兽每组),
     "监守者": 生物("net/minecraft/client/model/WardenModel", "net/minecraft/world/entity/monster/warden/Warden", 每组=_监守者每组),
     "骆驼": 生物("net/minecraft/client/model/CamelModel", "net/minecraft/world/entity/animal/camel/Camel", 准备=_骆驼准备, 每组=_骆驼每组),
     # 构造里 Arrays.setAll 填 12 根棒子
@@ -336,11 +397,8 @@ def 新版(原版: 真跑环境) -> 真跑环境:
     env = 环境()
     jdk = next((Path(d) / "bin" for d in (os.environ.get("JAVA21_HOME", ""), "/opt/homebrew/opt/openjdk@21", "/usr/lib/jvm/java-21-openjdk") if d and (Path(d) / "bin/java").exists()), None)
     client = env["游戏"] / "缓存/client-1.21.11.jar"
-    # 1.21.11 的映射没在 jars.toml 登记，临时放 cache/动作翻译映射/；以后登记进 cache/映射/ 也认
-    映射 = next(
-        (p for p in (env["数据"] / f"cache/{d}/client-1.21.11-mappings.txt" for d in ("映射", "动作翻译映射")) if p.exists()),
-        env["数据"] / "cache/动作翻译映射/client-1.21.11-mappings.txt",
-    )
+    # 1.21.11 的映射登记在 jars.toml（client-1.21.11-mappings），anim extract --下载 下到 cache/映射/
+    映射 = env["数据"] / "cache/映射/client-1.21.11-mappings.txt"
     libs = 库类路径(env, "1.21.11")
     if jdk is None or not client.exists() or not 映射.exists() or libs is None:
         pytest.skip(f"缺 JDK 21 / client-1.21.11.jar / 1.21.11 官方映射 / Prism 的 1.21.11 库（{client}、{映射}）")
@@ -443,6 +501,9 @@ def 对照(环: 真跑环境, 名: str, 物: 生物) -> None:
     # 部件树（翻译器按名字找部件要它）、初始姿态
     树: dict[str, list[str]] = {}
     i = 0
+    if 行们[0] == "T root -" and 行们[1] == "T root root":  # 青蛙、嗅探兽：网格根外面多一层同名的 root，模型的 root() 是里面这个
+        i = 1
+        行们[1] = "T root -"
     while 行们[i] != "END":
         _, n, p = 行们[i].split()
         树.setdefault(n, [])

@@ -77,6 +77,41 @@ public class RealPose {
                         }
                     }
                 }
+                case "fakelevel" -> { // fakelevel <Entity.level> <Level实现类> <Level.dimensionTypeRegistration> <Holder类> <Holder.direct> <DimensionType类> <Entity.blockPosition> <BlockPos类>
+                    // 实体的 level 换成一个只有维度高度的空壳，blockPosition 放在建筑高度以外：Level.getBlockState 就直接给 VOID_AIR，
+                    // Entity.isInBubbleColumn 这类读脚下方块的原版代码能真跑出 false（没有世界可读）
+                    sun.misc.Unsafe u = unsafe();
+                    Object level = u.allocateInstance(Class.forName(t[2]));
+                    // DimensionType 是 record，Unsafe 不给碰字段：走规范构造函数，整数依次是 minY、height、logicalHeight，其余全给 0/null
+                    Constructor<?> dc = null;
+                    for (Constructor<?> c : Class.forName(t[6]).getDeclaredConstructors()) if (dc == null || c.getParameterCount() > dc.getParameterCount()) dc = c;
+                    dc.setAccessible(true);
+                    int[] ints = {0, 256, 256};
+                    int ni = 0;
+                    Object[] da = new Object[dc.getParameterCount()];
+                    for (int i = 0; i < da.length; i++) {
+                        Class<?> pt = dc.getParameterTypes()[i];
+                        if (pt == int.class) da[i] = ints[ni++];
+                        else if (pt == boolean.class) da[i] = false;
+                        else if (pt == double.class) da[i] = 0.0;
+                        else if (pt == float.class) da[i] = 0f;
+                        else if (pt == long.class) da[i] = 0L;
+                        else da[i] = null;
+                    }
+                    Object dim = dc.newInstance(da);
+                    Class<?> hc = Class.forName(t[4]);
+                    Method direct = null;
+                    for (Method m : hc.getDeclaredMethods()) if (m.getName().equals(t[5]) && java.lang.reflect.Modifier.isStatic(m.getModifiers()) && m.getParameterCount() == 1 && m.getParameterTypes()[0] == Object.class) direct = m;
+                    direct.setAccessible(true);
+                    u.putObject(level, u.objectFieldOffset(field(t[3])), direct.invoke(null, dim));
+                    put(entity, field(t[1]), level);
+                    Constructor<?> bc = Class.forName(t[8]).getConstructor(int.class, int.class, int.class);
+                    put(entity, field(t[7]), bc.newInstance(0, -100000, 0));
+                }
+                case "defenum" -> { // defenum <Entity.entityData> <define 方法名> <描述符> <EntityDataAccessor 静态字段> <枚举类> <常量>：构造函数里才 define 的数据项（Sniffer 的状态）
+                    Object sed = field(t[1]).get(entity);
+                    find(sed.getClass(), t[2], t[3]).invoke(sed, field(t[4]).get(null), parse(Class.forName(t[5]), t[6]));
+                }
                 case "setlist" -> { // setlist <路径> <n>：字段 = n 个实体自己的 ImmutableList（乘客表这类，只看空不空）
                     Field f = field(t[1]);
                     put(entity, f, com.google.common.collect.ImmutableList.copyOf(java.util.Collections.nCopies(Integer.parseInt(t[2]), entity)));
@@ -84,6 +119,9 @@ public class RealPose {
                 case "call" -> { // call <方法名> <描述符> <参数…>：在实体上调（defineSynchedData、setFlag 这类）
                     Method m = find(entity.getClass(), t[1], t[2]);
                     m.invoke(entity, parseArgs(m, t, 3));
+                }
+                case "callin" -> { // callin <类> <方法名> <描述符>：从指定的类往上找方法再在实体上调（混淆后实体子类可能有同名同描述符的别的方法）
+                    find(Class.forName(t[1]), t[2], t[3]).invoke(entity);
                 }
                 case "state" -> state = construct(Class.forName(t[1])); // 1.21.2 起的渲染状态：无参构造
                 case "sets" -> { // sets <所属类>:<字段> <值>：设渲染状态的字段（float 给位）
@@ -174,12 +212,14 @@ public class RealPose {
         return a;
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     static Object parse(Class<?> c, String v) {
         if (c == float.class) return Float.intBitsToFloat((int) Long.parseLong(v, 16));
         if (c == double.class) return Double.longBitsToDouble(Long.parseUnsignedLong(v, 16));
         if (c == int.class) return Integer.parseInt(v);
         if (c == long.class) return Long.parseLong(v);
         if (c == boolean.class) return !v.equals("0");
+        if (c.isEnum()) return Enum.valueOf((Class) c, v); // 枚举常量的 name() 是源码里的名字，混淆不动它
         if (c == byte.class) return Byte.parseByte(v);
         if (c == short.class) return Short.parseShort(v);
         throw new IllegalArgumentException("不认识的类型 " + c);

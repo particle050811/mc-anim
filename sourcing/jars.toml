@@ -45,6 +45,16 @@
 "sha1" = "6c48521eed01fe2e8ecdadbd5ae348415f3c47da"
 "许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA", "原文" = "文件头：可以拷贝、使用于开发，不许完整原样再分发", "依据" = "client.txt 文件头；产物（动作/）照资产表已记的 LicenseRef-Minecraft-EULA，和客户端 jar 一致" }
 
+[["Mojang"."映射"]]
+"id" = "client-1.21.11-mappings"
+"版本" = "1.21.11"
+"根" = "数据"
+"到" = "cache/映射/client-1.21.11-mappings.txt"
+"下载" = "https://piston-data.mojang.com/v1/objects/031a68bebf55d824f66d6573d8c752f0e1bf232a/client.txt"
+"sha256" = "517799a8485e107e932dc1bd27c002b2d0b9207eb2396b685bcfe6c3321a9fbd"
+"sha1" = "031a68bebf55d824f66d6573d8c752f0e1bf232a"
+"许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA", "原文" = "文件头：可以拷贝、使用于开发，不许完整原样再分发", "依据" = "client.txt 文件头；同 client-1.20.1-mappings" }
+
 [["Mojang"."要自己生成"]]
 "id" = "client-1.20.1-srg"
 "到" = "缓存/client-1.20.1-srg.jar"

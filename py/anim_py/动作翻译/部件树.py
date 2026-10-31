@@ -54,5 +54,11 @@ def 从层定义取树(t: 翻译器, 方法名: str | None = None) -> dict[str, 
         for k, x in 子们:
             走(x, k)
 
-    走(读(读(层, "mesh"), "root"), "root")
+    根 = 读(读(层, "mesh"), "root")
+    # 青蛙、嗅探兽：网格根底下只挂一个同样叫 root 的部件，模型的 root() 取的是里面这个（构造里 getChild("root")）。
+    # 外面一层谁也不摆姿态、也不会被按名字找到（getAnyDescendantWithName("root") 直接给 root()），树从里面这个起算
+    唯一子 = 跑者._遍历序(态, 读(根, "children"))
+    if len(唯一子) == 1 and 唯一子[0][0] == "root":
+        根 = 唯一子[0][1]
+    走(根, "root")
     return 树
