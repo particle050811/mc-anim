@@ -6,10 +6,17 @@ import { variesByPos } from './群系色.ts';
 import { importedSectionVoxels, type 区段上下文 } from './导入区段.ts';
 import type { 工人消息, 工人回信 } from './区段工人池.ts';
 import type { VoxelGrid } from './生成.ts';
+import { gunzipSync } from 'fflate';
 
 const contexts = new Map<number, 区段上下文>();
 
-const gunzip = (bytes: Uint8Array<ArrayBuffer>) => new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+// 解压的几种写法（实验）：blob = 现状；流 = 不经 Blob（Blob 要跨进程到浏览器进程的 blob 存储）；同步 = fflate 在工人里同步解
+const gunzipBlob = (bytes: Uint8Array<ArrayBuffer>) => new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+const gunzipStream = (bytes: Uint8Array<ArrayBuffer>) => new Response(new ReadableStream<Uint8Array<ArrayBuffer>>({ start(c) { c.enqueue(bytes); c.close(); } }).pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+const gunzip = async (bytes: Uint8Array<ArrayBuffer>, how: string | undefined): Promise<Uint8Array> => {
+  if (how === '同步') return gunzipSync(bytes);
+  return new Uint8Array(await (how === '流' ? gunzipStream(bytes) : gunzipBlob(bytes)));
+};
 
 const run = async (msg: Extract<工人消息, { type: '取' }>): Promise<工人回信> => {
   const 桩0 = performance.now();
@@ -22,7 +29,7 @@ const run = async (msg: Extract<工人消息, { type: '取' }>): Promise<工人�
   const transfers: ArrayBuffer[] = [];
   for (const part of msg.parts) {
     let 桩a = performance.now();
-    const 桩解 = new Uint8Array(await gunzip(bytes.subarray(part.off, part.off + part.len)));
+    const 桩解 = await gunzip(bytes.subarray(part.off, part.off + part.len), msg.gz);
     桩t.解压工人ms += performance.now() - 桩a;
     桩t.解开字节 += 桩解.byteLength;
     桩a = performance.now();

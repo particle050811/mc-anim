@@ -4,11 +4,11 @@
 import type { SectionData } from './区段包.ts';
 import type { CutBox, FlattenArea, 区段包信息 } from './导入区段.ts';
 import type { VoxelGrid } from './生成.ts';
-import { 桩 } from './桩.ts';
+import { 桩, 环境 } from './桩.ts';
 
 export type 工人消息 =
   | { type: '来源'; ctx: number; info: 区段包信息; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
-  | { type: '取'; id: number; url: string; start: number; len: number; parts: { off: number; len: number; ctx?: number }[] };
+  | { type: '取'; id: number; url: string; start: number; len: number; parts: { off: number; len: number; ctx?: number }[]; gz?: string };
 export type 区段结果 = { data: SectionData; voxels: VoxelGrid | null };
 export type 工人回信 = { id: number; out: 区段结果[]; transfers: ArrayBuffer[]; 桩?: Record<string, number> };
 
@@ -56,6 +56,6 @@ export const fetchSectionsInPool = (url: string, start: number, len: number, par
   const worker = ws[nextWorker++ % ws.length];
   return new Promise((resolve, reject) => {
     pendingJobs.set(id, { resolve, reject });
-    worker.postMessage({ type: '取', id, url, start, len, parts } satisfies 工人消息);
+    worker.postMessage({ type: '取', id, url, start, len, parts, gz: 环境.ANIM_GZ } satisfies 工人消息);
   });
 };
