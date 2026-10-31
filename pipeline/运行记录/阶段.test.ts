@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记录 } from './阶段.ts';
+import { 出帧编码计时, 分段计时, 记阶段, 量阶段, 阶段小结, type 阶段记录 } from './阶段.ts';
 
 let dir: string;
 beforeEach(() => {
@@ -26,6 +26,16 @@ describe('分阶段计时', () => {
       ['2026-10-30T01:02:03Z', 'still:作/段:视频', '等闸', '1.23', String(process.pid)],
       ['2026-10-30T01:02:04Z', 'still:作/段:视频', '出帧', '5.00', String(process.pid)],
     ]);
+  });
+
+  it('分段计时：每次记从上一次调用到现在', () => {
+    const 表 = path.join(dir, '表.tsv');
+    const 收: 阶段记录[] = [];
+    const 点 = 分段计时(收, '成片:作:名', 表);
+    点('取母版');
+    点('拼声音');
+    expect(收.map((r) => r.阶段)).toEqual(['取母版', '拼声音']);
+    expect(收.every((r) => r.秒 >= 0 && r.标签 === '成片:作:名')).toBe(true);
   });
 
   it('量阶段：fn 抛错也记，错照常抛出', async () => {

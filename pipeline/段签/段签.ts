@@ -23,6 +23,7 @@ import { 抽样帧, 抽样流, 抽样滤镜, 音频流, sha, 默认间隔 } from
 import { 比块均值, 读阈值 } from '../验收/比较.ts';
 import { 扫母版 } from '../验收/验收.ts';
 import type { 签名 } from '../验收/认可.ts';
+import { 分段计时, type 阶段记录 } from '../运行记录/阶段.ts';
 
 export const 段签版本 = 1;
 export const 签文件名 = '签.json';
@@ -163,14 +164,17 @@ const 临时名 = (dir: string, 名: string) => {
  * 从母版派生段签（只读母版、只写段签目录）。签名用 扫母版（和 verify、accept 同一份代码）；声音存 FLAC、抽样帧存 FFV1，各自解回来核对过才收。
  * 同一指纹已有段签、字节 sha 变了（重渲）：旧的记进 历史.jsonl 并自查。不过闸，调用方过
  */
-export const 出段签 = async (母版: string, o: { 段键: string; 指纹: string; 级别: string | null; 派生: 段签['派生']; 作品?: string }): Promise<{ 签: 段签; 自查: 自查 | null }> => {
+export const 出段签 = async (母版: string, o: { 段键: string; 指纹: string; 级别: string | null; 派生: 段签['派生']; 作品?: string; 计时?: { 收: 阶段记录[]; 标签: string } }): Promise<{ 签: 段签; 自查: 自查 | null }> => {
   const 作品 = o.作品 ?? 作品名();
   if (是压缩母版(母版)) throw new Error(`${母版} 是 CRF12，段签只从 CRF1 派生（verify 比的是 CRF1 的无损抽样帧）：这段要重渲（anim render ${o.段键} --重渲）`);
   const dir = 段签目录(o.段键, o.指纹, 作品);
   fs.mkdirSync(dir, { recursive: true });
   const st = fs.statSync(母版);
+  const 点 = o.计时 ? 分段计时(o.计时.收, o.计时.标签) : () => {};
   const 字节sha = await 文件sha(母版);
+  点('段签：算字节');
   const { 签名 } = await 扫母版(母版);
+  点('段签：扫母版');
   const ffmpeg = 配置('ffmpeg');
   const 临时: string[] = [];
   try {
@@ -185,16 +189,19 @@ export const 出段签 = async (母版: string, o: { 段键: string; 指纹: str
       if (pcm !== 签名.音频sha) throw new Error(`${母版} 的声音存成 FLAC 再解回来对不上（PCM sha ${pcm.slice(0, 12)}，母版 ${签名.音频sha?.slice(0, 12)}）`);
       声音 = { 文件: 声音文件名, sha: await 文件sha(tmp), 大小: fs.statSync(tmp).size };
     }
+    点('段签：存声音');
 
     const 帧们 = 抽样帧(签名.帧数, 默认间隔);
     const 抽 = 临时名(dir, 抽样文件名);
     临时.push(抽);
     await 写抽样(母版, 签名.帧数, 默认间隔, 抽);
+    点('段签：写抽样');
     const 签哈希 = 签名.帧.map((f) => f.哈希);
     const 抽哈希: string[] = [];
     for await (const rgb of 抽样流(抽, 帧们, 帧们, 签名.宽, 签名.高)) 抽哈希.push(sha(rgb));
     if (抽哈希.join() !== 签哈希.join()) throw new Error(`${母版} 的抽样帧存成 FFV1 再解回来和签名对不上（${抽哈希.length}/${签哈希.length} 帧）`);
     if (视频信息(抽).帧数 !== 帧们.length) throw new Error(`${抽} 帧数不对`);
+    点('段签：核抽样');
     const 首尾 = { 宽: 小图宽, 高: 小图高, 首帧: 灰度帧(抽, 0).toString('base64'), 末帧: 灰度帧(抽, 帧们.length - 1).toString('base64') };
 
     const 签: 段签 = {
@@ -214,6 +221,7 @@ export const 出段签 = async (母版: string, o: { 段键: string; 指纹: str
     if (声音) fs.renameSync(临时[0]!, path.join(dir, 声音文件名));
     fs.renameSync(抽, path.join(dir, 抽样文件名));
     原子写(path.join(dir, 签文件名), JSON.stringify(签, null, 1) + '\n');
+    点('段签：写入');
     return { 签, 自查: 查 };
   } finally {
     for (const f of 临时) fs.rmSync(f, { force: true });

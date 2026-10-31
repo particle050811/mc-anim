@@ -2,6 +2,7 @@
 // 指纹对得上的母版直接用；每段渲之前排队过渲染闸，渲完核帧数、改名、写 .指纹.json，耗时按段记进耗时表，再从 CRF1 派生段签（pipeline/段签/，不计进耗时表），
 // 转存 CRF12（用户 10-30 定，转码.ts）、删掉 CRF1，最后删同段同级别的旧母版（缓存/钉.ts，叠层同样；只有主检出删，worktree 只新增）。
 // 段.ts 声明的透明叠层（<段键>-<名>）同样按指纹缓存，渲成 ProRes 4444 放 cache/叠层/。
+// 分阶段计时和每帧明细见 运行记录/阶段.ts、渲染明细.ts（anim 耗时 看）。
 // 打包前把作品随仓库发的字节补进数据根（资产/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
 // 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（资产/缺字节.ts）；webpack 缓存名不随资产锁变（资产/缓存名.ts）。
 import fs from 'node:fs';
@@ -24,6 +25,7 @@ import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
 import { 缺的注册目录, 缺目录提示 } from '../段框架/注册目录.ts';
 import { 记耗时, 预计耗时, type 运行记录 } from '../运行记录/记录.ts';
 import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记录 } from '../运行记录/阶段.ts';
+import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 压缩母版路径, 原母版路径, 叠层路径, 写指纹, 有母版, 现母版, 记用过 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
@@ -38,15 +40,17 @@ import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 
-export const 打包 = async (记录?: 运行记录) => {
+export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`) => {
   const 根 = 作品根();
   const 缺目录 = 缺的注册目录(根);
   if (缺目录.length) throw new Error(缺目录.map((d) => 缺目录提示(相对代码根(根), d)).join('\n'));
+  const t备 = Date.now();
   补字节并报(根, 数据根());
   for (const x of 备好私有配乐(await 全部段(), 读作品资产锁(根), 数据根())) {
     if (记录) 记录.记('警告', 缺配乐提示(x));
     else console.error(`!! ${缺配乐提示(x)}`);
   }
+  记阶段(记录?.阶段, 标签, '备素材', t备, (Date.now() - t备) / 1000);
   const t0 = Date.now();
   const serveUrl = await bundle({
     entryPoint: path.join(作品根(), 'index.ts'),
@@ -57,6 +61,7 @@ export const 打包 = async (记录?: 运行记录) => {
     // public 里只有指向数据根的链接，转发进包是预期的
     onSymlinkDetected: () => {},
   });
+  记阶段(记录?.阶段, 标签, 'webpack', t0, (Date.now() - t0) / 1000);
   console.log(`打包 ${((Date.now() - t0) / 1000).toFixed(0)} 秒`);
   return serveUrl;
 };
@@ -74,7 +79,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const 标签 = `会话:${作品名()}:${级别}`;
   const 收 = 记录?.阶段;
   const 起 = 收?.length ?? 0;
-  const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录));
+  const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签));
   const browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
   // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
   收求解缓存(browser);
@@ -93,6 +98,23 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   } finally {
     await browser.close({ silent: true });
   }
+};
+
+/** 渲一次的共用部分：Remotion 开 verbose（日志级别不进指纹），日志和进度进明细，出帧、编码分开计时 */
+const 量渲染 = async (标签: string, 收: 阶段记录[], t0: number, fn: (钩子: { logLevel: 'verbose'; onProgress: (p: { renderedFrames: number; renderedDoneIn: number | null }) => void }) => Promise<unknown>) => {
+  const 计 = 出帧编码计时();
+  const 明细 = new 明细收集(标签);
+  await 明细.包(() =>
+    fn({
+      logLevel: 'verbose',
+      onProgress: (p) => {
+        计.onProgress(p);
+        明细.帧完成(p.renderedFrames);
+      },
+    }),
+  );
+  记出帧编码(收, 标签, t0, 计);
+  return 明细;
 };
 
 const 记出帧编码 = (收: 阶段记录[], 标签: string, t0: number, 计: ReturnType<typeof 出帧编码计时>) => {
@@ -126,11 +148,12 @@ const 清命中的旧 = async (种: '母版' | '叠层', 项们: { 键: string; 
 
 export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 留CRF1?: boolean; 记录: 运行记录 }): Promise<母版结果[]> => {
   // 先补字节再算指纹：空数据根时指纹的「缺字节」项要按补完的算，不然母版落在错的指纹下、film 认不出
-  补字节并报(作品根(), 数据根());
+  const 总标签 = `批:${作品名()}:${级别}`;
+  await 量阶段(opts.记录.阶段, 总标签, '准备', async () => 补字节并报(作品根(), 数据根()));
   const 参数 = 渲染参数(级别);
   const 结果: 母版结果[] = [];
   const 待渲: 母版结果[] = [];
-  const 指纹们 = await 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 参数 })));
+  const 指纹们 = await 量阶段(opts.记录.阶段, 总标签, '算指纹', () => 算全部段指纹(段们.map((s) => ({ 段: s, 渲染设置: 参数 }))));
   for (const [i, s] of 段们.entries()) {
     const fp = 指纹们[i]!;
     const r = { 段: s, 指纹: fp, 母版: 现母版(s.键, fp.指纹) ?? 压缩母版路径(s.键, fp.指纹), 新渲: false };
@@ -140,7 +163,7 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
       记用过(母版目录(s.键), fp.指纹);
     } else 待渲.push(r);
   }
-  await 清命中的旧('母版', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.段.键, 指纹: r.指纹.指纹 })), 级别, opts.记录);
+  await 量阶段(opts.记录.阶段, 总标签, '清旧', () => 清命中的旧('母版', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.段.键, 指纹: r.指纹.指纹 })), 级别, opts.记录));
   if (!待渲.length) return 结果;
   const 估 = 待渲.map((r) => 预计耗时(渲染标签(r.段.键, 级别)));
   const 已知 = 估.filter((x): x is number => x !== null);
@@ -151,20 +174,20 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
   await 开会话(级别, async (h) => {
     for (const r of 待渲) {
       const composition = 找组合(h, r.段);
-      await 等求解缓存写完();
       const 标签 = 渲染标签(r.段.键, 级别);
+      await 量阶段(opts.记录.阶段, 标签, '等求解缓存', 等求解缓存写完);
       const 排队起 = Date.now();
       await 过渲染闸(async () => {
         const t0 = Date.now();
         记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
-        const 计 = 出帧编码计时();
         const 原 = 原母版路径(r.段.键, r.指纹.指纹);
         const tmp = 原.replace(/\.mkv$/, `.渲染中-${process.pid}.mkv`);
         fs.mkdirSync(path.dirname(tmp), { recursive: true });
         console.log(`== 渲 ${r.段.键}`);
         let code = 1;
+        let 明细: 明细收集 | null = null;
         try {
-          await renderMedia({
+          明细 = await 量渲染(标签, opts.记录.阶段, t0, (钩子) => renderMedia({
             serveUrl: h.serveUrl,
             composition,
             outputLocation: tmp,
@@ -182,11 +205,11 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
             concurrency: 参数.concurrency,
             timeoutInMilliseconds: 等帧超时毫秒,
             overwrite: true,
-            logLevel: 'error',
-            onProgress: 计.onProgress,
-          });
-          记出帧编码(opts.记录.阶段, 标签, t0, 计);
+            ...钩子,
+          }));
+          const t查 = Date.now();
           const 帧 = 视频信息(tmp).帧数;
+          记阶段(opts.记录.阶段, 标签, '查帧数', t查, (Date.now() - t查) / 1000);
           if (帧 !== r.段.段.帧数) throw new Error(`${r.段.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
           fs.renameSync(tmp, 原);
           写指纹(r.指纹);
@@ -203,7 +226,7 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
         const t1 = Date.now();
         let 有段签 = false;
         try {
-          const d = await 出段签(原, { 段键: r.段.键, 指纹: r.指纹.指纹, 级别, 派生: '渲染' });
+          const d = await 出段签(原, { 段键: r.段.键, 指纹: r.指纹.指纹, 级别, 派生: '渲染', 计时: { 收: opts.记录.阶段, 标签 } });
           有段签 = true;
           if (d.自查?.结论 === '漂移') opts.记录.记('警告', 漂移提示(r.段.键, d.自查));
           else if (d.自查) console.log(`   ${r.段.键}：同一指纹重渲，自查${d.自查.结论}（${d.自查.说明}）`);
@@ -226,7 +249,10 @@ export const 渲染母版 = async (段们: 段信息[], 级别: 渲染级别, op
           记阶段(opts.记录.阶段, 标签, '转存', t2, (Date.now() - t2) / 1000);
         }
         记用过(母版目录(r.段.键), r.指纹.指纹);
+        const t删 = Date.now();
         删旧('母版', r.段.键, 级别, r.指纹.指纹, { 记录: opts.记录 });
+        记阶段(opts.记录.阶段, 标签, '删旧', t删, (Date.now() - t删) / 1000);
+        await 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
       });
       opts.记录.产物.push(r.母版);
     }
@@ -258,19 +284,19 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
   await 开会话(级别, async (h) => {
     for (const r of 待渲) {
       const composition = 找组合(h, r.段, r.键);
-      await 等求解缓存写完();
       const 标签 = 叠层渲染标签(r.键, 级别);
+      await 量阶段(opts.记录.阶段, 标签, '等求解缓存', 等求解缓存写完);
       const 排队起 = Date.now();
       await 过渲染闸(async () => {
         const t0 = Date.now();
         记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
-        const 计 = 出帧编码计时();
         const tmp = r.文件.replace(/\.mov$/, `.渲染中-${process.pid}.mov`);
         fs.mkdirSync(path.dirname(tmp), { recursive: true });
         console.log(`== 渲叠层 ${r.键}`);
         let code = 1;
+        let 明细: 明细收集 | null = null;
         try {
-          await renderMedia({
+          明细 = await 量渲染(标签, opts.记录.阶段, t0, (钩子) => renderMedia({
             serveUrl: h.serveUrl,
             composition,
             outputLocation: tmp,
@@ -286,10 +312,8 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
             muted: 参数.muted,
             timeoutInMilliseconds: 等帧超时毫秒,
             overwrite: true,
-            logLevel: 'error',
-            onProgress: 计.onProgress,
-          });
-          记出帧编码(opts.记录.阶段, 标签, t0, 计);
+            ...钩子,
+          }));
           const 帧 = 视频信息(tmp).帧数;
           if (帧 !== r.段.段.帧数) throw new Error(`${r.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
           fs.renameSync(tmp, r.文件);
@@ -304,6 +328,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
         }
         记用过(叠层目录(r.键), r.指纹.指纹);
         删旧('叠层', r.键, 级别, r.指纹.指纹, { 记录: opts.记录 });
+        await 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
       });
       opts.记录.产物.push(r.文件);
     }
@@ -326,7 +351,9 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const t0 = Date.now();
       const 收 = 记录?.阶段;
       const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
-      for (const f of 帧们) {
+      const 明细 = new 明细收集(标签);
+      await 明细.包(async () => {
+      for (const [i, f] of 帧们.entries()) {
         const file = path.join(出到, `${s.键}-第${String(f).padStart(4, '0')}帧.png`);
         await renderStill({
           serveUrl: h.serveUrl,
@@ -340,11 +367,14 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
           scale: h.参数.scale,
           timeoutInMilliseconds: 等帧超时毫秒,
           overwrite: false,
-          logLevel: 'error',
+          logLevel: 'verbose',
         });
+        明细.帧完成(i + 1);
         出.push(file);
       }
+      });
       const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
+      await 明细.写出(收 ?? []);
       console.log(`${阶段小结([等闸, 出帧])}（${帧们.length} 帧）`);
     });
   }, 记录);
