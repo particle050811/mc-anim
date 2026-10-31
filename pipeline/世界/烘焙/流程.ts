@@ -12,11 +12,25 @@ import { 区域目录, 存档目录, 选包, 编辑文件, type 包声明, type 
 import { 载入体素库 } from '../体素库.ts';
 import { 发布, 新暂存, 登记, 登记条目, 读地形表, type 地形登记 } from '../版本.ts';
 import { 烘焙 } from './烘焙.ts';
+import type { 烘焙瘦身 } from './瘦身.ts';
 
 export const 列段缓存目录 = () => 数据路径('cache', '列段');
 export const 默认线程 = () => Math.max(1, os.availableParallelism() - 2);
 
-export type 烘焙选项 = { 包?: string; 存档?: string; 不套编辑?: boolean; 不登记?: boolean; 线程?: number; 日志: (s: string) => void };
+export type 烘焙选项 = {
+  包?: string;
+  存档?: string;
+  不套编辑?: boolean;
+  不登记?: boolean;
+  线程?: number;
+  日志: (s: string) => void;
+  /** 实验：瘦身（见 瘦身.ts） */
+  瘦身?: 烘焙瘦身;
+  /** 实验：只烘这些区域 [RX0, RX1, RZ0, RZ1]（再和包声明的范围取交） */
+  只区域?: [number, number, number, number];
+  /** 实验：写到这个目录（<目录>/<包>/），不发布、不登记 */
+  到?: string;
+};
 export type 包结果 = { 包: string; 版本: string; 目录: string; 原登记?: string; 条目: 地形登记; 已登记: boolean; 编辑步数: number; 编辑警告: string[]; 缺状态: number; 缺群系: number };
 
 /** 包在存档里要读的区域文件 */
@@ -42,17 +56,30 @@ export const 烘焙世界 = async (w: 世界声明, o: 烘焙选项): Promise<�
     // 编辑里 clone、摆结构要读别处的方块：读原样的区域（不套编辑），套用时按步骤先后自己算
     const 器 = 套 ? new 编辑套用器(套, new 区域源(区域目录(w, o.存档), 种子, 列段缓存目录())) : null;
     const 源 = new 区域源(区域目录(w, o.存档), 种子, 列段缓存目录(), 器 ? (r) => 器.套(r) : null);
-    const 文件们 = 包的区域(源, b);
+    const 只 = o.只区域;
+    const 文件们 = 包的区域(源, b).filter(([rx, rz]) => !只 || (rx >= 只[0] && rx <= 只[1] && rz >= 只[2] && rz <= 只[3]));
     if (!文件们.length) throw new Error(`包 ${b.名}：${源.区域目录} 里没有范围内的区域文件`);
+    const 读t0 = performance.now();
     const 区域们 = await 源.预读(文件们, o.线程 ?? 默认线程(), o.日志);
     if (!区域们.length) throw new Error(`包 ${b.名}：范围内 ${文件们.length} 个区域文件里没有生成完的区块`);
     if (套) o.日志(`套编辑 ${path.relative(代码根(), 套.文件)}：${套.步.length} 条命令`);
+    if (o.到) {
+      const dir = path.join(o.到, b.名);
+      fs.mkdirSync(dir, { recursive: true });
+      o.日志(`读存档 ${((performance.now() - 读t0) / 1000).toFixed(1)} 秒，${区域们.length} 个区域`);
+      const t0 = performance.now();
+      const r = await 烘焙({ 区域们, 取区域: (rx, rz) => 源.区域(rx, rz), 维度: w.包维度, 原点: b.原点, 输出: dir, 库, 日志: o.日志, 瘦身: o.瘦身 });
+      o.日志(`烘焙完，${((performance.now() - t0) / 1000).toFixed(1)} 秒；${r.块文件数} 个块文件；写到 ${dir}（没发布、没登记）`);
+      for (const [L, s] of r.级.entries()) o.日志(`  L${L}：${s.count} 个区段，${(s.bytes / 1e6).toFixed(2)} MB，raw ${(s.rawBytes / 1e6).toFixed(2)} MB，${s.runCount} 段`);
+      结果.push({ 包: b.名, 版本: '（实验）', 目录: dir, 条目: {} as 地形登记, 已登记: false, 编辑步数: 套?.步.length ?? 0, 编辑警告: [], 缺状态: r.缺状态.size, 缺群系: r.缺群系.size });
+      continue;
+    }
     const 暂存 = 新暂存(b.名);
     let 版本: string, dir: string;
     let r: Awaited<ReturnType<typeof 烘焙>>;
     try {
       const t0 = performance.now();
-      r = await 烘焙({ 区域们, 取区域: (rx, rz) => 源.区域(rx, rz), 维度: w.包维度, 原点: b.原点, 输出: 暂存.dir, 库, 日志: o.日志 });
+      r = await 烘焙({ 区域们, 取区域: (rx, rz) => 源.区域(rx, rz), 维度: w.包维度, 原点: b.原点, 输出: 暂存.dir, 库, 日志: o.日志, 瘦身: o.瘦身 });
       o.日志(`烘焙完，${((performance.now() - t0) / 1000).toFixed(1)} 秒；${r.块文件数} 个块文件，${r.包.状态.length} 种状态、${r.包.群系.length} 种群系、${r.条目数} 种条目；缺状态 ${r.缺状态.size} 种、群系 ${r.缺群系.size} 种（见 缺失.tsv）`);
       ({ 版本, 目录: dir } = 发布(b.名, 暂存.dir));
     } finally {

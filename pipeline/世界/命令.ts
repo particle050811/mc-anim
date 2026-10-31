@@ -69,9 +69,15 @@ const 子命令们: Record<string, 子命令> = {
     },
   },
   bake: {
-    用法: 'bake <世界> [--包 <名>] [--存档 <世界目录>] [--不套编辑] [--不登记] [--线程 <n>]',
+    用法: 'bake <世界> [--包 <名>] [--存档 <世界目录>] [--不套编辑] [--不登记] [--线程 <n>] [--瘦身 0|1 [--保留盒 <json>]] [--只区域 RX0,RX1,RZ0,RZ1] [--到 <目录>]（后三个是实验：--到 不发布、不登记）',
     跑: async (args, 记录) => {
-      const p = 解析参数(args, { 值: ['--包', '--存档', '--线程'], 开关: ['--不套编辑', '--不登记'] });
+      const p = 解析参数(args, { 值: ['--包', '--存档', '--线程', '--瘦身', '--保留盒', '--只区域', '--到'], 开关: ['--不套编辑', '--不登记'] });
+      const 档 = p.值['--瘦身'];
+      if (档 !== undefined && 档 !== '0' && 档 !== '1') throw new 用法错误('--瘦身 要是 0 或 1');
+      if (档 !== undefined && !p.值['--到']) throw new 用法错误('--瘦身 还是实验，要和 --到 一起用');
+      const 瘦身 = 档 === undefined ? undefined : { 档: Number(档) as 0 | 1, 保留盒: p.值['--保留盒'] ? (JSON.parse(fs.readFileSync(p.值['--保留盒'], 'utf8')) as number[][]) : [] };
+      const 只区域 = p.值['--只区域']?.split(',').map(Number) as [number, number, number, number] | undefined;
+      if (只区域 && (只区域.length !== 4 || 只区域.some((x) => !Number.isInteger(x)))) throw new 用法错误('--只区域 写 RX0,RX1,RZ0,RZ1');
       if (p.位置.length !== 1) throw new 用法错误('要给一个世界名（anim world list 看有哪些）');
       const w = 读声明(p.位置[0]!);
       const 线程 = p.值['--线程'] ? Number(p.值['--线程']) : undefined;
@@ -79,7 +85,7 @@ const 子命令们: Record<string, 子命令> = {
       const 编辑 = p.开关.has('--不套编辑') ? null : await 载入编辑(w); // 编辑文件写错了，排队前就报
       if (编辑) console.log(`编辑层 ${相对(编辑.文件)}：${编辑.步.length} 条命令`);
       const 结果 = await 过放行闸(() =>
-        烘焙世界(w, { 包: p.值['--包'], 存档: p.值['--存档'], 不套编辑: p.开关.has('--不套编辑'), 不登记: p.开关.has('--不登记'), 线程, 日志: (s) => console.log(s) }),
+        烘焙世界(w, { 包: p.值['--包'], 存档: p.值['--存档'], 不套编辑: p.开关.has('--不套编辑'), 不登记: p.开关.has('--不登记'), 线程, 日志: (s) => console.log(s), 瘦身, 只区域, 到: p.值['--到'] }),
       );
       for (const r of 结果) {
         记录.产物.push(r.目录);

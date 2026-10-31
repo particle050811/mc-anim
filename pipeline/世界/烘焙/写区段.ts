@@ -2,9 +2,11 @@
 import { closeSync, openSync, writeSync } from 'node:fs';
 import path from 'node:path';
 import { gzipSync } from 'node:zlib';
+import type { SectionData } from '../../../engine/voxel/区段包.ts';
 import type { 体素库 } from '../体素库.ts';
 import { 无地表, 无顶, type 层级 } from './合并.ts';
 import { 条目上限, type 条目表 } from './条目.ts';
+import { 建瘦身表, 瘦身区段, 碰保留盒, type 烘焙瘦身, type 瘦身表 } from './瘦身.ts';
 
 export type 级统计 = { count: number; bytes: number; rawBytes: number; runCount: number; cellCount: number };
 
@@ -19,8 +21,12 @@ export class 区段写手 {
   private 输出: string;
   private padCols: number;
   private tileCols: number;
+  private 瘦身?: 烘焙瘦身;
+  private 瘦身表?: 瘦身表;
 
-  constructor(库: 体素库, 表: 条目表, 输出: string, padCols: number, tileCols: number) {
+  constructor(库: 体素库, 表: 条目表, 输出: string, padCols: number, tileCols: number, 瘦身?: 烘焙瘦身) {
+    this.瘦身 = 瘦身;
+    if (瘦身) this.瘦身表 = 建瘦身表(库.方块表);
     this.库 = 库;
     this.表 = 表;
     this.输出 = 输出;
@@ -102,7 +108,13 @@ export class 区段写手 {
           }
         for (const entry of usedEntries) paletteIdx[entry] = -1;
         const id = { L: level.L, i: ti * sectionsPerSide + si, j: tj * sectionsPerSide + sj };
-        const raw = encodeSection({ ...id, kBottom, nz, palette: Uint16Array.from(palette), runCounts, paletteIndex: runPaletteIdx.subarray(0, runCount), runLengths: runLengths.subarray(0, runCount) });
+        let data: SectionData = { ...id, kBottom, nz, palette: Uint16Array.from(palette), runCounts, paletteIndex: runPaletteIdx.subarray(0, runCount), runLengths: runLengths.subarray(0, runCount) };
+        // 只改写出去的：往上合并粗一级的还是没瘦的 level
+        if (this.瘦身 && !碰保留盒(this.瘦身.保留盒, id)) {
+          data = 瘦身区段(data, this.瘦身表!, { L: id.L, 值: this.表.stateVoxel, 裙边窗: this.瘦身.档 >= 1 ? 8 : undefined });
+          runCount = data.paletteIndex.length;
+        }
+        const raw = encodeSection(data);
         const gz = gzipSync(raw, { level: 6 });
         this.tileSections.push({ slot: sectionInTile(id).slot, gz });
         const st = this.levelStats[level.L]!;

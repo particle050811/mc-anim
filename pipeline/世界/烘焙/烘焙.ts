@@ -13,6 +13,7 @@ import { 浮空下地表 } from './地表.ts';
 import { 段缓冲, 合并一级, 无地表, 无顶, type 层级 } from './合并.ts';
 import { 条目表, 不染色 } from './条目.ts';
 import { 区段写手, type 级统计 } from './写区段.ts';
+import type { 烘焙瘦身 } from './瘦身.ts';
 
 export type 烘焙参数 = {
   /** 这个包的区域（有数据的），[rx, rz] */
@@ -26,6 +27,8 @@ export type 烘焙参数 = {
   输出: string;
   库: 体素库;
   日志?: (s: string) => void;
+  /** 实验：写区段前去掉不出面的格（瘦身.ts），不给就和原来逐字节一样 */
+  瘦身?: 烘焙瘦身;
 };
 
 export type 烘焙结果 = { 包: 包信息; 缺状态: Map<string, number>; 缺群系: Map<string, number>; 级: 级统计[]; 块文件数: number; 条目数: number };
@@ -208,7 +211,7 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
   };
 
   // ---------- 主流程 ----------
-  const 写手 = new 区段写手(库, 表, p.输出, padCols, tileCols);
+  const 写手 = new 区段写手(库, 表, p.输出, padCols, tileCols, p.瘦身);
   const t0 = performance.now();
   p.日志?.(`烘焙 → ${p.输出}\n  ${p.维度}，原点 游戏 (${OX}, ${OY}, ${OZ})，${p.区域们.length} 个区域、${tiles.size} 块（${tileCols} 米一块），z ${zb}～${zt}`);
   for (const [ti, tj] of [...tiles.values()].sort((a, b) => a[1] - b[1] || a[0] - b[0])) {
