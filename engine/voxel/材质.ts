@@ -16,6 +16,7 @@
 // 台阶并色（用户 10-10，远山摩尔纹）：远处台阶顶面白、侧面棕，缩到一两个像素高时交替取样拍出同心弧纹，Voxy、DH 都不处理。
 // 一格在画布上约 6 个像素以下开始、约 2 个混满（`fwidth(vW)`）：顶面侧面往「两面各一半」混、侧面法线往上混、贴图往 1×1 平均色取，整片平均色不变。
 // 屏幕 AO 按它减弱用户不要（「去 ao 不行 远处糊成一团」），只做 `farAo` 的按距离减弱；只把侧面混成顶面试过，积雪山变灰白，和近处对不上。
+import { 标体素 } from './桩归因.ts';
 import * as THREE from 'three';
 // 屏幕 AO 第 1 遍时置 1（lib/体素/屏幕AO.tsx），所有体素材质共用
 export const aoPassUniform = { value: 0 };
@@ -166,6 +167,10 @@ export type VoxelMesh = THREE.Mesh & { userData: { 段: number[] } };
 export const faceGroupMesh = (group: FaceGroup, materialClass: MaterialClass, origin: number[], cellM: number, box: number[]): VoxelMesh | null => {
   if (!group.n) return null;
   const geo = new THREE.BufferGeometry();
+  标体素(group.pos, '体素pos');
+  标体素(group.uv, '体素uv');
+  标体素(group.tex, '体素tex');
+  标体素(group.col, '体素col');
   geo.setAttribute('position', new THREE.BufferAttribute(group.pos, 3));
   geo.setAttribute('uv', new THREE.BufferAttribute(group.uv, 2));
   geo.setAttribute('tex', new THREE.BufferAttribute(group.tex, 4));

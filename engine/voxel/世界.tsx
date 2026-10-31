@@ -13,7 +13,8 @@
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender, useCurrentFrame } from 'remotion';
-import { 桩, 桩开, 桩级别 } from './桩.ts';
+import { 桩, 桩开, 桩级别, 环境 as 桩环境 } from './桩.ts';
+import { 实验回收门 } from './实验池.ts';
 import { 桩世界网格, type 桩网格 } from './桩可见.ts';
 import { 缓存模式, 有缓存, 取网格, 存网格 } from './网格缓存.ts';
 import * as THREE from 'three';
@@ -28,6 +29,7 @@ import type { VoxelGrid, VoxelSource } from './生成.ts';
 
 // 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）
 const maxCachedFaces = 6_000_000;
+const 实验索引 = (桩环境.ANIM_X ?? '').includes('i');
 const materialClasses: MaterialClass[] = ['实心', '镂空', '实心树叶', '水', '花草'];
 
 // 区段网格（CPU 这边的数组）按世界键跨渲染器留着：拼段的下一截是新的 Canvas、新的 WebGL 上下文，前一截建过的区段不用再取、再换体素块、再建网格，只重新上传。
@@ -306,7 +308,12 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
     for (const [k, entry] of all) {
       if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
-      for (const mesh of [...entry.meshes, ...entry.shadowMeshes]) mesh.geometry.dispose();
+      实验回收门.开 = true;
+      for (const mesh of [...entry.meshes, ...entry.shadowMeshes]) {
+        if (实验索引) mesh.geometry.index = null; // 实验 i（不合并）：共享索引不随网格释放
+        mesh.geometry.dispose();
+      }
+      实验回收门.开 = false;
       桩.加('挤掉n', 1);
       world.faceCount -= entry.faceCount;
       cache.delete(k);

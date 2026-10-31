@@ -15,6 +15,7 @@ let 帧号 = -1;
 let 记录: Record<string, number> = {};
 const 记段 = new Map<string, number>(); // 区段键 → 建过几次（不分帧，整次渲染）
 export const 桩 = {
+  当前帧: () => 帧号,
   帧(f: number) {
     if (!桩开 || f === 帧号) return;
     桩.写();

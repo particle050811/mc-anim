@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
-import { getCompositions, openBrowser, renderMedia, renderStill, type HeadlessBrowser } from '@remotion/renderer';
+import { getCompositions, openBrowser, renderFrames, renderMedia, renderStill, type HeadlessBrowser } from '@remotion/renderer';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
@@ -366,6 +366,33 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
       const 明细 = new 明细收集(标签);
       await 明细.包(async () => {
+      // 实验（不合并）：ANIM_STILL_批=1 时同一段的多帧在一个页面里出（renderFrames 的 frames 列表，并发 1），不是每帧新建页面
+      if (process.env.ANIM_STILL_批 && 帧们.length > 1) {
+        let 第几 = 0;
+        await renderFrames({
+          serveUrl: h.serveUrl,
+          composition,
+          outputDir: null,
+          frames: [...帧们],
+          inputProps: h.参数.inputProps,
+          puppeteerInstance: h.browser,
+          chromiumOptions: { gl: h.参数.gl },
+          imageFormat: 'png',
+          scale: h.参数.scale,
+          concurrency: 1,
+          timeoutInMilliseconds: 等帧超时毫秒,
+          logLevel: 'verbose',
+          onStart: () => {},
+          onFrameUpdate: () => {},
+          onFrameBuffer: (buf, f) => {
+            const file = path.join(出到, `${s.键}-第${String(f).padStart(4, '0')}帧.png`);
+            fs.writeFileSync(file, buf, { flag: 'wx' });
+            明细.帧完成(++第几);
+            出.push(file);
+          },
+        });
+        return;
+      }
       for (const [i, f] of 帧们.entries()) {
         const file = path.join(出到, `${s.键}-第${String(f).padStart(4, '0')}帧.png`);
         await renderStill({

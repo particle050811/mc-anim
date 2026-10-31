@@ -18,6 +18,10 @@
 import { useFrame } from '@react-three/fiber';
 import { voxelsPending } from './世界.tsx';
 import { 桩, 桩级别 } from './桩.ts';
+import { 微测建对象, 标段 } from './桩归因.ts';
+import { 环境 as 桩环境 } from './桩.ts';
+
+const 实验排除 = (桩环境.ANIM_X ?? '').includes('b');
 import { 量可见 } from './桩可见.ts';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
@@ -28,6 +32,19 @@ import { aoPassUniform } from './材质.ts';
 import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, type MidPassContext } from './中间步骤.ts';
 import { 渲染输入 } from '../core/渲染设置.ts';
+
+// 归因实验（不合并）：每遍一个有名字的函数，CPU profile 的调用树里才分得开
+function AO第1遍投影加不透明(gl: THREE.WebGLRenderer, s: THREE.Scene, c: THREE.Camera) { gl.render(s, c); }
+function AO第2遍屏幕(gl: THREE.WebGLRenderer, s: THREE.Scene, c: THREE.Camera) { gl.render(s, c); }
+function AO水面遍(gl: THREE.WebGLRenderer, s: THREE.Scene, c: THREE.Camera) { gl.render(s, c); }
+function AO第3遍半透明(gl: THREE.WebGLRenderer, s: THREE.Scene, c: THREE.Camera) { gl.render(s, c); }
+function AO收集材质(scene: THREE.Scene, f: (o: THREE.Object3D) => void) { scene.traverse(f); }
+const 量遍 = (名: string, fn: () => void) => {
+  const t = performance.now();
+  fn();
+  桩.加(`遍:${名}ms`, performance.now() - t);
+  桩.加(`遍:${名}n`, 1);
+};
 
 export type ScreenAoProps = {
   // 每个像素的采样数：Voxy BEST = 24、BETTER = 12；离线渲染用 24
@@ -267,7 +284,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     // 收集材质
     saved.length = 0;
     const seen = new Set<THREE.Material>();
-    scene.traverse((obj) => {
+    量遍('收集材质', () => AO收集材质(scene, (obj) => {
       const material = (obj as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
       if (!material) return;
       for (const x of Array.isArray(material) ? material : [material]) {
@@ -275,7 +292,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
         seen.add(x);
         saved.push({ m: x, visible: x.visible, blending: x.blending, src: x.blendSrc, dst: x.blendDst, srcA: x.blendSrcAlpha, dstA: x.blendDstAlpha });
       }
-    });
+    }));
 
     // 第 1 遍：不透明的画进离屏图；要压暗的 alpha 写 0
     for (const entry of saved) {
@@ -293,7 +310,9 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     const prevTarget = gl.getRenderTarget();
     gl.setRenderTarget(rt);
     aoPassUniform.value = 1;
-    gl.render(scene, camera);
+    const 桩gl = gl.getContext() as WebGL2RenderingContext;
+    标段(桩gl, '1投影加不透明');
+    量遍('1投影加不透明', () => AO第1遍投影加不透明(gl, scene, camera));
     aoPassUniform.value = 0;
     for (const entry of saved) {
       const material = entry.m;
@@ -333,7 +352,9 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     }
     if (atmo) updateCloudUniforms(cam);
     gl.setRenderTarget(prevTarget);
-    gl.render(resources.quadScene, resources.camera);
+    标段(桩gl, '2屏幕AO');
+    量遍('2屏幕', () => AO第2遍屏幕(gl, resources.quadScene, resources.camera));
+    标段(桩gl, '中间步骤');
 
     // 第 2 遍之后的步骤
     const midPasses = [...midPassesOf(gl)].sort((a, b) => a.order - b.order);
@@ -354,6 +375,23 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     }
 
     // 第 3 遍：半透明的画到画布上，不清屏、不重画阴影
+    标段(桩gl, '3水面半透明');
+    // 实验 b（不合并）：这两遍只画半透明；全部材质都藏着的叶子网格（不透明、只投影的）不进 projectObject，矩阵第 1 遍已更新不再遍历
+    const 排除们: THREE.Object3D[] = [];
+    const 原矩阵自动 = scene.matrixWorldAutoUpdate;
+    if (实验排除) {
+      量遍('实验排除', () => {
+        scene.traverse((o) => {
+          if (!o.visible || o.children.length) return;
+          const m = o as THREE.Mesh;
+          if (!(m.isMesh || (o as THREE.Line).isLine || (o as THREE.Points).isPoints) || !m.material) return;
+          const ms = Array.isArray(m.material) ? m.material : [m.material];
+          if (ms.every((x) => !drawLater(x))) 排除们.push(o);
+        });
+        for (const o of 排除们) o.visible = false;
+      });
+      scene.matrixWorldAutoUpdate = false;
+    }
     const ac = [gl.autoClearColor, gl.autoClearDepth, gl.autoClearStencil];
     const shadowAuto = gl.shadowMap.autoUpdate;
     gl.autoClearColor = gl.autoClearDepth = gl.autoClearStencil = false;
@@ -369,24 +407,44 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       // 水这一下写深度：花草（屏幕AO 不挡）挪到水后面画了，水不写深度的话水下的海草、海带会盖在海面上（6-1-1 远处整片海成了草地）
       const waterDepthWrite = water.map((e) => e.m.depthWrite);
       for (const e of water) e.m.depthWrite = true;
-      if (water.length) gl.render(scene, camera);
+      if (water.length) 量遍('水面', () => AO水面遍(gl, scene, camera));
       water.forEach((e, i) => (e.m.depthWrite = waterDepthWrite[i]));
       for (const pass of latePasses) pass.draw(ctx);
       gl.setRenderTarget(prevTarget);
       for (const e of saved) if (drawLater(e.m)) e.m.visible = e.visible && !e.m.userData.水面;
-      gl.render(scene, camera);
+      量遍('3半透明', () => AO第3遍半透明(gl, scene, camera));
     } else {
       if (latePasses.length && ctx) {
         for (const pass of latePasses) pass.draw(ctx);
         gl.setRenderTarget(prevTarget);
       }
-      if (any) gl.render(scene, camera);
+      if (any) 量遍('3半透明', () => AO第3遍半透明(gl, scene, camera));
     }
+    for (const o of 排除们) o.visible = true;
+    scene.matrixWorldAutoUpdate = 原矩阵自动;
+    标段(桩gl, null);
     for (const entry of saved) entry.m.visible = entry.visible;
     [gl.autoClearColor, gl.autoClearDepth, gl.autoClearStencil] = ac;
     gl.shadowMap.autoUpdate = shadowAuto;
     saved.length = 0;
     桩.加('AO画CPUms', performance.now() - 桩t);
+    微测建对象(gl.getContext() as WebGL2RenderingContext);
+    if (桩级别 === 4 && 桩.当前帧() % 3 === 1) {
+      const 表: Record<string, { n: number; 新: number; 样: unknown }> = {};
+      scene.traverse((o) => {
+        const g = (o as THREE.Mesh).geometry as (THREE.BufferGeometry & { parameters?: unknown; __桩见?: boolean }) | undefined;
+        if (!g || (o as THREE.Mesh).userData.段) return;
+        const 链: string[] = [];
+        for (let x: THREE.Object3D | null = o.parent, i = 0; x && i < 3; x = x.parent, i++) 链.push(x.name || x.type);
+        const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial;
+        const k = `${g.type}|v${g.attributes.position?.count}|${o.name}|`+`${JSON.stringify(g.parameters)}|${m.type}|${m.map?.uuid?.slice(0, 6) ?? ''}|${(o as unknown as { __r3f?: { props?: object } }).__r3f ? 'r3f' : 'prim'}|${Object.keys(g.attributes).join(',')}`;
+        const e = (表[k] ??= { n: 0, 新: 0, 样: 链 });
+        e.n++;
+        if (!g.__桩见) e.新++;
+        g.__桩见 = true;
+      });
+      桩.事件('盒子', 表);
+    }
     桩.加('AO画n', 1);
     if (桩级别 === 3) 量可见(gl, scene, camera);
     if (桩级别 === 2) {

@@ -68,6 +68,16 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
       const composition = 组合.find((c) => c.id === s.键);
       if (!composition) throw new Error(`打包里没有 Composition ${s.键}`);
       const 轮: 测速结果['轮'] = [];
+      // 归因实验（不合并）：ANIM_PROF=<输出前缀> 时用 CDP 的 V8 CPU Profiler 量第 ANIM_PROF_SKIP 帧起到倒数第 2 帧（跳过冷启动的首帧）
+      let 页: { _client(): { send(m: string, p?: unknown): Promise<any> } } | null = null;
+      if (process.env.ANIM_PROF) {
+        const 原开 = browser.newPage.bind(browser);
+        (browser as unknown as { newPage: (...a: unknown[]) => Promise<unknown> }).newPage = async (...a: unknown[]) => {
+          const pg = await (原开 as (...x: unknown[]) => Promise<unknown>)(...a);
+          页 = pg as typeof 页;
+          return pg;
+        };
+      }
       for (let i = 0; i < (opts.次 ?? 1); i++) {
         if (opts.留输出) fs.mkdirSync(opts.留输出, { recursive: true });
         const out = path.join(opts.留输出 ?? os.tmpdir(), `mc-anim-测速-${process.pid}-${i}.mkv`);
@@ -75,6 +85,9 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
         await 过渲染闸(async () => {
           const t0 = Date.now();
           let 首帧 = 0, 末帧 = 0, 上次帧数 = 0;
+          let 配置中: Promise<unknown> = Promise.resolve();
+          const 配置起帧 = Number(process.env.ANIM_PROF_SKIP ?? 1);
+          const 配置止帧 = 帧[1] - 帧[0] + 1 - 1;
           const 明细 = new 明细收集(标签, 帧[0]);
           const 缓存服务 = process.env.ANIM_MC_DIR ? await 开网格缓存服务(process.env.ANIM_MC_DIR) : null;
           const 跑 = () => renderMedia({
@@ -92,12 +105,31 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
                 if (!首帧) 首帧 = now;
                 上次帧数 = p.renderedFrames;
                 明细.帧完成(p.renderedFrames, now);
+                if (process.env.ANIM_PROF && 页) {
+                  const c = 页._client();
+                  if (p.renderedFrames === 配置起帧) {
+                    配置中 = (async () => {
+                      await c.send('Profiler.enable');
+                      await c.send('Profiler.setSamplingInterval', { interval: Number(process.env.ANIM_PROF_US ?? 250) });
+                      await c.send('Profiler.start');
+                      console.error(`== CPU profile 开始 第 ${帧[0] + p.renderedFrames} 帧起`);
+                    })();
+                  } else if (p.renderedFrames === 配置止帧) {
+                    配置中 = 配置中.then(async () => {
+                      const r = await c.send('Profiler.stop');
+                      fs.writeFileSync(`${process.env.ANIM_PROF}-${i + 1}.cpuprofile`, JSON.stringify((r.value ?? r).profile));
+                      fs.writeFileSync(`${process.env.ANIM_PROF}-${i + 1}.帧.json`, JSON.stringify({ 起: 配置起帧, 止: 配置止帧, 帧数: 配置止帧 - 配置起帧 }));
+                      console.error('== CPU profile 写好');
+                    });
+                  }
+                }
                 if (p.renderedFrames === 帧[1] - 帧[0] + 1) 末帧 = now;
               },
             });
           try {
             if (opts.不收日志) await 跑();
             else await 明细.包(跑, 日志流 ? (文本) => void 日志流.write(文本 + '\n') : undefined);
+            await 配置中;
           } finally {
             if (!opts.留输出) fs.rmSync(out, { force: true });
             await 缓存服务?.关();
