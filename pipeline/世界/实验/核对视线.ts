@@ -138,7 +138,7 @@ const 走 = (包: 包读, sx: number, sy: number, sz: number, dx: number, dy: nu
 };
 
 const t0 = Date.now();
-let 总 = 0, 差 = 0, 中实心 = 0;
+let 总 = 0, 差 = 0, 差状态 = 0, 差首格 = 0, 中实心 = 0;
 const 样: string[] = [];
 for (const 名 of 文件们) {
   const 旧 = new 包读(旧目录), 新 = new 包读(新目录);
@@ -156,9 +156,14 @@ for (const 名 of 文件们) {
     if (a.length) 中实心++;
     if (a.length !== b.length || a.some((v, i) => v !== b[i])) {
       差++;
-      if (样.length < 10) 样.push(`${名} 起点 (${sx.toFixed(1)},${sy.toFixed(1)},${sz.toFixed(1)}) 方向 (${dx.toFixed(2)},${dy.toFixed(2)},${dz.toFixed(2)}) 旧 ${a.slice(-4).join(' ')} 新 ${b.slice(-4).join(' ')}`);
+      // 埋在水里的水格没有面（水和水之间剔面），它的群系变了看不出来：只差这个的单独数，不算画面差
+      const 状态差 = a.length !== b.length || a.some((v, i) => Math.floor(v / 65536) !== Math.floor(b[i]! / 65536));
+      const 首差 = a[0] !== b[0];
+      if (状态差) 差状态++;
+      if (首差) 差首格++;
+      if ((状态差 || 首差) && 样.length < 10) 样.push(`${名} 起点 (${sx.toFixed(1)},${sy.toFixed(1)},${sz.toFixed(1)}) 方向 (${dx.toFixed(2)},${dy.toFixed(2)},${dz.toFixed(2)}) 旧 ${a.slice(0, 2).join(' ')} … ${a.slice(-2).join(' ')}（${a.length}）新 ${b.slice(0, 2).join(' ')} … ${b.slice(-2).join(' ')}（${b.length}）`);
     }
   }
 }
-console.log(`L${L}：${文件们.length} 块，${总} 条射线（${中实心} 条碰到东西），不一样 ${差} 条；${((Date.now() - t0) / 1000).toFixed(1)} 秒`);
+console.log(`L${L}：${文件们.length} 块，${总} 条射线（${中实心} 条碰到东西），序列不一样 ${差} 条，其中沿途状态不同 ${差状态} 条、第一个碰到的格不同 ${差首格} 条；${((Date.now() - t0) / 1000).toFixed(1)} 秒`);
 for (const s of 样) console.log('  ' + s);
