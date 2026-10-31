@@ -80,6 +80,8 @@ export type 服务端选项 = {
   目录: string;
   /** 世界目录（里面有 level.dat） */
   存档: string;
+  /** 建新世界（anim world new）才给：存档还没有 level.dat，由服务端第一次启动时建 */
+  允许新世界?: boolean;
   /** Forge / NeoForge 版本（libraries 里有几个时挑哪个） */
   加载器版本?: string;
   /** java -Xmx；默认 12G（用户 10-04 定：6G 不够，暮色放大预生成到十几万区块老年代就满） */
@@ -157,7 +159,7 @@ export class 服务端 {
 
   /** 开服并等到就绪（日志出现 Done (）；起不来就抛错（服务端已停） */
   static async 起(o: 服务端选项): Promise<服务端> {
-    if (!fs.existsSync(path.join(o.存档, 'level.dat'))) throw new Error(`${o.存档} 不是世界（没有 level.dat）；不让服务端悄悄建一个新世界`);
+    if (!o.允许新世界 && !fs.existsSync(path.join(o.存档, 'level.dat'))) throw new Error(`${o.存档} 不是世界（没有 level.dat）；不让服务端悄悄建一个新世界`);
     const eula = path.join(o.目录, 'eula.txt');
     if (!fs.existsSync(eula) || !/^\s*eula\s*=\s*true\s*$/m.test(fs.readFileSync(eula, 'utf8'))) throw new Error(`${eula} 没写 eula=true：要人读过 Minecraft EULA 后自己改，anim 不替人同意`);
     const 旧pid = fs.existsSync(pid文件(o.目录)) ? Number(fs.readFileSync(pid文件(o.目录), 'utf8')) : 0;
@@ -169,8 +171,8 @@ export class 服务端 {
       `-Xmx${o.堆 ?? '12G'}`,
       ...(o.生成线程 ? [`-Dmax.bg.threads=${o.生成线程}`] : []),
       ...启动参数(o.目录, o.加载器版本),
-      '--universe',
-      path.dirname(path.resolve(o.存档)),
+      // 存档就在服务端目录下时不给 --universe：Forge 的 Main 见到 universe 等于服务端目录会报「Invalid world directory…the same directory as your universe」不起服
+      ...(fs.realpathSync(path.dirname(path.resolve(o.存档))) === fs.realpathSync(o.目录) ? [] : ['--universe', path.dirname(path.resolve(o.存档))]),
       '--world',
       path.basename(o.存档),
       '--port',
