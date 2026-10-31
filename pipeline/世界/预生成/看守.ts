@@ -5,6 +5,7 @@
 //   日志（卡住分钟内一行新日志都没有，先 jstack 存一份再停服续跑：光照线程抛 MissingPaletteEntryException 以后 Chunky 会一直等那几个区块）。
 // - Chunky 的任务进度按维度存在 <服务端>/config/chunky/tasks/<命名空间>/<维度>.properties，不分世界：
 //   那里有暂停着（cancelled=false）又不是这一块的任务就拒绝，不然会把别人的任务接着跑到这个世界里。
+// - 连着几次重启都没有新进度（同一阶段内 Chunky 的 Processed 没超过之前的最高值）就放弃报错，不再无限重启（用户 10-31 定）。
 // - 日志目录里：<块>.out（服务端全部输出和看守的话）、<块>.状态.json（阶段、每次起服的起止、停服原因、进度；看守被杀了重跑同一条命令接着来）、
 //   <块>.jstat.tsv（每分钟的老年代、Full GC、进度、速度）、<块>.jstack-<时间>.txt（卡住时的线程栈）。
 import fs from 'node:fs';
@@ -25,8 +26,26 @@ export type 看守状态 = {
   世界: string;
   存档: string;
   阶段: '主' | '补洞' | '完';
-  起服: { 开始: string; 结束?: string; 命令: string[]; 退出码?: number | null; 停服原因?: string | null; 最后进度?: 进度 | null; 完成?: 完成 | null }[];
+  起服: { 阶段?: '主' | '补洞'; 开始: string; 结束?: string; 命令: string[]; 退出码?: number | null; 停服原因?: string | null; 最后进度?: 进度 | null; 完成?: 完成 | null }[];
   完成: Partial<Record<'主' | '补洞', 完成>>;
+};
+
+type 起服记录 = 看守状态['起服'][number];
+
+/**
+ * 末尾连着几次起服没有新进度。进度 = 同一阶段里 Chunky 的 Processed 比之前每次起服的最高值大（续跑 Chunky 接着数，所以重启后该往上走）；
+ * 跑完（有 完成）算有进度。没有阶段字段的旧记录当「主」。
+ */
+export const 连续无进度 = (记录们: readonly 起服记录[], 阶段: '主' | '补洞'): number => {
+  let 最高 = 0, 数 = 0;
+  for (const r of 记录们) {
+    if ((r.阶段 ?? '主') !== 阶段) continue;
+    const 区块 = r.最后进度?.区块 ?? 0;
+    if (r.完成 || 区块 > 最高) 数 = 0;
+    else if (r.结束) 数++;
+    最高 = Math.max(最高, 区块);
+  }
+  return 数;
 };
 
 export const 任务文件 = (服务端目录: string, 维度: string) => {
@@ -79,6 +98,8 @@ export type 看守选项 = {
   不补洞?: boolean;
   不过闸?: boolean;
   重来?: boolean;
+  /** 连着这么多次重启都没有新进度就放弃（默认 3） */
+  最多无进度重启?: number;
   /** 测试用：盯的间隔（默认 60 秒） */
   盯间隔秒?: number;
   说: (s: string) => void;
@@ -119,6 +140,7 @@ export const 跑一块 = async (p: 预生成计划, o: 看守选项): Promise<�
   }
   const 前查 = 开服前核对(o.服务端目录, o.存档);
   if (前查.问题.length) throw new Error(前查.问题.join('\n'));
+  const 无进度上限 = o.最多无进度重启 ?? 3;
   const 上限 = o.老年代上限 ?? 90, 卡住毫秒 = (o.卡住分钟 ?? 10) * 60_000, 间隔 = (o.盯间隔秒 ?? 60) * 1000;
 
   while (st.阶段 !== '完') {
@@ -127,7 +149,7 @@ export const 跑一块 = async (p: 预生成计划, o: 看守选项): Promise<�
     if (暂停着 && !是这一块(t, p)) throw new Error(`${任务} 里有暂停着的别的任务（中心 ${t['center-x']}, ${t['center-z']}，图案 ${t.pattern}），先跑完或 chunky cancel`);
     if (!o.不过闸) await 过放行闸(async () => {});
     const 命令 = 暂停着 ? ['chunky continue'] : [...p.步骤.map(([c]) => c), 'chunky start'];
-    const 记录: 看守状态['起服'][number] = { 开始: 现在(), 命令 };
+    const 记录: 起服记录 = { 阶段: st.阶段, 开始: 现在(), 命令 };
     st.起服.push(记录);
     存(st);
     说(`${st.阶段}：起服，${暂停着 ? '续跑' : `选区 ${p.选区.形状} 中心 ${p.选区.中心.join(', ')} 半边 ${p.选区.半边.join(' × ')}，${p.图案}，${p.区块数} 个区块`}`);
@@ -219,6 +241,16 @@ export const 跑一块 = async (p: 预生成计划, o: 看守选项): Promise<�
       st.阶段 = 下;
       存(st);
     } else if (!原因) throw new Error(`服务端退出了但任务没跑完（${STATE}），看 ${OUT} 和服务端 logs/latest.log`);
+    else {
+      const 数 = 连续无进度(st.起服, st.阶段);
+      if (数 >= 无进度上限) {
+        const 停在 = Math.max(0, ...st.起服.filter((r) => (r.阶段 ?? '主') === st.阶段).map((r) => r.最后进度?.区块 ?? 0));
+        throw new Error(
+          `${名} 的「${st.阶段}」阶段连着 ${数} 次重启都没有新进度（Chunky 停在 ${停在} 个区块，最近原因：${st.起服.slice(-数).map((r) => r.停服原因 ?? '?').join('；')}），放弃，不再重启。` +
+            `看 ${OUT}、${JSTAT} 和 jstack 文件找原因；排查完重跑同一条命令接着来（只再试一次，再没进度又会停），--最多无进度重启 <n> 可调`,
+        );
+      }
+    }
   }
   说(`${名} 跑完了`);
   return st;
