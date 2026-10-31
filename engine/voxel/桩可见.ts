@@ -10,7 +10,7 @@ import { 桩, 环境 } from './桩.ts';
 import type { VoxelMesh } from './材质.ts';
 
 export type 桩网格 = { k: string; cls: string; mesh: VoxelMesh; shadow: VoxelMesh | null };
-export const 桩当前网格: 桩网格[] = [];
+export const 桩世界网格 = new Map<string, { gl: THREE.WebGLRenderer; 帧: number; 表: 桩网格[] }>();
 
 const VS = /* glsl */ `
 #include <common>
@@ -30,15 +30,18 @@ const FS = (cut: boolean) => /* glsl */ `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform sampler2D blockAtlas;
+uniform vec2 uOff;
 varying vec4 vId; varying vec2 vBUv; varying vec2 vTex; varying vec3 vW;
 ${blockAtlasGlsl()}
 void main() {
+  vec2 cBUv = vBUv + dFdx(vBUv) * uOff.x + dFdy(vBUv) * uOff.y;
+  vec3 cW = vW + dFdx(vW) * uOff.x + dFdy(vW) * uOff.y;
   ${cut ? `{
     float fl = floor(vTex.x / 4096.0 + 0.001);
     float layer = vTex.x - fl * 4096.0;
-    vec2 f = fract(vBUv);
+    vec2 f = fract(cBUv);
     if (fl > 1.5) {
-      vec2 cell = floor(vW.xz);
+      vec2 cell = floor(cW.xz);
       float h = fract(sin(dot(cell, vec2(127.1, 311.7))) * 43758.5453);
       vec2 c = f - 0.5;
       c = h < 0.25 ? c : h < 0.5 ? vec2(-c.y, c.x) : h < 0.75 ? -c : vec2(c.y, -c.x);
@@ -47,6 +50,9 @@ void main() {
     if (textureLod(blockAtlas, atlasUv(layer, f), 0.0).a < 0.5) discard;
   }` : ''}
   #include <logdepthbuf_fragment>
+  #if defined( USE_LOGARITHMIC_DEPTH_BUFFER )
+    if (vIsPerspective != 0.0) gl_FragDepth = log2(vFragDepth + dFdx(vFragDepth) * uOff.x + dFdy(vFragDepth) * uOff.y) * logDepthBufFC * 0.5;
+  #endif
   gl_FragColor = vId;
 }`;
 
@@ -57,14 +63,15 @@ let 量过 = 0;
 const 总帧 = Number(环境.ANIM_ZN ?? 0);
 const 倍数 = Number(环境.ANIM_ZS ?? 1);
 
-let 备 : { mats: Record<string, THREE.ShaderMaterial>; shadowMat: THREE.ShaderMaterial; uMesh: { value: number } } | null = null;
+let 备 : { mats: Record<string, THREE.ShaderMaterial>; shadowMat: THREE.ShaderMaterial; uMesh: { value: number }; uOff: { value: THREE.Vector2 } } | null = null;
 const 备好 = () => {
   if (备) return 备;
   const uMesh = { value: 0 };
-  const mk = (cut: boolean, side: THREE.Side) => new THREE.ShaderMaterial({ uniforms: { uMesh, blockAtlas: { value: blockAtlas().original } }, vertexShader: VS, fragmentShader: FS(cut), blending: THREE.NoBlending, side, toneMapped: false });
+  const uOff = { value: new THREE.Vector2(0, 0) };
+  const mk = (cut: boolean, side: THREE.Side) => new THREE.ShaderMaterial({ uniforms: { uMesh, uOff, blockAtlas: { value: blockAtlas().original } }, vertexShader: VS, fragmentShader: FS(cut), blending: THREE.NoBlending, side, toneMapped: false });
   const solid = mk(false, THREE.FrontSide);
   const cut = mk(true, THREE.FrontSide);
-  备 = { mats: { 实心: solid, 实心树叶: solid, 镂空: cut, 花草: cut, 水: solid }, shadowMat: mk(false, THREE.BackSide), uMesh };
+  备 = { mats: { 实心: solid, 实心树叶: solid, 镂空: cut, 花草: cut, 水: solid }, shadowMat: mk(false, THREE.BackSide), uMesh, uOff };
   return 备;
 };
 
@@ -97,8 +104,11 @@ const 记 = (pix: Uint8Array, table: 面记[], key: '主' | '影') => {
 };
 
 export const 量可见 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera) => {
-  const { mats, shadowMat, uMesh } = 备好();
-  const items = 桩当前网格;
+  const { mats, shadowMat, uMesh, uOff } = 备好();
+  // 同一画布可能有几个体素世界：只要这一帧挂着的（拼段上一截的世界早已释放）
+  const 这画布 = [...桩世界网格.values()].filter((w) => w.gl === gl);
+  const 最新帧 = Math.max(...这画布.map((w) => w.帧), -Infinity);
+  const items = 这画布.filter((w) => w.帧 === 最新帧).flatMap((w) => w.表);
   if (!items.length) return;
   const table: 面记[] = [];
   const proxies = new Map<string, THREE.Mesh[]>();
@@ -113,7 +123,7 @@ export const 量可见 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: T
     const proxy = new THREE.Mesh(it.mesh.geometry, [mats[it.cls]]);
     proxy.matrixAutoUpdate = false;
     proxy.matrix.copy(it.mesh.matrix);
-    proxy.matrixWorld.copy(it.mesh.matrixWorld.equals(new THREE.Matrix4()) ? it.mesh.matrix : it.mesh.matrixWorld);
+    proxy.matrixWorld.copy(it.mesh.matrixWorld);
     proxy.matrixWorldAutoUpdate = false;
     proxy.onBeforeRender = () => { uMesh.value = idx + 1; (mats[it.cls] as THREE.ShaderMaterial).uniformsNeedUpdate = true; };
     if (!proxies.has(it.cls)) proxies.set(it.cls, []);
@@ -131,7 +141,7 @@ export const 量可见 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: T
       const sp = new THREE.Mesh(it.shadow.geometry, [shadowMat]);
       sp.matrixAutoUpdate = false;
       sp.matrix.copy(it.shadow.matrix);
-      sp.matrixWorld.copy(it.shadow.matrix);
+      sp.matrixWorld.copy(it.shadow.matrixWorld); // 体素世界的 group 上面可能有位移，matrix 只是相对它的
       sp.matrixWorldAutoUpdate = false;
       sp.onBeforeRender = () => { uMesh.value = idx + 1; shadowMat.uniformsNeedUpdate = true; };
       shadowProxies.push(sp);
@@ -159,24 +169,42 @@ export const 量可见 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: T
     return s;
   };
   const stat: Record<string, number> = {};
-  gl.render(sceneOf(['实心', '镂空', '实心树叶']), camera);
-  gl.readRenderTargetPixels(rt, 0, 0, w, h, pix);
-  stat.主新面 = 记(pix, table, '主');
-  for (const cls of ['花草', '水']) {
+  // 真画面是 4× 多重采样：采样点不在像素中心。这里按标准 4× 的采样点各偏一遍（上下翻转的也来一遍，ANGLE 底下 y 朝向不好断定），连同像素中心共 9 遍；ANIM_ZJ=0 只画中心
+  const pe = (camera as THREE.PerspectiveCamera).projectionMatrix.elements;
+  const e8 = pe[8], e9 = pe[9];
+  const 偏 = 环境.ANIM_ZJ === '0' ? [[0, 0]] : [[0, 0], [-0.125, -0.375], [0.375, -0.125], [-0.375, 0.125], [0.125, 0.375], [-0.125, 0.375], [0.375, 0.125], [-0.375, -0.125], [0.125, -0.375]];
+  stat.主新面 = 0;
+  const 不透 = sceneOf(['实心', '镂空', '实心树叶']);
+  const 花草 = sceneOf(['花草']);
+  for (const [dx, dy] of 偏) {
+    if (环境.ANIM_ZX !== '0') uOff.value.set(dx * 倍数, dy * 倍数); // 把这一遍的像素中心挪到了采样点；外推回去要往同方向走（画面往反方向挪）
+    pe[8] = e8 + (2 * dx) / size.x; // 偏移按画布像素算，和 ANIM_ZS 无关
+    pe[9] = e9 + (2 * dy) / size.y;
+    gl.clear(true, true, true);
+    gl.render(不透, camera);
+    gl.readRenderTargetPixels(rt, 0, 0, w, h, pix);
+    stat.主新面 += 记(pix, table, '主');
     gl.clear(true, false, false);
-    gl.render(sceneOf([cls]), camera);
+    gl.render(花草, camera);
     gl.readRenderTargetPixels(rt, 0, 0, w, h, pix);
     stat.主新面 += 记(pix, table, '主');
   }
+  pe[8] = e8;
+  pe[9] = e9;
+  uOff.value.set(0, 0);
   // 投影：找级联阴影的光
   let cascades: THREE.OrthographicCamera[] = [];
+  let 视口: THREE.Vector4[] = [];
   let mapSize = 0;
+  let 灯数 = 0;
   scene.traverse((o) => {
     const l = o as THREE.Light;
     if (l.castShadow && l.shadow) {
-      const sh = l.shadow as unknown as { _cameras?: THREE.OrthographicCamera[]; mapSize: THREE.Vector2 };
+      灯数++;
+      const sh = l.shadow as unknown as { _cameras?: THREE.OrthographicCamera[]; _viewports: THREE.Vector4[]; mapSize: THREE.Vector2 };
       if (sh._cameras) {
         cascades = sh._cameras;
+        视口 = sh._viewports;
         mapSize = sh.mapSize.x;
       }
     }
@@ -187,19 +215,32 @@ export const 量可见 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: T
     const s = new THREE.Scene();
     s.matrixWorldAutoUpdate = false;
     for (const m of shadowProxies) (s.children as THREE.Object3D[]).push(m);
-    for (const cam of cascades) {
+    for (let ci = 0; ci < cascades.length; ci++) {
+      const cam = cascades[ci];
+      // 和真的阴影遍同样的像素格：图集里每级四周留了一圈，半径对应的是视口的像素数，不是整张 mapSize
+      const vp = 视口[ci];
+      srt.viewport.set((vp.x - ci) * mapSize, vp.y * mapSize, vp.z * mapSize, vp.w * mapSize);
       gl.setRenderTarget(srt);
       gl.clear(true, true, true);
+      gl.info.autoReset = false;
+      gl.info.reset();
       gl.render(s, cam);
+      const 调 = gl.info.render.calls, 三 = gl.info.render.triangles;
+      gl.info.autoReset = true;
       gl.readRenderTargetPixels(srt, 0, 0, mapSize, mapSize, spix);
-      stat.影新面 = (stat.影新面 ?? 0) + 记(spix, table, '影');
+      const 新 = 记(spix, table, '影');
+      stat.影新面 = (stat.影新面 ?? 0) + 新;
+      let 非空 = 0;
+      const su = new Uint32Array(spix.buffer);
+      for (let q = 0; q < su.length; q += 16) if (su[q]) 非空++;
+      (stat as unknown as { 级: unknown[] }).级 = [...((stat as unknown as { 级?: unknown[] }).级 ?? []), { 调, 三, 新, 非空比: 非空 / (su.length / 16), 半径: cam.right, 近: cam.near, 远: cam.far, 位: cam.position.toArray().map((x) => Math.round(x)) }];
     }
   }
   gl.setRenderTarget(prevTarget);
   gl.setClearColor(prevColor, prevAlpha);
   gl.autoClear = prevAuto;
   gl.shadowMap.autoUpdate = prevShadowAuto;
-  桩.事件('可见帧', { 网格: frameList, ...stat, 影图: mapSize, 宽: w, 高: h });
+  桩.事件('可见帧', { 网格: frameList, ...stat, 影图: mapSize, 宽: w, 高: h, 灯数, 投影网格: shadowProxies.length });
   量过++;
   if (量过 === 总帧) {
     const 出: Record<string, { 段: number[]; 主: number[]; 影: number[]; 并: number[] }> = {};
@@ -219,6 +260,20 @@ export const 量可见 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: T
       出[k] = { 段: rec.段, 主, 影, 并 };
     }
     桩.事件('可见汇总', 出);
+    // 面位图交给缓存服务（离线裁缓存）：主 ∪ 影，一面一位，base64
+    if (环境.ANIM_MC_URL) {
+      const 位图: Record<string, string> = {};
+      for (const [k, rec] of 面记们) {
+        const bits = new Uint8Array((rec.n + 7) >> 3);
+        for (let f = 0; f < rec.n; f++) if (rec.主[f] || rec.影[f]) bits[f >> 3] |= 1 << (f & 7);
+        let s = '';
+        for (let i = 0; i < bits.length; i += 8192) s += String.fromCharCode(...bits.subarray(i, i + 8192));
+        位图[k] = btoa(s);
+      }
+      const x = new XMLHttpRequest();
+      x.open('POST', `${环境.ANIM_MC_URL}/mask`, false);
+      x.send(JSON.stringify(位图));
+    }
   }
 };
 void 帧画;
