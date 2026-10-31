@@ -26,6 +26,7 @@ anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（000
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）
 anim cache gc [--执行]                     缓存回收，默认只看；--执行 过渲染闸
+anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转 CRF12（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
 anim world list|bake|edit|pregen|server|freeze|block|heightmap|map|slice   世界（docs/世界.md）
