@@ -99,8 +99,9 @@ export const 删旧 = (种: 缓存种, 键: string, 级别: string, 新指纹: s
   return r;
 };
 
-/** 刚转码完（备好母版、一次性迁移之后）：这个指纹已被 CRF12 取代的 CRF1，没有理由留就删。返回删掉的大小 */
-export const 删已取代 = (键: string, 指纹: string, o: { 记录?: 运行记录; 作品?: string; 现在?: number } = {}): number => {
+/** 刚转码完（备好母版、一次性迁移之后）：这个指纹已被 CRF12 取代的 CRF1，没有理由留就删；worktree 里不删（见文件头）。返回删掉的大小 */
+export const 删已取代 = (键: string, 指纹: string, o: { 记录?: 运行记录; 作品?: string; 现在?: number; 主检出?: boolean } = {}): number => {
+  if (!(o.主检出 ?? 在主检出())) return 0;
   const 警告 = (s: string) => (o.记录 ? o.记录.记('警告', s) : console.error(`!! ${s}`));
   try {
     const 这个 = 扫一键('母版', 键, o.作品).媒体.find((f) => f.指纹 === 指纹.slice(0, 16) && f.已被取代);

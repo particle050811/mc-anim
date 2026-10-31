@@ -197,7 +197,7 @@ describe('render 渲完删旧', () => {
     fs.writeFileSync(path.join(目录(), `${旧16}.用过`), '');
     fs.utimesSync(path.join(目录(), `${旧16}.用过`), new Date(现在 - 小时), new Date(现在 - 小时));
     fs.writeFileSync(检出记号文件(目录(), 旧, 别的), `${别的}\n`);
-    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(100);
+    expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(100);
     expect(在('.mkv')).toBe(false);
     expect(在('.crf12.mkv')).toBe(true);
     fs.rmSync(别的, { recursive: true });
@@ -212,7 +212,7 @@ describe('render 渲完删旧', () => {
     expect(r.删).toEqual([]);
     expect(r.留[0]!.理由).toContain('交付 manifest 读不出：假/坏了');
     expect(在('.mkv') && 在('.crf12.mkv')).toBe(true);
-    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(0);
+    expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(0);
     fs.writeFileSync(path.join(path.dirname(m), '全片-未拉响度.flac'), '');
     fs.writeFileSync(path.join(path.dirname(m), '剪辑包', '画面.mp4'), '');
     删();
@@ -224,7 +224,7 @@ describe('render 渲完删旧', () => {
     const f = 认可文件(键, 'darwin-arm64', 作品根);
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, '坏了\n');
-    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(0);
+    expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(0);
     expect(在('.mkv')).toBe(true);
   });
 
@@ -237,12 +237,18 @@ describe('render 渲完删旧', () => {
     expect(fs.existsSync(path.join(dir, `${旧16}.mov`))).toBe(false);
   });
 
+  it('删已取代：worktree 里不删', () => {
+    旧母版({ 原: true, 转过: true });
+    expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: false })).toBe(0);
+    expect(在('.mkv')).toBe(true);
+  });
+
   it('删已取代：只删段签记着转过的 CRF1；没转过的不算', () => {
     旧母版({ 原: true });
-    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(0);
+    expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(0);
     expect(在('.mkv')).toBe(true);
     旧母版({ 原: true, 转过: true });
-    expect(删已取代(键, 旧, { 作品: '假', 现在 })).toBe(100);
+    expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(100);
     expect(在('.mkv')).toBe(false);
     expect(在('.crf12.mkv')).toBe(true);
   });

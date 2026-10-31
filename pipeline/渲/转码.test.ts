@@ -10,6 +10,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-转码测试-'));
 process.env.ANIM_DATA = 数据根;
 vi.mock('../闸/闸.ts', async (原) => ({ ...(await 原<typeof import('../闸/闸.ts')>()), 过渲染闸: <T>(fn: () => Promise<T>) => fn() }));
+// 只有主检出才删 CRF1：测试在 worktree 里跑也按主检出算
+vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('../环境/路径.ts')>()), 在主检出: () => true }));
 
 const { 转码, 转码视频参数, 存法标签, 是压缩母版, 读存法标签, 读x264版本 } = await import('./转码.ts');
 const { 存成压缩, 备好母版 } = await import('./转存.ts');
