@@ -1,5 +1,6 @@
 // 交付目录（anim film 出的 交付/<作品>/<UTC>-<名>/）的约定：manifest 的两个版本、作品的交付选项、「自足」的判断。
-// 自足 = edit-package 不用再读母版：有 全片-未拉响度.flac（拉响度之前的整片声音，无损），作品开了剪辑包的还要有 剪辑包/画面.mp4。
+// 自足 = edit-package 不用再读母版：有 全片-未拉响度.flac（拉响度之前的整片声音，无损）和 剪辑包/画面.mp4。
+//   作品没开剪辑包（交付.toml）的 film 不出画面，这种交付不自足，母版一直钉着（edit-package 要拿母版现做画面）。
 // manifest v1（10-30 以前）每段记 母版（相对数据根，更早的是绝对路径）；v2 不记母版，记 指纹、字节sha、段签（相对数据根），母版路径按作品、段键、指纹现算。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -79,9 +80,8 @@ export const 读交付manifest = (dir: string): 交付manifest & { 版本: numbe
   };
 };
 
-/** 交付自足吗：缺哪几样（空就是自足）；要剪辑包 按作品的 交付.toml */
-export const 交付缺 = (dir: string, 要剪辑包: boolean): string[] =>
-  [未拉响度文件, ...(要剪辑包 ? [剪辑画面文件] : [])].filter((f) => !fs.existsSync(path.join(dir, f)));
+/** 交付自足吗：缺哪几样（空就是自足；和 缓存/回收.ts 的 交付自足 同一个判断） */
+export const 交付缺 = (dir: string): string[] => [未拉响度文件, 剪辑画面文件].filter((f) => !fs.existsSync(path.join(dir, f)));
 
 const 采样率 = 48000;
 

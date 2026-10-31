@@ -103,28 +103,27 @@ describe('保留集：母版', () => {
     const 段们 = [{ 键: '6-甲', 指纹: 'a'.repeat(16) + 'f'.repeat(48) }];
     写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 2, 作品: '作品甲', 段: 段们, 叠层: [] }));
     写('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
+    写('交付/作品甲/1030-0000-新/剪辑包/画面.mp4', '');
     const 保留 = new 保留集();
-    加交付(保留, path.join(根, '交付'), 根, () => {}, { 要剪辑包: () => false });
+    加交付(保留, path.join(根, '交付'), 根);
     expect(删的(规划(保留))).toEqual(['bbbbbbbbbbbbbbbb']);
     expect(保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mkv')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
   });
 
-  it('解钉打开：自足的交付不再钉母版；作品要剪辑包而画面还没有的照钉；不知道要不要剪辑包按要', () => {
+  it('解钉打开：FLAC 和剪辑包画面都在才不再钉母版；只有 FLAC 的（没开剪辑包的作品，edit-package 还要母版现做画面）照钉', () => {
     母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     母版('6-甲', 'cccccccccccccccc', '视频', 1);
     写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 2, 作品: '作品甲', 段: [{ 键: '6-甲', 指纹: 'a'.repeat(64) }], 叠层: [] }));
     写('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
-    const 解 = (o: { 要剪辑包?: (作品: string) => boolean }) => {
+    const 解 = () => {
       const 保留 = new 保留集();
-      加交付(保留, path.join(根, '交付'), 根, () => {}, { 解钉: true, ...o });
+      加交付(保留, path.join(根, '交付'), 根, () => {}, { 解钉: true });
       return 删的(规划(保留));
     };
-    expect(解({ 要剪辑包: () => false })).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
-    expect(解({ 要剪辑包: () => true })).toEqual(['bbbbbbbbbbbbbbbb']);
-    expect(解({})).toEqual(['bbbbbbbbbbbbbbbb']);
+    expect(解()).toEqual(['bbbbbbbbbbbbbbbb']);
     写('交付/作品甲/1030-0000-新/剪辑包/画面.mp4', '');
-    expect(解({ 要剪辑包: () => true })).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
+    expect(解()).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
   });
 
   it('认可：有认可参考才可解钉；解钉默认关，照钉、说明里标出', () => {
