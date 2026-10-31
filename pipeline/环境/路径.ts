@@ -46,6 +46,15 @@ export const 主检出 = (): string => {
   return (主检出缓存 = root);
 };
 
+const 规范检出 = (p: string) => {
+  const r = path.resolve(fs.realpathSync(p)).normalize('NFC');
+  return process.platform === 'win32' ? r.toLowerCase() : r;
+};
+/** 这份代码所在检出的规范路径（比较用：和 .检出-* 记号里写的同一个写法） */
+export const 本检出 = () => 规范检出(代码根());
+/** 这份代码是不是主检出（worktree 里是 false；公开版解压包没有 git，算主检出） */
+export const 在主检出 = () => 本检出() === 规范检出(主检出());
+
 /** 当前提交和工作区是否有未提交的改动；不在 git 里返回 null */
 export const 提交状态 = (): { 提交: string; 有改动: boolean } | null => {
   try {

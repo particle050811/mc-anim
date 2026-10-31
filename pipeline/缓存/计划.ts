@@ -3,9 +3,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 代码根, 主检出 } from '../环境/路径.ts';
 import { 作品们 } from '../环境/作品.ts';
-import { 配置, 数据根, 数据路径, 母版目录, 草稿根, 运行目录 } from '../环境/配置.ts';
+import { 配置, 数据根, 数据路径, 母版目录, 段签目录, 草稿根, 运行目录 } from '../环境/配置.ts';
 import { 跑出 } from '../环境/子进程.ts';
+import { 压缩名 } from '../渲/母版.ts';
 import { 加当前指纹 } from './当前指纹.ts';
+import { 参考文件查法, 开剪辑包查法 } from './钉.ts';
 import { 找重复, 执行去重, 读账, 写账, 能克隆, type 去重组, type 去重账 } from './去重.ts';
 import { sha缓存 } from './sha缓存.ts';
 import {
@@ -24,6 +26,8 @@ export type 回收选项 = {
   草稿天数: number;
   webpack天数: number;
   现在: number;
+  /** 一次性迁移的只打印：这些 CRF1 按「已经转存完了」算（anim cache 转存 用它列转存后能删什么） */
+  假定已转码?: ReadonlySet<string>;
 };
 export const 默认天数 = { 近期: 2, 草稿: 14, webpack: 3 };
 
@@ -102,7 +106,8 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
     const 缓存里的 = new Set(种们.flatMap((种) => (fs.existsSync(数据路径('cache', 种)) ? fs.readdirSync(数据路径('cache', 种)) : [])));
     const 这次 = o.作品.length ? o.作品 : [...new Set([...已知.keys(), ...缓存里的])].sort();
     const 保留 = new 保留集();
-    加交付(保留, 数据路径('交付'), 数据根(), 警告);
+    // 自足的交付、有认可参考的认可不再钉（用户 10-30 定「这个未来用不到的就删」）
+    加交付(保留, 数据路径('交付'), 数据根(), 警告, { 解钉: true, 开剪辑包: 开剪辑包查法(已知) });
     for (const 作品 of 这次) {
       if (!缓存里的.has(作品)) continue;
       const 根 = 已知.get(作品);
@@ -111,12 +116,13 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
         for (const 种 of 种们) 保留.加目录(数据路径('cache', 种, 作品), { 类: '算不出', 说明: '代码里没有这部作品' });
         continue;
       }
-      加认可(保留, 根, (键) => 母版目录(键, 作品), 警告);
+      加认可(保留, 根, (键) => 母版目录(键, 作品), 警告, { 解钉: true, 参考文件: 参考文件查法(作品) });
       if (要('母版') || 要('叠层') || 要('去重')) await 加当前指纹(保留, 作品, 警告, 进度);
     }
     for (const 作品 of 这次) {
       for (const 种 of 种们) {
-        const 扫 = 扫媒体(数据路径('cache', 种, 作品), 种, 作品);
+        const 扫 = 扫媒体(数据路径('cache', 种, 作品), 种, 作品, { 段签目录: (键, 指纹) => 段签目录(键, 指纹, 作品), 现在: o.现在 });
+        if (o.假定已转码) for (const f of 扫.媒体) if (o.假定已转码.has(f.路径)) f.已被取代 = true;
         if (要(种) || 要('去重')) 计划.媒体.push(...规划媒体(扫.媒体, 保留, { 现在: o.现在, 近期天数: o.近期天数 }));
         if (要('残留')) 计划.临时.push(...规划临时(扫.临时, o.现在));
         if (扫.不认识.length) 计划.不认识.push({ 位置: `cache/${种}/${作品}`, 条目: 扫.不认识.map((f) => ({ ...f, 名: path.relative(数据路径('cache', 种, 作品), f.路径) })) });
@@ -183,7 +189,8 @@ export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '
     }
   };
   const 未满 = (天数: number) => (改于: number) => 现在 - 改于 < 天数 * 天;
-  for (const f of 计划.媒体) if (!f.理由.length) 删(f.路径, f.大小, 未满(o.近期天数), false);
+  // 已被取代的 CRF1 不看新旧（迁移前几天渲的也算），只确认 CRF12 还在
+  for (const f of 计划.媒体) if (!f.理由.length) 删(f.路径, f.大小, f.已被取代 ? () => !fs.existsSync(压缩名(f.路径)) : 未满(o.近期天数), false);
   for (const f of 计划.临时) if (!f.理由.length) 删(f.路径, f.大小, 未满(1), false);
   // 计划算完到删之间可能有人开始烘焙同一个包：删前再看一眼锁
   for (const d of 计划.暂存) if (!d.理由.length) 删(d.路径, d.大小, (改于) => 未满(1)(改于) || 锁有人拿(`${d.路径}.写入.lock`, 配置('主机')), true);
