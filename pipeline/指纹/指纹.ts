@@ -66,7 +66,7 @@ export const 读地形版本表 = (): Record<string, string> => {
   return Object.fromEntries(Object.entries(包).map(([k, v]) => [k, v.版本]));
 };
 
-/** 段声明的包 → 登记的版本，键排好。指纹的地形项和传给页面的版本表都用它，两边不会对不上 */
+/** 段声明的包 → 登记的版本，键排好。指纹的地形项用它；母版、叠层的页面直接拿算好的这份，不重读表（渲/地形注入.ts） */
 export const 段地形版本 = (键: string, 声明: readonly string[], 版本表: Record<string, string>): Record<string, string> =>
   Object.fromEntries(
     [...声明].sort().map((名) => {

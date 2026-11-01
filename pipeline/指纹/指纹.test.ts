@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { 地形版本环境名, 地形用量段环境名 } from '../../engine/段/地形环境.ts';
-import { 全表环境, 段渲染环境 } from '../渲/地形注入.ts';
+import { 全表环境, 段渲染环境, 段现在的地形 } from '../渲/地形注入.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 全部段 } from '../清单/清单.ts';
@@ -119,11 +119,13 @@ describe('地形按段依赖', () => {
     await expect(用表算(s, (包) => void delete 包[s.段.地形[0]!])).rejects.toThrow(/没在 assets\/地形版本.json 登记版本/);
   });
 
-  it('传给页面的版本表和指纹的地形项是同一份，只有声明的包', async () => {
+  // 批次中途表变了页面也不跟着变，整条流程在 渲/渲母版.test.ts 验
+  it('环境按给的地形项拼，只有声明的包；同一张表当场读的和指纹的地形项相同', async () => {
     const s = await 穿塔();
     const 基 = await 用表算(s, () => {});
-    const 环境 = 段渲染环境(s);
+    const 环境 = 段渲染环境(基.段, 基.项.地形);
     expect(JSON.parse(环境[地形版本环境名]!)).toEqual(基.项.地形);
+    expect(段现在的地形(s)).toEqual(基.项.地形);
     expect(环境[地形用量段环境名]).toBe(`应力转动/${s.键}`);
     expect(Object.keys(JSON.parse(全表环境()[地形版本环境名]!))).toEqual(Object.keys(JSON.parse(原(表文件, 'utf8')).包));
   });
