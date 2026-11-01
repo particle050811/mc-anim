@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 配置 } from '../环境/配置.ts';
 import { 列文件 } from './文件.ts';
-import { 遮密 } from './发起者.ts';
+import { 遮密, 敏感名, type 发起者 } from './发起者.ts';
 export type 调度事件 = {
     v: number;
     时: string;
@@ -13,12 +13,35 @@ export type 调度事件 = {
     主机: string;
     [k: string]: unknown;
 };
+const 行上限 = 4096;
+const 放得下 = (行: 调度事件) => Buffer.byteLength(JSON.stringify(行)) + 1 < 行上限;
+const 短发起 = (x: unknown) => { const { 来源, 会话, 路, 工作区, pid, 子会话, 代理标 } = x as Partial<发起者>; return { 来源, 会话, 路, 工作区, pid, 子会话, 代理标 }; };
+const 按字节截 = (s: string, n: number) => Buffer.byteLength(s) <= n ? s : Buffer.from(s).subarray(0, n).toString('utf8').replace(/\uFFFD+$/, '') + '…';
+/** 按丢失的代价从小到大退。决定、为什么、谁 是这条日志存在的理由，只收缩不删。 */
+const 压行 = (行: 调度事件): 调度事件 => {
+    const a: 调度事件 = { ...行, 截断: true }, 看 = a.看到 as { 人工?: string; 摘要?: string } | string | undefined;
+    if (看 && typeof 看 === 'object')
+        a.看到 = [看.人工, 看.摘要].filter(Boolean).join('；');
+    delete a.队;
+    delete a.机;
+    if (放得下(a))
+        return a;
+    for (const k of ['发起', '谁'])
+        if (a[k] && typeof a[k] === 'object')
+            a[k] = 短发起(a[k]);
+    if (放得下(a))
+        return a;
+    for (const k of ['看到', '决定', '为什么'])
+        if (typeof a[k] === 'string')
+            a[k] = 按字节截(a[k], 900);
+    return 放得下(a) ? a : { v: a.v, 时: a.时, 事: a.事, 任务: a.任务, 票: a.票, 主机: a.主机, 截断: true, 谁: a.谁, 决定: a.决定, 为什么: a.为什么 };
+};
 /** 单次 O_APPEND write，不能先读再写；多进程和跨月均不轮转正在打开的文件。 */
 export const 记调度 = (目录: string, 事: string, 字段: Record<string, unknown> = {}, now = Date.now()) => {
     try {
         fs.mkdirSync(目录, { recursive: true });
         const 清 = (x: unknown, key = ''): unknown => {
-            if (/token|secret|password|authorization|api.?key/i.test(key))
+            if (敏感名.test(key))
                 return '[已遮蔽]';
             if (typeof x === 'string')
                 return 遮密(x).slice(0, 400);
@@ -30,14 +53,10 @@ export const 记调度 = (目录: string, 事: string, 字段: Record<string, un
         };
         const 行: 调度事件 = { ...(清(字段) as Record<string, unknown>), v: 1, 时: new Date(now).toISOString(), 事, 主机: 配置('主机') };
         let text = JSON.stringify(行) + '\n';
-        if (Buffer.byteLength(text) >= 4096) {
-            行.看到=(行.看到 as {摘要?:string}|undefined)?.摘要??'快照过长，见同票领票事件';
-            delete 行.队;
-            行.截断 = true;
-            text = JSON.stringify(行) + '\n';
+        if (!放得下(行)) {
+            text = JSON.stringify(压行(行)) + '\n';
+            console.error(`!! 调度日志一行超过 ${行上限} 字节，已压缩：${事}`);
         }
-        if (Buffer.byteLength(text) >= 4096)
-            text = JSON.stringify({ v: 1, 时: 行.时, 事, 任务: 行.任务, 票: 行.票, 主机: 行.主机, 截断: true }) + '\n';
         const fd = fs.openSync(path.join(目录, 行.时.slice(0, 7) + '.jsonl'), 'a');
         try {
             fs.writeSync(fd, text);

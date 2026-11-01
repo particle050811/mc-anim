@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 耗时表, 运行记录目录, 配置 } from '../环境/配置.ts';
 import { 提交状态 } from '../环境/路径.ts';
+import { 遮命令 } from '../闸/发起者.ts';
 import type { 阶段记录 } from './阶段.ts';
 
 const 表头 = '开始（UTC）\t标签\t秒\t退出码\t主机\t命令\n';
@@ -73,7 +74,7 @@ export class 运行记录 {
   结束(退出码: number) {
     if(this.已结束)return;this.已结束=true;
     const 秒 = (Date.now() - this.开始ms) / 1000;
-    const 命令行 = ['anim', this.命令, ...this.参数].join(' ');
+    const 命令行 = 遮命令(['anim', this.命令, ...this.参数]);
     try {
       记耗时(`anim ${this.命令}`, this.开始ms, 秒, 退出码, 命令行);
       const dir = 运行记录目录();
