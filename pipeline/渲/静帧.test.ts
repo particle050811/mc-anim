@@ -16,7 +16,7 @@ vi.mock('@remotion/renderer', async (原) => ({
     fs.writeFileSync(o.output, String(o.frame), { flag: o.overwrite ? 'w' : 'wx' });
   },
 }));
-const { 出静帧们, 同页出帧, 静帧文件 } = await import('./渲.ts');
+const { 出静帧们, 同页出帧, 静帧文件, 连出提醒 } = await import('./渲.ts');
 
 const 出到 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-静帧-'));
 const h = { serveUrl: '/包', browser: {}, 参数: { inputProps: {}, gl: 'angle', scale: 2 } } as never;
@@ -58,6 +58,11 @@ describe('静帧', () => {
     fs.writeFileSync(静帧文件(出到, '甲', 30), '旧');
     await expect(跑([30, 85])).rejects.toThrow(/EEXIST/);
     expect(fs.readFileSync(静帧文件(出到, '甲', 30), 'utf8')).toBe('旧');
+  });
+  it('多帧连出才提醒帧随批变，一帧和 --逐帧 不提醒', () => {
+    expect(连出提醒('甲', [0, 85])).toMatch(/甲 这 2 帧在同一页面连出.*--逐帧/);
+    expect(连出提醒('甲', [85])).toBeNull();
+    expect(连出提醒('甲', [0, 85], true)).toBeNull();
   });
   it('逐帧校验走的同页出帧可以开声音（照 renderMedia）', async () => {
     await 同页出帧(h, 组合, [1], { 打开声音: true, 每帧: () => {} });

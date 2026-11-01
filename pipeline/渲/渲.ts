@@ -384,6 +384,7 @@ export const 静帧文件 = (出到: string, 段键: string, 帧: number) => pat
 
 /**
  * 多帧默认同页连出（第一帧之后不用从头读地形）；逐帧 = 每帧一个新页面，等于旧做法。两边文件名一样，已有的文件都不覆盖。
+ * 连出的帧随批里排在前面的帧变，拼段跨截时天空可能整体变色，渲静帧 开跑前提醒（连出提醒）。
  * 用户 10-31 定做连出，定稿用哪条等主会话复核完（docs/渲染性能.md「静帧连出」）。
  */
 export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参数'>, composition: 会话['组合'][number], 段键: string, 帧们: readonly number[], 出到: string, o: { 逐帧?: boolean; 完成: (已出: number) => void }) => {
@@ -417,9 +418,17 @@ export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参
   }
 };
 
+/** 连出才有的提醒；数据见 docs/渲染性能.md「静帧连出」 */
+export const 连出提醒 = (段键: string, 帧们: readonly number[], 逐帧?: boolean) =>
+  帧们.length > 1 && !逐帧
+    ? `${段键} 这 ${帧们.length} 帧在同一页面连出：除帧号最小的一帧，别的帧随批里排在前面的帧变，和单帧、母版都可能不同；拼段批里跨了截（比如 6-斩娜迦 同时有第 9 帧及之前、第 10 帧及之后）时天空可能整体变色。看颜色、和单帧或母版比，加 --逐帧`
+    : null;
+
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
 export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录, o: { 逐帧?: boolean } = {}) => {
   const 要出 = [...new Set(帧们)];
+  const 提醒 = 连出提醒(s.键, 要出, o.逐帧);
+  if (提醒) 记录?.记('警告', 提醒);
   await 开会话(级别, async (h) => {
     const composition = 找组合(h, s);
     for (const f of 要出) {
