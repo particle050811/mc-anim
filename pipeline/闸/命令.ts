@@ -4,7 +4,7 @@ import { 等条件 } from './等.ts';
 import { 解析参数, 用法错误, type 已解析 } from '../cli/参数.ts';
 import type { 命令 } from '../cli/命令.ts';
 import { 取调度环境, 清崩溃, type 调度环境 } from './任务.ts';
-import { 读状态, 读占用, 渲染看, 一行状态, 前方等待 } from './看.ts';
+import { 读状态, 读占用, 渲染看, 一行状态, 前方等待, 队上占用 } from './看.ts';
 import { 读机器快照并行 } from './机器.ts';
 import { 读调度,记调度,type 调度事件 } from './调度日志.ts';
 import { 复盘 } from './复盘.ts';
@@ -57,7 +57,7 @@ export const 跑调度 = async (args: string[], env?: 调度环境, 输出: (s: 
     if (cmd === '预计') {
         if(!rest.length)throw new 用法错误('预计 要给选择器');
         const {选段}=await import('../清单/清单.ts');
-        const 段们=await 选段(rest),s=读状态(e),根=path.dirname(e.日志目录),级别=p.值['--级别']??'视频',前方=前方等待(s,s.时);
+        const 段们=await 选段(rest),s=读状态(e),根=path.dirname(e.日志目录),级别=p.值['--级别']??'视频',前方=前方等待(队上占用(s,'渲染'),s.时);
         输出(JSON.stringify({前方约秒:前方.秒,未知按下界:前方.未知,级别,段:段们.map(t=>({段:t.键,render纯跑秒:估计({种:'render',段:t.键,帧数:t.段.帧数,级别},根),still一帧秒:估计({种:'still',段:t.键,帧数:1,级别},根)})),说明:'未知显示 null；无预计的票按 23 秒下界，不承诺完成时刻'}));
         return 0;
     }

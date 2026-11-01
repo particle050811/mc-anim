@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { 排队拿, 过渲染闸, 闸心跳, 祖先持锁变量, type 闸环境 } from './闸.ts';
+import { 排队拿, 过放行闸, 过渲染闸, 闸心跳, 祖先持锁变量, type 闸环境 } from './闸.ts';
 import { 读调度 } from './调度日志.ts';
 import { 改序 } from './票.ts';
 import { 轮到我 as 旧轮到我 } from './fixtures/旧轮到我.ts';
@@ -130,6 +130,32 @@ it('锁在活进程手里不算等内存：票不写字段、不告警；锁空�
   expect(提示).toContain(`渲染排队（锁在 pid ${process.ppid} 手里）`);
   expect(事件('等内存起')).toHaveLength(2);
   expect(事件('等内存止')).toHaveLength(2);
+});
+
+it('票被旧内容盖掉，票主人下一轮补回；旧内容写回的残留标记也清掉', async () => {
+  let 轮 = 0, 起 = 0, 空闲 = 10;
+  const 改票 = (改: (c: Record<string, unknown>) => void) => { const c = 票内容(); 改(c); fs.writeFileSync(path.join(dir, '渲染.排队', 票们()[0]!), JSON.stringify(c)); };
+  await 过渲染闸(async () => {}, () => {}, { ...基本(), 读内存: () => 内存(空闲), 睡: async () => {
+    轮++;
+    if (轮 === 1) { 起 = 票内容().等内存起; expect(起).toBeGreaterThan(0); 改票(c => { delete c.等内存起; delete c.卡在; }); }
+    if (轮 === 2) { expect(票内容()).toMatchObject({ 等内存起: 起, 卡在: '内存' }); fs.writeFileSync(锁(), `${process.ppid}\n`); }
+    if (轮 === 3) { expect(票内容().卡在).toBeUndefined(); 改票(c => { c.等内存起 = 1; c.卡在 = '内存'; }); }
+    if (轮 === 4) { expect(票内容().卡在).toBeUndefined(); expect(票内容().等内存起).toBeUndefined(); fs.rmSync(锁()); 空闲 = 80; }
+  } }, { 种: 'still' });
+  expect(轮).toBe(4);
+});
+
+it('放行闸的票态同样补回，等内存秒按原起点算', async () => {
+  let 轮 = 0, 起 = 0, now = Date.now();
+  const 队 = path.join(dir, '放行.排队'), 读 = () => { const f = path.join(队, fs.readdirSync(队)[0]!); return [f, JSON.parse(fs.readFileSync(f, 'utf8'))] as const; };
+  await 过放行闸(async () => {}, () => {}, { ...基本(), 现在毫秒: () => now, 核数: () => 10, 一分钟负载: () => 0, 读内存: () => 内存(轮 < 2 ? 10 : 80), 睡: async () => {
+    轮++;
+    const [f, c] = 读();
+    if (轮 === 1) { 起 = c.等内存起; expect(起).toBe(now); delete c.等内存起; delete c.卡在; fs.writeFileSync(f, JSON.stringify(c)); now += 60_000; }
+    if (轮 === 2) expect(c).toMatchObject({ 等内存起: 起, 卡在: '内存' });
+  } }, { 种: 'voice' });
+  expect(事件('等内存起')).toHaveLength(1);
+  expect(事件('等内存止')).toMatchObject([{ 秒: 60 }]);
 });
 
 it('监控全写不了也只提示：渲染跑完、锁照放、下一次能拿', async () => {

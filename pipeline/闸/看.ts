@@ -77,6 +77,8 @@ export const 读状态 = (e: 调度环境, 读机 = 读机器快照, 回收 = tr
 const 分 = (秒: number) => `${Math.max(0, 秒 / 60).toFixed(1)}分`;
 const G = (n: number | null) => n === null ? '?' : (n / 2 ** 30).toFixed(1) + 'G';
 export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}`;
+/** 一张票只等自己这把锁和同队的票：放行票不等渲染锁。 */
+export const 队上占用 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>, 锁名: string) => ({ 持锁: 持锁.filter(x => x.锁 === 锁名), 票: 票.filter(t => path.basename(path.dirname(t.文件)) === `${锁名}.排队`) });
 /** 占锁中位数，没有预计的按它算下界。 */
 const 无预计秒 = 23;
 /** 这些活占用还要多久：持锁剩余加票的预计。 */
@@ -94,13 +96,12 @@ export const 渲染看 = (s: 调度状态): string => {
     lines.push(`CPU/准备 ${cpu.slice(0, 3).map(x => `#${x.发起.pid} ${x.声明.种} ${x.发起.路 || x.发起.工作区}`).join('；') || '无登记'}；孤儿Chrome ${m.孤儿 ?? '?'}`);
     for (const x of s.持锁.slice(0, 2))
         lines.push(`持锁 #${x.pid}${x.死 ? ' 死' : ''} ${x.声明.种 ?? '脚本'} ${x.声明.段 ?? ''} ${x.已出帧}/${x.总帧 ?? '?'}帧 ${x.发起.工作区}/${x.发起.路 || '?'} ${x.声明.用途 ?? '?'} 已占${分((s.时 - x.拿锁时) / 1000)}/预计${x.声明.预计秒 ? 分(x.声明.预计秒) : '?'} 心跳${x.心跳 ? Math.round((s.时 - x.心跳) / 1000) + '秒' : '无，旧闸'}`);
-    const seen = new Map<string, number>(), 前面: 票[] = [];
+    const seen = new Map<string, number>();
     s.票.slice(0, 3).forEach((t, i) => {
         const c = t.内容, d = c?.声明, key = JSON.stringify([d?.种, d?.作品, d?.段, d?.级别, d?.帧, d?.帧数]), 活 = c && !t.死;
-        const 重复 = 活 && seen.get(key), { 秒, 未知 } = 前方等待({ 持锁: s.持锁, 票: 前面 }, s.时);
+        const 上 = 队上占用(s, path.basename(path.dirname(t.文件), '.排队')), 重复 = 活 && seen.get(key), { 秒, 未知 } = 前方等待({ 持锁: 上.持锁, 票: 上.票.filter(q => q.名 < t.名) }, s.时);
         if (活)
             seen.set(key, t.pid);
-        前面.push(t);
         // 标记放前面：超预算时只截段和路名，「约 0 分后」后面的 等内存 不能被截掉。
         lines.push(`排队${i + 1} #${t.pid}${t.死 ? ' 死' : ''}${重复 ? ' 重复#' + 重复 : ''}${c?.卡在 ? ' 等' + c.卡在 : ''}${c?.暂缓至 ? ' 暂缓' : ''} 等${分((s.时 - (c?.起 ?? t.时间)) / 1000)} 预计${d?.预计秒 ? 分(d.预计秒) : '?'} 约${未知 ? '≥' : ''}${分(秒)}后 ${d?.种 ?? '旧票'} ${d?.段 ?? ''} ${c?.发起.路 ?? ''}`);
     });
