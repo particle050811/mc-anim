@@ -134,10 +134,13 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         只提示('被越计数', () => 记被越(列票(path.dirname(新.文件)).filter(q => q.名 > 新.名 && q.名 < 原), e.本机));
     if (cmd !== '恢复')
         新.内容!.原序 ??= String(t.时间);
-    if (cmd === '后')
+    if (cmd === '后') {
         新.内容!.暂缓至 = 至;
+        新.内容!.暂缓因 = why;
+    }
     else if (新.内容!.暂缓至) {
         delete 新.内容!.暂缓至;
+        delete 新.内容!.暂缓因;
         新.内容!.起 = e.现在毫秒();
     }
     写票(新);

@@ -11,7 +11,7 @@ import { 取调度环境, 开任务, 有任务, 清崩溃, type 调度环境, ty
 import { 领票, 列票, 票活着, type 票, 回队尾, 改序, 写票, 清任务票, 记被越 } from './票.ts';
 import { 写JSON, 读JSON, 只提示 } from './文件.ts';
 import { 清孤儿 } from './孤儿.ts';
-import { 读状态 } from './看.ts';
+import { 读状态, 读占用, 前方等待 } from './看.ts';
 import { 监测一轮 } from './告警.ts';
 import { 读机器快照, type 机器快照 } from './机器.ts';
 import { 估计 } from './估计.ts';
@@ -99,6 +99,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         const 让路 = 取指令(e, task.info.任务);
         if (让路?.动作 === '让路' && 让路.至 && 让路.至 > e.现在毫秒() && 让路.票 !== t.名) {
             t.内容!.暂缓至 = 让路.至;
+            t.内容!.暂缓因 = 让路.为什么;
             t.内容!.原序 = String(t.时间);
             t = 改序(t, String(900000000000000 + e.现在毫秒()));
             写票态(t);
@@ -121,6 +122,13 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         const 队况 = () => { const 全 = 列票(dir); return { 深度: 全.filter(x => x.名 !== t.名).length, 前面: 全.filter(x => x.名 < t.名).slice(0, 3).map(x => x.名), 持锁: 持有者(file) }; };
         撤票 = 登记收尾(清票);
         记('领票', { 队: 队况(), 机: 机读数(e) });
+        只提示('领票提示', () => {
+            const 占用 = 读占用(e), 前 = 占用.票.filter(q => !q.死 && path.dirname(q.文件) === dir && q.名 < t.名), 锁上 = 占用.持锁.filter(x => !x.死 && x.锁 === 名);
+            if (!前.length && !锁上.length)
+                return;
+            const { 秒, 未知 } = 前方等待({ 持锁: 锁上, 票: 前 }, e.现在毫秒());
+            (opts.等待提示 ?? (s => console.error(`== 资源闸：${名}排队（${s}）`)))(`前面 ${前.length} 张，约${未知 ? '≥' : ''}${(秒 / 60).toFixed(1)} 分`);
+        });
         for (;;) {
             const 令 = 路让路(e);
             if (令) {
@@ -153,6 +161,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
                     continue;
                 }
                 delete t.内容!.暂缓至;
+                delete t.内容!.暂缓因;
                 t.内容!.起 = e.现在毫秒();
                 写票态(t);
                 记('恢复', { 原因: '暂缓到期回队尾' });
@@ -195,7 +204,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             }
             else
                 opts.离开准入?.(t);
-            const 等待 = 暂缓 ? `暂缓至 ${new Date(t.内容!.暂缓至!).toISOString()}` : 占 ? `锁在 pid ${持有者(file) ?? '?'} 手里` : 轮到 ? '等资源' : '前面还有人排队';
+            const 等待 = 暂缓 ? `暂缓至 ${new Date(t.内容!.暂缓至!).toISOString()}${t.内容!.暂缓因 ? `：${t.内容!.暂缓因}` : ''}` : 占 ? `锁在 pid ${持有者(file) ?? '?'} 手里` : 轮到 ? '等资源' : '前面还有人排队';
             if (等待 !== 原等待) {
                 opts.等待提示?.(等待);
                 记('排队', { 等谁: 持有者(file), 前面: 活.slice(0, 3).map(x => x.名), 状态: 等待 });

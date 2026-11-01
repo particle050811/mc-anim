@@ -223,3 +223,16 @@ it('快路径的全局参数和帮助走完整路由，和别的命令一致',()
   const 用错=跑('不存在的动作');expect(用错.status).toBe(2);expect(用错.stderr).toContain('用法：anim 调度');
   const 走路由=跑('不存在的动作','--调试');expect(走路由.status).toBe(2);expect(走路由.stderr).toContain('用法：anim 调度');
 },120_000);
+it('领票打印前面几张和约几分；没人挡不打印；暂缓提示带原因',async()=>{
+  const e=取调度环境({锁目录:dir}),队=path.join(dir,'渲染.排队'),内存=()=>({总:100,空闲:80,空闲百分比:80,交换区总:0,交换区已用:0});
+  const 环={...e,读内存:内存,读压力:()=>1,读机器:机,清孤儿:()=>[]};
+  const 无人:string[]=[];await 过渲染闸(async()=>{},s=>无人.push(s),环);expect(无人.join()).not.toContain('前面');
+  const 前=领票(队,e.本机,{任务:'前',起:Date.now(),心跳:Date.now(),主机:e.本机,发起:读发起者({},[],dir,false),声明:{种:'still',预计秒:90}},Date.now());
+  const 名=`${前.名.split('-')[0]}-${主机片段(e.本机)}-${process.ppid}`;fs.renameSync(前.文件,path.join(队,名));
+  const 提示:string[]=[];
+  await 过渲染闸(async()=>{},s=>提示.push(s),{...环,睡:async()=>{fs.rmSync(path.join(队,名),{force:true});}});
+  expect(提示[0]).toBe('渲染排队（前面 1 张，约1.5 分）');
+  const 暂缓:string[]=[];let 轮=0;fs.writeFileSync(path.join(队,名),'{}');
+  await 过渲染闸(async()=>{},s=>暂缓.push(s),{...环,睡:async()=>{if(++轮===1){改调度('后',列票(队).find(x=>x.pid===process.pid)!.名,参数(['--为什么','让产出先走','--分钟','0.001']),e,{状态:()=>读状态(e,机,false),输出:()=>{}});fs.rmSync(path.join(队,名));}await new Promise(r=>setTimeout(r,20));}});
+  expect(暂缓.some(x=>/暂缓至 \S+：让产出先走/.test(x))).toBe(true);
+});

@@ -14,6 +14,7 @@ export type 票内容 = {
     声明: 任务声明;
     原序?: string;
     暂缓至?: number;
+    暂缓因?: string;
     等内存起?: number;
     卡在?: string;
     已被越?: number;
