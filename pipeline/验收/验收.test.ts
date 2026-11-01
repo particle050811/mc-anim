@@ -9,7 +9,7 @@ import { 跑出 } from '../环境/子进程.ts';
 import { encode } from 'fast-png';
 import { 包络, 找起音, 比像素, 比块均值, 比起音, 读阈值, 起音串, 解起音串, type 阈值 } from './比较.ts';
 import { 基线参照 } from './基线.ts';
-import { 帧流, 块均值, 抽样帧 } from './帧流.ts';
+import { 帧流, 读流, 块均值, 抽样帧, 选帧批次, 选帧表达式, 每批帧数 } from './帧流.ts';
 import { 读认可, 写认可, 认可文件, type 认可记录 } from './认可.ts';
 import { 变了, 扫母版 } from './验收.ts';
 
@@ -142,17 +142,39 @@ describe('anim verify', () => {
     expect((await 扫母版(原, { 参照: 少帧, 阈值: 阈 })).尺寸变了).toMatch(/基线的是 64×36 49 帧/);
   });
 
-  it('抽一百多帧也行：分批起 ffmpeg，顺序和单帧抽的一样', async () => {
+  it('抽一百多帧只起一个 ffmpeg：帧号、字节和整段解一遍取到的一样；中间的帧、跳着抽也对', async () => {
     const 长 = path.join(目录, '长.mkv');
     跑出([配置('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=64x36:rate=24:duration=8', '-c:v', 'libx264', '-qp', '0', '-pix_fmt', 'yuv420p', 长]);
-    const 帧们 = Array.from({ length: 192 }, (_, f) => f);
-    const 出: Buffer[] = [];
-    for await (const rgb of 帧流(长, 帧们, 64, 36)) 出.push(Buffer.from(rgb));
-    expect(出.length).toBe(192);
-    for (const f of [0, 89, 90, 91, 191]) {
-      for await (const 单 of 帧流(长, [f], 64, 36)) expect(出[f]!.equals(单)).toBe(true);
+    const 全部: Buffer[] = [];
+    for await (const rgb of 读流([配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', 长, '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'], 64 * 36 * 3)) 全部.push(Buffer.from(rgb));
+    expect(全部.length).toBe(192);
+    const 跳着 = 全部.map((_, f) => f).filter((f) => f % 7 === 0 || f % 11 === 3 || f === 100);
+    const 前半 = 跳着.filter((f) => f < 96);
+    for (const 帧们 of [全部.map((_, f) => f), 跳着, 前半, [0], [191], [90, 91]]) {
+      expect(选帧批次(帧们).length).toBe(1);
+      const 出: Buffer[] = [];
+      for await (const rgb of 帧流(长, 帧们, 64, 36)) 出.push(Buffer.from(rgb));
+      expect(出.length).toBe(帧们.length);
+      帧们.forEach((f, i) => expect(出[i]!.equals(全部[f]!), `第 ${f} 帧`).toBe(true));
     }
+    const 没有的帧: Buffer[] = [];
+    for await (const rgb of 帧流(长, [190, 191, 192], 64, 36)) 没有的帧.push(Buffer.from(rgb));
+    expect(没有的帧.length).toBe(2); // 调用方（扫母版）按帧号要，少了报「抽不出」
   });
+
+  it('超过一批的上限才多起一个 ffmpeg：跨批的帧照样按序，整批帧数的表达式 ffmpeg 收得下、长度不超过 Windows 命令行上限', async () => {
+    const 帧们 = Array.from({ length: 每批帧数 + 3 }, (_, f) => f);
+    expect(选帧批次(帧们).map((批) => 批.length)).toEqual([每批帧数, 3]);
+    const 大号帧 = 帧们.slice(0, 每批帧数).map((f) => f + 100000);
+    expect(选帧表达式(大号帧).length).toBeLessThan(32000);
+    const 长 = path.join(目录, '超长.mkv');
+    跑出([配置('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=size=16x16:rate=24:duration=${(每批帧数 + 3) / 24}`, '-c:v', 'libx264', '-qp', '0', '-pix_fmt', 'yuv420p', 长]);
+    const 全部: Buffer[] = [];
+    for await (const rgb of 读流([配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', 长, '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1'], 16 * 16 * 3)) 全部.push(Buffer.from(rgb));
+    let i = 0;
+    for await (const rgb of 帧流(长, 帧们, 16, 16)) expect(rgb.equals(全部[i++]!)).toBe(true);
+    expect(i).toBe(每批帧数 + 3);
+  }, 120_000);
 
   it('帧数尺寸不一样直接算变了', async () => {
     const 认 = { ...(await 认可(原)), 帧数: 49 };
