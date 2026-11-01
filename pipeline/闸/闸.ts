@@ -11,6 +11,7 @@ import {取调度环境,开任务,有任务,清崩溃,type 调度环境,type 任
 import {领票,列票,票活着,type 票,回队尾} from './票.ts';
 import {写JSON,读JSON} from './文件.ts';
 import {清孤儿} from './孤儿.ts';
+import {估计} from './估计.ts';
 export type {任务声明} from './任务.ts';
 export {闸记被杀,登记临时文件} from './收尾.ts';
 export const 祖先持锁变量='MCAI_RENDER_LOCK_PID';
@@ -29,6 +30,7 @@ export const 排队拿=async(名:string,opts:排队选项={}):Promise<锁柄>=>{
   const e=取环境(opts),key=path.join(e.锁目录,名),前=串行.get(key)??Promise.resolve();
   let 交棒!:()=>void;const 完=new Promise<void>(r=>{交棒=r;});串行.set(key,完);await 前;
   const 自建=!有任务(e.锁目录),声明=opts.声明??{种:process.argv[2]??'脚本',用途:process.env.ANIM_PURPOSE??'未声明'};
+  声明.种??=process.argv[2]??'脚本';声明.用途??=process.env.ANIM_PURPOSE??'未声明';声明.预计秒??=估计(声明,path.dirname(e.日志目录));
   const task=开任务(e,声明),file=锁文件(e.锁目录,名),dir=path.join(e.锁目录,名+'.排队');
   let t=领票(dir,e.本机,{...task.info,声明},e.现在毫秒());task.更新(声明,t.名);
   const 起=e.现在毫秒();let 原等待='',拿锁时=0,完了=false;
@@ -67,9 +69,9 @@ export const 排队拿=async(名:string,opts:排队选项={}):Promise<锁柄>=>{
   const 信息文件=file+'.信息.json';let 最近写=0,已出帧=0,帧时=拿锁时;
   const 心跳=(帧?:number)=>{if(帧!==undefined&&帧!==已出帧){已出帧=帧;帧时=e.现在毫秒();}if(最近写&&e.现在毫秒()-最近写<5000)return;
     最近写=e.现在毫秒();写JSON(信息文件,{pid:process.pid,任务:task.info.任务,票:t.名,发起:task.info.发起,声明,拿锁时,心跳:最近写,帧时,已出帧,总帧:声明.帧数});};
-  心跳();const timer=setInterval(()=>心跳(),30_000);timer.unref();
+  心跳();const 限时=Number(process.env.ANIM_TIME_LIMIT);const 限时器=名==='渲染'&&限时>0?setTimeout(()=>{记('限时杀',{限时});process.exit(124);},限时*1000):undefined;限时器?.unref();const timer=setInterval(()=>心跳(),30_000);timer.unref();
   const 撤锁=登记收尾((_,sig)=>释放(sig?'被杀':'退出'));
-  const 释放=(结果='成')=>{if(完了)return;完了=true;clearInterval(timer);撤锁();
+  const 释放=(结果='成')=>{if(完了)return;完了=true;clearInterval(timer);clearTimeout(限时器);撤锁();
     记('放锁',{持锁秒:(e.现在毫秒()-拿锁时)/1000,结果,已出帧});
     if(持有者(file)===process.pid)fs.rmSync(信息文件,{force:true});放(file);交接();if(自建&&!['被杀','退出'].includes(结果))task.结束(结果==='成'?0:1);
   };
