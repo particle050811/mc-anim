@@ -6,7 +6,7 @@ import { 读发起者, type 发起者 } from './发起者.ts';
 import { 记调度 } from './调度日志.ts';
 import { 读JSON, 写JSON, 列文件, 只提示 } from './文件.ts';
 import { 登记收尾 } from './收尾.ts';
-import { 进程在吗 } from './锁.ts';
+import { pid换人了, 进程在吗 } from './锁.ts';
 import { 取指令, 指令文件 } from './指令.ts';
 import { 一分钟负载 } from '../环境/资源.ts';
 export type 任务声明 = {
@@ -121,10 +121,10 @@ export const 检查盯 = (e: 调度环境, 任务: 任务信息) => {
     记调度(e.日志目录, '盯未挂', { 任务: 任务.任务, 发起: e.发起者 }, e.现在毫秒());
 };
 /** unlink 的胜者才记崩溃，多个等待者不会重复归因；跨主机不按本机 pid 猜死。 */
-export const 清崩溃 = (e: 调度环境, 活 = 进程在吗) => {
+export const 清崩溃 = (e: 调度环境, 活 = (pid: number, 心跳: number) => 进程在吗(pid) && !pid换人了(pid, 心跳)) => {
     for (const 名 of 列文件(path.join(e.锁目录, '在跑'))) {
         const file = path.join(e.锁目录, '在跑', 名), t = 读JSON<任务信息>(file);
-        if (!t || t.主机 !== e.本机 || 活(t.发起.pid))
+        if (!t || t.主机 !== e.本机 || 活(t.发起.pid, t.心跳))
             continue;
         try {
             fs.unlinkSync(file);

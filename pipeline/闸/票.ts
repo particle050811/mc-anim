@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { 进程在吗, 重试 } from './锁.ts';
+import { pid换人了, 进程在吗, 重试 } from './锁.ts';
 import { 读JSON, 写JSON, 列文件 } from './文件.ts';
 import type { 任务信息, 任务声明 } from './任务.ts';
 import type { 发起者 } from './发起者.ts';
@@ -45,7 +45,7 @@ export const 领票 = (dir: string, 本机: string, 任务: 任务信息, now: n
 };
 export const 票活着 = (t: 票, 本机: string) => {
     if (t.主机 === 主机片段(本机))
-        return 进程在吗(t.pid) && (()=>{try{return fs.statSync(t.文件).mtimeMs>=Date.now()-os.uptime()*1000;}catch{return false;}})();
+        return 进程在吗(t.pid) && (()=>{try{const m=fs.statSync(t.文件).mtimeMs;return m>=Date.now()-os.uptime()*1000&&!pid换人了(t.pid,m);}catch{return false;}})();
     try {
         return Date.now() - fs.statSync(t.文件).mtimeMs < 60000;
     }

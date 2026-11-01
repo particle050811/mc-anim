@@ -1,6 +1,6 @@
 // 资源闸的锁，协议和旧项目 参考模型库/工具/公共/锁.py、锁.mjs 一样（迁移期两个项目共用一个锁目录，一起排队）：
 // 锁是 <锁目录>/<名>.lock，O_EXCL 建出来就是拿到，内容是持有者的 pid，放锁就是删掉；刚建出来还没写进 pid 的空文件，10 秒内当有人拿着。
-// 持有者进程不在了就当过期：先改名成只有自己知道的临时名（原子），看改走的是不是刚判死的那把，是才删，不是就改回原名（旧项目 bd3a6a0d 的做法）。
+// 持有者进程不在了（或 pid 已被别的进程复用）就当过期：先过回收门，再改名成只有自己知道的临时名（原子），看改走的是不是刚判死的那把，是才删，不是就改回原名（旧项目 bd3a6a0d 的做法）。
 // 主机名不写进锁文件（旧 锁.py 只认纯数字，写了别的它 10 秒后就当空文件删掉），另写在旁边的 <名>.lock.<pid>.主机：
 // 持有者在别的机器上（共享盘上的锁目录）时本机查不了它的 pid，就当它活着。
 import { spawnSync } from 'node:child_process';
@@ -32,6 +32,21 @@ export const 进程起于 = (pid: number): number | null => {
   const r = spawnSync('ps', ['-o', 'lstart=', '-p', String(pid)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, LC_ALL: 'C' } });
   const t = r.status === 0 ? Date.parse(r.stdout.trim()) : NaN;
   return Number.isNaN(t) ? null : t;
+};
+
+/** 判错会抢走活进程的锁，所以余量宁大：时钟回拨、共享盘 mtime 走服务器钟都不该误判；pid 一轮要几小时，漏不掉真复用。 */
+const 复用余量毫秒 = 300_000;
+const 起于缓存 = new Map<number, { 时: number; 起: number | null }>();
+/** 活着的 pid 比 时刻（锁或票最后写入）晚得多才启动，就不是当时那个进程。排队每轮都判，时刻还新就不开 ps，查过的半分钟内不再查。 */
+export const pid换人了 = (pid: number, 时刻: number) => {
+  const 现在 = Date.now();
+  if (现在 - 时刻 <= 复用余量毫秒) return false;
+  let c = 起于缓存.get(pid);
+  if (!c || 现在 - c.时 > 30_000) {
+    c = { 时: 现在, 起: 进程起于(pid) };
+    起于缓存.set(pid, c);
+  }
+  return c.起 !== null && c.起 > 时刻 + 复用余量毫秒;
 };
 
 const code = (err: unknown) => (err as NodeJS.ErrnoException).code ?? '';
@@ -81,30 +96,57 @@ const 过期 = (file: string, pid: number | null, mtimeMs: number, 本机: strin
   if (pid === null) return Date.now() - mtimeMs > 空文件宽限毫秒;
   const 主机 = 持有者主机(file, pid);
   if (主机 && 主机 !== 本机) return false;
-  return !进程在吗(pid) || Date.now() - os.uptime() * 1000 > mtimeMs;
+  return !进程在吗(pid) || Date.now() - os.uptime() * 1000 > mtimeMs || pid换人了(pid, mtimeMs);
 };
 
-const 清掉过期 = (file: string, 判死的pid: number | null, 本机: string, 回收?: (pid:number|null) => void) => {
-  const tmp = `${file}.过期-${process.pid}-${randomBytes(4).toString('hex')}`;
+/** 门留下来（回收者死在门里）过这么久作废，下一轮再回收。门里只有几次文件操作。 */
+const 门作废毫秒 = 10_000;
+/**
+ * 回收者一次一个：死锁只有回收者能挪走，门里再判一次死，改名改走的就只会是这把死锁。
+ * 没有门的话，读完判死被抢占的回收者醒来会把别人刚拿的新锁改走，改回去之前原名是空的，第三方能拿到，两个持有者。
+ * 有人在门里返回 false，调用方这轮别等；不能原地重试，试拿 是同步的，门留下时会空转 10 秒卡死事件循环。
+ */
+const 清掉过期 = (file: string, 判死的pid: number | null, 本机: string, 回收?: (pid:number|null) => void): boolean => {
+  const 门 = `${file}.回收`;
   try {
-    重试(() => fs.renameSync(file, tmp));
+    fs.closeSync(fs.openSync(门, 'wx'));
   } catch (err) {
-    if (code(err) === 'ENOENT') return; // 别人先改走了
-    throw err;
-  }
-  const now = 读(tmp);
-  if (!(now && now[0] === 判死的pid && 过期(file, now[0], now[1], 本机))) {
-    // 改走的是别人刚建的新锁：用硬链接改回原名，原名上又有了新锁（第三方趁这一下建的）就不覆盖它
+    if (code(err) !== 'EEXIST') throw err;
     try {
-      fs.linkSync(tmp, file);
-    } catch (err) {
-      if (code(err) !== 'EEXIST') throw err;
-    }
-  } else if (判死的pid !== null) {
-    回收?.(判死的pid);
-    删(主机文件(file, 判死的pid));
+      if (Date.now() - fs.statSync(门).mtimeMs > 门作废毫秒) 删(门);
+    } catch { /* 刚被别人删了 */ }
+    return false;
   }
-  删(tmp);
+  let 回收了 = false;
+  try {
+    const seen = 读(file);
+    if (!seen || seen[0] !== 判死的pid || !过期(file, seen[0], seen[1], 本机)) return true;
+    const tmp = `${file}.过期-${process.pid}-${randomBytes(4).toString('hex')}`;
+    try {
+      重试(() => fs.renameSync(file, tmp));
+    } catch (err) {
+      if (code(err) === 'ENOENT') return true;
+      throw err;
+    }
+    const now = 读(tmp);
+    if (now && now[0] === 判死的pid) {
+      回收了 = 判死的pid !== null;
+      if (回收了) 删(主机文件(file, 判死的pid!));
+    } else {
+      // 旧项目的工具不认门，可能抢先回收又拿了新锁：用硬链接改回原名，原名上又有了新锁就不覆盖它
+      try {
+        fs.linkSync(tmp, file);
+      } catch (err) {
+        if (code(err) !== 'EEXIST') throw err;
+      }
+    }
+    删(tmp);
+  } finally {
+    删(门);
+  }
+  // 回收回调要清孤儿、写日志，不占着门。
+  if (回收了) 回收?.(判死的pid);
+  return true;
 };
 
 /** 旧项目的工具回收过期锁时不知道旁边的 .主机 文件，拿到锁时顺手删掉本机已死进程留下的 */
@@ -153,11 +195,10 @@ export const 试拿 = (file: string, 本机: string, 回收?: (pid:number|null)=
     }
     const seen = 读(file);
     if (!seen) continue; // 刚被放掉，再抢
-    if (!过期(file, seen[0], seen[1], 本机)) {
+    if (!过期(file, seen[0], seen[1], 本机) || !清掉过期(file, seen[0], 本机, 回收)) {
       if (seen[0] !== process.pid) 删(我的主机文件);
       return false;
     }
-    清掉过期(file, seen[0], 本机, 回收);
   }
 };
 

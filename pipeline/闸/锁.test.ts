@@ -6,7 +6,8 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { 配置 } from '../环境/配置.ts';
 import { 排队拿 } from './闸.ts';
-import { 持有者, 试拿, 放 } from './锁.ts';
+import { 持有者, 回收死锁, 试拿, 放, 进程起于, 锁被占 } from './锁.ts';
+import { 主机片段, 票活着 } from './票.ts';
 
 const 锁模块 = path.join(import.meta.dirname, '锁.ts');
 const 旧工具目录 = path.join(配置('旧项目'), '参考模型库', '工具');
@@ -101,6 +102,74 @@ describe('锁协议', () => {
     放(file);
     expect(fs.existsSync(file)).toBe(true);
   });
+});
+
+describe('pid 被复用', () => {
+  const 十分钟前 = () => new Date(Date.now() - 600_000);
+  it.skipIf(process.platform === 'win32')('活进程启动比锁、票晚很多：算死，回收并回调；票还在更新就不用查', async () => {
+    const c = spawn('sleep', ['30']);
+    try {
+      fs.writeFileSync(file, `${c.pid}\n`);
+      fs.utimesSync(file, 十分钟前(), 十分钟前());
+      expect(锁被占(file, 本机)).toBe(false);
+      const 回收了: (number | null)[] = [];
+      回收死锁(file, 本机, p => 回收了.push(p));
+      expect(fs.existsSync(file)).toBe(false);
+      expect(回收了).toEqual([c.pid]);
+      const 票文件 = path.join(dir, '票'), 票 = { 名: '票', 文件: 票文件, pid: c.pid!, 主机: 主机片段(本机), 时间: 0, 内容: null };
+      fs.writeFileSync(票文件, '');
+      expect(票活着(票, 本机)).toBe(true);
+      fs.utimesSync(票文件, 十分钟前(), 十分钟前());
+      expect(票活着(票, 本机)).toBe(false);
+    } finally {
+      c.kill('SIGKILL');
+    }
+  });
+  const 一号起于 = process.platform === 'win32' ? null : 进程起于(1);
+  it.skipIf(!一号起于 || Date.now() - 一号起于 < 900_000)('进程比锁早（真持有者占了很久）不算换人', () => {
+    fs.writeFileSync(file, '1\n');
+    fs.utimesSync(file, 十分钟前(), 十分钟前());
+    expect(锁被占(file, 本机)).toBe(true);
+    回收死锁(file, 本机);
+    expect(fs.existsSync(file)).toBe(true);
+    expect(试拿(file, 本机)).toBe(false);
+  });
+});
+
+describe('回收门', () => {
+  it('有人在门里：这轮不回收也不空转；门走了下一轮回收，什么都不留', () => {
+    fs.writeFileSync(file, `${死pid()}\n`);
+    fs.writeFileSync(`${file}.回收`, '');
+    const 起 = performance.now();
+    expect(试拿(file, 本机)).toBe(false);
+    回收死锁(file, 本机);
+    expect(performance.now() - 起).toBeLessThan(1000);
+    expect(fs.existsSync(file)).toBe(true);
+    fs.rmSync(`${file}.回收`);
+    expect(试拿(file, 本机)).toBe(true);
+    放(file);
+    expect(fs.readdirSync(dir)).toEqual([]);
+  });
+  it('门留下了（回收者死在门里）过 10 秒作废', () => {
+    fs.writeFileSync(file, `${死pid()}\n`);
+    fs.writeFileSync(`${file}.回收`, '');
+    const old = new Date(Date.now() - 11_000);
+    fs.utimesSync(`${file}.回收`, old, old);
+    expect(试拿(file, 本机)).toBe(false);
+    expect(试拿(file, 本机)).toBe(true);
+    放(file);
+  });
+  it('多进程紧循环抢回收：从不同时两个持有者', async () => {
+    const 工人 = Array.from({ length: 4 }, () => new Promise<string>((r) => {
+      const p = spawn(process.execPath, [path.join(import.meta.dirname, 'fixtures/回收竞争.ts'), file, path.join(dir, '占位'), String(死pid()), '1500'], { stdio: ['ignore', 'pipe', 'inherit'] });
+      let out = '';
+      p.stdout.on('data', (d) => { out += d; });
+      p.on('close', () => r(out));
+    }));
+    const 合 = (await Promise.all(工人)).map((x) => JSON.parse(x) as { 拿到: number; 重叠: number; 回收: number });
+    expect(合.reduce((n, x) => n + x.回收, 0)).toBeGreaterThan(0);
+    expect(合.reduce((n, x) => n + x.重叠, 0)).toBe(0);
+  }, 15_000);
 });
 
 describe('排队票', () => {
