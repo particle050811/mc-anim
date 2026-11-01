@@ -1,7 +1,7 @@
 // 段指纹：决定母版要不要重渲。代码部分按默克尔算（默克尔.ts：去注释、格式，说明符换成目标哈希，路径不进），再并上别的输入：
 //   代码    画面（或叠层入口）、段.ts、设置.ts、外壳（作品 index.ts，到 清单.ts 的边不跟，加段、改顺序不让已有段过期）各自的默克尔根；
 //           npm 包按 lockfile 版本、asset: 按资产锁 sha 已在叶子里
-//   地形    段声明的地形包和登记的版本（assets/地形版本.json）
+//   地形    段声明的地形包和登记的版本（assets/地形版本.json）。代码不再 import 这张表（engine/voxel/区段包位置.ts），改别的包不让这段过期；页面也只拿到这几个包（渲/地形注入.ts）
 //   渲染设置 传给 Remotion 的全部渲染参数和 inputProps
 //   依赖版本 lockfile 里 remotion、three 等决定像素的包
 //   打包规则 webpack 改写、ogg 解码各自规范化文本的哈希（不跟它们的闭包），和影响输出的 tsconfig 编译选项
@@ -66,6 +66,15 @@ export const 读地形版本表 = (): Record<string, string> => {
   return Object.fromEntries(Object.entries(包).map(([k, v]) => [k, v.版本]));
 };
 
+/** 段声明的包 → 登记的版本，键排好。指纹的地形项和传给页面的版本表都用它，两边不会对不上 */
+export const 段地形版本 = (键: string, 声明: readonly string[], 版本表: Record<string, string>): Record<string, string> =>
+  Object.fromEntries(
+    [...声明].sort().map((名) => {
+      if (!版本表[名]) throw new Error(`${键} 用的地形包 ${名} 没在 assets/地形版本.json 登记版本`);
+      return [名, 版本表[名]!];
+    }),
+  );
+
 export const 叠层键 = (段键: string, l: 叠层定义) => `${段键}-${l.名}`;
 
 /** 外壳到作品 清单.ts 的边不跟（加段、改顺序不影响已有段的像素） */
@@ -92,15 +101,9 @@ export const 算全部段指纹 = async (任务: readonly 指纹任务[]): Promi
   const 锁里缺的 = new Set(缺字节(Object.keys(锁), 锁, 数据根()));
   return 任务.map(({ 段: s, 渲染设置, 叠层 }) => {
     const { 根, 明细 } = 图.取(段入口(s, 叠层));
-    const 地形 = Object.fromEntries(
-      [...s.段.地形].sort().map((名) => {
-        if (!版本表[名]) throw new Error(`${s.键} 用的地形包 ${名} 没在 assets/地形版本.json 登记版本`);
-        return [名, 版本表[名]!];
-      }),
-    );
     const 项: 指纹项 = {
       代码: { 画面根: 根[0]!, 段根: 根[1]!, 设置根: 根[2]!, 外壳根: 根[3]! },
-      地形,
+      地形: 段地形版本(s.键, s.段.地形, 版本表),
       渲染设置: { ...渲染设置, 帧数: s.段.帧数, fps: s.段.fps, 宽: s.段.宽, 高: s.段.高 },
       依赖版本: { ...依赖版本 },
       打包规则: { ...打包规则 },

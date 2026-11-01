@@ -30,6 +30,7 @@ import { 压缩母版路径, 原母版路径, 叠层路径, 写指纹, 有母版
 import { 备好public目录 } from './public目录.ts';
 import { 删打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
+import { 段渲染环境 } from './地形注入.ts';
 import { 视频信息 } from './探测.ts';
 import { 出段签 } from '../段签/段签.ts';
 import { 漂移提示 } from '../段签/补.ts';
@@ -207,6 +208,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
             composition,
             outputLocation: tmp,
             inputProps: 参数.inputProps,
+            envVariables: 段渲染环境(r.段),
             puppeteerInstance: h.browser,
             chromiumOptions: { gl: 参数.gl },
             codec: 参数.codec,
@@ -316,6 +318,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
             composition,
             outputLocation: tmp,
             inputProps: 参数.inputProps,
+            envVariables: 段渲染环境(r.段, r.叠层),
             puppeteerInstance: h.browser,
             chromiumOptions: { gl: 参数.gl },
             codec: 参数.codec,
@@ -376,6 +379,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
           output: file,
           frame: f,
           inputProps: h.参数.inputProps,
+          envVariables: 段渲染环境(s),
           puppeteerInstance: h.browser,
           chromiumOptions: { gl: h.参数.gl },
           imageFormat: 'png',

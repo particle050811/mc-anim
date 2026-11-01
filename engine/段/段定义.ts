@@ -42,7 +42,7 @@ export type 段定义 = {
   fps: number;
   宽: number;
   高: number;
-  /** 用到的地形区段包名（assets/地形版本.json 里登记的），版本进指纹 */
+  /** 用到的地形区段包名（assets/地形版本.json 里登记的）。版本进指纹，页面也只拿到这些包，读别的包直接报错（engine/voxel/区段包位置.ts） */
   地形: readonly string[];
   /** 时钟是场窗口时：本段在场时间线上的 [起帧, 止帧)，止帧 − 起帧 = 帧数 */
   场窗口?: { 起帧: number; 止帧: number };

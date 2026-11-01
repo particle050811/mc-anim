@@ -17,6 +17,7 @@ import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 删打包 } from './打包残留.ts';
 import { 打包 } from './渲.ts';
 import { 渲染参数, 等帧超时毫秒 } from './设置.ts';
+import { 段渲染环境 } from './地形注入.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 export type 测速结果 = {
@@ -77,7 +78,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           let 首帧 = 0, 末帧 = 0, 上次帧数 = 0;
           const 明细 = new 明细收集(标签, 帧[0]);
           const 跑 = () => renderMedia({
-              serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
+              serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, envVariables: 段渲染环境(s), puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
               codec: 参数.codec, audioCodec: 参数.audioCodec, enforceAudioTrack: 参数.enforceAudioTrack, crf: 参数.crf, x264Preset: 参数.x264Preset,
               imageFormat: 参数.imageFormat, jpegQuality: 参数.jpegQuality, scale: 参数.scale, concurrency: 参数.concurrency,
               timeoutInMilliseconds: 等帧超时毫秒, overwrite: true, logLevel: 渲染日志, frameRange: 帧,
