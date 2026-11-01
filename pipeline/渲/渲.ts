@@ -232,7 +232,6 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
           const 帧 = 视频信息(tmp).帧数;
           记阶段(opts.记录.阶段, 标签, '查帧数', t查, (Date.now() - t查) / 1000);
           if (帧 !== r.段.段.帧数) throw new Error(`${r.段.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
-          await 记已量帧(r.段.键, Array.from({ length: 帧 }, (_, i) => i));
           fs.renameSync(tmp, 原);
           写指纹(r.指纹);
           r.母版 = 原;
@@ -244,6 +243,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
           记耗时(渲染标签(r.段.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
           if (code === 0) console.log(`   ${r.段.键}：${秒.toFixed(0)} 秒 → ${原}`);
         }
+        await 记已量帧(r.段.键, Array.from({ length: r.段.段.帧数 }, (_, i) => i));
         // 还在渲染闸里：派生、转码都要解码整段母版
         const t1 = Date.now();
         let 有段签 = false;

@@ -109,4 +109,33 @@ describe('收地形用量', () => {
     expect(Object.keys(r.包)).toEqual(['暮色']);
     expect(r.已量帧).toBe('0-1');
   });
+
+  it('记录写不上只报警告：坏 JSON、关页时写失败都不抛，页面照常关；整段重渲清掉坏的就恢复', async () => {
+    const 报 = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const f = 地形用量文件('甲作', '段四');
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, '{坏');
+    await expect(记已量帧('段四', [0], '甲作')).resolves.toBeUndefined();
+    const { browser, 关了 } = 假浏览器(窗('甲作/段四', [['暮色', { 版本: 'v1', 区段: new Set(['0|0|0']) }]]));
+    收地形用量(browser);
+    await 开页关页(browser);
+    expect(关了).toEqual(['关']);
+    expect(报.mock.calls.flat().join()).toMatch(/段四 的地形用量没记上/);
+    开始整段量('段四', '指纹乙', '甲作');
+    await 开页关页(browser);
+    await 记已量帧('段四', [0], '甲作');
+    expect(读地形用量('甲作', '段四')).toMatchObject({ 指纹: '指纹乙', 已量帧: '0' });
+    报.mockRestore();
+  });
+
+  it('开始整段量删不掉旧文件只报警告，接着照常量', () => {
+    const 报 = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const 桩 = vi.spyOn(fs, 'rmSync').mockImplementationOnce(() => {
+      throw new Error('EPERM');
+    });
+    expect(() => 开始整段量('段五', '指纹丙', '甲作')).not.toThrow();
+    expect(报.mock.calls.flat().join()).toMatch(/段五 的地形用量没记上（EPERM）/);
+    桩.mockRestore();
+    报.mockRestore();
+  });
 });

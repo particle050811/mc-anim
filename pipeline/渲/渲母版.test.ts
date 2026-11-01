@@ -1,4 +1,4 @@
-// 渲染母版、叠层、静帧的整条流程（Remotion、派生、转存都是假的，数据根是临时的）：页面拿到的地形版本要和指纹一样。
+// 渲染母版、叠层、静帧的整条流程（Remotion、派生、转存都是假的，数据根是临时的）：页面拿到的地形版本要和指纹一样，地形用量记不上不能丢掉渲完的段。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -54,17 +54,21 @@ vi.mock('./转存.ts', () => ({ 存成压缩: async () => ({ 文件: '假.crf12.
 vi.mock('../缓存/钉.ts', () => ({ 删旧: () => {}, 有要删的旧: () => false }));
 
 const { 渲染母版, 渲染叠层, 渲静帧 } = await import('./渲.ts');
+const { 原母版路径 } = await import('./母版.ts');
+const { 地形用量文件 } = await import('./地形用量.ts');
 const { 作品名 } = await import('../环境/作品.ts');
 const { 地形版本环境名, 地形用量段环境名 } = await import('../../engine/段/地形环境.ts');
 
 const 段 = (键: string, 叠层?: { 名: string }[]) => ({ 键, 目录: path.join(根, '段', 键), 段: { 帧数: 3, fps: 24, 宽: 320, 高: 180, 地形: ['暮色'], 叠层 } }) as unknown as 段信息;
 const 组合 = (id: string) => ({ id, durationInFrames: 3, fps: 24, width: 320, height: 180 });
 const 记录 = () => ({ 记: () => {}, 产物: [], 阶段: [] }) as unknown as 运行记录;
+const 指纹名 = `${'a'.repeat(63)}1`;
 
 afterEach(() => {
   态.环境们 = [];
   态.渲时 = null;
   态.表 = { 暮色: 'v1' };
+  vi.restoreAllMocks();
 });
 
 afterAll(() => fs.rmSync(根, { recursive: true, force: true }));
@@ -93,5 +97,34 @@ describe('页面的地形版本', () => {
     const 出到 = fs.mkdtempSync(path.join(根, '静帧-'));
     await 渲静帧(段('丙'), [0], '视频', 出到);
     expect(JSON.parse(态.环境们[0]![地形版本环境名]!)).toEqual({ 暮色: 'v3' });
+  });
+});
+
+describe('地形用量记不上', () => {
+  const 写坏 = (键: string) => () => {
+    fs.mkdirSync(path.dirname(地形用量文件(作品名(), 键)), { recursive: true });
+    fs.writeFileSync(地形用量文件(作品名(), 键), '{坏');
+  };
+
+  it('母版照样改名、写指纹，只报警告', async () => {
+    const 报 = vi.spyOn(console, 'error').mockImplementation(() => {});
+    态.组合们 = [组合('丁')];
+    态.渲时 = 写坏('丁');
+    const [r] = await 渲染母版([段('丁')], '视频', { 记录: 记录(), 重渲: true, 留CRF1: true });
+    expect(r!.新渲).toBe(true);
+    expect(fs.existsSync(原母版路径('丁', 指纹名))).toBe(true);
+    expect(fs.readdirSync(path.dirname(原母版路径('丁', 指纹名))).some((n) => n.endsWith('.指纹.json'))).toBe(true);
+    expect(报.mock.calls.flat().join()).toMatch(/丁 的地形用量没记上/);
+  });
+
+  it('静帧的帧照样出', async () => {
+    const 报 = vi.spyOn(console, 'error').mockImplementation(() => {});
+    态.组合们 = [组合('戊')];
+    写坏('戊')();
+    const 出到 = fs.mkdtempSync(path.join(根, '静帧-'));
+    const 出 = await 渲静帧(段('戊'), [1], '视频', 出到);
+    expect(出).toHaveLength(1);
+    expect(fs.existsSync(出[0]!)).toBe(true);
+    expect(报.mock.calls.flat().join()).toMatch(/戊 的地形用量没记上/);
   });
 });
