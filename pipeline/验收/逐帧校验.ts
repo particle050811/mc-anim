@@ -1,7 +1,7 @@
 // anim verify 逐帧：每帧 PNG 算 sha 存成一份有名字的记录（run/逐帧校验/<作品>/<名>/<段键>.tsv），之后再渲一次比，列出不同的帧。方便对比最终结果（用户 10-31 定）。
 // 和 anim verify 的分工：verify 比认可版的抽样帧、有阈值、可 accept；这里每帧都比、按字节、没有阈值，不写母版，不碰段签和认可。
 // 全程只打包一次（开会话，用完删包），每段过一次渲染闸，并发 1；同一页面按帧号升序连着渲、声音开着，走法和 renderMedia 出母版一样。
-// 同一批帧才能比：隔开的帧在同一页面连出，和连续渲或单帧出不一定相同（docs/渲染性能.md「静帧连出」），所以 --比 不给 --帧 时照基准存的帧渲。
+// 同一批帧才能比：隔开的帧在同一页面连出，和连续渲或单帧出不一定相同（docs/渲染性能.md「静帧连出」）。所以 --比 永远照基准存的帧渲，给了 --帧 也只是渲到那里为止，前面的帧不省。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -84,13 +84,18 @@ export const 读校验记录 = (文件: string): 校验记录 => {
   return r;
 };
 
-/** 这段要渲哪些帧。比的时候只渲基准里有的帧；超出 是这段没有的帧，基准没有 是给了 --帧、基准没存的帧 */
+/**
+ * 这段要渲哪些帧（基准帧要升序）。比的时候只渲基准里有的帧，给了 --帧 就从基准第一帧渲到要的最后一帧：
+ * 一帧的结果取决于同页面在它之前渲过什么，和它之后的无关（实测 6-斩娜迦 0-85 和整段的前 86 帧、30,85 和 30,85,140 字节相同）。
+ * 超出 是这段没有的帧，基准没有 是给了 --帧、基准没存的帧。
+ */
 export const 定要渲的帧 = (帧数: number, 给的: readonly number[] | null, 基准帧: readonly number[] | null) => {
   const 全 = 给的 ?? 基准帧 ?? Array.from({ length: 帧数 }, (_, i) => i);
   const 基准 = 基准帧 ? new Set(基准帧) : null;
   const 在段里 = 全.filter((f) => f < 帧数);
+  const 能渲 = 在段里.filter((f) => !基准 || 基准.has(f));
   return {
-    要渲: 在段里.filter((f) => !基准 || 基准.has(f)),
+    要渲: 基准帧 && 给的 && 能渲.length ? 基准帧.filter((f) => f <= Math.max(...能渲)) : 能渲,
     超出: 全.filter((f) => f >= 帧数),
     基准没有: 在段里.filter((f) => 基准 && !基准.has(f)),
   };
@@ -110,25 +115,29 @@ type 一段 = { 段: 段信息; 帧: number[]; 基准: 校验记录 | null; 指�
 
 export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式: '存' | '比'; 名: string; 帧: readonly number[] | null; 留图: string | null; 记录: 运行记录 }): Promise<number> => {
   const { 模式, 名, 记录 } = o;
-  const 要的段 = 段们.filter((s) => {
-    const 包 = 缺的本机地形(s);
-    if (包) console.log(`跳过 ${s.键}：本机没有区段包 ${包}（anim world bake 烘出来才能渲）`);
-    return !包;
-  });
-  // 不覆盖基准：存错了换个名，比的时候不会悄悄和新存的比
-  if (模式 === '存') {
-    const 已有 = 要的段.filter((s) => fs.existsSync(校验文件(名, s.键)));
-    if (已有.length) throw new 用法错误(`「${名}」里已经有 ${已有.map((s) => s.键).join('、')}，不覆盖：换个名，或者选别的段`);
-  }
-  if (o.留图) fs.mkdirSync(o.留图, { recursive: true });
-  补字节并报(作品根(), 数据根());
-  const 指纹们 = await 算全部段指纹(要的段.map((s) => ({ 段: s, 渲染设置: 渲染参数(级别) })));
   let 不过 = 0;
   let 留了 = 0;
   const 错 = (文本: string) => {
     不过++;
     记录.记('错误', 文本);
   };
+  const 跳过: string[] = [];
+  const 要的段 = 段们.filter((s) => {
+    const 包 = 缺的本机地形(s);
+    if (!包) return true;
+    跳过.push(s.键);
+    // 存过基准的段没渲到就是没比到，不能算过；没存过的段这台机器本来就比不了（章选择器存的时候也跳过了它）
+    if (模式 === '比' && fs.existsSync(校验文件(名, s.键))) 错(`${s.键}：「${名}」里存过这段，但本机没有区段包 ${包}，没比到（anim world bake 烘出来才能渲）`);
+    else console.log(`跳过 ${s.键}：本机没有区段包 ${包}（anim world bake 烘出来才能渲）`);
+    return false;
+  });
+  // 不覆盖基准：存错了换个名，比的时候不会悄悄和新存的比
+  if (模式 === '存') {
+    const 已有 = 要的段.filter((s) => fs.existsSync(校验文件(名, s.键)));
+    if (已有.length) throw new 用法错误(`「${名}」里已经有 ${已有.map((s) => s.键).join('、')}，不覆盖：换个名，或者选别的段`);
+  }
+  补字节并报(作品根(), 数据根());
+  const 指纹们 = await 算全部段指纹(要的段.map((s) => ({ 段: s, 渲染设置: 渲染参数(级别) })));
   const 计划: 一段[] = [];
   for (const [i, s] of 要的段.entries()) {
     const 文件 = 校验文件(名, s.键);
@@ -142,12 +151,19 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
     if (基准超出.length) 错(`${s.键}：段现在只有 ${s.段.帧数} 帧，基准存的这些帧没了：${帧号文本(基准超出)}`);
     else if (超出.length) console.log(`· ${s.键} 只有 ${s.段.帧数} 帧，不渲 ${帧号文本(超出)}`);
     if (基准没有.length) console.log(`· ${s.键}：基准没存这些帧，比不了：${帧号文本(基准没有)}`);
+    if (o.帧 && 基准 && 要渲.some((f) => !o.帧!.includes(f))) console.log(`· ${s.键}：基准的帧是连着渲的，隔开渲比不了，这次连前面的帧一起渲、一起比：${帧号文本(要渲)}`);
     if (基准 && !o.帧 && 基准.段帧数 !== s.段.帧数) 错(`${s.键}：存基准时段有 ${基准.段帧数} 帧，现在 ${s.段.帧数} 帧`);
     if (!要渲.length) {
       错(`${s.键}：没有能渲的帧`);
       continue;
     }
     计划.push({ 段: s, 帧: 要渲, 基准, 指纹: 指纹们[i]!.指纹 });
+  }
+  // 开跑前查：不覆盖，也不和上次留的混在一起；比的时候哪帧不同渲完才知道，按可能写的算
+  if (o.留图) {
+    const 撞 = 计划.flatMap((x) => x.帧.map((f) => 静帧文件(o.留图!, x.段.键, f))).filter((f) => fs.existsSync(f));
+    if (撞.length) throw new 用法错误(`--留图 ${o.留图} 里已经有 ${撞.length} 张这次可能写的 PNG（${path.basename(撞[0]!)} 等），不覆盖：换个空目录`);
+    fs.mkdirSync(o.留图, { recursive: true });
   }
   if (计划.length) {
     const 估 = 计划.map((x) => {
@@ -210,6 +226,8 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
     }, 记录);
   }
   if (o.留图 && 留了) console.log(`${模式 === '比' ? '不同的帧' : 'PNG'}在 ${path.resolve(o.留图)}`);
-  console.log(不过 ? `\n${不过} 处没过` : 模式 === '比' ? `\n${计划.length} 段都相同` : `\n${计划.length} 段存好了，比的时候 --比 ${名}`);
+  if (!计划.length && !不过) 错(`一段都没${模式}：选中的段本机都没有区段包`);
+  const 跳过文本 = 跳过.length ? `；跳过 ${跳过.join('、')}，没${模式}` : '';
+  console.log(不过 ? `\n${不过} 处没过${跳过文本}` : 模式 === '比' ? `\n${计划.length} 段都相同${跳过文本}` : `\n${计划.length} 段存好了，比的时候 --比 ${名}${跳过文本}`);
   return 不过 ? 1 : 0;
 };
