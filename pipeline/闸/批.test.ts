@@ -26,3 +26,9 @@ it('重放行等待不持短锁，卡项明确；死的上次放行者不等60�
   const 前=n;await 过放行闸(async()=>{},()=>{},e);expect(n).toBe(前);
   expect(fs.readFileSync(path.join(dir,'上次放行'),'utf8')).toMatch(/^\d+\n$/);
 });
+it('game start 队首先判负载再拿锁，负载等待不冒充内存等待',async()=>{
+  const {过渲染闸}=await import('./闸.ts');let load=100;const msg:string[]=[];
+  await 过渲染闸(async()=>{expect(load).toBe(0);},x=>msg.push(x),{锁目录:dir,读内存:()=>null,读压力:()=>1,核数:()=>10,一分钟负载:()=>load,睡:async()=>{
+    expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(false);const q=fs.readdirSync(path.join(dir,'渲染.排队'))[0]!;const t=JSON.parse(fs.readFileSync(path.join(dir,'渲染.排队',q),'utf8'));expect(t.卡在).toBe('负载');expect(t.等内存起).toBeUndefined();load=0;
+  }},{种:'mcai game start',需负载:true});expect(msg.some(x=>x.includes('等负载'))).toBe(true);
+});

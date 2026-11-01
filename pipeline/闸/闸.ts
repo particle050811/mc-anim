@@ -216,6 +216,7 @@ const 拿渲染闸 = async (提示: (s: string) => void, 环境: Partial<闸环�
     const e = 取环境(环境);
     let 说过 = false, 告警过 = false, 等起: number | undefined, 票名 = '';
     let 单票读数:Record<string,unknown>|undefined;
+    let 等负载起:number|undefined;
     const 柄 = await 排队拿('渲染', { ...e, 声明, 等待提示: s => 提示(`渲染排队（${s}）`), 越队: t => Boolean(读单票放行(e.锁目录, t.名)), 准入: t => {
             票名 = t.名;
             if (声明.不开渲染)
@@ -223,7 +224,15 @@ const 拿渲染闸 = async (提示: (s: string) => void, 环境: Partial<闸环�
             const m = e.读内存(), 压力 = e.读压力(), 授权 = 读单票放行(e.锁目录, t.名);
             const task = 开任务(e, 声明);
             const load = 声明.需负载 ? e.一分钟负载() : null;
-            const 够 = (压力 !== 4 || 授权?.强) && (授权 || !m || 内存够渲染(m, e.内存下限)) && (授权 || load === null || load < e.核数() * 0.8);
+            const 内存过 = (压力 !== 4 || 授权?.强) && (授权 || !m || 内存够渲染(m, e.内存下限));
+            const 负载过 = 授权 || load === null || load < e.核数() * 0.8;
+            if(内存过&&!负载过){
+                if(等起!==undefined){task.记('等内存止',{票:t.名,秒:(e.现在毫秒()-等起)/1000});等起=undefined;说过=false;delete t.内容!.等内存起;}
+                if(等负载起===undefined){等负载起=e.现在毫秒();提示(`渲染等负载（${load}，上限 ${e.核数()}×0.8）`);task.记('等负载起',{票:t.名,负载:load});}
+                if(t.内容!.卡在!=='负载'){t.内容!.卡在='负载';写JSON(t.文件,t.内容);}return false;
+            }
+            if(等负载起!==undefined&&负载过){task.记('等负载止',{票:t.名,秒:(e.现在毫秒()-等负载起)/1000});等负载起=undefined;delete t.内容!.卡在;写JSON(t.文件,t.内容);}
+            const 够 = 内存过 && 负载过;
             if (够) {
                 if (等起 !== undefined) {
                     task.记('等内存止', { 票: t.名, 秒: (e.现在毫秒() - 等起) / 1000 });
