@@ -24,6 +24,7 @@ const 级别 = '视频' as const;
 // 2K 的真画面 PNG 都上 MB，几十 KB 只能是纯色或接近纯色；只提醒不拦，段里本来可能有黑场
 const 纯色嫌疑字节 = 64 * 1024;
 const 列出的不同帧最多 = 20;
+const 第一帧约秒 = 15;
 
 export type 帧校验 = { sha: string; 字节: number };
 export type 校验记录 = { 段: string; 段帧数: number; 指纹: string; 提交: string; 帧: Map<number, 帧校验> };
@@ -123,6 +124,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
   补字节并报(作品根(), 数据根());
   const 指纹们 = await 算全部段指纹(要的段.map((s) => ({ 段: s, 渲染设置: 渲染参数(级别) })));
   let 不过 = 0;
+  let 留了 = 0;
   const 错 = (文本: string) => {
     不过++;
     记录.记('错误', 文本);
@@ -150,7 +152,9 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
   if (计划.length) {
     const 估 = 计划.map((x) => {
       const 整段 = 预计耗时(渲染标签(x.段.键, 级别));
-      return 整段 === null ? null : (整段 * x.帧.length) / x.段.段.帧数;
+      if (整段 === null) return null;
+      // 只渲一截时第一帧的读地形摊不到，单独加上
+      return x.帧.length === x.段.段.帧数 ? 整段 : (整段 * x.帧.length) / x.段.段.帧数 + 第一帧约秒;
     });
     const 已知 = 估.filter((x): x is number => x !== null);
     console.log(`== 逐帧${模式} ${计划.length} 段、${计划.reduce((a, x) => a + x.帧.length, 0)} 帧${已知.length ? `；按耗时表预计约 ${Math.round(已知.reduce((a, b) => a + b, 0))} 秒${已知.length < 计划.length ? `（另 ${计划.length - 已知.length} 段没有记录）` : ''}` : ''}`);
@@ -173,7 +177,10 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
                 const sha = crypto.createHash('sha256').update(png).digest('hex');
                 这次.set(f, { sha, 字节: png.length });
                 // 比的时候只留不同的帧：相同的和基准一样，整段的 PNG 又很占地方
-                if (o.留图 && (!x.基准 || x.基准.帧.get(f)?.sha !== sha)) fs.writeFileSync(静帧文件(o.留图, 键, f), png, { flag: 'wx' });
+                if (o.留图 && (!x.基准 || x.基准.帧.get(f)?.sha !== sha)) {
+                  fs.writeFileSync(静帧文件(o.留图, 键, f), png, { flag: 'wx' });
+                  留了++;
+                }
                 明细.帧完成(这次.size);
                 if (这次.size % 100 === 0) console.error(`   ${键}：${这次.size}/${x.帧.length} 帧`);
               },
@@ -202,7 +209,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
       }
     }, 记录);
   }
-  if (o.留图) console.log(`${模式 === '比' ? '不同的帧' : 'PNG'}在 ${path.resolve(o.留图)}`);
+  if (o.留图 && 留了) console.log(`${模式 === '比' ? '不同的帧' : 'PNG'}在 ${path.resolve(o.留图)}`);
   console.log(不过 ? `\n${不过} 处没过` : 模式 === '比' ? `\n${计划.length} 段都相同` : `\n${计划.length} 段存好了，比的时候 --比 ${名}`);
   return 不过 ? 1 : 0;
 };
