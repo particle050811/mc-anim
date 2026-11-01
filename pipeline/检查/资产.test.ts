@@ -42,6 +42,13 @@ describe('资产', () => {
     expect(违规.join('\n')).toMatch(/1 件音频的锁里没有时长、峰值、响度（如 音效\/没量）/);
   });
 
+  it('wasm/区段解码.ts 改了没重编要报（生成文件记的源码 sha 对不上），对得上放行', async () => {
+    const 生成 = (源: string) => `export const 源码sha256 = '${sha(源)}';\nexport const wasmBase64 = '';\n`;
+    const 好 = await 跑('资产', 造仓库(基础(), { 'wasm/区段解码.ts': 'a\n', 'engine/voxel/区段解码器.生成.ts': 生成('a\n') }));
+    expect(好.违规.filter((e) => e.includes('anim world 解码器'))).toEqual([]);
+    const 坏 = await 跑('资产', 造仓库(基础(), { 'wasm/区段解码.ts': 'b\n', 'engine/voxel/区段解码器.生成.ts': 生成('a\n') }));
+    expect(坏.违规.join('\n')).toMatch(/anim world 解码器 重编/);
+  });
   it('合规样例放行：代码 asset: 引公开资产、私有配音只走 cue、角色包引用都对上、许可待定只记数', async () => {
     const 根 = 造仓库(基础(), {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/李樱-脸', '公开', 'LicenseRef-待定')),

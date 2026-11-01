@@ -244,7 +244,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
   }
 
   // 区段解码器：改了 wasm/ 的源码没重编，解码的还是旧字节（不要求这台机器装 asc）
-  if (解码器源码过期(c.读('engine/voxel/区段解码器.生成.ts'), c.读('wasm/区段解码.ts'))) 报.错('wasm/区段解码.ts 和 engine/voxel/区段解码器.生成.ts 记的源码 sha256 对不上：anim world 解码器 重编', 'wasm/区段解码.ts');
+  if (c.存在('wasm/区段解码.ts') && 解码器源码过期(c.存在('engine/voxel/区段解码器.生成.ts') ? c.读('engine/voxel/区段解码器.生成.ts') : '', c.读('wasm/区段解码.ts'))) 报.错('wasm/区段解码.ts 和 engine/voxel/区段解码器.生成.ts 记的源码 sha256 对不上：anim world 解码器 重编', 'wasm/区段解码.ts');
 
   // 段声明的地形、cue 里的资产
   const 地形 = (c.读json('assets/地形版本.json') ?? {}) as 地形表;
