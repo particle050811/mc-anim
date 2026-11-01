@@ -3,6 +3,7 @@
 // 作品的 注册.tsx 只写 import.meta.webpackContext（webpack 要字面量参数，只能写在作品里）和调用 做注册。报错里的路径相对作品根。
 import React from 'react';
 import { Composition } from 'remotion';
+import '../core/稳定排序.ts';
 import type { 段定义 } from './段定义.ts';
 import { 设置Provider, 读设置 } from './设置.ts';
 

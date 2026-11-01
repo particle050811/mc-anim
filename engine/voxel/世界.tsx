@@ -17,7 +17,7 @@ import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
 import type { V3 } from '../model/parts.tsx';
-import { shadowMesh, pickDirs, backlitDirs, voxelMaterial, faceGroupMesh, type VoxelMesh, type MaterialClass } from './材质.ts';
+import { shadowMesh, pickDirs, backlitDirs, faceGroupMesh, type VoxelMesh, type MaterialClass } from './材质.ts';
 import { visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
@@ -115,9 +115,6 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const size = useThree((st) => st.size);
   const advance = useThree((st) => st.advance);
   const gl = useThree((st) => st.gl);
-  // 五类材质第一次渲染就建好，不等建第一块区段时才建：three 按材质编号定不透明物体的先后，地标网格和导入的地形有深度一样的地方，
-  // 谁盖谁看先后；用到才建的话，材质编号随文件取到的先后变，同一帧换个时候渲染会差几个像素
-  for (const materialClass of materialClasses) voxelMaterial(materialClass);
   const [, forceRedraw] = useState(0);
   const delayHandle = useRef<number | null>(null); // 拦着截图的 delayRender
   const toBuild = useRef<SectionId[]>([]); // 最近一次渲染还没建的，每次渲染整个换掉
