@@ -29,6 +29,7 @@ import { 取段签 } from '../段签/补.ts';
 import { 声音路径, 小图, type 段签 } from '../段签/段签.ts';
 import { 段签目录 } from '../环境/配置.ts';
 import { 懒放行闸 } from '../闸/闸.ts';
+import { 调度让路 } from '../闸/指令.ts';
 import { 叠层滤镜, 展开段叠层, type 叠加层 } from './叠层.ts';
 import { 读单声道 } from './音频.ts';
 import { 核对开口, 排字幕, 字幕表tsv, srt } from './字幕.ts';
@@ -130,12 +131,13 @@ const 取叠层 = async (截们: 截[], 级别: 渲染级别, opts: { 允许过�
 };
 
 /** 各段的段签：缺了、或和 CRF1 字节对不上就当场从 CRF1 派生（要解码，过放行闸）；派生失败、只剩压缩母版又没段签的只报警，这段的声音、接缝退回读母版（压缩母版里的 PCM 是原样拷的） */
-const 取段签们 = async (截们: 截[], 级别: 渲染级别, 记录: 运行记录) => {
+export const 取段签们 = async (截们: 截[], 级别: 渲染级别, 记录: 运行记录) => {
   const 等放行 = 懒放行闸();
   for (const c of 截们) {
     try {
       c.签 = await 取段签(c.段.键, c.指纹, 级别, { 等放行, 记录 });
     } catch (e) {
+      if (e instanceof 调度让路) throw e;
       记录.记('警告', `${c.段.键} 的段签派生不出来（${(e as Error).message.split('\n')[0]}），声音、接缝读母版`);
     }
   }

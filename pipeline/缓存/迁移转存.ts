@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 数据根 } from '../环境/配置.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
+import { 调度让路 } from '../闸/指令.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import { 压缩母版路径, 原母版路径 } from '../渲/母版.ts';
 import { 存成压缩 } from '../渲/转存.ts';
@@ -77,6 +78,7 @@ export const 迁移转存 = async (作品们: readonly string[], o: { 执行: bo
         新和 += r.新大小;
         console.log(`[${i + 1}/${要转.length}] ${x.作品}/${x.键}（${x.级别}）${大小文本(r.原大小)} → ${大小文本(r.新大小)}（${比(r.新大小, r.原大小)}），${r.秒.toFixed(0)} 秒`);
       } catch (e) {
+        if (e instanceof 调度让路) throw e;
         失败++;
         o.记录.记('错误', `${x.作品}/${x.键}（${x.级别}）没转成：${(e as Error).message.split('\n')[0]}`);
       }
