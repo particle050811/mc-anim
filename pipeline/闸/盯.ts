@@ -39,8 +39,11 @@ export const 盯 = async (e: 调度环境, o: {
     父活?: () => boolean;
 } = {}) => {
     const 目标 = o.任务 ? 解析任务(e.日志目录, o.任务) : undefined;
+    const 歇 = () => (o.睡 ?? (ms => new Promise(r => setTimeout(r, ms))))(5000);
     const 起 = e.现在毫秒(), 父 = process.ppid, live = path.join(e.调度目录, '盯', process.pid + '.json');
-    写JSON(live, { pid: process.pid, 会话: e.发起者.会话, 起 });
+    // --任务 只等自己的任务，不算挂了看守：它不报告警。
+    if (!目标)
+        写JSON(live, { pid: process.pid, 会话: e.发起者.会话, 起 });
     // 按会话一份；同会话两只 盯 共用，一件事只醒一只。
     const 名 = `游标-${e.发起者.会话 || '人'}`, 游标文件 = path.join(e.调度目录, 名 + '.json'), 游标锁 = 锁文件(e.调度目录, 名);
     try {
@@ -49,30 +52,33 @@ export const 盯 = async (e: 调度环境, o: {
                 return 到点退出码;
             const s = (o.读 ?? (() => 读状态(e)))();
             只提示('监测', () => { 监测一轮(e, s); });
-            // 任务结束是这一只 盯 自己要等的，不走共用游标：全局那只读过去了，这只也得醒。
-            const 私: 调度事件[] = 目标?.已止 ? [目标.已止] : [];
+            // --任务 不碰共用游标：主子 Agent 可能共用会话，子代理读走告警主 Agent 就不醒了；`盯 --任务 X && 下一步` 也不能因为别的告警提前走。
             if (目标) {
-                const { 行, 末 } = 读新事件(e.日志目录, 目标.位);
+                const { 行, 末 } = 读新事件(e.日志目录, 目标.位), 止 = 目标.已止 ?? 行.find(r => 任务结束(r.事件, 目标.任务))?.事件;
                 目标.位 = 末;
-                私.push(...行.filter(r => 任务结束(r.事件, 目标.任务)).map(r => r.事件));
+                if (止) {
+                    (o.输出 ?? console.log)(`${说事件(止)} | ${一行状态(s)}`);
+                    return 0;
+                }
+                await 歇();
+                continue;
             }
             const 公 = 试做(游标锁, e.本机, () => {
                 const 旧 = 读JSON<日志位置>(游标文件), 游标 = typeof 旧?.偏移 === 'number' ? 旧 : null;
                 const { 行, 末 } = 读新事件(e.日志目录, 游标);
-                const 未读 = 行.filter(r => 该醒(e, r.事件) && !(目标 && 任务结束(r.事件, 目标.任务)) && (游标 || s.时 - Date.parse(r.事件.时) <= 首挂回看毫秒));
-                const 报 = 未读.slice(0, Math.max(1, 一次最多 - 私.length)), 余 = 未读.slice(报.length);
+                const 未读 = 行.filter(r => 该醒(e, r.事件) && (游标 || s.时 - Date.parse(r.事件.时) <= 首挂回看毫秒));
+                const 报 = 未读.slice(0, 一次最多), 余 = 未读.slice(报.length);
                 // 没报的留在游标后面，下一只接着报；游标写坏了顶多重报，不能挡住这次叫醒。
                 const 新 = 余.length ? 报.at(-1)!.到 : 末;
                 if (新.月 !== 游标?.月 || 新.偏移 !== 游标.偏移)
                     只提示('盯游标', () => 写JSON(游标文件, 新));
                 return { 报: 报.map(r => r.事件), 余: 余.map(r => r.事件) };
             });
-            const 报 = [...私, ...(公?.报 ?? [])], 余 = 公?.余 ?? [];
-            if (报.length) {
-                (o.输出 ?? console.log)(`${报.map(说事件).join('；')}${余.length ? `；另${余.length}件未报（最重 ${最重(余)}），重挂接着报` : ''} | ${一行状态(s)}`);
+            if (公?.报.length) {
+                (o.输出 ?? console.log)(`${公.报.map(说事件).join('；')}${公.余.length ? `；另${公.余.length}件未报（最重 ${最重(公.余)}），重挂接着报` : ''} | ${一行状态(s)}`);
                 return 0;
             }
-            await (o.睡 ?? (ms => new Promise(r => setTimeout(r, ms))))(5000);
+            await 歇();
         }
         return 0;
     }

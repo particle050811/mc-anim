@@ -34,6 +34,16 @@ const 轮 = (h: 监测历史, s: 调度状态) => {
 };
 const 机 = (时: number, 改: Partial<调度状态['机']>) => { const s = 基本(时); Object.assign(s.机, 改); return s; };
 
+it('队列行的约几分只算自己这把锁和同队的票：放行票不等渲染', () => {
+  const 时 = 4_000_000, s = 基本(时);
+  s.持锁 = [持({ 锁: '渲染', 拿锁时: 时 - 60_000, 声明: { 种: 'render', 预计秒: 3600 } })];
+  s.票 = [{ ...票('002-h-8', { 任务: 'R', 声明: { 种: 'still', 预计秒: 30 } }), pid: 8 }, { ...票('003-h-9', { 任务: 'S', 声明: { 种: 'still', 预计秒: 30 } }), pid: 9 }, { ...票('001-h-7', { 任务: 'P', 声明: { 种: 'voice', 预计秒: 30 } }), pid: 7, 文件: '/q/放行.排队/001-h-7' }];
+  const 行 = 渲染看(s).split('\n').filter(l => l.startsWith('排队'));
+  expect(行[0]).toContain('#8'); expect(行[0]).toContain('约59.0分后');
+  expect(行[1]).toContain('#9'); expect(行[1]).toContain('约59.5分后');
+  expect(行[2]).toContain('#7'); expect(行[2]).toContain('约0.0分后');
+});
+
 describe('去重能复位', () => {
   it('压力：抖一下不重新叫醒，持续消失后是新事件；一天没人采样后再到也是新事件', () => {
     let h = 空历史(), a: string[];
@@ -228,6 +238,13 @@ describe('盯', () => {
     const e = 环(); 记调度(e.日志目录, '任务起', { 任务: 'K', 发起: { pid: 55 } }); await 定游标(e);
     记调度(e.日志目录, '崩溃', { 任务: 'K', 发起: { pid: 55 } });
     const r = await 跑(e, { 任务: 'K' }); expect(r.code).toBe(0); expect(r.out[0]!.match(/崩溃/g)).toHaveLength(1);
+  });
+  it('--任务 只等自己的任务：无关告警不退出、不消费，全局 盯 照样醒；它也不算挂了看守', async () => {
+    const e = 环(); await 定游标(e);
+    记调度(e.日志目录, '任务起', { 任务: 'X', 发起: { pid: 111 } }); 告警(e, '持锁者死');
+    const r = await 跑(e, { 任务: 'X', 睡: async () => { expect(fs.readdirSync(path.join(e.调度目录, '盯'))).toEqual([]); await new Promise(r => setTimeout(r, 10)); } });
+    expect(r).toEqual({ code: 124, out: [] });
+    const g = await 跑(e); expect(g.code).toBe(0); expect(g.out[0]).toContain('持锁者死');
   });
   it('--任务 匹配不到报用法错误，不默默等到点', async () => {
     const e = 环(); 记调度(e.日志目录, '任务起', { 任务: 'K', 发起: { pid: 55 } });
