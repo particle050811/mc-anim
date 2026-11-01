@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { 明细报告, 明细收集, 清旧明细, 累计子孙, 解析换出, 解析等待, 读明细们, 算小结, 归类标签 } from './渲染明细.ts';
 
 let dir: string;
@@ -73,5 +73,22 @@ describe('渲染明细', () => {
     for (const n of ['a', 'b', 'c']) fs.writeFileSync(path.join(dir, `0-${n}.json`), '{}');
     清旧明细(dir, 2);
     expect(fs.readdirSync(dir).length).toBe(3); // 每种各保留两份，其他种的明细不被挤掉
+  });
+
+  it('目录里有半截文件：照样写出、不误报，半截的也按种轮转', async () => {
+    const 半截 = (n: number) => path.join(dir, `2026010${n}-000000-render_作_乙段_视频-1.json`);
+    for (const n of [1, 2, 3]) fs.writeFileSync(半截(n), '{"标签":"render:作/乙');
+    const 错 = vi.spyOn(console, 'error');
+    const c = new 明细收集('render:作/甲段:视频');
+    c.帧完成(1);
+    const { 文件 } = await c.写出([], {}, dir);
+    expect(错).not.toHaveBeenCalled();
+    错.mockRestore();
+    expect(JSON.parse(fs.readFileSync(文件!, 'utf8')).标签).toBe('render:作/甲段:视频');
+    清旧明细(dir, 2);
+    expect(fs.existsSync(半截(1))).toBe(false);
+    expect(fs.existsSync(半截(2))).toBe(false);
+    expect(fs.existsSync(半截(3))).toBe(true);
+    expect(fs.existsSync(文件!)).toBe(true);
   });
 });

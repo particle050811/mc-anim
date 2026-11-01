@@ -6,6 +6,7 @@ import { execFile } from 'node:child_process';
 import fs from 'node:fs';
 import {读内存,读压力} from '../环境/资源.ts';
 import {当前票,闸心跳} from '../闸/闸.ts';
+import { 写JSON, 只提示 } from '../闸/文件.ts';
 import os from 'node:os';
 import path from 'node:path';
 import { 耗时表, 配置 } from '../环境/配置.ts';
@@ -200,11 +201,10 @@ export class 明细收集 {
       帧: this.帧们,
     };
     try {
-      fs.mkdirSync(目录, { recursive: true });
       const 名 = `${明细.开始.replace(/[-:]/g, '').replace('T', '-').replace('Z', '')}-${this.标签.replace(/[\\/:*?"<>|\s]+/g, '_')}-${process.pid}.json`;
       const 文件 = path.join(目录, 名);
-      fs.writeFileSync(文件, JSON.stringify(明细) + '\n', 'utf8');
-      清旧明细(目录);
+      写JSON(文件, 明细);
+      只提示('清旧明细', () => 清旧明细(目录));
       return { 文件, 明细 };
     } catch (e) {
       console.error(`!! 渲染明细没写成：${(e as Error).message}`);
@@ -215,11 +215,13 @@ export class 明细收集 {
 
 const 列明细 = (目录: string) => (fs.existsSync(目录) ? fs.readdirSync(目录).filter((f) => f.endsWith('.json')).sort() : []);
 
+/** 种从文件名取（<开始>-<标签>-<pid>.json，标签里的 : 变 _）：不解析内容，半截的文件照常轮转，也不用每次把几百份全读一遍。 */
+const 明细种 = (f: string) => /^\d{8}-\d{6}-([^_]+)_/.exec(f)?.[1] ?? '未知';
+
 export const 清旧明细 = (目录: string, 份数 = 保留份数) => {
-  const 全 = 列明细(目录);
-  const 分种=new Map<string,string[]>();
-  for(const f of 全){const m=JSON.parse(fs.readFileSync(path.join(目录,f),'utf8')) as 渲染明细;const 种=m.标签?.split(':')[0]??'未知';分种.set(种,[...(分种.get(种)??[]),f]);}
-  for(const files of 分种.values())for(const f of files.slice(0,Math.max(0,files.length-份数)))fs.rmSync(path.join(目录,f),{force:true});
+  const 分种 = new Map<string, string[]>();
+  for (const f of 列明细(目录)) 分种.set(明细种(f), [...(分种.get(明细种(f)) ?? []), f]);
+  for (const files of 分种.values()) for (const f of files.slice(0, Math.max(0, files.length - 份数))) fs.rmSync(path.join(目录, f), { force: true });
 };
 
 /** 最近的明细，新的在前；给了 含 只要标签里含这个字的 */
