@@ -122,6 +122,12 @@ export const 锁被占 = (file: string, 本机: string) => {
   return seen !== null && !过期(file, seen[0], seen[1], 本机);
 };
 
+/** 读 pid 和判死用同一次读：分两次读，正常放锁落在中间也会被报成持锁者死。 */
+export const 读持有 = (file: string, 本机: string) => {
+  const seen = 读(file);
+  return seen?.[0] ? { pid: seen[0], 死: 过期(file, seen[0], seen[1], 本机) } : null;
+};
+
 /** 抢一次：拿到返回 true，锁在活着的进程手里返回 false */
 export const 试拿 = (file: string, 本机: string, 回收?: (pid:number|null)=>void): boolean => {
   // 主机先写好再建锁：别的机器看到锁时，主机文件已经在了

@@ -25,6 +25,8 @@ export type 票 = {
     主机: string;
     时间: number;
     内容: 票内容 | null;
+    /** 读状态才算；死票要等下一个等待者回收，读的人不能把它算占用。 */
+    死?: boolean;
 };
 export const 主机片段 = (s: string) => s.replace(/[^A-Za-z0-9._-]/g, '_');
 export const 解析票 = (名: string) => { const m = /^(\d+)-(.+)-(\d+)$/.exec(名); return m ? { 时间: Number(m[1]), 主机: m[2]!, pid: Number(m[3]) } : null; };

@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { 读JSON, 写JSON, 只提示 } from './文件.ts';
 import type { 调度状态 } from './看.ts';
+import type { 票 } from './票.ts';
 import type { 调度环境 } from './任务.ts';
 import { 记调度 } from './调度日志.ts';
 import { 试做, 锁文件 } from './锁.ts';
@@ -36,13 +37,14 @@ export type 监测历史 = {
 };
 export const 空历史 = (): 监测历史 => ({ swap: [], 孤儿轮: 0, 高水位: 0, 去重: {} });
 const 键 = (a: 告警) => a.类 + ':' + a.对象;
+/** 暂缓是主 Agent 的决定，不是卡住；到期后票主人重置等待起点，别的进程可能先看到过期的暂缓至，所以不比时刻。死票没人在等。 */
+const 在等 = (t: 票) => !t.内容?.暂缓至 && !t.死;
 /** 此刻成立的全部条件，不管通知过没有。 */
 const 判条件 = (s: 调度状态, 现在: number, 阈值: typeof 默认阈值, h: 监测历史): 告警[] => {
     const out: 告警[] = [];
     const 加 = (类: string, 对象: string, 值: number, 阈: number, 附: Pick<告警, 'pid' | '段' | '票'> = {}) => { if (值 >= 阈)
         out.push({ 类, 对象, 值, 阈值: 阈, 次数: Math.min(3, 1 + Math.floor(Math.log2(Math.max(1, 值 / 阈)))), ...附 }); };
-    // 暂缓是主 Agent 的决定，不是卡住；到期后票主人重置等待起点，别的进程可能先看到过期的暂缓至，所以不比时刻。
-    const 待 = s.票.filter(t => !t.内容?.暂缓至);
+    const 待 = s.票.filter(在等);
     for (const t of 待) {
         const c = t.内容, 等 = (现在 - (c?.起 ?? t.时间)) / 1000, d = c?.声明, 预计 = d?.预计秒 ?? null;
         // 改序会换票名，对象用任务 id（旧票不能改序，没有任务 id）。
@@ -90,7 +92,7 @@ export const 更新历史 = (s: 调度状态, h: 监测历史, 阈值 = 默认�
         孤儿轮: 孤儿 === null ? 旧孤儿轮 : 孤儿 ? 旧孤儿轮 + 1 : 0,
         // 比 3 分钟多留 30 秒：持锁者 30 秒一采，定时器稍晚就会挤掉 180 秒前那个样本，再也凑不够窗口。
         swap: [...(断 ? [] : h.swap.filter(x => s.时 - x.时 <= 210000)), ...(swap === null ? [] : [{ 时: s.时, 量: swap }])],
-        高水位: s.票.some(t => !t.内容?.暂缓至) ? h.高水位 : 0, 去重: {} };
+        高水位: s.票.some(在等) ? h.高水位 : 0, 去重: {} };
     const 成立 = new Set(判条件(s, s.时, 阈值, n).map(键));
     for (const [k, v] of Object.entries(h.去重))
         // 这么久没见它成立（消失了，或这段时间没人采样）就算结束，此刻再成立是新事件。
