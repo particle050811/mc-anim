@@ -130,6 +130,8 @@ def 地形(旧: Path, 数据根: Path, 只核对: bool) -> list[tuple[str, str]]
     表 = json.loads(表路径.read_text(encoding='utf-8'))
     对照 = []
     for 名, v in 表['包'].items():
+        if '旧路径' not in v:  # anim world bake、转码 出的版本，旧项目里没有
+            continue
         dst = 数据根 / 'terrain' / 名 / v['版本']
         src = 旧 / v['旧路径']
         if not dst.exists() and not 只核对:

@@ -11,7 +11,7 @@ import { FlightFog, FlightRig, FlightSky, type CamPose } from '../../地点/飞�
 import { use按版本的地形 } from './地形.ts';
 
 const 包 = '测试-修整-岛-编辑示例';
-const 版本 = 'a30f4b86f061';
+const 版本 = '88d2370ec905';
 const 原点 = [38912, 64, -2048];
 const 场景 = (x: number, y: number, z: number) => [x - 原点[0], 原点[2] - z, y - 原点[1]];
 
