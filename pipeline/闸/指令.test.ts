@@ -7,7 +7,7 @@ import {取调度环境,开任务} from './任务.ts';
 import {读发起者} from './发起者.ts';
 import {改调度,令命令,路命令} from './改调度.ts';
 import {读状态} from './看.ts';
-import {列票,领票} from './票.ts';
+import {列票,领票,写票} from './票.ts';
 import {读调度} from './调度日志.ts';
 import {等条件} from './等.ts';
 import {过渲染闸} from './闸.ts';
@@ -54,4 +54,19 @@ it('等闸空连续30秒，不被段间假空骗过；内存到点124',async()=>
   let now=0;const e=取调度环境({锁目录:dir,现在毫秒:()=>now});
   expect(await 等条件(参数(['--闸空','--最长','90']),e,{睡:async ms=>{now+=ms;},闸空:()=>now<20_000||now>=30_000})).toBe(0);expect(now).toBe(60_000);
   now=0;expect(await 等条件(参数(['--内存','30','--最长','3']),e,{睡:async ms=>{now+=ms;},内存:()=>20})).toBe(124);
+});
+it('票已被持有者删掉时改序报错：不复活、不写决定',()=>{
+  const {e,t}=设置(),快照=读状态(e,机,false);
+  fs.rmSync(t.文件);
+  for(const cmd of ['先','后','恢复'])expect(()=>改调度(cmd,t.名,参数(['--为什么','测试']),e,{状态:()=>快照,输出:()=>{}})).toThrow('已不在');
+  expect(列票(path.join(dir,'渲染.排队'))).toHaveLength(0);
+  expect(读调度(e.日志目录).filter(x=>x.事==='决定')).toHaveLength(0);
+});
+it('后 先改名再写内容；写票不复活旧路径',()=>{
+  const {e,t}=设置();let 新名='';
+  改调度('后',t.名,参数(['--为什么','测试']),e,{状态:()=>读状态(e,机,false),输出:x=>{新名=x;}});
+  expect(fs.existsSync(t.文件)).toBe(false);
+  const q=列票(path.join(dir,'渲染.排队'));
+  expect(q.map(x=>x.名)).toEqual([新名]);expect(q[0]!.内容!.暂缓至).toBeGreaterThan(Date.now());expect(q[0]!.内容!.原序).toBe(String(t.时间));
+  写票(t);expect(fs.existsSync(t.文件)).toBe(false);
 });

@@ -8,7 +8,7 @@ import { 内存够渲染, 读内存, 读压力, 读数说明, 核数, 一分钟�
 import { 持有者, 试拿, 放, 进程在吗, 回收死锁, 锁被占 } from './锁.ts';
 import { 登记收尾 } from './收尾.ts';
 import { 取调度环境, 开任务, 有任务, 清崩溃, type 调度环境, type 任务声明 } from './任务.ts';
-import { 领票, 列票, 票活着, type 票, 回队尾, 改序 } from './票.ts';
+import { 领票, 列票, 票活着, type 票, 回队尾, 改序, 写票, 清任务票 } from './票.ts';
 import { 写JSON, 读JSON, 只提示 } from './文件.ts';
 import { 清孤儿 } from './孤儿.ts';
 import { 读状态 } from './看.ts';
@@ -57,7 +57,7 @@ type 排队选项 = Partial<闸环境> & {
     /** 这一轮没轮到或锁被活进程拿着，准入没被调：等资源的状态要结束，等的是锁或队列。 */
     离开准入?: (票: 票) => void;
 };
-const 写票态 = (t: 票) => 只提示('票状态', () => 写JSON(t.文件, t.内容));
+const 写票态 = (t: 票) => 只提示('票状态', () => 写票(t));
 export const 读单票放行 = (dir: string, 票: string) => { const c = 读JSON<{
     动作: string;
     强?: boolean;
@@ -86,8 +86,9 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         声明.用途 ??= process.env.ANIM_PURPOSE ?? '未声明';
         声明.预计秒 ??= 估计(声明, path.dirname(e.日志目录));
         const task = 任务柄 = 开任务(e, 声明);
+        清票 = () => 只提示('删票', () => 清任务票(dir, task.info.任务));
+        清票();
         let t = 领票(dir, e.本机, { ...task.info, 声明 }, e.现在毫秒());
-        清票 = () => 只提示('删票', () => fs.rmSync(t.文件, { force: true }));
         task.更新(声明, t.名);
         const 让路 = 取指令(e, task.info.任务);
         if (让路?.动作 === '让路' && 让路.至 && 让路.至 > e.现在毫秒() && 让路.票 !== t.名) {
@@ -123,7 +124,12 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             监测();
             // 每个等待者每轮都回收，不看队位和准入：只靠队首的话，全队暂缓时没人回收。
             只提示('回收死锁', () => 回收死锁(file, e.本机, 回收));
-            const 找 = 列票(dir).find(x => x.内容?.任务 === task.info.任务 && x.pid === process.pid);
+            const 我的 = 列票(dir).filter(x => x.内容?.任务 === task.info.任务 && x.pid === process.pid);
+            // 写旧路径和改名撞上时会出两张：改名后的那张才算数。
+            const 找 = 我的.find(x => x.名 !== t.名) ?? 我的[0];
+            for (const x of 我的)
+                if (x !== 找)
+                    只提示('删票', () => fs.rmSync(x.文件, { force: true }));
             if (找)
                 t = 找;
             else {
@@ -214,6 +220,8 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             clearTimeout(限时器);
             撤锁();
             记('放锁', { 持锁秒: (e.现在毫秒() - 拿锁时) / 1000, 结果, 已出帧 });
+            // 持锁期间 anim 调度 的改名可能和删票撞上，留下的票会挡住后来者，放锁前再扫一次。
+            清票();
             放掉();
             交接();
             if (自建 && !['被杀', '退出'].includes(结果))

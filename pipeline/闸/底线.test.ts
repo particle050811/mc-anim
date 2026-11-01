@@ -183,3 +183,34 @@ it('本机名跟配置走：ANIM_HOST 同时进环境和日志', () => {
   const out = execFileSync(process.execPath, ['--input-type=module', '-e', 脚本], { encoding: 'utf8', env: { ...process.env, ANIM_HOST: '测试机' } });
   expect(out.trim()).toBe('测试机 测试机');
 });
+
+it('票在拿锁前一刻被改名：拿锁后按任务清掉，不留残留活票', async () => {
+  const 柄 = await 排队拿('渲染', { ...基本(), 声明: { 种: 'render' }, 准入: t => { 改序(t, String(t.时间 - 1)); return true; } });
+  expect(票们()).toEqual([]);
+  柄.放();
+  expect(票们()).toEqual([]);
+  expect(fs.existsSync(锁())).toBe(false);
+});
+
+it('持锁期间撞出来的同任务票，放锁前再清一次', async () => {
+  const 柄 = await 排队拿('渲染', { ...基本(), 声明: { 种: 'render' } });
+  const 残留 = path.join(dir, '渲染.排队', `000000000000001-${os.hostname().replace(/[^A-Za-z0-9._-]/g, '_')}-${process.pid}`);
+  fs.writeFileSync(残留, JSON.stringify({ v: 1, 任务: 柄.任务, 起: 0, 发起: {}, 声明: {} }));
+  柄.放();
+  expect(票们()).toEqual([]);
+});
+
+it('写旧路径和改名撞上出两张票时，留改名后的那张', async () => {
+  let 轮 = 0, 新名 = '';
+  await 过渲染闸(async () => {}, () => {}, { ...基本(), 读内存: () => 内存(轮 < 2 ? 10 : 80), 睡: async () => {
+    轮++;
+    if (轮 === 1) {
+      const 旧名 = 票们()[0]!, 旧 = path.join(dir, '渲染.排队', 旧名), 内容 = fs.readFileSync(旧, 'utf8');
+      新名 = 旧名.replace(/^\d+/, m => String(Number(m) + 1).padStart(15, '0'));
+      fs.renameSync(旧, path.join(dir, '渲染.排队', 新名));
+      fs.writeFileSync(旧, 内容);
+    }
+    if (轮 === 2) expect(票们()).toEqual([新名]);
+  } }, { 种: 'still' });
+  expect(轮).toBe(2);
+});

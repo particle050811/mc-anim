@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { 进程在吗 } from './锁.ts';
+import { 进程在吗, 重试 } from './锁.ts';
 import { 读JSON, 写JSON, 列文件 } from './文件.ts';
 import type { 任务信息, 任务声明 } from './任务.ts';
 import type { 发起者 } from './发起者.ts';
@@ -56,4 +56,11 @@ export const 改序 = (t: 票, 序: string) => {
     fs.renameSync(t.文件, 文件);
     return { ...t, 名, 文件, 时间: Number(序) };
 };
+/** 票可能刚被改名或删除：往旧路径写会把它复活成残留活票。 */
+export const 写票 = (t: 票) => { if (fs.existsSync(t.文件))
+    写JSON(t.文件, t.内容); };
+/** anim 调度 随时可能改票名，记下的文件名靠不住，按任务和 pid 扫。 */
+export const 清任务票 = (dir: string, 任务: string) => { for (const x of 列票(dir))
+    if (x.pid === process.pid && x.内容?.任务 === 任务)
+        重试(() => fs.rmSync(x.文件, { force: true })); };
 export const 回队尾 = (t: 票, 原序 = false) => 改序(t, 原序 && t.内容?.原序 ? t.内容.原序 : String(Math.max(Date.now(), ...列票(path.dirname(t.文件)).filter(x => !x.名.startsWith('9')).map(x => x.时间)) + 1));

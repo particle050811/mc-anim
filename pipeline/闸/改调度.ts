@@ -2,7 +2,7 @@ import {持有者,持有者主机} from './锁.ts';
 import path from 'node:path';
 import { 用法错误, type 已解析 } from '../cli/参数.ts';
 import { 读状态, 一行状态, type 调度状态 } from './看.ts';
-import { 列票, 改序, 回队尾, 主机片段 } from './票.ts';
+import { 列票, 改序, 回队尾, 主机片段, 写票, type 票 } from './票.ts';
 import { 写JSON } from './文件.ts';
 import { 记调度, 读调度 } from './调度日志.ts';
 import { 写指令, 令文件 } from './指令.ts';
@@ -73,31 +73,33 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         throw new 用法错误(`${cmd} 只能操作排队票`);
     if (!t.内容)
         throw new 用法错误('旧票拒绝改名或放行：旧代码不认指令，只能等或取消');
-    记();
     if (cmd === '放行') {
+        记();
         写指令(e, t.名, { 动作: '放行', 为什么: why, 强: p.开关.has('--强'), 时: e.现在毫秒(), 票: t.名, 任务 });
         输出('单票授权已写；压力 4 仍需 --强，下一张票不继承');
         return;
     }
     const 原 = t.名;
-    let 新 = t;
+    // 先改名再写内容：票主人可能刚拿到锁删了票，改名失败就停，写旧路径会把票复活。
+    let 新: 票;
+    try {
+        新 = cmd === '后' ? 改序(t, String(900000000000000 + e.现在毫秒()))
+            : cmd === '先' ? 改序(t, String(Math.max(1, Math.min(...列票(path.dirname(t.文件)).filter(x => !x.名.startsWith('9')).map(x => x.时间), Date.now()) - 1)))
+                : 回队尾(t, p.开关.has('--原序'));
+    }
+    catch (err) {
+        if ((err as NodeJS.ErrnoException).code !== 'ENOENT')
+            throw err;
+        throw new 用法错误(`票 ${t.名} 已不在：可能刚拿到锁或退出了，请重看调度`);
+    }
     if (cmd === '后') {
-        t.内容.原序 ??= String(t.时间);
-        t.内容.暂缓至 = 至;
-        写JSON(t.文件, t.内容);
-        新 = 改序(t, String(900000000000000 + e.现在毫秒()));
+        新.内容!.原序 ??= String(t.时间);
+        新.内容!.暂缓至 = 至;
     }
-    else if (cmd === '先') {
-        delete t.内容.暂缓至;
-        写JSON(t.文件, t.内容);
-        const ts = 列票(path.dirname(t.文件)).filter(x => !x.名.startsWith('9'));
-        新 = 改序(t, String(Math.max(1, Math.min(...ts.map(x => x.时间), Date.now()) - 1)));
-    }
-    else if (cmd === '恢复') {
-        delete t.内容.暂缓至;
-        写JSON(t.文件, t.内容);
-        新 = 回队尾(t, p.开关.has('--原序'));
-    }
+    else
+        delete 新.内容!.暂缓至;
+    写票(新);
+    记();
     记调度(e.日志目录, cmd === '先' ? '改序' : cmd === '后' ? '暂缓' : '恢复', { 任务, 票: 新.名, 原序: 原, 新序: 新.名, 至: cmd === '后' ? 至 : undefined, 为什么: why }, e.现在毫秒());
     输出(新.名);
 };
