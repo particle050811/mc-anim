@@ -7,7 +7,8 @@ import type { 运行记录 } from '../运行记录/记录.ts';
 
 const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-改后缀测试-'));
 process.env.ANIM_DATA = 数据根;
-vi.mock('../闸/闸.ts', async (原) => ({ ...(await 原<typeof import('../闸/闸.ts')>()), 过渲染闸: <T>(fn: () => Promise<T>) => fn() }));
+const 过闸 = vi.hoisted(() => vi.fn((fn: () => Promise<unknown>, ..._余: unknown[]) => fn()));
+vi.mock('../闸/闸.ts', async (原) => ({ ...(await 原<typeof import('../闸/闸.ts')>()), 过渲染闸: 过闸 }));
 
 const { 迁移改名 } = await import('./迁移改名.ts');
 const { 扫媒体 } = await import('./回收.ts');
@@ -74,6 +75,11 @@ describe('anim cache 改后缀', () => {
     await 迁移改名('甲', { 执行: true, 记录: 记录() });
     expect(fs.existsSync(新)).toBe(true);
     expect(fs.existsSync(丙旧)).toBe(true);
+  });
+
+  it('只改名不开渲染：声明 不开渲染，不判内存', async () => {
+    await 迁移改名('甲', { 执行: true, 记录: 记录() });
+    expect(过闸.mock.lastCall?.[3]).toMatchObject({ 不开渲染: true });
   });
 
   it('gc 扫描：新后缀算压缩母版；没改名的旧后缀是不认识（只报告不删）', () => {
