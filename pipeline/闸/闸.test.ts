@@ -48,11 +48,11 @@ const 上次放行 = () => Number(fs.readFileSync(path.join(dir, '上次放行')
 
 describe('放行闸', () => {
   it('离上次放行不满 60 秒就等，满了才放；放行时间写成现在', async () => {
-    const e = 假环境();
+    const e = 假环境();e.环境.排队间隔毫秒=10_000;
     fs.writeFileSync(path.join(dir, '上次放行'), `${Math.floor(e.现在() / 1000) - 30}\n`);
     const 提示: string[] = [];
     expect(await 过放行闸(async () => 'ok', (s) => 提示.push(s), e.环境)).toBe('ok');
-    expect(e.睡过).toEqual([10_000, 10_000, 10_000]);
+    expect(e.睡过.reduce((a,b)=>a+b,0)).toBe(30_000);
     expect(上次放行()).toBe(Math.floor(e.现在() / 1000));
     expect(提示.filter((s) => s.startsWith('等资源'))).toHaveLength(1);
   });

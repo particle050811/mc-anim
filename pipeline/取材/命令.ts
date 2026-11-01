@@ -13,23 +13,12 @@ import { 相对代码根 } from '../环境/路径.ts';
 import { 读两侧资产表 } from '../资产/资产表.ts';
 import { 作品资产锁路径, 读作品资产锁, 读资产锁 } from '../资产/资产锁.ts';
 import { 登记产物, 算补许可, 写补许可 } from './登记.ts';
-import { 过放行闸 } from '../闸/闸.ts';
-import { mcai命令, mcai环境, 渲染中, 要过闸 } from './mcai.ts';
+import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
+import { mcai命令, mcai环境, 要过闸 } from './mcai.ts';
 import { 取材目录, 读清单, 选条目 } from './清单.ts';
 import { 分组, 缺配方网格, 补网格配方文本 } from './网格配方.ts';
 import { 下载, 下载清单 } from './下载.ts';
 import { jar登记路径, jar路径, 提取一条, 新id归属, 暂存目录, 检查, 跑步骤 } from './提取.ts';
-
-const 睡 = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-const 等渲染让出 = async () => {
-  let 说过 = false;
-  for (let pid = 渲染中(); pid !== null; pid = 渲染中()) {
-    if (!说过) console.error(`== 资源闸：渲染在跑（pid ${pid}），等它完了再开游戏`);
-    说过 = true;
-    await 睡(10_000);
-  }
-};
 
 export const 取材命令: Record<string, 命令> = {
   mcai: {
@@ -40,8 +29,7 @@ export const 取材命令: Record<string, 命令> = {
       const argv = args.length ? [...args] : ['--help'];
       const 跑一下 = () => 前台跑([...mcai命令(), ...argv], { env: mcai环境() });
       if (!要过闸(argv)) return 跑一下();
-      if (argv[0] === 'game') await 等渲染让出();
-      const code = await 过放行闸(跑一下);
+      const code = await (argv[0] === 'game' ? 过渲染闸(跑一下,undefined,{}, {种:'mcai game start',需负载:true}) : 过放行闸(跑一下,undefined,{}, {种:'mcai build'}));
       记录.记('信息', `mcai ${argv.join(' ')} 退出码 ${code}`);
       return code;
     },
@@ -144,6 +132,7 @@ export const 取材命令: Record<string, 命令> = {
       const 新归 = new Map(es.map((e) => [e.名称, 新id归属(e, 新ids).对.map(([id]) => id)]));
       const 没归 = 新ids.filter((id) => ![...新归.values()].some((xs) => xs.includes(id)));
       if (没归.length) throw new 用法错误(`--新 的 ${没归.join('、')} 不是所选条目的产物（对不上产物表的哪一项）`);
+      if (!es.length) return 0;
       return 过放行闸(async () => {
         let 坏 = 0;
         const 登记 = p.开关.has('--登记');

@@ -134,7 +134,7 @@ export const 缓存命令: Record<string, 命令> = {
         await 算();
         return 0;
       }
-      const r = await 过渲染闸(async () => 执行回收(await 算(), o));
+      const r = await 过渲染闸(async () => 执行回收(await 算(), o),undefined,{}, {种:'cache gc',不开渲染:true});
       console.log(`\n删了 ${r.删数} 项 ${大小文本(r.删大小)}${r.克隆数 ? `，克隆 ${r.克隆数} 个省 ${大小文本(r.克隆省)}` : ''}${r.跳过.length ? `，跳过 ${r.跳过.length} 项（刚改过）` : ''}`);
       for (const x of r.跳过) 记录.记('信息', `跳过 ${x}`);
       for (const x of r.失败) 记录.记('错误', x);
