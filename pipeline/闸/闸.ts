@@ -15,7 +15,7 @@ import { 读状态 } from './看.ts';
 import { 监测一轮 } from './告警.ts';
 import { 读机器快照, type 机器快照 } from './机器.ts';
 import { 估计 } from './估计.ts';
-import { 取指令, 取放行, 用掉放行, 删指令, 路让路, 调度让路 } from './指令.ts';
+import { 取指令, 取放行, 用掉放行, 删指令, 路让路, 调度让路, 失败退出码 } from './指令.ts';
 export type { 任务声明 } from './任务.ts';
 export { 闸记被杀, 登记临时文件 } from './收尾.ts';
 export const 祖先持锁变量 = 'MCAI_RENDER_LOCK_PID';
@@ -238,7 +238,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         放掉();
         交接();
         if (自建)
-            任务柄?.结束(err instanceof 调度让路 ? 75 : 1);
+            任务柄?.结束(失败退出码(err));
         throw err;
     }
 };
@@ -381,6 +381,10 @@ export const 过放行闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) 
         code = 0;
         return result;
     }
+    catch (err) {
+        code = 失败退出码(err);
+        throw err;
+    }
     finally {
         if (自建)
             task.结束(code);
@@ -391,15 +395,17 @@ export const 开闸批 = (声明: 任务声明, 环境: Partial<闸环境> = {})
     检查重入();
     if (声明.连贯 && !声明.连贯.为什么?.trim())
         throw Error('连贯批必须写为什么');
-    const e = 取环境(环境), 自建 = !有任务(e.锁目录), task = 开任务(e, { ...声明, 种: '批', 可让路: true });
-    let 柄: 锁柄 | null = null, 结束了 = false, 忙 = false, 项数 = 0;
+    // 只有一项的批没有下一个让路点；项数没声明时还可能有下一项。
+    const 可让路 = 声明.项数 !== 1;
+    const e = 取环境(环境), 自建 = !有任务(e.锁目录), task = 开任务(e, { ...声明, 种: '批', 可让路 });
+    let 柄: 锁柄 | null = null, 结束了 = false, 忙 = false, 项数 = 0, 码 = 0;
     return {
         一项: async <T>(项: 任务声明, fn: () => Promise<T>): Promise<T> => {
             if (结束了 || 忙)
                 throw Error('批已结束或并发调用一项；批内一次一路');
             忙 = true;
             try {
-                柄 ??= await 拿渲染闸(s => console.error(`== 资源闸：${s}`), e, { ...声明, ...项, 种: '批', 可让路: true });
+                柄 ??= await 拿渲染闸(s => console.error(`== 资源闸：${s}`), e, { ...声明, ...项, 种: '批', 可让路 });
                 Object.assign(柄.声明, 项);
                 柄.心跳(0);
                 const 起 = e.现在毫秒();
@@ -418,6 +424,10 @@ export const 开闸批 = (声明: 任务声明, 环境: Partial<闸环境> = {})
                     }
                 }
             }
+            catch (err) {
+                码 = 失败退出码(err);
+                throw err;
+            }
             finally {
                 忙 = false;
             }
@@ -425,7 +435,7 @@ export const 开闸批 = (声明: 任务声明, 环境: Partial<闸环境> = {})
         结束: () => { if (忙)
             throw Error('批项还在跑，不能提前结束'); if (结束了)
             return; 结束了 = true; 柄?.放(); 柄 = null; if (自建)
-            task.结束(); },
+            task.结束(码); },
     };
 };
 export const 懒放行闸 = (过闸: (fn: () => Promise<void>) => Promise<void> = 过放行闸) => { let p: Promise<void> | undefined; return () => p ??= 过闸(async () => { }); };

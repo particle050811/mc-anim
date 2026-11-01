@@ -66,4 +66,4 @@ export const 写票 = (t: 票) => { if (fs.existsSync(t.文件))
 export const 清任务票 = (dir: string, 任务: string) => { for (const x of 列票(dir))
     if (x.pid === process.pid && x.内容?.任务 === 任务)
         重试(() => fs.rmSync(x.文件, { force: true })); };
-export const 回队尾 = (t: 票, 原序 = false) => 改序(t, 原序 && t.内容?.原序 ? t.内容.原序 : String(Math.max(Date.now(), ...列票(path.dirname(t.文件)).filter(x => !x.名.startsWith('9')).map(x => x.时间)) + 1));
+export const 回队尾 = (t: 票) => 改序(t, String(Math.max(Date.now(), ...列票(path.dirname(t.文件)).filter(x => !x.名.startsWith('9')).map(x => x.时间)) + 1));

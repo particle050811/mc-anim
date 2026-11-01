@@ -48,7 +48,7 @@ it('让路不中断当前段，下一张票暂缓；路令排队返回 75',async
     expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(true);
   },()=>{},env,{种:'render',可让路:true});
   await 过渲染闸(async()=>{},()=>{},env);expect(等).toBeGreaterThan(0);task.结束();
-  const route={...e,发起者:{...e.发起者,路:'一路'}};令命令(['一路','请让路'],route);
+  const route={...e,发起者:{...e.发起者,路:'一路'}};令命令(['一路'],参数(['--让路','请让路']),route,()=>{});
   await expect(过渲染闸(async()=>{},()=>{},{...env,发起者:route.发起者})).rejects.toMatchObject({退出码:75});
   路命令(['开','一路'],参数(),e,()=>{});路命令(['完','一路'],参数(),e,()=>{});expect(读调度(e.日志目录).filter(x=>/^路/.test(x.事))).toHaveLength(2);
 });
@@ -59,6 +59,7 @@ it('等闸空连续30秒，不被段间假空骗过；内存到点124',async()=>
 });
 it('票已被持有者删掉时改序报错：不复活、不写决定',()=>{
   const {e,t}=设置(),快照=读状态(e,机,false);
+  快照.票[0]!.内容!.暂缓至=Date.now()+60_000;
   fs.rmSync(t.文件);
   for(const cmd of ['先','后','恢复'])expect(()=>改调度(cmd,t.名,参数(['--为什么','测试']),e,{状态:()=>快照,输出:()=>{}})).toThrow('已不在');
   expect(列票(path.join(dir,'渲染.排队'))).toHaveLength(0);
@@ -178,3 +179,47 @@ it('等闸空到点说卡在谁',async()=>{
   expect(await 等条件(参数(['--闸空','--最长','2']),e,{睡,提示:x=>{说.push(x);}})).toBe(124);
   expect(说[1]).toContain(`卡在 持锁 #${process.ppid} render 乙段`);expect(说[1]).toContain(`排队 #${process.ppid} still 甲段`);
 });
+it('批按项数算可让路：一项的直说不能让路，多项的能让',async()=>{
+  const e={...取调度环境({锁目录:dir}),读内存:()=>null,读压力:()=>1};
+  const 试=async(项数:number)=>{const 批=开闸批({项数},e);try{await 批.一项({},async()=>{const s=读状态(e,机,false);改调度('让路',s.持锁[0]!.票,参数(['--为什么','产出优先']),e,{状态:()=>s,输出:()=>{}});});}finally{批.结束();}};
+  await expect(试(1)).rejects.toThrow('不能让路');await expect(试(2)).resolves.toBeUndefined();
+});
+it('路令看动作字段不猜文本，能撤；撤了同路照常拿锁',async()=>{
+  const e=取调度环境({锁目录:dir}),route={...e,发起者:{...e.发起者,路:'一路'}},出:string[]=[],o=(x:string)=>{出.push(x);};
+  for(const a of [[],['一路'],['一路','让路'],['一路','--让路','x','--撤']])expect(()=>令命令(a.filter(x=>!x.startsWith('--')&&x!=='x'),参数(a.filter(x=>x.startsWith('--')||x==='x')),route,o)).toThrow('用法');
+  fs.mkdirSync(path.dirname(令文件(e,'一路')),{recursive:true});fs.writeFileSync(令文件(e,'一路'),JSON.stringify({令:'请让路',至:Date.now()+60_000}));expect(路让路(route)).toBeNull();
+  令命令(['一路'],参数(['--让路','不用猜']),route,o);expect(路让路(route)).toBe('不用猜');
+  令命令(['一路'],参数(['--撤']),route,o);expect(路让路(route)).toBeNull();expect(出[1]).toContain('已撤');
+  令命令(['一路'],参数(['--撤']),route,o);expect(出[2]).toContain('无事可撤');
+  await 过渲染闸(async()=>{},()=>{}, {...route,读内存:()=>null,读压力:()=>1});
+  expect(读调度(e.日志目录).filter(x=>x.事==='令').map(x=>x.动作)).toEqual(['让路','撤','撤']);
+});
+it.each([['渲染','顶层'],['渲染','未接'],['放行','顶层'],['批','顶层']])('直接 import 闸的脚本（%s，%s）路令也退 75，日志一致，不打调用栈',(闸,写法)=>{
+  const e=取调度环境({锁目录:dir});令命令(['甲路'],参数(['--让路','先交产出']),e,()=>{});
+  const 跑=(路:string)=>spawnSync(process.execPath,[path.join(import.meta.dirname,'fixtures/路令脚本.ts'),dir,闸,写法],{encoding:'utf8',env:{...process.env,ANIM_ROUTE:路}});
+  const r=跑('甲路');expect(r.status).toBe(75);expect(r.stderr).toContain('退出 75，不算失败');expect(r.stderr).not.toMatch(/^\s+at /m);
+  expect(读调度(e.日志目录).filter(x=>x.事==='任务止').map(x=>x.退出码)).toEqual([75]);
+  expect(跑('乙路').status).toBe(0);
+},30_000);
+it('恢复：--原序 没有原序报错、没暂缓的不动；先和后都能回原序',()=>{
+  const e=取调度环境({锁目录:dir}),o={状态:()=>读状态(e,机,false),输出:()=>{}};
+  const 任务=(n:string)=>({任务:n,起:Date.now(),心跳:Date.now(),主机:e.本机,发起:读发起者({},[],dir,false),声明:{种:'still'}});
+  for(const n of ['A','B','C'])领票(队(),e.本机,任务(n),Date.now());
+  const 序=()=>列票(队()).map(x=>x.内容!.任务),名=(n:string)=>列票(队()).find(x=>x.内容!.任务===n)!.名;
+  expect(()=>改调度('恢复',名('B'),参数(['--为什么','x','--原序']),e,o)).toThrow('没有原序');
+  expect(()=>改调度('恢复',名('A'),参数(['--为什么','x']),e,o)).toThrow('没在暂缓');
+  expect(序()).toEqual(['A','B','C']);expect(决定(e)).toHaveLength(0);
+  for(const cmd of ['先','后']){
+    改调度(cmd,名('B'),参数(['--为什么','调']),e,o);expect(序()).toEqual(cmd==='先'?['B','A','C']:['A','C','B']);
+    改调度('恢复',名('B'),参数(['--为什么','回','--原序']),e,o);expect(序()).toEqual(['A','B','C']);
+  }
+  改调度('后',名('A'),参数(['--为什么','调']),e,o);改调度('恢复',名('A'),参数(['--为什么','回']),e,o);expect(序()).toEqual(['B','C','A']);
+});
+it('快路径的全局参数和帮助走完整路由，和别的命令一致',()=>{
+  const main=path.join(import.meta.dirname,'../cli/main.ts'),环境={...process.env,ANIM_DATA:dir,ANIM_DEBUG:''};
+  const 跑=(...a:string[])=>spawnSync(process.execPath,[main,'调度',...a],{encoding:'utf8',env:环境});
+  for(const a of [['-h'],['--help'],['--调试','--help'],['看','-h']]){const r=跑(...a);expect(r.status).toBe(0);expect(r.stdout).toContain('用法：anim 调度');}
+  const 选错=跑('预计','段','--作品','没有这部作品');expect(选错.status).toBe(2);expect(选错.stderr).toContain('没有这部作品');
+  const 用错=跑('不存在的动作');expect(用错.status).toBe(2);expect(用错.stderr).toContain('用法：anim 调度');
+  const 走路由=跑('不存在的动作','--调试');expect(走路由.status).toBe(2);expect(走路由.stderr).toContain('用法：anim 调度');
+},120_000);

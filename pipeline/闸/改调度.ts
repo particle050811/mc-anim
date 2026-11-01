@@ -1,4 +1,5 @@
 import {持有者,持有者主机,进程起于} from './锁.ts';
+import fs from 'node:fs';
 import path from 'node:path';
 import { 用法错误, type 已解析 } from '../cli/参数.ts';
 import { 读状态, 一行状态, type 调度状态 } from './看.ts';
@@ -111,23 +112,25 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         输出(`单票授权已写，${new Date(至).toISOString()} 到期作废（--分钟 可改）；压力 4 仍需 --强，下一张票不继承`);
         return;
     }
-    const 原 = t.名;
+    const 原 = t.名, 回原序 = p.开关.has('--原序');
+    if (cmd === '恢复' && (回原序 ? !t.内容.原序 : !t.内容.暂缓至))
+        throw new 用法错误(回原序 ? `票 ${t.名} 没改过序，没有原序可回` : `票 ${t.名} 没在暂缓，没有可恢复的；回原位用 --原序`);
     // 先改名再写内容：票主人可能刚拿到锁删了票，改名失败就停，写旧路径会把票复活。
     let 新: 票;
     try {
         新 = cmd === '后' ? 改序(t, String(900000000000000 + e.现在毫秒()))
             : cmd === '先' ? 改序(t, String(Math.max(1, Math.min(...列票(path.dirname(t.文件)).filter(x => !x.名.startsWith('9')).map(x => x.时间), Date.now()) - 1)))
-                : 回队尾(t, p.开关.has('--原序'));
+                : 回原序 ? 改序(t, t.内容.原序!) : 回队尾(t);
     }
     catch (err) {
         if ((err as NodeJS.ErrnoException).code !== 'ENOENT')
             throw err;
         throw new 用法错误(`票 ${t.名} 已不在：可能刚拿到锁或退出了，请重看调度`);
     }
-    if (cmd === '后') {
+    if (cmd !== '恢复')
         新.内容!.原序 ??= String(t.时间);
+    if (cmd === '后')
         新.内容!.暂缓至 = 至;
-    }
     else if (新.内容!.暂缓至) {
         delete 新.内容!.暂缓至;
         新.内容!.起 = e.现在毫秒();
@@ -150,11 +153,21 @@ export const 路命令 = (args: string[], p: 已解析, e: 调度环境, 输出:
         throw new 用法错误('用法：调度 路 开|完|败 <路名> [--说明 …]，或 路 看');
     记调度(e.日志目录, '路' + 动作, { 路, 发起: e.发起者, 说明: p.值['--说明'], 结果: p.值['--结果'] }, e.现在毫秒());
 };
-export const 令命令 = (args: string[], e: 调度环境) => {
-    const [路, ...词] = args;
-    const 令 = 词.join(' ').trim();
-    if (!路 || !令)
-        throw new 用法错误('用法：调度 令 <路名> "指令"');
-    写JSON(令文件(e, 路), { 令, 时: e.现在毫秒(), 至: e.现在毫秒() + 1800000 });
-    记调度(e.日志目录, '令', { 路, 令, 发起: e.发起者 }, e.现在毫秒());
+/** 动作写成明确字段：从自由文本猜，「不用让路了」也会触发退出。 */
+export const 令命令 = (args: string[], p: 已解析, e: 调度环境, 输出: (s: string) => void) => {
+    const [路, ...多余] = args, 因 = p.值['--让路']?.trim(), 撤 = p.开关.has('--撤'), now = e.现在毫秒();
+    if (!路 || 多余.length || Boolean(因) === 撤)
+        throw new 用法错误('用法：调度 令 <路名> --让路 "原因"，或 令 <路名> --撤');
+    const file = 令文件(e, 路);
+    if (撤) {
+        const 有 = fs.existsSync(file);
+        fs.rmSync(file, { force: true });
+        记调度(e.日志目录, '令', { 路, 动作: '撤', 发起: e.发起者 }, now);
+        输出(有 ? `已撤 ${路} 的令` : `${路} 没有令，无事可撤`);
+        return;
+    }
+    const 至 = now + 1800000;
+    写JSON(file, { 动作: '让路', 为什么: 因, 时: now, 至 });
+    记调度(e.日志目录, '令', { 路, 动作: '让路', 为什么: 因, 至, 发起: e.发起者 }, now);
+    输出(`${路} 排队中的任务退出 75，不算失败；${new Date(至).toISOString()} 失效，提前撤用 --撤`);
 };
