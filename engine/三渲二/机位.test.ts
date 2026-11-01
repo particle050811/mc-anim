@@ -1,7 +1,14 @@
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
-import { 算正交取景, 设正交相机, type 朝向 } from './机位.tsx';
+import { describe, expect, it, vi } from 'vitest';
+import { 机位, 做机位相机, 算正交取景, 设正交相机, type 朝向, type 透视机位参数 } from './机位.tsx';
 import { 调色矩阵 } from './调子.ts';
+
+const 画布状态 = vi.hoisted(() => ({
+  camera: null as THREE.Camera | null,
+  size: { width: 1280, height: 720 },
+  viewport: { dpr: 2 },
+}));
+vi.mock('@react-three/fiber', () => ({ useThree: (取: (s: typeof 画布状态) => unknown) => 取(画布状态) }));
 
 // 场景坐标的贴图像素网格点（x 东、y 北、z 上，k/16 格）投到画布上，应该都落在整数像素上
 const 投 = (cam: THREE.Camera, [x, y, z]: number[], 宽: number, 高: number) => {
@@ -58,5 +65,38 @@ describe('调色矩阵', () => {
     const 用 = (c: number[]) => [0, 1, 2].map((i) => m[i * 5]! * c[0]! + m[i * 5 + 1]! * c[1]! + m[i * 5 + 2]! * c[2]! + m[i * 5 + 4]!);
     expect(用([0, 0, 0]).map((v) => Math.round(v * 255))).toEqual([0x33, 0x66, 0x99]);
     expect(用([1, 1, 1]).map((v) => Math.round(v * 1e6) / 1e6)).toEqual([1, 1, 1]);
+  });
+});
+
+describe('透视机位的宽高比', () => {
+  const 机 = { 种: '透视', 眼: [0, -6, 1], 看: [0, -5, 1], 视角: 50 } satisfies 透视机位参数;
+  const 比 = (c: THREE.Camera) => (c as THREE.PerspectiveCamera).aspect;
+  it('不给按画布宽高算，给了用给的（屋后远景按上一帧的画布高算）', () => {
+    expect(比(做机位相机(机, 1280, 720, 1))).toBeCloseTo(1280 / 720);
+    expect(比(做机位相机({ ...机, 宽高比: 1280 / 1000 }, 1280, 720, 1))).toBeCloseTo(1.28);
+  });
+});
+
+describe('显式宽高比不依赖上次渲染的画布尺寸', () => {
+  const 参数 = { 种: '透视', 眼: [0, -6, 1], 看: [0, -5, 1], 视角: 50, 宽高比: 1280 / 1000 } satisfies 透视机位参数;
+  it('旧 size 不改变投影矩阵，和画布外的投影相机一致', () => {
+    const 期望 = 做机位相机(参数, 1280, 900, 2);
+    for (const height of [720, 1000, 900]) {
+      画布状态.size = { width: 1280, height };
+      画布状态.camera = new THREE.PerspectiveCamera();
+      机位({ 参数 });
+      expect(画布状态.camera.projectionMatrix.elements).toEqual(期望.projectionMatrix.elements);
+      expect(画布状态.camera.matrixWorld.elements).toEqual(期望.matrixWorld.elements);
+    }
+  });
+  it('不给宽高比时保留既有的尺寸跟随', () => {
+    const { 宽高比: _, ...默认参数 } = 参数;
+    for (const height of [720, 1000]) {
+      画布状态.size = { width: 1280, height };
+      画布状态.camera = new THREE.PerspectiveCamera();
+      机位({ 参数: 默认参数 });
+      const 期望 = 做机位相机(默认参数, 1280, height, 2);
+      expect(画布状态.camera.projectionMatrix.elements).toEqual(期望.projectionMatrix.elements);
+    }
   });
 });

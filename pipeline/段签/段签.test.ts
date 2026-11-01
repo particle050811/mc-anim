@@ -122,10 +122,10 @@ describe('段签', () => {
     const 后 = await 记转码('核对-转码', fp, 压, { 原字节sha: 原sha, 存法: 法 });
     expect(后.母版.转码自!.字节sha).toBe(原sha);
     expect(后.母版.字节sha).toBe(await 文件sha(压));
-    expect(后.母版.存法!.标签).toBe('x264-crf12-veryfast-t4');
+    expect(后.母版.存法!.标签).toBe('x264-crf16-medium-t4');
     expect({ ...后, 母版: null }).toEqual({ ...前, 母版: null });
     expect(await 对得上母版(后, 压)).toBe(true);
-    // CRF1 删了也照样取（CRF1 不在、CRF12 对得上），抽样帧没换
+    // CRF1 删了也照样取（CRF1 不在、压缩母版对得上），抽样帧没换
     fs.rmSync(母版);
     const 取 = await 取段签('核对-转码', fp, '视频', { 等放行: async () => {} });
     expect(取!.抽样.sha).toBe(前.抽样.sha);
@@ -134,7 +134,7 @@ describe('段签', () => {
     expect((await 扫母版(压)).签名.帧.map((f) => f.哈希)).not.toEqual(前.签名.帧.map((f) => f.哈希));
   });
 
-  it('只剩 CRF12、抽样帧丢了：取段签 返回 null，不从 CRF12 派生；出段签 也拒收 CRF12', async () => {
+  it('只剩压缩母版、抽样帧丢了：取段签 返回 null，不从压缩母版派生；出段签 也拒收压缩母版', async () => {
     const fp = 指纹('丢抽样');
     const 母版 = 原母版路径('核对-丢抽样', fp);
     fs.mkdirSync(path.dirname(母版), { recursive: true });
@@ -146,11 +146,11 @@ describe('段签', () => {
     fs.rmSync(母版);
     fs.rmSync(抽样路径(前));
     expect(await 取段签('核对-丢抽样', fp, '视频', { 等放行: async () => {} })).toBeNull();
-    await expect(出段签(压, { 段键: '核对-丢抽样', 指纹: fp, 级别: '视频', 派生: '补' })).rejects.toThrow(/CRF12/);
-    // 改了名的 CRF12 看文件里的标签也认得出来
+    await expect(出段签(压, { 段键: '核对-丢抽样', 指纹: fp, 级别: '视频', 派生: '补' })).rejects.toThrow(/压缩母版/);
+    // 改了名的压缩母版看文件里的标签也认得出来
     const 改名 = path.join(目录, '改名.mkv');
     fs.copyFileSync(压, 改名);
-    await expect(出段签(改名, { 段键: '核对-丢抽样', 指纹: fp, 级别: '视频', 派生: '补' })).rejects.toThrow(/CRF12/);
+    await expect(出段签(改名, { 段键: '核对-丢抽样', 指纹: fp, 级别: '视频', 派生: '补' })).rejects.toThrow(/压缩母版/);
   });
 });
 
@@ -214,7 +214,7 @@ describe('扫段签：和 扫母版 结论一样', () => {
     const t = new Date(Date.now() + 5000);
     fs.utimesSync(母版, t, t);
     expect(同指纹重渲过(新, 认二, 母版)).toBe('母版和段签记的不是同一份');
-    // CRF12 和段签对得上，但又重渲出了新 CRF1（段签记的 转码自 不是它）
+    // 压缩母版和段签对得上，但又重渲出了新 CRF1（段签记的 转码自 不是它）
     const 另一份 = path.join(目录, '再认可-另一份.mkv');
     fs.copyFileSync(后半变, 另一份);
     const 现在的样子 = { ...新.母版, 大小: fs.statSync(母版).size, 改于: fs.statSync(母版).mtimeMs };

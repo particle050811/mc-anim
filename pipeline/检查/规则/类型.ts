@@ -17,9 +17,17 @@ const 收错 = (c: 检查上下文, 输出: string, 报: 报告, 前缀: string,
   if (错.length > 50) 报.错(`${前缀}：另有 ${错.length - 50} 条，没列出`);
 };
 
+/**
+ * tsc 增量缓存，每个检出一份，不进 Git（node_modules 被忽略）、删 worktree 时一起没。tsc 按文件内容哈希和编译选项判断，TS 版本不同整份作废；
+ * 错误也记在里面，没改文件再跑照样报。anim check --深 不读不写缓存，从头查一遍。
+ * ruff 不开缓存：Python 文件少，省不出时间。
+ */
+export const tsc缓存文件 = (c: 检查上下文) => c.绝对('node_modules/.cache/anim-check/tsc.tsbuildinfo');
+
 export const 跑tsc = (c: 检查上下文, 报: 报告) => {
   if (!c.存在('tsconfig.json')) return 报.跳过.push('tsc：没有 tsconfig.json');
-  const r = 试跑([process.execPath, path.join(包目录('typescript'), 'bin', 'tsc'), '-p', c.绝对('tsconfig.json'), '--noEmit', '--pretty', 'false'], { cwd: c.根 });
+  const 增量 = c.深 ? [] : ['--incremental', '--tsBuildInfoFile', tsc缓存文件(c)];
+  const r = 试跑([process.execPath, path.join(包目录('typescript'), 'bin', 'tsc'), '-p', c.绝对('tsconfig.json'), '--noEmit', '--pretty', 'false', ...增量], { cwd: c.根 });
   if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'tsc', /error TS\d+/);
 };
 

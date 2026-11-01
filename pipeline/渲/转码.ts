@@ -1,17 +1,19 @@
-// 母版的存法（用户 10-30 定「就用 CRF 12 转码 优化一下存储空间」）：Remotion 照旧按 设置.ts 渲 CRF1（crf:1 进指纹，表示「怎么渲的」，指纹不变），
-// 渲完派生段签（verify 的无损抽样帧从 CRF1 抽），再转成 x264 CRF12 存进缓存。转码不是重渲：同一份 CRF1 转出来逐位相同。
-// 参数照 run/草稿/工作-母版重设计/中间格式脚本/run.py 的 x264_crf12（02-实测数据.md、09-补充 的画质数就是它出的）：veryfast、CRF 12、yuv420p；
+// 母版的存法（用户 10-30 定转码存，11-01 定「CRF 16 medium 好的 那就用这个吧」，决策 0008）：Remotion 照旧按 设置.ts 渲 CRF1（crf:1 进指纹，表示「怎么渲的」；存法不进指纹），
+// 渲完派生段签（verify 的无损抽样帧从 CRF1 抽），再转成 x264 压缩母版存进缓存。转码不是重渲：同一份 CRF1 转出来逐位相同。
 // 线程数固定 4：x264 默认确定性编码，同线程数同版本逐位可复现，线程数一变码流就变。容器写 +bitexact（Matroska 的 UID 不随机、不写 Lavf 版本号）。
-// 声音原样拷（PCM 不重编码）：CRF12 自己能放能用，段签丢了 film、render --到预览 照样有声音；PCM 每分钟约 11 MB，占 CRF12 的 1～2%。
-// 存法（标签、参数、ffmpeg 和 x264 版本）记进段签 签.json 的 母版.存法，文件里另写 ANIM_STORAGE 标签，看文件就分得清 CRF1 和 CRF12。
+// 声音原样拷（PCM 不重编码）：压缩母版自己能放能用，段签丢了 film、render --到预览 照样有声音；PCM 每分钟约 11 MB。
+// 存法（标签、参数、ffmpeg 和 x264 版本）记进段签 签.json 的 母版.存法，文件里另写 ANIM_STORAGE 标签，看文件就分得清 CRF1 和压缩母版。
+// 换档位只改这里的标签和参数：后缀 .x264.mkv 不绑档位；已有的文件不重转（压两代），段签、manifest 记的旧标签照留，没有地方拿它和现行标签比。
 import fs from 'node:fs';
 import { 配置 } from '../环境/配置.ts';
 import { 低优先级, 跑, 跑出 } from '../环境/子进程.ts';
 import { 压缩后缀 } from './母版.ts';
 import { 视频信息 } from './探测.ts';
 
-export const 存法标签 = 'x264-crf12-veryfast-t4';
-export const 转码视频参数 = ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '12', '-threads', '4', '-pix_fmt', 'yuv420p'] as const;
+export const 存法标签 = 'x264-crf16-medium-t4';
+export const 转码视频参数 = ['-c:v', 'libx264', '-preset', 'medium', '-crf', '16', '-threads', '4', '-pix_fmt', 'yuv420p'] as const;
+/** 各档位的标签都这样开头（旧文件是 x264-crf12-veryfast-t4） */
+const 压缩标签前缀 = 'x264-';
 
 export type 存法 = { 标签: string; 参数: string[]; ffmpeg: string; x264: string | null };
 
@@ -36,12 +38,12 @@ export const 读存法标签 = (file: string): string | null => {
   return out || null;
 };
 
-/** 是不是 CRF12 存的：看名字（.crf12.mkv）或文件里的标签（改过名的也认得出） */
-export const 是压缩母版 = (file: string) => file.endsWith(压缩后缀) || (fs.existsSync(file) && 读存法标签(file) === 存法标签);
+/** 是不是转码存的：看名字（.x264.mkv）或文件里的标签（改过名的、旧档位的也认得出，不当 CRF1 再转） */
+export const 是压缩母版 = (file: string) => file.endsWith(压缩后缀) || (fs.existsSync(file) && !!读存法标签(file)?.startsWith(压缩标签前缀));
 
-/** CRF1 → CRF12：写到 出（调用方给临时名），核对尺寸、帧数和原来一样；不过闸（调用方过） */
+/** CRF1 → 压缩母版：写到 出（调用方给临时名），核对尺寸、帧数和原来一样；不过闸（调用方过） */
 export const 转码 = async (原: string, 出: string): Promise<存法> => {
-  if (是压缩母版(原)) throw new Error(`${原} 已经是 CRF12 了，不再转（压两代）`);
+  if (是压缩母版(原)) throw new Error(`${原} 已经是压缩母版了，不再转（压两代）`);
   const 参数 = [
     '-map', '0:v:0', '-map', '0:a?', ...转码视频参数, '-c:a', 'copy',
     '-map_metadata', '-1', '-map_chapters', '-1', '-fflags', '+bitexact', '-metadata', `ANIM_STORAGE=${存法标签}`,

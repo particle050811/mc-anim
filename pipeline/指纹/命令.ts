@@ -39,7 +39,7 @@ export const 指纹命令: Record<string, 命令> = {
         const 签 = 读段签(s.键, fp.指纹);
         const 渲过 = 有 || !!签 || fs.existsSync(指纹文件(s.键, fp.指纹));
         const 头 = `${(s.编号 ?? '').padEnd(5)} ${s.键}  ${fp.指纹.slice(0, 16)}`;
-        if (有) console.log(`✓ ${头}${段签齐(签) ? '' : '  缺段签'}${fs.existsSync(压缩母版路径(s.键, fp.指纹)) ? '' : '  未转存 CRF12'}`);
+        if (有) console.log(`✓ ${头}${段签齐(签) ? '' : '  缺段签'}${fs.existsSync(压缩母版路径(s.键, fp.指纹)) ? '' : '  未转存压缩母版'}`);
         else if (渲过) {
           母版不在++;
           const 估 = 加预计(s.键);

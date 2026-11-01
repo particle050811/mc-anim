@@ -57,23 +57,43 @@ export async function* 读流(cmd: string[], 块大小: number | null): AsyncGen
   }
 }
 
-// ffmpeg 的表达式一层最多连 100 项，select 超过就报「Cannot allocate memory」退出 244，所以分批各起一个 ffmpeg
-export const 每批帧数 = 90;
+// ffmpeg 的表达式有嵌套预算：连加超过 100 项就报「Cannot allocate memory」退出 244，括号里连的项也占预算。每 10 项包一层括号，深度只随帧数的对数涨
+const 每层项数 = 10;
+/** select 用的表达式：n 是这些帧号之一时非 0 */
+export const 选帧表达式 = (帧们: readonly number[]) => {
+  let 项 = 帧们.map((f) => `eq(n,${f})`);
+  while (项.length > 每层项数) {
+    const 上层: string[] = [];
+    for (let i = 0; i < 项.length; i += 每层项数) 上层.push(`(${项.slice(i, i + 每层项数).join('+')})`);
+    项 = 上层;
+  }
+  return 项.join('+');
+};
 
-/** 按帧号升序交出 rgb24 像素（宽×高×3 字节） */
+// 一个 ffmpeg 抽多少帧：表达式整条放在命令行上，一帧约 13 字符，Windows 命令行最长 32767 字符。超过才分批，后一批要从文件开头重新解
+export const 每批帧数 = 2000;
+
+/** 把升序的帧号切成各起一个 ffmpeg 的批 */
+export const 选帧批次 = (帧们: readonly number[]) => {
+  const 批们: (readonly number[])[] = [];
+  for (let i = 0; i < 帧们.length; i += 每批帧数) 批们.push(帧们.slice(i, i + 每批帧数));
+  return 批们;
+};
+
+/** 按帧号升序交出 rgb24 像素（宽×高×3 字节）；-frames:v 让 ffmpeg 解到这批最后一帧就退，不解到文件尾 */
 export async function* 帧流(file: string, 帧们: readonly number[], 宽: number, 高: number): AsyncGenerator<Buffer> {
-  for (let i = 0; i < 帧们.length; i += 每批帧数)
+  for (const 批 of 选帧批次(帧们))
     yield* 读流(
       低优先级([
         配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', file, '-map', '0:v:0',
-        '-vf', `select='${帧们.slice(i, i + 每批帧数).map((f) => `eq(n,${f})`).join('+')}'`, '-fps_mode', 'passthrough',
+        '-vf', `select='${选帧表达式(批)}'`, '-fps_mode', 'passthrough', '-frames:v', String(批.length),
         '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1',
       ]),
       宽 * 高 * 3,
     );
 }
 
-/** 只留抽样帧的 select 滤镜（和 抽样帧 同一组帧；一条 mod 表达式，不受 每批帧数 的限制） */
+/** 只留抽样帧的 select 滤镜（和 抽样帧 同一组帧；一条 mod 表达式，帧再多也不长） */
 export const 抽样滤镜 = (帧数: number, 间隔 = 默认间隔) => `select='not(mod(n,${间隔}))+eq(n,${帧数 - 1})'`;
 
 /**

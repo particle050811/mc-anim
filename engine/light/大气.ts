@@ -294,7 +294,7 @@ const apply = (data: Float32Array, sunIn: [number, number, number], far: number)
 };
 
 // 放进画布里打开：sun = 场景坐标指向太阳；far = 地形远端（米，边界雾在这里融进天色）。卸载时关
-export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number }> = ({ sun, far }) => {
+export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number; enabled?: boolean }> = ({ sun, far, enabled = true }) => {
   use写入者(大气槽, 关大气);
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;
@@ -317,6 +317,8 @@ export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number }
       }, (e) => cancelRender(e));
   }, [data]);
   if (data) apply(data, sun, far);
+  // 地下保留已经认可的大气后期时仍需准备散射表，但场景本身继续用地下雾。
+  if (!enabled) atmoPVec.x = 0;
   useEffect(() => {
     if (!data) return;
     advance(performance.now());
