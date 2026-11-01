@@ -9,12 +9,30 @@ import { 求解缓存目录 } from '../环境/配置.ts';
 
 type 页面 = { _client: () => { send: (方法: string, 参数: object) => Promise<unknown> }; close: (...a: unknown[]) => Promise<unknown> };
 
-const 收一页 = async (page: 页面, dir: string) => {
-  const r = (await page._client().send('Runtime.evaluate', { expression: 'JSON.stringify(window.__求解缓存待写 || {})', returnByValue: true })) as {
-    value?: { result: { value: string } };
-    result?: { value: string };
+/** 接到浏览器上：之后每个页面关掉前跑一次 收（拿 求值 在页面里取字符串）。页面崩了、已经跳走了就收不到，算了；在收的任务放进 在收，给调用方等 */
+export const 关页前 = (browser: HeadlessBrowser, 在收: Set<Promise<void>>, 收: (求值: (表达式: string) => Promise<string>) => Promise<void>) => {
+  const b = browser as unknown as { newPage: (...a: unknown[]) => Promise<页面> };
+  const 原newPage = b.newPage.bind(b);
+  b.newPage = async (...a) => {
+    const page = await 原newPage(...a);
+    const 原close = page.close.bind(page);
+    const 求值 = async (表达式: string) => {
+      const r = (await page._client().send('Runtime.evaluate', { expression: 表达式, returnByValue: true })) as { value?: { result: { value: string } }; result?: { value: string } };
+      return (r.value ?? r).result!.value;
+    };
+    page.close = async (...c) => {
+      const task = 收(求值).catch(() => {});
+      在收.add(task);
+      await task;
+      在收.delete(task);
+      return 原close(...c);
+    };
+    return page;
   };
-  const 待写 = JSON.parse((r.value ?? r).result!.value) as Record<string, string>;
+};
+
+const 收一页 = async (求值: (表达式: string) => Promise<string>, dir: string) => {
+  const 待写 = JSON.parse(await 求值('JSON.stringify(window.__求解缓存待写 || {})')) as Record<string, string>;
   let 新写 = 0;
   for (const [文件名, 内容] of Object.entries(待写)) {
     if (!/^[0-9a-f]{16}\.json$/.test(文件名)) continue;
@@ -35,19 +53,5 @@ export const 等求解缓存写完 = () => Promise.all([...在收]);
 
 export const 收求解缓存 = (browser: HeadlessBrowser) => {
   const dir = 求解缓存目录();
-  const b = browser as unknown as { newPage: (...a: unknown[]) => Promise<页面> };
-  const 原newPage = b.newPage.bind(b);
-  b.newPage = async (...a) => {
-    const page = await 原newPage(...a);
-    const 原close = page.close.bind(page);
-    page.close = async (...c) => {
-      // 页面崩了、已经跳走了就收不到，下次再算
-      const task = 收一页(page, dir).catch(() => {});
-      在收.add(task);
-      await task;
-      在收.delete(task);
-      return 原close(...c);
-    };
-    return page;
-  };
+  关页前(browser, 在收, (求值) => 收一页(求值, dir));
 };

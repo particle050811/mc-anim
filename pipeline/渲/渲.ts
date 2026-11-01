@@ -31,6 +31,7 @@ import { 备好public目录 } from './public目录.ts';
 import { 删打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
 import { 段渲染环境 } from './地形注入.ts';
+import { 开始整段量, 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
 import { 视频信息 } from './探测.ts';
 import { 出段签 } from '../段签/段签.ts';
 import { 漂移提示 } from '../段签/补.ts';
@@ -85,6 +86,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
   // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
   收求解缓存(browser);
+  收地形用量(browser);
   try {
     const 组合 = await 量阶段(收, 标签, '读组合', () =>
       getCompositions(serveUrl, {
@@ -98,6 +100,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
     if (收) console.log(`会话就绪：${阶段小结(收.slice(起))}`);
     return await fn({ serveUrl, browser, 参数, 组合 });
   } finally {
+    await 等地形用量写完();
     await browser.close({ silent: true });
     删打包(serveUrl);
   }
@@ -203,6 +206,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
         let code = 1;
         let 明细: 明细收集 | null = null;
         try {
+          开始整段量(r.段.键, r.指纹.指纹);
           明细 = await 量渲染(标签, opts.记录.阶段, t0, (钩子) => renderMedia({
             serveUrl: h.serveUrl,
             composition,
@@ -228,6 +232,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
           const 帧 = 视频信息(tmp).帧数;
           记阶段(opts.记录.阶段, 标签, '查帧数', t查, (Date.now() - t查) / 1000);
           if (帧 !== r.段.段.帧数) throw new Error(`${r.段.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
+          await 记已量帧(r.段.键, Array.from({ length: 帧 }, (_, i) => i));
           fs.renameSync(tmp, 原);
           写指纹(r.指纹);
           r.母版 = 原;
@@ -389,6 +394,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
           logLevel: 'verbose',
         });
         明细.帧完成(i + 1);
+        await 记已量帧(s.键, [f]);
         出.push(file);
       }
       });

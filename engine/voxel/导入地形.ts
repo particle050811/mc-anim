@@ -19,6 +19,7 @@ import { sectionKey, type SectionId } from './区段.ts';
 import { sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, type 包信息, type 包表, type SectionData, type 粗高度图 } from './区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
+import { 记读区段 } from './地形用量.ts';
 import { variesByPos } from './群系色.ts';
 import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type 区段上下文 } from './导入区段.ts';
 import { fetchSectionsInPool, registerSource, type 区段结果 } from './区段工人池.ts';
@@ -179,6 +180,7 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
         else toLoad.push(section);
       }
       if (toLoad.length) {
+        记读区段(pack.name, toLoad.map(sectionKey));
         const loading = loadSections(pack, toLoad, round, workerCtx, ready);
         for (const [k, promise] of loading) pack.inflight.set(k, promise);
         for (const promise of new Set(loading.values())) {
