@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
+import { 配置 } from '../环境/配置.ts';
 import { 列文件 } from './文件.ts';
 import { 遮密 } from './发起者.ts';
 export type 调度事件 = {
@@ -28,7 +28,7 @@ export const 记调度 = (目录: string, 事: string, 字段: Record<string, un
                 return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, 清(v, k)]));
             return x;
         };
-        const 行: 调度事件 = { ...(清(字段) as Record<string, unknown>), v: 1, 时: new Date(now).toISOString(), 事, 主机: os.hostname() };
+        const 行: 调度事件 = { ...(清(字段) as Record<string, unknown>), v: 1, 时: new Date(now).toISOString(), 事, 主机: 配置('主机') };
         let text = JSON.stringify(行) + '\n';
         if (Buffer.byteLength(text) >= 4096) {
             行.看到=(行.看到 as {摘要?:string}|undefined)?.摘要??'快照过长，见同票领票事件';

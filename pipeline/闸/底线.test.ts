@@ -1,8 +1,11 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, expect, it } from 'vitest';
-import { 过渲染闸, 祖先持锁变量, type 闸环境 } from './闸.ts';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { 排队拿, 过渲染闸, 闸心跳, 祖先持锁变量, type 闸环境 } from './闸.ts';
+import { 读调度 } from './调度日志.ts';
+import { 改序 } from './票.ts';
 import { 轮到我 as 旧轮到我 } from './fixtures/旧轮到我.ts';
 import { 试拿 as 旧试拿 } from './fixtures/旧锁.ts';
 import { 试拿, 放 } from './锁.ts';
@@ -54,4 +57,16 @@ it('冻结旧轮到我和试拿认新票 JSON、纯 pid 锁及尾部暂缓票',(
   expect(旧轮到我(q,{文件:path.join(q,旧),名:旧},os.hostname())).toBe(true);
   const file=path.join(dir,'渲染.lock'); expect(试拿(file,os.hostname())).toBe(true);
   expect(旧试拿(file,os.hostname())).toBe(false); 放(file);
+});
+
+const 票们 = () => fs.readdirSync(path.join(dir, '渲染.排队'));
+const 票内容 = () => JSON.parse(fs.readFileSync(path.join(dir, '渲染.排队', 票们()[0]!), 'utf8'));
+const 事件 = (事: string) => 读调度(path.join(dir, 'logs')).filter(x => x.事 === 事);
+const 锁 = () => path.join(dir, '渲染.lock');
+const 基本 = (): Partial<闸环境> => ({ 锁目录: dir, 本机: os.hostname(), 内存下限: 30, 读内存: () => null, 读压力: () => 1, 清孤儿: () => [], 睡: async () => {} });
+
+it('本机名跟配置走：ANIM_HOST 同时进环境和日志', () => {
+  const 根 = import.meta.dirname, 脚本 = `import {取调度环境} from ${JSON.stringify(path.join(根, '任务.ts'))};import {记调度,读调度} from ${JSON.stringify(path.join(根, '调度日志.ts'))};const d=${JSON.stringify(dir)};记调度(d,'测',{});console.log(取调度环境({锁目录:d}).本机,读调度(d)[0].主机);`;
+  const out = execFileSync(process.execPath, ['--input-type=module', '-e', 脚本], { encoding: 'utf8', env: { ...process.env, ANIM_HOST: '测试机' } });
+  expect(out.trim()).toBe('测试机 测试机');
 });

@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { 数据路径, 配置 } from '../环境/配置.ts';
 import { 读发起者, type 发起者 } from './发起者.ts';
@@ -44,7 +43,7 @@ export type 任务信息 = {
 const 活任务 = new Map<string, ReturnType<typeof 建任务>>();
 export const 取调度环境 = (e: Partial<调度环境> = {}): 调度环境 => ({ 锁目录: e.锁目录 ?? 配置('锁目录'),
     日志目录: e.日志目录 ?? (e.锁目录 ? path.join(e.锁目录, 'logs') : 数据路径('run', 'logs', '调度')),
-    调度目录: e.调度目录 ?? (e.锁目录 ? path.join(e.锁目录, 'state') : 数据路径('run', '调度')), 本机: e.本机 ?? os.hostname(),
+    调度目录: e.调度目录 ?? (e.锁目录 ? path.join(e.锁目录, 'state') : 数据路径('run', '调度')), 本机: e.本机 ?? 配置('主机'),
     发起者: e.发起者 ?? 读发起者(), 现在毫秒: e.现在毫秒 ?? Date.now });
 const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: number) => void) => {
     const now = e.现在毫秒();
