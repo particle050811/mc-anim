@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
-import { execFileSync } from 'node:child_process';
-import { 读内存, 读压力 } from '../环境/资源.ts';
+import { execFile, execFileSync } from 'node:child_process';
+import { promisify } from 'node:util';
+import { 读内存, 读压力, 解析vm_stat, 解析交换区 } from '../环境/资源.ts';
 import { 找孤儿, 读进程 } from './孤儿.ts';
 export type 机器快照 = {
     负载: number;
@@ -24,11 +25,9 @@ const 跑 = (cmd: string, args: string[]) => { try {
 catch {
     return '';
 } };
-export const 读机器快照 = (): 机器快照 => {
-    const m = 读内存(), 进程 = 读进程(), mac = process.platform === 'darwin', vm = mac ? 跑('vm_stat', []) : '';
+const 组快照 = (vm: string, 进程: string, io: string, 热: string, 闸: number | null, swap: number | null, 压力: number | null): 机器快照 => {
     const page = Number(/page size of (\d+)/.exec(vm)?.[1] ?? 4096);
     const 页 = (re: RegExp) => { const n = re.exec(vm)?.[1]; return n ? Number(n) * page : null; };
-    const io = mac ? 跑('ioreg', ['-r', '-c', 'AGXAccelerator', '-l']) : '';
     let 盘: number | null = null;
     try {
         const st = fs.statfsSync(process.cwd());
@@ -36,6 +35,28 @@ export const 读机器快照 = (): 机器快照 => {
     }
     catch { /* 平台不可读 */ }
     const 数 = (x: string | undefined) => x === undefined ? null : Number(x);
-    return { 负载: os.loadavg()[0]!, 核: os.availableParallelism(), 闸: m?.空闲百分比 ?? null, 压力: 读压力(), free: mac ? 页(/Pages free:\s+(\d+)/) : os.freemem(), 压缩: 页(/Pages occupied by compressor:\s+(\d+)/), swap: m?.交换区已用 ?? null, 换出: 页(/Swapouts:\s+(\d+)/),
-        GPU: 数(/"Device Utilization %"\s*=\s*(\d+)/.exec(io)?.[1]), 热: mac ? 数(跑('notifyutil', ['-g', 'com.apple.system.thermalpressure']).match(/(\d+)\s*$/)?.[1]) : null, 盘, 孤儿: 找孤儿(进程).length, 进程 };
+    return { 负载: os.loadavg()[0]!, 核: os.availableParallelism(), 闸, 压力, free: process.platform === 'darwin' ? 页(/Pages free:\s+(\d+)/) : os.freemem(), 压缩: 页(/Pages occupied by compressor:\s+(\d+)/), swap, 换出: 页(/Swapouts:\s+(\d+)/),
+        GPU: 数(/"Device Utilization %"\s*=\s*(\d+)/.exec(io)?.[1]), 热: 数(热.match(/(\d+)\s*$/)?.[1]), 盘, 孤儿: 找孤儿(进程).length, 进程 };
+};
+export const 读机器快照 = (): 机器快照 => {
+    const m = 读内存(), 进程 = 读进程(), mac = process.platform === 'darwin';
+    return 组快照(mac ? 跑('vm_stat', []) : '', 进程, mac ? 跑('ioreg', ['-r', '-c', 'AGXAccelerator', '-l']) : '', mac ? 跑('notifyutil', ['-g', 'com.apple.system.thermalpressure']) : '', m?.空闲百分比 ?? null, m?.交换区已用 ?? null, 读压力());
+};
+const 执行 = promisify(execFile);
+const 异步跑 = async (cmd: string, args: string[]): Promise<string> => {
+    try { return (await 执行(cmd, args, { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 })).stdout; }
+    catch { return ''; }
+};
+/** 快路径不串行等待六个只读进程；内存仍用资源闸同一解析器，不引入缓存读数。 */
+export const 读机器快照并行 = async (执行命令 = 异步跑): Promise<机器快照> => {
+    if (process.platform !== 'darwin') return 读机器快照();
+    const [vm, sw, pressure, ps, io, heat] = await Promise.all([
+        执行命令('vm_stat', []), 执行命令('sysctl', ['-n', 'vm.swapusage']),
+        执行命令('sysctl', ['-n', 'kern.memorystatus_vm_pressure_level']),
+        执行命令('ps', ['-A', '-o', 'pid=,ppid=,rss=,command=']),
+        执行命令('ioreg', ['-r', '-c', 'AGXAccelerator', '-l']),
+        执行命令('notifyutil', ['-g', 'com.apple.system.thermalpressure']),
+    ]);
+    const n = Number(pressure.trim());
+    return 组快照(vm!, ps!, io!, heat!, vm ? Math.round(解析vm_stat(vm, os.totalmem()) / os.totalmem() * 100) : null, sw ? 解析交换区(sw).已用 : null, [1, 2, 4].includes(n) ? n : null);
 };

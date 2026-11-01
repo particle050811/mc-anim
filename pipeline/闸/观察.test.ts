@@ -9,6 +9,8 @@ import {读发起者} from './发起者.ts';
 import {盯} from './盯.ts';
 import {估计} from './估计.ts';
 import {复盘} from './复盘.ts';
+import {读机器快照并行} from './机器.ts';
+import {解析vm_stat} from '../环境/资源.ts';
 import type {调度事件} from './调度日志.ts';
 let dir:string;
 beforeEach(()=>{dir=fs.mkdtempSync(path.join(os.tmpdir(),'anim-观察-'));});afterEach(()=>fs.rmSync(dir,{recursive:true,force:true}));
@@ -55,4 +57,13 @@ it('等待者已写的告警能由后来挂上的盯消费，不能只更新去�
   const e=取调度环境({锁目录:dir}),s=基本();s.时=Date.now();s.机.压力=4;
   const h=空历史();记录告警(e,s,h,判告警(s,s.时,undefined,h));const out:string[]=[];
   expect(await 盯(e,{读:()=>s,父活:()=>true,输出:x=>out.push(x)})).toBe(0);expect(out[0]).toContain('内存压力');
+});
+
+it.skipIf(process.platform !== 'darwin')('查看并行采样保持闸口径、缺读数不伪造零，六项同时发起',async()=>{
+  const vm='Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free: 200000.\nPages inactive: 100000.\nPages speculative: 2000.\nPages purgeable: 1000.\nPages occupied by compressor: 300.\nSwapouts: 400.';
+  const 起:string[]=[],完成:Array<()=>void>=[];
+  const pending=读机器快照并行(async(cmd,args)=>{起.push(cmd+' '+args.join(' '));await new Promise<void>(r=>完成.push(r));return cmd==='vm_stat'?vm:args.includes('vm.swapusage')?'total = 2048.00M used = 1024.00M':args.includes('kern.memorystatus_vm_pressure_level')?'4':cmd==='ioreg'?'"Device Utilization %" = 93':cmd==='notifyutil'?'state: 1':'';});
+  expect(起).toHaveLength(6);for(const f of 完成)f();const s=await pending;
+  expect(s.闸).toBe(Math.round(解析vm_stat(vm,os.totalmem())/os.totalmem()*100));expect(s.free).toBe(200000*16384);expect(s.压缩).toBe(300*16384);expect(s.swap).toBe(2**30);expect(s.压力).toBe(4);expect(s.GPU).toBe(93);expect(s.热).toBe(1);
+  const empty=await 读机器快照并行(async()=> '');expect([empty.闸,empty.压力,empty.free,empty.swap,empty.GPU,empty.热]).toEqual([null,null,null,null,null,null]);
 });

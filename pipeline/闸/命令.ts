@@ -5,6 +5,7 @@ import { 解析参数, 用法错误 } from '../cli/参数.ts';
 import type { 命令 } from '../cli/命令.ts';
 import { 取调度环境, type 调度环境 } from './任务.ts';
 import { 读状态, 渲染看, 一行状态 } from './看.ts';
+import { 读机器快照并行 } from './机器.ts';
 import { 读调度,记调度 } from './调度日志.ts';
 import { 复盘 } from './复盘.ts';
 import { 估计 } from './估计.ts';
@@ -32,7 +33,8 @@ export const 跑调度 = async (args: string[], env?: 调度环境, 输出: (s: 
     if (cmd === '等')
         return 等条件(p, e);
     if (cmd === '看') {
-        const s = 读状态(e);
+        const 机 = await 读机器快照并行();
+        const s = 读状态(e, () => 机);
         记调度(e.日志目录,'汇报',{发起:e.发起者,看到:一行状态(s)},s.时);
         输出(p.开关.has('--json') ? JSON.stringify({ ...s, 机: { ...s.机, 进程: undefined } }) : p.开关.has('--一行') ? 一行状态(s) : 渲染看(s));
         return 0;
