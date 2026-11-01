@@ -1,6 +1,7 @@
 // anim render <选择器…> [--级别 视频|预览] [--重渲] [--留CRF1] [--不叠层|--只叠层] [--到预览 <主题>]（段声明的透明叠层默认一起渲）；
 // anim render [<选择器…>] --只派生 [--重做] [--级别 …]：不渲，从现有当前指纹的母版补段签（没给选择器是全部段，没给 --级别 是各级别）；anim still <段> <帧…> --到预览 <主题> [--级别 …] [--逐帧]；anim bench（测速.ts）；anim 耗时 [<段>] [--最近 <n>] [--详]（运行记录/渲染明细.ts）
 import fs from 'node:fs';
+import {登记CPU} from '../闸/任务.ts';
 import os from 'node:os';
 import path from 'node:path';
 import type { 命令 } from '../cli/命令.ts';
@@ -27,13 +28,13 @@ const 取级别 = (v: string | undefined): 渲染级别 => {
 
 /** 母版压成给人看的 mp4（压法照旧项目 渲染带音频.py：视频级 x264 slower CRF 32，预览级 veryfast CRF 23，AAC 192k） */
 export const 压成mp4 = (母版: string, 出: string, 级别: 渲染级别) =>
-  跑(
+  登记CPU({种:'预览mp4',用途:process.env.ANIM_PURPOSE??'产出'},()=>跑(
     低优先级([
       配置('ffmpeg'), '-v', 'error', '-y', '-i', 母版,
       '-c:v', 'libx264', '-preset', 级别 === '预览' ? 'veryfast' : 'slower', '-crf', 级别 === '预览' ? '23' : '32',
       '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', 出,
     ]),
-  );
+  ));
 
 export const 渲染命令: Record<string, 命令> = {
   render: {

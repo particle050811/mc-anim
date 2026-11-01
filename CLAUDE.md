@@ -16,6 +16,7 @@
 
 ## 常用命令（Mac/Linux 用 `anim`，Windows 用 `anim.cmd`；以 `anim help` 为准）
 ```
+anim 调度 [--json|--一行] | 调度 盯 | 调度 预计 <选择器>    看资源、队列和决定；改调度必填 --为什么（docs/调度.md）
 anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）；子命令都认 --help
 anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章（都不中才当章范围）
 anim render [<选择器>] --只派生 [--重做]   从现有母版补段签（段签/，母版删了 film、verify、edit-package 照样用）

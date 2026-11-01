@@ -46,3 +46,13 @@ it('资源闸 import 闭包没有 Remotion',()=>{
     for(const m of text.matchAll(/(?:from\s+|import\s*\()['"]([^'"]+)['"]/g)){const target=m[1]!;expect(target).not.toMatch(/(?:^|\/)remotion|@remotion/);if(target.startsWith('.')&&/\.[cm]?tsx?$/.test(target))walk(path.resolve(path.dirname(file),target));}
   };for(const f of fs.readdirSync(import.meta.dirname).filter(f=>f.endsWith('.ts')&&!f.endsWith('.test.ts')))walk(path.join(import.meta.dirname,f));
 });
+it('无帧、持锁死亡、持锁超时和连贯批都有 fixture，升级最多三次',()=>{
+  const s=基本();s.时=2_000_000;加票(s,1);
+  s.持锁=[{pid:1,票:'x',任务:'x',拿锁时:0,心跳:s.时,帧时:0,已出帧:0,总帧:100,死:true,声明:{连贯:{为什么:'测连贯'},预计秒:60},发起:读发起者({},[],dir,false)}];
+  const a=判告警(s,s.时);expect(a.map(x=>x.类)).toEqual(expect.arrayContaining(['无帧','持锁者死','持锁超时','连贯批']));expect(a.every(x=>x.次数<=3)).toBe(true);
+});
+it('等待者已写的告警能由后来挂上的盯消费，不能只更新去重表而漏叫醒',async()=>{
+  const e=取调度环境({锁目录:dir}),s=基本();s.时=Date.now();s.机.压力=4;
+  const h=空历史();记录告警(e,s,h,判告警(s,s.时,undefined,h));const out:string[]=[];
+  expect(await 盯(e,{读:()=>s,父活:()=>true,输出:x=>out.push(x)})).toBe(0);expect(out[0]).toContain('内存压力');
+});
