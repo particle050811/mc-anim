@@ -2,7 +2,7 @@
 // 碎块就是墙上原来那几格：工具/游戏取材/网格碎块.py 从场景网格取出洞里每一格和各面贴图，镜头里同一片区域用 `BlockMesh` 的 `hide` 藏掉，碎块从原位飞；洞旁方块朝洞的那面游戏没画，由同份数据补上（`lining`），洞壁才有厚度。
 // 运动按时间参数算（无状态）：初速度 = 撞击方向×速度 + 从撞击点往外散开 + 随机，重力下落，绕随机轴匀速翻滚；另有几块 0.2～0.45 格的小碎渣。
 // 穿墙分两部分（用户 10-02）：被动力钻头矛直接碰到的方块（矛尖连钻头虚影扫过的那一管，各段 编排.ts 给的 `管`）当场崩掉，原地画原版破坏粒子（方块破坏粒子.tsx；钻头再顺着离开矛轴的方向甩一把），矛尖扫到那刻崩；周围没被碰到的才整块飞出。
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { rng, type V3 } from '../../engine/model/parts.tsx';
 import type { Png } from '../../engine/model/贴图.ts';
@@ -336,7 +336,9 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
       }
     });
     return out;
-  }, [pieces, bursts, fixWinding]);
+    // bursts 每帧都是新数组（编排的 debrisBursts(t)），按它比就每帧重建几十个几何还不释放。碎渣只看每盒的 seed、chips 和矛管崩掉哪几格（tubes 按 管 对象缓存，同一个 管 同一张表）
+  }, [pieces, fixWinding, bursts.length, ...bursts.flatMap((burst, bi) => [burst.seed, burst.chips, tubes[bi]])]);
+  useEffect(() => () => chipGeos.forEach((chip) => chip.geo.dispose()), [chipGeos]);
 
   const nodes: React.ReactNode[] = [];
   const particles: Particle[] = [];
