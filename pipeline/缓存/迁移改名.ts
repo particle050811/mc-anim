@@ -66,5 +66,5 @@ export const 迁移改名 = async (作品: string | null, o: { 执行: boolean; 
     else console.log(`共 ${项.length} 个，要改 ${项.length - 失败} 个${失败 ? `，${失败} 个目标已存在` : ''}`);
     return 失败 ? 1 : 0;
   };
-  return o.执行 ? 过渲染闸(做) : 做();
+  return o.执行 ? 过渲染闸(做, undefined, {}, { 种: 'cache 改后缀', 不开渲染: true }) : 做();
 };

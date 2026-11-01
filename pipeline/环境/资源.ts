@@ -1,13 +1,13 @@
 // 本机资源读数（资源闸、anim doctor 用）。
 // Mac 不用 memory_pressure：它把可压缩的页也算空闲，交换区快满时还报近一半空闲（全局记忆 resource-concurrency-preference，10-06）。
-// 这里按 vm_stat 的 free + inactive + speculative + purgeable 算空闲，另读交换区；交换区剩不到一成也当内存不够。
+// 这里按 vm_stat 的 free + inactive + speculative + purgeable 算空闲，另读交换区只供展示，不因已用交换区长期不归还而一直阻塞。
 // Windows 读 Win32_OperatingSystem（未在 Windows 实测），Linux 读 /proc/meminfo 的 MemAvailable。
 import fs from 'node:fs';
 import os from 'node:os';
 import { isMac, isWindows } from './配置.ts';
 import { 试跑 } from './子进程.ts';
 
-export type 内存读数 = { 总: number; 空闲: number; 空闲百分比: number; 交换区总: number; 交换区已用: number };
+export type 内存读数 = { 总: number; 空闲: number; 空闲百分比: number; 交换区总: number; 交换区已用: number | null };
 
 export const 解析vm_stat = (text: string, 总字节: number) => {
   const page = Number(/page size of (\d+) bytes/.exec(text)?.[1] ?? 4096);
@@ -25,7 +25,7 @@ export const 解析交换区 = (text: string) => {
 export const 读内存 = (): 内存读数 | null => {
   const 总 = os.totalmem();
   let 空闲: number;
-  let 交换区 = { 总: 0, 已用: 0 };
+  let 交换区: { 总: number; 已用: number | null } = { 总: 0, 已用: null };
   if (isMac) {
     const vm = 试跑(['vm_stat']);
     if (vm.退出码 !== 0) return null;
@@ -61,4 +61,12 @@ export const 一分钟负载 = (): number | null => (isWindows ? null : os.loada
 
 export const 读数说明 = (m: 内存读数) =>
   `空闲内存 ${m.空闲百分比}%（${(m.空闲 / 2 ** 30).toFixed(1)}/${(m.总 / 2 ** 30).toFixed(0)} GB）` +
-  (m.交换区总 ? `，交换区 ${(m.交换区已用 / 2 ** 30).toFixed(1)}/${(m.交换区总 / 2 ** 30).toFixed(1)} GB` : '');
+  (m.交换区总 && m.交换区已用 !== null ? `，交换区 ${(m.交换区已用 / 2 ** 30).toFixed(1)}/${(m.交换区总 / 2 ** 30).toFixed(1)} GB` : '');
+
+/** macOS 压力值：1 正常、2 警告、4 严重；不支持的平台不猜。 */
+export const 读压力 = (): number | null => {
+  if (!isMac) return null;
+  const r = 试跑(['sysctl', '-n', 'kern.memorystatus_vm_pressure_level']);
+  const n = Number(r.stdout.trim());
+  return r.退出码 === 0 && [1, 2, 4].includes(n) ? n : null;
+};

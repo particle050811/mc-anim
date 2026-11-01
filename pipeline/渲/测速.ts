@@ -1,3 +1,4 @@
+import {记阶段} from '../运行记录/阶段.ts';
 // 测速：同一段取一段帧，照母版的渲染参数渲一遍，按阶段计时（打包 / 开浏览器 / 读 Composition / 首帧 / 出帧 / 编码收尾），不写缓存、不按段记耗时（不影响 render 报的预计耗时）。
 // 用途：比 Remotion 版本、比引擎改动前后（docs/渲染性能.md）。走渲染闸；输出 mkv 放临时目录，跑完删掉。
 // 命令行是 anim bench（渲/命令.ts）。详细：Remotion 开 verbose，日志写到 `日志`，看它自己报的各步耗时。
@@ -75,8 +76,10 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
         if (opts.留输出) fs.mkdirSync(opts.留输出, { recursive: true });
         const out = path.join(opts.留输出 ?? os.tmpdir(), `mc-anim-测速-${process.pid}-${i}.mkv`);
         const 标签 = `bench:${作品名()}/${s.键}:${级别}`;
+        const 排队起=Date.now();
         await 过渲染闸(async () => {
           const t0 = Date.now();
+          const 等闸=记阶段(undefined,标签,'等闸',排队起,(t0-排队起)/1000);
           let 首帧 = 0, 末帧 = 0, 上次帧数 = 0;
           const 明细 = new 明细收集(标签, 帧[0]);
           const 跑 = () => renderMedia({
@@ -102,7 +105,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           }
           await 记已量帧(s.键, Array.from({ length: 帧[1] - 帧[0] + 1 }, (_, k) => 帧[0] + k));
           const end = Date.now();
-          const { 文件, 明细: d } = await 明细.写出([], { remotion, 浏览器: 浏览器版本(opts.浏览器), 日志级别: 渲染日志, 共享内存: String(!opts.关共享内存), 第几轮: String(i + 1) });
+          const { 文件, 明细: d } = await 明细.写出([等闸], { remotion, 浏览器: 浏览器版本(opts.浏览器), 日志级别: 渲染日志, 共享内存: String(!opts.关共享内存), 第几轮: String(i + 1) });
           轮.push({
             总秒: (end - t0) / 1000,
             首帧秒: (首帧 - t0) / 1000,
@@ -116,7 +119,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
             明细: 文件,
             输出: opts.留输出 ? out : null,
           });
-        }, (m) => console.error(`== 资源闸：${m}`));
+        }, (m) => console.error(`== 资源闸：${m}`),{}, {种:'bench',作品:作品名(),段:s.键,帧数:帧[1]-帧[0]+1,帧:`${帧[0]}-${帧[1]}`,级别,用途:process.env.ANIM_PURPOSE??'实验'});
       }
       return { remotion, 浏览器: 浏览器版本(opts.浏览器), 共享内存: !opts.关共享内存, 日志级别: 渲染日志, 段: `${作品名()}/${s.键}`, 帧, 打包秒, 开浏览器秒, 读组合秒, 轮 };
     } finally {
