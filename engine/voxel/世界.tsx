@@ -12,7 +12,7 @@
 // 挑区段时视野往背着光的方向多留 300 米：画面外、光源那边的块（树、山）也会把影子投进画面。
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
-import { cancelRender, continueRender, delayRender } from 'remotion';
+import { cancelRender, continueRender, delayRender, getRemotionEnvironment } from 'remotion';
 import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
@@ -122,8 +122,18 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   if (!glWorlds) {
     const newWorlds = (glWorlds = new Map<string, World>());
     worlds.set(gl, newWorlds);
-    // 上下文恢复后旧容器全部作废，还拿它们画不报错、只是地形没了（three 重传不了：容器归 容器池.ts 管）。清掉，下一次渲染整个重建，网格从 `kept` 拿
-    gl.domElement.addEventListener('webglcontextrestored', () => {
+    const canvas = gl.domElement;
+    // 渲染时丢了上下文就整次报错：丢失期间 three 不画，Remotion 照常截图，空画布会当正常帧进母版。
+    // 没法在丢失前提前拦，正在截的那一帧可能已经错了，只有整次失败才保证错帧不留下。
+    // 换截时 R3F 卸载 Canvas 也会让旧上下文丢失（forceContextLoss），那时画布已经离开页面，不算。
+    // delayRender 不放：cancelRender 抛的错帧与帧之间没人接，Remotion 又先看 renderReady 再看取消，占着句柄下一帧才一定报出来
+    canvas.addEventListener('webglcontextlost', () => {
+      if (!canvas.isConnected || !getRemotionEnvironment().isRendering) return;
+      delayRender('WebGL 上下文丢失');
+      cancelRender(new Error('WebGL 上下文丢失（GPU 重置或显存不够），这次渲染作废，要重渲'));
+    });
+    // Studio 里丢了接着看：恢复后旧容器全部作废，还拿它们画不报错、只是地形没了（three 重传不了：容器归 容器池.ts 管）。清掉，下一次渲染整个重建，网格从 `kept` 拿
+    canvas.addEventListener('webglcontextrestored', () => {
       newWorlds.clear();
       清空容器池(ctx);
     });
