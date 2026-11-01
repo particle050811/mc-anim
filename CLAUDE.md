@@ -7,7 +7,7 @@
 - `作品/<名>/`：一部作品自带的一切，现在有 `作品/应力转动/`、`作品/把回忆拼好给你/` 两部：`清单.ts`（唯一的段顺序表）、`场/<场键>/`、`段/<段键>/`、`核对/`、`注册.tsx`、`index.ts`、`台词.toml`、`旧名.tsv`、`默认.ts`（本作品全片默认值）、`认可/<平台>/<段键>.toml`（用户认可的画面指纹），本作品专有的角色、地点、配乐、配音。命令选作品：`--作品 <名>` > 当前目录 > `anim.local.toml` 的 `work` > 只有一部就用它（`docs/决策/0004-多作品.md`）；作品默认进 Git、开源（用户 10-22 定），要私有的逐个挡：`.gitignore` 加 `/作品/<名>/`，或放 `作品/` 外用 `[works]` 登记
 - `作品/应力转动/规矩.toml`：本作品的成片规矩，写默认值、级别、原话、出处、落点、例外。**规矩只登记在这里，不写进本文件**；`rules/通用.toml` 放各作品都守的，现在空着，升格要用户逐条定
 - `engine/`：纯技术，不含剧情。`engine/段/`：各作品共用的段框架（段定义、设置、注册工厂）。`库/`：多部作品会用的角色、生物、物品、界面、特效（原版、模组照原样做）。作品里引用写 `@engine/`、`@库/`
-- `pipeline/`：`anim` 的实现（环境、闸、指纹、渲、合成、剪辑包、适配器、检查）。`py/anim_py/`：Python 叶子工具
+- `pipeline/`：`anim` 的实现（环境、闸、指纹、渲、合成、剪辑包、适配器、检查）。`py/anim_py/`：Python 叶子工具。`wasm/`：编成 WASM 的源码（`anim world 解码器`）
 - `sourcing/`：取材 mod、mcai、世界声明、jar 和提取配方
 - `assets/registry/*.toml`：资产表（人写）；`assets/资产锁.json`：工具生成，不手改
 - 数据根 `../mc-anim-data/`（环境变量 `ANIM_DATA`，Git 外，各 worktree 共用这一份）：`store/ 私有/ terrain/ cache/ game/ 基线/ 交付/ archive/ run/`，缓存、交付按作品分子目录
@@ -30,7 +30,7 @@ anim cache gc [--执行]                     缓存回收，默认只看；--执
 anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转 CRF12（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
-anim world list|bake|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
+anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行（开游戏、编译过资源闸）、从游戏导群系色和方块表
 anim edit-package <交付目录>  |  anim jianying export|readback   剪辑包和剪映草稿
 anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心数据（浏览器里跑 pipeline/适配器/<平台>/取数.js 下载）收进数据根、对交付出报告；旧名 anim bili
