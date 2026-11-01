@@ -62,3 +62,11 @@ export const 一分钟负载 = (): number | null => (isWindows ? null : os.loada
 export const 读数说明 = (m: 内存读数) =>
   `空闲内存 ${m.空闲百分比}%（${(m.空闲 / 2 ** 30).toFixed(1)}/${(m.总 / 2 ** 30).toFixed(0)} GB）` +
   (m.交换区总 ? `，交换区 ${(m.交换区已用 / 2 ** 30).toFixed(1)}/${(m.交换区总 / 2 ** 30).toFixed(1)} GB` : '');
+
+/** macOS 压力值：1 正常、2 警告、4 严重；不支持的平台不猜。 */
+export const 读压力 = (): number | null => {
+  if (!isMac) return null;
+  const r = 试跑(['sysctl', '-n', 'kern.memorystatus_vm_pressure_level']);
+  const n = Number(r.stdout.trim());
+  return r.退出码 === 0 && [1, 2, 4].includes(n) ? n : null;
+};

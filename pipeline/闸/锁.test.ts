@@ -118,7 +118,8 @@ describe('排队票', () => {
       return 柄;
     });
     await new Promise((r) => setTimeout(r, 100));
-    expect(fs.readdirSync(path.join(dir, '渲染.排队'))).toHaveLength(2);
+    // 同进程串行领票，避免按 pid 查找时两张活票歧义；顺序仍由下面的断言核对。
+    expect(fs.readdirSync(path.join(dir, '渲染.排队'))).toHaveLength(1);
     await 子.杀();
     const 甲柄 = await 甲;
     await new Promise((r) => setTimeout(r, 150));
