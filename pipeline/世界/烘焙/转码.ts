@@ -9,32 +9,30 @@ import { 块文件们, 块格式 } from './读区段.ts';
 import type { 转码活, 转码果 } from './转码工人.ts';
 
 const 工人们干 = async (活们: 转码活[], 线程: number, 进度: (完: number, 总: number) => void) => {
-  const 剩 = [...活们], 果们: 转码果[] = [];
-  await Promise.all(
-    Array.from({ length: Math.min(线程, 活们.length) }, () =>
-      new Promise<void>((好, 坏) => {
-        const w = new Worker(new URL('./转码工人.ts', import.meta.url));
-        const 下一个 = () => {
-          const 活 = 剩.shift();
-          if (活) return w.postMessage(活);
-          void w.terminate();
-          好();
-        };
-        w.on('error', 坏);
-        w.on('message', (m: { 好了?: true; 错?: string; 果?: 转码果 }) => {
-          if (m.错) {
-            void w.terminate();
-            return 坏(new Error(m.错));
-          }
-          if (m.果) {
-            果们.push(m.果);
-            进度(果们.length, 活们.length);
-          }
-          下一个();
-        });
-      }),
-    ),
-  );
+  const 剩 = [...活们], 果们: 转码果[] = [], 工人们: Worker[] = [];
+  try {
+    await Promise.all(
+      Array.from({ length: Math.min(线程, 活们.length) }, () =>
+        new Promise<void>((好, 坏) => {
+          const w = new Worker(new URL('./转码工人.ts', import.meta.url));
+          工人们.push(w);
+          w.on('error', 坏);
+          w.on('message', (m: { 好了?: true; 错?: string; 果?: 转码果 }) => {
+            if (m.错) return 坏(new Error(m.错));
+            if (m.果) {
+              果们.push(m.果);
+              进度(果们.length, 活们.length);
+            }
+            const 活 = 剩.shift();
+            if (活) w.postMessage(活);
+            else 好();
+          });
+        }),
+      ),
+    );
+  } finally {
+    await Promise.all(工人们.map((w) => w.terminate())); // 一个出错，别的也停：它们还在往暂存目录写
+  }
   return 果们;
 };
 

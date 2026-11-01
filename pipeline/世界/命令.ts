@@ -108,6 +108,7 @@ const 子命令们: Record<string, 子命令> = {
         const 抽 = Number(p.值['--抽'] ?? 20);
         if (!(Number.isInteger(抽) && 抽 > 0)) throw new 用法错误('--抽 要是正整数');
         const 表 = 读地形表().包;
+        for (const 名 of p.位置) if (!表[名]) throw new 用法错误(`地形包 ${名} 没登记`);
         const { 初, 区段 } = 训练模型表(await 载入体素库(), p.位置.map((名) => 版本目录(名, 表[名]!.版本)), 抽);
         const 文本 = 模型表文件内容(初, `依据：${p.位置.join('、')}，按块文件名和文件内先后每 ${抽} 个区段取一个（${区段} 个）`);
         fs.writeFileSync(模型表生成文件(), 文本);
