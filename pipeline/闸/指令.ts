@@ -1,5 +1,6 @@
+import fs from 'node:fs';
 import path from 'node:path';
-import { 读JSON, 写JSON } from './文件.ts';
+import { 读JSON, 写JSON, 只提示 } from './文件.ts';
 import type { 调度环境 } from './任务.ts';
 export type 指令 = {
     动作: string;
@@ -13,6 +14,7 @@ export type 指令 = {
 export const 指令文件 = (e: 调度环境, id: string) => path.join(e.锁目录, '指令', encodeURIComponent(id) + '.json');
 export const 取指令 = (e: 调度环境, id: string) => 读JSON<指令>(指令文件(e, id));
 export const 写指令 = (e: 调度环境, id: string, c: 指令) => 写JSON(指令文件(e, id), c);
+export const 删指令 = (e: 调度环境, id: string) => 只提示('指令文件', () => fs.rmSync(指令文件(e, id), { force: true }));
 export const 令文件 = (e: 调度环境, 路: string) => path.join(e.调度目录, '令', encodeURIComponent(路));
 export const 路让路 = (e: 调度环境) => {
     const x = 读JSON<{

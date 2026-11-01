@@ -1,17 +1,18 @@
-import {持有者,持有者主机} from './锁.ts';
+import {持有者,持有者主机,进程起于} from './锁.ts';
 import path from 'node:path';
 import { 用法错误, type 已解析 } from '../cli/参数.ts';
 import { 读状态, 一行状态, type 调度状态 } from './看.ts';
 import { 列票, 改序, 回队尾, 主机片段, 写票, type 票 } from './票.ts';
 import { 写JSON } from './文件.ts';
 import { 记调度, 读调度 } from './调度日志.ts';
-import { 写指令, 令文件 } from './指令.ts';
+import { 写指令, 删指令, 令文件 } from './指令.ts';
 import { 清孤儿 } from './孤儿.ts';
 import type { 调度环境 } from './任务.ts';
 export const 改命令 = new Set(['先', '后', '恢复', '放行', '让路', '取消', '清孤儿', '记']);
 export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析, e: 调度环境, o: {
     状态?: () => 调度状态;
     杀?: (pid: number, sig: NodeJS.Signals) => void;
+    进程起于?: (pid: number) => number | null;
     清?: () => unknown[];
     输出?: (s: string) => void;
 } = {}) => {
@@ -19,7 +20,7 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
     if (!why)
         throw new 用法错误(`${cmd} 必须带 --为什么`);
     const 输出 = o.输出 ?? console.log, s = (o.状态 ?? (() => 读状态(e)))();
-    const 记 = () => 记调度(e.日志目录, '决定', { 谁: e.发起者, 发起: e.发起者, 看到: { 人工:p.值['--看到'],摘要: 一行状态(s), 队: s.票.slice(0, 3).map(t => ({ 票: t.名, 声明: t.内容?.声明 })), 持锁: s.持锁.map(t => ({ pid: t.pid, 任务: t.任务, 票: t.票 })) }, 决定: p.值['--决定'] ?? `${cmd} ${目标 ?? ''}`, 为什么: why, 票: 目标, 机: { ...s.机, 进程: undefined } }, e.现在毫秒());
+    const 记 = (结果?: string) => 记调度(e.日志目录, '决定', { 结果, 谁: e.发起者, 发起: e.发起者, 看到: { 人工:p.值['--看到'],摘要: 一行状态(s), 队: s.票.slice(0, 3).map(t => ({ 票: t.名, 声明: t.内容?.声明 })), 持锁: s.持锁.map(t => ({ pid: t.pid, 任务: t.任务, 票: t.票 })) }, 决定: p.值['--决定'] ?? `${cmd} ${目标 ?? ''}`, 为什么: why, 票: 目标, 机: { ...s.机, 进程: undefined } }, e.现在毫秒());
     if (e.发起者.子会话 || e.发起者.代理标.endsWith('_agent'))
         console.error('!! 当前环境标记为子代理；改调度应由主 Agent 决定，身份事实已入日志');
     if (cmd === '记') {
@@ -44,19 +45,50 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
     if (h && h.发起.pid !== pid)
         throw new 用法错误('锁信息与 pid 不符，请重看调度');
     if(h){for(const n of ['渲染','放行']){const file=path.join(e.锁目录,n+'.lock');if(持有者(file)===pid){const host=持有者主机(file,pid);if(host&&host!==e.本机)throw new 用法错误('不能从本机操作另一主机的持锁者');}}}
+    if (cmd !== '取消' && (t?.死 || h?.死))
+        throw new 用法错误(`#${pid} 的进程已不在，${cmd} 没有意义；留下的票或锁由下一个等待者回收`);
     const 分钟 = Number(p.值['--分钟'] ?? 30);
     if (!Number.isFinite(分钟) || 分钟 <= 0)
         throw new 用法错误('--分钟 要是正数');
     const 至 = e.现在毫秒() + 分钟 * 60000;
     if (cmd === '取消') {
-        if (h && !p.开关.has('--杀持锁'))
+        // 写全名取消一张残留票也可能杀到持锁者，同样要确认。
+        if ((h || s.持锁.some(x => x.pid === pid && !x.死)) && !p.开关.has('--杀持锁'))
             throw new 用法错误('目标正在持锁；确认中断请加 --杀持锁');
-        记();
+        const 称 = h ? '锁' : '票', 未发 = () => { const 话 = `未发信号：进程已不在，留下的${称}由下一个等待者回收`; 记(话); 输出(话); };
+        if (h?.死 || t?.死) {
+            未发();
+            return;
+        }
+        // 崩溃后 pid 被复用时进程在吗为真、票和锁也在，只有启动时刻分得出来。
+        const 声称 = h ? h.拿锁时 : t!.内容?.起 ?? t!.时间, 起于 = (o.进程起于 ?? 进程起于)(pid);
+        if (起于 !== null && 起于 > 声称) {
+            const 话 = `未发信号：pid ${pid} 已换人（${new Date(起于).toISOString()} 才启动，晚于${h ? '拿锁' : '领票'} ${new Date(声称).toISOString()}），原进程已不在；这个进程退出前${称}不会被回收`;
+            记(话);
+            throw Error(话);
+        }
+        if (起于 === null)
+            console.error('!! 读不到进程启动时刻（没有 ps），只凭 pid 和开机时间核对');
+        const sig = p.开关.has('--强') ? 'SIGKILL' : 'SIGTERM';
         if (任务)
             写指令(e, 任务, { 动作: '取消', 为什么: why, 时: e.现在毫秒(), 任务 });
-        const sig = p.开关.has('--强') ? 'SIGKILL' : 'SIGTERM';
+        try {
+            (o.杀 ?? ((n, sig) => { process.kill(n, sig); }))(pid, sig);
+        }
+        catch (err) {
+            if (任务)
+                删指令(e, 任务);
+            const code = (err as NodeJS.ErrnoException).code;
+            if (code === 'ESRCH') {
+                未发();
+                return;
+            }
+            const 话 = `信号失败：${sig} #${pid} ${code ?? (err as Error).message}`;
+            记(话);
+            throw Error(话);
+        }
+        记(`已发 ${sig}`);
         记调度(e.日志目录, '取消', { 任务, 票: t?.名 ?? h?.票, 目标: pid, 信号: sig, 为什么: why, 谁: e.发起者 }, e.现在毫秒());
-        (o.杀 ?? ((n, sig) => { process.kill(n, sig); }))(pid, sig);
         输出(`已请求 ${sig} #${pid}；${t && !t.内容 || h?.旧 ? '旧代码不能打印取消原因' : '不要原样重发'}`);
         return;
     }

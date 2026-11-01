@@ -3,6 +3,7 @@
 // 持有者进程不在了就当过期：先改名成只有自己知道的临时名（原子），看改走的是不是刚判死的那把，是才删，不是就改回原名（旧项目 bd3a6a0d 的做法）。
 // 主机名不写进锁文件（旧 锁.py 只认纯数字，写了别的它 10 秒后就当空文件删掉），另写在旁边的 <名>.lock.<pid>.主机：
 // 持有者在别的机器上（共享盘上的锁目录）时本机查不了它的 pid，就当它活着。
+import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,6 +25,13 @@ export const 进程在吗 = (pid: number) => {
   } catch (err) {
     return (err as NodeJS.ErrnoException).code === 'EPERM';
   }
+};
+
+/** pid 会复用，进程在吗 分不出是不是原来那个：启动得比它声称的拿锁、领票时刻还晚就是换人了。读不到（没有 ps）返回 null。 */
+export const 进程起于 = (pid: number): number | null => {
+  const r = spawnSync('ps', ['-o', 'lstart=', '-p', String(pid)], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], env: { ...process.env, LC_ALL: 'C' } });
+  const t = r.status === 0 ? Date.parse(r.stdout.trim()) : NaN;
+  return Number.isNaN(t) ? null : t;
 };
 
 const code = (err: unknown) => (err as NodeJS.ErrnoException).code ?? '';

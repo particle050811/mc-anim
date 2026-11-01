@@ -81,6 +81,50 @@ const 死pid=99999997;
 const 决定=(e:ReturnType<typeof 取调度环境>)=>读调度(e.日志目录).filter(x=>x.事==='决定');
 const 取消事件=(e:ReturnType<typeof 取调度环境>)=>读调度(e.日志目录).filter(x=>x.事==='取消');
 
+it('取消：死票、死锁不发信号，决定记真实结果，不写取消事件',()=>{
+  const e=取调度环境({锁目录:dir}),o=(杀:(...a:unknown[])=>void,出:string[]=[])=>({状态:()=>读状态(e,机,false),输出:(x:string)=>{出.push(x);},杀});
+  const 杀=vi.fn(),出:string[]=[];
+  const 名=放票(e,死pid);改调度('取消',名,参数(['--为什么','死票']),e,o(杀,出));
+  expect(出[0]).toContain('未发信号');expect(fs.existsSync(path.join(队(),名))).toBe(true);fs.rmSync(path.join(队(),名));
+  放锁(死pid+1);改调度('取消',`#${死pid+1}`,参数(['--为什么','死锁','--杀持锁','--强']),e,o(杀,出));
+  expect(杀).not.toHaveBeenCalled();expect(出[1]).toContain('留下的锁由下一个等待者回收');
+  expect(决定(e).map(x=>String(x.结果))).toEqual([expect.stringContaining('未发信号'),expect.stringContaining('未发信号')]);expect(取消事件(e)).toHaveLength(0);
+});
+it.skipIf(process.platform==='win32')('取消：pid 已换人（真进程，启动晚于声称的时刻）不发信号',async()=>{
+  const e=取调度环境({锁目录:dir}),c=spawn('sleep',['30']);
+  try{
+    const 杀=vi.fn(),o={状态:()=>读状态(e,机,false),输出:()=>{},杀};
+    放锁(c.pid!,Date.now()-3600_000);
+    expect(()=>改调度('取消',`#${c.pid}`,参数(['--为什么','超时了','--杀持锁','--强']),e,o)).toThrow('已换人');
+    fs.rmSync(path.join(dir,'渲染.lock'));fs.rmSync(path.join(dir,'渲染.lock.信息.json'));
+    const 名=放票(e,c.pid!);const f=path.join(队(),名),内容=JSON.parse(fs.readFileSync(f,'utf8'));fs.writeFileSync(f,JSON.stringify({...内容,起:Date.now()-3600_000}));
+    expect(()=>改调度('取消',名,参数(['--为什么','超时了']),e,o)).toThrow('晚于领票');
+    expect(杀).not.toHaveBeenCalled();expect(决定(e).every(x=>String(x.结果).includes('已换人'))).toBe(true);expect(决定(e)).toHaveLength(2);expect(取消事件(e)).toHaveLength(0);
+    // 真正的持有者：启动早于拿锁
+    fs.rmSync(f);放锁(c.pid!,Date.now()+2000);改调度('取消',`#${c.pid}`,参数(['--为什么','真要停','--杀持锁']),e,o);
+    expect(杀).toHaveBeenCalledWith(c.pid,'SIGTERM');expect(决定(e).at(-1)!.结果).toBe('已发 SIGTERM');expect(取消事件(e)).toHaveLength(1);
+    expect(fs.existsSync(指令文件(e,'持锁的'))).toBe(true);
+  }finally{c.kill('SIGKILL');}
+});
+it('取消：信号时目标刚退出、无权限都如实说；没有 ps 只警告',()=>{
+  const e=取调度环境({锁目录:dir}),名=放票(e,process.ppid),出:string[]=[];
+  const o=(code:string)=>({状态:()=>读状态(e,机,false),输出:(x:string)=>{出.push(x);},杀:()=>{throw Object.assign(Error(`kill ${code}`),{code});}});
+  改调度('取消',名,参数(['--为什么','刚退出']),e,o('ESRCH'));
+  expect(出[0]).toContain('未发信号');expect(决定(e)[0]!.结果).toContain('未发信号');expect(fs.existsSync(指令文件(e,'别人的'))).toBe(false);
+  expect(()=>改调度('取消',名,参数(['--为什么','没权限']),e,o('EPERM'))).toThrow('信号失败：SIGTERM');
+  expect(决定(e)[1]!.结果).toContain('EPERM');expect(取消事件(e)).toHaveLength(0);expect(fs.existsSync(指令文件(e,'别人的'))).toBe(false);
+  const 错=vi.spyOn(console,'error').mockImplementation(()=>{}),杀=vi.fn();
+  改调度('取消',名,参数(['--为什么','没 ps']),e,{状态:()=>读状态(e,机,false),输出:()=>{},杀,进程起于:()=>null});
+  expect(杀).toHaveBeenCalled();expect(错.mock.calls.flat().join()).toContain('读不到进程启动时刻');错.mockRestore();
+});
+it('写全名取消持锁者的残留票也要 --杀持锁；死目标不接受别的改调度',()=>{
+  const e=取调度环境({锁目录:dir}),杀=vi.fn(),o={状态:()=>读状态(e,机,false),输出:()=>{},杀};
+  放锁(process.ppid);const 名=放票(e,process.ppid);
+  expect(()=>改调度('取消',名,参数(['--为什么','清残留']),e,o)).toThrow('杀持锁');expect(杀).not.toHaveBeenCalled();
+  fs.rmSync(path.join(队(),名));const 死票=放票(e,死pid);
+  for(const cmd of ['先','后','恢复','放行'])expect(()=>改调度(cmd,死票,参数(['--为什么','死票']),e,o)).toThrow('进程已不在');
+  expect(fs.existsSync(path.join(队(),死票))).toBe(true);
+});
 it('读路径：死票死锁单独标记、不算占用、不当排队告警；异机锁不算死',async()=>{
   const e=取调度环境({锁目录:dir});放票(e,死pid);放锁(死pid+1);
   const s=读状态(e,机,false);expect(s.票[0]!.死).toBe(true);expect(s.持锁[0]!.死).toBe(true);
