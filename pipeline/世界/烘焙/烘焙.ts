@@ -232,7 +232,7 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
   }
 
   const 包: 包信息 = {
-    版本: 1,
+    版本: 库.区段包.formatVersion,
     维度: p.维度,
     原点: [OX, OY, OZ],
     状态: stateList,
