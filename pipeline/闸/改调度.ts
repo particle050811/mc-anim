@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 用法错误, type 已解析 } from '../cli/参数.ts';
 import { 读状态, 一行状态, type 调度状态 } from './看.ts';
-import { 列票, 改序, 回队尾, 主机片段, 写票, type 票 } from './票.ts';
-import { 写JSON } from './文件.ts';
+import { 列票, 改序, 回队尾, 主机片段, 写票, 记被越, type 票 } from './票.ts';
+import { 写JSON, 只提示 } from './文件.ts';
 import { 记调度, 读调度 } from './调度日志.ts';
 import { 写指令, 删指令, 令文件 } from './指令.ts';
 import { 清孤儿 } from './孤儿.ts';
@@ -21,7 +21,11 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
     if (!why)
         throw new 用法错误(`${cmd} 必须带 --为什么`);
     const 输出 = o.输出 ?? console.log, s = (o.状态 ?? (() => 读状态(e)))();
-    const 记 = (结果?: string) => 记调度(e.日志目录, '决定', { 结果, 谁: e.发起者, 发起: e.发起者, 看到: { 人工:p.值['--看到'],摘要: 一行状态(s), 队: s.票.slice(0, 3).map(t => ({ 票: t.名, 声明: t.内容?.声明 })), 持锁: s.持锁.map(t => ({ pid: t.pid, 任务: t.任务, 票: t.票 })) }, 决定: p.值['--决定'] ?? `${cmd} ${目标 ?? ''}`, 为什么: why, 票: 目标, 机: { ...s.机, 进程: undefined } }, e.现在毫秒());
+    const 中 = (name: string, pid: number) => 目标 === name || 目标 === `#${pid}` || 目标 === String(pid);
+    const tickets = s.票.filter(t => 中(t.名, t.pid)), held = s.持锁.filter(t => 中(t.票, t.pid)), 唯一 = tickets.length + held.length === 1;
+    const t = 唯一 ? tickets[0] : undefined, h = 唯一 ? held[0] : undefined, 任务 = t?.内容?.任务 ?? h?.任务;
+    // 记解析后的任务和票，#pid 配不上告警，票名改序后也配不上。
+    const 记 = (结果?: string) => 记调度(e.日志目录, '决定', { 结果, 任务, 票: t?.名 ?? h?.票, 目标, 谁: e.发起者, 发起: e.发起者, 看到: { 人工:p.值['--看到'],摘要: 一行状态(s), 队: s.票.slice(0, 3).map(t => ({ 票: t.名, 声明: t.内容?.声明 })), 持锁: s.持锁.map(t => ({ pid: t.pid, 任务: t.任务, 票: t.票 })) }, 决定: p.值['--决定'] ?? `${cmd} ${目标 ?? ''}`, 为什么: why, 机: { ...s.机, 进程: undefined } }, e.现在毫秒());
     if (e.发起者.子会话 || e.发起者.代理标.endsWith('_agent'))
         console.error('!! 当前环境标记为子代理；改调度应由主 Agent 决定，身份事实已入日志');
     if (cmd === '记') {
@@ -36,11 +40,9 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
     }
     if (!目标)
         throw new 用法错误(`${cmd} 要指定完整票名或 #pid`);
-    const match = (name: string, pid: number) => 目标 === name || 目标 === `#${pid}` || 目标 === String(pid);
-    const tickets = s.票.filter(t => match(t.名, t.pid)), held = s.持锁.filter(t => match(t.票, t.pid));
-    if (tickets.length + held.length !== 1)
+    if (!唯一)
         throw new 用法错误(`目标不存在或不唯一：${目标}；用完整票名`);
-    const t = tickets[0], h = held[0], 任务 = t?.内容?.任务 ?? h?.任务, pid = t?.pid ?? h!.pid;
+    const pid = t?.pid ?? h!.pid;
     if (t && t.主机 !== 主机片段(e.本机))
         throw new 用法错误('不能从本机改另一主机的票');
     if (h && h.发起.pid !== pid)
@@ -127,6 +129,9 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
             throw err;
         throw new 用法错误(`票 ${t.名} 已不在：可能刚拿到锁或退出了，请重看调度`);
     }
+    // 往前移才算越过别人：先、恢复 --原序。
+    if (新.名 < 原)
+        只提示('被越计数', () => 记被越(列票(path.dirname(新.文件)).filter(q => q.名 > 新.名 && q.名 < 原), e.本机));
     if (cmd !== '恢复')
         新.内容!.原序 ??= String(t.时间);
     if (cmd === '后')

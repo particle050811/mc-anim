@@ -8,6 +8,7 @@ import { 读JSON, 写JSON, 列文件, 只提示 } from './文件.ts';
 import { 登记收尾 } from './收尾.ts';
 import { 进程在吗 } from './锁.ts';
 import { 取指令, 指令文件 } from './指令.ts';
+import { 一分钟负载 } from '../环境/资源.ts';
 export type 任务声明 = {
     种?: string;
     作品?: string;
@@ -40,6 +41,8 @@ export type 任务信息 = {
     声明: 任务声明;
     主机: string;
     票?: string;
+    /** 被杀时说得清当时在干嘛；崩溃事件也从在跑文件带出来。 */
+    当时?: '排队' | '持锁' | '';
 };
 const 活任务 = new Map<string, ReturnType<typeof 建任务>>();
 export const 取调度环境 = (e: Partial<调度环境> = {}): 调度环境 => ({ 锁目录: e.锁目录 ?? 配置('锁目录'),
@@ -56,19 +59,19 @@ const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: n
     记('任务起');
     只提示('盯未挂记录', () => 检查盯(e, info));
     let 完 = false;
-    const 结束 = (码 = 0, 信号?: string) => {
+    const 结束 = (码 = 0, 信号?: string, 错误?: string) => {
         if (完)
             return;
         完 = true;
         clearInterval(timer);
         撤();
-        const 指令 = 取指令(e, info.任务);
+        const 指令 = 取指令(e, info.任务), 取消 = 指令?.动作 === '取消' ? 指令 : undefined, 现在 = e.现在毫秒();
         if (信号) {
-            if (指令?.动作 === '取消')
-                console.error(`被调度取消：${指令.为什么}，不要原样重发`);
-            记('被杀', { 信号, 退出码: 码, 为什么: 指令?.为什么, 票: info.票 });
+            if (取消)
+                console.error(`被调度取消：${取消.为什么}，不要原样重发`);
+            记('被杀', { 信号, 退出码: 码, 为什么: 取消?.为什么, 票: info.票, 当时: info.当时 || '其他', 已跑秒: (现在 - info.起) / 1000, 取消后秒: 取消?.时 ? (现在 - 取消.时) / 1000 : undefined, 机: { 负载: 一分钟负载() } });
         }
-        记('任务止', { 票: info.票, 退出码: 码, 信号, 秒: (e.现在毫秒() - info.起) / 1000 });
+        记('任务止', { 票: info.票, 退出码: 码, 信号, 错误, 秒: (现在 - info.起) / 1000 });
         只提示('耗时记录', () => {
             if (结束回调)
                 结束回调(码);
@@ -88,7 +91,7 @@ const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: n
     const 撤 = 登记收尾(结束);
     const timer = setInterval(() => { info.心跳 = e.现在毫秒(); 存(); }, 30000);
     timer.unref();
-    return { info, 记, 结束, 更新: (声明: 任务声明, 票?: string) => { info.声明 = 声明; info.票 = 票; 存(); } };
+    return { info, 记, 结束, 更新: (声明: 任务声明, 票?: string, 当时 = info.当时) => { info.声明 = 声明; info.票 = 票; info.当时 = 当时; 存(); } };
 };
 export const 开任务 = (e: 调度环境, 声明: 任务声明, 结束?: (码: number) => void) => {
     let t = 活任务.get(e.锁目录);
@@ -127,7 +130,7 @@ export const 清崩溃 = (e: 调度环境, 活 = 进程在吗) => {
         catch {
             continue;
         }
-        记调度(e.日志目录, '崩溃', { ...t, 原持有者: t.发起 }, e.现在毫秒());
+        记调度(e.日志目录, '崩溃', t, e.现在毫秒());
     }
 };
 export const 有任务 = (锁目录: string) => 活任务.has(锁目录);

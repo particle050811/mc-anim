@@ -101,12 +101,13 @@ export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Pr
   const 记录 = (o.新记录 ?? ((n, a) => new 运行记录(n, a)))(名, args);
   const 任务 = !c.不记录 && !o.新记录 && /^(render|still|bench|verify|film|extract|world|mcai|voice|edit-package|cache|批)$/.test(名) ? 开任务(取调度环境(), {种:名,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>记录.结束(code)) : null;
   if(任务)记录.任务=任务.info.任务;
-  let code = 1;
+  let code = 1, 错误: string | undefined;
   try {
     code = (await c.跑(args, 记录)) ?? 0;
   } catch (e) {
     const 栈 = e instanceof Error ? e.stack : undefined;
     const 信息 = e instanceof Error ? e.message : String(e);
+    错误 = 信息.slice(0, 200);
     if(e instanceof 调度让路){出.error(`调度让路：${信息}；不算失败，不要原样重发`);code=75;} else if (e instanceof 选作品错误) {
       出.error(信息);
       code = 2;
@@ -121,7 +122,7 @@ export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Pr
     // 上面已打过，不经 记录.记 再打一遍；调用栈总记下
     记录.事件.push({ 时间: utc时间(), 级别: '错误', 文本: 信息, ...(栈 ? { 调用栈: 栈 } : {}) });
   }
-  if(任务)任务.结束(code);
+  if(任务)任务.结束(code,undefined,错误);
   else if (!c.不记录) 记录.结束(code);
   return code;
 };

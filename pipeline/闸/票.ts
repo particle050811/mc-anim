@@ -62,6 +62,12 @@ export const 改序 = (t: 票, 序: string) => {
 /** 票可能刚被改名或删除：往旧路径写会把它复活成残留活票。 */
 export const 写票 = (t: 票) => { if (fs.existsSync(t.文件))
     写JSON(t.文件, t.内容); };
+/** 写进别人的票，票主人每轮重读；撞上改名或删票至多丢一次计数。暂缓的本来就不在等，不算被越。 */
+export const 记被越 = (们: 票[], 本机: string) => { for (const q of 们)
+    if (q.内容 && !q.内容.暂缓至 && 票活着(q, 本机)) {
+        q.内容.已被越 = (q.内容.已被越 ?? 0) + 1;
+        写票(q);
+    } };
 /** anim 调度 随时可能改票名，记下的文件名靠不住，按任务和 pid 扫。 */
 export const 清任务票 = (dir: string, 任务: string) => { for (const x of 列票(dir))
     if (x.pid === process.pid && x.内容?.任务 === 任务)
