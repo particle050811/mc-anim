@@ -50,32 +50,71 @@ export const 记调度 = (目录: string, 事: string, 字段: Record<string, un
         console.error(`!! 调度日志写失败：${(e as Error).message}`);
     }
 };
+const 月文件们 = (目录: string) => 列文件(目录).filter(x => /^\d{4}-\d{2}\.jsonl$/.test(x)).sort();
+/** 起：给定文件大小，定从哪个字节读起。月文件可能尚未创建，读不到返回 null。 */
+const 读字节 = (file: string, 起: (size: number) => number) => {
+    let fd: number | undefined;
+    try {
+        fd = fs.openSync(file, 'r');
+        const size = fs.fstatSync(fd).size, offset = 起(size), b = Buffer.alloc(size - offset);
+        fs.readSync(fd, b, 0, b.length, offset);
+        return b;
+    }
+    catch {
+        return null;
+    }
+    finally {
+        if (fd !== undefined)
+            fs.closeSync(fd);
+    }
+};
 export const 读调度 = (目录: string, 尾字节?: number): 调度事件[] => {
-    const files = 列文件(目录).filter(x => /^\d{4}-\d{2}\.jsonl$/.test(x)).sort();
-    const out: 调度事件[] = [];
-    for (const name of 尾字节 ? files.slice(-1) : files) {
-        let fd: number | undefined;
-        try {
-            fd = fs.openSync(path.join(目录, name), 'r');
-            const size = fs.fstatSync(fd).size;
-            const offset = 尾字节 ? Math.max(0, size - 尾字节) : 0;
-            const b = Buffer.alloc(size - offset);
-            fs.readSync(fd, b, 0, b.length, offset);
-            const lines = b.toString('utf8').split('\n');
-            if (offset)
-                lines.shift();
-            for (const l of lines) {
-                try {
-                    out.push(JSON.parse(l));
-                }
-                catch { /* 并发写入的末行下一次再读 */ }
+    let out: 调度事件[] = [], 余 = 尾字节 ?? Infinity;
+    for (const name of 月文件们(目录).reverse()) {
+        if (余 <= 0)
+            break;
+        let 截了 = false, 读了 = 0;
+        const b = 读字节(path.join(目录, name), size => { const offset = Math.max(0, size - 余); 截了 = offset > 0; 读了 = size - offset; return offset; });
+        if (!b)
+            continue;
+        余 -= 读了;
+        const lines = b.toString('utf8').split('\n'), 本月: 调度事件[] = [];
+        if (截了)
+            lines.shift();
+        for (const l of lines) {
+            try {
+                本月.push(JSON.parse(l));
             }
+            catch { /* 并发写入的末行下一次再读 */ }
         }
-        catch { /* 月文件可能尚未创建 */ }
-        finally {
-            if (fd !== undefined)
-                fs.closeSync(fd);
-        }
+        out = [...本月, ...out];
     }
     return out;
+};
+/** UTC 月文件名和字节偏移，跨月、尾部滑出都不丢。 */
+export type 日志位置 = {
+    月: string;
+    偏移: number;
+};
+/** 从位置读到末尾，只吃整行（末行可能还在写）。每行带读完它的位置，调用方可以只把报过的算已读。 */
+export const 读新事件 = (目录: string, 从?: 日志位置 | null) => {
+    const 行: { 事件: 调度事件; 到: 日志位置 }[] = [];
+    let 末: 日志位置 = 从 ?? { 月: '', 偏移: 0 };
+    for (const name of 月文件们(目录)) {
+        const 月 = name.slice(0, 7);
+        if (从 && 月 < 从.月)
+            continue;
+        let 基 = 0;
+        const b = 读字节(path.join(目录, name), size => (基 = 从?.月 === 月 && 从.偏移 <= size ? 从.偏移 : 0));
+        if (!b)
+            continue;
+        for (let 头 = 0, 尾 = b.indexOf(10); 尾 >= 0; 头 = 尾 + 1, 尾 = b.indexOf(10, 头)) {
+            末 = { 月, 偏移: 基 + 尾 + 1 };
+            try {
+                行.push({ 事件: JSON.parse(b.toString('utf8', 头, 尾)), 到: 末 });
+            }
+            catch { /* 坏行跳过，不卡住后面 */ }
+        }
+    }
+    return { 行, 末 };
 };
