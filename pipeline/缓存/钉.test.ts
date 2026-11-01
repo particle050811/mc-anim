@@ -30,12 +30,12 @@ const 写指纹 = (dir: string, 指纹: string, 级别: string | null) => {
   const 项 = 级别 ? { 渲染设置: { inputProps: { 级别 } } } : {};
   fs.writeFileSync(path.join(dir, `${指纹.slice(0, 16)}.指纹.json`), JSON.stringify({ 段: 键, 指纹, 项 }));
 };
-/** 造一份旧母版：要哪几个文件；两份都有且 转过 时段签记着 CRF12 转自这份 CRF1（CRF1 算已被取代） */
+/** 造一份旧母版：要哪几个文件；两份都有且 转过 时段签记着压缩母版转自这份 CRF1（CRF1 算已被取代） */
 const 旧母版 = (o: { 原?: boolean; 压?: boolean; 转过?: boolean; 级别?: string | null } = {}) => {
   const { 原 = false, 压 = true, 转过 = false, 级别 = '视频' } = o;
   写指纹(目录(), 旧, 级别);
   if (原) fs.writeFileSync(path.join(目录(), `${旧16}.mkv`), Buffer.alloc(100));
-  if (压) fs.writeFileSync(path.join(目录(), `${旧16}.crf12.mkv`), Buffer.alloc(40));
+  if (压) fs.writeFileSync(path.join(目录(), `${旧16}.x264.mkv`), Buffer.alloc(40));
   if (转过) {
     const dir = 段签目录(键, 旧, '假');
     fs.mkdirSync(dir, { recursive: true });
@@ -66,15 +66,15 @@ beforeEach(() => {
 });
 
 describe('render 渲完删旧', () => {
-  it('同段同级别别的指纹：CRF1、CRF12 都删，.指纹.json 留着，新指纹不动', () => {
+  it('同段同级别别的指纹：CRF1、压缩母版都删，.指纹.json 留着，新指纹不动', () => {
     旧母版({ 原: true });
     写指纹(目录(), 新, '视频');
-    const 新文件 = path.join(目录(), `${新.slice(0, 16)}.crf12.mkv`);
+    const 新文件 = path.join(目录(), `${新.slice(0, 16)}.x264.mkv`);
     fs.writeFileSync(新文件, Buffer.alloc(40));
     const r = 删();
     expect(r.删大小).toBe(140);
     expect(在('.mkv')).toBe(false);
-    expect(在('.crf12.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(false);
     expect(在('.指纹.json')).toBe(true);
     expect(fs.existsSync(新文件)).toBe(true);
   });
@@ -82,17 +82,17 @@ describe('render 渲完删旧', () => {
   it('别的级别的、级别读不出的不动', () => {
     旧母版({ 级别: '预览' });
     expect(删().删).toEqual([]);
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
     旧母版({ 级别: null });
     expect(删().删).toEqual([]);
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
   });
 
-  it('还没自足的交付钉着 CRF12；CRF1 已被取代的删（这份交付不补画面了）', () => {
+  it('还没自足的交付钉着压缩母版；CRF1 已被取代的删（这份交付不补画面了）', () => {
     旧母版({ 原: true, 转过: true });
     交付('没自足', { 有画面: true });
     const r = 删();
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
     expect(在('.mkv')).toBe(false);
     expect(r.留[0]!.理由).toContain('交付');
   });
@@ -102,7 +102,7 @@ describe('render 渲完删旧', () => {
     交付('待补');
     删();
     expect(在('.mkv')).toBe(true);
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
   });
 
   it('交付自足了就不钉', () => {
@@ -110,15 +110,15 @@ describe('render 渲完删旧', () => {
     交付('自足', { 自足: true });
     删();
     expect(在('.mkv')).toBe(false);
-    expect(在('.crf12.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(false);
   });
 
-  it('认可没有参考：CRF1 留（verify 要逐像素比），CRF12 不留（不比它的像素）', () => {
+  it('认可没有参考：CRF1 留（verify 要逐像素比），压缩母版不留（不比它的像素）', () => {
     旧母版({ 原: true, 转过: true });
     写认可记录();
     删();
     expect(在('.mkv')).toBe(true);
-    expect(在('.crf12.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(false);
   });
 
   it('认可有参考了就不钉', () => {
@@ -129,7 +129,7 @@ describe('render 渲完删旧', () => {
     fs.writeFileSync(参, '');
     删();
     expect(在('.mkv')).toBe(false);
-    expect(在('.crf12.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(false);
   });
 
   it('这个指纹正在写（.渲染中、.转码中）不删；过了一天的残留不算', () => {
@@ -138,15 +138,15 @@ describe('render 渲完删旧', () => {
     fs.writeFileSync(tmp, '');
     fs.utimesSync(tmp, new Date(现在 - 小时), new Date(现在 - 小时));
     expect(删().留[0]!.理由).toContain('正在写');
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
     fs.rmSync(tmp);
-    const tmp2 = path.join(目录(), `${旧16}.转码中-123.crf12.mkv`);
+    const tmp2 = path.join(目录(), `${旧16}.转码中-123.x264.mkv`);
     fs.writeFileSync(tmp2, '');
     fs.utimesSync(tmp2, new Date(现在 - 小时), new Date(现在 - 小时));
     expect(删().留[0]!.理由).toContain('正在写');
     fs.utimesSync(tmp2, new Date(现在 - 30 * 小时), new Date(现在 - 30 * 小时));
     删();
-    expect(在('.crf12.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(false);
   });
 
   it('近 2 小时用过的不删，过了 2 小时删', () => {
@@ -155,19 +155,19 @@ describe('render 渲完删旧', () => {
     fs.writeFileSync(记, '');
     fs.utimesSync(记, new Date(现在 - 小时), new Date(现在 - 小时));
     expect(删().留[0]!.理由).toContain('2 小时内用过');
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
     fs.utimesSync(记, new Date(现在 - 3 * 小时), new Date(现在 - 3 * 小时));
     删();
-    expect(在('.crf12.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(false);
     expect(fs.existsSync(记)).toBe(true);
   });
 
-  it('worktree 里不自动删旧（可能是主检出的当前指纹）：CRF1、CRF12 都在，报留着', () => {
+  it('worktree 里不自动删旧（可能是主检出的当前指纹）：CRF1、压缩母版都在，报留着', () => {
     旧母版({ 原: true });
     const r = 删旧('母版', 键, '视频', 新, { 作品: '假', 现在, 主检出: false });
     expect(r.删).toEqual([]);
     expect(r.留.map((x) => x.理由)).toEqual(['worktree 不自动删', 'worktree 不自动删']);
-    expect(在('.mkv') && 在('.crf12.mkv')).toBe(true);
+    expect(在('.mkv') && 在('.x264.mkv')).toBe(true);
     expect(有要删的旧('母版', 键, '视频', 新, { 作品: '假', 现在, 主检出: false })).toBe(false);
   });
 
@@ -185,14 +185,14 @@ describe('render 渲完删旧', () => {
     const 别的 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-别的检出-'));
     fs.writeFileSync(检出记号文件(目录(), 旧, 别的), `${别的}\n`);
     expect(删().留[0]!.理由).toContain(`别的检出用过：${别的}`);
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
     fs.rmSync(别的, { recursive: true });
     fs.writeFileSync(检出记号文件(目录(), 旧), `${本检出()}\n`);
     删();
-    expect(在('.crf12.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(false);
   });
 
-  it('已被取代的 CRF1 用过也删（读者都读 CRF12），别的检出用过也删；CRF12 照留', () => {
+  it('已被取代的 CRF1 用过也删（读者都读压缩母版），别的检出用过也删；压缩母版照留', () => {
     旧母版({ 原: true, 转过: true });
     const 别的 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-别的检出-'));
     fs.writeFileSync(path.join(目录(), `${旧16}.用过`), '');
@@ -200,7 +200,7 @@ describe('render 渲完删旧', () => {
     fs.writeFileSync(检出记号文件(目录(), 旧, 别的), `${别的}\n`);
     expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(100);
     expect(在('.mkv')).toBe(false);
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
     fs.rmSync(别的, { recursive: true });
   });
 
@@ -212,12 +212,12 @@ describe('render 渲完删旧', () => {
     const r = 删();
     expect(r.删).toEqual([]);
     expect(r.留[0]!.理由).toContain('交付 manifest 读不出：假/坏了');
-    expect(在('.mkv') && 在('.crf12.mkv')).toBe(true);
+    expect(在('.mkv') && 在('.x264.mkv')).toBe(true);
     expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(0);
     fs.writeFileSync(path.join(path.dirname(m), '全片-未拉响度.flac'), '');
     fs.writeFileSync(path.join(path.dirname(m), '剪辑包', '画面.mp4'), '');
     删();
-    expect(在('.mkv') || 在('.crf12.mkv')).toBe(false);
+    expect(在('.mkv') || 在('.x264.mkv')).toBe(false);
   });
 
   it('认可记录读不出：整段留着，已被取代的 CRF1 也留（说的和做的一样，它可能是 verify 唯一的像素来源）', () => {
@@ -251,7 +251,7 @@ describe('render 渲完删旧', () => {
     旧母版({ 原: true, 转过: true });
     expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(100);
     expect(在('.mkv')).toBe(false);
-    expect(在('.crf12.mkv')).toBe(true);
+    expect(在('.x264.mkv')).toBe(true);
   });
 });
 
@@ -268,11 +268,11 @@ describe('gc 同步', () => {
   };
   const 删的 = (r: ReturnType<typeof 规划>) => r.filter((f) => !f.理由.length).map((f) => path.basename(f.路径)).sort();
 
-  it('当前指纹不删；它的 CRF1 被 CRF12 取代了才删（CRF12 按同名 CRF1 找当前理由）', () => {
+  it('当前指纹不删；它的 CRF1 被压缩母版取代了才删（压缩母版按同名 CRF1 找当前理由）', () => {
     旧母版({ 原: true, 转过: true });
     const r = 规划((保) => 保.加(path.join(目录(), `${旧16}.mkv`), { 类: '当前', 说明: '视频' }));
     expect(删的(r)).toEqual([`${旧16}.mkv`]);
-    expect(r.find((f) => f.存法 === 'crf12')!.理由.some((x) => x.类 === '当前')).toBe(true);
+    expect(r.find((f) => f.存法 === 'x264')!.理由.some((x) => x.类 === '当前')).toBe(true);
   });
 
   it('只有 CRF1 的当前指纹留着（没转存的不算取代）', () => {
@@ -284,20 +284,20 @@ describe('gc 同步', () => {
 
   it('过期的（被更新的指纹取代）删；交付自足后不再引用的也删；未自足的留', () => {
     旧母版();
-    老('.crf12.mkv');
+    老('.x264.mkv');
     写指纹(目录(), 新, '视频');
-    fs.writeFileSync(path.join(目录(), `${新.slice(0, 16)}.crf12.mkv`), Buffer.alloc(40));
+    fs.writeFileSync(path.join(目录(), `${新.slice(0, 16)}.x264.mkv`), Buffer.alloc(40));
     // 新指纹的 json 写得晚才算最近一份
     fs.utimesSync(path.join(目录(), `${旧16}.指纹.json`), new Date(现在 - 30 * 24 * 小时), new Date(现在 - 30 * 24 * 小时));
     const 配 = (保: InstanceType<typeof 保留集>) => {
       加交付(保, path.join(数据根, '交付'), 数据根, () => {}, { 解钉: true, 开剪辑包: () => true });
       加认可(保, 作品根, (k) => 母版目录(k, '假'), () => {}, { 解钉: true });
     };
-    expect(删的(规划(配))).toEqual([`${旧16}.crf12.mkv`]);
+    expect(删的(规划(配))).toEqual([`${旧16}.x264.mkv`]);
     交付('未自足');
     expect(删的(规划(配))).toEqual([]);
     fs.rmSync(path.join(数据根, '交付'), { recursive: true });
     交付('自足', { 自足: true });
-    expect(删的(规划(配))).toEqual([`${旧16}.crf12.mkv`]);
+    expect(删的(规划(配))).toEqual([`${旧16}.x264.mkv`]);
   });
 });

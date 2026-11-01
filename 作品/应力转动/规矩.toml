@@ -719,11 +719,11 @@ id = "用现成资源"
 
 [["规矩"]]
 id = "交付编码"
-"默认值" = "Mac 硬件 H.264（h264_videotoolbox q 38），整片只压一遍；字幕用游戏像素字烧进画面"
+"默认值" = "x264 medium CRF 30（各平台相同），整片只压一遍；字幕用游戏像素字烧进画面"
 "级别" = "参考"
-"原话" = []
-"针对" = "交付成片（10-15 用户选）"
-"出处" = ["用户 10-15", "M/review-folder-preference.md", "M/video-encoding-benchmark.md"]
+"原话" = ["CRF 16 medium 好的 那就用这个吧 后面给出的那个正式发布版 也用 medium"]
+"针对" = "交付成片（10-15 用户选硬件 q38，11-01 改 medium；CRF 30 是实测定的，用户没有点这个数）"
+"出处" = ["用户 11-01", "docs/决策/0008-母版存储.md", "用户 10-15", "M/review-folder-preference.md", "M/video-encoding-benchmark.md"]
 "落点" = ["pipeline/合成（迁自 旧:工具/公共/环境.py 成片编码器）"]
 "例外" = []
 

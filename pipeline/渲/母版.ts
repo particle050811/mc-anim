@@ -1,6 +1,6 @@
-// 母版缓存：<数据根>/cache/母版/<作品>/<段键>/ 下按指纹前 16 位起名（用户 10-30 定母版改存 CRF12，存法见 转码.ts）：
+// 母版缓存：<数据根>/cache/母版/<作品>/<段键>/ 下按指纹前 16 位起名（用户 10-30 定母版转码存，存法见 转码.ts）：
 //   <指纹>.mkv        CRF1，Remotion 直出；10-30 以前渲的都是它，现在只在渲完到转码完之间短暂存在（verify 的无损抽样帧从它抽）
-//   <指纹>.crf12.mkv  CRF12，film、edit-package、render --到预览 读它
+//   <指纹>.x264.mkv   压缩母版，film、edit-package、render --到预览 读它；后缀不绑档位，换档位不改名
 //   <指纹>.指纹.json  逐项展开；<指纹>.用过 修改时间是最后一次被 render、film、verify、edit-package 用的时间（不是账本，各文件各记各的）
 //   <指纹>.检出-<哈希> 哪个检出用过这个指纹，内容是检出路径（各 worktree 共用数据根，这边算不出别的检出的当前指纹，缓存/钉.ts 靠它不删人家的）
 // 透明叠层同样存法：cache/叠层/<段键>-<名>/<指纹前 16 位>.mov（ProRes 4444 带透明，很小，不转码）。
@@ -11,15 +11,15 @@ import { 叠层目录, 母版目录 } from '../环境/配置.ts';
 import { 本检出 } from '../环境/路径.ts';
 import type { 段指纹 } from '../指纹/指纹.ts';
 
-export const 压缩后缀 = '.crf12.mkv';
-/** CRF1 那份（也是 认可、交付、当前指纹 钉母版时用的「逻辑名」：同一指纹的 CRF12 按它找理由） */
+export const 压缩后缀 = '.x264.mkv';
+/** CRF1 那份（也是 认可、交付、当前指纹 钉母版时用的「逻辑名」：同一指纹的压缩母版按它找理由） */
 export const 原母版路径 = (键: string, 指纹: string, 作品?: string) => path.join(母版目录(键, 作品), `${指纹.slice(0, 16)}.mkv`);
 export const 压缩母版路径 = (键: string, 指纹: string, 作品?: string) => path.join(母版目录(键, 作品), `${指纹.slice(0, 16)}${压缩后缀}`);
-/** 同一目录里 CRF1 名 → CRF12 名 */
+/** 同一目录里 CRF1 名 → 压缩母版名 */
 export const 压缩名 = (原: string) => 原.replace(/\.mkv$/, 压缩后缀);
-/** 这个指纹渲过、母版还在（CRF1、CRF12 哪份都算） */
+/** 这个指纹渲过、母版还在（CRF1、压缩母版哪份都算） */
 export const 有母版 = (键: string, 指纹: string, 作品?: string) => fs.existsSync(压缩母版路径(键, 指纹, 作品)) || fs.existsSync(原母版路径(键, 指纹, 作品));
-/** 现有的母版文件：CRF12 优先，没有就 CRF1，都没有 null（只看在不在；要读像素出片用 转存.ts 的 备好母版） */
+/** 现有的母版文件：压缩母版优先，没有就 CRF1，都没有 null（只看在不在；要读像素出片用 转存.ts 的 备好母版） */
 export const 现母版 = (键: string, 指纹: string, 作品?: string): string | null =>
   [压缩母版路径(键, 指纹, 作品), 原母版路径(键, 指纹, 作品)].find((f) => fs.existsSync(f)) ?? null;
 export const 叠层路径 = (叠层键: string, 指纹: string) => path.join(叠层目录(叠层键), `${指纹.slice(0, 16)}.mov`);

@@ -20,9 +20,9 @@ const townClear: [number, number, number, number] = [borderTownPos[0], borderTow
 // 海平面 y 63
 const seaY = 63 - 64;
 
-export const OverworldSky: React.FC = () => (
+export const OverworldSky: React.FC<{ active?: boolean }> = ({ active = true }) => (
   <>
-    <Atmosphere sun={SUN_OW} far={40000} />
-    <PhotonClouds add={[fallCloud]} clear={townClear} seaY={seaY} />
+    <Atmosphere sun={SUN_OW} far={40000} enabled={active} />
+    <PhotonClouds add={[fallCloud]} clear={townClear} seaY={seaY} draw={active} />
   </>
 );

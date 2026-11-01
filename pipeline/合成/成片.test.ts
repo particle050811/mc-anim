@@ -51,7 +51,7 @@ const 段 = (键: string, 帧数: number, fps = 24, 叠层?: { 名: string; 入�
     段: { 场: '测试', 帧数, fps, 宽: 320, 高: 180, 地形: [], 叠层 },
   }) as unknown as 段信息;
 
-/** film 用完 CRF1 就转存 CRF12、删 CRF1：比对、造别的段要 CRF1 的读这份 */
+/** film 用完 CRF1 就转存压缩母版、删 CRF1：比对、造别的段要 CRF1 的读这份 */
 const 留底 = (键: string) => path.join(数据根, '留底', `${键}.mkv`);
 
 /** 母版：testsrc2 画面 帧数 帧，正弦音比画面长 0.5 秒（成片要按样本截掉多的） */
@@ -198,7 +198,7 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     expect(a).toEqual(帧md5(现做));
   });
 
-  it('只有 CRF1 的旧母版：film 先转存，画面读 CRF12，manifest 记 CRF12 的字节 sha 和存法，同一指纹再出一次字节 sha 不变', async () => {
+  it('只有 CRF1 的旧母版：film 先转存，画面读压缩母版，manifest 记压缩母版的字节 sha 和存法，同一指纹再出一次字节 sha 不变', async () => {
     造母版('庚', 24, 880);
     const 原 = 原母版路径('庚', 指纹('庚'));
     expect(fs.existsSync(原)).toBe(true);
@@ -206,7 +206,7 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     const 压 = 压缩母版路径('庚', 指纹('庚'));
     expect(fs.existsSync(压)).toBe(true);
     expect(fs.existsSync(原)).toBe(false);
-    expect(manifest.段[0]).toMatchObject({ 字节sha: await 文件sha(压), 存法: 'x264-crf12-veryfast-t4' });
+    expect(manifest.段[0]).toMatchObject({ 字节sha: await 文件sha(压), 存法: 'x264-crf16-medium-t4' });
     const 再 = await 合成成片([段('庚', 24)], { 级别: '预览', 名: '转存再出', 范围: [], 记录: 记录() });
     expect(再.manifest.段[0]!.字节sha).toBe(manifest.段[0]!.字节sha);
   });

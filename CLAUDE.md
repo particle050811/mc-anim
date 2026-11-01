@@ -19,7 +19,7 @@
 anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）；子命令都认 --help
 anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章（都不中才当章范围）
 anim render [<选择器>] --只派生 [--重做]   从现有母版补段签（段签/，母版删了 film、verify、edit-package 照样用）
-anim render <选择器> --重渲 --留CRF1        渲完留下 CRF1（verify --对基线 要；平时渲完转 CRF12 就删 CRF1，主检出还删同段旧指纹，worktree 只新增）
+anim render <选择器> --重渲 --留CRF1        渲完留下 CRF1（verify --对基线 要；平时渲完转压缩母版就删 CRF1，主检出还删同段旧指纹，worktree 只新增）
 anim still <段> <帧…> --到预览 <主题> [--逐帧]（多帧默认同页连出，要逐像素比用 --逐帧）      anim stale [<选择器>] [--严格]     anim bench <段> [--帧 a-b]     anim 耗时 [<段>] [--最近 n]（每次渲染的阶段、每帧、等待、机器负载）
 anim verify [<段>] [--对基线 [--渲]]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
 anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   每帧 PNG 的 sha 存到 run/逐帧校验/<作品>/<名>/<段键>.tsv，再渲一次（照基准存的帧连着渲）列出不同的帧；不写母版，不碰段签和认可
@@ -28,7 +28,8 @@ anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（000
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）
 anim cache gc [--执行]                     缓存回收，默认只看；--执行 过渲染闸
-anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转 CRF12（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
+anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转压缩母版（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
+anim cache 改后缀 [--执行]                 一次性把旧的 <指纹>.crf12.mkv 就地改名 <指纹>.x264.mkv（不转码），默认只打印
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
 anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）

@@ -829,9 +829,11 @@ export const PhotonClouds: React.FC<{
   clear?: [number, number, number, number];
   seaY: number;
   exposure?: number;
+  draw?: boolean;
 }> = ({ weather = defaultWeather, add = [], near = defaultNear, clear,
   seaY,
   exposure = 1,
+  draw = true,
 }) => {
   use写入者(云设置槽, 云设置复位);
   settings.weather = weather;
@@ -851,6 +853,8 @@ export const PhotonClouds: React.FC<{
     };
   });
   useEffect(() => {
+    // 只给确定的大气后期提供云参数时，不注册云层绘制步骤，也不改变水和半透明物的次序。
+    if (!draw) { release(); return; }
     const off = registerMidPass(gl, {
       order: 10,
       afterWater: () => true,
@@ -862,6 +866,6 @@ export const PhotonClouds: React.FC<{
     advance(performance.now());
     release();
     return off;
-  }, [gl, advance, release]);
+  }, [gl, advance, release, draw]);
   return null;
 };
