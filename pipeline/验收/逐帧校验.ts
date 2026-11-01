@@ -208,7 +208,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
           await 记已量帧(键, x.帧);
           记阶段(记录.阶段, 标签, '出帧', t0, (Date.now() - t0) / 1000);
           await 明细.写出(记录.阶段, { 指纹: x.指纹.slice(0, 16) });
-        });
+        },undefined,{}, {种:'逐帧校验',作品:作品名(),段:键,帧数:x.帧.length,用途:process.env.ANIM_PURPOSE??'核对'});
         const 小 = [...这次].filter(([, v]) => v.字节 < 纯色嫌疑字节).map(([f]) => f).sort((a, b) => a - b);
         if (小.length) 记录.记('警告', `${键}：这些帧的 PNG 不到 ${纯色嫌疑字节 / 1024} KB，可能是纯色，看一眼画面：${帧号文本(小)}`);
         if (模式 === '存') {

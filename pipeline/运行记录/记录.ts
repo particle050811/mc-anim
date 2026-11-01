@@ -50,6 +50,8 @@ export const 预计耗时 = (标签: string, 表 = 耗时表()): number | null =
 export type 事件 = { 时间: string; 级别: '信息' | '警告' | '错误'; 文本: string; /** 命令抛出的错（cli/路由.ts）：屏幕上不一定打，这里总记 */ 调用栈?: string };
 
 export class 运行记录 {
+  任务?: string;
+  private 已结束 = false;
   命令: string;
   参数: string[];
   开始ms = Date.now();
@@ -69,6 +71,7 @@ export class 运行记录 {
   }
 
   结束(退出码: number) {
+    if(this.已结束)return;this.已结束=true;
     const 秒 = (Date.now() - this.开始ms) / 1000;
     const 命令行 = ['anim', this.命令, ...this.参数].join(' ');
     try {
@@ -77,6 +80,7 @@ export class 运行记录 {
       fs.mkdirSync(dir, { recursive: true });
       const 名 = `${utc时间(this.开始ms).replace(/[-:]/g, '').replace('T', '-').replace('Z', '')}-${this.命令}-${process.pid}.json`;
       const 记录 = {
+        任务: this.任务,
         命令: 命令行,
         开始: utc时间(this.开始ms),
         秒: Number(秒.toFixed(1)),

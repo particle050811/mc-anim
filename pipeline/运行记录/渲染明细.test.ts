@@ -72,6 +72,6 @@ describe('渲染明细', () => {
     expect(明细报告(读!.明细, 读!.文件)).toContain('render:作/甲段:视频');
     for (const n of ['a', 'b', 'c']) fs.writeFileSync(path.join(dir, `0-${n}.json`), '{}');
     清旧明细(dir, 2);
-    expect(fs.readdirSync(dir).length).toBe(2);
+    expect(fs.readdirSync(dir).length).toBe(3); // 每种各保留两份，其他种的明细不被挤掉
   });
 });

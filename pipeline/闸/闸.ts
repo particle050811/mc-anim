@@ -1,243 +1,103 @@
-// 资源闸：重任务开跑前过这道闸。规则照旧项目 参考模型库/工具/资源闸.py（用户 10-04、10-05 定）：
-//   渲染：渲染之间一个一个来（抢同一块 GPU），拿到「渲染」锁后只等内存够，不看负载；
-//   放行：别的重任务等 1 分钟负载低于核数 × 0.8、空闲内存不低于下限，两次放行至少隔 60 秒（「上次放行」文件和旧项目共用）。
-// 新加排队票：anim 的等待者在 <锁目录>/<名>.排队/ 里按先来后到排，轮到自己才去抢锁，批量渲染不再插队（全局记忆 10-05「渲染锁靠抢、不排队」）。
-// 旧项目的工具不认票，照旧直接抢；票只管 anim 之间的先后。
+// GPU 位容量 1；用户 11-01 定：等内存不持锁，人工放行只作用一票。
+// 30%、负载核×0.8、60 秒是 Agent 选的阈值，不冒称用户定值。
 import fs from 'node:fs';
-import { AsyncLocalStorage } from 'node:async_hooks';
 import path from 'node:path';
-import { 配置 } from '../环境/配置.ts';
-import { 内存够渲染, 读内存, 读压力, 读数说明, 核数, 一分钟负载, type 内存读数 } from '../环境/资源.ts';
-import { 持有者, 试拿, 放, 锁文件, 进程在吗 } from './锁.ts';
-
-const 票过期毫秒 = 60_000;
-const 放行间隔秒 = 60;
-const 负载上限比 = 0.8;
-
-/** 子孙进程知道祖先已经拿着渲染锁（和旧资源闸同名） */
-export const 祖先持锁变量 = 'MCAI_RENDER_LOCK_PID';
-
-const 持锁上下文 = new AsyncLocalStorage<boolean>();
-const 串行 = new Map<string, Promise<void>>();
-
-const 睡 = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-const 主机名片段 = (s: string) => s.replace(/[^A-Za-z0-9._-]/g, '_');
-
-// 进程退出（含 Ctrl-C）时放掉还拿着的锁、删掉自己的票
-const 收尾 = new Set<() => void>();
-let 装了退出钩子 = false;
-const 登记收尾 = (fn: () => void) => {
-  收尾.add(fn);
-  if (!装了退出钩子) {
-    装了退出钩子 = true;
-    process.on('exit', () => {
-      for (const f of 收尾) f();
-    });
-    for (const sig of ['SIGINT', 'SIGTERM'] as const) process.once(sig, () => process.exit(130));
-  }
-  return () => 收尾.delete(fn);
-};
-
-export type 票 = { 文件: string; 名: string };
-
-const 解析票 = (名: string) => {
-  const m = /^(\d+)-(.+)-(\d+)$/.exec(名);
-  return m ? { 时间: Number(m[1]), 主机: m[2]!, pid: Number(m[3]) } : null;
-};
-
-const 票还活着 = (dir: string, 名: string, 本机: string) => {
-  const t = 解析票(名);
-  if (!t) return false;
-  if (t.主机 === 主机名片段(本机)) return 进程在吗(t.pid);
+import {AsyncLocalStorage} from 'node:async_hooks';
+import {配置} from '../环境/配置.ts';
+import {内存够渲染,读内存,读压力,读数说明,核数,一分钟负载,type 内存读数} from '../环境/资源.ts';
+import {持有者,试拿,放,锁文件,进程在吗} from './锁.ts';
+import {登记收尾} from './收尾.ts';
+import {取调度环境,开任务,有任务,清崩溃,type 调度环境,type 任务声明} from './任务.ts';
+import {领票,列票,票活着,type 票,回队尾} from './票.ts';
+import {写JSON,读JSON} from './文件.ts';
+import {清孤儿} from './孤儿.ts';
+export type {任务声明} from './任务.ts';
+export {闸记被杀,登记临时文件} from './收尾.ts';
+export const 祖先持锁变量='MCAI_RENDER_LOCK_PID';
+const 持锁上下文=new AsyncLocalStorage<锁柄>();
+const 串行=new Map<string,Promise<void>>();
+const 睡=(ms:number)=>new Promise<void>(r=>setTimeout(r,ms));
+export type 闸环境=调度环境&{内存下限:number;读内存:()=>内存读数|null;读压力:()=>number|null;一分钟负载:()=>number|null;核数:()=>number;睡:(ms:number)=>Promise<void>;排队间隔毫秒?:number;清孤儿:()=>unknown[]};
+export const 取环境=(e:Partial<闸环境>={}):闸环境=>({...取调度环境(e),内存下限:e.内存下限??Number(配置('渲染内存下限')),读内存:e.读内存??读内存,读压力:e.读压力??读压力,
+  一分钟负载:e.一分钟负载??一分钟负载,核数:e.核数??核数,睡:e.睡??睡,排队间隔毫秒:e.排队间隔毫秒??1000,
+  // 注入锁目录的调用必须显式注入进程清理，测试不能碰真 Chrome。
+  清孤儿:e.清孤儿??(e.锁目录?()=>[]:清孤儿)});
+export type 锁柄={文件:string;票:string;任务:string;声明:任务声明;拿锁时:number;放:(结果?:string)=>void;心跳:(帧?:number)=>void};
+type 排队选项=Partial<闸环境>&{间隔毫秒?:number;等待提示?:(s:string)=>void;准入?:(票:票)=>boolean;越队?:(票:票)=>boolean;声明?:任务声明};
+export const 读单票放行=(dir:string,票:string)=>{const c=读JSON<{动作:string;强?:boolean}>(path.join(dir,'指令',票+'.json'));return c?.动作==='放行'?c:null;};
+export const 排队拿=async(名:string,opts:排队选项={}):Promise<锁柄>=>{
+  const e=取环境(opts),key=path.join(e.锁目录,名),前=串行.get(key)??Promise.resolve();
+  let 交棒!:()=>void;const 完=new Promise<void>(r=>{交棒=r;});串行.set(key,完);await 前;
+  const 自建=!有任务(e.锁目录),声明=opts.声明??{种:process.argv[2]??'脚本',用途:process.env.ANIM_PURPOSE??'未声明'};
+  const task=开任务(e,声明),file=锁文件(e.锁目录,名),dir=path.join(e.锁目录,名+'.排队');
+  let t=领票(dir,e.本机,{...task.info,声明},e.现在毫秒());task.更新(声明,t.名);
+  const 起=e.现在毫秒();let 原等待='',拿锁时=0,完了=false;
+  const 记=(事:string,字段:Record<string,unknown>={})=>task.记(事,{票:t.名,锁:名,声明,...字段});
+  const 清=()=>{for(const p of e.清孤儿())记('清孤儿',{进程:p});};
+  const 删票=()=>{fs.rmSync(t.文件,{force:true});};
+  const 撤票=登记收尾(()=>删票());
+  const 交接=()=>{交棒();if(串行.get(key)===完)串行.delete(key);};
+  记('领票',{队:{前面:列票(dir).filter(x=>x.名<t.名).slice(0,3).map(x=>x.名),深度:列票(dir).length,持锁:持有者(file)}});
   try {
-    return Date.now() - fs.statSync(path.join(dir, 名)).mtimeMs < 票过期毫秒;
-  } catch {
-    return false;
-  }
-};
-
-const 领票 = (dir: string, 本机: string): 票 => {
-  fs.mkdirSync(dir, { recursive: true });
-  const 名 = `${String(Date.now()).padStart(15, '0')}-${主机名片段(本机)}-${process.pid}`;
-  const 文件 = path.join(dir, 名);
-  fs.writeFileSync(文件, `${process.pid}\n`, 'utf8');
-  return { 文件, 名 };
-};
-
-/** 排在最前面的活票是不是我的；顺手删掉死票 */
-const 轮到我 = (dir: string, 我的: 票, 本机: string) => {
-  const now = new Date();
-  fs.utimesSync(我的.文件, now, now); // 别的机器按修改时间判活
-  for (const 名 of fs.readdirSync(dir).sort()) {
-    if (名 === 我的.名) return true;
-    if (票还活着(dir, 名, 本机)) return false;
-    fs.rmSync(path.join(dir, 名), { force: true });
-  }
-  return true;
-};
-
-export type 锁柄 = { 文件: string; 放: () => void };
-
-/** 排队拿一把锁：按票的先后，轮到了才抢；抢不到（旧项目的工具拿着）就接着等 */
-export const 排队拿 = async (名: string, opts: { 锁目录?: string; 本机?: string; 间隔毫秒?: number; 等待提示?: (持有者: string) => void; 准入?: (票: 票) => boolean; 越队?: (票: 票) => boolean; 睡?: (ms: number) => Promise<void> } = {}): Promise<锁柄> => {
-  const 锁目录 = opts.锁目录 ?? 配置('锁目录');
-  const 本机 = opts.本机 ?? 配置('主机');
-  const 间隔 = opts.间隔毫秒 ?? 3000;
-  const key = path.join(锁目录, 名);
-  const 前一个 = 串行.get(key) ?? Promise.resolve();
-  let 交棒!: () => void;
-  const 完 = new Promise<void>((r) => { 交棒 = r; });
-  串行.set(key, 完);
-  await 前一个;
-  const file = 锁文件(锁目录, 名);
-  const 票目录 = path.join(锁目录, `${名}.排队`);
-  const 我的票 = 领票(票目录, 本机);
-  const 删票 = () => fs.rmSync(我的票.文件, { force: true });
-  const 撤 = 登记收尾(删票);
-  let 上回 = '';
-  try {
-    for (;;) {
-      if ((opts.越队?.(我的票) || 轮到我(票目录, 我的票, 本机)) && (opts.准入?.(我的票) ?? true) && 试拿(file, 本机)) break;
-      // 换了持有者再说一遍（旧项目的工具不认票，锁放开时可能被它抢先）
-      const 现在 = fs.existsSync(file) ? `锁在 pid ${持有者(file) ?? '?'} 手里` : '前面还有人排队';
-      if (现在 !== 上回 && opts.等待提示) opts.等待提示(现在);
-      上回 = 现在;
-      await (opts.睡 ?? 睡)(间隔);
+    for(;;){
+      清崩溃(e);
+      const 找=列票(dir).find(x=>x.内容?.任务===task.info.任务&&x.pid===process.pid);
+      if(找)t=找;else{const 原=t.名;t=领票(dir,e.本机,{...task.info,声明},e.现在毫秒());记('票丢失',{原名:原,新名:t.名});}
+      if(t.内容?.暂缓至&&t.内容.暂缓至<=e.现在毫秒()){
+        t=回队尾(t);delete t.内容!.暂缓至;写JSON(t.文件,t.内容);记('恢复',{原因:'暂缓到期回队尾'});
+      }
+      try{fs.utimesSync(t.文件,new Date(),new Date());}catch{continue;}
+      const 活:票[]=[];
+      for(const q of 列票(dir)){
+        if(票活着(q,e.本机))活.push(q);
+        else {try{fs.unlinkSync(q.文件);记('清死票',{原信息:q});清();}catch{/* 另一读者先回收 */}}
+      }
+      const 越=opts.越队?.(t)??false;
+      const 暂缓=Boolean(t.内容?.暂缓至&&t.内容.暂缓至>e.现在毫秒());
+      if((越||(!暂缓&&活[0]?.名===t.名))&&(opts.准入?.(t)??true)&&试拿(file,e.本机,pid=>{
+        记('回收死锁',{原持有者:读JSON(file+'.信息.json')??{pid}});清();
+      }))break;
+      const 等待=暂缓?`暂缓至 ${new Date(t.内容!.暂缓至!).toISOString()}`:fs.existsSync(file)?`锁在 pid ${持有者(file)??'?'} 手里`:'前面还有人排队或等资源';
+      if(等待!==原等待){opts.等待提示?.(等待);记('排队',{等谁:持有者(file),前面:活.slice(0,3).map(x=>x.名),状态:等待});原等待=等待;}
+      await e.睡(opts.间隔毫秒??e.排队间隔毫秒??1000);
     }
-  } catch (err) {
-    交棒();
-    throw err;
-  } finally {
-    删票();
-    撤();
-  }
-  const 撤锁 = 登记收尾(() => 放(file));
-  return {
-    文件: file,
-    放: () => {
-      放(file);
-      撤锁();
-      交棒();
-      if (串行.get(key) === 完) 串行.delete(key);
-    },
+    拿锁时=e.现在毫秒();task.更新(声明,t.名);记('拿锁',{等锁秒:(拿锁时-起)/1000});
+  }catch(err){删票();撤票();交接();if(自建)task.结束(1);throw err;}
+  删票();撤票();
+  const 信息文件=file+'.信息.json';let 最近写=0,已出帧=0,帧时=拿锁时;
+  const 心跳=(帧?:number)=>{if(帧!==undefined&&帧!==已出帧){已出帧=帧;帧时=e.现在毫秒();}if(最近写&&e.现在毫秒()-最近写<5000)return;
+    最近写=e.现在毫秒();写JSON(信息文件,{pid:process.pid,任务:task.info.任务,票:t.名,发起:task.info.发起,声明,拿锁时,心跳:最近写,帧时,已出帧,总帧:声明.帧数});};
+  心跳();const timer=setInterval(()=>心跳(),30_000);timer.unref();
+  const 撤锁=登记收尾((_,sig)=>释放(sig?'被杀':'退出'));
+  const 释放=(结果='成')=>{if(完了)return;完了=true;clearInterval(timer);撤锁();
+    记('放锁',{持锁秒:(e.现在毫秒()-拿锁时)/1000,结果,已出帧});
+    if(持有者(file)===process.pid)fs.rmSync(信息文件,{force:true});放(file);交接();if(自建&&!['被杀','退出'].includes(结果))task.结束(结果==='成'?0:1);
   };
+  return {文件:file,票:t.名,任务:task.info.任务,声明,拿锁时,放:释放,心跳};
 };
-
-/** 闸读的外部状态，默认取本机和配置；测试换成假的（假时钟、假内存、假负载） */
-export type 闸环境 = {
-  锁目录: string;
-  本机: string;
-  /** 空闲内存百分比下限 */
-  内存下限: number;
-  读内存: () => 内存读数 | null;
-  读压力: () => number | null;
-  一分钟负载: () => number | null;
-  核数: () => number;
-  现在毫秒: () => number;
-  睡: (ms: number) => Promise<void>;
-  /** 排队时多久看一次锁 */
-  排队间隔毫秒?: number;
+export const 闸心跳=(帧?:number)=>持锁上下文.getStore()?.心跳(帧);
+export const 当前票=()=>持锁上下文.getStore()?.票;
+const 检查重入=()=>{if(持锁上下文.getStore())throw Error('禁止嵌套过闸：当前调用已经持有渲染锁');const pid=Number(process.env[祖先持锁变量]);if(pid&&pid!==process.pid&&进程在吗(pid))throw Error(`祖先 pid ${pid} 持有渲染锁，子进程不能再次过闸`);};
+export const 过渲染闸=async<T>(fn:()=>Promise<T>,提示:(s:string)=>void=s=>console.error(`== 资源闸：${s}`),环境:Partial<闸环境>={},声明:任务声明={}):Promise<T>=>{
+  检查重入();const e=取环境(环境);let 说过=false,告警过=false,等起:number|undefined,票名='';
+  const 柄=await 排队拿('渲染',{...e,声明,等待提示:s=>提示(`渲染排队（${s}）`),越队:t=>Boolean(读单票放行(e.锁目录,t.名)),准入:t=>{
+    票名=t.名;if(声明.不开渲染)return true;const m=e.读内存(),压力=e.读压力(),授权=读单票放行(e.锁目录,t.名);
+    const task=开任务(e,声明);
+    const 够=(压力!==4||授权?.强)&&(授权||!m||内存够渲染(m,e.内存下限));
+    if(够){if(等起!==undefined)task.记('等内存止',{票:t.名,秒:(e.现在毫秒()-等起)/1000});if(授权)task.记('单票放行',{票:t.名,压力,读数:m,强:授权.强});return true;}
+    等起??=e.现在毫秒();
+    if(!说过){提示(`渲染等内存（${m?读数说明(m):'无读数'}，下限 ${e.内存下限}%，压力 ${压力??'?'}）`);task.记('等内存起',{票:t.名,读数:m,压力,阈值:e.内存下限});t.内容!.等内存起=等起;t.内容!.卡在='内存';写JSON(t.文件,t.内容);}
+    说过=true;if(!告警过&&e.现在毫秒()-等起>=180_000){提示(`告警：等内存已满 3 分钟，票 ${t.名}；锁未占用，请主 Agent 决定`);task.记('告警',{类:'等内存',对象:t.名,阈值:180,值:(e.现在毫秒()-等起)/1000});告警过=true;}return false;
+  }});
+  let 结果='成';try{提示('放行渲染');fs.rmSync(path.join(e.锁目录,'指令',票名+'.json'),{force:true});process.env[祖先持锁变量]=String(process.pid);return await 持锁上下文.run(柄,fn);}catch(err){结果='异常';throw err;}finally{delete process.env[祖先持锁变量];柄.放(结果);}
 };
-
-const 取环境 = (e: Partial<闸环境>): 闸环境 => ({
-  锁目录: e.锁目录 ?? 配置('锁目录'),
-  本机: e.本机 ?? 配置('主机'),
-  内存下限: e.内存下限 ?? Number(配置('渲染内存下限')),
-  读内存: e.读内存 ?? 读内存,
-  读压力: e.读压力 ?? 读压力,
-  一分钟负载: e.一分钟负载 ?? 一分钟负载,
-  核数: e.核数 ?? 核数,
-  现在毫秒: e.现在毫秒 ?? Date.now,
-  睡: e.睡 ?? 睡,
-  排队间隔毫秒: e.排队间隔毫秒,
-});
-
-/** 指令只认完整票名，不按 pid 继承，下一段不能沿用这次放行。 */
-export const 读单票放行 = (锁目录: string, 票名: string): { 强?: boolean } | null => {
-  try {
-    const c = JSON.parse(fs.readFileSync(path.join(锁目录, '指令', `${票名}.json`), 'utf8'));
-    return c.动作 === '放行' ? c : null;
-  } catch { return null; }
+/** 放行闸仍默认重；后续在拿短锁前判断资源。 */
+export const 过放行闸=async<T>(fn:()=>Promise<T>,提示:(s:string)=>void=s=>console.error(`== 资源闸：${s}`),环境:Partial<闸环境>={},声明:任务声明={}):Promise<T>=>{
+  const e=取环境(环境),柄=await 排队拿('放行',{...e,声明,等待提示:s=>提示(`放行排队（${s}）`)}),上次文件=path.join(e.锁目录,'上次放行');
+  let 说过=false;
+  try{for(;;){let 上次=0;try{上次=Number(fs.readFileSync(上次文件,'utf8').trim())||0;}catch{/* 首次 */}
+    const m=e.读内存(),load=e.一分钟负载();if(e.现在毫秒()/1000-上次>=60&&(load===null||load<e.核数()*0.8)&&(!m||m.空闲百分比>=e.内存下限))break;
+    if(!说过)提示(`等资源（1 分钟负载 ${load}，内存 ${m?.空闲百分比}%）`);说过=true;await e.睡(10_000);
+  }fs.writeFileSync(上次文件,`${Math.floor(e.现在毫秒()/1000)}\n`);}finally{柄.放();}return fn();
 };
-
-export type 任务声明 = { 种?: string; 不开渲染?: boolean };
-
-/** 用户 11-01 定：内存不足不占 GPU 位；人工放行只越过这一张票的内存和队序。 */
-export const 过渲染闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) => void = (s) => console.error(`== 资源闸：${s}`), 环境: Partial<闸环境> = {}, 声明: 任务声明 = {}): Promise<T> => {
-  if (持锁上下文.getStore()) throw new Error('禁止嵌套过闸：当前调用已经持有渲染锁');
-  const 祖先 = Number(process.env[祖先持锁变量]);
-  if (祖先 && 祖先 !== process.pid && 进程在吗(祖先)) throw new Error(`祖先 pid ${祖先} 持有渲染锁，子进程不能再次过闸`);
-  const e = 取环境(环境);
-  let 说过 = false;
-  let 告警过 = false;
-  let 等内存起: number | undefined;
-  let 票名 = '';
-  const 柄 = await 排队拿('渲染', {
-    锁目录: e.锁目录, 本机: e.本机, 间隔毫秒: e.排队间隔毫秒 ?? 1000, 睡: e.睡,
-    等待提示: (s) => 提示(`渲染排队（${s}）`),
-    越队: (票) => Boolean(读单票放行(e.锁目录, 票.名)),
-    准入: (票) => {
-      票名 = 票.名;
-      if (声明.不开渲染) return true;
-      const m = e.读内存();
-      const 压力 = e.读压力();
-      const 放行 = 读单票放行(e.锁目录, 票.名);
-      const 够 = (压力 !== 4 || 放行?.强) && (放行 || !m || 内存够渲染(m, e.内存下限));
-      if (够) return true;
-      等内存起 ??= e.现在毫秒();
-      if (!说过) 提示(`渲染等内存（${m ? 读数说明(m) : '无读数'}，下限 ${e.内存下限}%，压力 ${压力 ?? '?'}）`);
-      说过 = true;
-      if (!告警过 && e.现在毫秒() - 等内存起 >= 180_000) {
-        提示(`告警：等内存已满 3 分钟，票 ${票.名}；锁未占用，请主 Agent 决定`);
-        告警过 = true;
-      }
-      return false;
-    },
-  });
-  try {
-    提示('放行渲染');
-    fs.rmSync(path.join(e.锁目录, '指令', `${票名}.json`), { force: true });
-    process.env[祖先持锁变量] = String(process.pid);
-    return await 持锁上下文.run(true, fn);
-  } finally {
-    delete process.env[祖先持锁变量];
-    柄.放();
-  }
-};
-
-/** 过放行闸：等负载和内存都够、离上次放行满 60 秒，记下放行时间就放锁，fn 不占锁 */
-export const 过放行闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) => void = (s) => console.error(`== 资源闸：${s}`), 环境: Partial<闸环境> = {}): Promise<T> => {
-  const e = 取环境(环境);
-  const 柄 = await 排队拿('放行', { 锁目录: e.锁目录, 本机: e.本机, 间隔毫秒: e.排队间隔毫秒, 等待提示: (s) => 提示(`放行排队（${s}）`) });
-  const 上次文件 = path.join(e.锁目录, '上次放行');
-  try {
-    const 下限 = e.内存下限;
-    let 说过 = false;
-    for (;;) {
-      let 上次 = 0;
-      try {
-        上次 = Number(fs.readFileSync(上次文件, 'utf8').trim()) || 0;
-      } catch {
-        // 没放行过
-      }
-      const m = e.读内存();
-      const load = e.一分钟负载();
-      const 够 = e.现在毫秒() / 1000 - 上次 >= 放行间隔秒 && (load === null || load < e.核数() * 负载上限比) && (!m || m.空闲百分比 >= 下限);
-      if (够) break;
-      if (!说过) 提示(`等资源（1 分钟负载 ${load?.toFixed(2) ?? '无'}，上限 ${e.核数()}×${负载上限比}${m ? '；' + 读数说明(m) : ''}）`);
-      说过 = true;
-      await e.睡(10_000);
-    }
-    fs.writeFileSync(上次文件, `${Math.floor(e.现在毫秒() / 1000)}\n`, 'utf8');
-  } finally {
-    柄.放();
-  }
-  return fn();
-};
-
-/** 用到时才过放行闸：返回的函数第一次调用时过闸，之后同一条命令里直接放行（过放行闸只等资源、记放行时间，不占锁）。
- * verify 用：指纹和认可版一样的段不解码，整条命令都不用等闸 */
-export const 懒放行闸 = (过闸: (fn: () => Promise<void>) => Promise<void> = 过放行闸) => {
-  let 放行: Promise<void> | undefined;
-  return () => (放行 ??= 过闸(async () => {}));
-};
+export const 懒放行闸=(过闸:(fn:()=>Promise<void>)=>Promise<void>=过放行闸)=>{let p:Promise<void>|undefined;return()=>p??=过闸(async()=>{});};

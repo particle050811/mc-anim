@@ -4,6 +4,8 @@
 // 占地：每帧约 100 字节，一份最多几百 KB，只留最近 保留份数 份。
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
+import {读内存,读压力} from '../环境/资源.ts';
+import {当前票,闸心跳} from '../闸/闸.ts';
 import os from 'node:os';
 import path from 'node:path';
 import { 耗时表, 配置 } from '../环境/配置.ts';
@@ -17,9 +19,10 @@ const 逐帧记的下限毫秒 = 20;
 
 export type 帧记录 = { 帧: number; 毫秒: number; 等?: Record<string, number> };
 export type 等待统计 = { 标签: string; 次: number; 总毫秒: number; 最大毫秒: number };
-export type 系统采样 = { 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
+export type 系统采样 = { 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
 export type 明细小结 = { 帧数: number; 首帧毫秒: number; 中位毫秒: number; P90毫秒: number; P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[] };
 export type 渲染明细 = {
+  票?: string;
   版本: number;
   标签: string;
   开始: string;
@@ -98,11 +101,13 @@ const 采一次 = async (起: number): Promise<系统采样> => {
     process.platform === 'win32' ? null : 跑取输出('ps', ['-A', '-o', 'pid=,ppid=,rss=,%cpu=']),
     process.platform === 'darwin' ? 跑取输出('sysctl', ['-n', 'vm.swapusage']) : null,
   ]);
+  const 内存=读内存();
   const 子 = ps ? 累计子孙(ps, process.pid) : null;
   return {
     秒: Math.round((Date.now() - 起) / 1000),
     负载: Number(os.loadavg()[0]!.toFixed(1)),
-    空闲内存GB: Number((os.freemem() / 1024 ** 3).toFixed(1)),
+    空闲内存GB: Number(((内存?.空闲 ?? os.freemem()) / 1024 ** 3).toFixed(1)),
+    闸:内存?.空闲百分比??null,压力:读压力(),
     换出GB: 换 ? 解析换出(换) : null,
     子进程内存GB: 子?.内存GB ?? null,
     子进程CPU: 子?.CPU ?? null,
@@ -118,6 +123,7 @@ export class 明细收集 {
   private 上次 = 0;
   private 上次帧数 = 0;
   private 起 = Date.now();
+  private 票 = 当前票();
   private 定时: NodeJS.Timeout | null = null;
   private 采样中: Promise<unknown>[] = [];
 
@@ -142,6 +148,7 @@ export class 明细收集 {
 
   /** 进度回调的同一帧数可能回调多次（编码进度也走这里），帧数变了才算出了一帧 */
   帧完成(已出帧数: number, now = Date.now()) {
+    闸心跳(已出帧数);
     if (已出帧数 === this.上次帧数) return;
     const 这次几帧 = 已出帧数 - this.上次帧数;
     const 毫秒 = Math.round((now - (this.上次帧数 === 0 ? this.起 : this.上次)) / 这次几帧);
@@ -179,6 +186,7 @@ export class 明细收集 {
     await Promise.allSettled(this.采样中);
     const 明细: 渲染明细 = {
       版本,
+      票:this.票,
       标签: this.标签,
       开始: new Date(this.起).toISOString().replace(/\.\d+Z$/, 'Z'),
       总秒: Number(((Date.now() - this.起) / 1000).toFixed(2)),
@@ -209,7 +217,9 @@ const 列明细 = (目录: string) => (fs.existsSync(目录) ? fs.readdirSync(�
 
 export const 清旧明细 = (目录: string, 份数 = 保留份数) => {
   const 全 = 列明细(目录);
-  for (const f of 全.slice(0, Math.max(0, 全.length - 份数))) fs.rmSync(path.join(目录, f), { force: true });
+  const 分种=new Map<string,string[]>();
+  for(const f of 全){const m=JSON.parse(fs.readFileSync(path.join(目录,f),'utf8')) as 渲染明细;const 种=m.标签?.split(':')[0]??'未知';分种.set(种,[...(分种.get(种)??[]),f]);}
+  for(const files of 分种.values())for(const f of files.slice(0,Math.max(0,files.length-份数)))fs.rmSync(path.join(目录,f),{force:true});
 };
 
 /** 最近的明细，新的在前；给了 含 只要标签里含这个字的 */

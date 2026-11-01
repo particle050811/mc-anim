@@ -6,6 +6,7 @@
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
 import { isWindows } from '../环境/配置.ts';
 
 const 空文件宽限毫秒 = 10_000;
@@ -72,10 +73,10 @@ const 过期 = (file: string, pid: number | null, mtimeMs: number, 本机: strin
   if (pid === null) return Date.now() - mtimeMs > 空文件宽限毫秒;
   const 主机 = 持有者主机(file, pid);
   if (主机 && 主机 !== 本机) return false;
-  return !进程在吗(pid);
+  return !进程在吗(pid) || Date.now() - os.uptime() * 1000 > mtimeMs;
 };
 
-const 清掉过期 = (file: string, 判死的pid: number | null, 本机: string) => {
+const 清掉过期 = (file: string, 判死的pid: number | null, 本机: string, 回收?: (pid:number|null) => void) => {
   const tmp = `${file}.过期-${process.pid}-${randomBytes(4).toString('hex')}`;
   try {
     重试(() => fs.renameSync(file, tmp));
@@ -92,6 +93,7 @@ const 清掉过期 = (file: string, 判死的pid: number | null, 本机: string)
       if (code(err) !== 'EEXIST') throw err;
     }
   } else if (判死的pid !== null) {
+    回收?.(判死的pid);
     删(主机文件(file, 判死的pid));
   }
   删(tmp);
@@ -109,7 +111,7 @@ const 扫掉死主机文件 = (file: string, 本机: string) => {
 };
 
 /** 抢一次：拿到返回 true，锁在活着的进程手里返回 false */
-export const 试拿 = (file: string, 本机: string): boolean => {
+export const 试拿 = (file: string, 本机: string, 回收?: (pid:number|null)=>void): boolean => {
   // 主机先写好再建锁：别的机器看到锁时，主机文件已经在了
   const 我的主机文件 = 主机文件(file, process.pid);
   fs.writeFileSync(我的主机文件, `${本机}\n`, 'utf8');
@@ -129,7 +131,7 @@ export const 试拿 = (file: string, 本机: string): boolean => {
       if (seen[0] !== process.pid) 删(我的主机文件);
       return false;
     }
-    清掉过期(file, seen[0], 本机);
+    清掉过期(file, seen[0], 本机, 回收);
   }
 };
 
