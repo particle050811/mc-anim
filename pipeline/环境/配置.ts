@@ -48,7 +48,7 @@ const 项表 = {
     是路径: true,
     默认: (v) => path.join(v.数据根!, 'run', 'locks'),
   },
-  编码器: { 变量: 'ANIM_VIDEO_ENCODER', 说明: '成片视频编码器：h264_videotoolbox（Mac 默认）或 libx264', 是路径: false, 默认: () => (isMac ? 'h264_videotoolbox' : 'libx264') },
+  编码器: { 变量: 'ANIM_VIDEO_ENCODER', 说明: '成片视频编码器：libx264（默认）或 h264_videotoolbox（Mac 上要快时用）', 是路径: false, 默认: () => 'libx264' },
   gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU；Docker 里没有 GPU 用 swangle）', 是路径: false, 默认: () => 'angle' },
   ffmpeg: { 变量: 'ANIM_FFMPEG', 说明: 'ffmpeg 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffmpeg' },
   ffprobe: { 变量: 'ANIM_FFPROBE', 说明: 'ffprobe 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffprobe' },

@@ -111,11 +111,11 @@ const 混 = (a: number[], b: number[], t: number) => new THREE.Vector3(...a.map(
 export type 远景云 = { 飘: number; 剩: (c: 云格子) => number; 色: RGB };
 
 /** 画布里的东西：地形网格、云 + 每帧按画布的像素比更新统一量（预览级、成片级的 dpr 不一样） */
-const 远景内容: React.FC<{ u: 雾统一量; 云?: 远景云 }> = ({ u, 云 }) => {
+const 远景内容: React.FC<{ u: 雾统一量; 云?: 远景云; 算雾页高?: number }> = ({ u, 云, 算雾页高 }) => {
   const dpr = useThree((s) => s.viewport.dpr);
   const 页高 = useThree((s) => s.size.height);
   u.mcPx!.value = 成片倍数 / dpr;
-  u.mcBufH!.value = 页高 * dpr;
+  u.mcBufH!.value = (算雾页高 ?? 页高) * dpr;
   const [网格们, 云材质] = useMemo(() => {
     const common = { map: blockAtlas().original, vertexColors: true, roughness: 1, metalness: 0 };
     const 材质 = {
@@ -149,6 +149,10 @@ export type 屋后远景选项 = {
 export type 屋后远景属性 = 屋后远景选项 & {
   /** 这一帧正交那一层的取景（天也按它画） */
   取景: 侧取景;
+  /** 同一段时间线上上一帧的取景，段首给当前取景；不是上次实际渲染的帧。
+   *  @remotion/three 提交后才 setSize，旧机位和雾读取的是上次渲染的高度。显式重现顺序渲染的高度，保留已看过的画面。
+   *  不给时保留既有行为：静帧核对里也会切换取景，不在这里顺带改它们（docs/渲染性能.md）。 */
+  前取景?: 侧取景;
   /** 整块画面的页面尺寸（同 门口画布） */
   宽: number;
   高: number;
@@ -162,14 +166,21 @@ export type 屋后远景属性 = 屋后远景选项 & {
   明暗幅度: number;
 };
 
+/** 地平线在画面上的位置（成片像素）= 相机画面正中那一行 */
+const 地平行在 = (取景: 侧取景, 高: number, 顶面: number) => 高 * 成片倍数 * 0.5 + 地平在中心下(取景, 顶面) * 取景.每格;
+/** 画布上下对称地包住地平线：画布半高（页面像素） */
+const 画布半高页 = (取景: 侧取景, 高: number, 顶面: number) => {
+  const 地平行 = 地平行在(取景, 高, 顶面);
+  return Math.ceil(Math.max(地平行, 高 * 成片倍数 - 地平行) / 成片倍数);
+};
+
 /** 放在 门口画布 的天和正交画布中间（绝对定位，自己算位置；比画面高的部分由 门口画布 的 overflow 裁掉） */
-export const 屋后远景: React.FC<屋后远景属性> = ({ 取景, 云, 宽, 高, 顶面, 色调, 天色, 刻, 明暗幅度 }) => {
+export const 屋后远景: React.FC<屋后远景属性> = ({ 取景, 前取景, 云, 宽, 高, 顶面, 色调, 天色, 刻, 明暗幅度 }) => {
   const 每格 = 取景.每格;
   const 下 = 地平在中心下(取景, 顶面);
-  // 地平线在画面上的位置（成片像素）= 相机画面正中那一行；画布上下对称地包住它
-  const 地平行 = 高 * 成片倍数 * 0.5 + 下 * 每格;
-  const 半高页 = Math.ceil(Math.max(地平行, 高 * 成片倍数 - 地平行) / 成片倍数);
-  const 顶页 = 地平行 / 成片倍数 - 半高页;
+  const 半高页 = 画布半高页(取景, 高, 顶面);
+  const 前画布高 = 前取景 === undefined ? undefined : 画布半高页(前取景, 高, 顶面) * 2;
+  const 顶页 = 地平行在(取景, 高, 顶面) / 成片倍数 - 半高页;
   const 眼: [number, number, number] = [取景.中心[0], -远景视距, 取景.中心[1] - 下];
   // 地形往下挪：眼睛正好在远景地面上 眼高
   const 地形低 = 眼[2] - 眼高;
@@ -200,12 +211,12 @@ export const 屋后远景: React.FC<屋后远景属性> = ({ 取景, 云, 宽, �
     <三渲二画布
       宽={宽}
       高={半高页 * 2}
-      机位={{ 种: '透视', 眼, 看: [眼[0], 眼[1] + 1, 眼[2]], 视角, 近: 1, 远: 远景雾.止 + 远景视距 + 16 }}
+      机位={{ 种: '透视', 眼, 看: [眼[0], 眼[1] + 1, 眼[2]], 视角, 近: 1, 远: 远景雾.止 + 远景视距 + 16, 宽高比: 前画布高 === undefined ? undefined : 宽 / 前画布高 }}
       色调={色调}
       style={{ position: 'absolute', left: 0, top: 顶页 }}
     >
       <group position={[0, 0, 地形低]}>
-        <远景内容 u={u} 云={云} />
+        <远景内容 u={u} 云={云} 算雾页高={前画布高} />
       </group>
     </三渲二画布>
   );
