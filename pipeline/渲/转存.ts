@@ -1,4 +1,4 @@
-// 母版转存 CRF12 的几步（用户 10-30 定，存法见 转码.ts）。
+// 母版转存的几步（用户 10-30 定，存法见 转码.ts）。
 // 顺序保证验收不受影响：先有 CRF1 派生的段签（无损抽样帧、声音、签名），再转码到临时名，记进段签，最后改名；任何一步断了 CRF1 都还在，下次重来，转出来逐位相同。
 // 备好母版：film、edit-package、render --到预览 要读母版时用，只有 CRF1 的（旧的）先照同样参数转码。
 import fs from 'node:fs';
@@ -14,7 +14,7 @@ import { 转码 } from './转码.ts';
 
 export type 转存结果 = { 文件: string; 原大小: number; 新大小: number; 秒: number };
 
-/** 这个指纹的 CRF1 存成 CRF12（CRF1 不删，调用方定）。段签缺了或不是这份 CRF1 派生的先派生。不过闸（调用方过） */
+/** 这个指纹的 CRF1 存成压缩母版（CRF1 不删，调用方定）。段签缺了或不是这份 CRF1 派生的先派生。不过闸（调用方过） */
 export const 存成压缩 = async (键: string, 指纹: string, 级别: string | null, o: { 作品?: string; 记录?: 运行记录 } = {}): Promise<转存结果> => {
   const 作品 = o.作品 ?? 作品名();
   const 原 = 原母版路径(键, 指纹, 作品);
@@ -40,8 +40,8 @@ export const 存成压缩 = async (键: string, 指纹: string, 级别: string |
 };
 
 /**
- * 要读这个指纹的母版出片：CRF12 在、段签也认它、在的 CRF1 就是段签记的那份，就用 CRF12；只有 CRF1（10-30 以前渲的），
- * 或 CRF12、CRF1 有一个和段签对不上而 CRF1 又在（CRF1 是后来重渲的），先从 CRF1 重新派生段签、照同样参数转码（过渲染闸；已被取代的 CRF1 没有理由留就删），
+ * 要读这个指纹的母版出片：压缩母版在、段签也认它、在的 CRF1 就是段签记的那份，就用压缩母版；只有 CRF1（10-30 以前渲的），
+ * 或压缩母版、CRF1 有一个和段签对不上而 CRF1 又在（CRF1 是后来重渲的），先从 CRF1 重新派生段签、照同样参数转码（过渲染闸；已被取代的 CRF1 没有理由留就删），
  * 保证同一指纹出同样的片。都没有 null。记一笔「用过」
  */
 export const 备好母版 = async (键: string, 指纹: string, 级别: string | null, o: { 作品?: string; 记录?: 运行记录; 在闸里?: boolean } = {}): Promise<string | null> => {
@@ -63,7 +63,7 @@ export const 备好母版 = async (键: string, 指纹: string, 级别: string |
   const 做 = async () => {
     // 排队等闸的时候别的进程可能已经转好了
     if (await 都对得上()) return;
-    console.log(`== 转存 CRF12 ${键}（${指纹.slice(0, 16)}，${(fs.statSync(原).size / 1e9).toFixed(2)} GB 的 CRF1）`);
+    console.log(`== 转存压缩母版 ${键}（${指纹.slice(0, 16)}，${(fs.statSync(原).size / 1e9).toFixed(2)} GB 的 CRF1）`);
     const r = await 存成压缩(键, 指纹, 级别, { 作品, 记录: o.记录 });
     console.log(`   ${键}：${(r.原大小 / 1e9).toFixed(2)} GB → ${(r.新大小 / 1e9).toFixed(2)} GB，${r.秒.toFixed(0)} 秒`);
     删已取代(键, 指纹, { 作品, 记录: o.记录 });

@@ -1,6 +1,6 @@
 // 分阶段计时（still、render）：打包、开浏览器、读组合（getCompositions）、等闸、出帧、编码各花多久，看清时间花在哪。
 // 写进这条命令运行记录的「阶段」字段，另追加到 run/logs/阶段耗时.tsv；耗时.tsv 的列不动（预计耗时还按它算）。
-// 编码 = renderMedia 出完最后一帧到返回（Remotion 边出帧边编码，这里只剩收尾编码和混音）；派生段签 = render 渲完从 CRF1 派生段签（pipeline/段签/）；转存 = 转成 CRF12（渲/转码.ts）。
+// 编码 = renderMedia 出完最后一帧到返回（Remotion 边出帧边编码，这里只剩收尾编码和混音）；派生段签 = render 渲完从 CRF1 派生段签（pipeline/段签/）；转存 = 转成压缩母版（渲/转码.ts）。
 // 外层阶段包含里层（打包含备素材、webpack；派生段签含 段签：开头的几步），加总时别重复算。每帧明细见 渲染明细.ts。
 import fs from 'node:fs';
 import path from 'node:path';

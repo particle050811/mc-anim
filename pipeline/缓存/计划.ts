@@ -194,7 +194,7 @@ export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '
     }
   };
   const 未满 = (天数: number) => (改于: number) => 现在 - 改于 < 天数 * 天;
-  // 已被取代的 CRF1 不看新旧（迁移前几天渲的也算），只确认 CRF12 还在
+  // 已被取代的 CRF1 不看新旧（迁移前几天渲的也算），只确认压缩母版还在
   for (const f of 计划.媒体) if (!f.理由.length) 删(f.路径, f.大小, f.已被取代 ? () => !fs.existsSync(压缩名(f.路径)) : 未满(o.近期天数), false);
   for (const f of 计划.临时) if (!f.理由.length) 删(f.路径, f.大小, 未满(1), false);
   // 计划算完到删之间可能有人开始烘焙同一个包：删前再看一眼锁
