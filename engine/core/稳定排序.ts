@@ -63,15 +63,20 @@ type R3F实例 = { object?: THREE.Object3D; children: R3F实例[] };
 export const 还原声明次序 = (物体: THREE.Object3D) => {
   const 实例们 = (物体 as THREE.Object3D & { __r3f?: R3F实例 }).__r3f?.children;
   if (!实例们 || 实例们.length < 2) return;
-  const 声明: THREE.Object3D[] = [];
-  for (const 实例 of 实例们) if (实例.object?.parent === 物体) 声明.push(实例.object);
-  if (声明.length < 2) return;
+  // 大部分物体没有两个由 R3F 挂上的子节点（网格的 geometry/material 是 attach），不为它们每帧分配数组。
+  let 声明数 = 0;
+  for (const 实例 of 实例们) if (实例.object?.parent === 物体 && ++声明数 === 2) break;
+  if (声明数 < 2) return;
   const 子们 = 物体.children;
   let 当前位置 = 0;
-  for (const 子 of 声明) {
+  for (const 实例 of 实例们) {
+    const 子 = 实例.object;
+    if (子?.parent !== 物体) continue;
     while (当前位置 < 子们.length && 子们[当前位置] !== 子) 当前位置++;
     if (当前位置 === 子们.length) {
       // 声明节点只占手动 add 的几千区段中的少数位置时，也不能反复从头 indexOf；游标单向走，乱序才建集合重排。
+      const 声明: THREE.Object3D[] = [];
+      for (const i of 实例们) if (i.object?.parent === 物体) 声明.push(i.object);
       const 声明集合 = new Set(声明);
       let 下一位 = 0;
       for (let i = 0; i < 子们.length; i++) if (声明集合.has(子们[i])) 子们[i] = 声明[下一位++];
