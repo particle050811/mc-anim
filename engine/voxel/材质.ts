@@ -29,6 +29,7 @@ export const farAoKeep = (distM: number) => {
 };
 import type { V3 } from '../model/parts.tsx';
 import { selfLight } from '../light/光照配比.ts';
+import { 成组排 } from '../core/稳定排序.ts';
 import { shadowFrustums } from '../light/级联阴影.ts';
 import { blockAtlas, blockAtlasGlsl } from './真实方块图集.ts';
 import { posScale, groupCount, skirtGroupStart, type FaceGroup } from './网格.ts';
@@ -103,6 +104,9 @@ const fragMap = (cutout: boolean) => `
 
 export type MaterialClass = '实心' | '镂空' | '实心树叶' | '水' | '花草';
 const mats = new Map<MaterialClass, THREE.Material>();
+// 五类的绘制先后固定（engine/core/稳定排序.ts）：地标网格和导入的地形有深度一样的地方，谁盖谁不能随这一帧挑到的区段变
+const 五类 = ['实心', '镂空', '实心树叶', '水', '花草'];
+const 五类组 = {};
 export const voxelMaterial = (materialClass: MaterialClass) => {
   let cached = mats.get(materialClass);
   if (cached) return cached;
@@ -146,6 +150,7 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     mat.userData.屏幕AO = '压暗';
     mat.userData.AO按alpha = true;
   } else mat.userData.水面 = true;
+  成组排(mat, 五类组, 五类.indexOf(materialClass), 五类.length);
   mats.set(materialClass, mat);
   return mat;
 };

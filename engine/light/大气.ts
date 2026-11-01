@@ -9,6 +9,7 @@ import { useThree } from '@react-three/fiber';
 import React, { useEffect, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
+import { use写入者, 新写入槽 } from '../core/写入者.ts';
 import scatteringBin from 'asset:数据/大气/散射';
 import noiseBin from 'asset:数据/大气/噪声';
 import worleyBubblyBin from 'asset:数据/大气/沃利-泡';
@@ -221,6 +222,13 @@ export const atmosphere: AtmoState = { sky: null, sun: [0, 0, 1], skyKey: '', wa
 export const atmoLightAt = (h: number) => atmosphere.cloudLight ?? sunlightAt(atmosphere.sun, h);
 // 要不要画 Photon 的云：大气打开，或只开云
 export const photonCloudsOn = () => atmoOn() || atmosphere.cloudsOnly;
+// 全开（Atmosphere）和只开云（CloudOnlyAtmosphere）共用一个槽，切点两边可以是不同的一种：接手的组件自己把另一种的开关关掉，不等旧画布卸载
+const 大气槽 = 新写入槽();
+const 关大气 = () => {
+  atmoPVec.x = 0;
+  atmosphere.cloudsOnly = false;
+  atmosphere.cloudLight = null;
+};
 // 天色图 2048×1024：太阳附近光晕的亮度在一两度里变化很快，512×256 时线性插值露出一格一格的纹
 const SKY_W = 2048;
 const SKY_H = 1024;
@@ -287,6 +295,9 @@ const apply = (data: Float32Array, sunIn: [number, number, number], far: number)
 
 // 放进画布里打开：sun = 场景坐标指向太阳；far = 地形远端（米，边界雾在这里融进天色）。卸载时关
 export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number }> = ({ sun, far }) => {
+  use写入者(大气槽, 关大气);
+  atmosphere.cloudsOnly = false;
+  atmosphere.cloudLight = null;
   const advance = useThree((s) => s.advance);
   const [data, setData] = useState(atmosphere.clouds && lut);
   const [release] = useState(() => {
@@ -311,18 +322,13 @@ export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number }
     advance(performance.now());
     release();
   }, [data, advance, release]);
-  useEffect(
-    () => () => {
-      atmoPVec.x = 0;
-    },
-    [],
-  );
   return null;
 };
 
 // 只开 Photon 的云（暮色森林，用户 10-15 定「Photon 云 + 暮色光照」）：天、雾、灯都还是那个世界自己的（atmoP 不开，材质的雾、穹顶不换），
 // 云远处融进的天色图按 skyAt（场景坐标的方向 → 线性颜色）展开，日光 light、天光 ambient 是线性颜色。key：天色、光变了就换一个（同一个 key 只展开一次）
 export const CloudOnlyAtmosphere: React.FC<{ sun: [number, number, number]; skyAt: (d: number[]) => number[]; light: number[]; ambient: number[]; skyKey: string }> = ({ sun, skyAt, light, ambient, skyKey }) => {
+  use写入者(大气槽, 关大气);
   const advance = useThree((s) => s.advance);
   const [ready, setReady] = useState(atmosphere.clouds !== null);
   const [release] = useState(() => {
@@ -364,23 +370,18 @@ export const CloudOnlyAtmosphere: React.FC<{ sun: [number, number, number]; skyA
     atmosphere.sky = tex;
     atmosphere.skyKey = key;
     atmosphere.sun = s;
-    atmosphere.cloudLight = light;
     Object.assign(atmoAmbVec, { x: ambient[0], y: ambient[1], z: ambient[2] });
     Object.assign(atmoSunVec, { x: s[0], y: s[2], z: -s[1] });
   }
+  atmoPVec.x = 0;
   atmosphere.cloudsOnly = true;
+  // 每次渲染都写，不放进上面按 skyKey 的那块：跨截时天色不变、那块不走，云光要是只在那里写，旧画布一复位就一直走回退公式（白灰，本意是这里的橙粉，用户 11-01 定修成本意）
+  atmosphere.cloudLight = light;
   useEffect(() => {
     if (!ready) return;
     advance(performance.now());
     release();
   }, [ready, advance, release]);
-  useEffect(
-    () => () => {
-      atmosphere.cloudsOnly = false;
-      atmosphere.cloudLight = null;
-    },
-    [],
-  );
   return null;
 };
 

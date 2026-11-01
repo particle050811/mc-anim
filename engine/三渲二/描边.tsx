@@ -50,7 +50,7 @@ const 变体 = (m: THREE.Material, 遮罩: boolean): THREE.Material => {
       };
       v.customProgramCacheKey = () => `${m.customProgramCacheKey()}|描边遮罩`;
     } else {
-      // 写 0 而不是 colorWrite = false：three 按 renderOrder、材质 id 排序，挡在前面的墙可能排在描边对象后面画，只写深度就擦不掉它的遮罩，墙边会透出轮廓线
+      // 写 0 而不是 colorWrite = false：three 按 renderOrder、材质先后排序（engine/core/稳定排序.ts），挡在前面的墙可能排在描边对象后面画，只写深度就擦不掉它的遮罩，墙边会透出轮廓线
       v.onBeforeCompile = (shader, renderer) => {
         m.onBeforeCompile(shader, renderer);
         shader.fragmentShader = shader.fragmentShader.replace('#include <dithering_fragment>', '#include <dithering_fragment>\n\tgl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );');
