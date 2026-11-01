@@ -31,7 +31,7 @@ const 建来源 = async (dir: string): Promise<按版本的地形> => {
     if (!idx) 索引.set(文件, (idx = fetchRange(文件, 0, tileHeaderLen).then((ab) => decodeTileHeader(new Uint8Array(ab)))));
     const url = new URL(dataUrl(文件), location.href).href;
     return idx
-      .then((ix) => fetchSectionsInPool(url, ix[2 * slot], ix[2 * slot + 1], [{ off: 0, len: ix[2 * slot + 1], ctx: 工人ctx }]))
+      .then((ix) => fetchSectionsInPool(url, ix[2 * slot], ix[2 * slot + 1], [{ off: 0, len: ix[2 * slot + 1], ctx: 工人ctx, id: q }]))
       .then(([r]) => {
         数据.set(sectionKey(q), r.data);
         if (r.voxels) 现成.set(sectionKey(q), r.voxels);

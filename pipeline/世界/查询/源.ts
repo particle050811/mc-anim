@@ -4,7 +4,6 @@
 // 坐标一律是游戏坐标（x, y, z），y 朝上、z 朝南。
 import fs from 'node:fs';
 import path from 'node:path';
-import { gunzipSync } from 'node:zlib';
 import { 列号, type 解开的列段 } from '../列段.ts';
 import type { 区域源 } from '../区域源.ts';
 import type { 体素库 } from '../体素库.ts';
@@ -130,7 +129,7 @@ export class 包方块源 implements 方块源 {
       const buf = Buffer.alloc(长);
       fs.readSync(fd, buf, 0, 长, 偏);
       fs.closeSync(fd);
-      const d = P.decodeSection(gunzipSync(buf));
+      const d = this.库.区段解码.解区段(buf, { L: 0, i: si, j: sj });
       const 起 = new Uint32Array(d.runCounts.length + 1);
       for (let c = 0; c < d.runCounts.length; c++) 起[c + 1] = 起[c]! + d.runCounts[c]!;
       v = { d, 起 };

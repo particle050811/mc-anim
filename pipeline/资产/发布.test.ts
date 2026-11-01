@@ -1,8 +1,9 @@
 import fs from 'node:fs';
+import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { 字节附件名, 地形附件名, 比对发布锁, 读随发布表, type 应发 } from './发布.ts';
+import { 字节附件名, 地形附件名, 拉发布, 比对发布锁, 读随发布表, type 应发 } from './发布.ts';
 import { 附件缺, type 发布锁 } from './发布锁.ts';
 
 const 表 = { 仓库: 'a/b', 标签: 'assets-v1', 段: ['6'] };
@@ -53,6 +54,29 @@ describe('挂 Release 发字节', () => {
       fs.mkdirSync(path.join(根, 'terrain', '主世界', 'abc123'), { recursive: true });
       expect(附件缺(地形, 根)).toBe(0);
     } finally {
+      fs.rmSync(根, { recursive: true, force: true });
+    }
+  });
+  it('pull：发布锁比 Release 新（附件 404）马上报清楚，不重试几分钟，也不写进数据根', async () => {
+    const 根 = fs.mkdtempSync(path.join(os.tmpdir(), '发布-'));
+    const 请求: string[] = [];
+    const 服 = http.createServer((q, r) => {
+      请求.push(`${q.method} ${q.url}`);
+      r.statusCode = 404;
+      r.end();
+    });
+    await new Promise<void>((好) => 服.listen(0, '127.0.0.1', 好));
+    const 口 = (服.address() as { port: number }).port;
+    const 原 = process.env.NO_PROXY;
+    process.env.NO_PROXY = '127.0.0.1';
+    try {
+      await expect(拉发布(锁({ 附件: [锁().附件[1]!] }), 根, `http://127.0.0.1:${口}`)).rejects.toThrow(/Release assets-v1 上没有 terrain-abc123\.tar.*anim assets pack --上传/);
+      expect(请求).toEqual(['HEAD /a/b/releases/download/assets-v1/terrain-abc123.tar']);
+      expect(fs.existsSync(path.join(根, 'terrain'))).toBe(false);
+    } finally {
+      if (原 === undefined) delete process.env.NO_PROXY;
+      else process.env.NO_PROXY = 原;
+      服.close();
       fs.rmSync(根, { recursive: true, force: true });
     }
   });

@@ -1,5 +1,5 @@
-// 区段包格式（区段包.ts）：区段、块文件头编了再解回来一样；块里各级区段的索引位置来回对得上；区段 → 体素块按列铺对；粗高度图查得对。
-// 一个固定区段编出来的字节（头 36 字节和整段的 sha256）存在 金样/区段包.json：格式一变，已经烘焙好的地形包就读不对了。
+// 区段包格式（区段包.ts）：块文件头编了再解回来一样，别的格式版本报清楚；块里各级区段的索引位置来回对得上；区段 → 体素块按列铺对；粗高度图查得对。
+// 块文件头的字节存在 金样/区段包.json：格式一变，已经烘焙好的地形包就读不对了。区段本身的编解码和金样在 pipeline/世界/烘焙/区段编码.test.ts（engine 不引 pipeline）。
 // 区段包.ts 引了方块表（数据根里的资产），这里换成空表：这些测试用不到方块。
 import crypto from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
@@ -31,19 +31,13 @@ const 造区段 = (种子: number, L = 2, nz = 20): import('./区段包.ts').Sec
   }
   return { L, i: -3, j: 7, kBottom: -5, nz, palette: Uint16Array.from([0, P.noBiome, 1, 0, 2, P.noBiome, 3, 2]), runCounts, paletteIndex: Uint16Array.from(号), runLengths: Uint16Array.from(长) };
 };
-const 平 = (d: import('./区段包.ts').SectionData) => ({ ...d, palette: [...d.palette], runCounts: [...d.runCounts], paletteIndex: [...d.paletteIndex], runLengths: [...d.runLengths] });
 
 describe('区段包', () => {
-  it('区段编了再解回来一样（解的时候输入不从 0 偏移也行）', () => {
-    for (const 种 of [1, 2, 3]) {
-      const d = 造区段(种);
-      const 字节 = P.encodeSection(d);
-      const 错位 = new Uint8Array(字节.length + 3);
-      错位.set(字节, 3);
-      expect(平(P.decodeSection(字节))).toEqual(平(d));
-      expect(平(P.decodeSection(错位.subarray(3)))).toEqual(平(d));
-    }
-    expect(() => P.decodeSection(new Uint8Array(40))).toThrow(/版本 1/);
+  it('块文件头是别的格式版本：报清楚（旧包要 anim assets pull 或转码），不当成能读', () => {
+    const 头 = P.encodeTileHeader(0, 0, new Uint32Array(2 * P.tileEntryCount));
+    new DataView(头.buffer).setUint32(4, 1, true);
+    expect(() => P.decodeTileHeader(头)).toThrow(/格式 1.*anim assets pull/);
+    expect(() => P.decodeTileHeader(new Uint8Array(P.tileHeaderLen))).toThrow(/不是块文件/);
   });
   it('块文件头编了再解回来一样；索引项数是各级一边区段数的平方和', () => {
     let 项 = 0;
@@ -91,12 +85,8 @@ describe('区段包', () => {
     expect(P.hasSection(图, { L: 0, i: -2, j: 0 })).toBe(true);
     expect(P.hasSection(图, { L: 0, i: 5, j: 0 })).toBe(false);
   });
-  it('固定区段编出来的字节（金样）', async () => {
-    const 字节 = P.encodeSection(造区段(42));
+  it('块文件头的字节（金样）', async () => {
     const 文 = JSON.stringify({
-      长: 字节.length,
-      头: Buffer.from(字节.subarray(0, 36)).toString('hex'),
-      sha256: crypto.createHash('sha256').update(字节).digest('hex'),
       块头sha256: crypto.createHash('sha256').update(P.encodeTileHeader(1, -1, Uint32Array.from({ length: 2 * P.tileEntryCount }, (_, k) => k))).digest('hex'),
       粗高度指纹: P.coarseHeightFingerprint(P.decodeCoarseHeight({ 粗高度: { 格: 32, x0: -64, y0: 0, nx: 2, ny: 1, 高: Buffer.from(new Int16Array([3, -32768]).buffer).toString('base64') } })),
     }, null, 1);

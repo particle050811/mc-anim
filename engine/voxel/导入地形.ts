@@ -1,7 +1,7 @@
 // 导入地形：把存档导入的区段包（格式见 engine/voxel/区段包.ts）接进体素世界。
 // 包在数据根的 terrain/<包名>/<版本>/ 下（engine/voxel/区段包位置.ts），经 engine/core/数据源.ts 取（取包时定下版本目录，同一个包的文件都从这一版取）：
 //   包.json 一开始就取（粗高度图要同步查）；区段按每帧要的现取：块文件先按 Range 取头部索引，要的区段按偏移排好、挨着的并成一次 Range 请求，
-//   交给区段工人（区段工人池.ts）取回、解开 gzip、换成体素块（导入区段.ts）；主线程只收结果。工人换好的体素块用一次就交出去（`区段` 返回、体素世界转交给网格工人），
+//   交给区段工人（区段工人池.ts）取回、解码、换成体素块（导入区段.ts）；主线程只收结果。工人换好的体素块用一次就交出去（`区段` 返回、体素世界转交给网格工人），
 //   要第二次的（网格被挤掉、镜头又回来）在主线程上从留着的区段数据重换，两边同一份纯函数，结果一样。
 //   编排用的粗高度是冻结进仓库的那份（engine/voxel/冻结粗高度.ts），包.json 取到后和它比一次指纹，对不上只报警。
 //   解开的区段留着给同标签页的各帧、各来源共用，按最近用到淘汰，总量有上限（见 `maxCachedBytes`）。
@@ -105,7 +105,7 @@ const loadSections = (pack: 包, sections: SectionId[], requestRound: number, ct
       const url = absoluteUrl(`${pack.dir}/${fileName}`);
       return Promise.all(
         jobs.map((job) =>
-          fetchSectionsInPool(url, job.start, job.len, job.parts.map((part) => ({ off: part.off - job.start, len: part.len, ctx }))).then((out: 区段结果[]) =>
+          fetchSectionsInPool(url, job.start, job.len, job.parts.map((part) => ({ off: part.off - job.start, len: part.len, ctx, id: part.section }))).then((out: 区段结果[]) =>
             job.parts.forEach((part, i) => {
               storeSection(pack, part.section, out[i].data, requestRound);
               if (out[i].voxels) ready.set(sectionKey(part.section), { voxels: out[i].voxels!, lastRound: requestRound });

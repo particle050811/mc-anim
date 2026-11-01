@@ -4,6 +4,7 @@
 // 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（资产/随仓库.ts）。
 // 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（资产/发布.ts）。
 // --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
+import { 解码器源码过期 } from '../../世界/区段解码器.ts';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -241,6 +242,9 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
       }
     }
   }
+
+  // 区段解码器：改了 wasm/ 的源码没重编，解码的还是旧字节（不要求这台机器装 asc）
+  if (c.存在('wasm/区段解码.ts') && 解码器源码过期(c.存在('engine/voxel/区段解码器.生成.ts') ? c.读('engine/voxel/区段解码器.生成.ts') : '', c.读('wasm/区段解码.ts'))) 报.错('wasm/区段解码.ts 和 engine/voxel/区段解码器.生成.ts 记的源码 sha256 对不上：anim world 解码器 重编', 'wasm/区段解码.ts');
 
   // 段声明的地形、cue 里的资产
   const 地形 = (c.读json('assets/地形版本.json') ?? {}) as 地形表;
