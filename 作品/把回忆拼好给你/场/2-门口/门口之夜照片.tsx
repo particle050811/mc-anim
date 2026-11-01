@@ -157,7 +157,7 @@ const 画卡 = (ctx: CanvasRenderingContext2D, 世界: HTMLCanvasElement, 帧: n
   }
 };
 
-export const 门口之夜照片: React.FC<{ 帧: number; 宽?: number; 高?: number }> = ({ 帧, 宽 = 1280, 高 = 720 }) => {
+export const 门口之夜照片: React.FC<{ 帧: number; 前帧?: number; 宽?: number; 高?: number }> = ({ 帧, 前帧, 宽 = 1280, 高 = 720 }) => {
   const ref底 = useRef<HTMLCanvasElement>(null);
   const ref = useRef<HTMLCanvasElement>(null);
   const dpr = canvasDpr(1);
@@ -176,7 +176,7 @@ export const 门口之夜照片: React.FC<{ 帧: number; 宽?: number; 高?: num
   );
   return (
     <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden', background: '#000' }}>
-      <门口之夜画布 帧={定了 ? 照片帧 : 帧} 宽={宽} 高={高} 捕获={定了 ? 合成 : undefined} style={定了 ? { visibility: 'hidden' } : undefined} />
+      <门口之夜画布 帧={定了 ? 照片帧 : 帧} 前帧={定了 ? undefined : 前帧} 宽={宽} 高={高} 捕获={定了 ? 合成 : undefined} style={定了 ? { visibility: 'hidden' } : undefined} />
       {定了 && <canvas ref={ref底} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />}
       {帧 >= 下帧 && (
         <像素聊天栏

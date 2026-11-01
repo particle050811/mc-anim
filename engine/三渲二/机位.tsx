@@ -36,6 +36,8 @@ export type 透视机位参数 = {
   视角?: number;
   近?: number;
   远?: number;
+  /** 不给 = 画布宽 ÷ 画布高 */
+  宽高比?: number;
 };
 
 export type 机位参数 = 正交机位参数 | 透视机位参数;
@@ -139,7 +141,7 @@ export const 机位: React.FC<{ 参数: 机位参数 }> = ({ 参数 }) => {
     设正交相机(camera as THREE.OrthographicCamera, 算正交取景(参数, size.width, size.height, dpr));
   } else {
     if (!(camera as THREE.PerspectiveCamera).isPerspectiveCamera) throw new Error('透视机位要透视相机');
-    设透视相机(camera as THREE.PerspectiveCamera, 参数, size.width / size.height);
+    设透视相机(camera as THREE.PerspectiveCamera, 参数, 参数.宽高比 ?? size.width / size.height);
   }
   return null;
 };
@@ -156,7 +158,7 @@ export const 做机位相机 = (p: 机位参数, 宽: number, 高: number, dpr: 
     return cam;
   }
   const cam = new THREE.PerspectiveCamera();
-  设透视相机(cam, p, 宽 / 高);
+  设透视相机(cam, p, p.宽高比 ?? 宽 / 高);
   return cam;
 };
 
