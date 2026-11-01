@@ -20,7 +20,7 @@ const 收错 = (c: 检查上下文, 输出: string, 报: 报告, 前缀: string,
 /**
  * tsc 增量缓存，每个检出一份，不进 Git（node_modules 被忽略）、删 worktree 时一起没。tsc 按文件内容哈希和编译选项判断，TS 版本不同整份作废；
  * 错误也记在里面，没改文件再跑照样报。anim check --深 不读不写缓存，从头查一遍。
- * ruff 不开缓存：58 个 Python 文件不开缓存也只要约 40 毫秒，开了量不出差别（交替 6 轮）。
+ * ruff 不开缓存：Python 文件少，省不出时间。
  */
 export const tsc缓存文件 = (c: 检查上下文) => c.绝对('node_modules/.cache/anim-check/tsc.tsbuildinfo');
 
