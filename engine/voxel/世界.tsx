@@ -17,7 +17,8 @@ import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
 import type { V3 } from '../model/parts.tsx';
-import { shadowMesh, pickDirs, backlitDirs, voxelMaterial, faceGroupMesh, type VoxelMesh, type MaterialClass } from './材质.ts';
+import { shadowMesh, pickDirs, backlitDirs, voxelMaterial, faceGroupMesh, releaseVoxelMeshes, type VoxelMesh, type MaterialClass } from './材质.ts';
+import { 清空容器池 } from './容器池.ts';
 import { visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
@@ -28,7 +29,7 @@ const maxCachedFaces = 6_000_000;
 const materialClasses: MaterialClass[] = ['实心', '镂空', '实心树叶', '水', '花草'];
 
 // 区段网格（CPU 这边的数组）按世界键跨渲染器留着：拼段的下一截是新的 Canvas、新的 WebGL 上下文，前一截建过的区段不用再取、再换体素块、再建网格，只重新上传。
-// 显存那份上传后放掉了 CPU 数组（releaseCpuArray 只断开 BufferAttribute 的引用），这里留的是同一批数组。总面数有上限（每面 88 字节），超了丢最久没画的。
+// 显存里那份归各上下文（faceGroupMesh 传完不留 CPU 数组），这里留的就是这批数组。总面数有上限（每面 88 字节），超了丢最久没画的。
 // 上限要装得下一整帧（飞越边城一帧约 560 万面），装不下的话切截时只有一部分接得上
 type Kept = { mesh: SectionMesh | null; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null; used: number };
 const kept = new Map<string, Kept>();
@@ -57,30 +58,24 @@ const trimKept = () => {
 // 投影：和 meshes 共用顶点的只进阴影图的网格（花草、水不投影）
 type Entry = { meshes: VoxelMesh[]; shadowMeshes: VoxelMesh[]; plants: VoxelMesh | null; box: number[]; faceCount: number; used: number; kept: Kept };
 type World = { cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number };
-// 按渲染器分：three 网格上传后放掉了 CPU 数组（见 releaseCpuArray），换了 WebGL 上下文（拼段的下一截是新的 Canvas）没法再上传，要重建（区段网格还在 `kept` 里就从那里拿）
+// 按渲染器分：three 网格的顶点在显存里，属于这个 WebGL 上下文（容器池.ts），换了上下文（拼段的下一截是新的 Canvas）要重建（区段网格还在 `kept` 里就从那里拿）
 const worlds = new WeakMap<THREE.WebGLRenderer, Map<string, World>>();
 // 还在后台建区段、这一帧画不全的体素世界：屏幕AO 看到不空就跳过这一次绘制（反正截图前建齐了还要再画一次），省掉一整遍画半截场景的 GPU 活
 export const voxelsPending = new Set<object>();
 const probe = newSurface();
 
-// 显存里有了就把 CPU 这边的数组放掉（区段网格只上传一次，之后只改画哪几组朝向）
-function releaseCpuArray(this: THREE.BufferAttribute) {
-  (this as unknown as { array: null }).array = null;
-}
-
 // 区段直接用包里解出来的（没有这一块就是空的，见 体素来源.区段）
 const emptyEntry = (rec: Kept): Entry => ({ meshes: [], shadowMeshes: [], plants: null, box: [], faceCount: 0, used: 0, kept: rec });
 // 树叶：第 0 级照游戏「高品质」镂空，粗级照 Voxy 画成实心（区段出网格 的第二个参数 q.L >= 1）
-const meshToEntry = (sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, '原点' | '格' | 'nz'>, section: SectionId, rec: Kept): Entry => {
+const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, '原点' | '格' | 'nz'>, section: SectionId, rec: Kept): Entry => {
   const [x0, y0, sizeM] = sectionBounds(section);
   const box = [x0, y0, voxels.原点[2], x0 + sizeM, y0 + sizeM, voxels.原点[2] + voxels.nz * voxels.格];
   const meshes: VoxelMesh[] = [];
   const shadowMeshes: VoxelMesh[] = [];
   let plantMesh: VoxelMesh | null = null;
   for (const materialClass of materialClasses) {
-    const mesh = faceGroupMesh(sectionMesh[materialClass], materialClass, voxels.原点, voxels.格, box);
+    const mesh = faceGroupMesh(ctx, sectionMesh[materialClass], materialClass, voxels.原点, voxels.格, box);
     if (!mesh) continue;
-    for (const attr of Object.values(mesh.geometry.attributes)) (attr as THREE.BufferAttribute).onUpload(releaseCpuArray);
     meshes.push(mesh);
     if (materialClass === '花草') plantMesh = mesh;
     if (materialClass !== '花草' && materialClass !== '水') shadowMeshes.push(shadowMesh(mesh));
@@ -122,8 +117,17 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const delayHandle = useRef<number | null>(null); // 拦着截图的 delayRender
   const toBuild = useRef<SectionId[]>([]); // 最近一次渲染还没建的，每次渲染整个换掉
   const building = useRef(false); // 后台在建
+  const ctx = gl.getContext() as WebGL2RenderingContext;
   let glWorlds = worlds.get(gl);
-  if (!glWorlds) worlds.set(gl, (glWorlds = new Map()));
+  if (!glWorlds) {
+    const newWorlds = (glWorlds = new Map<string, World>());
+    worlds.set(gl, newWorlds);
+    // 上下文恢复后旧容器全部作废，还拿它们画不报错、只是地形没了（three 重传不了：容器归 容器池.ts 管）。清掉，下一次渲染整个重建，网格从 `kept` 拿
+    gl.domElement.addEventListener('webglcontextrestored', () => {
+      newWorlds.clear();
+      清空容器池(ctx);
+    });
+  }
   let maybeWorld = glWorlds.get(worldKey);
   if (!maybeWorld) glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0 }));
   const world = maybeWorld;
@@ -192,7 +196,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
             const x = inFlight.shift()!;
             const mesh = x.m && (await x.m);
             const rec = x.rec ?? keep(keptKey(worldKey, x.q), { mesh, V: x.V, used: keptClock });
-            putEntry(x.q, x.V && mesh ? meshToEntry(mesh, x.V, x.q, rec) : emptyEntry(rec));
+            putEntry(x.q, x.V && mesh ? meshToEntry(ctx, mesh, x.V, x.q, rec) : emptyEntry(rec));
           };
           const t = performance.now();
           for (const section of qs) {
@@ -252,7 +256,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
     for (const [k, entry] of all) {
       if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
-      for (const mesh of [...entry.meshes, ...entry.shadowMeshes]) mesh.geometry.dispose();
+      releaseVoxelMeshes(ctx, entry.meshes, entry.shadowMeshes);
       world.faceCount -= entry.faceCount;
       cache.delete(k);
     }

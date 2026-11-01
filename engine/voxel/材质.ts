@@ -32,6 +32,7 @@ import { selfLight } from '../light/光照配比.ts';
 import { shadowFrustums } from '../light/级联阴影.ts';
 import { blockAtlas, blockAtlasGlsl } from './真实方块图集.ts';
 import { posScale, groupCount, skirtGroupStart, type FaceGroup } from './网格.ts';
+import { 传顶点, 顶点属性, 还容器, type 顶点数组 } from './容器池.ts';
 import { patchWaterShader } from './水面.ts';
 import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
 
@@ -162,14 +163,24 @@ const quadIndexFor = (quads: number) => {
 };
 
 // 一组面 → 网格（全部朝向都在里面，每帧用 挑朝向 只画朝着镜头的几组）。原点：体素块原点（世界坐标，米）；格：一格几米；盒子：范围（场景坐标）
-export type VoxelMesh = THREE.Mesh & { userData: { 段: number[] } };
-export const faceGroupMesh = (group: FaceGroup, materialClass: MaterialClass, origin: number[], cellM: number, box: number[]): VoxelMesh | null => {
+export type VoxelMesh = THREE.Mesh & { userData: { 段: number[]; 传: () => void } };
+// 第一次被哪个视锥碰到才传顶点：three 对碰到的物体紧接着 objects.update，那时属性要已经有容器
+function uploadWhenHit(this: VoxelMesh, frustum: THREE.Frustum) {
+  const hit = frustum.intersectsObject(this);
+  if (hit) this.userData.传();
+  return hit;
+}
+export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, materialClass: MaterialClass, origin: number[], cellM: number, box: number[]): VoxelMesh | null => {
   if (!group.n) return null;
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(group.pos, 3));
-  geo.setAttribute('uv', new THREE.BufferAttribute(group.uv, 2));
-  geo.setAttribute('tex', new THREE.BufferAttribute(group.tex, 4));
-  geo.setAttribute('col', new THREE.BufferAttribute(group.col, 4, true));
+  const geo = new THREE.BufferGeometry<THREE.NormalOrGLBufferAttributes>();
+  const pos = 顶点属性(ctx, group.pos, 3);
+  const uv = 顶点属性(ctx, group.uv, 2);
+  const tex = 顶点属性(ctx, group.tex, 4);
+  const col = 顶点属性(ctx, group.col, 4, true);
+  geo.setAttribute('position', pos);
+  geo.setAttribute('uv', uv);
+  geo.setAttribute('tex', tex);
+  geo.setAttribute('col', col);
   geo.setIndex(quadIndexFor(group.n));
   geo.setDrawRange(0, group.n * 6);
   // 位置存的是 以格为单位 × 64 的整数：网格缩小 64 / 格 倍；包围球按盒子给（three 自己算会按整数坐标算）
@@ -177,14 +188,34 @@ export const faceGroupMesh = (group: FaceGroup, materialClass: MaterialClass, or
   const center = [(box[0] + box[3]) / 2 - origin[0], (box[1] + box[4]) / 2 - origin[1], (box[2] + box[5]) / 2 - origin[2]];
   const radius = Math.hypot(box[3] - box[0], box[4] - box[1], box[5] - box[2]) / 2;
   geo.boundingSphere = new THREE.Sphere(new THREE.Vector3(center[0] * k, center[1] * k, center[2] * k), radius * k);
-  const mesh = new THREE.Mesh(geo, [voxelMaterial(materialClass)]) as unknown as VoxelMesh;
+  const mesh = new THREE.Mesh(geo as unknown as THREE.BufferGeometry, [voxelMaterial(materialClass)]) as unknown as VoxelMesh;
   mesh.userData.段 = group.段;
+  // 传完不留数组的引用：CPU 这边那份归 世界.tsx 的 `kept` 管，被它挤掉就该放
+  let toUpload: [THREE.GLBufferAttribute, 顶点数组][] | null = [[pos, group.pos], [uv, group.uv], [tex, group.tex], [col, group.col]];
+  mesh.userData.传 = () => {
+    if (!toUpload) return;
+    for (const [attr, array] of toUpload) 传顶点(ctx, attr, array);
+    toUpload = null;
+  };
+  mesh.intersectsFrustum = uploadWhenHit;
   mesh.position.set(origin[0], origin[1], origin[2]);
   mesh.scale.setScalar(1 / k);
   mesh.receiveShadow = true;
   mesh.matrixAutoUpdate = false;
   mesh.updateMatrix();
   return mesh;
+};
+
+// 释放一块区段的网格：顶点容器还回池（投影网格和画面网格共用属性，只还一遍）。three 的 dispose 会删它看到的属性和索引，所以先摘掉：
+// 共用索引还挂在别的网格上，删了下一帧又要重传 1.57 MB；它按用到的最大面数翻倍长，换下来的旧索引没人引用后由垃圾回收放掉，最多留一串翻倍的
+export const releaseVoxelMeshes = (ctx: WebGL2RenderingContext, meshes: VoxelMesh[], shadowMeshes: VoxelMesh[]) => {
+  for (const mesh of meshes) for (const attr of Object.values(mesh.geometry.attributes)) 还容器(ctx, (attr as unknown as THREE.GLBufferAttribute).buffer);
+  for (const mesh of [...meshes, ...shadowMeshes]) {
+    const geo = mesh.geometry;
+    geo.index = null;
+    geo.attributes = {};
+    geo.dispose();
+  }
 };
 
 // 只画看得见的几组朝向（看得见[g]：第 g 组朝着镜头）：连续几组并成一段一次绘制。只给了前 7 组（`背光朝向`）时，裙边四组跟着各自朝向走
@@ -210,8 +241,10 @@ export const pickDirs = (mesh: VoxelMesh, visible: boolean[]) => {
 // 主画面不画它：three 主画面和阴影遍都用 intersectsFrustum 挑物体，只有级联阴影的视锥才放行。
 // 花草、水不投影；镂空树叶按实心投影（阴影图用 three 自带深度材质，远处看的是整团树冠的影子）。
 const shadowMaterial = new THREE.MeshBasicMaterial();
-function shadowOnlyFrustumTest(this: THREE.Mesh, frustum: THREE.Frustum) {
-  return shadowFrustums.has(frustum) && frustum.intersectsObject(this);
+function shadowOnlyFrustumTest(this: VoxelMesh, frustum: THREE.Frustum) {
+  const hit = shadowFrustums.has(frustum) && frustum.intersectsObject(this);
+  if (hit) this.userData.传();
+  return hit;
 }
 export const shadowMesh = (mesh: VoxelMesh): VoxelMesh => {
   const geo = new THREE.BufferGeometry();
@@ -221,6 +254,7 @@ export const shadowMesh = (mesh: VoxelMesh): VoxelMesh => {
   geo.boundingSphere = mesh.geometry.boundingSphere;
   const castMesh = new THREE.Mesh(geo, [shadowMaterial]) as unknown as VoxelMesh;
   castMesh.userData.段 = mesh.userData.段;
+  castMesh.userData.传 = mesh.userData.传;
   castMesh.matrix.copy(mesh.matrix);
   castMesh.matrixAutoUpdate = false;
   castMesh.castShadow = true;
