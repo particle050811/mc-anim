@@ -1,7 +1,7 @@
 // anim verify 逐帧：每帧 PNG 算 sha 存成一份有名字的记录（run/逐帧校验/<作品>/<名>/<段键>.tsv），之后再渲一次比，列出不同的帧。方便对比最终结果（用户 10-31 定）。
 // 和 anim verify 的分工：verify 比认可版的抽样帧、有阈值、可 accept；这里每帧都比、按字节、没有阈值，不写母版，不碰段签和认可。
 // 全程只打包一次（开会话，用完删包），每段过一次渲染闸，并发 1；同一页面按帧号升序连着渲、声音开着，走法和 renderMedia 出母版一样。
-// 同一批帧才能比：隔开的帧在同一页面连出，和连续渲或单帧出不一定相同（docs/渲染性能.md「静帧连出」）。所以 --比 永远照基准存的帧渲，给了 --帧 也只是渲到那里为止，前面的帧不省。
+// 同一批帧才能比：隔开的帧在同一页面连出，和连续渲或单帧出不保证相同（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。所以 --比 永远照基准存的帧渲，给了 --帧 也只是渲到那里为止，前面的帧不省。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,6 +18,8 @@ import { 记阶段 } from '../运行记录/阶段.ts';
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 等求解缓存写完 } from '../渲/求解缓存收集.ts';
 import { 同页出帧, 开会话, 找组合, 渲染标签, 缺的本机地形, 静帧文件 } from '../渲/渲.ts';
+import { 段渲染环境 } from '../渲/地形注入.ts';
+import { 记已量帧 } from '../渲/地形用量.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 
 const 级别 = '视频' as const;
@@ -111,7 +113,7 @@ const 提交文本 = () => {
   return x ? `${x.提交}${x.有改动 ? '+未提交改动' : ''}` : '不在 git 里';
 };
 
-type 一段 = { 段: 段信息; 帧: number[]; 基准: 校验记录 | null; 指纹: string };
+type 一段 = { 段: 段信息; 帧: number[]; 基准: 校验记录 | null; 指纹: string; 地形: Record<string, string> };
 
 export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式: '存' | '比'; 名: string; 帧: readonly number[] | null; 留图: string | null; 记录: 运行记录 }): Promise<number> => {
   const { 模式, 名, 记录 } = o;
@@ -157,7 +159,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
       错(`${s.键}：没有能渲的帧`);
       continue;
     }
-    计划.push({ 段: s, 帧: 要渲, 基准, 指纹: 指纹们[i]!.指纹 });
+    计划.push({ 段: s, 帧: 要渲, 基准, 指纹: 指纹们[i]!.指纹, 地形: 指纹们[i]!.项.地形 });
   }
   // 开跑前查：不覆盖，也不和上次留的混在一起；比的时候哪帧不同渲完才知道，按可能写的算
   if (o.留图) {
@@ -189,6 +191,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
           await 明细.包(() =>
             同页出帧(h, composition, x.帧, {
               打开声音: true,
+              环境: 段渲染环境(键, x.地形),
               每帧: (png, f) => {
                 const sha = crypto.createHash('sha256').update(png).digest('hex');
                 这次.set(f, { sha, 字节: png.length });
@@ -202,6 +205,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
               },
             }),
           );
+          await 记已量帧(键, x.帧);
           记阶段(记录.阶段, 标签, '出帧', t0, (Date.now() - t0) / 1000);
           await 明细.写出(记录.阶段, { 指纹: x.指纹.slice(0, 16) });
         });

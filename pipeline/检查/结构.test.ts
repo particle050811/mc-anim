@@ -87,6 +87,39 @@ describe('结构', () => {
     expect(v).toMatch(/纯模块的闭包里不能有 asset:/);
   });
 
+  it('渲染代码读时刻的 依据（点、下标、解构）要拦，透传和 交界.json 的不拦', async () => {
+    const r = await 跑(
+      '结构',
+      造仓库(基础(), {
+        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+        '作品/应力转动/段/7-甲/画面.tsx': [
+          "const 表 = { 甲: { 在: { 秒: 1 }, 依据: '说明' } };",
+          "const 传 = { 依据: 表.甲.依据 ?? '', 又: 1 };",
+          'const 传二 = { 依据: 表.甲.依据 };',
+          'export const 字 = 表.甲.依据;',
+          "export const 字二 = 表.甲['依据'];",
+          'const { 依据 } = 表.甲;',
+          'export default () => <div>{依据}{传.又}{传二.依据 ? 1 : 0}</div>;',
+          '',
+        ].join('\n'),
+      }),
+    );
+    const 行 = r.违规.filter((x) => x.includes('依据')).map((x) => /画面.tsx:(\d+)/.exec(x)?.[1]);
+    expect(行).toEqual(['4', '5', '6', '7']);
+  });
+
+  it('渲染代码 import assets/地形版本.json 要拦', async () => {
+    const r = await 跑(
+      '结构',
+      造仓库(基础(), {
+        'assets/地形版本.json': JSON.stringify({ 包: {} }),
+        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+        '作品/应力转动/段/7-甲/画面.tsx': "import 表 from '../../../../assets/地形版本.json';\nexport default () => <div>{Object.keys(表).length}</div>;\n",
+      }),
+    );
+    expect(r.违规.join('\n')).toMatch(/渲染代码不许 import 地形版本表/);
+  });
+
   it('getInputProps 只在 设置.ts；渲染代码里的 Math.random、Date.now、写死路径、相对路径资产都拦', async () => {
     const 根 = 造仓库(基础(), {
       'engine/段/设置.ts': "import { getInputProps } from 'remotion';\nexport const 读 = () => getInputProps();\n",

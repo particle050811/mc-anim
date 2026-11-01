@@ -1,4 +1,4 @@
-// 导入区段：区段工人和主线程跑同一份 importedSectionVoxels，工人拿到的是结构化克隆过的来源（RegExp、Uint8Array 的罩）和重新解码的区段数据，
+// 导入区段：区段工人和主线程跑同一份 importedSectionVoxels，工人拿到的是结构化克隆过的来源（RegExp、Uint8Array 的罩）和另一份区段数据（解码出来的，这里克隆一份代替），
 // 结果要逐字节一样；主线程没拿到工人换好的体素块时从留着的区段数据重换，所以区段数据不能被改。
 // 真实方块表要 `asset:` 方块表，vitest 里解析不了，换成几种方块的小表。
 import { describe, expect, it, vi } from 'vitest';
@@ -15,7 +15,7 @@ vi.mock('./真实方块表.ts', () => {
 });
 
 const { importedSectionVoxels, globRegex } = await import('./导入区段.ts');
-const { buildPackTables, decodeSection, encodeSection, noBiome, paddedSectionCols } = await import('./区段包.ts');
+const { buildPackTables, noBiome, paddedSectionCols } = await import('./区段包.ts');
 type 区段上下文 = import('./导入区段.ts').区段上下文;
 type SectionData = import('./区段包.ts').SectionData;
 
@@ -80,16 +80,16 @@ describe('导入区段', () => {
     expect(v.挖空).toBeUndefined();
   });
 
-  it('工人那边（来源结构化克隆、区段重新解码）和主线程逐字节一样，区段数据不被改', () => {
+  it('工人那边（来源、区段都是另一份）和主线程逐字节一样，区段数据不被改', () => {
     const data = section();
-    const before = encodeSection(data);
+    const before = structuredClone(data);
     const main = importedSectionVoxels(data, context({ info, cutBoxes, flattenAreas }));
-    const worker = importedSectionVoxels(decodeSection(encodeSection(data)), context(structuredClone({ info, cutBoxes, flattenAreas })));
+    const worker = importedSectionVoxels(structuredClone(data), context(structuredClone({ info, cutBoxes, flattenAreas })));
     expect(worker.vox).toEqual(main.vox);
     expect(worker.挖空).toEqual(main.挖空);
     expect(worker.色板).toEqual(main.色板);
     expect([worker.nx, worker.ny, worker.nz, worker.格, worker.原点]).toEqual([main.nx, main.ny, main.nz, main.格, main.原点]);
-    expect(encodeSection(data)).toEqual(before);
+    expect(data).toEqual(before);
     // 同一份数据重换一次（工人换好的已经交出去、网格又被挤掉）结果一样
     expect(importedSectionVoxels(data, context({ info, cutBoxes, flattenAreas })).vox).toEqual(main.vox);
   });

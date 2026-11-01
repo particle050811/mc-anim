@@ -88,7 +88,7 @@ const 打发布 = async (上传: boolean, 记录: Parameters<命令['跑']>[1]) 
     console.log(`${应.段数} 段：${应.字节.length} 件字节、${应.地形.length} 个地形包，${锁.附件.length} 个附件共 ${(大 / 1e9).toFixed(2)} GB；新打 ${新打.length} 个${应.私有.length ? `；私有不发 ${应.私有.length} 件：${应.私有.join('、')}` : ''}`);
     console.log(`写了 ${相对代码根(path.join(根, 发布锁名))}`);
     if (上传) await 上传发布(锁, 数据根());
-    else if (新打.length) console.log(`传上去：anim assets pack --上传（要 gh 登录），或手动 gh release upload ${锁.标签} <cache/发布/ 里的附件> --repo ${锁.仓库}`);
+    else if (新打.length) console.log(`传上去：anim assets pack --上传（要 gh 登录），或手动 gh release upload ${锁.标签} <cache/发布/ 里的附件> --repo ${锁.仓库}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
   } finally {
     c.收尾();
   }

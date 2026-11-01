@@ -4,8 +4,10 @@
 // 附件名只用 ASCII（GitHub 会改掉非 ASCII 的附件名）、按内容取：字节 bytes-<sha 列表的 sha 前 12 位>.tar，地形 terrain-<版本>.tar。内容变了名字跟着变，
 // 旧附件留在 Release 上，和 store/ 一样只增不改；tar 每次打出来字节都不同（时间戳），所以发布锁里已有的同名附件不重打。
 // 下载用系统的 curl、解包用系统的 tar（Windows 10 起自带 curl.exe 和 bsdtar），代理认 HTTPS_PROXY 这类环境变量。
+import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { 检查上下文 } from '../检查/上下文.ts';
@@ -179,8 +181,14 @@ const 放进store = (源: string, 根: string, s: string) => {
   return true;
 };
 
-/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉 */
-export const 拉发布 = async (锁: 发布锁, 根: string) => {
+/** 先问一下附件在不在：Release 比发布锁旧（pack 了还没 --上传）时是 404，curl 的重试要耗好几分钟才报，也看不出原因。连不上这类返回 null，交给下载那边重试 */
+const 附件没上传 = (url: string) =>
+  new Promise<boolean>((好) => {
+    execFile('curl', ['-sIL', '-o', os.devNull, '-w', '%{http_code}', '--connect-timeout', '20', '--max-time', '60', url], (_错, 出) => 好(String(出).trim().endsWith('404')));
+  });
+
+/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 只有测试换 */
+export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 'https://github.com') => {
   const 要 = 锁.附件.filter((a) => 附件缺(a, 根) > 0);
   if (!要.length) {
     console.log(`${锁.附件.length} 个附件的东西数据根里都有`);
@@ -193,7 +201,8 @@ export const 拉发布 = async (锁: 发布锁, 根: string) => {
   for (const a of 要) {
     const f = path.join(dir, a.名);
     if (!(fs.existsSync(f) && fs.statSync(f).size === a.大小 && (await 流sha(f)) === a.sha256)) {
-      const url = `https://github.com/${锁.仓库}/releases/download/${encodeURIComponent(锁.标签)}/${encodeURIComponent(a.名)}`;
+      const url = `${下载根}/${锁.仓库}/releases/download/${encodeURIComponent(锁.标签)}/${encodeURIComponent(a.名)}`;
+      if (await 附件没上传(url)) throw new Error(`Release ${锁.标签} 上没有 ${a.名}（${锁.仓库}，HTTP 404）：发布锁比 Release 新，这份代码 pack 过但附件还没传。要在打包的那台机器上 anim assets pack --上传，传完才能用`);
       console.log(`下 ${a.名}（${(a.大小 / 1e6).toFixed(0)} MB）`);
       const tmp = `${f}.下载中`;
       // -C - 断点续传：上回没下完的接着下。走代理时连接会半路断（Windows 上见过 schannel「server closed abruptly」），

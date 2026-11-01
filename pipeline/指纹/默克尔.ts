@@ -1,5 +1,6 @@
 // 默克尔指纹：模块哈希 = 规范化文本里每个 import 说明符换成目标的哈希后的 sha256。规范化用 esbuild transform（读仓库 tsconfig，去注释、类型、格式），
 // 文件路径和说明符的写法都不进哈希，所以只改注释、挪文件、改 import 写法（相对路径换别名）都不改哈希。依赖图用 esbuild bundle 取，和打包同一套解析和插件。
+// 时刻的 依据 说明文字也不进（去依据.ts）。这条没换 默克尔算法 的名字：换名字等于全部模块的哈希都变，而不含依据的模块本来就没变。
 // 叶子：asset:<id> 记资产锁 sha；npm 包记 lockfile 版本加子路径；json、图片、音频等非代码文件记字节 sha。
 // new URL('./x', import.meta.url)（Worker）当一条边；import.meta.webpackContext 只许出现在 注册.tsx，参数作为代码文本进哈希；有环的按强连通分量整体哈希。
 import crypto from 'node:crypto';
@@ -11,6 +12,7 @@ import { 代码根 } from '../环境/路径.ts';
 import { esbuild别名插件, esbuild资产插件, 非代码loader, type 资产记录 } from '../资产/esbuild插件.ts';
 import { 作品根 } from '../环境/作品.ts';
 import { 读作品资产锁 } from '../资产/资产锁.ts';
+import { 去依据 } from './去依据.ts';
 
 export const 默克尔算法 = 'merkle-v1';
 const sha = (x: crypto.BinaryLike) => crypto.createHash('sha256').update(x).digest('hex');
@@ -143,7 +145,7 @@ export const 建默克尔图 = async (全部入口: string[], 选项: 默克尔�
     const 有 = 模块们.get(f);
     if (有) return 有;
     const loader = 代码loader[path.extname(f)]!;
-    const 文本 = await 规范化(fs.readFileSync(f, 'utf8'), loader);
+    const 文本 = 去依据(await 规范化(fs.readFileSync(f, 'utf8'), loader));
     const 相对 = path.relative(根, f).split(path.sep).join('/');
     if (/\bimport\(\s*`/.test(文本)) throw new Error(`${相对}：import() 的说明符要写字面量，不能用模板字符串`);
     if (/\bimport\.meta\.webpackContext\b|\brequire\.context\b/.test(文本) && path.basename(f) !== '注册.tsx') throw new Error(`${相对}：webpackContext 只许在作品的 注册.tsx 里用（指纹按代码文本记它的参数）`);

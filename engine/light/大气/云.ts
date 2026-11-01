@@ -9,6 +9,7 @@ import { useThree } from '@react-three/fiber';
 import React, { useEffect, useState } from 'react';
 import { continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
+import { use写入者, 新写入槽 } from '../../core/写入者.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoLightAt, atmoUniforms, atmosphere, photonCloudsOn } from '../大气.ts';
 import { registerMidPass, type MidPassContext } from '../../voxel/中间步骤.ts';
 
@@ -620,6 +621,12 @@ export const defaultWeather: CloudWeather = { temperature: 0.5, humidity: 0.55, 
 // 去云默认镜头 20 米内删掉、再 30 米渐变回来：下坠穿云时四周还看得到云团擦过
 const defaultNear: [number, number] = [20, 30];
 const settings: Settings = { weather: defaultWeather, add: [], near: defaultNear, clear: null, seaY: 0, exposure: 1 };
+const 云设置槽 = 新写入槽();
+const 云设置复位 = () => {
+  settings.add = [];
+  settings.near = defaultNear;
+  settings.clear = null;
+};
 
 // 云先画到离屏的两张图（预乘的色、要写的深度），再合成到画布
 let pass: {
@@ -826,6 +833,7 @@ export const PhotonClouds: React.FC<{
   seaY,
   exposure = 1,
 }) => {
+  use写入者(云设置槽, 云设置复位);
   settings.weather = weather;
   settings.add = add;
   settings.near = near;
@@ -855,13 +863,5 @@ export const PhotonClouds: React.FC<{
     release();
     return off;
   }, [gl, advance, release]);
-  useEffect(
-    () => () => {
-      settings.add = [];
-      settings.near = defaultNear;
-      settings.clear = null;
-    },
-    [],
-  );
   return null;
 };

@@ -5,8 +5,8 @@
 // 和原来的雾合起来：雾 = 1 − (1 − 原来的雾) × 透过率，雾色仍是场景雾色。
 // 参数在共用 uniform（fogHeight = 起点、半衰、浓度），由 `useHeightFog` 按镜头设，浓度 0 = 不开（主世界、古城不开）。
 // 屏幕 AO 的第 2 遍“先减雾、乘 AO、再加雾”要按同一公式算雾（lib/体素/屏幕AO.tsx 用 `HEIGHT_FOG_GLSL`）。
-import { useEffect } from 'react';
 import * as THREE from 'three';
+import { use写入者, 新写入槽 } from '../core/写入者.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL } from './大气.ts';
 
 export type HeightFogParams = { start: number; halfLife: number; density: number };
@@ -38,8 +38,13 @@ for (const k of Object.keys(THREE.ShaderLib) as (keyof typeof THREE.ShaderLib)[]
 (THREE.UniformsLib.fog as Record<string, THREE.IUniform>).fogSun = fogSun;
 (THREE.UniformsLib.fog as Record<string, THREE.IUniform>).fogGlow = fogGlow;
 export const dirFog = { dir: glowDir, color: glowColor };
+const 方向雾槽 = 新写入槽();
+const 关方向雾 = () => {
+  glowDir.w = 0;
+};
 // 光向：场景坐标（Z 朝上）指向太阳；色：#rrggbb（sRGB，画面数值）；强：0～1
 export const useDirFog = (opts: { sunDir: number[]; color: string; strength: number } | null) => {
+  use写入者(方向雾槽, 关方向雾);
   if (opts) {
     const horizLen = Math.hypot(opts.sunDir[0], opts.sunDir[1]) || 1;
     // 场景 (x, y, z) → 世界 (x, z, −y)
@@ -51,12 +56,6 @@ export const useDirFog = (opts: { sunDir: number[]; color: string; strength: num
     glowColor.y = ((rgbInt >> 8) & 255) / 255;
     glowColor.z = (rgbInt & 255) / 255;
   } else glowDir.w = 0;
-  useEffect(
-    () => () => {
-      glowDir.w = 0;
-    },
-    [],
-  );
 };
 // 视线从 o 到 e（世界坐标）方向上的雾色
 export const DIR_FOG_GLSL = /* glsl */ `
@@ -70,16 +69,15 @@ vec3 dirFogColor( vec3 fc, vec3 o, vec3 e, vec4 sun, vec3 glow ) {
 }`;
 
 export const heightFog = heightFogVec;
+const 高度雾槽 = 新写入槽();
+const 关高度雾 = () => {
+  heightFogVec.z = 0;
+};
 export const useHeightFog = (params: HeightFogParams) => {
+  use写入者(高度雾槽, 关高度雾);
   heightFogVec.x = params.start;
   heightFogVec.y = params.halfLife;
   heightFogVec.z = params.density;
-  useEffect(
-    () => () => {
-      heightFogVec.z = 0;
-    },
-    [],
-  );
 };
 
 // 视线从 o 到 e（世界坐标）的空气量（米 × 相对密度）：∫ 2^(−(h − 起点) / 半衰) dt = L × (两端的相对密度之差) / (ln2 × Δh / 半衰)。

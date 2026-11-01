@@ -23,7 +23,7 @@ const h = { serveUrl: '/包', browser: {}, 参数: { inputProps: {}, gl: 'angle'
 const 组合 = { id: '甲' } as never;
 const 跑 = (帧们: number[], 逐帧?: boolean) => {
   const 进度: number[] = [];
-  return 出静帧们(h, 组合, '甲', 帧们, 出到, { 逐帧, 完成: (n) => 进度.push(n) }).then(() => 进度);
+  return 出静帧们(h, 组合, '甲', 帧们, 出到, { 逐帧, 环境: { 段标记: '甲' }, 完成: (n) => 进度.push(n) }).then(() => 进度);
 };
 
 afterAll(() => fs.rmSync(出到, { recursive: true, force: true }));
@@ -65,7 +65,7 @@ describe('静帧', () => {
     expect(连出提醒('甲', [0, 85], true)).toBeNull();
   });
   it('逐帧校验走的同页出帧可以开声音（照 renderMedia）', async () => {
-    await 同页出帧(h, 组合, [1], { 打开声音: true, 每帧: () => {} });
+    await 同页出帧(h, 组合, [1], { 打开声音: true, 环境: {}, 每帧: () => {} });
     expect(假.连出[0]).toMatchObject({ muted: false, frames: [1] });
   });
 });

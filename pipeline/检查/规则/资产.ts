@@ -1,9 +1,10 @@
 // 资产：资产表字段齐全（许可是 SPDX 表达式）、资产表和资产锁一一对应、私有的进 私有/ 库；
 // 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁.json）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
-// 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本、取了地形包的段都声明了；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
+// 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
 // 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（资产/随仓库.ts）。
 // 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（资产/发布.ts）。
 // --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
+import { 解码器源码过期 } from '../../世界/区段解码器.ts';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -242,6 +243,9 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
     }
   }
 
+  // 区段解码器：改了 wasm/ 的源码没重编，解码的还是旧字节（不要求这台机器装 asc）
+  if (c.存在('wasm/区段解码.ts') && 解码器源码过期(c.存在('engine/voxel/区段解码器.生成.ts') ? c.读('engine/voxel/区段解码器.生成.ts') : '', c.读('wasm/区段解码.ts'))) 报.错('wasm/区段解码.ts 和 engine/voxel/区段解码器.生成.ts 记的源码 sha256 对不上：anim world 解码器 重编', 'wasm/区段解码.ts');
+
   // 段声明的地形、cue 里的资产
   const 地形 = (c.读json('assets/地形版本.json') ?? {}) as 地形表;
   const 内容 = await 读内容(c);
@@ -251,7 +255,8 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
       for (const cue of s.定义?.声音 ?? []) if (cue.资产 !== undefined) 查(cue.资产, `${s.键} 第 ${cue.帧} 帧的 cue `, s.段文件);
     }
   }
-  // 取了地形包的段（闭包里有 packDir）：闭包里写到的登记过的包名都要在 段.地形 里。指纹的地形项只按 段.地形 记版本，漏写了换版本这段不会过期
+  // 取了地形包的段（闭包里有 packDir）：闭包里写到的登记过的包名没在 段.地形 里，只提示。真读到时页面直接报错（engine/voxel/区段包位置.ts）；
+  // 闭包里写到不等于会读（共用的 主世界地形.ts 带默认包名），报错的话段就收窄不了声明
   if (!('错误' in 内容) && !图.错误.length) {
     const 包名们 = new Set(Object.keys(地形.包 ?? {}));
     const 缓存 = new Map<string, Set<string>>();
@@ -263,7 +268,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
       const 用到 = new Set<string>();
       for (const f of 文件们) if (/\.[cm]?[jt]sx?$/.test(f) && c.存在(f)) for (const t of 字符串们(c, f, 缓存)) if (包名们.has(t)) 用到.add(t);
       const 漏 = [...用到].filter((名) => !s.定义!.地形.includes(名)).sort();
-      if (漏.length) 报.错(`${s.键} 的闭包会取地形包（${取包模块}），写到了 ${漏.join('、')}，段.ts 的 地形 里没有：地形包的版本只经 段.地形 进指纹`, s.段文件);
+      if (漏.length) 报.信息.push(`${s.键} 的闭包写到了 ${漏.join('、')}，段.ts 的 地形 里没有：真读到时渲染会报错`);
     }
   }
   for (const [名, v] of Object.entries(地形.包 ?? {})) {

@@ -1,5 +1,5 @@
 // 世界编辑核对用的地形来源：直接按版本取没登记的区段包 测试-修整-岛-编辑示例（anim world bake 测试-修整-编辑示例 烘的，声明里 登记 = false）。
-// 不走 engine/voxel/导入地形.ts：那边只认 assets/地形版本.json 登记过的包，登记一个包会让所有用地形的段过期。
+// 不走 engine/voxel/导入地形.ts：那边只认段声明、登记进 assets/地形版本.json 的包；这个包只是演示，不登记。它也不记地形用量（engine/voxel/地形用量.ts）。
 // 这里是它的精简版（不挖地标、不平整、不并 Range 请求），区段一样交给区段工人取、解、换体素块；版本写在 画面.tsx 里，换了版本本段指纹跟着变。
 import { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
@@ -31,7 +31,7 @@ const 建来源 = async (dir: string): Promise<按版本的地形> => {
     if (!idx) 索引.set(文件, (idx = fetchRange(文件, 0, tileHeaderLen).then((ab) => decodeTileHeader(new Uint8Array(ab)))));
     const url = new URL(dataUrl(文件), location.href).href;
     return idx
-      .then((ix) => fetchSectionsInPool(url, ix[2 * slot], ix[2 * slot + 1], [{ off: 0, len: ix[2 * slot + 1], ctx: 工人ctx }]))
+      .then((ix) => fetchSectionsInPool(url, ix[2 * slot], ix[2 * slot + 1], [{ off: 0, len: ix[2 * slot + 1], ctx: 工人ctx, id: q }]))
       .then(([r]) => {
         数据.set(sectionKey(q), r.data);
         if (r.voxels) 现成.set(sectionKey(q), r.voxels);

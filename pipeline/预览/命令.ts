@@ -13,6 +13,7 @@ import { 读作品资产锁 } from '../资产/资产锁.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
 import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
 import { 渲前跑cues } from '../段框架/自动.ts';
+import { 全表环境 } from '../渲/地形注入.ts';
 
 /** Remotion CLI 的 js 入口：用 node 直接跑，不经 npx（Windows 上 npx 是 .cmd） */
 const remotion入口 = () => {
@@ -39,7 +40,7 @@ export const 预览命令: Record<string, 命令> = {
     透传: true,
     // remotion.config.ts 在 Remotion CLI 进程里求值，靠 ANIM_WORK 知道是哪部作品（资产锁、求解入口按它取）。
     // 随仓库的字节、私有配乐（缺了换静音）先在这边备好，和 anim render 打包前一样（渲/渲.ts 的 打包）；段框架的段先对齐生成的声音文件（段框架/自动.ts）。
-    // 开着 Studio 时改了 段.ts 的声音不会自动重生成，要手跑 anim cues
+    // 开着 Studio 时改了 段.ts 的声音不会自动重生成，要手跑 anim cues。一个页面看全部段，地形版本传全表（渲/地形注入.ts），登记了新版本要重开
     跑: async (args) => {
       const 根 = 作品根();
       const 缺目录 = 缺的注册目录(根);
@@ -47,7 +48,7 @@ export const 预览命令: Record<string, 命令> = {
       for (const [k, x] of (await 渲前跑cues()).失败) console.error(`!! ${k} 的 anim cues 没跑通，Studio 里这段会报错：${x}`);
       补字节并报(根, 数据根());
       for (const x of 备好私有配乐(await 全部段(), 读作品资产锁(根), 数据根())) console.error(`!! ${缺配乐提示(x)}`);
-      return 前台跑([process.execPath, remotion入口(), 'studio', 相对代码根(path.join(根, 'index.ts')), ...args], { cwd: 代码根(), env: { ...process.env, ANIM_WORK: 作品名() } });
+      return 前台跑([process.execPath, remotion入口(), 'studio', 相对代码根(path.join(根, 'index.ts')), ...args], { cwd: 代码根(), env: { ...process.env, ...全表环境(), ANIM_WORK: 作品名() } });
     },
   },
 };

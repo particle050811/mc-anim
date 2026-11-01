@@ -42,6 +42,13 @@ describe('资产', () => {
     expect(违规.join('\n')).toMatch(/1 件音频的锁里没有时长、峰值、响度（如 音效\/没量）/);
   });
 
+  it('wasm/区段解码.ts 改了没重编要报（生成文件记的源码 sha 对不上），对得上放行', async () => {
+    const 生成 = (源: string) => `export const 源码sha256 = '${sha(源)}';\nexport const wasmBase64 = '';\n`;
+    const 好 = await 跑('资产', 造仓库(基础(), { 'wasm/区段解码.ts': 'a\n', 'engine/voxel/区段解码器.生成.ts': 生成('a\n') }));
+    expect(好.违规.filter((e) => e.includes('anim world 解码器'))).toEqual([]);
+    const 坏 = await 跑('资产', 造仓库(基础(), { 'wasm/区段解码.ts': 'b\n', 'engine/voxel/区段解码器.生成.ts': 生成('a\n') }));
+    expect(坏.违规.join('\n')).toMatch(/anim world 解码器 重编/);
+  });
   it('合规样例放行：代码 asset: 引公开资产、私有配音只走 cue、角色包引用都对上、许可待定只记数', async () => {
     const 根 = 造仓库(基础(), {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/李樱-脸', '公开', 'LicenseRef-待定')),
@@ -134,7 +141,7 @@ describe('资产', () => {
     }
   });
 
-  it('取地形包的段（闭包里有 区段包位置.ts）写到的登记包名都要在 段.地形 里；不取地形的段写到了也不管', async () => {
+  it('取地形包的段（闭包里有 区段包位置.ts）写到的登记包名没声明，只提示不拦（真读到时页面报错）；不取地形的段写到了也不管', async () => {
     const 地形表 = JSON.stringify({ 包: { 主世界: { 版本: 'v1', 许可: 'MIT', 可见性: '发布' }, 暮色: { 版本: 'v2', 许可: 'MIT', 可见性: '发布' } } });
     const 文件 = (地形: string) => ({
       'assets/地形版本.json': 地形表,
@@ -144,8 +151,12 @@ describe('资产', () => {
       '作品/应力转动/段/7-甲/画面.tsx':
         "import 图 from 'asset:贴图/甲';\nimport { packDir } from '@engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
     });
-    expect((await 跑('资产', 造仓库(基础(), 文件('["主世界"]')))).违规.filter((x) => x.includes('地形')).join('\n')).toMatch(/7-甲 的闭包会取地形包.*写到了 暮色/);
-    expect((await 跑('资产', 造仓库(基础(), 文件('["主世界", "暮色"]')))).违规).toEqual([]);
+    const 窄 = await 跑('资产', 造仓库(基础(), 文件('["主世界"]')));
+    expect(窄.违规).toEqual([]);
+    expect(窄.报.信息.join('\n')).toMatch(/7-甲 的闭包写到了 暮色/);
+    const 全 = await 跑('资产', 造仓库(基础(), 文件('["主世界", "暮色"]')));
+    expect(全.违规).toEqual([]);
+    expect(全.报.信息.join('\n')).not.toMatch(/闭包写到了/);
     const 不取 = 文件('[]');
     不取['作品/应力转动/段/7-甲/画面.tsx'] = "import 图 from 'asset:贴图/甲';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + 主世界名} />;\n";
     expect((await 跑('资产', 造仓库(基础(), 不取))).违规).toEqual([]);

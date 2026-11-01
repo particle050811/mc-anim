@@ -3,8 +3,8 @@
 // 柔档：影子里暗约 45%，背光侧面约是顶面一半；中档：影子里暗约 60%。四项比例照光影方案，绝对值按「受光顶面亮度和原来一样」定。
 // 柔档提亮：柔档四项一起乘 1.1，相当于只给受光的东西加曝光（雾色、天不变），影子深浅比例同柔档，抵掉柔档比改前平均暗的 10%。
 // 暮色森林游戏里没有太阳（维度把时间固定在 13000），主光是艺术选择：方位同 6-1-2（东偏南），仰角压到 32°，影子是树高的 1.6 倍长。
-import { useEffect } from 'react';
 import type { V3 } from '../model/parts.tsx';
+import { use写入者, 新写入槽 } from '../core/写入者.ts';
 import { 渲染输入 } from '../core/渲染设置.ts';
 
 export type LightMix = {
@@ -100,12 +100,11 @@ export const overworldMix: LightMix = { 直射: 8.4, 天光: 1.0, 环境光: 0.1
 // 两类方块材质（lib/体素/材质.ts、lib/方块网格.tsx）共用的自发光系数，着色器里是同一个 uniform（selfLight）。
 // 由灯组件按世界设（use自发光），灯卸下时回到主世界的值：Studio 里从暮色森林的镜头切到主世界、古城的镜头，不会带着暮色的值
 export const selfLight = { value: overworldMix.自发光 };
+const 自发光槽 = 新写入槽();
+const 回主世界自发光 = () => {
+  selfLight.value = overworldMix.自发光;
+};
 export const useSelfLight = (k: number) => {
+  use写入者(自发光槽, 回主世界自发光);
   selfLight.value = k;
-  useEffect(
-    () => () => {
-      selfLight.value = overworldMix.自发光;
-    },
-    [],
-  );
 };

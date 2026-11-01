@@ -1,6 +1,6 @@
 // 区段包：从存档导入的地形，按 lib/体素/区段.ts 的 (L, i, j) 一块块烘焙好的方块。
 // 存档（.mca）→ 列段（工具/导入/列段.ts）→ 区段包（工具/导入/烘焙.ts 写）→ 这里解成 lib/体素/生成.ts 的 体素块，交给网格。
-// 这个文件只管格式（纯函数，不碰 node:fs / zlib，浏览器里也能用；gzip 由调用方解：Node 用 `gunzipSync`，浏览器用 `DecompressionStream`）。
+// 这个文件只管块文件、包信息和体素块的格式（纯函数，不碰 node:fs，浏览器里也能用）；区段的编码在 pipeline/世界/烘焙/区段编码.ts，解码在 engine/voxel/区段解码.ts。
 //
 // ---------- 坐标 ----------
 // 场景坐标 Z 朝上、北 = +Y（游戏 −Z）、1 格 = 1 米；游戏坐标 y 朝上、z 朝南。包.json 的 原点 = [ox, oy, oz]：
@@ -16,16 +16,13 @@
 //   <ti>.<tj>.块     块文件：2048 米一块（最粗一级的一个区段，烘焙也按这个分块做），块里各级的区段打成一个文件，格式见下面的 块文件
 // 区段的核心（32 × 32 列，不算相邻那圈）里一列数据都没有的不存。
 //
-// 区段（块文件里的一段，gzip 解开后，小端）：
-//   偏移 0  "MCQD" 魔数     4  u32 版本 1
-//        8  i32 L、i32 i、i32 j
-//        20 i32 k底         存的最低一格的格号（第 L 级一格 2^L 米，场景 z = k底·2^L）；再往下当实心（网格那边下面当石头，不画）
-//        24 u32 nz          存了几格高；再往上全是空气
-//        28 u32 P           色板项数，色板[0] 固定是空气
-//        32 u32 R           段总数
-//        36 色板 u16[2P]    每项 (状态号, 群系号)，下标进 包.json 的 状态、群系；群系号 65535 = 不染色的方块，不记群系
-//        接着 段数 u16[34·34]、号 u16[R]、长 u16[R]
-//   34 × 34 列 = 核心 32 × 32 列加四周各一列相邻区段的格（同一级），按 (y, x) 排、x 先变（和 体素块 的 vox 一样）。
+// 区段（块文件里的一段，小端；L、i、j 由它在索引里的位置定，不存）：
+//   偏移 0  u16 nz          存了几格高；再往上全是空气
+//        2  i16 k底         存的最低一格的格号（第 L 级一格 2^L 米，场景 z = k底·2^L）；再往下当实心（网格那边下面当石头，不画）
+//        4  u16 P           色板项数，色板[0] 固定是空气
+//        6  色板 u16[2P]    每项 (状态号, 群系号)，下标进 包.json 的 状态、群系；群系号 65535 = 不染色的方块，不记群系
+//        接着区间编码流（逐格预测压缩，见 pipeline/世界/烘焙/区段编码.ts，不包 gzip）
+//   解出来是 SectionData：34 × 34 列 = 核心 32 × 32 列加四周各一列相邻区段的格（同一级），按 (y, x) 排、x 先变（和 体素块 的 vox 一样）。
 //   每列从上往下若干段，每段 号（色板下标）连续 长 格，一列的各段正好盖满 [k底, k底 + nz)；空气也成段，没有数据的列是一整段空气。
 //
 // 区段里只存地表附近：`kBottom` = ⌊(区段连同相邻那圈里最低的地表 − 4) / 2^L⌋（照 lib/体素/生成.ts 往地面下多留 4 米），地表 = 一列里最高的整格不透明方块的顶；
@@ -40,18 +37,17 @@ import { sectionCells, coarsestLevel, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
 
 export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 34 列
-const sectionMagic = 0x4451434d; // "MCQD" 按小端读出来的数
-const formatVersion = 1;
-const headerLen = 36;
+// 格式版本，写在块文件头和 包.json：1 是行程 + gzip（只有 pipeline/世界/烘焙/读区段.ts 还认，转码用），2 是逐格预测压缩（用户 10-31 定，docs/决策/0011-地形压缩.md）
+export const formatVersion = 2;
 export const noBiome = 65535;
 
 // ---------- 块文件 ----------
 // 一块一个文件，不一个区段一个：区段有十几万个，Remotion 列 public 目录只列前 1 万个、bundle 要一个个拷。
 // 文件（小端）：
-//   偏移 0  "MCQK" 魔数   4  u32 版本 1   8  i32 ti、i32 tj（块号：块的场景范围 [ti·2048, ti·2048 + 2048) × [tj·2048, …)）
+//   偏移 0  "MCQK" 魔数   4  u32 版本（formatVersion）   8  i32 ti、i32 tj（块号：块的场景范围 [ti·2048, ti·2048 + 2048) × [tj·2048, …)）
 //        16 索引：L = 0…6 依次，第 L 级 n² 项（n = 64 >> L，块里一边几个区段），按 (sj, si) 排、si 先变，区段 (i, j) = (ti·n + si, tj·n + sj)；
 //           每项 u32 偏移、u32 长（字节，偏移从文件开头算），长 0 = 没有这个区段
-//        接着各区段的数据（上面的区段格式，各自 gzip），按索引的顺序挨着放
+//        接着各区段的数据（上面的区段格式），按索引的顺序挨着放
 // 浏览器里先按 Range 取文件头（块头长 字节）拿到索引，再按 Range 取要的区段（lib/体素/导入地形.ts；Remotion 渲染和 Studio 的静态服务都支持单段 Range）。
 export const tileSizeM = sectionCells * 2 ** coarsestLevel; // 2048 米
 const tileMagic = 0x4b51434d; // "MCQK"
@@ -87,7 +83,9 @@ export const encodeTileHeader = (ti: number, tj: number, indexTable: Uint32Array
 };
 export const decodeTileHeader = (raw: Uint8Array): Uint32Array => {
   const dv = new DataView(raw.buffer, raw.byteOffset, tileHeaderLen);
-  if (dv.getUint32(0, true) !== tileMagic || dv.getUint32(4, true) !== formatVersion) throw new Error('不是版本 1 的块文件');
+  if (dv.getUint32(0, true) !== tileMagic) throw new Error('不是块文件');
+  const version = dv.getUint32(4, true);
+  if (version !== formatVersion) throw new Error(`块文件是格式 ${version}，这版代码只读格式 ${formatVersion}：地形包版本和 assets/地形版本.json 对不上，anim assets pull，或 anim world 转码 转过来`);
   return Uint32Array.from({ length: 2 * tileEntryCount }, (_, k) => dv.getUint32(16 + 4 * k, true));
 };
 
@@ -102,7 +100,7 @@ export type 包信息 = {
   粗高度: { 格: number; x0: number; y0: number; nx: number; ny: number; 高: string };
 };
 
-// 一个区段的数据（编码前 / 解码后、换成体素块之前）
+// 一个区段的数据（编码前 / 解码后、换成体素块之前）；解码（engine/voxel/区段解码.ts）出来的四个数组同一块缓冲
 export type SectionData = {
   L: number;
   i: number;
@@ -113,54 +111,6 @@ export type SectionData = {
   runCounts: Uint16Array; // 区段边² 个
   paletteIndex: Uint16Array;
   runLengths: Uint16Array;
-};
-
-export const encodeSection = (data: SectionData): Uint8Array => {
-  const paletteCount = data.palette.length / 2;
-  const runCount = data.paletteIndex.length;
-  const out = new Uint8Array(headerLen + (2 * paletteCount + paddedSectionCols * paddedSectionCols + 2 * runCount) * 2);
-  const dv = new DataView(out.buffer);
-  dv.setUint32(0, sectionMagic, true);
-  dv.setUint32(4, formatVersion, true);
-  dv.setInt32(8, data.L, true);
-  dv.setInt32(12, data.i, true);
-  dv.setInt32(16, data.j, true);
-  dv.setInt32(20, data.kBottom, true);
-  dv.setUint32(24, data.nz, true);
-  dv.setUint32(28, paletteCount, true);
-  dv.setUint32(32, runCount, true);
-  let offset = headerLen;
-  for (const array of [data.palette, data.runCounts, data.paletteIndex, data.runLengths]) {
-    out.set(new Uint8Array(array.buffer, array.byteOffset, array.byteLength), offset);
-    offset += array.byteLength;
-  }
-  return out;
-};
-
-export const decodeSection = (raw: Uint8Array): SectionData => {
-  // 拷进一块新的 ArrayBuffer，偏移从 0 起，u16 数组才对得齐
-  const ab = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
-  const dv = new DataView(ab);
-  if (dv.getUint32(0, true) !== sectionMagic || dv.getUint32(4, true) !== formatVersion) throw new Error('不是版本 1 的区段文件');
-  const paletteCount = dv.getUint32(28, true);
-  const runCount = dv.getUint32(32, true);
-  let offset = headerLen;
-  const readU16s = (count: number) => {
-    const array = new Uint16Array(ab, offset, count);
-    offset += count * 2;
-    return array;
-  };
-  return {
-    L: dv.getInt32(8, true),
-    i: dv.getInt32(12, true),
-    j: dv.getInt32(16, true),
-    kBottom: dv.getInt32(20, true),
-    nz: dv.getUint32(24, true),
-    palette: readU16s(2 * paletteCount),
-    runCounts: readU16s(paddedSectionCols * paddedSectionCols),
-    paletteIndex: readU16s(runCount),
-    runLengths: readU16s(runCount),
-  };
 };
 
 // 包里的状态号、群系号 → 体素值、染色（每个包建一次）

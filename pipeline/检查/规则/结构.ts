@@ -1,6 +1,6 @@
 // 结构：分层方向（engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册.tsx）、作品不互引、段不互引、场只接上一场的 末态.ts、不许引 核对/、
 // pipeline 只 import 纯模块、纯模块闭包无 react/three/remotion、getInputProps 只在 engine/段/设置.ts、渲染代码里不许有
-// Math.random、Date.now、相对路径引的资产、写死的路径或主机名。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
+// Math.random、Date.now、相对路径引的资产、写死的路径或主机名；不许 import 地形版本表、不许读时刻的 依据。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
 import os from 'node:os';
 import { 读内容 } from '../内容.ts';
 import { 代码后缀, 是渲染代码, 是纯模块, 是测试或声明, type 报告, type 检查上下文 } from '../上下文.ts';
@@ -61,6 +61,10 @@ export const 查分层 = async (c: 检查上下文, 报: 报告) => {
         continue;
       }
       if (!是渲染层(a)) continue; // remotion.config.ts 这类配置、工具脚本
+      if (到 === 'assets/地形版本.json') {
+        报.错(`渲染代码不许 import 地形版本表：${从}（整表进闭包，改任何一个包声明没声明的段都过期；版本由渲染入口按段传，见 engine/voxel/区段包位置.ts）`, 从);
+        continue;
+      }
       if (b.名 === 'pipeline' || (b.名 === '其他' && 代码后缀.test(到))) {
         报.错(`渲染代码不许 import 管线和工具代码：${从} → ${到}`, 从);
         continue;
@@ -139,6 +143,19 @@ const 是资产目录键 = (n: ts.Node) => {
   return ts.isCallExpression(调用) && ts.isIdentifier(调用.expression) && 调用.expression.text === '资产目录';
 };
 
+/** 交界.json 自己的 依据 字段（粗高度指纹，真的要读），不是时刻的说明 */
+const 依据可读 = new Set(['engine/voxel/主世界地形.ts']);
+/** 依据: x.依据、依据: x.依据 ?? ''：解事件、排段 一路往下传，不算读 */
+const 是透传依据 = (n: ts.Node) => {
+  const 上 = ts.isBinaryExpression(n.parent) && n.parent.left === n ? n.parent.parent : n.parent;
+  return ts.isPropertyAssignment(上) && 上.name.getText() === '依据';
+};
+/** 指纹不算时刻的 依据（指纹/去依据.ts），渲染代码读了它，改字就会改画面、段却不过期 */
+const 读依据 = (n: ts.Node) =>
+  (ts.isPropertyAccessExpression(n) && n.name.text === '依据' && !是透传依据(n)) ||
+  (ts.isElementAccessExpression(n) && ts.isStringLiteralLike(n.argumentExpression) && n.argumentExpression.text === '依据') ||
+  (ts.isBindingElement(n) && (n.propertyName ?? n.name).getText() === '依据');
+
 export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostname()) => {
   for (const p of c.本作品文件()) {
     if (!代码后缀.test(p) || /\.d\.[cm]?ts$/.test(p)) continue;
@@ -151,6 +168,7 @@ export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostna
         报.错('getInputProps 只能在 engine/段/设置.ts 里用（别处从 use设置() 取渲染设置）', p, 行号(sf, n));
       }
       if (!渲染 || 是测试或声明(p)) return;
+      if (读依据(n) && !依据可读.has(p)) 报.错('渲染代码不许读时刻的 依据：它是写给人看的说明，不进指纹（pipeline/指纹/去依据.ts）。要画出来的字另写一个字段', p, 行号(sf, n));
       if (ts.isPropertyAccessExpression(n)) {
         const 路 = 点路径(n)?.join('.');
         if (路 === 'Math.random' || 路 === 'Date.now') 报.错(`渲染代码里不许用 ${路}（同一帧每次渲出来要一样；要随机用固定种子）`, p, 行号(sf, n));

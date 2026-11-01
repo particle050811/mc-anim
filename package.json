@@ -41,6 +41,7 @@
     "@types/node": "24.19.0",
     "@types/react": "^19",
     "@types/three": "0.186.0",
+    "assemblyscript": "0.28.20",
     "pyright": "1.1.414",
     "typescript": "^5",
     "vitest": "5.0.3"

@@ -30,6 +30,8 @@ import { 压缩母版路径, 原母版路径, 叠层路径, 写指纹, 有母版
 import { 备好public目录 } from './public目录.ts';
 import { 删打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
+import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
+import { 开始整段量, 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
 import { 视频信息 } from './探测.ts';
 import { 出段签 } from '../段签/段签.ts';
 import { 漂移提示 } from '../段签/补.ts';
@@ -84,6 +86,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
   // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
   收求解缓存(browser);
+  收地形用量(browser);
   try {
     const 组合 = await 量阶段(收, 标签, '读组合', () =>
       getCompositions(serveUrl, {
@@ -97,6 +100,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
     if (收) console.log(`会话就绪：${阶段小结(收.slice(起))}`);
     return await fn({ serveUrl, browser, 参数, 组合 });
   } finally {
+    await 等地形用量写完();
     await browser.close({ silent: true });
     删打包(serveUrl);
   }
@@ -202,11 +206,13 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
         let code = 1;
         let 明细: 明细收集 | null = null;
         try {
+          开始整段量(r.段.键, r.指纹.指纹);
           明细 = await 量渲染(标签, opts.记录.阶段, t0, (钩子) => renderMedia({
             serveUrl: h.serveUrl,
             composition,
             outputLocation: tmp,
             inputProps: 参数.inputProps,
+            envVariables: 段渲染环境(r.指纹.段, r.指纹.项.地形),
             puppeteerInstance: h.browser,
             chromiumOptions: { gl: 参数.gl },
             codec: 参数.codec,
@@ -237,6 +243,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
           记耗时(渲染标签(r.段.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
           if (code === 0) console.log(`   ${r.段.键}：${秒.toFixed(0)} 秒 → ${原}`);
         }
+        await 记已量帧(r.段.键, Array.from({ length: r.段.段.帧数 }, (_, i) => i));
         // 还在渲染闸里：派生、转码都要解码整段母版
         const t1 = Date.now();
         let 有段签 = false;
@@ -316,6 +323,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
             composition,
             outputLocation: tmp,
             inputProps: 参数.inputProps,
+            envVariables: 段渲染环境(r.指纹.段, r.指纹.项.地形),
             puppeteerInstance: h.browser,
             chromiumOptions: { gl: 参数.gl },
             codec: 参数.codec,
@@ -359,7 +367,7 @@ export const 同页出帧 = (
   h: Pick<会话, 'serveUrl' | 'browser' | '参数'>,
   composition: 会话['组合'][number],
   帧们: readonly number[],
-  o: { 打开声音: boolean; 每帧: (png: Buffer, 帧: number) => void | Promise<void> },
+  o: { 打开声音: boolean; 环境: Record<string, string>; 每帧: (png: Buffer, 帧: number) => void | Promise<void> },
 ) =>
   renderFrames({
     serveUrl: h.serveUrl,
@@ -367,6 +375,7 @@ export const 同页出帧 = (
     outputDir: null,
     frames: [...帧们],
     inputProps: h.参数.inputProps,
+    envVariables: o.环境,
     puppeteerInstance: h.browser,
     chromiumOptions: { gl: h.参数.gl },
     imageFormat: 'png',
@@ -384,14 +393,14 @@ export const 静帧文件 = (出到: string, 段键: string, 帧: number) => pat
 
 /**
  * 多帧默认同页连出（第一帧之后不用从头读地形）；逐帧 = 每帧一个新页面，等于旧做法。两边文件名一样，已有的文件都不覆盖。
- * 连出的帧随批里排在前面的帧变，拼段跨截时天空可能整体变色，渲静帧 开跑前提醒（连出提醒）。
- * 用户 10-31 定做连出，定稿用哪条等主会话复核完（docs/渲染性能.md「静帧连出」）。
+ * 用户 10-31 定做连出。同一帧单出和连出已知的例外见 连出提醒（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。
  */
-export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参数'>, composition: 会话['组合'][number], 段键: string, 帧们: readonly number[], 出到: string, o: { 逐帧?: boolean; 完成: (已出: number) => void }) => {
+export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参数'>, composition: 会话['组合'][number], 段键: string, 帧们: readonly number[], 出到: string, o: { 逐帧?: boolean; 环境: Record<string, string>; 完成: (已出: number) => void }) => {
   if (帧们.length > 1 && !o.逐帧) {
     let 已出 = 0;
     await 同页出帧(h, composition, 帧们, {
       打开声音: false,
+      环境: o.环境,
       每帧: (png, f) => {
         fs.writeFileSync(静帧文件(出到, 段键, f), png, { flag: 'wx' });
         o.完成(++已出);
@@ -406,6 +415,7 @@ export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参
       output: 静帧文件(出到, 段键, f),
       frame: f,
       inputProps: h.参数.inputProps,
+      envVariables: o.环境,
       puppeteerInstance: h.browser,
       chromiumOptions: { gl: h.参数.gl },
       imageFormat: 'png',
@@ -418,10 +428,10 @@ export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参
   }
 };
 
-/** 连出才有的提醒；数据见 docs/渲染性能.md「静帧连出」 */
+/** 连出才有的提醒 */
 export const 连出提醒 = (段键: string, 帧们: readonly number[], 逐帧?: boolean) =>
   帧们.length > 1 && !逐帧
-    ? `${段键} 这 ${帧们.length} 帧在同一页面连出：除帧号最小的一帧，别的帧随批里排在前面的帧变，和单帧、母版都可能不同；拼段批里跨了截（比如 6-斩娜迦 同时有第 9 帧及之前、第 10 帧及之后）时天空可能整体变色。看颜色、和单帧或母版比，加 --逐帧`
+    ? `${段键} 这 ${帧们.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：2-烟花 这类画布高度跟帧变的）。要和单帧或母版逐像素比，加 --逐帧；连出崩页（7-上塔 的 0,14 碰到过）也改用 --逐帧`
     : null;
 
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
@@ -442,7 +452,8 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 收 = 记录?.阶段;
       const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
       const 明细 = new 明细收集(标签);
-      await 明细.包(() => 出静帧们(h, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 完成: (已出) => 明细.帧完成(已出) }));
+      await 明细.包(() => 出静帧们(h, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境: 段渲染环境(s.键, 段现在的地形(s)), 完成: (已出) => 明细.帧完成(已出) }));
+      await 记已量帧(s.键, 要出);
       const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
       await 明细.写出(收 ?? []);
       console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
