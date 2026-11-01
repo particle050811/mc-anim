@@ -1,4 +1,6 @@
 import path from 'node:path';
+import {改命令,改调度,路命令,令命令} from './改调度.ts';
+import {等条件} from './等.ts';
 import {解析参数,用法错误} from '../cli/参数.ts';
 import type {命令} from '../cli/命令.ts';
 import {取调度环境,type 调度环境} from './任务.ts';
@@ -7,11 +9,15 @@ import {读调度} from './调度日志.ts';
 import {复盘} from './复盘.ts';
 import {估计} from './估计.ts';
 import {盯} from './盯.ts';
-const 用法='调度 [看|预计|盯|日志|复盘] [--json|--一行]';
+const 用法='调度 [看|先|后|恢复|放行|让路|取消|清孤儿|记|预计|盯|等|路|令|日志|复盘] [--json|--一行]';
 export const 跑调度=async(args:string[],env?:调度环境,输出:(s:string)=>void=console.log):Promise<number>=>{
-  const p=解析参数(args,{开关:['--json','--一行','--help'],值:['--最长','--任务','--从','--到','--事','--票','--段','--路','--日']});
+  const p=解析参数(args,{开关:['--json','--一行','--help','--强','--杀持锁','--原序','--闸空'],值:['--最长','--任务','--从','--到','--事','--票','--段','--路','--日','--为什么','--分钟','--看到','--决定','--说明','--结果','--pid','--文件','--内存']});
   if(p.开关.has('--help')){输出('用法：anim '+用法);return 0;}
   const e=env??取调度环境(),[cmd='看',...rest]=p.位置;
+  if(改命令.has(cmd)){改调度(cmd,rest[0],p,e,{输出});return 0;}
+  if(cmd==='路'){路命令(rest,p,e,输出);return 0;}
+  if(cmd==='令'){令命令(rest,e);return 0;}
+  if(cmd==='等')return 等条件(p,e);
   if(cmd==='看'){const s=读状态(e);输出(p.开关.has('--json')?JSON.stringify({...s,机:{...s.机,进程:undefined}}):p.开关.has('--一行')?一行状态(s):渲染看(s));return 0;}
   if(cmd==='预计'){输出(JSON.stringify({选择器:rest[0],纯跑秒:估计({种:'still',段:rest[0]},path.dirname(e.日志目录)),说明:'缺样本显示 null；未知队列按 23 秒下界估计'}));return 0;}
   if(cmd==='盯')return 盯(e,{最长:p.值['--最长']?Number(p.值['--最长']):undefined,任务:p.值['--任务'],输出});

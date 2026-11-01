@@ -2,6 +2,7 @@
 // 报错：预期内的（用法错、选不出作品、我们自己 throw new Error 的业务错、esbuild 构建失败）只打信息不打调用栈，加 --调试 才打；
 // 别的（TypeError 这类、库里抛的）照旧打调用栈。调用栈总记进运行记录，事后能查。
 import path from 'node:path';
+import {调度让路} from '../闸/指令.ts';
 import {开任务,取调度环境} from '../闸/任务.ts';
 import { fileURLToPath } from 'node:url';
 import { 用法错误 } from './参数.ts';
@@ -106,7 +107,7 @@ export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Pr
   } catch (e) {
     const 栈 = e instanceof Error ? e.stack : undefined;
     const 信息 = e instanceof Error ? e.message : String(e);
-    if (e instanceof 选作品错误) {
+    if(e instanceof 调度让路){出.error(`调度让路：${信息}；不算失败，不要原样重发`);code=75;} else if (e instanceof 选作品错误) {
       出.error(信息);
       code = 2;
     } else if (e instanceof 用法错误) {

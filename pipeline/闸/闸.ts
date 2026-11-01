@@ -12,6 +12,7 @@ import {领票,列票,票活着,type 票,回队尾} from './票.ts';
 import {写JSON,读JSON} from './文件.ts';
 import {清孤儿} from './孤儿.ts';
 import {估计} from './估计.ts';
+import {取指令,路让路,调度让路} from './指令.ts';
 export type {任务声明} from './任务.ts';
 export {闸记被杀,登记临时文件} from './收尾.ts';
 export const 祖先持锁变量='MCAI_RENDER_LOCK_PID';
@@ -33,6 +34,13 @@ export const 排队拿=async(名:string,opts:排队选项={}):Promise<锁柄>=>{
   声明.种??=process.argv[2]??'脚本';声明.用途??=process.env.ANIM_PURPOSE??'未声明';声明.预计秒??=估计(声明,path.dirname(e.日志目录));
   const task=开任务(e,声明),file=锁文件(e.锁目录,名),dir=path.join(e.锁目录,名+'.排队');
   let t=领票(dir,e.本机,{...task.info,声明},e.现在毫秒());task.更新(声明,t.名);
+  const 让路=取指令(e,task.info.任务);
+  if(让路?.动作==='让路'&&让路.至&&让路.至>e.现在毫秒()&&让路.票!==t.名){
+    t.内容!.暂缓至=让路.至;t.内容!.原序=String(t.时间);写JSON(t.文件,t.内容);
+    const {改序}=await import('./票.ts');t=改序(t,String(900_000_000_000_000+e.现在毫秒()));
+    console.error(`== 调度让路：${让路.为什么}；下一张票暂缓至 ${new Date(让路.至).toISOString()}`);
+    fs.rmSync(path.join(e.锁目录,'指令',task.info.任务+'.json'),{force:true});
+  }
   const 起=e.现在毫秒();let 原等待='',拿锁时=0,完了=false;
   const 记=(事:string,字段:Record<string,unknown>={})=>task.记(事,{票:t.名,锁:名,声明,...字段});
   const 清=()=>{for(const p of e.清孤儿())记('清孤儿',{进程:p});};
@@ -42,6 +50,7 @@ export const 排队拿=async(名:string,opts:排队选项={}):Promise<锁柄>=>{
   记('领票',{队:{前面:列票(dir).filter(x=>x.名<t.名).slice(0,3).map(x=>x.名),深度:列票(dir).length,持锁:持有者(file)}});
   try {
     for(;;){
+      const 令=路让路(e);if(令){console.error(`被路令让路：${令}，不要原样重发（退出 75，不算失败）`);throw new 调度让路(令);}
       清崩溃(e);
       const 找=列票(dir).find(x=>x.内容?.任务===task.info.任务&&x.pid===process.pid);
       if(找)t=找;else{const 原=t.名;t=领票(dir,e.本机,{...task.info,声明},e.现在毫秒());记('票丢失',{原名:原,新名:t.名});}
@@ -64,7 +73,7 @@ export const 排队拿=async(名:string,opts:排队选项={}):Promise<锁柄>=>{
       await e.睡(opts.间隔毫秒??e.排队间隔毫秒??1000);
     }
     拿锁时=e.现在毫秒();task.更新(声明,t.名);记('拿锁',{等锁秒:(拿锁时-起)/1000});
-  }catch(err){删票();撤票();交接();if(自建)task.结束(1);throw err;}
+  }catch(err){删票();撤票();交接();if(自建)task.结束(err instanceof 调度让路?75:1);throw err;}
   删票();撤票();
   const 信息文件=file+'.信息.json';let 最近写=0,已出帧=0,帧时=拿锁时;
   const 心跳=(帧?:number)=>{if(帧!==undefined&&帧!==已出帧){已出帧=帧;帧时=e.现在毫秒();}if(最近写&&e.现在毫秒()-最近写<5000)return;
