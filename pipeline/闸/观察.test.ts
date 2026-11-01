@@ -22,7 +22,7 @@ it.each([['10-22',146],['11-01 15:51',21],['11-01 夜',144]])('%s 旧事故回�
   const e=取调度环境({锁目录:dir});let h=空历史();const alarms=判告警(s,s.时,undefined,h);expect(alarms.some(x=>x.类==='等内存')).toBe(true);记录告警(e,s,h,alarms);h=读监测(e);expect(判告警(s,s.时,undefined,h)).toHaveLength(0);
 });
 it('CPU 无队列也告警，swap 和孤儿依赖历史，队深只创新高',()=>{
-  const s=基本();s.时=0;s.机.负载=30;let h=更新历史(s,空历史());s.时=180_000;s.机.swap=2**30;s.机.孤儿=1;h=更新历史(s,h);h=更新历史(s,h);
+  const s=基本();s.时=0;s.机.负载=30;let h=更新历史(s,空历史());for(const t of [30,60,90,120,150])h=更新历史({...s,时:t*1000},h);s.时=180_000;s.机.swap=2**30;s.机.孤儿=1;h=更新历史(s,h);h=更新历史(s,h);
   const kinds=判告警(s,s.时,undefined,h).map(x=>x.类);expect(kinds).toEqual(expect.arrayContaining(['负载','swap增长','孤儿Chrome']));
   加票(s,4);h.高水位=4;expect(判告警(s,s.时,undefined,h).some(x=>x.类==='队深')).toBe(false);
 });
@@ -50,8 +50,9 @@ it('资源闸 import 闭包没有 Remotion',()=>{
 });
 it('无帧、持锁死亡、持锁超时和连贯批都有 fixture，升级最多三次',()=>{
   const s=基本();s.时=2_000_000;加票(s,1);
-  s.持锁=[{pid:1,票:'x',任务:'x',拿锁时:0,心跳:s.时,帧时:0,已出帧:0,总帧:100,死:true,声明:{连贯:{为什么:'测连贯'},预计秒:60},发起:读发起者({},[],dir,false)}];
-  const a=判告警(s,s.时);expect(a.map(x=>x.类)).toEqual(expect.arrayContaining(['无帧','持锁者死','持锁超时','连贯批']));expect(a.every(x=>x.次数<=3)).toBe(true);
+  const 持=(死:boolean)=>({pid:1,票:'x',任务:'x',拿锁时:0,心跳:s.时,帧时:0,已出帧:0,总帧:100,死,声明:{连贯:{为什么:'测连贯'},预计秒:60},发起:读发起者({},[],dir,false)});
+  s.持锁=[持(false)];const a=判告警(s,s.时);expect(a.map(x=>x.类)).toEqual(expect.arrayContaining(['无帧','持锁超时','连贯批']));expect(a.every(x=>x.次数<=3)).toBe(true);
+  s.持锁=[持(true)];expect(判告警(s,s.时).filter(x=>x.对象.startsWith('x/')).map(x=>x.类)).toEqual(['持锁者死']);
 });
 it('等待者已写的告警能由后来挂上的盯消费，不能只更新去重表而漏叫醒',async()=>{
   const e=取调度环境({锁目录:dir}),s=基本();s.时=Date.now();s.机.压力=4;
@@ -65,7 +66,7 @@ it.skipIf(process.platform !== 'darwin')('查看并行采样保持闸口径、�
   const pending=读机器快照并行(async(cmd,args)=>{起.push(cmd+' '+args.join(' '));await new Promise<void>(r=>完成.push(r));return cmd==='vm_stat'?vm:args.includes('vm.swapusage')?'total = 2048.00M used = 1024.00M':args.includes('kern.memorystatus_vm_pressure_level')?'4':cmd==='ioreg'?'"Device Utilization %" = 93':cmd==='notifyutil'?'state: 1':'';});
   expect(起).toHaveLength(6);for(const f of 完成)f();const s=await pending;
   expect(s.闸).toBe(Math.round(解析vm_stat(vm,os.totalmem())/os.totalmem()*100));expect(s.free).toBe(200000*16384);expect(s.压缩).toBe(300*16384);expect(s.swap).toBe(2**30);expect(s.压力).toBe(4);expect(s.GPU).toBe(93);expect(s.热).toBe(1);
-  const empty=await 读机器快照并行(async()=> '');expect([empty.闸,empty.压力,empty.free,empty.swap,empty.GPU,empty.热]).toEqual([null,null,null,null,null,null]);
+  const empty=await 读机器快照并行(async()=> '');expect([empty.闸,empty.压力,empty.free,empty.swap,empty.GPU,empty.热,empty.孤儿]).toEqual([null,null,null,null,null,null,null]);
 });
 
 it('盯把快照与补读日志的同一任务止合并为一次通知',async()=>{

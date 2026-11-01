@@ -12,7 +12,7 @@ import { 领票, 列票, 票活着, type 票, 回队尾, 改序, 写票, 清任�
 import { 写JSON, 读JSON, 只提示 } from './文件.ts';
 import { 清孤儿 } from './孤儿.ts';
 import { 读状态 } from './看.ts';
-import { 读监测, 更新历史, 判告警, 记录告警 } from './告警.ts';
+import { 监测一轮 } from './告警.ts';
 import { 读机器快照, type 机器快照 } from './机器.ts';
 import { 估计 } from './估计.ts';
 import { 取指令, 路让路, 调度让路 } from './指令.ts';
@@ -103,7 +103,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         let 原等待 = '', 上次监测 = 0;
         const 记 = (事: string, 字段: Record<string, unknown> = {}) => task.记(事, { 票: t.名, 锁: 名, 声明, ...字段 });
         const 监测 = () => { if (e.现在毫秒() - 上次监测 < 3000)
-            return; 上次监测 = e.现在毫秒(); 只提示('监测', () => { const s = 读状态(e, e.读机器, false), h = 更新历史(s, 读监测(e)); 记录告警(e, s, h, 判告警(s, s.时, undefined, h)); }); };
+            return; 上次监测 = e.现在毫秒(); 只提示('监测', () => { 监测一轮(e, 读状态(e, e.读机器, false)); }); };
         const 清 = () => 只提示('清孤儿', () => { for (const p of e.清孤儿())
             记('清孤儿', { 进程: p }); });
         const 回收 = (pid: number | null) => {
@@ -146,6 +146,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
                     continue;
                 }
                 delete t.内容!.暂缓至;
+                t.内容!.起 = e.现在毫秒();
                 写票态(t);
                 记('恢复', { 原因: '暂缓到期回队尾' });
             }

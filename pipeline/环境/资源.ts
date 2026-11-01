@@ -7,7 +7,7 @@ import os from 'node:os';
 import { isMac, isWindows } from './配置.ts';
 import { 试跑 } from './子进程.ts';
 
-export type 内存读数 = { 总: number; 空闲: number; 空闲百分比: number; 交换区总: number; 交换区已用: number };
+export type 内存读数 = { 总: number; 空闲: number; 空闲百分比: number; 交换区总: number; 交换区已用: number | null };
 
 export const 解析vm_stat = (text: string, 总字节: number) => {
   const page = Number(/page size of (\d+) bytes/.exec(text)?.[1] ?? 4096);
@@ -25,7 +25,7 @@ export const 解析交换区 = (text: string) => {
 export const 读内存 = (): 内存读数 | null => {
   const 总 = os.totalmem();
   let 空闲: number;
-  let 交换区 = { 总: 0, 已用: 0 };
+  let 交换区: { 总: number; 已用: number | null } = { 总: 0, 已用: null };
   if (isMac) {
     const vm = 试跑(['vm_stat']);
     if (vm.退出码 !== 0) return null;
@@ -61,7 +61,7 @@ export const 一分钟负载 = (): number | null => (isWindows ? null : os.loada
 
 export const 读数说明 = (m: 内存读数) =>
   `空闲内存 ${m.空闲百分比}%（${(m.空闲 / 2 ** 30).toFixed(1)}/${(m.总 / 2 ** 30).toFixed(0)} GB）` +
-  (m.交换区总 ? `，交换区 ${(m.交换区已用 / 2 ** 30).toFixed(1)}/${(m.交换区总 / 2 ** 30).toFixed(1)} GB` : '');
+  (m.交换区总 && m.交换区已用 !== null ? `，交换区 ${(m.交换区已用 / 2 ** 30).toFixed(1)}/${(m.交换区总 / 2 ** 30).toFixed(1)} GB` : '');
 
 /** macOS 压力值：1 正常、2 警告、4 严重；不支持的平台不猜。 */
 export const 读压力 = (): number | null => {

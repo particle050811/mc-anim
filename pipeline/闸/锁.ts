@@ -152,3 +152,13 @@ export const 放 = (file: string) => {
   if (持有者(file) === process.pid) 删(file);
   删(主机文件(file, process.pid));
 };
+
+/** 拿不到不等：这种短锁里的事，别人正在做就等于这轮做过了。 */
+export const 试做 = <T>(file: string, 本机: string, fn: () => T): T | undefined => {
+  if (!试拿(file, 本机)) return undefined;
+  try {
+    return fn();
+  } finally {
+    放(file);
+  }
+};

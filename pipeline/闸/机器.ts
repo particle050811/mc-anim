@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
-import { 读内存, 读压力, 解析vm_stat, 解析交换区 } from '../环境/资源.ts';
+import { 读内存, 读压力, 解析vm_stat, 解析交换区, 一分钟负载 } from '../环境/资源.ts';
 import { 找孤儿, 读进程 } from './孤儿.ts';
 export type 机器快照 = {
-    负载: number;
+    负载: number | null;
     核: number;
     闸: number | null;
     压力: number | null;
@@ -16,7 +16,7 @@ export type 机器快照 = {
     GPU: number | null;
     热: number | null;
     盘: number | null;
-    孤儿: number;
+    孤儿: number | null;
     进程: string;
 };
 const 跑 = (cmd: string, args: string[]) => { try {
@@ -35,8 +35,8 @@ const 组快照 = (vm: string, 进程: string, io: string, 热: string, 闸: num
     }
     catch { /* 平台不可读 */ }
     const 数 = (x: string | undefined) => x === undefined ? null : Number(x);
-    return { 负载: os.loadavg()[0]!, 核: os.availableParallelism(), 闸, 压力, free: process.platform === 'darwin' ? 页(/Pages free:\s+(\d+)/) : os.freemem(), 压缩: 页(/Pages occupied by compressor:\s+(\d+)/), swap, 换出: 页(/Swapouts:\s+(\d+)/),
-        GPU: 数(/"Device Utilization %"\s*=\s*(\d+)/.exec(io)?.[1]), 热: 数(热.match(/(\d+)\s*$/)?.[1]), 盘, 孤儿: 找孤儿(进程).length, 进程 };
+    return { 负载: 一分钟负载(), 核: os.availableParallelism(), 闸, 压力, free: process.platform === 'darwin' ? 页(/Pages free:\s+(\d+)/) : os.freemem(), 压缩: 页(/Pages occupied by compressor:\s+(\d+)/), swap, 换出: 页(/Swapouts:\s+(\d+)/),
+        GPU: 数(/"Device Utilization %"\s*=\s*(\d+)/.exec(io)?.[1]), 热: 数(热.match(/(\d+)\s*$/)?.[1]), 盘, 孤儿: 进程 ? 找孤儿(进程).length : null, 进程 };
 };
 export const 读机器快照 = (): 机器快照 => {
     const m = 读内存(), 进程 = 读进程(), mac = process.platform === 'darwin';
