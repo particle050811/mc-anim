@@ -191,7 +191,7 @@ const mergeColumns = (gridA: VoxelGrid, gridB: VoxelGrid, pickB: Uint8Array): Vo
 };
 
 // 交界修正（工具/导入/交界.ts 写）：16 米一格的 Int16（分米），场景坐标（导入包原点）；双线性取，格外是 0。依据：导入包粗高度图的指纹、远景各加密层块数
-type Seam = { x0: number; y0: number; cellSize: number; nx: number; ny: number; deltas: Int16Array; basis?: { coarseHeightFingerprint: string; distantLayers: string[] } };
+type Seam = { x0: number; y0: number; cellSize: number; nx: number; ny: number; deltas: Int16Array; basis?: { 粗高度指纹: string; 远景层: string[] } };
 // distantDir：远景包的版本目录（packDir）
 const loadSeam = (distantDir: string, packName: string) =>
   loadOnce(`${distantDir}/交界.${packName}`, async (): Promise<Seam | null> => {
@@ -218,7 +218,7 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
   // 交界修正是不是对着手上这版导入包、远景包算的：导入范围或加密层变了，旧修正修不到新交界
   if (seam) {
     const fingerprint = coarseHeightFingerprint(imported.粗), layerSig = grid.层.map((F) => `${F.名}:${F.块.size}`).join(',');
-    if (seam.basis?.coarseHeightFingerprint !== fingerprint || seam.basis?.distantLayers.join(',') !== layerSig)
+    if (seam.basis?.粗高度指纹 !== fingerprint || seam.basis?.远景层.join(',') !== layerSig)
       console.warn(`主世界地形：交界修正（${grid.packName}/交界.*）不是按现在的导入包、远景包算的，交界会有台阶，重跑 npm run 远景:交界`);
   }
   const origin = imported.原点;
