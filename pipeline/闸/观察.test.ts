@@ -11,7 +11,7 @@ import {估计} from './估计.ts';
 import {复盘} from './复盘.ts';
 import {读机器快照并行} from './机器.ts';
 import {解析vm_stat} from '../环境/资源.ts';
-import type {调度事件} from './调度日志.ts';
+import {读调度,记调度,type 调度事件} from './调度日志.ts';
 let dir:string;
 beforeEach(()=>{dir=fs.mkdtempSync(path.join(os.tmpdir(),'anim-观察-'));});afterEach(()=>fs.rmSync(dir,{recursive:true,force:true}));
 const 基本=():调度状态=>({时:1_000_000,机:{负载:1,核:10,闸:40,压力:1,free:1e9,压缩:1e9,swap:0,换出:0,GPU:50,热:1,盘:4e11,孤儿:0,进程:''},票:[],持锁:[],在跑:[],最近:[]});
@@ -66,4 +66,10 @@ it.skipIf(process.platform !== 'darwin')('查看并行采样保持闸口径、�
   expect(起).toHaveLength(6);for(const f of 完成)f();const s=await pending;
   expect(s.闸).toBe(Math.round(解析vm_stat(vm,os.totalmem())/os.totalmem()*100));expect(s.free).toBe(200000*16384);expect(s.压缩).toBe(300*16384);expect(s.swap).toBe(2**30);expect(s.压力).toBe(4);expect(s.GPU).toBe(93);expect(s.热).toBe(1);
   const empty=await 读机器快照并行(async()=> '');expect([empty.闸,empty.压力,empty.free,empty.swap,empty.GPU,empty.热]).toEqual([null,null,null,null,null,null]);
+});
+
+it('盯把快照与补读日志的同一任务止合并为一次通知',async()=>{
+  const e=取调度环境({锁目录:dir}),s=基本();s.时=Date.now();记调度(e.日志目录,'任务止',{任务:'结束任务'},s.时);s.最近=读调度(e.日志目录);const out:string[]=[];
+  expect(await 盯(e,{任务:'结束任务',读:()=>s,父活:()=>true,输出:x=>out.push(x)})).toBe(0);
+  expect(out).toHaveLength(1);expect(out[0]!.match(/任务止/g)).toHaveLength(1);
 });

@@ -32,7 +32,8 @@ export const 盯 = async (e: 调度环境, o: {
                 会话?: string;
             })?.会话 === e.发起者.会话)) || (o.任务 && x.事 === '任务止' && (x.任务 === o.任务 || x.票 === o.任务)));
             const key = (x: typeof events[number]) => [x.时, x.事, x.任务, x.路, x.类, x.对象, x.次数].join('|');
-            const 未读 = events.filter(x => !已读[key(x)]);
+            // 快照尾部和补读日志会重叠，同一事件在本轮也只能通知一次。
+            const 未读 = [...new Map(events.map(x => [key(x), x])).values()].filter(x => !已读[key(x)]);
             if (未读.length) {
                 for (const ev of 未读)
                     已读[key(ev)] = true;
