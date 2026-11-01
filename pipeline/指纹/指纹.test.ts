@@ -1,7 +1,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { 地形版本环境名, 地形用量段环境名 } from '../../engine/段/地形环境.ts';
+import { 全表环境, 段渲染环境, 段现在的地形 } from '../渲/地形注入.ts';
+import type { 段信息 } from '../清单/清单.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 全部段 } from '../清单/清单.ts';
 import { 叠层渲染参数, 渲染参数 } from '../渲/设置.ts';
@@ -69,6 +72,62 @@ describe('段指纹', () => {
     expect(Object.keys(视频.项.打包规则).sort()).toEqual(['pipeline/资产/ogg解码.cjs', 'pipeline/资产/webpack.ts', 'tsconfig']);
     expect(指纹差异(视频, 预览).sort()).toEqual(['渲染设置 改了 imageFormat', '渲染设置 改了 inputProps', '渲染设置 改了 scale']);
     expect((await 算段指纹(冒烟!, 渲染参数('视频'))).指纹).toBe(视频.指纹);
+  });
+});
+
+describe('地形按段依赖', () => {
+  const 表文件 = path.join(代码根(), 'assets', '地形版本.json');
+  const 原 = fs.readFileSync;
+  /** 拿改过的地形登记表算指纹（代码根不动） */
+  const 用表算 = async (s: 段信息, 改: (包: Record<string, { 版本: string }>, 表: { 说明?: string }) => void) => {
+    const 表 = JSON.parse(原(表文件, 'utf8')) as { 说明?: string; 包: Record<string, { 版本: string }> };
+    改(表.包, 表);
+    const 桩 = vi.spyOn(fs, 'readFileSync').mockImplementation(((f: fs.PathOrFileDescriptor, ...其余: unknown[]) => (f === 表文件 ? JSON.stringify(表) : (原 as (...a: unknown[]) => unknown)(f, ...其余))) as typeof fs.readFileSync);
+    try {
+      return await 算段指纹(s, 渲染参数('视频'));
+    } finally {
+      桩.mockRestore();
+    }
+  };
+  const 穿塔 = async () => (await 全部段()).find((s) => s.键 === '6-穿塔斩首领')!;
+
+  it('改没声明的包、加新包、改说明，段不过期；改声明的包段过期，差异说得出是哪个包', async () => {
+    const s = await 穿塔();
+    const 无关 = Object.keys(JSON.parse(原(表文件, 'utf8')).包).filter((名) => !s.段.地形.includes(名));
+    expect(无关.length).toBeGreaterThan(0);
+    const 基 = await 用表算(s, () => {});
+    expect(Object.keys(基.明细.模块)).not.toContain('assets/地形版本.json');
+    expect(Object.keys(基.项.地形).sort()).toEqual([...s.段.地形].sort());
+    const 改无关 = await 用表算(s, (包, 表) => {
+      包[无关[0]!]!.版本 = '无关新版本';
+      包.新包 = { 版本: 'x' };
+      表.说明 = '改过';
+    });
+    expect(改无关.指纹).toBe(基.指纹);
+    const 改声明 = await 用表算(s, (包) => {
+      包[s.段.地形[0]!]!.版本 = '声明新版本';
+    });
+    expect(改声明.指纹).not.toBe(基.指纹);
+    expect(指纹差异(基, 改声明)).toEqual([`地形 改了 ${s.段.地形[0]}`]);
+  });
+
+  it('删掉没声明的包不过期；删掉声明的包算指纹时报错', async () => {
+    const s = await 穿塔();
+    const 基 = await 用表算(s, () => {});
+    const 无关 = Object.keys(JSON.parse(原(表文件, 'utf8')).包).filter((名) => !s.段.地形.includes(名))[0]!;
+    expect((await 用表算(s, (包) => void delete 包[无关])).指纹).toBe(基.指纹);
+    await expect(用表算(s, (包) => void delete 包[s.段.地形[0]!])).rejects.toThrow(/没在 assets\/地形版本.json 登记版本/);
+  });
+
+  // 批次中途表变了页面也不跟着变，整条流程在 渲/渲母版.test.ts 验
+  it('环境按给的地形项拼，只有声明的包；同一张表当场读的和指纹的地形项相同', async () => {
+    const s = await 穿塔();
+    const 基 = await 用表算(s, () => {});
+    const 环境 = 段渲染环境(基.段, 基.项.地形);
+    expect(JSON.parse(环境[地形版本环境名]!)).toEqual(基.项.地形);
+    expect(段现在的地形(s)).toEqual(基.项.地形);
+    expect(环境[地形用量段环境名]).toBe(`应力转动/${s.键}`);
+    expect(Object.keys(JSON.parse(全表环境()[地形版本环境名]!))).toEqual(Object.keys(JSON.parse(原(表文件, 'utf8')).包));
   });
 });
 

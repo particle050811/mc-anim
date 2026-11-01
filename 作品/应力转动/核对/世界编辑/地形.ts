@@ -1,5 +1,5 @@
 // 世界编辑核对用的地形来源：直接按版本取没登记的区段包 测试-修整-岛-编辑示例（anim world bake 测试-修整-编辑示例 烘的，声明里 登记 = false）。
-// 不走 engine/voxel/导入地形.ts：那边只认 assets/地形版本.json 登记过的包，登记一个包会让所有用地形的段过期。
+// 不走 engine/voxel/导入地形.ts：那边只认段声明、登记进 assets/地形版本.json 的包；这个包只是演示，不登记。它也不记地形用量（engine/voxel/地形用量.ts）。
 // 这里是它的精简版（不挖地标、不平整、不并 Range 请求），区段一样交给区段工人取、解、换体素块；版本写在 画面.tsx 里，换了版本本段指纹跟着变。
 import { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';

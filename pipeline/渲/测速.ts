@@ -17,6 +17,8 @@ import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 删打包 } from './打包残留.ts';
 import { 打包 } from './渲.ts';
 import { 渲染参数, 等帧超时毫秒 } from './设置.ts';
+import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
+import { 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 export type 测速结果 = {
@@ -61,6 +63,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
     t = Date.now();
     const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 前期日志, browserExecutable: opts.浏览器 ?? null });
     const 开浏览器秒 = (Date.now() - t) / 1000;
+    收地形用量(browser);
     try {
       t = Date.now();
       const 组合 = await getCompositions(serveUrl, { inputProps: 参数.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl }, timeoutInMilliseconds: 等帧超时毫秒, logLevel: 前期日志 });
@@ -77,7 +80,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           let 首帧 = 0, 末帧 = 0, 上次帧数 = 0;
           const 明细 = new 明细收集(标签, 帧[0]);
           const 跑 = () => renderMedia({
-              serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
+              serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, envVariables: 段渲染环境(s.键, 段现在的地形(s)), puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
               codec: 参数.codec, audioCodec: 参数.audioCodec, enforceAudioTrack: 参数.enforceAudioTrack, crf: 参数.crf, x264Preset: 参数.x264Preset,
               imageFormat: 参数.imageFormat, jpegQuality: 参数.jpegQuality, scale: 参数.scale, concurrency: 参数.concurrency,
               timeoutInMilliseconds: 等帧超时毫秒, overwrite: true, logLevel: 渲染日志, frameRange: 帧,
@@ -97,6 +100,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           } finally {
             if (!opts.留输出) fs.rmSync(out, { force: true });
           }
+          await 记已量帧(s.键, Array.from({ length: 帧[1] - 帧[0] + 1 }, (_, k) => 帧[0] + k));
           const end = Date.now();
           const { 文件, 明细: d } = await 明细.写出([], { remotion, 浏览器: 浏览器版本(opts.浏览器), 日志级别: 渲染日志, 共享内存: String(!opts.关共享内存), 第几轮: String(i + 1) });
           轮.push({
@@ -116,6 +120,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
       }
       return { remotion, 浏览器: 浏览器版本(opts.浏览器), 共享内存: !opts.关共享内存, 日志级别: 渲染日志, 段: `${作品名()}/${s.键}`, 帧, 打包秒, 开浏览器秒, 读组合秒, 轮 };
     } finally {
+      await 等地形用量写完();
       await browser.close({ silent: true });
       删打包(serveUrl);
     }

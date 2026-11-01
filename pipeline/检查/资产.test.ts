@@ -134,7 +134,7 @@ describe('资产', () => {
     }
   });
 
-  it('取地形包的段（闭包里有 区段包位置.ts）写到的登记包名都要在 段.地形 里；不取地形的段写到了也不管', async () => {
+  it('取地形包的段（闭包里有 区段包位置.ts）写到的登记包名没声明，只提示不拦（真读到时页面报错）；不取地形的段写到了也不管', async () => {
     const 地形表 = JSON.stringify({ 包: { 主世界: { 版本: 'v1', 许可: 'MIT', 可见性: '发布' }, 暮色: { 版本: 'v2', 许可: 'MIT', 可见性: '发布' } } });
     const 文件 = (地形: string) => ({
       'assets/地形版本.json': 地形表,
@@ -144,8 +144,12 @@ describe('资产', () => {
       '作品/应力转动/段/7-甲/画面.tsx':
         "import 图 from 'asset:贴图/甲';\nimport { packDir } from '@engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
     });
-    expect((await 跑('资产', 造仓库(基础(), 文件('["主世界"]')))).违规.filter((x) => x.includes('地形')).join('\n')).toMatch(/7-甲 的闭包会取地形包.*写到了 暮色/);
-    expect((await 跑('资产', 造仓库(基础(), 文件('["主世界", "暮色"]')))).违规).toEqual([]);
+    const 窄 = await 跑('资产', 造仓库(基础(), 文件('["主世界"]')));
+    expect(窄.违规).toEqual([]);
+    expect(窄.报.信息.join('\n')).toMatch(/7-甲 的闭包写到了 暮色/);
+    const 全 = await 跑('资产', 造仓库(基础(), 文件('["主世界", "暮色"]')));
+    expect(全.违规).toEqual([]);
+    expect(全.报.信息.join('\n')).not.toMatch(/闭包写到了/);
     const 不取 = 文件('[]');
     不取['作品/应力转动/段/7-甲/画面.tsx'] = "import 图 from 'asset:贴图/甲';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + 主世界名} />;\n";
     expect((await 跑('资产', 造仓库(基础(), 不取))).违规).toEqual([]);

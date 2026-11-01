@@ -1,6 +1,6 @@
 // 地形包的版本：<数据根>/terrain/<包>/<版本>/，版本是内容指纹（目录指纹，照旧项目 工具/导入/区段包版本.mjs），发布后不再改，旧版本不删。
 // 烘焙先写进暂存目录（<数据根>/run/暂存/terrain/<包>，同一个包同时只许一个进程写，拿 <暂存>.写入.lock），写完 发布：算指纹、改名成版本目录。
-// 登记进 assets/地形版本.json 另是一步（登记）：表被 engine/voxel/区段包位置.ts 整个 import，改一个字节，所有用地形的段都会过期。
+// 登记进 assets/地形版本.json 另是一步（登记）：声明了这个包的段会过期，别的段不受影响（地形项只记段声明的包，见 指纹/指纹.ts）。
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
