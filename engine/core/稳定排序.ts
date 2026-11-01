@@ -58,7 +58,8 @@ export const 不透明先后 = (a: 绘制项, b: 绘制项) => a.groupOrder - b.
 export const 透明先后 = (a: 绘制项, b: 绘制项) => a.groupOrder - b.groupOrder || a.renderOrder - b.renderOrder || b.z - a.z;
 
 // 场景遍历的先后（上面的材质先后、距离相同时的先后都靠它）也要和路径无关。R3F 重建物体（<primitive object> 换了对象、args 变了）时把新对象挂到父节点末尾（fiber 的 swapReconstructedInstances），
-// 它自己的实例表（__r3f.children，按 JSX 的先后）不动。没经历过重建的路径上，three 的子节点就是 JSX 的先后，所以每次渲染前按实例表还原。子节点里不归 R3F 管的（世界.tsx 手动 add 的区段）留在原位，只在 R3F 管的那几个位置上换。
+// 它自己的实例表（__r3f.children，按 JSX 的先后）不动，所以每次渲染前按实例表还原。不归 R3F 管的子节点留在原位，只在 R3F 管的那几个位置上换。
+// 前提，现有 JSX 都满足：同一父节点不把同一对象声明两次（声明表没去重，会丢节点）；不写「条件子节点后面紧跟 attach 节点、再后面还有 Object3D」、createPortal、挂载后手动 add 进有声明子节点的父节点（世界.tsx 的 group 是 <primitive>，实例表为空，走不到这里）。这几种写法下实例表和单帧直挂的先后可能不同，真要用得跟着改。
 type R3F实例 = { object?: THREE.Object3D; children: R3F实例[] };
 export const 还原声明次序 = (物体: THREE.Object3D) => {
   const 实例们 = (物体 as THREE.Object3D & { __r3f?: R3F实例 }).__r3f?.children;
