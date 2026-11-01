@@ -5,7 +5,10 @@ import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 过放行闸 } from '../闸/闸.ts';
-import { 烘焙世界, 载入编辑 } from './烘焙/流程.ts';
+import { 默认线程, 烘焙世界, 载入编辑 } from './烘焙/流程.ts';
+import { 转码包 } from './烘焙/转码.ts';
+import { 构建解码器, 模型表文件内容, 模型表生成文件, 训练模型表 } from './区段解码器.ts';
+import { 载入体素库 } from './体素库.ts';
 import { 生成重放, 重放脚本 } from './编辑/重放.ts';
 import { 列出世界, 读声明, 编辑文件, 存档目录 as 声明存档目录, type 世界声明, type 预生成块 } from './声明.ts';
 import { 冻结 } from './冻结.ts';
@@ -18,7 +21,7 @@ import { 装服务端 } from './服务端/安装.ts';
 import { 建世界 } from './服务端/建世界.ts';
 import { 取jar } from '../取材/取jar.ts';
 import { 配置, 数据路径 } from '../环境/配置.ts';
-import { 读地形表 } from './版本.ts';
+import { 版本目录, 读地形表 } from './版本.ts';
 import { 世界草稿目录, 查询子命令 } from './查询/命令.ts';
 
 const 相对 = (f: string) => path.relative(代码根(), f).split(path.sep).join('/');
@@ -77,6 +80,44 @@ const 子命令们: Record<string, 子命令> = {
         记录.产物.push(r.目录);
         记录.记('信息', `${r.包} 版本 ${r.版本}${r.已登记 ? '' : '（没登记）'}`);
       }
+    },
+  },
+  转码: {
+    用法: '转码 <包…> [--从 <版本>] [--不登记] [--线程 <n>]',
+    跑: async (args, 记录) => {
+      const p = 解析参数(args, { 值: ['--从', '--线程'], 开关: ['--不登记'] });
+      if (!p.位置.length) throw new 用法错误('要给包名（assets/地形版本.json 里的键）');
+      if (p.值['--从'] && p.位置.length !== 1) throw new 用法错误('--从 只能配一个包');
+      const 线程 = p.值['--线程'] ? Number(p.值['--线程']) : 默认线程();
+      if (!(Number.isInteger(线程) && 线程 > 0)) throw new 用法错误('--线程 要是正整数');
+      await 过放行闸(async () => {
+        for (const 包 of p.位置) {
+          const r = await 转码包(包, { 从: p.值['--从'], 不登记: p.开关.has('--不登记'), 线程, 日志: (s) => console.log(s) });
+          记录.产物.push(r.目录);
+          记录.记('信息', `${包} ${r.旧版本} → ${r.版本}，${r.区段} 个区段、${r.格} 格逐格相同`);
+        }
+      });
+    },
+  },
+  解码器: {
+    用法: '解码器 [--检查] | 解码器 --训练 <包…> [--抽 <n>]',
+    跑: async (args) => {
+      const p = 解析参数(args, { 值: ['--抽'], 开关: ['--检查', '--训练'] });
+      if (p.开关.has('--训练')) {
+        if (!p.位置.length) throw new 用法错误('--训练 要给包名，包的版本按 assets/地形版本.json');
+        const 抽 = Number(p.值['--抽'] ?? 20);
+        if (!(Number.isInteger(抽) && 抽 > 0)) throw new 用法错误('--抽 要是正整数');
+        const 表 = 读地形表().包;
+        const { 初, 区段 } = 训练模型表(await 载入体素库(), p.位置.map((名) => 版本目录(名, 表[名]!.版本)), 抽);
+        const 文本 = 模型表文件内容(初, `依据：${p.位置.join('、')}，按块文件名和文件内先后每 ${抽} 个区段取一个（${区段} 个）`);
+        fs.writeFileSync(模型表生成文件(), 文本);
+        console.log(`学了 ${区段} 个区段，写回 ${相对(模型表生成文件())}。换表等于换格式：要升格式版本，全部地形包重转`);
+        return 0;
+      }
+      if (p.位置.length) throw new 用法错误('解码器 不收位置参数');
+      const r = 构建解码器({ 检查: p.开关.has('--检查') });
+      console.log(`wasm/区段解码.ts → ${r.大小} 字节，sha256 ${r.sha256.slice(0, 12)}，${r.一样 ? '和生成文件一样' : '已写回'}`);
+      return 0;
     },
   },
   edit: {
@@ -262,7 +303,7 @@ export const 世界命令: Record<string, 命令> = {
     用法: `world ${Object.values(子命令们)
       .map((c) => c.用法.split(' ')[0])
       .join('|')} …`,
-    说明: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度。anim world help 看各子命令',
+    说明: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；转码 把旧格式的包转成逐格预测压缩（只写新版本目录，逐格核对）；解码器 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度。anim world help 看各子命令',
     跑: async (args, 记录) => {
       const [子, ...rest] = args;
       if (!子 || 子 === 'help' || 子 === '--help') {
