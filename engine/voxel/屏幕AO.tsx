@@ -26,6 +26,7 @@ import { aoPassUniform } from './材质.ts';
 import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, type MidPassContext } from './中间步骤.ts';
 import { 渲染输入 } from '../core/渲染设置.ts';
+import { 切换着色宏 } from '../core/着色宏.ts';
 
 export type ScreenAoProps = {
   // 每个像素的采样数：Voxy BEST = 24、BETTER = 12；离线渲染用 24
@@ -37,6 +38,8 @@ export type ScreenAoProps = {
   // 导出网格（lib/方块网格.tsx 的实心、镂空层）也压暗。默认不压：平滑光照已烤在网格顶点色里，再压缝里会比体素世界暗，两条方块管线颜色要一致（用户 10-01）。
   // 6-1-2 这种只有导出网格的近景可以打开（见 镜头/6-1-2/娜迦参考模型.tsx）
   applyToMesh?: boolean;
+  // 兼容已认可的地下画面：仅后期保留指定机位的大气和云影，世界雾仍由场景决定；不读取上一帧的机位。
+  atmosphereCamera?: THREE.Camera;
 };
 
 // 圆盘里的采样点：SSAO.java 里预先算好的常量数组（r = sqrt(fract(i/φ + 0.5))，角度 = (i + 0.5)/n 圈）
@@ -183,7 +186,7 @@ const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.N
 
 type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null };
 
-export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 24, radius: radius = 1.5, maxScreenRadius = 0.1, applyToMesh = false }) => {
+export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 24, radius: radius = 1.5, maxScreenRadius = 0.1, applyToMesh = false, atmosphereCamera }) => {
   const resources = useMemo(() => {
     const depth = new THREE.DepthTexture(1, 1, THREE.FloatType);
     const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthTexture: depth, generateMipmaps: false });
@@ -319,13 +322,10 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     } else uniforms.uFogType.value = 0;
     // 材质里的雾色按画到屏幕时的色彩空间换算（three 的 getUnlitUniformColorSpace），这里同样
     if (fog) fog.color.getRGB(uniforms.uFogColor.value as THREE.Color, gl.outputColorSpace);
-    const atmo = atmoOn();
-    if (!!mat.defines.ATMO !== atmo) {
-      if (atmo) mat.defines.ATMO = '';
-      else delete mat.defines.ATMO;
-      mat.needsUpdate = true;
-    }
-    if (atmo) updateCloudUniforms(cam);
+    const atmo = atmoOn() || atmosphereCamera !== undefined;
+    // 离开天空后关闭大气后期；需要保留已认可效果的镜头必须显式给参考相机。
+    切换着色宏(mat, 'ATMO', atmo);
+    if (atmo) updateCloudUniforms(atmosphereCamera ?? cam);
     gl.setRenderTarget(prevTarget);
     gl.render(resources.quadScene, resources.camera);
 
