@@ -62,7 +62,7 @@ export const 只报目录: Record<string, string> = {
 };
 
 /** 数据根 run/、cache/ 下 anim 认得的条目（别的只报告） */
-export const run认识 = ['草稿', '运行记录', 'logs', 'locks', 'queue', 'public', 'extract', '暂存', '地形用量'];
+export const run认识 = ['草稿', '运行记录', 'logs', 'locks', 'queue', 'public', 'extract', '暂存', '地形用量', '逐帧校验'];
 export const cache认识 = [
   '母版', '叠层', '求解', '私有配乐', '剪映解密', '发布', '缺字节', '接缝.json', '去重账.json', 'sha缓存.json', '列段',
   ...Object.keys(只报目录).filter((k) => k.startsWith('cache/')).map((k) => k.slice('cache/'.length)),

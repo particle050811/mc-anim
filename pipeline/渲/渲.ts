@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
-import { getCompositions, openBrowser, renderMedia, renderStill, type HeadlessBrowser } from '@remotion/renderer';
+import { getCompositions, openBrowser, renderFrames, renderMedia, renderStill, type HeadlessBrowser } from '@remotion/renderer';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
@@ -359,12 +359,89 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
   return 结果;
 };
 
-/** 单帧静帧（PNG），给预览核对用 */
-export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录) => {
-  const 出: string[] = [];
+/**
+ * 同一页面、并发 1 按帧号升序出 PNG（Remotion 自己排序，帧号不能重复）；不写母版、不编码。
+ * 打开声音：renderStill 是关的、renderMedia 是开的。静帧照 renderStill（声音文件也不用下），逐帧校验照 renderMedia
+ */
+export const 同页出帧 = (
+  h: Pick<会话, 'serveUrl' | 'browser' | '参数'>,
+  composition: 会话['组合'][number],
+  帧们: readonly number[],
+  o: { 打开声音: boolean; 环境: Record<string, string>; 每帧: (png: Buffer, 帧: number) => void | Promise<void> },
+) =>
+  renderFrames({
+    serveUrl: h.serveUrl,
+    composition,
+    outputDir: null,
+    frames: [...帧们],
+    inputProps: h.参数.inputProps,
+    envVariables: o.环境,
+    puppeteerInstance: h.browser,
+    chromiumOptions: { gl: h.参数.gl },
+    imageFormat: 'png',
+    scale: h.参数.scale,
+    concurrency: 1,
+    muted: !o.打开声音,
+    timeoutInMilliseconds: 等帧超时毫秒,
+    logLevel: 'verbose',
+    onStart: () => {},
+    onFrameUpdate: () => {},
+    onFrameBuffer: o.每帧,
+  });
+
+export const 静帧文件 = (出到: string, 段键: string, 帧: number) => path.join(出到, `${段键}-第${String(帧).padStart(4, '0')}帧.png`);
+
+/**
+ * 多帧默认同页连出（第一帧之后不用从头读地形）；逐帧 = 每帧一个新页面，等于旧做法。两边文件名一样，已有的文件都不覆盖。
+ * 用户 10-31 定做连出。同一帧单出和连出已知的例外见 连出提醒（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。
+ */
+export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参数'>, composition: 会话['组合'][number], 段键: string, 帧们: readonly number[], 出到: string, o: { 逐帧?: boolean; 环境: Record<string, string>; 完成: (已出: number) => void }) => {
+  if (帧们.length > 1 && !o.逐帧) {
+    let 已出 = 0;
+    await 同页出帧(h, composition, 帧们, {
+      打开声音: false,
+      环境: o.环境,
+      每帧: (png, f) => {
+        fs.writeFileSync(静帧文件(出到, 段键, f), png, { flag: 'wx' });
+        o.完成(++已出);
+      },
+    });
+    return;
+  }
+  for (const [i, f] of 帧们.entries()) {
+    await renderStill({
+      serveUrl: h.serveUrl,
+      composition,
+      output: 静帧文件(出到, 段键, f),
+      frame: f,
+      inputProps: h.参数.inputProps,
+      envVariables: o.环境,
+      puppeteerInstance: h.browser,
+      chromiumOptions: { gl: h.参数.gl },
+      imageFormat: 'png',
+      scale: h.参数.scale,
+      timeoutInMilliseconds: 等帧超时毫秒,
+      overwrite: false,
+      logLevel: 'verbose',
+    });
+    o.完成(i + 1);
+  }
+};
+
+/** 连出才有的提醒 */
+export const 连出提醒 = (段键: string, 帧们: readonly number[], 逐帧?: boolean) =>
+  帧们.length > 1 && !逐帧
+    ? `${段键} 这 ${帧们.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：2-烟花 这类画布高度跟帧变的）。要和单帧或母版逐像素比，加 --逐帧；连出崩页（7-上塔 的 0,14 碰到过）也改用 --逐帧`
+    : null;
+
+/** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
+export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录, o: { 逐帧?: boolean } = {}) => {
+  const 要出 = [...new Set(帧们)];
+  const 提醒 = 连出提醒(s.键, 要出, o.逐帧);
+  if (提醒) 记录?.记('警告', 提醒);
   await 开会话(级别, async (h) => {
     const composition = 找组合(h, s);
-    for (const f of 帧们) {
+    for (const f of 要出) {
       if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.键} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
     }
     await 等求解缓存写完();
@@ -375,33 +452,12 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 收 = 记录?.阶段;
       const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
       const 明细 = new 明细收集(标签);
-      await 明细.包(async () => {
-      for (const [i, f] of 帧们.entries()) {
-        const file = path.join(出到, `${s.键}-第${String(f).padStart(4, '0')}帧.png`);
-        await renderStill({
-          serveUrl: h.serveUrl,
-          composition,
-          output: file,
-          frame: f,
-          inputProps: h.参数.inputProps,
-          envVariables: 段渲染环境(s.键, 段现在的地形(s)),
-          puppeteerInstance: h.browser,
-          chromiumOptions: { gl: h.参数.gl },
-          imageFormat: 'png',
-          scale: h.参数.scale,
-          timeoutInMilliseconds: 等帧超时毫秒,
-          overwrite: false,
-          logLevel: 'verbose',
-        });
-        明细.帧完成(i + 1);
-        await 记已量帧(s.键, [f]);
-        出.push(file);
-      }
-      });
+      await 明细.包(() => 出静帧们(h, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境: 段渲染环境(s.键, 段现在的地形(s)), 完成: (已出) => 明细.帧完成(已出) }));
+      await 记已量帧(s.键, 要出);
       const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
       await 明细.写出(收 ?? []);
-      console.log(`${阶段小结([等闸, 出帧])}（${帧们.length} 帧）`);
+      console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
     });
   }, 记录);
-  return 出;
+  return 要出.map((f) => 静帧文件(出到, s.键, f));
 };
