@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { 读持有 } from './锁.ts';
-import { 读JSON, 列文件 } from './文件.ts';
+import { 读JSON, 写JSON, 列文件, 只提示 } from './文件.ts';
 import { 列票, 票活着, type 票 } from './票.ts';
-import { 读调度, type 调度事件 } from './调度日志.ts';
+import { 读调度, 记调度, type 调度事件 } from './调度日志.ts';
 import { 清崩溃, type 调度环境, type 任务信息, type 任务声明 } from './任务.ts';
 import { 读机器快照, type 机器快照 } from './机器.ts';
 import type { 发起者 } from './发起者.ts';
@@ -57,10 +57,18 @@ export const 谁占着 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>)
     ...票.filter(t => !t.死).map(t => `排队 #${t.pid} ${t.内容?.声明.种 ?? '旧票'} ${t.内容?.声明.段 ?? ''} ${t.内容?.发起.路 ?? ''}`),
 ].map(x => x.replace(/\s+/g, ' ').trim());
 /** 退役条件是「连续 7 天没见到旧票、旧锁」，不记这个条件恒真。一小时一条够判断，不逐张记。刚拿锁的新闸还没写信息文件，看着像旧锁，所以占够 10 秒才算。 */
+const 记旧协议 = (e: 调度环境, { 持锁, 票 }: Pick<调度状态, '持锁' | '票'>) => {
+    const 现在 = e.现在毫秒(), 旧锁 = 持锁.filter(x => x.旧 && !x.死 && 现在 - x.拿锁时 > 10_000).map(x => x.pid), 旧票 = 票.filter(t => !t.内容 && !t.死).map(t => t.名), file = path.join(e.调度目录, '旧协议.json');
+    if ((!旧锁.length && !旧票.length) || 现在 - (读JSON<{ 时: number }>(file)?.时 ?? 0) < 3_600_000)
+        return;
+    写JSON(file, { 时: 现在 });
+    记调度(e.日志目录, '见到旧协议', { 旧锁, 旧票 }, 现在);
+};
 export const 读状态 = (e: 调度环境, 读机 = 读机器快照, 回收 = true): 调度状态 => {
     if (回收)
         清崩溃(e);
     const 占用 = 读占用(e);
+    只提示('旧协议记录', () => 记旧协议(e, 占用));
     return { 时: e.现在毫秒(), 机: 读机(), ...占用,
         在跑: 列文件(path.join(e.锁目录, '在跑')).flatMap(n => { const x = 读JSON<任务信息>(path.join(e.锁目录, '在跑', n)); return x ? [x] : []; }),
         // 一次 anim 调度 就写一行汇报，尾部开小了告警和决定很快被挤掉，看 就显示成没有。

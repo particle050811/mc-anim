@@ -236,3 +236,14 @@ it('领票打印前面几张和约几分；没人挡不打印；暂缓提示带�
   await 过渲染闸(async()=>{},s=>暂缓.push(s),{...环,睡:async()=>{if(++轮===1){改调度('后',列票(队).find(x=>x.pid===process.pid)!.名,参数(['--为什么','让产出先走','--分钟','0.001']),e,{状态:()=>读状态(e,机,false),输出:()=>{}});fs.rmSync(path.join(队,名));}await new Promise(r=>setTimeout(r,20));}});
   expect(暂缓.some(x=>/暂缓至 \S+：让产出先走/.test(x))).toBe(true);
 });
+it('见到旧票旧锁写事件，一小时一条；刚建还没信息文件的锁可能是新闸，不算',()=>{
+  let now=Date.now();const e=取调度环境({锁目录:dir,现在毫秒:()=>now}),事=()=>读调度(e.日志目录).filter(x=>x.事==='见到旧协议');
+  fs.writeFileSync(path.join(dir,'渲染.lock'),`${process.ppid}\n`);
+  读状态(e,机,false);expect(事()).toHaveLength(0);
+  now+=11_000;读状态(e,机,false);expect(事()).toHaveLength(1);expect(事()[0]!.旧锁).toEqual([process.ppid]);
+  now+=60_000;读状态(e,机,false);expect(事()).toHaveLength(1);
+  fs.rmSync(path.join(dir,'渲染.lock'));fs.mkdirSync(path.join(dir,'渲染.排队'));const 旧票=`000000000000100-${主机片段(e.本机)}-${process.ppid}`;fs.writeFileSync(path.join(dir,'渲染.排队',旧票),String(process.ppid));
+  now+=3_600_000;读状态(e,机,false);expect(事()).toHaveLength(2);expect(事()[1]!.旧票).toEqual([旧票]);
+  fs.rmSync(path.join(dir,'渲染.排队',旧票));
+  设置();now+=7_200_000;读状态(e,机,false);expect(事()).toHaveLength(2);
+});
