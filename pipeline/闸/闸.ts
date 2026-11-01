@@ -15,7 +15,7 @@ import { 读状态 } from './看.ts';
 import { 监测一轮 } from './告警.ts';
 import { 读机器快照, type 机器快照 } from './机器.ts';
 import { 估计 } from './估计.ts';
-import { 取指令, 路让路, 调度让路 } from './指令.ts';
+import { 取指令, 取放行, 用掉放行, 删指令, 路让路, 调度让路 } from './指令.ts';
 export type { 任务声明 } from './任务.ts';
 export { 闸记被杀, 登记临时文件 } from './收尾.ts';
 export const 祖先持锁变量 = 'MCAI_RENDER_LOCK_PID';
@@ -58,10 +58,6 @@ type 排队选项 = Partial<闸环境> & {
     离开准入?: (票: 票) => void;
 };
 const 写票态 = (t: 票) => 只提示('票状态', () => 写票(t));
-export const 读单票放行 = (dir: string, 票: string) => { const c = 读JSON<{
-    动作: string;
-    强?: boolean;
-}>(path.join(dir, '指令', 票 + '.json')); return c?.动作 === '放行' ? c : null; };
 export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<锁柄> => {
     检查重入();
     const e = 取环境(opts), key = path.join(e.锁目录, 名), 前 = 串行.get(key) ?? Promise.resolve();
@@ -97,7 +93,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             t = 改序(t, String(900000000000000 + e.现在毫秒()));
             写票态(t);
             console.error(`== 调度让路：${让路.为什么}；下一张票暂缓至 ${new Date(让路.至).toISOString()}`);
-            只提示('指令文件', () => fs.rmSync(path.join(e.锁目录, '指令', task.info.任务 + '.json'), { force: true }));
+            删指令(e, task.info.任务);
         }
         const 起 = e.现在毫秒();
         let 原等待 = '', 上次监测 = 0;
@@ -169,6 +165,12 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
                     }
                     catch { /* 另一读者先回收 */ }
                 }
+            }
+            const 授权 = 取指令(e, task.info.任务);
+            if (授权?.动作 === '放行' && (授权.至 ?? 0) <= e.现在毫秒()) {
+                console.error(`!! 放行授权已过期（${授权.为什么}）：这张票回到正常判断，还要放行请重发`);
+                记('放行过期', { 至: 授权.至, 为什么: 授权.为什么 });
+                删指令(e, task.info.任务);
             }
             const 越 = opts.越队?.(t) ?? false;
             const 暂缓 = Boolean(t.内容?.暂缓至 && t.内容.暂缓至 > e.现在毫秒());
@@ -247,7 +249,7 @@ const 检查重入 = () => { if (持锁上下文.getStore())
     throw Error(`祖先 pid ${pid} 持有渲染锁，子进程不能再次过闸`); };
 const 拿渲染闸 = async (提示: (s: string) => void, 环境: Partial<闸环境>, 声明: 任务声明): Promise<锁柄> => {
     const e = 取环境(环境);
-    let 票名 = '', 单票读数: Record<string, unknown> | undefined, 卡: '' | '内存' | '负载' = '', 卡起 = 0, 告警过 = false;
+    let 单票读数: Record<string, unknown> | undefined, 卡: '' | '内存' | '负载' = '', 卡起 = 0, 告警过 = false;
     const 止卡 = (t: 票) => {
         if (!卡)
             return;
@@ -258,11 +260,10 @@ const 拿渲染闸 = async (提示: (s: string) => void, 环境: Partial<闸环�
         delete t.内容!.卡在;
         写票态(t);
     };
-    const 柄 = await 排队拿('渲染', { ...e, 声明, 等待提示: s => 提示(`渲染排队（${s}）`), 越队: t => Boolean(读单票放行(e.锁目录, t.名)), 离开准入: 止卡, 准入: t => {
-            票名 = t.名;
+    const 柄 = await 排队拿('渲染', { ...e, 声明, 等待提示: s => 提示(`渲染排队（${s}）`), 越队: t => Boolean(取放行(e, t.内容!.任务)), 离开准入: 止卡, 准入: t => {
             if (声明.不开渲染)
                 return true;
-            const m = e.读内存(), 压力 = e.读压力(), 授权 = 读单票放行(e.锁目录, t.名), load = 声明.需负载 ? e.一分钟负载() : null;
+            const m = e.读内存(), 压力 = e.读压力(), 授权 = 取放行(e, t.内容!.任务), load = 声明.需负载 ? e.一分钟负载() : null;
             const 内存过 = (压力 !== 4 || 授权?.强) && (授权 || !m || 内存够渲染(m, e.内存下限));
             const 负载过 = 授权 || load === null || load < e.核数() * 0.8;
             const 新 = !内存过 ? '内存' : !负载过 ? '负载' : '';
@@ -295,7 +296,7 @@ const 拿渲染闸 = async (提示: (s: string) => void, 环境: Partial<闸环�
     if (单票读数)
         开任务(e, 声明).记('单票放行', 单票读数);
     提示('放行渲染');
-    只提示('指令文件', () => fs.rmSync(path.join(e.锁目录, '指令', 票名 + '.json'), { force: true }));
+    用掉放行(e, 柄.任务);
     return 柄;
 };
 export const 过渲染闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) => void = s => console.error(`== 资源闸：${s}`), 环境: Partial<闸环境> = {}, 声明: 任务声明 = {}): Promise<T> => {
@@ -319,7 +320,7 @@ export const 过渲染闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) 
 export const 过放行闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) => void = s => console.error(`== 资源闸：${s}`), 环境: Partial<闸环境> = {}, 声明: 任务声明 = {}): Promise<T> => {
     检查重入();
     const e = 取环境(环境), 自建 = !有任务(e.锁目录), task = 开任务(e, 声明), 上次文件 = path.join(e.锁目录, '上次放行'), 起 = e.现在毫秒();
-    let 卡在 = '', 票名 = '', code = 1;
+    let 卡在 = '', code = 1;
     const 卡过 = new Set<string>();
     const 间隔够 = () => {
         let 秒 = 0;
@@ -344,9 +345,8 @@ export const 过放行闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) 
             delete c.卡在;
             写票态(t);
         };
-        const 柄 = await 排队拿('放行', { ...e, 声明, 越队: t => Boolean(读单票放行(e.锁目录, t.名)), 离开准入: t => { 卡在 = ''; 止等(t); }, 准入: t => {
-                票名 = t.名;
-                const 授权 = 读单票放行(e.锁目录, t.名), m = e.读内存(), 压力 = e.读压力(), load = e.一分钟负载();
+        const 柄 = await 排队拿('放行', { ...e, 声明, 越队: t => Boolean(取放行(e, t.内容!.任务)), 离开准入: t => { 卡在 = ''; 止等(t); }, 准入: t => {
+                const 授权 = 取放行(e, t.内容!.任务), m = e.读内存(), 压力 = e.读压力(), load = e.一分钟负载();
                 const 项 = [!授权 && !间隔够() ? '间隔' : '', !授权 && load !== null && load >= e.核数() * 0.8 ? '负载' : '', !声明.不开渲染 && ((压力 === 4 && !授权?.强) || (!授权 && m && !内存够渲染(m, e.内存下限))) ? '内存' : ''].filter(Boolean).join('、');
                 if (t.内容!.等内存起 !== undefined && !项.includes('内存'))
                     止等(t);
@@ -364,15 +364,15 @@ export const 过放行闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) 
                     卡过.add(项);
                 卡在 = 项;
                 return !项;
-            }, 锁内复核: t => Boolean(读单票放行(e.锁目录, t.名)) || 间隔够() });
+            }, 锁内复核: t => Boolean(取放行(e, t.内容!.任务)) || 间隔够() });
         try {
             const 秒 = Math.floor(e.现在毫秒() / 1000);
             只提示('上次放行', () => {
                 fs.writeFileSync(上次文件, `${秒}\n`);
                 写JSON(上次文件 + '.信息.json', { 秒, pid: process.pid, 任务: task.info.任务 });
             });
-            task.记('放行', { 票: 票名, 等秒: (e.现在毫秒() - 起) / 1000, 卡在: [...卡过] });
-            只提示('指令文件', () => fs.rmSync(path.join(e.锁目录, '指令', 票名 + '.json'), { force: true }));
+            task.记('放行', { 票: 柄.票, 等秒: (e.现在毫秒() - 起) / 1000, 卡在: [...卡过] });
+            用掉放行(e, 柄.任务);
         }
         finally {
             柄.放();

@@ -7,6 +7,7 @@ import { 记调度 } from './调度日志.ts';
 import { 读JSON, 写JSON, 列文件, 只提示 } from './文件.ts';
 import { 登记收尾 } from './收尾.ts';
 import { 进程在吗 } from './锁.ts';
+import { 取指令, 指令文件 } from './指令.ts';
 export type 任务声明 = {
     种?: string;
     作品?: string;
@@ -61,10 +62,7 @@ const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: n
         完 = true;
         clearInterval(timer);
         撤();
-        const 指令 = 读JSON<{
-            动作: string;
-            为什么?: string;
-        }>(path.join(e.锁目录, '指令', info.任务 + '.json'));
+        const 指令 = 取指令(e, info.任务);
         if (信号) {
             if (指令?.动作 === '取消')
                 console.error(`被调度取消：${指令.为什么}，不要原样重发`);
@@ -83,7 +81,7 @@ const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: n
         });
         只提示('在跑登记', () => {
             fs.rmSync(file, { force: true });
-            fs.rmSync(path.join(e.锁目录, '指令', info.任务 + '.json'), { force: true });
+            fs.rmSync(指令文件(e, info.任务), { force: true });
         });
         活任务.delete(e.锁目录);
     };

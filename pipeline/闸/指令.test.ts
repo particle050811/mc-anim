@@ -81,6 +81,41 @@ const 死pid=99999997;
 const 决定=(e:ReturnType<typeof 取调度环境>)=>读调度(e.日志目录).filter(x=>x.事==='决定');
 const 取消事件=(e:ReturnType<typeof 取调度环境>)=>读调度(e.日志目录).filter(x=>x.事==='取消');
 
+it('放行按任务 id 存：放行后再改序仍越过内存，用掉就没了',async()=>{
+  const e=取调度环境({锁目录:dir}),o={状态:()=>读状态(e,机,false),输出:()=>{}};let 轮=0;
+  await 过渲染闸(async()=>{},()=>{}, {...e,读内存:()=>内存(5),读压力:()=>1,睡:async()=>{
+    if(++轮>3)throw Error('改序后授权丢了');
+    if(轮===1){改调度('放行',列票(队())[0]!.名,参数(['--为什么','峰值小']),e,o);改调度('先',列票(队())[0]!.名,参数(['--为什么','调序']),e,o);}
+  }});
+  expect(轮).toBe(1);expect(fs.readdirSync(path.join(dir,'指令'))).toEqual([]);
+  expect(读调度(e.日志目录).some(x=>x.事==='单票放行')).toBe(true);
+});
+it('放行闸的授权同样跟任务走：改序后越过负载',async()=>{
+  const e=取调度环境({锁目录:dir}),o={状态:()=>读状态(e,机,false),输出:()=>{}},q=path.join(dir,'放行.排队');let 轮=0;
+  await 过放行闸(async()=>{},()=>{}, {...e,读内存:()=>null,读压力:()=>1,核数:()=>10,一分钟负载:()=>100,睡:async()=>{
+    if(++轮>3)throw Error('改序后授权丢了');
+    if(轮===1){改调度('放行',列票(q)[0]!.名,参数(['--为什么','负载是别的']),e,o);改调度('后',列票(q)[0]!.名,参数(['--为什么','调序']),e,o);}
+  }});
+  expect(轮).toBe(1);expect(fs.readdirSync(path.join(dir,'指令'))).toEqual([]);
+});
+it('放行到期作废：写事件一次、回到内存判断',async()=>{
+  let now=Date.now(),轮=0,空闲=5;const e=取调度环境({锁目录:dir,现在毫秒:()=>now}),o={状态:()=>读状态(e,机,false),输出:()=>{}};
+  放锁(process.ppid);const 错=vi.spyOn(console,'error').mockImplementation(()=>{});
+  await 过渲染闸(async()=>{},()=>{}, {...e,读内存:()=>内存(空闲),读压力:()=>1,睡:async()=>{
+    轮++;
+    if(轮===1){改调度('放行',列票(队())[0]!.名,参数(['--为什么','当时够','--分钟','1']),e,o);now+=120_000;fs.rmSync(path.join(dir,'渲染.lock'));}
+    if(轮===4)空闲=80;
+    if(轮>6)throw Error('内存够了还没过');
+  }});
+  expect(轮).toBe(4);expect(读调度(e.日志目录).filter(x=>x.事==='放行过期')).toHaveLength(1);
+  expect(错.mock.calls.flat().join('\n')).toContain('放行授权已过期（当时够）');错.mockRestore();
+  expect(fs.readdirSync(path.join(dir,'指令'))).toEqual([]);
+});
+it('拿锁后用掉放行时不删别的指令：让路还要留给下一段',async()=>{
+  const e=取调度环境({锁目录:dir});let 任务='';
+  await 过渲染闸(async()=>{任务=读状态(e,机,false).持锁[0]!.任务;写指令(e,任务,{动作:'让路',为什么:'下一段再说',时:Date.now(),至:Date.now()+60_000,票:'旧票',任务});
+    expect(fs.existsSync(指令文件(e,任务))).toBe(true);},()=>{}, {...e,读内存:()=>null,读压力:()=>1},{种:'render',可让路:true});
+});
 it('取消：死票、死锁不发信号，决定记真实结果，不写取消事件',()=>{
   const e=取调度环境({锁目录:dir}),o=(杀:(...a:unknown[])=>void,出:string[]=[])=>({状态:()=>读状态(e,机,false),输出:(x:string)=>{出.push(x);},杀});
   const 杀=vi.fn(),出:string[]=[];

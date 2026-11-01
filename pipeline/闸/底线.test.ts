@@ -14,7 +14,7 @@ beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-底线-'));
 afterEach(() => { fs.rmSync(dir, {recursive:true, force:true}); delete process.env[祖先持锁变量]; });
 const 内存 = (n: number) => ({总:100,空闲:n,空闲百分比:n,交换区总:0,交换区已用:0});
 it('低内存无锁但有活票；3 分钟告警；压力 4 只有强放行；下一张不继承', async () => {
-  let now = Date.now(), 压力 = 1, 轮 = 0, 名 = '', 下一张 = false;
+  let now = Date.now(), 压力 = 1, 轮 = 0, 名 = '', 任务 = '', 下一张 = false;
   const 提示: string[] = [];
   const e: Partial<闸环境> = { 锁目录:dir, 本机:os.hostname(), 内存下限:30, 读内存:()=>内存(10), 读压力:()=>压力,
     现在毫秒:()=>now, 排队间隔毫秒:1000, 睡:async () => {
@@ -25,13 +25,14 @@ it('低内存无锁但有活票；3 分钟告警；压力 4 只有强放行；�
       名=names[0]!;
       if (轮===3) 压力=4;
       if (轮>=4) {
+        任务=JSON.parse(fs.readFileSync(path.join(dir,'渲染.排队',名),'utf8')).任务;
         fs.mkdirSync(path.join(dir,'指令'),{recursive:true});
-        fs.writeFileSync(path.join(dir,'指令',名+'.json'),JSON.stringify({动作:'放行',强:轮>=5}));
+        fs.writeFileSync(path.join(dir,'指令',任务+'.json'),JSON.stringify({动作:'放行',强:轮>=5,至:now+60_000,为什么:'测试'}));
       }
     }};
   await 过渲染闸(async()=>{},s=>提示.push(s),e);
   expect(轮).toBe(5); expect(提示.filter(x=>x.startsWith('告警'))).toHaveLength(1);
-  expect(fs.existsSync(path.join(dir,'指令',名+'.json'))).toBe(false);
+  expect(fs.existsSync(path.join(dir,'指令',任务+'.json'))).toBe(false);
   下一张=true; 压力=1;
   // 第二张使用新的读数函数，不能靠上一张票的授权通过。
   e.睡=async()=>{ 轮++; expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(false); throw Error('第二张仍在等'); };
