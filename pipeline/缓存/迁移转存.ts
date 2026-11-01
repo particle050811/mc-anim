@@ -13,7 +13,7 @@ import { 大小文本, 小计, type 带理由, type 媒体文件 } from './回�
 import { 当前母版们, type 当前母版 } from './当前指纹.ts';
 import { 默认天数, 算回收计划 } from './计划.ts';
 
-/** 只打印时估压缩母版要新占多少：决策 0008 实测 CRF12 是 CRF1 的 40%，CRF16 medium 再小约 26% */
+/** 只打印时估压缩母版要新占多少：决策 0008 实测 CRF12 是 CRF1 的 40%，CRF16 medium 再小 26～37%（四段 10 秒样本，全片没测），按小的一头偏保守估 */
 const 估压缩比 = 0.3;
 const 比 = (新: number, 原: number) => (原 ? `${((新 / 原) * 100).toFixed(0)}%` : '-');
 const 相对 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
