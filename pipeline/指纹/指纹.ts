@@ -4,7 +4,7 @@
 //   地形    段声明的地形包和登记的版本（assets/地形版本.json）。代码不再 import 这张表（engine/voxel/区段包位置.ts），改别的包不让这段过期；页面也只拿到这几个包（渲/地形注入.ts）
 //   渲染设置 传给 Remotion 的全部渲染参数和 inputProps
 //   依赖版本 lockfile 里 remotion、three 等决定像素的包
-//   打包规则 webpack 改写、ogg 解码各自规范化文本的哈希（不跟它们的闭包），和影响输出的 tsconfig 编译选项
+//   打包规则 webpack 改写、ogg 解码和媒体字面量兼容各自规范化文本的哈希（不跟它们的闭包），和影响输出的 tsconfig 编译选项
 //   平台    process.platform-arch（跨平台不要求逐像素一致）
 //   私有配乐 闭包里有 engine/audio/私有配乐.ts 的段（按 cue 现取、不打进包）：本段 cue 里的私有配乐记 sha 或「缺:静音」（资产/私有配乐.ts）；
 //           没有这一项的段不写这个键，指纹和加这项之前一样
@@ -41,7 +41,7 @@ export { 锁定版本 };
 const 关键依赖 = ['remotion', '@remotion/bundler', '@remotion/renderer', '@remotion/media', '@remotion/three', 'three', 'react', 'react-dom', 'webpack', 'esbuild'];
 /** 外壳入口是所选作品的 index.ts（和 渲.ts 的 entryPoint 同一个） */
 const 外壳入口 = () => 相对代码根(path.join(作品根(), 'index.ts'));
-const 打包规则文件 = ['pipeline/资产/webpack.ts', 'pipeline/资产/ogg解码.cjs'];
+const 打包规则文件 = ['pipeline/资产/webpack.ts', 'pipeline/资产/ogg解码.cjs', 'pipeline/资产/媒体字面量.cjs'];
 
 const sha = (buf: crypto.BinaryLike) => crypto.createHash('sha256').update(buf).digest('hex');
 

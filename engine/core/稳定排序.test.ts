@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { 不透明先后, 成组排, 排材质, 排在后面, 刷新包围球, 透明先后 } from './稳定排序.ts';
+import { 不透明先后, 成组排, 排材质, 排在后面, 刷新包围球, 还原声明次序, 透明先后 } from './稳定排序.ts';
 
 const 项 = (名: string, 改: Partial<{ groupOrder: number; renderOrder: number; materialVariant: number; z: number }> = {}) => ({ 名, groupOrder: 0, renderOrder: 0, materialVariant: 0, z: 0.5, ...改 });
 const 名们 = (xs: { 名: string }[]) => xs.map((x) => x.名).join('');
@@ -104,4 +104,38 @@ describe('稳定排序', () => {
     expect(手写.boundingSphere).toBeNull();
     expect(() => 刷新包围球(new THREE.Group())).not.toThrow();
   });
+  it('重建挪到末尾的子节点按实例表还原，不归 R3F 管的留在原位', () => {
+    const 父 = new THREE.Group();
+    const [甲, 手动, 乙, 丙] = [new THREE.Mesh(), new THREE.Mesh(), new THREE.Mesh(), new THREE.Mesh()];
+    父.add(手动, 乙, 丙, 甲); // 甲 本来声明在最前，重建后到了末尾
+    const 带实例 = 父 as THREE.Group & { __r3f?: unknown };
+    带实例.__r3f = { children: [{ object: 甲 }, { object: new THREE.MeshBasicMaterial() }, { object: 乙 }, { object: 丙 }] };
+    还原声明次序(父);
+    expect(父.children).toEqual([手动, 甲, 乙, 丙]);
+    还原声明次序(父);
+    expect(父.children).toEqual([手动, 甲, 乙, 丙]);
+  });
+  it('几千个声明节点不反复从头查位置，手动节点仍留在原位', () => {
+    const 父 = new THREE.Group();
+    const 子们 = Array.from({ length: 2000 }, () => new THREE.Object3D());
+    const 手动 = new THREE.Object3D();
+    父.add(手动, ...子们);
+    (父 as THREE.Group & { __r3f?: unknown }).__r3f = { children: 子们.map((object) => ({ object })) };
+    let 读次数 = 0;
+    父.children = new Proxy(父.children, {
+      get: (数组, 键, 接收者) => {
+        if (typeof 键 === 'string' && /^\d+$/.test(键)) 读次数++;
+        return Reflect.get(数组, 键, 接收者);
+      },
+    });
+    还原声明次序(父);
+    expect(读次数).toBeLessThan(子们.length * 5);
+    父.remove(子们[0]);
+    父.add(子们[0]);
+    读次数 = 0;
+    还原声明次序(父);
+    expect(读次数).toBeLessThan(子们.length * 5);
+    expect(父.children).toEqual([手动, ...子们]);
+  });
+
 });
