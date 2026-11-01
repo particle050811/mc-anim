@@ -24,6 +24,8 @@ describe('遮密', () => {
     ['curl -H "Authorization: Bearer fake-1" https://x.y'], ['Cookie: sid=fake-1; other=fake-2'], ['--cookie=sid=fake-1'],
     ['https://oauth2:fake-1@github.com/a'], ['git clone ssh://me:fake-1@host/x'], ['PASSWD=fake-1'], ['DB_PASS=fake-1'], ['MYSQL_PWD=fake-1'], ['pass=fake-1'], ['pwd: fake-1'], ['--auth=fake-1'], ['--auth fake-1'],
     ['credentials=fake-1'], ['--credentials fake-1'], ['aws_credential: fake-1'], ['API_KEY=fake-1'], ['x-api-key: fake-1'], ['apikey=fake-1'], ['--key fake-1'], ['?token=fake-1&x=1'], ['{"password":"fake-1"}'], ['Bearer fake-1'],
+    ['Authorization: Bearer "fake-1"'], ["Authorization: Bearer 'fake-1'"], ['Authorization: Bearer "fake-1 fake-2"'], ['Authorization: token "fake-1"'], ['Authorization: "Bearer fake-1"'],
+    ['Cookie: sid="fake-1"; o=fake-2'], ["Set-Cookie: sid='fake-1'; Path=/"], ['x-api-key: fake-1 fake-2'], ['X-Auth-Token: "fake-1" fake-2'], ['Bearer "fake-1 fake-2"'], ['GH_TOKEN="fake-1 fake-2'], ['https://u:fake 1@h/x'],
   ])('%s', s => { expect(遮密(s)).not.toContain('fake'); });
   it('长得像密钥的值，没有名字也遮', () => { expect(遮密('用 sk-fake0000 和 ghp_fake0000 登录')).toBe('用 [已遮蔽] 和 [已遮蔽] 登录'); });
   it.each([['token 满了'], ['pass 3 通过'], ['bypass=1'], ['author=张三'], ['keyframe=3'], ['monkey=3'], ['--keyframe 3'], ['task-1234567'], ['key-art/图.png'], ['负载1.0/10 闸40% 压力1 持锁#1 排队0'], ['--为什么 auth 失败']])('不误遮 %s', s => { expect(遮密(s)).toBe(s); });
@@ -31,6 +33,10 @@ describe('遮密', () => {
     expect(遮命令(['anim', '--password', 'fake two words', '--to', '3'])).toBe('anim --password [已遮蔽] --to 3');
     expect(遮命令(['--password=fake two words', 'PASSWD=fake two'])).toBe('--password=[已遮蔽] PASSWD=[已遮蔽]');
     expect(遮命令(['-H', 'Authorization: Bearer fake abc'])).toBe('-H Authorization: [已遮蔽]');
+    expect(遮命令(['-H', 'Authorization: Bearer "fake abc"', '--to', '3'])).toBe('-H Authorization: [已遮蔽] --to 3');
+    expect(遮命令(['-H', 'Authorization: Bearer fake=abc'])).toBe('-H Authorization: [已遮蔽]');
+    expect(遮命令(['-H', 'Cookie: sid="fake"; o=fake', '--header', 'x-api-key: fake two'])).toBe('-H Cookie: [已遮蔽] --header x-api-key: [已遮蔽]');
+    expect(遮命令(['--为什么', 'pass 3: 通过', 'https://a.b/c:d', 'author: 张三'])).toBe('--为什么 pass 3: 通过 https://a.b/c:d author: 张三');
   });
   it('进日志的字段和键都遮；发起者的命令走逐项遮', () => {
     记调度(dir, '决定', { 为什么: 'DB_PASS=fake-1 https://u:fake-2@h/x', 发起: 读发起者({ ANIM_ROUTE: 'token=fake-3' }, ['node', '--cookie', 'sid fake-4'], dir, false), cookie: 'fake-5', db_pwd: 'fake-6' });
