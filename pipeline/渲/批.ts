@@ -44,7 +44,7 @@ export const 跑批 = async (args: string[]) => {
             const 留帧 = t.留 === '全' ? new Set(帧们) : new Set(t.留 ? 解帧(t.留) : [帧们.at(-1)!]);
             const 目录 = path.join(出!, t.名);
             fs.mkdirSync(目录, { recursive: true });
-            await 批.一项({ 段: t.段, 帧数: 帧们.length }, async () => {
+            await 批.一项({ 段: t.段, 帧数: 帧们.length, 帧: t.帧串.slice(0, 60) }, async () => {
                 browser ??= await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' });
                 const 日志 = fs.createWriteStream(path.join(目录, '日志.txt'));
                 const 行: string[] = [];

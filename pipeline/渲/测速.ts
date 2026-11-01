@@ -119,7 +119,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
             明细: 文件,
             输出: opts.留输出 ? out : null,
           });
-        }, (m) => console.error(`== 资源闸：${m}`),{}, {种:'bench',作品:作品名(),段:s.键,帧数:帧[1]-帧[0]+1,级别,用途:process.env.ANIM_PURPOSE??'实验'});
+        }, (m) => console.error(`== 资源闸：${m}`),{}, {种:'bench',作品:作品名(),段:s.键,帧数:帧[1]-帧[0]+1,帧:`${帧[0]}-${帧[1]}`,级别,用途:process.env.ANIM_PURPOSE??'实验'});
       }
       return { remotion, 浏览器: 浏览器版本(opts.浏览器), 共享内存: !opts.关共享内存, 日志级别: 渲染日志, 段: `${作品名()}/${s.键}`, 帧, 打包秒, 开浏览器秒, 读组合秒, 轮 };
     } finally {

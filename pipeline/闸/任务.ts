@@ -14,6 +14,8 @@ export type 任务声明 = {
     作品?: string;
     段?: string;
     帧数?: number;
+    /** 帧号摘要：只为认出重复的票，帧多时截短。 */
+    帧?: string;
     级别?: string;
     预计秒?: number | null;
     用途?: string;

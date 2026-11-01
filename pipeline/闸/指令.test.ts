@@ -165,7 +165,7 @@ it('读路径：死票死锁单独标记、不算占用、不当排队告警；�
   const e=取调度环境({锁目录:dir});放票(e,死pid);放锁(死pid+1);
   const s=读状态(e,机,false);expect(s.票[0]!.死).toBe(true);expect(s.持锁[0]!.死).toBe(true);
   expect(一行状态(s)).toContain(`持锁#${死pid+1}死 排队0 死票1`);
-  const 看=渲染看(s);expect(看).toContain(`持锁 #${死pid+1} 死 render`);expect(看).toContain(`排队1 #${死pid} 死 still`);
+  const 看=渲染看(s);expect(看).toContain(`持锁 #${死pid+1} 死 render`);expect(看).toContain(`排队1 #${死pid} 死 等`);expect(看).toContain(' still');
   const 类=判告警(s,s.时+3600_000).map(x=>x.类);expect(类).toContain('持锁者死');expect(类).not.toContain('排队长');expect(类).not.toContain('小任务等待');
   let now=0;const 时钟=取调度环境({锁目录:dir,现在毫秒:()=>now}),提示=vi.fn();
   expect(await 等条件(参数(['--闸空','--最长','90']),时钟,{睡:async ms=>{now+=ms;},提示})).toBe(0);expect(now).toBe(30_000);expect(提示).not.toHaveBeenCalled();

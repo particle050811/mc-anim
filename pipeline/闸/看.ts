@@ -20,6 +20,7 @@ export type 锁信息 = {
     总帧?: number;
     死?: boolean;
     旧?: boolean;
+    锁?: string;
 };
 export type 调度状态 = {
     时: number;
@@ -38,14 +39,14 @@ export const 读占用 = (e: 调度环境): Pick<调度状态, '持锁' | '票'>
             continue;
         const { pid, 死 } = 持, info = 读JSON<锁信息>(file + '.信息.json');
         if (info?.pid === pid)
-            持锁.push({ ...info, 死 });
+            持锁.push({ ...info, 死, 锁: name });
         else {
             let 起 = e.现在毫秒();
             try {
                 起 = fs.statSync(file).mtimeMs;
             }
             catch { /* 正在放锁 */ }
-            持锁.push({ pid, 票: `#${pid}`, 任务: `旧-${pid}`, 发起: { pid, 工作区: '旧闸，无信息' } as 发起者, 声明: { 种: name }, 拿锁时: 起, 心跳: 0, 帧时: 起, 已出帧: 0, 旧: true, 死 });
+            持锁.push({ pid, 票: `#${pid}`, 任务: `旧-${pid}`, 发起: { pid, 工作区: '旧闸，无信息' } as 发起者, 声明: { 种: name }, 拿锁时: 起, 心跳: 0, 帧时: 起, 已出帧: 0, 旧: true, 死, 锁: name });
         }
     }
     return { 持锁, 票: ['渲染', '放行'].flatMap(n => 列票(path.join(e.锁目录, n + '.排队'))).map(t => ({ ...t, 死: !票活着(t, e.本机) })) };
@@ -55,10 +56,12 @@ export const 谁占着 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>)
     ...持锁.filter(x => !x.死).map(x => `持锁 #${x.pid} ${x.声明.种 ?? '脚本'} ${x.声明.段 ?? ''} ${x.发起.路 || x.发起.工作区}`),
     ...票.filter(t => !t.死).map(t => `排队 #${t.pid} ${t.内容?.声明.种 ?? '旧票'} ${t.内容?.声明.段 ?? ''} ${t.内容?.发起.路 ?? ''}`),
 ].map(x => x.replace(/\s+/g, ' ').trim());
+/** 退役条件是「连续 7 天没见到旧票、旧锁」，不记这个条件恒真。一小时一条够判断，不逐张记。刚拿锁的新闸还没写信息文件，看着像旧锁，所以占够 10 秒才算。 */
 export const 读状态 = (e: 调度环境, 读机 = 读机器快照, 回收 = true): 调度状态 => {
     if (回收)
         清崩溃(e);
-    return { 时: e.现在毫秒(), 机: 读机(), ...读占用(e),
+    const 占用 = 读占用(e);
+    return { 时: e.现在毫秒(), 机: 读机(), ...占用,
         在跑: 列文件(path.join(e.锁目录, '在跑')).flatMap(n => { const x = 读JSON<任务信息>(path.join(e.锁目录, '在跑', n)); return x ? [x] : []; }),
         // 一次 anim 调度 就写一行汇报，尾部开小了告警和决定很快被挤掉，看 就显示成没有。
         最近: 读调度(e.日志目录, 256 * 1024).filter(x => x.事 === '告警' || x.事 === '决定').slice(-8) };
@@ -66,6 +69,16 @@ export const 读状态 = (e: 调度环境, 读机 = 读机器快照, 回收 = tr
 const 分 = (秒: number) => `${Math.max(0, 秒 / 60).toFixed(1)}分`;
 const G = (n: number | null) => n === null ? '?' : (n / 2 ** 30).toFixed(1) + 'G';
 export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}`;
+/** 占锁中位数，没有预计的按它算下界。 */
+const 无预计秒 = 23;
+/** 这些活占用还要多久：持锁剩余加票的预计。 */
+export const 前方等待 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>, 现在: number) => {
+    const 活锁 = 持锁.filter(x => !x.死), 活票 = 票.filter(t => !t.死);
+    return {
+        秒: 活锁.reduce((n, x) => n + Math.max(0, (x.声明.预计秒 ?? 无预计秒) - (现在 - x.拿锁时) / 1000), 0) + 活票.reduce((n, t) => n + (t.内容?.声明.预计秒 ?? 无预计秒), 0),
+        未知: 活锁.some(x => !x.声明.预计秒) || 活票.some(t => !t.内容?.声明.预计秒),
+    };
+};
 /** 固定预算，字符串按 UTF-8 字节截断；20 张票也不铺满会话。完整字段用 --json。 */
 export const 渲染看 = (s: 调度状态): string => {
     const m = s.机, lines = [`${new Date(s.时).toISOString().slice(5, 19)}Z ${一行状态(s)} free${G(m.free)} 压缩${G(m.压缩)} swap${G(m.swap)} 换出${G(m.换出)} GPU${m.GPU ?? '?'}% 热${m.热 ?? '?'} 盘${G(m.盘)}`];
@@ -73,19 +86,15 @@ export const 渲染看 = (s: 调度状态): string => {
     lines.push(`CPU/准备 ${cpu.slice(0, 3).map(x => `#${x.发起.pid} ${x.声明.种} ${x.发起.路 || x.发起.工作区}`).join('；') || '无登记'}；孤儿Chrome ${m.孤儿 ?? '?'}`);
     for (const x of s.持锁.slice(0, 2))
         lines.push(`持锁 #${x.pid}${x.死 ? ' 死' : ''} ${x.声明.种 ?? '脚本'} ${x.声明.段 ?? ''} ${x.已出帧}/${x.总帧 ?? '?'}帧 ${x.发起.工作区}/${x.发起.路 || '?'} ${x.声明.用途 ?? '?'} 已占${分((s.时 - x.拿锁时) / 1000)}/预计${x.声明.预计秒 ? 分(x.声明.预计秒) : '?'} 心跳${x.心跳 ? Math.round((s.时 - x.心跳) / 1000) + '秒' : '无，旧闸'}`);
-    const 活锁 = s.持锁.filter(x => !x.死);
-    let 等 = 活锁.reduce((n, x) => n + Math.max(0, (x.声明.预计秒 ?? 23) - (s.时 - x.拿锁时) / 1000), 0);
-    let 未知 = 活锁.some(x => !x.声明.预计秒);
-    const seen = new Map<string, number>();
+    const seen = new Map<string, number>(), 前面: 票[] = [];
     s.票.slice(0, 3).forEach((t, i) => {
-        const c = t.内容, d = c?.声明, key = JSON.stringify([d?.种, d?.作品, d?.段, d?.帧数]);
-        const 重复 = c && seen.get(key);
-        seen.set(key, t.pid);
-        lines.push(`排队${i + 1} #${t.pid}${t.死 ? ' 死' : ''} ${d?.种 ?? '旧票'} ${d?.段 ?? ''} ${c?.发起.路 ?? ''} 等${分((s.时 - (c?.起 ?? t.时间)) / 1000)} 预计${d?.预计秒 ? 分(d.预计秒) : '?'} 约${未知 ? '≥' : ''}${分(等)}后${重复 ? ' 重复#' + 重复 : ''}${c?.卡在 ? ' 等' + c.卡在 : ''}${c?.暂缓至 ? ' 暂缓' : ''}`);
-        if (t.死)
-            return;
-        等 += d?.预计秒 ?? 23;
-        未知 ||= !d?.预计秒;
+        const c = t.内容, d = c?.声明, key = JSON.stringify([d?.种, d?.作品, d?.段, d?.级别, d?.帧, d?.帧数]), 活 = c && !t.死;
+        const 重复 = 活 && seen.get(key), { 秒, 未知 } = 前方等待({ 持锁: s.持锁, 票: 前面 }, s.时);
+        if (活)
+            seen.set(key, t.pid);
+        前面.push(t);
+        // 标记放前面：超预算时只截段和路名，「约 0 分后」后面的 等内存 不能被截掉。
+        lines.push(`排队${i + 1} #${t.pid}${t.死 ? ' 死' : ''}${重复 ? ' 重复#' + 重复 : ''}${c?.卡在 ? ' 等' + c.卡在 : ''}${c?.暂缓至 ? ' 暂缓' : ''} 等${分((s.时 - (c?.起 ?? t.时间)) / 1000)} 预计${d?.预计秒 ? 分(d.预计秒) : '?'} 约${未知 ? '≥' : ''}${分(秒)}后 ${d?.种 ?? '旧票'} ${d?.段 ?? ''} ${c?.发起.路 ?? ''}`);
     });
     if (s.票.length > 3)
         lines.push(`另${s.票.length - 3}张（--json 看全队）`);

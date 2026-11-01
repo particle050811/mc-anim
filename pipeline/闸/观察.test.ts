@@ -74,3 +74,14 @@ it('盯把快照与补读日志的同一任务止合并为一次通知',async()=
   expect(await 盯(e,{任务:'结束任务',读:()=>s,父活:()=>true,输出:x=>out.push(x)})).toBe(0);
   expect(out).toHaveLength(1);expect(out[0]!.match(/任务止/g)).toHaveLength(1);
 });
+it('队列行：关键标记在前不被截，超预算只截段和路名；重复按帧号和级别认',()=>{
+  const s=基本();加票(s,3);s.票.forEach((t,i)=>{t.pid=100+i;});const [a,b,c]=s.票.map(t=>t.内容!) as [NonNullable<typeof s.票[0]['内容']>,NonNullable<typeof s.票[0]['内容']>,NonNullable<typeof s.票[0]['内容']>];
+  const 声明={种:'still',作品:'作',段:'6-规矩风矢',级别:'视频',帧:'0',帧数:1,预计秒:24};
+  a.声明=声明;a.卡在='内存';a.发起={...a.发起,路:'很长'.repeat(30)};
+  b.声明={...声明,帧:'100'};c.声明={...声明};c.暂缓至=9e15;
+  const 行=渲染看(s).split('\n').filter(x=>x.startsWith('排队'));
+  expect(行[0]).toMatch(/^排队1 #100 等内存 等.+约.+后 still 6-规矩风矢 很长/);expect(行[0]!.endsWith('…')).toBe(true);
+  expect(行[1]).not.toContain('重复');
+  expect(行[2]).toMatch(/^排队3 #102 重复#100 暂缓 /);
+  c.声明={...声明,级别:'预览'};expect(渲染看(s)).not.toContain('重复');
+});

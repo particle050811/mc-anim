@@ -461,7 +461,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
       await 明细.写出(收 ?? []);
       console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
-    }, undefined, {}, {种:'still',作品:作品名(),段:s.键,级别,帧数:要出.length,用途:process.env.ANIM_PURPOSE??'核对'});
+    }, undefined, {}, {种:'still',作品:作品名(),段:s.键,级别,帧数:要出.length,帧:要出.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
   }, 记录);
   return 要出.map((f) => 静帧文件(出到, s.键, f));
 };
