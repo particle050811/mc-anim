@@ -1,4 +1,4 @@
-// verify 永远不拿 CRF12 的像素按 1e-3 门槛比（用户 10-30 定母版存 CRF12，02-实测数据.md：地形差 > 16 占 2.4e-2，比就全不过）：
+// verify 永远不拿压缩母版的像素按 1e-3 门槛比（用户 10-30 定母版转码存，02-实测数据.md：CRF12 地形差 > 16 占 2.4e-2，比就全不过）：
 // 新这一版只用从 CRF1 抽的无损抽样帧；抽样帧丢了报要重渲才能验收，不静默退回。数据根、作品都是临时的。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -44,7 +44,7 @@ const 记录 = () => {
 };
 const 造 = (f: string) => {
   fs.mkdirSync(path.dirname(f), { recursive: true });
-  // 噪声大：CRF12 和 CRF1 差 > 16 的像素远超 1e-3，真拿 CRF12 比这里就不过
+  // 噪声大：压缩母版和 CRF1 差 > 16 的像素远超 1e-3，真拿压缩母版比这里就不过
   const r = spawnSync('ffmpeg', [
     '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=320x180:rate=24:duration=2,noise=alls=80:allf=t', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2:sample_rate=48000',
     '-c:v', 'libx264', '-preset', 'veryfast', '-qp', '0', '-threads', '1', '-pix_fmt', 'yuv420p', '-c:a', 'pcm_s16le', '-ac', '2', f,
@@ -55,7 +55,7 @@ const F1 = 指纹('认可那版');
 const F2 = 指纹('新的一版');
 const 有ffmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
 
-describe.skipIf(!有ffmpeg)('verify 和 CRF12', () => {
+describe.skipIf(!有ffmpeg)('verify 和压缩母版', () => {
   beforeAll(async () => {
     fs.mkdirSync(作品根, { recursive: true });
     当前.指纹 = F1;
@@ -70,16 +70,16 @@ describe.skipIf(!有ffmpeg)('verify 和 CRF12', () => {
   });
   afterAll(() => fs.rmSync(数据根, { recursive: true, force: true }));
 
-  it('只剩 CRF12：用段签的无损抽样帧比，过；真拿 CRF12 比是过不了的', async () => {
+  it('只剩压缩母版：用段签的无损抽样帧比，过；真拿压缩母版比是过不了的', async () => {
     读像素的.length = 0;
     expect(await 验收命令['verify']!.跑(['甲'], 记录())).toBe(0);
-    expect(读像素的.filter((f) => f.endsWith('.crf12.mkv'))).toEqual([]);
+    expect(读像素的.filter((f) => f.endsWith('.x264.mkv'))).toEqual([]);
     const 认 = 读认可(认可文件('甲'))!;
     const 直比 = await 扫母版(压缩母版路径('甲', F2), { 认可: 认, 旧母版: 原母版路径('甲', F1), 阈值: { 差像素门槛: 16, 差像素占比: 1e-3, 块均值容差: 1, 响度容差LU: 0.5, 起音容差帧: 1 } });
     expect(直比.帧结论.some((f) => f.结论 === '变了')).toBe(true);
   });
 
-  it('抽样帧丢了、CRF1 也没了：报要重渲才能验收，不比 CRF12；accept 也拒', async () => {
+  it('抽样帧丢了、CRF1 也没了：报要重渲才能验收，不比压缩母版；accept 也拒', async () => {
     const 抽 = 抽样路径(读段签('甲', F2)!);
     const 留 = `${抽}.留`;
     fs.renameSync(抽, 留);
@@ -95,7 +95,7 @@ describe.skipIf(!有ffmpeg)('verify 和 CRF12', () => {
     }
   });
 
-  it('--对基线 只剩 CRF12：不比 CRF12，报要加 --渲；加了就重渲并留 CRF1（不是让人 render --重渲 再转存删掉的死路）', async () => {
+  it('--对基线 只剩压缩母版：不比压缩母版，报要加 --渲；加了就重渲并留 CRF1（不是让人 render --重渲 再转存删掉的死路）', async () => {
     读像素的.length = 0;
     渲的.length = 0;
     const r = 记录();
@@ -108,7 +108,7 @@ describe.skipIf(!有ffmpeg)('verify 和 CRF12', () => {
     expect(读像素的).toEqual([]);
   });
 
-  it('认可记录的抽样间隔和段签不一样、CRF1 没了：同样报要重渲，不比 CRF12', async () => {
+  it('认可记录的抽样间隔和段签不一样、CRF1 没了：同样报要重渲，不比压缩母版', async () => {
     const f = 认可文件('甲');
     const 原文 = fs.readFileSync(f, 'utf8');
     fs.writeFileSync(f, 原文.replace(/^"间隔" = 24$/m, '"间隔" = 7'));
@@ -117,7 +117,7 @@ describe.skipIf(!有ffmpeg)('verify 和 CRF12', () => {
       读像素的.length = 0;
       const r = 记录();
       expect(await 验收命令['verify']!.跑(['甲'], r)).toBe(1);
-      expect(读像素的.filter((x) => x.endsWith('.crf12.mkv'))).toEqual([]);
+      expect(读像素的.filter((x) => x.endsWith('.x264.mkv'))).toEqual([]);
     } finally {
       fs.writeFileSync(f, 原文);
     }

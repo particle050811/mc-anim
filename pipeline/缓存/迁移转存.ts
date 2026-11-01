@@ -1,4 +1,4 @@
-// anim cache 转存 [--执行]：把现有的 CRF1 母版一次转成 CRF12（用户 10-30 定「就用 CRF 12 转码 优化一下存储空间」，决策 0008）。
+// anim cache 转存 [--执行]：把现有的 CRF1 母版一次转成压缩母版（用户 10-30 定转码存，决策 0008）。
 // 默认只打印：各作品、各级别当前指纹要转哪些、段签齐不齐，以及转完以后 anim cache gc 能删什么（已被取代的 CRF1、过期母版、叠层）。
 // --执行 只转码（每段单独过渲染闸，别的渲染能插进来），CRF1 不删：先看报告，再 anim cache gc --执行 --只 母版,叠层 真删。断了重跑，转好的跳过。
 import fs from 'node:fs';
@@ -13,8 +13,8 @@ import { 大小文本, 小计, type 带理由, type 媒体文件 } from './回�
 import { 当前母版们, type 当前母版 } from './当前指纹.ts';
 import { 默认天数, 算回收计划 } from './计划.ts';
 
-/** 只打印时估 CRF12 要新占多少：决策 0008 实测 62 个母版 9.6 GB → 3.9 GB */
-const 估压缩比 = 0.4;
+/** 只打印时估压缩母版要新占多少：决策 0008 实测 CRF12 是 CRF1 的 40%，CRF16 medium 再小 26～37%（四段 10 秒样本，全片没测），按小的一头偏保守估 */
+const 估压缩比 = 0.3;
 const 比 = (新: number, 原: number) => (原 ? `${((新 / 原) * 100).toFixed(0)}%` : '-');
 const 相对 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
 
@@ -35,7 +35,7 @@ const 现状 = async (x: 当前母版) => {
 export const 打删除计划 = (媒体: readonly 带理由<媒体文件>[], 详细: boolean) => {
   const 取代 = 媒体.filter((f) => f.已被取代);
   const 组们: [string, 带理由<媒体文件>[]][] = [
-    ['已被 CRF12 取代的 CRF1', 取代],
+    ['已被压缩母版取代的 CRF1', 取代],
     ['其余母版（删的都是过期的）', 媒体.filter((f) => f.种 === '母版' && !f.已被取代)],
     ['叠层（删的都是过期的）', 媒体.filter((f) => f.种 === '叠层')],
   ];
@@ -97,7 +97,7 @@ export const 迁移转存 = async (作品们: readonly string[], o: { 执行: bo
   if (o.执行) console.log(`  合计腾出约 ${大小文本(合计)}。真删：anim cache gc --执行 --只 母版,叠层`);
   else {
     const 新增 = 要转.reduce((n, x) => n + x.原大小, 0) * 估压缩比;
-    console.log(`  合计删约 ${大小文本(合计)}，转存新占约 ${大小文本(新增)}（按实测 CRF12 约 CRF1 的 ${估压缩比 * 100}% 估），净省约 ${大小文本(Math.max(0, 合计 - 新增))}。先 anim cache 转存 --执行，再真删：anim cache gc --执行 --只 母版,叠层`);
+    console.log(`  合计删约 ${大小文本(合计)}，转存新占约 ${大小文本(新增)}（按约 CRF1 的 ${估压缩比 * 100}% 估），净省约 ${大小文本(Math.max(0, 合计 - 新增))}。先 anim cache 转存 --执行，再真删：anim cache gc --执行 --只 母版,叠层`);
   }
   return 失败 ? 1 : 0;
 };

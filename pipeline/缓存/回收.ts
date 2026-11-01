@@ -1,9 +1,9 @@
 // anim cache gc 的规划：数据根和代码检出里各类缓存哪些删、哪些留、为什么留。这里只有纯规划和扫描（不删东西），删在 执行.ts。
-// 母版、叠层（cache/{母版,叠层}/<作品>/<键>/<指纹前 16 位>{.mkv,.crf12.mkv,.mov}）：只删媒体文件，旁边的 .指纹.json、.用过 一律留（stale 拿它说明哪项变了）。
+// 母版、叠层（cache/{母版,叠层}/<作品>/<键>/<指纹前 16 位>{.mkv,.x264.mkv,.mov}）：只删媒体文件，旁边的 .指纹.json、.用过 一律留（stale 拿它说明哪项变了）。
 //   留：各渲染级别的当前指纹、还没有认可参考的认可那版（verify 拿它的 CRF1 逐像素比）、还没自足的交付 manifest 引用的（edit-package 要读）、
 //   每段每级别最近渲的一份（film --允许过期 取它）、近 N 天渲的、近 2 小时用过的（.用过）、别的还在的检出用过的（.检出-*，它的当前指纹这边算不出来）、这段当前指纹算不出时整个目录。
-//   同一指纹有 CRF12 时 CRF1 已被取代（用户 10-30 定母版改存 CRF12），只有「要原母版」的理由（没有认可参考的认可、待补画面的交付、读不出的记录）和正在写才留它，用过不算：读者都读 CRF12，verify 只从段签取；
-//   CRF12 按同名 CRF1 的路径找理由（钉的时候都按 CRF1 名记），认可的理由对 CRF12 不算（verify 不比 CRF12 的像素）。
+//   同一指纹有压缩母版时 CRF1 已被取代（用户 10-30 定母版转码存），只有「要原母版」的理由（没有认可参考的认可、待补画面的交付、读不出的记录）和正在写才留它，用过不算：读者都读压缩母版，verify 只从段签取；
+//   压缩母版按同名 CRF1 的路径找理由（钉的时候都按 CRF1 名记），认可的理由对压缩母版不算（verify 不比压缩母版的像素）。
 // 草稿（run/草稿/<目录>）超过 N 天删；webpack 缓存（<检出>/node_modules/.cache/webpack/remotion-<环境>-<版本>/<哈希>/）换了 Remotion 版本的整个删，
 // 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。地形烘焙的暂存目录（run/暂存/terrain/<包>）写入锁没人拿、1 天没动的删。
 // 列段、音频数这类认得但不自动删的只报大小（计划.ts 的 只报目录）；不认识的目录只报告。
@@ -13,12 +13,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 本检出 } from '../环境/路径.ts';
 import { 持有者, 持有者主机, 进程在吗 } from '../闸/锁.ts';
-import { 近期用过毫秒 } from '../渲/母版.ts';
+import { 压缩后缀, 近期用过毫秒 } from '../渲/母版.ts';
 
 export type 保留类 = '当前' | '认可' | '交付' | '最近一份' | '近期' | '在用' | '算不出';
 /** 报告里按这个顺序算「主要因为什么留」 */
 export const 保留类顺序: readonly 保留类[] = ['当前', '认可', '交付', '最近一份', '近期', '在用', '算不出'];
-/** 要原母版：这个理由要的是 CRF1 那份字节（verify 的无损像素、补交付要出片时那份），CRF1 被 CRF12 取代了也照留 */
+/** 要原母版：这个理由要的是 CRF1 那份字节（verify 的无损像素、补交付要出片时那份），CRF1 被压缩母版取代了也照留 */
 export type 保留理由 = { 类: 保留类; 说明: string; 要原母版?: true };
 
 const 天 = 24 * 3600 * 1000;
@@ -63,7 +63,6 @@ export class 保留集 {
 
 export type 缓存种 = '母版' | '叠层';
 export const 媒体后缀: Record<缓存种, string> = { 母版: '.mkv', 叠层: '.mov' };
-export const 压缩后缀 = '.crf12.mkv';
 
 export type 媒体文件 = {
   路径: string;
@@ -85,9 +84,9 @@ export type 媒体文件 = {
   /** 设备-inode 和硬链接数：迁移时有过把同一份母版硬链接到新指纹名下，删掉一个名字不腾空间 */
   inode: string;
   链数: number;
-  /** 母版的存法：crf1（Remotion 直出）、crf12（转码存的）；叠层是 null */
-  存法: 'crf1' | 'crf12' | null;
-  /** CRF1 且同一指纹的 CRF12 在、段签记着是从它转的 */
+  /** 母版的存法：crf1（Remotion 直出）、x264（转码存的）；叠层是 null */
+  存法: 'crf1' | 'x264' | null;
+  /** CRF1 且同一指纹的压缩母版在、段签记着是从它转的 */
   已被取代: boolean;
   /** 旁边 .用过 的修改时间（render、film、verify、edit-package 最后一次用），没有是 null */
   用过于: number | null;
@@ -100,14 +99,14 @@ export type 带理由<T> = T & { 理由: 保留理由[] };
 
 /** 渲染中途崩掉留下的临时文件（渲.ts 的 .渲染中-<pid>、母版.ts 原子写 的 .写入中-<pid>） */
 export const 是临时名 = (名: string) => /\.(渲染中|写入中|转码中)-\d+/.test(名);
-const 媒体名 = /^([0-9a-f]{16})(\.crf12)?\.(mkv|mov)$/;
+const 媒体名 = /^([0-9a-f]{16})(\.x264)?\.(mkv|mov)$/;
 const 用过名 = /^[0-9a-f]{16}\.用过$/;
 const 检出记号名 = /^[0-9a-f]{16}\.检出-[0-9a-f]{8}$/;
 
-/** 同目录里 CRF1 名 ↔ 钉的时候用的逻辑名（CRF12 按同指纹的 CRF1 名找理由） */
+/** 同目录里 CRF1 名 ↔ 钉的时候用的逻辑名（压缩母版按同指纹的 CRF1 名找理由） */
 export const 逻辑名 = (路径: string) => (路径.endsWith(压缩后缀) ? 路径.slice(0, -压缩后缀.length) + '.mkv' : 路径);
 
-/** 段签记着这个指纹的 CRF12 是从这么大的 CRF1 转的、转出来这么大（只比大小，不读整个文件） */
+/** 段签记着这个指纹的压缩母版是从这么大的 CRF1 转的、转出来这么大（只比大小，不读整个文件） */
 export const 段签说已转码 = (段签目录: string, 指纹16: string, 原大小: number, 压缩大小: number) => {
   try {
     const j = JSON.parse(fs.readFileSync(path.join(段签目录, '签.json'), 'utf8')) as { 指纹?: string; 母版?: { 大小?: number; 转码自?: { 大小?: number } } };
@@ -171,7 +170,7 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
       r.媒体.push({
         路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 记于: 有json ? fs.statSync(json).mtimeMs : st.mtimeMs,
         级别: 有json ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink,
-        存法: 种 === '母版' ? (是压缩 ? 'crf12' : 'crf1') : null, 已被取代: false, 用过于, 正在写: 写着.has(m[1]!), 别的检出: 别的检出.get(m[1]!) ?? [],
+        存法: 种 === '母版' ? (是压缩 ? 'x264' : 'crf1') : null, 已被取代: false, 用过于, 正在写: 写着.has(m[1]!), 别的检出: 别的检出.get(m[1]!) ?? [],
       });
     } else if (是临时名(名)) r.临时.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
     else if (!名.endsWith('.指纹.json') && !用过名.test(名) && !检出记号名.test(名)) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
@@ -180,7 +179,7 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
   const 这批 = r.媒体.slice(起);
   for (const f of 这批) {
     if (f.存法 !== 'crf1') continue;
-    const 压 = 这批.find((x) => x.存法 === 'crf12' && x.指纹 === f.指纹);
+    const 压 = 这批.find((x) => x.存法 === 'x264' && x.指纹 === f.指纹);
     f.已被取代 = !!压 && 段签说已转码(o.段签目录(键, f.指纹), f.指纹, f.大小, 压.大小);
   }
 };
@@ -202,12 +201,12 @@ export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string, 
 };
 
 /**
- * 一个媒体文件身上的钉（gc、render 自动删旧共用）：保留集里按它自己、CRF12 再按同名 CRF1 找；CRF12 不认「认可」（verify 不比 CRF12 像素）；
+ * 一个媒体文件身上的钉（gc、render 自动删旧共用）：保留集里按它自己、压缩母版再按同名 CRF1 找；压缩母版不认「认可」（verify 不比压缩母版像素）；
  * 已被取代的 CRF1 只认「要原母版」的和正在写；别的还要看近 2 小时用过、别的检出用过、正在写
  */
 export const 钉理由 = (f: 媒体文件, 保留: 保留集, 现在: number): 保留理由[] => {
-  let 理由 = [...保留.查(f.路径), ...(f.存法 === 'crf12' ? 保留.查(逻辑名(f.路径)) : [])];
-  if (f.存法 === 'crf12') 理由 = 理由.filter((x) => x.类 !== '认可');
+  let 理由 = [...保留.查(f.路径), ...(f.存法 === 'x264' ? 保留.查(逻辑名(f.路径)) : [])];
+  if (f.存法 === 'x264') 理由 = 理由.filter((x) => x.类 !== '认可');
   if (f.已被取代) 理由 = 理由.filter((x) => x.要原母版);
   else {
     if (f.用过于 !== null && 现在 - f.用过于 < 近期用过毫秒) 理由.push({ 类: '在用', 说明: '2 小时内用过' });

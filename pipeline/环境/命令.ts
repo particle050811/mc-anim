@@ -30,6 +30,12 @@ const 已装版本 = (包: string): string | null => {
   }
 };
 
+/** 成片编码器不在 ffmpeg 里时的提示。母版转码、预览、剪辑包画面写死 libx264，缺它只能换 ffmpeg，改配置救不了 */
+export const 缺编码器提示 = (名: string) =>
+  名 === 'libx264'
+    ? `${名} 不在 ffmpeg 里（换带 libx264 的 ffmpeg）`
+    : `${名} 不在 ffmpeg 里（换 ANIM_VIDEO_ENCODER=libx264，ffmpeg 要带 libx264）`;
+
 export const 体检 = (): 结果[] => {
   const r: 结果[] = [];
   const 查 = (项: string, 过: boolean, 说明: string, 必需 = true) => r.push({ 项, 过, 必需, 说明 });
@@ -48,9 +54,9 @@ export const 体检 = (): 结果[] => {
   }
   const 编码器表 = 试跑([配置('ffmpeg'), '-hide_banner', '-encoders']).stdout;
   const 有编码器 = (名: string) => new RegExp(`\\s${名}\\s`).test(编码器表);
-  查('成片编码器', 有编码器(配置('编码器')), `${配置('编码器')}${有编码器(配置('编码器')) ? '' : ' 不在 ffmpeg 里（换 ANIM_VIDEO_ENCODER=libx264）'}`);
-  查('libx264', 有编码器('libx264'), '预览、分享版要用', true);
-  if (isMac) 查('videotoolbox', 有编码器('h264_videotoolbox'), 'Mac 成片默认用它', false);
+  查('成片编码器', 有编码器(配置('编码器')), 有编码器(配置('编码器')) ? 配置('编码器') : 缺编码器提示(配置('编码器')));
+  查('libx264', 有编码器('libx264'), '成片、预览、分享版要用', true);
+  if (isMac) 查('videotoolbox', 有编码器('h264_videotoolbox'), '可选：Mac 上要快时用它出片', false);
 
   for (const [k, 要] of [['core.quotepath', 'false'], ['core.longpaths', 'true']] as const) {
     const v = 试跑(['git', '-C', 代码根(), 'config', '--get', k]).stdout.trim();
