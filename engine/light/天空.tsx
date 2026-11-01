@@ -6,7 +6,8 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useState } from 'react';
 import { cancelRender, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
-import { skyBandCount, waterSky, skyReflMax } from '../voxel/水面.ts';
+import { use写入者, 新写入槽 } from '../core/写入者.ts';
+import { skyBandCount, waterSky, skyReflMax, 复位水面天色 } from '../voxel/水面.ts';
 import * as THREE from 'three';
 import { rng } from '../model/parts.tsx';
 import { overworldMix, brighten, twilightSunDir, twilightDusk } from './光照配比.ts';
@@ -148,8 +149,11 @@ const Sun: React.FC<{ sun: [number, number, number] }> = ({ sun }) => {
 };
 
 // 水面反射的天色和波纹时间（lib/水面.ts）：天色取穹顶按仰角的渐变，时间按帧号（Remotion 逐帧独立）。条：暮色天的色条；null = 主世界穹顶
-const useWaterSky = (bands: [number, string][] | null) => {
-  const frame = useCurrentFrame();
+const 水面天色槽 = 新写入槽();
+const useWaterSky = (bands: [number, string][] | null, 指定帧?: number) => {
+  use写入者(水面天色槽, 复位水面天色);
+  const 当前帧 = useCurrentFrame();
+  const frame = 指定帧 ?? 当前帧;
   const { fps } = useVideoConfig();
   waterSky.time.value = frame / fps;
   waterSky.reflectionMax.value = skyReflMax(bands !== null);
@@ -173,8 +177,8 @@ const useWaterSky = (bands: [number, string][] | null) => {
   }
 };
 // 没挂 `SkyDome` 的画布（6-1-1 海岛：天是背景色）也要给水面写天色和时间，不然水反射的是 `waterSky` 的默认灰蓝、波纹不动
-export const OverworldWaterSky: React.FC = () => {
-  useWaterSky(null);
+export const OverworldWaterSky: React.FC<{ 帧?: number }> = ({ 帧 }) => {
+  useWaterSky(null, 帧);
   return null;
 };
 

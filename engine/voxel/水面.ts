@@ -20,6 +20,16 @@ export const waterSky = {
   reflectionMax: { value: cliReflMax ?? 0.6 },
 };
 export const skyReflMax = (isTwilight: boolean) => cliReflMax ?? (isTwilight ? 0.6 : 0);
+const 默认天色 = waterSky.skyColors.value.map((c) => c.clone());
+const 默认仰角 = [...waterSky.elevation.value];
+const 默认反射上限 = waterSky.reflectionMax.value;
+// uniform 和颜色数组已经被水材质引用，卸载最后一片天空时原地恢复，不能换对象让旧材质继续读残留值。
+export const 复位水面天色 = () => {
+  waterSky.skyColors.value.forEach((c, i) => c.copy(默认天色[i]));
+  waterSky.elevation.value.splice(0, skyBandCount, ...默认仰角);
+  waterSky.time.value = 0;
+  waterSky.reflectionMax.value = 默认反射上限;
+};
 
 const VERT_HEAD = /* glsl */ `
 varying vec3 vWaterW;`;

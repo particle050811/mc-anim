@@ -27,7 +27,7 @@ import { MaceInHand } from '@库/物品/重锤.tsx';
 import { MechanicalRoller } from '@库/物品/动力压路机.tsx';
 import { BorderTown } from '../../../地点/边城轮廓.tsx';
 import { borderTownPos } from '../../../地点/主世界116.ts';
-import { SKY, SkyDome } from '@engine/light/天空.tsx';
+import { SKY, SkyDome, OverworldWaterSky } from '@engine/light/天空.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import { OverworldSky, SUN_OW, SUN_OW_DIR } from '../../../地点/主世界光照.tsx';
 import { overworldMix } from '@engine/light/光照配比.ts';
@@ -129,20 +129,24 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
   const under = cam.pos[2] < choreo.groundZ - 0.5;
   // 已看过的顺序画面在入井后保留了入井前最后一帧的大气后期和云影。
   // 明确从时间线求这台参考相机，而不是沿用浏览器实际渲过的上一帧；地下雾和灯不变。
-  const atmosphereCamera = useMemo(() => {
+  const atmosphereReference = useMemo(() => {
     if (segment !== '6-3-6') return undefined;
     const span = timeline.段表['6-3-6'];
     let last: ReturnType<typeof choreo.camPose> | undefined;
+    let lastFrame = 0;
     // 拼段跳过了 6-3-6 的第 0 帧；这里只求相机参数，不预渲任何历史帧。
     for (let G = span.起 + 1; G <= globalFrame; G++) {
       const c = choreo.camPose(G);
-      if (c.pos[2] >= choreo.groundZ - 0.5) last = c;
+      if (c.pos[2] >= choreo.groundZ - 0.5) {
+        last = c;
+        lastFrame = G - span.起;
+      }
     }
     if (!last) return undefined;
     const ref = new THREE.PerspectiveCamera();
     ref.position.set(last.pos[0], last.pos[2], -last.pos[1]);
     ref.updateMatrixWorld();
-    return ref;
+    return { camera: ref, waterFrame: lastFrame };
   }, [segment, globalFrame]);
   const fxParams = fx();
   const pit = after ? choreo.crater() : null;
@@ -203,8 +207,10 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
         {under ? <UnderFog /> : <FlightFog visibility={timeline.起点.visibility} />}
         <FlightRig c={cam} near={0.02} />
-        <ScreenAo atmosphereCamera={under ? atmosphereCamera : undefined} />
+        <ScreenAo atmosphereCamera={under ? atmosphereReference?.camera : undefined} />
         <OverworldSky active={!under} />
+        {/* 入井后旧顺序画面的水面停在最后有天空的帧；显式接住这个时刻，不能随跳帧历史停在别处，也不能被天空卸载复位。 */}
+        {under && atmosphereReference && <OverworldWaterSky 帧={atmosphereReference.waterFrame} />}
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {cam.pos[2] < choreo.caveCeilingZ ? <GuchengLight /> : <Lights camPos={cam.pos} dome={!under} />}
           {/* 地形：坑和竖井那一圈在导入的地形里一直是挖开的（地形.ts），砸穿以前城的地面盖在上面 */}
