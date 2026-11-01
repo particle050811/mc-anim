@@ -65,6 +65,72 @@ const 事件 = (事: string) => 读调度(path.join(dir, 'logs')).filter(x => x.
 const 锁 = () => path.join(dir, '渲染.lock');
 const 基本 = (): Partial<闸环境> => ({ 锁目录: dir, 本机: os.hostname(), 内存下限: 30, 读内存: () => null, 读压力: () => 1, 清孤儿: () => [], 睡: async () => {} });
 
+it('死锁 + 低内存 + 队首：不看准入就回收并清孤儿，3 秒内', async () => {
+  const 死 = spawnSync(process.execPath, ['-e', '0']).pid!;
+  fs.writeFileSync(锁(), `${死}\n`);
+  let 清 = 0, 空闲 = 10, 首轮秒 = -1;
+  const 起 = performance.now(), 提示: string[] = [];
+  await 过渲染闸(async () => {}, s => 提示.push(s), { ...基本(), 读内存: () => 内存(空闲), 清孤儿: () => { 清++; return []; }, 睡: async () => {
+    首轮秒 = (performance.now() - 起) / 1000;
+    expect(fs.existsSync(锁())).toBe(false);
+    expect(清).toBe(1);
+    expect(票内容().卡在).toBe('内存');
+    空闲 = 80;
+  } }, { 种: 'still' });
+  expect(首轮秒).toBeGreaterThanOrEqual(0);
+  expect(首轮秒).toBeLessThan(3);
+  expect(JSON.stringify(事件('回收死锁'))).toContain(String(死));
+  expect(提示.join('\n')).not.toContain(`锁在 pid ${死}`);
+});
+
+it('排在后面的等待者也回收死锁，不靠队首', async () => {
+  fs.writeFileSync(锁(), `${spawnSync(process.execPath, ['-e', '0']).pid!}\n`);
+  fs.mkdirSync(path.join(dir, '渲染.排队'));
+  const 前票 = path.join(dir, '渲染.排队', `000000000000001-${os.hostname().replace(/[^A-Za-z0-9._-]/g, '_')}-${process.ppid}`);
+  fs.writeFileSync(前票, String(process.ppid));
+  let 清 = 0;
+  await 过渲染闸(async () => {}, () => {}, { ...基本(), 清孤儿: () => { 清++; return []; }, 睡: async () => {
+    expect(fs.existsSync(锁())).toBe(false);
+    expect(清).toBe(1);
+    fs.rmSync(前票);
+  } }, { 种: 'still' });
+});
+
+it('锁在活进程手里不算等内存：票不写字段、不告警；锁空才起算，再被占就结束', async () => {
+  fs.writeFileSync(锁(), `${process.ppid}\n`);
+  let now = Date.now(), 轮 = 0, 空闲 = 10;
+  const 提示: string[] = [], 告警过 = () => 提示.some(x => x.startsWith('告警'));
+  await 过渲染闸(async () => {}, s => 提示.push(s), { ...基本(), 读内存: () => 内存(空闲), 现在毫秒: () => now, 睡: async () => {
+    轮++;
+    const c = 票内容();
+    if (轮 <= 5) {
+      expect(c.等内存起).toBeUndefined();
+      expect(c.卡在).toBeUndefined();
+      expect(告警过()).toBe(false);
+      expect(事件('告警').filter(x => x.类 === '等内存')).toEqual([]);
+    }
+    if (轮 === 5) fs.rmSync(锁());
+    if (轮 === 6) {
+      expect(c.等内存起).toBe(now);
+      expect(c.卡在).toBe('内存');
+      fs.writeFileSync(锁(), `${process.ppid}\n`);
+    }
+    if (轮 === 7) {
+      expect(c.等内存起).toBeUndefined();
+      expect(c.卡在).toBeUndefined();
+      fs.rmSync(锁());
+    }
+    if (轮 === 10) expect(告警过()).toBe(false);
+    if (轮 === 11) expect(告警过()).toBe(true);
+    if (轮 === 12) 空闲 = 80;
+    now += 60_000;
+  } }, { 种: 'still' });
+  expect(轮).toBe(12);
+  expect(提示).toContain(`渲染排队（锁在 pid ${process.ppid} 手里）`);
+  expect(事件('等内存起')).toHaveLength(2);
+  expect(事件('等内存止')).toHaveLength(2);
+});
+
 it('监控全写不了也只提示：渲染跑完、锁照放、下一次能拿', async () => {
   fs.mkdirSync(path.join(dir, '渲染.lock.信息.json', '占位'), { recursive: true });
   fs.writeFileSync(path.join(dir, '在跑'), '');

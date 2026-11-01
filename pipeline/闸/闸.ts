@@ -5,7 +5,7 @@ import path from 'node:path';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { 配置 } from '../环境/配置.ts';
 import { 内存够渲染, 读内存, 读压力, 读数说明, 核数, 一分钟负载, type 内存读数 } from '../环境/资源.ts';
-import { 持有者, 试拿, 放, 进程在吗 } from './锁.ts';
+import { 持有者, 试拿, 放, 进程在吗, 回收死锁, 锁被占 } from './锁.ts';
 import { 登记收尾 } from './收尾.ts';
 import { 取调度环境, 开任务, 有任务, 清崩溃, type 调度环境, type 任务声明 } from './任务.ts';
 import { 领票, 列票, 票活着, type 票, 回队尾, 改序 } from './票.ts';
@@ -54,6 +54,8 @@ type 排队选项 = Partial<闸环境> & {
     越队?: (票: 票) => boolean;
     声明?: 任务声明;
     锁内复核?: (票: 票) => boolean;
+    /** 这一轮没轮到或锁被活进程拿着，准入没被调：等资源的状态要结束，等的是锁或队列。 */
+    离开准入?: (票: 票) => void;
 };
 const 写票态 = (t: 票) => 只提示('票状态', () => 写JSON(t.文件, t.内容));
 export const 读单票放行 = (dir: string, 票: string) => { const c = 读JSON<{
@@ -119,6 +121,8 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             }
             清崩溃(e);
             监测();
+            // 每个等待者每轮都回收，不看队位和准入：只靠队首的话，全队暂缓时没人回收。
+            只提示('回收死锁', () => 回收死锁(file, e.本机, 回收));
             const 找 = 列票(dir).find(x => x.内容?.任务 === task.info.任务 && x.pid === process.pid);
             if (找)
                 t = 找;
@@ -161,12 +165,17 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             }
             const 越 = opts.越队?.(t) ?? false;
             const 暂缓 = Boolean(t.内容?.暂缓至 && t.内容.暂缓至 > e.现在毫秒());
-            if ((越 || (!暂缓 && 活[0]?.名 === t.名)) && (opts.准入?.(t) ?? true) && 试拿(file, e.本机, 回收)) {
-                if (!opts.锁内复核 || opts.锁内复核(t))
-                    break;
-                放(file);
+            const 轮到 = 越 || (!暂缓 && 活[0]?.名 === t.名), 占 = 锁被占(file, e.本机);
+            if (轮到 && !占) {
+                if ((opts.准入?.(t) ?? true) && 试拿(file, e.本机, 回收)) {
+                    if (!opts.锁内复核 || opts.锁内复核(t))
+                        break;
+                    放(file);
+                }
             }
-            const 等待 = 暂缓 ? `暂缓至 ${new Date(t.内容!.暂缓至!).toISOString()}` : fs.existsSync(file) ? `锁在 pid ${持有者(file) ?? '?'} 手里` : '前面还有人排队或等资源';
+            else
+                opts.离开准入?.(t);
+            const 等待 = 暂缓 ? `暂缓至 ${new Date(t.内容!.暂缓至!).toISOString()}` : 占 ? `锁在 pid ${持有者(file) ?? '?'} 手里` : 轮到 ? '等资源' : '前面还有人排队';
             if (等待 !== 原等待) {
                 opts.等待提示?.(等待);
                 记('排队', { 等谁: 持有者(file), 前面: 活.slice(0, 3).map(x => x.名), 状态: 等待 });
@@ -229,49 +238,53 @@ const 检查重入 = () => { if (持锁上下文.getStore())
     throw Error(`祖先 pid ${pid} 持有渲染锁，子进程不能再次过闸`); };
 const 拿渲染闸 = async (提示: (s: string) => void, 环境: Partial<闸环境>, 声明: 任务声明): Promise<锁柄> => {
     const e = 取环境(环境);
-    let 说过 = false, 告警过 = false, 等起: number | undefined, 票名 = '';
-    let 单票读数:Record<string,unknown>|undefined;
-    let 等负载起:number|undefined;
-    const 柄 = await 排队拿('渲染', { ...e, 声明, 等待提示: s => 提示(`渲染排队（${s}）`), 越队: t => Boolean(读单票放行(e.锁目录, t.名)), 准入: t => {
+    let 票名 = '', 单票读数: Record<string, unknown> | undefined, 卡: '' | '内存' | '负载' = '', 卡起 = 0, 告警过 = false;
+    const 止卡 = (t: 票) => {
+        if (!卡)
+            return;
+        开任务(e, 声明).记(`等${卡}止`, { 票: t.名, 秒: (e.现在毫秒() - 卡起) / 1000 });
+        卡 = '';
+        告警过 = false;
+        delete t.内容!.等内存起;
+        delete t.内容!.卡在;
+        写票态(t);
+    };
+    const 柄 = await 排队拿('渲染', { ...e, 声明, 等待提示: s => 提示(`渲染排队（${s}）`), 越队: t => Boolean(读单票放行(e.锁目录, t.名)), 离开准入: 止卡, 准入: t => {
             票名 = t.名;
             if (声明.不开渲染)
                 return true;
-            const m = e.读内存(), 压力 = e.读压力(), 授权 = 读单票放行(e.锁目录, t.名);
-            const task = 开任务(e, 声明);
-            const load = 声明.需负载 ? e.一分钟负载() : null;
+            const m = e.读内存(), 压力 = e.读压力(), 授权 = 读单票放行(e.锁目录, t.名), load = 声明.需负载 ? e.一分钟负载() : null;
             const 内存过 = (压力 !== 4 || 授权?.强) && (授权 || !m || 内存够渲染(m, e.内存下限));
             const 负载过 = 授权 || load === null || load < e.核数() * 0.8;
-            if(内存过&&!负载过){
-                if(等起!==undefined){task.记('等内存止',{票:t.名,秒:(e.现在毫秒()-等起)/1000});等起=undefined;说过=false;delete t.内容!.等内存起;}
-                if(等负载起===undefined){等负载起=e.现在毫秒();提示(`渲染等负载（${load}，上限 ${e.核数()}×0.8）`);task.记('等负载起',{票:t.名,负载:load});}
-                if(t.内容!.卡在!=='负载'){t.内容!.卡在='负载';写票态(t);}return false;
-            }
-            if(等负载起!==undefined&&负载过){task.记('等负载止',{票:t.名,秒:(e.现在毫秒()-等负载起)/1000});等负载起=undefined;delete t.内容!.卡在;写票态(t);}
-            const 够 = 内存过 && 负载过;
-            if (够) {
-                if (等起 !== undefined) {
-                    task.记('等内存止', { 票: t.名, 秒: (e.现在毫秒() - 等起) / 1000 });
-                    等起=undefined;说过=false;delete t.内容!.等内存起;delete t.内容!.卡在;写票态(t);
+            const 新 = !内存过 ? '内存' : !负载过 ? '负载' : '';
+            if (新 !== 卡) {
+                止卡(t);
+                if (新) {
+                    卡 = 新;
+                    卡起 = e.现在毫秒();
+                    t.内容!.卡在 = 新;
+                    if (新 === '内存') {
+                        t.内容!.等内存起 = 卡起;
+                        提示(`渲染等内存（${m ? 读数说明(m) : '无读数'}，下限 ${e.内存下限}%，压力 ${压力 ?? '?'}）`);
+                        开任务(e, 声明).记('等内存起', { 票: t.名, 读数: m, 压力, 阈值: e.内存下限 });
+                    }
+                    else {
+                        提示(`渲染等负载（${load}，上限 ${e.核数()}×0.8）`);
+                        开任务(e, 声明).记('等负载起', { 票: t.名, 负载: load });
+                    }
+                    写票态(t);
                 }
-                if (授权)单票读数={票:t.名,压力,读数:m,强:授权.强};
-                return true;
             }
-            等起 ??= e.现在毫秒();
-            if (!说过) {
-                提示(`渲染等内存（${m ? 读数说明(m) : '无读数'}，下限 ${e.内存下限}%，压力 ${压力 ?? '?'}）`);
-                task.记('等内存起', { 票: t.名, 读数: m, 压力, 阈值: e.内存下限 });
-                t.内容!.等内存起 = 等起;
-                t.内容!.卡在 = '内存';
-                写票态(t);
-            }
-            说过 = true;
-            if (!告警过 && e.现在毫秒() - 等起 >= 180000) {
+            if (卡 === '内存' && !告警过 && e.现在毫秒() - 卡起 >= 180000) {
                 提示(`告警：等内存已满 3 分钟，票 ${t.名}；锁未占用，请主 Agent 决定`);
                 告警过 = true;
             }
-            return false;
+            if (!新 && 授权)
+                单票读数 = { 票: t.名, 压力, 读数: m, 强: 授权.强 };
+            return !新;
         } });
-    if(单票读数)开任务(e,声明).记('单票放行',单票读数);
+    if (单票读数)
+        开任务(e, 声明).记('单票放行', 单票读数);
     提示('放行渲染');
     只提示('指令文件', () => fs.rmSync(path.join(e.锁目录, '指令', 票名 + '.json'), { force: true }));
     return 柄;
@@ -312,16 +325,22 @@ export const 过放行闸 = async <T>(fn: () => Promise<T>, 提示: (s: string) 
         return 信息?.秒 === 秒 && !进程在吗(信息.pid) || e.现在毫秒() / 1000 - 秒 >= 60;
     };
     try {
-        const 柄 = await 排队拿('放行', { ...e, 声明, 越队: t => Boolean(读单票放行(e.锁目录, t.名)), 准入: t => {
+        const 止等 = (t: 票) => {
+            const c = t.内容!;
+            if (c.等内存起 !== undefined)
+                task.记('等内存止', { 票: t.名, 秒: (e.现在毫秒() - c.等内存起) / 1000 });
+            if (c.等内存起 === undefined && c.卡在 === undefined)
+                return;
+            delete c.等内存起;
+            delete c.卡在;
+            写票态(t);
+        };
+        const 柄 = await 排队拿('放行', { ...e, 声明, 越队: t => Boolean(读单票放行(e.锁目录, t.名)), 离开准入: t => { 卡在 = ''; 止等(t); }, 准入: t => {
                 票名 = t.名;
                 const 授权 = 读单票放行(e.锁目录, t.名), m = e.读内存(), 压力 = e.读压力(), load = e.一分钟负载();
                 const 项 = [!授权 && !间隔够() ? '间隔' : '', !授权 && load !== null && load >= e.核数() * 0.8 ? '负载' : '', !声明.不开渲染 && ((压力 === 4 && !授权?.强) || (!授权 && m && !内存够渲染(m, e.内存下限))) ? '内存' : ''].filter(Boolean).join('、');
-                if (t.内容!.等内存起 !== undefined && !项.includes('内存')) {
-                    task.记('等内存止', { 票: t.名, 秒: (e.现在毫秒() - t.内容!.等内存起) / 1000 });
-                    delete t.内容!.等内存起;
-                    delete t.内容!.卡在;
-                    写票态(t);
-                }
+                if (t.内容!.等内存起 !== undefined && !项.includes('内存'))
+                    止等(t);
                 if (项 && 项 !== 卡在) {
                     提示(`等资源（卡在${项}；负载 ${load ?? '?'}，内存 ${m?.空闲百分比 ?? '?'}%，压力 ${压力 ?? '?'}）`);
                     task.记('放行等起', { 票: t.名, 卡在: 项, 机: { 负载: load, 闸: m?.空闲百分比, 压力 } });
