@@ -4,7 +4,7 @@ import { 等条件 } from './等.ts';
 import { 解析参数, 用法错误, type 已解析 } from '../cli/参数.ts';
 import type { 命令 } from '../cli/命令.ts';
 import { 取调度环境, 清崩溃, type 调度环境 } from './任务.ts';
-import { 读状态, 读占用, 渲染看, 一行状态 } from './看.ts';
+import { 读状态, 读占用, 渲染看, 一行状态, 前方等待 } from './看.ts';
 import { 读机器快照并行 } from './机器.ts';
 import { 读调度,记调度,type 调度事件 } from './调度日志.ts';
 import { 复盘 } from './复盘.ts';
@@ -31,7 +31,7 @@ const 日志筛 = (p: 已解析, 现在: number) => {
     return { 在窗, 入选 };
 };
 export const 跑调度 = async (args: string[], env?: 调度环境, 输出: (s: string) => void = console.log): Promise<number> => {
-    const p = 解析参数(args, { 开关: ['--json', '--一行', '--强', '--杀持锁', '--原序', '--闸空', '--撤'], 值: ['--让路', '--最长', '--任务', '--从', '--到', '--事', '--票', '--段', '--路', '--日', '--为什么', '--分钟', '--看到', '--决定', '--说明', '--结果', '--pid', '--文件', '--内存'] });
+    const p = 解析参数(args, { 开关: ['--json', '--一行', '--强', '--杀持锁', '--原序', '--闸空', '--撤'], 值: ['--让路', '--最长', '--任务', '--从', '--到', '--事', '--票', '--段', '--路', '--日', '--为什么', '--分钟', '--看到', '--决定', '--说明', '--结果', '--pid', '--文件', '--内存', '--级别'] });
     const e = env ?? 取调度环境(), [cmd = '看', ...rest] = p.位置;
     if (改命令.has(cmd)) {
         改调度(cmd, rest[0], p, e, { 输出 });
@@ -57,9 +57,8 @@ export const 跑调度 = async (args: string[], env?: 调度环境, 输出: (s: 
     if (cmd === '预计') {
         if(!rest.length)throw new 用法错误('预计 要给选择器');
         const {选段}=await import('../清单/清单.ts');
-        const 段们=await 选段(rest),s=读状态(e),根=path.dirname(e.日志目录),活票=s.票.filter(t=>!t.死),活锁=s.持锁.filter(t=>!t.死);
-        const 等秒=活票.reduce((n,t)=>n+(t.内容?.声明.预计秒??23),0)+活锁.reduce((n,t)=>n+Math.max(0,(t.声明.预计秒??23)-(s.时-t.拿锁时)/1000),0);
-        输出(JSON.stringify({前方约秒:等秒,未知按下界:活票.some(t=>!t.内容?.声明.预计秒)||活锁.some(t=>!t.声明.预计秒),段:段们.map(t=>({段:t.键,render纯跑秒:估计({种:'render',段:t.键,帧数:t.段.帧数},根),still一帧秒:估计({种:'still',段:t.键,帧数:1},根)})),说明:'未知显示 null；无预计的票按 23 秒下界，不承诺完成时刻'}));
+        const 段们=await 选段(rest),s=读状态(e),根=path.dirname(e.日志目录),级别=p.值['--级别']??'视频',前方=前方等待(s,s.时);
+        输出(JSON.stringify({前方约秒:前方.秒,未知按下界:前方.未知,级别,段:段们.map(t=>({段:t.键,render纯跑秒:估计({种:'render',段:t.键,帧数:t.段.帧数,级别},根),still一帧秒:估计({种:'still',段:t.键,帧数:1,级别},根)})),说明:'未知显示 null；无预计的票按 23 秒下界，不承诺完成时刻'}));
         return 0;
     }
     if (cmd === '盯') {

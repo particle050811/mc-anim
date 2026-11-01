@@ -74,6 +74,14 @@ it('盯把快照与补读日志的同一任务止合并为一次通知',async()=
   expect(await 盯(e,{任务:'结束任务',读:()=>s,父活:()=>true,输出:x=>out.push(x)})).toBe(0);
   expect(out).toHaveLength(1);expect(out[0]!.match(/任务止/g)).toHaveLength(1);
 });
+it('估计：声明了级别只认同级；明细和阶段表没样本时 render 回退耗时表，still 不回退',()=>{
+  fs.mkdirSync(path.join(dir,'渲染明细'));fs.writeFileSync(path.join(dir,'渲染明细','one.json'),JSON.stringify({标签:'render:作/段:预览',小结:{帧数:2,首帧毫秒:10_000,中位毫秒:1000}}));
+  expect(估计({种:'render',段:'段',帧数:2,级别:'预览'},dir)).toBe(11);
+  expect(估计({种:'render',段:'段',帧数:2,级别:'视频'},dir)).toBeNull();
+  fs.writeFileSync(path.join(dir,'耗时.tsv'),'开始（UTC）\t标签\t秒\t退出码\t主机\t命令\nt\trender:作/段:视频\t500.0\t0\th\tc\nt\trender:作/段:视频\t900.0\t1\th\tc\nt\tstill:作/段:视频\t700.0\t0\th\tc\n');
+  expect(估计({种:'render',段:'段',帧数:2,级别:'视频'},dir)).toBe(500);
+  expect(估计({种:'still',段:'段',帧数:1,级别:'视频'},dir)).toBeNull();
+});
 it('队列行：关键标记在前不被截，超预算只截段和路名；重复按帧号和级别认',()=>{
   const s=基本();加票(s,3);s.票.forEach((t,i)=>{t.pid=100+i;});const [a,b,c]=s.票.map(t=>t.内容!) as [NonNullable<typeof s.票[0]['内容']>,NonNullable<typeof s.票[0]['内容']>,NonNullable<typeof s.票[0]['内容']>];
   const 声明={种:'still',作品:'作',段:'6-规矩风矢',级别:'视频',帧:'0',帧数:1,预计秒:24};
