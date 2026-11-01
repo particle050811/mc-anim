@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { 数据路径, 配置 } from '../环境/配置.ts';
 import { 读发起者, type 发起者 } from './发起者.ts';
 import { 记调度 } from './调度日志.ts';
-import { 读JSON, 写JSON, 列文件 } from './文件.ts';
+import { 读JSON, 写JSON, 列文件, 只提示 } from './文件.ts';
 import { 登记收尾 } from './收尾.ts';
 import { 进程在吗 } from './锁.ts';
 export type 任务声明 = {
@@ -49,10 +49,11 @@ const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: n
     const now = e.现在毫秒();
     const info: 任务信息 = { 任务: `${now.toString(36)}-${process.pid}-${randomUUID().slice(0, 8)}`, 起: now, 心跳: now, 发起: e.发起者, 声明, 主机: e.本机 };
     const file = path.join(e.锁目录, '在跑', info.任务 + '.json');
-    写JSON(file, info);
+    const 存 = () => 只提示('在跑登记', () => 写JSON(file, info));
+    存();
     const 记 = (事: string, 字段: Record<string, unknown> = {}) => 记调度(e.日志目录, 事, { 任务: info.任务, 发起: info.发起, 声明: info.声明, ...字段 }, e.现在毫秒());
     记('任务起');
-    检查盯(e, info);
+    只提示('盯未挂记录', () => 检查盯(e, info));
     let 完 = false;
     const 结束 = (码 = 0, 信号?: string) => {
         if (完)
@@ -70,22 +71,26 @@ const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: n
             记('被杀', { 信号, 退出码: 码, 为什么: 指令?.为什么, 票: info.票 });
         }
         记('任务止', { 票: info.票, 退出码: 码, 信号, 秒: (e.现在毫秒() - info.起) / 1000 });
-        if (结束回调)
-            结束回调(码);
-        else {
-            const 表 = path.join(e.日志目录, '..', '耗时.tsv');
-            fs.mkdirSync(path.dirname(表), { recursive: true });
-            const 行 = [new Date(info.起).toISOString(), `脚本 ${声明.种 ?? '过闸'}`, ((e.现在毫秒() - info.起) / 1000).toFixed(1), 码, e.本机, info.发起.命令].join('\t') + '\n';
-            fs.appendFileSync(表, 行);
-        }
-        fs.rmSync(file, { force: true });
-        fs.rmSync(path.join(e.锁目录, '指令', info.任务 + '.json'), { force: true });
+        只提示('耗时记录', () => {
+            if (结束回调)
+                结束回调(码);
+            else {
+                const 表 = path.join(e.日志目录, '..', '耗时.tsv');
+                fs.mkdirSync(path.dirname(表), { recursive: true });
+                const 行 = [new Date(info.起).toISOString(), `脚本 ${声明.种 ?? '过闸'}`, ((e.现在毫秒() - info.起) / 1000).toFixed(1), 码, e.本机, info.发起.命令].join('\t') + '\n';
+                fs.appendFileSync(表, 行);
+            }
+        });
+        只提示('在跑登记', () => {
+            fs.rmSync(file, { force: true });
+            fs.rmSync(path.join(e.锁目录, '指令', info.任务 + '.json'), { force: true });
+        });
         活任务.delete(e.锁目录);
     };
     const 撤 = 登记收尾(结束);
-    const timer = setInterval(() => { info.心跳 = e.现在毫秒(); 写JSON(file, info); }, 30000);
+    const timer = setInterval(() => { info.心跳 = e.现在毫秒(); 存(); }, 30000);
     timer.unref();
-    return { info, 记, 结束, 更新: (声明: 任务声明, 票?: string) => { info.声明 = 声明; info.票 = 票; 写JSON(file, info); } };
+    return { info, 记, 结束, 更新: (声明: 任务声明, 票?: string) => { info.声明 = 声明; info.票 = 票; 存(); } };
 };
 export const 开任务 = (e: 调度环境, 声明: 任务声明, 结束?: (码: number) => void) => {
     let t = 活任务.get(e.锁目录);

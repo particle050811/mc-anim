@@ -32,7 +32,7 @@ const 睡 = (ms: number) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)
 
 /** Windows 上别的进程正读着（Python 读文件不带 FILE_SHARE_DELETE）时删不掉、改不了名，等一下再来，最多 5 秒（未在 Windows 实测）。
  * 别的系统上这类错误照常抛出，不空转 */
-const 重试 = <T>(fn: () => T): T => {
+export const 重试 = <T>(fn: () => T): T => {
   for (let i = 0; i < 50; i++) {
     try {
       return fn();

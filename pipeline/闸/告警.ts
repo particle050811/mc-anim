@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import { createHash } from 'node:crypto';
-import { 读JSON, 写JSON } from './文件.ts';
+import { 读JSON, 写JSON, 只提示 } from './文件.ts';
 import type { 调度状态 } from './看.ts';
 import type { 调度环境 } from './任务.ts';
 import { 记调度 } from './调度日志.ts';
@@ -69,23 +69,25 @@ export const 记录告警 = (e: 调度环境, s: 调度状态, h: 监测历史, 
         const key = a.类 + ':' + a.对象;
         h.去重[key] = Math.max(h.去重[key] ?? 0, a.次数);
         const id = createHash('sha256').update(key + ':' + (a.类 === '队深' ? a.值 : a.次数)).digest('hex');
-        const dir = path.join(e.调度目录, '告警');
-        fs.mkdirSync(dir, { recursive: true });
-        try {
-            const fd = fs.openSync(path.join(dir, id), 'wx');
-            fs.closeSync(fd);
-        }
-        catch (err) {
-            if ((err as NodeJS.ErrnoException).code === 'EEXIST')
-                continue;
-            throw err;
-        }
-        记调度(e.日志目录, '告警', { ...a, 机: { ...s.机, 进程: undefined } }, s.时);
-        新.push(a);
+        只提示('告警记录', () => {
+            const dir = path.join(e.调度目录, '告警');
+            fs.mkdirSync(dir, { recursive: true });
+            try {
+                const fd = fs.openSync(path.join(dir, id), 'wx');
+                fs.closeSync(fd);
+            }
+            catch (err) {
+                if ((err as NodeJS.ErrnoException).code === 'EEXIST')
+                    return;
+                throw err;
+            }
+            记调度(e.日志目录, '告警', { ...a, 机: { ...s.机, 进程: undefined } }, s.时);
+            新.push(a);
+        });
     }
     if (alarms.some(a => a.类 === '队深'))
         h.高水位 = Math.max(h.高水位, s.票.length);
-    写JSON(path.join(e.调度目录, '监测.json'), h);
+    只提示('告警记录', () => 写JSON(path.join(e.调度目录, '监测.json'), h));
     return 新;
 };
 export const 读监测 = (e: 调度环境) => 读JSON<监测历史>(path.join(e.调度目录, '监测.json')) ?? 空历史();

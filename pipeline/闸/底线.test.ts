@@ -65,6 +65,53 @@ const 事件 = (事: string) => 读调度(path.join(dir, 'logs')).filter(x => x.
 const 锁 = () => path.join(dir, '渲染.lock');
 const 基本 = (): Partial<闸环境> => ({ 锁目录: dir, 本机: os.hostname(), 内存下限: 30, 读内存: () => null, 读压力: () => 1, 清孤儿: () => [], 睡: async () => {} });
 
+it('监控全写不了也只提示：渲染跑完、锁照放、下一次能拿', async () => {
+  fs.mkdirSync(path.join(dir, '渲染.lock.信息.json', '占位'), { recursive: true });
+  fs.writeFileSync(path.join(dir, '在跑'), '');
+  fs.writeFileSync(path.join(dir, 'state'), '');
+  fs.mkdirSync(path.join(dir, '耗时.tsv'));
+  let now = Date.now(), 采样 = 0;
+  const e: Partial<闸环境> = { ...基本(), 现在毫秒: () => now, 读机器: () => { 采样++; throw Error('采样炸了'); } };
+  const 说 = vi.spyOn(console, 'error').mockImplementation(() => {});
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  try {
+    const r = await 过渲染闸(async () => {
+      now += 30_000;
+      vi.advanceTimersByTime(30_000);
+      now += 30_000;
+      闸心跳(1);
+      return 'ok';
+    }, () => {}, e, { 种: 'still' });
+    expect(r).toBe('ok');
+    expect(采样).toBe(2);
+    expect(fs.existsSync(锁())).toBe(false);
+    expect(票们()).toEqual([]);
+    const 说的 = 说.mock.calls.flat().join('\n');
+    for (const 名 of ['信息文件', '监测', '在跑登记', '耗时记录']) expect(说的).toContain(`!! ${名}失败`);
+    expect(await 过渲染闸(async () => '二', () => {}, e, { 种: 'still' })).toBe('二');
+  } finally {
+    vi.useRealTimers();
+    说.mockRestore();
+  }
+});
+
+it('领票抛错也交棒：同进程下一次不挂', async () => {
+  const q = path.join(dir, '渲染.排队');
+  fs.writeFileSync(q, '');
+  await expect(过渲染闸(async () => {}, () => {}, 基本(), { 种: 'still' })).rejects.toThrow();
+  fs.rmSync(q);
+  expect(await 过渲染闸(async () => 'ok', () => {}, 基本(), { 种: 'still' })).toBe('ok');
+});
+
+it('拿到锁后抛错也放锁、删票、交棒', async () => {
+  await expect(排队拿('渲染', { ...基本(), 声明: { 种: 'still' }, 锁内复核: () => { throw Error('复核炸了'); } })).rejects.toThrow('复核炸了');
+  expect(fs.existsSync(锁())).toBe(false);
+  expect(票们()).toEqual([]);
+  const 柄 = await 排队拿('渲染', { ...基本(), 声明: { 种: 'still' } });
+  柄.放();
+  expect(fs.existsSync(锁())).toBe(false);
+});
+
 it('本机名跟配置走：ANIM_HOST 同时进环境和日志', () => {
   const 根 = import.meta.dirname, 脚本 = `import {取调度环境} from ${JSON.stringify(path.join(根, '任务.ts'))};import {记调度,读调度} from ${JSON.stringify(path.join(根, '调度日志.ts'))};const d=${JSON.stringify(dir)};记调度(d,'测',{});console.log(取调度环境({锁目录:d}).本机,读调度(d)[0].主机);`;
   const out = execFileSync(process.execPath, ['--input-type=module', '-e', 脚本], { encoding: 'utf8', env: { ...process.env, ANIM_HOST: '测试机' } });
