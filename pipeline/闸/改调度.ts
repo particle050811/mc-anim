@@ -3,12 +3,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 用法错误, type 已解析 } from '../cli/参数.ts';
 import { 读状态, 一行状态, type 调度状态 } from './看.ts';
-import { 列票, 改序, 回队尾, 主机片段, 写票, 记被越, type 票 } from './票.ts';
-import { 写JSON, 只提示 } from './文件.ts';
+import { 列票, 改序, 回队尾, 主机片段, 写票, 记被越, type 票, type 票内容 } from './票.ts';
+import { 写JSON, 读JSON, 只提示 } from './文件.ts';
 import { 记调度, 读调度 } from './调度日志.ts';
 import { 写指令, 删指令, 令文件 } from './指令.ts';
 import { 清孤儿 } from './孤儿.ts';
 import type { 调度环境 } from './任务.ts';
+import { isWindows } from '../环境/配置.ts';
 export const 改命令 = new Set(['先', '后', '恢复', '放行', '让路', '取消', '清孤儿', '记']);
 export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析, e: 调度环境, o: {
     状态?: () => 调度状态;
@@ -16,6 +17,7 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
     进程起于?: (pid: number) => number | null;
     清?: () => unknown[];
     输出?: (s: string) => void;
+    Windows?: boolean;
 } = {}) => {
     const why = p.值['--为什么']?.trim();
     if (!why)
@@ -63,12 +65,13 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
             未发();
             return;
         }
-        // 崩溃后 pid 被复用时进程在吗为真、票和锁也在，只有启动时刻分得出来。
+        // 信号不能撤回，这里不用判死时的余量：只要启动晚于拿锁、领票就不是原来那个进程。
         const 声称 = h ? h.拿锁时 : t!.内容?.起 ?? t!.时间, 起于 = (o.进程起于 ?? 进程起于)(pid);
         if (起于 !== null && 起于 > 声称) {
-            const 话 = `未发信号：pid ${pid} 已换人（${new Date(起于).toISOString()} 才启动，晚于${h ? '拿锁' : '领票'} ${new Date(声称).toISOString()}），原进程已不在；这个进程退出前${称}不会被回收`;
+            const 话 = `未发信号：pid ${pid} 已换人（${new Date(起于).toISOString()} 才启动，晚于${h ? '拿锁' : '领票'} ${new Date(声称).toISOString()}），原进程已不在；留下的${称}由下一个等待者回收`;
             记(话);
-            throw Error(话);
+            输出(话);
+            return;
         }
         if (起于 === null)
             console.error('!! 读不到进程启动时刻（没有 ps），只凭 pid 和开机时间核对');
@@ -92,7 +95,8 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         }
         记(`已发 ${sig}`);
         记调度(e.日志目录, '取消', { 任务, 票: t?.名 ?? h?.票, 目标: pid, 信号: sig, 为什么: why, 谁: e.发起者 }, e.现在毫秒());
-        输出(`已请求 ${sig} #${pid}；${t && !t.内容 || h?.旧 ? '旧代码不能打印取消原因' : '不要原样重发'}`);
+        // Windows 上 process.kill 是无条件终止，退出钩子不跑。
+        输出(`已请求 ${sig} #${pid}；${o.Windows ?? isWindows ? `Windows 上是立即终止：目标不放锁、不写日志、不打印原因，${称}等下一个等待者回收，它的 Chrome 查不到，要手动看` : t && !t.内容 || h?.旧 ? '旧代码不能打印取消原因' : '不要原样重发'}`);
         return;
     }
     if (cmd === '让路') {
@@ -110,6 +114,13 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         throw new 用法错误('旧票拒绝改名或放行：旧代码不认指令，只能等或取消');
     if (cmd === '放行') {
         写指令(e, 任务!, { 动作: '放行', 为什么: why, 强: p.开关.has('--强'), 时: e.现在毫秒(), 至, 票: t.名, 任务 });
+        // 快照之后票主人可能已拿锁、用掉放行，这条指令就没人删了，同任务下一段会继承。票主人删票在先、用掉在后：写完还看得到这张票，就一定会被用掉。
+        if (!fs.existsSync(t.文件)) {
+            删指令(e, 任务!);
+            const 话 = `未放行：票 ${t.名} 已不在，可能刚拿到锁、改了序或退出了，请重看调度`;
+            记(话);
+            throw new 用法错误(话);
+        }
         记();
         输出(`单票授权已写，${new Date(至).toISOString()} 到期作废（--分钟 可改）；压力 4 仍需 --强，下一张票不继承`);
         return;
@@ -129,6 +140,8 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
             throw err;
         throw new 用法错误(`票 ${t.名} 已不在：可能刚拿到锁或退出了，请重看调度`);
     }
+    // 快照早于读机器，票主人这期间可能写了 等内存起、卡在。改名后它不再往旧名写，这时重读才不会盖掉。
+    新.内容 = 读JSON<票内容>(新.文件) ?? 新.内容;
     // 往前移才算越过别人：先、恢复 --原序。
     if (新.名 < 原)
         只提示('被越计数', () => 记被越(列票(path.dirname(新.文件)).filter(q => q.名 > 新.名 && q.名 < 原), e.本机));

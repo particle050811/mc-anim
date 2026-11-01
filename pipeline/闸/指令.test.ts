@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {afterEach,beforeEach,expect,it,vi} from 'vitest';
 import {解析参数} from '../cli/参数.ts';
-import {取调度环境,开任务} from './任务.ts';
+import {取调度环境,开任务,清崩溃} from './任务.ts';
 import {读发起者} from './发起者.ts';
 import {改调度,令命令,路命令} from './改调度.ts';
 import {读状态,一行状态,渲染看} from './看.ts';
@@ -126,21 +126,65 @@ it('取消：死票、死锁不发信号，决定记真实结果，不写取消�
   expect(杀).not.toHaveBeenCalled();expect(出[1]).toContain('留下的锁由下一个等待者回收');
   expect(决定(e).map(x=>String(x.结果))).toEqual([expect.stringContaining('未发信号'),expect.stringContaining('未发信号')]);expect(取消事件(e)).toHaveLength(0);
 });
-it.skipIf(process.platform==='win32')('取消：pid 已换人（真进程，启动晚于声称的时刻）不发信号',async()=>{
+it.skipIf(process.platform==='win32')('取消：pid 已换人（真进程，启动晚于声称的时刻）不发信号，下一个等待者回收',async()=>{
   const e=取调度环境({锁目录:dir}),c=spawn('sleep',['30']);
   try{
-    const 杀=vi.fn(),o={状态:()=>读状态(e,机,false),输出:()=>{},杀};
+    const 杀=vi.fn(),出:string[]=[],o={状态:()=>读状态(e,机,false),输出:(x:string)=>{出.push(x);},杀};
+    // 锁文件是新的：判死的余量没过，只有取消这道严格核对拦得住。
     放锁(c.pid!,Date.now()-3600_000);
-    expect(()=>改调度('取消',`#${c.pid}`,参数(['--为什么','超时了','--杀持锁','--强']),e,o)).toThrow('已换人');
+    改调度('取消',`#${c.pid}`,参数(['--为什么','超时了','--杀持锁','--强']),e,o);
+    expect(出.at(-1)).toContain('已换人');expect(出.at(-1)).toContain('留下的锁由下一个等待者回收');
     fs.rmSync(path.join(dir,'渲染.lock'));fs.rmSync(path.join(dir,'渲染.lock.信息.json'));
     const 名=放票(e,c.pid!);const f=path.join(队(),名),内容=JSON.parse(fs.readFileSync(f,'utf8'));fs.writeFileSync(f,JSON.stringify({...内容,起:Date.now()-3600_000}));
-    expect(()=>改调度('取消',名,参数(['--为什么','超时了']),e,o)).toThrow('晚于领票');
+    改调度('取消',名,参数(['--为什么','超时了']),e,o);
+    expect(出.at(-1)).toContain('晚于领票');expect(出.at(-1)).toContain('留下的票由下一个等待者回收');
     expect(杀).not.toHaveBeenCalled();expect(决定(e).every(x=>String(x.结果).includes('已换人'))).toBe(true);expect(决定(e)).toHaveLength(2);expect(取消事件(e)).toHaveLength(0);
+    fs.rmSync(f);
+    // 锁也老了：算死，排队的下一个回收；复用它的进程不受影响。
+    放锁(c.pid!,Date.now()-3600_000);const 老=new Date(Date.now()-3600_000);fs.utimesSync(path.join(dir,'渲染.lock'),老,老);
+    expect(读状态(e,机,false).持锁[0]!.死).toBe(true);
+    改调度('取消',`#${c.pid}`,参数(['--为什么','超时了','--杀持锁']),e,o);expect(出.at(-1)).toContain('进程已不在');
+    await 过渲染闸(async()=>{},()=>{},{...e,读内存:()=>null,读压力:()=>1,读机器:机,清孤儿:()=>[]},{种:'still'});
+    expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(false);expect(读调度(e.日志目录).some(x=>x.事==='回收死锁')).toBe(true);
+    expect(杀).not.toHaveBeenCalled();expect(c.exitCode).toBe(null);
     // 真正的持有者：启动早于拿锁
-    fs.rmSync(f);放锁(c.pid!,Date.now()+2000);改调度('取消',`#${c.pid}`,参数(['--为什么','真要停','--杀持锁']),e,o);
+    放锁(c.pid!,Date.now()+2000);改调度('取消',`#${c.pid}`,参数(['--为什么','真要停','--杀持锁']),e,o);
     expect(杀).toHaveBeenCalledWith(c.pid,'SIGTERM');expect(决定(e).at(-1)!.结果).toBe('已发 SIGTERM');expect(取消事件(e)).toHaveLength(1);
     expect(fs.existsSync(指令文件(e,'持锁的'))).toBe(true);
   }finally{c.kill('SIGKILL');}
+});
+it.skipIf(process.platform==='win32')('在跑文件的 pid 被复用：心跳老了算崩溃，一条',()=>{
+  const e=取调度环境({锁目录:dir}),c=spawn('sleep',['30']),f=path.join(dir,'在跑','甲.json');
+  try{
+    const 记=(心跳:number)=>{fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify({任务:'甲',主机:e.本机,起:心跳,心跳,发起:{pid:c.pid},声明:{}}));};
+    记(Date.now());清崩溃(e);expect(fs.existsSync(f)).toBe(true);
+    记(Date.now()-600_000);清崩溃(e);清崩溃(e);expect(fs.existsSync(f)).toBe(false);
+    expect(读调度(e.日志目录).filter(x=>x.事==='崩溃')).toHaveLength(1);
+  }finally{c.kill('SIGKILL');}
+});
+it('放行：快照之后票主人已拿锁删票，不留授权给同任务下一段，决定如实',()=>{
+  const {e,t}=设置(),快照=读状态(e,机,false);
+  fs.rmSync(t.文件);
+  expect(()=>改调度('放行',t.名,参数(['--为什么','峰值小']),e,{状态:()=>快照,输出:()=>{}})).toThrow('已不在');
+  expect(fs.existsSync(指令文件(e,'task'))).toBe(false);
+  expect(决定(e).at(-1)!.结果).toContain('未放行');
+});
+it('改序用改名后重读的内容：快照之后票主人写的 等内存起、卡在 不被盖掉',()=>{
+  const {e,t}=设置(),o=(快照:ReturnType<typeof 读状态>)=>({状态:()=>快照,输出:()=>{}});
+  for(const cmd of ['先','后']){
+    const 现=列票(队())[0]!;
+    delete 现.内容!.卡在;delete 现.内容!.等内存起;写票(现);
+    const 留底=读状态(e,机,false);
+    现.内容!.卡在='内存';现.内容!.等内存起=123;写票(现);
+    改调度(cmd,现.名,参数(['--为什么','调']),e,o(留底));
+    expect(列票(队())[0]!.内容).toMatchObject({卡在:'内存',等内存起:123});
+  }
+  expect(t.名).not.toBe(列票(队())[0]!.名);
+});
+it('取消：Windows 上 SIGTERM 是立即终止，如实说',()=>{
+  const {e,t}=设置(),出:string[]=[];
+  改调度('取消',t.名,参数(['--为什么','不要了']),e,{状态:()=>读状态(e,机,false),输出:(x:string)=>{出.push(x);},杀:()=>{},Windows:true});
+  expect(出[0]).toContain('立即终止');expect(出[0]).toContain('票等下一个等待者回收');
 });
 it('取消：信号时目标刚退出、无权限都如实说；没有 ps 只警告',()=>{
   const e=取调度环境({锁目录:dir}),名=放票(e,process.ppid),出:string[]=[];
