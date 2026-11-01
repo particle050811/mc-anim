@@ -21,7 +21,7 @@ from 音效拆分 import FFMPEG
 FPS = 24
 SAMPLE_RATE = 48000
 SAMPLES_PER_FRAME = SAMPLE_RATE // FPS
-WIDTH, HEIGHT = 2560, 1440  # 画面和成片同规格：2K、CRF 32（用户 10-14 定）
+WIDTH, HEIGHT = 2560, 1440  # 画面 2K，和成片同分辨率（用户 10-14 定）；CRF 和成片不同档，见 pipeline/合成/交付.ts
 DIALOGUE_BUS_GAIN = 1.0  # engine/audio/混音.ts 的 台词音量
 
 read_audio = sfx_split.read_audio
