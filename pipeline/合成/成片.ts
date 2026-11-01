@@ -1,6 +1,6 @@
 // 合成整片：按清单顺序取各段当前指纹的母版，硬切接成一条，整片只压一遍。做法照旧项目 工具/合成第六章.py：
 //   声音先单独按样本截、接，整片一个固定增益拉到 −16 LUFS + 限幅（不做动态压缩），压成 AAC 量真峰值，超了就压低限幅重做；
-//   画面 trim/scale/concat 和压成片一遍做完。Mac 默认 videotoolbox q38，其他平台 x264 slower CRF 32（用户 10-15 定）。
+//   画面 trim/scale/concat 和压成片一遍做完。各平台默认 x264 medium（用户 11-01 定）CRF 30（实测定，见 docs/决策/0008-母版存储.md）；同样大小画质比硬件编码高，硬件编码 q38 留作可选，要快时用。
 // 过期的母版（和段声明的透明叠层）默认拒绝：--重渲过期 先渲，--允许过期 用同一渲染级别最近一份旧的并逐段写进 manifest。
 // 叠层在下、字幕（按段.ts 的台词 cue 排，见 字幕.ts）在上，和画面一起压；接缝只查不改（接缝.ts）；--分享版 另压一份 50 MB 内的 720p。
 // 声音和接缝读各段的段签（pipeline/段签/：声音.flac、首尾帧小图，缺了从 CRF1 当场派生），画面读压缩母版（用户 10-30 定，渲/转码.ts；只有 CRF1 的旧母版先转存再用，同一指纹出同样的片）。
@@ -8,7 +8,7 @@
 // 作品开了剪辑包（<作品根>/交付.toml）的，同一遍 ffmpeg 在叠完段叠层、叠字幕之前 split 出 剪辑包/画面.mp4。交付因此自足，edit-package 不再读母版。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 交付根, 配置, isMac, 数据根 } from '../环境/配置.ts';
+import { 交付根, 配置, 数据根 } from '../环境/配置.ts';
 import { 提交状态, 相对代码根 } from '../环境/路径.ts';
 import { 低优先级, 跑, 跑出, 试跑 } from '../环境/子进程.ts';
 import { 叠层目录, 数据路径, 相对数据根 } from '../环境/配置.ts';
@@ -43,7 +43,7 @@ const 采样率 = 48000;
 
 const 编码参数表: Record<string, string[]> = {
   h264_videotoolbox: ['-c:v', 'h264_videotoolbox', '-q:v', '38', '-profile:v', 'high'],
-  libx264: ['-c:v', 'libx264', '-preset', 'slower', '-crf', '32', '-profile:v', 'high'],
+  libx264: ['-c:v', 'libx264', '-preset', 'medium', '-crf', '30', '-profile:v', 'high'],
 };
 
 export const 成片编码参数 = (级别: 渲染级别): string[] => {
@@ -433,6 +433,5 @@ export const 合成成片 = async (
   点('写清单');
   opts.记录.产物.push(成片);
   console.log(`成片 ${成片}：${manifest.时长秒.toFixed(2)} 秒，${总帧数} 帧，${终.lufs.toFixed(1)} LUFS`);
-  if (isMac && opts.级别 === '视频' && 配置('编码器') !== 'h264_videotoolbox') console.log('（这台是 Mac，但编码器设成了 ' + 配置('编码器') + '）');
   return { dir, 成片, manifest };
 };

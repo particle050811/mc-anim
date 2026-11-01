@@ -49,8 +49,8 @@ export const 体检 = (): 结果[] => {
   const 编码器表 = 试跑([配置('ffmpeg'), '-hide_banner', '-encoders']).stdout;
   const 有编码器 = (名: string) => new RegExp(`\\s${名}\\s`).test(编码器表);
   查('成片编码器', 有编码器(配置('编码器')), `${配置('编码器')}${有编码器(配置('编码器')) ? '' : ' 不在 ffmpeg 里（换 ANIM_VIDEO_ENCODER=libx264）'}`);
-  查('libx264', 有编码器('libx264'), '预览、分享版要用', true);
-  if (isMac) 查('videotoolbox', 有编码器('h264_videotoolbox'), 'Mac 成片默认用它', false);
+  查('libx264', 有编码器('libx264'), '成片、预览、分享版要用', true);
+  if (isMac) 查('videotoolbox', 有编码器('h264_videotoolbox'), '可选：Mac 上要快时用它出片', false);
 
   for (const [k, 要] of [['core.quotepath', 'false'], ['core.longpaths', 'true']] as const) {
     const v = 试跑(['git', '-C', 代码根(), 'config', '--get', k]).stdout.trim();
