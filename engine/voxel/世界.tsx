@@ -128,6 +128,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   if (!maybeWorld) glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0 }));
   const world = maybeWorld;
   const { cache, group } = world;
+  // 有的镜头组件摆完没更新世界矩阵，不更新就要等下一次画图，挑区段会用上一帧的视野：硬切或隔帧出静帧时缺地形（用户 10-31 定修）
+  camera.updateMatrixWorld();
   const inView = makeFrustumTest(camera);
   // 区段往背着光的方向扫 投影余量 米以后还碰得到视野，它的影子就可能落进画面
   const lh = shadowLightDir ? Math.hypot(shadowLightDir[0], shadowLightDir[1]) : 0;
