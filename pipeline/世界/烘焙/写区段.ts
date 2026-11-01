@@ -1,6 +1,8 @@
 // 把一级的列切成区段、换成区段自己的色板、压缩（区段编码.ts），攒齐一块的各级后写成块文件（格式见 engine/voxel/区段包.ts）。照旧项目 工具/导入/烘焙/写区段.ts。
 import { closeSync, openSync, writeSync } from 'node:fs';
 import path from 'node:path';
+import { 默认模型 } from '../../../engine/voxel/区段模型.ts';
+const 中性模型 = 默认模型();
 import type { 体素库 } from '../体素库.ts';
 import { 无地表, 无顶, type 层级 } from './合并.ts';
 import { 压并核对 } from './区段编码.ts';
@@ -102,7 +104,7 @@ export class 区段写手 {
           }
         for (const entry of usedEntries) paletteIdx[entry] = -1;
         const id = { L: level.L, i: ti * sectionsPerSide + si, j: tj * sectionsPerSide + sj };
-        const 压 = 压并核对(this.库, { ...id, kBottom, nz, palette: Uint16Array.from(palette), runCounts, paletteIndex: runPaletteIdx.subarray(0, runCount), runLengths: runLengths.subarray(0, runCount) });
+        const 压 = 压并核对(this.库, { ...id, kBottom, nz, palette: Uint16Array.from(palette), runCounts, paletteIndex: runPaletteIdx.subarray(0, runCount), runLengths: runLengths.subarray(0, runCount) }, 中性模型);
         this.tileSections.push({ slot: sectionInTile(id).slot, 压 });
         const st = this.levelStats[level.L]!;
         st.count++;

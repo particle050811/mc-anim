@@ -1,27 +1,20 @@
-// 区段的逐格预测压缩（编码半边，代码里叫算术编码）；解码半边是 wasm/区段解码.ts，两边逐条对应。为什么是这个方案见 docs/决策/0011-地形压缩.md。
-// 区段的字节（小端）：u16 nz、i16 kBottom、u16 色板项，色板 u16[2·色板项]，接着区间编码流。没有 gzip，L、i、j 由块文件索引的位置定。
-// 模型：格子按列优先（一列从上往下）走。每个格子先猜「和上一格一样」，猜错再猜「和左列同高的格一样」「和前列同高的格一样」，都错才记色板号。
-//   上下文 = 左、前两列在这一高度变没变，左、前、上三者相不相同，上一次猜错没有，上一格是不是空气。
-//   跳过：上、左、前三者相同，且左、前两列接下来 m 格都不变，只记「这 m 格都和上一格一样吗」。
-//   整列：这列和左列（再不行前列）完全一样，只记一下。
-//   初值：engine/voxel/区段模型表.生成.ts 里按真实地形学好的（训练见 ../区段解码器.ts），色板号的概率因为每区段含义不同，从 1/2 起。
-// 走模型 同时给编码器和训练用：训练时 记 只数不写。区间编码器的写法照 LZMA：low 进位靠 double 表示到 2^33，整数运算，平台无关。
-import type { SectionData } from '../../../engine/voxel/区段包.ts';
+// 格式 3 的逐格预测模型；状态类、条件字面值先验见 docs/决策/0011-地形压缩.md。
 import type { 体素库 } from '../体素库.ts';
-
+import type { 区段模型 } from '../../../engine/voxel/区段模型.ts';
+import type { SectionData } from '../../../engine/voxel/区段包.ts';
 const 边 = 34, 列数 = 边 * 边;
 export const 区段头长 = 6;
-const 移 = 4;
 // 模型表的布局（u16 下标）：p1、p2、p3 各 128 × 3 级，跳 64 × 3 级，整列 9 × 3 级
 export const 表布局 = { p1: 0, p2: 384, p3: 768, 跳: 1152, 列: 1344, 总: 1371 } as const;
 export const 级 = (L: number) => (L === 0 ? 0 : L <= 2 ? 1 : 2);
 
 export interface 记号器 {
+  literal?(u: number, v: number): void;
   /** 概率数组 ps 第 i 项上记一位，返回这一位 */
-  bit(ps: Uint16Array, i: number, b: number): number;
+  bit(ps: Uint16Array, i: number, b: number, state?: number): number;
 }
 
-class 区间编码器 implements 记号器 {
+export class 区间编码器 implements 记号器 {
   private low = 0;
   private range = 0xffffffff;
   private cache = 0;
@@ -52,15 +45,15 @@ class 区间编码器 implements 记号器 {
     this.cacheSize++;
     this.low = (this.low % 0x1000000) * 256;
   }
-  bit(ps: Uint16Array, i: number, b: number) {
+  bit(ps: Uint16Array, i: number, b: number, shift = 4) {
     const p = ps[i]!, bound = (this.range >>> 11) * p;
     if (!b) {
       this.range = bound;
-      ps[i] = p + ((2048 - p) >> 移);
+      ps[i] = p + ((2048 - p) >> shift);
     } else {
       this.low += bound;
       this.range -= bound;
-      ps[i] = p - (p >> 移);
+      ps[i] = p - (p >> shift);
     }
     while (this.range < 0x1000000) {
       this.range *= 256;
@@ -92,7 +85,7 @@ export const 到列优先 = (d: Pick<SectionData, 'nz' | 'runCounts' | 'paletteI
 
 let 跑长 = new Uint16Array(1 << 20);
 
-export const 走模型 = (rc: 记号器, cm: Uint16Array, nz: number, 色板项: number, L: number, 表: Uint16Array) => {
+export const 走模型 = (rc: 记号器, cm: Uint16Array, nz: number, 色板项: number, L: number, 表: Uint16Array, palette: Uint16Array) => {
   let 位 = 1;
   while (1 << 位 < 色板项) 位++;
   const 树 = new Uint16Array(1 << 位).fill(1024), l = 级(L), 偏 = l * 128;
@@ -144,7 +137,7 @@ export const 走模型 = (rc: 记号器, cm: Uint16Array, nz: number, 色板项:
             }
           }
           const 桶 = 31 - Math.clz32(m), 境 = (桶 > 7 ? 7 : 桶) | (U === 0 ? 8 : 0) | (上次错 << 4) | (顶 ? 32 : 0);
-          if (!rc.bit(表, o跳 + 境 + 64 * l, 同 ? 0 : 1)) {
+          if (!rc.bit(表, o跳 + 境 + 64 * l, 同 ? 0 : 1, palette[2 * U]!)) {
             k -= m;
             上次错 = 0;
             continue;
@@ -156,22 +149,23 @@ export const 走模型 = (rc: 记号器, cm: Uint16Array, nz: number, 色板项:
       const N变 = !顶 && bN >= 0 && cm[bN + k] !== cm[bN + k + 1] ? 1 : 0;
       const ctx = 偏 + (W变 | (N变 << 1) | (W === U ? 4 : 0) | (N === U ? 8 : 0) | (W === N ? 16 : 0) | (上次错 << 5) | (U === 0 ? 64 : 0));
       const v = cm[base + k]!;
-      if (!rc.bit(表, o1 + ctx, v === U ? 0 : 1)) {
+      if (!rc.bit(表, o1 + ctx, v === U ? 0 : 1, palette[2 * U]!)) {
         上次错 = 0;
         k--;
         continue;
       }
       上次错 = 1;
-      if (W !== U && !rc.bit(表, o2 + ctx, v === W ? 0 : 1)) {
+      if (W !== U && !rc.bit(表, o2 + ctx, v === W ? 0 : 1, palette[2 * W]!)) {
         k--;
         continue;
       }
-      if (N !== U && N !== W && !rc.bit(表, o3 + ctx, v === N ? 0 : 1)) {
+      if (N !== U && N !== W && !rc.bit(表, o3 + ctx, v === N ? 0 : 1, palette[2 * N]!)) {
         k--;
         continue;
       }
+      rc.literal?.(U, v);
       let n = 1;
-      for (let i = 位 - 1; i >= 0; i--) n = (n << 1) | rc.bit(树, n, (v >> i) & 1);
+      for (let i = 位 - 1; i >= 0; i--) n = (n << 1) | rc.bit(树, n, (v >> i) & 1, U);
       k--;
     }
     if (nz) 跑[base] = 1;
@@ -179,30 +173,43 @@ export const 走模型 = (rc: 记号器, cm: Uint16Array, nz: number, 色板项:
   }
 };
 
-/** 同样的 SectionData 出同样的字节（版本 = 目录指纹靠这个）。初值表 是 库.区段解码.初值表（pipeline 不静态引 engine 的模块）；cm 可以传现成的，省一次摊开 */
-export const 压区段 = (d: Pick<SectionData, 'nz' | 'kBottom' | 'palette' | 'runCounts' | 'paletteIndex' | 'runLengths' | 'L'>, 初值表: Uint16Array, cm: Uint16Array = 到列优先(d)): Uint8Array => {
-  const 色板项 = d.palette.length / 2;
-  if (d.nz > 0xffff || 色板项 > 0xffff || d.kBottom < -0x8000 || d.kBottom > 0x7fff) throw new Error(`区段放不进格式：nz ${d.nz}、色板 ${色板项} 项、kBottom ${d.kBottom}`);
-  const rc = new 区间编码器(4096);
-  走模型(rc, cm, d.nz, 色板项, d.L, 初值表.slice());
-  const 流 = rc.完();
-  const out = new Uint8Array(区段头长 + 4 * 色板项 + 流.length);
-  const v = new DataView(out.buffer);
-  v.setUint16(0, d.nz, true);
-  v.setInt16(2, d.kBottom, true);
-  v.setUint16(4, 色板项, true);
-  out.set(new Uint8Array(d.palette.buffer, d.palette.byteOffset, d.palette.byteLength), 区段头长);
-  out.set(流, 区段头长 + 4 * 色板项);
+
+/** 同一模型和格子生成相同的字节；区段之间不共享自适应状态，支持独立 Range 解码。 */
+export const 压区段 = (d: SectionData, 模型: 区段模型, cm: Uint16Array = 到列优先(d)): Uint8Array => {
+  const P = d.palette.length / 2;
+  if (d.nz > 0xffff || P < 1 || P > 0xffff || d.kBottom < -0x8000 || d.kBottom > 0x7fff) throw new Error(`区段放不进格式：nz ${d.nz}、色板 ${P} 项、kBottom ${d.kBottom}`);
+  const ps = new Uint16Array(1371), probs = 模型.init.slice();
+  const { tree, n } = 树初值(d.palette, 模型), rc = new 区间编码器(4096);
+  走模型({ bit(p, i, b, s = 0) {
+    const lit = p !== ps;
+    const idx = lit ? 模型.map[d.palette[2 * s]!]! * n + i : (i < 1344 ? 模型.map[s]! * 1371 : 0) + i;
+    return rc.bit(lit ? tree : probs, idx, b, lit ? 4 : 5);
+  } }, cm, d.nz, P, d.L, ps, d.palette);
+  const 流 = rc.完(), out = new Uint8Array(6 + d.palette.byteLength + 流.length), dv = new DataView(out.buffer);
+  dv.setUint16(0, d.nz, true); dv.setInt16(2, d.kBottom, true); dv.setUint16(4, P, true);
+  out.set(new Uint8Array(d.palette.buffer, d.palette.byteOffset, d.palette.byteLength), 6);
+  out.set(流, 6 + d.palette.byteLength);
   return out;
 };
 
-const 同数组 = (a: Uint16Array, b: Uint16Array) => a.length === b.length && Buffer.compare(new Uint8Array(a.buffer, a.byteOffset, a.byteLength), new Uint8Array(b.buffer, b.byteOffset, b.byteLength)) === 0;
-
-/** 压完马上用正式的解码器（WASM）解一遍逐格比：编码和解码两边实现是分开写的，错了不能进包 */
-export const 压并核对 = (库: 体素库, d: SectionData): Uint8Array => {
-  const cm = 到列优先(d);
-  const 压 = 压区段(d, 库.区段解码.初值表, cm);
-  const 解 = 库.区段解码.解区段(压, d);
-  if (解.kBottom !== d.kBottom || 解.nz !== d.nz || !同数组(解.palette, d.palette) || !同数组(到列优先(解), cm)) throw new Error(`区段 ${d.L}/${d.i}/${d.j} 压完解回来不一样`);
+export const 压并核对 = (库: 体素库, d: SectionData, 模型: 区段模型): Uint8Array => {
+  const cm = 到列优先(d), 压 = 压区段(d, 模型, cm), 解 = 库.区段解码.解区段(压, d, 模型);
+  const 同 = (a: Uint16Array, b: Uint16Array) => a.length === b.length && Buffer.compare(new Uint8Array(a.buffer, a.byteOffset, a.byteLength), new Uint8Array(b.buffer, b.byteOffset, b.byteLength)) === 0;
+  if (解.kBottom !== d.kBottom || 解.nz !== d.nz || !同(解.palette, d.palette) || !同(到列优先(解), cm)) throw new Error(`区段 ${d.L}/${d.i}/${d.j} 压完解回来不一样`);
   return 压;
+};
+
+const 树初值 = (palette: Uint16Array, m: 区段模型) => {
+  const P = palette.length / 2, n = 1 << Math.max(1, Math.ceil(Math.log2(P)));
+  const tree = new Uint16Array(m.classes * n), scratch = new Float64Array(n * 2);
+  for (let c = 0; c < m.classes; c++) {
+    scratch.fill(0);
+    for (let v = 0; v < P; v++) { const s = palette[2 * v]!; scratch[n + v] = s < m.stride ? m.weights[c * m.stride + s]! : 1; }
+    for (let i = n - 1; i > 0; i--) {
+      const a = scratch[2 * i]!, b = scratch[2 * i + 1]!;
+      scratch[i] = a + b;
+      tree[c * n + i] = a + b ? Math.max(15, Math.min(2033, Math.round(a / (a + b) * 2048))) : 1024;
+    }
+  }
+  return { tree, n };
 };

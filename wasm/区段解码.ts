@@ -3,25 +3,25 @@
 // 内存由 engine/voxel/区段解码.ts 排，这里只收指针；这个模块没有静态数据、不分配。
 // 算法：自适应二进制区间编码（LZMA 那一种，算法公开），这里是自己写的，没有拷第三方代码。
 const 边: i32 = 34, 列数: i32 = 边 * 边;
-const 移: u32 = 4; // 概率每次往命中的方向挪 1/16
+// 空间概率按 1/32 更新；字面值显式传 4，按 1/16 更新。
 const 偏p2: usize = 768, 偏p3: usize = 1536, 偏跳: usize = 2304, 偏列: usize = 2688, 表字节: usize = 2742;
 
 let range: u32 = 0, code: u32 = 0, at: usize = 0;
 
 // @ts-ignore
-@inline function bit(ps: usize, i: i32): i32 {
+@inline function bit(ps: usize, i: i32, shift: u32 = 5): i32 {
   const a = ps + (<usize>i << 1);
   const p = <u32>load<u16>(a);
   const bound = (range >>> 11) * p;
   let o: i32;
   if (code < bound) {
     range = bound;
-    store<u16>(a, <u16>(p + ((2048 - p) >> 移)));
+    store<u16>(a, <u16>(p + ((2048 - p) >> shift)));
     o = 0;
   } else {
     code -= bound;
     range -= bound;
-    store<u16>(a, <u16>(p - (p >> 移)));
+    store<u16>(a, <u16>(p - (p >> shift)));
     o = 1;
   }
   while (range < 0x1000000) {
@@ -41,16 +41,34 @@ let range: u32 = 0, code: u32 = 0, at: usize = 0;
 
 // 入、入长：编码流；表：初值表；工：表的工作拷贝；树：色板号的概率；cm、跑：列优先的格子和每格往下同值几格，都是 列数·nz 个 u16；数、号、长：解出来的行程。
 // 返回行程数；流读过头或没读完（截断、错位、坏字节）返回 −1
-export function 解(入: usize, 入长: i32, 表: usize, 工: usize, 树: usize, cm: usize, 跑: usize, 数: usize, 号: usize, 长: usize, nz: i32, 色板项: i32, L: i32): i32 {
+export function 解(入: usize, 入长: i32, 表: usize, 工: usize, 树: usize, cm: usize, 跑: usize, 数: usize, 号: usize, 长: usize, nz: i32, 色板项: i32, L: i32, pal: usize, classmap: usize, weights: usize, scratch: usize, classes: i32, stride: i32): i32 {
   at = 入;
   range = 0xffffffff;
   code = 0;
   for (let i = 0; i < 4; i++) code = (code << 8) | <u32>load<u8>(at++);
-  memory.copy(工, 表, 表字节);
+  memory.copy(工, 表, <usize>(classes * 2742));
   const p1 = 工, p2 = 工 + 偏p2, p3 = 工 + 偏p3, 跳 = 工 + 偏跳, 列 = 工 + 偏列;
   let 位: i32 = 1;
   while ((1 << 位) < 色板项) 位++;
-  for (let i = 0, n = 1 << 位; i < n; i++) 存(树, i, 1024);
+  const nodes: i32 = 1 << 位;
+  const local = scratch + (<usize>nodes << 3);
+  for (let v = 0; v < 色板项; v++) store<u8>(local + <usize>v, load<u8>(classmap + <usize>load<u16>(pal + (<usize>v << 2))));
+  for (let c = 0; c < classes; c++) {
+    for (let v = 0; v < nodes; v++) {
+      let w: u32 = 0;
+      if (v < 色板项) {
+        const s: i32 = load<u16>(pal + (<usize>v << 2));
+        w = s < stride ? <u32>load<u16>(weights + (<usize>(c * stride + s) << 1)) : 1;
+      }
+      store<u32>(scratch + (<usize>(nodes + v) << 2), w);
+    }
+    for (let i = nodes - 1; i > 0; i--) {
+      const a = load<u32>(scratch + (<usize>i << 3)), b = load<u32>(scratch + (<usize>i << 3) + 4);
+      store<u32>(scratch + (<usize>i << 2), a + b);
+      const p: i32 = a + b ? <i32>(<f64>a / <f64>(a + b) * 2048.0 + 0.5) : 1024;
+      存(树, c * nodes + i, min<i32>(2033, max<i32>(15, p)));
+    }
+  }
   const l = L == 0 ? 0 : L <= 2 ? 1 : 2, 偏 = l * 128;
   let 上次错: i32 = 0, 上列: i32 = 2;
   for (let c = 0; c < 列数; c++) {
@@ -88,7 +106,7 @@ export function 解(入: usize, 入长: i32, 表: usize, 工: usize, 树: usize,
         if (m >= 2) {
           const 桶 = 31 - clz<i32>(m);
           const 境 = (桶 > 7 ? 7 : 桶) | (U == 0 ? 8 : 0) | (上次错 << 4) | (顶 ? 32 : 0);
-          if (!bit(跳, 境 + 64 * l)) {
+          if (!bit(跳, 境 + 64 * l + 1371 * <i32>load<u8>(local + <usize>U))) {
             for (let j = 0; j < m; j++) 存(cm, base + k - j, U);
             k -= m;
             上次错 = 0;
@@ -100,7 +118,7 @@ export function 解(入: usize, 入长: i32, 表: usize, 工: usize, 树: usize,
       const W变 = !顶 && bW >= 0 && 取(cm, bW + k) != 取(cm, bW + k + 1) ? 1 : 0;
       const N变 = !顶 && bN >= 0 && 取(cm, bN + k) != 取(cm, bN + k + 1) ? 1 : 0;
       const ctx = 偏 + (W变 | (N变 << 1) | (W == U ? 4 : 0) | (N == U ? 8 : 0) | (W == N ? 16 : 0) | (上次错 << 5) | (U == 0 ? 64 : 0));
-      if (!bit(p1, ctx)) {
+      if (!bit(p1, ctx + 1371 * <i32>load<u8>(local + <usize>U))) {
         存(cm, base + k, U);
         上次错 = 0;
         k--;
@@ -108,21 +126,21 @@ export function 解(入: usize, 入长: i32, 表: usize, 工: usize, 树: usize,
       }
       上次错 = 1;
       if (W != U) {
-        if (!bit(p2, ctx)) {
+        if (!bit(p2, ctx + 1371 * <i32>load<u8>(local + <usize>W))) {
           存(cm, base + k, W);
           k--;
           continue;
         }
       }
       if (N != U && N != W) {
-        if (!bit(p3, ctx)) {
+        if (!bit(p3, ctx + 1371 * <i32>load<u8>(local + <usize>N))) {
           存(cm, base + k, N);
           k--;
           continue;
         }
       }
       let n: i32 = 1;
-      for (let i = 位 - 1; i >= 0; i--) n = (n << 1) | bit(树, n);
+      for (let i = 位 - 1; i >= 0; i--) n = (n << 1) | bit(树, n + nodes * <i32>load<u8>(local + <usize>U), 4);
       存(cm, base + k, n - (1 << 位));
       k--;
     }

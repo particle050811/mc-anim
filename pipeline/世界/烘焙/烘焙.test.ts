@@ -93,10 +93,14 @@ const 根 = ${JSON.stringify(输出)};
 fs.mkdirSync(path.join(根, '转'));
 await 转码目录(path.join(根, '旧'), path.join(根, '转'), 1);
 const 转版本 = 目录指纹(path.join(根, '转'));
+fs.mkdirSync(path.join(根, '重转'));
+await 转码目录(path.join(根, '旧'), path.join(根, '重转'), 2);
+const 重转版本 = 目录指纹(path.join(根, '重转'));
+const 模型大小 = fs.statSync(path.join(根, 'a', '模型.bin')).size;
 const 逐格 = await 逐格比目录(path.join(根, '旧'), path.join(根, '转'), 1);
 写旧包(path.join(根, 'a'), path.join(根, '坏'), true);
 const 比坏 = await 逐格比目录(path.join(根, '坏'), path.join(根, '转'), 1).then(() => '没报', (e) => e.message);
-console.log(JSON.stringify({ 版本们, 比了, 不同: 不同.slice(0, 5), 玻璃: 包.顶(5, 5), 木板: 包.顶(21, 3), 空: 包.列(40, 3), 转版本, 逐格, 比坏 }));
+console.log(JSON.stringify({ 版本们, 比了, 不同: 不同.slice(0, 5), 玻璃: 包.顶(5, 5), 木板: 包.顶(21, 3), 空: 包.列(40, 3), 转版本, 重转版本, 模型大小, 逐格, 比坏 }));
 `;
 
 describe.skipIf(!有字节)('烘焙（端到端，要数据根里的方块表字节）', () => {
@@ -112,7 +116,7 @@ describe.skipIf(!有字节)('烘焙（端到端，要数据根里的方块表字
     fs.writeFileSync(脚本文件, 脚本(世界, path.join(临时, '包')));
     const r = spawnSync(process.execPath, [脚本文件], { encoding: 'utf8', cwd: path.join(import.meta.dirname, '..', '..', '..') });
     expect(r.status, r.stderr).toBe(0);
-    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { 版本们: string[]; 比了: number; 不同: unknown[]; 玻璃: { y: number; 状态: string } | null; 木板: { y: number; 状态: string } | null; 空: unknown; 转版本: string; 逐格: { 区段: number; 格: number }; 比坏: string };
+    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { 版本们: string[]; 比了: number; 不同: unknown[]; 玻璃: { y: number; 状态: string } | null; 木板: { y: number; 状态: string } | null; 空: unknown; 转版本: string; 重转版本: string; 模型大小: number; 逐格: { 区段: number; 格: number }; 比坏: string };
     expect(o.版本们[0]).toMatch(/^[0-9a-f]{12}$/);
     expect(o.版本们[1]).toBe(o.版本们[0]);
     expect(o.比了).toBe(512);
@@ -121,6 +125,8 @@ describe.skipIf(!有字节)('烘焙（端到端，要数据根里的方块表字
     expect(o.木板).toMatchObject({ y: 63, 状态: 'minecraft:oak_planks' });
     expect(o.空).toBeNull(); // 区块 (2, 0) 没生成
     expect(o.转版本).toBe(o.版本们[0]); // anim world 转码 和直接烘的字节相同
+    expect(o.重转版本).toBe(o.转版本);
+    expect(o.模型大小).toBe(16); // 极小包比较了含表的总成本，中性表更小
     expect(o.逐格.区段).toBeGreaterThan(0);
     expect(o.逐格.格).toBeGreaterThan(0);
     expect(o.比坏).toMatch(/格不一样/);

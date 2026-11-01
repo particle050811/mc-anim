@@ -1,3 +1,4 @@
+import { 读模型, 模型文件名, 区段格式版本 } from '../../../engine/voxel/区段模型.ts';
 // 资产：资产表字段齐全（许可是 SPDX 表达式）、资产表和资产锁一一对应、私有的进 私有/ 库；
 // 共用表锁（assets/）并上本作品的表锁（<作品>/资产表/、<作品>/资产锁.json）：同一个 id 只登记在一侧，锁写在登记它的那一侧；
 // 代码里 asset:、cue、台词表、角色包引用的 id 都已登记；段声明的地形包登记了版本；公开构建（渲染代码，私有作品自己的目录除外）的闭包里没有私有资产。
@@ -319,6 +320,20 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
     if (!fs.existsSync(dir)) {
       报.错(`地形包 ${名}/${v.版本} 不在 ${dir}`);
       continue;
+    }
+    // 远景高度网格没有 .块，不属于区段格式；区段包必须带本包模型，不能靠机器上残留的全局表。
+    const 块们 = fs.readdirSync(dir).filter((f) => f.endsWith('.块'));
+    if (块们.length) {
+      try {
+        const info = JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as { 版本: number };
+        if (info.版本 !== 区段格式版本) throw new Error(`格式 ${info.版本} 不是现行格式 ${区段格式版本}：anim world 转码`);
+        读模型(fs.readFileSync(path.join(dir, 模型文件名)));
+        for (const f of 块们) {
+          const fd = fs.openSync(path.join(dir, f), 'r'), h = Buffer.alloc(8);
+          try { fs.readSync(fd, h, 0, 8, 0); } finally { fs.closeSync(fd); }
+          if (h.readUInt32LE(0) !== 0x4b51434d || h.readUInt32LE(4) !== 区段格式版本) throw new Error(`${f} 不是格式 ${区段格式版本} 的块文件`);
+        }
+      } catch (e) { 报.错(`地形包 ${名}/${v.版本}：${(e as Error).message}`); }
     }
     const 实 = await 包清单(dir);
     if (实.清单sha256 !== v.清单sha256 || 实.文件数 !== v.文件数 || 实.大小 !== v.大小) {

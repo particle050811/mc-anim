@@ -7,6 +7,7 @@ import type { CutBox, FlattenArea, 区段包信息 } from './导入区段.ts';
 import type { VoxelGrid } from './生成.ts';
 
 export type 工人消息 =
+  | { type: '模型'; url: string; bytes: Uint8Array }
   | { type: '来源'; ctx: number; info: 区段包信息; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
   | { type: '取'; id: number; url: string; start: number; len: number; parts: 区段活[] };
 /** 块文件里的一段：off 相对这次活的 start，id 是它在索引里的位置定的（文件里不存） */
@@ -59,4 +60,9 @@ export const fetchSectionsInPool = (url: string, start: number, len: number, par
     pendingJobs.set(id, { resolve, reject });
     worker.postMessage({ type: '取', id, url, start, len, parts } satisfies 工人消息);
   });
+};
+
+/** 同一包的表只在主线程下载一次；每个 Worker 收一份，不放进逐次 Range 活的消息里。 */
+export const registerModel = (url: string, bytes: Uint8Array) => {
+  for (const w of openPool()) w.postMessage({ type: '模型', url, bytes } satisfies 工人消息);
 };

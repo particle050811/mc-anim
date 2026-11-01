@@ -3,16 +3,21 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { 初值表, 解区段 } from '../../../engine/voxel/区段解码.ts';
+import { 解区段 as 解原 } from '../../../engine/voxel/区段解码.ts';
+import { 默认模型, 模型字节 } from '../../../engine/voxel/区段模型.ts';
+import { 学模型 } from './模型.ts';
 import { wasmBase64 } from '../../../engine/voxel/区段解码器.生成.ts';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
 import type { 体素库 } from '../体素库.ts';
 import { 解码器源码, 解码器生成文件, 解码器源码过期 } from '../区段解码器.ts';
 import { 到列优先, 压区段 as 压原, 压并核对, 表布局 } from './区段编码.ts';
+import { 解区段 as 解格式2区段 } from './格式2解码.ts';
 import { 编格式1区段, 解格式1区段 } from './读区段.ts';
 
-const 库 = { 区段解码: { 解区段, 初值表 } } as unknown as 体素库;
-const 压区段 = (d: Parameters<typeof 压原>[0]) => 压原(d, 初值表);
+const 模型 = 默认模型();
+const 解区段 = (raw: Uint8Array, id: { L: number; i: number; j: number }) => 解原(raw, id, 模型);
+const 库 = { 区段解码: { 解区段: 解原 } } as unknown as 体素库;
+const 压区段 = (d: Parameters<typeof 压原>[0]) => 压原(d, 模型);
 const 列数 = 34 * 34;
 
 const 随机 = (种: number) => () => (种 = (种 * 1664525 + 1013904223) >>> 0) / 2 ** 32;
@@ -60,11 +65,11 @@ describe('逐格预测压缩', () => {
   it('编了解回来逐格一样：各级、各种高度、各种色板大小（色板号的位数边界）', () => {
     for (const [L, nz, P] of [[0, 1, 2], [0, 40, 3], [1, 17, 4], [2, 64, 5], [3, 9, 16], [6, 300, 17], [0, 20, 257]] as const) {
       const d = 噪声(L + nz, L, nz, P);
-      同格(d, 解区段(压并核对(库, d), d));
+      同格(d, 解区段(压并核对(库, d, 模型), d));
     }
     for (const L of [0, 2, 6]) {
       const d = 地形(L, 64);
-      const 压 = 压并核对(库, d);
+      const 压 = 压并核对(库, d, 模型);
       同格(d, 解区段(压, d));
       expect(压.length).toBeLessThan(600); // 整列相同、跳过确实在起作用
     }
@@ -125,13 +130,27 @@ describe('逐格预测压缩', () => {
         噪声: { 长: a.length, sha256: crypto.createHash('sha256').update(a).digest('hex') },
         地形: { 长: b.length, sha256: crypto.createHash('sha256').update(b).digest('hex') },
         wasm: crypto.createHash('sha256').update(Buffer.from(wasmBase64, 'base64')).digest('hex'),
-        模型表: crypto.createHash('sha256').update(Buffer.from(初值表.buffer)).digest('hex'),
+        模型表: crypto.createHash('sha256').update(模型字节(模型)).digest('hex'),
       },
       null,
       1,
     );
     await expect(文 + '\n').toMatchFileSnapshot('./金样/区段编码.json');
-    expect(初值表.length).toBe(表布局.总);
+    expect(模型.init.length).toBe(表布局.总);
     expect(解码器源码过期(fs.readFileSync(解码器生成文件(), 'utf8'), fs.readFileSync(解码器源码(), 'utf8'))).toBe(false);
   });
+});
+
+  it('训练表确定、未见状态回退，多模型交替解码无状态串扰', () => {
+    const d = 地形(0, 64), a = 学模型(() => [d]), b = 学模型(() => [噪声(1)]);
+    expect(模型字节(a)).toEqual(模型字节(学模型(() => [d])));
+    expect(a.map[65535]).toBe(31);
+    for (const m of [a, b, a]) for (const x of [d, 噪声(3), 噪声(7, 6, 1, 1)]) 同格(x, 解原(压原(x, m), x, m));
+  });
+
+it('格式 2 冻结字节仍能由转码工具读，格式 3 编解码逐格相同', () => {
+  const { base64 } = JSON.parse(fs.readFileSync(new URL('./金样/格式2区段.json', import.meta.url), 'utf8'));
+  const d = 地形(1, 64), x = 解格式2区段(Buffer.from(base64, 'base64'), d), m = 学模型(() => [x]);
+  同格(d, x);
+  同格(d, 解原(压原(x, m), d, m));
 });

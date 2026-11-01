@@ -13,6 +13,7 @@
 // ---------- 包 ----------
 // 一个目录：
 //   包.json         包信息（下面的类型）：原点、方块状态表、群系表、粗高度图
+//   模型.bin       本包的概率模型（区段模型.ts），改模型改变包版本，不改变解码器代码
 //   <ti>.<tj>.块     块文件：2048 米一块（最粗一级的一个区段，烘焙也按这个分块做），块里各级的区段打成一个文件，格式见下面的 块文件
 // 区段的核心（32 × 32 列，不算相邻那圈）里一列数据都没有的不存。
 //
@@ -32,13 +33,14 @@
 // 方块状态存字符串（包.json 的 `state` 表），解的时候才用 lib/真实方块表.ts 的 `voxelFromState()` 换成体素值，所以方块表往后加方块、换编号，旧包照样解得对。
 // 群系只给染色的方块记（草、树叶、水……），颜色解的时候按群系取固定色、不做混合（用户 10-04 定，和 mcai mesh 导出的网格一致）。
 // 第 1 级以上的格子是烘焙时照 Voxy Mipper 合并好的（比不透明度，要查方块表），所以方块表改了不透明度、补了缺的方块，要重新烘焙。
+import { 区段格式版本 } from './区段模型.ts';
 import { voxelFromState, blockProps, buildTintTable, biomeIndex } from './真实方块表.ts';
 import { sectionCells, coarsestLevel, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
 
 export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 34 列
-// 格式版本，写在块文件头和 包.json：1 是行程 + gzip（只有 pipeline/世界/烘焙/读区段.ts 还认，转码用），2 是逐格预测压缩（用户 10-31 定，docs/决策/0011-地形压缩.md）
-export const formatVersion = 2;
+// 1：行程 gzip；2：全局初值逐格预测；3：每包模型（模型.bin）、32 类状态条件概率。旧格式只由转码工具读取。
+export const formatVersion = 区段格式版本;
 export const noBiome = 65535;
 
 // ---------- 块文件 ----------
