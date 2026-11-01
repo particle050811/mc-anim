@@ -38,21 +38,23 @@ export type BlockMeshInfo = {
 // 合并出来的大面：贴图要在自己那块图集里平铺，three 自带材质做不到，改片元着色器：贴图号 > 0 的面按 rect + fract(格数) × 大小取图集坐标。
 // vLocal 按质心插值（centroid）：开多重采样后，面边上只盖一部分的像素普通插值会把 uv 外推到面外，取到旁边的贴图；镂空层取到透明像素被 alphaTest 丢掉，
 // 远看每条方块边一道虚线（用户 10-06 接缝巡检）。质心插值把采样点挪回面里，只影响边上一圈像素
-const TILE_VERT = ['attribute vec4 rect;', 'varying vec4 vRect;', 'centroid varying vec2 vLocal;'].join('\n');
+const TILE_VERT = ['attribute vec4 rect;', 'varying vec4 vRect;', 'centroid varying vec2 vLocal;', 'varying vec2 vLocalD;'].join('\n');
 // 远处、掠射角的面一个像素盖住好几个贴图像素，只取最近的会出摩尔纹（用户 09-30），所以图集用多级纹理，按每像素盖住多少贴图像素算级别。
 // 级别封顶 4：图集里每张贴图 16×16、按 16 对齐，第 4 级每张缩成 1 像素，再往上会混进旁边的贴图。平铺大面要按没取 fract 的格数求导，否则接缝处导数突变出杂点。
+// 级别按普通插值的 vLocalD 算，取色才用 vLocal：质心插值的变量在面边上导数不可靠，同一份代码每次渲染都有几十个边缘像素取到不同级别（用户 10-31 定修，渲染要能逐帧比对）。
 const TILE_FRAG = [
   'varying vec4 vRect;',
   'centroid varying vec2 vLocal;',
+  'varying vec2 vLocalD;',
   'vec4 atlasSample(sampler2D t, vec2 uv) {',
-  '  vec2 tc = (vRect.z > 0.0 ? vLocal * vRect.zw : vLocal) * vec2(textureSize(t, 0));',
+  '  vec2 tc = (vRect.z > 0.0 ? vLocalD * vRect.zw : vLocalD) * vec2(textureSize(t, 0));',
   '  float rho = max(length(dFdx(tc)), length(dFdy(tc)));',
   '  return textureLod(t, uv, clamp(log2(max(rho, 1e-6)), 0.0, 4.0));',
   '}',
 ].join('\n');
 const TILE_UV = 'vec2 atlasUv = vRect.z > 0.0 ? vRect.xy + fract(vLocal) * vRect.zw : vLocal;';
 const tiled = (shader: THREE.WebGLProgramParametersWithUniforms, emissive: boolean) => {
-  shader.vertexShader = TILE_VERT + '\n' + shader.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n\tvRect = rect;\n\tvLocal = uv;');
+  shader.vertexShader = TILE_VERT + '\n' + shader.vertexShader.replace('#include <uv_vertex>', '#include <uv_vertex>\n\tvRect = rect;\n\tvLocal = uv;\n\tvLocalD = uv;');
   shader.fragmentShader = TILE_FRAG + '\n' + shader.fragmentShader.replace('#include <map_fragment>', `${TILE_UV}\n\tdiffuseColor *= atlasSample( map, atlasUv );`);
   if (emissive) {
     // 打底的自发光 = 颜色 × 自发光系数（三类方块材质共用，见 lib/光照配比.ts）；要乘顶点色，否则草和树叶（贴图灰、靠顶点色染绿）暗部发灰
