@@ -51,17 +51,19 @@ float farK;
 uniform float aoPass;
 ${blockAtlasGlsl()}`;
 // 镂空：按第 0 级的透明度丢像素（Voxy quads.frag）；随机转：草方块、泥土这类方块的顶面按这一格在世界里的位置转 0/90/180/270°
-const fragMap = (cutout: boolean) => `
+// 多级纹理级别按图集的格边长算（原版 16 → 0～4 级；材质包 32x 的高清图集 32 → 0～5 级），最粗一级是 1×1 的平均色。
+// 模板里「第 4 级」的说明是 16 时的：模板里的字会进着色器源码，改了默认画面的着色器就和以前不是同一份
+const fragMap = (cutout: boolean, cell = blockAtlas().cell, top = Math.log2(cell)) => `
   {
     float fl = floor(vTex.x / 4096.0 + 0.001);
     float layer = vTex.x - fl * 4096.0;
     bool tinted = mod(fl, 2.0) > 0.5;
     vec2 uv = vBUv;
-    vec2 tc = uv * 16.0;
-    float lod = clamp(log2(max(max(length(dFdx(tc)), length(dFdy(tc))), 1e-6)), 0.0, 4.0);
+    vec2 tc = uv * ${cell}.0;
+    float lod = clamp(log2(max(max(length(dFdx(tc)), length(dFdy(tc))), 1e-6)), 0.0, ${top}.0);
     // 台阶并色的远处系数（见文件头）：一格在画布上约 6 个像素以下开始、约 2 个像素混满；贴图往 1×1 的平均色取
     farK = vTop < 65000.0 ? smoothstep(0.16, 0.5, length(fwidth(vW))) : 0.0;
-    lod = mix(lod, 4.0, farK);
+    lod = mix(lod, ${top}.0, farK);
     vec2 f = fract(uv);
     if (fl > 1.5) {
       vec2 cell = floor(vW.xz);
@@ -75,7 +77,7 @@ const fragMap = (cutout: boolean) => `
     // 高光按贴图花纹压（见 高光随贴图）：这一点的亮度 ÷ 整张贴图的平均亮度（多级纹理第 4 级 1×1 就是平均），平均下来还是 1
     {
       const vec3 Y = vec3(0.2126, 0.7152, 0.0722);
-      float la = dot(textureLod(blockAtlas, auv, 4.0).rgb, Y);
+      float la = dot(textureLod(blockAtlas, auv, ${top}.0).rgb, Y);
       specMask = la > 1e-4 ? clamp(dot(t.rgb, Y) / la, 0.0, 2.5) : 1.0;
     }
     ${cutout ? 'if (textureLod(blockAtlas, auv, 0.0).a < 0.5) discard;\n    t.a = 1.0;' : ''}
