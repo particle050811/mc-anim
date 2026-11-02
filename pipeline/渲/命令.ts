@@ -15,6 +15,7 @@ import { 渲染叠层, 渲染母版, 渲静帧 } from './渲.ts';
 import { 备好母版 } from './转存.ts';
 import { 测速 } from './测速.ts';
 import { 明细一览, 明细报告, 读明细们 } from '../运行记录/渲染明细.ts';
+import { 后台账 } from '../运行记录/阶段.ts';
 import { 查所选段cues, 渲前跑cues } from '../段框架/自动.ts';
 import { 全部段 } from '../清单/清单.ts';
 import { 补段签 } from '../段签/补.ts';
@@ -132,7 +133,14 @@ export const 渲染命令: Record<string, 命令> = {
         return;
       }
       if (p.位置.length || p.开关.has('--详')) console.log(们.map((x) => 明细报告(x.明细, x.文件)).join('\n\n'));
-      else console.log(明细一览(们));
+      else {
+        console.log(明细一览(们));
+        const 账 = 后台账();
+        if (账.length) {
+          console.log('\n最近几批的后台（派生段签、转存 和出帧同时跑，加总超过墙钟是正常的；限流、等齐 是出帧为它多等的）：');
+          for (const x of 账) console.log(`  ${x.开始}  ${x.段数} 段  出帧 ${x.出帧.toFixed(0)} 秒  派生段签 ${x.派生段签.toFixed(0)}  转存 ${x.转存.toFixed(0)}  限流 ${x.限流.toFixed(0)}  等齐 ${x.等齐.toFixed(0)}`);
+        }
+      }
     },
   },
 };

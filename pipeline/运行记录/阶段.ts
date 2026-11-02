@@ -34,6 +34,34 @@ export const 记阶段 = (收: 阶段记录[] | undefined, 标签: string, 阶�
   return r;
 };
 
+export type 后台账目 = { 开始: string; 标签: string; 段数: number; 出帧: number; 派生段签: number; 转存: number; 限流: number; 等齐: number };
+
+/**
+ * 最近几批 render 的后台账：出帧和后台各花多少、出帧为后台多等了多少（anim 耗时 列）。从 批 的 准备 到 等后台 算一批。
+ * 后台的行 pid 是子进程的，按这批渲过的标签和时间窗认；只有用过后台的批才有 等后台。
+ */
+export const 后台账 = (最多 = 3, 表 = 阶段表()): 后台账目[] => {
+  if (!fs.existsSync(表)) return [];
+  const 行 = fs.readFileSync(表, 'utf8').split('\n').slice(1).filter(Boolean).map((l) => {
+    const [开始 = '', 标签 = '', 阶段 = '', 秒 = '0', , pid = ''] = l.split('\t');
+    return { 开始, 标签, 阶段, 秒: Number(秒), pid };
+  });
+  const 账: 后台账目[] = [];
+  for (let i = 行.length - 1; i >= 0 && 账.length < 最多; i--) {
+    const 尾 = 行[i]!;
+    if (尾.阶段 !== '等后台' || !尾.标签.startsWith('批:')) continue;
+    let 头 = i;
+    while (头 > 0 && !(行[头]!.pid === 尾.pid && 行[头]!.标签.startsWith('批:') && 行[头]!.阶段 === '准备')) 头--;
+    const 窗 = 行.slice(头, i + 1);
+    const 自己 = 窗.filter((x) => x.pid === 尾.pid && x.标签.startsWith('render:'));
+    const 段们 = new Set(自己.map((x) => x.标签));
+    const 和 = (们: typeof 窗, 阶段: string) => 们.filter((x) => x.阶段 === 阶段).reduce((a, x) => a + x.秒, 0);
+    const 后台行 = 窗.filter((x) => 段们.has(x.标签));
+    账.push({ 开始: 行[头]!.开始, 标签: 尾.标签, 段数: 段们.size, 出帧: 和(自己, '出帧'), 派生段签: 和(后台行, '派生段签'), 转存: 和(后台行, '转存'), 限流: 和(自己, '等后台'), 等齐: 尾.秒 });
+  }
+  return 账;
+};
+
 /** 量 fn 这一段（抛错也记） */
 export const 量阶段 = async <T>(收: 阶段记录[] | undefined, 标签: string, 阶段: 阶段名, fn: () => Promise<T>, 表?: string): Promise<T> => {
   const t0 = Date.now();
