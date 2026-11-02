@@ -1,5 +1,5 @@
 // anim mcai：把动作转给 sourcing/mcai/mcai.py。mcai 只读 MCAI_* 环境变量，这里按 anim 配置传；
-// 开游戏、编译前过放行闸，开游戏还要等渲染锁空出来（渲染和游戏抢同一块 GPU 和内存，用户 10-04 定的资源闸规矩）。
+// 用户 10-04 定的是控制并发、不吃满内存；阈值和排法是 Agent 的实现。game start 排渲染票后判资源，build 只过放行闸。
 import path from 'node:path';
 import fs from 'node:fs';
 import { 配置, 数据路径 } from '../环境/配置.ts';

@@ -85,6 +85,8 @@ export const webpack改写 = (作品根: string): WebpackOverrideFn => async (co
       // 项目外的文件按 [path] 命名会得到取不到的 "../…" 地址，音频统一按内容哈希命名
       { test: /\.(m4a|wav)$/, type: 'asset/resource', generator: { filename: 'audio/[contenthash:16][ext]' } },
       { test: /\.ogg$/, type: 'asset/resource', generator: { filename: 'audio/[contenthash:16].wav' }, use: [ogg解码loader()] },
+      // 锁定的媒体组件在同页跳帧时会撞到 V8 的字面量迁移断言；只改构造方式，声音参数不动。
+      { test: /[\\/]@remotion[\\/]media[\\/]dist[\\/]esm[\\/]index\.mjs$/, use: [{ loader: path.join(代码根(), 'pipeline', '资产', '媒体字面量.cjs') }] },
       ...资产规则(),
     ],
   },

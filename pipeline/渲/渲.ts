@@ -14,7 +14,7 @@ import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 import { 稳定缓存名 } from '../资产/缓存名.ts';
-import { 过渲染闸 } from '../闸/闸.ts';
+import { 过渲染闸, 登记临时文件 } from '../闸/闸.ts';
 import { 叠层键, 算全部段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import { 叠层目录, 数据根, 母版目录 } from '../环境/配置.ts';
 import { 全部段, type 段信息 } from '../清单/清单.ts';
@@ -37,11 +37,14 @@ import { 出段签 } from '../段签/段签.ts';
 import { 漂移提示 } from '../段签/补.ts';
 import { 删旧, 有要删的旧 } from '../缓存/钉.ts';
 import { 存成压缩 } from './转存.ts';
+import { 固定混音顺序 } from './混音顺序.ts';
 import { 叠层渲染参数, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
 import type { 叠层定义 } from '../../engine/段/段定义.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
-export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
+固定混音顺序();
+
+export const 渲染标签 =(键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 
 export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`) => {
   const 根 = 作品根();
@@ -149,7 +152,7 @@ const 清命中的旧 = async (种: '母版' | '叠层', 项们: { 键: string; 
   if (!要清.length) return;
   await 过渲染闸(async () => {
     for (const x of 要清) 删旧(种, x.键, 级别, x.指纹, { 记录 });
-  });
+  },undefined,{}, {种:'清命中的旧',不开渲染:true});
 };
 
 /** 段目录下的 本机地形.txt 写着这段要的、没登记发布的区段包（核对-世界编辑）。换台机器没有这个包就跳过：不让一条批量渲染死在核对段上（用户 10-31 定）。放段外的文件不进指纹 */
@@ -201,6 +204,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
         记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
         const 原 = 原母版路径(r.段.键, r.指纹.指纹);
         const tmp = 原.replace(/\.mkv$/, `.渲染中-${process.pid}.mkv`);
+        const 撤临时 = 登记临时文件(tmp);
         fs.mkdirSync(path.dirname(tmp), { recursive: true });
         console.log(`== 渲 ${r.段.键}`);
         let code = 1;
@@ -239,6 +243,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
           code = 0;
         } finally {
           fs.rmSync(tmp, { force: true });
+          撤临时();
           const 秒 = (Date.now() - t0) / 1000;
           记耗时(渲染标签(r.段.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
           if (code === 0) console.log(`   ${r.段.键}：${秒.toFixed(0)} 秒 → ${原}`);
@@ -275,7 +280,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
         删旧('母版', r.段.键, 级别, r.指纹.指纹, { 记录: opts.记录 });
         记阶段(opts.记录.阶段, 标签, '删旧', t删, (Date.now() - t删) / 1000);
         await 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
-      });
+      }, undefined, {}, {种:'render',作品:作品名(),段:r.段.键,级别,帧数:composition.durationInFrames,项数:待渲.length,可让路:待渲.length>1,用途:process.env.ANIM_PURPOSE??'产出'});
       opts.记录.产物.push(r.母版);
     }
   }, opts.记录);
@@ -313,6 +318,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
         const t0 = Date.now();
         记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
         const tmp = r.文件.replace(/\.mov$/, `.渲染中-${process.pid}.mov`);
+        const 撤临时 = 登记临时文件(tmp);
         fs.mkdirSync(path.dirname(tmp), { recursive: true });
         console.log(`== 渲叠层 ${r.键}`);
         let code = 1;
@@ -345,6 +351,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
           code = 0;
         } finally {
           fs.rmSync(tmp, { force: true });
+          撤临时();
           const 秒 = (Date.now() - t0) / 1000;
           记耗时(叠层渲染标签(r.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
           if (code === 0) console.log(`   ${r.键}：${秒.toFixed(0)} 秒 → ${r.文件}`);
@@ -352,7 +359,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
         记用过(叠层目录(r.键), r.指纹.指纹);
         删旧('叠层', r.键, 级别, r.指纹.指纹, { 记录: opts.记录 });
         await 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
-      });
+      }, undefined, {}, {种:'render',作品:作品名(),段:r.段.键,级别,帧数:composition.durationInFrames,项数:待渲.length,可让路:待渲.length>1,用途:process.env.ANIM_PURPOSE??'产出'});
       opts.记录.产物.push(r.文件);
     }
   }, opts.记录);
@@ -431,7 +438,7 @@ export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参
 /** 连出才有的提醒 */
 export const 连出提醒 = (段键: string, 帧们: readonly number[], 逐帧?: boolean) =>
   帧们.length > 1 && !逐帧
-    ? `${段键} 这 ${帧们.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：核对-门口哈气，没进成片）。要和单帧或母版逐像素比，加 --逐帧；连出崩页（7-上塔 的 0,14 碰到过）也改用 --逐帧`
+    ? `${段键} 这 ${帧们.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：核对-门口哈气，没进成片）。要和单帧或母版逐像素比，加 --逐帧；连出崩页（Page crashed）也改用 --逐帧`
     : null;
 
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
@@ -457,7 +464,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
       await 明细.写出(收 ?? []);
       console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
-    });
+    }, undefined, {}, {种:'still',作品:作品名(),段:s.键,级别,帧数:要出.length,帧:要出.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
   }, 记录);
   return 要出.map((f) => 静帧文件(出到, s.键, f));
 };

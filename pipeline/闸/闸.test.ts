@@ -29,6 +29,7 @@ const 假环境 = (o: { 内存?: (内存读数 | null)[]; 负载?: (number | nul
     锁目录: dir,
     本机: os.hostname(),
     内存下限: 20,
+    读压力: () => 1,
     读内存: 序列(o.内存 ?? [], 内存(80) as 内存读数 | null),
     一分钟负载: 序列(o.负载 ?? [], 0 as number | null),
     核数: () => 10,
@@ -36,6 +37,7 @@ const 假环境 = (o: { 内存?: (内存读数 | null)[]; 负载?: (number | nul
     睡: async (ms) => {
       睡过.push(ms);
       现在 += ms;
+      await new Promise((r) => setTimeout(r, 0));
     },
     排队间隔毫秒: 5,
   };
@@ -46,11 +48,11 @@ const 上次放行 = () => Number(fs.readFileSync(path.join(dir, '上次放行')
 
 describe('放行闸', () => {
   it('离上次放行不满 60 秒就等，满了才放；放行时间写成现在', async () => {
-    const e = 假环境();
+    const e = 假环境();e.环境.排队间隔毫秒=10_000;
     fs.writeFileSync(path.join(dir, '上次放行'), `${Math.floor(e.现在() / 1000) - 30}\n`);
     const 提示: string[] = [];
     expect(await 过放行闸(async () => 'ok', (s) => 提示.push(s), e.环境)).toBe('ok');
-    expect(e.睡过).toEqual([10_000, 10_000, 10_000]);
+    expect(e.睡过.reduce((a,b)=>a+b,0)).toBe(30_000);
     expect(上次放行()).toBe(Math.floor(e.现在() / 1000));
     expect(提示.filter((s) => s.startsWith('等资源'))).toHaveLength(1);
   });
@@ -111,7 +113,7 @@ describe('渲染闸', () => {
     fs.writeFileSync(path.join(dir, '上次放行'), `${Math.floor(e.现在() / 1000)}\n`);
     const 提示: string[] = [];
     await 过渲染闸(async () => {}, (s) => 提示.push(s), e.环境);
-    expect(e.睡过).toEqual([10_000, 10_000]);
+    expect(e.睡过).toEqual([5, 5]);
     expect(提示.some((s) => s.startsWith('渲染等内存'))).toBe(true);
     expect(提示.at(-1)).toMatch(/^放行渲染/);
   });

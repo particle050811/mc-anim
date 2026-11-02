@@ -1,3 +1,4 @@
+import {闸记被杀,信号码} from '../../闸/收尾.ts';
 // 起取材用的专用服务端（不是客户端）：开服、等就绪、发命令、等日志、正常停服。旧项目 游戏取材/取材服务端.py 按本仓库重写。
 // - 存档可以不在服务端目录下：--universe <存档上一级> --world <存档目录名>，服务端目录只当程序和配置用（沙盒.ts 就靠这个）。
 // - 端口每次挑一个空闲的（--port）：同一台机器上几个服务端（暮色、主世界、沙盒）可以同时开，不用改 server.properties。
@@ -17,6 +18,12 @@ export const 致命行 = ['Failed to load datapacks', 'Registry loading errors',
 const 崩溃行 = 'This crash report has been saved to';
 const 停服异常行 = 'Exception stopping the server';
 export const 停服超时秒 = 300;
+
+/**
+ * 中文 Windows 上 JVM 默认编码是 GBK：管道里的中文（数据包名、模组的话）这边按 UTF-8 解成乱码，核对启用包、核对启动日志都对不上；
+ * 模组读配置、log4j 写 latest.log 也跟着默认编码走，定成 UTF-8 才和 Mac 一样。JDK 17 的管道跟 file.encoding，JDK 19 起另认 stdout.encoding。
+ */
+export const 编码参数 = ['-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'];
 
 export const java程序 = (名 = 'java') => {
   const home = 配置('java_home');
@@ -147,12 +154,12 @@ export class 服务端 {
       this.错 = e;
     });
     // 收到 Ctrl-C、SIGTERM 先正常停服再退出：资源闸装的处理是直接 process.exit，服务端开着的这段时间先换下来
-    for (const sig of ['SIGINT', 'SIGTERM'] as const) {
+    for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
       this.旧信号.set(sig, process.listeners(sig) as NodeJS.SignalsListener[]);
       process.removeAllListeners(sig);
       process.once(sig, () => {
         this.提示(`收到 ${sig}，停服`);
-        void this.停().finally(() => process.exit(130));
+        void this.停().finally(() => {闸记被杀(sig);process.exit(信号码[sig]);});
       });
     }
   }
@@ -169,6 +176,7 @@ export class 服务端 {
     const 端口 = await 空闲端口();
     const 参数 = [
       `-Xmx${o.堆 ?? '12G'}`,
+      ...编码参数,
       ...(o.生成线程 ? [`-Dmax.bg.threads=${o.生成线程}`] : []),
       ...启动参数(o.目录, o.加载器版本),
       // 存档就在服务端目录下时不给 --universe：Forge 的 Main 见到 universe 等于服务端目录会报「Invalid world directory…the same directory as your universe」不起服

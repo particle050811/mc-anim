@@ -1,5 +1,6 @@
 // 起子进程的唯一入口：一律数组参数、不开 shell；Windows 上 .cmd、PATHEXT 交给 cross-spawn。文本输出固定 UTF-8。
 import spawn from 'cross-spawn';
+import {登记收尾} from '../闸/收尾.ts';
 import type { SpawnOptions } from 'node:child_process';
 import { isWindows } from './配置.ts';
 
@@ -41,6 +42,9 @@ export const 试跑 = (cmd: readonly string[], opts: SpawnOptions = {}) => {
 export const 跑 = (cmd: readonly string[], opts: SpawnOptions & { 安静?: boolean } = {}): Promise<void> =>
   new Promise((resolve, reject) => {
     const child = spawn(cmd[0]!, cmd.slice(1), { ...opts, stdio: ['ignore', opts.安静 ? 'ignore' : 'inherit', 'pipe'] });
+    // 调度取消直接退出，不会等 finally；一并停止本次启动的叶子进程，避免转码继续占资源。
+    const 撤=登记收尾(()=>{child.kill('SIGTERM');});
+    child.once('close',撤);
     let stderr = '';
     child.stderr?.setEncoding('utf8');
     child.stderr?.on('data', (d: string) => {
@@ -56,6 +60,8 @@ export const 跑 = (cmd: readonly string[], opts: SpawnOptions & { 安静?: bool
 export const 前台跑 = (cmd: readonly string[], opts: SpawnOptions = {}): Promise<number> =>
   new Promise((resolve, reject) => {
     const child = spawn(cmd[0]!, cmd.slice(1), { ...opts, stdio: 'inherit' });
+    const 撤=登记收尾(()=>{child.kill('SIGTERM');});
+    child.once('close',撤);
     child.on('error', reject);
     child.on('close', (code) => resolve(code ?? 1));
   });
