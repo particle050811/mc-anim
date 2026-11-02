@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { 历史指纹 } from '../渲/母版.ts';
 import { 抽样键, 认可文本, 读认可, type 认可记录 } from '../验收/认可.ts';
 import { 加当前指纹 } from './当前指纹.ts';
@@ -43,6 +43,31 @@ const 删的 = (r: ReturnType<typeof 规划>) => r.filter((f) => !f.理由.lengt
 const 认可记录 = (段: string, 指纹: string): 认可记录 => ({
   段, 指纹, 平台: 'darwin-arm64', 渲染级别: '视频', 认可于: '2026-10-22T00:00:00Z', 提交: 'abc', 理由: '测试', 上一版指纹: 'b'.repeat(64),
   宽: 4, 高: 4, 帧数: 1, 间隔: 24, 帧: [{ 帧: 0, 哈希: 'c'.repeat(64), 块均值: ['00'] }], 音频sha: null, 响度: null, 起音: null,
+});
+
+describe('扫键目录：列完目录文件才没', () => {
+  const 抛 = (码: string) => { throw Object.assign(new Error(码), { code: 码 }); };
+  const 扫 = () => 扫媒体(path.join(根, 'cache', '母版', '作品甲'), '母版', '作品甲');
+  afterEach(() => vi.restoreAllMocks());
+
+  it('占用标记、临时文件刚被放掉（ENOENT）：算没看见，别的照扫', () => {
+    const 媒体 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
+    const 标记 = 写('cache/母版/作品甲/6-甲/aaaaaaaaaaaaaaaa.占用', '1\n');
+    const 真stat = fs.statSync, 真lstat = fs.lstatSync;
+    vi.spyOn(fs, 'statSync').mockImplementation(((f: string, ...多: []) => (f === 标记 ? 抛('ENOENT') : 真stat(f, ...多))) as never);
+    vi.spyOn(fs, 'lstatSync').mockImplementation(((f: string, ...多: []) => (f === 标记 ? 抛('ENOENT') : 真lstat(f, ...多))) as never);
+    const r = 扫();
+    expect(r.媒体.map((f) => f.路径)).toEqual([媒体]);
+    expect(r.媒体[0]!.正在写).toBe(false);
+    expect(r.临时).toEqual([]);
+  });
+
+  it('别的错照抛：权限问题不能当成文件不在', () => {
+    const 媒体 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
+    const 真lstat = fs.lstatSync;
+    vi.spyOn(fs, 'lstatSync').mockImplementation(((f: string, ...多: []) => (f === 媒体 ? 抛('EACCES') : 真lstat(f, ...多))) as never);
+    expect(扫).toThrow('EACCES');
+  });
 });
 
 describe('保留集：母版', () => {

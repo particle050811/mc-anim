@@ -121,6 +121,16 @@ export const 段签说已转码 = (段签目录: string, 指纹16: string, 原: 
 
 export type 普通文件 = { 路径: string; 大小: number; 改于: number };
 
+/** 列目录和 stat 之间文件没了算没看见：后台转存在闸外一直在放占用、清临时文件；只吞 ENOENT */
+const 没了算空 = <T>(读: () => T): T | null => {
+  try {
+    return 读();
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    throw e;
+  }
+};
+
 export type 媒体扫描 = { 媒体: 媒体文件[]; 临时: 普通文件[]; 不认识: 普通文件[] };
 
 /** 读 .指纹.json 里的渲染级别；文件可能是旧算法的，只认 项.渲染设置.inputProps.级别 */
@@ -144,7 +154,10 @@ export type 扫描选项 = {
 export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: string, r: 媒体扫描, o: 扫描选项 = {}) => {
   const 现在 = o.现在 ?? Date.now();
   const 名们 = fs.readdirSync(dir);
-  const 写着 = new Set(名们.filter(是临时名).filter((n) => 现在 - fs.statSync(path.join(dir, n)).mtimeMs < 天).map((n) => n.slice(0, 16)));
+  const 写着 = new Set(名们.filter(是临时名).filter((n) => {
+    const st = 没了算空(() => fs.statSync(path.join(dir, n)));
+    return st !== null && 现在 - st.mtimeMs < 天;
+  }).map((n) => n.slice(0, 16)));
   const 这个检出 = 本检出();
   const 别的检出 = new Map<string, string[]>();
   for (const 名 of 名们.filter((n) => 检出记号名.test(n))) {
@@ -154,7 +167,8 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
   const 起 = r.媒体.length;
   for (const 名 of 名们) {
     const f = path.join(dir, 名);
-    const st = fs.lstatSync(f);
+    const st = 没了算空(() => fs.lstatSync(f));
+    if (!st) continue;
     if (!st.isFile()) {
       r.不认识.push({ 路径: f, 大小: 0, 改于: st.mtimeMs });
       continue;
