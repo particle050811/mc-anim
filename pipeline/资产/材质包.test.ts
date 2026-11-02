@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { 照搬贴图 } from './材质包.ts';
+import { 放大上限, 照搬贴图 } from './材质包.ts';
 import { 套材质包, 材质包锁路径, 读材质包选用, type 材质包选用, type 材质包锁, type 资产锁 } from './资产锁.ts';
 
 const 条 = (c: string) => ({ sha256: c.repeat(64), 大小: 1, 库: 'store' as const, 后缀: '.png' });
@@ -10,13 +10,38 @@ const 条 = (c: string) => ({ sha256: c.repeat(64), 大小: 1, 库: 'store' as c
 describe('材质包覆盖层', () => {
   it('选用：环境变量顶掉作品的 材质包.toml，短名补 材质包/，「原版」关掉；没写或空数组 = 原版', () => {
     const 根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
-    expect(读材质包选用(根, undefined)).toEqual({ 包: [], 来自: '无' });
+    expect(读材质包选用(根, undefined, undefined)).toEqual({ 包: [], 来自: '无' });
     fs.writeFileSync(path.join(根, '材质包.toml'), '# 注释里的 "包" = ["x"] 不算\n"包" = []\n');
-    expect(读材质包选用(根, undefined)).toEqual({ 包: [], 来自: '无' });
+    expect(读材质包选用(根, undefined, undefined)).toEqual({ 包: [], 来自: '无' });
     fs.writeFileSync(path.join(根, '材质包.toml'), '"包" = [\n  "材质包/甲",\n  "乙",\n]\n');
-    expect(读材质包选用(根, undefined)).toEqual({ 包: ['材质包/甲', '材质包/乙'], 来自: '作品' });
-    expect(读材质包选用(根, '丙, 材质包/丁')).toEqual({ 包: ['材质包/丙', '材质包/丁'], 来自: '环境' });
-    expect(读材质包选用(根, '原版')).toEqual({ 包: [], 来自: '无' });
+    expect(读材质包选用(根, undefined, undefined)).toEqual({ 包: ['材质包/甲', '材质包/乙'], 来自: '作品' });
+    expect(读材质包选用(根, '丙, 材质包/丁', undefined)).toEqual({ 包: ['材质包/丙', '材质包/丁'], 来自: '环境' });
+    expect(读材质包选用(根, '原版', undefined)).toEqual({ 包: [], 来自: '无' });
+  });
+
+  it('封顶：材质包.toml 的 "封顶"、环境变量 ANIM_PACKS_RES（顶掉作品的），只认 16 起的 2 的幂；没选包就没有封顶；试样锁名带 @封顶', () => {
+    const 根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
+    fs.writeFileSync(path.join(根, '材质包.toml'), '"包" = ["甲"]\n"封顶" = 16\n');
+    expect(读材质包选用(根, undefined, undefined)).toEqual({ 包: ['材质包/甲'], 来自: '作品', 封顶: 16 });
+    expect(读材质包选用(根, undefined, '32')).toEqual({ 包: ['材质包/甲'], 来自: '作品', 封顶: 32 });
+    expect(读材质包选用(根, '乙', '16')).toEqual({ 包: ['材质包/乙'], 来自: '环境', 封顶: 16 });
+    expect(读材质包选用(根, '乙', undefined)).toEqual({ 包: ['材质包/乙'], 来自: '环境' });
+    expect(读材质包选用(根, '原版', '16')).toEqual({ 包: [], 来自: '无' });
+    expect(() => 读材质包选用(根, '乙', '24')).toThrow(/2 的幂/);
+    expect(path.basename(材质包锁路径(根, { 包: ['材质包/乙', '材质包/丙'], 来自: '环境', 封顶: 16 }, '/数据'))).toBe('乙+丙@16.锁.json');
+    expect(path.basename(材质包锁路径(根, { 包: ['材质包/乙'], 来自: '环境' }, '/数据'))).toBe('乙.锁.json');
+  });
+
+  it('放大上限：倍数要同时整除 像素N 和 正交顶面（整像素），取 2 的幂；封顶再往下压；没有 画风.ts 不放大', () => {
+    const 画风 = (N: number, 顶?: number) => `export const 像素N = ${N};\n${顶 ? `export const 正交顶面 = ${顶};\n` : ''}`;
+    expect(放大上限(画风(6, 2)).倍).toBe(2); // 本作品：32x 原样，64x 缩到 32x
+    expect(放大上限(画风(6, 2), 16).倍).toBe(1);
+    expect(放大上限(画风(6, 2), 64).倍).toBe(2);
+    expect(放大上限(画风(8, 4)).倍).toBe(4);
+    expect(放大上限(画风(8)).倍).toBe(8);
+    expect(放大上限(画风(12, 4), 32).倍).toBe(2);
+    expect(放大上限(画风(3, 3)).倍).toBe(1);
+    expect(放大上限(null).倍).toBe(1);
   });
 
   it('不选就是原锁；选了按覆盖层锁盖上；包换了、锁没建、盖了没登记的 id 都报错', () => {
@@ -32,6 +57,8 @@ describe('材质包覆盖层', () => {
     expect(() => 套材质包(锁, 根, 选)).toThrow(/重跑 anim assets 材质包/);
     写({ 包: [{ id: '材质包/某', sha256: 'd'.repeat(64) }], 覆盖: { '贴图/丙': 条('c') } });
     expect(() => 套材质包(锁, 根, 选)).toThrow(/作品锁里没有的 id/);
+    写({ 包: [{ id: '材质包/某', sha256: 'd'.repeat(64) }], 封顶: 16, 覆盖: {} });
+    expect(() => 套材质包(锁, 根, 选)).toThrow(/封顶 16 建的/);
   });
 
   it('extract.toml 的「导出模型」照搬产物：通配和单件都认出包内路径，别的步骤不算', () => {
@@ -56,10 +83,42 @@ describe('材质包覆盖层', () => {
 "贴图/丙/水面" = "src/丙/水面.png"
 `;
     expect(Object.fromEntries(照搬贴图(表))).toEqual({
-      '贴图/甲/a': 'assets/minecraft/textures/block/a.png',
-      '贴图/甲/b': 'assets/minecraft/textures/block/b.png',
-      '贴图/环境/太阳': 'assets/minecraft/textures/environment/sun.png',
-      '贴图/丙/水面': 'assets/minecraft/textures/block/water_still.png',
+      '贴图/甲/a': { 包内: 'assets/minecraft/textures/block/a.png', 组: '甲#0' },
+      '贴图/甲/b': { 包内: 'assets/minecraft/textures/block/b.png', 组: '甲#0' },
+      '贴图/环境/太阳': { 包内: 'assets/minecraft/textures/environment/sun.png', 组: '乙#0' },
+      '贴图/丙/水面': { 包内: 'assets/minecraft/textures/block/water_still.png', 组: '丙#0' },
+    });
+  });
+
+  it('extract.toml 的单写路径、路径通配（按锁里有的 id 展开）、「导出实体模型」的 --贴图 也认', () => {
+    const 表 = `
+[["取材"]]
+"名称" = "粒子"
+"步骤" = [["导出模型", "{jar:client-1.20.1}", "src/粒子", "assets/minecraft/textures/particle/spark_*.png", "assets/minecraft/textures/particle/heart.png"]]
+["取材"."产物"]
+"贴图/粒子/*" = "src/粒子/*.png"
+
+[["取材"]]
+"名称" = "猪"
+"步骤" = [["python", "x.py"], ["导出实体模型", "{jar:client-1.20.1}", "src/猪/猪.json", "--贴图", "皮=assets/minecraft/textures/entity/pig/pig.png", "--动画", "走"]]
+["取材"."产物"]
+"模型/猪" = "src/猪/猪.json"
+"贴图/猪" = "src/猪/猪.png"
+
+[["取材"]]
+"名称" = "箱"
+"步骤" = [["导出实体模型", "{jar:client-1.20.1}", "src/箱/箱.json", "--贴图", "普通=assets/minecraft/textures/entity/chest/normal.png", "陷阱=assets/minecraft/textures/entity/chest/trapped.png"]]
+["取材"."产物"]
+"贴图/箱/普通" = "src/箱/箱.普通.png"
+"贴图/箱/陷阱" = "src/箱/箱.陷阱.png"
+`;
+    expect(Object.fromEntries(照搬贴图(表, ['贴图/粒子/spark_0', '贴图/粒子/spark_7', '贴图/粒子/别的', '贴图/粒子/子/spark_1']))).toEqual({
+      '贴图/粒子/spark_0': { 包内: 'assets/minecraft/textures/particle/spark_0.png', 组: '粒子#0' },
+      '贴图/粒子/spark_7': { 包内: 'assets/minecraft/textures/particle/spark_7.png', 组: '粒子#0' },
+      '贴图/粒子/heart': { 包内: 'assets/minecraft/textures/particle/heart.png', 组: '粒子#0' },
+      '贴图/猪': { 包内: 'assets/minecraft/textures/entity/pig/pig.png', 组: '猪#1' },
+      '贴图/箱/普通': { 包内: 'assets/minecraft/textures/entity/chest/normal.png', 组: '箱#0' },
+      '贴图/箱/陷阱': { 包内: 'assets/minecraft/textures/entity/chest/trapped.png', 组: '箱#0' },
     });
   });
 });

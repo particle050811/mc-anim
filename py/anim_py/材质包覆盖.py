@@ -1,10 +1,12 @@
 """Java 版材质包兼容层的出图（anim assets 材质包 调用，pipeline/资产/材质包.ts 排请求、入库、写覆盖层锁）。
-请求 JSON（argv[1]）：包们（zip，按 MC 资源包界面从上到下 = 优先级从高到低）、原版jar、出目录、分辨率（缩到16）、
-图集（[{id, 原图, 贴图名, 格}]）、单张（[{id, 原图, 包内}]）、群系（{id, 原表}）。结果 JSON 打在 stdout 最后一行。
+请求 JSON（argv[1]）：包们（zip，按 MC 资源包界面从上到下 = 优先级从高到低）、原版jar、出目录、倍上限（2 的幂，材质包.ts 放大上限）、
+图集（[{id, 原图, 贴图名, 格}]）、单张（[{id, 原图, 包内, 组, 倍上限?}]）、群系（{id, 原表}）。结果 JSON 打在 stdout 最后一行。
 - 每个贴图按包的顺序找，第一个有的包说了算（同 MC），.png.mcmeta 取同一个包的；都没有就留原版。
 - 动画贴图（.png.mcmeta 的 animation）：帧大小照 MC（写了 width/height 用它，没写取图宽高里小的那个），frames 的顺序、time 照写的、没写按 frametime。
   原版这件是一格（方块图集、方贴图）的取第一帧；原版是 N 帧竖条（水面）的，把包的一整圈动画按时长均匀取 N 帧排回竖条，帧数、帧长不同也能换（静态的就 N 帧都一样）。
-- 分辨率：成片按 16x 一个贴图像素 = 像素N 个成片像素排，所以全部规整到原版尺寸：整数倍大的按预乘透明度的盒子平均缩，小的最近邻放大。
+- 分辨率：包是原版的 s 倍，出 f 倍 = 不超过倍上限、整除 s 的最大 2 的幂（32x 包、上限 2 → 原样；64x、128x → 缩到 2 倍；24x、48x 这类 → 1 倍）。
+  比 f 倍大的按预乘透明度的盒子平均缩，小的最近邻放大。方块图集一格 = 16 × 各格 f 里最大的，包里没有的格（原版、模组的）最近邻放大到同一格；
+  单张按 组（同一步导出的一组，消费处常拼在一起用）取组里最大的 f，组里包没有的原版贴图也最近邻放大，一组一样大。
 - colormap：包里有 colormap/grass.png、foliage.png 的，原表里「按温度湿度查色图」的群系（原版色图在该点的颜色等于表里的）换成包色图同一点的颜色，
   写死颜色的群系（樱花林、沼泽修饰等）不动。温度、湿度取原版 jar 的 data/minecraft/worldgen/biome/*.json。
 - OptiFine（CTM、CIT、emissive、自定义天空等）、models、blockstates、core shaders 不支持，只统计、列警告。
@@ -128,13 +130,13 @@ def 均匀取帧(帧们: list[tuple[Image.Image, int]], n: int) -> list[Image.Im
 
 
 def 规整(im: Image.Image, 目标: tuple[int, int]) -> tuple[Image.Image | None, str]:
-    """缩放到原版尺寸：整数倍大的盒子平均（预乘透明度，镂空处的颜色不会把边缘拖黑），整数倍小的最近邻放大。返回 (图, 倍率说明)"""
+    """缩放到目标尺寸：大的盒子平均（预乘透明度，镂空处的颜色不会把边缘拖黑），小的最近邻放大。返回 (图, 倍率说明)"""
     w, h = im.size
     tw, th = 目标
     if (w, h) == (tw, th):
-        return im, '1x'
+        return im, '原样'
     if w * th != h * tw:
-        return None, f'{w}×{h} 和原版 {tw}×{th} 比例不同'
+        return None, f'{w}×{h} 和要出的 {tw}×{th} 比例不同'
     if w > tw:
         倍 = w / tw
         out = im.convert('RGBa').resize((tw, th), Image.BOX).convert('RGBA')
@@ -143,35 +145,59 @@ def 规整(im: Image.Image, 目标: tuple[int, int]) -> tuple[Image.Image | None
     return im.resize((tw, th), Image.NEAREST), f'{倍:g}倍放' + ('' if tw % w == 0 else '（非整数倍）')
 
 
-def 取贴图(叠: 叠包, 相对: str, 目标: tuple[int, int]):
-    """返回 (规整好的图, 哪个包, 说明)；包里没有 → (None, None, None)；尺寸对不上 → (None, 包, 原因)"""
+def 找图(叠: 叠包, 相对: str):
+    """(包, 图, 动画帧们或 None)；包里没有 → None"""
     p = 叠.找(相对)
     if p is None:
-        return None, None, None
+        return None
     im = p.图(相对)
     assert im is not None  # 找() 已确认包里有这个文件
-    tw, th = 目标
-    帧们 = 动画帧(p, 相对, im)
-    n = th // tw if tw and th % tw == 0 else 1
+    return p, im, 动画帧(p, 相对, im)
+
+
+def 包倍(找到, 原宽: int) -> float:
+    """包里一帧的宽是原版的几倍"""
+    _, im, 帧们 = 找到
+    return (帧们[0][0].width if 帧们 else im.width) / 原宽
+
+
+def 有效倍(s: float, 上限: int) -> int:
+    """包是原版的 s 倍：取不超过上限、整除 s 的最大 2 的幂；s 不是整数（24x）或比原版小 → 1"""
+    if s < 1 or s != int(s):
+        return 1
+    f = 1
+    while f * 2 <= 上限 and int(s) % (f * 2) == 0:
+        f *= 2
+    return f
+
+
+def 取贴图(找到, 原尺寸: tuple[int, int], f: int):
+    """包里的贴图出成原版尺寸的 f 倍，返回 (图, 说明)；尺寸对不上 → (None, 原因)"""
+    _, im, 帧们 = 找到
+    ow, oh = 原尺寸
+    tw, th = ow * f, oh * f
+    n = oh // ow if ow and oh % ow == 0 else 1
     if n == 1:
         # 原版一格：动画取第一帧
-        out, 说 = 规整(帧们[0][0] if 帧们 else im, 目标)
-        return out, p, 说
+        return 规整(帧们[0][0] if 帧们 else im, (tw, th))
     # 原版是 n 帧竖条（动画），包里是动画、或者一张方图（静态）：按帧重排
     if 帧们 is None and im.width == im.height:
         帧们 = [(im, 1)]
     if 帧们 is None:
-        out, 说 = 规整(im, 目标)
-        return out, p, 说
+        return 规整(im, (tw, th))
     条 = Image.new('RGBA', (tw, th))
     说们 = set()
     for k, 图 in enumerate(均匀取帧(帧们, n)):
         g, 说 = 规整(图, (tw, tw))
         if g is None:
-            return None, p, 说
+            return None, 说
         条.paste(g, (0, k * tw))
         说们.add(说)
-    return 条, p, '、'.join(sorted(说们)) + f'（动画 {len(帧们)} 帧→{n} 帧）'
+    return 条, '、'.join(sorted(说们)) + f'（动画 {len(帧们)} 帧→{n} 帧）'
+
+
+def 最近邻放大(im: Image.Image, f: int) -> Image.Image:
+    return im if f == 1 else im.resize((im.width * f, im.height * f), Image.NEAREST)
 
 
 def 存(im: Image.Image, 出目录: str, 名: str) -> str:
@@ -265,10 +291,10 @@ def 体检(p: 包) -> dict:
             记('blockstates', n)
         elif sub.startswith('shaders/'):
             记('shaders', n)
-        elif sub.startswith('textures/entity/') and not sub.startswith(('textures/entity/signs/', 'textures/entity/chest/')):
-            记('textures/entity（角色、生物不换）', n)
-        elif sub.startswith(('textures/gui/', 'font/', 'textures/font/')):
-            记('界面、字体（不换）', n)
+        elif sub.startswith(('font/', 'textures/font/')):
+            记('字体（不换：画面里的字是作品自己的点阵）', n)
+        elif sub.startswith('textures/gui/'):
+            记('界面（只换选择世界界面的泥土底、播放箭头）', n)
         elif sub.startswith('textures/') and sub.endswith('.png'):
             记('贴图', n)
     meta = p.json('pack.mcmeta')
@@ -283,37 +309,60 @@ def main() -> None:
     叠 = 叠包([包(x['zip'], x['名']) for x in q['包们']])
     jar = zipfile.ZipFile(q['原版jar'])
     出目录 = q['出目录']
-    结果: dict = {'产物': [], '图集缺': 0, '图集不合': [], '单张缺': [], '单张不合': [], '缩放': Counter(), '各包贡献': Counter(), '体检': [体检(p) for p in 叠.包们]}
+    倍上限 = int(q.get('倍上限', 1))
+    结果: dict = {'产物': [], '图集缺': 0, '图集不合': [], '单张缺': [], '单张原版放大': [], '单张不合': [], '图集格': {}, '缩放': Counter(), '各包贡献': Counter(), '体检': [体检(p) for p in 叠.包们]}
+
+    def 记缩放(s: float, f: int, 说: str):
+        结果['缩放'][f'包 {s:g} 倍 → 出 {f} 倍（{说}）'] += 1
+
     for t in q.get('图集', []):
         原 = Image.open(t['原图']).convert('RGBA')
         格 = t['格']
+        找到们 = [找图(叠, 贴图路径(名)) for 名 in t['贴图名']]
+        F = max([有效倍(包倍(x, 格), 倍上限) for x in 找到们 if x] or [1])
+        # 方块表.png 是竖条：格边长宽，第 i 张在 y = 格·i（engine/voxel/真实方块图集.ts 按竖条宽取格边长，读的时候才排成 16 列）
+        原 = 最近邻放大(原, F)
         换 = 0
-        for i, 名 in enumerate(t['贴图名']):
-            相对 = 贴图路径(名)
-            cell, p, 说 = 取贴图(叠, 相对, (格, 格))
-            if p is None:
+        for i, (名, x) in enumerate(zip(t['贴图名'], 找到们)):
+            if x is None:
                 结果['图集缺'] += 1
                 continue
+            cell, 说 = 取贴图(x, (格, 格), F)
             if cell is None:
-                结果['图集不合'].append({'名': 名, '包': p.名, '原因': 说})
+                结果['图集不合'].append({'名': 名, '包': x[0].名, '原因': 说})
                 continue
-            # 方块表.png 是竖条：16 像素宽，第 i 张在 y = 16i（engine/voxel/真实方块图集.ts 读的时候才排成 16 列）
-            原.paste(cell, (0, i * 格))
+            原.paste(cell, (0, i * 格 * F))
             换 += 1
-            结果['缩放'][说] += 1
-            结果['各包贡献'][p.名] += 1
+            记缩放(包倍(x, 格), F, 说)
+            结果['各包贡献'][x[0].名] += 1
+        结果['图集格'][t['id']] = 格 * F
         结果['产物'].append({'id': t['id'], '文件': 存(原, 出目录, t['id']), '换': 换, '共': len(t['贴图名'])})
-    for s in q.get('单张', []):
-        原 = Image.open(s['原图'])
-        im, p, 说 = 取贴图(叠, s['包内'], 原.size)
-        if p is None:
+    单张们 = q.get('单张', [])
+    原图们 = {s['id']: Image.open(s['原图']).convert('RGBA') for s in 单张们}
+    找到们 = {s['id']: 找图(叠, s['包内']) for s in 单张们}
+    上限们 = {s['id']: min(倍上限, int(s.get('倍上限', 倍上限))) for s in 单张们}
+    组倍: dict[str, int] = {}
+    for s in 单张们:
+        x = 找到们[s['id']]
+        if x:
+            组倍[s['组']] = max(组倍.get(s['组'], 1), 有效倍(包倍(x, 原图们[s['id']].width), 上限们[s['id']]))
+    for s in 单张们:
+        原 = 原图们[s['id']]
+        x = 找到们[s['id']]
+        f = min(组倍.get(s['组'], 1), 上限们[s['id']])
+        if x is None:
             结果['单张缺'].append(s['id'])
+            if f > 1:
+                # 同组别的贴图放大了，包里没有的原版贴图也跟着放大，一组一样大（消费处常把一组拼成一张图集）
+                结果['单张原版放大'].append(s['id'])
+                结果['产物'].append({'id': s['id'], '文件': 存(最近邻放大(原, f), 出目录, s['id']), '换': 0, '共': 1})
             continue
+        im, 说 = 取贴图(x, 原.size, f)
         if im is None:
-            结果['单张不合'].append({'id': s['id'], '包': p.名, '原因': 说})
+            结果['单张不合'].append({'id': s['id'], '包': x[0].名, '原因': 说})
             continue
-        结果['缩放'][说] += 1
-        结果['各包贡献'][p.名] += 1
+        记缩放(包倍(x, 原.width), f, 说)
+        结果['各包贡献'][x[0].名] += 1
         结果['产物'].append({'id': s['id'], '文件': 存(im, 出目录, s['id']), '换': 1, '共': 1})
     g = q.get('群系')
     if g:
