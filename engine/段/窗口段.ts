@@ -8,7 +8,7 @@ import { 一定不沾, 场声音那截, type 场声音选项, type 解出场声�
 import { 做声音助手, type 声音助手, type 声音表 } from './声音助手.ts';
 import { 时刻帧, 解事件, type 事件定义, type 时刻, type 解出事件 } from './时间线.ts';
 
-/** 两部作品现在都是 24 fps、页面 1280×720（成片渲染 scale 2 出 2K，见 段定义.ts 文件头） */
+/** 应力转动 24 fps，页面 1280×720（成片渲染 scale 2 出 2K，见 段定义.ts 文件头）；把回忆拼好给你 11-02 起 60 fps，用自己 分镜.ts 的 fps */
 export const 默认段格式 = { fps: 24, 宽: 1280, 高: 720 } as const;
 
 export type 场时间线<K extends string = string, 扩展 = never> = {
