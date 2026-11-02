@@ -21,7 +21,7 @@ import raw from 'asset:字体/把回忆拼好给你/歌词字';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import type { 字形表 } from '@库/界面/像素字表.ts';
-import { fps } from '../分镜.ts';
+import { fps, 旧帧 } from '../分镜.ts';
 import { 光明, 光明档数, 刹那, 刹那块, 放下, 放下块, 时差, 烟花, 烟花火花, 在词里 } from './歌词字效.ts';
 import { 分块, 字种, 收拢, 符文倍, 飞们, 飞位, type 块 } from './符文拼字.ts';
 import { 做字源, 合样式, 字状态, 排一句, 解码时段, type 一字状态, type 摆字, type 符文歌词样式, type 符文歌词行 } from './符文排版.ts';
@@ -109,7 +109,7 @@ const 光泽 = (X: number, Y: number, 毫秒: number, out: number[]) => {
   }
 };
 
-/** 一个字拼齐那一下，字形外框四个角外 2 点各闪一个亮点：第 1 帧十字（5 点），第 2 帧只剩中心一点 */
+/** 一个字拼齐那一下，字形外框四个角外 2 点各闪一个亮点：头 1/24 秒十字（5 点），之后只剩中心一点（24 fps 时第 1 帧十字、第 2 帧一点）。解后 是帧数 */
 const 亮点 = (层: 点层, 格: 摆字, 解后: number, 可见: (X: number, Y: number) => boolean, rgb: readonly number[]) => {
   const 点们 = 源.汉字(格.字).点;
   const xs = 点们.map(([x]) => x);
@@ -118,7 +118,7 @@ const 亮点 = (层: 点层, 格: 摆字, 解后: number, 可见: (X: number, Y:
   const 右 = Math.max(...xs) + 2;
   const 上 = Math.min(...ys) - 2;
   const 下 = Math.max(...ys) + 2;
-  const 形 = 解后 < 1 ? [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] : [[0, 0]];
+  const 形 = 解后 / fps < 旧帧(1) ? [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] : [[0, 0]];
   for (const [cx, cy] of [[左, 上], [右, 上], [左, 下], [右, 下]] as const)
     for (const [dx, dy] of 形) {
       const X = 格.x + cx + dx!;
@@ -136,18 +136,18 @@ type 一字 = { 格: 摆字; 音: string; 状: 一字状态; 时: { 起: number;
 const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式, 块样: (k: number) => 块样, 调?: (c: readonly number[]) => readonly number[]) => {
   const { 格, 音, 状, 时, 种, 块们 } = 字;
   const 符色 = 色(样式.符文色);
-  const 飞 = 飞们(块们, 音, { ...时, 入: 状.入 }, 样式.飞帧, 种);
+  const 飞 = 飞们(块们, 音, { ...时, 入: 状.入 }, 样式.飞秒, 种);
   const 界 = 格.界;
   const 画 = (X: number, Y: number, c: readonly number[], 光 = 0) => {
     if (界 && !(X >= 界[0] && X + 1 <= 界[1])) return;
     点(层, X, Y, 调 ? 调(c) : c, 光);
   };
-  // 符文先画（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）。一个字母像素画成 倍 × 倍 个点，最后一截缩回 1 倍
+  // 符文先画（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）。一个字母像素画成 倍 × 倍 个点，最后一截缩回 1 倍；起飞头 1/24 秒半透明
   飞.forEach((一, k) => {
     const 位 = 飞位(一, f);
     if (!位) return;
     const 留 = 1 - 状.出;
-    const 现 = f - 一.起 < 1 ? 0.5 : 1;
+    const 现 = (f - 一.起) / fps < 旧帧(1) ? 0.5 : 1;
     const 倍 = (f - 一.起) / (一.落 - 一.起) < 收拢 ? 符文倍 : 1;
     const 阵 = 源.符文(一.字母);
     const 心 = 块们[k]!.心;
@@ -162,7 +162,7 @@ const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式,
           if (留 * 现 > 阈(X, Y)) 画(X, Y, c, 1);
         }
   });
-  // 刚落定的块：头一帧外面一圈闪圈色，闪帧 帧内笔画是闪色；刹那冻住、裂开那一下外面一圈冰色、笔画冰亮色
+  // 刚落定的块：头 1/24 秒外面一圈闪圈色，闪秒 内笔画是闪色；刹那冻住、裂开那一下外面一圈冰色、笔画冰亮色
   const 闪圈 = 色(样式.闪圈色);
   const 闪 = 色(样式.闪色);
   const 落着 = 飞.map((一) => f >= 一.落);
@@ -170,7 +170,7 @@ const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式,
   飞.forEach((一, k) => {
     const s = 样们[k];
     if (!s) return;
-    const 圈 = s.冰 === 1 ? 色(刹那.冰色) : f - 一.落 < 1 ? 闪圈 : null;
+    const 圈 = s.冰 === 1 ? 色(刹那.冰色) : (f - 一.落) / fps < 旧帧(1) ? 闪圈 : null;
     if (!圈) return;
     const 有 = new Set(块们[k]!.点.map(([x, y]) => `${x},${y}`));
     for (const [x, y] of 块们[k]!.点)
@@ -184,7 +184,7 @@ const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式,
   飞.forEach((一, k) => {
     const s = 样们[k];
     if (!s) return;
-    const 刚落 = f - 一.落 < 样式.闪帧;
+    const 刚落 = (f - 一.落) / fps < 样式.闪秒;
     // 冰：笔画朝上露着的点亮一档（上面一点不是这个字的笔画）
     const 字点集 = s.冰 === 2 ? new Set(源.汉字(格.字).点.map(([x, y]) => `${x},${y}`)) : null;
     for (const [x, y] of 块们[k]!.点) {
@@ -195,7 +195,7 @@ const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式,
       画(X, Y, c);
     }
   });
-  if (状.解后 >= 0 && 状.解后 < 样式.亮点帧) 亮点(层, 格, 状.解后, (X, Y) => 状.显 > 阈(X, Y), 调 ? 调(色(样式.字色)) : 色(样式.字色));
+  if (状.解后 >= 0 && 状.解后 / fps < 样式.亮点秒) 亮点(层, 格, 状.解后, (X, Y) => 状.显 > 阈(X, Y), 调 ? 调(色(样式.字色)) : 色(样式.字色));
 };
 
 const 描边 = (层: 点层, 描边色: string | null) => {
@@ -332,7 +332,7 @@ const 画一句 = (行们: readonly 符文歌词行[], i: number, f: number, 底
       case '光明':
         return { dx: 0, dy: 0, 色: f >= 齐 ? 色(光明.字色) : 字色 };
       case '烟花':
-        return { dx: 0, dy: 0, 色: f >= 齐 && f < 齐 + 烟花.染帧 ? 色(烟花.字色) : 字色 };
+        return { dx: 0, dy: 0, 色: f >= 齐 && (f - 齐) / fps < 烟花.染秒 ? 色(烟花.字色) : 字色 };
       case '刹那': {
         // 块的中心离整个词的中心多远（往哪边裂）
         const 词格 = 字们.slice(效.从, 效.到 + 1).map((z) => z.格);

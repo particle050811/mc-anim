@@ -177,7 +177,8 @@ describe('匹配剪辑', () => {
     const L = (g: number) => Math.log(Math.hypot(...[0, 1, 2].map((i) => 眼机位(g).眼[i]! - 眼珠.右[i]!)));
     expect(L(接帧)).toBeCloseTo(Math.log(末距), 9);
     const ε = 1e-4;
-    expect((L(接帧 + ε) - L(接帧)) / ε).toBeCloseTo(末速, 3);
+    // 末速 是每秒的
+    expect(((L(接帧 + ε) - L(接帧)) / ε) * fps).toBeCloseTo(末速, 3);
     // 第 4 句第 0 帧（歌曲帧 窗.起帧）已经往里推了一帧
     expect(L(窗.起帧)).toBeLessThan(L(接帧));
   });

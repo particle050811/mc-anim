@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { fps, 旧帧 } from '../../分镜.ts';
 import * as 参 from './参数.ts';
 import { 事, 你挥, 你态, 传送粒子们, 原版下落, 帧数, 她态, 摔地帧, 机位, 浪进, 蛋格, 门格们, java随机 } from './编排.ts';
 
@@ -29,13 +30,13 @@ describe('第 5 句的时间线（用户 10-24「画面转太快就删」：只�
   });
 
   it('每个动作至少停 1 秒左右看得清：坐起来噘嘴一直到段尾超过 1 秒；扑之前伏着扭屁股超过半秒', () => {
-    expect((帧数 - 事.坐起) / 24).toBeGreaterThan(1);
-    expect((事.扑起 - 事.扭屁股) / 24).toBeGreaterThan(0.5);
+    expect((帧数 - 事.坐起) / fps).toBeGreaterThan(1);
+    expect((事.扑起 - 事.扭屁股) / fps).toBeGreaterThan(0.5);
   });
 
-  it('她在蛋上抱住至少 8 帧（核查 10-24：原来 3 帧，手机上看不出抓到了）；照片那一帧她在蛋上、蛋还在原处', () => {
-    expect(事.点龙蛋 - 事.落蛋).toBeGreaterThanOrEqual(8);
-    expect(事['照片-扑龙蛋']).toBeGreaterThanOrEqual(事.落蛋 + 参.落地弹帧);
+  it('她在蛋上抱住至少 1/3 秒（24 fps 时 8 帧；核查 10-24：原来 3 帧，手机上看不出抓到了）；照片那一帧她在蛋上、蛋还在原处', () => {
+    expect((事.点龙蛋 - 事.落蛋) / fps).toBeGreaterThanOrEqual(旧帧(8));
+    expect((事['照片-扑龙蛋'] - 事.落蛋) / fps).toBeGreaterThanOrEqual(参.落地弹秒);
     expect(事['照片-扑龙蛋']).toBeLessThan(事.点龙蛋);
     expect(蛋格(事['照片-扑龙蛋'])).toEqual(参.蛋位们.起);
   });
@@ -49,10 +50,10 @@ describe('第 5 句的时间线（用户 10-24「画面转太快就删」：只�
   it('你的手比蛋先动（核查 10-24：原来蛋先没、手后动），蛋瞬移那帧还在挥；整句只挥这一下', () => {
     expect(你挥(事.点龙蛋 - 1)).not.toBeNull();
     expect(你挥(事.点龙蛋)).not.toBeNull();
-    expect(你挥(事.点龙蛋 - 3)).toBeNull();
+    expect(你挥(事.点龙蛋 - 旧帧(3) * fps)).toBeNull();
     let 挥帧 = 0;
     for (let f = 0; f < 帧数; f++) if (你挥(f) !== null) 挥帧++;
-    expect(挥帧).toBeLessThanOrEqual(Math.ceil((参.挥手刻 / 20) * 24) + 1);
+    expect(挥帧).toBeLessThanOrEqual(Math.ceil((参.挥手刻 / 20) * fps) + 1);
   });
 
   it('你整句站在原地不动', () => {
@@ -85,7 +86,7 @@ describe('第 5 句的时间线（用户 10-24「画面转太快就删」：只�
     expect(浪进(0)).toBe(1);
     for (let f = 1; f < 帧数; f++) expect(浪进(f)).toBeGreaterThanOrEqual(浪进(f - 1));
     expect(浪进(帧数 - 1)).toBe(2);
-    // 浪一程 16 帧左右，她扑起来之前已经退完，扑这一下整个看得见
+    // 浪一程 2/3 秒左右，她扑起来之前已经退完，扑这一下整个看得见
     expect(浪进(事.扑起 - 1)).toBe(2);
   });
 });
