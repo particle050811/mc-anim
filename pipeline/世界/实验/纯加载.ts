@@ -1,5 +1,5 @@
 // 实验工具（不接 anim）：真浏览器、真区段工人，只把一帧要的区段取到体素块就绪，不建网格、不画，报墙钟和浏览器进程树的 CPU。各包交替，每次新开浏览器（第一趟是冷的，后面几趟工人已预热）。
-//   node pipeline/世界/实验/纯加载.ts <清单文件> <轮数> <名=包目录>…
+//   node pipeline/世界/实验/纯加载.ts <清单文件> <轮数> <名=包目录[=间隙字节,每次最多区段,每次最多字节]>…（合并读取的三个门限，默认和 导入地形.ts 一样）
 // 文件服务是这里的 Node http，不是 Remotion 的；真渲染里取文件的开销以 anim bench 的 [地形量时] 为准。
 import { spawn, execSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -45,8 +45,8 @@ const 树CPU = (根pid: number) => {
   }
   return 表.reduce((s, [p, , t]) => s + (在树.has(Number(p)) ? 秒(t!) : 0), 0);
 };
-type 趟结果 = { 墙钟: number; CPU: number; 取: number; 解压: number; 解码: number; 换: number; 字节: number; 区段: number };
-const 跑一次 = (目录: string) =>
+type 趟结果 = { 墙钟: number; 请求: number; CPU: number; 取: number; 解压: number; 解码: number; 换: number; 字节: number; 区段: number };
+const 跑一次 = (目录: string, 合并: number[]) =>
   new Promise<趟结果[]>((resolve, reject) => {
     const 包 = JSON.parse(fs.readFileSync(path.join(目录, '包.json'), 'utf8'));
     const 结果: 趟结果[] = [];
@@ -60,7 +60,7 @@ const 跑一次 = (目录: string) =>
       if (process.env.PURE_LOAD_DEBUG && !名.startsWith('/包/')) console.error(req.method, 名);
       if (名 === '/') return void res.setHeader('content-type', 'text/html').end('<!doctype html><meta charset="utf-8"><script type="module" src="/页.js"></script>');
       if (名 === '/页.js' || 名 === '/工人.js') return void res.setHeader('content-type', 'text/javascript').end(名 === '/页.js' ? 页js : 工人js);
-      if (名 === '/配置') return void res.setHeader('content-type', 'application/json').end(JSON.stringify({ 清单, 趟, 包: { 原点: 包.原点, 状态: 包.状态, 群系: 包.群系 } }));
+      if (名 === '/配置') return void res.setHeader('content-type', 'application/json').end(JSON.stringify({ 清单, 趟, 合并, 包: { 原点: 包.原点, 状态: 包.状态, 群系: 包.群系 } }));
       if (名 === '/快照') {
         const 块: Buffer[] = [];
         req.on('data', (d) => 块.push(d));
@@ -115,8 +115,8 @@ const 记 = new Map<string, 趟结果[][]>();
 for (let 轮 = 0; 轮 < 轮数; 轮++) {
   const 偏 = 轮 % 包们.length;
   for (const 项 of [...包们.slice(偏), ...包们.slice(0, 偏)]) {
-    const [名, 目录] = 项.split('=') as [string, string];
-    const r = await 跑一次(目录);
+    const [名, 目录, 合并串] = 项.split('=') as [string, string, string?];
+    const r = await 跑一次(目录, (合并串 ?? '16384,16,524288').split(',').map(Number));
     if (!记.has(名)) 记.set(名, []);
     记.get(名)!.push(r);
     console.log(`${名} 轮${轮 + 1} 负载 ${os.loadavg()[0]!.toFixed(1)}：` + r.map((x) => `墙 ${x.墙钟.toFixed(0)} CPU ${x.CPU.toFixed(0)}`).join(' | '));
@@ -126,5 +126,5 @@ console.log(`\n${清单.split(',').length} 个区段，${轮数} 轮，每次新
 for (const [名, rs] of 记)
   for (const [标, n] of [['冷', 0], ['热', 趟 - 1]] as const) {
     const 取 = (k: keyof 趟结果) => 中位(rs.map((r) => r[n]![k]));
-    console.log(`${名} ${标}：墙钟 ${取('墙钟').toFixed(0)}；浏览器 CPU ${取('CPU').toFixed(0)}；取(跨度) ${取('取').toFixed(0)}；解压(跨度) ${取('解压').toFixed(0)}；解码 ${取('解码').toFixed(0)}；换 ${取('换').toFixed(0)}；字节 ${(取('字节') / 1e6).toFixed(2)} MB`);
+    console.log(`${名} ${标}：请求 ${取('请求')}；墙钟 ${取('墙钟').toFixed(0)}；浏览器 CPU ${取('CPU').toFixed(0)}；取(跨度) ${取('取').toFixed(0)}；解压(跨度) ${取('解压').toFixed(0)}；解码 ${取('解码').toFixed(0)}；换 ${取('换').toFixed(0)}；字节 ${(取('字节') / 1e6).toFixed(2)} MB`);
   }

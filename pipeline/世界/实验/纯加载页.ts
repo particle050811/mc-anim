@@ -2,7 +2,7 @@
 import { sectionInTile, tileFileName, tileHeaderLen, decodeTileHeader } from '../../../engine/voxel/区段包.ts';
 import type { 工人消息, 工时 } from '../../../engine/voxel/区段工人池.ts';
 
-const 配置 = (await (await fetch('/配置')).json()) as { 清单: string; 趟: number; 包: { 原点: number[]; 状态: unknown; 群系: unknown } };
+const 配置 = (await (await fetch('/配置')).json()) as { 清单: string; 趟: number; 合并: [number, number, number]; 包: { 原点: number[]; 状态: unknown; 群系: unknown } };
 const 清单 = 配置.清单.split(',').map((s) => {
   const [L, i, j] = s.split('/').map(Number) as [number, number, number];
   return { L, i, j };
@@ -28,6 +28,7 @@ const 一趟 = async () => {
   }
   await fetch('/快照?名=起', { method: 'POST' });
   const 起 = performance.now();
+  let 请求 = 0;
   const 累: 工时 = { 取: 0, 解压: 0, 解码: 0, 换: 0, 字节: 0, 区段: 0 };
   const 任务: Promise<void>[] = [];
   for (const [f, 项] of 按文件) {
@@ -38,11 +39,12 @@ const 一趟 = async () => {
         const 活: { start: number; len: number; parts: typeof 段 }[] = [];
         for (const p of 段) {
           const 末 = 活[活.length - 1];
-          if (末 && p.off - (末.start + 末.len) <= 16 * 1024 && 末.parts.length < 16 && p.off + p.len - 末.start <= 512 * 1024) {
+          if (末 && p.off - (末.start + 末.len) <= 配置.合并[0] && 末.parts.length < 配置.合并[1] && p.off + p.len - 末.start <= 配置.合并[2]) {
             末.len = p.off + p.len - 末.start;
             末.parts.push(p);
           } else 活.push({ start: p.off, len: p.len, parts: [p] });
         }
+        请求 += 活.length;
         await Promise.all(
           活.map(
             (a) =>
@@ -61,7 +63,7 @@ const 一趟 = async () => {
   }
   await Promise.all(任务);
   const 墙钟 = performance.now() - 起;
-  await fetch('/快照?名=止', { method: 'POST', body: JSON.stringify({ 墙钟, ...累 }) });
+  await fetch('/快照?名=止', { method: 'POST', body: JSON.stringify({ 墙钟, 请求, ...累 }) });
 };
 for (let n = 0; n < 配置.趟; n++) await 一趟();
 await fetch('/完', { method: 'POST' });
