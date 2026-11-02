@@ -29,7 +29,7 @@ export const 按起点和内容排 = <T extends 混音项>(列表: readonly T[])
 
 const 已固定 = Symbol('混音顺序已固定');
 
-/** 给 Remotion 的混音器换上固定次序。download-map 每次都从模块导出上取工厂，所以换导出就够 */
+/** 只供渲染器.ts 绑定 CJS 入口：download-map 每次从导出上取工厂；ESM 的内置工厂不受此补丁影响 */
 export const 固定混音顺序 = () => {
   const require = createRequire(import.meta.url);
   const 模块路径 = path.join(path.dirname(require.resolve('@remotion/renderer')), 'assets', 'inline-audio-mixing.js');
