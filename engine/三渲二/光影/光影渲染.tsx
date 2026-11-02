@@ -417,7 +417,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     // 1. 影子图
     const { 受光, 别的 } = 收受光网格(scene);
     u.gyShadowOn.value = 0;
-    if (受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光)) {
+    if (!选项.不落影 && 受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光)) {
       const 藏 = 别的.filter((o) => o.visible);
       for (const o of 藏) o.visible = false;
       scene.background = null;
