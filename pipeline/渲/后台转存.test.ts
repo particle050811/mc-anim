@@ -73,7 +73,7 @@ const 段签临时 = (键: string) => {
 const 等退 = (c: ChildProcess) => new Promise<number | null>((r) => (c.exitCode !== null ? r(c.exitCode) : c.once('close', (code) => r(code))));
 
 /** 假的父进程：调 跑后台子进程，打印结果。要的是真杀它，所以要单独一个进程 */
-const 起父进程 = (键: string) => {
+const 起父进程 = (键: string, 自成一组 = false) => {
   const 脚本 = path.join(数据根, `父-${键}.mjs`);
   fs.writeFileSync(脚本, `const { 跑后台子进程 } = await import(${JSON.stringify(path.join(import.meta.dirname, '后台转存.ts'))});
 const 登记 = await import(${JSON.stringify(path.join(import.meta.dirname, '../闸/收尾.ts'))});
@@ -81,7 +81,7 @@ const 登记 = await import(${JSON.stringify(path.join(import.meta.dirname, '../
 const r = await 跑后台子进程(${JSON.stringify(参数(键))}, { 阶段() {}, 警告(s) { console.error(s); }, 等内存() {} });
 console.log(JSON.stringify(r));
 `);
-  return spawn(process.execPath, [脚本], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env } });
+  return spawn(process.execPath, [脚本], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env }, detached: 自成一组 });
 };
 
 describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
@@ -138,6 +138,24 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
     放样本('杀父对照');
     await 后处理一段(参数('杀父对照'), { 收: [], 记录: { 记: () => {} } });
     expect(await 文件sha(r!.母版!)).toBe(await 文件sha(压缩母版路径('杀父对照', 指纹('杀父对照'))));
+  });
+
+  it.each([
+    ['SIGHUP', 129, false],
+    ['SIGINT', 130, false],
+    // 终端里 Ctrl-C：整个前台进程组一起收到，子进程和 ffmpeg 不等父进程发信号也会自己退
+    ['Ctrl-C', 130, true],
+  ] as const)('父进程 %s：同样收尾', async (名, 码, 整组) => {
+    const 键 = `杀父${名}`;
+    const 原 = 放样本(键);
+    const 父 = 起父进程(键, 整组);
+    await 等到(() => 目录里(键).some((n) => n.includes('.转码中-')), '转码开始');
+    if (整组) process.kill(-父.pid!, 'SIGINT');
+    else 父.kill(名 as NodeJS.Signals);
+    expect(await 等退(父)).toBe(码);
+    await 等到(() => 还活着的(键).length === 0, `进程都退了（还有 ${还活着的(键).join('；')}）`);
+    expect(目录里(键).filter(是临时名)).toEqual([]);
+    expect(fs.existsSync(原)).toBe(true);
   });
 
   it('父进程被 SIGKILL（收不到信号）：子进程靠 IPC 断开发现，也收尾退出', async () => {
