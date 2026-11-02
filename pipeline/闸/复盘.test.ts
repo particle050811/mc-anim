@@ -97,6 +97,23 @@ describe('等谁', () => {
   });
 });
 
+describe('后台没转成', () => {
+  it('留CRF1、中断、丢了算；任务被杀、崩溃时排着和在做的段也算；转成的、还在跑的不算', () => {
+    const { rows, add } = 序列();
+    add(0, '后台排', { 任务: 'A', 段: '甲', 指纹: 'f1' }); add(1, '后台排', { 任务: 'A', 段: '乙', 指纹: 'f2' }); add(2, '后台止', { 任务: 'A', 段: '甲', 指纹: 'f1', 结果: '压缩', 秒: 1 });
+    add(3, '被杀', { 任务: 'A' }); add(3, '任务止', { 任务: 'A' });
+    add(4, '后台排', { 任务: 'B', 段: '丙', 指纹: 'f3' }); add(5, '崩溃', { 任务: 'B' });
+    add(6, '后台排', { 任务: 'C', 段: '丁', 指纹: 'f4' }); add(7, '后台止', { 任务: 'C', 段: '丁', 指纹: 'f4', 结果: '丢了', 秒: 1 });
+    add(8, '后台排', { 任务: 'D', 段: '戊', 指纹: 'f5' });
+    expect(复盘(rows).后台.没转成).toEqual(['乙', '丙', '丁']);
+  });
+  it('被杀的段不在入选窗口里不算', () => {
+    const { rows, add } = 序列();
+    add(0, '后台排', { 任务: 'A', 段: '甲', 指纹: 'f1' }); add(10, '被杀', { 任务: 'A' });
+    expect(复盘(rows, { 入选: (e) => Date.parse(e.时) >= 5000 }).后台.没转成).toEqual([]);
+  });
+});
+
 describe('告警到决定', () => {
   it('持锁告警对象是 任务/段，#pid 的决定落库带任务 id，配得上；改序不影响', () => {
     const e = 取调度环境({ 锁目录: dir, 发起者: 读发起者({}, [], dir, false) }), q = path.join(dir, '渲染.排队');
@@ -120,6 +137,15 @@ describe('日志过滤', () => {
   const 环 = () => 取调度环境({ 锁目录: dir, 发起者: 读发起者({}, [], dir, false), 现在毫秒: () => Date.parse('2026-11-01T12:00:00Z') });
   const 跑 = async (e: ReturnType<typeof 环>, ...args: string[]) => { const out: string[] = []; await 跑调度(args, e, s => out.push(s)); return out.join('\n'); };
   const 行数 = (s: string) => s ? s.split('\n').length : 0;
+  it('--段 先看事件顶层的段：后台事件的声明是任务手上那段，不能归错', async () => {
+    const e = 取调度环境({ 锁目录: dir });
+    记调度(e.日志目录, '后台起', { 任务: 'R', 段: '甲', 声明: { 段: '乙' } }, Date.now());
+    记调度(e.日志目录, '拿锁', { 任务: 'R', 声明: { 段: '乙' } }, Date.now());
+    const 看 = async (段: string) => { const 出: string[] = []; expect(await 跑调度(['日志', '--段', 段, '--json'], e, (s) => 出.push(s))).toBe(0); return 出.join('\n'); };
+    const 甲 = await 看('甲'), 乙 = await 看('乙');
+    expect(甲).toContain('后台起');expect(甲).not.toContain('拿锁');
+    expect(乙).toContain('拿锁');expect(乙).not.toContain('后台起');
+  });
   it('--路 同时查事件顶层的 路 和 发起.路', async () => {
     const e = 环();
     await 跑(e, '路', '开', '纹理核对'); await 跑(e, '令', '纹理核对', '--让路', '产出优先');
