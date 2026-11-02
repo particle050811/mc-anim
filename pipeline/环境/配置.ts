@@ -53,6 +53,7 @@ const 项表 = {
   ffmpeg: { 变量: 'ANIM_FFMPEG', 说明: 'ffmpeg 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffmpeg' },
   ffprobe: { 变量: 'ANIM_FFPROBE', 说明: 'ffprobe 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffprobe' },
   渲染内存下限: { 变量: 'ANIM_RENDER_FREE_MIN', 说明: '渲染放行要的空闲内存百分比（照旧资源闸 30%）', 是路径: false, 默认: () => '30' },
+  后台排队上限: { 变量: 'ANIM_BG_QUEUE', 说明: '后台转存排着的段到这么多就让下一段先别出帧（在做的那段不算；正整数）', 是路径: false, 默认: () => '2' },
   主机: { 变量: 'ANIM_HOST', 说明: '本机名（写进锁和运行记录）', 是路径: false, 默认: () => os.hostname() },
   记忆: {
     变量: 'ANIM_MEMORY',

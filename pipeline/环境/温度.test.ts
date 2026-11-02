@@ -136,3 +136,14 @@ it.each(['win32', 'linux'])('%s 不读文件、不起子进程', async 平台 =>
   expect(跑).not.toHaveBeenCalled();
   expect(fs.existsSync(path.join(dir, 'data'))).toBe(false);
 });
+
+it('后台只读现成探针：缺缓存不编译，也不妨碍随后正常读取时编译', async () => {
+  const { 读现成温度, 读温度并行 } = await import('./温度.ts');
+  expect(await 读现成温度()).toEqual({ 芯片最高温: null, 发热等级: 0 });
+  expect(跑.mock.calls.map(([cmd]) => cmd)).toEqual(['notifyutil']);
+  expect(await 读温度并行()).toEqual({ 芯片最高温: 82.5, 发热等级: 0 });
+  expect(跑.mock.calls.filter(([cmd]) => cmd === 'swiftc')).toHaveLength(1);
+  跑.mockClear();
+  expect(await 读现成温度()).toEqual({ 芯片最高温: 82.5, 发热等级: 0 });
+  expect(跑.mock.calls.some(([cmd]) => cmd === 'swiftc')).toBe(false);
+});

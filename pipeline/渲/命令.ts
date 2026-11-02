@@ -15,6 +15,7 @@ import { 渲染叠层, 渲染母版, 渲静帧 } from './渲.ts';
 import { 备好母版 } from './转存.ts';
 import { 测速 } from './测速.ts';
 import { 明细一览, 明细报告, 读明细们 } from '../运行记录/渲染明细.ts';
+import { 后台账 } from '../运行记录/阶段.ts';
 import { 查所选段cues, 渲前跑cues } from '../段框架/自动.ts';
 import { 全部段 } from '../清单/清单.ts';
 import { 补段签 } from '../段签/补.ts';
@@ -39,7 +40,7 @@ export const 压成mp4 = (母版: string, 出: string, 级别: 渲染级别) =>
 export const 渲染命令: Record<string, 命令> = {
   render: {
     用法: 'render <选择器…> [--级别 视频|预览] [--重渲] [--留CRF1] [--不叠层|--只叠层] [--到预览 <主题>]；render [<选择器…>] --只派生 [--重做] [--级别 …]',
-    说明: '渲母版到 cache/母版/<段键>/<指纹>.x264.mkv、段声明的透明叠层到 cache/叠层/（指纹对得上就跳过），渲完从 CRF1 派生段签（段签/）、转存压缩母版、删同段同级别的旧母版（钉着的、近 2 小时用过的、别的检出用过的不删，worktree 里不删）；可再压一份母版进预览。--留CRF1 新渲的段转存后不删 CRF1（verify --对基线 要）。--只派生 不渲，从现有当前指纹的 CRF1 母版补段签',
+    说明: '渲母版到 cache/母版/<段键>/<指纹>.x264.mkv、段声明的透明叠层到 cache/叠层/（指纹对得上就跳过），渲完从 CRF1 派生段签（段签/）、转存压缩母版、删同段同级别的旧母版（钉着的、近 2 小时用过的、别的检出用过的不删，worktree 里不删）；可再压一份母版进预览。--留CRF1 新渲的段转存后不删 CRF1（verify --对基线 要），这批留在闸里串行。--只派生 不渲，从现有当前指纹的 CRF1 母版补段签',
     跑: async (args, 记录) => {
       const p = 解析参数(args, { 值: ['--级别', '--到预览'], 开关: ['--重渲', '--留CRF1', '--不叠层', '--只叠层', '--只派生', '--重做'] });
       if (p.开关.has('--只派生')) {
@@ -132,7 +133,14 @@ export const 渲染命令: Record<string, 命令> = {
         return;
       }
       if (p.位置.length || p.开关.has('--详')) console.log(们.map((x) => 明细报告(x.明细, x.文件)).join('\n\n'));
-      else console.log(明细一览(们));
+      else {
+        console.log(明细一览(们));
+        const 账 = 后台账();
+        if (账.length) {
+          console.log('\n最近几批的后台（派生段签、转存 和出帧同时跑，加总超过墙钟是正常的；限流、等齐 是出帧为它多等的）：');
+          for (const x of 账) console.log(`  ${x.开始}  ${x.段数} 段  出帧 ${x.出帧.toFixed(0)} 秒  派生段签 ${x.派生段签.toFixed(0)}  转存 ${x.转存.toFixed(0)}  限流 ${x.限流.toFixed(0)}  等齐 ${x.等齐.toFixed(0)}`);
+        }
+      }
     },
   },
 };

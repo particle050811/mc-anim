@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { 读持有 } from './锁.ts';
+import { pid换人了, 读持有, 进程在吗 } from './锁.ts';
 import { 读JSON, 写JSON, 列文件, 只提示 } from './文件.ts';
 import { 列票, 票活着, type 票 } from './票.ts';
 import { 读调度, 记调度, type 调度事件 } from './调度日志.ts';
@@ -51,10 +51,17 @@ export const 读占用 = (e: 调度环境): Pick<调度状态, '持锁' | '票'>
     }
     return { 持锁, 票: ['渲染', '放行'].flatMap(n => 列票(path.join(e.锁目录, n + '.排队'))).map(t => ({ ...t, 死: !票活着(t, e.本机) })) };
 };
+export const 任务活着 = (t: 任务信息, 本机: string) => t.主机 !== 本机 || (进程在吗(t.发起.pid) && !pid换人了(t.发起.pid, t.心跳));
+/** 后台还在转的任务：闸放开了批却没完，CPU 和内存还占着，限流时也可能没有票和锁。崩溃没清的不算 */
+export const 读后台 = (e: 调度环境): 任务信息[] => 列文件(path.join(e.锁目录, '在跑')).flatMap(n => {
+    const t = 读JSON<任务信息>(path.join(e.锁目录, '在跑', n));
+    return t?.后台 && 任务活着(t, e.本机) ? [t] : [];
+});
 /** 活的占用，一处一条。 */
-export const 谁占着 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>) => [
+export const 谁占着 = ({ 持锁, 票, 后台 = [] }: Pick<调度状态, '持锁' | '票'> & { 后台?: 任务信息[] }) => [
     ...持锁.filter(x => !x.死).map(x => `持锁 #${x.pid} ${x.声明.种 ?? '脚本'} ${x.声明.段 ?? ''} ${x.发起.路 || x.发起.工作区}`),
     ...票.filter(t => !t.死).map(t => `排队 #${t.pid} ${t.内容?.声明.种 ?? '旧票'} ${t.内容?.声明.段 ?? ''} ${t.内容?.发起.路 ?? ''}`),
+    ...后台.map(t => `后台 #${t.发起.pid} ${t.后台!.在做 ?? ''} ${t.后台!.排着 ? `排${t.后台!.排着}` : ''} ${t.发起.路 || t.发起.工作区}`),
 ].map(x => x.replace(/\s+/g, ' ').trim());
 /** 退役条件是「连续 7 天没见到旧票、旧锁」，不记这个条件恒真。一小时一条够判断，不逐张记。刚拿锁的新闸还没写信息文件，看着像旧锁，所以占够 10 秒才算。 */
 const 记旧协议 = (e: 调度环境, { 持锁, 票 }: Pick<调度状态, '持锁' | '票'>) => {
@@ -77,7 +84,7 @@ export const 读状态 = (e: 调度环境, 读机 = 读机器快照, 回收 = tr
 const 分 = (秒: number) => `${Math.max(0, 秒 / 60).toFixed(1)}分`;
 const G = (n: number | null) => n === null ? '?' : (n / 2 ** 30).toFixed(1) + 'G';
 const 热简报 = (m: 机器快照) => `${m.芯片最高温 == null ? '' : ` 芯温${m.芯片最高温.toFixed(1)}°C`}${m.发热等级 == null ? '' : ` 热${m.发热等级}`}`;
-export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'}${热简报(s.机)} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}`;
+export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'}${热简报(s.机)} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}${s.在跑.some(t => t.后台) ? ` 后台${s.在跑.filter(t => t.后台).length}` : ''}`;
 /** 一张票只等自己这把锁和同队的票：放行票不等渲染锁。 */
 export const 队上占用 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>, 锁名: string) => ({ 持锁: 持锁.filter(x => x.锁 === 锁名), 票: 票.filter(t => path.basename(path.dirname(t.文件)) === `${锁名}.排队`) });
 /** 占锁中位数，没有预计的按它算下界。 */
@@ -94,7 +101,9 @@ export const 前方等待 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票
 export const 渲染看 = (s: 调度状态): string => {
     const m = s.机, lines = [`${new Date(s.时).toISOString().slice(5, 19)}Z ${一行状态(s)} free${G(m.free)} 压缩${G(m.压缩)} swap${G(m.swap)} 换出${G(m.换出)} GPU${m.GPU ?? '?'}% 盘${G(m.盘)}`];
     const cpu = s.在跑.filter(t => !s.持锁.some(x => x.任务 === t.任务) && !s.票.some(x => x.内容?.任务 === t.任务));
-    lines.push(`CPU/准备 ${cpu.slice(0, 3).map(x => `#${x.发起.pid} ${x.声明.种} ${x.发起.路 || x.发起.工作区}`).join('；') || '无登记'}；孤儿Chrome ${m.孤儿 ?? '?'}`);
+    // 持锁的任务也可能有后台在转：闸放开后才算完，单列出来，放前面不被截掉。
+    const 后台 = s.在跑.filter(t => t.后台).map(t => `后台#${t.发起.pid} ${t.后台!.在做 ?? ''}${t.后台!.排着 ? ` 排${t.后台!.排着}` : ''}`);
+    lines.push(`CPU/准备 ${[...后台, ...cpu.slice(0, 3).map(x => `#${x.发起.pid} ${x.声明.种} ${x.发起.路 || x.发起.工作区}`)].join('；') || '无登记'}；孤儿Chrome ${m.孤儿 ?? '?'}`);
     for (const x of s.持锁.slice(0, 2))
         lines.push(`持锁 #${x.pid}${x.死 ? ' 死' : ''} ${x.声明.种 ?? '脚本'} ${x.声明.段 ?? ''} ${x.已出帧}/${x.总帧 ?? '?'}帧 ${x.发起.工作区}/${x.发起.路 || '?'} ${x.声明.用途 ?? '?'} 已占${分((s.时 - x.拿锁时) / 1000)}/预计${x.声明.预计秒 ? 分(x.声明.预计秒) : '?'} 心跳${x.心跳 ? Math.round((s.时 - x.心跳) / 1000) + '秒' : '无，旧闸'}`);
     const seen = new Map<string, number>();
@@ -116,5 +125,5 @@ export const 渲染看 = (s: 调度状态): string => {
             return out + '…';
         out += c;
     } return out; };
-    return lines.slice(0, 10).map((l, i) => 截(l, i === 0 ? 210 : l.startsWith('持锁') ? 140 : 95)).join('\n');
+    return lines.slice(0, 10).map((l, i) => 截(l, i === 0 ? 210 : l.startsWith('持锁') ? 140 : l.startsWith('CPU/准备') ? 125 : 95)).join('\n');
 };

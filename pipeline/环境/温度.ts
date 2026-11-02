@@ -13,7 +13,7 @@ let 已试编译 = false;
 // Agent 选的初值：编译失败后冷却 1 小时，避免每条命令都启动 swiftc、最多阻塞 20 秒。
 const 失败冷却毫秒 = 3600_000;
 
-const 温度工具 = (): string | null => {
+const 温度工具 = (允许编译 = true): string | null => {
   let 临时: string | undefined;
   try {
     if (工具 === undefined) {
@@ -26,7 +26,7 @@ const 温度工具 = (): string | null => {
     const { 源, 文件 } = 工具;
     // 本进程失败后，其他进程仍可能编好；只抑制重复编译，不把缺读数记死。
     if (fs.existsSync(文件)) return 文件;
-    if (已试编译) return null;
+    if (!允许编译 || 已试编译) return null;
     const 失败时 = fs.statSync(`${文件}.失败`, { throwIfNoEntry: false })?.mtimeMs;
     if (失败时 !== undefined && Date.now() - 失败时 < 失败冷却毫秒) return null;
     已试编译 = true;
@@ -66,9 +66,13 @@ export const 读温度 = (): 温度读数 => {
   const 文件 = 温度工具();
   return 组读数(文件 ? 跑(文件, []) : '', 跑('notifyutil', ['-g', 热键]));
 };
-export const 读温度并行 = async (): Promise<温度读数> => {
+/** 出帧期间只用现成探针，缺失时省略芯温，不能同步启动 swiftc 堵住截图回调。 */
+const 异步读温度 = async (允许编译: boolean): Promise<温度读数> => {
   if (process.platform !== 'darwin') return 无温度();
-  const 文件 = 温度工具();
+  const 文件 = 温度工具(允许编译);
   const [芯温, 热] = await Promise.all([文件 ? 异步跑(文件, []) : '', 异步跑('notifyutil', ['-g', 热键])]);
   return 组读数(芯温, 热);
 };
+
+export const 读温度并行 = () => 异步读温度(true);
+export const 读现成温度 = () => 异步读温度(false);

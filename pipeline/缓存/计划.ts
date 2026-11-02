@@ -5,6 +5,9 @@ import { 代码根, 主检出 } from '../环境/路径.ts';
 import { 作品们 } from '../环境/作品.ts';
 import { 配置, 数据根, 数据路径, 母版目录, 段签目录, 草稿根, 运行目录 } from '../环境/配置.ts';
 import { 跑出 } from '../环境/子进程.ts';
+import { 扫打包, 打包保留理由 } from './打包.ts';
+import { 读进程 } from '../闸/孤儿.ts';
+import { 删打包 } from '../渲/打包残留.ts';
 import { 压缩名 } from '../渲/母版.ts';
 import { 加当前指纹 } from './当前指纹.ts';
 import { 参考文件查法, 开剪辑包查法 } from './钉.ts';
@@ -42,6 +45,7 @@ export type 回收计划 = {
   webpack: webpack根计划[];
   /** 地形烘焙中断留下的暂存目录（run/暂存/terrain/<包>），归在「残留」一类 */
   暂存: 带理由<目录条目>[];
+  打包: 带理由<目录条目>[];
   /** 认得、但不自动删的（只报大小和用途） */
   只报: { 位置: string; 用途: string; 大小: number }[];
   /** 只报告不删 */
@@ -100,7 +104,7 @@ const 要删的名字数 = (计划: 回收计划) => {
 };
 
 export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => void = () => {}): Promise<回收计划> => {
-  const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
+  const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
   const 警告 = (s: string) => 计划.警告.push(s);
   const 要 = (c: 回收类名) => o.类.has(c);
 
@@ -136,6 +140,7 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
     计划.媒体 = 计划.媒体.map((f) => (要(f.种) || f.理由.length ? f : { ...f, 理由: [{ 类: '算不出' as const, 说明: `这次没选 ${f.种}` }] }));
   }
 
+  if (要('残留')) 计划.打包 = 扫打包(o.现在);
   if (要('残留')) 计划.暂存 = 规划暂存(扫暂存(暂存根(), 配置('主机')), o.现在);
   if (要('草稿')) 计划.草稿 = 规划草稿(列目录(草稿根()), { 现在: o.现在, 天数: o.草稿天数 });
   // 区域源 读时记用过；按区域 sha 寻址，一个文件一个文件算
@@ -197,6 +202,19 @@ export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '
   const 未满 = (天数: number) => (改于: number) => 现在 - 改于 < 天数 * 天;
   // 已被取代的 CRF1 不看新旧（迁移前几天渲的也算），只确认压缩母版还在
   for (const f of 计划.媒体) if (!f.理由.length) 删(f.路径, f.大小, f.已被取代 ? () => !fs.existsSync(压缩名(f.路径)) : 未满(o.近期天数), false);
+  const 进程 = 计划.打包.some(d => !d.理由.length) ? 读进程() : '';
+  for (const d of 计划.打包) if (!d.理由.length) {
+    try {
+      const st = fs.lstatSync(d.路径, { throwIfNoEntry: false });
+      if (!st) continue;
+      if (!st.isDirectory()) { r.跳过.push(`${d.路径}（不再是打包目录）`); continue; }
+      const 理由 = 打包保留理由({ 路径: d.路径, 改于: 最近改于(d.路径, 3) }, 现在, 进程);
+      if (理由.length) { r.跳过.push(`${d.路径}（${理由.map(x => x.说明).join('、')}）`); continue; }
+      删打包(d.路径);
+      r.删数++;
+      r.删大小 += d.大小;
+    } catch (e) { r.失败.push(`${d.路径}：${(e as Error).message}`); }
+  }
   for (const f of 计划.临时) if (!f.理由.length) 删(f.路径, f.大小, 未满(1), false);
   // 计划算完到删之间可能有人开始烘焙同一个包：删前再看一眼锁
   for (const d of 计划.暂存) if (!d.理由.length) 删(d.路径, d.大小, (改于) => 未满(1)(改于) || 锁有人拿(`${d.路径}.写入.lock`, 配置('主机')), true);

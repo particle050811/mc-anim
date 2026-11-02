@@ -1,6 +1,6 @@
 // 渲母版：整个工程只打包一次、开一个浏览器，逐段 renderMedia（旧项目 批量渲染.mjs 的链路）。
-// 指纹对得上的母版直接用；每段渲之前排队过渲染闸，渲完核帧数、改名、写 .指纹.json，耗时按段记进耗时表，再从 CRF1 派生段签（pipeline/段签/，不计进耗时表），
-// 转存压缩母版（用户 10-30 定，转码.ts）、删掉 CRF1，最后删同段同级别的旧母版（缓存/钉.ts，叠层同样；只有主检出删，worktree 只新增）。
+// 指纹对得上的母版直接用；每段渲之前排队过渲染闸，渲完核帧数、改名、写 .指纹.json，耗时按段记进耗时表，就放开渲染闸让下一段出帧。这段的后处理在后台做（后台转存.ts、后处理.ts）：
+// 从 CRF1 派生段签（pipeline/段签/，不计进耗时表）、转存压缩母版（用户 10-30 定，转码.ts）、删掉 CRF1，最后删同段同级别的旧母版（缓存/钉.ts，叠层同样；只有主检出删，worktree 只新增）。渲染母版 等后台都做完才返回；ANIM_INLINE_TRANSCODE=1 和 --留CRF1 留在闸里当场做。
 // 段.ts 声明的透明叠层（<段键>-<名>）同样按指纹缓存，渲成 ProRes 4444 放 cache/叠层/。
 // 分阶段计时和每帧明细见 运行记录/阶段.ts、渲染明细.ts（anim 耗时 看）。
 // 打包前把作品随仓库发的字节补进数据根（资产/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
@@ -28,15 +28,15 @@ import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记�
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 压缩母版路径, 原母版路径, 叠层路径, 写指纹, 有母版, 现母版, 记用过 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
-import { 删打包 } from './打包残留.ts';
+import { 已转完 } from './转存.ts';
+import { 删打包, 登记打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
 import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
 import { 开始整段量, 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
 import { 视频信息 } from './探测.ts';
-import { 出段签 } from '../段签/段签.ts';
-import { 漂移提示 } from '../段签/补.ts';
 import { 删旧, 有要删的旧 } from '../缓存/钉.ts';
-import { 存成压缩 } from './转存.ts';
+import { 后处理一段 } from './后处理.ts';
+import { 建后台转存, type 跑后台 } from './后台转存.ts';
 import { 固定混音顺序 } from './混音顺序.ts';
 import { 叠层渲染参数, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
 import type { 叠层定义 } from '../../engine/段/段定义.ts';
@@ -67,6 +67,7 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
     // public 里只有指向数据根的链接，转发进包是预期的
     onSymlinkDetected: () => {},
   });
+  登记打包(serveUrl);
   记阶段(记录?.阶段, 标签, 'webpack', t0, (Date.now() - t0) / 1000);
   console.log(`打包 ${((Date.now() - t0) / 1000).toFixed(0)} 秒`);
   return serveUrl;
@@ -86,11 +87,12 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const 收 = 记录?.阶段;
   const 起 = 收?.length ?? 0;
   const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签));
-  const browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
-  // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
-  收求解缓存(browser);
-  收地形用量(browser);
+  let browser: HeadlessBrowser | undefined;
   try {
+    browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
+    // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
+    收求解缓存(browser);
+    收地形用量(browser);
     const 组合 = await 量阶段(收, 标签, '读组合', () =>
       getCompositions(serveUrl, {
         inputProps: 参数.inputProps,
@@ -103,9 +105,12 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
     if (收) console.log(`会话就绪：${阶段小结(收.slice(起))}`);
     return await fn({ serveUrl, browser, 参数, 组合 });
   } finally {
-    await 等地形用量写完();
-    await browser.close({ silent: true });
-    删打包(serveUrl);
+    try {
+      await 等地形用量写完();
+      await browser?.close({ silent: true });
+    } finally {
+      删打包(serveUrl);
+    }
   }
 };
 
@@ -163,7 +168,7 @@ export const 缺的本机地形 = (s: Pick<段信息, '目录'>, 地形根 = pat
   return fs.existsSync(path.join(地形根, 包)) ? null : 包;
 };
 
-export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 留CRF1?: boolean; 记录: 运行记录 }): Promise<母版结果[]> => {
+export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, opts: { 重渲?: boolean; 留CRF1?: boolean; 记录: 运行记录; /** 测试换掉子进程 */ 跑后台?: 跑后台 }): Promise<母版结果[]> => {
   const 段们 = 全部.filter((s) => {
     const 包 = 缺的本机地形(s);
     if (包) console.log(`跳过 ${s.键}：本机没有区段包 ${包}（anim world bake 烘出来才能渲）`);
@@ -182,108 +187,115 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
     结果.push(r);
     if (有母版(s.键, fp.指纹) && !opts.重渲) {
       console.log(`✓ ${s.键}：母版已是最新（${fp.指纹.slice(0, 16)}）`);
+      if (fs.existsSync(原母版路径(s.键, fp.指纹)) && !(await 已转完(s.键, fp.指纹, 作品名())))
+        console.log(`  ${s.键}：CRF1 还没转，用到时（film、edit-package、--到预览）会转；或者重跑 --重渲`);
       记用过(母版目录(s.键), fp.指纹);
     } else 待渲.push(r);
   }
   await 量阶段(opts.记录.阶段, 总标签, '清旧', () => 清命中的旧('母版', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.段.键, 指纹: r.指纹.指纹 })), 级别, opts.记录));
-  if (!待渲.length) return 结果;
-  const 估 = 待渲.map((r) => 预计耗时(渲染标签(r.段.键, 级别)));
-  const 已知 = 估.filter((x): x is number => x !== null);
-  console.log(
-    `== 要渲 ${待渲.length} 段：${待渲.map((r) => r.段.键).join('、')}` +
-      (已知.length ? `；按耗时表预计约 ${Math.round(已知.reduce((a, b) => a + b, 0))} 秒${已知.length < 待渲.length ? `（另 ${待渲.length - 已知.length} 段没有记录）` : ''}` : '；耗时表里还没有这些段的记录'),
-  );
-  await 开会话(级别, async (h) => {
-    for (const r of 待渲) {
-      const composition = 找组合(h, r.段);
-      const 标签 = 渲染标签(r.段.键, 级别);
-      await 量阶段(opts.记录.阶段, 标签, '等求解缓存', 等求解缓存写完);
-      const 排队起 = Date.now();
-      await 过渲染闸(async () => {
-        const t0 = Date.now();
-        记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
-        const 原 = 原母版路径(r.段.键, r.指纹.指纹);
-        const tmp = 原.replace(/\.mkv$/, `.渲染中-${process.pid}.mkv`);
-        const 撤临时 = 登记临时文件(tmp);
-        fs.mkdirSync(path.dirname(tmp), { recursive: true });
-        console.log(`== 渲 ${r.段.键}`);
-        let code = 1;
-        let 明细: 明细收集 | null = null;
-        try {
-          开始整段量(r.段.键, r.指纹.指纹);
-          明细 = await 量渲染(标签, opts.记录.阶段, t0, (钩子) => renderMedia({
-            serveUrl: h.serveUrl,
-            composition,
-            outputLocation: tmp,
-            inputProps: 参数.inputProps,
-            envVariables: 段渲染环境(r.指纹.段, r.指纹.项.地形),
-            puppeteerInstance: h.browser,
-            chromiumOptions: { gl: 参数.gl },
-            codec: 参数.codec,
-            audioCodec: 参数.audioCodec,
-            enforceAudioTrack: 参数.enforceAudioTrack,
-            crf: 参数.crf,
-            x264Preset: 参数.x264Preset,
-            imageFormat: 参数.imageFormat,
-            jpegQuality: 参数.jpegQuality,
-            scale: 参数.scale,
-            concurrency: 参数.concurrency,
-            timeoutInMilliseconds: 等帧超时毫秒,
-            overwrite: true,
-            ...钩子,
-          }));
-          const t查 = Date.now();
-          const 帧 = 视频信息(tmp).帧数;
-          记阶段(opts.记录.阶段, 标签, '查帧数', t查, (Date.now() - t查) / 1000);
-          if (帧 !== r.段.段.帧数) throw new Error(`${r.段.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
-          fs.renameSync(tmp, 原);
-          写指纹(r.指纹);
-          r.母版 = 原;
-          r.新渲 = true;
-          code = 0;
-        } finally {
-          fs.rmSync(tmp, { force: true });
-          撤临时();
-          const 秒 = (Date.now() - t0) / 1000;
-          记耗时(渲染标签(r.段.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
-          if (code === 0) console.log(`   ${r.段.键}：${秒.toFixed(0)} 秒 → ${原}`);
-        }
-        await 记已量帧(r.段.键, Array.from({ length: r.段.段.帧数 }, (_, i) => i));
-        // 还在渲染闸里：派生、转码都要解码整段母版
-        const t1 = Date.now();
-        let 有段签 = false;
-        try {
-          const d = await 出段签(原, { 段键: r.段.键, 指纹: r.指纹.指纹, 级别, 派生: '渲染', 计时: { 收: opts.记录.阶段, 标签 } });
-          有段签 = true;
-          if (d.自查?.结论 === '漂移') opts.记录.记('警告', 漂移提示(r.段.键, d.自查));
-          else if (d.自查) console.log(`   ${r.段.键}：同一指纹重渲，自查${d.自查.结论}（${d.自查.说明}）`);
-        } catch (e) {
-          opts.记录.记('警告', `${r.段.键} 渲好了，段签没派生成（${(e as Error).message.split('\n')[0]}）：anim render ${r.段.键} --只派生 再补`);
-        }
-        记阶段(opts.记录.阶段, 标签, '派生段签', t1, (Date.now() - t1) / 1000);
-        // 没有段签不转：无损抽样帧只能从 CRF1 抽，CRF1 留着等 --只派生
-        if (有段签) {
-          const t2 = Date.now();
-          try {
-            const z = await 存成压缩(r.段.键, r.指纹.指纹, 级别, { 记录: opts.记录 });
-            // 留CRF1：verify --对基线 要逐帧比，只有 CRF1 能比；留下的已被取代，下次 film 或 gc 就删
-            if (!opts.留CRF1) fs.rmSync(原, { force: true });
-            r.母版 = z.文件;
-            console.log(`   ${r.段.键}：CRF1 ${(z.原大小 / 1e9).toFixed(2)} GB → 压缩母版 ${(z.新大小 / 1e9).toFixed(2)} GB`);
-          } catch (e) {
-            opts.记录.记('警告', `${r.段.键} 渲好了，转存压缩母版没成（${(e as Error).message.split('\n')[0]}），CRF1 留着，用到时再转`);
+  // ANIM_INLINE_TRANSCODE 是对照和逃生口（环境变量名必须 ASCII，非 ASCII 的名字 Node 24 Worker 段错误）。
+  // 留 CRF1 的批也串行：这份 CRF1 转完就算已被取代，只有闸挡得住 film 的 备好母版、gc 在 verify 之前删它，跨进程没有别的记号
+  const 后台 = process.env.ANIM_INLINE_TRANSCODE === '1' || opts.留CRF1 ? null : 建后台转存({ 记录: opts.记录, 级别, 跑: opts.跑后台 });
+  try {
+    if (待渲.length) {
+      const 估 = 待渲.map((r) => 预计耗时(渲染标签(r.段.键, 级别)));
+      const 已知 = 估.filter((x): x is number => x !== null);
+      console.log(
+        `== 要渲 ${待渲.length} 段：${待渲.map((r) => r.段.键).join('、')}` +
+          (已知.length ? `；按耗时表预计约 ${Math.round(已知.reduce((a, b) => a + b, 0))} 秒${已知.length < 待渲.length ? `（另 ${待渲.length - 已知.length} 段没有记录）` : ''}` : '；耗时表里还没有这些段的记录'),
+      );
+      await 开会话(级别, async (h) => {
+        for (const r of 待渲) {
+          const composition = 找组合(h, r.段);
+          const 标签 = 渲染标签(r.段.键, 级别);
+          await 后台?.等空位(r.段.键, 标签);
+          await 量阶段(opts.记录.阶段, 标签, '等求解缓存', 等求解缓存写完);
+          const 排队起 = Date.now();
+          const 明细 = await 过渲染闸(async () => {
+            const t0 = Date.now();
+            记阶段(opts.记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
+            const 原 = 原母版路径(r.段.键, r.指纹.指纹);
+            const tmp = 原.replace(/\.mkv$/, `.渲染中-${process.pid}.mkv`);
+            const 撤临时 = 登记临时文件(tmp);
+            fs.mkdirSync(path.dirname(tmp), { recursive: true });
+            console.log(`== 渲 ${r.段.键}`);
+            let code = 1;
+            let 明细: 明细收集 | null = null;
+            try {
+              开始整段量(r.段.键, r.指纹.指纹);
+              明细 = await 量渲染(标签, opts.记录.阶段, t0, (钩子) => renderMedia({
+                serveUrl: h.serveUrl,
+                composition,
+                outputLocation: tmp,
+                inputProps: 参数.inputProps,
+                envVariables: 段渲染环境(r.指纹.段, r.指纹.项.地形),
+                puppeteerInstance: h.browser,
+                chromiumOptions: { gl: 参数.gl },
+                codec: 参数.codec,
+                audioCodec: 参数.audioCodec,
+                enforceAudioTrack: 参数.enforceAudioTrack,
+                crf: 参数.crf,
+                x264Preset: 参数.x264Preset,
+                imageFormat: 参数.imageFormat,
+                jpegQuality: 参数.jpegQuality,
+                scale: 参数.scale,
+                concurrency: 参数.concurrency,
+                timeoutInMilliseconds: 等帧超时毫秒,
+                overwrite: true,
+                ...钩子,
+              }));
+              const t查 = Date.now();
+              const 帧 = 视频信息(tmp).帧数;
+              记阶段(opts.记录.阶段, 标签, '查帧数', t查, (Date.now() - t查) / 1000);
+              if (帧 !== r.段.段.帧数) throw new Error(`${r.段.键} 渲出来 ${帧} 帧，段.ts 写的是 ${r.段.段.帧数} 帧`);
+              // 先记再改名：别的 render 的 删旧 在闸外跑，这份还没被段签记下来，只靠「刚用过」挡着
+              记用过(母版目录(r.段.键), r.指纹.指纹);
+              fs.renameSync(tmp, 原);
+              写指纹(r.指纹);
+              r.母版 = 原;
+              r.新渲 = true;
+              code = 0;
+            } finally {
+              fs.rmSync(tmp, { force: true });
+              撤临时();
+              const 秒 = (Date.now() - t0) / 1000;
+              记耗时(渲染标签(r.段.键, 级别), t0, 秒, code, `anim render ${r.段.键}`);
+              if (code === 0) console.log(`   ${r.段.键}：${秒.toFixed(0)} 秒 → ${原}`);
+            }
+            await 记已量帧(r.段.键, Array.from({ length: r.段.段.帧数 }, (_, i) => i));
+            if (后台) {
+              // 放闸就停表：明细的总秒还是这段占闸的时间，排队和后台另有阶段
+              明细?.停表();
+              return 明细;
+            }
+            // 还在渲染闸里：派生、转码都要解码整段母版
+            const x = await 后处理一段({ 键: r.段.键, 指纹: r.指纹.指纹, 级别, 作品: 作品名(), 留CRF1: !!opts.留CRF1, 标签 }, { 收: opts.记录.阶段, 记录: opts.记录 });
+            if (x.母版) r.母版 = x.母版;
+            return 明细;
+          }, undefined, {}, {种:'render',作品:作品名(),段:r.段.键,级别,帧数:composition.durationInFrames,项数:待渲.length,可让路:待渲.length>1,用途:process.env.ANIM_PURPOSE??'产出'});
+          const 写明细 = () => 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
+          const 收工 = async () => {
+            opts.记录.产物.push(r.母版);
+            // 派生段签、转存的阶段这时才齐
+            await 写明细();
+          };
+          if (!后台) await 收工();
+          else {
+            // 先落一份：批被杀时后台还没做完的段，出帧明细和温度不跟着丢；收工再写同一个文件，带齐后台阶段
+            await 写明细();
+            // 闸已放开：这里排，子进程才不算在持锁上下文里
+            后台.排({ 键: r.段.键, 指纹: r.指纹.指纹, 标签 }, async (x) => {
+              if (x?.母版) r.母版 = x.母版;
+              await 收工();
+            });
           }
-          记阶段(opts.记录.阶段, 标签, '转存', t2, (Date.now() - t2) / 1000);
         }
-        记用过(母版目录(r.段.键), r.指纹.指纹);
-        const t删 = Date.now();
-        删旧('母版', r.段.键, 级别, r.指纹.指纹, { 记录: opts.记录 });
-        记阶段(opts.记录.阶段, 标签, '删旧', t删, (Date.now() - t删) / 1000);
-        await 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
-      }, undefined, {}, {种:'render',作品:作品名(),段:r.段.键,级别,帧数:composition.durationInFrames,项数:待渲.length,可让路:待渲.length>1,用途:process.env.ANIM_PURPOSE??'产出'});
-      opts.记录.产物.push(r.母版);
+      }, opts.记录);
     }
-  }, opts.记录);
+  } finally {
+    // 关了浏览器再等（开会话 的 finally 已关），出错、让路也要等：已经排上的段不能丢给孤儿
+    await 后台?.等齐(总标签);
+  }
   return 结果;
 };
 

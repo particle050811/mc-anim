@@ -15,6 +15,7 @@ import path from 'node:path';
 import { 配置, 段签目录 } from '../环境/配置.ts';
 import { 作品名 } from '../环境/作品.ts';
 import { 低优先级, 跑 } from '../环境/子进程.ts';
+import { 登记临时文件 } from '../闸/收尾.ts';
 import { 视频信息, 有音轨 } from '../渲/探测.ts';
 import { 灰度帧 } from '../合成/接缝.ts';
 import { 原子写 } from '../渲/母版.ts';
@@ -177,11 +178,16 @@ export const 出段签 = async (母版: string, o: { 段键: string; 指纹: str
   点('段签：扫母版');
   const ffmpeg = 配置('ffmpeg');
   const 临时: string[] = [];
+  const 撤们: (() => void)[] = [];
+  const 记临时 = (f: string) => {
+    临时.push(f);
+    撤们.push(登记临时文件(f));
+  };
   try {
     let 声音: 段签['声音'] = null;
     if (有音轨(母版)) {
       const tmp = 临时名(dir, 声音文件名);
-      临时.push(tmp);
+      记临时(tmp);
       await 跑(低优先级([ffmpeg, '-v', 'error', '-nostdin', '-y', '-i', 母版, '-map', '0:a:0', '-c:a', 'flac', tmp]), { 安静: true });
       const h = crypto.createHash('sha256');
       for await (const c of 音频流(tmp)) h.update(c);
@@ -193,7 +199,7 @@ export const 出段签 = async (母版: string, o: { 段键: string; 指纹: str
 
     const 帧们 = 抽样帧(签名.帧数, 默认间隔);
     const 抽 = 临时名(dir, 抽样文件名);
-    临时.push(抽);
+    记临时(抽);
     await 写抽样(母版, 签名.帧数, 默认间隔, 抽);
     点('段签：写抽样');
     const 签哈希 = 签名.帧.map((f) => f.哈希);
@@ -225,6 +231,7 @@ export const 出段签 = async (母版: string, o: { 段键: string; 指纹: str
     return { 签, 自查: 查 };
   } finally {
     for (const f of 临时) fs.rmSync(f, { force: true });
+    for (const 撤 of 撤们) 撤();
   }
 };
 

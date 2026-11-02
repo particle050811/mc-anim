@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import spawn from 'cross-spawn';
 import { 配置 } from '../环境/配置.ts';
 import { 低优先级 } from '../环境/子进程.ts';
+import { 登记收尾 } from '../闸/收尾.ts';
 
 export const 默认间隔 = 24;
 export const 块列 = 16;
@@ -21,6 +22,8 @@ export const 抽样帧 = (帧数: number, 间隔 = 默认间隔): number[] => {
 /** 起 ffmpeg，把 stdout 按 块大小 切块交出；退出码非 0 抛错（带 stderr 末尾） */
 export async function* 读流(cmd: string[], 块大小: number | null): AsyncGenerator<Buffer> {
   const child = spawn(cmd[0]!, cmd.slice(1), { stdio: ['ignore', 'pipe', 'pipe'] });
+  // 被杀直接退出，不走下面的 finally：不杀的话 ffmpeg 解到管道写满才因 EPIPE 退，解到尾的那种还会多占一会儿 CPU
+  const 撤 = 登记收尾(() => void child.kill());
   let stderr = '';
   child.stderr!.setEncoding('utf8');
   child.stderr!.on('data', (d: string) => (stderr = (stderr + d).slice(-8192)));
@@ -53,6 +56,7 @@ export async function* 读流(cmd: string[], 块大小: number | null): AsyncGen
     const code = await 结束;
     if (code !== 0) throw new Error(`ffmpeg 失败（退出码 ${code}）：${cmd.join(' ')}\n${stderr.trim().split('\n').slice(-5).join('\n')}`);
   } finally {
+    撤();
     if (child.exitCode === null) child.kill();
   }
 }
