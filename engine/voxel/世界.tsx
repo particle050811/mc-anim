@@ -22,7 +22,7 @@ import { 清空容器池 } from './容器池.ts';
 import { visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
-import type { VoxelGrid, VoxelSource } from './生成.ts';
+import type { BuiltSection, VoxelGrid, VoxelSource } from './生成.ts';
 
 // 缓存的总面数上限：超过就丢最久没用的区段（Remotion 每个并发标签页各有一份）
 const maxCachedFaces = 6_000_000;
@@ -198,23 +198,29 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           // 主线程按 qs 的先后取体素块、交给网格池；建好的按同样的先后建 three 网格、进缓存（three 的物体编号跟着建的先后走，
           // 同一帧深度一样的物体按编号定先后，先后不能变；留着网格的区段也排在同一个队里）。同时在算的最多 窗口 块，不然第一帧几千块的体素块一起压在内存里
           const windowSize = 32;
-          const inFlight: { q: SectionId; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null; m: Promise<SectionMesh> | null; rec: Kept | null }[] = [];
+          const inFlight: { q: SectionId; built: Promise<BuiltSection>; rec: Kept | null }[] = [];
           const collectOne = async () => {
             const x = inFlight.shift()!;
-            const mesh = x.m && (await x.m);
-            const rec = x.rec ?? keep(keptKey(worldKey, x.q), { mesh, V: x.V, used: keptClock });
-            putEntry(x.q, x.V && mesh ? meshToEntry(ctx, mesh, x.V, x.q, rec) : emptyEntry(rec));
+            const { mesh, V } = await x.built;
+            const rec = x.rec ?? keep(keptKey(worldKey, x.q), { mesh, V, used: keptClock });
+            putEntry(x.q, V && mesh ? meshToEntry(ctx, mesh, V, x.q, rec) : emptyEntry(rec));
           };
           const t = performance.now();
           for (const section of qs) {
             if (inFlight.length >= windowSize) await collectOne();
             const rec = keptNow.get(sectionKey(section));
             if (rec) {
-              inFlight.push({ q: section, V: rec.V, m: rec.mesh && Promise.resolve(rec.mesh), rec });
+              inFlight.push({ q: section, built: Promise.resolve({ V: rec.V, mesh: rec.mesh }), rec });
               continue;
             }
-            const voxels = source.区段(section);
-            inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.转交) : null, rec: null });
+            if (source.建网格) {
+              inFlight.push({ q: section, built: source.建网格(section), rec: null });
+            } else {
+              const voxels = source.区段(section);
+              const V = voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz };
+              const built = voxels ? buildMeshInPool(voxels, section.L >= 1, source.转交).then((mesh) => ({ mesh, V })) : Promise.resolve({ mesh: null, V: null });
+              inFlight.push({ q: section, built, rec: null });
+            }
             if (performance.now() - t > 1000) break; // 隔一会儿回头看一次要建的变没变
           }
           while (inFlight.length) await collectOne();

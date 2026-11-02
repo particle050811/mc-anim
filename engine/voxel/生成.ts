@@ -8,6 +8,9 @@
 import { blockProps } from './真实方块表.ts';
 import type { TerrainSampler } from './地表.ts';
 import type { SectionId } from './区段.ts';
+import type { SectionMesh } from './网格.ts';
+
+export type BuiltSection = { mesh: SectionMesh | null; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null };
 
 export type RGB = [number, number, number];
 export type VoxelSource = {
@@ -16,6 +19,8 @@ export type VoxelSource = {
   // 预取：这一帧要用的区段，没取到的开始取，返回取齐的 Promise；都在手上返回 undefined（体素世界据此决定同步建还是先等）
   区段: (section: SectionId) => VoxelGrid | null;
   prefetch?: (qs: SectionId[]) => Promise<void> | undefined;
+  // 有后处理的来源可把补体素和出网格合在一次工人任务里，避免大数组在主线程来回转交。
+  建网格?: (section: SectionId) => Promise<BuiltSection>;
   // 转交：`区段` 每次返回新建的体素块、自己不留着，体素世界把它转交给网格工人（不拷贝，交完这边就用不了了）
   转交?: boolean;
 };
