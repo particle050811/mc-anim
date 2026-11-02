@@ -35,23 +35,26 @@ const 光圈: readonly { 宽: number; 亮: number }[] = [
   { 宽: 1, 亮: 0.5 },
 ];
 
-/** 画一个太阳或月亮：(u0, v0) 是贴图里那一格的左上角，(x0, y0) 是这一格 32×32 画在画布上的左上角，n = 一个贴图像素几个画布像素 */
-const 画天体 = (ctx: CanvasRenderingContext2D, tex: Png, u0: number, v0: number, x0: number, y0: number, n: number, 透 = 1, 带光圈 = true) => {
-  for (let v = 本体起; v < 本体起 + 本体边; v++)
-    for (let u = 本体起; u < 本体起 + 本体边; u++) {
-      const o = ((v0 + v) * tex.w + u0 + u) * 4;
+/** 画一个太阳或月亮：(u0, v0) 是贴图里那一格的左上角，(x0, y0) 是这一格 32×32 画在画布上的左上角，n = 一个贴图像素几个画布像素（坐标都按原版尺寸）。
+ *  列 = 贴图横着几格（太阳 1、月相 4）：材质包的高清贴图是原版的 k 倍（k = 宽 ÷ (列 × 32)），一个高清像素画 n / k，光圈也按高清像素宽 */
+const 画天体 = (ctx: CanvasRenderingContext2D, tex: Png, 列: number, u0: number, v0: number, x0: number, y0: number, n: number, 透 = 1, 带光圈 = true) => {
+  const k = tex.w / (列 * 天体边);
+  const m = n / k;
+  for (let v = 本体起 * k; v < (本体起 + 本体边) * k; v++)
+    for (let u = 本体起 * k; u < (本体起 + 本体边) * k; u++) {
+      const o = ((v0 * k + v) * tex.w + u0 * k + u) * 4;
       const a = tex.px[o + 3]!;
       if (!a || !(tex.px[o]! | tex.px[o + 1]! | tex.px[o + 2]!)) continue;
       ctx.fillStyle = `rgba(${tex.px[o]},${tex.px[o + 1]},${tex.px[o + 2]},${(a / 255) * 透})`;
-      ctx.fillRect(x0 + u * n, y0 + v * n, n, n);
+      ctx.fillRect(x0 + u * m, y0 + v * m, m, m);
     }
   if (!带光圈) return;
-  const 晕 = ((v0 + 本体起 - 1) * tex.w + u0 + 天体边 / 2) * 4; // 本体正上方紧挨着的那格光晕
+  const 晕 = (((v0 + 本体起) * k - 1) * tex.w + (u0 + 天体边 / 2) * k) * 4; // 本体正上方紧挨着的那格光晕
   const 色 = [tex.px[晕]!, tex.px[晕 + 1]!, tex.px[晕 + 2]!];
   const bx = x0 + 本体起 * n, by = y0 + 本体起 * n, 边 = 本体边 * n;
   let 内 = 0; // 这一圈内沿离本体几个画布像素
   for (const { 宽, 亮 } of 光圈) {
-    const t = 宽 * n;
+    const t = 宽 * m;
     ctx.fillStyle = `rgba(${色.map((c) => Math.round(c * 亮)).join(',')},${透})`;
     // 上下左右四条，互不重叠（lighter 是叠加，重叠的地方会更亮）
     ctx.fillRect(bx - 内 - t, by - 内 - t, 边 + 2 * (内 + t), t);
@@ -104,15 +107,15 @@ export const 侧剖面天空: React.FC<侧剖面天空属性> = ({ 取景, 宽, 
     if (!弧) return;
     const 吸 = (v: number, 原: number) => 原 + Math.round((v - 原) / n) * n;
     ctx.globalCompositeOperation = 'lighter';
-    const 画 = (tex: Png, u0: number, v0: number, x: number, z: number, 透?: number, 带光圈?: boolean) => {
+    const 画 = (tex: Png, 列: number, u0: number, v0: number, x: number, z: number, 透?: number, 带光圈?: boolean) => {
       const px = 吸(W / 2 + (x - 中心[0]) * 每格 - (天体边 * n) / 2, 格x0);
       const py = 吸(H / 2 - (z - 中心[1]) * 每格 - (天体边 * n) / 2, 地y);
-      画天体(ctx, tex, u0, v0, px, py, n, 透, 带光圈);
+      画天体(ctx, tex, 列, u0, v0, px, py, n, 透, 带光圈);
     };
     const 画两个 = (t: number, 透?: number, 带光圈?: boolean) => {
       const 位 = 天体位置(t, 弧);
-      画(png(sunPng), 0, 0, 位.太阳.x, 位.太阳.z, 透, 带光圈);
-      画(png(moonPng), (位.月亮.相 % 4) * 天体边, Math.floor(位.月亮.相 / 4) * 天体边, 位.月亮.x, 位.月亮.z, 透, 带光圈);
+      画(png(sunPng), 1, 0, 0, 位.太阳.x, 位.太阳.z, 透, 带光圈);
+      画(png(moonPng), 4, (位.月亮.相 % 4) * 天体边, Math.floor(位.月亮.相 / 4) * 天体边, 位.月亮.x, 位.月亮.z, 透, 带光圈);
     };
     // 残影从最远（最淡）的画起；不带光圈（主会话 10-24 定分屏的轨迹不发光）
     if (残影) for (let i = 残影.张; i >= 1; i--) 画两个(刻 - i * 残影.刻差, (残影.首透 * (残影.张 - i + 1)) / 残影.张, false);

@@ -46,7 +46,7 @@ const 新画布 = (w: number, h: number) => {
 // ---------- 泥土底（不随帧变，建一次） ----------
 let 泥土底: HTMLCanvasElement | null = null;
 /** 原版 blit 的平铺：16×16 的贴图按 32×32 界面像素一块铺（一个贴图像素 2 界面像素），带的颜色乘进去；列表区 uOffset = x1（界面宽）、vOffset = y1，
- *  上下两条 uOffset 0、vOffset 和屏幕 y 一样 */
+ *  上下两条 uOffset 0、vOffset 和屏幕 y 一样。材质包的 32×32 泥土照样铺 32×32 界面像素（一个贴图像素 1 界面像素） */
 const 画泥土底 = (): HTMLCanvasElement => {
   if (泥土底) return 泥土底;
   const 泥: Png = png(泥土uri);
@@ -58,7 +58,7 @@ const 画泥土底 = (): HTMLCanvasElement => {
       const 列表 = y >= 界面.列表.上 && y < 界面.列表.下;
       const u = 列表 ? x + 界面.宽 : x;
       const v = 列表 ? y - 界面.列表.上 + 界面.列表.下 : y;
-      const o = ((Math.floor((((v % 32) + 32) % 32) / 2) * 泥.w + Math.floor((((u % 32) + 32) % 32) / 2)) * 4);
+      const o = ((Math.floor(((((v % 32) + 32) % 32) * 泥.h) / 32) * 泥.w + Math.floor(((((u % 32) + 32) % 32) * 泥.w) / 32)) * 4);
       const k = 列表 ? 色.列表乘 : 色.带乘;
       const p = (y * 界面.宽 + x) * 4;
       for (let c = 0; c < 3; c++) img.data[p + c] = Math.round(泥.px[o + c]! * k);
@@ -73,7 +73,7 @@ const 画泥土底 = (): HTMLCanvasElement => {
 };
 
 let 箭头图: HTMLCanvasElement | null = null;
-/** world_selection.png 整张（256×256，播放箭头在 u 0 的 v 0、v 32 两格） */
+/** world_selection.png 整张（256×256，播放箭头在 u 0 的 v 0、v 32 两格；材质包的高清版是它的整数倍，取的时候按 箭头倍 放大坐标） */
 const 取箭头图 = () => {
   if (箭头图) return 箭头图;
   const 图 = png(箭头uri);
@@ -138,7 +138,8 @@ const 画底稿 = (s: 界面状态): HTMLCanvasElement => {
   ctx.drawImage(图标稿, (行.左 - 弹) * 倍, (行.顶 - 弹) * 倍, (边 + 2 * 弹) * 倍, (边 + 2 * 弹) * 倍);
   if (s.指着) {
     填(ctx, 色.指着蒙, 行.左, 行.顶, 行.左 + 边, 行.顶 + 边);
-    ctx.drawImage(取箭头图(), 0, s.指着 === 2 ? 32 : 0, 32, 32, 行.左 * 倍, 行.顶 * 倍, 边 * 倍, 边 * 倍);
+    const 箭头倍 = 取箭头图().width / 256;
+    ctx.drawImage(取箭头图(), 0, (s.指着 === 2 ? 32 : 0) * 箭头倍, 32 * 箭头倍, 32 * 箭头倍, 行.左 * 倍, 行.顶 * 倍, 边 * 倍, 边 * 倍);
   }
   画渐变(ctx);
   const f = 界面.搜索框;
