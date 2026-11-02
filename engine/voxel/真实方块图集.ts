@@ -108,11 +108,14 @@ export const blockAtlas = () => {
   return atlas;
 };
 
-
+// 贴图号本该是整数，但 Windows 上 D3D11、Vulkan、GL、WARP 插值后都会带一点小数（11-02 实测，Mac 上是整数）。
+// 每行第 0 列的贴图往下偏一点就拆到上一行末列（黄花叶 2384 取到白凳子 2383 的边列，成了白棕横纹），所以先取整再拆行列。
+// 说明写在模板外：模板里的字会进着色器源码，也就进了段指纹。
 export const blockAtlasGlsl = () => {
   const rows = blockAtlas().rows;
   return `
 vec2 atlasUv(float layer, vec2 f) {
+  layer = floor(layer + 0.5);
   vec2 cell = vec2(mod(layer, ${ATLAS_COLS}.0), floor(layer / ${ATLAS_COLS}.0));
   return (cell + f) / vec2(${ATLAS_COLS}.0, ${rows}.0);
 }`;
