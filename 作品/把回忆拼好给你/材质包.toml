@@ -1,0 +1,4 @@
+# 本作品选用的材质包（pipeline/资产/资产锁.ts 读材质包选用）：用户 11-02 定换 Faithful 32x 原样上屏，原版 3 像素、模组和界面 6 像素混着可以接受。
+# 改了这里要重跑 anim assets 材质包，重建 材质包.锁.json。
+# Faithful License v4：成片简介要署名、写明包名，放官网 https://faithfulpack.net 和许可 https://faithfulpack.net/license（署名原文见 预览/1102-1610-材质包32x原样/00-说明.md）
+"包" = ["材质包/faithful-32x"]
