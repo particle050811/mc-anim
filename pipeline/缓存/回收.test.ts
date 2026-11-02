@@ -328,8 +328,8 @@ describe('列段', () => {
 });
 
 describe('认得的目录', () => {
-  it('列段、核对、音频数、映射、sha缓存.json、run/暂存 不再报不认识；只报目录都在 cache 认得的里', () => {
-    for (const 名 of ['列段', '核对', '音频数', '映射', 'sha缓存.json', '会话交接']) 写(`cache/${名}/x`, 'x');
+  it('列段、核对、音频数、映射、temperature、sha缓存.json、run/暂存 不再报不认识；只报目录都在 cache 认得的里', () => {
+    for (const 名 of ['列段', '核对', '音频数', '映射', 'temperature', 'sha缓存.json', '会话交接']) 写(`cache/${名}/x`, 'x');
     写('run/暂存/terrain/x', 'x');
     写('run/会话交接-1024/x', 'x');
     expect(不认识条目(path.join(根, 'cache'), cache认识).map((e) => e.名)).toEqual(['会话交接']);

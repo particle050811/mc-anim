@@ -4,7 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { 写zip } from './测试夹具.ts';
 import { 解析启用包, 开服前核对, 排序核对 } from './核对.ts';
-import { 启动参数, 撤临时模组, 服务端 } from './服务端.ts';
+import { 启动参数, 撤临时模组, 服务端, 编码参数 } from './服务端.ts';
 import { 只读zip } from './zip.ts';
 
 const 临时 = () => fs.mkdtempSync(path.join(os.tmpdir(), '服务端-'));
@@ -98,7 +98,7 @@ readline.createInterface({ input: process.stdin }).on('line', (l) => {
     fs.writeFileSync(jar, 'x');
     const 行们: string[] = [];
     const s = await 服务端.起({ 目录: 服, 存档: 世, 临时模组: [jar], 每行: (l) => 行们.push(l), 提示: () => {}, 就绪超时秒: 20 });
-    expect(行们.find((l) => l.startsWith('ARGS '))).toBe(`ARGS -Xmx12G -jar server.jar nogui --universe ${根} --world 某世界 --port ${s.端口}`);
+    expect(行们.find((l) => l.startsWith('ARGS '))).toBe(`ARGS -Xmx12G ${编码参数.join(' ')} -jar server.jar nogui --universe ${根} --world 某世界 --port ${s.端口}`);
     expect(行们).toContain('MODS Chunky-test.jar');
     expect(fs.existsSync(path.join(服, '.anim-服务端.pid'))).toBe(true);
     s.发('chunky start');
@@ -111,7 +111,7 @@ readline.createInterface({ input: process.stdin }).on('line', (l) => {
     fs.writeFileSync(path.join(服, '本地世界', 'level.dat'), '');
     const 行2: string[] = [];
     const s2 = await 服务端.起({ 目录: 服, 存档: path.join(服, '本地世界'), 每行: (l) => 行2.push(l), 提示: () => {}, 就绪超时秒: 20 });
-    expect(行2.find((l) => l.startsWith('ARGS '))).toBe(`ARGS -Xmx12G -jar server.jar nogui --world 本地世界 --port ${s2.端口}`);
+    expect(行2.find((l) => l.startsWith('ARGS '))).toBe(`ARGS -Xmx12G ${编码参数.join(' ')} -jar server.jar nogui --world 本地世界 --port ${s2.端口}`);
     await s2.停();
     expect(fs.readdirSync(path.join(服, 'mods'))).toEqual([]);
     expect(fs.existsSync(path.join(服, '.anim-服务端.pid'))).toBe(false);

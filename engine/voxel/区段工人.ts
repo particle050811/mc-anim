@@ -2,22 +2,26 @@
 // 活里登记了来源的区段再换成体素块（导入区段.ts，和主线程同一份纯函数）。类型数组都转交回去，不拷贝。
 // 为什么放工人：一帧要新取上百个区段，放主线程上逐个取、解会和建网格、画抢主线程（docs/渲染性能.md）。
 import { buildPackTables, type SectionData } from './区段包.ts';
+import { 读模型, 模型文件名, type 区段模型 } from './区段模型.ts';
 import { 解区段 } from './区段解码.ts';
 import { variesByPos } from './群系色.ts';
 import { importedSectionVoxels, type 区段上下文 } from './导入区段.ts';
 import type { 工人消息, 工人回信 } from './区段工人池.ts';
 import type { VoxelGrid } from './生成.ts';
 
+const models = new Map<string, 区段模型>();
 const contexts = new Map<number, 区段上下文>();
 
 const run = async (msg: Extract<工人消息, { type: '取' }>): Promise<工人回信> => {
+  const 模型 = models.get(new URL(模型文件名, msg.url).href);
+  if (!模型) throw new Error(`区段工人没有登记 ${msg.url} 的模型`);
   const res = await fetch(msg.url, { headers: { Range: `bytes=${msg.start}-${msg.start + msg.len - 1}` } });
   if (res.status !== 206) throw new Error(`按 Range 取 ${msg.url} 的 ${msg.start}～${msg.start + msg.len} 字节，回的是 ${res.status}（要 206）`);
   const bytes = new Uint8Array(await res.arrayBuffer());
   const out: { data: SectionData; voxels: VoxelGrid | null }[] = [];
   const transfers: ArrayBuffer[] = [];
   for (const part of msg.parts) {
-    const data = 解区段(bytes.subarray(part.off, part.off + part.len), part.id);
+    const data = 解区段(bytes.subarray(part.off, part.off + part.len), part.id, 模型);
     transfers.push(data.palette.buffer as ArrayBuffer); // 四个数组同一块缓冲（解区段）
     let voxels: VoxelGrid | null = null;
     const ctx = part.ctx === undefined ? undefined : contexts.get(part.ctx);
@@ -33,6 +37,7 @@ const run = async (msg: Extract<工人消息, { type: '取' }>): Promise<工人�
 
 self.onmessage = (event: MessageEvent<工人消息>) => {
   const msg = event.data;
+  if (msg.type === '模型') { models.set(msg.url, 读模型(msg.bytes)); return; }
   if (msg.type === '来源') {
     contexts.set(msg.ctx, { info: msg.info, tables: buildPackTables(msg.info), variesByPos: msg.info.群系.map(variesByPos), cutBoxes: msg.cutBoxes, flattenAreas: msg.flattenAreas });
     return;

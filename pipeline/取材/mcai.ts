@@ -1,10 +1,8 @@
 // anim mcai：把动作转给 sourcing/mcai/mcai.py。mcai 只读 MCAI_* 环境变量，这里按 anim 配置传；
 // 用户 10-04 定的是控制并发、不吃满内存；阈值和排法是 Agent 的实现。game start 排渲染票后判资源，build 只过放行闸。
 import path from 'node:path';
-import fs from 'node:fs';
 import { 配置, 数据路径 } from '../环境/配置.ts';
 import { 代码根 } from '../环境/路径.ts';
-import { 持有者, 持有者主机, 锁文件, 进程在吗 } from '../闸/锁.ts';
 
 export const mcai脚本 = () => path.join(代码根(), 'sourcing', 'mcai', 'mcai.py');
 export const mcai命令 = () => [配置('python'), mcai脚本()];
@@ -22,14 +20,3 @@ export const mcai环境 = (): NodeJS.ProcessEnv => ({
 
 /** 哪些动作是重任务、要过闸：起游戏、编译 mod */
 export const 要过闸 = (args: readonly string[]) => (args[0] === 'game' && args[1] === 'start') || args[0] === 'build';
-
-/** 渲染锁现在被活着的进程拿着：返回 pid（别的机器上的当活着），没有返回 null */
-export const 渲染中 = (锁目录 = 配置('锁目录'), 本机 = 配置('主机')): number | null => {
-  const file = 锁文件(锁目录, '渲染');
-  if (!fs.existsSync(file)) return null;
-  const pid = 持有者(file);
-  if (pid === null) return -1; // 刚建、还没写 pid
-  const 主机 = 持有者主机(file, pid);
-  if (主机 && 主机 !== 本机) return pid;
-  return 进程在吗(pid) ? pid : null;
-};

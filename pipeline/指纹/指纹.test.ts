@@ -97,6 +97,8 @@ describe('地形按段依赖', () => {
     expect(无关.length).toBeGreaterThan(0);
     const 基 = await 用表算(s, () => {});
     expect(Object.keys(基.明细.模块)).not.toContain('assets/地形版本.json');
+    expect(Object.keys(基.明细.模块).some((f) => f.includes('/格式2'))).toBe(false);
+    expect(Object.keys(基.明细.模块)).not.toContain('engine/voxel/区段模型表.生成.ts');
     expect(Object.keys(基.项.地形).sort()).toEqual([...s.段.地形].sort());
     const 改无关 = await 用表算(s, (包, 表) => {
       包[无关[0]!]!.版本 = '无关新版本';
@@ -108,6 +110,8 @@ describe('地形按段依赖', () => {
       包[s.段.地形[0]!]!.版本 = '声明新版本';
     });
     expect(改声明.指纹).not.toBe(基.指纹);
+    // 模型是包内数据，换表只换包版本，不改解码器闭包。
+    expect(改声明.明细.模块).toEqual(基.明细.模块);
     expect(指纹差异(基, 改声明)).toEqual([`地形 改了 ${s.段.地形[0]}`]);
   });
 

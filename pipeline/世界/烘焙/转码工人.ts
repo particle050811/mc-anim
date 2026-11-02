@@ -1,12 +1,12 @@
 // anim world 转码 的工作线程（转码.ts 起）：一次一个块文件。
-//   转：格式 1 → 现行格式，区段在文件里的先后不变，和直接烘焙写出的字节一样。
+//   转：格式 1、2 → 现行格式，区段在文件里的先后不变，和直接烘焙写出的字节一样。
 //   比：从磁盘上两边各解一遍，逐格比（状态、群系）。转的时候已经压完就解回核对过（压并核对），这里再比一次盘上的成品。
 import fs from 'node:fs';
 import path from 'node:path';
 import { parentPort } from 'node:worker_threads';
 import { 载入体素库 } from '../体素库.ts';
 import { 到列优先, 压并核对 } from './区段编码.ts';
-import { 块号, 块里的区段 } from './读区段.ts';
+import { 块号, 块里的区段, 读包模型 } from './读区段.ts';
 
 export type 转码活 = { 动作: '转' | '比'; 旧: string; 新: string; 名: string };
 export type 转码果 = { 名: string; 区段: number; 旧字节: number; 新字节: number; 格: number; 非空气格: number; 解毫秒: number };
@@ -22,7 +22,7 @@ const 转 = ({ 旧, 新, 名 }: 转码活): 转码果 => {
   for (const s of 块里的区段(库, path.join(旧, 名))) {
     const d = s.取();
     if (d.L !== s.id.L || d.i !== s.id.i || d.j !== s.id.j) throw new Error(`${名} 第 ${s.slot} 项写的是区段 ${d.L}/${d.i}/${d.j}，位置算出来是 ${s.id.L}/${s.id.i}/${s.id.j}`);
-    const 压 = 压并核对(库, d);
+    const 压 = 压并核对(库, d, 读包模型(新));
     索引[2 * s.slot] = off;
     索引[2 * s.slot + 1] = 压.length;
     off += 压.length;
