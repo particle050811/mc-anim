@@ -91,7 +91,6 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
   });
   it.each([
     ['x-api-key'], ['x-api-keyframe', '3'], ['x-api-key-path', '文档'], ['api-key', '说明'],
-    ['anim', '调度', '记', '--为什么', '说明; mysql -pX'],
     ['echo', 'mask_live_fake1234', 'sk_lively_fake1234', 'sk_live_'],
     ['echo', 'myxoxb-fake1234', 'xoxb', 'xoxb-'],
     ['sort', '-u', 'a.txt'], ['git', 'add', '-u'], ['mkdir', '-p', '目录'], ['ssh', '-p', '22', 'host'],
@@ -103,9 +102,6 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
     ['curl', '--', '-u', 'user:x'], ['mysql', '--', '-pX'],
     ['curl', '--data', '-u', '--url', 'https://example.invalid'], ['mysql', '-e', '-pX'],
     ['anim', '调度', '记', '--为什么', '验证 -u user:x、-pX 和 ssh -p 22，不改中文参数', '--用途', '排错'],
-    ['anim', '调度', '记', '--为什么', 'curl -u user:x'],
-    ['anim', '调度', '记', '--为什么', 'mysql -pX'],
-    ['anim', '调度', '记', '--为什么', 'sshpass -p X'],
     ['anim', '调度', '记', '--为什么', 'x-api-key-path 文档、mask_live_fake1234、myxoxb-fake1234'],
     ['anim', '调度', '记', '--为什么', 'mysql', '-u', 'root', '-pX'],
     ['printf', '%s', 'curl -u user:x'],
@@ -123,9 +119,6 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
     'mysql -p 数据库 -P 3306', 'curl -u', 'mysql -u', 'sshpass -p',
     'sshpass -e ssh -p 22 host', 'sshpass -f 本地文件 ssh -p22 host',
     'curl -- -u user:x', 'mysql -- -pX', 'curl --data "-u" --url https://example.invalid', 'mysql -e "-pX"',
-    'anim 调度 记 --为什么 "curl -u user:x" --用途 中文',
-    'anim 调度 记 --为什么 "mysql -pX"', 'anim 调度 记 --为什么 "sshpass -p X"',
-    'anim 调度 记 --为什么 说明; mysql -pX',
     'anim 调度 记 --为什么 mysql -u root -pX', 'printf "%s" "curl -u user:x"',
   ])('不误遮文本：%s', 原文 => {
     expect(遮密(原文)).toBe(原文);
@@ -192,5 +185,69 @@ describe('登录选项返修', () => {
   ])('选项正文和中文说明不遮：%j', (...argv) => {
     expect(遮命令(argv)).toBe(argv.join(' '));
     expect(遮密(argv.join(' '))).toBe(argv.join(' '));
+  });
+});
+
+
+describe('生产路径与文本命令边界返修', () => {
+  it.each([
+    ['curl -u user:fake', 'curl -u [已遮蔽]'],
+    ['curl -u 张三:fake', 'curl -u [已遮蔽]'],
+    ['mysql -pfake', 'mysql -p[已遮蔽]'],
+    ['sshpass -p fake', 'sshpass -p [已遮蔽]'],
+    ['说明; mysql -pfake', '说明; mysql -p[已遮蔽]'],
+    ['curl -u 报错，改用 --user 也不行', 'curl -u 报错，改用 --user 也不行'],
+    ['curl 的 -u 参数要遮', 'curl 的 -u 参数要遮'],
+    ['mysql -u 写错了，重试', 'mysql -u 写错了，重试'],
+    ['sshpass -p 的值要遮', 'sshpass -p 的值要遮'],
+  ])('node argv → 读发起者 → 遮密 → 日志回读：%s', (原文, 期望) => {
+    const argv = ['/usr/local/bin/node', '/x/pipeline/cli/main.ts', '调度', '记', '--为什么', 原文, '--决定', '排错'];
+    const 发起 = 读发起者({}, argv, dir, false);
+    const 命令 = [...argv.slice(0, 5), 期望, ...argv.slice(6)].join(' ');
+    expect(发起.命令).toBe(命令);
+    expect(遮密(发起.命令)).toBe(命令);
+    记调度(dir, '决定', { 发起, 为什么: 原文 });
+    const 行 = 读调度(dir)[0]!;
+    expect((行.发起 as { 命令: string }).命令).toBe(命令);
+    expect(行.为什么).toBe(期望);
+    expect(JSON.stringify(行)).not.toContain('fake');
+    expect(遮命令(['anim', '--为什么', 原文])).toBe(`anim --为什么 ${期望}`);
+    expect(遮密(`anim --为什么 "${原文}"`)).toBe(`anim --为什么 "${期望}"`);
+  });
+  it.each([
+    '6-斩娜迦', 'curl -u 张三', 'mysql -p中文', 'mysql -u root -pfake',
+    '验证 -u user:fake、-pfake 和 ssh -p 22，不改中文参数',
+    '/data/curl/-u/user:fake.png', '/data/mysql -pfake', 'C:\\data\\mysql\\-pfake.png',
+  ])('不扩大 anim 参数的识别范围：%s', 参数 => {
+    const 原文 = `anim --为什么 ${参数}`;
+    expect(遮命令(['anim', '--为什么', 参数])).toBe(原文);
+    expect(遮密(原文)).toBe(原文);
+  });
+  it.each([
+    ['C:\\tools\\curl.exe -u user:fake', 'C:\\tools\\curl.exe -u [已遮蔽]'],
+    ['C:\\tools\\mysql.exe -pfake', 'C:\\tools\\mysql.exe -p[已遮蔽]'],
+    ['"C:\\tools\\curl.exe" -u user:fake', '"C:\\tools\\curl.exe" -u [已遮蔽]'],
+    ['\\curl -u user:fake', '\\curl -u [已遮蔽]'],
+    ['cu"r"l -u user:fake', 'cu"r"l -u [已遮蔽]'],
+    ...['env ', 'sudo ', 'A=1 ', 'env A=1 ', 'sudo env A=1 ', 'time ', 'nohup ', 'command ', 'exec ', 'echo hi | ', 'cd /tmp && ', 'true; ', '\n', '; '].map(前缀 => [
+      `${前缀}curl -u user:fake`, `${前缀}curl -u [已遮蔽]`,
+    ]),
+    ['sudo sshpass -p fake ssh host', 'sudo sshpass -p [已遮蔽] ssh host'],
+    ['true; mysql -pfake', 'true; mysql -p[已遮蔽]'],
+    ['curl -u user:fake || mysql -pfake', 'curl -u [已遮蔽] || mysql -p[已遮蔽]'],
+  ])('工具路径、前缀和后续命令：%s', (原文, 期望) => {
+    expect(遮密(原文)).toBe(期望);
+  });
+  it.each([
+    ['mysqldump', '-pfake'], ['mysqladmin', '-pfake'], ['mariadb-dump', '-pfake'],
+    ['sshpass', '-P', 'assword:', '-p', 'fake', 'ssh', 'host'],
+    ['SSHPASS=fake', 'sshpass', '-e', 'ssh', 'host'],
+  ])('同族工具：%j', (...argv) => {
+    expect(遮命令(argv)).toBe(argv.join(' ').replace('fake', '[已遮蔽]'));
+    expect(遮密(argv.join(' '))).toBe(argv.join(' ').replace('fake', '[已遮蔽]'));
+  });
+  it.each(['sshpass: 没装', 'sshpass: command not found', 'sshpass 没装', 'sshpass=fake'])('工具说明不是敏感词：%s', s => {
+    expect(遮密(s)).toBe(s);
+    expect(遮命令(['anim', '--为什么', s])).toBe(`anim --为什么 ${s}`);
   });
 });

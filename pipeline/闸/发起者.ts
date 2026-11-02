@@ -36,6 +36,7 @@ const 遮文字 = (s: string) => s
     .replace(头, `$1${遮}`)
     .replace(/(?<![a-z0-9+.-])([a-z][a-z0-9+.-]*:\/\/)[^/@\r\n]+@/gi, `$1${遮}@`)
     .replace(空格头, `$1${遮}`)
+    .replace(new RegExp(String.raw`\bSSHPASS=(?:${值}|\S+)`, 'g'), `SSHPASS=${遮}`)
     .replace(名值, `$1${遮}`)
     .replace(开关值, `$1${遮}`)
     .replace(new RegExp(String.raw`\bBearer\s+(?:${值}|\S+)`, 'gi'), `Bearer ${遮}`)
@@ -49,8 +50,8 @@ const 数据库选项: 登录选项 = {
 const 登录工具: Record<string, 登录选项> = {
     curl: { 分开: ['-u', '-U'], 连写: ['-u', '-U'], 长: ['--user', '--proxy-user'], 短组: true,
         带值: new Set(['--header', '--data', '--data-raw', '--data-binary', '--data-urlencode', '--output', '--user-agent', '--referer', '--url', '--proxy', '--request']) },
-    mysql: 数据库选项, mariadb: 数据库选项,
-    sshpass: { 分开: ['-p'], 连写: ['-p'], 长: [], 带值: new Set(['-f', '-d']), 有子命令: true },
+    mysql: 数据库选项, mariadb: 数据库选项, mysqldump: 数据库选项, mysqladmin: 数据库选项, 'mariadb-dump': 数据库选项,
+    sshpass: { 分开: ['-p'], 连写: ['-p'], 长: [], 带值: new Set(['-f', '-d', '-P']), 有子命令: true },
 };
 const 工具名 = (s: string) => s.split(/[\\/]/).at(-1)!.replace(/\.exe$/i, '').toLowerCase();
 // 非 ASCII 的说明不是凭据；但「张三:pw」有明确的 ASCII 冒号，仍须遮住。
@@ -101,19 +102,20 @@ const 遮空格头项 = (a: string, 前项 = '') => {
     return 头名 ? 头名 + 遮 : a;
 };
 /** 文本已经丢失 argv 边界，只按字面引号、转义和命令分隔符分词，不执行 shell 或展开变量。 */
-const 遮命令文本 = (s: string) => {
-    if (/^x-api-key[ \t]+[^\r\n]*$/i.test(s)) return 遮空格头项(s);
-    const 词 = [...s.matchAll(/&&|\|\||[;|&\r\n]|(?:\\[\s\S]|"(?:\\[\s\S]|[^"\\])*(?:"|$)|'[^']*(?:'|$)|[^\s"'\\;|&])+/g)].map(m => ({
-        原: m[0], 起: m.index,
-        字: m[0].replace(/"((?:\\[\s\S]|[^"\\])*)(?:"|$)|'([^']*)(?:'|$)|\\([\s\S])/g,
-            (_全, 双: string | undefined, 单: string | undefined, 转: string | undefined) => 双?.replace(/\\(["\\$`\n])/g, '$1') ?? 单 ?? 转!),
-    }));
-    // 不把参数中的分号后半句另猜成命令；日志里 anim --为什么 的原文也可能提到登录工具。
-    const 边界 = 词.findIndex(t => /^(?:&&|\|\||[;|&\r\n])$/.test(t.原));
-    const 换 = 登录参数替换(词.slice(0, 边界 < 0 ? 词.length : 边界).map(t => t.字));
+const 分词 = (s: string) => [...s.matchAll(/&&|\|\||[;|&\r\n]|(?:\\[\s\S]|"(?:\\[\s\S]|[^"\\])*(?:"|$)|'[^']*(?:'|$)|[^\s"'\\;|&])+/g)].map(m => ({
+    原: m[0], 起: m.index,
+    字: m[0].replace(/"((?:\\[\s\S]|[^"\\])*)(?:"|$)|'([^']*)(?:'|$)|\\([\s\S])/g,
+        (_全, 双: string | undefined, 单: string | undefined, 转: string | undefined) => 双?.replace(/\\(["\\$`\n])/g, '$1') ?? 单 ?? 转!),
+}));
+type 文本词 = ReturnType<typeof 分词>[number];
+const 是分隔符 = (t: 文本词) => /^(?:&&|\|\||[;|&\r\n])$/.test(t.原);
+// 无引号的 Windows 路径不按 shell 转义吃掉反斜杠；cu"r"l 仍使用解引号后的字。
+const 工具词 = (t: 文本词) => t.原.includes('\\') && !/^["']/.test(t.原) ? t.原 : t.字;
+const 是管线命令 = (s: string) => ['anim', 'node'].includes(工具名(s));
+const 写回 = (s: string, 词: 文本词[], 换: Map<number, string>) => {
     let out = '', 尾 = 0;
-    for (let i = 0; i < 词.length; i++) {
-        const t = 词[i]!, 新 = 换.get(i) ?? 遮空格头项(t.字, 词[i - 1]?.字);
+    for (const [i, 新] of [...换].sort(([a], [b]) => a - b)) {
+        const t = 词[i]!;
         if (新 === t.字) continue;
         const 引号 = /^['"]/.test(t.原) && t.原.endsWith(t.原[0]!) ? t.原[0]! : '';
         out += s.slice(尾, t.起) + 引号 + 新 + 引号;
@@ -121,16 +123,63 @@ const 遮命令文本 = (s: string) => {
     }
     return out + s.slice(尾);
 };
+const 内嵌参数替换 = (词: 文本词[]) => {
+    const 换 = new Map<number, string>();
+    for (let i = 0; i < 词.length; i++) {
+        // 只认独立工具名，不把文件路径里的 curl/mysql 目录名当命令。
+        const 工具 = 词[i]!.字.replace(/\.exe$/i, '').toLowerCase();
+        const 选项 = Object.hasOwn(登录工具, 工具) ? 登录工具[工具]! : undefined;
+        const 项 = 词[i + 1], 值词 = 词[i + 2];
+        if (!选项 || !项 || 是分隔符(项)) continue;
+        if (项.字 === '-u' && 选项.分开.includes('-u') && 值词 && !是分隔符(值词) && 值词.字.includes(':')) 换.set(i + 2, 遮);
+        else if (/^-p[\x00-\x7f]+$/.test(项.字) && 选项.连写.includes('-p')) 换.set(i + 1, '-p' + 遮);
+        else if (工具 === 'sshpass' && 项.字 === '-p' && 值词 && !是分隔符(值词) && 像凭据(值词.字)) 换.set(i + 2, 遮);
+    }
+    return 换;
+};
+// 用户定：anim/node 的参数只遮紧跟工具名的 -u x:y、-pASCII、sshpass -p X，不能整项吞掉段名、理由或路径。
+const 遮内嵌登录 = (s: string) => {
+    const 词 = 分词(s);
+    return 写回(s, 词, 内嵌参数替换(词));
+};
+const 遮命令文本 = (s: string) => {
+    if (/^x-api-key[ \t]+[^\r\n]*$/i.test(s)) return 遮空格头项(s);
+    const 词 = 分词(s);
+    const 首 = 词.find(t => !是分隔符(t));
+    const 管线命令 = 首 !== undefined && 是管线命令(工具词(首));
+    const 换 = 管线命令 ? 内嵌参数替换(词) : new Map<number, string>();
+    if (!管线命令) {
+        for (let 起 = 0; 起 < 词.length;) {
+            let 尾 = 起;
+            while (尾 < 词.length && !是分隔符(词[尾]!)) 尾++;
+            // 只支持不带选项的壳前缀；sudo -u、bash -c 等不在这里猜测。
+            while (起 < 尾 && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(词[起]!.字) || /^(?:env|sudo|time|nohup|command|exec)$/.test(词[起]!.字))) 起++;
+            if (起 < 尾) {
+                const argv = 词.slice(起, 尾).map((t, i) => i === 0 ? 工具词(t) : t.字);
+                for (const [i, 新] of 登录参数替换(argv)) 换.set(起 + i, 新);
+            }
+            起 = 尾 + 1;
+        }
+    }
+    for (let i = 0; i < 词.length; i++) {
+        const t = 词[i]!;
+        if (是分隔符(t) || 换.has(i)) continue;
+        const 新 = 遮空格头项(管线命令 ? 遮内嵌登录(t.字) : t.字, 词[i - 1]?.字);
+        if (新 !== t.字) 换.set(i, 新);
+    }
+    return 写回(s, 词, 换);
+};
 export const 遮密 = (s: string) => 遮文字(遮命令文本(s.slice(0, 4000)));
 /** 逐项遮再拼：argv 已去引号，拼起来就分不清值里的空格和下一项了。 */
 export const 遮命令 = (argv: readonly string[]) => {
     const 换 = 登录参数替换(argv);
+    const 管线命令 = 是管线命令(argv[0] ?? '');
     return argv.map((a, i) => {
         if (换.has(i)) return 换.get(i)!;
         // 这一项本身是 名=值 或 头: 值：认第一个分隔符，后面整项都是值，否则值里的等号会把密钥算进名字。
         const 名部 = /^[^\s=:：]+\s*[=:：]\s*/.exec(a)?.[0];
-        if (名部 && 敏感名.test(名部)) return 名部 + 遮;
-        return /^--?[^=]+$/.test(argv[i - 1] ?? '') && 敏感名.test(argv[i - 1]!) ? 遮 : 遮文字(遮空格头项(a, argv[i - 1]));
+        if (名部 && (敏感名.test(名部) || 名部 === 'SSHPASS=')) return 名部 + 遮;
+        return /^--?[^=]+$/.test(argv[i - 1] ?? '') && 敏感名.test(argv[i - 1]!) ? 遮 : 遮文字(遮空格头项(管线命令 ? 遮内嵌登录(a) : a, argv[i - 1]));
     }).join(' ');
 };
 export const 读发起者 = (env: NodeJS.ProcessEnv = process.env, argv = process.argv, cwd = process.cwd(), git = true): 发起者 => {
