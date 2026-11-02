@@ -9,7 +9,7 @@ process.env.ANIM_DATA = 数据根;
 const 作品根 = path.join(数据根, '假作品');
 vi.mock('../环境/作品.ts', async (原) => ({ ...(await 原<typeof import('../环境/作品.ts')>()), 作品们: () => new Map([['假', 作品根]]), 作品名: () => '假' }));
 
-const { 删旧, 删已取代, 有要删的旧 } = await import('./钉.ts');
+const { 删旧, 删已取代, 扫一键, 有要删的旧 } = await import('./钉.ts');
 const { 检出记号文件 } = await import('../渲/母版.ts');
 const { 本检出 } = await import('../环境/路径.ts');
 const { 规划媒体, 扫媒体, 保留集, 加交付, 加认可 } = await import('./回收.ts');
@@ -39,7 +39,7 @@ const 旧母版 = (o: { 原?: boolean; 压?: boolean; 转过?: boolean; 级别?:
   if (转过) {
     const dir = 段签目录(键, 旧, '假');
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, '签.json'), JSON.stringify({ 指纹: 旧, 母版: { 大小: 40, 转码自: { 大小: 100 } } }));
+    fs.writeFileSync(path.join(dir, '签.json'), JSON.stringify({ 指纹: 旧, 母版: { 大小: 40, 转码自: { 大小: 100, 改于: fs.statSync(path.join(目录(), `${旧16}.mkv`)).mtimeMs } } }));
   }
 };
 const 在 = (后缀: string) => fs.existsSync(path.join(目录(), `${旧16}${后缀}`));
@@ -241,6 +241,16 @@ describe('render 渲完删旧', () => {
   it('删已取代：worktree 里不删', () => {
     旧母版({ 原: true, 转过: true });
     expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: false })).toBe(0);
+    expect(在('.mkv')).toBe(true);
+  });
+
+  it('同一指纹重渲出同样大小的新 CRF1（改于和段签不一样）：还没转，不算已被取代，不删', () => {
+    旧母版({ 原: true, 转过: true });
+    const 原 = path.join(目录(), `${旧16}.mkv`);
+    const 以前 = new Date(现在 - 小时);
+    fs.utimesSync(原, 以前, 以前);
+    expect(扫一键('母版', 键, '假').媒体.find((f) => f.路径 === 原)!.已被取代).toBe(false);
+    expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(0);
     expect(在('.mkv')).toBe(true);
   });
 

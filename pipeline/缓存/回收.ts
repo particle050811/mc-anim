@@ -106,11 +106,14 @@ const 检出记号名 = /^[0-9a-f]{16}\.检出-[0-9a-f]{8}$/;
 /** 同目录里 CRF1 名 ↔ 钉的时候用的逻辑名（压缩母版按同指纹的 CRF1 名找理由） */
 export const 逻辑名 = (路径: string) => (路径.endsWith(压缩后缀) ? 路径.slice(0, -压缩后缀.length) + '.mkv' : 路径);
 
-/** 段签记着这个指纹的压缩母版是从这么大的 CRF1 转的、转出来这么大（只比大小，不读整个文件） */
-export const 段签说已转码 = (段签目录: string, 指纹16: string, 原大小: number, 压缩大小: number) => {
+/**
+ * 段签记着这个指纹的压缩母版是从这份 CRF1 转的、转出来这么大（不读整个文件）。CRF1 要大小、改于都对上：同一指纹重渲出同样大小的新 CRF1 还没转，只比大小会把它当已被取代删掉。
+ * CRF1 被复制过改于也对不上，按没取代算：宁可多留
+ */
+export const 段签说已转码 = (段签目录: string, 指纹16: string, 原: { 大小: number; 改于: number }, 压缩大小: number) => {
   try {
-    const j = JSON.parse(fs.readFileSync(path.join(段签目录, '签.json'), 'utf8')) as { 指纹?: string; 母版?: { 大小?: number; 转码自?: { 大小?: number } } };
-    return !!j.指纹?.startsWith(指纹16) && j.母版?.大小 === 压缩大小 && j.母版?.转码自?.大小 === 原大小;
+    const j = JSON.parse(fs.readFileSync(path.join(段签目录, '签.json'), 'utf8')) as { 指纹?: string; 母版?: { 大小?: number; 转码自?: { 大小?: number; 改于?: number } } };
+    return !!j.指纹?.startsWith(指纹16) && j.母版?.大小 === 压缩大小 && j.母版?.转码自?.大小 === 原.大小 && j.母版?.转码自?.改于 === 原.改于;
   } catch {
     return false;
   }
@@ -180,7 +183,7 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
   for (const f of 这批) {
     if (f.存法 !== 'crf1') continue;
     const 压 = 这批.find((x) => x.存法 === 'x264' && x.指纹 === f.指纹);
-    f.已被取代 = !!压 && 段签说已转码(o.段签目录(键, f.指纹), f.指纹, f.大小, 压.大小);
+    f.已被取代 = !!压 && 段签说已转码(o.段签目录(键, f.指纹), f.指纹, f, 压.大小);
   }
 };
 
