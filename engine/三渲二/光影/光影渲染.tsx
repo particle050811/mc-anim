@@ -370,6 +370,10 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
   const r = useMemo(建资源, []);
   useEffect(() => () => 释放(r), [r]);
   useFrame(({ gl, scene, camera }) => {
+    // 世界矩阵 three 在 gl.render 里才更新，下面摆影子机、摆粒子光先要用：不先更新就拿上一次画的（刚挂上的网格还是单位阵），
+    // 同一帧单独渲和接在别的帧后面渲出来不一样（2-截图下线 第 163 帧逐像素对不上查出来的）
+    scene.updateMatrixWorld();
+    camera.updateMatrixWorld();
     const 参 = 取光影参数(选项.预设);
     const 段 = 选项.时段 ?? 猜时段(色调);
     const 光 = 参[段];
