@@ -19,6 +19,12 @@ const 崩溃行 = 'This crash report has been saved to';
 const 停服异常行 = 'Exception stopping the server';
 export const 停服超时秒 = 300;
 
+/**
+ * 中文 Windows 上 JVM 默认编码是 GBK：管道里的中文（数据包名、模组的话）这边按 UTF-8 解成乱码，核对启用包、核对启动日志都对不上；
+ * 模组读配置、log4j 写 latest.log 也跟着默认编码走，定成 UTF-8 才和 Mac 一样。JDK 17 的管道跟 file.encoding，JDK 19 起另认 stdout.encoding。
+ */
+export const 编码参数 = ['-Dfile.encoding=UTF-8', '-Dstdout.encoding=UTF-8', '-Dstderr.encoding=UTF-8'];
+
 export const java程序 = (名 = 'java') => {
   const home = 配置('java_home');
   return home ? path.join(home, 'bin', isWindows ? `${名}.exe` : 名) : 名;
@@ -170,6 +176,7 @@ export class 服务端 {
     const 端口 = await 空闲端口();
     const 参数 = [
       `-Xmx${o.堆 ?? '12G'}`,
+      ...编码参数,
       ...(o.生成线程 ? [`-Dmax.bg.threads=${o.生成线程}`] : []),
       ...启动参数(o.目录, o.加载器版本),
       // 存档就在服务端目录下时不给 --universe：Forge 的 Main 见到 universe 等于服务端目录会报「Invalid world directory…the same directory as your universe」不起服
