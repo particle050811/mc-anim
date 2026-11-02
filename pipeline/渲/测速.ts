@@ -18,6 +18,7 @@ import { 照段材质包 } from '../资产/资产锁.ts';
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 删打包 } from './打包残留.ts';
 import { 打包 } from './渲.ts';
+import { 光影环境名, type 光影配置 } from './光影试看.ts';
 import { 渲染参数, 等帧超时毫秒 } from './设置.ts';
 import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
 import { 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
@@ -47,7 +48,7 @@ const 浏览器版本 = (可执行: string | undefined) => {
   }
 };
 
-export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别?: 渲染级别; 次?: number; 详细?: boolean; 日志?: string; 关共享内存?: boolean; 浏览器?: string; 不收日志?: boolean; 留输出?: string }): Promise<测速结果> => {
+export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别?: 渲染级别; 次?: number; 详细?: boolean; 日志?: string; 关共享内存?: boolean; 浏览器?: string; 不收日志?: boolean; 留输出?: string; 光影?: 光影配置 }): Promise<测速结果> => {
   const 级别 = opts.级别 ?? '视频';
   const [s] = await 选段([opts.段]);
   if (!s) throw new Error(`没有段 ${opts.段}`);
@@ -62,7 +63,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
   const remotion = (createRequire(path.join(代码根(), 'package.json'))('remotion/package.json') as { version: string }).version;
   try {
     let t = Date.now();
-    const serveUrl = await 照段材质包(作品根(), s.键, () => 打包());
+    const serveUrl = await 照段材质包(作品根(), s.键, () => 打包(undefined, undefined, { 光影: !!opts.光影 }));
     const 打包秒 = (Date.now() - t) / 1000;
     t = Date.now();
     const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 前期日志, browserExecutable: opts.浏览器 ?? null });
@@ -92,7 +93,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
       for (let i = 0; i < (opts.次 ?? 1); i++) {
         if (opts.留输出) fs.mkdirSync(opts.留输出, { recursive: true });
         const out = path.join(opts.留输出 ?? os.tmpdir(), `mc-anim-测速-${process.pid}-${i}.mkv`);
-        const 标签 = `bench:${作品名()}/${s.键}:${级别}`;
+        const 标签 = `bench:${作品名()}/${s.键}:${级别}${opts.光影 ? `:光影-${opts.光影.名}` : ''}`;
         const 排队起=Date.now();
         await 过渲染闸(async () => {
           const t0 = Date.now();
@@ -101,7 +102,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           let 共享内存 = false;
           const 明细 = new 明细收集(标签, 帧[0]);
           const 跑 = () => renderMedia({
-              serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, envVariables: 段渲染环境(s.键, 段现在的地形(s)), puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
+              serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, envVariables: { ...段渲染环境(s.键, 段现在的地形(s)), ...(opts.光影 ? { [光影环境名]: opts.光影.值 } : {}) }, puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
               codec: 参数.codec, audioCodec: 参数.audioCodec, enforceAudioTrack: 参数.enforceAudioTrack, crf: 参数.crf, x264Preset: 参数.x264Preset,
               imageFormat: 参数.imageFormat, jpegQuality: 参数.jpegQuality, scale: 参数.scale, concurrency: 参数.concurrency,
               timeoutInMilliseconds: 等帧超时毫秒, overwrite: true, logLevel: 渲染日志, frameRange: 帧,

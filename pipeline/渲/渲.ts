@@ -13,6 +13,7 @@ import { getCompositions, openBrowser, renderFrames, renderMedia, renderStill, t
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
+import { 光影环境名, 套光影试看, type 光影配置 } from './光影试看.ts';
 import { 稳定缓存名 } from '../资产/缓存名.ts';
 import { 过渲染闸, 登记临时文件 } from '../闸/闸.ts';
 import { 叠层键, 算全部段指纹, type 段指纹 } from '../指纹/指纹.ts';
@@ -43,7 +44,8 @@ import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 export const 渲染标签 =(键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 
-export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`) => {
+/** 光影：换上光影试看画布（光影试看.ts，只给 still、bench） */
+export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`, o: { 光影?: boolean } = {}) => {
   const 根 = 作品根();
   const 缺目录 = 缺的注册目录(根);
   if (缺目录.length) throw new Error(缺目录.map((d) => 缺目录提示(相对代码根(根), d)).join('\n'));
@@ -58,7 +60,7 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
   const serveUrl = await bundle({
     entryPoint: path.join(作品根(), 'index.ts'),
     rootDir: 代码根(),
-    webpackOverride: 稳定缓存名(补缺字节占位(webpack改写(根), 根)),
+    webpackOverride: 稳定缓存名(补缺字节占位(o.光影 ? 套光影试看(webpack改写(根)) : webpack改写(根), 根)),
     enableCaching: true,
     publicDir: 备好public目录(),
     // public 里只有指向数据根的链接，转发进包是预期的
@@ -73,7 +75,7 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
 type 会话 = { serveUrl: string; browser: HeadlessBrowser; 参数: 渲染参数表; 组合: Awaited<ReturnType<typeof getCompositions>> };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承 */
-export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录): Promise<T> => {
+export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: { 光影?: boolean } = {}): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {
@@ -83,7 +85,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const 标签 = `会话:${作品名()}:${级别}`;
   const 收 = 记录?.阶段;
   const 起 = 收?.length ?? 0;
-  const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签));
+  const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签, 打包选项));
   let browser: HeadlessBrowser | undefined;
   try {
     browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
@@ -407,20 +409,20 @@ export const 同页出帧 = (
     onFrameBuffer: o.每帧,
   });
 
-export const 静帧文件 = (出到: string, 段键: string, 帧: number) => path.join(出到, `${段键}-第${String(帧).padStart(4, '0')}帧.png`);
+export const 静帧文件 = (出到: string, 段键: string, 帧: number, 后缀 = '') => path.join(出到, `${段键}-第${String(帧).padStart(4, '0')}帧${后缀}.png`);
 
 /**
  * 多帧默认同页连出（第一帧之后不用从头读地形）；逐帧 = 每帧一个新页面，等于旧做法。两边文件名一样，已有的文件都不覆盖。
  * 用户 10-31 定做连出。同一帧单出和连出已知的例外见 连出提醒（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。
  */
-export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参数'>, composition: 会话['组合'][number], 段键: string, 帧们: readonly number[], 出到: string, o: { 逐帧?: boolean; 环境: Record<string, string>; 完成: (已出: number) => void }) => {
+export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参数'>, composition: 会话['组合'][number], 段键: string, 帧们: readonly number[], 出到: string, o: { 逐帧?: boolean; 环境: Record<string, string>; 完成: (已出: number) => void; 后缀?: string }) => {
   if (帧们.length > 1 && !o.逐帧) {
     let 已出 = 0;
     await 同页出帧(h, composition, 帧们, {
       打开声音: false,
       环境: o.环境,
       每帧: (png, f) => {
-        fs.writeFileSync(静帧文件(出到, 段键, f), png, { flag: 'wx' });
+        fs.writeFileSync(静帧文件(出到, 段键, f, o.后缀), png, { flag: 'wx' });
         o.完成(++已出);
       },
     });
@@ -430,7 +432,7 @@ export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参
     await renderStill({
       serveUrl: h.serveUrl,
       composition,
-      output: 静帧文件(出到, 段键, f),
+      output: 静帧文件(出到, 段键, f, o.后缀),
       frame: f,
       inputProps: h.参数.inputProps,
       envVariables: o.环境,
@@ -453,7 +455,8 @@ export const 连出提醒 = (段键: string, 帧们: readonly number[], 逐帧?:
     : null;
 
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
-export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录, o: { 逐帧?: boolean } = {}) => {
+/** 光影：每份配置各出一遍这几帧，文件名带「-光影-<名>」（光影试看.ts） */
+export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录, o: { 逐帧?: boolean; 光影?: 光影配置[] } = {}) => {
   const 要出 = [...new Set(帧们)];
   const 提醒 = 连出提醒(s.键, 要出, o.逐帧);
   if (提醒) 记录?.记('警告', 提醒);
@@ -470,12 +473,20 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 收 = 记录?.阶段;
       const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
       const 明细 = new 明细收集(标签);
-      await 明细.包(() => 出静帧们(h, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境: 段渲染环境(s.键, 段现在的地形(s)), 完成: (已出) => 明细.帧完成(已出) }));
+      const 环境 = 段渲染环境(s.键, 段现在的地形(s));
+      if (!o.光影) await 明细.包(() => 出静帧们(h, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境, 完成: (已出) => 明细.帧完成(已出) }));
+      else {
+        const 们 = o.光影;
+        await 明细.包(async () => {
+          for (const [i, c] of 们.entries())
+            await 出静帧们(h, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境: { ...环境, [光影环境名]: c.值 }, 后缀: `-光影-${c.名}`, 完成: (已出) => 明细.帧完成(i * 要出.length + 已出) });
+        });
+      }
       await 记已量帧(s.键, 要出);
       const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
       await 明细.写出(收 ?? []);
       console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
     }, undefined, {}, {种:'still',作品:作品名(),段:s.键,级别,帧数:要出.length,帧:要出.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
-  }, 记录));
-  return 要出.map((f) => 静帧文件(出到, s.键, f));
+  }, 记录, { 光影: !!o.光影 }));
+  return o.光影 ? o.光影.flatMap((c) => 要出.map((f) => 静帧文件(出到, s.键, f, `-光影-${c.名}`))) : 要出.map((f) => 静帧文件(出到, s.键, f));
 };

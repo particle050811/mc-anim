@@ -9,7 +9,7 @@ import { 门口小木屋 } from '../../地点/门口小木屋.tsx';
 import { 描边 as 描边默认 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 取景 as 默认取景, 天色, 正交顶面, 白天刻, 默认天弧, 群系 } from './参数.ts';
-import type { 门口画布属性 } from './门口.tsx';
+import { 门口光影, type 门口画布属性 } from './门口.tsx';
 
 const 乘色 = (hex: string, k: number) => {
   const n = parseInt(hex.slice(1), 16);
@@ -39,6 +39,7 @@ export const 林间门口画布: React.FC<林间门口画布属性> = ({
   children,
   生长 = 1,
   群系: 群 = 群系,
+  光影,
   ...屋
 }) => {
   if (宽 % 2 || 高 % 2) throw new Error(`林间门口画布的宽高要是偶数：${宽}×${高}`);
@@ -47,21 +48,23 @@ export const 林间门口画布: React.FC<林间门口画布属性> = ({
   const 色调 = 乘色(t.色调, 亮度);
   const 铺满: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: 宽, height: 高 };
   return (
-    <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden' }}>
-      <侧剖面天空 取景={取景} 宽={宽} 高={高} 色={天色} 刻={刻} 弧={天体弧} 明暗幅度={明暗幅度} 残影={残影} />
-      <林间背景 宽={宽} 高={高} 取景={取景} 顶面={顶面} 色调={色调} 雾色={天色.地平} 生长={生长} 群系={群} />
-      <三渲二画布
-        宽={宽}
-        高={高}
-        机位={侧机位(取景, 顶面)}
-        色调={色调}
-        描边={描边默认.开 ? { 宽: 描边宽, 色: t.描边 } : false}
-        style={铺满}
-      >
-        <门口小木屋 {...屋} 群系={群} />
-        {children}
-      </三渲二画布>
-      {叠层}
-    </div>
+    <门口光影 光影={光影}>
+      <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden' }}>
+        <侧剖面天空 取景={取景} 宽={宽} 高={高} 色={天色} 刻={刻} 弧={天体弧} 明暗幅度={明暗幅度} 残影={残影} />
+        <林间背景 宽={宽} 高={高} 取景={取景} 顶面={顶面} 色调={色调} 雾色={天色.地平} 生长={生长} 群系={群} />
+        <三渲二画布
+          宽={宽}
+          高={高}
+          机位={侧机位(取景, 顶面)}
+          色调={色调}
+          描边={描边默认.开 ? { 宽: 描边宽, 色: t.描边 } : false}
+          style={铺满}
+        >
+          <门口小木屋 {...屋} 群系={群} />
+          {children}
+        </三渲二画布>
+        {叠层}
+      </div>
+    </门口光影>
   );
 };

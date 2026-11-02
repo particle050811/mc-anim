@@ -11,6 +11,7 @@ import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 归隐歌词, 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
 import { 摇铃画面, 摇铃调子 } from '../../场/2-门口/摇铃.tsx';
+import { 光影段 } from '../../默认.ts';
 import 段 from './段.ts';
 import 铃url from 'asset:音效/万法皆通/wind_seeking_bell';
 import 风url from 'asset:音效/item.elytra.flying';
@@ -29,6 +30,7 @@ const 画面: React.FC = () => {
       <摇铃画面
         帧={帧}
         种子={旧帧号(f)}
+        光影={光影段['2-摇铃']}
         叠层={
           <>
             <符文歌词 行们={歌词.上行们} 样式={{ ...符文歌词默认, 描边色: 摇铃调子(帧).描边 }} />

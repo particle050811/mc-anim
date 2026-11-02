@@ -12,6 +12,7 @@ import { clamp01, rad } from '@engine/anim/anim.ts';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
+import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 插调子, type 调色 } from '@engine/三渲二/调子.ts';
 import { standPose } from '@库/角色/骨架.tsx';
@@ -168,9 +169,11 @@ export type 归隐画面属性 = {
   种子?: number;
   /** 盖在最上面、整页质感里面的东西（符文歌词），页面坐标 1280×720 */
   叠层?: React.ReactNode;
+  /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只开她那边（门口），现实那边不开（见 门口.tsx 的 门口画布）；不给 = 不开 */
+  光影?: 光影选项 | null;
 };
 
-export const 归隐画面: React.FC<归隐画面属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 种子, 叠层 }) => {
+export const 归隐画面: React.FC<归隐画面属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 种子, 叠层, 光影 }) => {
   const 秒 = 帧 / fps;
   const 她态 = 她于(帧);
   const 线 = 分屏线x(秒);
@@ -201,6 +204,7 @@ export const 归隐画面: React.FC<归隐画面属性> = ({ 帧, 描边 = 描�
             刻={白天刻}
             弧={整屏弧}
             调子={左调}
+            光影={光影}
             门开
             树进度={1}
             告示牌

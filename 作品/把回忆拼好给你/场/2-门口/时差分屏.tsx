@@ -15,6 +15,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { 描边 as 描边组 } from '@engine/三渲二/描边.tsx';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
+import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
 import type { 调色 } from '@engine/三渲二/调子.ts';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx } from '@库/角色/魔法酒狐新动作组件.tsx';
@@ -96,9 +97,11 @@ export type 时差分屏属性 = {
   种子?: number;
   /** 盖在两屏和分屏线上面、整页质感里面的东西（符文歌词），页面坐标 1280×720 */
   叠层?: React.ReactNode;
+  /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只开服务器那半（门口，太阳照 参数.ts 的 白天光影场），现实那半不开（同 归隐.tsx）；不给 = 不开 */
+  光影?: 光影选项 | null;
 };
 
-export const 时差分屏: React.FC<时差分屏属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 她: 盖, 接入 = false, 种子, 叠层 }) => {
+export const 时差分屏: React.FC<时差分屏属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 她: 盖, 接入 = false, 种子, 叠层, 光影 }) => {
   const 态 = 分屏态(帧);
   const 偏 = 接入 ? 成形偏于(帧) : 0;
   const { 服务器宽, 现实宽, 线宽, 线色 } = 分屏版式;
@@ -151,6 +154,7 @@ export const 时差分屏: React.FC<时差分屏属性> = ({ 帧, 描边 = 描�
         弧={null}
         调子={服务器调子}
         生长={态.生长}
+        光影={光影}
       >
         <方块拼搭 方块们={树} 原点={格原点} 群系={群系} 正面花草 />
         {偏 ? <方块拼搭 方块们={补地} 原点={格原点} 群系={群系} /> : null}
