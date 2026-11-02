@@ -9,7 +9,6 @@
 // 三渲二透视（平涂、不抗锯齿、不描边）、归隐之地的调子、门光色调，外面整片后期；叠层（樱花风、歌词）由段传进来，放在整片后期里面。
 // 手画在另一张三渲二画布上（原版手那一遍：竖直视角固定 70、不跟视角设置和推镜走），同样平涂。
 import type React from 'react';
-import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
@@ -19,7 +18,7 @@ import { SteveFirstPersonArm } from '@库/角色/史蒂夫第一人称.tsx';
 import { magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
 import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
-import { CAKE } from '@库/物品/蛋糕.tsx';
+import { 方块显示, 蛋糕方块 } from '@库/物品/蛋糕方块.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
 import { fps, 画幅, 正片事件 } from '../../分镜.ts';
 import { 画布调子 } from '../../画风.ts';
@@ -75,6 +74,7 @@ const 场景: React.FC<{ 帧: number; 秒: number; 眼: V3 }> = ({ 帧, 秒, 眼
 );
 
 // 手：右键在第 0 刻；换上蛋糕在右键前 8 刻（分镜的 换上蛋糕）；第 1 刻蛋糕被吃掉，手降下去（同 1-一如既往）。
+// 手里是立体的蛋糕方块、照拿方块的第一人称拿法（用户 11-02 要；1-一如既往 还是原版的平面图）。
 // 只画拿着蛋糕的那一截：对视那一帧不画手（对视.tsx 文件头：空手的右臂会压在她身上），蛋糕吃掉以后空手的右臂也不升上来（不压她的笑脸，前后一致）
 const 换上蛋糕刻 = Math.round((事.换上蛋糕.秒 - 事.递蛋糕右键.秒) * 20);
 const 手剧本: HandScript = { start: null, swings: [0], changes: [{ tick: 换上蛋糕刻, to: '蛋糕' }, { tick: 1, to: null }] };
@@ -92,7 +92,7 @@ const 手: React.FC<{ 帧: number }> = ({ 帧 }) => {
       style={{ position: 'absolute', left: 0, top: 0 }}
     >
       <group rotation={[Math.PI / 2, 0, 0]}>
-        <FirstPersonHand held={<ItemSprite layers={CAKE} emissive={0} shadow={false} />} arm={<SteveFirstPersonArm />} swing={h.swing} equip={h.equip} />
+        <FirstPersonHand held={<蛋糕方块 />} display={方块显示.firstperson_righthand} arm={<SteveFirstPersonArm />} swing={h.swing} equip={h.equip} />
       </group>
     </三渲二画布>
   );

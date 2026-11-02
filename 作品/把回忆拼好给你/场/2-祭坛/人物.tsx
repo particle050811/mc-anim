@@ -1,4 +1,4 @@
-// 第 3 句的两个人：你（史蒂夫，站在她右前方，右手远景里拿御币、切到近景已经拿着蛋糕，每次右键挥一下手）和她（现身就站在圈心看着你的眼睛，
+// 第 3 句的两个人：你（史蒂夫，站在她右前方，右手远景里拿御币、切到近景已经拿着蛋糕（立体蛋糕方块，用户 11-02 要），每次右键挥一下手）和她（现身就站在圈心看着你的眼睛，
 // 推眼睛那一拍稍后转过来正对镜头，最后一帧是 末态.ts 的 末她）。
 // 拿御币点祭坛是演绎（三稿）：原版放上最后一样材料就自动合成，御币只用来搭祭坛，见 编排.ts 的 点击帧们。
 // 挥手照原版 HumanoidModel.setupAttackAnimation（1.20.1，attackTime 0～1，6 刻挥完），叠在 库/角色/史蒂夫.tsx 的 steveParts 算好的部件上；
@@ -6,12 +6,12 @@
 import React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
 import { EntityModel, type PartPose } from '@engine/model/实体模型.tsx';
-import { DISPLAY, HeldItem, ItemSprite } from '@engine/model/物品贴图.tsx';
+import { HeldItem } from '@engine/model/物品贴图.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { MagicalWineFoxEx, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { STEVE_MODEL, STEVE_SKIN, steveLookAt, steveParts, stevePose, steveRootMatrix, type StevePose } from '@库/角色/史蒂夫.tsx';
-import { CAKE } from '@库/物品/蛋糕.tsx';
+import { 方块显示, 蛋糕方块 } from '@库/物品/蛋糕方块.tsx';
 import { 御币, 御币显示 } from './模型.tsx';
 import * as 参 from './参数.ts';
 import { 你朝向, 你看, 你眼, 她编排, 手里, 挥手进度, 秒 } from './编排.ts';
@@ -58,8 +58,8 @@ export const 你: React.FC<{ g: number }> = ({ g }) => {
     );
   if (拿 === '蛋糕')
     attach.right_arm = (
-      <HeldItem t={DISPLAY.generated.thirdperson_righthand}>
-        <ItemSprite layers={CAKE} />
+      <HeldItem t={方块显示.thirdperson_righthand}>
+        <蛋糕方块 />
       </HeldItem>
     );
   return (
