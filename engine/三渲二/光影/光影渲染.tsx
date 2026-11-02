@@ -17,7 +17,7 @@ import { Atmosphere, atmoUniforms, atmosphere } from '../../light/大气.ts';
 import { PhotonClouds, drawPhotonClouds } from '../../light/大气/云.ts';
 import { png } from '../../model/贴图.ts';
 import type { MidPassContext } from '../../voxel/中间步骤.ts';
-import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
+import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 最多粒子光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 取光影参数, type 光影选项, type 时段, type 时段光 } from './预设.ts';
 
 /** 影子图边长（纹素） */
@@ -52,8 +52,10 @@ const 取变体 = (m: THREE.Material, u: 光影统一量): THREE.Material | null
     const 种 = 平涂受光(m) ? '' : 是粒子材质(m) ? '粒子' : (m as THREE.MeshBasicMaterial).isMeshBasicMaterial ? '水' : null;
     if (种 !== null) {
       const v = m.clone();
-      // 粒子的 uniform 每帧在原材质上改（贴图），变体和它共用同一份；粒子的变体只用来画泛光源，透明的也照加色叠
-      if (种 === '粒子') Object.assign(v, { uniforms: (m as THREE.ShaderMaterial).uniforms, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true });
+      // 粒子的 uniform 每帧在原材质上改（贴图），变体和它共用同一份；粒子的变体只用来画泛光源。叠在一起的取最亮的（同画面里看得到的那一个），
+      // 不加起来：加起来密的一团（照片里缩小的烟花）会叠成一大团白
+      if (种 === '粒子')
+        Object.assign(v, { uniforms: (m as THREE.ShaderMaterial).uniforms, blending: THREE.CustomBlending, blendEquation: THREE.MaxEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, depthTest: false, depthWrite: false, transparent: true });
       v.userData.光影 = true;
       v.onBeforeCompile = (shader, renderer) => {
         m.onBeforeCompile(shader, renderer);
@@ -143,6 +145,12 @@ const 建资源 = () => {
     sunMin: { value: new THREE.Vector2() },
     sunN: { value: 1 },
     haloCol: { value: new THREE.Color() },
+    zenCol: { value: new THREE.Color() },
+    zenK: { value: 0 },
+    zenH: { value: 0.6 },
+    glowCell: { value: 0 },
+    glowOff: { value: new THREE.Vector2() },
+    res: { value: new THREE.Vector2(1, 1) },
   });
   return { u, 影, 影机, 主, 深, 云, 对数深, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 太阳图: 建太阳图() };
 };
@@ -294,6 +302,56 @@ const 收粒子 = (scene: THREE.Scene) => {
   return 们;
 };
 
+/** 粒子照亮的光源：粒子按 并格 格见方的格子并成团（颜色 × 不透明度加起来、位置按亮度平均），取最亮的几团。
+ *  一团的颜色 = 平均颜色 × 强 × √(粒子数 / 满团)，封到 满团 个粒子：火花多的一团亮一些，但不按个数线性翻上去 */
+const 并格 = 6;
+const 满团 = 60;
+const 摆粒子光 = (u: 光影统一量, 们: THREE.Mesh[], 半径: number, 强: number) => {
+  const 团 = new Map<string, { p: THREE.Vector3; c: THREE.Color; w: number; n: number }>();
+  const v = new THREE.Vector3();
+  for (const m of 们) {
+    const g = m.geometry as THREE.InstancedBufferGeometry;
+    const pc = g.getAttribute('iCenter') as THREE.BufferAttribute | undefined;
+    const cc = g.getAttribute('iColor') as THREE.BufferAttribute | undefined;
+    if (!pc || !cc) continue;
+    for (let i = 0; i < g.instanceCount; i++) {
+      const a = cc.getW(i);
+      if (a <= 0) continue;
+      v.fromBufferAttribute(pc, i).applyMatrix4(m.matrixWorld);
+      const k = `${Math.floor(v.x / 并格)},${Math.floor(v.y / 并格)},${Math.floor(v.z / 并格)}`;
+      const e = 团.get(k) ?? 团.set(k, { p: new THREE.Vector3(), c: new THREE.Color(0, 0, 0), w: 0, n: 0 }).get(k)!;
+      const r = cc.getX(i) * a, gg = cc.getY(i) * a, b = cc.getZ(i) * a;
+      const l = r * 0.2126 + gg * 0.7152 + b * 0.0722 + 1e-4;
+      e.p.addScaledVector(v, l);
+      e.w += l;
+      e.c.r += r;
+      e.c.g += gg;
+      e.c.b += b;
+      e.n += a;
+    }
+  }
+  const 排 = [...团.values()].sort((x, y) => y.w - x.w).slice(0, 最多粒子光);
+  u.gyFlashN.value = 排.length;
+  u.gyFlashR.value = 半径;
+  排.forEach((e, i) => {
+    u.gyFlashPos.value[i]!.copy(e.p).divideScalar(e.w);
+    u.gyFlashCol.value[i]!.copy(e.c).multiplyScalar((强 / e.n) * Math.sqrt(Math.min(e.n, 满团) / 满团));
+  });
+};
+
+/** 像素格光晕的格子（画布像素）和格线起点：正交镜头取 1/16 格在屏幕上的大小、格线对上世界原点；透视镜头按 6 个成片像素 */
+const 光晕格 = (camera: THREE.Camera, w: number, h: number, 成片宽: number, out: THREE.Vector2) => {
+  const o = camera as THREE.OrthographicCamera;
+  if (!o.isOrthographicCamera) {
+    out.set(0, 0);
+    return Math.max(1, Math.round((6 * w) / 成片宽));
+  }
+  const n = ((h / ((o.top - o.bottom) / o.zoom)) / 16);
+  const p = new THREE.Vector3(0, 0, 0).project(camera);
+  out.set((((p.x + 1) / 2) * w) % n, (((p.y + 1) / 2) * h) % n);
+  return n;
+};
+
 const 设尺寸 = (rt: THREE.WebGLRenderTarget, w: number, h: number) => {
   if (rt.width !== w || rt.height !== h) rt.setSize(w, h);
 };
@@ -307,7 +365,8 @@ export type 光影渲染属性 = {
 
 export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) => {
   // 水面波纹的时间取画面秒数（每帧单独算）
-  const 秒 = useCurrentFrame() / useVideoConfig().fps;
+  const { fps, width: 成片宽 } = useVideoConfig();
+  const 秒 = useCurrentFrame() / fps;
   const r = useMemo(建资源, []);
   useEffect(() => () => 释放(r), [r]);
   useFrame(({ gl, scene, camera }) => {
@@ -337,6 +396,13 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const 画云 = 画天 && 选项.云?.样式 === 'Photon体积' && atmosphere.clouds !== null;
     u.gyAtmoOn.value = 画天 ? 1 : 0;
     u.gyAtmoSky.value = atmosphere.sky;
+    const 顶 = 选项.天顶;
+    sRGB乘数(u.gyZenCol.value, 顶?.色 ?? '#000000');
+    u.gyZenK.value = 顶 ? 顶.拉 : 0;
+    u.gyZenH.value = Math.sin(((顶?.高 ?? 38) * Math.PI) / 180);
+    const 粒子们 = 光.粒子晕 > 0 || 选项.粒子照亮 ? 收粒子(scene) : [];
+    u.gyFlashN.value = 0;
+    if (选项.粒子照亮 && 光.粒子照.强 > 0) 摆粒子光(u, 粒子们, 光.粒子照.半径, 光.粒子照.强);
 
     const 背景 = scene.background;
     const 清透明 = gl.getClearAlpha();
@@ -379,8 +445,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     还原.forEach((f) => f());
 
     // 3. 泛光
-    const 粒子们 = 光.粒子晕 > 0 ? 收粒子(scene) : [];
-    if (粒子们.length) {
+    if (光.粒子晕 > 0 && 粒子们.length) {
       设尺寸(r.粒源, w, h);
       u.gyDepth.value = r.主.depthTexture;
       const 藏: THREE.Object3D[] = [];
@@ -478,6 +543,11 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     sRGB乘数(cu.darkTint!.value as THREE.Color, 参.调色.暗色);
     sRGB乘数(cu.lightTint!.value as THREE.Color, 参.调色.亮色);
     cu.split!.value = 参.调色.分离;
+    (cu.zenCol!.value as THREE.Color).copy(u.gyZenCol.value);
+    cu.zenK!.value = u.gyZenK.value;
+    cu.zenH!.value = u.gyZenH.value;
+    (cu.res!.value as THREE.Vector2).set(w, h);
+    cu.glowCell!.value = 选项.光晕 === '像素格' ? 光晕格(camera, w, h, 成片宽, cu.glowOff!.value as THREE.Vector2) : 0;
     gl.setClearColor(r.清色, 清透明);
     gl.setRenderTarget(null);
     gl.clear(true, true, true);
