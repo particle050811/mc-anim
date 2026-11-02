@@ -244,6 +244,20 @@ describe('后台转存', () => {
     }
   });
 
+  it('CRF1 改名那一刻 .用过 已经在：闸外别的 render 的 删旧 挡得住刚改名的这份', async () => {
+    态.组合们 = [组合('钉甲')];
+    const 原 = 原母版路径('钉甲', 指纹名);
+    const 用过 = path.join(path.dirname(原), `${指纹名.slice(0, 16)}.用过`);
+    const 真改名 = fs.renameSync;
+    let 改名时有: boolean | null = null;
+    vi.spyOn(fs, 'renameSync').mockImplementation((a, b) => {
+      if (b === 原) 改名时有 = fs.existsSync(用过);
+      真改名(a, b);
+    });
+    await 渲染母版([段('钉甲')], '视频', { 记录: 记录(), 重渲: true });
+    expect(改名时有).toBe(true);
+  });
+
   it('ANIM_INLINE_TRANSCODE=1：不走后台，还在闸里当场做', async () => {
     态.组合们 = [组合('内联')];
     const 跑 = vi.fn();

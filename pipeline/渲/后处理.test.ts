@@ -97,4 +97,10 @@ describe.skipIf(!有ffmpeg)('后处理一段', () => {
     expect(await 后处理一段(参数('抢走'), h)).toEqual({ 母版: 压, 结局: '别人转了' });
     expect(h.警告们).toEqual([]);
   });
+
+  it('CRF1 和压缩母版都没了：警告要重渲，算丢了，不抛', async () => {
+    const h = 钩();
+    expect(await 后处理一段(参数('丢'), h)).toEqual({ 母版: null, 结局: '丢了' });
+    expect(h.警告们.join()).toMatch(/丢 的 CRF1 不见了.*要重渲/);
+  });
 });

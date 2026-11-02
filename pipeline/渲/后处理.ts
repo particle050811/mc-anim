@@ -21,7 +21,8 @@ export type 后处理参数 = {
   /** 阶段表里记在哪个标签下（render:<作品>/<段>:<级别>） */
   标签: string;
 };
-export type 后处理结局 = '压缩' | '留CRF1' | '别人转了';
+/** 丢了：CRF1 和压缩母版都没了（被 gc 或别的任务删了），这段要重渲 */
+export type 后处理结局 = '压缩' | '留CRF1' | '别人转了' | '丢了';
 export type 后处理结果 = { 母版: string | null; 结局: 后处理结局 };
 export type 后处理钩子 = {
   收: 阶段记录[];
@@ -35,7 +36,12 @@ export const 后处理一段 = async (p: 后处理参数, h: 后处理钩子): P
   const 原 = 原母版路径(键, 指纹, 作品);
   const 结果 = await 占着(键, 指纹, 作品, async (): Promise<后处理结果> => {
     // 等占用的这会儿 film 的 备好母版 可能已经转完删了
-    if (!fs.existsSync(原)) return { 母版: 现母版(键, 指纹, 作品), 结局: '别人转了' };
+    if (!fs.existsSync(原)) {
+      const 现 = 现母版(键, 指纹, 作品);
+      if (现) return { 母版: 现, 结局: '别人转了' };
+      h.记录.记('警告', `${键} 的 CRF1 不见了，压缩母版也没有（被 gc 或别的任务删了？）：这段要重渲`);
+      return { 母版: null, 结局: '丢了' };
+    }
     const 当时 = fs.statSync(原);
     const t1 = Date.now();
     let 有段签 = false;
