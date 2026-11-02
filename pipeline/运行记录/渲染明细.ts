@@ -124,6 +124,7 @@ export class 明细收集 {
   private 上次 = 0;
   private 上次帧数 = 0;
   private 起 = Date.now();
+  private 止: number | null = null;
   private 票 = 当前票();
   private 定时: NodeJS.Timeout | null = null;
   private 采样中: Promise<unknown>[] = [];
@@ -182,6 +183,11 @@ export class 明细收集 {
     }
   }
 
+  /** 写出 要等后台收工才调（阶段才齐），总秒按这一刻算：后台排队不算这次渲染 */
+  停表(now = Date.now()) {
+    this.止 = now;
+  }
+
   /** 写出明细文件；写不成只提示，不影响渲染 */
   async 写出(阶段: readonly 阶段记录[], 环境: Record<string, string> = {}, 目录 = 明细目录()): Promise<{ 文件: string | null; 明细: 渲染明细 }> {
     await Promise.allSettled(this.采样中);
@@ -190,7 +196,7 @@ export class 明细收集 {
       票:this.票,
       标签: this.标签,
       开始: new Date(this.起).toISOString().replace(/\.\d+Z$/, 'Z'),
-      总秒: Number(((Date.now() - this.起) / 1000).toFixed(2)),
+      总秒: Number((((this.止 ?? Date.now()) - this.起) / 1000).toFixed(2)),
       主机: 配置('主机'),
       平台: `${process.platform}-${process.arch}`,
       环境,
