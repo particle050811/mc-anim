@@ -10,8 +10,8 @@
 - `pipeline/`：`anim` 的实现（环境、闸、指纹、渲、合成、剪辑包、适配器、检查）。`py/anim_py/`：Python 叶子工具。`wasm/`：编成 WASM 的源码（`anim world 解码器`）
 - `sourcing/`：取材 mod、mcai、世界声明、jar 和提取配方
 - `assets/registry/*.toml`：资产表（人写）；`assets/资产锁.json`：工具生成，不手改
-- 数据根 `../mc-anim-data/`（环境变量 `ANIM_DATA`，Git 外，各 worktree 共用这一份）：`store/ 私有/ terrain/ cache/ game/ 基线/ 交付/ archive/ run/`，缓存、交付按作品分子目录
-- `预览/`：在主检出下，不进 Git；worktree 里生成的预览也写回主检出。Agent 自己看的中间稿，主题以「工作-」开头，`anim` 写到数据根 `run/草稿/`，不进 `预览/`（用户 10-24 定）
+- 数据根 `../mc-anim-data/`（环境变量 `ANIM_DATA`，Git 外，各 worktree 共用这一份）：`store/ 私有/ terrain/ cache/ game/ 基线/ 交付/ 发布/ archive/ run/`，缓存、交付按作品分子目录。发 B 站、抖音的那版成片（连封面、标题简介）单独放 `发布/<作品>/`，只放平台上现在那版，换源整夹换掉（用户 11-02 定）
+- `预览/`：在主检出下，不进 Git；worktree 里生成的预览也写回主检出。Agent 自己看的中间稿，主题以「工作-」开头，`anim` 写到数据根 `run/草稿/`，不进 `预览/`（用户 10-24 定）。预览里冗余的自动删（用户 11-02 定）：`anim preview new` 每次顺手清，超过 3 天的夹只留文字挪进数据根 `archive/预览/`（同名），图、视频、声音删掉，Git 管的文件按完整路径引用的照留；仓库里引用的 `预览/<夹>` 不在主检出就去那里找
 - 路径语言：结构层（顶层目录、固定层级）用英文 ASCII；场、段、资产 id、台词 id、角色名用中文
 
 ## 常用命令（Mac/Linux 用 `anim`，Windows 用 `anim.cmd`；以 `anim help` 为准）
@@ -24,7 +24,7 @@ anim render <选择器> --重渲 --留CRF1        渲完留下 CRF1（verify --�
 anim still <段> <帧…> --到预览 <主题> [--逐帧]（多帧默认同页连出，要逐像素比用 --逐帧）      anim stale [<选择器>] [--严格]     anim bench <段> [--帧 a-b]     anim 耗时 [<段>] [--最近 n]（每次渲染的阶段、每帧、等待、机器负载）
 anim verify [<段>] [--对基线 [--渲]]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
 anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   每帧 PNG 的 sha 存到 run/逐帧校验/<作品>/<名>/<段键>.tsv，再渲一次（照基准存的帧连着渲）列出不同的帧；不写母版，不碰段签和认可
-anim film <范围>  |  anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题>
+anim film <范围>  |  anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
 anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（0005）、挂 Release 发的字节和地形包（0006）
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）

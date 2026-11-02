@@ -8,6 +8,7 @@ import { 取样动画, 取样骨骼, 播放到, 推进, 开始播放, 混合层,
 import { magicalWineFoxBlink, magicalWineFoxBlinkBones, magicalWineFoxFace, magicalWineFoxTail } from '@库/角色/魔法酒狐动作.ts';
 import { magicalWineFoxBoatBones } from '@库/角色/魔法酒狐坐船.ts';
 import { magicalWineFoxBreath } from '@库/角色/魔法酒狐新动作.ts';
+import { fps } from '../../分镜.ts';
 import { 尾巴稳态变量 } from './尾巴稳态.ts';
 
 // 魔法酒狐.tsx 顶上 import 了模型和贴图资产（打包时由 webpack 内联），测试里换成 store 里的字节
@@ -48,8 +49,8 @@ const 比姿势 = (位置: string, 手: 骨骼姿势 | undefined, 播: 骨骼姿
 const 是原位 = (p: 骨骼姿势) =>
   (!p.rot || p.rot.every((x) => x === 0)) && (!p.pos || p.pos.every((x) => x === 0)) && (p.scale === undefined || 三(p.scale).every((x) => x === 1));
 
-// 采样时间：每帧（24 fps）30 秒，加一组不和关键帧对齐的
-const 时刻们 = [...Array.from({ length: 24 * 30 + 1 }, (_, i) => i / 24), ...Array.from({ length: 400 }, (_, i) => i * 0.0731 + 0.003)];
+// 采样时间：本作品每帧（分镜.ts 的 fps）30 秒，加一组不和关键帧对齐的
+const 时刻们 = [...Array.from({ length: fps * 30 + 1 }, (_, i) => i / fps), ...Array.from({ length: 400 }, (_, i) => i * 0.0731 + 0.003)];
 
 describe.skipIf(!动画字节 || !模型字节)('魔法酒狐：播放器 × 手抄版', async () => {
   const 动画们 = 解析动画文件(JSON.parse(动画字节!.toString('utf8')), 'TLM');

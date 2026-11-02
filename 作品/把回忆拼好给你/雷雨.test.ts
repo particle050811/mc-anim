@@ -8,7 +8,7 @@ import type { 资产cue } from '@engine/段/段定义.ts';
 import 雷雨段 from './段/2-雷雨/段.ts';
 import 拨开阴霾段 from './段/2-拨开阴霾/段.ts';
 import 抢龙蛋段 from './段/2-抢龙蛋/段.ts';
-import { fps, 段窗口, 正片事件, type 正片事件名 } from './分镜.ts';
+import { fps, 旧帧, 段窗口, 正片事件, type 正片事件名 } from './分镜.ts';
 import * as 参 from './场/2-雷雨/参数.ts';
 import { 坑, 小木屋, 掉落位, 玩家捡得到, 箱子格, 南墙, 箱里, 箱里掉落们 } from './场/2-雷雨/弹坑.ts';
 import { 四周方块, 地面高, 树们 } from './场/2-雷雨/地形.ts';
@@ -93,7 +93,10 @@ describe('串：第 6、7 句', () => {
 
   it('推到缺口近景那一帧又闪一道电，停住的近景里炸掉的格占画面四分之一以上、两个人整个在画面里（核查 10-24）', () => {
     expect(闪(帧('雷照缺口'))).toBe(true);
-    expect(全部帧.filter(闪).length).toBe(2 * 参.闪帧们.reduce((n, [a, b]) => n + b - a, 0));
+    // 每道闪电亮的帧数：段内帧 d 落在 [a, b) 秒里的个数（60 fps 下亮 5 帧、隔 8 帧再亮 2 帧）
+    const 每道 = 参.闪秒们.reduce((n, [a, b]) => n + Math.ceil(b * fps - 1e-9) - Math.ceil(a * fps - 1e-9), 0);
+    expect(每道).toBe(7);
+    expect(全部帧.filter(闪).length).toBe(2 * 每道);
     for (const f of [帧('雷照缺口'), 帧('她站起') - 1]) expect(机位(f)).toEqual(机位(帧('雷照缺口')));
     const p = 屏(帧('雷照缺口'));
     const 角们 = [...坑().炸掉].flatMap((s) => {
@@ -290,7 +293,7 @@ describe('第 7 句：魔法阵、光柱、云洞、阳光', () => {
     expect(光柱顶(帧('光柱起') - 1, 2)).toBe(2);
     expect(光柱顶(帧('拨'), 2)).toBe(参.云底高);
     expect(光柱顶(帧('破云') - 1, 2)).toBe(参.云底高);
-    expect(光柱顶(帧('破云') + 4, 2)).toBeGreaterThan(参.云底高 + 100);
+    expect(光柱顶(帧('破云') + 旧帧(4) * fps, 2)).toBeGreaterThan(参.云底高 + 100);
     expect(光柱透(帧('光柱退') - 1)).toBe(1);
     expect(光柱透(末)).toBe(0);
   });
@@ -301,9 +304,13 @@ describe('第 7 句：魔法阵、光柱、云洞、阳光', () => {
     expect(撞亮(末)).toBe(0);
   });
 
-  it('云洞：破云 前没有，之后只开不合，段尾开到 r2', () => {
+  it('云洞：破云 前没有，之后只开不合，镜头止前 1/24 秒（24 fps 时的最后一帧）开到 r2、停到段尾', () => {
     expect(洞半径(帧('破云') - 1)).toBe(0);
-    for (let f = 帧('破云') + 1; f <= 末; f++) expect(洞半径(f), `帧 ${f}`).toBeGreaterThan(洞半径(f - 1));
+    const 开满 = 镜头止帧 - 旧帧(1) * fps;
+    for (let f = 帧('破云') + 1; f <= 末; f++) {
+      if (f < 开满) expect(洞半径(f), `帧 ${f}`).toBeGreaterThan(洞半径(f - 1));
+      else expect(洞半径(f), `帧 ${f}`).toBeCloseTo(参.云洞.r2, 6);
+    }
     expect(洞半径(末)).toBeCloseTo(参.云洞.r2, 6);
   });
 
@@ -324,7 +331,8 @@ describe('第 7 句：魔法阵、光柱、云洞、阳光', () => {
   it('洞里的天跟着散完的云格变蓝：破云 前没有；云还在（剩 > 0）的那一格底下透不出满的晴天，散完的格底下是晴天', () => {
     expect(天晴在(帧('破云') - 1)).toBeNull();
     const 全 = 云格们(() => true);
-    for (const f of [帧('破云'), 帧('破云') + 2, 帧('云洞开大'), 末]) {
+    const 破云后 = 帧('破云') + 旧帧(2) * fps;
+    for (const f of [帧('破云'), 破云后, 帧('云洞开大'), 末]) {
       const 晴 = 天晴在(f)!;
       const 飘 = 云飘(f);
       let 有剩 = 0, 有散完 = 0;
@@ -335,7 +343,7 @@ describe('第 7 句：魔法阵、光柱、云洞、阳光', () => {
         if (剩 > 0 && 剩 < 1) 有剩++;
         if (剩 === 0) 有散完++;
       }
-      if (f === 帧('破云') + 2) expect(有剩 + 有散完).toBeGreaterThan(0);
+      if (f === 破云后) expect(有剩 + 有散完).toBeGreaterThan(0);
     }
   });
 

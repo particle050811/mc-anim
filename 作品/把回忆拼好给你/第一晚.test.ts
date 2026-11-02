@@ -6,7 +6,7 @@ import {
 } from './段/2-第一晚/编排.ts';
 import { 正片事件, 段窗口, 第几句, fps, 拍 } from './分镜.ts';
 import { 天亮 } from './地点/天体.ts';
-import { 僵尸, 僵尸吼提前, 地层, 头, 快进, 挖朝向, 洞里暗, 音效们 } from './场/2-第一晚/参数.ts';
+import { 僵尸, 僵尸吼提前秒, 地层, 头, 快进, 挖朝向, 洞里暗, 音效们 } from './场/2-第一晚/参数.ts';
 import { 剖面, 剖面原点, 机位们 } from './场/2-新世界/参数.ts';
 import { 剖面方块 } from './场/2-新世界/地形.ts';
 import { 你在, 天刻在, 机位在 } from './场/2-新世界/编排.ts';
@@ -16,12 +16,12 @@ const 帧数 = 段.帧数;
 const 起 = 段窗口('2-第一晚').起帧;
 
 describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () => {
-  it('窗口从第 2 句首字到第 3 句首字（歌曲帧 119～201）', () => {
+  it('窗口从第 2 句首字到第 3 句首字（60 fps 歌曲帧 297～503）', () => {
     const w = 段窗口('2-第一晚');
-    expect([w.起帧, w.止帧]).toEqual([119, 201]);
+    expect([w.起帧, w.止帧]).toEqual([297, 503]);
     expect(w.起帧 / fps).toBeCloseTo(第几句(2).起, 1);
     expect(w.止帧 / fps).toBeCloseTo(第几句(3).起, 1);
-    expect(帧数).toBe(82);
+    expect(帧数).toBe(206);
   });
 
   it('只拍挖三填一：挖一、挖二、挖三、填土一拍一下（第 12～15 拍），挖开天窗在第 18 拍，段尾留够半秒阳光照进洞里（第 3 句从这里接）', () => {
@@ -34,7 +34,7 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
       expect(顶墙暗(f)).toBe(洞里暗.顶墙);
     }
     // 天光两格照到底以后到段尾洞里全亮，至少留三分之一秒
-    const 照到底 = 事.挖开天窗 + 2 * 洞里暗.光下帧;
+    const 照到底 = 事.挖开天窗 + 2 * 洞里暗.光下秒 * fps;
     expect(帧数 - 照到底).toBeGreaterThanOrEqual(Math.round(fps / 3));
     for (let f = 照到底; f < 帧数; f++) expect(洞暗(f)).toEqual([{ 前: 0, 后: 0 }, { 前: 0, 后: 0 }]);
   });
@@ -51,7 +51,7 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
       expect(20 * Math.log10(c.增益 as number) + 定.峰值).toBeCloseTo(定.到, 3);
       expect(定.到).toBeLessThanOrEqual(-15);
     }
-    expect(资产们.map((c) => c.帧)).toEqual([事.挖一, 事.挖二, 事.挖三, 事.填土, 僵尸过洞帧 - 僵尸吼提前, 事.挖开天窗]);
+    expect(资产们.map((c) => c.帧)).toEqual([事.挖一, 事.挖二, 事.挖三, 事.填土, 僵尸过洞帧 - Math.round(僵尸吼提前秒 * fps), 事.挖开天窗]);
   });
 
   it('接 2-初入 一镜不切：同一个剖面机位、撤完了排；你站在坑那一格、朝东低头，段首就开始挥手挖', () => {
@@ -67,7 +67,7 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     expect([上一帧.朝向, 上一帧.头]).toEqual([s.yaw, s.头]);
     expect([s.yaw, s.头]).toEqual([挖朝向, 头.挖]);
     expect(史蒂夫态(1).出手).toBeGreaterThan(0);
-    expect(裂纹态(5)).not.toBeNull();
+    expect(裂纹态(Math.ceil((5 * fps) / 24))).not.toBeNull();
   });
 
   it('天：接着 2-初入 的下午，边挖边黑、填土那一拍黑透；快进翻到破晓，黎明铺开好几帧（不从黑跳到白），挖开天窗前就亮满；天上的刻不往回走', () => {
@@ -81,7 +81,7 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     expect(星亮(天刻(Math.round((快进起 + 黎明起) / 2)))).toBeCloseTo(0.5, 2);
     // 黎明：每帧天亮最多涨两成，中间那帧一半左右
     for (let f = 黎明起 + 1; f <= 亮满帧; f++) expect(天亮(天刻(f)) - 天亮(天刻(f - 1))).toBeLessThan(0.2);
-    expect(天亮(天刻(黎明起 + 快进.黎明帧 / 2))).toBeCloseTo(0.5, 1);
+    expect(天亮(天刻(黎明起 + (快进.黎明秒 * fps) / 2))).toBeCloseTo(0.5, 1);
     expect(天亮(天刻(亮满帧))).toBe(1);
     expect(亮满帧).toBeLessThan(事.挖开天窗);
     expect(星亮(天刻(事.挖开天窗)) ** 2).toBeLessThan(1 / 255);
@@ -93,9 +93,9 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     expect(僵尸态(快进起)?.x).toBe(僵尸.起x);
     expect(坑态(僵尸过洞帧).顶土).toBe(true);
     expect(Math.abs(僵尸态(僵尸过洞帧)!.x)).toBeLessThan(1);
-    const 走完 = 事.挖开天窗 - 僵尸.止前;
+    const 走完 = 事.挖开天窗 - 僵尸.止前秒 * fps;
     expect(僵尸态(走完)?.x).toBe(僵尸.止x);
-    expect(僵尸态(走完 + 1)).toBeNull();
+    expect(僵尸态(Math.floor(走完) + 1)).toBeNull();
     expect(走完).toBeLessThanOrEqual(亮满帧);
   });
 
@@ -122,9 +122,9 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
   });
 
   it('掉落物：碎了就掉，10 刻后捡起、3 刻飞完；你从捡起第一块起手里拿着土', () => {
-    expect(捡起帧(0)).toBe(事.挖一 + 12);
+    expect(捡起帧(0)).toBe(事.挖一 + 0.5 * fps);
     expect(掉落物们(事.挖一).length).toBe(1);
-    expect(掉落物们(捡起帧(0) + 4).length).toBe(1); // 第一块飞完了，第二块还在
+    expect(掉落物们(捡起帧(0) + (4 * fps) / 24).length).toBe(1); // 捡起后 1/6 秒（约 3.3 刻）：第一块飞完了，第二块还在
     expect(史蒂夫态(捡起帧(0) - 1).拿土).toBe(false);
     expect(史蒂夫态(捡起帧(0)).拿土).toBe(true);
     // 都在坑里那一列（x −0.5～0.5）、剖面以里（y ≥ 0）
@@ -153,8 +153,9 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
       // 上面那格先亮
       expect(暗们[0]!.前).toBeLessThanOrEqual(暗们[1]!.前);
     }
-    expect(洞暗(事.挖开天窗 + 洞里暗.光下帧)[0]).toEqual({ 前: 0, 后: 0 });
-    expect(洞暗(事.挖开天窗 + 洞里暗.光下帧)[1]!.前).toBeGreaterThan(0);
+    const 照过一格 = Math.ceil(事.挖开天窗 + 洞里暗.光下秒 * fps);
+    expect(洞暗(照过一格)[0]).toEqual({ 前: 0, 后: 0 });
+    expect(洞暗(照过一格)[1]!.前).toBeGreaterThan(0);
     expect(顶墙暗(事.挖一 - 1)).toBe(0);
     expect(顶墙暗(事.挖一)).toBe(洞里暗.顶墙);
     expect(顶墙暗(事.填土)).toBe(0);

@@ -1,7 +1,7 @@
 // 第 3 句祭坛召唤每一帧的状态：柱顶材料、化成的光、她、你、光、两个镜头（远景贴地升起俯看祭坛，「光」那一拍切近景）。纯模块（测试也引），画法在 祭坛.tsx。
 // 钟是歌曲帧 g（段内帧 + 段起帧，核对段直接给歌曲帧），时刻取 分镜.ts 的正片事件，分寸取 参数.ts，最后一帧取 末态.ts。游戏里的刻 = 歌上的秒 × 20。
 import { clamp01 } from '@engine/anim/anim.ts';
-import { fps, 正片事件, 段窗口 } from '../../分镜.ts';
+import { fps, 旧帧, 正片事件, 段窗口 } from '../../分镜.ts';
 import * as 参 from './参数.ts';
 import { 末她, 末机, 末速, 眼珠 } from './末态.ts';
 
@@ -45,8 +45,8 @@ export const 柱顶物位 = (m: (typeof 参.柱顶材料)[number], g: number): {
   return { p: [m.柱[0], m.柱[1], z], 转: 毫秒 / 10 };
 };
 
-/** 化成光以后飞多少帧：从变白完到她现身那一帧汇齐 */
-export const 飞帧 = 事.现身 - 事.点祭坛 - 参.化光.亮帧;
+/** 化成光以后飞几秒：从变白完到她现身那一帧汇齐 */
+export const 飞秒 = (事.现身 - 事.点祭坛) / fps - 参.化光.亮秒;
 
 /** 化光以后光点的位置：t 0～1，从柱顶飞到 汇点，先慢后快（缓起），中间往上拱一点 */
 const 光点位 = (起: 点, t: number): 点 => {
@@ -59,10 +59,11 @@ const 光点位 = (起: 点, t: number): 点 => {
 export const 浮物态们 = (g: number): 浮物态[] =>
   参.柱顶材料.flatMap((m): 浮物态[] => {
     const { p, 转 } = 柱顶物位(m, g);
-    const k = g - 事.点祭坛;
+    const k = (g - 事.点祭坛) / fps;
     if (k < 0) return [{ 名: m.名, 样: '物', p, 转 }];
-    if (k < 参.化光.亮帧) return [{ 名: m.名, 样: '亮', p, 转 }];
-    const t = (k - 参.化光.亮帧 + 1) / 飞帧;
+    if (k < 参.化光.亮秒) return [{ 名: m.名, 样: '亮', p, 转 }];
+    // 变白完那一刻已经飞了 1/24 秒（24 fps 时起飞那一帧就走了一帧）
+    const t = (k - 参.化光.亮秒 + 旧帧(1)) / 飞秒;
     if (t >= 1) return [];
     return [{ 名: m.名, 样: '光', p: 光点位(p, t), 尾: [光点位(p, t - 0.1), 光点位(p, t - 0.2)] }];
   });
@@ -70,13 +71,13 @@ export const 浮物态们 = (g: number): 浮物态[] =>
 // ---------- 她 ----------
 /** 转：0 = 看着你，1 = 正对镜头（末她 的 看）；笑：驯服以后 */
 export type 她编排 = { 转: number; 表情: '无' | '微笑' };
-/** 转头那几帧的起点：推眼睛那一拍以后再等几帧（参数.ts 转头迟帧） */
-export const 转头起帧 = 事.推 + 参.转头迟帧;
+/** 转头的起点（歌上的秒）：推眼睛那一拍以后再等 参数.ts 的 转头迟秒 */
+export const 转头起秒 = 秒(事.推) + 参.转头迟秒;
 export const 她编排 = (g: number): 她编排 | null => {
   if (g < 事.现身) return null;
   return {
-    转: 缓(clamp01((g - 转头起帧) / 参.转头帧)),
-    表情: g >= 事.递 + 参.笑起帧 ? 末她.表情 : '无',
+    转: 缓(clamp01((秒(g) - 转头起秒) / 参.转头秒)),
+    表情: (g - 事.递) / fps >= 参.笑起秒 ? 末她.表情 : '无',
   };
 };
 
@@ -91,7 +92,7 @@ export const 挥手进度 = (g: number): number | null => {
   const t = (刻(g) - 刻(近)) / 参.挥手刻;
   return t < 1 ? t : null;
 };
-export const 蛋糕没帧 = 事.递 + Math.ceil((参.留蛋糕刻 / 20) * fps);
+export const 蛋糕没帧 = 事.递 + Math.round(参.留蛋糕秒 * fps);
 export type 手里 = '御币' | '蛋糕' | null;
 /** 远景里拿御币，切到近景时已经换成蛋糕（换东西在那一刀里，近景里不再单独换一次：核查 10-24 说近景一拍一件跟不上） */
 export const 手里 = (g: number): 手里 => (g < 事.切 ? '御币' : g < 蛋糕没帧 ? '蛋糕' : null);
@@ -103,21 +104,21 @@ export const 你朝向 = (Math.atan2(-(参.她.脚[0] - 参.你.脚[0]), 参.她
 export const 你眼: 点 = [参.你.脚[0], 参.你.脚[1], 参.你.脚[2] + 1.62];
 
 // ---------- 光 ----------
-/** 祭坛亮：这一帧亮着的几圈 [半径, 强度]：点祭坛起三圈全亮，她现身以后 退帧 帧里一档一档灭（最外圈先灭） */
+/** 祭坛亮：这一帧亮着的几圈 [半径, 强度]：点祭坛起三圈全亮，她现身以后 退秒 里一档一档灭（最外圈先灭） */
 export const 祭坛亮 = (g: number): [number, number][] => {
-  const { 半径, 强, 退帧 } = 参.光.祭坛亮;
+  const { 半径, 强, 退秒 } = 参.光.祭坛亮;
   if (g < 事.点祭坛) return [];
-  const 退 = g - 事.现身;
-  const 灭 = 退 < 0 ? 0 : Math.floor((退 / 退帧) * 半径.length) + 1;
+  const 退 = (g - 事.现身) / fps;
+  const 灭 = 退 < 0 ? 0 : Math.floor((退 / 退秒) * 半径.length) + 1;
   return 半径.map((r, i): [number, number] => [r, 强[i]!]).slice(Math.min(半径.length, 灭));
 };
-/** 光柱：这一帧的几层 [宽, 强度]（她现身前 起前帧 亮起，留 留帧 帧，再 退帧 帧里从外往里一层一层灭） */
+/** 光柱：这一帧的几层 [宽, 强度]（她现身前 起前秒 亮起，现身起留 留秒，再 退秒 里从外往里一层一层灭） */
 export const 光柱 = (g: number): [number, number][] => {
-  const { 宽, 强, 起前帧, 留帧, 退帧 } = 参.光.光柱;
-  const k = g - (事.现身 - 起前帧);
-  if (k < 0) return [];
-  const 退 = k - 起前帧 - 留帧;
-  const 灭 = 退 < 0 ? 0 : Math.floor((退 / 退帧) * 宽.length) + 1;
+  const { 宽, 强, 起前秒, 留秒, 退秒 } = 参.光.光柱;
+  const k = (g - 事.现身) / fps;
+  if (k < -起前秒) return [];
+  const 退 = k - 留秒;
+  const 灭 = 退 < 0 ? 0 : Math.floor((退 / 退秒) * 宽.length) + 1;
   return 宽.map((w, i): [number, number] => [w, 强[i]!]).slice(0, Math.max(0, 宽.length - 灭));
 };
 
@@ -144,13 +145,13 @@ export const 关键机位 = (): 关键[] => {
   ];
 };
 
-/** 三次埃尔米特：p0、p1 两头的值，m0、m1 两头每帧的变化率，h 这一段几帧，s 0～1 */
+/** 三次埃尔米特：p0、p1 两头的值，m0、m1 两头每秒的变化率，h 这一段几秒，s 0～1 */
 const 埃尔米特 = (p0: number, p1: number, m0: number, m1: number, h: number, s: number) => {
   const s2 = s * s;
   const s3 = s2 * s;
   return (2 * s3 - 3 * s2 + 1) * p0 + (s3 - 2 * s2 + s) * h * m0 + (-2 * s3 + 3 * s2) * p1 + (s3 - s2) * h * m1;
 };
-/** 各关键点的变化率（每帧）：头一个 = 起率（不给 = 第一段的平均速度的一半，接切过来就在慢慢动），末帧 = 给定的（不给就停稳），中间按两边的平均速度。
+/** 各关键点的变化率（每秒）：头一个 = 起率（不给 = 第一段的平均速度的一半，接切过来就在慢慢动），末帧 = 给定的（不给就停稳），中间按两边的平均速度。
  *  保单调 = true 时中间取两边的加权调和平均（Fritsch–Carlson），两边同号时插出来不会冲过头 */
 const 变化率们 = (t: readonly number[], y: readonly number[], 保单调: boolean, 末率 = 0, 起率?: number): number[] => {
   const n = t.length;
@@ -170,13 +171,13 @@ const 变化率们 = (t: readonly number[], y: readonly number[], 保单调: boo
 
 /** 按近景的关键机位插这一帧的镜头。眼睛：以她右眼眼珠为心，离心距离取对数用保单调的三次插值，方向用三次插值再归一；
  *  看点用三次插值；视角保单调插。各关键机位两边速度连续，不会一帧里突然起速。
- *  末率：离心距离的对数在最后一个关键机位上每帧变多少（第 4 句接着这个速度推）；方向、看点、视角在最后一个关键机位停稳 */
+ *  末率：离心距离的对数在最后一个关键机位上每秒变多少（第 4 句接着这个速度推）；方向、看点、视角在最后一个关键机位停稳 */
 const 插镜头 = (键: readonly 关键[], g: number, 末率: number): 机 => {
   const 心 = 眼珠.右;
-  const t = 键.map((k) => k.帧);
+  const t = 键.map((k) => 秒(k.帧));
   const 距 = 键.map((k) => Math.log(长(减(k.眼, 心))));
   const 向 = 键.map((k) => 单位(减(k.眼, 心)));
-  const x = Math.min(Math.max(g, t[0]!), t[t.length - 1]!);
+  const x = Math.min(Math.max(秒(g), t[0]!), t[t.length - 1]!);
   const i = Math.min(t.findIndex((v, j) => j > 0 && x <= v) - 1, t.length - 2);
   const h = t[i + 1]! - t[i]!;
   const s = (x - t[i]!) / h;
@@ -193,16 +194,19 @@ const 插镜头 = (键: readonly 关键[], g: number, 末率: number): 机 => {
   };
 };
 
-/** 远景一条轨在歌曲帧 g 的值：保单调三次插值，段首速度 0，最后一个关键帧接着最后一段的平均速度走（切走的时候还在动） */
+/** 远景一条轨在歌曲帧 g 的值：保单调三次插值，段首速度 0，最后一个关键帧接着最后一段的平均速度走（切走的时候还在动）。
+ *  最后一个关键帧在切前 1/24 秒，帧率高于 24 时它和切之间还有几帧，照这个速度直着往前走 */
 const 远轨值 = (轨: 参.远轨, g: number): number => {
-  const t = 轨.map(([f]) => (f === '切' ? 事.切 - 1 : 窗口.起帧 + f));
+  const t = 轨.map(([s]) => (s === '切' ? 秒(事.切) - 旧帧(1) : 秒(窗口.起帧) + s));
   const y = 轨.map(([, v]) => v);
   if (t.length === 1) return y[0]!;
   const n = t.length - 1;
-  const x = Math.min(Math.max(g, t[0]!), t[n]!);
+  const 末率 = (y[n]! - y[n - 1]!) / (t[n]! - t[n - 1]!);
+  const x = Math.max(秒(g), t[0]!);
+  if (x > t[n]!) return y[n]! + 末率 * (x - t[n]!);
   const i = Math.min(t.findIndex((v, j) => j > 0 && x <= v) - 1, n - 1);
   const h = t[i + 1]! - t[i]!;
-  const m = 变化率们(t, y, true, (y[n]! - y[n - 1]!) / (t[n]! - t[n - 1]!), 0);
+  const m = 变化率们(t, y, true, 末率, 0);
   return 埃尔米特(y[i]!, y[i + 1]!, m[i]!, m[i + 1]!, h, (x - t[i]!) / h);
 };
 

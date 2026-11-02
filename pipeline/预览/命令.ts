@@ -7,6 +7,7 @@ import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 前台跑 } from '../环境/子进程.ts';
 import { 新建预览目录 } from './预览.ts';
+import { 清理小结, 规划默认清理, 执行清理, 预览保留天数 } from './清理.ts';
 import { 数据根 } from '../环境/配置.ts';
 import { 全部段 } from '../清单/清单.ts';
 import { 读作品资产锁 } from '../资产/资产锁.ts';
@@ -23,11 +24,32 @@ const remotion入口 = () => {
 
 export const 预览命令: Record<string, 命令> = {
   preview: {
-    用法: 'preview new <主题>',
-    说明: '在主检出的 预览/ 下建 <UTC 月日-时分>-<主题>/，打印路径；主题以「工作-」开头的是中间稿，建在数据根 run/草稿/ 下',
+    用法: `preview new <主题> | preview 清理 [--执行] [--天 ${预览保留天数}]`,
+    说明:
+      'new：在主检出的 预览/ 下建 <UTC 月日-时分>-<主题>/，打印路径；主题以「工作-」开头的是中间稿，建在数据根 run/草稿/ 下。每次 new 先顺手清理一遍。' +
+      '清理：预览里超过天数的夹只留文字（说明、表格）挪进数据根 archive/预览/，图、视频、声音删掉，Git 管的文件按路径引用的照留；archive/预览/ 里的只留文字；草稿删按日期起名、超过 cache gc 草稿天数的。默认只打印',
     跑: async (args, 记录) => {
-      const p = 解析参数(args, {});
-      if (p.位置[0] !== 'new' || p.位置.length !== 2) throw new 用法错误('要 anim preview new <主题>');
+      const p = 解析参数(args, { 开关: ['--执行'], 值: ['--天'] });
+      if (p.位置[0] === '清理' && p.位置.length === 1) {
+        const 天数 = p.值['--天'] === undefined ? 预览保留天数 : Number(p.值['--天']);
+        if (!Number.isFinite(天数) || 天数 < 0) throw new 用法错误('--天 要非负的数');
+        const { 计划, 草稿 } = 规划默认清理(Date.now(), 天数);
+        for (const x of 计划) console.log(`${x.归档到 ? '归档' : '瘦身'}  ${x.名}：留 ${x.留.length} 个文字，删 ${x.删.length} 个（${(x.删.reduce((n, f) => n + f.大小, 0) / 1024 / 1024).toFixed(0)} MB）`);
+        for (const d of 草稿) console.log(`删草稿  ${d.名}（${(d.大小 / 1024 / 1024).toFixed(0)} MB）`);
+        if (!计划.length && !草稿.length) return console.log('没有要清理的');
+        if (!p.开关.has('--执行')) return console.log('只打印了；加 --执行 才动手');
+        console.log(清理小结(执行清理(计划, 草稿)));
+        return;
+      }
+      if (p.位置[0] !== 'new' || p.位置.length !== 2 || p.开关.size || Object.keys(p.值).length) throw new 用法错误('要 anim preview new <主题> 或 anim preview 清理 [--执行] [--天 N]');
+      // 清理出错不挡建预览
+      try {
+        const { 计划, 草稿 } = 规划默认清理();
+        const 小结 = 清理小结(执行清理(计划, 草稿));
+        if (小结) console.error(`预览清理：${小结}`);
+      } catch (e) {
+        console.error(`!! 预览清理没做成（预览照建）：${(e as Error).message}`);
+      }
       const dir = 新建预览目录(p.位置[1]!);
       记录.产物.push(dir);
       console.log(dir);

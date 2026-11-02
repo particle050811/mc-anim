@@ -97,7 +97,7 @@ export const 光点们 = (g: number): Particle[] => {
   if (柱.length) {
     const { 数, 半, 种子 } = 参.光.光点;
     const r = rng(种子);
-    const 已 = 秒(g) - 秒(事.现身 - 参.光.光柱.起前帧);
+    const 已 = 秒(g) - 秒(事.现身) + 参.光.光柱.起前秒;
     const 宽 = 参.光.光柱.宽[0]!;
     for (let i = 0; i < 数; i++) {
       const [x, y, z0, v] = [(r() - 0.5) * 宽, (r() - 0.5) * 宽, r() * 2.2, 0.5 + r() * 0.6];
