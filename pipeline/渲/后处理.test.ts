@@ -1,11 +1,10 @@
-// 一段渲完的收尾：次序、失败语义（段签没成不转、转存没成留 CRF1，都只警告）、别人抢先、等内存。真 ffmpeg，数据根是临时目录。
+// 一段渲完的收尾：次序、失败语义（段签没成不转、转存没成留 CRF1，都只警告）、别人抢先。真 ffmpeg，数据根是临时目录。
 import crypto from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import type { 内存读数 } from '../环境/资源.ts';
 import type { 阶段记录 } from '../运行记录/阶段.ts';
 
 const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-后处理测试-'));
@@ -13,7 +12,7 @@ process.env.ANIM_DATA = 数据根;
 vi.mock('../闸/闸.ts', async (原) => ({ ...(await 原<typeof import('../闸/闸.ts')>()), 过渲染闸: <T>(fn: () => Promise<T>) => fn() }));
 vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('../环境/路径.ts')>()), 在主检出: () => true }));
 
-const { 后处理一段, 等内存够 } = await import('./后处理.ts');
+const { 后处理一段 } = await import('./后处理.ts');
 const { 压缩母版路径, 原母版路径 } = await import('./母版.ts');
 const { 被占着 } = await import('./母版占用.ts');
 const { 文件sha, 读段签 } = await import('../段签/段签.ts');
@@ -33,22 +32,20 @@ const 造 = (f: string) => {
 };
 const 有ffmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
 const 参数 = (键: string, 多: { 留CRF1?: boolean; 续补?: boolean } = {}) => ({ 键, 指纹: 指纹(键), 级别: '视频', 作品: 作品名(), 留CRF1: false, 标签: `render:测/${键}:视频`, ...多 });
-const 钩 = (让内存?: () => Promise<void>) => {
+const 钩 = () => {
   const 收: 阶段记录[] = [];
   const 警告们: string[] = [];
-  return { 收, 警告们, 记录: { 记: (_: string, s: string) => void 警告们.push(s) }, 让内存 };
+  return { 收, 警告们, 记录: { 记: (_: string, s: string) => void 警告们.push(s) } };
 };
 
 describe.skipIf(!有ffmpeg)('后处理一段', () => {
-  it('次序：段签 → 转存 → 删 CRF1 → 删旧；每步前让内存；放了占用', async () => {
+  it('次序：段签 → 转存 → 删 CRF1 → 删旧；放了占用', async () => {
     const 原 = 造(原母版路径('全程', 指纹('全程')));
     const 原sha = await 文件sha(原);
-    let 让了 = 0;
-    const h = 钩(async () => void 让了++);
+    const h = 钩();
     const r = await 后处理一段(参数('全程'), h);
     expect(r).toEqual({ 母版: 压缩母版路径('全程', 指纹('全程')), 结局: '压缩' });
     expect(fs.existsSync(原)).toBe(false);
-    expect(让了).toBe(2);
     expect(h.警告们).toEqual([]);
     expect(h.收.map((x) => x.阶段).filter((x) => !x.startsWith('段签：'))).toEqual(['派生段签', '转存', '删旧']);
     expect(h.收.map((x) => x.阶段)).toContain('段签：扫母版');
@@ -122,47 +119,5 @@ describe.skipIf(!有ffmpeg)('后处理一段', () => {
     const h = 钩();
     expect(await 后处理一段(参数('补坏', { 续补: true }), h)).toEqual({ 母版: 原, 结局: '留CRF1' });
     expect(h.警告们.join()).toMatch(/补坏 接着补压缩母版没成/);
-  });
-});
-
-describe('等内存够', () => {
-  const 读数 = (空闲百分比: number) => ({ 总: 100, 空闲: 空闲百分比, 空闲百分比, 交换区总: 0, 交换区已用: null }) as 内存读数;
-  const 假钟 = () => {
-    let t = 0;
-    return { 现在: () => t, 睡: async (ms: number) => void (t += ms) };
-  };
-
-  it('够就不等，不记事', async () => {
-    const 事 = vi.fn();
-    expect(await 等内存够({ 读内存: () => 读数(50), 读压力: () => 1, 下限: 30, 事 })).toBe(0);
-    expect(事).not.toHaveBeenCalled();
-  });
-
-  it('读不到内存当够（和资源闸一样）；低于下限等到够，起止都记', async () => {
-    expect(await 等内存够({ 读内存: () => null, 读压力: () => null, 下限: 30 })).toBe(0);
-    const 钟 = 假钟();
-    const 事们: string[] = [];
-    let 次 = 0;
-    const 秒 = await 等内存够({ 读内存: () => 读数(++次 < 4 ? 20 : 40), 读压力: () => 1, 下限: 30, ...钟, 事: (x) => void 事们.push(x) });
-    expect(秒).toBe(15);
-    expect(事们).toEqual(['起', '止']);
-  });
-
-  it('压力 4：内存够也等', async () => {
-    const 钟 = 假钟();
-    let 次 = 0;
-    expect(await 等内存够({ 读内存: () => 读数(90), 读压力: () => (++次 < 3 ? 4 : 1), 下限: 30, ...钟 })).toBe(10);
-  });
-
-  it('满 10 分钟还不够、压力不是 4：照做并警告；压力 4 继续等', async () => {
-    const 钟 = 假钟();
-    const 超 = vi.fn();
-    expect(await 等内存够({ 读内存: () => 读数(10), 读压力: () => 1, 下限: 30, ...钟, 超时: 超 })).toBe(600);
-    expect(超).toHaveBeenCalledOnce();
-    const 钟2 = 假钟();
-    const 超2 = vi.fn();
-    let 次 = 0;
-    expect(await 等内存够({ 读内存: () => 读数(10), 读压力: () => (++次 < 200 ? 4 : 1), 下限: 30, ...钟2, 超时: 超2 })).toBeGreaterThan(600);
-    expect(超2).toHaveBeenCalledOnce();
   });
 });

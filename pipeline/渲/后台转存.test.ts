@@ -10,8 +10,6 @@ import type { 阶段记录 } from '../运行记录/阶段.ts';
 // realpath：macOS 的 /var → /private/var，ffmpeg 命令行里是哪个要一致（下面按路径找残留进程）
 const 数据根 = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'anim-后台转存测试-'));
 process.env.ANIM_DATA = 数据根;
-// 机器忙时闸口径内存可能低于 30%：这里不测让内存（后处理.test.ts 测），别让子进程等
-process.env.ANIM_RENDER_FREE_MIN = '0';
 vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('../环境/路径.ts')>()), 在主检出: () => true }));
 
 const { 跑后台子进程, 建后台转存 } = await import('./后台转存.ts');
@@ -50,7 +48,7 @@ const 参数 = (键: string, 多: { 续补?: boolean } = {}) => ({ 键, 指纹: 
 const 钩 = () => {
   const 阶段们: 阶段记录[] = [];
   const 警告们: string[] = [];
-  return { 阶段们, 警告们, h: { 阶段: (rs: 阶段记录[]) => void 阶段们.push(...rs), 警告: (s: string) => void 警告们.push(s), 等内存: () => {} } };
+  return { 阶段们, 警告们, h: { 阶段: (rs: 阶段记录[]) => void 阶段们.push(...rs), 警告: (s: string) => void 警告们.push(s) } };
 };
 const 睡 = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const 等到 = async (条件: () => boolean, 说: string, 最长 = 20_000) => {
@@ -79,7 +77,7 @@ const 起父进程 = (键: string, 自成一组 = false) => {
 const 登记 = await import(${JSON.stringify(path.join(import.meta.dirname, '../闸/收尾.ts'))});
 // 和 anim render 一样：闸的收尾钩子装在信号上，收到信号就退出
 登记.登记收尾(() => {});
-const r = await 跑后台子进程(${JSON.stringify(参数(键))}, { 阶段() {}, 警告(s) { console.error(s); }, 等内存() {} });
+const r = await 跑后台子进程(${JSON.stringify(参数(键))}, { 阶段() {}, 警告(s) { console.error(s); } });
 console.log(JSON.stringify(r));
 `);
   return spawn(process.execPath, [脚本], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env }, detached: 自成一组 });
@@ -192,7 +190,7 @@ describe('一批的后台：调度日志和复盘', () => {
     const 起 = 读调度(e.日志目录).length;
     const 放们: ((x: { 母版: string; 结局: '压缩' | '留CRF1' } | null) => void)[] = [];
     const 记录 = { 记: vi.fn(), 阶段: [] as 阶段记录[] };
-    const 后台 = 建后台转存({ 级别: '视频', 留CRF1: false, 记录: 记录 as never, 跑: (_, h) => (h.等内存('起', {}), h.等内存('止', { 秒: 7 }), new Promise((r) => void 放们.push(r))) });
+    const 后台 = 建后台转存({ 级别: '视频', 留CRF1: false, 记录: 记录 as never, 跑: () => new Promise((r) => void 放们.push(r)) });
     const 完们: unknown[] = [];
     for (const 键 of ['甲', '乙', '丙']) 后台.排({ 键, 指纹: 指纹(键), 标签: `标/${键}` }, (x) => void 完们.push(x));
     const 满 = 后台.等空位('丁', '标/丁');
@@ -213,7 +211,6 @@ describe('一批的后台：调度日志和复盘', () => {
     expect(新.some((x) => x.事 === '后台满' && x.段 === '丁')).toBe(true);
     const r = 复盘(新).后台;
     expect(r.段数).toBe(3);
-    expect(r.等内存秒).toBe(21);
     expect(r.没转成).toEqual(['乙', '丙']);
     expect(r.限流秒).toBeGreaterThan(0);
     expect(复盘(新).等闸.总秒).toBe(0);
