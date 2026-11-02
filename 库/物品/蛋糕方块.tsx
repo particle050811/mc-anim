@@ -15,7 +15,8 @@ import 底图 from 'asset:贴图/物品/蛋糕方块/cake_bottom';
 import 侧图 from 'asset:贴图/物品/蛋糕方块/cake_side';
 import 顶图 from 'asset:贴图/物品/蛋糕方块/cake_top';
 
-/** client 1.20.1 block/block.json 的 display（草方块这类方块物品都继承它）。物品贴图.tsx 的 DISPLAY 不加：改那个模块，import 它的段全部过期 */
+/** client 1.20.1 block/block.json 的 display（草方块这类方块物品都继承它）。物品贴图.tsx 的 DISPLAY 不加：改那个模块，import 它的段全部过期。
+ *  第一人称原样用正好转 45°，侧面在平涂里会出竖条噪点，要偏一点（见 作品/把回忆拼好给你/场/2-隐世之境/重逢.tsx 的 蛋糕拿法） */
 export const 方块显示 = {
   thirdperson_righthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [0.375, 0.375, 0.375] },
   firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 0, 0], scale: [0.4, 0.4, 0.4] },
