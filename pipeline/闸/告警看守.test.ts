@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { once } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { 渲染看, 读状态, 一行状态, type 调度状态, type 锁信息 } from './看.ts';
+import { 渲染看, 读状态, 读后台, 一行状态, type 调度状态, type 锁信息 } from './看.ts';
 import { 判告警, 更新历史, 监测一轮, 读监测, 空历史, type 监测历史 } from './告警.ts';
 import { 取调度环境, type 调度环境 } from './任务.ts';
 import { 读发起者 } from './发起者.ts';
@@ -313,4 +313,36 @@ process.exitCode=await 盯(e,{最长:4,父活:()=>true,读:()=>({时:Date.now(),
     const dead = once(c, 'exit'); c.kill('SIGKILL'); await dead;
     const r = await 醒; expect(r.code).toBe(0); expect(r.out[0]).toMatch(/崩溃|持锁者死/); expect(r.out[0]).toContain(`#${c.pid}`);
   }, 20000);
+});
+
+
+it('一行状态按有后台的任务数计，不按排队段数计；没有后台不显示', () => {
+  const s = 基本();
+  expect(一行状态(s)).not.toContain('后台');
+  const t = { 任务: 'T', 起: 0, 心跳: 0, 发起: 发起(), 声明: { 种: 'render' }, 主机: 'h' };
+  s.在跑 = [t, { ...t, 任务: 'A', 后台: { 在做: '甲', 排着: 2, 起于: 0 } }, { ...t, 任务: 'B', 后台: { 在做: null, 排着: 1, 起于: null } }];
+  expect(一行状态(s)).toContain('持锁无 排队0 后台2');
+});
+
+it('回收=false 时死任务和复用 pid 不报后台超时，活任务与外机口径同读后台', () => {
+  const now = Date.now(), e = 环({ 本机: 'h', 现在毫秒: () => now });
+  const 死pid = spawnSync(process.execPath, ['-e', '']).pid;
+  const t = { 任务: 'T', 起: now - 4000_000, 心跳: now, 发起: { ...发起(), pid: 死pid }, 声明: { 种: 'render' }, 主机: 'h', 后台: { 在做: '甲', 排着: 2, 起于: now - 1900_000 } };
+  fs.mkdirSync(path.join(e.锁目录, '在跑'), { recursive: true });
+  const file = path.join(e.锁目录, '在跑', 'T.json');
+  const 核 = (有: boolean) => {
+    fs.writeFileSync(file, JSON.stringify(t));
+    const s = 读状态(e, () => 基本().机, false);
+    expect(s.在跑).toHaveLength(1);
+    expect(读后台(e).length > 0).toBe(有);
+    expect(判告警(s, now, undefined, 空历史(), 'h').some(a => a.类 === '后台超时')).toBe(有);
+  };
+  核(false);
+  expect(监测一轮(e, 读状态(e, () => 基本().机, false))).toEqual([]);
+  t.发起.pid = process.pid;
+  核(true);
+  t.心跳 = 1;
+  核(false);
+  t.主机 = '别的机器';
+  核(true);
 });

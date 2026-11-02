@@ -51,10 +51,11 @@ export const 读占用 = (e: 调度环境): Pick<调度状态, '持锁' | '票'>
     }
     return { 持锁, 票: ['渲染', '放行'].flatMap(n => 列票(path.join(e.锁目录, n + '.排队'))).map(t => ({ ...t, 死: !票活着(t, e.本机) })) };
 };
+export const 任务活着 = (t: 任务信息, 本机: string) => t.主机 !== 本机 || (进程在吗(t.发起.pid) && !pid换人了(t.发起.pid, t.心跳));
 /** 后台还在转的任务：闸放开了批却没完，CPU 和内存还占着，限流时也可能没有票和锁。崩溃没清的不算 */
 export const 读后台 = (e: 调度环境): 任务信息[] => 列文件(path.join(e.锁目录, '在跑')).flatMap(n => {
     const t = 读JSON<任务信息>(path.join(e.锁目录, '在跑', n));
-    return t?.后台 && (t.主机 !== e.本机 || (进程在吗(t.发起.pid) && !pid换人了(t.发起.pid, t.心跳))) ? [t] : [];
+    return t?.后台 && 任务活着(t, e.本机) ? [t] : [];
 });
 /** 活的占用，一处一条。 */
 export const 谁占着 = ({ 持锁, 票, 后台 = [] }: Pick<调度状态, '持锁' | '票'> & { 后台?: 任务信息[] }) => [
@@ -83,7 +84,7 @@ export const 读状态 = (e: 调度环境, 读机 = 读机器快照, 回收 = tr
 const 分 = (秒: number) => `${Math.max(0, 秒 / 60).toFixed(1)}分`;
 const G = (n: number | null) => n === null ? '?' : (n / 2 ** 30).toFixed(1) + 'G';
 const 热简报 = (m: 机器快照) => `${m.芯片最高温 == null ? '' : ` 芯温${m.芯片最高温.toFixed(1)}°C`}${m.发热等级 == null ? '' : ` 热${m.发热等级}`}`;
-export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'}${热简报(s.机)} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}`;
+export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'}${热简报(s.机)} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}${s.在跑.some(t => t.后台) ? ` 后台${s.在跑.filter(t => t.后台).length}` : ''}`;
 /** 一张票只等自己这把锁和同队的票：放行票不等渲染锁。 */
 export const 队上占用 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>, 锁名: string) => ({ 持锁: 持锁.filter(x => x.锁 === 锁名), 票: 票.filter(t => path.basename(path.dirname(t.文件)) === `${锁名}.排队`) });
 /** 占锁中位数，没有预计的按它算下界。 */
