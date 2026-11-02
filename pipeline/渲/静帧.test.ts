@@ -5,8 +5,8 @@ import path from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const 假 = vi.hoisted(() => ({ 连出: [] as Record<string, unknown>[], 单帧: [] as number[] }));
-vi.mock('@remotion/renderer', async (原) => ({
-  ...(await 原<typeof import('@remotion/renderer')>()),
+vi.mock('./渲染器.ts', async (原) => ({
+  ...(await 原<typeof import('./渲染器.ts')>()),
   renderFrames: async (o: { frames: number[]; onFrameBuffer: (b: Buffer, f: number) => void }) => {
     假.连出.push(o);
     for (const f of [...o.frames].sort((a, b) => a - b)) await o.onFrameBuffer(Buffer.from(String(f)), f);

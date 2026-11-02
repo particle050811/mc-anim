@@ -1,5 +1,5 @@
 // Remotion 4.0.537 把每个声音写成一个 wav，按起点排序后混音；起点相同的按写入先后，而写入先后是 @remotion/media 异步解码完成的次序，渲两遍可能不同。
-// 满 32 条时 Remotion 每 10 条先混成 16 位中间文件再合并，接近爆音处截掉多少取决于分组，次序一变就有个别样本不同（6-穿塔斩首领 23 个样本，最大差 2362）。
+// inline 声音多于 10 条时，每 10 条先混成 16 位中间 wav，再逐层合并；同起点组跨过十条分组边界时，次序会改变分组（merge-inline-audio-tracks.js 的 MAX_INLINE_AUDIO_INPUTS）。
 // 起点相同的改按文件内容排，和解码先后无关；内容相同的两条换位不影响结果。
 // 不写 node_modules，也不进段指纹（只定次序）。版本锁定，依赖布局变了这里直接报错，不能静默漏修。
 import crypto from 'node:crypto';
@@ -29,7 +29,7 @@ export const 按起点和内容排 = <T extends 混音项>(列表: readonly T[])
 
 const 已固定 = Symbol('混音顺序已固定');
 
-/** 给 Remotion 的混音器换上固定次序。download-map 每次都从模块导出上取工厂，所以换导出就够 */
+/** 只供渲染器.ts 绑定 CJS 入口：download-map 每次从导出上取工厂；ESM 的内置工厂不受此补丁影响 */
 export const 固定混音顺序 = () => {
   const require = createRequire(import.meta.url);
   const 模块路径 = path.join(path.dirname(require.resolve('@remotion/renderer')), 'assets', 'inline-audio-mixing.js');

@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
-import { getCompositions, openBrowser, renderMedia, type LogLevel } from '@remotion/renderer';
+import { getCompositions, openBrowser, renderMedia, type LogLevel } from './渲染器.ts';
 import { 作品名 } from '../环境/作品.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 选段 } from '../清单/清单.ts';

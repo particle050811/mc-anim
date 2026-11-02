@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { getCompositions, openBrowser, renderFrames } from '@remotion/renderer';
+import { getCompositions, openBrowser, renderFrames } from './渲染器.ts';
 import { 开闸批, 闸心跳 } from '../闸/闸.ts';
 import { 解析参数, 用法错误 } from '../cli/参数.ts';
 import type { 命令 } from '../cli/命令.ts';

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { getCompositions, renderMedia } from '@remotion/renderer';
+import { getCompositions, renderMedia } from './渲染器.ts';
 
 const 假 = vi.hoisted(() => ({
   目录: '', 时间: 100_000, 输入: 'remotionshm', 读组合毫秒: [] as number[], 首帧毫秒: [] as number[],
@@ -30,7 +30,7 @@ vi.mock('../运行记录/渲染明细.ts', () => ({ 明细收集: class {
     return { 文件: null, 明细: { 小结: { 中位毫秒: 20, P90毫秒: 20, P99毫秒: 20, 最慢帧: [] }, 等待: [] } };
   }
 } }));
-vi.mock('@remotion/renderer', () => ({
+vi.mock('./渲染器.ts', () => ({
   openBrowser: vi.fn(async () => { 假.时间 += 500; return 假.browser; }),
   getCompositions: vi.fn(async () => {
     const page = await 假.browser.newPage();
