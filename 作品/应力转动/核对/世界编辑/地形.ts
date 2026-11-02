@@ -5,16 +5,24 @@ import { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
 import { dataUrl, fetchJson, fetchRange, loadOnce } from '@engine/core/数据源.ts';
 import { sectionKey, type SectionId } from '@engine/voxel/区段.ts';
-import { buildPackTables, coarseHeightAt, decodeCoarseHeight, decodeTileHeader, hasSection, sectionInTile, tileFileName, tileHeaderLen, type 包信息, type SectionData } from '@engine/voxel/区段包.ts';
+import { formatVersion, buildPackTables, coarseHeightAt, decodeCoarseHeight, decodeTileHeader, hasSection, sectionInTile, tileFileName, tileHeaderLen, type 包信息, type SectionData } from '@engine/voxel/区段包.ts';
 import { variesByPos } from '@engine/voxel/群系色.ts';
 import { importedSectionVoxels, type 区段上下文 } from '@engine/voxel/导入区段.ts';
-import { fetchSectionsInPool, registerSource } from '@engine/voxel/区段工人池.ts';
+import { fetchSectionsInPool, registerSource, registerModel } from '@engine/voxel/区段工人池.ts';
+import { 读模型, 模型文件名 } from '@engine/voxel/区段模型.ts';
 import type { VoxelGrid, VoxelSource } from '@engine/voxel/生成.ts';
 
 export type 按版本的地形 = { 键: string; 来源: VoxelSource; 高度: [number, number]; 原点: [number, number, number] };
 
 const 建来源 = async (dir: string): Promise<按版本的地形> => {
   const info = await fetchJson<包信息>(`${dir}/包.json`, 'anim world bake 测试-修整-编辑示例 烘出来');
+  if (info.版本 !== formatVersion) throw new Error(`世界编辑核对地形 ${dir} 是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：运行 anim world 转码，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
+  const url = new URL(dataUrl(`${dir}/${模型文件名}`), location.href).href;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`取世界编辑核对模型 ${url}：${res.status}；运行 anim world 转码，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  读模型(bytes);
+  registerModel(url, bytes);
   const 粗 = decodeCoarseHeight(info);
   let 顶 = -Infinity;
   for (const h of 粗.高) if (h !== -32768) 顶 = Math.max(顶, h);

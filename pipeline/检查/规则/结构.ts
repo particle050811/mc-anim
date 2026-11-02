@@ -2,6 +2,7 @@
 // pipeline 只 import 纯模块、纯模块闭包无 react/three/remotion、getInputProps 只在 engine/段/设置.ts、渲染代码里不许有
 // Math.random、Date.now、相对路径引的资产、写死的路径或主机名；不许 import 地形版本表、不许读时刻的 依据。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
 import os from 'node:os';
+import { 查区段模型登记 } from '../区段模型登记.ts';
 import { 读内容 } from '../内容.ts';
 import { 代码后缀, 是渲染代码, 是纯模块, 是测试或声明, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 点路径, 行号, 解析, 遍历, ts } from '../语法.ts';
@@ -186,4 +187,5 @@ export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostna
 export const 结构 = async (c: 检查上下文, 报: 报告) => {
   await 查分层(c, 报);
   查代码(c, 报);
+  查区段模型登记(c, 报);
 };
