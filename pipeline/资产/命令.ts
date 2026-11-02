@@ -17,7 +17,7 @@ import { 上传发布, 打包发布, 拉发布, 读随发布表, 随发布表名
 import { 写发布锁, 读发布锁, 发布锁名 } from './发布锁.ts';
 import { 补字节, 写随仓库, 算随仓库, 读随仓库表, 随仓库表名, 字节目录 } from './随仓库.ts';
 import { 库名, 读两侧资产表 } from './资产表.ts';
-import { 作品资产锁路径, 入库, 写资产锁, 资产锁路径, 读资产锁, type 锁条目 } from './资产锁.ts';
+import { 作品材质包表路径, 作品的材质包选用们, 作品资产锁路径, 入库, 写资产锁, 资产锁路径, 读材质包选用, 读资产锁, type 锁条目 } from './资产锁.ts';
 import { 带音频元数据 } from './音频量.ts';
 import { 建材质包覆盖 } from './材质包.ts';
 import { 补音频元数据 } from './补量.ts';
@@ -131,7 +131,7 @@ const 补量 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => 
 export const 资产命令: Record<string, 命令> = {
   assets: {
     用法: 'assets add <id> <文件> [--替换] | assets measure [--检查] | assets vendor [--检查] | assets seed | assets pack [--上传] | assets pull | assets 材质包',
-    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--检查 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（render、still、film、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--上传 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "包"、"封顶"，试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
+    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--检查 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（render、still、film、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--上传 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "包"、"封顶"，[段] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
     跑: async (args, 记录) => {
       const p = 解析参数(args, { 开关: ['--替换', '--检查', '--上传'] });
       const [子, id, 文件] = p.位置;
@@ -145,17 +145,22 @@ export const 资产命令: Record<string, 命令> = {
         return;
       }
       if (子 === '材质包' && p.位置.length === 1 && !p.开关.size) {
-        const r = 建材质包覆盖(作品根());
-        const 报 = r.盖.报告 as { 分辨率: { 规则: string; 方块图集格: number }; 方块图集: { 换: number; 共: number; 包里没有: number; 不合: number }; 单张: { 共: number; 换: number; 包里没有: number; 包里没有但同组放大: string[]; 不合: { id: string; 原因: string }[] }; 缩放: Record<string, number>; 各包贡献: Record<string, number>; 群系色: { 改: number } | null; 警告: string[] };
-        console.log(`选用（${r.选.来自}，上面的盖下面的）：${r.包们.map((p) => `${p.id}（${p.许可}，${p.可见性}）`).join(' > ')} > 原版`);
-        console.log(`分辨率：${报.分辨率.规则}；方块图集一格 ${报.分辨率.方块图集格} 像素`);
-        console.log(`方块图集换了 ${报.方块图集.换}/${报.方块图集.共} 格（包里没有 ${报.方块图集.包里没有}，尺寸不合 ${报.方块图集.不合}）；照搬的单张贴图 ${报.单张.共} 件，换了 ${报.单张.换} 件，包里没有 ${报.单张.包里没有} 件（其中 ${报.单张.包里没有但同组放大.length} 件跟同组放大）`);
-        for (const x of 报.单张.不合) console.log(`  不合 ${x.id}：${x.原因}`);
-        console.log(`缩放：${Object.entries(报.缩放).map(([k, n]) => `${k} ${n}`).join('、')}；各包贡献：${Object.entries(报.各包贡献).map(([k, n]) => `${k} ${n}`).join('、')}`);
-        console.log(报.群系色 ? `群系色：按包的 colormap 改了 ${报.群系色.改} 处` : '群系色：包里没有 colormap，照原版');
-        for (const w of 报.警告) console.log(`  !! ${w}`);
-        console.log(`覆盖层 ${Object.keys(r.盖.覆盖).length} 件，写了 ${相对代码根(r.锁文件)}`);
-        记录.产物.push(r.锁文件);
+        // 试样（环境变量）只建那一份；不然 材质包.toml 里的每一种选用（"包" 和 [段] 另选的）各建一份
+        const 选们 = 读材质包选用(作品根()).来自 === '环境' ? [读材质包选用(作品根())] : 作品的材质包选用们(作品根());
+        if (!选们.length) throw new Error(`这部作品没选用材质包：在 ${相对代码根(作品材质包表路径(作品根()))} 写 "包" = ["材质包/<名>"]（或 [段] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
+        for (const 选 of 选们) {
+          const r = 建材质包覆盖(作品根(), 选);
+          const 报 = r.盖.报告 as { 分辨率: { 规则: string; 方块图集格: number }; 方块图集: { 换: number; 共: number; 包里没有: number; 不合: number }; 单张: { 共: number; 换: number; 包里没有: number; 包里没有但同组放大: string[]; 不合: { id: string; 原因: string }[] }; 缩放: Record<string, number>; 各包贡献: Record<string, number>; 群系色: { 改: number } | null; 警告: string[] };
+          console.log(`选用（${r.选.来自}，上面的盖下面的）：${r.包们.map((p) => `${p.id}（${p.许可}，${p.可见性}）`).join(' > ')} > 原版`);
+          console.log(`分辨率：${报.分辨率.规则}；方块图集一格 ${报.分辨率.方块图集格} 像素`);
+          console.log(`方块图集换了 ${报.方块图集.换}/${报.方块图集.共} 格（包里没有 ${报.方块图集.包里没有}，尺寸不合 ${报.方块图集.不合}）；照搬的单张贴图 ${报.单张.共} 件，换了 ${报.单张.换} 件，包里没有 ${报.单张.包里没有} 件（其中 ${报.单张.包里没有但同组放大.length} 件跟同组放大）`);
+          for (const x of 报.单张.不合) console.log(`  不合 ${x.id}：${x.原因}`);
+          console.log(`缩放：${Object.entries(报.缩放).map(([k, n]) => `${k} ${n}`).join('、')}；各包贡献：${Object.entries(报.各包贡献).map(([k, n]) => `${k} ${n}`).join('、')}`);
+          console.log(报.群系色 ? `群系色：按包的 colormap 改了 ${报.群系色.改} 处` : '群系色：包里没有 colormap，照原版');
+          for (const w of 报.警告) console.log(`  !! ${w}`);
+          console.log(`覆盖层 ${Object.keys(r.盖.覆盖).length} 件，写了 ${相对代码根(r.锁文件)}`);
+          记录.产物.push(r.锁文件);
+        }
         return 0;
       }
       if (子 === 'seed' && p.位置.length === 1 && !p.开关.size) {

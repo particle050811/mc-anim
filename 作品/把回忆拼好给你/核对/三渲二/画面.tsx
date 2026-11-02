@@ -16,6 +16,7 @@ import { drawText, shadowOffset, textWidth } from '@库/界面/像素字.ts';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MAGICAL_WINE_FOX, MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
+import { 按原版坐标 } from '@engine/model/贴图倍数.ts';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import houseRaw from 'asset:网格/隐世之境一楼/头';
@@ -71,7 +72,7 @@ const 场景: React.FC<{ v: 视图; 眼?: V3 }> = ({ v, 眼 }) => (
       </贴图像素对齐>
     </描边>
     {/* 箱子跟方块一样不描 */}
-    <Chest 贴图={VANILLA_CHEST_TEX} p={箱子位} />
+    <Chest 贴图={按原版坐标(VANILLA_CHEST_TEX, [64, 64])} p={箱子位} />
   </>
 );
 

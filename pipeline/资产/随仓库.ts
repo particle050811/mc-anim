@@ -2,6 +2,7 @@
 // <作品根>/字节/<sha 前两位>/<sha256> 只放 <作品根>/随仓库.toml 列的段渲片要用的非私有资产（用户点名的范围，不扩大），布局同数据根 store/，按内容寻址。
 // 集合按当前代码现算：这些段的 画面、段.ts、设置.ts、作品外壳（和段指纹同一组入口）沿依赖图走到的 asset:，加 cue 里的资产、台词的配音，
 // 加 anim film 自己要读的（音效起音；有台词时字幕卡的像素字）。私有的一律不带：私有配乐缺了换静音（资产/私有配乐.ts）。
+// 选了材质包的段按它的选用取字节（材质包.toml，资产锁.ts 套材质包）：带的是换过的那份；环境变量的试样不算。
 // 同一个包里别的段（核对段等）import、又不在集合里的字节，公开仓库没有，打包时换成占位（资产/缺字节.ts）。
 // anim assets vendor 照它重写 字节/（从数据根 store 拷、逐件核 sha），anim check 核对 字节/ 和集合一致；
 // anim render/still/film/studio 开头 补字节：字节/ 里数据根 store/ 还没有的核过 sha 补进去（APFS 克隆，别的文件系统退成普通复制），已有的不动。
@@ -15,7 +16,7 @@ import { 读台词表 } from '../检查/规则/台词.ts';
 import { 音效起音资产 } from '../合成/台词落点.ts';
 import { 像素字资产 } from '../合成/字幕卡.ts';
 import { 提示发布缺 } from './发布锁.ts';
-import { 字节路径, type 资产锁, type 锁条目 } from './资产锁.ts';
+import { 字节路径, 套材质包, 材质包选用键, 读材质包选用, type 资产锁, type 锁条目 } from './资产锁.ts';
 
 export const 随仓库表名 = '随仓库.toml';
 export const 字节目录名 = '字节';
@@ -58,8 +59,26 @@ export const 算随仓库 = async (c: 检查上下文, 选择器: string[]): Pro
   for (const x of 选择器) if (!内容.段们.some((s) => 中(s, x))) 集合.问题.push(`${随仓库表名} 的「${x}」没对上清单里的段（只认段键或章）`);
   const 两锁 = c.资产锁();
   const 锁: 资产锁 = { ...两锁.作品, ...两锁.共用 };
+  const 作品根 = c.绝对(c.作品目录);
+  const 套过 = new Map<string, 资产锁 | null>();
+  /** 这一段的选用下的锁；覆盖层锁没建、过期的记成问题，返回 null */
+  const 段锁 = (段键: string) => {
+    const 选 = 读材质包选用(作品根, '', '', 段键);
+    const k = 材质包选用键(选);
+    if (!套过.has(k)) {
+      try {
+        套过.set(k, 套材质包(锁, 作品根, 选));
+      } catch (e) {
+        集合.问题.push((e as Error).message);
+        套过.set(k, null);
+      }
+    }
+    return 套过.get(k)!;
+  };
+  /** id → 用到它的段的锁（材质包按段选时同一个 id 在不同段可以是不同的字节） */
+  const 用到 = new Map<string, Set<资产锁>>();
+  const 加 = (id: string, l: 资产锁) => 用到.set(id, (用到.get(id) ?? new Set()).add(l));
   const 配音 = new Map((读台词表(c) ?? []).map((t) => [t.id, t.配音]));
-  const ids = new Set<string>();
   let 有台词 = false;
   for (const s of 内容.段们.filter((s) => 选择器.some((x) => 中(s, x)))) {
     集合.段们.push(s.键);
@@ -67,34 +86,38 @@ export const 算随仓库 = async (c: 检查上下文, 选择器: string[]): Pro
       集合.问题.push(`${s.键}：${s.错误 ?? '段.ts 读不出来'}`);
       continue;
     }
+    const l = 段锁(s.键);
+    if (!l) continue;
     for (const 名 of s.定义.地形) if (!集合.地形.includes(名)) 集合.地形.push(名);
     const 入口 = [`${s.目录}/画面.tsx`, s.段文件, 'engine/段/设置.ts', c.作品路径('index.ts'), ...(s.定义.叠层 ?? []).map((l) => `${s.目录}/${l.入口}`)];
-    for (const f of 闭包(图, 入口.filter((p) => 图.边.has(p)))) for (const id of 图.资产.get(f) ?? []) ids.add(id);
+    for (const f of 闭包(图, 入口.filter((p) => 图.边.has(p)))) for (const id of 图.资产.get(f) ?? []) 加(id, l);
     for (const cue of s.定义.声音 ?? []) {
-      if (cue.资产 !== undefined) ids.add(cue.资产);
+      if (cue.资产 !== undefined) 加(cue.资产, l);
       else {
         有台词 = true;
         const id = 配音.get(cue.台词);
-        if (id) ids.add(id);
+        if (id) 加(id, l);
       }
     }
   }
   // anim film 自己读的：没登记就是这部作品不用（读音效起音 缺了按 0 算）
-  for (const id of [音效起音资产, ...(有台词 ? [像素字资产] : [])]) if (锁[id]) ids.add(id);
+  for (const id of [音效起音资产, ...(有台词 ? [像素字资产] : [])]) if (锁[id]) 加(id, 锁);
   集合.地形.sort();
-  for (const id of [...ids].sort()) {
-    const 条目 = 锁[id];
-    if (!条目) {
-      集合.问题.push(`「${id}」不在资产锁里`);
-      continue;
+  for (const id of [...用到.keys()].sort()) {
+    for (const l of 用到.get(id)!) {
+      const 条目 = l[id];
+      if (!条目) {
+        集合.问题.push(`「${id}」不在资产锁里`);
+        break;
+      }
+      if (条目.库 === '私有') {
+        if (!集合.私有.includes(id)) 集合.私有.push(id);
+        continue;
+      }
+      const 已 = 集合.件.get(条目.sha256);
+      if (!已) 集合.件.set(条目.sha256, { 条目, ids: [id] });
+      else if (!已.ids.includes(id)) 已.ids.push(id);
     }
-    if (条目.库 === '私有') {
-      集合.私有.push(id);
-      continue;
-    }
-    const 已 = 集合.件.get(条目.sha256);
-    if (已) 已.ids.push(id);
-    else 集合.件.set(条目.sha256, { 条目, ids: [id] });
   }
   return 集合;
 };

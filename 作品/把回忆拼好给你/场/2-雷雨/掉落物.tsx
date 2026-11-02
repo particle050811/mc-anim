@@ -10,6 +10,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite, type ItemLayer } from '@engine/model/物品贴图.tsx';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { textureNames } from '@engine/voxel/真实方块表.ts';
+import { 按原版坐标 } from '@engine/model/贴图倍数.ts';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import 方块表图 from 'asset:贴图/场景/关键帧/方块表';
@@ -74,7 +75,7 @@ const 一堆: React.FC<{ d: 掉落物; 刻: number }> = ({ d, 刻 }) => {
         const o = k === 0 ? [0, 0, 0] : [(r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15];
         return (
           <group key={k} position={[o[0]!, o[1]!, o[2]! + 3 / 16]} scale={0.25}>
-            {d.物品 === 'minecraft:chest' ? <Chest 贴图={VANILLA_CHEST_TEX} p={[0, 0, -0.5]} 朝向="south" /> : <方块拼搭 方块们={[{ 状态, 位: [0, 0, 0] }]} 原点={[-0.5, -0.5, -0.5]} />}
+            {d.物品 === 'minecraft:chest' ? <Chest 贴图={按原版坐标(VANILLA_CHEST_TEX, [64, 64])} p={[0, 0, -0.5]} 朝向="south" /> : <方块拼搭 方块们={[{ 状态, 位: [0, 0, 0] }]} 原点={[-0.5, -0.5, -0.5]} />}
           </group>
         );
       })}

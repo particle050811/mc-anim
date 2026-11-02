@@ -83,7 +83,9 @@ export const blockAtlas = () => {
   const src = png(texUri);
   const cell = src.w;
   if (cell < 16 || (cell & (cell - 1)) !== 0 || src.h % cell !== 0) throw new Error(`方块图集竖条宽 ${src.w}、高 ${src.h}：格边长要是 16 起的 2 的幂、高是它的整数倍（材质包覆盖层见 pipeline/资产/材质包.ts）`);
-  const sheet = flatColorBlocks ? flattenAtlasColors(src, '不分', cell) : src;
+  // 纯色方块（纯色方块.ts）按 16 一格压色；高清图集不压，不然一格被拆成四块各算各的平均色
+  if (flatColorBlocks && cell !== 16) throw new Error(`纯色方块只认 16 像素一格的方块图集，这里是 ${cell}：出纯色参考视频时作品不选高清材质包（材质包.toml 写 "封顶" = 16）`);
+  const sheet = flatColorBlocks ? flattenAtlasColors(src, '不分') : src;
   const texCount = sheet.h / cell;
   const rows = Math.ceil(texCount / ATLAS_COLS);
   const mk = (solidFill: boolean) => {

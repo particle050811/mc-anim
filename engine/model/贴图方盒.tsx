@@ -49,9 +49,7 @@ export const TexBox: React.FC<{
   emissive?: number;
   alphaTest?: number;
   hurt?: boolean; // 原版受伤 / 死亡变红（见 `HURT_OVERLAY`）
-  // 模型按多大的贴图写的（原版尺寸，像素）；不给 = 贴图本身的尺寸。材质包的高清贴图是它的整数倍（pipeline/资产/材质包.ts），px、uv 照原版尺寸写
-  texSize?: [number, number];
-}> = ({ tex, px: [width, height, depth], uv: [u0, v0], s: size, p: center = [0, 0, 0], emissive = 0, alphaTest = 0, hurt = false, texSize: [texW, texH] = [tex.w, tex.h] }) => {
+}> = ({ tex, px: [width, height, depth], uv: [u0, v0], s: size, p: center = [0, 0, 0], emissive = 0, alphaTest = 0, hurt = false }) => {
   const mesh = useMemo(() => {
     const [hx, hy, hz] = [size[0] / 2, size[1] / 2, size[2] / 2];
     const pos: number[] = [];
@@ -62,7 +60,7 @@ export const TexBox: React.FC<{
     const face = (corners: V3[], normal: V3, x: number, y: number, fw: number, fh: number) => {
       const baseIdx = pos.length / 3;
       corners.forEach((corner) => { pos.push(...corner); nor.push(...normal); });
-      const [ua, ub, va, vb] = [x / texW, (x + fw) / texW, y / texH, (y + fh) / texH];
+      const [ua, ub, va, vb] = [x / tex.w, (x + fw) / tex.w, y / tex.h, (y + fh) / tex.h];
       uvs.push(ua, va, ub, va, ub, vb, ua, vb);
       idx.push(baseIdx, baseIdx + 2, baseIdx + 1, baseIdx, baseIdx + 3, baseIdx + 2);
     };
@@ -90,6 +88,6 @@ export const TexBox: React.FC<{
     boxMesh.castShadow = true;
     boxMesh.receiveShadow = true;
     return boxMesh;
-  }, [tex, width, height, depth, u0, v0, size[0], size[1], size[2], emissive, alphaTest, hurt, texW, texH]);
+  }, [tex, width, height, depth, u0, v0, size[0], size[1], size[2], emissive, alphaTest, hurt]);
   return <primitive object={mesh} position={center} />;
 };

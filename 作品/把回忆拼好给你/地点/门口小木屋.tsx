@@ -11,6 +11,7 @@
 import type React from 'react';
 import { 方块拼搭, type 方块 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
+import { 按原版坐标 } from '@engine/model/贴图倍数.ts';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import type { 地图边长 } from '../特效/地图画.ts';
 import { 告示牌, 告示牌尺寸 } from './告示牌.tsx';
@@ -192,7 +193,7 @@ export const 门口小木屋: React.FC<门口小木屋属性> = ({ 门开 = fals
       <group position={[门开 ? 门口.门.开着的门板.x0 + 0.5 : 0, 0, 0]} scale={[门开 ? 1 : -1, 1, 1]}>
         <方块拼搭 方块们={门方块} 原点={格原点} />
       </group>
-      {墙 ? <照片墙 格们={墙} 边长={照片墙边长} /> : <Chest 贴图={VANILLA_CHEST_TEX} 开度={箱子开度} p={门口.箱子} 朝向="south" />}
+      {墙 ? <照片墙 格们={墙} 边长={照片墙边长} /> : <Chest 贴图={按原版坐标(VANILLA_CHEST_TEX, [64, 64])} 开度={箱子开度} p={门口.箱子} 朝向="south" />}
       {树 && <方块拼搭 方块们={树} 原点={格原点} 群系={群系} 正面花草 />}
       {插牌 && <告示牌 位={门口.告示牌}>{告示牌字}</告示牌>}
     </group>
