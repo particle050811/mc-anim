@@ -93,7 +93,9 @@ export const 前方等待 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票
 export const 渲染看 = (s: 调度状态): string => {
     const m = s.机, lines = [`${new Date(s.时).toISOString().slice(5, 19)}Z ${一行状态(s)} free${G(m.free)} 压缩${G(m.压缩)} swap${G(m.swap)} 换出${G(m.换出)} GPU${m.GPU ?? '?'}% 热${m.热 ?? '?'} 盘${G(m.盘)}`];
     const cpu = s.在跑.filter(t => !s.持锁.some(x => x.任务 === t.任务) && !s.票.some(x => x.内容?.任务 === t.任务));
-    lines.push(`CPU/准备 ${cpu.slice(0, 3).map(x => `#${x.发起.pid} ${x.声明.种} ${x.发起.路 || x.发起.工作区}`).join('；') || '无登记'}；孤儿Chrome ${m.孤儿 ?? '?'}`);
+    // 持锁的任务也可能有后台在转：闸放开后才算完，单列出来，放前面不被截掉。
+    const 后台 = s.在跑.filter(t => t.后台).map(t => `后台#${t.发起.pid} ${t.后台!.在做 ?? ''}${t.后台!.排着 ? ` 排${t.后台!.排着}` : ''}`);
+    lines.push(`CPU/准备 ${[...后台, ...cpu.slice(0, 3).map(x => `#${x.发起.pid} ${x.声明.种} ${x.发起.路 || x.发起.工作区}`)].join('；') || '无登记'}；孤儿Chrome ${m.孤儿 ?? '?'}`);
     for (const x of s.持锁.slice(0, 2))
         lines.push(`持锁 #${x.pid}${x.死 ? ' 死' : ''} ${x.声明.种 ?? '脚本'} ${x.声明.段 ?? ''} ${x.已出帧}/${x.总帧 ?? '?'}帧 ${x.发起.工作区}/${x.发起.路 || '?'} ${x.声明.用途 ?? '?'} 已占${分((s.时 - x.拿锁时) / 1000)}/预计${x.声明.预计秒 ? 分(x.声明.预计秒) : '?'} 心跳${x.心跳 ? Math.round((s.时 - x.心跳) / 1000) + '秒' : '无，旧闸'}`);
     const seen = new Map<string, number>();
@@ -115,5 +117,5 @@ export const 渲染看 = (s: 调度状态): string => {
             return out + '…';
         out += c;
     } return out; };
-    return lines.slice(0, 10).map((l, i) => 截(l, i === 0 ? 210 : l.startsWith('持锁') ? 140 : 95)).join('\n');
+    return lines.slice(0, 10).map((l, i) => 截(l, i === 0 ? 210 : l.startsWith('持锁') ? 140 : l.startsWith('CPU/准备') ? 125 : 95)).join('\n');
 };
