@@ -1,13 +1,16 @@
 // 接缝：后一段首帧和前一段末帧画面、声音都一样（段与段共用了一帧）只报警，两帧都留（用户 10-18 定：段与段不共用帧，要去掉就改那段的编排）。
 // 判法照旧项目 合成第六章.py 的 judge_seam：160×90 灰度平均差 ≤ 2 才看声音；两帧声音都低于 −60 dB，或相关 > 0.6 且响度差 < 1.5 dB，算首帧重复。
 // 相关 0.6：一镜到底相邻两段同一个全局帧，配乐一样，但有的音效只在一边；声音接着往下放的在 0 上下。
-// 两头的画面、声音可以取自母版，也可以取自段签（首尾帧小图是同一条 ffmpeg 从无损抽样帧缩的，声音从 声音.flac 截，取出来和母版逐位相同）。
+// 两头的画面、声音可以取自母版，也可以取自段签（首尾帧小图是派生段签时从 CRF1 用同一个滤镜缩的，声音从 声音.flac 截，取出来和母版逐位相同）。
 import { 配置 } from '../环境/配置.ts';
 import { 跑出字节 } from '../环境/子进程.ts';
 import { 转float } from './音频.ts';
 
+/** 接缝比的小图：160×90 灰度（段签的首尾帧小图也用它，见 验收.ts 的 扫母版） */
+export const 灰度滤镜 = 'scale=160:90,format=gray';
+
 export const 灰度帧 = (file: string, 帧: number) =>
-  跑出字节([配置('ffmpeg'), '-v', 'error', '-i', file, '-vf', `select=eq(n\\,${帧}),scale=160:90,format=gray`, '-vframes', '1', '-f', 'rawvideo', '-']);
+  跑出字节([配置('ffmpeg'), '-v', 'error', '-i', file, '-vf', `select=eq(n\\,${帧}),${灰度滤镜}`, '-vframes', '1', '-f', 'rawvideo', '-']);
 
 export const 一帧声音 = (file: string, 帧: number, 每帧样本: number) =>
   转float(跑出字节([配置('ffmpeg'), '-v', 'error', '-i', file, '-vn', '-af', `atrim=start_sample=${帧 * 每帧样本}:end_sample=${(帧 + 1) * 每帧样本}`, '-ac', '1', '-ar', '48000', '-f', 'f32le', '-']));
