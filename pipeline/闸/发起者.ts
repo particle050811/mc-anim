@@ -28,24 +28,88 @@ const 词首 = String.raw`(?<![\w.-])`;
 const 头 = new RegExp(String.raw`(${词首}(?:[\w.-]*(?:authorization|cookies?)|x-${名})["']?\s*[=:：]\s*)[^\r\n]*`, 'gi');
 const 名值 = new RegExp(String.raw`(${词首}${名}["']?\s*[=:：]\s*)(?:${值}|[^\s&"']+)`, 'gi');
 const 开关值 = new RegExp(String.raw`(${词首}--?${名}\s+)(?:${值}|\S+)`, 'gi');
-/** 日志不是凭据容器。空格分隔的只认 --token abc，「token 满了」这种话不遮。 */
-export const 遮密 = (s: string) => s
+// 空格头只认明确的 x-api-key，不把「api-key 说明」「token 满了」当名值对。
+const 空格头 = new RegExp(String.raw`(${词首}x-api-key[ \t]+)(?:${值}|[^\s&"']+)`, 'gi');
+const 遮文字 = (s: string) => s
     // 调用方都只留几百字；不截的话一长串 key-key-… 仍是平方级。
     .slice(0, 4000)
     .replace(头, `$1${遮}`)
     .replace(/(?<![a-z0-9+.-])([a-z][a-z0-9+.-]*:\/\/)[^/@\r\n]+@/gi, `$1${遮}@`)
+    .replace(空格头, `$1${遮}`)
     .replace(名值, `$1${遮}`)
     .replace(开关值, `$1${遮}`)
     .replace(new RegExp(String.raw`\bBearer\s+(?:${值}|\S+)`, 'gi'), `Bearer ${遮}`)
-    .replace(/\b(?:sk-|gh[pousr]_|github_pat_)[\w-]{4,}/g, 遮);
+    .replace(/\b(?:(?:sk-|gh[pousr]_|github_pat_)[\w-]{4,}|(?:sk_live_|xoxb-)[\w-]+)/g, 遮);
+type 登录选项 = { 分开: string[]; 连写: string[]; 带值: Set<string>; 有子命令?: boolean };
+const 数据库选项: 登录选项 = {
+    // mysql 的 -p 单独出现是交互输入密码，后面的数据库名不能遮；-P 是端口。
+    分开: ['-u'], 连写: ['-u', '-p'],
+    带值: new Set(['-h', '--host', '-P', '--port', '-S', '--socket', '-e', '--execute', '-D', '--database', '--user', '--password']),
+};
+const 登录工具: Record<string, 登录选项> = {
+    curl: { 分开: ['-u'], 连写: ['-u'], 带值: new Set(['-H', '--header', '-d', '--data', '--data-raw', '--data-binary', '--data-urlencode', '-o', '--output', '-A', '--user-agent', '-e', '--referer', '--url', '-x', '--proxy', '-X', '--request', '--user']) },
+    mysql: 数据库选项, mariadb: 数据库选项,
+    sshpass: { 分开: ['-p'], 连写: ['-p'], 带值: new Set(['-f', '-d']), 有子命令: true },
+};
+/** 只认命令位置的工具名，不从 anim 的理由、参数值里的命令示例猜工具。 */
+const 登录参数替换 = (argv: readonly string[]) => {
+    const 换 = new Map<number, string>();
+    const 工具 = (argv[0] ?? '').split(/[\\/]/).at(-1)!.replace(/\.exe$/i, '').toLowerCase();
+    const 选项 = Object.hasOwn(登录工具, 工具) ? 登录工具[工具]! : undefined;
+    if (!选项) return 换;
+    for (let i = 1; i < argv.length; i++) {
+        const a = argv[i]!;
+        if (a === '--') break;
+        if (选项.分开.includes(a)) {
+            if (i + 1 < argv.length) 换.set(++i, 遮);
+        } else {
+            const 前缀 = 选项.连写.find(k => a.startsWith(k) && a.length > k.length);
+            if (前缀) 换.set(i, 前缀 + 遮);
+            // -e 的 SQL、--data 的正文即便恰好是 -pX、-u 也不是登录参数。
+            else if (选项.带值.has(a)) i++;
+            else if (选项.有子命令 && !a.startsWith('-')) break;
+        }
+    }
+    return 换;
+};
+const 遮空格头项 = (a: string, 前项 = '') => {
+    if (/^x-api-key$/i.test(前项)) return 遮;
+    const 头名 = /^x-api-key[ \t]+/i.exec(a)?.[0];
+    return 头名 ? 头名 + 遮 : a;
+};
+/** 文本已经丢失 argv 边界，只按字面引号、转义和命令分隔符分词，不执行 shell 或展开变量。 */
+const 遮命令文本 = (s: string) => {
+    if (/^x-api-key[ \t]+[^\r\n]*$/i.test(s)) return 遮空格头项(s);
+    const 词 = [...s.matchAll(/&&|\|\||[;|&\r\n]|(?:\\[\s\S]|"(?:\\[\s\S]|[^"\\])*(?:"|$)|'[^']*(?:'|$)|[^\s"'\\;|&])+/g)].map(m => ({
+        原: m[0], 起: m.index,
+        字: m[0].replace(/"((?:\\[\s\S]|[^"\\])*)(?:"|$)|'([^']*)(?:'|$)|\\([\s\S])/g,
+            (_全, 双: string | undefined, 单: string | undefined, 转: string | undefined) => 双?.replace(/\\(["\\$`\n])/g, '$1') ?? 单 ?? 转!),
+    }));
+    // 不把参数中的分号后半句另猜成命令；日志里 anim --为什么 的原文也可能提到登录工具。
+    const 边界 = 词.findIndex(t => /^(?:&&|\|\||[;|&\r\n])$/.test(t.原));
+    const 换 = 登录参数替换(词.slice(0, 边界 < 0 ? 词.length : 边界).map(t => t.字));
+    let out = '', 尾 = 0;
+    for (let i = 0; i < 词.length; i++) {
+        const t = 词[i]!, 新 = 换.get(i) ?? 遮空格头项(t.字, 词[i - 1]?.字);
+        if (新 === t.字) continue;
+        const 引号 = /^['"]/.test(t.原) && t.原.endsWith(t.原[0]!) ? t.原[0]! : '';
+        out += s.slice(尾, t.起) + 引号 + 新 + 引号;
+        尾 = t.起 + t.原.length;
+    }
+    return out + s.slice(尾);
+};
+export const 遮密 = (s: string) => 遮文字(遮命令文本(s.slice(0, 4000)));
 /** 逐项遮再拼：argv 已去引号，拼起来就分不清值里的空格和下一项了。 */
-export const 遮命令 = (argv: readonly string[]) => argv.map((a, i) => {
-    // 这一项本身是 名=值 或 头: 值：认第一个分隔符，后面整项都是值，否则值里的等号会把密钥算进名字。
-    const 名部 = /^[^\s=:：]+\s*[=:：]\s*/.exec(a)?.[0];
-    if (名部 && 敏感名.test(名部))
-        return 名部 + 遮;
-    return /^--?[^=]+$/.test(argv[i - 1] ?? '') && 敏感名.test(argv[i - 1]!) ? 遮 : 遮密(a);
-}).join(' ');
+export const 遮命令 = (argv: readonly string[]) => {
+    const 换 = 登录参数替换(argv);
+    return argv.map((a, i) => {
+        if (换.has(i)) return 换.get(i)!;
+        // 这一项本身是 名=值 或 头: 值：认第一个分隔符，后面整项都是值，否则值里的等号会把密钥算进名字。
+        const 名部 = /^[^\s=:：]+\s*[=:：]\s*/.exec(a)?.[0];
+        if (名部 && 敏感名.test(名部)) return 名部 + 遮;
+        return /^--?[^=]+$/.test(argv[i - 1] ?? '') && 敏感名.test(argv[i - 1]!) ? 遮 : 遮文字(遮空格头项(a, argv[i - 1]));
+    }).join(' ');
+};
 export const 读发起者 = (env: NodeJS.ProcessEnv = process.env, argv = process.argv, cwd = process.cwd(), git = true): 发起者 => {
     const root=git?代码根():cwd;
     const 父链:number[]=[process.ppid];
