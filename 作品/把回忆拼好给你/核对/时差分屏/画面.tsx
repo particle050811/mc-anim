@@ -2,6 +2,7 @@
 // 不在画面上写字（看的就是成片那一帧），视图名看文件夹里的 00-说明.md。
 import type React from 'react';
 import { AbsoluteFill, Freeze, useCurrentFrame } from 'remotion';
+import { 旧帧号 } from '../../分镜.ts';
 import { 时差分屏 } from '../../场/2-门口/时差分屏.tsx';
 import { 视图们 } from './视图.ts';
 
@@ -10,7 +11,7 @@ const 画面: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <Freeze frame={v.帧}>
-        <时差分屏 帧={v.帧} 描边={v.描边} 后期={v.后期} 她={v.她} />
+        <时差分屏 帧={v.帧} 种子={旧帧号(v.帧)} 描边={v.描边} 后期={v.后期} 她={v.她} />
       </Freeze>
     </AbsoluteFill>
   );

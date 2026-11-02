@@ -10,7 +10,7 @@ import { stevePose, vanillaWalk } from '@库/角色/史蒂夫.tsx';
 import { Zombie, ZOMBIE } from '@库/生物/僵尸.tsx';
 import { collectBreakParticles, spawnBlockBreak } from '@库/特效/方块破坏粒子.tsx';
 import { type Particle, ParticleQuads, particleTexture } from '@库/特效/粒子面片.tsx';
-import { fps, 画幅 } from '../../分镜.ts';
+import { fps, 旧帧号, 画幅 } from '../../分镜.ts';
 import { 地层, 掉落物, 粒子色, 音效们 } from '../../场/2-第一晚/参数.ts';
 import { 第一晚史蒂夫 } from '../../场/2-第一晚/史蒂夫.tsx';
 import { 地上泥土, 泥土贴图 } from '../../场/2-第一晚/泥土块.tsx';
@@ -113,7 +113,7 @@ const 画面: React.FC = () => {
       {(Object.keys(音源) as (keyof typeof 音效们)[]).map((名) => (
         <音效轨 key={名} src={音源[名]} 资产={音效们[名].资产} 段={段} />
       ))}
-      <整片后期 调色={t.调色} 种子={歌曲帧(f)}>
+      <整片后期 调色={t.调色} 种子={旧帧号(歌曲帧(f))}>
         <新世界 机位={镜头(f)} 你={null} 色调={t.色调} 刻={天刻(f)} 剖={{ 坑: 坑态(f), 剥: 剥(f) }} 宽={宽} 高={高}>
           <你 f={f} />
           <掉的土 f={f} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fps, 画幅, 段窗口, 正片事件 } from '../../分镜.ts';
+import { fps, 旧帧, 画幅, 段窗口, 正片事件 } from '../../分镜.ts';
 import { 图标边 } from '../../界面/实例图标.ts';
 import { 光标, 取景中心, 尺, 界面, 碎片, 钻入, 片尾白, 片尾拉回 } from './参数.ts';
 import { 上次游玩字, 光标在, 图标框, 指着在, 框光标亮, 行字, 选中在, 钻入取景, 钻入进度, 钻入透, 碎块们, 碎块在, 片尾白光, 片尾取景, 平常取景, 重逢行字 } from './编排.ts';
@@ -29,10 +29,11 @@ describe('第 0 镜：光标、指着、选中', () => {
     expect(框光标亮(0)).toBe(true);
   });
   it('搜索框光标照原版 6 刻亮、6 刻灭', () => {
-    const 亮们 = Array.from({ length: 48 }, (_, f) => 框光标亮(f));
-    expect(亮们.filter(Boolean).length).toBeGreaterThan(20);
-    expect(亮们.filter(Boolean).length).toBeLessThan(28);
-    expect(框光标亮(Math.ceil((6 * 24) / 20))).toBe(false);
+    // 两秒里亮的帧占 20/48～28/48
+    const 亮们 = Array.from({ length: 2 * fps }, (_, f) => 框光标亮(f));
+    expect(亮们.filter(Boolean).length).toBeGreaterThan((2 * fps * 20) / 48);
+    expect(亮们.filter(Boolean).length).toBeLessThan((2 * fps * 28) / 48);
+    expect(框光标亮(Math.ceil((6 * fps) / 20))).toBe(false);
   });
   it('光标到了停在图标上（蓝的播放箭头），鼓点那一帧点下去：选中、光标还在、不再蒙灰；下一帧光标没了', () => {
     expect(光标在(正片事件.开场光标到.帧)).toEqual(光标.停);
@@ -78,7 +79,7 @@ describe('取景', () => {
 
 describe('钻进图标', () => {
   it('最后一帧有界面的画面：图标铺满画面、照片全透，下一帧去掉界面不跳', () => {
-    const 末 = 鼓点 + 钻入.帧 - 1;
+    const 末 = Math.ceil(鼓点 + 钻入.秒 * fps) - 1;
     const { p, q } = 钻入进度(末);
     expect(p).toBe(1);
     expect(钻入透(q)).toBe(1);
@@ -101,24 +102,27 @@ describe('片尾：闪白、拉回、碎片（核查 10-24）', () => {
     expect(段窗口('2-拼回').起帧).toBe(正片事件.片尾白光.帧);
     expect(正片事件.片尾白光.帧).toBe(正片事件.合照咔哒.帧);
   });
-  it('第一帧整屏纯白，同第 11 句截图那一闪几帧就退：白过三成的不超过 3 帧，闪白帧 起没有白', () => {
+  it('第一帧整屏纯白，同第 11 句截图那一闪几帧就退：白过三成的不超过 1/8 秒（24 fps 时 3 帧），闪白秒 起没有白', () => {
     expect(片尾白光(0)).toBe(1);
-    expect(Array.from({ length: 20 }, (_, f) => 片尾白光(f)).filter((a) => a > 0.3).length).toBeLessThanOrEqual(3);
-    expect(片尾白光(片尾白.闪白帧)).toBe(0);
+    expect(Array.from({ length: fps }, (_, f) => 片尾白光(f)).filter((a) => a > 0.3).length / fps).toBeLessThanOrEqual(旧帧(3));
+    expect(片尾白光(Math.ceil(片尾白.闪白秒 * fps))).toBe(0);
   });
-  it('镜头从图标跟前往外拉（钻入那条路倒着走）：第一帧尺 起尺、越拉越慢，拉回帧 起是平常取景（第 0 镜），回色前已经停住', () => {
+  it('镜头从图标跟前往外拉（钻入那条路倒着走）：第一帧尺 起尺、越拉越慢，拉回秒 起是平常取景（第 0 镜），回色前已经停住', () => {
+    const 拉完 = 片尾拉回.秒 * fps;
     expect(片尾取景(0).尺).toBeCloseTo(片尾拉回.起尺, 9);
-    for (let f = 1; f <= 片尾拉回.帧; f++) {
+    for (let f = 1; f <= 拉完; f++) {
       expect(片尾取景(f).尺, `第 ${f} 帧`).toBeLessThan(片尾取景(f - 1).尺);
       if (f >= 2) expect(片尾取景(f - 1).尺 - 片尾取景(f).尺, `第 ${f} 帧`).toBeLessThanOrEqual(片尾取景(f - 2).尺 - 片尾取景(f - 1).尺 + 1e-9);
     }
-    expect(片尾取景(片尾拉回.帧)).toEqual(平常取景);
-    expect(片尾拉回.帧).toBeLessThan(回色);
+    expect(片尾取景(拉完)).toEqual(平常取景);
+    expect(拉完).toBeLessThan(回色);
   });
   it('碎片大、飞得够久：起飞那一帧一块不小于 120 页面像素宽，第一块起飞到最后一块到位不短于 0.8 秒；回色后定格不短于 0.5 秒', () => {
-    for (const b of 碎块们) expect((碎块在(b, b.起帧)!.边 * 片尾取景(b.起帧).尺) / 2).toBeGreaterThanOrEqual(120);
-    const 到们 = 碎块们.map((b) => b.起帧 + 碎片.飞帧);
-    expect((Math.max(...到们) - Math.min(...碎块们.map((b) => b.起帧)) + 1) / fps).toBeGreaterThanOrEqual(0.8);
+    // 起飞那一帧 = 起秒 起的第一个整帧；最后一块到位那一刻再算上 1/24 秒（24 fps 时到位那一帧）
+    const 起飞帧 = (b: (typeof 碎块们)[number]) => Math.ceil(b.起秒 * fps);
+    for (const b of 碎块们) expect((碎块在(b, 起飞帧(b))!.边 * 片尾取景(起飞帧(b)).尺) / 2).toBeGreaterThanOrEqual(120);
+    const 到们 = 碎块们.map((b) => b.起秒 + 碎片.飞秒);
+    expect(Math.max(...到们) - Math.min(...碎块们.map((b) => b.起秒)) + 旧帧(1)).toBeGreaterThanOrEqual(0.8);
     expect((段窗口('2-拼回').帧数 - 回色) / fps).toBeGreaterThanOrEqual(0.5);
   });
   it('16 块碎片正好铺满图标，一格一块', () => {

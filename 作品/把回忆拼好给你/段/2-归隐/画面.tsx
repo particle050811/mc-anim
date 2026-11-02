@@ -2,7 +2,7 @@
 // 符文歌词同 2-时差：叠在两屏上面、整页那层质感里面，描边色取服务器那半的调子；第 15 句放到底部（场/2-门口/归隐歌词.ts）。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
-import { 段时钟 } from '../../分镜.ts';
+import { 旧帧号, 段时钟 } from '../../分镜.ts';
 import { 左调子, 归隐画面 } from '../../场/2-门口/归隐.tsx';
 import { 归隐歌词, 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
@@ -28,7 +28,7 @@ const 画面: React.FC = () => {
       <音效轨 src={铃url} 资产="音效/万法皆通/wind_seeking_bell" 段={段} />
       <归隐画面
         帧={帧}
-        种子={帧}
+        种子={旧帧号(帧)}
         叠层={
           <>
             <符文歌词 行们={歌词.上行们} 样式={{ ...符文歌词默认, 描边色: 左调子(帧).描边 }} />
