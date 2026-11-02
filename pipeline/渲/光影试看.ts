@@ -1,6 +1,6 @@
-// anim still、bench 的 --光影：打包时把 engine/三渲二/画布.tsx 整个换成 engine/三渲二/光影/试看画布.tsx（带光影层的同名组件），每份光影配置从页面环境变量取。
-// 用户 11-02 要先出光影静帧给他挑：现有段的代码、指纹一点不动，只在这两个不留母版、不算指纹的命令里换。render 不认 --光影，母版不会混进光影画面。
-// 一份配置是 JSON 或预设名（engine/三渲二/光影/预设.ts），「关」= 换上去的画布不开光影（核对替身和原画布逐像素一样）。
+// anim still、bench 的 --光影：打包时把段里引的 engine/三渲二/画布.tsx 换成 engine/三渲二/光影/试看画布.tsx（包一层原画布，光影的样式改从页面环境变量取），
+// 没在作品默认值里开光影的段也能先出光影静帧给用户挑（用户 11-02），不用为试看改默认值、动指纹。只在这两个不留母版、不算指纹的命令里换，
+// render 不认 --光影，母版不会混进试看的画面。一份配置是 JSON 或预设名（engine/三渲二/光影/预设.ts），「关」= 强制不开（段在默认值里开了也关）。
 import path from 'node:path';
 import type { WebpackOverrideFn } from '@remotion/bundler';
 import type { Compiler } from 'webpack';
@@ -12,9 +12,12 @@ export const 光影环境名 = 'REMOTION_ANIM_LIGHTING';
 const 原画布 = () => path.join(代码根(), 'engine', '三渲二', '画布.tsx');
 const 试看画布 = () => path.join(代码根(), 'engine', '三渲二', '光影', '试看画布.tsx');
 
-type 解析数据 = { createData: { resource?: string; request?: string; userRequest?: string; rawRequest?: string; context?: string } };
+type 解析数据 = {
+  contextInfo?: { issuer?: string };
+  createData: { resource?: string; request?: string; userRequest?: string; rawRequest?: string; context?: string };
+};
 
-/** 解析到原画布的 import 一律改指试看画布 */
+/** 解析到原画布的 import 改指试看画布，试看画布自己引原画布的那一处不改 */
 export class 光影试看插件 {
   readonly 原: string;
   readonly 替: string;
@@ -25,8 +28,8 @@ export class 光影试看插件 {
   apply(compiler: Compiler) {
     compiler.hooks.normalModuleFactory.tap('anim-光影试看', (nmf) => {
       nmf.hooks.afterResolve.tap('anim-光影试看', (r) => {
-        const d = (r as unknown as 解析数据).createData;
-        if (d.resource !== this.原) return;
+        const { contextInfo, createData: d } = r as unknown as 解析数据;
+        if (d.resource !== this.原 || contextInfo?.issuer === this.替) return;
         for (const k of ['resource', 'request', 'userRequest', 'rawRequest'] as const) if (d[k]) d[k] = d[k]!.split(this.原).join(this.替);
         // 模块的 context 是解析时按原文件定的，不跟着改，试看画布里的相对 import 会按原画布的目录解析（./画布.tsx 解析回自己）
         d.context = path.dirname(this.替);

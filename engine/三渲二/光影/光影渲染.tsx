@@ -9,8 +9,10 @@
 // 云不走 屏幕AO 的中间步骤登记（三渲二画布不挂屏幕AO）：<PhotonClouds draw={false}> 只给设置，这里自己调 drawPhotonClouds，深度、目标图都是这里的。
 import { useFrame } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
+import { useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
-import sunPng from 'asset:贴图/环境/太阳';
+import sunPng from 'asset:贴图/场景/天空/sun';
+import { 场景到three } from '../../core/three换算.ts';
 import { Atmosphere, atmoUniforms, atmosphere } from '../../light/大气.ts';
 import { PhotonClouds, drawPhotonClouds } from '../../light/大气/云.ts';
 import { png } from '../../model/贴图.ts';
@@ -39,8 +41,6 @@ export const 猜时段 = (色调: string | undefined): 时段 => {
   if (c.r > c.b * 1.25) return '日落';
   return '白天';
 };
-
-const 场景到three = (v: readonly number[]) => new THREE.Vector3(v[0], v[2], -v[1]!);
 
 type 变体 = { 光: THREE.Material };
 const 变体表 = new WeakMap<THREE.Material, 变体 | null>();
@@ -276,14 +276,15 @@ const 设尺寸 = (rt: THREE.WebGLRenderTarget, w: number, h: number) => {
 };
 
 export type 光影渲染属性 = {
+  /** 已经合上场景给的事实（预设.ts 的 合光影） */
   选项: 光影选项;
   /** 平涂色调：没给时段时拿它猜 */
   色调?: string;
-  /** 画面秒数（水面波纹的时间） */
-  秒: number;
 };
 
-export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调, 秒 }) => {
+export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) => {
+  // 水面波纹的时间取画面秒数（每帧单独算）
+  const 秒 = useCurrentFrame() / useVideoConfig().fps;
   const r = useMemo(建资源, []);
   useEffect(() => () => 释放(r), [r]);
   useFrame(({ gl, scene, camera }) => {

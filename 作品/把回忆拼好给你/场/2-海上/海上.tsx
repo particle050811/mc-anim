@@ -5,6 +5,7 @@
 // 歌词不在这里画：段的画面在最上面叠符文歌词，照片帧不带。
 // 不描边（规矩 不描边，用户 10-24）：画布的描边跟 画风.ts 的全片开关走，段里不自己开。
 // 谁在哪、镜头在哪全在 编排.ts，这里只按它画。
+// 光影按段开（默认.ts 的 光影段，照片里的这一镜跟着本段开），这里只给太阳方向和海平面：海面在世界高度 0。
 import React from 'react';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 平涂 } from '@engine/三渲二/平涂.tsx';
@@ -16,11 +17,12 @@ import { standPose } from '@库/角色/骨架.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { MagicalWineFox } from '@库/角色/魔法酒狐.tsx';
 import { magicalWineFoxBoatBones } from '@库/角色/魔法酒狐坐船.ts';
+import { 光影段 } from '../../默认.ts';
 import { 旧帧号 } from '../../分镜.ts';
 import { 画布调子 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 人船日落, 叠化格, 海日落, 海调子名, 眼调子名 } from './参数.ts';
-import { 她位, 你位, 叠化, 浪进, 海机位, 游戏刻, 照片帧, 秒, 船态, 页 } from './编排.ts';
+import { 她位, 你位, 叠化, 太阳方向, 段键, 浪进, 海机位, 游戏刻, 照片帧, 秒, 船态, 页 } from './编排.ts';
 import { 日落天 } from './天.tsx';
 import { 海面 } from './海面.tsx';
 import { 日落浪 } from './浪.tsx';
@@ -42,7 +44,15 @@ export const 海上镜头: React.FC<{ 歌曲帧: number }> = ({ 歌曲帧: g }) 
   return (
     <div style={全屏}>
       <日落天 机={机} 刻={游戏刻(g)} 宽={页.宽} 高={页.高} />
-      <三渲二画布 宽={页.宽} 高={页.高} 机位={{ 种: '透视', ...机 }} 色调={t.色调} 描边={t.描边}>
+      <三渲二画布
+        宽={页.宽}
+        高={页.高}
+        机位={{ 种: '透视', ...机 }}
+        色调={t.色调}
+        描边={t.描边}
+        光影={光影段[段键] ?? null}
+        光影场={{ 时段: '日落', 太阳: 太阳方向(游戏刻(g)), 海平面: 0 }}
+      >
         <海面 机={机} 宽={页.宽} 高={页.高} 船={船} 刻={s * 20} 色调={海色调} />
         <平涂 色调={人船色调}>
           <原版船 loc={船.loc} yaw={船.yaw} 桨={船.桨} />
