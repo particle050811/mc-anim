@@ -12,6 +12,7 @@ import { 登记入库 } from '../资产/命令.ts';
 import { 作品资产表目录, 读两侧资产表 } from '../资产/资产表.ts';
 import { 作品资产锁路径, 字节路径, 读资产锁, 资产锁路径, type 资产锁 } from '../资产/资产锁.ts';
 import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
+import { 调度让路 } from '../闸/指令.ts';
 import { 列句模块, 句模块目录, 句模块路径, 写句模块文本, 读句模块 } from './句模块.ts';
 import { 复核组, 跑配音py } from './python.ts';
 import { 列候选, 复核报告文本, 写进候选说明, 拆回包, type 复核回包, type 复核请求, type 一条 } from './复核.ts';
@@ -258,6 +259,7 @@ const 生成 = async (表: 作品台词, 行们: 台词行[], p: ReturnType<type
     try {
       await 复核(表, 行们, { 项们: [], 只描述: false, 允许付费: false });
     } catch (e) {
+      if (e instanceof 调度让路) throw e;
       console.error(`复核没跑成（候选不受影响，可以之后 anim voice review）：${(e as Error).message}`);
     }
   }

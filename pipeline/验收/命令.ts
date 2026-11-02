@@ -181,11 +181,11 @@ const 认: 命令 = {
     if (缺.length) throw new Error(`${缺.map((x) => `${x.段.键}（${x.指纹.slice(0, 16)}）`).join('、')} 没有现在指纹的母版和段签：先 anim render ${缺.map((x) => x.段.键).join(' ')}，或加 --渲`);
     if (备.length > 1) console.log(`== 认可 ${备.length} 段：${备.map((x) => x.段.键).join('、')}`);
     // 签名取自段签（和 扫母版 同一份；缺了从母版派生，要解码：整批过一次放行闸）
-    await 过放行闸(async () => {});
+    const 等认可放行 = 懒放行闸();
     // 每段都签好了再写：中途哪段解码失败，一个认可文件都不改
     const 签们 = [];
     for (const x of 备) {
-      const 签 = await 取段签(x.段.键, x.指纹, 级别, { 等放行: async () => {}, 记录 });
+      const 签 = await 取段签(x.段.键, x.指纹, 级别, { 等放行: 等认可放行, 记录 });
       if (!签) throw new Error(`${x.段.键} 段签的无损抽样帧丢了，CRF1 母版也没了（压缩母版的像素不拿来认可）：要重渲才能认可（anim render ${x.段.键} --重渲）`);
       签们.push(签);
     }

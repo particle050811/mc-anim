@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import { 母版目录 } from '../环境/配置.ts';
 import { 作品名 } from '../环境/作品.ts';
-import { 过渲染闸 } from '../闸/闸.ts';
+import { 过渲染闸, 登记临时文件 } from '../闸/闸.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import { 出段签, 原样子, 对得上母版, 对得上原母版, 段签齐, 记转码, 读段签 } from '../段签/段签.ts';
 import { 漂移提示 } from '../段签/补.ts';
@@ -28,6 +28,7 @@ export const 存成压缩 = async (键: string, 指纹: string, 级别: string |
   }
   const 出 = 压缩母版路径(键, 指纹, 作品);
   const tmp = 出.slice(0, -压缩后缀.length) + `.转码中-${process.pid}${压缩后缀}`;
+  const 撤临时 = 登记临时文件(tmp);
   try {
     const 法 = await 转码(原, tmp);
     await 记转码(键, 指纹, tmp, { 原字节sha: 原样子(签).字节sha, 存法: 法, 作品 });
@@ -35,6 +36,7 @@ export const 存成压缩 = async (键: string, 指纹: string, 级别: string |
     fs.renameSync(tmp, 出);
   } finally {
     fs.rmSync(tmp, { force: true });
+    撤临时();
   }
   return { 文件: 出, 原大小: fs.statSync(原).size, 新大小: fs.statSync(出).size, 秒: (Date.now() - t0) / 1000 };
 };
