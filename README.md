@@ -97,6 +97,7 @@ npm ci
 - 万法皆通（Touhou Little Maid: Spell，作者 yimeng261）的贴图和音效：MIT。
 - 铁魔法（Iron's Spells 'n Spellbooks）、Lootr、暮色森林（The Twilight Forest）的贴图归各自作者。
 - 大气光照代码改写自 Photon 光影，许可见 `engine/light/大气/Photon-LICENSE.txt`。
+- 「把回忆拼好给你」的方块、物品、粒子、实体等原版贴图换成了 Faithful 32x 材质包（Faithful Resource Pack，官网 https://faithfulpack.net ），按 Faithful License v4（https://faithfulpack.net/license ）使用和再分发；随仓库发的 `作品/把回忆拼好给你/字节/` 里带着第 2 章用到的那部分，换了哪些见 `作品/把回忆拼好给你/材质包.锁.json`。本项目和 Faithful 团队无关。
 - 每件素材的来源、许可登记在 `assets/registry/*.toml` 和 `作品/<名>/资产表/*.toml`，规则见 `assets/README.md`。
 
 本仓库自己的代码用什么开源协议还没定，暂时不写，以后再决定。
