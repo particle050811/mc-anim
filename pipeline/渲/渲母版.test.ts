@@ -66,6 +66,7 @@ vi.mock('./转存.ts', () => ({
 vi.mock('../缓存/钉.ts', () => ({ 删旧: () => {}, 有要删的旧: () => false }));
 
 const { 渲染母版, 渲染叠层, 渲静帧 } = await import('./渲.ts');
+const { 明细目录 } = await import('../运行记录/渲染明细.ts');
 const { 原母版路径 } = await import('./母版.ts');
 const { 地形用量文件 } = await import('./地形用量.ts');
 const { 作品名 } = await import('../环境/作品.ts');
@@ -154,6 +155,28 @@ describe('后台转存', () => {
       expect(记.产物).toEqual(['后甲.x264.mkv', '后乙.x264.mkv']);
       expect(记.阶段.filter((x) => x.阶段 === '派生段签').length).toBe(2);
       expect(记.阶段.some((x) => x.阶段 === '等后台' && x.标签 === `批:${作品名()}:视频`)).toBe(true);
+    } finally {
+      开();
+    }
+  });
+
+  it('后台还没做完，出帧明细已经落盘；收工写回同一个文件，带上后台阶段', async () => {
+    const 开 = 关内联();
+    try {
+      态.组合们 = [组合('明细甲')];
+      const 手 = 手动跑();
+      const 新明细 = () => (fs.existsSync(明细目录()) ? fs.readdirSync(明细目录()).filter((f) => f.includes('明细甲')) : []);
+      for (const f of 新明细()) fs.rmSync(path.join(明细目录(), f));
+      const p = 渲染母版([段('明细甲')], '视频', { 记录: 记录(), 重渲: true, 跑后台: 手.跑 });
+      await vi.waitFor(() => expect(手.起了.length).toBe(1));
+      const 文件们 = 新明细();
+      expect(文件们.length).toBe(1);
+      const 读 = () => JSON.parse(fs.readFileSync(path.join(明细目录(), 文件们[0]!), 'utf8')) as { 阶段: { 阶段: string }[] };
+      expect(读().阶段.some((x) => x.阶段 === '派生段签')).toBe(false);
+      手.放[0]!(压('明细甲'));
+      await p;
+      expect(新明细()).toEqual(文件们);
+      expect(读().阶段.some((x) => x.阶段 === '派生段签')).toBe(true);
     } finally {
       开();
     }

@@ -265,17 +265,22 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
             if (x.母版) r.母版 = x.母版;
             return 明细;
           }, undefined, {}, {种:'render',作品:作品名(),段:r.段.键,级别,帧数:composition.durationInFrames,项数:待渲.length,可让路:待渲.length>1,用途:process.env.ANIM_PURPOSE??'产出'});
+          const 写明细 = () => 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
           const 收工 = async () => {
             opts.记录.产物.push(r.母版);
             // 派生段签、转存的阶段这时才齐
-            await 明细?.写出(opts.记录.阶段, { 指纹: r.指纹.指纹.slice(0, 16) });
+            await 写明细();
           };
           if (!后台) await 收工();
-          // 闸已放开：这里排，子进程才不算在持锁上下文里
-          else 后台.排({ 键: r.段.键, 指纹: r.指纹.指纹, 标签 }, async (x) => {
-            if (x?.母版) r.母版 = x.母版;
-            await 收工();
-          });
+          else {
+            // 先落一份：批被杀时后台还没做完的段，出帧明细和温度不跟着丢；收工再写同一个文件，带齐后台阶段
+            await 写明细();
+            // 闸已放开：这里排，子进程才不算在持锁上下文里
+            后台.排({ 键: r.段.键, 指纹: r.指纹.指纹, 标签 }, async (x) => {
+              if (x?.母版) r.母版 = x.母版;
+              await 收工();
+            });
+          }
         }
       }, opts.记录);
     }
