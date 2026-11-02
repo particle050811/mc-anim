@@ -29,7 +29,7 @@ import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 压缩母版路径, 原母版路径, 叠层路径, 写指纹, 有母版, 现母版, 记用过 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
 import { 已转完 } from './转存.ts';
-import { 删打包 } from './打包残留.ts';
+import { 删打包, 登记打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
 import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
 import { 开始整段量, 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
@@ -67,6 +67,7 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
     // public 里只有指向数据根的链接，转发进包是预期的
     onSymlinkDetected: () => {},
   });
+  登记打包(serveUrl);
   记阶段(记录?.阶段, 标签, 'webpack', t0, (Date.now() - t0) / 1000);
   console.log(`打包 ${((Date.now() - t0) / 1000).toFixed(0)} 秒`);
   return serveUrl;
@@ -86,11 +87,12 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const 收 = 记录?.阶段;
   const 起 = 收?.length ?? 0;
   const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签));
-  const browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
-  // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
-  收求解缓存(browser);
-  收地形用量(browser);
+  let browser: HeadlessBrowser | undefined;
   try {
+    browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
+    // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
+    收求解缓存(browser);
+    收地形用量(browser);
     const 组合 = await 量阶段(收, 标签, '读组合', () =>
       getCompositions(serveUrl, {
         inputProps: 参数.inputProps,
@@ -103,9 +105,12 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
     if (收) console.log(`会话就绪：${阶段小结(收.slice(起))}`);
     return await fn({ serveUrl, browser, 参数, 组合 });
   } finally {
-    await 等地形用量写完();
-    await browser.close({ silent: true });
-    删打包(serveUrl);
+    try {
+      await 等地形用量写完();
+      await browser?.close({ silent: true });
+    } finally {
+      删打包(serveUrl);
+    }
   }
 };
 

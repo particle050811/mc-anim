@@ -30,3 +30,20 @@ test('名字不像 Remotion 的包、不是绝对路径的一律不删', () => {
   expect(fs.existsSync(别的)).toBe(true);
   删打包('http://localhost:3000/remotion-webpack-bundle-abc');
 });
+
+
+test('public 本身是链接也只摘链接，包根被换成链接则不进入', () => {
+  const 数据 = path.join(根, '外面');
+  fs.mkdirSync(数据);
+  fs.writeFileSync(path.join(数据, '留'), '留');
+  const 包 = path.join(根, 'remotion-webpack-bundle-public');
+  fs.mkdirSync(包);
+  fs.symlinkSync(数据, path.join(包, 'public'), 'junction');
+  删打包(包);
+  expect(fs.existsSync(包)).toBe(false);
+  expect(fs.existsSync(path.join(数据, '留'))).toBe(true);
+  fs.symlinkSync(数据, 包, 'junction');
+  删打包(包);
+  expect(fs.lstatSync(包).isSymbolicLink()).toBe(true);
+  expect(fs.existsSync(path.join(数据, '留'))).toBe(true);
+});
