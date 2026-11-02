@@ -69,11 +69,11 @@ export const 建后台转存 = (o: { 级别: string; 留CRF1: boolean; 记录: P
   let 排过 = false;
   return {
     /** 排一段；完 在这段后台收工时调（子进程没交结果时是 null，警告这里已报） */
-    排: (段: { 键: string; 指纹: string; 标签: string; 续补?: boolean }, 完: (x: 后处理结果 | null) => void | Promise<void>) => {
+    排: (段: { 键: string; 指纹: string; 标签: string }, 完: (x: 后处理结果 | null) => void | Promise<void>) => {
       排过 = true;
       const 短 = 段.指纹.slice(0, 16);
       const 排于 = Date.now();
-      调度记('后台排', { 段: 段.键, 指纹: 短, 续补: 段.续补 ?? false, 排着: 队列.现状().排着.length });
+      调度记('后台排', { 段: 段.键, 指纹: 短, 排着: 队列.现状().排着.length });
       队列.排({
         名: 段.键,
         做: async () => {
@@ -82,11 +82,11 @@ export const 建后台转存 = (o: { 级别: string; 留CRF1: boolean; 记录: P
           报现状();
           let x: 后处理结果 | null = null;
           try {
-            x = await 跑({ 键: 段.键, 指纹: 段.指纹, 级别: o.级别, 作品: 作品名(), 留CRF1: o.留CRF1, 标签: 段.标签, 续补: 段.续补 }, {
+            x = await 跑({ 键: 段.键, 指纹: 段.指纹, 级别: o.级别, 作品: 作品名(), 留CRF1: o.留CRF1, 标签: 段.标签 }, {
               阶段: (rs) => void o.记录.阶段.push(...rs),
               警告: (s) => o.记录.记('警告', s),
             });
-            if (!x) o.记录.记('警告', `${段.键} 的后台转存中断，CRF1 留着，下次 anim render 或 film 接着补`);
+            if (!x) o.记录.记('警告', `${段.键} 的后台转存中断，CRF1 留着，film、edit-package、render --到预览 用到时再转`);
           } finally {
             调度记('后台止', { 段: 段.键, 指纹: 短, 秒: 秒(起), 结果: x?.结局 ?? '中断' });
             await 完(x);

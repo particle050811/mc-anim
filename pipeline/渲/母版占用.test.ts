@@ -24,8 +24,8 @@ vi.mock('../指纹/指纹.ts', async (原) => {
 });
 
 const { 占用文件, 占着, 被占着, 等占用放开 } = await import('./母版占用.ts');
-const { 存成压缩, 备好母版, 存成压缩内层, 要补转存 } = await import('./转存.ts');
-const { 压缩母版路径, 原母版路径, 记用过, 写指纹 } = await import('./母版.ts');
+const { 存成压缩, 备好母版, 存成压缩内层 } = await import('./转存.ts');
+const { 压缩母版路径, 原母版路径, 写指纹 } = await import('./母版.ts');
 const { 文件sha, 读段签, 出段签 } = await import('../段签/段签.ts');
 const { 取段签, 补段签 } = await import('../段签/补.ts');
 const { 扫一键, 删旧, 删已取代 } = await import('../缓存/钉.ts');
@@ -234,19 +234,5 @@ describe.skipIf(!有ffmpeg)('后台转存占着同一指纹', () => {
       expect(r.留[0]!.理由).toContain('正在写');
     });
     expect(fs.existsSync(旧原)).toBe(true);
-  });
-
-  it('要补转存：只有 CRF1、CRF1 新于压缩母版的要补；对得上的、只剩压缩母版的不补', async () => {
-    const fp = 指纹('要补');
-    const 原 = 造(原母版路径('要补', fp));
-    expect(await 要补转存('要补', fp)).toBe(true);
-    await 存成压缩('要补', fp, '视频');
-    expect(await 要补转存('要补', fp)).toBe(false);
-    造(原, 880);
-    expect(await 要补转存('要补', fp)).toBe(true);
-    await 备好母版('要补', fp, '视频');
-    expect(fs.existsSync(原)).toBe(false);
-    expect(await 要补转存('要补', fp)).toBe(false);
-    记用过(母版目录('要补'), fp);
   });
 });

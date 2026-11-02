@@ -31,7 +31,7 @@ const 造 = (f: string) => {
   return f;
 };
 const 有ffmpeg = spawnSync('ffmpeg', ['-version']).status === 0;
-const 参数 = (键: string, 多: { 留CRF1?: boolean; 续补?: boolean } = {}) => ({ 键, 指纹: 指纹(键), 级别: '视频', 作品: 作品名(), 留CRF1: false, 标签: `render:测/${键}:视频`, ...多 });
+const 参数 = (键: string, 多: { 留CRF1?: boolean } = {}) => ({ 键, 指纹: 指纹(键), 级别: '视频', 作品: 作品名(), 留CRF1: false, 标签: `render:测/${键}:视频`, ...多 });
 const 钩 = () => {
   const 收: 阶段记录[] = [];
   const 警告们: string[] = [];
@@ -96,28 +96,5 @@ describe.skipIf(!有ffmpeg)('后处理一段', () => {
     const h = 钩();
     expect(await 后处理一段(参数('抢走'), h)).toEqual({ 母版: 压, 结局: '别人转了' });
     expect(h.警告们).toEqual([]);
-  });
-
-  it('续补：段签缺的先补，转完删已被取代的 CRF1；留CRF1 时不删', async () => {
-    const 原 = 造(原母版路径('补', 指纹('补')));
-    const h = 钩();
-    expect(await 后处理一段(参数('补', { 续补: true }), h)).toEqual({ 母版: 压缩母版路径('补', 指纹('补')), 结局: '压缩' });
-    expect(读段签('补', 指纹('补'))!.派生).toBe('补');
-    expect(fs.existsSync(原)).toBe(false);
-    expect(h.收.map((x) => x.阶段)).toEqual(['转存']);
-
-    const 留原 = 造(原母版路径('补留', 指纹('补留')));
-    await 后处理一段(参数('补留', { 续补: true, 留CRF1: true }), 钩());
-    expect(fs.existsSync(留原)).toBe(true);
-    expect(fs.existsSync(压缩母版路径('补留', 指纹('补留')))).toBe(true);
-  });
-
-  it('续补失败：只警告', async () => {
-    const 原 = 原母版路径('补坏', 指纹('补坏'));
-    fs.mkdirSync(path.dirname(原), { recursive: true });
-    fs.writeFileSync(原, '不是视频');
-    const h = 钩();
-    expect(await 后处理一段(参数('补坏', { 续补: true }), h)).toEqual({ 母版: 原, 结局: '留CRF1' });
-    expect(h.警告们.join()).toMatch(/补坏 接着补压缩母版没成/);
   });
 });

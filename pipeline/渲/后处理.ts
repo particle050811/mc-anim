@@ -10,7 +10,7 @@ import { 记阶段, type 阶段记录 } from '../运行记录/阶段.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import { 原母版路径, 现母版 } from './母版.ts';
 import { 占着 } from './母版占用.ts';
-import { 备好母版, 存成压缩, 存成压缩内层, 还是那份 } from './转存.ts';
+import { 存成压缩内层, 还是那份 } from './转存.ts';
 
 export type 后处理参数 = {
   键: string;
@@ -20,8 +20,6 @@ export type 后处理参数 = {
   留CRF1: boolean;
   /** 阶段表里记在哪个标签下（render:<作品>/<段>:<级别>） */
   标签: string;
-  /** 不是刚渲的：render 命中「已是最新」、CRF1 还没转（上回被杀、转存失败或旧母版），接着补 */
-  续补?: boolean;
 };
 export type 后处理结局 = '压缩' | '留CRF1' | '别人转了';
 export type 后处理结果 = { 母版: string | null; 结局: 后处理结局 };
@@ -32,22 +30,7 @@ export type 后处理钩子 = {
 
 const 首行 = (e: unknown) => (e as Error).message.split('\n')[0];
 
-const 续补一段 = async (p: 后处理参数, h: 后处理钩子): Promise<后处理结果> => {
-  const t = Date.now();
-  try {
-    // 留CRF1 不走 备好母版：它转完会删已被取代的 CRF1
-    const 压 = p.留CRF1 ? (await 存成压缩(p.键, p.指纹, p.级别, { 作品: p.作品, 记录: h.记录 })).文件 : await 备好母版(p.键, p.指纹, p.级别, { 作品: p.作品, 记录: h.记录, 不过闸: true });
-    return { 母版: 压 ?? 现母版(p.键, p.指纹, p.作品), 结局: '压缩' };
-  } catch (e) {
-    h.记录.记('警告', `${p.键} 接着补压缩母版没成（${首行(e)}），CRF1 留着，用到时再转`);
-    return { 母版: 现母版(p.键, p.指纹, p.作品), 结局: '留CRF1' };
-  } finally {
-    记阶段(h.收, p.标签, '转存', t, (Date.now() - t) / 1000);
-  }
-};
-
 export const 后处理一段 = async (p: 后处理参数, h: 后处理钩子): Promise<后处理结果> => {
-  if (p.续补) return 续补一段(p, h);
   const { 键, 指纹, 级别, 作品, 标签 } = p;
   const 原 = 原母版路径(键, 指纹, 作品);
   const 结果 = await 占着(键, 指纹, 作品, async (): Promise<后处理结果> => {

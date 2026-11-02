@@ -1,4 +1,4 @@
-// 后台转存的子进程：字节和内联一样、被杀不留孤儿和临时文件、父进程被 SIGKILL 子进程也退、下次接着补；调度日志和复盘。真 ffmpeg、真子进程，数据根是临时目录。
+// 后台转存的子进程：字节和内联一样、被杀不留孤儿和临时文件、父进程被 SIGKILL 子进程也退、重做字节相同；调度日志和复盘。真 ffmpeg、真子进程，数据根是临时目录。
 import crypto from 'node:crypto';
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
@@ -44,7 +44,7 @@ const 放样本 = (键: string) => {
   fs.copyFileSync(样本, f);
   return f;
 };
-const 参数 = (键: string, 多: { 续补?: boolean } = {}) => ({ 键, 指纹: 指纹(键), 级别: '视频', 作品: 作品名(), 留CRF1: false, 标签: `render:测/${键}:视频`, ...多 });
+const 参数 = (键: string) => ({ 键, 指纹: 指纹(键), 级别: '视频', 作品: 作品名(), 留CRF1: false, 标签: `render:测/${键}:视频` });
 const 钩 = () => {
   const 阶段们: 阶段记录[] = [];
   const 警告们: string[] = [];
@@ -118,7 +118,7 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
     报.mockRestore();
   });
 
-  it('父进程 SIGTERM：子进程和 ffmpeg 都没了，临时文件、占用都清掉，CRF1 还在；下次续补字节相同', async () => {
+  it('父进程 SIGTERM：子进程和 ffmpeg 都没了，临时文件、占用都清掉，CRF1 还在；重做一遍字节相同', async () => {
     const 键 = '杀父';
     const 原 = 放样本(键);
     const 父 = 起父进程(键);
@@ -131,8 +131,7 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
     expect(fs.existsSync(原)).toBe(true);
     expect(fs.existsSync(压缩母版路径(键, 指纹(键)))).toBe(false);
     const k = 钩();
-    const r = await 跑后台子进程(参数(键, { 续补: true }), k.h);
-    // 删不删已被取代的 CRF1 看在不在主检出（子进程里 mock 不到），这里不查
+    const r = await 跑后台子进程(参数(键), k.h);
     expect(r?.结局).toBe('压缩');
     放样本('杀父对照');
     await 后处理一段(参数('杀父对照'), { 收: [], 记录: { 记: () => {} } });

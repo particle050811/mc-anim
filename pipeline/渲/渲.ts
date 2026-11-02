@@ -34,7 +34,6 @@ import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
 import { 开始整段量, 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
 import { 视频信息 } from './探测.ts';
 import { 删旧, 有要删的旧 } from '../缓存/钉.ts';
-import { 要补转存 } from './转存.ts';
 import { 后处理一段 } from './后处理.ts';
 import { 建后台转存, type 跑后台 } from './后台转存.ts';
 import { 叠层渲染参数, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
@@ -185,9 +184,6 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
   await 量阶段(opts.记录.阶段, 总标签, '清旧', () => 清命中的旧('母版', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.段.键, 指纹: r.指纹.指纹 })), 级别, opts.记录));
   // 对照用（环境变量名必须 ASCII，非 ASCII 的名字 Node 24 Worker 段错误）
   const 后台 = process.env.ANIM_INLINE_TRANSCODE === '1' ? null : 建后台转存({ 级别, 留CRF1: !!opts.留CRF1, 记录: opts.记录, 跑: opts.跑后台 });
-  // 不让旧的积压挡新渲的：出帧都排完了才排这些
-  const 待补: 母版结果[] = [];
-  if (后台) for (const r of 结果) if (!待渲.includes(r) && (await 要补转存(r.段.键, r.指纹.指纹))) 待补.push(r);
   try {
     if (待渲.length) {
       const 估 = 待渲.map((r) => 预计耗时(渲染标签(r.段.键, 级别)));
@@ -278,11 +274,6 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
           });
         }
       }, opts.记录);
-    }
-    for (const r of 待补) {
-      后台?.排({ 键: r.段.键, 指纹: r.指纹.指纹, 标签: 渲染标签(r.段.键, 级别), 续补: true }, (x) => {
-        if (x?.母版) r.母版 = x.母版;
-      });
     }
   } finally {
     // 关了浏览器再等（开会话 的 finally 已关），出错、让路也要等：已经排上的段不能丢给孤儿

@@ -1,6 +1,5 @@
 // 后台转存的子进程入口（后台转存.ts 起它，不要手跑）。IPC 发回警告和最后的结果；日志直接继承父进程的 stdout、stderr。
 // 父进程没了（信号、SIGKILL 都一样）靠 IPC 断开发现，跟着收尾退出（杀 ffmpeg、清临时文件、放占用），不留孤儿。
-import os from 'node:os';
 import { 指定作品 } from '../环境/作品.ts';
 import { 收尾, 信号码 } from '../闸/收尾.ts';
 import type { 阶段记录 } from '../运行记录/阶段.ts';
@@ -13,12 +12,6 @@ export type 后台消息 =
 const 发 = (m: 后台消息, 完?: () => void) => void process.send?.(m, undefined, undefined, () => 完?.());
 
 const p = JSON.parse(process.argv[2]!) as 后处理参数;
-// 单独续补时父进程还没降优先级；和旧串行一样跟在 Chrome 后面
-try {
-  os.setPriority(10);
-} catch {
-  // 没权限改优先级就照常跑
-}
 指定作品(p.作品);
 process.on('disconnect', () => {
   收尾(信号码.SIGTERM, 'SIGTERM');

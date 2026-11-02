@@ -18,7 +18,6 @@ const 态 = vi.hoisted(() => ({
   渲时: null as null | (() => void),
   组合们: [] as { id: string; durationInFrames: number; fps: number; width: number; height: number }[],
   表: { 暮色: 'v1' } as Record<string, string>,
-  要补: [] as string[],
 }));
 
 vi.mock('@remotion/bundler', () => ({ bundle: async () => '假包' }));
@@ -58,7 +57,6 @@ vi.mock('../段签/段签.ts', () => ({ 出段签: async () => ({}) }));
 vi.mock('./转存.ts', () => ({
   存成压缩内层: async () => ({ 文件: '假.x264.mkv', 原大小: 1, 新大小: 1 }),
   还是那份: () => true,
-  要补转存: async (键: string) => 态.要补.includes(键),
 }));
 vi.mock('../缓存/钉.ts', () => ({ 删旧: () => {}, 有要删的旧: () => false }));
 
@@ -141,7 +139,6 @@ describe('后台转存', () => {
       await 过一拍();
       expect(完).toBe(false);
       expect(手.起了[0]).toMatchObject({ 级别: '视频', 留CRF1: false, 标签: `render:${作品名()}/后甲:视频` });
-      expect(手.起了[0]!.续补).toBeUndefined();
       手.放[0]!(压('后甲'));
       await vi.waitFor(() => expect(手.起了.length).toBe(2));
       await 过一拍();
@@ -231,56 +228,23 @@ describe('后台转存', () => {
     }
   });
 
-  it('命中已是最新但只有 CRF1：不开浏览器也接着补，补完才返回；不进产物', async () => {
+  it('命中已是最新但只有 CRF1：不排后台，用到时才转', async () => {
     const 开 = 关内联();
     try {
       fs.mkdirSync(path.dirname(原母版路径('补甲', 指纹名)), { recursive: true });
       fs.writeFileSync(原母版路径('补甲', 指纹名), '帧');
-      态.要补 = ['补甲'];
       态.组合们 = [];
-      const 手 = 手动跑();
-      const 记 = 记录();
-      const p = 渲染母版([段('补甲')], '视频', { 记录: 记, 跑后台: 手.跑 });
-      await vi.waitFor(() => expect(手.起了.length).toBe(1));
-      expect(手.起了[0]!.续补).toBe(true);
-      expect(态.环境们.length).toBe(0);
-      手.放[0]!(压('补甲'));
-      const [r] = await p;
-      expect(r!.母版).toBe('补甲.x264.mkv');
+      const 跑 = vi.fn();
+      const [r] = await 渲染母版([段('补甲')], '视频', { 记录: 记录(), 跑后台: 跑 as never });
+      expect(跑).not.toHaveBeenCalled();
+      expect(r!.母版).toBe(原母版路径('补甲', 指纹名));
       expect(r!.新渲).toBe(false);
-      expect(记.产物).toEqual([]);
     } finally {
       开();
-      态.要补 = [];
     }
   });
 
-  it('要渲的先渲，积压的旧 CRF1 排在最后，不占限流', async () => {
-    const 开 = 关内联();
-    try {
-      fs.mkdirSync(path.dirname(原母版路径('旧积压', 指纹名)), { recursive: true });
-      fs.writeFileSync(原母版路径('旧积压', 指纹名), '帧');
-      fs.mkdirSync(path.dirname(原母版路径('旧积压二', 指纹名)), { recursive: true });
-      fs.writeFileSync(原母版路径('旧积压二', 指纹名), '帧');
-      fs.mkdirSync(path.dirname(原母版路径('旧积压三', 指纹名)), { recursive: true });
-      fs.writeFileSync(原母版路径('旧积压三', 指纹名), '帧');
-      态.要补 = ['旧积压', '旧积压二', '旧积压三'];
-      态.组合们 = [组合('新渲')];
-      fs.rmSync(path.dirname(原母版路径('新渲', 指纹名)), { recursive: true, force: true });
-      const 次序: string[] = [];
-      const 跑: 跑后台 = async (p) => {
-        次序.push(p.键);
-        return 压(p.键);
-      };
-      await 渲染母版([段('旧积压'), 段('旧积压二'), 段('旧积压三'), 段('新渲')], '视频', { 记录: 记录(), 跑后台: 跑 });
-      expect(次序).toEqual(['新渲', '旧积压', '旧积压二', '旧积压三']);
-    } finally {
-      开();
-      态.要补 = [];
-    }
-  });
-
-  it('ANIM_INLINE_TRANSCODE=1：不走后台，还在闸里当场做；不续补', async () => {
+  it('ANIM_INLINE_TRANSCODE=1：不走后台，还在闸里当场做', async () => {
     态.组合们 = [组合('内联')];
     const 跑 = vi.fn();
     const 记 = 记录();

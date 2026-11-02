@@ -71,15 +71,12 @@ const 都对得上 = async (键: string, 指纹: string, 作品: string) => {
 
 const 不用转 = async (键: string, 指纹: string, 作品: string) => fs.existsSync(压缩母版路径(键, 指纹, 作品)) && (!fs.existsSync(原母版路径(键, 指纹, 作品)) || (await 都对得上(键, 指纹, 作品)));
 
-/** render 命中「已是最新」时看一眼：CRF1 在而压缩母版没跟上（上回被杀、转存失败，或 10-30 以前渲的），后台接着补 */
-export const 要补转存 = async (键: string, 指纹: string, 作品 = 作品名()) => fs.existsSync(原母版路径(键, 指纹, 作品)) && !(await 不用转(键, 指纹, 作品));
-
 /**
  * 要读这个指纹的母版出片：压缩母版在、段签也认它、在的 CRF1 就是段签记的那份，就用压缩母版；只有 CRF1（10-30 以前渲的），
  * 或压缩母版、CRF1 有一个和段签对不上而 CRF1 又在（CRF1 是后来重渲的），先从 CRF1 重新派生段签、照同样参数转码（过渲染闸；已被取代的 CRF1 没有理由留就删），
- * 保证同一指纹出同样的片。别的进程正在后台转这个指纹就等它转完再看。都没有 null。记一笔「用过」。不过闸：后台接着补时用，CPU 活不占渲染闸
+ * 保证同一指纹出同样的片。别的进程正在后台转这个指纹就等它转完再看。都没有 null。记一笔「用过」。
  */
-export const 备好母版 = async (键: string, 指纹: string, 级别: string | null, o: { 作品?: string; 记录?: 记警告; 不过闸?: boolean } = {}): Promise<string | null> => {
+export const 备好母版 = async (键: string, 指纹: string, 级别: string | null, o: { 作品?: string; 记录?: 记警告 } = {}): Promise<string | null> => {
   const 作品 = o.作品 ?? 作品名();
   const 压 = 压缩母版路径(键, 指纹, 作品);
   const 原 = 原母版路径(键, 指纹, 作品);
@@ -92,7 +89,7 @@ export const 备好母版 = async (键: string, 指纹: string, 级别: string |
   if (await 不用转(键, 指纹, 作品)) return 用它();
   await 等占用放开(键, 指纹, 作品);
   if (await 不用转(键, 指纹, 作品)) return 用它();
-  const 做 = async () => {
+  await 过渲染闸(async () => {
     const 转了 = await 占着(键, 指纹, 作品, async () => {
       // 排队等闸的时候别的进程可能已经转好了
       if (await 不用转(键, 指纹, 作品)) return false;
@@ -104,8 +101,7 @@ export const 备好母版 = async (键: string, 指纹: string, 级别: string |
     });
     // 放了占用才删：自己占着会被算成「正在写」
     if (转了) 删已取代(键, 指纹, { 作品, 记录: o.记录 });
-  };
-  await (o.不过闸 ? 做() : 过渲染闸(做));
+  });
   if (!fs.existsSync(压)) return null;
   return 用它();
 };
