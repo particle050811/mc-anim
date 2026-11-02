@@ -142,7 +142,8 @@ float gySd = max( dot( gyR, gySun ), 0.0 );
 float gyGl = pow( gySd, mix( 1800.0, 220.0, gyFar ) ) * mix( 1.0, 2.2, gyFar );
 gyGl = gyWaterPix > 0.5 ? step( 0.35, gyGl ) * 1.4 : smoothstep( 0.05, 0.6, gyGl ) * 1.4;
 vec3 gyBody = mix( gyWaterBody, gyHor, 0.3 );
-vec3 gyC = mix( gyBody, gySky, clamp( gyFr * gyRefl, 0.0, 1.0 ) ) + gyGlintCol * gyGl;
+// 碎光封顶：sRGB 数值过 1 以后转线性是 2.4 次方往上翻，不封的话近处一块碎光的泛光糊成一大团，像素版的方块也被糊没
+vec3 gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl, 0.0, 1.0 ) ) + gyGlintCol * gyGl, vec3( 1.5 ) );
 outgoingLight = sRGBTransferEOTF( vec4( mix( gyC, gyHor, seaF ), 1.0 ) ).rgb;
 `;
 
@@ -221,8 +222,9 @@ void main() {
 }`;
 
 /** 合成到画布：原图（线性、预乘）去预乘 → sRGB → 调色 → 叠在天、云上 → 加泛光 → 再乘回透明度。泛光在透明的地方也加（叠在画布后面的 2D 天上，算加色）。
- *  天（skyOn）：透明的地方画 Photon 天色（同 engine/light/天空.tsx 大气打开时的穹顶：天色图 × 空气透过率 + 内散射），再按 2D 天那样叠原版方形太阳（本体 8×8 贴图像素、外面两圈硬边光圈，加色）；
- *  云（cloudOn）：Photon 云那一遍画好的（画面值、预乘）叠在天上、画面底下 */
+ *  天（skyOn）：透明的地方画 Photon 天色（同 engine/light/天空.tsx 大气打开时的穹顶：天色图 × 空气透过率 + 内散射）；
+ *  云（cloudOn）：Photon 云那一遍画好的（画面值、预乘）叠在天上、画面底下；
+ *  太阳：按 2D 天那样叠原版方形太阳（本体 8×8 贴图像素、外面两圈硬边光圈，加色），叠在云上、整块按云挡了多少压暗 */
 export const 合成片元 = /* glsl */ `
 uniform sampler2D atmoSky;
 ${ATMO_PARS_GLSL}
@@ -272,18 +274,6 @@ void main() {
     vec3 T;
     vec3 S = atmoAir( uCamPos, uCamPos + wd * atmoP.y, T );
     bg = atmoDisp( atmoSkyAt( atmoSky, d ) * T + S );
-    if ( sunOn > 0.5 ) {
-      vec2 q = floor( ( gl_FragCoord.xy - sunMin ) / sunN );
-      if ( all( greaterThanEqual( q, vec2( 0.0 ) ) ) && all( lessThan( q, vec2( 8.0 ) ) ) ) {
-        vec4 t = texelFetch( tSun, ivec2( q ), 0 );
-        bg += t.rgb * t.a;
-      } else {
-        float r = max( max( - q.x - 1.0, q.x - 8.0 ), max( - q.y - 1.0, q.y - 8.0 ) );
-        if ( r < 0.5 ) bg += haloCol;
-        else if ( r < 1.5 ) bg += haloCol * 0.5;
-      }
-    }
-    bg = min( bg, 1.0 );
     bgA = 1.0;
   }
   if ( cloudOn > 0.5 ) {
@@ -291,6 +281,30 @@ void main() {
     bg = cl.rgb + bg * ( 1.0 - cl.a );
     bgA = cl.a + bgA * ( 1.0 - cl.a );
   }
+  // 太阳叠在云上、整块按本体那 8×8 格里云的平均不透明度压暗：逐像素让云挡的话，云缝里漏出一格格碎方块（主会话 11-02 看了说像出错）
+  if ( skyOn > 0.5 && a < 1.0 && sunOn > 0.5 ) {
+    vec2 q = floor( ( gl_FragCoord.xy - sunMin ) / sunN );
+    if ( all( greaterThanEqual( q, vec2( - 2.0 ) ) ) && all( lessThan( q, vec2( 10.0 ) ) ) ) {
+      float vis = 1.0;
+      if ( cloudOn > 0.5 ) {
+        vec2 px = 1.0 / vec2( textureSize( tCloud, 0 ) );
+        float ca = 0.0;
+        for ( int y = 0; y < 8; y ++ )
+          for ( int x = 0; x < 8; x ++ ) ca += texture2D( tCloud, ( sunMin + ( vec2( x, y ) + 0.5 ) * sunN ) * px ).a;
+        vis = 1.0 - ca / 64.0;
+      }
+      vec3 sc = vec3( 0.0 );
+      if ( all( greaterThanEqual( q, vec2( 0.0 ) ) ) && all( lessThan( q, vec2( 8.0 ) ) ) ) {
+        vec4 t = texelFetch( tSun, ivec2( q ), 0 );
+        sc = t.rgb * t.a;
+      } else {
+        float r = max( max( - q.x - 1.0, q.x - 8.0 ), max( - q.y - 1.0, q.y - 8.0 ) );
+        sc = r < 0.5 ? haloCol : haloCol * 0.5;
+      }
+      bg += sc * vis;
+    }
+  }
+  bg = min( bg, 1.0 );
   vec3 o = clamp( c, 0.0, 1.0 ) * a + bg * ( 1.0 - a ) + bs;
   gl_FragColor = vec4( min( o, 1.0 ), a + bgA * ( 1.0 - a ) );
 }`;
