@@ -71,3 +71,14 @@ it('一项缺失独立保留另一项；旧明细不伪造温度', async () => {
   delete d.温度;
   expect(明细报告(d)).not.toMatch(/最高芯温|最高发热等级/);
 });
+
+it('不收日志时不采样、不写温度，不把未采伪装成读不到', async () => {
+  const c = new 明细收集('bench:作/不收日志:视频');
+  c.帧完成(1);
+  const { 文件, 明细: d } = await c.写出([], {}, dir);
+  expect(读).not.toHaveBeenCalled();
+  expect(d.系统).toEqual([]);
+  expect(d.温度).toBeUndefined();
+  expect(JSON.parse(fs.readFileSync(文件!, 'utf8'))).not.toHaveProperty('温度');
+  expect(明细报告(d)).not.toMatch(/最高芯温|最高发热等级/);
+});

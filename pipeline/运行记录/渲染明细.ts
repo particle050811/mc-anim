@@ -214,7 +214,7 @@ export class 明细收集 {
       等待: [...this.等待.values()].sort((a, b) => b.总毫秒 - a.总毫秒),
       阶段: 阶段.filter((r) => r.标签 === this.标签),
       系统: this.系统.sort((a, b) => a.秒 - b.秒),
-      温度: 温度小结(this.系统),
+      温度: this.系统.length ? 温度小结(this.系统) : undefined,
       帧: this.帧们,
     };
     try {
