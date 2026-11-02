@@ -149,6 +149,7 @@ const 建资源 = () => {
     zenK: { value: 0 },
     zenH: { value: 0.6 },
     glowCell: { value: 0 },
+    denseK: { value: 0 },
     glowOff: { value: new THREE.Vector2() },
     res: { value: new THREE.Vector2(1, 1) },
   });
@@ -551,6 +552,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     cu.zenK!.value = u.gyZenK.value;
     cu.zenH!.value = u.gyZenH.value;
     (cu.res!.value as THREE.Vector2).set(w, h);
+    cu.denseK!.value = 选项.压密光晕 ?? 0;
     cu.glowCell!.value = 选项.光晕 === '像素格' ? 光晕格(camera, w, h, 成片宽, cu.glowOff!.value as THREE.Vector2) : 0;
     gl.setClearColor(r.清色, 清透明);
     gl.setRenderTarget(null);

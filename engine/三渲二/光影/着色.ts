@@ -215,7 +215,8 @@ void main() {
 
 export const 全屏顶点 = 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = vec4( position.xy, 0.0, 1.0 ); }';
 
-/** 取亮部顺带缩到一半：主画面（sRGB 编码、预乘）解回线性（预乘照原样），四个采样平均；粒子泛光源（线性）不过阈，乘 addK 直接加 */
+/** 取亮部顺带缩到一半：主画面（sRGB 编码、预乘）解回线性（预乘照原样），四个采样平均；粒子泛光源（线性）不过阈，乘 addK 直接加。
+ *  透明度通道带粒子的覆盖率（这一块有几成是粒子），跟着各层一起缩、一起糊，合成时按它压粒子挤成一团的地方（压密光晕） */
 export const 取亮片元 = /* glsl */ `
 uniform sampler2D tSrc;
 uniform sampler2D tAdd;
@@ -230,9 +231,12 @@ vec3 pick( vec2 uv ) {
   float l = max( c.r, max( c.g, c.b ) );
   return c * smoothstep( threshold, threshold + knee, l ) + texture2D( tAdd, uv ).rgb * addK;
 }
+// 覆盖率另算一路，颜色那一路的算式照原样（不压时和原来逐像素一样）
+float cover( vec2 uv ) { return texture2D( tAdd, uv ).a; }
 void main() {
   vec3 s = pick( vUv + texel * vec2( - 1.0, - 1.0 ) ) + pick( vUv + texel * vec2( 1.0, - 1.0 ) ) + pick( vUv + texel * vec2( - 1.0, 1.0 ) ) + pick( vUv + texel * vec2( 1.0, 1.0 ) );
-  gl_FragColor = vec4( s * 0.25, 1.0 );
+  float a = addK > 0.0 ? ( cover( vUv + texel * vec2( - 1.0, - 1.0 ) ) + cover( vUv + texel * vec2( 1.0, - 1.0 ) ) + cover( vUv + texel * vec2( - 1.0, 1.0 ) ) + cover( vUv + texel * vec2( 1.0, 1.0 ) ) ) * 0.25 : 0.0;
+  gl_FragColor = vec4( s * 0.25, a );
 }`;
 
 /** 缩一半 */
@@ -243,7 +247,9 @@ varying vec2 vUv;
 void main() {
   vec3 s = texture2D( tSrc, vUv + texel * vec2( - 1.0, - 1.0 ) ).rgb + texture2D( tSrc, vUv + texel * vec2( 1.0, - 1.0 ) ).rgb
     + texture2D( tSrc, vUv + texel * vec2( - 1.0, 1.0 ) ).rgb + texture2D( tSrc, vUv + texel * vec2( 1.0, 1.0 ) ).rgb;
-  gl_FragColor = vec4( s * 0.25, 1.0 );
+  float a = texture2D( tSrc, vUv + texel * vec2( - 1.0, - 1.0 ) ).a + texture2D( tSrc, vUv + texel * vec2( 1.0, - 1.0 ) ).a
+    + texture2D( tSrc, vUv + texel * vec2( - 1.0, 1.0 ) ).a + texture2D( tSrc, vUv + texel * vec2( 1.0, 1.0 ) ).a;
+  gl_FragColor = vec4( s * 0.25, a * 0.25 );
 }`;
 
 /** 9 抽头高斯（双线性取 5 次），dir 是一个纹素的步长 */
@@ -255,7 +261,10 @@ void main() {
   vec3 s = texture2D( tSrc, vUv ).rgb * 0.2270270270;
   s += ( texture2D( tSrc, vUv + dir * 1.3846153846 ).rgb + texture2D( tSrc, vUv - dir * 1.3846153846 ).rgb ) * 0.3162162162;
   s += ( texture2D( tSrc, vUv + dir * 3.2307692308 ).rgb + texture2D( tSrc, vUv - dir * 3.2307692308 ).rgb ) * 0.0702702703;
-  gl_FragColor = vec4( s, 1.0 );
+  float a = texture2D( tSrc, vUv ).a * 0.2270270270;
+  a += ( texture2D( tSrc, vUv + dir * 1.3846153846 ).a + texture2D( tSrc, vUv - dir * 1.3846153846 ).a ) * 0.3162162162;
+  a += ( texture2D( tSrc, vUv + dir * 3.2307692308 ).a + texture2D( tSrc, vUv - dir * 3.2307692308 ).a ) * 0.0702702703;
+  gl_FragColor = vec4( s, a );
 }`;
 
 /** 合成到画布：原图（sRGB 编码、预乘）去预乘 → 调色 → 叠在天、云上 → 加泛光 → 再乘回透明度。泛光在透明的地方也加（叠在画布后面的 2D 天上，算加色）。
@@ -270,6 +279,7 @@ uniform vec3 zenCol;
 uniform float zenK;
 uniform float zenH;
 uniform float glowCell;
+uniform float denseK;
 uniform vec2 glowOff;
 uniform vec2 res;
 uniform float skyOn;
@@ -313,6 +323,12 @@ void main() {
   vec2 bu = glowCell > 0.0 ? ( ( floor( ( gl_FragCoord.xy - glowOff ) / glowCell ) + 0.5 ) * glowCell + glowOff ) / res : vUv;
   vec3 b = texture2D( tB0, bu ).rgb * bw[ 0 ] + texture2D( tB1, bu ).rgb * bw[ 1 ] + texture2D( tB2, bu ).rgb * bw[ 2 ] + texture2D( tB3, bu ).rgb * bw[ 3 ]
     + texture2D( tB4, bu ).rgb * bw[ 4 ] + texture2D( tB5, bu ).rgb * bw[ 5 ];
+  // 压密光晕：每层按这一层糊过的粒子覆盖率除，覆盖率不到 1 / denseK（零散的火花）不动，挤成一大团的地方压下来；denseK = 0 不压（照上面那行原样）
+  if ( denseK > 0.0 ) {
+    vec4 t0 = texture2D( tB0, bu ), t1 = texture2D( tB1, bu ), t2 = texture2D( tB2, bu ), t3 = texture2D( tB3, bu ), t4 = texture2D( tB4, bu ), t5 = texture2D( tB5, bu );
+    b = t0.rgb * bw[ 0 ] / max( 1.0, t0.a * denseK ) + t1.rgb * bw[ 1 ] / max( 1.0, t1.a * denseK ) + t2.rgb * bw[ 2 ] / max( 1.0, t2.a * denseK )
+      + t3.rgb * bw[ 3 ] / max( 1.0, t3.a * denseK ) + t4.rgb * bw[ 4 ] / max( 1.0, t4.a * denseK ) + t5.rgb * bw[ 5 ] / max( 1.0, t5.a * denseK );
+  }
   vec3 bs = toSRGB( b * bloom );
   vec3 bg = vec3( 0.0 );
   float bgA = 0.0;
