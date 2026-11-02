@@ -186,7 +186,7 @@ void main() {
 
 export const 全屏顶点 = 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = vec4( position.xy, 0.0, 1.0 ); }';
 
-/** 取亮部（线性颜色，预乘透明度照原样）顺带缩到一半：四个双线性采样平均；粒子泛光源不过阈，乘 addK 直接加 */
+/** 取亮部顺带缩到一半：主画面（sRGB 编码、预乘）解回线性（预乘照原样），四个采样平均；粒子泛光源（线性）不过阈，乘 addK 直接加 */
 export const 取亮片元 = /* glsl */ `
 uniform sampler2D tSrc;
 uniform sampler2D tAdd;
@@ -196,7 +196,8 @@ uniform float threshold;
 uniform float knee;
 varying vec2 vUv;
 vec3 pick( vec2 uv ) {
-  vec3 c = texture2D( tSrc, uv ).rgb;
+  vec4 t = texture2D( tSrc, uv );
+  vec3 c = t.a > 0.0 ? sRGBTransferEOTF( vec4( max( t.rgb / t.a, 0.0 ), 1.0 ) ).rgb * t.a : vec3( 0.0 );
   float l = max( c.r, max( c.g, c.b ) );
   return c * smoothstep( threshold, threshold + knee, l ) + texture2D( tAdd, uv ).rgb * addK;
 }
@@ -228,7 +229,7 @@ void main() {
   gl_FragColor = vec4( s, 1.0 );
 }`;
 
-/** 合成到画布：原图（线性、预乘）去预乘 → sRGB → 调色 → 叠在天、云上 → 加泛光 → 再乘回透明度。泛光在透明的地方也加（叠在画布后面的 2D 天上，算加色）。
+/** 合成到画布：原图（sRGB 编码、预乘）去预乘 → 调色 → 叠在天、云上 → 加泛光 → 再乘回透明度。泛光在透明的地方也加（叠在画布后面的 2D 天上，算加色）。
  *  天（skyOn）：透明的地方画 Photon 天色（同 engine/light/天空.tsx 大气打开时的穹顶：天色图 × 空气透过率 + 内散射）；
  *  云（cloudOn）：Photon 云那一遍画好的（画面值、预乘）叠在天上、画面底下；
  *  太阳：按 2D 天那样叠原版方形太阳（本体 8×8 贴图像素、外面两圈硬边光圈，加色），叠在云上、整块按云挡了多少压暗 */
@@ -266,7 +267,7 @@ vec3 toSRGB( vec3 c ) { return sRGBTransferOETF( vec4( max( c, 0.0 ), 1.0 ) ).rg
 void main() {
   vec4 src = texture2D( tColor, vUv );
   float a = src.a;
-  vec3 c = a > 0.0 ? toSRGB( src.rgb / a ) : vec3( 0.0 );
+  vec3 c = a > 0.0 ? max( src.rgb / a, 0.0 ) : vec3( 0.0 );
   float l = dot( c, vec3( 0.2126, 0.7152, 0.0722 ) );
   c = mix( vec3( l ), c, sat );
   c = ( c - 0.5 ) * con + 0.5;

@@ -1,7 +1,7 @@
 // 光影层：放进三渲二画布接管渲染（useFrame 优先级 1，在平涂换完材质之后），一帧四步，都只看这一帧（不跨帧累积，乱序、并行出帧结果一样）：
 // 1. 太阳的影子图：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光），深度进影子图。影子图一个纹素固定 1/32 格（不够大才放粗），
 //    框按纹素吸附，镜头动的时候影子边不游；
-// 2. 主画面画进离屏图（半精度浮点、线性）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，画完换回来；
+// 2. 主画面画进离屏图（半精度浮点，同画布存 sRGB 编码后的值）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，画完换回来；
 // 3. 泛光：只画粒子的泛光源（被主画面挡住的丢掉）；取亮部（加上泛光源）缩一半，再缩五次，每层横竖各糊一遍；
 // 4. 云（云的样式是 Photon体积 时）：主画面的深度换成对数深度，交给 engine/light/大气/云.ts 的 drawPhotonClouds 画进一张离屏图；
 // 5. 合成到画布：调色、叠在天（天的样式是 Photon平滑 时）和云上、叠泛光；不画天时透明度照原样（画布后面的 2D 天、远景照常透出来）。
@@ -101,6 +101,10 @@ const 建资源 = () => {
     depthBuffer: true,
     depthTexture: new THREE.DepthTexture(1, 1, THREE.UnsignedIntType),
   });
+  // 主画面照画布那样存 sRGB 编码后的值（混色也在 sRGB 上做，同画布）。坑：three 画进离屏图一律输出线性（r186 WebGLPrograms 的 outputColorSpace），
+  // 只有标成 XR 的离屏图才按它贴图的色彩空间输出；场景里有接在 colorspace_fragment 后面、按 sRGB 数值混的补丁（原版柱形雾），输出线性时雾色会发白
+  主.texture.colorSpace = THREE.SRGBColorSpace;
+  (主 as unknown as { isXRRenderTarget: boolean }).isXRRenderTarget = true;
   // 云：对数深度（浮点，一像素一值）、云画好的图（画面值、预乘）
   const 深 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
   const 云 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
