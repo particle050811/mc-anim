@@ -28,6 +28,7 @@ import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记�
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 压缩母版路径, 原母版路径, 叠层路径, 写指纹, 有母版, 现母版, 记用过 } from './母版.ts';
 import { 备好public目录 } from './public目录.ts';
+import { 已转完 } from './转存.ts';
 import { 删打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
 import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
@@ -181,6 +182,8 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
     结果.push(r);
     if (有母版(s.键, fp.指纹) && !opts.重渲) {
       console.log(`✓ ${s.键}：母版已是最新（${fp.指纹.slice(0, 16)}）`);
+      if (fs.existsSync(原母版路径(s.键, fp.指纹)) && !(await 已转完(s.键, fp.指纹, 作品名())))
+        console.log(`  ${s.键}：CRF1 还没转，用到时（film、edit-package、--到预览）会转；或者重跑 --重渲`);
       记用过(母版目录(s.键), fp.指纹);
     } else 待渲.push(r);
   }

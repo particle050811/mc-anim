@@ -344,3 +344,29 @@ describe('地形用量记不上', () => {
     expect(报.mock.calls.flat().join()).toMatch(/戊 的地形用量没记上/);
   });
 });
+
+describe('命中母版时提示遗留 CRF1，不自动转存', () => {
+  it.each([
+    ['只有CRF1', true, false, false, true],
+    ['压缩在但段签不认', true, true, false, true],
+    ['留CRF1且已转完', true, true, true, false],
+    ['只有压缩', false, true, true, false],
+  ] as const)('%s', async (键, 有原, 有压, 转完, 提示) => {
+    const { 压缩母版路径 } = await import('./母版.ts');
+    const 转存 = await import('./转存.ts');
+    const 已转 = vi.spyOn(转存, '已转完').mockResolvedValue(转完);
+    const 存 = vi.spyOn(转存, '存成压缩内层');
+    const 原 = 原母版路径(键, 指纹名), 压 = 压缩母版路径(键, 指纹名);
+    fs.mkdirSync(path.dirname(原), { recursive: true });
+    if (有原) fs.writeFileSync(原, 'CRF1');
+    if (有压) fs.writeFileSync(压, '压缩');
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const r = await 渲染母版([段(键)], '视频', { 记录: 记录() });
+    expect(r).toHaveLength(1);
+    expect(log.mock.calls.flat().join('\n').includes('CRF1 还没转，用到时（film、edit-package、--到预览）会转；或者重跑 --重渲')).toBe(提示);
+    expect(log.mock.calls.flat().join('\n')).toContain('母版已是最新');
+    expect(存).not.toHaveBeenCalled();
+    expect(已转).toHaveBeenCalledTimes(有原 ? 1 : 0);
+    expect(fs.existsSync(原)).toBe(有原);
+  });
+});
