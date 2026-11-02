@@ -56,7 +56,8 @@ export const 归类标签 = (标签: string) =>
 
 /** 一行 Remotion 日志是 delayRender 清除的话，取标签和毫秒 */
 export const 解析等待 = (行: string): { 标签: string; 毫秒: number } | null => {
-  const m = /delayRender\(\)\] "(.*)" handle was cleared after (\d+)ms\s*$/.exec(行.replace(ANSI, ''));
+  // Remotion 无色标签用方括号，彩色标签用背景色和空格（Windows 默认启用颜色）；去掉 ANSI 后两种边界都要认。
+  const m = /delayRender\(\)\]?[ \t]+"(.*)" handle was cleared after (\d+)ms\s*$/.exec(行.replace(ANSI, ''));
   return m ? { 标签: 归类标签(m[1]!), 毫秒: Number(m[2]) } : null;
 };
 
