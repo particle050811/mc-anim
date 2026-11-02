@@ -88,6 +88,9 @@ console.log(JSON.stringify(r));
   return spawn(process.execPath, [脚本], { stdio: ['ignore', 'pipe', 'inherit'], env: { ...process.env }, detached: 自成一组 });
 };
 
+// Windows 的 kill 是无条件终止，父进程收不了尾，这几条断言的路径在那边不成立
+const 不能发信号 = process.platform === 'win32';
+
 describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
   it('转出来和内联（同进程）字节相同，段签、阶段、CRF1 都对', async () => {
     const 后 = 放样本('子进程');
@@ -126,7 +129,7 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
     报.mockRestore();
   });
 
-  it('父进程 SIGTERM：子进程和 ffmpeg 都没了，临时文件、占用都清掉，CRF1 还在；重做一遍字节相同', async () => {
+  it.skipIf(不能发信号)('父进程 SIGTERM：子进程和 ffmpeg 都没了，临时文件、占用都清掉，CRF1 还在；重做一遍字节相同', async () => {
     const 键 = '杀父';
     const 原 = 放样本(键);
     const 父 = 起父进程(键);
@@ -146,7 +149,7 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
     expect(await 文件sha(r!.母版!)).toBe(await 文件sha(压缩母版路径('杀父对照', 指纹('杀父对照'))));
   });
 
-  it.each([
+  it.skipIf(不能发信号).each([
     ['SIGHUP', 129, false],
     ['SIGINT', 130, false],
     // 终端里 Ctrl-C：整个前台进程组一起收到，子进程和 ffmpeg 不等父进程发信号也会自己退
@@ -164,7 +167,7 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
     expect(fs.existsSync(原)).toBe(true);
   });
 
-  it('父进程被 SIGKILL（收不到信号）：子进程靠 IPC 断开发现，也收尾退出', async () => {
+  it.skipIf(不能发信号)('父进程被 SIGKILL（收不到信号）：子进程靠 IPC 断开发现，也收尾退出', async () => {
     const 键 = '杀死父';
     const 原 = 放样本(键);
     const 父 = 起父进程(键);
@@ -176,7 +179,7 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
     expect(fs.existsSync(原)).toBe(true);
   });
 
-  it('派生段签途中被杀：段签的临时文件也清掉', async () => {
+  it.skipIf(不能发信号)('派生段签途中被杀：段签的临时文件也清掉', async () => {
     const 键 = '杀派生';
     放样本(键);
     const 父 = 起父进程(键);
