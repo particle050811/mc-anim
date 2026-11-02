@@ -64,11 +64,10 @@ export type 箱子朝向 = 'north' | 'south' | 'east' | 'west';
 // 正面朝 -Y（南）转到 朝向 那边
 const FACING_Z: Record<箱子朝向, number> = { south: 0, north: Math.PI, east: Math.PI / 2, west: -Math.PI / 2 };
 
-// 箱子贴图（原版、Lootr、暮色森林）都按 64×64 写；材质包的高清贴图是它的整数倍，uv 照 64 算（TexBox 的 texSize）。
 // 箱子的展开图是上下颠倒的：箱子模型直接画在 Y 朝上的方块空间里，不像生物模型先上下翻转，且带锁扣的正面在模型 +Z 侧（展开图第 4 格）。所以把 TexBox 绕 X 轴转 180°。
 const Part: React.FC<{ tex: Png; px: [number, number, number]; uv: [number, number]; c: V3; emissive: number }> = ({ tex, px, uv, c: center, emissive }) => (
   <group position={center} rotation={[Math.PI, 0, 0]}>
-    <TexBox tex={tex} px={px} uv={uv} s={[px[0] * PX, px[2] * PX, px[1] * PX]} emissive={emissive} texSize={[64, 64]} />
+    <TexBox tex={tex} px={px} uv={uv} s={[px[0] * PX, px[2] * PX, px[1] * PX]} emissive={emissive} />
   </group>
 );
 
