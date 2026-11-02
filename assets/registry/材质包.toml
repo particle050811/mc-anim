@@ -19,6 +19,14 @@ id = "材质包/faithful-32x"
 "说明" = "Faithful 32x，原版放大加细节。https://faithfulpack.net/license（v4）：可做变现视频、可修改再分发，要醒目署名并附许可链接；不许放付费墙、NFT、训练 AI"
 
 [["资产"]]
+id = "材质包/faithful-64x"
+"类别" = "材质包"
+"来源" = "手工:下载 https://cdn.modrinth.com/data/r4GILswZ/versions/YOjutORB/Faithful%2064x%20-%20Beta%209.zip（Modrinth faithful-64x Beta 9，1.20.1，sha1 6dd076b2a74b7b9a0141339be48ef9c72c559516）"
+"许可" = "LicenseRef-Faithful-License-4"
+"可见性" = "公开"
+"说明" = "Faithful 64x，Faithful 32x 再细一倍，还是测试版（缺玩家皮肤和一些方块）。用户 11-02 要「顺便兼容一下可能以后出现的 64x」拿它试；本作品 像素N 6 只能缩到 32x 上屏（pipeline/资产/材质包.ts 放大上限）。许可同 Faithful 32x：https://faithfulpack.net/license（v4）"
+
+[["资产"]]
 id = "材质包/pixel-perfection-legacy"
 "类别" = "材质包"
 "来源" = "手工:下载 https://cdn.modrinth.com/data/6w3F4SEu/versions/8HUXdaIC/Pixel%20Perfection%20Legacy%2013.21.3.zip（Modrinth pixel-perfection-legacy 13.21.3，sha1 35592cf5406f8006d37f42351add0cb0a18736ec）"

@@ -251,6 +251,12 @@
     "大小": 11088963,
     "库": "store"
   },
+  "材质包/faithful-64x": {
+    "sha256": "7420e04b09c5ff758df781ad1f591a49fe3560c120700f41fb683c62c986d400",
+    "后缀": ".zip",
+    "大小": 9608212,
+    "库": "store"
+  },
   "材质包/pixel-perfection-legacy": {
     "sha256": "cf0926e2357a8cb75aa938895476949c54bc6d11a3cd6742d98999dce70c78b3",
     "后缀": ".zip",
