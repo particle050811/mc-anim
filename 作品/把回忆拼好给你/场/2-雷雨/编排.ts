@@ -4,6 +4,8 @@ import { clamp01 } from '@engine/anim/anim.ts';
 import type { 方块 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
+import { 插骨, 合并骨骼表, type 骨骼表 } from '@库/角色/骨骼表.ts';
+import { magicalWineFoxExMotion } from '@库/角色/魔法酒狐新动作.ts';
 import { fps, 旧帧, 段窗口, 正片事件 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
 import * as 参 from './参数.ts';
@@ -55,15 +57,32 @@ export const 闪 = (帧: number) =>
   });
 
 // ---------- 她、你 ----------
-export type 她态 = { loc: V3; yaw: number; 姿势: '抱膝坐' | '站'; 看: [number, number]; 表情: '难过' | '微笑'; 施法: boolean };
+export type 她态 = { loc: V3; yaw: number; 姿势: '抱膝坐' | '站'; 看: [number, number]; 表情: '难过' | '微笑'; 施法: boolean; 骨骼?: 骨骼表 };
 /** 头转过去：起 那一帧起 转头秒 转到位 */
 const 转头 = (帧: number, 起: number) => 缓(走(帧, 起, 参.转头秒));
 
+/** 起身插值的两头：抱膝坐、站着举手的整张骨骼（不带头：头由 看 管）；只留两头不一样的骨骼，其余照组件自己算 */
+const 起身两头 = (() => {
+  const 坐 = magicalWineFoxExMotion({ 姿势: '抱膝坐', 眨眼: 0 }).骨骼;
+  const 站 = 合并骨骼表(magicalWineFoxExMotion({ 姿势: '站', 眨眼: 0 }).骨骼, { RightArm: { rot: 参.施法臂.右 }, LeftArm: { rot: 参.施法臂.左 } });
+  const 键们 = [...new Set([...Object.keys(坐), ...Object.keys(站)])].filter((k) => k !== 'Head' && JSON.stringify(坐[k]) !== JSON.stringify(站[k]));
+  const 取 = (t: 骨骼表) => Object.fromEntries(键们.map((k) => [k, t[k] ?? {}]));
+  return { 坐: 取(坐), 站: 取(站) };
+})();
+/** 抱膝坐时头的俯仰折成「站」的 看：抱膝坐的头补偿多抬 6°（库/角色/魔法酒狐新动作.ts 的 头补偿），起身那一帧头不跳 */
+const 坐头补 = 6;
+
 export const 她态 = (帧: number): 她态 => {
   const loc = 参.站位.她;
-  if (帧 >= 事('她站起')) return { loc, yaw: 参.朝向.她, 姿势: '站', 看: [参.施法仰, 0], 表情: '微笑', 施法: true };
   // 看你：你在她东边（右手边），头往右转（看 的左右正 = 往左）
   const 你方位 = (Math.atan2(参.站位.你[1] - loc[1], 参.站位.你[0] - loc[0]) * 180) / Math.PI - 90 - 参.朝向.她;
+  if (帧 >= 事('她站起')) {
+    const k = 缓(走(帧, 事('她站起'), 参.起身秒));
+    if (k >= 1) return { loc, yaw: 参.朝向.她, 姿势: '站', 看: [参.施法仰, 0], 表情: '微笑', 施法: true };
+    // 站起来：腿、上身、两只胳膊从抱膝坐一起插到站着举手，头从看你转到仰头
+    const 看: [number, number] = [插(-6 - 坐头补, 参.施法仰, k), 插(你方位, 0, k)];
+    return { loc, yaw: 参.朝向.她, 姿势: '站', 看, 表情: '微笑', 施法: true, 骨骼: 插骨(起身两头.坐, 起身两头.站, k) };
+  }
   return { loc, yaw: 参.朝向.她, 姿势: '抱膝坐', 看: [-6, 插(0, 你方位, 转头(帧, 事('她看你')))], 表情: '难过', 施法: false };
 };
 
