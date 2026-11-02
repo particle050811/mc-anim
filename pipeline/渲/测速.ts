@@ -10,10 +10,11 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { getCompositions, openBrowser, renderMedia, type LogLevel } from './渲染器.ts';
-import { 作品名 } from '../环境/作品.ts';
+import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 选段 } from '../清单/清单.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
+import { 照段材质包 } from '../资产/资产锁.ts';
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 删打包 } from './打包残留.ts';
 import { 打包 } from './渲.ts';
@@ -61,7 +62,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
   const remotion = (createRequire(path.join(代码根(), 'package.json'))('remotion/package.json') as { version: string }).version;
   try {
     let t = Date.now();
-    const serveUrl = await 打包();
+    const serveUrl = await 照段材质包(作品根(), s.键, () => 打包());
     const 打包秒 = (Date.now() - t) / 1000;
     t = Date.now();
     const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 前期日志, browserExecutable: opts.浏览器 ?? null });

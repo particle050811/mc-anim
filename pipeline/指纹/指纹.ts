@@ -18,7 +18,7 @@ import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品根 } from '../环境/作品.ts';
 import { 建默克尔图, 文本哈希, 编译选项, 锁定版本, 默克尔算法, type 默克尔明细 } from './默克尔.ts';
 import { 数据根 } from '../环境/配置.ts';
-import { 读作品资产锁 } from '../资产/资产锁.ts';
+import { 按材质包分组, 照材质包选用, 读作品资产锁 } from '../资产/资产锁.ts';
 import { 段私有配乐, 私有配乐模块 } from '../资产/私有配乐.ts';
 import { 缺字节 } from '../资产/缺字节.ts';
 import type { 段信息 } from '../清单/清单.ts';
@@ -85,8 +85,19 @@ const 段入口 = (s: 段信息, 叠层?: 叠层定义) => [相对代码根(叠�
 
 export type 指纹任务 = { 段: 段信息; 渲染设置: Record<string, unknown>; 叠层?: 叠层定义 };
 
-/** 一批段、叠层一次打包算指纹（建一张默克尔图，按段取闭包），顺序和任务一样；每一份都和单独 算段指纹 的一样 */
+/** 一批段、叠层一次打包算指纹（建一张默克尔图，按段取闭包），顺序和任务一样；每一份都和单独 算段指纹 的一样。
+ *  材质包按段选的（资产锁.ts）按选用分组，一组一张图：asset: 叶子是这一段选用下的 sha */
 export const 算全部段指纹 = async (任务: readonly 指纹任务[]): Promise<段指纹[]> => {
+  const 组们 = 按材质包分组(作品根(), 任务.map((t, i) => ({ t, i })), (x) => x.t.段.键);
+  const 出: 段指纹[] = [];
+  for (const g of 组们) {
+    const r = await 照材质包选用(g.选, () => 算一组指纹(g.项们.map((x) => x.t)));
+    g.项们.forEach((x, j) => (出[x.i] = r[j]!));
+  }
+  return 出;
+};
+
+const 算一组指纹 = async (任务: readonly 指纹任务[]): Promise<段指纹[]> => {
   if (!任务.length) return [];
   const 图 = await 建默克尔图(
     任务.flatMap((t) => 段入口(t.段, t.叠层)),

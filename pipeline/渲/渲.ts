@@ -18,7 +18,7 @@ import { 过渲染闸, 登记临时文件 } from '../闸/闸.ts';
 import { 叠层键, 算全部段指纹, type 段指纹 } from '../指纹/指纹.ts';
 import { 叠层目录, 数据根, 母版目录 } from '../环境/配置.ts';
 import { 全部段, type 段信息 } from '../清单/清单.ts';
-import { 读作品资产锁 } from '../资产/资产锁.ts';
+import { 核对段材质包, 照段材质包, 读作品资产锁, 逐组照材质包 } from '../资产/资产锁.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
 import { 补缺字节占位 } from '../资产/缺字节.ts';
 import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
@@ -135,6 +135,7 @@ const 记出帧编码 = (收: 阶段记录[], 标签: string, t0: number, 计: R
 };
 
 export const 找组合 = (h: Pick<会话, '组合'>, s: 段信息, id = s.键) => {
+  核对段材质包(作品根(), s.键);
   const c = h.组合.find((x) => x.id === id);
   if (!c) throw new Error(`打包里没有 Composition ${id}（作品的 注册.tsx 按清单和 段.ts 的叠层登记，清单里有它吗？）`);
   if (c.durationInFrames !== s.段.帧数 || c.fps !== s.段.fps || c.width !== s.段.宽 || c.height !== s.段.高) {
@@ -201,8 +202,9 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
         `== 要渲 ${待渲.length} 段：${待渲.map((r) => r.段.键).join('、')}` +
           (已知.length ? `；按耗时表预计约 ${Math.round(已知.reduce((a, b) => a + b, 0))} 秒${已知.length < 待渲.length ? `（另 ${待渲.length - 已知.length} 段没有记录）` : ''}` : '；耗时表里还没有这些段的记录'),
       );
-      await 开会话(级别, async (h) => {
-        for (const r of 待渲) {
+      // 材质包按段选的一组一个打包（资产锁.ts）；不按段选的只有一组
+      await 逐组照材质包(作品根(), 待渲, (r) => r.段.键, (组) => 开会话(级别, async (h) => {
+        for (const r of 组) {
           const composition = 找组合(h, r.段);
           const 标签 = 渲染标签(r.段.键, 级别);
           await 后台?.等空位(r.段.键, 标签);
@@ -287,7 +289,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
             });
           }
         }
-      }, opts.记录);
+      }, opts.记录));
     }
   } finally {
     // 关了浏览器再等（开会话 的 finally 已关），出错、让路也要等：已经排上的段不能丢给孤儿
@@ -317,8 +319,8 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
   await 清命中的旧('叠层', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.键, 指纹: r.指纹.指纹 })), 级别, opts.记录);
   if (!待渲.length) return 结果;
   console.log(`== 要渲 ${待渲.length} 个叠层：${待渲.map((r) => r.键).join('、')}`);
-  await 开会话(级别, async (h) => {
-    for (const r of 待渲) {
+  await 逐组照材质包(作品根(), 待渲, (r) => r.段.键, (组) => 开会话(级别, async (h) => {
+    for (const r of 组) {
       const composition = 找组合(h, r.段, r.键);
       const 标签 = 叠层渲染标签(r.键, 级别);
       await 量阶段(opts.记录.阶段, 标签, '等求解缓存', 等求解缓存写完);
@@ -371,7 +373,7 @@ export const 渲染叠层 = async (段们: 段信息[], 级别: 渲染级别, op
       }, undefined, {}, {种:'render',作品:作品名(),段:r.段.键,级别,帧数:composition.durationInFrames,项数:待渲.length,可让路:待渲.length>1,用途:process.env.ANIM_PURPOSE??'产出'});
       opts.记录.产物.push(r.文件);
     }
-  }, opts.记录);
+  }, opts.记录));
   return 结果;
 };
 
@@ -455,7 +457,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
   const 要出 = [...new Set(帧们)];
   const 提醒 = 连出提醒(s.键, 要出, o.逐帧);
   if (提醒) 记录?.记('警告', 提醒);
-  await 开会话(级别, async (h) => {
+  await 照段材质包(作品根(), s.键, () => 开会话(级别, async (h) => {
     const composition = 找组合(h, s);
     for (const f of 要出) {
       if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.键} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
@@ -474,6 +476,6 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       await 明细.写出(收 ?? []);
       console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
     }, undefined, {}, {种:'still',作品:作品名(),段:s.键,级别,帧数:要出.length,帧:要出.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
-  }, 记录);
+  }, 记录));
   return 要出.map((f) => 静帧文件(出到, s.键, f));
 };

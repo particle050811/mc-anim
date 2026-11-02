@@ -13,6 +13,7 @@ import type { 段信息 } from '../清单/清单.ts';
 import { 算全部段指纹 } from '../指纹/指纹.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
+import { 逐组照材质包 } from '../资产/资产锁.ts';
 import { 预计耗时, type 运行记录 } from '../运行记录/记录.ts';
 import { 记阶段 } from '../运行记录/阶段.ts';
 import { 明细收集 } from '../运行记录/渲染明细.ts';
@@ -176,8 +177,8 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
     });
     const 已知 = 估.filter((x): x is number => x !== null);
     console.log(`== 逐帧${模式} ${计划.length} 段、${计划.reduce((a, x) => a + x.帧.length, 0)} 帧${已知.length ? `；按耗时表预计约 ${Math.round(已知.reduce((a, b) => a + b, 0))} 秒${已知.length < 计划.length ? `（另 ${计划.length - 已知.length} 段没有记录）` : ''}` : ''}`);
-    await 开会话(级别, async (h) => {
-      for (const x of 计划) {
+    await 逐组照材质包(作品根(), 计划, (x) => x.段.键, (组) => 开会话(级别, async (h) => {
+      for (const x of 组) {
         const 键 = x.段.键;
         const composition = 找组合(h, x.段);
         const 标签 = `逐帧校验:${作品名()}/${键}`;
@@ -227,7 +228,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
         const 明细行 = 不同.slice(0, 列出的不同帧最多).map((d) => `第 ${d.帧} 帧：基准 ${d.基准.slice(0, 16)}，这次 ${d.这次.slice(0, 16)}`);
         错([`${键}：${这次.size} 帧里 ${不同.length} 帧不同（${帧号文本(不同.map((d) => d.帧))}）；${代码}`, ...明细行, ...(不同.length > 列出的不同帧最多 ? [`另 ${不同.length - 列出的不同帧最多} 帧`] : [])].join('\n    '));
       }
-    }, 记录);
+    }, 记录));
   }
   if (o.留图 && 留了) console.log(`${模式 === '比' ? '不同的帧' : 'PNG'}在 ${path.resolve(o.留图)}`);
   if (!计划.length && !不过) 错(`一段都没${模式}：选中的段本机都没有区段包`);
