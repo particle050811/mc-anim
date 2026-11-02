@@ -1,0 +1,30 @@
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { 读机器快照, 读机器快照并行, type 机器快照 } from './机器.ts';
+import { 过渲染闸, type 闸环境 } from './闸.ts';
+import { 取调度环境 } from './任务.ts';
+import { 读发起者 } from './发起者.ts';
+import { 读调度 } from './调度日志.ts';
+vi.mock('./机器.ts', async (原) => ({ ...await 原<typeof import('./机器.ts')>(), 读机器快照: vi.fn(), 读机器快照并行: vi.fn() }));
+const 机 = (闸: number, 发热等级: number): 机器快照 => ({ 负载: 1, 核: 10, 闸, 压力: 1, free: 1e9, 压缩: 0, swap: 0, 换出: 0, GPU: 0, 热: 发热等级, 芯片最高温: 50, 发热等级, 盘: 1e11, 孤儿: 0, 进程: '' });
+let dir: string;
+beforeEach(() => { vi.resetAllMocks(); dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-持锁监测-')); });
+afterEach(() => { vi.useRealTimers(); fs.rmSync(dir, { recursive: true, force: true }); });
+it('持锁 30 秒心跳必须现读，不能沿用领票快照，新的发热仍告警', async () => {
+  let now = Date.now();
+  const e: 闸环境 = { ...取调度环境({ 锁目录: dir, 发起者: 读发起者({}, [], dir, false) }), 现在毫秒: () => now, 内存下限: 30, 读内存: () => ({ 总: 100, 空闲: 80, 空闲百分比: 80, 交换区总: 0, 交换区已用: 0 }), 读压力: () => 1, 一分钟负载: () => 0, 核数: () => 10, 睡: vi.fn(async () => {}), 清孤儿: () => [], 读机器: 读机器快照 };
+  vi.mocked(读机器快照并行).mockResolvedValue(机(80, 0));
+  vi.mocked(读机器快照).mockReturnValue(机(45, 3));
+  vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });
+  await 过渲染闸(async () => {
+    expect(读机器快照).not.toHaveBeenCalled();
+    now += 30_000;
+    vi.advanceTimersByTime(30_000);
+    expect(读机器快照).toHaveBeenCalledOnce();
+    expect(读调度(e.日志目录).find(x => x.事 === '告警' && x.类 === '发热')).toBeDefined();
+  }, () => {}, e, { 种: 'render' });
+  expect(读机器快照并行).toHaveBeenCalledOnce();
+  expect(读机器快照).toHaveBeenCalledTimes(2);
+});

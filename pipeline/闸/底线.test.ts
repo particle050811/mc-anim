@@ -176,8 +176,8 @@ it('监控全写不了也只提示：渲染跑完、锁照放、下一次能拿'
       return 'ok';
     }, () => {}, e, { 种: 'still' });
     expect(r).toBe('ok');
-    // 本轮采样失败，监测各自再试；放锁仍重新采样，全炸了也不影响。
-    expect(采样).toBe(4);
+    // 监测 2 次，领票、拿锁、放锁的日志读数 3 次，全炸了也不影响。
+    expect(采样).toBe(5);
     expect(fs.existsSync(锁())).toBe(false);
     expect(票们()).toEqual([]);
     const 说的 = 说.mock.calls.flat().join('\n');
