@@ -7,7 +7,7 @@ import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 画幅, 段窗口 } from '../../分镜.ts';
+import { 旧帧号, 画幅, 段窗口 } from '../../分镜.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 像素字 } from '../../界面/像素字.ts';
@@ -42,7 +42,7 @@ const 画面: React.FC = () => {
   const 透 = 钻入透(q);
   return (
     <>
-      <整片后期 调色={调.调色} 种子={歌帧}>
+      <整片后期 调色={调.调色} 种子={旧帧号(歌帧)}>
         <新世界 机位={镜头在(歌帧)} 你={你姿} 色调={调.色调} 刻={天刻在(歌帧)} 剖={{ 坑: 没挖, 剥: 剥了(歌帧) }} 宽={宽} 高={高} />
         {歌帧 < 钻完 && (
           <选择世界 状态={{ 取景: 钻入取景(q), 指着: 0, 选中: true, 框光标: false, 光标: null, 图标: 旧图标, 图标透: (i, j) => 阈(i, j) < 透 }} 宽={宽} 高={高} />

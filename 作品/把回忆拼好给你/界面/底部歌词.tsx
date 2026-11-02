@@ -3,6 +3,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { uiFontFamily } from '@库/界面/基础.tsx';
+import { 旧帧 } from '../分镜.ts';
 import { 歌词不透明度, type 歌词样式, type 歌词行 } from './歌词.tsx';
 
 export type 底部歌词样式 = Omit<歌词样式, '顶边'> & {
@@ -10,15 +11,15 @@ export type 底部歌词样式 = Omit<歌词样式, '顶边'> & {
   底边: number;
 };
 
-/** 第 15 句用的样式（Agent 暂定）：字号、颜色、阴影、淡入淡出同 1-一如既往 的顶部歌词（场/1-隐世之境一楼/参数.ts）；
+/** 第 15 句用的样式（Agent 暂定）：字号、颜色、阴影、淡入淡出（24 fps 时 4、5 帧）同 1-一如既往 的顶部歌词（场/1-隐世之境一楼/参数.ts）；
  *  下沿离底 30：左下原版聊天栏（缩放 6）最底一行的下沿在页面 y 600，歌词在 y 650～690，不压聊天字 */
 export const 第15句歌词样式: 底部歌词样式 = {
   底边: 30,
   字号: 36,
   颜色: '#ffffff',
   阴影: '0 2px 6px rgba(0, 0, 0, 0.45)',
-  淡入帧: 4,
-  淡出帧: 5,
+  淡入秒: 旧帧(4),
+  淡出秒: 旧帧(5),
 };
 
 export const 底部歌词: React.FC<{ 行们: readonly 歌词行[]; 样式: 底部歌词样式; 收?: number }> = ({ 行们, 样式, 收 }) => {

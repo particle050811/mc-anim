@@ -6,7 +6,7 @@
 // 文字一时只走一路（用户 10-24 点名这一帧气泡、聊天行、歌词三路字一起出），接缝那一帧又不能一下没了。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
-import { fps, 段时钟 } from '../../分镜.ts';
+import { fps, 旧帧号, 段时钟 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
@@ -40,6 +40,7 @@ const 画面: React.FC = () => {
       <音效轨 src={推门url} 资产="音效/block.wooden_door.open.1" 段={段} />
       <重逢画面
         帧={帧}
+        种子={旧帧号(f)}
         叠层={
           <>
             <樱花风 秒={帧 / fps} 时刻={第15句风} 源={铃在画面} 散心={风散心} />

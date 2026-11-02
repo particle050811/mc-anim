@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { 正片事件 } from '../../分镜.ts';
+import { fps, 正片事件 } from '../../分镜.ts';
 import { 天亮 } from '../../地点/天体.ts';
 import { 剖面列, 剖面方块, 剥排方块, 地面高, 平原花, 树们, 新世界方块 } from './地形.ts';
 import { 你, 剖面, 地形范围, 地形雾, 坑, 机位们, 樱花林, 聊天, 远山, 远林们, 雾色, type 机位帧 } from './参数.ts';
@@ -144,7 +144,7 @@ describe('镜头、时间', () => {
     expect(机位在(1, 正片事件.第1句起步.帧)).toEqual({ ...机位们.落定, 眼: [...机位们.落定.眼], 看: [...机位们.落定.看] });
     const 中 = 机位在(1, 正片事件.第1句起步.帧 + 1);
     expect(Math.abs(中.眼[2] - 机位们.落定.眼[2])).toBeLessThan(0.1);
-    for (const f of [正片事件.第1句剖开.帧, 句2 - 1, 句2 + 30]) {
+    for (const f of [正片事件.第1句剖开.帧, 句2 - 1, 句2 + 1.25 * fps]) {
       const 机 = 机位在(1, f);
       机.眼.forEach((v, i) => expect(v).toBeCloseTo(机位们.剖面.眼[i]!, 9));
       expect(机.视角).toBeCloseTo(机位们.剖面.视角, 9);
@@ -162,13 +162,13 @@ describe('镜头、时间', () => {
     expect(星亮(天刻在(填土))).toBeCloseTo(0.5, 6);
     // 第 1 句看不见星星：加到天上的 星亮² × 255 四舍五入是 0
     expect(Math.round(星亮(天刻在(句2)) ** 2 * 255)).toBe(0);
-    for (let f = 正片事件.第1句加入游戏.帧 + 1; f < 填土 + 40; f++) expect(天刻在(f)).toBeGreaterThan(天刻在(f - 1));
+    for (let f = 正片事件.第1句加入游戏.帧 + 1; f < 填土 + (40 * fps) / 24; f++) expect(天刻在(f)).toBeGreaterThan(天刻在(f - 1));
   });
-  it('聊天栏的钟：「Steve加入了游戏」剖开那一帧正好 200 刻（原版那一行消失），淡掉的 20 刻铺在剖开前 聊天.淡帧 帧；之前一直在走', () => {
+  it('聊天栏的钟：「Steve加入了游戏」剖开那一帧正好 200 刻（原版那一行消失），淡掉的 20 刻铺在剖开前 聊天.淡秒 里；之前一直在走', () => {
     const 剖开 = 正片事件.第1句剖开.帧;
     expect(聊天刻在(正片事件.第1句加入游戏.帧)).toBe(0);
     expect(聊天刻在(剖开)).toBeCloseTo(200, 9);
-    expect(聊天刻在(剖开 - 聊天.淡帧)).toBeCloseTo(180, 9);
+    expect(聊天刻在(剖开 - 聊天.淡秒 * fps)).toBeCloseTo(180, 9);
     for (let f = 正片事件.第1句加入游戏.帧 + 1; f < 句2; f++) expect(聊天刻在(f)).toBeGreaterThan(聊天刻在(f - 1));
   });
 });
