@@ -22,7 +22,7 @@ const 态 = vi.hoisted(() => ({
 
 vi.mock('../环境/温度.ts', () => {
   const 无温度 = () => ({ 芯片最高温: null, 发热等级: null });
-  return { 读温度: vi.fn(无温度), 读温度并行: vi.fn(async () => 无温度()), 无温度 };
+  return { 读温度: vi.fn(无温度), 读温度并行: vi.fn(async () => 无温度()), 读现成温度: vi.fn(async () => 无温度()), 无温度 };
 });
 vi.mock('@remotion/bundler', () => ({ bundle: async () => '假包' }));
 vi.mock('@remotion/renderer', () => {

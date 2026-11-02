@@ -11,6 +11,8 @@ import type { 阶段记录 } from '../运行记录/阶段.ts';
 const 数据根 = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'anim-后台转存测试-'));
 process.env.ANIM_DATA = 数据根;
 vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('../环境/路径.ts')>()), 在主检出: () => true }));
+const 温度 = vi.hoisted(() => ({ 读: vi.fn(async () => ({ 芯片最高温: 72.5 as number | null, 发热等级: 2 as number | null })) }));
+vi.mock('../环境/温度.ts', async (原) => ({ ...(await 原<typeof import('../环境/温度.ts')>()), 读现成温度: 温度.读 }));
 const 发起 = vi.hoisted(() => ({ 读了: 0 }));
 vi.mock('../闸/发起者.ts', async (原) => {
   const m = await 原<typeof import('../闸/发起者.ts')>();
@@ -284,6 +286,7 @@ describe('一批的后台：调度日志和复盘', () => {
     expect(新.filter((x) => x.事 === '后台排').map((x) => x.段)).toEqual(['甲', '乙', '丙']);
     expect(新.filter((x) => x.事 === '后台止').map((x) => x.结果)).toEqual(['压缩', '中断', '留CRF1']);
     expect(新.find((x) => x.事 === '后台起')).toHaveProperty('机.负载');
+    for (const 事件 of 新.filter(x => x.事 === '后台起' || x.事 === '后台止')) expect(事件).toMatchObject({ 机: { 芯片最高温: 72.5, 发热等级: 2 } });
     expect(新.find((x) => x.事 === '后台止')).toMatchObject({ CPU秒: 12, 机: { 闸: 40, 压力: 1, 负载: 3 } });
     expect(新.some((x) => x.事 === '后台满' && x.段 === '丁')).toBe(true);
     const r = 复盘(新).后台;
@@ -293,4 +296,27 @@ describe('一批的后台：调度日志和复盘', () => {
     expect(r.限流秒).toBeGreaterThan(0);
     expect(复盘(新).等闸.总秒).toBe(0);
   });
+});
+
+
+it('后台温度缺失或读取失败时省略字段，出帧事件循环仍能推进', async () => {
+  for (const 失败 of [false, true]) {
+    温度.读.mockImplementation(async () => {
+      await new Promise(r => setTimeout(r, 20));
+      if (失败) throw new Error('探针不可用');
+      return { 芯片最高温: null, 发热等级: null };
+    });
+    const e = 取调度环境(), 起 = 读调度(e.日志目录).length;
+    let 次数 = 0;
+    const timer = setInterval(() => 次数++, 1);
+    try {
+      const 后台 = 建后台转存({ 级别: '视频', 记录: { 记() {}, 阶段: [] } as never, 跑: async () => null });
+      后台.排({ 键: '缺温度', 指纹: 指纹('缺温度'), 标签: '温' }, () => {});
+      await 后台.等齐('批');
+      expect(次数).toBeGreaterThan(1);
+      const 事件们 = 读调度(e.日志目录).slice(起).filter(x => x.事 === '后台起' || x.事 === '后台止');
+      expect(事件们).toHaveLength(2);
+      for (const x of 事件们) { expect(x).not.toHaveProperty('机.芯片最高温'); expect(x).not.toHaveProperty('机.发热等级'); }
+    } finally { clearInterval(timer); }
+  }
 });
