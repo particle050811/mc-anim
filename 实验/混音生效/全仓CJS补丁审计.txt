@@ -1,0 +1,11 @@
+pipeline/渲/测速.ts:10:import { createRequire } from 'node:module';
+pipeline/渲/测速.ts:61:  const remotion = (createRequire(path.join(代码根(), 'package.json'))('remotion/package.json') as { version: string }).version;
+pipeline/渲/混音顺序.ts:7:import { createRequire } from 'node:module';
+pipeline/渲/混音顺序.ts:34:  const require = createRequire(import.meta.url);
+pipeline/渲/混音顺序.ts:45:  模块.makeInlineAudioMixing = 换;
+pipeline/检查/规则/类型.ts:5:import { createRequire } from 'node:module';
+pipeline/检查/规则/类型.ts:11:const 包目录 = (包: string) => path.dirname(createRequire(import.meta.url).resolve(`${包}/package.json`));
+pipeline/渲/渲染器.ts:3:import { createRequire } from 'node:module';
+pipeline/渲/渲染器.ts:6:const 渲染器 = createRequire(import.meta.url)('@remotion/renderer') as typeof import('@remotion/renderer');
+pipeline/预览/命令.ts:1:import { createRequire } from 'node:module';
+pipeline/预览/命令.ts:20:  const 包 = createRequire(path.join(代码根(), 'package.json')).resolve('@remotion/cli/package.json');

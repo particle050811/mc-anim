@@ -1,0 +1,13 @@
+npm warn Unknown env config "no-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v5.0.3 /Users/particle/Developer/personal/mc-anim-wt/工作-混音生效
+
+
+ Test Files  5 passed (5)
+      Tests  36 passed (36)
+   Start at  00:22:20
+   Duration  5.26s (tests 61%, import 24%, transform 14%)
+
+    Isolate  5 workers spawned · ~92ms startup each (spawn + environment, per file)
+             at least ~368ms faster with isolate: false — reuses workers across files instead of one per file
+

@@ -1,0 +1,18 @@
+== 逐帧比 2 段、172 帧；按耗时表预计约 30 秒
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (972kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (416kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (140kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (159kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (192kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+打包 46 秒
+会话就绪：备素材 0.1 秒、webpack 46.0 秒、打包 46.1 秒、开浏览器 0.1 秒、读组合 4.1 秒
+== 资源闸：放行渲染
+✓ 核对-冒烟：48 帧全部相同；段指纹和存基准时一样（69c39d4be8d0258b）
+== 资源闸：渲染排队（前面 1 张，约8.7 分）
+== 资源闸：渲染排队（锁在 pid 45080 手里）
+== 资源闸：放行渲染
+[Tab 0, ../../mc-anim/node_modules/three/build/three.core.js:2022] THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+   7-秒杀：100/124 帧
+✓ 7-秒杀：124 帧全部相同；段指纹和存基准时一样（9b277a25f195c2c0）
+
+2 段都相同

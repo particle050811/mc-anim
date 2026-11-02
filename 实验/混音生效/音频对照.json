@@ -1,0 +1,72 @@
+[
+  {
+    "name": "a1",
+    "seed": 1,
+    "fixed": false,
+    "output": "/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/a1.wav",
+    "秒": 449.671,
+    "工厂调用": 1,
+    "takeFrame调用": 1289,
+    "none调用": 1289,
+    "截图调用": 0,
+    "声音条数": 256,
+    "视频md5": null,
+    "音频md5": "MD5=e58c514031b64919d0514a071bfb6404"
+  },
+  {
+    "name": "a2",
+    "seed": 2,
+    "fixed": false,
+    "output": "/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/a2.wav",
+    "秒": 460.514,
+    "工厂调用": 1,
+    "takeFrame调用": 1289,
+    "none调用": 1289,
+    "截图调用": 0,
+    "声音条数": 256,
+    "视频md5": null,
+    "音频md5": "MD5=db160c5ec55c2be5170a55f2292719c2"
+  },
+  {
+    "name": "b1",
+    "seed": 1,
+    "fixed": true,
+    "output": "/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/b1.wav",
+    "秒": 437.521,
+    "工厂调用": 1,
+    "takeFrame调用": 1289,
+    "none调用": 1289,
+    "截图调用": 0,
+    "声音条数": 256,
+    "视频md5": null,
+    "音频md5": "MD5=fdb4731dabedcdf363354e4f25bf5574"
+  },
+  {
+    "name": "b2",
+    "seed": 2,
+    "fixed": true,
+    "output": "/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/b2.wav",
+    "秒": 424.942,
+    "工厂调用": 1,
+    "takeFrame调用": 1289,
+    "none调用": 1289,
+    "截图调用": 0,
+    "声音条数": 256,
+    "视频md5": null,
+    "音频md5": "MD5=fdb4731dabedcdf363354e4f25bf5574"
+  },
+  {
+    "name": "c",
+    "seed": null,
+    "fixed": true,
+    "output": "/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/c.wav",
+    "秒": 419.047,
+    "工厂调用": 1,
+    "takeFrame调用": 1289,
+    "none调用": 1289,
+    "截图调用": 0,
+    "声音条数": 256,
+    "视频md5": null,
+    "音频md5": "MD5=fdb4731dabedcdf363354e4f25bf5574"
+  }
+]

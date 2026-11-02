@@ -1,0 +1,65 @@
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (972kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (416kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (159kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (140kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (192kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+打包 43 秒
+== 资源闸：渲染排队（前面 0 张，约≥0.3 分）
+== 资源闸：渲染排队（锁在 pid 44954 手里）
+== 资源闸：放行渲染
+START a1 2026-11-02T08:24:03.290Z
+a1 frame 200 106.052s
+a1 frame 400 165.44s
+a1 frame 600 229.483s
+a1 frame 800 296.691s
+a1 frame 1000 357.609s
+a1 frame 1200 416.747s
+RESULT {"name":"a1","seed":1,"fixed":false,"output":"/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/a1.wav","秒":449.671,"工厂调用":1,"takeFrame调用":1289,"none调用":1289,"截图调用":0,"声音条数":256,"视频md5":null,"音频md5":"MD5=e58c514031b64919d0514a071bfb6404"}
+!! 盯未挂：请主 Agent 挂 anim 调度 盯；任务照常排队
+== 资源闸：渲染排队（前面 2 张，约≥1.0 分）
+== 资源闸：渲染排队（前面还有人排队）
+== 资源闸：渲染排队（锁在 pid 44954 手里）
+== 资源闸：渲染排队（锁在 pid 70837 手里）
+== 资源闸：放行渲染
+START a2 2026-11-02T08:32:35.030Z
+a2 frame 200 107.01s
+a2 frame 400 170.806s
+a2 frame 600 239.325s
+a2 frame 800 308.024s
+a2 frame 1000 369.67s
+a2 frame 1200 429.503s
+RESULT {"name":"a2","seed":2,"fixed":false,"output":"/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/a2.wav","秒":460.514,"工厂调用":1,"takeFrame调用":1289,"none调用":1289,"截图调用":0,"声音条数":256,"视频md5":null,"音频md5":"MD5=db160c5ec55c2be5170a55f2292719c2"}
+NEGATIVE {"样本数":[5156002,5156002],"不同样本数":51,"最大差":4213,"首差秒":10.18675,"末差秒":23.379239583333334,"长度相同":true}
+== 资源闸：渲染排队（前面 2 张，约≥0.5 分）
+== 资源闸：渲染排队（前面还有人排队）
+== 资源闸：渲染排队（锁在 pid 97831 手里）
+== 资源闸：渲染排队（锁在 pid 70837 手里）
+== 资源闸：放行渲染
+START b1 2026-11-02T08:41:03.338Z
+b1 frame 200 99.742s
+b1 frame 400 163.725s
+b1 frame 600 228.249s
+b1 frame 800 292.341s
+b1 frame 1000 350.12s
+b1 frame 1200 407.747s
+RESULT {"name":"b1","seed":1,"fixed":true,"output":"/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/b1.wav","秒":437.521,"工厂调用":1,"takeFrame调用":1289,"none调用":1289,"截图调用":0,"声音条数":256,"视频md5":null,"音频md5":"MD5=fdb4731dabedcdf363354e4f25bf5574"}
+!! 盯未挂：请主 Agent 挂 anim 调度 盯；任务照常排队
+== 资源闸：放行渲染
+START b2 2026-11-02T08:48:21.264Z
+b2 frame 200 95.704s
+b2 frame 400 152.388s
+b2 frame 600 214.307s
+b2 frame 800 277.481s
+b2 frame 1000 336.178s
+b2 frame 1200 395.107s
+RESULT {"name":"b2","seed":2,"fixed":true,"output":"/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/b2.wav","秒":424.942,"工厂调用":1,"takeFrame调用":1289,"none调用":1289,"截图调用":0,"声音条数":256,"视频md5":null,"音频md5":"MD5=fdb4731dabedcdf363354e4f25bf5574"}
+FIXED {"样本数":[5156002,5156002],"不同样本数":0,"最大差":0,"首差秒":null,"末差秒":null,"长度相同":true}
+== 资源闸：放行渲染
+START c 2026-11-02T08:55:26.732Z
+c frame 200 94.259s
+c frame 400 149.63s
+c frame 600 210.515s
+c frame 800 272.758s
+c frame 1000 329.583s
+c frame 1200 386.952s
+RESULT {"name":"c","seed":null,"fixed":true,"output":"/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/c.wav","秒":419.047,"工厂调用":1,"takeFrame调用":1289,"none调用":1289,"截图调用":0,"声音条数":256,"视频md5":null,"音频md5":"MD5=fdb4731dabedcdf363354e4f25bf5574"}

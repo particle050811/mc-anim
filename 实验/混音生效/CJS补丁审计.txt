@@ -1,0 +1,15 @@
+pipeline/渲/测速.ts:10:import { createRequire } from 'node:module';
+pipeline/渲/测速.ts:61:  const remotion = (createRequire(path.join(代码根(), 'package.json'))('remotion/package.json') as { version: string }).version;
+pipeline/检查/规则/类型.ts:5:import { createRequire } from 'node:module';
+pipeline/检查/规则/类型.ts:11:const 包目录 = (包: string) => path.dirname(createRequire(import.meta.url).resolve(`${包}/package.json`));
+pipeline/预览/命令.ts:1:import { createRequire } from 'node:module';
+pipeline/预览/命令.ts:20:  const 包 = createRequire(path.join(代码根(), 'package.json')).resolve('@remotion/cli/package.json');
+pipeline/渲/混音顺序.ts:7:import { createRequire } from 'node:module';
+pipeline/渲/混音顺序.ts:34:  const require = createRequire(import.meta.url);
+pipeline/渲/混音顺序.ts:45:  模块.makeInlineAudioMixing = 换;
+pipeline/资产/缓存名.ts:2:// Remotion 拿整份 webpack 配置 JSON 的 md5 当缓存目录名（@remotion/bundler 的 shared-bundler-config.js computeHashAndFinalConfig），
+pipeline/资产/缓存名.ts:16:const 挂JSON = (o: object, json: () => unknown) => Object.defineProperty(o, 'toJSON', { value: json, enumerable: false, configurable: true });
+pipeline/资产/ogg解码.cjs:9:module.exports = function oggDecode() {
+pipeline/资产/媒体字面量.cjs:28:module.exports = function 媒体字面量(source) {
+pipeline/资产/缺字节.ts:26:  return `// anim 生成：${话}\nmodule.exports = { __esModule: true, get default() { throw new Error(${JSON.stringify(话)}); } };\n`;
+pipeline/资产/缺字节.ts:32:  return `// anim 生成：${话}\nmodule.exports = { __esModule: true, default: function 缺字节() { throw new Error(${JSON.stringify(话)}); } };\n`;

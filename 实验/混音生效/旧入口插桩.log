@@ -1,0 +1,62 @@
+打包 7 秒
+== 资源闸：放行渲染
+{
+  "替换工厂调用次数": 0,
+  "ESM入口": "file:///Users/particle/Developer/personal/mc-anim/node_modules/@remotion/renderer/dist/esm/index.mjs",
+  "CJS入口": "/Users/particle/Developer/personal/mc-anim/node_modules/@remotion/renderer/dist/index.js",
+  "结果": {
+    "remotion": "4.0.537",
+    "浏览器": "自带",
+    "共享内存": true,
+    "日志级别": "error",
+    "段": "应力转动/6-穿塔斩首领",
+    "帧": [
+      240,
+      263
+    ],
+    "打包秒": 6.679,
+    "开浏览器秒": 0.199,
+    "读组合秒": 5.876,
+    "求解缓存准备": {
+      "新写": 0,
+      "秒": 0
+    },
+    "轮": [
+      {
+        "共享内存": true,
+        "总秒": 40.858,
+        "首帧秒": 26.621,
+        "出帧秒": 12.605,
+        "收尾秒": 1.632,
+        "每帧中位毫秒": 524,
+        "每帧P90毫秒": 801,
+        "每帧P99毫秒": 1162,
+        "最慢帧": [
+          {
+            "帧": 259,
+            "毫秒": 1162
+          },
+          {
+            "帧": 260,
+            "毫秒": 1121
+          },
+          {
+            "帧": 258,
+            "毫秒": 801
+          },
+          {
+            "帧": 247,
+            "毫秒": 748
+          },
+          {
+            "帧": 257,
+            "毫秒": 722
+          }
+        ],
+        "最多的等待": [],
+        "明细": "/Users/particle/Developer/personal/mc-anim-data/run/logs/渲染明细/20261102-082038-bench_应力转动_6-穿塔斩首领_视频-37626.json",
+        "输出": "/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/scratchpad/混音生效/mc-anim-测速-37626-0.mkv"
+      }
+    ]
+  }
+}

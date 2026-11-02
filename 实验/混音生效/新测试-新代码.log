@@ -1,0 +1,12 @@
+npm warn Unknown env config "no-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v5.0.3 /Users/particle/Developer/personal/mc-anim-wt/工作-混音生效
+
+ ✓ pipeline/渲/渲染器.test.ts > 渲染器入口 > 导出 CJS 的同一份函数，加载即固定实际下载表的混音器 84ms
+ ✓ pipeline/渲/渲染器.test.ts > 渲染器入口 > pipeline 除统一入口外不直接取 @remotion/renderer 的值（类型可直引） 193ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  01:06:27
+   Duration  447ms (tests 69%, import 22%, transform 9%)
+

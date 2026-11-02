@@ -1,0 +1,128 @@
+npm warn Unknown env config "no-proxy". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+
+ RUN  v5.0.3 /Users/particle/Developer/personal/mc-anim-wt/工作-混音生效
+
+node:internal/modules/esm/resolve:271
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/pipeline/渲/渲染器.ts' imported from /Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/[eval1]
+    at finalizeResolution (node:internal/modules/esm/resolve:271:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)
+    at #resolve (node:internal/modules/esm/loader:683:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)
+    at node:internal/modules/esm/loader:632:32
+    at TracingChannel.tracePromise (node:diagnostics_channel:362:14) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/particle/Developer/personal/mc-anim-wt/%E5%B7%A5%E4%BD%9C-%E6%B7%B7%E9%9F%B3%E7%94%9F%E6%95%88/pipeline/%E6%B8%B2/%E6%B8%B2%E6%9F%93%E5%99%A8.ts'
+}
+
+Node.js v24.19.0
+ ❯ pipeline/渲/渲染器.test.ts (2 tests | 2 failed) 1059ms
+   ❯ 渲染器入口 (2)
+     × 导出 CJS 的同一份函数，加载即固定实际下载表的混音器 186ms
+     × pipeline 除统一入口外不直接取 @remotion/renderer 的值（类型可直引） 872ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  pipeline/渲/渲染器.test.ts > 渲染器入口 > 导出 CJS 的同一份函数，加载即固定实际下载表的混音器
+Error: Command failed: /usr/local/bin/node --input-type=module -e 
+      import assert from 'node:assert/strict';
+      import { createRequire } from 'node:module';
+      import path from 'node:path';
+      import fs from 'node:fs';
+      import crypto from 'node:crypto';
+      const require = createRequire(import.meta.url);
+      const cjs = require('@remotion/renderer');
+      const dir = path.dirname(require.resolve('@remotion/renderer'));
+      const mixing = require(path.join(dir, 'assets/inline-audio-mixing.js'));
+      const original = mixing.makeInlineAudioMixing;
+      const renderer = await import('./pipeline/渲/渲染器.ts');
+      for (const key of ['renderMedia', 'renderFrames', 'renderStill', 'getCompositions', 'openBrowser']) {
+        assert.equal(renderer[key], cjs[key], key + ' 必须是 CJS 同一份函数');
+      }
+      assert.notEqual(mixing.makeInlineAudioMixing, original, '入口必须自动固定混音顺序');
+      const fixed = mixing.makeInlineAudioMixing;
+      let calls = 0;
+      mixing.makeInlineAudioMixing = (...args) => { calls++; return fixed(...args); };
+      const {makeDownloadMap, cleanDownloadMap} = require(path.join(dir, 'assets/download-map.js'));
+      const map = makeDownloadMap(48000);
+      try {
+        assert.equal(calls, 1, '下载表必须调用替换后的导出');
+        for (const [id, value] of [['甲', 100], ['乙', 200], ['丙', 300]]) {
+          map.inlineAudioMixing.addAsset({
+            asset: {type: 'inline-audio', id, frame: 5, startInVideo: 5, audio: new Array(3200).fill(value), timestamp: 0, duration: 41666, toneFrequency: 1},
+            fps: 24, totalNumberOfFrames: 100, firstFrame: 0, trimLeftOffset: 0, trimRightOffset: 0,
+          });
+        }
+        await map.inlineAudioMixing.finish({binariesDirectory: null, indent: false, logLevel: 'error', cancelSignal: undefined, sampleRate: 48000});
+        const hashes = map.inlineAudioMixing.getListOfAssets().map(x => crypto.createHash('sha256').update(fs.readFileSync(x.outName)).digest('hex'));
+        assert.equal(hashes.length, 3);
+        assert.deepEqual(hashes, [...hashes].sort(), '真实混音项必须按内容排序');
+        console.log('CJS 同一份函数 5/5；下载表调用替换工厂 1 次；真实声音 3 条按内容排序');
+      } finally { cleanDownloadMap(map); }
+    
+node:internal/modules/esm/resolve:271
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/pipeline/渲/渲染器.ts' imported from /Users/particle/Developer/personal/mc-anim-wt/工作-混音生效/[eval1]
+    at finalizeResolution (node:internal/modules/esm/resolve:271:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:992:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:701:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:721:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:56)
+    at #resolve (node:internal/modules/esm/loader:683:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:35)
+    at node:internal/modules/esm/loader:632:32
+    at TracingChannel.tracePromise (node:diagnostics_channel:362:14) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/particle/Developer/personal/mc-anim-wt/%E5%B7%A5%E4%BD%9C-%E6%B7%B7%E9%9F%B3%E7%94%9F%E6%95%88/pipeline/%E6%B8%B2/%E6%B8%B2%E6%9F%93%E5%99%A8.ts'
+}
+
+Node.js v24.19.0
+
+ ❯ pipeline/渲/渲染器.test.ts:13:16
+     11| describe('渲染器入口', () => {
+     12|   it('导出 CJS 的同一份函数，加载即固定实际下载表的混音器', () => {
+     13|     const 输出 = execFileSync(process.execPath, ['--input-type=module', …
+       |                ^
+     14|       import assert from 'node:assert/strict';
+     15|       import { createRequire } from 'node:module';
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  pipeline/渲/渲染器.test.ts > 渲染器入口 > pipeline 除统一入口外不直接取 @remotion/renderer 的值（类型可直引）
+AssertionError: 值导入必须通过 pipeline/渲/渲染器.ts: expected [ 'pipeline/渲/批.ts:7', …(2) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   "pipeline/渲/批.ts:7",
++   "pipeline/渲/测速.ts:12",
++   "pipeline/渲/渲.ts:12",
++ ]
+
+ ❯ pipeline/渲/渲染器.test.ts:83:45
+     81|     };
+     82|     扫(path.join(根, 'pipeline'));
+     83|     expect(违规, '值导入必须通过 pipeline/渲/渲染器.ts').toEqual([]);
+       |                                             ^
+     84|   });
+     85| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  00:18:52
+   Duration  1.70s (tests 68%, import 23%, transform 8%)
+
