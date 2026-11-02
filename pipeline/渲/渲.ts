@@ -37,11 +37,14 @@ import { 出段签 } from '../段签/段签.ts';
 import { 漂移提示 } from '../段签/补.ts';
 import { 删旧, 有要删的旧 } from '../缓存/钉.ts';
 import { 存成压缩 } from './转存.ts';
+import { 固定混音顺序 } from './混音顺序.ts';
 import { 叠层渲染参数, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
 import type { 叠层定义 } from '../../engine/段/段定义.ts';
 import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
-export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
+固定混音顺序();
+
+export const 渲染标签 =(键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 
 export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`) => {
   const 根 = 作品根();
