@@ -16,6 +16,9 @@ export class 子进程失败 extends Error {
 /** 降 CPU 优先级（nice 10）跑：渲染、编码占满核时前台不卡。Windows 没有 nice，不降 */
 export const 低优先级 = (cmd: readonly string[]): string[] => (isWindows ? [...cmd] : ['nice', '-n', '10', ...cmd]);
 
+/** 和渲染同时跑的 CPU 活。macOS 选 P 核还是 E 核看 QoS 不看 nice，光 nice 的 x264 照占 P 核、把 Chrome 挤慢；钳到 utility（background 太狠，慢到排满）。taskpolicy 是 exec，pid 不变，信号和 IPC 照常。子孙继承。别的平台原样 */
+export const 后台QoS = (cmd: readonly string[]): string[] => (process.platform === 'darwin' ? ['taskpolicy', '-c', 'utility', ...cmd] : [...cmd]);
+
 /** 跑完，返回 stdout（UTF-8 文本）；退出码非 0 抛 子进程失败（带 stderr 末尾） */
 export const 跑出 = (cmd: readonly string[], opts: SpawnOptions = {}): string => {
   const r = spawn.sync(cmd[0]!, cmd.slice(1), { ...opts, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 30 });
