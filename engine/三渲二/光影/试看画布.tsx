@@ -4,7 +4,9 @@ import React from 'react';
 import { 三渲二画布 as 原画布, type 三渲二画布参数 } from '../画布.tsx';
 import type { 光影选项 } from './预设.ts';
 
+// 原画布模块别的导出照原样转出去（被换掉的是整个模块，少一个引的地方就拿到 undefined）
 export type { 三渲二画布参数 };
+export { 光影范围 } from '../画布.tsx';
 
 /** pipeline/渲/光影试看.ts 里同一个名字 */
 const 环境名 = 'REMOTION_ANIM_LIGHTING';
