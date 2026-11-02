@@ -17,6 +17,8 @@ export type 发起者 = {
     代理标: string;
 };
 const 遮 = '[已遮蔽]';
+// 丢掉截点上的整个词，避免 URL 的 @ 被切掉后把半截密码当普通文本留下。
+const 截 = (s: string) => s.length > 4000 ? s.slice(0, 4000).replace(/\S*$/, '') : s;
 // 短词只认整段（DB_PASS、--auth）：不然 bypass、author、keyframe 也会被遮。
 const 敏感词 = String.raw`token|secret|passw(?:or)?d|passphrase|credential|cookie|authorization|(?:api|access|private)[-_]?key|(?<![a-z0-9])(?:key|pass|pwd|o?auth)(?![a-z0-9])`;
 // 引号没配对时算到末尾：不然值里的空格后面还露着。
@@ -29,13 +31,17 @@ const 头 = new RegExp(String.raw`(${词首}(?:[\w.-]*(?:authorization|cookies?)
 const 名值 = new RegExp(String.raw`(${词首}${名}["']?\s*[=:：]\s*)(?:${值}|[^\s&"']+)`, 'gi');
 const 开关值 = new RegExp(String.raw`(${词首}--?${名}\s+)(?:${值}|\S+)`, 'gi');
 // 空格头只认明确的 x-api-key，不把「api-key 说明」「token 满了」当名值对。
-const 空格头 = new RegExp(String.raw`(${词首}x-api-key[ \t]+)(?:${值}|[^\s&"']+)`, 'gi');
-const 遮文字 = (s: string) => s
-    // 调用方都只留几百字；不截的话一长串 key-key-… 仍是平方级。
-    .slice(0, 4000)
+const 空格头 = new RegExp(String.raw`(${词首}x-api-key[ \t]+)(?:${值}|[^\s&"';|]+)`, 'gi');
+// 只看值的第一个词：中文说明不遮，但「fake 是测试值」仍必须遮住 fake。
+const 头值可遮 = (s: string) => {
+    const 首词 = s.replace(/^["']/, '').match(/^[^\s;|&]+/)?.[0];
+    return 首词 !== undefined && !/[^\x00-\x7f]/.test(首词);
+};
+// 调用方都只留几百字；先封顶，避免一长串 key-key-… 的回溯开销。
+const 遮文字 = (s: string) => 截(s)
     .replace(头, `$1${遮}`)
     .replace(/(?<![a-z0-9+.-])([a-z][a-z0-9+.-]*:\/\/)[^/@\r\n]+@/gi, `$1${遮}@`)
-    .replace(空格头, `$1${遮}`)
+    .replace(空格头, (全: string, 头名: string) => 头值可遮(全.slice(头名.length)) ? 头名 + 遮 : 全)
     .replace(new RegExp(String.raw`\bSSHPASS=(?:${值}|\S+)`, 'g'), `SSHPASS=${遮}`)
     .replace(名值, `$1${遮}`)
     .replace(开关值, `$1${遮}`)
@@ -97,9 +103,9 @@ const 登录参数替换 = (argv: readonly string[]) => {
     return 换;
 };
 const 遮空格头项 = (a: string, 前项 = '') => {
-    if (/^x-api-key$/i.test(前项)) return 遮;
+    if (/^x-api-key$/i.test(前项)) return 头值可遮(a) ? 遮 : a;
     const 头名 = /^x-api-key[ \t]+/i.exec(a)?.[0];
-    return 头名 ? 头名 + 遮 : a;
+    return 头名 && 头值可遮(a.slice(头名.length)) ? 头名 + 遮 : a;
 };
 /** 文本已经丢失 argv 边界，只按字面引号、转义和命令分隔符分词，不执行 shell 或展开变量。 */
 const 分词 = (s: string) => [...s.matchAll(/&&|\|\||[;|&\r\n]|(?:\\[\s\S]|"(?:\\[\s\S]|[^"\\])*(?:"|$)|'[^']*(?:'|$)|[^\s"'\\;|&])+/g)].map(m => ({
@@ -169,12 +175,13 @@ const 遮命令文本 = (s: string) => {
     }
     return 写回(s, 词, 换);
 };
-export const 遮密 = (s: string) => 遮文字(遮命令文本(s.slice(0, 4000)));
+export const 遮密 = (s: string) => 遮文字(遮命令文本(截(s)));
 /** 逐项遮再拼：argv 已去引号，拼起来就分不清值里的空格和下一项了。 */
 export const 遮命令 = (argv: readonly string[]) => {
     const 换 = 登录参数替换(argv);
     const 管线命令 = 是管线命令(argv[0] ?? '');
     return argv.map((a, i) => {
+        a = 截(a);
         if (换.has(i)) return 换.get(i)!;
         // 这一项本身是 名=值 或 头: 值：认第一个分隔符，后面整项都是值，否则值里的等号会把密钥算进名字。
         const 名部 = /^[^\s=:：]+\s*[=:：]\s*/.exec(a)?.[0];

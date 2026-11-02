@@ -251,3 +251,37 @@ describe('生产路径与文本命令边界返修', () => {
     expect(遮命令(['anim', '--为什么', s])).toBe(`anim --为什么 ${s}`);
   });
 });
+
+
+describe('截断与空格头返修', () => {
+  it.each(['token', 'Cookie'])('4000 字截断不能留下 URL 密码半截：%s', 名 => {
+    const 前缀 = 名 === 'token' ? 'token="' : 'Cookie: ';
+    const 后缀 = 名 === 'token' ? '" ' : '\n';
+    const url = 'https://u:fakeTAIL@h';
+    const 原文 = 前缀 + 'a'.repeat(4000 - 前缀.length - 后缀.length - 'https://u:fake'.length) + 后缀 + url;
+    expect(原文.slice(0, 4000)).toMatch(/fake$/);
+    expect(遮密(原文)).toBe(名 === 'token' ? 'token=[已遮蔽] ' : 'Cookie: [已遮蔽]\n');
+    expect(遮命令(['anim', '--为什么', 原文])).not.toContain('fake');
+  });
+  it('普通 URL 仍遮，argv 长项丢掉被切开的 URL，不做超大输入实验', () => {
+    expect(遮密('https://u:fake@h')).toBe('https://[已遮蔽]@h');
+    const 原文 = 'a'.repeat(3986) + ' https://u:fakeTAIL@h';
+    expect(遮命令(['anim', '--为什么', 原文])).toBe('anim --为什么 ' + 'a'.repeat(3986) + ' ');
+  });
+  it.each([
+    'x-api-key 缺失，换头', '缺 x-api-key 头', 'x-api-key; 下一条',
+    '缺 x-api-key\n第二行说明', 'x-api-key\n第二行说明',
+    'echo x-api-key | grep foo', 'echo x-api-key ; true', 'x-api-key | grep foo',
+  ])('中文说明和分隔符不遮：%s', s => {
+    expect(遮密(s)).toBe(s);
+    expect(遮命令(['anim', '--为什么', s])).toBe(`anim --为什么 ${s}`);
+    记调度(dir, '决定', { 发起: 读发起者({}, ['node', '/x/main.ts', '--为什么', s], dir, false), 为什么: s });
+    const 行 = 读调度(dir)[0]!;
+    expect(行.为什么).toBe(s);
+    expect((行.发起 as { 命令: string }).命令).toBe(`node /x/main.ts --为什么 ${s}`);
+  });
+  it.each(['x-api-key fakeA 是测试值', '缺 x-api-key fakeA 是测试值', 'x-api-key "fakeA 是测试值"'])('只看第一个值词：%s', s => {
+    expect(遮密(s)).not.toContain('fakeA');
+    expect(遮命令(['anim', '--为什么', s])).not.toContain('fakeA');
+  });
+});
