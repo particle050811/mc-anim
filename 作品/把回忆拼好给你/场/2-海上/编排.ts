@@ -186,7 +186,7 @@ export const 每格像素 = (机: 透视, p: V3, 高 = 页.高) => {
 /** 第 3 句最后一帧（末态.ts 的 末机）的歌曲帧：眼睛特写从这里接着推 */
 export const 接帧 = 窗.起帧 - 1;
 
-/** 三次埃尔米特：p0、p1 两头的值，m0、m1 两头每帧的变化率，h 这一段几帧，s 0～1 */
+/** 三次埃尔米特：p0、p1 两头的值，m0、m1 两头每秒的变化率，h 这一段几秒，s 0～1 */
 const 埃尔米特 = (p0: number, p1: number, m0: number, m1: number, h: number, s: number) => {
   const s2 = s * s;
   const s3 = s2 * s;
@@ -201,9 +201,8 @@ export const 眼机位 = (g: number): 透视 => {
   const t = Math.tan((末机.视角 * 度) / 2);
   const 宽高比 = 页.宽 / 页.高;
   const 止距 = (眼珠.高 * 页.高) / (2 * t * 日.边);
-  const h = 事.眼化日.帧 - 接帧;
-  const s = 夹((g - 接帧) / h);
-  const 距 = Math.exp(埃尔米特(Math.log(末距), Math.log(止距), 末速, 0, h, s));
+  const s = 夹((g - 接帧) / (事.眼化日.帧 - 接帧));
+  const 距 = Math.exp(埃尔米特(Math.log(末距), Math.log(止距), 末速, 0, 秒(事.眼化日.帧) - 秒(接帧), s));
   const k = 平滑(s);
   const nx = (日.x / 页.宽) * 2 - 1;
   const ny = 1 - (日.y / 页.高) * 2;

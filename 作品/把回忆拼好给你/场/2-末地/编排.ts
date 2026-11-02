@@ -1,11 +1,11 @@
 // 2-抢龙蛋 每一帧谁在哪、什么样：她、你、龙蛋、龙蛋瞬移的传送粒子、机位、开头从第 4 句的浪里出来。
 // 按段内帧算，时刻取 分镜.ts 的正片事件，位置和分寸取 参数.ts、姿势.ts。纯模块（测试能引，不 import 组件）。
-// 游戏钟：段首是第 0 刻，每帧 20/24 刻；粒子、挥手都按刻走，同游戏。
+// 游戏钟：段首是第 0 刻，每帧 20/fps 刻；粒子、挥手都按刻走，同游戏。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import type { 魔法酒狐全部表情, 魔法酒狐新姿势 } from '@库/角色/魔法酒狐新动作.ts';
 import type { ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { fps, 段内正片事件帧, 段窗口, 正片事件 } from '../../分镜.ts';
+import { fps, 旧帧, 段内正片事件帧, 段窗口, 正片事件 } from '../../分镜.ts';
 import { 网格 } from '../../配乐/网格.ts';
 import * as 参 from './参数.ts';
 import * as 姿 from './姿势.ts';
@@ -14,7 +14,7 @@ const 键 = '2-抢龙蛋';
 export const 事 = 段内正片事件帧(键);
 const 窗 = 段窗口(键);
 export const 帧数 = 窗.帧数;
-/** 段内帧 → 歌曲帧（颗粒的种子用它，核对段的静帧同一颗粒） */
+/** 段内帧 → 歌曲帧（颗粒的种子取它的 旧帧号，核对段的静帧同一颗粒） */
 export const 歌曲帧 = (f: number) => 窗.起帧 + f;
 /** 段内帧 → 歌上的秒（她眨眼、尾巴按它走） */
 export const 歌秒 = (f: number) => (窗.起帧 + f) / fps;
@@ -53,7 +53,7 @@ export const 你眼 = (): V3 => [参.你.位[0], 参.你.位[1], 姿.你眼高];
 export type 你态 = { loc: V3; yaw: number; 看: V3; 挥: number | null; 秒: number };
 /** 你一直站着：看她，点蛋前转头看蛋，蛋没了、她摔下去以后再看回她 */
 export const 你态 = (f: number): 你态 => {
-  const 看 = f >= 事.点龙蛋 - 提前帧 && f < 事.扑空 + 2 ? 格心(参.蛋位们.起) : 她头位(f);
+  const 看 = f >= 事.点龙蛋 - 提前帧 && (f - 事.扑空) / fps < 旧帧(2) ? 格心(参.蛋位们.起) : 她头位(f);
   return { loc: 参.你.位, yaw: 参.你.朝向, 看, 挥: 你挥(f), 秒: 歌秒(f) };
 };
 
@@ -71,7 +71,8 @@ export type 她态 = {
   秒?: number;
 };
 
-const 蹬起 = 事.扑起 - 参.蹬地帧;
+/** 蹬地压低了没有：扑起前 蹬地秒 起 */
+const 蹬了 = (f: number) => (事.扑起 - f) / fps <= 参.蹬地秒;
 const 站姿 = (loc: V3, pitch = 0, yaw: number = 参.她.朝向): FigurePose => ({ loc, pitch, squash: 1, headPitch: 0, headYaw: 0, legR: 0, legL: 0, armR: 0, armRRoll: 0, armL: 0, armLRoll: 0, yaw });
 
 /** 扑在半空：0～1（扑起 → 落蛋） */
@@ -139,15 +140,15 @@ const 抬头 = (身倾: number, 腰: number, 头: V3, 点: V3): 姿.骨 => {
 };
 const 腰 = (表: 姿.骨表) => 表.UpBody?.rot?.[0] ?? 0;
 
-/** 扭屁股：每拍一个来回，起止各用 2 帧渐入渐出 */
+/** 扭屁股：每拍一个来回，起止各用 1/12 秒（24 fps 时 2 帧）渐入渐出 */
 const 扭 = (f: number) => {
-  const 包 = clamp01((f - 事.扭屁股) / 2) * clamp01((蹬起 - f) / 2);
+  const 包 = clamp01((f - 事.扭屁股) / fps / 旧帧(2)) * clamp01(((事.扑起 - f) / fps - 参.蹬地秒) / 旧帧(2));
   return Math.sin((2 * Math.PI * (f - 事.扭屁股)) / 拍帧) * 包;
 };
 
 export const 她态 = (f: number): 她态 => {
   const 秒 = 歌秒(f);
-  if (f < 蹬起) {
+  if (!蹬了(f)) {
     const w = 扭(f);
     return {
       pose: 站姿(参.她.伏位),
@@ -174,7 +175,7 @@ export const 她态 = (f: number): 她态 => {
   }
   if (f < 事.点龙蛋) {
     // 扑在蛋上抱住：落上去那几帧胸口弹起一点再贴下去；抬头看你（得意）
-    const k = clamp01((f - 事.落蛋) / 参.落地弹帧);
+    const k = clamp01((f - 事.落蛋) / fps / 参.落地弹秒);
     const 倾 = -90 + Math.sin(Math.PI * k) * 姿.落地弹;
     const 骨骼 = { ...姿.蛋上, Head: 抬头(倾, 腰(姿.蛋上), 头, 你眼()) };
     return { pose: 站姿(参.她.蛋上位, 倾, 参.她.趴朝向), 姿势: '静站', 表情: '大笑', 骨骼, 眨眼: 0, 秒 };

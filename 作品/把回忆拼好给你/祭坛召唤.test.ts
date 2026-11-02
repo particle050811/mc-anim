@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import { heartStateAt, tamingHearts } from '@库/特效/爱心粒子.tsx';
 import 段 from './段/2-祭坛召唤/段.ts';
-import { 正片事件, 段窗口, 第几句, fps } from './分镜.ts';
+import { 正片事件, 段窗口, 第几句, fps, 旧帧 } from './分镜.ts';
 import * as 参 from './场/2-祭坛/参数.ts';
-import { 事, 刻, 你眼, 关键机位, 她编排, 手里, 挥手进度, 末帧, 窗口, 镜头态, 浮物态们, 光柱, 蛋糕没帧, 转头起帧 } from './场/2-祭坛/编排.ts';
+import { 事, 刻, 你眼, 关键机位, 她编排, 手里, 挥手进度, 末帧, 窗口, 镜头态, 浮物态们, 光柱, 蛋糕没帧, 转头起秒 } from './场/2-祭坛/编排.ts';
 import { 地面高 } from './场/2-祭坛/地形.ts';
 import { 末她, 末机, 末距, 末速, 眼珠 } from './场/2-祭坛/末态.ts';
 
@@ -71,17 +71,19 @@ const 仰角 = (g: number) => {
 };
 /** 离她右眼眼珠多远的对数 */
 const L = (g: number) => Math.log(距(镜头态(g).眼, 眼珠.右));
+/** 24 fps 时离段首 n 帧那一刻，换成现在的歌曲帧（取整） */
+const 段首后 = (n: number) => 窗口.起帧 + Math.round(旧帧(n) * fps);
 const 歌曲帧们 = (a: number, b: number, 步 = 1) => Array.from({ length: Math.floor((b - a) / 步) + 1 }, (_, i) => a + i * 步);
 
 describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」那一拍切近景，推到右眼）', () => {
-  it('窗口从第 3 句首字到第 4 句首字（歌曲帧 201～283）', () => {
+  it('窗口从第 3 句首字到第 4 句首字（歌曲帧 503～708）', () => {
     const w = 段窗口('2-祭坛召唤');
-    expect([w.起帧, w.止帧]).toEqual([201, 283]);
+    expect([w.起帧, w.止帧]).toEqual([503, 708]);
     expect(w.起帧 / fps).toBeCloseTo(第几句(3).起, 1);
     expect(w.止帧 / fps).toBeCloseTo(第几句(4).起, 1);
-    expect(段.帧数).toBe(82);
-    expect(段.场窗口).toEqual({ 起帧: 201, 止帧: 283 });
-    expect(末帧).toBe(282);
+    expect(段.帧数).toBe(205);
+    expect(段.场窗口).toEqual({ 起帧: 503, 止帧: 708 });
+    expect(末帧).toBe(707);
   });
 
   it('拍：点祭坛 9.48，现身 9.91，光 10.33（切），递蛋糕 10.76，推眼睛 11.19（差不到半帧）；远景先立住地方一秒多，每个动作至少隔 0.4 秒；只切一刀，两边各 1.4 秒以上', () => {
@@ -108,7 +110,7 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
   it('没有蛋糕盒（用户 10-24「这里拆盒过程就多余了」）：材料在柱顶 → 点祭坛变白 → 化光飞到圈心，她现身那一帧光汇齐、她直接站在光里', () => {
     expect(浮物态们(事.点祭坛 - 1).every((s) => s.样 === '物')).toBe(true);
     expect(浮物态们(事.点祭坛).every((s) => s.样 === '亮')).toBe(true);
-    expect(浮物态们(事.点祭坛 + 参.化光.亮帧).every((s) => s.样 === '光')).toBe(true);
+    expect(浮物态们(事.点祭坛 + Math.round(参.化光.亮秒 * fps)).every((s) => s.样 === '光')).toBe(true);
     expect(浮物态们(事.现身)).toEqual([]);
     expect(她编排(事.现身 - 1)).toBeNull();
     expect(她编排(事.现身)).toEqual({ 转: 0, 表情: '无' });
@@ -125,10 +127,10 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     expect(手里(蛋糕没帧 - 1)).toBe('蛋糕');
     expect(手里(蛋糕没帧)).toBeNull();
     expect(手里(末帧)).toBeNull();
-    expect((蛋糕没帧 - (事.递 + 参.笑起帧)) / fps).toBeGreaterThanOrEqual(0.5);
-    expect((转头起帧 - 事.递) / fps).toBeGreaterThanOrEqual(0.5);
-    for (let g = 事.现身; g < 转头起帧; g++) expect(她编排(g)!.转).toBe(0);
-    expect(转头起帧 + 参.转头帧).toBeLessThan(末帧);
+    expect((蛋糕没帧 - 事.递) / fps - 参.笑起秒).toBeGreaterThanOrEqual(0.5);
+    expect(转头起秒 - 事.递 / fps).toBeGreaterThanOrEqual(0.5);
+    for (let g = 事.现身; g / fps < 转头起秒; g++) expect(她编排(g)!.转).toBe(0);
+    expect(转头起秒 + 参.转头秒).toBeLessThan(末帧 / fps);
     for (const c of [事.点祭坛, 事.递]) {
       expect(挥手进度(c - 1)).toBeNull();
       expect(挥手进度(c)).toBe(0);
@@ -166,8 +168,8 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     for (let g = 窗口.起帧; g < 窗口.起帧 + fps / 2; g++) expect(在画里(投(g, [0, 3.5, 5.9])), `歌曲帧 ${g} 鸟居顶`).toBe(true);
   });
 
-  it('远景看得懂因果（核查 10-24）：点祭坛起你一直露在两根前柱子中间，光柱罩下来、她出现都在远景里，切之前光柱亮着 5 帧以上、她站着 5 帧以上', () => {
-    const 远起 = 窗口.起帧 + 22;
+  it('远景看得懂因果（核查 10-24）：点祭坛起你一直露在两根前柱子中间，光柱罩下来、她出现都在远景里，切之前光柱亮着、她站着都有 5/24 秒以上', () => {
+    const 远起 = 段首后(22);
     expect(远起).toBeLessThan(事.点祭坛);
     // 祭坛立住以后往下俯着看圈里
     for (let g = 远起; g < 事.切; g++) expect(仰角(g)).toBeLessThan(0);
@@ -179,8 +181,8 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     for (let g = 事.现身; g < 事.切; g++) expect(看得见(g, [0, -0.03, 1.24]), `歌曲帧 ${g} 她的脸`).toBe(true);
     let 光柱帧 = 0;
     for (let g = 窗口.起帧; g < 事.切; g++) if (光柱(g).length > 0) 光柱帧++;
-    expect(光柱帧).toBeGreaterThanOrEqual(5);
-    expect(事.切 - 事.现身).toBeGreaterThanOrEqual(5);
+    expect(光柱帧 / fps).toBeGreaterThanOrEqual(旧帧(5));
+    expect((事.切 - 事.现身) / fps).toBeGreaterThanOrEqual(旧帧(5));
   });
 
   it('镜头：近景各关键机位按拍落定；「光」那一帧切（远景 → 近景），末帧落在 末态.ts 的 末机', () => {
@@ -201,20 +203,22 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     expect(距(镜头态(事.切 - 1).眼, 镜头态(事.切).眼)).toBeGreaterThan(5);
   });
 
-  it('镜头不赶（规矩 看得懂的速度）：段首升起那一下每帧不过 0.45 格、摇不过 8°；祭坛立住以后远景、近景各自一共走不到 2.5 格，每帧不过 0.12 格；视角只收不放', () => {
-    const 走 = (a: number, b: number, 每帧: number) => {
+  it('镜头不赶（规矩 看得懂的速度）：段首升起那一下每 1/24 秒不过 0.45 格、摇不过 8°；祭坛立住以后远景、近景各自一共走不到 2.5 格，每 1/24 秒不过 0.12 格；视角只收不放', () => {
+    /** 一帧走的折成每 1/24 秒（24 fps 时的一帧）走多少 */
+    const 折 = fps * 旧帧(1);
+    const 走 = (a: number, b: number, 每旧帧: number) => {
       let 共 = 0;
       for (let g = a; g < b; g++) {
         const d = 距(镜头态(g + 1).眼, 镜头态(g).眼);
-        expect(d, `歌曲帧 ${g}`).toBeLessThan(每帧);
-        expect(Math.abs(仰角(g + 1) - 仰角(g)), `歌曲帧 ${g}`).toBeLessThan(8);
+        expect(d * 折, `歌曲帧 ${g}`).toBeLessThan(每旧帧);
+        expect(Math.abs(仰角(g + 1) - 仰角(g)) * 折, `歌曲帧 ${g}`).toBeLessThan(8);
         expect(镜头态(g + 1).视角).toBeLessThanOrEqual(镜头态(g).视角 + 1e-9);
         共 += d;
       }
       return 共;
     };
-    走(窗口.起帧, 窗口.起帧 + 22, 0.45);
-    expect(走(窗口.起帧 + 22, 事.切 - 1, 0.12)).toBeLessThan(2.5);
+    走(窗口.起帧, 段首后(22), 0.45);
+    expect(走(段首后(22), 事.切 - 1, 0.12)).toBeLessThan(2.5);
     expect(走(事.切, 末帧, 0.12)).toBeLessThan(2.5);
   });
 
@@ -223,12 +227,13 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     const ε = 1e-4;
     const 速 = (a: number, b: number) => 减(镜头态(b).眼, 镜头态(a).眼).map((v) => v / (b - a));
     for (const k of 关键机位().slice(1, -1)) expect(距(速(k.帧 - ε, k.帧), 速(k.帧, k.帧 + ε))).toBeLessThan(1e-3);
-    // 远景各条轨的关键帧上也不突然起速
+    // 远景各条轨的关键帧上也不突然起速（24 fps 时的段内帧）
     for (const f of [4, 5, 10, 21, 22]) {
-      const g = 窗口.起帧 + f;
-      expect(距(速(g - ε, g), 速(g, g + ε)), `段内帧 ${f}`).toBeLessThan(1e-3);
+      const g = 窗口.起帧 + 旧帧(f) * fps;
+      expect(距(速(g - ε, g), 速(g, g + ε)), `24 fps 段内帧 ${f}`).toBeLessThan(1e-3);
     }
-    expect((L(末帧) - L(末帧 - ε)) / ε).toBeCloseTo(末速, 3);
+    // 末速 是每秒的
+    expect(((L(末帧) - L(末帧 - ε)) / ε) * fps).toBeCloseTo(末速, 3);
     expect(末速).toBeLessThan(0);
   });
 
@@ -264,8 +269,8 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
         const 半 = s.half * p.像素;
         if (p.x + 半 < 0 || p.x - 半 > 页宽 || p.y + 半 < 0 || p.y - 半 > 页高) continue;
         if (g === 事.照片 && p.x - 半 > 0 && p.x + 半 < 页宽 && p.y - 半 > 0 && p.y + 半 < 页高) 照片里++;
-        // 一行歌词占画面上面 14%（界面/符文排版.ts），递蛋糕到照片后两帧爱心刚冒出来，要整颗看得见
-        if (g <= 事.照片 + 2) expect(p.y - 半, `歌曲帧 ${g}`).toBeGreaterThan(0.14 * 页高);
+        // 一行歌词占画面上面 14%（界面/符文排版.ts），递蛋糕到照片后 1/12 秒（24 fps 时两帧）爱心刚冒出来，要整颗看得见
+        if ((g - 事.照片) / fps <= 旧帧(2)) expect(p.y - 半, `歌曲帧 ${g}`).toBeGreaterThan(0.14 * 页高);
         if (g >= 事.推) expect((半 * 390) / 页宽).toBeLessThanOrEqual(40);
         // 她的眼睛、鼻子那一条（两眼连眉 0.44 × 0.24 格）
         const 在脸前 = p.z < 脸.z - 0.2;
@@ -285,7 +290,7 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
   it('cue：只有原声和祭坛合成声（拆盒声跟盒子一起删了）；原声铺满整段，合成声文件头对着点祭坛、峰值配到同一档，不过段尾', () => {
     const 声 = 段.声音 as 资产cue[];
     expect(声.map((c) => c.名)).toEqual(['原声', '祭坛合成']);
-    expect(声[0]).toMatchObject({ 帧: 0, 帧数: 82, 入点秒: 201 / 24, 增益: 参.原声增益 });
+    expect(声[0]).toMatchObject({ 帧: 0, 帧数: 段.帧数, 入点秒: 窗口.起帧 / fps, 增益: 参.原声增益 });
     const 合 = 声[1]!;
     expect(合.帧).toBe(事.点祭坛 - 窗口.起帧);
     expect(20 * Math.log10(合.增益 as number) + 参.音效.祭坛.峰值).toBeCloseTo(参.音效.峰值, 3);

@@ -1,4 +1,4 @@
-// 日落划船核对的画面：按视图表一帧画一个视图，整页就是成片那一帧（不写视图名）；颗粒的种子是那一帧的歌曲帧（场/2-海上/海上.tsx 里给的）。
+// 日落划船核对的画面：按视图表一帧画一个视图，整页就是成片那一帧（不写视图名）；颗粒的种子是那一帧歌曲帧的 旧帧号（场/2-海上/海上.tsx 里给的）。
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 眼机位 } from '../../场/2-海上/编排.ts';
