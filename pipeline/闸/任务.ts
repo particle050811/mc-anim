@@ -45,8 +45,8 @@ export type 任务信息 = {
     票?: string;
     /** 被杀时说得清当时在干嘛；崩溃事件也从在跑文件带出来。 */
     当时?: '排队' | '持锁' | '';
-    /** 后台转存（渲/后台转存.ts）做到哪：闸放开后这段还在占 CPU，持锁信息看不出来。 */
-    后台?: { 在做: string | null; 排着: number };
+    /** 后台转存（渲/后台转存.ts）做到哪：闸放开后这段还在占 CPU，持锁信息看不出来。起于 是在做这段开工的时刻。 */
+    后台?: { 在做: string | null; 排着: number; 起于?: number | null };
 };
 const 活任务 = new Map<string, ReturnType<typeof 建任务>>();
 export const 取调度环境 = (e: Partial<调度环境> = {}): 调度环境 => ({ 锁目录: e.锁目录 ?? 配置('锁目录'),

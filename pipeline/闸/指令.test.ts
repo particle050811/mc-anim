@@ -223,6 +223,16 @@ it('等闸空到点说卡在谁',async()=>{
   expect(await 等条件(参数(['--闸空','--最长','2']),e,{睡,提示:x=>{说.push(x);}})).toBe(124);
   expect(说[1]).toContain(`卡在 持锁 #${process.ppid} render 乙段`);expect(说[1]).toContain(`排队 #${process.ppid} still 甲段`);
 });
+it('等闸空：批的后台还在转就不算空（限流时没有票和锁），到点说卡在谁；后台的进程没了不算',async()=>{
+  let now=0;const e=取调度环境({锁目录:dir,现在毫秒:()=>now}),说:string[]=[],睡=async(ms:number)=>{now+=ms;};
+  const 在跑=path.join(dir,'在跑');fs.mkdirSync(在跑,{recursive:true});
+  const 写在跑=(pid:number)=>fs.writeFileSync(path.join(在跑,`t${pid}.json`),JSON.stringify({任务:`t${pid}`,起:0,心跳:Date.now(),主机:e.本机,发起:{...e.发起者,pid},声明:{种:'render'},后台:{在做:'甲',排着:1,起于:0}}));
+  写在跑(process.ppid);
+  expect(await 等条件(参数(['--闸空','--最长','40']),e,{睡,提示:x=>{说.push(x);}})).toBe(124);
+  expect(说[0]).toContain(`卡在 后台 #${process.ppid} 甲 排1`);
+  fs.rmSync(path.join(在跑,`t${process.ppid}.json`));写在跑(死pid);now=0;
+  expect(await 等条件(参数(['--闸空','--最长','40']),e,{睡,提示:x=>{说.push(x);}})).toBe(0);
+});
 it('批按项数算可让路：一项的直说不能让路，多项的能让',async()=>{
   const e={...取调度环境({锁目录:dir}),读内存:()=>null,读压力:()=>1};
   const 试=async(项数:number)=>{const 批=开闸批({项数},e);try{await 批.一项({},async()=>{const s=读状态(e,机,false);改调度('让路',s.持锁[0]!.票,参数(['--为什么','产出优先']),e,{状态:()=>s,输出:()=>{}});});}finally{批.结束();}};
