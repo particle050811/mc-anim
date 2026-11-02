@@ -3,7 +3,7 @@
 import { 定义段 } from '@engine/段/段定义.ts';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import { fps, 段内正片事件帧, 段时钟, 画幅 } from '../../分镜.ts';
-import { 僵尸吼提前, 原声增益, 音效们 } from '../../场/2-第一晚/参数.ts';
+import { 僵尸吼提前秒, 原声增益, 音效们 } from '../../场/2-第一晚/参数.ts';
 import { 僵尸过洞帧 } from './编排.ts';
 
 const 键 = '2-第一晚';
@@ -25,7 +25,7 @@ const 音效cue们: readonly 资产cue[] = [
   放('挖二', 事.挖二),
   放('挖三', 事.挖三),
   放('填土', 事.填土),
-  放('僵尸', 僵尸过洞帧 - 僵尸吼提前),
+  放('僵尸', 僵尸过洞帧 - Math.round(僵尸吼提前秒 * fps)),
   放('挖开天窗', 事.挖开天窗),
 ];
 
