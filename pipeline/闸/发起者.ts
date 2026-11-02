@@ -40,31 +40,54 @@ const 遮文字 = (s: string) => s
     .replace(开关值, `$1${遮}`)
     .replace(new RegExp(String.raw`\bBearer\s+(?:${值}|\S+)`, 'gi'), `Bearer ${遮}`)
     .replace(/\b(?:(?:sk-|gh[pousr]_|github_pat_)[\w-]{4,}|(?:sk_live_|xoxb-)[\w-]+)/g, 遮);
-type 登录选项 = { 分开: string[]; 连写: string[]; 带值: Set<string>; 有子命令?: boolean };
+type 登录选项 = { 分开: string[]; 连写: string[]; 长: string[]; 带值: Set<string>; 短组?: boolean; 有子命令?: boolean };
 const 数据库选项: 登录选项 = {
-    // mysql 的 -p 单独出现是交互输入密码，后面的数据库名不能遮；-P 是端口。
-    分开: ['-u'], 连写: ['-u', '-p'],
-    带值: new Set(['-h', '--host', '-P', '--port', '-S', '--socket', '-e', '--execute', '-D', '--database', '--user', '--password']),
+    // mysql 的 -p 单独出现是交互输入密码，后面的数据库名不能遮；-P 是端口，-U 是安全更新开关。
+    分开: ['-u'], 连写: ['-u', '-p'], 长: ['--user'],
+    带值: new Set(['-h', '--host', '-P', '--port', '-S', '--socket', '-e', '--execute', '-D', '--database', '--password']),
 };
 const 登录工具: Record<string, 登录选项> = {
-    curl: { 分开: ['-u'], 连写: ['-u'], 带值: new Set(['-H', '--header', '-d', '--data', '--data-raw', '--data-binary', '--data-urlencode', '-o', '--output', '-A', '--user-agent', '-e', '--referer', '--url', '-x', '--proxy', '-X', '--request', '--user']) },
+    curl: { 分开: ['-u', '-U'], 连写: ['-u', '-U'], 长: ['--user', '--proxy-user'], 短组: true,
+        带值: new Set(['--header', '--data', '--data-raw', '--data-binary', '--data-urlencode', '--output', '--user-agent', '--referer', '--url', '--proxy', '--request']) },
     mysql: 数据库选项, mariadb: 数据库选项,
-    sshpass: { 分开: ['-p'], 连写: ['-p'], 带值: new Set(['-f', '-d']), 有子命令: true },
+    sshpass: { 分开: ['-p'], 连写: ['-p'], 长: [], 带值: new Set(['-f', '-d']), 有子命令: true },
 };
-/** 只认命令位置的工具名，不从 anim 的理由、参数值里的命令示例猜工具。 */
+const 工具名 = (s: string) => s.split(/[\\/]/).at(-1)!.replace(/\.exe$/i, '').toLowerCase();
+// 非 ASCII 的说明不是凭据；但「张三:pw」有明确的 ASCII 冒号，仍须遮住。
+const 像凭据 = (s: string) => !/[^\x00-\x7f]/.test(s) || s.includes(':');
+// curl 的带值短选项会吃掉组内余串或下一项，不能继续把正文里的 u 当登录选项；f 是开关。
+const curl带值短项 = new Set('AbcCdDeEFHKmoPQrtTwxXyYz');
+/** 这里只处理命令位置的工具名；anim 参数中的示例另走窄规则。 */
 const 登录参数替换 = (argv: readonly string[]) => {
     const 换 = new Map<number, string>();
-    const 工具 = (argv[0] ?? '').split(/[\\/]/).at(-1)!.replace(/\.exe$/i, '').toLowerCase();
+    const 工具 = 工具名(argv[0] ?? '');
     const 选项 = Object.hasOwn(登录工具, 工具) ? 登录工具[工具]! : undefined;
     if (!选项) return 换;
+    const 记 = (i: number, 前缀 = '') => {
+        if (i < argv.length && 像凭据(argv[i]!.slice(前缀.length))) 换.set(i, 前缀 + 遮);
+    };
     for (let i = 1; i < argv.length; i++) {
         const a = argv[i]!;
         if (a === '--') break;
-        if (选项.分开.includes(a)) {
-            if (i + 1 < argv.length) 换.set(++i, 遮);
+        const 长 = 选项.长.find(k => a.startsWith(k + '='));
+        if (选项.分开.includes(a) || 选项.长.includes(a)) 记(++i);
+        else if (长) 记(i, 长 + '=');
+        else if (选项.短组 && /^-[^-]/.test(a)) {
+            for (let j = 1; j < a.length; j++) {
+                const 字 = a[j]!;
+                if (字 === 'u' || 字 === 'U') {
+                    if (j === a.length - 1) 记(++i);
+                    else 记(i, a.slice(0, j + 1));
+                    break;
+                }
+                if (curl带值短项.has(字)) {
+                    if (j === a.length - 1) i++;
+                    break;
+                }
+            }
         } else {
             const 前缀 = 选项.连写.find(k => a.startsWith(k) && a.length > k.length);
-            if (前缀) 换.set(i, 前缀 + 遮);
+            if (前缀) 记(i, 前缀);
             // -e 的 SQL、--data 的正文即便恰好是 -pX、-u 也不是登录参数。
             else if (选项.带值.has(a)) i++;
             else if (选项.有子命令 && !a.startsWith('-')) break;

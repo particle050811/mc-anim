@@ -162,3 +162,35 @@ describe('行超长', () => {
     expect(乙!.其他).toBeUndefined();
   });
 });
+
+
+describe('登录选项返修', () => {
+  it.each([
+    [['curl', '--user', 'user:fake'], 'curl --user [已遮蔽]'],
+    [['curl', '--user=user:fake'], 'curl --user=[已遮蔽]'],
+    [['curl', '-U', 'user:fake'], 'curl -U [已遮蔽]'],
+    [['curl', '-Uuser:fake'], 'curl -U[已遮蔽]'],
+    [['curl', '--proxy-user', 'user:fake'], 'curl --proxy-user [已遮蔽]'],
+    [['curl', '--proxy-user=user:fake'], 'curl --proxy-user=[已遮蔽]'],
+    [['mysql', '--user', 'fake'], 'mysql --user [已遮蔽]'],
+    [['mysql', '--user=fake'], 'mysql --user=[已遮蔽]'],
+    ...['-su', '-sSLu', '-ku', '-vu', '-fsSLu', '-sU'].map(项 => [
+      ['curl', 项, 'user:fake', 'https://h'], `curl ${项} [已遮蔽] https://h`,
+    ]),
+    [['curl', '-sSuuser:fake'], 'curl -sSu[已遮蔽]'],
+    [['curl', '-u', '张三:fake'], 'curl -u [已遮蔽]'],
+  ] as [string[], string][])('文本和 argv：%j', (argv, 期望) => {
+    expect(遮命令(argv)).toBe(期望);
+    expect(遮密(argv.join(' '))).toBe(期望);
+  });
+  it.each([
+    ['curl', '--user-agent', 'demo'], ['curl', '--user-agent=demo'], ['mysql', '-U', '数据库'],
+    ['curl', '-XPOST'], ['curl', '-dfoo-u'], ['curl', '-fsSL', '-o', 'a'],
+    ['curl', '-F', '-u=1'], ['curl', '-b', '-u', 'x'], ['curl', '-w', '-u', 'x'],
+    ['curl', '-u', '报错，改用', '--user', '也不行'], ['curl', '的', '-u', '参数要遮'],
+    ['mysql', '-u', '写错了，重试'], ['sshpass', '-p', '的值要遮'],
+  ])('选项正文和中文说明不遮：%j', (...argv) => {
+    expect(遮命令(argv)).toBe(argv.join(' '));
+    expect(遮密(argv.join(' '))).toBe(argv.join(' '));
+  });
+});
