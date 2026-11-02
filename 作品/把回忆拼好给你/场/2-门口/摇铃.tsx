@@ -11,6 +11,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { clamp01, sample } from '@engine/anim/anim.ts';
 import { 描边 as 描边组 } from '@engine/三渲二/描边.tsx';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
+import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 插调子 } from '@engine/三渲二/调子.ts';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
@@ -106,10 +107,12 @@ export type 摇铃画面属性 = {
   叠层?: React.ReactNode;
   /** 整片后期颗粒的种子，不给 = 当前帧号；段里给 旧帧号，颗粒还是一秒换 24 次 */
   种子?: number;
+  /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只开门口这边（见 门口.tsx 的 门口画布）；不给 = 不开 */
+  光影?: 光影选项 | null;
 };
 
 /** 一整帧（1280×720 页面），自己铺满 */
-export const 摇铃画面: React.FC<摇铃画面属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 叠层, 种子 }) => {
+export const 摇铃画面: React.FC<摇铃画面属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 叠层, 种子, 光影 }) => {
   const 秒 = 帧 / fps;
   const 调 = 摇铃调子(帧);
   const 你 = 你的姿势(秒);
@@ -121,6 +124,7 @@ export const 摇铃画面: React.FC<摇铃画面属性> = ({ 帧, 描边 = 描�
         {...整屏镜头}
         刻={白天刻}
         调子={调}
+        光影={光影}
         门开
         树进度={1}
         告示牌

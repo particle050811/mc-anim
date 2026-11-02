@@ -9,6 +9,7 @@ import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx'
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 音效轨 } from '../../声音/音效轨.tsx';
+import { 光影段 } from '../../默认.ts';
 import 段 from './段.ts';
 import 纸声2 from 'asset:音效/item.book.page_turn.2';
 import 取出url from 'asset:音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1';
@@ -29,6 +30,7 @@ const 画面: React.FC = () => {
       <归隐画面
         帧={帧}
         种子={旧帧号(帧)}
+        光影={光影段['2-归隐']}
         叠层={
           <>
             <符文歌词 行们={歌词.上行们} 样式={{ ...符文歌词默认, 描边色: 左调子(帧).描边 }} />
