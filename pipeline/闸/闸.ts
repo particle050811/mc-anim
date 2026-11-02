@@ -13,7 +13,7 @@ import { 写JSON, 读JSON, 只提示 } from './文件.ts';
 import { 清孤儿 } from './孤儿.ts';
 import { 读状态, 读占用, 前方等待, 队上占用 } from './看.ts';
 import { 监测一轮 } from './告警.ts';
-import { 读机器快照, type 机器快照 } from './机器.ts';
+import { 读机器快照, 读机器快照并行, type 机器快照 } from './机器.ts';
 import { 估计 } from './估计.ts';
 import { 取指令, 取放行, 用掉放行, 删指令, 路让路, 调度让路, 失败退出码 } from './指令.ts';
 export type { 任务声明 } from './任务.ts';
@@ -75,10 +75,10 @@ const 对票态 = (t: 票, 卡在: string, 等内存起?: number) => {
         c.等内存起 = 等内存起;
     写票态(t);
 };
+const 摘机器 = ({ 进程: _, ...m }: 机器快照) => m;
 /** 进日志的读数。进程表太大不进；读不到不能影响过闸。 */
 const 机读数 = (e: 闸环境) => { try {
-    const { 进程: _, ...m } = e.读机器();
-    return m;
+    return 摘机器(e.读机器());
 }
 catch {
     return undefined;
@@ -124,8 +124,9 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         const 起 = e.现在毫秒();
         let 原等待 = '', 上次监测 = 0;
         const 记 = (事: string, 字段: Record<string, unknown> = {}) => task.记(事, { 票: t.名, 锁: 名, 声明, ...字段 });
-        const 监测 = () => { if (e.现在毫秒() - 上次监测 < 3000)
-            return; 上次监测 = e.现在毫秒(); 只提示('监测', () => { 监测一轮(e, 读状态(e, e.读机器, false)); }); };
+        const 监测到点 = () => e.现在毫秒() - 上次监测 >= 3000;
+        const 监测 = (机?: 机器快照) => { if (!监测到点())
+            return; 上次监测 = e.现在毫秒(); 只提示('监测', () => { 监测一轮(e, 读状态(e, () => 机 ?? e.读机器(), false)); }); };
         const 清 = () => 只提示('清孤儿', () => { for (const p of e.清孤儿())
             记('清孤儿', { 进程: p }); });
         const 回收 = (pid: number | null) => {
@@ -133,10 +134,24 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             记('回收死锁', { 原持有者: info?.pid === pid ? info : { pid } });
             清();
         };
-        const 歇 = () => e.睡(opts.间隔毫秒 ?? e.排队间隔毫秒 ?? 1000);
+        // 观测快照只供日志和监测复用；准入仍独立现读内存、压力、负载。
+        // 不在重读队序到试拿之间追加探针、睡眠或 I/O，尽量缩短窗口。
+        // 与其他进程改调度的次序仍是尽力而为，撞上时由记被越记录。
+        const 采样 = async () => {
+            try { return e.读机器 === 读机器快照 ? await 读机器快照并行() : e.读机器(); }
+            catch { return undefined; }
+        };
+        let 本轮机: 机器快照 | undefined;
+        const 本轮读数 = () => 本轮机 && 摘机器(本轮机);
+        const 歇 = async () => {
+            await e.睡(opts.间隔毫秒 ?? e.排队间隔毫秒 ?? 1000);
+            本轮机 = 监测到点() ? await 采样() : undefined;
+        };
         const 队况 = () => { const 全 = 列票(dir); return { 深度: 全.filter(x => x.名 !== t.名).length, 前面: 全.filter(x => x.名 < t.名).slice(0, 3).map(x => x.名), 持锁: 持有者(file) }; };
         撤票 = 登记收尾(清票);
-        记('领票', { 队: 队况(), 机: 机读数(e) });
+        const 领队 = 队况();
+        本轮机 = await 采样();
+        记('领票', { 队: 领队, 机: 本轮读数() });
         只提示('领票提示', () => {
             const 上 = 队上占用(读占用(e), 名), 前 = 上.票.filter(q => !q.死 && q.名 < t.名), 锁上 = 上.持锁.filter(x => !x.死);
             if (!前.length && !锁上.length)
@@ -151,7 +166,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
                 throw new 调度让路(令);
             }
             清崩溃(e);
-            监测();
+            监测(本轮机);
             // 每个等待者每轮都回收，不看队位和准入：只靠队首的话，全队暂缓时没人回收。
             只提示('回收死锁', () => 回收死锁(file, e.本机, 回收));
             const 我的 = 列票(dir).filter(x => x.内容?.任务 === task.info.任务 && x.pid === process.pid);
@@ -231,7 +246,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         task.更新(声明, t.名, '持锁');
         // 正常轮到时前面没有活票；还有的就是被放行越过了。
         只提示('被越计数', () => 记被越(列票(dir).filter(q => q.名 < t.名), e.本机));
-        记('拿锁', { 等锁秒: (拿锁时 - 起) / 1000, 等内存秒: opts.等内存秒?.() ?? 0, 被越次数: t.内容?.已被越 ?? 0, 队: 队况(), 机: 机读数(e) });
+        记('拿锁', { 等锁秒: (拿锁时 - 起) / 1000, 等内存秒: opts.等内存秒?.() ?? 0, 被越次数: t.内容?.已被越 ?? 0, 队: 队况(), 机: 本轮读数() ?? 机读数(e) });
         清票();
         撤票();
         let 最近写 = 0, 已出帧 = 0, 帧时 = 拿锁时, 完了 = false;
