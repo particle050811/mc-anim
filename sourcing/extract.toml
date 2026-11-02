@@ -280,6 +280,22 @@
 ["取材"."产物"]
 "贴图/物品/蛋糕" = "src/模型/物品/蛋糕.png"
 
+# 放在地上的蛋糕方块（block/cake.json，整块没吃过的那个；cake_inner 只有吃过几口的 cake_slice1～6 用，不导）。
+# 几何取模型 json 的面片（同时写出的图集不登记）；贴图另外一张张照搬，材质包覆盖层才认得出、换得了（pipeline/资产/材质包.ts 的 照搬贴图）。
+[["取材"]]
+"名称" = "蛋糕方块"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/蛋糕方块.模型.json", "蛋糕=minecraft:block/cake"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/物品/蛋糕方块.贴图", "cake_top=assets/minecraft/textures/block/cake_top.png", "cake_side=assets/minecraft/textures/block/cake_side.png", "cake_bottom=assets/minecraft/textures/block/cake_bottom.png"],
+]
+["取材"."产物"]
+"模型/物品/蛋糕方块" = "src/模型/物品/蛋糕方块.模型.json"
+"贴图/物品/蛋糕方块/*" = "src/模型/物品/蛋糕方块.贴图/*.png"
+
 # 把回忆拼好给你 门口那个机位：告示牌（方块实体，方块表里查不到，形状照 SignRenderer 手搭）、天上的太阳和月相。产物登记在作品资产表，所以写了「作品」。
 [["取材"]]
 "名称" = "门口贴图"
