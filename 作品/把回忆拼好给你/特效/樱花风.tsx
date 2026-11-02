@@ -42,10 +42,10 @@ const 造风流 = (p: 樱花风参数, t: 樱花风时刻): 瓣[] => {
 
 const 缓存 = new Map<string, { 流: 瓣[]; 墙: 墙瓣[] }>();
 
-/** 3×3 贴图转 转×90°、翻了再左右翻以后，第 (i, j) 格取原图哪一格 */
-const 取格 = (i: number, j: number, 转: number, 翻: boolean): [number, number] => {
-  let [a, b] = [翻 ? 2 - i : i, j];
-  for (let k = 0; k < 转; k++) [a, b] = [2 - b, a];
+/** n×n 贴图（原版 3×3；材质包 32x 是 6×6）转 转×90°、翻了再左右翻以后，第 (i, j) 格取原图哪一格 */
+const 取格 = (i: number, j: number, 转: number, 翻: boolean, n = 3): [number, number] => {
+  let [a, b] = [翻 ? n - 1 - i : i, j];
+  for (let k = 0; k < 转; k++) [a, b] = [n - 1 - b, a];
   return [a, b];
 };
 
@@ -53,13 +53,16 @@ const 画瓣 = (ctx: CanvasRenderingContext2D, 图: Png, x: number, y: number, �
   // 左上角吸到偶数成片像素（预览级一个画布像素是两个成片像素）
   const x0 = Math.round(x / 2) * 2;
   const y0 = Math.round(y / 2) * 2;
-  for (let j = 0; j < 3; j++)
-    for (let i = 0; i < 3; i++) {
-      const [a, b] = 取格(i, j, 转, 翻);
+  // 档 是原版一个贴图像素的大小；材质包的高清贴图（n > 3）一格是它的 3/n，整片花瓣一样大
+  const n = 图.w;
+  const 格 = (档 * 3) / n;
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const [a, b] = 取格(i, j, 转, 翻, n);
       const k = (b * 图.w + a) * 4;
       if (图.px[k + 3]! < 128) continue;
       ctx.fillStyle = `rgb(${图.px[k]},${图.px[k + 1]},${图.px[k + 2]})`;
-      ctx.fillRect(x0 + i * 档, y0 + j * 档, 档, 档);
+      ctx.fillRect(x0 + i * 格, y0 + j * 格, 格, 格);
     }
 };
 

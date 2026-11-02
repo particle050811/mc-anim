@@ -53,13 +53,15 @@ const 手持图 = { 树苗: png(树苗图), 烟花火箭: png(火箭图) } as co
 const 火箭 = png(火箭图);
 const 闪光片 = png(闪光图);
 
-// 火花八张 8×8 拼成一条 64×8 的图集，第 n 张在 u ∈ [n/8, (n+1)/8)
+// 火花八张 8×8 拼成一条 64×8 的图集，第 n 张在 u ∈ [n/8, (n+1)/8)。材质包的高清火花（16×16）照样拼，图集 128×16；方片大小照原版 8 个像素算，不变
+const 火花边 = png(火花0).w;
 const 火花图集 = (() => {
   const 张们 = [火花0, 火花1, 火花2, 火花3, 火花4, 火花5, 火花6, 火花7].map(png);
-  const px = new Uint8Array(64 * 8 * 4);
+  const e = 火花边;
+  const px = new Uint8Array(8 * e * e * 4);
   张们.forEach((p, n) => {
-    if (p.w !== 8 || p.h !== 8) throw new Error(`火花贴图 ${n} 不是 8×8：${p.w}×${p.h}`);
-    for (let y = 0; y < 8; y++) px.set(p.px.subarray(y * 32, y * 32 + 32), (y * 64 + n * 8) * 4);
+    if (p.w !== e || p.h !== e) throw new Error(`火花贴图 ${n} 不是 ${e}×${e}：${p.w}×${p.h}`);
+    for (let y = 0; y < e; y++) px.set(p.px.subarray(y * e * 4, (y + 1) * e * 4), (y * 8 * e + n * e) * 4);
   });
   return px;
 })();
@@ -99,7 +101,7 @@ const 方片半 = (j: 门口之夜镜头, 原半: number, 边: number) => {
 
 // ---------- 烟花：火花、火箭 ----------
 const 烟花方片: React.FC<{ 秒: number; 镜: 门口之夜镜头; 火箭色: V3 }> = ({ 秒, 镜, 火箭色 }) => {
-  const 图集 = particleTexture(火花图集, 64, 8, 火花图集);
+  const 图集 = particleTexture(火花图集, 8 * 火花边, 火花边, 火花图集);
   const 火箭贴图 = particleTexture(火箭.px, 火箭.w, 火箭.h, 火箭);
   const 火花们: Particle[] = [];
   const 火箭们: Particle[] = [];
@@ -175,7 +177,9 @@ const 闪光层: React.FC<{ 宽: number; 高: number; 秒: number; 镜: 门口�
       const q = g.刻 - 1;
       const 半 = Math.abs(7.1 * Math.sin((q * Math.PI) / 4));
       const alpha = 0.6 - q * 0.125;
-      const 格 = Math.max(1, Math.round(半)) * 镜.N; // 一个光片像素几个成片像素：N 的整数倍
+      // 一个光片像素几个成片像素：N 的整数倍（原版 32×32 的光片；材质包的高清光片是它的 倍 倍，一个像素 格 ÷ 倍）
+      const 倍 = 闪光片.w / 32;
+      const 格 = (Math.max(1, Math.round(半)) * 镜.N) / 倍;
       const 心 = 吸点(镜, g.心);
       const k = 16 * 镜.N;
       const cx = W / 2 + (心[0] - 镜.中心[0]) * k;

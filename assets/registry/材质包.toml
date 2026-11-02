@@ -1,0 +1,43 @@
+# 资产表：材质包（标准 Java 版资源包 zip，pipeline/资产/材质包.ts 的兼容层读它们，作品在 <作品根>/材质包.toml 选用）。人写；锁由 anim assets add 写。
+# 许可不许再分发的 可见性 私有（字节只在数据根 私有/）。许可原文 11-02 查，出处写在 说明 里。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "材质包/bare-bones"
+"类别" = "材质包"
+"来源" = "手工:下载 https://cdn.modrinth.com/data/rox3U8B6/versions/s3lwqPHV/Bare%20Bones%201.20.zip（Modrinth bare-bones 1.1.7，sha1 31d55c22f6f26529ff6ba810dba48873862ae358）"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "RobotPantaloons 的 Bare Bones，16x，仿官方宣传片的扁平风。https://modrinth.com/resourcepack/bare-bones：「Do not reupload any instance of the Bare Bones texture pack.」商用要找作者授权（business.robotpantaloons@gmail.com）"
+
+[["资产"]]
+id = "材质包/faithful-32x"
+"类别" = "材质包"
+"来源" = "手工:下载 https://cdn.modrinth.com/data/w0TnApzs/versions/VgTWEXF2/Faithful%2032x%20-%201.20.1.zip（Modrinth faithful-32x 1.20.1-june-2026，sha1 7084d82b48844f7c1b625e157463c4d7b87a82d3）"
+"许可" = "LicenseRef-Faithful-License-4"
+"可见性" = "公开"
+"说明" = "Faithful 32x，原版放大加细节。https://faithfulpack.net/license（v4）：可做变现视频、可修改再分发，要醒目署名并附许可链接；不许放付费墙、NFT、训练 AI"
+
+[["资产"]]
+id = "材质包/faithful-64x"
+"类别" = "材质包"
+"来源" = "手工:下载 https://cdn.modrinth.com/data/r4GILswZ/versions/YOjutORB/Faithful%2064x%20-%20Beta%209.zip（Modrinth faithful-64x Beta 9，1.20.1，sha1 6dd076b2a74b7b9a0141339be48ef9c72c559516）"
+"许可" = "LicenseRef-Faithful-License-4"
+"可见性" = "公开"
+"说明" = "Faithful 64x，Faithful 32x 再细一倍，还是测试版（缺玩家皮肤和一些方块）。用户 11-02 要「顺便兼容一下可能以后出现的 64x」拿它试；本作品 像素N 6 只能缩到 32x 上屏（pipeline/资产/材质包.ts 放大上限）。许可同 Faithful 32x：https://faithfulpack.net/license（v4）"
+
+[["资产"]]
+id = "材质包/pixel-perfection-legacy"
+"类别" = "材质包"
+"来源" = "手工:下载 https://cdn.modrinth.com/data/6w3F4SEu/versions/8HUXdaIC/Pixel%20Perfection%20Legacy%2013.21.3.zip（Modrinth pixel-perfection-legacy 13.21.3，sha1 35592cf5406f8006d37f42351add0cb0a18736ec）"
+"许可" = "CC-BY-SA-4.0"
+"可见性" = "公开"
+"说明" = "NovaWostra 续作的 XSSheep Pixel Perfection，16x。Modrinth 标 CC-BY-4.0、链接指向 BY-SA 4.0，原作是 BY-SA，保守按 CC-BY-SA-4.0：可商用、可再分发，要署名、改过的同协议"
+
+[["资产"]]
+id = "材质包/vanilla-tweaks-试样"
+"类别" = "材质包"
+"来源" = "手工:vanillatweaks.net 1.20 资源包拼装（11-02 选 CherryPicking、CircleLogTops、SmoothDirt、UniversalLushGrass、CircularSunandMoon、ClearerWater、BushyLeaves、CleanGlass、UnobtrusiveRain、VariatedGrass；r569351）"
+"许可" = "LicenseRef-VanillaTweaks-Terms"
+"可见性" = "私有"
+"说明" = "Vanilla Tweaks 挑选式小改。https://vanillatweaks.net/terms/：可在项目里用、改、分享，要 credits.txt 署名，不许收费；没写视频商用，再分发原样拼装包不明，先按私有"

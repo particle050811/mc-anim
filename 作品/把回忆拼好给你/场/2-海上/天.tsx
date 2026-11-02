@@ -61,24 +61,26 @@ export const 日落天: React.FC<日落天属性> = ({ 机, 刻, 宽, 高 }) => 
     const 日 = 太阳屏幕(机, 刻, 宽, 高);
     if (!日) return;
     const tex = png(sunPng);
-    const n = Math.max(1, Math.round((日.边 * 成片倍数) / 本体边)); // 一个贴图像素几个成片像素
-    const x0 = Math.round(日.x * 成片倍数 - (本体边 * n) / 2);
-    const y0 = Math.round(日.y * 成片倍数 - (本体边 * n) / 2);
+    // 材质包的高清太阳是原版 32×32 的 k 倍：一个高清像素取整数个成片像素（m），本体照样 本体边 × k 个
+    const k = tex.w / 32;
+    const m = Math.max(1, Math.round((日.边 * 成片倍数) / (本体边 * k))); // 一个贴图像素几个成片像素
+    const 边 = 本体边 * k * m;
+    const x0 = Math.round(日.x * 成片倍数 - 边 / 2);
+    const y0 = Math.round(日.y * 成片倍数 - 边 / 2);
     ctx.globalCompositeOperation = 'lighter';
-    for (let v = 0; v < 本体边; v++)
-      for (let u = 0; u < 本体边; u++) {
-        const o = ((本体起 + v) * tex.w + 本体起 + u) * 4;
+    for (let v = 0; v < 本体边 * k; v++)
+      for (let u = 0; u < 本体边 * k; u++) {
+        const o = ((本体起 * k + v) * tex.w + 本体起 * k + u) * 4;
         const a = tex.px[o + 3]!;
         if (!a) continue;
         ctx.fillStyle = `rgba(${tex.px[o]},${tex.px[o + 1]},${tex.px[o + 2]},${a / 255})`;
-        ctx.fillRect(x0 + u * n, y0 + v * n, n, n);
+        ctx.fillRect(x0 + u * m, y0 + v * m, m, m);
       }
-    const 晕 = ((本体起 - 1) * tex.w + 16) * 4;
+    const 晕 = ((本体起 * k - 1) * tex.w + 16 * k) * 4;
     const 色 = [tex.px[晕]!, tex.px[晕 + 1]!, tex.px[晕 + 2]!];
-    const 边 = 本体边 * n;
     let 内 = 0;
     for (const { 宽: w, 亮 } of 光圈) {
-      const t = w * n;
+      const t = w * m;
       ctx.fillStyle = `rgb(${色.map((c) => Math.round(c * 亮)).join(',')})`;
       // 上下左右四条，互不重叠（lighter 是叠加，重叠的地方会更亮）
       ctx.fillRect(x0 - 内 - t, y0 - 内 - t, 边 + 2 * (内 + t), t);
