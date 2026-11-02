@@ -1,5 +1,5 @@
 // 结构：分层方向（engine ← 库 ← 作品公共 ← 场 ← 段 ← 注册.tsx）、作品不互引、段不互引、场只接上一场的 末态.ts、不许引 核对/、
-// pipeline 只 import 纯模块、纯模块闭包无 react/three/remotion、getInputProps 只在 engine/段/设置.ts、渲染代码里不许有
+// pipeline 只 import 纯模块、渲染器取值只走统一入口、纯模块闭包无 react/three/remotion、getInputProps 只在 engine/段/设置.ts、渲染代码里不许有
 // Math.random、Date.now、相对路径引的资产、写死的路径或主机名；不许 import 地形版本表、不许读时刻的 依据。依赖边取自 esbuild metafile（真实打包用到的），不用文本 grep。
 import os from 'node:os';
 import { 查区段模型登记 } from '../区段模型登记.ts';
@@ -184,8 +184,62 @@ export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostna
   }
 };
 
+const 渲染器包 = '@remotion/renderer';
+const 渲染器入口 = 'pipeline/渲/渲染器.ts';
+const 入口提示 = `值导入必须通过 ${渲染器入口}（绑定 CJS 混音补丁；类型可直引）`;
+
+/** vitest 和 anim check 共用；不追踪拼接或变量，只守可直接识别的入口绕行。 */
+export const 查渲染器入口 = (文件: string, 源: string): { 行: number; 文本: string }[] => {
+  if (!文件.startsWith('pipeline/') || !/\.[cm]?[jt]s$/.test(文件) || /\.d\.[cm]?ts$/.test(文件)) return [];
+  const 问题: { 行: number; 文本: string }[] = [];
+  const 测试 = /\.test\.[cm]?[jt]s$/.test(文件);
+  const sf = 解析(文件, 源);
+  const 是包 = (n: ts.Node | undefined) => n && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) &&
+    (n.text === 渲染器包 || n.text.startsWith(`${渲染器包}/`));
+  const 值导入 = (n: ts.ImportDeclaration) => {
+    const c = n.importClause;
+    if (!c) return true;
+    if (c.isTypeOnly) return false;
+    return !!c.name || !c.namedBindings || ts.isNamespaceImport(c.namedBindings) || c.namedBindings.elements.length === 0 || c.namedBindings.elements.some(x => !x.isTypeOnly);
+  };
+
+  // 文本兜底连注释、测试也检查，避免相对路径和 import 条件解析绕过 AST 包名匹配。
+  const esm路径 = 'renderer/' + 'dist/esm';
+  const import解析 = /import\s*\.\s*meta\s*\.\s*resolve\s*\(\s*(['"`])@remotion\/renderer\1/g;
+  for (const m of 源.matchAll(new RegExp(esm路径, 'g'))) {
+    问题.push({ 行: sf.getLineAndCharacterOfPosition(m.index).line + 1, 文本: `不许引用 renderer 的 ESM 路径：${入口提示}` });
+  }
+  for (const m of 源.matchAll(import解析)) {
+    问题.push({ 行: sf.getLineAndCharacterOfPosition(m.index).line + 1, 文本: `不许用 import.meta.resolve 解析渲染器：${入口提示}` });
+  }
+  遍历(sf, (n) => {
+    if (测试) {
+      if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) &&
+          ts.isIdentifier(n.expression.expression) && n.expression.expression.text === 'vi' &&
+          ['mock', 'doMock'].includes(n.expression.name.text) &&
+          n.arguments[0] && ts.isStringLiteralLike(n.arguments[0]) && n.arguments[0].text === 渲染器包) {
+        问题.push({ 行: 行号(sf, n), 文本: `测试要 mock 渲染器.ts，不要 mock '${渲染器包}'（拦不到 createRequire 加载的 CJS 渲染器）` });
+      }
+      return;
+    }
+    if (文件 === 渲染器入口) return;
+    const 违规导入 = ts.isImportDeclaration(n) && 是包(n.moduleSpecifier) && 值导入(n);
+    const 违规导出 = ts.isExportDeclaration(n) && 是包(n.moduleSpecifier) && !n.isTypeOnly &&
+      (!n.exportClause || !ts.isNamedExports(n.exportClause) || n.exportClause.elements.some(x => !x.isTypeOnly));
+    const 违规调用 = ts.isCallExpression(n) && 是包(n.arguments[0]) &&
+      !(ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'resolve');
+    const 违规别名 = ts.isImportEqualsDeclaration(n) && !n.isTypeOnly && ts.isExternalModuleReference(n.moduleReference) && 是包(n.moduleReference.expression);
+    if (违规导入 || 违规导出 || 违规调用 || 违规别名) 问题.push({ 行: 行号(sf, n), 文本: 入口提示 });
+  });
+  return 问题;
+};
+
 export const 结构 = async (c: 检查上下文, 报: 报告) => {
   await 查分层(c, 报);
   查代码(c, 报);
+  for (const p of c.文件()) {
+    if (!p.startsWith('pipeline/') || !/\.[cm]?[jt]s$/.test(p)) continue;
+    for (const q of 查渲染器入口(p, c.读(p))) 报.错(q.文本, p, q.行);
+  }
   查区段模型登记(c, 报);
 };

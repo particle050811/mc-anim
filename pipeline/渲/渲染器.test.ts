@@ -3,7 +3,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ts from 'typescript';
+import { 查渲染器入口 } from '../检查/规则/结构.ts';
 import { describe, expect, it } from 'vitest';
 
 const 根 = fileURLToPath(new URL('../../', import.meta.url));
@@ -22,8 +22,11 @@ describe('渲染器入口', () => {
       const mixing = require(path.join(dir, 'assets/inline-audio-mixing.js'));
       const original = mixing.makeInlineAudioMixing;
       const renderer = await import('./pipeline/渲/渲染器.ts');
-      for (const key of ['renderMedia', 'renderFrames', 'renderStill', 'getCompositions', 'openBrowser']) {
-        assert.equal(renderer[key], cjs[key], key + ' 必须是 CJS 同一份函数');
+      const entries = Object.entries(renderer);
+      assert.ok(entries.length > 0, '统一入口必须有值导出');
+      for (const [key, value] of entries) {
+        assert.ok(Object.hasOwn(cjs, key), key + ' 必须是 CJS 的值导出');
+        assert.equal(value, cjs[key], key + ' 必须是 CJS 同一份值');
       }
       assert.notEqual(mixing.makeInlineAudioMixing, original, '入口必须自动固定混音顺序');
       const fixed = mixing.makeInlineAudioMixing;
@@ -43,40 +46,23 @@ describe('渲染器入口', () => {
         const hashes = map.inlineAudioMixing.getListOfAssets().map(x => crypto.createHash('sha256').update(fs.readFileSync(x.outName)).digest('hex'));
         assert.equal(hashes.length, 3);
         assert.deepEqual(hashes, [...hashes].sort(), '真实混音项必须按内容排序');
-        console.log('CJS 同一份函数 5/5；下载表调用替换工厂 1 次；真实声音 3 条按内容排序');
+        console.log('全部值导出与 CJS 严格同一 ' + entries.length + '/' + entries.length + '；下载表调用替换工厂 1 次；真实声音 3 条按内容排序');
       } finally { cleanDownloadMap(map); }
     `], { cwd: 根, encoding: 'utf8' });
-    expect(输出).toContain('CJS 同一份函数 5/5');
+    expect(输出).toContain('全部值导出与 CJS 严格同一');
   });
 
-  it('pipeline 除统一入口外不直接取 @remotion/renderer 的值（类型可直引）', () => {
+  it('pipeline 除统一入口外不直接取渲染器的值，测试 mock 统一入口（与 anim check 共用）', () => {
     const 违规: string[] = [];
     const 扫 = (目录: string) => {
       for (const e of fs.readdirSync(目录, { withFileTypes: true })) {
         const 文件 = path.join(目录, e.name);
         if (e.isDirectory()) { 扫(文件); continue; }
-        if (!e.name.endsWith('.ts') || e.name.endsWith('.test.ts') || 文件 === path.join(根, 'pipeline/渲/渲染器.ts')) continue;
-        const 源 = ts.createSourceFile(文件, fs.readFileSync(文件, 'utf8'), ts.ScriptTarget.Latest, true);
-        const 是包 = (n: ts.Node | undefined) => n && ts.isStringLiteral(n) && (n.text === '@remotion/renderer' || n.text.startsWith('@remotion/renderer/'));
-        const 值导入 = (n: ts.ImportDeclaration) => {
-          const c = n.importClause;
-          if (!c) return true;
-          if (c.isTypeOnly) return false;
-          return !!c.name || !c.namedBindings || ts.isNamespaceImport(c.namedBindings) || c.namedBindings.elements.length === 0 || c.namedBindings.elements.some(x => !x.isTypeOnly);
-        };
-        const 看 = (n: ts.Node) => {
-          const 违规导入 = ts.isImportDeclaration(n) && 是包(n.moduleSpecifier) && 值导入(n);
-          const 违规导出 = ts.isExportDeclaration(n) && 是包(n.moduleSpecifier) && !n.isTypeOnly &&
-            (!n.exportClause || !ts.isNamedExports(n.exportClause) || n.exportClause.elements.some(x => !x.isTypeOnly));
-          const 违规调用 = ts.isCallExpression(n) && 是包(n.arguments[0]) &&
-            !(ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === 'resolve');
-          const 违规别名 = ts.isImportEqualsDeclaration(n) && !n.isTypeOnly && ts.isExternalModuleReference(n.moduleReference) && 是包(n.moduleReference.expression);
-          if (违规导入 || 违规导出 || 违规调用 || 违规别名) {
-            违规.push(path.relative(根, 文件) + ':' + (源.getLineAndCharacterOfPosition(n.getStart()).line + 1));
-          }
-          ts.forEachChild(n, 看);
-        };
-        看(源);
+        if (!/\.[cm]?[jt]s$/.test(e.name)) continue;
+        const 相对路径 = path.relative(根, 文件).split(path.sep).join('/');
+        for (const q of 查渲染器入口(相对路径, fs.readFileSync(文件, 'utf8'))) {
+          违规.push(`${相对路径}:${q.行} ${q.文本}`);
+        }
       }
     };
     扫(path.join(根, 'pipeline'));

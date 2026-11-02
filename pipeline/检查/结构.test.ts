@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { 基础, 跑, 造仓库, type 文件表 } from './测试夹具.ts';
-import { 写死了, 分层 } from './规则/结构.ts';
+import { 写死了, 分层, 查渲染器入口 } from './规则/结构.ts';
 
 const 两场 = {
   '作品/应力转动/清单.ts': [
@@ -193,5 +193,99 @@ describe('结构', () => {
     expect(写死了('./a.png', 'host')).toBe('相对路径的资产');
     expect(写死了('暮色放大-1752-扩展', 'host')).toBeNull();
     expect(写死了('my-laptop-01.local', 'my-laptop-01')).toBe('写死的本机名');
+  });
+});
+
+describe('pipeline 渲染器统一入口', () => {
+  const 包 = '@remotion/renderer';
+  const esm路径 = `${包}/dist/esm/index.mjs`;
+  const 取值提示 = '值导入必须通过 pipeline/渲/渲染器.ts';
+
+  it('六种代码后缀都检查，动态导入也认无插值模板字面量', () => {
+    for (const 后缀 of ['ts', 'mts', 'cts', 'js', 'mjs', 'cjs']) {
+      const 问题 = 查渲染器入口(`pipeline/绕行.${后缀}`, `// 第一行\nconst r = import(\`${包}\`);`);
+      expect(问题, 后缀).toEqual([{ 行: 2, 文本: expect.stringContaining(取值提示) }]);
+    }
+  });
+
+  it('静态值导入、转导出、require 和 import 等号别名都不能绕行，混合类型导入也拦', () => {
+    for (const 源 of [
+      `import '${包}';`,
+      `import {} from '${包}';`,
+      `import R from '${包}';`,
+      `import * as R from '${包}';`,
+      `import { type HeadlessBrowser, renderMedia } from '${包}';`,
+      `export * from '${包}';`,
+      `export * as R from '${包}';`,
+      `export { type HeadlessBrowser, renderMedia as render } from '${包}';`,
+      `const r = require('${包}');`,
+      `const r = createRequire(import.meta.url)('${包}');`,
+      `const r = import('${包}/client');`,
+      `import R = require('${包}');`,
+    ]) expect(查渲染器入口('pipeline/绕行.ts', 源), 源).toEqual([{ 行: 1, 文本: expect.stringContaining(取值提示) }]);
+  });
+
+  it('类型、CJS 路径解析、统一入口及测试取值放行；声明文件不扫', () => {
+    for (const 源 of [
+      `import type { HeadlessBrowser } from '${包}';`,
+      `import { type HeadlessBrowser } from '${包}';`,
+      `export type { HeadlessBrowser } from '${包}';`,
+      `export { type HeadlessBrowser } from '${包}';`,
+      `export type * from '${包}';`,
+      `type R = typeof import('${包}');`,
+      `import type R = require('${包}');`,
+      `const p = require.resolve('${包}');`,
+    ]) expect(查渲染器入口('pipeline/类型.ts', 源), 源).toEqual([]);
+    const 源 = `import * as R from '${包}';`;
+    for (const 文件 of ['pipeline/渲/渲染器.ts', 'pipeline/合法.test.ts', 'pipeline/声明.d.ts', 'pipeline/声明.d.mts', 'pipeline/声明.d.cts', '库/无关.ts']) {
+      expect(查渲染器入口(文件, 源), 文件).toEqual([]);
+    }
+    expect(查渲染器入口('pipeline/声明.d.ts', `// ${esm路径}\nconst p = import.meta.resolve('${包}');`)).toEqual([]);
+  });
+
+  it('文本兜底守相对 ESM 路径和 import.meta.resolve，注释、测试、统一入口也不能藏', () => {
+    for (const 文件 of ['pipeline/绕行.ts', 'pipeline/绕行.test.mjs', 'pipeline/渲/渲染器.ts']) {
+      for (const 引号 of ["'", '"', '`']) {
+        const 源 = `// ${esm路径}\nconst p = import.meta.resolve(${引号}${包}${引号});`;
+        expect(查渲染器入口(文件, 源), 文件).toEqual([
+          { 行: 1, 文本: expect.stringContaining('不许引用 renderer 的 ESM 路径') },
+          { 行: 2, 文本: expect.stringContaining('不许用 import.meta.resolve 解析渲染器') },
+        ]);
+      }
+    }
+  });
+
+  it('测试六种后缀的 vi.mock / vi.doMock 必须 mock 统一入口，普通注释和别的 mock 放行', () => {
+    for (const 后缀 of ['ts', 'mts', 'cts', 'js', 'mjs', 'cjs']) {
+      const 文件 = `pipeline/绕行.test.${后缀}`;
+      for (const 方法 of ['mock', 'doMock']) {
+        for (const 引号 of ["'", '"', '`']) {
+          expect(查渲染器入口(文件, `vi.${方法}(${引号}${包}${引号}, () => ({}));`)).toEqual([
+            { 行: 1, 文本: expect.stringContaining('测试要 mock 渲染器.ts') },
+          ]);
+        }
+        expect(查渲染器入口(文件, `// vi.${方法}('${包}')\nvi.${方法}('./渲染器.ts');\nvi.${方法}('@remotion/media');`)).toEqual([]);
+      }
+    }
+  });
+
+  it('anim check 的结构规则接入相同判定，含新文件、非 ts、测试 mock 和文本兜底', async () => {
+    const 文件: 文件表 = {
+      'pipeline/绕行.mts': `export const r = import(\`${包}\`);`,
+      'pipeline/解析.mjs': `export const p = import.meta.resolve('${包}');`,
+      'pipeline/深路径.cjs': `// ${esm路径}`,
+      'pipeline/错误.test.cts': `vi.mock('${包}');\nvi.doMock('${包}');`,
+    };
+    const 违规 = (await 跑('结构', 造仓库(基础(), 文件))).违规;
+    expect(违规).toHaveLength(5);
+    for (const [p, 源] of Object.entries(文件)) {
+      for (const q of 查渲染器入口(p, String(源))) expect(违规).toContain(`${p}:${q.行} ${q.文本}`);
+    }
+    const 合法: 文件表 = {
+      'pipeline/渲/渲染器.ts': `export const r = require('${包}');`,
+      'pipeline/合法.ts': `export type { HeadlessBrowser } from '${包}';`,
+      'pipeline/合法.test.ts': `vi.mock('./渲/渲染器.ts');`,
+    };
+    expect((await 跑('结构', 造仓库(基础(), 合法))).违规).toEqual([]);
   });
 });
