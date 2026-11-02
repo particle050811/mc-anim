@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { fps } from '../分镜.ts';
 import { 吹法, 日历尺寸, 日历数, 满页, 离开秒, 纸厚, 页版式, 飞姿, 飞页们, 飞走几页 } from './日历.ts';
 import { 找格, 星期们, 节们, 课表格们 } from './课表数据.ts';
 
@@ -26,16 +27,16 @@ describe('风吹日历', () => {
     for (let k = 1; k < 满页; k++) expect(飞走几页(离开秒(k, 窗) + 1e-9, 窗)).toBeGreaterThanOrEqual(k);
   });
 
-  it('空中的纸：印的数比本子上的大、龄在 0～1，每帧新飞的不超过 每帧最多 太多（不糊成一团白）', () => {
-    for (let t = 窗.起; t < 窗.止 + 0.5; t += 1 / 24) {
+  it('空中的纸：印的数比本子上的大、龄在 0～1，每秒新飞的不超过 每秒最多 太多（不糊成一团白）', () => {
+    for (let t = 窗.起; t < 窗.止 + 0.5; t += 1 / fps) {
       const 顶 = 日历数(t, 窗);
-      const 飞 = 飞页们(t, 窗, 24);
+      const 飞 = 飞页们(t, 窗);
       for (const x of 飞) {
         expect(x.数).toBeGreaterThan(顶);
         expect(x.龄).toBeGreaterThanOrEqual(0);
         expect(x.龄).toBeLessThan(1);
       }
-      expect(飞.length).toBeLessThanOrEqual(Math.ceil(吹法.飞 * 24 * 吹法.每帧最多) + 2);
+      expect(飞.length).toBeLessThanOrEqual(Math.ceil(吹法.飞 * 吹法.每秒最多) + 2);
     }
   });
 

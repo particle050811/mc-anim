@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { 正片事件 } from './分镜.ts';
+import { fps, 旧帧, 正片事件 } from './分镜.ts';
 import {
   亮格于,
   分屏N,
@@ -14,7 +14,7 @@ import {
   门口长成帧,
   林生长,
 } from './场/2-门口/分屏参数.ts';
-import { 末帧速度 } from './段/2-空床/编排.ts';
+import { 末速度 } from './段/2-空床/编排.ts';
 import { 中景方块, 中景树们, 冒出, 远景方块, 远景树们 } from './地点/樱花林.ts';
 import { 樱花树方块 } from './地点/樱花树.ts';
 import { 正交顶面 } from './画风.ts';
@@ -25,6 +25,8 @@ const 事 = 正片事件;
 const 起 = 事.分屏起.帧;
 const 止 = 事.第14句分屏.帧;
 const 树根 = [-5, 1, 0] as const; // 地点/门口小木屋.tsx 门口.树苗 那一格（那边是 tsx，测试不引）
+/** 24 fps 的一帧（旧帧(1) 秒）是几帧 */
+const 一旧帧 = 旧帧(1) * fps;
 
 // 成片像素：服务器画布 0～1280、现实画布 1280～2560；一格 16N 个像素，往里一格画面上升 斜 格
 const 每格 = 16 * 分屏N;
@@ -47,7 +49,7 @@ describe('第 13 句分屏', () => {
   it('林子跟着日历冒：生长 = 吹走的页数 ÷ 99；日历窗就是 风吹日历 到 日历到一 两拍；门口树苗在 日历到一 那一拍长成', () => {
     expect([林生长(满页), 林生长(1)]).toEqual([0, 1]);
     expect(冒出.页数).toBe(满页 - 1);
-    expect(日历窗).toEqual({ 起: 事.风吹日历.帧 / 24, 止: 事.日历到一.帧 / 24 });
+    expect(日历窗).toEqual({ 起: 事.风吹日历.帧 / fps, 止: 事.日历到一.帧 / fps });
     expect(分屏态(事.风吹日历.帧 - 1).日历).toBe(100);
     expect(分屏态(事.风吹日历.帧).日历).toBe(99);
     expect(门口长成帧).toBe(事.日历到一.帧);
@@ -60,10 +62,10 @@ describe('第 13 句分屏', () => {
     expect(几棵(事.风吹日历.帧 - 1)).toBe(0);
     expect(几棵(事.风吹日历.帧)).toBe(1);
     expect(几棵(事.日历到一.帧)).toBe(樱.length);
-    // 左屏看得见的（出 不到 1；树干在左屏外的都等到 日历到一）一棵棵错开：每帧顶多冒两棵，前半个日历窗冒的比后半个少
+    // 左屏看得见的（出 不到 1；树干在左屏外的都等到 日历到一）一棵棵错开：每 旧帧(1) 秒顶多冒两棵，前半个日历窗冒的比后半个少
     const 看得见 = 樱.filter((t) => t.出 < 1);
     expect(看得见.length).toBeGreaterThanOrEqual(20);
-    for (let f = 事.风吹日历.帧; f < 事.日历到一.帧; f++) expect(几棵(f + 1, 看得见) - 几棵(f, 看得见)).toBeLessThanOrEqual(2);
+    for (let f = 事.风吹日历.帧 - 一旧帧; f < 事.日历到一.帧; f++) expect(几棵(f + 一旧帧, 看得见) - 几棵(f, 看得见)).toBeLessThanOrEqual(2);
     const 中 = Math.round((事.风吹日历.帧 + 事.日历到一.帧) / 2);
     expect(几棵(中, 看得见) - 几棵(事.风吹日历.帧, 看得见)).toBeLessThan(几棵(事.日历到一.帧 - 1, 看得见) - 几棵(中, 看得见));
     expect(几棵(事.日历到一.帧 - 1, 看得见)).toBe(看得见.length);
@@ -82,7 +84,7 @@ describe('第 13 句分屏', () => {
 
   it('她只换一次姿势，每个姿势至少 1 秒（用户 10-24「画面转太快就删」）', () => {
     const 界 = [起, ...换姿帧们, 止];
-    for (let i = 1; i < 界.length; i++) expect((界[i]! - 界[i - 1]!) / 24).toBeGreaterThanOrEqual(1);
+    for (let i = 1; i < 界.length; i++) expect((界[i]! - 界[i - 1]!) / fps).toBeGreaterThanOrEqual(1);
     expect(换姿帧们).toHaveLength(1);
   });
 
@@ -120,8 +122,8 @@ describe('第 13 句分屏', () => {
   });
 
   it('接入：头一步接上 2-空床 末帧的横移速度，越滑越慢，分屏成形到位 停稳；每帧落在贴图像素上', () => {
-    const 速 = 末帧速度();
-    const 页每帧 = (速.右 * 速.每格) / 2;
+    const 速 = 末速度();
+    const 页每帧 = (速.右 * 速.每格) / 2 / fps;
     expect(成形偏于(起)).toBe(成形.横);
     expect(Math.abs(成形偏于(起) - 成形偏于(起 + 1) - 页每帧)).toBeLessThanOrEqual(4);
     let 上 = Infinity;
