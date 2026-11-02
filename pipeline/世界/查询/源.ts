@@ -1,3 +1,4 @@
+import { 读模型, 模型文件名, type 区段模型 } from '../../../engine/voxel/区段模型.ts';
 // 查询（block、heightmap、map、slice）读方块的两种来源，接口一样：
 //   存档：区域源（默认套编辑层，--原样 不套），整列都有；
 //   地形包：烘好的区段包第 0 级（engine/voxel/区段包.ts 的格式），只存了地表附近（k底 以下当实心、没存），看的是渲染实际拿到的方块。
@@ -99,6 +100,7 @@ export class 存档方块源 implements 方块源 {
 export class 包方块源 implements 方块源 {
   readonly 描述: string;
   readonly 信息: 包信息;
+  private 模型: 区段模型;
   private dir: string;
   private 库: 体素库;
   private 头们 = new Map<string, Uint32Array | null>();
@@ -109,6 +111,8 @@ export class 包方块源 implements 方块源 {
     this.库 = 库;
     this.描述 = 描述;
     this.信息 = JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as 包信息;
+    if (this.信息.版本 !== 库.区段包.formatVersion) throw new Error(`地形包是格式 ${this.信息.版本}，只读格式 ${库.区段包.formatVersion}：anim assets pull，或 anim world 转码`);
+    this.模型 = 读模型(fs.readFileSync(path.join(dir, 模型文件名)));
   }
 
   private 区段(si: number, sj: number) {
@@ -129,7 +133,7 @@ export class 包方块源 implements 方块源 {
       const buf = Buffer.alloc(长);
       fs.readSync(fd, buf, 0, 长, 偏);
       fs.closeSync(fd);
-      const d = this.库.区段解码.解区段(buf, { L: 0, i: si, j: sj });
+      const d = this.库.区段解码.解区段(buf, { L: 0, i: si, j: sj }, this.模型);
       const 起 = new Uint32Array(d.runCounts.length + 1);
       for (let c = 0; c < d.runCounts.length; c++) 起[c + 1] = 起[c]! + d.runCounts[c]!;
       v = { d, 起 };

@@ -7,7 +7,7 @@ import { 代码根 } from '../环境/路径.ts';
 import { 过放行闸 } from '../闸/闸.ts';
 import { 默认线程, 烘焙世界, 载入编辑 } from './烘焙/流程.ts';
 import { 转码包 } from './烘焙/转码.ts';
-import { 构建解码器, 模型表文件内容, 模型表生成文件, 训练模型表 } from './区段解码器.ts';
+import { 构建解码器 } from './区段解码器.ts';
 import { 载入体素库 } from './体素库.ts';
 import { 生成重放, 重放脚本 } from './编辑/重放.ts';
 import { 列出世界, 读声明, 编辑文件, 存档目录 as 声明存档目录, type 世界声明, type 预生成块 } from './声明.ts';
@@ -100,22 +100,10 @@ const 子命令们: Record<string, 子命令> = {
     },
   },
   解码器: {
-    用法: '解码器 [--检查] | 解码器 --训练 <包…> [--抽 <n>]',
+    用法: '解码器 [--检查]',
     跑: async (args) => {
-      const p = 解析参数(args, { 值: ['--抽'], 开关: ['--检查', '--训练'] });
-      if (p.开关.has('--训练')) {
-        if (!p.位置.length) throw new 用法错误('--训练 要给包名，包的版本按 assets/地形版本.json');
-        const 抽 = Number(p.值['--抽'] ?? 20);
-        if (!(Number.isInteger(抽) && 抽 > 0)) throw new 用法错误('--抽 要是正整数');
-        const 表 = 读地形表().包;
-        for (const 名 of p.位置) if (!表[名]) throw new 用法错误(`地形包 ${名} 没登记`);
-        const { 初, 区段 } = 训练模型表(await 载入体素库(), p.位置.map((名) => 版本目录(名, 表[名]!.版本)), 抽);
-        const 文本 = 模型表文件内容(初, `依据：${p.位置.join('、')}，按块文件名和文件内先后每 ${抽} 个区段取一个（${区段} 个）`);
-        fs.writeFileSync(模型表生成文件(), 文本);
-        console.log(`学了 ${区段} 个区段，写回 ${相对(模型表生成文件())}。换表等于换格式：要升格式版本，全部地形包重转`);
-        return 0;
-      }
-      if (p.位置.length) throw new 用法错误('解码器 不收位置参数');
+      const p = 解析参数(args, { 开关: ['--检查'] });
+      if (p.位置.length) throw new 用法错误('模型随每个包在 bake、转码时自动训练，不再写代码表');
       const r = 构建解码器({ 检查: p.开关.has('--检查') });
       console.log(`wasm/区段解码.ts → ${r.大小} 字节，sha256 ${r.sha256.slice(0, 12)}，${r.一样 ? '和生成文件一样' : '已写回'}`);
       return 0;
