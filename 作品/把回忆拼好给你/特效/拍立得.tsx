@@ -1,26 +1,27 @@
 // 拍立得定格：定格帧那一下闪白、画面停住，然后整张画面缩成一张斜放的拍立得（三边窄白边、下边宽），下白边淡入一行字。
 // 2D 自创效果只在本作品用（用户 10-22 定：照片白边、拼图、花瓣这部作品可以用），所以放作品目录、不进 库/。
 // 用法：<拍立得 定格帧={…} 字="…" 样式={…} 浮层={歌词等}>{(fs) => 3D、手、聊天}</拍立得>。fs = min(帧, 定格帧)，子画面全按 fs 画，
-// 定格以后每帧都重画定格那一刻；浮层不停、不跟着缩，画在照片上面、闪白下面。定格帧由段画面从 分镜.ts 取，这里只数相对定格帧的帧数。
+// 定格以后每帧都重画定格那一刻；浮层不停、不跟着缩，画在照片上面、闪白下面。定格帧由段画面从 分镜.ts 取，这里只数离定格帧几秒。
 // 缩小是把整张卡片从「画面正好铺满」拉远到最终大小：白边一开始在画外，拉远时自然露出来；外框留在 DOM 里不重挂，ThreeCanvas 不会因此重建。
 import type React from 'react';
 import { useId } from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { clamp01, rad, sample } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
+import { fps, 旧帧 } from '../分镜.ts';
 
 export type 拍立得样式 = {
   /** 照片里的画面最后缩到原来的几倍（白边另加在外面） */
   缩放: number;
   /** 最后斜几度，负数是逆时针 */
   斜度: number;
-  /** 闪白从定格帧起持续几帧（第一帧全白，平方衰减） */
-  闪白帧: number;
-  /** 从定格帧起缩小、转斜用几帧（缓入缓出） */
-  缩小帧: number;
-  /** 定格后第几帧起字开始淡入，淡入用几帧 */
-  字延迟帧: number;
-  字淡入帧: number;
+  /** 闪白从定格帧起持续几秒（定格那一下全白，平方衰减） */
+  闪白秒: number;
+  /** 从定格帧起缩小、转斜用几秒（缓入缓出） */
+  缩小秒: number;
+  /** 定格后几秒起字开始淡入，淡入用几秒 */
+  字延迟秒: number;
+  字淡入秒: number;
   /** 左、上、右白边，下白边：占画面宽的比例（缩放前） */
   边: number;
   下边: number;
@@ -70,10 +71,10 @@ export const 拍立得: React.FC<{
   const { width: W, height: H } = useVideoConfig();
   const fs = Math.min(f, 定格帧);
   const 已定格 = f >= 定格帧;
-  const t = f - 定格帧;
+  const t = (f - 定格帧) / fps;
 
-  // 进度 p：定格帧是 0，第 缩小帧−1 帧走完
-  const p = sample([[0, 0], [Math.max(1, 样式.缩小帧 - 1), 1]], t);
+  // 进度 p：定格帧是 0，比 缩小秒 早 1/24 秒走完（24 fps 时第 缩小帧−1 帧）
+  const p = sample([[0, 0], [Math.max(旧帧(1), 样式.缩小秒 - 旧帧(1)), 1]], t);
   const k = 1 + (样式.缩放 - 1) * p;
   const θ = 样式.斜度 * p;
   const 边 = 样式.边 * W;
@@ -83,8 +84,9 @@ export const 拍立得: React.FC<{
   const tx = p * k * d * Math.sin(rad(θ));
   const ty = -p * k * d * Math.cos(rad(θ));
 
-  const 闪 = 已定格 && t < 样式.闪白帧 ? (1 - t / 样式.闪白帧) ** 2 : 0;
-  const 字透明 = clamp01((t - 样式.字延迟帧 + 1) / Math.max(1, 样式.字淡入帧));
+  const 闪 = 已定格 && t < 样式.闪白秒 ? (1 - t / 样式.闪白秒) ** 2 : 0;
+  // 淡入那一刻已经走了 24 fps 的一帧；那一刻之前截成 0（24 fps 时本来就是 0）
+  const 字透明 = t < 样式.字延迟秒 ? 0 : clamp01((t - 样式.字延迟秒 + 旧帧(1)) / Math.max(旧帧(1), 样式.字淡入秒));
 
   return (
     <AbsoluteFill style={{ overflow: 'hidden', backgroundColor: 已定格 ? 样式.背景 : undefined }}>
