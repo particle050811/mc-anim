@@ -8,26 +8,40 @@ import { 代码根 } from './路径.ts';
 export type 温度读数 = { 芯片最高温: number | null; 发热等级: number | null };
 export const 无温度 = (): 温度读数 => ({ 芯片最高温: null, 发热等级: null });
 const 热键 = 'com.apple.system.thermalpressurelevel';
-let 工具: string | null | undefined;
+let 工具: { 源: string; 文件: string } | null | undefined;
+let 已试编译 = false;
+// Agent 选的初值：编译失败后冷却 1 小时，避免每条命令都启动 swiftc、最多阻塞 20 秒。
+const 失败冷却毫秒 = 3600_000;
 
-/** 编译失败只在本进程试一次，免得每次心跳都启动编译器；下次命令仍可重试。 */
 const 温度工具 = (): string | null => {
-  if (工具 !== undefined) return 工具;
   let 临时: string | undefined;
   try {
-    const 源 = path.join(代码根(), 'pipeline', '环境', '温度.swift');
-    const sha = createHash('sha256').update(fs.readFileSync(源)).digest('hex');
-    const 文件 = 数据路径('cache', 'temperature', `die-${process.arch}-${sha}`);
-    if (!fs.existsSync(文件)) {
-      fs.mkdirSync(path.dirname(文件), { recursive: true });
-      // 同时首次使用的进程各编自己的临时文件，发布前看不到半个可执行文件。
-      临时 = `${文件}-${process.pid}-${randomUUID()}.tmp`;
-      execFileSync('swiftc', ['-O', 源, '-o', 临时], { timeout: 20_000, stdio: 'ignore' });
-      fs.renameSync(临时, 文件);
+    if (工具 === undefined) {
+      工具 = null;
+      const 源 = path.join(代码根(), 'pipeline', '环境', '温度.swift');
+      const sha = createHash('sha256').update(fs.readFileSync(源)).digest('hex');
+      工具 = { 源, 文件: 数据路径('cache', 'temperature', `die-${process.arch}-${sha}`) };
     }
-    return (工具 = 文件);
+    if (!工具) return null;
+    const { 源, 文件 } = 工具;
+    // 本进程失败后，其他进程仍可能编好；只抑制重复编译，不把缺读数记死。
+    if (fs.existsSync(文件)) return 文件;
+    if (已试编译) return null;
+    const 失败时 = fs.statSync(`${文件}.失败`, { throwIfNoEntry: false })?.mtimeMs;
+    if (失败时 !== undefined && Date.now() - 失败时 < 失败冷却毫秒) return null;
+    已试编译 = true;
+    fs.mkdirSync(path.dirname(文件), { recursive: true });
+    // 同时首次使用的进程各编自己的临时文件，发布前看不到半个可执行文件。
+    临时 = `${文件}-${process.pid}-${randomUUID()}.tmp`;
+    // SIGTERM 会留下 swift-frontend 孤儿，SIGINT 让 swiftc 驱动一并结束子进程。
+    execFileSync('swiftc', ['-O', 源, '-o', 临时], { timeout: 20_000, killSignal: 'SIGINT', stdio: 'ignore' });
+    fs.renameSync(临时, 文件);
+    return 文件;
   } catch {
-    return (工具 = null);
+    if (工具 && 已试编译) {
+      try { fs.writeFileSync(`${工具.文件}.失败`, ''); } catch { /* 缓存不可写也不能挡住调度 */ }
+    }
+    return null;
   } finally {
     if (临时) { try { fs.rmSync(临时, { force: true }); } catch { /* 观测不能挡住调度 */ } }
   }
