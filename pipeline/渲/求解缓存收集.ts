@@ -44,6 +44,7 @@ const 收一页 = async (求值: (表达式: string) => Promise<string>, dir: st
     新写++;
   }
   if (新写) console.log(`求解缓存：新写 ${新写} 份`);
+  return 新写;
 };
 
 // Remotion 关页面时不等 close 完（get-browser-instance.js 的 cleanupPage），收缓存是异步写完的：
@@ -53,5 +54,7 @@ export const 等求解缓存写完 = () => Promise.all([...在收]);
 
 export const 收求解缓存 = (browser: HeadlessBrowser) => {
   const dir = 求解缓存目录();
-  关页前(browser, 在收, (求值) => 收一页(求值, dir));
+  const 统计 = { 新写: 0 };
+  关页前(browser, 在收, async (求值) => { 统计.新写 += await 收一页(求值, dir); });
+  return 统计;
 };

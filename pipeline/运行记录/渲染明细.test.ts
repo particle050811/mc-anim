@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,7 +14,7 @@ let dir: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-明细-'));
 });
-afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); vi.unstubAllEnvs(); });
 
 describe('渲染明细', () => {
   it('从 Remotion 的 verbose 日志取 delayRender，帧号和地址归到一类', () => {
@@ -21,6 +22,37 @@ describe('渲染明细', () => {
     expect(解析等待('\u001b[90m[Tab 0, delayRender()] "取方块网格 http://localhost:3000/data/8cab.bin" handle was cleared after 2105ms\u001b[39m')).toEqual({ 标签: '取方块网格', 毫秒: 2105 });
     expect(解析等待('Seeking to frame 0 took 2778ms')).toBeNull();
     expect(归类标签('Loading root component - See https://remotion.dev/x if you experience a timeout')).toBe('Loading root component');
+  });
+
+  it('识别 Remotion 彩色标签（Windows 默认）、CRLF 和 Windows 路径，不把普通日志当等待', () => {
+    const 行 = '\x1b[40m Tab 0, delayRender() \x1b[49m \x1b[90m"Waiting for R3F to render frame 12" handle was cleared after 27ms\x1b[39m\r\n';
+    expect(解析等待(行)).toEqual({ 标签: 'Waiting for R#F to render frame #', 毫秒: 27 });
+    expect(解析等待('[Tab 0, delayRender()] "读取 D:\\cache\\mesh.bin" handle was cleared after 42ms\r\n')).toEqual({ 标签: '读取 D:\\cache\\mesh.bin', 毫秒: 42 });
+    expect(解析等待('\x1b[40m Tab 0, node_modules/three/build/three.core.js:2022 \x1b[49m THREE.Clock: This module has been deprecated.')).toBeNull();
+    const c = new 明细收集('bench:作/段:视频');
+    c.行(行);
+    c.帧完成(1);
+    expect(c.帧们[0]!.等).toEqual({ 'Waiting for R#F to render frame #': 27 });
+  });
+
+  it('Windows results/third/B2-tower 的原始彩色等待行能解析，两条不丢失', () => {
+    const 行们 = ["\u001b[40m Tab 1, delayRender() \u001b[49m \u001b[90m\u001b[90m\"体素世界：还有 361 块区段\" handle was cleared after 968ms\u001b[39m\u001b[90m\u001b[39m", "\u001b[40m Tab 0, delayRender() \u001b[49m \u001b[90m\u001b[90m\"体素世界：还有 380 块区段\" handle was cleared after 972ms\u001b[39m\u001b[90m\u001b[39m"];
+    expect(行们.map(解析等待)).toEqual([
+      { 标签: '体素世界：还有 # 块区段', 毫秒: 968 },
+      { 标签: '体素世界：还有 # 块区段', 毫秒: 972 },
+    ]);
+  });
+
+  it('直接用当前 Remotion 格式化器核对有色和无色的等待标签', () => {
+    const require = createRequire(import.meta.url);
+    const { Log } = require(path.join(path.dirname(require.resolve('@remotion/renderer')), 'logger.js'));
+    for (const 彩色 of [false, true]) {
+      vi.unstubAllEnvs();
+      if (彩色) { vi.stubEnv('FORCE_COLOR', '1'); vi.stubEnv('NO_COLOR', undefined); }
+      else vi.stubEnv('NO_COLOR', '1');
+      const 行 = Log.formatLogs('verbose', { indent: false, logLevel: 'verbose', tag: 'Tab 0, delayRender()' }, ['"Waiting for R3F to render frame 12" handle was cleared after 27ms']).join(' ');
+      expect(解析等待(行 + '\r\n')).toEqual({ 标签: 'Waiting for R#F to render frame #', 毫秒: 27 });
+    }
   });
 
   it('一帧的等待记到下一次进度那帧上；同帧数的进度回调不算新帧；短等待只进总表', () => {
