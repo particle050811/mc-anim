@@ -3,7 +3,7 @@ import { 加挥手, 挥手进度 } from '@库/角色/挥手.ts';
 import { 火箭位置, 烟花火花们, 炸开秒, 炸点, 球半径 } from '@库/特效/烟花.ts';
 import { 天体位置 } from '../../地点/天体.ts';
 import { 四周方块, 屋后远景范围 } from '../../地点/小木屋四周地形.ts';
-import { fps, 拍, 段窗口, 正片事件, 第几句, 歌曲帧 } from '../../分镜.ts';
+import { fps, 拍, 旧帧, 段窗口, 正片事件, 第几句, 歌曲帧 } from '../../分镜.ts';
 import { 逐字 } from '../../配乐/逐字.ts';
 import { 告示牌行们, 告示牌词们 } from './参数.ts';
 import { 第8句镜头, 第8句镜头N } from './第8句.ts';
@@ -23,7 +23,7 @@ import {
   换火箭秒,
   烟花们,
   照片帧,
-  照片晚帧,
+  照片晚秒,
   牌上行们,
   牌字面,
   牌近N,
@@ -99,14 +99,14 @@ describe('门口之夜的段（第 9–11 句）', () => {
       expect(f >= 窗们[2]!.起帧 && f < 窗们[2]!.止帧).toBe(true);
     }
     expect(定格帧).toBe(正片事件.第11句照片.帧);
-    expect(照片帧).toBe(定格帧 + 照片晚帧);
+    expect(照片帧).toBe(定格帧 + 照片晚秒 * fps);
   });
 
-  it('牌上写字和歌词的字错开：写上一行那一帧离第 9、10 句每个字唱到的那一帧（和前一帧拼齐）至少 3 帧', () => {
+  it('牌上写字和歌词的字错开：写上一行那一帧离第 9、10 句每个字唱到的那一帧（和 1/24 秒以前拼齐）至少 1/8 秒（24 fps 时 3 帧）', () => {
     const 唱 = [...逐字[9]!, ...逐字[10]!].map(歌曲帧);
     for (const k of 写字们) {
       const f = 正片事件[k].帧;
-      for (const g of 唱) expect(Math.min(Math.abs(f - g), Math.abs(f - (g - 1))), `${k} 和第 ${g} 帧`).toBeGreaterThanOrEqual(3);
+      for (const g of 唱) expect(Math.min(Math.abs(f - g), Math.abs(f - (g - fps * 旧帧(1)))) / fps, `${k} 和第 ${g} 帧`).toBeGreaterThanOrEqual(旧帧(3));
     }
   });
 
@@ -198,8 +198,8 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     }
   });
 
-  it('开场同第 8 句的机位（N 16、中心）匹配剪进来，原样停 4 帧；N 16 一直留到 0.6 秒以后才往牌子推', () => {
-    for (let f = 起; f < 起 + 4; f++) expect(镜头(f), `第 ${f} 帧`).toEqual({ N: 第8句镜头N, 顶面: 2, 中心: 第8句镜头.取景.中心 });
+  it('开场同第 8 句的机位（N 16、中心）匹配剪进来，原样停 1/6 秒（24 fps 时 4 帧）；N 16 一直留到 0.6 秒以后才往牌子推', () => {
+    for (let f = 起; (f - 起) / fps < 旧帧(4); f++) expect(镜头(f), `第 ${f} 帧`).toEqual({ N: 第8句镜头N, 顶面: 2, 中心: 第8句镜头.取景.中心 });
     let f = 起;
     while (镜头(f).N === 第8句镜头N) f++;
     expect(f - 起).toBeGreaterThanOrEqual(0.6 * fps);
@@ -210,7 +210,7 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     for (let f = 种下帧; f <= 正片事件.第9句推近.帧; f++) expect(投(f, 树苗x - 0.5, 0).x, `第 ${f} 帧`).toBeGreaterThanOrEqual(64);
   });
 
-  it('两行字都在牌子特写里写上（N 84）：牌字在画面正中、你在画外；写完的两行在特写里留 0.35 秒以上（按词写只留得出这么多），拉开头 3 帧 N 还在 60 以上', () => {
+  it('两行字都在牌子特写里写上（N 84）：牌字在画面正中、你在画外；写完的两行在特写里留 0.35 秒以上（按词写只留得出这么多），拉开头 1/8 秒（24 fps 时 3 帧）N 还在 60 以上', () => {
     for (let f = 正片事件.写字一.帧; f < 镜头段.跟起 * fps; f++) {
       expect(镜头(f).N, `第 ${f} 帧`).toBe(牌近N);
       const 牌 = 投(f, 牌字面.x, 牌字面.z, 牌字面.y);
@@ -220,7 +220,7 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       expect(投(f, 你态(f).x - 0.375, 1).x, `第 ${f} 帧`).toBeGreaterThan(2560);
     }
     expect(镜头段.跟起 - 正片事件.写字二续.帧 / fps).toBeGreaterThanOrEqual(0.35);
-    for (let f = Math.ceil(镜头段.跟起 * fps); f < 镜头段.跟起 * fps + 3; f++) expect(镜头(f).N, `第 ${f} 帧`).toBeGreaterThanOrEqual(60);
+    for (let f = Math.ceil(镜头段.跟起 * fps); f / fps < 镜头段.跟起 + 旧帧(3); f++) expect(镜头(f).N, `第 ${f} 帧`).toBeGreaterThanOrEqual(60);
   });
 
   it('火箭到手时镜头已经拉开（N 36 以内），你整个人和伸出去的手都在画里，不从画框边戳进来', () => {
@@ -334,7 +334,8 @@ describe('人', () => {
 
 describe('下线：存档图标', () => {
   it('照原版：裁正中正方形，落定时 64×64 个点、一个点 8 个成片像素，斜度、相纸边收没', () => {
-    const c = 卡片(正片事件.第11句下线.帧 + 下线图标.缩帧 - 1, 2560, 1440);
+    // 缩好那一帧：下线那一帧已经走了 1/24 秒，缩秒 走完
+    const c = 卡片(正片事件.第11句下线.帧 + Math.ceil((下线图标.缩秒 - 旧帧(1)) * fps), 2560, 1440);
     expect(c.下).toBe(1);
     expect(c.点).toBe(64);
     expect(c.w).toBe(512);
@@ -348,7 +349,7 @@ describe('下线：存档图标', () => {
   });
 
   it('最后半秒是落定的图标和下线那行聊天', () => {
-    expect(止 - (正片事件.第11句下线.帧 + 下线图标.缩帧 - 1)).toBeGreaterThanOrEqual(0.5 * fps);
+    expect((止 - 正片事件.第11句下线.帧) / fps - (下线图标.缩秒 - 旧帧(1))).toBeGreaterThanOrEqual(0.5);
   });
 
   it('手机 390 宽：聊天字（原版字高 8 个界面像素）至少 11 像素高；图标下沿让开聊天栏暗底（y 950 起）', () => {

@@ -1,7 +1,7 @@
 // 第 11 句「绽」以后（按歌曲帧画）：最大那发炸开、咔哒一声闪白，画面定格，缩成一张拍立得（F2 截图，不画按键）；37.61 照片后面的世界碎成方块往下掉，
 // 同一拍照片裁成正中的正方形、褪色蒙灰，分辨率一路降到 64×64，缩成画面中间的方形图标（第 0 镜「选择世界」里「新的世界」那个存档的图标），
 // 同一帧聊天栏冒出黄字「Steve退出了游戏」；37.94 缩好，图标和聊天行一起定到第 12 句。F2 截图当存档图标、缩的过程都是演绎（见 门口之夜参数.ts 的 照片帧、下线图标）。
-// 画法：定格帧起世界停在 照片帧（比定格帧晚 5 帧，白闪盖着看不出，见 门口之夜参数.ts），门口之夜画布 照常画（同一帧画出来逐像素一样），
+// 画法：定格帧起世界停在 照片帧（比定格帧晚 5/24 秒，白闪盖着看不出，见 门口之夜参数.ts），门口之夜画布 照常画（同一帧画出来逐像素一样），
 // 每帧画完由 捕获 把各层拼进一张离屏画布，再画到上面两张合成画布上：底下那张是压暗、碎成方块的世界，上面那张是相纸、照片、闪白。
 // 聊天栏夹在两张中间：它是游戏画面里的东西，照片盖在它上面，照片缩走时字从照片后面露出来，不横穿照片里的你和树苗（核查 10-24）。
 // 版式数在 门口之夜参数.ts 的 照片版式、碎裂、下线图标、卡片。
@@ -12,7 +12,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { fps, 正片事件 } from '../../分镜.ts';
+import { fps, 旧帧, 正片事件 } from '../../分镜.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
 import { 投影 } from '../../特效/拍立得.tsx';
@@ -33,7 +33,7 @@ const 拼层 = (离屏: HTMLCanvasElement, 层们: readonly 捕获层[], W: numb
   o.clearRect(0, 0, W, H);
   for (const { 图, 左, 上, 宽, 高 } of 层们) o.drawImage(图, Math.round(左 * W), Math.round(上 * H), Math.round(宽 * W), Math.round(高 * H));
 };
-// 碎块晚几帧掉：确定性的小抖动
+// 碎块晚多久掉：确定性的小抖动
 const 抖 = (i: number, j: number) => {
   const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453;
   return s - Math.floor(s);
@@ -49,16 +49,16 @@ const 画底 = (ctx: CanvasRenderingContext2D, 世界: HTMLCanvasElement, 帧: n
   ctx.filter = 'none';
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
-  // 底：定格的世界压暗；碎裂起碎成方块往下掉（下面的先掉，上面的晚到 最晚帧）
+  // 底：定格的世界压暗；碎裂起碎成方块往下掉（下面的先掉，上面的晚到 最晚秒；晚多少取整到 1/24 秒，同 24 fps 时取整到帧）
   ctx.imageSmoothingEnabled = false;
   if (帧 < 碎帧) ctx.drawImage(世界, 0, 0, W, H);
   else {
     const 块 = 碎裂.块 * u;
     const 列 = Math.ceil(W / 块), 行 = Math.ceil(H / 块);
-    const t0 = 帧 - 碎帧;
+    const t0 = (帧 - 碎帧) / fps;
     for (let j = 0; j < 行; j++)
       for (let i = 0; i < 列; i++) {
-        const 晚 = Math.round(碎裂.最晚帧 * (1 - j / 行) * 0.7 + 碎裂.最晚帧 * 0.3 * 抖(i, j));
+        const 晚 = 旧帧(Math.round((碎裂.最晚秒 * (1 - j / 行) * 0.7 + 碎裂.最晚秒 * 0.3 * 抖(i, j)) * 24));
         const t = Math.max(0, t0 - 晚);
         const dy = 0.5 * 碎裂.重力 * u * t * t;
         const y = j * 块 + dy;
@@ -108,10 +108,10 @@ const 下线图标图 = (世界: HTMLCanvasElement) => {
   return 降点图(世界, [(W - H) / 2, 0, H, H], 下线图标.点数, 1);
 };
 
-/** 定格以后这一帧的上层（透明底）：拍立得和闪白。g = 歌曲帧 − 定格帧 */
+/** 定格以后这一帧的上层（透明底）：拍立得和闪白。g = 离定格帧几秒 */
 const 画卡 = (ctx: CanvasRenderingContext2D, 世界: HTMLCanvasElement, 帧: number, W: number, H: number) => {
   const 版 = 照片版式;
-  const g = 帧 - 定帧;
+  const g = (帧 - 定帧) / fps;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1;
   ctx.filter = 'none';
@@ -151,8 +151,8 @@ const 画卡 = (ctx: CanvasRenderingContext2D, 世界: HTMLCanvasElement, 帧: n
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   // 咔哒闪白
-  if (g < 版.闪白帧) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${((1 - g / 版.闪白帧) ** 2).toFixed(4)})`;
+  if (g < 版.闪白秒) {
+    ctx.fillStyle = `rgba(255, 255, 255, ${((1 - g / 版.闪白秒) ** 2).toFixed(4)})`;
     ctx.fillRect(0, 0, W, H);
   }
 };
