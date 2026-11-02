@@ -1,4 +1,5 @@
-// 认可记录 <作品根>/认可/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音。
+// 认可记录 <作品根>/认可/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音，
+// 认可时比画面用的换算（比较.ts 的 换算；11-02 换比法以前的记录没有这一项）。
 // anim verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -10,7 +11,7 @@ import { 起音串, 解起音串, type 起音 } from './比较.ts';
 export type 帧签名 = { 帧: number; 哈希: string; 块均值: string[] };
 export type 声音签名 = { 音频sha: string | null; 响度: number | null; 起音: 起音[] | null };
 export type 签名 = { 宽: number; 高: number; 帧数: number; 间隔: number; 帧: 帧签名[] } & 声音签名;
-export type 认可记录 = 签名 & { 段: string; 指纹: string; 平台: string; 渲染级别: string; 认可于: string; 提交: string; 理由: string; 上一版指纹: string | null };
+export type 认可记录 = 签名 & { 段: string; 指纹: string; 平台: string; 渲染级别: string; 认可于: string; 提交: string; 理由: string; 上一版指纹: string | null; 换算?: string };
 
 /**
  * 一组抽样帧的身份：尺寸、帧数、间隔、各抽样帧的哈希（不含声音）。认可参考按它起名：同一指纹重渲后再 accept，
@@ -43,6 +44,7 @@ export const 读认可 = (file: string): 认可记录 | null => {
     响度: (t['响度'] as number | undefined) ?? null,
     起音: Array.isArray(t['起音']) ? (t['起音'] as string[]).map(解起音串) : null,
     上一版指纹: (t['上一版指纹'] as string | undefined) ?? null,
+    ...(typeof t['换算'] === 'string' ? { 换算: t['换算'] } : {}),
   };
 };
 
@@ -65,6 +67,7 @@ export const 认可文本 = (r: 认可记录) =>
     `"高" = ${r.高}`,
     `"帧数" = ${r.帧数}`,
     `"间隔" = ${r.间隔}`,
+    ...(r.换算 ? [`"换算" = ${串(r.换算)}`] : []),
     ...(r.音频sha ? [`"音频sha" = ${串(r.音频sha)}`] : []),
     ...(r.响度 !== null ? [`"响度" = ${r.响度}`] : []),
     ...(r.起音 ? [`"起音" = [`, ...分行(r.起音.map((x) => 串(起音串(x))), 8).map((行) => `  ${行.join(', ')},`), ']'] : []),

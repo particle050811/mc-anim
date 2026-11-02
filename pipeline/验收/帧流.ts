@@ -1,9 +1,10 @@
-// 从母版里按帧号抽出原始像素（rgb24）和整条 PCM，边读边交出去，不把整段解进内存。
-// 抽样：首帧、每 24 帧、末帧。像素签名：原始像素的 sha256 和 16×9 块均值（没有旧母版时只能靠它比）。
+// 从母版里按帧号抽出原始像素和整条 PCM，边读边交出去，不把整段解进内存。
+// 抽样：首帧、每 24 帧、末帧。像素签名：ffmpeg 解成 rgb24 的 sha256 和 16×9 块均值（没有旧那版的像素时只能靠它比）；签名一直这么算，已有的认可记录、段签都靠它。
+// 比画面用 yuv420p 原样（不经 swscale，各版本 ffmpeg 解出来逐位一样），再由 比较.ts 的 转rgb 按固定公式换。
 import crypto from 'node:crypto';
 import spawn from 'cross-spawn';
 import { 配置 } from '../环境/配置.ts';
-import { 低优先级 } from '../环境/子进程.ts';
+import { 低优先级, 跑出 } from '../环境/子进程.ts';
 import { 登记收尾 } from '../闸/收尾.ts';
 
 export const 默认间隔 = 24;
@@ -84,16 +85,32 @@ export const 选帧批次 = (帧们: readonly number[]) => {
   return 批们;
 };
 
-/** 按帧号升序交出 rgb24 像素（宽×高×3 字节）；-frames:v 让 ffmpeg 解到这批最后一帧就退，不解到文件尾 */
-export async function* 帧流(file: string, 帧们: readonly number[], 宽: number, 高: number): AsyncGenerator<Buffer> {
-  for (const 批 of 选帧批次(帧们))
+export type 像素格式 = 'rgb24' | 'yuv420p';
+export const 帧字节 = (宽: number, 高: number, 格式: 像素格式) => (格式 === 'rgb24' ? 宽 * 高 * 3 : (宽 * 高 * 3) / 2);
+
+/** 源不是 yuv420p 时 -pix_fmt yuv420p 会经 swscale 换，就不是逐位一样了：拒 */
+export const 要yuv420p = (file: string) => {
+  const f = 跑出([配置('ffprobe'), '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=pix_fmt', '-of', 'csv=p=0', file]).trim();
+  if (f !== 'yuv420p') throw new Error(`${file} 的像素格式是 ${f}，比画面要 yuv420p（换算公式只认它）`);
+};
+
+/**
+ * 按帧号升序交出像素（rgb24：宽×高×3 字节；yuv420p：宽×高×1.5 字节，原样不换）；-frames:v 让 ffmpeg 解到这批最后一帧就退，不解到文件尾。
+ * 另出：在最后一批的同一次解码里多写一路输出（出段签 拿它顺带出首尾帧小图，省一遍解码；ffmpeg 参数，接在主输出后面）
+ */
+export async function* 帧流(file: string, 帧们: readonly number[], 宽: number, 高: number, o: { 格式?: 像素格式; 另出?: string[] } = {}): AsyncGenerator<Buffer> {
+  const 格式 = o.格式 ?? 'rgb24';
+  if (格式 === 'yuv420p') 要yuv420p(file);
+  const 批们 = 选帧批次(帧们);
+  for (const [i, 批] of 批们.entries())
     yield* 读流(
       低优先级([
-        配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', file, '-map', '0:v:0',
+        配置('ffmpeg'), '-v', 'error', '-nostdin', '-y', '-i', file, '-map', '0:v:0',
         '-vf', `select='${选帧表达式(批)}'`, '-fps_mode', 'passthrough', '-frames:v', String(批.length),
-        '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1',
+        '-f', 'rawvideo', '-pix_fmt', 格式, 'pipe:1',
+        ...(i === 批们.length - 1 ? (o.另出 ?? []) : []),
       ]),
-      宽 * 高 * 3,
+      帧字节(宽, 高, 格式),
     );
 }
 
@@ -101,17 +118,18 @@ export async function* 帧流(file: string, 帧们: readonly number[], 宽: numb
 export const 抽样滤镜 = (帧数: number, 间隔 = 默认间隔) => `select='not(mod(n,${间隔}))+eq(n,${帧数 - 1})'`;
 
 /**
- * 只存了抽样帧的文件（段签、认可参考的 抽样.mkv：第 i 帧是原片的第 文件里的帧[i] 帧）按原片帧号交出 rgb24。
+ * 只存了抽样帧的文件（认可参考：第 i 帧是原片的第 文件里的帧[i] 帧）按原片帧号交出像素（格式同 帧流）。
  * 要的 必须是 文件里的帧 的子集、升序；整份解一遍（抽样只有原片的 1/24）
  */
-export async function* 抽样流(file: string, 文件里的帧: readonly number[], 要的: readonly number[], 宽: number, 高: number): AsyncGenerator<Buffer> {
+export async function* 抽样流(file: string, 文件里的帧: readonly number[], 要的: readonly number[], 宽: number, 高: number, 格式: 像素格式 = 'rgb24'): AsyncGenerator<Buffer> {
   const 位置 = new Map(文件里的帧.map((f, i) => [f, i]));
   for (const f of 要的) if (!位置.has(f)) throw new Error(`${file} 里没有原片第 ${f} 帧（只存了 ${文件里的帧.length} 个抽样帧）`);
   if (!要的.length) return;
   const 要 = new Set(要的);
   let i = 0;
   let 交了 = 0;
-  for await (const rgb of 读流(低优先级([配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', file, '-map', '0:v:0', '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 'rgb24', 'pipe:1']), 宽 * 高 * 3)) {
+  if (格式 === 'yuv420p') 要yuv420p(file);
+  for await (const rgb of 读流(低优先级([配置('ffmpeg'), '-v', 'error', '-nostdin', '-i', file, '-map', '0:v:0', '-fps_mode', 'passthrough', '-f', 'rawvideo', '-pix_fmt', 格式, 'pipe:1']), 帧字节(宽, 高, 格式))) {
     const f = 文件里的帧[i++];
     if (f === undefined) throw new Error(`${file} 的帧比记的 ${文件里的帧.length} 帧多`);
     if (!要.has(f)) continue;
