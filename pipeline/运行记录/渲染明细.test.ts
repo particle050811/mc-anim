@@ -4,6 +4,10 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { 明细报告, 明细收集, 清旧明细, 累计子孙, 解析换出, 解析等待, 读明细们, 算小结, 归类标签 } from './渲染明细.ts';
 
+vi.mock('../环境/温度.ts', () => {
+  const 无温度 = () => ({ 芯片最高温: null, 发热等级: null });
+  return { 读温度: vi.fn(无温度), 读温度并行: vi.fn(async () => 无温度()), 无温度 };
+});
 let dir: string;
 beforeEach(() => {
   dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-明细-'));

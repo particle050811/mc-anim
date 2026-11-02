@@ -13,6 +13,10 @@ const 假 = vi.hoisted(() => ({ 指纹: 'a'.repeat(64), 改的帧: new Set<numbe
 const 段 = (键: string, 帧数: number) => ({ 键, 段名: 键, 章: 0, 编号: null, 目录: `/没有/${键}`, 段: { 帧数, fps: 24, 宽: 320, 高: 180 } });
 const 甲 = 段('甲', 5);
 const 乙 = 段('乙', 3);
+vi.mock('../环境/温度.ts', () => {
+  const 无温度 = () => ({ 芯片最高温: null, 发热等级: null });
+  return { 读温度: vi.fn(无温度), 读温度并行: vi.fn(async () => 无温度()), 无温度 };
+});
 vi.mock('../环境/作品.ts', async (原) => ({ ...(await 原<typeof import('../环境/作品.ts')>()), 作品名: () => '假作品', 作品根: () => 数据根 }));
 vi.mock('../指纹/指纹.ts', () => ({ 算全部段指纹: async (任务: { 段: { 键: string } }[]) => 任务.map((t) => ({ 段: t.段.键, 指纹: 假.指纹, 项: {} })) }));
 vi.mock('../闸/闸.ts', async (原) => ({ ...(await 原<typeof import('../闸/闸.ts')>()), 过渲染闸: <T>(fn: () => Promise<T>) => (假.闸++, fn()) }));
