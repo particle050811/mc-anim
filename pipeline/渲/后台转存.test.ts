@@ -11,6 +11,11 @@ import type { 阶段记录 } from '../运行记录/阶段.ts';
 const 数据根 = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'anim-后台转存测试-'));
 process.env.ANIM_DATA = 数据根;
 vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('../环境/路径.ts')>()), 在主检出: () => true }));
+const 发起 = vi.hoisted(() => ({ 读了: 0 }));
+vi.mock('../闸/发起者.ts', async (原) => {
+  const m = await 原<typeof import('../闸/发起者.ts')>();
+  return { ...m, 读发起者: (...a: Parameters<typeof m.读发起者>) => (发起.读了++, m.读发起者(...a)) };
+});
 
 const { 跑后台子进程, 建后台转存 } = await import('./后台转存.ts');
 const { 后处理一段 } = await import('./后处理.ts');
@@ -20,7 +25,7 @@ const { 是临时名 } = await import('../缓存/回收.ts');
 const { 文件sha, 读段签 } = await import('../段签/段签.ts');
 const { 作品名 } = await import('../环境/作品.ts');
 const { 母版目录 } = await import('../环境/配置.ts');
-const { 取调度环境 } = await import('../闸/任务.ts');
+const { 取调度环境, 开任务 } = await import('../闸/任务.ts');
 const { 读调度 } = await import('../闸/调度日志.ts');
 const { 复盘 } = await import('../闸/复盘.ts');
 
@@ -184,6 +189,37 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
 });
 
 describe('一批的后台：调度日志和复盘', () => {
+  const 手动跑 = () => {
+    const 放们: ((x: null) => void)[] = [];
+    return { 放们, 跑: () => new Promise<null>((r) => void 放们.push(r)) };
+  };
+
+  it('在跑登记跟着队列：排进、开工、收工都更新，全做完清掉；调度环境只取一次（读发起者要同步跑 ps、git）', async () => {
+    const e = 取调度环境();
+    const t = 开任务(e, { 种: 'render' });
+    const 登记 = () => (JSON.parse(fs.readFileSync(path.join(e.锁目录, '在跑', `${t.info.任务}.json`), 'utf8')) as { 后台?: unknown }).后台;
+    try {
+      const 读前 = 发起.读了;
+      const 手 = 手动跑();
+      const 后台 = 建后台转存({ 级别: '视频', 记录: { 记: vi.fn(), 阶段: [] } as never, 跑: 手.跑 });
+      expect(发起.读了 - 读前).toBe(1);
+      后台.排({ 键: '登甲', 指纹: 指纹('登甲'), 标签: '标' }, () => {});
+      expect(登记()).toEqual({ 在做: '登甲', 排着: 0 });
+      后台.排({ 键: '登乙', 指纹: 指纹('登乙'), 标签: '标' }, () => {});
+      expect(登记()).toEqual({ 在做: '登甲', 排着: 1 });
+      await 等到(() => 手.放们.length === 1, '第一段开始');
+      手.放们[0]!(null);
+      await 等到(() => 手.放们.length === 2, '第二段开始');
+      expect(登记()).toEqual({ 在做: '登乙', 排着: 0 });
+      手.放们[1]!(null);
+      await 后台.等齐('批');
+      expect(登记()).toBeUndefined();
+      expect(发起.读了 - 读前).toBe(1);
+    } finally {
+      t.结束(0);
+    }
+  });
+
   it('排、起、止、满、等齐都进日志，复盘算得出后台占了多少、谁没转成', async () => {
     const e = 取调度环境();
     const 起 = 读调度(e.日志目录).length;

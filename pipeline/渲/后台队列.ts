@@ -6,12 +6,13 @@ export const 后台排队上限 = 2;
 
 export type 后台项 = { 名: string; 做: () => Promise<void> };
 
-export const 建后台队列 = (o: { 上限?: number; 出错?: (名: string, 错: unknown) => void } = {}) => {
+export const 建后台队列 = (o: { 上限?: number; 出错?: (名: string, 错: unknown) => void; /** 在做、排着变了就调（已经是变完的样子） */ 变了?: () => void } = {}) => {
   const 上限 = o.上限 ?? 后台排队上限;
   const 排着: 后台项[] = [];
   let 在做: 后台项 | null = null;
   let 等变: (() => void)[] = [];
   const 变了 = () => {
+    o.变了?.();
     const 们 = 等变;
     等变 = [];
     for (const f of 们) f();
@@ -37,7 +38,8 @@ export const 建后台队列 = (o: { 上限?: number; 出错?: (名: string, 错
   return {
     排: (t: 后台项) => {
       排着.push(t);
-      下一个();
+      if (在做) 变了();
+      else 下一个();
     },
     等空位: async () => {
       while (排着.length >= 上限) await 等下一变();
