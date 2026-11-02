@@ -25,13 +25,65 @@ export const 读资产锁 = (file = 资产锁路径()): 资产锁 => {
   }
 };
 
-/** 打包一部作品用的锁：共用的 assets/资产锁.json 并上 <作品根>/资产锁.json（没有就只用共用的）；同一个 id 两边都有就报错 */
-export const 读作品资产锁 = (作品根: string): 资产锁 => {
+/** 打包一部作品用的锁：共用的 assets/资产锁.json 并上 <作品根>/资产锁.json（没有就只用共用的）；同一个 id 两边都有就报错。
+ *  这部作品选用了材质包（读材质包选用）就再盖上材质包覆盖层（套材质包）；写锁的地方（assets add、extract --登记）读的是 读资产锁(单份)，不经这里 */
+export const 读作品资产锁 = (作品根: string, 选 = 读材质包选用(作品根)): 资产锁 => {
   const 共用 = 读资产锁();
   const 作品 = 读资产锁(作品资产锁路径(作品根));
   const 重 = Object.keys(作品).filter((id) => id in 共用);
   if (重.length) throw new Error(`资产 id 在共用锁和 ${作品资产锁路径(作品根)} 里都有：${重.join('、')}（一个 id 只登记在一侧）`);
-  return { ...共用, ...作品 };
+  return 套材质包({ ...共用, ...作品 }, 作品根, 选);
+};
+
+// 材质包兼容层（用户 11-02「找一个更好的材质包」「写个统一的兼容层…也兼容现有的光影和材质包」）：标准 Java 版资源包 zip 按资产 id 登记（类 材质包/），
+// 作品在 <作品根>/材质包.toml 写 "包" = [...] 选用（顺序同 MC 资源包界面，上面的盖下面的），anim assets 材质包 生成覆盖层锁：
+// 被包换掉的 id → 换后的字节，盖在作品锁上，打包、指纹都看盖过的（换了的贴图 sha 不同，段指纹跟着变）。没写或空 = 原版，锁、指纹都不变。
+// 试样不改作品：环境变量 ANIM_PACKS=<名,名…> 顶掉作品的选用（=原版 关掉），覆盖层锁放数据根 cache/材质包/<作品>/。变量名用 ASCII：本机 zsh 会把中文变量名搅乱。
+export const 材质包变量 = 'ANIM_PACKS';
+export const 作品材质包表路径 = (作品根: string) => path.join(作品根, '材质包.toml');
+export type 材质包选用 = { 包: string[]; 来自: '无' | '作品' | '环境' };
+export type 材质包锁 = { 包: { id: string; sha256: string }[]; 覆盖: 资产锁; 报告?: unknown };
+
+const 补前缀 = (x: string) => (x.startsWith('材质包/') ? x : `材质包/${x}`);
+
+/** 这部作品选用哪些材质包：环境变量 > <作品根>/材质包.toml 的 "包"。这个文件随 remotion.config.ts 打包，不能用 TOML 库，只认一行 "包" = [ … ] 的写法 */
+export const 读材质包选用 = (作品根: string, 环境 = process.env[材质包变量]): 材质包选用 => {
+  if (环境 !== undefined && 环境.trim() !== '') {
+    const 包 = 环境.trim() === '原版' ? [] : 环境.split(',').map((x) => x.trim()).filter(Boolean).map(补前缀);
+    return { 包, 来自: 包.length ? '环境' : '无' };
+  }
+  const f = 作品材质包表路径(作品根);
+  if (!fs.existsSync(f)) return { 包: [], 来自: '无' };
+  const 正文 = fs.readFileSync(f, 'utf8').split('\n').filter((l) => !l.trim().startsWith('#')).join('\n');
+  const m = /^\s*"?包"?\s*=\s*\[([^\]]*)\]/m.exec(正文);
+  if (!m) throw new Error(`${f}：要写成 "包" = ["材质包/<名>", …]（空数组 = 原版）`);
+  let 包: string[];
+  try {
+    包 = (JSON.parse(`[${m[1]!.replace(/,\s*$/, '')}]`) as unknown[]).map((x) => 补前缀(String(x)));
+  } catch {
+    throw new Error(`${f}：「包」里只能是双引号字符串`);
+  }
+  return { 包, 来自: 包.length ? '作品' : '无' };
+};
+
+/** 覆盖层锁放哪：作品选用的进 Git（<作品根>/材质包.锁.json，像资产锁一样钉住字节）；环境变量试样的放数据根 cache/ */
+export const 材质包锁路径 = (作品根: string, 选: 材质包选用, 根 = 数据根()) =>
+  选.来自 === '作品'
+    ? path.join(作品根, '材质包.锁.json')
+    : path.join(根, 'cache', '材质包', path.basename(作品根), `${选.包.map((x) => x.slice('材质包/'.length)).join('+')}.锁.json`);
+
+export const 套材质包 = (锁: 资产锁, 作品根: string, 选: 材质包选用): 资产锁 => {
+  if (!选.包.length) return 锁;
+  const 文件 = 材质包锁路径(作品根, 选);
+  const 重建 = `anim${选.来自 === '环境' ? ` 前面带 ${材质包变量}=${选.包.join(',')}` : ''} assets 材质包`;
+  if (!fs.existsSync(文件)) throw new Error(`选用了材质包 ${选.包.join('、')}，但覆盖层锁 ${文件} 不存在：先跑 ${重建}`);
+  const 盖 = JSON.parse(fs.readFileSync(文件, 'utf8')) as 材质包锁;
+  const 现 = 选.包.map((id) => `${id}@${锁[id]?.sha256 ?? '没登记'}`).join(',');
+  const 建时 = 盖.包.map((x) => `${x.id}@${x.sha256}`).join(',');
+  if (现 !== 建时) throw new Error(`覆盖层锁 ${文件} 是按 ${建时} 建的，现在选用 ${现}：重跑 ${重建}`);
+  const 多 = Object.keys(盖.覆盖).filter((id) => !(id in 锁));
+  if (多.length) throw new Error(`${文件} 盖了作品锁里没有的 id：${多.slice(0, 5).join('、')}（覆盖层只能换已登记的资产）`);
+  return { ...锁, ...盖.覆盖 };
 };
 
 export const 写资产锁 = (锁: 资产锁, file = 资产锁路径()) => {
