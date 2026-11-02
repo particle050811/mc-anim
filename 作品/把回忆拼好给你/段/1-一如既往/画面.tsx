@@ -21,7 +21,7 @@ import { 第一人称机位, 眼位 } from '../../地点/机位.tsx';
 import { 一楼, 一楼灯光, 隐世之境一楼 } from '../../地点/隐世之境一楼.tsx';
 import { 拍立得样式, 机位, 歌词样式, 爱心种子, 聊天缩放, 视角, 视线 } from '../../场/1-隐世之境一楼/参数.ts';
 import { 驯服聊天行 } from '../../场/1-隐世之境一楼/聊天.ts';
-import { fps, 段时钟, 段内事件帧, 第几句, type 事件名 } from '../../分镜.ts';
+import { fps, 旧帧, 段时钟, 段内事件帧, 第几句, type 事件名 } from '../../分镜.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 音效轨 } from '../../声音/音效轨.tsx';
@@ -157,9 +157,9 @@ const 大字事件: readonly { 名: 事件名; 字: string }[] = [
   { 名: '咔哒定格', 字: '咔哒定格' },
 ];
 const 大字名 = new Set<事件名>(大字事件.map((x) => x.名));
-/** 事件名从事件那一帧起留多久；大字之后再用几帧淡掉 */
+/** 事件名从事件那一帧起留多久（1 秒）；大字之后再用几秒淡掉（24 fps 时 6 帧） */
 const 标注留帧 = fps;
-const 大字淡出帧 = 6;
+const 大字淡出秒 = 旧帧(6);
 
 // 核卡点的标注：按真实帧走，定格以后照常往下数
 const 核卡点标注: React.FC = () => {
@@ -206,16 +206,16 @@ const 核卡点标注: React.FC = () => {
   );
 };
 
-// 四个要卡的事件的大字：从事件那一帧起留 1 秒再淡掉；头两帧反色、略放大，看得出正好落在哪一帧
+// 四个要卡的事件的大字：从事件那一帧起留 1 秒再淡掉；头 2/24 秒反色、头 3/24 秒略放大，看得出正好落在哪一帧
 const 事件大字: React.FC = () => {
   const f = useCurrentFrame();
   const 在显示 = 大字事件
     .map((x) => ({ ...x, 帧: 事件帧[x.名], t: f - 事件帧[x.名] }))
-    .filter((x) => x.t >= 0 && x.t < 标注留帧 + 大字淡出帧);
+    .filter((x) => x.t >= 0 && (x.t - 标注留帧) / fps < 大字淡出秒);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none', justifyContent: 'center', alignItems: 'center', gap: 14, fontFamily: uiFontFamily }}>
       {在显示.map(({ 名, 字, 帧, t }) => {
-        const 刚到 = t < 2;
+        const 刚到 = t / fps < 旧帧(2);
         return (
           <div
             key={名}
@@ -227,8 +227,8 @@ const 事件大字: React.FC = () => {
               borderRadius: 14,
               background: 刚到 ? '#ffd84a' : 'rgba(20, 22, 26, 0.6)',
               color: 刚到 ? '#202226' : '#ffd84a',
-              opacity: 1 - clamp01((t - 标注留帧 + 1) / 大字淡出帧),
-              transform: `scale(${sample([[0, 1.18], [3, 1]], t)})`,
+              opacity: 1 - clamp01(((t - 标注留帧) / fps + 旧帧(1)) / 大字淡出秒),
+              transform: `scale(${sample([[0, 1.18], [旧帧(3), 1]], t / fps)})`,
             }}
           >
             <span style={{ fontSize: 104, fontWeight: 700, lineHeight: 1.2 }}>{字}</span>
