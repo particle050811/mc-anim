@@ -15,11 +15,13 @@ import { CAKE } from '@库/物品/蛋糕.tsx';
 import 方块表图 from 'asset:贴图/场景/关键帧/方块表';
 import { Java随机 } from './弹坑.ts';
 
-/** 方块图集里的一张贴图（图集是 16 宽的竖条，一张 16×16 接一张，顺序同 textureNames） */
+/** 方块图集里的一张贴图（图集是 格 宽的竖条，一张 格×格 接一张，顺序同 textureNames；格 原版 16，材质包高清图集 32） */
 const 方块贴图 = (名: string): Png => {
   const k = textureNames.indexOf(名);
   if (k < 0) throw new Error(`方块图集里没有 ${名}`);
-  return { w: 16, h: 16, px: png(方块表图).px.subarray(k * 1024, (k + 1) * 1024) };
+  const 表 = png(方块表图);
+  const 格 = 表.w;
+  return { w: 格, h: 格, px: 表.px.subarray(k * 格 * 格 * 4, (k + 1) * 格 * 格 * 4) };
 };
 /** 平面物品的贴图层 */
 const 平面物品: Record<string, () => ItemLayer[]> = {

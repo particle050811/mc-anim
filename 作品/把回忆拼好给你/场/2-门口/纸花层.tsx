@@ -44,8 +44,8 @@ const 像素色 = (图: Png, a: number, b: number) => {
   const k = (b * 图.w + a) * 4;
   return 图.px[k + 3]! < 128 ? null : `#${[0, 1, 2].map((c) => 图.px[k + c]!.toString(16).padStart(2, '0')).join('')}`;
 };
-/** 一张樱花贴图的底色：中间那一格 */
-const 底色 = (k: number) => 像素色(瓣图们[k]!, 1, 1)!;
+/** 一张樱花贴图的底色：中间那一格（材质包的 6×6 取中间偏左上那格） */
+const 底色 = (k: number) => 像素色(瓣图们[k]!, (瓣图们[k]!.w - 1) >> 1, (瓣图们[k]!.w - 1) >> 1)!;
 
 const 色表 = new Map<string, 色组>();
 /** 第 档 档的调色板（碎纸 q，第 0～2 档）：碎纸本来的颜色往变成的樱花底色混 色进[档] */
@@ -63,10 +63,10 @@ const 档色 = (q: 纸花片, 档: number): 色组 => {
   return 色;
 };
 
-/** 3×3 贴图转 转×90°、翻了再左右翻以后，第 (i, j) 格取原图哪一格（同 樱花风.tsx） */
-const 取格 = (i: number, j: number, 转: number, 翻: boolean): [number, number] => {
-  let [a, b] = [翻 ? 2 - i : i, j];
-  for (let k = 0; k < 转; k++) [a, b] = [2 - b, a];
+/** n×n 贴图（原版 3×3；材质包 32x 是 6×6）转 转×90°、翻了再左右翻以后，第 (i, j) 格取原图哪一格（同 樱花风.tsx） */
+const 取格 = (i: number, j: number, 转: number, 翻: boolean, n = 3): [number, number] => {
+  let [a, b] = [翻 ? n - 1 - i : i, j];
+  for (let k = 0; k < 转; k++) [a, b] = [n - 1 - b, a];
   return [a, b];
 };
 
@@ -111,16 +111,19 @@ const 画碎纸 = (ctx: CanvasRenderingContext2D, q: 纸花片, 档: number, 翻
   }
 };
 
-/** 一片樱花瓣（3×3，转 转×90°）在 (x0, y0) 画；偏白 = 碎纸变的第 3 档，颜色往纸白混回 1 − 色进[3] */
+/** 一片樱花瓣（原版 3×3，转 转×90°）在 (x0, y0) 画；偏白 = 碎纸变的第 3 档，颜色往纸白混回 1 − 色进[3]。
+ *  档宽 是原版一个贴图像素的大小；材质包的高清贴图（n > 3）一格是它的 3/n，整片一样大（碎纸是自己画的格子，照旧按 档宽） */
 const 画瓣 = (ctx: CanvasRenderingContext2D, k: number, 档宽: number, 转: number, 翻: boolean, x0: number, y0: number, 偏白: boolean) => {
   const 图 = 瓣图们[k]!;
-  for (let j = 0; j < 3; j++)
-    for (let i = 0; i < 3; i++) {
-      const [a, b] = 取格(i, j, 转, 翻);
+  const n = 图.w;
+  const 格 = (档宽 * 3) / n;
+  for (let j = 0; j < n; j++)
+    for (let i = 0; i < n; i++) {
+      const [a, b] = 取格(i, j, 转, 翻, n);
       const c = 像素色(图, a, b);
       if (!c) continue;
       ctx.fillStyle = 偏白 ? 混(纸色们.近.正.W!, c, 色进[3]) : c;
-      ctx.fillRect(x0 + i * 档宽, y0 + j * 档宽, 档宽, 档宽);
+      ctx.fillRect(x0 + i * 格, y0 + j * 格, 格, 格);
     }
 };
 

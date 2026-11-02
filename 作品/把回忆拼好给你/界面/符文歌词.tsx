@@ -285,16 +285,18 @@ const 光圈 = (层: 点层, 点们: readonly (readonly [number, number])[], 档
   }
 };
 
-/** 烟花的火花：原版 spark 贴图（8×8，一个贴图像素 = 一个点）乘火花色，只画在空处、按 透 抖动 */
+/** 烟花的火花：原版 spark 贴图（8×8，一个贴图像素 = 一个点）乘火花色，只画在空处、按 透 抖动。
+ *  歌词是自己的点阵，点不随材质包变细：材质包的高清火花（16×16）隔 k 个取一个，还是 8×8 个点 */
 const 画火花 = (层: 点层, 心: readonly [number, number], 起圈: readonly [number, number], f: number, 齐: number, 种: number, 留: number) => {
   for (const s of 烟花火花(f, 齐, 种, 起圈)) {
     const tex: Png = png(火花贴图[s.档]!);
+    const k = tex.w / 8;
     const c = 数色(s.色);
-    const x0 = Math.round(心[0] + s.x - tex.w / 2);
-    const y0 = Math.round(心[1] + s.y - tex.h / 2);
-    for (let y = 0; y < tex.h; y++)
-      for (let x = 0; x < tex.w; x++) {
-        const i = (y * tex.w + x) * 4;
+    const x0 = Math.round(心[0] + s.x - 4);
+    const y0 = Math.round(心[1] + s.y - 4);
+    for (let y = 0; y < 8; y++)
+      for (let x = 0; x < 8; x++) {
+        const i = (y * k * tex.w + x * k) * 4;
         const a = tex.px[i + 3]! / 255;
         if (!a) continue;
         const X = x0 + x;

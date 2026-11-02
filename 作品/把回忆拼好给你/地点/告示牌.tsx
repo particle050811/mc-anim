@@ -8,6 +8,8 @@ import { TexBox } from '@engine/model/贴图方盒.tsx';
 import oakSign from 'asset:贴图/物品/橡木告示牌';
 
 const TEX = png(oakSign);
+/** 原版 entity/signs/oak.png 的尺寸；材质包高清贴图是它的整数倍，uv 照原版算 */
+const 贴图尺寸: [number, number] = [64, 32];
 const PX = 1 / 24;
 
 /** 告示牌的尺寸（格，相对底面中心）。字面：放字的那块，中心在牌面南边贴面处 */
@@ -22,8 +24,8 @@ export const 告示牌尺寸 = {
 /** 位：底面中心；children：字，放在字面中心的 group 里（Z 朝上，x 右、z 上） */
 export const 告示牌: React.FC<{ 位: V3; children?: React.ReactNode }> = ({ 位, children }) => (
   <group position={位}>
-    <TexBox tex={TEX} px={[24, 12, 2]} uv={[0, 0]} s={[24 * PX, 2 * PX, 12 * PX]} p={[0, 0, 20 * PX]} />
-    <TexBox tex={TEX} px={[2, 14, 2]} uv={[0, 14]} s={[2 * PX, 2 * PX, 14 * PX]} p={[0, 0, 7 * PX]} />
+    <TexBox tex={TEX} px={[24, 12, 2]} uv={[0, 0]} s={[24 * PX, 2 * PX, 12 * PX]} p={[0, 0, 20 * PX]} texSize={贴图尺寸} />
+    <TexBox tex={TEX} px={[2, 14, 2]} uv={[0, 14]} s={[2 * PX, 2 * PX, 14 * PX]} p={[0, 0, 7 * PX]} texSize={贴图尺寸} />
     {children && <group position={告示牌尺寸.字面.中心}>{children}</group>}
   </group>
 );
