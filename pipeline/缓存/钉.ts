@@ -51,7 +51,7 @@ export const 扫一键 = (种: 缓存种, 键: string, 作品 = 作品名()): �
 
 export type 删旧结果 = { 删: string[]; 删大小: number; 留: { 文件: string; 理由: string }[] };
 
-type 旧分法 = { 记录?: 运行记录; 作品?: string; 现在?: number };
+type 旧分法 = { 记录?: Pick<运行记录, '记'>; 作品?: string; 现在?: number };
 
 const 分旧的 = (种: 缓存种, 键: string, 级别: string, 新指纹: string, o: 旧分法, 警告: (s: string) => void) => {
   const 新 = 新指纹.slice(0, 16);
@@ -100,7 +100,7 @@ export const 删旧 = (种: 缓存种, 键: string, 级别: string, 新指纹: s
 };
 
 /** 刚转码完（备好母版、一次性迁移之后）：这个指纹已被压缩母版取代的 CRF1，没有理由留就删；worktree 里不删（见文件头）。返回删掉的大小 */
-export const 删已取代 = (键: string, 指纹: string, o: { 记录?: 运行记录; 作品?: string; 现在?: number; 主检出?: boolean } = {}): number => {
+export const 删已取代 = (键: string, 指纹: string, o: { 记录?: Pick<运行记录, '记'>; 作品?: string; 现在?: number; 主检出?: boolean } = {}): number => {
   if (!(o.主检出 ?? 在主检出())) return 0;
   const 警告 = (s: string) => (o.记录 ? o.记录.记('警告', s) : console.error(`!! ${s}`));
   try {

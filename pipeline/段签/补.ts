@@ -1,9 +1,12 @@
 // 取段签、补段签：film、verify 要段签时用 取段签（缺了或和母版对不上、CRF1 母版又在，就当场派生）；anim render --只派生 用 补段签 从现有 CRF1 母版回填。
 // 只从 CRF1 派生：只剩压缩母版的段，段签缺了就补不了（verify 报要重渲，不拿压缩母版的像素顶）。
 // 派生要解码母版，调用方传「等放行」（懒放行闸），真要派生时才过闸、一条命令只过一次。
+// 别的进程的后台转存可能正在动同一份 CRF1 和段签：派生前拿占用（渲/母版占用.ts）再查一遍，CRF1 被抢先转走了就不用派生。
 import fs from 'node:fs';
 import { 段签目录 } from '../环境/配置.ts';
+import { 作品名 } from '../环境/作品.ts';
 import { 压缩母版路径, 原母版路径 } from '../渲/母版.ts';
+import { 占着 } from '../渲/母版占用.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 算全部段指纹 } from '../指纹/指纹.ts';
 import type { 段信息 } from '../清单/清单.ts';
@@ -35,14 +38,23 @@ export const 同指纹重渲过 = (签: 段签 | null, 认可: 签名, 母版: s
  */
 export const 取段签 = async (段键: string, 指纹: string, 级别: string | null, opts: { 等放行: () => Promise<void>; 记录?: 运行记录 }): Promise<段签 | null> => {
   const 原 = 原母版路径(段键, 指纹);
-  const 签 = 读段签(段键, 指纹);
-  if (!fs.existsSync(原)) return 段签齐(签) ? 签 : null;
-  if (段签齐(签) && (await 对得上原母版(签, 原))) return 签;
+  /** 不用派生就是这份（可能是 null）；要派生 undefined */
+  const 现成 = async (): Promise<段签 | null | undefined> => {
+    const 签 = 读段签(段键, 指纹);
+    if (!fs.existsSync(原)) return 段签齐(签) ? 签 : null;
+    return 段签齐(签) && (await 对得上原母版(签, 原)) ? 签 : undefined;
+  };
+  const 先看 = await 现成();
+  if (先看 !== undefined) return 先看;
   await opts.等放行();
-  console.log(`== 补段签 ${段键}（${指纹.slice(0, 16)}）`);
-  const r = await 出段签(原, { 段键, 指纹, 级别, 派生: '补' });
-  if (r.自查?.结论 === '漂移') opts.记录?.记('警告', 漂移提示(段键, r.自查));
-  return r.签;
+  return 占着(段键, 指纹, 作品名(), async () => {
+    const 再看 = await 现成();
+    if (再看 !== undefined) return 再看;
+    console.log(`== 补段签 ${段键}（${指纹.slice(0, 16)}）`);
+    const r = await 出段签(原, { 段键, 指纹, 级别, 派生: '补' });
+    if (r.自查?.结论 === '漂移') opts.记录?.记('警告', 漂移提示(段键, r.自查));
+    return r.签;
+  });
 };
 
 /** anim render --只派生：这些段在这些级别下当前指纹的 CRF1 母版在、段签缺（或和它对不上）的，补段签；--重做 全部重新派生。只剩压缩母版的补不了，单独报 */
@@ -56,20 +68,26 @@ export const 补段签 = async (段们: 段信息[], 级别们: readonly 渲染�
     for (const [i, s] of 段们.entries()) {
       const 指纹 = 指纹们[i]!.指纹;
       const 母版 = 原母版路径(s.键, 指纹);
-      const 签 = 读段签(s.键, 指纹);
-      if (!fs.existsSync(母版)) {
-        if (!fs.existsSync(压缩母版路径(s.键, 指纹))) 缺母版++;
-        else if (段签齐(签) && (await 对得上母版(签, 压缩母版路径(s.键, 指纹)))) 有++;
-        else 只剩压缩.push(`${s.键}（${级别}）`);
-        continue;
-      }
-      if (!opts.重做 && 段签齐(签) && (await 对得上原母版(签, 母版))) {
-        有++;
-        continue;
-      }
+      /** 要派生 true；不用的这里记好账 */
+      const 要派生 = async () => {
+        const 签 = 读段签(s.键, 指纹);
+        if (!fs.existsSync(母版)) {
+          if (!fs.existsSync(压缩母版路径(s.键, 指纹))) 缺母版++;
+          else if (段签齐(签) && (await 对得上母版(签, 压缩母版路径(s.键, 指纹)))) 有++;
+          else 只剩压缩.push(`${s.键}（${级别}）`);
+          return false;
+        }
+        if (!opts.重做 && 段签齐(签) && (await 对得上原母版(签, 母版))) {
+          有++;
+          return false;
+        }
+        return true;
+      };
+      if (!(await 要派生())) continue;
       await opts.等放行();
       const t0 = Date.now();
-      const r = await 出段签(母版, { 段键: s.键, 指纹, 级别, 派生: '回填' });
+      const r = await 占着(s.键, 指纹, 作品名(), async () => ((await 要派生()) ? 出段签(母版, { 段键: s.键, 指纹, 级别, 派生: '回填' }) : null));
+      if (!r) continue;
       补++;
       console.log(`✓ ${s.键}（${级别}，${指纹.slice(0, 16)}）：段签 ${r.签.抽样.帧.length} 帧抽样、${r.签.声音 ? '有' : '没有'}声音，${((Date.now() - t0) / 1000).toFixed(0)} 秒${r.自查 ? `；自查：${r.自查.结论}（${r.自查.说明}）` : ''}`);
       if (r.自查?.结论 === '漂移') opts.记录.记('警告', 漂移提示(s.键, r.自查));

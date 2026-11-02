@@ -44,12 +44,13 @@ export const 是压缩母版 = (file: string) => file.endsWith(压缩后缀) || 
 /** CRF1 → 压缩母版：写到 出（调用方给临时名），核对尺寸、帧数和原来一样；不过闸（调用方过） */
 export const 转码 = async (原: string, 出: string): Promise<存法> => {
   if (是压缩母版(原)) throw new Error(`${原} 已经是压缩母版了，不再转（压两代）`);
+  // 转之前取：ffmpeg 开着文件，转的途中 CRF1 被别人删了也转得完，转完再探就抛了
+  const a = 视频信息(原);
   const 参数 = [
     '-map', '0:v:0', '-map', '0:a?', ...转码视频参数, '-c:a', 'copy',
     '-map_metadata', '-1', '-map_chapters', '-1', '-fflags', '+bitexact', '-metadata', `ANIM_STORAGE=${存法标签}`,
   ];
   await 跑(低优先级([配置('ffmpeg'), '-v', 'error', '-nostdin', '-y', '-i', 原, ...参数, 出]), { 安静: true });
-  const a = 视频信息(原);
   const b = 视频信息(出);
   if (a.宽 !== b.宽 || a.高 !== b.高 || a.帧数 !== b.帧数) throw new Error(`${原} 转码后是 ${b.宽}×${b.高} ${b.帧数} 帧，原来 ${a.宽}×${a.高} ${a.帧数} 帧`);
   return { 标签: 存法标签, 参数, ffmpeg: ffmpeg版本(), x264: 读x264版本(出) };
