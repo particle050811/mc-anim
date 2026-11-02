@@ -189,7 +189,7 @@ describe('一批的后台：调度日志和复盘', () => {
     const 起 = 读调度(e.日志目录).length;
     const 放们: ((x: { 母版: string; 结局: '压缩' | '留CRF1' } | null) => void)[] = [];
     const 记录 = { 记: vi.fn(), 阶段: [] as 阶段记录[] };
-    const 后台 = 建后台转存({ 级别: '视频', 留CRF1: false, 记录: 记录 as never, 跑: () => new Promise((r) => void 放们.push(r)) });
+    const 后台 = 建后台转存({ 级别: '视频', 记录: 记录 as never, 跑: () => new Promise((r) => void 放们.push(r)) });
     const 完们: unknown[] = [];
     for (const 键 of ['甲', '乙', '丙']) 后台.排({ 键, 指纹: 指纹(键), 标签: `标/${键}` }, (x) => void 完们.push(x));
     const 满 = 后台.等空位('丁', '标/丁');

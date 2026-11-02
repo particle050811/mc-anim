@@ -182,8 +182,9 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
     } else 待渲.push(r);
   }
   await 量阶段(opts.记录.阶段, 总标签, '清旧', () => 清命中的旧('母版', 结果.filter((r) => !待渲.includes(r)).map((r) => ({ 键: r.段.键, 指纹: r.指纹.指纹 })), 级别, opts.记录));
-  // 对照用（环境变量名必须 ASCII，非 ASCII 的名字 Node 24 Worker 段错误）
-  const 后台 = process.env.ANIM_INLINE_TRANSCODE === '1' ? null : 建后台转存({ 级别, 留CRF1: !!opts.留CRF1, 记录: opts.记录, 跑: opts.跑后台 });
+  // ANIM_INLINE_TRANSCODE 是对照和逃生口（环境变量名必须 ASCII，非 ASCII 的名字 Node 24 Worker 段错误）。
+  // 留 CRF1 的批也串行：这份 CRF1 转完就算已被取代，只有闸挡得住 film 的 备好母版、gc 在 verify 之前删它，跨进程没有别的记号
+  const 后台 = process.env.ANIM_INLINE_TRANSCODE === '1' || opts.留CRF1 ? null : 建后台转存({ 记录: opts.记录, 级别, 跑: opts.跑后台 });
   try {
     if (待渲.length) {
       const 估 = 待渲.map((r) => 预计耗时(渲染标签(r.段.键, 级别)));

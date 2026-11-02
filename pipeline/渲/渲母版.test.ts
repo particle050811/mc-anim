@@ -244,6 +244,22 @@ describe('后台转存', () => {
     }
   });
 
+  it('--留CRF1：不走后台，还在闸里当场做，CRF1 不删', async () => {
+    const 开 = 关内联();
+    try {
+      态.组合们 = [组合('留甲')];
+      const 跑 = vi.fn();
+      const 记 = 记录();
+      const [r] = await 渲染母版([段('留甲')], '视频', { 记录: 记, 重渲: true, 留CRF1: true, 跑后台: 跑 as never });
+      expect(跑).not.toHaveBeenCalled();
+      expect(r!.母版).toBe('假.x264.mkv');
+      expect(fs.existsSync(原母版路径('留甲', 指纹名))).toBe(true);
+      expect(记.阶段.some((x) => x.阶段 === '等后台')).toBe(false);
+    } finally {
+      开();
+    }
+  });
+
   it('CRF1 改名那一刻 .用过 已经在：闸外别的 render 的 删旧 挡得住刚改名的这份', async () => {
     态.组合们 = [组合('钉甲')];
     const 原 = 原母版路径('钉甲', 指纹名);

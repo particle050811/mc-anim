@@ -56,7 +56,7 @@ const 调度记 = (事: string, 字段: Record<string, unknown>) =>
 const 秒 = (起: number) => (Date.now() - 起) / 1000;
 
 /** 一批 render 的后台：渲.ts 用它排段、限流、等齐。阶段记录交回运行记录（阶段表由子进程自己写），调度日志由这边记（子进程没有任务） */
-export const 建后台转存 = (o: { 级别: string; 留CRF1: boolean; 记录: Pick<运行记录, '记' | '阶段'>; 跑?: 跑后台 }) => {
+export const 建后台转存 = (o: { 级别: string; 记录: Pick<运行记录, '记' | '阶段'>; 跑?: 跑后台 }) => {
   const 队列 = 建后台队列({ 出错: (名, e) => o.记录.记('警告', `${名} 的后台转存出错（${(e as Error).message.split('\n')[0]}），CRF1 留着，用到时再转`) });
   const 跑 = o.跑 ?? 跑后台子进程;
   const 报现状 = () =>
@@ -82,7 +82,7 @@ export const 建后台转存 = (o: { 级别: string; 留CRF1: boolean; 记录: P
           报现状();
           let x: 后处理结果 | null = null;
           try {
-            x = await 跑({ 键: 段.键, 指纹: 段.指纹, 级别: o.级别, 作品: 作品名(), 留CRF1: o.留CRF1, 标签: 段.标签 }, {
+            x = await 跑({ 键: 段.键, 指纹: 段.指纹, 级别: o.级别, 作品: 作品名(), 留CRF1: false, 标签: 段.标签 }, {
               阶段: (rs) => void o.记录.阶段.push(...rs),
               警告: (s) => o.记录.记('警告', s),
             });
