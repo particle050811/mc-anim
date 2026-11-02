@@ -100,7 +100,7 @@ describe.skipIf(!有ffmpeg)('转码', () => {
     await 存成压缩内层('存', fp, '视频');
     const 再 = 读段签('存', fp)!;
     expect(再.母版.字节sha).toBe(签.母版.字节sha);
-    expect(再.抽样.sha).toBe(签.抽样.sha);
+    expect(再.签名).toEqual(签.签名);
   });
 
   it('转码断在中间：CRF1 在，压缩母版名字下没有半截文件', async () => {

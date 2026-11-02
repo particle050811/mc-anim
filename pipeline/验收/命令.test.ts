@@ -1,5 +1,5 @@
-// verify 永远不拿压缩母版的像素按 1e-3 门槛比（用户 10-30 定母版转码存，02-实测数据.md：CRF12 地形差 > 16 占 2.4e-2，比就全不过）：
-// 新这一版只用从 CRF1 抽的无损抽样帧；抽样帧丢了报要重渲才能验收，不静默退回。数据根、作品都是临时的。
+// verify 和压缩母版（用户 11-02 定换比法）：哈希和认可版不一样的帧直接解压缩母版，比小块平均颜色，压缩噪声在门槛以下照样过；
+// 段签记的母版都没了、又要看像素，报要重渲才能验收，accept 也拒（认可参考要从这版的母版抽）。数据根、作品都是临时的。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -25,6 +25,11 @@ vi.mock('../渲/渲.ts', async (原) => ({
   ...(await 原<typeof import('../渲/渲.ts')>()),
   渲染母版: async (段们: { 键: string }[], _级别: string, 选项: Record<string, unknown>) => (渲的.push({ 键: 段们.map((s) => s.键), 选项 }), []),
 }));
+// 并排图写到临时数据根，不写主检出的 预览/
+vi.mock('../预览/预览.ts', async (原) => ({
+  ...(await 原<typeof import('../预览/预览.ts')>()),
+  新建预览目录: (主题: string) => fs.mkdtempSync(path.join(process.env.ANIM_DATA!, `预览-${主题}-`)),
+}));
 vi.mock('./基线.ts', async (原) => ({ ...(await 原<typeof import('./基线.ts')>()), 旧段号: () => '旧', 基线目录: () => process.env.ANIM_DATA! }));
 vi.mock('./验收.ts', async (原) => {
   const 真 = await 原<typeof import('./验收.ts')>();
@@ -35,18 +40,20 @@ const { 验收命令 } = await import('./命令.ts');
 const { 扫母版 } = await import('./验收.ts');
 const { 原母版路径, 压缩母版路径 } = await import('../渲/母版.ts');
 const { 存成压缩 } = await import('../渲/转存.ts');
-const { 读段签, 抽样路径 } = await import('../段签/段签.ts');
-const { 读认可, 认可文件 } = await import('./认可.ts');
+const { 读认可, 认可文件, 本平台 } = await import('./认可.ts');
+const { 参考文件 } = await import('./参考.ts');
+const { 读旁记 } = await import('./参考像素.ts');
+const { 换算 } = await import('./比较.ts');
 
 const 记录 = () => {
   const 事件: string[] = [];
   return { 记: (_: string, m: string) => 事件.push(m), 产物: [] as string[], 事件 } as unknown as 运行记录 & { 事件: string[] };
 };
-const 造 = (f: string) => {
+/** 带颗粒噪声（压缩母版和 CRF1 逐像素差得多，以前按差像素占比比就全不过）；亮一级：整片 Y 加 1，哈希都变、肉眼看不出 */
+const 造 = (f: string, 亮一级 = false) => {
   fs.mkdirSync(path.dirname(f), { recursive: true });
-  // 噪声大：压缩母版和 CRF1 差 > 16 的像素远超 1e-3，真拿压缩母版比这里就不过
   const r = spawnSync('ffmpeg', [
-    '-v', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=320x180:rate=24:duration=2,noise=alls=80:allf=t', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2:sample_rate=48000',
+    '-v', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=size=320x180:rate=24:duration=2,noise=alls=20:allf=t${亮一级 ? ',lutyuv=y=val+1' : ''}`, '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2:sample_rate=48000',
     '-c:v', 'libx264', '-preset', 'veryfast', '-qp', '0', '-threads', '1', '-pix_fmt', 'yuv420p', '-c:a', 'pcm_s16le', '-ac', '2', f,
   ]);
   if (r.status !== 0) throw new Error(String(r.stderr));
@@ -62,27 +69,35 @@ describe.skipIf(!有ffmpeg)('verify 和压缩母版', () => {
     造(原母版路径('甲', F1));
     await 验收命令['verify']!.跑(['accept', '甲', '--理由', '测试'], 记录());
     expect(读认可(认可文件('甲'))?.指纹).toBe(F1);
-    // 新指纹：同一画面（噪声种子固定），渲完转存、CRF1 删掉
+    // 新指纹：同一画面亮一级（噪声种子固定），渲完转存、CRF1 删掉
     当前.指纹 = F2;
-    造(原母版路径('甲', F2));
+    造(原母版路径('甲', F2), true);
     await 存成压缩('甲', F2, '视频');
     fs.rmSync(原母版路径('甲', F2));
   });
   afterAll(() => fs.rmSync(数据根, { recursive: true, force: true }));
 
-  it('只剩压缩母版：用段签的无损抽样帧比，过；真拿压缩母版比是过不了的', async () => {
-    读像素的.length = 0;
-    expect(await 验收命令['verify']!.跑(['甲'], 记录())).toBe(0);
-    expect(读像素的.filter((f) => f.endsWith('.x264.mkv'))).toEqual([]);
+  it('accept 记下换算、从这版的母版备好认可参考（带旁记）', () => {
     const 认 = 读认可(认可文件('甲'))!;
-    const 直比 = await 扫母版(压缩母版路径('甲', F2), { 认可: 认, 旧母版: 原母版路径('甲', F1), 阈值: { 差像素门槛: 16, 差像素占比: 1e-3, 块均值容差: 1, 响度容差LU: 0.5, 起音容差帧: 1 } });
-    expect(直比.帧结论.some((f) => f.结论 === '变了')).toBe(true);
+    expect(认.换算).toBe(换算);
+    expect(读旁记(参考文件(认, 本平台()))).toMatchObject({ 来源: 'CRF1', 帧: [0, 24, 47] });
   });
 
-  it('抽样帧丢了、CRF1 也没了：报要重渲才能验收，不比压缩母版；accept 也拒', async () => {
-    const 抽 = 抽样路径(读段签('甲', F2)!);
-    const 留 = `${抽}.留`;
-    fs.renameSync(抽, 留);
+  it('只剩压缩母版：哈希不一样的帧解压缩母版比块平均差，压缩噪声在门槛内，过', async () => {
+    const 印 = vi.spyOn(console, 'log');
+    try {
+      expect(await 验收命令['verify']!.跑(['甲'], 记录())).toBe(0);
+      const 出 = 印.mock.calls.map((c) => String(c[0])).join('\n');
+      expect(出).toMatch(/✓ 甲：和认可版.*比在阈值内（块差，像素取自认可参考；3 帧有微小差别/);
+    } finally {
+      印.mockRestore();
+    }
+  });
+
+  it('段签记的母版都没了（CRF1 删了、压缩母版也不在）：要看像素就报要重渲才能验收；accept 也拒', async () => {
+    const 压 = 压缩母版路径('甲', F2);
+    const 留 = `${压}.留`;
+    fs.renameSync(压, 留);
     try {
       读像素的.length = 0;
       const r = 记录();
@@ -91,7 +106,7 @@ describe.skipIf(!有ffmpeg)('verify 和压缩母版', () => {
       expect(读像素的).toEqual([]);
       await expect(验收命令['verify']!.跑(['accept', '甲', '--理由', '测试'], 记录())).rejects.toThrow(/要重渲才能认可/);
     } finally {
-      fs.renameSync(留, 抽);
+      fs.renameSync(留, 压);
     }
   });
 
@@ -108,18 +123,24 @@ describe.skipIf(!有ffmpeg)('verify 和压缩母版', () => {
     expect(读像素的).toEqual([]);
   });
 
-  it('认可记录的抽样间隔和段签不一样、CRF1 没了：同样报要重渲，不比压缩母版', async () => {
+  it('认可记录的抽样间隔和段签不一样：签名里没有要的帧，解压缩母版重算、都比像素，过', async () => {
     const f = 认可文件('甲');
     const 原文 = fs.readFileSync(f, 'utf8');
     fs.writeFileSync(f, 原文.replace(/^"间隔" = 24$/m, '"间隔" = 7'));
     expect(fs.readFileSync(f, 'utf8')).not.toBe(原文);
     try {
       读像素的.length = 0;
-      const r = 记录();
-      expect(await 验收命令['verify']!.跑(['甲'], r)).toBe(1);
-      expect(读像素的.filter((x) => x.endsWith('.x264.mkv'))).toEqual([]);
+      expect(await 验收命令['verify']!.跑(['甲'], 记录())).toBe(0);
+      expect(读像素的.filter((x) => x.endsWith('.x264.mkv'))).toHaveLength(1);
     } finally {
       fs.writeFileSync(f, 原文);
     }
+  });
+
+  it('只剩压缩母版的这版 accept：认可参考从压缩母版抽', async () => {
+    await 验收命令['verify']!.跑(['accept', '甲', '--理由', '测试'], 记录());
+    const 认 = 读认可(认可文件('甲'))!;
+    expect(认.指纹).toBe(F2);
+    expect(读旁记(参考文件(认, 本平台()))).toMatchObject({ 来源: '压缩母版' });
   });
 });

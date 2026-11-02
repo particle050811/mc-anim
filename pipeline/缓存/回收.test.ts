@@ -10,6 +10,7 @@ import { 加当前指纹 } from './当前指纹.ts';
 import { 执行回收, cache认识, run认识, 只报目录, type 回收计划 } from './计划.ts';
 import {
   保留集, 加交付, 加认可, 交付引用, 扫媒体, 扫webpack, 列目录, 是临时名, 规划媒体, 规划临时, 规划草稿, 规划webpack, 读认可指纹, 小计, 主要理由, 不认识条目, 扫暂存, 规划暂存,
+  扫抽样, 规划抽样,
 } from './回收.ts';
 
 const 天 = 24 * 3600 * 1000;
@@ -223,7 +224,7 @@ describe('保留集：母版', () => {
     const 旧 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     const 刚改 = 母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
+    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 打包: [], 抽样: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
     expect(删的(计划.媒体)).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
     fs.utimesSync(刚改, new Date(), new Date());
     const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 });
@@ -314,11 +315,40 @@ describe('地形暂存', () => {
   });
 });
 
+describe('段签里的抽样帧', () => {
+  it('版本 1 的 抽样.mkv（连 历史/ 里的）近期天数外的删，签.json、声音不碰；和同段同指纹认可参考一样大的标出来（多半是克隆）', async () => {
+    写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/签.json', '{}', 现在 - 9 * 天);
+    写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/声音.flac', 'x', 现在 - 9 * 天);
+    const 旧 = 写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/抽样.mkv', Buffer.alloc(300), 现在 - 9 * 天);
+    const 史 = 写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/历史/0123456789abcdef/抽样.mkv', Buffer.alloc(200), 现在 - 9 * 天);
+    const 新 = 写('段签/作品甲/6-乙/bbbbbbbbbbbbbbbb/抽样.mkv', Buffer.alloc(50), 现在 - 天);
+    写('段签/作品甲/6-丙/cccccccccccccccc/签.json', '{}', 现在 - 9 * 天); // 版本 2：没有抽样
+    写('认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-0123456789ab.mkv', Buffer.alloc(300));
+    写('认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-0123456789ab.json', '{}');
+    const 扫 = 扫抽样(path.join(根, '段签', '作品甲'), path.join(根, '认可参考', '作品甲'));
+    expect(扫.map((f) => [f.段, f.指纹, f.在历史, f.大小]).sort()).toEqual([['6-乙', 'bbbbbbbbbbbbbbbb', false, 50], ['6-甲', 'aaaaaaaaaaaaaaaa', false, 300], ['6-甲', 'aaaaaaaaaaaaaaaa', true, 200]]);
+    expect(扫.find((f) => f.路径 === 旧)!.参考同大小).toMatch(/aaaaaaaaaaaaaaaa-0123456789ab\.mkv$/);
+    expect(扫.find((f) => f.路径 === 史)!.参考同大小).toBeNull();
+    const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 抽样: 规划抽样(扫, { 现在, 近期天数: 2 }), 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
+    expect(计划.抽样.filter((f) => !f.理由.length).map((f) => f.路径).sort()).toEqual([旧, 史].sort());
+    expect(计划.抽样.find((f) => f.路径 === 新)!.理由[0]!.类).toBe('近期');
+    const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 }, 现在);
+    expect(r).toMatchObject({ 删数: 2, 删大小: 500, 失败: [] });
+    expect([旧, 史, 新].map((f) => fs.existsSync(f))).toEqual([false, false, true]);
+    expect(fs.existsSync(path.join(根, '段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/签.json'))).toBe(true);
+    expect(fs.existsSync(path.join(根, '段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/声音.flac'))).toBe(true);
+  });
+
+  it('没有段签目录：空', () => {
+    expect(扫抽样(path.join(根, '段签', '没有'), path.join(根, '认可参考', '没有'))).toEqual([]);
+  });
+});
+
 describe('列段', () => {
   it('超过天数没读过的才删，新近用过的留着（文件在 <sha 前 2>/ 下一层）', async () => {
     写('cache/列段/ab/ab旧.列段', 'xx', 现在 - 100 * 天);
     写('cache/列段/ab/ab新.列段', 'x', 现在 - 10 * 天);
-    const 计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: 规划草稿(列目录(path.join(根, 'cache', '列段')).flatMap((d) => 列目录(d.路径)), { 现在, 天数: 90 }), webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] } as 回收计划;
+    const 计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 抽样: [], 草稿: [], 列段: 规划草稿(列目录(path.join(根, 'cache', '列段')).flatMap((d) => 列目录(d.路径)), { 现在, 天数: 90 }), webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] } as 回收计划;
     expect(计划.列段.filter((f) => !f.理由.length).map((f) => f.名)).toEqual(['ab旧.列段']);
     const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 }, 现在);
     expect(r.删数).toBe(1);
