@@ -19,7 +19,7 @@
 anim 调度 [--json|--一行] | 调度 盯 | 调度 预计 <选择器>    看资源、队列和决定；改调度必填 --为什么（docs/调度.md）
 anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）；子命令都认 --help
 anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章（都不中才当章范围）
-anim render [<选择器>] --只派生 [--重做]   从现有母版补段签（段签/，母版删了 film、verify、edit-package 照样用）
+anim render [<选择器>] --只派生 [--重做]   从现有 CRF1 母版补段签（段签/，母版删了 film、edit-package 照样用；verify 哈希和认可版不同的帧要解母版）
 anim render <选择器> --重渲 --留CRF1        渲完留下 CRF1（verify --对基线 要；平时渲完转压缩母版就删 CRF1，主检出还删同段旧指纹，worktree 只新增）
 anim still <段> <帧…> --到预览 <主题> [--逐帧]（多帧默认同页连出，要逐像素比用 --逐帧）      anim stale [<选择器>] [--严格]     anim bench <段> [--帧 a-b]     anim 耗时 [<段>] [--最近 n]（每次渲染的阶段、每帧、等待、机器负载）
 anim verify [<段>] [--对基线 [--渲]]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]

@@ -113,12 +113,15 @@ describe('render 渲完删旧', () => {
     expect(在('.x264.mkv')).toBe(false);
   });
 
-  it('认可没有参考：CRF1 留（verify 要逐像素比），压缩母版不留（不比它的像素）', () => {
+  it('认可没有参考：压缩母版留（verify 比它的像素、补参考 从它抽，用户 11-02 定），已被取代的 CRF1 删；没转存的 CRF1 留', () => {
     旧母版({ 原: true, 转过: true });
     写认可记录();
     删();
+    expect(在('.mkv')).toBe(false);
+    expect(在('.x264.mkv')).toBe(true);
+    旧母版({ 原: true, 压: false });
+    删();
     expect(在('.mkv')).toBe(true);
-    expect(在('.x264.mkv')).toBe(false);
   });
 
   it('认可有参考了就不钉', () => {

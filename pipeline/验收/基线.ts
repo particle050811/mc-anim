@@ -51,6 +51,8 @@ export const 基线参照 = async (目录: string): Promise<参照> => {
     帧数: 表.帧数,
     帧们,
     签名: new Map(),
+    // 基线 PNG 是当年 ffmpeg 解成 rgb24 存的，新这一版也照这样解，换法一致才好比
+    换法: 'ffmpeg',
     像素: async function* (要的) {
       for (const f of 要的) {
         const p = 读png(文件.get(f)!);
