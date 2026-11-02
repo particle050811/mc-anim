@@ -1,15 +1,21 @@
 // 后台转存的队列：一个工作者，先排先做。限流看「排着还没开始的」：满了让下一段先别出帧，CRF1 才不会堆满盘、后台才不会越落越远。
 // 只管次序，不管做什么（做什么见 后处理.ts、后台转存.ts）；一项失败只报给 出错，不连累后面。
+import { 配置 } from '../环境/配置.ts';
 
-/** x264 -threads 4 加出帧在 10 核上放得下一个工作者，再多就和 Chrome 抢；排着的超过这么多段就让下一段等（在做的那段不算） */
-export const 后台排队上限 = 2;
+/** ANIM_BG_QUEUE 的值：排着的到这么多段就让下一段等（在做的那段不算）。0 会让下一段永远等，非数等于不限流，都当写错 */
+export const 解析排队上限 = (文: string) => {
+  const n = Number(文);
+  if (!Number.isInteger(n) || n < 1) throw new Error(`ANIM_BG_QUEUE 要是正整数：${文}`);
+  return n;
+};
 
 export type 后台项 = { 名: string; 做: () => Promise<void> };
 
 export const 建后台队列 = (o: { 上限?: number; 出错?: (名: string, 错: unknown) => void; /** 在做、排着变了就调（已经是变完的样子） */ 变了?: () => void } = {}) => {
-  const 上限 = o.上限 ?? 后台排队上限;
+  const 上限 = o.上限 ?? 解析排队上限(配置('后台排队上限'));
   const 排着: 后台项[] = [];
   let 在做: 后台项 | null = null;
+  let 起于: number | null = null;
   let 等变: (() => void)[] = [];
   const 变了 = () => {
     o.变了?.();
@@ -22,6 +28,7 @@ export const 建后台队列 = (o: { 上限?: number; 出错?: (名: string, 错
     const t = 排着.shift();
     if (!t) return 变了();
     在做 = t;
+    起于 = Date.now();
     变了();
     void (async () => {
       try {
@@ -30,6 +37,7 @@ export const 建后台队列 = (o: { 上限?: number; 出错?: (名: string, 错
         o.出错?.(t.名, e);
       } finally {
         在做 = null;
+        起于 = null;
         下一个();
       }
     })();
@@ -47,6 +55,6 @@ export const 建后台队列 = (o: { 上限?: number; 出错?: (名: string, 错
     等齐: async () => {
       while (在做 || 排着.length) await 等下一变();
     },
-    现状: () => ({ 在做: 在做?.名 ?? null, 排着: 排着.map((t) => t.名) }),
+    现状: () => ({ 在做: 在做?.名 ?? null, 排着: 排着.map((t) => t.名), 起于 }),
   };
 };

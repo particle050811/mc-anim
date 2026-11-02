@@ -204,19 +204,46 @@ describe('一批的后台：调度日志和复盘', () => {
       const 后台 = 建后台转存({ 级别: '视频', 记录: { 记: vi.fn(), 阶段: [] } as never, 跑: 手.跑 });
       expect(发起.读了 - 读前).toBe(1);
       后台.排({ 键: '登甲', 指纹: 指纹('登甲'), 标签: '标' }, () => {});
-      expect(登记()).toEqual({ 在做: '登甲', 排着: 0 });
+      expect(登记()).toEqual({ 在做: '登甲', 排着: 0, 起于: expect.any(Number) });
       后台.排({ 键: '登乙', 指纹: 指纹('登乙'), 标签: '标' }, () => {});
-      expect(登记()).toEqual({ 在做: '登甲', 排着: 1 });
+      expect(登记()).toEqual({ 在做: '登甲', 排着: 1, 起于: expect.any(Number) });
       await 等到(() => 手.放们.length === 1, '第一段开始');
       手.放们[0]!(null);
       await 等到(() => 手.放们.length === 2, '第二段开始');
-      expect(登记()).toEqual({ 在做: '登乙', 排着: 0 });
+      expect(登记()).toEqual({ 在做: '登乙', 排着: 0, 起于: expect.any(Number) });
       手.放们[1]!(null);
       await 后台.等齐('批');
       expect(登记()).toBeUndefined();
       expect(发起.读了 - 读前).toBe(1);
     } finally {
       t.结束(0);
+    }
+  });
+
+  it('ANIM_TIME_LIMIT 管到后台：一段做超了记限时杀退 124，按时做完的不杀', async () => {
+    process.env.ANIM_TIME_LIMIT = '0.05';
+    const 退 = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    try {
+      const e = 取调度环境();
+      const 起 = 读调度(e.日志目录).length;
+      const 手 = 手动跑();
+      const 后台 = 建后台转存({ 级别: '视频', 记录: { 记: vi.fn(), 阶段: [] } as never, 跑: 手.跑 });
+      后台.排({ 键: '限甲', 指纹: 指纹('限甲'), 标签: '标' }, () => {});
+      await 等到(() => 退.mock.calls.length === 1, '限时到');
+      expect(退).toHaveBeenCalledWith(124);
+      expect(读调度(e.日志目录).slice(起).find((x) => x.事 === '限时杀')).toMatchObject({ 段: '限甲', 限时: 0.05, 后台: true, 已跑秒: expect.any(Number) });
+      手.放们[0]!(null);
+      await 后台.等齐('批');
+      退.mockClear();
+      后台.排({ 键: '限乙', 指纹: 指纹('限乙'), 标签: '标' }, () => {});
+      await 等到(() => 手.放们.length === 2, '第二段开始');
+      手.放们[1]!(null);
+      await 后台.等齐('批');
+      await 睡(100);
+      expect(退).not.toHaveBeenCalled();
+    } finally {
+      delete process.env.ANIM_TIME_LIMIT;
+      退.mockRestore();
     }
   });
 

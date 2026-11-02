@@ -12,7 +12,7 @@ import {读调度} from './调度日志.ts';
 import {等条件} from './等.ts';
 import {开闸批,过放行闸,过渲染闸} from './闸.ts';
 import {判告警} from './告警.ts';
-import {写指令,路让路,指令文件,令文件} from './指令.ts';
+import {写指令,取指令,路让路,指令文件,令文件} from './指令.ts';
 import {spawn,spawnSync} from 'node:child_process';
 let dir:string;beforeEach(()=>{dir=fs.mkdtempSync(path.join(os.tmpdir(),'anim-指令-'));});afterEach(()=>fs.rmSync(dir,{recursive:true,force:true}));
 const 机=()=>({负载:0,核:10,闸:10,压力:1,free:0,压缩:0,swap:0,换出:0,GPU:0,热:0,盘:1e10,孤儿:0,进程:''});
@@ -116,6 +116,21 @@ it('拿锁后用掉放行时不删别的指令：让路还要留给下一段',as
   const e=取调度环境({锁目录:dir});let 任务='';
   await 过渲染闸(async()=>{任务=读状态(e,机,false).持锁[0]!.任务;写指令(e,任务,{动作:'让路',为什么:'下一段再说',时:Date.now(),至:Date.now()+60_000,票:'旧票',任务});
     expect(fs.existsSync(指令文件(e,任务))).toBe(true);},()=>{}, {...e,读内存:()=>null,读压力:()=>1},{种:'render',可让路:true});
+});
+it('闸放开后批还在（只有在跑登记）：取消、让路按 #pid 或任务 id 对得上，放行、改序说只能操作排队票；没后台的任务不算目标',()=>{
+  const e=取调度环境({锁目录:dir}),杀=vi.fn(),出:string[]=[],o={状态:()=>读状态(e,机,false),输出:(x:string)=>{出.push(x);},杀,进程起于:()=>0};
+  const 在跑=path.join(dir,'在跑'),id='后台任务-1';fs.mkdirSync(在跑,{recursive:true});
+  const 写=(多:object)=>fs.writeFileSync(path.join(在跑,`${id}.json`),JSON.stringify({任务:id,起:Date.now(),心跳:Date.now(),主机:e.本机,发起:{...e.发起者,pid:process.ppid},声明:{种:'render',可让路:true},...多}));
+  写({});
+  expect(()=>改调度('取消',`#${process.ppid}`,参数(['--为什么','没后台']),e,o)).toThrow('目标不存在');
+  写({后台:{在做:'甲',排着:0,起于:Date.now()},声明:{种:'render',可让路:false}});
+  expect(()=>改调度('让路',`#${process.ppid}`,参数(['--为什么','单项']),e,o)).toThrow('不能让路');
+  写({后台:{在做:'甲',排着:0,起于:Date.now()}});
+  改调度('让路',`#${process.ppid}`,参数(['--为什么','让一让']),e,o);
+  const 令=取指令(e,id);expect(令).toMatchObject({动作:'让路',任务:id});expect(令!.票).toBeUndefined();expect(出.at(-1)).toContain('后台照转');
+  for(const cmd of ['放行','先','后','恢复'])expect(()=>改调度(cmd,id,参数(['--为什么','不行']),e,o)).toThrow('只能操作排队票');
+  改调度('取消',id,参数(['--为什么','不要了']),e,o);
+  expect(杀).toHaveBeenCalledWith(process.ppid,'SIGTERM');expect(取消事件(e).at(-1)).toMatchObject({任务:id});expect(决定(e).at(-1)).toMatchObject({任务:id,结果:'已发 SIGTERM'});
 });
 it('取消：死票、死锁不发信号，决定记真实结果，不写取消事件',()=>{
   const e=取调度环境({锁目录:dir}),o=(杀:(...a:unknown[])=>void,出:string[]=[])=>({状态:()=>读状态(e,机,false),输出:(x:string)=>{出.push(x);},杀});

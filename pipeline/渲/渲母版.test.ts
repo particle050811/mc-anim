@@ -186,7 +186,8 @@ describe('后台转存', () => {
       const p = 渲染母版(键们.map((k) => 段(k)), '视频', { 记录: 记, 重渲: true, 跑后台: 手.跑 });
       // 一在做，二、三排着：第四段等空位
       await vi.waitFor(() => expect(态.环境们.length).toBe(3));
-      await 过一拍();
+      // 等满 100 毫秒才记阶段（后台转存.ts 的 等空位）
+      await new Promise((r) => setTimeout(r, 150));
       expect(态.环境们.length).toBe(3);
       手.放[0]!(压('流一'));
       await vi.waitFor(() => expect(态.环境们.length).toBe(4));

@@ -1,6 +1,6 @@
 // 后台转存队列：先排先做、一次一个、排满了让下一段等、一项失败不连累后面、等齐才算完。
 import { describe, expect, it } from 'vitest';
-import { 建后台队列 } from './后台队列.ts';
+import { 建后台队列, 解析排队上限 } from './后台队列.ts';
 
 /** 手动放行的一项：调 开 才算做完 */
 const 手动 = () => {
@@ -27,7 +27,7 @@ describe('后台队列', () => {
     for (const x of 项们) q.排({ 名: x.名, 做: async () => (次序.push(x.名), await x.手.完) });
     await 过一拍();
     expect(次序).toEqual(['甲']);
-    expect(q.现状()).toEqual({ 在做: '甲', 排着: ['乙', '丙'] });
+    expect(q.现状()).toEqual({ 在做: '甲', 排着: ['乙', '丙'], 起于: expect.any(Number) });
     项们[0]!.手.开();
     await 过一拍();
     expect(次序).toEqual(['甲', '乙']);
@@ -35,7 +35,7 @@ describe('后台队列', () => {
     项们[2]!.手.开();
     await q.等齐();
     expect(次序).toEqual(['甲', '乙', '丙']);
-    expect(q.现状()).toEqual({ 在做: null, 排着: [] });
+    expect(q.现状()).toEqual({ 在做: null, 排着: [], 起于: null });
   });
 
   it('排着的到上限才让等，在做的那段不算；腾出位子就放', async () => {
@@ -50,7 +50,7 @@ describe('后台队列', () => {
     expect(等.完).toBe(false);
     手们[0]!.开();
     await 过一拍();
-    expect(q.现状()).toEqual({ 在做: '一', 排着: ['二'] });
+    expect(q.现状()).toEqual({ 在做: '一', 排着: ['二'], 起于: expect.any(Number) });
     expect(等.完).toBe(true);
     手们[1]!.开();
     手们[2]!.开();
@@ -93,7 +93,7 @@ describe('后台队列', () => {
   });
 
   it('变了：排进、开工、收工都通知，拿到的是变完的现状', async () => {
-    const 见: { 在做: string | null; 排着: string[] }[] = [];
+    const 见: ReturnType<typeof q.现状>[] = [];
     const q = 建后台队列({ 变了: () => void 见.push(q.现状()) });
     const a = 手动();
     const b = 手动();
@@ -103,12 +103,17 @@ describe('后台队列', () => {
     await 过一拍();
     b.开();
     await q.等齐();
-    expect(见).toEqual([
+    expect(见).toMatchObject([
       { 在做: '甲', 排着: [] },
       { 在做: '甲', 排着: ['乙'] },
       { 在做: '乙', 排着: [] },
-      { 在做: null, 排着: [] },
+      { 在做: null, 排着: [], 起于: null },
     ]);
+  });
+
+  it('排队上限：正整数才行，0 和非数报错', () => {
+    expect(解析排队上限('3')).toBe(3);
+    for (const 坏 of ['0', '-1', '1.5', '两个', '']) expect(() => 解析排队上限(坏)).toThrow('ANIM_BG_QUEUE');
   });
 
   it('等齐的时候又排进来的也要等', async () => {

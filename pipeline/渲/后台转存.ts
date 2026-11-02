@@ -60,8 +60,8 @@ export const 建后台转存 = (o: { 级别: string; 记录: Pick<运行记录, 
   const 报现状 = () =>
     只提示('在跑登记', () => {
       if (!有任务(e.锁目录)) return;
-      const { 在做, 排着 } = 队列.现状();
-      开任务(e, {}).记后台(在做 || 排着.length ? { 在做, 排着: 排着.length } : undefined);
+      const { 在做, 排着, 起于 } = 队列.现状();
+      开任务(e, {}).记后台(在做 || 排着.length ? { 在做, 排着: 排着.length, 起于 } : undefined);
     });
   const 队列 = 建后台队列({ 变了: 报现状, 出错: (名, e) => o.记录.记('警告', `${名} 的后台转存出错（${(e as Error).message.split('\n')[0]}），CRF1 留着，用到时再转`) });
   const 跑 = o.跑 ?? 跑后台子进程;
@@ -78,6 +78,10 @@ export const 建后台转存 = (o: { 级别: string; 记录: Pick<运行记录, 
         做: async () => {
           const 起 = Date.now();
           调度记('后台起', { 段: 段.键, 指纹: 短, 等秒: 秒(排于) });
+          // 转存挪出闸以后 ANIM_TIME_LIMIT（闸.ts）管不到这里；这边一退，子进程靠 IPC 断开收尾
+          const 限时 = Number(process.env.ANIM_TIME_LIMIT);
+          const 限时器 = 限时 > 0 ? setTimeout(() => { 调度记('限时杀', { 段: 段.键, 限时, 后台: true, 已跑秒: 秒(起) }); process.exit(124); }, 限时 * 1000) : undefined;
+          限时器?.unref();
           let x: 后处理结果 | null = null;
           try {
             x = await 跑({ 键: 段.键, 指纹: 段.指纹, 级别: o.级别, 作品: 作品名(), 留CRF1: false, 标签: 段.标签 }, {
@@ -86,6 +90,7 @@ export const 建后台转存 = (o: { 级别: string; 记录: Pick<运行记录, 
             });
             if (!x) o.记录.记('警告', `${段.键} 的后台转存中断，CRF1 留着，film、edit-package、render --到预览 用到时再转`);
           } finally {
+            clearTimeout(限时器);
             调度记('后台止', { 段: 段.键, 指纹: 短, 秒: 秒(起), 结果: x?.结局 ?? '中断' });
             await 完(x);
           }
