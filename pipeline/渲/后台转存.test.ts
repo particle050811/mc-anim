@@ -77,6 +77,7 @@ const 起父进程 = (键: string, 自成一组 = false) => {
   const 脚本 = path.join(数据根, `父-${键}.mjs`);
   fs.writeFileSync(脚本, `const { 跑后台子进程 } = await import(${JSON.stringify(path.join(import.meta.dirname, '后台转存.ts'))});
 const 登记 = await import(${JSON.stringify(path.join(import.meta.dirname, '../闸/收尾.ts'))});
+// 和 anim render 一样：闸的收尾钩子装在信号上，收到信号就退出
 登记.登记收尾(() => {});
 const r = await 跑后台子进程(${JSON.stringify(参数(键))}, { 阶段() {}, 警告(s) { console.error(s); }, 等内存() {} });
 console.log(JSON.stringify(r));

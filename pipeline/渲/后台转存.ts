@@ -1,11 +1,11 @@
 // 后台转存（目标：全片母版墙钟接近出帧时间）：一段 CRF1 写好就放开渲染闸让下一段出帧，这段的 派生段签、转存、删 CRF1、删旧 在后台做（后处理.ts），batch 末尾等齐才返回。
 // 为什么用子进程不留在本进程：派生段签有同步 ffprobe、灰度帧和逐像素块均值，实测把事件循环堵到半秒（renderMedia 的截图、编码管道都靠它）；明细收集 又在出帧时劫持 console.log，同进程的日志会被吞；子进程杀得干净。
+// 这边被杀不用管子进程：进程一没 IPC 就断，子进程靠这个收尾（后台转存入口.ts），SIGKILL 也一样；Windows 的 kill 是无条件终止，发信号反而收不了尾。
 // 每段一个子进程，一次一个（后台队列.ts），环境里去掉祖先持锁变量：下一段可能正持着闸。没进日志的中间状态（在做谁、排着几段）写在 在跑 登记里，anim 调度 看得到。
 // 这里不过闸也不看别人的票：后台不占渲染闸，内存不够自己让（后处理.ts 的 等内存够）；macOS 上钳 QoS（后台QoS），出帧才不被挤慢。
 import spawn from 'cross-spawn';
 import path from 'node:path';
 import { 祖先持锁变量 } from '../闸/闸.ts';
-import { 登记收尾 } from '../闸/收尾.ts';
 import { 只提示 } from '../闸/文件.ts';
 import { 取调度环境, 开任务, 有任务 } from '../闸/任务.ts';
 import { 记调度 } from '../闸/调度日志.ts';
@@ -33,7 +33,6 @@ export const 跑后台子进程 = (p: 后处理参数, h: 后台钩子, 入口 =
     delete env[祖先持锁变量];
     const [命令, ...参数] = 后台QoS([process.execPath, 入口, JSON.stringify(p)]);
     const child = spawn(命令!, 参数, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'], env });
-    const 撤 = 登记收尾(() => void child.kill('SIGTERM'));
     let 结果: 后处理结果 | null = null;
     child.on('message', (m) => {
       const x = m as 后台消息;
@@ -46,10 +45,7 @@ export const 跑后台子进程 = (p: 后处理参数, h: 后台钩子, 入口 =
     });
     // 起不来时 close 也会来；报一声就够
     child.on('error', (e) => h.警告(`${p.键} 的后台转存起不来（${e.message}）`));
-    child.on('close', () => {
-      撤();
-      resolve(结果);
-    });
+    child.on('close', () => resolve(结果));
   });
 
 const 调度记 = (事: string, 字段: Record<string, unknown>) =>

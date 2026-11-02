@@ -1,5 +1,5 @@
 // 后台转存的子进程入口（后台转存.ts 起它，不要手跑）。IPC 发回警告、等内存和最后的结果；日志直接继承父进程的 stdout、stderr。
-// 父进程被 SIGKILL 收不到信号，靠 IPC 断开发现，跟着收尾退出，不留孤儿。
+// 父进程没了（信号、SIGKILL 都一样）靠 IPC 断开发现，跟着收尾退出（杀 ffmpeg、清临时文件、放占用），不留孤儿。
 import os from 'node:os';
 import { 指定作品 } from '../环境/作品.ts';
 import { 收尾, 信号码 } from '../闸/收尾.ts';
