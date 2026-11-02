@@ -27,7 +27,7 @@ describe('分镜：从网格常数推帧号', () => {
   });
 
   it('段.ts 的原声 cue：帧、帧数、入点取自分镜，增益逐帧，开头淡入到场参数的固定增益', () => {
-    const cue = 段.声音?.find((c): c is 资产cue => c.资产 === '配乐/把回忆拼好给你-抖音原声');
+    const cue = 段.声音?.find((c): c is 资产cue => c.资产 === '配乐/把回忆拼好给你-无男声DJ');
     expect(cue).toMatchObject({ 帧: 0, 帧数: 875, 入点秒: 2485 / 60, 名: '原声' });
     const 增益 = cue!.增益 as readonly number[];
     expect(增益).toHaveLength(875);

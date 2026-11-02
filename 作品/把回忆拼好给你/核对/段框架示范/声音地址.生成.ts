@@ -10,7 +10,7 @@ import 声3 from "asset:音效/把回忆拼好给你/entity.firework_rocket.twin
 
 const 声音: 声音地址 = {
   地址: {
-    "配乐/把回忆拼好给你-抖音原声": 私有配乐("配乐/把回忆拼好给你-抖音原声"),
+    "配乐/把回忆拼好给你-无男声DJ": 私有配乐("配乐/把回忆拼好给你-无男声DJ"),
     "音效/把回忆拼好给你/entity.firework_rocket.blast": 声0,
     "音效/把回忆拼好给你/entity.firework_rocket.large_blast": 声1,
     "音效/把回忆拼好给你/entity.firework_rocket.launch": 声2,
