@@ -14,7 +14,7 @@ vi.mock('../闸/闸.ts', async (原) => ({ ...(await 原<typeof import('../闸/�
 vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('../环境/路径.ts')>()), 在主检出: () => true }));
 
 const { 转码, 转码视频参数, 存法标签, 是压缩母版, 读存法标签, 读x264版本 } = await import('./转码.ts');
-const { 存成压缩, 备好母版 } = await import('./转存.ts');
+const { 存成压缩, 存成压缩内层, 备好母版 } = await import('./转存.ts');
 const { 压缩母版路径, 原母版路径, 用过于 } = await import('./母版.ts');
 const { 母版目录, 段签目录 } = await import('../环境/配置.ts');
 const { 文件sha, 读段签 } = await import('../段签/段签.ts');
@@ -86,17 +86,18 @@ describe.skipIf(!有ffmpeg)('转码', () => {
     expect(存法标签).toBe('x264-crf16-medium-t4');
   });
 
-  it('存成压缩：先派生段签，记下存法和转码前的样子；CRF1 不删；重跑同一份 CRF1 转出同样的字节、段签不变', async () => {
+  it('存成压缩：先派生段签，记下存法和转码前的样子；CRF1 不删；重跑同一份 CRF1 转出同样的字节、段签不变；已转完的 存成压缩 不再转', async () => {
     const fp = 指纹('存');
     const 文件 = 造(原母版路径('存', fp));
-    const r = await 存成压缩('存', fp, '视频');
+    const r = (await 存成压缩('存', fp, '视频'))!;
     expect(r.文件).toBe(压缩母版路径('存', fp));
     expect(fs.existsSync(文件)).toBe(true);
     const 签 = 读段签('存', fp)!;
     expect(签.母版.存法!.标签).toBe(存法标签);
     expect(签.母版.字节sha).toBe(await 文件sha(r.文件));
     expect(签.母版.转码自!.字节sha).toBe(await 文件sha(文件));
-    await 存成压缩('存', fp, '视频');
+    expect(await 存成压缩('存', fp, '视频')).toBeNull();
+    await 存成压缩内层('存', fp, '视频');
     const 再 = 读段签('存', fp)!;
     expect(再.母版.字节sha).toBe(签.母版.字节sha);
     expect(再.抽样.sha).toBe(签.抽样.sha);

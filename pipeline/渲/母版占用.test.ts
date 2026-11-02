@@ -156,7 +156,7 @@ describe.skipIf(!有ffmpeg)('后台转存占着同一指纹', () => {
     const 转 = 存成压缩('途中删', fp, '视频');
     await 等转码开始('途中删');
     fs.rmSync(原, { force: true });
-    const r = await 转;
+    const r = (await 转)!;
     expect(r.原大小).toBe(原大小);
     expect(fs.existsSync(r.文件)).toBe(true);
     expect(读段签('途中删', fp)!.母版.转码自!.字节sha).toBe(原sha);
@@ -176,6 +176,21 @@ describe.skipIf(!有ffmpeg)('后台转存占着同一指纹', () => {
     expect(fs.existsSync(压缩母版路径('途中换', fp))).toBe(false);
     const 得 = await 备好母版('途中换', fp, '视频');
     expect(读段签('途中换', fp)!.母版.字节sha).toBe(await 文件sha(得!));
+  });
+
+  it('存成压缩 等占用时别人转完删了 CRF1：拿到占用后重查，返回 null，不抛不重转', async () => {
+    const fp = 指纹('等完');
+    const 原 = 造(原母版路径('等完', fp));
+    let 等: Promise<unknown> | undefined;
+    await 占着('等完', fp, undefined, async () => {
+      等 = 存成压缩('等完', fp, '视频');
+      await 睡(50);
+      await 存成压缩内层('等完', fp, '视频');
+      fs.rmSync(原);
+    });
+    const sha = await 文件sha(压缩母版路径('等完', fp));
+    expect(await 等).toBeNull();
+    expect(await 文件sha(压缩母版路径('等完', fp))).toBe(sha);
   });
 
   it('取段签 等它放开、重查：CRF1 被转走了就用段签，不再派生', async () => {

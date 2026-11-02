@@ -15,7 +15,9 @@ vi.mock('../环境/路径.ts', async (原) => ({ ...(await 原<typeof import('..
 const { 后处理一段 } = await import('./后处理.ts');
 const { 压缩母版路径, 原母版路径 } = await import('./母版.ts');
 const { 被占着 } = await import('./母版占用.ts');
-const { 文件sha, 读段签 } = await import('../段签/段签.ts');
+const { 存成压缩 } = await import('./转存.ts');
+const { 文件sha, 历史文件名, 读段签 } = await import('../段签/段签.ts');
+const { 段签目录 } = await import('../环境/配置.ts');
 const { 作品名 } = await import('../环境/作品.ts');
 
 afterAll(() => fs.rmSync(数据根, { recursive: true, force: true }));
@@ -96,6 +98,34 @@ describe.skipIf(!有ffmpeg)('后处理一段', () => {
     const h = 钩();
     expect(await 后处理一段(参数('抢走'), h)).toEqual({ 母版: 压, 结局: '别人转了' });
     expect(h.警告们).toEqual([]);
+  });
+
+  it('等占用时别人转完了、CRF1 还没删：不重转不重派生，CRF1 不动', async () => {
+    const fp = 指纹('已转');
+    const 原 = 造(原母版路径('已转', fp));
+    await 存成压缩('已转', fp, '视频');
+    const 压 = 压缩母版路径('已转', fp);
+    const 压身份 = fs.statSync(压);
+    const 历史 = path.join(段签目录('已转', fp), 历史文件名);
+    const 历史前 = fs.existsSync(历史) ? fs.readFileSync(历史, 'utf8') : '';
+    const h = 钩();
+    expect(await 后处理一段(参数('已转'), h)).toEqual({ 母版: 压, 结局: '别人转了' });
+    expect(fs.existsSync(原)).toBe(true);
+    expect(fs.statSync(压).ino).toBe(压身份.ino);
+    expect(fs.statSync(压).mtimeMs).toBe(压身份.mtimeMs);
+    expect(fs.existsSync(历史) ? fs.readFileSync(历史, 'utf8') : '').toBe(历史前);
+    expect(h.警告们).toEqual([]);
+  });
+
+  it('同字节重渲（大小、sha 都一样，改于不同）：不算别人转了，照常转完删掉这份 CRF1', async () => {
+    const fp = 指纹('同字节');
+    const 原 = 造(原母版路径('同字节', fp));
+    await 存成压缩('同字节', fp, '视频');
+    const 以后 = new Date(Date.now() + 5000);
+    fs.utimesSync(原, 以后, 以后);
+    const r = await 后处理一段(参数('同字节'), 钩());
+    expect(r.结局).toBe('压缩');
+    expect(fs.existsSync(原)).toBe(false);
   });
 
   it('CRF1 和压缩母版都没了：警告要重渲，算丢了，不抛', async () => {

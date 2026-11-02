@@ -58,9 +58,23 @@ export const 存成压缩内层 = async (键: string, 指纹: string, 级别: st
   return { 文件: 出, 原大小: 当时.size, 新大小: fs.statSync(出).size, 秒: (Date.now() - t0) / 1000 };
 };
 
-/** 这个指纹的 CRF1 存成压缩母版（CRF1 不删，调用方定）。段签缺了或不是这份 CRF1 派生的先派生。不过闸（调用方过） */
-export const 存成压缩 = (键: string, 指纹: string, 级别: string | null, o: { 作品?: string; 记录?: 记警告 } = {}): Promise<转存结果> =>
-  占着(键, 指纹, o.作品, () => 存成压缩内层(键, 指纹, 级别, o));
+/**
+ * 等占用的这会儿别人是不是已经把现在这份 CRF1 转完了（CRF1 不在也算）。拿到占用后重查用它。
+ * 不用 不用转：它靠 对得上样子，同字节重渲时退回比 sha 判相等，这份新 CRF1 就没人转也没人删。这里 CRF1 的大小、改于都要和转码自一样
+ */
+export const 已转完 = async (键: string, 指纹: string, 作品: string) => {
+  const 签 = 读段签(键, 指纹, 作品);
+  const 压 = 压缩母版路径(键, 指纹, 作品);
+  if (!fs.existsSync(压) || !段签齐(签) || !(await 对得上母版(签, 压))) return false;
+  const 原 = 原母版路径(键, 指纹, 作品);
+  if (!fs.existsSync(原)) return true;
+  const st = fs.statSync(原);
+  return st.size === 签.母版.转码自?.大小 && st.mtimeMs === 签.母版.转码自.改于;
+};
+
+/** 这个指纹的 CRF1 存成压缩母版（CRF1 不删，调用方定）。段签缺了或不是这份 CRF1 派生的先派生。等占用时别人转完了就不再转，返回 null。不过闸（调用方过） */
+export const 存成压缩 = (键: string, 指纹: string, 级别: string | null, o: { 作品?: string; 记录?: 记警告 } = {}): Promise<转存结果 | null> =>
+  占着(键, 指纹, o.作品, async () => ((await 已转完(键, 指纹, o.作品 ?? 作品名())) ? null : 存成压缩内层(键, 指纹, 级别, o)));
 
 /** 这个指纹的压缩母版在、段签也认它、在的 CRF1 就是段签记的那份（CRF1 不在算不上，调用方自己看） */
 const 都对得上 = async (键: string, 指纹: string, 作品: string) => {

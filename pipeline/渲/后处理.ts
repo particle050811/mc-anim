@@ -8,9 +8,9 @@ import { 漂移提示 } from '../段签/补.ts';
 import { 删旧 } from '../缓存/钉.ts';
 import { 记阶段, type 阶段记录 } from '../运行记录/阶段.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
-import { 原母版路径, 现母版 } from './母版.ts';
+import { 压缩母版路径, 原母版路径, 现母版 } from './母版.ts';
 import { 占着 } from './母版占用.ts';
-import { 存成压缩内层, 还是那份 } from './转存.ts';
+import { 已转完, 存成压缩内层, 还是那份 } from './转存.ts';
 
 export type 后处理参数 = {
   键: string;
@@ -42,6 +42,8 @@ export const 后处理一段 = async (p: 后处理参数, h: 后处理钩子): P
       h.记录.记('警告', `${键} 的 CRF1 不见了，压缩母版也没有（被 gc 或别的任务删了？）：这段要重渲`);
       return { 母版: null, 结局: '丢了' };
     }
+    // CRF1 还在也可能是别人转完还没删；不重转，CRF1 留给那边的 删已取代 或 gc
+    if (await 已转完(键, 指纹, 作品)) return { 母版: 压缩母版路径(键, 指纹, 作品), 结局: '别人转了' };
     const 当时 = fs.statSync(原);
     const t1 = Date.now();
     let 有段签 = false;
