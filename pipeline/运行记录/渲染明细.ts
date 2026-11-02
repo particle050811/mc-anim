@@ -20,7 +20,7 @@ const 逐帧记的下限毫秒 = 20;
 
 export type 帧记录 = { 帧: number; 毫秒: number; 等?: Record<string, number> };
 export type 等待统计 = { 标签: string; 次: number; 总毫秒: number; 最大毫秒: number };
-export type 系统采样 = { 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
+export type 系统采样 = { 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null; /** 后台转存子进程（不算进 子进程*），这刻没在转就没有 */ 后台内存GB?: number | null; 后台CPU?: number | null };
 export type 明细小结 = { 帧数: number; 首帧毫秒: number; 中位毫秒: number; P90毫秒: number; P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[] };
 export type 渲染明细 = {
   票?: string;
@@ -77,18 +77,85 @@ const 跑取输出 = (cmd: string, args: string[]) =>
     execFile(cmd, args, { timeout: 3000, maxBuffer: 4 * 1024 * 1024 }, (err, out) => resolve(err ? null : out));
   });
 
-/** 本进程所有子孙（浏览器、ffmpeg）的内存和 CPU；Windows 没有 ps，记 null */
-export const 累计子孙 = (ps输出: string, 根: number) => {
-  const 行们 = ps输出.trim().split('\n').map((l) => l.trim().split(/\s+/).map(Number)).filter((c) => c.length >= 4 && c.every(Number.isFinite));
+/** 跑后台子进程 登记的根：也是本进程的子孙，混进 子进程* 就分不清出帧和转存各占多少 */
+const 后台根们 = new Set<number>();
+export const 登记后台根 = (pid: number) => {
+  后台根们.add(pid);
+  return () => void 后台根们.delete(pid);
+};
+
+const 空集 = new Set<number>();
+const 解析ps = (ps输出: string) => ps输出.trim().split('\n').map((l) => l.trim().split(/\s+/).map(Number)).filter((c) => c.length >= 4 && c.every(Number.isFinite));
+/** 根的子孙（不含根）；碰到排除的连它的子树一起不进 */
+const 子孙 = (行们: number[][], 根: number, 排除: ReadonlySet<number> = 空集) => {
   const 子们 = new Map<number, number[]>();
   for (const [pid, ppid] of 行们) 子们.set(ppid!, [...(子们.get(ppid!) ?? []), pid!]);
   const 在内 = new Set<number>();
   const 栈 = [根];
-  while (栈.length) for (const c of 子们.get(栈.pop()!) ?? []) if (!在内.has(c)) (在内.add(c), 栈.push(c));
+  while (栈.length) for (const c of 子们.get(栈.pop()!) ?? []) if (!在内.has(c) && !排除.has(c)) (在内.add(c), 栈.push(c));
+  return 在内;
+};
+const 合计 = (行们: number[][], 在内: ReadonlySet<number>) => {
   let kb = 0;
   let cpu = 0;
   for (const [pid, , rss, pc] of 行们) if (在内.has(pid!)) (kb += rss!, cpu += pc!);
   return { 内存GB: Number((kb / 1024 / 1024).toFixed(2)), CPU: Number(cpu.toFixed(0)) };
+};
+
+/** 本进程的子孙（浏览器、ffmpeg）的内存和 CPU，后台子进程那几棵除外；Windows 没有 ps，记 null */
+export const 累计子孙 = (ps输出: string, 根: number, 排除: ReadonlySet<number> = 空集) => {
+  const 行们 = 解析ps(ps输出);
+  return 合计(行们, 子孙(行们, 根, 排除));
+};
+
+/** 后台子进程（node、它起的 ffmpeg）连根带子孙 */
+export const 累计后台 = (ps输出: string, 根们: ReadonlySet<number>) => {
+  const 行们 = 解析ps(ps输出);
+  return 合计(行们, new Set([...根们].flatMap((r) => [r, ...子孙(行们, r)])));
+};
+
+/** ps 的 time 列：[天-][时:]分:秒[.小数]（macOS 0:00.02，Linux 00:00:02、1-00:00:02） */
+export const 解析CPU时间 = (文: string): number | null => {
+  const m = /^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+(?:\.\d+)?)$/.exec(文.trim());
+  return m ? Number(m[1] ?? 0) * 86400 + Number(m[2] ?? 0) * 3600 + Number(m[3]) * 60 + Number(m[4]) : null;
+};
+
+/** ps -o pid=,ppid=,time= 的一次读数里，根连子孙每个进程的 CPU 秒 */
+export const 读子树CPU = (ps输出: string, 根: number) => {
+  const 行们 = ps输出.trim().split('\n').map((l) => l.trim().split(/\s+/));
+  const 树 = 行们.map((c) => [Number(c[0]), Number(c[1])]).filter((c) => c.every(Number.isFinite));
+  const 在内 = new Set([根, ...子孙(树, 根)]);
+  const 出 = new Map<number, number>();
+  for (const [p, , t] of 行们) {
+    const 秒 = 解析CPU时间(t ?? '');
+    if (在内.has(Number(p)) && 秒 !== null) 出.set(Number(p), 秒);
+  }
+  return 出;
+};
+
+/**
+ * 这个进程连子孙花了多少 CPU 秒：定时读 ps，每个 pid 留最后一次读数相加。macOS 的 ps 不累计已退出的子进程，也没有 RUSAGE_CHILDREN，只能这样；
+ * 进程退出前最后一个间隔的量读不到，是估算。读不到 ps（Windows）是 null
+ */
+export const 建CPU账 = (根 = process.pid, 间隔毫秒 = 2000) => {
+  const 账 = new Map<number, number>();
+  let 读到过 = false;
+  const 读 = async () => {
+    const out = process.platform === 'win32' ? null : await 跑取输出('ps', ['-A', '-o', 'pid=,ppid=,time=']);
+    if (!out) return;
+    读到过 = true;
+    for (const [pid, 秒] of 读子树CPU(out, 根)) 账.set(pid, 秒);
+  };
+  void 读();
+  const 定时 = setInterval(() => void 读(), 间隔毫秒);
+  定时.unref();
+  return {
+    止: async (): Promise<number | null> => {
+      clearInterval(定时);
+      await 读();
+      return 读到过 ? Number([...账.values()].reduce((a, b) => a + b, 0).toFixed(1)) : null;
+    },
+  };
 };
 
 /** vm.swapusage 的 used = 123.00M */
@@ -103,7 +170,8 @@ const 采一次 = async (起: number): Promise<系统采样> => {
     process.platform === 'darwin' ? 跑取输出('sysctl', ['-n', 'vm.swapusage']) : null,
   ]);
   const 内存=读内存();
-  const 子 = ps ? 累计子孙(ps, process.pid) : null;
+  const 子 = ps ? 累计子孙(ps, process.pid, 后台根们) : null;
+  const 后 = ps && 后台根们.size ? 累计后台(ps, 后台根们) : null;
   return {
     秒: Math.round((Date.now() - 起) / 1000),
     负载: Number(os.loadavg()[0]!.toFixed(1)),
@@ -112,6 +180,7 @@ const 采一次 = async (起: number): Promise<系统采样> => {
     换出GB: 换 ? 解析换出(换) : null,
     子进程内存GB: 子?.内存GB ?? null,
     子进程CPU: 子?.CPU ?? null,
+    ...(后 ? { 后台内存GB: 后.内存GB, 后台CPU: 后.CPU } : {}),
   };
 };
 
@@ -271,6 +340,7 @@ export const 明细报告 = (d: 渲染明细, 文件?: string) => {
   if (d.系统.length) {
     const 最大 = (取: (s: 系统采样) => number | null) => Math.max(...d.系统.map((s) => 取(s) ?? 0));
     行们.push(`机器（${d.系统.length} 次采样的最大值）：负载 ${最大((s) => s.负载)}，子进程内存 ${最大((s) => s.子进程内存GB)} GB，子进程 CPU ${最大((s) => s.子进程CPU)}%，换出 ${最大((s) => s.换出GB)} GB；空闲内存最少 ${Math.min(...d.系统.map((s) => s.空闲内存GB))} GB`);
+    if (d.系统.some((s) => s.后台CPU != null)) 行们.push(`后台转存（同时在转的，不算进上面的子进程）：内存 ${最大((s) => s.后台内存GB ?? null)} GB，CPU ${最大((s) => s.后台CPU ?? null)}%`);
   }
   if (文件) 行们.push(`文件：${文件}`);
   return 行们.join('\n');

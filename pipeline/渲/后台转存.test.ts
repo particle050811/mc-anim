@@ -92,11 +92,14 @@ describe.skipIf(!有ffmpeg)('后台转存子进程', () => {
   it('转出来和内联（同进程）字节相同，段签、阶段、CRF1 都对', async () => {
     const 后 = 放样本('子进程');
     const k = 钩();
-    const r = await 跑后台子进程(参数('子进程'), k.h);
+    let 资源: { CPU秒: number | null; 机: unknown } | undefined;
+    const r = await 跑后台子进程(参数('子进程'), { ...k.h, 资源: (x) => void (资源 = x) });
     expect(r).toEqual({ 母版: 压缩母版路径('子进程', 指纹('子进程')), 结局: '压缩' });
     expect(k.警告们).toEqual([]);
     expect(fs.existsSync(后)).toBe(false);
     expect(k.阶段们.map((x) => x.阶段)).toEqual(expect.arrayContaining(['派生段签', '段签：扫母版', '转存', '删旧']));
+    expect(资源).toHaveProperty('机.闸');
+    if (process.platform !== 'win32') expect(资源!.CPU秒).toBeGreaterThan(0);
     放样本('内联');
     await 后处理一段(参数('内联'), { 收: [], 记录: { 记: () => {} } });
     expect(await 文件sha(r!.母版!)).toBe(await 文件sha(压缩母版路径('内联', 指纹('内联'))));
@@ -252,7 +255,14 @@ describe('一批的后台：调度日志和复盘', () => {
     const 起 = 读调度(e.日志目录).length;
     const 放们: ((x: { 母版: string; 结局: '压缩' | '留CRF1' } | null) => void)[] = [];
     const 记录 = { 记: vi.fn(), 阶段: [] as 阶段记录[] };
-    const 后台 = 建后台转存({ 级别: '视频', 记录: 记录 as never, 跑: () => new Promise((r) => void 放们.push(r)) });
+    const 后台 = 建后台转存({
+      级别: '视频',
+      记录: 记录 as never,
+      跑: (_, h) => {
+        h.资源?.({ CPU秒: 12, 机: { 闸: 40, 压力: 1, 负载: 3 } });
+        return new Promise((r) => void 放们.push(r));
+      },
+    });
     const 完们: unknown[] = [];
     for (const 键 of ['甲', '乙', '丙']) 后台.排({ 键, 指纹: 指纹(键), 标签: `标/${键}` }, (x) => void 完们.push(x));
     const 满 = 后台.等空位('丁', '标/丁');
@@ -270,9 +280,12 @@ describe('一批的后台：调度日志和复盘', () => {
     const 新 = 读调度(e.日志目录).slice(起);
     expect(新.filter((x) => x.事 === '后台排').map((x) => x.段)).toEqual(['甲', '乙', '丙']);
     expect(新.filter((x) => x.事 === '后台止').map((x) => x.结果)).toEqual(['压缩', '中断', '留CRF1']);
+    expect(新.find((x) => x.事 === '后台起')).toHaveProperty('机.负载');
+    expect(新.find((x) => x.事 === '后台止')).toMatchObject({ CPU秒: 12, 机: { 闸: 40, 压力: 1, 负载: 3 } });
     expect(新.some((x) => x.事 === '后台满' && x.段 === '丁')).toBe(true);
     const r = 复盘(新).后台;
     expect(r.段数).toBe(3);
+    expect(r.CPU秒).toBe(36);
     expect(r.没转成).toEqual(['乙', '丙']);
     expect(r.限流秒).toBeGreaterThan(0);
     expect(复盘(新).等闸.总秒).toBe(0);

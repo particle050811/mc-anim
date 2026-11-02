@@ -11,15 +11,18 @@ import { 取调度环境, 开任务, 有任务 } from '../闸/任务.ts';
 import { 记调度 } from '../闸/调度日志.ts';
 import { 记阶段, type 阶段记录 } from '../运行记录/阶段.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
+import { 登记后台根 } from '../运行记录/渲染明细.ts';
 import { 作品名 } from '../环境/作品.ts';
+import { 一分钟负载 } from '../环境/资源.ts';
 import { 后台QoS } from '../环境/子进程.ts';
 import { 建后台队列 } from './后台队列.ts';
-import type { 后台消息 } from './后台转存入口.ts';
+import type { 后台消息, 后台资源 } from './后台转存入口.ts';
 import type { 后处理参数, 后处理结果 } from './后处理.ts';
 
 export type 后台钩子 = {
   阶段: (rs: 阶段记录[]) => void;
   警告: (文本: string) => void;
+  资源?: (r: 后台资源) => void;
 };
 /** null：子进程没交结果就没了（被杀、起不来） */
 export type 跑后台 = (p: 后处理参数, h: 后台钩子) => Promise<后处理结果 | null>;
@@ -32,18 +35,24 @@ export const 跑后台子进程 = (p: 后处理参数, h: 后台钩子, 入口 =
     delete env[祖先持锁变量];
     const [命令, ...参数] = 后台QoS([process.execPath, 入口, JSON.stringify(p)]);
     const child = spawn(命令!, 参数, { stdio: ['ignore', 'inherit', 'inherit', 'ipc'], env });
+    // 后台QoS 是 exec，pid 就是 node 的
+    const 撤根 = child.pid ? 登记后台根(child.pid) : () => {};
     let 结果: 后处理结果 | null = null;
     child.on('message', (m) => {
       const x = m as 后台消息;
       if (x.类 === '警告') h.警告(x.文本);
       else {
         h.阶段(x.阶段);
+        h.资源?.(x.资源);
         结果 = x.结果;
       }
     });
     // 起不来时 close 也会来；报一声就够
     child.on('error', (e) => h.警告(`${p.键} 的后台转存起不来（${e.message}）`));
-    child.on('close', () => resolve(结果));
+    child.on('close', () => {
+      撤根();
+      resolve(结果);
+    });
   });
 
 const 秒 = (起: number) => (Date.now() - 起) / 1000;
@@ -77,21 +86,23 @@ export const 建后台转存 = (o: { 级别: string; 记录: Pick<运行记录, 
         名: 段.键,
         做: async () => {
           const 起 = Date.now();
-          调度记('后台起', { 段: 段.键, 指纹: 短, 等秒: 秒(排于) });
+          调度记('后台起', { 段: 段.键, 指纹: 短, 等秒: 秒(排于), 机: { 负载: 一分钟负载() } });
           // 转存挪出闸以后 ANIM_TIME_LIMIT（闸.ts）管不到这里；这边一退，子进程靠 IPC 断开收尾
           const 限时 = Number(process.env.ANIM_TIME_LIMIT);
           const 限时器 = 限时 > 0 ? setTimeout(() => { 调度记('限时杀', { 段: 段.键, 限时, 后台: true, 已跑秒: 秒(起) }); process.exit(124); }, 限时 * 1000) : undefined;
           限时器?.unref();
           let x: 后处理结果 | null = null;
+          let 资源: 后台资源 | undefined;
           try {
             x = await 跑({ 键: 段.键, 指纹: 段.指纹, 级别: o.级别, 作品: 作品名(), 留CRF1: false, 标签: 段.标签 }, {
               阶段: (rs) => void o.记录.阶段.push(...rs),
               警告: (s) => o.记录.记('警告', s),
+              资源: (r) => void (资源 = r),
             });
             if (!x) o.记录.记('警告', `${段.键} 的后台转存中断，CRF1 留着，film、edit-package、render --到预览 用到时再转`);
           } finally {
             clearTimeout(限时器);
-            调度记('后台止', { 段: 段.键, 指纹: 短, 秒: 秒(起), 结果: x?.结局 ?? '中断' });
+            调度记('后台止', { 段: 段.键, 指纹: 短, 秒: 秒(起), 结果: x?.结局 ?? '中断', CPU秒: 资源?.CPU秒 ?? null, 机: 资源?.机 });
             await 完(x);
           }
         },
