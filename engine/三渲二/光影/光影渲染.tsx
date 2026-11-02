@@ -1,8 +1,8 @@
 // 光影层：放进三渲二画布接管渲染（useFrame 优先级 1，在平涂换完材质之后），一帧四步，都只看这一帧（不跨帧累积，乱序、并行出帧结果一样）：
 // 1. 太阳的影子图：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光），深度进影子图。影子图一个纹素固定 1/32 格（不够大才放粗），
 //    框按纹素吸附，镜头动的时候影子边不游；
-// 2. 主画面画进离屏图（半精度浮点、线性）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，粒子换成乘了 粒子亮 的，画完换回来；
-// 3. 泛光：取亮部缩一半，再缩三次，每层横竖各糊一遍；
+// 2. 主画面画进离屏图（半精度浮点、线性）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，画完换回来；
+// 3. 泛光：只画粒子的泛光源（被主画面挡住的丢掉）；取亮部（加上泛光源）缩一半，再缩五次，每层横竖各糊一遍；
 // 4. 云（云的样式是 Photon体积 时）：主画面的深度换成对数深度，交给 engine/light/大气/云.ts 的 drawPhotonClouds 画进一张离屏图；
 // 5. 合成到画布：调色、叠在天（天的样式是 Photon平滑 时）和云上、叠泛光；不画天时透明度照原样（画布后面的 2D 天、远景照常透出来）。
 // 描边：开光影时不描（本作品全片不描边，规矩 不描边）。
@@ -17,7 +17,7 @@ import { Atmosphere, atmoUniforms, atmosphere } from '../../light/大气.ts';
 import { PhotonClouds, drawPhotonClouds } from '../../light/大气/云.ts';
 import { png } from '../../model/贴图.ts';
 import type { MidPassContext } from '../../voxel/中间步骤.ts';
-import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 糊片元, 缩片元, 补受光, 补水面, 补粒子, type 光影统一量 } from './着色.ts';
+import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 取光影参数, type 光影选项, type 时段, type 时段光 } from './预设.ts';
 
 /** 影子图边长（纹素） */
@@ -52,13 +52,13 @@ const 取变体 = (m: THREE.Material, u: 光影统一量): THREE.Material | null
     const 种 = 平涂受光(m) ? '' : 是粒子材质(m) ? '粒子' : (m as THREE.MeshBasicMaterial).isMeshBasicMaterial ? '水' : null;
     if (种 !== null) {
       const v = m.clone();
-      // 粒子的 uniform 每帧在原材质上改（贴图），变体和它共用同一份
-      if (种 === '粒子') (v as THREE.ShaderMaterial).uniforms = (m as THREE.ShaderMaterial).uniforms;
+      // 粒子的 uniform 每帧在原材质上改（贴图），变体和它共用同一份；粒子的变体只用来画泛光源，透明的也照加色叠
+      if (种 === '粒子') Object.assign(v, { uniforms: (m as THREE.ShaderMaterial).uniforms, blending: THREE.AdditiveBlending, depthTest: false, depthWrite: false, transparent: true });
       v.userData.光影 = true;
       v.onBeforeCompile = (shader, renderer) => {
         m.onBeforeCompile(shader, renderer);
         if (种 === '') 补受光(shader, u);
-        else if (种 === '粒子') 补粒子(shader, u);
+        else if (种 === '粒子') 补粒子源(shader, u);
         else 补水面(shader, u);
       };
       v.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影${种}`;
@@ -105,9 +105,10 @@ const 建资源 = () => {
   const 深 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
   const 云 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
   const 对数深 = 新全屏(对数深度片元, { tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
-  // 泛光四层：1/2、1/4、1/8、1/16，每层一对（糊的时候来回倒）
-  const 层 = Array.from({ length: 4 }, () => [new THREE.WebGLRenderTarget(1, 1, 浮点), new THREE.WebGLRenderTarget(1, 1, 浮点)] as const);
-  const 取亮 = 新全屏(取亮片元, { tSrc: { value: null }, texel: { value: new THREE.Vector2() }, threshold: { value: 1 }, knee: { value: 0.2 } });
+  // 泛光六层：1/2 到 1/64，每层一对（糊的时候来回倒）；后两层只在 泛光.宽 大于 0 时有分量（烟花那种大光晕）
+  const 层 = Array.from({ length: 6 }, () => [new THREE.WebGLRenderTarget(1, 1, 浮点), new THREE.WebGLRenderTarget(1, 1, 浮点)] as const);
+  const 粒源 = new THREE.WebGLRenderTarget(1, 1, 浮点);
+  const 取亮 = 新全屏(取亮片元, { tSrc: { value: null }, tAdd: { value: null }, addK: { value: 0 }, texel: { value: new THREE.Vector2() }, threshold: { value: 1 }, knee: { value: 0.2 } });
   const 缩 = 新全屏(缩片元, { tSrc: { value: null }, texel: { value: new THREE.Vector2() } });
   const 糊 = 新全屏(糊片元, { tSrc: { value: null }, dir: { value: new THREE.Vector2() } });
   const 合 = 新全屏(合成片元, {
@@ -116,6 +117,9 @@ const 建资源 = () => {
     tB1: { value: null },
     tB2: { value: null },
     tB3: { value: null },
+    tB4: { value: null },
+    tB5: { value: null },
+    bw: { value: [0, 0, 0, 0, 0, 0] },
     bloom: { value: 0 },
     sat: { value: 1 },
     con: { value: 1 },
@@ -136,7 +140,7 @@ const 建资源 = () => {
     sunN: { value: 1 },
     haloCol: { value: new THREE.Color() },
   });
-  return { u, 影, 影机, 主, 深, 云, 对数深, 层, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 太阳图: 建太阳图() };
+  return { u, 影, 影机, 主, 深, 云, 对数深, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 太阳图: 建太阳图() };
 };
 
 /** 原版太阳本体 8×8 进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；光圈色 = 本体正上方那一格（同 2D 天 的光圈），画面值 */
@@ -161,6 +165,7 @@ const 释放 = (r: 资源) => {
   r.主.depthTexture?.dispose();
   r.主.dispose();
   r.深.dispose();
+  r.粒源.dispose();
   r.云.dispose();
   r.太阳图.图.dispose();
   for (const [a, b] of r.层) {
@@ -271,6 +276,20 @@ const 收受光网格 = (scene: THREE.Scene) => {
   return { 受光, 别的 };
 };
 
+/** 泛光六层叠回去的权重：窄（泛光.宽 = 0）只用前四层，宽（= 1）往粗的层挪 */
+const 窄权 = [0.4, 0.3, 0.2, 0.1, 0, 0];
+const 宽权 = [0.1, 0.12, 0.16, 0.2, 0.22, 0.2];
+
+/** 看得见的粒子面片（单一材质） */
+const 收粒子 = (scene: THREE.Scene) => {
+  const 们: THREE.Mesh[] = [];
+  scene.traverseVisible((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && !Array.isArray(m.material) && 是粒子材质(m.material)) 们.push(m);
+  });
+  return 们;
+};
+
 const 设尺寸 = (rt: THREE.WebGLRenderTarget, w: number, h: number) => {
   if (rt.width !== w || rt.height !== h) rt.setSize(w, h);
 };
@@ -309,7 +328,6 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     sRGB乘数(u.gyGlintCol.value, 光.水.碎光色, 光.水.碎光强);
     sRGB乘数(u.gyWaterBody.value, 光.水.水体);
     u.gyReflMin.value = 光.水.近反射;
-    u.gyPartK.value = 光.粒子亮;
     const 透视 = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
     const 画天 = 选项.天 === 'Photon平滑' && 透视 && atmosphere.sky !== null;
     const 画云 = 画天 && 选项.云?.样式 === 'Photon体积' && atmosphere.clouds !== null;
@@ -341,7 +359,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const [w, h] = gl.getDrawingBufferSize(r.尺寸).toArray();
     设尺寸(r.主, w, h);
     const 还原: (() => void)[] = [];
-    const 换 = (m: THREE.Material) => (平涂受光(m) || 是粒子材质(m) || (改水 && 像水(m)) ? (取变体(m, u) ?? m) : m);
+    const 换 = (m: THREE.Material) => (平涂受光(m) || (改水 && 像水(m)) ? (取变体(m, u) ?? m) : m);
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -357,6 +375,25 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     还原.forEach((f) => f());
 
     // 3. 泛光
+    const 粒子们 = 光.粒子晕 > 0 ? 收粒子(scene) : [];
+    if (粒子们.length) {
+      设尺寸(r.粒源, w, h);
+      u.gyDepth.value = r.主.depthTexture;
+      const 藏: THREE.Object3D[] = [];
+      scene.traverseVisible((o) => {
+        if (o !== scene && !粒子们.includes(o as THREE.Mesh) && ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite)) 藏.push(o);
+      });
+      for (const o of 藏) o.visible = false;
+      const 原材: THREE.Material[] = 粒子们.map((m) => m.material as THREE.Material);
+      粒子们.forEach((m, i) => (m.material = 取变体(原材[i]!, u) ?? 原材[i]!));
+      scene.background = null;
+      gl.setRenderTarget(r.粒源);
+      gl.clear(true, true, true);
+      gl.render(scene, camera);
+      scene.background = 背景;
+      粒子们.forEach((m, i) => (m.material = 原材[i]!));
+      for (const o of 藏) o.visible = true;
+    }
     const 自动清 = gl.autoClear;
     gl.autoClear = false;
     const 画 = (x: { 场: THREE.Scene }, 到: THREE.WebGLRenderTarget | null) => {
@@ -375,6 +412,8 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       if (i === 0) {
         用.材质.uniforms.threshold!.value = 光.泛光.阈;
         用.材质.uniforms.knee!.value = 光.泛光.软;
+        用.材质.uniforms.tAdd!.value = r.粒源.texture;
+        用.材质.uniforms.addK!.value = 粒子们.length ? 光.粒子晕 : 0;
       }
       画(用, a);
       r.糊.材质.uniforms.tSrc!.value = a.texture;
@@ -428,6 +467,8 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     cu.tColor!.value = r.主.texture;
     r.层.forEach(([a], i) => (cu[`tB${i}`]!.value = a.texture));
     cu.bloom!.value = 光.泛光.强;
+    const 宽 = 光.泛光.宽 ?? 0;
+    cu.bw!.value = 窄权.map((a, i) => a + (宽权[i]! - a) * 宽);
     cu.sat!.value = 参.调色.饱和;
     cu.con!.value = 参.调色.对比;
     sRGB乘数(cu.darkTint!.value as THREE.Color, 参.调色.暗色);

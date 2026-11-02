@@ -34,7 +34,8 @@ export const 新光影统一量 = () => ({
   /** 水面反射、远处融进的天色改取 Photon 的天色图（天的样式是 Photon平滑 时） */
   gyAtmoOn: { value: 0 },
   gyAtmoSky: { value: null as THREE.Texture | null },
-  gyPartK: { value: 1 },
+  /** 主画面的深度（粒子泛光源按它丢掉被挡住的） */
+  gyDepth: { value: null as THREE.Texture | null },
 });
 
 const 受光头 = /* glsl */ `
@@ -156,11 +157,15 @@ export const 补水面 = (shader: THREE.WebGLProgramParametersWithUniforms, u: �
   shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${水头}`).replace('#include <opaque_fragment>', `${水身}\n#include <opaque_fragment>`);
 };
 
-// 粒子面片（库/特效/粒子面片.tsx 的着色器：烟花火花、闪光）：线性颜色乘 粒子亮，亮过泛光的阈才晕得出来
+// 粒子面片（库/特效/粒子面片.tsx 的着色器：烟花火花、闪光）：主画面里照原样画（颜色不变）；另画一遍只有粒子的「泛光源」，
+// 被主画面挡住的丢掉（和主画面的深度比），不过阈直接进泛光。这样烟花有光晕，人物的发光贴图（同样满亮度）不晕
 export const 是粒子材质 = (m: THREE.Material) => (m as THREE.ShaderMaterial).isShaderMaterial && (m as THREE.ShaderMaterial).vertexShader.includes('attribute vec3 iCenter');
-export const 补粒子 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量) => {
-  shader.uniforms.gyPartK = u.gyPartK;
-  shader.fragmentShader = shader.fragmentShader.replace('void main() {', 'uniform float gyPartK;\nvoid main() {').replace('gl_FragColor = c;', 'gl_FragColor = vec4( c.rgb * gyPartK, c.a );');
+export const 补粒子源 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量) => {
+  shader.uniforms.gyDepth = u.gyDepth;
+  shader.fragmentShader = shader.fragmentShader.replace(
+    'void main() {',
+    'uniform sampler2D gyDepth;\nvoid main() {\n  if ( gl_FragCoord.z > texelFetch( gyDepth, ivec2( gl_FragCoord.xy ), 0 ).r + 1e-5 ) discard;',
+  );
 };
 
 // ---------- 全屏几遍：深度换算、泛光、合成 ----------
@@ -181,9 +186,11 @@ void main() {
 
 export const 全屏顶点 = 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = vec4( position.xy, 0.0, 1.0 ); }';
 
-/** 取亮部（线性颜色，预乘透明度照原样）顺带缩到一半：四个双线性采样平均 */
+/** 取亮部（线性颜色，预乘透明度照原样）顺带缩到一半：四个双线性采样平均；粒子泛光源不过阈，乘 addK 直接加 */
 export const 取亮片元 = /* glsl */ `
 uniform sampler2D tSrc;
+uniform sampler2D tAdd;
+uniform float addK;
 uniform vec2 texel;
 uniform float threshold;
 uniform float knee;
@@ -191,7 +198,7 @@ varying vec2 vUv;
 vec3 pick( vec2 uv ) {
   vec3 c = texture2D( tSrc, uv ).rgb;
   float l = max( c.r, max( c.g, c.b ) );
-  return c * smoothstep( threshold, threshold + knee, l );
+  return c * smoothstep( threshold, threshold + knee, l ) + texture2D( tAdd, uv ).rgb * addK;
 }
 void main() {
   vec3 s = pick( vUv + texel * vec2( - 1.0, - 1.0 ) ) + pick( vUv + texel * vec2( 1.0, - 1.0 ) ) + pick( vUv + texel * vec2( - 1.0, 1.0 ) ) + pick( vUv + texel * vec2( 1.0, 1.0 ) );
@@ -245,6 +252,9 @@ uniform sampler2D tB0;
 uniform sampler2D tB1;
 uniform sampler2D tB2;
 uniform sampler2D tB3;
+uniform sampler2D tB4;
+uniform sampler2D tB5;
+uniform float bw[ 6 ];
 uniform float bloom;
 uniform float sat;
 uniform float con;
@@ -263,7 +273,8 @@ void main() {
   float l2 = clamp( dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ), 0.0, 1.0 );
   c *= mix( vec3( 1.0 ), lightTint, split * l2 );
   c += darkTint * split * ( 1.0 - l2 ) * ( 1.0 - l2 );
-  vec3 b = texture2D( tB0, vUv ).rgb * 0.4 + texture2D( tB1, vUv ).rgb * 0.3 + texture2D( tB2, vUv ).rgb * 0.2 + texture2D( tB3, vUv ).rgb * 0.1;
+  vec3 b = texture2D( tB0, vUv ).rgb * bw[ 0 ] + texture2D( tB1, vUv ).rgb * bw[ 1 ] + texture2D( tB2, vUv ).rgb * bw[ 2 ] + texture2D( tB3, vUv ).rgb * bw[ 3 ]
+    + texture2D( tB4, vUv ).rgb * bw[ 4 ] + texture2D( tB5, vUv ).rgb * bw[ 5 ];
   vec3 bs = toSRGB( b * bloom );
   vec3 bg = vec3( 0.0 );
   float bgA = 0.0;
