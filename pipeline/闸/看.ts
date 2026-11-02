@@ -76,7 +76,8 @@ export const 读状态 = (e: 调度环境, 读机 = 读机器快照, 回收 = tr
 };
 const 分 = (秒: number) => `${Math.max(0, 秒 / 60).toFixed(1)}分`;
 const G = (n: number | null) => n === null ? '?' : (n / 2 ** 30).toFixed(1) + 'G';
-export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}`;
+const 热简报 = (m: 机器快照) => `${m.芯片最高温 == null ? '' : ` 芯温${m.芯片最高温.toFixed(1)}°C`}${m.发热等级 == null ? '' : ` 热${m.发热等级}`}`;
+export const 一行状态 = (s: 调度状态) => `负载${s.机.负载?.toFixed(1) ?? '?'}/${s.机.核} 闸${s.机.闸 ?? '?'}% 压力${s.机.压力 ?? '?'}${热简报(s.机)} 持锁${s.持锁.map(x => `#${x.pid}${x.死 ? '死' : ''}`).join(',') || '无'} 排队${s.票.filter(t => !t.死).length}${s.票.some(t => t.死) ? ` 死票${s.票.filter(t => t.死).length}` : ''}`;
 /** 一张票只等自己这把锁和同队的票：放行票不等渲染锁。 */
 export const 队上占用 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票'>, 锁名: string) => ({ 持锁: 持锁.filter(x => x.锁 === 锁名), 票: 票.filter(t => path.basename(path.dirname(t.文件)) === `${锁名}.排队`) });
 /** 占锁中位数，没有预计的按它算下界。 */
@@ -91,7 +92,7 @@ export const 前方等待 = ({ 持锁, 票 }: Pick<调度状态, '持锁' | '票
 };
 /** 固定预算，字符串按 UTF-8 字节截断；20 张票也不铺满会话。完整字段用 --json。 */
 export const 渲染看 = (s: 调度状态): string => {
-    const m = s.机, lines = [`${new Date(s.时).toISOString().slice(5, 19)}Z ${一行状态(s)} free${G(m.free)} 压缩${G(m.压缩)} swap${G(m.swap)} 换出${G(m.换出)} GPU${m.GPU ?? '?'}% 热${m.热 ?? '?'} 盘${G(m.盘)}`];
+    const m = s.机, lines = [`${new Date(s.时).toISOString().slice(5, 19)}Z ${一行状态(s)} free${G(m.free)} 压缩${G(m.压缩)} swap${G(m.swap)} 换出${G(m.换出)} GPU${m.GPU ?? '?'}% 盘${G(m.盘)}`];
     const cpu = s.在跑.filter(t => !s.持锁.some(x => x.任务 === t.任务) && !s.票.some(x => x.内容?.任务 === t.任务));
     lines.push(`CPU/准备 ${cpu.slice(0, 3).map(x => `#${x.发起.pid} ${x.声明.种} ${x.发起.路 || x.发起.工作区}`).join('；') || '无登记'}；孤儿Chrome ${m.孤儿 ?? '?'}`);
     for (const x of s.持锁.slice(0, 2))

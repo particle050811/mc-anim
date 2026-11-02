@@ -4,6 +4,7 @@
 // 占地：每帧约 100 字节，一份最多几百 KB，只留最近 保留份数 份。
 import { execFile } from 'node:child_process';
 import fs from 'node:fs';
+import { 读温度并行, 无温度, type 温度读数 } from '../环境/温度.ts';
 import {读内存,读压力} from '../环境/资源.ts';
 import {当前票,闸心跳} from '../闸/闸.ts';
 import { 写JSON, 只提示 } from '../闸/文件.ts';
@@ -20,7 +21,8 @@ const 逐帧记的下限毫秒 = 20;
 
 export type 帧记录 = { 帧: number; 毫秒: number; 等?: Record<string, number> };
 export type 等待统计 = { 标签: string; 次: number; 总毫秒: number; 最大毫秒: number };
-export type 系统采样 = { 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
+type 采样时点 = '开始' | '采样' | '结束';
+export type 系统采样 = Partial<温度读数> & { 时点?: 采样时点; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
 export type 明细小结 = { 帧数: number; 首帧毫秒: number; 中位毫秒: number; P90毫秒: number; P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[] };
 export type 渲染明细 = {
   票?: string;
@@ -35,6 +37,7 @@ export type 渲染明细 = {
   等待: 等待统计[];
   阶段: 阶段记录[];
   系统: 系统采样[];
+  温度?: { 开始: 温度读数; 结束: 温度读数; 最高: 温度读数 };
   帧: 帧记录[];
 };
 
@@ -97,15 +100,18 @@ export const 解析换出 = (输出: string): number | null => {
   return m ? Number((Number(m[1]) * { K: 1 / 1024 / 1024, M: 1 / 1024, G: 1 }[m[2] as 'K' | 'M' | 'G']).toFixed(2)) : null;
 };
 
-const 采一次 = async (起: number): Promise<系统采样> => {
-  const [ps, 换] = await Promise.all([
+const 采一次 = async (起: number, 时点: 采样时点): Promise<系统采样> => {
+  // 时间戳对齐出帧的起点，不能等子进程返回后再取，否则慢探针会把峰值挪到后面的帧。
+  const 秒 = Number(((Date.now() - 起) / 1000).toFixed(3));
+  const [ps, 换, 温度] = await Promise.all([
     process.platform === 'win32' ? null : 跑取输出('ps', ['-A', '-o', 'pid=,ppid=,rss=,%cpu=']),
     process.platform === 'darwin' ? 跑取输出('sysctl', ['-n', 'vm.swapusage']) : null,
+    Promise.resolve().then(读温度并行).catch(无温度),
   ]);
   const 内存=读内存();
   const 子 = ps ? 累计子孙(ps, process.pid) : null;
   return {
-    秒: Math.round((Date.now() - 起) / 1000),
+    秒, 时点, ...温度,
     负载: Number(os.loadavg()[0]!.toFixed(1)),
     空闲内存GB: Number(((内存?.空闲 ?? os.freemem()) / 1024 ** 3).toFixed(1)),
     闸:内存?.空闲百分比??null,压力:读压力(),
@@ -113,6 +119,15 @@ const 采一次 = async (起: number): Promise<系统采样> => {
     子进程内存GB: 子?.内存GB ?? null,
     子进程CPU: 子?.CPU ?? null,
   };
+};
+
+const 温度小结 = (系统: readonly 系统采样[]): NonNullable<渲染明细['温度']> => {
+  const 取 = (s?: 系统采样): 温度读数 => ({ 芯片最高温: s?.芯片最高温 ?? null, 发热等级: s?.发热等级 ?? null });
+  const 最高 = (键: keyof 温度读数) => {
+    const 值们 = 系统.flatMap(s => s[键] == null ? [] : [s[键]!]);
+    return 值们.length ? Math.max(...值们) : null;
+  };
+  return { 开始: 取(系统.find(s => s.时点 === '开始')), 结束: 取(系统.findLast(s => s.时点 === '结束')), 最高: { 芯片最高温: 最高('芯片最高温'), 发热等级: 最高('发热等级') } };
 };
 
 /** 一次渲染的收集器：包住 renderMedia（把 verbose 日志收走不刷屏），onProgress 传进去，完了 写出 */
@@ -171,14 +186,15 @@ export class 明细收集 {
       转发?.(文本);
     };
     this.起 = Date.now();
-    this.采样中.push(采一次(this.起).then((x) => this.系统.push(x)));
-    this.定时 = setInterval(() => this.采样中.push(采一次(this.起).then((x) => this.系统.push(x))), 采样间隔毫秒);
+    this.采样中.push(采一次(this.起, '开始').then((x) => this.系统.push(x)));
+    this.定时 = setInterval(() => this.采样中.push(采一次(this.起, '采样').then((x) => this.系统.push(x))), 采样间隔毫秒);
     this.定时.unref();
     try {
       return await fn();
     } finally {
       console.log = 原;
       clearInterval(this.定时);
+      this.采样中.push(采一次(this.起, '结束').then((x) => this.系统.push(x)));
     }
   }
 
@@ -198,6 +214,7 @@ export class 明细收集 {
       等待: [...this.等待.values()].sort((a, b) => b.总毫秒 - a.总毫秒),
       阶段: 阶段.filter((r) => r.标签 === this.标签),
       系统: this.系统.sort((a, b) => a.秒 - b.秒),
+      温度: this.系统.length ? 温度小结(this.系统) : undefined,
       帧: this.帧们,
     };
     try {
@@ -242,6 +259,11 @@ export const 读明细们 = (o: { 含?: string; 最多?: number; 目录?: string
 
 const 秒 = (毫秒: number) => `${(毫秒 / 1000).toFixed(1)} 秒`;
 
+const 温度报告 = (d: 渲染明细) => {
+  const t = d.温度?.最高;
+  return [t?.芯片最高温 == null ? '' : `最高芯温 ${t.芯片最高温.toFixed(1)}°C`, t?.发热等级 == null ? '' : `最高发热等级 ${t.发热等级}`].filter(Boolean).join('，');
+};
+
 /** anim 耗时 <段>：一份明细给人看的报告 */
 export const 明细报告 = (d: 渲染明细, 文件?: string) => {
   const 帧总 = d.帧.reduce((a, f) => a + f.毫秒, 0);
@@ -266,10 +288,11 @@ export const 明细报告 = (d: 渲染明细, 文件?: string) => {
     const 最大 = (取: (s: 系统采样) => number | null) => Math.max(...d.系统.map((s) => 取(s) ?? 0));
     行们.push(`机器（${d.系统.length} 次采样的最大值）：负载 ${最大((s) => s.负载)}，子进程内存 ${最大((s) => s.子进程内存GB)} GB，子进程 CPU ${最大((s) => s.子进程CPU)}%，换出 ${最大((s) => s.换出GB)} GB；空闲内存最少 ${Math.min(...d.系统.map((s) => s.空闲内存GB))} GB`);
   }
+  if (温度报告(d)) 行们.push(`温度（采样峰值）：${温度报告(d)}`);
   if (文件) 行们.push(`文件：${文件}`);
   return 行们.join('\n');
 };
 
 /** anim 耗时：最近几次一行一条 */
 export const 明细一览 = (们: readonly { 明细: 渲染明细 }[]) =>
-  们.map(({ 明细: d }) => `${d.开始}  ${d.总秒.toFixed(0).padStart(5)} 秒  ${String(d.小结.帧数).padStart(5)} 帧  中位 ${String(d.小结.中位毫秒).padStart(5)} 毫秒  P90 ${String(d.小结.P90毫秒).padStart(5)}  首帧 ${秒(d.小结.首帧毫秒).padStart(8)}  ${d.等待[0]?.标签 ?? ''}  ${d.标签}`).join('\n');
+  们.map(({ 明细: d }) => `${d.开始}  ${d.总秒.toFixed(0).padStart(5)} 秒  ${String(d.小结.帧数).padStart(5)} 帧  中位 ${String(d.小结.中位毫秒).padStart(5)} 毫秒  P90 ${String(d.小结.P90毫秒).padStart(5)}  首帧 ${秒(d.小结.首帧毫秒).padStart(8)}  ${d.等待[0]?.标签 ?? ''}  ${d.标签}${温度报告(d) ? '  ' + 温度报告(d) : ''}`).join('\n');

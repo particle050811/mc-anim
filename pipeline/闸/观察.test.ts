@@ -63,10 +63,10 @@ it('等待者已写的告警能由后来挂上的盯消费，不能只更新去�
 it.skipIf(process.platform !== 'darwin')('查看并行采样保持闸口径、缺读数不伪造零，六项同时发起',async()=>{
   const vm='Mach Virtual Memory Statistics: (page size of 16384 bytes)\nPages free: 200000.\nPages inactive: 100000.\nPages speculative: 2000.\nPages purgeable: 1000.\nPages occupied by compressor: 300.\nSwapouts: 400.';
   const 起:string[]=[],完成:Array<()=>void>=[];
-  const pending=读机器快照并行(async(cmd,args)=>{起.push(cmd+' '+args.join(' '));await new Promise<void>(r=>完成.push(r));return cmd==='vm_stat'?vm:args.includes('vm.swapusage')?'total = 2048.00M used = 1024.00M':args.includes('kern.memorystatus_vm_pressure_level')?'4':cmd==='ioreg'?'"Device Utilization %" = 93':cmd==='notifyutil'?'state: 1':'';});
-  expect(起).toHaveLength(6);for(const f of 完成)f();const s=await pending;
+  const pending=读机器快照并行(async(cmd,args)=>{起.push(cmd+' '+args.join(' '));await new Promise<void>(r=>完成.push(r));return cmd==='vm_stat'?vm:args.includes('vm.swapusage')?'total = 2048.00M used = 1024.00M':args.includes('kern.memorystatus_vm_pressure_level')?'4':cmd==='ioreg'?'"Device Utilization %" = 93':'';},async()=>({芯片最高温:72.5,发热等级:1}));
+  expect(起).toHaveLength(5);for(const f of 完成)f();const s=await pending;
   expect(s.闸).toBe(Math.round(解析vm_stat(vm,os.totalmem())/os.totalmem()*100));expect(s.free).toBe(200000*16384);expect(s.压缩).toBe(300*16384);expect(s.swap).toBe(2**30);expect(s.压力).toBe(4);expect(s.GPU).toBe(93);expect(s.热).toBe(1);
-  const empty=await 读机器快照并行(async()=> '');expect([empty.闸,empty.压力,empty.free,empty.swap,empty.GPU,empty.热,empty.孤儿]).toEqual([null,null,null,null,null,null,null]);
+  const empty=await 读机器快照并行(async()=> '',async()=>({芯片最高温:null,发热等级:null}));expect([empty.闸,empty.压力,empty.free,empty.swap,empty.GPU,empty.热,empty.孤儿]).toEqual([null,null,null,null,null,null,null]);
 });
 
 it('盯把快照与补读日志的同一任务止合并为一次通知',async()=>{

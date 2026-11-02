@@ -16,6 +16,10 @@ const 态 = vi.hoisted(() => ({
   表: { 暮色: 'v1' } as Record<string, string>,
 }));
 
+vi.mock('../环境/温度.ts', () => {
+  const 无温度 = () => ({ 芯片最高温: null, 发热等级: null });
+  return { 读温度: vi.fn(无温度), 读温度并行: vi.fn(async () => 无温度()), 无温度 };
+});
 vi.mock('@remotion/bundler', () => ({ bundle: async () => '假包' }));
 vi.mock('@remotion/renderer', () => {
   const 出 = async (o: { envVariables: Record<string, string> }, 文件: string) => {
