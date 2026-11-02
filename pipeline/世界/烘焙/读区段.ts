@@ -1,6 +1,7 @@
-// 读整个地形包的区段（转码、核对、训练用）：格式 1（gzip，转码的来源）和现行的格式 2 都认。
-// 引擎和查询只读现行格式（engine/voxel/区段解码.ts）；格式 1 只留在这里，不进任何段的依赖闭包，为什么见 docs/决策/0011-地形压缩.md。
+// 转码、核对、训练读取格式 1、2、3；旧格式解码仅留在 pipeline，不进任何段的依赖闭包。
 import fs from 'node:fs';
+import { 解区段 as 解格式2区段 } from './格式2解码.ts';
+import { 读模型, 模型文件名, type 区段模型 } from '../../../engine/voxel/区段模型.ts';
 import path from 'node:path';
 import { gunzipSync, gzipSync } from 'node:zlib';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
@@ -55,7 +56,7 @@ export const 块格式 = (头: Uint8Array) => {
   return dv.getUint32(4, true);
 };
 
-/** 块文件头的索引，不管格式几（两种格式索引布局一样） */
+/** 块文件头的索引，不管格式几（各版索引布局一样） */
 export const 读块索引 = (库: 体素库, 头: Uint8Array) => {
   const dv = new DataView(头.buffer, 头.byteOffset, 库.区段包.tileHeaderLen);
   return Uint32Array.from({ length: 2 * 库.区段包.tileEntryCount }, (_, k) => dv.getUint32(16 + 4 * k, true));
@@ -68,12 +69,20 @@ export const 块文件们 = (dir: string) =>
     .sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
 export const 块号 = (文件名: string) => 文件名.split('.').slice(0, 2).map(Number) as [number, number];
 
+const 模型缓存 = new Map<string, 区段模型>();
+export const 读包模型 = (dir: string) => {
+  let m = 模型缓存.get(dir);
+  if (!m) { m = 读模型(fs.readFileSync(path.join(dir, 模型文件名))); 模型缓存.set(dir, m); }
+  return m;
+};
+
 /** 一个块文件的区段，按文件里的先后；取 才解 */
 export function* 块里的区段(库: 体素库, 文件: string) {
   const buf = fs.readFileSync(文件);
   const 头 = new Uint8Array(buf.buffer, buf.byteOffset, 库.区段包.tileHeaderLen);
   const 格式 = 块格式(头);
-  if (格式 !== 1 && 格式 !== 库.区段包.formatVersion) throw new Error(`${文件} 是格式 ${格式}，不认`);
+  if (格式 !== 1 && 格式 !== 2 && 格式 !== 库.区段包.formatVersion) throw new Error(`${文件} 是格式 ${格式}，不认`);
+  const 模型 = 格式 === 3 ? 读包模型(path.dirname(文件)) : null;
   const 索引 = 读块索引(库, 头);
   const [ti, tj] = 块号(path.basename(文件));
   const 项: { slot: number; off: number; len: number }[] = [];
@@ -82,7 +91,7 @@ export function* 块里的区段(库: 体素库, 文件: string) {
   for (const { slot, off, len } of 项) {
     const raw = new Uint8Array(buf.buffer, buf.byteOffset + off, len);
     const id = 库.区段包.sectionAtIndex(ti, tj, slot);
-    yield { slot, id, 字节: raw, 取: (): SectionData => (格式 === 1 ? 解格式1区段(raw) : 库.区段解码.解区段(raw, id)) };
+    yield { slot, id, 字节: raw, 取: (): SectionData => (格式 === 1 ? 解格式1区段(raw) : 格式 === 2 ? 解格式2区段(raw, id) : 库.区段解码.解区段(raw, id, 模型!)) };
   }
 }
 

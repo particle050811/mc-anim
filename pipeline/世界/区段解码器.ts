@@ -8,15 +8,11 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { 代码根 } from '../环境/路径.ts';
-import { 走模型, 到列优先, 表布局, type 记号器 } from './烘焙/区段编码.ts';
-import { 遍历区段 } from './烘焙/读区段.ts';
-import type { 体素库 } from './体素库.ts';
 
 const sha = (b: Uint8Array | string) => crypto.createHash('sha256').update(b).digest('hex');
 const 源码指纹 = (源码: string) => sha(源码.replace(/\r\n/g, '\n')); // Windows 上 git 可能把换行改成 CRLF
 export const 解码器源码 = () => path.join(代码根(), 'wasm', '区段解码.ts');
 export const 解码器生成文件 = () => path.join(代码根(), 'engine', 'voxel', '区段解码器.生成.ts');
-export const 模型表生成文件 = () => path.join(代码根(), 'engine', 'voxel', '区段模型表.生成.ts');
 
 /** 优化选项进 WASM 字节，改了等于换解码器 */
 const asc参数 = ['--optimizeLevel', '3', '--shrinkLevel', '0', '--noAssert', '--runtime', 'stub', '--use', 'abort=', '--initialMemory', '8', '--converge'];
@@ -55,44 +51,3 @@ export const 构建解码器 = (o: { 检查: boolean }) => {
   if (!一样) fs.writeFileSync(f, 文本);
   return { 大小: wasm.length, sha256: sha(wasm), 一样 };
 };
-
-class 数频率 implements 记号器 {
-  n: Float64Array;
-  private 表: Uint16Array;
-  constructor(表: Uint16Array) {
-    this.表 = 表;
-    this.n = new Float64Array(2 * 表.length);
-  }
-  bit(ps: Uint16Array, i: number, b: number) {
-    if (ps === this.表) this.n[2 * i + b]!++; // 色板号的概率每区段含义不同，不学
-    return b;
-  }
-}
-
-/** 每个包抽一部分区段（按文件名、索引顺序每 抽 个取一个）数频率，出初值；同样的包、同样的 抽 出同样的表 */
-export const 训练模型表 = (库: 体素库, 包目录们: string[], 抽: number) => {
-  const 表 = new Uint16Array(表布局.总).fill(1024);
-  const 计 = new 数频率(表);
-  let 区段 = 0;
-  for (const dir of 包目录们) {
-    let 见 = 0;
-    for (const { 取 } of 遍历区段(库, dir)) {
-      if (见++ % 抽) continue;
-      const d = 取();
-      走模型(计, 到列优先(d), d.nz, d.palette.length / 2, d.L, 表);
-      区段++;
-    }
-  }
-  const 初 = new Uint16Array(表布局.总).fill(1024);
-  for (let i = 0; i < 初.length; i++) {
-    const n0 = 计.n[2 * i]!, n1 = 计.n[2 * i + 1]!;
-    if (n0 + n1) 初[i] = Math.min(2017, Math.max(31, Math.round(((n0 + 0.4) / (n0 + n1 + 0.8)) * 2048)));
-  }
-  return { 初, 区段 };
-};
-
-export const 模型表文件内容 = (初: Uint16Array, 依据: string) =>
-  `// anim world 解码器 --训练 生成，别手改：区段模型的初值（docs/决策/0011-地形压缩.md）。它是地形包格式的一部分，换表要升格式版本、全部地形包重转。\n` +
-  `// ${依据}\n` +
-  `// 布局（下标）：p1 0、p2 384、p3 768 各 128 × 3 级，跳 1152 是 64 × 3 级，整列 1344 是 9 × 3 级；值是「这一位是 0」的概率 × 2048。\n` +
-  `export const 初值表 = Uint16Array.of(${[...初].join(',')});\n`;

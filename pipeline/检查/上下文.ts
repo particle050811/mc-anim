@@ -45,7 +45,8 @@ export const 是渲染代码 = (p: string) => 渲染层前缀.some((x) => p.star
  * 段、场、核对目录下的 环境.ts（<环境> 的声明）也是：check 执行它、查声明。
  * 地形环境 只有两个环境变量名：页面和 pipeline/渲/地形注入.ts 共用。
  */
-const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境'].map((x) => `engine/段/${x}.ts`);
+// 区段模型只做 TypedArray 与字节转换，编码、检查和浏览器共用同一份格式定义。
+const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
 export const 是纯模块 = (p: string) =>
   engine纯模块.includes(p) ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||

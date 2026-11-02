@@ -4,8 +4,11 @@
 // - 染色方块照游戏重挑群系（BiomeManager.getBiome 的种子抖动），交界颜色和 mcai mesh 导出的地标网格一致。
 // - 查不到的方块状态、群系照常烘焙，记进 缺失.tsv。
 // 只管算和写进给定目录；版本、登记、锁在 版本.ts 和 命令.ts。
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { 默认模型, 模型字节, 模型文件名 } from '../../../engine/voxel/区段模型.ts';
+import { 转码目录 } from './转码.ts';
+import { 遍历区段 } from './读区段.ts';
 import type { 包信息 } from '../../../engine/voxel/区段包.ts';
 import type { 解开的列段 } from '../列段.ts';
 import type { 体素库 } from '../体素库.ts';
@@ -39,6 +42,11 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
   const [OX, OY, OZ] = p.原点;
   if (OX % tileCols || OZ % tileCols) throw new Error(`原点的 x、z 要是 ${tileCols} 的整数倍，给的是 ${OX},${OZ}`);
   if (!p.区域们.length) throw new Error('没有区域可烘');
+  // 先落中性表的暂存包，等状态号和全部区段固定后再学一次；和转码共用定稿路径。
+  const 输出 = p.输出;
+  p = { ...p, 输出: path.join(输出, '.训练输入') };
+  mkdirSync(p.输出, { recursive: true });
+  writeFileSync(path.join(p.输出, 模型文件名), 模型字节(默认模型()));
   const padCols = 2 ** coarsestLevel; // 每块四周多带的列数
   const paddedCols = tileCols + 2 * padCols;
   const 表 = new 条目表(库.知识);
@@ -245,5 +253,10 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
     ...[...missingBiomes].sort((a, b) => b[1] - a[1]).map(([k, count]) => `群系\t${k}\t${count}`),
   ];
   writeFileSync(path.join(p.输出, '缺失.tsv'), ['类\t名\t第0级格数', ...missingRows].join('\n') + '\n');
+  const 训练 = await 转码目录(p.输出, 输出, 1);
+  for (const st of 写手.levelStats) st.bytes = 0;
+  for (const s of 遍历区段(库, 输出)) 写手.levelStats[s.id.L]!.bytes += s.字节.length;
+  rmSync(p.输出, { recursive: true });
+  p.日志?.(`模型 ${训练.模型类数} 类、${训练.模型字节} 字节，训练 ${训练.样本数} 区段；定稿完成`);
   return { 包, 缺状态: missingStates, 缺群系: missingBiomes, 级: 写手.levelStats, 块文件数: 写手.tileFileCount, 条目数: entryState.length };
 };

@@ -16,13 +16,14 @@ import { dataUrl, fetchJson, fetchRange, loadOnce } from '../core/数据源.ts';
 import type { V3 } from '../model/parts.tsx';
 import type { TerrainSampler } from './地表.ts';
 import { sectionKey, type SectionId } from './区段.ts';
-import { sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, type 包信息, type 包表, type SectionData, type 粗高度图 } from './区段包.ts';
+import { 读模型, 模型文件名 } from './区段模型.ts';
+import { formatVersion, sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, type 包信息, type 包表, type SectionData, type 粗高度图 } from './区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
 import { 记读区段 } from './地形用量.ts';
 import { variesByPos } from './群系色.ts';
 import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type 区段上下文 } from './导入区段.ts';
-import { fetchSectionsInPool, registerSource, type 区段结果 } from './区段工人池.ts';
+import { fetchSectionsInPool, registerSource, registerModel, type 区段结果 } from './区段工人池.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 
 export type { LandmarkCutout, FlattenArea } from './导入区段.ts';
@@ -51,6 +52,12 @@ type 包 = {
 const loadPack = (dir: string, packName: string): Promise<包> =>
   loadOnce(dir, async () => {
     const info = await fetchJson<包信息>(`${dir}/包.json`, '先烘焙：见 工具/导入/烘焙.ts');
+    if (info.版本 !== formatVersion) throw new Error(`地形包是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：anim assets pull，或 anim world 转码`);
+    const url = absoluteUrl(`${dir}/${模型文件名}`), res = await fetch(url);
+    if (!res.ok) throw new Error(`取地形模型 ${url}：${res.status}，anim assets pull`);
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    读模型(bytes);
+    registerModel(url, bytes);
     const coarseHeights = decodeCoarseHeight(info);
     checkFrozenCoarse(packName, coarseHeights);
     let maxTop = -Infinity;
