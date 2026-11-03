@@ -7,7 +7,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { fps, 旧帧号, 段时钟 } from '../../分镜.ts';
+import { fps, 段时钟 } from '../../分镜.ts';
 import { 光影段 } from '../../默认.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
@@ -48,7 +48,7 @@ const 画面: React.FC = () => {
       <光影范围.Provider value={{ 光影: 光影段[键] }}>
         <重逢画面
           帧={帧}
-          种子={旧帧号(f)}
+          种子={f}
           光影场={光影场}
           叠层={
             <>

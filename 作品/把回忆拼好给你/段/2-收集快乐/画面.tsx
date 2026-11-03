@@ -3,7 +3,7 @@
 // 不画太阳（第 7 句末那一镜也没有太阳：7000 刻的太阳在头顶偏南，朝北看不见）。
 // 小木屋开着门，后墙照片墙挂着三张、第四只框空着，她左手拿着光柱破云立在空框前面，推进框里；你、苦力怕、她头顶的气泡，外面整片后期；符文歌词一起过后期。
 // 谁在哪、什么姿势、镜头和调子全在 编排.ts，这里只按它画。哈气那一帧（正片事件 哈气，60 fps 时歌曲帧 1668）同静帧「门口哈气」（核对-门口哈气）再加顶上的歌词。
-// 颗粒种子 = 歌曲帧的 旧帧号（照旧一秒换 24 次）。全片不描边。
+// 颗粒种子 = 歌曲帧。全片不描边。
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
@@ -13,7 +13,7 @@ import { standPose } from '@库/角色/骨架.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { Creeper } from '@库/生物/苦力怕.tsx';
 import { 女仆气泡, 女仆气泡锚高 } from '@库/界面/女仆气泡.tsx';
-import { 旧帧号, 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜.ts';
 import { 侧投影 } from '../../地点/侧剖面.tsx';
 import { 地图画片, 照片墙格们 } from '../../地点/照片墙.tsx';
 import { 门口 } from '../../地点/门口小木屋.tsx';
@@ -90,7 +90,7 @@ const 画面: React.FC = () => {
       <配乐音轨 song={原声} 段={段} />
       <音效轨 src={挂照片声} 资产="音效/把回忆拼好给你/entity.glow_item_frame.add_item.1" 段={段} />
       <音效轨 src={哈气声} 资产="音效/把回忆拼好给你/entity.cat.hiss.1" 段={段} />
-      <整片后期 调色={调.调色} 种子={旧帧号(歌曲帧(f))}>
+      <整片后期 调色={调.调色} 种子={歌曲帧(f)}>
         <门口画布
           光影={光影段['2-收集快乐']}
           光影场={第8句光影场(歌曲帧(f))}

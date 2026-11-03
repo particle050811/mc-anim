@@ -7,7 +7,7 @@ import { AbsoluteFill } from 'remotion';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { VanillaParticles } from '@库/特效/原版粒子.tsx';
-import { fps, 旧帧号, 段窗口, 画幅 } from '../../分镜.ts';
+import { fps, 段窗口, 画幅 } from '../../分镜.ts';
 import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
@@ -51,7 +51,7 @@ export type 末地镜头属性 = {
 /** 一整帧（1280×720 页面） */
 export const 末地镜头: React.FC<末地镜头属性> = ({ f, 干净 = false, 后期 = true, 盖层 }) => (
   <AbsoluteFill>
-    <整片后期 调色={后期 ? (盖层 ? { ...调.调色, 暗角: 0, 颗粒: 0 } : 调.调色) : null} 种子={旧帧号(歌曲帧(f))}>
+    <整片后期 调色={后期 ? (盖层 ? { ...调.调色, 暗角: 0, 颗粒: 0 } : 调.调色) : null} 种子={歌曲帧(f)}>
       <三渲二画布 宽={宽} 高={高} 机位={机位(f)} {...画布调子('末地')}>
         <末地场景 f={f} />
       </三渲二画布>

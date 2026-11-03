@@ -11,7 +11,7 @@ import { 三渲二画布, 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { blockAtlas } from '@engine/voxel/真实方块图集.ts';
 import { MAGICAL_WINE_FOX } from '@库/角色/魔法酒狐.tsx';
-import { 旧帧号, 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜.ts';
 import { 格原点 } from '../../地点/门口小木屋.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
@@ -198,8 +198,7 @@ export const 雷雨画面: React.FC<雷雨画面属性> = ({ 帧, 干净 = false
   设雾色(色.雾);
   return (
     <AbsoluteFill style={{ backgroundColor: '#000' }}>
-      {/* 颗粒照旧每秒换 24 次（分镜.ts 旧帧号） */}
-      <整片后期 调色={后期 ? 调.后期.调色 : null} 种子={旧帧号(帧)}>
+      <整片后期 调色={后期 ? 调.后期.调色 : null} 种子={帧}>
         <div style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, overflow: 'hidden' }}>
           {!photon云 && <透视天 机位={机} 宽={宽} 高={高} 天={色.天} 雾={色.雾} 晴天={色.晴天} 晴雾={色.晴雾} 晴在={天晴在(帧)} />}
           <三渲二画布 宽={宽} 高={高} 机位={机} 色调={调.色调} 发光区={发光区(帧)} 光影场={光影场(帧)} style={{ position: 'absolute', left: 0, top: 0 }}>

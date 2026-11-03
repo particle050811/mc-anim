@@ -3,7 +3,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 插调子 } from '@engine/三渲二/调子.ts';
-import { 旧帧号, 段时钟 } from '../../分镜.ts';
+import { 段时钟 } from '../../分镜.ts';
 import { 分屏态 } from '../../场/2-门口/分屏参数.ts';
 import { 时差分屏 } from '../../场/2-门口/时差分屏.tsx';
 import { 色板 } from '../../色板.ts';
@@ -25,7 +25,7 @@ const 画面: React.FC = () => {
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <配乐音轨 song={原声} 段={段} />
-      <时差分屏 帧={帧} 接入 种子={旧帧号(帧)} 光影={光影段['2-时差']} 现实光影={光影段['2-时差/现实']} 叠层={<符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色 }} />} />
+      <时差分屏 帧={帧} 接入 种子={帧} 光影={光影段['2-时差']} 现实光影={光影段['2-时差/现实']} 叠层={<符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色 }} />} />
     </AbsoluteFill>
   );
 };

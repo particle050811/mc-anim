@@ -6,7 +6,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 旧帧号, 段内正片事件帧, 段窗口 } from '../../分镜.ts';
+import { 段内正片事件帧, 段窗口 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
@@ -35,7 +35,7 @@ const 画面: React.FC = () => {
   const 取景 = 片尾取景(f);
   return (
     <>
-      <整片后期 调色={回色 ? 调.调色 : 灰调色} 种子={旧帧号(起帧 + f)}>
+      <整片后期 调色={回色 ? 调.调色 : 灰调色} 种子={起帧 + f}>
         <选择世界
           状态={{
             取景,

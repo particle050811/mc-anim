@@ -18,7 +18,6 @@ import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { MagicalWineFox } from '@库/角色/魔法酒狐.tsx';
 import { magicalWineFoxBoatBones } from '@库/角色/魔法酒狐坐船.ts';
 import { 光影段 } from '../../默认.ts';
-import { 旧帧号 } from '../../分镜.ts';
 import { 画布调子 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 亮度溶解, 人船日落, 叠化格, 模糊, 海日落, 海调子名, 眼调子名, 颗粒格, type 叠化样式名, type 浪样式名 } from './参数.ts';
@@ -151,7 +150,7 @@ export const 日落划船画面: React.FC<日落划船画面属性> = ({ 歌曲�
   const 滤镜id = `ld${useId().replace(/[^A-Za-z0-9]/g, '')}`;
   const 层 = 叠化层样式(叠化样式, k, 滤镜id);
   const 海 = (
-    <整片后期 调色={后期 ? 色板[海调子名].调色 : null} 种子={旧帧号(g)}>
+    <整片后期 调色={后期 ? 色板[海调子名].调色 : null} 种子={g}>
       <海上镜头 歌曲帧={g} />
       {进 > 0 && <日落浪 进={进} 宽={页.宽} 高={页.高} 样式={浪样式} />}
     </整片后期>
@@ -162,7 +161,7 @@ export const 日落划船画面: React.FC<日落划船画面属性> = ({ 歌曲�
       {k > 0 && k < 1 && 叠化样式 === '按亮度溶解' && 亮度滤镜(滤镜id, k)}
       {k < 1 && 眼睛 && (
         <div style={{ ...全屏, ...层.眼 }}>
-          <整片后期 调色={后期 ? 色板[眼调子名].调色 : null} 种子={旧帧号(g)}>
+          <整片后期 调色={后期 ? 色板[眼调子名].调色 : null} 种子={g}>
             {眼睛(g)}
           </整片后期>
         </div>
