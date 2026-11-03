@@ -12,7 +12,7 @@ import { useCallback, useMemo, useRef } from 'react';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { fps, 旧帧, 正片事件 } from '../../分镜.ts';
+import { fps, 正片事件 } from '../../分镜.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
 import { 投影 } from '../../特效/拍立得.tsx';
@@ -52,7 +52,7 @@ const 画底 = (ctx: CanvasRenderingContext2D, 世界: HTMLCanvasElement, 帧: n
   ctx.filter = 'none';
   ctx.fillStyle = '#000';
   ctx.fillRect(0, 0, W, H);
-  // 底：定格的世界压暗；碎裂起碎成方块往下掉（下面的先掉，上面的晚到 最晚秒；晚多少取整到 1/24 秒，同 24 fps 时取整到帧）
+  // 底：定格的世界压暗；碎裂起碎成方块往下掉（下面的先掉，上面的晚到 最晚秒；晚多少连续取，原来取整到 1/24 秒，用户 11-03「统统改成 60 帧」）
   ctx.imageSmoothingEnabled = false;
   if (帧 < 碎帧) ctx.drawImage(世界, 0, 0, W, H);
   else {
@@ -61,7 +61,7 @@ const 画底 = (ctx: CanvasRenderingContext2D, 世界: HTMLCanvasElement, 帧: n
     const t0 = (帧 - 碎帧) / fps;
     for (let j = 0; j < 行; j++)
       for (let i = 0; i < 列; i++) {
-        const 晚 = 旧帧(Math.round((碎裂.最晚秒 * (1 - j / 行) * 0.7 + 碎裂.最晚秒 * 0.3 * 抖(i, j)) * 24));
+        const 晚 = 碎裂.最晚秒 * (1 - j / 行) * 0.7 + 碎裂.最晚秒 * 0.3 * 抖(i, j);
         const t = Math.max(0, t0 - 晚);
         const dy = 0.5 * 碎裂.重力 * u * t * t;
         const y = j * 块 + dy;

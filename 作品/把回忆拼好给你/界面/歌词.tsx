@@ -5,7 +5,7 @@ import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { clamp01 } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
-import { fps, 旧帧 } from '../分镜.ts';
+import { fps, 一帧秒 } from '../分镜.ts';
 
 /** 一句：入 = 从这一段内帧起淡入 */
 export type 歌词行 = { 词: string; 入: number };
@@ -23,9 +23,9 @@ export type 歌词样式 = {
   淡出秒: number;
 };
 
-/** 从 起 那一帧开始、n秒 走完的渐变：起那一帧已经走了 24 fps 的一帧（第 0 帧就看得见，不白占一帧）。
- *  起 是分镜事件的整数帧，起之前一律是 0（24 fps 时本来就是 0；不截的话按秒连起来会在起之前 1/24 秒冒头） */
-const 渐 = (f: number, 起: number, n秒: number) => (f < 起 ? 0 : clamp01(((f - 起) / fps + 旧帧(1)) / Math.max(旧帧(1), n秒)));
+/** 从 起 那一帧开始、n秒 走完的渐变：起那一帧已经走了一帧（第 0 帧就看得见，不白占一帧；原来走了 1/24 秒，用户 11-03「统统改成 60 帧」）。
+ *  起 是分镜事件的整数帧，起之前一律是 0 */
+const 渐 = (f: number, 起: number, n秒: number) => (f < 起 ? 0 : clamp01(((f - 起) / fps + 一帧秒) / Math.max(一帧秒, n秒)));
 
 /** 第 f 帧每句的不透明度（和 行们 同序；行们 要按 入 从早到晚排）。没有 收 时最后一句一直留着 */
 export const 歌词不透明度 = (行们: readonly 歌词行[], f: number, 样式: Pick<歌词样式, '淡入秒' | '淡出秒'>, 收?: number): number[] =>

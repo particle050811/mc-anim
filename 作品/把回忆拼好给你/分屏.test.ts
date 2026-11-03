@@ -111,7 +111,7 @@ describe('第 13 句分屏', () => {
     expect(现实取景.中心[1]).toBe(服务器取景.中心[1]);
   });
 
-  it('接入：头一步接上 2-空床 末帧的横移速度，越滑越慢，分屏成形到位 停稳；每帧落在贴图像素上', () => {
+  it('接入：头一步接上 2-空床 末帧的横移速度，越滑越慢，分屏成形到位 停稳；每帧落在成片像素上', () => {
     const 速 = 末速度();
     const 页每帧 = (速.右 * 速.每格) / 2 / fps;
     expect(成形偏于(起)).toBe(成形.横);
@@ -119,7 +119,7 @@ describe('第 13 句分屏', () => {
     let 上 = Infinity;
     for (let f = 起; f <= 事.分屏成形到位.帧; f++) {
       const 偏 = 成形偏于(f);
-      expect(偏 % (分屏N / 2)).toBe(0);
+      expect(Number.isInteger(偏 * 2)).toBe(true);
       expect(偏).toBeLessThan(上);
       上 = 偏;
     }

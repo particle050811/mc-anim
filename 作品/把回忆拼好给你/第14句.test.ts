@@ -56,7 +56,7 @@ const 一像素 = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUg
 vi.mock('asset:贴图/照片/第3句递蛋糕-三版', () => ({ default: 一像素 }));
 vi.mock('asset:贴图/照片/第4句日落划船-二版', () => ({ default: 一像素 }));
 vi.mock('asset:贴图/照片/第5句扑龙蛋-二版', () => ({ default: 一像素 }));
-vi.mock('asset:贴图/照片/第7句光柱破云-二版', () => ({ default: 一像素 }));
+vi.mock('asset:贴图/照片/第7句光柱破云-三版', () => ({ default: 一像素 }));
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
@@ -107,13 +107,10 @@ describe('合屏：同一台机位连续拉开', () => {
     expect(分屏线x(秒(事.合屏到位.帧))).toBe(1280);
   });
 
-  it('每帧只挪整贴图像素、一路往一个方向，没有一帧跳得特别远（两头慢）', () => {
-    const 每贴图像素页 = 整屏镜头N / 成片倍数;
+  it('每帧都往一个方向挪（不一帧挪、一帧不挪），没有一帧跳得特别远（两头慢）', () => {
     for (let i = 1; i < 合屏帧们.length; i++) {
       const [a, b] = [合屏帧们[i - 1]!, 合屏帧们[i]!].map((f) => 服务器中心x(秒(f)));
-      const 挪页 = (a! - b!) * 16 * 每贴图像素页;
-      expect(挪页, `第 ${合屏帧们[i]} 帧`).toBeGreaterThanOrEqual(0);
-      expect(Math.abs(挪页 / 每贴图像素页 - Math.round(挪页 / 每贴图像素页))).toBeLessThan(1e-9);
+      expect(a! - b!, `第 ${合屏帧们[i]} 帧`).toBeGreaterThan(0);
       const [la, lb] = [合屏帧们[i - 1]!, 合屏帧们[i]!].map((f) => 分屏线x(秒(f)));
       expect(lb! - la!).toBeGreaterThanOrEqual(0);
       // 线一帧不超过平均速度的 1.6 倍（smoothstep 峰值 1.5 倍）
