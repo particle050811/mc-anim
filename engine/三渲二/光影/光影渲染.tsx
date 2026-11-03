@@ -201,11 +201,12 @@ const 释放 = (r: 资源) => {
 
 const sRGB乘数 = (c: THREE.Color, hex: string, 强 = 1) => c.setStyle(hex, THREE.LinearSRGBColorSpace).multiplyScalar(强);
 
-/** 太阳方向（three 世界，指向太阳）：场景给了用场景的，不然按时段的仰角、方位跟着镜头摆 */
+/** 太阳方向（three 世界，指向太阳）：场景给了用场景的，不然按时段的仰角、方位跟着镜头摆（给了 太阳参照朝向 就跟它，不跟这一帧的镜头） */
 const 太阳方向 = (选: 光影选项, 光: 时段光, camera: THREE.Camera, out: THREE.Vector3) => {
   if (选.太阳) return out.copy(场景到three(选.太阳)).normalize();
   const f = new THREE.Vector3();
-  camera.getWorldDirection(f);
+  if (选.太阳参照朝向) f.copy(场景到three(选.太阳参照朝向));
+  else camera.getWorldDirection(f);
   f.y = 0;
   if (f.lengthSq() < 1e-6) f.set(0, 0, -1);
   f.normalize();
