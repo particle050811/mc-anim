@@ -633,8 +633,11 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
         <PhotonClouds
           draw={false}
           seaY={云.海平面 ?? 0}
-          exposure={云.曝光 ?? 1}
+          exposure={(云.曝光 ?? 1) * (云.曝光倍 ?? 1)}
           weather={{ temperature: 云.温度 ?? 0.5, humidity: 云.湿度 ?? 0.55, wind: 云.风 ?? 0.6 }}
+          {...(云.高低差 !== undefined ? { spread: 云.高低差 } : {})}
+          {...(云.洞 ? { clear: [...云.洞] as [number, number, number, number] } : {})}
+          {...(云.亮 ? { glow: 云.亮 } : {})}
         />
       )}
     </>
