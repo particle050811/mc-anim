@@ -3,7 +3,7 @@
 // 角色放 children（Z 朝上，坐标同 地点/门口小木屋.tsx；要描边的自己包 <描边>），气泡、聊天栏放 叠层。整片后期在段里包在最外面。
 import React from 'react';
 import { 三渲二画布, 光影范围 } from '@engine/三渲二/画布.tsx';
-import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
+import type { 光影场参数, 光影选项 } from '@engine/三渲二/光影/预设.ts';
 import type { 调子 } from '@engine/三渲二/调子.ts';
 import { 侧机位 } from '../../地点/侧剖面.tsx';
 import { 侧剖面天空, type 侧剖面天空属性 } from '../../地点/天空.tsx';
@@ -52,13 +52,15 @@ export type 门口画布属性 = 门口小木屋属性 & {
   /** 三维的场景内容：角色等 */
   children?: React.ReactNode;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]）：不给 = 不开。开了天以外的几张画布（屋子、屋后远景或身后的林子）一起开，
-   *  太阳照 参数.ts 的 白天光影场 */
+   *  太阳照 参数.ts 的 白天光影场。样式开了 Photon 天和 Photon体积 云、又开着 远景 时，天、云在屋后远景那张透视画布的光影层画，2D 天、远景的原版云不画 */
   光影?: 光影选项 | null;
+  /** 再盖在 白天光影场 上的光影场（海平面、Photon 云的洞这些按帧变的事） */
+  光影场?: 光影场参数;
 };
 
 /** 门口这几张三维画布一起开光影（engine 三渲二画布的 光影范围）；不开时原样 */
-export const 门口光影: React.FC<{ 光影?: 光影选项 | null; children: React.ReactNode }> = ({ 光影, children }) =>
-  光影 ? <光影范围.Provider value={{ 光影, 光影场: 白天光影场 }}>{children}</光影范围.Provider> : children;
+export const 门口光影: React.FC<{ 光影?: 光影选项 | null; 光影场?: 光影场参数; children: React.ReactNode }> = ({ 光影, 光影场, children }) =>
+  光影 ? <光影范围.Provider value={{ 光影, 光影场: { ...白天光影场, ...光影场 } }}>{children}</光影范围.Provider> : children;
 
 /** 一块 宽 × 高 的定位容器：天、三维、叠层三层叠在一起 */
 export const 门口画布: React.FC<门口画布属性> = ({
@@ -78,19 +80,22 @@ export const 门口画布: React.FC<门口画布属性> = ({
   children,
   群系: 群 = 群系,
   光影,
+  光影场,
   ...屋
 }) => {
   if (宽 % 2 || 高 % 2) throw new Error(`门口画布的宽高要是偶数：${宽}×${高}`);
   const 天体弧 = 弧 === null ? undefined : (弧 ?? 默认天弧(取景, 宽, 高));
   const t = typeof 调 === 'string' ? 色板[调] : 调;
   const 色调 = 乘色(t.色调, 亮度);
+  // 只有透视画布画得出 Photon 的天（光影渲染.tsx 的 画天），这里就是屋后远景那张；它比画面高、盖满整块，画布不透明
+  const photon天 = !!远景 && 光影?.天 === 'Photon平滑' && 光影.云?.样式 === 'Photon体积';
   return (
-    <门口光影 光影={光影}>
+    <门口光影 光影={光影} {...(光影场 ? { 光影场 } : {})}>
       <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden' }}>
-        <侧剖面天空 取景={取景} 宽={宽} 高={高} 色={天色} 刻={刻} 弧={天体弧} 明暗幅度={明暗幅度} 残影={残影} />
+        {!photon天 && <侧剖面天空 取景={取景} 宽={宽} 高={高} 色={天色} 刻={刻} 弧={天体弧} 明暗幅度={明暗幅度} 残影={残影} />}
         {远景 && (
           <屋后远景
-            {...(远景 === true ? {} : 远景)}
+            {...(远景 === true || photon天 ? {} : 远景)}
             取景={取景}
             宽={宽}
             高={高}
