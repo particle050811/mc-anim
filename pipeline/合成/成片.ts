@@ -392,7 +392,8 @@ export const 合成成片 = async (
   点('核对声音');
   let 分享: { kbps: number; MB: number; 真峰值: number; 限幅dBFS: number } | null = null;
   if (opts.分享版) {
-    const 出 = path.join(dir, `${opts.名}-分享版${分享上限MB}MB.mp4`);
+    // 名字不再带 50MB（用户 11-03「这个不再是以 50 MB 作为标准了 这个名字是不是也得改一下？」）：标准是 720p、760 kbps，50 MB 只是兜底
+    const 出 = path.join(dir, `${opts.名}-分享版720p.mp4`);
     const 分享声音 = 压分享声音(拉, 余量, 工作);
     分享 = { ...(await 压分享版(成片, 分享声音.声音, 出, 工作, 时长秒(成片))), 真峰值: 量响度(出).真峰值, 限幅dBFS: 分享声音.限幅dBFS };
     if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，压低限幅 6 次还超过 ${真峰值上限}`);
