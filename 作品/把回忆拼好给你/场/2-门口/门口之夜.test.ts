@@ -33,6 +33,7 @@ import {
   远N,
   镜头,
   镜头段,
+  推拉中,
 } from './门口之夜参数.ts';
 
 const 窗们 = ['2-明年六月见', '2-烟花', '2-截图下线'].map(段窗口);
@@ -175,9 +176,9 @@ describe('烟花（原版 1.20.1 的走法）', () => {
 });
 
 describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 → 推到牌子上 → 跟火箭上天 → 落回门口定格）', () => {
-  const 推着 = (f: number) => f / fps > 镜头段.推起 && f / fps < 镜头段.推到;
-  it('推近牌子以外每一帧 N 是偶数、顶面 2，中心落在偶数像素上（方块边、地面线都是整像素）', () => {
-    for (const f of 帧们.filter((f) => !推着(f))) {
+  const 推拉着 = (f: number) => 推拉中(f / fps);
+  it('推近牌子、从牌子拉开以外每一帧 N 是偶数、顶面 2，中心落在偶数像素上（方块边、地面线都是整像素）', () => {
+    for (const f of 帧们.filter((f) => !推拉着(f))) {
       const j = 镜头(f);
       const k = 16 * j.N;
       expect(j.N % 2, `第 ${f} 帧`).toBe(0);
@@ -191,12 +192,13 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     }
   });
 
-  it('推近牌子时每帧都在推、一帧放大不过 6%（N 不取整，不一顿一顿地跳）', () => {
-    const 推帧 = 帧们.filter(推着);
-    for (const f of 推帧.slice(1)) {
-      const r = 镜头(f).N / 镜头(f - 1).N;
-      expect(r, `第 ${f} 帧`).toBeGreaterThan(1);
-      expect(r, `第 ${f} 帧`).toBeLessThan(1.06);
+  it('推近、拉开时每帧都在变、一帧变不过 10%（N 不取整，不一顿一顿地跳）', () => {
+    const 推拉帧 = 帧们.filter(推拉着);
+    expect(推拉帧.length).toBeGreaterThan(80);
+    for (const f of 推拉帧.filter((f) => 推拉着(f - 1))) {
+      const [a, b] = [镜头(f - 1).N, 镜头(f).N];
+      expect(a, `第 ${f} 帧`).not.toBe(b);
+      expect(Math.max(a / b, b / a), `第 ${f} 帧`).toBeLessThan(1.1);
     }
   });
 
