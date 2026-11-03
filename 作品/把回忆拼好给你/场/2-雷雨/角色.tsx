@@ -17,7 +17,7 @@ export const 她: React.FC<{ 态: 她态; 秒: number }> = ({ 态, 秒 }) => (
       看={态.看}
       秒={秒}
       眨眼="auto"
-      骨骼={态.施法 ? { RightArm: { rot: 参.施法臂.右 }, LeftArm: { rot: 参.施法臂.左 } } : undefined}
+      骨骼={态.骨骼 ?? (态.施法 ? { RightArm: { rot: 参.施法臂.右 }, LeftArm: { rot: 参.施法臂.左 } } : undefined)}
     />
   </贴图像素对齐>
 );
