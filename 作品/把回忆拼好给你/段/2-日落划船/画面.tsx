@@ -10,7 +10,7 @@ import { 符文歌词默认 } from '../../界面/符文排版.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 原声 } from '../../配乐/原声.ts';
 import { 音效轨 } from '../../声音/音效轨.tsx';
-import { 海调子名, 眼调子名 } from '../../场/2-海上/参数.ts';
+import { 叠化样式, 浪样式, 海调子名, 眼调子名 } from '../../场/2-海上/参数.ts';
 import { 叠化, 歌曲帧, 眼机位, 窗 } from '../../场/2-海上/编排.ts';
 import { 日落划船画面 } from '../../场/2-海上/海上.tsx';
 import { 祭坛画面 } from '../../场/2-祭坛/祭坛.tsx';
@@ -37,7 +37,7 @@ const 画面: React.FC = () => {
       <音效轨 src={桨声3} 资产="音效/把回忆拼好给你/entity.boat.paddle_water.3" 段={段} />
       <音效轨 src={桨声4} 资产="音效/把回忆拼好给你/entity.boat.paddle_water.4" 段={段} />
       <音效轨 src={浪声} 资产="音效/entity.player.splash.high_speed" 段={段} />
-      <日落划船画面 歌曲帧={g} 眼睛={眼睛} />
+      <日落划船画面 歌曲帧={g} 眼睛={眼睛} 叠化样式={叠化样式} 浪样式={浪样式} />
       <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色 }} />
     </AbsoluteFill>
   );

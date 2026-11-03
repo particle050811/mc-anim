@@ -5,7 +5,7 @@ import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 旧帧号, 画幅 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
-import { 海调子名 } from '../../场/2-海上/参数.ts';
+import { 浪样式, 海调子名 } from '../../场/2-海上/参数.ts';
 import { 日落浪 } from '../../场/2-海上/浪.tsx';
 import { 末地镜头 } from '../../场/2-末地/镜头.tsx';
 import { 歌曲帧, 浪进 } from '../../场/2-末地/编排.ts';
@@ -24,7 +24,7 @@ const 画面: React.FC = () => {
         盖层={
           进 < 2 ? (
             <整片后期 调色={色板[海调子名].调色} 种子={旧帧号(歌曲帧(f))}>
-              <日落浪 进={进} 宽={画幅.宽} 高={画幅.高} />
+              <日落浪 进={进} 宽={画幅.宽} 高={画幅.高} 样式={浪样式} />
             </整片后期>
           ) : undefined
         }
