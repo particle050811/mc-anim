@@ -17,8 +17,8 @@ import { Atmosphere, atmoUniforms, atmosphere } from '../../light/大气.ts';
 import { PhotonClouds, drawPhotonClouds } from '../../light/大气/云.ts';
 import { png } from '../../model/贴图.ts';
 import type { MidPassContext } from '../../voxel/中间步骤.ts';
-import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 最多粒子光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
-import { 取光影参数, type 光影选项, type 时段, type 时段光 } from './预设.ts';
+import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
+import { 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
 
 /** 影子图边长（纹素） */
 const 影子图边 = 4096;
@@ -328,6 +328,35 @@ const 收粒子 = (scene: THREE.Scene) => {
  *  一团的颜色 = 平均颜色 × 强 × √(粒子数 / 满团)，封到 满团 个粒子：火花多的一团亮一些，但不按个数线性翻上去 */
 const 并格 = 6;
 const 满团 = 60;
+/** 补光进统一量：方向光的方向、点光的位置换到 three 世界；'镜头' 取镜头朝向反过来、往上抬 20°。要在日光、阴影摆好之后调（受光减影子 要用） */
+const 摆补光 = (u: 光影统一量, 们: readonly 补光[], camera: THREE.Camera) => {
+  if (们.length > 最多补光) throw new Error(`补光最多 ${最多补光} 盏，给了 ${们.length} 盏`);
+  u.gyFillN.value = 们.length;
+  们.forEach((b, i) => {
+    const p = u.gyFillPos.value[i];
+    if (b.位置) {
+      p.copy(场景到three(b.位置));
+      u.gyFillR.value[i] = b.半径 ?? 8;
+    } else {
+      if (b.方向 === '镜头' || !b.方向) {
+        camera.getWorldDirection(p).negate();
+        const 抬 = (20 * Math.PI) / 180;
+        p.y = Math.max(p.y, 0);
+        const h = Math.hypot(p.x, p.z) || 1;
+        p.set((p.x / h) * Math.cos(抬), Math.sin(抬), (p.z / h) * Math.cos(抬));
+      } else p.copy(场景到three(b.方向));
+      p.normalize();
+      u.gyFillR.value[i] = 0;
+    }
+    u.gyFillSh.value[i] = b.只补影子里 ? 1 : 0;
+    const c = u.gyFillCol.value[i];
+    if (b.色 === '受光减影子') {
+      c.copy(u.gySunCol.value).sub(u.gyShadeCol.value).multiplyScalar(b.强);
+      c.setRGB(Math.max(c.r, 0), Math.max(c.g, 0), Math.max(c.b, 0));
+    } else sRGB乘数(c, b.色, b.强);
+  });
+};
+
 const 摆粒子光 = (u: 光影统一量, 们: THREE.Mesh[], 半径: number, 强: number) => {
   const 团 = new Map<string, { p: THREE.Vector3; c: THREE.Color; w: number; n: number }>();
   const v = new THREE.Vector3();
@@ -432,6 +461,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const 粒子们 = 光.粒子晕 > 0 || 选项.粒子照亮 ? 收粒子(scene) : [];
     u.gyFlashN.value = 0;
     if (选项.粒子照亮 && 光.粒子照.强 > 0) 摆粒子光(u, 粒子们, 光.粒子照.半径, 光.粒子照.强 * 基);
+    摆补光(u, 选项.补光 ?? [], camera);
 
     const 背景 = scene.background;
     const 清透明 = gl.getClearAlpha();

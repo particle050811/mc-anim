@@ -5,6 +5,7 @@ import type React from 'react';
 import { useCurrentFrame } from 'remotion';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
+import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { stevePose, vanillaWalk } from '@库/角色/史蒂夫.tsx';
 import { Zombie, ZOMBIE } from '@库/生物/僵尸.tsx';
@@ -19,6 +20,7 @@ import { 新世界 } from '../../场/2-新世界/世界.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
+import { 光影段 } from '../../默认.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 僵尸态, 剥, 坑态, 天刻, 掉落物们, 歌曲帧, 歌秒, 洞暗, 碎们, 裂纹态, 调子, 镜头, 顶墙暗, 史蒂夫态 } from './编排.ts';
@@ -114,14 +116,17 @@ const 画面: React.FC = () => {
         <音效轨 key={名} src={音源[名]} 资产={音效们[名].资产} 段={段} />
       ))}
       <整片后期 调色={t.调色} 种子={旧帧号(歌曲帧(f))}>
-        <新世界 机位={镜头(f)} 你={null} 色调={t.色调} 刻={天刻(f)} 剖={{ 坑: 坑态(f), 剥: 剥(f) }} 宽={宽} 高={高}>
-          <你 f={f} />
-          <掉的土 f={f} />
-          {裂 && <裂纹 格={裂.格} 级={裂.级} />}
-          <粒子 f={f} 色调={t.色调} />
-          <僵尸们 f={f} />
-          <洞里暗 暗们={洞暗(f)} 顶={顶墙暗(f)} />
-        </新世界>
+        {/* 光影照 默认.ts 的 光影段 */}
+        <光影范围.Provider value={{ 光影: 光影段['2-第一晚'] }}>
+          <新世界 机位={镜头(f)} 你={null} 色调={t.色调} 刻={天刻(f)} 剖={{ 坑: 坑态(f), 剥: 剥(f) }} 宽={宽} 高={高}>
+            <你 f={f} />
+            <掉的土 f={f} />
+            {裂 && <裂纹 格={裂.格} 级={裂.级} />}
+            <粒子 f={f} 色调={t.色调} />
+            <僵尸们 f={f} />
+            <洞里暗 暗们={洞暗(f)} 顶={顶墙暗(f)} />
+          </新世界>
+        </光影范围.Provider>
         <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色: t.描边 }} />
       </整片后期>
     </>

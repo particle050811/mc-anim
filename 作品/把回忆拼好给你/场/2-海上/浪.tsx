@@ -3,6 +3,7 @@
 // 进：0 还没起（看不见）→ 1 正好盖满 → 2 浪尾也退出画面上沿。第 4 句段里走 0 → 1（编排.ts 的 浪进），第 5 句接着走 1 → 2 就能从浪里出来。
 // 放在 position 不是 static 的容器里，自己铺满 宽 × 高；画布按成片分辨率建。
 import React, { useLayoutEffect, useRef } from 'react';
+import { smoothstep } from '@engine/core/数学.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { 浪形, 浪格, 浪碎光, 浪色, 浪色海面, type 浪样式名 } from './参数.ts';
 
@@ -44,11 +45,6 @@ const 画像素浪 = (ctx: CanvasRenderingContext2D, 进: number, W: number, H: 
 };
 
 const 拆 = (hex: string): [number, number, number] => [1, 3, 5].map((k) => parseInt(hex.slice(k, k + 2), 16)) as [number, number, number];
-const 夹 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
-const 缓 = (a: number, b: number, v: number) => {
-  const t = 夹((v - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
 
 /** 平滑版：浪头、浪尾的位置照像素版的式子（不取整），按原来的格算深度 d（浪头往下几格），颜色按 d 平滑过渡：
  *  沫（0～1 格，下沿随横向起伏成花边）→ 亮（到 3 格）→ 身（到 8 格往后慢慢变深）→ 深；浪身上叠横着拉长的波纹（明暗）和几道细碎光，越近浪头越亮 */
@@ -83,20 +79,20 @@ const 画平滑浪 = (ctx: CanvasRenderingContext2D, 进: number, W: number, H: 
       const u = (x + 0.5) / c;
       // 沫的下沿：一格上下随横向起伏，成花边
       const 沫边 = 1 + 0.35 * Math.sin(u * 0.9 + 漂 * 0.37) * Math.sin(u * 0.23 - 漂 * 0.21);
-      const 沫比 = 1 - 缓(沫边 - 0.25, 沫边 + 0.25, d);
+      const 沫比 = 1 - smoothstep(沫边 - 0.25, 沫边 + 0.25, d);
       // 水：亮 → 身（3～6 格）→ 深（8～16 格）
-      const k1 = 缓(2.2, 6, d);
-      const k2 = 缓(7, 16, d);
+      const k1 = smoothstep(2.2, 6, d);
+      const k2 = smoothstep(7, 16, d);
       // 横着拉长的波纹：明暗起伏，越深越弱；碎光：几道细亮线，靠近浪头多、往下少
       const 纹 = Math.sin(v * 2.1 + 1.3 * Math.sin(u * 0.31 + 进 * 2.0) + 进 * 6) * Math.sin(u * 0.07 - v * 0.15 + 进 * 1.3);
       const 纹强 = 0.07 * (1 - 0.6 * k2);
       // 碎光是一截一截的短亮线（不连成整条），每条错开
-      const 截 = 缓(0.45, 0.85, 0.5 + 0.5 * Math.sin(u * 0.62 + 3.1 * Math.sin(v * 0.83) + 进 * 4));
-      const 闪 = Math.pow(Math.max(0, Math.sin(v * 3.3 + 2.2 * Math.sin(u * 0.19 - 进 * 3) + Math.sin(u * 0.043 + 1.1))), 14) * 截 * (1 - 缓(1.5, 10, d)) * 0.85;
-      const a = 缓(-一像素, 一像素, d) * (Number.isFinite(尾) ? 1 - 缓(尾 - 一像素, 尾 + 一像素, v) : 1);
+      const 截 = smoothstep(0.45, 0.85, 0.5 + 0.5 * Math.sin(u * 0.62 + 3.1 * Math.sin(v * 0.83) + 进 * 4));
+      const 闪 = Math.pow(Math.max(0, Math.sin(v * 3.3 + 2.2 * Math.sin(u * 0.19 - 进 * 3) + Math.sin(u * 0.043 + 1.1))), 14) * 截 * (1 - smoothstep(1.5, 10, d)) * 0.85;
+      const a = smoothstep(-一像素, 一像素, d) * (Number.isFinite(尾) ? 1 - smoothstep(尾 - 一像素, 尾 + 一像素, v) : 1);
       if (a <= 0) continue;
       // 浪尾（退的时候）那一道亮边，同像素版最后一格是 亮
-      const 尾亮 = Number.isFinite(尾) ? 1 - 缓(0.4, 1.4, 尾 - v) : 0;
+      const 尾亮 = Number.isFinite(尾) ? 1 - smoothstep(0.4, 1.4, 尾 - v) : 0;
       const o = (y * W + x) * 4;
       for (let ch = 0; ch < 3; ch++) {
         let w = 亮[ch]! + (身[ch]! - 亮[ch]!) * k1;
