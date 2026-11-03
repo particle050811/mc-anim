@@ -2820,3 +2820,27 @@ id = "贴图/场景/月相"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "client jar 的 environment/moon_phases.png，128×64，4×2 格一格一个月相（<环境> 主世界画法的月亮）"
+
+[["资产"]]
+id = "贴图/物品/蛋糕方块/cake_bottom"
+"类别" = "贴图"
+"来源" = "提取:蛋糕方块@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/cake_bottom.png，16×16：蛋糕方块的底面（库/物品/蛋糕方块.tsx）"
+
+[["资产"]]
+id = "贴图/物品/蛋糕方块/cake_side"
+"类别" = "贴图"
+"来源" = "提取:蛋糕方块@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/cake_side.png，16×16：蛋糕方块的四个侧面，只用下半张（库/物品/蛋糕方块.tsx）"
+
+[["资产"]]
+id = "贴图/物品/蛋糕方块/cake_top"
+"类别" = "贴图"
+"来源" = "提取:蛋糕方块@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/cake_top.png，16×16：蛋糕方块的顶面（库/物品/蛋糕方块.tsx）"

@@ -3,7 +3,7 @@
 // 新的裁两个人的头到她手里的花（手机上认得出是她和你，见资产表 贴图/照片/第15句新合照）。画面改了重出、登新 id，只改这里的 import：别的地方都从这里取。
 import { png } from '@engine/model/贴图.ts';
 import 旧uri from 'asset:贴图/照片/第11句合照-三版';
-import 新uri from 'asset:贴图/照片/第15句新合照';
+import 新uri from 'asset:贴图/照片/第15句新合照-二版';
 import { 取图标, 褪色蒙灰 } from '../../界面/实例图标.ts';
 
 /** 第 0 镜的旧图标：褪了色、蒙着灰 */

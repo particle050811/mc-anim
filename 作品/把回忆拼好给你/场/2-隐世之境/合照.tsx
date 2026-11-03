@@ -13,6 +13,7 @@ import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 做机位相机, type 正交机位参数 } from '@engine/三渲二/机位.tsx';
+import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
@@ -20,6 +21,7 @@ import { magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角
 import { 女仆气泡, 女仆气泡锚高 } from '@库/界面/女仆气泡.tsx';
 import { 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import { fps, 旧帧号, 画幅, 正片事件 } from '../../分镜.ts';
+import { 光影段 } from '../../默认.ts';
 import { 画布调子 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
@@ -28,7 +30,7 @@ import { 重逢发光区, 隐世之境重逢布景 } from './布景.tsx';
 import { 对视门光, 门光色调, 背景褪色参数 } from './对视参数.ts';
 import { 加滚, 拿着花的她, 空手拿 } from './对视.tsx';
 import { 靠肩机位, 靠肩进度 } from './合照动作.ts';
-import { 合照站位, 合照朝向, 合照镜, 史蒂夫倍数, 你的头, 台词气泡接过来, 窗景, 第11句拍立得样式, 靠肩, 靠肩气泡, 靠肩起势 } from './合照参数.ts';
+import { 合照光影场, 合照站位, 合照朝向, 合照镜, 史蒂夫倍数, 你的头, 台词气泡接过来, 窗景, 第11句拍立得样式, 靠肩, 靠肩气泡, 靠肩起势 } from './合照参数.ts';
 import { 台词气泡, 笑 } from './重逢参数.ts';
 import { 不褪色, 背景褪色 } from './褪色.tsx';
 
@@ -124,16 +126,28 @@ export type 靠肩画面属性 = {
   /** 窗里补樱花林（合照参数 的 窗景，小样），默认不补（窗里只有天，同片里） */
   窗景?: boolean;
   后期?: boolean;
+  /** 光影（默认.ts 的 光影段['2-合照']，照片跟着片里走）；null = 不开 */
+  光影?: 光影选项 | null;
 };
 
 /** 靠肩这一镜的一整帧（1280×720 页面），自己铺满 */
-export const 靠肩画面: React.FC<靠肩画面属性> = ({ 帧, 叠层, 气泡 = 靠肩气泡, 台词 = false, 褪色 = false, 机位 = 靠肩机位, 窗景: 补窗景 = false, 后期 = true }) => {
+export const 靠肩画面: React.FC<靠肩画面属性> = ({ 帧, 叠层, 气泡 = 靠肩气泡, 台词 = false, 褪色 = false, 机位 = 靠肩机位, 窗景: 补窗景 = false, 后期 = true, 光影 = 光影段['2-合照'] ?? null }) => {
   const t = 色板[调子];
   const 调 = 画布调子(调子);
   return (
     <整片后期 调色={后期 ? t.调色 : null} 种子={旧帧号(帧)}>
       {补窗景 && <窗景层 />}
-      <三渲二画布 宽={画幅.宽} 高={画幅.高} 机位={机位} {...调} 天={补窗景 ? undefined : 调.天} 色调={门光色调} 发光区={重逢发光区}>
+      <三渲二画布
+        宽={画幅.宽}
+        高={画幅.高}
+        机位={机位}
+        {...调}
+        天={补窗景 ? undefined : 调.天}
+        色调={门光色调}
+        发光区={重逢发光区}
+        光影={光影}
+        光影场={合照光影场}
+      >
         <靠肩场景 帧={帧} 褪色={褪色} 窗外={!补窗景} />
       </三渲二画布>
       {气泡 && <靠肩气泡层 字={笑.气泡字} 缩放={合照镜.N} />}

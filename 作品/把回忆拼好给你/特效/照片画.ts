@@ -3,7 +3,7 @@
 // 测试引不进资产（打包时才有 asset:），引这个文件的测试要 vi.mock 这四个资产（见 收集快乐.test.ts）。
 import { png } from '@engine/model/贴图.ts';
 import type { 照片图 } from './照片图.ts';
-import 递蛋糕uri from 'asset:贴图/照片/第3句递蛋糕-二版';
+import 递蛋糕uri from 'asset:贴图/照片/第3句递蛋糕-三版';
 import 日落划船uri from 'asset:贴图/照片/第4句日落划船-二版';
 import 扑龙蛋uri from 'asset:贴图/照片/第5句扑龙蛋-二版';
 import 光柱破云uri from 'asset:贴图/照片/第7句光柱破云-二版';

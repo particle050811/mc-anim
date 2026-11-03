@@ -17,9 +17,12 @@ import { 像素字 } from '../../界面/像素字.ts';
 import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
 import { 投影 } from '../../特效/拍立得.tsx';
 import { 下线图标, 卡片, 碎裂, 定格帧, 照片帧, 照片版式, 聊天缩放 } from './门口之夜参数.ts';
+import { 光影段 } from '../../默认.ts';
 import { 门口之夜画布, type 捕获层 } from './门口之夜画布.tsx';
 
 const 黄 = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
+/** 照片是第 11 句（段 2-截图下线）截下的，2-空床 开头接着缩的也是这一张：光影跟着 2-截图下线 开不开走 */
+const 光影 = 光影段['2-截图下线'];
 const 定帧 = 定格帧;
 const 碎帧 = 正片事件.第11句碎裂.帧;
 const 下帧 = 正片事件.第11句下线.帧;
@@ -176,7 +179,7 @@ export const 门口之夜照片: React.FC<{ 帧: number; 前帧?: number; 宽?: 
   );
   return (
     <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden', background: '#000' }}>
-      <门口之夜画布 帧={定了 ? 照片帧 : 帧} 前帧={定了 ? undefined : 前帧} 宽={宽} 高={高} 捕获={定了 ? 合成 : undefined} style={定了 ? { visibility: 'hidden' } : undefined} />
+      <门口之夜画布 帧={定了 ? 照片帧 : 帧} 前帧={定了 ? undefined : 前帧} 宽={宽} 高={高} 捕获={定了 ? 合成 : undefined} style={定了 ? { visibility: 'hidden' } : undefined} 光影={光影} />
       {定了 && <canvas ref={ref底} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />}
       {帧 >= 下帧 && (
         <像素聊天栏

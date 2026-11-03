@@ -6,7 +6,9 @@
 // 文字一时只走一路（用户 10-24 点名这一帧气泡、聊天行、歌词三路字一起出），接缝那一帧又不能一下没了。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { fps, 旧帧号, 段时钟 } from '../../分镜.ts';
+import { 光影段 } from '../../默认.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
@@ -38,21 +40,24 @@ const 画面: React.FC = () => {
       <音效轨 src={铃url} 资产="音效/万法皆通/wind_seeking_bell" 段={段} />
       <音效轨 src={风url} 资产="音效/item.elytra.flying" 段={段} />
       <音效轨 src={推门url} 资产="音效/block.wooden_door.open.1" 段={段} />
-      <重逢画面
-        帧={帧}
-        种子={旧帧号(f)}
-        叠层={
-          <>
-            <樱花风 秒={帧 / fps} 时刻={第15句风} 源={铃在画面} 散心={风散心} />
-            <符文歌词 行们={行们} 样式={歌词样式} />
-            {聊天透 > 0 && (
-              <div style={{ position: 'absolute', inset: 0, opacity: 聊天透 }}>
-                <加入游戏聊天 帧={帧} />
-              </div>
-            )}
-          </>
-        }
-      />
+      {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
+      <光影范围.Provider value={{ 光影: 光影段[键] }}>
+        <重逢画面
+          帧={帧}
+          种子={旧帧号(f)}
+          叠层={
+            <>
+              <樱花风 秒={帧 / fps} 时刻={第15句风} 源={铃在画面} 散心={风散心} />
+              <符文歌词 行们={行们} 样式={歌词样式} />
+              {聊天透 > 0 && (
+                <div style={{ position: 'absolute', inset: 0, opacity: 聊天透 }}>
+                  <加入游戏聊天 帧={帧} />
+                </div>
+              )}
+            </>
+          }
+        />
+      </光影范围.Provider>
     </AbsoluteFill>
   );
 };

@@ -242,3 +242,11 @@ id = "模型/物品/船"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版 BoatModel.createBodyModel（1.20.1）：船底、船头、船尾、两舷、两支桨和 water_patch，贴图 128×64；木船都用这一个模型（竹筏另有 RaftModel）"
+
+[["资产"]]
+id = "模型/物品/蛋糕方块"
+"类别" = "模型"
+"来源" = "提取:蛋糕方块@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "client jar 的 block/cake.json（放在地上、没吃过的整块蛋糕：一个 14×8×14 像素的方盒），方块模型.tsx 的面片格式；贴图不用一起导出的图集，用 贴图/物品/蛋糕方块/*（材质包能换）。库/物品/蛋糕方块.tsx 拿在手里"
