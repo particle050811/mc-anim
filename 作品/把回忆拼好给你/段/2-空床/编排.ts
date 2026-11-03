@@ -5,6 +5,7 @@
 //   横移时屋外是早上的天和林子，整片后期跟着横移往 2-时差 开头服务器那半的调子走（接缝不跳亮度）。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
+import type { 光影场参数 } from '@engine/三渲二/光影/预设.ts';
 import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
 import type { 魔法酒狐全部表情 } from '@库/角色/魔法酒狐新动作.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
@@ -133,6 +134,33 @@ export const 光态 = (f: number) => {
   const k = i === 3 ? (f - 事.月落) / (事.天亮转头 - 事.月落) : 0;
   const t: 调子 = 插调子(色板.夜, 色板.日落, 插(参.晓们[i]!, 参.晓们[4]!, k));
   return { 光: 参.窗光档们[i]!, 调子: t, 天: 混色(参.天们[i]!, 参.天们[4]!, k), 门外亮: i >= 参.门外亮档 };
+};
+
+/** 过 p0～p3 的一段 Catmull-Rom（t 0～1 从 p1 走到 p2） */
+const 卡特 = (p0: readonly number[], p1: readonly number[], p2: readonly number[], p3: readonly number[], t: number) =>
+  p1.map((_, i) => {
+    const [a, b, c, d] = [p0[i]!, p1[i]!, p2[i]!, p3[i]!];
+    return 0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+  });
+
+/**
+ * 开光影时交给光影的事实（三渲二画布的 光影场）：月亮、太阳在哪，照进来几成，哪套灯。
+ * 月亮：坐床沿 起沿 参.月亮们 连着挪（Catmull-Rom），窗光三 和 月落 正中起光淡下去（第三档爬上后墙那一下看得见）、月落 没了；太阳：月落 到 天亮转头 从 日出.起 升到 日出.止、光淡进来，之后不动。
+ * 时段：月落 起换 日落（日出的暖光）；那一刻光是 0，两套灯的影子一样（默认.ts 的 屋里月光），换了看不出来
+ */
+export const 光影场于 = (f: number): 光影场参数 => {
+  if (f >= 事.月落) {
+    const k = 缓(夹((f - 事.月落) / (事.天亮转头 - 事.月落)));
+    const 太阳 = 参.日出.起.map((v, i) => 插(v, 参.日出.止[i]!, k)) as [number, number, number];
+    return { 时段: '日落', 太阳, 光强: k };
+  }
+  const 们 = 参.月亮们;
+  const s = (们.length - 1) * 夹((f - 事.坐床沿) / (事.月落 - 事.坐床沿)) ** 参.月行幂;
+  const i = Math.min(们.length - 2, Math.floor(s));
+  const 取 = (j: number) => 们[Math.max(0, Math.min(们.length - 1, j))]!;
+  const 太阳 = 卡特(取(i - 1), 取(i), 取(i + 1), 取(i + 2), s - i) as [number, number, number];
+  const 淡起 = (事.窗光三 + 事.月落) / 2;
+  return { 时段: '夜', 太阳, 光强: 1 - 缓(夹((f - 淡起) / (事.月落 - 淡起))) };
 };
 
 // ---------- 镜头 ----------
