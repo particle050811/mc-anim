@@ -26,8 +26,10 @@ const 影子图边 = 4096;
 const 透视影距 = 80;
 /** Photon 天的空气雾算到多远（米）：同 engine/light/环境.ts 主世界画法不给时的地形远端 */
 const 天远 = 40000;
-/** 原版太阳：贴图 32×32 里本体是正中 8×8（第 12～19 格），本体离镜头 100 格、半边 7.5 格（同 作品/把回忆拼好给你/场/2-海上/天.tsx 的 2D 天） */
+/** 原版太阳：贴图 32×32 里本体是正中 8×8（第 12～19 格），本体离镜头 100 格、半边 7.5 格（同 作品/把回忆拼好给你/场/2-海上/天.tsx 的 2D 天）。
+ *  材质包的高清太阳是原版的 k 倍（Faithful 32x 是 64×64，本体 16×16 在第 24～39 格），本体起、本体边都乘 k */
 const 本体起 = 12;
+const 本体边 = 8;
 const 太阳距 = 100;
 const 太阳半边 = 7.5;
 
@@ -144,6 +146,7 @@ const 建资源 = () => {
     tSun: { value: null },
     sunMin: { value: new THREE.Vector2() },
     sunN: { value: 1 },
+    sunBody: { value: 本体边 },
     haloCol: { value: new THREE.Color() },
     zenCol: { value: new THREE.Color() },
     zenK: { value: 0 },
@@ -156,20 +159,25 @@ const 建资源 = () => {
   return { u, 影, 影机, 主, 深, 云, 对数深, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
 };
 
-/** 原版太阳本体 8×8 进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；光圈色 = 本体正上方那一格（同 2D 天 的光圈），画面值 */
+/** 太阳本体（原版 8×8，材质包高清的 8k×8k）进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；边 = 本体几个贴图像素；
+ *  光圈色 = 本体正上方紧挨着的那一格（同 2D 天 的光圈），画面值。
+ *  坑：高清贴图要按 k 倍的格子取；按原版 32×32 的格子取，取到的是本体外面那圈快黑的光晕，太阳整个看不见 */
 const 建太阳图 = () => {
   const t = png(sunPng);
-  const px = new Uint8Array(8 * 8 * 4);
-  for (let y = 0; y < 8; y++)
-    for (let x = 0; x < 8; x++) {
-      const o = ((本体起 + 7 - y) * t.w + 本体起 + x) * 4;
-      px.set(t.px.subarray(o, o + 4), (y * 8 + x) * 4);
+  const k = Math.max(1, Math.round(t.w / 32));
+  const 边 = 本体边 * k;
+  const 起 = 本体起 * k;
+  const px = new Uint8Array(边 * 边 * 4);
+  for (let y = 0; y < 边; y++)
+    for (let x = 0; x < 边; x++) {
+      const o = ((起 + 边 - 1 - y) * t.w + 起 + x) * 4;
+      px.set(t.px.subarray(o, o + 4), (y * 边 + x) * 4);
     }
-  const 图 = new THREE.DataTexture(px, 8, 8, THREE.RGBAFormat);
+  const 图 = new THREE.DataTexture(px, 边, 边, THREE.RGBAFormat);
   图.minFilter = 图.magFilter = THREE.NearestFilter;
   图.needsUpdate = true;
-  const 晕 = ((本体起 - 1) * t.w + 16) * 4;
-  return { 图, 晕: new THREE.Color(t.px[晕]! / 255, t.px[晕 + 1]! / 255, t.px[晕 + 2]! / 255) };
+  const 晕 = ((起 - 1) * t.w + 16 * k) * 4;
+  return { 图, 边, 晕: new THREE.Color(t.px[晕]! / 255, t.px[晕 + 1]! / 255, t.px[晕 + 2]! / 255) };
 };
 
 const 释放 = (r: 资源) => {
@@ -604,8 +612,8 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
 };
 
 /** 原版方形太阳在画布上的位置：同 2D 天（作品/把回忆拼好给你/场/2-海上/编排.ts 的 太阳屏幕），本体边长 = 上下沿（沿太阳走的方向各偏半边）投影的距离，
- *  一个贴图像素取整成几个画布像素，左下角取整；屏幕上横平竖直 */
-const 摆太阳 = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, 太阳: 光影选项['太阳'], w: number, h: number, 图: { 图: THREE.Texture; 晕: THREE.Color }) => {
+ *  一个贴图像素（高清贴图按高清像素）取整成几个画布像素，左下角取整；屏幕上横平竖直 */
+const 摆太阳 = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, 太阳: 光影选项['太阳'], w: number, h: number, 图: { 图: THREE.Texture; 边: number; 晕: THREE.Color }) => {
   cu.sunOn!.value = 0;
   if (!太阳) return;
   const d = new THREE.Vector3(...太阳).normalize();
@@ -619,12 +627,14 @@ const 摆太阳 = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, 太
   const 上 = 投(d.clone().multiplyScalar(太阳距).addScaledVector(沿, 太阳半边));
   const 下 = 投(d.clone().multiplyScalar(太阳距).addScaledVector(沿, -太阳半边));
   if (!c || !上 || !下) return;
-  const n = Math.max(1, Math.round(上.distanceTo(下) / 8));
+  const 边 = 图.边;
+  const n = Math.max(1, Math.round(上.distanceTo(下) / 边));
   // 2D 天按左上角取整（y 朝下），这里换成左下角
-  const x0 = Math.round(c.x - 4 * n);
-  const y0上 = Math.round(h - c.y - 4 * n);
-  (cu.sunMin!.value as THREE.Vector2).set(x0, h - y0上 - 8 * n);
+  const x0 = Math.round(c.x - (边 / 2) * n);
+  const y0上 = Math.round(h - c.y - (边 / 2) * n);
+  (cu.sunMin!.value as THREE.Vector2).set(x0, h - y0上 - 边 * n);
   cu.sunN!.value = n;
+  cu.sunBody!.value = 边;
   cu.tSun!.value = 图.图;
   (cu.haloCol!.value as THREE.Color).copy(图.晕);
   cu.sunOn!.value = 1;

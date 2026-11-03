@@ -270,7 +270,8 @@ void main() {
 /** 合成到画布：原图（sRGB 编码、预乘）去预乘 → 调色 → 叠在天、云上 → 加泛光 → 再乘回透明度。泛光在透明的地方也加（叠在画布后面的 2D 天上，算加色）。
  *  天（skyOn）：透明的地方画 Photon 天色（同 engine/light/天空.tsx 大气打开时的穹顶：天色图 × 空气透过率 + 内散射）；
  *  云（cloudOn）：Photon 云那一遍画好的（画面值、预乘）叠在天上、画面底下；
- *  太阳：按 2D 天那样叠原版方形太阳（本体 8×8 贴图像素、外面两圈硬边光圈，加色），叠在云上、整块按云挡了多少压暗 */
+ *  太阳：按 2D 天那样叠原版方形太阳（本体 sunBody × sunBody 个贴图像素：原版 8，材质包高清的按高清像素；外面两圈硬边光圈各一个贴图像素宽，加色），
+ *  叠在云上、整块按云挡了多少压暗 */
 export const 合成片元 = /* glsl */ `
 uniform sampler2D atmoSky;
 ${ATMO_PARS_GLSL}
@@ -292,6 +293,7 @@ uniform float sunOn;
 uniform sampler2D tSun;
 uniform vec2 sunMin;
 uniform float sunN;
+uniform float sunBody;
 uniform vec3 haloCol;
 uniform sampler2D tColor;
 uniform sampler2D tB0;
@@ -347,24 +349,24 @@ void main() {
     bg = cl.rgb + bg * ( 1.0 - cl.a );
     bgA = cl.a + bgA * ( 1.0 - cl.a );
   }
-  // 太阳叠在云上、整块按本体那 8×8 格里云的平均不透明度压暗：逐像素让云挡的话，云缝里漏出一格格碎方块（主会话 11-02 看了说像出错）
+  // 太阳叠在云上、整块按本体里 8×8 个点上云的平均不透明度压暗：逐像素让云挡的话，云缝里漏出一格格碎方块（主会话 11-02 看了说像出错）
   if ( skyOn > 0.5 && a < 1.0 && sunOn > 0.5 ) {
     vec2 q = floor( ( gl_FragCoord.xy - sunMin ) / sunN );
-    if ( all( greaterThanEqual( q, vec2( - 2.0 ) ) ) && all( lessThan( q, vec2( 10.0 ) ) ) ) {
+    if ( all( greaterThanEqual( q, vec2( - 2.0 ) ) ) && all( lessThan( q, vec2( sunBody + 2.0 ) ) ) ) {
       float vis = 1.0;
       if ( cloudOn > 0.5 ) {
         vec2 px = 1.0 / vec2( textureSize( tCloud, 0 ) );
         float ca = 0.0;
         for ( int y = 0; y < 8; y ++ )
-          for ( int x = 0; x < 8; x ++ ) ca += texture2D( tCloud, ( sunMin + ( vec2( x, y ) + 0.5 ) * sunN ) * px ).a;
+          for ( int x = 0; x < 8; x ++ ) ca += texture2D( tCloud, ( sunMin + ( vec2( x, y ) + 0.5 ) * sunN * sunBody / 8.0 ) * px ).a;
         vis = 1.0 - ca / 64.0;
       }
       vec3 sc = vec3( 0.0 );
-      if ( all( greaterThanEqual( q, vec2( 0.0 ) ) ) && all( lessThan( q, vec2( 8.0 ) ) ) ) {
+      if ( all( greaterThanEqual( q, vec2( 0.0 ) ) ) && all( lessThan( q, vec2( sunBody ) ) ) ) {
         vec4 t = texelFetch( tSun, ivec2( q ), 0 );
         sc = t.rgb * t.a;
       } else {
-        float r = max( max( - q.x - 1.0, q.x - 8.0 ), max( - q.y - 1.0, q.y - 8.0 ) );
+        float r = max( max( - q.x - 1.0, q.x - sunBody ), max( - q.y - 1.0, q.y - sunBody ) );
         sc = r < 0.5 ? haloCol : haloCol * 0.5;
       }
       bg += sc * vis;
