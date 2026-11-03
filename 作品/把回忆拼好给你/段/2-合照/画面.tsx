@@ -3,7 +3,9 @@
 // 歌词：15 句都交给符文歌词（这一段里只剩第 15 句「爱炙热的你却忘了爱自己」），样式同 2-重逢（底部），硬切那一下歌词不跳；咔哒那一帧起退场（退在片尾的闪白里）。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 段时钟, 段内正片事件帧 } from '../../分镜.ts';
+import { 光影段 } from '../../默认.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
@@ -27,7 +29,10 @@ const 画面: React.FC = () => {
     <AbsoluteFill style={{ background: '#000' }}>
       <配乐音轨 song={原声} 段={段} />
       <音效轨 src={咔哒url} 资产="音效/车万女仆/item.camera_use" 段={段} />
-      <合照画面 帧={起帧 + f} 叠层={<符文歌词 行们={行们} 样式={歌词样式} 收={事件帧.合照咔哒} />} />
+      {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
+      <光影范围.Provider value={{ 光影: 光影段[键] }}>
+        <合照画面 帧={起帧 + f} 叠层={<符文歌词 行们={行们} 样式={歌词样式} 收={事件帧.合照咔哒} />} />
+      </光影范围.Provider>
     </AbsoluteFill>
   );
 };
