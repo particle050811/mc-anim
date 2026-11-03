@@ -328,7 +328,7 @@ const 收粒子 = (scene: THREE.Scene) => {
  *  一团的颜色 = 平均颜色 × 强 × √(粒子数 / 满团)，封到 满团 个粒子：火花多的一团亮一些，但不按个数线性翻上去 */
 const 并格 = 6;
 const 满团 = 60;
-/** 补光进统一量：方向光的方向、点光的位置换到 three 世界；'镜头' 取镜头朝向反过来、往上抬 20° */
+/** 补光进统一量：方向光的方向、点光的位置换到 three 世界；'镜头' 取镜头朝向反过来、往上抬 20°。要在日光、阴影摆好之后调（受光减影子 要用） */
 const 摆补光 = (u: 光影统一量, 们: readonly 补光[], camera: THREE.Camera) => {
   if (们.length > 最多补光) throw new Error(`补光最多 ${最多补光} 盏，给了 ${们.length} 盏`);
   u.gyFillN.value = 们.length;
@@ -348,7 +348,12 @@ const 摆补光 = (u: 光影统一量, 们: readonly 补光[], camera: THREE.Cam
       p.normalize();
       u.gyFillR.value[i] = 0;
     }
-    sRGB乘数(u.gyFillCol.value[i], b.色, b.强);
+    u.gyFillSh.value[i] = b.只补影子里 ? 1 : 0;
+    const c = u.gyFillCol.value[i];
+    if (b.色 === '受光减影子') {
+      c.copy(u.gySunCol.value).sub(u.gyShadeCol.value).multiplyScalar(b.强);
+      c.setRGB(Math.max(c.r, 0), Math.max(c.g, 0), Math.max(c.b, 0));
+    } else sRGB乘数(c, b.色, b.强);
   });
 };
 

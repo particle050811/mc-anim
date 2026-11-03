@@ -55,6 +55,7 @@ export const 新光影统一量 = () => ({
   gyFillPos: { value: Array.from({ length: 最多补光 }, () => new THREE.Vector3()) },
   gyFillCol: { value: Array.from({ length: 最多补光 }, () => new THREE.Color()) },
   gyFillR: { value: Array.from({ length: 最多补光 }, () => 0) },
+  gyFillSh: { value: Array.from({ length: 最多补光 }, () => 0) },
 });
 
 const 受光头 = /* glsl */ `
@@ -79,6 +80,7 @@ uniform int gyFillN;
 uniform vec3 gyFillPos[ ${最多补光} ];
 uniform vec3 gyFillCol[ ${最多补光} ];
 uniform float gyFillR[ ${最多补光} ];
+uniform float gyFillSh[ ${最多补光} ];
 float gyShadowAt( vec3 p ) {
   vec4 c = gyShadowMat * vec4( p, 1.0 );
   vec3 u = c.xyz / c.w * 0.5 + 0.5;
@@ -116,7 +118,7 @@ for ( int i = 0; i < ${最多粒子光}; i ++ ) {
   float v = floor( clamp( 1.0 - l / gyFlashR, 0.0, 1.0 ) * 15.0 + 0.5 ) / 15.0;
   gyFl += gyFlashCol[ i ] * ( v / ( 4.0 - 3.0 * v ) ) * clamp( dot( flatN, d / max( l, 1e-3 ) ) * 0.75 + 0.25, 0.0, 1.0 );
 }
-// 补光：不打影子；点光按距离平方衰减到半径处为 0（平滑，不分级），朝向同粒子照亮（背着的面留四分之一）
+// 补光：不打影子；点光按距离平方衰减到半径处为 0（平滑，不分级），朝向同粒子照亮（背着的面留四分之一）；只补影子里的按太阳照到几成减掉
 vec3 gyFi = vec3( 0.0 );
 for ( int i = 0; i < ${最多补光}; i ++ ) {
   if ( i >= gyFillN ) break;
@@ -129,6 +131,7 @@ for ( int i = 0; i < ${最多补光}; i ++ ) {
     a = clamp( 1.0 - l / gyFillR[ i ], 0.0, 1.0 );
     a *= a;
   }
+  if ( gyFillSh[ i ] > 0.5 ) a *= 1.0 - gyLit * gyDir;
   gyFi += gyFillCol[ i ] * a * clamp( dot( flatN, d ) * 0.75 + 0.25, 0.0, 1.0 );
 }
 vec3 gyOut = gyGlow ? flatC * flatS * flatK * gyGlowK : flatC * mix( 1.0, flatS, gyFaceK ) * ( flatK * gyLight + gyLampCol * gyLb + gyFl + gyFi );
