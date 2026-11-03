@@ -3,8 +3,10 @@
 // 歌词浮在最上面、不过后期：同 2-日落划船（第 4 句开头还是这一镜，歌词两边一样，接缝上字不变色）
 import type React from 'react';
 import { useCurrentFrame } from 'remotion';
+import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 旧帧号, 段窗口 } from '../../分镜.ts';
+import { 光影段 } from '../../默认.ts';
 import { 色板 } from '../../色板.ts';
 import { 祭坛画面 } from '../../场/2-祭坛/祭坛.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
@@ -27,7 +29,10 @@ const 画面: React.FC = () => {
       <配乐音轨 song={原声} 段={段} />
       <音效轨 src={合成声} 资产="音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2" 段={段} />
       <整片后期 调色={色板.夏日白天.调色} 种子={旧帧号(g)}>
-        <祭坛画面 g={g} />
+        {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
+        <光影范围.Provider value={{ 光影: 光影段['2-祭坛召唤'] }}>
+          <祭坛画面 g={g} />
+        </光影范围.Provider>
       </整片后期>
       <符文歌词 行们={行们} 样式={歌词样式} />
     </>

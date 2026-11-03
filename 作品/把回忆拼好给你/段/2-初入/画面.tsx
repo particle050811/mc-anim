@@ -4,6 +4,7 @@
 // 调子跟着透掉的比例从现实回暖到新世界的下午。
 import type React from 'react';
 import { useCurrentFrame } from 'remotion';
+import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
@@ -20,6 +21,7 @@ import { 旧图标 } from '../../场/2-选择世界/图标源.ts';
 import { 聊天 } from '../../场/2-新世界/参数.ts';
 import { 你在, 剥了, 天刻在, 聊天刻在 } from '../../场/2-新世界/编排.ts';
 import { 新世界 } from '../../场/2-新世界/世界.tsx';
+import { 光影段 } from '../../默认.ts';
 import { 调子在, 钻完, 镜头在 } from './编排.ts';
 import 段 from './段.ts';
 
@@ -43,7 +45,10 @@ const 画面: React.FC = () => {
   return (
     <>
       <整片后期 调色={调.调色} 种子={旧帧号(歌帧)}>
-        <新世界 机位={镜头在(歌帧)} 你={你姿} 色调={调.色调} 刻={天刻在(歌帧)} 剖={{ 坑: 没挖, 剥: 剥了(歌帧) }} 宽={宽} 高={高} />
+        {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
+        <光影范围.Provider value={{ 光影: 光影段['2-初入'] }}>
+          <新世界 机位={镜头在(歌帧)} 你={你姿} 色调={调.色调} 刻={天刻在(歌帧)} 剖={{ 坑: 没挖, 剥: 剥了(歌帧) }} 宽={宽} 高={高} />
+        </光影范围.Provider>
         {歌帧 < 钻完 && (
           <选择世界 状态={{ 取景: 钻入取景(q), 指着: 0, 选中: true, 框光标: false, 光标: null, 图标: 旧图标, 图标透: (i, j) => 阈(i, j) < 透 }} 宽={宽} 高={高} />
         )}
