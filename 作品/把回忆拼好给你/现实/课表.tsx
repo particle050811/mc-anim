@@ -122,6 +122,7 @@ const 画纸 = (亮: ReadonlyMap<课表格, number>): 像素画 => {
     const 行们 = 排行(g, b.x1 - b.x0 - 1);
     const 距 = 行们.length > 1 && g.疏 ? 行距 : 9;
     const 总高 = (行们.length - 1) * 距 + 8;
+    if (总高 > b.y1 - b.y0 - 1) throw new Error(`课表格「${g.字}」排出来 ${总高} 像素高，格子里只有 ${b.y1 - b.y0 - 1}`);
     const y0 = Math.round((b.y0 + 1 + b.y1 - 总高) / 2);
     行们.forEach((s, j) => 居中写(p, s, b.x0 + 1, b.x1, y0 + j * 距, y0 + j * 距 + 8, 墨));
   }
