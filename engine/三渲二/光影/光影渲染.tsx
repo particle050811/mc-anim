@@ -380,13 +380,15 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const 光 = 参[段];
     const u = r.u;
     太阳方向(选项, 光, camera, u.gySun.value);
-    sRGB乘数(u.gySunCol.value, 光.日光, 光.日光强);
-    sRGB乘数(u.gyShadeCol.value, 光.阴影, 光.阴影强);
+    // 基准亮度：受光、影子、灯、粒子照的光一起乘（发光区不乘），不给是 1
+    const 基 = 选项.基准亮度 ?? 1;
+    sRGB乘数(u.gySunCol.value, 光.日光, 光.日光强 * 基);
+    sRGB乘数(u.gyShadeCol.value, 光.阴影, 光.阴影强 * 基);
     u.gyDirK.value = 光.朝向;
     u.gyFaceK.value = 光.面明暗;
     u.gyGlowK.value = 光.发光强;
     u.gyLampR.value = 光.灯照.半径;
-    sRGB乘数(u.gyLampCol.value, 光.灯照.色, 光.灯照.强);
+    sRGB乘数(u.gyLampCol.value, 光.灯照.色, 光.灯照.强 * 基);
     u.gyPixel.value = 参.像素阴影 ? 1 : 0;
     u.gyTime.value = 秒;
     const 改水 = 选项.水 === '平滑波纹' || 选项.水 === '像素波纹';
@@ -407,7 +409,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     u.gyZenH.value = Math.sin(((顶?.高 ?? 38) * Math.PI) / 180);
     const 粒子们 = 光.粒子晕 > 0 || 选项.粒子照亮 ? 收粒子(scene) : [];
     u.gyFlashN.value = 0;
-    if (选项.粒子照亮 && 光.粒子照.强 > 0) 摆粒子光(u, 粒子们, 光.粒子照.半径, 光.粒子照.强);
+    if (选项.粒子照亮 && 光.粒子照.强 > 0) 摆粒子光(u, 粒子们, 光.粒子照.半径, 光.粒子照.强 * 基);
 
     const 背景 = scene.background;
     const 清透明 = gl.getClearAlpha();
