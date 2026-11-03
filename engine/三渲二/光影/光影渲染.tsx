@@ -1,5 +1,5 @@
 // 光影层：放进三渲二画布接管渲染（useFrame 优先级 1，在平涂换完材质之后），一帧四步，都只看这一帧（不跨帧累积，乱序、并行出帧结果一样）：
-// 1. 太阳的影子图：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光）和只挡光的组（剖掉的墙），深度进影子图。影子图一个纹素 1/32 格（像素阴影；不按像素时 1/256 格，不够大才放粗），
+// 1. 太阳的影子图：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光）和只挡光的组（剖掉的墙），深度进影子图（剖掉的不挡光 时镜头近裁剪面前面的不画）。影子图一个纹素 1/32 格（像素阴影；不按像素时 1/256 格，不够大才放粗），
 //    框按纹素吸附，镜头动的时候影子边不游；
 // 2. 主画面画进离屏图（半精度浮点，同画布存 sRGB 编码后的值）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，画完换回来；
 // 3. 泛光：只画粒子的泛光源（被主画面挡住的丢掉）；取亮部（加上泛光源）缩一半，再缩五次，每层横竖各糊一遍；
@@ -153,7 +153,7 @@ const 建资源 = () => {
     glowOff: { value: new THREE.Vector2() },
     res: { value: new THREE.Vector2(1, 1) },
   });
-  return { u, 影, 影机, 主, 深, 云, 对数深, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 太阳图: 建太阳图() };
+  return { u, 影, 影机, 主, 深, 云, 对数深, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
 };
 
 /** 原版太阳本体 8×8 进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；光圈色 = 本体正上方那一格（同 2D 天 的光圈），画面值 */
@@ -206,6 +206,13 @@ const 太阳方向 = (选: 光影选项, 光: 时段光, camera: THREE.Camera, o
   const 仰 = (光.太阳仰角 * Math.PI) / 180;
   const h = f.applyAxisAngle(new THREE.Vector3(0, 1, 0), -方);
   return out.set(h.x * Math.cos(仰), Math.sin(仰), h.z * Math.cos(仰)).normalize();
+};
+
+/** 镜头的近裁剪面（世界坐标，镜头看得见的那一边为正）：剖面镜头的近裁剪面放在看点前面 剖 格（机位.tsx） */
+const 近裁剪面 = (camera: THREE.Camera, out: THREE.Plane) => {
+  const f = camera.getWorldDirection(new THREE.Vector3());
+  const p = camera.getWorldPosition(new THREE.Vector3()).addScaledVector(f, (camera as THREE.OrthographicCamera).near);
+  return out.setFromNormalAndCoplanarPoint(f, p);
 };
 
 const 角点 = (camera: THREE.Camera): THREE.Vector3[] => {
@@ -437,7 +444,10 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       scene.background = null;
       gl.setRenderTarget(r.影);
       gl.clear(true, true, true);
+      const 原裁 = gl.clippingPlanes;
+      if (选项.剖掉的不挡光) gl.clippingPlanes = [近裁剪面(camera, r.剖面)];
       gl.render(scene, r.影机);
+      gl.clippingPlanes = 原裁;
       scene.background = 背景;
       for (const o of 藏) o.visible = true;
       u.gyShadowMap.value = r.影.depthTexture;
