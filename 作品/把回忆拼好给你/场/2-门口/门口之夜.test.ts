@@ -175,8 +175,9 @@ describe('烟花（原版 1.20.1 的走法）', () => {
 });
 
 describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 → 推到牌子上 → 跟火箭上天 → 落回门口定格）', () => {
-  it('每一帧 N 是偶数、顶面 2，中心落在偶数像素上（方块边、地面线都是整像素）', () => {
-    for (const f of 帧们) {
+  const 推着 = (f: number) => f / fps > 镜头段.推起 && f / fps < 镜头段.推到;
+  it('推近牌子以外每一帧 N 是偶数、顶面 2，中心落在偶数像素上（方块边、地面线都是整像素）', () => {
+    for (const f of 帧们.filter((f) => !推着(f))) {
       const j = 镜头(f);
       const k = 16 * j.N;
       expect(j.N % 2, `第 ${f} 帧`).toBe(0);
@@ -190,6 +191,15 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     }
   });
 
+  it('推近牌子时每帧都在推、一帧放大不过 6%（N 不取整，不一顿一顿地跳）', () => {
+    const 推帧 = 帧们.filter(推着);
+    for (const f of 推帧.slice(1)) {
+      const r = 镜头(f).N / 镜头(f - 1).N;
+      expect(r, `第 ${f} 帧`).toBeGreaterThan(1);
+      expect(r, `第 ${f} 帧`).toBeLessThan(1.06);
+    }
+  });
+
   it('连贯：相邻两帧 N 变不过 1.5 倍，画面中心那一点挪不过半屏宽', () => {
     for (let f = 起 + 1; f < 止; f++) {
       const [a, b] = [镜头(f - 1), 镜头(f)];
@@ -198,11 +208,12 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     }
   });
 
-  it('开场同第 8 句的机位（N 16、中心）匹配剪进来，原样停 1/6 秒（24 fps 时 4 帧）；N 16 一直留到 0.6 秒以后才往牌子推', () => {
+  it('开场同第 8 句的机位（N 16、中心）匹配剪进来，原样停 1/6 秒（24 fps 时 4 帧）；N 16 一直留到 推起（0.58 秒）才往牌子推', () => {
     for (let f = 起; (f - 起) / fps < 旧帧(4); f++) expect(镜头(f), `第 ${f} 帧`).toEqual({ N: 第8句镜头N, 顶面: 2, 中心: 第8句镜头.取景.中心 });
     let f = 起;
     while (镜头(f).N === 第8句镜头N) f++;
-    expect(f - 起).toBeGreaterThanOrEqual(0.6 * fps);
+    expect(f / fps).toBeGreaterThan(镜头段.推起);
+    expect(f - 起).toBeGreaterThanOrEqual(0.55 * fps);
     expect(f - 1).toBeGreaterThanOrEqual(种下帧);
   });
 
