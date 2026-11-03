@@ -3,12 +3,14 @@
 // 歌词把 15 句都交给符文歌词（它自己按时刻挑出这一段里看得见的：第 3 句的退场、第 4 句、第 5 句的进场），描边色跟着当下的镜头走。
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 符文歌词默认 } from '../../界面/符文排版.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 原声 } from '../../配乐/原声.ts';
+import { 光影段 } from '../../默认.ts';
 import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 叠化样式, 浪样式, 海调子名, 眼调子名 } from '../../场/2-海上/参数.ts';
 import { 叠化, 歌曲帧, 眼机位, 窗 } from '../../场/2-海上/编排.ts';
@@ -22,7 +24,12 @@ import 桨声4 from 'asset:音效/把回忆拼好给你/entity.boat.paddle_water
 import 浪声 from 'asset:音效/entity.player.splash.high_speed';
 
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 窗.起帧));
-const 眼睛 = (g: number) => <祭坛画面 g={g} 机={眼机位(g)} />;
+// 眼睛特写是 2-祭坛召唤 那一镜接着推，光影跟它走（接缝上不跳）；海那块照本段的（海上.tsx）
+const 眼睛 = (g: number) => (
+  <光影范围.Provider value={{ 光影: 光影段['2-祭坛召唤'] }}>
+    <祭坛画面 g={g} 机={眼机位(g)} />
+  </光影范围.Provider>
+);
 
 const 画面: React.FC = () => {
   const f = useCurrentFrame();
