@@ -4,6 +4,7 @@ import { clamp01 } from '@engine/anim/anim.ts';
 import type { 方块 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
+import type { 光影场参数 } from '@engine/三渲二/光影/预设.ts';
 import { fps, 旧帧, 段窗口, 正片事件 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
 import * as 参 from './参数.ts';
@@ -156,6 +157,24 @@ export const 转晴 = (帧: number) => 缓(1 - 雨量(帧));
 export const 这帧调子 = (帧: number): { 后期: 调子; 色调: string } => {
   const 后期 = 插调子(色板.雷雨, 色板[参.晴调子], 转晴(帧));
   return { 后期, 色调: 闪(帧) ? 参.闪电.色调 : 后期.色调 };
+};
+
+/** 光影场（三渲二画布）：太阳、Photon 雨云这一帧的洞、撞亮、曝光（光影的云不是 Photon体积 时光影层不看云这一项） */
+export const 光影场 = (帧: number): 光影场参数 => {
+  const 云 = 参.雨云;
+  const 心 = 洞心();
+  const r = 洞半径(帧) * 云.洞比;
+  const 亮 = 撞亮(帧);
+  return {
+    太阳: 云.太阳,
+    海平面: 云.海平面,
+    云: {
+      高低差: 云.高低差,
+      ...(r > 0 ? { 洞: [心[0], 心[1], r, 云.软边] as const } : {}),
+      ...(亮 > 0 ? { 亮: { 心, 半径: 参.撞云.半径 * 云.亮比, 强: 亮 * 云.亮倍, 色: 参.光柱.色 } } : {}),
+      曝光倍: 插(云.雨曝光, 1, 转晴(帧)) * (闪(帧) ? 云.闪曝光 : 1),
+    },
+  };
 };
 
 // ---------- 发光区：她被自己的阵照亮、阳光 ----------
