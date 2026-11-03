@@ -4,6 +4,8 @@
 // 接口：行们（用 符文歌词数据.ts 的 正片歌词行 取）、样式（全片默认加这一镜的描边色）、收；帧 只给核对段钉帧用。
 // 按「点」画：一个点 = 字点 个成片像素，点格从画面左上角数；每句一层，按成片分辨率整数倍放大、不抗锯齿。
 // 进出场不用半透明，用 4×4 Bayer 抖动一个点一个点地亮、灭；描边 = 字和符文外一圈 8 邻域的点，1 点宽（歌词自己的字边，颜色给场的调子的 描边）。放在 整片后期 里面。
+// 飞着的符文不进点层，一枚一枚按成片像素贴（飞符图）：吸到 7 像素一点时 60 fps 下一帧挪 1 点、每 5 帧跳 2 点，一顿一顿（用户 11-03「改好」）；
+// 落定的笔画照旧在点层里；贴的时候按原来同一层里的遮挡分几张叠（见 符文歌词 组件）。
 import type React from 'react';
 import { useLayoutEffect, useRef } from 'react';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
@@ -24,7 +26,7 @@ import type { 字形表 } from '@库/界面/像素字表.ts';
 import { fps, 旧帧 } from '../分镜.ts';
 import { 光明, 光明档数, 刹那, 刹那块, 放下, 放下块, 时差, 烟花, 烟花火花, 在词里 } from './歌词字效.ts';
 import { 分块, 字种, 收拢, 符文倍, 飞们, 飞位, type 块 } from './符文拼字.ts';
-import { 做字源, 合样式, 字状态, 排一句, 解码时段, type 一字状态, type 摆字, type 符文歌词样式, type 符文歌词行 } from './符文排版.ts';
+import { 做字源, 合样式, 字状态, 排一句, 解码时段, type 一字状态, type 摆字, type 点阵, type 符文歌词样式, type 符文歌词行 } from './符文排版.ts';
 
 export { 符文歌词默认 } from './符文排版.ts';
 export type { 符文歌词样式, 符文歌词行 };
@@ -132,8 +134,11 @@ type 块样 = { dx: number; dy: number; 色: readonly number[]; 冰?: 0 | 1 | 2 
 
 type 一字 = { 格: 摆字; 音: string; 状: 一字状态; 时: { 起: number; 完: number }; 种: number; 块们: readonly 块[] };
 
-/** 画一个字的符文和已经落定的块。块样 给关键词改落定以后的样子；调 = 时差的残影那一遍把所有颜色换成冷色 */
-const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式, 块样: (k: number) => 块样, 调?: (c: readonly number[]) => readonly number[]) => {
+/** 一枚飞着的符文：左上角在点格上的位置（带小数）、点阵、一个字母像素几点、颜色、显现度（抖动阈值比它小的点才画）、横向裁到哪（点） */
+type 飞符 = { x: number; y: number; 阵: 点阵; 倍: number; c: readonly number[]; 显: number; 界?: readonly [number, number] };
+
+/** 画一个字的符文和已经落定的块：落定的画进 层，飞着的放进 飞符们。块样 给关键词改落定以后的样子；调 = 时差的残影那一遍把所有颜色换成冷色 */
+const 画字 = (层: 点层, 飞符们: 飞符[], 字: 一字, f: number, 样式: 符文歌词样式, 块样: (k: number) => 块样, 调?: (c: readonly number[]) => readonly number[]) => {
   const { 格, 音, 状, 时, 种, 块们 } = 字;
   const 符色 = 色(样式.符文色);
   const 飞 = 飞们(块们, 音, { ...时, 入: 状.入 }, 样式.飞秒, 种);
@@ -142,25 +147,23 @@ const 画字 = (层: 点层, 字: 一字, f: number, 样式: 符文歌词样式,
     if (界 && !(X >= 界[0] && X + 1 <= 界[1])) return;
     点(层, X, Y, 调 ? 调(c) : c, 光);
   };
-  // 符文先画（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）。一个字母像素画成 倍 × 倍 个点，最后一截缩回 1 倍；起飞头 1/24 秒半透明
+  // 飞着的符文（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）。一个字母像素画成 倍 × 倍 个点，最后一截缩回 1 倍；起飞头 1/24 秒半透明
   飞.forEach((一, k) => {
     const 位 = 飞位(一, f);
     if (!位) return;
-    const 留 = 1 - 状.出;
-    const 现 = (f - 一.起) / fps < 旧帧(1) ? 0.5 : 1;
     const 倍 = (f - 一.起) / (一.落 - 一.起) < 收拢 ? 符文倍 : 1;
     const 阵 = 源.符文(一.字母);
     const 心 = 块们[k]!.心;
-    const x0 = Math.round(格.x + 心[0] + 位[0] - (阵.宽 * 倍) / 2);
-    const y0 = Math.round(格.y + 心[1] + 位[1] - 3.5 * 倍);
     const c = 符色.map((v) => v * 一.亮);
-    for (const [x, y] of 阵.点)
-      for (let sy = 0; sy < 倍; sy++)
-        for (let sx = 0; sx < 倍; sx++) {
-          const X = x0 + x * 倍 + sx;
-          const Y = y0 + y * 倍 + sy;
-          if (留 * 现 > 阈(X, Y)) 画(X, Y, c, 1);
-        }
+    飞符们.push({
+      x: 格.x + 心[0] + 位[0] - (阵.宽 * 倍) / 2,
+      y: 格.y + 心[1] + 位[1] - 3.5 * 倍,
+      阵,
+      倍,
+      c: 调 ? 调(c) : c,
+      显: (1 - 状.出) * ((f - 一.起) / fps < 旧帧(1) ? 0.5 : 1),
+      ...(界 ? { 界 } : {}),
+    });
   });
   // 刚落定的块：头 1/24 秒外面一圈闪圈色，闪秒 内笔画是闪色；刹那冻住、裂开那一下外面一圈冰色、笔画冰亮色
   const 闪圈 = 色(样式.闪圈色);
@@ -221,15 +224,49 @@ const 描边 = (层: 点层, 描边色: string | null) => {
     }
 };
 
-const 上光泽 = (层: 点层, f: number) => {
+const 上光泽 = (层: 点层, f: number, 原点: readonly [number, number] = [0, 0]) => {
   const 毫秒 = (f / fps) * 1000;
   const g = [0, 0, 0];
   for (let k = 0; k < 层.宽 * 层.高; k++) {
     const s = 层.光[k]!;
     if (!s || !层.实[k]) continue;
-    光泽(k % 层.宽, Math.floor(k / 层.宽), 毫秒, g);
+    光泽(原点[0] + (k % 层.宽), 原点[1] + Math.floor(k / 层.宽), 毫秒, g);
     for (let ch = 0; ch < 3; ch++) 层.px[k * 4 + ch] = 层.px[k * 4 + ch]! + s * g[ch]!;
   }
+};
+
+/** 点层里挑出实的点（字、符文、闪圈）或不实的点（描边、光圈、火花、残影）放进一块画布 */
+const 挑点 = (层: 点层, 实: boolean) => {
+  const px = new Uint8ClampedArray(层.px.length);
+  for (let k = 0; k < 层.宽 * 层.高; k++) if (!!层.实[k] === 实) for (let ch = 0; ch < 4; ch++) px[k * 4 + ch] = 层.px[k * 4 + ch]!;
+  const c = document.createElement('canvas');
+  c.width = 层.宽;
+  c.height = 层.高;
+  c.getContext('2d')!.putImageData(new ImageData(px, 层.宽, 层.高), 0, 0);
+  return c;
+};
+
+/** 一枚飞符在自己的小点层里画（抖动阈值、光泽按它在点格上的整数位置取，同画在大点层里一样）、描边、上光泽，
+ *  按位置的小数部分挪整数个成片像素；描边和符文分两张返回，好让几枚叠着时描边都垫在符文底下。影 = 时差的残影（不描边、不上光泽） */
+const 飞符图 = (符: 飞符, 字点: number, f: number, 描边色: string | null, 影: boolean) => {
+  const X0 = Math.floor(符.x);
+  const Y0 = Math.floor(符.y);
+  // 外面留一点给描边；小层原点在点格的 (X0 − 1, Y0 − 1)
+  const 小层 = 新层(符.阵.宽 * 符.倍 + 2, 符.阵.高 * 符.倍 + 2);
+  for (const [x, y] of 符.阵.点)
+    for (let sy = 0; sy < 符.倍; sy++)
+      for (let sx = 0; sx < 符.倍; sx++) {
+        const X = X0 + x * 符.倍 + sx;
+        const Y = Y0 + y * 符.倍 + sy;
+        if (符.界 && !(X >= 符.界[0] && X + 1 <= 符.界[1])) continue;
+        if (符.显 > 阈(X, Y)) 点(小层, X - X0 + 1, Y - Y0 + 1, 符.c, 1);
+      }
+  if (!影) {
+    描边(小层, 描边色);
+    上光泽(小层, f, [X0 - 1, Y0 - 1]);
+  }
+  const 偏 = (v: number, v0: number) => (v0 - 1) * 字点 + Math.round((v - v0) * 字点);
+  return { x: 偏(符.x, X0), y: 偏(符.y, Y0), 宽: 小层.宽 * 字点, 高: 小层.高 * 字点, 描: 挑点(小层, false), 填: 挑点(小层, true) };
 };
 
 /** 把 影 垫在 层 底下：层 空着的点取 影 的点（时差的残影） */
@@ -307,8 +344,16 @@ const 画火花 = (层: 点层, 心: readonly [number, number], 起圈: readonly
   }
 };
 
-/** 画一句到它自己的点层（字点按这句的样式），返回这一层；这一帧整句都看不见给 null */
-const 画一句 = (行们: readonly 符文歌词行[], i: number, f: number, 底样式: 符文歌词样式, 宽: number, 高: number, 收?: number): { 层: 点层; 字点: number } | null => {
+/** 画一句到它自己的点层（字点按这句的样式），返回这一层、飞着的符文（先残影的、后本体的）和描边色；这一帧整句都看不见给 null */
+const 画一句 = (
+  行们: readonly 符文歌词行[],
+  i: number,
+  f: number,
+  底样式: 符文歌词样式,
+  宽: number,
+  高: number,
+  收?: number,
+): { 层: 点层; 字点: number; 飞符们: 飞符[]; 影飞符们: 飞符[]; 描边色: string | null } | null => {
   const 行 = 行们[i]!;
   const 样式 = 合样式(底样式, 行.版);
   if (!Number.isInteger(样式.字点) || 样式.字点 <= 0) throw new Error(`符文歌词的字点要是正整数：${样式.字点}`);
@@ -350,7 +395,9 @@ const 画一句 = (行们: readonly 符文歌词行[], i: number, f: number, 底
         return { dx: 0, dy: 0, 色: 字色 };
     }
   };
-  字们.forEach((z, j) => 画字(层, z, f, 样式, 块样法(j)));
+  const 飞符们: 飞符[] = [];
+  const 影飞符们: 飞符[] = [];
+  字们.forEach((z, j) => 画字(层, 飞符们, z, f, 样式, 块样法(j)));
   描边(层, 样式.描边色);
   上光泽(层, f);
   if (效) {
@@ -371,12 +418,12 @@ const 画一句 = (行们: readonly 符文歌词行[], i: number, f: number, 底
       词们.forEach((z, n) => {
         const j = 效.从 + n;
         const 格 = { ...z.格, x: z.格.x + 时差.偏[0], y: z.格.y + 时差.偏[1] };
-        画字(影, { ...z, 格, 状: 迟状们[j]! }, 迟, 样式, () => ({ dx: 0, dy: 0, 色: 字色 }), () => 冷);
+        画字(影, 影飞符们, { ...z, 格, 状: 迟状们[j]! }, 迟, 样式, () => ({ dx: 0, dy: 0, 色: 字色 }), () => 冷);
       });
       垫底(层, 影);
     }
   }
-  return { 层, 字点: 样式.字点 };
+  return { 层, 字点: 样式.字点, 飞符们, 影飞符们, 描边色: 样式.描边色 };
 };
 
 /** 铺满画面，放在 position 不是 static 的容器里（如 AbsoluteFill）。行们按 入 从早到晚排 */
@@ -397,11 +444,15 @@ export const 符文歌词: React.FC<{ 行们: readonly 符文歌词行[]; 样式
     行们.forEach((_, i) => {
       const r = 画一句(行们, i, f, 样式, 宽, 高, 收);
       if (!r) return;
-      const 小 = document.createElement('canvas');
-      小.width = r.层.宽;
-      小.height = r.层.高;
-      小.getContext('2d')!.putImageData(new ImageData(r.层.px, r.层.宽, r.层.高), 0, 0);
-      ctx.drawImage(小, 0, 0, r.层.宽 * r.字点, r.层.高 * r.字点);
+      const 影符 = r.影飞符们.map((符) => 飞符图(符, r.字点, f, null, true));
+      const 符 = r.飞符们.map((符) => 飞符图(符, r.字点, f, r.描边色, false));
+      const 整层 = (c: HTMLCanvasElement) => ctx.drawImage(c, 0, 0, r.层.宽 * r.字点, r.层.高 * r.字点);
+      // 叠法同都画在一层里：残影的符文 < 描边、光圈、火花、残影的字 < 符文的描边 < 符文 < 字和闪圈
+      for (const g of 影符) ctx.drawImage(g.填, g.x, g.y, g.宽, g.高);
+      整层(挑点(r.层, false));
+      for (const g of 符) ctx.drawImage(g.描, g.x, g.y, g.宽, g.高);
+      for (const g of 符) ctx.drawImage(g.填, g.x, g.y, g.宽, g.高);
+      整层(挑点(r.层, true));
     });
   });
   // 预览级（不放大）时画布按一半显示：最近邻缩，字点是奇数时点一格宽一格窄，但边是硬的
