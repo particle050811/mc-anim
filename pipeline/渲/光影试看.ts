@@ -51,7 +51,7 @@ export const 套光影试看 =
 
 export type 光影配置 = { 名: string; 值: string };
 
-/** --光影 的值：分号隔开的几份，每份是预设名或 JSON（JSON 里写 名 当文件名后缀，没写用 预设） */
+/** --光影 的值：分号隔开的几份，每份是预设名或 JSON（JSON 里写 名 当文件名后缀，没写用 预设 的名字） */
 export const 解析光影 = (v: string): 光影配置[] =>
   v
     .split(';')
@@ -59,8 +59,8 @@ export const 解析光影 = (v: string): 光影配置[] =>
     .filter(Boolean)
     .map((s) => {
       if (!s.startsWith('{')) return { 名: s, 值: JSON.stringify({ 预设: s }) };
-      const o = JSON.parse(s) as { 名?: string; 预设?: string };
-      const 名 = o.名 ?? o.预设 ?? '关';
+      const o = JSON.parse(s) as { 名?: string; 预设?: string | { 名?: string } };
+      const 名 = o.名 ?? (typeof o.预设 === 'string' ? o.预设 : o.预设?.名) ?? '关';
       if (/[<>:"/\\|?*]/.test(名)) throw new Error(`光影配置的名字要能当文件名：${名}`);
       return { 名, 值: s };
     });
