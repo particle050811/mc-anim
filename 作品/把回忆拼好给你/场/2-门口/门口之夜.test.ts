@@ -33,6 +33,7 @@ import {
   远N,
   镜头,
   镜头段,
+  推拉中,
 } from './门口之夜参数.ts';
 
 const 窗们 = ['2-明年六月见', '2-烟花', '2-截图下线'].map(段窗口);
@@ -175,18 +176,39 @@ describe('烟花（原版 1.20.1 的走法）', () => {
 });
 
 describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 → 推到牌子上 → 跟火箭上天 → 落回门口定格）', () => {
-  it('每一帧 N 是偶数、顶面 2，中心落在偶数像素上（方块边、地面线都是整像素）', () => {
-    for (const f of 帧们) {
+  const 推拉着 = (f: number) => 推拉中(f / fps);
+  it('推近牌子、从牌子拉开以外每一帧 N 是偶数、顶面 2；停住的帧中心落在偶数像素上（方块边、地面线都是整像素）', () => {
+    for (const f of 帧们.filter((f) => !推拉着(f))) {
       const j = 镜头(f);
       const k = 16 * j.N;
       expect(j.N % 2, `第 ${f} 帧`).toBe(0);
       expect(j.顶面).toBe(2);
+      if (j.动着) continue;
       const ex = (0.5 + j.中心[0]) * k;
       const ez = j.中心[1] * k;
       expect(Math.abs(ex - Math.round(ex))).toBeLessThan(1e-6);
       expect(Math.abs(Math.round(ex) % 2)).toBe(0);
       expect(Math.abs(ez - Math.round(ez))).toBeLessThan(1e-6);
       expect(Math.abs(Math.round(ez) % 2)).toBe(0);
+    }
+  });
+
+  it('推近、拉开时每帧都在变、一帧变不过 10%（N 不取整，不一顿一顿地跳）', () => {
+    const 推拉帧 = 帧们.filter(推拉着);
+    expect(推拉帧.length).toBeGreaterThan(80);
+    for (const f of 推拉帧.filter((f) => 推拉着(f - 1))) {
+      const [a, b] = [镜头(f - 1).N, 镜头(f).N];
+      expect(a, `第 ${f} 帧`).not.toBe(b);
+      expect(Math.max(a / b, b / a), `第 ${f} 帧`).toBeLessThan(1.1);
+    }
+  });
+
+  it('停住的帧不少（开场、牌子特写、定格），动着的帧中心每帧都在挪（不一帧挪、一帧不挪）', () => {
+    const 停 = 帧们.filter((f) => !镜头(f).动着);
+    expect(停.length).toBeGreaterThan(60);
+    for (const f of 帧们.filter((f) => 镜头(f).动着 && 镜头(f - 1).动着)) {
+      const [a, b] = [镜头(f - 1).中心, 镜头(f).中心];
+      expect(a[0] !== b[0] || a[1] !== b[1], `第 ${f} 帧`).toBe(true);
     }
   });
 
@@ -198,11 +220,12 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
     }
   });
 
-  it('开场同第 8 句的机位（N 16、中心）匹配剪进来，原样停 1/6 秒（24 fps 时 4 帧）；N 16 一直留到 0.6 秒以后才往牌子推', () => {
+  it('开场同第 8 句的机位（N 16、中心）匹配剪进来，原样停 1/6 秒（24 fps 时 4 帧）；N 16 一直留到 推起（0.58 秒）才往牌子推', () => {
     for (let f = 起; (f - 起) / fps < 旧帧(4); f++) expect(镜头(f), `第 ${f} 帧`).toEqual({ N: 第8句镜头N, 顶面: 2, 中心: 第8句镜头.取景.中心 });
     let f = 起;
     while (镜头(f).N === 第8句镜头N) f++;
-    expect(f - 起).toBeGreaterThanOrEqual(0.6 * fps);
+    expect(f / fps).toBeGreaterThan(镜头段.推起);
+    expect(f - 起).toBeGreaterThanOrEqual(0.55 * fps);
     expect(f - 1).toBeGreaterThanOrEqual(种下帧);
   });
 
@@ -334,8 +357,8 @@ describe('人', () => {
 
 describe('下线：存档图标', () => {
   it('照原版：裁正中正方形，落定时 64×64 个点、一个点 8 个成片像素，斜度、相纸边收没', () => {
-    // 缩好那一帧：下线那一帧已经走了 1/24 秒，缩秒 走完
-    const c = 卡片(正片事件.第11句下线.帧 + Math.ceil((下线图标.缩秒 - 旧帧(1)) * fps), 2560, 1440);
+    // 缩好那一帧：下线那一帧已经走了一帧，缩秒 走完
+    const c = 卡片(正片事件.第11句下线.帧 + Math.ceil(下线图标.缩秒 * fps) - 1, 2560, 1440);
     expect(c.下).toBe(1);
     expect(c.点).toBe(64);
     expect(c.w).toBe(512);
@@ -349,7 +372,7 @@ describe('下线：存档图标', () => {
   });
 
   it('最后半秒是落定的图标和下线那行聊天', () => {
-    expect((止 - 正片事件.第11句下线.帧) / fps - (下线图标.缩秒 - 旧帧(1))).toBeGreaterThanOrEqual(0.5);
+    expect((止 - 正片事件.第11句下线.帧) / fps - (下线图标.缩秒 - 1 / fps)).toBeGreaterThanOrEqual(0.5);
   });
 
   it('手机 390 宽：聊天字（原版字高 8 个界面像素）至少 11 像素高；图标下沿让开聊天栏暗底（y 950 起）', () => {

@@ -20,7 +20,7 @@ import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { 女仆气泡, 女仆气泡锚高 } from '@库/界面/女仆气泡.tsx';
 import { 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
-import { fps, 旧帧号, 画幅, 正片事件 } from '../../分镜.ts';
+import { fps, 画幅, 正片事件 } from '../../分镜.ts';
 import { 光影段 } from '../../默认.ts';
 import { 画布调子 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
@@ -135,7 +135,7 @@ export const 靠肩画面: React.FC<靠肩画面属性> = ({ 帧, 叠层, 气泡
   const t = 色板[调子];
   const 调 = 画布调子(调子);
   return (
-    <整片后期 调色={后期 ? t.调色 : null} 种子={旧帧号(帧)}>
+    <整片后期 调色={后期 ? t.调色 : null} 种子={帧}>
       {补窗景 && <窗景层 />}
       <三渲二画布
         宽={画幅.宽}

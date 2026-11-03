@@ -3,7 +3,7 @@
 import type React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 旧帧号, 段窗口 } from '../../分镜.ts';
+import { 段窗口 } from '../../分镜.ts';
 import { 色板 } from '../../色板.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
@@ -22,7 +22,7 @@ const 画面: React.FC = () => {
   const 歌帧 = 起帧 + useCurrentFrame();
   return (
     <>
-      <整片后期 调色={调.调色} 种子={旧帧号(歌帧)}>
+      <整片后期 调色={调.调色} 种子={歌帧}>
         <选择世界
           状态={{ 取景: 平常取景, 指着: 指着在(歌帧), 选中: 选中在(歌帧), 框光标: 框光标亮(歌帧, 起帧), 光标: 光标在(歌帧), 图标: 旧图标 }}
         />

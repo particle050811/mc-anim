@@ -11,6 +11,7 @@
 import type React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
+import type { 光影场参数 } from '@engine/三渲二/光影/预设.ts';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { HAND_FOV, HAND_NEAR, FirstPersonHand, handTimeline, type HandScript } from '@库/角色/第一人称.tsx';
@@ -137,18 +138,20 @@ export type 重逢画面属性 = {
   /** 叠在 3D 和气泡上面、整片后期里面的 2D（樱花风、歌词） */
   叠层?: React.ReactNode;
   后期?: boolean;
-  /** 整片后期颗粒的种子，不给 = 当前帧号（核对一帧一个视图用）；段里给 旧帧号，颗粒还是一秒换 24 次 */
+  /** 整片后期颗粒的种子，不给 = 当前帧号（核对一帧一个视图用）；段里给歌曲帧 */
   种子?: number;
+  /** 开光影时交给屋里那张画布的事实（手那张不给：手的镜头不动，太阳本来就不转） */
+  光影场?: 光影场参数;
 };
 
 /** 一整帧（1280×720 页面），自己铺满 */
-export const 重逢画面: React.FC<重逢画面属性> = ({ 帧, 气泡字: 字, 机位, 叠层, 后期 = true, 种子 }) => {
+export const 重逢画面: React.FC<重逢画面属性> = ({ 帧, 气泡字: 字, 机位, 叠层, 后期 = true, 种子, 光影场 }) => {
   const 秒 = 帧 / fps;
   const t = 色板[调子];
   const 机 = 机位 ? { 种: '透视' as const, ...机位 } : 重逢机位(秒);
   return (
     <整片后期 调色={后期 ? t.调色 : null} 种子={种子}>
-      <三渲二画布 宽={画幅.宽} 高={画幅.高} 机位={机} {...画布调子(调子)} 色调={门光色调} 发光区={重逢发光区}>
+      <三渲二画布 宽={画幅.宽} 高={画幅.高} 机位={机} {...画布调子(调子)} 色调={门光色调} 发光区={重逢发光区} 光影场={光影场}>
         <场景 帧={帧} 秒={秒} 眼={机.眼} />
       </三渲二画布>
       <手 帧={帧} />

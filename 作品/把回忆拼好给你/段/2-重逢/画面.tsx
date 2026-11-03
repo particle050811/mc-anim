@@ -7,7 +7,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { fps, 旧帧号, 段时钟 } from '../../分镜.ts';
+import { fps, 段时钟 } from '../../分镜.ts';
 import { 光影段 } from '../../默认.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
@@ -19,7 +19,7 @@ import { 樱花风 } from '../../特效/樱花风.tsx';
 import { 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
 import { 加入游戏聊天, 第15句风, 铃在画面 } from '../../场/2-门口/摇铃.tsx';
 import { 重逢画面, 风散心 } from '../../场/2-隐世之境/重逢.tsx';
-import { 聊天行不透明 } from '../../场/2-隐世之境/重逢动作.ts';
+import { 聊天行不透明, 重逢机位 } from '../../场/2-隐世之境/重逢动作.ts';
 import 段 from './段.ts';
 import 铃url from 'asset:音效/万法皆通/wind_seeking_bell';
 import 风url from 'asset:音效/item.elytra.flying';
@@ -29,6 +29,10 @@ const 键 = '2-重逢';
 const 起帧 = 段时钟(键).场窗口.起帧;
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
 const 歌词样式 = { ...第15句符文样式, 描边色: 色板['归隐之地'].描边 };
+/** 太阳整段按第 57 帧的镜头朝向摆（用户 11-03 核脸补光看的那一帧，那一帧和原来一样）。原来跟着每帧的镜头转，推镜一路往右转，
+ *  地毯上的影子边跟着一格一格地爬（用户 11-03「这边边缘像素为什么光影会乱动？」） */
+const 参照机 = 重逢机位((起帧 + 57) / fps);
+const 光影场 = { 太阳参照朝向: [参照机.看[0] - 参照机.眼[0], 参照机.看[1] - 参照机.眼[1], 参照机.看[2] - 参照机.眼[2]] as const };
 
 const 画面: React.FC = () => {
   const f = useCurrentFrame();
@@ -44,7 +48,8 @@ const 画面: React.FC = () => {
       <光影范围.Provider value={{ 光影: 光影段[键] }}>
         <重逢画面
           帧={帧}
-          种子={旧帧号(f)}
+          种子={f}
+          光影场={光影场}
           叠层={
             <>
               <樱花风 秒={帧 / fps} 时刻={第15句风} 源={铃在画面} 散心={风散心} />

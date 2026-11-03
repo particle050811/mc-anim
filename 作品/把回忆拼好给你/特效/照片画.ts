@@ -6,7 +6,7 @@ import type { 照片图 } from './照片图.ts';
 import 递蛋糕uri from 'asset:贴图/照片/第3句递蛋糕-三版';
 import 日落划船uri from 'asset:贴图/照片/第4句日落划船-二版';
 import 扑龙蛋uri from 'asset:贴图/照片/第5句扑龙蛋-二版';
-import 光柱破云uri from 'asset:贴图/照片/第7句光柱破云-二版';
+import 光柱破云uri from 'asset:贴图/照片/第7句光柱破云-三版';
 
 /** 按前面出场的先后：第 8 句开头墙上已经挂着前三张，她把最新那张（光柱破云）挂进最后一只空框（主会话 10-24 按用户「需要取舍」定）。
  *  照片墙格.ts 的 照片墙格位.夏天 按这个顺序排 */

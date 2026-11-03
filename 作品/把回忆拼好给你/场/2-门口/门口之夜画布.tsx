@@ -35,7 +35,7 @@ import { 第8句照片们 } from '../../特效/照片画.ts';
 import { 描边 as 描边默认, 像素N } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 天色, 群系 } from './参数.ts';
-import { 亮档, 亮档比, 夜刻, 夜天弧, 天取景, 星星, 烟花们, 烟花光掺白, 牌字样式, 镜头, 镜头取景, type 门口之夜镜头 } from './门口之夜参数.ts';
+import { 亮档, 亮档比, 夜光影场, 夜刻, 夜天弧, 天取景, 星星, 烟花们, 烟花光掺白, 牌字样式, 镜头, 镜头取景, type 门口之夜镜头 } from './门口之夜参数.ts';
 import { 你态, 加挥手, 她态, 摆设态, 站排y } from './门口之夜编排.ts';
 import 火箭图 from 'asset:贴图/物品/烟花火箭';
 import 树苗图 from 'asset:贴图/物品/樱花树苗';
@@ -222,14 +222,14 @@ const 捕获器: React.FC<{ 层: React.RefObject<HTMLDivElement | null>; 交: (�
 export type 门口之夜画布属性 = {
   /** 歌曲帧 */
   帧: number;
-  /** 同一段时间线上 1/24 秒以前的歌曲帧（24 fps 时的上一帧，可带小数；段首 1/24 秒里不给），给屋后远景算画布高（见 地点/屋后远景.tsx 的 前取景） */
+  /** 同一段时间线上的上一帧（歌曲帧；段首那一帧不给），给屋后远景算画布高（见 地点/屋后远景.tsx 的 前取景）。原来是 1/24 秒以前（24 fps 时的上一帧），用户 11-03「统统改成 60 帧」 */
   前帧?: number;
   宽?: number;
   高?: number;
   /** 每帧画完把各层（天、星星、远景、闪光、三维）连同位置交出来 */
   捕获?: (层们: readonly 捕获层[]) => void;
   style?: React.CSSProperties;
-  /** 光影的样式（段里传 默认.ts 的 光影段[段键]）：屋后远景和前面的三维一起开；不给 = 不开。夜里的时段按平涂色调认，月光方向用光影的默认 */
+  /** 光影的样式（段里传 默认.ts 的 光影段[段键]）：屋后远景和前面的三维一起开；不给 = 不开。夜里的时段按平涂色调认，月光方向见 夜光影场 */
   光影?: 光影选项 | null;
 };
 
@@ -255,7 +255,7 @@ export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, �
   const 你姿 = 加挥手({ ...stevePose([你.x, 站排y, 0], 你.yaw, { headPitch: 你.头俯仰, holdR: !!你.拿 }), armRRoll: 0, armLRoll: 0 }, 你.挥);
   const 她loc: V3 = [她.x, 站排y, 0];
   return (
-    <光影范围.Provider value={{ 光影 }}>
+    <光影范围.Provider value={{ 光影, 光影场: 夜光影场 }}>
       <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden', ...style }}>
         <div ref={层} style={{ position: 'absolute', inset: 0 }}>
           <侧剖面天空 取景={天} 宽={宽} 高={高} 色={天色} 刻={夜刻(秒)} 弧={夜天弧} />

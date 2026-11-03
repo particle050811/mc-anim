@@ -3,7 +3,7 @@
 // 镜头、快进前的天（边挖边天黑）、撤排照 场/2-新世界/编排.ts（和 2-初入 同一套函数，接缝那一帧对得上）；你、掉落物、裂纹、僵尸的坐标是剖面里的（见 场/2-第一晚/参数.ts）。
 import { clamp01 } from '@engine/anim/anim.ts';
 import { 插调子, type 调子 as 调子类型 } from '@engine/三渲二/调子.ts';
-import { fps, 旧帧, 段内正片事件帧, 段时钟, 段窗口 } from '../../分镜.ts';
+import { fps, 一帧秒, 段内正片事件帧, 段时钟, 段窗口 } from '../../分镜.ts';
 import { 天亮 } from '../../地点/天体.ts';
 import { 头, 僵尸, 地层, 天窗挖秒, 快进, 抬头秒, 挖朝向, 掉落物, 洞里暗, 站着vy, 缩下秒 } from '../../场/2-第一晚/参数.ts';
 import type { 坑态 as 坑态类型 } from '../../场/2-新世界/地形.ts';
@@ -64,22 +64,21 @@ export const 碎们: readonly { 帧: number; 格: readonly [number, number, numb
 ];
 
 /** 按住左键挖的几段：[起, 碎, 第几格]（段内帧，可以带小数），裂纹在这段里从 0 长到满。第一格段首就开始挖（接着 2-初入 低头站定），
- *  后两格从上一格碎掉 1/24 秒后接着挖（24 fps 时的下一帧） */
-const 一旧帧 = 旧帧(1) * fps;
+ *  后两格从上一格碎掉的下一帧接着挖（原来是 1/24 秒后，24 fps 时的下一帧；用户 11-03「统统改成 60 帧」） */
 const 挖段们: readonly (readonly [number, number, number])[] = [
   [0, 事.挖一, 0],
-  [事.挖一 + 一旧帧, 事.挖二, 1],
-  [事.挖二 + 一旧帧, 事.挖三, 2],
+  [事.挖一 + 1, 事.挖二, 1],
+  [事.挖二 + 1, 事.挖三, 2],
 ];
 const 天窗挖起 = 事.挖开天窗 - 天窗挖秒 * fps;
 
-/** 裂纹：原版 destroyBlockProgress = (int)(进度 × 10) − 1，−1 不画。进度多算 1/24 秒（24 fps 时按帧末算：起的那一帧已经挖了一帧），
- *  碎前最后 1/24 秒是满的第 9 级（多算的那截让进度过 1，封顶 9） */
+/** 裂纹：原版 destroyBlockProgress = (int)(进度 × 10) − 1，−1 不画。进度多算一帧（按帧末算：起的那一帧已经挖了一帧），
+ *  碎前最后一帧是满的第 9 级（多算的那截让进度过 1，封顶 9） */
 export const 裂纹态 = (f: number): { 格: readonly [number, number, number]; 级: number } | null => {
   const 段 = [...挖段们, [天窗挖起, 事.挖开天窗, 3] as const].find(([起, 碎]) => f >= 起 && f < 碎);
   if (!段) return null;
   const [起, 碎, i] = 段;
-  const 级 = Math.min(9, Math.floor(((f - 起 + 一旧帧) / (碎 - 起)) * 10) - 1);
+  const 级 = Math.min(9, Math.floor(((f - 起 + 1) / (碎 - 起)) * 10) - 1);
   return 级 < 0 ? null : { 格: 碎们[i]!.格, 级 };
 };
 

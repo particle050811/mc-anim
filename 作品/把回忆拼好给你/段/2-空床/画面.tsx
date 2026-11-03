@@ -9,7 +9,7 @@ import { 平涂 } from '@engine/三渲二/平涂.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx, magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { fps, 旧帧, 旧帧号 } from '../../分镜.ts';
+import { fps, 一帧秒 } from '../../分镜.ts';
 import { 帽子抬, 开场化秒, 戴帽子 } from '../../场/2-卧室/参数.ts';
 import { 白天光影场 } from '../../场/2-门口/参数.ts';
 import { 卧室画布 } from '../../场/2-卧室/卧室.tsx';
@@ -52,10 +52,10 @@ const 她: React.FC<{ f: number; 色调: string }> = ({ f, 色调 }) => {
   );
 };
 
-/** 开头 开场化秒 盖在卧室上的第 11 句末画面（照 2-截图下线 按歌曲帧接着画，最后一帧之后图标、聊天栏不动），不透明度两头慢地退到 0（第一帧已经退了 旧帧(1) 秒） */
+/** 开头 开场化秒 盖在卧室上的第 11 句末画面（照 2-截图下线 按歌曲帧接着画，最后一帧之后图标、聊天栏不动），不透明度两头慢地退到 0（第一帧已经退了一帧） */
 const 下线余影: React.FC<{ f: number }> = ({ f }) => {
   if (f / fps >= 开场化秒 - 1e-9) return null;
-  const t = (f / fps + 旧帧(1)) / (开场化秒 + 旧帧(1));
+  const t = (f / fps + 一帧秒) / (开场化秒 + 一帧秒);
   return (
     <div style={{ position: 'absolute', inset: 0, opacity: 1 - t * t * (3 - 2 * t) }}>
       <门口之夜照片 帧={歌曲帧(f)} />
@@ -69,7 +69,7 @@ const 画面: React.FC = () => {
   return (
     <>
       <配乐音轨 song={原声} 段={段} />
-      <整片后期 调色={后期调色(f)} 种子={旧帧号(歌曲帧(f))}>
+      <整片后期 调色={后期调色(f)} 种子={歌曲帧(f)}>
         <卧室画布
           调子={光.调子}
           天={光.天}

@@ -17,6 +17,8 @@ import { registerMidPass, type MidPassContext } from '../../voxel/中间步骤.t
 // 取 3：积云一团团云底在 y 363～1163（见 cumulusHeightMap），下坠和 6-2-5 俯冲都穿过；高积云 y 1130～1290；
 // 卷云 y 2063 在悬停点以上、6-2-5 开头（y 约 2564）以下，悬停时头顶脚下都有云
 export const CLOUDS_SCALE = 3;
+/** 积云各团云底的高低差（云空间米，GLSL 里的 PC_CU_BH） */
+const CU_BH = 2400;
 
 // ---------- 天气 → 云的参数（include/weather/clouds.glsl 的 get_clouds_parameters；不下雨） ----------
 export type CloudWeather = { temperature: number; humidity: number; wind: number };
@@ -78,6 +80,9 @@ export const cloudUniforms = {
   pcNear: { value: new THREE.Vector2(1, 1) }, // 去云：镜头周围云空间里多远以内删掉，软边宽
   pcClear: { value: v4() }, // 让开：云空间水平位置 x、z，半径（0 = 不让），软边
   pcLight: { value: [0, 1, 2].map(() => new THREE.Vector3()) }, // 三层所在高度的日光
+  pcCuBH: { value: CU_BH }, // 积云各团云底的高低差（云空间米，PC_CU_BH × 高低差倍数，见 pcCuBase）
+  pcGlow: { value: v4() }, // 云底被照亮的一块：云空间水平位置 x、z，半径，强（0 = 不亮；按积云那层日光的亮度算，1 = 和日光一样亮）
+  pcGlowCol: { value: new THREE.Color() },
 };
 
 // ---------- GLSL ----------
@@ -101,13 +106,16 @@ uniform int pcAddN;
 uniform vec2 pcNear;
 uniform vec4 pcClear;
 uniform vec3 pcLight[3];
+uniform float pcCuBH;
+uniform vec4 pcGlow;
+uniform vec3 pcGlowCol;
 #define PC_S ${CLOUDS_SCALE.toFixed(1)}
 #define PC_R 6371e3
 #define PC_EPS 1e-6
 #define PC_PI 3.14159265
 #define PC_ISO 0.0795774715
 #define PC_CU_R (PC_R + 900.0)
-#define PC_CU_BH 2400.0
+#define PC_CU_BH ${CU_BH.toFixed(1)}
 #define PC_CU_T 1200.0
 #define PC_CU_TOP (PC_CU_R + PC_CU_BH + PC_CU_T)
 #define PC_AC_R (PC_R + 3200.0)
@@ -182,7 +190,9 @@ float pcAddBoost(vec2 xz) {
 // ---- 积云 ----
 // 积云照 Photon 单层算，再把每一团整团挪到自己的高度（用户 10-14：云不该都挤在 +400 米一层，云底随机在海平面以上 300～1100 米，用户 10-14 比过 400～4000 后定）。
 // 每团的高度存在 pcCuHeight（和覆盖的细噪声同一套纹理坐标），一团里处处一样，云底是平的、不会被拉斜
-float pcCuBase(vec2 xz) { return PC_CU_R + PC_CU_BH * texture(pcCuHeight, 0.000027 * xz).r; }
+// 高低差改过（倍数 ≠ 1）时高度图换成线性过滤的那张：一格 72 米（方块 24 格），从正下方仰看时团和团的交界是一道道横平竖直的断崖（2-拨开阴霾 看出来的），
+// 过渡成斜坡；没改时照原样（最近邻，2-日落划船 等画面逐像素不变：在着色器里分支取样会差几个像素）
+float pcCuBase(vec2 xz) { return PC_CU_R + pcCuBH * texture(pcCuHeight, 0.000027 * xz).r; }
 float pcCuCoverage(vec2 xz) {
   vec2 n = vec2(texture(pcNoise, 0.000002 * xz).x, texture(pcNoise, 0.000027 * xz).w);
   float cu = 0.0, st = 0.0;
@@ -348,7 +358,8 @@ PcRes pcCumulus(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
   float fall = 0.55 * mix(pcLift(clamp(ext / 0.1, 0.0, 1.0), 0.33), 1.0, c * 0.5 + 0.5);
   float ph0 = pcPhaseSingle(c);
   vec2 sc = vec2(0.0);
-  float T = 1.0, dsum = 0.0, wsum = 0.0;
+  float T = 1.0, dsum = 0.0, wsum = 0.0, glow = 0.0;
+  float glowBase = pcGlow.w > 0.0 ? pcCuBase(pcGlow.xy) : 0.0;
   for (int i = 0; i < PC_CU_MAX; i++) {
     if (i >= steps || T < 0.075) break;
     vec3 p = ro + st * float(i);
@@ -381,12 +392,20 @@ PcRes pcCumulus(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
       ph = pcPhaseMulti(c, g);
     }
     sc += s * ((1.0 - sT) / ext) * T;
+    // 云底被照亮：亮心那一团的云底当一盏灯，平方反比（软心 = 半径），按这一步挡掉的光算（云自己发光，不经空气透视）。
+    // 不按「离云底多高」衰减：积云从云底往上 0.2 层厚才浓起来（方块 80 格），仰看时看到的是那一截
+    if (pcGlow.w > 0.0) {
+      vec2 gd = p.xz + pcCamXZ - pcGlow.xy;
+      float gh = length(p) - glowBase;
+      glow += (1.0 - sT) * T / (1.0 + (dot(gd, gd) + gh * gh) / (pcGlow.z * pcGlow.z));
+    }
     T *= sT;
     dsum += dist * dens;
     wsum += dens;
   }
   float cT = pcLs(0.075, 1.0, T);
   vec3 col = pcAerial(sc.x * pcLight[0] + sc.y * atmoAmb, cT, o, ro, rd, sky);
+  if (pcGlow.w > 0.0) col += pcGlowCol * (pcGlow.w * glow * dot(pcLight[0], vec3(0.2126, 0.7152, 0.0722)));
   return PcRes(col, cT, wsum == 0.0 ? 1e6 : dsum / wsum + distance(o, ro));
 }
 
@@ -615,17 +634,30 @@ void main() {
 
 // 加的云：场景坐标 [x, y, 半径]（方块米），在高积云层里
 type Circle = [number, number, number];
-type Settings = { weather: CloudWeather; add: Circle[]; near: [number, number]; clear: [number, number, number, number] | null; seaY: number; exposure: number };
+/** 云底被照亮的一块（场景坐标，方块米）：心、半径、强（乘在 色 上，线性；1 = 和积云那层的日光一样亮）、色（sRGB） */
+export type CloudGlow = { 心: readonly [number, number]; 半径: number; 强: number; 色: string };
+type Settings = {
+  weather: CloudWeather;
+  add: Circle[];
+  near: [number, number];
+  clear: [number, number, number, number] | null;
+  seaY: number;
+  exposure: number;
+  spread: number;
+  glow: CloudGlow | null;
+};
 // 默认天气：积云 + 高积云 + 卷云三层都有。湿度 0.55（用户 10-14 定；0.6 太密，0.45 时积云几乎没了）
 export const defaultWeather: CloudWeather = { temperature: 0.5, humidity: 0.55, wind: 0.6 };
 // 去云默认镜头 20 米内删掉、再 30 米渐变回来：下坠穿云时四周还看得到云团擦过
 const defaultNear: [number, number] = [20, 30];
-const settings: Settings = { weather: defaultWeather, add: [], near: defaultNear, clear: null, seaY: 0, exposure: 1 };
+const settings: Settings = { weather: defaultWeather, add: [], near: defaultNear, clear: null, seaY: 0, exposure: 1, spread: 1, glow: null };
 const 云设置槽 = 新写入槽();
 const 云设置复位 = () => {
   settings.add = [];
   settings.near = defaultNear;
   settings.clear = null;
+  settings.spread = 1;
+  settings.glow = null;
 };
 
 // 云先画到离屏的两张图（预乘的色、要写的深度），再合成到画布
@@ -689,7 +721,7 @@ const getPass = () => {
 // 找连通的团（四邻接、平铺回绕），每团一个随机高度 0～1（× PC_CU_BH）；团外的格子跟最近的团（按格子一圈圈往外扩），轮廓稍大一点也落在同一团里。
 // 阈值 0.56：再低团就连成一大片（0.53 时最大一团占四分之一）；云量高过它时团边上多出的一圈跟着最近的团走
 const HEIGHT_THRESHOLD = 0.56;
-let heightMap: THREE.DataTexture | null = null;
+let heightMap: { nearest: THREE.DataTexture; smooth: THREE.DataTexture } | null = null;
 const cumulusHeightMap = (noise: Uint8Array) => {
   if (heightMap) return heightMap;
   const N = 512;
@@ -738,7 +770,10 @@ const cumulusHeightMap = (noise: Uint8Array) => {
   t.generateMipmaps = false;
   t.unpackAlignment = 1;
   t.needsUpdate = true;
-  return (heightMap = t);
+  const smooth = t.clone();
+  smooth.minFilter = smooth.magFilter = THREE.LinearFilter;
+  smooth.needsUpdate = true;
+  return (heightMap = { nearest: t, smooth });
 };
 
 // 每帧更新共用 uniform（云这一遍、屏幕AO 的云影都读）；cam：主镜头
@@ -749,12 +784,15 @@ export const updateCloudUniforms = (cam: THREE.Camera) => {
   u.pcL0C.value.z = 0;
   if (!tex) return;
   u.pcNoise.value = tex.noise;
-  u.pcCuHeight.value = cumulusHeightMap(tex.noise.image.data as Uint8Array);
+  const hm = cumulusHeightMap(tex.noise.image.data as Uint8Array);
+  u.pcCuHeight.value = settings.spread === 1 ? hm.nearest : hm.smooth;
   u.pcWorleyB.value = tex.worleyBubbly;
   u.pcWorleyS.value = tex.worleySwirley;
   camWorld.setFromMatrixPosition(cam.matrixWorld);
-  u.pcCamXZ.value.set(CLOUDS_SCALE * camWorld.x, CLOUDS_SCALE * camWorld.z);
-  u.pcCamR.value = 6371e3 + CLOUDS_SCALE * (camWorld.y - settings.seaY);
+  const S = CLOUDS_SCALE;
+  u.pcCuBH.value = CU_BH * settings.spread;
+  u.pcCamXZ.value.set(S * camWorld.x, S * camWorld.z);
+  u.pcCamR.value = 6371e3 + S * (camWorld.y - settings.seaY);
   u.pcSeaY.value = settings.seaY;
   const sunY = atmosphere.sun[2];
   const p = cloudParams(settings.weather, sunY);
@@ -768,10 +806,13 @@ export const updateCloudUniforms = (cam: THREE.Camera) => {
   const add = settings.add.slice(0, 4);
   u.pcAddN.value = add.length;
   // 加云的场景坐标 (x, y) → 世界 (x, −y) → 云空间 × CLOUDS_SCALE；圈心覆盖 1（高积云薄，再低就只剩几缕）
-  add.forEach(([x, y, r], i) => u.pcAdd.value[i].set(CLOUDS_SCALE * x, -CLOUDS_SCALE * y, CLOUDS_SCALE * r, 1));
-  u.pcNear.value.set(CLOUDS_SCALE * settings.near[0], CLOUDS_SCALE * settings.near[1]);
+  add.forEach(([x, y, r], i) => u.pcAdd.value[i].set(S * x, -S * y, S * r, 1));
+  u.pcNear.value.set(S * settings.near[0], S * settings.near[1]);
   const c = settings.clear;
-  u.pcClear.value.set(c ? CLOUDS_SCALE * c[0] : 0, c ? -CLOUDS_SCALE * c[1] : 0, c ? CLOUDS_SCALE * c[2] : 0, c ? CLOUDS_SCALE * c[3] : 0);
+  u.pcClear.value.set(c ? S * c[0] : 0, c ? -S * c[1] : 0, c ? S * c[2] : 0, c ? S * c[3] : 0);
+  const g = settings.glow;
+  u.pcGlow.value.set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.半径 : 1, g ? g.强 : 0);
+  if (g) u.pcGlowCol.value.setStyle(g.色, THREE.LinearSRGBColorSpace);
   // 三层所在的云空间高度上的日光（light_color.glsl：日光色 × 透过率 × 7）
   [1200, 3200, 6000].forEach((h, i) => u.pcLight.value[i].fromArray(atmoLightAt(h)));
 };
@@ -821,7 +862,8 @@ export const drawPhotonClouds = (ctx: MidPassContext) => {
 };
 
 // 放进画布里画云（画布要挂 <ScreenAo />，在它第 3 遍的水面之后画）：weather 天气（0～1）；add 加云（场景坐标 [x, y, 半径]，最多 4 朵，方块米）；near 镜头周围去云（[半径, 软边]，方块米）；
-// clear 让开（场景坐标 [x, y, 半径, 软边] 的竖直圆柱，里面的云变薄纱）；seaY 海平面的世界高度；exposure 云的曝光
+// clear 让开（场景坐标 [x, y, 半径, 软边] 的竖直圆柱，里面的云变薄纱）；seaY 海平面的世界高度；exposure 云的曝光；
+// spread 积云各团云底高低差的倍数（不给 1）；glow 云底被照亮的一块
 export const PhotonClouds: React.FC<{
   weather?: CloudWeather;
   add?: Circle[];
@@ -829,10 +871,14 @@ export const PhotonClouds: React.FC<{
   clear?: [number, number, number, number];
   seaY: number;
   exposure?: number;
+  spread?: number;
+  glow?: CloudGlow;
   draw?: boolean;
 }> = ({ weather = defaultWeather, add = [], near = defaultNear, clear,
   seaY,
   exposure = 1,
+  spread = 1,
+  glow,
   draw = true,
 }) => {
   use写入者(云设置槽, 云设置复位);
@@ -842,6 +888,8 @@ export const PhotonClouds: React.FC<{
   settings.clear = clear ?? null;
   settings.seaY = seaY;
   settings.exposure = exposure;
+  settings.spread = spread;
+  settings.glow = glow ?? null;
   const gl = useThree((s) => s.gl);
   const advance = useThree((s) => s.advance);
   const [release] = useState(() => {

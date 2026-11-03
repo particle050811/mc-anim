@@ -8,7 +8,7 @@ import { useId } from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { clamp01, rad, sample } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
-import { fps, 旧帧 } from '../分镜.ts';
+import { fps, 一帧秒 } from '../分镜.ts';
 
 export type 拍立得样式 = {
   /** 照片里的画面最后缩到原来的几倍（白边另加在外面） */
@@ -73,8 +73,8 @@ export const 拍立得: React.FC<{
   const 已定格 = f >= 定格帧;
   const t = (f - 定格帧) / fps;
 
-  // 进度 p：定格帧是 0，比 缩小秒 早 1/24 秒走完（24 fps 时第 缩小帧−1 帧）
-  const p = sample([[0, 0], [Math.max(旧帧(1), 样式.缩小秒 - 旧帧(1)), 1]], t);
+  // 进度 p：定格帧是 0，比 缩小秒 早一帧走完
+  const p = sample([[0, 0], [Math.max(一帧秒, 样式.缩小秒 - 一帧秒), 1]], t);
   const k = 1 + (样式.缩放 - 1) * p;
   const θ = 样式.斜度 * p;
   const 边 = 样式.边 * W;
@@ -85,8 +85,8 @@ export const 拍立得: React.FC<{
   const ty = -p * k * d * Math.cos(rad(θ));
 
   const 闪 = 已定格 && t < 样式.闪白秒 ? (1 - t / 样式.闪白秒) ** 2 : 0;
-  // 淡入那一刻已经走了 24 fps 的一帧；那一刻之前截成 0（24 fps 时本来就是 0）
-  const 字透明 = t < 样式.字延迟秒 ? 0 : clamp01((t - 样式.字延迟秒 + 旧帧(1)) / Math.max(旧帧(1), 样式.字淡入秒));
+  // 淡入那一刻已经走了一帧；那一刻之前截成 0
+  const 字透明 = t < 样式.字延迟秒 ? 0 : clamp01((t - 样式.字延迟秒 + 一帧秒) / Math.max(一帧秒, 样式.字淡入秒));
 
   return (
     <AbsoluteFill style={{ overflow: 'hidden', backgroundColor: 已定格 ? 样式.背景 : undefined }}>

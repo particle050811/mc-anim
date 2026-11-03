@@ -5,7 +5,7 @@
 // 符文怎么飞、字怎么分块见 符文拼字.ts；逐句的位置、断行、对齐见 歌词排版表.ts。
 import type { Png } from '@engine/model/贴图.ts';
 import type { 字形表 } from '@库/界面/像素字表.ts';
-import { fps, 旧帧 } from '../分镜.ts';
+import { fps, 一帧秒, 旧帧 } from '../分镜.ts';
 
 /** 定死的散列（不用 Math.random：同一帧每次渲都一样），返回 [0, 1) */
 export const 散 = (a: number, b: number, c = 0) => {
@@ -208,8 +208,8 @@ export type 字效 =
   | { 效: '时差'; 从: number; 到: number; 半拍: number };
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-/** 从 起 那一帧开始、n秒 走完的渐变（同 歌词.tsx：起那一帧已经走了 24 fps 的一帧） */
-const 渐 = (f: number, 起: number, n秒: number) => clamp01(((f - 起) / fps + 旧帧(1)) / Math.max(旧帧(1), n秒));
+/** 从 起 那一帧开始、n秒 走完的渐变（同 歌词.tsx：起那一帧已经走了一帧） */
+const 渐 = (f: number, 起: number, n秒: number) => clamp01(((f - 起) / fps + 一帧秒) / Math.max(一帧秒, n秒));
 
 /** 每个字拼字的起止帧：完 = 起唱 − 落定提前秒（最后一块落定），起 = 完 − 拼字秒（第一块落定），但不早于这个字进场后 首飞秒 */
 export const 解码时段 = (行: Pick<符文歌词行, '解' | '入'>, 样式: Pick<时间样式, '拼字秒' | '首飞秒' | '落定提前秒' | '错开秒'>): { 起: number; 完: number }[] =>
