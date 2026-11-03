@@ -1,5 +1,5 @@
 // 光影层：放进三渲二画布接管渲染（useFrame 优先级 1，在平涂换完材质之后），一帧四步，都只看这一帧（不跨帧累积，乱序、并行出帧结果一样）：
-// 1. 太阳的影子图：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光），深度进影子图。影子图一个纹素固定 1/32 格（不够大才放粗），
+// 1. 太阳的影子图：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光）和只挡光的组（剖掉的墙），深度进影子图。影子图一个纹素 1/32 格（像素阴影；不按像素时 1/256 格，不够大才放粗），
 //    框按纹素吸附，镜头动的时候影子边不游；
 // 2. 主画面画进离屏图（半精度浮点，同画布存 sRGB 编码后的值）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，画完换回来；
 // 3. 泛光：只画粒子的泛光源（被主画面挡住的丢掉）；取亮部（加上泛光源）缩一半，再缩五次，每层横竖各糊一遍；
@@ -226,7 +226,7 @@ const 角点 = (camera: THREE.Camera): THREE.Vector3[] => {
 };
 
 /** 摆影子机：受光网格的包围盒和镜头视体（在太阳的视角下）取交，纹素吸附。没有要画影子的东西返回 false */
-const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: THREE.Vector3, 受光网格: THREE.Mesh[]) => {
+const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: THREE.Vector3, 受光网格: THREE.Mesh[], 起纹素: number) => {
   const 上 = Math.abs(L.y) > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
   const 视 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上);
   const 逆 = 视.clone().invert();
@@ -245,8 +245,8 @@ const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: TH
   const x0 = Math.max(场盒.min.x, 视盒.min.x), x1 = Math.min(场盒.max.x, 视盒.max.x);
   const y0 = Math.max(场盒.min.y, 视盒.min.y), y1 = Math.min(场盒.max.y, 视盒.max.y);
   if (x0 >= x1 || y0 >= y1) return false;
-  // 纹素：1/32 格起，框装不下就翻倍
-  let 纹素 = 1 / 32;
+  // 纹素：起纹素起，框装不下就翻倍
+  let 纹素 = 起纹素;
   while (Math.max(x1 - x0, y1 - y0) + 2 > 影子图边 * 纹素) 纹素 *= 2;
   const 半 = (影子图边 * 纹素) / 2;
   const 吸 = (v: number) => Math.round(v / 纹素) * 纹素;
@@ -275,6 +275,12 @@ const 包围球 = (g: THREE.BufferGeometry): THREE.Sphere | null => {
   return g.boundingSphere;
 };
 
+/** 只挡光（./只挡光.tsx）组里的网格 */
+const 在挡光组 = (o: THREE.Object3D) => {
+  for (let p: THREE.Object3D | null = o; p; p = p.parent) if (p.userData.只挡光) return true;
+  return false;
+};
+
 const 收受光网格 = (scene: THREE.Scene) => {
   const 受光: THREE.Mesh[] = [];
   const 别的: THREE.Object3D[] = [];
@@ -282,7 +288,7 @@ const 收受光网格 = (scene: THREE.Scene) => {
     const mesh = o as THREE.Mesh;
     if (mesh.isMesh) {
       const ms = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      if (ms.some(平涂受光)) 受光.push(mesh);
+      if (ms.some(平涂受光) || 在挡光组(mesh)) 受光.push(mesh);
       else 别的.push(o);
     } else if ((o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite) 别的.push(o);
   });
@@ -384,6 +390,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const 基 = 选项.基准亮度 ?? 1;
     sRGB乘数(u.gySunCol.value, 光.日光, 光.日光强 * 基);
     sRGB乘数(u.gyShadeCol.value, 光.阴影, 光.阴影强 * 基);
+    if (选项.光强 !== undefined) u.gySunCol.value.lerp(u.gyShadeCol.value, 1 - 选项.光强);
     u.gyDirK.value = 光.朝向;
     u.gyFaceK.value = 光.面明暗;
     u.gyGlowK.value = 光.发光强;
@@ -416,10 +423,15 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     gl.getClearColor(r.清色);
     gl.setClearColor(0x000000, 0);
 
-    // 1. 影子图
+    // 1. 影子图：只挡光的组（平时藏着）只在这一步露出来
+    const 挡光组: THREE.Object3D[] = [];
+    scene.traverse((o) => {
+      if (o.userData.只挡光) 挡光组.push(o);
+    });
+    for (const o of 挡光组) o.visible = true;
     const { 受光, 别的 } = 收受光网格(scene);
     u.gyShadowOn.value = 0;
-    if (受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光)) {
+    if (受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256)) {
       const 藏 = 别的.filter((o) => o.visible);
       for (const o of 藏) o.visible = false;
       scene.background = null;
@@ -431,6 +443,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       u.gyShadowMap.value = r.影.depthTexture;
       u.gyShadowOn.value = 1;
     }
+    for (const o of 挡光组) o.visible = false;
 
     // 2. 主画面
     const [w, h] = gl.getDrawingBufferSize(r.尺寸).toArray();
