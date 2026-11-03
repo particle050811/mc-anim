@@ -30,7 +30,7 @@ import { 重逢发光区, 隐世之境重逢布景 } from './布景.tsx';
 import { 对视门光, 门光色调, 背景褪色参数 } from './对视参数.ts';
 import { 加滚, 拿着花的她, 空手拿 } from './对视.tsx';
 import { 靠肩机位, 靠肩进度 } from './合照动作.ts';
-import { 合照光影场, 合照站位, 合照朝向, 合照镜, 史蒂夫倍数, 你的头, 台词气泡接过来, 后期打光, 窗景, 第11句拍立得样式, 靠肩, 靠肩气泡, 靠肩起势 } from './合照参数.ts';
+import { 合照光影场, 合照站位, 合照朝向, 合照镜, 史蒂夫倍数, 你的头, 台词气泡接过来, 窗景, 第11句拍立得样式, 靠肩, 靠肩气泡, 靠肩起势 } from './合照参数.ts';
 import { 台词气泡, 笑 } from './重逢参数.ts';
 import { 不褪色, 背景褪色 } from './褪色.tsx';
 
@@ -98,29 +98,6 @@ const 窗景层: React.FC = () => (
   </三渲二画布>
 );
 
-const 椭圆光 = (c: { 中: [number, number]; 宽: number; 高: number; 色: string }) =>
-  `radial-gradient(ellipse ${c.宽 * 100}% ${c.高 * 100}% at ${c.中[0] * 100}% ${c.中[1] * 100}%, ${c.色} 0%, ${c.色}00 100%)`;
-
-/** 后期打光（合照参数 的 后期打光）：主光、窗光滤色提亮，暗角正片叠底压暗 */
-const 后期打光层: React.FC = () => {
-  const { 主光, 窗光, 暗角 } = 后期打光;
-  return (
-    <>
-      <div style={{ position: 'absolute', inset: 0, background: 椭圆光(主光), mixBlendMode: 'screen', opacity: 主光.强 }} />
-      <div style={{ position: 'absolute', inset: 0, background: 椭圆光(窗光), mixBlendMode: 'screen', opacity: 窗光.强 }} />
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          background: `radial-gradient(ellipse farthest-corner at ${暗角.中[0] * 100}% ${暗角.中[1] * 100}%, #ffffff ${暗角.起 * 100}%, ${暗角.色} 100%)`,
-          mixBlendMode: 'multiply',
-          opacity: 暗角.强,
-        }}
-      />
-    </>
-  );
-};
-
 /** 她头顶气泡的锚点（页面坐标）：原版脚底 + 女仆气泡锚高 投到靠肩机位的画面上 */
 export const 靠肩气泡锚 = () => {
   const cam = 做机位相机(靠肩机位, 画幅.宽, 画幅.高, canvasDpr(1));
@@ -149,7 +126,7 @@ export type 靠肩画面属性 = {
   /** 窗里补樱花林（合照参数 的 窗景，小样），默认不补（窗里只有天，同片里） */
   窗景?: boolean;
   后期?: boolean;
-  /** 光影（默认.ts 的 光影段['2-合照']，照片跟着片里走）；null = 不开。开了连 后期打光 一起 */
+  /** 光影（默认.ts 的 光影段['2-合照']，照片跟着片里走）；null = 不开 */
   光影?: 光影选项 | null;
 };
 
@@ -173,7 +150,6 @@ export const 靠肩画面: React.FC<靠肩画面属性> = ({ 帧, 叠层, 气泡
       >
         <靠肩场景 帧={帧} 褪色={褪色} 窗外={!补窗景} />
       </三渲二画布>
-      {光影 && 后期 && <后期打光层 />}
       {气泡 && <靠肩气泡层 字={笑.气泡字} 缩放={合照镜.N} />}
       {台词 && <靠肩气泡层 字={台词气泡.字} 缩放={台词气泡接过来.缩放} />}
       {叠层}
