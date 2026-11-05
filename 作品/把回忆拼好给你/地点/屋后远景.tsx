@@ -14,7 +14,7 @@ import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { blockAtlas } from '@engine/voxel/真实方块图集.ts';
 import { 小木屋上空云, type 云格子 } from './原版云.ts';
-import { 原版云层, 做云材质们, type RGB } from './原版云层.tsx';
+import { 原版方块云, 做云材质们, type RGB } from '@engine/light/云/原版方块云.tsx';
 import type { 侧取景 } from './侧剖面.tsx';
 import { 天亮 } from './天体.ts';
 import type { 天色 as 天色类型 } from './天空.tsx';
@@ -135,7 +135,7 @@ const 远景内容: React.FC<{ u: 雾统一量; 云?: 远景云; 算雾页高?: 
       {网格们.map((m) => (
         <primitive key={m.name} object={m} />
       ))}
-      {云 && <原版云层 剩={云.剩} 飘={云.飘} 色={云.色} 底高={小木屋上空云.底高} 材质们={云材质} />}
+      {云 && <原版方块云 偏={小木屋上空云.偏} 铺={小木屋上空云.铺} 剩={云.剩} 飘={云.飘} 色={云.色} 底高={小木屋上空云.底高} 材质们={云材质} />}
     </group>
   );
 };
