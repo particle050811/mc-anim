@@ -83,10 +83,10 @@ type 资源 = ReturnType<typeof 建资源>;
 // 起伏网格：海面（场景里平放在 z = 0、以眼为中心的一块方板）在 Photon 式、FFT 时换成这张极坐标网格，同样以眼为中心、铺到方板的角上；
 // 圈距按指数往外疏（近处 5 厘米一圈、视距边上几米一圈），每圈 720 段。只在画主画面那一下换上，画完换回去，场景自己的网格不动
 let 起伏网格: THREE.BufferGeometry | null = null;
-const 取起伏网格 = (原: THREE.BufferGeometry) => {
+const 取起伏网格 = (原: THREE.BufferGeometry, 远: number) => {
   原.computeBoundingBox();
   const b = 原.boundingBox!;
-  const R = Math.hypot(b.max.x - b.min.x, b.max.y - b.min.y) / 2;
+  const R = Math.max(远, Math.hypot(b.max.x - b.min.x, b.max.y - b.min.y) / 2);
   if (起伏网格 && 起伏网格.userData.R === R) return 起伏网格;
   起伏网格?.dispose();
   const 圈 = 640;
@@ -119,14 +119,15 @@ const 取起伏网格 = (原: THREE.BufferGeometry) => {
 // FFT 海：Ultra-Water 的模拟（4 层 256² 的谱，按画面秒数直接算到那一刻，不靠上一帧，乱序出帧一样；它的白沫要逐帧累积，这里不用）。
 // 每个渲染器一份，风速变了重算谱
 const FFT们 = new WeakMap<THREE.WebGLRenderer, OceanSim>();
-const 备FFT海 = (gl: THREE.WebGLRenderer, u: 光影统一量, 秒: number, 风速: number) => {
+const 备FFT海 = (gl: THREE.WebGLRenderer, u: 光影统一量, 秒: number, 风速: number, 涌浪: number) => {
   let sim = FFT们.get(gl);
   if (!sim) {
     sim = new OceanSim(gl, defaultOceanParams());
     FFT们.set(gl, sim);
   }
-  if (sim.params.windSpeed !== 风速) {
+  if (sim.params.windSpeed !== 风速 || sim.params.swellScale !== 涌浪) {
     sim.params.windSpeed = 风速;
+    sim.params.swellScale = 涌浪;
     sim.dirty = true;
   }
   sim.time = 秒 % 300;
@@ -531,7 +532,10 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     }
     u.gyThruOn.value = 散 && 选项.水透 ? 1 : 0;
     if (散 && 选项.水透) u.gyAtt.value.set(...(选项.水透.衰减 ?? [0.46, 0.07, 0.025]));
-    if (u.gyWaterMode.value === 3) 备FFT海(gl, u, 秒, 选项.水风速 ?? 5);
+    u.gyFarR.value = 选项.水远?.远 ?? 0;
+    u.gyHaze.value = 选项.水远?.雾 ?? 0;
+    u.gyEdgeFlat.value = 选项.水远?.边平 ? 1 : 0;
+    if (u.gyWaterMode.value === 3) 备FFT海(gl, u, 秒, 选项.水风速 ?? 5, 选项.水涌浪 ?? 0.7);
     sRGB乘数(u.gyZenith.value, 选项.水天顶 ?? 光.水.天顶);
     u.gyRefl.value = 光.水.反射;
     sRGB乘数(u.gyGlintCol.value, 光.水.碎光色, 光.水.碎光强);
@@ -599,7 +603,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       if (!Array.isArray(原) && 像水(原)) 水们.push(mesh);
       if (u.gyWaterMode.value > 1.5 && !Array.isArray(原) && 像水(原)) {
         const 原网格 = mesh.geometry;
-        mesh.geometry = 取起伏网格(原网格);
+        mesh.geometry = 取起伏网格(原网格, u.gyFarR.value);
         // 起伏以后包围盒变了，不让 three 按方板的包围盒剔掉
         const 原剔 = mesh.frustumCulled;
         mesh.frustumCulled = false;

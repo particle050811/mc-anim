@@ -57,6 +57,11 @@ export const 新光影统一量 = () => ({
   gyUnder: { value: null as THREE.Texture | null },
   gyAtt: { value: new THREE.Vector3(0.46, 0.07, 0.025) },
   gyRes: { value: new THREE.Vector2(1, 1) },
+  /** 远处（用户 11-05 看到地平线一排黑浪：海只画到场景视距 192 格，起伏的浪头挡住后面的雾色、又正对着镜头不反光）：
+   *  远 = FFT 海改画到多远（格，0 = 照场景视距）；雾 = 大气透视，每多少格淡掉 63%（0 = 不加）；边平 = 1 时浪高到画的边上压平，边缘不留剪影 */
+  gyFarR: { value: 0 },
+  gyHaze: { value: 0 },
+  gyEdgeFlat: { value: 0 },
   /** 浪强：Photon 式、FFT 的浪高和坡度一起乘它（网格起伏和法线对得上）；FFT 的坡度方差只乘一次方（乘平方的话浪强 8 以上整片糙成一片灰、碎光没了，预览 1105-1619） */
   gyWaveK: { value: 1 },
   /** 水面反射、远处融进的天色改取 Photon 的天色图（天的样式是 Photon平滑 时） */
@@ -226,6 +231,8 @@ uniform float gyThruOn;
 uniform sampler2D gyUnder;
 uniform vec3 gyAtt;
 uniform vec2 gyRes;
+uniform float gyFarR;
+uniform float gyHaze;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
 ${浪函数}
@@ -378,7 +385,14 @@ if ( gyScatOn > 0.5 ) {
 }
 gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl / 0.9 * 1.0, 0.0, 1.0 ) ) + gyGlintCol * spec * 0.05, vec3( 1.5 ) );
 }
-outgoingLight = sRGBTransferEOTF( vec4( mix( gyC, gyHor, seaF ), 1.0 ) ).rgb;
+float gyFog = seaF;
+if ( gyWaterMode > 1.5 && ( gyFarR > 0.0 || gyHaze > 0.0 ) ) {
+  float gyEnd = gyFarR > 0.0 ? gyFarR : seaFar;
+  // 大气透视往同一方位的地平色淡；画到头之前那三成再补满，海的尽头和天接上，不留一道边
+  gyFog = max( gyHaze > 0.0 ? 1.0 - exp( - seaDist / gyHaze ) : 0.0, smoothstep( 0.7 * gyEnd, gyEnd, seaDist ) );
+  if ( gyFarR <= 0.0 ) gyFog = max( gyFog, seaF );
+}
+outgoingLight = sRGBTransferEOTF( vec4( mix( gyC, gyHor, gyFog ), 1.0 ) ).rgb;
 `;
 
 /** 这份着色器是不是认得的水面 */
@@ -394,6 +408,9 @@ uniform sampler2D gyDisp0;
 uniform sampler2D gyDisp1;
 uniform sampler2D gyDisp2;
 uniform vec4 gyFftLen;
+uniform float gyFarR;
+uniform float gyEdgeFlat;
+uniform float seaFar;
 varying vec2 gyU;
 varying float gyHgt;
 ${浪函数}
@@ -404,6 +421,10 @@ gyU = gyW.xz;
 gyHgt = 0.0;
 if ( gyWaterMode > 2.5 ) {
   vec3 d = textureLod( gyDisp0, gyU / gyFftLen.x, 0.0 ).xyz + textureLod( gyDisp1, gyU / gyFftLen.y, 0.0 ).xyz + textureLod( gyDisp2, gyU / gyFftLen.z, 0.0 ).xyz;
+  if ( gyEdgeFlat > 0.5 ) {
+    float gyEnd = gyFarR > 0.0 ? gyFarR : seaFar;
+    d *= 1.0 - smoothstep( 0.6 * gyEnd, 0.95 * gyEnd, length( gyU - cameraPosition.xz ) );
+  }
   gyW.xyz += d * gyWaveK;
   gyHgt = d.y * gyWaveK;
 } else if ( gyWaterMode > 1.5 ) {
@@ -419,7 +440,11 @@ export const 补水面 = (shader: THREE.WebGLProgramParametersWithUniforms, u: �
   Object.assign(shader.uniforms, atmoUniforms, u);
   if (!shader.vertexShader.includes('vSeaClip = gl_Position;')) throw new Error('海面顶点着色器认不出（没有 vSeaClip = gl_Position;）');
   shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${起伏顶点头}`).replace('vSeaClip = gl_Position;', `vSeaClip = gl_Position;\nif ( gyWaterMode > 1.5 ) {\n${起伏顶点身}\n}`);
-  shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${水头}`).replace('#include <opaque_fragment>', `${水身}\n#include <opaque_fragment>`);
+  if (!shader.fragmentShader.includes('if ( seaDist > seaFar ) discard;')) throw new Error('海面片元着色器认不出（没有 seaDist > seaFar 的 discard）');
+  shader.fragmentShader = shader.fragmentShader
+    .replace('#include <common>', `#include <common>\n${水头}`)
+    .replace('if ( seaDist > seaFar ) discard;', 'if ( seaDist > ( gyWaterMode > 1.5 && gyFarR > 0.0 ? gyFarR : seaFar ) ) discard;')
+    .replace('#include <opaque_fragment>', `${水身}\n#include <opaque_fragment>`);
 };
 
 // 粒子面片（库/特效/粒子面片.tsx 的着色器：烟花火花、闪光）：主画面里照原样画（颜色不变）；另画一遍只有粒子的「泛光源」，
