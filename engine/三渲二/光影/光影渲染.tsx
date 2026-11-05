@@ -1,24 +1,24 @@
 // 光影层：放进三渲二画布接管渲染（useFrame 优先级 1，在平涂换完材质之后），一帧四步，都只看这一帧（不跨帧累积，乱序、并行出帧结果一样）：
-// 1. 太阳的影子图：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光）和只挡光的组（剖掉的墙），深度进影子图（剖掉的不挡光 时镜头近裁剪面前面的不画）。影子图一个纹素 1/32 格（像素阴影；不按像素时 1/256 格，不够大才放粗），
+// 1. 太阳的影子图（光照 关了不画，下面第 2 步也不换受光的变体）：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光）和只挡光的组（剖掉的墙），深度进影子图（剖掉的不挡光 时镜头近裁剪面前面的不画）。影子图一个纹素 1/32 格（像素阴影；不按像素时 1/256 格，不够大才放粗），
 //    框按纹素吸附，镜头动的时候影子边不游；
 // 2. 主画面画进离屏图（半精度浮点，同画布存 sRGB 编码后的值）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，画完换回来；
 // 3. 泛光：只画粒子的泛光源（被主画面挡住的丢掉）；取亮部（加上泛光源）缩一半，再缩五次，每层横竖各糊一遍；
-// 4. 云（云的样式是 Photon体积 时）：主画面的深度换成对数深度，交给 engine/light/大气/云.ts 的 drawPhotonClouds 画进一张离屏图；
+// 4. 云（光影选项.云 开着时）：主画面的深度换成对数深度，交给云组件（engine/light/云/画云.ts）画进一张离屏图；
 // 5. 合成到画布：调色、叠在天（天的样式是 Photon平滑 时）和云上、叠泛光；不画天时透明度照原样（画布后面的 2D 天、远景照常透出来）。
 // 描边：开光影时不描（本作品全片不描边，规矩 不描边）。
-// 云不走 屏幕AO 的中间步骤登记（三渲二画布不挂屏幕AO）：<PhotonClouds draw={false}> 只给设置，这里自己调 drawPhotonClouds，深度、目标图都是这里的。
-import { useFrame } from '@react-three/fiber';
+// 天、云、光照是三个能单独开关的组件（用户 11-04 定）：天 = engine/light/天/Photon天.ts，云 = engine/light/云/。应力转动用的 engine/light/大气.ts、大气/云.ts 不动。
+import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { cancelRender, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import sunPng from 'asset:贴图/场景/天空/sun';
 import { 场景到three } from '../../core/three换算.ts';
-import { Atmosphere, atmoUniforms, atmosphere } from '../../light/大气.ts';
-import { PhotonClouds, drawPhotonClouds } from '../../light/大气/云.ts';
+import { atmoUniforms, atmosphere } from '../../light/大气.ts';
+import { Photon天, 备天色图 } from '../../light/天/Photon天.ts';
+import { 画云 as 画云层, 预编云 } from '../../light/云/画云.ts';
 import { png } from '../../model/贴图.ts';
-import type { MidPassContext } from '../../voxel/中间步骤.ts';
 import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
-import { 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
+import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
 
 /** 影子图边长（纹素） */
 const 影子图边 = 4096;
@@ -421,11 +421,21 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
   const 秒 = useCurrentFrame() / fps;
   const r = useMemo(建资源, []);
   useEffect(() => () => 释放(r), [r]);
+  // 云的着色器（按配置拼的一大段）趁取素材的时候并行先编（用户 11-04 定 A4），编完才放行截图；不然头一帧画的时候才同步编
+  const gl = useThree((s) => s.gl);
+  const 云键 = 光影画云(选项) && 选项.云 ? JSON.stringify(选项.云) : '';
+  useEffect(() => {
+    if (!云键 || !选项.云) return;
+    const 手 = delayRender('云的着色器');
+    预编云(gl, 选项.云, 选项.云.海平面 ?? 0).then(() => continueRender(手), (e) => cancelRender(e));
+  }, [gl, 云键]);
   useFrame(({ gl, scene, camera }) => {
     // 世界矩阵 three 在 gl.render 里才更新，下面摆影子机、摆粒子光先要用：不先更新就拿上一次画的（刚挂上的网格还是单位阵），
     // 同一帧单独渲和接在别的帧后面渲出来不一样（2-截图下线 第 163 帧逐像素对不上查出来的）
     scene.updateMatrixWorld();
     camera.updateMatrixWorld();
+    // GPU 天色图换了太阳要先画好：水面（第 2 步）、云、合成都取它
+    备天色图(gl);
     const 参 = 取光影参数(选项.预设);
     const 段 = 选项.时段 ?? 猜时段(色调);
     const 光 = 参[段];
@@ -452,7 +462,8 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     u.gyReflMin.value = 光.水.近反射;
     const 透视 = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
     const 画天 = 选项.天 === 'Photon平滑' && 透视 && atmosphere.sky !== null;
-    const 画云 = 画天 && 选项.云?.样式 === 'Photon体积' && atmosphere.clouds !== null;
+    const 画云 = 画天 && 光影画云(选项) && atmosphere.clouds !== null;
+    const 光照 = 选项.光照 !== false;
     u.gyAtmoOn.value = 画天 ? 1 : 0;
     u.gyAtmoSky.value = atmosphere.sky;
     const 顶 = 选项.天顶;
@@ -477,7 +488,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     for (const o of 挡光组) o.visible = true;
     const { 受光, 别的 } = 收受光网格(scene);
     u.gyShadowOn.value = 0;
-    if (受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256)) {
+    if (光照 && 受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256)) {
       const 藏 = 别的.filter((o) => o.visible);
       for (const o of 藏) o.visible = false;
       scene.background = null;
@@ -498,7 +509,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const [w, h] = gl.getDrawingBufferSize(r.尺寸).toArray();
     设尺寸(r.主, w, h);
     const 还原: (() => void)[] = [];
-    const 换 = (m: THREE.Material) => (平涂受光(m) || (改水 && 像水(m)) ? (取变体(m, u) ?? m) : m);
+    const 换 = (m: THREE.Material) => ((光照 && 平涂受光(m)) || (改水 && 像水(m)) ? (取变体(m, u) ?? m) : m);
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
@@ -565,8 +576,12 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       sh = lh;
     });
 
+    // 太阳摆在哪先算好：云要连太阳本体那一块一起算（合成按它上面云的不透明度压暗太阳）
+    const cu = r.合.材质.uniforms;
+    if (画天) 摆太阳(cu, camera, 选项.太阳, w, h, r.太阳图);
+
     // 4. 云
-    if (画云) {
+    if (画云 && 选项.云) {
       const 机 = camera as THREE.PerspectiveCamera;
       设尺寸(r.深, w, h);
       设尺寸(r.云, w, h);
@@ -577,21 +592,25 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       画(r.对数深, r.深);
       gl.setRenderTarget(r.云);
       gl.clear(true, true, true);
-      const ctx: MidPassContext = {
+      const n = cu.sunN!.value as number, b = cu.sunBody!.value as number, m = cu.sunMin!.value as THREE.Vector2;
+      画云层({
         gl,
         camera: 机,
-        depth: r.深.texture as unknown as THREE.DepthTexture,
-        width: w,
-        height: h,
-        target: r.云,
-        fog: { type: 0, params: new THREE.Vector3(), color: new THREE.Color(), height: { x: 0, y: 1, z: 0 } },
-      };
-      drawPhotonClouds(ctx);
+        深度: r.深.texture,
+        主画面: r.主.texture,
+        宽: w,
+        高: h,
+        目标: r.云,
+        配置: 选项.云,
+        场: 选项.云场 ?? {},
+        海平面: 选项.云.海平面 ?? 0,
+        秒,
+        太阳框: cu.sunOn!.value ? [m.x, m.y, n * b, n * b] : null,
+      });
       gl.autoClear = false;
     }
 
     // 5. 合成
-    const cu = r.合.材质.uniforms;
     cu.skyOn!.value = 画天 ? 1 : 0;
     cu.cloudOn!.value = 画云 ? 1 : 0;
     cu.tCloud!.value = r.云.texture;
@@ -600,7 +619,6 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       (cu.uInvProj!.value as THREE.Matrix4).copy(camera.projectionMatrixInverse);
       (cu.uCamWorld!.value as THREE.Matrix4).copy(camera.matrixWorld);
       (cu.uCamPos!.value as THREE.Vector3).setFromMatrixPosition(camera.matrixWorld);
-      摆太阳(cu, camera, 选项.太阳, w, h, r.太阳图);
     }
     cu.tColor!.value = r.主.texture;
     r.层.forEach(([a], i) => (cu[`tB${i}`]!.value = a.texture));
@@ -625,24 +643,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     gl.autoClear = 自动清;
   }, 1);
   if (选项.天 !== 'Photon平滑' || !选项.太阳) return null;
-  const 云 = 选项.云?.样式 === 'Photon体积' ? 选项.云 : null;
-  const 日 = [...选项.太阳] as [number, number, number];
-  return (
-    <>
-      <Atmosphere sun={日} far={天远} />
-      {云 && (
-        <PhotonClouds
-          draw={false}
-          seaY={云.海平面 ?? 0}
-          exposure={(云.曝光 ?? 1) * (云.曝光倍 ?? 1)}
-          weather={{ temperature: 云.温度 ?? 0.5, humidity: 云.湿度 ?? 0.55, wind: 云.风 ?? 0.6 }}
-          {...(云.高低差 !== undefined ? { spread: 云.高低差 } : {})}
-          {...(云.洞 ? { clear: [...云.洞] as [number, number, number, number] } : {})}
-          {...(云.亮 ? { glow: 云.亮 } : {})}
-        />
-      )}
-    </>
-  );
+  return <Photon天 sun={[...选项.太阳] as [number, number, number]} far={天远} 算法={选项.天算法 ?? 'GPU'} />;
 };
 
 /** 原版方形太阳在画布上的位置：同 2D 天（作品/把回忆拼好给你/场/2-海上/编排.ts 的 太阳屏幕），本体边长 = 上下沿（沿太阳走的方向各偏半边）投影的距离，
