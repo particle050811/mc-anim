@@ -2,6 +2,7 @@
 // 一份 云配置 = 几层云（层数不设上限，用户 11-04「肯定要允许超过三层」），每层自己的算法、高度、厚、覆盖……，加上整份的天气、曝光、质量档。纯模块（测试直接引）。
 // 高度都是世界高度（格），进 Photon 的「云空间」时离海平面的高度 × 云空间倍数（同 engine/light/大气/云.ts 的 CLOUDS_SCALE）。
 // 天气 → 各层覆盖、细节、消光照 Photon 的 get_clouds_parameters（同 大气/云.ts 的 cloudParams，那边应力转动在用、一行不改，这里抄一份）。
+import { clamp01, easeOutQuad, lerp, linearstep, smoothstep, smoothstep01 } from '@engine/core/数学.ts';
 
 /** 方块到云空间的倍数（同 大气/云.ts 的 CLOUDS_SCALE，用户 10-14 定的 3） */
 export const 云空间倍 = 3;
@@ -139,19 +140,10 @@ export const 光影层们 = (c: 云配置 | false | undefined, 海平面: number
 };
 
 // ---------- 天气 → 各层参数（Photon include/weather/clouds.glsl 的 get_clouds_parameters；不下雨。同 大气/云.ts 的 cloudParams） ----------
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-const linearStep = (a: number, b: number, x: number) => clamp01((x - a) / (b - a));
-const smooth = (a: number, b: number, x: number) => {
-  const t = clamp01((x - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
-export const dampen = (x: number) => {
-  const c = clamp01(x);
-  return c * (2 - c);
-};
-const cubicSmooth = (x: number) => x * x * (3 - 2 * x);
-const mix = (a: number, b: number, t: number) => a + (b - a) * t;
-export { smooth as 平滑阶 };
+// 下面照 Photon 的函数名写，好和 clouds.glsl 逐行对；它的 dampen 就是 easeOutQuad，cubic_smooth 这里的参数都已夹到 0～1，等于 smoothstep01
+const linearStep = linearstep, smooth = smoothstep, cubicSmooth = smoothstep01, mix = lerp;
+export { easeOutQuad as dampen, smoothstep as 平滑阶 };
+const dampen = easeOutQuad;
 
 /** 积云厚（云空间米）进了 l0AltScale：大气/云.ts 写死 1200 */
 export const 天气参数 = (w: Required<云天气>, sunY: number, 积云厚 = 1200) => {
