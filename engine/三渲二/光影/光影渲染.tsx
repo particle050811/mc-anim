@@ -520,6 +520,12 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     u.gyWaterPix.value = 水 === '像素波纹' || 水 === 'FFT像素' ? 1 : 0;
     u.gyWaterMode.value = 水 === '像素波纹' ? 1 : 水 === 'Photon波纹' ? 2 : 水 === 'FFT海' || 水 === 'FFT像素' ? 3 : 0;
     u.gyWaveK.value = 选项.水浪强 ?? 1;
+    const 散 = 选项.水散射;
+    u.gyScatOn.value = 散 ? 1 : 0;
+    if (散) {
+      u.gyScat.value.setRGB(...(散.色 ?? [0, 0.05, 0.08]), THREE.LinearSRGBColorSpace);
+      u.gySSS.value.set(1.6 * (散.透光 ?? 1), 0.06 * (散.透光 ?? 1), 0.05 * (散.透光 ?? 1));
+    }
     if (u.gyWaterMode.value === 3) 备FFT海(gl, u, 秒, 选项.水风速 ?? 5);
     sRGB乘数(u.gyZenith.value, 选项.水天顶 ?? 光.水.天顶);
     u.gyRefl.value = 光.水.反射;

@@ -48,6 +48,10 @@ export const 新光影统一量 = () => ({
   gyDisp0: { value: null as THREE.Texture | null },
   gyDisp1: { value: null as THREE.Texture | null },
   gyDisp2: { value: null as THREE.Texture | null },
+  /** FFT 的水体按散射算（Ultra-Water 的做法）：开 = 1；散射色（线性）；透光 = 浪尖逆光透出来的那层（Ultra-Water uSSS 的 x、y、z） */
+  gyScatOn: { value: 0 },
+  gyScat: { value: new THREE.Color(0, 0.05, 0.08) },
+  gySSS: { value: new THREE.Vector3(1.6, 0.06, 0.05) },
   /** 浪强：Photon 式、FFT 的浪高和坡度一起乘它（网格起伏和法线对得上）；FFT 的坡度方差只乘一次方（乘平方的话浪强 8 以上整片糙成一片灰、碎光没了，预览 1105-1619） */
   gyWaveK: { value: 1 },
   /** 水面反射、远处融进的天色改取 Photon 的天色图（天的样式是 Photon平滑 时） */
@@ -209,6 +213,10 @@ uniform sampler2D gySlope3;
 uniform vec4 gyFftLen;
 uniform float gyWaveK;
 varying vec2 gyU;
+varying float gyHgt;
+uniform float gyScatOn;
+uniform vec3 gyScat;
+uniform vec3 gySSS;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
 ${浪函数}
@@ -329,6 +337,18 @@ if ( spec > 0.02 ) {
   spec *= mix( 1.0, m, smoothstep( 4.0, 30.0, seaDist ) );
 }
 vec3 gyBody = mix( gyWaterBody, gyHor, 0.3 );
+if ( gyScatOn > 0.5 ) {
+  // 照 Ultra-Water（OceanSurface.js 的 lighting 一节，深海没有海底可折射）：水体 = 散射色 ×（天光 + 太阳）；
+  // 透光：浪尖越高、越是迎着太阳看、背光面越透（k1），正对着往下看也透一点（k2），受光面再加一点（z）。这几样在线性空间算，再换回 sRGB 数值
+  vec3 amb = pow( max( gyAtmoOn > 0.5 ? atmoDisp( atmoSkyAt( gyAtmoSky, vec3( 0.0, 0.0, 1.0 ) ) ) : gyZenith, 0.0 ), vec3( 2.2 ) );
+  vec3 sunL = pow( max( gyGlintCol, 0.0 ), vec3( 2.2 ) );
+  float sunUp = max( gySun.y, 0.0 );
+  vec3 insc = gyScat * ( amb + sunL * sunUp );
+  float k1 = gySSS.x * max( gyHgt, 0.0 ) * pow( clamp( dot( gySun, - gyVv ), 0.0, 1.0 ), 4.0 ) * pow( 0.5 - 0.5 * dot( gyN, gySun ), 3.0 );
+  float k2 = gySSS.y * NoV * NoV;
+  vec3 sss = ( k1 + k2 ) * gyScat * sunL + gySSS.z * nl * gyScat * sunL;
+  gyBody = pow( insc + sss, vec3( 1.0 / 2.2 ) );
+}
 gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl / 0.9 * 1.0, 0.0, 1.0 ) ) + gyGlintCol * spec * 0.05, vec3( 1.5 ) );
 }
 outgoingLight = sRGBTransferEOTF( vec4( mix( gyC, gyHor, seaF ), 1.0 ) ).rgb;
@@ -348,14 +368,17 @@ uniform sampler2D gyDisp1;
 uniform sampler2D gyDisp2;
 uniform vec4 gyFftLen;
 varying vec2 gyU;
+varying float gyHgt;
 ${浪函数}
 `;
 const 起伏顶点身 = /* glsl */ `
 vec4 gyW = modelMatrix * vec4( transformed, 1.0 );
 gyU = gyW.xz;
+gyHgt = 0.0;
 if ( gyWaterMode > 2.5 ) {
   vec3 d = textureLod( gyDisp0, gyU / gyFftLen.x, 0.0 ).xyz + textureLod( gyDisp1, gyU / gyFftLen.y, 0.0 ).xyz + textureLod( gyDisp2, gyU / gyFftLen.z, 0.0 ).xyz;
   gyW.xyz += d * gyWaveK;
+  gyHgt = d.y * gyWaveK;
 } else if ( gyWaterMode > 1.5 ) {
   gyW.y += 0.04 * gyWaveK * ( gyPhotonH( gyU, 0.5 * gyTime ) - 0.5 );
 }
