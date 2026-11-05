@@ -3,7 +3,7 @@
 // 角色放 children（Z 朝上，坐标同 地点/门口小木屋.tsx；要描边的自己包 <描边>），气泡、聊天栏放 叠层。整片后期在段里包在最外面。
 import React from 'react';
 import { 三渲二画布, 光影范围 } from '@engine/三渲二/画布.tsx';
-import type { 光影场参数, 光影选项 } from '@engine/三渲二/光影/预设.ts';
+import { 光影画云, type 光影场参数, type 光影选项 } from '@engine/三渲二/光影/预设.ts';
 import type { 调子 } from '@engine/三渲二/调子.ts';
 import { 侧机位 } from '../../地点/侧剖面.tsx';
 import { 侧剖面天空, type 侧剖面天空属性 } from '../../地点/天空.tsx';
@@ -52,7 +52,7 @@ export type 门口画布属性 = 门口小木屋属性 & {
   /** 三维的场景内容：角色等 */
   children?: React.ReactNode;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]）：不给 = 不开。开了天以外的几张画布（屋子、屋后远景或身后的林子）一起开，
-   *  太阳照 参数.ts 的 白天光影场。样式开了 Photon 天和 Photon体积 云、又开着 远景 时，天、云在屋后远景那张透视画布的光影层画，2D 天、远景的原版云不画 */
+   *  太阳照 参数.ts 的 白天光影场。样式开了 Photon 天和光影层的云、又开着 远景 时，天、云在屋后远景那张透视画布的光影层画，2D 天、远景的原版云不画 */
   光影?: 光影选项 | null;
   /** 再盖在 白天光影场 上的光影场（海平面、Photon 云的洞这些按帧变的事） */
   光影场?: 光影场参数;
@@ -88,7 +88,7 @@ export const 门口画布: React.FC<门口画布属性> = ({
   const t = typeof 调 === 'string' ? 色板[调] : 调;
   const 色调 = 乘色(t.色调, 亮度);
   // 只有透视画布画得出 Photon 的天（光影渲染.tsx 的 画天），这里就是屋后远景那张；它比画面高、盖满整块，画布不透明
-  const photon天 = !!远景 && 光影?.天 === 'Photon平滑' && 光影.云?.样式 === 'Photon体积';
+  const photon天 = !!远景 && 光影画云(光影);
   return (
     <门口光影 光影={光影} {...(光影场 ? { 光影场 } : {})}>
       <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden' }}>
