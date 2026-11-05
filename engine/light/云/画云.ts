@@ -313,9 +313,10 @@ export const 画云 = (x: 画云输入): boolean => {
   u.uLogFar!.value = Math.log2(cam.far + 1);
   u.uExposure!.value = e.曝光 * (x.场.曝光倍 ?? 1);
 
-  // 复用的键：着色器、所有 uniform 的值、天色图、尺寸（镜头矩阵在 uniform 里）
+  // 复用的键：着色器、所有 uniform 的值、天色图、尺寸（镜头矩阵在 uniform 里）。横条位置、准备图是这一遍自己摆的，不算输入（算进去就每帧都对不上）
   const 值们: unknown[] = [p.材质.fragmentShader.length, atmosphere.skyKey, w, h, x.太阳框];
   for (const [k, v] of Object.entries(u)) {
+    if (k === 'uStrip' || k === 'tPrep') continue;
     const val = v.value as unknown;
     if (val && typeof val === 'object' && 'isTexture' in val) 值们.push(k, (val as THREE.Texture).uuid);
     else if (val && typeof val === 'object' && 'toArray' in val) 值们.push(k, (val as { toArray(): number[] }).toArray());
