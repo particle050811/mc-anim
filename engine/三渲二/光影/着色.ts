@@ -44,6 +44,8 @@ export const 新光影统一量 = () => ({
   gySlope3: { value: null as THREE.Texture | null },
   /** FFT 四层的边长（格 = 米） */
   gyFftLen: { value: new THREE.Vector4(1, 1, 1, 1) },
+  /** 浪强：Photon 式、FFT 的坡度乘它（方差乘平方） */
+  gyWaveK: { value: 1 },
   /** 水面反射、远处融进的天色改取 Photon 的天色图（天的样式是 Photon平滑 时） */
   gyAtmoOn: { value: 0 },
   gyAtmoSky: { value: null as THREE.Texture | null },
@@ -172,6 +174,7 @@ uniform sampler2D gySlope1;
 uniform sampler2D gySlope2;
 uniform sampler2D gySlope3;
 uniform vec4 gyFftLen;
+uniform float gyWaveK;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
 float gyHash12( vec2 p ) { vec3 p3 = fract( vec3( p.xyx ) * 0.1031 ); p3 += dot( p3, p3.yzx + 33.33 ); return fract( ( p3.x + p3.y ) * p3.z ); }
@@ -258,7 +261,7 @@ if ( gyWaterMode < 2.5 ) {
   float gyH0 = gyPhotonH( gyWq, gyT );
   vec2 gyD = vec2( gyPhotonH( gyWq + vec2( 0.1, 0.0 ), gyT ) - gyH0, gyPhotonH( gyWq + vec2( 0.0, 0.1 ), gyT ) - gyH0 ) / 0.1;
   // Photon 主世界开阔水面 0.04，平视时压平防噪点
-  gySl = gyD * 0.04 * smoothstep( 0.0, 0.15, abs( gyVv.y ) );
+  gySl = gyD * 0.04 * gyWaveK * smoothstep( 0.0, 0.15, abs( gyVv.y ) );
 } else {
   vec2 gx = dFdx( gyP0 ), gy = dFdy( gyP0 );
   vec4 s0 = textureGrad( gySlope0, gyWq / gyFftLen.x, gx / gyFftLen.x, gy / gyFftLen.x );
@@ -269,8 +272,8 @@ if ( gyWaterMode < 2.5 ) {
   float slick = smoothstep( 0.3, 0.7, gyVnoise( gyP0 * 0.006 + gyTime * 0.01 ) );
   float sl2 = mix( 0.75, 1.0, slick ), sl3 = mix( 0.4, 1.0, slick );
   s2.xy *= sl2; s2.zw *= sl2 * sl2; s3.xy *= sl3; s3.zw *= sl3 * sl3;
-  gySl = s0.xy + s1.xy + s2.xy + s3.xy;
-  gyVar = max( s0.zw - s0.xy * s0.xy, 0.0 ) + max( s1.zw - s1.xy * s1.xy, 0.0 ) + max( s2.zw - s2.xy * s2.xy, 0.0 ) + max( s3.zw - s3.xy * s3.xy, 0.0 );
+  gySl = ( s0.xy + s1.xy + s2.xy + s3.xy ) * gyWaveK;
+  gyVar = ( max( s0.zw - s0.xy * s0.xy, 0.0 ) + max( s1.zw - s1.xy * s1.xy, 0.0 ) + max( s2.zw - s2.xy * s2.xy, 0.0 ) + max( s3.zw - s3.xy * s3.xy, 0.0 ) ) * gyWaveK * gyWaveK;
 }
 vec3 gyN = normalize( vec3( - gySl.x, 1.0, - gySl.y ) );
 vec3 dndx = dFdx( gyN ), dndy = dFdy( gyN );

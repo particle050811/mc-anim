@@ -480,6 +480,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const 改水 = 水 !== '原版贴图';
     u.gyWaterPix.value = 水 === '像素波纹' || 水 === 'FFT像素' ? 1 : 0;
     u.gyWaterMode.value = 水 === '像素波纹' ? 1 : 水 === 'Photon波纹' ? 2 : 水 === 'FFT海' || 水 === 'FFT像素' ? 3 : 0;
+    u.gyWaveK.value = 选项.水浪强 ?? 1;
     if (u.gyWaterMode.value === 3) 备FFT海(gl, u, 秒, 选项.水风速 ?? 5);
     sRGB乘数(u.gyZenith.value, 选项.水天顶 ?? 光.水.天顶);
     u.gyRefl.value = 光.水.反射;
