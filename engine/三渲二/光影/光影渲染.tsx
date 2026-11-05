@@ -19,6 +19,7 @@ import { 画云 as 画云层, 预编云 } from '../../light/云/画云.ts';
 import { png } from '../../model/贴图.ts';
 import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
+import { use编排fps } from '../../段/编排时钟.tsx';
 
 /** 影子图边长（纹素） */
 const 影子图边 = 4096;
@@ -417,7 +418,8 @@ export type 光影渲染属性 = {
 
 export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) => {
   // 水面波纹的时间取画面秒数（每帧单独算）
-  const { fps, width: 成片宽 } = useVideoConfig();
+  const { width: 成片宽 } = useVideoConfig();
+  const fps = use编排fps();
   const 秒 = useCurrentFrame() / fps;
   const r = useMemo(建资源, []);
   useEffect(() => () => 释放(r), [r]);

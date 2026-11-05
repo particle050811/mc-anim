@@ -8,6 +8,7 @@ import 受死 from '../../台词/7-黄叛-受死.ts';
 import 溜了 from '../../台词/7-李樱-溜了.ts';
 import 受死声 from 'asset:配音/7-黄叛-受死';
 import 溜了声 from 'asset:配音/7-李樱-溜了';
+import { use编排fps } from '@engine/段/编排时钟.tsx';
 
 const 句们: readonly 台词句cue[] = [
   { 句: 受死, 帧: 6 },
@@ -17,7 +18,8 @@ const 声音 = { [受死.id]: 受死声, [溜了.id]: 溜了声 };
 
 const 画面: React.FC = () => {
   const frame = useCurrentFrame();
-  const { width, durationInFrames, fps } = useVideoConfig();
+  const { width, durationInFrames } = useVideoConfig();
+  const fps = use编排fps();
   const 每帧 = (width - 160) / durationInFrames;
   return (
     <AbsoluteFill style={{ background: '#1b1d22', color: '#eee', fontFamily: 'sans-serif' }}>

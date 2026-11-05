@@ -745,6 +745,7 @@ import 资_718 from 'asset:音效/twilightforest.entity.twilightforest.ur_ghast.
 import 资_719 from 'asset:音效/twilightforest.entity.twilightforest.ur_ghast.hurt.4';
 import 资_720 from 'asset:音效/twilightforest.entity.twilightforest.ur_ghast.hurt.5';
 import 资_721 from 'asset:音效/ui.button.click';
+import { use编排fps } from '../段/编排时钟.tsx';
 
 type SoundFile = {
   文件: string;
@@ -889,7 +890,8 @@ export const GameSoundTrack: React.FC<{ sounds: SoundCue[]; listener: (frame: nu
   frameCount: frameCount,
   tailFade = false,
 }) => {
-  const { fps, durationInFrames } = useVideoConfig();
+  const { durationInFrames } = useVideoConfig();
+  const fps = use编排fps();
   const segFrames = frameCount ?? durationInFrames;
   const logSfx = useSfxLog();
   const firstVisible = useFirstVisibleFrame();
@@ -949,7 +951,8 @@ export const LoopSound: React.FC<{
   position?: V3;
   listener?: (frame: number) => V3;
 }> = ({ event: event, beginFrame: beginFrame, endFrame: endFrame, volume: volumeAt = () => 1, tier, loudness, envelope = () => 1, pitch: pitch = 1, pick: pickRand = 0, name: label, startFrame: baseFrame = 0, position: position, listener }) => {
-  const { durationInFrames, fps } = useVideoConfig();
+  const { durationInFrames } = useVideoConfig();
+  const fps = use编排fps();
   const logSfx = useSfxLog();
   const firstVisible = useFirstVisibleFrame();
   const file = pickFile(event, pickRand);

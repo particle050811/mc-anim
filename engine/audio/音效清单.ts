@@ -4,8 +4,9 @@
 // 渲染时把放法打到浏览器日志，一声一行 `音效清单 {json}` / `配乐清单 {json}` / `台词清单 {json}`（台词轨.tsx）；工具/剪辑微调/导出音效清单.mjs 收集，导出剪辑包.py 照着合成。
 // 帧是 Composition 的绝对帧（外面包的 Sequence 的起点、长度已经算进去）。
 import { useContext } from 'react';
-import { Internals, useVideoConfig } from 'remotion';
+import { Internals } from 'remotion';
 import { 渲染输入 } from '../core/渲染设置.ts';
+import { use编排fps } from '../段/编排时钟.tsx';
 
 export type SfxClipLog = {
   名: string;
@@ -54,7 +55,7 @@ export const useFirstVisibleFrame = () => Math.max(0, -(useContext(Internals.Seq
 // 外面包的 Sequence 带 trimBefore（lib/拼段.tsx）时，这一截从 offset − cumulatedNegativeFrom 才露出来，之前的那一截从文件里跳过去
 export const useSfxLog = (kind: '音效清单' | '配乐清单' | '台词清单' = '音效清单') => {
   const seq = useContext(Internals.SequenceContext);
-  const { fps } = useVideoConfig();
+  const fps = use编排fps();
   const compFrames = Internals.useVideo()?.durationInFrames ?? Infinity;
   if (!exportOn) return (_clip: Omit<SfxClipLog, '增益' | '起帧'> & { from: number; gainAt: (f: number) => number }) => {};
   const offset = seq ? seq.cumulatedFrom + seq.relativeFrom : 0;
