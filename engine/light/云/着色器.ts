@@ -4,7 +4,9 @@
 // 坑：质量档 精确、默认三层时拼出来的运算要和 engine/light/大气/云.ts 一模一样（用户看过的 2-日落划船 等逐字节不变），
 // 那边的式子照抄、只换名字；风、偏移、尺寸、密度这些不是默认值才多拼一截，不往默认的式子里加「+ 0」「× 1」（编译器合并乘加的方式会变）。
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL } from '../大气.ts';
+import type { 云抖动 } from './配置.ts';
 import type { 展开层 } from './展开.ts';
+import { 蓝噪声边 } from './蓝噪声.ts';
 
 const 阈 = (l: { 透射率阈值: number }) => (l.透射率阈值 === 0.075 ? '0.075' : f(l.透射率阈值));
 const f = (x: number) => {
@@ -111,6 +113,33 @@ const 形 = (l: 展开层, 名: string, xz: string) => {
   return l.尺寸 === 1 ? 移 : `(${移} * ${f(1 / l.尺寸)})`;
 };
 
+/** 积云主步进怎么走：起 = 循环前定 steps、起点 ro；取点 = 每一步开头定这一步的点 p、步长 sl。两者都只用 len、slP、dither */
+type 走法 = { 起: string; 取点: string };
+
+/** 等步长：同 大气/云.ts（精确档逐字节不变靠它） */
+const 等步长 = (D: string): 走法 => ({
+  起: `int steps = int(min(ceil(len / max(slP, 1.0)), float(${D}_MAX)));
+  float sl = len / float(max(steps, 1));
+  vec3 st = rd * sl;
+  vec3 ro = o + rd * (ds.x + sl * dither);`,
+  取点: 'vec3 p = ro + st * float(i);',
+});
+
+/** 几何增步长（质量.远步增，docs/云.md 第 3 节）：第一步约 slP，往后每步乘 G，几何级数正好加到 len */
+const 几何增步长 = (D: string, 增: number): 走法 => {
+  const G = f(增);
+  return {
+    起: `int steps = int(min(ceil(log(1.0 + len * (${G} - 1.0) / max(slP, 1.0)) / log(${G})), float(${D}_MAX)));
+  float slN = len * (${G} - 1.0) / (pow(${G}, float(max(steps, 1))) - 1.0);
+  vec3 ro = o + rd * ds.x;
+  float tAt = 0.0;`,
+    取点: `float sl = slN;
+    vec3 p = ro + rd * (tAt + sl * dither);
+    tAt += sl;
+    slN *= ${G};`,
+  };
+};
+
 // ---- 积云（同 大气/云.ts 的 pcCuBase、pcCuCoverage、pcCuDensity、pcCuOD、pcCumulus） ----
 const 积云 = (l: 展开层) => {
   const n = `pcCu${l.号}`, D = `PC_CU${l.号}`;
@@ -118,6 +147,7 @@ const 积云 = (l: 展开层) => {
   const 高度图 = l.平滑 ? 'pcCuHeightS' : 'pcCuHeight';
   const 留 = l.受洞 ? 'keep.x * keep.y' : 'keep.x';
   const 密 = l.密度 === 1 ? '' : ` * ${f(l.密度)}`;
+  const 走 = q.增 === 1 ? 等步长(D) : 几何增步长(D, q.增);
   return /* glsl */ `
 uniform vec4 ${n}A;
 uniform vec4 ${n}B;
@@ -190,10 +220,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
   if (ds.y < 0.0 || planet && r < ${D}_R || dT >= 0.0 && r < ${D}_R && dT < ds.x) return pcNone();
   float len = clamp((dT >= 0.0 ? dT : ds.y) - ds.x, 0.0, 2e4);
   float slP = ${D}_T / max(abs(rd.y), ${D}_T / 2e4) / mix(float(${D}_H), float(${D}_Z), abs(rd.y));
-  int steps = int(min(ceil(len / max(slP, 1.0)), float(${D}_MAX)));
-  float sl = len / float(max(steps, 1));
-  vec3 st = rd * sl;
-  vec3 ro = o + rd * (ds.x + sl * dither);
+  ${走.起}
   vec3 L = atmoSun;
   float c = dot(rd, L);
   float bounced = 0.4 * L.y / PC_PI;
@@ -205,7 +232,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
   ${l.受亮 ? `float glowBase = pcGlow.w > 0.0 ? ${n}Base(${形(l, n, 'pcGlow.xy')}) : 0.0;` : ''}
   for (int i = 0; i < ${D}_MAX; i++) {
     if (i >= steps || T < ${阈(l)}) break;
-    vec3 p = ro + st * float(i);
+    ${走.取点}
     float dens = ${n}Density(p, true);
     if (dens < PC_EPS) continue;
     float dist = distance(ro, p);
@@ -547,8 +574,17 @@ vec4 pcDrawClouds(vec3 rd, vec3 sky, float dT, float dither, out float apparent)
   return vec4(res.s, res.T);
 }`;
 
+/** 步进起点错开多少（0～1，定义 dither），只按像素坐标取 */
+const 抖动码: Record<云抖动, string> = {
+  Bayer: `const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
+  ivec2 bq = ivec2(gl_FragCoord.xy) & 3;
+  float dither = (BAYER[bq.y * 4 + bq.x] + 0.5) / 16.0;`,
+  交错梯度: 'float dither = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));',
+  蓝噪声: `float dither = texelFetch(tBlue, ivec2(gl_FragCoord.xy) & ${蓝噪声边 - 1}, 0).r;`,
+};
+
 /** 片元着色器（GLSL3）：tPrep 是这一遍分辨率上的 (对数深度, 这一帧要不要算)；要算的才步进，别的像素 discard、离屏图里留着上一帧的 */
-export const 云片元 = (层们: readonly 展开层[], S: number, 抖动: 'Bayer' | '交错梯度', 半: boolean) => /* glsl */ `
+export const 云片元 = (层们: readonly 展开层[], S: number, 抖动: 云抖动, 半: boolean) => /* glsl */ `
 precision highp float;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
@@ -557,6 +593,7 @@ ${层们.map((l) => 层码[l.算法](l)).join('\n')}
 ${画云函数(层们)}
 uniform sampler2D tPrep;
 uniform sampler2D atmoSky;
+${抖动 === '蓝噪声' ? 'uniform sampler2D tBlue;' : ''}
 uniform vec2 uSize;
 uniform mat4 uInvProj;
 uniform mat4 uCamWorld;
@@ -573,11 +610,7 @@ void main() {
   float fwdK = -vdir.z;
   vec3 wdir = mat3(uCamWorld) * vdir;
   float tScene = d >= 1.0 ? -1.0 : (exp2(d * uLogFar) - 1.0) / fwdK;
-  ${抖动 === 'Bayer'
-    ? `const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
-  ivec2 bq = ivec2(gl_FragCoord.xy) & 3;
-  float dither = (BAYER[bq.y * 4 + bq.x] + 0.5) / 16.0;`
-    : `float dither = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));`}
+  ${抖动码[抖动]}
   vec3 sky = atmoSkyAt(atmoSky, vec3(wdir.x, -wdir.z, wdir.y));
   float apparent;
   vec4 c = pcDrawClouds(wdir, sky, tScene, dither, apparent);

@@ -2,7 +2,7 @@
 // 层号按云底从低到高排（叠的时候低的在前）。默认三层、质量档 精确 时，每个数和 engine/light/大气/云.ts 算出来的一样（逐字节不变的前提）。
 import { 云空间倍, 云算法表, 默认厚度, 默认层们, 天气参数, 默认天气, dampen, 平滑阶, 取质量, 是光影层算法, type 云层, type 云配置, type 云质量, type 光影层云算法 } from './配置.ts';
 
-export type 步数 = { 主H: number; 主Z: number; 最多: number; 光: number; 环: number; 散射: number };
+export type 步数 = { 主H: number; 主Z: number; 最多: number; 光: number; 环: number; 散射: number; 增: number };
 
 export type 展开层 = {
   算法: 光影层云算法;
@@ -47,10 +47,10 @@ export const 展开层们 = (层们: readonly 云层[], 海平面: number, q: �
     const 主 = l.主步数;
     const 步0: 步数 =
       l.算法 === 'Photon积云'
-        ? { 主H: 40 * 倍, 主Z: 20 * 倍, 最多: 120 * 倍, 光: q.光步, 环: 2, 散射: q.散射次 }
+        ? { 主H: 40 * 倍, 主Z: 20 * 倍, 最多: 120 * 倍, 光: q.光步, 环: 2, 散射: q.散射次, 增: q.远步增 }
         : l.算法 === 'Photon高积云'
-          ? { 主H: 12 * 倍, 主Z: 6 * 倍, 最多: 12 * 倍, 光: Math.round((q.光步 * 2) / 3), 环: 2, 散射: q.散射次 }
-          : { 主H: 0, 主Z: 0, 最多: 0, 光: 0, 环: 0, 散射: 4 };
+          ? { 主H: 12 * 倍, 主Z: 6 * 倍, 最多: 12 * 倍, 光: Math.round((q.光步 * 2) / 3), 环: 2, 散射: q.散射次, 增: 1 }
+          : { 主H: 0, 主Z: 0, 最多: 0, 光: 0, 环: 0, 散射: 4, 增: 1 };
     const 步: 步数 = { ...步0, ...(主 ? { 主H: 主[0], 主Z: 主[1], 最多: 主[2] } : {}), ...(l.光步数 !== undefined ? { 光: l.光步数 } : {}) };
     return {
       算法: l.算法,

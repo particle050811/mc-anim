@@ -15,6 +15,7 @@ import { 云空间倍 } from './配置.ts';
 import { 云片元 } from './着色器.ts';
 import { 展开, 层值, 白天系数, type 展开配置 } from './展开.ts';
 import { 积云高度图 } from './高度图.ts';
+import { 蓝噪声, 蓝噪声边 } from './蓝噪声.ts';
 import type { 云场, 云配置 } from './配置.ts';
 
 export type 画云输入 = {
@@ -223,6 +224,7 @@ const 取程序 = (e: 展开配置) => {
         pcGlowCol: { value: new THREE.Color() },
         uStrip: { value: new THREE.Vector2(-1, 1) },
         tPrep: { value: null },
+        tBlue: { value: null },
         atmoSky: { value: null },
         uSize: { value: new THREE.Vector2() },
         uInvProj: { value: new THREE.Matrix4() },
@@ -272,6 +274,16 @@ const 摆资源 = (宽: number, 高: number, 半: boolean) => {
 
 const 镜头位 = new THREE.Vector3();
 
+let 蓝噪声纹理: THREE.DataTexture | null = null;
+const 取蓝噪声纹理 = () => {
+  if (蓝噪声纹理) return 蓝噪声纹理;
+  const t = new THREE.DataTexture(蓝噪声(), 蓝噪声边, 蓝噪声边, THREE.RedFormat, THREE.FloatType);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.generateMipmaps = false;
+  t.needsUpdate = true;
+  return (蓝噪声纹理 = t);
+};
+
 /** 光影层第 4 步：画这一帧的云。配置里没有光影层的云（都关了、只有原版方块）就不画，返回 false */
 export const 画云 = (x: 画云输入): boolean => {
   const tex = atmosphere.clouds;
@@ -307,6 +319,7 @@ export const 画云 = (x: 画云输入): boolean => {
   if (g) (u.pcGlowCol!.value as THREE.Color).setStyle(g.色, THREE.LinearSRGBColorSpace);
   u.pcAddN!.value = 0;
   u.atmoSky!.value = atmosphere.sky;
+  if (e.质量.抖动 === '蓝噪声') u.tBlue!.value = 取蓝噪声纹理();
   (u.uSize!.value as THREE.Vector2).set(x.宽, x.高);
   (u.uInvProj!.value as THREE.Matrix4).copy(cam.projectionMatrixInverse);
   (u.uCamWorld!.value as THREE.Matrix4).copy(cam.matrixWorld);
