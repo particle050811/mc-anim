@@ -35,6 +35,8 @@ export type 画云输入 = {
   秒: number;
   /** 太阳本体在画布上的方块（像素，左下角 x、y，宽，高）；没有给 null */
   太阳框: readonly [number, number, number, number] | null;
+  /** 离屏图和复用状态各用各的（水面反射的云另画一张小图，和主画面那张不来回挤掉） */
+  槽?: string;
 };
 
 // 去云默认镜头 20 米内删掉、再 30 米渐变回来（同 大气/云.ts 的 defaultNear）
@@ -146,7 +148,7 @@ const 程序们 = new Map<string, { 材质: THREE.ShaderMaterial; 场: THREE.Sce
 const 准备们 = new Map<boolean, { 材质: THREE.ShaderMaterial; 场: THREE.Scene }>();
 let 合成: { 材质: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
 let 放大: { 材质: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
-let 资: 资源 | null = null;
+const 资们 = new Map<string, 资源>();
 
 const 取准备 = (半: boolean) => {
   let p = 准备们.get(半);
@@ -261,15 +263,18 @@ const 设值 = (u: Record<string, THREE.IUniform>, 名: string, v: number | read
 const 新离屏 = (w: number, h: number) =>
   new THREE.WebGLRenderTarget(w, h, { type: THREE.FloatType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
 
-const 摆资源 = (宽: number, 高: number, 半: boolean) => {
+const 摆资源 = (宽: number, 高: number, 半: boolean, 槽: string) => {
   const w = 半 ? Math.ceil(宽 / 2) : 宽, h = 半 ? Math.ceil(高 / 2) : 高;
+  const 资 = 资们.get(槽);
   if (资 && 资.宽 === 宽 && 资.高 === 高 && 资.半 === 半) return 资;
   if (资) {
     资.云.dispose();
     资.准备[0].dispose();
     资.准备[1].dispose();
   }
-  return (资 = { 宽, 高, 半, 云: 新离屏(w, h), 准备: [新离屏(w, h), 新离屏(w, h)], 轮: 0, 键: '' });
+  const 新: 资源 = { 宽, 高, 半, 云: 新离屏(w, h), 准备: [新离屏(w, h), 新离屏(w, h)], 轮: 0, 键: '' };
+  资们.set(槽, 新);
+  return 新;
 };
 
 const 镜头位 = new THREE.Vector3();
@@ -292,7 +297,7 @@ export const 画云 = (x: 画云输入): boolean => {
   if (!e.层们.length) return false;
   const { gl, camera: cam } = x;
   const 半 = e.质量.分辨率 === 0.5;
-  const r = 摆资源(x.宽, x.高, 半);
+  const r = 摆资源(x.宽, x.高, 半, x.槽 ?? '主');
   const w = r.云.width, h = r.云.height;
   const p = 取程序(e);
   const u = p.材质.uniforms;
