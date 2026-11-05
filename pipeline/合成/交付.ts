@@ -30,10 +30,9 @@ export const 读交付设置 = (作品根: string): 交付设置 => {
   return { 剪辑包: t['剪辑包'] === true };
 };
 
-/** 剪辑包画面的编码参数（用户 10-14 定：2K、CRF 32、每帧关键帧，剪映里拖播放头哪帧都能直接解）；film 和 edit-package 共用 */
+/** 剪辑包画面的编码参数（用户 10-14 定：2K、CRF 32、每帧关键帧，剪映里拖播放头哪帧都能直接解）；film 和 edit-package 共用。
+ *  宽高 = 母版的（manifest 的 合成宽、合成高）：10-14 定的是「2K、和成片同分辨率」，11-04 成片改按 B 站缩到 1080 后，剪辑包仍按母版的 2K 出（剪映导出时再缩），4k 档跟着 4K */
 export const 剪辑画面编码 = (fps: number) => ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '32', '-g', '1', '-keyint_min', '1', '-sc_threshold', '0', '-pix_fmt', 'yuv420p', '-r', String(fps), '-movflags', '+faststart'];
-export const 剪辑画面宽 = 2560;
-export const 剪辑画面高 = 1440;
 
 /** 读交付manifest 统一成这样：母版、声音都是绝对路径（母版不一定还在；声音是段签的 声音.flac，v1 或没段签的没有）。bili 时间轴直接读原 JSON，只用帧数这些 */
 export type 交付段 = { 编号: string | null; 键: string; 指纹: string; 帧数: number; 全片起帧: number; 母版: string; 声音?: string | null; 字节sha?: string | null };
@@ -45,6 +44,9 @@ export type 交付manifest = {
   帧率: number;
   宽: number;
   高: number;
+  /** 母版、叠层、剪辑包画面的宽高；11-04 以前的交付没有，和 宽、高 一样 */
+  合成宽?: number;
+  合成高?: number;
   总帧数: number;
   响度: { 增益dB: number };
   段: 交付段[];

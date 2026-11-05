@@ -1,5 +1,5 @@
 // anim edit-package：照一次 anim film 的交付（manifest.json 的增益、各段帧数和 台词落点.json）出剪辑包，放在 <交付目录>/剪辑包/，出完写进剪映草稿。
-// 照旧项目 导出剪辑包.py 的快路：画面 = 同一批母版 + 叠层、不带字幕，2K、CRF 32、每帧关键帧（用户 10-14 定，剪映里拖播放头哪帧都能直接解）；
+// 照旧项目 导出剪辑包.py 的快路：画面 = 同一批母版 + 叠层、不带字幕，母版分辨率（1080p 档 2K）、CRF 32、每帧关键帧（用户 10-14 定，剪映里拖播放头哪帧都能直接解）；
 // 声音 = 拉响度之前的整片声音，各句台词和字幕现算（字幕.ts），轨道、核对交给 剪辑包.py。
 // 只读交付目录：画面.mp4 film 已经出了（作品开了剪辑包）就不碰母版，声音读交付的 全片-未拉响度.flac；旧交付没有这两样才退回段签的 声音.flac、压缩母版现做（合成/交付.ts、渲/转存.ts）。
 // 配乐、音效默认一条「去台词」；--拆音效 照段.ts 的 cue 出清单、一声一个片段（和成片差多少看 核对.tsv）。
@@ -19,7 +19,7 @@ import { 叠层滤镜, 展开段叠层 } from '../../合成/叠层.ts';
 import { 排字幕, type 台词落点 } from '../../合成/字幕.ts';
 import { 读单声道 } from '../../合成/音频.ts';
 import type { 运行记录 } from '../../运行记录/记录.ts';
-import { 剪辑画面编码, 剪辑画面宽, 剪辑画面高, 未拉响度文件, 段声音源, 拼未拉响度, 读交付manifest, type 交付manifest } from '../../合成/交付.ts';
+import { 剪辑画面编码, 未拉响度文件, 段声音源, 拼未拉响度, 读交付manifest, type 交付manifest } from '../../合成/交付.ts';
 import { 写清单 } from './音效清单.ts';
 import { 导入剪映 } from './剪映.ts';
 
@@ -57,22 +57,23 @@ const 比字幕表 = (dir: string, 屏们: { 字: string; 起帧: number; 止帧
   if (旧.join('\n') !== 新.join('\n')) 记录.记('警告', `现算的字幕和成片的字幕表对不上（表 ${旧.length} 屏、现算 ${新.length} 屏），台词或配音在出成片以后改过？`);
 };
 
-/** 剪辑包画面：各段母版 + 段叠层、不带字幕，缩到 2K（film 开了剪辑包时同一遍 split 出同样的画面；这里给旧交付现做）。过放行闸 */
+/** 剪辑包画面：各段母版 + 段叠层、不带字幕，按母版分辨率（film 开了剪辑包时同一遍 split 出同样的画面；这里给旧交付现做）。过放行闸 */
 export const 做剪辑画面 = async (m: 交付manifest, 出: string) => {
   const 缺 = [...m.段.map((s) => s.母版), ...m.叠层.map((l) => l.文件)].filter((f) => !fs.existsSync(f));
   if (缺.length) throw new Error(`交付里没有剪辑包画面，现做要的母版或叠层又不在了（缓存被清过？）：${缺.join('、')}；重出一次 anim film`);
   const ffmpeg = 配置('ffmpeg');
   const fps = m.帧率;
   const 输入 = m.段.flatMap((s) => ['-i', s.母版]);
-  const 滤镜 = m.段.map((s, k) => `[${k}:v]trim=start_frame=0:end_frame=${s.帧数},setpts=PTS-STARTPTS,scale=${m.宽}:${m.高}:flags=lanczos,setsar=1,fps=${fps}[v${k}]`);
+  const [宽, 高] = [m.合成宽 ?? m.宽, m.合成高 ?? m.高];
+  const 滤镜 = m.段.map((s, k) => `[${k}:v]trim=start_frame=0:end_frame=${s.帧数},setpts=PTS-STARTPTS,scale=${宽}:${高}:flags=lanczos,setsar=1,fps=${fps}[v${k}]`);
   滤镜.push(`${m.段.map((_, k) => `[v${k}]`).join('')}concat=n=${m.段.length}:v=1:a=0[cat]`);
   const 段 = new Map(m.段.map((s) => [s.键, s]));
   const 层们 = m.叠层.map((l) => 展开段叠层(l.文件, 视频信息(l.文件).帧数, 段.get(l.段)!.帧数, l.全片起帧));
   const [层输入, 层滤镜, 出标签] = 叠层滤镜(层们, m.段.length, 'cat', fps);
   if (层滤镜) 滤镜.push(层滤镜);
-  滤镜.push(`[${出标签}]scale=${剪辑画面宽}:${剪辑画面高}:flags=lanczos[out]`);
+  滤镜.push(`[${出标签}]null[out]`);
   const 写入中 = 出.replace(/\.mp4$/, '.写入中.mp4');
-  console.log(`== 画面：${m.段.length} 段母版、叠 ${层们.length} 层，压成 2K 每帧关键帧`);
+  console.log(`== 画面：${m.段.length} 段母版、叠 ${层们.length} 层，压成 ${宽}×${高} 每帧关键帧`);
   await 过放行闸(() =>
     跑(
       低优先级([
@@ -147,6 +148,8 @@ export const 出剪辑包 = async (交付目录: string, opts: { 拆音效?: boo
     包目录: 包,
     项目名: m.名,
     帧率: m.帧率,
+    宽: m.合成宽 ?? m.宽,
+    高: m.合成高 ?? m.高,
     总帧: m.总帧数,
     增益dB: m.响度.增益dB,
     画面: path.basename(画面文件),

@@ -21,7 +21,6 @@ from 音效拆分 import FFMPEG
 FPS = 24
 SAMPLE_RATE = 48000
 SAMPLES_PER_FRAME = SAMPLE_RATE // FPS
-WIDTH, HEIGHT = 2560, 1440  # 画面 2K，和成片同分辨率（用户 10-14 定）；CRF 和成片不同档，见 pipeline/合成/交付.ts
 DIALOGUE_BUS_GAIN = 1.0  # engine/audio/混音.ts 的 台词音量
 
 read_audio = sfx_split.read_audio
@@ -70,7 +69,7 @@ def measure_anchor_offset(mix: np.ndarray, dialogue: np.ndarray, start_frame: fl
 # ---------- 字幕 ----------
 # 样式照 pipeline/合成/字幕卡.ts：1 个界面像素 = 画面高 / 90（1440p 16 像素）；字 8 个界面像素高、框四边各多 1 个、白字、黑底不透明度 0.5；
 # 下方：框底离画面底 6 个界面像素；思索上：框底在思索按钮上沿（思索界面 240 高里的 240 − 54）以上 1 个界面像素
-def subtitle_style(position: str, height: int = HEIGHT) -> dict:
+def subtitle_style(position: str, height: int) -> dict:
     ui_pixel = height / 90
     box_height = round(10 * ui_pixel)
     box_bottom = int(np.floor((240 - 54) / 240 * height - ui_pixel)) if position == '思索上' else round(height - 6 * ui_pixel)
@@ -90,6 +89,7 @@ def main(input_file: Path):
     if spec['帧率'] != FPS:
         raise SystemExit(f'剪辑包只按 {FPS} fps 写（音效清单的每帧样本数是定的），这一片是 {spec["帧率"]} fps')
     package_dir = Path(spec['包目录'])
+    width, height = spec['宽'], spec['高']  # 画面 = 母版分辨率（pipeline/合成/交付.ts 的 剪辑画面编码）
     (package_dir / '台词').mkdir(parents=True, exist_ok=True)
     segment_offsets = [(s['段'], s['Composition'], s['段内起帧'], s['段内起帧'] + s['帧数'], s['全片起帧']) for s in spec['段落']]
     total_frames = spec['总帧']
@@ -193,7 +193,7 @@ def main(input_file: Path):
         screen_counts[screen['句']] = screen_counts.get(screen['句'], 0) + 1
         subtitle_clips.append(dict(
             名=f'字幕 {screen["句"]} #{screen_counts[screen["句"]]}', 文字=screen['字'], 起帧=screen['起帧'], 长帧=screen['止帧'] - screen['起帧'], 跟随=clip_name_by_sentence[screen['句']],
-            样式=subtitle_style(screen['位置']), 元数据=dict(句=screen['句'], 屏=screen_counts[screen['句']], 位置=screen['位置'], 依据=screen['依据'])))
+            样式=subtitle_style(screen['位置'], height), 元数据=dict(句=screen['句'], 屏=screen_counts[screen['句']], 位置=screen['位置'], 依据=screen['依据'])))
 
     # 核对：成片 ≈ 剪辑包各轨相加（有清单时配乐、音效照清单合成，不是拿整片减台词得来的，那样比只剩限幅器、自己比自己）
     rebuilt_mix = rebuilt_no_dialogue.copy()
@@ -242,7 +242,7 @@ def main(input_file: Path):
 
     manifest = dict(
         格式='剪辑包', 版本=1, 项目名=spec['项目名'], 生成时间=time.strftime('%Y-%m-%d %H:%M:%S'),
-        帧率=FPS, 宽=WIDTH, 高=HEIGHT, 总帧=total_frames,
+        帧率=FPS, 宽=width, 高=height, 总帧=total_frames,
         轨道=[
             dict(名='字幕', 类型='文字', 片段=subtitle_clips),
             dict(名='画面', 类型='视频', 片段=[dict(名='画面（整片，不带字幕）', 文件=spec['画面'], 起帧=0, 长帧=total_frames)]),
