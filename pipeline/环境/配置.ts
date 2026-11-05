@@ -51,7 +51,7 @@ const 项表 = {
   编码器: { 变量: 'ANIM_VIDEO_ENCODER', 说明: '成片视频编码器：libsvtav1（默认，AV1）、libx264 或 h264_videotoolbox（Mac 上要快时用）', 是路径: false, 默认: () => 'libsvtav1' },
   编码档位: { 变量: 'ANIM_VIDEO_PRESET', 说明: '成片编码的档位（-preset）：空 = 编码器默认（libsvtav1 6，0～13 越小越慢越好；libx264 medium）', 是路径: false, 默认: () => '' },
   编码质量: { 变量: 'ANIM_VIDEO_CRF', 说明: '成片编码的质量（libsvtav1、libx264 的 -crf，videotoolbox 的 -q:v）：空 = 编码器默认（libsvtav1 30、libx264 18、videotoolbox 38），越小越好越大', 是路径: false, 默认: () => '' },
-  编码码率上限: { 变量: 'ANIM_VIDEO_MAXRATE', 说明: '成片视频码率上限（kbps）：空 = 成片档的（1080p 5800、4k 19400，照 B 站投稿上限留余量）；videotoolbox 不卡', 是路径: false, 默认: () => '' },
+  编码码率上限: { 变量: 'ANIM_VIDEO_MAXRATE', 说明: '成片视频码率上限（kbps）：空 = 不卡，只按 CRF 控质量；videotoolbox 不卡', 是路径: false, 默认: () => '' },
   成片档: { 变量: 'ANIM_FILM_PROFILE', 说明: '成片档：1080p（默认，B 站 1080P60）或 4k（渲染 3 倍出 3840×2160，母版全部重渲）；见 pipeline/渲/设置.ts 的 成片档表', 是路径: false, 默认: () => '1080p' },
   gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU；Docker 里没有 GPU 用 swangle）', 是路径: false, 默认: () => 'angle' },
   ffmpeg: { 变量: 'ANIM_FFMPEG', 说明: 'ffmpeg 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffmpeg' },
