@@ -4,7 +4,7 @@ import {登记CPU} from '../闸/任务.ts';
 //   画面 trim/scale/concat 和压成片一遍做完。分辨率按成片档（渲/设置.ts，用户 11-04 定按 B 站 1080P60 出）。
 //   默认 AV1（SVT-AV1 preset 6、CRF 30、不卡码率）：用户 11-04 试传 B 站可用后定「以后就有 av1 了」；
 //   x264 medium CRF 18 留作可选（ANIM_VIDEO_ENCODER=libx264），硬件编码 q38 要快时用。
-//   段叠层在母版分辨率上叠（叠层和母版同倍数渲），叠完缩到成片档的宽高，字幕卡按成片的宽高画，像素字一个界面像素是整数个成片像素。
+//   母版、叠层按成片档原生渲到成片的宽高，合成只接、叠，不缩放。
 // 过期的母版（和段声明的透明叠层）默认拒绝：--重渲过期 先渲，--允许过期 用同一渲染级别最近一份旧的并逐段写进 manifest。
 // 叠层在下、字幕（按段.ts 的台词 cue 排，见 字幕.ts）在上，和画面一起压；接缝只查不改（接缝.ts）；--分享版 另压一份 720p。
 // 声音和接缝读各段的段签（pipeline/段签/：声音.flac、首尾帧小图，缺了从 CRF1 当场派生），画面读压缩母版（用户 10-30 定，渲/转码.ts；只有 CRF1 的旧母版先转存再用，同一指纹出同样的片）。
@@ -259,10 +259,8 @@ export const 合成成片 = async (
   const 叠层们 = opts.不叠层 ? [] : await 取叠层(截们, opts.级别, opts);
   点('取叠层');
   const 总帧数 = 截们.reduce((a, c) => a + c.帧数, 0);
-  // 合成宽高 = 母版、叠层、剪辑包的；宽高 = 成片的（成片档）
-  const [合成宽, 合成高] = 母版宽高(opts.级别);
+  const [宽, 高] = 母版宽高(opts.级别);
   const 档 = opts.级别 === '预览' ? null : 成片档();
-  const [宽, 高] = 档 ? [档.宽, 档.高] : [合成宽, 合成高];
   const 接缝们 = 查接缝(截们, 每帧样本, opts.记录);
 
   // 字幕：段.ts 的台词 cue → 落点 → 排时间；不叠字幕时照样排、出表和 SRT
@@ -287,7 +285,7 @@ export const 合成成片 = async (
   // 叠层们（段叠层在下、字幕卡在上）
   const 段层们: 叠加层[] = 叠层们.map((l) => {
     const 层帧 = 视频信息(l.文件);
-    if (层帧.宽 !== 合成宽 || 层帧.高 !== 合成高) throw new Error(`叠层 ${l.键} 是 ${层帧.宽}×${层帧.高}，母版是 ${合成宽}×${合成高}（叠层要按同一级别、同一成片档渲）`);
+    if (层帧.宽 !== 宽 || 层帧.高 !== 高) throw new Error(`叠层 ${l.键} 是 ${层帧.宽}×${层帧.高}，成片是 ${宽}×${高}（叠层要按同一级别、同一成片档渲）`);
     return 展开段叠层(l.文件, 层帧.帧数, l.截.帧数, l.截.全片起帧);
   });
   const 卡层们: 叠加层[] = [];
@@ -344,7 +342,7 @@ export const 合成成片 = async (
   const 视频编码 = 成片编码参数(opts.级别);
   const 成片 = path.join(dir, `${opts.名}.mp4`);
   const 写入中 = path.join(工作, `${opts.名}.写入中.mp4`);
-  const 视频滤镜 = 截们.map((c, k) => `[${k}:v]trim=start_frame=0:end_frame=${c.帧数},setpts=PTS-STARTPTS,scale=${合成宽}:${合成高}:flags=lanczos,setsar=1,fps=${fps}[v${k}]`);
+  const 视频滤镜 = 截们.map((c, k) => `[${k}:v]trim=start_frame=0:end_frame=${c.帧数},setpts=PTS-STARTPTS,scale=${宽}:${高}:flags=lanczos,setsar=1,fps=${fps}[v${k}]`);
   视频滤镜.push(`${截们.map((_, k) => `[v${k}]`).join('')}concat=n=${截们.length}:v=1:a=0[cat]`);
   // 放子目录里：成片的临时名是 <名>.写入中.mp4，名可以是任何字，同一层会撞
   const 剪辑写入中 = path.join(工作, '剪辑包', '画面.写入中.mp4');
@@ -354,14 +352,10 @@ export const 合成成片 = async (
   if (段滤镜) 视频滤镜.push(段滤镜);
   let 底 = 段标签;
   if (剪辑包) {
-    // 段叠层叠完 split：一路缩到成片档、叠字幕卡压成片，一路按母版分辨率压剪辑包画面（edit-package 从母版现做的同一套滤镜）
+    // 段叠层叠完 split：一路叠字幕卡压成片，一路压剪辑包画面（edit-package 从母版现做的同一套滤镜）
     视频滤镜.push(`[${底}]split=2[pre][pkg]`);
     底 = 'pre';
     剪辑出.push('-map', '[pkg]', '-an', ...剪辑画面编码(fps), 剪辑写入中);
-  }
-  if (宽 !== 合成宽 || 高 !== 合成高) {
-    视频滤镜.push(`[${底}]scale=${宽}:${高}:flags=lanczos,setsar=1[film]`);
-    底 = 'film';
   }
   const [卡输入, 卡滤镜, 出标签] = 叠层滤镜(卡层们, 截们.length + 1 + 段层们.length, 底, fps, 'c');
   if (卡滤镜) 视频滤镜.push(卡滤镜);
@@ -442,9 +436,6 @@ export const 合成成片 = async (
     帧率: fps,
     宽,
     高,
-    // 母版、叠层、剪辑包画面的宽高（11-04 以前的交付没有这两项，和 宽、高 一样）
-    合成宽,
-    合成高,
     成片档: 档?.名 ?? null,
     总帧数,
     时长秒: 时长秒(成片),

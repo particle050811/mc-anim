@@ -89,7 +89,7 @@ def main(input_file: Path):
     if spec['帧率'] != FPS:
         raise SystemExit(f'剪辑包只按 {FPS} fps 写（音效清单的每帧样本数是定的），这一片是 {spec["帧率"]} fps')
     package_dir = Path(spec['包目录'])
-    width, height = spec['宽'], spec['高']  # 画面 = 母版分辨率（pipeline/合成/交付.ts 的 剪辑画面编码）
+    width, height = spec['宽'], spec['高']  # 画面和成片同分辨率（pipeline/合成/交付.ts 的 剪辑画面编码）
     (package_dir / '台词').mkdir(parents=True, exist_ok=True)
     segment_offsets = [(s['段'], s['Composition'], s['段内起帧'], s['段内起帧'] + s['帧数'], s['全片起帧']) for s in spec['段落']]
     total_frames = spec['总帧']
