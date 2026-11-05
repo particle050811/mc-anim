@@ -36,6 +36,14 @@ export const 新光影统一量 = () => ({
   gyGlintCol: { value: new THREE.Color() },
   gyWaterBody: { value: new THREE.Color() },
   gyReflMin: { value: 0 },
+  /** 水面样式比较（用户 11-05 要几版并排挑）：0 平滑波纹、1 像素波纹（这两种同 gyWaterPix 的老写法）、2 Photon 式波纹、3 FFT 海（Ultra-Water 的谱） */
+  gyWaterMode: { value: 0 },
+  gySlope0: { value: null as THREE.Texture | null },
+  gySlope1: { value: null as THREE.Texture | null },
+  gySlope2: { value: null as THREE.Texture | null },
+  gySlope3: { value: null as THREE.Texture | null },
+  /** FFT 四层的边长（格 = 米） */
+  gyFftLen: { value: new THREE.Vector4(1, 1, 1, 1) },
   /** 水面反射、远处融进的天色改取 Photon 的天色图（天的样式是 Photon平滑 时） */
   gyAtmoOn: { value: 0 },
   gyAtmoSky: { value: null as THREE.Texture | null },
@@ -158,8 +166,40 @@ uniform sampler2D gyAtmoSky;
 uniform vec3 gyZenCol;
 uniform float gyZenK;
 uniform float gyZenH;
+uniform float gyWaterMode;
+uniform sampler2D gySlope0;
+uniform sampler2D gySlope1;
+uniform sampler2D gySlope2;
+uniform sampler2D gySlope3;
+uniform vec4 gyFftLen;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
+float gyHash12( vec2 p ) { vec3 p3 = fract( vec3( p.xyx ) * 0.1031 ); p3 += dot( p3, p3.yzx + 33.33 ); return fract( ( p3.x + p3.y ) * p3.z ); }
+float gyVnoise( vec2 p ) {
+  vec2 i = floor( p ), f = fract( p );
+  vec2 u = f * f * ( 3.0 - 2.0 * f );
+  return mix( mix( gyHash12( i ), gyHash12( i + vec2( 1.0, 0.0 ) ), u.x ), mix( gyHash12( i + vec2( 0.0, 1.0 ) ), gyHash12( i + vec2( 1.0, 1.0 ) ), u.x ), u.y );
+}
+// Photon（sixthsurge/photon include/surface/water_normal.glsl）的水面高度：6 道 Gerstner（sin² 尖浪顶），每道相位按噪声挪、方向按黄金角转，大范围浪高再按噪声起伏。
+// 照它的参数自己写的（它的 noisetex 换成值噪声，256 格一周期同它的贴图）
+float gyGer( vec2 c, vec2 dir, float t, float n, float wl ) {
+  float k = 6.2831853 / wl;
+  float x = sqrt( 9.8 * k ) * t - k * ( dot( dir, c ) + n );
+  float s = sin( x ) * 0.5 + 0.5;
+  return s * s;
+}
+float gyPhotonH( vec2 c, float t ) {
+  vec2 dir = vec2( 0.8660254, 0.5 );
+  mat2 rot = mat2( cos( 2.39996 ), sin( 2.39996 ), - sin( 2.39996 ), cos( 2.39996 ) );
+  vec2 nc = ( c + vec2( 0.0, 0.25 * t ) ) * 0.007 * 256.0;
+  float h = 0.0, amp = 1.0, freq = 0.7, wl = 1.0;
+  for ( int i = 0; i < 6; i ++ ) {
+    h += gyGer( c * freq, dir, t, gyVnoise( nc ) * 2.0, wl ) * amp;
+    nc *= 2.5; amp *= 0.5; freq *= 1.7; wl *= 1.5; dir = rot * dir;
+  }
+  float hv = gyVnoise( ( c + vec2( 0.0, 0.1 * t ) ) * 0.001 * 256.0 );
+  return h * max( 0.4, hv * 2.0 - 0.5 ) * ( 0.5 / ( 1.0 - pow( 0.5, 6.0 ) ) );
+}
 `;
 
 // 水面：认的是 作品/把回忆拼好给你/场/2-海上/海面.tsx 着色器里的变量（seaT 水贴图、seaDeep、seaWater、seaTint、seaFogC 这一方位的地平色、seaF 远处雾档、seaDist），
@@ -170,6 +210,9 @@ ${ATMO_FN_GLSL}
 // 不做抗锯齿就会闪成噪点，所以按距离把高光的锐度降下来、范围放大（远处的碎光连成一条）。
 // 像素版：波纹按贴图像素（1/16 格）的格子取值，一格一个法线、一个高光，和水贴图的像素一样大。
 const 水身 = /* glsl */ `
+vec3 gyHor = seaFogC;
+vec3 gyC;
+if ( gyWaterMode < 1.5 ) {
 vec2 gyWp = vSeaW.xz;
 if ( gyWaterPix > 0.5 ) gyWp = ( floor( gyWp * 16.0 ) + 0.5 ) / 16.0;
 float gyFar = clamp( seaDist / 96.0, 0.0, 1.0 );
@@ -190,7 +233,6 @@ vec3 gyR = reflect( gyV, gyN );
 gyR.y = abs( gyR.y );
 float gyCos = clamp( dot( - gyV, gyN ), 0.0, 1.0 );
 float gyFr = mix( gyReflMin, 1.0, pow( 1.0 - gyCos, 5.0 ) );
-vec3 gyHor = seaFogC;
 vec3 gySky;
 if ( gyAtmoOn > 0.5 ) {
   gyHor = atmoDisp( atmoSkyAt( gyAtmoSky, normalize( vec3( gyV.x, - gyV.z, 0.0 ) ) ) );
@@ -202,7 +244,81 @@ float gyGl = pow( gySd, mix( 1800.0, 220.0, gyFar ) ) * mix( 1.0, 2.2, gyFar );
 gyGl = gyWaterPix > 0.5 ? step( 0.35, gyGl ) * 1.4 : smoothstep( 0.05, 0.6, gyGl ) * 1.4;
 vec3 gyBody = mix( gyWaterBody, gyHor, 0.3 );
 // 碎光封顶：sRGB 数值过 1 以后转线性是 2.4 次方往上翻，不封的话近处一块碎光的泛光糊成一大团，像素版的方块也被糊没
-vec3 gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl, 0.0, 1.0 ) ) + gyGlintCol * gyGl, vec3( 1.5 ) );
+gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl, 0.0, 1.0 ) ) + gyGlintCol * gyGl, vec3( 1.5 ) );
+} else {
+// 新两种（Photon 式、FFT）共用一套光：GGX 太阳（粗糙度下限当太阳是个小面光源）、坡度方差进粗糙度（远处不闪、碎光自己连成光路）、
+// Lagarde 菲涅尔（粗糙的远处不发白）、反射 Photon 的天；碎光照 Ultra-Water 按每个像素里有几个小镜面按泊松抽（近处碎成点、远处平滑）
+vec2 gyP0 = vSeaW.xz;
+vec2 gyWq = gyWaterPix > 0.5 ? ( floor( gyP0 * 16.0 ) + 0.5 ) / 16.0 : gyP0;
+vec2 gySl = vec2( 0.0 );
+vec2 gyVar = vec2( 0.0 );
+vec3 gyVv = normalize( cameraPosition - vSeaW );
+if ( gyWaterMode < 2.5 ) {
+  float gyT = 0.5 * gyTime;
+  float gyH0 = gyPhotonH( gyWq, gyT );
+  vec2 gyD = vec2( gyPhotonH( gyWq + vec2( 0.1, 0.0 ), gyT ) - gyH0, gyPhotonH( gyWq + vec2( 0.0, 0.1 ), gyT ) - gyH0 ) / 0.1;
+  // Photon 主世界开阔水面 0.04，平视时压平防噪点
+  gySl = gyD * 0.04 * smoothstep( 0.0, 0.15, abs( gyVv.y ) );
+} else {
+  vec2 gx = dFdx( gyP0 ), gy = dFdy( gyP0 );
+  vec4 s0 = textureGrad( gySlope0, gyWq / gyFftLen.x, gx / gyFftLen.x, gy / gyFftLen.x );
+  vec4 s1 = textureGrad( gySlope1, gyWq / gyFftLen.y, gx / gyFftLen.y, gy / gyFftLen.y );
+  vec4 s2 = textureGrad( gySlope2, gyWq / gyFftLen.z, gx / gyFftLen.z, gy / gyFftLen.z );
+  vec4 s3 = textureGrad( gySlope3, gyWq / gyFftLen.w, gx / gyFftLen.w, gy / gyFftLen.w );
+  // 风带（表面活性物质压住短浪）：远处分成平、糙的条带，不是一片均匀的噪点
+  float slick = smoothstep( 0.3, 0.7, gyVnoise( gyP0 * 0.006 + gyTime * 0.01 ) );
+  float sl2 = mix( 0.75, 1.0, slick ), sl3 = mix( 0.4, 1.0, slick );
+  s2.xy *= sl2; s2.zw *= sl2 * sl2; s3.xy *= sl3; s3.zw *= sl3 * sl3;
+  gySl = s0.xy + s1.xy + s2.xy + s3.xy;
+  gyVar = max( s0.zw - s0.xy * s0.xy, 0.0 ) + max( s1.zw - s1.xy * s1.xy, 0.0 ) + max( s2.zw - s2.xy * s2.xy, 0.0 ) + max( s3.zw - s3.xy * s3.xy, 0.0 );
+}
+vec3 gyN = normalize( vec3( - gySl.x, 1.0, - gySl.y ) );
+vec3 dndx = dFdx( gyN ), dndy = dFdy( gyN );
+float geoVar = min( 0.25 * ( dot( dndx, dndx ) + dot( dndy, dndy ) ), 0.18 );
+float alpha = sqrt( 0.0004 + gyVar.x + gyVar.y + geoVar );
+float NoV = max( dot( gyN, gyVv ), 1e-4 );
+float F90 = max( 1.0 - 0.7 * sqrt( alpha ), 0.02 );
+float gyFr = 0.02 + ( F90 - 0.02 ) * pow( 1.0 - NoV, 5.0 );
+vec3 gyV = - gyVv;
+vec3 gyR = reflect( gyV, gyN );
+gyR.y = abs( gyR.y );
+vec3 gySky;
+if ( gyAtmoOn > 0.5 ) {
+  gyHor = atmoDisp( atmoSkyAt( gyAtmoSky, normalize( vec3( gyV.x, - gyV.z, 0.0 ) ) ) );
+  gySky = atmoDisp( atmoSkyAt( gyAtmoSky, vec3( gyR.x, - gyR.z, gyR.y ) ) );
+  gySky = mix( gySky, gyZenCol, gyZenK * smoothstep( 0.0, gyZenH, gyR.y ) );
+} else gySky = mix( seaFogC, gyZenith, smoothstep( 0.0, 0.8, gyR.y ) );
+float aS = max( alpha, 0.015 );
+float aS2 = aS * aS;
+vec3 H = normalize( gySun + gyVv );
+float NoH = max( dot( gyN, H ), 0.0 );
+float nl = max( dot( gyN, gySun ), 0.0 );
+float dd = NoH * NoH * ( aS2 - 1.0 ) + 1.0;
+float D = aS2 / ( 3.14159265 * dd * dd );
+float vis = 0.5 / ( nl * sqrt( NoV * NoV * ( 1.0 - aS2 ) + aS2 ) + NoV * sqrt( nl * nl * ( 1.0 - aS2 ) + aS2 ) + 1e-5 );
+float Fs = 0.02 + 0.98 * pow( 1.0 - max( dot( gyVv, H ), 0.0 ), 5.0 );
+float spec = 3.14159265 * D * vis * Fs * nl;
+if ( spec > 0.02 ) {
+  vec2 fw = fwidth( gyP0 );
+  float lf = log2( max( max( fw.x, fw.y ), 1e-3 ) ) + 1.0;
+  float l0 = floor( lf );
+  float lam1 = 2e4 * D * NoH * 6.8e-5 / ( 4.0 * max( dot( gyVv, H ), 0.05 ) );
+  float m = 0.0;
+  for ( int j = 0; j < 2; j ++ ) {
+    float l = l0 + float( j ), sz = exp2( l );
+    vec2 cell = floor( gyP0 / sz );
+    float lam = lam1 * sz * sz;
+    float u = clamp( gyHash12( cell * 1.31 + floor( gyTime * 3.0 + gyHash12( cell + l * 17.17 ) * 64.0 ) * 3.7 ), 1e-4, 0.9999 );
+    float n;
+    if ( lam > 6.0 ) n = max( 0.0, lam + sqrt( lam ) * log( u / ( 1.0 - u ) ) / 1.702 );
+    else { float pp = exp( - lam ), F = pp; n = 0.0; for ( int k = 0; k < 14; k ++ ) { if ( u <= F ) break; n += 1.0; pp *= lam / n; F += pp; } }
+    m += ( j == 0 ? 1.0 - ( lf - l0 ) : lf - l0 ) * min( n / max( lam, 1e-4 ), 30.0 );
+  }
+  spec *= mix( 1.0, m, smoothstep( 4.0, 30.0, seaDist ) );
+}
+vec3 gyBody = mix( gyWaterBody, gyHor, 0.3 );
+gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl / 0.9 * 1.0, 0.0, 1.0 ) ) + gyGlintCol * spec * 0.05, vec3( 1.5 ) );
+}
 outgoingLight = sRGBTransferEOTF( vec4( mix( gyC, gyHor, seaF ), 1.0 ) ).rgb;
 `;
 

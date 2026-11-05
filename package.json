@@ -29,6 +29,7 @@
     "cross-spawn": "7.0.6",
     "esbuild": "0.28.1",
     "fast-png": "^8.0.0",
+    "gelatin-game-engine": "github:Humpalumps/Ultra-Water#30ea65ecb0a66b137aa200d099965634bdd84d51",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "remotion": "4.0.537",

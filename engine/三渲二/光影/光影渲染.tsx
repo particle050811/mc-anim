@@ -17,6 +17,7 @@ import { atmoUniforms, atmosphere } from '../../light/大气.ts';
 import { Photon天, 备天色图 } from '../../light/天/Photon天.ts';
 import { 画云 as 画云层, 预编云 } from '../../light/云/画云.ts';
 import { png } from '../../model/贴图.ts';
+import { OceanSim, defaultOceanParams } from 'gelatin-game-engine/src/water/OceanSim.js';
 import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
 
@@ -78,6 +79,28 @@ const 取变体 = (m: THREE.Material, u: 光影统一量): THREE.Material | null
 const 像水 = (m: THREE.Material) => (m as THREE.MeshBasicMaterial).isMeshBasicMaterial && /海面|水面/.test(m.customProgramCacheKey());
 
 type 资源 = ReturnType<typeof 建资源>;
+
+// FFT 海：Ultra-Water 的模拟（4 层 256² 的谱，按画面秒数直接算到那一刻，不靠上一帧，乱序出帧一样；它的白沫要逐帧累积，这里不用）。
+// 每个渲染器一份，风速变了重算谱
+const FFT们 = new WeakMap<THREE.WebGLRenderer, OceanSim>();
+const 备FFT海 = (gl: THREE.WebGLRenderer, u: 光影统一量, 秒: number, 风速: number) => {
+  let sim = FFT们.get(gl);
+  if (!sim) {
+    sim = new OceanSim(gl, defaultOceanParams());
+    FFT们.set(gl, sim);
+  }
+  if (sim.params.windSpeed !== 风速) {
+    sim.params.windSpeed = 风速;
+    sim.dirty = true;
+  }
+  sim.time = 秒 % 300;
+  sim.update(0);
+  u.gySlope0.value = sim.slope[0]!;
+  u.gySlope1.value = sim.slope[1]!;
+  u.gySlope2.value = sim.slope[2]!;
+  u.gySlope3.value = sim.slope[3]!;
+  u.gyFftLen.value.set(sim.lengths[0]!, sim.lengths[1]!, sim.lengths[2]!, sim.lengths[3]!);
+};
 
 const 新全屏 = (fragmentShader: string, uniforms: Record<string, THREE.IUniform>) => {
   const 材质 = new THREE.ShaderMaterial({ uniforms, vertexShader: 全屏顶点, fragmentShader, depthTest: false, depthWrite: false, toneMapped: false });
@@ -453,12 +476,15 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     sRGB乘数(u.gyLampCol.value, 光.灯照.色, 光.灯照.强 * 基);
     u.gyPixel.value = 参.像素阴影 ? 1 : 0;
     u.gyTime.value = 秒;
-    const 改水 = 选项.水 === '平滑波纹' || 选项.水 === '像素波纹';
-    u.gyWaterPix.value = 选项.水 === '像素波纹' ? 1 : 0;
+    const 水 = 选项.水 ?? '原版贴图';
+    const 改水 = 水 !== '原版贴图';
+    u.gyWaterPix.value = 水 === '像素波纹' || 水 === 'FFT像素' ? 1 : 0;
+    u.gyWaterMode.value = 水 === '像素波纹' ? 1 : 水 === 'Photon波纹' ? 2 : 水 === 'FFT海' || 水 === 'FFT像素' ? 3 : 0;
+    if (u.gyWaterMode.value === 3) 备FFT海(gl, u, 秒, 选项.水风速 ?? 5);
     sRGB乘数(u.gyZenith.value, 选项.水天顶 ?? 光.水.天顶);
     u.gyRefl.value = 光.水.反射;
     sRGB乘数(u.gyGlintCol.value, 光.水.碎光色, 光.水.碎光强);
-    sRGB乘数(u.gyWaterBody.value, 光.水.水体);
+    sRGB乘数(u.gyWaterBody.value, 选项.水体 ?? 光.水.水体);
     u.gyReflMin.value = 光.水.近反射;
     const 透视 = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
     const 画天 = 选项.天 === 'Photon平滑' && 透视 && atmosphere.sky !== null;
