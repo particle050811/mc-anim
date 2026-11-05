@@ -110,6 +110,18 @@ export const 画字幕卡 = (字: string, 位置: 字幕位置, 画面宽: numbe
   return { png: 编PNG(c.宽, c.高, c.rgba()), x: box.x, y: box.y, 宽: box.w, 高: box.h };
 };
 
+/** 整帧大小的字幕卡（框外全透明）：段里铺满画面画（engine/段/设置值.ts 的 段字幕），一个 PNG 像素正好对一个成片像素 */
+export const 画整帧字幕卡 = (字: string, 位置: 字幕位置, 画面宽: number, 画面高: number) => {
+  const box = 字幕框(字, 位置, 画面宽, 画面高);
+  const c = new 画布(box.w, box.h);
+  c.填(0, 0, box.w, box.h, 底色);
+  画字(c, 字, box.x / box.s + 边距, box.y / box.s + 边距, 字色, box.s, box);
+  const 小 = c.rgba();
+  const 整 = Buffer.alloc(画面宽 * 画面高 * 4);
+  for (let y = 0; y < box.h; y++) 小.copy(整, ((box.y + y) * 画面宽 + box.x) * 4, y * box.w * 4, (y + 1) * box.w * 4);
+  return 编PNG(画面宽, 画面高, 整);
+};
+
 // ---------- PNG（8 位 RGBA，不滤波） ----------
 const crc表 = Array.from({ length: 256 }, (_, n) => {
   let c = n;

@@ -44,8 +44,8 @@
 # video_preset = "6"
 # video_crf = "30"
 
-# 成片档：1080p（默认，B 站 1080P60，截图放大 1.5 倍原生出 1920×1080）或 4k（3 倍出 3840×2160）；换档母版指纹全变、要整片重渲。环境变量 ANIM_FILM_PROFILE
-# film_profile = "1080p"
+# 成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧）或 1080p60（1.5 倍出 1920×1080）；换档段指纹全变、要整片重渲。环境变量 ANIM_FILM_PROFILE
+# film_profile = "4k60"
 
 # 无头 Chrome 的 WebGL 后端：angle、swangle、egl、swiftshader、vulkan、angle-egl。环境变量 ANIM_GL。默认 angle
 # gl = "angle"

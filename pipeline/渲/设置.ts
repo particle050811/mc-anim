@@ -1,17 +1,19 @@
-// 渲染参数（全部显式传给 Remotion，并整份进指纹）。母版照旧项目 渲染带音频.py、批量渲染.mjs：
-// h264-mkv、CRF 1、PCM 声音（Remotion 直出 mp4 时 AAC 预填充没写进编辑列表，声音会晚约一帧，所以先出 PCM 再由 ffmpeg 压），
-// 视频级 PNG 帧、截图按成片档放大（1080p 档 1.5 倍出 1920×1080，4k 档 3 倍出 3840×2160）；预览级 JPEG、不放大、inputProps 级别=预览。并发 1（用户 10-06 定）。
+// 渲染参数（全部显式传给 Remotion，并整份进指纹）。每段渲出来就是成片的一截（用户 11-05 定「母版 = 成片切片」）：
+// 叠层、字幕画在段里，Remotion 直接按成片参数压（x264 medium CRF 18 + 码率上限、BT.709），成片只接不重压；不带声音，声音另出一遍（声音渲染参数）。
+// 视频级 PNG 帧、截图按成片档放大；预览级 JPEG、不放大、inputProps 级别=预览。并发 1（用户 10-06 定）。
 import { 配置 } from '../环境/配置.ts';
-import { 规范化设置, type 渲染级别 } from '../../engine/段/设置值.ts';
+import { 规范化设置, type 段字幕, type 渲染级别 } from '../../engine/段/设置值.ts';
 
 /**
- * 成片档（用户 11-04 定：B 站是主要平台，成片按它的 1080P60 出；4K 做成改一项设置 ANIM_FILM_PROFILE=4k 就能出）。
+ * 成片档：默认 4K60（用户 11-05 定「默认 4K60」，1080P60 只是可选项，ANIM_FILM_PROFILE=1080p60）。帧率是输出帧率，段.ts 的 fps 是编排帧率（engine/段/出帧.ts）。
+ * 码率上限是 x264 的 VBV（缓冲快满时提 QP，不是硬截）：4K 40 Mbps（用户 11-05 定「用 40mbps 稍微高点」，B 站 4K 档约 16 Mbps）；
+ * 1080P60 按 11-05 实测每帧 250 kbit 够 B 站二压不掉画质，取 15 Mbps（用户没单独点这个数）。缓冲都是上限的 2 倍。
  * 渲染倍数是截图放大倍数，进指纹；母版就是成片的分辨率，合成不再缩放（用户 11-04「还是用原生的 1080P 而不是重新压缩 不要给未来留技术债务」，11-05 再定「母版分辨率肯定要改成和发布版一致的」）。
  * 1080p 1.5 倍（11-05 以前是 2 倍出 2560×1440，那些母版、认可参考都是 1440 的），4k 3 倍；换档母版全部重渲。
  */
 export const 成片档表 = {
-  '1080p': { 渲染倍数: 1.5, 宽: 1920, 高: 1080 },
-  '4k': { 渲染倍数: 3, 宽: 3840, 高: 2160 },
+  '4k60': { 渲染倍数: 3, 宽: 3840, 高: 2160, fps: 60, 码率上限: '40M', 缓冲: '80M' },
+  '1080p60': { 渲染倍数: 1.5, 宽: 1920, 高: 1080, fps: 60, 码率上限: '15M', 缓冲: '30M' },
 } as const;
 export type 成片档名 = keyof typeof 成片档表;
 export const 成片档 = () => {
@@ -27,31 +29,49 @@ export const 母版宽高 = (级别: 渲染级别): [number, number] => {
 
 export const 等帧超时毫秒 = 10 * 60 * 1000; // 体素世界第一帧要建几十秒的区段，默认 30 秒不够；不影响画面，不进指纹
 
-export const 渲染参数 = (级别: 渲染级别) => ({
-  inputProps: 规范化设置({ 级别 }),
-  codec: 'h264-mkv' as const,
-  audioCodec: 'pcm-16' as const,
-  crf: 1,
-  x264Preset: 'veryfast' as const,
-  imageFormat: 级别 === '预览' ? ('jpeg' as const) : ('png' as const),
-  jpegQuality: 95,
-  scale: 级别 === '预览' ? 1 : 成片档().渲染倍数,
-  gl: 配置('gl') as 'angle' | 'swangle' | 'egl' | 'swiftshader' | 'vulkan' | 'angle-egl',
-  concurrency: 1,
-  enforceAudioTrack: true,
-});
+const 显卡 = () => 配置('gl') as 'angle' | 'swangle' | 'egl' | 'swiftshader' | 'vulkan' | 'angle-egl';
+
+/** 段的画面：字幕是这一段的（段字幕.ts），进 inputProps 也就进指纹 */
+export const 渲染参数 = (级别: 渲染级别, 字幕: readonly 段字幕[] = []) => {
+  const 档 = 成片档();
+  return {
+    inputProps: 规范化设置({ 级别, 输出fps: 档.fps, 字幕 }),
+    codec: 'h264' as const,
+    crf: 18,
+    x264Preset: 'medium' as const,
+    encodingMaxRate: 档.码率上限,
+    encodingBufferSize: 档.缓冲,
+    colorSpace: 'bt709' as const,
+    pixelFormat: 'yuv420p' as const,
+    muted: true,
+    imageFormat: 级别 === '预览' ? ('jpeg' as const) : ('png' as const),
+    jpegQuality: 95,
+    scale: 级别 === '预览' ? 1 : 档.渲染倍数,
+    gl: 显卡(),
+    concurrency: 1,
+  };
+};
 
 export type 渲染参数表 = ReturnType<typeof 渲染参数>;
 
-// 透明叠层：照旧项目 透明层.py 出 ProRes 4444（yuva444p10le，带透明），PNG 帧、和母版一样放大（成片档的渲染倍数，预览 1 倍），不带声音
+/** 段的声音：按编排帧率（段.ts 的 fps）出、不包编排时钟，和以前母版里的声音一样；不出画面，和级别、成片档无关 */
+export const 声音渲染参数 = () => ({
+  inputProps: 规范化设置({ 级别: '视频' }),
+  codec: 'wav' as const,
+  audioCodec: 'pcm-16' as const,
+  gl: 显卡(),
+  concurrency: 1,
+});
+
+// 透明叠层单看用（叠层已画进段里）：ProRes 4444（带透明），PNG 帧、和段一样放大
 export const 叠层渲染参数 = (级别: 渲染级别) => ({
-  inputProps: 规范化设置({ 级别 }),
+  inputProps: 规范化设置({ 级别, 输出fps: 成片档().fps }),
   codec: 'prores' as const,
   proResProfile: '4444' as const,
   pixelFormat: 'yuva444p10le' as const,
   imageFormat: 'png' as const,
   scale: 级别 === '预览' ? 1 : 成片档().渲染倍数,
-  gl: 配置('gl') as 'angle' | 'swangle' | 'egl' | 'swiftshader' | 'vulkan' | 'angle-egl',
+  gl: 显卡(),
   concurrency: 1,
   muted: true,
 });
