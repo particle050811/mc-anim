@@ -108,6 +108,8 @@ export type 光影选项 = {
   水浪强?: number;
   /** FFT 的水体按散射算（照 Ultra-Water），给了就不用 水体：色 = 散射色（线性 RGB，不给 Ultra-Water 的清水 [0, 0.05, 0.08]），透光 = 浪尖透光倍数（不给 1） */
   水散射?: { 色?: readonly [number, number, number]; 透光?: number };
+  /** 透水（要和 水散射 一起开）：看得到水下的东西，视线在水里每米按 衰减（线性 RGB，不给 = 清澈大洋 Jerlov I 在 680/550/440 nm 的吸收 + 散射）变暗 */
+  水透?: { 衰减?: readonly [number, number, number] };
   /** 盖掉这一时段的水体色（sRGB，不反光那部分的颜色） */
   水体?: string;
   /** 盖掉这一时段的水面天顶色（场景自己的天色） */

@@ -18,7 +18,7 @@ import { Photon天, 备天色图 } from '../../light/天/Photon天.ts';
 import { 画云 as 画云层, 预编云 } from '../../light/云/画云.ts';
 import { png } from '../../model/贴图.ts';
 import { OceanSim, defaultOceanParams } from 'gelatin-game-engine/src/water/OceanSim.js';
-import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
+import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 水下片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
 
 /** 影子图边长（纹素） */
@@ -175,6 +175,9 @@ const 建资源 = () => {
   const 深 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
   const 云 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
   const 对数深 = 新全屏(对数深度片元, { tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
+  // 透水：先画水以外的，抄成这张（rgb 画面、a 视深），水面再取它
+  const 水下 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const 抄水下 = 新全屏(水下片元, { tColor: { value: null }, tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
   // 泛光六层：1/2 到 1/64，每层一对（糊的时候来回倒）；后两层只在 泛光.宽 大于 0 时有分量（烟花那种大光晕）
   const 层 = Array.from({ length: 6 }, () => [new THREE.WebGLRenderTarget(1, 1, 浮点), new THREE.WebGLRenderTarget(1, 1, 浮点)] as const);
   const 粒源 = new THREE.WebGLRenderTarget(1, 1, 浮点);
@@ -218,7 +221,7 @@ const 建资源 = () => {
     glowOff: { value: new THREE.Vector2() },
     res: { value: new THREE.Vector2(1, 1) },
   });
-  return { u, 影, 影机, 主, 深, 云, 对数深, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
+  return { u, 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
 };
 
 /** 太阳本体（原版 8×8，材质包高清的 8k×8k）进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；边 = 本体几个贴图像素；
@@ -255,7 +258,7 @@ const 释放 = (r: 资源) => {
     a.dispose();
     b.dispose();
   }
-  for (const x of [r.取亮, r.缩, r.糊, r.合, r.对数深]) {
+  for (const x of [r.取亮, r.缩, r.糊, r.合, r.对数深, r.抄水下]) {
     x.材质.dispose();
     x.片.geometry.dispose();
   }
@@ -526,6 +529,8 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       u.gyScat.value.setRGB(...(散.色 ?? [0, 0.05, 0.08]), THREE.LinearSRGBColorSpace);
       u.gySSS.value.set(1.6 * (散.透光 ?? 1), 0.06 * (散.透光 ?? 1), 0.05 * (散.透光 ?? 1));
     }
+    u.gyThruOn.value = 散 && 选项.水透 ? 1 : 0;
+    if (散 && 选项.水透) u.gyAtt.value.set(...(选项.水透.衰减 ?? [0.46, 0.07, 0.025]));
     if (u.gyWaterMode.value === 3) 备FFT海(gl, u, 秒, 选项.水风速 ?? 5);
     sRGB乘数(u.gyZenith.value, 选项.水天顶 ?? 光.水.天顶);
     u.gyRefl.value = 光.水.反射;
@@ -581,6 +586,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     const [w, h] = gl.getDrawingBufferSize(r.尺寸).toArray();
     设尺寸(r.主, w, h);
     const 还原: (() => void)[] = [];
+    const 水们: THREE.Object3D[] = [];
     const 换 = (m: THREE.Material) => ((光照 && 平涂受光(m)) || (改水 && 像水(m)) ? (取变体(m, u) ?? m) : m);
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
@@ -590,6 +596,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       if (新 === 原 || (Array.isArray(新) && 新.every((m, i) => m === (原 as THREE.Material[])[i]))) return;
       mesh.material = 新;
       还原.push(() => (mesh.material = 原));
+      if (!Array.isArray(原) && 像水(原)) 水们.push(mesh);
       if (u.gyWaterMode.value > 1.5 && !Array.isArray(原) && 像水(原)) {
         const 原网格 = mesh.geometry;
         mesh.geometry = 取起伏网格(原网格);
@@ -604,7 +611,33 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     });
     gl.setRenderTarget(r.主);
     gl.clear(true, true, true);
-    gl.render(scene, camera);
+    if (u.gyThruOn.value && 水们.length) {
+      // 透水：水以外的先画进主画面，抄一份（画面 + 视深）给水面取，再只画水、叠在上面（深度照旧比）
+      for (const o of 水们) o.visible = false;
+      gl.render(scene, camera);
+      for (const o of 水们) o.visible = true;
+      设尺寸(r.水下, w, h);
+      const cam = camera as THREE.PerspectiveCamera;
+      Object.assign(r.抄水下.材质.uniforms, { tColor: { value: r.主.texture }, tDepth: { value: r.主.depthTexture }, cNear: { value: cam.near }, cFar: { value: cam.far } });
+      gl.setRenderTarget(r.水下);
+      gl.render(r.抄水下.场, r.屏机);
+      u.gyUnder.value = r.水下.texture;
+      u.gyRes.value.set(w, h);
+      const 藏: THREE.Object3D[] = [];
+      scene.traverseVisible((o) => {
+        if (o !== scene && !水们.includes(o) && ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite)) 藏.push(o);
+      });
+      for (const o of 藏) o.visible = false;
+      const 背 = scene.background;
+      scene.background = null;
+      const 清 = gl.autoClear;
+      gl.autoClear = false;
+      gl.setRenderTarget(r.主);
+      gl.render(scene, camera);
+      gl.autoClear = 清;
+      scene.background = 背;
+      for (const o of 藏) o.visible = true;
+    } else gl.render(scene, camera);
     还原.forEach((f) => f());
 
     // 3. 泛光

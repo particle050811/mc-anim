@@ -52,6 +52,11 @@ export const 新光影统一量 = () => ({
   gyScatOn: { value: 0 },
   gyScat: { value: new THREE.Color(0, 0.05, 0.08) },
   gySSS: { value: new THREE.Vector3(1.6, 0.06, 0.05) },
+  /** 透水（用户 11-05「水下是完全看不到吗」）：开 = 1；水下那遍画面（rgb = 主画面的值，a = 视深）；每米衰减（线性 RGB，吸收 + 散射）；画面像素尺寸 */
+  gyThruOn: { value: 0 },
+  gyUnder: { value: null as THREE.Texture | null },
+  gyAtt: { value: new THREE.Vector3(0.46, 0.07, 0.025) },
+  gyRes: { value: new THREE.Vector2(1, 1) },
   /** 浪强：Photon 式、FFT 的浪高和坡度一起乘它（网格起伏和法线对得上）；FFT 的坡度方差只乘一次方（乘平方的话浪强 8 以上整片糙成一片灰、碎光没了，预览 1105-1619） */
   gyWaveK: { value: 1 },
   /** 水面反射、远处融进的天色改取 Photon 的天色图（天的样式是 Photon平滑 时） */
@@ -217,6 +222,10 @@ varying float gyHgt;
 uniform float gyScatOn;
 uniform vec3 gyScat;
 uniform vec3 gySSS;
+uniform float gyThruOn;
+uniform sampler2D gyUnder;
+uniform vec3 gyAtt;
+uniform vec2 gyRes;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
 ${浪函数}
@@ -347,7 +356,25 @@ if ( gyScatOn > 0.5 ) {
   float k1 = gySSS.x * max( gyHgt, 0.0 ) * pow( clamp( dot( gySun, - gyVv ), 0.0, 1.0 ), 4.0 ) * pow( 0.5 - 0.5 * dot( gyN, gySun ), 3.0 );
   float k2 = gySSS.y * NoV * NoV;
   vec3 sss = ( k1 + k2 ) * gyScat * sunL + gySSS.z * nl * gyScat * sunL;
-  gyBody = pow( insc + sss, vec3( 1.0 / 2.2 ) );
+  vec3 gyLin = insc + sss;
+  if ( gyThruOn > 0.5 ) {
+    // 透水：水下那遍画面按折射挪一点取（坡度 × 离水面越远挪得越多，取到水面前面的东西就不挪），
+    // 视线在水里走 L 米、海底那点在水面下 dz 米（光先往下照到它，按漫射天光近似走 dz），每米按 gyAtt 衰减；水里走过的那段散射出 insc ×（1 − 透过）
+    vec2 suv = gl_FragCoord.xy / gyRes;
+    float dw = vSeaClip.w;
+    float s2w = length( vSeaW - cameraPosition ) / dw;
+    vec4 bg = texture2D( gyUnder, suv + gySl * 0.3 / max( dw, 1.0 ) );
+    if ( bg.a < dw ) bg = texture2D( gyUnder, suv );
+    // 水下那一点在水面下多深按直线视线算；视线进水以后折弯（折射率 1.33），水里实际走 dz / cos(折射角)，比直线短（平视时差两倍）
+    float dz = max( vSeaW.y - ( cameraPosition.y + gyV.y * bg.a * s2w ), 0.0 );
+    float cosT = sqrt( max( 1.0 - ( 1.0 - NoV * NoV ) / 1.769, 1e-4 ) );
+    float L = min( max( bg.a - dw, 0.0 ) * s2w, dz / cosT );
+    vec3 Tv = exp( - gyAtt * min( L, 1e4 ) );
+    vec3 Tb = Tv * exp( - gyAtt * min( dz, 1e4 ) );
+    vec3 under = bg.a > 1e8 ? vec3( 0.0 ) : pow( max( bg.rgb, 0.0 ), vec3( 2.2 ) );
+    gyLin = under * Tb + gyLin * ( 1.0 - Tv );
+  }
+  gyBody = pow( gyLin, vec3( 1.0 / 2.2 ) );
 }
 gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl / 0.9 * 1.0, 0.0, 1.0 ) ) + gyGlintCol * spec * 0.05, vec3( 1.5 ) );
 }
@@ -409,6 +436,19 @@ export const 补粒子源 = (shader: THREE.WebGLProgramParametersWithUniforms, u
 // ---------- 全屏几遍：深度换算、泛光、合成 ----------
 
 /** 主画面的深度 → Photon 云要的对数深度（log2(1 + 视深) / log2(远 + 1)，天 = 1；同 engine/light/大气/云.ts 读的那种） */
+/** 水下那遍：rgb 照抄主画面，a = 视深（格；没东西 = 1e9），水面着色器按它算水里走了多远 */
+export const 水下片元 = /* glsl */ `
+#include <packing>
+uniform sampler2D tColor;
+uniform sampler2D tDepth;
+uniform float cNear;
+uniform float cFar;
+varying vec2 vUv;
+void main() {
+  float z = texture2D( tDepth, vUv ).r;
+  gl_FragColor = vec4( texture2D( tColor, vUv ).rgb, z >= 1.0 ? 1e9 : - perspectiveDepthToViewZ( z, cNear, cFar ) );
+}`;
+
 export const 对数深度片元 = /* glsl */ `
 #include <packing>
 uniform sampler2D tDepth;
