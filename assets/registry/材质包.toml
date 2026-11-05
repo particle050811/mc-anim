@@ -41,3 +41,11 @@ id = "材质包/vanilla-tweaks-试样"
 "许可" = "LicenseRef-VanillaTweaks-Terms"
 "可见性" = "私有"
 "说明" = "Vanilla Tweaks 挑选式小改。https://vanillatweaks.net/terms/：可在项目里用、改、分享，要 credits.txt 署名，不许收费；没写视频商用，再分发原样拼装包不明，先按私有"
+
+[["资产"]]
+id = "材质包/sphax-32x"
+"类别" = "材质包"
+"来源" = "手工:下载 https://bdcraft.net/downloads/purebdcraft-minecraft/（PureBDcraft 32x MC120，11-05 用户授权代点 Accept Terms of Use 后下载，文件名「PureBDcraft  32x MC120.zip」）"
+"许可" = "LicenseRef-BDcraft-EULA"
+"可见性" = "私有"
+"说明" = "Sphax PureBDcraft 32x，漫画卡通风整套重画。https://bdcraft.net/eula/：可做视频（含变现），简介署名 BDcraft.net 并附链接；不许再分发。11-05 拿来和 Faithful 32x 比整体画风，没选用"
