@@ -59,6 +59,11 @@ export const 新光影统一量 = () => ({
   gyRes: { value: new THREE.Vector2(1, 1) },
   /** 远处（用户 11-05 看到地平线一排黑浪：海只画到场景视距 192 格，起伏的浪头挡住后面的雾色、又正对着镜头不反光）：
    *  远 = FFT 海改画到多远（格，0 = 照场景视距）；雾 = 大气透视，每多少格淡掉 63%（0 = 不加）；边平 = 1 时浪高到画的边上压平，边缘不留剪影 */
+  /** 反射里的云（用户 11-05 看到地平线一排黑浪：水面只映不带云的晴空，夕阳下满天的亮云映不出来）：开 = 1；朝天另画的一张云（画面值、预乘）、那台相机的投影 × 视图 */
+  gyCloudOn: { value: 0 },
+  gyLinMix: { value: 0 },
+  gyCloudMap: { value: null as THREE.Texture | null },
+  gyCloudVP: { value: new THREE.Matrix4() },
   gyFarR: { value: 0 },
   gyHaze: { value: 0 },
   gyEdgeFlat: { value: 0 },
@@ -233,6 +238,10 @@ uniform vec3 gyAtt;
 uniform vec2 gyRes;
 uniform float gyFarR;
 uniform float gyHaze;
+uniform float gyCloudOn;
+uniform float gyLinMix;
+uniform sampler2D gyCloudMap;
+uniform mat4 gyCloudVP;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
 ${浪函数}
@@ -324,6 +333,15 @@ if ( gyAtmoOn > 0.5 ) {
   gySky = atmoDisp( atmoSkyAt( gyAtmoSky, vec3( gyR.x, - gyR.z, gyR.y ) ) );
   gySky = mix( gySky, gyZenCol, gyZenK * smoothstep( 0.0, gyZenH, gyR.y ) );
 } else gySky = mix( seaFogC, gyZenith, smoothstep( 0.0, 0.8, gyR.y ) );
+if ( gyCloudOn > 0.5 ) {
+  // 反射方向在朝天那台相机里落在哪（方向当无穷远的点，只取旋转），落在图里就把那里的云叠在天上（同合成：云 + 天 ×（1 − 不透明度））
+  vec4 cc = gyCloudVP * vec4( gyR, 0.0 );
+  vec2 cuv = cc.xy / cc.w * 0.5 + 0.5;
+  if ( cc.w > 0.0 && all( greaterThan( cuv, vec2( 0.0 ) ) ) && all( lessThan( cuv, vec2( 1.0 ) ) ) ) {
+    vec4 cl = texture2D( gyCloudMap, cuv );
+    gySky = cl.rgb + gySky * ( 1.0 - cl.a );
+  }
+}
 float aS = max( alpha, 0.015 );
 float aS2 = aS * aS;
 vec3 H = normalize( gySun + gyVv );
@@ -372,18 +390,25 @@ if ( gyScatOn > 0.5 ) {
     float s2w = length( vSeaW - cameraPosition ) / dw;
     vec4 bg = texture2D( gyUnder, suv + gySl * 0.3 / max( dw, 1.0 ) );
     if ( bg.a < dw ) bg = texture2D( gyUnder, suv );
-    // 水下那一点在水面下多深按直线视线算；视线进水以后折弯（折射率 1.33），水里实际走 dz / cos(折射角)，比直线短（平视时差两倍）
-    float dz = max( vSeaW.y - ( cameraPosition.y + gyV.y * bg.a * s2w ), 0.0 );
-    float cosT = sqrt( max( 1.0 - ( 1.0 - NoV * NoV ) / 1.769, 1e-4 ) );
-    float L = min( max( bg.a - dw, 0.0 ) * s2w, dz / cosT );
-    vec3 Tv = exp( - gyAtt * min( L, 1e4 ) );
-    vec3 Tb = Tv * exp( - gyAtt * min( dz, 1e4 ) );
-    vec3 under = bg.a > 1e8 ? vec3( 0.0 ) : pow( max( bg.rgb, 0.0 ), vec3( 2.2 ) );
-    gyLin = under * Tb + gyLin * ( 1.0 - Tv );
+    // 背后是天（深度 1e9）= 没打着东西，不能拿来算水下多深：原来这样算出 dz = 0、路程 0，视线朝上（比眼睛高的浪脊）的水体连浪尖透光一起归零，
+    // 成了地平线前一条黑带（用户 11-05「上边为什么会变成黑色」）。屏幕上背后是天不等于光穿过了薄浪：迎着眼睛的浪坡折射进水后还是往下走进深水，按深水算
+    if ( bg.a < 1e8 ) {
+      // 水下那一点在水面下多深按直线视线算；视线进水以后折弯（折射率 1.33），水里实际走 dz / cos(折射角)，比直线短（平视时差两倍）
+      float dz = max( vSeaW.y - ( cameraPosition.y + gyV.y * bg.a * s2w ), 0.0 );
+      float cosT = sqrt( max( 1.0 - ( 1.0 - NoV * NoV ) / 1.769, 1e-4 ) );
+      float L = min( max( bg.a - dw, 0.0 ) * s2w, dz / cosT );
+      vec3 Tv = exp( - gyAtt * min( L, 1e4 ) );
+      vec3 Tb = Tv * exp( - gyAtt * min( dz, 1e4 ) );
+      vec3 under = pow( max( bg.rgb, 0.0 ), vec3( 2.2 ) );
+      gyLin = under * Tb + gyLin * ( 1.0 - Tv );
+    }
   }
   gyBody = pow( gyLin, vec3( 1.0 / 2.2 ) );
 }
-gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl / 0.9 * 1.0, 0.0, 1.0 ) ) + gyGlintCol * spec * 0.05, vec3( 1.5 ) );
+// 反射和水体按线性光强混（gyLinMix；原来直接混 sRGB 数值，反射占两成时只有线性混的一半亮）
+float gyFW = clamp( gyFr * gyRefl / 0.9, 0.0, 1.0 );
+vec3 gyMix = gyLinMix > 0.5 ? pow( mix( pow( max( gyBody, 0.0 ), vec3( 2.2 ) ), pow( max( gySky, 0.0 ), vec3( 2.2 ) ), gyFW ), vec3( 1.0 / 2.2 ) ) : mix( gyBody, gySky, gyFW );
+gyC = min( gyMix + gyGlintCol * spec * 0.05, vec3( 1.5 ) );
 }
 float gyFog = seaF;
 if ( gyWaterMode > 1.5 && ( gyFarR > 0.0 || gyHaze > 0.0 ) ) {

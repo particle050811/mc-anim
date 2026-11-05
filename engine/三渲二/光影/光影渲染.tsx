@@ -151,6 +151,41 @@ const 新全屏 = (fragmentShader: string, uniforms: Record<string, THREE.IUnifo
   return { 材质, 片, 场 };
 };
 
+// 水面反射的云：镜头位置、朝向不变，往上抬到看 −5°～65° 仰角，横向比镜头宽一些（反射方向的方位角和视线差不多）。
+// 这台相机里没有东西挡（对数深度全是 1、主画面全透明），云照主画面那一遍的配置画，各用各的离屏图（画云 的 槽）
+const 画反射云 = (gl: THREE.WebGLRenderer, r: 资源, cam: THREE.PerspectiveCamera, w: number, h: number, 选项: 光影选项, 秒: number) => {
+  const 云 = 选项.云;
+  if (!云) return;
+  const pw = Math.max(64, Math.round(w / 2)), ph = Math.max(32, Math.round(h / 2));
+  for (const t of [r.反云, r.反云深, r.反云空]) 设尺寸(t, pw, ph);
+  const 清 = gl.getClearColor(new THREE.Color()), 清a = gl.getClearAlpha();
+  gl.setClearColor(0xffffff, 1);
+  gl.setRenderTarget(r.反云深);
+  gl.clear(true, false, false);
+  gl.setClearColor(0x000000, 0);
+  gl.setRenderTarget(r.反云空);
+  gl.clear(true, false, false);
+  gl.setRenderTarget(r.反云);
+  gl.clear(true, false, false);
+  gl.setClearColor(清, 清a);
+  const m = r.反云机;
+  m.position.setFromMatrixPosition(cam.matrixWorld);
+  const 向 = new THREE.Vector3();
+  cam.getWorldDirection(向);
+  m.rotation.set(0, Math.atan2(-向.x, -向.z), 0, 'YXZ');
+  m.rotateX((42 * Math.PI) / 180);
+  m.fov = 120;
+  m.aspect = pw / ph;
+  m.near = cam.near;
+  m.far = cam.far;
+  m.updateProjectionMatrix();
+  m.updateMatrixWorld(true);
+  画云层({ gl, camera: m, 深度: r.反云深.texture, 主画面: r.反云空.texture, 宽: pw, 高: ph, 目标: r.反云, 配置: 云, 场: 选项.云场 ?? {}, 海平面: 云.海平面 ?? 0, 秒, 太阳框: null, 槽: '水面反射' });
+  r.u.gyCloudMap.value = r.反云.texture;
+  r.u.gyCloudVP.value.multiplyMatrices(m.projectionMatrix, m.matrixWorldInverse);
+  r.u.gyCloudOn.value = 1;
+};
+
 const 建资源 = () => {
   const u = 新光影统一量();
   const 影 = new THREE.WebGLRenderTarget(影子图边, 影子图边, {
@@ -178,6 +213,11 @@ const 建资源 = () => {
   const 对数深 = 新全屏(对数深度片元, { tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
   // 透水：先画水以外的，抄成这张（rgb 画面、a 视深），水面再取它
   const 水下 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  // 水面反射的云：朝天另画一张（半宽半高的那么多像素，不用全分辨率：反射本来就被浪揉碎了）
+  const 反云 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false });
+  const 反云深 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const 反云空 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const 反云机 = new THREE.PerspectiveCamera();
   const 抄水下 = 新全屏(水下片元, { tColor: { value: null }, tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
   // 泛光六层：1/2 到 1/64，每层一对（糊的时候来回倒）；后两层只在 泛光.宽 大于 0 时有分量（烟花那种大光晕）
   const 层 = Array.from({ length: 6 }, () => [new THREE.WebGLRenderTarget(1, 1, 浮点), new THREE.WebGLRenderTarget(1, 1, 浮点)] as const);
@@ -222,7 +262,7 @@ const 建资源 = () => {
     glowOff: { value: new THREE.Vector2() },
     res: { value: new THREE.Vector2(1, 1) },
   });
-  return { u, 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
+  return { u, 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 反云, 反云深, 反云空, 反云机, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
 };
 
 /** 太阳本体（原版 8×8，材质包高清的 8k×8k）进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；边 = 本体几个贴图像素；
@@ -531,6 +571,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       u.gySSS.value.set(1.6 * (散.透光 ?? 1), 0.06 * (散.透光 ?? 1), 0.05 * (散.透光 ?? 1));
     }
     u.gyThruOn.value = 散 && 选项.水透 ? 1 : 0;
+    u.gyLinMix.value = 选项.水线性混 ? 1 : 0;
     if (散 && 选项.水透) u.gyAtt.value.set(...(选项.水透.衰减 ?? [0.46, 0.07, 0.025]));
     u.gyFarR.value = 选项.水远?.远 ?? 0;
     u.gyHaze.value = 选项.水远?.雾 ?? 0;
@@ -588,6 +629,8 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
 
     // 2. 主画面
     const [w, h] = gl.getDrawingBufferSize(r.尺寸).toArray();
+    u.gyCloudOn.value = 0;
+    if (画云 && 选项.云 && 选项.水反云 && u.gyWaterMode.value > 1.5) 画反射云(gl, r, camera as THREE.PerspectiveCamera, w, h, 选项, 秒);
     设尺寸(r.主, w, h);
     const 还原: (() => void)[] = [];
     const 水们: THREE.Object3D[] = [];
