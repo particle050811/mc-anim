@@ -34,7 +34,7 @@ const 已装版本 = (包: string): string | null => {
 export const 缺编码器提示 = (名: string) =>
   名 === 'libx264'
     ? `${名} 不在 ffmpeg 里（换带 libx264 的 ffmpeg）`
-    : `${名} 不在 ffmpeg 里（换 ANIM_VIDEO_ENCODER=libx264，ffmpeg 要带 libx264）`;
+    : `${名} 不在 ffmpeg 里（换带 ${名} 的 ffmpeg，或 ANIM_VIDEO_ENCODER=libx264）`;
 
 export const 体检 = (): 结果[] => {
   const r: 结果[] = [];
