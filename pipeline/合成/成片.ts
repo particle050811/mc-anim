@@ -1,8 +1,9 @@
 import {登记CPU} from '../闸/任务.ts';
 // 合成整片：按清单顺序取各段当前指纹的母版，硬切接成一条，整片只压一遍。做法照旧项目 工具/合成第六章.py：
 //   声音先单独按样本截、接，整片一个固定增益拉到 −16 LUFS + 限幅（不做动态压缩），压成 AAC 量真峰值，超了就压低限幅重做；
-//   画面 trim/scale/concat 和压成片一遍做完。各平台默认 x264 medium（用户 11-01 定）；分辨率、码率上限按成片档（渲/设置.ts，用户 11-04 定按 B 站 1080P60 出），
-//   CRF 18 再用 VBV 卡在档的码率上限以内（B 站超了会多压一遍）；硬件编码 q38 留作可选，要快时用，不卡码率。
+//   画面 trim/scale/concat 和压成片一遍做完。分辨率、码率上限按成片档（渲/设置.ts，用户 11-04 定按 B 站 1080P60 出）。
+//   默认 AV1（SVT-AV1 preset 6、CRF 30、mbr 卡在档的上限）：用户 11-04 试传 B 站可用后定「以后就有 av1 了」；
+//   x264 medium CRF 18 + VBV 留作可选（ANIM_VIDEO_ENCODER=libx264），硬件编码 q38 要快时用，不卡码率。
 //   段叠层在母版分辨率上叠（叠层和母版同倍数渲），叠完缩到成片档的宽高，字幕卡按成片的宽高画，像素字一个界面像素是整数个成片像素。
 // 过期的母版（和段声明的透明叠层）默认拒绝：--重渲过期 先渲，--允许过期 用同一渲染级别最近一份旧的并逐段写进 manifest。
 // 叠层在下、字幕（按段.ts 的台词 cue 排，见 字幕.ts）在上，和画面一起压；接缝只查不改（接缝.ts）；--分享版 另压一份 720p。
@@ -45,18 +46,31 @@ const 目标响度 = -16;
 const 真峰值上限 = -1;
 const 采样率 = 48000;
 
-// VBV 缓冲取 2 秒（码率上限的 2 倍）：任何 2 秒窗口都不超上限，峰值远低于 B 站的峰值上限（1080P 24000、4K 60000 kbps）
-const 编码参数表: Record<string, (上限kbps: number) => string[]> = {
-  h264_videotoolbox: () => ['-c:v', 'h264_videotoolbox', '-q:v', '38', '-profile:v', 'high'],
-  libx264: (k) => ['-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-maxrate', `${k}k`, '-bufsize', `${k * 2}k`, '-profile:v', 'high'],
+// x264 的 VBV 缓冲取 2 秒（码率上限的 2 倍）：任何 2 秒窗口都不超上限，峰值远低于 B 站的峰值上限（1080P 24000、4K 60000 kbps）。
+// SVT-AV1 的 preset、CRF 是 11-04 在 2-时差（1080 60fps）上量的：preset 4 和 6 的 VMAF 只差 0.2～0.3、6 快约 1.5 倍；8 掉 2 分。
+// CRF 24～36 的 VMAF 都在 92 上下（x264 CRF 18 卡 5800 kbps 是 90.7），CRF 30 那段 5375 kbps，最难的段也在上限以内；mbr 是 SVT-AV1 的封顶码率
+// 档位、质量、码率上限都能在本机配置里调（用户 11-04「这个东西最好改成可以调的 只不过默认用 AV1」），不写就用这里各编码器的默认
+type 编码调 = { 档位: string; 质量: string; 上限kbps: number };
+const 编码参数表: Record<string, { 默认档位: string; 默认质量: string; 参数: (o: 编码调) => string[] }> = {
+  libsvtav1: { 默认档位: '6', 默认质量: '30', 参数: (o) => ['-c:v', 'libsvtav1', '-preset', o.档位, '-crf', o.质量, '-svtav1-params', `mbr=${o.上限kbps}`] },
+  // 硬件编码不卡码率，也没有档位
+  h264_videotoolbox: { 默认档位: '', 默认质量: '38', 参数: (o) => ['-c:v', 'h264_videotoolbox', '-q:v', o.质量, '-profile:v', 'high'] },
+  libx264: {
+    默认档位: 'medium',
+    默认质量: '18',
+    参数: (o) => ['-c:v', 'libx264', '-preset', o.档位, '-crf', o.质量, '-maxrate', `${o.上限kbps}k`, '-bufsize', `${o.上限kbps * 2}k`, '-profile:v', 'high'],
+  },
 };
 
 export const 成片编码参数 = (级别: 渲染级别): string[] => {
   if (级别 === '预览') return ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23'];
   const 名 = 配置('编码器');
-  const args = 编码参数表[名];
-  if (!args) throw new Error(`编码器 ${名} 不认识，只能是 ${Object.keys(编码参数表).join('、')}（ANIM_VIDEO_ENCODER）`);
-  return args(成片档().码率上限kbps);
+  const 表 = 编码参数表[名];
+  if (!表) throw new Error(`编码器 ${名} 不认识，只能是 ${Object.keys(编码参数表).join('、')}（ANIM_VIDEO_ENCODER）`);
+  const 上限 = 配置('编码码率上限');
+  const 上限kbps = 上限 ? Number(上限) : 成片档().码率上限kbps;
+  if (!Number.isInteger(上限kbps) || 上限kbps <= 0) throw new Error(`码率上限 ${上限} 要是正整数 kbps（ANIM_VIDEO_MAXRATE）`);
+  return 表.参数({ 档位: 配置('编码档位') || 表.默认档位, 质量: 配置('编码质量') || 表.默认质量, 上限kbps });
 };
 
 export const 量响度 = (file: string) => {
