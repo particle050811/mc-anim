@@ -44,7 +44,11 @@ export const 新光影统一量 = () => ({
   gySlope3: { value: null as THREE.Texture | null },
   /** FFT 四层的边长（格 = 米） */
   gyFftLen: { value: new THREE.Vector4(1, 1, 1, 1) },
-  /** 浪强：Photon 式、FFT 的坡度乘它（方差乘平方） */
+  /** FFT 三层的位移（海面网格按它起伏） */
+  gyDisp0: { value: null as THREE.Texture | null },
+  gyDisp1: { value: null as THREE.Texture | null },
+  gyDisp2: { value: null as THREE.Texture | null },
+  /** 浪强：Photon 式、FFT 的浪高和坡度一起乘它（网格起伏和法线对得上）；FFT 的坡度方差只乘一次方（乘平方的话浪强 8 以上整片糙成一片灰、碎光没了，预览 1105-1619） */
   gyWaveK: { value: 1 },
   /** 水面反射、远处融进的天色改取 Photon 的天色图（天的样式是 Photon平滑 时） */
   gyAtmoOn: { value: 0 },
@@ -154,29 +158,7 @@ export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: �
   shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${受光头}`).replace('#include <opaque_fragment>', `${受光身}\n#include <opaque_fragment>`);
 };
 
-const 水头 = /* glsl */ `
-uniform vec3 gySun;
-uniform float gyTime;
-uniform float gyWaterPix;
-uniform vec3 gyZenith;
-uniform float gyRefl;
-uniform vec3 gyGlintCol;
-uniform vec3 gyWaterBody;
-uniform float gyReflMin;
-uniform float gyAtmoOn;
-uniform sampler2D gyAtmoSky;
-uniform vec3 gyZenCol;
-uniform float gyZenK;
-uniform float gyZenH;
-uniform float gyWaterMode;
-uniform sampler2D gySlope0;
-uniform sampler2D gySlope1;
-uniform sampler2D gySlope2;
-uniform sampler2D gySlope3;
-uniform vec4 gyFftLen;
-uniform float gyWaveK;
-${ATMO_PARS_GLSL}
-${ATMO_FN_GLSL}
+const 浪函数 = /* glsl */ `
 float gyHash12( vec2 p ) { vec3 p3 = fract( vec3( p.xyx ) * 0.1031 ); p3 += dot( p3, p3.yzx + 33.33 ); return fract( ( p3.x + p3.y ) * p3.z ); }
 float gyVnoise( vec2 p ) {
   vec2 i = floor( p ), f = fract( p );
@@ -203,6 +185,33 @@ float gyPhotonH( vec2 c, float t ) {
   float hv = gyVnoise( ( c + vec2( 0.0, 0.1 * t ) ) * 0.001 * 256.0 );
   return h * max( 0.4, hv * 2.0 - 0.5 ) * ( 0.5 / ( 1.0 - pow( 0.5, 6.0 ) ) );
 }
+`;
+
+const 水头 = /* glsl */ `
+uniform vec3 gySun;
+uniform float gyTime;
+uniform float gyWaterPix;
+uniform vec3 gyZenith;
+uniform float gyRefl;
+uniform vec3 gyGlintCol;
+uniform vec3 gyWaterBody;
+uniform float gyReflMin;
+uniform float gyAtmoOn;
+uniform sampler2D gyAtmoSky;
+uniform vec3 gyZenCol;
+uniform float gyZenK;
+uniform float gyZenH;
+uniform float gyWaterMode;
+uniform sampler2D gySlope0;
+uniform sampler2D gySlope1;
+uniform sampler2D gySlope2;
+uniform sampler2D gySlope3;
+uniform vec4 gyFftLen;
+uniform float gyWaveK;
+varying vec2 gyU;
+${ATMO_PARS_GLSL}
+${ATMO_FN_GLSL}
+${浪函数}
 `;
 
 // 水面：认的是 作品/把回忆拼好给你/场/2-海上/海面.tsx 着色器里的变量（seaT 水贴图、seaDeep、seaWater、seaTint、seaFogC 这一方位的地平色、seaF 远处雾档、seaDist），
@@ -251,7 +260,7 @@ gyC = min( mix( gyBody, gySky, clamp( gyFr * gyRefl, 0.0, 1.0 ) ) + gyGlintCol *
 } else {
 // 新两种（Photon 式、FFT）共用一套光：GGX 太阳（粗糙度下限当太阳是个小面光源）、坡度方差进粗糙度（远处不闪、碎光自己连成光路）、
 // Lagarde 菲涅尔（粗糙的远处不发白）、反射 Photon 的天；碎光照 Ultra-Water 按每个像素里有几个小镜面按泊松抽（近处碎成点、远处平滑）
-vec2 gyP0 = vSeaW.xz;
+vec2 gyP0 = gyWaterMode > 1.5 ? gyU : vSeaW.xz;
 vec2 gyWq = gyWaterPix > 0.5 ? ( floor( gyP0 * 16.0 ) + 0.5 ) / 16.0 : gyP0;
 vec2 gySl = vec2( 0.0 );
 vec2 gyVar = vec2( 0.0 );
@@ -273,7 +282,7 @@ if ( gyWaterMode < 2.5 ) {
   float sl2 = mix( 0.75, 1.0, slick ), sl3 = mix( 0.4, 1.0, slick );
   s2.xy *= sl2; s2.zw *= sl2 * sl2; s3.xy *= sl3; s3.zw *= sl3 * sl3;
   gySl = ( s0.xy + s1.xy + s2.xy + s3.xy ) * gyWaveK;
-  gyVar = ( max( s0.zw - s0.xy * s0.xy, 0.0 ) + max( s1.zw - s1.xy * s1.xy, 0.0 ) + max( s2.zw - s2.xy * s2.xy, 0.0 ) + max( s3.zw - s3.xy * s3.xy, 0.0 ) ) * gyWaveK * gyWaveK;
+  gyVar = ( max( s0.zw - s0.xy * s0.xy, 0.0 ) + max( s1.zw - s1.xy * s1.xy, 0.0 ) + max( s2.zw - s2.xy * s2.xy, 0.0 ) + max( s3.zw - s3.xy * s3.xy, 0.0 ) ) * gyWaveK;
 }
 vec3 gyN = normalize( vec3( - gySl.x, 1.0, - gySl.y ) );
 vec3 dndx = dFdx( gyN ), dndy = dFdy( gyN );
@@ -328,9 +337,38 @@ outgoingLight = sRGBTransferEOTF( vec4( mix( gyC, gyHor, seaF ), 1.0 ) ).rgb;
 /** 这份着色器是不是认得的水面 */
 export const 是水面着色器 = (shader: THREE.WebGLProgramParametersWithUniforms) => shader.fragmentShader.includes('seaFogC') && shader.fragmentShader.includes('vSeaW');
 
+// 海面起伏（Photon 式、FFT）：网格换成 光影渲染.tsx 的 起伏网格（围着镜头、越远越疏），顶点在三维世界里按浪高挪：
+// FFT 取 Ultra-Water 三层的位移（含水平挤压，浪顶变尖），Photon 式取同一个高度函数，高 = 0.04 × 浪强 × 高度（和法线用的坡度一致）
+const 起伏顶点头 = /* glsl */ `
+uniform float gyWaterMode;
+uniform float gyTime;
+uniform float gyWaveK;
+uniform sampler2D gyDisp0;
+uniform sampler2D gyDisp1;
+uniform sampler2D gyDisp2;
+uniform vec4 gyFftLen;
+varying vec2 gyU;
+${浪函数}
+`;
+const 起伏顶点身 = /* glsl */ `
+vec4 gyW = modelMatrix * vec4( transformed, 1.0 );
+gyU = gyW.xz;
+if ( gyWaterMode > 2.5 ) {
+  vec3 d = textureLod( gyDisp0, gyU / gyFftLen.x, 0.0 ).xyz + textureLod( gyDisp1, gyU / gyFftLen.y, 0.0 ).xyz + textureLod( gyDisp2, gyU / gyFftLen.z, 0.0 ).xyz;
+  gyW.xyz += d * gyWaveK;
+} else if ( gyWaterMode > 1.5 ) {
+  gyW.y += 0.04 * gyWaveK * ( gyPhotonH( gyU, 0.5 * gyTime ) - 0.5 );
+}
+gl_Position = projectionMatrix * viewMatrix * gyW;
+vSeaW = gyW.xyz;
+vSeaClip = gl_Position;
+`;
+
 export const 补水面 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量) => {
   if (!是水面着色器(shader)) return;
   Object.assign(shader.uniforms, atmoUniforms, u);
+  if (!shader.vertexShader.includes('vSeaClip = gl_Position;')) throw new Error('海面顶点着色器认不出（没有 vSeaClip = gl_Position;）');
+  shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${起伏顶点头}`).replace('vSeaClip = gl_Position;', `vSeaClip = gl_Position;\nif ( gyWaterMode > 1.5 ) {\n${起伏顶点身}\n}`);
   shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${水头}`).replace('#include <opaque_fragment>', `${水身}\n#include <opaque_fragment>`);
 };
 

@@ -80,6 +80,42 @@ const 像水 = (m: THREE.Material) => (m as THREE.MeshBasicMaterial).isMeshBasic
 
 type 资源 = ReturnType<typeof 建资源>;
 
+// 起伏网格：海面（场景里平放在 z = 0、以眼为中心的一块方板）在 Photon 式、FFT 时换成这张极坐标网格，同样以眼为中心、铺到方板的角上；
+// 圈距按指数往外疏（近处 5 厘米一圈、视距边上几米一圈），每圈 720 段。只在画主画面那一下换上，画完换回去，场景自己的网格不动
+let 起伏网格: THREE.BufferGeometry | null = null;
+const 取起伏网格 = (原: THREE.BufferGeometry) => {
+  原.computeBoundingBox();
+  const b = 原.boundingBox!;
+  const R = Math.hypot(b.max.x - b.min.x, b.max.y - b.min.y) / 2;
+  if (起伏网格 && 起伏网格.userData.R === R) return 起伏网格;
+  起伏网格?.dispose();
+  const 圈 = 640;
+  const 段 = 720;
+  const k = Math.log(R / 0.05);
+  const pos: number[] = [0, 0, 0];
+  for (let i = 0; i < 圈; i++) {
+    const r = 0.05 * Math.exp((k * i) / (圈 - 1));
+    for (let j = 0; j < 段; j++) {
+      const a = (j / 段) * Math.PI * 2;
+      pos.push(r * Math.cos(a), r * Math.sin(a), 0);
+    }
+  }
+  const idx: number[] = [];
+  for (let j = 0; j < 段; j++) idx.push(0, 1 + j, 1 + ((j + 1) % 段));
+  for (let i = 0; i < 圈 - 1; i++)
+    for (let j = 0; j < 段; j++) {
+      const a = 1 + i * 段 + j;
+      const c = 1 + i * 段 + ((j + 1) % 段);
+      idx.push(a, a + 段, c, c, a + 段, c + 段);
+    }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.userData.R = R;
+  起伏网格 = g;
+  return g;
+};
+
 // FFT 海：Ultra-Water 的模拟（4 层 256² 的谱，按画面秒数直接算到那一刻，不靠上一帧，乱序出帧一样；它的白沫要逐帧累积，这里不用）。
 // 每个渲染器一份，风速变了重算谱
 const FFT们 = new WeakMap<THREE.WebGLRenderer, OceanSim>();
@@ -99,6 +135,9 @@ const 备FFT海 = (gl: THREE.WebGLRenderer, u: 光影统一量, 秒: number, 风
   u.gySlope1.value = sim.slope[1]!;
   u.gySlope2.value = sim.slope[2]!;
   u.gySlope3.value = sim.slope[3]!;
+  u.gyDisp0.value = sim.displacement[0]!;
+  u.gyDisp1.value = sim.displacement[1]!;
+  u.gyDisp2.value = sim.displacement[2]!;
   u.gyFftLen.value.set(sim.lengths[0]!, sim.lengths[1]!, sim.lengths[2]!, sim.lengths[3]!);
 };
 
@@ -545,6 +584,17 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
       if (新 === 原 || (Array.isArray(新) && 新.every((m, i) => m === (原 as THREE.Material[])[i]))) return;
       mesh.material = 新;
       还原.push(() => (mesh.material = 原));
+      if (u.gyWaterMode.value > 1.5 && !Array.isArray(原) && 像水(原)) {
+        const 原网格 = mesh.geometry;
+        mesh.geometry = 取起伏网格(原网格);
+        // 起伏以后包围盒变了，不让 three 按方板的包围盒剔掉
+        const 原剔 = mesh.frustumCulled;
+        mesh.frustumCulled = false;
+        还原.push(() => {
+          mesh.geometry = 原网格;
+          mesh.frustumCulled = 原剔;
+        });
+      }
     });
     gl.setRenderTarget(r.主);
     gl.clear(true, true, true);
