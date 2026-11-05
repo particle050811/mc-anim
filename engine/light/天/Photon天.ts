@@ -2,8 +2,8 @@
 // 地平线和水面的天色、日光天光、云的噪声），写同一份共用状态（atmosphere、atmoUniforms），着色.ts 的水面、云、合成照旧读那里。
 // 大气.ts 应力转动在用、一行不改（用户 11-04 定应力转动的指纹不能变），这里抄它的式子。
 // 天色图两种展开（用户 11-04 定 B 类都做）：
-//   精确 = CPU 上同 大气.ts 的 buildSky 逐位相同（去掉每像素的数组分配和闭包，同样的运算、同样的顺序，一张约 0.55 秒，原来 1.2～1.4 秒）；
-//   GPU = 片元着色器里 float32 算（一张不到几毫秒；和精确的差在半精度的末位）。太阳每帧在动的段（2-日落划船）原来每帧光展开天色图就要 2 秒。
+//   精确 = CPU 上同 大气.ts 的 buildSky 逐位相同（不做每像素的数组分配和闭包，运算和顺序不变）；
+//   GPU = 片元着色器里 float32 算，和精确的差在半精度的末位。太阳每帧在动的段（2-日落划船）每帧都要重展开，CPU 展开是这种段的大头。
 // Photon Shaders License Agreement, Copyright © 2021-2025 Benjamin Stott ("SixthSurge")，许可证全文见 engine/light/大气/Photon-LICENSE.txt。
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useState } from 'react';
