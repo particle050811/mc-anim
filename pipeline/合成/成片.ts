@@ -193,6 +193,13 @@ const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) =>
   return 结果;
 };
 
+// 成片写规范的 BT.709 颜色标签（用户 11-05 定「成品颜色标签改成规范的」）：母版是 Remotion 默认出的，像素按 BT.601 矩阵、
+// 标签写 sRGB 曲线、矩阵不写，B 站转码按标签换算会把中间调抬亮约 8 级、画面发灰（预览/1105-1358-B站实际码率-把回忆）。
+// 只换矩阵 601→709，曲线和原色不动（Remotion 的像素本来就是 709 原色）；本机 ffmpeg 没 zscale，用 colorspace 滤镜，实测几乎无损。
+// 分享版从成片压，像素已是 709，只补标签。母版、剪辑包不动
+const 转709 = 'colorspace=space=bt709:trc=bt709:primaries=bt709:range=tv:ispace=bt470bg:itrc=bt709:iprimaries=bt709:irange=tv:format=yuv420p';
+const 标709 = ['-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv'];
+
 // 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 128k，50 MB 以内；超了按比例降码率重压，最多 3 次。
 const 分享上限MB = 50;
 const 分享视频kbps = 760;
@@ -219,7 +226,7 @@ const 压分享版 = async (成片: string, 声音: string, 出: string, 工作:
   const ffmpeg = 配置('ffmpeg');
   let kbps = Math.min(分享视频kbps, Math.floor((分享上限MB * 8e3 * 0.97) / 时长 - 分享音频kbps));
   const log = path.join(工作, '分享版两遍');
-  const 视频 = ['-map', '0:v', '-vf', 'scale=1280:720:flags=lanczos,setsar=1', '-c:v', 'libx264', '-preset', 'slow', '-pix_fmt', 'yuv420p'];
+  const 视频 = ['-map', '0:v', '-vf', 'scale=1280:720:flags=lanczos,setsar=1', '-c:v', 'libx264', '-preset', 'slow', '-pix_fmt', 'yuv420p', ...标709];
   for (let i = 0; i < 3; i++) {
     await 跑(低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, ...视频, '-b:v', `${kbps}k`, '-pass', '1', '-passlogfile', log, '-an', '-f', 'null', '-']));
     await 跑(
@@ -358,12 +365,13 @@ export const 合成成片 = async (
   }
   const [卡输入, 卡滤镜, 出标签] = 叠层滤镜(卡层们, 截们.length + 1 + 段层们.length, 底, fps, 'c');
   if (卡滤镜) 视频滤镜.push(卡滤镜);
+  视频滤镜.push(`[${出标签}]${转709}[out]`);
   const 层输入 = [...段输入, ...卡输入];
   console.log(`== 拼画面、叠 ${层们.length} 层、压成片（${视频编码[1]}，${宽}×${高}${档 ? `，${档.名} 档` : ''}）${剪辑包 ? '，另出剪辑包画面（不带字幕）' : ''}`);
   await 登记CPU({种:'film x264',用途:process.env.ANIM_PURPOSE??'产出'},()=>跑(
     低优先级([
-      ffmpeg, '-v', 'error', '-y', ...输入, '-i', 成品音, ...层输入, '-filter_complex', 视频滤镜.join(';'), '-map', `[${出标签}]`, '-map', `${截们.length}:a`,
-      ...视频编码, '-pix_fmt', 'yuv420p', '-c:a', 'copy', '-movflags', '+faststart', 写入中, ...剪辑出,
+      ffmpeg, '-v', 'error', '-y', ...输入, '-i', 成品音, ...层输入, '-filter_complex', 视频滤镜.join(';'), '-map', '[out]', '-map', `${截们.length}:a`,
+      ...视频编码, '-pix_fmt', 'yuv420p', ...标709, '-c:a', 'copy', '-movflags', '+faststart', 写入中, ...剪辑出,
     ]),
   ));
   const 出帧 = 视频信息(写入中).帧数;
