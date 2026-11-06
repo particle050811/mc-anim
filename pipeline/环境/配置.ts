@@ -25,14 +25,10 @@ const prism数据默认 = () => {
 /** 用户本机放外部模型仓库的地方（~/Developer/personal/<名>，旧项目 工具/公共/环境.py 同样的默认） */
 const 个人仓库 = (名: string) => path.join(os.homedir(), 'Developer', 'personal', 名);
 
-/** 旧项目 10-31 退役、打包进外置硬盘；要跑 pipeline/适配器/旧项目/ 就先解回主检出同级，或用 ANIM_LEGACY 指过去 */
-const 旧项目目录名 = '机械动力应力转动-AI漫画';
-
 // 顺序有意义：后面的默认值可以用前面已经取到的值
 const 项表 = {
   数据根: { 变量: 'ANIM_DATA', 说明: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 'mc-anim-data') },
   默认作品: { 变量: 'ANIM_WORK', 说明: '没给 --作品、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', 是路径: false, 默认: () => '' },
-  旧项目: { 变量: 'ANIM_LEGACY', 说明: '旧项目根（已退役，只有 pipeline/适配器/旧项目/ 的基线工具用）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 旧项目目录名) },
   游戏: { 变量: 'ANIM_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）', 是路径: true, 默认: (v) => path.join(v.数据根!, 'game') },
   java_home: { 变量: 'ANIM_JAVA_HOME', 说明: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', 是路径: true, 默认: () => '' },
   prism: { 变量: 'ANIM_PRISM', 说明: 'Prism Launcher 程序（anim mcai 起游戏用）；空就从 PATH 找', 是路径: false, 默认: () => '' },

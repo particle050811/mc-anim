@@ -19,7 +19,7 @@ describe('配置', () => {
   });
 
   it('默认值跟着前面取到的值走', () => {
-    const { 值 } = 读配置({ ANIM_LEGACY: '/不存在/旧项目', ANIM_DATA: '/数据' }, null);
+    const { 值 } = 读配置({ ANIM_DATA: '/数据' }, null);
     expect(值.游戏!.值).toBe(path.resolve('/数据/game'));
     expect(值.锁目录!.值).toBe(path.resolve('/数据/run/locks'));
   });
