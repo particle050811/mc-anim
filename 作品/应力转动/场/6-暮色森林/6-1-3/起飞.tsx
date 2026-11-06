@@ -1,4 +1,5 @@
-// 6-1-3 起飞：把模型库里的场景、角色、扫帚按 编排.ts 组装成镜头，挂上这一段的配乐（2026-10-10 起配乐晚 配乐延后 帧进，见 编排.ts）。
+// 6-1-3 起飞：把模型库里的场景、角色、扫帚按 编排.ts 组装成镜头。时间按秒取（决策 0015），编排的数是格（1/24 秒）。
+// 声音：原生段（6-起飞）照 段.ts 的 cue 放；`旧声音` 只给没迁的 6-1-4至9（头一截是起飞的尾巴），挂旧 声音.tsx 和配乐（2026-10-10 起配乐晚 配乐延后 帧进，见 编排.ts）。
 // 场景：娜迦庭院导出网格 + 四周游戏真实地貌导入的地形（模型/场景/暮色新世界.tsx，2026-10-05 起）；李樱、九胡、扫帚都是取材的实机模型。
 // 编排是庭院本地坐标：人、扫帚、宝箱、云都放进 <地标位 名="娜迦庭院">，镜头加上庭院原点换成世界坐标，地形照世界坐标画。
 // 光照（用户 2026-10-02）：和 6-1-2 同一套暮色森林的天、光、雾（lib/暮色光照.tsx），一直用到 6-1-9。镜头 1（接 6-1-2 末帧）里
@@ -6,7 +7,8 @@
 import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { FlightRig } from '../../../地点/飞行镜头.tsx';
 import { TwilightLighting, twilightFogNear } from '@engine/light/暮色光照.tsx';
 import { twilightSunDir } from '@engine/light/光照配比.ts';
@@ -29,8 +31,8 @@ export const SUN = twilightSunDir;
 
 const sheath = <WornSheath />;
 
-export const TakeOff: React.FC = () => {
-  const frame = useCurrentFrame();
+export const TakeOff: React.FC<{ 旧声音?: boolean }> = ({ 旧声音 = false }) => {
+  const frame = use当前秒() * 24;
   const { width, height } = useVideoConfig();
   const local = choreo.camera(frame);
   const origin = choreo.courtyard.原点;
@@ -76,10 +78,14 @@ export const TakeOff: React.FC = () => {
           </LandmarkPlacement>
         </group>
       </ThreeCanvas>
-      <TakeoffSound />
-      <声音Sequence from={choreo.musicDelay}>
-        <SegmentMusic segmentId={choreo.segmentId} />
-      </声音Sequence>
+      {旧声音 && (
+        <>
+          <TakeoffSound />
+          <声音Sequence from={choreo.musicDelay}>
+            <SegmentMusic segmentId={choreo.segmentId} />
+          </声音Sequence>
+        </>
+      )}
     </AbsoluteFill>
   );
 };
