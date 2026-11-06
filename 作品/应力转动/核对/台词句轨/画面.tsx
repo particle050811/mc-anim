@@ -21,8 +21,9 @@ const 画面: React.FC = () => {
   // 句模块的帧是 1/24 秒一格
   const fps = 24;
   const frame = 贴格(use当前秒() * fps);
-  const { width, durationInFrames } = useVideoConfig();
-  const 每帧 = (width - 160) / durationInFrames;
+  const { width, durationInFrames, fps: 帧率 } = useVideoConfig();
+  // 时间轴一格 1/24 秒：段长折成格数做分母
+  const 每帧 = (width - 160) / ((durationInFrames / 帧率) * fps);
   return (
     <AbsoluteFill style={{ background: '#1b1d22', color: '#eee', fontFamily: 'sans-serif' }}>
       <台词句轨 句们={句们} 声音={声音} />

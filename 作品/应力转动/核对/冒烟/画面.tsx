@@ -22,9 +22,10 @@ const 图 = 解码(色块);
 const 格 = 40;
 
 const 画面: React.FC = () => {
-  // 段内第几格（一格 1/24 秒）；进度条的分母是 Composition 的帧数，照旧
+  // 段内第几格（一格 1/24 秒）；进度条的分母是段长折成的格数
   const frame = 贴格(use当前秒() * 24);
-  const { width, durationInFrames } = useVideoConfig();
+  const { width, durationInFrames: 帧数, fps: 帧率 } = useVideoConfig();
+  const durationInFrames = (帧数 / 帧率) * 24;
   const { 级别 } = use设置();
   const 格子 = [];
   for (let y = 0; y < 图.h; y++) {
