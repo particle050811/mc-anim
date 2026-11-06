@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""把旧项目的资产按 assets/registry/*.toml 导进数据根，生成 assets/资产锁.json 和 assets/旧路径.tsv。
+"""把旧项目的资产按 assets/registry/*.toml 导进数据根，生成 assets/资产锁/（一件资产一个 <id>.json）和 assets/旧路径.tsv。
 
 用法：python3 assets/tools/导入旧项目.py [--旧项目 <目录>] [--数据根 <目录>] [--只核对]
   旧项目默认取环境变量 ANIM_OLD，没有就是本仓库同级的 机械动力应力转动-AI漫画/；数据根默认 ANIM_DATA，没有就是同级的 mc-anim-data/。
@@ -222,8 +222,8 @@ def main() -> None:
         p = getattr(a, attr)
         if not p.exists() and (REPO.parent.parent / name).exists():
             setattr(a, attr, REPO.parent.parent / name)
-    锁路径 = ASSETS / '资产锁.json'
-    现有锁 = json.loads(锁路径.read_text(encoding='utf-8')) if 锁路径.exists() else {}
+    锁目录 = ASSETS / '资产锁'
+    现有锁 = {f.relative_to(锁目录).with_suffix('').as_posix(): json.loads(f.read_text(encoding='utf-8')) for f in sorted(锁目录.rglob('*.json'))}
     对照: list[tuple[str, str]] = []
     if a.只核对:
         锁 = 现有锁
@@ -232,7 +232,13 @@ def main() -> None:
         对照 = [(e['旧路径'], e['id']) for e in 读资产表() if e.get('旧路径')] + 拷文字源(a.旧项目)
     对照地形 = 地形(a.旧项目, a.数据根, a.只核对)
     if not a.只核对:
-        锁路径.write_text(json.dumps(锁, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+        for id_, v in 锁.items():
+            f = 锁目录 / f'{id_}.json'
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(json.dumps(v, ensure_ascii=False, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+        for f in 锁目录.rglob('*.json'):
+            if f.relative_to(锁目录).with_suffix('').as_posix() not in 锁:
+                f.unlink()
         行 = ['旧路径\t新\n'] + [f'{o}\t{n}\n' for o, n in sorted(对照 + 对照地形)]
         (ASSETS / '旧路径.tsv').write_text(''.join(行), encoding='utf-8')
     回读(锁, a.旧项目, a.数据根)
