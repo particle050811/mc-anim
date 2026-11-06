@@ -28,7 +28,6 @@ export const 段签版本 = 3;
 const 认的版本 = new Set([1, 2, 3]);
 export const 签文件名 = '签.json';
 export const 声音文件名 = '声音.flac';
-export const 抽样文件名 = '抽样.mkv';
 export const 历史文件名 = '历史.jsonl';
 export const 历史目录名 = '历史';
 export const 小图宽 = 160;

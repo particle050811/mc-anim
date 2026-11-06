@@ -159,8 +159,7 @@ export const 逐帧校验目录 = (名: string, 作品 = 作品名()) => 按作�
 export const 交付根 = (作品 = 作品名()) => 按作品(['交付'], 作品, []);
 /** 旧项目对照的基线：基线/<作品>/（只有 应力转动 有） */
 export const 基线根 = (作品 = 作品名()) => 按作品(['基线'], 作品, []);
-/** manifest 里数据根下的路径写相对数据根（数据根挪了照样认）；读的时候两种都认 */
-export const 相对数据根 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
+/** manifest 里数据根下的路径：相对数据根的、绝对的都认 */
 export const 数据根下 = (p: string) => (path.isAbsolute(p) ? p : path.join(数据根(), ...p.split('/')));
 export const 运行目录 = () => 数据路径('run');
 /** Agent 的中间稿：run/草稿/<UTC 月日-时分>-工作-<主题>/（见 pipeline/预览/预览.ts） */
