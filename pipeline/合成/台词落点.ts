@@ -5,7 +5,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { 段定义, 台词cue } from '../../engine/段/段定义.ts';
-import { 读作品资产锁, 解析资产 } from '../资产/资产锁.ts';
 import { 作品根 } from '../环境/作品.ts';
 import type { 段信息 } from '../清单/清单.ts';
 import type { 台词落点 } from './字幕.ts';
@@ -96,33 +95,3 @@ export const 算台词落点 = (
   }
   return out;
 };
-
-/** 同步表要读的资产（现在只有 旧项目/声音对照.ts 读，交付里不再出同步表）；随仓库发的字节也带上它（资产/随仓库.ts） */
-export const 音效起音资产 = '数据/音效/音效起音';
-
-/** 资产 数据/音效/音效起音：文件名（音效 id 去掉 音效/ 加 .ogg）→ 文件开头静音几秒 */
-export const 读音效起音 = (): ((资产id: string) => number) => {
-  const 锁 = 读作品资产锁(作品根());
-  if (!锁[音效起音资产]) return () => 0;
-  const 表 = JSON.parse(fs.readFileSync(解析资产(音效起音资产, 锁).文件, 'utf8')) as Record<string, number>;
-  return (id) => (id.startsWith('音效/') ? (表[`${id.slice('音效/'.length)}.ogg`] ?? 0) : 0);
-};
-
-/** 一条 cue 在段内哪一帧听得见：台词是开口；音效从文件头放的加上文件开头的静音（按速率换成画面时间），接着放的（入点秒 > 0）就是起放那一帧 */
-export const 听见帧 = (c: NonNullable<段定义['声音']>[number], fps: number, 起音: (资产id: string) => number) =>
-  c.台词 !== undefined ? c.帧 : c.帧 + (c.入点秒 ? 0 : (起音(c.资产) / (c.速率 ?? 1)) * fps);
-
-/** 同步表（每条声音 cue 在全片第几帧听得见，接上段的台词不另列）的行：按听见的全片帧排；旧项目/声音对照.ts 拿它和基线比 */
-export const 同步表行 = (截们: 截位置[], fps: number, 起音: (资产id: string) => number) =>
-  截们
-    .flatMap(({ 段: s, 全片起帧 }) =>
-      (s.段.声音 ?? []).flatMap((c) => (c.台词 !== undefined && c.接上段 ? [] : [{ s, c, 段内帧: 听见帧(c, fps, 起音), 起: 全片起帧 }])),
-    )
-    .map((r) => ({ ...r, 帧: r.起 + r.段内帧 }))
-    .sort((a, b) => a.帧 - b.帧)
-    .map(({ s, c, 帧, 段内帧 }) => {
-      const 秒 = 帧 / fps;
-      const m = Math.floor(秒 / 60);
-      const 事件 = c.台词 !== undefined ? `台词 ${c.台词}` : `${c.名}（${c.资产}）`;
-      return { 帧, 行: `${s.键}\t${String(m).padStart(2, '0')}:${(秒 - m * 60).toFixed(3).padStart(6, '0')}\t${帧.toFixed(1)}\t${段内帧.toFixed(1)}\t${事件}\t${c.台词 ?? c.资产}` };
-    });
