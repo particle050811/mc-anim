@@ -8,9 +8,10 @@ import { 读状态, 读占用, 渲染看, 一行状态, 前方等待, 队上占�
 import { 读机器快照并行 } from './机器.ts';
 import { 读调度,记调度,type 调度事件 } from './调度日志.ts';
 import { 复盘 } from './复盘.ts';
+import { 等锁表 } from './等锁表.ts';
 import { 估计 } from './估计.ts';
 import { 盯 } from './盯.ts';
-export const 用法 = '调度 [看|先|后|恢复|放行|让路|取消|清孤儿|记|预计|盯|等|路|令|日志|复盘] [--json|--一行]';
+export const 用法 = '调度 [看|先|后|恢复|放行|让路|取消|清孤儿|记|预计|盯|等|路|令|日志|复盘|等锁表] [--json|--一行]';
 /** 都按 UTC，和日志、--日 一致。只给日期的 --到 算到当天结束，否则当天的事全被排除。 */
 const 解析时刻 = (名: string, s: string, 现在: number) => {
     const m = /^(?:(\d{4})-)?(\d{2}-\d{2})(?:[T ](\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(Z|[+-]\d{2}:\d{2})?)?$/.exec(s);
@@ -64,6 +65,10 @@ export const 跑调度 = async (args: string[], env?: 调度环境, 输出: (s: 
     if (cmd === '盯') {
         if(p.值['--最长']&&(!Number.isFinite(Number(p.值['--最长']))||Number(p.值['--最长'])<=0))throw new 用法错误('--最长 要正秒数');
         return 盯(e, { 最长: p.值['--最长'] ? Number(p.值['--最长']) : undefined, 任务: p.值['--任务'], 输出 });
+    }
+    if (cmd === '等锁表') {
+        输出(JSON.stringify(等锁表(读调度(e.日志目录), 日志筛(p, e.现在毫秒()).入选), null, 2));
+        return 0;
     }
     if (cmd === '日志' || cmd === '复盘') {
         const 现在 = e.现在毫秒(), { 在窗, 入选 } = 日志筛(p, 现在);
