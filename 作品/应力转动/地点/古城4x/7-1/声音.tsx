@@ -1,5 +1,5 @@
 // 第 7 章第 1 场七段共用的声音：只用游戏原声（src/音效/），听者是镜头。整场的事件按场时刻 t 排一张表（7-1 七段 11-06 迁成原生段后，各段的声音照 段.ts 的 cue 放，cue 是照这张表的基线声音清单转写的；
-// 这张表现在给没迁的变速段（变速段.tsx 带声音）和 7-五万血 远景用）。台词配音按 时间线.ts 的 台词 开口时刻排。
+// 这张表现在只给 7-五万血 远景用）。台词配音按 时间线.ts 的 台词 开口时刻排。
 // - 黑暗：原版放黑暗本身没有声音；监守者生气（怒气 ≥ 80）时的叫声 entity.warden.angry 当「黑暗低吼」（音量 3）。
 // - 召唤恼鬼：entity.evoker.prepare_summon（开始施法）→ entity.evoker.cast_spell（恼鬼出来）；冲锋 entity.vex.charge；死 entity.vex.death。
 // - 监守者拍：entity.warden.attack_impact（挥臂打中，攻击动画第 0.15 秒）。

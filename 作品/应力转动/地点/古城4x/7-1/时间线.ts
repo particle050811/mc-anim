@@ -90,7 +90,7 @@ export const huangFollowArrowHitTs = [shieldSwingTs[1] + 0.1, shieldSwingTs[1] +
 // 段界按戏和台词定，切在动作上：7-1-1 收在监守者起扑；7-1-2 收在第一拍前 0.45 秒；7-1-3 收在它扑向丘脚的半路；
 //   7-1-4 刘心忠蹬地上墙脊、它跟着扑到东墙脚下，收在黄叛开口前；7-1-5 收在刘心忠越过它头顶；7-1-6 收在它扑向 C2 之前；
 //   7-1-7 演到马落上墙头（末帧 = 衔接.七三首，马落墙后 0.1 秒），它照样追，接第 3 场。
-// 「一百级的恼鬼……就这么没了？！」说进 7-1-4（`segmentLines` 的 接上段）。
+// 「一百级的恼鬼……就这么没了？！」说进 7-1-4（7-逃命 段.ts 的台词 cue 接上段）。
 // 7-1-6 原来先有一镜黄叛越肩射火把、照出羊毛（「羊毛……？！」「刘兄，快到羊毛上逃！」），用户 10-19 删了这两句和这一镜：
 //   后面是追逐，上羊毛躲不掉它。剧情时间轴不动（7-2-1 按它远望第 1 场），只把 7-1-5 末到刘心忠快落到 C2 那一截跳过去不演（`skipTo`）。
 const cutTs = {
@@ -130,17 +130,6 @@ export const dialogue: Record<string, { t: number; 文: string; 段?: SegmentId 
 };
 export type LineId = keyof typeof dialogue;
 const lineSegment = (id: LineId) => dialogue[id].段 ?? (id.split('-').slice(0, 3).join('-') as SegmentId);
-// 一段要放的句子：本段开口的，加上前一段开口、还没说完的（接上段 = 只放后半截，开口在本段之前）
-export const segmentLines = (segId: SegmentId) => {
-  const startT = segmentStartT(segId);
-  const endT = segmentEndT(segId);
-  return (Object.keys(dialogue) as LineId[]).flatMap((id) => {
-    const { t } = dialogue[id];
-    if (lineSegment(id) === segId) return [{ id, t, 接上段: false }];
-    if (t < startT && t + voicedSec(id) > startT && t <= endT) return [{ id, t, 接上段: true }];
-    return [];
-  });
-};
 for (const id of Object.keys(dialogue) as LineId[]) {
   const segId = lineSegment(id);
   const { t } = dialogue[id];
