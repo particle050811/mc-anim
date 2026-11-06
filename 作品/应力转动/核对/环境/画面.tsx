@@ -3,8 +3,9 @@
 // 仰望的视图同一个镜头位置、抬到仰角约 80°（午夜月亮在天顶）。
 import { ThreeCanvas } from '@remotion/three';
 import React, { useEffect, useMemo } from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 import { TwilightLighting, twilightFogNear } from '@engine/light/暮色光照.tsx';
 import { 环境 } from '@engine/light/环境组件.tsx';
 import 主世界画法 from '@engine/light/画法/主世界.tsx';
@@ -96,7 +97,7 @@ const 灯天: React.FC<{ 帧: number }> = ({ 帧 }) => {
 };
 
 const 画面: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use视图下标();
   const { width, height } = useVideoConfig();
   const v = 视图们[frame]!;
   const 主世界现有 = v.用 === '现有' && v.套 !== '暮色';
