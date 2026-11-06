@@ -157,8 +157,10 @@ const 舍入 = (x: number) => {
   return Math.round(x);
 };
 
-/** 排每屏的起止帧（全片帧）；读声音交给 读声音（测试可以注入） */
-export const 排字幕 = (落点们: 台词落点[], 总帧数: number, fps: number, 读声音: (文件: string) => Float32Array) => {
+/** 排每屏的起止帧（全片帧）；读声音交给 读声音（测试可以注入）。
+ *  切点们（全片帧，段和段的交界）：一句的末屏只因「说完留 0.4 秒」伸过切点、配音在切点前已经说完的，到切点就收
+ *  （用户 11-05 定，那时 6-李樱-不值一提、7-李樱-溜了、7-刘心忠-风筝 伸过 1～6 帧）；话本身跨段的照旧跨过去 */
+export const 排字幕 = (落点们: 台词落点[], 总帧数: number, fps: number, 读声音: (文件: string) => Float32Array, 切点们: readonly number[] = []) => {
   const 句们: 排好的句[] = [];
   const 屏们: 字幕屏[] = [];
   const 换们 = new Map<string, [number, string][]>();
@@ -178,6 +180,10 @@ export const 排字幕 = (落点们: 台词落点[], 总帧数: number, fps: num
     const 秒们 = [e.开 - 提前秒, ...换.map(([t]) => t), e.完 + 留秒];
     const 依据们 = ['开口', ...换.map(([, d]) => d)];
     const 帧们 = 秒们.map((t) => 舍入(e.文件头帧 + t * fps));
+    const 说完帧 = e.文件头帧 + e.完 * fps;
+    const 末 = 帧们.length - 1;
+    const 切 = 切点们.find((c) => 帧们[末 - 1]! < c && c < 帧们[末]! && 说完帧 <= c);
+    if (切 !== undefined) 帧们[末] = 切;
     e.屏们.forEach((p, k) => 屏们.push({ 字: p.字, 位置: e.位置, 起帧: 帧们[k]!, 止帧: 帧们[k + 1]!, 句: e.id, 角色: e.角色, 段: e.段, 依据: 依据们[k]! }));
   }
   for (let i = 0; i + 1 < 屏们.length; i++) if (屏们[i]!.止帧 > 屏们[i + 1]!.起帧) 屏们[i]!.止帧 = 屏们[i + 1]!.起帧;

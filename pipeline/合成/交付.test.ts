@@ -6,7 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 const 数据根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-交付测试-'));
 process.env.ANIM_DATA = 数据根;
-const { 读交付manifest, 交付缺, 读交付设置, 交付母版, 未拉响度文件, 剪辑画面文件 } = await import('./交付.ts');
+const { 读交付manifest, 交付缺, 交付母版, 未拉响度文件 } = await import('./交付.ts');
 const { 交付引用, 交付自足 } = await import('../缓存/回收.ts');
 
 afterAll(() => fs.rmSync(数据根, { recursive: true, force: true }));
@@ -42,27 +42,12 @@ describe('交付 manifest', () => {
     expect(() => 读交付manifest(交付('v3', { ...公共, 版本: 3, 段: [] }))).toThrow(/只认到 v2/);
   });
 
-  it('自足：未拉响度的 FLAC 和剪辑包画面都要有（没开剪辑包的作品 edit-package 也要拿母版现做画面）；和 gc 的判断一样', () => {
+  it('自足：有未拉响度的 FLAC 就够（剪辑包用户 11-06 定不要了）；和 gc 的判断一样', () => {
     const dir = 交付('自足', { ...公共, 段: [] });
-    expect(交付缺(dir)).toEqual([未拉响度文件, 剪辑画面文件]);
-    fs.writeFileSync(path.join(dir, 未拉响度文件), '');
-    expect(交付缺(dir)).toEqual([剪辑画面文件]);
+    expect(交付缺(dir)).toEqual([未拉响度文件]);
     expect(交付自足(dir)).toBe(false);
-    fs.mkdirSync(path.join(dir, '剪辑包'));
-    fs.writeFileSync(path.join(dir, 剪辑画面文件), '');
+    fs.writeFileSync(path.join(dir, 未拉响度文件), '');
     expect(交付缺(dir)).toEqual([]);
     expect(交付自足(dir)).toBe(true);
-  });
-
-  it('交付.toml：没有是默认（不出剪辑包），只认 剪辑包 一项', () => {
-    const 根 = path.join(数据根, '作品根');
-    fs.mkdirSync(根, { recursive: true });
-    expect(读交付设置(根)).toEqual({ 剪辑包: false });
-    fs.writeFileSync(path.join(根, '交付.toml'), '"剪辑包" = true\n');
-    expect(读交付设置(根)).toEqual({ 剪辑包: true });
-    fs.writeFileSync(path.join(根, '交付.toml'), '"剪辑报" = true\n');
-    expect(() => 读交付设置(根)).toThrow(/不认识/);
-    fs.writeFileSync(path.join(根, '交付.toml'), '"剪辑包" = "是"\n');
-    expect(() => 读交付设置(根)).toThrow(/true 或 false/);
   });
 });

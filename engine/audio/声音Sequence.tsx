@@ -3,8 +3,9 @@
 // - 清单Audio：直接放一个文件的声音（不走 游戏声音轨、台词轨、配乐的），同时记进清单；不要再写裸的 <Audio>。
 import { Audio } from '@remotion/media';
 import React from 'react';
-import { Sequence, useVideoConfig } from 'remotion';
+import { Sequence } from 'remotion';
 import { useLateSequenceLog, useSfxLog } from './音效清单.ts';
+import { use编排fps } from '../段/编排时钟.tsx';
 
 export const 声音Sequence: React.FC<{ from?: number; durationInFrames?: number; name?: string; children: React.ReactNode }> = ({ from = 0, durationInFrames = Infinity, name, children }) => {
   useLateSequenceLog(from, durationInFrames);
@@ -18,7 +19,7 @@ export const 声音Sequence: React.FC<{ from?: number; durationInFrames?: number
 // from：在所在时间线上第几帧起放（从文件开头放）；文件：相对 src/，清单和 音效拆分.py 按它找文件；时长：文件多少秒，只用来记清单里的帧数，
 // 渲染时不按它截（文件重新生成变长了也放完，不会悄悄截掉）
 export const 清单Audio: React.FC<{ kind: '音效清单' | '台词清单'; 名: string; src: string; 文件: string; 时长: number; from: number; volume: number }> = ({ kind, 名: label, src, 文件: file, 时长: durationSec, from, volume }) => {
-  const { fps } = useVideoConfig();
+  const fps = use编排fps();
   const log = useSfxLog(kind);
   const frames = Math.ceil(durationSec * fps);
   log({ 名: label, 文件: file, from, 帧数: frames, 入点秒: 0, 速率: 1, 循环: false, gainAt: () => volume });

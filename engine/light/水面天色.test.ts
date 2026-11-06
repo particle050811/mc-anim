@@ -8,6 +8,7 @@ vi.mock('react', async (原模块) => {
     useState: <T,>(初值: T | (() => T)) => [typeof 初值 === 'function' ? (初值 as () => T)() : 初值],
     useMemo: <T,>(算: () => T) => 算(),
     useRef: <T,>(值: T) => ({ current: 值 }),
+    useContext: () => null,
     useEffect: (挂: () => void | (() => void)) => {
       const 清理 = 挂();
       if (清理) 时序.清理.push(清理);

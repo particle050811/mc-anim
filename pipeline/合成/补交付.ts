@@ -1,6 +1,5 @@
 // anim film 补声音：给 10-30 以前出的交付补上「自足」要的文件（只新增，不改 manifest、不动别的文件）：
-//   全片-未拉响度.flac：按 成片.ts 一样按样本截、接各段声音（段签的 声音.flac，现在的或 历史/ 里的；都不行读母版），量出的响度要和 manifest 的 原LUFS 一样才收；
-//   剪辑包/画面.mp4（作品开了剪辑包、交付里还没有的）：和 edit-package 现做的同一套（剪辑包.ts 的 做剪辑画面）。没开剪辑包的作品不补，交付照旧不自足。
+//   全片-未拉响度.flac：按 成片.ts 一样按样本截、接各段声音（段签的 声音.flac，现在的或 历史/ 里的；都不行读母版），量出的响度要和 manifest 的 原LUFS 一样才收。
 // 补出来的文件解钉后就是这份交付唯一的来源，所以源要是出片时那一份：v2 比 manifest 记的母版字节 sha；v1 没记，母版、叠层、段签派生时的母版
 // 改于都不能晚于 manifest.json（晚了就是出片以后重渲或转码过）。补了什么、从哪补的记进 补做.json。要的源都不在或对不上的交付报出来跳过。
 // 母版转存以后（渲/转存.ts）：出片时读的 CRF1 转存后不算「出片时那份」的画面（像素变了），但声音是原样拷的 PCM，算；出片时读的就是压缩母版的两样都算。
@@ -9,9 +8,8 @@ import path from 'node:path';
 import { 交付根 } from '../环境/配置.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
-import { 做剪辑画面 } from '../适配器/剪映/剪辑包.ts';
 import { 文件sha, 段签文件, 读段签, 读历史段签, 对得上母版, 对得上原母版, 段签齐, type 段签 } from '../段签/段签.ts';
-import { 交付缺, 剪辑画面文件, 未拉响度文件, 拼未拉响度, 读交付manifest, 读交付设置, type 交付段 } from './交付.ts';
+import { 交付缺, 未拉响度文件, 拼未拉响度, 读交付manifest, type 交付段 } from './交付.ts';
 import { 量响度 } from './成片.ts';
 import { 压缩名 } from '../渲/母版.ts';
 
@@ -81,7 +79,6 @@ const 记补做 = (dir: string, 文件: string, 说明: Record<string, unknown>)
 };
 
 export const 补交付 = async (dirs: string[], opts: { 只看?: boolean; 记录: 运行记录; 等放行: () => Promise<void> }) => {
-  const 要剪辑包 = 读交付设置(作品根()).剪辑包;
   let 补了 = 0;
   let 补不了 = 0;
   for (const dir of dirs) {
@@ -95,9 +92,8 @@ export const 补交付 = async (dirs: string[], opts: { 只看?: boolean; 记录
     if (m.作品 !== 作品名()) throw new Error(`${dir} 是 ${m.作品} 的交付，现在选的作品是 ${作品名()}`);
     const 原 = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')) as { 响度?: { 原LUFS?: number } };
     const 片: 出片时 = { 作品: m.作品, 改于: fs.statSync(path.join(dir, 'manifest.json')).mtimeMs };
-    const 不补画面 = 缺.includes(剪辑画面文件) && !要剪辑包;
     if (opts.只看) {
-      console.log(`· ${名}：缺 ${缺.join('、')}${不补画面 ? `（作品没开剪辑包，${剪辑画面文件} 不补，这份交付照旧钉着母版）` : ''}`);
+      console.log(`· ${名}：缺 ${缺.join('、')}`);
       continue;
     }
     if (缺.includes(未拉响度文件)) {
@@ -131,35 +127,6 @@ export const 补交付 = async (dirs: string[], opts: { 只看?: boolean; 记录
           fs.rmSync(tmp, { force: true });
         }
       }
-    }
-    if (不补画面) console.log(`· ${名}：作品没开剪辑包，${剪辑画面文件} 不补，这份交付照旧钉着母版`);
-    else if (缺.includes(剪辑画面文件)) {
-      const 不在 = [...m.段.filter((s) => !fs.existsSync(s.母版) && !fs.existsSync(压缩名(s.母版))).map((s) => s.母版), ...m.叠层.map((l) => l.文件).filter((f) => !fs.existsSync(f))];
-      const 变过: string[] = [];
-      const 段们: 交付段[] = [];
-      for (const s of m.段) {
-        const 源 = await 出片时画面(s, 片);
-        if (源) 段们.push({ ...s, 母版: 源 });
-        else if (fs.existsSync(s.母版) || fs.existsSync(压缩名(s.母版))) 变过.push(s.键);
-      }
-      for (const l of m.叠层) if (fs.existsSync(l.文件) && fs.statSync(l.文件).mtimeMs > 片.改于) 变过.push(l.键);
-      if (不在.length || 变过.length) {
-        补不了++;
-        const 说 = [
-          不在.length ? `母版或叠层不在：${不在.map((f) => path.basename(path.dirname(f)) + '/' + path.basename(f)).join('、')}` : '',
-          变过.length ? `出片以后重渲或转码过：${变过.join('、')}` : '',
-        ].filter(Boolean);
-        opts.记录.记('警告', `${名}：补不了 ${剪辑画面文件}，${说.join('；')}`);
-        continue;
-      }
-      await opts.等放行();
-      const 出 = path.join(dir, 剪辑画面文件);
-      fs.mkdirSync(path.dirname(出), { recursive: true });
-      await 做剪辑画面({ ...m, 段: 段们 }, 出);
-      记补做(dir, 剪辑画面文件, { 核对: m.版本 >= 2 ? '母版字节 sha' : '母版、叠层改于不晚于 manifest' });
-      补了++;
-      opts.记录.产物.push(出);
-      console.log(`✓ ${名}：补了 ${剪辑画面文件}`);
     }
   }
   console.log(`\n补了 ${补了} 个文件${补不了 ? `，${补不了} 个补不了（见警告）` : ''}`);

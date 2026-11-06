@@ -104,7 +104,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           const 明细 = new 明细收集(标签, 帧[0]);
           const 跑 = () => renderMedia({
               serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, envVariables: { ...段渲染环境(s.键, 段现在的地形(s)), ...(opts.光影 ? { [光影环境名]: opts.光影.值 } : {}) }, puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
-              codec: 参数.codec, audioCodec: 参数.audioCodec, enforceAudioTrack: 参数.enforceAudioTrack, crf: 参数.crf, x264Preset: 参数.x264Preset,
+              codec: 参数.codec, muted: 参数.muted, crf: 参数.crf, x264Preset: 参数.x264Preset,
               imageFormat: 参数.imageFormat, jpegQuality: 参数.jpegQuality, scale: 参数.scale, concurrency: 参数.concurrency,
               timeoutInMilliseconds: 等帧超时毫秒, overwrite: true, logLevel: 渲染日志, frameRange: 帧,
               ...(opts.关共享内存 ? { disableSharedMemoryCapture: true } : {}),

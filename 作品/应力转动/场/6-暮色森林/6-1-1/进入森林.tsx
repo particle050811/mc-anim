@@ -33,6 +33,7 @@ import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
 import * as choreo from './编排.ts';
 import { EnterForestSound, lineCues } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
+import { use编排fps } from '@engine/段/编排时钟.tsx';
 
 export const ENTER_FOREST_FRAMES = choreo.END - 1;
 
@@ -173,7 +174,8 @@ const TwilightForest: React.FC<{ f: number; t: number }> = ({ f: frame, t }) => 
 
 export const EnterForest: React.FC = () => {
   const frame = useCurrentFrame();
-  const { width, height, fps } = useVideoConfig();
+  const { width, height } = useVideoConfig();
+  const fps = use编排fps();
   const choreoFrame = frame + 1;
   const island = choreo.world(choreoFrame) === 'island';
   // 不超采样（用户 10-07 比过 2K 下超采样和不超采样，选不超采样，见 lib/渲染级别.ts）。

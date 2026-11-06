@@ -5,7 +5,7 @@
 // 云照原版：environment/clouds.png 每个不透明像素是一块 12×12 格、4 格厚的云，四面按原版明暗（顶 1.0、东西 0.9、南北 0.8、底 0.7）。贴图用 npm run 取材 -- 天空 从 client jar 导出到 天空.贴图/。
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useState } from 'react';
-import { cancelRender, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
+import { cancelRender, continueRender, delayRender, useCurrentFrame } from 'remotion';
 import { use写入者, 新写入槽 } from '../core/写入者.ts';
 import { skyBandCount, waterSky, skyReflMax, 复位水面天色 } from '../voxel/水面.ts';
 import * as THREE from 'three';
@@ -14,6 +14,7 @@ import { overworldMix, brighten, twilightSunDir, twilightDusk } from './光照�
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms, atmosphere } from './大气.ts';
 import cloudsPng from 'asset:贴图/场景/天空/clouds';
 import sunPng from 'asset:贴图/场景/天空/sun';
+import { use编排fps } from '../段/编排时钟.tsx';
 
 export const SKY = {
   top: '#7ea2cc',
@@ -154,7 +155,7 @@ const useWaterSky = (bands: [number, string][] | null, 指定帧?: number) => {
   use写入者(水面天色槽, 复位水面天色);
   const 当前帧 = useCurrentFrame();
   const frame = 指定帧 ?? 当前帧;
-  const { fps } = useVideoConfig();
+  const fps = use编排fps();
   waterSky.time.value = frame / fps;
   waterSky.reflectionMax.value = skyReflMax(bands !== null);
   {

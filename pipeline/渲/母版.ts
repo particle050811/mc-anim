@@ -1,7 +1,7 @@
 // 母版缓存：<数据根>/cache/母版/<作品>/<段键>/ 下按指纹前 16 位起名（用户 10-30 定母版转码存，存法见 转码.ts）：
 //   <指纹>.mkv        CRF1，Remotion 直出；10-30 以前渲的都是它，现在只在渲完到转码完之间短暂存在（段签的签名从它算）
-//   <指纹>.x264.mkv   压缩母版，film、edit-package、render --到预览、verify（比像素、accept 抽认可参考）读它；后缀不绑档位，换档位不改名
-//   <指纹>.指纹.json  逐项展开；<指纹>.用过 修改时间是最后一次被 render、film、verify、edit-package 用的时间（不是账本，各文件各记各的）
+//   <指纹>.x264.mkv   压缩母版，film、render --到预览、verify（比像素、accept 抽认可参考）读它；后缀不绑档位，换档位不改名
+//   <指纹>.指纹.json  逐项展开；<指纹>.用过 修改时间是最后一次被 render、film、verify 用的时间（不是账本，各文件各记各的）
 //   <指纹>.检出-<哈希> 哪个检出用过这个指纹，内容是检出路径（各 worktree 共用数据根，这边算不出别的检出的当前指纹，缓存/钉.ts 靠它不删人家的）
 // 透明叠层同样存法：cache/叠层/<段键>-<名>/<指纹前 16 位>.mov（ProRes 4444 带透明，很小，不转码）。
 import crypto from 'node:crypto';
@@ -25,7 +25,7 @@ export const 现母版 = (键: string, 指纹: string, 作品?: string): string 
 export const 叠层路径 = (叠层键: string, 指纹: string) => path.join(叠层目录(叠层键), `${指纹.slice(0, 16)}.mov`);
 export const 指纹文件 = (键: string, 指纹: string, 目录 = 母版目录(键)) => path.join(目录, `${指纹.slice(0, 16)}.指纹.json`);
 
-/** 删旧母版时，近这么久被用过的不删（film、verify、edit-package 正在用的） */
+/** 删旧母版时，近这么久被用过的不删（film、verify 正在用的） */
 export const 近期用过毫秒 = 2 * 3600 * 1000;
 export const 用过文件 = (目录: string, 指纹: string) => path.join(目录, `${指纹.slice(0, 16)}.用过`);
 export const 检出记号文件 = (目录: string, 指纹: string, 检出 = 本检出()) => path.join(目录, `${指纹.slice(0, 16)}.检出-${crypto.createHash('sha256').update(检出).digest('hex').slice(0, 8)}`);

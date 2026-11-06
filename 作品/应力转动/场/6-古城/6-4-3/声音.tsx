@@ -42,6 +42,7 @@ import { chestSound } from '@库/物品/箱子.tsx';
 import * as geom from './几何.ts';
 import * as choreo from './编排.ts';
 import * as timeline from './时间线.ts';
+import { use编排fps } from '@engine/段/编排时钟.tsx';
 
 const tickSec = 1 / 20;
 
@@ -115,7 +116,7 @@ export const shoutLine = { id: '6-4-3a-黄叛-纳命来', 帧: Math.round(timeli
 
 // 段里第 0 帧 = 全局帧 起帧
 export const DeflectSound: React.FC<{ startFrame: number; frameCount: number }> = ({ startFrame: startFrame, frameCount: frameCount }) => {
-  const { fps } = useVideoConfig();
+  const fps = use编排fps();
   const shoutSegFrame = shoutLine.帧 - startFrame;
   // 上一段开口、这一段还没说完的也放（剩下的那截）
   const hasShout = shoutSegFrame < frameCount && shoutSegFrame + lineTable[shoutLine.id].时长 * fps > 0;

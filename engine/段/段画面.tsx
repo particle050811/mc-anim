@@ -3,13 +3,14 @@
 // 声音的放法在 放法.ts；和音效轨.tsx 一样用 @remotion/media 的 Audio（不用 remotion 自带的：变速时那个只变速不变调），渲染时照样打清单日志。
 import { Audio } from '@remotion/media';
 import React, { createContext, useContext } from 'react';
-import { Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Sequence, useCurrentFrame } from 'remotion';
 import { lineVolume } from '../audio/混音.ts';
 import { tagSrc } from '../audio/同源区分.ts';
 import { useFirstVisibleFrame, useSfxLog } from '../audio/音效清单.ts';
 import type { 段定义 } from './段定义.ts';
 import { 段放法, type 一声 } from './放法.ts';
 import type { 声音表 } from './声音助手.ts';
+import { use编排fps } from './编排时钟.tsx';
 
 /** anim cues 生成的 声音地址.生成.ts 的默认导出：资产 id → 打包后的地址，和本段的声音表 */
 export type 声音地址 = { 地址: Readonly<Record<string, string>>; 表: 声音表 };
@@ -18,7 +19,7 @@ type 段上下文 = { 段: 段定义; 声音: 声音地址 };
 const 段Context = createContext<段上下文 | null>(null);
 
 const 放一声: React.FC<{ 声: 一声; src: string }> = ({ 声, src }) => {
-  const { fps } = useVideoConfig();
+  const fps = use编排fps();
   const 记 = useSfxLog(声.类);
   const 外露 = useFirstVisibleFrame();
   记({ 名: 声.名, ...(声.档 !== undefined ? { 档: 声.档 } : {}), 文件: 声.资产, from: 声.起帧, 帧数: 声.帧数, 入点秒: 声.入点秒, 速率: 声.速率, 循环: 声.循环, gainAt: 声.增益 });
@@ -41,7 +42,7 @@ const 放一声: React.FC<{ 声: 一声; src: string }> = ({ 声, src }) => {
 export const 段声音: React.FC = () => {
   const c = useContext(段Context);
   if (!c) throw new Error('<段声音> 要放在 定义画面(…) 包着的画面里');
-  const { fps } = useVideoConfig();
+  const fps = use编排fps();
   if (fps !== c.段.fps) throw new Error(`Composition 是 ${fps} fps，段.ts 是 ${c.段.fps} fps`);
   const 声们 = 段放法(c.段, c.声音.表, { 台词增益: lineVolume });
   return (

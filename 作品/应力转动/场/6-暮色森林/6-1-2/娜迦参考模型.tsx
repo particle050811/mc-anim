@@ -30,6 +30,7 @@ import * as motion from './动作改进.ts';
 import { nagaLineCues, NagaShotSound } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { 渲染输入 } from '@engine/core/渲染设置.ts';
+import { use编排fps } from '@engine/段/编排时钟.tsx';
 
 // 李樱用哪一版动作：原版（6-1-2-斩娜迦-旧动作）是 编排.ts 的 `liying`；正式的 6-1-2-斩娜迦（动作改进）换成 动作改进.ts 的 `liyingV2`（人、残影、刀光都跟着换）
 type LiyingVersion = (frame: number) => ReturnType<typeof choreo.liying>;
@@ -193,7 +194,8 @@ export const nagaShotCam = ({ hitStopFrames = 0, newCams = false, 跟拍: follow
 export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
   const { 动作改进: motionV2 = false, hitStopFrames = 0, newCams = false, preSheathFix = false, 跟拍: followMode } = props;
   const frame = useCurrentFrame();
-  const { width, height, fps } = useVideoConfig();
+  const { width, height } = useVideoConfig();
+  const fps = use编排fps();
   const { f: storyFrame, cam: cam } = nagaShotCam({ hitStopFrames, newCams, 跟拍: followMode }, frame);
   // 光：庭院几个镜头 70°/28°；迷宫镜头（S3 起）按 迷宫光 换（见上面）
   const mazePreset = storyFrame >= choreo.S3 && !cliSunDir && !cliGain ? mazeLightPresets[props.mazeLight ?? defaultMazeLight] : null;

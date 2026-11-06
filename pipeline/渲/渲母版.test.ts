@@ -369,7 +369,7 @@ describe('命中母版时提示遗留 CRF1，不自动转存', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const r = await 渲染母版([段(键)], '视频', { 记录: 记录() });
     expect(r).toHaveLength(1);
-    expect(log.mock.calls.flat().join('\n').includes('CRF1 还没转，用到时（film、edit-package、--到预览）会转；或者重跑 --重渲')).toBe(提示);
+    expect(log.mock.calls.flat().join('\n').includes('CRF1 还没转，用到时（film、--到预览）会转；或者重跑 --重渲')).toBe(提示);
     expect(log.mock.calls.flat().join('\n')).toContain('母版已是最新');
     expect(存).not.toHaveBeenCalled();
     expect(已转).toHaveBeenCalledTimes(有原 ? 1 : 0);

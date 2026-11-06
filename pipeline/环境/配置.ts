@@ -51,7 +51,7 @@ const 项表 = {
   编码器: { 变量: 'ANIM_VIDEO_ENCODER', 说明: '成片视频编码器：libsvtav1（默认，AV1）、libx264 或 h264_videotoolbox（Mac 上要快时用）', 是路径: false, 默认: () => 'libsvtav1' },
   编码档位: { 变量: 'ANIM_VIDEO_PRESET', 说明: '成片编码的档位（-preset）：空 = 编码器默认（libsvtav1 6，0～13 越小越慢越好；libx264 medium）', 是路径: false, 默认: () => '' },
   编码质量: { 变量: 'ANIM_VIDEO_CRF', 说明: '成片编码的质量（libsvtav1、libx264 的 -crf，videotoolbox 的 -q:v）：空 = 编码器默认（libsvtav1 30、libx264 18、videotoolbox 38），越小越好越大', 是路径: false, 默认: () => '' },
-  成片档: { 变量: 'ANIM_FILM_PROFILE', 说明: '成片档：1080p（默认，B 站 1080P60）或 4k（渲染 3 倍出 3840×2160，母版全部重渲）；见 pipeline/渲/设置.ts 的 成片档表', 是路径: false, 默认: () => '1080p' },
+  成片档: { 变量: 'ANIM_FILM_PROFILE', 说明: '成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧、码率上限 40 Mbps）或 1080p60（1.5 倍出 1920×1080、15 Mbps）；换档段全部重渲；见 pipeline/渲/设置.ts 的 成片档表', 是路径: false, 默认: () => '4k60' },
   gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU；Docker 里没有 GPU 用 swangle）', 是路径: false, 默认: () => 'angle' },
   ffmpeg: { 变量: 'ANIM_FFMPEG', 说明: 'ffmpeg 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffmpeg' },
   ffprobe: { 变量: 'ANIM_FFPROBE', 说明: 'ffprobe 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffprobe' },
@@ -63,13 +63,6 @@ const 项表 = {
     说明: 'agent-context 里本作品的记忆目录（规矩表出处 M/ 的根；anim check 查引用的记忆在不在，不在本机就跳过）',
     是路径: true,
     默认: () => path.join(os.homedir(), 'Developer', 'company', 'agent-context', 'memory', 'projects', 'stress-rotation-comic'),
-  },
-  剪映: { 变量: 'ANIM_JIANYING_APP', 说明: '剪映专业版（Mac 版的 .app；读回草稿时解密用它的库）', 是路径: true, 默认: () => '/Applications/VideoFusion-macOS.app' },
-  剪映草稿: {
-    变量: 'ANIM_JIANYING_DRAFTS',
-    说明: '剪映的草稿目录（anim jianying export 写进这里，首页「本地草稿」里就有）',
-    是路径: true,
-    默认: () => path.join(os.homedir(), 'Movies', 'JianyingPro', 'User Data', 'Projects', 'com.lveditor.draft'),
   },
 } satisfies Record<string, 项定义>;
 
@@ -173,8 +166,6 @@ export const 基线根 = (作品 = 作品名()) => 按作品(['基线'], 作品,
 /** manifest 里数据根下的路径写相对数据根（数据根挪了照样认）；读的时候两种都认 */
 export const 相对数据根 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
 export const 数据根下 = (p: string) => (path.isAbsolute(p) ? p : path.join(数据根(), ...p.split('/')));
-/** 剪映解密.cpp 编出来的程序（按平台分，第一次读回草稿时编） */
-export const 剪映解密程序 = () => 数据路径('cache', '剪映解密', `${process.platform}-${process.arch}`, '剪映解密');
 export const 运行目录 = () => 数据路径('run');
 /** Agent 的中间稿：run/草稿/<UTC 月日-时分>-工作-<主题>/（见 pipeline/预览/预览.ts） */
 export const 草稿根 = () => 数据路径('run', '草稿');

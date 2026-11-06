@@ -44,8 +44,8 @@
 # video_preset = "6"
 # video_crf = "30"
 
-# 成片档：1080p（默认，B 站 1080P60，母版照旧 2560×1440、成片缩到 1920×1080）或 4k（截图放大 3 倍出 3840×2160，母版指纹全变、要整片重渲）。环境变量 ANIM_FILM_PROFILE
-# film_profile = "1080p"
+# 成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧）或 1080p60（1.5 倍出 1920×1080）；换档段指纹全变、要整片重渲。环境变量 ANIM_FILM_PROFILE
+# film_profile = "4k60"
 
 # 无头 Chrome 的 WebGL 后端：angle、swangle、egl、swiftshader、vulkan、angle-egl。环境变量 ANIM_GL。默认 angle
 # gl = "angle"
@@ -65,12 +65,6 @@
 
 # agent-context 里本作品的记忆目录（规矩表出处 M/ 的根，anim check 查引用的记忆在不在；不在本机就跳过）。环境变量 ANIM_MEMORY。默认 ~/Developer/company/agent-context/memory/projects/stress-rotation-comic
 # memory = "/Users/me/Developer/company/agent-context/memory/projects/stress-rotation-comic"
-
-# 剪映专业版（Mac 版的 .app；anim jianying readback 解密草稿用它的库）。环境变量 ANIM_JIANYING_APP。默认 /Applications/VideoFusion-macOS.app
-# jianying_app = "/Applications/VideoFusion-macOS.app"
-
-# 剪映的草稿目录（anim edit-package、anim jianying export 写进这里）。环境变量 ANIM_JIANYING_DRAFTS。默认 ~/Movies/JianyingPro/User Data/Projects/com.lveditor.draft
-# jianying_drafts = "/Users/me/Movies/JianyingPro/User Data/Projects/com.lveditor.draft"
 
 # 外部作品（放在 作品/ 以外）的位置：作品名 = 目录（中文名要加引号；相对路径相对本文件）。作品/<名>/ 下的作品不用登记（默认进 Git；要私有的在 .gitignore 逐个挡 /作品/<名>/，做成嵌套仓库时 worktree 里用它自己的 worktree，见 docs/决策/0004-多作品.md）
 # [works]

@@ -45,12 +45,11 @@ const 旧母版 = (o: { 原?: boolean; 压?: boolean; 转过?: boolean; 级别?:
 const 在 = (后缀: string) => fs.existsSync(path.join(目录(), `${旧16}${后缀}`));
 const 删 = (种: '母版' | '叠层' = '母版', k = 键) => 删旧(种, k, '视频', 新, { 作品: '假', 现在, 主检出: true });
 
-const 交付 = (名: string, o: { 自足?: boolean; 有画面?: boolean } = {}) => {
+const 交付 = (名: string, o: { 自足?: boolean } = {}) => {
   const dir = path.join(数据根, '交付', '假', 名);
-  fs.mkdirSync(path.join(dir, '剪辑包'), { recursive: true });
+  fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ 版本: 2, 作品: '假', 段: [{ 键, 指纹: 旧 }], 叠层: [] }));
   if (o.自足) fs.writeFileSync(path.join(dir, '全片-未拉响度.flac'), '');
-  if (o.自足 || o.有画面) fs.writeFileSync(path.join(dir, '剪辑包', '画面.mp4'), '');
 };
 const 认可记录 = {
   段: 键, 指纹: 旧, 平台: 'darwin-arm64', 渲染级别: '视频', 认可于: '2026-10-22T00:00:00Z', 提交: 'abc', 理由: '测试', 上一版指纹: null,
@@ -62,7 +61,6 @@ beforeEach(() => {
   for (const d of ['cache', '交付', '段签', '认可参考']) fs.rmSync(path.join(数据根, d), { recursive: true, force: true });
   fs.rmSync(作品根, { recursive: true, force: true });
   fs.mkdirSync(作品根, { recursive: true });
-  fs.writeFileSync(path.join(作品根, '交付.toml'), '剪辑包 = true\n');
 });
 
 describe('render 渲完删旧', () => {
@@ -88,21 +86,13 @@ describe('render 渲完删旧', () => {
     expect(在('.x264.mkv')).toBe(true);
   });
 
-  it('还没自足的交付钉着压缩母版；CRF1 已被取代的删（这份交付不补画面了）', () => {
+  it('还没自足的交付钉着压缩母版；CRF1 已被取代的删', () => {
     旧母版({ 原: true, 转过: true });
-    交付('没自足', { 有画面: true });
+    交付('没自足');
     const r = 删();
     expect(在('.x264.mkv')).toBe(true);
     expect(在('.mkv')).toBe(false);
     expect(r.留[0]!.理由).toContain('交付');
-  });
-
-  it('交付待补画面（开了剪辑包）：要出片时那份，CRF1 也留', () => {
-    旧母版({ 原: true, 转过: true });
-    交付('待补');
-    删();
-    expect(在('.mkv')).toBe(true);
-    expect(在('.x264.mkv')).toBe(true);
   });
 
   it('交付自足了就不钉', () => {
@@ -218,7 +208,6 @@ describe('render 渲完删旧', () => {
     expect(在('.mkv') && 在('.x264.mkv')).toBe(true);
     expect(删已取代(键, 旧, { 作品: '假', 现在, 主检出: true })).toBe(0);
     fs.writeFileSync(path.join(path.dirname(m), '全片-未拉响度.flac'), '');
-    fs.writeFileSync(path.join(path.dirname(m), '剪辑包', '画面.mp4'), '');
     删();
     expect(在('.mkv') || 在('.x264.mkv')).toBe(false);
   });
@@ -303,7 +292,7 @@ describe('gc 同步', () => {
     // 新指纹的 json 写得晚才算最近一份
     fs.utimesSync(path.join(目录(), `${旧16}.指纹.json`), new Date(现在 - 30 * 24 * 小时), new Date(现在 - 30 * 24 * 小时));
     const 配 = (保: InstanceType<typeof 保留集>) => {
-      加交付(保, path.join(数据根, '交付'), 数据根, () => {}, { 解钉: true, 开剪辑包: () => true });
+      加交付(保, path.join(数据根, '交付'), 数据根, () => {}, { 解钉: true });
       加认可(保, 作品根, (k) => 母版目录(k, '假'), () => {}, { 解钉: true });
     };
     expect(删的(规划(配))).toEqual([`${旧16}.x264.mkv`]);

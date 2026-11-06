@@ -5,9 +5,10 @@
 // 台词不跟镜头远近走（不做距离衰减）：漫剧里台词都是给观众听清的。
 import { Audio } from '@remotion/media';
 import React from 'react';
-import { Sequence, useVideoConfig } from 'remotion';
+import { Sequence } from 'remotion';
 import { lineVolume } from './混音.ts';
 import { useSfxLog } from './音效清单.ts';
+import { use编排fps } from '../段/编排时钟.tsx';
 
 export type LineEntry = { 字: string; 角色: string; 段: string; 文件: string | null; 时长: number; 开口: number; 有声长: number };
 export type LineCue = { id: string; 帧: number; 音量?: number };
@@ -18,7 +19,7 @@ export const 做台词轨 = (台词表: unknown, wav们: Readonly<Record<string,
   // 一句从开口到说完要几帧（有声的长度）
   const lineFrameCount = (id: string, fps = 24) => Math.ceil(lineTable[id].有声长 * fps);
   const LineTrack: React.FC<{ 句们: LineCue[] }> = ({ 句们: lines }) => {
-    const { fps } = useVideoConfig();
+    const fps = use编排fps();
     const logLine = useSfxLog('台词清单');
     return (
       <>

@@ -10,6 +10,7 @@ import { musicVolume } from '@engine/audio/混音.ts';
 import { halfGain, findSegment } from './第六章飞行.ts';
 import { useFirstVisibleFrame, useSfxLog } from '@engine/audio/音效清单.ts';
 import { tagSrc } from '@engine/audio/同源区分.ts';
+import { use编排fps } from '@engine/段/编排时钟.tsx';
 
 export const songStartFrame = (startSec: number, fps: number) => Math.round(startSec * fps);
 export const songSec = (startSec: number, frame: number, fps: number) => (songStartFrame(startSec, fps) + frame) / fps;
@@ -22,7 +23,8 @@ export const MusicAudio: React.FC<{
   volume?: number;
   clickTrack?: boolean | number;
 }> = ({ song, startSec: startSec, gain: gainFn, volume: volume = 1, clickTrack: clickTrack }) => {
-  const { fps, durationInFrames } = useVideoConfig();
+  const { durationInFrames } = useVideoConfig();
+  const fps = use编排fps();
   const logMusic = useSfxLog('配乐清单');
   const firstVisible = useFirstVisibleFrame(); // volume 回调的帧从露出来那一帧数起（见 音效清单.ts）
   const startFrame = songStartFrame(startSec, fps);
@@ -70,7 +72,7 @@ export const frameInSegment = (segmentId: string, pos: MusicPos, fps = 24) => {
 
 export const useSegmentSongSec = (segmentId: string) => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const fps = use编排fps();
   return songSec(segmentRange(segmentId).start, frame, fps);
 };
 

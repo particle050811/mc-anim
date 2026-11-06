@@ -10,7 +10,7 @@ import { 读进程 } from '../闸/孤儿.ts';
 import { 删打包 } from '../渲/打包残留.ts';
 import { 压缩名 } from '../渲/母版.ts';
 import { 加当前指纹 } from './当前指纹.ts';
-import { 参考文件查法, 开剪辑包查法 } from './钉.ts';
+import { 参考文件查法 } from './钉.ts';
 import { 找重复, 执行去重, 读账, 写账, 能克隆, type 去重组, type 去重账 } from './去重.ts';
 import { sha缓存 } from './sha缓存.ts';
 import {
@@ -117,7 +117,7 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
     const 这次 = o.作品.length ? o.作品 : [...new Set([...已知.keys(), ...缓存里的])].sort();
     const 保留 = new 保留集();
     // 自足的交付、有认可参考的认可不再钉（用户 10-30 定「这个未来用不到的就删」）
-    加交付(保留, 数据路径('交付'), 数据根(), 警告, { 解钉: true, 开剪辑包: 开剪辑包查法(已知) });
+    加交付(保留, 数据路径('交付'), 数据根(), 警告, { 解钉: true });
     for (const 作品 of 这次) {
       if (!缓存里的.has(作品)) continue;
       const 根 = 已知.get(作品);
