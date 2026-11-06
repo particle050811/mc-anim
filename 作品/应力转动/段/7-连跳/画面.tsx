@@ -1,19 +1,17 @@
-// 7-1-6 连跳：整场共用的 ../7-1/画面.tsx 按本段的场时刻和机位画出来，声音见 声音.tsx。
+// 7-1-6 连跳：整场共用的 ../7-1/画面.tsx 按本段的场时刻和机位画出来。原生段（段.ts 写了 时钟: '秒'），声音照 段.ts 的 cue 和 声音地址.生成.ts（anim cues 生成）同一遍出。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
+import { 定义画面 } from '@engine/段/段画面.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { ScenePicture } from '../../地点/古城4x/7-1/画面.tsx';
 import * as choreo from './编排.ts';
-import { Sound } from './声音.tsx';
+import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
 
 export const c716FrameCount = choreo.END;
 export const C716: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
   const { width, height } = useVideoConfig();
-  return (
-    <>
-      <ScenePicture t={choreo.t于(frame)} cam={choreo.camera(frame)} width={width} height={height} />
-      <Sound />
-    </>
-  );
+  return <ScenePicture t={choreo.t于(frame)} cam={choreo.camera(frame)} width={width} height={height} />;
 };
-export default C716;
+export default 定义画面(段, 声音地址, C716);
