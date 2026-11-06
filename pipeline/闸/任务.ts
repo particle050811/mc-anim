@@ -138,9 +138,3 @@ export const 清崩溃 = (e: 调度环境, 活 = (pid: number, 心跳: number) =
     }
 };
 export const 有任务 = (锁目录: string) => 活任务.has(锁目录);
-/** CPU 后处理不占 GPU 锁；单独脚本也能登记，路由已有任务时只换可见阶段。 */
-export const 登记CPU = async<T>(声明:任务声明,fn:()=>Promise<T>,环境:Partial<调度环境>={}):Promise<T> => {
-    const e=取调度环境(环境),自建=!有任务(e.锁目录),t=开任务(e,声明),旧=t.info.声明;
-    t.更新(声明);let code=1;
-    try{const r=await fn();code=0;return r;}finally{if(自建)t.结束(code);else t.更新(旧);}
-};
