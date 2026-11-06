@@ -1,9 +1,12 @@
-// 7-2-2至3 开到了、传送的 Composition：画面（../7-2/画面.tsx）+ 箱子界面层 + 声音。编排见 编排.ts。
+// 7-2-2至3 开到了、传送：原生段（段.ts 写了 时钟: '秒'）。画面（../7-2/画面.tsx）+ 箱子界面层。编排见 编排.ts。
+// 声音照 段.ts 的 cue 和 声音地址.生成.ts（anim cues 生成）同一遍出（cue 照基线声音清单转写：开箱、感测体、尖啸、关箱、传送石、传走，段尾淡出；台词「开到了！」）。
 // 远景（第 1 场的人和监守者）在小石屋里拍不到，不画。
 // 界面层：原版箱子界面的箱子部分（模型/界面/箱子界面.tsx）出在箱子正上方，像从箱子里弹出来（用户 10-19 定），跟着箱子投到画面上的位置走；
 //   右边让开他的脸和身子。古卷那格往上拉一根思索引线，说明框在窗口上方（同 6-2-2 古卷的标注）。
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { 定义画面 } from '@engine/段/段画面.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { mouthAt } from '../../配音/口型.ts';
 import { ScenePicture } from '../../场/7-李樱撤离/7-2/画面.tsx';
 import { ChestScreen, chestWindowOverLid } from '@库/界面/箱子界面.tsx';
@@ -14,7 +17,8 @@ import { slotPos } from '@库/界面/箱子格子.ts';
 import { PonderCallout } from '@库/界面/思索.tsx';
 import { tomeCalloutLines } from '@库/界面/古卷.tsx';
 import * as choreo from './编排.ts';
-import { GotItTeleportSound } from './声音.tsx';
+import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
 
 export const gotItTeleportFrameCount = choreo.帧数;
 
@@ -50,13 +54,12 @@ const ChestUiLayer: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 export const GotItTeleport: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS;
   return (
     <>
       <ScenePicture sf={choreo.sf(frame)} cam={choreo.camera(frame)} 嘴={mouthAt(choreo.台词, '李樱', frame, choreo.FPS)} />
       <ChestUiLayer frame={frame} />
-      <GotItTeleportSound />
     </>
   );
 };
-export default GotItTeleport;
+export default 定义画面(段, 声音地址, GotItTeleport);

@@ -11,11 +11,8 @@ import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png, type Png } from '../../engine/model/贴图.ts';
 import giantRaw from 'asset:模型/角色/巨人';
 import steveUri from 'asset:贴图/角色/巨人/史蒂夫';
-import { sfxVolume } from '../../engine/audio/混音.ts';
 import { ponderScreen, drawBackground, drawTitle, drawButtons, drawProgressBar, drawTextWindow, itemFramePos, type 说明框 } from './思索界面.tsx';
 // 按钮声文件放在 6-3-2 段目录（那一段先做的）
-import clickWav from 'asset:音效/镜头/6-3-2/点击';
-import { 清单Audio } from '../../engine/audio/声音Sequence.tsx';
 
 export const PLAYER = (giantRaw as unknown as { models: Record<'宽', EntityModelData> }).models.宽;
 export const STEVE = png(steveUri);
@@ -336,9 +333,4 @@ export const PonderUiLayer: React.FC<{
       </>
     )}
   </AbsoluteFill>
-);
-
-// 关界面那一下原版按钮声（思索的 jar 里没有自己的音效，游戏里按住按键打开不出声），乘音效总线；at 是第几帧
-export const CloseClick: React.FC<{ at: number }> = ({ at }) => (
-  <清单Audio kind="音效清单" 名="关界面按钮声" src={clickWav} 文件="镜头/6-3-2/点击.wav" 时长={0.28} from={at} volume={0.5 * sfxVolume} />
 );
