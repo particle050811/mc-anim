@@ -31,13 +31,14 @@ import { shadowFarFor, TwilightClouds, TwilightSunLight, useTwilightFog } from '
 import { VIEW_FOG } from '@engine/voxel/视距.ts';
 import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
 import * as choreo from './编排.ts';
-import { lineCues } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { use当前秒 } from '@engine/段/时间.tsx';
 
 export const ENTER_FOREST_FRAMES = choreo.END - 1;
 
-// 台词口型：台词轨的帧是 Remotion 帧，编排帧 = Remotion 帧 + 1
+// 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口帧是段内帧（cue 在 段/6-进入森林/段.ts）
+const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 }];
+// 台词口型：段内帧，编排帧 = 段内帧 + 1
 const liYingMouth = (choreoFrame: number) => mouthAt(lineCues, '李樱', choreoFrame - 1);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上

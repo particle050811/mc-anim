@@ -27,7 +27,6 @@ import { sunDirFromAngles, cliGain, cliSunDir, twilightSunDir } from '@engine/li
 import { LandmarkPlacement, twilightLandmark, TwilightTerrain } from '../../../地点/暮色新世界.tsx';
 import * as choreo from './编排.ts';
 import * as motion from './动作改进.ts';
-import { nagaLineCues } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { 渲染输入 } from '@engine/core/渲染设置.ts';
 import { use当前秒 } from '@engine/段/时间.tsx';
@@ -65,6 +64,12 @@ const meshAO = Boolean((渲染输入() as { meshAO?: boolean }).meshAO);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
+
+// 口型用的台词开口帧（段内帧，cue 在 段/6-斩娜迦/段.ts）：打击停顿以后的台词跟着往后挪
+const nagaLineCues = (hitStop: number) => [
+  { id: '6-1-2-李樱-不值一提', 帧: choreo.lineStartFrame + hitStop },
+  { id: '6-1-3-九胡-等等我', 帧: choreo.segFrame(choreo.S3 + choreo.MAZE_SHOUT) + hitStop },
+];
 
 type CamPose = { lens: number; pos: number[]; tgt: number[] };
 const Rig: React.FC<{ k: CamPose }> = ({ k }) => {
