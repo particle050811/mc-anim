@@ -64,13 +64,6 @@ const 项表 = {
     是路径: true,
     默认: () => path.join(os.homedir(), 'Developer', 'company', 'agent-context', 'memory', 'projects', 'stress-rotation-comic'),
   },
-  剪映: { 变量: 'ANIM_JIANYING_APP', 说明: '剪映专业版（Mac 版的 .app；读回草稿时解密用它的库）', 是路径: true, 默认: () => '/Applications/VideoFusion-macOS.app' },
-  剪映草稿: {
-    变量: 'ANIM_JIANYING_DRAFTS',
-    说明: '剪映的草稿目录（anim jianying export 写进这里，首页「本地草稿」里就有）',
-    是路径: true,
-    默认: () => path.join(os.homedir(), 'Movies', 'JianyingPro', 'User Data', 'Projects', 'com.lveditor.draft'),
-  },
 } satisfies Record<string, 项定义>;
 
 export type 配置键 = keyof typeof 项表;
@@ -173,8 +166,6 @@ export const 基线根 = (作品 = 作品名()) => 按作品(['基线'], 作品,
 /** manifest 里数据根下的路径写相对数据根（数据根挪了照样认）；读的时候两种都认 */
 export const 相对数据根 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
 export const 数据根下 = (p: string) => (path.isAbsolute(p) ? p : path.join(数据根(), ...p.split('/')));
-/** 剪映解密.cpp 编出来的程序（按平台分，第一次读回草稿时编） */
-export const 剪映解密程序 = () => 数据路径('cache', '剪映解密', `${process.platform}-${process.arch}`, '剪映解密');
 export const 运行目录 = () => 数据路径('run');
 /** Agent 的中间稿：run/草稿/<UTC 月日-时分>-工作-<主题>/（见 pipeline/预览/预览.ts） */
 export const 草稿根 = () => 数据路径('run', '草稿');

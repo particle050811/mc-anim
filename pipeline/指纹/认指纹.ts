@@ -3,7 +3,7 @@
 // 比法：旧母版多半只剩压缩母版（x264 CRF16，之前还过一道 CRF1），新出的 PNG 和它逐像素不可能一样。新帧先照母版编码时一样转成 yuv420p，
 //   两边都按 比较.ts 的固定公式换 RGB，再用 verify 的块平均差和 verify/阈值.toml 的「变了」三条门槛判（看一眼档算噪声内，只列出来）。
 // 登记：在新指纹名下克隆（Mac 上 APFS clonefile，不占空间；别处退回硬链接、再不行整份复制）一份旧母版，复制段签并记下 沿用；
-//   之后 stale、film、verify、edit-package、cache gc 都把它当这个指纹渲出来的母版，不用改它们。
+//   之后 stale、film、verify、cache gc 都把它当这个指纹渲出来的母版，不用改它们。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 配置, 母版目录, 段签目录 } from '../环境/配置.ts';

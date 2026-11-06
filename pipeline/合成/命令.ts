@@ -1,12 +1,12 @@
 // anim film <范围…> [--名 <名>] [--级别 视频|预览] [--重渲] [--分享版]
-// anim film 补声音 <交付…> | --全部 [--只看]：给旧交付补 全片-未拉响度.flac（作品开了剪辑包的还有 剪辑包/画面.mp4），补完不再要母版
+// anim film 补声音 <交付…> | --全部 [--只看]：给旧交付补 全片-未拉响度.flac，补完不再要母版
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 选段 } from '../清单/清单.ts';
 import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
 import { 拼成片 } from './拼成片.ts';
 import { 补交付, 全部交付 } from './补交付.ts';
-import { 找交付目录 } from '../适配器/剪映/剪辑包.ts';
+import { 找交付目录 } from './交付.ts';
 import { 懒放行闸 } from '../闸/闸.ts';
 
 export const 合成命令: Record<string, 命令> = {

@@ -110,7 +110,7 @@ export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Pr
     return 0;
   }
   const 记录 = (o.新记录 ?? ((n, a) => new 运行记录(n, a)))(名, args);
-  const 任务 = !c.不记录 && !o.新记录 && /^(render|still|bench|verify|film|extract|world|mcai|voice|edit-package|cache|批)$/.test(名) ? 开任务(取调度环境(), {种:名,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>记录.结束(code)) : null;
+  const 任务 = !c.不记录 && !o.新记录 && /^(render|still|bench|verify|film|extract|world|mcai|voice|cache|批)$/.test(名) ? 开任务(取调度环境(), {种:名,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>记录.结束(code)) : null;
   if(任务)记录.任务=任务.info.任务;
   let code = 1, 错误: string | undefined;
   try {

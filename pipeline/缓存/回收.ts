@@ -1,6 +1,6 @@
 // anim cache gc 的规划：数据根和代码检出里各类缓存哪些删、哪些留、为什么留。这里只有纯规划和扫描（不删东西），删在 执行.ts。
 // 母版、叠层（cache/{母版,叠层}/<作品>/<键>/<指纹前 16 位>{.mkv,.x264.mkv,.mov}）：只删媒体文件，旁边的 .指纹.json、.用过 一律留（stale 拿它说明哪项变了）。
-//   留：各渲染级别的当前指纹、还没有认可参考的认可那版（verify 拿它的像素比、accept 后补参考从它抽）、还没自足的交付 manifest 引用的（edit-package 要读）、
+//   留：各渲染级别的当前指纹、还没有认可参考的认可那版（verify 拿它的像素比、accept 后补参考从它抽）、还没自足的交付 manifest 引用的（补声音要读）、
 //   每段每级别最近渲的一份（film --允许过期 取它）、近 N 天渲的、近 2 小时用过的（.用过）、别的还在的检出用过的（.检出-*，它的当前指纹这边算不出来）、这段当前指纹算不出时整个目录。
 //   同一指纹有压缩母版时 CRF1 已被取代（用户 10-30 定母版转码存），只有「要原母版」的理由（待补画面的交付、读不出的记录）和正在写才留它，用过不算：读者都读压缩母版；
 //   认可那版也只留压缩母版（用户 11-02 定 verify 换比法，压缩母版的像素照样比、认可参考也从它抽）。压缩母版按同名 CRF1 的路径找理由（钉的时候都按 CRF1 名记）。
@@ -8,7 +8,7 @@
 // 草稿（run/草稿/<目录>）超过 N 天删；webpack 缓存（<检出>/node_modules/.cache/webpack/remotion-<环境>-<版本>/<哈希>/）换了 Remotion 版本的整个删，
 // 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。地形烘焙的暂存目录（run/暂存/terrain/<包>）写入锁没人拿、1 天没动的删。
 // 列段、音频数这类认得但不自动删的只报大小（计划.ts 的 只报目录）；不认识的目录只报告。
-// 解钉（01-推荐方案.md 第四节 D 的顺序）：交付自足了（有 全片-未拉响度.flac 和 剪辑包/画面.mp4，edit-package 不再读母版）才不再钉它引用的母版、叠层；
+// 解钉（01-推荐方案.md 第四节 D 的顺序）：交付自足了（有 全片-未拉响度.flac，不再读母版）才不再钉它引用的母版、叠层；
 // 认可有了认可参考（文件名绑定认可记录的抽样哈希）才不再钉认可那版的母版。用户 10-30 定「这个未来用不到的就删」，gc 和 render 自动删旧母版都开着解钉（钉.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -89,7 +89,7 @@ export type 媒体文件 = {
   存法: 'crf1' | 'x264' | null;
   /** CRF1 且同一指纹的压缩母版在、段签记着是从它转的 */
   已被取代: boolean;
-  /** 旁边 .用过 的修改时间（render、film、verify、edit-package 最后一次用），没有是 null */
+  /** 旁边 .用过 的修改时间（render、film、verify 最后一次用），没有是 null */
   用过于: number | null;
   /** 同目录里有这个指纹正在写的临时文件（.渲染中、.转码中、.占用，1 天内动过的） */
   正在写: boolean;
@@ -272,8 +272,6 @@ export const 读认可指纹 = (file: string): { 段: string; 指纹: string } |
 export type 解钉选项 = {
   /** true：自足的交付、有认可参考的认可不再钉母版（gc、render 自动删旧都传 true，钉.ts）。不给是 false，只在说明里标 */
   解钉?: boolean;
-  /** 交付的作品开没开剪辑包：开了、交付又缺 剪辑包/画面.mp4 的，补交付 要出片时那份 CRF1，钉的理由带 要原母版。不给按没开算 */
-  开剪辑包?: (作品: string) => boolean;
   /** 认可记录文件 → 它在这个平台的认可参考（验收/参考.ts 的 参考文件，按记录的抽样哈希起名）；读不出记录返回 null。不给就当都没有参考 */
   参考文件?: (认可文件: string, 平台: string) => string | null;
 };
@@ -337,12 +335,8 @@ export const 找交付manifest = (交付根: string, 深 = 3): string[] => {
   return r.sort();
 };
 
-/**
- * 交付自足：edit-package 要的都在交付目录里了，不再读母版（文件名同 合成/交付.ts）。不管作品开没开剪辑包都要两样：
- * 没开剪辑包的作品 film 不出画面，edit-package 还得拿母版现做，这种交付就一直钉着母版
- */
-export const 交付自足 = (交付目录: string) =>
-  fs.existsSync(path.join(交付目录, '全片-未拉响度.flac')) && fs.existsSync(path.join(交付目录, '剪辑包', '画面.mp4'));
+/** 交付自足：有 全片-未拉响度.flac 就不再读母版（文件名同 合成/交付.ts；剪辑包用户 11-06 定不要了，不再要 剪辑包/画面.mp4） */
+export const 交付自足 = (交付目录: string) => fs.existsSync(path.join(交付目录, '全片-未拉响度.flac'));
 
 /** 交付 manifest 引用的母版、叠层进保留集，说明写交付目录（相对交付根） */
 export const 加交付 = (保留: 保留集, 交付根: string, 数据根: string, 警告: (s: string) => void = () => {}, o: 解钉选项 = {}) => {
@@ -367,9 +361,8 @@ export const 加交付 = (保留: 保留集, 交付根: string, 数据根: strin
     }
     const 自足 = 交付自足(path.dirname(m));
     if (自足 && o.解钉) continue;
-    const 待补画面 = !自足 && !!o.开剪辑包?.(作品) && !fs.existsSync(path.join(path.dirname(m), '剪辑包', '画面.mp4'));
-    const 说明 = path.relative(交付根, path.dirname(m)).split(path.sep).join('/') + (自足 ? '（已自足）' : 待补画面 ? '（待补画面）' : '');
-    for (const p of 引用) 保留.加(path.isAbsolute(p) ? p : path.join(数据根, ...p.split('/')), { 类: '交付', 说明, ...(待补画面 ? { 要原母版: true as const } : {}) });
+    const 说明 = path.relative(交付根, path.dirname(m)).split(path.sep).join('/') + (自足 ? '（已自足）' : '');
+    for (const p of 引用) 保留.加(path.isAbsolute(p) ? p : path.join(数据根, ...p.split('/')), { 类: '交付', 说明 });
   }
 };
 

@@ -31,7 +31,7 @@ const 已装版本 = (包: string): string | null => {
   }
 };
 
-/** 成片编码器不在 ffmpeg 里时的提示。母版转码、预览、剪辑包画面写死 libx264，缺它只能换 ffmpeg，改配置救不了 */
+/** 成片编码器不在 ffmpeg 里时的提示。母版转码、预览写死 libx264，缺它只能换 ffmpeg，改配置救不了 */
 export const 缺编码器提示 = (名: string) =>
   名 === 'libx264'
     ? `${名} 不在 ffmpeg 里（换带 libx264 的 ffmpeg）`

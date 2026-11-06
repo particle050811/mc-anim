@@ -66,12 +66,6 @@
 # agent-context 里本作品的记忆目录（规矩表出处 M/ 的根，anim check 查引用的记忆在不在；不在本机就跳过）。环境变量 ANIM_MEMORY。默认 ~/Developer/company/agent-context/memory/projects/stress-rotation-comic
 # memory = "/Users/me/Developer/company/agent-context/memory/projects/stress-rotation-comic"
 
-# 剪映专业版（Mac 版的 .app；anim jianying readback 解密草稿用它的库）。环境变量 ANIM_JIANYING_APP。默认 /Applications/VideoFusion-macOS.app
-# jianying_app = "/Applications/VideoFusion-macOS.app"
-
-# 剪映的草稿目录（anim edit-package、anim jianying export 写进这里）。环境变量 ANIM_JIANYING_DRAFTS。默认 ~/Movies/JianyingPro/User Data/Projects/com.lveditor.draft
-# jianying_drafts = "/Users/me/Movies/JianyingPro/User Data/Projects/com.lveditor.draft"
-
 # 外部作品（放在 作品/ 以外）的位置：作品名 = 目录（中文名要加引号；相对路径相对本文件）。作品/<名>/ 下的作品不用登记（默认进 Git；要私有的在 .gitignore 逐个挡 /作品/<名>/，做成嵌套仓库时 worktree 里用它自己的 worktree，见 docs/决策/0004-多作品.md）
 # [works]
 # "私有甲" = "../私有甲"

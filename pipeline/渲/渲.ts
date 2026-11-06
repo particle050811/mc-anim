@@ -189,7 +189,7 @@ export const 渲染母版 = async (全部: 段信息[], 级别: 渲染级别, op
     if (有母版(s.键, fp.指纹) && !opts.重渲) {
       console.log(`✓ ${s.键}：母版已是最新（${fp.指纹.slice(0, 16)}）`);
       if (fs.existsSync(原母版路径(s.键, fp.指纹)) && !(await 已转完(s.键, fp.指纹, 作品名())))
-        console.log(`  ${s.键}：CRF1 还没转，用到时（film、edit-package、--到预览）会转；或者重跑 --重渲`);
+        console.log(`  ${s.键}：CRF1 还没转，用到时（film、--到预览）会转；或者重跑 --重渲`);
       记用过(母版目录(s.键), fp.指纹);
     } else 待渲.push(r);
   }

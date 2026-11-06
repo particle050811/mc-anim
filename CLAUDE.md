@@ -7,7 +7,7 @@
 - `作品/<名>/`：一部作品自带的一切，现在有 `作品/应力转动/`、`作品/把回忆拼好给你/` 两部：`清单.ts`（唯一的段顺序表）、`场/<场键>/`、`段/<段键>/`、`核对/`、`注册.tsx`、`index.ts`、`台词.toml`、`旧名.tsv`、`默认.ts`（本作品全片默认值）、`认可/<平台>/<段键>.toml`（用户认可的画面指纹），本作品专有的角色、地点、配乐、配音。命令选作品：`--作品 <名>` > 当前目录 > `anim.local.toml` 的 `work` > 只有一部就用它（`docs/决策/0004-多作品.md`）；作品默认进 Git、开源（用户 10-22 定），要私有的逐个挡：`.gitignore` 加 `/作品/<名>/`，或放 `作品/` 外用 `[works]` 登记
 - `作品/应力转动/规矩.toml`：本作品的成片规矩，写默认值、级别、原话、出处、落点、例外。**规矩只登记在这里，不写进本文件**；`rules/通用.toml` 放各作品都守的，现在空着，升格要用户逐条定
 - `engine/`：纯技术，不含剧情。`engine/段/`：各作品共用的段框架（段定义、设置、注册工厂）。`库/`：多部作品会用的角色、生物、物品、界面、特效（原版、模组照原样做）。作品里引用写 `@engine/`、`@库/`
-- `pipeline/`：`anim` 的实现（环境、闸、指纹、渲、合成、剪辑包、适配器、检查）。`py/anim_py/`：Python 叶子工具。`wasm/`：编成 WASM 的源码（`anim world 解码器`）
+- `pipeline/`：`anim` 的实现（环境、闸、指纹、渲、合成、适配器、检查）。`py/anim_py/`：Python 叶子工具。`wasm/`：编成 WASM 的源码（`anim world 解码器`）
 - `sourcing/`：取材 mod、mcai、世界声明、jar 和提取配方
 - `assets/registry/*.toml`：资产表（人写）；`assets/资产锁/`（一件资产一个 `<id>.json`）：工具生成，不手改
 - 数据根 `../mc-anim-data/`（环境变量 `ANIM_DATA`，Git 外，各 worktree 共用这一份）：`store/ 私有/ terrain/ cache/ game/ 基线/ 交付/ 发布/ archive/ run/`，缓存、交付按作品分子目录。发 B 站、抖音的成片（连封面、标题简介）单独放 `发布/<作品>/<月日-时分>-<一句话>/`（用户 11-02 定）：像软件发布一样一次一个夹，夹名用发布的 UTC 日期时间，不编 V1、V2，旧版不删；`发布/<作品>/00-说明.md` 是发布记录，最新的写最前（用户 11-03 定）
@@ -20,13 +20,13 @@ anim 调度 [--json|--一行] | 调度 盯 | 调度 预计 <选择器> | 调度 
 anim --低优先 <命令>                      全局参数：过渲染闸排在全部普通票后面，静帧来了下一段先让它（合并后统一渲用）
 anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）；子命令都认 --help
 anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章（都不中才当章范围）
-anim render [<选择器>] --只派生 [--重做]   从现有 CRF1 母版补段签（段签/，母版删了 film、edit-package 照样用；verify 哈希和认可版不同的帧要解母版）
+anim render [<选择器>] --只派生 [--重做]   从现有 CRF1 母版补段签（段签/，母版删了 film 照样用；verify 哈希和认可版不同的帧要解母版）
 anim render <选择器> --重渲 --留CRF1        渲完留下 CRF1（verify --对基线 要；平时渲完转压缩母版就删 CRF1，主检出还删同段旧指纹，worktree 只新增）
 anim still <段> <帧…> --到预览 <主题> [--逐帧]（多帧默认同页连出，要逐像素比用 --逐帧）      anim stale [<选择器>] [--严格]     anim bench <段> [--帧 a-b]     anim 耗时 [<段>] [--最近 n]（每次渲染的阶段、每帧、等待、机器负载）
 anim 认指纹 <选择器…> --理由 "…" [--抽 N] [--只看]   过期段抽 N 帧（默认 12）静帧和旧母版比，都在压缩噪声内就沿用旧母版不重渲；不比声音、没抽的帧（docs/决策/0013-认指纹.md）
 anim verify [<段>] [--对基线 [--渲]]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
 anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   每帧 PNG 的 sha 存到 run/逐帧校验/<作品>/<名>/<段键>.tsv，再渲一次（照基准存的帧连着渲）列出不同的帧；不写母版，不碰段签和认可
-anim film <范围>  |  anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
+anim film <范围> [--分享版]  |  anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
 anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（0005）、挂 Release 发的字节和地形包（0006）
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）
@@ -38,10 +38,9 @@ anim wt new <名> [--从 <分支>]          开 worktree 并备好依赖（pnpm 
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
 anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行（开游戏、编译过资源闸）、从游戏导群系色和方块表
-anim edit-package <交付目录>  |  anim jianying export|readback   剪辑包和剪映草稿
 anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心数据（浏览器里跑 pipeline/适配器/<平台>/取数.js 下载）收进数据根、对交付出报告；旧名 anim bili
 ```
-还没实现：`anim music`、`anim assets import|verify`（字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）；取材 mod 的录制（`mcai record`）用户 10-30 说用不到，不做。
+剪映剪辑包（`anim edit-package`、`anim jianying`）用户 11-06 定不要了，成片、分享版统一在 image-flow 插件里看，代码从 Git 历史找。还没实现：`anim music`、`anim assets import|verify`（字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）；取材 mod 的录制（`mcai record`）用户 10-30 说用不到，不做。
 
 Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；`anim wt new` 会克隆进新 worktree，别处缺了用 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim render`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
 

@@ -2,7 +2,7 @@
 // 留存曲线只有约 18 档，段比档短时段内是线性插值；开头窗内的流失不记到段上（见 按段统计）。
 import fs from 'node:fs';
 import path from 'node:path';
-import type { 交付manifest } from '../剪映/剪辑包.ts';
+import type { 交付manifest } from '../../合成/交付.ts';
 import type { 留存点, 稿件 } from './数据.ts';
 
 export type 交付 = { 目录: string; m: 交付manifest & { 时长秒: number; 完成?: string } };

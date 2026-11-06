@@ -7,7 +7,6 @@ import fs from 'node:fs';
 import { 叠层目录, 数据根, 数据路径, 母版目录, 段签目录, 认可参考文件 } from '../环境/配置.ts';
 import { 作品们, 作品名 } from '../环境/作品.ts';
 import { 在主检出 } from '../环境/路径.ts';
-import { 读交付设置 } from '../合成/交付.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import { 抽样键, 读认可 } from '../验收/认可.ts';
 import { 保留集, 加交付, 加认可, 大小文本, 扫键目录, 钉理由, type 媒体扫描, type 缓存种 } from './回收.ts';
@@ -22,22 +21,11 @@ export const 参考文件查法 = (作品: string) => (file: string, 平台: str
   }
 };
 
-/** 这部作品开没开剪辑包（交付.toml 读不出按开了算：钉得多不会丢东西） */
-export const 开剪辑包查法 = (已知 = 作品们()) => (作品: string) => {
-  const 根 = 已知.get(作品);
-  if (!根) return true;
-  try {
-    return 读交付设置(根).剪辑包;
-  } catch {
-    return true;
-  }
-};
-
 /** 现在钉着的母版、叠层：还没自足的交付、还没有认可参考的认可 */
 export const 钉住集 = (警告: (s: string) => void = () => {}): 保留集 => {
   const 保留 = new 保留集();
   const 已知 = 作品们();
-  加交付(保留, 数据路径('交付'), 数据根(), 警告, { 解钉: true, 开剪辑包: 开剪辑包查法(已知) });
+  加交付(保留, 数据路径('交付'), 数据根(), 警告, { 解钉: true });
   for (const [作品, 根] of 已知) 加认可(保留, 根, (键) => 母版目录(键, 作品), 警告, { 解钉: true, 参考文件: 参考文件查法(作品) });
   return 保留;
 };

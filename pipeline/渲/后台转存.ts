@@ -103,7 +103,7 @@ export const 建后台转存 = (o: { 级别: string; 记录: Pick<运行记录, 
               警告: (s) => o.记录.记('警告', s),
               资源: (r) => void (资源 = r),
             });
-            if (!x) o.记录.记('警告', `${段.键} 的后台转存中断，CRF1 留着，film、edit-package、render --到预览 用到时再转`);
+            if (!x) o.记录.记('警告', `${段.键} 的后台转存中断，CRF1 留着，film、render --到预览 用到时再转`);
           } finally {
             clearTimeout(限时器);
             const 用秒 = 秒(起), 温度 = await 后台温度();
