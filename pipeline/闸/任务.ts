@@ -25,6 +25,8 @@ export type 任务声明 = {
     };
     不开渲染?: boolean;
     可让路?: boolean;
+    /** anim --低优先（ANIM_PRIORITY=low）：票排在所有普通票后面，多段批有普通票在等就在项间让开 */
+    低优先?: boolean;
     需负载?: boolean;
 };
 export type 调度环境 = {

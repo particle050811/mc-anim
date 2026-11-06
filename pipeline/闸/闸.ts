@@ -8,7 +8,7 @@ import { 内存够渲染, 读内存, 读压力, 读数说明, 核数, 一分钟�
 import { 持有者, 试拿, 放, 进程在吗, 回收死锁, 锁被占 } from './锁.ts';
 import { 登记收尾 } from './收尾.ts';
 import { 取调度环境, 开任务, 有任务, 清崩溃, type 调度环境, type 任务声明 } from './任务.ts';
-import { 领票, 列票, 票活着, type 票, 回队尾, 改序, 写票, 清任务票, 记被越 } from './票.ts';
+import { 领票, 列票, 票活着, type 票, 回队尾, 改序, 写票, 清任务票, 记被越, 是低优先票 } from './票.ts';
 import { 写JSON, 读JSON, 只提示 } from './文件.ts';
 import { 清孤儿 } from './孤儿.ts';
 import { 读状态, 读占用, 前方等待, 队上占用 } from './看.ts';
@@ -105,6 +105,7 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         const 声明 = opts.声明 ?? { 种: process.argv[2] ?? '脚本', 用途: process.env.ANIM_PURPOSE ?? '未声明' };
         声明.种 ??= process.argv[2] ?? '脚本';
         声明.用途 ??= process.env.ANIM_PURPOSE ?? '未声明';
+        if (process.env.ANIM_PRIORITY === 'low') 声明.低优先 = true;
         声明.预计秒 ??= 估计(声明, path.dirname(e.日志目录));
         const task = 任务柄 = 开任务(e, 声明);
         清票 = () => 只提示('删票', () => 清任务票(dir, task.info.任务));
@@ -472,8 +473,10 @@ export const 开闸批 = (声明: 任务声明, 环境: Partial<闸环境> = {})
                     delete process.env[祖先持锁变量];
                     task.记('批项', { 票: 柄.票, 第几项: ++项数, 秒: (e.现在毫秒() - 起) / 1000, 声明: 项 });
                     const 指 = 取指令(e, task.info.任务), 让 = 指?.动作 === '让路' && 指.至! > e.现在毫秒();
-                    const 别人 = 列票(path.join(e.锁目录, '渲染.排队')).some(t => t.pid !== process.pid && 票活着(t, e.本机));
-                    if (让 || (!声明.连贯 && 别人 && e.现在毫秒() - 柄.拿锁时 >= 120000)) {
+                    const 别们 = 列票(path.join(e.锁目录, '渲染.排队')).filter(t => t.pid !== process.pid && 票活着(t, e.本机));
+                    // 低优先的批：有普通票在等就让，不等满 120 秒
+                    const 低让 = 柄.声明.低优先 && 别们.some(t => !是低优先票(t));
+                    if (让 || (!声明.连贯 && (低让 || (别们.length && e.现在毫秒() - 柄.拿锁时 >= 120000)))) {
                         柄.放('让路');
                         柄 = null;
                     }
