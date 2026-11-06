@@ -130,6 +130,13 @@ export default 窗口段(线, { 起: '切', 止: { 长秒: 1 }, 声音表 });
     expect(fs.existsSync(path.join(目录, 声音表文件))).toBe(false);
   });
 
+  it('目录里已有声音表、一声也没有的 定义段：照样生成（第 6、7 章没声音的段）', async () => {
+    fs.writeFileSync(path.join(目录, '段.ts'), `export default { 场: '核对', 秒: 1, 宽: 1, 高: 1, 地形: [] };\n`);
+    fs.writeFileSync(path.join(目录, 声音表文件), 'export default { 资产: {}, 台词: {} };\n');
+    await expect(生成一段(path.join(目录, '段.ts'), 根, 环境())).resolves.toBeDefined();
+    expect(fs.existsSync(path.join(目录, 声音地址文件))).toBe(true);
+  });
+
   it('跨段的接上段：从上一段算 上段开口秒；没有上一段就报错', async () => {
     写段(`接着说('甲', 0)`);
     const 上: 段定义 = { 秒: 2, 声音: [{ 秒: 1.75, 台词: '甲' }] } as unknown as 段定义;

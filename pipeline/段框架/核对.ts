@@ -1,5 +1,5 @@
 // anim check 的 加载 规则调这里：段框架的段，生成的声音表、声音地址要和 段.ts 现在的 cue 对得上（不量音频，数取锁里的、缓存的或盘上表里的）；
-// 接老段 做的场时间线抄的老段帧数要和老段对得上。
+// 接老段 做的场时间线抄的老段段长要和老段对得上。
 import type { 报告, 检查上下文 } from '../检查/上下文.ts';
 import type { 段项 } from '../检查/内容.ts';
 import { 是框架段 } from '../../engine/段/窗口段.ts';
@@ -7,19 +7,19 @@ import { 核老段 } from '../../engine/段/老段接续.ts';
 import { 核对一段, type 台词行 } from './生成.ts';
 import { 已知音频数 } from './音频数.ts';
 
-/** 接老段 手给的起帧：老段按清单顺序摆，后一段不能起在前一段的止帧之前（跳过一截可以，重叠是抄错了），顺序要和清单一样。放这里不放 engine 的 核老段：engine 进指纹 */
-export const 核老段起帧 = (老段: readonly { 键: string; 起帧: number; 帧数: number }[], 清单序: readonly string[]): string[] => {
+/** 接老段 手给的起秒：老段按清单顺序摆，后一段不能起在前一段的止秒之前（跳过一截可以，重叠是抄错了），顺序要和清单一样。放这里不放 engine 的 核老段：engine 进指纹 */
+export const 核老段起秒 = (老段: readonly { 键: string; 起秒: number; 秒: number }[], 清单序: readonly string[]): string[] => {
   const 问题: string[] = [];
   const 序 = 老段.map((x) => 清单序.indexOf(x.键)).filter((i) => i >= 0);
   if (序.some((i, k) => k > 0 && i < 序[k - 1]!)) 问题.push(`老段的顺序和清单不一样：${老段.map((x) => x.键).join('、')}`);
   老段.forEach((x, k) => {
     const 上 = 老段[k - 1];
-    if (上 && x.起帧 < 上.起帧 + 上.帧数) 问题.push(`老段 ${x.键} 起在第 ${x.起帧} 帧，和 ${上.键}（止于第 ${上.起帧 + 上.帧数} 帧）重叠`);
+    if (上 && x.起秒 < 上.起秒 + 上.秒 - 1e-6) 问题.push(`老段 ${x.键} 起在第 ${x.起秒} 秒，和 ${上.键}（止于第 ${上.起秒 + 上.秒} 秒）重叠`);
   });
   return 问题;
 };
 
-/** 接老段 做的场时间线（场/<场键>/时间线.ts）：抄的老段帧数、场、fps 要和老段的 段.ts 对得上（老段不改，对不上多半是手改了时间线），起帧不重叠 */
+/** 接老段 做的场时间线（场/<场键>/时间线.ts）：抄的老段段长、场、画幅要和老段的 段.ts 对得上（老段不改，对不上多半是手改了时间线），起秒不重叠 */
 export const 查老段接续 = async (c: 检查上下文, 报: 报告, 段们: readonly 段项[]) => {
   const 线们 = c.本作品文件().filter((p) => p.startsWith(c.作品路径('场/')) && /\/场\/[^/]+\/时间线\.ts$/.test(p) && /接老段\(/.test(c.读(p)));
   for (const p of 线们) {
@@ -27,9 +27,9 @@ export const 查老段接续 = async (c: 检查上下文, 报: 报告, 段们: r
     const 线 = r.模块?.default as Parameters<typeof 核老段>[0] | undefined;
     if (!线 || !Array.isArray(线.老段)) continue; // 加载失败由 加载 规则报
     for (const x of 核老段(线, (k) => 段们.find((s) => s.键 === k)?.定义)) 报.错(`${p}：${x}`, p);
-    for (const x of 核老段起帧(线.老段, 段们.map((s) => s.键))) 报.错(`${p}：${x}`, p);
+    for (const x of 核老段起秒(线.老段, 段们.map((s) => s.键))) 报.错(`${p}：${x}`, p);
   }
-  if (线们.length) 报.信息.push(`接老段 的场时间线 ${线们.length} 条，抄的老段帧数和 段.ts 核对了`);
+  if (线们.length) 报.信息.push(`接老段 的场时间线 ${线们.length} 条，抄的老段段长和 段.ts 核对了`);
 };
 
 export const 查段框架 = async (c: 检查上下文, 报: 报告, 段们: readonly 段项[]) => {
