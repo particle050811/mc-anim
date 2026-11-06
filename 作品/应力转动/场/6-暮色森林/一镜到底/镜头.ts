@@ -13,6 +13,7 @@ import {
 } from './镜头构图.ts';
 import * as route from './路线.ts';
 import pullInData资产 from 'asset:数据/镜头/一镜到底/收表';
+import { 插表 } from '@engine/段/按时取值.ts';
 const pullInData = pullInData资产 as unknown as { 收: number[][] };
 
 export { chaseSpans, camWindows } from './镜段.ts';
@@ -109,7 +110,8 @@ export const cameraAt = (Fg: number): Cam => {
   let pos = placed.pos;
   // `收表` 只量了离骑手 20 米以内的帧，抹平的窗口会把收带到旁边的帧上：远景刹停那几帧镜头退到几十米外，再收就把停着的镜头往骑手拽。20～30 米之间渐到不收
   const dist = len(sub(pos, placed.B));
-  const k = lerp(1, pullInTable[Math.min(pullInTable.length - 1, Math.max(0, Math.round(Fg)))], 1 - ss((dist - 20) / 10));
+  // 收表一格一个，格之间插值（以前取最近的整格，60 帧输出时按 24 帧跳）
+  const k = lerp(1, 插表(pullInTable, Fg), 1 - ss((dist - 20) / 10));
   if (k < 1) pos = add(placed.B, mul(sub(pos, placed.B), k));
   return { pos, tgt: add(pos, mul(placed.fw, 10)), lens: placed.lens };
 };

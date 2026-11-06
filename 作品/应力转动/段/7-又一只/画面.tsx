@@ -30,8 +30,8 @@ const HIDE: number[][] = choreo.sensors.flatMap(([x, y, z]) => {
   ];
 });
 const woolBlocks = placedWoolThrough('V');
-// 马身上的附魔字母：镜 2～4 用本段秒数另起一份（位置跟着马走）
-const horseParticles = steedParticles((k) => choreo.horseState(Math.round((k / 20) * choreo.FPS)).p, 0, choreo.END / choreo.FPS, 7421);
+// 马身上的附魔字母：镜 2～4 用本段秒数另起一份（位置跟着马走）；第 k 刻出生在那一刻马的位置（不取整到格）
+const horseParticles = steedParticles((k) => choreo.horseState((k / 20) * choreo.FPS).p, 0, choreo.END / choreo.FPS, 7421);
 
 export const AnotherOnePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam }) => {
   const { width, height } = useVideoConfig();

@@ -10,6 +10,7 @@ import { type FigurePose, standPose } from '@库/角色/骨架.tsx';
 import { PORTAL_ISLAND } from '../../../地点/传送门海岛.tsx';
 import { NAGA_COURTYARD } from '../../../地点/娜迦庭院.tsx';
 import * as choreo612 from '../6-1-2/编排.ts';
+import { 取档 } from '@engine/段/按时取值.ts';
 
 export const FPS = 24;
 // 时间轴（帧）
@@ -178,9 +179,10 @@ export const diamond = (frame: number): { loc: V3; spin: number; scale: number }
 export const splashSec = (f: number) => (f - LAND) / FPS;
 export const waterGlow = (f: number) => (f >= STRIKE ? 0 : track([[LAND, 0], [LAND + 4, 0.9], [LAND + 12, 0.35], [STRIKE - 6, 0.45], [STRIKE - 1, 1]], f));
 
-// 闪电：原版闪电劈下时亮暗闪几下；这里逐帧给亮度，0.4 秒
+// 闪电：原版闪电劈下时亮暗闪几下；一档 1/24 秒（第 i 档从 STRIKE + i 格起、到下一格为止），共 0.375 秒。
+// 硬闪：档内不插值，帧落在哪一档就是哪一档的亮度（整格上和以前逐格给的一样）
 const FLASH = [1, 1, 0.35, 1, 0.75, 0.2, 0.6, 0.3, 0.12];
-export const flash = (f: number) => FLASH[Math.round(f) - STRIKE] ?? 0;
+export const flash = (f: number) => 取档(FLASH, f - STRIKE, { 值: 0 });
 export const BOLT_AT: V3 = [PX, PY, PZ];
 // 闪电形状：机位 A 里只看得到最下面一段的下半截，挑一个在画面平面里往左上斜、不朝镜头也不朝人倒的，人在右边不被挡
 export const BOLT_SEED = 23;

@@ -1,5 +1,6 @@
 // 6-1-9b 落地后（画面）：一镜到底的画面（一镜到底/画面.tsx 的 一镜画面）按全局帧 F0 + f 接着往下画，机位换成 编排.ts 的 机位，
 // 两人的姿势在一镜到底落地站定的站姿上先叠 落地编排.ts 的从天落地，再叠 编排.ts 的增量（改骑手）。
+import { 插表 } from '@engine/段/按时取值.ts';
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
@@ -24,7 +25,7 @@ const LandingParticles: React.FC<{ F: number }> = ({ F }) => {
 };
 
 // 九胡尾巴摆动的相位：一镜到底按全局帧 / 9 走（画面.tsx 的 骑手），这里东张西望时甩得快一点（编排.ts 的 尾快），按帧把快慢积起来，
-// 第 0 帧和一镜到底末帧同一个相位
+// 第 0 帧和一镜到底末帧同一个相位；表是一格一个，格之间插值（f 带小数，60 帧输出时以前取下标取到 undefined）
 const tailPhases: number[] = [(P613.beats.末帧 + choreo.F0) / 9];
 for (let frame = 1; frame <= choreo.frameCount; frame++) tailPhases.push(tailPhases[frame - 1] + choreo.jiuhuTweak((frame - 0.5) / choreo.FPS).tailSpeed / 9);
 const TAIL = ['Tail', 'Tail2', 'Tail3', 'Tail4', 'Tail5', 'Tail6', 'Tail7'];
@@ -58,7 +59,7 @@ export const tweakRiders = (f: number) => (onerRiders: Riders): Riders => {
   };
   const jh = choreo.jiuhuTweak(t);
   const bones = { ...(riders.jiuhu.boneOverrides ?? {}) };
-  const φ = tailPhases[Math.min(tailPhases.length - 1, Math.max(0, f))];
+  const φ = 插表(tailPhases, f);
   TAIL.forEach((boneName, i) => {
     bones[boneName] = { ...bones[boneName], rot: [0, Math.sin(φ - i * 0.6) * (i < 3 ? 8 : 5), 0] };
   });
