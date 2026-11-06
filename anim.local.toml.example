@@ -8,9 +8,6 @@
 # Git 外的数据根（store、私有、terrain、cache、交付、run）。环境变量 ANIM_DATA。默认：主检出同级的 mc-anim-data
 # data = "../mc-anim-data"
 
-# 旧项目根（已退役，只有 pipeline/适配器/旧项目/ 的基线工具用）。环境变量 ANIM_LEGACY。默认：主检出同级的 机械动力应力转动-AI漫画
-# legacy = "../机械动力应力转动-AI漫画"
-
 # 游戏环境（取材服务端、Prism 实例、jar 缓存）。环境变量 ANIM_GAME。默认：<数据根>/game
 # game = "../mc-anim-game"
 

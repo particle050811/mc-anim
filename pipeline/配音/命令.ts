@@ -7,12 +7,12 @@ import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 配置, 数据根 } from '../环境/配置.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 相对代码根 } from '../环境/路径.ts';
-import { 旧台词改名, 旧表资产, 读旧配音表 } from '../适配器/旧项目/配音表.ts';
 import { 登记入库 } from '../资产/命令.ts';
 import { 作品资产表目录, 读两侧资产表 } from '../资产/资产表.ts';
 import { 作品资产锁路径, 字节路径, 读资产锁, 资产锁路径, type 资产锁 } from '../资产/资产锁.ts';
 import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
 import { 调度让路 } from '../闸/指令.ts';
+import { 旧台词改名, 旧表资产 } from './旧表.ts';
 import { 列句模块, 句模块目录, 句模块路径, 写句模块文本, 读句模块 } from './句模块.ts';
 import { 复核组, 跑配音py } from './python.ts';
 import { 列候选, 复核报告文本, 写进候选说明, 拆回包, type 复核回包, type 复核请求, type 一条 } from './复核.ts';
@@ -44,29 +44,26 @@ type 后端信息 = { 名: string; 说明: string; 本机: boolean; 云端: bool
 
 // ---------- lip：字 → 嘴 → 句模块 ----------
 
-type 出句选项 = { 重对齐?: boolean; 从旧表?: boolean; 新测量?: Map<string, 测量> };
+type 出句选项 = { 重对齐?: boolean; 新测量?: Map<string, 测量> };
 
-/** 给这些句子出句模块：字取 口型手修 > （不重对齐时）旧句模块或旧表 > 对齐器；测量取 新测量 > 旧句模块（同一版成品）> 旧表 */
+/** 给这些句子出句模块：字取 口型手修 > （不重对齐时）旧句模块 > 对齐器；测量取 新测量 > 旧句模块（同一版成品） */
 const 出句模块 = async (行们: 台词行[], o: 出句选项) => {
   const 锁 = 两锁();
-  const 旧表 = o.从旧表 ? 读旧配音表(作品根(), 锁, 数据根()) : null;
-  const 备: { 行: 台词行; sha: string; 测量: 测量; 文件秒数: number; 字?: 字们; 手修: boolean; 旧?: string }[] = [];
+  const 备: { 行: 台词行; sha: string; 测量: 测量; 文件秒数: number; 字?: 字们; 手修: boolean }[] = [];
   for (const 行 of 行们) {
     const sha = 成品sha(行, 锁);
     if (!sha) throw new Error(`${行.id}：配音「${行.配音}」不在资产锁里`);
     const 文件秒数 = wav秒数(fs.readFileSync(成品文件(行, 锁)));
     const 旧句 = 读句模块(句模块路径(作品根(), 行.id));
     const 同版 = 旧句?.成品sha === sha ? 旧句 : null;
-    const 旧 = 旧表?.get(行.id);
-    const 测量 = o.新测量?.get(行.id) ?? (同版 ? { 开口: 同版.开口, 有声长: 同版.有声长, 时长: 同版.时长 } : 旧 ? { 开口: 旧.台词.开口, 有声长: 旧.台词.有声长, 时长: 旧.台词.时长 } : null);
+    const 测量 = o.新测量?.get(行.id) ?? (同版 ? { 开口: 同版.开口, 有声长: 同版.有声长, 时长: 同版.时长 } : null);
     if (!测量) throw new Error(`${行.id}：没有这版成品的测量（开口、有声长、时长），先 anim voice use 定稿`);
     let 字: 字们 | undefined;
     const 手修 = 手修可用(行, sha);
     if (行.口型手修?.字 && !手修) console.error(`${行.id}：口型手修 绑的成品不是现在这版，不用它，照常对齐（重标后改 口型手修.成品sha）`);
     if (手修) 字 = 行.口型手修!.字!;
     else if (!o.重对齐 && 同版 && !同版.手修 && 同版.念 === 念的字(行)) 字 = 同版.字 as 字们;
-    else if (!o.重对齐 && 旧?.口型 && 旧.口型.文 === 念的字(行) && 旧.口型.时长 === 文件秒数) 字 = 旧.口型.字;
-    备.push({ 行, sha, 测量, 文件秒数, 字, 手修, ...(旧 ? { 旧: 旧.旧id } : {}) });
+    备.push({ 行, sha, 测量, 文件秒数, 字, 手修 });
   }
   const 要对齐 = 备.filter((b) => !b.字);
   if (要对齐.length) {
@@ -97,7 +94,7 @@ const 出句模块 = async (行们: 台词行[], o: 出句选项) => {
 
 // ---------- check ----------
 
-const 核对 = async (表: 作品台词, 行们: 台词行[], 对旧表: boolean): Promise<string[]> => {
+const 核对 = async (表: 作品台词, 行们: 台词行[]): Promise<string[]> => {
   const 锁 = 两锁();
   const 问题: string[] = [];
   const 有句: { 行: 台词行; 句: NonNullable<ReturnType<typeof 读句模块>> }[] = [];
@@ -117,28 +114,6 @@ const 核对 = async (表: 作品台词, 行们: 台词行[], 对旧表: boolean
   if (有句.length) {
     const 嘴们 = await 跑配音py<Record<string, [number, string][]>>('嘴', { 句: 有句.map(({ 句 }) => ({ id: 句.id, 念: 句.念, 时长: 句.文件秒数, 字: 句.字 })) });
     for (const { 句 } of 有句) if (JSON.stringify(嘴们[句.id]) !== JSON.stringify(句.嘴)) 问题.push(`${句.id}：按字重算的嘴和句模块里的不一样（口型规则或 pypinyin 变了？）`);
-  }
-  if (对旧表) {
-    const 旧表 = 读旧配音表(作品根(), 锁, 数据根());
-    for (const { 行, 句 } of 有句) {
-      const 旧 = 旧表.get(行.id);
-      if (!旧) {
-        问题.push(`${行.id}：旧表里没有这一句`);
-        continue;
-      }
-      const 比 = (名: string, a: unknown, b: unknown) => JSON.stringify(a) !== JSON.stringify(b) && 问题.push(`${行.id}：${名} 句模块 ${JSON.stringify(a)}，旧表 ${JSON.stringify(b)}`);
-      比('角色', 句.角色, 旧.台词.角色);
-      比('念', 句.念, 旧.台词.合成 ?? 旧.台词.字);
-      比('开口', 句.开口, 旧.台词.开口);
-      比('有声长', 句.有声长, 旧.台词.有声长);
-      比('时长', 句.时长, 旧.台词.时长);
-      if (!旧.口型) 问题.push(`${行.id}：旧口型表里没有这一句`);
-      else {
-        比('口型的字', 句.字, 旧.口型.字);
-        比('嘴', 句.嘴, 旧.口型.嘴);
-        比('文件秒数', 句.文件秒数, 旧.口型.时长);
-      }
-    }
   }
   return 问题;
 };
@@ -281,7 +256,7 @@ const 补登记 = (id: string, 来源: string, 许可: string, 可见性: string
 
 const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: ReturnType<typeof 解析参数>, 记录: Parameters<命令['跑']>[1]) => {
   if (!fs.existsSync(候选)) throw new 用法错误(`没有 ${候选}`);
-  // 第 6、7 章的旧段还从旧项目的两份表（数据/配音/台词表、口型）取开口、时长、嘴，换了成品它们不跟着变：声音和嘴会对不上
+  // 第 6、7 章的旧段还从两份整表（数据/配音/台词表、口型）取开口、时长、嘴，换了成品它们不跟着变：声音和嘴会对不上
   if (!p.开关.has('--不管旧表') && [...旧台词改名(作品根()).values()].includes(行.id)) {
     throw new 用法错误(`${行.id} 还被旧段的 台词轨.tsx、配音/口型.ts 经旧表（${旧表资产.台词表}、${旧表资产.口型}）用着，换了成品旧段的开口、时长、嘴不跟着变；用到它的段改用句模块后再换，确实要换加 --不管旧表`);
   }
@@ -311,12 +286,12 @@ const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: Retu
 
 export const 配音命令: Record<string, 命令> = {
   voice: {
-    用法: 'voice list [前缀…] | check [前缀…] [--对旧表] | gen <id…> [--后端 名] [--种子 a,b] [--语气参考 wav] [--强度 x] [--dry-run] [--允许云端] [--允许付费] [--不复核] | review <id…> [--项 起伏,音色,听写,语气] [--dry-run] [--允许付费] | use <id> <候选.wav> [--不裁] [--替换] [--不管旧表] [--来源 说明] | lip [前缀…] [--重对齐] [--从旧表] | backends',
+    用法: 'voice list [前缀…] | check [前缀…] | gen <id…> [--后端 名] [--种子 a,b] [--语气参考 wav] [--强度 x] [--dry-run] [--允许云端] [--允许付费] [--不复核] | review <id…> [--项 起伏,音色,听写,语气] [--dry-run] [--允许付费] | use <id> <候选.wav> [--不裁] [--替换] [--不管旧表] [--来源 说明] | lip [前缀…] [--重对齐] | backends',
     说明: '配音链：台词.toml 一句 → gen 出候选（run/草稿/配音/，顺带本机复核音色、起伏，见 复核.md；review 单独重跑）→ use 定稿（裁静音拉响度、登记私有资产、写回 台词.toml、出句模块 台词/<id>.ts）；lip 重出口型；check 核对配音、句模块、口型可复现',
     跑: async (args, 记录) => {
       const [动作, ...余] = args;
       const p = 解析参数(余, {
-        开关: ['--对旧表', '--dry-run', '--允许云端', '--允许付费', '--不裁', '--替换', '--不管旧表', '--重对齐', '--从旧表', '--不复核'],
+        开关: ['--dry-run', '--允许云端', '--允许付费', '--不裁', '--替换', '--不管旧表', '--重对齐', '--不复核'],
         值: ['--后端', '--种子', '--语气参考', '--强度', '--来源', '--项'],
       });
       if (动作 === 'backends') {
@@ -344,13 +319,13 @@ export const 配音命令: Record<string, 命令> = {
         return 0;
       }
       if (动作 === 'check') {
-        const 问题 = await 核对(表, 选行(表, p.位置, true), p.开关.has('--对旧表'));
+        const 问题 = await 核对(表, 选行(表, p.位置, true));
         for (const x of 问题) console.log(x);
-        console.log(问题.length ? `${问题.length} 处不对` : `${选行(表, p.位置, true).length} 句的配音、句模块、口型都对得上${p.开关.has('--对旧表') ? '，和旧表一致' : ''}`);
+        console.log(问题.length ? `${问题.length} 处不对` : `${选行(表, p.位置, true).length} 句的配音、句模块、口型都对得上`);
         return 问题.length ? 1 : 0;
       }
       if (动作 === 'lip') {
-        const 写了 = await 出句模块(选行(表, p.位置, true), { 重对齐: p.开关.has('--重对齐'), 从旧表: p.开关.has('--从旧表') });
+        const 写了 = await 出句模块(选行(表, p.位置, true), { 重对齐: p.开关.has('--重对齐') });
         记录.产物.push(...写了);
         console.log(`写了 ${写了.length} 个句模块（${相对代码根(句模块目录(作品根()))}）`);
         return 0;

@@ -22,7 +22,7 @@ const 逐帧记的下限毫秒 = 20;
 export type 帧记录 = { 帧: number; 毫秒: number; 等?: Record<string, number> };
 export type 等待统计 = { 标签: string; 次: number; 总毫秒: number; 最大毫秒: number };
 type 采样时点 = '开始' | '采样' | '结束';
-export type 系统采样 = Partial<温度读数> & { 时点?: 采样时点; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null; /** 11-06 以前后台转存子进程的（决策/0014 删了后台转存），旧明细里有 */ 后台内存GB?: number | null; 后台CPU?: number | null };
+export type 系统采样 = Partial<温度读数> & { 时点?: 采样时点; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
 export type 明细小结 = { 帧数: number; 首帧毫秒: number; 中位毫秒: number; P90毫秒: number; P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[] };
 export type 渲染明细 = {
   票?: string;
@@ -303,7 +303,6 @@ export const 明细报告 = (d: 渲染明细, 文件?: string) => {
   if (d.系统.length) {
     const 最大 = (取: (s: 系统采样) => number | null) => Math.max(...d.系统.map((s) => 取(s) ?? 0));
     行们.push(`机器（${d.系统.length} 次采样的最大值）：负载 ${最大((s) => s.负载)}，子进程内存 ${最大((s) => s.子进程内存GB)} GB，子进程 CPU ${最大((s) => s.子进程CPU)}%，换出 ${最大((s) => s.换出GB)} GB；空闲内存最少 ${Math.min(...d.系统.map((s) => s.空闲内存GB))} GB`);
-    if (d.系统.some((s) => s.后台CPU != null)) 行们.push(`后台转存（同时在转的，不算进上面的子进程）：内存 ${最大((s) => s.后台内存GB ?? null)} GB，CPU ${最大((s) => s.后台CPU ?? null)}%`);
   }
   if (温度报告(d)) 行们.push(`温度（采样峰值）：${温度报告(d)}`);
   if (文件) 行们.push(`文件：${文件}`);

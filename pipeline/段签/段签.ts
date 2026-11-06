@@ -5,7 +5,7 @@
 //     历史.jsonl 同一指纹重渲：上一份的字节 sha 和自查结论
 //     历史/<上一份切片字节 sha 前 16 位>/  重渲前那一套（签.json、声音.flac）原样挪进来
 // 版本 3（11-06 起，决策/0014）：母版 = 切片 mp4，签名直接从它算（切片就是渲染出来的原样，没有转码这一步了）、声音从 wav 算。
-// 版本 1、2 是 CRF1 时代的（母版 .mkv，转码过的记 转码自、存法），照读：补交付、认可参考找旧版还看它们；版本 1 的 抽样.mkv 没人用了，anim cache gc 回收。
+// 只认版本 3：CRF1 时代的版本 1、2 不读（用户 11-06「旧的不用兼容」），当没有段签，取段签 会从切片重派生。
 // 同一指纹重渲可能变（换机器、驱动都会；同机的随机来源 10-31 修掉一个，见 docs/渲染性能.md）：自查比抽样帧 sha，不一样再比块均值（阈值.toml 的 块均值容差），超了算「重渲漂移」，要对这段跑 verify。
 // 签.json 最后原子写，有它就是一整套；旧的一套只挪不删，不删切片。
 import crypto from 'node:crypto';
@@ -15,7 +15,6 @@ import { 配置, 段签目录 } from '../环境/配置.ts';
 import { 作品名 } from '../环境/作品.ts';
 import { 低优先级, 跑 } from '../环境/子进程.ts';
 import { 登记临时文件 } from '../闸/收尾.ts';
-import { 有音轨 } from '../渲/探测.ts';
 import { 原子写 } from '../渲/母版.ts';
 import { 音频流 } from '../验收/帧流.ts';
 import { 比块均值, 读阈值 } from '../验收/比较.ts';
@@ -24,8 +23,6 @@ import type { 签名 } from '../验收/认可.ts';
 import { 分段计时, type 阶段记录 } from '../运行记录/阶段.ts';
 
 export const 段签版本 = 3;
-/** 还认的旧版本：1、2 是 CRF1 时代的（见文件头），1 多一个 抽样（抽样.mkv） */
-const 认的版本 = new Set([1, 2, 3]);
 export const 签文件名 = '签.json';
 export const 声音文件名 = '声音.flac';
 export const 历史文件名 = '历史.jsonl';
@@ -34,23 +31,21 @@ export const 小图宽 = 160;
 export const 小图高 = 90;
 
 export type 段签 = {
-  版本: 1 | 2 | 3;
+  版本: 3;
   作品: string;
   段: string;
   /** 画面指纹 */
   指纹: string;
-  /** 版本 3：配的声音指纹（wav 那份） */
+  /** 配的声音指纹（wav 那份）；没有声音的不写 */
   声音指纹?: string;
   级别: string | null;
-  /** 切片（版本 1、2 是母版）的样子：大小、改于对得上就当字节没变，不重算 sha。版本 1、2 转码过的：母版 是压缩母版那份、存法 是怎么转的，签名是从 转码自（CRF1）算的 */
-  母版: 母版样子 & { 转码自?: 母版样子; 存法?: { 标签?: string } };
-  /** 版本 3：声音那份 wav 的样子 */
+  /** 切片的样子：大小、改于对得上就当字节没变，不重算 sha */
+  母版: 母版样子;
+  /** 声音那份 wav 的样子 */
   声音源?: 母版样子;
   签名: 签名;
   /** 没有声音是 null */
   声音: { 文件: string; sha: string; 大小: number } | null;
-  /** 只有版本 1 有：抽样帧的无损 FFV1（11-02 起不用了） */
-  抽样?: { 文件: string; sha: string; 大小: number; 帧: number[] };
   /** 首尾帧 160×90 灰度（base64），接缝.ts 判首帧重复用 */
   首尾: { 宽: number; 高: number; 首帧: string; 末帧: string };
   派生于: string;
@@ -74,7 +69,7 @@ export const 读段签 = (段键: string, 指纹: string, 作品 = 作品名()):
   if (!fs.existsSync(f)) return null;
   try {
     const j = JSON.parse(fs.readFileSync(f, 'utf8')) as 段签;
-    return 认的版本.has(j.版本) && j.指纹 === 指纹 ? j : null;
+    return j.版本 === 段签版本 && j.指纹 === 指纹 ? j : null;
   } catch {
     return null;
   }
@@ -97,19 +92,14 @@ const 对得上样子 = async (样: 母版样子, 文件: string) => {
   return (await 文件sha(文件)) === 样.字节sha;
 };
 
-/** 段签记的切片（版本 1、2 是母版，转码过的就是压缩母版那份）是不是这个文件：大小、改于一样就是；不一样再算字节 sha */
+/** 段签记的切片是不是这个文件：大小、改于一样就是；不一样再算字节 sha */
 export const 对得上母版 = (签: 段签, 母版: string) => 对得上样子(签.母版, 母版);
-/** 版本 3 段签记的声音是不是这份 wav */
+/** 段签记的声音是不是这份 wav */
 export const 对得上声音源 = (签: 段签, wav: string) => (签.声音源 ? 对得上样子(签.声音源, wav) : Promise.resolve(false));
-/** 段签是这一对切片、wav 派生的（版本 3、两样都对得上） */
-export const 对得上切片 = async (签: 段签, 画面: string, 声音: string) => 签.版本 === 3 && (await 对得上母版(签, 画面)) && (await 对得上声音源(签, 声音));
+/** 段签是这一对切片、wav 派生的（两样都对得上） */
+export const 对得上切片 = async (签: 段签, 画面: string, 声音: string) => (await 对得上母版(签, 画面)) && (await 对得上声音源(签, 声音));
 
-/** 版本 1、2：段签是从哪份 CRF1 派生的（转码过的看 转码自） */
-export const 原样子 = (签: 段签): 母版样子 => 签.母版.转码自 ?? 签.母版;
-/** 段签是不是这份 CRF1 派生的 */
-export const 对得上原母版 = (签: 段签, 原: string) => 对得上样子(原样子(签), 原);
-
-/** 段签齐不齐：签.json 里登记的声音在（版本 1 的 抽样.mkv 不算，没人用了） */
+/** 段签齐不齐：签.json 里登记的声音在 */
 export const 段签齐 = (签: 段签 | null): 签 is 段签 => !!签 && (!签.声音 || fs.existsSync(声音路径(签)!));
 
 /** 同一指纹两份签名比：抽样帧 sha 全一样是同画面；不一样比块均值，超容差算漂移 */
@@ -131,11 +121,11 @@ export const 比签名 = (旧: 签名, 新: 签名, 块均值容差 = 读阈值(
     : { 结论: '漂移', 说明: `${不同} 个抽样帧 sha 不一样，块均值最多差 ${最大}（容差 ${块均值容差}），${声}` };
 };
 
-/** 重渲前的那一套挪进 历史/<字节 sha 前 16 位>/：先挪声音（版本 1 还有抽样），签.json 最后（中途断了，留下的签.json 指的文件不齐，下次照样重派生、接着挪） */
+/** 重渲前的那一套挪进 历史/<字节 sha 前 16 位>/：先挪声音，签.json 最后（中途断了，留下的签.json 指的文件不齐，下次照样重派生、接着挪） */
 const 存旧 = (旧: 段签, dir: string) => {
   const 去 = path.join(dir, 历史目录名, 旧.母版.字节sha.slice(0, 16));
   fs.mkdirSync(去, { recursive: true });
-  for (const 名 of [...(旧.声音 ? [旧.声音.文件] : []), ...(旧.抽样 ? [旧.抽样.文件] : []), 签文件名]) {
+  for (const 名 of [...(旧.声音 ? [旧.声音.文件] : []), 签文件名]) {
     const 从 = path.join(dir, 名);
     // 同一份字节的已经挪过一次（内容相同），留着那份
     if (fs.existsSync(从) && !fs.existsSync(path.join(去, 名))) fs.renameSync(从, path.join(去, 名));
@@ -143,14 +133,14 @@ const 存旧 = (旧: 段签, dir: string) => {
   return path.relative(dir, 去).split(path.sep).join('/');
 };
 
-/** 历史/ 里挪过去的各套段签和它们所在的目录（补交付找出片时那份声音、备参考找认可那一版） */
+/** 历史/ 里挪过去的各套段签和它们所在的目录（备参考找认可那一版） */
 export const 读历史段签 = (段键: string, 指纹: string, 作品 = 作品名()): { 签: 段签; 目录: string }[] => {
   const 根 = path.join(段签目录(段键, 指纹, 作品), 历史目录名);
   if (!fs.existsSync(根)) return [];
   return fs.readdirSync(根).sort().flatMap((名) => {
     try {
       const 签 = JSON.parse(fs.readFileSync(path.join(根, 名, 签文件名), 'utf8')) as 段签;
-      return 认的版本.has(签.版本) && 签.指纹 === 指纹 ? [{ 签, 目录: path.join(根, 名) }] : [];
+      return 签.版本 === 段签版本 && 签.指纹 === 指纹 ? [{ 签, 目录: path.join(根, 名) }] : [];
     } catch {
       return [];
     }
@@ -196,7 +186,7 @@ export const 出段签 = async (画面: string, 声音源: string | null, o: { �
     点('段签：扫切片');
     let 声音: 段签['声音'] = null;
     let 声音tmp: string | null = null;
-    const 声源 = 声音源 ?? (有音轨(画面) ? 画面 : null);
+    const 声源 = 声音源;
     if (声源 && 签名.音频sha) {
       const tmp = (声音tmp = 临时名(dir, 声音文件名));
       记临时(tmp);
