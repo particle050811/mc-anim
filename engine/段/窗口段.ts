@@ -133,6 +133,8 @@ export const 窗口段 = <K extends string, 扩展 = never>(
     宽: 线.宽,
     高: 线.高,
     地形: d.地形 ?? [],
+    // 段框架的新段一律是原生段：画面按秒、声音同一遍出（用户 11-06，决策 0015）
+    时钟: '秒',
     场窗口: { 起帧, 止帧 },
     ...(d.连续 ? { 连续: true } : {}),
     ...(声音 ? { 声音 } : {}),
@@ -147,5 +149,6 @@ const 事件帧于 = <K extends string>(线: { 场: string; 事件: Readonly<Rec
   return e.帧;
 };
 
-/** 是不是段框架做的段（pipeline 按这个决定要不要给它生成声音表、地址表）；以后别的工厂也写 框架 字段 */
-export const 是框架段 = (段: 段定义): boolean => typeof (段 as { 框架?: unknown }).框架 === 'string';
+/** 是不是段框架做的段（pipeline 按这个决定要不要给它生成声音表、地址表）；以后别的工厂也写 框架 字段。
+ *  迁到秒的老段（时钟: '秒'）也算：声音改由 段.ts 的 cue 照 定义画面 放（决策 0015） */
+export const 是框架段 = (段: 段定义): boolean => typeof (段 as { 框架?: unknown }).框架 === 'string' || 段.时钟 === '秒';
