@@ -9,6 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
+import { 备浏览器 } from './浏览器.ts';
 import { getCompositions, openBrowser, renderMedia, type LogLevel } from './渲染器.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 代码根 } from '../环境/路径.ts';
@@ -66,7 +67,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
     const serveUrl = await 照段材质包(作品根(), s.键, () => 打包(undefined, undefined, { 光影: !!opts.光影 }));
     const 打包秒 = (Date.now() - t) / 1000;
     t = Date.now();
-    const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 前期日志, browserExecutable: opts.浏览器 ?? null });
+    const browser = await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 前期日志, browserExecutable: opts.浏览器 ?? (await 备浏览器()) });
     const 开浏览器秒 = (Date.now() - t) / 1000;
     收地形用量(browser);
     const 求解缓存 = 收求解缓存(browser);

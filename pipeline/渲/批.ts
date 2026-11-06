@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { 备浏览器 } from './浏览器.ts';
 import { getCompositions, openBrowser, renderFrames } from './渲染器.ts';
 import { 开闸批, 闸心跳 } from '../闸/闸.ts';
 import { 解析参数, 用法错误 } from '../cli/参数.ts';
@@ -45,7 +46,7 @@ export const 跑批 = async (args: string[]) => {
             const 目录 = path.join(出!, t.名);
             fs.mkdirSync(目录, { recursive: true });
             await 批.一项({ 段: t.段, 帧数: 帧们.length, 帧: t.帧串.slice(0, 60) }, async () => {
-                browser ??= await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' });
+                browser ??= await openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error', browserExecutable: await 备浏览器() });
                 const 日志 = fs.createWriteStream(path.join(目录, '日志.txt'));
                 const 行: string[] = [];
                 const 载前 = os.loadavg()[0].toFixed(1);
