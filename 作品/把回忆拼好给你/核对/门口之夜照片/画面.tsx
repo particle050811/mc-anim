@@ -8,9 +8,10 @@ import { 色板 } from '../../色板.ts';
 import { 照片帧 } from '../../场/2-门口/门口之夜参数.ts';
 import { 门口之夜画布 } from '../../场/2-门口/门口之夜画布.tsx';
 import { 门口之夜图标 } from '../../场/2-门口/门口之夜照片.tsx';
+import { fps } from '../../分镜/时间.ts';
 
 const 画面: React.FC = () => {
-  const f = use视图下标();
+  const f = use视图下标(fps);
   const 图 = <门口之夜画布 帧={照片帧} />;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
