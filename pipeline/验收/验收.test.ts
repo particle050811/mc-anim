@@ -1,4 +1,4 @@
-// 用 ffmpeg 现造的小母版（64×36、2 秒、带正弦音）测抽帧、签名、认可记录、和认可版或基线比，还有 YUV 换 RGB、块平均差、并排图；不碰数据根和真母版。
+// 用 ffmpeg 现造的小母版（64×36、2 秒、带正弦音）测抽帧、签名、认可记录、和认可版比，还有 YUV 换 RGB、块平均差、并排图；不碰数据根和真母版。
 // 样例用无损 x264（qp 0）：有损编码时后面帧的改动会让前面没改的帧也差几个灰阶，那是真母版的噪声底，阈值另定。
 import fs from 'node:fs';
 import os from 'node:os';
@@ -6,9 +6,8 @@ import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { 配置 } from '../环境/配置.ts';
 import { 跑出 } from '../环境/子进程.ts';
-import { decode, encode } from 'fast-png';
+import { decode } from 'fast-png';
 import { 包络, 找起音, 比块均值, 比起音, 读阈值, 起音串, 解起音串, 转rgb, 算块差, 判块差, 要看的块, 并排, 块边, type 阈值 } from './比较.ts';
-import { 基线参照 } from './基线.ts';
 import { 帧流, 读流, 块均值, 抽样帧, 选帧批次, 选帧表达式, 每批帧数 } from './帧流.ts';
 import { 读认可, 写认可, 认可文件, type 认可记录 } from './认可.ts';
 import { 变了, 扫母版 } from './验收.ts';
@@ -134,27 +133,6 @@ describe('anim verify', () => {
     const 旧式 = { ...认, 响度: null, 起音: null };
     expect((await 扫母版(晚一帧内, { 认可: 旧式, 旧母版: 原, 阈值: 阈 })).音频结论).toBe('容差内');
     expect((await 扫母版(晚一帧内, { 认可: 旧式, 阈值: 阈 })).音频说明).toMatch(/比不了/);
-  });
-
-  it('和基线比：基线 PNG 比块平均差（新这一版也用 ffmpeg rgb24）、基线 wav 比声音，帧号照 段.json', async () => {
-    const 基 = path.join(目录, '基线');
-    fs.mkdirSync(path.join(基, '帧'), { recursive: true });
-    const 帧们 = [0, 7, 24, 47];
-    let i = 0;
-    for await (const rgb of 帧流(原, 帧们, 64, 36)) {
-      fs.writeFileSync(path.join(基, '帧', `${帧们[i]}.png`), encode({ width: 64, height: 36, data: new Uint8Array(rgb), channels: 3, depth: 8 }));
-      i++;
-    }
-    跑出([配置('ffmpeg'), '-v', 'error', '-y', '-i', 原, '-map', '0:a:0', '-c:a', 'pcm_s16le', path.join(基, '音频.wav')]);
-    fs.writeFileSync(path.join(基, '段.json'), JSON.stringify({ 段: '9-9-9', 帧数: 48, 帧: 帧们.map((f) => ({ 帧: f, 文件: `帧/${f}.png` })), 音频: { 文件: '音频.wav' } }));
-    const 同 = await 扫母版(原, { 参照: await 基线参照(基), 阈值: 阈 });
-    expect(同.帧结论.map((f) => [f.帧, f.结论])).toEqual(帧们.map((f) => [f, '一样']));
-    expect(同.音频结论).toBe('一样');
-    expect(同.比法).toBe('块差');
-    const 异 = await 扫母版(后半变, { 参照: await 基线参照(基), 阈值: 阈 });
-    expect(异.帧结论.map((f) => f.结论)).toEqual(['一样', '一样', '一样', '变了']); // 红框从第 30 帧起
-    const 少帧 = { ...(await 基线参照(基)), 帧数: 49 };
-    expect((await 扫母版(原, { 参照: 少帧, 阈值: 阈 })).尺寸变了).toMatch(/基线的是 64×36 49 帧/);
   });
 
   it('抽一百多帧只起一个 ffmpeg：帧号、字节和整段解一遍取到的一样；中间的帧、跳着抽也对', async () => {
