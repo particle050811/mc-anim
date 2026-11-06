@@ -36,9 +36,22 @@ export const 基础 = (): 文件表 => ({
   'assets/地形版本.json': JSON.stringify({ 包: {} }),
 });
 
+/** 文件表里的 '<目录>/资产锁.json' 是整份锁的简写（后面的层整份顶掉前面的），写进仓库时展开成 <目录>/资产锁/<id>.json 一件一个文件 */
+const 展开锁 = (合: 文件表): 文件表 => {
+  const 出: 文件表 = {};
+  for (const [p, 内容] of Object.entries(合)) {
+    if (!p.endsWith('资产锁.json') || typeof 内容 !== 'string') {
+      出[p] = 内容;
+      continue;
+    }
+    for (const [id, 条目] of Object.entries(JSON.parse(内容) as Record<string, unknown>)) 出[`${p.slice(0, -'.json'.length)}/${id}.json`] = JSON.stringify(条目);
+  }
+  return 出;
+};
+
 export const 造仓库 = (...层: 文件表[]): string => {
   const 根 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查样例-')));
-  const 合 = Object.assign({}, ...层) as 文件表;
+  const 合 = 展开锁(Object.assign({}, ...层) as 文件表);
   for (const [p, 内容] of Object.entries(合)) {
     if (内容 === null) continue;
     const f = path.join(根, ...p.split('/'));

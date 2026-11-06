@@ -1,5 +1,6 @@
-// 资产锁 assets/资产锁.json（工具生成，人不手改）：id → { sha256, 大小, 库, 后缀 }，键排序、UTF-8、缩进 2。
-// 登记在作品资产表（<作品根>/资产表/）的 id 写在 <作品根>/资产锁.json，格式一样；一部作品用的是两份并起来（读作品资产锁）。
+// 资产锁 assets/资产锁/（工具生成，人不手改）：一件资产一个文件 <id>.json（id 里的 / 就是子目录），内容 { sha256, 大小, 库, 后缀 }，键排序、UTF-8、缩进 2。
+// 一件一个文件是为了并行的 Agent 各自登记资产时不撞同一个文件（以前整份一个 JSON，合并冲突 26 次，用户 11-06「按你的想法优化」）。
+// 登记在作品资产表（<作品根>/资产表/）的 id 写在 <作品根>/资产锁/，格式一样；一部作品用的是两份并起来（读作品资产锁）。
 // 字节按内容寻址放在数据根：可见性=私有 的进 私有/，其余进 store/，路径 <库>/<sha 前 2 位>/<sha256>，无后缀，只增不改。
 // 这个文件也被 remotion.config.ts 打进 Remotion 的配置包，只能用 Node 自带模块和本仓库的纯 TS。
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -14,19 +15,41 @@ export type 库 = 'store' | '私有';
 export type 锁条目 = { sha256: string; 大小: number; 库: 库; 后缀: string; 时长?: number; 峰值?: number; 响度?: number };
 export type 资产锁 = Record<string, 锁条目>;
 
-export const 资产锁路径 = () => path.join(代码根(), 'assets', '资产锁.json');
-export const 作品资产锁路径 = (作品根: string) => path.join(作品根, '资产锁.json');
+/** 锁目录 */
+export const 资产锁路径 = () => path.join(代码根(), 'assets', '资产锁');
+export const 作品资产锁路径 = (作品根: string) => path.join(作品根, '资产锁');
+/** 一件资产的锁文件 */
+export const 锁文件路径 = (目录: string, id: string) => `${path.join(目录, ...id.split('/'))}.json`;
 
-export const 读资产锁 = (file = 资产锁路径()): 资产锁 => {
-  try {
-    return JSON.parse(fs.readFileSync(file, 'utf8')) as 资产锁;
-  } catch (e) {
-    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return {};
-    throw new Error(`${file} 读不了：${(e as Error).message}`);
-  }
+const 锁文本 = (条目: 锁条目) => {
+  // 字段排序，和 Python json.dumps(sort_keys=True, ensure_ascii=False, indent=2) 写出的逐字节一样
+  const 排 = Object.fromEntries(Object.keys(条目).sort().map((k) => [k, (条目 as Record<string, unknown>)[k]]));
+  return JSON.stringify(排, null, 2) + '\n';
 };
 
-/** 打包一部作品用的锁：共用的 assets/资产锁.json 并上 <作品根>/资产锁.json（没有就只用共用的）；同一个 id 两边都有就报错。
+/** 整份一个文件的旧格式还在（老分支合进来又带回来）就报错，不悄悄漏掉它里面的条目 */
+const 拦旧格式 = (目录: string) => {
+  if (fs.existsSync(`${目录}.json`)) throw new Error(`${目录}.json 是整份一个文件的旧资产锁，现在一件资产一个文件放 ${目录}/：把它的条目并进去（写资产锁）再删掉它`);
+};
+
+export const 读资产锁 = (目录 = 资产锁路径()): 资产锁 => {
+  拦旧格式(目录);
+  if (!fs.existsSync(目录)) return {};
+  const 条: [string, 锁条目][] = [];
+  for (const rel of fs.readdirSync(目录, { recursive: true }) as string[]) {
+    if (!rel.endsWith('.json')) continue;
+    const f = path.join(目录, rel);
+    try {
+      条.push([rel.slice(0, -'.json'.length).split(path.sep).join('/'), JSON.parse(fs.readFileSync(f, 'utf8')) as 锁条目]);
+    } catch (e) {
+      throw new Error(`${f} 读不了：${(e as Error).message}`);
+    }
+  }
+  // 键按 id 排（和以前整份 JSON 的键序一样），不按文件路径排
+  return Object.fromEntries(条.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
+};
+
+/** 打包一部作品用的锁：共用的 assets/资产锁/ 并上 <作品根>/资产锁/（没有就只用共用的）；同一个 id 两边都有就报错。
  *  这部作品选用了材质包就再盖上材质包覆盖层（套材质包）：在 照材质包选用 里按那一组的选用，不在就按作品的 "包"（当前材质包选用）；
  *  写锁的地方（assets add、extract --登记）读的是 读资产锁(单份)，不经这里 */
 export const 读作品资产锁 = (作品根: string, 选 = 当前材质包选用(作品根)): 资产锁 => {
@@ -188,11 +211,22 @@ export const 套材质包 = (锁: 资产锁, 作品根: string, 选: 材质包�
   return { ...锁, ...盖.覆盖 };
 };
 
-export const 写资产锁 = (锁: 资产锁, file = 资产锁路径()) => {
-  // 条目里的字段也排序，和 Python json.dumps(sort_keys=True, ensure_ascii=False, indent=2) 写出的逐字节一样
-  const 排 = (o: object): object => Object.fromEntries(Object.keys(o).sort().map((k) => [k, (o as Record<string, unknown>)[k]]));
-  const 排好 = Object.fromEntries(Object.keys(锁).sort().map((k) => [k, 排(锁[k]!)]));
-  fs.writeFileSync(file, JSON.stringify(排好, null, 2) + '\n', 'utf8');
+/** 让目录里的锁文件和 锁 一样：内容变了的才重写，锁里没有的删掉（空目录一并删），没变的文件不碰 */
+export const 写资产锁 = (锁: 资产锁, 目录 = 资产锁路径()) => {
+  拦旧格式(目录);
+  const 现 = 读资产锁(目录);
+  for (const [id, 条目] of Object.entries(锁)) {
+    const f = 锁文件路径(目录, id);
+    const 文本 = 锁文本(条目);
+    if (现[id] && fs.readFileSync(f, 'utf8') === 文本) continue;
+    fs.mkdirSync(path.dirname(f), { recursive: true });
+    fs.writeFileSync(f, 文本, 'utf8');
+  }
+  for (const id of Object.keys(现)) {
+    if (id in 锁) continue;
+    fs.rmSync(锁文件路径(目录, id));
+    for (let d = path.dirname(锁文件路径(目录, id)); d !== 目录 && !fs.readdirSync(d).length; d = path.dirname(d)) fs.rmdirSync(d);
+  }
 };
 
 export const 字节路径 = (条目: Pick<锁条目, 'sha256' | '库'>, 根 = 数据根()) => path.join(根, 条目.库, 条目.sha256.slice(0, 2), 条目.sha256);

@@ -14,7 +14,7 @@ process.env.ANIM_DATA = path.join(临时, '数据根');
 const { webpack改写 } = await import('./webpack.ts');
 const { 稳定缓存名 } = await import('./缓存名.ts');
 const { 缺字节占位插件 } = await import('./缺字节.ts');
-const { 入库 } = await import('./资产锁.ts');
+const { 入库, 写资产锁 } = await import('./资产锁.ts');
 const require = createRequire(import.meta.url);
 // Remotion 不导出这个模块，按文件取（它算缓存名用的就是这个函数）
 const { computeHashAndFinalConfig } = require(path.join(path.dirname(require.resolve('@remotion/bundler')), 'shared-bundler-config.js')) as {
@@ -32,7 +32,7 @@ const 字节 = (名: string, 内容: string) => {
   fs.writeFileSync(f, 内容);
   return 入库(f, 'store');
 };
-const 写锁 = (条目: ReturnType<typeof 字节>) => fs.writeFileSync(path.join(作品根, '资产锁.json'), JSON.stringify({ '测试/甲': 条目 }));
+const 写锁 = (条目: ReturnType<typeof 字节>) => 写资产锁({ '测试/甲': 条目 }, path.join(作品根, '资产锁'));
 
 const 基础配置 = () => ({ plugins: [], module: { rules: [] }, resolve: {} }) as never;
 const 缓存名 = async (稳定: boolean) => {

@@ -124,9 +124,8 @@ describe('--登记', () => {
     fs.writeFileSync(path.join(暂存, 'out/旧.png'), 'PNG旧');
     const 表目录 = path.join(根, 'registry');
     fs.mkdirSync(表目录);
-    const 锁文件 = path.join(根, '资产锁.json');
-    fs.writeFileSync(锁文件, '{}\n');
-    const 产物 = 按文件展开产物(q.条目.get('图')!.产物, ['out/新.png', 'out/旧.png', 'out/深/x.png', 'other.txt']);
+    const 锁文件 = path.join(根, '资产锁');
+        const 产物 = 按文件展开产物(q.条目.get('图')!.产物, ['out/新.png', 'out/旧.png', 'out/深/x.png', 'other.txt']);
     expect(产物).toEqual([
       ['贴图/图/新', 'out/新.png'],
       ['贴图/图/旧', 'out/旧.png'],
@@ -209,9 +208,8 @@ describe('--新、产物来源', () => {
     fs.writeFileSync(path.join(暂存, 'src/音效/a.ogg'), '原版');
     fs.writeFileSync(path.join(暂存, 'src/音效/create.b.ogg'), '模组');
     const 表目录 = path.join(根, 'registry');
-    const 锁文件 = path.join(根, '资产锁.json');
-    fs.writeFileSync(锁文件, '{}\n');
-    const r = 登记产物(
+    const 锁文件 = path.join(根, '资产锁');
+        const r = 登记产物(
       音清单,
       音,
       暂存,
@@ -246,9 +244,8 @@ describe('--新、产物来源', () => {
     fs.writeFileSync(path.join(暂存, 'out/作品的.png'), 'PNG');
     const 作品根 = path.join(根, '作品');
     fs.mkdirSync(作品根);
-    const 共用锁 = path.join(根, '资产锁.json');
-    fs.writeFileSync(共用锁, '{}\n');
-    const 已登记 = new Map([['贴图/图/作品的', { id: '贴图/图/作品的', 类别: '贴图', 来源: '手工:x', 许可: 'MIT', 可见性: '公开' as const, 表: '贴图.toml', 侧: '作品' as const }]]);
+    const 共用锁 = path.join(根, '资产锁');
+        const 已登记 = new Map([['贴图/图/作品的', { id: '贴图/图/作品的', 类别: '贴图', 来源: '手工:x', 许可: 'MIT', 可见性: '公开' as const, 表: '贴图.toml', 侧: '作品' as const }]]);
     const r = 登记产物(q, q.条目.get('图')!, 暂存, [{ id: '贴图/图/作品的', 文件: 'out/作品的.png' }], {
       作品根,
       已登记,
@@ -260,7 +257,7 @@ describe('--新、产物来源', () => {
     });
     expect(r.新登记).toEqual([]);
     expect(Object.keys(读资产锁(共用锁))).toEqual([]);
-    const 作品锁 = 读资产锁(path.join(作品根, '资产锁.json'));
+    const 作品锁 = 读资产锁(path.join(作品根, '资产锁'));
     expect(Object.keys(作品锁)).toEqual(['贴图/图/作品的']);
     fs.chmodSync(path.join(根, '数据', 'store', 作品锁['贴图/图/作品的']!.sha256.slice(0, 2), 作品锁['贴图/图/作品的']!.sha256), 0o644);
     fs.rmSync(根, { recursive: true, force: true });
