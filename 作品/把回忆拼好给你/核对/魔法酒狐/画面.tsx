@@ -2,11 +2,12 @@
 // 只放她、木地板和她身下那块地毯（颜色是近似的，房子另做）；灯是均匀的环境光加一盏正面偏上的平行光，看清贴图用；「暗」的视图只留很暗的环境光，看发光。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 // 她面朝南（yaw 180），脚底在地毯顶面；地毯 1/16 格厚，铺在木地板上
 const 她 = { ...standPose([0, 0, 0]), yaw: 180 };
@@ -26,7 +27,7 @@ const 地面: React.FC = () => (
 );
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 看 = v.头 === '看玩家' ? magicalWineFoxLookAt(她, v.眼, v.姿势) : v.头;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>

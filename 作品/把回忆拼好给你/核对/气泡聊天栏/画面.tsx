@@ -1,6 +1,6 @@
 // 女仆气泡和像素聊天栏的核对画面：中性灰底，气泡按视图摆，锚点画红点；聊天栏贴左下，几行是片里要出的（加入、死亡、进度、退出）。
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
@@ -9,6 +9,7 @@ import { chatColors } from '@库/界面/基础.tsx';
 import { 画幅 } from '../../分镜/时间.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 黄 = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 
@@ -21,7 +22,7 @@ const 聊天行们 = (起刻: number[]): ChatLine[] => [
 ];
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   return (
     <AbsoluteFill style={{ background: '#808080' }}>
       {v.气泡们.map((b, i) => (

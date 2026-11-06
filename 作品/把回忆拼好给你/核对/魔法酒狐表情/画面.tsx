@@ -1,13 +1,14 @@
 // 魔法酒狐表情核对的画面：按视图表一帧画一个视图，左上角写视图名。地面、灯同 核对-魔法酒狐（看清贴图用，颜色是近似的）。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { 画幅 } from '../../分镜/时间.ts';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 她 = { ...standPose([0, 0, 0]), yaw: 180 };
 const 九胡 = { ...standPose([0, 0, 0]), yaw: 180 };
@@ -27,7 +28,7 @@ const 地面: React.FC = () => (
 );
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 看 = v.头 === '看玩家' ? magicalWineFoxLookAt(她, v.眼) : undefined;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>

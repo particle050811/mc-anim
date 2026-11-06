@@ -3,7 +3,6 @@
 // 不写视图名：静帧就是成片的样子。
 // 时刻取歌曲帧 正片事件.哈气.帧（片子里真有的那一帧），颗粒的种子取它（同成片）。这一拍三个角色都定住，不按时间取样。
 import React from 'react';
-import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 事件 as 正片事件 } from '../../分镜/正片第8句.ts';
 import { 照片墙格们 } from '../../地点/照片墙.tsx';
@@ -14,12 +13,13 @@ import { 第8句调子, 第8句镜头 } from '../../场/2-门口/第8句.ts';
 import { 第8句云 } from '../../场/2-门口/第8句云.ts';
 import { 第8句照片们 } from '../../特效/照片画.ts';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 帧 = 正片事件.哈气.帧;
 const 墙 = 照片墙格们(第8句照片们);
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   // N = 6 不是 4 的倍数：地图画按 32 格画（特效/地图画.ts），天、太阳用 门口画布 的默认
   const 镜 = v.N6 ? { 取景: N6取景, 照片墙边长: 32 as const } : { ...第8句镜头, 照片墙边长: 64 as const, 弧: null };
   return (

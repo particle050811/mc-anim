@@ -1,7 +1,7 @@
 // 聊天栏和驯服爱心的核对画面：灰房间、她的位置放灰盒，机位和摆位同 1-一如既往 的占位（远景退到 6 格外）；爱心从灰盒脚底按她的碰撞箱放，聊天栏贴左下。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { ChatOverlay } from '@库/界面/聊天栏.tsx';
@@ -10,6 +10,7 @@ import { 第一人称机位, 眼位 } from '../../地点/机位.tsx';
 import { 聊天缩放, 视角 } from '../../场/1-隐世之境一楼/参数.ts';
 import { 驯服聊天行 } from '../../场/1-隐世之境一楼/聊天.ts';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 她: V3 = [0, 0, 0];
 const 玩家脚: V3 = [0, -2.25, 0];
@@ -28,7 +29,7 @@ const 盒: React.FC<{ 中: V3; 尺: V3; 色: string }> = ({ 中, 尺, 色 }) => 
 );
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   return (
     <AbsoluteFill style={{ background: '#202226' }}>
       <ThreeCanvas width={v.宽} height={v.高} gl={{ antialias: true }}>

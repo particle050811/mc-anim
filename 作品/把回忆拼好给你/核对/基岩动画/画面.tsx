@@ -4,7 +4,7 @@
 // 标了 控制器 的视图左右换成两种控制器（控制器示例.ts）。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox } from '@库/角色/魔法酒狐.tsx';
 import { 画幅 } from '../../分镜/时间.ts';
@@ -13,6 +13,7 @@ import { GeckoLib坐到站, 基岩坐到站, 控制器层们 } from './控制器
 import { 尾巴稳态变量 } from './尾巴稳态.ts';
 import { 视图们, type 视图 } from './视图.ts';
 import { 魔法酒狐播放器版 } from './魔法酒狐播放器版.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 位置 = { ...standPose([0, 0, 0]), yaw: 180 };
 
@@ -36,7 +37,7 @@ const 半边: React.FC<{ v: 视图; 标题: string; children: React.ReactNode }>
 );
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 变量 = 尾巴稳态变量(魔法酒狐播放器版.动画文件!, v.秒);
   return (
     <AbsoluteFill style={{ background: '#5a5e66', flexDirection: 'row' }}>

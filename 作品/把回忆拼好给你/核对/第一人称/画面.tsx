@@ -1,7 +1,7 @@
 // 第一人称核对的画面：底下一张灰墙色的底，上面叠手画布，左上角写视图名和这一刻的 手里、挥手、放下。
 // 灯的方向按 段/1-一如既往 占位机位的朝向（站在她南边 2.25 格、看她 0.7 格高处），亮度先用 1。
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { FirstPersonCanvas, FirstPersonHand, HAND_FOV, type HandScript, handTimeline, viewAngles } from '@库/角色/第一人称.tsx';
@@ -9,6 +9,7 @@ import { LiYingFirstPersonArm } from '@库/角色/李樱第一人称.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { 眼位 } from '../../地点/机位.tsx';
 import { 视图们, type 情形 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 剧本: Record<情形, HandScript> = {
   驯服: { start: '蛋糕', swings: [0], changes: [{ tick: 1, to: null }] },
@@ -19,7 +20,7 @@ const 剧本: Record<情形, HandScript> = {
 const 朝向 = viewAngles(眼位([0, -2.25, 0]), [0, 0, 0.7]);
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const { width, height } = useVideoConfig();
   const 手 = handTimeline(v.刻, 剧本[v.情形]);
   const 视角 = v.视角 ?? HAND_FOV;

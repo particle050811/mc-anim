@@ -1,10 +1,11 @@
 // 合照核对的画面：按视图表一帧画一个视图，整页就是成片那一帧（不写视图名）。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 合照拍立得, 合照照片, 靠肩画面 } from '../../场/2-隐世之境/合照.tsx';
 import { 对视机位 } from '../../场/2-隐世之境/对视.tsx';
 import { 重逢画面 } from '../../场/2-隐世之境/重逢.tsx';
 import { 视图们, type 视图 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 一帧: React.FC<{ v: 视图 }> = ({ v }) => {
   const 帧 = v.帧 ?? 0;
@@ -21,7 +22,7 @@ const 一帧: React.FC<{ v: 视图 }> = ({ v }) => {
 };
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
       <一帧 v={v} />

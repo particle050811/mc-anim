@@ -1,11 +1,12 @@
 // 封面帧核对的画面：按视图表一帧画一个视图。成片画幅（片）的几帧铺满、不写字；B站封面、竖版贴在左上角，视图名写在右边空着的黑地上。
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { 对视画面 } from '../../场/2-隐世之境/对视.tsx';
 import { 对视取景 } from '../../场/2-隐世之境/对视参数.ts';
 import { 封面安全区 } from '../../场/2-隐世之境/封面.ts';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 安全区层: React.FC<{ 宽: number; 高: number }> = ({ 宽: W, 高: H }) => {
   const { 四比三, 底边, 右下角 } = 封面安全区(W, H);
@@ -23,7 +24,7 @@ const 安全区层: React.FC<{ 宽: number; 高: number }> = ({ 宽: W, 高: H }
 };
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const { 宽, 高 } = 对视取景[v.版];
   return (
     <AbsoluteFill style={{ background: '#000000' }}>

@@ -6,7 +6,7 @@
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
@@ -22,6 +22,7 @@ import { 画幅 } from '../../分镜/时间.ts';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { 月铃兰 } from '../../物品/月铃兰.tsx';
 import { 视图们, type 视图 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 原点: V3 = [0, 0, 0];
 // 封面：你站在她南边 2.6 格的门口，眼高 1.62
@@ -113,7 +114,7 @@ const 三渲二画面: React.FC<{ v: 视图; props: 魔法酒狐新动作Props }
 );
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const { props, 眼, 看, 视角 } = 摆(v);
   if (v.三渲二)
     return (

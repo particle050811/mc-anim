@@ -5,7 +5,7 @@
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, Img, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Img } from 'remotion';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { useSelfLight } from '@engine/light/光照配比.ts';
@@ -16,6 +16,7 @@ import shot from 'asset:截图/隐世之境/一楼机位';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { 一楼, 一楼灯光, 主厅灯, 隐世之境一楼, type 灯位 } from '../../地点/隐世之境一楼.tsx';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 掀顶盒 = [[-1, -27, 5.97, 22, 1, 10]];
 const 单位盒 = new THREE.BoxGeometry(1, 1, 1);
@@ -53,7 +54,7 @@ const 平光: React.FC = () => {
 };
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 尺寸 = { width: v.宽, height: v.高 };
   const 灯笼 = 主厅灯.filter((l) => l.种 === '灯笼').length;
   const 蜡烛 = 主厅灯.length - 灯笼;
