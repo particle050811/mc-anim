@@ -24,6 +24,7 @@ import { 亮度溶解, 人船日落, 叠化格, 模糊, 海日落, 海调子名,
 import { 她位, 你位, 叠化, 太阳方向, 段键, 浪进, 海机位, 游戏刻, 照片帧, 秒, 船态, 页 } from './编排.ts';
 import { 日落天 } from './天.tsx';
 import { 海面 } from './海面.tsx';
+import { 海底方块, 要画海底 } from './海底.tsx';
 import { 日落浪 } from './浪.tsx';
 
 const 全屏: React.CSSProperties = { position: 'absolute', left: 0, top: 0, width: 页.宽, height: 页.高, overflow: 'hidden' };
@@ -54,6 +55,7 @@ export const 海上镜头: React.FC<{ 歌曲帧: number }> = ({ 歌曲帧: g }) 
       >
         <海面 机={机} 宽={页.宽} 高={页.高} 船={船} 刻={s * 20} 色调={海色调} />
         <平涂 色调={人船色调}>
+          {要画海底() && <海底方块 />}
           <原版船 loc={船.loc} yaw={船.yaw} 桨={船.桨} />
           <Steve pose={骑乘腿臂(stevePose(你.loc, 你.yaw, { sec: s }))} />
           <MagicalWineFox pose={{ ...standPose(她.loc), yaw: 她.yaw }} 姿势="站" 骨骼={magicalWineFoxBoatBones} 看={她.看} 表情="微笑" 秒={s} />
