@@ -1,15 +1,10 @@
 // 段的 cue 表 → 母版里每一声怎么放（从段内第几秒起、放几秒、文件里从第几秒起、变速、循环、随时间的增益）。<段声音>（段画面.tsx）照它挂 <Audio>。
-// 不依赖 React，单独测。cue 的数以 1/fps 秒为一格（段定义.ts），这里一律换成秒，不对齐到格（docs/决策/0015-原生60帧.md）；
-// 格点上和以前按格放的一样。资产 cue 从 cue 的帧起、放 帧数、文件从 入点秒 起、按 cue 增益；
-// 台词 cue 同 engine/audio/台词轨.tsx 和 pipeline/合成/台词落点.ts 的 台词头们：文件头 = 开口 − 开口秒，从文件头放到文件完多 1 格、段尾或同一句的下一截为止。
-// 以前文件头在格之间时往后取整到格、跳过那一截；现在从文件头那一刻放（段头之前的照样跳过），文件和时间轴对得一样，只是少切一点头。
-import { cue增益, type 段定义, type 资产cue } from './段定义.ts';
+// 不依赖 React，单独测。cue 都是秒（段定义.ts），不对齐到任何帧网格（docs/决策/0015-原生60帧.md）。资产 cue 从 cue 的秒起、放 长秒、文件从 入点秒 起、按 cue 增益；
+// 台词 cue 同 pipeline/合成/台词落点.ts 的 台词头们：文件头 = 开口 − 开口秒，从文件头放到文件完多 台词尾余秒、段尾或同一句的下一截为止（段头之前的跳过）。
+import { cue增益, 台词尾余秒, 段长秒, type 段定义, type 资产cue } from './段定义.ts';
 import type { 声音表 } from './声音助手.ts';
 
-export type 清单类 = '音效清单' | '配乐清单' | '台词清单';
-
 export type 一声 = {
-  类: 清单类;
   /** 要放的文件的资产 id（声音地址表的键） */
   资产: string;
   名: string;
@@ -29,47 +24,46 @@ export type 一声 = {
 
 export const 是配乐 = (资产: string) => 资产.startsWith('配乐/');
 
-const 资产一声 = (c: 资产cue, fps: number): 一声 => {
-  if (c.循环 && (c.入点秒 ?? 0) > 0) throw new Error(`${c.名}（第 ${c.帧} 帧）：循环的 cue 不能带入点秒（段框架还不支持从文件中间起循环，拆成两条 cue）`);
+const 资产一声 = (c: 资产cue): 一声 => {
+  if (c.循环 && (c.入点秒 ?? 0) > 0) throw new Error(`${c.名}（第 ${c.秒} 秒）：循环的 cue 不能带入点秒（段框架还不支持从文件中间起循环，拆成两条 cue）`);
   return {
-    类: 是配乐(c.资产) ? '配乐清单' : '音效清单',
     资产: c.资产,
     名: c.名,
     ...(c.档 !== undefined ? { 档: c.档 } : {}),
-    起秒: c.帧 / fps,
-    秒数: c.帧数 / fps,
+    起秒: c.秒,
+    秒数: c.长秒,
     入点秒: c.入点秒 ?? 0,
     速率: c.速率 ?? 1,
     循环: Boolean(c.循环),
-    增益: (t) => cue增益(c, t * fps),
+    增益: (t) => cue增益(c, t),
   };
 };
 
 /** 一段的全部声音。台词增益：台词总线的音量（engine/audio/混音.ts 的 lineVolume，去台词时是 0） */
-export const 段放法 = (段: Pick<段定义, '声音' | '帧数' | 'fps'>, 表: 声音表, o: { 台词增益: number }): 一声[] => {
+export const 段放法 = (段: Pick<段定义, '声音' | '秒'>, 表: 声音表, o: { 台词增益: number }): 一声[] => {
   const cues = 段.声音 ?? [];
-  const 开口帧 = new Map<string, number>();
+  const 段长 = 段长秒(段);
+  const 开口秒 = new Map<string, number>();
   const out: 一声[] = [];
   cues.forEach((c, i) => {
     if (c.台词 === undefined) {
-      out.push(资产一声(c, 段.fps));
+      out.push(资产一声(c));
       return;
     }
     const t = 表.台词[c.台词];
     if (!t) throw new Error(`声音表里没有台词「${c.台词}」：跑 anim cues`);
-    const f = c.接上段 ? (开口帧.get(c.台词) ?? t.上段开口帧) : c.帧;
-    if (f === undefined) throw new Error(`第 ${c.帧} 帧的台词「${c.台词}」标了 接上段，本段前面和清单里上一段都没有它开口`);
-    开口帧.set(c.台词, f);
-    // 以下都是格（1/fps 秒），最后换成秒
-    const 头 = f - t.开口 * 段.fps;
-    const 起 = c.接上段 ? c.帧 : Math.max(0, 头);
+    const f = c.接上段 ? (开口秒.get(c.台词) ?? t.上段开口秒) : c.秒;
+    if (f === undefined) throw new Error(`第 ${c.秒} 秒的台词「${c.台词}」标了 接上段，本段前面和清单里上一段都没有它开口`);
+    开口秒.set(c.台词, f);
+    const 头 = f - t.开口;
+    const 起 = c.接上段 ? c.秒 : Math.max(0, 头);
     const 跳 = 起 - 头;
     // 截到段尾、同一句的下一截
     const 下一截 = cues.slice(i + 1).find((x) => x.台词 === c.台词);
-    const 上限 = Math.min(段.帧数, 下一截 ? 下一截.帧 : Infinity) - 起;
-    const 长 = Math.min(c.帧数 ?? t.时长 * 段.fps - 跳 + 1, 上限);
+    const 上限 = Math.min(段长, 下一截 ? 下一截.秒 : Infinity) - 起;
+    const 长 = Math.min(c.长秒 ?? t.时长 - 跳 + 台词尾余秒, 上限);
     if (长 <= 1e-9) return;
-    out.push({ 类: '台词清单', 资产: t.配音, 名: c.台词, 起秒: 起 / 段.fps, 秒数: 长 / 段.fps, 入点秒: 跳 / 段.fps, 速率: 1, 循环: false, 增益: () => o.台词增益 });
+    out.push({ 资产: t.配音, 名: c.台词, 起秒: 起, 秒数: 长, 入点秒: 跳, 速率: 1, 循环: false, 增益: () => o.台词增益 });
   });
   // 同一个文件叠着放：后面那声加区分标记，不然母版里只剩一声（同源区分.ts）
   for (let i = 0; i < out.length; i++) {

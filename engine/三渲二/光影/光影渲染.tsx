@@ -9,7 +9,7 @@
 // 天、云、光照是三个能单独开关的组件（用户 11-04 定）：天 = engine/light/天/Photon天.ts，云 = engine/light/云/。应力转动用的 engine/light/大气.ts、大气/云.ts 不动。
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
-import { cancelRender, continueRender, delayRender, useCurrentFrame, useVideoConfig } from 'remotion';
+import { cancelRender, continueRender, delayRender, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import sunPng from 'asset:贴图/场景/天空/sun';
 import { 场景到three } from '../../core/three换算.ts';
@@ -20,7 +20,7 @@ import { png } from '../../model/贴图.ts';
 import { OceanSim, defaultOceanParams } from 'gelatin-game-engine/src/water/OceanSim.js';
 import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 水下片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
-import { use编排fps } from '../../段/编排时钟.tsx';
+import { use当前秒 } from '../../段/时间.tsx';
 
 /** 影子图边长（纹素） */
 const 影子图边 = 4096;
@@ -525,8 +525,7 @@ export type 光影渲染属性 = {
 export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) => {
   // 水面波纹的时间取画面秒数（每帧单独算）
   const { width: 成片宽 } = useVideoConfig();
-  const fps = use编排fps();
-  const 秒 = useCurrentFrame() / fps;
+  const 秒 = use当前秒();
   const r = useMemo(建资源, []);
   useEffect(() => () => 释放(r), [r]);
   // 云的着色器（按配置拼的一大段）趁取素材的时候并行先编（用户 11-04 定 A4），编完才放行截图；不然头一帧画的时候才同步编

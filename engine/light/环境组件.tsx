@@ -4,8 +4,7 @@
 // 画法不放在一张总表里：加一种画法（下界、末地、模组维度）只加一个模块，已有段的依赖不变、不过期。
 // 云要画布挂 <ScreenAo />；投影要画布开 shadows，投影的东西自己开 castShadow（体素世界给同一个 shadowLightDir）。
 import React from 'react';
-import { useCurrentFrame } from 'remotion';
-import { 灯光系数, 环境在, type 环境描述, type 环境轨 } from './环境.ts';
+import { 是环境轨, 灯光系数, 环境在, type 环境描述, type 环境轨 } from './环境.ts';
 import type { 画法模块 } from './环境部件.tsx';
 
 export type 环境属性 = {
@@ -18,13 +17,13 @@ export type 环境属性 = {
   离地?: number;
   /** 给了穹顶就固定在这里（暮色画法不放大，同 TwilightLighting 的 domeCenter）；不给跟着镜头 */
   穹顶中心?: readonly number[];
-  /** 关键帧按第几帧取（场窗口段要按场内帧取就传进来）；不给 = 段内当前帧 */
+  /** 描述是环境轨时，关键帧按第几帧取（帧是环境轨自己的格，调用处按秒换算好传进来）；描述是固定的不用给 */
   帧?: number;
 };
 
 export const 环境: React.FC<环境属性> = ({ 描述, 画法, 镜头, 离地, 穹顶中心, 帧 }) => {
-  const 当前帧 = useCurrentFrame();
-  const e = 环境在(描述, 帧 ?? 当前帧);
+  if (是环境轨(描述) && 帧 === undefined) throw new Error('<环境> 的描述是环境轨，要给 帧');
+  const e = 环境在(描述, 帧 ?? 0);
   const 灯 = 灯光系数(e);
   const 们: readonly 画法模块[] = Array.isArray(画法) ? 画法 : [画法 as 画法模块];
   const 画 = 们.find((m) => m.名 === e.画法);
