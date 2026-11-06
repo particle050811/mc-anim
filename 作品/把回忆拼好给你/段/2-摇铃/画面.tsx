@@ -14,7 +14,7 @@ import 段 from './段.ts';
 import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
-const 起帧 = 段时钟('2-摇铃').场窗口.起帧;
+const 起帧 = 段时钟('2-摇铃').起帧;
 const 歌词 = 归隐歌词(起帧);
 
 const 画面: React.FC = () => {

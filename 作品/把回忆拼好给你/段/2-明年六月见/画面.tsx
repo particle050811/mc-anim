@@ -14,7 +14,7 @@ import 段 from './段.ts';
 import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
-const 起帧 = 段时钟('2-明年六月见').场窗口.起帧;
+const 起帧 = 段时钟('2-明年六月见').起帧;
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
 const 样式 = { ...符文歌词默认, 描边色: 色板.夜.描边 };
 

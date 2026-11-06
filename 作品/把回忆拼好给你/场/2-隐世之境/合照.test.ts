@@ -17,17 +17,18 @@ import { 靠肩机位, 靠肩进度 } from './合照动作.ts';
 import { 合照咔哒声, 咔哒声文件 } from './合照声音.ts';
 import { 合照站位, 合照镜, 台词气泡接过来 } from './合照参数.ts';
 import { 台词气泡 } from './重逢参数.ts';
+import { 回帧, 回帧们, 帧数于, 窗帧 } from '../../声音/回帧.ts';
 
 const 事 = 正片事件;
 const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
-const 找 = (名: string, 段 = 合照段) => 段.声音?.find((c): c is 资产cue => c.资产 !== undefined && c.名 === 名);
+const 找 = (名: string, 段 = 合照段) => 回帧们(段).find((c) => c.名 === 名);
 
 describe('15 尾（2-合照）：窗口和事件', () => {
   it('窗口 [3177, 3279)：接在 2-重逢 后面，止在咔哒（54.65，第 32 小节下拍，2-拼回 从这里起）', () => {
     expect(段窗口('2-合照')).toMatchObject({ 起帧: 3177, 止帧: 3279, 帧数: 102 });
     expect(段窗口('2-重逢').止帧).toBe(段窗口('2-合照').起帧);
     expect(Math.round(54.65 * fps)).toBe(3279);
-    expect(合照段.帧数).toBe(102);
+    expect(帧数于(合照段)).toBe(102);
   });
 
   it('和前后两段交接的时刻是同一刻：靠肩起 = 2-重逢 止；咔哒 = 片尾歌词收；段尾 = 片尾白光 = 2-拼回 起', () => {
@@ -90,7 +91,7 @@ describe('15 尾：声音、歌词', () => {
     expect(a.帧).toBe(合照咔哒声.起帧 - 段窗口('2-合照').起帧);
     expect(a.帧 + a.帧数).toBe(102);
     expect(a.入点秒).toBeUndefined();
-    const b = 段里那截({ 起帧: 段窗口('2-合照').止帧, 止帧: 段窗口('2-合照').止帧 + 2 * fps }, 合照咔哒声)!;
+    const b = 回帧(段里那截({ 起秒: 段窗口('2-合照').止帧 / fps, 止秒: 段窗口('2-合照').止帧 / fps + 2 }, 合照咔哒声)!);
     expect(b.帧).toBe(0);
     expect(b.入点秒).toBeCloseTo(a.帧数 / fps, 12);
     expect(a.帧数 + b.帧数).toBe(Math.ceil(咔哒声文件.时长秒 * fps));

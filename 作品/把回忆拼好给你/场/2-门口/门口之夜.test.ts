@@ -384,7 +384,7 @@ describe('下线：存档图标', () => {
 
 describe('声音', () => {
   it('每一声都整个落在三段里，三段切出来的截数加起来不少；种树苗的声音在种下那一帧，咔哒的起音落在定格那一帧', () => {
-    const 截 = 窗们.flatMap((w) => 本段音效(w));
+    const 截 = 窗们.flatMap((w) => 本段音效({ 起秒: w.起帧 / fps, 止秒: w.止帧 / fps }));
     for (const 音 of 门口之夜音效) {
       expect(Number.isInteger(音.起帧)).toBe(true);
       expect(音.起帧).toBeGreaterThanOrEqual(起);

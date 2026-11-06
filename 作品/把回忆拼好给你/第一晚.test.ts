@@ -11,8 +11,9 @@ import { 剖面, 剖面原点, 机位们 } from './场/2-新世界/参数.ts';
 import { 剖面方块 } from './场/2-新世界/地形.ts';
 import { 你在, 天刻在, 机位在 } from './场/2-新世界/编排.ts';
 import { 星亮 } from './场/2-新世界/星.ts';
+import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
 
-const 帧数 = 段.帧数;
+const 帧数 = 帧数于(段);
 const 起 = 段窗口('2-第一晚').起帧;
 
 describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () => {
@@ -40,8 +41,8 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
   });
 
   it('cue：原声铺满整段；音效是挖三填一、僵尸低吼和挖开天窗，挖、放在碎、放的那一帧，按实测峰值配到目标 dBFS', () => {
-    const 声 = (段.声音 ?? []).filter((c: 声音cue): c is 资产cue => c.台词 === undefined);
-    const 原 = 声.find((c) => c.名 === '原声') as 资产cue;
+    const 声 = 回帧们(段).filter((c) => c.台词 === undefined);
+    const 原 = 声.find((c) => c.名 === '原声')!;
     expect([原.帧, 原.帧数]).toEqual([0, 帧数]);
     const 资产们 = 声.filter((c) => c.名 !== '原声');
     expect(资产们.map((c) => c.名)).toEqual(['挖一', '挖二', '挖三', '填土', '僵尸', '挖开天窗']);

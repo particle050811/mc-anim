@@ -31,7 +31,7 @@ import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 键 = '1-一如既往';
-const 起帧 = 段时钟(键).场窗口.起帧;
+const 起帧 = 段时钟(键).起帧;
 const 事件帧 = 段内事件帧(键);
 const 事件们 = (Object.entries(事件帧) as [事件名, number][]).sort((a, b) => a[1] - b[1]);
 
