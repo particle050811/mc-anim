@@ -1,13 +1,13 @@
 // 6-4-1 羊毛搜刮：放大 4 倍的新城（古城4x画布，10-13）里，李樱从 6-3-6 的落点起一跳二十多米、落脚处垫羊毛，三镜跳切：大院 → 场子垫 F1 → 开 #212、跳走。
-// 戏在 跳搭.ts（剧情时间线），跳切和机位在 编排.ts，声音在 声音.tsx。
+// 戏在 跳搭.ts（剧情时间线），跳切和机位在 编排.ts；声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 6-4-1/声音.tsx。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { bladeInHand } from '@库/角色/骨架.tsx';
 import { MaceInHand } from '@库/物品/重锤.tsx';
 import { AncientCity4xCanvas, LiYingWithBlade } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as choreo from '../../场/6-古城/6-4-1/编排.ts';
 import * as jumpBuild from '../../场/6-古城/6-4-1/跳搭.ts';
-import { WoolSearchSound } from '../../场/6-古城/6-4-1/声音.tsx';
 
 export const WOOL_SEARCH_FRAMES = choreo.END;
 
@@ -36,11 +36,6 @@ export const WoolSearchView: React.FC<{ f: number; g: number }> = ({ f: frame, g
 };
 
 export const WoolSearch: React.FC = () => {
-  const cutFrame = useCurrentFrame();
-  return (
-    <>
-      <WoolSearchView f={choreo.storyFrame(cutFrame)} g={cutFrame} />
-      <WoolSearchSound />
-    </>
-  );
+  const cutFrame = use当前秒() * choreo.FPS;
+  return <WoolSearchView f={choreo.storyFrame(cutFrame)} g={cutFrame} />;
 };

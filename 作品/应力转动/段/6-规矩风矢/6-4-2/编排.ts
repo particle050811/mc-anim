@@ -3,7 +3,7 @@
 //   箱盖一开，6.4 米外感测体触须一抖，振动飞进紧挨着的尖啸体——尖啸，第一次警告。他扭身对着尖啸体定住。尖啸后 4.5 秒监守者低吼，黑暗效果落下，黑雾退开才转回去接着翻箱子——末帧是 6-4-3a 首帧的前一刻（契约 `lastFrame642`）。镜头 3 和 6-4-3a 的 A1 是一个不切的镜头，两段合成 6-4-2至3a（../6-4-2至3a/）。
 //   转回箱子时弹出箱子界面，古城战利品一格一格 shift 点击拿走，跨进 6-4-3a 的 A1 拿完（用户 10-20：「这里应该显示拾取这个箱子里面的东西」，见「拾取」）。
 //   用户 10-12 删了「满四次……」内心独白；剧情里照游戏等 4.5 秒、黑暗 13 秒（260 刻），剪辑里只留够看懂的几截（见「跳切」）。
-// 帧号：`liying`、`camera`、`wool`、`keyMoments` 等全按本段「剧情帧」（不跳，0 = 跳搭.ts 的 `start642`）；成片帧 `f` 用 `toStoryFrame(f)` 换（规矩.tsx、声音.tsx 的听者）。
+// 帧号：`liying`、`camera`、`wool`、`keyMoments` 等全按本段「剧情帧」（不跳，0 = 跳搭.ts 的 `start642`）；成片帧 `f` 用 `toStoryFrame(f)` 换（规矩.tsx、../6-4-2至3a/）。
 //
 // 为什么是开箱惹出警告（1.20.1 javap 核对，jar 在 game/缓存/）：
 //   - Lootr 开箱：`LootrChestBlockEntity.startOpen` → `incrementOpeners` → gameEvent(CONTAINER_OPEN)，在 vibrations 标签里，源头是箱子方块中心。新城的箱子是夸克 quark:ancient_chest，镜头里画成 Lootr 战利品箱（共用箱子 模型/物品/箱子.tsx）。
@@ -13,7 +13,7 @@
 //   - 尖啸后 90 刻 `tryRespond`：第 1 级警告召不出监守者，先 `playWardenReplySound`（entity.warden.nearby_close，位置三轴各加 [−10,10] 随机整数，HOSTILE、volume 5、pitch 1），
 //     再 `Warden.applyDarknessAround`：40 格内玩家 260 刻黑暗（模型/特效/黑暗效果.tsx：头尾各 1.1 秒渐入渐出，雾压到 15 格、亮度 4 秒一周期）。
 //   - 6-4-3 挡箭惹的是第二次警告：离这次远超 10 秒冷却，照样尖啸。
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { shriekToDarknessSec, darknessParams } from '@库/特效/黑暗效果.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
@@ -84,15 +84,6 @@ export const sensorClock = (f: number) => (toEditFrame(f) - END) / FPS + 32;
 // ---------- 黑暗 ----------
 export const darknessStartSec = shriek.t + shriekToDarknessSec;
 export const darknessEndSec = darknessStartSec + darknessParams.durationTicks / 20;
-// 回应声的位置：尖啸体方块坐标三个轴各加 [−10, 10] 的随机整数（游戏用 level.random，这里固定种子）
-export const wardenReplyPos: V3 = (() => {
-  const rand = rng(6402);
-  const k = () => Math.floor(rand() * 21) - 10;
-  const [x, y, z] = shriek.块;
-  return blockCenter([x + k(), y + k(), z + k()]);
-})();
-// 监守者回应声（entity.warden.nearby_close）开不开：照游戏补的（tryRespond 里和黑暗效果同一刻），要去掉改成 false
-export const wardenReplyOn = true;
 
 // ---------- 台词 ----------
 // 没有（「满四次……」用户 10-12 删了，配音文件留着不动）。空表留着：台词落点.ts、同步表按段读 台词
@@ -160,15 +151,6 @@ export const toStoryFrame = (cutFrame: number) => {
     cutOffset += winEnd - winStart;
   }
   return STORY_END - 1 + (cutFrame - END + 1);
-};
-// 剧情帧 → 成片帧（落在跳掉的那几段里返回 undefined）；声音.tsx 用
-export const toCutFrame = (storyFrame: number): number | undefined => {
-  let cutOffset = 0;
-  for (const [winStart, winEnd] of storyWindows) {
-    if (storyFrame >= winStart && storyFrame < winEnd) return cutOffset + (storyFrame - winStart);
-    cutOffset += winEnd - winStart;
-  }
-  return undefined;
 };
 // 剧情帧 → 剪辑上的帧（可带小数）：跳掉那几段里的停在前一个窗口的末尾。按成片走的动作（定住时的呼吸、拧头，镜头 3 的机位）用它，跳点两边接得上
 const toEditFrame = (storyFrame: number): number => {

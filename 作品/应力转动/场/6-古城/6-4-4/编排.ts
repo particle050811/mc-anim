@@ -10,7 +10,6 @@
 //   前景是感测体的青色触须和尖啸体的骨白牙口（声波环从这里往上飘），往里 5 米是李樱站在羊毛 C 上、正脸半侧，脚边是 #210 战利品箱。刀光、招架的闪光在他身前，振动的粒子从他身前朝镜头飞进前景的感测体，再一格飞进尖啸体。
 //   对着新世界的方块核过（工具/G4临时/找机位644.py）：机位周围 0.3 格是空气，到他胸口、头顶、感测体、尖啸体顶面的视线不挡（到箱子正面中间隔着一根白蜡烛）。
 import { sample, type Key } from '@engine/anim/anim.ts';
-import type { V3 } from '@engine/model/parts.tsx';
 import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import * as choreo643 from '../6-4-3/编排.ts';
@@ -41,10 +40,3 @@ export const deflectFrameAt = (f: number) => 帧小数(storySecAt(f));
 const camPose: Cam = { pos: G4(-1092.3, -45.3, 189.7), tgt: G4(-1087.2, -45.0, 194.2), lens: 22 };
 const LENS: Key[] = [[0, 22], [frameCount, 24]];
 export const camera = (f: number): Cam => ({ ...camPose, lens: sample(LENS, f) });
-
-// 声源位置（场景坐标）：咔嗒在感测体方块中心，尖啸在尖啸体顶面中心
-const blockCenter = ([x, y, z]: V3): V3 => G4(x + 0.5, y + 0.5, z + 0.5);
-export const soundSources = {
-  sculkSensor: blockCenter(choreo643.sensors[0]),
-  shriek: [choreo643.shriek!.p[0], choreo643.shriek!.p[1], choreo643.shriek!.p[2] + 0.5] as V3,
-};
