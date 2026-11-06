@@ -1,5 +1,5 @@
 // 第 6、7 句这一个镜头（段 2-雷雨、2-拨开阴霾，照片「光柱破云」也取这里）每一帧的样子：镜头、她和你、闪电、魔法阵、光柱、云洞、天气颜色、阳光、雨、掉落物。
-// 按歌曲帧算（两段是同一个镜头，照片按歌上的时刻取帧），时刻取 分镜.ts 的正片事件，分寸取 参数.ts。纯模块（测试也引）。
+// 按歌曲帧算（两段是同一个镜头，照片按歌上的时刻取帧），时刻取 分镜/正片第6到7句.ts 的事件，分寸取 参数.ts。纯模块（测试也引）。
 import { clamp01 } from '@engine/anim/anim.ts';
 import type { 方块 } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
@@ -7,7 +7,8 @@ import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
 import type { 光影场参数 } from '@engine/三渲二/光影/预设.ts';
 import { 插骨, 合并骨骼表, type 骨骼表 } from '@库/角色/骨骼表.ts';
 import { magicalWineFoxExMotion } from '@库/角色/魔法酒狐新动作.ts';
-import { fps, 一帧秒, 段窗口, 正片事件 } from '../../分镜.ts';
+import { fps, 一帧秒 } from '../../分镜/时间.ts';
+import { 段窗口, 事件 as 正片事件 } from '../../分镜/正片第6到7句.ts';
 import { 色板 } from '../../色板.ts';
 import * as 参 from './参数.ts';
 import { 云格, 散起半径, type 云格子 } from './云.ts';

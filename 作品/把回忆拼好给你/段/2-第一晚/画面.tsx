@@ -11,7 +11,7 @@ import { stevePose, vanillaWalk } from '@库/角色/史蒂夫.tsx';
 import { Zombie, ZOMBIE } from '@库/生物/僵尸.tsx';
 import { collectBreakParticles, spawnBlockBreak } from '@库/特效/方块破坏粒子.tsx';
 import { type Particle, ParticleQuads, particleTexture } from '@库/特效/粒子面片.tsx';
-import { fps, 画幅 } from '../../分镜.ts';
+import { fps, 画幅 } from '../../分镜/时间.ts';
 import { 地层, 掉落物, 粒子色, 音效们 } from '../../场/2-第一晚/参数.ts';
 import { 第一晚史蒂夫 } from '../../场/2-第一晚/史蒂夫.tsx';
 import { 地上泥土, 泥土贴图 } from '../../场/2-第一晚/泥土块.tsx';

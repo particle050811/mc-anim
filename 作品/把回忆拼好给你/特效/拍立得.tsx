@@ -1,14 +1,14 @@
 // 拍立得定格：定格帧那一下闪白、画面停住，然后整张画面缩成一张斜放的拍立得（三边窄白边、下边宽），下白边淡入一行字。
 // 2D 自创效果只在本作品用（用户 10-22 定：照片白边、拼图、花瓣这部作品可以用），所以放作品目录、不进 库/。
 // 用法：<拍立得 定格帧={…} 字="…" 样式={…} 浮层={歌词等}>{(fs) => 3D、手、聊天}</拍立得>。fs = min(帧, 定格帧)，子画面全按 fs 画，
-// 定格以后每帧都重画定格那一刻；浮层不停、不跟着缩，画在照片上面、闪白下面。定格帧由段画面从 分镜.ts 取，这里只数离定格帧几秒。
+// 定格以后每帧都重画定格那一刻；浮层不停、不跟着缩，画在照片上面、闪白下面。定格帧由段画面从 分镜 取，这里只数离定格帧几秒。
 // 缩小是把整张卡片从「画面正好铺满」拉远到最终大小：白边一开始在画外，拉远时自然露出来；外框留在 DOM 里不重挂，ThreeCanvas 不会因此重建。
 import type React from 'react';
 import { useId } from 'react';
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
 import { clamp01, rad, sample } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
-import { fps, 一帧秒 } from '../分镜.ts';
+import { fps, 一帧秒 } from '../分镜/时间.ts';
 
 export type 拍立得样式 = {
   /** 照片里的画面最后缩到原来的几倍（白边另加在外面） */

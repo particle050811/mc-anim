@@ -5,7 +5,7 @@
 import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 正片事件 } from '../../分镜.ts';
+import { 事件 as 正片事件 } from '../../分镜/正片第8句.ts';
 import { 照片墙格们 } from '../../地点/照片墙.tsx';
 import { 哈气角色, 哈气气泡 } from '../../场/2-门口/哈气.tsx';
 import { 取景 as N6取景 } from '../../场/2-门口/参数.ts';

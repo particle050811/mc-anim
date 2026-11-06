@@ -2,7 +2,8 @@
 // 按歌曲帧算（和第 7 句同一套飘法，接得上）；段 2-收集快乐 和 核对-门口哈气 都用。纯模块（测试直接引）。
 import { clamp01 } from '@engine/anim/anim.ts';
 import type { 光影场参数 } from '@engine/三渲二/光影/预设.ts';
-import { fps, 一帧秒, 段窗口 } from '../../分镜.ts';
+import { fps, 一帧秒 } from '../../分镜/时间.ts';
+import { 段窗口 } from '../../分镜/正片第8句.ts';
 import { 小木屋上空云, 散起半径, type 云格子 } from '../../地点/原版云.ts';
 import type { 远景云 } from '../../地点/屋后远景.tsx';
 import { 末雨云 } from '../2-雷雨/末态.ts';

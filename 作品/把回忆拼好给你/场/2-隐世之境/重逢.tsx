@@ -21,7 +21,9 @@ import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
 import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import { 方块显示, 蛋糕方块 } from '@库/物品/蛋糕方块.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
-import { fps, 画幅, 正片事件 } from '../../分镜.ts';
+import { fps, 画幅 } from '../../分镜/时间.ts';
+import { 事件 as 歌词事件 } from '../../分镜/歌词.ts';
+import { 事件 as 正片第15句事件 } from '../../分镜/正片第15句.ts';
 import { 画布调子 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 像素字 } from '../../界面/像素字.ts';
@@ -32,6 +34,8 @@ import { 加滚, 拿着花的她, 空手拿 } from './对视.tsx';
 import { 台词气泡, 背身, 笑, 风散心高, 驯服爱心种子 } from './重逢参数.ts';
 import { 台词弹出, 回头进度, 笑了, 笑进度, 重逢机位 } from './重逢动作.ts';
 import { 不褪色, 背景褪色 } from './褪色.tsx';
+
+const 正片事件 = { ...歌词事件, ...正片第15句事件 };
 
 const 调子 = '归隐之地' as const;
 const 事 = 正片事件;

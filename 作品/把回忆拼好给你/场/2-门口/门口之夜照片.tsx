@@ -12,13 +12,17 @@ import { useCallback, useMemo, useRef } from 'react';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { fps, 正片事件 } from '../../分镜.ts';
+import { fps } from '../../分镜/时间.ts';
+import { 事件 as 歌词事件 } from '../../分镜/歌词.ts';
+import { 事件 as 正片第9至11句事件 } from '../../分镜/正片第9至11句.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
 import { 投影 } from '../../特效/拍立得.tsx';
 import { 下线图标, 卡片, 碎裂, 定格帧, 照片帧, 照片版式, 聊天缩放 } from './门口之夜参数.ts';
 import { 光影段 } from '../../默认.ts';
 import { 门口之夜画布, type 捕获层 } from './门口之夜画布.tsx';
+
+const 正片事件 = { ...歌词事件, ...正片第9至11句事件 };
 
 const 黄 = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 /** 照片是第 11 句（段 2-截图下线）截下的，2-空床 开头接着缩的也是这一张：光影跟着 2-截图下线 开不开走 */

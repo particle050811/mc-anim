@@ -6,7 +6,9 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 段内正片事件帧, 段窗口 } from '../../分镜.ts';
+import { 段内帧 } from '../../分镜/时间.ts';
+import { 事件 as 正片15尾事件 } from '../../分镜/正片15尾.ts';
+import { 事件 as 正片片尾事件, 段窗口 } from '../../分镜/正片片尾.ts';
 import { 色板 } from '../../色板.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
@@ -18,6 +20,9 @@ import { 框光标亮, 片尾取景, 片尾弹, 片尾白光, 重逢行字 } fro
 import { 新图标, 旧图标 } from '../../场/2-选择世界/图标源.ts';
 import 段 from './段.ts';
 import 咔哒url from 'asset:音效/车万女仆/item.camera_use';
+
+const 正片事件 = { ...正片15尾事件, ...正片片尾事件 };
+const 段内正片事件帧 = (键: string) => 段内帧(段窗口(键).起帧, 正片事件);
 
 const 起帧 = 段窗口('2-拼回').起帧;
 const 事 = 段内正片事件帧('2-拼回');

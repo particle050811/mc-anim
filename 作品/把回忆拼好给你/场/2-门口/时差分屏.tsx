@@ -20,7 +20,7 @@ import type { 调色 } from '@engine/三渲二/调子.ts';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx } from '@库/角色/魔法酒狐新动作组件.tsx';
 import type { 魔法酒狐新姿势 } from '@库/角色/魔法酒狐新动作.ts';
-import { fps, 画幅 } from '../../分镜.ts';
+import { fps, 画幅 } from '../../分镜/时间.ts';
 import { 格原点, 门口 } from '../../地点/门口小木屋.tsx';
 import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
 import { 樱花树方块 } from '../../地点/樱花树.ts';
@@ -83,7 +83,7 @@ const 中性: 调色 = { 饱和: 1, 对比: 1, 乘: '#ffffff', 抬: '#000000', �
 const 只调色 = (t: 调色): 调色 => ({ ...t, 暗角: 0, 颗粒: 0 });
 
 export type 时差分屏属性 = {
-  /** 歌曲帧（分镜.ts 的时间轴） */
+  /** 歌曲帧（分镜 的时间轴） */
   帧: number;
   /** 描边开关（默认照 画风.ts），两屏一起管 */
   描边?: boolean;

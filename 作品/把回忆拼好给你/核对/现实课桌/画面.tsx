@@ -1,7 +1,7 @@
 // 现实课桌核对的画面：左半 640×720 放现实画布（现实课桌，取景同第 13 句分屏右屏），右半中灰、左上角写视图名。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 现实画布 } from '../../现实/画布.tsx';
 import { 现实课桌 } from '../../现实/课桌.tsx';
 import { 分屏N, 现实取景 } from '../../场/2-门口/分屏参数.ts';

@@ -13,7 +13,7 @@ import { standPose } from '@库/角色/骨架.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { Creeper } from '@库/生物/苦力怕.tsx';
 import { 女仆气泡, 女仆气泡锚高 } from '@库/界面/女仆气泡.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 侧投影 } from '../../地点/侧剖面.tsx';
 import { 地图画片, 照片墙格们 } from '../../地点/照片墙.tsx';
 import { 门口 } from '../../地点/门口小木屋.tsx';

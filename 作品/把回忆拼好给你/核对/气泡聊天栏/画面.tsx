@@ -6,7 +6,7 @@ import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
 import { type ChatLine, 成就聊天行, 聊天色 } from '@库/界面/聊天栏.tsx';
 import { chatColors } from '@库/界面/基础.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 视图们 } from './视图.ts';
 

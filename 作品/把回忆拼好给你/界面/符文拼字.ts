@@ -3,7 +3,7 @@
 // 飞的路线照原版附魔台的飞字粒子 EnchantmentTableParticle.tick（1.20.1 client jar）：p = 年龄 ÷ 寿命，
 //   位置 = 终点 + 起点偏移 ·(1 − p)，竖直再加 1.2 格 ·(1 − p⁴)：前面一路平着滑过来，最后一小段才往下落进去。
 // 符文是这个字拼音的银河字母（块比字母多就从头再轮），沿用 10-22 的「读音落成字」。
-import { fps, 旧帧 } from '../分镜.ts';
+import { fps, 旧帧 } from '../分镜/时间.ts';
 import { 散, type 点阵 } from './符文排版.ts';
 
 export type 点 = readonly [number, number];

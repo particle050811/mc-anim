@@ -2,7 +2,7 @@
 import type React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { 段窗口 } from '../../分镜.ts';
+import { 段窗口 } from '../../分镜/正片第6到7句.ts';
 import { 光影段 } from '../../默认.ts';
 import { 雷雨画面 } from '../../场/2-雷雨/画面.tsx';
 import { 原声 } from '../../配乐/原声.ts';

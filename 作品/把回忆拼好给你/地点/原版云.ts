@@ -1,7 +1,7 @@
 // 小木屋头顶那一层原版 fancy 云（第 7 句光柱打散的就是这一层，第 8 句门口头顶接着是它）的参数；算法、画法在 engine/light/云/原版方块.ts、原版方块云.tsx（云组件的 F 算法）。
 // 出处：照 末地雷雨 那一路 9f33adf（到 e21e5c6 没再改）的 场/2-雷雨/参数.ts 的云那几个数抄来。纯计算（测试直接引）。
 import { 云格们 as 引擎云格们, 散起半径 as 引擎散起半径, type 云格子, type 云铺 } from '@engine/light/云/原版方块.ts';
-import { 旧帧 } from '../分镜.ts';
+import { 旧帧 } from '../分镜/时间.ts';
 
 export { 云格, 云厚, 云心, type 云格子, type 云铺 } from '@engine/light/云/原版方块.ts';
 

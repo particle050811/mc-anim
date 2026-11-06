@@ -3,7 +3,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { uiFontFamily } from '@库/界面/基础.tsx';
-import { 旧帧 } from '../分镜.ts';
+import { 旧帧 } from '../分镜/时间.ts';
 import { 歌词不透明度, type 歌词样式, type 歌词行 } from './歌词.tsx';
 
 export type 底部歌词样式 = Omit<歌词样式, '顶边'> & {
