@@ -1,6 +1,6 @@
-// 原声的曲目数据（engine/audio/曲目.ts 的 Song）：配乐音轨.tsx 按它取音频，歌词可以按它的 歌词 取当前句（currentLyric）。
+// 原声的曲目数据（engine/audio/曲目.ts 的 Song）：歌词可以按它的 歌词 取当前句（currentLyric）。出声不经这里：段.ts 的原声 cue 由 定义画面 放（engine/段/段画面.tsx）。
 // 网格、句起止、长音都从 网格.ts 来，这里只换成 Song 的格式，不另写数；拟合质量是同一次实测（原声人声分离加强制对齐，10-22）的结果。
-// 段.ts 是纯模块，不 import 这里，cue 的资产 id 另写在段里，配乐音轨.tsx 按 文件 对上。
+// 段.ts 是纯模块，不 import 这里，cue 的资产 id 另写在段里（和这里的 文件 同一个）。
 // 原声是第三方音乐、私有，不能分发：不打进包，按 id 现取（@engine/audio/私有配乐.ts），数据根里没有就换成静音，公开仓库渲出来没歌（用户 10-25 定歌不放）。
 import { 私有配乐 } from '@engine/audio/私有配乐.ts';
 import type { Song } from '@engine/audio/曲目.ts';
@@ -19,7 +19,7 @@ export const 原声: Song = {
   // 没做节拍声音轨（配乐分析.py 还在旧项目），放歌不开节拍器
   节拍声: '',
   // 网格.ts 是在旧原声（m4a）解出的 wav 上量的；这份 wav 按 ffmpeg 解码和旧原声互相关对齐过（±15 个样本，11-02）。
-  // Remotion 解码要是比 ffmpeg 早晚了（拿渲出来的音轨对原声量），差值写这里，配乐音轨.tsx 只补在出声上
+  // Remotion 解码要是比 ffmpeg 早晚了（拿渲出来的音轨对原声量）差值写这里；段声音 不读它（11-06 起），不是 0 时要改到 cue 的入点秒
   fileOffsetSec: 0,
   分析: {
     音频: '原声.m4a',

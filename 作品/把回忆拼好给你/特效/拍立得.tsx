@@ -5,10 +5,11 @@
 // 缩小是把整张卡片从「画面正好铺满」拉远到最终大小：白边一开始在画外，拉远时自然露出来；外框留在 DOM 里不重挂，ThreeCanvas 不会因此重建。
 import type React from 'react';
 import { useId } from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { clamp01, rad, sample } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { fps, 一帧秒 } from '../分镜/时间.ts';
+import { use当前帧 } from '../当前帧.ts';
 
 export type 拍立得样式 = {
   /** 照片里的画面最后缩到原来的几倍（白边另加在外面） */
@@ -67,7 +68,7 @@ export const 拍立得: React.FC<{
   浮层?: React.ReactNode;
   children: (fs: number) => React.ReactNode;
 }> = ({ 定格帧, 字, 样式, 浮层, children }) => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const { width: W, height: H } = useVideoConfig();
   const fs = Math.min(f, 定格帧);
   const 已定格 = f >= 定格帧;

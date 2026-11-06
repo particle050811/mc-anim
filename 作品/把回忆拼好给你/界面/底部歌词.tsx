@@ -1,10 +1,11 @@
 // 歌词素字放在画面底部（三稿第 15 句的特例：让人只读她头顶的气泡）。淡入淡出的算法同 歌词.tsx（歌词不透明度），只是位置从下往上量。
 // 不改 歌词.tsx：1-一如既往 用它，改了它那段就过期。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { 旧帧 } from '../分镜/时间.ts';
 import { 歌词不透明度, type 歌词样式, type 歌词行 } from './歌词.tsx';
+import { use当前帧 } from '../当前帧.ts';
 
 export type 底部歌词样式 = Omit<歌词样式, '顶边'> & {
   /** 字的下沿离画面底几像素（页面像素） */
@@ -23,7 +24,7 @@ export const 第15句歌词样式: 底部歌词样式 = {
 };
 
 export const 底部歌词: React.FC<{ 行们: readonly 歌词行[]; 样式: 底部歌词样式; 收?: number }> = ({ 行们, 样式, 收 }) => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const 透明 = 歌词不透明度(行们, f, 样式, 收);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>

@@ -1,6 +1,6 @@
 // 两句台词各一个色块当嘴（句口型 的 open、width 直接换算成高、宽），时间轴上标出每句从开口到说完的帧；第 6 帧黄叛开口、第 36 帧李樱开口。
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { 台词句轨 } from '@engine/audio/台词句轨.tsx';
 import { 句帧数, type 台词句cue } from '@engine/audio/台词句.ts';
 import { 句口型 } from '@库/角色/句口型.ts';
@@ -8,7 +8,9 @@ import 受死 from '../../台词/7-黄叛-受死.ts';
 import 溜了 from '../../台词/7-李樱-溜了.ts';
 import 受死声 from 'asset:配音/7-黄叛-受死';
 import 溜了声 from 'asset:配音/7-李樱-溜了';
-import { use编排fps } from '@engine/段/编排时钟.tsx';
+import { 贴格 } from '@engine/段/按时取值.ts';
+import { use当前秒 } from '@engine/段/时间.tsx';
+import 段 from './段.ts';
 
 const 句们: readonly 台词句cue[] = [
   { 句: 受死, 帧: 6 },
@@ -17,9 +19,10 @@ const 句们: readonly 台词句cue[] = [
 const 声音 = { [受死.id]: 受死声, [溜了.id]: 溜了声 };
 
 const 画面: React.FC = () => {
-  const frame = useCurrentFrame();
+  // 句模块的帧是段.ts 的 fps（24）一格
+  const fps = 段.fps;
+  const frame = 贴格(use当前秒() * fps);
   const { width, durationInFrames } = useVideoConfig();
-  const fps = use编排fps();
   const 每帧 = (width - 160) / durationInFrames;
   return (
     <AbsoluteFill style={{ background: '#1b1d22', color: '#eee', fontFamily: 'sans-serif' }}>

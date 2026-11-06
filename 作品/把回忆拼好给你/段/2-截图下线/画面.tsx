@@ -1,17 +1,17 @@
 // 2-截图下线 的画面：场/2-门口/门口之夜照片.tsx 按歌曲帧画（定格前就是门口之夜画布），外面包夜的整片后期（颗粒种子 = 歌曲帧，定格前牌面上不盖颗粒），符文歌词在顶上、一起过后期。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 段时钟 } from '../../分镜/正片第9至11句.ts';
 import { 色板 } from '../../色板.ts';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 牌面矩形, 定格帧 } from '../../场/2-门口/门口之夜参数.ts';
 import { 门口之夜照片 } from '../../场/2-门口/门口之夜照片.tsx';
-import { 门口之夜音效轨 } from '../../场/2-门口/门口之夜音效轨.tsx';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段时钟('2-截图下线').场窗口.起帧;
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
@@ -19,11 +19,9 @@ const 样式 = { ...符文歌词默认, 描边色: 色板.夜.描边 };
 
 /** 前帧 取上一帧：屋后远景按它算画布高，学的是顺序渲染「读上一帧的高度」（docs/渲染性能.md 的 E）。原来取 1/24 秒以前，用户 11-03「统统改成 60 帧」 */
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <配乐音轨 song={原声} 段={段} />
-      <门口之夜音效轨 段={段} />
       <整片后期 调色={色板.夜.调色} 种子={起帧 + f} 颗粒让开={起帧 + f < 定格帧 ? 牌面矩形(起帧 + f) : undefined}>
         <门口之夜照片 帧={起帧 + f} 前帧={f >= 1 ? 起帧 + f - 1 : undefined} />
         <符文歌词 行们={行们} 样式={样式} />
@@ -32,4 +30,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

@@ -3,10 +3,13 @@
 import { Audio } from '@remotion/media';
 import { decode } from 'fast-png';
 import React from 'react';
-import { AbsoluteFill, Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import 色块 from 'asset:核对/冒烟色块';
 import 音 from 'asset:核对/冒烟音';
+import { 贴格 } from '@engine/段/按时取值.ts';
 import { use设置 } from '@engine/段/设置.ts';
+import { use当前秒, 秒Sequence } from '@engine/段/时间.tsx';
+import 段 from './段.ts';
 
 const 解码 = (uri: string) => {
   const bin = atob(uri.slice(uri.indexOf(',') + 1));
@@ -20,7 +23,8 @@ const 图 = 解码(色块);
 const 格 = 40;
 
 const 画面: React.FC = () => {
-  const frame = useCurrentFrame();
+  // 段内第几帧（段.ts 的 fps，24）；进度条的分母是 Composition 的帧数，照旧
+  const frame = 贴格(use当前秒() * 段.fps);
   const { width, durationInFrames } = useVideoConfig();
   const { 级别 } = use设置();
   const 格子 = [];
@@ -39,12 +43,12 @@ const 画面: React.FC = () => {
       <div style={{ position: 'absolute', left: 560, top: 280, color: '#eee', fontSize: 64, fontFamily: 'sans-serif' }}>
         核对-冒烟 · 第 {frame} 帧 · {级别}
       </div>
-      <Sequence from={0} durationInFrames={24}>
+      <秒Sequence 起秒={0} 长秒={1}>
         <Audio src={音} />
-      </Sequence>
-      <Sequence from={24} durationInFrames={24}>
+      </秒Sequence>
+      <秒Sequence 起秒={1} 长秒={1}>
         <Audio src={音} />
-      </Sequence>
+      </秒Sequence>
     </AbsoluteFill>
   );
 };
