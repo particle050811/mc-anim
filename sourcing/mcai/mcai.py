@@ -230,7 +230,7 @@ class NotRunning(Exception):
     pass
 
 
-# 连游戏里的接口一律直连：urllib 照 HTTP_PROXY 走代理，没设 NO_PROXY 时 127.0.0.1 也交给代理，游戏开着也报连不上（同 py/anim_py/网络.py）
+# 连游戏里的接口一律直连：urllib 照 HTTP_PROXY 走代理，没设 NO_PROXY 时 127.0.0.1 也交给代理，游戏开着也报连不上
 _DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 

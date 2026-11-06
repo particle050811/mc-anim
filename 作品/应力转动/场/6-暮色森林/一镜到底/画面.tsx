@@ -2,7 +2,8 @@
 // 地形是游戏真实地貌导入的（模型/场景/暮色新世界.tsx）。整条一镜到底在 6-1-4至9 一段里（6-1/段界.ts），`OnerSegment` 给出段起帧：段内第 `frame` 帧 = 全局帧 `起` + `frame`。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { FlightRig } from '../../../地点/飞行镜头.tsx';
@@ -10,8 +11,6 @@ import { TwilightLighting, twilightFogFar, clampFogToEdge, TWILIGHT_CRUISE_FOG_F
 import { twilightSunDir } from '@engine/light/光照配比.ts';
 import { LevelParams, type RenderLevel, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
-import { MusicAudio } from '../../../配乐/配乐音轨.tsx';
-import { halfGain, ch6FlightMusic } from '../../../配乐/第六章飞行.ts';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { broomMatrix, handAim, jiuhuRideBones, RIDE, RideBroom, type RideJiuhu, type RideLiYing } from '@库/角色/骑扫帚.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
@@ -30,7 +29,6 @@ import { GiantScene } from '../6-1-8b/戏.tsx';
 import { cameraAt, type Cam } from './镜头.ts';
 import * as route from './路线.ts';
 import { SpearDrill, LootLayer, drillGhost, drillSpin } from './战利品.tsx';
-import { OnerSound } from './声音.tsx';
 
 const ss = (x: number) => {
   const clamped = Math.min(1, Math.max(0, x));
@@ -254,16 +252,13 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   );
 };
 
-// 一镜到底的一截：段内第 frame 帧 = 全局帧 `起` + frame，挂上配乐和原版音效（`帧数`：放到哪儿，音效截在这里）。整条一镜到底是 6-1-4至9 的一截（6-1/段界.ts）。
-// 配乐按全局帧接着 6-1-3 往下放（一镜到底第 0 帧 = 6-1-3 末帧，歌曲时间 = 6-1-3 编排的 `songSec`(6-1-3 帧数 − 1 + 全局帧)），用户 10-08 要完整连贯的音乐
-export const OnerSegment: React.FC<{ 起: number; 帧数: number }> = ({ 起: startFrame, 帧数: frameCount }) => {
-  const frame = useCurrentFrame();
+// 一镜到底的一截：段内第 frame 格（1/24 秒一格，带小数）= 全局帧 `起` + frame。整条一镜到底是 6-1-4至9 的一截（6-1/段界.ts）。
+// 声音（配乐接着 6-1-3 往下放、原版音效）照 6-穿塔斩首领 段.ts 的 cue 放（11-06 迁成原生段，决策 0015），这里只画画面
+export const OnerSegment: React.FC<{ 起: number }> = ({ 起: startFrame }) => {
+  const frame = use当前秒() * route.FPS;
   return (
     <AbsoluteFill>
       <OnerFrame F={startFrame + frame} />
-      <MusicAudio song={ch6FlightMusic.song} startSec={P613.songSec(P613.FRAMES - 1 + startFrame)} gain={(t) => halfGain(ch6FlightMusic, '前一半', t)} />
-      {/* 原版音效：排在全局时间轴上，见 声音.tsx */}
-      <OnerSound startFrame={startFrame} frameCount={frameCount} />
     </AbsoluteFill>
   );
 };

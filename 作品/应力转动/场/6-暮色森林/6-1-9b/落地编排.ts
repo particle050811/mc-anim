@@ -17,7 +17,6 @@ import type { RideJiuhu, RideLiYing } from '@库/角色/骑扫帚.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { particleInitVel, particlePath } from '@库/特效/粒子面片.tsx';
 import type { BreakParticle } from '@库/特效/方块破坏粒子.tsx';
-import type { SoundCue } from '@engine/audio/游戏音效.tsx';
 import * as choreo619 from '../6-1-9/编排.ts';
 import type { Riders } from '../一镜到底/画面.tsx';
 import * as route from '../一镜到底/路线.ts';
@@ -259,18 +258,3 @@ export const bursts = [
   { at: T_LIYING, ps: burst(fromScene([...touchAt(LIYING_AT, flights.liYing).slice(0, 2), 0.01]), 61901) },
   { at: T_JIUHU, ps: burst(fromScene([...touchAt(JIUHU_AT, flights.jiuhu).slice(0, 2), 0.01]), 61902) },
 ];
-
-// ---------- 声音（帧 = 6-1-9b 段内帧） ----------
-// 照 6-3-下坠/声音.tsx 的落地：`LivingEntity.causeFallDamage` 的摔落声（> 4 点 → entity.player.big_fall，1、1，在人身上）+ `playBlockFallSound`（脚下方块 fall 声，volume × 0.5、pitch × 0.75；城堡砖是 STONE）
-export const landingSounds: SoundCue[] = [
-  ['李樱', T_LIYING, touchAt(LIYING_AT, flights.liYing), 0.31],
-  ['九胡', T_JIUHU, touchAt(JIUHU_AT, flights.jiuhu), 0.67],
-].flatMap(([name, at, p, pick]) => {
-  const frame = (at as number) - F0;
-  const pos = p as V3;
-  return [
-    { 名: `${name}落地`, 事件: 'entity.player.big_fall', 帧: frame, 位置: fromScene([pos[0], pos[1], 0.9]), 音量: 1, 音高: 1, 选: pick as number },
-    { 名: `${name}落地·城堡砖`, 事件: 'block.stone.fall', 帧: frame, 位置: fromScene(pos), 音量: 0.5, 音高: 0.75, 选: 1 - (pick as number) },
-  ];
-});
-

@@ -3,7 +3,6 @@ import type { 体素库 } from '../体素库.ts';
 import type { 区段模型 } from '../../../engine/voxel/区段模型.ts';
 import type { SectionData } from '../../../engine/voxel/区段包.ts';
 const 边 = 34, 列数 = 边 * 边;
-export const 区段头长 = 6;
 // 模型表的布局（u16 下标）：p1、p2、p3 各 128 × 3 级，跳 64 × 3 级，整列 9 × 3 级
 export const 表布局 = { p1: 0, p2: 384, p3: 768, 跳: 1152, 列: 1344, 总: 1371 } as const;
 export const 级 = (L: number) => (L === 0 ? 0 : L <= 2 ? 1 : 2);

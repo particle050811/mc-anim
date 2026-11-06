@@ -1,5 +1,6 @@
 // 第 1 场 6-1-1～6-1-4至9 各段的 Composition 组件：照 段界.ts 的截把原来那几个组件拼起来（lib/拼段.tsx）。
 // 6-1-2 的伤害数字层同样按截拼（只有 6-1-2 斩娜迦那一截有数字），和 6-1-2 段同帧。
+// 截表的数是 1/24 秒一格（拼段 每秒={24}，按秒放）；这几个源组件只画画面，声音照各段 段.ts 的 cue 放。
 import React from 'react';
 import { 拼段, type 截 } from '@engine/core/拼段.tsx';
 import { EnterForest } from '../6-1-1/进入森林.tsx';
@@ -8,13 +9,12 @@ import { official } from '../6-1-2/动作改进.ts';
 import { NagaDamageLayer } from '../6-1-2/伤害数字层.tsx';
 import { TakeOff } from '../6-1-3/起飞.tsx';
 import { OnerSegment } from '../一镜到底/画面.tsx';
-import { F_CUT } from '../6-1-9b/落地编排.ts';
 import { segments, frameCountOf, compositionId, type SegmentId, type 源 } from './段界.ts';
 
 const Naga: React.FC = () => <NagaBlockout {...official} />;
 const NagaDamage: React.FC = () => <NagaDamageLayer {...official} />;
-// 一镜到底的源帧就是全局帧 F，放到硬切 6-1-9b 那一帧（F_CUT）为止
-const Oner: React.FC = () => <OnerSegment 起={0} 帧数={F_CUT} />;
+// 一镜到底的源帧就是全局帧 F，截表放到硬切 6-1-9b 那一帧（F_CUT）为止
+const Oner: React.FC = () => <OnerSegment 起={0} />;
 const sourceComponents: Record<源, React.FC> = { '6-1-1': EnterForest, '6-1-2': Naga, '6-1-3': TakeOff, 一镜到底: Oner };
 
 const Empty: React.FC = () => null; // 透明层里没有数字的截
@@ -23,7 +23,7 @@ const piecesOf = (id: SegmentId, components: Partial<Record<源, React.FC>>): (�
 
 const shots = segments.map((s) => {
   const pieces = piecesOf(s.id, sourceComponents);
-  const Comp: React.FC = () => <拼段 截们={pieces} />;
+  const Comp: React.FC = () => <拼段 截们={pieces} 每秒={24} />;
   return { id: compositionId(s.id), component: Comp, frames: frameCountOf(s.id) };
 });
 // 注册用：<Shot {...scene1Shot('6-1-2')} />

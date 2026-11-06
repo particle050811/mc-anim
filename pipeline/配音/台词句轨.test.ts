@@ -5,7 +5,7 @@ import path from 'node:path';
 import { createElement, type ReactElement } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { 代码根 } from '../环境/路径.ts';
-import { 读旧配音表 } from '../适配器/旧项目/配音表.ts';
+import { 读旧配音表 } from './旧表.ts';
 import { 字节路径, 读资产锁, 资产锁路径 } from '../资产/资产锁.ts';
 import { 列句模块, 句模块路径, 读句模块 } from './句模块.ts';
 
