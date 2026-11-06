@@ -8,8 +8,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import ClassVar
 
-# 台词.toml 写的语言 → 各后端常用的写法
-语言码 = {'中文': 'zh', '日语': 'ja', '英语': 'en', '粤语': 'yue'}
+# 台词.toml 写的语言 → 对齐器要的写法
 语言名 = {'中文': 'Chinese', '日语': 'Japanese', '英语': 'English', '粤语': 'Cantonese'}
 
 

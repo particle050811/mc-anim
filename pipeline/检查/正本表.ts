@@ -29,7 +29,6 @@ const three换算 = 'engine/core/three换算.ts';
 const 机位 = 'engine/core/机位.ts';
 
 const 零到一 = [[0], [0.1], [0.25], [0.5], [0.62], [0.9], [1]] as const;
-const 夹外 = [[-0.5], [0], [0.3], [0.5], [0.8], [1], [1.7]] as const;
 const 三数 = [[0, 10, 0.25], [2, -4, 0.5], [1, 1, 0.3], [-3, 5, 1.5], [5, 7, -0.5], [0.2, 0.9, 0.7]] as const;
 /** 固定序列的随机数发生器替身（randInt、pick 的探针） */
 const 假随机 = (...序: number[]) => {
@@ -201,10 +200,3 @@ export const 正本表: readonly 正本项[] = [
 
 /** 正本所在的文件（这些文件里的定义就是正本本身，不算副本） */
 export const 正本文件 = new Set(正本表.map((z) => z.位置));
-
-/** 测试用：一个节点下所有被某个记号认出的节点 */
-export const 记号处 = (sf: ts.SourceFile, z: 正本项): ts.Node[] => {
-  const 处: ts.Node[] = [];
-  if (z.记号) 遍历(sf, (n) => z.记号!(n, sf) && 处.push(n));
-  return 处;
-};

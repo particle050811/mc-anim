@@ -81,15 +81,14 @@ const 跑取输出 = (cmd: string, args: string[]) =>
     execFile(cmd, args, { timeout: 3000, maxBuffer: 4 * 1024 * 1024 }, (err, out) => resolve(err ? null : out));
   });
 
-const 空集 = new Set<number>();
 const 解析ps = (ps输出: string) => ps输出.trim().split('\n').map((l) => l.trim().split(/\s+/).map(Number)).filter((c) => c.length >= 4 && c.every(Number.isFinite));
-/** 根的子孙（不含根）；碰到排除的连它的子树一起不进 */
-const 子孙 = (行们: number[][], 根: number, 排除: ReadonlySet<number> = 空集) => {
+/** 根的子孙（不含根） */
+const 子孙 = (行们: number[][], 根: number) => {
   const 子们 = new Map<number, number[]>();
   for (const [pid, ppid] of 行们) 子们.set(ppid!, [...(子们.get(ppid!) ?? []), pid!]);
   const 在内 = new Set<number>();
   const 栈 = [根];
-  while (栈.length) for (const c of 子们.get(栈.pop()!) ?? []) if (!在内.has(c) && !排除.has(c)) (在内.add(c), 栈.push(c));
+  while (栈.length) for (const c of 子们.get(栈.pop()!) ?? []) if (!在内.has(c)) (在内.add(c), 栈.push(c));
   return 在内;
 };
 const 合计 = (行们: number[][], 在内: ReadonlySet<number>) => {
@@ -100,54 +99,9 @@ const 合计 = (行们: number[][], 在内: ReadonlySet<number>) => {
 };
 
 /** 本进程的子孙（浏览器、ffmpeg）的内存和 CPU；Windows 没有 ps，记 null */
-export const 累计子孙 = (ps输出: string, 根: number, 排除: ReadonlySet<number> = 空集) => {
+export const 累计子孙 = (ps输出: string, 根: number) => {
   const 行们 = 解析ps(ps输出);
-  return 合计(行们, 子孙(行们, 根, 排除));
-};
-
-
-/** ps 的 time 列：[天-][时:]分:秒[.小数]（macOS 0:00.02，Linux 00:00:02、1-00:00:02） */
-export const 解析CPU时间 = (文: string): number | null => {
-  const m = /^(?:(\d+)-)?(?:(\d+):)?(\d+):(\d+(?:\.\d+)?)$/.exec(文.trim());
-  return m ? Number(m[1] ?? 0) * 86400 + Number(m[2] ?? 0) * 3600 + Number(m[3]) * 60 + Number(m[4]) : null;
-};
-
-/** ps -o pid=,ppid=,time= 的一次读数里，根连子孙每个进程的 CPU 秒 */
-export const 读子树CPU = (ps输出: string, 根: number) => {
-  const 行们 = ps输出.trim().split('\n').map((l) => l.trim().split(/\s+/));
-  const 树 = 行们.map((c) => [Number(c[0]), Number(c[1])]).filter((c) => c.every(Number.isFinite));
-  const 在内 = new Set([根, ...子孙(树, 根)]);
-  const 出 = new Map<number, number>();
-  for (const [p, , t] of 行们) {
-    const 秒 = 解析CPU时间(t ?? '');
-    if (在内.has(Number(p)) && 秒 !== null) 出.set(Number(p), 秒);
-  }
-  return 出;
-};
-
-/**
- * 这个进程连子孙花了多少 CPU 秒：定时读 ps，每个 pid 留最后一次读数相加。macOS 的 ps 不累计已退出的子进程，也没有 RUSAGE_CHILDREN，只能这样；
- * 进程退出前最后一个间隔的量读不到，是估算。读不到 ps（Windows）是 null
- */
-export const 建CPU账 = (根 = process.pid, 间隔毫秒 = 2000) => {
-  const 账 = new Map<number, number>();
-  let 读到过 = false;
-  const 读 = async () => {
-    const out = process.platform === 'win32' ? null : await 跑取输出('ps', ['-A', '-o', 'pid=,ppid=,time=']);
-    if (!out) return;
-    读到过 = true;
-    for (const [pid, 秒] of 读子树CPU(out, 根)) 账.set(pid, 秒);
-  };
-  void 读();
-  const 定时 = setInterval(() => void 读(), 间隔毫秒);
-  定时.unref();
-  return {
-    止: async (): Promise<number | null> => {
-      clearInterval(定时);
-      await 读();
-      return 读到过 ? Number([...账.values()].reduce((a, b) => a + b, 0).toFixed(1)) : null;
-    },
-  };
+  return 合计(行们, 子孙(行们, 根));
 };
 
 /** vm.swapusage 的 used = 123.00M */

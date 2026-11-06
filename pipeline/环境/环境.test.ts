@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { 缺编码器提示 } from './命令.ts';
 import { 读配置 } from './配置.ts';
 import { 代码根, 主检出 } from './路径.ts';
 import { 内存够渲染, 解析vm_stat, 解析交换区 } from './资源.ts';
@@ -11,11 +10,11 @@ describe('配置', () => {
   it('环境变量 > anim.local.toml > 默认，并记下来源', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-配置-'));
     const toml = path.join(dir, 'anim.local.toml');
-    fs.writeFileSync(toml, 'data = "数据"\nvideo_encoder = "libx264"\n');
-    const { 值 } = 读配置({ ANIM_VIDEO_ENCODER: 'h264_videotoolbox' }, toml);
+    fs.writeFileSync(toml, 'data = "数据"\ngl = "swangle"\n');
+    const { 值 } = 读配置({ ANIM_GL: 'egl' }, toml);
     expect(值.数据根).toMatchObject({ 值: path.join(dir, '数据'), 来源: 'anim.local.toml' });
-    expect(值.编码器).toMatchObject({ 值: 'h264_videotoolbox', 来源: '环境变量' });
-    expect(值.gl).toMatchObject({ 值: 'angle', 来源: '默认' });
+    expect(值.gl).toMatchObject({ 值: 'egl', 来源: '环境变量' });
+    expect(值.ffmpeg).toMatchObject({ 值: 'ffmpeg', 来源: '默认' });
     fs.rmSync(dir, { recursive: true });
   });
 
@@ -31,16 +30,6 @@ describe('配置', () => {
     fs.writeFileSync(toml, 'dta = "x"\n');
     expect(() => 读配置({}, toml)).toThrow(/不认识的项：dta/);
     fs.rmSync(dir, { recursive: true });
-  });
-});
-
-describe('doctor 缺编码器的提示', () => {
-  it('缺的就是 libx264：让人换 ffmpeg，不让人再设一遍 libx264', () => {
-    expect(缺编码器提示('libx264')).toBe('libx264 不在 ffmpeg 里（换带 libx264 的 ffmpeg）');
-  });
-
-  it('缺的是别的编码器：才让人改回 libx264', () => {
-    expect(缺编码器提示('h264_videotoolbox')).toContain('换 ANIM_VIDEO_ENCODER=libx264');
   });
 });
 

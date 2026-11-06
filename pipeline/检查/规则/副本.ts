@@ -40,17 +40,6 @@ export const 读副本表 = (文本: string): { 表: Map<string, Map<string, num
   return { 表, 错 };
 };
 
-/** 由现状写出副本表（第一次建表、整理时用；行按 正本表 的顺序、再按文件排） */
-export const 写副本表 = (现状: 副本现状, 表头注释: string): string => {
-  const 行们 = [表头注释.trimEnd(), '正本\t文件\t处数'];
-  for (const z of 正本表) {
-    const 按文件 = 现状.get(z.id);
-    if (!按文件) continue;
-    for (const 文件 of [...按文件.keys()].sort()) 行们.push(`${z.id}\t${文件}\t${按文件.get(文件)!.length}`);
-  }
-  return 行们.join('\n') + '\n';
-};
-
 /** 加载正本模块，拿出各个行为认法要比的函数（正本是 three 一类的模块也行：esbuild 打包后在 Node 里执行） */
 const 正本函数们 = async (c: 检查上下文, 报: 报告) => {
   const 表 = new Map<正本项, { 函数: 正本函数; 探针: readonly (readonly unknown[])[]; 参数数: number }[]>();

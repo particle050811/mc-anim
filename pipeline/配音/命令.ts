@@ -47,7 +47,7 @@ type 后端信息 = { 名: string; 说明: string; 本机: boolean; 云端: bool
 type 出句选项 = { 重对齐?: boolean; 从旧表?: boolean; 新测量?: Map<string, 测量> };
 
 /** 给这些句子出句模块：字取 口型手修 > （不重对齐时）旧句模块或旧表 > 对齐器；测量取 新测量 > 旧句模块（同一版成品）> 旧表 */
-const 出句模块 = async (表: 作品台词, 行们: 台词行[], o: 出句选项) => {
+const 出句模块 = async (行们: 台词行[], o: 出句选项) => {
   const 锁 = 两锁();
   const 旧表 = o.从旧表 ? 读旧配音表(作品根(), 锁, 数据根()) : null;
   const 备: { 行: 台词行; sha: string; 测量: 测量; 文件秒数: number; 字?: 字们; 手修: boolean; 旧?: string }[] = [];
@@ -305,7 +305,7 @@ const 定稿 = async (表: 作品台词, 行: 台词行, 候选: string, p: Retu
   fs.writeFileSync(台词文件(), toml);
   console.log(`${行.id}：成品 ${条目.sha256.slice(0, 12)}，开口 ${m.开口} 秒、有声 ${m.有声长} 秒、共 ${m.时长} 秒，增益 ${m.增益dB} dB`);
   const 新表 = 读表();
-  const 写了 = await 出句模块(新表, [新表.台词.find((t) => t.id === 行.id)!], { 新测量: new Map([[行.id, { 开口: m.开口, 有声长: m.有声长, 时长: m.时长 }]]) });
+  const 写了 = await 出句模块([新表.台词.find((t) => t.id === 行.id)!], { 新测量: new Map([[行.id, { 开口: m.开口, 有声长: m.有声长, 时长: m.时长 }]]) });
   记录.产物.push(...写了);
 };
 
@@ -350,7 +350,7 @@ export const 配音命令: Record<string, 命令> = {
         return 问题.length ? 1 : 0;
       }
       if (动作 === 'lip') {
-        const 写了 = await 出句模块(表, 选行(表, p.位置, true), { 重对齐: p.开关.has('--重对齐'), 从旧表: p.开关.has('--从旧表') });
+        const 写了 = await 出句模块(选行(表, p.位置, true), { 重对齐: p.开关.has('--重对齐'), 从旧表: p.开关.has('--从旧表') });
         记录.产物.push(...写了);
         console.log(`写了 ${写了.length} 个句模块（${相对代码根(句模块目录(作品根()))}）`);
         return 0;

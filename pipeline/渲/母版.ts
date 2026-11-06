@@ -29,14 +29,6 @@ export const 记用过 = (目录: string, 指纹: string) => {
     // 记不上只是少一层保护
   }
 };
-/** 最后一次用的时间（毫秒），没记过 null */
-export const 用过于 = (目录: string, 指纹: string): number | null => {
-  try {
-    return fs.statSync(用过文件(目录, 指纹)).mtimeMs;
-  } catch {
-    return null;
-  }
-};
 
 /** 先写临时名再原子改名，中途失败不留半截文件 */
 export const 原子写 = (file: string, text: string) => {

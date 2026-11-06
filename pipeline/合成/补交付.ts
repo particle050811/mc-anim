@@ -6,7 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { 交付根 } from '../环境/配置.ts';
-import { 作品名, 作品根 } from '../环境/作品.ts';
+import { 作品名 } from '../环境/作品.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import { 文件sha, 段签文件, 读段签, 读历史段签, 对得上母版, 对得上原母版, 段签齐, type 段签 } from '../段签/段签.ts';
 import { 交付缺, 未拉响度文件, 拼未拉响度, 读交付manifest, type 交付段 } from './交付.ts';

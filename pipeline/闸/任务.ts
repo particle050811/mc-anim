@@ -47,8 +47,6 @@ export type 任务信息 = {
     票?: string;
     /** 被杀时说得清当时在干嘛；崩溃事件也从在跑文件带出来。 */
     当时?: '排队' | '持锁' | '';
-    /** 11-06 以前的后台转存（决策/0014 删了）做到哪：闸放开后这段还在占 CPU，持锁信息看不出来。起于 是在做这段开工的时刻。 */
-    后台?: { 在做: string | null; 排着: number; 起于?: number | null };
 };
 const 活任务 = new Map<string, ReturnType<typeof 建任务>>();
 export const 取调度环境 = (e: Partial<调度环境> = {}): 调度环境 => ({ 锁目录: e.锁目录 ?? 配置('锁目录'),
@@ -97,7 +95,7 @@ const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: n
     const 撤 = 登记收尾(结束);
     const timer = setInterval(() => { info.心跳 = e.现在毫秒(); 存(); }, 30000);
     timer.unref();
-    return { info, 记, 结束, 更新: (声明: 任务声明, 票?: string, 当时 = info.当时) => { info.声明 = 声明; info.票 = 票; info.当时 = 当时; 存(); }, 记后台: (后台: 任务信息['后台']) => { info.后台 = 后台; 存(); } };
+    return { info, 记, 结束, 更新: (声明: 任务声明, 票?: string, 当时 = info.当时) => { info.声明 = 声明; info.票 = 票; info.当时 = 当时; 存(); } };
 };
 export const 开任务 = (e: 调度环境, 声明: 任务声明, 结束?: (码: number) => void) => {
     let t = 活任务.get(e.锁目录);
@@ -140,9 +138,3 @@ export const 清崩溃 = (e: 调度环境, 活 = (pid: number, 心跳: number) =
     }
 };
 export const 有任务 = (锁目录: string) => 活任务.has(锁目录);
-/** CPU 后处理不占 GPU 锁；单独脚本也能登记，路由已有任务时只换可见阶段。 */
-export const 登记CPU = async<T>(声明:任务声明,fn:()=>Promise<T>,环境:Partial<调度环境>={}):Promise<T> => {
-    const e=取调度环境(环境),自建=!有任务(e.锁目录),t=开任务(e,声明),旧=t.info.声明;
-    t.更新(声明);let code=1;
-    try{const r=await fn();code=0;return r;}finally{if(自建)t.结束(code);else t.更新(旧);}
-};

@@ -4,18 +4,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { 音频数 } from '../../engine/段/声音助手.ts';
-import { 量音频数, 解析ebur128 } from '../资产/音频量.ts';
+import { 量音频数 } from '../资产/音频量.ts';
 import { 字节路径, type 锁条目 } from '../资产/资产锁.ts';
 
 /** 锁条目里量好的可选字段（assets add 入库时写的；老条目没有） */
 type 带数条目 = 锁条目 & Partial<音频数>;
-
-/** 解析 ffmpeg ebur128 的 stderr 和 ffprobe 的时长（资产/音频量.ts 的同一份解析），时长量不出或不是正数报错 */
-export const 解析量音 = (stderr: string, 时长文本: string): 音频数 => {
-  const r = 解析ebur128(stderr, 时长文本);
-  if (r.时长 === undefined || !(r.时长 > 0)) throw new Error(`ffprobe 给的时长不对：${JSON.stringify(时长文本)}`);
-  return { ...r, 时长: r.时长 };
-};
 
 /** 和入库、assets measure 用同一个量法，锁里的数和这里现量的逐位一样 */
 export const 量音频文件 = (文件: string): 音频数 => 量音频数(文件);

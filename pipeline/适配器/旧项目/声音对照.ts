@@ -6,7 +6,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 基线根, 数据路径 } from '../../环境/配置.ts';
 import { 旧布局作品, 指定作品, 作品根 } from '../../环境/作品.ts';
-import { 代码根 } from '../../环境/路径.ts';
 import { 全部段 } from '../../清单/清单.ts';
 import { 读资产表 } from '../../资产/资产表.ts';
 import { 字节路径, 读资产锁, 解析资产 } from '../../资产/资产锁.ts';
