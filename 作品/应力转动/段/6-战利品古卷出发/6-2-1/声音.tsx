@@ -1,5 +1,6 @@
 // 第 2 场基地谋划 6-2-1～6-2-3 的声音：李樱的台词 + 原版脚步声，不挂配乐（三段的场景描述都写了不要配乐）。
-// 三段是 编排.ts 那条全局时间线上的三个窗口，声音也排在全局帧上，每段放自己那一截（同 6-4-3/声音.tsx）。
+// 11-06 迁成原生段以后这里不再挂音轨：声音照 6-战利品古卷出发 段.ts 的 cue 放（cue 照基线声音清单转写，就是下面 `sounds`、`lineCues` 当年放出来的）；
+// `lineCues` 还给 画面.tsx 动嘴用，`sounds` 留着记步点、点搜索是怎么推出来的。
 // 台词开口见 编排.ts 的 `lineStarts` / `ancientCityLineStart`（全局帧，照用户在剪映里放字幕的位置）。
 //   夸克古卷跨段：6-2-3 从它说到一半的地方接着放（帧是负的，`LineTrack` 自己跳过前面那截），同 6-1-2 → 6-1-3。
 // 音效规则照 1.20.1（javap 核对，见 src/音效/游戏音效.tsx）：
@@ -11,10 +12,8 @@
 // - 游戏里没有声音所以不加：拿起、放下战利品；JEI 界面弹出、按 Ctrl；手指敲桌面、拍手；拿起结构指南针、指针转动；九胡回头、转身。
 // - 传动杆和齿轮在转，但它们是 SimpleKineticBlockEntity，`isNoisy()` = false，不放 KINETIC 嗡鸣；齿轮的 create:cogs 声音没导出，
 //   按 `SoundScape.getVolume` 算镜头离齿轮 6～8 格时约 −32 dB，先没加。北山墙外风车轴承离镜头 9～13 格，约 −58 dB，不加。
-import React from 'react';
 import { rng, type V3 } from '@engine/model/parts.tsx';
-import { GameSoundTrack, type SoundCue } from '@engine/audio/游戏音效.tsx';
-import { lineFrameCount, LineTrack } from '../../../配音/台词轨.tsx';
+import type { SoundCue } from '@engine/audio/游戏音效.tsx';
 import { compassClickFrames } from '@库/界面/结构罗盘.tsx';
 import type { WalkPath } from './动作.ts';
 import * as choreo from './编排.ts';
@@ -65,17 +64,3 @@ export const lineCues: { id: string; frame: number }[] = [
   { id: '6-2-2-李樱-夸克古卷', frame: choreo.lineStarts.quarkTome },
   { id: '6-2-3-李樱-古城寻宝', frame: choreo.ancientCityLineStart },
 ];
-
-const listener = (G: number) => choreo.camera(Math.min(Math.max(Math.round(G), 0), choreo.lastFrame)).pos as V3;
-
-// 段里第 0 帧 = 全局帧 段表[段].起；每段放开口落在自己里面的台词，再加上一段开口、说进这一段的（夸克古卷，帧是负的）
-export const BasePlanSound: React.FC<{ segment: choreo.SegmentName }> = ({ segment: segment }) => {
-  const { 起: start, 止: end } = choreo.segmentTable[segment];
-  const lines = lineCues.filter((x) => x.frame < end && x.frame + lineFrameCount(x.id) > start).map((x) => ({ id: x.id, 帧: x.frame - start }));
-  return (
-    <>
-      <GameSoundTrack sounds={sounds} listener={listener} startFrame={start} frameCount={choreo.segmentFrames(segment)} />
-      <LineTrack 句们={lines} />
-    </>
-  );
-};
