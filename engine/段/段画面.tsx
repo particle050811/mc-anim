@@ -10,7 +10,7 @@ import { useFirstVisibleFrame, useSfxLog } from '../audio/音效清单.ts';
 import type { 段定义 } from './段定义.ts';
 import { 段放法, type 一声 } from './放法.ts';
 import type { 声音表 } from './声音助手.ts';
-import { use当前秒, use帧率 } from './时间.tsx';
+import { use当前秒, use帧率, use输出帧零头 } from './时间.tsx';
 
 /** anim cues 生成的 声音地址.生成.ts 的默认导出：资产 id → 打包后的地址，和本段的声音表 */
 export type 声音地址 = { 地址: Readonly<Record<string, string>>; 表: 声音表 };
@@ -18,25 +18,31 @@ export type 声音地址 = { 地址: Readonly<Record<string, string>>; 表: 声�
 type 段上下文 = { 段: 段定义; 声音: 声音地址 };
 const 段Context = createContext<段上下文 | null>(null);
 
-// 帧号在这里由秒现算，可以带小数：Remotion 的 Sequence 收小数 from，@remotion/media 的 Audio 按 (当前帧 − from) ÷ fps 秒取文件（不取整），
-// 起点就按样本落在那一刻；只是 Sequence 第一次露出来是在 from 之后的第一个整帧，声音开头不到一帧的那截会切掉（决策 0015 量过）。
-// 增益每个输出帧取一次（Remotion 一帧一个音量），取的是这一帧开头那一刻的。
+// 帧号在这里由秒现算，可以带小数：Remotion 的 Sequence 收小数 from，@remotion/media 的 Audio 按 (当前帧 − from) ÷ fps 秒取文件（不取整）。
+// Sequence 要到 from 之后第一个输出帧才露出来，直接放会切掉声音开头不到一帧的那截。所以没入点、不循环的 cue 把 Sequence 前移 d 帧到
+// 它前面那个输出帧上，trimBefore 给 −d：文件第 0 秒以前那截 @remotion/media 补静音（extract-audio 的 leadingSilence），起点按样本准。
+// 有入点的（接着放的）前移会多放入点以前的那截、循环的会把静音也循环进去，这两种照旧切（决策 0015 量过）。
+// 结尾不准：最后一个露出来的帧照样取满一帧，cue 尾最多多放不到一帧。增益每个输出帧取一次（Remotion 一帧一个音量），取这一帧开头那一刻的。
 const 放一声: React.FC<{ 声: 一声; src: string }> = ({ 声, src }) => {
   const r = use帧率();
+  const 零头 = use输出帧零头();
   const 记 = useSfxLog(声.类);
   const 外露 = useFirstVisibleFrame();
-  记({ 名: 声.名, ...(声.档 !== undefined ? { 档: 声.档 } : {}), 文件: 声.资产, from: 声.起秒 * r, 帧数: 声.秒数 * r, 入点秒: 声.入点秒, 速率: 声.速率, 循环: 声.循环, gainAt: (f) => 声.增益(f / r) });
+  const 起 = 声.起秒 * r;
+  const 余 = (((起 - 零头) % 1) + 1) % 1;
+  const d = 声.入点秒 === 0 && !声.循环 && 余 > 1e-6 && 余 < 1 - 1e-6 ? 余 : 0;
+  const from = 起 - d;
+  记({ 名: 声.名, ...(声.档 !== undefined ? { 档: 声.档 } : {}), 文件: 声.资产, from: 起, 帧数: 声.秒数 * r, 入点秒: 声.入点秒, 速率: 声.速率, 循环: 声.循环, gainAt: (f) => 声.增益(f / r) });
   // 外面的 Sequence 带 trimBefore、从负帧起时声音从 外露 那帧才露出来，Remotion 给 volume 的帧从露出来那帧数起（见 音效清单.ts）
-  const from = 声.起秒 * r;
   const 跳 = Math.max(0, 外露 - from);
   return (
-    <Sequence from={from} durationInFrames={声.秒数 * r} layout="none" name={声.名}>
+    <Sequence from={from} durationInFrames={声.秒数 * r + d} layout="none" name={声.名}>
       <Audio
         src={声.区分 ? tagSrc(src, 声.区分) : src}
-        trimBefore={声.入点秒 * r}
+        trimBefore={d ? -d * 声.速率 : 声.入点秒 * r}
         {...(声.速率 !== 1 ? { playbackRate: 声.速率 } : {})}
         {...(声.循环 ? { loop: true, loopVolumeCurveBehavior: 'extend' as const } : {})}
-        volume={(f) => 声.增益((f + 跳) / r)}
+        volume={(f) => 声.增益((f + 跳 - d) / r)}
       />
     </Sequence>
   );

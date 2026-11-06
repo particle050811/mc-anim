@@ -39,5 +39,17 @@ export const 原生时钟: React.FC<{ 相位秒: number; children: ReactNode }> 
   );
 };
 
+/**
+ * 输出帧落在当前时间轴的哪个零头（0 ≤ x < 1）：这一层的第 g 个输出帧在帧号 整数 + x 上（原生时钟的相位、带小数 from 的 Sequence 都算进去）。
+ * 只给声音用（段画面.tsx 放一声：把 cue 起点前移到输出帧上、用负的 trimBefore 补静音，起点按样本准）。兼容层里一个输出帧不是一整帧，给 0
+ */
+export const use输出帧零头 = (): number => {
+  const 兼容 = useContext(编排fpsContext);
+  const f = useCurrentFrame();
+  if (兼容 !== null) return 0;
+  const x = f - Math.floor(f);
+  return x < 1e-6 || x > 1 - 1e-6 ? 0 : x;
+};
+
 /** 核对 Composition「一帧一个视图」的视图下标（第几个输出帧，整数）。只给核对用：正片画面一律按秒写 */
 export const use视图下标 = (): number => Math.floor(useCurrentFrame() + 1e-9);
