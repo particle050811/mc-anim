@@ -23,7 +23,7 @@ export const 规则表: Record<规则类, { 说明: string; 跑: (c: 检查上�
   规矩: { 说明: '例外 和 作品的 规矩.toml 双向对得上、默认值落点在、出处引用的记忆在', 跑: 规矩 },
   平台: { 说明: 'Windows 合法文件名、结构层 ASCII、不开 shell、不用 fcntl', 跑: 平台 },
   副本: { 说明: 'lerp、toThree、Cam 这类共用函数不许新写副本（import engine/core、库 的正本）；旧副本冻在 docs/副本表.tsv，只许减少', 跑: 副本 },
-  时间: { 说明: '段、场、库的画面按秒写，不直接调 useCurrentFrame()、use编排fps()（用 engine/段/时间.tsx）；没迁的冻在 docs/帧号例外表.tsv，只许减少', 跑: 时间 },
+  时间: { 说明: '段、场、库的画面按秒写，不直接调 useCurrentFrame()（用 engine/段/时间.tsx），没有例外', 跑: 时间 },
 };
 
 export type 检查选项 = { 只?: readonly 规则类[]; 快?: boolean; 深?: boolean; 数据根?: string; 作品?: string };

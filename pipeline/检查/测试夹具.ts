@@ -16,7 +16,7 @@ export const 基础 = (): 文件表 => ({
     "export const 清单 = [{ 键: '7-甲', 章: 7 }];",
     "export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
-  '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+  '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
   '作品/应力转动/段/7-甲/画面.tsx': "import 图 from 'asset:贴图/甲';\nexport default () => <img src={图} />;\n",
   'engine/core/例外.ts': fs.readFileSync(path.join(代码根(), 'engine', 'core', '例外.ts'), 'utf8'),
   '作品/应力转动/旧名.tsv': '类别\t旧名\t新键\t备注\n段号\t7-1-1\t7-甲\t\n段名\t7-老名\t7-甲\t改名\n',
