@@ -1,4 +1,4 @@
-// 渲段渲完自动删旧切片（CRF1 时代的 .mkv、.x264.mkv 同样算旧）的每条跳过规则，和 gc 同步的规则（用户 10-30 定：旧的过期的删，当前不删，没有预算）。数据根是临时目录，作品是现造的。
+// 渲段渲完自动删旧切片的每条跳过规则，和 gc 同步的规则（用户 10-30 定：旧的过期的删，当前不删，没有预算）。数据根是临时目录，作品是现造的。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,7 +13,7 @@ const { 删旧, 有要删的旧 } = await import('./钉.ts');
 const { 检出记号文件 } = await import('../渲/母版.ts');
 const { 本检出 } = await import('../环境/路径.ts');
 const { 规划媒体, 扫媒体, 保留集, 加交付, 加认可 } = await import('./回收.ts');
-const { 认可参考文件, 母版目录, 叠层目录, 段签目录 } = await import('../环境/配置.ts');
+const { 认可参考文件, 母版目录 } = await import('../环境/配置.ts');
 const { 抽样键, 写认可, 认可文件 } = await import('../验收/认可.ts');
 
 const 新 = 'a'.repeat(64);
@@ -31,23 +31,19 @@ const 写指纹 = (dir: string, 指纹: string, 级别: string | null) => {
   const 项 = 级别 ? { 渲染设置: { inputProps: { 级别 } } } : {};
   fs.writeFileSync(path.join(dir, `${指纹.slice(0, 16)}.指纹.json`), JSON.stringify({ 段: 键, 指纹, 项 }));
 };
-/** 造一份旧的：默认是切片（.mp4）；原、压 是 CRF1 时代的 .mkv、.x264.mkv */
-const 旧母版 = (o: { 切片?: boolean; 原?: boolean; 压?: boolean; 级别?: string | null } = {}) => {
-  const { 切片 = true, 原 = false, 压 = false, 级别 = '视频' } = o;
-  写指纹(目录(), 旧, 级别);
-  if (切片) fs.writeFileSync(path.join(目录(), `${旧16}.mp4`), Buffer.alloc(40));
-  if (原) fs.writeFileSync(path.join(目录(), `${旧16}.mkv`), Buffer.alloc(100));
-  if (压) fs.writeFileSync(path.join(目录(), `${旧16}.x264.mkv`), Buffer.alloc(40));
+/** 造一份旧的切片（.mp4） */
+const 旧母版 = (o: { 级别?: string | null } = {}) => {
+  写指纹(目录(), 旧, o.级别 === undefined ? '视频' : o.级别);
+  fs.writeFileSync(path.join(目录(), `${旧16}.mp4`), Buffer.alloc(40));
 };
 const 在 = (后缀: string) => fs.existsSync(path.join(目录(), `${旧16}${后缀}`));
-const 删 = (种: '母版' | '叠层' = '母版', k = 键) => 删旧(种, k, '视频', [新, 新声], { 作品: '假', 现在, 主检出: true });
+const 删 = () => 删旧('母版', 键, '视频', [新, 新声], { 作品: '假', 现在, 主检出: true });
 
-/** 交付：默认是 CRF1 时代的 manifest（版本 2，段记 指纹）；切片 是现在的（段记 画面指纹） */
-const 交付 = (名: string, o: { 自足?: boolean; 切片?: boolean } = {}) => {
+/** 交付 manifest（版本 3，段记 画面指纹） */
+const 交付 = (名: string, o: { 自足?: boolean } = {}) => {
   const dir = path.join(数据根, '交付', '假', 名);
   fs.mkdirSync(dir, { recursive: true });
-  const 段 = o.切片 ? { 键, 画面指纹: 旧 } : { 键, 指纹: 旧 };
-  fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ 版本: o.切片 ? 3 : 2, 作品: '假', 段: [段], 叠层: [] }));
+  fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify({ 版本: 3, 作品: '假', 段: [{ 键, 画面指纹: 旧 }] }));
   if (o.自足) fs.writeFileSync(path.join(dir, '全片-未拉响度.flac'), '');
 };
 const 认可记录 = {
@@ -63,8 +59,9 @@ beforeEach(() => {
 });
 
 describe('渲段渲完删旧', () => {
-  it('同段同级别别的指纹：切片、旧 wav、CRF1 时代的 .mkv 和 .x264.mkv 都删，.指纹.json 留着，当前画面、声音不动', () => {
-    旧母版({ 原: true, 压: true });
+  it('同段同级别别的指纹：切片、旧 wav 都删，.指纹.json 留着，当前画面、声音不动；CRF1 时代的 .mkv 不认，不动', () => {
+    旧母版();
+    fs.writeFileSync(path.join(目录(), `${旧16}.mkv`), Buffer.alloc(100));
     写指纹(目录(), 新, '视频');
     写指纹(目录(), 新声, '视频');
     const 新文件 = path.join(目录(), `${新.slice(0, 16)}.mp4`);
@@ -75,8 +72,9 @@ describe('渲段渲完删旧', () => {
     写指纹(目录(), 旧声, '视频');
     fs.writeFileSync(path.join(目录(), `${旧声.slice(0, 16)}.wav`), Buffer.alloc(8));
     const r = 删();
-    expect(r.删大小).toBe(40 + 100 + 40 + 8);
-    expect(在('.mp4') || 在('.mkv') || 在('.x264.mkv')).toBe(false);
+    expect(r.删大小).toBe(40 + 8);
+    expect(在('.mp4')).toBe(false);
+    expect(在('.mkv')).toBe(true);
     expect(fs.existsSync(path.join(目录(), `${旧声.slice(0, 16)}.wav`))).toBe(false);
     expect(在('.指纹.json')).toBe(true);
     expect(fs.existsSync(新文件) && fs.existsSync(新声文件)).toBe(true);
@@ -91,16 +89,16 @@ describe('渲段渲完删旧', () => {
     expect(在('.mp4')).toBe(true);
   });
 
-  it('还没自足的交付（CRF1 时代的 manifest 引用旧母版）钉着；自足了就不钉', () => {
-    旧母版({ 切片: false, 压: true });
+  it('还没自足的交付引用的旧切片钉着；自足了就不钉', () => {
+    旧母版();
     交付('没自足');
     const r = 删();
-    expect(在('.x264.mkv')).toBe(true);
+    expect(在('.mp4')).toBe(true);
     expect(r.留[0]!.理由).toContain('交付');
     fs.rmSync(path.join(数据根, '交付'), { recursive: true });
     交付('自足', { 自足: true });
     删();
-    expect(在('.x264.mkv')).toBe(false);
+    expect(在('.mp4')).toBe(false);
   });
 
   it('认可没有参考：认可那版的切片留（verify 比它的像素、补参考 从它抽，用户 11-02 定）；有参考了就不钉', () => {
@@ -113,13 +111,6 @@ describe('渲段渲完删旧', () => {
     fs.writeFileSync(参, '');
     删();
     expect(在('.mp4')).toBe(false);
-  });
-
-  it('CRF1 时代认可的：.mkv 和 .x264.mkv 一样按认可钉', () => {
-    旧母版({ 切片: false, 原: true, 压: true });
-    写认可记录();
-    删();
-    expect(在('.mkv') && 在('.x264.mkv')).toBe(true);
   });
 
   it('这个指纹正在写（.渲染中、.写入中）不删；过了一天的残留不算', () => {
@@ -153,11 +144,11 @@ describe('渲段渲完删旧', () => {
   });
 
   it('worktree 里不自动删旧（可能是主检出的当前指纹）：都在，报留着', () => {
-    旧母版({ 原: true });
+    旧母版();
     const r = 删旧('母版', 键, '视频', [新, 新声], { 作品: '假', 现在, 主检出: false });
     expect(r.删).toEqual([]);
-    expect(r.留.map((x) => x.理由)).toEqual(['worktree 不自动删', 'worktree 不自动删']);
-    expect(在('.mkv') && 在('.mp4')).toBe(true);
+    expect(r.留.map((x) => x.理由)).toEqual(['worktree 不自动删']);
+    expect(在('.mp4')).toBe(true);
     expect(有要删的旧('母版', 键, '视频', [新, 新声], { 作品: '假', 现在, 主检出: false })).toBe(false);
   });
 
@@ -183,34 +174,26 @@ describe('渲段渲完删旧', () => {
   });
 
   it('交付 manifest 读不出：不知道引用了谁，整部作品的母版留着；已自足的不钉', () => {
-    旧母版({ 原: true });
+    旧母版();
     交付('坏了');
     const m = path.join(数据根, '交付', '假', '坏了', 'manifest.json');
     fs.writeFileSync(m, '{"段": [');
     const r = 删();
     expect(r.删).toEqual([]);
     expect(r.留[0]!.理由).toContain('交付 manifest 读不出：假/坏了');
-    expect(在('.mkv') && 在('.mp4')).toBe(true);
+    expect(在('.mp4')).toBe(true);
     fs.writeFileSync(path.join(path.dirname(m), '全片-未拉响度.flac'), '');
     删();
-    expect(在('.mkv') || 在('.mp4')).toBe(false);
+    expect(在('.mp4')).toBe(false);
   });
 
-  it('叠层（旧缓存）同一套', () => {
-    const k = '甲-层';
-    const dir = 叠层目录(k, '假');
-    写指纹(dir, 旧, '视频');
-    fs.writeFileSync(path.join(dir, `${旧16}.mov`), Buffer.alloc(10));
-    expect(删('叠层', k).删大小).toBe(10);
-    expect(fs.existsSync(path.join(dir, `${旧16}.mov`))).toBe(false);
-  });
 });
 
 describe('gc 同步', () => {
   const 规划 = (配: (保留: InstanceType<typeof 保留集>) => void) => {
     const 保留 = new 保留集();
     配(保留);
-    const 扫 = 扫媒体(path.join(数据根, 'cache', '母版', '假'), '母版', '假', { 段签目录: (k, f) => 段签目录(k, f, '假'), 现在 });
+    const 扫 = 扫媒体(path.join(数据根, 'cache', '母版', '假'), '母版', '假', { 现在 });
     return 规划媒体(扫.媒体, 保留, { 现在, 近期天数: 2 });
   };
   const 老 = (后缀: string) => {
@@ -219,10 +202,9 @@ describe('gc 同步', () => {
   };
   const 删的 = (r: ReturnType<typeof 规划>) => r.filter((f) => !f.理由.length).map((f) => path.basename(f.路径)).sort();
 
-  it('当前的切片和 wav 不删；CRF1 时代的旧母版有更新的切片了，过了近期就删', () => {
-    旧母版({ 切片: false, 原: true, 压: true });
-    老('.mkv');
-    老('.x264.mkv');
+  it('当前的切片和 wav 不删；旧切片有更新的了，过了近期就删', () => {
+    旧母版();
+    老('.mp4');
     fs.utimesSync(path.join(目录(), `${旧16}.指纹.json`), new Date(现在 - 30 * 24 * 小时), new Date(现在 - 30 * 24 * 小时));
     写指纹(目录(), 新, '视频');
     写指纹(目录(), 新声, '视频');
@@ -234,7 +216,7 @@ describe('gc 同步', () => {
       保.加(画, { 类: '当前', 说明: '视频' });
       保.加(声, { 类: '当前', 说明: '视频' });
     });
-    expect(删的(r)).toEqual([`${旧16}.mkv`, `${旧16}.x264.mkv`]);
+    expect(删的(r)).toEqual([`${旧16}.mp4`]);
     expect(r.find((f) => f.存法 === '切片')!.理由.some((x) => x.类 === '当前')).toBe(true);
     expect(r.find((f) => f.存法 === '声音')!.理由.some((x) => x.类 === '当前')).toBe(true);
   });
@@ -251,7 +233,7 @@ describe('gc 同步', () => {
       加认可(保, 作品根, (k) => 母版目录(k, '假'), () => {}, { 解钉: true });
     };
     expect(删的(规划(配))).toEqual([`${旧16}.mp4`]);
-    交付('未自足', { 切片: true });
+    交付('未自足');
     expect(删的(规划(配))).toEqual([]);
     fs.rmSync(path.join(数据根, '交付'), { recursive: true });
     交付('自足', { 自足: true });

@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { 作品们, 取作品参数, 拆全名, 选作品 } from './作品.ts';
-import { 交付根, 母版目录, 叠层目录, 读配置 } from './配置.ts';
+import { 交付根, 母版目录, 读配置 } from './配置.ts';
 
 const 临时 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-作品-'));
 const 造 = (dir: string) => {
@@ -67,10 +67,9 @@ describe('选作品', () => {
 });
 
 describe('按作品分的缓存和交付', () => {
-  it('同名段在不同作品下的母版、叠层、交付目录不同', () => {
+  it('同名段在不同作品下的母版、交付目录不同', () => {
     expect(母版目录('7-甲', '甲')).not.toBe(母版目录('7-甲', '乙'));
     expect(母版目录('7-甲', '甲').split(path.sep).slice(-3)).toEqual(['母版', '甲', '7-甲']);
-    expect(叠层目录('7-甲-层', '甲')).not.toBe(叠层目录('7-甲-层', '乙'));
     expect(交付根('甲')).not.toBe(交付根('乙'));
   });
 });

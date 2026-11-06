@@ -142,7 +142,7 @@ describe('找旧版、登记沿用', () => {
 
     // cache gc 的扫描：新指纹的切片是它自己的一份
     const 扫 = 扫一键('母版', 键, 作品).媒体.find((m) => m.指纹 === 乙.画面指纹.指纹.slice(0, 16));
-    expect(扫).toMatchObject({ 存法: '切片', 已被取代: false });
+    expect(扫).toMatchObject({ 存法: '切片' });
 
     // 连着认：原渲 指到真渲的那份
     const 丙 = 产物('丙');
