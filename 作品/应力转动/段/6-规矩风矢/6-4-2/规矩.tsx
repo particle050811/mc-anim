@@ -1,7 +1,7 @@
 // 6-4-2 规矩：放大 4 倍的新城（古城4x画布，10-13）里，李樱跳切到兵营南门外（Q4），一小跳进城西头兵营，落在 #210 跟前开箱惹出第一次尖啸，定住不动，等黑暗效果过去接着翻箱子。
-// 编排见 编排.ts，声音见 声音.tsx。首帧接 6-4-1（中间四跳不演），末帧的下一帧是 6-4-3a 首帧（../古城4x布局.ts 的 六四二末帧），两段合成 6-4-2至3a（../6-4-2至3a/）。跳切（编排.ts）的成片帧用 剧情帧() 换。
+// 编排见 编排.ts；成片段是 ../6-4-2至3a/，声音照那段 段.ts 的 cue 放。首帧接 6-4-1（中间四跳不演），末帧的下一帧是 6-4-3a 首帧（../古城4x布局.ts 的 六四二末帧），两段合成 6-4-2至3a（../6-4-2至3a/）。跳切（编排.ts）的成片帧用 剧情帧() 换。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import { FOG_4X } from '../../../地点/古城4x.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { SculkSensor } from '@库/特效/幽匿感测体.tsx';
@@ -10,7 +10,6 @@ import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import { DarknessEffect } from '@库/特效/黑暗效果.tsx';
 import { AncientCity4xCanvas, LiYingWithBlade, type Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as choreo from './编排.ts';
-import { RulesSound } from './声音.tsx';
 
 export const rulesFrames = choreo.END;
 
@@ -44,15 +43,5 @@ export const RulesView: React.FC<{ f: number; cam?: Cam }> = ({ f: storyFrame, c
       {/* 黑暗效果：雾和亮度照 1.20.1（模型/特效/黑暗效果.tsx），平时的雾是古城4x画布的 FOG_4X */}
       <DarknessEffect sec={t - choreo.darknessStartSec} fogColor={FOG_4X.color} normalFogNear={FOG_4X.near} normalFogFar={FOG_4X.far} fogBackground />
     </AncientCity4xCanvas>
-  );
-};
-
-export const Rules: React.FC = () => {
-  const cutFrame = useCurrentFrame();
-  return (
-    <>
-      <RulesView f={choreo.toStoryFrame(cutFrame)} />
-      <RulesSound />
-    </>
   );
 };
