@@ -1,5 +1,5 @@
 // 段签：从 ffmpeg 现造的小切片（有损 x264 mp4，和真切片一样有编码噪声）和 wav 派生，查签名和 verify 逐位相同、FLAC 无损、版本 3 记两份样子、
-// 首尾小图和 灰度帧 一样、版本 1、2（CRF1 时代）照读、重渲自查（旧的一套挪进 历史/）、取段签 缺了才派生；
+// 首尾小图和 灰度帧 一样、版本 1、2 不认、重渲自查（旧的一套挪进 历史/）、取段签 缺了才派生；
 // 扫段签 和 扫母版 结论一样；认可参考（accept 时从认可那版的切片抽、旁记核 yuv；没有旁记的老参考不用）。数据根是临时目录，不碰真数据。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -116,24 +116,15 @@ describe('段签', () => {
     expect(签.声音).toBeNull();
   });
 
-  it('版本 1（带 抽样.mkv）、版本 2 的段签照读、算齐，但不算这一对切片派生的；重渲时旧的连 抽样.mkv 挪进 历史/，新的是版本 3', async () => {
+  it('版本 1、2（CRF1 时代）的段签不认：当没有', async () => {
     const fp = 指纹('版本一');
     const 画 = path.join(目录, '版本一.mp4');
     fs.copyFileSync(原, 画);
     const 新 = (await 出段签(画, 声, { 段键: '核对-版本一', 指纹: fp, 级别: '视频', 派生: '渲染' })).签;
-    const 旧式 = { ...新, 版本: 1, 抽样: { 文件: '抽样.mkv', sha: 'a'.repeat(64), 大小: 3, 帧: [0, 24, 47] } };
-    fs.writeFileSync(签路径(新), JSON.stringify(旧式));
-    expect(读段签('核对-版本一', fp)).toEqual(旧式);
-    expect(段签齐(读段签('核对-版本一', fp))).toBe(true);
-    expect(await 对得上切片(读段签('核对-版本一', fp)!, 画, 声)).toBe(false);
-    fs.writeFileSync(段签文件(新, '抽样.mkv'), 'abc');
-    fs.copyFileSync(后半变, 画);
-    const 再 = (await 出段签(画, 声, { 段键: '核对-版本一', 指纹: fp, 级别: '视频', 派生: '渲染' })).签;
-    expect(再.版本).toBe(3);
-    expect(fs.existsSync(段签文件(再, '抽样.mkv'))).toBe(false);
-    const [史] = 读历史段签('核对-版本一', fp);
-    expect(史!.签.版本).toBe(1);
-    expect(fs.readFileSync(path.join(史!.目录, '抽样.mkv'), 'utf8')).toBe('abc');
+    for (const 版本 of [1, 2]) {
+      fs.writeFileSync(签路径(新), JSON.stringify({ ...新, 版本 }));
+      expect(读段签('核对-版本一', fp)).toBeNull();
+    }
   });
 
   it('同一指纹重渲：画面一样字节不一样是同画面，画面变了是漂移；都记进 历史.jsonl', async () => {

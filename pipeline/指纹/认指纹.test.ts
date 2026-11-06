@@ -159,7 +159,7 @@ describe('找旧版、登记沿用', () => {
     expect(fs.statSync(r2.母版).size).toBe(签.母版.大小);
   });
 
-  it('新指纹渲过（有段签、没 沿用）不算过期；认到一半（段签有 沿用、切片没改名过来）可以重认；CRF1 时代的 .mkv 不拿来比', async () => {
+  it('新指纹渲过（有段签、没 沿用）不算过期；认到一半（段签有 沿用、切片没改名过来）可以重认；切片不在的旧版跳过', async () => {
     const 丁 = await 放旧版('丁');
     await 找旧版(键, 段fp('丁之后'), { 帧数: 48, 等放行: 放行, 作品 });
     const 签 = 读段签(键, 丁.画面指纹.指纹, 作品)!;
@@ -170,8 +170,7 @@ describe('找旧版、登记沿用', () => {
     fs.mkdirSync(段签目录, { recursive: true });
     fs.writeFileSync(path.join(段签目录, '签.json'), JSON.stringify({ ...签, 指纹: 戊.画面指纹.指纹, 沿用: { 自: 丁.画面指纹.指纹 } }));
     expect(新指纹已有(键, 戊, 作品)).toBeNull();
-    // 只剩 .mkv 的旧版：切片不在就跳过
-    fs.writeFileSync(path.join(path.dirname(丁.画面), `${丁.画面指纹.指纹.slice(0, 16)}.mkv`), '');
+    // 切片删了的旧版跳过
     const 只看 = await 找旧版(键, 段fp('己'), { 帧数: 48, 等放行: 放行, 作品 });
     expect(只看.旧?.指纹).not.toBe(丁.画面指纹.指纹);
     expect(await 对得上母版(签, 丁.画面).catch(() => false)).toBe(false);
