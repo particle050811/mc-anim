@@ -54,7 +54,12 @@ export type 段签 = {
   首尾: { 宽: number; 高: number; 首帧: string; 末帧: string };
   派生于: string;
   派生: '渲染' | '回填' | '补';
+  /** anim 认指纹 登记的：这个指纹没渲过，母版和这份段签沿用 自 那个指纹的（决策/0013）；同一指纹真渲一次就照「重渲」换掉，这套挪进 历史/ */
+  沿用?: 沿用记录;
 };
+
+/** 自：直接沿用的那个指纹；原渲：真渲出这份母版的指纹（连着认过几次也指到头）；帧：比过的帧；比法：哪种比法、哪套门槛 */
+export type 沿用记录 = { 自: string; 原渲: string; 理由: string; 帧: number[]; 比法: string; 于: string; 提交: string };
 
 type 母版样子 = { 字节sha: string; 大小: number; 改于: number };
 

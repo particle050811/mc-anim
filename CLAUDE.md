@@ -23,6 +23,7 @@ anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段�
 anim render [<选择器>] --只派生 [--重做]   从现有 CRF1 母版补段签（段签/，母版删了 film、edit-package 照样用；verify 哈希和认可版不同的帧要解母版）
 anim render <选择器> --重渲 --留CRF1        渲完留下 CRF1（verify --对基线 要；平时渲完转压缩母版就删 CRF1，主检出还删同段旧指纹，worktree 只新增）
 anim still <段> <帧…> --到预览 <主题> [--逐帧]（多帧默认同页连出，要逐像素比用 --逐帧）      anim stale [<选择器>] [--严格]     anim bench <段> [--帧 a-b]     anim 耗时 [<段>] [--最近 n]（每次渲染的阶段、每帧、等待、机器负载）
+anim 认指纹 <选择器…> --理由 "…" [--抽 N] [--只看]   过期段抽 N 帧（默认 12）静帧和旧母版比，都在压缩噪声内就沿用旧母版不重渲；不比声音、没抽的帧（docs/决策/0013-认指纹.md）
 anim verify [<段>] [--对基线 [--渲]]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
 anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   每帧 PNG 的 sha 存到 run/逐帧校验/<作品>/<名>/<段键>.tsv，再渲一次（照基准存的帧连着渲）列出不同的帧；不写母版，不碰段签和认可
 anim film <范围>  |  anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
