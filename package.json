@@ -13,6 +13,7 @@
     "./接入/资产模块": "./pipeline/资产/资产模块.d.ts",
     "./package.json": "./package.json"
   },
+  "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=24"
   },
