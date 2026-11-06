@@ -10,8 +10,9 @@
 //   箭和第三炮只隔 0.26 秒，从箭钉处往上 0.2 起飘，不和还在飘的炮数字叠在一起。
 //   刘心忠那个照原版生成在他碰撞箱顶（眼睛 + 0.18）、定在世界里不动（他被冲得横滑 2.6 米，数字留在挨打的地方）。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
@@ -32,7 +33,7 @@ const liuEyeAtHit = play.liuEye(timeline.hitT);
 const liuHit = { T: timeline.hitT, damage: sonicBoomDamage, anchor: damageNumberAnchor(toThree([liuEyeAtHit[0], liuEyeAtHit[1], liuEyeAtHit[2] - 1.62]), 1.8, 7351) };
 
 const makeLayer = (T于: (frame: number) => number, camera: (frame: number) => Cam): React.FC => () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * timeline.FPS; // 编排的帧是 1/24 秒一格
   const { width, height } = useVideoConfig();
   const T = T于(frame);
   const cam = camera(frame);

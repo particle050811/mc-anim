@@ -3,8 +3,9 @@
 // 血账：进本段时剩的血由 7-1 的血账减 7-3 那几下算出（戏.ts 的 `hpAtStart`），本段每一下都出数字（用户 10-19：算进血里的每一下都要看得到），最后一箭打穿；
 //   每一下都落在某个镜头那一截里（编排.ts 载入时查）。位置同 7-3：锚点跟着它走；炮从碰撞箱顶（2.9）起飘，箭从箭钉处往上 0.2 起飘。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
@@ -20,7 +21,7 @@ const shown = play.hits.map((h, n) => {
 });
 
 export const DamageLayer741: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS; // 编排的帧是 1/24 秒一格
   const { width, height } = useVideoConfig();
   const T = choreo.storyT(frame);
   const k = choreo.shotIndex(frame);
