@@ -4,7 +4,7 @@ import { 清单, 编号 } from '../../作品/应力转动/清单.ts';
 import type { 段信息 } from './清单.ts';
 
 const 假段 = (键: string, 章: number, 序: string, 场: string): 段信息 =>
-  ({ 键, 章, 编号: `${章}-${序}`, 段名: 键.slice(String(章).length + 1), 目录: '', 画面: '', 段文件: '', 段: { 场, 帧数: 1, fps: 24, 宽: 1, 高: 1, 地形: [] } }) as 段信息;
+  ({ 键, 章, 编号: `${章}-${序}`, 段名: 键.slice(String(章).length + 1), 目录: '', 画面: '', 段文件: '', 段: { 场, 秒: 1, 宽: 1, 高: 1, 地形: [] } }) as 段信息;
 
 describe('选择器', () => {
   it('段键、段名、编号、场键、章、章范围全字匹配', () => {
@@ -37,7 +37,7 @@ describe('选择器', () => {
     const 全 = await 全部段();
     expect(全.map((s) => s.键)).toEqual(清单.map((x) => x.键));
     expect(全.slice(0, 2).map((s) => s.键)).toEqual(['核对-冒烟', '核对-角色包']);
-    expect(全[0]!.段).toMatchObject({ 帧数: 48, fps: 24, 宽: 1280, 高: 720 });
+    expect(全[0]!.段).toMatchObject({ 秒: 2, 宽: 1280, 高: 720 });
     expect(编号('核对-冒烟')).toBeNull();
     expect((await 选段(['核对'])).map((s) => s.键)).toEqual(['核对-冒烟', '核对-角色包', '核对-环境', '核对-台词句轨', '核对-世界编辑']);
     await expect(选段(['没有这段'])).rejects.toThrow(/没对上任何段：没有这段/);

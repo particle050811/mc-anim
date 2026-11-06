@@ -21,6 +21,7 @@ import { 按材质包分组, 照材质包选用, 读作品资产锁 } from '../�
 import { 段私有配乐, 私有配乐模块 } from '../资产/私有配乐.ts';
 import { 缺字节 } from '../资产/缺字节.ts';
 import type { 段信息 } from '../清单/清单.ts';
+import { 段长秒 } from '../../engine/段/段定义.ts';
 
 export type 指纹项 = {
   代码: { 画面根: string; 段根: string; 设置根: string; 外壳根: string };
@@ -111,7 +112,7 @@ const 算一组指纹 = async (任务: readonly 指纹任务[]): Promise<段指�
     const 项: 指纹项 = {
       代码: { 画面根: 根[0]!, 段根: 根[1]!, 设置根: 根[2]!, 外壳根: 根[3]! },
       地形: 段地形版本(s.键, s.段.地形, 版本表),
-      渲染设置: { ...渲染设置, 帧数: s.段.帧数, fps: s.段.fps, 宽: s.段.宽, 高: s.段.高 },
+      渲染设置: { ...渲染设置, 秒: 段长秒(s.段), 宽: s.段.宽, 高: s.段.高 },
       依赖版本: { ...依赖版本 },
       打包规则: { ...打包规则 },
       平台: `${process.platform}-${process.arch}`,

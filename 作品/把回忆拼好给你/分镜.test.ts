@@ -6,6 +6,7 @@ import 段 from './段/1-一如既往/段.ts';
 import { 句们 } from './配乐/网格.ts';
 import { 原声增益, 原声淡入秒, 咔哒增益, 咔哒声 } from './场/1-隐世之境一楼/参数.ts';
 import { 串们, 事件, 排段, 正片事件, 正片事件分串, 段内事件帧, 段时钟, 段窗口, 第几句, fps, 旧帧 } from './分镜.ts';
+import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
 
 describe('分镜：从网格常数推帧号', () => {
   it('验证片：段起 2485、驯服 2563、微笑 3177、咔哒 3279、段止 3360（60 fps）', () => {
@@ -22,14 +23,13 @@ describe('分镜：从网格常数推帧号', () => {
 
   it('段.ts 的帧数、场窗口和原声入点都取自分镜', () => {
     const 钟 = 段时钟('1-一如既往');
-    expect(段.帧数).toBe(875);
-    expect(段.fps).toBe(60);
-    expect(段.场窗口).toEqual({ 起帧: 2485, 止帧: 3360 });
-    expect(钟.原声).toEqual({ 帧: 0, 帧数: 875, 入点秒: 2485 / 60 });
+    expect(帧数于(段)).toBe(875);
+    expect(窗帧(段)).toEqual({ 起帧: 2485, 止帧: 3360 });
+    expect(钟.原声).toEqual({ 秒: 0, 长秒: 875 / 60, 入点秒: 2485 / 60 });
   });
 
   it('段.ts 的原声 cue：帧、帧数、入点取自分镜，增益逐帧，开头淡入到场参数的固定增益', () => {
-    const cue = 段.声音?.find((c): c is 资产cue => c.资产 === '配乐/把回忆拼好给你-无男声DJ');
+    const cue = 回帧们(段).find((c) => c.资产 === '配乐/把回忆拼好给你-无男声DJ');
     expect(cue).toMatchObject({ 帧: 0, 帧数: 875, 入点秒: 2485 / 60, 名: '原声' });
     const 增益 = cue!.增益 as readonly number[];
     expect(增益).toHaveLength(875);
@@ -42,14 +42,14 @@ describe('分镜：从网格常数推帧号', () => {
   });
 
   it('段.ts 的咔哒 cue：从分镜的咔哒定格往前提起音秒，主音离定格那一帧不到半帧；放满文件、不过段尾，增益取场参数', () => {
-    const cue = 段.声音?.find((c): c is 资产cue => c.资产 === '音效/车万女仆/item.camera_use');
+    const cue = 回帧们(段).find((c) => c.资产 === '音效/车万女仆/item.camera_use');
     const 定格 = 段内事件帧('1-一如既往').咔哒定格;
     // 起音 0.13 秒 = 7.8 帧取整 8 帧，文件 0.88 秒 = 52.8 帧放满 53 帧（24 fps 时 3 帧、22 帧）
     expect(cue).toMatchObject({ 帧: 定格 - 8, 帧数: 53, 增益: 咔哒增益, 名: '咔哒' });
     // 起放帧按起音秒四舍五入到帧（同 2-合照 的咔哒）：主音离定格那一帧不到半帧，60 fps 早 0.2 帧（24 fps 时晚 0.12 帧）
     expect(Math.abs(cue!.帧 + 咔哒声.起音秒 * fps - 定格)).toBeLessThanOrEqual(0.5);
     expect(cue!.帧数 / fps).toBeGreaterThanOrEqual(咔哒声.时长秒);
-    expect(cue!.帧 + cue!.帧数).toBeLessThanOrEqual(段.帧数);
+    expect(cue!.帧 + cue!.帧数).toBeLessThanOrEqual(帧数于(段));
   });
 
   it('段起落在第 12 句止和第 13 句前导音之间的换气里', () => {

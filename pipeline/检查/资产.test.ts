@@ -55,7 +55,7 @@ describe('资产', () => {
       'assets/registry/配音.toml': 表(条('配音/甲', '私有', 'LicenseRef-用户保留')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '贴图/李樱-脸': 锁条('b'.repeat(64)), '配音/甲': 锁条('c'.repeat(64), '私有') }),
       '作品/应力转动/段/7-甲/段.ts':
-        "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [], 声音: [{ 帧: 0, 资产: '配音/甲' }] });\n",
+        "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 0, 资产: '配音/甲' }] });\n",
       'assets/kits/李樱.toml': [
         '"角色" = "李樱"',
         '[["基准"]]',
@@ -100,7 +100,7 @@ describe('资产', () => {
       'assets/registry/贴图.toml': 表(条('贴图/甲'), 条('贴图/乙', '公开', 'MIT 或 GPL'), 条('贴图/私', '私有')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条('a'.repeat(64)), '贴图/私': 锁条('d'.repeat(64)), '贴图/孤': 锁条('e'.repeat(64)) }),
       '作品/应力转动/段/7-甲/画面.tsx': "import 图 from 'asset:贴图/甲';\nimport 私 from 'asset:贴图/私';\nimport 无 from 'asset:贴图/没登记';\nexport default () => <img src={图 + 私 + 无} />;\n",
-      '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: ['没登记的包'] });\n",
+      '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: ['没登记的包'] });\n",
       'assets/kits/九胡.toml': ['"角色" = "九胡"', '[["资产组"]]', '"用途" = "模型"', '"匹配" = ["模型/九胡-*"]', '"文字源" = ["docs/没有.md"]'].join('\n'),
     });
     const v = (await 跑('资产', 根)).违规.join('\n');
@@ -147,7 +147,7 @@ describe('资产', () => {
       'assets/地形版本.json': 地形表,
       'engine/voxel/区段包位置.ts': "export const packDir = (名: string) => `terrain/${名}`;\n",
       '作品/应力转动/地点/名.ts': "export const 主世界名 = '主世界';\nexport const 暮色名 = '暮色';\n",
-      '作品/应力转动/段/7-甲/段.ts': `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: ${地形} });\n`,
+      '作品/应力转动/段/7-甲/段.ts': `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: ${地形} });\n`,
       '作品/应力转动/段/7-甲/画面.tsx':
         "import 图 from 'asset:贴图/甲';\nimport { packDir } from '@engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
     });
@@ -174,7 +174,7 @@ describe('资产', () => {
 /** 第二部作品 示例：一段 1-标题，画面 import 什么由参数定 */
 const 示例 = (...导入: string[]) => ({
   '作品/示例/清单.ts': "export const 清单 = [{ 键: '1-标题', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",
-  '作品/示例/段/1-标题/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-片头', 帧数: 24, fps: 24, 宽: 640, 高: 360, 地形: [] });\n",
+  '作品/示例/段/1-标题/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-片头', 秒: 24, 宽: 640, 高: 360, 地形: [] });\n",
   '作品/示例/段/1-标题/画面.tsx': `${导入.map((id, i) => `import a${i} from 'asset:${id}';`).join('\n')}\nexport default () => <div>{${导入.map((_, i) => `a${i}`).join(' + ') || "''"}}</div>;\n`,
 });
 
@@ -248,7 +248,7 @@ describe('随仓库发的字节', () => {
         'assets/registry/配乐.toml': 表(条('配乐/私曲', '私有', 'LicenseRef-All-Rights-Reserved')),
         'assets/资产锁.json': JSON.stringify({ '贴图/甲': 锁条(sha(甲)), '配乐/私曲': 锁条(sha(私), '私有') }),
         '作品/应力转动/段/7-甲/段.ts':
-          "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [], 声音: [{ 帧: 0, 资产: '配乐/私曲', 名: '歌', 帧数: 10 }] });\n",
+          "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 0, 资产: '配乐/私曲', 名: '歌', 长秒: 10 }] });\n",
         '作品/应力转动/随仓库.toml': '"段" = ["7"]',
         [位置(甲)]: 甲,
       },

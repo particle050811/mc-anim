@@ -21,6 +21,8 @@ export const 视图们: readonly 视图[] = [
   { 名: '月落22500', 套: '时刻', 用: '环境' },
 ];
 
+/** 一个视图占 1/24 秒（以前 24 帧一帧一个视图，留着这个数好照旧的静帧号比） */
+export const 每秒视图 = 24;
 export const 页宽 = 1280;
 export const 页高 = 720;
 /** 主世界那几帧的能见度（米，FlightFog 的 visibility） */

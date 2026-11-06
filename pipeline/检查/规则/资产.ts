@@ -277,7 +277,7 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
   if (!('错误' in 内容)) {
     for (const s of 内容.段们) {
       for (const 名 of s.定义?.地形 ?? []) if (!地形.包?.[名]) 报.错(`${s.键} 用的地形包「${名}」没在 assets/地形版本.json 登记`, s.段文件);
-      for (const cue of s.定义?.声音 ?? []) if (cue.资产 !== undefined) 查(cue.资产, `${s.键} 第 ${cue.帧} 帧的 cue `, s.段文件);
+      for (const cue of s.定义?.声音 ?? []) if (cue.资产 !== undefined) 查(cue.资产, `${s.键} 第 ${cue.秒} 秒的 cue `, s.段文件);
     }
   }
   // 取了地形包的段（闭包里有 packDir）：闭包里写到的登记过的包名没在 段.地形 里，只提示。真读到时页面直接报错（engine/voxel/区段包位置.ts）；

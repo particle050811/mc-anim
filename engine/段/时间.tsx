@@ -1,18 +1,12 @@
 // 段里取时间：一律用秒（用户 11-06 定「直接原生 60 FPS」「不应该都是按函数那种写的吗」，docs/决策/0015-原生60帧.md）。
 // use当前秒() = Composition 帧 ÷ 帧率，带小数；嵌套 Sequence 的偏移照常算进去（里面拿到的是从那个 Sequence 起算的秒）。
-// 原生段（段.ts 写 时钟: '秒'）外面包 <原生时钟>：Composition 按成片帧率跑，段界的零头（出帧.ts 的 相位）用负的 from 补上，第 0 秒就是段起点。
-// 没迁的段还包着兼容层 编排时钟.tsx（里面的帧是 24 帧编排帧），这里的工具在两边都按秒对：共用组件先迁到秒，老段新段都能用。
-// 段、场、库代码不直接调 useCurrentFrame()（anim check 的「时间」规则）；非要一帧一个的（核对视图）用 取档（按时取值.ts）按秒取下标。
-import React, { useContext, type ReactNode } from 'react';
+// Composition 按成片帧率跑，第 0 帧就是段起点（段长对齐到 1/60 秒，段界没有零头）。
+// 段、场、库代码不直接调 useCurrentFrame()（anim check 的「时间」规则）；非要一帧一个的（核对视图）用 use视图下标。
+import React, { type ReactNode } from 'react';
 import { Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
-import { 编排fpsContext } from './编排时钟.tsx';
 
-/** 当前时钟一秒几帧：兼容层里是段.ts 的 fps，原生段和别处是 Composition 的。只给时间工具自己和声音换算用，画面代码用秒 */
-export const use帧率 = (): number => {
-  const 兼容 = useContext(编排fpsContext);
-  const { fps } = useVideoConfig();
-  return 兼容 ?? fps;
-};
+/** Composition 一秒几帧。只给时间工具自己和声音换算用，画面代码用秒 */
+export const use帧率 = (): number => useVideoConfig().fps;
 
 /** 当前时刻（秒，带小数）：段内从段起点算，在 <秒Sequence> 里从它的起点算 */
 export const use当前秒 = (): number => useCurrentFrame() / use帧率();
@@ -27,29 +21,21 @@ export const 秒Sequence: React.FC<{ 起秒?: number; 长秒?: number; 剪秒?: 
   );
 };
 
-/** 原生段的根：段起点不在输出帧上时（相位秒 > 0，见 出帧.ts），从 −相位 起，里面第 0 帧 = 段起点、第 g 个输出帧 = 段内 g ÷ fps + 相位秒 */
-export const 原生时钟: React.FC<{ 相位秒: number; children: ReactNode }> = ({ 相位秒, children }) => {
-  const { fps } = useVideoConfig();
-  return 相位秒 === 0 ? (
-    <>{children}</>
-  ) : (
-    <Sequence from={-相位秒 * fps} layout="none" name="原生时钟">
-      {children}
-    </Sequence>
-  );
-};
-
 /**
- * 输出帧落在当前时间轴的哪个零头（0 ≤ x < 1）：这一层的第 g 个输出帧在帧号 整数 + x 上（原生时钟的相位、带小数 from 的 Sequence 都算进去）。
- * 只给声音用（段画面.tsx 放一声：把 cue 起点前移到输出帧上、用负的 trimBefore 补静音，起点按样本准）。兼容层里一个输出帧不是一整帧，给 0
+ * 输出帧落在当前时间轴的哪个零头（0 ≤ x < 1）：这一层的第 g 个输出帧在帧号 整数 + x 上（带小数 from 的 Sequence 算进去）。
+ * 只给声音用（段画面.tsx 放一声：把 cue 起点前移到输出帧上、用负的 trimBefore 补静音，起点按样本准）
  */
 export const use输出帧零头 = (): number => {
-  const 兼容 = useContext(编排fpsContext);
   const f = useCurrentFrame();
-  if (兼容 !== null) return 0;
   const x = f - Math.floor(f);
   return x < 1e-6 || x > 1 - 1e-6 ? 0 : x;
 };
 
-/** 核对 Composition「一帧一个视图」的视图下标（第几个输出帧，整数）。只给核对用：正片画面一律按秒写 */
-export const use视图下标 = (): number => Math.floor(useCurrentFrame() + 1e-9);
+/** 这一层的第几个输出帧（整数）。只给按输出帧排的东西用（注册工厂.tsx 的字幕层：字幕是 pipeline 按输出帧切好的），画面一律按秒写 */
+export const use输出帧 = (): number => Math.round(useCurrentFrame());
+
+/**
+ * 核对 Composition 的视图下标：一个视图占 1 ÷ 每秒 秒（段长 = 视图数 ÷ 每秒），第几个视图按秒算。只给核对用：正片画面一律按秒写。
+ * 每秒 = 1：第 i 个视图在第 i 秒（60 帧输出时第 60i 帧起）
+ */
+export const use视图下标 = (每秒 = 1): number => Math.max(0, Math.floor(use当前秒() * 每秒 + 1e-9));

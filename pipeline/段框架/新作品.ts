@@ -63,8 +63,8 @@ import 段 from './段.ts';
 import 声音 from './声音地址.生成.ts';
 
 export default 定义画面(段, 声音, () => {
-  const { 帧, 段: 本段 } = use段(段);
-  return <AbsoluteFill style={{ background: '#000', color: '#fff', fontSize: 48, justifyContent: 'center', alignItems: 'center' }}>{\`\${帧} / \${本段.帧数}\`}</AbsoluteFill>;
+  const { 秒, 段: 本段 } = use段(段);
+  return <AbsoluteFill style={{ background: '#000', color: '#fff', fontSize: 48, justifyContent: 'center', alignItems: 'center' }}>{\`\${秒.toFixed(2)} / \${本段.秒} 秒\`}</AbsoluteFill>;
 });
 `;
 
@@ -91,7 +91,7 @@ export default 窗口段(线, { 起: '开始', 止: '结束', 声音表 });
 `,
     写了,
   );
-  写新文件(path.join(段目录, '画面.tsx'), 画面模板('起步的画面：黑底上数帧'), 写了);
+  写新文件(path.join(段目录, '画面.tsx'), 画面模板('起步的画面：黑底上数秒'), 写了);
   空声音文件(段目录, 写了);
   return 写了;
 };
@@ -105,24 +105,21 @@ export const 清单加一段 = (文本: string, 键: string, 章: number | '核�
   return `${文本.slice(0, 止)}\n  { 键: '${键}', 章: ${typeof 章 === 'number' ? 章 : `'核对'`} },${文本.slice(止)}`;
 };
 
-/** 本场已有的老段（定义段 写的，不是窗口段），清单顺序：段键、帧数，有 场窗口 的带起帧；fps、画幅不是默认的也带上 */
-export type 场里老段 = { 键: string; 帧数: number; 起帧?: number; fps: number; 宽: number; 高: number };
+/** 本场已有的老段（定义段 写的，不是窗口段），清单顺序：段键、段长秒，有 场窗口 的带起秒；画幅不是默认的也带上 */
+export type 场里老段 = { 键: string; 秒: number; 起秒?: number; 宽: number; 高: number };
 
-/** 老场的场时间线：老段的帧数抄成数摆上来（engine/段/老段接续.ts；场不许 import 段），新段的起止事件接在最后一个老段后面 */
+/** 老场的场时间线：老段的段长抄成数摆上来（engine/段/老段接续.ts；场不许 import 段），新段的起止事件接在最后一个老段后面 */
 const 老场时间线模板 = (场: string, 老段: readonly 场里老段[], 起: string, 止: string) => {
   const 头 = 老段[0]!;
-  const 格式 = [
-    ...(头.fps !== 24 ? [`  fps: ${头.fps},`] : []),
-    ...(头.宽 !== 1280 || 头.高 !== 720 ? [`  画幅: { 宽: ${头.宽}, 高: ${头.高} },`] : []),
-  ];
-  return `// ${场} 的场时间线：本场的老段（定义段 写的）一个不改，帧数抄过来按清单顺序首尾相接摆上，事件 <段键>.起、<段键>.止（engine/段/老段接续.ts）；
-// 新段（窗口段）从这条线取窗口，跨段的声音写在 声音 里（只放进新段，老段照旧）。抄的帧数 anim check 和老段的 段.ts 对；老段中间有跳过的，给那一段写 起帧。纯模块。
+  const 格式 = 头.宽 !== 1280 || 头.高 !== 720 ? [`  画幅: { 宽: ${头.宽}, 高: ${头.高} },`] : [];
+  return `// ${场} 的场时间线：本场的老段（定义段 写的）一个不改，段长抄过来按清单顺序首尾相接摆上，事件 <段键>.起、<段键>.止（engine/段/老段接续.ts）；
+// 新段（窗口段）从这条线取窗口，跨段的声音写在 声音 里（只放进新段，老段照旧）。抄的段长 anim check 和老段的 段.ts 对；老段中间有跳过的，给那一段写 起秒。纯模块。
 import { 接老段 } from '@engine/段/老段接续.ts';
 
 export default 接老段({
   场: '${场}',
 ${格式.join('\n')}${格式.length ? '\n' : ''}  老段: [
-${老段.map((x) => `    { 键: '${x.键}', 帧数: ${x.帧数}${x.起帧 !== undefined ? `, 起帧: ${x.起帧}` : ''} },`).join('\n')}
+${老段.map((x) => `    { 键: '${x.键}', 秒: ${x.秒}${x.起秒 !== undefined ? `, 起秒: ${x.起秒}` : ''} },`).join('\n')}
   ],
   事件: {
     ${起}: { 在: { 接: '${老段.at(-1)!.键}.止' }, 依据: '暂定：接在本场最后一个老段后面' },
@@ -159,7 +156,7 @@ export const 新段 = (作品根: string, 键: string, o: { 场?: string; 起?: 
     else if (!fs.existsSync(线文件)) {
       写新文件(
         线文件,
-        `// ${场} 的场时间线：本场的事件（秒、帧，或接在别的事件后面），本场各段按 [起事件, 止事件) 取窗口（engine/段/窗口段.ts）。纯模块。
+        `// ${场} 的场时间线：本场的事件（秒，或接在别的事件后面），本场各段按 [起事件, 止事件) 取窗口（engine/段/窗口段.ts）。纯模块。
 import { 定义场时间线 } from '@engine/段/窗口段.ts';
 
 export default 定义场时间线({
@@ -190,7 +187,7 @@ export default 窗口段(线, {
 `,
     写了,
   );
-  写新文件(path.join(目录, '画面.tsx'), 画面模板('段的画面：use段() 取当前帧和事件的段内帧；声音由 定义画面 照 段.ts 的 cue 自动放'), 写了);
+  写新文件(path.join(目录, '画面.tsx'), 画面模板('段的画面：use段() 取当前秒和事件的段内秒；声音由 定义画面 照 段.ts 的 cue 自动放'), 写了);
   空声音文件(目录, 写了);
   const 清单文件 = path.join(作品根, '清单.ts');
   fs.writeFileSync(清单文件, 清单加一段(fs.readFileSync(清单文件, 'utf8'), 键, 核对 ? '核对' : Number(正片![1])), 'utf8');

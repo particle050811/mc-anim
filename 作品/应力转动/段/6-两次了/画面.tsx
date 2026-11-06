@@ -1,4 +1,4 @@
-// 6-4-4 两次了：原生段（段.ts 写了 时钟: '秒'），画面按秒放，声音照 段.ts 的 cue 和 声音地址.生成.ts（anim cues 生成）同一遍出。
+// 6-4-4 两次了：画面按秒放，声音照 段.ts 的 cue 和 声音地址.生成.ts（anim cues 生成）同一遍出。
 import { 定义画面 } from '@engine/段/段画面.tsx';
 import { Twice } from './两次了.tsx';
 import 段 from './段.ts';

@@ -19,7 +19,7 @@ import { standPose } from '@库/角色/骨架.tsx';
 import { FlightFog, FlightRig, FlightSky, overworldShadowFar, type CamPose } from '../../地点/飞行镜头.tsx';
 import { 主世界环境 } from '../../地点/主世界环境.ts';
 import 环境轨 from './环境.ts';
-import { 视图们, 能见度 } from './视图.ts';
+import { 每秒视图, 视图们, 能见度 } from './视图.ts';
 
 const 机位: CamPose = { pos: [22, 10, 3.5], tgt: [0, 2, 5], lens: 24 };
 const 仰望机位: CamPose = { pos: [22, 10, 3.5], tgt: [20.6, 9.5, 11.9], lens: 24 };
@@ -87,7 +87,7 @@ const 灯天: React.FC<{ 帧: number }> = ({ 帧 }) => {
     ) : (
       <环境 描述={暮色环境({ 雾远: 暮色雾远, 雾近: twilightFogNear(暮色雾远) })} 画法={暮色画法} 镜头={cam.pos} />
     );
-  if (v.套 === '时刻') return <环境 描述={环境轨} 画法={主世界画法} 镜头={cam.pos} />;
+  if (v.套 === '时刻') return <环境 描述={环境轨} 画法={主世界画法} 镜头={cam.pos} 帧={帧} />;
   const 投影 = v.套 === '主世界投影';
   return v.用 === '现有' ? (
     <FlightFog visibility={能见度} />
@@ -97,7 +97,7 @@ const 灯天: React.FC<{ 帧: number }> = ({ 帧 }) => {
 };
 
 const 画面: React.FC = () => {
-  const frame = use视图下标();
+  const frame = use视图下标(每秒视图);
   const { width, height } = useVideoConfig();
   const v = 视图们[frame]!;
   const 主世界现有 = v.用 === '现有' && v.套 !== '暮色';

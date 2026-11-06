@@ -25,6 +25,7 @@ import {
 import { 第8句照片们 } from './特效/照片画.ts';
 import { 正交顶面 } from './画风.ts';
 import { 色板 } from './色板.ts';
+import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
 
 // asset: 资产打包时才有，照片四张在测试里换成 1×1 的图。编排.ts 引的 vanillaWalk、CREEPER、门口.站排y 在 史蒂夫.tsx、苦力怕.tsx、门口小木屋.tsx 里，
 // 那几个顶层就读模型、贴图（一路引到方块图集），换成桩：腿怎么摆这里不测；逃的速度照抄 CREEPER.speed.flee（groundSpeed(1.2)），站排y 照抄
@@ -46,8 +47,8 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     const w = 段窗口('2-收集快乐');
     expect([w.起帧, w.止帧]).toEqual([1528, 1717]);
     expect(w.起帧 / fps).toBeCloseTo(第几句(8).起, 1);
-    expect(段.帧数).toBe(189);
-    expect(段.场窗口).toEqual({ 起帧: 1528, 止帧: 1717 });
+    expect(帧数于(段)).toBe(189);
+    expect(窗帧(段)).toEqual({ 起帧: 1528, 止帧: 1717 });
   });
 
   it('拍：晴定 25.99，挂照片 26.53「收」，看见苦力怕 27.38，哈气 27.80，淘 28.23（差不到半帧）；一时一个焦点：调子定了才往框里推照片，挂上了苦力怕才冒头', () => {
@@ -62,7 +63,7 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
   });
 
   it('cue：原声铺满整段（哈气那一截让一让）；挂照片声在挂照片那一帧起放；哈气声在哈气前 1/12 秒（24 fps 时 2 帧）起放；没有纸声；都不过段尾', () => {
-    const 声 = 段.声音 as 资产cue[];
+    const 声 = 回帧们(段);
     const 原 = 声.find((c) => c.名 === '原声')!;
     expect(原).toMatchObject({ 帧: 0, 帧数: 189, 入点秒: 1528 / fps });
     const 增益 = 原.增益 as number[];
@@ -73,7 +74,7 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     expect(挂.帧数).toBe(Math.ceil(挂照片声.秒 * fps));
     expect(声.find((c) => c.名 === '哈气')!.帧).toBe(事.哈气 - 旧帧(2) * fps);
     expect(声.some((c) => c.资产.startsWith('音效/item.book.page_turn'))).toBe(false);
-    for (const c of 声) expect(c.帧 + c.帧数).toBeLessThanOrEqual(段.帧数);
+    for (const c of 声) expect(c.帧 + c.帧数).toBeLessThanOrEqual(帧数于(段));
   });
 
   it('镜头：整句就是 第8句镜头，段首不再从天往下摇（核查 10-24：切过来头几帧是大半屏山墙）；中心落在偶数成片像素上', () => {
@@ -85,13 +86,13 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     expect(调子在(0)).toEqual(色板.雨后暖阳);
     expect(转晴进度(事.第8句晴定)).toBe(1);
     expect(调子在(事.第8句晴定)).toEqual(第8句调子);
-    expect(调子在(段.帧数 - 1)).toEqual(第8句调子);
+    expect(调子在(帧数于(段) - 1)).toEqual(第8句调子);
   });
 
   it('云：段首洞已开到 云洞半径、整段不变，段首前一帧洞里的格一开头就没了；飘进洞的格 散秒 里散完、不回来', () => {
     const 接 = 段窗口('2-收集快乐').起帧 - 1;
     expect(第8句光影场.云?.洞?.[2]).toBe(云洞半径 * 末雨云.洞比);
-    const 帧们 = Array.from({ length: 段.帧数 }, (_, f) => 段窗口('2-收集快乐').起帧 + f);
+    const 帧们 = Array.from({ length: 帧数于(段) }, (_, f) => 段窗口('2-收集快乐').起帧 + f);
     // 铺满的假贴图：每格都有云
     const 格们 = 云格们(() => true);
     const 首帧 = 帧们[0]!, 末帧 = 帧们.at(-1)!;
@@ -107,7 +108,7 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
 
   it('照片墙：墙上已经挂着前三张、第四只框空着；她举着光柱破云挡在空框前，挂伸秒 里推进框、缩到一格，挂照片那一帧换成墙上那张（不跳）', () => {
     expect(第8句照片们.map((p) => p.名)).toEqual(['递蛋糕', '日落划船', '扑龙蛋', '光柱破云']);
-    for (let f = 0; f < 段.帧数; f++) {
+    for (let f = 0; f < 帧数于(段); f++) {
       expect(墙上几张(f)).toBe(f < 事.挂照片 ? 3 : 4);
       expect(照片态(f) === null).toBe(f >= 事.挂照片);
     }
@@ -125,7 +126,7 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
   });
 
   it('她整句站在门洞里（哈气站位.她）：哈气那一截侧身朝苦力怕哈气，前后都朝镜头', () => {
-    for (let f = 0; f < 段.帧数; f++) {
+    for (let f = 0; f < 帧数于(段); f++) {
       const 她 = 她态(f);
       expect(她.loc[0]).toBe(哈气站位.她);
       const 哈 = f >= 事.哈气 && f < 事.苦力怕逃;
@@ -147,12 +148,12 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     expect(苦力怕走速 / 追).toBeLessThan(1.5);
     const 逃 = 逃速原版 * 苦力怕逃倍率;
     const 出画帧 = 事.苦力怕掉头 + (苦力怕掉头秒 + (哈气站位.苦力怕 - (左沿 - 苦力怕前沿)) / 逃) * fps;
-    expect(出画帧).toBeLessThan(段.帧数 - 1);
-    expect(苦力怕态(段.帧数 - 1).loc[0] + 苦力怕前沿).toBeLessThan(左沿);
+    expect(出画帧).toBeLessThan(帧数于(段) - 1);
+    expect(苦力怕态(帧数于(段) - 1).loc[0] + 苦力怕前沿).toBeLessThan(左沿);
   });
 
   it('末帧就是 第8句末态（第 9 句同机位匹配剪从这里接）：她朝镜头得意歪头、头顶「(✿◠‿◠)」，四张都在墙上', () => {
-    const f = 段.帧数 - 1;
+    const f = 帧数于(段) - 1;
     const 她 = 她态(f);
     expect(她.yaw).toBe(第8句末态.她.yaw);
     expect(她.骨骼.Head!.rot).toEqual([-第8句末态.她.看[0], -第8句末态.她.看[1], 第8句末态.她.歪]);

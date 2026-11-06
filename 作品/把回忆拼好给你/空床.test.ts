@@ -14,6 +14,7 @@ import { 床面高 } from './物品/床尺寸.ts';
 import { 歌词排版表, 歌词框 } from './界面/歌词排版表.ts';
 import { 正片歌词行 } from './界面/符文歌词数据.ts';
 import { 字状态, 符文歌词默认 } from './界面/符文排版.ts';
+import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
 
 /** 24 fps 的一帧（旧帧(1) 秒）是几帧 */
 const 一旧帧 = 旧帧(1) * fps;
@@ -25,9 +26,9 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     const w = 段窗口('2-空床');
     expect([w.起帧, w.止帧]).toEqual([2306, 2495]);
     expect(w.起帧 / fps).toBeCloseTo(第几句(12).起, 1);
-    expect(段.帧数).toBe(189);
+    expect(帧数于(段)).toBe(189);
     expect(帧数).toBe(189);
-    expect(段.场窗口).toEqual({ 起帧: 2306, 止帧: 2495 });
+    expect(窗帧(段)).toEqual({ 起帧: 2306, 止帧: 2495 });
     expect(正片事件.分屏起.帧).toBe(2495);
   });
 
@@ -57,7 +58,7 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
   });
 
   it('cue：只有原声，铺满整段、固定增益、不淡', () => {
-    const 声 = 段.声音 as 资产cue[];
+    const 声 = 回帧们(段);
     expect(声).toHaveLength(1);
     expect(声[0]).toMatchObject({ 帧: 0, 帧数: 189, 入点秒: 2306 / fps, 增益: 正片原声增益, 资产: '配乐/把回忆拼好给你-无男声DJ' });
   });

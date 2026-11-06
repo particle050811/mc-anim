@@ -39,6 +39,7 @@ import {
   阳光半径,
   阵大小,
 } from './场/2-雷雨/编排.ts';
+import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
 
 const 帧 = (名: 正片事件名) => 正片事件[名].帧;
 const 雷雨 = 段窗口('2-雷雨');
@@ -81,7 +82,7 @@ describe('串：第 6、7 句', () => {
   it('5→6 接缝：闪电落在切点上（2-雷雨 第 0 帧就在闪），雨声在 2-抢龙蛋 段尾先淡进来、段尾那一帧已经满了', () => {
     expect(帧('第6句闷雷')).toBe(雷雨.起帧);
     expect(闪(雷雨.起帧)).toBe(true);
-    const 雨们 = (抢龙蛋段.声音 ?? []).filter((c): c is 资产cue => c.资产?.includes('weather.rain') === true);
+    const 雨们 = 回帧们(抢龙蛋段).filter((c) => c.资产.includes('weather.rain'));
     expect(雨们.length).toBeGreaterThan(0);
     const 头 = 雨们[0]!;
     expect(头.帧).toBeGreaterThan(段窗口('2-抢龙蛋').止帧 - 段窗口('2-抢龙蛋').起帧 - fps);

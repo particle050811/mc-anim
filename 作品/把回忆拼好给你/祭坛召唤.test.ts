@@ -7,6 +7,7 @@ import * as 参 from './场/2-祭坛/参数.ts';
 import { 事, 刻, 你眼, 关键机位, 她编排, 手里, 挥手进度, 末帧, 窗口, 镜头态, 浮物态们, 光柱, 蛋糕没帧, 转头起秒 } from './场/2-祭坛/编排.ts';
 import { 地面高 } from './场/2-祭坛/地形.ts';
 import { 末她, 末机, 末距, 末速, 眼珠 } from './场/2-祭坛/末态.ts';
+import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
 
 // 爱心粒子.tsx 顶上就解码贴图（打包时才有 asset:），这里只要它的出生和运动，换成一张 1×1 的 RGBA
 vi.mock('asset:贴图/特效/爱心粒子', () => ({
@@ -81,8 +82,8 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
     expect([w.起帧, w.止帧]).toEqual([503, 708]);
     expect(w.起帧 / fps).toBeCloseTo(第几句(3).起, 1);
     expect(w.止帧 / fps).toBeCloseTo(第几句(4).起, 1);
-    expect(段.帧数).toBe(205);
-    expect(段.场窗口).toEqual({ 起帧: 503, 止帧: 708 });
+    expect(帧数于(段)).toBe(205);
+    expect(窗帧(段)).toEqual({ 起帧: 503, 止帧: 708 });
     expect(末帧).toBe(707);
   });
 
@@ -288,15 +289,15 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
   });
 
   it('cue：只有原声和祭坛合成声（拆盒声跟盒子一起删了）；原声铺满整段，合成声文件头对着点祭坛、峰值配到同一档，不过段尾', () => {
-    const 声 = 段.声音 as 资产cue[];
+    const 声 = 回帧们(段);
     expect(声.map((c) => c.名)).toEqual(['原声', '祭坛合成']);
-    expect(声[0]).toMatchObject({ 帧: 0, 帧数: 段.帧数, 入点秒: 窗口.起帧 / fps, 增益: 参.原声增益 });
+    expect(声[0]).toMatchObject({ 帧: 0, 帧数: 帧数于(段), 入点秒: 窗口.起帧 / fps, 增益: 参.原声增益 });
     const 合 = 声[1]!;
     expect(合.帧).toBe(事.点祭坛 - 窗口.起帧);
     expect(20 * Math.log10(合.增益 as number) + 参.音效.祭坛.峰值).toBeCloseTo(参.音效.峰值, 3);
     for (const c of 声) {
       expect(c.帧).toBeGreaterThanOrEqual(0);
-      expect(c.帧 + (c.帧数 as number)).toBeLessThanOrEqual(段.帧数);
+      expect(c.帧 + (c.帧数 as number)).toBeLessThanOrEqual(帧数于(段));
     }
   });
 });

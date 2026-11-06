@@ -33,19 +33,18 @@ const 放行 = async () => {};
 const 项 = (o: Partial<指纹项> = {}): 指纹项 => ({
   代码: { 画面根: 'a', 段根: 'b', 设置根: 'c', 外壳根: 'd' },
   地形: {},
-  渲染设置: { inputProps: { 级别: '视频', 输出fps: 60 }, codec: 'h264', crf: 18, scale: 3, gl: 'angle', 帧数: 48, fps: 60, 宽: 64, 高: 36 },
+  渲染设置: { inputProps: { 级别: '视频', 输出fps: 60 }, codec: 'h264', crf: 18, scale: 3, gl: 'angle', muted: false, audioCodec: 'pcm-16', 秒: 0.8, 宽: 64, 高: 36 },
   依赖版本: { three: '0.186.1' },
   打包规则: { tsconfig: 't', 'pipeline/资产/webpack.ts': 'w', 'pipeline/资产/ogg解码.cjs': 'o' },
   平台: 'darwin-arm64',
   ...o,
 });
 const 段fp = (名: string, 代码 = 名): 段指纹 => ({ 段: 键, 指纹: 指纹(名), 算法: 'merkle-v1', 项: 项({ 代码: { 画面根: 代码, 段根: 'b', 设置根: 'c', 外壳根: 'd' } }), 明细: { 模块: {}, 资产: {} } });
-/** 和 段产物 一样的一对：画面指纹、配的声音指纹（声音那遍只差渲染设置） */
+/** 和 段产物 一样：声音和画面同一遍出，声音指纹就是画面指纹 */
 const 产物 = (名: string) => {
   const 画面指纹 = 段fp(名);
-  const 声 = 配对声音指纹(画面指纹);
-  const 声音指纹: 段指纹 = { ...画面指纹, 指纹: 声, 项: { ...画面指纹.项, 渲染设置: { codec: 'wav' } } };
-  return { 画面指纹, 声音指纹, 画面: 段画面路径(键, 画面指纹.指纹, 作品), 声音: 段声音路径(键, 声, 作品) };
+  const 声 = 配对声音指纹(画面指纹)!;
+  return { 画面指纹, 声音指纹: 画面指纹, 画面: 段画面路径(键, 画面指纹.指纹, 作品), 声音: 段声音路径(键, 声, 作品) };
 };
 
 /** 源画面（无损 PNG 流）；单帧取第 n 帧，改 就在左上画一块红 */
@@ -55,14 +54,13 @@ const 源png = (n: number | null, 改 = false) =>
     ...(n === null ? [] : ['-vf', `select=eq(n\\,${n})${改 ? ',drawbox=x=0:y=0:w=24:h=24:color=red:t=fill' : ''}`, '-frames:v', '1']), '-f', 'image2pipe', '-c:v', 'png', '-',
   ]);
 
-/** 和真切片一样：PNG 帧经 Remotion 的 ffmpeg、bt709 zscale、x264 CRF18 压成 mp4；配一份 wav；写两份 .指纹.json（不派生段签，找旧版 会补） */
+/** 和真切片一样：PNG 帧经 Remotion 的 ffmpeg、bt709 zscale、x264 CRF18 压成 mp4；配一份 wav；写 .指纹.json（不派生段签，找旧版 会补） */
 const 放旧版 = async (名: string) => {
   const r = 产物(名);
   fs.mkdirSync(path.dirname(r.画面), { recursive: true });
   await 跑自带ffmpeg(['-v', 'error', '-y', '-r', '24', '-f', 'image2pipe', '-vcodec', 'png', '-i', '-', '-vf', 切片转yuv滤镜, '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', r.画面], 源png(null));
   跑出([配置('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=440:duration=2:sample_rate=48000', '-c:a', 'pcm_s16le', '-ac', '2', r.声音]);
   写指纹(r.画面指纹, path.dirname(r.画面));
-  写指纹(r.声音指纹, path.dirname(r.画面));
   return r;
 };
 

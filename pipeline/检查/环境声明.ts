@@ -59,10 +59,11 @@ export const 查环境声明 = async (c: 检查上下文, 报: 报告, 段们: r
     if (轨) {
       const 目录 = p.slice(0, -'/环境.ts'.length);
       const 段 = 段们.find((s) => s.目录 === 目录);
-      const 帧数 = 段?.定义?.帧数;
+      // 环境轨的关键帧按 24 帧一秒（核对-环境 一个视图 1/24 秒）
+      const 帧数 = 段?.定义 ? Math.round(段.定义.秒 * 24) : undefined;
       const 越界 = 帧数 === undefined ? [] : (v.关键帧 as { 帧: number }[]).filter((k) => k.帧 >= 帧数);
       if (越界.length) {
-        报.错(`关键帧 ${越界.map((k) => k.帧).join('、')} 不在段里（段.ts 帧数 ${帧数}）`, p);
+        报.错(`关键帧 ${越界.map((k) => k.帧).join('、')} 不在段里（段长 ${段!.定义!.秒} 秒，一秒 24 帧共 ${帧数} 帧）`, p);
         continue;
       }
     }

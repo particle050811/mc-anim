@@ -19,7 +19,7 @@ import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx, type 手持物 } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { PortalParticles } from '@库/特效/传送粒子.tsx';
 import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段时钟, 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
+import { 段窗口, 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
 import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
 import { 照片墙格们, 手持地图画 } from '../../地点/照片墙.tsx';
 import { 门口 } from '../../地点/门口小木屋.tsx';
@@ -56,7 +56,7 @@ import {
 } from './归隐参数.ts';
 
 const 事 = 正片事件;
-const 窗 = 段时钟('2-归隐').场窗口;
+const 窗 = 段窗口('2-归隐');
 
 // ---------- 她 ----------
 const 原显示 = DISPLAY.generated.thirdperson_righthand;

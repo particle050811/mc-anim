@@ -7,7 +7,7 @@ export type 渲染级别 = (typeof 渲染级别取值)[number];
 export type 段字幕 = { 图: string; 起: number; 止: number };
 
 /**
- * 输出fps：Composition 的帧率；null 是照段.ts 的 fps（编排帧率）出，声音那一遍就这样出（声音和以前母版里的一样）。不同时段外面包编排时钟（engine/段/编排时钟.tsx）。
+ * 输出fps：Composition 的帧率（成片档的帧率）；null 是 段格（60，engine/段/段定义.ts），Studio 里就这样看。
  * 字幕：只有出成片的那一遍带（每段渲出来就是成片的一截，用户 11-05 定「母版 = 成片切片」）。
  */
 export type 渲染设置 = { 级别: 渲染级别; 输出fps: number | null; 字幕: readonly 段字幕[] };

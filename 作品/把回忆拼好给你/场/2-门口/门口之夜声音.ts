@@ -42,6 +42,6 @@ export const 门口之夜音效: readonly 歌上音效[] = [
   一条('咔哒', '咔哒', 正片事件.第11句照片.秒, 咔哒起音秒, false),
 ];
 
-/** 落在这一段窗口里的那几截（帧是段内帧） */
-export const 本段音效 = (窗: { 起帧: number; 止帧: number }): 资产cue[] =>
+/** 落在这一段窗口（秒）里的那几截 */
+export const 本段音效 = (窗: { 起秒: number; 止秒: number }): 资产cue[] =>
   门口之夜音效.map((音) => 段里那截(窗, 音)).filter((c): c is 资产cue => c !== null);

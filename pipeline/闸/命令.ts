@@ -57,13 +57,13 @@ export const 跑调度 = async (args: string[], env?: 调度环境, 输出: (s: 
     }
     if (cmd === '预计') {
         if(!rest.length)throw new 用法错误('预计 要给选择器');
-        const {选段,全部段}=await import('../清单/清单.ts');
+        const {选段}=await import('../清单/清单.ts');
         // 不经 渲/段产物.ts：它的闭包里有 Remotion（资源闸的闭包不许有）
-        const {段输出窗,全片起帧表}=await import('../../engine/段/出帧.ts');
+        const {段帧数}=await import('../../engine/段/段定义.ts');
         const {成片档}=await import('../渲/设置.ts');
-        const 段们=await 选段(rest),起帧=全片起帧表((await 全部段()).map(x=>({键:x.键,帧数:x.段.帧数}))),s=读状态(e),根=path.dirname(e.日志目录),级别=p.值['--级别']??'视频',前方=前方等待(队上占用(s,'渲染'),s.时);
+        const 段们=await 选段(rest),s=读状态(e),根=path.dirname(e.日志目录),级别=p.值['--级别']??'视频',前方=前方等待(队上占用(s,'渲染'),s.时);
         // 渲段的明细按切片的输出帧记，预计也按输出帧数算
-        const 输出帧数=(t:(typeof 段们)[number])=>段输出窗(起帧.get(t.键)??0,t.段.帧数,t.段.fps,成片档().fps).帧数;
+        const 输出帧数=(t:(typeof 段们)[number])=>段帧数(t.段,成片档().fps);
         输出(JSON.stringify({前方约秒:前方.秒,未知按下界:前方.未知,级别,段:段们.map(t=>({段:t.键,render纯跑秒:估计({种:'render',段:t.键,帧数:输出帧数(t),级别},根),still一帧秒:估计({种:'still',段:t.键,帧数:1,级别},根)})),说明:'未知显示 null；无预计的票按 23 秒下界，不承诺完成时刻'}));
         return 0;
     }

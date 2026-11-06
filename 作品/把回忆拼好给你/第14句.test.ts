@@ -50,6 +50,7 @@ import { 照片墙格们, 照片墙格位 } from './地点/照片墙格.ts';
 import { 地图画像素, 地图调色板, 白边 } from './特效/地图画.ts';
 import { 第8句照片们 } from './特效/照片画.ts';
 import { 撒纸窗们, 楼, 楼下N } from './现实/楼下布局.ts';
+import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
 
 // 特效/照片画.ts 顶上就解码四张照片（真帧资产，打包时才有 asset:），这里换成一张 1×1 的 RGBA（同 祭坛召唤.test.ts）
 const 一像素 = vi.hoisted(() => 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==');
@@ -73,7 +74,7 @@ describe('第 14 句：窗口和事件', () => {
     expect(段窗口('2-归隐')).toMatchObject({ 起帧: 2704, 止帧: 2895, 帧数: 191 });
     expect(段窗口('2-摇铃').起帧).toBe(2895);
     expect(事.合屏到位.帧).toBe(2895);
-    expect(归隐段.帧数).toBe(191);
+    expect(帧数于(归隐段)).toBe(191);
   });
 
   it('事件一拍一个动作：分屏、挂铃、走向照片墙、纸飘下、按框、打框、取照、她消失、合屏到位', () => {
@@ -460,7 +461,7 @@ describe('声音', () => {
       expect(音.起帧, 音.名).toBeGreaterThanOrEqual(窗.起帧);
       expect(尾, 音.名).toBeLessThanOrEqual(窗.止帧);
     }
-    const 名们 = (归隐段.声音 ?? []).filter((c): c is 资产cue => c.资产 !== undefined).map((c) => c.名);
+    const 名们 = 回帧们(归隐段).filter((c) => c.资产 !== undefined).map((c) => c.名);
     expect(名们).toEqual(['原声', ...第14句声音们.map((s) => s.名)]);
   });
 

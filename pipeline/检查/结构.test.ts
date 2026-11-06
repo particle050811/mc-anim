@@ -7,7 +7,7 @@ const 两场 = {
     "export const 清单 = [{ 键: '7-甲', 章: 7 }, { 键: '7-乙', 章: 7 }];",
     "export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
-  '作品/应力转动/段/7-乙/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场二', 帧数: 5, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+  '作品/应力转动/段/7-乙/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场二', 秒: 5, 宽: 4, 高: 4, 地形: [] });\n",
   '作品/应力转动/段/7-乙/画面.tsx': 'export default () => null;\n',
   '作品/应力转动/场/7-场一/末态.ts': 'export const 末态 = { x: 1 };\n',
   '作品/应力转动/场/7-场一/布局.ts': 'export const 布局 = 1;\n',
@@ -20,7 +20,7 @@ const 两部作品 = (): 文件表 => {
   for (const 名 of ['夹具甲', '夹具乙']) {
     Object.assign(表, {
       [`作品/${名}/清单.ts`]: "export const 清单 = [{ 键: '1-开场', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",
-      [`作品/${名}/段/1-开场/段.ts`]: "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-场一', 帧数: 24, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+      [`作品/${名}/段/1-开场/段.ts`]: "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-场一', 秒: 24, 宽: 4, 高: 4, 地形: [] });\n",
       [`作品/${名}/段/1-开场/画面.tsx`]: 'export default () => null;\n',
       [`作品/${名}/场/1-场一/末态.ts`]: 'export const 末态 = { x: 1 };\n',
       [`作品/${名}/角色.ts`]: 'export const 角色 = 1;\n',
@@ -79,7 +79,7 @@ describe('结构', () => {
 
   it('纯模块闭包里有 react/remotion、asset: 都拦', async () => {
     const 根 = 造仓库(基础(), {
-      '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nimport { 帧 } from './帮.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 帧, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+      '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nimport { 帧 } from './帮.ts';\nexport default 定义段({ 场: '7-场一', 秒: 帧, 宽: 4, 高: 4, 地形: [] });\n",
       '作品/应力转动/段/7-甲/帮.ts': "import { interpolate } from 'remotion';\nimport 图 from 'asset:贴图/甲';\nexport const 帧 = 10;\nexport const x = [interpolate, 图];\n",
     });
     const v = (await 跑('结构', 根)).违规.join('\n');
@@ -91,7 +91,7 @@ describe('结构', () => {
     const r = await 跑(
       '结构',
       造仓库(基础(), {
-        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
         '作品/应力转动/段/7-甲/画面.tsx': [
           "const 表 = { 甲: { 在: { 秒: 1 }, 依据: '说明' } };",
           "const 传 = { 依据: 表.甲.依据 ?? '', 又: 1 };",
@@ -113,7 +113,7 @@ describe('结构', () => {
       '结构',
       造仓库(基础(), {
         'assets/地形版本.json': JSON.stringify({ 包: {} }),
-        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 帧数: 10, fps: 24, 宽: 4, 高: 4, 地形: [] });\n",
+        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
         '作品/应力转动/段/7-甲/画面.tsx': "import 表 from '../../../../assets/地形版本.json';\nexport default () => <div>{Object.keys(表).length}</div>;\n",
       }),
     );
