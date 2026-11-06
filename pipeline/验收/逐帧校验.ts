@@ -1,6 +1,6 @@
 // anim verify 逐帧：每帧 PNG 算 sha 存成一份有名字的记录（run/逐帧校验/<作品>/<名>/<段键>.tsv），之后再渲一次比，列出不同的帧。方便对比最终结果（用户 10-31 定）。
 // 和 anim verify 的分工：verify 比认可版的抽样帧、有阈值、可 accept；这里每帧都比、按字节、没有阈值，不写母版，不碰段签和认可。
-// 全程只打包一次（开会话，用完删包），每段过一次渲染闸，并发 1；同一页面按帧号升序连着渲、声音开着，走法和 renderMedia 出母版一样。
+// 全程只打包一次（开会话，用完删包），每段过一次渲染闸，并发 1；同一页面按帧号升序连着渲、声音开着，参数和切片那遍一样（带字幕、帧号是输出帧），走法和 renderMedia 出切片一样。
 // 同一批帧才能比：隔开的帧在同一页面连出，和连续渲或单帧出不保证相同（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。所以 --比 永远照基准存的帧渲，给了 --帧 也只是渲到那里为止，前面的帧不省。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -10,7 +10,6 @@ import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 提交状态 } from '../环境/路径.ts';
 import { 数据根, 逐帧校验目录 } from '../环境/配置.ts';
 import type { 段信息 } from '../清单/清单.ts';
-import { 算全部段指纹 } from '../指纹/指纹.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
 import { 逐组照材质包 } from '../资产/资产锁.ts';
@@ -21,10 +20,12 @@ import { 等求解缓存写完 } from '../渲/求解缓存收集.ts';
 import { 同页出帧, 开会话, 找组合, 渲染标签, 缺的本机地形, 静帧文件 } from '../渲/渲.ts';
 import { 段渲染环境 } from '../渲/地形注入.ts';
 import { 记已量帧 } from '../渲/地形用量.ts';
-import { 渲染参数 } from '../渲/设置.ts';
+import { 段产物们 } from '../渲/段产物.ts';
+import type { 渲染参数表 } from '../渲/设置.ts';
+import { 全部段 } from '../清单/清单.ts';
 
 const 级别 = '视频' as const;
-// 2K 的真画面 PNG 都上 MB，几十 KB 只能是纯色或接近纯色；只提醒不拦，段里本来可能有黑场
+// 4K 的真画面 PNG 都上 MB，几十 KB 只能是纯色或接近纯色；只提醒不拦，段里本来可能有黑场
 const 纯色嫌疑字节 = 64 * 1024;
 const 列出的不同帧最多 = 20;
 const 第一帧约秒 = 15;
@@ -114,7 +115,7 @@ const 提交文本 = () => {
   return x ? `${x.提交}${x.有改动 ? '+未提交改动' : ''}` : '不在 git 里';
 };
 
-type 一段 = { 段: 段信息; 帧: number[]; 基准: 校验记录 | null; 指纹: string; 地形: Record<string, string> };
+type 一段 = { 段: 段信息; 帧: number[]; 基准: 校验记录 | null; 指纹: string; 地形: Record<string, string>; 帧数: number; 参数: 渲染参数表 };
 
 export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式: '存' | '比'; 名: string; 帧: readonly number[] | null; 留图: string | null; 记录: 运行记录 }): Promise<number> => {
   const { 模式, 名, 记录 } = o;
@@ -140,7 +141,8 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
     if (已有.length) throw new 用法错误(`「${名}」里已经有 ${已有.map((s) => s.键).join('、')}，不覆盖：换个名，或者选别的段`);
   }
   补字节并报(作品根(), 数据根());
-  const 指纹们 = await 算全部段指纹(要的段.map((s) => ({ 段: s, 渲染设置: 渲染参数(级别) })));
+  const 全部 = await 全部段();
+  const 产物们 = await 段产物们(全部, 要的段, 级别);
   const 计划: 一段[] = [];
   for (const [i, s] of 要的段.entries()) {
     const 文件 = 校验文件(名, s.键);
@@ -149,18 +151,20 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
       continue;
     }
     const 基准 = 模式 === '比' ? 读校验记录(文件) : null;
-    const { 要渲, 超出, 基准没有 } = 定要渲的帧(s.段.帧数, o.帧, 基准 ? [...基准.帧.keys()].sort((a, b) => a - b) : null);
+    const 产物 = 产物们[i]!;
+    const 帧数 = 产物.输出帧数;
+    const { 要渲, 超出, 基准没有 } = 定要渲的帧(帧数, o.帧, 基准 ? [...基准.帧.keys()].sort((a, b) => a - b) : null);
     const 基准超出 = 超出.filter((f) => 基准?.帧.has(f));
-    if (基准超出.length) 错(`${s.键}：段现在只有 ${s.段.帧数} 帧，基准存的这些帧没了：${帧号文本(基准超出)}`);
-    else if (超出.length) console.log(`· ${s.键} 只有 ${s.段.帧数} 帧，不渲 ${帧号文本(超出)}`);
+    if (基准超出.length) 错(`${s.键}：段现在只有 ${帧数} 帧，基准存的这些帧没了：${帧号文本(基准超出)}`);
+    else if (超出.length) console.log(`· ${s.键} 只有 ${帧数} 帧，不渲 ${帧号文本(超出)}`);
     if (基准没有.length) console.log(`· ${s.键}：基准没存这些帧，比不了：${帧号文本(基准没有)}`);
     if (o.帧 && 基准 && 要渲.some((f) => !o.帧!.includes(f))) console.log(`· ${s.键}：基准的帧是连着渲的，隔开渲比不了，这次连前面的帧一起渲、一起比：${帧号文本(要渲)}`);
-    if (基准 && !o.帧 && 基准.段帧数 !== s.段.帧数) 错(`${s.键}：存基准时段有 ${基准.段帧数} 帧，现在 ${s.段.帧数} 帧`);
+    if (基准 && !o.帧 && 基准.段帧数 !== 帧数) 错(`${s.键}：存基准时段有 ${基准.段帧数} 帧，现在 ${帧数} 帧（切片前存的基准按编排帧，要重存）`);
     if (!要渲.length) {
       错(`${s.键}：没有能渲的帧`);
       continue;
     }
-    计划.push({ 段: s, 帧: 要渲, 基准, 指纹: 指纹们[i]!.指纹, 地形: 指纹们[i]!.项.地形 });
+    计划.push({ 段: s, 帧: 要渲, 基准, 指纹: 产物.画面指纹.指纹, 地形: 产物.画面指纹.项.地形, 帧数, 参数: 产物.参数 });
   }
   // 开跑前查：不覆盖，也不和上次留的混在一起；比的时候哪帧不同渲完才知道，按可能写的算
   if (o.留图) {
@@ -173,14 +177,14 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
       const 整段 = 预计耗时(渲染标签(x.段.键, 级别));
       if (整段 === null) return null;
       // 只渲一截时第一帧的读地形摊不到，单独加上
-      return x.帧.length === x.段.段.帧数 ? 整段 : (整段 * x.帧.length) / x.段.段.帧数 + 第一帧约秒;
+      return x.帧.length === x.帧数 ? 整段 : (整段 * x.帧.length) / x.帧数 + 第一帧约秒;
     });
     const 已知 = 估.filter((x): x is number => x !== null);
     console.log(`== 逐帧${模式} ${计划.length} 段、${计划.reduce((a, x) => a + x.帧.length, 0)} 帧${已知.length ? `；按耗时表预计约 ${Math.round(已知.reduce((a, b) => a + b, 0))} 秒${已知.length < 计划.length ? `（另 ${计划.length - 已知.length} 段没有记录）` : ''}` : ''}`);
     await 逐组照材质包(作品根(), 计划, (x) => x.段.键, (组) => 开会话(级别, async (h) => {
       for (const x of 组) {
         const 键 = x.段.键;
-        const composition = 找组合(h, x.段);
+        const composition = 找组合(h, x.段, 全部);
         const 标签 = `逐帧校验:${作品名()}/${键}`;
         await 等求解缓存写完();
         const 排队起 = Date.now();
@@ -190,7 +194,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
           记阶段(记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
           const 明细 = new 明细收集(标签);
           await 明细.包(() =>
-            同页出帧(h, composition, x.帧, {
+            同页出帧({ ...h, 参数: x.参数 }, composition, x.帧, {
               打开声音: true,
               环境: 段渲染环境(键, x.地形),
               每帧: (png, f) => {
@@ -214,7 +218,7 @@ export const 跑逐帧校验 = async (段们: readonly 段信息[], o: { 模式:
         if (小.length) 记录.记('警告', `${键}：这些帧的 PNG 不到 ${纯色嫌疑字节 / 1024} KB，可能是纯色，看一眼画面：${帧号文本(小)}`);
         if (模式 === '存') {
           const 文件 = 校验文件(名, 键);
-          写校验记录(文件, { 段: 键, 段帧数: x.段.段.帧数, 指纹: x.指纹, 提交: 提交文本(), 帧: 这次 });
+          写校验记录(文件, { 段: 键, 段帧数: x.帧数, 指纹: x.指纹, 提交: 提交文本(), 帧: 这次 });
           记录.产物.push(文件);
           console.log(`✓ ${键}：${这次.size} 帧 → ${文件}`);
           continue;

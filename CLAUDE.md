@@ -19,20 +19,16 @@
 anim 调度 [--json|--一行] | 调度 盯 | 调度 预计 <选择器> | 调度 等锁表 [--从 <时刻>]    看资源、队列和决定；改调度必填 --为什么（docs/调度.md）
 anim --低优先 <命令>                      全局参数：过渲染闸排在全部普通票后面，静帧来了下一段先让它（合并后统一渲用）
 anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）；子命令都认 --help
-anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章（都不中才当章范围）
-anim render [<选择器>] --只派生 [--重做]   从现有 CRF1 母版补段签（段签/，母版删了 film 照样用；verify 哈希和认可版不同的帧要解母版）
-anim render <选择器> --重渲 --留CRF1        渲完留下 CRF1（verify --对基线 要；平时渲完转压缩母版就删 CRF1，主检出还删同段旧指纹，worktree 只新增）
+anim film <选择器…> [--重渲] [--级别 视频|预览] [--分享版] [--名 <名>]   唯一的出片路：选择器全字匹配段键、段名、编号、场键、章（都不中才当章范围），一段也行；缺的段当场渲成切片（4K60 画面 mp4 带叠层字幕 + wav，渲完派生段签，主检出删同段旧切片，worktree 只新增），再接成片（docs/决策/0014-单一出片路.md）
 anim still <段> <帧…> --到预览 <主题> [--逐帧]（多帧默认同页连出，要逐像素比用 --逐帧）      anim stale [<选择器>] [--严格]     anim bench <段> [--帧 a-b]     anim 耗时 [<段>] [--最近 n]（每次渲染的阶段、每帧、等待、机器负载）
-anim 认指纹 <选择器…> --理由 "…" [--抽 N] [--只看]   过期段抽 N 帧（默认 12）静帧和旧母版比，都在压缩噪声内就沿用旧母版不重渲；不比声音、没抽的帧（docs/决策/0013-认指纹.md）
-anim verify [<段>] [--对基线 [--渲]]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
-anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   每帧 PNG 的 sha 存到 run/逐帧校验/<作品>/<名>/<段键>.tsv，再渲一次（照基准存的帧连着渲）列出不同的帧；不写母版，不碰段签和认可
-anim film <范围> [--分享版]  |  anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
+anim 认指纹 <选择器…> --理由 "…" [--抽 N] [--只看]   过期段抽 N 帧（默认 12）静帧和旧切片比，都在压缩噪声内就沿用旧切片不重渲；不比声音、没抽的帧（docs/决策/0013-认指纹.md）
+anim verify [<段>] [--渲]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
+anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   每帧 PNG 的 sha 存到 run/逐帧校验/<作品>/<名>/<段键>.tsv，再渲一次（照基准存的帧连着渲）列出不同的帧；不写切片，不碰段签和认可
+anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
 anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（0005）、挂 Release 发的字节和地形包（0006）
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）
 anim cache gc [--执行]                     缓存回收，默认只看；--执行 过渲染闸
-anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转压缩母版（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
-anim cache 改后缀 [--执行]                 一次性把旧的 <指纹>.crf12.mkv 就地改名 <指纹>.x264.mkv（不转码），默认只打印
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
 anim wt new <名> [--从 <分支>]          开 worktree 并备好依赖（pnpm install --frozen-lockfile，从全机共用的 store 克隆或硬链接，几秒）
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
@@ -40,9 +36,9 @@ anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|free
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行（开游戏、编译过资源闸）、从游戏导群系色和方块表
 anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心数据（浏览器里跑 pipeline/适配器/<平台>/取数.js 下载）收进数据根、对交付出报告；旧名 anim bili
 ```
-剪映剪辑包（`anim edit-package`、`anim jianying`）用户 11-06 定不要了，成片、分享版统一在 image-flow 插件里看，代码从 Git 历史找。还没实现：`anim music`、`anim assets import|verify`（字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）；取材 mod 的录制（`mcai record`）用户 10-30 说用不到，不做。
+剪映剪辑包（`anim edit-package`、`anim jianying`）用户 11-06 定不要了，成片、分享版统一在 image-flow 插件里看，代码从 Git 历史找。`anim render`（连 `--到预览`、`--留CRF1`、`--只派生`）、`verify --对基线`、`cache 转存|改后缀` 用户 11-06 定删掉，出片只走 `anim film`（`docs/决策/0014-单一出片路.md`）。还没实现：`anim music`、`anim assets import|verify`（字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）；取材 mod 的录制（`mcai record`）用户 10-30 说用不到，不做。
 
-Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；`anim wt new` 会克隆进新 worktree，别处缺了用 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim render`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
+Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；`anim wt new` 会克隆进新 worktree，别处缺了用 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim film`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
 
 ## 两条元规则（用户 10-21）
 1. **看过的实现为准**：用户看过的已实现画面，优先于旧规矩、原设计和 Agent 写的规矩。冲突时留现状，列给用户，写清规矩出处和「现状是用户看过的」；用户这次点名才改。

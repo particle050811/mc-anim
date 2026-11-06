@@ -1,14 +1,15 @@
 // 认可参考：认可那一版的抽样帧（全分辨率 FFV1，存解出来的 yuv420p 原样），存 认可参考/<作品>/<平台>/<段键>/<指纹前 16 位>-<抽样键>.mkv（数据根，不进 Git），
 // 旁边同名 .json 是旁记（各帧 yuv sha，verify 逐帧核，见 参考像素.ts）。认可那版的母版删了，verify 照样能比像素（设计见 预览/1030-1755-母版管线重设计/01-推荐方案.md 第四节 C）。
-// 用户 11-02 定换比法后，accept 时从认可那版的压缩母版抽帧做（还没转码的用 CRF1）；以前从段签无损抽样克隆的不动，补参考 给它们补旁记。
+// accept 时从认可那版的切片抽帧做（决策/0014；CRF1 时代认可的从压缩母版、CRF1 抽，用户 11-02 定）；以前从段签无损抽样克隆的不动，补参考 给它们补旁记。
 // 文件名带认可记录的抽样键：同一指纹重渲后再 accept，新记录对应新文件名，旧参考不会冒充新认可（只写新文件，不删旧参考）。
-// 抽之前核对母版就是认可那一版：认可那版指纹的段签（现在的，或重渲前挪进 历史/ 的）签名和认可记录是同一版，母版又正是那份段签记的。
+// 抽之前核对母版就是认可那一版：认可那版指纹的段签（现在的，或重渲前挪进 历史/ 的）签名和认可记录是同一版，切片（母版）又正是那份段签记的。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 配置, 认可参考文件 } from '../环境/配置.ts';
+import { 配置, 母版目录, 认可参考文件 } from '../环境/配置.ts';
 import { 低优先级, 跑 } from '../环境/子进程.ts';
 import { 视频信息 } from '../渲/探测.ts';
-import { 压缩母版路径, 原母版路径 } from '../渲/母版.ts';
+import { 压缩名 } from '../渲/母版.ts';
+import { 段画面路径 } from '../渲/段产物.ts';
 import { 原样子, 对得上母版, 对得上原母版, 读段签, 读历史段签, type 段签 } from '../段签/段签.ts';
 import { 抽样帧, 抽样流, 抽样滤镜, sha } from './帧流.ts';
 import { 旁记文件, 读旁记, type 旁记 } from './参考像素.ts';
@@ -17,26 +18,20 @@ import { 同一版, 抽样键, type 认可记录 } from './认可.ts';
 /** 这条认可记录在这个平台的认可参考文件 */
 export const 参考文件 = (认可: 认可记录, 平台: string, 作品?: string) => 认可参考文件(认可.段, 认可.指纹, 抽样键(认可), 平台, 作品);
 
-export type 认可母版 = { 文件: string; 来源: '压缩母版' | 'CRF1'; 字节sha: string };
+export type 认可母版 = { 文件: string; 来源: '切片' | '压缩母版' | 'CRF1'; 字节sha: string };
 
 /**
- * 认可那一版的母版：认可那版指纹的段签（现在的、历史/ 里的）有和认可记录同一版的，母版又对得上那份段签（压缩母版看段签记的、CRF1 看它转自的）。
- * 先 指先拿哪种（备参考 先压缩母版，用户 11-02 定；verify 比的时候先 CRF1，少一层压缩噪声）。都不是 null
+ * 认可那一版的母版：认可那版指纹的段签（现在的、历史/ 里的）有和认可记录同一版的，切片又对得上那份段签。
+ * CRF1 时代的段签（版本 1、2）先找压缩母版（用户 11-02 定），再找 CRF1（看它转自的那份）。都不是 null
  */
-export const 找认可母版 = async (认可: 认可记录, 先: '压缩母版' | 'CRF1'): Promise<认可母版 | null> => {
+export const 找认可母版 = async (认可: 认可记录): Promise<认可母版 | null> => {
   const 签们 = [读段签(认可.段, 认可.指纹), ...读历史段签(认可.段, 认可.指纹).map((h) => h.签)].filter((s): s is 段签 => !!s && 同一版(s.签名, 认可));
-  const 压 = 压缩母版路径(认可.段, 认可.指纹);
-  const 原 = 原母版路径(认可.段, 认可.指纹);
-  const 试: Record<认可母版['来源'], (签: 段签) => Promise<认可母版 | null>> = {
-    压缩母版: async (签) => (签.母版.转码自 && (await 对得上母版(签, 压)) ? { 文件: 压, 来源: '压缩母版', 字节sha: 签.母版.字节sha } : null),
-    CRF1: async (签) => ((await 对得上原母版(签, 原)) ? { 文件: 原, 来源: 'CRF1', 字节sha: 原样子(签).字节sha } : null),
-  };
-  for (const 种 of 先 === '压缩母版' ? (['压缩母版', 'CRF1'] as const) : (['CRF1', '压缩母版'] as const)) {
-    for (const 签 of 签们) {
-      const r = await 试[种](签);
-      if (r) return r;
-    }
-  }
+  const 切片 = 段画面路径(认可.段, 认可.指纹);
+  const 原 = path.join(母版目录(认可.段), `${认可.指纹.slice(0, 16)}.mkv`);
+  const 压 = 压缩名(原);
+  for (const 签 of 签们) if (签.版本 === 3 && (await 对得上母版(签, 切片))) return { 文件: 切片, 来源: '切片', 字节sha: 签.母版.字节sha };
+  for (const 签 of 签们) if (签.版本 !== 3 && 签.母版.转码自 && (await 对得上母版(签, 压))) return { 文件: 压, 来源: '压缩母版', 字节sha: 签.母版.字节sha };
+  for (const 签 of 签们) if (签.版本 !== 3 && (await 对得上原母版(签, 原))) return { 文件: 原, 来源: 'CRF1', 字节sha: 原样子(签).字节sha };
   return null;
 };
 
@@ -58,17 +53,17 @@ const 写旁记 = (参考: string, 记: 旁记) => {
   fs.renameSync(tmp, f);
 };
 
-export type 参考结果 = '已有' | '从压缩母版' | '从CRF1' | '对不上' | '没有来源';
+export type 参考结果 = '已有' | '从切片' | '从压缩母版' | '从CRF1' | '对不上' | '没有来源';
 
 /**
- * 给一条认可记录备好认可参考：已有就不动；不然从认可那一版的母版（找认可母版，先压缩母版）抽。
+ * 给一条认可记录备好认可参考：已有就不动；不然从认可那一版的母版（找认可母版）抽。
  * 先写临时文件，帧数尺寸对、算好各帧 yuv sha 才收：先改名旁记、再改名参考（中途断了只留旁记，下次照样重抽）。
  * 同一指纹重渲过、现在的母版不是认可那版的，返回 '没有来源'（verify 退回块均值）
  */
 export const 备参考 = async (认可: 认可记录, 平台: string): Promise<参考结果> => {
   const 出 = 参考文件(认可, 平台);
   if (fs.existsSync(出)) return '已有';
-  const 母 = await 找认可母版(认可, '压缩母版');
+  const 母 = await 找认可母版(认可);
   if (!母) return '没有来源';
   fs.mkdirSync(path.dirname(出), { recursive: true });
   const tmp = path.join(path.dirname(出), `${path.basename(出, '.mkv')}.写入中-${process.pid}.mkv`);
@@ -82,7 +77,7 @@ export const 备参考 = async (认可: 认可记录, 平台: string): Promise<�
     if (yuv.length !== 帧们.length) return '对不上';
     写旁记(出, { 抽样键: 抽样键(认可), 帧: 帧们, yuv, 来源: 母.来源, 母版字节sha: 母.字节sha, 记于: new Date().toISOString() });
     fs.renameSync(tmp, 出);
-    return 母.来源 === '压缩母版' ? '从压缩母版' : '从CRF1';
+    return 母.来源 === '切片' ? '从切片' : 母.来源 === '压缩母版' ? '从压缩母版' : '从CRF1';
   } finally {
     fs.rmSync(tmp, { force: true });
   }

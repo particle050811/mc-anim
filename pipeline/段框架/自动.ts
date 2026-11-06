@@ -1,4 +1,4 @@
-// render、still、studio 开跑前自动跑 anim cues：段框架的段生成的 声音表.生成.ts、声音地址.生成.ts 和 段.ts 的 cue 对不上就重新生成（变了才写）。
+// film、still、studio 开跑前自动跑 anim cues：段框架的段生成的 声音表.生成.ts、声音地址.生成.ts 和 段.ts 的 cue 对不上就重新生成（变了才写）。
 // 为什么自动生成、不是报错让人去跑：这两份文件只由 段.ts、场时间线、资产锁、台词.toml 和字节算出来，人去跑也是同一条命令、同一个结果；
 // 报错的话 studio 起不来、改一声就要多敲一条命令。写了哪份会打出来（进 Git，git diff 看得见），anim check 照样核对。
 // 只看一眼认得出的段（段.ts 直接引 窗口段，或目录里已经有生成的声音表；anim new seg 建的段一开始就有空表），不执行老段，开跑前不慢。
@@ -51,7 +51,7 @@ export const 渲前跑cues = async (o: { 打印?: (行: string) => void } = {}):
   return 结果;
 };
 
-/** render、still 用：所选的段里有 cues 生成失败的就停（声音会放错），别的段失败只提醒 */
+/** film、still 用：所选的段里有 cues 生成失败的就停（声音会放错），别的段失败只提醒 */
 export const 查所选段cues = (r: 自动结果, 所选: readonly { 键: string }[], 打印: (行: string) => void = (x) => console.error(x)) => {
   const 选中 = new Set(所选.map((s) => s.键));
   const 停 = [...r.失败].filter(([k]) => 选中.has(k));
