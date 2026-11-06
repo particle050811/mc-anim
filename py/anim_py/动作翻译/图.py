@@ -20,9 +20,6 @@ import math
 import struct
 from typing import Any
 
-类型们 = ("i", "j", "f", "d", "z")
-
-
 def f32(x: float) -> float:
     try:
         return struct.unpack(">f", struct.pack(">f", x))[0]

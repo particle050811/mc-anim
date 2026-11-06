@@ -25,14 +25,10 @@ const prism数据默认 = () => {
 /** 用户本机放外部模型仓库的地方（~/Developer/personal/<名>，旧项目 工具/公共/环境.py 同样的默认） */
 const 个人仓库 = (名: string) => path.join(os.homedir(), 'Developer', 'personal', 名);
 
-/** 旧项目 10-31 退役、打包进外置硬盘；要跑 pipeline/适配器/旧项目/ 就先解回主检出同级，或用 ANIM_LEGACY 指过去 */
-const 旧项目目录名 = '机械动力应力转动-AI漫画';
-
 // 顺序有意义：后面的默认值可以用前面已经取到的值
 const 项表 = {
   数据根: { 变量: 'ANIM_DATA', 说明: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 'mc-anim-data') },
   默认作品: { 变量: 'ANIM_WORK', 说明: '没给 --作品、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', 是路径: false, 默认: () => '' },
-  旧项目: { 变量: 'ANIM_LEGACY', 说明: '旧项目根（已退役，只有 pipeline/适配器/旧项目/ 的基线工具用）', 是路径: true, 默认: () => path.join(path.dirname(主检出()), 旧项目目录名) },
   游戏: { 变量: 'ANIM_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）', 是路径: true, 默认: (v) => path.join(v.数据根!, 'game') },
   java_home: { 变量: 'ANIM_JAVA_HOME', 说明: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', 是路径: true, 默认: () => '' },
   prism: { 变量: 'ANIM_PRISM', 说明: 'Prism Launcher 程序（anim mcai 起游戏用）；空就从 PATH 找', 是路径: false, 默认: () => '' },
@@ -48,9 +44,6 @@ const 项表 = {
     是路径: true,
     默认: (v) => path.join(v.数据根!, 'run', 'locks'),
   },
-  编码器: { 变量: 'ANIM_VIDEO_ENCODER', 说明: '成片视频编码器：libsvtav1（默认，AV1）、libx264 或 h264_videotoolbox（Mac 上要快时用）', 是路径: false, 默认: () => 'libsvtav1' },
-  编码档位: { 变量: 'ANIM_VIDEO_PRESET', 说明: '成片编码的档位（-preset）：空 = 编码器默认（libsvtav1 6，0～13 越小越慢越好；libx264 medium）', 是路径: false, 默认: () => '' },
-  编码质量: { 变量: 'ANIM_VIDEO_CRF', 说明: '成片编码的质量（libsvtav1、libx264 的 -crf，videotoolbox 的 -q:v）：空 = 编码器默认（libsvtav1 30、libx264 18、videotoolbox 38），越小越好越大', 是路径: false, 默认: () => '' },
   成片档: { 变量: 'ANIM_FILM_PROFILE', 说明: '成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧、码率上限 40 Mbps）或 1080p60（1.5 倍出 1920×1080、15 Mbps）；换档段全部重渲；见 pipeline/渲/设置.ts 的 成片档表', 是路径: false, 默认: () => '4k60' },
   gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU；Docker 里没有 GPU 用 swangle）', 是路径: false, 默认: () => 'angle' },
   ffmpeg: { 变量: 'ANIM_FFMPEG', 说明: 'ffmpeg 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffmpeg' },
@@ -134,7 +127,7 @@ export const 配置 = (名: 配置键): string => 全部().值[名]!.值;
 export const 全部配置 = () => 全部();
 export const 作品路径表 = () => 全部().作品路径;
 
-// ---------- 数据根下的布局（方案「二、新项目总览」）；按作品分：母版、叠层、交付、基线；共用：store、私有、terrain、cache/求解 ----------
+// ---------- 数据根下的布局（方案「二、新项目总览」）；按作品分：母版、交付、基线；共用：store、私有、terrain、cache/求解 ----------
 
 export const 数据根 = () => 配置('数据根');
 export const 数据路径 = (...段: string[]) => path.join(数据根(), ...段);
@@ -146,12 +139,10 @@ export const 地形根 = () => 数据路径('terrain');
 export const 求解缓存目录 = () => 数据路径('cache', '求解');
 /** Remotion 的 public 目录：里面只放指向 terrain/、cache/求解/ 的链接（见 pipeline/渲/public目录.ts） */
 export const public目录 = () => 数据路径('run', 'public');
-/** 透明叠层的缓存：cache/叠层/<段键>-<名>/ */
-export const 叠层目录 = (叠层键: string, 作品 = 作品名()) => 按作品(['cache', '叠层'], 作品, [叠层键]);
-/** 段签：段签/<作品>/<段键>/<指纹前 16 位>/（签.json、声音.flac、历史.jsonl；版本 1 还有 抽样.mkv），渲过一个指纹就留一份，母版删了也在（pipeline/段签/） */
+/** 段签：段签/<作品>/<段键>/<指纹前 16 位>/（签.json、声音.flac、历史.jsonl），渲过一个指纹就留一份，母版删了也在（pipeline/段签/） */
 export const 段签目录 = (段键: string, 指纹: string, 作品 = 作品名()) => 按作品(['段签'], 作品, [段键, 指纹.slice(0, 16)]);
 /**
- * 认可参考：认可那版的抽样帧（全分辨率 FFV1，存解出来的 yuv420p 原样；11-02 起从认可那版的压缩母版抽，以前的从 CRF1 抽），
+ * 认可参考：认可那版的抽样帧（全分辨率 FFV1，存解出来的 yuv420p 原样；从认可那版的切片抽），
  * 认可参考/<作品>/<平台>/<段键>/<指纹前 16 位>-<抽样键>.mkv，旁边 .json 是旁记（验收/参考像素.ts）；verify 比像素用，不再要认可那版的母版。
  * 抽样键见 验收/认可.ts，文件名跟着认可记录的哈希走，同一指纹重新 accept 不会撞上旧参考
  */
@@ -162,8 +153,7 @@ export const 逐帧校验目录 = (名: string, 作品 = 作品名()) => 按作�
 export const 交付根 = (作品 = 作品名()) => 按作品(['交付'], 作品, []);
 /** 旧项目对照的基线：基线/<作品>/（只有 应力转动 有） */
 export const 基线根 = (作品 = 作品名()) => 按作品(['基线'], 作品, []);
-/** manifest 里数据根下的路径写相对数据根（数据根挪了照样认）；读的时候两种都认 */
-export const 相对数据根 = (p: string) => path.relative(数据根(), p).split(path.sep).join('/');
+/** manifest 里数据根下的路径：相对数据根的、绝对的都认 */
 export const 数据根下 = (p: string) => (path.isAbsolute(p) ? p : path.join(数据根(), ...p.split('/')));
 export const 运行目录 = () => 数据路径('run');
 /** Agent 的中间稿：run/草稿/<UTC 月日-时分>-工作-<主题>/（见 pipeline/预览/预览.ts） */

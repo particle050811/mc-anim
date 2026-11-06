@@ -24,7 +24,7 @@ anim still <段> <帧…> --到预览 <主题> [--逐帧]（多帧默认同页�
 anim 认指纹 <选择器…> --理由 "…" [--抽 N] [--只看]   过期段抽 N 帧（默认 12）静帧和旧切片比，都在压缩噪声内就沿用旧切片不重渲；不比声音、没抽的帧（docs/决策/0013-认指纹.md）
 anim verify [<段>] [--渲]  |  anim verify accept <段…> --理由 …  |  anim verify 补参考 [<选择器>]
 anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   每帧 PNG 的 sha 存到 run/逐帧校验/<作品>/<名>/<段键>.tsv，再渲一次（照基准存的帧连着渲）列出不同的帧；不写切片，不碰段签和认可
-anim film 补声音 <交付…>|--全部  |  anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
+anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim preview new <主题> | preview 清理 [--执行]
 anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（0005）、挂 Release 发的字节和地形包（0006）
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）
