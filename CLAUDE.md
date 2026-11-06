@@ -33,7 +33,7 @@ anim cache gc [--执行]                     缓存回收，默认只看；--执
 anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转压缩母版（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
 anim cache 改后缀 [--执行]                 一次性把旧的 <指纹>.crf12.mkv 就地改名 <指纹>.x264.mkv（不转码），默认只打印
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
-anim wt new <名> [--从 <分支>]          开 worktree 并备好依赖（克隆主检出的 node_modules，不带缓存；锁文件不同才 npm ci）
+anim wt new <名> [--从 <分支>]          开 worktree 并备好依赖（pnpm install --frozen-lockfile，从全机共用的 store 克隆或硬链接，几秒）
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
 anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行（开游戏、编译过资源闸）、从游戏导群系色和方块表
@@ -50,7 +50,7 @@ Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git
 
 ## 工作纪律
 - 逐文件 `git add <文件>`，不用 `-A` 或 `.`；按逻辑拆提交。不 push，要推送先问用户。
-- 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`，不手动 `git worktree add` 再自己装依赖：不在 worktree 里 `npm ci`（锁文件不同时命令自己会跑）、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree；删之前先清点被忽略的文件。不留没合并的分支。
+- 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`，不手动 `git worktree add` 再自己装依赖：不在 worktree 里自己装依赖（命令会跑 `pnpm install`）、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。依赖用 pnpm（用户 11-06 定，三系统一个做法），只留 `pnpm-lock.yaml`，加减依赖用 `pnpm add`，不用 npm 装。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree；删之前先清点被忽略的文件。不留没合并的分支。
 - 子 Agent 在 worktree 里只出静帧看效果（看动作可 `anim still` 连出几帧），不渲整段、不做逐帧校验；整段渲染、逐帧校验由主 Agent 合并后用 `anim --低优先 …` 排，给静帧让路（用户 11-06 定，依据和基线见 `docs/决策/0012-调度.md`）。改渲染管线本身、必须真渲才验得了的活例外，派活时写明。
 - 合并前 `anim check` 必须过。说「改好了」之前在 main 上核对：用户这次定的每一条都要在代码里查到，或者出静帧确认。
 - 给用户看的东西放 `预览/<月日-时分>-<主题>/`，时间用 UTC（`date -u +%m%d-%H%M`，代码里用 `time.gmtime()`）。文件夹里一层平铺，文件名带编号，附一份 `00-说明.md`，末尾留「你的回复：」。成片、整段视频这类数据根里已有的大文件不复制进来，在 `00-说明.md` 里写 `![名](绝对路径)`，用户在 image-flow 侧栏「本页引用」里看（用户 11-05 定）。不覆盖旧的；换了变量就另开一个文件夹。
