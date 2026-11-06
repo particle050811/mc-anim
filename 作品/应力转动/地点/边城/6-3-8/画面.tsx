@@ -4,7 +4,8 @@
 // 坑口不冒烟（用户 10-12 嫌浓烟多余）：不画碎块.tsx 的 `烟尘`、`余烟`，不画 6-3-6 的震波；古城地面照 6-3-6 砸完落定的样子（坑、落块、裂纹，竖井.tsx 的 `AncientCity` 默认）。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { use当前秒, use视图下标 } from '@engine/段/时间.tsx';
 import { rad } from '@engine/anim/anim.ts';
 import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
@@ -101,15 +102,15 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
   );
 };
 
+// 段内秒换成这条时间线的格（1/24 秒）再走 toSec（跳下城墙那一截跳切）
 export const PursuerSegment: React.FC<{ segment: choreo.SegmentName }> = ({ segment: segment }) => {
-  const frame = useCurrentFrame();
-  return <PursuerScene t={choreo.toSec(segment, frame)} />;
+  const 秒 = use当前秒();
+  return <PursuerScene t={choreo.toSec(segment, 秒 * choreo.FPS)} />;
 };
 
 // 核对：一帧一个视图（编排秒 + 可选机位），出静帧定机位、动作用：npx remotion render 6-3-8至10-核对 <目录> --sequence --props=<json>
 export type CheckView = { t: number; 机位?: choreo.Cam };
 export const PursuerCheck: React.FC<{ views: CheckView[] }> = ({ views }) => {
-  const frame = useCurrentFrame();
-  const view = views[Math.min(frame, views.length - 1)];
+  const view = views[Math.min(use视图下标(), views.length - 1)];
   return <PursuerScene t={view.t} cam={view.机位} />;
 };

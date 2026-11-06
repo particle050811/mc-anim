@@ -68,10 +68,10 @@ describe('水面天色的写入者', () => {
     卸新();
     expect(快照()).toEqual(默认值);
   });
-  it('地下兼容水面按参考帧写时间，不跟这次跳到的当前帧走', () => {
+  it('地下兼容水面按参考时刻写时间，不跟这次跳到的当前帧走', () => {
     时序.帧 = 120;
     const 卸旧 = 挂(() => SkyDome({ twilight: true }));
-    const 卸新 = 挂(() => OverworldWaterSky({ 帧: 42 }));
+    const 卸新 = 挂(() => OverworldWaterSky({ 秒: 42 / 30 }));
     expect(waterSky.time.value).toBe(42 / 30);
     expect(waterSky.reflectionMax.value).toBe(0);
     const 新值 = 快照();

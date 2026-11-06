@@ -5,7 +5,7 @@
 // 云照原版：environment/clouds.png 每个不透明像素是一块 12×12 格、4 格厚的云，四面按原版明暗（顶 1.0、东西 0.9、南北 0.8、底 0.7）。贴图用 npm run 取材 -- 天空 从 client jar 导出到 天空.贴图/。
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useState } from 'react';
-import { cancelRender, continueRender, delayRender, useCurrentFrame } from 'remotion';
+import { cancelRender, continueRender, delayRender } from 'remotion';
 import { use写入者, 新写入槽 } from '../core/写入者.ts';
 import { skyBandCount, waterSky, skyReflMax, 复位水面天色 } from '../voxel/水面.ts';
 import * as THREE from 'three';
@@ -14,7 +14,7 @@ import { overworldMix, brighten, twilightSunDir, twilightDusk } from './光照�
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms, atmosphere } from './大气.ts';
 import cloudsPng from 'asset:贴图/场景/天空/clouds';
 import sunPng from 'asset:贴图/场景/天空/sun';
-import { use编排fps } from '../段/编排时钟.tsx';
+import { use当前秒 } from '../段/时间.tsx';
 
 export const SKY = {
   top: '#7ea2cc',
@@ -149,14 +149,12 @@ const Sun: React.FC<{ sun: [number, number, number] }> = ({ sun }) => {
   return <primitive object={mesh} renderOrder={-1} />;
 };
 
-// 水面反射的天色和波纹时间（lib/水面.ts）：天色取穹顶按仰角的渐变，时间按帧号（Remotion 逐帧独立）。条：暮色天的色条；null = 主世界穹顶
+// 水面反射的天色和波纹时间（lib/水面.ts）：天色取穹顶按仰角的渐变，时间按当前秒（Remotion 逐帧独立）。条：暮色天的色条；null = 主世界穹顶
 const 水面天色槽 = 新写入槽();
-const useWaterSky = (bands: [number, string][] | null, 指定帧?: number) => {
+const useWaterSky = (bands: [number, string][] | null, 指定秒?: number) => {
   use写入者(水面天色槽, 复位水面天色);
-  const 当前帧 = useCurrentFrame();
-  const frame = 指定帧 ?? 当前帧;
-  const fps = use编排fps();
-  waterSky.time.value = frame / fps;
+  const 当前秒 = use当前秒();
+  waterSky.time.value = 指定秒 ?? 当前秒;
   waterSky.reflectionMax.value = skyReflMax(bands !== null);
   {
     const domeColors = [new THREE.Color(SKY.horizon), new THREE.Color(SKY.top)];
@@ -178,8 +176,9 @@ const useWaterSky = (bands: [number, string][] | null, 指定帧?: number) => {
   }
 };
 // 没挂 `SkyDome` 的画布（6-1-1 海岛：天是背景色）也要给水面写天色和时间，不然水反射的是 `waterSky` 的默认灰蓝、波纹不动
-export const OverworldWaterSky: React.FC<{ 帧?: number }> = ({ 帧 }) => {
-  useWaterSky(null, 帧);
+// 秒：水面波纹定在这一刻（不给就跟当前秒走）
+export const OverworldWaterSky: React.FC<{ 秒?: number }> = ({ 秒 }) => {
+  useWaterSky(null, 秒);
   return null;
 };
 
