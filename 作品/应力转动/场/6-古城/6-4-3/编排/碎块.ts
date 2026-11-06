@@ -55,7 +55,7 @@ const tubePoints = Array.from({ length: 2 }, (_, i) => {
 // 每个盒子一根管（方块飞溅.tsx 按管对象缓存，同一根管不能给两个盒子共用）
 const tubes: 矛管[] = geom.击穿方块.map(() => ({ 点: tubePoints, 半径: 0.1, particleClockScale: closeupBreakClockScale.墙 }));
 const fallingSet = new Set(geom.掉落方块.map((b) => b.join()));
-// 掉下来的那块落地的剧情时刻（箭碰到起按 16 米/秒² 下落，方块中心落到 `groundZ` + 0.5）：声音.tsx 的落地声在这一刻
+// 掉下来的那块落地的剧情时刻（箭碰到起按 16 米/秒² 下落，方块中心落到 `groundZ` + 0.5）：落地声在这一刻（6-4-3c 段尾以后，不放）
 export const rockLandSec = (() => {
   const fallBlock = geom.掉落方块[0];
   const i = geom.击穿方块.findIndex((x) => x.join() === fallBlock.join());
