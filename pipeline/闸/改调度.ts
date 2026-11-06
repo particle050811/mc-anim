@@ -25,9 +25,8 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
     const 输出 = o.输出 ?? console.log, s = (o.状态 ?? (() => 读状态(e)))();
     const 中 = (name: string, pid: number) => 目标 === name || 目标 === `#${pid}` || 目标 === String(pid);
     const tickets = s.票.filter(t => 中(t.名, t.pid)), held = s.持锁.filter(t => 中(t.票, t.pid));
-    // 闸放开后批还活着（后台在转、限流、等齐）：没有票也没有锁，只有在跑登记。
-    const 后台们 = tickets.length + held.length ? [] : s.在跑.filter(x => x.后台 && 中(x.任务, x.发起.pid)), 唯一 = tickets.length + held.length + 后台们.length === 1;
-    const t = 唯一 ? tickets[0] : undefined, h = 唯一 ? held[0] : undefined, b = 唯一 ? 后台们[0] : undefined, 任务 = t?.内容?.任务 ?? h?.任务 ?? b?.任务;
+    const 唯一 = tickets.length + held.length === 1;
+    const t = 唯一 ? tickets[0] : undefined, h = 唯一 ? held[0] : undefined, 任务 = t?.内容?.任务 ?? h?.任务;
     // 记解析后的任务和票，#pid 配不上告警，票名改序后也配不上。
     const 记 = (结果?: string) => 记调度(e.日志目录, '决定', { 结果, 任务, 票: t?.名 ?? h?.票, 目标, 谁: e.发起者, 发起: e.发起者, 看到: { 人工:p.值['--看到'],摘要: 一行状态(s), 队: s.票.slice(0, 3).map(t => ({ 票: t.名, 声明: t.内容?.声明 })), 持锁: s.持锁.map(t => ({ pid: t.pid, 任务: t.任务, 票: t.票 })) }, 决定: p.值['--决定'] ?? `${cmd} ${目标 ?? ''}`, 为什么: why, 机: { ...s.机, 进程: undefined } }, e.现在毫秒());
     if (e.发起者.子会话 || e.发起者.代理标.endsWith('_agent'))
@@ -46,11 +45,9 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         throw new 用法错误(`${cmd} 要指定完整票名或 #pid`);
     if (!唯一)
         throw new 用法错误(`目标不存在或不唯一：${目标}；用完整票名`);
-    const pid = t?.pid ?? h?.pid ?? b!.发起.pid;
+    const pid = t?.pid ?? h!.pid;
     if (t && t.主机 !== 主机片段(e.本机))
         throw new 用法错误('不能从本机改另一主机的票');
-    if (b && b.主机 !== e.本机)
-        throw new 用法错误('不能从本机操作另一主机的任务');
     if (h && h.发起.pid !== pid)
         throw new 用法错误('锁信息与 pid 不符，请重看调度');
     if(h){for(const n of ['渲染','放行']){const file=path.join(e.锁目录,n+'.lock');if(持有者(file)===pid){const host=持有者主机(file,pid);if(host&&host!==e.本机)throw new 用法错误('不能从本机操作另一主机的持锁者');}}}
@@ -64,15 +61,15 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         // 写全名取消一张残留票也可能杀到持锁者，同样要确认。
         if ((h || s.持锁.some(x => x.pid === pid && !x.死)) && !p.开关.has('--杀持锁'))
             throw new 用法错误('目标正在持锁；确认中断请加 --杀持锁');
-        const 称 = h ? '锁' : b ? '任务' : '票', 未发 = () => { const 话 = `未发信号：进程已不在，留下的${称}由下一个等待者回收`; 记(话); 输出(话); };
+        const 称 = h ? '锁' : '票', 未发 = () => { const 话 = `未发信号：进程已不在，留下的${称}由下一个等待者回收`; 记(话); 输出(话); };
         if (h?.死 || t?.死) {
             未发();
             return;
         }
         // 信号不能撤回，这里不用判死时的余量：只要启动晚于拿锁、领票就不是原来那个进程。
-        const 声称 = h ? h.拿锁时 : b ? b.起 : t!.内容?.起 ?? t!.时间, 起于 = (o.进程起于 ?? 进程起于)(pid);
+        const 声称 = h ? h.拿锁时 : t!.内容?.起 ?? t!.时间, 起于 = (o.进程起于 ?? 进程起于)(pid);
         if (起于 !== null && 起于 > 声称) {
-            const 话 = `未发信号：pid ${pid} 已换人（${new Date(起于).toISOString()} 才启动，晚于${h ? '拿锁' : b ? '任务开始' : '领票'} ${new Date(声称).toISOString()}），原进程已不在；留下的${称}由下一个等待者回收`;
+            const 话 = `未发信号：pid ${pid} 已换人（${new Date(起于).toISOString()} 才启动，晚于${h ? '拿锁' : '领票'} ${new Date(声称).toISOString()}），原进程已不在；留下的${称}由下一个等待者回收`;
             记(话);
             输出(话);
             return;
@@ -104,12 +101,12 @@ export const 改调度 = (cmd: string, 目标: string | undefined, p: 已解析,
         return;
     }
     if (cmd === '让路') {
-        if (!(h ?? b)?.声明.可让路)
+        if (!h?.声明.可让路)
             throw new 用法错误('不能让路，只能等或取消：单项或旧式整批没有让路点');
         写指令(e, 任务!, { 动作: '让路', 为什么: why, 时: e.现在毫秒(), 至, 票: h?.票, 任务 });
         记();
         记调度(e.日志目录, '让路', { 票: h?.票, 任务, 至, 为什么: why }, e.现在毫秒());
-        输出(`${h ? '当前段不中断' : '后台照转'}；下一张票暂缓领，到期回队尾`);
+        输出('当前段不中断；下一张票暂缓领，到期回队尾');
         return;
     }
     if (!t)
