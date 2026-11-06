@@ -1,9 +1,12 @@
 // 7-4-2 又一只的画面：编排.ts 的人、马、四只监守者、感测体振动链和机位按帧画出来。场景同 7-4-1（古城4x画布，块按镜头取，见 编排.ts 的 块于；
 // 城心这一块和北墙外的石龛 #213 和老城一模一样），夜视光照。
 // 镜 1 从 7-4-1 硬切过来、剧情时刻接着它末帧往下走（白烟、马身上的附魔字母照 7-4-1 那一份）；镜 2～4 是再硬切到北墙外石龛的那一场。
+// 原生段（段.ts 写了 时钟: '秒'）：编排的帧是 1/24 秒一格，按秒换算；声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import { rad } from '@engine/anim/anim.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { HuangPan, LiuXinzhong } from '../../角色/追兵.tsx';
 import { SpectralSteed, steedParticles } from '@库/生物/幽灵马.tsx';
 import { Warden } from '@库/生物/监守者.tsx';
@@ -16,7 +19,8 @@ import { AncientCity4xCanvas, placedWoolThrough, type Cam } from '../../地点/�
 import { toScene } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import * as X741 from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from './编排.ts';
-import { AnotherOneSound } from './声音.tsx';
+import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
 
 // 7-4-1 的白烟、马身上的附魔字母（同一份出生表：同样的位置、死刻、种子）
 const islandParticles = [...deathPoof(X741.deathPos(), 0.9, 2.9, X741.deathT * 20, 742), ...steedParticles((k) => X741.horseState(k / 20).p, 0, choreo.T12(choreo.shot1End), 741)];
@@ -79,13 +83,5 @@ export const AnotherOnePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame
 };
 
 export const anotherOneFrameCount = choreo.END;
-export const AnotherOne: React.FC = () => {
-  const frame = useCurrentFrame();
-  return (
-    <>
-      <AnotherOnePicture f={frame} />
-      <AnotherOneSound />
-    </>
-  );
-};
-export default AnotherOne;
+export const AnotherOne: React.FC = () => <AnotherOnePicture f={use当前秒() * choreo.FPS} />;
+export default 定义画面(段, 声音地址, AnotherOne);

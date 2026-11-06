@@ -1,9 +1,12 @@
 // 7-4-1 风筝的画面：戏.ts 里剧情时刻 T 的状态按 编排.ts 的机位画出来（T = 编排.ts 的 剧情T(f)）。场景是放大 4 倍的新城（6-4-1/古城画面.tsx 的 古城4x画布），李樱一路垫的羊毛（到 V）。
 // 特效全用现成的，画法同 ../7-3/画面.tsx：苦力怕迫击炮（头、尾烟、爆炸粒子、放大的冲击波环）、监守者音波粒子、幽灵马的附魔字母；
 //   风矢同 6-4-3（每一支都有弓前鼓风机虚影和风道，../7-1/弓前风扇.tsx；1000 米/秒的箭），身上插的箭跟着身子走、倒下时跟着倒；死后 1 秒白烟。
+// 原生段（段.ts 写了 时钟: '秒'）：编排的帧是 1/24 秒一格，按秒换算；声音、台词照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import { rad } from '@engine/anim/anim.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { HuangPan, LiuXinzhong } from '../../角色/追兵.tsx';
 import { SpectralSteed, steedParticles } from '@库/生物/幽灵马.tsx';
 import { Warden } from '@库/生物/监守者.tsx';
@@ -16,7 +19,8 @@ import { BowFans } from '../../地点/古城4x/7-1/弓前风扇.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
 import { withTalkNod } from '../../配音/口型.ts';
-import { KiteSound } from './声音.tsx';
+import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
 
 const woolBlocks = placedWoolThrough('V');
 const blastwaveSize = 12; // 同 7-3（用户 10-18：威力特效大一点）
@@ -73,13 +77,5 @@ export const KitePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam 
 };
 
 export const kiteFrameCount = choreo.END;
-export const Kite: React.FC = () => {
-  const frame = useCurrentFrame();
-  return (
-    <>
-      <KitePicture f={frame} />
-      <KiteSound />
-    </>
-  );
-};
-export default Kite;
+export const Kite: React.FC = () => <KitePicture f={use当前秒() * choreo.FPS} />;
+export default 定义画面(段, 声音地址, Kite);
