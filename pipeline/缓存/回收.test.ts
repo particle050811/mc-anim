@@ -210,11 +210,11 @@ describe('保留集：母版', () => {
     expect(规划(保留).filter((f) => !f.理由.length).map((f) => f.键)).toEqual(['6-甲乙']);
   });
 
-  it('作品读不出时（不在代码里）母版、叠层整个留着', async () => {
+  it('作品读不出时（不在代码里）母版目录整个留着（叠层只剩 CRF1 时代的旧缓存，不再是谁的当前产物）', async () => {
     const 保留 = new 保留集();
     const 警告: string[] = [];
     await 加当前指纹(保留, '没有这部作品', (s) => 警告.push(s));
-    expect([...保留.目录.keys()].map((k) => path.basename(path.dirname(k)) + '/' + path.basename(k))).toEqual(['母版/没有这部作品', '叠层/没有这部作品']);
+    expect([...保留.目录.keys()].map((k) => path.basename(path.dirname(k)) + '/' + path.basename(k))).toEqual(['母版/没有这部作品']);
     expect(警告[0]).toMatch(/清单读不出/);
   });
 
