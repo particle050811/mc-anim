@@ -2,7 +2,7 @@
 // 灯光先用一楼现成的那套（三渲二平涂底座还没并进来）。她用现成的魔法酒狐站姿（新表情、拿花另一路在做），头按门口的眼睛现算转过来看你。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
@@ -16,6 +16,7 @@ import { 她, 机位 } from '../../场/2-隐世之境/参数.ts';
 import { 封面安全区 } from '../../场/2-隐世之境/封面.ts';
 import { 封面聊天行, 重逢气泡 } from '../../场/2-隐世之境/叠层.tsx';
 import { 视图们, type 视图 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 黄 = '#FFFF55';
 // 成片画幅的封面：48.61 出的「Steve加入了游戏」到 49.96 过了 27 刻，还是满亮；聊天栏缩放照原版 2560×1440 的界面尺寸 6
@@ -101,7 +102,7 @@ const 世界: React.FC<{ v: 视图 }> = ({ v }) => {
 };
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 机 = 机位于(v);
   const 姿势 = { ...standPose(她.脚), yaw: v.身子朝向 ?? 她.身子朝向 };
   const [俯仰, 左右] = 她看你(门口眼, 姿势);

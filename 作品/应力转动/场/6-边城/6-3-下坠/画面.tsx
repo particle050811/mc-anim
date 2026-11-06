@@ -6,7 +6,8 @@
 import { 例外 } from '@engine/core/例外.ts';
 import { ThreeCanvas } from '@remotion/three';
 import React, { useMemo } from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import * as THREE from 'three';
 import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
@@ -146,7 +147,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
     const ref = new THREE.PerspectiveCamera();
     ref.position.set(last.pos[0], last.pos[2], -last.pos[1]);
     ref.updateMatrixWorld();
-    return { camera: ref, waterFrame: lastFrame };
+    return { camera: ref, waterSec: lastFrame / timeline.FPS };
   }, [segment, globalFrame]);
   const fxParams = fx();
   const pit = after ? choreo.crater() : null;
@@ -210,7 +211,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
         <ScreenAo atmosphereCamera={under ? atmosphereReference?.camera : undefined} />
         <OverworldSky active={!under} />
         {/* 入井后旧顺序画面的水面停在最后有天空的帧；显式接住这个时刻，不能随跳帧历史停在别处，也不能被天空卸载复位。 */}
-        {under && atmosphereReference && <OverworldWaterSky 帧={atmosphereReference.waterFrame} />}
+        {under && atmosphereReference && <OverworldWaterSky 秒={atmosphereReference.waterSec} />}
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {cam.pos[2] < choreo.caveCeilingZ ? <GuchengLight /> : <Lights camPos={cam.pos} dome={!under} />}
           {/* 地形：坑和竖井那一圈在导入的地形里一直是挖开的（地形.ts），砸穿以前城的地面盖在上面 */}
@@ -270,7 +271,8 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
   );
 };
 
+// G 是下坠时间线的格（1/24 秒），由段内秒现算、带小数
 export const FallSegment: React.FC<{ segment: timeline.段名 }> = ({ segment: segment }) => {
-  const frame = useCurrentFrame();
-  return <FallScene G={timeline.段表[segment].起 + frame} segment={segment} />;
+  const 秒 = use当前秒();
+  return <FallScene G={timeline.段表[segment].起 + 秒 * timeline.FPS} segment={segment} />;
 };

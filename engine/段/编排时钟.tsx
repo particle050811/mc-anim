@@ -1,3 +1,4 @@
+// 兼容层（待删，docs/待办.md「原生 60 帧」）：没迁到秒的段（段.ts 没写 时钟: '秒'）才包这一层，迁完删掉这个文件和 use编排fps（docs/决策/0015-原生60帧.md）。
 // 编排时钟：Composition 按输出帧率跑，段里的画面照旧按编排帧率（段.ts 的 fps）拿帧（engine/段/出帧.ts）。
 // 外面包一层 Remotion 自带的 <Sequence playbackRate>：里面 useCurrentFrame() 拿到的是编排帧（输出 60、编排 24 时是 0、0.4、0.8…），
 // 嵌套的 Sequence、拼段照旧按编排帧写。useVideoConfig().fps 还是输出帧率，所以画面里要秒数的用 use编排fps()。
@@ -5,9 +6,9 @@
 import React, { createContext, useContext, type ReactNode } from 'react';
 import { Sequence, useVideoConfig } from 'remotion';
 
-const 编排fpsContext = createContext<number | null>(null);
+export const 编排fpsContext = createContext<number | null>(null);
 
-/** 画面里的帧率：编排时钟里是段.ts 的 fps，没包的（核对、旧组件单独挂）就是 Composition 的 */
+/** 画面里的帧率：编排时钟里是段.ts 的 fps，没包的（核对、旧组件单独挂）就是 Composition 的。兼容层：新代码用 时间.tsx 的 use当前秒 */
 export const use编排fps = () => {
   const 包 = useContext(编排fpsContext);
   const { fps } = useVideoConfig();

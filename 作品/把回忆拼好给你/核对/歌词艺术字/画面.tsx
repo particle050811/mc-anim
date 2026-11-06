@@ -4,7 +4,6 @@
 // 分屏、归隐：第 13、14 句那两段的场画这一帧，歌词叠在场自己的后期里面（同 2-时差、2-归隐 的画面）。
 // 前四种底是定住的一帧，只有歌词按视图的帧走。
 import type React from 'react';
-import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
 import { 哈气角色, 哈气气泡 } from '../../场/2-门口/哈气.tsx';
@@ -19,6 +18,7 @@ import { 色板 } from '../../色板.ts';
 import { 符文歌词, 符文歌词默认, type 符文歌词样式 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 视图们, type 底 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1));
 
@@ -39,7 +39,7 @@ const 定底们: Record<Exclude<底, '分屏' | '归隐'>, { 调: 调子; 画: R
 const 歌词 = (帧: number, 描边色: string) => <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色 } satisfies 符文歌词样式} 帧={帧} />;
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   if (v.底 === '分屏') {
     // 同 2-时差：描边色取服务器那半的调子
     const 态 = 分屏态(v.帧);

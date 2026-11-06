@@ -5,7 +5,7 @@
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
@@ -16,6 +16,7 @@ import { SteveFirstPersonArm } from '@库/角色/史蒂夫第一人称.tsx';
 import { CREEPER, Creeper, type CreeperPose, creeperLookAt } from '@库/生物/苦力怕.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { 视图们, type 史蒂夫姿势, type 苦力怕姿势 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 原点: V3 = [0, 0, 0];
 const 迈开 = 0; // cos(limbSwing × 0.6662) = 1：腿迈到最开
@@ -171,7 +172,7 @@ const 像素密度: React.FC = () => (
 );
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const { width, height } = useVideoConfig();
   let 内容: React.ReactNode = null;
   if (v.主体 === '史蒂夫') {

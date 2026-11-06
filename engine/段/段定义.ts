@@ -1,4 +1,9 @@
 // 段.ts 的形状：纯数据（pipeline 直接 import，闭包里不许有 react、three、remotion），画面.tsx 负责画。
+import { 插表 } from './按时取值.ts';
+
+// 时间：段长 = 帧数 ÷ fps 秒，cue 的 帧、帧数、逐帧增益都以 1/fps 秒为一格（第 6、7 章 1/24 秒）。写了 时钟: '秒' 的是原生段：
+// 画面按秒取时间（engine/段/时间.tsx），Composition 按成片档帧率跑，声音和画面同一遍出，cue 按秒放、不对齐到格（docs/决策/0015-原生60帧.md）。
+// 没写的是没迁的段，外面包兼容层 编排时钟.tsx（待删）。
 // 宽高是 Composition 的页面尺寸，成片 2K 靠渲染时 scale 2（旧项目 渲染级别.ts：改宽高会让体素世界换细一级，所以不改宽高）。
 
 /** 台词 cue：开口落在段内第 帧 帧（可带小数；文件头 = 帧 − 作品的 台词.toml 里的 开口秒 × fps，在段开头之前的从文件里跳过）。
@@ -24,9 +29,10 @@ export type 资产cue = {
 };
 export type 声音cue = 台词cue | 资产cue;
 
-/** 资产 cue 第 f 帧的增益（f 从 cue 的 帧 数起） */
+/** 资产 cue 第 f 格的增益（f 从 cue 的 帧 数起，可带小数）：逐帧数组第 i 项是第 i 格那一刻的值，格之间线性插值（按时取值.ts）；
+ *  常数带淡出的按 f 连续算。f 是整数时和以前一样 */
 export const cue增益 = (c: 资产cue, f: number) => {
-  if (Array.isArray(c.增益)) return (c.增益 as readonly number[])[f]!;
+  if (Array.isArray(c.增益)) return 插表(c.增益 as readonly number[], f);
   const g = (c.增益 as number | undefined) ?? 1;
   return c.淡出 ? Math.round(g * Math.min(1, (c.帧数 - f) / c.淡出) * 1e6) / 1e6 : g;
 };
@@ -38,8 +44,12 @@ export type 叠层定义 = { 名: string; 入口: string };
 export type 段定义 = {
   /** 所属场键（核对段写 核对；跨场的段写开头那场） */
   场: string;
+  /** 段长（格）：段长 = 帧数 ÷ fps 秒 */
   帧数: number;
+  /** 一秒几格（段.ts 里的数的时间单位）。原生段的出帧率是成片档的，不是这个 */
   fps: number;
+  /** '秒'：原生段（画面按秒、声音同一遍出）；不写是没迁的段，走兼容层 编排时钟 */
+  时钟?: '秒';
   宽: number;
   高: number;
   /** 用到的地形区段包名（assets/地形版本.json 里登记的）。版本进指纹，页面也只拿到这些包，读别的包直接报错（engine/voxel/区段包位置.ts） */
@@ -57,6 +67,7 @@ export const 定义段 = (d: 段定义): 段定义 => {
   if (d.场窗口 && d.场窗口.止帧 - d.场窗口.起帧 !== d.帧数) {
     throw new Error(`场窗口 [${d.场窗口.起帧}, ${d.场窗口.止帧}) 有 ${d.场窗口.止帧 - d.场窗口.起帧} 帧，段的帧数是 ${d.帧数}`);
   }
+  if (d.时钟 !== undefined && d.时钟 !== '秒') throw new Error(`段的 时钟 只能写 '秒'：${String(d.时钟)}`);
   if (d.连续 && !d.场窗口) throw new Error('标了 连续 的段要写 场窗口，才查得了和上一段接没接上');
   for (const c of d.声音 ?? []) {
     if ((c.台词 === undefined) === (c.资产 === undefined)) throw new Error(`声音 cue（第 ${c.帧} 帧）要写 台词 或 资产，二选一`);

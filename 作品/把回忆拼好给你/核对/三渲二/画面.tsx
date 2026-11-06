@@ -1,7 +1,7 @@
 // 三渲二核对的画面：按视图表一帧画一个视图。左上角一行原版像素字和一把 16 格的贴图像素尺子，都按 像素N 画，和方块的贴图像素一样大（她的贴图像素约 3.5 像素，对不上，见 她模型像素）；左下角写视图名（不过后期）。
 // 待迁移（私有资产）：对照用的游戏截图私有（核对段，不进成片），公开构建缺了怎么降级还没定
 import React, { useLayoutEffect, useRef } from 'react';
-import { AbsoluteFill, Img, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, Img } from 'remotion';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
@@ -27,6 +27,7 @@ import { 一楼, 一楼灯光, 主厅灯 } from '../../地点/隐世之境一楼
 import { 像素N, 正交机位, 正交顶面 } from '../../画风.ts';
 import { 色板 } from '../../色板.ts';
 import { 一楼机, 侧面看, 视图们, 透视机, type 视图 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const houseInfo = houseRaw as unknown as BlockMeshInfo;
 const 宽 = 1280;
@@ -103,7 +104,7 @@ const 像素字行: React.FC = () => {
 };
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 调子 = 色板[v.调子 ?? '夏日白天'];
   const 机位 = 机位参(v);
   return (

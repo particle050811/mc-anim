@@ -274,9 +274,13 @@ export const huangPanPose = (frame: number): FigurePose => {
     const at = along(huangFleePath, dist);
     const turn = rampIn(frame, huangFleeStart, huangFleeStart + 0.35 * FPS);
     const runYaw = yaw + (nearestYaw(yaw, at.yaw) - yaw) * turn;
-    // 摆腿相位 = ∫步频（模型/角色/跑步.ts，步频封顶、快了靠步子大）；拧身那 0.35 秒腿先小步倒腾起来
+    // 摆腿相位 = ∫步频（模型/角色/跑步.ts，步频封顶、快了靠步子大）；拧身那 0.35 秒腿先小步倒腾起来。
+    // 一格一格积，最后不满一格的那截按那一格的步频补上（frame 带小数时腿不按 24 帧跳；整格上和只积整格一样）
+    const 步 = (f: number) => runCadence((fleeDist(f + 1, huangFleeStart, baseSpeed.人, huangFleeLen) - fleeDist(f, huangFleeStart, baseSpeed.人, huangFleeLen)) * FPS) / FPS;
     let cycles = 0;
-    for (let f = huangFleeStart; f < frame; f++) cycles += runCadence((fleeDist(f + 1, huangFleeStart, baseSpeed.人, huangFleeLen) - fleeDist(f, huangFleeStart, baseSpeed.人, huangFleeLen)) * FPS) / FPS;
+    let f = huangFleeStart;
+    for (; f + 1 <= frame + 1e-9; f++) cycles += 步(f);
+    if (frame > f) cycles += 步(f) * (frame - f);
     const speed = (fleeDist(frame + 1, huangFleeStart, baseSpeed.人, huangFleeLen) - dist) * FPS;
     const run = runPoseAt(pos, runYaw, cycles, speed);
     const k = Math.min(1, turn * 1.5);

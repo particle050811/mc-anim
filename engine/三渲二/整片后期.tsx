@@ -4,7 +4,8 @@
 // 参数是调子里的 调色，从作品的色板取；不给 = 原样输出（核对时对比用）。
 // 颗粒让开（可选）：这几块不盖颗粒（页面像素的矩形），给要逐像素看清的小字用（告示牌上的字，用户 10-24：「整片后期的颗粒别压在字上」）。
 import React, { useId } from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { use当前秒 } from '../段/时间.tsx';
 import { 调色矩阵, type 调色 } from './调子.ts';
 
 /** 颗粒的空间频率（每 CSS 像素几个周期）：噪声斑点约 1.5 个 CSS 像素、成片上 3 个像素 */
@@ -19,7 +20,8 @@ const 挖空路径 = (块们: readonly 页面矩形[]) =>
   `path(evenodd, '${['M-1 -1 H100000 V100000 H-1 Z', ...块们.map((r) => `M${r.左} ${r.上} h${r.宽} v${r.高} h${-r.宽} Z`)].join(' ')}')`;
 
 export const 整片后期: React.FC<{ 调色?: 调色 | null; 种子?: number; 颗粒让开?: readonly 页面矩形[]; children: React.ReactNode }> = ({ 调色: t, 种子, 颗粒让开, children }) => {
-  const 帧 = useCurrentFrame();
+  // 默认种子是第几个输出帧（秒 × Composition 帧率）：颗粒一个输出帧换一次（SVG 的 seed 会截成整数，按秒给就一秒才换一次）
+  const 帧 = Math.round(use当前秒() * useVideoConfig().fps);
   const frame = 种子 ?? 帧;
   const id = `grade${useId().replace(/[^A-Za-z0-9]/g, '')}`;
   if (!t) return <AbsoluteFill>{children}</AbsoluteFill>;

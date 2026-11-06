@@ -126,7 +126,8 @@ const AIM_REL: number[] = (() => {
   }
   return out;
 })();
-const nagaAim = (f: number) => AIM_REL[Math.min(Math.max(1, Math.round(f)), END)];
+// 格之间插值（以前取最近的整格，60 帧输出时按 24 帧跳）；整格上一样
+const nagaAim = (f: number) => lerpArr(AIM_REL, f);
 
 export const naga = (frame: number) => {
   // 身体节正面（本地 -Y）朝着前进方向：数学角 dir 对应 yaw = dir + 90

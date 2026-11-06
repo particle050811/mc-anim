@@ -17,6 +17,7 @@ import { DrawnKatana, Sheath } from '@库/物品/拔刀剑.tsx';
 import jiuhuRaw from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 // ---------- 照李樱对照（旧 李樱对照.tsx 的 VIEWS 第 3、6 个，第 3～5 帧是平行投影） ----------
 type 对照视图 = { az: number; el: number; pose: FigurePose; span?: number; centerZ?: number; centerX?: number };
@@ -223,7 +224,7 @@ const 照口型演示: React.FC<{ 帧: number; width: number; height: number }> 
 );
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 尺寸 = { width: v.宽, height: v.高 };
   return (
     <AbsoluteFill style={{ background: '#000000' }}>

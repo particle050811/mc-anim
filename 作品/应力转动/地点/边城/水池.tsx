@@ -3,14 +3,13 @@
 // 乘平原的水色 #3F76E4（同 工具/游戏取材/边城贴图.py 的水），贴图自带透明度 180/255 按半透明画；波纹、菲涅尔、天光反射和别的水同一段（lib/水面.ts）。
 // 贴图动画跟全局时间走，这里按画面帧号算（Remotion 逐帧独立）。
 import React, { useMemo } from 'react';
-import { useCurrentFrame } from 'remotion';
 import * as THREE from 'three';
 import { selfLight } from '@engine/light/光照配比.ts';
 import { png } from '@engine/model/贴图.ts';
 import { patchWaterShader } from '@engine/voxel/水面.ts';
 import { fallPool } from './布局/共用.ts';
 import stillUri from 'asset:贴图/场景/边城/水面';
-import { use编排fps } from '@engine/段/编排时钟.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 
 export const poolSurfaceZ = fallPool.waterTop - 1 + 8 / 9;
 
@@ -62,11 +61,10 @@ const surfaceGeometry = () => {
 };
 
 export const PoolWater: React.FC = () => {
-  const frame = useCurrentFrame();
-  const fps = use编排fps();
+  const 秒 = use当前秒();
   const geo = useMemo(surfaceGeometry, []);
   const material = waterMaterial();
   const all = waterFrames();
-  material.map = all[Math.floor((frame / fps) * 20 / FRAME_TICKS) % all.length];
+  material.map = all[Math.floor((秒 * 20) / FRAME_TICKS) % all.length];
   return <mesh geometry={geo} material={material} receiveShadow />;
 };

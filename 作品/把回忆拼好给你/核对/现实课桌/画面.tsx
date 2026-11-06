@@ -1,17 +1,18 @@
 // 现实课桌核对的画面：左半 640×720 放现实画布（现实课桌，取景同第 13 句分屏右屏），右半中灰、左上角写视图名。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 画幅 } from '../../分镜/时间.ts';
 import { 现实画布 } from '../../现实/画布.tsx';
 import { 现实课桌 } from '../../现实/课桌.tsx';
 import { 分屏N, 现实取景 } from '../../场/2-门口/分屏参数.ts';
 import { 正交顶面 } from '../../画风.ts';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 左宽 = 画幅.宽 / 2;
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
       <div style={{ position: 'absolute', left: 0, top: 0, width: 左宽, height: 画幅.高, overflow: 'hidden' }}>

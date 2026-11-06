@@ -2,7 +2,7 @@
 // 门对比那帧左右各一个半屏、门都在正中。站位标尺那几帧：门外一步站史蒂夫、牌树之间站魔法酒狐（站姿、戴帽、面朝镜头），她头顶冒「˃ʍ˂」气泡、左下聊天栏一行「Steve加入了游戏」，气泡、聊天栏的缩放 = 这一帧的 N；
 //   红线标门、箱子、树苗、告示牌的 x，黄线是地面，右边写人占画面高的比例。分屏那帧只画右半屏。
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { STEVE, Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { MagicalWineFox } from '@库/角色/魔法酒狐.tsx';
@@ -19,6 +19,7 @@ import { 像素字 } from '../../界面/像素字.ts';
 import { 半屏取景, 整屏取景, 正交顶面, 默认天弧, type 门口取景 } from '../../场/2-门口/参数.ts';
 import { 门口画布 } from '../../场/2-门口/门口.tsx';
 import { 视图们 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 宽 = 画幅.宽, 高 = 画幅.高;
 const 黄 = '#FFFF55'; // ChatFormatting.YELLOW：加入游戏
@@ -76,7 +77,7 @@ const 天体轨迹: React.FC<{ 取景: 门口取景 }> = ({ 取景 }) => {
 };
 
 const 画面: React.FC = () => {
-  const v = 视图们[useCurrentFrame()]!;
+  const v = 视图们[use视图下标()]!;
   const 屋 = { 门开: v.门开, 箱子开度: v.箱子开度, 树进度: v.树进度, 告示牌: v.告示牌, 刻: v.刻, 明暗幅度: v.明暗幅度, 调子: v.调子, 顶面: v.顶面 };
   const 取景 = 整屏取景(v.N);
   const N = 取景.每格 / 16;

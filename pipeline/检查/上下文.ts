@@ -13,7 +13,7 @@ import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts
 import { 读资产锁, type 资产锁 } from '../资产/资产锁.ts';
 import { 选作品错误 } from '../环境/作品.ts';
 
-export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本'] as const;
+export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本', '时间'] as const;
 export type 规则类 = (typeof 规则名)[number];
 
 export type 问题 = { 文件?: string; 行?: number; 文本: string };
@@ -46,7 +46,7 @@ export const 是渲染代码 = (p: string) => 渲染层前缀.some((x) => p.star
  * 地形环境 只有两个环境变量名：页面和 pipeline/渲/地形注入.ts 共用。
  */
 // 区段模型只做 TypedArray 与字节转换，编码、检查和浏览器共用同一份格式定义。
-const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '出帧'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
+const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '出帧', '按时取值'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
 export const 是纯模块 = (p: string) =>
   engine纯模块.includes(p) ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||

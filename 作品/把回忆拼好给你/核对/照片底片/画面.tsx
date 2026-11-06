@@ -1,6 +1,6 @@
 // 照片底片核对的画面：按视图表一帧画一张照片的干净帧（整页就是成片那一帧，不写名字）。各场自己的干净画法，这里只挑帧、关后期。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 光影段 } from '../../默认.ts';
 import { 事件 as 正片第3句事件 } from '../../分镜/正片第3句.ts';
@@ -14,6 +14,7 @@ import { 照片帧 } from '../../场/2-门口/门口之夜参数.ts';
 import { 门口之夜画布 } from '../../场/2-门口/门口之夜画布.tsx';
 import { 合照照片 } from '../../场/2-隐世之境/合照.tsx';
 import { 视图们, type 底片名 } from './视图.ts';
+import { use视图下标 } from '@engine/段/时间.tsx';
 
 const 正片事件 = { ...正片第3句事件, ...正片第5句事件 };
 
@@ -31,6 +32,6 @@ const 一张: Record<底片名, () => React.ReactNode> = {
   新合照: () => <合照照片 后期={false} />,
 };
 
-const 画面: React.FC = () => <AbsoluteFill style={{ background: '#000000' }}>{一张[视图们[useCurrentFrame()]!.名]()}</AbsoluteFill>;
+const 画面: React.FC = () => <AbsoluteFill style={{ background: '#000000' }}>{一张[视图们[use视图下标()]!.名]()}</AbsoluteFill>;
 
 export default 画面;
