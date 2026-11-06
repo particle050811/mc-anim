@@ -27,9 +27,10 @@ export const 跑出 = (cmd: readonly string[], opts: SpawnOptions = {}): string 
   return String(r.stdout ?? '');
 };
 
-/** 跑完，返回 stdout 原始字节（ffmpeg 出 PCM、raw 帧用）；退出码非 0 抛 子进程失败 */
-export const 跑出字节 = (cmd: readonly string[], opts: SpawnOptions = {}): Buffer => {
-  const r = spawn.sync(cmd[0]!, cmd.slice(1), { ...opts, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 2 ** 32 });
+/** 跑完，返回 stdout 原始字节（ffmpeg 出 PCM、raw 帧用）；退出码非 0 抛 子进程失败。给了 输入 就从 stdin 喂进去（PNG 交给 ffmpeg 转 yuv） */
+export const 跑出字节 = (cmd: readonly string[], opts: SpawnOptions & { 输入?: Buffer } = {}): Buffer => {
+  const { 输入, ...其余 } = opts;
+  const r = spawn.sync(cmd[0]!, cmd.slice(1), { ...其余, ...(输入 ? { input: 输入 } : {}), stdio: [输入 ? 'pipe' : 'ignore', 'pipe', 'pipe'], maxBuffer: 2 ** 32 });
   if (r.error) throw r.error;
   if (r.status !== 0) throw new 子进程失败(cmd, r.status, String(r.stderr ?? ''));
   return r.stdout as Buffer;
