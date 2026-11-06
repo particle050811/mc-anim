@@ -1,5 +1,5 @@
 // 渲染用的 chrome-headless-shell 放数据根 cache/浏览器/<Remotion 期望版本>/，各 worktree 共用一份。
-// Remotion 默认下到 node_modules/.remotion：npm ci 一跑就删，每个 worktree 各下 570 MB，没网时渲染卡在下载（用户 11-06 定挪走）。
+// Remotion 默认下到 node_modules/.remotion：重装依赖一跑就删，每个 worktree 各下 570 MB，没网时渲染卡在下载（用户 11-06 定挪走）。
 // 目录名用 Remotion 的期望版本（如 157.0.8080.0-remotion-v3，带共享内存补丁的构建），升 Remotion 换版本就换目录，旧的留给 bench --浏览器 做对照。
 // 缺了按顺序补：从本检出的 node_modules/.remotion 克隆（版本要对）→ 让 Remotion 下载到那里再克隆。
 import fs from 'node:fs';

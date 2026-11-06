@@ -7,7 +7,7 @@
 
 ## 要装的
 
-- Node 24（`.nvmrc`）和 npm
+- Node 24（`.nvmrc`）和 pnpm（版本见 `package.json` 的 `packageManager`；`corepack enable` 后自动用这一版，或 `npm i -g pnpm@<版本>`）
 - ffmpeg、ffprobe（在 PATH 上，或用环境变量 `ANIM_FFMPEG`、`ANIM_FFPROBE` 指定）
 - Git；先 `git config --global core.quotepath false`（中文路径照原样显示），Windows 上再 `git config --global core.longpaths true`
 - 第一次渲染时 Remotion 会自己下载 Chrome Headless Shell，要联网
@@ -19,7 +19,7 @@ Windows（cmd 或 PowerShell 都行）：
 ```
 git clone <仓库地址> mc-anim
 cd mc-anim
-npm ci
+pnpm install --frozen-lockfile
 .\anim.cmd doctor
 .\anim.cmd --作品 把回忆拼好给你 render 2
 .\anim.cmd --作品 把回忆拼好给你 film 2
@@ -30,13 +30,13 @@ Mac / Linux：
 ```
 git clone <仓库地址> mc-anim
 cd mc-anim
-npm ci
+pnpm install --frozen-lockfile
 ./anim doctor
 ./anim --作品 把回忆拼好给你 render 2
 ./anim --作品 把回忆拼好给你 film 2
 ```
 
-- 刚 clone 下来跑 `doctor`，「数据根/…不在」「资产字节：…件不在数据根」这几项会报 ✗、退出码 1：数据根第一次渲染时自动建，第 2 章要的字节渲染前从 `字节/` 补进去，剩下缺的是别的段和《应力转动》的，不影响第 2 章。其余几项（Node、npm 依赖、ffmpeg、git 设置）要过。
+- 刚 clone 下来跑 `doctor`，「数据根/…不在」「资产字节：…件不在数据根」这几项会报 ✗、退出码 1：数据根第一次渲染时自动建，第 2 章要的字节渲染前从 `字节/` 补进去，剩下缺的是别的段和《应力转动》的，不影响第 2 章。其余几项（Node、依赖、pnpm、ffmpeg、git 设置）要过。
 - `render 2` 把第 2 章各段渲成母版，`film 2` 接成成片，出到数据根的 `交付/把回忆拼好给你/<UTC 月日-时分>-2/2.mp4`（`--名 <名>` 换掉文件夹和文件名里的 `2`）。
 - 母版、成片这些大文件放在 Git 外的数据根，默认是仓库旁边的 `mc-anim-data/`，用环境变量 `ANIM_DATA` 可以换。`anim env` 列出本机各项配置。
 - 改一次代码重渲一次，`render` 渲完会删掉同段同级别的旧母版（交付、认可还要的留着）。别的旧文件：`./anim cache gc` 列出能删的旧母版、旧草稿、旧 webpack 缓存和能省多少，看过再加 `--执行` 删。
