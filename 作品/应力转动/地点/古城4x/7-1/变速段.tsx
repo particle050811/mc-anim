@@ -2,7 +2,8 @@
 // 机位按场时刻切（切在动作上）；每个镜头的 pos、tgt、lens 是场时刻 t 的函数。
 // 不加游戏里没有的特效（用户 10-06），力量只靠机位、变速、停顿；打中不震屏、不推焦（用户 10-18 嫌冲击镜头不好，全删）。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { GameSoundTrack, type SoundCue } from '@engine/audio/游戏音效.tsx';
 import { scheduleToScreen } from '@engine/audio/慢放.ts';
 import { LineTrack } from '../../../配音/台词轨.tsx';
@@ -34,7 +35,8 @@ export const lineFrameIn = (v: 变速, t: number) => {
 type 场画面 = React.FC<{ t: number; cam: Cam; width: number; height: number }>;
 // 一段：画面、声音、台词都按本段的变速排。7-1 用本场的（默认，台词给段号取 `segmentLines`），7-3 传自己的（7-3-3/画面.tsx）。tailFade：下一段硬切到别处时给（见 GameSoundTrack）
 // 台词开口在段头之前的（上一段说进来的后半截）照原速往前推帧（段头之前不变速）
-export const 变速段: React.FC<{ v: 变速; camera: (frame: number) => Cam; segId?: timeline.SegmentId; Picture?: 场画面; sounds?: 场声音[]; lines?: { id: string; t: number }[]; tailFade?: boolean }> = ({
+// 带声音={false}：原生段（段.ts 写 时钟: '秒'，决策 0015）的声音由 段.ts 的 cue 放，这里只画画面；没迁的段照旧在这里挂音效轨、台词轨
+export const 变速段: React.FC<{ v: 变速; camera: (frame: number) => Cam; segId?: timeline.SegmentId; Picture?: 场画面; sounds?: 场声音[]; lines?: { id: string; t: number }[]; tailFade?: boolean; 带声音?: boolean }> = ({
   v,
   camera,
   segId,
@@ -42,8 +44,9 @@ export const 变速段: React.FC<{ v: 变速; camera: (frame: number) => Cam; se
   sounds = sceneSounds,
   lines,
   tailFade = false,
+  带声音 = true,
 }) => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * v.FPS; // 段内第几格（1/24 秒一格，带小数）
   const { width, height } = useVideoConfig();
   const startT = v.剧情时间(0);
   const endT = v.剧情时间(v.总帧数 - 1);
@@ -62,8 +65,8 @@ export const 变速段: React.FC<{ v: 变速; camera: (frame: number) => Cam; se
   return (
     <>
       <Picture t={v.剧情时间(frame)} cam={camera(frame)} width={width} height={height} />
-      <GameSoundTrack sounds={[...before, ...inside]} listener={listener} tailFade={tailFade} />
-      <LineTrack 句们={lineCues} />
+      {带声音 && <GameSoundTrack sounds={[...before, ...inside]} listener={listener} tailFade={tailFade} />}
+      {带声音 && <LineTrack 句们={lineCues} />}
     </>
   );
 };

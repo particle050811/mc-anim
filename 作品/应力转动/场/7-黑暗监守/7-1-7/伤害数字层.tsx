@@ -5,8 +5,9 @@
 // 护盾不是生物，挨拍不出数字。
 // 位置：监守者这时站在盾前不动，照原版生成在它碰撞箱顶（2.9）、之后定在世界里不动。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as choreo from './编排.ts';
@@ -21,7 +22,7 @@ const hits = play.huangFollowArrows.map((a, k) => {
 export const followArrowHits = hits; // 7-2-1 李樱远望时看到的是同样的数字、同样的位置
 
 export const FollowArrowDamageLayer: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
   const { width, height } = useVideoConfig();
   const t = choreo.t于(frame);
   const cam = choreo.camera(frame);
