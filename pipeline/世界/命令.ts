@@ -8,7 +8,6 @@ import { 过放行闸 } from '../闸/闸.ts';
 import { 默认线程, 烘焙世界, 载入编辑 } from './烘焙/流程.ts';
 import { 转码包 } from './烘焙/转码.ts';
 import { 构建解码器 } from './区段解码器.ts';
-import { 载入体素库 } from './体素库.ts';
 import { 生成重放, 重放脚本 } from './编辑/重放.ts';
 import { 列出世界, 读声明, 编辑文件, 存档目录 as 声明存档目录, type 世界声明, type 预生成块 } from './声明.ts';
 import { 冻结 } from './冻结.ts';
@@ -21,7 +20,7 @@ import { 装服务端 } from './服务端/安装.ts';
 import { 建世界 } from './服务端/建世界.ts';
 import { 取jar } from '../取材/取jar.ts';
 import { 配置, 数据路径 } from '../环境/配置.ts';
-import { 版本目录, 读地形表 } from './版本.ts';
+import { 读地形表 } from './版本.ts';
 import { 世界草稿目录, 查询子命令 } from './查询/命令.ts';
 
 const 相对 = (f: string) => path.relative(代码根(), f).split(path.sep).join('/');
