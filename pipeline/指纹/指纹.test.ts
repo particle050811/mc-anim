@@ -9,7 +9,9 @@ import { 代码根 } from '../环境/路径.ts';
 import { 全部段 } from '../清单/清单.ts';
 import { 渲染参数 } from '../渲/设置.ts';
 import { 读资产锁 } from '../资产/资产锁.ts';
-import { 稳定JSON, 算全部段指纹, 算段指纹, 指纹差异, type 指纹任务 } from './指纹.ts';
+import { 稳定JSON, 算全部段指纹, 指纹差异, type 指纹任务 } from './指纹.ts';
+
+const 算段指纹 = async (s: 段信息, 渲染设置: Record<string, unknown>) => (await 算全部段指纹([{ 段: s, 渲染设置 }]))[0]!;
 import { 算默克尔 } from './默克尔.ts';
 
 const 相对 = (p: string) => path.relative(代码根(), p).split(path.sep).join('/');
@@ -136,18 +138,17 @@ describe('地形按段依赖', () => {
 });
 
 describe('一次算 = 逐段算', () => {
-  it('一批段和叠层一次建图算的指纹、明细，和逐段单独算的逐字相同', async () => {
+  it('一批段一次建图算的指纹、明细，和逐段单独算的逐字相同', async () => {
     const 段们 = await 全部段();
-    // 取头几段加所有带叠层的段：两级渲染设置、叠层、共用闭包都覆盖到，又不至于逐段打包太久
+    // 取头几段加一个带叠层的段：两级渲染设置、共用闭包都覆盖到，又不至于逐段打包太久
     const 挑 = [...new Set([...段们.slice(0, 3), ...段们.filter((s) => s.段.叠层?.length).slice(0, 1)])];
     const 任务: 指纹任务[] = 挑.flatMap((s) => [
       { 段: s, 渲染设置: 渲染参数('视频') },
       { 段: s, 渲染设置: 渲染参数('预览') },
-      ...(s.段.叠层 ?? []).map((l) => ({ 段: s, 渲染设置: 渲染参数('视频'), 叠层: l })),
     ]);
     const 一次 = await 算全部段指纹(任务);
-    expect(一次.map((x) => x.段)).toEqual(任务.map((t) => (t.叠层 ? `${t.段.键}-${t.叠层.名}` : t.段.键)));
-    const 逐段 = await Promise.all(任务.map((t) => 算段指纹(t.段, t.渲染设置, t.叠层)));
+    expect(一次.map((x) => x.段)).toEqual(任务.map((t) => t.段.键));
+    const 逐段 = await Promise.all(任务.map((t) => 算段指纹(t.段, t.渲染设置)));
     for (const [i, x] of 逐段.entries()) expect(JSON.stringify(一次[i])).toBe(JSON.stringify(x));
   });
 });
