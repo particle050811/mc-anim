@@ -6,8 +6,9 @@
 //   汇流来世出的是扣血之前的伤害、不按剩余血量截断，所以恼鬼（14 血）一下就死、数字照样是四百五上下。监守者拍不算暴击。
 // 位置：照原版生成在恼鬼碰撞箱顶（脚底 + 0.8）、之后定在世界里不动（恼鬼被拍飞，数字留在挨拍的地方）。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as choreo from './编排.ts';
@@ -24,7 +25,7 @@ const hits = play.swingTs.map((s, k) => {
 });
 
 export const VexSwipeDamageLayer: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
   const { width, height } = useVideoConfig();
   const t = choreo.t于(frame);
   const cam = choreo.camera(frame);

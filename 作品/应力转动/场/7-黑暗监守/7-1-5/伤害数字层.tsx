@@ -7,8 +7,9 @@
 //   高度从碰撞箱顶（2.9）降到中箭处往上 0.6（2.2）：镜 2 机位在它身后高 4.4，2.9 起飘 0.95 格会出画面上沿；2.2 起，字底正好在箭上面、不盖住箭。
 //   随机偏移照 `damageNumberAnchor`（种子固定）。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera } from '@库/界面/伤害数字.tsx';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as choreo from './编排.ts';
@@ -22,7 +23,7 @@ const anchor = damageNumberAnchor(toThree(play.wardenState(play.windArrowShot.�
 export const windArrowHit = { ...hit, anchor }; // 7-2-1 李樱远望时看到的是同一个数字、同一个位置
 
 export const WindArrowDamageLayer: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
   const { width, height } = useVideoConfig();
   const t = choreo.t于(frame);
   const cam = choreo.camera(frame);

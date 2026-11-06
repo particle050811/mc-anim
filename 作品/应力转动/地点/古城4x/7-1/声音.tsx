@@ -1,5 +1,5 @@
-// 第 7 章第 1 场七段共用的声音：只用游戏原声（src/音效/），听者是镜头。整场的事件按场时刻 t 排一张表，各段取落在自己那一截里的
-// （开头之前就响起、还没放完的照样从中间接着放：帧是负的）。台词配音（src/配音/，工具/配音/生成台词.py）按 时间线.ts 的 台词 开口时刻挂台词轨，各段放 `segmentLines`（本段开口的和上一段说进来的）。
+// 第 7 章第 1 场七段共用的声音：只用游戏原声（src/音效/），听者是镜头。整场的事件按场时刻 t 排一张表（7-1 七段 11-06 迁成原生段后，各段的声音照 段.ts 的 cue 放，cue 是照这张表的基线声音清单转写的；
+// 这张表现在只给 7-五万血 远景用）。台词配音按 时间线.ts 的 台词 开口时刻排。
 // - 黑暗：原版放黑暗本身没有声音；监守者生气（怒气 ≥ 80）时的叫声 entity.warden.angry 当「黑暗低吼」（音量 3）。
 // - 召唤恼鬼：entity.evoker.prepare_summon（开始施法）→ entity.evoker.cast_spell（恼鬼出来）；冲锋 entity.vex.charge；死 entity.vex.death。
 // - 监守者拍：entity.warden.attack_impact（挥臂打中，攻击动画第 0.15 秒）。
@@ -11,12 +11,9 @@
 // - 二人每次落地放落脚方块的声音（幽匿块 block.sculk.step / 深板岩 block.deepslate.fall，音量 0.5、音高 0.75 同原版 playBlockFallSound），
 //   监守者 0.25 秒后收到这下振动、触角咔嗒（entity.warden.tendril_clicks）。拍恼鬼的时刻是 戏.ts 逐刻推出来的 `swingTs`。
 // 不放：监守者脚步（交给 AI 生成，chapter6-sound-mix 的规矩）、心跳（生气时间隔随怒气变，简单版没算）。
-import React from 'react';
 import { rng, type V3 } from '@engine/model/parts.tsx';
-import { GameSoundTrack, randomPitch, type SoundCue } from '@engine/audio/游戏音效.tsx';
+import { randomPitch, type SoundCue } from '@engine/audio/游戏音效.tsx';
 import type { 音效档 } from '@engine/audio/混音.ts';
-import { LineTrack } from '../../../配音/台词轨.tsx';
-import type { Cam } from '../6-4-1/古城画面.tsx';
 import * as K649 from '../6-4-9/编排.ts';
 import { roarCue as roar649 } from '../6-4-9/声音.tsx';
 import * as play from './戏.ts';
@@ -111,22 +108,3 @@ export const sceneSounds: SceneSound[] = (() => {
   });
   return out;
 })();
-
-// 一段的声音：段内帧 = (t − 段起t) × FPS；开头前 3 秒内响起的也带上（帧为负，从中间接着放）
-export const SegmentSound: React.FC<{ segId: timeline.SegmentId; camera: (frame: number) => Cam }> = ({ segId: segId, camera }) => {
-  const startT = timeline.segmentStartT(segId);
-  const endT = timeline.segmentEndT(segId);
-  const sounds: SoundCue[] = sceneSounds
-    .filter((s) => s.t >= startT - 3 && s.t <= endT)
-    .map(({ t, 止t, ...sound }) => ({ ...sound, 帧: (t - startT) * timeline.FPS, ...(止t === undefined ? {} : { 止帧: (止t - startT) * timeline.FPS }) }));
-  const frameCount = timeline.frameCountOf(segId);
-  const listener = (f: number) => camera(Math.min(Math.max(Math.round(f), 0), frameCount - 1)).pos;
-  // 本段开口的句子，和上一段开口、说进本段的后半截（帧是负的）
-  const lines = timeline.segmentLines(segId).map((l) => ({ id: l.id, 帧: Math.round((l.t - startT) * timeline.FPS) }));
-  return (
-    <>
-      <GameSoundTrack sounds={sounds} listener={listener} />
-      <LineTrack 句们={lines} />
-    </>
-  );
-};
