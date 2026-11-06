@@ -2,12 +2,13 @@
 // 坑：不能像 核对/时差分屏 那样包 <Freeze frame={歌曲帧}>：渲视频时三渲二画布（three）就停在第一帧不动了，只有 2D 的天在走（静帧一张一张渲看不出来）。
 // 所以颗粒的种子是段内帧，生长三那一帧和 核对-时差分屏 的定稿只差颗粒。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 时差分屏 } from '../../场/2-门口/时差分屏.tsx';
 import { 窗口 } from './窗口.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <时差分屏 帧={窗口.起帧 + f} 种子={f} />

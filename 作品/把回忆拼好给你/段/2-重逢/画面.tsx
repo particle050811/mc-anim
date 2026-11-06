@@ -5,7 +5,7 @@
 // 左下那行「Steve加入了游戏」从上一段接过来（同一个 加入游戏聊天），风散开时跟着花瓣淡掉（重逢动作.ts 的 聊天行不透明）：
 // 文字一时只走一路（用户 10-24 点名这一帧气泡、聊天行、歌词三路字一起出），接缝那一帧又不能一下没了。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { fps } from '../../分镜/时间.ts';
 import { 段时钟 } from '../../分镜/正片第15句.ts';
@@ -25,6 +25,7 @@ import 段 from './段.ts';
 import 铃url from 'asset:音效/万法皆通/wind_seeking_bell';
 import 风url from 'asset:音效/item.elytra.flying';
 import 推门url from 'asset:音效/block.wooden_door.open.1';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 键 = '2-重逢';
 const 起帧 = 段时钟(键).场窗口.起帧;
@@ -36,7 +37,7 @@ const 参照机 = 重逢机位((起帧 + 57) / fps);
 const 光影场 = { 太阳参照朝向: [参照机.看[0] - 参照机.眼[0], 参照机.看[1] - 参照机.眼[1], 参照机.看[2] - 参照机.眼[2]] as const };
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const 帧 = 起帧 + f;
   const 聊天透 = 聊天行不透明(帧 / fps);
   return (

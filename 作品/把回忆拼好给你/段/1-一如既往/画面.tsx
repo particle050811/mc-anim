@@ -4,7 +4,7 @@
 // 原版的东西按刻走（20 刻一秒）：手从右键那一帧起数，聊天栏、爱心从驯服那一帧起数。她的尾巴、环转、眨眼按歌上的秒走（场时间线就是歌）。
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { clamp01, rad, sample, sampleV, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
@@ -30,6 +30,7 @@ import { 歌词, type 歌词行 } from '../../界面/歌词.tsx';
 import { 拍立得 } from '../../特效/拍立得.tsx';
 import 段 from './段.ts';
 import 咔哒url from 'asset:音效/车万女仆/item.camera_use';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 键 = '1-一如既往';
 const 起帧 = 段时钟(键).场窗口.起帧;
@@ -164,7 +165,7 @@ const 大字淡出秒 = 旧帧(6);
 
 // 核卡点的标注：按真实帧走，定格以后照常往下数
 const 核卡点标注: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const { durationInFrames } = useVideoConfig();
   const 歌帧 = 起帧 + f;
   const 最近 = 事件们.filter(([, 帧]) => 帧 <= f).at(-1);
@@ -209,7 +210,7 @@ const 核卡点标注: React.FC = () => {
 
 // 四个要卡的事件的大字：从事件那一帧起留 1 秒再淡掉；头 2/24 秒反色、头 3/24 秒略放大，看得出正好落在哪一帧
 const 事件大字: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const 在显示 = 大字事件
     .map((x) => ({ ...x, 帧: 事件帧[x.名], t: f - 事件帧[x.名] }))
     .filter((x) => x.t >= 0 && (x.t - 标注留帧) / fps < 大字淡出秒);

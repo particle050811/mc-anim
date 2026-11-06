@@ -5,7 +5,6 @@
 // 谁在哪、什么姿势、镜头和调子全在 编排.ts，这里只按它画。哈气那一帧（正片事件 哈气，60 fps 时歌曲帧 1668）同静帧「门口哈气」（核对-门口哈气）再加顶上的歌词。
 // 颗粒种子 = 歌曲帧。全片不描边。
 import React from 'react';
-import { useCurrentFrame } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
@@ -34,6 +33,7 @@ import { 她态, 你态, 取景, 墙上几张, 气泡态, 照片态, 苦力怕�
 import 段 from './段.ts';
 import 挂照片声 from 'asset:音效/把回忆拼好给你/entity.glow_item_frame.add_item.1';
 import 哈气声 from 'asset:音效/把回忆拼好给你/entity.cat.hiss.1';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 宽 = 画幅.宽, 高 = 画幅.高;
 const 站 = 门口.站排y;
@@ -82,7 +82,7 @@ const 气泡: React.FC<{ f: number; 取景: 门口取景 }> = ({ f, 取景 }) =>
 };
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const 调 = 调子在(f);
   const 墙 = 照片墙格们([...第8句照片们.slice(0, 墙上几张(f)), null].slice(0, 4));
   return (

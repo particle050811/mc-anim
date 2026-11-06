@@ -1,6 +1,6 @@
 // 2-烟花 的画面：场/2-门口/门口之夜画布.tsx 按歌曲帧画，外面包夜的整片后期（颗粒种子 = 歌曲帧，牌面上不盖颗粒），符文歌词在顶上、一起过后期（同 核对-歌词艺术字小样）。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 段时钟 } from '../../分镜/正片第9至11句.ts';
 import { 色板 } from '../../色板.ts';
@@ -13,6 +13,7 @@ import { 牌面矩形 } from '../../场/2-门口/门口之夜参数.ts';
 import { 门口之夜音效轨 } from '../../场/2-门口/门口之夜音效轨.tsx';
 import { 光影段 } from '../../默认.ts';
 import 段 from './段.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段时钟('2-烟花').场窗口.起帧;
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
@@ -20,7 +21,7 @@ const 样式 = { ...符文歌词默认, 描边色: 色板.夜.描边 };
 
 /** 前帧 取上一帧：屋后远景按它算画布高，学的是顺序渲染「读上一帧的高度」（docs/渲染性能.md 的 E）。原来取 1/24 秒以前，用户 11-03「统统改成 60 帧」 */
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <配乐音轨 song={原声} 段={段} />

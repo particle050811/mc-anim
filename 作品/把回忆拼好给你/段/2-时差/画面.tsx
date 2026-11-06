@@ -1,7 +1,7 @@
 // 2-时差 的画面：第 f 帧画歌曲帧 起帧 + f 的分屏（场/2-门口/时差分屏.tsx），开头两屏从右边滑进来（接入）。
 // 符文歌词（全片 15 行，按歌自己进出）叠在两屏和分屏线上面、整页那层质感里面：不跟哪一屏调色（两屏一冷一暖），描边色取服务器那半的调子。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { 插调子 } from '@engine/三渲二/调子.ts';
 import { 段时钟 } from '../../分镜/正片第13至14句.ts';
 import { 分屏态 } from '../../场/2-门口/分屏参数.ts';
@@ -13,12 +13,13 @@ import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 光影段 } from '../../默认.ts';
 import 段 from './段.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段时钟('2-时差').场窗口.起帧;
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const 帧 = 起帧 + f;
   // 同 时差分屏.tsx 的 服务器调子
   const 描边色 = 插调子(色板.夏日白天, 色板.褪色, 分屏态(帧).褪色).描边;

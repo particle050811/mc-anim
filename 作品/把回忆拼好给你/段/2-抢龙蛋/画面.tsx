@@ -1,7 +1,6 @@
 // 2-抢龙蛋 的画面：场/2-末地/镜头.tsx 的 末地镜头 按段内帧画，配原声。
 // 段首接第 4 句那道浪（场/2-海上/浪.tsx）往上退：浪照第 4 句的画法包在日落那套整片后期里（接缝那一帧和第 4 句末一样），退完就不画。
 import React from 'react';
-import { useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 画幅 } from '../../分镜/时间.ts';
@@ -14,9 +13,10 @@ import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 原声 } from '../../配乐/原声.ts';
 import { 光影段 } from '../../默认.ts';
 import 段 from './段.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const 进 = 浪进(f);
   return (
     <>

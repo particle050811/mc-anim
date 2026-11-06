@@ -2,10 +2,11 @@
 // 画在段画面里（不走台词 cue、不做 film 叠层），静帧、预览看到的就是成片。
 // 入帧、收帧由段画面从 分镜 取段内帧传进来（每句的开口、咔哒定格），样式从场的 参数.ts 传进来，这里不写帧号。
 import type React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
 import { clamp01 } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { fps, 一帧秒 } from '../分镜/时间.ts';
+import { use当前帧 } from '../当前帧.ts';
 
 /** 一句：入 = 从这一段内帧起淡入 */
 export type 歌词行 = { 词: string; 入: number };
@@ -38,7 +39,7 @@ export const 歌词不透明度 = (行们: readonly 歌词行[], f: number, 样�
   });
 
 export const 歌词: React.FC<{ 行们: readonly 歌词行[]; 样式: 歌词样式; 收?: number }> = ({ 行们, 样式, 收 }) => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   for (let i = 1; i < 行们.length; i++) if (行们[i].入 < 行们[i - 1].入) throw new Error(`歌词「${行们[i].词}」的入帧比上一句早`);
   const 透明 = 歌词不透明度(行们, f, 样式, 收);
   return (

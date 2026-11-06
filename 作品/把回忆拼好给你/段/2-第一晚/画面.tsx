@@ -2,7 +2,6 @@
 // 最上面符文歌词；都包在整片后期里，调子跟着天亮从夜插到夏日白天。谁在哪、什么姿势全在 编排.ts，这里只按它画。
 // 不描边（用户 10-24 定全片不描边）。
 import type React from 'react';
-import { useCurrentFrame } from 'remotion';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
@@ -31,6 +30,7 @@ import 挖声三 from 'asset:音效/block.gravel.break.2';
 import 放声 from 'asset:音效/block.gravel.break.3';
 import 天窗声 from 'asset:音效/block.gravel.break.4';
 import 僵尸声 from 'asset:音效/把回忆拼好给你/entity.zombie.ambient.2';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 宽 = 画幅.宽, 高 = 画幅.高;
 const 音源: Record<keyof typeof 音效们, string> = { 挖一: 挖声一, 挖二: 挖声二, 挖三: 挖声三, 填土: 放声, 僵尸: 僵尸声, 挖开天窗: 天窗声 };
@@ -106,7 +106,7 @@ const 掉的土: React.FC<{ f: number }> = ({ f }) => (
 );
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const t = 调子(f);
   const 裂 = 裂纹态(f);
   return (

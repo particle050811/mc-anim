@@ -8,7 +8,7 @@
 // 挪着的块（刹那掉下去、放下飘下去）、烟花的火花也这样贴（用户 11-03「统统改成 60 帧」）。停着的笔画照旧在点层里；贴的时候按原来同一层里的遮挡分几张叠（见 符文歌词 组件）。
 import type React from 'react';
 import { useLayoutEffect, useRef } from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import sgaPng from 'asset:贴图/界面/银河字母';
 import glintPng from 'asset:贴图/特效/附魔光泽';
 import 火花0 from 'asset:贴图/粒子/火花/0';
@@ -27,6 +27,7 @@ import { fps, 旧帧 } from '../分镜/时间.ts';
 import { 光明, 光明档数, 刹那, 刹那块, 放下, 放下块, 时差, 烟花, 烟花火花, 在词里 } from './歌词字效.ts';
 import { 分块, 字种, 收拢, 符文倍, 飞们, 飞位, type 块 } from './符文拼字.ts';
 import { 做字源, 合样式, 字状态, 排一句, 解码时段, type 一字状态, type 摆字, type 符文歌词样式, type 符文歌词行 } from './符文排版.ts';
+import { use当前帧 } from '../当前帧.ts';
 
 export { 符文歌词默认 } from './符文排版.ts';
 export type { 符文歌词样式, 符文歌词行 };
@@ -472,7 +473,7 @@ const 画一句 = (
 
 /** 铺满画面，放在 position 不是 static 的容器里（如 AbsoluteFill）。行们按 入 从早到晚排 */
 export const 符文歌词: React.FC<{ 行们: readonly 符文歌词行[]; 样式: 符文歌词样式; 收?: number; 帧?: number }> = ({ 行们, 样式, 收, 帧 }) => {
-  const 当前 = useCurrentFrame();
+  const 当前 = use当前帧();
   const f = 帧 ?? 当前;
   const { width, height } = useVideoConfig();
   const ref = useRef<HTMLCanvasElement>(null);

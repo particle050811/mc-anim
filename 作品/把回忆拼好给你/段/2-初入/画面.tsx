@@ -3,7 +3,6 @@
 // 镜头跟着往前、往下落到地面高度，聊天行淡掉，你和镜头之间的地一排排撤掉，露出你脚下的地面剖面；第 2 句（2-第一晚）同一个镜头接着拍（天在第 2 句里才黑）。
 // 调子跟着透掉的比例从现实回暖到新世界的下午。
 import type React from 'react';
-import { useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
@@ -25,6 +24,7 @@ import { 新世界 } from '../../场/2-新世界/世界.tsx';
 import { 光影段 } from '../../默认.ts';
 import { 调子在, 钻完, 镜头在 } from './编排.ts';
 import 段 from './段.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段窗口('2-初入').起帧;
 const 宽 = 画幅.宽, 高 = 画幅.高;
@@ -37,7 +37,7 @@ const 聊天行们 = [{ text: 'Steve加入了游戏', color: 黄, 起刻: 0 }];
 const 没挖 = { 挖掉: 0, 顶土: false };
 
 const 画面: React.FC = () => {
-  const 歌帧 = 起帧 + useCurrentFrame();
+  const 歌帧 = 起帧 + use当前帧();
   const 调 = 调子在(歌帧);
   const 样 = 你在(歌帧);
   const 你姿 = stevePose(样.脚, 样.朝向, { sec: 样.秒, limbSwing: 样.摆, stride: 样.步幅, headPitch: 样.头 });

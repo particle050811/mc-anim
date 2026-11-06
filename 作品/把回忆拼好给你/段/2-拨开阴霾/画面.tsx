@@ -1,6 +1,5 @@
 // 2-拨开阴霾 的画面：场/2-雷雨/画面.tsx 的 雷雨画面 按歌曲帧画（接着 2-雷雨 那个镜头），配原声、信标声、雨声（接上一段放到雨停）。
 import type React from 'react';
-import { useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 段窗口 } from '../../分镜/正片第6到7句.ts';
 import { 光影段 } from '../../默认.ts';
@@ -14,6 +13,7 @@ import 雨1 from 'asset:音效/把回忆拼好给你/weather.rain.1';
 import 雨2 from 'asset:音效/把回忆拼好给你/weather.rain.2';
 import 雨3 from 'asset:音效/把回忆拼好给你/weather.rain.3';
 import 雨4 from 'asset:音效/把回忆拼好给你/weather.rain.4';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段窗口('2-拨开阴霾').起帧;
 /** 段里有 cue 的才放（雨声按歌上排，这一段只落到其中几个文件） */
@@ -26,7 +26,7 @@ const 音效们: readonly [string, string][] = [
 ];
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <>
       <配乐音轨 song={原声} 段={段} />

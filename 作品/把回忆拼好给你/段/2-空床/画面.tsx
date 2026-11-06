@@ -2,7 +2,6 @@
 // 开头不到半秒从 2-截图下线 最后的下线画面化进来（场/2-卧室/参数.ts 的 开场化秒）。
 // 谁在哪、什么姿势、窗光哪一档、镜头挪到哪、屋外和后期怎么接 2-时差 全在 编排.ts，这里只按它画。全片不描边（用户 10-24 定）：她单独套一层平涂，色调比屋里提亮（编排.ts 的 她色调）。
 import type React from 'react';
-import { useCurrentFrame } from 'remotion';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
 import { 平涂 } from '@engine/三渲二/平涂.tsx';
@@ -21,6 +20,7 @@ import { 光影段 } from '../../默认.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 光影场于, 光态, 后期调色, 她态, 她色调, 屋外态, 歌曲帧, 镜 } from './编排.ts';
 import 段 from './段.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 歌曲帧(0)));
 
@@ -64,7 +64,7 @@ const 下线余影: React.FC<{ f: number }> = ({ f }) => {
 };
 
 const 画面: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const 光 = 光态(f);
   return (
     <>

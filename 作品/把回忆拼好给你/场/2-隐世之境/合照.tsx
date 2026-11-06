@@ -7,7 +7,6 @@
 // 用户 10-24 定「看得懂的速度」：原来 52.94 先同机位硬切一镜尾笑、53.80 再切侧面，删成一刀。
 // 叠层（歌词）由段传进来，放在整片后期里面。参数见 合照参数.ts，靠到哪、机位见 合照动作.ts。
 import type React from 'react';
-import { useCurrentFrame } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
@@ -34,6 +33,7 @@ import { 靠肩机位, 靠肩进度 } from './合照动作.ts';
 import { 合照光影场, 合照站位, 合照朝向, 合照镜, 史蒂夫倍数, 你的头, 台词气泡接过来, 窗景, 第11句拍立得样式, 靠肩, 靠肩气泡, 靠肩起势 } from './合照参数.ts';
 import { 台词气泡, 笑 } from './重逢参数.ts';
 import { 不褪色, 背景褪色 } from './褪色.tsx';
+import { use当前帧 } from '../../当前帧.ts';
 
 const 调子 = '归隐之地' as const;
 const 事 = 正片事件;
@@ -174,7 +174,7 @@ const 拍立得停稳帧 = Math.ceil(Math.max(第11句拍立得样式.闪白秒,
  *  定格帧取「这一帧往前 停稳帧」，拍立得 每一帧都画成停稳的样子；坑：不能用 remotion 的 Freeze 把它冻在停稳帧上，
  *  里面的 ThreeCanvas 在 renderStill 单出这一帧时一直等不到放行（anim still 超时），renderMedia 整段渲却没事 */
 export const 合照拍立得: React.FC<{ 后期?: boolean; 字?: string }> = ({ 后期 = true, 字 }) => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <拍立得 定格帧={f - 拍立得停稳帧} 样式={第11句拍立得样式} 字={字}>
       {() => <合照照片 后期={后期} />}
