@@ -13,7 +13,6 @@ import { parse } from 'smol-toml';
 import { 闭包, type 检查上下文 } from '../检查/上下文.ts';
 import { 读内容 } from '../检查/内容.ts';
 import { 读台词表 } from '../检查/规则/台词.ts';
-import { 音效起音资产 } from '../合成/台词落点.ts';
 import { 像素字资产 } from '../合成/字幕卡.ts';
 import { 提示发布缺 } from './发布锁.ts';
 import { 字节路径, 套材质包, 材质包选用键, 读材质包选用, type 资产锁, type 锁条目 } from './资产锁.ts';
@@ -100,8 +99,8 @@ export const 算随仓库 = async (c: 检查上下文, 选择器: string[]): Pro
       }
     }
   }
-  // anim film 自己读的：没登记就是这部作品不用（读音效起音 缺了按 0 算）
-  for (const id of [音效起音资产, ...(有台词 ? [像素字资产] : [])]) if (锁[id]) 加(id, 锁);
+  // 不经 cue 引用、直接按 id 读的：有台词时字幕卡的像素字
+  if (有台词 && 锁[像素字资产]) 加(像素字资产, 锁);
   集合.地形.sort();
   for (const id of [...用到.keys()].sort()) {
     for (const l of 用到.get(id)!) {

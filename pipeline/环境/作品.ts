@@ -5,9 +5,6 @@ import path from 'node:path';
 import { 代码根 } from './路径.ts';
 import { 配置, 作品路径表 } from './配置.ts';
 
-/** 从旧仓库搬来的那部作品（旧项目适配器按它取基线、作品根） */
-export const 旧布局作品 = '应力转动';
-
 export type 作品 = { 名: string; 根: string };
 
 /** 选不出作品（没指定、有好几部，或名字不对）：cli/路由.ts 只打这一行提示，不打调用栈 */

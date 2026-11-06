@@ -67,7 +67,7 @@ describe('加载', () => {
   it('纯模块执行得了就放行', async () => {
     const { 违规, 报 } = await 跑('加载', 造仓库(基础()));
     expect(违规).toEqual([]);
-    expect(报.信息[0]).toMatch(/执行了 3 个纯模块/);
+    expect(报.信息[0]).toMatch(/执行了 4 个纯模块/);
   });
 
   it('段.ts、时间线.ts 里的断言 throw 了就拦', async () => {

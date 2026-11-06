@@ -9,13 +9,12 @@ import { official } from '../6-1-2/动作改进.ts';
 import { NagaDamageLayer } from '../6-1-2/伤害数字层.tsx';
 import { TakeOff } from '../6-1-3/起飞.tsx';
 import { OnerSegment } from '../一镜到底/画面.tsx';
-import { F_CUT } from '../6-1-9b/落地编排.ts';
 import { segments, frameCountOf, compositionId, type SegmentId, type 源 } from './段界.ts';
 
 const Naga: React.FC = () => <NagaBlockout {...official} />;
 const NagaDamage: React.FC = () => <NagaDamageLayer {...official} />;
-// 一镜到底的源帧就是全局帧 F，放到硬切 6-1-9b 那一帧（F_CUT）为止
-const Oner: React.FC = () => <OnerSegment 起={0} 帧数={F_CUT} />;
+// 一镜到底的源帧就是全局帧 F，截表放到硬切 6-1-9b 那一帧（F_CUT）为止
+const Oner: React.FC = () => <OnerSegment 起={0} />;
 const sourceComponents: Record<源, React.FC> = { '6-1-1': EnterForest, '6-1-2': Naga, '6-1-3': TakeOff, 一镜到底: Oner };
 const FPS = 24;
 

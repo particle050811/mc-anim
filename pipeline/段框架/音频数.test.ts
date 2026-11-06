@@ -3,32 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { 锁条目 } from '../资产/资产锁.ts';
-import { 取音频数, 已知音频数, 解析量音 } from './音频数.ts';
-
-// ffmpeg -af ebur128=peak=sample 末尾的 Summary（中间逐帧的行里也有 I:，只认 Summary 之后的）
-const stderr = `[Parsed_ebur128_0 @ 0x1] t: 0.1  TARGET:-23 LUFS    M:-120.7 S:-120.7     I: -70.0 LUFS
-[Parsed_ebur128_0 @ 0x1] Summary:
-
-  Integrated loudness:
-    I:         -18.37 LUFS
-    Threshold: -28.4 LUFS
-
-  Loudness range:
-    LRA:         2.1 LU
-
-  Sample peak:
-    Peak:       -3.456 dBFS
-`;
-
-describe('解析量音', () => {
-  it('取 Summary 的响度、峰值（两位小数），时长六位', () => {
-    expect(解析量音(stderr, '1.6250114\n')).toEqual({ 时长: 1.625011, 峰值: -3.46, 响度: -18.37 });
-  });
-  it('静音：峰值、响度是 -inf 就不给；时长不对报错', () => {
-    expect(解析量音('Summary:\n I: -inf LUFS\n Peak: -inf dBFS\n', '2')).toEqual({ 时长: 2 });
-    expect(() => 解析量音(stderr, 'N/A')).toThrow(/时长/);
-  });
-});
+import { 取音频数, 已知音频数 } from './音频数.ts';
 
 describe('取音频数', () => {
   let 根: string;

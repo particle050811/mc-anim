@@ -15,8 +15,8 @@ const 两场 = {
 
 /** 两部临时作品，段键、场键同名（1-开场、1-场一），只带 engine 里要用的两个文件 */
 const 两部作品 = (): 文件表 => {
-  const { 'engine/段/段定义.ts': 段定义, 'engine/core/例外.ts': 例外 } = 基础();
-  const 表: 文件表 = { 'engine/段/段定义.ts': 段定义!, 'engine/core/例外.ts': 例外! };
+  const { 'engine/段/段定义.ts': 段定义, 'engine/段/按时取值.ts': 按时取值, 'engine/core/例外.ts': 例外 } = 基础();
+  const 表: 文件表 = { 'engine/段/段定义.ts': 段定义!, 'engine/段/按时取值.ts': 按时取值!, 'engine/core/例外.ts': 例外! };
   for (const 名 of ['夹具甲', '夹具乙']) {
     Object.assign(表, {
       [`作品/${名}/清单.ts`]: "export const 清单 = [{ 键: '1-开场', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",

@@ -1,8 +1,7 @@
 // 台词字幕排时间：每句开口前 0.15 秒出、说完 0.4 秒收，下一句出来上一句就收；一句切几屏时到配音响度的谷里找停顿换屏。
-// 照抄旧项目 工具/合成第六章/字幕.py（plan_subtitles、find_voiced_runs、screen_switch_times、verify_onsets），数值不改；
-// 落点不再从各段代码里扒，由 台词落点.ts 按段.ts 的声音 cue 算。产出 字幕表.tsv、SRT、字幕核对.tsv。
+// 照抄旧项目 工具/合成第六章/字幕.py（plan_subtitles、find_voiced_runs、screen_switch_times），数值不改；
+// 落点不再从各段代码里扒，由 台词落点.ts 按段.ts 的声音 cue 算。产出 字幕表.tsv、SRT。
 // 接上段的落点（上一段说过来的后半截）不出字幕，字幕表末尾照旧另列一行，写它和开口那段差几帧。
-import { 互相关 } from './音频.ts';
 import type { 字幕位置, 屏 } from './字幕卡.ts';
 
 export const 采样率 = 48000;
@@ -20,13 +19,13 @@ export type 台词落点 = {
   /** 配音文件第 0 秒落在全片第几帧（= 段起帧 + cue 帧 − 开口秒 × fps） */
   文件头帧: number;
   文件: string;
-  /** 配音的资产 id（剪辑包按它取文件） */
+  /** 配音的资产 id */
   配音: string;
   字: string;
   角色: string;
   位置: 字幕位置;
   屏们: 屏[];
-  /** 上一段说过来的后半截（同一个文件在这一段接着放）：不出字幕、不核对开口，只拿来对两边接没接上 */
+  /** 上一段说过来的后半截（同一个文件在这一段接着放）：不出字幕，只拿来对两边接没接上 */
   接上段?: true;
 };
 
@@ -226,40 +225,3 @@ const srt时间 = (帧: number, fps: number) => {
   return `${p(Math.floor(ms / 3600000))}:${p(Math.floor(ms / 60000) % 60)}:${p(Math.floor(ms / 1000) % 60)},${p(ms % 1000, 3)}`;
 };
 export const srt = (屏们: 字幕屏[], fps: number) => 屏们.map((p, i) => `${i + 1}\n${srt时间(p.起帧, fps)} --> ${srt时间(p.止帧, fps)}\n${p.字}\n\n`).join('');
-
-/** 配音和成片声音做互相关（开口前后 1.5 秒里找），量每句实际开口帧，和字幕用的落点比（字幕.py 的 verify_onsets） */
-export const 核对开口 = (句们: 排好的句[], 混音: Float32Array, fps: number, 读声音: (文件: string) => Float32Array) => {
-  const 行 = ['句\t段\t字幕用的开口帧\t成片里量出的开口帧\t差（帧）\t相关系数'];
-  const 差们: number[] = [];
-  const 每帧 = 采样率 / fps;
-  for (const e of 句们) {
-    const 全 = 读声音(e.文件);
-    const a = Math.trunc(e.开 * 采样率);
-    const v = 全.subarray(a, a + 2 * 采样率);
-    const c0 = Math.round(e.开口帧 * 每帧);
-    const ws = c0 - Math.trunc(1.5 * 采样率);
-    const we = c0 + Math.trunc(1.5 * 采样率) + v.length;
-    if (ws < 0 || we > 混音.length) continue;
-    const w = 混音.subarray(ws, we);
-    let vn = 0;
-    for (const x of v) vn += x * x;
-    vn = Math.sqrt(vn);
-    const xc = 互相关(w, v);
-    let e2 = 0;
-    for (let k = 0; k < v.length; k++) e2 += w[k]! * w[k]!;
-    let best = -Infinity;
-    let bk = 0;
-    for (let k = 0; k < xc.length; k++) {
-      if (k > 0) e2 += w[k + v.length - 1]! ** 2 - w[k - 1]! ** 2;
-      const c = xc[k]! / (Math.sqrt(Math.max(e2, 0)) * vn + 1e-9);
-      if (c > best) {
-        best = c;
-        bk = k;
-      }
-    }
-    const 量 = (ws + bk) / 每帧;
-    差们.push(量 - e.开口帧);
-    行.push(`${e.id}\t${e.段}\t${e.开口帧.toFixed(1)}\t${量.toFixed(1)}\t${(量 - e.开口帧 >= 0 ? '+' : '') + (量 - e.开口帧).toFixed(2)}\t${best.toFixed(2)}`);
-  }
-  return { tsv: 行.join('\n') + '\n', 最大差: 差们.length ? Math.max(...差们.map(Math.abs)) : NaN };
-};

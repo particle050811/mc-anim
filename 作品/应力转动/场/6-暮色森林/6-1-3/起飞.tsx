@@ -28,6 +28,7 @@ export const SUN = twilightSunDir;
 
 const sheath = <WornSheath />;
 
+// 只画画面，第几格 = 秒 × 24（带小数）；声音照用到它的段（6-起飞、6-穿塔斩首领）段.ts 的 cue 放
 export const TakeOff: React.FC = () => {
   const frame = use当前秒() * 24;
   const { width, height } = useVideoConfig();

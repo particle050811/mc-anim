@@ -3,26 +3,25 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { 代码根, 主检出 } from '../环境/路径.ts';
 import { 作品们 } from '../环境/作品.ts';
-import { 配置, 数据根, 数据路径, 母版目录, 段签目录, 草稿根, 运行目录 } from '../环境/配置.ts';
+import { 配置, 数据根, 数据路径, 母版目录, 草稿根, 运行目录 } from '../环境/配置.ts';
 import { 跑出 } from '../环境/子进程.ts';
 import { 扫打包, 打包保留理由 } from './打包.ts';
 import { 读进程 } from '../闸/孤儿.ts';
 import { 删打包 } from '../渲/打包残留.ts';
-import { 压缩名 } from '../渲/母版.ts';
 import { 加当前指纹 } from './当前指纹.ts';
 import { 参考文件查法 } from './钉.ts';
 import { 找重复, 执行去重, 读账, 写账, 能克隆, type 去重组, type 去重账 } from './去重.ts';
 import { sha缓存 } from './sha缓存.ts';
 import {
-  保留集, 加交付, 加认可, 不认识条目, 列目录, 扫媒体, 扫webpack, 最近改于, 目录大小, 锁有人拿, 规划媒体, 规划临时, 规划草稿, 规划webpack, 规划暂存, 扫暂存, 扫抽样, 规划抽样,
-  type 带理由, type 媒体文件, type 普通文件, type 目录条目, type webpack条目, type 缓存种, type 抽样文件,
+  保留集, 加交付, 加认可, 不认识条目, 列目录, 扫媒体, 扫webpack, 最近改于, 目录大小, 锁有人拿, 规划媒体, 规划临时, 规划草稿, 规划webpack, 规划暂存, 扫暂存,
+  type 带理由, type 媒体文件, type 普通文件, type 目录条目, type webpack条目,
 } from './回收.ts';
 
-export const 回收类 = ['母版', '叠层', '抽样', '残留', '草稿', '列段', 'webpack', '去重'] as const;
+export const 回收类 = ['母版', '残留', '草稿', '列段', 'webpack', '去重'] as const;
 export type 回收类名 = (typeof 回收类)[number];
 
 export type 回收选项 = {
-  /** 母版、叠层、抽样、去重只看这几部作品；空是全部（cache/ 下有、代码里没有的作品整个留着） */
+  /** 母版、去重只看这几部作品；空是全部（cache/ 下有、代码里没有的作品整个留着） */
   作品: string[];
   类: ReadonlySet<回收类名>;
   近期天数: number;
@@ -44,8 +43,6 @@ export type 回收计划 = {
   /** 地形烘焙中断留下的暂存目录（run/暂存/terrain/<包>），归在「残留」一类 */
   暂存: 带理由<目录条目>[];
   打包: 带理由<目录条目>[];
-  /** 段签里版本 1 的无损抽样帧（11-02 换比法后没人读了） */
-  抽样: 带理由<抽样文件>[];
   /** 认得、但不自动删的（只报大小和用途） */
   只报: { 位置: string; 用途: string; 大小: number }[];
   /** 只报告不删 */
@@ -69,7 +66,7 @@ export const 只报目录: Record<string, string> = {
 /** 数据根 run/、cache/ 下 anim 认得的条目（别的只报告） */
 export const run认识 = ['草稿', '运行记录', 'logs', 'locks', 'queue', 'public', 'extract', '暂存', '地形用量', '逐帧校验', '调度'];
 export const cache认识 = [
-  '母版', '叠层', '求解', '私有配乐', '剪映解密', '发布', '缺字节', '接缝.json', '去重账.json', 'sha缓存.json', '列段',
+  '母版', '求解', '私有配乐', '剪映解密', '发布', '缺字节', '接缝.json', '去重账.json', 'sha缓存.json', '列段',
   ...Object.keys(只报目录).filter((k) => k.startsWith('cache/')).map((k) => k.slice('cache/'.length)),
 ];
 export const 去重账文件 = () => 数据路径('cache', '去重账.json');
@@ -104,14 +101,13 @@ const 要删的名字数 = (计划: 回收计划) => {
 };
 
 export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => void = () => {}): Promise<回收计划> => {
-  const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 抽样: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
+  const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
   const 警告 = (s: string) => 计划.警告.push(s);
   const 要 = (c: 回收类名) => o.类.has(c);
 
-  if (要('母版') || 要('叠层') || 要('残留') || 要('去重')) {
+  if (要('母版') || 要('残留') || 要('去重')) {
     const 已知 = 作品们();
-    const 种们: 缓存种[] = ['母版', '叠层'];
-    const 缓存里的 = new Set(种们.flatMap((种) => (fs.existsSync(数据路径('cache', 种)) ? fs.readdirSync(数据路径('cache', 种)) : [])));
+    const 缓存里的 = new Set(fs.existsSync(数据路径('cache', '母版')) ? fs.readdirSync(数据路径('cache', '母版')) : []);
     const 这次 = o.作品.length ? o.作品 : [...new Set([...已知.keys(), ...缓存里的])].sort();
     const 保留 = new 保留集();
     // 自足的交付、有认可参考的认可不再钉（用户 10-30 定「这个未来用不到的就删」）
@@ -120,30 +116,23 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
       if (!缓存里的.has(作品)) continue;
       const 根 = 已知.get(作品);
       if (!根) {
-        警告(`cache/ 下有作品「${作品}」，代码里没有这部作品（私有的没登记、或在别的分支上），它的母版、叠层整个留着`);
-        for (const 种 of 种们) 保留.加目录(数据路径('cache', 种, 作品), { 类: '算不出', 说明: '代码里没有这部作品' });
+        警告(`cache/ 下有作品「${作品}」，代码里没有这部作品（私有的没登记、或在别的分支上），它的母版整个留着`);
+        保留.加目录(数据路径('cache', '母版', 作品), { 类: '算不出', 说明: '代码里没有这部作品' });
         continue;
       }
       加认可(保留, 根, (键) => 母版目录(键, 作品), 警告, { 解钉: true, 参考文件: 参考文件查法(作品) });
-      if (要('母版') || 要('叠层') || 要('去重')) await 加当前指纹(保留, 作品, 警告, 进度);
+      if (要('母版') || 要('去重')) await 加当前指纹(保留, 作品, 警告, 进度);
     }
     for (const 作品 of 这次) {
-      for (const 种 of 种们) {
-        const 扫 = 扫媒体(数据路径('cache', 种, 作品), 种, 作品, { 段签目录: (键, 指纹) => 段签目录(键, 指纹, 作品), 现在: o.现在 });
-        if (要(种) || 要('去重')) 计划.媒体.push(...规划媒体(扫.媒体, 保留, { 现在: o.现在, 近期天数: o.近期天数 }));
-        if (要('残留')) 计划.临时.push(...规划临时(扫.临时, o.现在));
-        if (扫.不认识.length) 计划.不认识.push({ 位置: `cache/${种}/${作品}`, 条目: 扫.不认识.map((f) => ({ ...f, 名: path.relative(数据路径('cache', 种, 作品), f.路径) })) });
-      }
+      const 扫 = 扫媒体(数据路径('cache', '母版', 作品), '母版', 作品, { 现在: o.现在 });
+      if (要('母版') || 要('去重')) 计划.媒体.push(...规划媒体(扫.媒体, 保留, { 现在: o.现在, 近期天数: o.近期天数 }));
+      if (要('残留')) 计划.临时.push(...规划临时(扫.临时, o.现在));
+      if (扫.不认识.length) 计划.不认识.push({ 位置: `cache/母版/${作品}`, 条目: 扫.不认识.map((f) => ({ ...f, 名: path.relative(数据路径('cache', '母版', 作品), f.路径) })) });
     }
     // 只要了去重、没要删的那一种：那一种的都按留算
     计划.媒体 = 计划.媒体.map((f) => (要(f.种) || f.理由.length ? f : { ...f, 理由: [{ 类: '算不出' as const, 说明: `这次没选 ${f.种}` }] }));
   }
 
-  if (要('抽样')) {
-    const 段签根 = 数据路径('段签');
-    const 这些 = o.作品.length ? o.作品 : 列目录(段签根, 0).map((e) => e.名).sort();
-    for (const 作品 of 这些) 计划.抽样.push(...规划抽样(扫抽样(path.join(段签根, 作品), 数据路径('认可参考', 作品)), { 现在: o.现在, 近期天数: o.近期天数 }));
-  }
   if (要('残留')) 计划.打包 = 扫打包(o.现在);
   if (要('残留')) 计划.暂存 = 规划暂存(扫暂存(暂存根(), 配置('主机')), o.现在);
   if (要('草稿')) 计划.草稿 = 规划草稿(列目录(草稿根()), { 现在: o.现在, 天数: o.草稿天数 });
@@ -204,8 +193,7 @@ export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '
     }
   };
   const 未满 = (天数: number) => (改于: number) => 现在 - 改于 < 天数 * 天;
-  // 已被取代的 CRF1 不看新旧（迁移前几天渲的也算），只确认压缩母版还在
-  for (const f of 计划.媒体) if (!f.理由.length) 删(f.路径, f.大小, f.已被取代 ? () => !fs.existsSync(压缩名(f.路径)) : 未满(o.近期天数), false);
+  for (const f of 计划.媒体) if (!f.理由.length) 删(f.路径, f.大小, 未满(o.近期天数), false);
   const 进程 = 计划.打包.some(d => !d.理由.length) ? 读进程() : '';
   for (const d of 计划.打包) if (!d.理由.length) {
     try {
@@ -220,7 +208,6 @@ export const 执行回收 = async (计划: 回收计划, o: Pick<回收选项, '
     } catch (e) { r.失败.push(`${d.路径}：${(e as Error).message}`); }
   }
   for (const f of 计划.临时) if (!f.理由.length) 删(f.路径, f.大小, 未满(1), false);
-  for (const f of 计划.抽样) if (!f.理由.length) 删(f.路径, f.大小, 未满(o.近期天数), false);
   // 计划算完到删之间可能有人开始烘焙同一个包：删前再看一眼锁
   for (const d of 计划.暂存) if (!d.理由.length) 删(d.路径, d.大小, (改于) => 未满(1)(改于) || 锁有人拿(`${d.路径}.写入.lock`, 配置('主机')), true);
   for (const d of 计划.草稿) if (!d.理由.length) 删(d.路径, d.大小, 未满(o.草稿天数), true);
