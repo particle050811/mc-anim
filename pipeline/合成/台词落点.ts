@@ -5,7 +5,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { 段定义, 台词cue } from '../../engine/段/段定义.ts';
-import { 代码根 } from '../环境/路径.ts';
 import { 读作品资产锁, 解析资产 } from '../资产/资产锁.ts';
 import { 作品根 } from '../环境/作品.ts';
 import type { 段信息 } from '../清单/清单.ts';
@@ -113,29 +112,7 @@ export const 读音效起音 = (): ((资产id: string) => number) => {
 export const 听见帧 = (c: NonNullable<段定义['声音']>[number], fps: number, 起音: (资产id: string) => number) =>
   c.台词 !== undefined ? c.帧 : c.帧 + (c.入点秒 ? 0 : (起音(c.资产) / (c.速率 ?? 1)) * fps);
 
-/** 同步表：每条声音 cue 在全片第几帧听得见（接上段的台词不另列），再到成片声音里找 ±1 帧内的起音（旧项目 合成第六章.py 的 build_sync_table） */
-export const 同步表 = (截们: 截位置[], 混音: Float32Array, fps: number, 起音: (资产id: string) => number = () => 0) => {
-  const 每帧 = 48000 / fps;
-  const n = Math.floor(混音.length / 每帧);
-  const db = new Float64Array(n);
-  for (let k = 0; k < n; k++) {
-    let s = 0;
-    for (let i = k * 每帧; i < (k + 1) * 每帧; i++) s += 混音[i]! * 混音[i]!;
-    db[k] = 20 * Math.log10(Math.sqrt(s / 每帧) + 1e-9);
-  }
-  const 起音帧 = new Set<number>();
-  for (let k = 1; k < n; k++) if (db[k]! - db[k - 1]! > 6 && db[k]! > -50) 起音帧.add(k);
-  let 对上 = 0;
-  const 行们 = 同步表行(截们, fps, 起音).map((r) => {
-    const 中 = [...起音帧].filter((k) => Math.abs(k - r.帧) <= 1.5);
-    if (中.length) 对上++;
-    const 最近 = 中.sort((a, b) => Math.abs(a - r.帧) - Math.abs(b - r.帧))[0];
-    return `${r.行}\t${最近 !== undefined ? `对上（第 ${最近} 帧）` : '没测到（被盖住或太轻）'}`;
-  });
-  return { tsv: ['段\t全局时间\t帧\t段内帧\t事件\t声音\t成片里起音（±1 帧内的能量跳变）', ...行们].join('\n') + '\n', 对上, 总: 行们.length };
-};
-
-/** 同步表除了起音那一列：按听见的全片帧排 */
+/** 同步表（每条声音 cue 在全片第几帧听得见，接上段的台词不另列）的行：按听见的全片帧排；旧项目/声音对照.ts 拿它和基线比 */
 export const 同步表行 = (截们: 截位置[], fps: number, 起音: (资产id: string) => number) =>
   截们
     .flatMap(({ 段: s, 全片起帧 }) =>

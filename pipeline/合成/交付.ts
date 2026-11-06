@@ -6,16 +6,11 @@
 // v3（11-05 起，拼成片.ts 写）各段记切片的画面指纹，出片时就有 全片-未拉响度.flac，本来自足，这里不读（读交付manifest 只认到 v2，补声音碰上会拒）。
 import fs from 'node:fs';
 import path from 'node:path';
-import { parse } from 'smol-toml';
 import { 交付根, 数据根下, 母版目录, 配置 } from '../环境/配置.ts';
 import { 低优先级, 跑 } from '../环境/子进程.ts';
-import { 压缩名 } from '../渲/母版.ts';
-import { 声音路径, 读段签 } from '../段签/段签.ts';
 
 export const 未拉响度文件 = '全片-未拉响度.flac';
 export const manifest版本 = 2;
-
-export const 剪辑画面编码 = (fps: number) => ['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '32', '-g', '1', '-keyint_min', '1', '-sc_threshold', '0', '-pix_fmt', 'yuv420p', '-r', String(fps), '-movflags', '+faststart'];
 
 /** 读交付manifest 统一成这样：母版、声音都是绝对路径（母版不一定还在；声音是段签的 声音.flac，v1 或没段签的没有）。bili 时间轴直接读原 JSON，只用帧数这些 */
 export type 交付段 = { 编号: string | null; 键: string; 指纹: string; 帧数: number; 全片起帧: number; 母版: string; 声音?: string | null; 字节sha?: string | null };
@@ -75,14 +70,6 @@ export const 找交付目录 = (arg: string) => {
 export const 交付缺 = (dir: string): string[] => [未拉响度文件].filter((f) => !fs.existsSync(path.join(dir, f)));
 
 const 采样率 = 48000;
-
-/** 各段声音从哪读：manifest 记的段签声音 > 现有段签的 声音.flac > 母版（CRF1，或压缩母版：PCM 是原样拷的）；都不在是 null */
-export const 段声音源 = (m: 交付manifest & { 作品: string }) =>
-  m.段.map((s) => {
-    const 签 = 读段签(s.键, s.指纹, m.作品);
-    for (const f of [s.声音, 签 && 声音路径(签), s.母版, 压缩名(s.母版)]) if (f && fs.existsSync(f)) return f;
-    return null;
-  });
 
 /** 拼 全片-未拉响度.flac：各段按样本截（end_sample = 帧数 × 每帧样本）、接，FLAC 无损；film、补声音共用 */
 export const 拼未拉响度 = async (源: string[], m: { 段: { 帧数: number }[]; 帧率: number }, 出: string) => {
