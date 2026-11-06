@@ -10,7 +10,6 @@ import 受死声 from 'asset:配音/7-黄叛-受死';
 import 溜了声 from 'asset:配音/7-李樱-溜了';
 import { 贴格 } from '@engine/段/按时取值.ts';
 import { use当前秒 } from '@engine/段/时间.tsx';
-import 段 from './段.ts';
 
 const 句们: readonly 台词句cue[] = [
   { 句: 受死, 帧: 6 },
@@ -19,8 +18,8 @@ const 句们: readonly 台词句cue[] = [
 const 声音 = { [受死.id]: 受死声, [溜了.id]: 溜了声 };
 
 const 画面: React.FC = () => {
-  // 句模块的帧是段.ts 的 fps（24）一格
-  const fps = 段.fps;
+  // 句模块的帧是 1/24 秒一格
+  const fps = 24;
   const frame = 贴格(use当前秒() * fps);
   const { width, durationInFrames } = useVideoConfig();
   const 每帧 = (width - 160) / durationInFrames;

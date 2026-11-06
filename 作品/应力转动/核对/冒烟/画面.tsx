@@ -9,7 +9,6 @@ import 音 from 'asset:核对/冒烟音';
 import { 贴格 } from '@engine/段/按时取值.ts';
 import { use设置 } from '@engine/段/设置.ts';
 import { use当前秒, 秒Sequence } from '@engine/段/时间.tsx';
-import 段 from './段.ts';
 
 const 解码 = (uri: string) => {
   const bin = atob(uri.slice(uri.indexOf(',') + 1));
@@ -23,8 +22,8 @@ const 图 = 解码(色块);
 const 格 = 40;
 
 const 画面: React.FC = () => {
-  // 段内第几帧（段.ts 的 fps，24）；进度条的分母是 Composition 的帧数，照旧
-  const frame = 贴格(use当前秒() * 段.fps);
+  // 段内第几格（一格 1/24 秒）；进度条的分母是 Composition 的帧数，照旧
+  const frame = 贴格(use当前秒() * 24);
   const { width, durationInFrames } = useVideoConfig();
   const { 级别 } = use设置();
   const 格子 = [];
