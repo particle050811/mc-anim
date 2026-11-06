@@ -1,5 +1,5 @@
 // 认可记录 <作品根>/认可/<平台>/<段键>.toml（进 Git）：认可的那一版母版的指纹、抽样帧签名，音频的 sha、响度和起音，
-// 认可时比画面用的换算（比较.ts 的 换算；11-02 换比法以前的记录没有这一项）。
+// 认可时比画面用的换算（比较.ts 的 换算）。
 // anim verify accept 写，人不手改；画面每次变化都会出现在 diff 里。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -40,7 +40,7 @@ export const 读认可 = (file: string): 认可记录 | null => {
   return {
     ...(t as unknown as 认可记录),
     音频sha: (t['音频sha'] as string | undefined) ?? null,
-    // 早先的记录没有响度和起音，比声音时只能靠 sha 或旧母版
+    // 没有声音的段这几项不写
     响度: (t['响度'] as number | undefined) ?? null,
     起音: Array.isArray(t['起音']) ? (t['起音'] as string[]).map(解起音串) : null,
     上一版指纹: (t['上一版指纹'] as string | undefined) ?? null,

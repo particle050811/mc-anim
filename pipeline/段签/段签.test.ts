@@ -1,6 +1,6 @@
 // 段签：从 ffmpeg 现造的小切片（有损 x264 mp4，和真切片一样有编码噪声）和 wav 派生，查签名和 verify 逐位相同、FLAC 无损、版本 3 记两份样子、
 // 首尾小图和 灰度帧 一样、版本 1、2（CRF1 时代）照读、重渲自查（旧的一套挪进 历史/）、取段签 缺了才派生；
-// 扫段签 和 扫母版 结论一样；认可参考（accept 时从认可那版的切片抽、旁记核 yuv；CRF1 时代的认可从 CRF1 抽；老参考核 rgb 哈希、补旁记）。数据根是临时目录，不碰真数据。
+// 扫段签 和 扫母版 结论一样；认可参考（accept 时从认可那版的切片抽、旁记核 yuv；没有旁记的老参考不用）。数据根是临时目录，不碰真数据。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -17,7 +17,7 @@ const { 出段签, 读段签, 读历史段签, 段签齐, 对得上切片, 声�
 const { 取段签, 同指纹重渲过 } = await import('./取.ts');
 const { 扫母版, 扫段签, 母版像素, 签名里没有, 缺母版, 参考对不上 } = await import('../验收/验收.ts');
 const { 抽样流, 音频流, sha } = await import('../验收/帧流.ts');
-const { 备参考, 补旁记, 找认可母版, 参考文件 } = await import('../验收/参考.ts');
+const { 备参考, 找认可母版, 参考文件 } = await import('../验收/参考.ts');
 const { 参考像素, 旁记文件, 读旁记 } = await import('../验收/参考像素.ts');
 const { 段画面路径, 段声音路径 } = await import('../渲/段产物.ts');
 const { 同一版 } = await import('../验收/认可.ts');
@@ -84,18 +84,6 @@ const 放切片 = async (段: string, 指: string, 源: string) => {
   fs.copyFileSync(声, r.声音);
   const 签 = (await 出段签(r.画面, r.声音, { 段键: 段, 指纹: 指, 声音指纹: r.声音指纹.指纹, 级别: '视频', 派生: '渲染' })).签;
   return { ...r, 签 };
-};
-
-/** CRF1 时代的：<指纹>.mkv（带声音），段签改写成版本 2（没有 声音源、声音指纹） */
-const 放CRF1 = async (段: string, 指: string, 源画: string) => {
-  const 原母版 = path.join(母版目录(段), `${指.slice(0, 16)}.mkv`);
-  fs.mkdirSync(path.dirname(原母版), { recursive: true });
-  跑出([配置('ffmpeg'), '-v', 'error', '-y', '-i', 源画, '-i', 声, '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'pcm_s16le', 原母版]);
-  const 新 = (await 出段签(原母版, null, { 段键: 段, 指纹: 指, 级别: '视频', 派生: '回填' })).签;
-  const { 声音源: _声音源, 声音指纹: _声音指纹, ...其余 } = 新;
-  const 旧 = { ...其余, 版本: 2 as const };
-  fs.writeFileSync(签路径(新), JSON.stringify(旧));
-  return { 原母版, 签: 旧 };
 };
 
 describe('段签', () => {
@@ -223,7 +211,7 @@ describe('认可参考', () => {
     const fp = 指纹('参考');
     const { 画面 } = await 放切片('核对-参考', fp, 原);
     const 认 = await 认可(原, fp, '核对-参考');
-    expect(await 找认可母版(认)).toEqual({ 文件: 画面, 来源: '切片', 字节sha: await 文件sha(画面) });
+    expect(await 找认可母版(认)).toEqual({ 文件: 画面, 字节sha: await 文件sha(画面) });
     expect(await 备参考(认, 'test')).toBe('从切片');
     expect(await 备参考(认, 'test')).toBe('已有');
     const 参考 = 参考文件(认, 'test');
@@ -251,24 +239,16 @@ describe('认可参考', () => {
     fs.writeFileSync(旁记文件(参考), 好);
   });
 
-  it('CRF1 时代认可的从 CRF1 抽；老参考（没有旁记）核 rgb 哈希能用，补旁记 补上；记录对不上的不收、不留文件', async () => {
+  it('没有旁记的老参考不用（抛 参考对不上）；记录对不上的不收、不留文件', async () => {
     const fp = 指纹('参考一');
-    const { 原母版 } = await 放CRF1('核对-参考一', fp, 原);
-    const 认 = await 认可(原, fp, '核对-参考一');
-    expect((await 找认可母版(认))).toMatchObject({ 文件: 原母版, 来源: 'CRF1' });
-    expect(await 备参考(认, 'test')).toBe('从CRF1');
+    const { 画面 } = await 放切片('核对-参考一', fp, 原);
+    const 认 = await 认可(画面, fp, '核对-参考一');
+    expect((await 找认可母版(认))).toMatchObject({ 文件: 画面 });
+    expect(await 备参考(认, 'test')).toBe('从切片');
     const 参考 = 参考文件(认, 'test');
-    // 老参考是段签无损抽样克隆的：和从 CRF1 抽的逐位一样，只是没有旁记
     fs.rmSync(旁记文件(参考));
     const 来源 = { 签名: (await 扫母版(后半变, { 声音: 声 })).签名, 母版: 后半变 };
-    const 老 = await 扫段签(来源, { 认可: 认, 参考, 阈值: 阈 });
-    expect(老.像素来源).toBe('认可参考');
-    expect(老.帧结论.map((f) => f.结论)).toEqual(['一样', '容差内', '变了']);
-    expect(await 补旁记(认, 'test')).toBe('补了');
-    expect(读旁记(参考)).toMatchObject({ 来源: '段签抽样', 母版字节sha: null, 帧: [0, 24, 47] });
-    expect(await 补旁记(认, 'test')).toBe('已有');
-    expect((await 扫段签(来源, { 认可: 认, 参考, 阈值: 阈 })).帧结论).toEqual(老.帧结论);
-    expect(await 补旁记({ ...认, 指纹: 指纹('没参考') }, 'test')).toBe('没有参考');
+    await expect(扫段签(来源, { 认可: 认, 参考, 阈值: 阈 })).rejects.toBeInstanceOf(参考对不上);
 
     const 坏 = { ...认, 帧: 认.帧.map((f, i) => (i === 1 ? { ...f, 哈希: '0'.repeat(64) } : f)) };
     expect(await 备参考(坏, 'test')).toBe('没有来源'); // 段签和它不是同一版

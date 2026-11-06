@@ -123,7 +123,7 @@ describe.skipIf(!有ffmpeg)('verify 和切片', () => {
     }
   });
 
-  it('CRF1 时代的认可（1440p、编排帧数）：报参考是旧档的、要重新认可，不解码', async () => {
+  it('不是现行的认可（CRF1 时代的 1440p）：报要重新认可，不解码', async () => {
     const f = 认可文件('甲');
     const 原文 = fs.readFileSync(f, 'utf8');
     fs.writeFileSync(f, 原文.replace(/^"宽" = 320$/m, '"宽" = 2560').replace(/^"高" = 180$/m, '"高" = 1440'));
@@ -132,7 +132,7 @@ describe.skipIf(!有ffmpeg)('verify 和切片', () => {
       读像素的.length = 0;
       const r = 记录();
       expect(await 跑(['甲'], r)).toBe(1);
-      expect(r.事件.join('\n')).toMatch(/甲：参考是旧档的、要重新认可（认可时是 2560×1440 48 帧，现在的切片是 320×180 48 帧/);
+      expect(r.事件.join('\n')).toMatch(/甲：这段没有现行认可，要重新认可（认可时是 2560×1440 48 帧，现在的切片是 320×180 48 帧/);
       expect(读像素的).toEqual([]);
     } finally {
       fs.writeFileSync(f, 原文);
