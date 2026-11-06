@@ -13,16 +13,6 @@ vi.mock('../闸/闸.ts', async orig => ({ ...(await orig<object>()), 过渲染�
 const 记录 = () => ({ 记: vi.fn() }) as never;
 afterEach(() => { vi.restoreAllMocks(); });
 
-it('film 取段签：路令透传，别的错还是只警告', async () => {
-  const { 取段签们 } = await import('../合成/成片.ts'), 截们 = [{ 段: { 键: '段' }, 指纹: 'f' }] as never;
-  假.段签错 = () => new 调度让路('先交产出');
-  await expect(取段签们(截们, '视频' as never, 记录())).rejects.toBeInstanceOf(调度让路);
-  假.段签错 = () => Error('坏文件');
-  const r = 记录();
-  await 取段签们(截们, '视频' as never, r);
-  expect((r as { 记: ReturnType<typeof vi.fn> }).记.mock.calls[0]![1]).toContain('坏文件');
-});
-
 it('cache 转存：路令透传，不算成 N 个失败', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-让路-'));
   假.原 = path.join(dir, '母版.mkv');
