@@ -4,37 +4,17 @@ import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 段窗口 } from '../../分镜/正片第6到7句.ts';
 import { 光影段 } from '../../默认.ts';
 import { 雷雨画面 } from '../../场/2-雷雨/画面.tsx';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 音效轨 } from '../../声音/音效轨.tsx';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 雷url from 'asset:音效/entity.lightning_bolt.thunder.2';
-import 雨1 from 'asset:音效/把回忆拼好给你/weather.rain.1';
-import 雨2 from 'asset:音效/把回忆拼好给你/weather.rain.2';
-import 雨3 from 'asset:音效/把回忆拼好给你/weather.rain.3';
-import 雨4 from 'asset:音效/把回忆拼好给你/weather.rain.4';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段窗口('2-雷雨').起帧;
-/** 段里有 cue 的才放（雨声按歌上排，这一段只落到其中几个文件） */
-const 音效们: readonly [string, string][] = [
-  ['音效/entity.lightning_bolt.thunder.2', 雷url],
-  ['音效/把回忆拼好给你/weather.rain.1', 雨1],
-  ['音效/把回忆拼好给你/weather.rain.2', 雨2],
-  ['音效/把回忆拼好给你/weather.rain.3', 雨3],
-  ['音效/把回忆拼好给你/weather.rain.4', 雨4],
-];
 
 const 画面: React.FC = () => {
   const f = use当前帧();
   return (
     <>
-      <配乐音轨 song={原声} 段={段} />
-      {音效们
-        .filter(([id]) => 段.声音?.some((c) => (c as { 资产?: string }).资产 === id))
-        .map(([id, src]) => (
-          <音效轨 key={id} src={src} 资产={id} 段={段} />
-        ))}
       {/* 光影照 默认.ts 的 光影段 */}
       <光影范围.Provider value={{ 光影: 光影段['2-雷雨'] }}>
         <雷雨画面 帧={起帧 + f} />
@@ -43,4 +23,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

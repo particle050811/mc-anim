@@ -10,11 +10,9 @@ import { 色板 } from '../../色板.ts';
 import { 祭坛画面 } from '../../场/2-祭坛/祭坛.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 音效轨 } from '../../声音/音效轨.tsx';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 合成声 from 'asset:音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段窗口('2-祭坛召唤').起帧;
@@ -26,8 +24,6 @@ const 画面: React.FC = () => {
   const g = 起帧 + f;
   return (
     <>
-      <配乐音轨 song={原声} 段={段} />
-      <音效轨 src={合成声} 资产="音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2" 段={段} />
       <整片后期 调色={色板.夏日白天.调色} 种子={g}>
         {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
         <光影范围.Provider value={{ 光影: 光影段['2-祭坛召唤'] }}>
@@ -39,4 +35,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

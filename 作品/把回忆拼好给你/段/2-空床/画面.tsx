@@ -15,11 +15,11 @@ import { 卧室画布 } from '../../场/2-卧室/卧室.tsx';
 import { 门口之夜照片 } from '../../场/2-门口/门口之夜照片.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 原声 } from '../../配乐/原声.ts';
 import { 光影段 } from '../../默认.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 光影场于, 光态, 后期调色, 她态, 她色调, 屋外态, 歌曲帧, 镜 } from './编排.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 歌曲帧(0)));
@@ -68,7 +68,6 @@ const 画面: React.FC = () => {
   const 光 = 光态(f);
   return (
     <>
-      <配乐音轨 song={原声} 段={段} />
       <整片后期 调色={后期调色(f)} 种子={歌曲帧(f)}>
         <卧室画布
           调子={光.调子}
@@ -91,4 +90,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

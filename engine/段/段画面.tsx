@@ -1,6 +1,6 @@
 // 新段的画面外壳：定义画面(段, 声音地址, 组件) 把本段的 段.ts 和 anim cues 生成的声音地址放进 context，自动挂上 <段声音>；
 // 组件里用 use段() 取段、当前帧、事件的段内帧。段.ts 里每条 cue 只写一次，画面里不再 import 音效字节、不再手挂音轨。
-// 声音的放法在 放法.ts；和音效轨.tsx 一样用 @remotion/media 的 Audio（不用 remotion 自带的：变速时那个只变速不变调），渲染时照样打清单日志。
+// 声音的放法在 放法.ts；用 @remotion/media 的 Audio（不用 remotion 自带的：变速时那个只变速不变调），渲染时照样打清单日志。
 import { Audio } from '@remotion/media';
 import React, { createContext, useContext } from 'react';
 import { Sequence } from 'remotion';

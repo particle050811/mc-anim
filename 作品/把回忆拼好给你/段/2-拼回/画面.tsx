@@ -10,16 +10,14 @@ import { 段内帧 } from '../../分镜/时间.ts';
 import { 事件 as 正片15尾事件 } from '../../分镜/正片15尾.ts';
 import { 事件 as 正片片尾事件, 段窗口 } from '../../分镜/正片片尾.ts';
 import { 色板 } from '../../色板.ts';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 碎片层, 选择世界 } from '../../场/2-选择世界/选择世界.tsx';
 import { 框光标亮, 片尾取景, 片尾弹, 片尾白光, 重逢行字 } from '../../场/2-选择世界/编排.ts';
 import { 新图标, 旧图标 } from '../../场/2-选择世界/图标源.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 咔哒url from 'asset:音效/车万女仆/item.camera_use';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 正片事件 = { ...正片15尾事件, ...正片片尾事件 };
@@ -62,10 +60,8 @@ const 画面: React.FC = () => {
         </整片后期>
       )}
       {白 > 0 && <AbsoluteFill style={{ background: `rgba(255,255,255,${白})` }} />}
-      <配乐音轨 song={原声} 段={段} />
-      <音效轨 src={咔哒url} 资产="音效/车万女仆/item.camera_use" 段={段} />
     </>
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

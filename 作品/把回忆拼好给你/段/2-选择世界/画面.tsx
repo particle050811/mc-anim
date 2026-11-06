@@ -4,14 +4,14 @@ import type React from 'react';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { 段窗口 } from '../../分镜/正片开场.ts';
 import { 色板 } from '../../色板.ts';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 选择世界 } from '../../场/2-选择世界/选择世界.tsx';
 import { 光标在, 平常取景, 指着在, 框光标亮, 选中在 } from '../../场/2-选择世界/编排.ts';
 import { 旧图标 } from '../../场/2-选择世界/图标源.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段窗口('2-选择世界').起帧;
@@ -28,9 +28,8 @@ const 画面: React.FC = () => {
         />
         <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色: 调.描边 }} />
       </整片后期>
-      <配乐音轨 song={原声} 段={段} />
     </>
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

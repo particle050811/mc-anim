@@ -13,18 +13,14 @@ import { 光影段 } from '../../默认.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 樱花风 } from '../../特效/樱花风.tsx';
 import { 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
 import { 加入游戏聊天, 第15句风, 铃在画面 } from '../../场/2-门口/摇铃.tsx';
 import { 重逢画面, 风散心 } from '../../场/2-隐世之境/重逢.tsx';
 import { 聊天行不透明, 重逢机位 } from '../../场/2-隐世之境/重逢动作.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 铃url from 'asset:音效/万法皆通/wind_seeking_bell';
-import 风url from 'asset:音效/item.elytra.flying';
-import 推门url from 'asset:音效/block.wooden_door.open.1';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 键 = '2-重逢';
@@ -42,10 +38,6 @@ const 画面: React.FC = () => {
   const 聊天透 = 聊天行不透明(帧 / fps);
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <配乐音轨 song={原声} 段={段} />
-      <音效轨 src={铃url} 资产="音效/万法皆通/wind_seeking_bell" 段={段} />
-      <音效轨 src={风url} 资产="音效/item.elytra.flying" 段={段} />
-      <音效轨 src={推门url} 资产="音效/block.wooden_door.open.1" 段={段} />
       {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
       <光影范围.Provider value={{ 光影: 光影段[键] }}>
         <重逢画面
@@ -69,4 +61,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

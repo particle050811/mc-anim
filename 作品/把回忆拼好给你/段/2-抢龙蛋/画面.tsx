@@ -9,10 +9,10 @@ import { 浪样式, 海调子名 } from '../../场/2-海上/参数.ts';
 import { 日落浪 } from '../../场/2-海上/浪.tsx';
 import { 末地镜头 } from '../../场/2-末地/镜头.tsx';
 import { 歌曲帧, 浪进 } from '../../场/2-末地/编排.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 原声 } from '../../配乐/原声.ts';
 import { 光影段 } from '../../默认.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 画面: React.FC = () => {
@@ -20,7 +20,6 @@ const 画面: React.FC = () => {
   const 进 = 浪进(f);
   return (
     <>
-      <配乐音轨 song={原声} 段={段} />
       {/* 光影照 默认.ts 的 光影段（只照末地，退场的浪不是三渲二） */}
       <光影范围.Provider value={{ 光影: 光影段['2-抢龙蛋'] }}>
         <末地镜头
@@ -38,4 +37,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

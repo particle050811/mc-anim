@@ -24,15 +24,12 @@ import { 哈气酒狐 } from '../../场/2-门口/第8句炸毛.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
 import { 像素字 } from '../../界面/像素字.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 原声 } from '../../配乐/原声.ts';
-import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 光影段 } from '../../默认.ts';
 import { 第8句照片们 } from '../../特效/照片画.ts';
 import { 她态, 你态, 取景, 墙上几张, 气泡态, 照片态, 苦力怕态, 调子在, 歌曲帧 } from './编排.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 挂照片声 from 'asset:音效/把回忆拼好给你/entity.glow_item_frame.add_item.1';
-import 哈气声 from 'asset:音效/把回忆拼好给你/entity.cat.hiss.1';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 宽 = 画幅.宽, 高 = 画幅.高;
@@ -87,9 +84,6 @@ const 画面: React.FC = () => {
   const 墙 = 照片墙格们([...第8句照片们.slice(0, 墙上几张(f)), null].slice(0, 4));
   return (
     <>
-      <配乐音轨 song={原声} 段={段} />
-      <音效轨 src={挂照片声} 资产="音效/把回忆拼好给你/entity.glow_item_frame.add_item.1" 段={段} />
-      <音效轨 src={哈气声} 资产="音效/把回忆拼好给你/entity.cat.hiss.1" 段={段} />
       <整片后期 调色={调.调色} 种子={歌曲帧(f)}>
         <门口画布
           光影={光影段['2-收集快乐']}
@@ -111,4 +105,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

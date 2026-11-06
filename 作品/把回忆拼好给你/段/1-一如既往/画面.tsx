@@ -23,13 +23,11 @@ import { 拍立得样式, 机位, 歌词样式, 爱心种子, 聊天缩放, 视�
 import { 驯服聊天行 } from '../../场/1-隐世之境一楼/聊天.ts';
 import { fps, 旧帧, 第几句 } from '../../分镜/时间.ts';
 import { 段时钟, 段内事件帧, type 事件名 } from '../../分镜/验证片.ts';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 歌词, type 歌词行 } from '../../界面/歌词.tsx';
 import { 拍立得 } from '../../特效/拍立得.tsx';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 咔哒url from 'asset:音效/车万女仆/item.camera_use';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 键 = '1-一如既往';
@@ -245,8 +243,6 @@ const 事件大字: React.FC = () => {
 // 原声放在拍立得外面：声音不跟画面定格
 const 画面: React.FC = () => (
   <>
-    <配乐音轨 song={原声} 段={段} />
-    <音效轨 src={咔哒url} 资产="音效/车万女仆/item.camera_use" 段={段} />
     <拍立得
       定格帧={事件帧.咔哒定格}
       字="新存档的第一张"
@@ -264,4 +260,4 @@ const 画面: React.FC = () => (
   </>
 );
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

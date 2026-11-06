@@ -11,29 +11,21 @@ import { Zombie, ZOMBIE } from '@库/生物/僵尸.tsx';
 import { collectBreakParticles, spawnBlockBreak } from '@库/特效/方块破坏粒子.tsx';
 import { type Particle, ParticleQuads, particleTexture } from '@库/特效/粒子面片.tsx';
 import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 地层, 掉落物, 粒子色, 音效们 } from '../../场/2-第一晚/参数.ts';
+import { 地层, 掉落物, 粒子色 } from '../../场/2-第一晚/参数.ts';
 import { 第一晚史蒂夫 } from '../../场/2-第一晚/史蒂夫.tsx';
 import { 地上泥土, 泥土贴图 } from '../../场/2-第一晚/泥土块.tsx';
 import { 裂纹 } from '../../场/2-第一晚/裂纹.tsx';
 import { 新世界 } from '../../场/2-新世界/世界.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 光影段 } from '../../默认.ts';
-import { 原声 } from '../../配乐/原声.ts';
-import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 僵尸态, 剥, 坑态, 天刻, 掉落物们, 歌曲帧, 歌秒, 洞暗, 碎们, 裂纹态, 调子, 镜头, 顶墙暗, 史蒂夫态 } from './编排.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 挖声一 from 'asset:音效/block.grass.break.2';
-import 挖声二 from 'asset:音效/block.gravel.break.1';
-import 挖声三 from 'asset:音效/block.gravel.break.2';
-import 放声 from 'asset:音效/block.gravel.break.3';
-import 天窗声 from 'asset:音效/block.gravel.break.4';
-import 僵尸声 from 'asset:音效/把回忆拼好给你/entity.zombie.ambient.2';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 宽 = 画幅.宽, 高 = 画幅.高;
-const 音源: Record<keyof typeof 音效们, string> = { 挖一: 挖声一, 挖二: 挖声二, 挖三: 挖声三, 填土: 放声, 僵尸: 僵尸声, 挖开天窗: 天窗声 };
 const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 歌曲帧(0)));
 
 // ---------- 破坏粒子：原版 TerrainParticle，草方块、泥土的粒子贴图都是泥土 ----------
@@ -111,10 +103,6 @@ const 画面: React.FC = () => {
   const 裂 = 裂纹态(f);
   return (
     <>
-      <配乐音轨 song={原声} 段={段} />
-      {(Object.keys(音源) as (keyof typeof 音效们)[]).map((名) => (
-        <音效轨 key={名} src={音源[名]} 资产={音效们[名].资产} 段={段} />
-      ))}
       <整片后期 调色={t.调色} 种子={歌曲帧(f)}>
         {/* 光影照 默认.ts 的 光影段 */}
         <光影范围.Provider value={{ 光影: 光影段['2-第一晚'] }}>
@@ -133,4 +121,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);

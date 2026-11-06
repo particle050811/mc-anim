@@ -6,14 +6,10 @@ import { 段时钟 } from '../../分镜/正片第13至14句.ts';
 import { 左调子, 归隐画面 } from '../../场/2-门口/归隐.tsx';
 import { 归隐歌词, 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 原声 } from '../../配乐/原声.ts';
-import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
-import { 音效轨 } from '../../声音/音效轨.tsx';
 import { 光影段 } from '../../默认.ts';
+import { 定义画面 } from '@engine/段/段画面.tsx';
 import 段 from './段.ts';
-import 纸声2 from 'asset:音效/item.book.page_turn.2';
-import 取出url from 'asset:音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1';
-import 铃url from 'asset:音效/万法皆通/wind_seeking_bell';
+import 声音地址 from './声音地址.生成.ts';
 import { use当前帧 } from '../../当前帧.ts';
 
 const 起帧 = 段时钟('2-归隐').场窗口.起帧;
@@ -24,10 +20,6 @@ const 画面: React.FC = () => {
   const 帧 = 起帧 + f;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <配乐音轨 song={原声} 段={段} />
-      <音效轨 src={纸声2} 资产="音效/item.book.page_turn.2" 段={段} />
-      <音效轨 src={取出url} 资产="音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1" 段={段} />
-      <音效轨 src={铃url} 资产="音效/万法皆通/wind_seeking_bell" 段={段} />
       <归隐画面
         帧={帧}
         种子={帧}
@@ -44,4 +36,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default 定义画面(段, 声音地址, 画面);
