@@ -1,4 +1,4 @@
-// Remotion 打包（webpack）的改写：anim render 和 remotion.config.ts（studio）共用这一份，按作品根各出一份（webpack改写(作品根)）。
+// Remotion 打包（webpack）的改写：anim film、still 和 remotion.config.ts（studio）共用这一份，按作品根各出一份（webpack改写(作品根)）。
 // 本文件的文本进段指纹的「打包规则」，所以按作品变的东西（资产锁、求解入口）都在别处现读，这里只接线，加作品、挪作品不用改它。
 // 1. `import x from 'asset:<id>'`：按作品的资产锁（读作品资产锁）换成数据根 store/、私有/ 里的文件，后缀放在 ?anim资产= 查询串里给下面的规则认（库里的文件没有后缀）；
 //    锁里没有、字节不在，打包直接失败，报错里写该跑的命令。

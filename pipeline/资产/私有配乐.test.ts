@@ -16,7 +16,7 @@ const 放 = (根: string, 库: 'store' | '私有', 内容: string) => {
 
 describe('私有配乐', () => {
   const id = '配乐/某歌';
-  const 段 = (帧数: number, 入点秒 = 0) => ({ 段: { fps: 30, 声音: [{ 帧: 0, 资产: id, 名: '歌', 帧数, 入点秒 }, { 帧: 3, 资产: '音效/甲', 名: '甲', 帧数: 9 }] } });
+  const 段 = (长秒: number, 入点秒 = 0) => ({ 段: { 声音: [{ 秒: 0, 资产: id, 名: '歌', 长秒, 入点秒 }, { 秒: 0.1, 资产: '音效/甲', 名: '甲', 长秒: 0.3 }] } });
 
   it('静音 wav：48 kHz 单声道 16 位，秒数向上取整，数据全零', () => {
     const b = 静音wav(1.2);
@@ -34,21 +34,21 @@ describe('私有配乐', () => {
     const 锁: 资产锁 = { [id]: 条目, '音效/甲': { sha256: 'a'.repeat(64), 后缀: '.ogg', 大小: 1, 库: 'store' } };
     const 目标 = path.join(私有配乐目录(根), '配乐', '某歌');
 
-    expect(段私有配乐(段(60).段, 锁, 根)).toEqual({ [id]: 缺字节 });
-    // 两段：60 帧从 0 秒起、30 帧从 2.5 秒起 → 盖到 3.5 秒，多留 1 秒取整 = 5 秒
-    const 缺 = 备好私有配乐([段(60), 段(30, 2.5)], 锁, 根);
+    expect(段私有配乐(段(2).段, 锁, 根)).toEqual({ [id]: 缺字节 });
+    // 两段：2 秒从 0 秒起、1 秒从 2.5 秒起 → 盖到 3.5 秒，多留 1 秒取整 = 5 秒
+    const 缺 = 备好私有配乐([段(2), 段(1, 2.5)], 锁, 根);
     expect(缺).toEqual([{ id, 秒: 5, 应在: path.join(根, '私有', 条目.sha256.slice(0, 2), 条目.sha256) }]);
     expect(fs.readFileSync(目标).equals(静音wav(4.5))).toBe(true);
     const 修改时间 = fs.statSync(目标).mtimeMs;
-    expect(备好私有配乐([段(60), 段(30, 2.5)], 锁, 根)).toHaveLength(1);
+    expect(备好私有配乐([段(2), 段(1, 2.5)], 锁, 根)).toHaveLength(1);
     expect(fs.statSync(目标).mtimeMs).toBe(修改时间);
 
     放(根, '私有', '歌的字节');
     fs.chmodSync(path.join(根, '私有', 条目.sha256.slice(0, 2), 条目.sha256), 0o444);
-    expect(段私有配乐(段(60).段, 锁, 根)).toEqual({ [id]: 条目.sha256 });
-    expect(备好私有配乐([段(60)], 锁, 根)).toEqual([]);
+    expect(段私有配乐(段(2).段, 锁, 根)).toEqual({ [id]: 条目.sha256 });
+    expect(备好私有配乐([段(2)], 锁, 根)).toEqual([]);
     expect(fs.readFileSync(目标, 'utf8')).toBe('歌的字节');
     // 公开的配乐不走这里（照常打进包）
-    expect(段私有配乐(段(60).段, { ...锁, [id]: { ...条目, 库: 'store' } }, 根)).toEqual({});
+    expect(段私有配乐(段(2).段, { ...锁, [id]: { ...条目, 库: 'store' } }, 根)).toEqual({});
   });
 });

@@ -74,6 +74,10 @@ export const 找旧版 = async (键: string, 新: 段指纹, o: { 帧数: number
     const 母版 = 段画面路径(键, h.指纹, 作品);
     if (!fs.existsSync(母版)) continue;
     const 声音指纹 = 配对声音指纹(h);
+    if (!声音指纹) {
+      没用的.push(`${名}：11-06 以前另出声音的旧切片，不沿用`);
+      continue;
+    }
     const 声音 = 段声音路径(键, 声音指纹, 作品);
     if (!fs.existsSync(声音)) {
       没用的.push(`${名}：切片在，配的声音 ${声音指纹.slice(0, 16)}.wav 不在`);

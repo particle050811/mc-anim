@@ -1,8 +1,7 @@
 // 渲段：唯一的出片路（用户 11-06「要改 改成直接出带字幕的成片」「那个 render 不用了 可以直接删了吧」，决策/0014）。
-// 每段渲出来就是成片的一截（段产物.ts）：画面按成片参数直接压成 <指纹>.mp4；声音 <指纹>.wav 原生段和画面同一遍出（separateAudioTo，决策/0015），
-// 没迁的段按编排帧率另出一遍（兼容层，迁完删）；成片只接不重压（合成/拼成片.ts）。
+// 每段渲出来就是成片的一截（段产物.ts）：画面按成片参数直接压成 <指纹>.mp4；声音 <指纹>.wav 和画面同一遍出（separateAudioTo，决策/0015）；成片只接不重压（合成/拼成片.ts）。
 // 指纹对得上就不渲（✓ 已是最新）。要渲的每段排队过一次渲染闸（任务种 render，耗时表标签 render:<作品>/<段>:<级别>），闸里依次：
-//   出画面（Remotion 直出，核帧数 = 输出窗帧数）→ 出声音 → 从这两份派生段签（段签/，verify 的签名、首尾小图、声音.flac）→ 删同段同级别的旧产物（缓存/钉.ts）。
+//   画面、声音同一遍出（Remotion 直出，核帧数 = 输出窗帧数）→ 从这两份派生段签（段签/，verify 的签名、首尾小图、声音.flac）→ 删同段同级别的旧产物（缓存/钉.ts）。
 // 删旧只在主检出做（worktree 渲的是没合并的改动，「旧」很可能还是 main 的当前指纹）；命中「已是最新」的也清一遍（worktree 里渲的合进来后第一次出片走这里）。
 // 段目录下 本机地形.txt 写的区段包本机没有就跳过这段（用户 10-31 定，不让一条批量渲染死在核对段上）。
 import fs from 'node:fs';
@@ -26,8 +25,8 @@ import { 等求解缓存写完 } from './求解缓存收集.ts';
 import { 写指纹, 记用过 } from './母版.ts';
 import { renderMedia } from './渲染器.ts';
 import { 开会话, 找组合, 渲染标签, 缺的本机地形, 量渲染 } from './渲.ts';
-import { 段产物们, 是原生, type 段产物 } from './段产物.ts';
-import { 声音渲染参数, 等帧超时毫秒 } from './设置.ts';
+import { 段产物们, type 段产物 } from './段产物.ts';
+import { 等帧超时毫秒 } from './设置.ts';
 import { 视频信息 } from './探测.ts';
 
 export { 段画面路径, 段声音路径, 段产物们, type 段产物 } from './段产物.ts';
@@ -97,18 +96,18 @@ export const 渲染段们 = async (全部: readonly 段信息[], 选的: readonl
         let code = 1;
         const 收: { 明细?: 明细收集 } = {};
         try {
-          // 原生段声音和画面同一遍出：缺哪样都整遍重渲，wav 先写临时名，画面成了再改名
-          const 同一遍 = 是原生(r.段);
-          if (opts.重渲 || !fs.existsSync(r.画面) || (同一遍 && !fs.existsSync(r.声音))) {
-            console.log(`== 渲 ${键} 画面${同一遍 ? '、声音' : ''}`);
+          // 声音和画面同一遍出：缺哪样都整遍重渲，wav 先写临时名，画面成了再改名
+          if (opts.重渲 || !fs.existsSync(r.画面) || !fs.existsSync(r.声音)) {
+            console.log(`== 渲 ${键} 画面、声音`);
             const p = r.参数;
             开始整段量(键, r.画面指纹.指纹);
             const 声tmp = r.声音.replace(/(\.\w+)$/, `.渲染中-${process.pid}$1`);
-            const 撤声 = 同一遍 ? 登记临时文件(声tmp) : () => {};
+            const 撤声 = 登记临时文件(声tmp);
             try {
               await 写到(r.画面, 键, r.画面指纹.指纹, async (tmp) => {
                 收.明细 = await 量渲染(标签, opts.记录.阶段, t0, (钩子) => renderMedia({
-                  ...(同一遍 ? { separateAudioTo: 声tmp, audioCodec: p.audioCodec } : {}),
+                  separateAudioTo: 声tmp,
+                  audioCodec: p.audioCodec,
                   serveUrl: h.serveUrl,
                   composition,
                   outputLocation: tmp,
@@ -136,7 +135,7 @@ export const 渲染段们 = async (全部: readonly 段信息[], 选的: readonl
                 const 帧 = 视频信息(tmp).帧数;
                 记阶段(opts.记录.阶段, 标签, '查帧数', t查, (Date.now() - t查) / 1000);
                 if (帧 !== r.输出帧数) throw new Error(`${键} 渲出来 ${帧} 帧，按全片位置应该是 ${r.输出帧数} 帧`);
-                if (同一遍) fs.renameSync(声tmp, r.声音);
+                fs.renameSync(声tmp, r.声音);
               });
             } finally {
               fs.rmSync(声tmp, { force: true });
@@ -144,29 +143,6 @@ export const 渲染段们 = async (全部: readonly 段信息[], 选的: readonl
             }
             写指纹(r.画面指纹);
             await 记已量帧(键, Array.from({ length: r.输出帧数 }, (_, i) => i));
-          }
-          if (!同一遍 && (opts.重渲 || !fs.existsSync(r.声音))) {
-            console.log(`== 渲 ${键} 声音`);
-            const a = 声音渲染参数();
-            const t声 = Date.now();
-            await 写到(r.声音, 键, r.声音指纹.指纹, (tmp) => renderMedia({
-              serveUrl: h.serveUrl,
-              // 按编排帧率出：页面拿 输出fps = null 的设置，注册出来就是段.ts 的帧率、帧数
-              composition: { ...composition, fps: r.段.段.fps, durationInFrames: r.段.段.帧数 },
-              outputLocation: tmp,
-              inputProps: a.inputProps,
-              envVariables: 环境,
-              puppeteerInstance: h.browser,
-              chromiumOptions: { gl: a.gl },
-              codec: a.codec,
-              audioCodec: a.audioCodec,
-              concurrency: a.concurrency,
-              timeoutInMilliseconds: 等帧超时毫秒,
-              overwrite: true,
-              logLevel: 'error',
-            }));
-            写指纹(r.声音指纹);
-            记阶段(opts.记录.阶段, 标签, '声音', t声, (Date.now() - t声) / 1000);
           }
           code = 0;
           收.明细?.停表();

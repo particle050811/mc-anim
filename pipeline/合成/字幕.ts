@@ -14,9 +14,9 @@ const 静音低于峰值dB = 40; // 且不高于 −60 dBFS
 export type 台词落点 = {
   id: string;
   段: string;
-  /** cue 写的帧：开口落在段内第几帧 */
+  /** cue 写的开口落在段内第几帧（cue 秒 × fps） */
   段内帧: number;
-  /** 配音文件第 0 秒落在全片第几帧（= 段起帧 + cue 帧 − 开口秒 × fps） */
+  /** 配音文件第 0 秒落在全片第几帧（= 段起帧 +（cue 秒 − 开口秒）× fps） */
   文件头帧: number;
   文件: string;
   /** 配音的资产 id */
@@ -196,7 +196,8 @@ export const 排字幕 = (落点们: 台词落点[], 总帧数: number, fps: num
     const 主 = a.接上段 ? 句们.find((e) => e.id === a.id) : undefined;
     return 主 ? [{ 落点: a, 差: a.文件头帧 - 主.文件头帧 }] : [];
   });
-  for (const x of 接着放们) if (Math.abs(x.差) > 1.5) throw new Error(`字幕：${x.落点.id} 在 ${x.落点.段} 接着放的后半截和开口那段差 ${x.差.toFixed(1)} 帧`);
+  // 容差是以前 24 帧编排时的 1.5 帧，换成秒
+  for (const x of 接着放们) if (Math.abs(x.差) / fps > 1.5 / 24) throw new Error(`字幕：${x.落点.id} 在 ${x.落点.段} 接着放的后半截和开口那段差 ${x.差.toFixed(1)} 帧`);
   return { 屏们, 句们, 接着放们 };
 };
 

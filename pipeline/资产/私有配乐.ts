@@ -27,7 +27,7 @@ export const 段私有配乐 = (段: Pick<段定义, '声音'>, 锁: 资产锁, 
 };
 
 /** 一条 cue 放到文件第几秒为止（静音要盖住它） */
-const cue止秒 = (c: 资产cue, fps: number) => (c.入点秒 ?? 0) + (c.帧数 * (c.速率 ?? 1)) / fps;
+const cue止秒 = (c: 资产cue) => (c.入点秒 ?? 0) + c.长秒 * (c.速率 ?? 1);
 
 /** 单声道 16 位 PCM 的静音 wav（秒取整）：Remotion 混音时它是全零，和不放一样 */
 export const 静音wav = (秒: number): Buffer => {
@@ -58,13 +58,13 @@ export type 缺了的配乐 = { id: string; 秒: number; 应在: string };
  * 按这些段（一部作品的全部段）的 cue 备好 cache/私有配乐/<id>；返回缺字节、换成静音的。
  * 已经是想要的那份就不动；要换时先写临时文件再改名（别的渲染正在读也只会读到整份旧的或整份新的）。
  */
-export const 备好私有配乐 = (段们: { 段: Pick<段定义, '声音' | 'fps'> }[], 锁: 资产锁, 根: string): 缺了的配乐[] => {
+export const 备好私有配乐 = (段们: { 段: Pick<段定义, '声音'> }[], 锁: 资产锁, 根: string): 缺了的配乐[] => {
   const 要: Map<string, { 条目: 锁条目; 秒: number }> = new Map();
   for (const { 段 } of 段们) {
     for (const c of 段.声音 ?? []) {
       if (c.资产 === undefined || !是私有配乐(c.资产, 锁)) continue;
       const 旧 = 要.get(c.资产);
-      要.set(c.资产, { 条目: 锁[c.资产]!, 秒: Math.max(旧?.秒 ?? 0, cue止秒(c, 段.fps)) });
+      要.set(c.资产, { 条目: 锁[c.资产]!, 秒: Math.max(旧?.秒 ?? 0, cue止秒(c)) });
     }
   }
   const 缺: 缺了的配乐[] = [];
@@ -72,7 +72,7 @@ export const 备好私有配乐 = (段们: { 段: Pick<段定义, '声音' | 'fp
     const 目标 = path.join(私有配乐目录(根), ...id.split('/'));
     const 源 = 字节路径(条目, 根);
     const 有 = fs.existsSync(源);
-    // 静音多留 1 秒：cue 的帧数换成秒有小数，解码器读到文件尾前后可能多要几个样本
+    // 静音多留 1 秒：cue 的长秒有小数，解码器读到文件尾前后可能多要几个样本
     const 静音 = 有 ? null : 静音wav(秒 + 1);
     if (!有) 缺.push({ id, 秒: Math.ceil(秒 + 1), 应在: 源 });
     const 想要 = 有 ? 条目.sha256 : sha(静音!);

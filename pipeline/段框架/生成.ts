@@ -10,7 +10,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
 import { 开始收集, 结束收集, type 声音表, type 表里音频数, type 音频数, type 台词数 } from '../../engine/段/声音助手.ts';
-import type { 段定义 } from '../../engine/段/段定义.ts';
+import { 段长秒, type 段定义 } from '../../engine/段/段定义.ts';
 import { 是框架段 } from '../../engine/段/窗口段.ts';
 import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts';
 import { 是私有配乐 } from '../资产/私有配乐.ts';
@@ -123,16 +123,16 @@ export const 算声音表 = async (段: 段定义, 额外资产: Iterable<string
     const 上 = await 环境.上一段?.();
     if (!上) throw new Error(`${[...先接].join('、')} 标了 接上段，清单里没有上一段`);
     const 开口 = 开口表(环境.台词表.map((t) => ({ 角色: '', 文本: '', ...t })));
-    上段开口 = new Map(台词头们(上, 开口, undefined, false).map((x) => [x.cue.台词, x.开口帧 - 上.帧数]));
+    上段开口 = new Map(台词头们(上, 开口, undefined, false).map((x) => [x.cue.台词, x.开口秒 - 段长秒(上)]));
   }
   for (const id of [...台词].sort()) {
     const t = 台词条.get(id);
     if (!t) throw new Error(`台词「${id}」不在作品的 台词.toml 里`);
     if (!t.配音) throw new Error(`台词「${id}」还没配音（台词.toml 没写 配音），放不了`);
     要数.add(t.配音);
-    const 上段开口帧 = 先接.has(id) ? 上段开口?.get(id) : undefined;
-    if (先接.has(id) && 上段开口帧 === undefined) throw new Error(`台词「${id}」标了 接上段，清单里上一段没有它开口`);
-    台词们[id] = { 配音: t.配音, 开口: t.开口 ?? 0, 时长: 0, ...(上段开口帧 !== undefined ? { 上段开口帧 } : {}) };
+    const 上段开口秒 = 先接.has(id) ? 上段开口?.get(id) : undefined;
+    if (先接.has(id) && 上段开口秒 === undefined) throw new Error(`台词「${id}」标了 接上段，清单里上一段没有它开口`);
+    台词们[id] = { 配音: t.配音, 开口: t.开口 ?? 0, 时长: 0, ...(上段开口秒 !== undefined ? { 上段开口秒: Math.round(上段开口秒 * 1e6) / 1e6 } : {}) };
   }
   const 资产们: Record<string, 表里音频数> = {};
   for (const id of [...要数].sort()) {
