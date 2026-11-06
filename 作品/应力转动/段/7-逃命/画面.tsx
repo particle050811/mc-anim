@@ -1,4 +1,4 @@
-// 7-1-4 逃：整场共用的 ../7-1/画面.tsx 按本段的场时刻和机位画出来。原生段（段.ts 写了 时钟: '秒'），声音照 段.ts 的 cue 和 声音地址.生成.ts（anim cues 生成）同一遍出。
+// 7-1-4 逃：整场共用的 ../7-1/画面.tsx 按本段的场时刻和机位画出来。声音照 段.ts 的 cue 和 声音地址.生成.ts（anim cues 生成）同一遍出。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { 定义画面 } from '@engine/段/段画面.tsx';
