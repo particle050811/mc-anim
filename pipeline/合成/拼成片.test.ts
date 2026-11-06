@@ -38,8 +38,8 @@ const 跑 = (args: string[]) => {
   if (r.status !== 0) throw new Error(String(r.stderr));
 };
 
-/** 一段成片切片：60 帧 输出帧数 帧（和 渲/设置.ts 同一套 x264 参数），声音按编排时钟、比段长 0.5 秒（要按样本截掉） */
-const 造产物 = (键: string, 编排帧数: number, 输出帧数: number, 输出起帧: number, 频率: number) => {
+/** 一段成片切片：60 帧 输出帧数 帧（和 渲/设置.ts 同一套 x264 参数），声音按编排时钟（没迁的段）、从全片第 编排起帧 格起、比段长 0.5 秒（要按样本截掉） */
+const 造产物 = (键: string, 编排帧数: number, 编排起帧: number, 输出帧数: number, 输出起帧: number, 频率: number) => {
   const d = path.join(数据根, '切片', 键);
   fs.mkdirSync(d, { recursive: true });
   const 画面 = path.join(d, '画面.mp4');
@@ -47,7 +47,7 @@ const 造产物 = (键: string, 编排帧数: number, 输出帧数: number, 输�
   跑(['-f', 'lavfi', '-i', 'testsrc2=size=320x180:rate=60', '-frames:v', String(输出帧数), '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p', 画面]);
   跑(['-f', 'lavfi', '-t', String(编排帧数 / 24 + 0.5), '-i', `sine=frequency=${频率}:sample_rate=48000`, '-ac', '2', '-c:a', 'pcm_s16le', 声音]);
   const 指纹 = (k: string) => ({ 段: 键, 指纹: k.repeat(64).slice(0, 64), 项: {} });
-  return { 段: 段(键, 编排帧数), 画面指纹: 指纹('a'), 声音指纹: 指纹('b'), 画面, 声音, 输出帧数, 输出起帧 };
+  return { 段: 段(键, 编排帧数), 画面指纹: 指纹('a'), 声音指纹: 指纹('b'), 画面, 声音, 输出帧数, 输出起帧, 声音起秒: 编排起帧 / 24, 声音止秒: (编排起帧 + 编排帧数) / 24 };
 };
 
 const 记录 = () => ({ 记: vi.fn(), 产物: [] as string[], 阶段: [] }) as unknown as 运行记录;
@@ -55,7 +55,7 @@ const 记录 = () => ({ 记: vi.fn(), 产物: [] as string[], 阶段: [] }) as u
 describe.skipIf(!有ffmpeg)('拼成片', () => {
   beforeAll(() => {
     // 编排 48 + 37 帧，60 帧输出的窗是 [0, 120)、[120, 213)（engine/段/出帧.ts 的 段输出窗）
-    假.产物们 = [造产物('甲', 48, 120, 0, 440), 造产物('乙', 37, 93, 120, 660)];
+    假.产物们 = [造产物('甲', 48, 0, 120, 0, 440), 造产物('乙', 37, 48, 93, 120, 660)];
     假.段们 = (假.产物们 as { 段: 段信息 }[]).map((r) => r.段);
   });
   afterAll(() => fs.rmSync(数据根, { recursive: true, force: true }));

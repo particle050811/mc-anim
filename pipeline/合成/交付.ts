@@ -83,10 +83,14 @@ export const 段声音源 = (m: 交付manifest & { 作品: string }) =>
     return null;
   });
 
-/** 拼 全片-未拉响度.flac：各段按样本截（end_sample = 帧数 × 每帧样本）、接，FLAC 无损；film、补声音共用 */
-export const 拼未拉响度 = async (源: string[], m: { 段: { 帧数: number }[]; 帧率: number }, 出: string) => {
+/** 拼 全片-未拉响度.flac：各段按样本截（end_sample = 样本数，没给是 帧数 × 每帧样本）、接，FLAC 无损；film、补声音共用。
+ *  给了 样本数 的不够长就补静音（原生段和兼容段挨着的地方，docs/决策/0015-原生60帧.md） */
+export const 拼未拉响度 = async (源: string[], m: { 段: { 帧数: number; 样本数?: number }[]; 帧率: number }, 出: string) => {
   const 每帧样本 = 采样率 / m.帧率;
-  const 滤镜 = m.段.map((s, k) => `[${k}:a]atrim=start_sample=0:end_sample=${s.帧数 * 每帧样本},asetpts=PTS-STARTPTS,aresample=${采样率},aformat=channel_layouts=stereo[a${k}]`);
+  const 滤镜 = m.段.map(
+    (s, k) =>
+      `[${k}:a]atrim=start_sample=0:end_sample=${s.样本数 ?? s.帧数 * 每帧样本},asetpts=PTS-STARTPTS,aresample=${采样率},aformat=channel_layouts=stereo${s.样本数 !== undefined ? `,apad=whole_len=${s.样本数}` : ''}[a${k}]`,
+  );
   滤镜.push(`${m.段.map((_, k) => `[a${k}]`).join('')}concat=n=${m.段.length}:v=0:a=1[a]`);
   await 跑(低优先级([配置('ffmpeg'), '-v', 'error', '-y', ...源.flatMap((f) => ['-i', f]), '-filter_complex', 滤镜.join(';'), '-map', '[a]', '-c:a', 'flac', 出]));
 };
