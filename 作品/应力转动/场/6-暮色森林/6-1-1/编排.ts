@@ -326,21 +326,5 @@ export const tfEmitters = () => {
   ];
 };
 
-// 声音（声音.tsx）要用的时刻（编排帧，= Remotion 帧 + 1）和落点：海岛那半是海岛本地坐标，暮色那半是庭院本地坐标
-export const soundCues = {
-  diamondSplash: LAND,
-  liYingJump: LY_UP,
-  liyingEnterPortal: LY_IN,
-  jiuhuJump: JH_UP,
-  jiuhuEnterPortal: JH_IN,
-  liYingLanding: LY_POP + POP_N,
-  jiuHuLand: LAST,
-  diamondDropPoint: DROP,
-  liyingJumpPoint: LY0,
-  jiuhuJumpPoint: JH0,
-  liyingPortalPoint: LY_LAND,
-  jiuhuPortalPoint: JH_LAND,
-};
-
 // 海岛那段的阴影范围（暮色森林那段的主光跟着镜头投影，不用指定）
 export const islandShadowCenter: V3 = [PX + 1, PY, 0];

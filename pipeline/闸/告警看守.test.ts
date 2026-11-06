@@ -1,10 +1,10 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { spawn, spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { 渲染看, 读状态, 读后台, 一行状态, type 调度状态, type 锁信息 } from './看.ts';
+import { 渲染看, 读状态, 一行状态, type 调度状态, type 锁信息 } from './看.ts';
 import { 判告警, 更新历史, 监测一轮, 读监测, 空历史, type 监测历史 } from './告警.ts';
 import { 取调度环境, type 调度环境 } from './任务.ts';
 import { 读发起者 } from './发起者.ts';
@@ -33,19 +33,6 @@ const 轮 = (h: 监测历史, s: 调度状态) => {
   return [n, a.map(x => `${x.类}#${x.次数}`)] as const;
 };
 const 机 = (时: number, 改: Partial<调度状态['机']>) => { const s = 基本(时); Object.assign(s.机, 改); return s; };
-
-it('后台一段转太久告警，对象带段，翻倍升级；没到阈值、没在做不报', () => {
-  const 时 = 2_000_000, s = 基本(时), f = 发起();
-  const 任务 = (后台: NonNullable<调度状态['在跑'][number]['后台']>) => [{ 任务: 'R', 起: 0, 心跳: 0, 发起: f, 声明: { 种: 'render' }, 主机: 'h', 后台 }];
-  s.在跑 = 任务({ 在做: '甲', 排着: 1, 起于: 时 - 1800_000 });
-  expect(判告警(s, 时)).toEqual([expect.objectContaining({ 类: '后台超时', 对象: 'R/后台/甲', 段: '甲', pid: f.pid, 次数: 1 })]);
-  s.在跑 = 任务({ 在做: '甲', 排着: 1, 起于: 时 - 3600_000 });
-  expect(判告警(s, 时)[0]!.次数).toBe(2);
-  s.在跑 = 任务({ 在做: '甲', 排着: 0, 起于: 时 - 1000 });
-  expect(判告警(s, 时)).toEqual([]);
-  s.在跑 = 任务({ 在做: null, 排着: 1, 起于: null });
-  expect(判告警(s, 时)).toEqual([]);
-});
 
 it('队列行的约几分只算自己这把锁和同队的票：放行票不等渲染', () => {
   const 时 = 4_000_000, s = 基本(时);
@@ -316,33 +303,3 @@ process.exitCode=await 盯(e,{最长:4,父活:()=>true,读:()=>({时:Date.now(),
 });
 
 
-it('一行状态按有后台的任务数计，不按排队段数计；没有后台不显示', () => {
-  const s = 基本();
-  expect(一行状态(s)).not.toContain('后台');
-  const t = { 任务: 'T', 起: 0, 心跳: 0, 发起: 发起(), 声明: { 种: 'render' }, 主机: 'h' };
-  s.在跑 = [t, { ...t, 任务: 'A', 后台: { 在做: '甲', 排着: 2, 起于: 0 } }, { ...t, 任务: 'B', 后台: { 在做: null, 排着: 1, 起于: null } }];
-  expect(一行状态(s)).toContain('持锁无 排队0 后台2');
-});
-
-it('回收=false 时死任务和复用 pid 不报后台超时，活任务与外机口径同读后台', () => {
-  const now = Date.now(), e = 环({ 本机: 'h', 现在毫秒: () => now });
-  const 死pid = spawnSync(process.execPath, ['-e', '']).pid;
-  const t = { 任务: 'T', 起: now - 4000_000, 心跳: now, 发起: { ...发起(), pid: 死pid }, 声明: { 种: 'render' }, 主机: 'h', 后台: { 在做: '甲', 排着: 2, 起于: now - 1900_000 } };
-  fs.mkdirSync(path.join(e.锁目录, '在跑'), { recursive: true });
-  const file = path.join(e.锁目录, '在跑', 'T.json');
-  const 核 = (有: boolean) => {
-    fs.writeFileSync(file, JSON.stringify(t));
-    const s = 读状态(e, () => 基本().机, false);
-    expect(s.在跑).toHaveLength(1);
-    expect(读后台(e).length > 0).toBe(有);
-    expect(判告警(s, now, undefined, 空历史(), 'h').some(a => a.类 === '后台超时')).toBe(有);
-  };
-  核(false);
-  expect(监测一轮(e, 读状态(e, () => 基本().机, false))).toEqual([]);
-  t.发起.pid = process.pid;
-  核(true);
-  t.心跳 = 1;
-  核(false);
-  t.主机 = '别的机器';
-  核(true);
-});

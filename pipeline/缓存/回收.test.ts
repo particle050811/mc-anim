@@ -10,7 +10,6 @@ import { 加当前指纹 } from './当前指纹.ts';
 import { 执行回收, cache认识, run认识, 只报目录, type 回收计划 } from './计划.ts';
 import {
   保留集, 加交付, 加认可, 交付引用, 扫媒体, 扫webpack, 列目录, 是临时名, 规划媒体, 规划临时, 规划草稿, 规划webpack, 读认可指纹, 小计, 主要理由, 不认识条目, 扫暂存, 规划暂存,
-  扫抽样, 规划抽样,
 } from './回收.ts';
 
 const 天 = 24 * 3600 * 1000;
@@ -35,7 +34,7 @@ const 写 = (rel: string, 内容: string | Buffer, 改于?: number) => {
 const 母版 = (键: string, 指纹: string, 级别: string, 几天前: number, 大小 = 100) => {
   const t = 现在 - 几天前 * 天;
   写(`cache/母版/作品甲/${键}/${指纹}.指纹.json`, JSON.stringify({ 段: 键, 指纹: 指纹.padEnd(64, '0'), 项: { 渲染设置: { inputProps: { 级别 } } } }), t);
-  return 写(`cache/母版/作品甲/${键}/${指纹}.mkv`, Buffer.alloc(大小, 指纹.charCodeAt(0)), t);
+  return 写(`cache/母版/作品甲/${键}/${指纹}.mp4`, Buffer.alloc(大小, 指纹.charCodeAt(0)), t);
 };
 const 母版目录 = (键: string) => path.join(根, 'cache', '母版', '作品甲', 键);
 const 规划 = (保留: 保留集, 近期天数 = 2) => 规划媒体(扫媒体(path.join(根, 'cache', '母版', '作品甲'), '母版', '作品甲').媒体, 保留, { 现在, 近期天数 });
@@ -63,6 +62,16 @@ describe('扫键目录：列完目录文件才没', () => {
     expect(r.临时).toEqual([]);
   });
 
+  it('mp4、wav 是母版；CRF1 时代的 .mkv、.x264.mkv 不认，归不认识', () => {
+    const 画 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
+    const 声 = 写('cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.wav', 'x');
+    写('cache/母版/作品甲/6-甲/cccccccccccccccc.mkv', 'x');
+    写('cache/母版/作品甲/6-甲/dddddddddddddddd.x264.mkv', 'x');
+    const r = 扫();
+    expect(r.媒体.map((f) => [f.路径, f.存法])).toEqual([[画, '切片'], [声, '声音']]);
+    expect(r.不认识.map((f) => path.basename(f.路径)).sort()).toEqual(['cccccccccccccccc.mkv', 'dddddddddddddddd.x264.mkv']);
+  });
+
   it('别的错照抛：权限问题不能当成文件不在', () => {
     const 媒体 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
     const 真lstat = fs.lstatSync;
@@ -79,7 +88,7 @@ describe('保留集：母版', () => {
     写('作品/作品甲/认可/darwin-arm64/6-甲.toml', 认可文本(认可记录('6-甲', 'a'.repeat(16) + 'f'.repeat(48))));
     const 保留 = new 保留集();
     加认可(保留, path.join(根, '作品', '作品甲'), 母版目录);
-    保留.加(path.join(母版目录('6-甲'), 'cccccccccccccccc.mkv'), { 类: '当前', 说明: '视频' });
+    保留.加(path.join(母版目录('6-甲'), 'cccccccccccccccc.mp4'), { 类: '当前', 说明: '视频' });
     const r = 规划(保留);
     expect(删的(r)).toEqual(['bbbbbbbbbbbbbbbb']);
     expect(主要理由(r.find((f) => f.指纹 === 'aaaaaaaaaaaaaaaa')!.理由)).toBe('认可');
@@ -90,7 +99,7 @@ describe('保留集：母版', () => {
     母版('6-甲', 'cccccccccccccccc', '视频', 7);
     const 保留 = new 保留集();
     加认可(保留, path.join(根, '作品', '作品甲'), 母版目录);
-    保留.加(path.join(母版目录('6-甲'), 'cccccccccccccccc.mkv'), { 类: '当前', 说明: '视频' });
+    保留.加(path.join(母版目录('6-甲'), 'cccccccccccccccc.mp4'), { 类: '当前', 说明: '视频' });
     expect(删的(规划(保留))).toEqual(['aaaaaaaaaaaaaaaa']);
   });
 
@@ -107,39 +116,28 @@ describe('保留集：母版', () => {
     expect(警告).toHaveLength(1);
   });
 
-  it('交付 manifest 引用的母版、叠层留着（相对数据根和早先的绝对路径都认）', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    const 绝对 = 母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
-    母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    母版('6-甲', 'dddddddddddddddd', '视频', 6);
-    写('交付/作品甲/1021-1755-第6-7章/manifest.json', JSON.stringify({ 段: [{ 键: '6-甲', 母版: 'cache/母版/作品甲/6-甲/aaaaaaaaaaaaaaaa.mkv' }], 叠层: [{ 键: '6-甲-层', 文件: 'cache/叠层/作品甲/6-甲-层/eeeeeeeeeeeeeeee.mov' }] }));
-    写('交付/1020-0000-更早/manifest.json', JSON.stringify({ 段: [{ 键: '6-甲', 母版: 绝对 }] }));
-    const 保留 = new 保留集();
-    加交付(保留, path.join(根, '交付'), 根);
-    expect(删的(规划(保留))).toEqual(['cccccccccccccccc']); // dddd 是最近一份
-    expect(保留.查(path.join(根, 'cache', '叠层', '作品甲', '6-甲-层', 'eeeeeeeeeeeeeeee.mov')).map((x) => x.说明)).toEqual(['作品甲/1021-1755-第6-7章']);
-    expect(交付引用({ 段: [{ 母版: 'x' }, { 母版: 1 }], 叠层: 'x' })).toEqual(['x']);
-    expect(交付引用(null)).toEqual([]);
-  });
-
-  it('v2 交付（段不记母版）按作品、段键、指纹算出母版钉住；解钉默认关，自足的只在说明里标出', () => {
+  it('交付 manifest（版本 3）引用的切片留着：按作品、段键、画面指纹、声音指纹算；v1、v2 的不认；解钉默认关，自足的只在说明里标出', () => {
     母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     母版('6-甲', 'cccccccccccccccc', '视频', 1);
-    const 段们 = [{ 键: '6-甲', 指纹: 'a'.repeat(16) + 'f'.repeat(48) }];
-    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 2, 作品: '作品甲', 段: 段们, 叠层: [] }));
+    const 段们 = [{ 键: '6-甲', 画面指纹: 'a'.repeat(16) + 'f'.repeat(48), 声音指纹: 'e'.repeat(64) }];
+    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 3, 作品: '作品甲', 段: 段们 }));
     写('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
+    写('交付/作品甲/1021-1755-旧/manifest.json', JSON.stringify({ 段: [{ 键: '6-甲', 母版: 'cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.mkv', 指纹: 'b'.repeat(64) }] }));
     const 保留 = new 保留集();
     加交付(保留, path.join(根, '交付'), 根);
     expect(删的(规划(保留))).toEqual(['bbbbbbbbbbbbbbbb']);
-    expect(保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mkv')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
+    expect(保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mp4')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
+    expect(保留.查(path.join(母版目录('6-甲'), 'eeeeeeeeeeeeeeee.wav')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
+    expect(交付引用({ 段: [{ 键: '6-甲', 母版: 'x' }, { 键: '6-甲', 指纹: 'a'.repeat(64) }] }, '作品甲')).toEqual([]);
+    expect(交付引用(null)).toEqual([]);
   });
 
   it('解钉打开：有 FLAC 就不再钉母版（剪辑包用户 11-06 定不要了）；没 FLAC 的照钉', () => {
     母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     母版('6-甲', 'cccccccccccccccc', '视频', 1);
-    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 2, 作品: '作品甲', 段: [{ 键: '6-甲', 指纹: 'a'.repeat(64) }], 叠层: [] }));
+    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 3, 作品: '作品甲', 段: [{ 键: '6-甲', 画面指纹: 'a'.repeat(64) }] }));
     const 解 = () => {
       const 保留 = new 保留集();
       加交付(保留, path.join(根, '交付'), 根, () => {}, { 解钉: true });
@@ -162,7 +160,7 @@ describe('保留集：母版', () => {
     const 跑 = (解钉: boolean) => {
       const 保留 = new 保留集();
       加认可(保留, path.join(根, '作品', '作品甲'), 母版目录, () => {}, { 解钉, 参考文件 });
-      return { 删: 删的(规划(保留)), 说明: 保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mkv')).map((x) => x.说明) };
+      return { 删: 删的(规划(保留)), 说明: 保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mp4')).map((x) => x.说明) };
     };
     expect(跑(true)).toEqual({ 删: [], 说明: ['darwin-arm64'] }); // 没参考：解钉也照钉
     // 同一指纹上一次认可的参考（哈希不一样）不算这条记录的
@@ -184,13 +182,13 @@ describe('保留集：母版', () => {
   });
 
   it('最近一份按 .指纹.json 的时间排：删完以后 film --允许过期（历史指纹）取的还是原来那份', () => {
-    // 迁移时把 aaaa 的母版硬链接到新指纹 bbbb 名下：bbbb.mkv 是旧时间，bbbb.指纹.json 是新的
+    // 迁移时把 aaaa 的母版硬链接到新指纹 bbbb 名下：bbbb.mp4 是旧时间，bbbb.指纹.json 是新的
     const a = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9, 100);
     母版('6-甲', 'cccccccccccccccc', '视频', 8, 200);
-    const b = path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mkv');
+    const b = path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mp4');
     fs.linkSync(a, b);
     写('cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.指纹.json', JSON.stringify({ 段: '6-甲', 指纹: 'b'.repeat(64), 项: { 渲染设置: { inputProps: { 级别: '视频' } } } }), 现在 - 3 * 天);
-    const 取 = () => 历史指纹('6-甲', 母版目录('6-甲')).find((h) => fs.existsSync(path.join(母版目录('6-甲'), `${h.指纹.slice(0, 16)}.mkv`)))?.指纹.slice(0, 16);
+    const 取 = () => 历史指纹('6-甲', 母版目录('6-甲')).find((h) => fs.existsSync(path.join(母版目录('6-甲'), `${h.指纹.slice(0, 16)}.mp4`)))?.指纹.slice(0, 16);
     expect(取()).toBe('bbbbbbbbbbbbbbbb');
     const r = 规划(new 保留集());
     expect(删的(r)).toEqual(['aaaaaaaaaaaaaaaa', 'cccccccccccccccc']);
@@ -210,7 +208,7 @@ describe('保留集：母版', () => {
     expect(规划(保留).filter((f) => !f.理由.length).map((f) => f.键)).toEqual(['6-甲乙']);
   });
 
-  it('作品读不出时（不在代码里）母版目录整个留着（叠层只剩 CRF1 时代的旧缓存，不再是谁的当前产物）', async () => {
+  it('作品读不出时（不在代码里）母版目录整个留着', async () => {
     const 保留 = new 保留集();
     const 警告: string[] = [];
     await 加当前指纹(保留, '没有这部作品', (s) => 警告.push(s));
@@ -222,22 +220,22 @@ describe('保留集：母版', () => {
     const 旧 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
     const 刚改 = 母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
     母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 打包: [], 抽样: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
+    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
     expect(删的(计划.媒体)).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
     fs.utimesSync(刚改, new Date(), new Date());
     const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 });
     expect(r).toMatchObject({ 删数: 1, 删大小: 100, 失败: [] });
     expect(r.跳过).toHaveLength(1);
     expect(fs.existsSync(旧)).toBe(false);
-    expect(fs.existsSync(旧.replace(/\.mkv$/, '.指纹.json'))).toBe(true);
+    expect(fs.existsSync(旧.replace(/\.mp4$/, '.指纹.json'))).toBe(true);
     expect(fs.existsSync(刚改)).toBe(true);
   });
 
   it('硬链接：名字全删了才算腾出空间，留下的同一 inode 只算一次', () => {
     const a = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    fs.linkSync(a, path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mkv'));
+    fs.linkSync(a, path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mp4'));
     const bjson = path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.指纹.json');
-    fs.copyFileSync(a.replace(/\.mkv$/, '.指纹.json'), bjson);
+    fs.copyFileSync(a.replace(/\.mp4$/, '.指纹.json'), bjson);
     fs.utimesSync(bjson, new Date(现在 - 9 * 天), new Date(现在 - 9 * 天));
     母版('6-甲', 'cccccccccccccccc', '视频', 7);
     const 全删 = 小计(规划(new 保留集()).filter((f) => f.指纹 !== 'cccccccccccccccc'));
@@ -313,40 +311,11 @@ describe('地形暂存', () => {
   });
 });
 
-describe('段签里的抽样帧', () => {
-  it('版本 1 的 抽样.mkv（连 历史/ 里的）近期天数外的删，签.json、声音不碰；和同段同指纹认可参考一样大的标出来（多半是克隆）', async () => {
-    写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/签.json', '{}', 现在 - 9 * 天);
-    写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/声音.flac', 'x', 现在 - 9 * 天);
-    const 旧 = 写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/抽样.mkv', Buffer.alloc(300), 现在 - 9 * 天);
-    const 史 = 写('段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/历史/0123456789abcdef/抽样.mkv', Buffer.alloc(200), 现在 - 9 * 天);
-    const 新 = 写('段签/作品甲/6-乙/bbbbbbbbbbbbbbbb/抽样.mkv', Buffer.alloc(50), 现在 - 天);
-    写('段签/作品甲/6-丙/cccccccccccccccc/签.json', '{}', 现在 - 9 * 天); // 版本 2：没有抽样
-    写('认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-0123456789ab.mkv', Buffer.alloc(300));
-    写('认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-0123456789ab.json', '{}');
-    const 扫 = 扫抽样(path.join(根, '段签', '作品甲'), path.join(根, '认可参考', '作品甲'));
-    expect(扫.map((f) => [f.段, f.指纹, f.在历史, f.大小]).sort()).toEqual([['6-乙', 'bbbbbbbbbbbbbbbb', false, 50], ['6-甲', 'aaaaaaaaaaaaaaaa', false, 300], ['6-甲', 'aaaaaaaaaaaaaaaa', true, 200]]);
-    expect(扫.find((f) => f.路径 === 旧)!.参考同大小).toMatch(/aaaaaaaaaaaaaaaa-0123456789ab\.mkv$/);
-    expect(扫.find((f) => f.路径 === 史)!.参考同大小).toBeNull();
-    const 计划: 回收计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 抽样: 规划抽样(扫, { 现在, 近期天数: 2 }), 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
-    expect(计划.抽样.filter((f) => !f.理由.length).map((f) => f.路径).sort()).toEqual([旧, 史].sort());
-    expect(计划.抽样.find((f) => f.路径 === 新)!.理由[0]!.类).toBe('近期');
-    const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 }, 现在);
-    expect(r).toMatchObject({ 删数: 2, 删大小: 500, 失败: [] });
-    expect([旧, 史, 新].map((f) => fs.existsSync(f))).toEqual([false, false, true]);
-    expect(fs.existsSync(path.join(根, '段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/签.json'))).toBe(true);
-    expect(fs.existsSync(path.join(根, '段签/作品甲/6-甲/aaaaaaaaaaaaaaaa/声音.flac'))).toBe(true);
-  });
-
-  it('没有段签目录：空', () => {
-    expect(扫抽样(path.join(根, '段签', '没有'), path.join(根, '认可参考', '没有'))).toEqual([]);
-  });
-});
-
 describe('列段', () => {
   it('超过天数没读过的才删，新近用过的留着（文件在 <sha 前 2>/ 下一层）', async () => {
     写('cache/列段/ab/ab旧.列段', 'xx', 现在 - 100 * 天);
     写('cache/列段/ab/ab新.列段', 'x', 现在 - 10 * 天);
-    const 计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 抽样: [], 草稿: [], 列段: 规划草稿(列目录(path.join(根, 'cache', '列段')).flatMap((d) => 列目录(d.路径)), { 现在, 天数: 90 }), webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] } as 回收计划;
+    const 计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: 规划草稿(列目录(path.join(根, 'cache', '列段')).flatMap((d) => 列目录(d.路径)), { 现在, 天数: 90 }), webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] } as 回收计划;
     expect(计划.列段.filter((f) => !f.理由.length).map((f) => f.名)).toEqual(['ab旧.列段']);
     const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 }, 现在);
     expect(r.删数).toBe(1);

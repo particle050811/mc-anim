@@ -293,10 +293,6 @@ def 拼音(hanzi: str) -> list[list[str]]:
     return [[i[0], f[0]] for i, f in zip(pinyin(hanzi, style=Style.INITIALS, strict=True), pinyin(hanzi, style=Style.FINALS, strict=True))]
 
 
-def 是日语(念: str) -> bool:
-    return bool(re.search(r'[぀-ヿ]', 念))
-
-
 def 算嘴(念: str, 时长: float, 字: list) -> list:
     """念：对齐用的字（台词的「念」，没写同「文本」）；时长：配音成品的秒数（round 到 3 位）；字：[[单位, 起秒, 止秒]]。返回 [[秒, 嘴型]]"""
     hanzi = ''.join(re.findall(r'[一-鿿]', 念))

@@ -17,7 +17,7 @@ import 资_4 from 'asset:贴图/界面/结构罗盘/帧-04';
 import 资_5 from 'asset:贴图/界面/结构罗盘/帧-05';
 import 资_6 from 'asset:贴图/界面/结构罗盘/帧-06';
 import 资_7 from 'asset:贴图/界面/结构罗盘/帧-07';
-const frameTable = frameTable资产 as unknown as { 帧数: number; 点击: Record<string, number>; 帧: string[] };
+const frameTable = frameTable资产 as unknown as { 帧数: number; 帧: string[] };
 
 const ctx = 资产目录({ './帧-00.png': 资_0, './帧-01.png': 资_1, './帧-02.png': 资_2, './帧-03.png': 资_3, './帧-04.png': 资_4, './帧-05.png': 资_5, './帧-06.png': 资_6, './帧-07.png': 资_7 }) as unknown as { keys(): string[]; (k: string): string | { default: string } };
 const pngUrls: Record<string, string> = {};
@@ -27,9 +27,6 @@ for (const k of ctx.keys()) {
 }
 
 export const compassFrameCount: number = frameTable.帧数;
-// 几次点击落在界面的第几帧（声音用）：点输入框、点列表里的远古城市都不出声（EditBox、ObjectSelectionList 的条目没有声音），
-// 点「搜索」是按钮，出声（见 6-2-1/声音.tsx）
-export const compassClickFrames = frameTable.点击 as { 输入框: number; 远古城市: number; 搜索: number };
 
 // 帧：界面开着的第几帧（0 = 刚打开）；不在 0～帧数-1 里就不画
 export const CompassUi: React.FC<{ frame: number }> = ({ frame: frame }) => {

@@ -2,8 +2,10 @@
 // 6-4-3 留下的东西照 6-4-3 的编排在这一刻的样子画（../6-4-3/画面.tsx 的 挡箭画面 里的那几样：藏掉击穿的方块和网格里的感测体、
 // 换成会抖的感测体、掉下来的石块、钉在洞顶的箭、尖啸体的声波环、开过的战利品箱），只有李樱和羊毛按这一段编。
 // 黄叛在东边 370 米外的传送门上，第一镜往东看也只是远处一个小点，雾里看不见，不画。刀光、招架、风扇、气流在 6-4-3c 末帧之前都已经没了，不画。
+// 声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import { png } from '@engine/model/贴图.ts';
 import atlasWest3 from 'asset:网格/古城4x/西3/图集';
 import { Arrow } from '@库/物品/箭.tsx';
@@ -21,7 +23,6 @@ import * as K3 from '../../场/6-古城/6-4-3/编排.ts';
 import * as G3 from '../../场/6-古城/6-4-3/几何.ts';
 import debrisRaw from 'asset:碎块/镜头/6-4-3/碎块';
 import * as choreo from '../../场/6-古城/6-4-5/编排.ts';
-import { LureSound } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../配音/口型.ts';
 
 // 同 6-4-3/画面.tsx：只要击穿的那几格（外圈和取贴图用的那一格不画），洞壁另补；碎块贴图取自击穿那几格所在的网格块 古城4x-西3（同 6-4-3/画面.tsx 的 ATLAS_C）
@@ -67,7 +68,7 @@ const closeupCam = (ly: ReturnType<typeof choreo.liying>, bearingDeg: number): C
 export type LureParams = { rawSheathe?: boolean; 特写?: number };
 
 export const Lure: React.FC<LureParams> = ({ rawSheathe = false, 特写: closeupBearing }) => {
-  const segFrame = useCurrentFrame();
+  const segFrame = use当前秒() * choreo.FPS;
   const { width, height } = useVideoConfig();
   const globalFrame = choreo.globalFrameAt(segFrame);
   const ly = choreo.liying(segFrame, rawSheathe);
@@ -87,7 +88,6 @@ export const Lure: React.FC<LureParams> = ({ rawSheathe = false, 特写: closeup
         ))}
         {K3.shriek && <ShriekRings p={K3.shriek.p} sec={K3.storySecAt(globalFrame) - K3.shriek.t} />}
       </AncientCity4xCanvas>
-      <LureSound />
     </>
   );
 };

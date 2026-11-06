@@ -2,25 +2,22 @@
 // 母版（cache/母版/<作品>/<键>/<指纹前 16 位>.{mp4,wav}，切片的画面、声音；决策/0014）：只删媒体文件，旁边的 .指纹.json、.用过 一律留（stale 拿它说明哪项变了）。
 //   留：各渲染级别的当前指纹（画面、声音各一份）、还没有认可参考的认可那版（accept 后补参考从它抽）、还没自足的交付 manifest 引用的、
 //   每段每级别画面、声音各最近渲的一份、近 N 天渲的、近 2 小时用过的（.用过）、别的还在的检出用过的（.检出-*，它的当前指纹这边算不出来）、这段当前指纹算不出时整个目录。
-// CRF1 时代的旧产物（11-06 以前）：<指纹>.mkv（CRF1）、<指纹>.x264.mkv（压缩母版）、cache/叠层/ 的 .mov 都不再是谁的当前指纹，按上面的规则当旧的回收。
-//   同一指纹有压缩母版时 CRF1 已被取代，只有「要原母版」的理由（待补画面的交付、读不出的记录）和正在写才留它；压缩母版按同名 CRF1 的路径找理由（那时钉都按 CRF1 名记）。
-// 段签里版本 1 的 抽样.mkv（连 历史/ 里的）：11-02 换比法后没人读了，近期天数内写的留，别的删。
+// CRF1 时代的 .mkv、.x264.mkv 和 cache/叠层/ 不认（用户 11-06「旧的不用兼容」），母版目录里剩下的归「不认识」只报告。
 // 草稿（run/草稿/<目录>）超过 N 天删；webpack 缓存（<检出>/node_modules/.cache/webpack/remotion-<环境>-<版本>/<哈希>/）换了 Remotion 版本的整个删，
 // 同版本的每个环境留最近用的一份，其余超过 N 天没用的删。地形烘焙的暂存目录（run/暂存/terrain/<包>）写入锁没人拿、1 天没动的删。
 // 列段、音频数这类认得但不自动删的只报大小（计划.ts 的 只报目录）；不认识的目录只报告。
-// 解钉（01-推荐方案.md 第四节 D 的顺序）：交付自足了（有 全片-未拉响度.flac，不再读母版）才不再钉它引用的母版、叠层；
+// 解钉（01-推荐方案.md 第四节 D 的顺序）：交付自足了（有 全片-未拉响度.flac，不再读母版）才不再钉它引用的母版；
 // 认可有了认可参考（文件名绑定认可记录的抽样哈希）才不再钉认可那版的母版。用户 10-30 定「这个未来用不到的就删」，gc 和渲段自动删旧都开着解钉（钉.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import { 本检出 } from '../环境/路径.ts';
 import { 持有者, 持有者主机, 进程在吗 } from '../闸/锁.ts';
-import { 压缩后缀, 近期用过毫秒 } from '../渲/母版.ts';
+import { 近期用过毫秒 } from '../渲/母版.ts';
 
 export type 保留类 = '当前' | '认可' | '交付' | '最近一份' | '近期' | '在用' | '算不出';
 /** 报告里按这个顺序算「主要因为什么留」 */
 export const 保留类顺序: readonly 保留类[] = ['当前', '认可', '交付', '最近一份', '近期', '在用', '算不出'];
-/** 要原母版：这个理由要的是 CRF1 那份字节（补交付要出片时那份、读不出的记录），CRF1 被压缩母版取代了也照留 */
-export type 保留理由 = { 类: 保留类; 说明: string; 要原母版?: true };
+export type 保留理由 = { 类: 保留类; 说明: string };
 
 const 天 = 24 * 3600 * 1000;
 
@@ -60,16 +57,15 @@ export class 保留集 {
   }
 }
 
-// ---------- 母版、叠层 ----------
+// ---------- 母版 ----------
 
-export type 缓存种 = '母版' | '叠层';
-export const 媒体后缀: Record<缓存种, string> = { 母版: '.mkv', 叠层: '.mov' };
+export type 缓存种 = '母版';
 
 export type 媒体文件 = {
   路径: string;
   种: 缓存种;
   作品: string;
-  /** 段键（叠层是 <段键>-<名>） */
+  /** 段键 */
   键: string;
   /** 文件名里的指纹前 16 位 */
   指纹: string;
@@ -85,10 +81,8 @@ export type 媒体文件 = {
   /** 设备-inode 和硬链接数：迁移时有过把同一份母版硬链接到新指纹名下，删掉一个名字不腾空间 */
   inode: string;
   链数: number;
-  /** 母版的存法：切片（mp4 画面）、声音（wav）；CRF1 时代的 crf1（Remotion 直出）、x264（转码存的）；叠层是 null */
-  存法: '切片' | '声音' | 'crf1' | 'x264' | null;
-  /** CRF1 且同一指纹的压缩母版在、段签记着是从它转的 */
-  已被取代: boolean;
+  /** 切片（mp4 画面）、声音（wav） */
+  存法: '切片' | '声音';
   /** 旁边 .用过 的修改时间（film、verify 最后一次用），没有是 null */
   用过于: number | null;
   /** 同目录里有这个指纹正在写的临时文件（.渲染中、.转码中、.占用，1 天内动过的） */
@@ -100,25 +94,9 @@ export type 带理由<T> = T & { 理由: 保留理由[] };
 
 /** 渲染中途崩掉留下的临时文件（渲.ts 的 .渲染中-<pid>、母版.ts 原子写 的 .写入中-<pid>）；渲/母版占用.ts 的 .占用 和锁协议的旁文件（.占用.<pid>.主机 等）同样算：活着的挡住这个指纹，崩掉留下的超 1 天 gc 删 */
 export const 是临时名 = (名: string) => /\.(渲染中|写入中|转码中)-\d+|\.占用(\.|$)/.test(名);
-const 媒体名 = /^([0-9a-f]{16})(\.x264)?\.(mkv|mov|mp4|wav)$/;
+const 媒体名 = /^([0-9a-f]{16})\.(mp4|wav)$/;
 const 用过名 = /^[0-9a-f]{16}\.用过$/;
 const 检出记号名 = /^[0-9a-f]{16}\.检出-[0-9a-f]{8}$/;
-
-/** 同目录里 CRF1 名 ↔ 钉的时候用的逻辑名（压缩母版按同指纹的 CRF1 名找理由） */
-export const 逻辑名 = (路径: string) => (路径.endsWith(压缩后缀) ? 路径.slice(0, -压缩后缀.length) + '.mkv' : 路径);
-
-/**
- * 段签记着这个指纹的压缩母版是从这份 CRF1 转的、转出来这么大（不读整个文件）。CRF1 要大小、改于都对上：同一指纹重渲出同样大小的新 CRF1 还没转，只比大小会把它当已被取代删掉。
- * CRF1 被复制过改于也对不上，按没取代算：宁可多留
- */
-export const 段签说已转码 = (段签目录: string, 指纹16: string, 原: { 大小: number; 改于: number }, 压缩大小: number) => {
-  try {
-    const j = JSON.parse(fs.readFileSync(path.join(段签目录, '签.json'), 'utf8')) as { 指纹?: string; 母版?: { 大小?: number; 转码自?: { 大小?: number; 改于?: number } } };
-    return !!j.指纹?.startsWith(指纹16) && j.母版?.大小 === 压缩大小 && j.母版?.转码自?.大小 === 原.大小 && j.母版?.转码自?.改于 === 原.改于;
-  } catch {
-    return false;
-  }
-};
 
 export type 普通文件 = { 路径: string; 大小: number; 改于: number };
 
@@ -145,11 +123,7 @@ export const 读级别 = (json文件: string): string | null => {
   }
 };
 
-export type 扫描选项 = {
-  /** 段签目录（判 CRF1 是不是已被取代）；不给就都不算已被取代 */
-  段签目录?: (键: string, 指纹16: string) => string;
-  现在?: number;
-};
+export type 扫描选项 = { 现在?: number };
 
 /** 扫一个键目录（cache/<种>/<作品>/<键>/），结果追加进 r */
 export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: string, r: 媒体扫描, o: 扫描选项 = {}) => {
@@ -165,7 +139,6 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
     const 路径 = fs.readFileSync(path.join(dir, 名), 'utf8').trim();
     if (路径 && 路径 !== 这个检出 && fs.existsSync(路径)) 别的检出.set(名.slice(0, 16), [...(别的检出.get(名.slice(0, 16)) ?? []), 路径]);
   }
-  const 起 = r.媒体.length;
   for (const 名 of 名们) {
     const f = path.join(dir, 名);
     const st = 没了算空(() => fs.lstatSync(f));
@@ -175,9 +148,7 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
       continue;
     }
     const m = 媒体名.exec(名);
-    const 是压缩 = !!m?.[2];
-    const 母版存法 = !m ? null : m[3] === 'mkv' ? (是压缩 ? 'x264' : 'crf1') : 是压缩 ? null : m[3] === 'mp4' ? '切片' : m[3] === 'wav' ? '声音' : null;
-    if (m && (种 === '母版' ? 母版存法 !== null : !是压缩 && `.${m[3]}` === 媒体后缀[种])) {
+    if (m) {
       const json = path.join(dir, `${m[1]}.指纹.json`);
       const 有json = fs.existsSync(json);
       let 用过于: number | null = null;
@@ -189,17 +160,10 @@ export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: s
       r.媒体.push({
         路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 记于: 有json ? fs.statSync(json).mtimeMs : st.mtimeMs,
         级别: 有json ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink,
-        存法: 种 === '母版' ? 母版存法 : null, 已被取代: false, 用过于, 正在写: 写着.has(m[1]!), 别的检出: 别的检出.get(m[1]!) ?? [],
+        存法: m[2] === 'mp4' ? '切片' : '声音', 用过于, 正在写: 写着.has(m[1]!), 别的检出: 别的检出.get(m[1]!) ?? [],
       });
     } else if (是临时名(名)) r.临时.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
     else if (!名.endsWith('.指纹.json') && !用过名.test(名) && !检出记号名.test(名)) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
-  }
-  if (种 !== '母版' || !o.段签目录) return;
-  const 这批 = r.媒体.slice(起);
-  for (const f of 这批) {
-    if (f.存法 !== 'crf1') continue;
-    const 压 = 这批.find((x) => x.存法 === 'x264' && x.指纹 === f.指纹);
-    f.已被取代 = !!压 && 段签说已转码(o.段签目录(键, f.指纹), f.指纹, f, 压.大小);
   }
 };
 
@@ -219,24 +183,18 @@ export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string, 
   return r;
 };
 
-/**
- * 一个媒体文件身上的钉（gc、film 渲完自动删旧共用）：保留集里按它自己、压缩母版再按同名 CRF1 找；
- * 已被取代的 CRF1 只认「要原母版」的和正在写；别的还要看近 2 小时用过、别的检出用过、正在写
- */
+/** 一个媒体文件身上的钉（gc、film 渲完自动删旧共用）：保留集里的，再加近 2 小时用过、别的检出用过、正在写 */
 export const 钉理由 = (f: 媒体文件, 保留: 保留集, 现在: number): 保留理由[] => {
-  let 理由 = [...保留.查(f.路径), ...(f.存法 === 'x264' ? 保留.查(逻辑名(f.路径)) : [])];
-  if (f.已被取代) 理由 = 理由.filter((x) => x.要原母版);
-  else {
-    if (f.用过于 !== null && 现在 - f.用过于 < 近期用过毫秒) 理由.push({ 类: '在用', 说明: '2 小时内用过' });
-    for (const 检出 of f.别的检出) 理由.push({ 类: '在用', 说明: `别的检出用过：${检出}` });
-  }
+  const 理由 = 保留.查(f.路径);
+  if (f.用过于 !== null && 现在 - f.用过于 < 近期用过毫秒) 理由.push({ 类: '在用', 说明: '2 小时内用过' });
+  for (const 检出 of f.别的检出) 理由.push({ 类: '在用', 说明: `别的检出用过：${检出}` });
   if (f.正在写) 理由.push({ 类: '在用', 说明: '这个指纹正在写' });
   return 理由;
 };
 
 /**
  * 给每个媒体文件定留不留：钉理由 有的留；另外每个（种、作品、键、级别，画面声音分开）记于最新的那个指纹留（理由「最近一份」；
- * 每个级别的都留），近 近期天数 天里改过的留（「近期」）；已被取代的 CRF1 不算这两条。理由为空的就是要删的。
+ * 每个级别的都留），近 近期天数 天里改过的留（「近期」）。理由为空的就是要删的。
  */
 export const 规划媒体 = (文件们: readonly 媒体文件[], 保留: 保留集, o: { 现在: number; 近期天数: number }): 带理由<媒体文件>[] => {
   const 最近 = new Map<string, 媒体文件>();
@@ -248,10 +206,8 @@ export const 规划媒体 = (文件们: readonly 媒体文件[], 保留: 保留�
   const 最近指纹 = new Set([...最近.values()].map((f) => [f.种, f.作品, f.键, f.指纹].join('\0')));
   return 文件们.map((f) => {
     const 理由 = 钉理由(f, 保留, o.现在);
-    if (!f.已被取代) {
-      if (最近指纹.has([f.种, f.作品, f.键, f.指纹].join('\0'))) 理由.push({ 类: '最近一份', 说明: f.级别 ?? '级别不明' });
-      if (o.现在 - f.改于 < o.近期天数 * 天) 理由.push({ 类: '近期', 说明: `${o.近期天数} 天内` });
-    }
+    if (最近指纹.has([f.种, f.作品, f.键, f.指纹].join('\0'))) 理由.push({ 类: '最近一份', 说明: f.级别 ?? '级别不明' });
+    if (o.现在 - f.改于 < o.近期天数 * 天) 理由.push({ 类: '近期', 说明: `${o.近期天数} 天内` });
     return { ...f, 理由 };
   });
 };
@@ -290,38 +246,31 @@ export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (�
       const 段键 = 名.slice(0, -'.toml'.length);
       if (!r) {
         警告(`${file} 读不出 段 和 指纹，${段键} 的母版整个留着`);
-        保留.加目录(母版目录(段键), { 类: '算不出', 说明: '认可记录读不出', 要原母版: true });
+        保留.加目录(母版目录(段键), { 类: '算不出', 说明: '认可记录读不出' });
         continue;
       }
       const 参考 = o.参考文件?.(file, 平台);
       const 有参考 = !!参考 && fs.existsSync(参考);
       if (有参考 && o.解钉) continue;
       const 说明 = 有参考 ? `${平台}（有认可参考）` : 平台;
-      // 切片（决策/0014）；CRF1 时代认可的按 CRF1 名钉，压缩母版也认，不要原母版（用户 11-02 定）
       保留.加(path.join(母版目录(r.段), `${r.指纹.slice(0, 16)}.mp4`), { 类: '认可', 说明 });
-      保留.加(path.join(母版目录(r.段), `${r.指纹.slice(0, 16)}${媒体后缀.母版}`), { 类: '认可', 说明 });
     }
   }
 };
 
 /**
- * 一份交付 manifest.json 引用的母版、叠层（anim film 写的：v1 段[].母版，相对数据根，早先的是绝对路径；
- * v2 段不记母版，按 cache/母版/<作品>/<键>/<指纹前 16 位>.mkv 算，和 合成/交付.ts 的 交付母版 同一条规则；叠层[].文件 两版都有；
- * v3 段记 画面指纹、声音指纹，引用的是切片 <画面指纹>.mp4、<声音指纹>.wav，出片时就写了未拉响度 FLAC，总是自足）。
- * 作品 是 manifest 没写作品时的兜底（交付目录的上一级）
+ * 一份交付 manifest.json（版本 3，anim film 写的）引用的切片：各段 <画面指纹>.mp4、<声音指纹>.wav，相对数据根。
+ * 10-30 以前的 v1、v2 不认（用户 11-06「旧的不用兼容」），它们只引用 CRF1 时代的 .mkv。作品 是 manifest 没写作品时的兜底（交付目录的上一级）
  */
 export const 交付引用 = (manifest: unknown, 作品?: string): string[] => {
-  const m = (manifest ?? {}) as { 作品?: unknown; 段?: { 母版?: unknown; 键?: unknown; 指纹?: unknown; 画面指纹?: unknown; 声音指纹?: unknown }[]; 叠层?: { 文件?: unknown }[] };
+  const m = (manifest ?? {}) as { 作品?: unknown; 段?: { 键?: unknown; 画面指纹?: unknown; 声音指纹?: unknown }[] };
   const 品 = typeof m.作品 === 'string' ? m.作品 : 作品;
   const r: string[] = [];
   for (const s of Array.isArray(m.段) ? m.段 : []) {
-    if (品 && typeof s?.键 === 'string' && typeof s?.画面指纹 === 'string') {
-      r.push(['cache', '母版', 品, s.键, `${s.画面指纹.slice(0, 16)}.mp4`].join('/'));
-      if (typeof s.声音指纹 === 'string') r.push(['cache', '母版', 品, s.键, `${s.声音指纹.slice(0, 16)}.wav`].join('/'));
-    } else if (typeof s?.母版 === 'string') r.push(s.母版);
-    else if (品 && typeof s?.键 === 'string' && typeof s?.指纹 === 'string') r.push(['cache', '母版', 品, s.键, `${s.指纹.slice(0, 16)}${媒体后缀.母版}`].join('/'));
+    if (!品 || typeof s?.键 !== 'string' || typeof s?.画面指纹 !== 'string') continue;
+    r.push(['cache', '母版', 品, s.键, `${s.画面指纹.slice(0, 16)}.mp4`].join('/'));
+    if (typeof s.声音指纹 === 'string') r.push(['cache', '母版', 品, s.键, `${s.声音指纹.slice(0, 16)}.wav`].join('/'));
   }
-  for (const l of Array.isArray(m.叠层) ? m.叠层 : []) if (typeof l?.文件 === 'string') r.push(l.文件);
   return r;
 };
 
@@ -345,7 +294,7 @@ export const 找交付manifest = (交付根: string, 深 = 3): string[] => {
 /** 交付自足：有 全片-未拉响度.flac 就不再读母版（文件名同 合成/交付.ts；剪辑包用户 11-06 定不要了，不再要 剪辑包/画面.mp4） */
 export const 交付自足 = (交付目录: string) => fs.existsSync(path.join(交付目录, '全片-未拉响度.flac'));
 
-/** 交付 manifest 引用的母版、叠层进保留集，说明写交付目录（相对交付根） */
+/** 交付 manifest 引用的母版进保留集，说明写交付目录（相对交付根） */
 export const 加交付 = (保留: 保留集, 交付根: string, 数据根: string, 警告: (s: string) => void = () => {}, o: 解钉选项 = {}) => {
   for (const m of 找交付manifest(交付根)) {
     let 引用: string[];
@@ -362,8 +311,8 @@ export const 加交付 = (保留: 保留集, 交付根: string, 数据根: strin
       }
       const 层 = path.relative(交付根, path.dirname(m)).split(path.sep);
       const 哪部 = 层.length >= 2 ? [层[0]!] : [];
-      警告(`${m} 读不出（${(e as Error).message}），它引用的母版不知道，${哪部[0] ?? '各作品'}的母版、叠层整个留着`);
-      for (const 种 of ['母版', '叠层']) 保留.加目录(path.join(数据根, 'cache', 种, ...哪部), { 类: '算不出', 说明: `交付 manifest 读不出：${层.join('/')}`, 要原母版: true });
+      警告(`${m} 读不出（${(e as Error).message}），它引用的母版不知道，${哪部[0] ?? '各作品'}的母版整个留着`);
+      保留.加目录(path.join(数据根, 'cache', '母版', ...哪部), { 类: '算不出', 说明: `交付 manifest 读不出：${层.join('/')}` });
       continue;
     }
     const 自足 = 交付自足(path.dirname(m));
@@ -372,47 +321,6 @@ export const 加交付 = (保留: 保留集, 交付根: string, 数据根: strin
     for (const p of 引用) 保留.加(path.isAbsolute(p) ? p : path.join(数据根, ...p.split('/')), { 类: '交付', 说明 });
   }
 };
-
-// ---------- 段签里的抽样帧 ----------
-
-export type 抽样文件 = 普通文件 & { 作品: string; 段: string; 指纹: string; 在历史: boolean; 参考同大小: string | null };
-
-/**
- * 段签/<作品>/<段键>/<指纹前 16 位>/抽样.mkv 和 …/历史/<字节 sha 前 16 位>/抽样.mkv（版本 1 段签的无损抽样帧）。
- * 参考同大小：同段同指纹的认可参考有一样大的（11-02 以前的认可参考是从它 APFS 克隆的，删了这份不腾那部分空间）
- */
-export const 扫抽样 = (段签根: string, 认可参考根: string): 抽样文件[] => {
-  const r: 抽样文件[] = [];
-  const 子目录 = (d: string) => (fs.existsSync(d) ? fs.readdirSync(d).filter((n) => 没了算空(() => fs.statSync(path.join(d, n)).isDirectory())) : []);
-  const 参考大小 = new Map<string, Map<number, string>>();
-  for (const 平台 of 子目录(认可参考根)) {
-    for (const 段 of 子目录(path.join(认可参考根, 平台))) {
-      for (const 名 of fs.readdirSync(path.join(认可参考根, 平台, 段)).filter((n) => n.endsWith('.mkv'))) {
-        const f = path.join(认可参考根, 平台, 段, 名);
-        const k = `${段}\0${名.slice(0, 16)}`;
-        const st = 没了算空(() => fs.statSync(f));
-        if (st) 参考大小.set(k, (参考大小.get(k) ?? new Map()).set(st.size, f));
-      }
-    }
-  }
-  for (const 段 of 子目录(段签根)) {
-    for (const 指纹 of 子目录(path.join(段签根, 段))) {
-      const 目录 = path.join(段签根, 段, 指纹);
-      const 历史 = path.join(目录, '历史');
-      for (const { d, 在历史 } of [{ d: 目录, 在历史: false }, ...子目录(历史).map((h) => ({ d: path.join(历史, h), 在历史: true }))]) {
-        const f = path.join(d, '抽样.mkv');
-        const st = 没了算空(() => fs.statSync(f));
-        if (!st?.isFile()) continue;
-        r.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs, 作品: path.basename(段签根), 段, 指纹, 在历史, 参考同大小: 参考大小.get(`${段}\0${指纹}`)?.get(st.size) ?? null });
-      }
-    }
-  }
-  return r;
-};
-
-/** 抽样帧：近 近期天数 天写的留（还没合并换比法的检出可能正在用），别的删 */
-export const 规划抽样 = (文件们: readonly 抽样文件[], o: { 现在: number; 近期天数: number }): 带理由<抽样文件>[] =>
-  文件们.map((f) => ({ ...f, 理由: o.现在 - f.改于 < o.近期天数 * 天 ? [{ 类: '近期' as const, 说明: `${o.近期天数} 天内写的，没合并换比法的检出可能还在用` }] : [] }));
 
 // ---------- 目录（草稿、webpack、不认识的） ----------
 

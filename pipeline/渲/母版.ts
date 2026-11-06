@@ -1,7 +1,6 @@
 // 母版缓存的小件：<数据根>/cache/母版/<作品>/<段键>/ 下按指纹前 16 位起名。切片本身叫什么见 段产物.ts（<画面指纹>.mp4、<声音指纹>.wav，决策/0014）。
 //   <指纹>.指纹.json  逐项展开（画面、声音各一份）；<指纹>.用过 修改时间是最后一次被 film、verify 用的时间（不是账本，各文件各记各的）
 //   <指纹>.检出-<哈希> 哪个检出用过这个指纹，内容是检出路径（各 worktree 共用数据根，这边算不出别的检出的当前指纹，缓存/钉.ts 靠它不删人家的）
-// CRF1 时代留下的旧名：<指纹>.mkv（CRF1）、<指纹>.x264.mkv（压缩母版）。只剩认可参考、补交付找旧版时读，cache gc 照常回收。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,10 +8,6 @@ import { 母版目录 } from '../环境/配置.ts';
 import { 本检出 } from '../环境/路径.ts';
 import type { 段指纹 } from '../指纹/指纹.ts';
 
-/** 旧的压缩母版后缀（CRF1 时代） */
-export const 压缩后缀 = '.x264.mkv';
-/** 同一目录里旧 CRF1 名 → 旧压缩母版名 */
-export const 压缩名 = (原: string) => 原.replace(/\.mkv$/, 压缩后缀);
 export const 指纹文件 = (键: string, 指纹: string, 目录 = 母版目录(键)) => path.join(目录, `${指纹.slice(0, 16)}.指纹.json`);
 
 /** 删旧时，近这么久被用过的不删（film、verify 正在用的） */
@@ -27,14 +22,6 @@ export const 记用过 = (目录: string, 指纹: string) => {
     fs.writeFileSync(检出记号文件(目录, 指纹), `${本检出()}\n`, 'utf8');
   } catch {
     // 记不上只是少一层保护
-  }
-};
-/** 最后一次用的时间（毫秒），没记过 null */
-export const 用过于 = (目录: string, 指纹: string): number | null => {
-  try {
-    return fs.statSync(用过文件(目录, 指纹)).mtimeMs;
-  } catch {
-    return null;
   }
 };
 

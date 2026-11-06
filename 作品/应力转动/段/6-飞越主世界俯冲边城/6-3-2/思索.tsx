@@ -3,11 +3,12 @@
 // 画面从下往上：世界画面（6-3-下坠/画面.tsx 按全局帧画；界面淡入以后被不透明的底色盖住，不画）→ 思索的底色 → 场景板、李樱、锤上的压路机虚影、金光、方块碎屑
 // （三维，互相遮挡）→ 标题、按钮、进度条、说明框（2D）→ 标题框里的物品（动力压路机，三维）。
 // 思索里的李樱和下坠里是同一个模型、同一套姿势和灯（灯的方向跟着他转 ψ，见 编排.ts 的 `figureRef`），转场时和底下真的俯冲叠得上。
-// 两版：
-// - `RollerPonder`：世界 + 界面 + 李樱的配音 + 关界面的按钮声 + 推近时起的风声（6-3-下坠/声音.tsx），完整的一段（拼在 6-2-5至6-3-3 里，见 6-2至6-3段界/段表.ts）；
-// - 6-3-2-思索界面层：只有界面 + 按钮声，比本段多 `淡出帧数` − 1 帧（接着画到 6-3-3 里淡完），剪辑时要单独叠界面用。
+// `RollerPonder`：世界 + 界面，完整的一段（拼在 6-2-5至6-3-3 里，见 6-2至6-3段界/段表.ts）；6-3-3 开头用 world={false} 接着画到思索层淡完。
+// 声音（李樱的配音、关界面的按钮声、推近时起的风声）照 6-飞越主世界俯冲边城 段.ts 的 cue 放（11-06 迁成原生段，定义画面 自动挂）。
+// cue 只放「改字」那版配音：渲染输入 台词 选「五句」「原文」时画面跟着换，声音不换。
 import React, { useMemo } from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { pngDir, type Png } from '@engine/model/贴图.ts';
@@ -22,23 +23,17 @@ import { LiYingGoldGlow } from '../../../特效/锤击金光.tsx';
 import { paletteValue } from '@库/界面/思索界面.tsx';
 import {
   posKey, buildBlockGeometry, blockTexture, flipMapV, blockMaterials, Outline,
-  makeRand, destroyParticle, debrisPosAt, billboardAxes, QUAD_CORNERS, debrisMaterial, PonderUiLayer, CloseClick,
+  makeRand, destroyParticle, debrisPosAt, billboardAxes, QUAD_CORNERS, debrisMaterial, PonderUiLayer,
 } from '@库/界面/思索场景.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import { FallScene } from '../../../场/6-边城/6-3-下坠/画面.tsx';
-import { FallSound } from '../../../场/6-边城/6-3-下坠/声音.tsx';
 import { 段表, 刻, 李樱下落 } from '../../../地点/边城/6-3-下坠/时间线.ts';
 import * as LY from '../../../地点/边城/6-3-下坠/编排/李樱.ts';
 import { liYingHip } from '../../../地点/边城/6-3-下坠/编排/金光.ts';
 import * as choreo from '../../../地点/边城/6-3-2/编排.ts';
-import { activeLine, voiceStart, uiOpen, chosenVersion } from '../../../地点/边城/6-3-2/台词.ts';
+import { uiOpen } from '../../../地点/边城/6-3-2/台词.ts';
 import { glowCamAt, ponderCamAt, ponderLayerOpacity, tMatch, transitionW } from '../../../地点/边城/6-3-2/转场.ts';
-import { lineVolume } from '@engine/audio/混音.ts';
-import { 清单Audio } from '@engine/audio/声音Sequence.tsx';
 import ponderText资产 from 'asset:数据/镜头/6-3-2/文案';
-import voiceOriginal from 'asset:配音/镜头/6-3-2/李樱-压路机-原文';
-import voiceFiveLines from 'asset:配音/镜头/6-3-2/李樱-压路机-五句';
-import voiceRevised from 'asset:配音/镜头/6-3-2/李樱-压路机-改字';
 import { 资产目录 } from '@engine/core/资产目录.ts';
 import 资_0 from 'asset:贴图/镜头/6-3-2/方块/平滑石台阶侧';
 import 资_1 from 'asset:贴图/镜头/6-3-2/方块/平滑石头';
@@ -59,8 +54,6 @@ import 资_15 from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
 import 资_16 from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
 import 资_17 from 'asset:贴图/镜头/6-3-2/方块/雪块';
 const ponderText = ponderText资产 as unknown as { 标题: string; 说明: string[] };
-
-const voiceWav = { 改字: voiceRevised, 原文: voiceOriginal, 五句: voiceFiveLines }[chosenVersion];
 
 const TEX = pngDir(资产目录({ './平滑石台阶侧.png': 资_0, './平滑石头.png': 资_1, './泥土.png': 资_2, './深板岩.png': 资_3, './深板岩顶.png': 资_4, './白色混凝土.png': 资_5, './石头.png': 资_6, './裂纹0.png': 资_7, './裂纹1.png': 资_8, './裂纹2.png': 资_9, './裂纹3.png': 资_10, './裂纹4.png': 资_11, './裂纹5.png': 资_12, './裂纹6.png': 资_13, './裂纹7.png': 资_14, './裂纹8.png': 资_15, './裂纹9.png': 资_16, './雪块.png': 资_17 })) as Record<string, Png>;
 
@@ -291,10 +284,9 @@ const RollerItem: React.FC = () => {
   );
 };
 
-// 帧：段内第几帧（不给就是当前帧；6-3-3 开头叠思索层时接着往下数）。世界：画不画底下的世界画面（不画就是透明底）；
-// 配音：放不放李樱的话（界面层不放，配音另有 wav）；按钮声：关界面那一下（只在 6-3-2 自己的时间轴上放）
-export const PonderSegment: React.FC<{ world?: boolean; voice?: boolean; click?: boolean; frame?: number }> = ({ world: showWorld = true, voice: playVoice = true, click = true, frame: frameOverride }) => {
-  const cur = useCurrentFrame();
+// 帧：段内第几帧（1/24 秒一格，不给就是当前时刻；6-3-3 开头叠思索层时接着往下数）。世界：画不画底下的世界画面（不画就是透明底）
+export const PonderSegment: React.FC<{ world?: boolean; frame?: number }> = ({ world: showWorld = true, frame: frameOverride }) => {
+  const cur = use当前秒() * choreo.FPS;
   const frame = frameOverride ?? cur;
   const G = 段表['6-3-2'].起 + frame;
   const t = frame / choreo.FPS - uiOpen; // 思索场景时间（开界面以前是负的）
@@ -337,24 +329,8 @@ export const PonderSegment: React.FC<{ world?: boolean; voice?: boolean; click?:
           <Outline min={greenBox.min} max={greenBox.max} color={paletteValue('GREEN')} k={greenBox.k} />
         </PonderUiLayer>
       )}
-      {/* 李樱的配音：界面开了 `开口` 秒以后开口（取在整帧上）；音量照台词总线（台词.ts 的 `增益dB`） */}
-      {playVoice && (
-        <清单Audio
-          kind="台词清单"
-          名="6-3-2-李樱-压路机"
-          src={voiceWav}
-          文件={`镜头/6-3-2/${activeLine.文件}`}
-          时长={activeLine.时长}
-          from={Math.round((uiOpen + voiceStart) * choreo.FPS)}
-          volume={lineVolume * 10 ** (activeLine.增益dB / 20)}
-        />
-      )}
-      {/* 界面的声音只有关界面那一下按钮声，演示场景里方块碎掉也不出声 */}
-      {click && <CloseClick at={Math.round((uiOpen + choreo.cues.close[0]) * choreo.FPS)} />}
-      {showWorld && <FallSound segment="6-3-2" />}
     </AbsoluteFill>
   );
 };
 
 export const RollerPonder = () => <PonderSegment />;
-export const RollerPonderOverlay = () => <PonderSegment world={false} voice={false} />;

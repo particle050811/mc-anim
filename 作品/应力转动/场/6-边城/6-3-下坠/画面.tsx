@@ -46,7 +46,6 @@ import { HeldCompass } from '../6-3-1/指南针.tsx';
 import { JiuhuHandCompass } from '../../../角色/九胡持指南针.tsx';
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
 import { mouthAt } from '../../../配音/口型.ts';
-import { fallSoundTable } from './声音.tsx';
 const jiuhuRaw = jiuhuRaw资产 as unknown as object;
 
 const JIUHU_MODEL = { ...jiuhuRaw, texture: png(jiuhuSkin) } as unknown as BedrockModel;
@@ -115,8 +114,8 @@ const fx = (): FxParams => {
   return FX;
 };
 
-// 6-3-5 喊「ロードローラーだッ！」时动嘴：开口帧（全局帧）取 声音.tsx 的 RoadRoller；台词只在 6-3-5 放，别的段不动嘴
-const shoutMouth = (globalFrame: number) => mouthAt([fallSoundTable().RoadRoller], '李樱', globalFrame);
+// 6-3-5 喊「ロードローラーだッ！」时动嘴：开口帧（全局帧）取 编排/李樱.ts 的 shoutLine（6-举锤砸穿 段.ts 的台词 cue 就是它）；台词只在 6-3-5 放，别的段不动嘴
+const shoutMouth = (globalFrame: number) => mouthAt([choreo.shoutLine], '李樱', globalFrame);
 
 export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G: globalFrame, segment: segment }) => {
   const { width, height } = useVideoConfig();
