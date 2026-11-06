@@ -22,7 +22,7 @@ const 逐帧记的下限毫秒 = 20;
 export type 帧记录 = { 帧: number; 毫秒: number; 等?: Record<string, number> };
 export type 等待统计 = { 标签: string; 次: number; 总毫秒: number; 最大毫秒: number };
 type 采样时点 = '开始' | '采样' | '结束';
-export type 系统采样 = Partial<温度读数> & { 时点?: 采样时点; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null; /** 后台转存子进程（不算进 子进程*），这刻没在转就没有 */ 后台内存GB?: number | null; 后台CPU?: number | null };
+export type 系统采样 = Partial<温度读数> & { 时点?: 采样时点; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null; /** 11-06 以前后台转存子进程的（决策/0014 删了后台转存），旧明细里有 */ 后台内存GB?: number | null; 后台CPU?: number | null };
 export type 明细小结 = { 帧数: number; 首帧毫秒: number; 中位毫秒: number; P90毫秒: number; P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[] };
 export type 渲染明细 = {
   票?: string;
@@ -81,13 +81,6 @@ const 跑取输出 = (cmd: string, args: string[]) =>
     execFile(cmd, args, { timeout: 3000, maxBuffer: 4 * 1024 * 1024 }, (err, out) => resolve(err ? null : out));
   });
 
-/** 跑后台子进程 登记的根：也是本进程的子孙，混进 子进程* 就分不清出帧和转存各占多少 */
-const 后台根们 = new Set<number>();
-export const 登记后台根 = (pid: number) => {
-  后台根们.add(pid);
-  return () => void 后台根们.delete(pid);
-};
-
 const 空集 = new Set<number>();
 const 解析ps = (ps输出: string) => ps输出.trim().split('\n').map((l) => l.trim().split(/\s+/).map(Number)).filter((c) => c.length >= 4 && c.every(Number.isFinite));
 /** 根的子孙（不含根）；碰到排除的连它的子树一起不进 */
@@ -106,17 +99,12 @@ const 合计 = (行们: number[][], 在内: ReadonlySet<number>) => {
   return { 内存GB: Number((kb / 1024 / 1024).toFixed(2)), CPU: Number(cpu.toFixed(0)) };
 };
 
-/** 本进程的子孙（浏览器、ffmpeg）的内存和 CPU，后台子进程那几棵除外；Windows 没有 ps，记 null */
+/** 本进程的子孙（浏览器、ffmpeg）的内存和 CPU；Windows 没有 ps，记 null */
 export const 累计子孙 = (ps输出: string, 根: number, 排除: ReadonlySet<number> = 空集) => {
   const 行们 = 解析ps(ps输出);
   return 合计(行们, 子孙(行们, 根, 排除));
 };
 
-/** 后台子进程（node、它起的 ffmpeg）连根带子孙 */
-export const 累计后台 = (ps输出: string, 根们: ReadonlySet<number>) => {
-  const 行们 = 解析ps(ps输出);
-  return 合计(行们, new Set([...根们].flatMap((r) => [r, ...子孙(行们, r)])));
-};
 
 /** ps 的 time 列：[天-][时:]分:秒[.小数]（macOS 0:00.02，Linux 00:00:02、1-00:00:02） */
 export const 解析CPU时间 = (文: string): number | null => {
@@ -177,8 +165,7 @@ const 采一次 = async (起: number, 时点: 采样时点): Promise<系统采�
     Promise.resolve().then(读温度并行).catch(无温度),
   ]);
   const 内存=读内存();
-  const 子 = ps ? 累计子孙(ps, process.pid, 后台根们) : null;
-  const 后 = ps && 后台根们.size ? 累计后台(ps, 后台根们) : null;
+  const 子 = ps ? 累计子孙(ps, process.pid) : null;
   return {
     秒, 时点, ...温度,
     负载: Number(os.loadavg()[0]!.toFixed(1)),
@@ -187,7 +174,6 @@ const 采一次 = async (起: number, 时点: 采样时点): Promise<系统采�
     换出GB: 换 ? 解析换出(换) : null,
     子进程内存GB: 子?.内存GB ?? null,
     子进程CPU: 子?.CPU ?? null,
-    ...(后 ? { 后台内存GB: 后.内存GB, 后台CPU: 后.CPU } : {}),
   };
 };
 
@@ -269,7 +255,7 @@ export class 明细收集 {
     }
   }
 
-  /** 总秒止于放闸，后台排队不算占闸；先写一份防批被杀，收工再写回同一文件补齐后台阶段。第一份尚无转存阶段是正常的。 */
+  /** 总秒止于出完片：渲段之后在闸里派生段签、删旧，不算进这次渲染 */
   停表(now = Date.now()) {
     this.止 = now;
   }

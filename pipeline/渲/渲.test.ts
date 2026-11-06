@@ -1,36 +1,36 @@
-// 渲/渲.ts 不开浏览器能测的部分：Composition 和 段.ts 对不上要拦、渲染标签的格式（耗时表按它查预计耗时）。
+// 渲/渲.ts 不开浏览器能测的部分：Composition 和全片位置对不上要拦（帧数按 段输出窗 精确比）、渲染标签的格式（耗时表按它查预计耗时）。
 import { describe, expect, it } from 'vitest';
 import type { 段信息 } from '../清单/清单.ts';
 import { 作品名 } from '../环境/作品.ts';
-import { 叠层渲染标签, 找组合, 渲染标签 } from './渲.ts';
-import { 成片档 } from './设置.ts';
+import { 找组合, 渲染标签 } from './渲.ts';
 
-const 段 = { 键: '6-测试', 段: { 帧数: 48, fps: 24, 宽: 1920, 高: 1080 } } as unknown as 段信息;
+const 段 = (键: string) => ({ 键, 段: { 帧数: 25, fps: 24, 宽: 1920, 高: 1080 } }) as unknown as 段信息;
+// 24 帧编排、出 60 帧：甲 [0,25) → 输出 [0,63)；乙 [25,50) → [⌈62.5⌉, 125) = [63,125)，62 帧；核对段各自从 0 起，和甲一样 63 帧
+const 甲 = 段('6-甲');
+const 乙 = 段('6-乙');
+const 核 = 段('核对-丙');
+const 全部 = [甲, 乙, 核];
 const 组合 = (o: Partial<{ id: string; durationInFrames: number; fps: number; width: number; height: number }> = {}) =>
-  ({ id: '6-测试', durationInFrames: 48, fps: 24, width: 1920, height: 1080, ...o }) as never;
+  ({ id: '6-甲', durationInFrames: 63, fps: 60, width: 1920, height: 1080, ...o }) as never;
 
 describe('找组合', () => {
-  it('按段键（或叠层键）找，帧数、fps、画幅和 段.ts 一致才放过', () => {
-    expect(找组合({ 组合: [组合()] }, 段)).toMatchObject({ id: '6-测试' });
-    expect(找组合({ 组合: [组合({ id: '6-测试-字幕' })] }, 段, '6-测试-字幕')).toMatchObject({ id: '6-测试-字幕' });
+  it('帧数要正好是这段在全片位置上的输出窗：同长的段放在不同位置帧数不同', () => {
+    expect(找组合({ 组合: [组合()] }, 甲, 全部)).toMatchObject({ id: '6-甲' });
+    expect(找组合({ 组合: [组合({ id: '6-乙', durationInFrames: 62 })] }, 乙, 全部)).toMatchObject({ id: '6-乙' });
+    expect(() => 找组合({ 组合: [组合({ id: '6-乙', durationInFrames: 63 })] }, 乙, 全部)).toThrow(/应是 62 帧 60fps/);
+    expect(() => 找组合({ 组合: [组合({ durationInFrames: 62 })] }, 甲, 全部)).toThrow(/应是 63 帧 60fps/);
+    expect(找组合({ 组合: [组合({ id: '核对-丙' })] }, 核, 全部)).toMatchObject({ id: '核对-丙' });
   });
-  it('打包里没有、或和 段.ts 对不上就报错', () => {
-    expect(() => 找组合({ 组合: [] }, 段)).toThrow(/打包里没有 Composition 6-测试/);
-    expect(() => 找组合({ 组合: [组合({ durationInFrames: 47 })] }, 段)).toThrow(/47 帧 24fps 1920×1080）和 段.ts 对不上/);
-    expect(() => 找组合({ 组合: [组合({ width: 1280 })] }, 段)).toThrow(/和 段.ts 对不上/);
-  });
-  it('按成片档的输出帧率注册的：帧数是编排帧数换到输出帧率、差 1 帧以内（段在全片的位置决定取整）', () => {
-    const fps = 成片档().fps;
-    const 应 = (48 * fps) / 24;
-    expect(找组合({ 组合: [组合({ fps, durationInFrames: 应 + 1 })] }, 段)).toMatchObject({ id: '6-测试' });
-    expect(() => 找组合({ 组合: [组合({ fps, durationInFrames: 应 + 2 })] }, 段)).toThrow(/和 段.ts 对不上/);
-    expect(() => 找组合({ 组合: [组合({ fps: 30, durationInFrames: 60 })] }, 段)).toThrow(/和 段.ts 对不上/);
+  it('打包里没有、按编排帧率注册的、画幅不对、段不在清单里都报错', () => {
+    expect(() => 找组合({ 组合: [] }, 甲, 全部)).toThrow(/打包里没有 Composition 6-甲/);
+    expect(() => 找组合({ 组合: [组合({ fps: 24, durationInFrames: 25 })] }, 甲, 全部)).toThrow(/25 帧 24fps 1920×1080）和 段.ts、全片位置对不上/);
+    expect(() => 找组合({ 组合: [组合({ width: 1280 })] }, 甲, 全部)).toThrow(/对不上/);
+    expect(() => 找组合({ 组合: [组合()] }, 甲, [乙])).toThrow(/不在这部作品的清单里/);
   });
 });
 
 describe('渲染标签', () => {
   it('带作品名、段键、级别（耗时表的标签列）', () => {
     expect(渲染标签('6-测试', '预览')).toBe(`render:${作品名()}/6-测试:预览`);
-    expect(叠层渲染标签('6-测试-字幕', '视频')).toBe(`render-layer:${作品名()}/6-测试-字幕:视频`);
   });
 });

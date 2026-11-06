@@ -30,8 +30,6 @@ export type 回收选项 = {
   webpack天数: number;
   列段天数: number;
   现在: number;
-  /** 一次性迁移的只打印：这些 CRF1 按「已经转存完了」算（anim cache 转存 用它列转存后能删什么） */
-  假定已转码?: ReadonlySet<string>;
 };
 // 列段重解存档要几分钟到几十分钟，留得比草稿久
 export const 默认天数 = { 近期: 2, 草稿: 14, webpack: 3, 列段: 90 };
@@ -132,7 +130,6 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
     for (const 作品 of 这次) {
       for (const 种 of 种们) {
         const 扫 = 扫媒体(数据路径('cache', 种, 作品), 种, 作品, { 段签目录: (键, 指纹) => 段签目录(键, 指纹, 作品), 现在: o.现在 });
-        if (o.假定已转码) for (const f of 扫.媒体) if (o.假定已转码.has(f.路径)) f.已被取代 = true;
         if (要(种) || 要('去重')) 计划.媒体.push(...规划媒体(扫.媒体, 保留, { 现在: o.现在, 近期天数: o.近期天数 }));
         if (要('残留')) 计划.临时.push(...规划临时(扫.临时, o.现在));
         if (扫.不认识.length) 计划.不认识.push({ 位置: `cache/${种}/${作品}`, 条目: 扫.不认识.map((f) => ({ ...f, 名: path.relative(数据路径('cache', 种, 作品), f.路径) })) });

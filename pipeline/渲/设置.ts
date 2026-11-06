@@ -63,15 +63,3 @@ export const 声音渲染参数 = () => ({
   concurrency: 1,
 });
 
-// 透明叠层单看用（叠层已画进段里）：ProRes 4444（带透明），PNG 帧、和段一样放大
-export const 叠层渲染参数 = (级别: 渲染级别) => ({
-  inputProps: 规范化设置({ 级别, 输出fps: 成片档().fps }),
-  codec: 'prores' as const,
-  proResProfile: '4444' as const,
-  pixelFormat: 'yuva444p10le' as const,
-  imageFormat: 'png' as const,
-  scale: 级别 === '预览' ? 1 : 成片档().渲染倍数,
-  gl: 显卡(),
-  concurrency: 1,
-  muted: true,
-});

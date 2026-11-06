@@ -67,7 +67,7 @@ export const 读作品资产锁 = (作品根: string, 选 = 当前材质包选�
 // 封顶：一格最多几个贴图像素（16 = 缩回原版尺寸；不写按作品画风放到最大，见 材质包.ts 放大上限），环境变量 ANIM_PACKS_RES 或 材质包.toml 的 "封顶" = 16（全作品一个）。
 // 按段选（用户 11-02「材质包应该也是可选项 而不是耦合的」）：材质包.toml 的 [段] 小节 "<段键>" = [...] 给这一段换包，[] = 这一段用原版，没写的段用 "包"。
 // 选的包只进那一段自己的指纹（换了的贴图 sha 在它闭包的 asset: 叶子里），别的段不动；打包、算指纹按选用分组，一组一个打包（按材质包分组、照材质包选用）。
-// Studio（remotion.config.ts）只有一个打包，按作品的 "包"：[段] 里另选的段在 Studio 里看到的是作品的包，以 anim still、render 为准。
+// Studio（remotion.config.ts）只有一个打包，按作品的 "包"：[段] 里另选的段在 Studio 里看到的是作品的包，以 anim still、film 为准。
 export const 材质包变量 = 'ANIM_PACKS';
 export const 材质包封顶变量 = 'ANIM_PACKS_RES';
 export const 作品材质包表路径 = (作品根: string) => path.join(作品根, '材质包.toml');

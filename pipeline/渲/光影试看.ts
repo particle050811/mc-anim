@@ -1,6 +1,6 @@
 // anim still、bench 的 --光影：打包时把段里引的 engine/三渲二/画布.tsx 换成 engine/三渲二/光影/试看画布.tsx（包一层原画布，光影的样式改从页面环境变量取），
 // 没在作品默认值里开光影的段也能先出光影静帧给用户挑（用户 11-02），不用为试看改默认值、动指纹。只在这两个不留母版、不算指纹的命令里换，
-// render 不认 --光影，母版不会混进试看的画面。一份配置是 JSON 或预设名（engine/三渲二/光影/预设.ts），「关」= 强制不开（段在默认值里开了也关）。
+// film 不认 --光影，切片不会混进试看的画面。一份配置是 JSON 或预设名（engine/三渲二/光影/预设.ts），「关」= 强制不开（段在默认值里开了也关）。
 import path from 'node:path';
 import type { WebpackOverrideFn } from '@remotion/bundler';
 import type { Compiler } from 'webpack';
