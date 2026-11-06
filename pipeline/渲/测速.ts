@@ -1,9 +1,9 @@
 import {记阶段} from '../运行记录/阶段.ts';
-// 测速：同一段取一段帧，照母版的渲染参数渲一遍，按阶段计时（打包 / 开浏览器 / 读 Composition / 首帧 / 出帧 / 编码收尾），不写母版缓存、不按段记耗时（不影响 render 报的预计耗时）。
-// 用途：比 Remotion 版本、比引擎改动前后（docs/渲染性能.md）。走渲染闸；输出 mkv 放临时目录，跑完删掉。
+// 测速：同一段取一段帧，照切片的渲染参数（带这段的字幕、按输出帧）渲一遍，按阶段计时（打包 / 开浏览器 / 读 Composition / 首帧 / 出帧 / 编码收尾），不写切片缓存、不按段记耗时（不影响 anim film 报的预计耗时）。
+// 用途：比 Remotion 版本、比引擎改动前后（docs/渲染性能.md）。走渲染闸；输出 mp4 放临时目录，跑完删掉。帧号是输出帧。
 // 命令行是 anim bench（渲/命令.ts）。详细：Remotion 开 verbose，日志写到 `日志`，看它自己报的各步耗时。
-// --关共享内存、--浏览器：拆 Remotion 版本差异用（共享内存截图 4.0.534 起有；换自带 Chromium 的版本），母版不用。
-// 每轮都写渲染明细（运行记录/渲染明细.ts）；--不收日志 退回 logLevel error（量 verbose 的开销）；--留输出 <目录> 留下 mkv（比两版浏览器的像素）。
+// --关共享内存、--浏览器：拆 Remotion 版本差异用（共享内存截图 4.0.534 起有；换自带 Chromium 的版本），出片不用。
+// 每轮都写渲染明细（运行记录/渲染明细.ts）；--不收日志 退回 logLevel error（量 verbose 的开销）；--留输出 <目录> 留下 mp4（比两版浏览器的像素）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -13,14 +13,15 @@ import { 备浏览器 } from './浏览器.ts';
 import { getCompositions, openBrowser, renderMedia, type LogLevel } from './渲染器.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 代码根 } from '../环境/路径.ts';
-import { 选段 } from '../清单/清单.ts';
+import { 全部段, 选段 } from '../清单/清单.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 照段材质包 } from '../资产/资产锁.ts';
 import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 删打包 } from './打包残留.ts';
-import { 打包 } from './渲.ts';
+import { 打包, 找组合 } from './渲.ts';
+import { 段画面参数们, 段输出窗于 } from './段产物.ts';
 import { 光影环境名, type 光影配置 } from './光影试看.ts';
-import { 渲染参数, 等帧超时毫秒 } from './设置.ts';
+import { 等帧超时毫秒 } from './设置.ts';
 import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
 import { 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
@@ -53,8 +54,9 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
   const 级别 = opts.级别 ?? '视频';
   const [s] = await 选段([opts.段]);
   if (!s) throw new Error(`没有段 ${opts.段}`);
-  const 帧: [number, number] = opts.帧 ?? [0, Math.min(99, s.段.帧数 - 1)];
-  const 参数 = 渲染参数(级别);
+  const 全部 = await 全部段();
+  const 帧: [number, number] = opts.帧 ?? [0, Math.min(99, 段输出窗于(全部, s).帧数 - 1)];
+  const 参数 = 段画面参数们(全部, [s], 级别)[0]!;
   // 打包、开浏览器这几步只有 --详细 才开 verbose；renderMedia 默认 verbose，日志进明细
   const 前期日志: LogLevel = opts.详细 ? 'verbose' : 'error';
   const 渲染日志: LogLevel = opts.不收日志 ? 'error' : 'verbose';
@@ -88,12 +90,11 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
         await 等求解缓存写完();
         await 等地形用量写完();
       }
-      const composition = 组合.find((c) => c.id === s.键);
-      if (!composition) throw new Error(`打包里没有 Composition ${s.键}`);
+      const composition = 找组合({ 组合 }, s, 全部);
       const 轮: 测速结果['轮'] = [];
       for (let i = 0; i < (opts.次 ?? 1); i++) {
         if (opts.留输出) fs.mkdirSync(opts.留输出, { recursive: true });
-        const out = path.join(opts.留输出 ?? os.tmpdir(), `mc-anim-测速-${process.pid}-${i}.mkv`);
+        const out = path.join(opts.留输出 ?? os.tmpdir(), `mc-anim-测速-${process.pid}-${i}.mp4`);
         const 标签 = `bench:${作品名()}/${s.键}:${级别}${opts.光影 ? `:光影-${opts.光影.名}` : ''}`;
         const 排队起=Date.now();
         await 过渲染闸(async () => {
@@ -105,6 +106,7 @@ export const 测速 = async (opts: { 段: string; 帧?: [number, number]; 级别
           const 跑 = () => renderMedia({
               serveUrl, composition, outputLocation: out, inputProps: 参数.inputProps, envVariables: { ...段渲染环境(s.键, 段现在的地形(s)), ...(opts.光影 ? { [光影环境名]: opts.光影.值 } : {}) }, puppeteerInstance: browser, chromiumOptions: { gl: 参数.gl },
               codec: 参数.codec, muted: 参数.muted, crf: 参数.crf, x264Preset: 参数.x264Preset,
+              encodingMaxRate: 参数.encodingMaxRate, encodingBufferSize: 参数.encodingBufferSize, colorSpace: 参数.colorSpace, pixelFormat: 参数.pixelFormat,
               imageFormat: 参数.imageFormat, jpegQuality: 参数.jpegQuality, scale: 参数.scale, concurrency: 参数.concurrency,
               timeoutInMilliseconds: 等帧超时毫秒, overwrite: true, logLevel: 渲染日志, frameRange: 帧,
               ...(opts.关共享内存 ? { disableSharedMemoryCapture: true } : {}),

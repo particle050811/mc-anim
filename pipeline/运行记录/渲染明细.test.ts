@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { 建CPU账, 明细报告, 明细收集, 清旧明细, 累计后台, 累计子孙, 解析CPU时间, 解析换出, 解析等待, 读子树CPU, 读明细们, 算小结, 归类标签 } from './渲染明细.ts';
+import { 建CPU账, 明细报告, 明细收集, 清旧明细, 累计子孙, 解析CPU时间, 解析换出, 解析等待, 读子树CPU, 读明细们, 算小结, 归类标签 } from './渲染明细.ts';
 
 vi.mock('../环境/温度.ts', () => {
   const 无温度 = () => ({ 芯片最高温: null, 发热等级: null });
@@ -97,13 +97,12 @@ describe('渲染明细', () => {
     expect(解析换出('什么也没有')).toBeNull();
   });
 
-  it('后台子进程那棵树不算进子进程，单算：连根带子孙', () => {
-    // 100 是本进程；200 浏览器；300 后台子进程，400 是它的 ffmpeg；500 无关
+  it('子进程连孙子都算；排除的那棵连子树不进', () => {
+    // 100 是本进程；200 浏览器；300 排除的子进程，400 是它的 ffmpeg；500 无关
     const ps = '100 1 1024 10\n200 100 2048 20\n300 100 1048576 5\n400 300 2097152 300\n500 1 9999 99\n';
     const 后台 = new Set([300]);
     expect(累计子孙(ps, 100)).toEqual({ 内存GB: 3, CPU: 325 });
     expect(累计子孙(ps, 100, 后台)).toEqual({ 内存GB: 0, CPU: 20 });
-    expect(累计后台(ps, 后台)).toEqual({ 内存GB: 3, CPU: 305 });
   });
 
   it('CPU 时间各平台的写法都认；子树每个进程一条，别的进程、读不出的不进', () => {

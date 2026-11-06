@@ -7,5 +7,6 @@ import { 固定混音顺序 } from './混音顺序.ts';
 const 渲染器 = createRequire(import.meta.url)('@remotion/renderer') as typeof import('@remotion/renderer');
 固定混音顺序();
 
-export const { ensureBrowser, getCompositions, openBrowser, renderFrames, renderMedia, renderStill } = 渲染器;
+export const { ensureBrowser, getCompositions, openBrowser, renderFrames, renderMedia, renderStill, RenderInternals } = 渲染器;
 export type { HeadlessBrowser, LogLevel } from '@remotion/renderer';
+

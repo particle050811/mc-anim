@@ -1,27 +1,18 @@
-// anim render <选择器…> [--级别 视频|预览] [--重渲] [--留CRF1] [--不叠层|--只叠层] [--到预览 <主题>]（段声明的透明叠层默认一起渲）；
-// anim render [<选择器…>] --只派生 [--重做] [--级别 …]：不渲，从现有当前指纹的母版补段签（没给选择器是全部段，没给 --级别 是各级别）；anim still <段> <帧…> --到预览 <主题> [--级别 …] [--逐帧]；anim bench（测速.ts）；anim 耗时 [<段>] [--最近 <n>] [--详]（运行记录/渲染明细.ts）
+// anim still <段> <帧…> --到预览 <主题> [--级别 …] [--逐帧]；anim bench（测速.ts）；anim 耗时 [<段>] [--最近 <n>] [--详]（运行记录/渲染明细.ts）。
+// 出片（渲段、接成片）只有 anim film（合成/命令.ts）：anim render 用户 11-06 定删掉（「那个 render 不用了 可以直接删了吧」，决策/0014）。
 import fs from 'node:fs';
-import {登记CPU} from '../闸/任务.ts';
 import os from 'node:os';
 import path from 'node:path';
-import { 代码根 } from '../环境/路径.ts';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
-import { 配置 } from '../环境/配置.ts';
-import { 低优先级, 跑 } from '../环境/子进程.ts';
 import { 选段 } from '../清单/清单.ts';
 import { 新建预览目录 } from '../预览/预览.ts';
 import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
-import { 渲染叠层, 渲染母版, 渲静帧 } from './渲.ts';
-import { 备好母版 } from './转存.ts';
+import { 渲静帧 } from './渲.ts';
 import { 测速 } from './测速.ts';
 import { 解析光影 } from './光影试看.ts';
 import { 明细一览, 明细报告, 读明细们 } from '../运行记录/渲染明细.ts';
-import { 后台账 } from '../运行记录/阶段.ts';
 import { 查所选段cues, 渲前跑cues } from '../段框架/自动.ts';
-import { 全部段 } from '../清单/清单.ts';
-import { 补段签 } from '../段签/补.ts';
-import { 懒放行闸 } from '../闸/闸.ts';
 
 const 取级别 = (v: string | undefined): 渲染级别 => {
   const 级别 = (v ?? '视频') as 渲染级别;
@@ -29,57 +20,7 @@ const 取级别 = (v: string | undefined): 渲染级别 => {
   return 级别;
 };
 
-/** 母版压成给人看的 mp4（压法照旧项目 渲染带音频.py：视频级 x264 slower CRF 32，预览级 veryfast CRF 23，AAC 192k） */
-export const 压成mp4 = (母版: string, 出: string, 级别: 渲染级别) =>
-  登记CPU({种:'预览mp4',用途:process.env.ANIM_PURPOSE??'产出'},()=>跑(
-    低优先级([
-      配置('ffmpeg'), '-v', 'error', '-y', '-i', 母版,
-      '-c:v', 'libx264', '-preset', 级别 === '预览' ? 'veryfast' : 'slower', '-crf', 级别 === '预览' ? '23' : '32',
-      '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', '-movflags', '+faststart', 出,
-    ]),
-  ));
-
 export const 渲染命令: Record<string, 命令> = {
-  render: {
-    用法: 'render <选择器…> [--级别 视频|预览] [--重渲] [--留CRF1] [--不叠层|--只叠层] [--到预览 <主题>]；render [<选择器…>] --只派生 [--重做] [--级别 …]',
-    说明: '渲母版到 cache/母版/<段键>/<指纹>.x264.mkv、段声明的透明叠层到 cache/叠层/（指纹对得上就跳过），渲完从 CRF1 派生段签（段签/）、转存压缩母版、删同段同级别的旧母版（钉着的、近 2 小时用过的、别的检出用过的不删，worktree 里不删）；可再压一份母版进预览。--留CRF1 新渲的段转存后不删 CRF1（verify --对基线 要），这批留在闸里串行。--只派生 不渲，从现有当前指纹的 CRF1 母版补段签',
-    跑: async (args, 记录) => {
-      const p = 解析参数(args, { 值: ['--级别', '--到预览'], 开关: ['--重渲', '--留CRF1', '--不叠层', '--只叠层', '--只派生', '--重做'] });
-      if (p.开关.has('--只派生')) {
-        const 别的 = ['--重渲', '--留CRF1', '--不叠层', '--只叠层'].filter((k) => p.开关.has(k));
-        if (别的.length || p.值['--到预览']) throw new 用法错误(`--只派生 不渲，不能和 ${[...别的, ...(p.值['--到预览'] ? ['--到预览'] : [])].join('、')} 一起给`);
-        const cues = await 渲前跑cues();
-        const 段们 = p.位置.length ? await 选段(p.位置) : await 全部段();
-        查所选段cues(cues, 段们);
-        await 补段签(段们, p.值['--级别'] ? [取级别(p.值['--级别'])] : 渲染级别取值, { 重做: p.开关.has('--重做'), 记录, 等放行: 懒放行闸() });
-        return;
-      }
-      if (p.开关.has('--重做')) throw new 用法错误('--重做 只和 --只派生 一起用');
-      if (!p.位置.length) throw new 用法错误('要给选择器（段键、段名、编号、场键、章）');
-      if (p.开关.has('--不叠层') && p.开关.has('--只叠层')) throw new 用法错误('--不叠层 和 --只叠层 只能给一个');
-      const 级别 = 取级别(p.值['--级别']);
-      // 段框架的段：生成的声音表、地址表先和 cue 对齐（要在 选段 之前：表过期时 段.ts 加载就抛错）
-      const cues = await 渲前跑cues();
-      const 段们 = await 选段(p.位置);
-      查所选段cues(cues, 段们);
-      if (!p.开关.has('--不叠层')) await 渲染叠层(段们, 级别, { 重渲: p.开关.has('--重渲'), 记录 });
-      if (p.开关.has('--只叠层')) return;
-      // 用户 11-06 定：子 Agent 在 worktree 里只出静帧（或 anim still 连出几帧看动作），整段渲染由主 Agent 合并后 --低优先 排；这里只提醒不拦（改渲染管线本身的活要真渲）
-      if (代码根().includes(`${path.sep}mc-anim-wt${path.sep}`) && process.env.ANIM_PRIORITY !== 'low')
-        console.error('== 提醒：在 worktree 里渲整段。子 Agent 看效果用 anim still；整段渲染留给主 Agent 合并后用 anim --低优先 render 排（CLAUDE.md 工作纪律）');
-      const 结果 = await 渲染母版(段们, 级别, { 重渲: p.开关.has('--重渲'), 留CRF1: p.开关.has('--留CRF1'), 记录 });
-      if (p.值['--到预览']) {
-        const dir = 新建预览目录(p.值['--到预览']);
-        for (const r of 结果) {
-          const 出 = path.join(dir, `${r.段.编号 ? r.段.编号 + ' ' : ''}${r.段.键}${级别 === '预览' ? '-预览' : ''}.mp4`);
-          // 只有 CRF1 的旧母版先转存，和 film 读同一份画面
-          await 压成mp4((await 备好母版(r.段.键, r.指纹.指纹, 级别, { 记录 })) ?? r.母版, 出, 级别);
-          记录.产物.push(出);
-        }
-        console.log(`预览在 ${dir}`);
-      }
-    },
-  },
   still: {
     用法: 'still <段> <帧…> --到预览 <主题> [--级别 视频|预览] [--逐帧] [--光影 <配置>[;<配置>…]]',
     说明: '渲几帧静帧（PNG）进预览。多帧默认在同一页面连出，快；--逐帧 每帧开新页面，慢但每帧都和单独出一帧相同，逐像素比或连出崩页时用它。--光影 把三渲二画布换成带光影层的试看画布，每份配置（预设名或 JSON）各出一遍，文件名带 -光影-<名>（pipeline/渲/光影试看.ts）',
@@ -103,7 +44,7 @@ export const 渲染命令: Record<string, 命令> = {
   },
   bench: {
     用法: 'bench <段> [--帧 <起>-<止>] [--级别 视频|预览] [--次 <n>] [--详细] [--输出 <json>] [--关共享内存] [--浏览器 <chrome-headless-shell>] [--不收日志] [--留输出 <目录>] [--光影 <配置>]',
-    说明: '测速：照母版参数渲一段帧（默认前 100 帧），按打包、开浏览器、首帧、出帧、收尾计时，不写母版缓存，缺求解缓存时先补齐（docs/渲染性能.md）',
+    说明: '测速：照切片参数（带字幕、输出帧）渲一段帧（默认前 100 帧），按打包、开浏览器、首帧、出帧、收尾计时，不写母版缓存，缺求解缓存时先补齐（docs/渲染性能.md）',
     跑: async (args) => {
       const p = 解析参数(args, { 值: ['--帧', '--级别', '--次', '--输出', '--浏览器', '--留输出', '--光影'], 开关: ['--详细', '--关共享内存', '--不收日志'] });
       const 光影 = p.值['--光影'] ? 解析光影(p.值['--光影']) : undefined;
@@ -140,14 +81,7 @@ export const 渲染命令: Record<string, 命令> = {
         return;
       }
       if (p.位置.length || p.开关.has('--详')) console.log(们.map((x) => 明细报告(x.明细, x.文件)).join('\n\n'));
-      else {
-        console.log(明细一览(们));
-        const 账 = 后台账();
-        if (账.length) {
-          console.log('\n最近几批的后台（派生段签、转存 和出帧同时跑，加总超过墙钟是正常的；限流、等齐 是出帧为它多等的）：');
-          for (const x of 账) console.log(`  ${x.开始}  ${x.段数} 段  出帧 ${x.出帧.toFixed(0)} 秒  派生段签 ${x.派生段签.toFixed(0)}  转存 ${x.转存.toFixed(0)}  限流 ${x.限流.toFixed(0)}  等齐 ${x.等齐.toFixed(0)}`);
-        }
-      }
+      else console.log(明细一览(们));
     },
   },
 };
