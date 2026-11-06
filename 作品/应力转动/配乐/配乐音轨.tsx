@@ -1,16 +1,20 @@
 // 把配乐挂到 Composition 上，并让画面按歌曲时间对齐。
 // 用法：Composition 的 `durationInFrames` 用 `segmentFrames('6-1-4')`，组件里放 `<SegmentMusic 段号="6-1-4" />`（帧 0 = 这段在音乐里的开头，带所在那半的淡入淡出）；
 //   关键帧卡拍用 `frameInSegment('6-1-4', [9, 1])`（第 9 小节第 1 拍是这段第几帧）。参考视频不要音乐就渲染时 --muted 或去掉 `<SegmentMusic>`。
-// 起点先取整到帧（`songStartFrame`），第 f 帧对应歌曲时间 (起帧 + f) / fps，音频和画面拍点同一起帧，取整误差不到半帧。
+// 起点先取整到 1/24 秒的格（`songStartFrame`，第 6、7 章的编排格），第 f 格对应歌曲时间 (起帧 + f) / 24，音频和画面拍点同一起格，取整误差不到半格。
+// 原生段（决策 0015）和兼容层里一样取整到 1/24 秒的格，起点不随输出帧率变；Audio 的帧数按当前时钟的帧率（use帧率）现算。
 import { Audio } from '@remotion/media';
 import React from 'react';
-import { Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
+import { Sequence, useVideoConfig } from 'remotion';
 import { posToSec, type MusicPos, type Song } from '@engine/audio/曲目.ts';
 import { musicVolume } from '@engine/audio/混音.ts';
 import { halfGain, findSegment } from './第六章飞行.ts';
 import { useFirstVisibleFrame, useSfxLog } from '@engine/audio/音效清单.ts';
 import { tagSrc } from '@engine/audio/同源区分.ts';
-import { use编排fps } from '@engine/段/编排时钟.tsx';
+import { use当前秒, use帧率 } from '@engine/段/时间.tsx';
+
+/** 编排格率：歌曲起点取整到这个格上（第 6、7 章 24） */
+const 格率 = 24;
 
 export const songStartFrame = (startSec: number, fps: number) => Math.round(startSec * fps);
 export const songSec = (startSec: number, frame: number, fps: number) => (songStartFrame(startSec, fps) + frame) / fps;
@@ -24,10 +28,11 @@ export const MusicAudio: React.FC<{
   clickTrack?: boolean | number;
 }> = ({ song, startSec: startSec, gain: gainFn, volume: volume = 1, clickTrack: clickTrack }) => {
   const { durationInFrames } = useVideoConfig();
-  const fps = use编排fps();
+  const fps = use帧率();
   const logMusic = useSfxLog('配乐清单');
   const firstVisible = useFirstVisibleFrame(); // volume 回调的帧从露出来那一帧数起（见 音效清单.ts）
-  const startFrame = songStartFrame(startSec, fps);
+  // 起点（秒）取整到编排格；startFrame 是它在当前时钟上的帧号（先乘后除：兼容层里 fps = 格率，和以前同一个整数）
+  const startFrame = (songStartFrame(startSec, 格率) * fps) / 格率;
   // Remotion 按帧给音频乘音量，取这一帧中点的增益，淡入淡出的台阶才不会偏早半帧。
   // 配乐总线固定乘 混音.ts 的 `musicVolume`（用户 10-10 定），节拍声不乘
   const volumeAt = (f: number) => musicVolume * volume * (gainFn ? gainFn((startFrame + f + 0.5) / fps) : 1);
@@ -70,11 +75,7 @@ export const frameInSegment = (segmentId: string, pos: MusicPos, fps = 24) => {
   return Math.round(posToSec(musicTable.song, pos) * fps) - songStartFrame(startSec, fps);
 };
 
-export const useSegmentSongSec = (segmentId: string) => {
-  const frame = useCurrentFrame();
-  const fps = use编排fps();
-  return songSec(segmentRange(segmentId).start, frame, fps);
-};
+export const useSegmentSongSec = (segmentId: string) => songStartFrame(segmentRange(segmentId).start, 格率) / 格率 + use当前秒();
 
 // 播这一段对应的那一截配乐，带上所在那一半的淡入淡出
 export const SegmentMusic: React.FC<{ segmentId: string; volume?: number; clickTrack?: boolean | number }> = ({ segmentId: segmentId, volume: volume, clickTrack: clickTrack }) => {
