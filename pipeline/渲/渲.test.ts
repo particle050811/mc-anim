@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { 段信息 } from '../清单/清单.ts';
 import { 作品名 } from '../环境/作品.ts';
 import { 叠层渲染标签, 找组合, 渲染标签 } from './渲.ts';
+import { 成片档 } from './设置.ts';
 
 const 段 = { 键: '6-测试', 段: { 帧数: 48, fps: 24, 宽: 1920, 高: 1080 } } as unknown as 段信息;
 const 组合 = (o: Partial<{ id: string; durationInFrames: number; fps: number; width: number; height: number }> = {}) =>
@@ -17,6 +18,13 @@ describe('找组合', () => {
     expect(() => 找组合({ 组合: [] }, 段)).toThrow(/打包里没有 Composition 6-测试/);
     expect(() => 找组合({ 组合: [组合({ durationInFrames: 47 })] }, 段)).toThrow(/47 帧 24fps 1920×1080）和 段.ts 对不上/);
     expect(() => 找组合({ 组合: [组合({ width: 1280 })] }, 段)).toThrow(/和 段.ts 对不上/);
+  });
+  it('按成片档的输出帧率注册的：帧数是编排帧数换到输出帧率、差 1 帧以内（段在全片的位置决定取整）', () => {
+    const fps = 成片档().fps;
+    const 应 = (48 * fps) / 24;
+    expect(找组合({ 组合: [组合({ fps, durationInFrames: 应 + 1 })] }, 段)).toMatchObject({ id: '6-测试' });
+    expect(() => 找组合({ 组合: [组合({ fps, durationInFrames: 应 + 2 })] }, 段)).toThrow(/和 段.ts 对不上/);
+    expect(() => 找组合({ 组合: [组合({ fps: 30, durationInFrames: 60 })] }, 段)).toThrow(/和 段.ts 对不上/);
   });
 });
 
