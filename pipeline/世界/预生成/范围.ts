@@ -86,12 +86,6 @@ export const 外包方形 = (区块: readonly [number, number][]): { 中心: [nu
   return { 中心: [cx * 16 + 8, cz * 16 + 8], 半边: r * 16 };
 };
 
-/** 块碰到的区域文件号范围（r.<rx>.<rz>.mca） */
-export const 区域范围 = (框们: readonly 区块框[]) => ({
-  RX: [Math.min(...框们.map((b) => b.cx0)) >> 5, Math.max(...框们.map((b) => b.cx1)) >> 5] as [number, number],
-  RZ: [Math.min(...框们.map((b) => b.cz0)) >> 5, Math.max(...框们.map((b) => b.cz1)) >> 5] as [number, number],
-});
-
 /** 区块列表的外包框（几十万个区块，不用展开参数的 Math.min） */
 export const 列表框 = (区块: readonly [number, number][]): 区块框 => {
   const b = { cx0: Infinity, cx1: -Infinity, cz0: Infinity, cz1: -Infinity };

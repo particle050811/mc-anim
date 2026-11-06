@@ -62,7 +62,6 @@ export async function* 母版像素(file: string, 帧们: readonly number[], 宽
 
 /**
  * 认可记录作参照。像素按这个顺序取：认可参考（认可那版的抽样帧；边解边核对，见 参考像素.ts）、认可那版的母版（调用方确认过是认可那版，尺寸帧数一样才用）、都没有就只比块均值。
- * 记录里没响度、起音的从认可那版的母版补
  */
 export const 认可参照 = async (认可: 认可记录, 旧母版?: string | null, 参考?: string | null): Promise<参照> => {
   let 旧 = 旧母版 && fs.existsSync(旧母版) ? 旧母版 : null;
@@ -70,8 +69,7 @@ export const 认可参照 = async (认可: 认可记录, 旧母版?: string | nu
     const v = 视频信息(旧);
     if (v.宽 !== 认可.宽 || v.高 !== 认可.高 || v.帧数 !== 认可.帧数) 旧 = null;
   }
-  let 声音: 声音签名 | null = 认可.音频sha ? { 音频sha: 认可.音频sha, 响度: 认可.响度, 起音: 认可.起音 } : null;
-  if (声音 && (声音.响度 === null || !声音.起音) && 旧 && 有音轨(旧)) 声音 = { ...(await 扫声音(旧)), 音频sha: 声音.音频sha };
+  const 声音: 声音签名 | null = 认可.音频sha ? { 音频sha: 认可.音频sha, 响度: 认可.响度, 起音: 认可.起音 } : null;
   const 帧们 = 抽样帧(认可.帧数, 认可.间隔);
   const 签名 = new Map(认可.帧.map((f) => [f.帧, f]));
   const 参考在 = 参考 && fs.existsSync(参考) ? 参考 : null;

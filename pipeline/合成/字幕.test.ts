@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { 数据路径, 基线根 } from '../环境/配置.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 读资产锁 } from '../资产/资产锁.ts';
-import { 有声段, 排字幕, 字幕表tsv, srt, 核对开口, type 台词落点 } from './字幕.ts';
-import { 断屏, 画字幕卡 } from './字幕卡.ts';
+import { 有声段, 排字幕, 字幕表tsv, srt, type 台词落点 } from './字幕.ts';
+import { 断屏 } from './字幕卡.ts';
 import { 读单声道 } from './音频.ts';
 
 const 表目录 = path.join(基线根(), '_表');
@@ -89,39 +89,4 @@ describe('字幕', () => {
     const 旧srt = fs.readFileSync(path.join(表目录, '字幕.srt'), 'utf8');
     expect(srt(屏们, 24).split('\n\n').length).toBe(旧srt.split('\n\n').length);
   }, 120_000);
-
-  it.skipIf(!有ffmpeg)('核对开口：配音塞进一段混音里，量出的开口帧和落点差不到 0.1 帧', () => {
-    const 语 = new Float32Array(48000);
-    for (let i = 4800; i < 40000; i++) 语[i] = 0.4 * Math.sin(i / 5) * Math.sin(i / 3000);
-    const 混 = new Float32Array(48000 * 6);
-    const 头 = 48000 * 2 + 1000; // 文件头放在第 2 秒多一点
-    混.set(语, 头);
-    for (let i = 0; i < 混.length; i++) 混[i]! += 0.02 * Math.sin(i / 11);
-    const 开 = 0.1;
-    const e = { id: '测', 段: '甲', 段内帧: 0, 文件头帧: 头 / 2000, 文件: 'x', 配音: '配音/测', 字: '测', 角色: '甲', 位置: '下' as const, 屏们: [], 有声: [[开, 0.8]] as [number, number][], 开, 完: 0.8, 开口帧: 头 / 2000 + 开 * 24 };
-    const r = 核对开口([e], 混, 24, () => 语);
-    expect(r.最大差).toBeLessThan(0.1);
-  });
-
-  it.skipIf(!有基线 || !有ffmpeg)('字幕卡：和旧项目 Chrome 画的 1440p 卡逐像素一样（旧卡在就比）', () => {
-    const 旧目录 = path.join(path.dirname(代码根()), '..', '机械动力应力转动-AI漫画', '参考模型库', '工具', '合成第六章', 'out', '透明层', '字幕-1440p');
-    const 参数 = path.join(旧目录, '字幕卡参数.json');
-    if (!fs.existsSync(参数)) return;
-    const 屏们 = (JSON.parse(fs.readFileSync(参数, 'utf8')) as { 屏们: { 字: string; 位置: '下' | '思索上' }[] }).屏们;
-    const 解 = (png: string | Buffer) => {
-      const r = spawnSync('ffmpeg', ['-v', 'error', '-i', typeof png === 'string' ? png : 'pipe:0', '-f', 'rawvideo', '-pix_fmt', 'rgba', '-'], { input: typeof png === 'string' ? undefined : png, maxBuffer: 1 << 28 });
-      return r.stdout;
-    };
-    for (const [i, p] of 屏们.slice(0, 12).entries()) {
-      const 旧 = path.join(旧目录, '裁', `${String(i).padStart(3, '0')}.png`);
-      if (!fs.existsSync(旧)) continue;
-      const 卡 = 画字幕卡(p.字, p.位置, 2560, 1440);
-      const a = 解(卡.png);
-      const b = 解(旧);
-      expect(a.length, p.字).toBe(b.length);
-      let 差 = 0;
-      for (let k = 0; k < a.length; k++) 差 = Math.max(差, Math.abs(a[k]! - b[k]!));
-      expect(差, p.字).toBeLessThanOrEqual(1);
-    }
-  });
 });

@@ -2,7 +2,8 @@
 // 两人的姿势在一镜到底落地站定的站姿上先叠 落地编排.ts 的从天落地，再叠 编排.ts 的增量（改骑手）。
 import { 插表 } from '@engine/段/按时取值.ts';
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame } from 'remotion';
+import { AbsoluteFill } from 'remotion';
+import { use当前秒 } from '@engine/段/时间.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import type { RideJiuhu, RideLiYing } from '@库/角色/骑扫帚.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
@@ -13,7 +14,6 @@ import * as P613 from '../../场/6-暮色森林/6-1-3/编排.ts';
 import { OnerFrame, type Riders } from '../../场/6-暮色森林/一镜到底/画面.tsx';
 import * as choreo from '../../场/6-暮色森林/6-1-9b/编排.ts';
 import * as landing from '../../场/6-暮色森林/6-1-9b/落地编排.ts';
-import { AfterLandingSound } from './声音.tsx';
 import { mouthAt } from '../../配音/口型.ts';
 import brickUri from 'asset:贴图/镜头/6-1-9b/城堡砖';
 
@@ -77,12 +77,12 @@ export const AfterLandingView: React.FC<{ f: number; cam?: ReturnType<typeof cho
   <OnerFrame F={choreo.toGlobalFrame(frame)} cam={camOverride ?? choreo.camPose(frame)} tweakRiders={tweakRiders(frame)} extra={<LandingParticles F={choreo.toGlobalFrame(frame)} />} />
 );
 
+// 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（定义画面 自动挂）；f 是第几格（1/24 秒一格，带小数）
 export const AfterLanding: React.FC = () => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS;
   return (
     <AbsoluteFill>
       <AfterLandingView f={frame} />
-      <AfterLandingSound />
     </AbsoluteFill>
   );
 };
