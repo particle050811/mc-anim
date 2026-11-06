@@ -47,7 +47,11 @@ export const 体检 = (): 结果[] => {
   const pkg = JSON.parse(fs.readFileSync(path.join(代码根(), 'package.json'), 'utf8'));
   const 锁定 = Object.entries({ ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>).filter(([, v]) => /^\d/.test(v));
   const 不符 = 锁定.filter(([k, v]) => 已装版本(k) !== v).map(([k, v]) => `${k} 要 ${v}、装的是 ${已装版本(k) ?? '没装'}`);
-  查('npm 依赖', 不符.length === 0, 不符.length ? `${不符.join('；')}（跑 npm ci）` : `${锁定.length} 个锁死版本都对`);
+  查('依赖', 不符.length === 0, 不符.length ? `${不符.join('；')}（跑 pnpm install --frozen-lockfile）` : `${锁定.length} 个锁死版本都对`);
+  // pnpm 版本照 package.json 的 packageManager（用户 11-06 定换 pnpm）；corepack enable 后会自动用这一版
+  const 要的pnpm = String(pkg.packageManager ?? '').replace(/^pnpm@/, '');
+  const 有的pnpm = 试跑(['pnpm', '--version']);
+  查('pnpm', 有的pnpm.退出码 === 0 && 有的pnpm.stdout.trim() === 要的pnpm, 有的pnpm.退出码 === 0 ? `${有的pnpm.stdout.trim()}（要 ${要的pnpm}）` : `没装（要 ${要的pnpm}：corepack enable，或 npm i -g pnpm@${要的pnpm}）`);
 
   for (const 名 of ['ffmpeg', 'ffprobe'] as const) {
     const v = 试跑([配置(名), '-version']);
