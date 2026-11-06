@@ -65,7 +65,7 @@ export const 只报目录: Record<string, string> = {
   'cache/核对': '迁移时新旧画面的对照图（人看的，不自动删）',
   'cache/映射': '官方映射等本机自取、不许再分发的文件（anim extract 用，删了下次按 jars.toml 重下）',
   'cache/动作翻译映射': '动作翻译早先临时下的官方映射（新的进 cache/映射/，1.21.11 的还靠这份）',
-  'cache/浏览器': '对照实验用的旧版 chrome-headless-shell（anim bench --浏览器，母版不用；删了要重下）',
+  'cache/浏览器': '渲染用的 chrome-headless-shell，按 Remotion 期望版本一个目录（现用那版渲染都用，删了下次渲染从 node_modules 克隆或重下）；旧版留给 anim bench --浏览器 做对照',
 };
 
 /** 数据根 run/、cache/ 下 anim 认得的条目（别的只报告） */

@@ -15,7 +15,7 @@ export const 打包保留理由 = (包: Pick<目录条目, '路径' | '改于'>,
     const cmd = m![4]!;
     if (cmd.includes(名) || cmd.includes(encodeURIComponent(名))) return [{ 类: '在用', 说明: `进程 #${m![1]} 引用了这份打包` }];
   }
-  const 不明 = 表.find(m => Number(m![1]) !== process.pid && (/pipeline[\\/]cli[\\/]main\.ts(?:\s|$)/.test(m![4]!) || /(?:\.remotion|@remotion)[\\/].*chrome-headless-shell/.test(m![4]!) || /(?:^|[\\/\s])remotion(?:\s|[\\/])/.test(m![4]!)));
+  const 不明 = 表.find(m => Number(m![1]) !== process.pid && (/pipeline[\\/]cli[\\/]main\.ts(?:\s|$)/.test(m![4]!) || /(?:\.remotion|@remotion|[\\/]cache[\\/]浏览器)[\\/].*chrome-headless-shell/.test(m![4]!) || /(?:^|[\\/\s])remotion(?:\s|[\\/])/.test(m![4]!)));
   return 不明 ? [{ 类: '算不出', 说明: `渲染进程 #${不明[1]} 的打包归属不明` }] : [];
 };
 

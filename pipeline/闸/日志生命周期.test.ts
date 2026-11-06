@@ -44,6 +44,6 @@ it('白名单及命令遮密，不泄漏 token 类变量',()=>{
   const text=JSON.stringify(读调度(dir));expect(text).not.toMatch(/fake-env-secret|fake-argv-secret|fake-password|fake-key/);expect(发起.来源).toBe('codex');
 });
 it('孤儿清理只命中 Remotion headless 路径，不碰 Playwright',()=>{
-  const ps='111 1 900 /x/node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell\n112 2 900 /x/node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell\n113 1 900 /x/ms-playwright/chrome-headless-shell';
-  expect(找孤儿(ps).map(x=>x.pid)).toEqual([111]);const killed:number[]=[];清孤儿(ps,pid=>{killed.push(pid);return true;});expect(killed).toEqual([111]);
+  const ps='111 1 900 /x/node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell\n112 2 900 /x/node_modules/.remotion/chrome-headless-shell/mac-arm64/chrome-headless-shell\n113 1 900 /x/ms-playwright/chrome-headless-shell\n114 1 900 /d/mc-anim-data/cache/浏览器/157.0.8080.0-remotion-v3/chrome-headless-shell-mac-arm64/chrome-headless-shell';
+  expect(找孤儿(ps).map(x=>x.pid)).toEqual([111,114]);const killed:number[]=[];清孤儿(ps,pid=>{killed.push(pid);return true;});expect(killed).toEqual([111,114]);
 });

@@ -9,6 +9,7 @@ import { 全部配置, 配置, 数据路径, isMac } from './配置.ts';
 import { 代码根, 主检出 } from './路径.ts';
 import { 当前作品, 作品们 } from './作品.ts';
 import { 读内存, 读数说明 } from './资源.ts';
+import { 期望版本, 浏览器位置 } from '../渲/浏览器.ts';
 import { 试跑 } from './子进程.ts';
 
 type 结果 = { 项: string; 过: boolean; 必需: boolean; 说明: string };
@@ -88,8 +89,8 @@ export const 体检 = (): 结果[] => {
   const 没登记 = Object.keys(锁).filter((id) => !表.条目.has(id));
   查('资产表', 表.问题.length === 0 && 没登记.length === 0, [...表.问题.slice(0, 5), ...(没登记.length ? [`资产锁里有 ${没登记.length} 件资产表没登记：${没登记.slice(0, 5).join('、')}`] : [])].join('；') || `${表.条目.size} 条`);
 
-  const 浏览器 = path.join(代码根(), 'node_modules', '.remotion', 'chrome-headless-shell');
-  查('Remotion 浏览器', fs.existsSync(浏览器), fs.existsSync(浏览器) ? 浏览器 : '还没下载（第一次渲染时 Remotion 自动下）', false);
+  const 浏览器 = 浏览器位置();
+  查('渲染浏览器', fs.existsSync(浏览器.可执行), fs.existsSync(浏览器.可执行) ? 浏览器.目录 : `数据根还没有 ${期望版本()}（第一次渲染时从 node_modules/.remotion 克隆，没有就下载）`, false);
 
   const m = 读内存();
   查('内存读数', m !== null, m ? 读数说明(m) : '读不到（资源闸不等内存，直接放行）', false);
