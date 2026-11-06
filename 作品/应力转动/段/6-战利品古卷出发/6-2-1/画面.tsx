@@ -2,7 +2,7 @@
 // 上面叠一层游戏界面（模型/界面/：6-2-1 的两页匠魂 JEI——链甲基底、冶炼炉燃料，6-2-2/6-2-3 的古卷铁砧页和思索标注，
 // 6-2-3 的结构罗盘搜索界面——这个是游戏里录的整屏界面，连压暗底一起盖满画面），出现的时间在 编排.ts 的 界面()。
 // 房间在世界里的摆法、灯、雾、天空、刀鞘全用 6-2-4 那一套（只读 import），6-2-3 末帧和 6-2-4 首帧逐像素一样（那一帧没有界面）。声音照 6-战利品古卷出发 段.ts 的 cue 放（定义画面 自动挂）。
-// 李樱的台词按配音动嘴（src/lib/口型.ts，开口取 声音.tsx 的 `lineCues`，全局帧）。
+// 李樱的台词按配音动嘴（配音/口型.ts，开口取下面的 `mouthCues`，全局帧；和 段.ts 台词 cue 的开口是同一批时刻，照用户在剪映里放字幕的位置）。
 import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
@@ -23,9 +23,16 @@ import { FuelWindow, MailleWindow } from '@库/界面/匠魂.tsx';
 import { CompassUi } from '@库/界面/结构罗盘.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
-import { lineCues } from './声音.tsx';
 
-const mouthCues = lineCues.map(({ id, frame }) => ({ id, 帧: frame }));
+// 开口（全局帧）：夸克古卷跨 6-2-2、6-2-3 两窗
+const mouthCues = [
+  { id: '6-2-1-李樱-不算白跑', 帧: choreo.lineStarts.notWasted },
+  { id: '6-2-1-李樱-锁链基底', 帧: choreo.lineStarts.chainBase },
+  { id: '6-2-1-李樱-熔炼温度', 帧: choreo.lineStarts.smeltTemp },
+  { id: '6-2-2-李樱-沉淀', 帧: choreo.lineStarts.sediment },
+  { id: '6-2-2-李樱-夸克古卷', 帧: choreo.lineStarts.quarkTome },
+  { id: '6-2-3-李樱-古城寻宝', 帧: choreo.ancientCityLineStart },
+];
 
 const asV3 = (p: number[]) => p as [number, number, number];
 const LOOT_SIZE = 0.5;
