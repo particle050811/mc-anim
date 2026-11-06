@@ -7,7 +7,8 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { fps, 段时钟 } from '../../分镜.ts';
+import { fps } from '../../分镜/时间.ts';
+import { 段时钟 } from '../../分镜/正片第15句.ts';
 import { 光影段 } from '../../默认.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';

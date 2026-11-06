@@ -5,7 +5,7 @@
 import React from 'react';
 import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 画布调子 } from '../../画风.ts';
 import { 女仆祭坛, 柱顶物 } from './模型.tsx';
 import { 你, 她 } from './人物.tsx';

@@ -4,7 +4,8 @@
 import { clamp01 } from '@engine/anim/anim.ts';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import type { 魔法酒狐全部表情 } from '@库/角色/魔法酒狐新动作.ts';
-import { fps, 旧帧, 正片事件 } from '../../分镜.ts';
+import { fps, 旧帧 } from '../../分镜/时间.ts';
+import { 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
 import {
   主手,
   副手捧花,

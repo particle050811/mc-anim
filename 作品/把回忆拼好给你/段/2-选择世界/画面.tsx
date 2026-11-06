@@ -3,7 +3,7 @@
 import type React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 段窗口 } from '../../分镜.ts';
+import { 段窗口 } from '../../分镜/正片开场.ts';
 import { 色板 } from '../../色板.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';

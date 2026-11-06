@@ -98,7 +98,8 @@ describe('去依据（模块哈希）', () => {
   });
 
   it('真分镜：字面量的时刻依据全去掉，透传的留着', () => {
-    const 文本 = fs.readFileSync(path.join(代码根(), '作品/把回忆拼好给你/分镜.ts'), 'utf8');
+    const 目录 = path.join(代码根(), '作品/把回忆拼好给你/分镜');
+    const 文本 = fs.readdirSync(目录).filter((f) => f.endsWith('.ts')).sort().map((f) => fs.readFileSync(path.join(目录, f), 'utf8')).join('\n');
     const 去后 = 去依据(文本.replace(/ as const satisfies [^;]+;/g, ';'));
     expect(去后).toContain('依据: 表[名].依据');
     expect(去后).toContain('依据: d.依据');

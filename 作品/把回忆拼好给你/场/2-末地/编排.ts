@@ -1,14 +1,19 @@
 // 2-抢龙蛋 每一帧谁在哪、什么样：她、你、龙蛋、龙蛋瞬移的传送粒子、机位、开头从第 4 句的浪里出来。
-// 按段内帧算，时刻取 分镜.ts 的正片事件，位置和分寸取 参数.ts、姿势.ts。纯模块（测试能引，不 import 组件）。
+// 按段内帧算，时刻取 分镜 的正片事件，位置和分寸取 参数.ts、姿势.ts。纯模块（测试能引，不 import 组件）。
 // 游戏钟：段首是第 0 刻，每帧 20/fps 刻；粒子、挥手都按刻走，同游戏。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import type { 魔法酒狐全部表情, 魔法酒狐新姿势 } from '@库/角色/魔法酒狐新动作.ts';
 import type { ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { fps, 旧帧, 段内正片事件帧, 段窗口, 正片事件 } from '../../分镜.ts';
+import { fps, 旧帧, 段内帧 } from '../../分镜/时间.ts';
+import { 事件 as 正片第4句事件 } from '../../分镜/正片第4句.ts';
+import { 事件 as 正片第5句事件, 段窗口 } from '../../分镜/正片第5句.ts';
 import { 网格 } from '../../配乐/网格.ts';
 import * as 参 from './参数.ts';
 import * as 姿 from './姿势.ts';
+
+const 正片事件 = { ...正片第4句事件, ...正片第5句事件 };
+const 段内正片事件帧 = (键: string) => 段内帧(段窗口(键).起帧, 正片事件);
 
 const 键 = '2-抢龙蛋';
 export const 事 = 段内正片事件帧(键);
@@ -100,7 +105,7 @@ export const 原版下落 = (刻数: number): number => {
 const 摔前高 = 参.她.蛋上位[2];
 /** 蛋没了以后她的身子中线离地多高（落到 趴高 停住） */
 const 摔高 = (f: number) => Math.max(参.她.趴高, 摔前高 - 原版下落(刻(f - 事.点龙蛋)));
-/** 掉到地上那一帧（连续的段内帧）；分镜.ts 的 扑空 按同一套写成秒，测试核两边差不到一帧 */
+/** 掉到地上那一帧（连续的段内帧）；分镜 的 扑空 按同一套写成秒，测试核两边差不到一帧 */
 export const 摔地帧 = (() => {
   let f = 事.点龙蛋;
   while (摔高(f) > 参.她.趴高) f += 0.01;

@@ -9,7 +9,7 @@ import { 平涂 } from '@engine/三渲二/平涂.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx, magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { fps, 一帧秒 } from '../../分镜.ts';
+import { fps, 一帧秒 } from '../../分镜/时间.ts';
 import { 帽子抬, 开场化秒, 戴帽子 } from '../../场/2-卧室/参数.ts';
 import { 白天光影场 } from '../../场/2-门口/参数.ts';
 import { 卧室画布 } from '../../场/2-卧室/卧室.tsx';

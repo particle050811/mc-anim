@@ -5,7 +5,7 @@
 // 符文怎么飞、字怎么分块见 符文拼字.ts；逐句的位置、断行、对齐见 歌词排版表.ts。
 import type { Png } from '@engine/model/贴图.ts';
 import type { 字形表 } from '@库/界面/像素字表.ts';
-import { fps, 一帧秒, 旧帧 } from '../分镜.ts';
+import { fps, 一帧秒, 旧帧 } from '../分镜/时间.ts';
 
 /** 定死的散列（不用 Math.random：同一帧每次渲都一样），返回 [0, 1) */
 export const 散 = (a: number, b: number, c = 0) => {

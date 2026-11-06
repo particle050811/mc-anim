@@ -4,7 +4,8 @@
 import { clamp01 } from '@engine/anim/anim.ts';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import { 烟花声音们 } from '@库/特效/烟花.ts';
-import { fps, 歌曲帧, 正片事件 } from '../../分镜.ts';
+import { fps, 歌曲帧 } from '../../分镜/时间.ts';
+import { 事件 as 正片事件 } from '../../分镜/正片第9至11句.ts';
 import { 段里那截, type 歌上音效 } from '../../声音/跨段音效.ts';
 import { 烟花们, 声音增益, 种下秒 } from './门口之夜参数.ts';
 

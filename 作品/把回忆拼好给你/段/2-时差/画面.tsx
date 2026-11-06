@@ -3,7 +3,7 @@
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { 插调子 } from '@engine/三渲二/调子.ts';
-import { 段时钟 } from '../../分镜.ts';
+import { 段时钟 } from '../../分镜/正片第13至14句.ts';
 import { 分屏态 } from '../../场/2-门口/分屏参数.ts';
 import { 时差分屏 } from '../../场/2-门口/时差分屏.tsx';
 import { 色板 } from '../../色板.ts';

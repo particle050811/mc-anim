@@ -7,7 +7,7 @@ import { 女仆气泡, 女仆气泡锚高, 气泡像素格 } from '@库/界面/�
 import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
 import { 聊天行不透明度 } from '@库/界面/像素聊天栏.tsx';
 import { 成片倍数 } from '@库/界面/像素字表.ts';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 她, 气泡字, 封面聊天 } from './参数.ts';
 import { 门口机位 } from './布景.tsx';

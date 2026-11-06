@@ -18,7 +18,8 @@ import { 插调子, type 调色 } from '@engine/三渲二/调子.ts';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx, type 手持物 } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { PortalParticles } from '@库/特效/传送粒子.tsx';
-import { fps, 画幅, 正片事件, 段时钟 } from '../../分镜.ts';
+import { fps, 画幅 } from '../../分镜/时间.ts';
+import { 段时钟, 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
 import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
 import { 照片墙格们, 手持地图画 } from '../../地点/照片墙.tsx';
 import { 门口 } from '../../地点/门口小木屋.tsx';
@@ -160,7 +161,7 @@ const 你的头于 = (帧: number): [number, number] => {
 const 整屏弧 = 默认天弧(整屏镜头.取景, 画幅.宽, 画幅.高);
 
 export type 归隐画面属性 = {
-  /** 歌曲帧（分镜.ts 的时间轴） */
+  /** 歌曲帧（分镜 的时间轴） */
   帧: number;
   描边?: boolean;
   /** 整片后期开关（默认开） */

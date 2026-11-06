@@ -1,11 +1,11 @@
 // 歌词字幕：顶部居中一行。每句从入帧起淡入；下一句入帧时它用一半的时长先退掉（两句在同一位置，等长交叉会叠成一团），最后一句在 收 那帧起淡出。
 // 画在段画面里（不走台词 cue、不做 film 叠层），静帧、预览看到的就是成片。
-// 入帧、收帧由段画面从 分镜.ts 取段内帧传进来（每句的开口、咔哒定格），样式从场的 参数.ts 传进来，这里不写帧号。
+// 入帧、收帧由段画面从 分镜 取段内帧传进来（每句的开口、咔哒定格），样式从场的 参数.ts 传进来，这里不写帧号。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { clamp01 } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
-import { fps, 一帧秒 } from '../分镜.ts';
+import { fps, 一帧秒 } from '../分镜/时间.ts';
 
 /** 一句：入 = 从这一段内帧起淡入 */
 export type 歌词行 = { 词: string; 入: number };

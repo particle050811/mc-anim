@@ -18,7 +18,7 @@ import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
 import { 画布调子, 正交机位 as 成片正交机位 } from '../../画风.ts';
 import { magicalWineFoxTurnTo } from '@库/角色/魔法酒狐新动作.ts';
 import { MagicalWineFoxEx, magicalWineFoxBoneAt, magicalWineFoxExBones, type 手持物, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { 月铃兰 } from '../../物品/月铃兰.tsx';
 import { 视图们, type 视图 } from './视图.ts';
