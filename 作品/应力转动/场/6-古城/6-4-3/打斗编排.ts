@@ -60,8 +60,6 @@ export const liying = choreo.makeLiying({ 蓄势: true });
 const cutFrame = tl.帧小数(切李樱);
 const push1 = tl.帧小数(回原速);
 const stopFrame = tl.帧(停顿时刻);
-// 打斗.tsx 的箭飞风声：跟拍起、切到李樱、弹开定住这三帧（这条时间线的全局帧）
-export const flightWindFrames = { 起: 起帧, 切: cutFrame, 止: stopFrame };
 const arrowRight: V3 = norm(cross(geom.来向, [0, 0, 1]));
 const arrowUp: V3 = norm(cross(arrowRight, geom.来向));
 // 画面上的箭速 → 0（慢）～1（快）：8 米/秒（接 6-4-3a 风道里的 1/120）起，167 米/秒以上算满
