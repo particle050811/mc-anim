@@ -146,7 +146,7 @@ const landingSec = (z0: number, vz: number, gravity: number, half: number, groun
 export type 矛管 = { 点: number[][]; 半径: number; particleClockScale: number; 密度?: number };
 const open = (B?: DebrisBurst) => !!B && (B.sec >= 0 || !!B.hidden);
 
-// 一格（中心、尺寸）离矛尖路线最近的那一点：距离、矛尖到那一点的时刻（相对撞击）、位置和路线方向。路线按 0.1 格细分。一镜到底/声音.tsx 也用它定每一格破坏声什么时候响
+// 一格（中心、尺寸）离矛尖路线最近的那一点：距离、矛尖到那一点的时刻（相对撞击）、位置和路线方向。路线按 0.1 格细分
 export const closestOnTube = (center: number[], size: number[], tube: 矛管) => {
   let best = Infinity;
   let bt = 0;

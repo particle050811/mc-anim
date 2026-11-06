@@ -5,7 +5,7 @@ import type { 命令 } from '../cli/命令.ts';
 import { 解析参数 } from '../cli/参数.ts';
 import { 读资产表 } from '../资产/资产表.ts';
 import { 字节路径, 读资产锁 } from '../资产/资产锁.ts';
-import { 全部配置, 配置, 数据路径, isMac } from './配置.ts';
+import { 全部配置, 配置, 数据路径 } from './配置.ts';
 import { 代码根, 主检出 } from './路径.ts';
 import { 当前作品, 作品们 } from './作品.ts';
 import { 读内存, 读数说明 } from './资源.ts';
@@ -31,12 +31,6 @@ const 已装版本 = (包: string): string | null => {
   }
 };
 
-/** 成片编码器不在 ffmpeg 里时的提示。母版转码、预览写死 libx264，缺它只能换 ffmpeg，改配置救不了 */
-export const 缺编码器提示 = (名: string) =>
-  名 === 'libx264'
-    ? `${名} 不在 ffmpeg 里（换带 libx264 的 ffmpeg）`
-    : `${名} 不在 ffmpeg 里（换带 ${名} 的 ffmpeg，或 ANIM_VIDEO_ENCODER=libx264）`;
-
 export const 体检 = (): 结果[] => {
   const r: 结果[] = [];
   const 查 = (项: string, 过: boolean, 说明: string, 必需 = true) => r.push({ 项, 过, 必需, 说明 });
@@ -59,9 +53,8 @@ export const 体检 = (): 结果[] => {
   }
   const 编码器表 = 试跑([配置('ffmpeg'), '-hide_banner', '-encoders']).stdout;
   const 有编码器 = (名: string) => new RegExp(`\\s${名}\\s`).test(编码器表);
-  查('成片编码器', 有编码器(配置('编码器')), 有编码器(配置('编码器')) ? 配置('编码器') : 缺编码器提示(配置('编码器')));
-  查('libx264', 有编码器('libx264'), '成片、预览、分享版要用', true);
-  if (isMac) 查('videotoolbox', 有编码器('h264_videotoolbox'), '可选：Mac 上要快时用它出片', false);
+  // 切片由 Remotion 自带的 ffmpeg 压，film 只接不重压；本机 ffmpeg 只有分享版要编码器
+  查('libsvtav1', 有编码器('libsvtav1'), 有编码器('libsvtav1') ? 'anim film --分享版 用' : 'libsvtav1 不在 ffmpeg 里（anim film --分享版 要它，换带 libsvtav1 的 ffmpeg）');
 
   for (const [k, 要] of [['core.quotepath', 'false'], ['core.longpaths', 'true']] as const) {
     const v = 试跑(['git', '-C', 代码根(), 'config', '--get', k]).stdout.trim();

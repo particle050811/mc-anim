@@ -27,7 +27,7 @@ const 日志筛 = (p: 已解析, 现在: number) => {
     const 从 = 从串 ? 解析时刻('--从', 从串, 现在) : -Infinity, 到 = 到串 ? 解析时刻('--到', 到串, 现在) : Infinity;
     const 含 = (v: unknown, 要: string) => JSON.stringify(v)?.includes(要);
     const 在窗 = (ms: number) => ms >= 从 && ms <= 到 && (!日 || new Date(ms).toISOString().slice(5, 10) === 日);
-    // 路 开、令 这些事件的路名在顶层，发起者多半没设 ANIM_ROUTE。顶层有段的（告警、后台事件）以它为准：声明里是任务手上那段，后台做的可能是上一段。
+    // 路 开、令 这些事件的路名在顶层，发起者多半没设 ANIM_ROUTE。顶层有段的（告警）以它为准：声明里是任务手上那段。
     const 入选 = (x: 调度事件) => 在窗(Date.parse(x.时)) && (!事 || 含(x.事, 事)) && (!票 || 含(x.票, 票)) && (!段 || 含(x.段 ?? (x.声明 as { 段?: string } | undefined)?.段, 段)) && (!路 || 含(x.路, 路) || 含((x.发起 as { 路?: string } | undefined)?.路, 路));
     return { 在窗, 入选 };
 };

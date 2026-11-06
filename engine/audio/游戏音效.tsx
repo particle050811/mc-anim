@@ -835,7 +835,7 @@ export const distanceGain = (listener: V3, source: V3, range: number) =>
 
 // 一声在某一帧最后乘到文件上的音量：游戏的增益 × 距离衰减，主要动作按 混音.ts 的下限兜底，乘份数和音效总线。
 // 脚步没有下限，照游戏衰减（成片的脚步交给 AI 生成，用户 10-11）。
-// 距离 = `距离增益`(听者, 声源, 范围)。`游戏声音轨` 和 一镜到底/声音.tsx 的限幅预测都用它，两边算的一样
+// 距离 = `距离增益`(听者, 声源, 范围)
 export const soundGain = (sound: SoundCue, resolved: ReturnType<typeof resolveSound>, distGain: number) => {
   const gain = resolved.gain * distGain;
   const floored = majorActionFloorOn && isMajorAction(sound) ? Math.max(gain, Math.min(resolved.gain, majorActionFloor)) : gain;
@@ -852,7 +852,7 @@ const cueTarget = (s: { 档?: 音效档; 响度?: number }) => s.响度 ?? (s.�
 // 一声归哪档：镜头给的，没给按事件名
 export const cueTier = (s: SoundCue): { 档?: 音效档; 响度?: number } => ({ 档: s.档 ?? defaultTier(s.事件), 响度: s.响度 });
 export const isTiered = (s: SoundCue) => cueTarget(cueTier(s)) !== undefined;
-// 一声在某一帧最后乘到文件上的音量：分档的按档，「细节」档照游戏规则（`soundGain`）。`游戏声音轨` 和 一镜到底/声音/限幅.ts 的峰值预测都用它
+// 一声在某一帧最后乘到文件上的音量：分档的按档，「细节」档照游戏规则（`soundGain`）
 // 脚步档另乘游戏的线性距离衰减（16 格外听不见）：画外、远处的人的脚步不放（用户 10-18 问「为什么在空中和落地后还有走路的声音」，那是画外九胡的脚步）
 export const cueGain = (sound: SoundCue, resolved: ReturnType<typeof resolveSound>, listenerPos: V3) => {
   const tier = cueTier(sound);
@@ -868,7 +868,6 @@ const tierLabel = (s: { 档?: 音效档; 响度?: number }) =>
 // 不往后取整帧、把晚开始的那一点从文件头跳过去：刀砍、箭命中、脚步这类脆声最响的一下就在文件头 5 毫秒里，跳掉起音就没了，峰值小 10～15 dB、发闷（用户 10-11 问为什么要切掉一节）。
 // 帧号是负的（上一段就开始响、这一段接着放）照同一个规则取整再只放剩下的：Math.round(帧 − 整数) = Math.round(帧) − 整数，前后两段算出来的起点相同，接得上。
 // 本来就该从文件中间接着放的（起点 > 0：慢放回到原速以后按剧情时间接着放的余音）不取整，往后取整帧、把晚的那一点跳过去，落点准。
-// 一镜到底/声音.tsx 撞墙限幅的峰值预测也用它，两边算的起点一样
 // 文件开头的静音（音效起音.json）先从 帧 里减掉：起播早这么多，听见的那一下还在 帧 上
 export const playStartFrame = (s: SoundCue, fps = 24) => {
   if ((s.起点 ?? 0) > 0) return s.帧;

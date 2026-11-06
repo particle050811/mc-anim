@@ -11,6 +11,7 @@ export type 文件表 = Record<string, string | Buffer | null>;
 /** 一个合规的最小仓库：一段 7-甲（场 7-场一）、一件公开资产、一条规矩、空台词表 */
 export const 基础 = (): 文件表 => ({
   'engine/段/段定义.ts': fs.readFileSync(path.join(代码根(), 'engine', '段', '段定义.ts'), 'utf8'),
+  'engine/段/按时取值.ts': fs.readFileSync(path.join(代码根(), 'engine', '段', '按时取值.ts'), 'utf8'),
   '作品/应力转动/清单.ts': [
     "export const 清单 = [{ 键: '7-甲', 章: 7 }];",
     "export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
