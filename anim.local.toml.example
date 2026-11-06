@@ -38,12 +38,6 @@
 # 资源闸锁目录。环境变量 ANIM_LOCK_DIR。默认：<数据根>/run/locks
 # lock_dir = "../mc-anim-data/run/locks"
 
-# 成片视频编码器：libsvtav1（AV1）、libx264 或 h264_videotoolbox。环境变量 ANIM_VIDEO_ENCODER。默认 libsvtav1；h264_videotoolbox 只在 Mac 上可选，要快时用
-# video_encoder = "libsvtav1"
-# 档位、质量：不写就用各编码器的默认（libsvtav1 preset 6、CRF 30；libx264 medium、CRF 18）；码率不卡。环境变量 ANIM_VIDEO_PRESET、ANIM_VIDEO_CRF
-# video_preset = "6"
-# video_crf = "30"
-
 # 成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧）或 1080p60（1.5 倍出 1920×1080）；换档段指纹全变、要整片重渲。环境变量 ANIM_FILM_PROFILE
 # film_profile = "4k60"
 
