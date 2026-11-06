@@ -19,7 +19,7 @@
 //    娜迦没有护甲，刀光罩住头（本体），不按身体节转给本体的 2/3 算；单算一刀（528）斩不断。
 // 5. 颜色：严格照 jar，拔刀剑自己的跳劈不会让它变红（金色普通字）；这一刀是空中下劈、参考图也是深红大字，按暴击画。
 import React from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { rad } from '@engine/anim/anim.ts';
 import { GAME_NAGA } from '@库/角色/娜迦实机.tsx';
@@ -28,7 +28,7 @@ import { JadeTooltip, jadeScalePerWidth } from '@库/界面/Jade.tsx';
 import { courtyardToWorld, nagaShotCam, type NagaShotProps } from './娜迦参考模型.tsx';
 import { nagaWarp } from './动作改进.ts';
 import * as choreo from './编排.ts';
-import { use编排fps } from '@engine/段/编排时钟.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 
 // ---------- 伤害 ----------
 export const nagaHealth = (120 + 130) * 10; // 困难（极限模式）× 原文的十倍
@@ -91,13 +91,12 @@ const nagaJade = (storyFrame: number, motionV2: boolean) => {
 };
 
 export const NagaDamageLayer: React.FC<NagaShotProps> = (props) => {
-  const frame = useCurrentFrame();
+  const frame = use当前秒() * choreo.FPS;
   const { width, height } = useVideoConfig();
-  const fps = use编排fps();
   const { f: storyFrame, cam: cam } = nagaShotCam(props, frame);
   const toWorld = (p: number[]) => toThree(courtyardToWorld(p));
   const camera = makePerspectiveCamera(cam.lens, toWorld(cam.pos), toWorld(cam.tgt), width, height);
-  const ticks = ((frame - damageSpawnFrame) / fps) * 20;
+  const ticks = ((frame - damageSpawnFrame) / choreo.FPS) * 20;
   const jade = nagaJade(storyFrame, props.动作改进 ?? false);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>

@@ -1,6 +1,6 @@
 // 第 1 场 6-1-1～6-1-4至9 各段的 Composition 组件：照 段界.ts 的截把原来那几个组件拼起来（lib/拼段.tsx）。
 // 6-1-2 的伤害数字层同样按截拼（只有 6-1-2 斩娜迦那一截有数字），和 6-1-2 段同帧。
-// 截表的数是 1/24 秒一格（拼段 每秒={24}，按秒放）；这几个源组件只画画面，声音照各段 段.ts 的 cue 放。
+// 截表的数是各源组件的格（1/24 秒），拼段 按秒换算（每秒 = 24）。声音照各段 段.ts 的 cue 放，源组件不挂声音（决策 0015）。
 import React from 'react';
 import { 拼段, type 截 } from '@engine/core/拼段.tsx';
 import { EnterForest } from '../6-1-1/进入森林.tsx';
@@ -16,6 +16,7 @@ const NagaDamage: React.FC = () => <NagaDamageLayer {...official} />;
 // 一镜到底的源帧就是全局帧 F，截表放到硬切 6-1-9b 那一帧（F_CUT）为止
 const Oner: React.FC = () => <OnerSegment 起={0} />;
 const sourceComponents: Record<源, React.FC> = { '6-1-1': EnterForest, '6-1-2': Naga, '6-1-3': TakeOff, 一镜到底: Oner };
+const FPS = 24;
 
 const Empty: React.FC = () => null; // 透明层里没有数字的截
 const piecesOf = (id: SegmentId, components: Partial<Record<源, React.FC>>): (截 & { 画: React.FC })[] =>
@@ -23,12 +24,12 @@ const piecesOf = (id: SegmentId, components: Partial<Record<源, React.FC>>): (�
 
 const shots = segments.map((s) => {
   const pieces = piecesOf(s.id, sourceComponents);
-  const Comp: React.FC = () => <拼段 截们={pieces} 每秒={24} />;
+  const Comp: React.FC = () => <拼段 截们={pieces} 每秒={FPS} />;
   return { id: compositionId(s.id), component: Comp, frames: frameCountOf(s.id) };
 });
 // 注册用：<Shot {...scene1Shot('6-1-2')} />
 export const scene1Shot = (id: SegmentId) => shots[segments.findIndex((s) => s.id === id)];
 
 const damagePieces = piecesOf('6-1-2', { '6-1-2': NagaDamage });
-export const NagaDamageSegment: React.FC = () => <拼段 截们={damagePieces} />;
+export const NagaDamageSegment: React.FC = () => <拼段 截们={damagePieces} 每秒={FPS} />;
 export const NAGA_SEGMENT_FRAMES = frameCountOf('6-1-2');

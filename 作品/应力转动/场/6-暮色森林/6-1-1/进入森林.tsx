@@ -7,7 +7,7 @@ import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { useThree } from '@react-three/fiber';
 import React, { useMemo } from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { rad } from '@engine/anim/anim.ts';
 import { Box, rng, type V3 } from '@engine/model/parts.tsx';
@@ -31,13 +31,14 @@ import { shadowFarFor, TwilightClouds, TwilightSunLight, useTwilightFog } from '
 import { VIEW_FOG } from '@engine/voxel/视距.ts';
 import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
 import * as choreo from './编排.ts';
-import { EnterForestSound, lineCues } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
-import { use编排fps } from '@engine/段/编排时钟.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 
 export const ENTER_FOREST_FRAMES = choreo.END - 1;
 
-// 台词口型：台词轨的帧是 Remotion 帧，编排帧 = Remotion 帧 + 1
+// 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口帧是段内帧（cue 在 段/6-进入森林/段.ts）
+const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 }];
+// 台词口型：段内帧，编排帧 = 段内帧 + 1
 const liYingMouth = (choreoFrame: number) => mouthAt(lineCues, '李樱', choreoFrame - 1);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
@@ -173,18 +174,16 @@ const TwilightForest: React.FC<{ f: number; t: number }> = ({ f: frame, t }) => 
 };
 
 export const EnterForest: React.FC = () => {
-  const frame = useCurrentFrame();
+  const sec = use当前秒();
+  const frame = sec * choreo.FPS;
   const { width, height } = useVideoConfig();
-  const fps = use编排fps();
   const choreoFrame = frame + 1;
   const island = choreo.world(choreoFrame) === 'island';
   // 不超采样（用户 10-07 比过 2K 下超采样和不超采样，选不超采样，见 lib/渲染级别.ts）。
-  // 声音见 声音.tsx，挂在两块画布外面，换画布时不打断。
-  const soundTrack = <EnterForestSound />;
+  // 声音照 段.ts 的 cue 放（定义画面 自动挂，决策 0015），不在这里挂。
   if (island)
     return (
       <>
-        {soundTrack}
         {/* 两块画布的 key 不同：gl 的设置只在建画布时生效，同一个位置只换 props 会沿用旧画布，暮色那一半就跟着开了对数深度 */}
         <ThreeCanvas key="海岛" width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
           <color attach="background" args={[SKY.horizon]} />
@@ -200,7 +199,6 @@ export const EnterForest: React.FC = () => {
     );
   return (
     <>
-      {soundTrack}
       <ThreeCanvas key="暮色" width={width} height={height} shadows="percentage" gl={{ antialias: true }} dpr={canvasDpr(1)}>
         <color attach="background" args={[twilightFogColor]} />
         {/* 雾只给暮色森林（和 6-1-2 一样挂在场景上，满视距、只在视距边上淡出，lib/视距.ts） */}
@@ -209,7 +207,7 @@ export const EnterForest: React.FC = () => {
         <PostFx drawsScene={false} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <TwilightForest f={choreoFrame} t={frame / fps} />
+          <TwilightForest f={choreoFrame} t={sec} />
         </group>
       </ThreeCanvas>
     </>

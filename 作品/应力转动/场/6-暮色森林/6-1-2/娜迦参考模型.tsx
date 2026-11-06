@@ -6,7 +6,7 @@ import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { useThree } from '@react-three/fiber';
 import React from 'react';
-import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { useVideoConfig } from 'remotion';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { PostFx } from '@engine/post/后期.tsx';
 import * as THREE from 'three';
@@ -27,10 +27,9 @@ import { sunDirFromAngles, cliGain, cliSunDir, twilightSunDir } from '@engine/li
 import { LandmarkPlacement, twilightLandmark, TwilightTerrain } from '../../../地点/暮色新世界.tsx';
 import * as choreo from './编排.ts';
 import * as motion from './动作改进.ts';
-import { nagaLineCues, NagaShotSound } from './声音.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { 渲染输入 } from '@engine/core/渲染设置.ts';
-import { use编排fps } from '@engine/段/编排时钟.tsx';
+import { use当前秒 } from '@engine/段/时间.tsx';
 
 // 李樱用哪一版动作：原版（6-1-2-斩娜迦-旧动作）是 编排.ts 的 `liying`；正式的 6-1-2-斩娜迦（动作改进）换成 动作改进.ts 的 `liyingV2`（人、残影、刀光都跟着换）
 type LiyingVersion = (frame: number) => ReturnType<typeof choreo.liying>;
@@ -65,6 +64,12 @@ const meshAO = Boolean((渲染输入() as { meshAO?: boolean }).meshAO);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
+
+// 口型用的台词开口帧（段内帧，cue 在 段/6-斩娜迦/段.ts）：打击停顿以后的台词跟着往后挪
+const nagaLineCues = (hitStop: number) => [
+  { id: '6-1-2-李樱-不值一提', 帧: choreo.lineStartFrame + hitStop },
+  { id: '6-1-3-九胡-等等我', 帧: choreo.segFrame(choreo.S3 + choreo.MAZE_SHOUT) + hitStop },
+];
 
 type CamPose = { lens: number; pos: number[]; tgt: number[] };
 const Rig: React.FC<{ k: CamPose }> = ({ k }) => {
@@ -193,9 +198,9 @@ export const nagaShotCam = ({ hitStopFrames = 0, newCams = false, 跟拍: follow
 };
 export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
   const { 动作改进: motionV2 = false, hitStopFrames = 0, newCams = false, preSheathFix = false, 跟拍: followMode } = props;
-  const frame = useCurrentFrame();
+  const sec = use当前秒();
+  const frame = sec * choreo.FPS;
   const { width, height } = useVideoConfig();
-  const fps = use编排fps();
   const { f: storyFrame, cam: cam } = nagaShotCam({ hitStopFrames, newCams, 跟拍: followMode }, frame);
   // 光：庭院几个镜头 70°/28°；迷宫镜头（S3 起）按 迷宫光 换（见上面）
   const mazePreset = storyFrame >= choreo.S3 && !cliSunDir && !cliGain ? mazeLightPresets[props.mazeLight ?? defaultMazeLight] : null;
@@ -207,7 +212,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
   // 不超采样（用户 10-07 定，见 lib/渲染级别.ts）：720p 时 dpr=2 远处方块、树叶、海带出摩尔纹，超采样只减半，3 倍反而更差（非整数倍缩放）
   return (
     <>
-      <NagaShotSound hitStopFrames={hitStopFrames} sheathLateFrames={motionV2 ? motion.sheathLateFrames : 0} listener={followMode ? undefined : newCams ? motion.cameraV2 : undefined} />
+      {/* 声音照 段.ts 的 cue 放（定义画面 自动挂，决策 0015），不在这里挂 */}
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true }} dpr={canvasDpr(1)}>
         <color attach="background" args={[twilightFogColor]} />
         {/* 暮色森林的雾是很亮的薄荷绿；按全片规矩开满视距，只在视距边上淡出（lib/视距.ts） */}
@@ -224,7 +229,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
               现在那几个镜头里墙是背光的，靠黄昏档偏蓝紫的天光托着。投影到雾的远端（视距） */}
           <TwilightSunLight shadowFar={shadowFarFor(VIEW_FOG.far)} lightDir={lightDir} gain={lightGain} />
           {/* 跑道上的草留着（用户 2026-10-01：不用清），跑起来脚会被草挡住一点。庭院网格由 暮色地形 画（摆在新世界的庭院上） */}
-          <TwilightTerrain camPos={courtyardToWorld(cam.pos)} landmarks={nagaLandmarks} t={frame / fps} shadowLightDir={lightDir} />
+          <TwilightTerrain camPos={courtyardToWorld(cam.pos)} landmarks={nagaLandmarks} t={sec} shadowLightDir={lightDir} />
           {/* 云同暮色各镜头（lib/暮色光照.tsx 的 TwilightClouds），按这里的光向打光 */}
           <TwilightClouds sun={lightDir} />
           <LandmarkPlacement 名="娜迦庭院">
