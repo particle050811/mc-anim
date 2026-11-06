@@ -1,6 +1,6 @@
 // 挂 GitHub Release 发的字节的锁 <作品根>/发布锁.json（anim assets pack 生成，人不手改；见 docs/决策/0006-挂Release发字节.md）：
 // 仓库、标签和这一版的附件，每个附件记名字、sha256、大小，和里面是什么（store/ 的一批字节，或一个地形包的一个版本）。
-// 这里只读锁、查数据根还缺什么（render 这些命令开头提示要不要 anim assets pull）；打包、下载在 资产/发布.ts。
+// 这里只读锁、查数据根还缺什么（film 这些命令开头提示要不要 anim assets pull）；打包、下载在 资产/发布.ts。
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -35,7 +35,7 @@ export const 附件缺 = (a: 附件, 根: string): number => {
   return (a.字节 ?? []).filter((sha) => !fs.existsSync(path.join(根, 'store', sha.slice(0, 2), sha))).length;
 };
 
-/** 有发布锁、数据根又缺它的东西时打一行（render、still、film、studio 开头）；不自动下：地形包上 GB */
+/** 有发布锁、数据根又缺它的东西时打一行（film、still、studio 开头）；不自动下：地形包上 GB */
 export const 提示发布缺 = (作品根: string, 根: string) => {
   const 锁 = 读发布锁(作品根);
   if (!锁) return;

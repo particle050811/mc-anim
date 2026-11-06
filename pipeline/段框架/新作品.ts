@@ -21,7 +21,7 @@ const 空声音文件 = (目录: string, 写了: string[]) => {
   写新文件(path.join(目录, 声音地址文件), 声音地址文本([], {}), 写了);
 };
 
-export const 清单模板 = (首段: string) => `// 段清单：进成片的段按剪辑顺序排，anim render、anim film、注册.tsx 都读它（唯一顺序表）。纯数据。
+export const 清单模板 = (首段: string) => `// 段清单：进成片的段按剪辑顺序排，anim film、注册.tsx 都读它（唯一顺序表）。纯数据。
 // 段键是永久身份（<章>-<段名>），目录名、Composition id、母版缓存都用它；核对段（键以 核对- 开头）放 核对/，不进章节编号。
 import type { 清单条目 } from '@engine/段/清单条目.ts';
 import { 清单工具 } from '@engine/段/清单工具.ts';

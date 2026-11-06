@@ -5,7 +5,7 @@
 // 选了材质包的段按它的选用取字节（材质包.toml，资产锁.ts 套材质包）：带的是换过的那份；环境变量的试样不算。
 // 同一个包里别的段（核对段等）import、又不在集合里的字节，公开仓库没有，打包时换成占位（资产/缺字节.ts）。
 // anim assets vendor 照它重写 字节/（从数据根 store 拷、逐件核 sha），anim check 核对 字节/ 和集合一致；
-// anim render/still/film/studio 开头 补字节：字节/ 里数据根 store/ 还没有的核过 sha 补进去（APFS 克隆，别的文件系统退成普通复制），已有的不动。
+// anim film/still/studio 开头 补字节：字节/ 里数据根 store/ 还没有的核过 sha 补进去（APFS 克隆，别的文件系统退成普通复制），已有的不动。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';

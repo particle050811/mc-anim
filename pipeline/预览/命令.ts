@@ -61,7 +61,7 @@ export const 预览命令: Record<string, 命令> = {
     不记录: true,
     透传: true,
     // remotion.config.ts 在 Remotion CLI 进程里求值，靠 ANIM_WORK 知道是哪部作品（资产锁、求解入口按它取）。
-    // 随仓库的字节、私有配乐（缺了换静音）先在这边备好，和 anim render 打包前一样（渲/渲.ts 的 打包）；段框架的段先对齐生成的声音文件（段框架/自动.ts）。
+    // 随仓库的字节、私有配乐（缺了换静音）先在这边备好，和 anim film 打包前一样（渲/渲.ts 的 打包）；段框架的段先对齐生成的声音文件（段框架/自动.ts）。
     // 开着 Studio 时改了 段.ts 的声音不会自动重生成，要手跑 anim cues。一个页面看全部段，地形版本传全表（渲/地形注入.ts），登记了新版本要重开
     跑: async (args) => {
       const 根 = 作品根();
