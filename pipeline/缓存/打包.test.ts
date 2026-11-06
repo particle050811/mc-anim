@@ -39,6 +39,7 @@ test.each([
   ['33 1 200 chrome --serveUrl=file:///tmp/remotion-webpack-bundle-%E6%97%A7', '在用'],
   ['33 1 200 node /repo/pipeline/cli/main.ts render 核对-冒烟', '算不出'],
   ['33 1 200 /repo/node_modules/.remotion/chrome-headless-shell/mac/chrome-headless-shell', '算不出'],
+  ['33 1 200 /d/mc-anim-data/cache/浏览器/157.0.8080.0-remotion-v3/chrome-headless-shell-mac-arm64/chrome-headless-shell', '算不出'],
 ])('进程在用或无法判断时保守留着：%s', (ps, 类) => {
   expect(打包保留理由({ 路径: 放包(), 改于: 旧时 }, 现在, ps)[0]?.类).toBe(类);
 });
