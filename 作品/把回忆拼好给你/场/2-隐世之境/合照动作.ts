@@ -1,7 +1,7 @@
-// 15 尾随歌曲帧走的几样（纯函数，合照.tsx 画、测试核）：她靠到哪、靠肩那一镜的正交机位。时刻取 分镜.ts 的 正片事件，数取 合照参数.ts。
+// 15 尾随歌曲帧走的几样（纯函数，合照.tsx 画、测试核）：她靠到哪、靠肩那一镜的正交机位。时刻取 分镜 的 正片事件，数取 合照参数.ts。
 import type { 正交机位参数 } from '@engine/三渲二/机位.tsx';
 import { clamp01 } from '@engine/anim/anim.ts';
-import { 正片事件 } from '../../分镜.ts';
+import { 事件 as 正片事件 } from '../../分镜/正片15尾.ts';
 import { 合照镜 } from './合照参数.ts';
 
 const 事 = 正片事件;

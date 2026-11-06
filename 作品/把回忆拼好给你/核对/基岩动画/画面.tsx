@@ -7,7 +7,7 @@ import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox } from '@库/角色/魔法酒狐.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { GeckoLib坐到站, 基岩坐到站, 控制器层们 } from './控制器示例.ts';
 import { 尾巴稳态变量 } from './尾巴稳态.ts';

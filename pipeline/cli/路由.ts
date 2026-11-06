@@ -28,6 +28,15 @@ export const 取调试参数 = (args: readonly string[]): { 调试: boolean; 其
   return { 调试: 前.includes('--调试'), 其余: [...前.filter((a) => a !== '--调试'), ...(停 < 0 ? [] : args.slice(停))] };
 };
 
+/** 低优先（用户 11-06 定：子 Agent 只出静帧，整段渲染由主 Agent 合并后用 --低优先 排，给静帧让路）：
+ *  取走 --低优先，设 ANIM_PRIORITY=low，这条命令和它起的子进程过闸都排在普通票后面（闸/票.ts 领票） */
+export const 低优先变量 = 'ANIM_PRIORITY';
+export const 取低优先参数 = (args: readonly string[]): { 低优先: boolean; 其余: string[] } => {
+  const 停 = args.indexOf('--');
+  const 前 = 停 < 0 ? args : args.slice(0, 停);
+  return { 低优先: 前.includes('--低优先'), 其余: [...前.filter((a) => a !== '--低优先'), ...(停 < 0 ? [] : args.slice(停))] };
+};
+
 const 内置错误 = [TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError];
 
 /** 调用栈第一帧的文件（file:// 地址转成路径）；取不到返回 null */
@@ -56,7 +65,7 @@ export const 是预期错误 = (e: unknown, 根 = 代码根()): boolean => {
 };
 
 export const 帮助文本 = (命令表: Record<string, 命令>) =>
-  ['用法：anim [--作品 <名>] [--调试] <命令> [参数]\n', ...Object.values(命令表).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
+  ['用法：anim [--作品 <名>] [--调试] [--低优先] <命令> [参数]\n', ...Object.values(命令表).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
 
 /** 一条命令的帮助：自带的详细帮助，没有就是 用法 和 说明 */
 export const 命令帮助 = (c: 命令) => c.帮助?.() ?? `用法：anim ${c.用法}\n      ${c.说明}`;
@@ -70,7 +79,9 @@ export const 要帮助 = (args: readonly string[]) => {
 /** 跑一条 anim 命令，返回退出码 */
 export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Promise<number> => {
   const 出 = o.输出 ?? { log: (s) => console.log(s), error: (s) => console.error(s) };
-  const { 调试: 加了调试, 其余: 去调试 } = 取调试参数(argv);
+  const { 低优先, 其余: 去低优先 } = 取低优先参数(argv);
+  if (低优先) process.env[低优先变量] = 'low';
+  const { 调试: 加了调试, 其余: 去调试 } = 取调试参数(去低优先);
   const 调试 = 加了调试 || o.环境变量?.ANIM_DEBUG === '1';
   // --作品 对所有命令都有效，这里统一取走（选作品的顺序见 环境/作品.ts）
   let 拆: ReturnType<typeof 取作品参数>;

@@ -7,7 +7,8 @@
 import { clamp01 } from '@engine/anim/anim.ts';
 import { 加挥手, 挥手进度 } from '@库/角色/挥手.ts';
 import { 火箭位置, 炸点, 炸开秒 } from '@库/特效/烟花.ts';
-import { fps, 一帧秒, 旧帧, 正片事件 } from '../../分镜.ts';
+import { fps, 一帧秒, 旧帧 } from '../../分镜/时间.ts';
+import { 事件 as 正片事件 } from '../../分镜/正片第9至11句.ts';
 import { 你站, 她站, 换火箭秒, 烟花们, 牌字面, 牌上行们, 种下秒, 树苗x, 站排y } from './门口之夜参数.ts';
 
 const 秒 = (帧: number) => 帧 / fps;

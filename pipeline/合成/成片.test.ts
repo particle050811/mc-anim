@@ -228,13 +228,12 @@ describe.skipIf(!有ffmpeg)('合成成片', () => {
     expect((r.事件 as unknown as string[]).some((m) => m.includes('甲 → 丁'))).toBe(true);
   });
 
-  it('分享版：720p、50 MB 以内，文件名带 -分享版720p', async () => {
+  it('分享版：1080p60 AV1、2750 kbps，文件名带 -分享版1080p60', async () => {
     const { dir, manifest } = await 合成成片([段('甲', 48), 段('乙', 37)], { 级别: '预览', 名: '分享', 范围: [], 分享版: true, 记录: 记录() });
-    expect(manifest.文件.分享版).toBe('分享-分享版720p.mp4');
+    expect(manifest.文件.分享版).toBe('分享-分享版1080p60.mp4');
     const f = path.join(dir, manifest.文件.分享版!);
-    expect(视频信息(f)).toMatchObject({ 帧数: 85, 宽: 1280, 高: 720 });
-    expect(fs.statSync(f).size).toBeLessThanOrEqual(50e6);
-    expect(manifest.分享版?.视频kbps).toBe(760);
+    expect(视频信息(f)).toMatchObject({ 帧数: 85, 宽: 1920, 高: 1080 });
+    expect(manifest.分享版?.视频kbps).toBe(2750);
     expect(manifest.分享版?.真峰值dBTP).toBeLessThanOrEqual(-1);
     expect(manifest.分享版?.限幅dBFS).toBeTypeOf('number');
   });

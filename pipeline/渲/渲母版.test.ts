@@ -25,6 +25,7 @@ vi.mock('../环境/温度.ts', () => {
   return { 读温度: vi.fn(无温度), 读温度并行: vi.fn(async () => 无温度()), 读现成温度: vi.fn(async () => 无温度()), 无温度 };
 });
 vi.mock('@remotion/bundler', () => ({ bundle: async () => '假包' }));
+vi.mock('./浏览器.ts', () => ({ 备浏览器: async () => '/假/chrome-headless-shell' }));
 vi.mock('./渲染器.ts', () => {
   const 出 = async (o: { envVariables: Record<string, string> }, 文件: string) => {
     态.环境们.push(o.envVariables);

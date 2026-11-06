@@ -9,7 +9,7 @@ import { MagicalWineFox } from '@库/角色/魔法酒狐.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { 女仆气泡, 女仆气泡锚高 } from '@库/界面/女仆气泡.tsx';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 成片倍数 as 出片倍数 } from '@engine/三渲二/像素.ts';
 import { 描边 } from '@engine/三渲二/描边.tsx';
 import { 侧投影 } from '../../地点/侧剖面.tsx';

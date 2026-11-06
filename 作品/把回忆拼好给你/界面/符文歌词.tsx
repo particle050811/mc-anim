@@ -23,7 +23,7 @@ import raw from 'asset:字体/把回忆拼好给你/歌词字';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 成片倍数 } from '@engine/三渲二/像素.ts';
 import type { 字形表 } from '@库/界面/像素字表.ts';
-import { fps, 旧帧 } from '../分镜.ts';
+import { fps, 旧帧 } from '../分镜/时间.ts';
 import { 光明, 光明档数, 刹那, 刹那块, 放下, 放下块, 时差, 烟花, 烟花火花, 在词里 } from './歌词字效.ts';
 import { 分块, 字种, 收拢, 符文倍, 飞们, 飞位, type 块 } from './符文拼字.ts';
 import { 做字源, 合样式, 字状态, 排一句, 解码时段, type 一字状态, type 摆字, type 符文歌词样式, type 符文歌词行 } from './符文排版.ts';

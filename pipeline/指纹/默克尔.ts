@@ -27,10 +27,27 @@ export const 编译选项 = (): Record<string, unknown> => {
 const 代码loader: Record<string, Loader> = { '.ts': 'ts', '.mts': 'ts', '.cts': 'ts', '.tsx': 'tsx', '.js': 'js', '.mjs': 'js', '.cjs': 'js', '.jsx': 'jsx' };
 const 包名 = (spec: string) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]!);
 
-let lock缓存: Record<string, { version?: string }> | undefined;
+/**
+ * 读 pnpm-lock.yaml 里根项目直接依赖的版本（用户 11-06 定换 pnpm）。代码 import 的包都是直接依赖，只读 importers['.'] 就够。
+ * 取出来的要和以前 package-lock 记的一字不差，否则全片指纹都变：去掉 peer 后缀「(react@…)」；git 依赖的 version 是 tarball 地址，到 packages 里取包自己的 version。
+ */
+export const 解析pnpm锁 = (文本: string): Map<string, string> => {
+  const 表 = new Map<string, string>();
+  const 根 = 文本.split(/^importers:\n/m)[1]?.split(/^\S/m)[0] ?? '';
+  const 块 = 根.split(/^ {2}\S.*:\n/m)[1] ?? '';
+  for (const m of 块.matchAll(/^ {6}'?(.+?)'?:\n {8}specifier: .*\n {8}version: (.+)$/gm)) {
+    const 版本 = m[2]!.trim().replace(/\(.*$/, '');
+    if (/^\d/.test(版本)) { 表.set(m[1]!, 版本); continue; }
+    const 条 = 文本.split(`\n  '${m[1]}@${版本}':\n`)[1] ?? 文本.split(`\n  ${m[1]}@${版本}:\n`)[1] ?? '';
+    const 自报 = /^ {4}version: (\S+)$/m.exec(条.split(/\n\n/)[0]!)?.[1];
+    表.set(m[1]!, 自报 ?? 版本);
+  }
+  return 表;
+};
+let lock缓存: Map<string, string> | undefined;
 export const 锁定版本 = (包: string): string | null => {
-  lock缓存 ??= JSON.parse(fs.readFileSync(path.join(代码根(), 'package-lock.json'), 'utf8')).packages as Record<string, { version?: string }>;
-  return lock缓存[`node_modules/${包}`]?.version ?? null;
+  lock缓存 ??= 解析pnpm锁(fs.readFileSync(path.join(代码根(), 'pnpm-lock.yaml'), 'utf8'));
+  return lock缓存.get(包) ?? null;
 };
 
 const 转换缓存 = new Map<string, string>();

@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { build, type Plugin } from 'esbuild';
 import { parse } from 'smol-toml';
 import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts';
-import type { 资产锁 } from '../资产/资产锁.ts';
+import { 读资产锁, type 资产锁 } from '../资产/资产锁.ts';
 import { 选作品错误 } from '../环境/作品.ts';
 
 export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本'] as const;
@@ -46,7 +46,7 @@ export const 是渲染代码 = (p: string) => 渲染层前缀.some((x) => p.star
  * 地形环境 只有两个环境变量名：页面和 pipeline/渲/地形注入.ts 共用。
  */
 // 区段模型只做 TypedArray 与字节转换，编码、检查和浏览器共用同一份格式定义。
-const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
+const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '出帧'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
 export const 是纯模块 = (p: string) =>
   engine纯模块.includes(p) ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||
@@ -307,9 +307,9 @@ export class 检查上下文 {
 
   读toml = (p: string): Record<string, unknown> | null => (this.存在(p) ? (parse(this.读(p)) as Record<string, unknown>) : null);
   读json = (p: string): unknown => (this.存在(p) ? JSON.parse(this.读(p)) : null);
-  /** 本作品用的两份资产锁：共用的和作品资产表那一侧的（文件不在就是空的） */
+  /** 本作品用的两份资产锁：共用的和作品资产表那一侧的（目录不在就是空的） */
   资产锁 = (): { 共用: 资产锁; 作品: 资产锁 } => ({
-    共用: (this.读json('assets/资产锁.json') ?? {}) as 资产锁,
-    作品: (this.读json(this.作品路径('资产锁.json')) ?? {}) as 资产锁,
+    共用: 读资产锁(this.绝对('assets/资产锁')),
+    作品: 读资产锁(this.绝对(this.作品路径('资产锁'))),
   });
 }

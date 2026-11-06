@@ -12,7 +12,7 @@ import { 光影画云 } from '@engine/三渲二/光影/预设.ts';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
 import { blockAtlas } from '@engine/voxel/真实方块图集.ts';
 import { MAGICAL_WINE_FOX } from '@库/角色/魔法酒狐.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 格原点 } from '../../地点/门口小木屋.tsx';
 import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';

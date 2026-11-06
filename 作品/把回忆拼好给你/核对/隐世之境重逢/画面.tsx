@@ -8,7 +8,7 @@ import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { 像素字 } from '../../界面/像素字.ts';
 import { 她看你, 门口眼, 隐世之境重逢布景, 天色 } from '../../场/2-隐世之境/布景.tsx';

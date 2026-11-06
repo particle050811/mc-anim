@@ -34,14 +34,18 @@ export const 解析票 = (名: string) => { const m = /^(\d+)-(.+)-(\d+)$/.exec(
 export const 列票 = (dir: string): 票[] => 列文件(dir).sort().flatMap(名 => { const x = 解析票(名); if (!x)
     return []; const 文件 = path.join(dir, 名), 内容 = 读JSON<票内容>(文件); return [{ ...x, 文件, 名, 内容: 内容?.v === 1 ? 内容 : null }]; });
 let 序 = 0;
+/** 队序就是票名：普通票 0 开头（领票毫秒），低优先 8 开头（排在全部普通票后面，彼此仍先来先渲），暂缓 9 开头 */
+const 低优先基 = 800000000000000;
+export const 是低优先票 = (t: Pick<票, '时间'>) => t.时间 >= 低优先基 && t.时间 < 900000000000000;
+const 普通票 = (x: 票) => !x.名.startsWith('9') && !是低优先票(x);
 export const 领票 = (dir: string, 本机: string, 任务: 任务信息, now: number): 票 => {
     fs.mkdirSync(dir, { recursive: true });
     序 = Math.max(Date.now(), 序 + 1);
-    const 名 = `${String(序).padStart(15, '0')}-${主机片段(本机)}-${process.pid}`;
+    const 名 = `${String(任务.声明.低优先 ? 低优先基 + 序 : 序).padStart(15, '0')}-${主机片段(本机)}-${process.pid}`;
     const 内容: 票内容 = { v: 1, 任务: 任务.任务, 起: now, 发起: 任务.发起, 声明: 任务.声明 };
     const 文件 = path.join(dir, 名);
     写JSON(文件, 内容);
-    return { 名, 文件, 内容, pid: process.pid, 主机: 主机片段(本机), 时间: 序 };
+    return { 名, 文件, 内容, pid: process.pid, 主机: 主机片段(本机), 时间: Number(名.split('-')[0]) };
 };
 export const 票活着 = (t: 票, 本机: string) => {
     if (t.主机 === 主机片段(本机))
@@ -73,4 +77,9 @@ export const 记被越 = (们: 票[], 本机: string) => { for (const q of 们)
 export const 清任务票 = (dir: string, 任务: string) => { for (const x of 列票(dir))
     if (x.pid === process.pid && x.内容?.任务 === 任务)
         重试(() => fs.rmSync(x.文件, { force: true })); };
-export const 回队尾 = (t: 票) => 改序(t, String(Math.max(Date.now(), ...列票(path.dirname(t.文件)).filter(x => !x.名.startsWith('9')).map(x => x.时间)) + 1));
+/** 低优先的票回到低优先那一档的队尾，普通票回普通票的队尾 */
+export const 回队尾 = (t: 票) => {
+    const 低 = Boolean(t.内容?.声明?.低优先), 基 = 低 ? 低优先基 : 0;
+    const 同档 = 列票(path.dirname(t.文件)).filter(x => (低 ? 是低优先票(x) : 普通票(x))).map(x => x.时间 - 基);
+    return 改序(t, String(基 + Math.max(Date.now(), ...同档) + 1));
+};

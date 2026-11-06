@@ -4,7 +4,7 @@
 //   第 15 句「爱炙热的你却忘了爱自己」在底部，等聊天行淡掉才进（下一段 2-重逢 里）；描边色取这一帧的调子。用户 10-24「还在用素字歌词的段换成符文歌词」。叠在整片后期里面。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
-import { 段时钟 } from '../../分镜.ts';
+import { 段时钟 } from '../../分镜/正片第15句.ts';
 import { 原声 } from '../../配乐/原声.ts';
 import { 配乐音轨 } from '../../配乐/配乐音轨.tsx';
 import { 音效轨 } from '../../声音/音效轨.tsx';

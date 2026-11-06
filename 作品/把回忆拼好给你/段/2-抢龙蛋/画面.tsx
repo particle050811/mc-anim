@@ -4,7 +4,7 @@ import React from 'react';
 import { useCurrentFrame } from 'remotion';
 import { 光影范围 } from '@engine/三渲二/画布.tsx';
 import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 色板 } from '../../色板.ts';
 import { 浪样式, 海调子名 } from '../../场/2-海上/参数.ts';
 import { 日落浪 } from '../../场/2-海上/浪.tsx';

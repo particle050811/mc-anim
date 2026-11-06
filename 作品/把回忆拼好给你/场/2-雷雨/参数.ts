@@ -3,7 +3,7 @@
 // yaw 同 FigurePose：0 朝北（背对镜头）、正 = 往左（西）。
 import type { 云层 } from '@engine/light/云/配置.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 旧帧 } from '../../分镜.ts';
+import { 旧帧 } from '../../分镜/时间.ts';
 
 /** 屋前那块平地的草、树叶按哪个群系染色：同门口那一场（场/2-门口/参数.ts 的 群系；场之间不互引，抄一份） */
 export const 群系 = 'minecraft:plains';

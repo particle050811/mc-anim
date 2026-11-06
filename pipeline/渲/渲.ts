@@ -9,6 +9,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
+import { 备浏览器 } from './浏览器.ts';
 import { getCompositions, openBrowser, renderFrames, renderMedia, renderStill, type HeadlessBrowser } from './渲染器.ts';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
@@ -88,7 +89,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签, 打包选项));
   let browser: HeadlessBrowser | undefined;
   try {
-    browser = await 量阶段(收, 标签, '开浏览器', () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error' }));
+    browser = await 量阶段(收, 标签, '开浏览器', async () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error', browserExecutable: await 备浏览器() }));
     // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
     收求解缓存(browser);
     收地形用量(browser);

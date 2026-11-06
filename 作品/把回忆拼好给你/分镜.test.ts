@@ -1,9 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { 资产cue } from '@engine/段/段定义.ts';
 import 段 from './段/1-一如既往/段.ts';
 import { 句们 } from './配乐/网格.ts';
 import { 原声增益, 原声淡入秒, 咔哒增益, 咔哒声 } from './场/1-隐世之境一楼/参数.ts';
-import { 串们, 事件, 排段, 正片事件, 段内事件帧, 段时钟, 段窗口, 第几句, fps, 旧帧 } from './分镜.ts';
+import { 串们, 事件, 排段, 正片事件, 正片事件分串, 段内事件帧, 段时钟, 段窗口, 第几句, fps, 旧帧 } from './分镜.ts';
 
 describe('分镜：从网格常数推帧号', () => {
   it('验证片：段起 2485、驯服 2563、微笑 3177、咔哒 3279、段止 3360（60 fps）', () => {
@@ -77,9 +79,30 @@ describe('分镜：从网格常数推帧号', () => {
     expect(Math.round(刻)).toBe(34);
   });
 
-  it('正片事件按时间排', () => {
-    const 帧们 = Object.values(正片事件).map((e) => e.帧);
-    expect(帧们).toEqual([...帧们].sort((a, b) => a - b));
+  it('正片事件按时间排：每串的文件里各自按时间排，事件名各串不重', () => {
+    for (const 表 of 正片事件分串) {
+      const 帧们 = Object.values(表).map((e) => e.帧);
+      expect(帧们).toEqual([...帧们].sort((a, b) => a - b));
+    }
+    expect(正片事件分串.reduce((n, 表) => n + Object.keys(表).length, 0)).toBe(Object.keys(正片事件).length);
+  });
+
+  it('渲染代码不引汇总的 分镜.ts，只引 分镜/时间.ts 和用得到的那几串（引了改哪一句都让全片过期，用户 11-06 定按句拆）', () => {
+    const 根 = import.meta.dirname;
+    const 引汇总: string[] = [];
+    const 走 = (d: string) => {
+      for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+        const p = path.join(d, e.name);
+        if (e.isDirectory()) {
+          if (e.name !== 'node_modules') 走(p);
+        } else if (/\.tsx?$/.test(e.name) && !e.name.endsWith('.test.ts') && p !== path.join(根, '分镜.ts')) {
+          for (const m of fs.readFileSync(p, 'utf8').matchAll(/from\s+'([^']+)'/g))
+            if (path.resolve(d, m[1]!) === path.join(根, '分镜.ts')) 引汇总.push(path.relative(根, p));
+        }
+      }
+    };
+    走(根);
+    expect(引汇总).toEqual([]);
   });
 
   it('第 8 句的几拍和依据里写的秒数差不到 0.01 秒（晴定提早、苦力怕冒头挪后，见依据；后面几拍同三稿）', () => {

@@ -9,14 +9,15 @@
 - `engine/`：纯技术，不含剧情。`engine/段/`：各作品共用的段框架（段定义、设置、注册工厂）。`库/`：多部作品会用的角色、生物、物品、界面、特效（原版、模组照原样做）。作品里引用写 `@engine/`、`@库/`
 - `pipeline/`：`anim` 的实现（环境、闸、指纹、渲、合成、剪辑包、适配器、检查）。`py/anim_py/`：Python 叶子工具。`wasm/`：编成 WASM 的源码（`anim world 解码器`）
 - `sourcing/`：取材 mod、mcai、世界声明、jar 和提取配方
-- `assets/registry/*.toml`：资产表（人写）；`assets/资产锁.json`：工具生成，不手改
+- `assets/registry/*.toml`：资产表（人写）；`assets/资产锁/`（一件资产一个 `<id>.json`）：工具生成，不手改
 - 数据根 `../mc-anim-data/`（环境变量 `ANIM_DATA`，Git 外，各 worktree 共用这一份）：`store/ 私有/ terrain/ cache/ game/ 基线/ 交付/ 发布/ archive/ run/`，缓存、交付按作品分子目录。发 B 站、抖音的成片（连封面、标题简介）单独放 `发布/<作品>/<月日-时分>-<一句话>/`（用户 11-02 定）：像软件发布一样一次一个夹，夹名用发布的 UTC 日期时间，不编 V1、V2，旧版不删；`发布/<作品>/00-说明.md` 是发布记录，最新的写最前（用户 11-03 定）
 - `预览/`：在主检出下，不进 Git；worktree 里生成的预览也写回主检出。Agent 自己看的中间稿，主题以「工作-」开头，`anim` 写到数据根 `run/草稿/`，不进 `预览/`（用户 10-24 定）。预览里冗余的自动删（用户 11-02 定）：`anim preview new` 每次顺手清，超过 3 天的夹只留文字挪进数据根 `archive/预览/`（同名），图、视频、声音删掉，Git 管的文件按完整路径引用的照留；仓库里引用的 `预览/<夹>` 不在主检出就去那里找
 - 路径语言：结构层（顶层目录、固定层级）用英文 ASCII；场、段、资产 id、台词 id、角色名用中文
 
 ## 常用命令（Mac/Linux 用 `anim`，Windows 用 `anim.cmd`；以 `anim help` 为准）
 ```
-anim 调度 [--json|--一行] | 调度 盯 | 调度 预计 <选择器>    看资源、队列和决定；改调度必填 --为什么（docs/调度.md）
+anim 调度 [--json|--一行] | 调度 盯 | 调度 预计 <选择器> | 调度 等锁表 [--从 <时刻>]    看资源、队列和决定；改调度必填 --为什么（docs/调度.md）
+anim --低优先 <命令>                      全局参数：过渲染闸排在全部普通票后面，静帧来了下一段先让它（合并后统一渲用）
 anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）；子命令都认 --help
 anim render <选择器> [--到预览 <主题>]     选择器全字匹配：段键、段名、编号、场键、章（都不中才当章范围）
 anim render [<选择器>] --只派生 [--重做]   从现有 CRF1 母版补段签（段签/，母版删了 film、edit-package 照样用；verify 哈希和认可版不同的帧要解母版）
@@ -32,6 +33,7 @@ anim cache gc [--执行]                     缓存回收，默认只看；--执
 anim cache 转存 [--执行]                   一次性把现有 CRF1 母版转压缩母版（`docs/决策/0008-母版存储.md`），默认只打印；只转不删
 anim cache 改后缀 [--执行]                 一次性把旧的 <指纹>.crf12.mkv 就地改名 <指纹>.x264.mkv（不转码），默认只打印
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
+anim wt new <名> [--从 <分支>]          开 worktree 并备好依赖（pnpm install --frozen-lockfile，从全机共用的 store 克隆或硬链接，几秒）
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
 anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行（开游戏、编译过资源闸）、从游戏导群系色和方块表
@@ -40,7 +42,7 @@ anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心�
 ```
 还没实现：`anim music`、`anim assets import|verify`（字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）；取材 mod 的录制（`mcai record`）用户 10-30 说用不到，不做。
 
-Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；新 worktree 里 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim render`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
+Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；`anim wt new` 会克隆进新 worktree，别处缺了用 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim render`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
 
 ## 两条元规则（用户 10-21）
 1. **看过的实现为准**：用户看过的已实现画面，优先于旧规矩、原设计和 Agent 写的规矩。冲突时留现状，列给用户，写清规矩出处和「现状是用户看过的」；用户这次点名才改。
@@ -48,9 +50,10 @@ Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git
 
 ## 工作纪律
 - 逐文件 `git add <文件>`，不用 `-A` 或 `.`；按逻辑拆提交。不 push，要推送先问用户。
-- 并行任务各开 worktree：`git worktree add ../mc-anim-wt/<名> -b <名> main`。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree；删之前先清点被忽略的文件。不留没合并的分支。
+- 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`，不手动 `git worktree add` 再自己装依赖：不在 worktree 里自己装依赖（命令会跑 `pnpm install`）、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。依赖用 pnpm（用户 11-06 定，三系统一个做法），只留 `pnpm-lock.yaml`，加减依赖用 `pnpm add`，不用 npm 装。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree；删之前先清点被忽略的文件。不留没合并的分支。
+- 子 Agent 在 worktree 里只出静帧看效果（看动作可 `anim still` 连出几帧），不渲整段、不做逐帧校验；整段渲染、逐帧校验由主 Agent 合并后用 `anim --低优先 …` 排，给静帧让路（用户 11-06 定，依据和基线见 `docs/决策/0012-调度.md`）。改渲染管线本身、必须真渲才验得了的活例外，派活时写明。
 - 合并前 `anim check` 必须过。说「改好了」之前在 main 上核对：用户这次定的每一条都要在代码里查到，或者出静帧确认。
-- 给用户看的东西放 `预览/<月日-时分>-<主题>/`，时间用 UTC（`date -u +%m%d-%H%M`，代码里用 `time.gmtime()`）。文件夹里一层平铺，文件名带编号，附一份 `00-说明.md`，末尾留「你的回复：」。不覆盖旧的；换了变量就另开一个文件夹。
+- 给用户看的东西放 `预览/<月日-时分>-<主题>/`，时间用 UTC（`date -u +%m%d-%H%M`，代码里用 `time.gmtime()`）。文件夹里一层平铺，文件名带编号，附一份 `00-说明.md`，末尾留「你的回复：」。成片、整段视频这类数据根里已有的大文件不复制进来，在 `00-说明.md` 里写 `![名](绝对路径)`，用户在 image-flow 侧栏「本页引用」里看（用户 11-05 定）。不覆盖旧的；换了变量就另开一个文件夹。
 - **迁移不改画面**：搬迁期间不改任何画面、规矩数值、镜头、台词，不借机「顺手统一」。版本锁死 Remotion 4.0.537（用户 10-22 定从 4.0.530 升上来）、three 0.186.1、react 19.3.0、esbuild 0.28.1、Node 24，升级要用户点名。和旧版对不上时，只能按 `docs/迁移.md` 的两种情况接受，并逐条登记。
 - 全片默认值改在共用的地方（`作品/应力转动/默认.ts` 或对应的共用模块），段里不覆盖。确实要例外的，写成 `例外('规矩id', 值, {段, 原因})`，同时登记进规矩表。
 - 渲染、烘焙地形、开游戏这类重任务，先过资源闸。两个 MC 客户端不同时开。长任务开跑前，按 `run/logs/耗时.tsv` 报预计耗时。

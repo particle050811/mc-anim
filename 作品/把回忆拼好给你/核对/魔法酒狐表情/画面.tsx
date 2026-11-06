@@ -5,7 +5,7 @@ import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
-import { 画幅 } from '../../分镜.ts';
+import { 画幅 } from '../../分镜/时间.ts';
 import { 第一人称机位 } from '../../地点/机位.tsx';
 import { 视图们 } from './视图.ts';
 

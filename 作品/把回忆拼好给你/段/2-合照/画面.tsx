@@ -3,7 +3,7 @@
 // 歌词：15 句都交给符文歌词（这一段里只剩第 15 句「爱炙热的你却忘了爱自己」），样式同 2-重逢（底部），硬切那一下歌词不跳；咔哒那一帧起退场（退在片尾的闪白里）。
 import type React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
-import { 段时钟, 段内正片事件帧 } from '../../分镜.ts';
+import { 段时钟, 段内事件帧 as 段内正片事件帧 } from '../../分镜/正片15尾.ts';
 import { 色板 } from '../../色板.ts';
 import { 符文歌词 } from '../../界面/符文歌词.tsx';
 import { 正片歌词行 } from '../../界面/符文歌词数据.ts';

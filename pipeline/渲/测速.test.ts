@@ -31,6 +31,7 @@ vi.mock('../运行记录/渲染明细.ts', () => ({ 明细收集: class {
     return { 文件: null, 明细: { 小结: { 中位毫秒: 20, P90毫秒: 20, P99毫秒: 20, 最慢帧: [] }, 等待: [] } };
   }
 } }));
+vi.mock('./浏览器.ts', () => ({ 备浏览器: async () => '/假/chrome-headless-shell' }));
 vi.mock('./渲染器.ts', () => ({
   openBrowser: vi.fn(async () => { 假.时间 += 500; return 假.browser; }),
   getCompositions: vi.fn(async () => {

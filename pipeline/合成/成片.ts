@@ -6,7 +6,7 @@ import {登记CPU} from '../闸/任务.ts';
 //   x264 medium CRF 18 留作可选（ANIM_VIDEO_ENCODER=libx264），硬件编码 q38 要快时用。
 //   母版、叠层按成片档原生渲到成片的宽高，合成只接、叠，不缩放。
 // 过期的母版（和段声明的透明叠层）默认拒绝：--重渲过期 先渲，--允许过期 用同一渲染级别最近一份旧的并逐段写进 manifest。
-// 叠层在下、字幕（按段.ts 的台词 cue 排，见 字幕.ts）在上，和画面一起压；接缝只查不改（接缝.ts）；--分享版 另压一份 720p。
+// 叠层在下、字幕（按段.ts 的台词 cue 排，见 字幕.ts）在上，和画面一起压；接缝只查不改（接缝.ts）；--分享版 另压一份 B 站 1080P60 AV1 码率的。
 // 声音和接缝读各段的段签（pipeline/段签/：声音.flac、首尾帧小图，缺了从 CRF1 当场派生），画面读压缩母版（用户 10-30 定，渲/转码.ts；只有 CRF1 的旧母版先转存再用，同一指纹出同样的片）。
 // 产出 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、接缝、字幕表、SRT、台词落点、同步表、字幕核对、全片-未拉响度.flac、manifest.json（v2，见 交付.ts）；
 // 作品开了剪辑包（<作品根>/交付.toml）的，同一遍 ffmpeg 在叠完段叠层、叠字幕之前 split 出 剪辑包/画面.mp4。交付因此自足，edit-package 不再读母版。
@@ -200,13 +200,15 @@ const 查接缝 = (截们: 截[], 每帧样本: number, 记录: 运行记录) =>
 const 转709 = 'colorspace=space=bt709:trc=bt709:primaries=bt709:range=tv:ispace=bt470bg:itrc=bt709:iprimaries=bt709:irange=tv:format=yuv420p';
 const 标709 = ['-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-color_range', 'tv'];
 
-// 分享版（用户 10-15 定）：从成片再压，720p、x264 slow 两遍，视频约 760 kbps + AAC 128k，50 MB 以内；超了按比例降码率重压，最多 3 次。
-const 分享上限MB = 50;
-const 分享视频kbps = 760;
+// 分享版：照 B 站给观众的 1080P60 AV1 档压（用户 11-05「和 B 站的 AV1 1080p 高码率 60fps 对齐」）。
+// 2750 kbps 是 11-05 实测 B 站普通 1080P60 AV1 档的平均码率（任意 1 秒最高 4.5 Mbps，archive/预览/1105-1358-B站实际码率-把回忆）；
+// 「1080P 高码率」那档（大会员）没量过，用户 11-05 定先用这个数、量到再换。不卡大小（用户同日定去掉 50 MB 上限）。
+// SVT-AV1 单遍 VBR：第 2 章 56 秒实测平均 2.73 Mbps、19.1 MB，任意 1 秒最高 5.7 Mbps，不用两遍。
+const 分享视频kbps = 2750;
 // 96k 真峰超规矩，用户 10-31 定 128k
-const 分享音频kbps = 128;
+export const 分享音频kbps = 128;
 // AAC 的过冲不随码率、限幅单调变，声音差几十个样本也会差 0.5 dB（第 6-7 章量过），只能压完量：超 −1 dBTP 就压低限幅重压。只动分享版的声音，成片不变
-const 压分享声音 = (拉: (余量: number, 出: string) => void, 起余量: number, 工作: string) => {
+export const 压分享声音 = (拉: (余量: number, 出: string) => void, 起余量: number, 工作: string) => {
   const ffmpeg = 配置('ffmpeg');
   const 中间 = path.join(工作, '分享声音.wav');
   const 出 = path.join(工作, '分享声音.m4a');
@@ -222,22 +224,18 @@ const 压分享声音 = (拉: (余量: number, 出: string) => void, 起余量: 
   }
   return { 声音: 出, 限幅dBFS: 真峰值上限 - 余量 };
 };
-const 压分享版 = async (成片: string, 声音: string, 出: string, 工作: string, 时长: number) => {
+export const 压分享版 = async (成片: string, 声音: string, 出: string) => {
   const ffmpeg = 配置('ffmpeg');
-  let kbps = Math.min(分享视频kbps, Math.floor((分享上限MB * 8e3 * 0.97) / 时长 - 分享音频kbps));
-  const log = path.join(工作, '分享版两遍');
-  const 视频 = ['-map', '0:v', '-vf', 'scale=1280:720:flags=lanczos,setsar=1', '-c:v', 'libx264', '-preset', 'slow', '-pix_fmt', 'yuv420p', ...标709];
-  for (let i = 0; i < 3; i++) {
-    await 跑(低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, ...视频, '-b:v', `${kbps}k`, '-pass', '1', '-passlogfile', log, '-an', '-f', 'null', '-']));
-    await 跑(
-      低优先级([ffmpeg, '-v', 'error', '-y', '-i', 成片, '-i', 声音, ...视频, '-map', '1:a', '-b:v', `${kbps}k`, '-pass', '2', '-passlogfile', log, '-c:a', 'copy', '-movflags', '+faststart', 出]),
-    );
-    const mb = fs.statSync(出).size / 1e6;
-    console.log(`分享版 ${mb.toFixed(1)} MB（视频 ${kbps} kbps）`);
-    if (mb <= 分享上限MB) return { kbps, MB: mb };
-    kbps = Math.floor(((kbps * 分享上限MB) / mb) * 0.97);
-  }
-  throw new Error(`分享版压了 3 次还超过 ${分享上限MB} MB`);
+  await 跑(
+    低优先级([
+      ffmpeg, '-v', 'error', '-y', '-i', 成片, '-i', 声音, '-map', '0:v', '-map', '1:a',
+      '-vf', 'scale=1920:1080:flags=lanczos,setsar=1', '-c:v', 'libsvtav1', '-preset', '6', '-b:v', `${分享视频kbps}k`,
+      '-pix_fmt', 'yuv420p', ...标709, '-c:a', 'copy', '-movflags', '+faststart', 出,
+    ]),
+  );
+  const mb = fs.statSync(出).size / 1e6;
+  console.log(`分享版 ${mb.toFixed(1)} MB（视频目标 ${分享视频kbps} kbps）`);
+  return { kbps: 分享视频kbps, MB: mb };
 };
 
 export const 合成成片 = async (
@@ -413,10 +411,10 @@ export const 合成成片 = async (
   点('核对声音');
   let 分享: { kbps: number; MB: number; 真峰值: number; 限幅dBFS: number } | null = null;
   if (opts.分享版) {
-    // 名字不再带 50MB（用户 11-03「这个不再是以 50 MB 作为标准了 这个名字是不是也得改一下？」）：标准是 720p、760 kbps，50 MB 只是兜底
-    const 出 = path.join(dir, `${opts.名}-分享版720p.mp4`);
+    // 名字带规格不带大小（用户 11-03「这个不再是以 50 MB 作为标准了 这个名字是不是也得改一下？」）
+    const 出 = path.join(dir, `${opts.名}-分享版1080p60.mp4`);
     const 分享声音 = 压分享声音(拉, 余量, 工作);
-    分享 = { ...(await 压分享版(成片, 分享声音.声音, 出, 工作, 时长秒(成片))), 真峰值: 量响度(出).真峰值, 限幅dBFS: 分享声音.限幅dBFS };
+    分享 = { ...(await 压分享版(成片, 分享声音.声音, 出)), 真峰值: 量响度(出).真峰值, 限幅dBFS: 分享声音.限幅dBFS };
     if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，压低限幅 6 次还超过 ${真峰值上限}`);
     文件.分享版 = path.basename(出);
     opts.记录.产物.push(出);

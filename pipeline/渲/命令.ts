@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import {登记CPU} from '../闸/任务.ts';
 import os from 'node:os';
 import path from 'node:path';
+import { 代码根 } from '../环境/路径.ts';
 import type { 命令 } from '../cli/命令.ts';
 import { 用法错误, 解析参数 } from '../cli/参数.ts';
 import { 配置 } from '../环境/配置.ts';
@@ -63,6 +64,9 @@ export const 渲染命令: Record<string, 命令> = {
       查所选段cues(cues, 段们);
       if (!p.开关.has('--不叠层')) await 渲染叠层(段们, 级别, { 重渲: p.开关.has('--重渲'), 记录 });
       if (p.开关.has('--只叠层')) return;
+      // 用户 11-06 定：子 Agent 在 worktree 里只出静帧（或 anim still 连出几帧看动作），整段渲染由主 Agent 合并后 --低优先 排；这里只提醒不拦（改渲染管线本身的活要真渲）
+      if (代码根().includes(`${path.sep}mc-anim-wt${path.sep}`) && process.env.ANIM_PRIORITY !== 'low')
+        console.error('== 提醒：在 worktree 里渲整段。子 Agent 看效果用 anim still；整段渲染留给主 Agent 合并后用 anim --低优先 render 排（CLAUDE.md 工作纪律）');
       const 结果 = await 渲染母版(段们, 级别, { 重渲: p.开关.has('--重渲'), 留CRF1: p.开关.has('--留CRF1'), 记录 });
       if (p.值['--到预览']) {
         const dir = 新建预览目录(p.值['--到预览']);
