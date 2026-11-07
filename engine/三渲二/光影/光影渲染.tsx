@@ -291,7 +291,7 @@ const 建资源 = () => {
     res: { value: new THREE.Vector2(1, 1) },
   });
   // 光线影子的罩：每个画面像素中心 1 条射线的可见度、起点、导数、法线（三张 32 位浮点：半精度在几十格外分不出相邻像素，导数、法线用半精度实测也不省时，
-  // 影子边上和直接打 16 条的还差得多些），自带深度，和主画面同尺寸、同样光栅化，逐像素对得上。抗：抗锯齿后的可见度（半精度存 k/16 正好）
+  // 影子边上和直接打 8 条的还差得多些），自带深度，和主画面同尺寸、同样光栅化，逐像素对得上。抗：抗锯齿后的可见度（半精度存 k/8 正好）
   const 罩 = new THREE.WebGLRenderTarget(1, 1, { count: 3, format: THREE.RGBAFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
   const 抗 = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
   const 光线 = 新光线资源();
@@ -483,7 +483,7 @@ const 收受光网格 = (scene: THREE.Scene) => {
 };
 
 /** 光线影子的罩（光线影子.ts 的 gyRtMask）：主画面之前同一台镜头先画一遍，受光的不透明材质换成罩变体（中心 1 条射线的可见度和抗锯齿要的位置、导数），
- *  别的材质只写深度不写颜色（挡住后面的受光面，罩里留的就是画面上看得见的那一面）；再全屏一遍抗锯齿（影子边上补到 16 条），主画面的主变体按像素取 */
+ *  别的材质只写深度不写颜色（挡住后面的受光面，罩里留的就是画面上看得见的那一面）；再全屏一遍抗锯齿（影子边上补到 8 条），主画面的主变体按像素取 */
 const 画罩 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, r: 资源, u: 光影统一量, w: number, h: number) => {
   设尺寸(r.罩, w, h);
   设尺寸(r.抗, w, h);

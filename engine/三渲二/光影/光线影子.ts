@@ -97,31 +97,26 @@ bool gyRtBlocked( vec3 o, vec3 d ) {
   }
   return false;
 }
-// 抗锯齿：在这个像素盖住的那一小块面上打 16 条（固定的 4×4 抖动格点，帧和帧一样），亮的比例就是 gyLit。
-// 先打四角，四条都一样就当整块一样（比一个像素还细的挡光物可能漏，影子边上才补满 16 条，省三四倍）。
+// 抗锯齿：在这个像素盖住的那一小块面上打 8 条（D3D 的 8 倍多重采样点位，横竖坐标各不相同，横竖的边能分 9 级；固定点位，帧和帧一样），亮的比例就是 gyLit。
+// 先打前四条，四条都一样就当整块一样（比一个像素还细的挡光物可能漏），不一样才补后四条。
+// 原来 16 条（用户 11-07「16 条是不是有点多了」）：8 条每帧省 10～20 毫秒，2-收集快乐 第 100 帧整帧平均只差 0.011 级（满 255），放大 6 倍看不出。
 // 导数换到面内、长度夹到 1/4 格：物体轮廓上的像素两边是不同的面，导数会很大
 vec3 gyRtFoot( vec3 v, vec3 n ) {
   v -= n * dot( v, n );
   float l = length( v );
   return l > 0.25 ? v * ( 0.25 / l ) : v;
 }
+const vec2 gyRtPts[ 8 ] = vec2[ 8 ]( vec2( 1, - 3 ), vec2( - 1, 3 ), vec2( 5, 1 ), vec2( - 3, - 5 ), vec2( - 5, 5 ), vec2( - 7, - 1 ), vec2( 3, 7 ), vec2( 7, - 7 ) );
 float gyRtLit( vec3 o, vec3 n, vec3 dx, vec3 dy ) {
   dx = gyRtFoot( dx, n );
   dy = gyRtFoot( dy, n );
   float s = 0.0;
-  for ( int i = 0; i < 4; i ++ ) {
-    vec2 q = vec2( i & 1, i >> 1 ) * 0.75 - 0.375;
+  for ( int i = 0; i < 8; i ++ ) {
+    if ( i == 4 && ( s == 0.0 || s == 4.0 ) ) return s * 0.25;
+    vec2 q = gyRtPts[ i ] / 16.0;
     s += gyRtBlocked( o + dx * q.x + dy * q.y, gySun ) ? 0.0 : 1.0;
   }
-  if ( s == 0.0 || s == 4.0 ) return s * 0.25;
-  for ( int i = 0; i < 16; i ++ ) {
-    int x = i & 3, y = i >> 2;
-    if ( ( x == 0 || x == 3 ) && ( y == 0 || y == 3 ) ) continue;
-    // 4×4 格里每格按 (x, y) 定的小抖动，避免格点排成直线时和影子边平行
-    vec2 q = ( vec2( x, y ) + 0.5 + 0.2 * vec2( fract( float( y ) * 0.618 ) - 0.5, fract( float( x ) * 0.382 ) - 0.5 ) ) * 0.25 - 0.5;
-    s += gyRtBlocked( o + dx * q.x + dy * q.y, gySun ) ? 0.0 : 1.0;
-  }
-  return s / 16.0;
+  return s / 8.0;
 }
 // 罩那遍（光影渲染.tsx 的 画罩）：只打中心 1 条
 float gyRtCenter( vec3 o ) {
@@ -161,7 +156,7 @@ ${解罩}
   gl_FragDepth = same || tol == 0.0 ? 1.0 : 0.0;
 }
 `;
-/** 抗锯齿第二遍（全屏，深度比第一遍写的大才画，GPU 在跑着色器之前就把其余像素剔掉）：影子边上的像素打 gyRtLit 的 16 条。
+/** 抗锯齿第二遍（全屏，深度比第一遍写的大才画，GPU 在跑着色器之前就把其余像素剔掉）：影子边上的像素打 gyRtLit 的 8 条。
  *  求交单放这一遍：着色器里带着整套求交，哪怕几乎不走也让每个像素慢一截（放主画面材质里实测每帧多 200 多毫秒，和第一遍合成一遍多 70 毫秒） */
 export const 抗锯齿补片元 = /* glsl */ `
 uniform vec3 gySun;
