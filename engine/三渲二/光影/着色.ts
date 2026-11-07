@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoUniforms } from '../../light/大气.ts';
 import { 最多发光区 } from '../平涂.tsx';
+import { 光线头, type 光线统一量 } from './光线影子.ts';
 
 export type 光影统一量 = ReturnType<typeof 新光影统一量>;
 
@@ -183,10 +184,17 @@ vec3 gyOut = gyGlow ? flatC * flatS * flatK * gyGlowK : flatC * mix( 1.0, flatS,
 outgoingLight = sRGBTransferEOTF( vec4( gyOut, 1.0 ) ).rgb;
 `;
 
-/** 补在平涂派生的受光材质上（平涂那段已经插在 opaque_fragment 前，这段跟在它后面） */
-export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量) => {
+// 光线影子（光线影子.ts）：查影子图换成朝太阳打射线，起点沿法线挪一点防自身打影；只在这个变体里换，影子图的变体源码一字不动
+const 查影子图 = 'gyShadowAt( gyP + flatN * gyShadowBias )';
+const 打射线 = '( gyRtBlocked( gyP + flatN * gyRtBias, gySun ) ? 0.0 : 1.0 )';
+
+/** 补在平涂派生的受光材质上（平涂那段已经插在 opaque_fragment 前，这段跟在它后面）。给了 光线 = 影子按光线求交算（光影参数.影子算法 '光线'） */
+export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量, 光线?: 光线统一量) => {
   Object.assign(shader.uniforms, u);
-  shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${受光头}`).replace('#include <opaque_fragment>', `${受光身}\n#include <opaque_fragment>`);
+  if (光线) Object.assign(shader.uniforms, 光线);
+  const 头 = 光线 ? `${受光头}\n${光线头}` : 受光头;
+  const 身 = 光线 ? 受光身.replace(查影子图, 打射线) : 受光身;
+  shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${头}`).replace('#include <opaque_fragment>', `${身}\n#include <opaque_fragment>`);
 };
 
 const 浪函数 = /* glsl */ `

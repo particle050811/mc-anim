@@ -1,6 +1,6 @@
 // 光影层：放进三渲二画布接管渲染（useFrame 优先级 1，在平涂换完材质之后），一帧四步，都只看这一帧（不跨帧累积，乱序、并行出帧结果一样）：
 // 1. 太阳的影子图（光照 关了不画，下面第 2 步也不换受光的变体）：正交机从太阳那边看，只画受光的平涂网格（发光方片、粒子、天这些不挡光）和只挡光的组（剖掉的墙），深度进影子图（剖掉的不挡光 时镜头近裁剪面前面的不画）。影子图一个纹素 1/32 格（像素阴影；不按像素时 1/256 格，不够大才放粗），
-//    框按纹素吸附，镜头动的时候影子边不游；
+//    框按纹素吸附，镜头动的时候影子边不游。光影参数.影子算法 = '光线' 时不画影子图，挡光的同一批网格建 BVH，受光面逐像素朝太阳打射线（光线影子.ts）；
 // 2. 主画面画进离屏图（半精度浮点，同画布存 sRGB 编码后的值）：受光的平涂材质换成补了光影的变体（着色.ts），标了水的换成补了波纹反光的变体，画完换回来；
 // 3. 泛光：只画粒子的泛光源（被主画面挡住的丢掉）；取亮部（加上泛光源）缩一半，再缩五次，每层横竖各糊一遍；
 // 4. 云（光影选项.云 开着时）：主画面的深度换成对数深度，交给云组件（engine/light/云/画云.ts）画进一张离屏图；
@@ -20,6 +20,7 @@ import { png } from '../../model/贴图.ts';
 import { OceanSim, defaultOceanParams } from 'gelatin-game-engine/src/water/OceanSim.js';
 import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 水下片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
+import { 摆光线, 新光线资源, 释放光线, type 光线统一量 } from './光线影子.ts';
 import { use当前秒 } from '../../段/时间.tsx';
 
 /** 影子图默认边长（纹素）；光影参数.影子图边 可改，资源按需改尺寸 */
@@ -48,8 +49,26 @@ export const 猜时段 = (色调: string | undefined): 时段 => {
 
 type 变体 = { 光: THREE.Material };
 const 变体表 = new WeakMap<THREE.Material, 变体 | null>();
+/** 影子按光线算的受光变体（光线影子.ts）：和影子图的变体分开存，影子图那份照旧 */
+const 光线变体表 = new WeakMap<THREE.Material, THREE.Material>();
 
-const 取变体 = (m: THREE.Material, u: 光影统一量): THREE.Material | null => {
+const 取变体 = (m: THREE.Material, u: 光影统一量, 光线?: 光线统一量): THREE.Material | null => {
+  if (光线 && 平涂受光(m)) {
+    let v = 光线变体表.get(m);
+    if (!v) {
+      const 新 = m.clone();
+      新.userData.光影 = true;
+      新.onBeforeCompile = (shader, renderer) => {
+        m.onBeforeCompile(shader, renderer);
+        补受光(shader, u, 光线);
+      };
+      新.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影|光线`;
+      m.addEventListener('dispose', () => 新.dispose());
+      光线变体表.set(m, 新);
+      v = 新;
+    }
+    return v;
+  }
   let e = 变体表.get(m);
   if (e === undefined) {
     e = null;
@@ -263,7 +282,7 @@ const 建资源 = () => {
     glowOff: { value: new THREE.Vector2() },
     res: { value: new THREE.Vector2(1, 1) },
   });
-  return { u, 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 反云, 反云深, 反云空, 反云机, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
+  return { u, 光线: 新光线资源(), 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 反云, 反云深, 反云空, 反云机, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
 };
 
 /** 太阳本体（原版 8×8，材质包高清的 8k×8k）进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；边 = 本体几个贴图像素；
@@ -288,6 +307,7 @@ const 建太阳图 = () => {
 };
 
 const 释放 = (r: 资源) => {
+  释放光线(r.光线);
   r.影.depthTexture?.dispose();
   r.影.dispose();
   r.主.depthTexture?.dispose();
@@ -631,7 +651,10 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     for (const o of 挡光组) o.visible = true;
     const { 受光, 别的 } = 收受光网格(scene);
     u.gyShadowOn.value = 0;
-    if (光照 && 受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256, !参.像素阴影 && !!参.影子对齐)) {
+    // 光线影子：不画影子图，挡光的三角形建 BVH（像素阴影开着时照旧走影子图）
+    const 光线 = 光照 && 参.影子算法 === '光线' && !参.像素阴影;
+    if (光线) u.gyShadowOn.value = 受光.length && 摆光线(r.光线, 受光, 选项.剖掉的不挡光 ? 近裁剪面(camera, r.剖面) : null) > 0 ? 1 : 0;
+    else if (光照 && 受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256, !参.像素阴影 && !!参.影子对齐)) {
       const 藏 = 别的.filter((o) => o.visible);
       for (const o of 藏) o.visible = false;
       scene.background = null;
@@ -655,7 +678,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     设尺寸(r.主, w, h);
     const 还原: (() => void)[] = [];
     const 水们: THREE.Object3D[] = [];
-    const 换 = (m: THREE.Material) => ((光照 && 平涂受光(m)) || (改水 && 像水(m)) ? (取变体(m, u) ?? m) : m);
+    const 换 = (m: THREE.Material) => ((光照 && 平涂受光(m)) || (改水 && 像水(m)) ? (取变体(m, u, 光线 ? r.光线.u : undefined) ?? m) : m);
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
