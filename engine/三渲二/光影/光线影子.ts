@@ -25,6 +25,8 @@ export const 新光线统一量 = () => ({
   gyRtClip: { value: new THREE.Vector4() },
   gyRtClipOn: { value: 0 },
   gyRtBias: { value: 光线起点偏移 },
+  /** 抗锯齿后的可见度（屏幕图，光影渲染.tsx 的 画罩 先算好），主变体按像素取 */
+  gyRtMask: { value: 空图 as THREE.Texture },
 });
 export type 光线统一量 = ReturnType<typeof 新光线统一量>;
 
@@ -48,6 +50,7 @@ ${Array.from({ length: 最多贴图 }, (_, i) => `uniform sampler2D gyRtTex${i};
 uniform vec4 gyRtClip;
 uniform float gyRtClipOn;
 uniform float gyRtBias;
+uniform sampler2D gyRtMask;
 float gyRtAlpha( int s, vec2 uv ) {
   ${取透明度}
   return 1.0;
@@ -119,6 +122,54 @@ float gyRtLit( vec3 o, vec3 n, vec3 dx, vec3 dy ) {
     s += gyRtBlocked( o + dx * q.x + dy * q.y, gySun ) ? 0.0 : 1.0;
   }
   return s / 16.0;
+}
+// 罩那遍（光影渲染.tsx 的 画罩）：只打中心 1 条
+float gyRtCenter( vec3 o ) {
+  return gyRtBlocked( o, gySun ) ? 0.0 : 1.0;
+}
+`;
+
+/** 罩的三张图逐像素是 起点 + 可见度、x 导数 + 法线 x、y 导数 + 法线 y（法线 z 的正负记在可见度上加 2；没画东西的像素全 0） */
+const 读罩 = /* glsl */ `
+uniform sampler2D gyRtA;
+uniform sampler2D gyRtB;
+uniform sampler2D gyRtC;
+float gyRtVis( float w ) { return w > 1.5 ? w - 2.0 : w; }
+`;
+const 解罩 = /* glsl */ `
+  ivec2 c = ivec2( gl_FragCoord.xy );
+  vec4 A = texelFetch( gyRtA, c, 0 ), B = texelFetch( gyRtB, c, 0 ), C = texelFetch( gyRtC, c, 0 );
+  vec3 n = vec3( B.w, C.w, ( A.w > 1.5 ? - 1.0 : 1.0 ) * sqrt( max( 0.0, 1.0 - B.w * B.w - C.w * C.w ) ) );
+`;
+/** 抗锯齿第一遍（全屏、轻）：同一面上的 3×3 邻居都和中心一样就用中心值，深度写 1；有不一样的（影子边上）深度写 0，留给第二遍补。
+ *  别的面上的邻居（轮廓外、草叶缝里透出去的）不算：影子边要穿过这个像素，同一面上的邻居一定有一个不一样，不排掉的话轮廓和草丛处处走慢路 */
+export const 抗锯齿分片元 = /* glsl */ `
+${读罩}
+void main() {
+${解罩}
+  ivec2 m = textureSize( gyRtA, 0 ) - 1;
+  float v = gyRtVis( A.w );
+  // 离这个面多远算同一面：像素在面上那一块尺寸的 1/4（同一平面上的相邻像素是 0）；tol = 0 是罩里没画东西的像素（背景、不受光的），主画面不取
+  float tol = 0.25 * ( length( B.xyz ) + length( C.xyz ) );
+  bool same = true;
+  for ( int j = - 1; j <= 1; j ++ )
+    for ( int i = - 1; i <= 1; i ++ ) {
+      vec4 t = texelFetch( gyRtA, clamp( c + ivec2( i, j ), ivec2( 0 ), m ), 0 );
+      same = same && ( abs( gyRtVis( t.w ) - v ) < 0.5 || abs( dot( t.xyz - A.xyz, n ) ) > tol );
+    }
+  gl_FragColor = vec4( v, 0.0, 0.0, 1.0 );
+  gl_FragDepth = same || tol == 0.0 ? 1.0 : 0.0;
+}
+`;
+/** 抗锯齿第二遍（全屏，深度比第一遍写的大才画，GPU 在跑着色器之前就把其余像素剔掉）：影子边上的像素打 gyRtLit 的 16 条。
+ *  求交单放这一遍：着色器里带着整套求交，哪怕几乎不走也让每个像素慢一截（放主画面材质里实测每帧多 200 多毫秒，和第一遍合成一遍多 70 毫秒） */
+export const 抗锯齿补片元 = /* glsl */ `
+uniform vec3 gySun;
+${光线头}
+${读罩}
+void main() {
+${解罩}
+  gl_FragColor = vec4( gyRtLit( A.xyz, n, B.xyz, C.xyz ), 0.0, 0.0, 1.0 );
 }
 `;
 

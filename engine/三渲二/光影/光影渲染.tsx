@@ -20,7 +20,8 @@ import { png } from '../../model/贴图.ts';
 import { OceanSim, defaultOceanParams } from 'gelatin-game-engine/src/water/OceanSim.js';
 import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 水下片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
 import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
-import { 摆光线, 新光线资源, 释放光线, type 光线统一量 } from './光线影子.ts';
+import { 抗锯齿分片元, 抗锯齿补片元, 摆光线, 新光线资源, 释放光线, type 光线统一量 } from './光线影子.ts';
+import type { 光线模式 } from './着色.ts';
 import { use当前秒 } from '../../段/时间.tsx';
 
 /** 影子图默认边长（纹素）；光影参数.影子图边 可改，资源按需改尺寸 */
@@ -49,26 +50,33 @@ export const 猜时段 = (色调: string | undefined): 时段 => {
 
 type 变体 = { 光: THREE.Material };
 const 变体表 = new WeakMap<THREE.Material, 变体 | null>();
-/** 影子按光线算的受光变体（光线影子.ts）：和影子图的变体分开存，影子图那份照旧 */
-const 光线变体表 = new WeakMap<THREE.Material, THREE.Material>();
+/** 影子按光线算的受光变体（光线影子.ts）：和影子图的变体分开存，影子图那份照旧。按模式各一份（着色.ts 的 光线模式） */
+const 光线变体表 = new WeakMap<THREE.Material, Map<光线模式, THREE.Material>>();
+
+/** 半透明（混色）的材质罩那遍接不上（混出来的不是一个可见度），主画面里自己打（直） */
+const 光线主模式 = (m: THREE.Material): 光线模式 => (m.transparent ? '直' : '主');
+
+const 取光线变体 = (m: THREE.Material, u: 光影统一量, 光线: 光线统一量, 模式: 光线模式) => {
+  let 表 = 光线变体表.get(m);
+  if (!表) 光线变体表.set(m, (表 = new Map()));
+  let v = 表.get(模式);
+  if (!v) {
+    const 新 = m.clone();
+    新.userData.光影 = true;
+    新.onBeforeCompile = (shader, renderer) => {
+      m.onBeforeCompile(shader, renderer);
+      补受光(shader, u, 光线, 模式);
+    };
+    新.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影|光线${模式 === '直' ? '' : `|${模式}`}`;
+    m.addEventListener('dispose', () => 新.dispose());
+    表.set(模式, 新);
+    v = 新;
+  }
+  return v;
+};
 
 const 取变体 = (m: THREE.Material, u: 光影统一量, 光线?: 光线统一量): THREE.Material | null => {
-  if (光线 && 平涂受光(m)) {
-    let v = 光线变体表.get(m);
-    if (!v) {
-      const 新 = m.clone();
-      新.userData.光影 = true;
-      新.onBeforeCompile = (shader, renderer) => {
-        m.onBeforeCompile(shader, renderer);
-        补受光(shader, u, 光线);
-      };
-      新.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影|光线`;
-      m.addEventListener('dispose', () => 新.dispose());
-      光线变体表.set(m, 新);
-      v = 新;
-    }
-    return v;
-  }
+  if (光线 && 平涂受光(m)) return 取光线变体(m, u, 光线, 光线主模式(m));
   let e = 变体表.get(m);
   if (e === undefined) {
     e = null;
@@ -282,7 +290,20 @@ const 建资源 = () => {
     glowOff: { value: new THREE.Vector2() },
     res: { value: new THREE.Vector2(1, 1) },
   });
-  return { u, 光线: 新光线资源(), 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 反云, 反云深, 反云空, 反云机, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
+  // 光线影子的罩：每个画面像素中心 1 条射线的可见度、起点、导数、法线（三张 32 位浮点：半精度在几十格外分不出相邻像素，导数、法线用半精度实测也不省时，
+  // 影子边上和直接打 16 条的还差得多些），自带深度，和主画面同尺寸、同样光栅化，逐像素对得上。抗：抗锯齿后的可见度（半精度存 k/16 正好）
+  const 罩 = new THREE.WebGLRenderTarget(1, 1, { count: 3, format: THREE.RGBAFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
+  const 抗 = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
+  const 光线 = 新光线资源();
+  const 罩图 = { gyRtA: { value: 罩.textures[0] }, gyRtB: { value: 罩.textures[1] }, gyRtC: { value: 罩.textures[2] } };
+  const 抗分 = 新全屏(抗锯齿分片元, 罩图);
+  Object.assign(抗分.材质, { depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true });
+  // 全屏片的深度是 0.5：第一遍写 0 的（影子边上）才过
+  // 不给 gyRtMask：它就是这一遍要画的 抗（着色器里没用到，也不绑，免得读写同一张图）
+  const { gyRtMask: _, ...求交 } = 光线.u;
+  const 抗补 = 新全屏(抗锯齿补片元, { ...求交, gySun: u.gySun, ...罩图 });
+  Object.assign(抗补.材质, { depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
+  return { u, 光线, 罩, 抗, 抗分, 抗补, 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 反云, 反云深, 反云空, 反云机, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
 };
 
 /** 太阳本体（原版 8×8，材质包高清的 8k×8k）进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；边 = 本体几个贴图像素；
@@ -308,6 +329,12 @@ const 建太阳图 = () => {
 
 const 释放 = (r: 资源) => {
   释放光线(r.光线);
+  r.罩.dispose();
+  r.抗.dispose();
+  for (const x of [r.抗分, r.抗补]) {
+    x.材质.dispose();
+    x.片.geometry.dispose();
+  }
   r.影.depthTexture?.dispose();
   r.影.dispose();
   r.主.depthTexture?.dispose();
@@ -453,6 +480,51 @@ const 收受光网格 = (scene: THREE.Scene) => {
     } else if ((o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite) 别的.push(o);
   });
   return { 受光, 别的 };
+};
+
+/** 光线影子的罩（光线影子.ts 的 gyRtMask）：主画面之前同一台镜头先画一遍，受光的不透明材质换成罩变体（中心 1 条射线的可见度和抗锯齿要的位置、导数），
+ *  别的材质只写深度不写颜色（挡住后面的受光面，罩里留的就是画面上看得见的那一面）；再全屏一遍抗锯齿（影子边上补到 16 条），主画面的主变体按像素取 */
+const 画罩 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, r: 资源, u: 光影统一量, w: number, h: number) => {
+  设尺寸(r.罩, w, h);
+  设尺寸(r.抗, w, h);
+  const 还原: (() => void)[] = [];
+  const 关色 = new Set<THREE.Material>();
+  const 换 = (m: THREE.Material) => {
+    if (平涂受光(m) && 光线主模式(m) === '主') return 取光线变体(m, u, r.光线.u, '罩');
+    关色.add(m);
+    return m;
+  };
+  scene.traverse((o) => {
+    const mesh = o as THREE.Mesh;
+    const 原 = mesh.material as THREE.Material | THREE.Material[] | undefined;
+    if (!原) return;
+    // 点、线、精灵也只写深度
+    if (!mesh.isMesh) {
+      for (const m of Array.isArray(原) ? 原 : [原]) 关色.add(m);
+      return;
+    }
+    mesh.material = Array.isArray(原) ? 原.map(换) : 换(原);
+    还原.push(() => (mesh.material = 原));
+  });
+  const 原色写 = [...关色].map((m) => [m, m.colorWrite] as const);
+  for (const m of 关色) m.colorWrite = false;
+  const 背景 = scene.background;
+  scene.background = null;
+  // 清成全 0（调用处清色已设成 0、透明）：没画东西的像素导数是 0，抗锯齿那遍据此跳过
+  gl.setRenderTarget(r.罩);
+  gl.clear(true, true, true);
+  gl.render(scene, camera);
+  scene.background = 背景;
+  for (const [m, c] of 原色写) m.colorWrite = c;
+  还原.forEach((f) => f());
+  gl.setRenderTarget(r.抗);
+  gl.clear(true, true, false);
+  const 自动清 = gl.autoClear;
+  gl.autoClear = false;
+  gl.render(r.抗分.场, r.屏机);
+  gl.render(r.抗补.场, r.屏机);
+  gl.autoClear = 自动清;
+  r.光线.u.gyRtMask.value = r.抗.texture;
 };
 
 /** 泛光六层叠回去的权重：窄（泛光.宽 = 0）只用前四层，宽（= 1）往粗的层挪 */
@@ -676,6 +748,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     u.gyCloudOn.value = 0;
     if (画云 && 选项.云 && 选项.水反云 && u.gyWaterMode.value > 1.5) 画反射云(gl, r, camera as THREE.PerspectiveCamera, w, h, 选项, 秒);
     设尺寸(r.主, w, h);
+    if (光线 && u.gyShadowOn.value) 画罩(gl, scene, camera, r, u, w, h);
     const 还原: (() => void)[] = [];
     const 水们: THREE.Object3D[] = [];
     const 换 = (m: THREE.Material) => ((光照 && 平涂受光(m)) || (改水 && 像水(m)) ? (取变体(m, u, 光线 ? r.光线.u : undefined) ?? m) : m);
