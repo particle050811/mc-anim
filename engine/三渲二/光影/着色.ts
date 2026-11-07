@@ -19,6 +19,8 @@ export const 新光影统一量 = () => ({
   gyShadowOn: { value: 0 },
   /** 法线方向往外挪多少（格）再查影子，防自身打影 */
   gyShadowBias: { value: 0.04 },
+  /** 影子过滤（光影参数.影子过滤）：0 硬比较；> 0 是一个纹素在影子图上的 UV 宽，按相邻 2×2 纹素双线性加权取 */
+  gyShadowFilter: { value: 0 },
   /** 指向太阳（three 世界） */
   gySun: { value: new THREE.Vector3(0, 1, 0) },
   gySunCol: { value: new THREE.Color(1, 1, 1) },
@@ -96,6 +98,7 @@ uniform sampler2D gyShadowMap;
 uniform mat4 gyShadowMat;
 uniform float gyShadowOn;
 uniform float gyShadowBias;
+uniform float gyShadowFilter;
 uniform vec3 gySun;
 uniform vec3 gySunCol;
 uniform vec3 gyShadeCol;
@@ -118,7 +121,16 @@ float gyShadowAt( vec3 p ) {
   vec4 c = gyShadowMat * vec4( p, 1.0 );
   vec3 u = c.xyz / c.w * 0.5 + 0.5;
   if ( u.x <= 0.0 || u.y <= 0.0 || u.x >= 1.0 || u.y >= 1.0 || u.z >= 1.0 ) return 1.0;
-  return u.z - 0.0005 <= texture2D( gyShadowMap, u.xy ).r ? 1.0 : 0.0;
+  if ( gyShadowFilter <= 0.0 ) return u.z - 0.0005 <= texture2D( gyShadowMap, u.xy ).r ? 1.0 : 0.0;
+  // 相邻 2×2 纹素的比较结果按双线性加权：影子边只在一个纹素宽里过渡，台阶变成平的斜边，不往外糊（4×4 试过，这一镜纹素约 1/16 格，糊成一团）
+  vec2 t = u.xy / gyShadowFilter - 0.5;
+  vec2 f = fract( t );
+  vec2 b = ( floor( t ) + 0.5 ) * gyShadowFilter;
+  float s00 = u.z - 0.0005 <= texture2D( gyShadowMap, b ).r ? 1.0 : 0.0;
+  float s10 = u.z - 0.0005 <= texture2D( gyShadowMap, b + vec2( gyShadowFilter, 0.0 ) ).r ? 1.0 : 0.0;
+  float s01 = u.z - 0.0005 <= texture2D( gyShadowMap, b + vec2( 0.0, gyShadowFilter ) ).r ? 1.0 : 0.0;
+  float s11 = u.z - 0.0005 <= texture2D( gyShadowMap, b + vec2( gyShadowFilter ) ).r ? 1.0 : 0.0;
+  return mix( mix( s00, s10, f.x ), mix( s01, s11, f.x ), f.y );
 }
 `;
 
