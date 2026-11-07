@@ -3,7 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { 放大上限, 照搬贴图 } from './材质包.ts';
-import { 作品的材质包选用们, 套材质包, 当前材质包选用, 按材质包分组, 核对段材质包, 照材质包选用, 材质包锁路径, 读材质包选用, 读材质包表, type 材质包选用, type 材质包锁, type 资产锁 } from './资产锁.ts';
+import { 作品的材质包选用们, 材质包选用键, 套材质包, 当前材质包选用, 按材质包分组, 核对段材质包, 照材质包选用, 材质包锁路径, 读材质包选用, 读材质包表, type 材质包选用, type 材质包锁, type 资产锁 } from './资产锁.ts';
 
 const 条 = (c: string) => ({ sha256: c.repeat(64), 大小: 1, 库: 'store' as const, 后缀: '.png' });
 
@@ -30,6 +30,28 @@ describe('材质包覆盖层', () => {
     expect(() => 读材质包选用(根, '乙', '24')).toThrow(/2 的幂/);
     expect(path.basename(材质包锁路径(根, { 包: ['材质包/乙', '材质包/丙'], 来自: '环境', 封顶: 16 }, '/数据'))).toBe('乙+丙@16.锁.json');
     expect(path.basename(材质包锁路径(根, { 包: ['材质包/乙'], 来自: '环境' }, '/数据'))).toBe('乙.锁.json');
+  });
+
+  it('试验倍数：ANIM_PACKS_TRY 只跟环境变量选的包一起起作用，锁名、分组键带 @试验', () => {
+    const 根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
+    fs.writeFileSync(path.join(根, '材质包.toml'), '"包" = ["甲"]\n');
+    expect(读材质包选用(根, '乙', undefined, undefined, '256')).toEqual({ 包: ['材质包/乙'], 来自: '环境', 试验: 256 });
+    expect(读材质包选用(根, '', '', undefined, '256')).toEqual({ 包: ['材质包/甲'], 来自: '作品' });
+    expect(读材质包选用(根, '原版', undefined, undefined, '256')).toEqual({ 包: [], 来自: '无' });
+    expect(() => 读材质包选用(根, '乙', undefined, undefined, '100')).toThrow(/2 的幂/);
+    expect(path.basename(材质包锁路径(根, { 包: ['材质包/乙'], 来自: '环境', 试验: 128 }, '/数据'))).toBe('乙@试验128.锁.json');
+    expect(材质包选用键({ 包: ['材质包/乙'], 来自: '环境', 试验: 128 })).not.toBe(材质包选用键({ 包: ['材质包/乙'], 来自: '环境' }));
+  });
+
+  it('分辨率：材质包.toml 的 "分辨率" 给作品和 [段] 另选的包都带上，[] 原版和环境变量试样不带', () => {
+    const 根 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
+    fs.writeFileSync(path.join(根, '材质包.toml'), '"包" = ["甲"]\n"分辨率" = 64\n\n[段]\n"2-雷雨" = []\n"2-抢龙蛋" = ["乙"]\n');
+    expect(读材质包选用(根, '', '')).toEqual({ 包: ['材质包/甲'], 来自: '作品', 分辨率: 64 });
+    expect(读材质包选用(根, '', '', '2-抢龙蛋')).toEqual({ 包: ['材质包/乙'], 来自: '段', 分辨率: 64 });
+    expect(读材质包选用(根, '', '', '2-雷雨')).toEqual({ 包: [], 来自: '无' });
+    expect(读材质包选用(根, '丙', '')).toEqual({ 包: ['材质包/丙'], 来自: '环境' });
+    fs.writeFileSync(path.join(根, '材质包.toml'), '"包" = ["甲"]\n"分辨率" = 60\n');
+    expect(() => 读材质包选用(根, '', '')).toThrow(/2 的幂/);
   });
 
   it('按段选：[段] 里的段换包或 [] 退回原版，没写的段跟 "包"；和 "包" 一样的算作品的；环境变量顶掉所有段；锁各一份', () => {
@@ -78,6 +100,8 @@ describe('材质包覆盖层', () => {
     expect(放大上限(画风(12, 4), 32).倍).toBe(2);
     expect(放大上限(画风(3, 3)).倍).toBe(1);
     expect(放大上限(null).倍).toBe(1);
+    expect(放大上限(画风(6, 2), undefined, 256).倍).toBe(16); // 试验：不按整除
+    expect(放大上限(画风(6, 2), 64, 256).倍).toBe(4);
   });
 
   it('不选就是原锁；选了按覆盖层锁盖上；包换了、锁没建、盖了没登记的 id 都报错', () => {

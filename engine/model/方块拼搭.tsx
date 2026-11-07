@@ -21,7 +21,6 @@ export const 发光方块 = new Set(['minecraft:torch', 'minecraft:wall_torch', 
 
 type 类 = '实心' | '镂空' | '半透明' | '发光';
 type 缓冲 = { pos: number[]; nor: number[]; uv: number[]; col: number[]; idx: number[] };
-const ATLAS_COLS = 16;
 /** sRGB 数值 → 线性（three 0.186 不再导出 SRGBToLinear） */
 export const sRGB转线性 = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const 线性 = sRGB转线性;
@@ -58,15 +57,15 @@ export const 拼搭缓冲 = (方块们: readonly 方块[], 选项: 拼搭选项 
     if (占.has(k)) throw new Error(`格 ${k} 放了两个方块`);
     占.set(k, 查方块(b.状态));
   }
-  const rows = blockAtlas().rows;
+  const { rows, cols } = blockAtlas(); // 列数：高倍材质包图集会多于 16 列（真实方块图集.ts）
   const 缓冲们: Record<类, 缓冲> = { 实心: 空(), 镂空: 空(), 半透明: 空(), 发光: 空() };
   const 推面 = (buf: 缓冲, 角: number[], uv: number[], tex: number, n: number[], 色: number[]) => {
     const base = buf.pos.length / 3;
-    const cx = tex % ATLAS_COLS, cy = Math.floor(tex / ATLAS_COLS);
+    const cx = tex % cols, cy = Math.floor(tex / cols);
     for (let c = 0; c < 4; c++) {
       buf.pos.push(角[c * 3]!, 角[c * 3 + 1]!, 角[c * 3 + 2]!);
       buf.nor.push(n[0]!, n[1]!, n[2]!);
-      buf.uv.push((cx + uv[c * 2]!) / ATLAS_COLS, (cy + uv[c * 2 + 1]!) / rows);
+      buf.uv.push((cx + uv[c * 2]!) / cols, (cy + uv[c * 2 + 1]!) / rows);
       buf.col.push(色[0]!, 色[1]!, 色[2]!);
     }
     // 面表的四个角从外面看是顺时针（左上 右上 右下 左下），three 的正面要逆时针

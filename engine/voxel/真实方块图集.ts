@@ -10,6 +10,15 @@ import { flattenAtlasColors, flatColorBlocks } from './纯色方块.ts';
 
 const HOLE = 0.6;
 const ATLAS_COLS = 16; // 图集每行 16 张
+// WebGL 纹理边长上限：Mac 上 Chrome（ANGLE、Metal）和多数显卡是 16384。128x、256x 试验包（材质包.ts ANIM_PACKS_TRY）按 16 列排会超高，
+// 列数翻倍到放得下为止；放得下的（16x、32x、64x）照旧 16 列，着色器源码和段指纹不变
+const MAX_TEX = 16384;
+const colsFor = (cell: number, texCount: number) => {
+  let cols = ATLAS_COLS;
+  while (Math.ceil(texCount / cols) * cell > MAX_TEX && cols * 2 * cell <= MAX_TEX) cols *= 2;
+  if (Math.ceil(texCount / cols) * cell > MAX_TEX) throw new Error(`方块图集 ${texCount} 张、一格 ${cell} 像素，排不进 ${MAX_TEX}×${MAX_TEX} 的纹理`);
+  return cols;
+};
 
 // sRGB ↔ 线性
 const toLin = (c: number) => Math.pow(c / 255, 2.2);
@@ -77,7 +86,7 @@ const buildMips = (px: Uint8Array, solidFill: boolean, cell: number): Uint8Array
 };
 
 // 图集：每张贴图占一格，多级纹理每级都按格排（第 k 级每格 格 >> k 像素），格子之间不混色
-let atlas: { original: THREE.DataTexture; solid: THREE.DataTexture; rows: number; cell: number } | null = null;
+let atlas: { original: THREE.DataTexture; solid: THREE.DataTexture; rows: number; cols: number; cell: number } | null = null;
 export const blockAtlas = () => {
   if (atlas) return atlas;
   const src = png(texUri);
@@ -87,15 +96,16 @@ export const blockAtlas = () => {
   if (flatColorBlocks && cell !== 16) throw new Error(`纯色方块只认 16 像素一格的方块图集，这里是 ${cell}：出纯色参考视频时作品不选高清材质包（材质包.toml 写 "封顶" = 16）`);
   const sheet = flatColorBlocks ? flattenAtlasColors(src, '不分') : src;
   const texCount = sheet.h / cell;
-  const rows = Math.ceil(texCount / ATLAS_COLS);
+  const cols = colsFor(cell, texCount);
+  const rows = Math.ceil(texCount / cols);
   const mk = (solidFill: boolean) => {
     const levels = Array.from({ length: Math.log2(cell) + 1 }, (_, k) => {
       const cellPx = cell >> k;
-      return { width: ATLAS_COLS * cellPx, height: rows * cellPx, data: new Uint8Array(ATLAS_COLS * cellPx * rows * cellPx * 4) };
+      return { width: cols * cellPx, height: rows * cellPx, data: new Uint8Array(cols * cellPx * rows * cellPx * 4) };
     });
     for (let texIdx = 0; texIdx < texCount; texIdx++) {
       const mips = buildMips(sheet.px.subarray(texIdx * cell * cell * 4, (texIdx + 1) * cell * cell * 4), solidFill, cell);
-      const cx = texIdx % ATLAS_COLS, cy = Math.floor(texIdx / ATLAS_COLS);
+      const cx = texIdx % cols, cy = Math.floor(texIdx / cols);
       mips.forEach((mip, k) => {
         const cellPx = cell >> k;
         const level = levels[k];
@@ -111,7 +121,7 @@ export const blockAtlas = () => {
     t.needsUpdate = true;
     return t;
   };
-  atlas = { original: mk(false), solid: mk(true), rows: rows, cell };
+  atlas = { original: mk(false), solid: mk(true), rows: rows, cols, cell };
   return atlas;
 };
 
@@ -119,11 +129,11 @@ export const blockAtlas = () => {
 // 每行第 0 列的贴图往下偏一点就拆到上一行末列（黄花叶 2384 取到白凳子 2383 的边列，成了白棕横纹），所以先取整再拆行列。
 // 说明写在模板外：模板里的字会进着色器源码，也就进了段指纹。
 export const blockAtlasGlsl = () => {
-  const rows = blockAtlas().rows;
+  const { rows, cols } = blockAtlas();
   return `
 vec2 atlasUv(float layer, vec2 f) {
   layer = floor(layer + 0.5);
-  vec2 cell = vec2(mod(layer, ${ATLAS_COLS}.0), floor(layer / ${ATLAS_COLS}.0));
-  return (cell + f) / vec2(${ATLAS_COLS}.0, ${rows}.0);
+  vec2 cell = vec2(mod(layer, ${cols}.0), floor(layer / ${cols}.0));
+  return (cell + f) / vec2(${cols}.0, ${rows}.0);
 }`;
 };
