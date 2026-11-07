@@ -12,7 +12,7 @@ import { liYingFinalPose, type RideLiYing } from '@库/角色/骑扫帚.tsx';
 import { twilightFogFar, twilightFogNear, clampFogToEdge, TWILIGHT_CRUISE_FOG_FAR } from '@engine/light/暮色光照.tsx';
 import { VIEW_DISTANCE } from '@engine/voxel/视距.ts';
 import { cruiseHeight, twilightLandmark, twilightHeightAboveGround, viewEdgeDistance } from '../../../地点/暮色新世界.tsx';
-import { cruiseFogFar } from '../../../地点/暮色新世界/远景试看.ts';
+import { cruiseFogFar, farViewOf, TWILIGHT_FAR_VIEW } from '../../../地点/暮色新世界/超远景.ts';
 import * as choreo612 from '../6-1-2/编排.ts';
 // 6-1-2 的正式版（段长、台词开口都含打击停顿；末帧的李樱是收刀后站定带呼吸微动的样子）
 import { officialLiying, officialLineStart, officialJiuhuLineStart, officialFrames } from '../6-1-2/动作改进.ts';
@@ -313,12 +313,15 @@ export const aboveGround = (frame: number) => {
   return frame < beats.起飞 ? camPos[2] : twilightHeightAboveGround(courtyard.到世界(camPos));
 };
 // 雾的远端（米）：同 6-1-2 的暮色线性雾，地面上是满视距（lib/视距.ts），升空后按镜头离地高度放远（lib/暮色光照.tsx）。起飞到放平那一帧放到一镜到底的巡航下限（`TWILIGHT_CRUISE_FOG_FAR`），
-// 才和 6-1-4 首帧接得上；往导入范围边上看时压到边以内（`clampFogToEdge`）；超远景试看开着时按试看的雾远封顶（暮色新世界/远景试看.ts）
+// 才和 6-1-4 首帧接得上；往导入范围边上看时压到边以内（`clampFogToEdge`）。
+// 超远景（用户 11-07 定 10 公里，暮色新世界/超远景.ts）：起飞后跟着这条放远的曲线一起放进（`farViewRamp`），起飞前林子里的雾、高度雾不变，首帧接得上 6-1-2
+export const farView = () => farViewOf(TWILIGHT_FAR_VIEW);
+export const farViewRamp = (frame: number) => (frame < beats.起飞 ? 0 : ss((frame - beats.起飞) / flipDelay));
 export const fogFar = (frame: number) => {
   const nearFog = twilightFogFar(aboveGround(frame));
   if (frame < beats.起飞) return nearFog;
   const cam = camera(frame);
-  const farFog = Math.max(nearFog, VIEW_DISTANCE + (TWILIGHT_CRUISE_FOG_FAR - VIEW_DISTANCE) * ss((frame - beats.起飞) / flipDelay));
-  return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.到世界(cam.pos), courtyard.到世界(cam.tgt)), clampFogToEdge);
+  const farFog = Math.max(nearFog, VIEW_DISTANCE + (TWILIGHT_CRUISE_FOG_FAR - VIEW_DISTANCE) * farViewRamp(frame));
+  return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.到世界(cam.pos), courtyard.到世界(cam.tgt)), clampFogToEdge, farView(), farViewRamp(frame));
 };
 export const T612 = (officialFrames - 1) / 24;

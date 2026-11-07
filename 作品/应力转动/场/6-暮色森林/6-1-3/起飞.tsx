@@ -18,7 +18,7 @@ import { RideBroom } from '@库/角色/骑扫帚.tsx';
 import { WornSheath } from '@库/物品/拔刀剑.tsx';
 import { Chest, TWILIGHT_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { LandmarkPlacement, TwilightTerrain } from '../../../地点/暮色新世界.tsx';
-import { twilightDistantTrial } from '../../../地点/暮色新世界/远景试看.ts';
+import { farViewLighting } from '../../../地点/暮色新世界/超远景.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
@@ -47,12 +47,12 @@ export const TakeOff: React.FC = () => {
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(frame)} fogNear={twilightFogNear(choreo.fogFar(frame))} aboveGround={choreo.aboveGround(frame)} heightFogScale={twilightDistantTrial()?.高度雾 ?? 1} />
+        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(frame)} fogNear={twilightFogNear(choreo.fogFar(frame))} aboveGround={choreo.aboveGround(frame)} {...farViewLighting(choreo.farView(), choreo.farViewRamp(frame))} />
         <FlightRig c={cam} />
         {/* 屏幕空间 AO：同 6-1-2、一镜到底一直开着（云也画在它里面） */}
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <TwilightTerrain camPos={cam.pos} landmarks={['娜迦庭院']} t={choreo.T612 + frame / 24} clearPlants={choreo.clearPlants(frame)} shadowLightDir={twilightSunDir} />
+          <TwilightTerrain camPos={cam.pos} landmarks={['娜迦庭院']} t={choreo.T612 + frame / 24} clearPlants={choreo.clearPlants(frame)} shadowLightDir={twilightSunDir} farView={choreo.farView()} />
           {/* 巫妖怪塔：起飞朝东南 135° 以后它就在正前方 2 公里（直航，用户 10-05「为什么起飞的时候就不能把那个扫帚摆好方向」），升上林海以后地平线上看得见塔尖。
               一镜到底（6-1-4+5）从第 0 帧起画它，这里不画的话末帧接 6-1-4+5 首帧时塔尖一下子冒出来（整合时逐像素比出来的）。
               时间照一镜到底的口径：6-1-3 末帧 = 一镜到底第 0 帧（物理时间 0），塔还没被撞 */}
