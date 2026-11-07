@@ -559,6 +559,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     u.gyLampR.value = 光.灯照.半径;
     sRGB乘数(u.gyLampCol.value, 光.灯照.色, 光.灯照.强 * 基);
     u.gyPixel.value = 参.像素阴影 ? 1 : 0;
+    u.gyShadowFilter.value = !参.像素阴影 && 参.影子过滤 ? 1 / 影子图边 : 0;
     u.gyTime.value = 秒;
     const 水 = 选项.水 ?? '原版贴图';
     const 改水 = 水 !== '原版贴图';
