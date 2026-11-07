@@ -186,18 +186,34 @@ outgoingLight = sRGBTransferEOTF( vec4( gyOut, 1.0 ) ).rgb;
 
 // 光线影子（光线影子.ts）：查影子图换成朝太阳打射线，起点沿法线挪一点防自身打影；只在这个变体里换，影子图的变体源码一字不动
 const 查影子图 = 'gyShadowAt( gyP + flatN * gyShadowBias )';
-const 打射线 = 'gyRtLit( gyP + flatN * gyRtBias, flatN, gyPdx, gyPdy )';
+const 打射线 = {
+  直: 'gyRtLit( gyP + flatN * gyRtBias, flatN, gyPdx, gyPdy )',
+  罩: 'gyRtCenter( gyP + flatN * gyRtBias )',
+  主: 'texelFetch( gyRtMask, ivec2( gl_FragCoord.xy ), 0 ).r',
+};
+/** 光线影子的三种变体：直 = 每像素自己打（先四角、边上补到 16 条）；罩 = 只打中心 1 条，输出抗锯齿那遍要的（先画的那一遍）；主 = 取抗锯齿那遍算好的，自己不打 */
+export type 光线模式 = keyof typeof 打射线;
 // 抗锯齿要这个像素在面上占的那一块：导数在分支外取（三元式里取导数是未定义的）
 const 取导数 = 'vec3 gyPL = ( flatToLocal * vec4( gyP, 1.0 ) ).xyz;';
 const 取导数后 = `${取导数}\nvec3 gyPdx = dFdx( gyP ), gyPdy = dFdy( gyP );`;
 
 /** 补在平涂派生的受光材质上（平涂那段已经插在 opaque_fragment 前，这段跟在它后面）。给了 光线 = 影子按光线求交算（光影参数.影子算法 '光线'） */
-export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量, 光线?: 光线统一量) => {
+export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量, 光线?: 光线统一量, 模式: 光线模式 = '直') => {
   Object.assign(shader.uniforms, u);
   if (光线) Object.assign(shader.uniforms, 光线);
   const 头 = 光线 ? `${受光头}\n${光线头}` : 受光头;
-  const 身 = 光线 ? 受光身.replace(查影子图, 打射线).replace(取导数, 取导数后) : 受光身;
-  shader.fragmentShader = shader.fragmentShader.replace('#include <common>', `#include <common>\n${头}`).replace('#include <opaque_fragment>', `${身}\n#include <opaque_fragment>`);
+  const 身 = 光线 ? 受光身.replace(查影子图, 打射线[模式]).replace(取导数, 取导数后) : 受光身;
+  let f = shader.fragmentShader.replace('#include <common>', `#include <common>\n${头}`).replace('#include <opaque_fragment>', `${身}\n#include <opaque_fragment>`);
+  // 罩：画进三张图（光线影子.ts 的 读罩、解罩 怎么读），颜色、雾、色彩空间都不要；第 0 张是 three 自己声明的 location 0
+  if (光线 && 模式 === '罩' && !f.includes('#include <dithering_fragment>')) throw new Error('光线影子：材质的片元着色器里没有 dithering_fragment，罩那遍接不上');
+  if (光线 && 模式 === '罩')
+    f = f
+      .replace('#include <common>', '#include <common>\nlayout( location = 1 ) out highp vec4 gyRtO1;\nlayout( location = 2 ) out highp vec4 gyRtO2;')
+      .replace(
+        '#include <dithering_fragment>',
+        '#include <dithering_fragment>\n\tgl_FragColor = vec4( gyP + flatN * gyRtBias, gyLit + ( flatN.z < 0.0 ? 2.0 : 0.0 ) );\n\tgyRtO1 = vec4( gyPdx, flatN.x );\n\tgyRtO2 = vec4( gyPdy, flatN.y );',
+      );
+  shader.fragmentShader = f;
 };
 
 const 浪函数 = /* glsl */ `
