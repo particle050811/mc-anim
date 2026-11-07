@@ -53,10 +53,12 @@ const coarseAreaTop = (coarseHeights: 粗高度图, x0: number, y0: number, size
 
 // 粗级里水面那格补成水（结冰的补成冰，同 远景.ts 的 `waterFreezes`）：导入的粗级照 Mipper 合并，水面和海底同格时露出海底，而远景画的是水，两边要一样。
 // 认水：这格跨着 y 62（场景 z −2）、是这列最上面一格，粗高度图里这列最高不过水面（−1），离线网格这列也是水（最高实心方块 y ≤ 61：y 62 的沙滩和水面一样平，光看粗高度分不出）
+// （主世界海平面 63、oy 64 时的数；别的维度按远景包的 海平面 和包原点的 oy 换算）
 const fillWaterSurface = (voxels: VoxelGrid, coarseHeights: 粗高度图, grid: DistantGrid, origin: number[]) => {
   const cellM = voxels.格;
   if (cellM < 2) return;
-  const k = Math.floor((-2 - voxels.原点[2]) / cellM);
+  const waterTopZ = grid.海平面 - 1 - origin[1]; // 最上一格水的场景 z（主世界 −2）
+  const k = Math.floor((waterTopZ - voxels.原点[2]) / cellM);
   if (k < 0 || k >= voxels.nz) return;
   const colCount = voxels.nx * voxels.ny;
   const waterVoxel = voxelFromState('minecraft:water');
@@ -70,9 +72,9 @@ const fillWaterSurface = (voxels: VoxelGrid, coarseHeights: 粗高度图, grid: 
     if (covered) continue;
     const X0 = voxels.原点[0] + ((colIdx % voxels.nx) - 1) * cellM;
     const Y0 = voxels.原点[1] + (Math.floor(colIdx / voxels.nx) - 1) * cellM;
-    if (coarseAreaTop(coarseHeights, X0, Y0, cellM) > -1) continue;
+    if (coarseAreaTop(coarseHeights, X0, Y0, cellM) > waterTopZ + 1) continue;
     const gx = X0 + origin[0] + cellM / 2, gz = origin[2] - Y0 - cellM / 2;
-    if (distantTop(grid, gx, gz) > 61.5) continue;
+    if (distantTop(grid, gx, gz) > grid.海平面 - 1.5) continue;
     const biome = distantBiome(grid, gx, gz);
     const frozen = waterFreezes(grid, biome, X0 + origin[0] + cellM - 1, origin[2] - Y0 - 1); // 格子东南角那一块（远景.ts 水面结冰 的注释）
     const tint = frozen ? 0xffffff : blockTint(waterVoxel, biome, gx, gz);
@@ -214,7 +216,11 @@ const seamCorrection = (J: Seam, origin: number[]): GroundCorrection => (gx, gz)
   return d00 + (d10 - d00) * fu + (d01 - d00) * fv + (d00 - d10 - d01 + d11) * fu * fv;
 };
 
-export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, seam: Seam | null): Omit<主世界地形, '键' | '远'> => {
+// 补粗级：导入的粗级补水面、水草、地面草花（照主世界导入量的表，见上）；暮色不补，导入那片和只画导入地形时一样。树高：竖直范围在远景最高的地面上再留多少米给树
+// 补充：导入范围外另一个导入包（同一个原点烘的，暮色远处地标的小块），主导入包没有的区段先取它、它也没有的列再用远景
+export type 远景兜底选项 = { 补粗级: boolean; 树高: number; 补充?: ImportedTerrain };
+const overworldOptions: 远景兜底选项 = { 补粗级: true, 树高: 26 };
+export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, seam: Seam | null, options: 远景兜底选项 = overworldOptions): Omit<主世界地形, '键' | '远'> => {
   // 交界修正是不是对着手上这版导入包、远景包算的：导入范围或加密层变了，旧修正修不到新交界
   if (seam) {
     const fingerprint = coarseHeightFingerprint(imported.粗), layerSig = grid.层.map((F) => `${F.名}:${F.块.size}`).join(',');
@@ -241,12 +247,14 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
       out.crown = 0;
     },
     区段: (section) => {
-      const voxels = baseSource.区段!(section);
+      const voxels = baseSource.区段!(section) ?? options.补充?.来源.区段!(section);
       if (!voxels) return distantSection(grid, origin, section, undefined, correction);
-      voxels.水面 = grid.海平面 - oy; // 各级的海面画齐（lib/体素/网格.ts 的 液顶）
-      fillWaterSurface(voxels, coarseHeights, grid, origin);
-      fillSeagrass(voxels, grid, origin);
-      fillGroundPlants(voxels, grid, origin);
+      if (options.补粗级) {
+        voxels.水面 = grid.海平面 - oy; // 各级的海面画齐（lib/体素/网格.ts 的 液顶）
+        fillWaterSurface(voxels, coarseHeights, grid, origin);
+        fillSeagrass(voxels, grid, origin);
+        fillGroundPlants(voxels, grid, origin);
+      }
       // 没数据的列：整列空气（烘焙时区段的 `k底` 取所有列最低地表，有数据的列在其上一定有方块）；挖地标整列挖空的列（`V.挖空`）也是整列空气但有数据，不补
       const colCount = voxels.nx * voxels.ny;
       const emptyCols = new Uint8Array(colCount).fill(1);
@@ -266,7 +274,10 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
       if (!anyEmpty) return voxels;
       return mergeColumns(voxels, distantSection(grid, origin, section, (c) => emptyCols[c] === 1, correction), emptyCols);
     },
-    prefetch: baseSource.prefetch,
+    prefetch: options.补充 ? (qs) => {
+      const a = baseSource.prefetch?.(qs), b = options.补充!.来源.prefetch?.(qs);
+      return a || b ? Promise.all([a, b]).then(() => undefined) : undefined;
+    } : baseSource.prefetch,
     转交: true, // 导入的体素块（来源 转交）就地改完交出去，远景、并列都是新建的
   };
   // 竖直范围：导入的（维度下界 ～ 最高的方块顶）和远景网格最高处 + 最高的树
@@ -274,7 +285,7 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
   for (const height of grid.高) if (height > maxHeight) maxHeight = height;
   return {
     来源: source,
-    高度: [imported.高度[0], Math.max(imported.高度[1], maxHeight + 1 - oy + 26)],
+    高度: [imported.高度[0], Math.max(imported.高度[1], options.补充?.高度[1] ?? -Infinity, maxHeight + 1 - oy + options.树高)],
     位置: imported.位置,
     地面: groundAt,
     导入: imported,
@@ -286,19 +297,29 @@ const noCutouts: LandmarkCutout[] = [];
 const noFlatten: FlattenArea[] = [];
 // 包名、远景包 在各帧要一样（换了要重新取、重新建来源）。
 // `挖掉`、`平整`：导入地形上要挖掉的地标、要整平的地（见 导入地形.ts），各帧同一个数组；`改动名` 并进缓存键，改动不同的来源不能共用缓存（边城整平、竖井挖开见 镜头/6-3-下坠/地形.ts）
-export const useOverworldTerrain = (packName = overworldPack, distantPack = overworldDistantPack, cutouts: LandmarkCutout[] = noCutouts, flattenAreas: FlattenArea[] = noFlatten, editName = ''): 主世界地形 | null => {
+export const useOverworldTerrain = (packName = overworldPack, distantPack = overworldDistantPack, cutouts: LandmarkCutout[] = noCutouts, flattenAreas: FlattenArea[] = noFlatten, editName = ''): 主世界地形 | null =>
+  useDistantFallbackTerrain(packName, distantPack, cutouts, flattenAreas, { 键前缀: '主世界', 改动名: editName, 远: overworldFarM, 交界: true, ...overworldOptions });
+
+// 导入包为主、远景包兜底的地形（主世界、暮色共用）。键前缀：体素世界缓存键的头；交界：取不取 <远景包>/交界.<导入包>.*（暮色没量，不取）；
+// 补充是 null 时等它取到（调用方自己 useImportedTerrain），不写就没有补充包
+export type 远景兜底设置 = Omit<远景兜底选项, '补充'> & { 键前缀: string; 改动名?: string; 远: number; 交界: boolean; 补充?: ImportedTerrain | null };
+export const useDistantFallbackTerrain = (packName: string, distantPack: string, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[], settings: 远景兜底设置): 主世界地形 | null => {
+  const { 键前缀: keyPrefix, 改动名: editName = '', 远: farM, 交界: withSeam, 补粗级: fillCoarse, 树高: treeHeight, 补充: extra } = settings;
   const imported = useImportedTerrain(packName, cutouts, flattenAreas);
   const [gridAndSeam, setGridAndSeam] = useState<[DistantGrid, Seam | null] | null>(null);
   const distantDir = packDir(distantPack);
-  const [handle] = useState(() => delayRender(`主世界地形：取 ${distantDir}`));
+  const [handle] = useState(() => delayRender(`${keyPrefix}地形：取 ${distantDir}`));
   const released = useRef(false);
   useEffect(() => {
-    Promise.all([loadDistantGrid(distantDir, distantPack), loadSeam(distantDir, packName)])
+    Promise.all([loadDistantGrid(distantDir, distantPack), withSeam ? loadSeam(distantDir, packName) : null])
       .then(setGridAndSeam)
       .catch((e) => cancelRender(e));
-  }, [distantDir, distantPack, packName]);
-  const worldKey = `主世界:${packDir(packName)}+${distantDir}${editName ? `+${editName}` : ''}`;
-  const terrain = useMemo(() => (imported && gridAndSeam ? { ...buildOverworld(imported, gridAndSeam[0], gridAndSeam[1]), 键: worldKey, 远: overworldFarM } : null), [imported, gridAndSeam, worldKey]);
+  }, [distantDir, distantPack, packName, withSeam]);
+  const worldKey = `${keyPrefix}:${packDir(packName)}+${distantDir}${extra ? `+${extra.键}` : ''}${editName ? `+${editName}` : ''}`;
+  const terrain = useMemo(
+    () => (imported && gridAndSeam && extra !== null ? { ...buildOverworld(imported, gridAndSeam[0], gridAndSeam[1], { 补粗级: fillCoarse, 树高: treeHeight, ...(extra ? { 补充: extra } : {}) }), 键: worldKey, 远: farM } : null),
+    [imported, gridAndSeam, worldKey, farM, fillCoarse, treeHeight, extra],
+  );
   // 和 use导入地形 一样，等用到地形的子组件（体素世界）这一次渲染完、挂上它自己的 delayRender 以后再放行
   useEffect(() => {
     if (!terrain || released.current) return;
