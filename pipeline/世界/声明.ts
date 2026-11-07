@@ -20,10 +20,12 @@ export type 包声明 = {
   /** false = 烘了也不登记进 assets/地形版本.json（演示、试验用的包） */
   登记: boolean;
 };
-/** 矩形写 两角，或 中心 加 半边；走廊写 折线、半宽，可选 去掉（已在别的矩形块里的区块不重复生成）。怎么算区块见 预生成/范围.ts */
+/** 矩形写 两角，或 中心 加 半边；走廊写 折线、半宽，可选 去掉（已在别的矩形块里的区块不重复生成）；区块表写 文件（相对 sourcing/worlds/ 的 JSON，{"区块": [[cx, cz], …]}，
+ *  程序算出来的散点区块，例：anim world 远景 地标 排的远处地标小块）。怎么算区块见 预生成/范围.ts */
 export type 预生成块 = {
   名: string;
-  形状: '矩形' | '走廊';
+  形状: '矩形' | '走廊' | '区块表';
+  文件?: string;
   两角?: [number, number, number, number];
   中心?: [number, number];
   半边?: [number, number];
@@ -51,6 +53,8 @@ export type 世界声明 = {
   数据包: string[];
   预生成: { 区域文件范围?: 区域范围; 区块数?: number; 块: 预生成块[] };
   包: 包声明[];
+  /** 远景包（pipeline/世界/远景/）：导入范围（预生成的矩形块）外扩多远、中层（16 米）和细带（8 米）在交界外多宽，米 */
+  远景?: { 包: string; 外扩: number; 中宽: number; 细宽: number };
 };
 
 export const 世界目录 = () => path.join(代码根(), 'sourcing', 'worlds');
@@ -130,7 +134,11 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
         if (typeof k.半宽 !== 'number' || !(k.半宽 > 0)) throw 错(`${何}（${k.名}）是走廊，要写 半宽（米，正数）`);
         return { 名: k.名, 形状, 折线, 半宽: k.半宽, 去掉: 字符串组(k.去掉, `${何}.去掉`), 依据 };
       }
-      if (形状 !== '矩形') throw 错(`${何} 的 形状 只认 矩形、走廊`);
+      if (形状 === '区块表') {
+        if (typeof k.文件 !== 'string' || !k.文件) throw 错(`${何}（${k.名}）是区块表，要写 文件`);
+        return { 名: k.名, 形状, 文件: k.文件, 依据 };
+      }
+      if (形状 !== '矩形') throw 错(`${何} 的 形状 只认 矩形、走廊、区块表`);
       const 两角 = k.两角 as number[] | undefined;
       if (两角 !== undefined && (!Array.isArray(两角) || 两角.length !== 4 || !两角.every(Number.isInteger))) throw 错(`${何} 的 两角 要写 [x1, z1, x2, z2]`);
       if (!两角 && (k.中心 === undefined || k.半边 === undefined)) throw 错(`${何} 要写 两角，或 中心 加 半边（走廊写 折线、半宽）`);
@@ -140,6 +148,17 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
     const 块重名 = 块名.filter((n, i) => 块名.indexOf(n) !== i);
     if (块重名.length) throw 错(`预生成块重名：${块重名.join('、')}`);
     for (const k of 块们) for (const n of k.去掉 ?? []) if (!块们.some((b) => b.名 === n && b.形状 === '矩形')) throw 错(`走廊 ${k.名} 的 去掉 写了 ${n}，没有这个矩形块`);
+    const 远 = d.远景 as Record<string, unknown> | undefined;
+    let 远景: 世界声明['远景'];
+    if (远 !== undefined) {
+      if (typeof 远.包 !== 'string' || !远.包) throw 错('远景 要写 包（远景包名）');
+      const 米 = (k: string) => {
+        const v = 远[k];
+        if (typeof v !== 'number' || !(v >= 0)) throw 错(`远景.${k} 要写非负的米数`);
+        return v;
+      };
+      远景 = { 包: 远.包, 外扩: 米('外扩'), 中宽: 米('中宽'), 细宽: 米('细宽') };
+    }
     return {
       名称: 名,
       文件,
@@ -156,6 +175,7 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
       数据包: 字符串组(d.数据包, '数据包'),
       预生成: { 区域文件范围: 范围(预.区域文件范围, '预生成.区域文件范围'), 区块数: typeof 预.区块数 === 'number' ? 预.区块数 : undefined, 块: 块们 },
       包: 包们,
+      远景,
     };
   } catch (e) {
     if ((e as Error).message.startsWith(文件)) throw e;

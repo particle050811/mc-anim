@@ -2,7 +2,9 @@
 // 每条选区命令后面跟着 Chunky 回的那句话（lang/en.json 的 format_*）：哪条没生效（比如 csv 名不认），选区就还是上一次的，
 // 接着 chunky start 会按错的范围生成，所以执行时没等到回话就停服。
 import { createHash } from 'node:crypto';
-import type { 世界声明, 预生成块 } from '../声明.ts';
+import fs from 'node:fs';
+import path from 'node:path';
+import { 世界目录, type 世界声明, type 预生成块 } from '../声明.ts';
 import { 外包方形, 矩形中心半边, 矩形区块, 走廊区块 } from './范围.ts';
 
 export type 选区 = { 形状: 'square' | 'rectangle'; 中心: [number, number]; 半边: [number, number] };
@@ -31,15 +33,22 @@ const 选区步骤 = (维度: string, s: 选区, 图案: string): [string, strin
   [`chunky pattern ${图案}`, `Pattern changed to ${图案.split(' ')[0]}`],
 ];
 
+const 读区块表 = (k: 预生成块): [number, number][] => {
+  const f = path.join(世界目录(), k.文件!);
+  const 表 = JSON.parse(fs.readFileSync(f, 'utf8')) as { 区块?: [number, number][] };
+  if (!Array.isArray(表.区块) || !表.区块.every((c) => Array.isArray(c) && c.length === 2 && c.every(Number.isInteger))) throw new Error(`${f} 要写 {"区块": [[cx, cz], …]}`);
+  return 表.区块;
+};
+
 /** 一块的计划；只要 只要 那一块（不写 = 全部） */
 export const 预生成计划们 = (w: 世界声明, 只要?: string, 另加: 预生成块[] = []): 预生成计划[] => {
   const 全部 = [...w.预生成.块, ...另加];
   const 块们 = 全部.filter((k) => (只要 ? k.名 === 只要 : !另加.length || 另加.includes(k)));
   if (只要 && !块们.length) throw new Error(`世界 ${w.名称} 没有预生成块 ${只要}；有：${w.预生成.块.map((k) => k.名).join('、') || '（无）'}`);
   return 块们.map((k): 预生成计划 => {
-    if (k.形状 === '走廊') {
-      const 区块 = 走廊区块(k, 全部);
-      if (!区块.length) throw new Error(`走廊 ${k.名} 一个区块都没有`);
+    if (k.形状 === '走廊' || k.形状 === '区块表') {
+      const 区块 = k.形状 === '走廊' ? 走廊区块(k, 全部) : 读区块表(k);
+      if (!区块.length) throw new Error(`${k.形状} ${k.名} 一个区块都没有`);
       const 框 = 外包方形(区块);
       const 选: 选区 = { 形状: 'square', 中心: 框.中心, 半边: [框.半边, 框.半边] };
       const 名 = csv名(w.名称, k.名);

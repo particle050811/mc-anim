@@ -90,6 +90,47 @@ export const biomeSetups: Record<string, BiomeSetup> = {
   'minecraft:frozen_ocean': defineBiome(gravel, gravel),
   'minecraft:deep_frozen_ocean': defineBiome(gravel, gravel),
 };
+// 暮色森林（暮色远景包，pipeline/世界/远景/）：地表方块包里每个点都有（暮色自己的地表规则算的），这里的 地表 只在包里没有时顶上；
+// 黑森林（dark_forest、dark_forest_center）的树冠是地形那一步铺的硬化树叶顶层，也在包里（远景网格.ts 的 冠顶、冠底），这里不再撒树。
+// 郁闭度、冠顶照暮色放大-1752 存档量的（11-06，56 个区域隔 3 列取：陆地列最上面是树叶的比例；冠顶离地的中位、九成位）：
+//   萤火虫林 0.67（冠顶中位 29 米）、密林 0.92（30）、森林 0.40（27）、蘑菇林 0.46（24）、橡树草原 0.18（11，九成位 45）、雪林 0.55（6）、高地 0.37（12，九成位 22）、
+//   诡异林 0.12（8）、火焰沼泽 0.19（5）、沼泽 0.56（17）、荆棘地 0.94（5）、终焉高原 0.01、冰川 0。树种比重按各种树叶的列数除以冠面积折成棵数。
+const twilightOak: TreeKind = { 叶: 'twilightforest:twilight_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 8, crownBottom: 3, 半径: 2.5 };
+const smallTwilightOak: TreeKind = { 叶: 'twilightforest:twilight_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 5, crownBottom: 2, 半径: 2.5 };
+const largeTwilightOak: TreeKind = { 叶: 'twilightforest:twilight_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 26, crownBottom: 10, 半径: 6 };
+const canopyTree: TreeKind = { 叶: 'twilightforest:canopy_leaves', 干: 'twilightforest:canopy_log[axis=y]', crownTop: 30, crownBottom: 22, 半径: 5 };
+const twilightMangrove: TreeKind = { 叶: 'twilightforest:mangrove_leaves', 干: 'twilightforest:mangrove_log[axis=y]', crownTop: 17, crownBottom: 9, 半径: 4 };
+const rainbowOak: TreeKind = { 叶: 'twilightforest:rainbow_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 8, crownBottom: 3, 半径: 2.5 };
+const smallSpruce: TreeKind = { 叶: 'minecraft:spruce_leaves', 干: 'minecraft:spruce_log[axis=y]', crownTop: 7, crownBottom: 1, 半径: 2, conical: true };
+const brownMushroom: TreeKind = { 叶: 'minecraft:brown_mushroom_block', 干: 'minecraft:mushroom_stem', crownTop: 8, crownBottom: 5, 半径: 3 };
+const redMushroom: TreeKind = { 叶: 'minecraft:red_mushroom_block', 干: 'minecraft:mushroom_stem', crownTop: 7, crownBottom: 3, 半径: 2 };
+const thorns: TreeKind = { 叶: 'twilightforest:brown_thorns[axis=y]', 干: 'twilightforest:brown_thorns[axis=y]', crownTop: 5, crownBottom: 1, 半径: 3 };
+const podzol = 'minecraft:podzol[snowy=false]';
+const deadrock = 'twilightforest:weathered_deadrock';
+export const twilightBiomeSetups: Record<string, BiomeSetup> = {
+  'twilightforest:forest': defineBiome(grassBlock, dirt, 0.4, [[canopyTree, 0.28], [twilightOak, 0.65], [birch, 0.07]]),
+  'twilightforest:dense_forest': defineBiome(grassBlock, dirt, 0.92, [[canopyTree, 0.32], [twilightOak, 0.68]]),
+  'twilightforest:firefly_forest': defineBiome(grassBlock, dirt, 0.67, [[canopyTree, 0.63], [twilightOak, 0.37]]),
+  'twilightforest:mushroom_forest': defineBiome(grassBlock, dirt, 0.46, [[canopyTree, 0.2], [twilightOak, 0.48], [brownMushroom, 0.15], [redMushroom, 0.17]]),
+  'twilightforest:dense_mushroom_forest': defineBiome(grassBlock, dirt, 0.6, [[canopyTree, 0.15], [brownMushroom, 0.45], [redMushroom, 0.4]]),
+  'twilightforest:oak_savannah': defineBiome(grassBlock, dirt, 0.18, [[twilightOak, 0.85], [largeTwilightOak, 0.15]]),
+  'twilightforest:clearing': defineBiome(grassBlock, dirt, 0.02, [[twilightOak, 1]]),
+  'twilightforest:enchanted_forest': defineBiome(grassBlock, dirt, 0.5, [[rainbowOak, 0.6], [twilightOak, 0.4]]),
+  'twilightforest:spooky_forest': defineBiome(grassBlock, dirt, 0.12, [[twilightOak, 1]]),
+  'twilightforest:swamp': defineBiome(grassBlock, dirt, 0.56, [[twilightMangrove, 0.8], [twilightOak, 0.2]]),
+  'twilightforest:fire_swamp': defineBiome(grassBlock, dirt, 0.19, [[smallTwilightOak, 1]]),
+  'twilightforest:snowy_forest': defineBiome(snowBlock, dirt, 0.55, [[smallSpruce, 1]]),
+  'twilightforest:highlands': defineBiome(podzol, dirt, 0.37, [[spruce, 0.6], [megaSpruce, 0.4]]),
+  'twilightforest:thornlands': defineBiome(deadrock, deadrock, 0.94, [[thorns, 1]]),
+  'twilightforest:final_plateau': defineBiome(deadrock, deadrock),
+  'twilightforest:glacier': defineBiome('minecraft:ice', 'minecraft:packed_ice'),
+  'twilightforest:dark_forest': defineBiome(grassBlock, dirt),
+  'twilightforest:dark_forest_center': defineBiome(grassBlock, dirt),
+  'twilightforest:lake': defineBiome(dirt, dirt),
+  'twilightforest:stream': defineBiome(dirt, dirt),
+  'twilightforest:underground': defineBiome(grassBlock, dirt),
+};
+export const twilightDarkCanopy = 'twilightforest:hardened_dark_leaves';
 export const oceanBiomes = new Set(['minecraft:ocean', 'minecraft:deep_ocean', 'minecraft:cold_ocean', 'minecraft:deep_cold_ocean', 'minecraft:frozen_ocean', 'minecraft:deep_frozen_ocean', 'minecraft:river', 'minecraft:frozen_river']);
 export const defaultBiome = defineBiome(grassBlock, dirt, 0.03, [[oak, 1]]); // 洞穴群系露到地表（繁茂洞穴、溶洞、深暗之域）和表里没有的
 // 水面结冰：照原版 1.20.1 的 `Biome.shouldFreeze`，水面那一格（y 62）的温度低于 0.15 才结冰。温度是群系温度（远景.json 的 群系温度，史诗地形覆盖过的），

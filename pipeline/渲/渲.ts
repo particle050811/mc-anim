@@ -27,7 +27,7 @@ import { 明细收集 } from '../运行记录/渲染明细.ts';
 import { 备好public目录 } from './public目录.ts';
 import { 删打包, 登记打包 } from './打包残留.ts';
 import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
-import { 段渲染环境, 段现在的地形 } from './地形注入.ts';
+import { 段渲染环境, 段现在的地形, 试看地形, 试看环境 } from './地形注入.ts';
 import { 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
 import { 段画面参数们, 段输出窗于 } from './段产物.ts';
 import { 成片档, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
@@ -247,7 +247,7 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 收 = 记录?.阶段;
       const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
       const 明细 = new 明细收集(标签);
-      const 环境 = 段渲染环境(s.键, 段现在的地形(s));
+      const 环境 = { ...段渲染环境(s.键, 段现在的地形(s, 试看地形())), ...试看环境() };
       if (!o.光影) await 明细.包(() => 出静帧们(带字幕, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境, 完成: (已出) => 明细.帧完成(已出) }));
       else {
         const 们 = o.光影;

@@ -19,6 +19,7 @@ import { WornSheath } from '@库/物品/拔刀剑.tsx';
 import { SpearInHand } from '@库/物品/下界合金长矛.tsx';
 import { ItemPickup, type 拾取件 } from '@库/特效/物品拾取.tsx';
 import { TwilightTerrain, twilightLandmark, twilightHeightAboveGround, viewEdgeDistance, type TwilightLandmarkName } from '../../../地点/暮色新世界.tsx';
+import { cruiseFogFar, twilightDistantTrial } from '../../../地点/暮色新世界/远景试看.ts';
 import * as P613 from '../6-1-3/编排.ts';
 import * as castleChoreo from '../6-1-9/编排.ts';
 import { LichScene, lichRiderTweak } from '../6-1-5/戏.tsx';
@@ -176,6 +177,9 @@ const stowBroom = (physT: number) => {
   return { items: broomItems, τ: td, target: chest };
 };
 
+// 娜迦庭院的网格 4 公里以内才画：雾现在压在导入范围的边以内（最远 4 公里），再远看不见；超远景试看把雾放远了，跟着放到雾外 500 米，
+// 不然 4 公里外导入地形里挖掉庭院的那块是个坑
+const nagaDrawDist = (fogFar: number) => (twilightDistantTrial() ? Math.max(4000, fogFar + 500) : 4000);
 // 这些地标离镜头多远以内才画（米）：雾最远 22 公里，新世界整片不到 13 公里，基本都画
 const isNear = (landmark: TwilightLandmarkName, camPos: number[], maxDist = 16000) => {
   const origin = twilightLandmark(landmark).原点;
@@ -207,9 +211,9 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   const stow = stowBroom(physT);
   const broomMat = broomMatrix(broom.位置, broom.朝向, broom.俯仰, broom.横滚);
   // 雾和投影的级联按镜头离脚下地物多高算（新世界的地面不在 z = 0：终焉高原在 z 96）；
-  // 往导入范围的边那边看时，雾的远端压到边以内（lib/暮色光照 的 `clampFogToEdge`）
+  // 往导入范围的边那边看时，雾的远端压到边以内（lib/暮色光照 的 `clampFogToEdge`）；超远景试看开着时按试看的雾远封顶（暮色新世界/远景试看.ts）
   const aboveGround = twilightHeightAboveGround(cam.pos);
-  const fogFar = clampFogToEdge(Math.max(TWILIGHT_CRUISE_FOG_FAR, twilightFogFar(aboveGround)), viewEdgeDistance(cam.pos, cam.tgt));
+  const fogFar = cruiseFogFar(Math.max(TWILIGHT_CRUISE_FOG_FAR, twilightFogFar(aboveGround)), () => viewEdgeDistance(cam.pos, cam.tgt), clampFogToEdge);
   // 镜头钻进结构里（巫妖的房间、宫殿顶层、小屋、雪怪的洞）时补一盏不投影的点光，免得黑成一片
   const indoorLights: V3[] = [];
   for (const [bossName, halfSpan] of [['巫妖', 0.6], ['冰雪女王', 0.5], ['巨人', 0.5], ['雪怪首领', 0.8]] as const) {
@@ -219,7 +223,7 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(dpr)}>
-        <TwilightLighting camPos={cam.pos} fogFar={fogFar} aboveGround={aboveGround} />
+        <TwilightLighting camPos={cam.pos} fogFar={fogFar} aboveGround={aboveGround} heightFogScale={twilightDistantTrial()?.高度雾 ?? 1} />
         <FlightRig c={cam} near={0.05} far={150000} />
         {AO && <ScreenAo />}{/* 照 Voxy 的屏幕空间 AO（用户 10-03），默认开，关掉传 屏幕AO={false} */}
         <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -228,7 +232,7 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
           ))}
           <TwilightTerrain
             camPos={cam.pos}
-            landmarks={[...(isNear('娜迦庭院', cam.pos, 4000) ? ['娜迦庭院' as const] : []), ...(isNear('终焉高原城堡', cam.pos) ? ['终焉高原城堡' as const] : [])]}
+            landmarks={[...(isNear('娜迦庭院', cam.pos, nagaDrawDist(fogFar)) ? ['娜迦庭院' as const] : []), ...(isNear('终焉高原城堡', cam.pos) ? ['终焉高原城堡' as const] : [])]}
             t={P613.T612 + (P613.beats.末帧 + frame) / 24}
             clearPlants={P613.CLEAR_PLANTS}
             像素={lodPixels}

@@ -9,7 +9,7 @@ import { 默认线程, 烘焙世界, 载入编辑 } from './烘焙/流程.ts';
 import { 转码包 } from './烘焙/转码.ts';
 import { 构建解码器 } from './区段解码器.ts';
 import { 生成重放, 重放脚本 } from './编辑/重放.ts';
-import { 列出世界, 读声明, 编辑文件, 存档目录 as 声明存档目录, type 世界声明, type 预生成块 } from './声明.ts';
+import { 列出世界, 世界目录, 读声明, 编辑文件, 存档目录 as 声明存档目录, type 世界声明, type 预生成块 } from './声明.ts';
 import { 冻结 } from './冻结.ts';
 import { 打印命令, csv文本, 预生成计划们 } from './预生成/计划.ts';
 import { 跑一块 } from './预生成/看守.ts';
@@ -20,7 +20,10 @@ import { 装服务端 } from './服务端/安装.ts';
 import { 建世界 } from './服务端/建世界.ts';
 import { 取jar } from '../取材/取jar.ts';
 import { 配置, 数据路径 } from '../环境/配置.ts';
-import { 读地形表 } from './版本.ts';
+import { 发布, 新暂存, 登记, 登记条目, 读地形表 } from './版本.ts';
+import { 区块数, 切任务, 远景范围, type 远景任务 } from './远景/任务.ts';
+import { 写进目录, 打包远景 } from './远景/打包.ts';
+import { 远地标们, type 地标项 } from './远景/地标.ts';
 import { 世界草稿目录, 查询子命令 } from './查询/命令.ts';
 
 const 相对 = (f: string) => path.relative(代码根(), f).split(path.sep).join('/');
@@ -98,6 +101,74 @@ const 子命令们: Record<string, 子命令> = {
       });
     },
   },
+  远景: {
+    用法: '远景 任务 <世界> [--分 <n>] [--到 <目录>] | 远景 地标 <世界> <地标.json> --镜头框 x0,z0,x1,z1 [--视距 米] [--写 <区块表文件>] | 远景 打包 <任务.json…> [--不登记]',
+    跑: async (args, 记录) => {
+      const p = 解析参数(args, { 值: ['--分', '--到', '--镜头框', '--视距', '--写'], 开关: ['--不登记'] });
+      const [动作, ...其余] = p.位置;
+      if (动作 === '任务') {
+        if (其余.length !== 1) throw new 用法错误('写 远景 任务 <世界>');
+        const w = 读声明(其余[0]!);
+        const 份 = Number(p.值['--分'] ?? 1);
+        if (!(Number.isInteger(份) && 份 > 0)) throw new 用法错误('--分 要是正整数');
+        const 目录 = p.值['--到'] ? path.resolve(p.值['--到']) : 世界草稿目录();
+        fs.mkdirSync(目录, { recursive: true });
+        const 任务们 = 切任务(w, path.join(目录, '远景'), 份);
+        const 范围 = 远景范围(w);
+        for (const t of 任务们) {
+          const f = `${t.出}.任务.json`;
+          fs.writeFileSync(f, JSON.stringify(t));
+          记录.产物.push(f);
+          console.log(`${相对(f)}：${t.层.map((l) => `${l.名} ${l.块.length} 块`).join('，')}，${区块数(t.层)} 区块`);
+        }
+        const 地标 = path.join(目录, '地标.任务.json');
+        fs.writeFileSync(地标, JSON.stringify({ 维度: w.维度, x0: 范围[0], z0: 范围[1], x1: 范围[2], z1: 范围[3], 出: path.join(目录, '地标.json') }));
+        记录.产物.push(地标);
+        console.log(`范围 x ${范围[0]}～${范围[2]}、z ${范围[1]}～${范围[3]}；取样：anim world server ${w.名称} --沙盒 -- "mcai far <任务.json>" "wait:mcai 远景：完成"（约 1000 区块/秒）`);
+        return;
+      }
+      if (动作 === '地标') {
+        if (其余.length !== 2) throw new 用法错误('写 远景 地标 <世界> <mcai landmarks 输出的 JSON> --镜头框 x0,z0,x1,z1 [--视距 米] [--写 <区块表文件>]');
+        const w = 读声明(其余[0]!);
+        const 框 = (p.值['--镜头框'] ?? '').split(',').map(Number);
+        if (框.length !== 4 || !框.every(Number.isFinite)) throw new 用法错误('--镜头框 写 x0,z0,x1,z1（镜头会飞到的范围，方块坐标）');
+        const 视距 = Number(p.值['--视距'] ?? 10000);
+        const 列 = JSON.parse(fs.readFileSync(其余[1]!, 'utf8')) as 地标项[];
+        const r = 远地标们(w, 列, 框 as [number, number, number, number], 视距);
+        const 数 = new Map<string, number>();
+        for (const o of r.地标) 数.set(o.地标, (数.get(o.地标) ?? 0) + 1);
+        console.log(`列出 ${列.length} 座（生成 ${列.filter((o) => o.生成).length}），不全在导入范围里、离镜头框 ${视距} 米以内 ${r.地标.length} 座，${r.区块.length} 个区块（约 ${Math.round(r.区块.length / 40 / 60)} 分钟预生成）`);
+        console.log([...数].sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${n}`).join('，'));
+        if (p.值['--写']) {
+          const f = path.join(世界目录(), p.值['--写']);
+          fs.writeFileSync(f, JSON.stringify({ 说明: `anim world 远景 地标 ${w.名称}：镜头框 ${框.join(',')}、视距 ${视距} 米`, 地标: r.地标.map((o) => ({ 地标: o.地标, x: o.x, z: o.z, 群系: o.群系, 离: o.离, 框: o.框 })), 区块: r.区块 }) + '\n');
+          记录.产物.push(f);
+          console.log(`写了 ${相对(f)}`);
+        }
+        return;
+      }
+      if (动作 !== '打包' || !其余.length) throw new 用法错误('写 远景 任务 <世界>、远景 地标 <世界> <地标.json> 或 远景 打包 <任务.json…>');
+      const 任务们 = 其余.map((f) => JSON.parse(fs.readFileSync(f, 'utf8')) as 远景任务);
+      const 世界 = 列出世界().map((n) => 读声明(n)).find((w) => w.远景 && w.维度 === 任务们[0]!.维度);
+      if (!世界?.远景) throw new 用法错误(`没有哪个世界声明写了 [远景] 且维度是 ${任务们[0]!.维度}`);
+      const 包 = 世界.远景.包;
+      const r = await 过放行闸(async () => {
+        const 结果 = await 打包远景(任务们);
+        const 暂存 = 新暂存(包);
+        try {
+          写进目录(结果, 暂存.dir);
+          const v = 发布(包, 暂存.dir);
+          const 条目 = await 登记条目(包, v.版本, { 来源: `手工:${世界.名称} 的暮色远景（mcai far 在服务端里只跑地形和地表那一步取样），anim world 远景 打包`, 许可: 'LicenseRef-Minecraft-Derived', 可见性: '发布' });
+          if (!p.开关.has('--不登记')) 登记(包, 条目);
+          return { ...v, 结果 };
+        } finally {
+          暂存.放();
+        }
+      });
+      记录.产物.push(r.目录);
+      记录.记('信息', `${包} 版本 ${r.版本}${r.已有 ? '（同内容已有）' : ''}：${Object.entries(r.结果.点数).map(([k, n]) => `${k} ${n} 点`).join('，')}，${r.结果.群系.length} 种群系、${r.结果.地表.length} 种地表方块`);
+    },
+  },
   解码器: {
     用法: '解码器 [--检查]',
     跑: async (args) => {
@@ -153,7 +224,7 @@ const 子命令们: Record<string, 子命令> = {
       if (!p.开关.has('--执行')) {
         console.log(`只打印、不执行（--执行 才开服跑，过资源闸；--沙盒 先把服务端和存档克隆到数据根 run/沙盒/ 再跑）：`);
         for (const k of 计划) {
-          console.log(`\n# ${k.块.名}：${k.块.形状 === '走廊' ? `走廊 ${k.块.折线!.map((x) => x.join(',')).join(' → ')}，半宽 ${k.块.半宽}` : `中心 ${k.选区.中心.join(', ')}，半边 ${k.选区.半边.join(' × ')}`}，${k.区块数} 个区块${k.块.依据 ? `（${k.块.依据}）` : ''}`);
+          console.log(`\n# ${k.块.名}：${k.块.形状 === '走廊' ? `走廊 ${k.块.折线!.map((x) => x.join(',')).join(' → ')}，半宽 ${k.块.半宽}` : k.块.形状 === '区块表' ? `区块表 ${k.块.文件}` : `中心 ${k.选区.中心.join(', ')}，半边 ${k.选区.半边.join(' × ')}`}，${k.区块数} 个区块${k.块.依据 ? `（${k.块.依据}）` : ''}`);
           if (k.图案 === 'csv') {
             const f = path.join(世界草稿目录(), `${k.csv名}.csv`);
             fs.writeFileSync(f, csv文本(k.区块!));

@@ -21,6 +21,12 @@ export type DistantGrid = {
   温度: number[];
   // 加密层（工具/选种/远景加密.mjs）：中层、细带，各存和下面各层的差（分米），没有的层不在里面
   层: DetailLayer[];
+  // 暮色远景包（pipeline/世界/远景/）才有：点上地表那一块的方块（下标进 地表名，照暮色自己的地表规则算的，不再按群系猜）、
+  // 黑森林的硬化树叶顶层（地形那一步就铺上的，ChunkGeneratorTwilight.addDarkForestCanopy）最上、最下一格的 y，没有是 −32768
+  地表?: Uint8Array;
+  地表名?: string[];
+  冠顶?: Int16Array;
+  冠底?: Int16Array;
 };
 export type DetailLayer = { 名: string; step: number; 块边: number; n: number; 块: Map<number, number>; 差: Int16Array };
 
@@ -28,8 +34,12 @@ const buildHint = '先跑 npm run 远景:主世界-116（工具/选种/远景包
 // dir：远景包的版本目录（lib/体素/区段包位置.ts 的 packDir），各文件都从这一版取
 export const loadDistantGrid = (dir: string, packName: string): Promise<DistantGrid> =>
   loadOnce(`${dir}/远景`, async () => {
-    const meta = await fetchJson<{ x0: number; z0: number; step: number; nx: number; nz: number; 海平面: number; 群系名: string[]; 群系温度: number[] }>(`${dir}/远景.json`, buildHint);
+    const meta = await fetchJson<{ x0: number; z0: number; step: number; nx: number; nz: number; 海平面: number; 群系名: string[]; 群系温度: number[]; 地表名?: string[] }>(`${dir}/远景.json`, buildHint);
     const [heightBuf, biomeBuf] = await Promise.all([fetchGunzip(`${dir}/远景.高.bin.gz`, buildHint), fetchGunzip(`${dir}/远景.群.bin.gz`, buildHint)]);
+    // 暮色远景包多的几张（远景.json 写了 地表名 才有，主世界包不取）
+    const extra = meta.地表名
+      ? await Promise.all([fetchGunzip(`${dir}/远景.地表.bin.gz`), fetchGunzip(`${dir}/远景.冠顶.bin.gz`), fetchGunzip(`${dir}/远景.冠底.bin.gz`)])
+      : null;
     const layers: DetailLayer[] = [];
     for (const layerName of ['中', '细']) {
       const layerMeta = await fetchJsonIfAny<Parameters<typeof buildDetailLayer>[1]>(`${dir}/远景.${layerName}.json`);
@@ -40,7 +50,9 @@ export const loadDistantGrid = (dir: string, packName: string): Promise<DistantG
       const deltas = new Int16Array(await fetchGunzip(`${dir}/远景.${layerName}.bin.gz`, buildHint));
       layers.push(buildDetailLayer(layerName, layerMeta, deltas));
     }
-    return { packName, x0: meta.x0, z0: meta.z0, step: meta.step, nx: meta.nx, nz: meta.nz, 海平面: meta.海平面, 高: new Int16Array(heightBuf), 群: new Uint8Array(biomeBuf), 群系名: meta.群系名, 温度: meta.群系温度, 层: layers };
+    const grid: DistantGrid = { packName, x0: meta.x0, z0: meta.z0, step: meta.step, nx: meta.nx, nz: meta.nz, 海平面: meta.海平面, 高: new Int16Array(heightBuf), 群: new Uint8Array(biomeBuf), 群系名: meta.群系名, 温度: meta.群系温度, 层: layers };
+    if (extra) Object.assign(grid, { 地表: new Uint8Array(extra[0]), 地表名: meta.地表名, 冠顶: new Int16Array(extra[1]), 冠底: new Int16Array(extra[2]) });
+    return grid;
   });
 
 // ---------- 查网格（游戏坐标，连续：方块 x 占 [x, x + 1)） ----------
@@ -81,14 +93,18 @@ export const distantTop = (grid: DistantGrid, gx: number, gz: number) => {
 // 群系：取最近的网格点（网格外当深海）。取之前把坐标扭一下：网格 32 米一个点，直接取最近的点，群系的边是一级级 32 米的直角台阶，游戏里群系 4 米一格、边不规则。
 // 扭法：64 米一片的噪声推 ±12 米，再按 4 米一格的哈希抖 ±6 米；只挪取样点，各群系的面积不变。
 const warpX = simplex2(91), warpZ = simplex2(92);
-export const distantBiome = (grid: DistantGrid, gx: number, gz: number) => {
+// 扭过以后最近的网格点下标（j·nx + i），网格外是 −1；群系、暮色的地表方块和树叶顶层都按它取
+export const distantPoint = (grid: DistantGrid, gx: number, gz: number) => {
   const ix = Math.floor(gx / 4), iz = Math.floor(gz / 4);
   const wx = gx + 12 * warpX(gx / 64, gz / 64) + (hash2(ix, iz, 93) - 0.5) * 12;
   const wz = gz + 12 * warpZ(gx / 64, gz / 64) + (hash2(ix, iz, 94) - 0.5) * 12;
   const i = Math.round((wx - 0.5 - grid.x0) / grid.step);
   const j = Math.round((wz - 0.5 - grid.z0) / grid.step);
-  if (i < 0 || j < 0 || i >= grid.nx || j >= grid.nz) return 'minecraft:deep_ocean';
-  return grid.群系名[grid.群[j * grid.nx + i]];
+  return i < 0 || j < 0 || i >= grid.nx || j >= grid.nz ? -1 : j * grid.nx + i;
+};
+export const distantBiome = (grid: DistantGrid, gx: number, gz: number) => {
+  const k = distantPoint(grid, gx, gz);
+  return k < 0 ? 'minecraft:deep_ocean' : grid.群系名[grid.群[k]];
 };
 // [gx0, gx1) × [gz0, gz1) 这一片方块里最高的地面（最高实心方块 y）：四个角那几块的中心双线性，加上落在里面的网格点
 export const distantAreaTop = (grid: DistantGrid, gx0: number, gz0: number, gx1: number, gz1: number) => {

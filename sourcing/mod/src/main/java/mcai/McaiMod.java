@@ -23,6 +23,8 @@ public class McaiMod {
         MinecraftForge.EVENT_BUS.addListener(FillBiome::onServerAboutToStart);
         // 主世界生成时修整的两种密度函数（mcai.terrain），只有世界里放了「主世界修整」数据包才用到
         TerrainTypes.register(FMLJavaModLoadingContext.get().getModEventBus());
+        // 服务端控制台命令：远景取样、列地标（ServerCommands）
+        MinecraftForge.EVENT_BUS.addListener(ServerCommands::onRegister);
         if (FMLEnvironment.dist == Dist.CLIENT) McaiClient.init();
     }
 }

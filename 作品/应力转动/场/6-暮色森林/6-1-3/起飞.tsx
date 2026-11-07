@@ -18,6 +18,7 @@ import { RideBroom } from '@库/角色/骑扫帚.tsx';
 import { WornSheath } from '@库/物品/拔刀剑.tsx';
 import { Chest, TWILIGHT_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { LandmarkPlacement, TwilightTerrain } from '../../../地点/暮色新世界.tsx';
+import { twilightDistantTrial } from '../../../地点/暮色新世界/远景试看.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
@@ -46,7 +47,7 @@ export const TakeOff: React.FC = () => {
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(frame)} fogNear={twilightFogNear(choreo.fogFar(frame))} aboveGround={choreo.aboveGround(frame)} />
+        <TwilightLighting camPos={cam.pos} domeCenter={shot1 ? origin : undefined} fogFar={choreo.fogFar(frame)} fogNear={twilightFogNear(choreo.fogFar(frame))} aboveGround={choreo.aboveGround(frame)} heightFogScale={twilightDistantTrial()?.高度雾 ?? 1} />
         <FlightRig c={cam} />
         {/* 屏幕空间 AO：同 6-1-2、一镜到底一直开着（云也画在它里面） */}
         <ScreenAo />
