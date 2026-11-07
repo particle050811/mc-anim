@@ -18,11 +18,14 @@ import { patchRoll, pickSolid, pickPlant, kelpDensity, seabedFor, coarseSeaPlant
 import { fineGroundPlant, coarseGroundPlant } from './远景地面草.ts';
 import { sectionCells, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
-import { distantAreaTop, distantBiome, distantTop, type DistantGrid } from './远景网格.ts';
-import { biomeSetups, biomeTemperature, defaultBiome, grassBlock, gravel, oceanBiomes, sand, snowyGrass, steepSlope, stone, waterFreezes, 积雪, type BiomeSetup, type TreeKind } from './远景群系.ts';
+import { distantAreaTop, distantBiome, distantPoint, distantTop, type DistantGrid } from './远景网格.ts';
+import { biomeSetups, biomeTemperature, defaultBiome, grassBlock, gravel, oceanBiomes, sand, snowyGrass, steepSlope, stone, twilightBiomeSetups, twilightDarkCanopy, waterFreezes, 积雪, type BiomeSetup, type TreeKind } from './远景群系.ts';
 
 export { buildDetailLayer, distantAreaTop, distantBiome, distantTop, loadDistantGrid, type DetailLayer, type DistantGrid } from './远景网格.ts';
 export { biomeTemperature, waterFreezes } from './远景群系.ts';
+
+// 群系的设定：主世界、暮色各一张表，群系 id 带命名空间，不会撞
+const setupOf = (biome: string) => biomeSetups[biome] ?? twilightBiomeSetups[biome] ?? defaultBiome;
 
 // ---------- 树 ----------
 // 细级（一格不到 8 米）一棵棵撒：4 米一格的抖动网格，每格最多一棵，有没有按群系郁闭度定：
@@ -121,7 +124,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
         const y = (cj + 1 - hash2(gi, gj, seeds.posY)) * treeCellM;
         const gx = Math.floor(x) + ox, gz = oz - 1 - Math.floor(y);
         const biome = distantBiome(grid, gx, gz);
-        const setup = biomeSetups[biome] ?? defaultBiome;
+        const setup = setupOf(biome);
         if (!setup.郁闭) continue;
         const treeProb = (-Math.log(1 - setup.郁闭) * treeCellM * treeCellM) / crownArea(setup);
         if (hash2(gi, gj, seeds.hasTree) >= treeProb) continue;
@@ -144,7 +147,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       const gx0 = X0 + ox, gz0 = oz - Y0 - cellM;
       const groundY = Math.round(distantAreaTop(grid, gx0, gz0, gx0 + cellM, gz0 + cellM) + (correction ? correction(gx0 + cellM / 2, gz0 + cellM / 2) : 0));
       const biome = distantBiome(grid, gx0 + cellM / 2, gz0 + cellM / 2);
-      const setup = biomeSetups[biome] ?? defaultBiome;
+      const setup = setupOf(biome);
       const temperature = biomeTemperature(grid, biome);
       const col = emptyColumn();
       col.groundTop = groundY + 1 - oy;
@@ -153,7 +156,9 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       const slopeStep = Math.max(cellM, grid.step / 2);
       const cx = gx0 + cellM / 2, cz = gz0 + cellM / 2;
       const slope = Math.max(Math.abs(distantTop(grid, cx + slopeStep, cz) - distantTop(grid, cx - slopeStep, cz)), Math.abs(distantTop(grid, cx, cz + slopeStep) - distantTop(grid, cx, cz - slopeStep))) / (2 * slopeStep);
-      let surfaceName = setup.地表;
+      // 暮色远景包里每个点有地表方块（暮色自己的地表规则算的），按群系同样的扭法取最近的点；主世界包没有，按群系定
+      const point = grid.地表 ? distantPoint(grid, cx, cz) : -1;
+      let surfaceName = point >= 0 ? grid.地表名![grid.地表![point]] : setup.地表;
       // 岸边：海、河群系里露出水面的列和水深不到 5 米的水底是沙（远景网格 32 米一格，海岸上的列常落在海群系里；照群系给砾石的话
       // 海岸是一道灰边，导入的同一段是沙滩、浅水沙底，交界俯看对出来的）
       if (surfaceName === gravel && oceanBiomes.has(biome) && groundY >= seaLevel - 5) surfaceName = sand;
@@ -167,7 +172,8 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
         col.water = paletteId('minecraft:water', biome, gx0, gz0);
         col.waterSurface = waterFreezes(grid, biome, gx0 + cellM - 1, gz0 + cellM - 1) ? paletteId('minecraft:ice', biome, gx0, gz0) : col.water;
         // 海底和水草照导入量出来的分布挑（远景海底.ts）；量表里没有的照上面按群系定的
-        const bed = seabedFor(biome, section.L, seaLevel - 1 - groundY);
+        // 海底量表（远景海底.ts）是照主世界导入量的，暮色的湖底用包里的地表方块、不长水草
+        const bed = grid.地表 ? null : seabedFor(biome, section.L, seaLevel - 1 - groundY);
         if (bed) {
           const roll = cellM <= 4 ? patchRoll(gx0 + cellM / 2, gz0 + cellM / 2, seeds.seabed) : hash2(gx0 >> section.L, gz0 >> section.L, seeds.seabed + section.L);
           col.surface = paletteId(pickSolid(bed.solid, roll), biome, gx0, gz0);
@@ -181,7 +187,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
           }
         }
         // 粗级：照第 0 级的水草比例在海底上面那一格放一株（远景海底.ts 的 粗级水草），水面那一格不放
-        if (section.L >= 1) {
+        if (section.L >= 1 && !grid.地表) {
           const plantName = coarseSeaPlant(biome, seaLevel - 1 - groundY, gx0, gz0, section.L);
           const kg = Math.floor((col.groundTop - 1) / cellM);
           if (plantName && kg + 1 < Math.floor((waterZ - 1) / cellM)) {
@@ -189,6 +195,11 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
             col.plant = col.plantTip = paletteId(plantName, biome, gx0, gz0);
           }
         }
+      } else if (point >= 0 && grid.冠顶![point] > groundY) {
+        // 暮色黑森林：地形那一步铺的硬化树叶顶层，照包里最近那个点的上下两格（下面的树看不见，不撒）
+        col.crownTop = grid.冠顶![point] + 1 - oy;
+        col.crownBottom = Math.max(groundY + 1, grid.冠底![point]) - oy;
+        col.leaf = paletteId(twilightDarkCanopy, biome, gx0, gz0);
       } else if (treeCells) {
         // 细级：取样点落在哪棵树的冠里，冠顶取最高的
         let crownTopY = -Infinity, crownBottomY = 0, kind: TreeKind | null = null, hasTrunk = false;
