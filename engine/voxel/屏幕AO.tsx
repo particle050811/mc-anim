@@ -19,7 +19,7 @@ import { useFrame } from '@react-three/fiber';
 import { voxelsPending } from './世界.tsx';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { DIR_FOG_GLSL, HEIGHT_FOG_GLSL, dirFog, heightFog } from '../light/高度雾.ts';
+import { DIR_FOG_GLSL, HEIGHT_FOG_GLSL, SKY_FOG_GLSL, dirFog, heightFog, skyFogUniforms } from '../light/高度雾.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms } from '../light/大气.ts';
 import { PHOTON_CLOUD_COMMON_GLSL, PHOTON_CLOUD_SHADOW_GLSL, cloudUniforms, updateCloudUniforms } from '../light/大气/云.ts';
 import { aoPassUniform } from './材质.ts';
@@ -72,6 +72,7 @@ uniform vec4 uFogSun; // 方向雾色（黄昏）：太阳水平方向、强度�
 uniform vec3 uFogGlow;
 ${HEIGHT_FOG_GLSL}
 ${DIR_FOG_GLSL}
+${SKY_FOG_GLSL}
 #ifdef ATMO
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
@@ -172,7 +173,7 @@ void main() {
     float f = uFogType == 1 ? smoothstep(uFog.x, uFog.y, w) : uFogType == 2 ? 1.0 - exp(-uFog.z * uFog.z * w * w) : 0.0;
     vec3 Pw = (uCamWorld * vec4(P, 1.0)).xyz;
     if (uFogType > 0) f = addHeightFog(f, uCamWorld[3].xyz, Pw, uFogHeight);
-    vec3 F = dirFogColor(uFogColor, uCamWorld[3].xyz, Pw, uFogSun, uFogGlow) * f;
+    vec3 F = skyFogMix(dirFogColor(uFogColor, uCamWorld[3].xyz, Pw, uFogSun, uFogGlow), uCamWorld[3].xyz, Pw, f) * f;
     col.rgb = (col.rgb - F) * ao + F;
 #endif
   }
@@ -210,6 +211,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
         uFogHeight: { value: heightFog },
         uFogSun: { value: dirFog.dir },
         uFogGlow: { value: dirFog.color },
+        ...skyFogUniforms,
         uCamWorld: { value: new THREE.Matrix4() },
         ...atmoUniforms,
         ...cloudUniforms,

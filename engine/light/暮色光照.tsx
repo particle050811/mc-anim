@@ -16,7 +16,7 @@ import { VIEW_DISTANCE, VIEW_FOG } from '../voxel/视距.ts';
 import { SkyDome, TWILIGHT, twilightFogColor } from './天空.tsx';
 import { useSelfLight, twilightSunDir, twilightMix, twilightDusk } from './光照配比.ts';
 import { CascadedShadow, quarterOctaveCeil } from './级联阴影.ts';
-import { useDirFog, useHeightFog, type HeightFogParams } from './高度雾.ts';
+import { useDirFog, useHeightFog, useSkyFog, type HeightFogParams } from './高度雾.ts';
 
 // 雾的远端（米）：按镜头离地高度放远，220 米以上 22 公里（冲出林海要看得到天边）；地面不近于全片的满视距（lib/视距.ts，用户 10-21「按照规矩来」）。
 // 往上放远的那条曲线是一镜到底按它调好的，只把底抬到视距，所以式子里还是从 240 起
@@ -42,7 +42,7 @@ export const twilightFogNear = (fogFar: number) => {
 export const twilightHeightFog: HeightFogParams = { start: 0, halfLife: 30, density: 2.5e-4 };
 
 // 暮色的雾：高度雾 + 黄昏档的方向雾（远处往太阳那边褪成余晖色，lib/高度雾.ts）。`TwilightLighting` 和 6-1-1、6-1-2 自己搭场景的都调这个。光向：余晖往哪边褪（指向太阳，不给就是 `twilightSunDir`；6-1-2 自己定了光向，要和主光同向）
-// 高度雾倍数：浓度乘几（暮色超远景试看用，作品的 暮色新世界/远景试看.ts；1 就是 `twilightHeightFog` 原样）
+// 高度雾倍数：浓度乘几（暮色超远景用，作品的 暮色新世界/超远景.ts；1 就是 `twilightHeightFog` 原样）
 export const useTwilightFog = (sunDir: V3 = twilightSunDir, heightFogScale = 1) => {
   useHeightFog(heightFogScale === 1 ? twilightHeightFog : { ...twilightHeightFog, density: twilightHeightFog.density * heightFogScale });
   useDirFog(twilightDusk && { sunDir, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength });
@@ -89,16 +89,19 @@ export const shadowFarFor = (fogFar: number) => quarterOctaveCeil(Math.min(fogFa
 // 镜头：镜头位置（穹顶跟着它）；穹顶中心：不给就跟镜头（地面镜头要和 6-1-2 逐像素一致时给 [0,0,0]，6-1-2 穹顶在原点、半径 480）。
 // 跟着镜头时穹顶放大到 120 公里：星星是半透明点、最后画又不被雾盖，穹顶只 480 米的话高空往下看时 480 米外的地面会撒满星星；放大后星星大小不变（按像素画）。
 // 雾远：雾的远端（米）；雾近：近端（米，不给就是远 × 0.25；贴地的镜头给 `twilightFogNear`(雾远)）；离地：镜头离地多高（米，不给就是镜头的 z）。投影的中、远两级切在 max(300, 2 × 离地) 米，近处地面都在细的那两级里
-// 高度雾倍数：见 `useTwilightFog`
-export const TwilightLighting: React.FC<{ camPos: number[]; domeCenter?: number[]; fogFar: number; fogNear?: number; aboveGround?: number; heightFogScale?: number }> = ({
+// 高度雾倍数：见 `useTwilightFog`；天色雾：0～1，全进雾的远处往穹顶颜色靠多少（lib/高度雾.ts 的 `useSkyFog`，暮色超远景用，0 = 雾色照旧）
+export const TwilightLighting: React.FC<{ camPos: number[]; domeCenter?: number[]; fogFar: number; fogNear?: number; aboveGround?: number; heightFogScale?: number; skyFog?: number }> = ({
   camPos: camPos,
   domeCenter,
   fogFar: fogFar,
   fogNear = fogFar * 0.25,
   aboveGround: aboveGround = camPos[2],
   heightFogScale = 1,
+  skyFog = 0,
 }) => {
   useTwilightFog(twilightSunDir, heightFogScale);
+  // 色带、余晖同下面 SkyDome twilight 的默认（天空.tsx 的 duskAfterglow）
+  useSkyFog(skyFog > 0 ? { k: skyFog, bands: twilightDusk?.skyColors ?? TWILIGHT.sky, glow: twilightDusk?.afterglow ?? null, glowK: twilightDusk?.afterglowStrength ?? 0, sunDir: twilightSunDir } : null);
   return (
     <>
       <color attach="background" args={[twilightFogColor]} />
