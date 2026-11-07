@@ -348,10 +348,13 @@ const 角点 = (camera: THREE.Camera): THREE.Vector3[] => {
   return 点们;
 };
 
-/** 摆影子机：受光网格的包围盒和镜头视体（在太阳的视角下）取交，纹素吸附。没有要画影子的东西返回 false */
-const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: THREE.Vector3, 受光网格: THREE.Mesh[], 起纹素: number) => {
+/** 摆影子机：受光网格的包围盒和镜头视体（在太阳的视角下）取交，纹素吸附。没有要画影子的东西返回 false。
+ *  对齐（光影参数.影子对齐）：影子图的横轴转到画面里最横的那条方块轴（世界 X 或 Z）在太阳视角下的投影上，那个方向的方块边正好落在一行纹素上，投出来是直的；
+ *  不对齐时影子图的格子跟着太阳方向随便转，直的屋檐边在影子图里斜穿纹素行、存成台阶，落到被光斜擦的墙上拉长成一排锯齿（用户 11-07 看 2-收集快乐）。
+ *  对齐时纹素也按框取到最细（不取 2 的幂） */
+const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: THREE.Vector3, 受光网格: THREE.Mesh[], 起纹素: number, 对齐 = false) => {
   const 上 = Math.abs(L.y) > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
-  const 视 = new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上);
+  const 视 = 对齐 ? 对齐影子基(camera, L) ?? new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上) : new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上);
   const 逆 = 视.clone().invert();
   // 用包围球：方块网格的 CPU 数组上传后就释放，包围盒事后算不出；包围球第一次画（视锥裁剪）之前就算好了
   const 场盒 = new THREE.Box3();
@@ -371,6 +374,7 @@ const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: TH
   // 纹素：起纹素起，框装不下就翻倍
   let 纹素 = 起纹素;
   while (Math.max(x1 - x0, y1 - y0) + 2 > 影子图边 * 纹素) 纹素 *= 2;
+  if (对齐) 纹素 = Math.max(起纹素, (Math.max(x1 - x0, y1 - y0) + 2) / 影子图边);
   const 半 = (影子图边 * 纹素) / 2;
   const 吸 = (v: number) => Math.round(v / 纹素) * 纹素;
   const cx = 吸((x0 + x1) / 2), cy = 吸((y0 + y1) / 2);
@@ -385,6 +389,18 @@ const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: TH
   r.u.gyShadowMat.value.multiplyMatrices(机.projectionMatrix, 逆);
   r.u.gyShadowBias.value = Math.max(0.03, 纹素 * 1.5);
   return true;
+};
+
+/** 影子机的朝向：z = 指向太阳，x = 画面横向最接近的那条水平方块轴（世界 X 或 Z）去掉太阳方向的分量，y = z × x。太阳正对那条轴（投影退化）时返回 null */
+const 对齐影子基 = (camera: THREE.Camera, L: THREE.Vector3) => {
+  const 横 = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+  const 轴 = Math.abs(横.x) >= Math.abs(横.z) ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+  const z = L.clone().normalize();
+  const x = 轴.addScaledVector(z, -轴.dot(z));
+  if (x.lengthSq() < 1e-4) return null;
+  x.normalize();
+  const y = new THREE.Vector3().crossVectors(z, x);
+  return new THREE.Matrix4().makeBasis(x, y, z);
 };
 
 const 包围球 = (g: THREE.BufferGeometry): THREE.Sphere | null => {
@@ -612,7 +628,7 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     for (const o of 挡光组) o.visible = true;
     const { 受光, 别的 } = 收受光网格(scene);
     u.gyShadowOn.value = 0;
-    if (光照 && 受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256)) {
+    if (光照 && 受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256, !参.像素阴影 && !!参.影子对齐)) {
       const 藏 = 别的.filter((o) => o.visible);
       for (const o of 藏) o.visible = false;
       scene.background = null;
