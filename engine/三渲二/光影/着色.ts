@@ -188,10 +188,11 @@ outgoingLight = sRGBTransferEOTF( vec4( gyOut, 1.0 ) ).rgb;
 const 查影子图 = 'gyShadowAt( gyP + flatN * gyShadowBias )';
 const 打射线 = {
   直: 'gyRtLit( gyP + flatN * gyRtBias, flatN, gyPdx, gyPdy )',
-  罩: 'gyRtCenter( gyP + flatN * gyRtBias )',
+  // 几何罩只标记朝光面；中心射线在独立的全屏遍里算，不能在这里重新引入求交。
+  罩: '1.0',
   主: 'texelFetch( gyRtMask, ivec2( gl_FragCoord.xy ), 0 ).r',
 };
-/** 光线影子的三种变体：直 = 每像素自己打（先打四条、边上补到 8 条）；罩 = 只打中心 1 条，输出抗锯齿那遍要的（先画的那一遍）；主 = 取抗锯齿那遍算好的，自己不打 */
+/** 光线影子的三种变体：直 = 每像素自己打（先打四条、边上补到 8 条）；罩 = 输出起点、导数、法线和朝光标记（先画的几何遍）；主 = 取抗锯齿那遍算好的，自己不打 */
 export type 光线模式 = keyof typeof 打射线;
 // 抗锯齿要这个像素在面上占的那一块：导数在分支外取（三元式里取导数是未定义的）
 const 取导数 = 'vec3 gyPL = ( flatToLocal * vec4( gyP, 1.0 ) ).xyz;';
@@ -201,7 +202,9 @@ const 取导数后 = `${取导数}\nvec3 gyPdx = dFdx( gyP ), gyPdy = dFdy( gyP 
 export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量, 光线?: 光线统一量, 模式: 光线模式 = '直') => {
   Object.assign(shader.uniforms, u);
   if (光线) Object.assign(shader.uniforms, 光线);
-  const 头 = 光线 ? `${受光头}\n${光线头}` : 受光头;
+  // 主画面和几何罩不调用 BVH；不把求交源码带进它们，避免驱动为无关材质编译大着色器。
+  const 光线声明 = 模式 === '直' ? 光线头 : 'uniform float gyRtBias;\nuniform sampler2D gyRtMask;';
+  const 头 = 光线 ? `${受光头}\n${光线声明}` : 受光头;
   const 身 = 光线 ? 受光身.replace(查影子图, 打射线[模式]).replace(取导数, 取导数后) : 受光身;
   let f = shader.fragmentShader.replace('#include <common>', `#include <common>\n${头}`).replace('#include <opaque_fragment>', `${身}\n#include <opaque_fragment>`);
   // 罩：画进三张图（光线影子.ts 的 读罩、解罩 怎么读），颜色、雾、色彩空间都不要；第 0 张是 three 自己声明的 location 0
