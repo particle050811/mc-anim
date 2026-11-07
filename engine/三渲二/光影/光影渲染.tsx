@@ -22,8 +22,8 @@ import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 水下片
 import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
 import { use当前秒 } from '../../段/时间.tsx';
 
-/** 影子图边长（纹素） */
-const 影子图边 = 4096;
+/** 影子图默认边长（纹素）；光影参数.影子图边 可改，资源按需改尺寸 */
+const 默认影子图边 = 4096;
 /** 透视镜头的影子只算到这么远（格） */
 const 透视影距 = 80;
 /** Photon 天的空气雾算到多远（米）：同 engine/light/环境.ts 主世界画法不给时的地形远端 */
@@ -189,11 +189,11 @@ const 画反射云 = (gl: THREE.WebGLRenderer, r: 资源, cam: THREE.Perspective
 
 const 建资源 = () => {
   const u = 新光影统一量();
-  const 影 = new THREE.WebGLRenderTarget(影子图边, 影子图边, {
+  const 影 = new THREE.WebGLRenderTarget(默认影子图边, 默认影子图边, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
     depthBuffer: true,
-    depthTexture: new THREE.DepthTexture(影子图边, 影子图边, THREE.UnsignedIntType),
+    depthTexture: new THREE.DepthTexture(默认影子图边, 默认影子图边, THREE.UnsignedIntType),
   });
   const 影机 = new THREE.OrthographicCamera();
   const 浮点 = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false } as const;
@@ -353,6 +353,7 @@ const 角点 = (camera: THREE.Camera): THREE.Vector3[] => {
  *  不对齐时影子图的格子跟着太阳方向随便转，直的屋檐边在影子图里斜穿纹素行、存成台阶，落到被光斜擦的墙上拉长成一排锯齿（用户 11-07 看 2-收集快乐）。
  *  对齐时纹素也按框取到最细（不取 2 的幂） */
 const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: THREE.Vector3, 受光网格: THREE.Mesh[], 起纹素: number, 对齐 = false) => {
+  const 影子图边 = r.影.width;
   const 上 = Math.abs(L.y) > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
   const 视 = 对齐 ? 对齐影子基(camera, L) ?? new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上) : new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上);
   const 逆 = 视.clone().invert();
@@ -575,7 +576,9 @@ export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) =
     u.gyLampR.value = 光.灯照.半径;
     sRGB乘数(u.gyLampCol.value, 光.灯照.色, 光.灯照.强 * 基);
     u.gyPixel.value = 参.像素阴影 ? 1 : 0;
-    u.gyShadowFilter.value = !参.像素阴影 && 参.影子过滤 ? 1 / 影子图边 : 0;
+    const 影边 = 参.影子图边 ?? 默认影子图边;
+    if (r.影.width !== 影边) r.影.setSize(影边, 影边);
+    u.gyShadowFilter.value = !参.像素阴影 && 参.影子过滤 ? 1 / 影边 : 0;
     u.gyTime.value = 秒;
     const 水 = 选项.水 ?? '原版贴图';
     const 改水 = 水 !== '原版贴图';
