@@ -9,12 +9,15 @@
 import React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
 import { useImportedTerrain } from '@engine/voxel/导入地形.ts';
+import { useDistantFallbackTerrain } from '@engine/voxel/主世界地形.ts';
+import type { VoxelSource } from '@engine/voxel/生成.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { NagaCourtyard } from './娜迦庭院.tsx';
 import { FinalCastle } from './终焉高原城堡.tsx';
 import { twilightPackName, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 import { frameByName, allCutouts, allFlattens, landmarkHideOutsideCore, castleMeshHide } from './暮色新世界/摆放.ts';
+import { twilightDistantPack, twilightDistantTrial, twilightFarLandmarkPack } from './暮色新世界/远景试看.ts';
 
 export { twilightPackName, twilightFrozen, gameToWorld, yetiCore, twilightLandmarkNames, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 export {
@@ -45,7 +48,19 @@ export {
 // ---------- 地形组件 ----------
 // 镜头：镜头的世界坐标；地标：要画哪几座的网格（boss 那几座由各段的 戏.tsx 自己画，这里一般只给 娜迦庭院、终焉高原城堡）；
 // `t`、`清草`：娜迦庭院的火焰时间、不画花草的矩形（庭院本地坐标）；像素、远：体素世界的精度和最远距离；`投影光向`：同 `TwilightZones`
-export const TwilightTerrain: React.FC<{ camPos: number[]; landmarks?: TwilightLandmarkName[]; t?: number; clearPlants?: number[][]; 像素?: number; 远?: number; shadowLightDir?: V3 }> = ({
+type TerrainProps = { camPos: number[]; landmarks?: TwilightLandmarkName[]; t?: number; clearPlants?: number[][]; 像素?: number; 远?: number; shadowLightDir?: V3 };
+// 超远景试看（暮色新世界/远景试看.ts）开着才拿远景包兜底，没开只画导入的地形（现状）；两种各是一个组件，钩子不按条件调
+export const TwilightTerrain: React.FC<TerrainProps> = (props) => (twilightDistantTrial() ? <TerrainWithDistant {...props} /> : <ImportedTerrainOnly {...props} />);
+const ImportedTerrainOnly: React.FC<TerrainProps> = (props) => {
+  const terrain = useImportedTerrain(twilightPackName, allCutouts, allFlattens);
+  return terrain ? <TerrainView terrain={terrain} {...props} /> : null;
+};
+const TerrainWithDistant: React.FC<TerrainProps> = (props) => {
+  const terrain = useTwilightWithDistant();
+  return terrain ? <TerrainView terrain={terrain} {...props} /> : null;
+};
+const TerrainView: React.FC<TerrainProps & { terrain: { 键: string; 来源: VoxelSource; 高度: [number, number] } }> = ({
+  terrain,
   camPos: cameraPos,
   landmarks: landmarks = [],
   t = 0,
@@ -53,17 +68,21 @@ export const TwilightTerrain: React.FC<{ camPos: number[]; landmarks?: TwilightL
   像素: splitPixels = LevelParams.视频.像素,
   远: farM = LevelParams.视频.远,
   shadowLightDir,
-}) => {
-  const terrain = useImportedTerrain(twilightPackName, allCutouts, allFlattens);
-  if (!terrain) return null;
-  return (
-    <group>
-      <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cameraPos} 像素={splitPixels} 远={farM} 高度={terrain.高度} shadowLightDir={shadowLightDir} />
-      {landmarks.map((name) => (
-        <LandmarkMesh key={name} name={name} t={t} clearPlants={clearPlants} />
-      ))}
-    </group>
-  );
+}) => (
+  <group>
+    <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cameraPos} 像素={splitPixels} 远={farM} 高度={terrain.高度} shadowLightDir={shadowLightDir} />
+    {landmarks.map((name) => (
+      <LandmarkMesh key={name} name={name} t={t} clearPlants={clearPlants} />
+    ))}
+  </group>
+);
+
+// 导入地形外面先用远处地标的补充包（暮色放大-1752-远地标，只生成了远处地标周围的小块），再拿暮色远景包兜底（engine/voxel/主世界地形.ts 同一套拼法）：
+// 导入那片不补粗级（和只画导入地形时一样），没量交界；树高 50：远景里最高的是橡树草原的大暮色橡树（冠顶离地 26 米），再留余量
+const noCutouts: [] = [];
+const useTwilightWithDistant = () => {
+  const farLandmarks = useImportedTerrain(twilightFarLandmarkPack, noCutouts);
+  return useDistantFallbackTerrain(twilightPackName, twilightDistantPack, allCutouts, allFlattens, { 键前缀: '暮色', 远: LevelParams.视频.远, 交界: false, 补粗级: false, 树高: 50, 补充: farLandmarks });
 };
 
 // boss 那几座的 戏.tsx 用同样的变换包自己的场景
