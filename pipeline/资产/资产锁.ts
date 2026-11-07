@@ -65,6 +65,7 @@ export const 读作品资产锁 = (作品根: string, 选 = 当前材质包选�
 // 被包换掉的 id → 换后的字节，盖在作品锁上，打包、指纹都看盖过的（换了的贴图 sha 不同，段指纹跟着变）。没写或空 = 原版，锁、指纹都不变。
 // 试样不改作品：环境变量 ANIM_PACKS=<名,名…> 顶掉作品的选用（=原版 关掉），覆盖层锁放数据根 cache/材质包/<作品>/。变量名用 ASCII：本机 zsh 会把中文变量名搅乱。
 // 封顶：一格最多几个贴图像素（16 = 缩回原版尺寸；不写按作品画风放到最大，见 材质包.ts 放大上限），环境变量 ANIM_PACKS_RES 或 材质包.toml 的 "封顶" = 16（全作品一个）。
+// 分辨率：材质包.toml 的 "分辨率" = 64（全作品一个）同试验倍数一样不按画风整除，照这个分辨率上屏（用户 11-07 定《把回忆拼好给你》直接用 64x）。
 // 试验倍数（用户 11-06 要看 64x、128x、256x 真上屏的样子和渲染时长）：环境变量 ANIM_PACKS_TRY=64|128|256 只跟 ANIM_PACKS 一起才起作用，
 // 不按画风整除、照这个分辨率放（一个贴图像素不再是整数个成片像素），覆盖层锁名带 @试验<N>；作品的 材质包.toml 不认它。
 // 按段选（用户 11-02「材质包应该也是可选项 而不是耦合的」）：材质包.toml 的 [段] 小节 "<段键>" = [...] 给这一段换包，[] = 这一段用原版，没写的段用 "包"。
@@ -75,8 +76,8 @@ export const 材质包封顶变量 = 'ANIM_PACKS_RES';
 export const 材质包试验变量 = 'ANIM_PACKS_TRY';
 export const 作品材质包表路径 = (作品根: string) => path.join(作品根, '材质包.toml');
 /** 来自：作品 = 作品的 "包"；段 = [段] 小节给这一段另选的（和 "包" 一样的算 作品）；环境 = 试样的环境变量 */
-export type 材质包选用 = { 包: string[]; 来自: '无' | '作品' | '段' | '环境'; 封顶?: number; 试验?: number };
-export type 材质包锁 = { 包: { id: string; sha256: string }[]; 封顶?: number; 试验?: number; 覆盖: 资产锁; 报告?: unknown };
+export type 材质包选用 = { 包: string[]; 来自: '无' | '作品' | '段' | '环境'; 封顶?: number; 试验?: number; 分辨率?: number };
+export type 材质包锁 = { 包: { id: string; sha256: string }[]; 封顶?: number; 试验?: number; 分辨率?: number; 覆盖: 资产锁; 报告?: unknown };
 
 const 补前缀 = (x: string) => (x.startsWith('材质包/') ? x : `材质包/${x}`);
 
@@ -94,10 +95,10 @@ const 读包数组 = (x: string, 出处: string) => {
   }
 };
 
-export type 材质包表 = { 文件: string; 包: string[]; 封顶?: number; 段: Map<string, string[]> };
+export type 材质包表 = { 文件: string; 包: string[]; 封顶?: number; 分辨率?: number; 段: Map<string, string[]> };
 
 /** <作品根>/材质包.toml；没有这个文件是 null。这个文件随 remotion.config.ts 打包，不能用 TOML 库，只认下面这几种写法：
- *  "包" = [ … ]、"封顶" = 32、[段] 小节里一行一段 "<段键>" = [ … ]（# 开头的行是注释） */
+ *  "包" = [ … ]、"封顶" = 32、"分辨率" = 64、[段] 小节里一行一段 "<段键>" = [ … ]（# 开头的行是注释） */
 export const 读材质包表 = (作品根: string): 材质包表 | null => {
   const f = 作品材质包表路径(作品根);
   if (!fs.existsSync(f)) return null;
@@ -107,6 +108,7 @@ export const 读材质包表 = (作品根: string): 材质包表 | null => {
   const m = /^\s*"?包"?\s*=\s*\[([^\]]*)\]/m.exec(顶);
   if (!m) throw new Error(`${f}：要写成 "包" = ["材质包/<名>", …]（空数组 = 原版）`);
   const c = /^\s*"?封顶"?\s*=\s*(\S+)/m.exec(顶);
+  const 分 = /^\s*"?分辨率"?\s*=\s*(\S+)/m.exec(顶);
   const 段 = new Map<string, string[]>();
   if (小节 >= 0) {
     if (行[小节]!.trim() !== '[段]') throw new Error(`${f}：只认 [段] 小节，现在是「${行[小节]!.trim()}」`);
@@ -118,7 +120,7 @@ export const 读材质包表 = (作品根: string): 材质包表 | null => {
     }
     if (余.trim()) throw new Error(`${f}：[段] 里一行一段，写成 "<段键>" = ["材质包/<名>", …]（[] = 这段用原版），这里认不出：${余.trim().split('\n')[0]}`);
   }
-  return { 文件: f, 包: 读包数组(m[1]!, `${f} 的「包」`), ...(c ? { 封顶: 读封顶(c[1]!, f) } : {}), 段 };
+  return { 文件: f, 包: 读包数组(m[1]!, `${f} 的「包」`), ...(c ? { 封顶: 读封顶(c[1]!, f) } : {}), ...(分 ? { 分辨率: 读封顶(分[1]!, f) } : {}), 段 };
 };
 
 const 同包 = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
@@ -137,8 +139,9 @@ export const 读材质包选用 = (作品根: string, 环境 = process.env[材�
   if (!表) return { 包: [], 来自: '无' };
   const 封顶 = 变量封顶 ?? 表.封顶;
   const 段包 = 段键 === undefined ? undefined : 表.段.get(段键);
-  if (段包 && !同包(段包, 表.包)) return 带封顶({ 包: 段包, 来自: 段包.length ? '段' : '无' }, 封顶);
-  return 带封顶({ 包: 表.包, 来自: 表.包.length ? '作品' : '无' }, 封顶);
+  const 带分辨率 = (选: 材质包选用): 材质包选用 => (选.包.length && 表.分辨率 !== undefined ? { ...选, 分辨率: 表.分辨率 } : 选);
+  if (段包 && !同包(段包, 表.包)) return 带分辨率(带封顶({ 包: 段包, 来自: 段包.length ? '段' : '无' }, 封顶));
+  return 带分辨率(带封顶({ 包: 表.包, 来自: 表.包.length ? '作品' : '无' }, 封顶));
 };
 
 /** 材质包.toml 里用得上的每一种选用（作品的 "包" 和 [段] 另选的，去重、不含原版），anim assets 材质包 逐个建覆盖层锁 */
@@ -211,6 +214,7 @@ export const 套材质包 = (锁: 资产锁, 作品根: string, 选: 材质包�
   const 现 = 选.包.map((id) => `${id}@${锁[id]?.sha256 ?? '没登记'}`).join(',');
   const 建时 = 盖.包.map((x) => `${x.id}@${x.sha256}`).join(',');
   if (现 !== 建时) throw new Error(`覆盖层锁 ${文件} 是按 ${建时} 建的，现在选用 ${现}：重跑 ${重建}`);
+  if (盖.分辨率 !== 选.分辨率) throw new Error(`覆盖层锁 ${文件} 是按分辨率 ${盖.分辨率 ?? '按画风'} 建的，现在选用 ${选.分辨率 ?? '按画风'}：重跑 ${重建}`);
   if (盖.试验 !== 选.试验) throw new Error(`覆盖层锁 ${文件} 是按试验 ${盖.试验 ?? '无'} 建的，现在选用试验 ${选.试验 ?? '无'}：重跑 ${重建}`);
   if (盖.封顶 !== 选.封顶) throw new Error(`覆盖层锁 ${文件} 是按封顶 ${盖.封顶 ?? '不限'} 建的，现在选用封顶 ${选.封顶 ?? '不限'}：重跑 ${重建}`);
   const 多 = Object.keys(盖.覆盖).filter((id) => !(id in 锁));
