@@ -65,15 +65,18 @@ export const 读作品资产锁 = (作品根: string, 选 = 当前材质包选�
 // 被包换掉的 id → 换后的字节，盖在作品锁上，打包、指纹都看盖过的（换了的贴图 sha 不同，段指纹跟着变）。没写或空 = 原版，锁、指纹都不变。
 // 试样不改作品：环境变量 ANIM_PACKS=<名,名…> 顶掉作品的选用（=原版 关掉），覆盖层锁放数据根 cache/材质包/<作品>/。变量名用 ASCII：本机 zsh 会把中文变量名搅乱。
 // 封顶：一格最多几个贴图像素（16 = 缩回原版尺寸；不写按作品画风放到最大，见 材质包.ts 放大上限），环境变量 ANIM_PACKS_RES 或 材质包.toml 的 "封顶" = 16（全作品一个）。
+// 试验倍数（用户 11-06 要看 64x、128x、256x 真上屏的样子和渲染时长）：环境变量 ANIM_PACKS_TRY=64|128|256 只跟 ANIM_PACKS 一起才起作用，
+// 不按画风整除、照这个分辨率放（一个贴图像素不再是整数个成片像素），覆盖层锁名带 @试验<N>；作品的 材质包.toml 不认它。
 // 按段选（用户 11-02「材质包应该也是可选项 而不是耦合的」）：材质包.toml 的 [段] 小节 "<段键>" = [...] 给这一段换包，[] = 这一段用原版，没写的段用 "包"。
 // 选的包只进那一段自己的指纹（换了的贴图 sha 在它闭包的 asset: 叶子里），别的段不动；打包、算指纹按选用分组，一组一个打包（按材质包分组、照材质包选用）。
 // Studio（remotion.config.ts）只有一个打包，按作品的 "包"：[段] 里另选的段在 Studio 里看到的是作品的包，以 anim still、film 为准。
 export const 材质包变量 = 'ANIM_PACKS';
 export const 材质包封顶变量 = 'ANIM_PACKS_RES';
+export const 材质包试验变量 = 'ANIM_PACKS_TRY';
 export const 作品材质包表路径 = (作品根: string) => path.join(作品根, '材质包.toml');
 /** 来自：作品 = 作品的 "包"；段 = [段] 小节给这一段另选的（和 "包" 一样的算 作品）；环境 = 试样的环境变量 */
-export type 材质包选用 = { 包: string[]; 来自: '无' | '作品' | '段' | '环境'; 封顶?: number };
-export type 材质包锁 = { 包: { id: string; sha256: string }[]; 封顶?: number; 覆盖: 资产锁; 报告?: unknown };
+export type 材质包选用 = { 包: string[]; 来自: '无' | '作品' | '段' | '环境'; 封顶?: number; 试验?: number };
+export type 材质包锁 = { 包: { id: string; sha256: string }[]; 封顶?: number; 试验?: number; 覆盖: 资产锁; 报告?: unknown };
 
 const 补前缀 = (x: string) => (x.startsWith('材质包/') ? x : `材质包/${x}`);
 
@@ -121,12 +124,14 @@ export const 读材质包表 = (作品根: string): 材质包表 | null => {
 const 同包 = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((x, i) => x === b[i]);
 
 /** 选用哪些材质包：环境变量（试样，所有段一样）> 材质包.toml [段] 里这一段的 > "包"。不给段键就是作品的 */
-export const 读材质包选用 = (作品根: string, 环境 = process.env[材质包变量], 环境封顶 = process.env[材质包封顶变量], 段键?: string): 材质包选用 => {
+export const 读材质包选用 = (作品根: string, 环境 = process.env[材质包变量], 环境封顶 = process.env[材质包封顶变量], 段键?: string, 环境试验 = process.env[材质包试验变量]): 材质包选用 => {
   const 带封顶 = (选: 材质包选用, 封顶: number | undefined): 材质包选用 => (选.包.length && 封顶 !== undefined ? { ...选, 封顶 } : 选);
   const 变量封顶 = 环境封顶 !== undefined && 环境封顶.trim() !== '' ? 读封顶(环境封顶, 材质包封顶变量) : undefined;
   if (环境 !== undefined && 环境.trim() !== '') {
     const 包 = 环境.trim() === '原版' ? [] : 环境.split(',').map((x) => x.trim()).filter(Boolean).map(补前缀);
-    return 带封顶({ 包, 来自: 包.length ? '环境' : '无' }, 变量封顶);
+    const 选 = 带封顶({ 包, 来自: 包.length ? '环境' : '无' }, 变量封顶);
+    if (!包.length || 环境试验 === undefined || 环境试验.trim() === '') return 选;
+    return { ...选, 试验: 读封顶(环境试验, 材质包试验变量) };
   }
   const 表 = 读材质包表(作品根);
   if (!表) return { 包: [], 来自: '无' };
@@ -149,8 +154,9 @@ export const 作品的材质包选用们 = (作品根: string): 材质包选用[
 };
 
 /** 两份选用打出来的包一样，键就一样（分组用） */
-export const 材质包选用键 = (选: 材质包选用) => (选.包.length ? `${选.来自}:${选.包.join(',')}${选.封顶 !== undefined ? `@${选.封顶}` : ''}` : '原版');
-const 说选用 = (选: 材质包选用) => (选.包.length ? `${选.包.join('、')}${选.封顶 !== undefined ? `（封顶 ${选.封顶}）` : ''}` : '原版');
+const 试验后缀 = (选: 材质包选用) => (选.试验 !== undefined ? `@试验${选.试验}` : '');
+export const 材质包选用键 = (选: 材质包选用) => (选.包.length ? `${选.来自}:${选.包.join(',')}${选.封顶 !== undefined ? `@${选.封顶}` : ''}${试验后缀(选)}` : '原版');
+const 说选用 = (选: 材质包选用) => (选.包.length ? `${选.包.join('、')}${选.封顶 !== undefined ? `（封顶 ${选.封顶}）` : ''}${选.试验 !== undefined ? `（试验 ${选.试验}）` : ''}` : '原版');
 
 // 打包、算指纹时这一组的选用：webpack改写、补缺字节占位、建默克尔图 都在里面调 读作品资产锁，不用一路传参（webpack.ts 的文本进全片指纹，改不得）
 const 打包时选用 = new AsyncLocalStorage<材质包选用>();
@@ -190,7 +196,7 @@ export const 核对段材质包 = (作品根: string, 段键: string) => {
 
 /** 覆盖层锁放哪：作品选用的进 Git（<作品根>/材质包.锁.json，像资产锁一样钉住字节；[段] 另选的是 材质包-<包+包>[@封顶].锁.json）；环境变量试样的放数据根 cache/ */
 export const 材质包锁路径 = (作品根: string, 选: 材质包选用, 根 = 数据根()) => {
-  const 名 = `${选.包.map((x) => x.slice('材质包/'.length)).join('+')}${选.封顶 !== undefined ? `@${选.封顶}` : ''}`;
+  const 名 = `${选.包.map((x) => x.slice('材质包/'.length)).join('+')}${选.封顶 !== undefined ? `@${选.封顶}` : ''}${试验后缀(选)}`;
   if (选.来自 === '作品') return path.join(作品根, '材质包.锁.json');
   if (选.来自 === '段') return path.join(作品根, `材质包-${名}.锁.json`);
   return path.join(根, 'cache', '材质包', path.basename(作品根), `${名}.锁.json`);
@@ -199,12 +205,13 @@ export const 材质包锁路径 = (作品根: string, 选: 材质包选用, 根 
 export const 套材质包 = (锁: 资产锁, 作品根: string, 选: 材质包选用): 资产锁 => {
   if (!选.包.length) return 锁;
   const 文件 = 材质包锁路径(作品根, 选);
-  const 重建 = `anim${选.来自 === '环境' ? ` 前面带 ${材质包变量}=${选.包.join(',')}${选.封顶 !== undefined ? ` ${材质包封顶变量}=${选.封顶}` : ''}` : ''} assets 材质包`;
+  const 重建 = `anim${选.来自 === '环境' ? ` 前面带 ${材质包变量}=${选.包.join(',')}${选.封顶 !== undefined ? ` ${材质包封顶变量}=${选.封顶}` : ''}${选.试验 !== undefined ? ` ${材质包试验变量}=${选.试验}` : ''}` : ''} assets 材质包`;
   if (!fs.existsSync(文件)) throw new Error(`选用了材质包 ${选.包.join('、')}，但覆盖层锁 ${文件} 不存在：先跑 ${重建}`);
   const 盖 = JSON.parse(fs.readFileSync(文件, 'utf8')) as 材质包锁;
   const 现 = 选.包.map((id) => `${id}@${锁[id]?.sha256 ?? '没登记'}`).join(',');
   const 建时 = 盖.包.map((x) => `${x.id}@${x.sha256}`).join(',');
   if (现 !== 建时) throw new Error(`覆盖层锁 ${文件} 是按 ${建时} 建的，现在选用 ${现}：重跑 ${重建}`);
+  if (盖.试验 !== 选.试验) throw new Error(`覆盖层锁 ${文件} 是按试验 ${盖.试验 ?? '无'} 建的，现在选用试验 ${选.试验 ?? '无'}：重跑 ${重建}`);
   if (盖.封顶 !== 选.封顶) throw new Error(`覆盖层锁 ${文件} 是按封顶 ${盖.封顶 ?? '不限'} 建的，现在选用封顶 ${选.封顶 ?? '不限'}：重跑 ${重建}`);
   const 多 = Object.keys(盖.覆盖).filter((id) => !(id in 锁));
   if (多.length) throw new Error(`${文件} 盖了作品锁里没有的 id：${多.slice(0, 5).join('、')}（覆盖层只能换已登记的资产）`);

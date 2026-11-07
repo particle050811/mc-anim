@@ -33,8 +33,13 @@ const 原尺寸id = new Set(['贴图/场景/天空/clouds']);
 /** 材质包最多放大几倍（相对原版 16 像素一格，2 的幂）。用户 11-02：32x 原样上屏、以后的 64x 也要兼容。
  *  三渲二正交机位一个原版贴图像素 = 像素N 个成片像素、顶面一个贴图像素 = 正交顶面 个像素高（画风.ts）；放大 倍 倍后一个贴图像素是 像素N ÷ 倍，
  *  要整像素（画风原则 3：像素一样大、不糊）就得 倍 同时整除 像素N 和 正交顶面。本作品 6、2 → 2：32x 原样，64x、128x 缩到 32x（6 ÷ 4 = 1.5 像素）。
- *  封顶（一格最多几个贴图像素，16 = 原版尺寸）再往下压；作品没有 画风.ts 的 像素N 就不放大 */
-export const 放大上限 = (画风文本: string | null, 封顶?: number): { 倍: number; 依据: string } => {
+ *  封顶（一格最多几个贴图像素，16 = 原版尺寸）再往下压；作品没有 画风.ts 的 像素N 就不放大。
+ *  试验（ANIM_PACKS_TRY，资产锁.ts）顶掉画风的整除限制，直接放到 试验 ÷ 16 倍，只给用户看高倍效果用 */
+export const 放大上限 = (画风文本: string | null, 封顶?: number, 试验?: number): { 倍: number; 依据: string } => {
+  if (试验 !== undefined) {
+    const 倍 = Math.min(试验, 封顶 ?? 试验) / 16;
+    return { 倍, 依据: `试验 ANIM_PACKS_TRY=${试验}：不按画风整除，最多 ${倍} 倍（${16 * 倍}x）${封顶 !== undefined ? `，封顶 ${封顶}` : ''}` };
+  }
   const 取 = (名: string) => {
     const m = 画风文本 ? new RegExp(`export const ${名} = (\\d+)`).exec(画风文本) : null;
     return m ? Number(m[1]) : undefined;
@@ -187,7 +192,7 @@ export const 建材质包覆盖 = (作品根: string, 选 = 读材质包选用(�
     .filter(([id, { 包内 }]) => id in 锁 && id.startsWith('贴图/') && (界面可换.has(id) || !不换id前缀.some((q) => id.startsWith(q))) && 包内.startsWith(可换前缀) && !不换包内前缀.some((q) => 包内.startsWith(q)))
     .map(([id, { 包内, 组 }]) => ({ id, 原图: 解析资产(id, 锁).文件, 包内, 组, ...(原尺寸id.has(id) ? { 倍上限: 1 } : {}) }));
   const 画风 = path.join(作品根, '画风.ts');
-  const 上限 = 放大上限(fs.existsSync(画风) ? fs.readFileSync(画风, 'utf8') : null, 选.封顶);
+  const 上限 = 放大上限(fs.existsSync(画风) ? fs.readFileSync(画风, 'utf8') : null, 选.封顶, 选.试验);
   const jar = jar路径(读清单(), 原版jar);
   if (!fs.existsSync(jar)) throw new Error(`原版 jar 不在 ${jar}（群系色要它的色图和群系温度湿度）：anim extract --下载`);
   const 出目录 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
@@ -212,6 +217,7 @@ export const 建材质包覆盖 = (作品根: string, 选 = 读材质包选用(�
     const 盖: 材质包锁 = {
       包: 包们.map((p) => ({ id: p.id, sha256: p.条目.sha256 })),
       ...(选.封顶 !== undefined ? { 封顶: 选.封顶 } : {}),
+      ...(选.试验 !== undefined ? { 试验: 选.试验 } : {}),
       覆盖: Object.fromEntries(Object.keys(覆盖).sort().map((k) => [k, 覆盖[k]!])) as 资产锁,
       报告: {
         许可: Object.fromEntries(包们.map((p) => [p.id, `${p.许可}（${p.可见性}）`])),
