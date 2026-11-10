@@ -14,6 +14,9 @@ import 缠绕 from '../法术/缠绕.tsx';
 import 过度生长 from '../法术/过度生长.tsx';
 import 散射 from '../法术/散射.tsx';
 import 生物地雷 from '../法术/生物地雷.tsx';
+import 三叉戟风暴 from '../法术/三叉戟风暴.tsx';
+import 水鞭 from '../法术/水鞭.tsx';
+import 震地 from '../法术/震地.tsx';
 
 export const 乙演出: readonly 法术演出条[] = [
   撕咬,
@@ -28,4 +31,7 @@ export const 乙演出: readonly 法术演出条[] = [
   过度生长,
   散射,
   生物地雷,
+  三叉戟风暴,
+  水鞭,
+  震地,
 ];

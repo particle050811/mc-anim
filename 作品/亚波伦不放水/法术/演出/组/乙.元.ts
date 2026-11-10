@@ -14,6 +14,9 @@ import 缠绕 from '../法术/缠绕.元.ts';
 import 过度生长 from '../法术/过度生长.元.ts';
 import 散射 from '../法术/散射.元.ts';
 import 生物地雷 from '../法术/生物地雷.元.ts';
+import 三叉戟风暴 from '../法术/三叉戟风暴.元.ts';
+import 水鞭 from '../法术/水鞭.元.ts';
+import 震地 from '../法术/震地.元.ts';
 
 export const 乙元: readonly 法术元[] = [
   撕咬,
@@ -28,4 +31,7 @@ export const 乙元: readonly 法术元[] = [
   过度生长,
   散射,
   生物地雷,
+  三叉戟风暴,
+  水鞭,
+  震地,
 ];
