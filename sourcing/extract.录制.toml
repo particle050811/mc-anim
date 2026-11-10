@@ -1,0 +1,33 @@
+# 录制：在开着的取材客户端里放一发法术，把粒子、实体、声音逐刻录下来（docs/决策/0016-法术录制.md）。格式同 extract.toml，这里只放录制这一批。
+# 先开游戏（过资源闸）：MCAI_INSTANCE=取材客户端-诡厄 anim mcai game start world=法术录制
+# 再录：MCAI_INSTANCE=取材客户端-诡厄 anim --作品 亚波伦不放水 extract 录制-<法术> [--登记]；录完 anim mcai game stop。
+# 加一个法术：照抄一条，改名称、法术注册名（goety 的 Spell 注册名，聚晶默认 goety:<名>_focus）和产物 id；蓄力、引导的加 "--按住", "<刻>"。
+# 录出来是一次随机的结果（粒子自己的随机数没有种子入口，服务端的种子固定），重录字节会变：锁对不上时删锁重登记，见 0016。
+# 所以公开版不让使用者重录（录不出锁里那一版），录好的这份随公开版发（可见性 公开；Goety 是 MIT）。
+
+["组"]
+"录制" = ["录制-frost_nova", "录制-weakening"]
+
+[["取材"]]
+"名称" = "录制-frost_nova"
+"说明" = "霜冻新星：施法者脚下一圈冰晶往外炸（goety:frost_nova 贴图粒子 + 地面冲击波）"
+"需要" = ["goety"]
+"要开游戏" = true
+"作品" = "亚波伦不放水"
+"公开版" = "不提取"
+"可见性" = "公开"
+"步骤" = [["python", "{脚本}/录法术.py", "frost_nova", "src/录制/法术/goety/frost_nova.json", "--刻", "60", "--作品根", "{作品根}"]]
+["取材"."产物"]
+"录制/法术/goety/frost_nova" = "src/录制/法术/goety/frost_nova.json"
+
+[["取材"]]
+"名称" = "录制-weakening"
+"说明" = "弱化：施法者周围紫色方块粒子 + 地面冲击波"
+"需要" = ["goety"]
+"要开游戏" = true
+"作品" = "亚波伦不放水"
+"公开版" = "不提取"
+"可见性" = "公开"
+"步骤" = [["python", "{脚本}/录法术.py", "weakening", "src/录制/法术/goety/weakening.json", "--刻", "60", "--作品根", "{作品根}"]]
+["取材"."产物"]
+"录制/法术/goety/weakening" = "src/录制/法术/goety/weakening.json"

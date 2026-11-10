@@ -1,0 +1,18 @@
+# 资产表：录制。人写；anim extract --登记 自动追加取材产物。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "录制/法术/goety/frost_nova"
+"类别" = "录制"
+"来源" = "提取:录制-frost_nova@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "公开"
+"说明" = "霜冻新星的一次录制（sourcing/extract.录制.toml）；重录是另一次随机结果，所以随公开版发"
+
+[["资产"]]
+id = "录制/法术/goety/weakening"
+"类别" = "录制"
+"来源" = "提取:录制-weakening@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "公开"
+"说明" = "弱化的一次录制（sourcing/extract.录制.toml）；重录是另一次随机结果，所以随公开版发"

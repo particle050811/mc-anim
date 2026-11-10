@@ -63,6 +63,16 @@ describe('取材清单', () => {
     expect(q.条目.get('乙')?.前置).toEqual(['甲']);
   });
 
+  it('另批的 extract.<名>.toml 并进同一张表：名称、组不能重，只认 [[取材]] 和 [组]', () => {
+    const 另 = `["组"]\n"录" = ["戊"]\n[["取材"]]\n"名称" = "戊"\n"要开游戏" = true\n"公开版" = "提取"\n"步骤" = [["python", "x.py"]]\n`;
+    const q2 = 解析清单(清单文本, jar文本, { 'extract.录制.toml': 另 });
+    expect([...q2.条目.keys()]).toEqual(['甲', '乙', '丙', '丁', '戊']);
+    expect(选条目(q2, ['录'], false).map((e) => e.名称)).toEqual(['戊']);
+    expect(() => 解析清单(清单文本, jar文本, { 'extract.x.toml': `[["取材"]]\n"名称" = "甲"\n` })).toThrow(/两条/);
+    expect(() => 解析清单(清单文本, jar文本, { 'extract.x.toml': `["组"]\n"一组" = []\n` })).toThrow(/已经有了/);
+    expect(() => 解析清单(清单文本, jar文本, { 'extract.x.toml': `["程序"]\n"a" = []\n` })).toThrow(/只认/);
+  });
+
   it('--全部 只选有步骤、不用开游戏、不待迁移的，写了别的作品的不选；组按组里的先后', () => {
     expect(选条目(q, [], true).map((e) => e.名称)).toEqual(['甲', '丁']);
     expect(选条目(q, [], true, '甲作').map((e) => e.名称)).toEqual(['甲']);

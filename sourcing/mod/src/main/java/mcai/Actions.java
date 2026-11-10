@@ -11,11 +11,13 @@ import mcai.action.CmdAction;
 import mcai.action.FillAction;
 import mcai.action.FreezeAction;
 import mcai.action.HelpAction;
+import mcai.action.HoldAction;
 import mcai.action.InputAction;
 import mcai.action.KeyAction;
 import mcai.action.MeshAction;
 import mcai.action.QuitAction;
 import mcai.action.ReadyAction;
+import mcai.action.RecordAction;
 import mcai.action.SetBlockAction;
 import mcai.action.ShootAction;
 import mcai.action.StateAction;
@@ -52,6 +54,8 @@ public final class Actions {
         register(new UiAction());
         register(new BiomesAction());
         register(new BlocksAction());
+        register(new HoldAction());
+        register(new RecordAction());
     }
 
     private Actions() {
