@@ -2437,6 +2437,22 @@
 ["取材"."产物"]
 "贴图/物品/聚晶/光环版/*" = "src/模型/物品/聚晶/光环版/*.png"
 
+# 下界魔杖（goety:nether_staff，zh_cn「下界魔杖」；用户 11-09 定亚波伦手持）：models/item/nether_staff.json 是 Blockbench 做的元素模型（17 个元素，32×32 贴图），
+# 没有 Forge 的 separate_transforms、没有 parent；display.thirdperson_righthand 只有平移 [0, -7, 1]。启示录没盖这个模型。
+[["取材"]]
+"名称" = "下界魔杖"
+"作品" = "亚波伦不放水"
+"需要" = ["goety"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  ["导出模型", "{jar:goety}", "src/模型/物品/下界魔杖.模型.json", "杖=goety:item/nether_staff"],
+]
+["取材"."产物"]
+"模型/物品/下界魔杖" = "src/模型/物品/下界魔杖.模型.json"
+"贴图/物品/下界魔杖" = "src/模型/物品/下界魔杖.模型.png"
+
 # 亚波伦的 boss 血条（ApollyonBossbar，都是 256×256 的图集，按代码里的 UV 切）：boss_bar 是现在的完整版（一二阶段边框、弓形装饰），
 # boss_bar_simple 是配置 simpleApollyonBossbar 开着时的简版，old_boss_bar、old_boss_bar_nether 是旧式（renderClassicApollyonBar，主世界、下界各一张）。
 # 名牌没有自己的贴图：名字和称号是游戏字体配 dissolve_text 着色器画的（DissolveApollyonFont），溶解用的噪声是 noise.png；血条里流动的「宇宙」填充是 cosmic 着色器。着色器没取。

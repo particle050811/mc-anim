@@ -8,3 +8,11 @@ id = "模型/角色/娘化亚波伦"
 "许可" = "GPL-3.0-only"
 "可见性" = "提取"
 "说明" = "4911 的 YSM 包 models/main.json：358 根骨骼、568 个方盒、逐面 UV，骨骼一根没去；玩家模型，ysm.json 的 height_scale 0.7"
+
+[["资产"]]
+id = "模型/物品/下界魔杖"
+"类别" = "模型"
+"来源" = "提取:下界魔杖@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "goety:nether_staff（下界魔杖）的物品模型 models/item/nether_staff.json：17 个元素、102 个面，部件「杖」；display 没导，写在 物品/下界魔杖.tsx"
