@@ -5032,3 +5032,11 @@ id = "贴图/方块附加/方块表"
 "许可" = "LicenseRef-Minecraft-EULA AND CC-BY-NC-SA-4.0 AND CC-BY-NC-SA-3.0 AND MIT AND LicenseRef-LGPL-Unversioned AND LGPL-2.1-only AND LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "本作品体素方块表的贴图竖条（16 宽、一格一张）：全局图集原样 + 追加的 24 张模组贴图；换用.toml 让本作品用它顶替全局图集。私有"
+
+[["资产"]]
+id = "贴图/特效/晋升之环/halo"
+"类别" = "贴图"
+"来源" = "提取:晋升之环@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "启示录 textures/entity/player/halo.png，16×16，晋升之环戴在头后的那张片的贴图（PlayerHaloLayer；画法见 特效/晋升之环形.ts 文件头）"

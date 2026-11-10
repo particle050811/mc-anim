@@ -15,6 +15,8 @@
 // engine 的基岩模型不剔背面，零厚度的片只留一面、两面都画，照画的话环有两侧被白片整个盖住。所以这 8 根骨骼的描边片从模型里拿掉，
 // 另用只画正面的材质画（描边片），挂回各自的骨骼上。
 // 身边的 8 个浮块（ysmGlowbone54～61，default 贴图上 7 彩 1 黑的芯，外面同样一圈黑描边片）：用户 11-10 定不留，芯和描边片都不画。
+// 头后的眼形大光环是 ysmGlowbone24（19 张零厚度片，挂在 aaabody 下，不跟头转；模型像素 x ±31、y 42.7～68、z 9.2，只有 default 贴图上有像素）。
+// 用户 11-10 定换成晋升之环（特效/晋升之环.tsx，同样挂在 aaabody 上、不跟头转）；候选还没挑，所以先做成属性 头后环：不给时画面不变，给了就藏掉眼形光环换上。
 import { useMemo, type FC, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { Molang环境 } from '@engine/anim/Molang.ts';
@@ -29,6 +31,8 @@ import type { 实体光照 } from '@engine/model/实体材质.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 合并环境, 定义生物 } from '@库/生物/定义生物.ts';
 import { 手持下界魔杖, 手持杖矩阵, 杖尖, 杖尾, 杖头芯 } from '../物品/下界魔杖.tsx';
+import { 亚波伦头后环 } from '../特效/晋升之环.tsx';
+import type { 环款 } from '../特效/晋升之环形.ts';
 import 表情动画 from 'asset:动画/角色/娘化亚波伦/extra';
 import 主动画 from 'asset:动画/角色/娘化亚波伦/main';
 import 模型 from 'asset:模型/角色/娘化亚波伦';
@@ -230,18 +234,31 @@ export type 娘化亚波伦属性 = {
   受伤?: number;
   光照?: 实体光照;
   透明度?: number;
+  /** 头后换成晋升之环的哪一款（特效/晋升之环形.ts）：给了就藏掉包里的眼形大光环（ysmGlowbone24），在头后挂晋升之环（挂 aaabody）；不给照旧画眼形大光环。
+   *  用户 11-10 定要换，候选没挑，挑定后再把默认改过来 */
+  头后环?: 环款;
+  /** 晋升之环转到第几秒的样子，不给用 秒 */
+  环秒?: number;
   /** 右手拿下界魔杖（用户 11-09 定亚波伦手持）：挂在定位骨 RightHandLocator 上，右臂默认斜举（见 斜举）；默认不拿 */
   持杖?: boolean;
   挂载?: Record<string, ReactNode>;
 };
 
 const 杖挂载 = { RightHandLocator: <手持下界魔杖 /> };
+// 整根骨骼缩成 0，基岩模型就不画它（engine/model/基岩模型.tsx）
+const 藏眼形光环: Readonly<Record<string, BonePose>> = { ysmGlowbone24: { scale: 0 } };
 
-export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 挂载, 姿势, ...其余 }) => {
+export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 挂载, 姿势, 头后环, 环秒, ...其余 }) => {
   const e = 表演.环境(秒);
   const 图 = 娘化亚波伦生物.取模型(其余.变体).texture;
-  const 挂 = useMemo(() => ({ ...描边挂载(图), ...(持杖 ? 杖挂载 : undefined), ...挂载 }), [图, 持杖, 挂载]);
-  return <娘化亚波伦生物 {...其余} 姿势={姿势 ?? (持杖 ? 表演.持杖姿势 : undefined)} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
+  const 转秒 = 环秒 ?? 秒;
+  const 挂 = useMemo(
+    () => ({ ...描边挂载(图), ...(持杖 ? 杖挂载 : undefined), ...(头后环 ? { aaabody: 亚波伦头后环(头后环, 转秒) } : undefined), ...挂载 }),
+    [图, 持杖, 头后环, 转秒, 挂载],
+  );
+  const 摆 = 姿势 ?? (持杖 ? 表演.持杖姿势 : undefined);
+  const 全姿势 = useMemo(() => (头后环 ? { ...摆, ...藏眼形光环 } : 摆), [头后环, 摆]);
+  return <娘化亚波伦生物 {...其余} 姿势={全姿势} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
 };
 
 export type 杖位姿 = {
