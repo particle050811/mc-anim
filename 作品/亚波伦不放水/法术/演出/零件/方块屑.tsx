@@ -6,9 +6,9 @@ import React from 'react';
 import { png, type Png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { rng } from '@engine/model/parts.tsx';
-import { interpPathPos, particleInitVel, particlePath } from '@库/特效/粒子面片.tsx';
+import { interpPathPos, particleInitVel, particlePath, ParticlePhysics } from '@库/特效/粒子面片.tsx';
 import type { 点 } from '../接口.ts';
-import { 面片们, type 面片项 } from './面片.tsx';
+import { 片, 面片们, type 面片项 } from './面片.tsx';
 import 下界岩图 from 'asset:贴图/方块/下界岩';
 
 export const 默认地面方块图: Png = png(下界岩图);
@@ -44,6 +44,8 @@ export const 屑撒 = (中心: 点, 数量: number, 散布: 点, 速度: number,
   }));
 };
 
+const 屑色 = [0.6, 0.6, 0.6] as const;
+
 export const 方块屑: React.FC<{ 出生们: readonly 屑出生[]; 秒: number; 图?: Png; 地面?: number }> = ({ 出生们, 秒, 图 = 默认地面方块图, 地面 }) => {
   const 刻 = 秒 * 20;
   const 项: 面片项[] = [];
@@ -57,8 +59,8 @@ export const 方块屑: React.FC<{ 出生们: readonly 屑出生[]; 秒: number;
     const v = particleInitVel(r, 速[0], 速[2], -速[1]);
     const 半 = 0.05 * (1 + r());
     const [u0, v0] = [(r() * 3) / 4, (r() * 3) / 4];
-    const 路 = particlePath([...生.位] as V3, [v[0], -v[2], v[1]], Math.ceil(年龄) + 1, { gravity: 1, friction: 0.98, ground: 地面 });
-    项.push({ 位: interpPathPos(路, 年龄), 半宽: 半, 色: [0.6, 0.6, 0.6], uv: [u0, v0, u0 + 0.25, v0 + 0.25] });
+    const 路 = particlePath([...生.位] as V3, [v[0], -v[2], v[1]], Math.ceil(年龄) + 1, new ParticlePhysics(1, 0.98, 地面));
+    项.push(片(interpPathPos(路, 年龄), 半, 屑色, [u0, v0, u0 + 0.25, v0 + 0.25]));
   }
   return <面片们 图={图} 项={项} 混合="镂空" />;
 };

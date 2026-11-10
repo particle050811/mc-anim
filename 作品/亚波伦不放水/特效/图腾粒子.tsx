@@ -8,7 +8,7 @@
 // 坐标：场景（Z 朝上，格）。
 import React, { useMemo } from 'react';
 import { rng, type V3 } from '@engine/model/parts.tsx';
-import { interpPathPos, type Particle, particlePath, ParticleQuads } from '@库/特效/粒子面片.tsx';
+import { interpPathPos, type Particle, particlePath, ParticlePhysics, ParticleQuads } from '@库/特效/粒子面片.tsx';
 import { vanillaParticleAtlas } from '@库/特效/原版粒子.tsx';
 
 export const 图腾发射刻 = 30;
@@ -31,7 +31,7 @@ export const 图腾粒子表 = (脚底: V3, 种子: number, 选项: { 宽?: numb
       const 色: [number, number, number] = rand() < 0.25 ? [0.6 + rand() * 0.2, 0.6 + rand() * 0.3, rand() * 0.2] : [0.1 + rand() * 0.2, 0.4 + rand() * 0.3, rand() * 0.2];
       // 游戏 y 朝上 → 场景 z
       const p: V3 = [脚底[0] + (宽 * d0) / 4, 脚底[1] + (宽 * d2) / 4, 脚底[2] + 高 * (0.5 + d1 / 4)];
-      const 路 = particlePath(p, [d0, d2, d1 + 0.2], 寿, { gravity: 1.25, friction: 0.6, ground: 地面 });
+      const 路 = particlePath(p, [d0, d2, d1 + 0.2], 寿, new ParticlePhysics(1.25, 0.6, 地面));
       出.push({ 生刻: 次, 路, 半, 寿, 色 });
     }
   }

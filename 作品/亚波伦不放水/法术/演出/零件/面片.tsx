@@ -7,18 +7,44 @@ import type { Png } from '@engine/model/贴图.ts';
 import type { 点 } from '../接口.ts';
 import { 混合参数, 贴图, type 混合, type 色 } from './材质.ts';
 
-export type 面片项 = {
-  位: 点;
+/**
+ * 一张面片。一律用 片() 造，不写对象字面量（类有私有成员，字面量过不了类型检查）。
+ * 坑：渲染用的 chrome-headless-shell（Remotion 的 157.0.8080.0-remotion-v3）开着 V8 的 DCHECK。以前各处用字面量 {位, 半宽, …} 造，
+ * 它们共用同一串隐藏类，有的 半宽 是整数、有的是小数，隐藏类被作废；字面量的样板对象（boilerplate）跟着迁移时撞上 V8 的检查
+ * （js-objects.cc 3350 行 TrustedCast，迁到的值是 Hole / UninitializedHeapNumber），页面进程当场崩掉，Remotion 等不到帧，
+ * 看着是一直不出帧、各进程 CPU 都是 0。第 4 幕第 720 帧过度生长、撕咬、尖牙盛宴同时在场时必崩，出不出看种子和先后。类构造没有样板对象。
+ */
+export class 面片项 {
+  declare private readonly 品: never;
+  readonly 位: 点;
   /** 半边长（游戏的 quadSize）；半高不给 = 方的 */
-  半宽: number;
-  半高?: number;
-  色?: 色;
-  透明度?: number;
-  /** 绕视线转的弧度（粒子的 roll） */
-  转角?: number;
+  readonly 半宽: number;
+  readonly 色: 色 | undefined;
   /** [U0, V0, U1, V1]：画面左、上、右、下对应的贴图坐标；不给 = 整张 */
-  uv?: readonly [number, number, number, number];
-};
+  readonly uv: readonly [number, number, number, number] | undefined;
+  readonly 透明度: number | undefined;
+  /** 绕视线转的弧度（粒子的 roll） */
+  readonly 转角: number | undefined;
+  readonly 半高: number | undefined;
+  constructor(位: 点, 半宽: number, 色: 色 | undefined, uv: readonly [number, number, number, number] | undefined, 透明度: number | undefined, 转角: number | undefined, 半高: number | undefined) {
+    this.位 = 位;
+    this.半宽 = 半宽;
+    this.色 = 色;
+    this.uv = uv;
+    this.透明度 = 透明度;
+    this.转角 = 转角;
+    this.半高 = 半高;
+  }
+}
+export const 片 = (
+  位: 点,
+  半宽: number,
+  色?: 色,
+  uv?: readonly [number, number, number, number],
+  透明度?: number,
+  转角?: number,
+  半高?: number,
+): 面片项 => new 面片项(位, 半宽, 色, uv, 透明度, 转角, 半高);
 
 const VERT = `
 #include <common>
@@ -113,7 +139,18 @@ export const 面片们: React.FC<{ 图: Png; 项: readonly 面片项[]; 混合?:
 };
 
 /** 单张面片 */
-export const 面片: React.FC<面片项 & { 图: Png; 混合?: 混合; 写深度?: boolean }> = ({ 图, 混合, 写深度, ...项 }) => <面片们 图={图} 项={[项]} 混合={混合} 写深度={写深度} />;
+export const 面片: React.FC<{ 图: Png; 位: 点; 半宽: number; 半高?: number; 色?: 色; 透明度?: number; 转角?: number; uv?: readonly [number, number, number, number]; 混合?: 混合; 写深度?: boolean }> = ({
+  图,
+  混合,
+  写深度,
+  位,
+  半宽,
+  半高,
+  色,
+  透明度,
+  转角,
+  uv,
+}) => <面片们 图={图} 项={[片(位, 半宽, 色, uv, 透明度, 转角, 半高)]} 混合={混合} 写深度={写深度} />;
 
 /** 序列帧：第 序号 帧（向下取整）；循环 = 超出从头再来，否则停在最后一帧 */
 export const 序列帧 = <T,>(帧们: readonly T[], 序号: number, 循环 = false): T => {

@@ -10,7 +10,7 @@ import { rng } from '@engine/model/parts.tsx';
 import { 定义法术演出 } from '../定义.tsx';
 import type { 法术演出属性, 点 } from '../接口.ts';
 import { 混 } from '../零件/弹道.ts';
-import { 面片们, type 面片项 } from '../零件/面片.tsx';
+import { 片, 面片们, type 面片项 } from '../零件/面片.tsx';
 import { 十六进制色, type 色 } from '../零件/材质.ts';
 import { 聚流, 聚流寿命 } from '../零件/游带.tsx';
 import 元, { 水蛭持续刻 } from './水蛭.元.ts';
@@ -38,7 +38,7 @@ const 水蛭: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) =
       const 比 = Math.max(0, 年龄 - 1) / 吸收寿命;
       const 色比 = Math.min(1, 年龄 / 吸收寿命);
       const 色: 色 = [0, 1, 2].map((c) => Math.min(1, 暗红[c]! * 偏[c]!) * (1 - 色比) + 终色[c]! * 色比) as unknown as 色;
-      片们.push({ 位: 混(生, 到, 比), 半宽: 0.26, 色 });
+      片们.push(片(混(生, 到, 比), 0.26, 色));
     }
   }
   return (
