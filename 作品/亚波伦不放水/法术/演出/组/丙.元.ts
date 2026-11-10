@@ -1,5 +1,9 @@
 // 丙组（束、电弧、吐息，名单见 ../分组.ts）的元数据表（纯，段.ts 能引）。每做完一个法术在这里加一行，丙.tsx 同一位置也加一行。
 // 写法：import 某法术 from '../法术/某法术.元.ts'; 再放进数组。
 import type { 法术元 } from '../接口.ts';
+import 震撼 from '../法术/震撼.元.ts';
+import 索命 from '../法术/索命.元.ts';
+import 闪电 from '../法术/闪电.元.ts';
+import 音爆 from '../法术/音爆.元.ts';
 
-export const 丙元: readonly 法术元[] = [];
+export const 丙元: readonly 法术元[] = [震撼, 索命, 闪电, 音爆];
