@@ -1,6 +1,8 @@
-// 晋升之环的形：原版的转速和摆法照游戏的数，候选的方盒都在写明的外径里、各层按秒转。
+// 晋升之环的形：原版的转速和摆法照游戏的数；候选的几何都在写明的外径里、各层按秒转、法线和三角的绕向一致（反了受光会翻）。
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { 候选们, 原版环, 原版转角, 戴法 } from './晋升之环形.ts';
+import { 环体 } from './晋升之环几何.ts';
+import { 候选们, 原版环, 原版转角, 戴法, type 候选名 } from './晋升之环形.ts';
 
 describe('原版贴片', () => {
   it('每秒 18 度，从正面看顺时针', () => {
@@ -15,26 +17,45 @@ describe('原版贴片', () => {
 });
 
 describe('候选', () => {
-  for (const [名, 候选] of Object.entries(候选们)) {
-    it(`${名}：方盒尺寸为正，转到任何时刻都不超出外径`, () => {
+  for (const 名 of Object.keys(候选们) as 候选名[]) {
+    const 体 = 环体(名);
+    it(`${名}：转到任何时刻都不超出外径，也不比外径小一截`, () => {
+      const [m, v] = [new THREE.Matrix4(), new THREE.Vector3()];
       for (const 秒 of [0, 0.7, 3.3]) {
         let 最远 = 0;
-        for (const 层 of 候选.层们) {
-          const p = 层.位姿(秒);
-          const 心 = Math.hypot(p.中心?.[0] ?? 0, p.中心?.[1] ?? 0);
-          for (const b of 层.盒们) {
-            for (const i of [0, 1, 2] as const) expect(b.大[i]).toBeGreaterThan(b.小[i]);
-            // 自转会把盒子的任何一角转到朝外：按离层中心最远的角算
-            const 角远 = Math.hypot(Math.max(Math.abs(b.小[0]), Math.abs(b.大[0])), Math.max(Math.abs(b.小[1]), Math.abs(b.大[1])), p.自转 ? Math.max(Math.abs(b.小[2]), Math.abs(b.大[2])) : 0);
-            最远 = Math.max(最远, 心 + 角远);
+        for (const 层 of 体.层们) {
+          层.位姿(秒, m);
+          for (const { geo } of 层.件们) {
+            const p = geo.getAttribute('position');
+            for (let i = 0; i < p.count; i += 7) 最远 = Math.max(最远, v.fromBufferAttribute(p, i).applyMatrix4(m).length());
           }
         }
-        expect(最远).toBeLessThanOrEqual(候选.外径 + 1e-9);
+        expect(最远).toBeLessThanOrEqual(候选们[名].外径 + 1e-6);
+        expect(最远).toBeGreaterThan(候选们[名].外径 - 0.6);
       }
     });
     it(`${名}：会转`, () => {
-      const 变 = 候选.层们.some((层) => 层.位姿(0).公转 !== 层.位姿(1).公转);
+      const 变 = 体.层们.some((层) => !层.位姿(0, new THREE.Matrix4()).equals(层.位姿(1, new THREE.Matrix4())));
       expect(变).toBe(true);
+    });
+    it(`${名}：受光的网格法线和三角绕向一致`, () => {
+      const [a, b, c, n, f] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+      for (const 层 of 体.层们)
+        for (const { 类, geo } of 层.件们) {
+          if (类 === '光' || 类 === '芒') continue;
+          const [p, nor] = [geo.getAttribute('position'), geo.getAttribute('normal')];
+          let 反 = 0;
+          for (let i = 0; i < p.count; i += 3) {
+            a.fromBufferAttribute(p, i);
+            b.fromBufferAttribute(p, i + 1);
+            c.fromBufferAttribute(p, i + 2);
+            f.crossVectors(b.sub(a), c.sub(a));
+            if (f.lengthSq() < 1e-14) continue;
+            n.fromBufferAttribute(nor, i).add(c.fromBufferAttribute(nor, i + 1)).add(b.fromBufferAttribute(nor, i + 2));
+            if (f.dot(n) < 0) 反++;
+          }
+          expect(反 / (p.count / 3)).toBeLessThan(0.002);
+        }
     });
   }
 });
