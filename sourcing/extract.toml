@@ -35,6 +35,7 @@
 "导出实体模型" = ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出实体模型.py"]
 "网格碎块" = ["uv", "run", "-q", "--with", "numpy==2.4.6", "python", "{脚本}/网格碎块.py"]
 "动作翻译" = ["uv", "run", "-q", "{脚本}/翻译动作.py"]
+"粒子翻译" = ["uv", "run", "-q", "{脚本}/翻译粒子.py"]
 
 # 一组一起跑；另有 --全部
 ["组"]
@@ -2955,6 +2956,26 @@
 ]
 ["取材"."产物"]
 "数据/法术/minecraft/particles/*" = "src/数据/法术/minecraft/particles/*.json"
+
+# 法术粒子的行为（py/anim_py/动作翻译/粒子.py 符号执行 Provider.createParticle、tick、getQuadSize）：寿命、重力、摩擦、大小、碰撞、选帧、颜色。
+# 先登记丁粒子.ts 手抄过的三种（逐项对照见 py/tests/test_粒子翻译.py），画面没换成用它。Provider 是 ClientSideInit 里注册的：
+# frost_nova 注册的是原版 FlameParticle.Provider（只是贴图换成霜），big_fire 是 FireParticle.ReversibleProvider，spell_cloud 是 FireParticle.ColorProvider。
+[["取材"]]
+"名称" = "亚波伦粒子行为"
+"作品" = "亚波伦不放水"
+"需要" = ["goety", "client-1.20.1-srg", "client-1.20.1-mappings", "mcp-1.20.1-srg表"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6、原版 Minecraft 1.20.1 的字节码"
+"许可" = "MIT（Goety）、Mojang EULA（原版父类）"
+"步骤" = [
+  ["粒子翻译", "src/数据/法术/goety/粒子行为/frost_nova.粒子.json", "net.minecraft.client.particle.FlameParticle$Provider", "--jar", "{jar:client-1.20.1-srg}", "--映射", "srg:{jar:mcp-1.20.1-srg表},{jar:client-1.20.1-mappings}", "--来源", "{产物来源}"],
+  ["粒子翻译", "src/数据/法术/goety/粒子行为/big_fire.粒子.json", "com.Polarice3.Goety.client.particles.FireParticle$ReversibleProvider", "--jar", "{jar:goety,client-1.20.1-srg}", "--映射", "srg:{jar:mcp-1.20.1-srg表},{jar:client-1.20.1-mappings}", "--来源", "{产物来源}"],
+  ["粒子翻译", "src/数据/法术/goety/粒子行为/spell_cloud.粒子.json", "com.Polarice3.Goety.client.particles.FireParticle$ColorProvider", "--jar", "{jar:goety,client-1.20.1-srg}", "--映射", "srg:{jar:mcp-1.20.1-srg表},{jar:client-1.20.1-mappings}", "--来源", "{产物来源}"],
+]
+["取材"."产物"]
+"数据/法术/goety/粒子行为/frost_nova" = "src/数据/法术/goety/粒子行为/frost_nova.粒子.json"
+"数据/法术/goety/粒子行为/big_fire" = "src/数据/法术/goety/粒子行为/big_fire.粒子.json"
+"数据/法术/goety/粒子行为/spell_cloud" = "src/数据/法术/goety/粒子行为/spell_cloud.粒子.json"
 
 # 黑暗祭坛（goety:dark_altar，分镜 1-01 史蒂夫放破碎之环的那座）：方块模型两个状态，没点着和点着（lit）。
 [["取材"]]

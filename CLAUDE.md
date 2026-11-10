@@ -28,6 +28,7 @@ anim assets add <id> <文件>  |  anim assets measure [--检查]  |  anim previe
 anim assets vendor | seed | pack [--上传] | pull   随仓库发的字节（0005）、挂 Release 发的字节和地形包（0006）
 anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记]   按 sourcing/extract.toml 从 jar 导出，sha 和资产锁一样才入库
 anim extract --许可 | --补网格配方 | --下载      补许可、反填网格配方、下载本机自取的文件（官方映射到 cache/映射/）
+anim extract --粒子帧 [<命名空间:名>…|--全部] [--检查]   照粒子定义的 textures 顺序生成帧模块 <作品根>/粒子帧/<命名空间>/<名>.ts（import 拿 Png[]）
 anim cache gc [--执行]                     缓存回收，默认只看；--执行 过渲染闸
 anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
 anim wt new <名> [--从 <分支>]          开 worktree 并备好依赖（pnpm install --frozen-lockfile，从全机共用的 store 克隆或硬链接，几秒）
