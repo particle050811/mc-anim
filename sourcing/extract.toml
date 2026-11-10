@@ -2563,3 +2563,54 @@
 "动画/角色/娘化亚波伦/tlm" = "src/动画/角色/娘化亚波伦/tlm.animation.json"
 "动画/角色/娘化亚波伦/fp_arm" = "src/动画/角色/娘化亚波伦/fp_arm.animation.json"
 "动画/角色/娘化亚波伦/控制器" = "src/动画/角色/娘化亚波伦/控制器.animation_controllers.json"
+
+# 粉色婚礼教堂的结构文件：整合包《诡厄：使徒》1.3.1 里层 graemod-1.0.0.jar 的 data/graemod/structures/0721.nbt（87×83×97，sha256 01888225…）。
+# y 0～5 是地下室、19 个实体全在地下室，用户 11-09 定不入镜：裁成 y ≥ 6、整体下移 6 格、实体清空（87×77×97）。原文件不入库。
+# 整合包「保留所有权益」，结构按私有登记（字节只在数据根 私有/）。
+[["取材"]]
+"名称" = "粉色教堂结构"
+"作品" = "亚波伦不放水"
+"需要" = ["诡厄使徒整合包"]
+"公开版" = "不提取"  # 私有，公开版不带；有整合包的人照这条自己裁
+"可见性" = "私有"
+"许可部分" = ["结构"]
+"来源" = "整合包《诡厄：使徒》1.3.1（落烟雨辰；教堂是群友做的）"
+"许可" = "保留所有权益（BBSMC）"
+"步骤" = [
+  ["python", "{脚本}/裁结构.py", "{jar:诡厄使徒整合包}", "client-overrides/mods/graemod-1.0.0.jar", "data/graemod/structures/0721.nbt", "6", "src/结构/粉色教堂-地上.nbt"],
+]
+["取材"."产物"]
+"数据/场景/粉色教堂/结构-地上" = "src/结构/粉色教堂-地上.nbt"
+
+# 粉色婚礼教堂的网格：上面裁好的结构用数据包带进实例「取材客户端-诡厄」的存档「教堂片场」，主世界高空手放（世界 = 裁后模板 + (0,200,0)），mcai mesh 导出。
+# origin 取 (0,194,0)：网格里的游戏坐标 = 原结构 0721.nbt 的坐标（地下室 y 0～5 裁掉了，草地 y 6，教堂地板顶面 y 9）。
+# 实例是从 取材客户端 复制的，多装 jars.toml 末尾那一批（教堂里的模组方块和它们的前置）；「需要」只列方块或贴图进了网格的 jar，前置不列。
+# goety、灾变、lootr 用的是本机已有的新版（整合包带 goety 2.5.52.1、灾变 3.16、lootr 0.7.35.93；用户 11-09 说版本差异没关系）。
+# 整合包「保留所有权益」，头、顶点、图集都按私有登记。步骤要先开着这个存档：MCAI_INSTANCE=取材客户端-诡厄 anim mcai game start world=教堂片场，
+# 跑的时候同样带 MCAI_INSTANCE=取材客户端-诡厄。存档已经放好教堂，别再 place。实例或存档丢了照这样重建，再跑步骤：
+#   1. anim mcai game newinstance name=取材客户端-诡厄；把 jars.toml 里 youkaishomecoming、alexscaves、prefab、bosses_of_mass_destruction、celestial_core、
+#      sophisticatedbackpacks、lionfishapi、farmersdelight、curios、geckolib、cloth_config、cerbons_api、sophisticatedcore、patchouli、goety、cataclysm、lootr
+#      这 17 个 jar 拷进实例的 .minecraft/mods/；instance.cfg 的 MaxMemAlloc 改 6144
+#   2. MCAI_INSTANCE=取材客户端-诡厄 anim mcai game copyworld name=教堂片场 from=<游戏环境>/实例/取材客户端/.minecraft/saves/片场
+#   3. 存档里建数据包 datapacks/church_ref/：pack.mcmeta 的 pack_format 15；「粉色教堂结构」的产物放成 data/mcanim/structures/church.nbt
+#   4. 开游戏，cam 到下面第一步的机位；cmd execute in minecraft:overworld if blocks 0 <y> 0 86 <y+2> 96 0 300 0 all 逐层核 y 200～276 全是空气（一次最多 32768 格）
+#   5. cmd time set 6000；cmd gamerule commandModificationBlockLimit 2000000；cmd execute in minecraft:overworld run fillbiome -16 190 -16 111 290 111 minecraft:plains
+#      （草方块顶、花簇的茎按群系染色，统一成平原 #91BD59；整合包里教堂所在维度的群系没查到，Agent 暂定，要换用 网格换群系色.py）；freeze；
+#      cmd execute in minecraft:overworld run place template mcanim:church 0 200 0
+[["取材"]]
+"名称" = "粉色教堂网格"
+"作品" = "亚波伦不放水"
+"需要" = ["诡厄使徒整合包", "client-1.20.1", "goety", "cataclysm", "lootr", "youkaishomecoming", "alexscaves", "prefab", "bosses_of_mass_destruction", "celestial_core", "sophisticatedbackpacks", "quark", "twilightforest"]
+"要开游戏" = true
+"公开版" = "不提取"  # 私有，公开版不带
+"可见性" = "私有"
+"步骤" = [
+  ["mcai", "cam", "pos=43.5,300,48.5", "pitch=90", "yaw=180", "fov=70", "dim=minecraft:overworld"],
+  ["mcai", "cmd", "time", "set", "6000"],
+  ["mcai", "freeze"],
+  ["mcai", "mesh", "from=0,200,0", "to=86,276,96", "origin=0,194,0", "out=src/模型/场景/粉色教堂.网格", "mark=minecraft:glowstone,minecraft:ochre_froglight,minecraft:lantern,minecraft:end_rod,minecraft:pink_candle,minecraft:soul_fire,alexscaves:radon_lamp_pink,goety:purpur_lamp"],
+]
+["取材"."产物"]
+"网格/粉色教堂/图集" = "src/模型/场景/粉色教堂.网格.png"
+"网格/粉色教堂/头" = "src/模型/场景/粉色教堂.网格.json"
+"网格/粉色教堂/顶点" = "src/模型/场景/粉色教堂.网格.bin"

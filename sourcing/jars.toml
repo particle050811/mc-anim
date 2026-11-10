@@ -434,3 +434,202 @@
 "sha1" = "ca3b05128e164bf09de1caad4638cd754e92b0cb"
 "许可" = { "代码" = "GPL-3.0-only", "资源" = "GPL-3.0-only", "模型" = "GPL-3.0-only", "原文" = "GPL v3", "依据" = "包里 ysm.json metadata.license.type = GPL v3（没写 or later），authors = 4911；包里没有 LICENSE 全文" }
 "来源页" = "https://www.bilibili.com/video/BV1GSoUBYEK7"
+
+# 实例「取材客户端-诡厄」（Forge 1.20.1，从 取材客户端 复制）多装的模组：给《亚波伦不放水》导粉色婚礼教堂（整合包《诡厄：使徒》1.3.1 的结构 graemod:0721）的网格用。
+# 实例里另有本表已登记的 goety 2.5.60.6、cataclysm 3.31、lootr 0.7.35.94（都比整合包带的新，用户 11-09 说版本差异没关系），和取材客户端原有的那批。
+# 整合包本体不是模组 jar，登记在这里是为了 extract 能按 id 找文件、核 sha256。只在夸克网盘发（要登录），「下载」写的是分享页，不是直链；
+# BBSMC 标「保留所有权益 / 无许可证」。教堂结构在里层 client-overrides/mods/graemod-1.0.0.jar 的 data/graemod/structures/0721.nbt
+[["模组"]]
+"id" = "诡厄使徒整合包"
+"名称" = "整合包《诡厄：使徒》GRAE 1.3.1（落烟雨辰）"
+"文件" = "诡厄使徒1.3.1.mrpack"
+"版本" = "1.3.1"
+"到" = "缓存/整合包/诡厄使徒1.3.1.mrpack"
+"下载" = "https://pan.quark.cn/s/34684e6bcc68"
+"sha256" = "97b3f24dace192f4828a087d67d475b86c806e5a3921e6e9c36d8a05b03e46c6"
+"sha1" = "68a98418896a76448552923254d0788bc7f05125"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "结构" = "LicenseRef-All-Rights-Reserved", "原文" = "保留所有权益 / 无许可证", "依据" = "BBSMC 项目接口 api.bbsmc.net/v2/project/grae 的 license.id = LicenseRef-All-Rights-Reserved；包里 graemod 的 mods.toml license = All Rights Reserved；教堂是群友做的（作者评论原话），没有单独许可" }
+"来源页" = "https://bbsmc.net/modpack/grae"
+"用途" = "只取教堂结构文件；不照整合包装实例"
+
+[["模组"]]
+"id" = "youkaishomecoming"
+"名称" = "妖怪们的归家 Youkai's Homecoming"
+"文件" = "youkaishomecoming-2.6.9.jar"
+"版本" = "2.6.9"
+"到" = "缓存/mods/youkaishomecoming-2.6.9.jar"
+"下载" = "https://cdn.modrinth.com/data/uJT3ahxz/versions/6TedUGDi/youkaishomecoming-2.6.9.jar"
+"sha256" = "1395903ba21cef8a0fb833303eaa70cf5a2ae5e8ab23ba0185a5392e02dfffcd"
+"sha1" = "ccac305a9948b8c9256bf33bdf361d073f67fb4c"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "All rights reserved", "依据" = "jar 里 META-INF/mods.toml license = All rights reserved；jar 里没有 LICENSE 文件" }
+"来源页" = "https://modrinth.com/mod/uJT3ahxz"
+"用途" = "教堂的樱花木扶手 cherry_handrail（97 格）；内嵌 l2library slim、l2harvester、TerraBlender"
+
+[["模组"]]
+"id" = "alexscaves"
+"名称" = "Alex 的洞穴 Alex's Caves"
+"文件" = "alexscaves-2.0.2.jar"
+"版本" = "2.0.2"
+"到" = "缓存/mods/alexscaves-2.0.2.jar"
+"下载" = "https://cdn.modrinth.com/data/U6GY0xp0/versions/lC8HHXOF/alexscaves-2.0.2.jar"
+"sha256" = "131e205ce3eed384d701b336d8a0d4a671108ed56b6eff6014f0e407db2997f0"
+"sha1" = "a1e5c7b7c7eadda4c8e954acbcbaf75a7b500d53"
+"许可" = { "代码" = "LicenseRef-LGPL-Unversioned", "资源" = "LicenseRef-LGPL-Unversioned", "原文" = "GNU LESSER GENERAL PUBLIC LICENSE", "依据" = "jar 里 META-INF/mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE，没写版本；jar 里没有 LICENSE 文件" }
+"来源页" = "https://modrinth.com/mod/U6GY0xp0"
+"用途" = "教堂的粉色氡灯、糖霜块、甜浆果冰淇淋；前置 citadel"
+
+[["模组"]]
+"id" = "prefab"
+"名称" = "预制建筑 Prefab"
+"文件" = "prefab-1.10.0.1.jar"
+"版本" = "1.10.0.1"
+"到" = "缓存/mods/prefab-1.10.0.1.jar"
+"下载" = "https://cdn.modrinth.com/data/pTJ1ZloG/versions/ZlrnxNhh/prefab-1.10.0.1.jar"
+"sha256" = "4f63c3d8037814c6c86b57f7d97617951d661c3ee947b2f6e0c4dc11339b4824"
+"sha1" = "a1b04571bda501cb059dbb14d79eaa466b2a5e15"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "All Rights Reserved", "依据" = "jar 里 META-INF/mods.toml license = 'All Rights Reserved'；jar 里没有 LICENSE 文件" }
+"来源页" = "https://modrinth.com/mod/pTJ1ZloG"
+"用途" = "教堂的石英混凝土墙 block_quartz_crete_wall（54 格，贴图用的是原版石英块侧面）"
+
+[["模组"]]
+"id" = "bosses_of_mass_destruction"
+"名称" = "祸乱鬼魅 Bosses of Mass Destruction (Forge)"
+"文件" = "BOMD-Forge-1.20.1-1.1.2.jar"
+"版本" = "1.1.2"
+"到" = "缓存/mods/BOMD-Forge-1.20.1-1.1.2.jar"
+"下载" = "https://edge.forgecdn.net/files/5067/728/BOMD-Forge-1.20.1-1.1.2.jar"
+"sha256" = "9d064557007fbf8a48da92034209b209edd99a16a5017ee104cdc13206390441"
+"sha1" = "2caa8739ed9702c5ad87b6c5436432f8be755217"
+"许可" = { "代码" = "LicenseRef-LGPL-Unversioned", "资源" = "LicenseRef-LGPL-Unversioned", "原文" = "GNU LESSER GENERAL PUBLIC LICENSE", "依据" = "jar 里 META-INF/mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE，没写版本；jar 里没有 LICENSE 文件" }
+"来源页" = "https://www.curseforge.com/minecraft/mc-mods/bosses-of-mass-destruction-forge"
+"用途" = "教堂院子里 12 根 mob_ward 柱子；前置 cerbons_api、geckolib、cloth_config"
+
+[["模组"]]
+"id" = "celestial_core"
+"名称" = "星月核心 Celestial Core"
+"文件" = "celestial_core-1.5.7.jar"
+"版本" = "1.5.7"
+"到" = "缓存/mods/celestial_core-1.5.7.jar"
+"下载" = "https://edge.forgecdn.net/files/7695/718/celestial_core-1.5.7.jar"
+"sha256" = "b288fdb5fba00b9fdb2e4e54edfdfa5f61188495c4fb83a2660de51d7e74c620"
+"sha1" = "dd431a7dccac87eaf4f9e80def6d1e4188a09c2f"
+"许可" = { "代码" = "LGPL-2.1-only", "资源" = "LGPL-2.1-only", "原文" = "LGPL-2.1", "依据" = "jar 里 META-INF/mods.toml license = LGPL-2.1（没写 or later）；jar 里没有 LICENSE 文件" }
+"来源页" = "https://www.curseforge.com/minecraft/mc-mods/celestial-core"
+"用途" = "教堂的樱钢块 sakura_steel_block（6 格）；内嵌 l2library slim"
+
+[["模组"]]
+"id" = "sophisticatedbackpacks"
+"名称" = "精妙背包 Sophisticated Backpacks"
+"文件" = "sophisticatedbackpacks-1.20.1-3.24.8.1386.jar"
+"版本" = "3.24.8.1386"
+"到" = "缓存/mods/sophisticatedbackpacks-1.20.1-3.24.8.1386.jar"
+"下载" = "https://edge.forgecdn.net/files/7045/268/sophisticatedbackpacks-1.20.1-3.24.8.1386.jar"
+"sha256" = "6b888c1eac85d15939723d763e37e6ab9f77c7a715166cc9b82b4fad4b8204e4"
+"sha1" = "3025bb4723867c3bade633949c3bc1e8af1dacd4"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "All Rights Reserved", "依据" = "jar 里 META-INF/mods.toml license = All Rights Reserved；jar 里没有 LICENSE 文件" }
+"来源页" = "https://www.curseforge.com/minecraft/mc-mods/sophisticated-backpacks"
+"用途" = "教堂中殿地上一个铁背包；前置 sophisticatedcore"
+
+[["模组"]]
+"id" = "lionfishapi"
+"名称" = "Lionfish API"
+"文件" = "lionfishapi-3.0.jar"
+"版本" = "3.0"
+"到" = "缓存/mods/lionfishapi-3.0.jar"
+"下载" = "https://cdn.modrinth.com/data/FoVacERa/versions/CPftDBcY/lionfishapi-3.0.jar"
+"sha256" = "d2fdaf7e9bc53fde7da4a86ab17018a3ed6c16fc2d46de5054e5a83e2bef7871"
+"sha1" = "79d0404f87fa066480b18c844c1e0b1c5f5475f9"
+"许可" = { "代码" = "LGPL-3.0-only", "资源" = "LGPL-3.0-only", "原文" = "LGPL", "依据" = "jar 里 META-INF/mods.toml license = LGPL（没写版本）；Modrinth 项目接口 license.id = LGPL-3.0-only" }
+"来源页" = "https://modrinth.com/mod/lionfish-api"
+"用途" = "灾变 3.31 的前置（要 ≥ 3.0；整合包带的是 2.4-Fix，配它的灾变 3.16）"
+
+[["模组"]]
+"id" = "farmersdelight"
+"名称" = "农夫乐事 Farmer's Delight"
+"文件" = "FarmersDelight-1.20.1-1.2.11a.jar"
+"版本" = "1.2.11a"
+"到" = "缓存/mods/FarmersDelight-1.20.1-1.2.11a.jar"
+"下载" = "https://cdn.modrinth.com/data/R2OftAxM/versions/RLMY4UKM/FarmersDelight-1.20.1-1.2.11a.jar"
+"sha256" = "c60d0161a5e38a63dec0f4f468fd757cf8ecfe061634a26b679fa2c5fd8eb1ee"
+"sha1" = "8683e354b3d9d3c536902b884bfff9fea16c7f12"
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "MIT License", "依据" = "jar 里 META-INF/mods.toml license = MIT License；资源是否同许可没核" }
+"来源页" = "https://modrinth.com/mod/R2OftAxM"
+"用途" = "妖怪们的归家的前置；它的方块只在教堂地下室，不入镜"
+
+[["模组"]]
+"id" = "curios"
+"名称" = "Curios API"
+"文件" = "curios-forge-5.14.1+1.20.1.jar"
+"版本" = "5.14.1"
+"到" = "缓存/mods/curios-forge-5.14.1+1.20.1.jar"
+"下载" = "https://cdn.modrinth.com/data/vvuO3ImH/versions/IPQlZkz1/curios-forge-5.14.1%2B1.20.1.jar"
+"sha256" = "1e817919a35b37cf30524aaec73f0ca5130452f23f168f844854df282eb8e51f"
+"sha1" = "452175b95ad3db6ff58bb8968f6bf7a9d1e0f480"
+"许可" = { "代码" = "LGPL-3.0-or-later", "资源" = "LGPL-3.0-or-later", "原文" = "LGPL-3.0-or-later", "依据" = "jar 里 META-INF/mods.toml license = LGPL-3.0-or-later" }
+"来源页" = "https://modrinth.com/mod/vvuO3ImH"
+"用途" = "诡厄巫法的前置"
+
+[["模组"]]
+"id" = "geckolib"
+"名称" = "GeckoLib"
+"文件" = "geckolib-forge-1.20.1-4.8.3.jar"
+"版本" = "4.8.3"
+"到" = "缓存/mods/geckolib-forge-1.20.1-4.8.3.jar"
+"下载" = "https://cdn.modrinth.com/data/8BmcQJ2H/versions/HVdLnQMI/geckolib-forge-1.20.1-4.8.3.jar"
+"sha256" = "477d5d014d6641522cd0deb93c66aefff755760259970c4c255fadb3d88ff702"
+"sha1" = "fead1d1645e16cfa02f39113481ead355230f8fd"
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "MIT", "依据" = "jar 里 META-INF/mods.toml license = MIT" }
+"来源页" = "https://modrinth.com/mod/8BmcQJ2H"
+"用途" = "祸乱鬼魅的前置"
+
+[["模组"]]
+"id" = "cloth_config"
+"名称" = "Cloth Config API"
+"文件" = "cloth-config-11.1.136-forge.jar"
+"版本" = "11.1.136"
+"到" = "缓存/mods/cloth-config-11.1.136-forge.jar"
+"下载" = "https://cdn.modrinth.com/data/9s6osm5g/versions/t8TXrZvZ/cloth-config-11.1.136-forge.jar"
+"sha256" = "1e895e85cf5b1e1905ef3178ec155c8badfe22a1577b92c09143a5aa1f4ce0f2"
+"sha1" = "c65d07748acc57ceb45d53b3964368b84f34d54f"
+"许可" = { "代码" = "LGPL-3.0-only", "资源" = "LGPL-3.0-only", "原文" = "GNU LGPLv3", "依据" = "jar 里 META-INF/mods.toml license = GNU LGPLv3（没写 or later）" }
+"来源页" = "https://modrinth.com/mod/9s6osm5g"
+"用途" = "祸乱鬼魅的前置"
+
+[["模组"]]
+"id" = "cerbons_api"
+"名称" = "Cerbons API"
+"文件" = "CerbonsAPI-Forge-1.20.1-1.1.0.jar"
+"版本" = "1.1.0"
+"到" = "缓存/mods/CerbonsAPI-Forge-1.20.1-1.1.0.jar"
+"下载" = "https://cdn.modrinth.com/data/GkIc6rRo/versions/XWZQbKsr/CerbonsAPI-Forge-1.20.1-1.1.0.jar"
+"sha256" = "54a0a20da56ab1af2d0d7f5cf1133c059a7523485d567521084f822e81505dfb"
+"sha1" = "83cccb66e679d72345a5194e4ca520f647bc97e6"
+"许可" = { "代码" = "LGPL-3.0-only", "资源" = "LGPL-3.0-only", "原文" = "GNU LGPL 3.0", "依据" = "jar 里 META-INF/mods.toml license = GNU LGPL 3.0（没写 or later）" }
+"来源页" = "https://modrinth.com/mod/GkIc6rRo"
+"用途" = "祸乱鬼魅的前置"
+
+[["模组"]]
+"id" = "sophisticatedcore"
+"名称" = "精妙核心 Sophisticated Core"
+"文件" = "sophisticatedcore-1.20.1-1.2.98.1199.jar"
+"版本" = "1.2.98.1199"
+"到" = "缓存/mods/sophisticatedcore-1.20.1-1.2.98.1199.jar"
+"下载" = "https://edge.forgecdn.net/files/7051/13/sophisticatedcore-1.20.1-1.2.98.1199.jar"
+"sha256" = "17d6d0f411498d05e4d13fb5bd9e8387c7ab822122b40db7a532bd788eaf7b00"
+"sha1" = "9f597e131d17c1f9afc4b77dfa0e85957ed68c9b"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "All Rights Reserved", "依据" = "jar 里 META-INF/mods.toml license = All Rights Reserved" }
+"来源页" = "https://www.curseforge.com/minecraft/mc-mods/sophisticated-core"
+"用途" = "精妙背包的前置"
+
+[["模组"]]
+"id" = "patchouli"
+"名称" = "帕秋莉手册 Patchouli"
+"文件" = "Patchouli-1.20.1-84.1-FORGE.jar"
+"版本" = "84.1"
+"到" = "缓存/mods/Patchouli-1.20.1-84.1-FORGE.jar"
+"下载" = "https://cdn.modrinth.com/data/nU0bVIaL/versions/8Qyw08ld/Patchouli-1.20.1-84.1-FORGE.jar"
+"sha256" = "9cc38ebb5e29b350222e337b7a5a2ba238c802230a89434ce00e90ee3026d056"
+"sha1" = "e91d2e2f251375d647d592b670ea6f310c2554eb"
+"许可" = { "代码" = "CC-BY-NC-SA-3.0", "资源" = "CC-BY-NC-SA-3.0", "原文" = "CC BY-NC-SA 3.0", "依据" = "jar 里 META-INF/mods.toml license = CC BY-NC-SA 3.0" }
+"来源页" = "https://modrinth.com/mod/nU0bVIaL"
+"用途" = "教堂讲台上那本诡厄巫法手册（goety:black_book）是帕秋莉的书"
