@@ -1,6 +1,6 @@
 // 晋升之环核对的画面：灰底或暗红底（带雾）、一块地面；环单独并排，或戴在娘化亚波伦、史蒂夫头后。视图表在 视图.ts。
 // 机位：坐标照场景约定（Z 朝上），进 three 换成 Y 朝上，场景内容放在 rotation [−π/2, 0, 0] 的 group 里。
-// 画布不开抗锯齿：史蒂夫没做 UV 内收（见 @库/角色/史蒂夫.tsx）。
+// 画布开抗锯齿：环是顺滑的真几何，不开的话圆的边是锯齿。史蒂夫没做 UV 内收（见 @库/角色/史蒂夫.tsx），开了以后他的轮廓可能冒出贴图相邻格子的颜色，这里只看环，不管。
 import { ThreeCanvas } from '@remotion/three';
 import { useThree } from '@react-three/fiber';
 import React from 'react';
@@ -12,7 +12,7 @@ import { stevePose } from '@库/角色/史蒂夫.tsx';
 import { 戴环史蒂夫 } from '../../角色/戴环史蒂夫.tsx';
 import { 娘化亚波伦, 悬停, 站立 } from '../../角色/娘化亚波伦.tsx';
 import { 晋升之环 } from '../../特效/晋升之环.tsx';
-import { 两人位, 小图画幅, 并排, 画幅, 视图们, type 视图 } from './视图.ts';
+import { 两人位, 单看, 并排, 画幅, 视图们, type 视图 } from './视图.ts';
 
 // 暗红底：背景、雾取封面草稿段的雾色，地面取暗的下界岩色
 const 底色 = { 灰: { 背景: '#5a5e66', 地: '#8a8f98' }, 暗红: { 背景: '#3a0a07', 地: '#3b1513' } } as const;
@@ -47,6 +47,13 @@ const 内容: React.FC<{ v: 视图 }> = ({ v }) => {
       </>
     );
   }
+  if (v.画.类 === '单看') {
+    return (
+      <group position={[0, 0, 单看.高]} rotation={[Math.PI / 2, 0, 0]} scale={单看.每像素格}>
+        <晋升之环 款={v.画.款} 秒={v.环秒} />
+      </group>
+    );
+  }
   const { 谁, 款, 表演, 离地 = 0 } = v.画;
   const 两人 = 谁 === '两人';
   return (
@@ -62,11 +69,10 @@ const 内容: React.FC<{ v: 视图 }> = ({ v }) => {
 const 画面: React.FC = () => {
   const v = 视图们[use视图下标()]!;
   const 色 = 底色[v.底];
-  const 幅 = v.小图 ? 小图画幅 : 画幅;
   return (
-    <AbsoluteFill style={{ background: v.小图 ? '#101010' : 色.背景, alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: 幅.宽, height: 幅.高 }}>
-        <ThreeCanvas width={幅.宽} height={幅.高} gl={{ antialias: false }}>
+    <AbsoluteFill style={{ background: 色.背景 }}>
+      <div style={{ width: 画幅.宽, height: 画幅.高 }}>
+        <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
           <color attach="background" args={[色.背景]} />
           {v.底 === '暗红' && <fog attach="fog" args={[色.背景, 30, 140]} />}
           <机位 v={v} />
