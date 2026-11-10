@@ -107,3 +107,26 @@ export const 炼狱结界透明度 = (活了几刻: number, 停手刻?: number):
   if (停手刻 !== undefined && 停手刻 > 0) return Math.max(0, 1 - Math.min((活了几刻 - 停手刻) / 炼狱结界原版.淡出刻, 1));
   return Math.min(活了几刻 / 炼狱结界原版.淡入刻, 1);
 };
+
+/**
+ * 去掉重复后的 30 条棱、20 个顶点（坐标同 结界线段表(1)）。给不照原版画法的用：加色发光的线要是照 50 段画，画了两遍的 20 条棱会比另外 10 条亮一倍。
+ * 重复的两遍差约 0.0004 个单位，各取先画的那一遍。
+ */
+export const 结界棱表 = (): { 顶点: 向量[]; 棱: [number, number][] } => {
+  const 顶点: 向量[] = [];
+  const 号 = (p: 向量) => {
+    const i = 顶点.findIndex((q) => Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) < 0.01);
+    return i >= 0 ? i : 顶点.push(p) - 1;
+  };
+  const 有 = new Set<string>();
+  const 棱: [number, number][] = [];
+  for (const s of 结界线段表(1)) {
+    const [a, b] = [号(s.起), 号(s.止)];
+    const k = a < b ? `${a}-${b}` : `${b}-${a}`;
+    if (!有.has(k)) {
+      有.add(k);
+      棱.push([a, b]);
+    }
+  }
+  return { 顶点, 棱 };
+};
