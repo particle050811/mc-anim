@@ -6,7 +6,7 @@
 //
 // 接口：<下界魔杖 />      物品空间（单位格，原点 = 模型 (8, 8, 8)，Y 朝上，游戏的北 = −Z），核对图、掉落物用。
 //       <手持下界魔杖 />  挂在基岩模型的手部定位骨上（骨骼坐标：原点 = pivot，单位像素，Y 朝上，正面 −Z）。
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { BlockModel, type BlockModelData } from '@engine/model/方块模型.tsx';
 import { ItemDisplay, type ItemTransform } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
@@ -26,6 +26,9 @@ export const 下界魔杖显示 = {
   fixed: { rotation: [0, -180, -45], translation: [3.5, -4, 1], scale: [0.75, 0.75, 0.75] },
 } satisfies Record<string, ItemTransform>;
 
+/** 杖头那颗 3×3×3 的芯的中心（物品空间，单位格）：模型像素 (8, 27.5, 8.5) */
+export const 杖头芯 = [0, 19.5 / 16, 0.5 / 16] as const;
+
 // BlockModel 的坐标是 游戏的上 = +Z、游戏的北 = +Y，绕 X 转 −90 度换回物品空间
 export const 下界魔杖: FC = () => (
   <group rotation={[-Math.PI / 2, 0, 0]}>
@@ -38,11 +41,12 @@ export const 下界魔杖: FC = () => (
  * 定位骨之后的变换 YSM 2.6.5 在原生库里核对不了，这里照同一作者开源的车万女仆 GeckoLayerMaidHeld 写（是推断）：
  * 平移 (0, −1/16, −0.1) 格 → 绕 X 转 −90 度 → 物品的第三人称显示变换。手臂垂着时杖头朝前，手臂前平举时杖头朝上。
  */
-export const 手持下界魔杖: FC<{ 左手?: boolean }> = ({ 左手 }) => (
+export const 手持下界魔杖: FC<{ 左手?: boolean; /** 跟着杖走的东西，物品空间（杖头的芯在 杖头芯） */ children?: ReactNode }> = ({ 左手, children }) => (
   <group scale={16}>
     <group position={[0, -1 / 16, -0.1]} rotation={[-Math.PI / 2, 0, 0]}>
       <ItemDisplay t={下界魔杖显示[左手 ? 'thirdperson_lefthand' : 'thirdperson_righthand']} left={左手}>
         <下界魔杖 />
+        {children}
       </ItemDisplay>
     </group>
   </group>
