@@ -2793,7 +2793,7 @@
 "音效/诡厄巫法/*" = "src/音效/诡厄巫法/*.ogg"
 
 # 原版贴图里库里还没有的：法术用到的原版粒子贴图、原版实体贴图（唤魔者尖牙、凋灵之首、守卫者激光），分镜要的原版物品和界面（不死图腾、金苹果、盾、经验球、死亡界面按钮）。
-# 库里已有同一份字节的（generic_*、sga_*、sonic_boom_*、splash_* 等）没列在这里，素材清单.md 里直接写库里的 id。
+# 库里已有同一份字节的（generic_*、sga_*、sonic_boom_*、splash_* 等，铁剑是 贴图/物品/杂项物品/铁剑）没列在这里，素材清单.md 里直接写库里的 id。
 [["取材"]]
 "名称" = "亚波伦原版贴图"
 "作品" = "亚波伦不放水"
@@ -2806,7 +2806,7 @@
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity/illager", "assets/minecraft/textures/entity/illager/evoker_fangs.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity/wither", "assets/minecraft/textures/entity/wither/wither.png", "assets/minecraft/textures/entity/wither/wither_invulnerable.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/gui", "assets/minecraft/textures/gui/widgets.png"],
-  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/item", "assets/minecraft/textures/item/diamond_sword.png", "assets/minecraft/textures/item/fire_charge.png", "assets/minecraft/textures/item/golden_apple.png", "assets/minecraft/textures/item/iron_sword.png", "assets/minecraft/textures/item/totem_of_undying.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/item", "assets/minecraft/textures/item/diamond_sword.png", "assets/minecraft/textures/item/fire_charge.png", "assets/minecraft/textures/item/golden_apple.png", "assets/minecraft/textures/item/totem_of_undying.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/particle", "assets/minecraft/textures/particle/bubble.png", "assets/minecraft/textures/particle/drip_fall.png", "assets/minecraft/textures/particle/glint.png", "assets/minecraft/textures/particle/lava.png", "assets/minecraft/textures/particle/sculk_soul_0.png", "assets/minecraft/textures/particle/sculk_soul_1.png", "assets/minecraft/textures/particle/sculk_soul_10.png", "assets/minecraft/textures/particle/sculk_soul_2.png", "assets/minecraft/textures/particle/sculk_soul_3.png", "assets/minecraft/textures/particle/sculk_soul_4.png", "assets/minecraft/textures/particle/sculk_soul_5.png", "assets/minecraft/textures/particle/sculk_soul_6.png", "assets/minecraft/textures/particle/sculk_soul_7.png", "assets/minecraft/textures/particle/sculk_soul_8.png", "assets/minecraft/textures/particle/sculk_soul_9.png", "assets/minecraft/textures/particle/soul_0.png", "assets/minecraft/textures/particle/soul_1.png", "assets/minecraft/textures/particle/soul_10.png", "assets/minecraft/textures/particle/soul_2.png", "assets/minecraft/textures/particle/soul_3.png", "assets/minecraft/textures/particle/soul_4.png", "assets/minecraft/textures/particle/soul_5.png", "assets/minecraft/textures/particle/soul_6.png", "assets/minecraft/textures/particle/soul_7.png", "assets/minecraft/textures/particle/soul_8.png", "assets/minecraft/textures/particle/soul_9.png"],
 ]
 ["取材"."产物"]
