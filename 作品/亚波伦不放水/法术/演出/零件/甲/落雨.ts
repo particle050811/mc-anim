@@ -4,7 +4,7 @@
 import { mulberry32 } from '@engine/core/数学.ts';
 import type { 点 } from '../../接口.ts';
 import { 减, 乘, 单位, 抛物线, type 弹道 } from '../弹道.ts';
-import { 落地刻, 瞄点 } from './共用.ts';
+import { 道触地刻, 瞄点 } from './共用.ts';
 
 export const 云高 = 15;
 export interface 落雨弹 {
@@ -25,6 +25,6 @@ export const 落雨 = (目标: 点, 颗数: number, 种子: number): 落雨弹[]
     const 三角 = () => 散 * (r() - r());
     const 速 = 乘(单位([向[0] + 三角(), 向[1] + 三角(), 向[2] + 三角()]), 1.0 + 1.5 * r());
     const 道 = 抛物线(生位, 速, { 阻力: 0.99, 重力: 0.05 });
-    return { 出刻: k, 生位, 道, 飞刻: 落地刻(道, 目标[2], 200) ?? 200 };
+    return { 出刻: k, 生位, 道, 飞刻: 道触地刻(道, 目标[2], 200) ?? 200 };
   });
 };
