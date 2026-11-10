@@ -2,7 +2,7 @@
 // 这里只是照 Steve 组件的写法把装备挂到各部件上（Steve 不收 attach，所以外面那层 steveRootMatrix + EntityModel 在这里重写了一遍，要和那边保持一样）。
 // 各件的出处见 物品/神灵金盔甲.tsx、物品/断曜流光.tsx、物品/晋升之环.tsx。姿势用 stevePose / steveLookAt，手里有剑时传 holdR: true。
 // 神灵金套和剑默认用旧版外观（用户 11-10 定「用旧版本的，新版本建模很丑」；两套的来历见 物品/装备外观.ts），新版留着，传 外观: '新版' 切回；晋升之环只有一套。
-// 取的默认：剑不加附魔光效（用户原话「附魔」说的是神灵金套；剑要不要附魔等用户定）。
+// 剑也带附魔光效（用户 11-10 定「加一下附魔光泽」），和盔甲一起由 附魔 开关。
 import React from 'react';
 import { EntityModel } from '@engine/model/实体模型.tsx';
 import { HeldItem } from '@engine/model/物品贴图.tsx';
@@ -15,7 +15,7 @@ import { 默认外观, type 装备外观 } from '../物品/装备外观.ts';
 export type 史蒂夫装备 = {
   /** 穿哪几件神灵金甲，不给 = 全套，[] = 不穿 */
   盔甲?: readonly 神灵金件[];
-  /** 盔甲带不带附魔光泽，不给 = 带 */
+  /** 盔甲和剑带不带附魔光泽，不给 = 带 */
   附魔?: boolean;
   /** 右手拿不拿断曜流光，不给 = 拿 */
   剑?: boolean;
@@ -42,7 +42,7 @@ export const 装备史蒂夫: React.FC<{ pose: StevePose; 秒: number; 装备?: 
       <>
         {甲.right_arm}
         <HeldItem t={断曜流光显示[外观].thirdperson_righthand}>
-          <断曜流光 外观={外观} />
+          <断曜流光 外观={外观} 光泽秒={附魔 ? 秒 : undefined} />
         </HeldItem>
       </>
     );

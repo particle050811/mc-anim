@@ -6,10 +6,11 @@
 //   新版 58 个元素，x 5.25～10.5、y −0.25～19.5、z 8～8.25；旧版 31 个元素，x 6～10.25、y 0～18.2、z 0～0.25（薄片贴在模型格子的北面上，靠 display 的平移挪回手里）。
 // 两个模型都是原样导出（配方「亚波伦史蒂夫装备」），display 照各自的 json 抄。
 // 坐标：物品空间（单位格，原点 = 模型 (8, 8, 8)，Y 朝上，游戏的北 = −Z）。
-import type { FC } from 'react';
+import { type FC, useMemo } from 'react';
 import { BlockModel, type BlockModelData } from '@engine/model/方块模型.tsx';
 import { ItemSprite, type ItemTransform } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
+import { GlintItem, 附魔光效补丁 } from '@库/物品/附魔物品.tsx';
 import { 默认外观, type 装备外观 } from './装备外观.ts';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
 import 新版数据 from 'asset:模型/物品/断曜流光';
@@ -51,12 +52,19 @@ export const 断曜流光显示 = {
   },
 } satisfies Record<装备外观, Record<string, ItemTransform>>;
 
-// BlockModel 的坐标是 游戏的上 = +Z、游戏的北 = +Y，绕 X 转 −90 度换回物品空间
-export const 断曜流光: FC<{ 外观?: 装备外观 }> = ({ 外观 = 默认外观 }) => (
-  <group rotation={[-Math.PI / 2, 0, 0]}>
-    <BlockModel data={表[外观].模型} atlas={png(表[外观].图集)} part="剑" />
-  </group>
-);
+// BlockModel 的坐标是 游戏的上 = +Z、游戏的北 = +Y，绕 X 转 −90 度换回物品空间。
+// 光泽秒：附魔光效滚动的时钟，不给 = 没附魔。游戏里附魔的剑走原版 ItemRenderer 的物品光效，和 库/物品/附魔物品.tsx 同一套；两套外观的贴图都是 64 像素宽。
+export const 断曜流光: FC<{ 外观?: 装备外观; 光泽秒?: number }> = ({ 外观 = 默认外观, 光泽秒 }) => {
+  const 附魔 = 光泽秒 !== undefined;
+  const 光效 = useMemo(() => (附魔 ? 附魔光效补丁(64) : undefined), [附魔]);
+  if (光效 && 附魔) 光效.设秒(光泽秒);
+  return (
+    <group rotation={[-Math.PI / 2, 0, 0]}>
+      <BlockModel data={表[外观].模型} atlas={png(表[外观].图集)} part="剑" patch={光效?.patch} />
+    </group>
+  );
+};
 
-/** 物品栏里的样子：平面图标（valettein_gui），不是上面那个 3D 模型 */
-export const 断曜流光图标: FC<{ 外观?: 装备外观 }> = ({ 外观 = 默认外观 }) => <ItemSprite layers={[{ tex: png(表[外观].图标) }]} />;
+/** 物品栏里的样子：平面图标（valettein_gui），不是上面那个 3D 模型。光泽秒：给了就带附魔光效 */
+export const 断曜流光图标: FC<{ 外观?: 装备外观; 光泽秒?: number }> = ({ 外观 = 默认外观, 光泽秒 }) =>
+  光泽秒 === undefined ? <ItemSprite layers={[{ tex: png(表[外观].图标) }]} /> : <GlintItem layers={[{ tex: png(表[外观].图标) }]} sec={光泽秒} />;
