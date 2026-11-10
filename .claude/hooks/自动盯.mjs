@@ -48,10 +48,10 @@ process.on('exit', 收);
 for (const s of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(s, () => process.exit(0));
 
 const 主 = Number(process.env.CLAUDE_PID) || process.ppid;
-const anim = path.join(根, process.platform === 'win32' ? 'anim.cmd' : 'anim');
+const 入口 = path.join(根, 'pipeline', 'cli', 'main.ts');
 while (活(主)) {
   // 短挂：Claude Code 退了最多多留这么久（盯 只认自己的父进程，也就是本脚本）
-  const r = spawnSync(anim, ['调度', '盯', '--最长', '300'], { cwd: 根, encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: 会话 }, shell: process.platform === 'win32' });
+  const r = spawnSync(process.execPath, [入口, '调度', '盯', '--最长', '300'], { cwd: 根, encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: 会话 } });
   const 话 = (r.stdout ?? '').trim();
   if (r.status === 0 && 话) {
     process.stderr.write(`调度告警（钩子自动盯，不用自己挂 Monitor）：${话}\n看全貌：./anim 调度 --一行；处理完接着干，下一次工具调用钩子会自动再挂。\n`);
