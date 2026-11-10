@@ -1,5 +1,6 @@
 // 核对-亚波伦表演 的视图表（纯数据，段.ts 也读）：一秒一个视图，第 i 个在第 60i 帧。每个视图取示范演出（下面的 示范轴）的某一秒。
 // 坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格）。她在原点上空，目标（史蒂夫的位置，画成一根红柱）在东边地上。
+import { clamp01, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { 演出条 } from '../../角色/动作/亚波伦演出.ts';
 
@@ -24,10 +25,8 @@ export const 示范轴: readonly 演出条[] = [
 export const 示范出手 = [6.0, 6.4, 6.8] as const;
 export const 开盘秒 = 4.5;
 export const 收盘秒 = 7.0;
-const 缓 = (t: number) => t * t * (3 - 2 * t);
-const 夹 = (t: number) => Math.min(1, Math.max(0, t));
 /** 脚底高度：1.2～2.4 秒升到悬高，9.0～10.0 秒落回地面 */
-export const 示范位 = (秒: number): V3 => [0, 0, 悬高 * (缓(夹((秒 - 1.2) / 1.2)) - 缓(夹((秒 - 9.0) / 1.0)))];
+export const 示范位 = (秒: number): V3 => [0, 0, 悬高 * (smoothstep01(clamp01((秒 - 1.2) / 1.2)) - smoothstep01(clamp01((秒 - 9.0) / 1.0)))];
 
 export type 视图 = {
   名: string;

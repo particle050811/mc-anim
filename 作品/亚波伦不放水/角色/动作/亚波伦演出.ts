@@ -2,6 +2,7 @@
 // 姿势都是本片自己摆的（包里没有施法、举杖的动作，见 ../说明.md），没经用户看过；身子的底子是包里的 idle 和 fly（按「飞」的权重混）。
 // 用法：模块里建一次 定演出({...})，画面里 演.在(秒) 拿到 <娘化亚波伦> 的属性，演.杖(秒) 拿到杖尖位姿（给 界面/杖尖轮盘.tsx 和法术的出手点）。
 // 结果只看时间：姿势按关键帧表插值，指向目标的右臂每帧用 瞄杖 解一次（身子在 fly 里晃，杖尖照样指着目标）。
+import { lerp, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { 动画骨骼表, 定表演, 持杖位姿, 斜举, 瞄杖, type 亚波伦表演, type 杖位姿 } from '../娘化亚波伦.tsx';
@@ -74,8 +75,6 @@ export type 演出此刻 = {
   过渡: { 从: 姿势名; 到: 姿势名; 比: number };
 };
 
-const 缓 = (t: number) => t * t * (3 - 2 * t);
-const 混数 = (a: number, b: number, k: number) => a + (b - a) * k;
 
 /** 抖杖：出手后 0.3 秒里手腕带着杖头往上一挑再落回（最大约 4 度），不改瞄准的右肩。原创，幅度小是因为轮盘钉在杖尖上，杖一甩整个盘跟着甩 */
 export const 抖杖秒 = 0.3;
@@ -98,7 +97,7 @@ export const 轴上 = (轴: readonly 演出条[], 秒: number): 演出此刻['�
   const 到 = 条.到 ?? 条.起 + 0.4;
   const t = 到 <= 条.起 ? 1 : Math.min(1, Math.max(0, (秒 - 条.起) / (到 - 条.起)));
   // 上一条还没摆好就被这一条接走：从上一条的目标姿势出发（不追中间态），段里别把两条排得比过渡还密
-  return { 从: 轴[i - 1]!.做, 到: 条.做, 比: 缓(t) };
+  return { 从: 轴[i - 1]!.做, 到: 条.做, 比: smoothstep01(t) };
 };
 
 export const 定演出 = (设定: 演出设定) => {
@@ -112,7 +111,7 @@ export const 定演出 = (设定: 演出设定) => {
   };
   const 飞权 = (秒: number) => {
     const { 从, 到, 比 } = 轴上(设定.轴, 秒);
-    return 混数(姿势们[从].飞, 姿势们[到].飞, 比);
+    return lerp(姿势们[从].飞, 姿势们[到].飞, 比);
   };
   const h = 1 / 120;
   const 表演 = 定表演({
@@ -142,7 +141,7 @@ export const 定演出 = (设定: 演出设定) => {
     for (const 骨 of new Set([...Object.keys(甲.手), ...Object.keys(乙.手)])) {
       const 底 = 动画[骨]?.rot ?? [0, 0, 0];
       const [a, b] = [甲.手[骨]?.rot ?? 底, 乙.手[骨]?.rot ?? 底];
-      混[骨] = { rot: [0, 1, 2].map((j) => 混数(a[j]!, b[j]!, k)) };
+      混[骨] = { rot: [0, 1, 2].map((j) => lerp(a[j]!, b[j]!, k)) };
     }
     const 解 = (朝: '目标' | '上') => 瞄杖({ pose, 秒, 表演, 姿势: 混, 朝: 朝 === '目标' ? { 点: 目标(秒) } : { 向: [0, 0, 1] } });
     let 姿势 = 混;
@@ -151,7 +150,7 @@ export const 定演出 = (设定: 演出设定) => {
       // 两头瞄的不一样（或只有一头瞄）：各解各的右肩，再按过渡插
       const 肩 = (定: 姿势定义) => (定.杖朝 ? 解(定.杖朝) : 混).RightArm!.rot!;
       const [a, b] = [肩(甲), 肩(乙)];
-      姿势 = { ...混, RightArm: { rot: [0, 1, 2].map((j) => 混数(a[j]!, b[j]!, k)) } };
+      姿势 = { ...混, RightArm: { rot: [0, 1, 2].map((j) => lerp(a[j]!, b[j]!, k)) } };
     }
     const 抖 = 抖杖角(秒, 设定.出手 ?? []);
     if (抖) {
