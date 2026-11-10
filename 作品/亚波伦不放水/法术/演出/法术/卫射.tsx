@@ -13,7 +13,7 @@ import { 定义法术演出 } from '../定义.tsx';
 import type { 法术演出属性, 点 } from '../接口.ts';
 import { 加, 减, 乘, 长, 单位 } from '../零件/弹道.ts';
 import { 束 } from '../零件/束.tsx';
-import { 面片们, type 面片项 } from '../零件/面片.tsx';
+import { 片, 面片们, type 面片项 } from '../零件/面片.tsx';
 import { 四边面们, 轴架 } from '../零件/方管.tsx';
 import type { 色 } from '../零件/材质.ts';
 import 元, { 卫射蓄刻, 卫射落点 } from './卫射.元.ts';
@@ -48,7 +48,7 @@ const 卫射: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) =
   for (let d4 = r(); d4 < 距; ) {
     d4 += 1.8 - d5 + r() * (1.7 - d5);
     // quadSize = 0.1 × (随机 × 0.5 + 0.5) × 2，BubbleParticle 再 × (随机 × 0.6 + 0.2)
-    泡.push({ 位: 加(起点, 乘(向, d4)), 半宽: 0.1 * (r() * 0.5 + 0.5) * 2 * (r() * 0.6 + 0.2) });
+    泡.push(片(加(起点, 乘(向, d4)), 0.1 * (r() * 0.5 + 0.5) * 2 * (r() * 0.6 + 0.2)));
   }
   return (
     <>

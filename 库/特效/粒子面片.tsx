@@ -130,6 +130,22 @@ export const particleTexture = (px: Uint8Array, width: number, height: number, k
   return t;
 };
 
+/**
+ * particlePath 的 opt 用这个造，同一页面里有好几处调用、gravity 有整数有小数时尤其要用。
+ * 坑：渲染用的 chrome-headless-shell 开着 V8 的 DCHECK，字面量 { gravity: 1, … } 和 { gravity: 0.5, … } 共用隐藏类，整数换成小数时隐藏类被作废，
+ * 字面量的样板对象跟着迁移会撞上检查，页面进程直接崩（亚波伦不放水 第 4 幕：方块屑和暴击星同在一帧）。类构造没有样板对象。
+ */
+export class ParticlePhysics {
+  readonly gravity: number;
+  readonly friction: number;
+  readonly ground: number | undefined;
+  constructor(gravity: number, friction: number, ground?: number) {
+    this.gravity = gravity;
+    this.friction = friction;
+    this.ground = ground;
+  }
+}
+
 // 粒子的物理（Particle.tick，1.20.1）：每刻先 yd -= 0.04×重力，再移动，再三个分量都 ×摩擦；
 // `hasPhysics` 时碰到方块：竖直方向被挡住、这一刻几乎没动（< 1e-5）就整个停住，之后不再动；落地那一刻水平速度再 ×0.7。
 // 只处理一个水平地面（z = ground），不处理墙。

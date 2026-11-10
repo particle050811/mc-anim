@@ -6,7 +6,7 @@ import type { Png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
 import type { 点 } from '../接口.ts';
 import { 加, 乘, 单位, 混 } from './弹道.ts';
-import { 面片们, type 面片项 } from './面片.tsx';
+import { 片, 面片们, type 面片项 } from './面片.tsx';
 import type { 混合 } from './材质.ts';
 
 export interface 吐息粒子类 {
@@ -39,7 +39,8 @@ export interface 吐息出生 {
   readonly 种子: number;
 }
 
-const 一颗 = (类: 吐息粒子类, 生: 吐息出生, 刻: number): (面片项 & { 帧: number }) | null => {
+/** 这一颗画在第几帧、它的面片 */
+const 一颗 = (类: 吐息粒子类, 生: 吐息出生, 刻: number): readonly [number, 面片项] | null => {
   const 年龄 = 刻 - 生.刻;
   if (年龄 < 0 || 年龄 >= 类.寿命) return null;
   const r = rng(生.种子);
@@ -57,14 +58,14 @@ const 一颗 = (类: 吐息粒子类, 生: 吐息出生, 刻: number): (面片�
     v = [v[0] + r() * 类.抖横 * 号(), v[1] + r() * 类.抖横 * 号(), v[2] + r() * 类.抖竖];
   }
   // 游戏画的是上一刻到这一刻之间
-  return { 位: 混(上, p, 年龄 - n), 半宽: 生.半径, 帧: Math.min(类.帧.length - 1, Math.max(0, 类.帧号(n))) };
+  return [Math.min(类.帧.length - 1, Math.max(0, 类.帧号(n))), 片(混(上, p, 年龄 - n), 生.半径)];
 };
 
 export const 吐息粒子: React.FC<{ 类: 吐息粒子类; 出生们: readonly 吐息出生[]; 秒: number }> = ({ 类, 出生们, 秒 }) => {
   const 按帧: 面片项[][] = 类.帧.map(() => []);
   for (const 生 of 出生们) {
-    const 片 = 一颗(类, 生, 秒 * 20);
-    if (片) 按帧[片.帧]!.push(片);
+    const 这颗 = 一颗(类, 生, 秒 * 20);
+    if (这颗) 按帧[这颗[0]]!.push(这颗[1]);
   }
   // 同一张图在序列里出现几次的（如 frost 的 1～6 再倒回 1）也各占一批，批数固定
   return (

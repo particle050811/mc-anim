@@ -4,7 +4,7 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { 弹道位置 } from '../弹道.ts';
-import { 面片们 } from '../面片.tsx';
+import { 片, 面片们 } from '../面片.tsx';
 import { VanillaParticles, type ParticleSpawn } from '../粒子.tsx';
 import { 各刻 } from './共用.ts';
 import type { 火球弹 } from './火球.ts';
@@ -24,7 +24,7 @@ export const 火球们: React.FC<{ 弹们: readonly 火球弹[]; 秒: number; /*
     .filter((弹) => 刻 >= 弹.出刻 && 刻 - 弹.出刻 < 弹.飞刻)
     .map((弹) => {
       const p = 弹道位置(弹.道, 刻 - 弹.出刻);
-      return { 位: [p[0], p[1], p[2] + 0.125 * 倍] as const, 半宽: 0.25 * 倍 };
+      return 片([p[0], p[1], p[2] + 0.125 * 倍], 0.25 * 倍);
     });
   return (
     <>

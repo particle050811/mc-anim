@@ -14,7 +14,7 @@ import { rng } from '@engine/model/parts.tsx';
 import { 定义法术演出 } from '../定义.tsx';
 import type { 法术演出属性, 点 } from '../接口.ts';
 import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 面片们, type 面片项 } from '../零件/面片.tsx';
+import { 片, 面片们, type 面片项 } from '../零件/面片.tsx';
 import { 屑撒, 方块屑 } from '../零件/方块屑.tsx';
 import 元, { 大牙命中刻, 大牙悬停刻, 大牙高, 尖桩寿命刻 } from './牙之.元.ts';
 import 牙模型数据 from 'asset:模型/法术/goety/ViciousToothModel';
@@ -96,7 +96,7 @@ const 落尘 = (牙位: 点, 地: number, 刻: number, 种子: number): Map<numb
     const z = Math.max(地, 牙位[2] - 落);
     const 帧 = Math.min(7, Math.floor((年龄 * 8) / 寿命));
     if (!按帧.has(帧)) 按帧.set(帧, []);
-    按帧.get(帧)!.push({ 位: [牙位[0] + Math.cos(角) * 距, 牙位[1] + Math.sin(角) * 距, z], 半宽: 半 * Math.min(1, (年龄 / 寿命) * 32), 转角: z > 地 ? 转0 + Math.PI * 转速 * 2 * 年龄 : 0 });
+    按帧.get(帧)!.push(片([牙位[0] + Math.cos(角) * 距, 牙位[1] + Math.sin(角) * 距, z], 半 * Math.min(1, (年龄 / 寿命) * 32), undefined, undefined, undefined, z > 地 ? 转0 + Math.PI * 转速 * 2 * 年龄 : 0));
   }
   return 按帧;
 };
