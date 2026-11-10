@@ -2,4 +2,36 @@
 // 写法：import 某法术 from '../法术/某法术.tsx'; 再放进数组。
 import type { 法术演出条 } from '../定义.tsx';
 
-export const 乙演出: readonly 法术演出条[] = [];
+import 撕咬 from '../法术/撕咬.tsx';
+import 尖牙盛宴 from '../法术/尖牙盛宴.tsx';
+import 牙之 from '../法术/牙之.tsx';
+import 尖刺 from '../法术/尖刺.tsx';
+import 障碍 from '../法术/障碍.tsx';
+import 撼地 from '../法术/撼地.tsx';
+import 冰川 from '../法术/冰川.tsx';
+import 喷发 from '../法术/喷发.tsx';
+import 缠绕 from '../法术/缠绕.tsx';
+import 过度生长 from '../法术/过度生长.tsx';
+import 散射 from '../法术/散射.tsx';
+import 生物地雷 from '../法术/生物地雷.tsx';
+import 三叉戟风暴 from '../法术/三叉戟风暴.tsx';
+import 水鞭 from '../法术/水鞭.tsx';
+import 震地 from '../法术/震地.tsx';
+
+export const 乙演出: readonly 法术演出条[] = [
+  撕咬,
+  尖牙盛宴,
+  牙之,
+  尖刺,
+  障碍,
+  撼地,
+  冰川,
+  喷发,
+  缠绕,
+  过度生长,
+  散射,
+  生物地雷,
+  三叉戟风暴,
+  水鞭,
+  震地,
+];

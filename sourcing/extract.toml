@@ -2900,6 +2900,7 @@
 "来源" = "原版 Minecraft 1.20.1"
 "许可" = "Mojang EULA"
 "步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/block", "assets/minecraft/textures/block/packed_ice.png", "assets/minecraft/textures/block/snow.png", "assets/minecraft/textures/block/tuff.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity", "assets/minecraft/textures/entity/experience_orb.png", "assets/minecraft/textures/entity/guardian_beam.png", "assets/minecraft/textures/entity/shield_base.png", "assets/minecraft/textures/entity/shield_base_nopattern.png", "assets/minecraft/textures/entity/trident.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity/illager", "assets/minecraft/textures/entity/illager/evoker_fangs.png"],
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity/wither", "assets/minecraft/textures/entity/wither/wither.png", "assets/minecraft/textures/entity/wither/wither_invulnerable.png"],
@@ -2908,6 +2909,7 @@
   ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/particle", "assets/minecraft/textures/particle/bubble.png", "assets/minecraft/textures/particle/drip_fall.png", "assets/minecraft/textures/particle/glint.png", "assets/minecraft/textures/particle/lava.png", "assets/minecraft/textures/particle/sculk_soul_0.png", "assets/minecraft/textures/particle/sculk_soul_1.png", "assets/minecraft/textures/particle/sculk_soul_10.png", "assets/minecraft/textures/particle/sculk_soul_2.png", "assets/minecraft/textures/particle/sculk_soul_3.png", "assets/minecraft/textures/particle/sculk_soul_4.png", "assets/minecraft/textures/particle/sculk_soul_5.png", "assets/minecraft/textures/particle/sculk_soul_6.png", "assets/minecraft/textures/particle/sculk_soul_7.png", "assets/minecraft/textures/particle/sculk_soul_8.png", "assets/minecraft/textures/particle/sculk_soul_9.png", "assets/minecraft/textures/particle/soul_0.png", "assets/minecraft/textures/particle/soul_1.png", "assets/minecraft/textures/particle/soul_10.png", "assets/minecraft/textures/particle/soul_2.png", "assets/minecraft/textures/particle/soul_3.png", "assets/minecraft/textures/particle/soul_4.png", "assets/minecraft/textures/particle/soul_5.png", "assets/minecraft/textures/particle/soul_6.png", "assets/minecraft/textures/particle/soul_7.png", "assets/minecraft/textures/particle/soul_8.png", "assets/minecraft/textures/particle/soul_9.png"],
 ]
 ["取材"."产物"]
+"贴图/法术/minecraft/block/*" = "src/贴图/法术/minecraft/block/*.png"
 "贴图/法术/minecraft/entity/*" = "src/贴图/法术/minecraft/entity/*.png"
 "贴图/法术/minecraft/entity/illager/*" = "src/贴图/法术/minecraft/entity/illager/*.png"
 "贴图/法术/minecraft/entity/wither/*" = "src/贴图/法术/minecraft/entity/wither/*.png"

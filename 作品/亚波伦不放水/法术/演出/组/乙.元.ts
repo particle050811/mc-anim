@@ -2,4 +2,36 @@
 // 写法：import 某法术 from '../法术/某法术.元.ts'; 再放进数组。
 import type { 法术元 } from '../接口.ts';
 
-export const 乙元: readonly 法术元[] = [];
+import 撕咬 from '../法术/撕咬.元.ts';
+import 尖牙盛宴 from '../法术/尖牙盛宴.元.ts';
+import 牙之 from '../法术/牙之.元.ts';
+import 尖刺 from '../法术/尖刺.元.ts';
+import 障碍 from '../法术/障碍.元.ts';
+import 撼地 from '../法术/撼地.元.ts';
+import 冰川 from '../法术/冰川.元.ts';
+import 喷发 from '../法术/喷发.元.ts';
+import 缠绕 from '../法术/缠绕.元.ts';
+import 过度生长 from '../法术/过度生长.元.ts';
+import 散射 from '../法术/散射.元.ts';
+import 生物地雷 from '../法术/生物地雷.元.ts';
+import 三叉戟风暴 from '../法术/三叉戟风暴.元.ts';
+import 水鞭 from '../法术/水鞭.元.ts';
+import 震地 from '../法术/震地.元.ts';
+
+export const 乙元: readonly 法术元[] = [
+  撕咬,
+  尖牙盛宴,
+  牙之,
+  尖刺,
+  障碍,
+  撼地,
+  冰川,
+  喷发,
+  缠绕,
+  过度生长,
+  散射,
+  生物地雷,
+  三叉戟风暴,
+  水鞭,
+  震地,
+];
