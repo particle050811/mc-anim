@@ -1224,3 +1224,19 @@ id = "贴图/角色/娘化亚波伦/default"
 "许可" = "GPL-3.0-only"
 "可见性" = "提取"
 "说明" = "YSM 包 textures/default.png，512×512，下界亚波伦二阶段那套（浮块 bone62、大光环 ysmGlowbone24 只在这张上有像素）"
+
+[["资产"]]
+id = "贴图/物品/下界魔杖"
+"类别" = "贴图"
+"来源" = "提取:下界魔杖@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "下界魔杖模型的图集：textures/item/nether_staff.png（32×32）"
+
+[["资产"]]
+id = "贴图/方块/下界岩"
+"类别" = "贴图"
+"来源" = "提取:亚波伦下界岩@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版方块贴图 textures/block/netherrack.png（16×16），封面草稿的地面用"

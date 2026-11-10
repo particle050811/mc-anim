@@ -2,7 +2,7 @@
 import type { 开合 } from '../../界面/分圈.ts';
 import type { 排盘选项 } from '../../界面/轮盘法术.ts';
 
-type 多圈 = 排盘选项 & { 刻?: number; 选中?: string; 圆心?: string; 底纹?: '原大' | '随外圈' | '无'; 学派分色?: boolean; 开合?: Partial<开合> };
+type 多圈 = 排盘选项 & { 刻?: number; 选中?: string; 圆心?: string | null; 底纹?: '原大' | '随外圈' | '无'; 学派分色?: boolean; 开合?: Partial<开合> };
 
 export type 视图 =
   | { 名: string; 画: '原版'; 格数: number; 文字格?: string; 选中?: number; 刻?: number }
@@ -23,6 +23,8 @@ export const 视图们: readonly 视图[] = [
   { 名: '⑤-3 张开中：第 7 刻，第三圈弹到八成', 画: '多圈', 刻: 7 },
   { 名: '⑥ 立在世界里的示意：史蒂夫顶替亚波伦，轮盘竖在身后', 画: '世界' },
   { 名: '⑦ 另一档排法：照注册顺序、各圈格数均分', 画: '多圈', 顺序: '注册', 分法: '均分' },
-  { 名: '⑧ 选中高亮（火球）、圆心画当前聚晶、背景贴图随外圈放大', 画: '多圈', 选中: 'goety:fireball_focus', 圆心: 'goety:fireball_focus', 底纹: '随外圈' },
+  { 名: '⑧ 选中高亮（火球）、圆心换成火球（原版画当前聚晶的做法）、背景贴图随外圈放大', 画: '多圈', 选中: 'goety:fireball_focus', 圆心: 'goety:fireball_focus', 底纹: '随外圈' },
   { 名: '⑨ 128 个全放 + 学派分色', 画: '多圈', 放: '全部', 学派分色: true },
+  { 名: '⑩ 圆心：本作品默认固定画炼狱聚晶（用户 11-09 定），选中凋灵也不换', 画: '多圈', 选中: 'goety:wither_skull_focus' },
+  { 名: '⑩b 对照：圆心不画（圆心: null）', 画: '多圈', 圆心: null },
 ];

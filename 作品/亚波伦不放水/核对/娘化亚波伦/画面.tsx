@@ -47,7 +47,7 @@ const 画面: React.FC = () => {
             <boxGeometry args={[12, 12, 0.1]} />
             <meshStandardMaterial color="#8a8f98" />
           </mesh>
-          <娘化亚波伦 pose={{ loc: [0, 0, v.离地 ?? 0], yaw: 180 }} 秒={v.秒} 表演={表演们[v.表演]} 变体={v.变体} />
+          <娘化亚波伦 pose={{ loc: [0, 0, v.离地 ?? 0], yaw: 180 }} 秒={v.秒} 表演={表演们[v.表演]} 变体={v.变体} 持杖={v.持杖} />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
