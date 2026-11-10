@@ -1,7 +1,7 @@
 // 持杖的默认摆法「斜举」（用户 11-10 定）：不给姿势时杖在身体右侧、杖头朝斜上前方；显式给姿势的不受影响。
 // 坐标：pose 取原点、yaw 0，她面朝 +Y、右手边是 +X、上是 +Z（单位格）。字节在数据根 store，没有就整组跳过。
 import { describe, expect, it, vi } from 'vitest';
-import { 悬停, 持杖位姿, 斜举, 站立 } from './娘化亚波伦.tsx';
+import { 右手心, 悬停, 持杖位姿, 斜举, 站立 } from './娘化亚波伦.tsx';
 
 const { json, 图, 有字节 } = await vi.hoisted(async () => {
   const fs = await import('node:fs');
@@ -55,9 +55,10 @@ describe.skipIf(!有字节)('持杖的默认摆法（斜举）', () => {
       expect(离竖直(杖.轴)).toBeLessThan(65);
       expect(杖.轴[0]).toBeGreaterThan(0.6);
       expect(杖.轴[1]).toBeGreaterThan(0.1);
-      // fly 里头偏到右边 0.42 格、帽顶到 0.85 格上下
-      expect(杖.尖[0]).toBeGreaterThan(1.3);
-      expect(杖.尾[0]).toBeGreaterThan(0.2);
+      // fly 里头偏到右边 0.42 格、帽顶到 0.85 格上下；握杖改成杖身垂直小臂后手往里收了约 0.19 格，杖尖最里到 1.23
+      expect(杖.尖[0]).toBeGreaterThan(1.15);
+      // 杖尾最里在第 0 秒（身子摆到最右）：0.09，在右胯外侧（核对段「持杖-飞行-正面-0秒」）
+      expect(杖.尾[0]).toBeGreaterThan(0.05);
     }
     expect(持杖位姿({ pose: 原点, 秒: 0.75, 表演: 悬停, 姿势: {} }).尖[0]).toBeLessThan(0.8);
   });
@@ -66,5 +67,25 @@ describe.skipIf(!有字节)('持杖的默认摆法（斜举）', () => {
     const 垂手 = 持杖位姿({ pose: 原点, 秒: 0, 表演: 站立, 姿势: {} });
     expect(垂手.轴[1]).toBeCloseTo(1, 3);
     expect(持杖位姿({ pose: 原点, 秒: 0.5, 表演: 站立, 姿势: 斜举.站 })).toEqual(持杖位姿({ pose: 原点, 秒: 0.5, 表演: 站立 }));
+  });
+
+  it('杖握在手里（用户 11-10）：杖身的中轴穿过手心，站立斜举、飞行斜举、手腕另转的姿势都是；旧握法（不修正）离手心半个像素以上', () => {
+    const 离轴 = (杖: { 尖: readonly number[]; 轴: readonly number[] }, 点: readonly number[]) => {
+      // 杖尖比杖身中轴偏 0.5 个物品像素（杖头居中、杖身不居中），换成格是 0.5 × 0.7 / 16 ≈ 0.022
+      const d = 点.map((v, i) => v - 杖.尖[i]!);
+      const 沿 = d.reduce((和, v, i) => 和 + v * 杖.轴[i]!, 0);
+      return Math.hypot(...d.map((v, i) => v - 沿 * 杖.轴[i]!));
+    };
+    const 一像素 = 0.7 / 16;
+    for (const 设 of [
+      { 表演: 站立, 秒: 0.5 },
+      { 表演: 悬停, 秒: 1.4 },
+      { 表演: 站立, 秒: 0.5, 姿势: { RightArm: { rot: [-20, 0, -60] }, RightHand: { rot: [90, 0, 0] } } },
+      { 表演: 站立, 秒: 0.5, 姿势: { RightArm: { rot: [-60, 0, 30] }, RightHand: { rot: [30, -50, 20] } } },
+    ]) {
+      const 参 = { pose: 原点, ...设 };
+      expect(离轴(持杖位姿(参), 右手心(参))).toBeLessThan(0.6 * 一像素);
+      expect(离轴(持杖位姿({ ...参, 旧握法: true }), 右手心(参))).toBeGreaterThan(0.6 * 一像素);
+    }
   });
 });

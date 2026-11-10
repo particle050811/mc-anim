@@ -201,29 +201,57 @@ const 结界: React.FC<{ 设: NonNullable<方案['结界']> }> = ({ 设 }) => (
   </group>
 );
 
+/**
+ * 斜着看盘的机位（视图.ts 的 斜看盘）：杖的方向 d 在镜头坐标里要等于 sinθ·(cosφ·右 − sinφ·上) + cosθ·前（cosθ = 扁，φ = 斜），镜头不滚转。
+ * 设镜头朝向的方位角 α（从北往东）、仰角 ε，h = d 的水平分量投到镜头朝向上的长度：(h, d.z) 转 −ε 得 (cosθ, −sinθ·sinφ)，解出 h、ε，再由 h 解 α（取杖指向画面右边的那个解）
+ */
+const 斜看机位 = (d: readonly number[], 心: readonly number[], 设: NonNullable<方案['斜看盘']>, lens: number, 宽高比: number): Cam => {
+  const θ = Math.acos(设.扁);
+  const 上分 = -Math.sin(θ) * Math.sin((设.斜 * Math.PI) / 180);
+  const h2 = 设.扁 ** 2 + 上分 ** 2 - d[2]! ** 2;
+  const 水平 = Math.hypot(d[0]!, d[1]!);
+  if (h2 < 0 || Math.sqrt(h2) > 水平) throw new Error('封面草稿：杖这么陡，摆不出要的 扁、斜（镜头不滚转）');
+  const h = Math.sqrt(h2);
+  const ε = Math.atan2(d[2]!, h) - Math.atan2(上分, 设.扁);
+  const α = Math.atan2(d[0]!, d[1]!) - Math.acos(h / 水平);
+  const 前 = [Math.cos(ε) * Math.sin(α), Math.cos(ε) * Math.cos(α), Math.sin(ε)];
+  const 右 = [Math.cos(α), -Math.sin(α), 0];
+  const 上 = [-Math.sin(ε) * Math.sin(α), -Math.sin(ε) * Math.cos(α), Math.cos(ε)];
+  // 圆心那个深度上画面的宽、高（格）：把镜头横着、竖着挪，圆心就落到 盘心 给的位置
+  const 宽 = (2 * 设.距 * 18) / lens;
+  const [移右, 移上] = [-(设.盘心[0] - 0.5) * 宽, (设.盘心[1] - 0.5) * (宽 / 宽高比)];
+  const pos = [0, 1, 2].map((i) => 心[i]! - 前[i]! * 设.距 + 右[i]! * 移右 + 上[i]! * 移上) as [number, number, number];
+  return { pos, tgt: [pos[0] + 前[0]!, pos[1] + 前[1]!, pos[2] + 前[2]!], lens };
+};
+
 const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
+  const 宽高比 = useThree((s) => s.size.width / s.size.height);
   const 参: 多圈轮盘参数 = { 放: v.轮盘.放, 刻: 40, 压暗: v.轮盘.压暗 };
   const 她 = v.亚波伦;
   const 她属性 = { pose: { loc: [...她.位], yaw: 她.yaw ?? 180 }, 秒: 1.4, 表演: 她.表演 === '悬停' ? 悬停 : 站立, 姿势: 她.姿势 };
   // 杖尖在哪、朝哪：和画她用同一份属性算
-  const 杖 = 持杖位姿(她属性);
+  // 杖握在手里是六稿起的挂法；五稿及以前的旧案照旧握法画，画面不动
+  const 新握 = !!v.斜看盘;
+  const 杖 = 持杖位姿({ ...她属性, 旧握法: !新握 });
   // 盘心居中的方案：镜头朝向不变（手臂的角度是照这个朝向搜的），整个平移到光轴穿过圆心（杖尖再沿杖身伸出 离尖）
   const 机位 = useMemo((): Cam => {
-    if (!v.盘心居中) return v.机位;
     const 心 = [0, 1, 2].map((i) => 杖.尖[i]! + 杖.轴[i]! * (v.轮盘.摆法.离尖 ?? 0));
+    if (v.斜看盘) return 斜看机位(杖.轴, 心, v.斜看盘, v.机位.lens, 宽高比);
+    if (!v.盘心居中) return v.机位;
     const 向 = 视线(v.机位);
     const 深 = [0, 1, 2].reduce((和, i) => 和 + (心[i]! - v.机位.pos[i]!) * 向[i]!, 0);
     const 移 = [0, 1, 2].map((i) => 心[i]! - v.机位.pos[i]! - 向[i]! * 深);
     const 挪 = (p: readonly number[]) => [p[0]! + 移[0]!, p[1]! + 移[1]!, p[2]! + 移[2]!] as [number, number, number];
     return { ...v.机位, pos: 挪(v.机位.pos), tgt: 挪(v.机位.tgt) };
-  }, [v, 杖]);
+  }, [v, 杖, 宽高比]);
   // 盘的圆心：默认就是杖尖；要退后的顺着镜头到杖尖的视线挪，画面上位置不变
   const 眼 = 机位.pos;
   const 眼到尖 = Math.hypot(杖.尖[0] - 眼[0], 杖.尖[1] - 眼[1], 杖.尖[2] - 眼[2]);
   const 退 = (v.轮盘.退后 ?? 0) / 眼到尖;
   const 盘杖 = { 尖: [0, 1, 2].map((i) => 杖.尖[i]! + (杖.尖[i]! - 眼[i]!) * 退) as [number, number, number], 轴: 杖.轴 };
   const 头 = [她.位[0], 她.位[1], 她.位[2] + 1.4] as const;
-  const 杖挂 = useMemo(() => ({ RightHandLocator: <手持下界魔杖>{v.杖头光 && <光斑 位={杖头芯} 大={1.1} 色="#ff8a30" 强={0.9} />}</手持下界魔杖> }), [v.杖头光]);
+  const 杖光 = useMemo(() => v.杖头光 && <光斑 位={杖头芯} 大={1.1} 色="#ff8a30" 强={0.9} />, [v.杖头光]);
+  const 杖挂 = useMemo(() => ({ RightHandLocator: <手持下界魔杖>{杖光}</手持下界魔杖> }), [杖光]);
   const { 朝向, ...摆法 } = v.轮盘.摆法;
   return (
     <>
@@ -236,7 +264,7 @@ const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
         {/* 轮廓光：从背后下方往上打。要弱、淡：强的饱和橙光会把黑衣服照成棕色 */}
         <directionalLight position={[2, 7, -4]} color="#ff8a5c" intensity={0.35 * Math.PI} />
         <地形 />
-        <娘化亚波伦 {...她属性} 挂载={杖挂} />
+        {新握 ? <娘化亚波伦 {...她属性} 持杖 杖上={杖光} /> : <娘化亚波伦 {...她属性} 挂载={杖挂} />}
         {v.史蒂夫 && <Steve pose={steveLookAt(stevePose(v.史蒂夫.位, 0), [...(v.史蒂夫.看 ?? 头)])} mcLight={1} />}
         {v.结界 && <结界 设={v.结界} />}
         <杖尖轮盘 杖={盘杖} 朝向={朝向 === '正对镜头' ? { 正对: 机位 } : 朝向} {...摆法} 参={参} 每像素格={v.轮盘.每像素格} renderOrder={v.轮盘.盘在前 ? 5 : -1} />

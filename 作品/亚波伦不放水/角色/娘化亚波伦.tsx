@@ -28,7 +28,7 @@ import type { BedrockBone, BedrockCube, BedrockModel, BonePose } from '@engine/m
 import type { 实体光照 } from '@engine/model/实体材质.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 合并环境, 定义生物 } from '@库/生物/定义生物.ts';
-import { 手持下界魔杖, 手持杖矩阵, 杖尖, 杖尾, 杖头芯 } from '../物品/下界魔杖.tsx';
+import { 手持下界魔杖, 手持杖矩阵, 杖尖, 杖尾, 杖头芯, 杖握点 } from '../物品/下界魔杖.tsx';
 import 表情动画 from 'asset:动画/角色/娘化亚波伦/extra';
 import 主动画 from 'asset:动画/角色/娘化亚波伦/main';
 import 模型 from 'asset:模型/角色/娘化亚波伦';
@@ -183,11 +183,13 @@ export type 亚波伦表演 = {
  * 站：idle 这类身子直立的动作。上臂往外抬 40 度、肘微弯、手腕外旋 70 度，杖和竖直约成 31 度，杖头在帽檐外侧、齐帽顶高。
  * 飞：fly 里上身往她右边倒约 45 度、还拧着（UpBody、UpperBody），头和帽子跟着偏到右肩上方，照「站」的朝向摆杖头会贴着帽子，
  *     所以杖也跟着身子往外倒：和竖直约成 56 度（比站时斜），杖头在帽子外侧。原动作里右手合在胸前，这里整个盖掉。
+ * 手腕只绕小臂的长轴转（RightHand 的 rot 只有 y）：杖身和小臂垂直，从手的两个侧面穿出去，是握拳攥着的样子（用户 11-10：杖要握在手里）。
+ * 手腕带 x、z 转角的话杖身斜着顺向小臂，会从袖口里穿过去、手被袖口挡住。飞 的三组角是固定杖的方向按这个条件搜出来的，手比原来往里收了约 0.19 格。
  * 角度是对着核对段的静帧取的（各比过几组），没经用户看过。
  */
 export const 斜举 = {
   站: { RightArm: { rot: [10, 0, 40] }, RightForeArm: { rot: [-30, 0, 0] }, RightHand: { rot: [0, 70, 0] } },
-  飞: { RightArm: { rot: [43, -2, 101] }, RightForeArm: { rot: [-56, 0, 0] }, RightHand: { rot: [40, 90, 0] } },
+  飞: { RightArm: { rot: [40.5, -40, 74] }, RightForeArm: { rot: [-64, 0, 0] }, RightHand: { rot: [0, 122, 0] } },
 } satisfies Record<string, Record<string, BonePose>>;
 
 /**
@@ -230,17 +232,58 @@ export type 娘化亚波伦属性 = {
   受伤?: number;
   光照?: 实体光照;
   透明度?: number;
-  /** 右手拿下界魔杖（用户 11-09 定亚波伦手持）：挂在定位骨 RightHandLocator 上，右臂默认斜举（见 斜举）；默认不拿 */
+  /** 右手拿下界魔杖（用户 11-09 定亚波伦手持）：挂在定位骨 RightHandLocator 上、握点对到手心（见 握杖修正），右臂默认斜举（见 斜举）；默认不拿 */
   持杖?: boolean;
+  /** 持杖 时跟着杖走的东西，物品空间（杖头的芯在 物品/下界魔杖.tsx 的 杖头芯） */
+  杖上?: ReactNode;
   挂载?: Record<string, ReactNode>;
 };
 
-const 杖挂载 = { RightHandLocator: <手持下界魔杖 /> };
+/** 这一刻合好的骨骼姿势表：动画各层，上面按通道盖手摆的姿势（同 基岩实体.tsx） */
+const 姿势表 = (秒: number, 表演: 亚波伦表演, 姿势: Readonly<Record<string, BonePose>> | undefined) => {
+  const 定 = 娘化亚波伦生物.定义;
+  const 动画骨骼 = 动画姿势(
+    { 文件: 娘化亚波伦生物.动画文件!, 层们: 表演.层们(秒), 口径: 定.动画!.口径, 环境: 合并环境(定.动画!.环境, { ...表演.环境(秒), 函数: { 'ysm.second_order': 表演.二阶在(秒) } }) },
+    秒,
+  );
+  return 混合层([{ 骨骼: 动画骨骼 }, { 骨骼: 姿势 ?? 表演.持杖姿势 }], 'TLM');
+};
 
-export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 挂载, 姿势, ...其余 }) => {
+// 手心：小臂方盒（RightForeArm，模型像素 x −5.29～−2.79、y 18.41～24.91、z −0.73～1.78）露在袖口（y ≈ 20.1）外面那一截的中心，
+// 写成 RightForeArm 的骨骼坐标（原点 = pivot (−4.125, 25.075, 0.025)，X 取负）。这个模型的手没有单独的方盒，RightHand 只是个转轴
+const 手心 = new THREE.Vector3(-0.08, -5.78, 0.5);
+/**
+ * 握杖修正（用户 11-10：「这法杖都没有拿到手上」）：定位骨 RightHandLocator 在手腕（袖口里面），照 手持下界魔杖 原样挂的话杖身贴着袖口过、不穿过露出来的手。
+ * 这里在定位骨坐标里再平移一下，把杖的握点正好放到手心上：杖身从手那一截方盒的正中穿过去，手腕怎么转都在。返回定位骨坐标里的平移矩阵
+ */
+const 握杖修正 = (表: Readonly<Record<string, BonePose>>): THREE.Matrix4 => {
+  const 缩 = 娘化亚波伦生物.定义.缩放;
+  const 腕到臂 = 骨骼矩阵(原几何, 'RightForeArm', 表, 缩).invert().multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 缩));
+  const 要 = 手心.clone().applyMatrix4(腕到臂.invert());
+  const 现 = new THREE.Vector3(...杖握点).applyMatrix4(手持杖矩阵());
+  return new THREE.Matrix4().makeTranslation(要.x - 现.x, 要.y - 现.y, 要.z - 现.z);
+};
+
+export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 杖上, 挂载, 姿势, ...其余 }) => {
   const e = 表演.环境(秒);
   const 图 = 娘化亚波伦生物.取模型(其余.变体).texture;
-  const 挂 = useMemo(() => ({ ...描边挂载(图), ...(持杖 ? 杖挂载 : undefined), ...挂载 }), [图, 持杖, 挂载]);
+  const 修正 = 持杖 ? 握杖修正(姿势表(秒, 表演, 姿势)) : undefined;
+  const 修正键 = 修正?.elements.join(',');
+  const 挂 = useMemo(
+    () => ({
+      ...描边挂载(图),
+      ...(修正 && {
+        RightHandLocator: (
+          <group matrix={修正} matrixAutoUpdate={false}>
+            <手持下界魔杖>{杖上}</手持下界魔杖>
+          </group>
+        ),
+      }),
+      ...挂载,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [图, 修正键, 杖上, 挂载],
+  );
   return <娘化亚波伦生物 {...其余} 姿势={姿势 ?? (持杖 ? 表演.持杖姿势 : undefined)} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
 };
 
@@ -257,22 +300,30 @@ export type 杖位姿 = {
 
 /**
  * 她右手里的下界魔杖这一刻在场景里的位置和朝向：不渲染，按同一张姿势表（动画 + 手摆的姿势）做骨骼正解算出来。
- * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势）
+ * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势）。
+ * 旧握法：不做握杖修正，杖照定位骨原样挂（<手持下界魔杖> 直接挂 RightHandLocator）；只给封面草稿五稿及以前的旧案留着，不改它们的画面
  */
-export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'>): 杖位姿 => {
-  const 定 = 娘化亚波伦生物.定义;
-  const 动画骨骼 = 动画姿势(
-    { 文件: 娘化亚波伦生物.动画文件!, 层们: 表演.层们(秒), 口径: 定.动画!.口径, 环境: 合并环境(定.动画!.环境, { ...表演.环境(秒), 函数: { 'ysm.second_order': 表演.二阶在(秒) } }) },
-    秒,
-  );
-  // 姿势按通道盖在动画上，同 基岩实体.tsx
-  const 表 = 混合层([{ 骨骼: 动画骨骼 }, { 骨骼: 姿势 ?? 表演.持杖姿势 }], 'TLM');
+export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'> & { 旧握法?: boolean }): 杖位姿 => {
+  const 表 = 姿势表(秒, 表演, 姿势);
   const m = new THREE.Matrix4()
     .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
     .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
-    .multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 定.缩放))
-    .multiply(手持杖矩阵());
+    .multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 娘化亚波伦生物.定义.缩放));
+  if (!旧握法) m.multiply(握杖修正(表));
+  m.multiply(手持杖矩阵());
   const 点 = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
   const [尖, 尾] = [点(杖尖), 点(杖尾)];
   return { 尖: 尖.toArray(), 芯: 点(杖头芯).toArray(), 尾: 尾.toArray(), 轴: 尖.clone().sub(尾).normalize().toArray() };
 };
+
+/** 她右手手心（握杖修正 对的那一点）在场景里的位置：核对握杖、给手部特写定机位用 */
+export const 右手心 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'>): V3 =>
+  手心
+    .clone()
+    .applyMatrix4(
+      new THREE.Matrix4()
+        .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
+        .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
+        .multiply(骨骼矩阵(原几何, 'RightForeArm', 姿势表(秒, 表演, 姿势), 娘化亚波伦生物.定义.缩放)),
+    )
+    .toArray();
