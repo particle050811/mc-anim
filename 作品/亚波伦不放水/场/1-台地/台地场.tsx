@@ -5,7 +5,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
 import type { Cam } from '@engine/core/机位.ts';
-import { 摆相机 } from '@engine/core/three换算.ts';
+import { 场景到three, 摆相机 } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { 下界提亮, 真下界 } from '../../地点/真下界.tsx';
@@ -43,4 +43,14 @@ export const 取镜头 = (表: readonly 镜头[], 秒: number, 段长: number): 
   const 止 = 表[i + 1]?.起 ?? 段长;
   const 镜内秒 = 秒 - 镜.起;
   return { 镜, 机位: 镜.机位(Math.min(1, Math.max(0, 镜内秒 / (止 - 镜.起))), 镜内秒), 镜内秒 };
+};
+
+const 投影相机 = new THREE.PerspectiveCamera();
+/** 场景里的一点落在画面上哪（像素，页面坐标）；前 = 在镜头前面 */
+export const 投到画面 = (机位: Cam, 点: readonly number[]): { x: number; y: number; 前: boolean } => {
+  摆相机(投影相机, 机位, 画幅.宽 / 画幅.高, { 近: 0.05, 远: 1400 });
+  投影相机.updateMatrixWorld();
+  投影相机.matrixWorldInverse.copy(投影相机.matrixWorld).invert();
+  const v = 场景到three(点).project(投影相机);
+  return { x: ((v.x + 1) / 2) * 画幅.宽, y: ((1 - v.y) / 2) * 画幅.高, 前: v.z < 1 };
 };
