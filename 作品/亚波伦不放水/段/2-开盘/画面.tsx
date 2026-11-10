@@ -1,4 +1,4 @@
-// 第 2 幕 起飞、张开轮盘的画面：走位和她的演出在 编排.ts，这里摆镜头（分镜第二稿 2-01～2-05，机位是 Agent 摆的）和屏幕字。
+// 第 2 幕 起飞、张开轮盘的画面：走位和她的演出在 编排.ts，这里摆镜头（分镜第二稿 2-01～2-05，机位是 Agent 摆的）。屏幕字（「假如祂用呢？」和片名）用户 11-10 说没要求加，去掉了。
 // 没做：猩红雨、史蒂夫走路的腿（位置是平移的）、声音。仪式结构留在台地上（火还烧着，祭品没了）。
 import React from 'react';
 import { clamp01, lerp as 混 } from '@engine/core/数学.ts';
@@ -19,8 +19,6 @@ import 声音 from './声音地址.生成.ts';
 
 const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 const 平滑 = (u: number) => u * u * (3 - 2 * u);
-const 字: React.CSSProperties = { position: 'absolute', left: 0, right: 0, textAlign: 'center', color: '#fff', fontFamily: '"PingFang SC", sans-serif', fontWeight: 800, textShadow: '0 0 12px #c00, 0 3px 0 #300' };
-const 显 = (秒: number, 起: number, 止: number) => clamp01((秒 - 起) / 0.3) * clamp01((止 - 秒) / 0.3);
 
 export default 定义画面(段, 声音, () => {
   const { 秒, 事件, 段: 本段 } = use段(段);
@@ -67,16 +65,12 @@ export default 定义画面(段, 声音, () => {
   const 落地后 = 秒 >= 1.7;
   // 朝向：冲的时候朝北，之后身子跟着头转（看 偏出 50 度身子自己跟）
   const 朝她 = (Math.atan2(-(她位[0] - 史位[0]), 她位[1] - 史位[1]) * 180) / Math.PI;
-  const 问 = 显(秒, 2.5, 4.8);
-  const 片名 = 显(秒, 7.6, 9.9);
   return (
     <台地画布
       机位={机位}
       界面={
         <>
           <亚波伦血条 宽={画幅.宽} s={2} 血比={1} />
-          {问 > 0 && <div style={{ ...字, bottom: 画幅.高 * 0.16, fontSize: 44, opacity: 问 }}>假如祂用呢？</div>}
-          {片名 > 0 && <div style={{ ...字, bottom: 画幅.高 * 0.1, fontSize: 60, opacity: 片名 }}>假如下界亚波伦不放水</div>}
         </>
       }
     >
