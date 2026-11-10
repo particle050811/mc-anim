@@ -7,5 +7,9 @@ import 霜冻新星 from '../法术/霜冻新星.tsx';
 import 战栗 from '../法术/战栗.tsx';
 import 震颤猛击 from '../法术/震颤猛击.tsx';
 import 炎爆 from '../法术/炎爆.tsx';
+import 旋风 from '../法术/旋风.tsx';
+import 上升气流 from '../法术/上升气流.tsx';
+import 冲刺 from '../法术/冲刺.tsx';
+import 炼狱 from '../法术/炼狱.tsx';
 
-export const 丁演出: readonly 法术演出条[] = [冲击波, 弱化, 霜冻新星, 战栗, 震颤猛击, 炎爆];
+export const 丁演出: readonly 法术演出条[] = [冲击波, 弱化, 霜冻新星, 战栗, 震颤猛击, 炎爆, 旋风, 上升气流, 冲刺, 炼狱];

@@ -7,5 +7,9 @@ import 霜冻新星元 from '../法术/霜冻新星.元.ts';
 import 战栗元 from '../法术/战栗.元.ts';
 import 震颤猛击元 from '../法术/震颤猛击.元.ts';
 import 炎爆元 from '../法术/炎爆.元.ts';
+import 旋风元 from '../法术/旋风.元.ts';
+import 上升气流元 from '../法术/上升气流.元.ts';
+import 冲刺元 from '../法术/冲刺.元.ts';
+import 炼狱元 from '../法术/炼狱.元.ts';
 
-export const 丁元: readonly 法术元[] = [冲击波元, 弱化元, 霜冻新星元, 战栗元, 震颤猛击元, 炎爆元];
+export const 丁元: readonly 法术元[] = [冲击波元, 弱化元, 霜冻新星元, 战栗元, 震颤猛击元, 炎爆元, 旋风元, 上升气流元, 冲刺元, 炼狱元];
