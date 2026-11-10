@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { esbuild资产插件 } from './esbuild插件.ts';
 import { 登记入库 } from './命令.ts';
 import { 读两侧资产表, 读资产表 } from './资产表.ts';
-import { id合法, 入库, 写资产锁, 解析资产, 读作品资产锁, 读资产锁, 字节路径 } from './资产锁.ts';
+import { id合法, 入库, 写资产锁, 解析资产, 读作品资产锁, 读资产锁, 字节路径, type 锁条目 } from './资产锁.ts';
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'anim-资产-'));
 
@@ -158,6 +158,20 @@ describe('作品资产表', () => {
     const 撞 = Object.keys(共用)[0]!;
     写资产锁({ [撞]: 共用[撞]! }, path.join(作品根, '资产锁'));
     expect(() => 读作品资产锁(作品根)).toThrow(/在共用锁和 .* 里都有/);
+  });
+
+  it('换用.toml：这部作品里共用 id 换成作品那件的字节；换用 = false 是没换的；右边没登记、写法不对报错', () => {
+    const 作品根 = tmp();
+    const 共用 = 读资产锁();
+    const 原 = Object.keys(共用).find((id) => 共用[id]!.后缀 === '.png')!;
+    const 换: 锁条目 = { sha256: 'd'.repeat(64), 大小: 2, 库: '私有', 后缀: '.png' };
+    fs.writeFileSync(path.join(作品根, '换用.toml'), `# 说明\n"${原}" = "贴图/附加/甲"  # 行尾注释\n`);
+    expect(() => 读作品资产锁(作品根)).toThrow(/贴图\/附加\/甲 不在资产锁里/);
+    写资产锁({ '贴图/附加/甲': 换 }, path.join(作品根, '资产锁'));
+    expect(读作品资产锁(作品根)[原]).toEqual(换);
+    expect(读作品资产锁(作品根, undefined, false)[原]).toEqual(共用[原]);
+    fs.writeFileSync(path.join(作品根, '换用.toml'), `${原} = 贴图/附加/甲\n`);
+    expect(() => 读作品资产锁(作品根)).toThrow(/认不出/);
   });
 });
 

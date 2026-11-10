@@ -141,7 +141,7 @@ export const 取材命令: Record<string, 命令> = {
           const 行 = `${e.名称}：${r.一致.length + r.像素一致.length} 件和资产锁一样（新入库 ${r.入库.length}${r.像素一致.length ? `，其中 ${r.像素一致.length} 件 PNG 字节不同、像素一样，锁里留原来那份` : ''}）`;
           console.log(`${行}${r.不一致.length ? `，${r.不一致.length} 件不一样` : ''}${r.缺文件.length ? `，缺 ${r.缺文件.length} 件` : ''}`);
           if (登记 && r.新产物.length) {
-            const g = 登记产物(q, e, dir, r.新产物, { 作品根: 作品根(), 已登记: 读两侧资产表(作品根()).条目, 锁: 读作品资产锁(作品根()), jar路径: (i) => jar路径(q, i), 产物来源 });
+            const g = 登记产物(q, e, dir, r.新产物, { 作品根: 作品根(), 已登记: 读两侧资产表(作品根()).条目, 锁: 读作品资产锁(作品根(), undefined, false), jar路径: (i) => jar路径(q, i), 产物来源 });
             console.log(`  登记 ${g.新登记.length} 件进 ${g.表文件.map(相对代码根).join('、') || '（都已登记过）'}，写锁 ${g.入锁.length} 件`);
             for (const x of g.仍待定) console.log(`  许可待定：${x.id}（${x.缺.join('；')}）`);
             记录.产物.push(...g.表文件, ...g.入锁.map((id) => `入库 ${id}`));
