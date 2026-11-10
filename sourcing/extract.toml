@@ -3029,6 +3029,14 @@
   ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/晋升之环.png", "图标=assets/goety_revelation/textures/item/curio/halo.png"],
   ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/断曜流光.图标.png", "图标=assets/goety_revelation/textures/item/combat/valettein_gui.png"],
   ["导出模型", "{jar:goety_revelation}", "src/模型/物品/断曜流光.模型.json", "剑=goety_revelation:item/valettein_normal"],
+  # 旧版外观（用户 11-10 定用旧版）：NBT revelationfix:transformed 时换的那套，资源在 transform/ 目录。盔甲网格不换，只换贴图
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/角色/史蒂夫装备/神灵金盔甲.旧版.png", "甲=assets/goety_revelation/textures/models/armor/transform/apocalyptium_custom.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金头盔.旧版.png", "图标=assets/goety_revelation/textures/item/armor/transform/apocalyptium_helmet.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金胸甲.旧版.png", "图标=assets/goety_revelation/textures/item/armor/transform/apocalyptium_chestplate.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金护腿.旧版.png", "图标=assets/goety_revelation/textures/item/armor/transform/apocalyptium_leggings.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金靴子.旧版.png", "图标=assets/goety_revelation/textures/item/armor/transform/apocalyptium_boots.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/断曜流光.旧版.图标.png", "图标=assets/goety_revelation/textures/item/combat/transform/valettein_gui.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/模型/物品/断曜流光.旧版.模型.json", "剑=goety_revelation:item/transform/valettein_normal"],
 ]
 ["取材"."产物"]
 "数据/角色/史蒂夫装备/神灵金盔甲网格" = "src/数据/角色/史蒂夫装备/神灵金盔甲网格.json"
@@ -3042,3 +3050,11 @@
 "贴图/物品/断曜流光.图标" = "src/贴图/物品/断曜流光.图标.png"
 "模型/物品/断曜流光" = "src/模型/物品/断曜流光.模型.json"
 "贴图/物品/断曜流光" = "src/模型/物品/断曜流光.模型.png"
+"贴图/角色/史蒂夫装备/神灵金盔甲.旧版" = "src/贴图/角色/史蒂夫装备/神灵金盔甲.旧版.png"
+"贴图/物品/神灵金头盔.旧版" = "src/贴图/物品/神灵金头盔.旧版.png"
+"贴图/物品/神灵金胸甲.旧版" = "src/贴图/物品/神灵金胸甲.旧版.png"
+"贴图/物品/神灵金护腿.旧版" = "src/贴图/物品/神灵金护腿.旧版.png"
+"贴图/物品/神灵金靴子.旧版" = "src/贴图/物品/神灵金靴子.旧版.png"
+"贴图/物品/断曜流光.旧版.图标" = "src/贴图/物品/断曜流光.旧版.图标.png"
+"模型/物品/断曜流光.旧版" = "src/模型/物品/断曜流光.旧版.模型.json"
+"贴图/物品/断曜流光.旧版" = "src/模型/物品/断曜流光.旧版.模型.png"

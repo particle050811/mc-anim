@@ -1,18 +1,24 @@
 // 神灵金套（启示录的 apocalyptium_helmet / chestplate / leggings / boots，用户 11-10 定史蒂夫穿附魔的全套）穿在身上的样子。
 // 游戏里（RevelationFix 4.9，反编译）：ApocalyptiumArmor.initializeClient → ApocalyptiumArmorClient.getHumanoidArmorModel 把原版盔甲层的方盒换成 ApocalyptiumArmorModel，
 // 顶点写死在 ApocalyptiumArmorGeometry（配方「亚波伦史蒂夫装备」原样导出）：每块网格跟一个人形部件（head、body、两臂、两腿），坐标是部件里的模型像素；
-// 四件共用一张 128×64 贴图（getArmorTexture 都返回 textures/models/armor/apocalyptium_custom.png）。胸甲背后另有一幅披风（物品/神灵金披风.ts）。
-// 没有发光层；附魔光泽走原版 HumanoidArmorLayer.renderGlint，拿同一个模型再画一遍，披风也带。变形外观（NBT revelationfix:transformed）没做。
-// 用法：const 挂 = use神灵金盔甲(件, 光泽秒)，把 挂.head、挂.body… 放进 EntityModel 的 attach（人形模型的同名部件）。
+// 四件共用一张 128×64 贴图（getArmorTexture 返回 textures/models/armor/apocalyptium_custom.png）。胸甲背后另有一幅披风（物品/神灵金披风.ts）。
+// 没有发光层；附魔光泽走原版 HumanoidArmorLayer.renderGlint，拿同一个模型再画一遍，披风也带。
+// 两套外观（物品/装备外观.ts）只差贴图：getArmorTexture 在 transformed 时返回 transform/apocalyptium_custom.png，模型类不看这个 NBT，网格、披风、uv 都是同一份。
+// 用法：const 挂 = use神灵金盔甲(件, 光泽秒, 外观)，把 挂.head、挂.body… 放进 EntityModel 的 attach（人形模型的同名部件）。
 import React, { useMemo } from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { 四边形几何, 盔甲材质 } from '@库/角色/网格盔甲.tsx';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
 import 网格数据 from 'asset:数据/角色/史蒂夫装备/神灵金盔甲网格';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 贴图 from 'asset:贴图/角色/史蒂夫装备/神灵金盔甲';
+import 新版贴图 from 'asset:贴图/角色/史蒂夫装备/神灵金盔甲';
+// 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
+import 旧版贴图 from 'asset:贴图/角色/史蒂夫装备/神灵金盔甲.旧版';
 import 光泽图 from 'asset:贴图/角色/卫兵/附魔光泽';
+import { 默认外观, type 装备外观 } from './装备外观.ts';
 import { 披风站定, 披风顶点表, type 披风数据 } from './神灵金披风.ts';
+
+const 贴图表 = { 旧版: 旧版贴图, 新版: 新版贴图 } as const;
 
 type 网格 = { 骨: number; 顶点: number[] };
 const 数据 = 网格数据 as unknown as { 骨: string[]; 槽: Record<'head' | 'chest' | 'legs' | 'feet', 网格[]>; 披风: 披风数据 };
@@ -31,10 +37,10 @@ let 披风几何缓存: ReturnType<typeof 四边形几何> | null = null;
 // 披风只做了站着不动的样子（跑到稳的布料），不跟人的走动摆
 const 披风几何 = () => (披风几何缓存 ??= 四边形几何(披风顶点表(数据.披风, 披风站定(数据.披风))));
 
-/** 件：穿哪几件，不给 = 全套。光泽秒：附魔光泽滚动的时钟，不给 = 没附魔。返回 { 部件名: 节点 }，没东西的部件不在里面 */
-export const use神灵金盔甲 = (件: readonly 神灵金件[] = 神灵金全套, 光泽秒?: number): Record<string, React.ReactNode> => {
+/** 件：穿哪几件，不给 = 全套。光泽秒：附魔光泽滚动的时钟，不给 = 没附魔。外观：不给 = 本片默认（旧版）。返回 { 部件名: 节点 }，没东西的部件不在里面 */
+export const use神灵金盔甲 = (件: readonly 神灵金件[] = 神灵金全套, 光泽秒?: number, 外观: 装备外观 = 默认外观): Record<string, React.ReactNode> => {
   const 附魔 = 光泽秒 !== undefined;
-  const { 材质, 设秒 } = useMemo(() => 盔甲材质(png(贴图), 附魔 ? png(光泽图) : undefined), [附魔]);
+  const { 材质, 设秒 } = useMemo(() => 盔甲材质(png(贴图表[外观]), 附魔 ? png(光泽图) : undefined), [附魔, 外观]);
   if (附魔) 设秒(光泽秒);
   const 挂: Record<string, React.ReactNode[]> = {};
   for (const 名 of 神灵金全套) {
