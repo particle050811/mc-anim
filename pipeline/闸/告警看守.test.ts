@@ -174,6 +174,10 @@ describe('告警对象', () => {
     expect(这次('t4')).toBeUndefined();
     记('t4', '720', '异常', 50);
     expect(这次('t5')).toMatchObject({ 值: 2 });
+    记('t5', '720', '被杀', 40);
+    expect(这次('t6')).toBeUndefined();
+    记('t6', '720', '被杀', 30);
+    expect(这次('t7')).toMatchObject({ 值: 4, 次数: 2 });
   });
   it('still 只有预计缺失才算小任务', () => {
     const 判 = (声明: NonNullable<票['内容']>['声明'], 等: number) => { const s = 基本(等 * 1000); s.票 = [票('a', { 声明 })]; return 判告警(s, s.时).map(x => x.类); };
