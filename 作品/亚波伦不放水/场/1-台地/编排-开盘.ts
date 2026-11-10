@@ -1,21 +1,20 @@
 // 第 2 幕的走位和她的演出：史蒂夫怎么冲、跳、退到受困位，亚波伦怎么升、举杖、开盘。纯计算，时钟是「现身后几秒」（和第 1 幕她的动画时钟接上），第 3 幕接着用。
 // 走位、时刻、轮盘大小都是 Agent 照分镜第二稿取的，用户没看过。和分镜不一样：祭坛南边一排基座挡着，史蒂夫是跳上基座挥剑（分镜只写「冲上去跳劈」）。
-import { clamp01, lerp as 混 } from '@engine/core/数学.ts';
+import { clamp01, lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { STEVE, steveSize } from '@库/角色/史蒂夫.tsx';
 import { 定演出, type 演出条 } from '../../角色/动作/亚波伦演出.ts';
 import { 杖尖盘位姿, type 盘摆法 } from '../../界面/杖尖盘位姿.ts';
 import { 轮盘外半径, type 多圈轮盘参数 } from '../../界面/多圈轮盘.tsx';
 import { 现身位置 } from '../../特效/安息仪式时序.ts';
-import { 脚高 } from '../../场/1-台地/布局.ts';
+import { 脚高 } from './布局.ts';
 import { 真下界场景 } from '../../地点/真下界位置.ts';
-import 线 from '../../场/1-台地/时间线.ts';
+import 线 from './时间线.ts';
 
 const 事 = 线.事件;
 /** 场时间线的秒 → 现身后几秒 */
 export const 现身后 = (场秒: number) => 场秒 - 事.现身.秒;
 const 幕起 = 现身后(事.召唤完.秒);
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 const 段 = (t: number, a: number, b: number) => clamp01((t - a) / (b - a));
 
 // 祭坛那一列中心的游戏坐标（布局.ts 的 祭坛）；本地 = 以它为原点的场景坐标（x 东、y 北）

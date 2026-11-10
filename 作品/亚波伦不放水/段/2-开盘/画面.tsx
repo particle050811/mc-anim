@@ -1,7 +1,7 @@
-// 第 2 幕 起飞、张开轮盘的画面：走位和她的演出在 编排.ts，这里摆镜头（分镜第二稿 2-01～2-05，机位是 Agent 摆的）。屏幕字（「假如祂用呢？」和片名）用户 11-10 说没要求加，去掉了。
+// 第 2 幕 起飞、张开轮盘的画面：走位和她的演出在 场/1-台地/编排-开盘.ts，这里摆镜头（分镜第二稿 2-01～2-05，机位是 Agent 摆的）。屏幕字（「假如祂用呢？」和片名）用户 11-10 说没要求加，去掉了。
 // 没做：猩红雨、史蒂夫走路的腿（位置是平移的）、声音。仪式结构留在台地上（火还烧着，祭品没了）。
 import React from 'react';
-import { clamp01, lerp as 混 } from '@engine/core/数学.ts';
+import { clamp01, lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 定义画面, use段 } from '@engine/段/段画面.tsx';
 import { 娘化亚波伦 } from '../../角色/娘化亚波伦.tsx';
@@ -13,12 +13,11 @@ import { 召唤方案们 } from '../../特效/安息仪式时序.ts';
 import { 祭坛 } from '../../场/1-台地/布局.ts';
 import { 取镜头, 台地画布, 画幅, type 镜头 } from '../../场/1-台地/台地场.tsx';
 import 线 from '../../场/1-台地/时间线.ts';
-import { 亚波伦位, 史蒂夫位, 史蒂夫眼, 演, 现身后, 盘位, 盘半径, 盘摆, 每像素格, 轮盘参 } from './编排.ts';
+import { 亚波伦位, 史蒂夫位, 史蒂夫眼, 演, 现身后, 盘位, 盘半径, 盘摆, 每像素格, 轮盘参 } from '../../场/1-台地/编排-开盘.ts';
 import 段 from './段.ts';
 import 声音 from './声音地址.生成.ts';
 
 const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 
 export default 定义画面(段, 声音, () => {
   const { 秒, 事件, 段: 本段 } = use段(段);

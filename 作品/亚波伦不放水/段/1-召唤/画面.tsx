@@ -1,7 +1,7 @@
 // 第 1 幕 召唤的画面：台地上的安息仪式（特效/安息仪式.tsx，短方案）→ 过渡 → 亚波伦现身、持杖站在祭坛上；史蒂夫在祭坛南边看着、后退、拔剑。
 // 镜头照分镜第二稿 1-01～1-04 排，机位是 Agent 摆的。和分镜不一样：1-01 没有「手落在祭坛上」的特写（史蒂夫站在基座圈外够不着，环直接出现在祭坛上）。
 import React from 'react';
-import { clamp01, lerp as 混 } from '@engine/core/数学.ts';
+import { clamp01, lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 定义画面, use段 } from '@engine/段/段画面.tsx';
 import { 娘化亚波伦, 站立 } from '../../角色/娘化亚波伦.tsx';
@@ -16,7 +16,6 @@ import 声音 from './声音地址.生成.ts';
 
 const 方案 = 召唤方案们.短;
 const 加 = (a: V3, b: readonly number[]): V3 => [a[0] + b[0]!, a[1] + b[1]!, a[2] + b[2]!];
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 
 export default 定义画面(段, 声音, () => {
   const { 秒, 事件, 段: 本段 } = use段(段);

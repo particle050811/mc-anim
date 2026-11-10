@@ -1,7 +1,7 @@
-// 第 3 幕 结界和点名的画面：编排在 编排.ts，这里摆镜头（分镜第二稿 3-01～3-07，机位是 Agent 摆的）和界面（血条、计数、名签）。
+// 第 3 幕 结界和点名的画面：编排在 场/1-台地/编排-点名.ts，这里摆镜头（分镜第二稿 3-01～3-07，机位是 Agent 摆的）和界面（血条、计数、名签）。
 // 没做：猩红雨、伤害数字、史蒂夫吃金苹果（3-06 他只是站着）、她冲刺时的旋转姿势、声音。
 import React from 'react';
-import { lerp as 混 } from '@engine/core/数学.ts';
+import { lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 定义画面, use段 } from '@engine/段/段画面.tsx';
 import { Arrow } from '@库/物品/箭.tsx';
@@ -16,13 +16,12 @@ import { 祭坛 } from '../../场/1-台地/布局.ts';
 import { 出手们, 出手名签, 已出手 } from '../../场/1-台地/出手.tsx';
 import { 取镜头, 台地画布, 画幅, type 镜头 } from '../../场/1-台地/台地场.tsx';
 import 线 from '../../场/1-台地/时间线.ts';
-import { 每像素格, 盘摆 } from '../2-开盘/编排.ts';
-import { 中箭, 亚波伦位, 出手表, 况, 史蒂夫状态在, 史蒂夫脚, 幕起, 扔, 演, 盘位, 箭们, 结界设定, 轮盘参 } from './编排.ts';
+import { 每像素格, 盘摆 } from '../../场/1-台地/编排-开盘.ts';
+import { 中箭, 亚波伦位, 出手表, 况, 史蒂夫状态在, 史蒂夫脚, 幕起, 扔, 演, 盘位, 箭们, 结界设定, 轮盘参 } from '../../场/1-台地/编排-点名.ts';
 import 段 from './段.ts';
 import 声音 from './声音地址.生成.ts';
 
 const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 const S = 史蒂夫脚;
 
 export default 定义画面(段, 声音, () => {

@@ -1,6 +1,6 @@
 // 第 3 幕的编排：结界几时扔、七个法术几时放、她几时冲到结界另一侧、史蒂夫几时拉弓（用户 11-10 定：高端局，史蒂夫不拿盾）。纯计算，时钟接第 2 幕（现身后几秒），第 4 幕接着用。
 // 时刻、走位都是 Agent 照分镜第二稿 3-01～3-07 取的，用户没看过。
-import { clamp01, lerp as 混 } from '@engine/core/数学.ts';
+import { clamp01, lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { STEVE, steveSize } from '@库/角色/史蒂夫.tsx';
 import { 定演出 } from '../../角色/动作/亚波伦演出.ts';
@@ -9,14 +9,13 @@ import { 杖尖盘位姿 } from '../../界面/杖尖盘位姿.ts';
 import type { 多圈轮盘参数 } from '../../界面/多圈轮盘.tsx';
 import { 排盘 } from '../../界面/轮盘法术.ts';
 import { 结界演出默认, type 结界演出设定 } from '../../特效/炼狱结界演出状态.ts';
-import { 亮格, 发命中, 发键, type 一发, type 场况 } from '../../场/1-台地/出手.tsx';
-import 线 from '../../场/1-台地/时间线.ts';
-import { 亚波伦位 as 开盘位, 史蒂夫位 as 开盘史位, 开盘轴, 悬停高, 每像素格, 演 as 开盘演, 现身后, 盘摆, 祭坛点, 轮盘参 as 开盘参 } from '../2-开盘/编排.ts';
+import { 亮格, 发命中, 发键, type 一发, type 场况 } from './出手.tsx';
+import 线 from './时间线.ts';
+import { 亚波伦位 as 开盘位, 史蒂夫位 as 开盘史位, 开盘轴, 悬停高, 每像素格, 演 as 开盘演, 现身后, 盘摆, 祭坛点, 轮盘参 as 开盘参 } from './编排-开盘.ts';
 
 const 事 = 线.事件;
 /** 本幕开头（编排的钟） */
 export const 幕起 = 现身后(事.开盘完.秒);
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 
 /** 史蒂夫被钉住的地方（脚底）：第 2 幕退到的受困位 */

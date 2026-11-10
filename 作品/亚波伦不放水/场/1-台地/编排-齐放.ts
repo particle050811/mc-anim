@@ -5,7 +5,7 @@
 //   为了让它的结果落在分镜写的那一镜里，出手比标早，标按分镜写的那一镜放。
 // - 一波结束硬切清场（止），长秒拖过波末的不跨波；没有「只留地上的火、冰、酸」。
 // - 4-09 的线比法术自己的长秒短，每条线接着再放一次（重复，不计数），到 4-10 中段一起硬切，就是分镜的「线一起断开」。
-import { clamp01, lerp as 混 } from '@engine/core/数学.ts';
+import { clamp01, lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 法术时长 } from '../../法术/演出/接口.ts';
 import { 取法术元 } from '../../法术/演出/元表.ts';
@@ -14,17 +14,16 @@ import type { 史蒂夫状态 } from '../../角色/史蒂夫反应.ts';
 import { 杖尖盘位姿 } from '../../界面/杖尖盘位姿.ts';
 import type { 多圈轮盘参数 } from '../../界面/多圈轮盘.tsx';
 import { 排盘 } from '../../界面/轮盘法术.ts';
-import { 发命中, 发键, 发目标, 发起点, type 一发, type 场况 } from '../../场/1-台地/出手.tsx';
-import 线 from '../../场/1-台地/时间线.ts';
-import { 开盘轴, 现身后, 每像素格, 盘摆, 轮盘参 as 开盘参 } from '../2-开盘/编排.ts';
-import { 幕起 as 三幕起, 出手表 as 点名表, 位乙, 史蒂夫眼, 史蒂夫脚 } from '../3-点名/编排.ts';
+import { 发命中, 发键, 发目标, 发起点, type 一发, type 场况 } from './出手.tsx';
+import 线 from './时间线.ts';
+import { 开盘轴, 现身后, 每像素格, 盘摆, 轮盘参 as 开盘参 } from './编排-开盘.ts';
+import { 幕起 as 三幕起, 出手表 as 点名表, 位乙, 史蒂夫眼, 史蒂夫脚 } from './编排-点名.ts';
 
 const 事 = 线.事件;
 /** 本幕开头（编排的钟）；第 3 幕末 */
 export const 幕起 = 现身后(事.点名完.秒);
 export const 幕长 = 事.齐放完.秒 - 事.点名完.秒;
 export const 秒在 = (s: number) => 幕起 + s;
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 
 /** 各镜头的开头（幕内秒），分镜 7.4 的 4-01～4-18；4-14 拆成她升起、史蒂夫视角仰拍两镜 */

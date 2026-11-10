@@ -1,9 +1,9 @@
-// 第 4 幕 齐放的画面：编排在 编排.ts，这里摆镜头（分镜 7.4 的 4-01～4-18，机位是 Agent 摆的，用户没看过）和界面（血条、计数、名签、4-18 糊屏）。
+// 第 4 幕 齐放的画面：编排在 场/1-台地/编排-齐放.ts，这里摆镜头（分镜 7.4 的 4-01～4-18，机位是 Agent 摆的，用户没看过）和界面（血条、计数、名签、4-18 糊屏）。
 // 没做：猩红雨、伤害数字、史蒂夫单膝跪、盾（用户 11-10 定不拿盾）、砍藤、被冻住、盾被掀歪、不死图腾在屏幕上转和金绿粒子、声音；
 // 「只留地上的火、冰、酸」（一波结束硬切清场）；4-16 的史蒂夫视角（改成动作线侧面的机位，见 4-16）。
 // 4-14 图腾救回来的站起是把原版死亡的倒下角度倒着走（左手图腾 4-14 索命后消失）。
 import React from 'react';
-import { lerp as 混 } from '@engine/core/数学.ts';
+import { lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 定义画面, use段 } from '@engine/段/段画面.tsx';
 import { 娘化亚波伦 } from '../../角色/娘化亚波伦.tsx';
@@ -13,14 +13,13 @@ import { 杖尖轮盘 } from '../../界面/杖尖轮盘.tsx';
 import { 炼狱结界演出 } from '../../特效/炼狱结界演出.tsx';
 import { 出手们, 出手名签 } from '../../场/1-台地/出手.tsx';
 import { 取镜头, 台地画布, 画幅, type 镜头 } from '../../场/1-台地/台地场.tsx';
-import { 每像素格, 盘半径, 盘摆 } from '../2-开盘/编排.ts';
-import { 扔, 史蒂夫脚, 结界设定 } from '../3-点名/编排.ts';
-import { 亚波伦位, 幕起, 出手表, 况, 计数在, 签表, 史蒂夫状态在, 演, 盘位, 站, 轮盘参, 镜起 } from './编排.ts';
+import { 每像素格, 盘半径, 盘摆 } from '../../场/1-台地/编排-开盘.ts';
+import { 扔, 史蒂夫脚, 结界设定 } from '../../场/1-台地/编排-点名.ts';
+import { 亚波伦位, 幕起, 出手表, 况, 计数在, 签表, 史蒂夫状态在, 演, 盘位, 站, 轮盘参, 镜起 } from '../../场/1-台地/编排-齐放.ts';
 import 段 from './段.ts';
 import 声音 from './声音地址.生成.ts';
 
 const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 const 渐 = (a: readonly number[], b: readonly number[], u: number): V3 => [混(a[0]!, b[0]!, u), 混(a[1]!, b[1]!, u), 混(a[2]!, b[2]!, u)];
 const S = 史蒂夫脚;
 /** 从 p 到史蒂夫的水平方向、它的垂直方向（镜头按这条动作线摆，同第 3 幕） */

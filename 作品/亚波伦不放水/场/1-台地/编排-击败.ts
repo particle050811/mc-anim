@@ -1,25 +1,24 @@
 // 第 5 幕 击败的编排：火光退去、地上剩史蒂夫的掉落物（5-01），他的死亡界面（5-02），她收盘、落地（5-03）。纯计算，时钟接第 4 幕（现身后几秒）。
 // 时刻、她落在哪、收盘节奏都是 Agent 照分镜第二稿 5-01～5-03 取的，用户没看过。
 // 和分镜不一样：5-03 从 2 秒拉到 4 秒（三圈收回、杖收到身侧、从 12 格高落下来，2 秒只够匆匆掉下来）；地上没有留火、冰、酸（第 4 幕各波硬切清场，同那边的做法）；没有经验球。
-import { clamp01, lerp as 混 } from '@engine/core/数学.ts';
+import { clamp01, lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 定演出 } from '../../角色/动作/亚波伦演出.ts';
 import { 开完刻, 默认开合 } from '../../界面/分圈.ts';
 import type { 多圈轮盘参数 } from '../../界面/多圈轮盘.tsx';
 import { 杖尖盘位姿 } from '../../界面/杖尖盘位姿.ts';
 import { 排盘 } from '../../界面/轮盘法术.ts';
-import { 台地点 } from '../../场/1-台地/布局.ts';
-import 线 from '../../场/1-台地/时间线.ts';
-import { 开盘轴, 现身后, 盘摆, 轮盘参 as 开盘参 } from '../2-开盘/编排.ts';
-import { 史蒂夫眼, 史蒂夫脚 } from '../3-点名/编排.ts';
-import { 焚死, 站 } from '../4-齐放/编排.ts';
+import { 台地点 } from './布局.ts';
+import 线 from './时间线.ts';
+import { 开盘轴, 现身后, 盘摆, 轮盘参 as 开盘参 } from './编排-开盘.ts';
+import { 史蒂夫眼, 史蒂夫脚 } from './编排-点名.ts';
+import { 焚死, 站 } from './编排-齐放.ts';
 
 const 事 = 线.事件;
 /** 本幕开头（编排的钟）：结界收缩焚烧完的那一刻 */
 export const 幕起 = 现身后(事.齐放完.秒);
 export const 幕长 = 事.击败完.秒 - 事.齐放完.秒;
 export const 秒在 = (s: number) => 幕起 + s;
-const 平滑 = (u: number) => u * u * (3 - 2 * u);
 
 /**
  * 游戏界面开关：5-02 的死亡界面、5-03 聊天栏里的死亡消息。都是游戏自带的界面，照分镜做上的，用户没看过；不要就改成 false。
