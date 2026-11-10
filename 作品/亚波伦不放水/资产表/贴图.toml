@@ -5032,3 +5032,75 @@ id = "贴图/方块附加/方块表"
 "许可" = "LicenseRef-Minecraft-EULA AND CC-BY-NC-SA-4.0 AND CC-BY-NC-SA-3.0 AND MIT AND LicenseRef-LGPL-Unversioned AND LGPL-2.1-only AND LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "本作品体素方块表的贴图竖条（16 宽、一格一张）：全局图集原样 + 追加的 24 张模组贴图；换用.toml 让本作品用它顶替全局图集。私有"
+
+[["资产"]]
+id = "贴图/物品/断曜流光"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/断曜流光.模型.png）"
+
+[["资产"]]
+id = "贴图/物品/断曜流光.图标"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/物品/断曜流光.图标.png）"
+
+[["资产"]]
+id = "贴图/物品/晋升之环"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/物品/晋升之环.png）"
+
+[["资产"]]
+id = "贴图/物品/神灵金头盔"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/物品/神灵金头盔.png）"
+
+[["资产"]]
+id = "贴图/物品/神灵金护腿"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/物品/神灵金护腿.png）"
+
+[["资产"]]
+id = "贴图/物品/神灵金胸甲"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/物品/神灵金胸甲.png）"
+
+[["资产"]]
+id = "贴图/物品/神灵金靴子"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/物品/神灵金靴子.png）"
+
+[["资产"]]
+id = "贴图/角色/史蒂夫装备/晋升之环"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/角色/史蒂夫装备/晋升之环.png）"
+
+[["资产"]]
+id = "贴图/角色/史蒂夫装备/神灵金盔甲"
+"类别" = "贴图"
+"来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/角色/史蒂夫装备/神灵金盔甲.png）"
