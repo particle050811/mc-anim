@@ -109,7 +109,7 @@ export const 祭品: React.FC<{ 名: 祭品名; 秒: number; 缩放?: number }> 
     );
   }
   if (名 === '暗影精华') {
-    const 帧 = Math.floor((秒 * 20) / 2) % 4;
+    const 帧 = ((Math.floor((秒 * 20) / 2) % 4) + 4) % 4; // 秒可以是负的（仪式开始前）
     const l = (暗影层缓存[帧] ??= [{ tex: 暗影精华帧()[帧]! }]);
     return (
       <地面物品 转度={转度} 缩放={缩放}>
