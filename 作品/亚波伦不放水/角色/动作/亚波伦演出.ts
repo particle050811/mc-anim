@@ -19,11 +19,14 @@ export type 姿势定义 = {
 };
 
 // 右臂往前伸、杖从手里朝前指出去的起点（封面六稿的「前指」：肘微弯，手腕以绕小臂长轴转为主，杖从手的侧面穿过）；指哪由 瞄杖 解右肩
-const 前伸: 手摆 = { RightArm: { rot: [-61, 25, -1.25] }, RightForeArm: { rot: [-22, 0, 0] }, RightHand: { rot: [33, -90, 0] } };
+// 施法时把上身扶正一些：fly 原样是 UpBody [−5, −60, −43]（往右倒 43 度、拧 60 度），照它指向目标的话人是横躺着的、脸背着目标。
+// 这里只留一点侧身；腿、蜘蛛腿、身后的缺口环照 fly。左臂从胸前放下来摊在身侧（封面六稿的左臂）
+const 扶正: 手摆 = { UpBody: { rot: [-5, -22, -12] }, UpperBody: { rot: [0, 12, 0] }, AllHead: { rot: [0, 6, 3] }, LeftArm: { rot: [20, 0, -35] }, LeftForeArm: { rot: [-25, 0, 0] } };
+const 前伸: 手摆 = { ...扶正, RightArm: { rot: [-61, 25, -1.25] }, RightForeArm: { rot: [-22, 0, 0] }, RightHand: { rot: [33, -90, 0] } };
 // 开盘那一下：肘伸直（杖往前送约 0.15 格），左臂往外后方甩开，头抬一点
 const 送出: 手摆 = { ...前伸, RightForeArm: { rot: [-3.75, 0, 0] }, LeftArm: { rot: [25, 0, -70] }, LeftForeArm: { rot: [-10, 0, 0] }, Head: { rot: [-8, 0, 0] } };
 // 收盘：肘收回来，杖竖在身前右侧（杖朝上由 瞄杖 解）
-const 收回: 手摆 = { RightArm: { rot: [-35, 10, 15] }, RightForeArm: { rot: [-70, 0, 0] }, RightHand: { rot: [0, 70, 0] } };
+const 收回: 手摆 = { ...扶正, RightArm: { rot: [-35, 10, 15] }, RightForeArm: { rot: [-70, 0, 0] }, RightHand: { rot: [0, 70, 0] } };
 // 起飞前蓄一下、落地缓一下：两膝微屈（袍子里只露出一点）
 const 屈膝: 手摆 = { RightLeg: { rot: [-22, 0, 0] }, RightLowerLeg: { rot: [40, 0, 0] }, LeftLeg: { rot: [-22, 0, 0] }, LeftLowerLeg: { rot: [40, 0, 0] } };
 
