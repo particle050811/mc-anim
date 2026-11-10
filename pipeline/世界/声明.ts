@@ -40,8 +40,10 @@ export type 世界声明 = {
   服务端: string;
   存档: string;
   维度: string;
-  /** 包.json 的 维度：主世界 / 暮色 … */
+  /** 包.json 的 维度：主世界 / 暮色 / 下界 … */
   包维度: string;
+  /** 烘焙时整个高度都存（有顶的维度：从上往下第一层是基岩顶，按「最高整格方块 = 地表」只会存下一层顶）；见 烘焙/烘焙.ts 的 全高 */
+  全高: boolean;
   种子?: string;
   /** 建新世界时写进 server.properties 的 level-type；不写 minecraft:normal（地形模组改的是普通世界，large_biomes 和 Tectonic 互斥） */
   世界类型: string;
@@ -71,9 +73,11 @@ export const 列出世界 = () =>
     : [];
 
 /** 维度 id → 包.json 的 维度 和默认 oy（场景 z = 0 对应的游戏 y） */
-const 已知维度: Record<string, { 包维度: string; oy: number }> = {
+const 已知维度: Record<string, { 包维度: string; oy: number; 全高?: boolean }> = {
   'minecraft:overworld': { 包维度: '主世界', oy: 64 },
   'twilightforest:twilight_forest': { 包维度: '暮色', oy: 0 },
+  // 下界 y 0～127 是地形（min_y 0、logical_height 128），基岩顶在 y 127：场景 z = 游戏 y
+  'minecraft:the_nether': { 包维度: '下界', oy: 0, 全高: true },
 };
 
 const 数对 = (v: unknown, 何: string): [number, number] => {
@@ -105,6 +109,8 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
     const 烘 = (d.烘焙 ?? {}) as Record<string, unknown>;
     const 包维度 = typeof 烘.包维度 === 'string' ? 烘.包维度 : 已知?.包维度;
     if (!包维度) throw 错(`维度 ${维度} 不认识，要在 [烘焙] 写 包维度（包.json 的 维度）`);
+    if (烘.全高 !== undefined && typeof 烘.全高 !== 'boolean') throw 错('烘焙.全高 要写 true 或 false');
+    const 全高 = typeof 烘.全高 === 'boolean' ? 烘.全高 : (已知?.全高 ?? false);
     const 原点于 = (v: unknown, 何: string): [number, number, number] | undefined => {
       if (v === undefined) return undefined;
       if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isInteger)) throw 错(`${何} 要写 [ox, oy, oz] 三个整数`);
@@ -166,6 +172,7 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
       存档: typeof d.存档 === 'string' ? d.存档 : 名,
       维度,
       包维度,
+      全高,
       种子: d.种子 === undefined ? undefined : String(d.种子),
       世界类型: typeof d.世界类型 === 'string' ? d.世界类型 : 'minecraft:normal',
       生成结构: d.生成结构 !== false,

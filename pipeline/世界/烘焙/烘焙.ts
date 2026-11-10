@@ -26,6 +26,9 @@ export type 烘焙参数 = {
   维度: string;
   /** 场景原点 [ox, oy, oz]：ox、oz 是 2048 的整数倍 */
   原点: readonly [number, number, number];
+  /** 有顶的维度（下界）：整个高度都存。地表不取「最高整格方块的顶」（那是基岩顶，底下的洞腔全丢），改取这一列最低的非整格方块的底，
+   *  即从维度底往上那一摞实心的顶：熔岩海、洞腔、岩顶都在它上面，照存；它下面全是整格方块，照旧当实心不存。不给 = 照旧（露天维度），烘出来和以前逐字节一样 */
+  全高?: boolean;
   输出: string;
   库: 体素库;
   日志?: (s: string) => void;
@@ -174,6 +177,7 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
             else runBuf.push(entry, bottom);
           };
           let top = zt; // 这一段的顶
+          let lowestOpen = zt + 1; // 全高：最低的非整格方块（空气、熔岩、花草）的底；一列全是整格方块就留在最高一格上面
           for (let k = region.runStarts[col]!, ke = k + runCount; k < ke; k++) {
             const li = region.状态[k]! * region.群系表.length + region.群系[k]!;
             let entry = rc.entryIds[li]!;
@@ -181,7 +185,9 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
             const bottom = region.底[k]! - OY;
             const st = entryState[entry]!;
             if (inCore && st && !stateVoxel[st]) missingStates.set(stateList[st]!, (missingStates.get(stateList[st]!) ?? 0) + top - bottom + 1);
-            if (surfaces[levelCol] === 无地表 && entryFullCube[entry]) surfaces[levelCol] = top + 1;
+            if (p.全高) {
+              if (!entryFullCube[entry]) lowestOpen = bottom;
+            } else if (surfaces[levelCol] === 无地表 && entryFullCube[entry]) surfaces[levelCol] = top + 1;
             if (tops[levelCol] === 无顶 && entry) tops[levelCol] = top;
             const ownBiome = entryBiome[entry]!;
             if (ownBiome === 不染色) pushRun(entry, bottom);
@@ -205,13 +211,14 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
               }
             top = bottom - 1;
           }
-          if (surfaces[levelCol] === 无地表) surfaces[levelCol] = zb; // 一列里没有整格方块：一直通到底
+          if (p.全高) surfaces[levelCol] = lowestOpen;
+          else if (surfaces[levelCol] === 无地表) surfaces[levelCol] = zb; // 一列里没有整格方块：一直通到底
         }
         runStarts[levelCol + 1] = runBuf.n;
       }
     }
     const runEntries = runBuf.entries.slice(0, runBuf.n), runBottoms = runBuf.bottoms.slice(0, runBuf.n);
-    浮空下地表(width, runStarts, runEntries, runBottoms, surfaces, entryFullCube, zb, zt);
+    if (!p.全高) 浮空下地表(width, runStarts, runEntries, runBottoms, surfaces, entryFullCube, zb, zt); // 全高的地表已经在所有空当下面
     return { L: 0, W: width, kb: zb, kt: zt, runStarts, entries: runEntries, bottoms: runBottoms, surface: surfaces, tops };
   };
 
