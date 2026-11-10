@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { 径向轮盘数, 格角, 轮盘态 } from '@库/界面/径向轮盘数.ts';
 import { 法术表 } from '../法术/法术表.ts';
-import { 分圈, 圈半径, 圈容量, 圈态, 开完刻, 最少圈数, 落格, 适配缩放, 默认开合, 默认圈形, type 分法 } from './分圈.ts';
+import { 分圈, 圈半径, 圈容量, 圈态, 开完刻, 收圈态, 最少圈数, 落格, 适配缩放, 默认开合, 默认圈形, type 分法 } from './分圈.ts';
 import { 学派顺序, 排法术, 排盘, 选法术 } from './轮盘法术.ts';
 
 const 和 = (数: readonly number[]) => 数.reduce((a, b) => a + b, 0);
@@ -100,6 +100,16 @@ describe('开合', () => {
     expect(圈态(0, 20)!.转角).toBeCloseTo((默认开合.转速 * Math.PI) / 180, 12);
     expect(圈态(1, 20)!.转角).toBeCloseTo(-圈态(0, 20)!.转角, 12);
     expect(圈态(1, 20, 默认圈形, { ...默认开合, 转速: 0 })!.转角).toBeCloseTo(0, 12);
+  });
+
+  it('收盘：最外圈先缩、最里一圈最后缩回圆心，收完是 null；转角照总刻数接着转', () => {
+    expect(收圈态(2, 100, 0, 3)).toMatchObject({ 进度: 1, 内: 90, 外: 120 });
+    expect(收圈态(2, 100, 1.25, 3)).toMatchObject({ 进度: 0.5, 内: 90, 外: 105 });
+    expect(收圈态(2, 100, 3, 3)).toBeNull();
+    expect(收圈态(0, 100, 3, 3)).toMatchObject({ 进度: 1, 内: 30 });
+    expect(收圈态(0, 100, 6.25, 3)!.内).toBeCloseTo(15, 12);
+    expect(收圈态(0, 100, 7.6, 3)).toBeNull();
+    expect(收圈态(1, 100, 2, 3)!.转角).toBeCloseTo(圈态(1, 100)!.转角, 12);
   });
 });
 
