@@ -1,5 +1,5 @@
 // 封面草稿的画面：下界荒地的样子（不是真地形）——中间一块平的下界岩地，几处熔岩池（池边一圈岩浆块），四周的下界岩一级级垒高成坡，
-// 暗红的雾和天；娘化亚波伦持下界魔杖悬空，多圈轮盘从杖尖张满（界面/杖尖轮盘.tsx），地上的史蒂夫仰视，有的方案加炼狱结界（本片的辉线，特效/炼狱结界辉线.tsx）。方案表在 视图.ts。
+// 暗红的雾和天；娘化亚波伦持下界魔杖悬空，多圈轮盘从杖尖张满（界面/杖尖轮盘.tsx），四稿及以前地上有史蒂夫仰视（五稿起不出镜，用户 11-10 定），有的方案加炼狱结界（本片的辉线，特效/炼狱结界辉线.tsx）。方案表在 视图.ts。
 // 光：一盏中性的环境光加正面偏上的白主光（头发贴图是中性灰 64,64,64，一稿用偏橙的环境光和主光把它照成了棕色），背后下方一盏弱的橙色轮廓光，熔岩池上各一盏橙色点光。
 // 轮盘的时刻取完全张开（第 40 刻）。每个方案那一秒的前半（第 60i 帧）是干净的构图，后半（第 60i+30 帧）叠方案名和 4:3、3:4 裁切参考框。
 import { useThree } from '@react-three/fiber';
@@ -8,6 +8,7 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { smoothstep01 } from '@engine/core/数学.ts';
+import { type Cam, 视线 } from '@engine/core/机位.ts';
 import { hash2 } from '@engine/core/噪声.ts';
 import { 摆相机 } from '@engine/core/three换算.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
@@ -37,7 +38,7 @@ const 噪声 = (x: number, y: number, 尺: number, 种: number) => {
   const 下 = hash2(i, j + 1, 种) * (1 - u) + hash2(i + 1, j + 1, 种) * u;
   return 上 * (1 - v) + 下 * v;
 };
-// 熔岩池：[中心 x, 中心 y, 半径]。躲开各方案里史蒂夫站的地方
+// 熔岩池：[中心 x, 中心 y, 半径]。躲开四稿及以前各方案里史蒂夫站的地方
 const 池们: readonly [number, number, number][] = [
   [-6.5, 2.5, 2.3],
   [7.5, 4.5, 2.8],
@@ -187,10 +188,10 @@ const 光斑: React.FC<{ 位: readonly number[]; 大: number; 色: string; 强?:
   );
 };
 
-const 摆机位: React.FC<{ v: 方案 }> = ({ v }) => {
+const 摆机位: React.FC<{ 机位: Cam }> = ({ 机位 }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
-  摆相机(camera as THREE.PerspectiveCamera, v.机位, size.width / size.height);
+  摆相机(camera as THREE.PerspectiveCamera, 机位, size.width / size.height);
   return null;
 };
 
@@ -206,30 +207,39 @@ const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
   const 她属性 = { pose: { loc: [...她.位], yaw: 她.yaw ?? 180 }, 秒: 1.4, 表演: 她.表演 === '悬停' ? 悬停 : 站立, 姿势: 她.姿势 };
   // 杖尖在哪、朝哪：和画她用同一份属性算
   const 杖 = 持杖位姿(她属性);
+  // 盘心居中的方案：镜头朝向不变（手臂的角度是照这个朝向搜的），整个平移到光轴穿过圆心（杖尖再沿杖身伸出 离尖）
+  const 机位 = useMemo((): Cam => {
+    if (!v.盘心居中) return v.机位;
+    const 心 = [0, 1, 2].map((i) => 杖.尖[i]! + 杖.轴[i]! * (v.轮盘.摆法.离尖 ?? 0));
+    const 向 = 视线(v.机位);
+    const 深 = [0, 1, 2].reduce((和, i) => 和 + (心[i]! - v.机位.pos[i]!) * 向[i]!, 0);
+    const 移 = [0, 1, 2].map((i) => 心[i]! - v.机位.pos[i]! - 向[i]! * 深);
+    const 挪 = (p: readonly number[]) => [p[0]! + 移[0]!, p[1]! + 移[1]!, p[2]! + 移[2]!] as [number, number, number];
+    return { ...v.机位, pos: 挪(v.机位.pos), tgt: 挪(v.机位.tgt) };
+  }, [v, 杖]);
   // 盘的圆心：默认就是杖尖；要退后的顺着镜头到杖尖的视线挪，画面上位置不变
-  const 眼 = v.机位.pos;
+  const 眼 = 机位.pos;
   const 眼到尖 = Math.hypot(杖.尖[0] - 眼[0], 杖.尖[1] - 眼[1], 杖.尖[2] - 眼[2]);
   const 退 = (v.轮盘.退后 ?? 0) / 眼到尖;
   const 盘杖 = { 尖: [0, 1, 2].map((i) => 杖.尖[i]! + (杖.尖[i]! - 眼[i]!) * 退) as [number, number, number], 轴: 杖.轴 };
   const 头 = [她.位[0], 她.位[1], 她.位[2] + 1.4] as const;
-  const 史 = stevePose(v.史蒂夫.位, 0);
   const 杖挂 = useMemo(() => ({ RightHandLocator: <手持下界魔杖>{v.杖头光 && <光斑 位={杖头芯} 大={1.1} 色="#ff8a30" 强={0.9} />}</手持下界魔杖> }), [v.杖头光]);
   const { 朝向, ...摆法 } = v.轮盘.摆法;
   return (
     <>
-      <摆机位 v={v} />
+      <摆机位 机位={机位} />
       <fog attach="fog" args={[雾色, 16, 70]} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <天 心={v.机位.pos} />
+        <天 心={机位.pos} />
         <ambientLight color="#ffffff" intensity={0.3 * Math.PI} />
         <directionalLight position={[-2.5, -6, 4]} color="#fff2ea" intensity={0.55 * Math.PI} />
         {/* 轮廓光：从背后下方往上打。要弱、淡：强的饱和橙光会把黑衣服照成棕色 */}
         <directionalLight position={[2, 7, -4]} color="#ff8a5c" intensity={0.35 * Math.PI} />
         <地形 />
         <娘化亚波伦 {...她属性} 挂载={杖挂} />
-        <Steve pose={steveLookAt(史, [...(v.史蒂夫.看 ?? 头)])} mcLight={1} />
+        {v.史蒂夫 && <Steve pose={steveLookAt(stevePose(v.史蒂夫.位, 0), [...(v.史蒂夫.看 ?? 头)])} mcLight={1} />}
         {v.结界 && <结界 设={v.结界} />}
-        <杖尖轮盘 杖={盘杖} 朝向={朝向 === '正对镜头' ? { 正对: v.机位 } : 朝向} {...摆法} 参={参} 每像素格={v.轮盘.每像素格} renderOrder={v.轮盘.盘在前 ? 5 : -1} />
+        <杖尖轮盘 杖={盘杖} 朝向={朝向 === '正对镜头' ? { 正对: 机位 } : 朝向} {...摆法} 参={参} 每像素格={v.轮盘.每像素格} renderOrder={v.轮盘.盘在前 ? 5 : -1} />
       </group>
     </>
   );
