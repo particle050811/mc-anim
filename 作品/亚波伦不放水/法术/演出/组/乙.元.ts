@@ -12,6 +12,8 @@ import 冰川 from '../法术/冰川.元.ts';
 import 喷发 from '../法术/喷发.元.ts';
 import 缠绕 from '../法术/缠绕.元.ts';
 import 过度生长 from '../法术/过度生长.元.ts';
+import 散射 from '../法术/散射.元.ts';
+import 生物地雷 from '../法术/生物地雷.元.ts';
 
 export const 乙元: readonly 法术元[] = [
   撕咬,
@@ -24,4 +26,6 @@ export const 乙元: readonly 法术元[] = [
   喷发,
   缠绕,
   过度生长,
+  散射,
+  生物地雷,
 ];

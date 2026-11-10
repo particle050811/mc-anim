@@ -12,6 +12,8 @@ import 冰川 from '../法术/冰川.tsx';
 import 喷发 from '../法术/喷发.tsx';
 import 缠绕 from '../法术/缠绕.tsx';
 import 过度生长 from '../法术/过度生长.tsx';
+import 散射 from '../法术/散射.tsx';
+import 生物地雷 from '../法术/生物地雷.tsx';
 
 export const 乙演出: readonly 法术演出条[] = [
   撕咬,
@@ -24,4 +26,6 @@ export const 乙演出: readonly 法术演出条[] = [
   喷发,
   缠绕,
   过度生长,
+  散射,
+  生物地雷,
 ];
