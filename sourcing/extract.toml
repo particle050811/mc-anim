@@ -2457,7 +2457,7 @@
 "贴图/界面/亚波伦血条/old_boss_bar_nether" = "src/模型/界面/亚波伦血条.贴图/old_boss_bar_nether.png"
 "贴图/界面/亚波伦血条/noise" = "src/模型/界面/亚波伦血条.贴图/noise.png"
 
-# 下界亚波伦在场时客户端下的猩红雨（ClientEventsHandler，配置 enableScarletRain 默认开）：贴图在里层 RevelationFix jar 里，先解出里层再读。
+# 下界亚波伦进二阶段后客户端下的猩红雨（ClientEventsHandler 画，ClientLevelExpandedContext.isNetherScarletRaining 要 isSecondPhase；配置 enableScarletRain 默认开）：贴图在里层 RevelationFix jar 里，先解出里层再读。
 # 同时还有后处理着色器（the_end、aberration 等），没取。
 [["取材"]]
 "名称" = "猩红雨"
