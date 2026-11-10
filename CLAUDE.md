@@ -37,7 +37,7 @@ anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|free
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行（开游戏、编译过资源闸）、从游戏导群系色和方块表
 anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心数据（浏览器里跑 pipeline/适配器/<平台>/取数.js 下载）收进数据根、对交付出报告；旧名 anim bili
 ```
-剪映剪辑包（`anim edit-package`、`anim jianying`）用户 11-06 定不要了，成片、分享版统一在 image-flow 插件里看，代码从 Git 历史找。`anim render`（连 `--到预览`、`--留CRF1`、`--只派生`）、`verify --对基线`、`cache 转存|改后缀` 用户 11-06 定删掉，出片只走 `anim film`（`docs/决策/0014-单一出片路.md`）。还没实现：`anim music`、`anim assets import|verify`（字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）；取材 mod 的录制（`mcai record`）用户 10-30 说用不到，不做。
+剪映剪辑包（`anim edit-package`、`anim jianying`）用户 11-06 定不要了，成片、分享版统一在 image-flow 插件里看，代码从 Git 历史找。`anim render`（连 `--到预览`、`--留CRF1`、`--只派生`）、`verify --对基线`、`cache 转存|改后缀` 用户 11-06 定删掉，出片只走 `anim film`（`docs/决策/0014-单一出片路.md`）。还没实现：`anim music`、`anim assets import|verify`（字节核对现在用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。取材 mod 的录制（`mcai record`）用户 11-10 定要做（10-30 说过用不到）：把法术在游戏里放一遍录下粒子、实体、声音再回放，原型和做法见 `docs/决策/0016-法术录制.md`。
 
 Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；`anim wt new` 会克隆进新 worktree，别处缺了用 `npx skills experimental_install` 装回）只当 API 参考。它让用 `npx remotion studio|render|still` 的地方，一律换成 `anim studio`、`anim film`、`anim still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说做视频先开 Studio，我们这里先出静帧进预览。
 
