@@ -712,3 +712,27 @@ id = "数据/角色/史蒂夫装备/神灵金盔甲网格"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "anim extract --登记 自动登记（src/数据/角色/史蒂夫装备/神灵金盔甲网格.json）"
+
+[["资产"]]
+id = "数据/法术/goety/粒子行为/big_fire"
+"类别" = "数据"
+"来源" = "提取:亚波伦粒子行为@154ae1f767f8+e2e940fe7ca0"
+"许可" = "MIT AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "goety:big_fire 的行为（FireParticle.ReversibleProvider 翻的）：寿命 8、摩擦 0.96、不碰撞、按年龄选帧、出生随机左右翻转；和 丁粒子.ts 大火类 的对照见 py/tests/test_粒子翻译.py。画面还用手抄的"
+
+[["资产"]]
+id = "数据/法术/goety/粒子行为/frost_nova"
+"类别" = "数据"
+"来源" = "提取:亚波伦粒子行为@e2e940fe7ca0"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "goety:frost_nova 的行为（注册的是原版 FlameParticle.Provider，翻的原版字节码）：寿命 ⌊8 ÷ (r × 0.8 + 0.2)⌋ + 4、摩擦 0.96、随机选帧、大小缩到一半；和 丁粒子.ts 霜新星类 的对照见 py/tests/test_粒子翻译.py。画面还用手抄的"
+
+[["资产"]]
+id = "数据/法术/goety/粒子行为/spell_cloud"
+"类别" = "数据"
+"来源" = "提取:亚波伦粒子行为@154ae1f767f8+e2e940fe7ca0"
+"许可" = "MIT AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "goety:spell_cloud 的行为（FireParticle.ColorProvider 翻的）：同 big_fire，颜色取 xd0、yd0、zd0、不翻转；和 丁粒子.ts 云片类 的对照见 py/tests/test_粒子翻译.py。画面还用手抄的"

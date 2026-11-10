@@ -64,6 +64,17 @@
 "用途" = "导出实体模型.py 用 javap 读 SRG 名的客户端类（监守者、巨人等实体模型）"
 "许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
+# SRG 表（混淆名 → SRG 名，tsrg2）：粒子翻译读 Forge 1.20.1 模组 jar（成员是 m_5989_、f_107226_ 这样的 SRG 名）时，配 client.txt 换回官方名。
+# 不进仓库、不进资产库。anim world install-server 跑的 Forge 安装器会顺手生成这一份，「也认」就是它的位置；ForgeGradle 缓存里的 obf_to_srg.tsrg 内容同义、字节不同（sha 对不上）
+[["Mojang"."要自己生成"]]
+"id" = "mcp-1.20.1-srg表"
+"到" = "缓存/mcp_config-1.20.1-mappings-merged.txt"
+"也认" = ["游戏:取材服务端/libraries/de/oceanlabs/mcp/mcp_config/1.20.1-20230612.114412/mcp_config-1.20.1-20230612.114412-mappings-merged.txt", "游戏:取材服务端-主世界/libraries/de/oceanlabs/mcp/mcp_config/1.20.1-20230612.114412/mcp_config-1.20.1-20230612.114412-mappings-merged.txt"]
+"怎么得到" = "java17 -jar forge-1.20.1-47.4.10-installer.jar --installServer <目录>，产物在 <目录>/libraries/de/oceanlabs/mcp/mcp_config/1.20.1-20230612.114412/mcp_config-1.20.1-20230612.114412-mappings-merged.txt"
+"sha256" = "ea4366a7c3ddf9e1857a3edb1d81887d44efd7c5c0c3d1e321fc85feead857f4"
+"用途" = "粒子翻译（py/anim_py/动作翻译/粒子.py）的 srg: 映射；翻出来的东西里只有官方名，没有 SRG 名"
+"许可" = { "代码" = "LicenseRef-待核-MCPConfig", "资源" = "LicenseRef-待核-MCPConfig", "依据" = "MinecraftForge/MCPConfig 仓库的许可原文没核" }
+
 [["模组"]]
 "id" = "forge"
 "名称" = "Minecraft Forge（universal）"
