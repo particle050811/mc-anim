@@ -3,6 +3,7 @@
 // 和游戏的差别：聚流在游戏里永远侧对镜头（宽向 = 条的方向 × 视线），组件拿不到镜头，这里摆成十字两片（半宽只有 0.03 格，看不出差别）；
 // 风带的宽向游戏里是竖直向量绕 Z 轴转镜头的 yaw（镜头朝正南正北时就是竖直），这里一律竖直。
 import React from 'react';
+import { easeInOutQuad } from '@engine/core/数学.ts';
 import { png } from '@engine/model/贴图.ts';
 import type { 点 } from '../接口.ts';
 import { 加, 减, 乘, 长, 单位, 混 } from './弹道.ts';
@@ -22,8 +23,8 @@ export const 垂向 = (向: 点): [点, 点] => {
   return [一, 叉(d, 一)];
 };
 
-// Easing.IN_OUT_QUAD
-const 缓入出 = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+// Goety 的 Easing.IN_OUT_QUAD
+const 缓入出 = easeInOutQuad;
 
 /** GatherTrailParticle 的寿命：round(随机 × 3) + 5 刻 */
 export const 聚流寿命 = (随机: number) => Math.round(随机 * 3) + 5;
