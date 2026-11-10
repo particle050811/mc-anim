@@ -58,6 +58,7 @@ import 火柱5 from 'asset:贴图/法术/goety/particle/big_fire_drop_5';
 import 火柱6 from 'asset:贴图/法术/goety/particle/big_fire_drop_6';
 import 火柱7 from 'asset:贴图/法术/goety/particle/big_fire_drop_7';
 import 火柱8 from 'asset:贴图/法术/goety/particle/big_fire_drop_8';
+import 岩浆 from 'asset:贴图/法术/minecraft/particle/lava';
 import 带图 from 'asset:贴图/法术/goety/particle/trail';
 
 /** RisingParticle / FireParticle 的构造：先过 Particle 的随机速度，再 × 0.01 + 给定速度；位置抖 ±0.05（RisingParticle 才抖）。位、速都是场景坐标 */
@@ -142,4 +143,24 @@ export const 火柱类: 粒子类 = {
   摩擦: 0.99,
   混合: '半透明',
   大小: (年龄, 寿命) => (1 + (年龄 / 寿命) * 0.5) / 1,
+};
+
+/** FROST_FLOWER（启示录 FrostFlowerParticle）：generic_7→0 按年龄，重力 0.225、每刻速度 ×(0.95, 0.9, 0.95)（这里并成一个 0.92），
+ * 半边长 0.1 × (随机² + 1)，寿命 (int)(16 ÷ (随机 × 0.8 + 0.2)) + 2，色基本是 (0.69, 0.87, 0.9)（渲染时按年龄夹到 0.55/0.77/0.98，夹法写反了，只剩这一档），
+ * 透明度前 8 刻淡入。没做：每刻绕圈抖 1/32 格。 */
+export const 霜花类: 粒子类 = {
+  帧: [沙7, 沙6, 沙5, 沙4, 沙3, 沙2, 沙1, 沙0].map(png),
+  选帧: '按年龄',
+  重力: 0.225,
+  摩擦: 0.92,
+  色: [0.69, 0.88, 0.9],
+  透明度: (年龄) => Math.min(1, 年龄 / 8),
+};
+
+/** BURNING（goety 注册成 FlameParticle.Provider，贴图 minecraft:lava）：摩擦 0.96、不动重力，半边长随年龄 × (1 − 年龄比² × 0.5)，寿命 (int)(8 ÷ (随机 × 0.8 + 0.2)) + 4，不透明 */
+export const 燃烧类: 粒子类 = {
+  帧: [png(岩浆)],
+  选帧: '按年龄',
+  摩擦: 0.96,
+  大小: (年龄, 寿命) => 1 - (年龄 / 寿命) ** 2 * 0.5,
 };
