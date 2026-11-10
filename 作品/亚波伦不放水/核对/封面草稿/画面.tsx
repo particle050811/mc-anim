@@ -1,6 +1,7 @@
 // 封面草稿的画面：下界荒地的样子（不是真地形）——中间一块平的下界岩地，几处熔岩池（池边一圈岩浆块），四周的下界岩一级级垒高成坡，
 // 暗红的雾和天；娘化亚波伦持下界魔杖悬空，多圈轮盘从杖尖张满（界面/杖尖轮盘.tsx），四稿及以前地上有史蒂夫仰视（五稿起不出镜，用户 11-10 定），有的方案加炼狱结界（本片的辉线，特效/炼狱结界辉线.tsx）。方案表在 视图.ts。
 // 光：一盏中性的环境光加正面偏上的白主光（头发贴图是中性灰 64,64,64，一稿用偏橙的环境光和主光把它照成了棕色），背后下方一盏弱的橙色轮廓光，熔岩池上各一盏橙色点光。
+// 八稿起镜头在她下方仰拍、被她的杖指着，机位由杖反算（指杖机位.ts）。
 // 轮盘的时刻取完全张开（第 40 刻）。每个方案那一秒的前半（第 60i 帧）是干净的构图，后半（第 60i+30 帧）叠方案名和 4:3、3:4 裁切参考框。
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
@@ -22,6 +23,9 @@ import { 杖尖轮盘 } from '../../界面/杖尖轮盘.tsx';
 import { 娘化亚波伦, 悬停, 持杖位姿, 站立 } from '../../角色/娘化亚波伦.tsx';
 import { 手持下界魔杖, 杖头芯 } from '../../物品/下界魔杖.tsx';
 import { 炼狱结界辉线 } from '../../特效/炼狱结界辉线.tsx';
+import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
+import { 下界提亮, 真下界 } from '../../地点/真下界.tsx';
+import { 指杖机位 } from './指杖机位.ts';
 import { 方案们, type 方案 } from './视图.ts';
 
 const 雾色 = '#3a0a07';
@@ -188,10 +192,10 @@ const 光斑: React.FC<{ 位: readonly number[]; 大: number; 色: string; 强?:
   );
 };
 
-const 摆机位: React.FC<{ 机位: Cam }> = ({ 机位 }) => {
+const 摆机位: React.FC<{ 机位: Cam; 远?: number }> = ({ 机位, 远 }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
-  摆相机(camera as THREE.PerspectiveCamera, 机位, size.width / size.height);
+  摆相机(camera as THREE.PerspectiveCamera, 机位, size.width / size.height, 远 ? { 远 } : {});
   return null;
 };
 
@@ -231,12 +235,20 @@ const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
   const 她属性 = { pose: { loc: [...她.位], yaw: 她.yaw ?? 180 }, 秒: 1.4, 表演: 她.表演 === '悬停' ? 悬停 : 站立, 姿势: 她.姿势 };
   // 杖尖在哪、朝哪：和画她用同一份属性算
   // 杖握在手里是六稿起的挂法；五稿及以前的旧案照旧握法画，画面不动
-  const 新握 = !!v.斜看盘;
-  const 杖 = 持杖位姿({ ...她属性, 旧握法: !新握 });
+  const 新握 = !!v.斜看盘 || !!v.指杖;
+  const 握偏 = v.指杖?.握偏;
+  const 杖 = 持杖位姿({ ...她属性, 握偏, 旧握法: !新握 });
   // 盘心居中的方案：镜头朝向不变（手臂的角度是照这个朝向搜的），整个平移到光轴穿过圆心（杖尖再沿杖身伸出 离尖）
   const 机位 = useMemo((): Cam => {
     const 心 = [0, 1, 2].map((i) => 杖.尖[i]! + 杖.轴[i]! * (v.轮盘.摆法.离尖 ?? 0));
     if (v.斜看盘) return 斜看机位(杖.轴, 心, v.斜看盘, v.机位.lens, 宽高比);
+    if (v.指杖?.看中) {
+      // 扫角度用：镜头位置照 θ 反算，但对准盘心和她胸口的中点，哪个角度她和盘都在画里
+      const 位 = 指杖机位({ 心, d: 杖.轴, θ: v.指杖.θ, 方位: v.指杖.方位, 距: v.指杖.距, lens: v.机位.lens, 盘心画面: [0.5, 0.5], 宽高比 }).pos;
+      const 胸 = [v.亚波伦.位[0], v.亚波伦.位[1], v.亚波伦.位[2] + 1];
+      return { pos: 位, tgt: [0, 1, 2].map((i) => (心[i]! + 胸[i]!) / 2) as [number, number, number], lens: v.机位.lens };
+    }
+    if (v.指杖) return 指杖机位({ 心, d: 杖.轴, θ: v.指杖.θ, 方位: v.指杖.方位, 距: v.指杖.距, lens: v.机位.lens, 盘心画面: v.指杖.盘心, 宽高比 });
     if (!v.盘心居中) return v.机位;
     const 向 = 视线(v.机位);
     const 深 = [0, 1, 2].reduce((和, i) => 和 + (心[i]! - v.机位.pos[i]!) * 向[i]!, 0);
@@ -255,16 +267,21 @@ const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
   const { 朝向, ...摆法 } = v.轮盘.摆法;
   return (
     <>
-      <摆机位 机位={机位} />
-      <fog attach="fog" args={[雾色, 16, 70]} />
+      <摆机位 机位={机位} 远={v.远景 ? 1400 : undefined} />
+      {v.远景 ? <ScreenAo /> : <fog attach="fog" args={[雾色, 16, 70]} />}
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <天 心={机位.pos} />
-        <ambientLight color="#ffffff" intensity={0.3 * Math.PI} />
-        <directionalLight position={[-2.5, -6, 4]} color="#fff2ea" intensity={0.55 * Math.PI} />
-        {/* 轮廓光：从背后下方往上打。要弱、淡：强的饱和橙光会把黑衣服照成棕色 */}
-        <directionalLight position={[2, 7, -4]} color="#ff8a5c" intensity={0.35 * Math.PI} />
-        <地形 />
-        {新握 ? <娘化亚波伦 {...她属性} 持杖 杖上={杖光} /> : <娘化亚波伦 {...她属性} 挂载={杖挂} />}
+        {!v.远景 && <天 心={机位.pos} />}
+        {/* 真下界自己带灯（地点/真下界.tsx），再加这几盏会把地形照得比用户看过的亮 */}
+        {!v.远景 && (
+          <>
+            <ambientLight color="#ffffff" intensity={0.3 * Math.PI} />
+            <directionalLight position={[-2.5, -6, 4]} color="#fff2ea" intensity={0.55 * Math.PI} />
+            {/* 轮廓光：从背后下方往上打。要弱、淡：强的饱和橙光会把黑衣服照成棕色 */}
+            <directionalLight position={[2, 7, -4]} color="#ff8a5c" intensity={0.35 * Math.PI} />
+          </>
+        )}
+        {v.远景 ? <真下界 镜头={机位.pos} 光={下界提亮} /> : <地形 />}
+        {新握 ? <娘化亚波伦 {...她属性} 持杖 握偏={握偏} 杖上={杖光} /> : <娘化亚波伦 {...她属性} 挂载={杖挂} />}
         {v.史蒂夫 && <Steve pose={steveLookAt(stevePose(v.史蒂夫.位, 0), [...(v.史蒂夫.看 ?? 头)])} mcLight={1} />}
         {v.结界 && <结界 设={v.结界} />}
         <杖尖轮盘 杖={盘杖} 朝向={朝向 === '正对镜头' ? { 正对: 机位 } : 朝向} {...摆法} 参={参} 每像素格={v.轮盘.每像素格} renderOrder={v.轮盘.盘在前 ? 5 : -1} />

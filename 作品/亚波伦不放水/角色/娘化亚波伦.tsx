@@ -243,6 +243,8 @@ export type 娘化亚波伦属性 = {
   环秒?: number;
   /** 右手拿下界魔杖（用户 11-09 定亚波伦手持）：挂在定位骨 RightHandLocator 上、握点对到手心（见 握杖修正），右臂默认斜举（见 斜举）；默认不拿 */
   持杖?: boolean;
+  /** 持杖 时握点沿杖身往杖尾挪几格（物品空间的格，见 握杖修正）；默认 0 = 握杖身正中。只有封面草稿八稿用（握近杖尾，伸到身前的那一截更长），正片没用过 */
+  握偏?: number;
   /** 持杖 时跟着杖走的东西，物品空间（杖头的芯在 物品/下界魔杖.tsx 的 杖头芯） */
   杖上?: ReactNode;
   /** 持杖时拿哪一根：不给就是原版的下界魔杖。细做的候选（物品/下界魔杖细做.tsx 的 细做杖款）；握点和原版落在同一处，握杖修正照用 */
@@ -268,23 +270,24 @@ const 姿势表 = (秒: number, 表演: 亚波伦表演, 姿势: Readonly<Record
 const 手心 = new THREE.Vector3(-0.08, -5.78, 0.5);
 /**
  * 握杖修正（用户 11-10：「这法杖都没有拿到手上」）：定位骨 RightHandLocator 在手腕（袖口里面），照 手持下界魔杖 原样挂的话杖身贴着袖口过、不穿过露出来的手。
- * 这里在定位骨坐标里再平移一下，把杖的握点正好放到手心上：杖身从手那一截方盒的正中穿过去，手腕怎么转都在。返回定位骨坐标里的平移矩阵
+ * 这里在定位骨坐标里再平移一下，把杖的握点正好放到手心上：杖身从手那一截方盒的正中穿过去，手腕怎么转都在。返回定位骨坐标里的平移矩阵。
+ * 握偏：握点沿杖身往杖尾挪几格（物品空间；杖全长 31/16，默认的握点到杖尾 15/16），默认 0 = 模型 display 定的握点（杖身正中）
  */
-const 握杖修正 = (表: Readonly<Record<string, BonePose>>): THREE.Matrix4 => {
+const 握杖修正 = (表: Readonly<Record<string, BonePose>>, 握偏 = 0): THREE.Matrix4 => {
   const 缩 = 娘化亚波伦生物.定义.缩放;
   const 腕到臂 = 骨骼矩阵(原几何, 'RightForeArm', 表, 缩).invert().multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 缩));
   const 要 = 手心.clone().applyMatrix4(腕到臂.invert());
-  const 现 = new THREE.Vector3(...杖握点).applyMatrix4(手持杖矩阵());
+  const 现 = new THREE.Vector3(杖握点[0], 杖握点[1] - 握偏, 杖握点[2]).applyMatrix4(手持杖矩阵());
   return new THREE.Matrix4().makeTranslation(要.x - 现.x, 要.y - 现.y, 要.z - 现.z);
 };
 
 // 整根骨骼缩成 0，基岩模型就不画它（engine/model/基岩模型.tsx）
 const 藏眼形光环: Readonly<Record<string, BonePose>> = { ysmGlowbone24: { scale: 0 } };
 
-export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 杖, 杖上, 挂载, 姿势, 头后环, 环秒, ...其余 }) => {
+export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 握偏, 杖, 杖上, 挂载, 姿势, 头后环, 环秒, ...其余 }) => {
   const e = 表演.环境(秒);
   const 图 = 娘化亚波伦生物.取模型(其余.变体).texture;
-  const 修正 = 持杖 ? 握杖修正(姿势表(秒, 表演, 姿势)) : undefined;
+  const 修正 = 持杖 ? 握杖修正(姿势表(秒, 表演, 姿势), 握偏) : undefined;
   const 修正键 = 修正?.elements.join(',');
   const 转秒 = 环秒 ?? 秒;
   const 挂 = useMemo(
@@ -324,13 +327,13 @@ export type 杖位姿 = {
  * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势），不给 杖 就是原版的下界魔杖。
  * 旧握法：不做握杖修正，杖照定位骨原样挂（<手持下界魔杖> 直接挂 RightHandLocator）；只给封面草稿五稿及以前的旧案留着，不改它们的画面
  */
-export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖'> & { 旧握法?: boolean }): 杖位姿 => {
+export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 握偏, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖' | '握偏'> & { 旧握法?: boolean }): 杖位姿 => {
   const 表 = 姿势表(秒, 表演, 姿势);
   const m = new THREE.Matrix4()
     .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
     .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
     .multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 娘化亚波伦生物.定义.缩放));
-  if (!旧握法) m.multiply(握杖修正(表));
+  if (!旧握法) m.multiply(握杖修正(表, 握偏));
   m.multiply(杖?.矩阵 ?? 手持杖矩阵());
   const 点 = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
   const [尖, 尾] = [点(杖?.尖 ?? 杖尖), 点(杖?.尾 ?? 杖尾)];
@@ -348,3 +351,34 @@ export const 右手心 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚
         .multiply(骨骼矩阵(原几何, 'RightForeArm', 姿势表(秒, 表演, 姿势), 娘化亚波伦生物.定义.缩放)),
     )
     .toArray();
+
+// 脸的中心：头的方盒（Head，模型像素 x −3.42～3.58、y 33.13～40.13、z −3～4）正面（−Z）那一面的中心，写成 Head 的骨骼坐标（原点 = pivot (0, 33.05, 0)）
+const 脸心 = new THREE.Vector3(-0.08, 3.58, -3);
+
+// 量她在画面上占多高用的骨骼：帽子、头、躯干、两臂、两腿、两只鞋。不算头后的眼形光环、蜘蛛腿、头发和裙摆（都在这些方盒的上下范围以内）
+const 身体骨骼 = ['mao', 'Head', 'UpperBody2', 'LeftArm', 'LeftForeArm', 'RightArm', 'RightForeArm', 'LeftLeg', 'LeftLowerLeg', 'RightLeg', 'RightLowerLeg', 'bone16', 'bone20'];
+
+/**
+ * 她的脸在场景里的位置和朝向、身子（胸，UpperBody）的朝向、身体各方盒的角（身体骨骼 那几根，不算头后光环）：不渲染，同一张姿势表做骨骼正解。
+ * 核对「她是不是朝着镜头、脸落在画面哪、在画面上占多高」用（封面草稿八稿的自检）
+ */
+export const 头身朝向 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'>): { 脸: V3; 脸朝向: V3; 身朝向: V3; 身体点: V3[] } => {
+  const 表 = 姿势表(秒, 表演, 姿势);
+  const 底 = new THREE.Matrix4().makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!).multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)));
+  const 骨 = (名: string) => 底.clone().multiply(骨骼矩阵(原几何, 名, 表, 娘化亚波伦生物.定义.缩放));
+  // 骨骼坐标的正面是 −Z
+  const 正面 = (m: THREE.Matrix4) => new THREE.Vector3(0, 0, -1).transformDirection(m).toArray();
+  const 头 = 骨('Head');
+  const 身体点: V3[] = [];
+  for (const b of 原几何.bones) {
+    if (!身体骨骼.includes(b.name)) continue;
+    const m = 骨(b.name);
+    // 方盒的角写成骨骼坐标：原点 = pivot，X 取负（同 描边面）；方盒自己带转角的这几根里没有
+    for (const c of b.cubes ?? [])
+      for (let k = 0; k < 8; k++) {
+        const 角 = [0, 1, 2].map((i) => c.origin[i]! + (k & (1 << i) ? c.size[i]! : 0));
+        身体点.push(new THREE.Vector3(-(角[0]! - b.pivot[0]), 角[1]! - b.pivot[1], 角[2]! - b.pivot[2]).applyMatrix4(m).toArray());
+      }
+  }
+  return { 脸: 脸心.clone().applyMatrix4(头).toArray(), 脸朝向: 正面(头), 身朝向: 正面(骨('UpperBody')), 身体点 };
+};
