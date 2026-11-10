@@ -13,5 +13,7 @@ import 音爆 from '../法术/音爆.元.ts';
 import 闪电 from '../法术/闪电.元.ts';
 import 索命 from '../法术/索命.元.ts';
 import 震撼 from '../法术/震撼.元.ts';
+import 释放 from '../法术/释放.元.ts';
+import 凋灵寂灭 from '../法术/凋灵寂灭.元.ts';
 
-export const 丙元: readonly 法术元[] = [腐化, 水蛭, 水柱, 卫射, 风爆, 霜呼, 炎呼, 虫群, 音爆, 闪电, 索命, 震撼];
+export const 丙元: readonly 法术元[] = [腐化, 水蛭, 水柱, 卫射, 风爆, 霜呼, 炎呼, 虫群, 音爆, 闪电, 索命, 震撼, 释放, 凋灵寂灭];
