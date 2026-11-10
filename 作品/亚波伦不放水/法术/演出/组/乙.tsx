@@ -8,6 +8,8 @@ import 牙之 from '../法术/牙之.tsx';
 import 尖刺 from '../法术/尖刺.tsx';
 import 障碍 from '../法术/障碍.tsx';
 import 撼地 from '../法术/撼地.tsx';
+import 冰川 from '../法术/冰川.tsx';
+import 喷发 from '../法术/喷发.tsx';
 
 export const 乙演出: readonly 法术演出条[] = [
   撕咬,
@@ -16,4 +18,6 @@ export const 乙演出: readonly 法术演出条[] = [
   尖刺,
   障碍,
   撼地,
+  冰川,
+  喷发,
 ];
