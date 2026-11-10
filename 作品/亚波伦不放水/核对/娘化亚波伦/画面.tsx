@@ -7,7 +7,7 @@ import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
 import { 场景到three } from '@engine/core/three换算.ts';
 import { use视图下标 } from '@engine/段/时间.tsx';
-import { 娘化亚波伦, 定表演, 悬停, 斜举, 站立, type 亚波伦表演 } from '../../角色/娘化亚波伦.tsx';
+import { 右手心, 娘化亚波伦, 定表演, 悬停, 斜举, 站立, type 亚波伦表演 } from '../../角色/娘化亚波伦.tsx';
 import { ItemDisplay } from '@engine/model/物品贴图.tsx';
 import { 下界魔杖, 下界魔杖显示 } from '../../物品/下界魔杖.tsx';
 import { 画幅, 视图们, type 视图 } from './视图.ts';
@@ -27,9 +27,13 @@ const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
   cam.near = 0.05;
   cam.far = 256;
   const 抬 = v.离地 ?? 0;
-  cam.position.copy(场景到three([v.眼[0], v.眼[1], v.眼[2] + 抬]));
+  // 手部特写：手心和画角色用同一份 pose、表演、秒 算（已经带离地）
+  const 手 = v.看右手 && 右手心({ pose: { loc: [0, 0, 抬], yaw: 180 }, 秒: v.秒, 表演: 表演们[v.表演] });
+  const 眼 = 手 ? [手[0] + v.看右手![0], 手[1] + v.看右手![1], 手[2] + v.看右手![2]] : [v.眼[0], v.眼[1], v.眼[2] + 抬];
+  const 看 = 手 ?? [v.看[0], v.看[1], v.看[2] + 抬];
+  cam.position.copy(场景到three([眼[0]!, 眼[1]!, 眼[2]!]));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three([v.看[0], v.看[1], v.看[2] + 抬]));
+  cam.lookAt(场景到three([看[0]!, 看[1]!, 看[2]!]));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
