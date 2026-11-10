@@ -12,7 +12,7 @@ import type { Png } from '@engine/model/贴图.ts';
 import { interpPathPos, particlePath } from '@库/特效/粒子面片.tsx';
 import type { 点 } from '../接口.ts';
 import { 混合参数, 贴图, type 混合 } from './材质.ts';
-import { 面片们, type 面片项 } from './面片.tsx';
+import { 片, 面片们, type 面片项 } from './面片.tsx';
 
 type 轨行 = readonly number[];
 export type 录制粒子 = {
@@ -135,7 +135,7 @@ export const 录制回放: React.FC<录制回放属性> = ({ 录制, 秒, 脚底
     const 键 = `${名}|${混}`;
     let b = 批.get(键);
     if (!b) 批.set(键, (b = { 图, 混合: 混, 项: [] }));
-    b.项.push({ 位: 摆(局[0]!, 局[1]!, 局[2]!), 半宽: 插(这[3]!, 下[3]!, f), 色: [这[4]!, 这[5]!, 这[6]!], 透明度: 这[7]!, 转角: 插(前[8]!, 这[8]!, f) });
+    b.项.push(片(摆(局[0]!, 局[1]!, 局[2]!), 插(这[3]!, 下[3]!, f), [这[4]!, 这[5]!, 这[6]!], undefined, 这[7]!, 插(前[8]!, 这[8]!, f)));
   });
   return (
     <>
