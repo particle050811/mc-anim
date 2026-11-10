@@ -1,4 +1,5 @@
 // 读 sourcing/extract.toml（取材条目）和 sourcing/jars.toml（jar 登记），格式见两个文件开头。
+// sourcing/extract.<名>.toml：另放的一批条目（录制这类自成一批的），只认 [[取材]] 和 [组]，并进同一张表，名称不能重。
 // 这里只做解析、选条目、展开步骤和产物，跑和查在 提取.ts。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -51,10 +52,22 @@ export type 取材清单 = { 程序: Record<string, string[]>; 组: Record<strin
 export const 取材目录 = () => path.join(代码根(), 'sourcing');
 export const 脚本目录 = () => path.join(取材目录(), 'extract');
 
-export const 解析清单 = (清单文本: string, jar文本: string): 取材清单 => {
+export const 解析清单 = (清单文本: string, jar文本: string, 另批: Record<string, string> = {}): 取材清单 => {
   const d = parse(清单文本) as Record<string, unknown>;
   const 条目 = new Map<string, 取材条目>();
-  for (const raw of (d['取材'] ?? []) as Record<string, unknown>[]) {
+  const 组 = { ...((d['组'] as Record<string, string[]>) ?? {}) };
+  const 全部条目 = [...((d['取材'] ?? []) as Record<string, unknown>[])];
+  for (const [文件, 文本] of Object.entries(另批)) {
+    const x = parse(文本) as Record<string, unknown>;
+    const 多 = Object.keys(x).filter((k) => k !== '取材' && k !== '组');
+    if (多.length) throw new Error(`${文件} 只认 [[取材]] 和 [组]，多了 ${多.join('、')}`);
+    全部条目.push(...((x['取材'] ?? []) as Record<string, unknown>[]));
+    for (const [k, v] of Object.entries((x['组'] as Record<string, string[]>) ?? {})) {
+      if (组[k]) throw new Error(`${文件} 的组「${k}」别处已经有了`);
+      组[k] = v;
+    }
+  }
+  for (const raw of 全部条目) {
     const e: 取材条目 = {
       名称: String(raw['名称']),
       需要: (raw['需要'] as string[] | undefined) ?? [],
@@ -89,11 +102,20 @@ export const 解析清单 = (清单文本: string, jar文本: string): 取材清
     for (const y of x.也认 ?? []) 拆位置(y);
     jars.set(x.id, { ...x, 许可: x.许可 === undefined ? undefined : 读jar许可(x.许可) });
   }
-  return { 程序: (d['程序'] as Record<string, string[]>) ?? {}, 组: (d['组'] as Record<string, string[]>) ?? {}, 条目, jars };
+  return { 程序: (d['程序'] as Record<string, string[]>) ?? {}, 组, 条目, jars };
 };
 
-export const 读清单 = () =>
-  解析清单(fs.readFileSync(path.join(取材目录(), 'extract.toml'), 'utf8'), fs.readFileSync(path.join(取材目录(), 'jars.toml'), 'utf8'));
+export const 读清单 = () => {
+  const 目录 = 取材目录();
+  const 另批 = Object.fromEntries(
+    fs
+      .readdirSync(目录)
+      .filter((f) => /^extract\..+\.toml$/.test(f))
+      .sort()
+      .map((f) => [f, fs.readFileSync(path.join(目录, f), 'utf8')]),
+  );
+  return 解析清单(fs.readFileSync(path.join(目录, 'extract.toml'), 'utf8'), fs.readFileSync(path.join(目录, 'jars.toml'), 'utf8'), 另批);
+};
 
 /** 能直接跑的：有步骤、不用开游戏、不待迁移、不是不重导（--全部 就是这些） */
 export const 可直接跑 = (e: 取材条目) => e.步骤.length > 0 && !e.要开游戏 && !e.待迁移 && !e.不重导;
