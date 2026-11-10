@@ -2,11 +2,14 @@
 // 过渡实体（法阵和两道环、聚风带、大烟、现身那一下的火焰）。摆法、时刻、出处在 安息仪式时序.ts。都按秒算，自己不取时间。
 // 坐标：场景约定（Z 朝上，单位格），放在 rotation [−π/2, 0, 0] 的 group 里；祭坛那一列中心在 (0, 0)，黑曜石底的顶是 z = 0。
 // 和游戏不一样的地方（粗做）：
-//   聚风带的宽度方向游戏里跟着镜头偏航歪（WindTrailParticle.getCameraRot），这里一律竖着；游戏里带头那一截因为没更新 xo 会每帧闪回出生点，没照做。
+//   聚风带的宽度方向照游戏跟着镜头偏航歪（WindTrailParticle.getCameraRot），取的是 useThree 的相机朝向，前提是演出整体没再转过；游戏里带头那一截因为没更新 xo 会每帧闪回出生点，没照做。
+//   灵魂火的烟（BaseFireBlock.animateTick，3 颗 LARGE_SMOKE）出烟率取决于玩家站哪，这里固定按游戏实拍机位（玩家格）算，片里镜头怎么动都不变。
+//   祭坛的眼睛（lit 的 composite 模型第二层）画在 方块拼搭 的祭坛上面，自己加了 polygonOffset 防共面；完成光柱的粗细核过源码和实拍是一样的（宽约 0.65～0.9 格），没改。
 //   物品碎屑不算碰撞，只在撞进祭坛那一列时停住；灵魂火的面片双面画（游戏里每片只有一面）。
 //   暗影精华的 4 帧图标游戏里帧间插值，这里只换帧。
-//   没做：祭坛脚边转圈的图腾粒子（goety:totem_effect）、每秒两颗幽匿灵魂粒子（贴图都没取）。
+//   没做：祭坛脚边转圈的图腾粒子（goety:totem_effect，没有灵魂时每秒一次、仪式中每刻一次）、祭坛上方每秒两颗幽匿灵魂粒子、仪式没开始时祭坛格里每刻 4 颗火焰（贴图都没取）。
 // 待迁移（私有资产）：破碎之环是启示录的（保留所有权益），只能私有；公开版怎么办（缺了报错还是换占位）等用户定
+import { useThree } from '@react-three/fiber';
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { clamp01, lerp as 混, rad as 弧 } from '@engine/core/数学.ts';
@@ -20,6 +23,8 @@ import { type Particle, ParticleQuads, particleTexture } from '@库/特效/粒�
 import { type ParticleSpawn, vanillaParticleAtlas, VanillaParticles } from '@库/特效/原版粒子.tsx';
 import 魔典数据 from 'asset:模型/仪式/炼狱魔典';
 import 魔典图 from 'asset:贴图/仪式/炼狱魔典';
+import 祭坛模型 from 'asset:模型/方块/黑暗祭坛';
+import 祭坛眼睛图 from 'asset:贴图/方块/黑暗祭坛.激活';
 import 法阵图 from 'asset:贴图/仪式/goety/entity/cultist/summon_apostle';
 import 环图 from 'asset:贴图/仪式/goety/entity/cultist/summon_apostle_ring';
 import 聚风图 from 'asset:贴图/仪式/goety/particle/gathering_trail';
@@ -44,6 +49,7 @@ import {
   图腾位置,
   游戏,
   灵魂火格,
+  祭坛格,
   激活物位置,
   物品转速度每刻,
   祭品们,
@@ -220,6 +226,17 @@ export const 灵魂火: React.FC<{ 秒: number }> = ({ 秒 }) => {
   );
 };
 
+// ---------- 祭坛的眼睛 ----------
+// dark_altar[lit=true] 的模型是 forge:composite：同一个 template_altar 画两遍，底层贴 dark_altar（方块拼搭已经画了），上面再叠一层贴 dark_altar_activated（两只发绿光的眼睛）。
+// 这里只画上面那层：同一个模型，贴图换成 激活 那张（64×64，和底层同样的 uv），略往外偏一点免得和底层共面闪。
+const 眼睛补材质 = (m: THREE.MeshStandardMaterial) => {
+  m.polygonOffset = true;
+  m.polygonOffsetFactor = -2;
+  m.polygonOffsetUnits = -2;
+  m.emissiveIntensity = 1; // 眼睛自己发光
+};
+const 祭坛眼睛: React.FC = () => <BlockModel data={祭坛模型 as unknown as BlockModelData} atlas={png(祭坛眼睛图)} part="祭坛" patch={眼睛补材质} />;
+
 // ---------- 结构 ----------
 /**
  * 仪式结构：黑曜石底 7×7、哭泣黑曜石 3×3 台、中心诅咒笼（里面转着灵魂图腾）上摞点亮的黑暗祭坛、四个斜角灵魂土上的灵魂火、外圈 12 个基座。
@@ -238,6 +255,9 @@ export const 安息仪式结构: React.FC<{ 秒: number; 黑曜石底?: boolean;
         ))}
       <group position={图腾位置}>
         <灵魂图腾 秒={秒} />
+      </group>
+      <group position={[祭坛格[0], 祭坛格[1], 祭坛格[2] + 0.5]}>
+        <祭坛眼睛 />
       </group>
     </group>
   );
@@ -418,6 +438,13 @@ const 排聚风 = (进度刻在: (真实刻: number) => number, 止刻: number, 
 };
 
 const 聚风带们: React.FC<{ 表: 聚风[]; 真实刻: number }> = ({ 表, 真实刻 }) => {
+  // 带子的「宽度方向」：游戏里 (0, 宽 ÷ 2, 0) 绕 z 轴转 −偏航（WindTrailParticle.getCameraRot），在游戏的 x-y 平面（y 朝上）里歪：偏航 180（朝北）时竖直、偏航 90 时横躺。
+  // 这里的 three 世界轴和游戏一致（场景 Z 朝上放在 rotation [−π/2, 0, 0] 的 group 里），所以直接拿相机朝向算；
+  // 前提：演出整体没有再转过（游戏偏航 0 = 朝场景 −y）。
+  const 相机 = useThree((st) => st.camera);
+  const 朝 = new THREE.Vector3(0, 0, -1).applyQuaternion(相机.quaternion);
+  const 歪 = -Math.atan2(-朝.x, 朝.z);
+  const [歪x, 歪z] = [Math.sin(歪), Math.cos(歪)];
   const mat = useMemo(() => new THREE.MeshBasicMaterial({ map: 平贴图(聚风图), vertexColors: true, transparent: true, depthWrite: false, side: THREE.DoubleSide }), []);
   const geo = useMemo(() => {
     const pos: number[] = [];
@@ -441,7 +468,8 @@ const 聚风带们: React.FC<{ 表: 聚风[]; 真实刻: number }> = ({ 表, 真
         const 到 = 点(k + 1);
         const [u1, u2] = [k / c.采样, (k + 1) / c.采样];
         const 起 = pos.length / 3;
-        pos.push(从[0], 从[1], 从[2] - c.宽 / 2, 到[0], 到[1], 到[2] - c.宽 / 2, 到[0], 到[1], 到[2] + c.宽 / 2, 从[0], 从[1], 从[2] + c.宽 / 2);
+        const [hx, hz] = [(歪x * c.宽) / 2, (歪z * c.宽) / 2];
+        pos.push(从[0] - hx, 从[1], 从[2] - hz, 到[0] - hx, 到[1], 到[2] - hz, 到[0] + hx, 到[1], 到[2] + hz, 从[0] + hx, 从[1], 从[2] + hz);
         uv.push(u1, 1, u2, 1, u2, 0, u1, 0);
         for (let q = 0; q < 4; q++) col.push(r, g, b);
         idx.push(起, 起 + 1, 起 + 2, 起, 起 + 2, 起 + 3);
@@ -454,7 +482,7 @@ const 聚风带们: React.FC<{ 表: 聚风[]; 真实刻: number }> = ({ 表, 真
     geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     geo.setIndex(idx);
     return geo;
-  }, [表, 真实刻]);
+  }, [表, 真实刻, 歪x, 歪z]);
   React.useEffect(() => () => geo.dispose(), [geo]);
   return <mesh geometry={geo} material={mat} frustumCulled={false} />;
 };
@@ -489,6 +517,28 @@ const 烟状态 = (c: 烟, 当前刻: number): Particle | null => {
   const f = τ - 岁;
   const 帧 = 7 - Math.min(7, Math.floor((岁 * 7) / 寿命));
   return { p: [混(前[0], p[0], f), 混(前[1], p[1], f), 混(前[2], p[2], f)], half: 半, uv: vanillaParticleAtlas.uv[`generic_${帧}`]!, color: [灰, 灰, 灰] };
+};
+
+// 灵魂火自己的烟：原版 BaseFireBlock.animateTick（客户端每刻在玩家四周随机抽方块调用，抽法 = 三个轴各「两个 0～14 的随机整数之差」，每刻 667 次），
+// 下面是实心方块（灵魂土）时放 3 颗 LARGE_SMOKE，位置 = 火格内水平随机、高 0.5～1.0。所以每团火的出烟率取决于玩家站在哪，离得近就多：
+// 这里把玩家放在游戏实拍的机位（对照报告 1110-1330：方块 (4, 103, 4)，折到场景格 (4, −4, 3)），灵魂火是一直烧着的，仪式前、中、过渡、现身后都在冒。
+const 玩家格: V3 = [4, -4, 3];
+const 火烟率 = (火: readonly [number, number, number]): number => {
+  const 概率 = (d: number) => (15 - Math.abs(d)) / 225;
+  const [dx, dy, dz] = [火[0] - 玩家格[0], 火[1] - 玩家格[1], 火[2] - 玩家格[2]];
+  return 667 * 概率(dx) * 概率(dy) * 概率(dz);
+};
+const 灵魂火烟表 = (起刻: number, 止刻: number, 种子: number): 烟[] => {
+  const 表: 烟[] = [];
+  for (const [fi, 火] of 灵魂火格.entries()) {
+    const 率 = 火烟率(火);
+    for (let 刻 = 起刻; 刻 <= 止刻; 刻++) {
+      const rand = rng(种子 * 1000003 + (刻 + 1000) * 31 + fi * 7 + 5);
+      if (rand() >= 率) continue; // 率 < 1：一刻最多被抽中一次
+      for (let n = 0; n < 3; n++) 表.push({ 刻, p: [火[0] + rand() - 0.5, 火[1] + rand() - 0.5, 火[2] + 0.5 + rand() * 0.5], 种子: 种子 * 4001 + 刻 * 17 + fi * 3 + n });
+    }
+  }
+  return 表;
 };
 const 大烟们: React.FC<{ 表: 烟[]; 当前刻: number }> = ({ 表, 当前刻 }) => {
   const 粒 = 表.map((c) => 烟状态(c, 当前刻)).filter((s): s is Particle => !!s);
@@ -530,6 +580,8 @@ export const 安息仪式演出: React.FC<安息仪式演出属性> = ({ 秒, �
     for (let 刻 = Math.ceil(方案.低语 * 20); 刻 <= 现身刻; 刻++) {
       烟表.push({ 刻, p: [祭坛中心[0] + (rand() * 2 - 1), 祭坛中心[1] + (rand() * 2 - 1), 祭坛中心[2] + rand() * 游戏.实体高], 种子: 种子 * 977 + 刻 });
     }
+    // 灵魂火的烟：从仪式开始前 15 秒（烟最长活 5 秒，到放环时已是稳态）到整段结束
+    烟表.push(...灵魂火烟表(-300, Math.ceil(方案.总秒 * 20), 种子));
     // 现身：200 颗 FLAME，从实体脚边 0.3 格高炸开。速度 = (cos × f2, 0.01 + 随机 × 0.5, sin × f2) × 0.5，f2 = 随机 × 4（格/刻）
     const 火焰: ParticleSpawn[] = Array.from({ length: 200 }, (_, k) => {
       const f2 = rand() * 4;
@@ -538,7 +590,7 @@ export const 安息仪式演出: React.FC<安息仪式演出属性> = ({ 秒, �
       return { 种: 'flame' as const, 刻: 现身刻, p: [祭坛中心[0] + d1 * 0.1, 祭坛中心[1] - d3 * 0.1, 祭坛中心[2] + 0.3] as V3, v: [d1 * 0.5, -d3 * 0.5, d2 * 0.5] as V3, 种子: 种子 * 131 + k };
     });
     return { 聚风表, 烟表, 火焰 };
-  }, [方案.完成, 方案.提示, 方案.低语, 方案.现身, 种子, 完成刻, 现身刻, 过渡总刻]);
+  }, [方案.完成, 方案.提示, 方案.低语, 方案.现身, 方案.总秒, 种子, 完成刻, 现身刻, 过渡总刻]);
 
   const 当前刻 = 秒 * 20;
   const 飞 = 1 - s.祭品在;
