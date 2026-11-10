@@ -2,4 +2,10 @@
 // 写法：import 某法术 from '../法术/某法术.元.ts'; 再放进数组。
 import type { 法术元 } from '../接口.ts';
 
-export const 乙元: readonly 法术元[] = [];
+import 撕咬 from '../法术/撕咬.元.ts';
+import 尖牙盛宴 from '../法术/尖牙盛宴.元.ts';
+
+export const 乙元: readonly 法术元[] = [
+  撕咬,
+  尖牙盛宴,
+];

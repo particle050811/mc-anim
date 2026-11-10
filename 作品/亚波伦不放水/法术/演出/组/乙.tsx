@@ -2,4 +2,10 @@
 // 写法：import 某法术 from '../法术/某法术.tsx'; 再放进数组。
 import type { 法术演出条 } from '../定义.tsx';
 
-export const 乙演出: readonly 法术演出条[] = [];
+import 撕咬 from '../法术/撕咬.tsx';
+import 尖牙盛宴 from '../法术/尖牙盛宴.tsx';
+
+export const 乙演出: readonly 法术演出条[] = [
+  撕咬,
+  尖牙盛宴,
+];
