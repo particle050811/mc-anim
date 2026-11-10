@@ -688,3 +688,19 @@ id = "数据/着色器/启示录/quietus_beam.vsh"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/quietus_beam.vsh）"
+
+[["资产"]]
+id = "数据/方块附加/方块表"
+"类别" = "数据"
+"来源" = "提取:方块附加-亚波伦不放水@56b71336d2b4+0bdc89263616+c90b96f049d9+154ae1f767f8+131e205ce3ee+9d064557007f+b288fdb5fba0+c29dcf940168+1395903ba21c+4f63c3d80378"
+"许可" = "LicenseRef-Minecraft-EULA AND CC-BY-NC-SA-4.0 AND CC-BY-NC-SA-3.0 AND MIT AND LicenseRef-LGPL-Unversioned AND LGPL-2.1-only AND LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "本作品的体素方块表：全局表（数据/场景/关键帧/方块表）原样 + 粉色教堂地上结构用到的模组方块和原版樱花系状态；换用.toml 让本作品用它顶替全局表。含灾变、妖怪归家、Prefab 的方块，私有"
+
+[["资产"]]
+id = "数据/场景/粉色教堂/体素方块"
+"类别" = "数据"
+"来源" = "派生:9d6c154a4c4f+sourcing/extract/结构方块.py"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "粉色教堂地上结构的体素方块列表（46644 格、289 种状态，坐标是结构模板的 x 东、y 上、z 南），配方「粉色教堂体素方块」从 数据/场景/粉色教堂/结构-地上 转出；核对-体素教堂 用"

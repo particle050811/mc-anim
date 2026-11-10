@@ -51,13 +51,49 @@ export const 读资产锁 = (目录 = 资产锁路径()): 资产锁 => {
 
 /** 打包一部作品用的锁：共用的 assets/资产锁/ 并上 <作品根>/资产锁/（没有就只用共用的）；同一个 id 两边都有就报错。
  *  这部作品选用了材质包就再盖上材质包覆盖层（套材质包）：在 照材质包选用 里按那一组的选用，不在就按作品的 "包"（当前材质包选用）；
+ *  作品写了 换用.toml 的先照它把共用 id 换成作品自己那件的字节（套换用），材质包覆盖层盖在换过的上面；换用 = false 是没换的（取材配方的输入要原件）。
  *  写锁的地方（assets add、extract --登记）读的是 读资产锁(单份)，不经这里 */
-export const 读作品资产锁 = (作品根: string, 选 = 当前材质包选用(作品根)): 资产锁 => {
+export const 读作品资产锁 = (作品根: string, 选 = 当前材质包选用(作品根), 换用 = true): 资产锁 => {
   const 共用 = 读资产锁();
   const 作品 = 读资产锁(作品资产锁路径(作品根));
   const 重 = Object.keys(作品).filter((id) => id in 共用);
   if (重.length) throw new Error(`资产 id 在共用锁和 ${作品资产锁路径(作品根)} 里都有：${重.join('、')}（一个 id 只登记在一侧）`);
-  return 套材质包({ ...共用, ...作品 }, 作品根, 选);
+  const 并 = { ...共用, ...作品 };
+  return 套材质包(换用 ? 套换用(并, 作品根) : 并, 作品根, 选);
+};
+
+// 按作品换用：<作品根>/换用.toml 一行一条 "<共用 id>" = "<本作品资产 id>"，这部作品里引用左边 id 的地方（asset:、打包、指纹）拿到的是右边那件的字节，
+// 别的作品不受影响。现在只给体素方块表用：全局表、图集公开发且别的作品的画面钉在它上面，作品要的模组方块做成「全局表 + 追加」的附加表登记在作品侧
+// （sourcing/extract.toml「方块附加-…」，docs/世界.md「给方块表加模组方块」）。
+export const 换用表路径 = (作品根: string) => path.join(作品根, '换用.toml');
+
+/** 换用.toml 的条目；没有这个文件是空的。随 remotion.config.ts 打包不能用 TOML 库，只认 "…" = "…" 和 # 注释 */
+export const 读换用表 = (作品根: string): [string, string][] => {
+  const f = 换用表路径(作品根);
+  if (!fs.existsSync(f)) return [];
+  const 出: [string, string][] = [];
+  for (const 行 of fs.readFileSync(f, 'utf8').split(/\r?\n/)) {
+    const t = 行.replace(/\s+#.*$/, '').trim();
+    if (!t || t.startsWith('#')) continue;
+    const m = /^"([^"]+)"\s*=\s*"([^"]+)"$/.exec(t);
+    if (!m) throw new Error(`${f}：一行一条，写成 "<共用资产 id>" = "<本作品资产 id>"，这里认不出：${t}`);
+    if (出.some(([a]) => a === m[1])) throw new Error(`${f}：${m[1]} 写了两次`);
+    出.push([m[1], m[2]]);
+  }
+  return 出;
+};
+
+export const 套换用 = (锁: 资产锁, 作品根: string): 资产锁 => {
+  const 表 = 读换用表(作品根);
+  if (!表.length) return 锁;
+  const 出 = { ...锁 };
+  for (const [原, 换] of 表) {
+    if (!锁[原]) throw new Error(`${换用表路径(作品根)}：${原} 不在资产锁里（只能换已登记的资产）`);
+    if (!锁[换]) throw new Error(`${换用表路径(作品根)}：${换} 不在资产锁里：先登记、入库（anim assets add，或对应的 anim extract … --登记）`);
+    if (锁[原].后缀 !== 锁[换].后缀) throw new Error(`${换用表路径(作品根)}：${原}（${锁[原].后缀}）和 ${换}（${锁[换].后缀}）后缀不一样`);
+    出[原] = 锁[换];
+  }
+  return 出;
 };
 
 // 材质包兼容层（用户 11-02「找一个更好的材质包」「写个统一的兼容层…也兼容现有的光影和材质包」）：标准 Java 版资源包 zip 按资产 id 登记（类 材质包/），

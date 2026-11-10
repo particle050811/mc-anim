@@ -58,7 +58,8 @@ export const 显示 = (argv: 步骤, 用: 壳 = 本机壳()) =>
 
 export const 暂存目录 = (名称: string) => 数据路径('run', 'extract', 名称);
 
-const 取材锁 = () => 读作品资产锁(作品根());
+// 没套 换用.toml 的锁：配方的输入、产物说的是 id 自己那件（附加方块表的输入是全局表，不是换上去的附加表）
+const 取材锁 = () => 读作品资产锁(作品根(), undefined, false);
 
 const 摆输入 = (e: 取材条目, 锁: 资产锁, dir: string) => {
   for (const [id, f] of Object.entries(e.输入)) {

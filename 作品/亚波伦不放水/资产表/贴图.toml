@@ -5024,3 +5024,11 @@ id = "贴图/方块/熔岩"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版方块贴图 textures/block/lava_still.png（16×320，动画贴图的整条 20 帧），封面草稿的熔岩池、远处的熔岩柱用"
+
+[["资产"]]
+id = "贴图/方块附加/方块表"
+"类别" = "贴图"
+"来源" = "提取:方块附加-亚波伦不放水@56b71336d2b4+0bdc89263616+c90b96f049d9+154ae1f767f8+131e205ce3ee+9d064557007f+b288fdb5fba0+c29dcf940168+1395903ba21c+4f63c3d80378"
+"许可" = "LicenseRef-Minecraft-EULA AND CC-BY-NC-SA-4.0 AND CC-BY-NC-SA-3.0 AND MIT AND LicenseRef-LGPL-Unversioned AND LGPL-2.1-only AND LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "本作品体素方块表的贴图竖条（16 宽、一格一张）：全局图集原样 + 追加的 24 张模组贴图；换用.toml 让本作品用它顶替全局图集。私有"
