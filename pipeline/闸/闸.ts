@@ -12,7 +12,7 @@ import { 领票, 列票, 票活着, type 票, 回队尾, 改序, 写票, 清任�
 import { 写JSON, 读JSON, 只提示 } from './文件.ts';
 import { 清孤儿 } from './孤儿.ts';
 import { 读状态, 读占用, 前方等待, 队上占用 } from './看.ts';
-import { 监测一轮 } from './告警.ts';
+import { 报静帧重复失败, 监测一轮 } from './告警.ts';
 import { 读机器快照, 读机器快照并行, type 机器快照 } from './机器.ts';
 import { 估计 } from './估计.ts';
 import { 取指令, 取放行, 用掉放行, 删指令, 路让路, 调度让路, 失败退出码 } from './指令.ts';
@@ -127,7 +127,12 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
         const 记 = (事: string, 字段: Record<string, unknown> = {}) => task.记(事, { 票: t.名, 锁: 名, 声明, ...字段 });
         const 监测到点 = () => e.现在毫秒() - 上次监测 >= 3000;
         const 监测 = (机?: 机器快照) => { if (!监测到点())
-            return; 上次监测 = e.现在毫秒(); 只提示('监测', () => { 监测一轮(e, 读状态(e, () => 机 ?? e.读机器(), false)); }); };
+            return; 上次监测 = e.现在毫秒(); 只提示('监测', () => {
+            // 说的是自己的告警当场打到 stderr：调用方（子 Agent）不挂 盯 也看得到自己卡住了
+            for (const a of 监测一轮(e, 读状态(e, () => 机 ?? e.读机器(), false)))
+                if (a.pid === process.pid)
+                    console.error(`!! 告警 ${a.类} ${a.对象}：${Math.round(a.值)} ≥ ${Math.round(a.阈值)}（第 ${a.次数} 次）。${a.类 === '无帧' ? '这么久没出新帧，多半卡住了；别原样重跑，先缩小范围查是哪样东西卡' : ''}`);
+        }); };
         const 清 = () => 只提示('清孤儿', () => { for (const p of e.清孤儿())
             记('清孤儿', { 进程: p }); });
         const 回收 = (pid: number | null) => {
@@ -278,6 +283,9 @@ export const 排队拿 = async (名: string, opts: 排队选项 = {}): Promise<�
             const 中断 = 结果 === '被杀' || 结果 === '退出';
             // 中断时在退出钩子里，不开子进程读内存，要快。被杀事件靠 当时 说明，所以不清。
             记('放锁', { 持锁秒: (e.现在毫秒() - 拿锁时) / 1000, 结果, 已出帧, 队: 队况(), 机: 中断 ? { 负载: e.一分钟负载() } : 机读数(e) });
+            if (结果 !== '成')
+                只提示('重复失败', () => { const a = 报静帧重复失败(e.日志目录, { 声明, 工作区: task.info.发起.工作区, 任务: task.info.任务, pid: process.pid }, e.现在毫秒()); if (a)
+                    console.error(`!! 告警 静帧重复失败 ${a.对象}：同一批帧连着 ${a.值} 次没出来，别再原样重跑`); });
             if (!中断)
                 task.更新(声明, t.名, '');
             // 持锁期间 anim 调度 的改名可能和删票撞上，留下的票会挡住后来者，放锁前再扫一次。

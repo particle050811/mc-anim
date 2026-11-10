@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { 渲染看, 读状态, 一行状态, type 调度状态, type 锁信息 } from './看.ts';
-import { 判告警, 更新历史, 监测一轮, 读监测, 空历史, type 监测历史 } from './告警.ts';
+import { 判告警, 报静帧重复失败, 更新历史, 监测一轮, 读监测, 空历史, type 监测历史 } from './告警.ts';
 import { 取调度环境, type 调度环境 } from './任务.ts';
 import { 读发起者 } from './发起者.ts';
 import { 盯 } from './盯.ts';
@@ -154,6 +154,26 @@ describe('告警对象', () => {
     const 时 = 400_000, 态 = (票名: string) => { const s = 基本(时); s.持锁 = [持({ 票: 票名, 声明: { 种: '批' }, 拿锁时: 时 - 360_000, 帧时: 时 - 360_000 })]; return s; };
     const [h, a] = 轮(空历史(), 态('a')); expect(a).toEqual(['无帧#1']);
     expect(轮(h, 态('b'))[1]).toEqual(['无帧#1']);
+  });
+  it('静帧 90 秒没出新帧就报，render 还是 5 分钟', () => {
+    const 判 = (种: string, 秒: number) => { const s = 基本(秒 * 1000 + 1); s.持锁 = [持({ 声明: { 种, 段: '4-齐放' }, 拿锁时: 1, 帧时: 1, 已出帧: 0, 总帧: 1 })]; return 判告警(s, s.时).map(x => x.类); };
+    expect(判('still', 89)).toEqual([]);
+    expect(判('still', 91)).toEqual(['无帧']);
+    expect(判('render', 91)).toEqual([]);
+  });
+  it('同一批静帧连着两次没出来就报，换帧、中间成功过都不算', () => {
+    const 日志 = path.join(dir, 'logs'), 现在 = Date.now(), 发 = { 工作区: 'wt' };
+    const 记 = (任务: string, 帧: string, 结果: string, 前秒: number) => 记调度(日志, '放锁', { 任务, 结果, 声明: { 种: 'still', 作品: 'A', 段: '4-齐放', 帧 }, 发起: 发 }, 现在 - 前秒 * 1000);
+    const 这次 = (任务: string, 帧 = '720') => 报静帧重复失败(日志, { 声明: { 种: 'still', 作品: 'A', 段: '4-齐放', 帧 }, 工作区: 'wt', 任务 }, 现在);
+    记('t1', '720', '被杀', 300);
+    expect(这次('t1')).toBeUndefined();
+    expect(这次('t2', '721')).toBeUndefined();
+    expect(这次('t2')).toMatchObject({ 类: '静帧重复失败', 对象: '4-齐放@720', 值: 2 });
+    expect(读调度(日志).filter(x => x.事 === '告警').length).toBe(1);
+    记('t2', '720', '被杀', 200); 记('t3', '720', '成', 100);
+    expect(这次('t4')).toBeUndefined();
+    记('t4', '720', '异常', 50);
+    expect(这次('t5')).toMatchObject({ 值: 2 });
   });
   it('still 只有预计缺失才算小任务', () => {
     const 判 = (声明: NonNullable<票['内容']>['声明'], 等: number) => { const s = 基本(等 * 1000); s.票 = [票('a', { 声明 })]; return 判告警(s, s.时).map(x => x.类); };
