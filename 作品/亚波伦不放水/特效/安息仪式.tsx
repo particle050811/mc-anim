@@ -9,6 +9,7 @@
 // 待迁移（私有资产）：破碎之环是启示录的（保留所有权益），只能私有；公开版怎么办（缺了报错还是换占位）等用户定
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
+import { clamp01, lerp as 混, rad as 弧 } from '@engine/core/数学.ts';
 import { BlockModel, type BlockModelData } from '@engine/model/方块模型.tsx';
 import { 方块拼搭 } from '@engine/model/方块拼搭.tsx';
 import { rng, type V3 } from '@engine/model/parts.tsx';
@@ -53,9 +54,6 @@ import {
   type 祭品名,
 } from './安息仪式时序.ts';
 
-const 弧 = (度: number) => (度 * Math.PI) / 180;
-const 混 = (a: number, b: number, f: number) => a + (b - a) * f;
-const 夹 = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 
 // ---------- 物品 ----------
 /** 竖条动画图标取一帧（暗影精华 16×64，mcmeta 每帧 2 刻） */
@@ -401,7 +399,7 @@ const 排聚风 = (进度刻在: (真实刻: number) => number, 止刻: number, 
   const rand = rng(种子 * 48271 + 7);
   const 表: 聚风[] = [];
   for (let 刻 = 1; 刻 <= 止刻; 刻++) {
-    const 进度 = 夹(进度刻在(刻) / 游戏.过渡刻);
+    const 进度 = clamp01(进度刻在(刻) / 游戏.过渡刻);
     const 间隔 = 8 + Math.floor(进度 * -6);
     if (刻 % 间隔 !== 0) continue;
     表.push({
