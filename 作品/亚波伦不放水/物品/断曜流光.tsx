@@ -1,6 +1,6 @@
 // 断曜流光：启示录的 goety_revelation:valettein（zh_cn「断曜流光」），史蒂夫手里的剑（用户 11-10 定）。
 // 游戏里（反编译）：ValetteinItem extends ModSwordItem extends SwordItem，没有自己的渲染器、没有 isFoil 重写，拿在手上走原版 ItemInHandLayer。
-// 模型 models/item/valettein.json 是 forge:separate_transforms：手里、地上用 valettein_normal（Blockbench 元素模型，58 个元素都不带旋转，64×64 贴图，
+// 模型 models/item/valettein.json 是 forge:separate_transforms：手里、地上用 valettein_normal（Blockbench 元素模型，58 个元素的 rotation 角度都是 0，64×64 贴图，
 // 是一片 0.25 像素厚的薄片：x 5.25～10.5、y −0.25～19.5、z 8～8.25），物品栏用 valettein_gui（item/generated 的平面图标）。
 // 这里的 3D 模型是 valettein_normal 原样导出（配方「亚波伦史蒂夫装备」），display 照 json 抄。变形外观（transform/）没取。
 // 坐标：物品空间（单位格，原点 = 模型 (8, 8, 8)，Y 朝上，游戏的北 = −Z）。
