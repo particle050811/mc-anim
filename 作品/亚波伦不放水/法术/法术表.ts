@@ -1938,8 +1938,8 @@ export const 法术表: readonly 法术[] = [
     学派: '下界', 施放: '引导', 施放刻: 0,
     类: '有画面',
     依据: 'RevelationSpell 是 EverChargeSpell，按住时在施法者身上 new RevelationCageEntity（每个施法者同时只有一个），笼子给里面的敌人上 CURSED 并持续扣血',
-    画面: '一个暗红色、三轴乱转的正二十面体线笼罩住施法者周围约 6 格，笼里的敌人身上烧起来',
-    难度: '中', 难度理由: 'RendererUtils.renderRegularIcosahedron 程序画的二十面体，没有贴图',
+    画面: '一个暗红色、三轴同转的正十二面体线框罩住施法者（顶点离中心约 9.7 格），8.5 格内的敌人被钉住、持续掉血；原版不放粒子也不点火',
+    难度: '中', 难度理由: 'RendererUtils.renderRegularIcosahedron 程序画的线框（函数名叫二十面体，画出来是正十二面体），没有贴图',
     图标: 'assets/goety_revelation/textures/item/focus/revelation_focus.png',
     法术类: 'com/mega/revelationfix/common/spell/nether/RevelationSpell.class',
     实体: [
