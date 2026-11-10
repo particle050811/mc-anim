@@ -29,6 +29,8 @@ vi.mock('asset:贴图/角色/娘化亚波伦/2default', () => 图('贴图/角色
 vi.mock('asset:贴图/角色/娘化亚波伦/3default', () => 图('贴图/角色/娘化亚波伦/3default'));
 vi.mock('asset:贴图/角色/娘化亚波伦/4default', () => 图('贴图/角色/娘化亚波伦/4default'));
 vi.mock('asset:贴图/角色/娘化亚波伦/5default', () => 图('贴图/角色/娘化亚波伦/5default'));
+// 持杖挂的物品组件也带 asset: import，这组测试不看杖
+vi.mock('../物品/下界魔杖.tsx', () => ({ 手持下界魔杖: () => null }));
 
 const 姿势在 = (表演: 亚波伦表演, 秒: number, 未知?: Set<string>) => {
   const e = 表演.环境(秒);
