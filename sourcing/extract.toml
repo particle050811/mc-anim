@@ -3002,3 +3002,43 @@
 "数据/着色器/启示录/bossbar_hit.vsh" = "src/数据/着色器/启示录/bossbar_hit.vsh"
 "数据/着色器/启示录/cosmic.fsh" = "src/数据/着色器/启示录/cosmic.fsh"
 "数据/着色器/启示录/cosmic.vsh" = "src/数据/着色器/启示录/cosmic.vsh"
+
+# 史蒂夫的装备（用户 11-10 定：附魔神灵金全套、断曜流光、晋升之环），都是启示录的，私有。
+# 神灵金套（apocalyptium_helmet/chestplate/leggings/boots）穿上不是原版盔甲层的方盒：ApocalyptiumArmorClient.getHumanoidArmorModel 换成 ApocalyptiumArmorModel，
+#   顶点写死在 ApocalyptiumArmorGeometry 里（头 12 面、胸 50 面、腿 24 面、脚 12 面，另有 5×15 的披风网格），四件共用一张 128×64 的 textures/models/armor/apocalyptium_custom.png。
+# 断曜流光（valettein，剑）：models/item/valettein.json 是 forge:separate_transforms，手里和地上用 valettein_normal（58 个元素的薄片，64×64 贴图），物品栏用 valettein_gui（平面图标）。
+# 晋升之环（ascension_halo，饰品）：戴上由 PlayerHaloLayer 在头后画一片 16×16 的 textures/entity/player/halo.png；物品图标是 textures/item/curio/halo.png。
+# 变形外观（NBT revelationfix:transformed，transform/ 下那套）没取。
+[["取材"]]
+"名称" = "亚波伦史蒂夫装备"
+"作品" = "亚波伦不放水"
+"需要" = ["goety_revelation"]
+"公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
+"可见性" = "私有"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["python", "-m", "zipfile", "-e", "{jar:goety_revelation}", "外层"],
+  ["python", "{脚本}/导出启示录盔甲.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "src/数据/角色/史蒂夫装备/神灵金盔甲网格.json"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/角色/史蒂夫装备/神灵金盔甲.png", "甲=assets/goety_revelation/textures/models/armor/apocalyptium_custom.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/角色/史蒂夫装备/晋升之环.png", "环=assets/goety_revelation/textures/entity/player/halo.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金头盔.png", "图标=assets/goety_revelation/textures/item/armor/apocalyptium_helmet.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金胸甲.png", "图标=assets/goety_revelation/textures/item/armor/apocalyptium_chestplate.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金护腿.png", "图标=assets/goety_revelation/textures/item/armor/apocalyptium_leggings.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/神灵金靴子.png", "图标=assets/goety_revelation/textures/item/armor/apocalyptium_boots.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/晋升之环.png", "图标=assets/goety_revelation/textures/item/curio/halo.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/断曜流光.图标.png", "图标=assets/goety_revelation/textures/item/combat/valettein_gui.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/模型/物品/断曜流光.模型.json", "剑=goety_revelation:item/valettein_normal"],
+]
+["取材"."产物"]
+"数据/角色/史蒂夫装备/神灵金盔甲网格" = "src/数据/角色/史蒂夫装备/神灵金盔甲网格.json"
+"贴图/角色/史蒂夫装备/神灵金盔甲" = "src/贴图/角色/史蒂夫装备/神灵金盔甲.png"
+"贴图/角色/史蒂夫装备/晋升之环" = "src/贴图/角色/史蒂夫装备/晋升之环.png"
+"贴图/物品/神灵金头盔" = "src/贴图/物品/神灵金头盔.png"
+"贴图/物品/神灵金胸甲" = "src/贴图/物品/神灵金胸甲.png"
+"贴图/物品/神灵金护腿" = "src/贴图/物品/神灵金护腿.png"
+"贴图/物品/神灵金靴子" = "src/贴图/物品/神灵金靴子.png"
+"贴图/物品/晋升之环" = "src/贴图/物品/晋升之环.png"
+"贴图/物品/断曜流光.图标" = "src/贴图/物品/断曜流光.图标.png"
+"模型/物品/断曜流光" = "src/模型/物品/断曜流光.模型.json"
+"贴图/物品/断曜流光" = "src/模型/物品/断曜流光.模型.png"
