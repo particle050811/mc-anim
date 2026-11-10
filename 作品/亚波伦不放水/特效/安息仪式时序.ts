@@ -186,6 +186,6 @@ export const 召唤声音 = (方案: 召唤方案): 召唤声[] => {
     { 名: '雷声', 资产: [1, 2, 3].map((n) => `音效/entity.lightning_bolt.thunder.${n}`), 秒: 方案.现身, 音量: 1, 音高: '1', 出处: 'SummonApostle.tick 第 450 刻；只有声音，没有闪电' },
   ];
   // 每秒扣一次灵魂：幽匿催发体绽放声、祭坛顶上两颗幽匿灵魂粒子（DarkAltarBlockEntity.tick，世界时间每 20 刻）
-  for (let s = 1; s <= 方案.完成 + 1e-9; s++) 声.push({ 名: `扣灵魂${s}`, 资产: Array.from({ length: 14 }, (_, n) => `音效/block.sculk_catalyst.bloom.${n + 1}`), 秒: s, 音量: 1, 音高: '0.9～1.0 随机', 出处: 'DarkAltarBlockEntity.tick' });
+  for (let s = 1; s <= 方案.完成 + 1e-9; s++) 声.push({ 名: `扣灵魂${s}`, 资产: Array.from({ length: 13 }, (_, n) => `音效/block.sculk_catalyst.bloom.${n + 1}`), 秒: s, 音量: 1, 音高: '0.9～1.0 随机', 出处: 'DarkAltarBlockEntity.tick' });
   return 声.sort((a, b) => a.秒 - b.秒);
 };
