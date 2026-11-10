@@ -17,6 +17,7 @@ import type { BonePose } from '@engine/model/基岩模型.tsx';
 import type { 实体光照 } from '@engine/model/实体材质.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 定义生物 } from '@库/生物/定义生物.ts';
+import { 手持下界魔杖 } from '../物品/下界魔杖.tsx';
 import 表情动画 from 'asset:动画/角色/娘化亚波伦/extra';
 import 主动画 from 'asset:动画/角色/娘化亚波伦/main';
 import 模型 from 'asset:模型/角色/娘化亚波伦';
@@ -109,10 +110,15 @@ export type 娘化亚波伦属性 = {
   受伤?: number;
   光照?: 实体光照;
   透明度?: number;
+  /** 右手拿下界魔杖（用户 11-09 定亚波伦手持）：挂在定位骨 RightHandLocator 上；默认不拿 */
+  持杖?: boolean;
   挂载?: Record<string, ReactNode>;
 };
 
-export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, ...其余 }) => {
+const 杖挂载 = { RightHandLocator: <手持下界魔杖 /> };
+
+export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 挂载, ...其余 }) => {
   const e = 表演.环境(秒);
-  return <娘化亚波伦生物 {...其余} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
+  const 挂 = 持杖 ? { ...杖挂载, ...挂载 } : 挂载;
+  return <娘化亚波伦生物 {...其余} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
 };
