@@ -240,3 +240,11 @@ id = "模型/物品/断曜流光.旧版"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "anim extract --登记 自动登记（src/模型/物品/断曜流光.旧版.模型.json）"
+
+[["资产"]]
+id = "模型/仪式/炼狱魔典"
+"类别" = "模型"
+"来源" = "提取:亚波伦安息仪式@154ae1f767f8+56b71336d2b4"
+"许可" = "MIT AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/仪式/炼狱魔典.模型.json）"
