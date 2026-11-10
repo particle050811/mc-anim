@@ -1,0 +1,2234 @@
+# 资产表：音效。人写；anim extract --登记 自动追加取材产物。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.abyss_prepare_spell.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.abyss_prepare_spell.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.abyss_prepare_spell.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.abyss_prepare_spell.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.abyss_prepare_spell.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.abyss_prepare_spell.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.abyss_prepare_spell.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.abyss_prepare_spell.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_ambient.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_ambient.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_ambient.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_ambient.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_ambient.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_ambient.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_ambient.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_ambient.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_cast_spell.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_cast_spell.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_cast_spell.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_cast_spell.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_death"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_death.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_hurt.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_hurt.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_hurt.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_hurt.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_hurt.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_hurt.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_hurt.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_hurt.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_pre_teleport"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_pre_teleport.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_predeath"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_predeath.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_prepare_spell.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_prepare_spell.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_prepare_spell.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_prepare_spell.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_prepare_summon"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_prepare_summon.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_shade"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_shade.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_shoot"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_shoot.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_teleport.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_teleport.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_teleport.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_teleport.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_theme"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_theme.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_theme_disc"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_theme_disc.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.apostle_theme_post"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.apostle_theme_post.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.biomine_spawn.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.biomine_spawn.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.biomine_spawn.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.biomine_spawn.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.biomine_spawn.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.biomine_spawn.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.biomine_trigger.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.biomine_trigger.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.biomine_trigger.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.biomine_trigger.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.biomine_trigger.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.biomine_trigger.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.blast_fungus_throw.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.blast_fungus_throw.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.blast_fungus_throw.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.blast_fungus_throw.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.blast_fungus_throw.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.blast_fungus_throw.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bolt_impact.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bolt_impact.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bolt_impact.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bolt_impact.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bolt_impact.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bolt_impact.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bolt_impact.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bolt_impact.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_fuse"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_fuse.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_load"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_load.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_pulse.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_pulse.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_pulse.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_pulse.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_sparkle.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_sparkle.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_sparkle.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_sparkle.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_sparkle.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_sparkle.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_spawn.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_spawn.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.bomb_spawn.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.bomb_spawn.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_spell.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_spell.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_spell.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_spell.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_spell.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_spell.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_spell.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_spell.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_spell_two.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_spell_two.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_spell_two.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_spell_two.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_steam.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_steam.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_steam.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_steam.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_steam.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_steam.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.cast_steam.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.cast_steam.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.corrupt_beam_start.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.corrupt_beam_start.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.corrupt_beam_start.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.corrupt_beam_start.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.dirt_debris.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.dirt_debris.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.dirt_debris.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.dirt_debris.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.dirt_debris.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.dirt_debris.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.dirt_debris.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.dirt_debris.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fire_breath"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fire_breath.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fire_breath_start"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fire_breath_start.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fire_projectile_fly.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fire_projectile_fly.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fire_projectile_fly.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fire_projectile_fly.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fire_projectile_fly.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fire_projectile_fly.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fire_tornado_ambient"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fire_tornado_ambient.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.flight"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.flight.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.frost_breath"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.frost_breath.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.frost_prepare_spell.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.frost_prepare_spell.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.frost_prepare_spell.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.frost_prepare_spell.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.frost_prepare_spell.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.frost_prepare_spell.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fungus_explosion.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fungus_explosion.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.fungus_explosion.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.fungus_explosion.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.heavy_woosh.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.heavy_woosh.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.heavy_woosh.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.heavy_woosh.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.heavy_woosh.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.heavy_woosh.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.heavy_woosh.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.heavy_woosh.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.heavy_woosh.5"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.heavy_woosh.5.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_blast_impact.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_blast_impact.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_blast_impact.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_blast_impact.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_blast_impact.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_blast_impact.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_blast_shoot.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_blast_shoot.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_blast_shoot.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_blast_shoot.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_blast_shoot.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_blast_shoot.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_bolt_impact.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_bolt_impact.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_bolt_impact.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_bolt_impact.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_bolt_impact.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_bolt_impact.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_bolt_shoot.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_bolt_shoot.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_bolt_shoot.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_bolt_shoot.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.hell_bolt_shoot.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.hell_bolt_shoot.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_chunk_drop"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_chunk_drop.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_chunk_hit"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_chunk_hit.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_chunk_idle"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_chunk_idle.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_chunk_summon"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_chunk_summon.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_spike_cast"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_spike_cast.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_spike_hit.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_spike_hit.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_spike_hit.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_spike_hit.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.ice_spike_hit.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.ice_spike_hit.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.impale"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.impale.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.insect_swarm.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.insect_swarm.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.insect_swarm.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.insect_swarm.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.insect_swarm_bite.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.insect_swarm_bite.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.insect_swarm_bite.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.insect_swarm_bite.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.lich_teleport_out.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.lich_teleport_out.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.lich_teleport_out.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.lich_teleport_out.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_snap.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_snap.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_snap.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_snap.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_snap.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_snap.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_snap.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_snap.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_spawn.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_spawn.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_spawn.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_spawn.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_spawn.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_spawn.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_spawn.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_spawn.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_spawn.5"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_spawn.5.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_summon.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_summon.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_summon.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_summon.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_summon.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_summon.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_telegraph.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_telegraph.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.master_fang_telegraph.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.master_fang_telegraph.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.necromancer_summon.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.necromancer_summon.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.necromancer_summon.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.necromancer_summon.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.necromancer_summon.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.necromancer_summon.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.necromancer_summon.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.necromancer_summon.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_bolt_impact.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_bolt_impact.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_bolt_impact.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_bolt_impact.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_bolt_impact.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_bolt_impact.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_aqua_impact.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_aqua_impact.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_aqua_impact.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_aqua_impact.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_aqua_impact.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_aqua_impact.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_aqua_impact.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_aqua_impact.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_impact.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_impact.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_impact.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_impact.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_impact.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_impact.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_impact.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_impact.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_ambient.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_ambient.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_ambient.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_ambient.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_ambient.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_ambient.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_burst"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_burst.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_close"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_close.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_death.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_death.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_death.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_death.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_death.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_death.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_hurt.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_hurt.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_hurt.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_hurt.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_hurt.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_hurt.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_open"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_open.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_shoot.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_shoot.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_shoot.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_shoot.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.poison_quill_vine_shoot.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.poison_quill_vine_shoot.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.prepare_spell.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.prepare_spell.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.prepare_spell.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.prepare_spell.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.prepare_summon.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.prepare_summon.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.prepare_summon.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.prepare_summon.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.projectile_spell"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.projectile_spell.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_burrow.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_burrow.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_burrow.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_burrow.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_burrow.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_burrow.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_burst.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_burst.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_burst.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_burst.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_burst.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_burst.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_death.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_death.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_death.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_death.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_death.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_death.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_hurt.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_hurt.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_hurt.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_hurt.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.quick_growing_vine_hurt.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.quick_growing_vine_hurt.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_explode.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_explode.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_explode.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_explode.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_explode.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_explode.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_explode.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_explode.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_fire_projectile"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_fire_projectile.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_golem_electric_sparks.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_golem_electric_sparks.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_golem_electric_sparks.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_golem_electric_sparks.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_golem_electric_sparks.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_golem_electric_sparks.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_golem_electric_sparks.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_golem_electric_sparks.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.redstone_golem_electric_sparks.5"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.redstone_golem_electric_sparks.5.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.roar_spell"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.roar_spell.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.rumble.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.rumble.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.rumble.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.rumble.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.rumble.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.rumble.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.shock_cast.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.shock_cast.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.shock_cast.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.shock_cast.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.shock_cast.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.shock_cast.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.shock_cast.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.shock_cast.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.shock_cast.5"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.shock_cast.5.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.shock_cast.6"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.shock_cast.6.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.shock_cast.7"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.shock_cast.7.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.soul_bolt_cast"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.soul_bolt_cast.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.soul_eat.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.soul_eat.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.soul_eat.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.soul_eat.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.soul_eat.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.soul_eat.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.soul_explode.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.soul_explode.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.soul_explode.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.soul_explode.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.soul_explode.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.soul_explode.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.steam_impact.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.steam_impact.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.steam_impact.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.steam_impact.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.steam_impact.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.steam_impact.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.steam_impact.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.steam_impact.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.swing.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.swing.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.swing.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.swing.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.teleport_orb_throw"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.teleport_orb_throw.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.thunder_strike_fast.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.thunder_strike_fast.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.thunder_strike_fast.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.thunder_strike_fast.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.thunder_strike_fast.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.thunder_strike_fast.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.thunderbolt.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.thunderbolt.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.thunderbolt.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.thunderbolt.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.thunderbolt.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.thunderbolt.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.tooth_spawn.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.tooth_spawn.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.tooth_spawn.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.tooth_spawn.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_explode.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_explode.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_explode.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_explode.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_explode.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_explode.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_explode.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_explode.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_pre.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_pre.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_pre.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_pre.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_pre.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_pre.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.trident_storm_pre.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.trident_storm_pre.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.updraft_blast.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.updraft_blast.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.updraft_blast.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.updraft_blast.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.updraft_blast.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.updraft_blast.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.vex_vapor.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.vex_vapor.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.vex_vapor.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.vex_vapor.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.vex_vapor.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.vex_vapor.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.vine_trap_burst.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.vine_trap_burst.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.vine_trap_burst.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.vine_trap_burst.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.vine_trap_burst.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.vine_trap_burst.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.vine_trap_hold"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.vine_trap_hold.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.void_prepare_spell.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.void_prepare_spell.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.void_prepare_spell.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.void_prepare_spell.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.void_prepare_spell.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.void_prepare_spell.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.void_prepare_spell.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.void_prepare_spell.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.void_rift"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.void_rift.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.void_rift_open"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.void_rift_open.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_disappear"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_disappear.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_erupt.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_erupt.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_erupt.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_erupt.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_erupt.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_erupt.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_hit.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_hit.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_hit.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_hit.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_spawn.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_spawn.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_spawn.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_spawn.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wall_spawn.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wall_spawn.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.water_jet"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.water_jet.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.weaken_cast.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.weaken_cast.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.weaken_cast.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.weaken_cast.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.weaken_cast.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.weaken_cast.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.weaken_cast.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.weaken_cast.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.weaken_curse"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.weaken_curse.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_hit.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_hit.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_hit.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_hit.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_hit.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_hit.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_hit.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_hit.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_swing.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_swing.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_swing.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_swing.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_swing.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_swing.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whip_swing.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whip_swing.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.whirlwind"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.whirlwind.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wild_prepare_spell"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wild_prepare_spell.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind_blast.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind_blast.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind_blast.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind_blast.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind_blast.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind_blast.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wind_horn"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wind_horn.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.wraith_fire"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.wraith_fire.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.zap.1"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.zap.1.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.zap.2"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.zap.2.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.zap.3"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.zap.3.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.zap.4"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.zap.4.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.zap.5"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.zap.5.ogg）"
+
+[["资产"]]
+id = "音效/诡厄巫法/goety.zap.6"
+"类别" = "音效"
+"来源" = "提取:亚波伦法术音效@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/诡厄巫法/goety.zap.6.ogg）"
+
+[["资产"]]
+id = "音效/启示录/revelationfix.quietus_beam"
+"类别" = "音效"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/音效/启示录/revelationfix.quietus_beam.ogg）"

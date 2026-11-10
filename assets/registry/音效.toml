@@ -6514,3 +6514,963 @@ id = "音效/镜头/6-3-2/点击"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "旧路径" = "参考模型库/src/镜头/6-3-2/点击.wav"
+
+[["资产"]]
+id = "音效/ambient.nether_wastes.mood.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/ambient.nether_wastes.mood.1.ogg）"
+
+[["资产"]]
+id = "音效/ambient.nether_wastes.mood.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/ambient.nether_wastes.mood.2.ogg）"
+
+[["资产"]]
+id = "音效/ambient.nether_wastes.mood.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/ambient.nether_wastes.mood.3.ogg）"
+
+[["资产"]]
+id = "音效/ambient.nether_wastes.mood.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/ambient.nether_wastes.mood.4.ogg）"
+
+[["资产"]]
+id = "音效/ambient.nether_wastes.mood.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/ambient.nether_wastes.mood.5.ogg）"
+
+[["资产"]]
+id = "音效/block.amethyst_block.break.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.amethyst_block.break.1.ogg）"
+
+[["资产"]]
+id = "音效/block.amethyst_block.break.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.amethyst_block.break.2.ogg）"
+
+[["资产"]]
+id = "音效/block.amethyst_block.break.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.amethyst_block.break.3.ogg）"
+
+[["资产"]]
+id = "音效/block.amethyst_block.break.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.amethyst_block.break.4.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.break.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.break.1.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.break.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.break.2.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.break.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.break.3.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.break.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.break.4.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.break.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.break.5.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.place.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.place.1.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.place.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.place.2.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.place.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.place.3.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.place.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.place.4.ogg）"
+
+[["资产"]]
+id = "音效/block.basalt.place.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.basalt.place.5.ogg）"
+
+[["资产"]]
+id = "音效/block.beacon.deactivate"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.beacon.deactivate.ogg）"
+
+[["资产"]]
+id = "音效/block.bubble_column.bubble_pop.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.bubble_column.bubble_pop.1.ogg）"
+
+[["资产"]]
+id = "音效/block.bubble_column.bubble_pop.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.bubble_column.bubble_pop.2.ogg）"
+
+[["资产"]]
+id = "音效/block.bubble_column.bubble_pop.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.bubble_column.bubble_pop.3.ogg）"
+
+[["资产"]]
+id = "音效/block.fire.ambient"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.fire.ambient.ogg）"
+
+[["资产"]]
+id = "音效/block.fire.extinguish"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.fire.extinguish.ogg）"
+
+[["资产"]]
+id = "音效/block.grindstone.use.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.grindstone.use.1.ogg）"
+
+[["资产"]]
+id = "音效/block.grindstone.use.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.grindstone.use.2.ogg）"
+
+[["资产"]]
+id = "音效/block.grindstone.use.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.grindstone.use.3.ogg）"
+
+[["资产"]]
+id = "音效/block.growing_plant.crop"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.growing_plant.crop.ogg）"
+
+[["资产"]]
+id = "音效/block.lava.ambient"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.lava.ambient.ogg）"
+
+[["资产"]]
+id = "音效/block.lava.pop"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.lava.pop.ogg）"
+
+[["资产"]]
+id = "音效/block.portal.ambient"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.portal.ambient.ogg）"
+
+[["资产"]]
+id = "音效/block.powder_snow.break.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.powder_snow.break.1.ogg）"
+
+[["资产"]]
+id = "音效/block.powder_snow.break.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.powder_snow.break.2.ogg）"
+
+[["资产"]]
+id = "音效/block.powder_snow.break.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.powder_snow.break.3.ogg）"
+
+[["资产"]]
+id = "音效/block.powder_snow.break.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.powder_snow.break.4.ogg）"
+
+[["资产"]]
+id = "音效/block.powder_snow.break.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.powder_snow.break.5.ogg）"
+
+[["资产"]]
+id = "音效/block.powder_snow.break.6"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.powder_snow.break.6.ogg）"
+
+[["资产"]]
+id = "音效/block.powder_snow.break.7"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.powder_snow.break.7.ogg）"
+
+[["资产"]]
+id = "音效/block.respawn_anchor.deplete.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.respawn_anchor.deplete.1.ogg）"
+
+[["资产"]]
+id = "音效/block.respawn_anchor.deplete.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/block.respawn_anchor.deplete.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.arrow.hit_player"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.arrow.hit_player.ogg）"
+
+[["资产"]]
+id = "音效/entity.blaze.ambient.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.blaze.ambient.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.blaze.ambient.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.blaze.ambient.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.blaze.ambient.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.blaze.ambient.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.blaze.ambient.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.blaze.ambient.4.ogg）"
+
+[["资产"]]
+id = "音效/entity.blaze.burn"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.blaze.burn.ogg）"
+
+[["资产"]]
+id = "音效/entity.blaze.shoot"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.blaze.shoot.ogg）"
+
+[["资产"]]
+id = "音效/entity.dragon_fireball.explode.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.dragon_fireball.explode.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.dragon_fireball.explode.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.dragon_fireball.explode.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.dragon_fireball.explode.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.dragon_fireball.explode.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.dragon_fireball.explode.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.dragon_fireball.explode.4.ogg）"
+
+[["资产"]]
+id = "音效/entity.drowned.shoot.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.drowned.shoot.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.drowned.shoot.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.drowned.shoot.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.evoker.prepare_attack.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.evoker.prepare_attack.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.evoker.prepare_attack.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.evoker.prepare_attack.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.evoker_fangs.attack"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.evoker_fangs.attack.ogg）"
+
+[["资产"]]
+id = "音效/entity.generic.eat.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.generic.eat.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.generic.eat.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.generic.eat.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.generic.eat.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.generic.eat.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.generic.swim.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.generic.swim.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.generic.swim.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.generic.swim.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.generic.swim.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.generic.swim.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.generic.swim.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.generic.swim.4.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.attack.nodamage.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.attack.nodamage.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.attack.nodamage.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.attack.nodamage.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.attack.nodamage.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.attack.nodamage.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.attack.nodamage.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.attack.nodamage.4.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.burp"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.burp.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.death.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.death.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.death.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.death.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.death.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.death.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_freeze.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_freeze.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_freeze.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_freeze.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_freeze.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_freeze.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_freeze.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_freeze.4.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_freeze.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_freeze.5.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_on_fire.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_on_fire.1.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_on_fire.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_on_fire.2.ogg）"
+
+[["资产"]]
+id = "音效/entity.player.hurt_on_fire.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.player.hurt_on_fire.3.ogg）"
+
+[["资产"]]
+id = "音效/entity.wither.shoot"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.wither.shoot.ogg）"
+
+[["资产"]]
+id = "音效/entity.zombie.break_wooden_door"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/entity.zombie.break_wooden_door.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.1.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.10"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.10.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.11"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.11.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.12"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.12.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.13"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.13.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.14"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.14.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.15"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.15.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.2.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.3.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.4.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.5.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.6"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.6.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.7"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.7.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.8"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.8.ogg）"
+
+[["资产"]]
+id = "音效/item.bone_meal.use.9"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.bone_meal.use.9.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.1.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.10"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.10.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.2.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.3.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.4.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.5.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.6"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.6.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.7"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.7.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.8"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.8.ogg）"
+
+[["资产"]]
+id = "音效/item.crossbow.loading_middle.9"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.crossbow.loading_middle.9.ogg）"
+
+[["资产"]]
+id = "音效/item.shield.block.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.shield.block.1.ogg）"
+
+[["资产"]]
+id = "音效/item.shield.block.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.shield.block.2.ogg）"
+
+[["资产"]]
+id = "音效/item.shield.block.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.shield.block.3.ogg）"
+
+[["资产"]]
+id = "音效/item.shield.block.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.shield.block.4.ogg）"
+
+[["资产"]]
+id = "音效/item.shield.block.5"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.shield.block.5.ogg）"
+
+[["资产"]]
+id = "音效/item.totem.use"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.totem.use.ogg）"
+
+[["资产"]]
+id = "音效/item.trident.hit.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.trident.hit.1.ogg）"
+
+[["资产"]]
+id = "音效/item.trident.hit.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.trident.hit.2.ogg）"
+
+[["资产"]]
+id = "音效/item.trident.hit.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.trident.hit.3.ogg）"
+
+[["资产"]]
+id = "音效/item.trident.hit_ground.1"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.trident.hit_ground.1.ogg）"
+
+[["资产"]]
+id = "音效/item.trident.hit_ground.2"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.trident.hit_ground.2.ogg）"
+
+[["资产"]]
+id = "音效/item.trident.hit_ground.3"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.trident.hit_ground.3.ogg）"
+
+[["资产"]]
+id = "音效/item.trident.hit_ground.4"
+"类别" = "音效"
+"来源" = "提取:音效@d3769bf82ceb"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/item.trident.hit_ground.4.ogg）"

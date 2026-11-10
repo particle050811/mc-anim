@@ -16,3 +16,675 @@ id = "数据/场景/粉色教堂/结构-地上"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "粉色婚礼教堂的结构模板（1.20.1，DataVersion 3465）：graemod 的 0721.nbt 裁掉地下室 y 0～5、整体下移 6 格、实体清空，87×77×97。整合包保留所有权益，私有；原文件不入库"
+
+[["资产"]]
+id = "数据/法术/goety/particles/absorb_trail"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/absorb_trail.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/additive_effect"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/additive_effect.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/aoe_indicator"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/aoe_indicator.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/big_cult_spell"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/big_cult_spell.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/big_electric"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/big_electric.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/big_fire"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/big_fire.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/big_fire_ground"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/big_fire_ground.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/blossom_thorn_indicator"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/blossom_thorn_indicator.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/bullet_effect"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/bullet_effect.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/burning"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/burning.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/circle_explode"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/circle_explode.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/cult_spell"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/cult_spell.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/dragon_flame"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/dragon_flame.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/dust_cloud"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/dust_cloud.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/electric"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/electric.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/electric_explode"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/electric_explode.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/fast_dust"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/fast_dust.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/fiery_pillar"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/fiery_pillar.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/fly"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/fly.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/fog_cloud"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/fog_cloud.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/frost"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/frost.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/frost_gather"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/frost_gather.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/frost_nova"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/frost_nova.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/gather_trail"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/gather_trail.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/god_ray"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/god_ray.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/heal"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/heal.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/lich_death"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/lich_death.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/magic_bolt"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/magic_bolt.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/magic_smoke"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/magic_smoke.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/mine_pulse"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/mine_pulse.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/necro_dragon_flame"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/necro_dragon_flame.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/necro_effect"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/necro_effect.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/none"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/none.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/redstone_explode"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/redstone_explode.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/reverse_shockwave"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/reverse_shockwave.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/rolling_spiral"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/rolling_spiral.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/shockwave"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/shockwave.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/small_dragon_flame"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/small_dragon_flame.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/small_frost"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/small_frost.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/sparkle"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/sparkle.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/spell_cloud"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/spell_cloud.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/spell_square"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/spell_square.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/summon"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/summon.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/summon_trail"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/summon_trail.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/totem_effect"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/totem_effect.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/trail"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/trail.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/water_trail"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/water_trail.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/wind"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/wind.json）"
+
+[["资产"]]
+id = "数据/法术/goety/particles/wind_blow"
+"类别" = "数据"
+"来源" = "提取:亚波伦法术粒子定义@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety/particles/wind_blow.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/bubble"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/bubble.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/bubble_column_up"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/bubble_column_up.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/cloud"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/cloud.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/crit"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/crit.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/dragon_breath"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/dragon_breath.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/dust"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/dust.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/dust_color_transition"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/dust_color_transition.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/enchant"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/enchant.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/entity_effect"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/entity_effect.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/falling_dust"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/falling_dust.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/falling_water"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/falling_water.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/flame"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/flame.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/happy_villager"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/happy_villager.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/large_smoke"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/large_smoke.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/lava"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/lava.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/poof"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/poof.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/portal"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/portal.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/rain"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/rain.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/sculk_soul"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/sculk_soul.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/smoke"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/smoke.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/snowflake"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/snowflake.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/sonic_boom"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/sonic_boom.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/soul"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/soul.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/splash"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/splash.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/totem_of_undying"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/totem_of_undying.json）"
+
+[["资产"]]
+id = "数据/法术/minecraft/particles/witch"
+"类别" = "数据"
+"来源" = "提取:亚波伦原版粒子定义@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/minecraft/particles/witch.json）"
+
+[["资产"]]
+id = "数据/法术/goety_revelation/particles/frost_flower"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/法术/goety_revelation/particles/frost_flower.json）"
+
+[["资产"]]
+id = "数据/着色器/启示录/bossbar_hit.fsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/bossbar_hit.fsh）"
+
+[["资产"]]
+id = "数据/着色器/启示录/bossbar_hit.vsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/bossbar_hit.vsh）"
+
+[["资产"]]
+id = "数据/着色器/启示录/cosmic.fsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/cosmic.fsh）"
+
+[["资产"]]
+id = "数据/着色器/启示录/cosmic.vsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/cosmic.vsh）"
+
+[["资产"]]
+id = "数据/着色器/启示录/dissolve_text.fsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/dissolve_text.fsh）"
+
+[["资产"]]
+id = "数据/着色器/启示录/dissolve_text.vsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/dissolve_text.vsh）"
+
+[["资产"]]
+id = "数据/着色器/启示录/quietus_beam.fsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/quietus_beam.fsh）"
+
+[["资产"]]
+id = "数据/着色器/启示录/quietus_beam.vsh"
+"类别" = "数据"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/数据/着色器/启示录/quietus_beam.vsh）"
