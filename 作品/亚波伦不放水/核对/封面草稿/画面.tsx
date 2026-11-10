@@ -1,5 +1,5 @@
 // 封面草稿三稿的画面：下界荒地的样子（不是真地形）——中间一块平的下界岩地，几处熔岩池（池边一圈岩浆块），四周的下界岩一级级垒高成坡，
-// 暗红的雾和天；娘化亚波伦持下界魔杖悬空，多圈轮盘从杖尖张满（界面/杖尖轮盘.tsx），地上的史蒂夫仰视，有的方案加炼狱结界线框。方案表在 视图.ts。
+// 暗红的雾和天；娘化亚波伦持下界魔杖悬空，多圈轮盘从杖尖张满（界面/杖尖轮盘.tsx），地上的史蒂夫仰视，有的方案加炼狱结界（本片的辉线，特效/炼狱结界辉线.tsx）。方案表在 视图.ts。
 // 光：一盏中性的环境光加正面偏上的白主光（头发贴图是中性灰 64,64,64，一稿用偏橙的环境光和主光把它照成了棕色），背后下方一盏弱的橙色轮廓光，熔岩池上各一盏橙色点光。
 // 轮盘的时刻取完全张开（第 40 刻）。每个方案那一秒的前半（第 60i 帧）是干净的构图，后半（第 60i+30 帧）叠方案名和 4:3、3:4 裁切参考框。
 import { useThree } from '@react-three/fiber';
@@ -13,7 +13,6 @@ import { 摆相机 } from '@engine/core/three换算.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { use当前秒, use视图下标 } from '@engine/段/时间.tsx';
 import { Steve, steveLookAt, stevePose } from '@库/角色/史蒂夫.tsx';
-import { 炼狱结界线框 } from '@库/特效/炼狱结界.tsx';
 import 下界岩 from 'asset:贴图/方块/下界岩';
 import 岩浆块 from 'asset:贴图/方块/岩浆块';
 import 熔岩 from 'asset:贴图/方块/熔岩';
@@ -21,6 +20,7 @@ import type { 多圈轮盘参数 } from '../../界面/多圈轮盘.tsx';
 import { 杖尖轮盘 } from '../../界面/杖尖轮盘.tsx';
 import { 娘化亚波伦, 悬停, 持杖位姿, 站立 } from '../../角色/娘化亚波伦.tsx';
 import { 手持下界魔杖, 杖头芯 } from '../../物品/下界魔杖.tsx';
+import { 炼狱结界辉线 } from '../../特效/炼狱结界辉线.tsx';
 import { 方案们, type 方案 } from './视图.ts';
 
 const 雾色 = '#3a0a07';
@@ -194,15 +194,11 @@ const 摆机位: React.FC<{ v: 方案 }> = ({ v }) => {
   return null;
 };
 
-const 结界: React.FC<{ 设: NonNullable<方案['结界']> }> = ({ 设 }) => {
-  const gl = useThree((s) => s.gl);
-  const 宽 = gl.getDrawingBufferSize(new THREE.Vector2()).x;
-  return (
-    <group position={[设.心[0], 设.心[1], 设.心[2]]}>
-      <炼狱结界线框 秒={设.秒} 半径系数={设.半径系数} 线宽={(宽 / 1920) * 设.线宽} 颜色={设.颜色} />
-    </group>
-  );
-};
+const 结界: React.FC<{ 设: NonNullable<方案['结界']> }> = ({ 设 }) => (
+  <group position={[设.心[0], 设.心[1], 设.心[2]]}>
+    <炼狱结界辉线 秒={设.秒} 半径系数={设.半径系数} />
+  </group>
+);
 
 const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
   const 参: 多圈轮盘参数 = { 放: v.轮盘.放, 刻: 40, 压暗: v.轮盘.压暗 };
