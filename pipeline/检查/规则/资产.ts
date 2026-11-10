@@ -5,6 +5,7 @@ import { 读模型, 模型文件名, 区段格式版本 } from '../../../engine/
 // 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（资产/随仓库.ts）。
 // 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（资产/发布.ts）。
 // 写了 材质包.toml 的作品：[段] 里的段键在清单里，每一种选用的覆盖层锁都建了、和现在登记的包对得上（资产/资产锁.ts 套材质包）。
+// 粒子帧/ 下 anim extract --粒子帧 生成的模块和定义、配方、锁对得上（取材/粒子帧.ts）。
 // --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import { 解码器源码过期 } from '../../世界/区段解码器.ts';
 import crypto from 'node:crypto';
@@ -21,6 +22,8 @@ import { 比对字节, 算随仓库, 读随仓库表, 随仓库表名, 字节目
 import { 比对发布锁, 算应发, 读随发布表, 随发布表名 } from '../../资产/发布.ts';
 import { 发布锁名 } from '../../资产/发布锁.ts';
 import { 缺音频元数据 } from '../../资产/补量.ts';
+import { 解析清单 } from '../../取材/清单.ts';
+import { 已生成文件, 建来源表, 核对粒子帧 } from '../../取材/粒子帧.ts';
 
 /**
  * 搬来的代码还没改走 cue 的私有资产：import 那一行往上连着的 import 块顶上写一行「// 待迁移（私有资产）：原因」，算待迁移、不算违规。
@@ -270,6 +273,17 @@ export const 资产 = async (c: 检查上下文, 报: 报告) => {
 
   // 区段解码器：改了 wasm/ 的源码没重编，解码的还是旧字节（不要求这台机器装 asc）
   if (c.存在('wasm/区段解码.ts') && 解码器源码过期(c.存在('engine/voxel/区段解码器.生成.ts') ? c.读('engine/voxel/区段解码器.生成.ts') : '', c.读('wasm/区段解码.ts'))) 报.错('wasm/区段解码.ts 和 engine/voxel/区段解码器.生成.ts 记的源码 sha256 对不上：anim world 解码器 重编', 'wasm/区段解码.ts');
+
+  // 粒子帧：anim extract --粒子帧 生成的模块和粒子定义、配方、资产锁对得上（定义字节不在本机的只核头里记的 sha）
+  if (已生成文件(c.根, c.绝对(c.作品目录)).length) {
+    const 两侧 = c.资产锁();
+    const q = 解析清单(c.读('sourcing/extract.toml'), c.读('sourcing/jars.toml'));
+    const 数据 = c.数据根 ?? 配置数据根();
+    for (const [f, 说] of 核对粒子帧(c.根, c.绝对(c.作品目录), 两侧, 建来源表(q, { ...两侧.共用, ...两侧.作品 }), (e) => fs.readFileSync(字节路径(e, 数据), 'utf8'))) {
+      const 相对 = path.relative(c.根, f).split(path.sep).join('/');
+      报.错(`${相对}：${说}`, 相对);
+    }
+  }
 
   // 段声明的地形、cue 里的资产
   const 地形 = (c.读json('assets/地形版本.json') ?? {}) as 地形表;
