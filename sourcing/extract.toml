@@ -2351,3 +2351,185 @@
 "网格/雪怪洞窟/图集" = "src/模型/场景/雪怪洞窟.网格.png"
 "网格/雪怪洞窟/头" = "src/模型/场景/雪怪洞窟.网格.json"
 "网格/雪怪洞窟/顶点" = "src/模型/场景/雪怪洞窟.网格.bin"
+
+# ===== 作品 亚波伦不放水（用户 11-09 定：诡厄巫法 + 启示录、娘化亚波伦用 4911 的 YSM 版）。产物都登记在作品资产表：anim --作品 亚波伦不放水 extract <名称> =====
+
+# 聚晶轮盘的背景：FocusRadialMenuScreen 画在屏幕正中的 256×256 齿轮纹（50% 透明是代码里设的，贴图本身不带）。
+[["取材"]]
+"名称" = "聚晶轮盘"
+"作品" = "亚波伦不放水"
+"需要" = ["goety"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  ["导出模型", "{jar:goety}", "src/模型/界面/聚晶轮盘.png", "聚晶轮盘=assets/goety/textures/gui/focus_wheel.png"],
+]
+["取材"."产物"]
+"贴图/界面/聚晶轮盘" = "src/模型/界面/聚晶轮盘.png"
+
+# 本体 124 个聚晶加空聚晶（empty_focus）的背包图标，轮盘每格画的就是它。名单照 ModItems 的注册顺序，文件名 = 注册名；
+# 图标照 models/item/<注册名>.json 的 layer0 取（贴图名和注册名对不上的不少：fireball_focus → minor_fireball_spell.png）。
+# 两个 jar 一起给是照装了启示录的样子解析模型：启示录盖了 7 个聚晶的模型（加 owner_halo_* 覆盖），默认的 layer0 没变，字节都取自 Goety。
+# call、troop、recall 三个有激活态图标（predicate active = 1），没取：轮盘上画的是物品默认态。
+[["取材"]]
+"名称" = "诡厄巫法聚晶图标"
+"作品" = "亚波伦不放水"
+"需要" = ["goety", "goety_revelation"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/goety", "--jar", "{jar:goety}", "--jar", "{jar:goety_revelation}", "--命名空间", "goety", "--来源", "{产物来源}",
+    "empty_focus", "vexing_focus", "biting_focus", "feast_focus", "teeth_focus", "shredding_focus", "illusion_focus", "ignite_focus",
+    "soul_bolt_focus", "magic_bolt_focus", "sword_focus", "soul_light_focus", "glow_light_focus", "illuminate_focus", "crafting_focus", "iron_hide_focus",
+    "bulwark_focus", "soul_heal_focus", "shockwave_focus", "weakening_focus", "arrow_rain_focus", "telekinesis_focus", "command_focus", "order_focus",
+    "sonic_boom_focus", "corruption_focus", "rotting_focus", "osseous_focus", "ghost_fire_focus", "reaping_focus", "spooky_focus", "phantasm_focus",
+    "vanguard_focus", "blackguard_focus", "leeching_focus", "killing_focus", "skull_focus", "barricade_focus", "quaking_focus", "earth_punch_focus",
+    "smack_stone_focus", "temblor_clap_focus", "ministrous_focus", "pulverize_focus", "rotation_focus", "burrowing_focus", "sensing_focus", "scatter_focus",
+    "eruption_focus", "frost_breath_focus", "ice_spike_focus", "ice_storm_focus", "hail_focus", "iceology_focus", "blizzard_focus", "chilling_focus",
+    "frost_nova_focus", "frostborn_focus", "swarm_focus", "poison_dart_focus", "blossoming_focus", "grapple_focus", "hunting_focus", "mauling_focus",
+    "slimy_focus", "carrion_focus", "overgrowth_focus", "entangling_focus", "whispering_focus", "leaping_focus", "launch_focus", "flying_focus",
+    "cushion_focus", "whirlwind_focus", "cyclone_focus", "updraft_focus", "wind_blast_focus", "razor_wind_focus", "trembling_focus", "charge_focus",
+    "shocking_focus", "thunderbolt_focus", "electrocute_focus", "surging_focus", "sprightly_focus", "monsoon_focus", "discharge_focus", "bolting_focus",
+    "lightning_focus", "thunderstorm_focus", "water_jet_focus", "bouncy_bubble_focus", "steaming_focus", "trident_storm_focus", "prisma_beam_focus", "guardian_focus",
+    "biomine_focus", "water_whip_focus", "tidal_focus", "fire_breath_focus", "fireball_focus", "lavaball_focus", "bombardment_focus", "meteor_shower_focus",
+    "magma_bomb_focus", "fire_blast_focus", "flame_strike_focus", "wither_skull_focus", "ghastly_focus", "blazing_focus", "hogging_focus", "call_focus",
+    "troop_focus", "recall_focus", "ender_chest_focus", "end_walk_focus", "blink_focus", "banish_focus", "tunnel_focus", "rupture_focus",
+    "stellar_focus", "void_flash_focus", "watching_focus", "blasting_focus", "snaring_focus",
+  ],
+]
+["取材"."产物"]
+"贴图/物品/聚晶/goety/*" = "src/模型/物品/聚晶/goety/*.png"
+
+# 启示录的 9 个聚晶：有实现的 4 个（revelation、heretic、wither_quietus、ice）和 5 个空壳（EmptySpell：dementor、dragon_nirvana、dragon_skyrocket、shadow_clone、nether_meteor）。
+[["取材"]]
+"名称" = "启示录聚晶图标"
+"作品" = "亚波伦不放水"
+"需要" = ["goety_revelation"]
+"公开版" = "提取"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/goety_revelation", "--jar", "{jar:goety_revelation}", "--命名空间", "goety_revelation", "--来源", "{产物来源}",
+    "revelation_focus", "heretic_focus", "wither_quietus_focus", "dementor_focus", "dragon_nirvana_focus", "dragon_skyrocket_focus", "ice_focus", "shadow_clone_focus",
+    "nether_meteor_focus",
+  ],
+]
+["取材"."产物"]
+"贴图/物品/聚晶/goety_revelation/*" = "src/模型/物品/聚晶/goety_revelation/*.png"
+
+# 启示录给戴光环的人换的聚晶图标：本体 7 个聚晶的物品模型被启示录盖掉，持有者有光环（owner_halo_state = 1，ItemPropertiesInit.FOCUS_OWNER_STATE_ASCENSION）
+# 或 owner_halo_odamane = 1（只有 wither_skull_focus）时换成启示录画的这一张。轮盘用不用这一版没定，先入库备着。文件名 = 本体聚晶的注册名。
+[["取材"]]
+"名称" = "光环版聚晶图标"
+"作品" = "亚波伦不放水"
+"需要" = ["goety", "goety_revelation"]
+"公开版" = "提取"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（盖在 Goety 2.5.60.6 的物品模型上）"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/光环版", "--jar", "{jar:goety}", "--jar", "{jar:goety_revelation}", "--命名空间", "goety", "--谓词", "owner_halo_state", "--来源", "{产物来源}",
+    "fireball_focus", "barricade_focus", "cyclone_focus", "hail_focus", "skull_focus", "updraft_focus"],
+  ["uv", "run", "-q", "--with", "pillow==13.0.0", "{脚本}/导出物品图标.py", "src/模型/物品/聚晶/光环版", "--jar", "{jar:goety}", "--jar", "{jar:goety_revelation}", "--命名空间", "goety", "--谓词", "owner_halo_odamane", "--来源", "{产物来源}",
+    "wither_skull_focus"],
+]
+["取材"."产物"]
+"贴图/物品/聚晶/光环版/*" = "src/模型/物品/聚晶/光环版/*.png"
+
+# 亚波伦的 boss 血条（ApollyonBossbar，都是 256×256 的图集，按代码里的 UV 切）：boss_bar 是现在的完整版（一二阶段边框、弓形装饰），
+# boss_bar_simple 是配置 simpleApollyonBossbar 开着时的简版，old_boss_bar、old_boss_bar_nether 是旧式（renderClassicApollyonBar，主世界、下界各一张）。
+# 名牌没有自己的贴图：名字和称号是游戏字体配 dissolve_text 着色器画的（DissolveApollyonFont），溶解用的噪声是 noise.png；血条里流动的「宇宙」填充是 cosmic 着色器。着色器没取。
+[["取材"]]
+"名称" = "亚波伦血条"
+"作品" = "亚波伦不放水"
+"需要" = ["goety_revelation"]
+"公开版" = "提取"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出模型", "{jar:goety_revelation}", "src/模型/界面/亚波伦血条.贴图", "boss_bar=assets/goety_revelation/textures/ui/boss_bar/apollyon/boss_bar.png", "boss_bar_simple=assets/goety_revelation/textures/ui/boss_bar/apollyon/boss_bar_simple.png", "old_boss_bar=assets/goety_revelation/textures/ui/boss_bar/apollyon/old/boss_bar.png", "old_boss_bar_nether=assets/goety_revelation/textures/ui/boss_bar/apollyon/old/boss_bar_nether.png", "noise=assets/goety_revelation/textures/ui/noise.png"],
+]
+["取材"."产物"]
+"贴图/界面/亚波伦血条/boss_bar" = "src/模型/界面/亚波伦血条.贴图/boss_bar.png"
+"贴图/界面/亚波伦血条/boss_bar_simple" = "src/模型/界面/亚波伦血条.贴图/boss_bar_simple.png"
+"贴图/界面/亚波伦血条/old_boss_bar" = "src/模型/界面/亚波伦血条.贴图/old_boss_bar.png"
+"贴图/界面/亚波伦血条/old_boss_bar_nether" = "src/模型/界面/亚波伦血条.贴图/old_boss_bar_nether.png"
+"贴图/界面/亚波伦血条/noise" = "src/模型/界面/亚波伦血条.贴图/noise.png"
+
+# 下界亚波伦进二阶段后客户端下的猩红雨（ClientEventsHandler 画，ClientLevelExpandedContext.isNetherScarletRaining 要 isSecondPhase；配置 enableScarletRain 默认开）：贴图在里层 RevelationFix jar 里，先解出里层再读。
+# 同时还有后处理着色器（the_end、aberration 等），没取。
+[["取材"]]
+"名称" = "猩红雨"
+"作品" = "亚波伦不放水"
+"需要" = ["goety_revelation"]
+"公开版" = "提取"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6 内嵌的 RevelationFix 4.9"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["python", "-m", "zipfile", "-e", "{jar:goety_revelation}", "外层"],
+  ["导出模型", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "src/模型/环境/猩红雨.png", "猩红雨=assets/revelationfix/textures/environment/rain.png"],
+]
+["取材"."产物"]
+"贴图/环境/猩红雨" = "src/模型/环境/猩红雨.png"
+
+# 娘化亚波伦：4911 的 YSM 玩家模型包（明文基岩几何，358 根骨骼、568 个方盒、逐面 UV，贴图 512×512）。骨骼一根不去：
+# ysmGlow* 是发光层、bone62 浮块和 ysmGlowbone24 大光环只在 default 上有像素，显示哪些由生物声明定（store 只增不改，重导要 --替换）。
+# 5 张贴图是 ysm.json files.player.texture 的 5 套皮肤：default 是下界二阶段那套，另外 4 张是使徒和亚波伦别的阶段；包的默认皮肤写的是 4default。
+# ysm.json 一并存下：height_scale 0.7、皮肤表、动画文件表、许可（GPL v3）都在里面。
+[["取材"]]
+"名称" = "娘化亚波伦模型"
+"作品" = "亚波伦不放水"
+"需要" = ["ysm-使徒娘化"]
+"公开版" = "提取"
+"来源" = "使徒娘化版 YSM 玩家模型包（作者 4911，B 站 BV1GSoUBYEK7 简介的蓝奏云链接）"
+"许可" = "GPL v3（ysm.json）"
+"步骤" = [
+  ["导出模型", "{jar:ysm-使徒娘化}", "src/模型/角色/娘化亚波伦.模型.json", "models/main.json", "textures/default.png"],
+  ["导出模型", "{jar:ysm-使徒娘化}", "src/模型/角色/娘化亚波伦.贴图", "2default=textures/2default.png", "3default=textures/3default.png", "4default=textures/4default.png", "5default=textures/5default.png"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "ysm.json", "src/模型/角色/娘化亚波伦.ysm.json"],
+]
+["取材"."产物"]
+"模型/角色/娘化亚波伦" = "src/模型/角色/娘化亚波伦.模型.json"
+"贴图/角色/娘化亚波伦/default" = "src/模型/角色/娘化亚波伦.模型.png"
+"贴图/角色/娘化亚波伦/2default" = "src/模型/角色/娘化亚波伦.贴图/2default.png"
+"贴图/角色/娘化亚波伦/3default" = "src/模型/角色/娘化亚波伦.贴图/3default.png"
+"贴图/角色/娘化亚波伦/4default" = "src/模型/角色/娘化亚波伦.贴图/4default.png"
+"贴图/角色/娘化亚波伦/5default" = "src/模型/角色/娘化亚波伦.贴图/5default.png"
+"数据/角色/娘化亚波伦/ysm" = "src/模型/角色/娘化亚波伦.ysm.json"
+
+# 娘化亚波伦的动画：ysm.json files.player.animation 列的 10 个文件原样拷出（id 最后一段 = 那张表的键），外加 animation_controllers 的那一个。
+# main 是 50 段主动作（走跑跳飞、眨眼的并行层），extra 是 8 段表情动作；tac、slashblade、tlm、parcool、swem、carryon 是联动模组的动作。
+# 控制器文件里 8 个控制器都只有一个空的 default 状态。投射物、载具的模型和动画（arrow、boat 等）没取。
+[["取材"]]
+"名称" = "娘化亚波伦动画"
+"作品" = "亚波伦不放水"
+"需要" = ["ysm-使徒娘化"]
+"公开版" = "提取"
+"来源" = "使徒娘化版 YSM 玩家模型包（作者 4911，B 站 BV1GSoUBYEK7 简介的蓝奏云链接）"
+"许可" = "GPL v3（ysm.json）"
+"步骤" = [
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/main.animation.json", "src/动画/角色/娘化亚波伦/main.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/arm.animation.json", "src/动画/角色/娘化亚波伦/arm.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/extra.animation.json", "src/动画/角色/娘化亚波伦/extra.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/tac.animation.json", "src/动画/角色/娘化亚波伦/tac.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/carryon.animation.json", "src/动画/角色/娘化亚波伦/carryon.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/parcool.animation.json", "src/动画/角色/娘化亚波伦/parcool.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/swem.animation.json", "src/动画/角色/娘化亚波伦/swem.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/slashblade.animation.json", "src/动画/角色/娘化亚波伦/slashblade.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/tlm.animation.json", "src/动画/角色/娘化亚波伦/tlm.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "animations/fp.arm.animation.json", "src/动画/角色/娘化亚波伦/fp_arm.animation.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:ysm-使徒娘化}", "controller/main.animation_controllers.json", "src/动画/角色/娘化亚波伦/控制器.animation_controllers.json"],
+]
+["取材"."产物"]
+"动画/角色/娘化亚波伦/main" = "src/动画/角色/娘化亚波伦/main.animation.json"
+"动画/角色/娘化亚波伦/arm" = "src/动画/角色/娘化亚波伦/arm.animation.json"
+"动画/角色/娘化亚波伦/extra" = "src/动画/角色/娘化亚波伦/extra.animation.json"
+"动画/角色/娘化亚波伦/tac" = "src/动画/角色/娘化亚波伦/tac.animation.json"
+"动画/角色/娘化亚波伦/carryon" = "src/动画/角色/娘化亚波伦/carryon.animation.json"
+"动画/角色/娘化亚波伦/parcool" = "src/动画/角色/娘化亚波伦/parcool.animation.json"
+"动画/角色/娘化亚波伦/swem" = "src/动画/角色/娘化亚波伦/swem.animation.json"
+"动画/角色/娘化亚波伦/slashblade" = "src/动画/角色/娘化亚波伦/slashblade.animation.json"
+"动画/角色/娘化亚波伦/tlm" = "src/动画/角色/娘化亚波伦/tlm.animation.json"
+"动画/角色/娘化亚波伦/fp_arm" = "src/动画/角色/娘化亚波伦/fp_arm.animation.json"
+"动画/角色/娘化亚波伦/控制器" = "src/动画/角色/娘化亚波伦/控制器.animation_controllers.json"

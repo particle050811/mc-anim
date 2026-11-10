@@ -39,6 +39,8 @@ export type Molang环境 = {
   变量?: Record<string, Molang值>;
   上下文?: Readonly<Record<string, number>>;
   外部?: Readonly<Record<string, number | ((...参: number[]) => number)>>;
+  /** 要原样拿参数（含字符串）的函数，按全名查，先于 查询、外部：ysm.second_order('名字', 输入, …) 靠第一个字符串参数认是哪一个系统 */
+  函数?: Readonly<Record<string, (参: readonly Molang值[]) => Molang值>>;
   /** 'float' 每步舍入到 32 位（mocha、基岩版），'double'（默认）不舍入（GeckoLib 4 的 mclib） */
   数值?: 'float' | 'double';
   /** math.random、math.die_roll 用的随机源（0～1）；不给按 0 算，保证可复现 */
@@ -309,7 +311,10 @@ const 求 = (n: 节点, 环境: Molang环境, 临时: Record<string, Molang值>)
       return 数(v);
     }
     case '调': {
-      const 参 = n.参.map((a) => 转数(求(a, 环境, 临时)));
+      const 原参 = n.参.map((a) => 求(a, 环境, 临时));
+      const 原样 = 环境.函数?.[n.名];
+      if (原样) return 数(原样(原参));
+      const 参 = 原参.map(转数);
       if (n.名.startsWith('math.')) {
         const f = 数学[n.名.slice(5)];
         if (f) return r(f(参, 环境));
