@@ -10,6 +10,8 @@ import 障碍 from '../法术/障碍.tsx';
 import 撼地 from '../法术/撼地.tsx';
 import 冰川 from '../法术/冰川.tsx';
 import 喷发 from '../法术/喷发.tsx';
+import 缠绕 from '../法术/缠绕.tsx';
+import 过度生长 from '../法术/过度生长.tsx';
 
 export const 乙演出: readonly 法术演出条[] = [
   撕咬,
@@ -20,4 +22,6 @@ export const 乙演出: readonly 法术演出条[] = [
   撼地,
   冰川,
   喷发,
+  缠绕,
+  过度生长,
 ];
