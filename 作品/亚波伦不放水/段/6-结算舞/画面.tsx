@@ -1,6 +1,7 @@
-// 第 6 幕 结算舞的画面：照分镜第 9 节「跳一遍」。6-01 教堂外立面（固定）、6-02 中殿走道正面全身跳一遍（固定，底部字幕）、6-03 同机位收住。
+// 第 6 幕 结算舞的画面：照分镜第 9 节「跳一遍」。6-01 教堂外立面（固定）、6-02 中殿走道正面全身跳一遍（固定）、6-03 同机位收住。
 // 机位是 Agent 摆的，用户没看过。和分镜不一样：分镜写「正面外墙囍字」，实际囍在北山墙（祭坛后墙外面，核对/粉色教堂 查的），正门在南，
 // 所以 6-01 拍北山墙。天空是纯色淡蓝（教堂所在空间的天没核实，同 核对/粉色教堂）。
+// 底部字幕「亚波伦结算动画」用户 11-10 说多余，去掉了。
 // 没做：配乐、环境声、结算面板（分镜默认不要）。
 import { ThreeCanvas } from '@remotion/three';
 import { useThree } from '@react-three/fiber';
@@ -37,8 +38,6 @@ const 摆机位: React.FC<{ 机位: Cam }> = ({ 机位 }) => {
   return null;
 };
 
-const 字幕: React.CSSProperties = { position: 'absolute', left: 0, right: 0, bottom: 画幅.高 * 0.07, textAlign: 'center', color: '#fff', fontFamily: '"PingFang SC", sans-serif', fontWeight: 800, fontSize: 40, textShadow: '0 0 6px #000, 0 2px 0 #000' };
-
 export default 定义画面(段, 声音, () => {
   const { 秒, 事件 } = use段(段);
   const 舞秒 = 秒 - 事件.起舞;
@@ -54,7 +53,6 @@ export default 定义画面(段, 声音, () => {
           <娘化亚波伦 pose={{ loc: 教堂.跳舞位, yaw: 180 }} 秒={Math.max(0, 舞秒)} 表演={跳舞} 姿势={忘情牛肉面姿势(舞秒)} />
         </group>
       </ThreeCanvas>
-      {在里面 && <div style={字幕}>亚波伦结算动画</div>}
     </AbsoluteFill>
   );
 });
