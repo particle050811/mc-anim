@@ -11,5 +11,8 @@ import 旋风 from '../法术/旋风.tsx';
 import 上升气流 from '../法术/上升气流.tsx';
 import 冲刺 from '../法术/冲刺.tsx';
 import 炼狱 from '../法术/炼狱.tsx';
+import 冰雹 from '../法术/冰雹.tsx';
+import 季风 from '../法术/季风.tsx';
+import 炽燃升腾 from '../法术/炽燃升腾.tsx';
 
-export const 丁演出: readonly 法术演出条[] = [冲击波, 弱化, 霜冻新星, 战栗, 震颤猛击, 炎爆, 旋风, 上升气流, 冲刺, 炼狱];
+export const 丁演出: readonly 法术演出条[] = [冲击波, 弱化, 霜冻新星, 战栗, 震颤猛击, 炎爆, 旋风, 上升气流, 冲刺, 炼狱, 冰雹, 季风, 炽燃升腾];
