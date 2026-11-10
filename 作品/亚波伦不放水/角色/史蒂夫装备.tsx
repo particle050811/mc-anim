@@ -6,6 +6,7 @@
 import React from 'react';
 import { EntityModel } from '@engine/model/实体模型.tsx';
 import { HeldItem } from '@engine/model/物品贴图.tsx';
+import type { PartPose } from '@engine/model/实体模型.tsx';
 import { STEVE_MODEL, STEVE_SKIN, type StevePose, steveParts, steveRootMatrix } from '@库/角色/史蒂夫.tsx';
 import { 断曜流光, 断曜流光显示 } from '../物品/断曜流光.tsx';
 import { 晋升之环 } from '../物品/晋升之环.tsx';
@@ -23,11 +24,23 @@ export type 史蒂夫装备 = {
   环?: boolean;
   /** 神灵金套和剑用哪套外观，不给 = 旧版 */
   外观?: 装备外观;
+  /** 右手换成别的东西（已经包好 HeldItem 的节点，比如弓）；给了就不画剑 */
+  右手?: React.ReactNode;
+  /** 左手拿的东西（已经包好 HeldItem left 的节点，比如盾、图腾） */
+  左手?: React.ReactNode;
 };
 
-/** 秒：附魔光泽滚动、光环自转的时钟（段里传段内秒；游戏里这两样都按系统时间走，和人的动作无关） */
-export const 装备史蒂夫: React.FC<{ pose: StevePose; 秒: number; 装备?: 史蒂夫装备 }> = ({ pose, 秒, 装备 = {} }) => {
-  const { 盔甲 = 神灵金全套, 附魔 = true, 剑 = true, 环 = true, 外观 = 默认外观 } = 装备;
+/** 秒：附魔光泽滚动、光环自转的时钟（段里传段内秒；游戏里这两样都按系统时间走，和人的动作无关）。
+ *  改部件：steveParts 出来的原版部件表再改一道（举盾、拉弓、挥剑这类直接按原版部件转角写的姿势，见 角色/史蒂夫反应.ts）。
+ *  受伤：原版受伤、死亡的变红 0～1，只红皮肤（原版盔甲层、手里的东西都不套受伤色） */
+export const 装备史蒂夫: React.FC<{
+  pose: StevePose;
+  秒: number;
+  装备?: 史蒂夫装备;
+  改部件?: (部件: Record<string, PartPose>) => Record<string, PartPose>;
+  受伤?: number;
+}> = ({ pose, 秒, 装备 = {}, 改部件, 受伤 }) => {
+  const { 盔甲 = 神灵金全套, 附魔 = true, 剑 = true, 环 = true, 外观 = 默认外观, 右手, 左手 } = 装备;
   const 甲 = use神灵金盔甲(盔甲, 附魔 ? 秒 : undefined, 外观);
   const attach: Record<string, React.ReactNode> = { ...甲 };
   if (环)
@@ -37,7 +50,14 @@ export const 装备史蒂夫: React.FC<{ pose: StevePose; 秒: number; 装备?: 
         <晋升之环 秒={秒} />
       </>
     );
-  if (剑)
+  if (右手)
+    attach.right_arm = (
+      <>
+        {甲.right_arm}
+        {右手}
+      </>
+    );
+  else if (剑)
     attach.right_arm = (
       <>
         {甲.right_arm}
@@ -46,9 +66,17 @@ export const 装备史蒂夫: React.FC<{ pose: StevePose; 秒: number; 装备?: 
         </HeldItem>
       </>
     );
+  if (左手)
+    attach.left_arm = (
+      <>
+        {甲.left_arm}
+        {左手}
+      </>
+    );
+  const 部件 = 改部件 ? 改部件(steveParts(pose)) : steveParts(pose);
   return (
     <group matrix={steveRootMatrix(pose)} matrixAutoUpdate={false}>
-      <EntityModel model={STEVE_MODEL} tex={STEVE_SKIN} pose={steveParts(pose)} attach={attach} />
+      <EntityModel model={STEVE_MODEL} tex={STEVE_SKIN} pose={部件} attach={attach} hurt={受伤} />
     </group>
   );
 };
