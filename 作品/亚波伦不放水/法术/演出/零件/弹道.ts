@@ -1,5 +1,6 @@
 // 弹道（纯数学，场景坐标 Z 朝上，速度 格/刻）：照原版各类弹射物的 tick() 一刻一刻走，再在两刻之间插值（游戏画的是上一刻和这一刻之间）。
 // 出处：原版 1.20.1 AbstractHurtingProjectile.tick、ThrowableProjectile.tick、AbstractArrow.tick。
+import { lerpV } from '@engine/core/数学.ts';
 import type { 点 } from '../接口.ts';
 
 export const 加 = (a: 点, b: 点): 点 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
@@ -10,7 +11,7 @@ export const 单位 = (a: 点): 点 => {
   const l = 长(a);
   return l > 0 ? 乘(a, 1 / l) : [0, 0, 0];
 };
-export const 混 = (a: 点, b: 点, t: number): 点 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+export const 混 = (a: 点, b: 点, t: number): 点 => lerpV(a, b, t) as unknown as 点;
 
 /** 一条弹道：第 n 刻末的位置（n 是整数，0 = 出生位置） */
 export type 弹道 = (n: number) => 点;

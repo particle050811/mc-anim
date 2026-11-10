@@ -33,11 +33,11 @@ describe('法术演出注册表', () => {
     });
   };
 
-  it('各组只登记自己名下的法术，元表（组/<组>.ts）和演出表（组/<组>.tsx）一一对应、顺序一样', () => {
+  it('各组只登记自己名下的法术，元表（组/<组>.元.ts）和演出表（组/<组>.tsx）一一对应、顺序一样', () => {
     for (const 组 of 组名们) {
       const 名下 = new Set<string>(法术分组[组]);
       for (const 元 of 分组元[组]) expect(名下.has(元.id), `${组}组登记了不在名下的 ${元.id}`).toBe(true);
-      const 元文件 = 表里(`${组}.ts`, '.元.ts');
+      const 元文件 = 表里(`${组}.元.ts`, '.元.ts');
       expect(元文件.length).toBe(分组元[组].length);
       expect(表里(`${组}.tsx`, '.tsx')).toEqual(元文件);
     }
@@ -50,7 +50,7 @@ describe('法术演出注册表', () => {
     const 元文件 = 文件.filter((f) => f.endsWith('.元.ts')).map((f) => f.replace('.元.ts', '')).sort();
     const 画文件 = 文件.filter((f) => f.endsWith('.tsx')).map((f) => f.replace('.tsx', '')).sort();
     expect(画文件).toEqual(元文件);
-    expect(组名们.flatMap((组) => 表里(`${组}.ts`, '.元.ts')).sort()).toEqual(元文件);
+    expect(组名们.flatMap((组) => 表里(`${组}.元.ts`, '.元.ts')).sort()).toEqual(元文件);
   });
 
   it('每个法术的长秒是正数，命中秒在里面，声音时刻算得出来', () => {

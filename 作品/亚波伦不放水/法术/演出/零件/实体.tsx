@@ -11,11 +11,13 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { ownPartGeometry, type EntityModelData, type EntityPart, type PartPose } from '@engine/model/实体模型.tsx';
 import type { Png } from '@engine/model/贴图.ts';
+import { rad } from '@engine/core/数学.ts';
 import type { 点 } from '../接口.ts';
 import { 混合参数, 贴图, type 混合, type 色 } from './材质.ts';
 
 export type { EntityModelData, PartPose };
-export const 度 = (a: number) => (a * Math.PI) / 180;
+/** 度 → 弧度 */
+export const 度 = rad;
 
 /** import raw from 'asset:模型/法术/goety/<类名>' 得到的 json 里取出模型（json 形如 { models: { <类名>: … } }） */
 export const 取模型 = (raw: unknown, 名: string): EntityModelData => {

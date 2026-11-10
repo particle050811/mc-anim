@@ -5,6 +5,8 @@
 //   lightningBolt：粗 0.5，散开 线性升，平行噪声 1、散开系数 0.001
 // 段数默认 (int)sqrt(距离 × 100)，一条（count 1），寿命由发包的地方给（雷霆 10 刻），淡入淡出各占寿命的一半（FadeFunction.fade(0.5)）。
 // 游戏用 java.util.Random 不带种子，每次形状都不同；这里换成带种子的随机数，形状固定。
+import { 场景到游戏, 游戏到场景 } from '@engine/core/坐标.ts';
+import { gaussian, mulberry32 } from '@engine/core/数学.ts';
 import type { 点 } from '../接口.ts';
 
 export type 散开函数 = '正弦' | '线性升' | '线性升降';
@@ -40,19 +42,12 @@ const 归一 = (a: 三): 三 => {
   return l < 1e-4 ? [0, 0, 0] : 乘(a, 1 / l);
 };
 // 游戏坐标（y 朝上、z 朝南）↔ 场景坐标（z 朝上、y 朝北）：截面朝哪边是按游戏坐标叉出来的，在游戏坐标里算完再换回来
-const 进游戏 = (p: 点): 三 => [p[0], p[2], -p[1]];
-const 出游戏 = (p: 三): 点 => [p[0], -p[2], p[1]];
+const 进游戏 = (p: 点): 三 => 场景到游戏(p);
+const 出游戏 = (p: 三): 点 => 游戏到场景(p);
 
 const 随机 = (种子: number) => {
-  let s = 种子 >>> 0;
-  const 下一个 = () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  return { 浮: 下一个, 高斯: () => Math.sqrt(-2 * Math.log(1 - 下一个())) * Math.cos(2 * Math.PI * 下一个()) };
+  const 浮 = mulberry32(种子);
+  return { 浮, 高斯: () => gaussian(浮) };
 };
 
 const 散开值 = (f: 散开函数, 进度: number) =>
