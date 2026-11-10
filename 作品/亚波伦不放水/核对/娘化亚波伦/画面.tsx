@@ -8,6 +8,8 @@ import * as THREE from 'three';
 import { 场景到three } from '@engine/core/three换算.ts';
 import { use视图下标 } from '@engine/段/时间.tsx';
 import { 娘化亚波伦, 定表演, 悬停, 站立, type 亚波伦表演 } from '../../角色/娘化亚波伦.tsx';
+import { ItemDisplay } from '@engine/model/物品贴图.tsx';
+import { 下界魔杖, 下界魔杖显示 } from '../../物品/下界魔杖.tsx';
 import { 画幅, 视图们, type 视图 } from './视图.ts';
 
 // 受击：attacked 是整身的动作，顶掉 idle 播一遍（YSM 里受伤时主动画怎么让位没核实，这里当成整段换）
@@ -47,7 +49,16 @@ const 画面: React.FC = () => {
             <boxGeometry args={[12, 12, 0.1]} />
             <meshStandardMaterial color="#8a8f98" />
           </mesh>
-          <娘化亚波伦 pose={{ loc: [0, 0, v.离地 ?? 0], yaw: 180 }} 秒={v.秒} 表演={表演们[v.表演]} 变体={v.变体} 持杖={v.持杖} />
+          {v.只杖 ? (
+            // 物品空间 Y 朝上，场景 Z 朝上：绕 X 转 +90 度立起来
+            <group position={[0, 0, 1.5]} rotation={[Math.PI / 2, 0, 0]} scale={2}>
+              <ItemDisplay t={下界魔杖显示.gui}>
+                <下界魔杖 />
+              </ItemDisplay>
+            </group>
+          ) : (
+            <娘化亚波伦 pose={{ loc: [0, 0, v.离地 ?? 0], yaw: 180 }} 秒={v.秒} 表演={表演们[v.表演]} 变体={v.变体} 持杖={v.持杖} />
+          )}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
