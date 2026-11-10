@@ -3,11 +3,11 @@
 import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React, { useMemo } from 'react';
-import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { 摆相机 } from '@engine/core/three换算.ts';
 import { png } from '@engine/model/贴图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { use当前秒, use视图下标 } from '@engine/段/时间.tsx';
 import { 轮盘世界面 } from '@库/界面/径向轮盘世界.tsx';
 import { Steve, steveLookAt, stevePose } from '@库/角色/史蒂夫.tsx';
 import 下界岩 from 'asset:贴图/方块/下界岩';
@@ -93,11 +93,11 @@ const 裁切框: React.FC<{ 中线: number }> = ({ 中线 }) => {
 };
 
 const 画面: React.FC = () => {
-  const { width, height, fps } = useVideoConfig();
-  const 帧 = useCurrentFrame();
+  const { width, height } = useVideoConfig();
+  const 秒 = use当前秒();
   const v = 方案们[Math.min(方案们.length - 1, use视图下标())]!;
   // 每个方案那一秒的前半是干净的构图，后半叠裁切参考框和方案名
-  const 标注 = 帧 % fps >= fps / 2;
+  const 标注 = 秒 % 1 >= 0.5;
   return (
     <AbsoluteFill style={{ background: `linear-gradient(to bottom, ${天顶} 0%, #3a0a0a 45%, ${天边} 100%)` }}>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, alpha: true }}>
