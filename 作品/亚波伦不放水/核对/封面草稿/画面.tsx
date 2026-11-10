@@ -8,6 +8,7 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { smoothstep01 } from '@engine/core/数学.ts';
+import { hash2 } from '@engine/core/噪声.ts';
 import { 摆相机 } from '@engine/core/three换算.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { use当前秒, use视图下标 } from '@engine/段/时间.tsx';
@@ -27,18 +28,13 @@ const 天顶色 = '#050102';
 
 // ── 地：格子坐标 (i, j) 的方块占 x ∈ [i, i+1)、y ∈ [j, j+1) ──
 const 范围 = { x0: -44, x1: 44, y0: -14, y1: 76 };
-const 散列 = (i: number, j: number, 种 = 0) => {
-  let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(种, 2147483647)) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-};
 /** 值噪声（双线性），格距 尺 */
 const 噪声 = (x: number, y: number, 尺: number, 种: number) => {
   const [fx, fy] = [x / 尺, y / 尺];
   const [i, j] = [Math.floor(fx), Math.floor(fy)];
   const [u, v] = [smoothstep01(fx - i), smoothstep01(fy - j)];
-  const 上 = 散列(i, j, 种) * (1 - u) + 散列(i + 1, j, 种) * u;
-  const 下 = 散列(i, j + 1, 种) * (1 - u) + 散列(i + 1, j + 1, 种) * u;
+  const 上 = hash2(i, j, 种) * (1 - u) + hash2(i + 1, j, 种) * u;
+  const 下 = hash2(i, j + 1, 种) * (1 - u) + hash2(i + 1, j + 1, 种) * u;
   return 上 * (1 - v) + 下 * v;
 };
 // 熔岩池：[中心 x, 中心 y, 半径]。躲开各方案里史蒂夫站的地方
@@ -53,14 +49,14 @@ const 池们: readonly [number, number, number][] = [
   [-20, 24, 4.5],
   [20, 30, 5],
 ];
-const 是熔岩 = (i: number, j: number) => 池们.some(([cx, cy, r]) => Math.hypot(i + 0.5 - cx, j + 0.5 - cy) + (散列(i, j, 7) - 0.5) * 1.2 < r);
+const 是熔岩 = (i: number, j: number) => 池们.some(([cx, cy, r]) => Math.hypot(i + 0.5 - cx, j + 0.5 - cy) + (hash2(i, j, 7) - 0.5) * 1.2 < r);
 /** 这一格垒几层（0 = 平地）：离场地中心 15 格以内是平的，往外越来越高，加两层噪声 */
 const 高 = (i: number, j: number): number => {
   if (是熔岩(i, j)) return 0;
   const 远 = Math.hypot(i + 0.5, (j + 0.5 - 6) * 0.9);
   const 坡 = Math.max(0, 远 - 15);
   const 起伏 = 噪声(i, j, 9, 1) * 0.75 + 噪声(i, j, 3.5, 2) * 0.25;
-  const 零碎 = 远 > 12 && 散列(i, j, 3) > 0.93 ? 1 : 0;
+  const 零碎 = 远 > 12 && hash2(i, j, 3) > 0.93 ? 1 : 0;
   return Math.max(0, Math.floor(坡 * 0.42 * (0.35 + 起伏 * 1.5) + (坡 > 0 ? 起伏 * 2.2 : 0) + 零碎));
 };
 
