@@ -2614,3 +2614,309 @@
 "网格/粉色教堂/图集" = "src/模型/场景/粉色教堂.网格.png"
 "网格/粉色教堂/头" = "src/模型/场景/粉色教堂.网格.json"
 "网格/粉色教堂/顶点" = "src/模型/场景/粉色教堂.网格.bin"
+
+# ===== 亚波伦不放水：齐放 71 个法术的取材（作品/亚波伦不放水/素材清单.md 逐个法术列了用到哪几件）。配方按类型分，不按法术分：粒子、施法声大半是几个法术共用的。 =====
+
+# 本体的实体贴图、粒子贴图：71 个法术的法术类、它们生成的实体（含落地后再生成的次生实体）、渲染器里写到的贴图，逐个读反编译源码收的。
+# id = 贴图/法术/goety/<jar 里 assets/goety/textures/ 之下的路径去掉 .png>；一个目录一步、一行产物。hellfire、magic_fire、biomine、tidal_surge 这些数字结尾的是逐帧动画（帧序在渲染器里算）。
+[["取材"]]
+"名称" = "亚波伦法术贴图"
+"作品" = "亚波伦不放水"
+"需要" = ["goety"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/corrupted", "assets/goety/textures/entity/corrupted/beacon_beam_core.png", "assets/goety/textures/entity/corrupted/beacon_beam_glow.png", "assets/goety/textures/entity/corrupted/beacon_beam_main.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/monolith", "assets/goety/textures/entity/monolith/glacial_wall.png", "assets/goety/textures/entity/monolith/glacial_wall_crack_1.png", "assets/goety/textures/entity/monolith/glacial_wall_crack_2.png", "assets/goety/textures/entity/monolith/totemic_bomb.png", "assets/goety/textures/entity/monolith/totemic_bomb_glow.png", "assets/goety/textures/entity/monolith/totemic_bomb_glow2.png", "assets/goety/textures/entity/monolith/totemic_bomb_glow3.png", "assets/goety/textures/entity/monolith/totemic_wall.png", "assets/goety/textures/entity/monolith/volcano.png", "assets/goety/textures/entity/monolith/volcano_active.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/monolith/poison_quill_vine", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_anemone.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_anemone_glow.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine_glow.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine_glow_original.png", "assets/goety/textures/entity/monolith/poison_quill_vine/poison_quill_vine_original.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/monolith/quick_growing_vine", "assets/goety/textures/entity/monolith/quick_growing_vine/quick_growing_kelp.png", "assets/goety/textures/entity/monolith/quick_growing_vine/quick_growing_kelp_glow.png", "assets/goety/textures/entity/monolith/quick_growing_vine/quick_growing_vine.png", "assets/goety/textures/entity/monolith/quick_growing_vine/quick_growing_vine_glow.png", "assets/goety/textures/entity/monolith/quick_growing_vine/quick_growing_vine_glow_original.png", "assets/goety/textures/entity/monolith/quick_growing_vine/quick_growing_vine_original.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles", "assets/goety/textures/entity/projectiles/blossom_ball.png", "assets/goety/textures/entity/projectiles/blossom_thorn.png", "assets/goety/textures/entity/projectiles/bouncy_bubble.png", "assets/goety/textures/entity/projectiles/cyclone.png", "assets/goety/textures/entity/projectiles/earth_fist.png", "assets/goety/textures/entity/projectiles/electro_orb.png", "assets/goety/textures/entity/projectiles/entangle_vines.png", "assets/goety/textures/entity/projectiles/fire_tornado.png", "assets/goety/textures/entity/projectiles/gulf_tentacle.png", "assets/goety/textures/entity/projectiles/ice_chunk.png", "assets/goety/textures/entity/projectiles/ice_chunk_spawn.png", "assets/goety/textures/entity/projectiles/ice_spike.png", "assets/goety/textures/entity/projectiles/ice_storm.png", "assets/goety/textures/entity/projectiles/master_fang.png", "assets/goety/textures/entity/projectiles/pointed_trail.png", "assets/goety/textures/entity/projectiles/poison_quill.png", "assets/goety/textures/entity/projectiles/poison_quill_aqua.png", "assets/goety/textures/entity/projectiles/pyroclast.png", "assets/goety/textures/entity/projectiles/rain_arrow.png", "assets/goety/textures/entity/projectiles/scatter_bolt.png", "assets/goety/textures/entity/projectiles/scatter_bolt_orange.png", "assets/goety/textures/entity/projectiles/scatter_mine.png", "assets/goety/textures/entity/projectiles/scatter_mine_explode.png", "assets/goety/textures/entity/projectiles/scatter_mine_glow.png", "assets/goety/textures/entity/projectiles/scatter_mine_glow_spell.png", "assets/goety/textures/entity/projectiles/smack_stone.png", "assets/goety/textures/entity/projectiles/smack_stone_fiery.png", "assets/goety/textures/entity/projectiles/smack_stone_fiery_glow.png", "assets/goety/textures/entity/projectiles/solid_trail.png", "assets/goety/textures/entity/projectiles/spike.png", "assets/goety/textures/entity/projectiles/trail.png", "assets/goety/textures/entity/projectiles/trident_storm.png", "assets/goety/textures/entity/projectiles/vicious_pike.png", "assets/goety/textures/entity/projectiles/vicious_tooth.png", "assets/goety/textures/entity/projectiles/void_shock_bomb_inner.png", "assets/goety/textures/entity/projectiles/void_shock_bomb_outer.png", "assets/goety/textures/entity/projectiles/void_shock_inner.png", "assets/goety/textures/entity/projectiles/void_shock_outer.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/biomine", "assets/goety/textures/entity/projectiles/biomine/0.png", "assets/goety/textures/entity/projectiles/biomine/1.png", "assets/goety/textures/entity/projectiles/biomine/10.png", "assets/goety/textures/entity/projectiles/biomine/11.png", "assets/goety/textures/entity/projectiles/biomine/12.png", "assets/goety/textures/entity/projectiles/biomine/13.png", "assets/goety/textures/entity/projectiles/biomine/14.png", "assets/goety/textures/entity/projectiles/biomine/15.png", "assets/goety/textures/entity/projectiles/biomine/16.png", "assets/goety/textures/entity/projectiles/biomine/17.png", "assets/goety/textures/entity/projectiles/biomine/18.png", "assets/goety/textures/entity/projectiles/biomine/19.png", "assets/goety/textures/entity/projectiles/biomine/2.png", "assets/goety/textures/entity/projectiles/biomine/3.png", "assets/goety/textures/entity/projectiles/biomine/4.png", "assets/goety/textures/entity/projectiles/biomine/5.png", "assets/goety/textures/entity/projectiles/biomine/6.png", "assets/goety/textures/entity/projectiles/biomine/7.png", "assets/goety/textures/entity/projectiles/biomine/8.png", "assets/goety/textures/entity/projectiles/biomine/9.png", "assets/goety/textures/entity/projectiles/biomine/glow.png"],
+  # 下面四个目录的贴图路径写在实体类里（SoulBolt、SteamMissile、VoidRift 按帧换贴图；hell_bolt、hell_blast 是施法者算使徒时换的弹），整目录取
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/soul_bolt", "assets/goety/textures/entity/projectiles/soul_bolt/*.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/hell_bolt", "assets/goety/textures/entity/projectiles/hell_bolt/*.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/hell_blast", "assets/goety/textures/entity/projectiles/hell_blast/*.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/void_rift", "assets/goety/textures/entity/projectiles/void_rift/*.png"],
+  # 幽灵火的逐帧贴图（路径在 IceBouquetTextures 里拼；通配的 * 会跨目录，所以写 fire*，pre/ 另一步）、冰暴的逐帧贴图
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/ghost_fire", "assets/goety/textures/entity/projectiles/ghost_fire/fire*.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/ghost_fire/pre", "assets/goety/textures/entity/projectiles/ghost_fire/pre/*.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/ice_storm", "assets/goety/textures/entity/projectiles/ice_storm/*.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/hellfire", "assets/goety/textures/entity/projectiles/hellfire/0.png", "assets/goety/textures/entity/projectiles/hellfire/1.png", "assets/goety/textures/entity/projectiles/hellfire/10.png", "assets/goety/textures/entity/projectiles/hellfire/11.png", "assets/goety/textures/entity/projectiles/hellfire/12.png", "assets/goety/textures/entity/projectiles/hellfire/13.png", "assets/goety/textures/entity/projectiles/hellfire/14.png", "assets/goety/textures/entity/projectiles/hellfire/15.png", "assets/goety/textures/entity/projectiles/hellfire/16.png", "assets/goety/textures/entity/projectiles/hellfire/17.png", "assets/goety/textures/entity/projectiles/hellfire/18.png", "assets/goety/textures/entity/projectiles/hellfire/19.png", "assets/goety/textures/entity/projectiles/hellfire/2.png", "assets/goety/textures/entity/projectiles/hellfire/20.png", "assets/goety/textures/entity/projectiles/hellfire/21.png", "assets/goety/textures/entity/projectiles/hellfire/22.png", "assets/goety/textures/entity/projectiles/hellfire/23.png", "assets/goety/textures/entity/projectiles/hellfire/24.png", "assets/goety/textures/entity/projectiles/hellfire/25.png", "assets/goety/textures/entity/projectiles/hellfire/26.png", "assets/goety/textures/entity/projectiles/hellfire/27.png", "assets/goety/textures/entity/projectiles/hellfire/28.png", "assets/goety/textures/entity/projectiles/hellfire/29.png", "assets/goety/textures/entity/projectiles/hellfire/3.png", "assets/goety/textures/entity/projectiles/hellfire/30.png", "assets/goety/textures/entity/projectiles/hellfire/31.png", "assets/goety/textures/entity/projectiles/hellfire/4.png", "assets/goety/textures/entity/projectiles/hellfire/5.png", "assets/goety/textures/entity/projectiles/hellfire/6.png", "assets/goety/textures/entity/projectiles/hellfire/7.png", "assets/goety/textures/entity/projectiles/hellfire/8.png", "assets/goety/textures/entity/projectiles/hellfire/9.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/magic_fire", "assets/goety/textures/entity/projectiles/magic_fire/0.png", "assets/goety/textures/entity/projectiles/magic_fire/1.png", "assets/goety/textures/entity/projectiles/magic_fire/10.png", "assets/goety/textures/entity/projectiles/magic_fire/11.png", "assets/goety/textures/entity/projectiles/magic_fire/12.png", "assets/goety/textures/entity/projectiles/magic_fire/13.png", "assets/goety/textures/entity/projectiles/magic_fire/14.png", "assets/goety/textures/entity/projectiles/magic_fire/15.png", "assets/goety/textures/entity/projectiles/magic_fire/16.png", "assets/goety/textures/entity/projectiles/magic_fire/17.png", "assets/goety/textures/entity/projectiles/magic_fire/18.png", "assets/goety/textures/entity/projectiles/magic_fire/19.png", "assets/goety/textures/entity/projectiles/magic_fire/2.png", "assets/goety/textures/entity/projectiles/magic_fire/20.png", "assets/goety/textures/entity/projectiles/magic_fire/21.png", "assets/goety/textures/entity/projectiles/magic_fire/22.png", "assets/goety/textures/entity/projectiles/magic_fire/23.png", "assets/goety/textures/entity/projectiles/magic_fire/24.png", "assets/goety/textures/entity/projectiles/magic_fire/25.png", "assets/goety/textures/entity/projectiles/magic_fire/26.png", "assets/goety/textures/entity/projectiles/magic_fire/27.png", "assets/goety/textures/entity/projectiles/magic_fire/28.png", "assets/goety/textures/entity/projectiles/magic_fire/29.png", "assets/goety/textures/entity/projectiles/magic_fire/3.png", "assets/goety/textures/entity/projectiles/magic_fire/30.png", "assets/goety/textures/entity/projectiles/magic_fire/31.png", "assets/goety/textures/entity/projectiles/magic_fire/4.png", "assets/goety/textures/entity/projectiles/magic_fire/5.png", "assets/goety/textures/entity/projectiles/magic_fire/6.png", "assets/goety/textures/entity/projectiles/magic_fire/7.png", "assets/goety/textures/entity/projectiles/magic_fire/8.png", "assets/goety/textures/entity/projectiles/magic_fire/9.png", "assets/goety/textures/entity/projectiles/magic_fire/fire.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/slash", "assets/goety/textures/entity/projectiles/slash/1.png", "assets/goety/textures/entity/projectiles/slash/2.png", "assets/goety/textures/entity/projectiles/slash/3.png", "assets/goety/textures/entity/projectiles/slash/4.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/projectiles/tidal_surge", "assets/goety/textures/entity/projectiles/tidal_surge/overlay_0.png", "assets/goety/textures/entity/projectiles/tidal_surge/overlay_1.png", "assets/goety/textures/entity/projectiles/tidal_surge/overlay_2.png", "assets/goety/textures/entity/projectiles/tidal_surge/overlay_3.png", "assets/goety/textures/entity/projectiles/tidal_surge/surge_0.png", "assets/goety/textures/entity/projectiles/tidal_surge/surge_1.png", "assets/goety/textures/entity/projectiles/tidal_surge/surge_2.png", "assets/goety/textures/entity/projectiles/tidal_surge/surge_3.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/entity/water_jet", "assets/goety/textures/entity/water_jet/jet_inner.png", "assets/goety/textures/entity/water_jet/jet_outer.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/法术/goety/particle", "assets/goety/textures/particle/additive_effect1.png", "assets/goety/textures/particle/additive_effect2.png", "assets/goety/textures/particle/additive_effect3.png", "assets/goety/textures/particle/additive_effect4.png", "assets/goety/textures/particle/additive_effect5.png", "assets/goety/textures/particle/additive_effect6.png", "assets/goety/textures/particle/additive_effect7.png", "assets/goety/textures/particle/aoe_indicator.png", "assets/goety/textures/particle/aura.png", "assets/goety/textures/particle/big_electric_1.png", "assets/goety/textures/particle/big_electric_2.png", "assets/goety/textures/particle/big_electric_3.png", "assets/goety/textures/particle/big_fire_1.png", "assets/goety/textures/particle/big_fire_2.png", "assets/goety/textures/particle/big_fire_3.png", "assets/goety/textures/particle/big_fire_4.png", "assets/goety/textures/particle/big_fire_5.png", "assets/goety/textures/particle/big_fire_6.png", "assets/goety/textures/particle/big_fire_7.png", "assets/goety/textures/particle/big_fire_8.png", "assets/goety/textures/particle/big_fire_drop_1.png", "assets/goety/textures/particle/big_fire_drop_2.png", "assets/goety/textures/particle/big_fire_drop_3.png", "assets/goety/textures/particle/big_fire_drop_4.png", "assets/goety/textures/particle/big_fire_drop_5.png", "assets/goety/textures/particle/big_fire_drop_6.png", "assets/goety/textures/particle/big_fire_drop_7.png", "assets/goety/textures/particle/big_fire_drop_8.png", "assets/goety/textures/particle/big_fire_ground_1.png", "assets/goety/textures/particle/big_fire_ground_2.png", "assets/goety/textures/particle/big_fire_ground_3.png", "assets/goety/textures/particle/big_fire_ground_4.png", "assets/goety/textures/particle/big_fire_ground_5.png", "assets/goety/textures/particle/big_fire_ground_6.png", "assets/goety/textures/particle/big_fire_ground_7.png", "assets/goety/textures/particle/big_fire_ground_8.png", "assets/goety/textures/particle/big_soul_fire_1.png", "assets/goety/textures/particle/big_soul_fire_2.png", "assets/goety/textures/particle/big_soul_fire_3.png", "assets/goety/textures/particle/big_soul_fire_4.png", "assets/goety/textures/particle/big_soul_fire_5.png", "assets/goety/textures/particle/big_soul_fire_6.png", "assets/goety/textures/particle/big_soul_fire_7.png", "assets/goety/textures/particle/big_soul_fire_8.png", "assets/goety/textures/particle/bullet_effect1.png", "assets/goety/textures/particle/bullet_effect2.png", "assets/goety/textures/particle/bullet_effect3.png", "assets/goety/textures/particle/bullet_effect4.png", "assets/goety/textures/particle/bullet_effect5.png", "assets/goety/textures/particle/bullet_effect6.png", "assets/goety/textures/particle/bullet_effect7.png", "assets/goety/textures/particle/circle_explode1.png", "assets/goety/textures/particle/circle_explode2.png", "assets/goety/textures/particle/circle_explode3.png", "assets/goety/textures/particle/circle_explode4.png", "assets/goety/textures/particle/circle_explode5.png", "assets/goety/textures/particle/circle_explode6.png", "assets/goety/textures/particle/circle_explode7.png", "assets/goety/textures/particle/circle_explode8.png", "assets/goety/textures/particle/crack_1.png", "assets/goety/textures/particle/crack_2.png", "assets/goety/textures/particle/crack_3.png", "assets/goety/textures/particle/crack_4.png", "assets/goety/textures/particle/crack_5.png", "assets/goety/textures/particle/crack_6.png", "assets/goety/textures/particle/cult_spell_0.png", "assets/goety/textures/particle/cult_spell_1.png", "assets/goety/textures/particle/cult_spell_2.png", "assets/goety/textures/particle/cult_spell_3.png", "assets/goety/textures/particle/cult_spell_4.png", "assets/goety/textures/particle/cult_spell_5.png", "assets/goety/textures/particle/cult_spell_6.png", "assets/goety/textures/particle/cult_spell_7.png", "assets/goety/textures/particle/electric_1.png", "assets/goety/textures/particle/electric_10.png", "assets/goety/textures/particle/electric_11.png", "assets/goety/textures/particle/electric_12.png", "assets/goety/textures/particle/electric_13.png", "assets/goety/textures/particle/electric_14.png", "assets/goety/textures/particle/electric_15.png", "assets/goety/textures/particle/electric_16.png", "assets/goety/textures/particle/electric_2.png", "assets/goety/textures/particle/electric_3.png", "assets/goety/textures/particle/electric_4.png", "assets/goety/textures/particle/electric_5.png", "assets/goety/textures/particle/electric_6.png", "assets/goety/textures/particle/electric_7.png", "assets/goety/textures/particle/electric_8.png", "assets/goety/textures/particle/electric_9.png", "assets/goety/textures/particle/fly1.png", "assets/goety/textures/particle/fly2.png", "assets/goety/textures/particle/fly3.png", "assets/goety/textures/particle/fog_cloud.png", "assets/goety/textures/particle/frost_1.png", "assets/goety/textures/particle/frost_2.png", "assets/goety/textures/particle/frost_3.png", "assets/goety/textures/particle/frost_4.png", "assets/goety/textures/particle/frost_5.png", "assets/goety/textures/particle/frost_6.png", "assets/goety/textures/particle/gather_trail.png", "assets/goety/textures/particle/god_ray1.png", "assets/goety/textures/particle/god_ray2.png", "assets/goety/textures/particle/god_ray3.png", "assets/goety/textures/particle/god_ray4.png", "assets/goety/textures/particle/heal.png", "assets/goety/textures/particle/magic_bolt.png", "assets/goety/textures/particle/mine_pulse.png", "assets/goety/textures/particle/mine_pulse2.png", "assets/goety/textures/particle/mine_pulse3.png", "assets/goety/textures/particle/mine_pulse4.png", "assets/goety/textures/particle/necro_bolt_base.png", "assets/goety/textures/particle/necro_bolt_base_colorless.png", "assets/goety/textures/particle/necro_bolt_mid.png", "assets/goety/textures/particle/necro_bolt_top.png", "assets/goety/textures/particle/necro_bolt_top_colorless.png", "assets/goety/textures/particle/necro_effect1.png", "assets/goety/textures/particle/necro_effect2.png", "assets/goety/textures/particle/necro_effect3.png", "assets/goety/textures/particle/necro_effect4.png", "assets/goety/textures/particle/necro_effect5.png", "assets/goety/textures/particle/necro_effect6.png", "assets/goety/textures/particle/necro_effect7.png", "assets/goety/textures/particle/necro_fire_1.png", "assets/goety/textures/particle/necro_fire_2.png", "assets/goety/textures/particle/necro_fire_3.png", "assets/goety/textures/particle/necro_fire_4.png", "assets/goety/textures/particle/necro_fire_5.png", "assets/goety/textures/particle/necro_fire_6.png", "assets/goety/textures/particle/necro_fire_7.png", "assets/goety/textures/particle/necro_fire_8.png", "assets/goety/textures/particle/shockwave.png", "assets/goety/textures/particle/sparkle_0.png", "assets/goety/textures/particle/sparkle_1.png", "assets/goety/textures/particle/sparkle_2.png", "assets/goety/textures/particle/sparkle_3.png", "assets/goety/textures/particle/spell_cloud_0.png", "assets/goety/textures/particle/spell_cloud_1.png", "assets/goety/textures/particle/spell_cloud_10.png", "assets/goety/textures/particle/spell_cloud_11.png", "assets/goety/textures/particle/spell_cloud_2.png", "assets/goety/textures/particle/spell_cloud_3.png", "assets/goety/textures/particle/spell_cloud_4.png", "assets/goety/textures/particle/spell_cloud_5.png", "assets/goety/textures/particle/spell_cloud_6.png", "assets/goety/textures/particle/spell_cloud_7.png", "assets/goety/textures/particle/spell_cloud_8.png", "assets/goety/textures/particle/spell_cloud_9.png", "assets/goety/textures/particle/spiral.png", "assets/goety/textures/particle/summon_0.png", "assets/goety/textures/particle/summon_1.png", "assets/goety/textures/particle/summon_2.png", "assets/goety/textures/particle/summon_3.png", "assets/goety/textures/particle/totem_effect1.png", "assets/goety/textures/particle/totem_effect2.png", "assets/goety/textures/particle/totem_effect3.png", "assets/goety/textures/particle/totem_effect4.png", "assets/goety/textures/particle/totem_effect5.png", "assets/goety/textures/particle/totem_effect6.png", "assets/goety/textures/particle/totem_effect7.png", "assets/goety/textures/particle/trail.png", "assets/goety/textures/particle/water_trail.png"],
+]
+["取材"."产物"]
+"贴图/法术/goety/entity/corrupted/*" = "src/贴图/法术/goety/entity/corrupted/*.png"
+"贴图/法术/goety/entity/monolith/*" = "src/贴图/法术/goety/entity/monolith/*.png"
+"贴图/法术/goety/entity/monolith/poison_quill_vine/*" = "src/贴图/法术/goety/entity/monolith/poison_quill_vine/*.png"
+"贴图/法术/goety/entity/monolith/quick_growing_vine/*" = "src/贴图/法术/goety/entity/monolith/quick_growing_vine/*.png"
+"贴图/法术/goety/entity/projectiles/*" = "src/贴图/法术/goety/entity/projectiles/*.png"
+"贴图/法术/goety/entity/projectiles/biomine/*" = "src/贴图/法术/goety/entity/projectiles/biomine/*.png"
+"贴图/法术/goety/entity/projectiles/soul_bolt/*" = "src/贴图/法术/goety/entity/projectiles/soul_bolt/*.png"
+"贴图/法术/goety/entity/projectiles/hell_bolt/*" = "src/贴图/法术/goety/entity/projectiles/hell_bolt/*.png"
+"贴图/法术/goety/entity/projectiles/hell_blast/*" = "src/贴图/法术/goety/entity/projectiles/hell_blast/*.png"
+"贴图/法术/goety/entity/projectiles/void_rift/*" = "src/贴图/法术/goety/entity/projectiles/void_rift/*.png"
+"贴图/法术/goety/entity/projectiles/ghost_fire/*" = "src/贴图/法术/goety/entity/projectiles/ghost_fire/*.png"
+"贴图/法术/goety/entity/projectiles/ghost_fire/pre/*" = "src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/*.png"
+"贴图/法术/goety/entity/projectiles/ice_storm/*" = "src/贴图/法术/goety/entity/projectiles/ice_storm/*.png"
+"贴图/法术/goety/entity/projectiles/hellfire/*" = "src/贴图/法术/goety/entity/projectiles/hellfire/*.png"
+"贴图/法术/goety/entity/projectiles/magic_fire/*" = "src/贴图/法术/goety/entity/projectiles/magic_fire/*.png"
+"贴图/法术/goety/entity/projectiles/slash/*" = "src/贴图/法术/goety/entity/projectiles/slash/*.png"
+"贴图/法术/goety/entity/projectiles/tidal_surge/*" = "src/贴图/法术/goety/entity/projectiles/tidal_surge/*.png"
+"贴图/法术/goety/entity/water_jet/*" = "src/贴图/法术/goety/entity/water_jet/*.png"
+"贴图/法术/goety/particle/*" = "src/贴图/法术/goety/particle/*.png"
+
+# 本体的粒子定义（assets/goety/particles/<id>.json，写的是这个粒子用哪几张贴图、帧序）。怎么动、多大、什么颜色在各自的 Provider 类里（素材清单.md 列了类名），没取。
+# sphere_explode、smash 两个粒子没有定义文件，是 Provider 里程序画的。
+[["取材"]]
+"名称" = "亚波伦法术粒子定义"
+"作品" = "亚波伦不放水"
+"需要" = ["goety"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/absorb_trail.json", "src/数据/法术/goety/particles/absorb_trail.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/additive_effect.json", "src/数据/法术/goety/particles/additive_effect.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/aoe_indicator.json", "src/数据/法术/goety/particles/aoe_indicator.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/big_cult_spell.json", "src/数据/法术/goety/particles/big_cult_spell.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/big_electric.json", "src/数据/法术/goety/particles/big_electric.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/big_fire.json", "src/数据/法术/goety/particles/big_fire.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/big_fire_ground.json", "src/数据/法术/goety/particles/big_fire_ground.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/blossom_thorn_indicator.json", "src/数据/法术/goety/particles/blossom_thorn_indicator.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/bullet_effect.json", "src/数据/法术/goety/particles/bullet_effect.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/burning.json", "src/数据/法术/goety/particles/burning.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/circle_explode.json", "src/数据/法术/goety/particles/circle_explode.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/cult_spell.json", "src/数据/法术/goety/particles/cult_spell.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/dragon_flame.json", "src/数据/法术/goety/particles/dragon_flame.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/dust_cloud.json", "src/数据/法术/goety/particles/dust_cloud.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/electric.json", "src/数据/法术/goety/particles/electric.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/electric_explode.json", "src/数据/法术/goety/particles/electric_explode.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/fast_dust.json", "src/数据/法术/goety/particles/fast_dust.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/fiery_pillar.json", "src/数据/法术/goety/particles/fiery_pillar.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/fly.json", "src/数据/法术/goety/particles/fly.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/fog_cloud.json", "src/数据/法术/goety/particles/fog_cloud.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/frost.json", "src/数据/法术/goety/particles/frost.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/frost_gather.json", "src/数据/法术/goety/particles/frost_gather.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/frost_nova.json", "src/数据/法术/goety/particles/frost_nova.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/gather_trail.json", "src/数据/法术/goety/particles/gather_trail.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/god_ray.json", "src/数据/法术/goety/particles/god_ray.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/heal.json", "src/数据/法术/goety/particles/heal.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/lich_death.json", "src/数据/法术/goety/particles/lich_death.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/magic_bolt.json", "src/数据/法术/goety/particles/magic_bolt.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/magic_smoke.json", "src/数据/法术/goety/particles/magic_smoke.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/mine_pulse.json", "src/数据/法术/goety/particles/mine_pulse.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/necro_dragon_flame.json", "src/数据/法术/goety/particles/necro_dragon_flame.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/necro_effect.json", "src/数据/法术/goety/particles/necro_effect.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/none.json", "src/数据/法术/goety/particles/none.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/redstone_explode.json", "src/数据/法术/goety/particles/redstone_explode.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/reverse_shockwave.json", "src/数据/法术/goety/particles/reverse_shockwave.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/rolling_spiral.json", "src/数据/法术/goety/particles/rolling_spiral.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/shockwave.json", "src/数据/法术/goety/particles/shockwave.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/small_dragon_flame.json", "src/数据/法术/goety/particles/small_dragon_flame.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/small_frost.json", "src/数据/法术/goety/particles/small_frost.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/sparkle.json", "src/数据/法术/goety/particles/sparkle.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/spell_cloud.json", "src/数据/法术/goety/particles/spell_cloud.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/spell_square.json", "src/数据/法术/goety/particles/spell_square.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/summon.json", "src/数据/法术/goety/particles/summon.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/summon_trail.json", "src/数据/法术/goety/particles/summon_trail.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/totem_effect.json", "src/数据/法术/goety/particles/totem_effect.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/trail.json", "src/数据/法术/goety/particles/trail.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/water_trail.json", "src/数据/法术/goety/particles/water_trail.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/wind.json", "src/数据/法术/goety/particles/wind.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety}", "assets/goety/particles/wind_blow.json", "src/数据/法术/goety/particles/wind_blow.json"],
+]
+["取材"."产物"]
+"数据/法术/goety/particles/*" = "src/数据/法术/goety/particles/*.json"
+
+# 本体写死在 Java 里的实体模型（各 XxxModel.createBodyLayer）和三个关键帧动画类。别的模型的动作在各自 Model.setupAnim 里按 ageInTicks 算，要照源码抄。
+# 贴图不跟模型绑（一个模型常配几张贴图），在「亚波伦法术贴图」里。
+[["取材"]]
+"名称" = "亚波伦法术模型"
+"作品" = "亚波伦不放水"
+"需要" = ["goety"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"许可部分" = { "模型" = ["模型", "代码"], "动画" = ["模型", "代码"] }  # 几何和关键帧是 导出实体模型 从模组 Java 代码里读的
+"步骤" = [
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/BioMineModel.json", "BioMineModel=com.Polarice3.Goety.client.render.model.BioMineModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/BlastFungusModel.json", "BlastFungusModel=com.Polarice3.Goety.client.render.model.BlastFungusModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/CycloneModel.json", "CycloneModel=com.Polarice3.Goety.client.render.model.CycloneModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/EarthFistModel.json", "EarthFistModel=com.Polarice3.Goety.client.render.model.EarthFistModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/EntangleVinesModel.json", "EntangleVinesModel=com.Polarice3.Goety.client.render.model.EntangleVinesModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/GulfTentacleModel.json", "GulfTentacleModel=com.Polarice3.Goety.client.render.model.GulfTentacleModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/HellBlastModel.json", "HellBlastModel=com.Polarice3.Goety.client.render.model.HellBlastModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/IceBouquetModel.json", "IceBouquetModel=com.Polarice3.Goety.client.render.model.IceBouquetModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/IceChunkModel.json", "IceChunkModel=com.Polarice3.Goety.client.render.model.IceChunkModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/MasterFangModel.json", "MasterFangModel=com.Polarice3.Goety.client.render.model.MasterFangModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/MonolithModel.json", "MonolithModel=com.Polarice3.Goety.client.render.model.MonolithModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/PoisonQuillModel.json", "PoisonQuillModel=com.Polarice3.Goety.client.render.model.PoisonQuillModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/PoisonQuillVineModel.json", "PoisonQuillVineModel=com.Polarice3.Goety.client.render.model.PoisonQuillVineModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/QuickGrowingVineModel.json", "QuickGrowingVineModel=com.Polarice3.Goety.client.render.model.QuickGrowingVineModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/ScatterMineModel.json", "ScatterMineModel=com.Polarice3.Goety.client.render.model.ScatterMineModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/SmackStoneModel.json", "SmackStoneModel=com.Polarice3.Goety.client.render.model.SmackStoneModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/SoulBoltModel.json", "SoulBoltModel=com.Polarice3.Goety.client.render.model.SoulBoltModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/SpikeModel.json", "SpikeModel=com.Polarice3.Goety.client.render.model.SpikeModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/TidalSurgeModel.json", "TidalSurgeModel=com.Polarice3.Goety.client.render.model.TidalSurgeModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/TridentStormModel.json", "TridentStormModel=com.Polarice3.Goety.client.render.model.TridentStormModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/ViciousPikeModel.json", "ViciousPikeModel=com.Polarice3.Goety.client.render.model.ViciousPikeModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/ViciousToothModel.json", "ViciousToothModel=com.Polarice3.Goety.client.render.model.ViciousToothModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/VoidShockBombModel.json", "VoidShockBombModel=com.Polarice3.Goety.client.render.model.VoidShockBombModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/VoidShockModel.json", "VoidShockModel=com.Polarice3.Goety.client.render.model.VoidShockModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/模型/法术/goety/VolcanoModel.json", "VolcanoModel=com.Polarice3.Goety.client.render.model.VolcanoModel:createBodyLayer", "--贴图"],
+  ["导出实体模型", "{jar:goety}", "src/动画/法术/goety/EntangleVinesAnimations.json", "--贴图", "--动画", "EntangleVinesAnimations=com.Polarice3.Goety.client.render.animation.EntangleVinesAnimations"],
+  ["导出实体模型", "{jar:goety}", "src/动画/法术/goety/QuickGrowingVineAnimations.json", "--贴图", "--动画", "QuickGrowingVineAnimations=com.Polarice3.Goety.client.render.animation.QuickGrowingVineAnimations"],
+  ["导出实体模型", "{jar:goety}", "src/动画/法术/goety/PoisonQuillAnimations.json", "--贴图", "--动画", "PoisonQuillAnimations=com.Polarice3.Goety.client.render.animation.PoisonQuillAnimations"],
+]
+["取材"."产物"]
+"模型/法术/goety/*" = "src/模型/法术/goety/*.json"
+"动画/法术/goety/*" = "src/动画/法术/goety/*.json"
+
+# 本体的声音事件（法术的施法声、出手声、命中声，实体自己的声音；使徒那几个是亚波伦用的）。文件名 goety.<事件>[.<序号>].ogg，序号照 sounds.json 的先后。
+# 事件引用原版声音文件的（名字不带命名空间），字节取自资源索引。
+[["取材"]]
+"名称" = "亚波伦法术音效"
+"作品" = "亚波伦不放水"
+"需要" = ["goety", "资源索引-1.20.1"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  ["python", "{脚本}/导出音效.py", "src/音效/诡厄巫法", "--jar", "{jar:goety}", "--来源", "{产物来源}", "goety:abyss_prepare_spell", "goety:apostle_ambient", "goety:apostle_cast_spell", "goety:apostle_death", "goety:apostle_hurt", "goety:apostle_pre_teleport", "goety:apostle_predeath", "goety:apostle_prepare_spell", "goety:apostle_prepare_summon", "goety:apostle_shade", "goety:apostle_shoot", "goety:apostle_teleport", "goety:apostle_theme", "goety:apostle_theme_disc", "goety:apostle_theme_post", "goety:biomine_spawn", "goety:biomine_trigger", "goety:blast_fungus_throw", "goety:bolt_impact", "goety:bomb_fuse", "goety:bomb_load", "goety:bomb_pulse", "goety:bomb_sparkle", "goety:bomb_spawn", "goety:cast_spell", "goety:cast_spell_two", "goety:cast_steam", "goety:corrupt_beam_start", "goety:dirt_debris", "goety:fire_breath", "goety:fire_breath_start", "goety:fire_projectile_fly", "goety:fire_tornado_ambient", "goety:flight", "goety:frost_breath", "goety:frost_prepare_spell", "goety:fungus_explosion", "goety:heavy_woosh", "goety:hell_blast_impact", "goety:hell_blast_shoot", "goety:hell_bolt_impact", "goety:hell_bolt_shoot", "goety:ice_chunk_drop", "goety:ice_chunk_hit", "goety:ice_chunk_idle", "goety:ice_chunk_summon", "goety:ice_spike_cast", "goety:ice_spike_hit", "goety:impale", "goety:insect_swarm", "goety:insect_swarm_bite", "goety:lich_teleport_out", "goety:master_fang_snap", "goety:master_fang_spawn", "goety:master_fang_summon", "goety:master_fang_telegraph", "goety:necromancer_summon", "goety:poison_bolt_impact", "goety:poison_quill_aqua_impact", "goety:poison_quill_impact", "goety:poison_quill_vine_ambient", "goety:poison_quill_vine_burst", "goety:poison_quill_vine_close", "goety:poison_quill_vine_death", "goety:poison_quill_vine_hurt", "goety:poison_quill_vine_open", "goety:poison_quill_vine_shoot", "goety:prepare_spell", "goety:prepare_summon", "goety:projectile_spell", "goety:quick_growing_vine_burrow", "goety:quick_growing_vine_burst", "goety:quick_growing_vine_death", "goety:quick_growing_vine_hurt", "goety:redstone_explode", "goety:redstone_fire_projectile", "goety:redstone_golem_electric_sparks", "goety:roar_spell", "goety:rumble", "goety:shock_cast", "goety:soul_bolt_cast", "goety:soul_eat", "goety:soul_explode", "goety:steam_impact", "goety:swing", "goety:teleport_orb_throw", "goety:thunder_strike_fast", "goety:thunderbolt", "goety:tooth_spawn", "goety:trident_storm_explode", "goety:trident_storm_pre", "goety:updraft_blast", "goety:vex_vapor", "goety:vine_trap_burst", "goety:vine_trap_hold", "goety:void_prepare_spell", "goety:void_rift", "goety:void_rift_open", "goety:wall_disappear", "goety:wall_erupt", "goety:wall_hit", "goety:wall_spawn", "goety:water_jet", "goety:weaken_cast", "goety:weaken_curse", "goety:whip_hit", "goety:whip_swing", "goety:whirlwind", "goety:wild_prepare_spell", "goety:wind", "goety:wind_blast", "goety:wind_horn", "goety:wraith_fire", "goety:zap"],
+]
+["取材"."产物"]
+"音效/诡厄巫法/*" = "src/音效/诡厄巫法/*.ogg"
+
+# 原版贴图里库里还没有的：法术用到的原版粒子贴图、原版实体贴图（唤魔者尖牙、凋灵之首、守卫者激光），分镜要的原版物品和界面（不死图腾、金苹果、盾、经验球、死亡界面按钮）。
+# 库里已有同一份字节的（generic_*、sga_*、sonic_boom_*、splash_* 等，铁剑是 贴图/物品/杂项物品/铁剑）没列在这里，素材清单.md 里直接写库里的 id。
+[["取材"]]
+"名称" = "亚波伦原版贴图"
+"作品" = "亚波伦不放水"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity", "assets/minecraft/textures/entity/experience_orb.png", "assets/minecraft/textures/entity/guardian_beam.png", "assets/minecraft/textures/entity/shield_base.png", "assets/minecraft/textures/entity/shield_base_nopattern.png", "assets/minecraft/textures/entity/trident.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity/illager", "assets/minecraft/textures/entity/illager/evoker_fangs.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/entity/wither", "assets/minecraft/textures/entity/wither/wither.png", "assets/minecraft/textures/entity/wither/wither_invulnerable.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/gui", "assets/minecraft/textures/gui/widgets.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/item", "assets/minecraft/textures/item/diamond_sword.png", "assets/minecraft/textures/item/fire_charge.png", "assets/minecraft/textures/item/golden_apple.png", "assets/minecraft/textures/item/totem_of_undying.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/法术/minecraft/particle", "assets/minecraft/textures/particle/bubble.png", "assets/minecraft/textures/particle/drip_fall.png", "assets/minecraft/textures/particle/glint.png", "assets/minecraft/textures/particle/lava.png", "assets/minecraft/textures/particle/sculk_soul_0.png", "assets/minecraft/textures/particle/sculk_soul_1.png", "assets/minecraft/textures/particle/sculk_soul_10.png", "assets/minecraft/textures/particle/sculk_soul_2.png", "assets/minecraft/textures/particle/sculk_soul_3.png", "assets/minecraft/textures/particle/sculk_soul_4.png", "assets/minecraft/textures/particle/sculk_soul_5.png", "assets/minecraft/textures/particle/sculk_soul_6.png", "assets/minecraft/textures/particle/sculk_soul_7.png", "assets/minecraft/textures/particle/sculk_soul_8.png", "assets/minecraft/textures/particle/sculk_soul_9.png", "assets/minecraft/textures/particle/soul_0.png", "assets/minecraft/textures/particle/soul_1.png", "assets/minecraft/textures/particle/soul_10.png", "assets/minecraft/textures/particle/soul_2.png", "assets/minecraft/textures/particle/soul_3.png", "assets/minecraft/textures/particle/soul_4.png", "assets/minecraft/textures/particle/soul_5.png", "assets/minecraft/textures/particle/soul_6.png", "assets/minecraft/textures/particle/soul_7.png", "assets/minecraft/textures/particle/soul_8.png", "assets/minecraft/textures/particle/soul_9.png"],
+]
+["取材"."产物"]
+"贴图/法术/minecraft/entity/*" = "src/贴图/法术/minecraft/entity/*.png"
+"贴图/法术/minecraft/entity/illager/*" = "src/贴图/法术/minecraft/entity/illager/*.png"
+"贴图/法术/minecraft/entity/wither/*" = "src/贴图/法术/minecraft/entity/wither/*.png"
+"贴图/法术/minecraft/gui/*" = "src/贴图/法术/minecraft/gui/*.png"
+"贴图/法术/minecraft/item/*" = "src/贴图/法术/minecraft/item/*.png"
+"贴图/法术/minecraft/particle/*" = "src/贴图/法术/minecraft/particle/*.png"
+
+# 法术用到的原版粒子的定义（assets/minecraft/particles/<id>.json：用哪几张贴图、帧序）。
+[["取材"]]
+"名称" = "亚波伦原版粒子定义"
+"作品" = "亚波伦不放水"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/bubble.json", "src/数据/法术/minecraft/particles/bubble.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/bubble_column_up.json", "src/数据/法术/minecraft/particles/bubble_column_up.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/cloud.json", "src/数据/法术/minecraft/particles/cloud.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/crit.json", "src/数据/法术/minecraft/particles/crit.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/dragon_breath.json", "src/数据/法术/minecraft/particles/dragon_breath.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/dust.json", "src/数据/法术/minecraft/particles/dust.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/dust_color_transition.json", "src/数据/法术/minecraft/particles/dust_color_transition.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/enchant.json", "src/数据/法术/minecraft/particles/enchant.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/entity_effect.json", "src/数据/法术/minecraft/particles/entity_effect.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/falling_dust.json", "src/数据/法术/minecraft/particles/falling_dust.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/falling_water.json", "src/数据/法术/minecraft/particles/falling_water.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/flame.json", "src/数据/法术/minecraft/particles/flame.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/happy_villager.json", "src/数据/法术/minecraft/particles/happy_villager.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/large_smoke.json", "src/数据/法术/minecraft/particles/large_smoke.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/lava.json", "src/数据/法术/minecraft/particles/lava.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/poof.json", "src/数据/法术/minecraft/particles/poof.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/portal.json", "src/数据/法术/minecraft/particles/portal.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/rain.json", "src/数据/法术/minecraft/particles/rain.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/sculk_soul.json", "src/数据/法术/minecraft/particles/sculk_soul.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/smoke.json", "src/数据/法术/minecraft/particles/smoke.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/snowflake.json", "src/数据/法术/minecraft/particles/snowflake.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/sonic_boom.json", "src/数据/法术/minecraft/particles/sonic_boom.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/soul.json", "src/数据/法术/minecraft/particles/soul.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/splash.json", "src/数据/法术/minecraft/particles/splash.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/totem_of_undying.json", "src/数据/法术/minecraft/particles/totem_of_undying.json"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:client-1.20.1}", "assets/minecraft/particles/witch.json", "src/数据/法术/minecraft/particles/witch.json"],
+]
+["取材"."产物"]
+"数据/法术/minecraft/particles/*" = "src/数据/法术/minecraft/particles/*.json"
+
+# 黑暗祭坛（goety:dark_altar，分镜 1-01 史蒂夫放破碎之环的那座）：方块模型两个状态，没点着和点着（lit）。
+[["取材"]]
+"名称" = "亚波伦黑暗祭坛"
+"作品" = "亚波伦不放水"
+"需要" = ["goety", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  # lit=true 的模型是 forge:composite：同一个 template_altar 画两遍，底层贴 dark_altar、上面再叠一层 dark_altar_activated（眼睛）。导出模型不认 composite，所以只导未激活的形状，激活那层贴图单独取
+  ["导出模型", "{jar:goety,client-1.20.1}", "src/模型/方块/黑暗祭坛.模型.json", "祭坛=goety:dark_altar[lit=false]"],
+  ["导出模型", "{jar:goety}", "src/贴图/方块/黑暗祭坛.激活.png", "激活=assets/goety/textures/block/dark_altar_activated.png"],
+]
+["取材"."产物"]
+"模型/方块/黑暗祭坛" = "src/模型/方块/黑暗祭坛.模型.json"
+"贴图/方块/黑暗祭坛" = "src/模型/方块/黑暗祭坛.模型.png"
+"贴图/方块/黑暗祭坛.激活" = "src/贴图/方块/黑暗祭坛.激活.png"
+
+# 启示录里亚波伦和三个启示录法术要的：凋灵寂灭的光束声和着色器、绝对零度法阵用的白贴图和冰花粒子定义、血条和名字用的着色器（cosmic、dissolve_text、bossbar_hit）、
+# 召唤用的破碎之环图标、战斗曲。下界默认曲 apollyon_new_nether_theme 是 Tak_mfk《決戦の刻》（215.7 秒，配置 enableNewBossMusic 默认开）；
+# apollyon_theme_nether_phase2 是旧的下界曲（300.7 秒），apollyon_theme_post 是打完的尾奏（18.4 秒）。曲子是第三方的，jar 里没有单独的授权说明，随 jar 记 All Rights Reserved。
+# 启示录 All Rights Reserved，这一条按私有登记（字节只在数据根 私有/）。里层 RevelationFix jar 先解出来再读（同「猩红雨」）。
+[["取材"]]
+"名称" = "亚波伦启示录素材"
+"作品" = "亚波伦不放水"
+"需要" = ["goety_revelation"]
+"公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
+"可见性" = "私有"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["python", "-m", "zipfile", "-e", "{jar:goety_revelation}", "外层"],
+  ["python", "{脚本}/导出音效.py", "src/音效/启示录", "--jar", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "revelationfix:quietus_beam"],
+  ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/sounds/apollyon_new_nether_theme.ogg", "src/配乐/亚波伦/決戦の刻.ogg"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety_revelation}", "assets/goety_revelation/sounds/apollyon_theme_nether_phase2.ogg", "src/配乐/亚波伦/下界旧曲.ogg"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety_revelation}", "assets/goety_revelation/sounds/apollyon_theme_post.ogg", "src/配乐/亚波伦/尾奏.ogg"],
+  ["导出模型", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "src/贴图/法术/revelationfix/particle", "assets/revelationfix/textures/particle/white.png"],
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/破碎之环.png", "破碎之环=assets/goety_revelation/textures/item/curio/broken_halo.png"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety_revelation}", "assets/goety_revelation/particles/frost_flower.json", "src/数据/法术/goety_revelation/particles/frost_flower.json"],
+  ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/shaders/core/quietus_beam.fsh", "src/数据/着色器/启示录/quietus_beam.fsh"],
+  ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/shaders/core/quietus_beam.vsh", "src/数据/着色器/启示录/quietus_beam.vsh"],
+  ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/shaders/core/dissolve_text.fsh", "src/数据/着色器/启示录/dissolve_text.fsh"],
+  ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/shaders/core/dissolve_text.vsh", "src/数据/着色器/启示录/dissolve_text.vsh"],
+  ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/shaders/core/bossbar_hit.fsh", "src/数据/着色器/启示录/bossbar_hit.fsh"],
+  ["python", "{脚本}/拷jar文件.py", "外层/META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar", "assets/revelationfix/shaders/core/bossbar_hit.vsh", "src/数据/着色器/启示录/bossbar_hit.vsh"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety_revelation}", "assets/goety_revelation/shaders/core/cosmic.fsh", "src/数据/着色器/启示录/cosmic.fsh"],
+  ["python", "{脚本}/拷jar文件.py", "{jar:goety_revelation}", "assets/goety_revelation/shaders/core/cosmic.vsh", "src/数据/着色器/启示录/cosmic.vsh"],
+]
+["取材"."产物"]
+"音效/启示录/revelationfix.quietus_beam" = "src/音效/启示录/revelationfix.quietus_beam.ogg"
+"配乐/亚波伦/決戦の刻" = "src/配乐/亚波伦/決戦の刻.ogg"
+"配乐/亚波伦/下界旧曲" = "src/配乐/亚波伦/下界旧曲.ogg"
+"配乐/亚波伦/尾奏" = "src/配乐/亚波伦/尾奏.ogg"
+"贴图/法术/revelationfix/particle/white" = "src/贴图/法术/revelationfix/particle/white.png"
+"贴图/物品/破碎之环" = "src/贴图/物品/破碎之环.png"
+"数据/法术/goety_revelation/particles/frost_flower" = "src/数据/法术/goety_revelation/particles/frost_flower.json"
+"数据/着色器/启示录/quietus_beam.fsh" = "src/数据/着色器/启示录/quietus_beam.fsh"
+"数据/着色器/启示录/quietus_beam.vsh" = "src/数据/着色器/启示录/quietus_beam.vsh"
+"数据/着色器/启示录/dissolve_text.fsh" = "src/数据/着色器/启示录/dissolve_text.fsh"
+"数据/着色器/启示录/dissolve_text.vsh" = "src/数据/着色器/启示录/dissolve_text.vsh"
+"数据/着色器/启示录/bossbar_hit.fsh" = "src/数据/着色器/启示录/bossbar_hit.fsh"
+"数据/着色器/启示录/bossbar_hit.vsh" = "src/数据/着色器/启示录/bossbar_hit.vsh"
+"数据/着色器/启示录/cosmic.fsh" = "src/数据/着色器/启示录/cosmic.fsh"
+"数据/着色器/启示录/cosmic.vsh" = "src/数据/着色器/启示录/cosmic.vsh"

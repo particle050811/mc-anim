@@ -1240,3 +1240,3771 @@ id = "贴图/方块/下界岩"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版方块贴图 textures/block/netherrack.png（16×16），封面草稿的地面用"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/corrupted/beacon_beam_core"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/corrupted/beacon_beam_core.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/corrupted/beacon_beam_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/corrupted/beacon_beam_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/corrupted/beacon_beam_main"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/corrupted/beacon_beam_main.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/glacial_wall"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/glacial_wall.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/glacial_wall_crack_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/glacial_wall_crack_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/glacial_wall_crack_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/glacial_wall_crack_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/poison_quill_vine/poison_anemone"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/poison_quill_vine/poison_anemone.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/poison_quill_vine/poison_anemone_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/poison_quill_vine/poison_anemone_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine_glow_original"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine_glow_original.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine_original"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/poison_quill_vine/poison_quill_vine_original.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_kelp"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_kelp.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_kelp_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_kelp_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_glow_original"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_glow_original.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_original"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_original.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/totemic_bomb"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/totemic_bomb.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/totemic_bomb_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/totemic_bomb_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/totemic_bomb_glow2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/totemic_bomb_glow2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/totemic_bomb_glow3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/totemic_bomb_glow3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/totemic_wall"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/totemic_wall.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/volcano"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/volcano.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/monolith/volcano_active"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/monolith/volcano_active.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/12"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/12.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/13"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/13.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/14"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/14.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/15"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/15.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/16"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/16.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/17"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/17.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/18"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/18.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/19"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/19.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/biomine/glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/biomine/glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/blossom_ball"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/blossom_ball.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/blossom_thorn"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/blossom_thorn.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/bouncy_bubble"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/bouncy_bubble.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/cyclone"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/cyclone.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/earth_fist"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/earth_fist.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/electro_orb"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/electro_orb.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/entangle_vines"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/entangle_vines.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/fire_tornado"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/fire_tornado.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/gulf_tentacle"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/gulf_tentacle.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/12"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/12.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/13"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/13.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/14"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/14.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/15"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/15.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/16"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/16.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/17"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/17.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/18"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/18.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/19"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/19.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/20"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/20.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/21"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/21.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/22"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/22.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/23"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/23.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/24"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/24.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/25"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/25.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/26"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/26.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/27"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/27.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/28"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/28.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/29"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/29.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/30"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/30.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/31"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/31.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hellfire/9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hellfire/9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ice_chunk"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ice_chunk.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ice_chunk_spawn"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ice_chunk_spawn.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ice_spike"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ice_spike.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ice_storm"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ice_storm.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/12"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/12.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/13"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/13.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/14"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/14.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/15"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/15.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/16"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/16.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/17"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/17.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/18"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/18.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/19"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/19.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/20"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/20.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/21"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/21.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/22"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/22.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/23"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/23.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/24"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/24.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/25"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/25.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/26"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/26.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/27"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/27.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/28"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/28.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/29"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/29.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/30"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/30.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/31"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/31.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/magic_fire/fire"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/magic_fire/fire.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/master_fang"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/master_fang.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/pointed_trail"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/pointed_trail.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/poison_quill"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/poison_quill.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/poison_quill_aqua"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/poison_quill_aqua.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/pyroclast"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/pyroclast.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/rain_arrow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/rain_arrow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/scatter_bolt"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/scatter_bolt.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/scatter_bolt_orange"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/scatter_bolt_orange.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/scatter_mine"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/scatter_mine.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/scatter_mine_explode"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/scatter_mine_explode.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/scatter_mine_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/scatter_mine_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/scatter_mine_glow_spell"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/scatter_mine_glow_spell.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/slash/1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/slash/1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/slash/2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/slash/2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/slash/3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/slash/3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/slash/4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/slash/4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/smack_stone"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/smack_stone.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/smack_stone_fiery"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/smack_stone_fiery.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/smack_stone_fiery_glow"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/smack_stone_fiery_glow.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/solid_trail"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/solid_trail.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/spike"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/spike.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/overlay_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/overlay_0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/overlay_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/overlay_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/overlay_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/overlay_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/overlay_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/overlay_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/surge_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/surge_0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/surge_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/surge_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/surge_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/surge_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/tidal_surge/surge_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/tidal_surge/surge_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/trail"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/trail.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/trident_storm"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/trident_storm.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/vicious_pike"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/vicious_pike.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/vicious_tooth"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/vicious_tooth.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_shock_bomb_inner"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_shock_bomb_inner.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_shock_bomb_outer"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_shock_bomb_outer.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_shock_inner"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_shock_inner.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_shock_outer"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_shock_outer.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/water_jet/jet_inner"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/water_jet/jet_inner.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/water_jet/jet_outer"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/water_jet/jet_outer.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/additive_effect1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/additive_effect1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/additive_effect2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/additive_effect2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/additive_effect3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/additive_effect3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/additive_effect4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/additive_effect4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/additive_effect5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/additive_effect5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/additive_effect6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/additive_effect6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/additive_effect7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/additive_effect7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/aoe_indicator"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/aoe_indicator.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/aura"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/aura.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_electric_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_electric_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_electric_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_electric_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_electric_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_electric_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_drop_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_drop_8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_fire_ground_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_fire_ground_8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/big_soul_fire_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/big_soul_fire_8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/bullet_effect1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/bullet_effect1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/bullet_effect2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/bullet_effect2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/bullet_effect3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/bullet_effect3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/bullet_effect4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/bullet_effect4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/bullet_effect5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/bullet_effect5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/bullet_effect6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/bullet_effect6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/bullet_effect7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/bullet_effect7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/circle_explode8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/circle_explode8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/crack_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/crack_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/crack_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/crack_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/crack_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/crack_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/crack_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/crack_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/crack_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/crack_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/crack_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/crack_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/cult_spell_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/cult_spell_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_12"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_12.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_13"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_13.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_14"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_14.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_15"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_15.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_16"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_16.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/electric_9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/electric_9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/fly1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/fly1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/fly2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/fly2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/fly3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/fly3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/fog_cloud"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/fog_cloud.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/frost_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/frost_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/frost_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/frost_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/frost_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/frost_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/frost_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/frost_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/frost_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/frost_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/frost_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/frost_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/gather_trail"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/gather_trail.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/god_ray1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/god_ray1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/god_ray2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/god_ray2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/god_ray3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/god_ray3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/god_ray4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/god_ray4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/heal"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/heal.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/magic_bolt"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/magic_bolt.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/mine_pulse"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/mine_pulse.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/mine_pulse2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/mine_pulse2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/mine_pulse3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/mine_pulse3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/mine_pulse4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/mine_pulse4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_bolt_base"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_bolt_base.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_bolt_base_colorless"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_bolt_base_colorless.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_bolt_mid"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_bolt_mid.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_bolt_top"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_bolt_top.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_bolt_top_colorless"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_bolt_top_colorless.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_effect1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_effect1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_effect2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_effect2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_effect3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_effect3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_effect4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_effect4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_effect5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_effect5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_effect6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_effect6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_effect7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_effect7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/necro_fire_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/necro_fire_8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/shockwave"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/shockwave.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/sparkle_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/sparkle_0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/sparkle_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/sparkle_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/sparkle_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/sparkle_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/sparkle_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/sparkle_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spell_cloud_9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spell_cloud_9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/spiral"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/spiral.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/summon_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/summon_0.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/summon_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/summon_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/summon_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/summon_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/summon_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/summon_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/totem_effect1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/totem_effect1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/totem_effect2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/totem_effect2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/totem_effect3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/totem_effect3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/totem_effect4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/totem_effect4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/totem_effect5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/totem_effect5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/totem_effect6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/totem_effect6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/totem_effect7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/totem_effect7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/trail"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/trail.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/particle/water_trail"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/particle/water_trail.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/guardian_beam"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/guardian_beam.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/illager/evoker_fangs"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/illager/evoker_fangs.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/shield_base"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/shield_base.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/shield_base_nopattern"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/shield_base_nopattern.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/trident"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/trident.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/wither/wither"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/wither/wither.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/wither/wither_invulnerable"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/wither/wither_invulnerable.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/gui/widgets"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/gui/widgets.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/item/diamond_sword"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/item/diamond_sword.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/item/golden_apple"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/item/golden_apple.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/item/totem_of_undying"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/item/totem_of_undying.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/bubble"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/bubble.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/drip_fall"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/drip_fall.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/glint"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/glint.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/lava"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/lava.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_0.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_1.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_10.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_2.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_3.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_4.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_5.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_6.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_7.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_8.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/sculk_soul_9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/sculk_soul_9.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_0"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_0.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_1.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_10.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_2.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_3.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_4.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_5.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_6.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_7.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_8.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/particle/soul_9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/particle/soul_9.png）"
+
+[["资产"]]
+id = "贴图/法术/revelationfix/particle/white"
+"类别" = "贴图"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/revelationfix/particle/white.png）"
+
+[["资产"]]
+id = "贴图/物品/破碎之环"
+"类别" = "贴图"
+"来源" = "提取:亚波伦启示录素材@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "私有"
+"说明" = "anim extract --登记 自动登记（src/贴图/物品/破碎之环.png）"
+
+[["资产"]]
+id = "贴图/方块/黑暗祭坛"
+"类别" = "贴图"
+"来源" = "提取:亚波伦黑暗祭坛@154ae1f767f8+56b71336d2b4"
+"许可" = "MIT AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/方块/黑暗祭坛.模型.png）"
+
+[["资产"]]
+id = "贴图/方块/黑暗祭坛.激活"
+"类别" = "贴图"
+"来源" = "提取:亚波伦黑暗祭坛@154ae1f767f8+56b71336d2b4"
+"许可" = "MIT AND LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/方块/黑暗祭坛.激活.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/entity/experience_orb"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/entity/experience_orb.png）"
+
+[["资产"]]
+id = "贴图/法术/minecraft/item/fire_charge"
+"类别" = "贴图"
+"来源" = "提取:亚波伦原版贴图@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/minecraft/item/fire_charge.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast12"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast12.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast13"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast13.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast14"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast14.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast15"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast15.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast16"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast16.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast17"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast17.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast18"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast18.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast19"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast19.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast20"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast20.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast21"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast21.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast22"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast22.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast23"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast23.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast24"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast24.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast25"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast25.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast26"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast26.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast27"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast27.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast28"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast28.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast29"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast29.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast30"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast30.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast31"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast31.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast32"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast32.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_blast/hell_blast9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_blast/hell_blast9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_bolt/bolt_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_bolt/bolt_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_bolt/bolt_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_bolt/bolt_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/hell_bolt/bolt_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/hell_bolt/bolt_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/poison_bolt_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/poison_bolt_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/poison_bolt_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/poison_bolt_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/poison_bolt_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/poison_bolt_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/steam_missile_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/steam_missile_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/steam_missile_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/steam_missile_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/steam_missile_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/steam_missile_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/wither_bolt_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/wither_bolt_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/wither_bolt_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/wither_bolt_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/soul_bolt/wither_bolt_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/soul_bolt/wither_bolt_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/open_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/open_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/open_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/open_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/open_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/open_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/rift_1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/rift_1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/rift_2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/rift_2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/rift_3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/rift_3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/rift_4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/rift_4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/void_rift/rift_5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/void_rift/rift_5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire12"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire12.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire13"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire13.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire14"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire14.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire15"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire15.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire16"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire16.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire17"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire17.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire18"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire18.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire19"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire19.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire20"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire20.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire21"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire21.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire22"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire22.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire23"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire23.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire24"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire24.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire25"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire25.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire26"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire26.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire27"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire27.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire28"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire28.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire29"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire29.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire30"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire30.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire31"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire31.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire32"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire32.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/fire_inner"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/fire_inner.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre10"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre10.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre11"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre11.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre12"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre12.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre13"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre13.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre2.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre3"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre3.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre4"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre4.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre5"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre5.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre6"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre6.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre7"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre7.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre8"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre8.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre9"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre9.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ice_storm/ice_storm1"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ice_storm/ice_storm1.png）"
+
+[["资产"]]
+id = "贴图/法术/goety/entity/projectiles/ice_storm/ice_storm2"
+"类别" = "贴图"
+"来源" = "提取:亚波伦法术贴图@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/贴图/法术/goety/entity/projectiles/ice_storm/ice_storm2.png）"

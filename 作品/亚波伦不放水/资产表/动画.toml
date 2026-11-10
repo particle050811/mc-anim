@@ -88,3 +88,27 @@ id = "动画/角色/娘化亚波伦/控制器"
 "许可" = "GPL-3.0-only"
 "可见性" = "提取"
 "说明" = "YSM 包 controller/main.animation_controllers.json：8 个控制器，都只有一个空的 default 状态"
+
+[["资产"]]
+id = "动画/法术/goety/EntangleVinesAnimations"
+"类别" = "动画"
+"来源" = "提取:亚波伦法术模型@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/动画/法术/goety/EntangleVinesAnimations.json）"
+
+[["资产"]]
+id = "动画/法术/goety/PoisonQuillAnimations"
+"类别" = "动画"
+"来源" = "提取:亚波伦法术模型@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/动画/法术/goety/PoisonQuillAnimations.json）"
+
+[["资产"]]
+id = "动画/法术/goety/QuickGrowingVineAnimations"
+"类别" = "动画"
+"来源" = "提取:亚波伦法术模型@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/动画/法术/goety/QuickGrowingVineAnimations.json）"
