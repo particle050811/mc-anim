@@ -18,6 +18,13 @@
 //   数是配置默认值（本体 SpellConfig，启示录 GRSpellConfig）。
 // 画面、难度是照默认法杖写的；配对应学派法杖时的变体只在依据或画面里带一句。难度是 Agent 估的：
 //   易 = 原版就有的模型、面片或普通贴图粒子；中 = 要翻 Java 写死的模型，或粒子量大、有程序画的环；难 = 程序画的光束、闪电、裂隙，要读写场地方块，或多段动作的大模型。
+// 配下界魔杖（用户 11-09 定亚波伦手持下界魔杖、法术画面按配它时的样子）：下界魔杖是 DarkStaff(SpellType.NETHER)，getSpellTypes 只有 NETHER。
+//   它改法术只有两条路：下界学派法术自己的 rightStaff(staff)（法杖学派 = 法术学派），别的学派法术里点名的 typeStaff(staff, SpellType.NETHER)。
+//   全部 rightStaff、typeStaff 调用点和启示录的 mixin 都扫过（启示录的 SpellMixin 给这两个判断加了一条等价的旁路，结果不变）：受影响的 20 个，齐放名单里 10 个。
+//   不算进这一栏的三档，条件都不只是法杖：① hasUnholySet（穿不洁套装或施法者是使徒）换地狱火弹、地狱爆弹、火龙卷等；
+//   ② 启示录「戴晋升光环 + 下界魔杖」（ATAHelper.hasHalo，只认玩家饰品）：火球、熔岩炸弹、凋灵、上升气流、冰雹、飓风、障碍、头颅、阴森另有变体；
+//   ③ 灵魂束要「下界魔杖 + 下界套装」（hasNetherSet）才换成 WitherBolt。炼狱、凋灵寂灭两个启示录法术不看法杖。
+//   和学派无关的通用项：下界学派法术举杖期间有金色粒子往杖头聚（Spell.useParticle → SStaffParticlePacket，ColorUtil.GOLD，只对玩家发），拿不拿下界魔杖都有。
 // 粒子、声音两栏含法术类直接用的，和（非召唤类）它生成的实体类里用的；召唤物自己的叫声、受伤声没收。
 // 实体栏只列法术类直接生成的；这些实体落地、命中后再生成的次生实体（岩浆怪、尖桩、火山弹等）没列全，清单见 说明.md。
 
@@ -56,6 +63,8 @@ export interface 法术 {
   readonly 待定?: { readonly 候选: readonly [法术定类, 法术定类]; readonly 理由: Partial<Record<法术定类, string>> };
   /** 放出来屏幕上是什么 */
   readonly 画面: string;
+  /** 手持下界魔杖（goety:nether_staff，法杖学派 NETHER）时和默认法杖比变了什么；不写 = 没变。只算法杖本身，见文件头 */
+  readonly 配下界魔杖?: string;
   /** 搬进 three.js 的难度 */
   readonly 难度: '易' | '中' | '难';
   readonly 难度理由: string;
@@ -411,6 +420,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'ZombieSpell 是 SummonSpell，new ZombieServant 及按群系换的变体 加进世界，召出的仆从带寻路和索敌 AI，自己去打',
     画面: '脚边出现僵尸仆从（按环境换成冰冻、破布、丛林、僵尸猪灵、溺尸等变体）',
+    配下界魔杖: 'typeStaff(NETHER)：召出的是僵尸猪灵仆从（ZPiglinServant）；召唤时的粒子换成下界橙金色（ISummonSpell：0xFFA400 → 0xFFFFAE）',
     难度: '中', 难度理由: '原版僵尸系模型，变体多',
     图标: 'assets/goety/textures/item/focus/zombie_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/necromancy/ZombieSpell.class',
@@ -432,6 +442,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'SkeletonSpell 是 SummonSpell，new SkeletonServant 及变体 加进世界，召出的仆从带寻路和索敌 AI，自己去打',
     画面: '脚边冒出几只拿弓的骷髅仆从',
+    配下界魔杖: 'typeStaff(NETHER)：召出的是凋灵骷髅仆从（WitherSkeletonServant）；召唤粒子同样换成下界橙金色',
     难度: '中', 难度理由: '原版骷髅系模型，变体多',
     图标: 'assets/goety/textures/item/focus/skeleton_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/necromancy/SkeletonSpell.class',
@@ -952,6 +963,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'HuntingSpell 是 SummonSpell，new BlackWolf 及按群系换的变体 加进世界，召出的仆从带寻路和索敌 AI，自己去打',
     画面: '召出黑狼（按环境换成骷髅狼、地狱犬、冬狼等）',
+    配下界魔杖: 'typeStaff(NETHER)：不在雷雨露天、山地、水里、雪地这几种先判的环境时，召出的是地狱犬（Hellhound）',
     难度: '难', 难度理由: '狼模型要翻，变体多',
     图标: 'assets/goety/textures/item/focus/hunting_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/wild/HuntingSpell.class',
@@ -973,6 +985,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'MaulingSpell 是 SummonSpell，new BearServant / HoglinServant / Gnasher 加进世界，召出的仆从带寻路和索敌 AI，自己去打',
     画面: '召出一头熊（按环境换成疣猪兽、北极熊或啮咬兽）',
+    配下界魔杖: 'typeStaff(NETHER)：不在水里、寒冷群系、Y ≤ 64 的洞里时，召出的是疣猪兽仆从（HoglinServant）',
     难度: '难', 难度理由: '熊模型要翻',
     图标: 'assets/goety/textures/item/focus/mauling_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/wild/MaulingSpell.class',
@@ -991,6 +1004,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'SlimySpell 是 SummonSpell，new SlimeServant 及变体 加进世界，召出的仆从带寻路和索敌 AI，自己去打',
     画面: '召出史莱姆仆从',
+    配下界魔杖: 'typeStaff(NETHER)：召出 2 只岩浆怪仆从（MagmaCubeServant），默认是 1 只史莱姆',
     难度: '中', 难度理由: '原版史莱姆模型',
     图标: 'assets/goety/textures/item/focus/slimy_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/wild/SlimySpell.class',
@@ -1172,6 +1186,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'WindBlastSpell 沿视线发 WindBlow 粒子并击退范围内的敌人',
     画面: '一股白色气浪从手上吹出去把人掀飞',
+    配下界魔杖: 'typeStaff(NETHER)：气浪沿线每格多一颗原版 FLAME 粒子；被吹到的生物着火 5 秒',
     难度: '中', 难度理由: '气浪粒子是程序画的',
     图标: 'assets/goety/textures/item/focus/windblast_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/wind/WindBlastSpell.class',
@@ -1268,6 +1283,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'SurgingSpell 蓄满后每 6 刻 new SurgingOrb',
     画面: '蓄一会儿之后连射带尖尾迹的电弹',
+    配下界魔杖: 'typeStaff(NETHER)：SurgingOrb.setOrange，贴图换成 scatter_bolt_orange.png，电弧和命中的球形闪光的颜色从 0xA4FFFF（浅青）换成 ChatFormatting.GOLD（金）',
     难度: '中', 难度理由: '面片加尖尾迹带子',
     图标: 'assets/goety/textures/item/focus/surging_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/storm/SurgingSpell.class',
@@ -1503,8 +1519,9 @@ export const 法术表: readonly 法术[] = [
     注册名: 'fire_breath', 来源: '本体', 中文名: '炎呼聚晶', 英文名: 'Fire Breath Focus',
     学派: '下界', 施放: '引导', 施放刻: 0,
     类: '有画面',
-    依据: 'FireBreathSpell 是 BreathingSpell，沿视线喷 dragon_flame 粒子并点火',
+    依据: 'FireBreathSpell 是 BreathingSpell，沿视线喷 small_dragon_flame 粒子（默认法杖；配下界魔杖才是 dragon_flame）并点火',
     画面: '嘴前持续喷出一道锥形火焰',
+    配下界魔杖: 'rightStaff：粒子从 small_dragon_flame 换成 dragon_flame（大号龙焰，走另一个 dragonBreathAttack 重载，速度系数 0.35 对 0.55）；伤害翻倍；DragonFireGriefing 开着时每刻另在 10 格内随机点 3 处火',
     难度: '中', 难度理由: '粒子量大，要做成锥形流',
     图标: 'assets/goety/textures/item/focus/firebreath_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/FireBreathSpell.class',
@@ -1518,6 +1535,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'FireballSpell new ModFireball（SmallFireball）；CuriosFinder.hasUnholySet（穿不洁套装，或施法者本身是使徒）时是 HellBolt，和法杖无关',
     画面: '一颗小火球直线飞出去，命中点火',
+    配下界魔杖: 'rightStaff：多发 2 颗，共 3 颗。多的两颗起点在水平 x、z 上各偏一个高斯随机量（标准差 1 格），方向和第一颗相同，是平行飞出去的一小簇，不是扇形（戴恶毒头盔才是左右各 10 度的扇形）',
     难度: '易', 难度理由: '原版烈焰弹的面片',
     图标: 'assets/goety/textures/item/focus/minor_fireball_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/FireballSpell.class',
@@ -1534,6 +1552,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'LavaballSpell new Lavaball（LargeFireball）；CuriosFinder.hasUnholySet（穿不洁套装，或施法者本身是使徒）时是 HellBlast，和法杖无关',
     画面: '一颗大熔岩弹飞出去，命中爆炸',
+    配下界魔杖: 'rightStaff：多发 2 颗，共 3 颗，起点同火球那样随机偏、方向相同；三颗都 setUpgraded（不会被打回去、不和别的弹射物相撞），外观没查到差别',
     难度: '易', 难度理由: '原版火球面片放大 3 倍',
     图标: 'assets/goety/textures/item/focus/major_fireball_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/LavaballSpell.class',
@@ -1550,6 +1569,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'BombardmentSpell 蓄 60 刻后每 6 刻 new ModFireball',
     画面: '蓄一会儿之后火球连发',
+    配下界魔杖: 'rightStaff：每 6 刻那一发从 1 颗变 3 颗，多的两颗起点随机偏、方向相同',
     难度: '易', 难度理由: '同火球，数量多',
     图标: 'assets/goety/textures/item/focus/bombardment_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/BombardmentSpell.class',
@@ -1566,6 +1586,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'MeteorShowerSpell 蓄 60 刻后每 10 刻在上空 new Lavaball 往下砸，配 FoggyCloud',
     画面: '头顶一片雾云，熔岩弹一颗颗砸下来爆炸',
+    配下界魔杖: 'rightStaff：potency + 2，每 10 刻那一轮从 1 颗变 3 颗（各自在上空 24×4×24 的范围里随机取起点，各带两团雾云粒子）',
     难度: '中', 难度理由: '同熔岩炸弹，加雾云粒子和成片爆炸',
     图标: 'assets/goety/textures/item/focus/meteor_shower_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/MeteorShowerSpell.class',
@@ -1583,6 +1604,7 @@ export const 法术表: readonly 法术[] = [
     依据: 'MagmaSpell new MagmaBomb（SpellThrowableProjectile）抛出去。MagmaBomb 落地除了爆炸和地面火，还无条件 create 2 只 MagmaCubeServant（岩浆怪仆从，大小 2，寿命按召唤物算；配对应学派法杖 3 只，第三只大小 4），配法杖另外射 4 颗 Pyroclast。岩浆怪和 Pyroclast 实体栏没列',
     待定: { 候选: ['有画面', '召唤'], 理由: { 有画面: '放出来的是一颗抛出去的炸弹，爆炸和一地火是主画面；岩浆怪是炸完顺带掉出来的', 召唤: '每次落地都留下 2 只会自己蹦着打人的岩浆怪仆从，用户说「召唤整只生物的」不放' } },
     画面: '抛出一颗岩浆弹，落地炸开一地火，炸点蹦出 2 只小岩浆怪去追人',
+    配下界魔杖: 'rightStaff：爆炸半径 +1；落地蹦出的岩浆怪从 2 只变 3 只（第三只大小 4），另外朝上射 4 颗 Pyroclast（火山弹）',
     难度: '中', 难度理由: 'BlastFungusModel 换 pyroclast 贴图，落地有地面火',
     图标: 'assets/goety/textures/item/focus/magma_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/MagmaSpell.class',
@@ -1598,6 +1620,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'FireBlastSpell 以施法者为中心 new SpellExplosion，发 Shockwave、SphereExplode 和 big_fire 粒子',
     画面: '以施法者为中心炸开一圈火环和球形火闪',
+    配下界魔杖: 'rightStaff：火环、球形火闪和伤害半径都 +0.5 格；big_fire 粒子数从随机 4～8 个变成 4～16 个',
     难度: '中', 难度理由: '环和球是程序画的',
     图标: 'assets/goety/textures/item/focus/fire_blast_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/FireBlastSpell.class',
@@ -1611,6 +1634,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'FlameStrikeSpell 在目标周围一圈（潜行时绕自己两圈）new FirePillar（CastSpellTrap）',
     画面: '目标周围一圈地面先冒火苗预警，随后一圈火柱冲天',
+    配下界魔杖: 'rightStaff：对着目标时在半径 2 倍处多一圈火柱（共两圈）；潜行或没目标时在自己周围 1、3 格两圈之外再加 6 格、9 格两圈（各 8 根）',
     难度: '中', 难度理由: '没有模型，火柱是 fiery_pillar 粒子',
     图标: 'assets/goety/textures/item/focus/flame_strike_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/FlameStrikeSpell.class',
@@ -1626,6 +1650,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'WitherSkullSpell new ModWitherSkull（继承原版 WitherSkull）',
     画面: '一颗凋灵之首飞出去，命中爆炸',
+    配下界魔杖: 'rightStaff：多发 2 颗，共 3 颗凋灵之首，起点随机偏、方向相同',
     难度: '易', 难度理由: '原版凋灵之首模型',
     图标: 'assets/goety/textures/item/focus/witherskull_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/WitherSkullSpell.class',
@@ -1641,6 +1666,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'GhastSpell 是 SummonSpell，new MiniGhast / GhastServant / Malghast 加进世界，召出的仆从带寻路和索敌 AI，自己去打',
     画面: '头顶出现恶魂仆从吐火球',
+    配下界魔杖: 'rightStaff：数量从 3 只变成随机 3～5 只（小恶魂）',
     难度: '中', 难度理由: '原版恶魂模型',
     图标: 'assets/goety/textures/item/focus/ghastly_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/GhastSpell.class',
@@ -1658,6 +1684,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'BlazeSpell 是 SummonSpell，new BlazeServant / Inferno 加进世界，召出的仆从带寻路和索敌 AI，自己去打',
     画面: '召出烈焰人仆从',
+    配下界魔杖: 'rightStaff：数量从 1 只变成随机 2～5 只',
     难度: '中', 难度理由: '原版烈焰人模型',
     图标: 'assets/goety/textures/item/focus/blazing_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/BlazeSpell.class',
@@ -1675,6 +1702,7 @@ export const 法术表: readonly 法术[] = [
     依据: 'HoggingSpell 是 SummonSpell，new BurningHoglin（Summoned）。它唯一的 AI 是 BHChargeGoal：蓄势后直线冲撞，撞上或寿命到（100 刻乘持续档）就爆炸自毁',
     待定: { 候选: ['召唤', '有画面'], 理由: { 召唤: '基类是 SummonSpell，疣猪兽是整只生物的模型', 有画面: '行为是一发会跑的炮弹：冲出去撞上即爆，寿命按 100 刻计' } },
     画面: '施法者身侧出现一头着火的疣猪兽，蹬地后直线冲向目标，撞上爆炸',
+    配下界魔杖: 'rightStaff：施法者左右各一头，共 2 头（默认只有左边一头）；蓄势从 20 刻缩到 10 刻',
     难度: '中', 难度理由: '原版疣猪兽模型换贴图，加冲锋和爆炸',
     图标: 'assets/goety/textures/item/focus/hogging_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/HoggingSpell.class',
@@ -1926,6 +1954,7 @@ export const 法术表: readonly 法术[] = [
     类: '召唤',
     依据: 'HereticSpell 是 SummonSpell，new MaverickServant 和 HereticServant（本体的教徒仆从）加进世界，带 AI 自己去打',
     画面: '身边出现几名异教徒和独行者仆从',
+    配下界魔杖: 'rightStaff：独行者、异教徒各 4 名（默认按强度 1～3 名独行者、多 1 名异教徒），召出的独行者带力量 II',
     难度: '难', 难度理由: '本体的教徒模型要翻（灾厄村民体型）',
     图标: 'assets/goety_revelation/textures/item/focus/heretic_focus.png',
     法术类: 'com/mega/revelationfix/common/spell/nether/HereticSpell.class',

@@ -28,6 +28,13 @@ describe('法术表', () => {
     expect(齐放名单.every((法) => 法.类 === '有画面')).toBe(true);
   });
 
+  it('配下界魔杖变样的 20 个，齐放名单里 10 个', () => {
+    expect(数((法) => 法.配下界魔杖 !== undefined)).toBe(20);
+    expect(齐放名单.filter((法) => 法.配下界魔杖 !== undefined).map((法) => 法.注册名).sort()).toEqual(
+      ['bombardment', 'fire_blast', 'fire_breath', 'fireball', 'flame_strike', 'lavaball', 'meteor_shower', 'surging', 'wind_blast', 'wither_skull'],
+    );
+  });
+
   it('注册名不重复', () => {
     const 名 = 法术表.map((法) => `${法.来源}:${法.注册名}`);
     expect(new Set(名).size).toBe(名.length);
