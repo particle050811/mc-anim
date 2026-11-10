@@ -2467,6 +2467,22 @@
 ["取材"."产物"]
 "贴图/方块/下界岩" = "src/模型/方块/下界岩.png"
 
+# 熔岩、岩浆块的方块贴图：封面草稿二稿的地面上嵌几处熔岩池、池边一圈岩浆块（都是动画贴图的整条，画面里只取第一帧）。
+[["取材"]]
+"名称" = "亚波伦熔岩"
+"作品" = "亚波伦不放水"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/方块/熔岩.png", "lava_still=assets/minecraft/textures/block/lava_still.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/方块/岩浆块.png", "magma=assets/minecraft/textures/block/magma.png"],
+]
+["取材"."产物"]
+"贴图/方块/熔岩" = "src/模型/方块/熔岩.png"
+"贴图/方块/岩浆块" = "src/模型/方块/岩浆块.png"
+
 # 亚波伦的 boss 血条（ApollyonBossbar，都是 256×256 的图集，按代码里的 UV 切）：boss_bar 是现在的完整版（一二阶段边框、弓形装饰），
 # boss_bar_simple 是配置 simpleApollyonBossbar 开着时的简版，old_boss_bar、old_boss_bar_nether 是旧式（renderClassicApollyonBar，主世界、下界各一张）。
 # 名牌没有自己的贴图：名字和称号是游戏字体配 dissolve_text 着色器画的（DissolveApollyonFont），溶解用的噪声是 noise.png；血条里流动的「宇宙」填充是 cosmic 着色器。着色器没取。

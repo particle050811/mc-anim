@@ -1240,3 +1240,19 @@ id = "贴图/方块/下界岩"
 "许可" = "LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
 "说明" = "原版方块贴图 textures/block/netherrack.png（16×16），封面草稿的地面用"
+
+[["资产"]]
+id = "贴图/方块/岩浆块"
+"类别" = "贴图"
+"来源" = "提取:亚波伦熔岩@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版方块贴图 textures/block/magma.png（16×48，动画贴图的整条 3 帧），封面草稿熔岩池的池边用"
+
+[["资产"]]
+id = "贴图/方块/熔岩"
+"类别" = "贴图"
+"来源" = "提取:亚波伦熔岩@56b71336d2b4"
+"许可" = "LicenseRef-Minecraft-EULA"
+"可见性" = "提取"
+"说明" = "原版方块贴图 textures/block/lava_still.png（16×320，动画贴图的整条 20 帧），封面草稿的熔岩池、远处的熔岩柱用"
