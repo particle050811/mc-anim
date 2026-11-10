@@ -388,13 +388,13 @@ export const 召唤法阵: React.FC<{ 年龄刻: number; 半边: number; 环高:
 type 聚风 = { 生刻: number; 采样: number; 宽: number; 红: boolean; dx: number; dz: number; 偏航速: number; 半径速比: number; 最小半径: number };
 const 聚风寿命 = 90;
 const 聚风位置 = (c: 聚风, 岁: number): V3 => {
-  // 岁：已经走了几刻（整数）。0 = 出生点
+  // 岁：已经走了几刻（整数）。游戏里先走一步再记轨迹，头一次记的时候把整条历史都填成走完第一步的位置，
+  // 出生点不进带子（出生用 atan2(dx, dz)、之后用 cos/sin，不是一对，连上会拉出一条横穿法阵的直带）
   const r0 = Math.hypot(c.dx, c.dz);
-  if (岁 <= 0) return [c.dx, -c.dz, 游戏.实体高];
-  const 走 = Math.min(岁, 聚风寿命 - (c.采样 - 1));
+  const 走 = Math.min(Math.max(岁, 1), 聚风寿命 - (c.采样 - 1));
   const 偏航 = Math.atan2(c.dx, c.dz) + c.偏航速 * 走;
   const 半径 = Math.max(c.最小半径, r0 - (r0 / 20) * c.半径速比 * 走);
-  // 游戏：x = r cos(偏航)、z = r sin(偏航)（和出生时 atan2(dx, dz) 的算法不是一对，第一刻会跳一下，照做）；场景 y = −z
+  // 游戏：x = r cos(偏航)、z = r sin(偏航)；场景 y = −z
   return [半径 * Math.cos(偏航), -半径 * Math.sin(偏航), (Math.sin((走 - 1) * 0.2) + 1) * 0.5 * 游戏.实体高];
 };
 const 排聚风 = (进度刻在: (真实刻: number) => number, 止刻: number, 种子: number): 聚风[] => {
@@ -429,7 +429,7 @@ const 聚风带们: React.FC<{ 表: 聚风[]; 真实刻: number }> = ({ 表, 真
     const 红 = new THREE.Color(0xaa0000);
     for (const c of 表) {
       const τ = 真实刻 - c.生刻;
-      if (τ < 0 || τ >= 聚风寿命) continue;
+      if (τ < 1 || τ >= 聚风寿命) continue;
       const 岁 = Math.floor(τ);
       const f = τ - 岁;
       // 第 k 个采样点 = k 刻前的位置（刻间插值）
