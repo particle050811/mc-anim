@@ -1,7 +1,8 @@
 // 娘化亚波伦的声明：层、环境、眨眼、头发弹簧、贴图变体。字节在数据根 store（作品资产锁，anim extract 娘化亚波伦模型、娘化亚波伦动画 入的库）；没有就整组跳过。
 import { describe, expect, it, vi } from 'vitest';
 import { 动画姿势 } from '@engine/model/基岩实体.tsx';
-import { 定表演, 娘化亚波伦生物, 站立, 静止环境, type 亚波伦表演 } from './娘化亚波伦.tsx';
+import type { BedrockBone } from '@engine/model/基岩模型.tsx';
+import { 定表演, 娘化亚波伦生物, 描边面, 站立, 静止环境, type 亚波伦表演 } from './娘化亚波伦.tsx';
 
 // 娘化亚波伦.tsx 顶上的 asset: import 打包时由 webpack 内联，测试里换成 store 里的字节
 const { json, 图, 有字节 } = await vi.hoisted(async () => {
@@ -106,5 +107,31 @@ describe.skipIf(!有字节)('娘化亚波伦', () => {
       }
     expect(面纱).toBeGreaterThan(100);
     expect(漩涡).toBeGreaterThan(100);
+  });
+  it('描边片（all_cutout 的面剔除）：环和浮块的零厚度片从模型里拿掉，另画的每一面都朝着芯；环是白边、浮块是黑边', () => {
+    const 现 = 娘化亚波伦生物.取模型({});
+    const 原骨 = (json('模型/角色/娘化亚波伦', '{}').default.bones as BedrockBone[]).filter((b) => /^ysmGlowbone(5[4-9]|6[01]|17[2-9])$/.test(b.name));
+    expect(原骨.length).toBe(16);
+    for (const 骨 of 原骨) {
+      const 留 = 现.bones.find((b) => b.name === 骨.name)!.cubes!;
+      expect(留.length).toBe(1);
+      expect(留[0]!.size.every((v) => v > 0)).toBe(true);
+      // 芯的中心（骨骼坐标，X 取负）
+      const 芯 = 留[0]!;
+      const 心 = [-(芯.origin[0] + 芯.size[0] / 2) + 骨.pivot[0], 芯.origin[1] + 芯.size[1] / 2 - 骨.pivot[1], 芯.origin[2] + 芯.size[2] / 2 - 骨.pivot[2]];
+      const 面们 = 描边面(骨, 现.texture);
+      const 环 = Number(骨.name.slice(11)) >= 172;
+      // 环：每段四面，两个缺口端头（176、178）多一面；浮块六面
+      expect(面们.length).toBe(环 ? (骨.name.endsWith('176') || 骨.name.endsWith('178') ? 5 : 4) : 6);
+      for (const f of 面们) {
+        expect(f.色).toEqual(环 ? [255, 255, 255] : [0, 0, 0]);
+        const [a, b, , d] = f.角;
+        const e1 = [d![0] - a![0], d![1] - a![1], d![2] - a![2]];
+        const e2 = [b![0] - a![0], b![1] - a![1], b![2] - a![2]];
+        const n = [e1[1]! * e2[2]! - e1[2]! * e2[1]!, e1[2]! * e2[0]! - e1[0]! * e2[2]!, e1[0]! * e2[1]! - e1[1]! * e2[0]!];
+        const 到心 = [心[0]! - a![0], 心[1]! - a![1], 心[2]! - a![2]];
+        expect(n[0]! * 到心[0]! + n[1]! * 到心[1]! + n[2]! * 到心[2]!).toBeGreaterThan(0);
+      }
+    }
   });
 });

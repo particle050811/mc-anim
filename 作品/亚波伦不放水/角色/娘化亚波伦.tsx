@@ -9,11 +9,17 @@
 // 变体 面纱、漩涡光环 写「加」时，把 2default 上那两块像素叠到所选贴图上（default 上这两块本来是空的）：包里没有这种组合，是本片自己拼的。
 // 口径用 '通用'：YSM 2.6.5 的播放器在原生库里，核对不了；按 YSM wiki「并行动画」一页，pre_parallel 低于主动画、parallel 高于主动画且转角相加。
 // 包里的 controller/main.animation_controllers.json 八个控制器全是空状态（animations: []），不用接。
-import type { FC, ReactNode } from 'react';
+// 面剔除：ysm.json 写了 all_cutout: true（YSM wiki「项目结构」：「无论材质情况，全部启用面剔除。用于支持负尺寸描边模型」），
+// 8 个浮块（ysmGlowbone54～61）和 fly 里身后的缺口环（ysmGlowbone172～179）靠它描边：芯外面包一圈零厚度的片，每片只有朝里那面有颜色、朝外那面透明，
+// 剔掉背面后从外面看到的是芯加上对面那几片露出来的一圈边（环是黑芯白边，作者视频 BV1GSoUBYEK7 0:33～0:41 里就是这样；浮块是彩芯黑边）。
+// engine 的基岩模型不剔背面，零厚度的片只留一面、两面都画，照画的话环有两侧被白片整个盖住。所以这 16 根骨骼的描边片从模型里拿掉，
+// 另用只画正面的材质画（描边片），挂回各自的骨骼上。
+import { useMemo, type FC, type ReactNode } from 'react';
+import * as THREE from 'three';
 import type { Molang环境 } from '@engine/anim/Molang.ts';
 import { 二阶推进器, 二阶稳态, type 二阶函数 } from '@engine/anim/二阶系统.ts';
 import { 动画姿势, type 动画层设定 } from '@engine/model/基岩实体.tsx';
-import type { BonePose } from '@engine/model/基岩模型.tsx';
+import type { BedrockBone, BedrockCube, BedrockModel, BonePose } from '@engine/model/基岩模型.tsx';
 import type { 实体光照 } from '@engine/model/实体材质.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { 定义生物 } from '@库/生物/定义生物.ts';
@@ -52,9 +58,92 @@ export const 静止环境: Molang环境 = {
   外部: { 'ysm.head_yaw': 0, 'ysm.head_pitch': 0, 'ysm.elytra_rot_z': 0 },
 };
 
+// ── 描边片（面剔除，见文件头） ──
+type 面名 = 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
+const 描边骨骼 = (名: string) => {
+  const m = /^ysmGlowbone(\d+)$/.exec(名);
+  const n = m ? Number(m[1]) : -1;
+  return (n >= 54 && n <= 61) || (n >= 172 && n <= 179);
+};
+const 是片 = (c: BedrockCube) => c.size.some((v) => Math.abs(v) < 1e-6);
+type 几何 = Omit<BedrockModel, 'texture'>;
+const 原几何 = 模型 as unknown as 几何;
+/** 交给 定义生物 的几何：描边骨骼只留有厚度的芯 */
+export const 去描边片 = (g: 几何): 几何 => ({
+  ...g,
+  bones: g.bones.map((b): BedrockBone => (描边骨骼(b.name) && b.cubes ? { ...b, cubes: b.cubes.filter((c) => !是片(c)) } : b)),
+});
+
+/**
+ * 一根描边骨骼上各片的面，照贴图上色（片上都是纯色，取 UV 矩形正中那个像素；透明的面不出）。
+ * 坐标是骨骼坐标（原点 = pivot，单位像素，X 取负，同 基岩模型.tsx），每面四个角从它朝的那一侧看是 左上、右上、右下、左下。
+ */
+export const 描边面 = (骨: BedrockBone, 图: Png): { 面: 面名; 角: [number, number, number][]; 色: [number, number, number] }[] => {
+  const 出: ReturnType<typeof 描边面> = [];
+  for (const c of 骨.cubes ?? []) {
+    if (!是片(c) || Array.isArray(c.uv)) continue;
+    const [sx, sy, sz] = c.size;
+    const [x0, x1, y0, y1, z0, z1] = [-(c.origin[0] + sx), -c.origin[0], c.origin[1], c.origin[1] + sy, c.origin[2], c.origin[2] + sz];
+    const 各面: Record<面名, [number, number, number][]> = {
+      north: [[x1, y1, z0], [x0, y1, z0], [x0, y0, z0], [x1, y0, z0]],
+      south: [[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]],
+      east: [[x1, y1, z1], [x1, y1, z0], [x1, y0, z0], [x1, y0, z1]],
+      west: [[x0, y1, z0], [x0, y1, z1], [x0, y0, z1], [x0, y0, z0]],
+      up: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]],
+      down: [[x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0]],
+    };
+    const 面积 = { north: sx * sy, south: sx * sy, east: sy * sz, west: sy * sz, up: sx * sz, down: sx * sz };
+    for (const 面 of Object.keys(c.uv) as 面名[]) {
+      const u = c.uv[面]!;
+      if (面积[面] < 1e-9 || u.uv_size[0] === 0 || u.uv_size[1] === 0) continue;
+      const px = Math.min(图.w - 1, Math.max(0, Math.floor(u.uv[0] + u.uv_size[0] / 2)));
+      const py = Math.min(图.h - 1, Math.max(0, Math.floor(u.uv[1] + u.uv_size[1] / 2)));
+      const i = (py * 图.w + px) * 4;
+      if (图.px[i + 3]! < 26) continue;
+      出.push({ 面, 角: 各面[面].map(([x, y, z]) => [x + 骨.pivot[0], y - 骨.pivot[1], z - 骨.pivot[2]]), 色: [图.px[i]!, 图.px[i + 1]!, 图.px[i + 2]!] });
+    }
+  }
+  return 出;
+};
+
+// 只画正面、不受光、不过色调映射（这 16 根都是 ysmGlow 发光骨骼，和 engine 的发光材质一个算法）。受伤发红、透明度没接：用到再说
+const 描边材质 = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.FrontSide, toneMapped: false });
+const 描边缓存 = new WeakMap<Png, Record<string, ReactNode>>();
+/** 一张贴图对应的描边片，按骨骼名给 挂载 用 */
+const 描边挂载 = (图: Png): Record<string, ReactNode> => {
+  let 表 = 描边缓存.get(图);
+  if (表) return 表;
+  表 = {};
+  for (const 骨 of 原几何.bones) {
+    if (!描边骨骼(骨.name)) continue;
+    const 面们 = 描边面(骨, 图);
+    if (!面们.length) continue;
+    const pos: number[] = [];
+    const col: number[] = [];
+    const idx: number[] = [];
+    const 色 = new THREE.Color();
+    for (const f of 面们) {
+      const 底 = pos.length / 3;
+      色.setRGB(f.色[0] / 255, f.色[1] / 255, f.色[2] / 255, THREE.SRGBColorSpace);
+      for (const p of f.角) {
+        pos.push(...p);
+        col.push(色.r, 色.g, 色.b);
+      }
+      idx.push(底, 底 + 3, 底 + 2, 底, 底 + 2, 底 + 1);
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx);
+    表[骨.name] = <mesh geometry={g} material={描边材质} />;
+  }
+  描边缓存.set(图, 表);
+  return 表;
+};
+
 export const 娘化亚波伦生物 = 定义生物({
   名: '娘化亚波伦',
-  模型,
+  模型: 去描边片(原几何),
   贴图: (v) => [贴图们[v.贴图], ...(v.面纱 === '加' ? [补层().面纱] : []), ...(v.漩涡光环 === '加' ? [补层().漩涡] : [])],
   变体: { 贴图: ['default', '2default', '3default', '4default', '5default'], 面纱: ['原样', '加'], 漩涡光环: ['原样', '加'] },
   缩放: 0.7 / 16,
@@ -119,6 +208,7 @@ const 杖挂载 = { RightHandLocator: <手持下界魔杖 /> };
 
 export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 挂载, ...其余 }) => {
   const e = 表演.环境(秒);
-  const 挂 = 持杖 ? { ...杖挂载, ...挂载 } : 挂载;
+  const 图 = 娘化亚波伦生物.取模型(其余.变体).texture;
+  const 挂 = useMemo(() => ({ ...描边挂载(图), ...(持杖 ? 杖挂载 : undefined), ...挂载 }), [图, 持杖, 挂载]);
   return <娘化亚波伦生物 {...其余} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
 };
