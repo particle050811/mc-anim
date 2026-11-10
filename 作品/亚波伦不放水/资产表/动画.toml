@@ -1,0 +1,90 @@
+# 资产表：动画。只有本作品用的资产登记在这里，锁是作品根的 资产锁/（anim --作品 亚波伦不放水 extract <配方> --登记 追加，不手改锁）。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/arm"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/arm.animation.json：第一人称手臂模型（models/arm.json，没取）用的动作"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/carryon"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/carryon.animation.json：Carry On 联动动作"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/extra"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/extra.animation.json：8 段表情动作（挥手、拍手、跳舞等）"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/fp_arm"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/fp.arm.animation.json"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/main"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/main.animation.json：50 段主动作（idle、walk、run、jump、fly、sit、眨眼并行层等）"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/parcool"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/parcool.animation.json：ParCool 联动动作"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/slashblade"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/slashblade.animation.json：拔刀剑联动动作"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/swem"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/swem.animation.json：SWEM 联动动作"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/tac"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/tac.animation.json：TACZ 联动动作"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/tlm"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 animations/tlm.animation.json：车万女仆联动动作"
+
+[["资产"]]
+id = "动画/角色/娘化亚波伦/控制器"
+"类别" = "动画"
+"来源" = "提取:娘化亚波伦动画@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 controller/main.animation_controllers.json：8 个控制器，都只有一个空的 default 状态"

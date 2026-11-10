@@ -1,0 +1,1226 @@
+# 资产表：贴图。只有本作品用的资产登记在这里，锁是作品根的 资产锁/（anim --作品 亚波伦不放水 extract <配方> --登记 追加，不手改锁）。
+# 字段和取值见 assets/README.md。
+
+[["资产"]]
+id = "贴图/界面/聚晶轮盘"
+"类别" = "贴图"
+"来源" = "提取:聚晶轮盘@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "Goety textures/gui/focus_wheel.png，256×256，FocusRadialMenuScreen 画在屏幕正中的轮盘底纹（游戏里按 50% 透明画）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/arrow_rain_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/arrow_rain_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/banish_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/banish_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/barricade_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/barricade_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/biomine_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/biomine_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/biting_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/biting_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/blackguard_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/blackguard_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/blasting_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/blasting_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/blazing_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/blazing_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/blink_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/blink_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/blizzard_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/blizzard_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/blossoming_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/blossoming_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/bolting_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/bolting_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/bombardment_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/bombardment_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/bouncy_bubble_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/bouncy_bubble_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/bulwark_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/bulwark_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/burrowing_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/burrowing_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/call_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/call_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/carrion_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/carrion_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/charge_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/charge_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/chilling_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/chilling_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/command_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/command_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/corruption_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/corruption_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/crafting_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/crafting_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/cushion_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/cushion_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/cyclone_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/cyclone_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/discharge_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/discharge_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/earth_punch_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/earth_punch_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/electrocute_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/electrocute_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/empty_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/empty_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/end_walk_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/end_walk_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/ender_chest_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/ender_chest_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/entangling_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/entangling_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/eruption_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/eruption_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/feast_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/feast_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/fire_blast_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/fire_blast_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/fire_breath_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/fire_breath_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/fireball_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/fireball_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/flame_strike_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/flame_strike_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/flying_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/flying_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/frost_breath_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/frost_breath_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/frost_nova_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/frost_nova_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/frostborn_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/frostborn_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/ghastly_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/ghastly_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/ghost_fire_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/ghost_fire_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/glow_light_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/glow_light_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/grapple_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/grapple_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/guardian_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/guardian_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/hail_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/hail_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/hogging_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/hogging_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/hunting_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/hunting_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/ice_spike_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/ice_spike_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/ice_storm_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/ice_storm_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/iceology_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/iceology_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/ignite_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/ignite_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/illuminate_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/illuminate_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/illusion_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/illusion_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/iron_hide_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/iron_hide_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/killing_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/killing_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/launch_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/launch_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/lavaball_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/lavaball_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/leaping_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/leaping_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/leeching_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/leeching_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/lightning_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/lightning_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/magic_bolt_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/magic_bolt_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/magma_bomb_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/magma_bomb_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/mauling_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/mauling_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/meteor_shower_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/meteor_shower_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/ministrous_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/ministrous_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/monsoon_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/monsoon_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/order_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/order_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/osseous_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/osseous_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/overgrowth_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/overgrowth_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/phantasm_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/phantasm_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/poison_dart_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/poison_dart_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/prisma_beam_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/prisma_beam_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/pulverize_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/pulverize_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/quaking_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/quaking_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/razor_wind_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/razor_wind_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/reaping_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/reaping_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/recall_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/recall_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/rotation_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/rotation_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/rotting_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/rotting_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/rupture_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/rupture_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/scatter_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/scatter_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/sensing_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/sensing_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/shocking_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/shocking_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/shockwave_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/shockwave_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/shredding_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/shredding_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/skull_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/skull_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/slimy_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/slimy_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/smack_stone_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/smack_stone_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/snaring_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/snaring_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/sonic_boom_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/sonic_boom_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/soul_bolt_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/soul_bolt_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/soul_heal_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/soul_heal_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/soul_light_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/soul_light_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/spooky_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/spooky_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/sprightly_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/sprightly_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/steaming_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/steaming_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/stellar_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/stellar_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/surging_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/surging_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/swarm_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/swarm_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/sword_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/sword_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/teeth_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/teeth_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/telekinesis_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/telekinesis_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/temblor_clap_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/temblor_clap_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/thunderbolt_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/thunderbolt_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/thunderstorm_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/thunderstorm_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/tidal_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/tidal_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/trembling_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/trembling_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/trident_storm_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/trident_storm_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/troop_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/troop_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/tunnel_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/tunnel_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/updraft_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/updraft_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/vanguard_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/vanguard_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/vexing_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/vexing_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/void_flash_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/void_flash_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/watching_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/watching_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/water_jet_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/water_jet_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/water_whip_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/water_whip_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/weakening_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/weakening_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/whirlwind_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/whirlwind_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/whispering_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/whispering_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/wind_blast_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/wind_blast_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety/wither_skull_focus"
+"类别" = "贴图"
+"来源" = "提取:诡厄巫法聚晶图标@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety/wither_skull_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/dementor_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/dementor_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/dragon_nirvana_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/dragon_nirvana_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/dragon_skyrocket_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/dragon_skyrocket_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/heretic_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/heretic_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/ice_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/ice_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/nether_meteor_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/nether_meteor_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/revelation_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/revelation_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/shadow_clone_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/shadow_clone_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/goety_revelation/wither_quietus_focus"
+"类别" = "贴图"
+"来源" = "提取:启示录聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/goety_revelation/wither_quietus_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/光环版/barricade_focus"
+"类别" = "贴图"
+"来源" = "提取:光环版聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/光环版/barricade_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/光环版/cyclone_focus"
+"类别" = "贴图"
+"来源" = "提取:光环版聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/光环版/cyclone_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/光环版/fireball_focus"
+"类别" = "贴图"
+"来源" = "提取:光环版聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/光环版/fireball_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/光环版/hail_focus"
+"类别" = "贴图"
+"来源" = "提取:光环版聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/光环版/hail_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/光环版/skull_focus"
+"类别" = "贴图"
+"来源" = "提取:光环版聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/光环版/skull_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/光环版/updraft_focus"
+"类别" = "贴图"
+"来源" = "提取:光环版聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/光环版/updraft_focus.png）"
+
+[["资产"]]
+id = "贴图/物品/聚晶/光环版/wither_skull_focus"
+"类别" = "贴图"
+"来源" = "提取:光环版聚晶图标@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/模型/物品/聚晶/光环版/wither_skull_focus.png）"
+
+[["资产"]]
+id = "贴图/界面/亚波伦血条/boss_bar"
+"类别" = "贴图"
+"来源" = "提取:亚波伦血条@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "启示录 textures/ui/boss_bar/apollyon/boss_bar.png，256×256 图集，ApollyonBossbar 现在的完整版血条（一二阶段边框、弓形装饰），按代码里的 UV 切"
+
+[["资产"]]
+id = "贴图/界面/亚波伦血条/boss_bar_simple"
+"类别" = "贴图"
+"来源" = "提取:亚波伦血条@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "启示录 …/apollyon/boss_bar_simple.png，配置 simpleApollyonBossbar 开着时的简版血条"
+
+[["资产"]]
+id = "贴图/界面/亚波伦血条/noise"
+"类别" = "贴图"
+"来源" = "提取:亚波伦血条@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "启示录 textures/ui/noise.png，640×640，名牌和血条溶解着色器（dissolve_text、dissolve_2d）采样的噪声"
+
+[["资产"]]
+id = "贴图/界面/亚波伦血条/old_boss_bar"
+"类别" = "贴图"
+"来源" = "提取:亚波伦血条@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "启示录 …/apollyon/old/boss_bar.png，旧式血条（renderClassicApollyonBar）主世界那张"
+
+[["资产"]]
+id = "贴图/界面/亚波伦血条/old_boss_bar_nether"
+"类别" = "贴图"
+"来源" = "提取:亚波伦血条@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "启示录 …/apollyon/old/boss_bar_nether.png，旧式血条下界那张"
+
+[["资产"]]
+id = "贴图/环境/猩红雨"
+"类别" = "贴图"
+"来源" = "提取:猩红雨@d7e53575be83"
+"许可" = "LicenseRef-All-Rights-Reserved"
+"可见性" = "提取"
+"说明" = "启示录内嵌 RevelationFix 的 textures/environment/rain.png，64×256，下界亚波伦在场时客户端下的猩红雨（替原版 rain.png 的位置）"
+
+[["资产"]]
+id = "贴图/角色/娘化亚波伦/2default"
+"类别" = "贴图"
+"来源" = "提取:娘化亚波伦模型@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 textures/2default.png，另一套皮肤（使徒和亚波伦别的阶段，哪张对哪个阶段没逐张核）"
+
+[["资产"]]
+id = "贴图/角色/娘化亚波伦/3default"
+"类别" = "贴图"
+"来源" = "提取:娘化亚波伦模型@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 textures/3default.png，另一套皮肤（哪个阶段没核）"
+
+[["资产"]]
+id = "贴图/角色/娘化亚波伦/4default"
+"类别" = "贴图"
+"来源" = "提取:娘化亚波伦模型@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 textures/4default.png，另一套皮肤（哪个阶段没核）；ysm.json 的 default_texture 写的是它"
+
+[["资产"]]
+id = "贴图/角色/娘化亚波伦/5default"
+"类别" = "贴图"
+"来源" = "提取:娘化亚波伦模型@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 textures/5default.png，另一套皮肤（哪个阶段没核）"
+
+[["资产"]]
+id = "贴图/角色/娘化亚波伦/default"
+"类别" = "贴图"
+"来源" = "提取:娘化亚波伦模型@3799cdae87f6"
+"许可" = "GPL-3.0-only"
+"可见性" = "提取"
+"说明" = "YSM 包 textures/default.png，512×512，下界亚波伦二阶段那套（浮块 bone62、大光环 ysmGlowbone24 只在这张上有像素）"
