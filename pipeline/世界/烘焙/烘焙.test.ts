@@ -132,3 +132,70 @@ describe.skipIf(!有字节)('烘焙（端到端，要数据根里的方块表字
     expect(o.比坏).toMatch(/格不一样/);
   });
 });
+
+// 有顶的维度（下界）：同一个存档不开、开 全高 各烘一次，逐列看存下了哪几段
+const 全高脚本 = (世界: string, 输出: string) => `
+import { 载入体素库 } from ${模('../体素库.ts')};
+import { 烘焙 } from ${模('./烘焙.ts')};
+import { 区域源 } from ${模('../区域源.ts')};
+import { 目录指纹 } from ${模('../版本.ts')};
+import { 包方块源 } from ${模('../查询/源.ts')};
+import fs from 'node:fs';
+import path from 'node:path';
+const 库 = await 载入体素库();
+const 区目录 = path.join(${JSON.stringify(世界)}, 'region');
+const 出 = {};
+for (const [名, 全高] of [['露天', undefined], ['露天2', false], ['全高', true], ['全高2', true]]) {
+  const dir = path.join(${JSON.stringify(输出)}, 名);
+  fs.mkdirSync(dir, { recursive: true });
+  const 源 = new 区域源(区目录, '1', null);
+  await 烘焙({ 区域们: [[0, 0]], 取区域: (rx, rz) => 源.区域(rx, rz), 维度: '下界', 原点: [0, 0, 0], 全高, 输出: dir, 库 });
+  const 包 = new 包方块源(dir, 库, 名);
+  出[名] = { 版本: 目录指纹(dir), 海: 包.列(5, 5), 洞: 包.列(20, 5) };
+}
+console.log(JSON.stringify(出));
+`;
+
+describe.skipIf(!有字节)('烘焙 全高（有顶的维度）', () => {
+  it('不开只存到基岩顶，开了熔岩海、洞腔、岩顶都在；不给和给 false 逐字节一样', () => {
+    const 世界 = path.join(临时, '下界');
+    // 两个区块，y 0～127：顶上 y 120～127 基岩，底下 y 0～9 下界岩。区块 0 是熔岩海（y 10～31 熔岩，往上到岩顶是空的）；
+    // 区块 1 全是下界岩，中间 y 40～59 一个封闭的洞
+    造世界(
+      世界,
+      1n,
+      [
+        [0, 0, (_x, y) => (y >= 120 ? 'minecraft:bedrock' : y < 10 ? 'minecraft:netherrack' : y < 32 ? 'minecraft:lava[level=0]' : 'minecraft:air')],
+        [1, 0, (_x, y) => (y >= 120 ? 'minecraft:bedrock' : y >= 40 && y < 60 ? 'minecraft:air' : 'minecraft:netherrack')],
+      ],
+      { y底: 0, 段数: 8, 群系: 'minecraft:nether_wastes' },
+    );
+    const 脚本文件 = path.join(临时, '跑全高.mjs');
+    fs.writeFileSync(脚本文件, 全高脚本(世界, path.join(临时, '下界包')));
+    const r = spawnSync(process.execPath, [脚本文件], { encoding: 'utf8', cwd: path.join(import.meta.dirname, '..', '..', '..') });
+    expect(r.status, r.stderr).toBe(0);
+    type 列 = { y底: number; y顶: number; 段: { 底: number; 顶: number; 状态: string | null }[] } | null;
+    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as Record<string, { 版本: string; 海: 列; 洞: 列 }>;
+    expect(o.露天2!.版本).toBe(o.露天!.版本);
+    expect(o.全高2!.版本).toBe(o.全高!.版本);
+    expect(o.全高!.版本).not.toBe(o.露天!.版本);
+    // 不开：地表 = 基岩顶（y 128），只留它下面 4 格
+    expect(o.露天!.海!.y底).toBe(124);
+    expect(o.露天!.海!.段.some((s) => s.状态?.startsWith('minecraft:lava'))).toBe(false);
+    // 开：整个区段从最低的空当（熔岩底 y 10）往下 4 格起存；熔岩、空腔、基岩顶都在
+    const 段 = (c: 列) => c!.段.map((s) => [s.状态, s.底, s.顶]);
+    expect(o.全高!.海!.y底).toBe(6);
+    expect(段(o.全高!.海)).toEqual([
+      ['minecraft:bedrock', 120, 127],
+      ['minecraft:air', 32, 119],
+      ['minecraft:lava[level=0]', 10, 31],
+      ['minecraft:netherrack', 6, 9],
+    ]);
+    expect(段(o.全高!.洞)).toEqual([
+      ['minecraft:bedrock', 120, 127],
+      ['minecraft:netherrack', 60, 119],
+      ['minecraft:air', 40, 59],
+      ['minecraft:netherrack', 6, 39],
+    ]);
+  });
+});

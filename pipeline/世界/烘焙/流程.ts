@@ -52,7 +52,7 @@ export const 烘焙世界 = async (w: 世界声明, o: 烘焙选项): Promise<�
     let r: Awaited<ReturnType<typeof 烘焙>>;
     try {
       const t0 = performance.now();
-      r = await 烘焙({ 区域们, 取区域: (rx, rz) => 源.区域(rx, rz), 维度: w.包维度, 原点: b.原点, 输出: 暂存.dir, 库, 日志: o.日志 });
+      r = await 烘焙({ 区域们, 取区域: (rx, rz) => 源.区域(rx, rz), 维度: w.包维度, 原点: b.原点, 全高: w.全高, 输出: 暂存.dir, 库, 日志: o.日志 });
       o.日志(`烘焙完，${((performance.now() - t0) / 1000).toFixed(1)} 秒；${r.块文件数} 个块文件，${r.包.状态.length} 种状态、${r.包.群系.length} 种群系、${r.条目数} 种条目；缺状态 ${r.缺状态.size} 种、群系 ${r.缺群系.size} 种（见 缺失.tsv）`);
       ({ 版本, 目录: dir } = 发布(b.名, 暂存.dir));
     } finally {
