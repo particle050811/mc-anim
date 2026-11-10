@@ -57,7 +57,8 @@ describe.skipIf(!有字节)('持杖的默认摆法（斜举）', () => {
       expect(杖.轴[1]).toBeGreaterThan(0.1);
       // fly 里头偏到右边 0.42 格、帽顶到 0.85 格上下；握杖改成杖身垂直小臂后手往里收了约 0.19 格，杖尖最里到 1.23
       expect(杖.尖[0]).toBeGreaterThan(1.15);
-      expect(杖.尾[0]).toBeGreaterThan(0.2);
+      // 杖尾最里在第 0 秒（身子摆到最右）：0.09，在右胯外侧（核对段「持杖-飞行-正面-0秒」）
+      expect(杖.尾[0]).toBeGreaterThan(0.05);
     }
     expect(持杖位姿({ pose: 原点, 秒: 0.75, 表演: 悬停, 姿势: {} }).尖[0]).toBeLessThan(0.8);
   });
