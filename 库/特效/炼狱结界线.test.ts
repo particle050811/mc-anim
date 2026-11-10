@@ -1,6 +1,6 @@
 // 炼狱结界线段表：守住「重放出来是正十二面体」和段数。
 import { describe, expect, it } from 'vitest';
-import { 炼狱结界透明度, 结界外接球半径, 结界线段表 } from './炼狱结界线.ts';
+import { 炼狱结界透明度, 结界外接球半径, 结界棱表, 结界线段表 } from './炼狱结界线.ts';
 
 const 键 = (p: readonly number[]) => p.map((v) => Math.round(v * 100) / 100 + 0).join(',');
 
@@ -29,6 +29,20 @@ describe('炼狱结界线段表', () => {
   });
   it('边比例 0.5 时每段短一截', () => {
     for (const s of 结界线段表(0.5)) expect(Math.hypot(s.止[0] - s.起[0], s.止[1] - s.起[1], s.止[2] - s.起[2])).toBeLessThan(0.65);
+  });
+});
+
+describe('结界棱表', () => {
+  it('20 个顶点、30 条棱不重复，每个顶点接 3 条棱', () => {
+    const { 顶点, 棱 } = 结界棱表();
+    expect(顶点.length).toBe(20);
+    expect(棱.length).toBe(30);
+    const 度 = new Array<number>(20).fill(0);
+    for (const [a, b] of 棱) {
+      度[a]!++;
+      度[b]!++;
+    }
+    expect(度.every((n) => n === 3)).toBe(true);
   });
 });
 
