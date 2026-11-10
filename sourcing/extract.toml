@@ -2956,6 +2956,66 @@
 "贴图/方块/黑暗祭坛" = "src/模型/方块/黑暗祭坛.模型.png"
 "贴图/方块/黑暗祭坛.激活" = "src/贴图/方块/黑暗祭坛.激活.png"
 
+# 安息仪式（召唤亚波伦，用户 11-10 说还没搞）：配方 goety_revelation:summon_apollyon 的 12 件祭品里本体的 9 件图标（shadow_essence 是 4 帧竖条，mcmeta 每帧 2 刻、插值）、
+# 笼里灵魂图腾充满的图标（full_totem）、炼狱魔典的物品模型（默认 active = 0 走 infernal_tome_close，是个立体的合上的书，不是平面图标）、
+# 仪式结束生成的过渡实体（SummonApostleRenderer）的地面法阵和两道环、聚风带（WindGatherParticle）的贴图、祭坛的四个声音。
+# 祭坛、基座、诅咒笼的方块形状不在这里：本作品的方块表（数据/方块附加/方块表）里已经有；祭坛另见「亚波伦黑暗祭坛」。
+[["取材"]]
+"名称" = "亚波伦安息仪式"
+"作品" = "亚波伦不放水"
+"需要" = ["goety", "client-1.20.1"]
+"公开版" = "提取"
+"来源" = "诡厄巫法 Goety 2.5.60.6"
+"许可" = "MIT"
+"步骤" = [
+  ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/item", "assets/goety/textures/item/heart_of_the_night.png", "assets/goety/textures/item/forbidden_scroll.png", "assets/goety/textures/item/unholy_blood.png", "assets/goety/textures/item/shadow_essence.png", "assets/goety/textures/item/soul_ruby.png", "assets/goety/textures/item/malefic_helm.png", "assets/goety/textures/item/crone_hat.png", "assets/goety/textures/item/warlock_sash.png", "assets/goety/textures/item/full_totem.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/entity/cultist", "assets/goety/textures/entity/cultist/summon_apostle.png", "assets/goety/textures/entity/cultist/summon_apostle_ring.png"],
+  ["导出模型", "{jar:goety}", "src/贴图/仪式/goety/particle", "assets/goety/textures/particle/gathering_trail.png"],
+  ["导出模型", "{jar:goety,client-1.20.1}", "src/模型/仪式/炼狱魔典.模型.json", "书=goety:item/infernal_tome_close"],
+  ["python", "{脚本}/导出音效.py", "src/音效/仪式", "--jar", "{jar:goety}", "--来源", "{产物来源}", "goety:altar_start", "goety:altar_loop", "goety:altar_finish", "goety:spell_fail"],
+]
+["取材"."产物"]
+"贴图/仪式/goety/item/*" = "src/贴图/仪式/goety/item/*.png"
+"贴图/仪式/goety/entity/cultist/*" = "src/贴图/仪式/goety/entity/cultist/*.png"
+"贴图/仪式/goety/particle/*" = "src/贴图/仪式/goety/particle/*.png"
+"模型/仪式/炼狱魔典" = "src/模型/仪式/炼狱魔典.模型.json"
+"贴图/仪式/炼狱魔典" = "src/模型/仪式/炼狱魔典.模型.png"
+"音效/仪式/*" = "src/音效/仪式/*.ogg"
+
+# 安息仪式用到的原版贴图里库里、本作品里还没有的：祭品龙息和下界之星的图标（附魔金苹果用 贴图/法术/minecraft/item/golden_apple 加附魔光效）、
+# 灵魂火的两张 32 帧竖条（方块表图集里只有第一帧，火要动得自己按帧取）、灵魂火焰粒子、大烟雾粒子 12 帧（火冒的烟、仪式结束和过渡实体冒的烟）。
+[["取材"]]
+"名称" = "亚波伦安息仪式原版"
+"作品" = "亚波伦不放水"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/仪式/minecraft/item", "assets/minecraft/textures/item/dragon_breath.png", "assets/minecraft/textures/item/nether_star.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/仪式/minecraft/block", "assets/minecraft/textures/block/soul_fire_0.png", "assets/minecraft/textures/block/soul_fire_1.png"],
+  ["导出模型", "{jar:client-1.20.1}", "src/贴图/仪式/minecraft/particle", "assets/minecraft/textures/particle/soul_fire_flame.png", "assets/minecraft/textures/particle/big_smoke_0.png", "assets/minecraft/textures/particle/big_smoke_1.png", "assets/minecraft/textures/particle/big_smoke_2.png", "assets/minecraft/textures/particle/big_smoke_3.png", "assets/minecraft/textures/particle/big_smoke_4.png", "assets/minecraft/textures/particle/big_smoke_5.png", "assets/minecraft/textures/particle/big_smoke_6.png", "assets/minecraft/textures/particle/big_smoke_7.png", "assets/minecraft/textures/particle/big_smoke_8.png", "assets/minecraft/textures/particle/big_smoke_9.png", "assets/minecraft/textures/particle/big_smoke_10.png", "assets/minecraft/textures/particle/big_smoke_11.png"],
+]
+["取材"."产物"]
+"贴图/仪式/minecraft/item/*" = "src/贴图/仪式/minecraft/item/*.png"
+"贴图/仪式/minecraft/block/*" = "src/贴图/仪式/minecraft/block/*.png"
+"贴图/仪式/minecraft/particle/*" = "src/贴图/仪式/minecraft/particle/*.png"
+
+# 安息仪式的第二个配方 goety_revelation:summon_apollyon2 的激活物：末日勋章（doom_medal，打赢亚波伦掉的，图标 item/doom_icon）。启示录的，私有。
+[["取材"]]
+"名称" = "亚波伦安息仪式启示录"
+"作品" = "亚波伦不放水"
+"需要" = ["goety_revelation"]
+"公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
+"可见性" = "私有"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出模型", "{jar:goety_revelation}", "src/贴图/物品/末日勋章.png", "末日勋章=assets/goety_revelation/textures/item/doom_icon.png"],
+]
+["取材"."产物"]
+"贴图/物品/末日勋章" = "src/贴图/物品/末日勋章.png"
+
 # 启示录里亚波伦和三个启示录法术要的：凋灵寂灭的光束声和着色器、绝对零度法阵用的白贴图和冰花粒子定义、血条和名字用的着色器（cosmic、dissolve_text、bossbar_hit）、
 # 召唤用的破碎之环图标、战斗曲。下界默认曲 apollyon_new_nether_theme 是 Tak_mfk《決戦の刻》（215.7 秒，配置 enableNewBossMusic 默认开）；
 # apollyon_theme_nether_phase2 是旧的下界曲（300.7 秒），apollyon_theme_post 是打完的尾奏（18.4 秒）。曲子是第三方的，jar 里没有单独的授权说明，随 jar 记 All Rights Reserved。

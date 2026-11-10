@@ -2232,3 +2232,35 @@ id = "音效/启示录/revelationfix.quietus_beam"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "anim extract --登记 自动登记（src/音效/启示录/revelationfix.quietus_beam.ogg）"
+
+[["资产"]]
+id = "音效/仪式/goety.altar_finish"
+"类别" = "音效"
+"来源" = "提取:亚波伦安息仪式@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/仪式/goety.altar_finish.ogg）"
+
+[["资产"]]
+id = "音效/仪式/goety.altar_loop"
+"类别" = "音效"
+"来源" = "提取:亚波伦安息仪式@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/仪式/goety.altar_loop.ogg）"
+
+[["资产"]]
+id = "音效/仪式/goety.altar_start"
+"类别" = "音效"
+"来源" = "提取:亚波伦安息仪式@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/仪式/goety.altar_start.ogg）"
+
+[["资产"]]
+id = "音效/仪式/goety.spell_fail"
+"类别" = "音效"
+"来源" = "提取:亚波伦安息仪式@154ae1f767f8"
+"许可" = "MIT"
+"可见性" = "提取"
+"说明" = "anim extract --登记 自动登记（src/音效/仪式/goety.spell_fail.ogg）"
