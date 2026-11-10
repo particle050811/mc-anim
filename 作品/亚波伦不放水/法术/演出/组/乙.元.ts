@@ -4,8 +4,16 @@ import type { 法术元 } from '../接口.ts';
 
 import 撕咬 from '../法术/撕咬.元.ts';
 import 尖牙盛宴 from '../法术/尖牙盛宴.元.ts';
+import 牙之 from '../法术/牙之.元.ts';
+import 尖刺 from '../法术/尖刺.元.ts';
+import 障碍 from '../法术/障碍.元.ts';
+import 撼地 from '../法术/撼地.元.ts';
 
 export const 乙元: readonly 法术元[] = [
   撕咬,
   尖牙盛宴,
+  牙之,
+  尖刺,
+  障碍,
+  撼地,
 ];
