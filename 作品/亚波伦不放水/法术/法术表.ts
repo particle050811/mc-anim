@@ -1634,7 +1634,7 @@ export const 法术表: readonly 法术[] = [
     类: '有画面',
     依据: 'FlameStrikeSpell 在目标周围一圈（潜行时绕自己两圈）new FirePillar（CastSpellTrap）',
     画面: '目标周围一圈地面先冒火苗预警，随后一圈火柱冲天',
-    配下界魔杖: 'rightStaff：对着目标时在半径 2 倍处多一圈火柱（共两圈）；潜行或没目标时在自己周围 1、3 格两圈之外再加 6 格、9 格两圈（各 8 根）',
+    配下界魔杖: 'rightStaff：对着目标时在半径 2 倍处多一圈火柱（共两圈）；潜行或没目标时在自己周围 1、3 格两圈之外再加 6 格、9 格两圈（6 格 8 根；9 格循环 16 次但角度步长还是 45 度，8 个方位各叠 2 根）',
     难度: '中', 难度理由: '没有模型，火柱是 fiery_pillar 粒子',
     图标: 'assets/goety/textures/item/focus/flame_strike_spell.png',
     法术类: 'com/Polarice3/Goety/common/magic/spells/nether/FlameStrikeSpell.class',
