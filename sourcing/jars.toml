@@ -392,3 +392,45 @@
 "许可" = { "代码" = "GPL-3.0-only", "资源" = "GPL-3.0-only", "原文" = "GNU GPLv3", "依据" = "jar 里 META-INF/mods.toml license = GNU GPLv3（没写 or later）；Modrinth 按 sha1 查到的同一个文件" }
 "来源页" = "https://modrinth.com/plugin/chunky"
 "用途" = "anim world pregen --执行"
+
+# 作品 亚波伦不放水 的取材来源（用户 11-09 定用这两个模组和娘化 YSM 版）：不装进取材游戏，只放在 缓存/ 里给 anim extract 读
+[["模组"]]
+"id" = "goety"
+"名称" = "诡厄巫法 Goety"
+"文件" = "goety-2.5.60.6.jar"
+"版本" = "2.5.60.6"
+"到" = "缓存/mods/goety-2.5.60.6.jar"
+"下载" = "https://cdn.modrinth.com/data/4ZVIxU8x/versions/XIafvWQz/goety-2.5.60.6.jar"
+"sha256" = "154ae1f767f893fd1ca9c1ed32b51deff8dca50498378f5bb5c2d228db94d3d6"
+"sha1" = "66c32ec52d06a64342f7ac09afe5b454b8db87af"
+"许可" = { "代码" = "MIT", "资源" = "MIT", "原文" = "MIT License", "依据" = "jar 里 META-INF/mods.toml license = MIT License；jar 里没有 LICENSE 文件，源码仓库 github.com/Polarice3/Goety-2 的 LICENSE 原文没核；mods.toml credits 写明部分贴图、模型、建筑是别人做的，这些是否同样按 MIT 没查到" }
+"来源页" = "https://modrinth.com/mod/goety"
+
+# 启示录是 jar 套 jar：新逻辑和下界亚波伦的贴图、猩红雨在里层 META-INF/jarjar/[Forge]RevelationFix-1.20.1-4.9.jar（modid revelationfix），
+# 取材条目要读里层的先解出来再读（同 maidspell）。要求 Goety ≥ 2.5.60.0
+[["模组"]]
+"id" = "goety_revelation"
+"名称" = "诡厄巫法启示录 Goety: Revelation"
+"文件" = "GoetyRevelation-2.3.6.jar"
+"版本" = "2.3.6"
+"到" = "缓存/mods/GoetyRevelation-2.3.6.jar"
+"下载" = "https://cdn.modrinth.com/data/VayV26Pa/versions/BAH9TQcK/GoetyRevelation-2.3.6.jar"
+"sha256" = "d7e53575be83e4258056acfc711aacb670bde127e571c337ac27aa9e59bad606"
+"sha1" = "34a5014ba0f734214c808159f722f6a875a58963"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "All Rights Reserved", "依据" = "jar 里 META-INF/mods.toml license = All Rights Reserved；Modrinth 项目接口 license.id = LicenseRef-All-Rights-Reserved；里层 RevelationFix 的 mods.toml 没单独核" }
+"来源页" = "https://modrinth.com/mod/goety-revelation"
+
+# 不是模组 jar，是 YSM 玩家模型包（明文 zip：基岩几何、贴图、动画），登记在这里是为了 extract 能按 id 找文件、核 sha256。
+# 蓝奏云分享页要密码、下载过一道 cookie 校验，「下载」写的是分享页，不是直链；作者 4911（B 站 xb4911），资源包 Apostles T 的同一位作者
+[["模组"]]
+"id" = "ysm-使徒娘化"
+"名称" = "使徒娘化版 YSM 玩家模型包（4911）"
+"文件" = "使徒娘化版ysm.zip"
+"版本" = "2026-04-25"
+"到" = "缓存/ysm包/使徒娘化版ysm.zip"
+"下载" = "https://wwbvn.lanzouw.com/b019vrowef"
+"提取码" = "9mc3"
+"sha256" = "3799cdae87f6bf52ab949ef2f843ce79b82c7779e9b2fe7a4f29668d5c7b201f"
+"sha1" = "ca3b05128e164bf09de1caad4638cd754e92b0cb"
+"许可" = { "代码" = "GPL-3.0-only", "资源" = "GPL-3.0-only", "模型" = "GPL-3.0-only", "原文" = "GPL v3", "依据" = "包里 ysm.json metadata.license.type = GPL v3（没写 or later），authors = 4911；包里没有 LICENSE 全文" }
+"来源页" = "https://www.bilibili.com/video/BV1GSoUBYEK7"
