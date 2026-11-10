@@ -7,7 +7,5 @@ export const 游戏水平角 = (从: 点, 到: 点) => Math.atan2(-(到[1] - 从
 export const 沿角 = (f: number, d: number): readonly [number, number] => [Math.cos(f) * d, -Math.sin(f) * d];
 /** 落到目标所在的地面上：x、y 给定，z 取目标脚底 */
 export const 贴地 = (x: number, y: number, 地: 点): 点 => [x, y, 地[2]];
-/** 游戏坐标的偏移 [dx, dy 竖直, dz 南] → 场景偏移 */
-export const 从游戏 = (v: readonly [number, number, number]): 点 => [v[0], -v[2], v[1]];
 /** 实体朝施法者 → 目标方向时的 yRot（度）：Entity.setYRot(f × 180/π) 那种写法直接传 f；这里是 lookAt 式的（−atan2(dx, dz) 的游戏偏航） */
 export const 游戏偏航度 = (从: 点, 到: 点) => (Math.atan2(-(到[0] - 从[0]), -(到[1] - 从[1])) * 180) / Math.PI;
