@@ -6,7 +6,8 @@ export const 幽灵火寿命刻 = 100;
 
 export default 定义法术元({
   id: 'ghost_fire',
-  长秒: 幽灵火寿命刻 / 20,
+  // 火在第 98 刻缩没，烟冒到实体移除（第 100 刻），一颗最长活 19 刻
+  长秒: (幽灵火寿命刻 + 20) / 20,
   命中秒: 12 / 20, // IceBouquet.tick：tickCount ≥ 12 起每刻对碰撞箱里的生物结算伤害
   // IceBouquetSpell：SoundUtil.playNecromancerSummon（音量 1.4、音高 0.7）；中心那丛出生时 WRAITH_FIRE，其余三丛第 12 刻各响 REDSTONE_FIRE_PROJECTILE、FIRE_PROJECTILE_FLY（音量 0.3、音高 1.3，这里各记一声）
   声音: [
