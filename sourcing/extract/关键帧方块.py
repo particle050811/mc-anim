@@ -1,21 +1,31 @@
 #!/usr/bin/env python3
-"""体素世界（src/lib/体素/）的方块表和群系色：每种方块状态的面（贴图、染色、朝向）全从 jar 里查，不自己编（用户 10-03：用 MC 真实材质）。
-blockstates → models → 每个面的贴图和 tintindex，解析照 资源包.py。jar：原版、暮色森林、冰火、匠魂（Mantle 里有父模型）、机械动力、夸克（含 Zeta）。
+"""体素世界（engine/voxel/）的方块表和群系色：每种方块状态的面（贴图、染色、朝向）全从 jar 里查，不自己编（用户 10-03：用 MC 真实材质）。
+blockstates → models → 每个面的贴图和 tintindex，解析照 资源包.py。读哪些 jar 由配方点名（sourcing/extract.toml 的步骤里 --jar {jar:<id>}，
+id 在 sourcing/jars.toml 登记；用户 11-09 定方块表兼容任意模组），第一个要是原版客户端，资源按给的顺序查、先找到的算。
 
-导哪些状态：variants 不超过 4 个的全导，多的只导第一个；multipart 的原版和暮色按 when 里的属性取全部组合（补 none 见 CONNECT_VALUES），
-模组的 multipart 只导不带属性的；再补 `SAVES` 里存档出现过的状态（新世界要加进 SAVES 重跑）；双格高的下半格导了上半格也导。
-最后核对存档里每个状态都查得到（查法同 lib/真实方块表.ts 的 `体素值`），查不到的打出来（箱子、告示牌、头颅这类方块实体画的不画）。
+两种跑法：
+  增量（--基 <旧方块表.json> <旧方块表.png>，全局表和按作品的附加表都走这个）：旧表的贴图号、面组号、方块顺序和图集里的像素原样留着，只在后面追加。
+    追加哪些：--结构（结构模板 .nbt 的调色板，只收用到的）、--状态表（一行一个方块状态，# 开头是注释）、--存档 里出现、旧表里查不到的状态；
+    旧表里没有的方块 id 先补它的默认状态（规则同全量），再补出现过的。给的 jar 里查不到 blockstates 的、方块实体画的（没有元素）打出来，不算错。
+    什么都没追加时原样拷旧表（配方的输入是当前的表，重跑得到同一份）。不出群系色。
+  全量（不给 --基）：jar 里每个 blockstates 都导，从头排号。重排后贴图号、方块号全变，现用的表不走这条，只有群系色.json 还由它出。
+    variants 不超过 4 个的全导，多的只导第一个；multipart 按 when 里的属性取全部组合（补 none 见 CONNECT_VALUES），
+    模组（第 3 个 jar 起）组合数超过 --多部件上限（默认 256）的只导不带属性的；再补存档、结构、状态表里出现过的；双格高的下半格导了上半格也导。
+最后核对来源里每个状态都查得到（查法同 engine/voxel/真实方块表.ts 的 voxelFromState），查不到的打出来（箱子、告示牌、头颅这类方块实体画的不画）。
 染色分几路（见 tint_route）：grass / foliage / water 按群系取色，canopy / mangrove 是暮色的树叶算法，"#rrggbb" 是定值；按位置变色的方块取近似。
+新模组有染色的方块要在 TINT 里逐个补（照它的 BlockColors 注册）。
 
-输出在 src/模型/场景/关键帧/：
-  方块表.png：每张贴图 16×16 竖排；方块表.json：贴图 [id]（序号 < 4096，lib/体素/网格.ts 把贴图号和染色、随机转并进 16 位数）、面组 [[面...]]（一个部件按一种旋转摆好的全部面，状态间共用）、
+输出在 --出（默认 src/模型/场景/关键帧/）：
+  方块表.png：每张贴图 16×16 竖排；方块表.json：贴图 [id]（序号 < 4096，engine/voxel/网格.ts 把贴图号和染色、随机转并进 16 位数）、面组 [[面...]]（一个部件按一种旋转摆好的全部面，状态间共用）、
     方块 {状态: [标志, 染, 面组号...]}，标志 = 类(0 solid/1 cutout/2 translucent/3 liquid) + 4 满(整格不透明) + 8 遮(整格碰撞箱) + 16 光(环境光遮蔽) + 32 转(4 个差 y 旋转的变体，贴图随机转) + 64 偏(花草 ±0.25 格随机偏)；
     每个面 [朝向, 剔除方向, 贴图, 叠加贴图(-1 无), 染, 明暗, 四角 xyz, 四角 uv]：朝向 +x -x +y -y +z -z（场景坐标，北 = +y、上 = +z）或空串，坐标和 uv 以 1/16 格为单位。
-  群系色.json：{群系: {草, 叶, 水, 草修饰?, 叶修饰?}}（#rrggbb），规则见 biome_colors()。
+  群系色.json（只全量）：{群系: {草, 叶, 水, 草修饰?, 叶修饰?}}（#rrggbb），规则见 biome_colors()。
+  --来源 <json>：写 {输出文件: [新追加的内容取自哪些 jar]}（anim extract 的 {产物来源}，--登记 照它记来源）。
 
-用法：anim extract 关键帧方块（anim extract 按 sourcing/extract.toml 在暂存目录里调，目录布局照旧项目的 参考模型库/）
+用法：anim extract 关键帧方块（全局表，增量）、anim extract 关键帧方块-全量；按作品的附加表见 docs/世界.md「给方块表加模组方块」。
+  关键帧方块.py --列状态 <结构.nbt>…：只把结构里用到的方块状态按字典序打出来（做 --状态表 用），不读 jar。
 """
-import io, itertools, json, os, re, struct, sys, zipfile
+import argparse, gzip, io, itertools, json, os, re, shutil, struct, sys, zipfile
 from collections import defaultdict
 from pathlib import Path
 from PIL import Image
@@ -25,24 +35,8 @@ from 资源包 import ResourcePack, rid, when_ok, when_value, turn, rot, VEC, UA
 import 读区块 as RD
 
 ROOT = Path.cwd()
-OUTD = ROOT / "src/模型/场景/关键帧"
-GAME = Path(os.environ["ANIM_GAME"])
-CLIENT = GAME / "缓存/client-1.20.1.jar"
-
-
-def find_jar(prefix):
-    """模组 jar：先找取材服务端装的，没装的（夸克、Zeta）找整合包缓存里的"""
-    for d in (GAME / "取材服务端/mods", GAME / "缓存/mods"):
-        hit = sorted(d.glob(prefix + "*.jar"))
-        if hit: return hit[-1]
-    sys.exit(f"找不到 {prefix}*.jar")
-
-
-# 资源按这个顺序查，先找到的算（模组没有覆盖原版的资源）
-JARS = [CLIENT] + [find_jar(p) for p in ("twilightforest-", "iceandfire-", "TConstruct-", "Mantle-", "create-", "Quark-", "Zeta-")]
-# 要覆盖的存档（只读）：取材服务端主世界、两个客户端的片场、暮色放大 4 倍的新世界（种子 1752，npm run 导入:暮色放大1752 导入的就是它）。新生成的世界加在这里
-SAVES = [GAME / "取材服务端/world", GAME / "实例/取材客户端/.minecraft/saves/片场", GAME / "实例/取材客户端-远景/.minecraft/saves/片场",
-         GAME / "取材服务端/暮色放大-1752"]
+JARS = []    # main() 按 --jar 填：资源按这个顺序查，先找到的算（模组没有覆盖原版的资源）
+SAVES = []   # main() 按 --存档 填（只读）；相对路径相对游戏环境目录 ANIM_GAME
 
 TRANSLUCENT = {"minecraft:ice", "minecraft:water", "minecraft:lava"}
 # 液体（方块模型里没有元素，游戏用 LiquidBlockRenderer 画）：气泡柱画成水；匠魂史莱姆液用它的流体贴图
@@ -132,13 +126,37 @@ def parse(state):
 def state_name(name, props): return f"{name}[{','.join(f'{k}={v}' for k, v in sorted(props.items()))}]" if props else name
 
 
+class TrackedPack(ResourcePack):
+    """记下读过的文件各取自哪个 jar（增量时只有新追加的状态会读 jar，--来源 照它写）"""
+    def __init__(self, jar_paths):
+        super().__init__(jar_paths)
+        self.paths, self.used = list(jar_paths), set()
+
+    def read(self, path):
+        for i, (j, ns) in enumerate(zip(self.jars, self.names)):
+            if path in ns:
+                self.used.add(i)
+                return j.read(path)
+        return None
+
+
 class BlockTable:
-    def __init__(self):
-        self.rp = ResourcePack([str(j) for j in JARS])
+    def __init__(self, base=None):
+        """base：(旧方块表 dict, 旧图集 Image)，增量时旧贴图照旧图集里的像素、旧号"""
+        self.rp = TrackedPack([str(j) for j in JARS])
         self.tex, self.tex_idx, self.tex_a = [], {}, []
         self.part_cache = {}
+        if base:
+            table, strip = base
+            if strip.width != 16 or strip.height != 16 * len(table["贴图"]): sys.exit(f"旧图集 {strip.size} 和旧表的贴图数 {len(table['贴图'])} 对不上（要 16×16 竖排的原版分辨率图集，不是材质包换过的）")
+            for i, key in enumerate(table["贴图"]):
+                im = strip.crop((0, 16 * i, 16, 16 * i + 16))
+                self.tex_idx[key] = i
+                self.tex.append((key, im))
+                self.tex_a.append(im.getchannel("A").getextrema()[0])
         g = Image.open(io.BytesIO(self.rp.read("assets/minecraft/textures/colormap/grass.png"))).convert("RGBA")
         self.colors = {"默认草": hexc(colormap_color(g, 0.5, 1.0)), "史莱姆": slime_colors(self.rp)}
+        self.rp.used.clear()   # 上面读色图不算「用到」
 
     def texture(self, key):
         if key in self.tex_idx: return self.tex_idx[key]
@@ -322,8 +340,8 @@ def when_props(j):
 CONNECT_VALUES = {"low", "tall", "side", "up", "large", "small", "post", "capped", "full", "top", "middle", "bottom"}
 
 
-def multipart_states(name, j, saved_values):
-    """多部件方块的全部组合（属性只记 when 里出现的），见文件头。
+def multipart_states(name, j, saved_values, cap=None):
+    """多部件方块的全部组合（属性只记 when 里出现的），见文件头。组合数超过 cap 返回 None。
     false、none 排在前面：只给方块 id 不带属性查（体素值 退回这个方块导出的第一个状态）时取到的是什么都不连的那个（栅栏只有柱子）"""
     acc = when_props(j)
     for k, vs in acc.items():
@@ -332,6 +350,10 @@ def multipart_states(name, j, saved_values):
         vs |= saved_values.get((name, k), set())
     keys = sorted(acc)
     doms = [sorted(acc[k], key=lambda v: (v not in ("false", "none"), v)) for k in keys]
+    if cap is not None:
+        n = 1
+        for d in doms: n *= len(d)
+        if n > cap: return None
     return [state_name(name, dict(zip(keys, c))) for c in itertools.product(*doms)]
 
 
@@ -363,7 +385,9 @@ def slime_colors(rp):
     fx = |256 - |x| % 512| / 256，fz 同理，大的当行、小的当列查 256×256 的色图"""
     out = {}
     for t in ("earth", "sky", "ichor", "ender", "blood"):
-        im = Image.open(io.BytesIO(rp.read(f"assets/tconstruct/textures/colormap/{t}_grass_color.png"))).convert("RGB")
+        raw = rp.read(f"assets/tconstruct/textures/colormap/{t}_grass_color.png")
+        if raw is None: continue   # 没给匠魂的 jar
+        im = Image.open(io.BytesIO(raw)).convert("RGB")
         px = im.load()
         f = [abs(f32(f32(256 - f32(x % 512)) / 256)) for x in range(512)]
         s = [0, 0, 0]
@@ -414,59 +438,119 @@ def biome_colors(rp):
     return out
 
 
-def main():
-    T = BlockTable()
-    saved, saved_biomes = saved_states()
-    saved_values = defaultdict(set)
-    for (n, props), _ in saved.items():
-        for k, v in props: saved_values[(n, k)].add(v)
-    # 要导出的状态：jar 里每个 blockstates
-    states, variants, multipart = [], {}, {}
-    for jar in JARS:
-        z = zipfile.ZipFile(jar)
-        for f in sorted(z.namelist()):
-            m = re.fullmatch(r"assets/([^/]+)/blockstates/(.+)\.json", f)
-            if not m: continue
-            name = f"{m.group(1)}:{m.group(2)}"
-            j = T.blockstate(name)
-            if j is None: continue
-            if "variants" in j:
-                keys = [k for k in j["variants"] if all("=" in c for c in k.split(",") if c)]   # 冰火有两个写坏的键（没有 =），游戏也认不出
-                states += [f"{name}[{k}]" if k else name for k in (keys if len(keys) <= 4 else keys[:1])]
-                variants[name] = keys
-            elif "multipart" in j:
-                multipart[name] = j
-                # 模组的多部件方块世界生成里不出现：只导不带属性的，存档里有的下面补
-                states += multipart_states(name, j, saved_values) if jar in JARS[:2] else [name]
-    # 荆棘之地导进来后荆棘各种连接、荆棘玫瑰各个朝向都会有：荆棘（brown_thorns，多部件）3 × 64 种已全导，荆棘玫瑰 6 个朝向（变体多于 4 个只导了第一个）这里补全
-    states += [f"twilightforest:thorn_rose[facing={f}]" for f in ("down", "up", "north", "south", "west", "east")]
-    # 存档里有、上面没导到的状态补上：变体的补存档里那个状态对上的变体，多部件的只记 when 里的属性
-    have = set(states)
-    for (n, props), _ in sorted(saved.items()):
+def read_nbt(path):
+    """结构模板 .nbt（gzip 的 NBT）"""
+    return RD._nbt(io.BytesIO(gzip.decompress(Path(path).read_bytes())))
+
+
+def structure_states(path):
+    """结构模板里用到的方块状态：{(名, 属性元组): 格数}，不含空气；调色板里有、一格都没用到的不收"""
+    d = read_nbt(path)
+    cnt = defaultdict(int)
+    for b in d["blocks"]: cnt[b["state"]] += 1
+    out = defaultdict(int)
+    for i, p in enumerate(d["palette"]):
+        if cnt[i] and p["Name"] not in AIR: out[(p["Name"], tuple(sorted(p.get("Properties", {}).items())))] += cnt[i]
+    return out
+
+
+def listed_states(path):
+    """状态表：一行一个方块状态（带全部属性，同结构模板调色板里的），# 开头和空行不算"""
+    out = defaultdict(int)
+    for line in Path(path).read_text(encoding="utf-8").splitlines():
+        line = line.split("#")[0].strip()
+        if not line: continue
+        n, p = parse(line)
+        out[(n, tuple(sorted(p.items())))] += 1
+    return out
+
+
+AIR = ("minecraft:air", "minecraft:cave_air", "minecraft:void_air")
+
+
+def collect_sources(a):
+    """--存档、--结构、--状态表 里出现过的方块状态（带全部属性）和群系"""
+    seen, biomes = defaultdict(int), defaultdict(int)
+    if SAVES:
+        st, bi = saved_states()
+        for k, v in st.items(): seen[k] += v
+        for k, v in bi.items(): biomes[k] += v
+    for f in a.结构:
+        for k, v in structure_states(f).items(): seen[k] += v
+    for f in a.状态表:
+        for k, v in listed_states(f).items(): seen[k] += v
+    return seen, biomes
+
+
+class Chooser:
+    """哪些状态要导：方块 id 的默认状态，和来源里的状态对上表里的哪个键"""
+    def __init__(self, T, seen, cap):
+        self.T, self.cap, self.kind = T, cap, {}
+        self.saved_values = defaultdict(set)
+        for (n, props), _ in seen.items():
+            for k, v in props: self.saved_values[(n, k)].add(v)
+
+    def info(self, name):
+        """(类, 数据)：('variants', 键们) / ('multipart', blockstates) / (None, None)"""
+        if name not in self.kind:
+            try:
+                j = self.T.blockstate(name)
+            except ValueError:
+                j = None
+            if j and "variants" in j:
+                # 冰火有两个写坏的键（没有 =），游戏也认不出
+                self.kind[name] = ("variants", [k for k in j["variants"] if all("=" in c for c in k.split(",") if c)])
+            elif j and "multipart" in j: self.kind[name] = ("multipart", j)
+            else: self.kind[name] = (None, None)
+        return self.kind[name]
+
+    def defaults(self, name, all_combos):
+        """只给方块 id 时导哪些状态。all_combos：多部件不看上限、全部组合都导（原版和暮色）"""
+        kind, d = self.info(name)
+        if kind == "variants": return [f"{name}[{k}]" if k else name for k in (d if len(d) <= 4 else d[:1])]
+        if kind == "multipart":
+            sts = multipart_states(name, d, self.saved_values, None if all_combos else self.cap)
+            return sts if sts is not None else [name]
+        return []
+
+    def key(self, name, props):
+        """来源里的一个状态（带全部属性）在表里的键：变体的是对上的那个变体，多部件的只记 when 里的属性；这些 jar 里没有这个方块返回 None"""
+        kind, d = self.info(name)
         pd = dict(props)
-        if n in variants:
-            k = next((k for k in variants[n] if all(pd.get(a) == b for a, b in (c.split("=") for c in k.split(",") if c))), None)
-            if k is None: continue
-            s = f"{n}[{k}]" if k else n
-        elif n in multipart:
-            acc = when_props(multipart[n])
-            s = state_name(n, {k: v for k, v in props if k in acc})
-        else:
-            continue
-        if s not in have:
-            have.add(s)
-            states.append(s)
-    for s in list(states):   # 双格高的（门、高草、大花）下半格导了，上半格也导
+        if kind == "variants":
+            k = next((k for k in d if all(pd.get(a) == b for a, b in (c.split("=") for c in k.split(",") if c))), None)
+            return None if k is None else f"{name}[{k}]" if k else name
+        if kind == "multipart":
+            acc = when_props(d)
+            return state_name(name, {k: v for k, v in props if k in acc})
+        return None
+
+
+def upper_halves(C, states):
+    """双格高的（门、高草、大花）下半格导了，上半格也导；键照 blockstates 里的写法（模组的变体键不一定按字母序）"""
+    out = []
+    for s in states:
         n, p = parse(s)
-        if p.get("half") == "lower": states.append(state_name(n, {**p, "half": "upper"}))
-    blocks, groups, gidx = {}, [], {}
+        if p.get("half") != "lower": continue
+        up = {**p, "half": "upper"}
+        out.append(C.key(n, tuple(up.items())) or state_name(n, up))
+    return out
+
+
+def add_blocks(T, states, blocks, groups, gidx):
+    """states 里表里还没有的逐个解析、追加进 blocks / groups；返回 (追加了的, 画不出来的)"""
+    added, undrawable = [], []
     for s in dict.fromkeys(states):
+        if s in blocks: continue
         try:
             b = T.block(s)
         except Exception as e:  # 少数模组方块的模型写法 资源包.py 解析不了，跳过
             print(f"  {s} 解析失败（{type(e).__name__}: {e}），不画", file=sys.stderr)
+            undrawable.append(s)
             continue
-        if not b: continue
+        if not b:
+            undrawable.append(s)
+            continue
         ids = []
         for fs in b["面"]:
             k = json.dumps(fs)
@@ -475,33 +559,159 @@ def main():
                 groups.append(fs)
             ids.append(gidx[k])
         blocks[s] = [["solid", "cutout", "translucent", "liquid"].index(b["类"]) + 4 * b["满"] + 8 * b["遮"] + 16 * b["光"] + 32 * b["转"] + 64 * b["偏"], b["染"]] + ids
-    if len(T.tex) >= 4096: sys.exit(f"贴图 {len(T.tex)} 张，超过 4095（lib/体素/网格.ts 的贴图号只有 12 位）")
+        added.append(s)
+    return added, undrawable
+
+
+def check_limits(T, blocks):
+    if len(T.tex) >= 4096: sys.exit(f"贴图 {len(T.tex)} 张，超过 4095（engine/voxel/网格.ts 的贴图号只有 12 位）")
     if len(blocks) >= 65535: sys.exit(f"方块状态 {len(blocks)} 种，体素值是 16 位的放不下")
-    # 核对：存档里的每个状态都要查得到（同 lib/真实方块表.ts 的 体素值：表里同一个方块 id 的状态，属性都和存档里的一样）
+
+
+def find_missing(blocks, seen):
+    """来源里的每个状态都要查得到（同 engine/voxel/真实方块表.ts 的 voxelFromState：表里同一个方块 id 的状态，属性都和来源里的一样）"""
     by_id = defaultdict(list)
     for s in blocks:
         n, p = parse(s)
         by_id[n].append(p)
     missing = defaultdict(int)
-    for (n, props), cnt in saved.items():
+    for (n, props), cnt in seen.items():
         pd = dict(props)
-        if n in ("minecraft:air", "minecraft:cave_air", "minecraft:void_air"): continue
+        if n in AIR: continue
         if not any(all(pd.get(k) == v for k, v in p.items()) for p in by_id.get(n, [])): missing[state_name(n, pd)] += cnt
-    biomes = biome_colors(T.rp)
-    missing_biomes = sorted(b for b in saved_biomes if b not in biomes)
-    # 输出
+    return missing
+
+
+NOTE = "sourcing/extract/关键帧方块.py 从原版和模组 jar 里查出来的方块模型和贴图（哪些 jar 见 sourcing/extract.toml 的配方），不要手改"
+
+
+def write_table(outd, T, groups, blocks):
     strip = Image.new("RGBA", (16, 16 * len(T.tex)))
     for i, (_, im) in enumerate(T.tex): strip.paste(im, (0, 16 * i))
-    OUTD.mkdir(parents=True, exist_ok=True)
-    strip.save(OUTD / "方块表.png")
-    out = {"说明": "工具/游戏取材/关键帧方块.py 从原版、暮色森林、冰火、匠魂、机械动力、夸克的 jar 里查出来的方块模型和贴图，不要手改",
-           "贴图": [k for k, _ in T.tex], "面组": groups, "方块": blocks}
-    json.dump(out, open(OUTD / "方块表.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    outd.mkdir(parents=True, exist_ok=True)
+    strip.save(outd / "方块表.png")
+    out = {"说明": NOTE, "贴图": [k for k, _ in T.tex], "面组": groups, "方块": blocks}
+    json.dump(out, open(outd / "方块表.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+
+
+def write_origin(a, T, files):
+    if a.来源: json.dump({str(f): [T.rp.paths[i] for i in sorted(T.rp.used)] for f in files}, open(a.来源, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+
+
+def incremental(a):
+    """见文件头「增量」"""
+    base_json, base_png = (Path(x) for x in a.基)
+    table = json.loads(base_json.read_text(encoding="utf-8"))
+    T = BlockTable((table, Image.open(base_png).convert("RGBA")))
+    groups, blocks = table["面组"], table["方块"]
+    gidx = {json.dumps(fs): i for i, fs in enumerate(groups)}
+    n_tex, n_groups, n_blocks = len(T.tex), len(groups), len(blocks)
+    seen, _ = collect_sources(a)
+    C = Chooser(T, seen, a.多部件上限)
+    known_ids = {s.split("[")[0] for s in blocks}
+    states, unknown = [], defaultdict(int)
+    for (n, props), cnt in sorted(seen.items()):
+        if n in AIR: continue
+        s = C.key(n, props)
+        if s is None:
+            if n not in known_ids: unknown[n] += cnt
+            continue
+        if n not in known_ids:   # 新方块：先补默认状态，只给 id 查时取到的是它（多部件什么都不连的那个、变体的第一个）
+            known_ids.add(n)
+            states += C.defaults(n, False)
+        states.append(s)
+    states += upper_halves(C, states)
+    T.rp.used.clear()   # 到这里只查过 blockstates（旧表已有的方块也查），下面真追加时读到的 jar 才算来源
+    added, undrawable = add_blocks(T, states, blocks, groups, gidx)
+    check_limits(T, blocks)
+    outd = Path(a.出)
+    outd.mkdir(parents=True, exist_ok=True)
+    if added: write_table(outd, T, groups, blocks)
+    else:
+        shutil.copyfile(base_json, outd / "方块表.json")
+        shutil.copyfile(base_png, outd / "方块表.png")
+    write_origin(a, T, [outd / "方块表.json", outd / "方块表.png"] if added else [])
+    print(f"增量：旧表 {n_blocks} 种方块状态、{n_groups} 组面、{n_tex} 张贴图；追加 {len(blocks) - n_blocks} 种状态、{len(groups) - n_groups} 组面、{len(T.tex) - n_tex} 张贴图 → {outd / '方块表.json'}", file=sys.stderr)
+    for s in added: print(f"  加 {s}", file=sys.stderr)
+    missing = find_missing(blocks, seen)
+    drawn_ids = {s.split("[")[0] for s in blocks}
+    print(f"来源里 {len(seen)} 种方块状态；给的 jar 里没有 blockstates 的方块 {len(unknown)} 种，查不到的状态 {len(missing)} 种", file=sys.stderr)
+    for n, cnt in sorted(unknown.items()): print(f"  jar 里没有 {n}（{cnt} 格）", file=sys.stderr)
+    for s, cnt in sorted(missing.items()):
+        n = s.split("[")[0]
+        if n in unknown: continue
+        print(f"  {'画不出（没有元素，方块实体画的）' if n not in drawn_ids else '缺'} {s}（{cnt} 格）", file=sys.stderr)
+
+
+def full(a):
+    """见文件头「全量」"""
+    T = BlockTable()
+    seen, saved_biomes = collect_sources(a)
+    C = Chooser(T, seen, a.多部件上限)
+    # 要导出的状态：jar 里每个 blockstates
+    states = []
+    for jar in JARS:
+        z = zipfile.ZipFile(jar)
+        for f in sorted(z.namelist()):
+            m = re.fullmatch(r"assets/([^/]+)/blockstates/(.+)\.json", f)
+            if not m: continue
+            # 原版和暮色的多部件（栅栏、墙、荆棘）世界生成里各种连接都有，全部组合都导；别的模组看上限
+            states += C.defaults(f"{m.group(1)}:{m.group(2)}", jar in JARS[:2])
+    # 荆棘之地导进来后荆棘各种连接、荆棘玫瑰各个朝向都会有：荆棘（brown_thorns，多部件）3 × 64 种已全导，荆棘玫瑰 6 个朝向（变体多于 4 个只导了第一个）这里补全
+    if C.info("twilightforest:thorn_rose")[0]: states += [f"twilightforest:thorn_rose[facing={f}]" for f in ("down", "up", "north", "south", "west", "east")]
+    # 来源里有、上面没导到的状态补上
+    have = set(states)
+    for (n, props), _ in sorted(seen.items()):
+        s = C.key(n, props)
+        if s is not None and s not in have:
+            have.add(s)
+            states.append(s)
+    states += upper_halves(C, states)
+    blocks, groups, gidx = {}, [], {}
+    add_blocks(T, states, blocks, groups, gidx)
+    check_limits(T, blocks)
+    missing = find_missing(blocks, seen)
+    biomes = biome_colors(T.rp)
+    missing_biomes = sorted(b for b in saved_biomes if b not in biomes)
+    outd = Path(a.出)
+    write_table(outd, T, groups, blocks)
     json.dump({"说明": "工具/游戏取材/关键帧方块.py 从各 jar 的群系 JSON 算出来的草、树叶、水色，规则见 lib/体素/群系色.ts，不要手改", "群系": biomes},
-              open(OUTD / "群系色.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
-    print(f"{len(blocks)} 种方块状态，{len(groups)} 组面，{len(T.tex)} 张贴图 → {OUTD / '方块表.json'}；{len(biomes)} 个群系 → 群系色.json", file=sys.stderr)
-    print(f"存档里 {len(saved)} 种方块状态、{len(saved_biomes)} 个群系；查不到的方块状态 {len(missing)} 种，群系 {len(missing_biomes)} 个 {missing_biomes}", file=sys.stderr)
-    for s, cnt in sorted(missing.items()): print(f"  缺 {s}（{cnt} 个区段）", file=sys.stderr)
+              open(outd / "群系色.json", "w", encoding="utf-8"), ensure_ascii=False, indent=1)
+    write_origin(a, T, [outd / "方块表.json", outd / "方块表.png", outd / "群系色.json"])
+    print(f"{len(blocks)} 种方块状态，{len(groups)} 组面，{len(T.tex)} 张贴图 → {outd / '方块表.json'}；{len(biomes)} 个群系 → 群系色.json", file=sys.stderr)
+    print(f"来源里 {len(seen)} 种方块状态、{len(saved_biomes)} 个群系；查不到的方块状态 {len(missing)} 种，群系 {len(missing_biomes)} 个 {missing_biomes}", file=sys.stderr)
+    for s, cnt in sorted(missing.items()): print(f"  缺 {s}（{cnt} 处）", file=sys.stderr)
+
+
+def main():
+    ap = argparse.ArgumentParser(description="体素世界的方块表（见文件头）")
+    ap.add_argument("--jar", action="append", default=[], help="读哪些 jar，按给的顺序查，可以逗号隔开写几个；第一个是原版客户端")
+    ap.add_argument("--存档", action="append", default=[], help="存档目录（只读），相对路径相对 ANIM_GAME")
+    ap.add_argument("--结构", action="append", default=[], help="结构模板 .nbt")
+    ap.add_argument("--状态表", action="append", default=[], help="一行一个方块状态的文本")
+    ap.add_argument("--基", nargs=2, metavar=("方块表.json", "方块表.png"), help="增量：在这份旧表后面追加")
+    ap.add_argument("--多部件上限", type=int, default=256, help="模组的多部件方块组合数超过它就只导不带属性的")
+    ap.add_argument("--出", default=str(ROOT / "src/模型/场景/关键帧"))
+    ap.add_argument("--来源", help="写产物来源 JSON（anim extract 的 {产物来源}）")
+    ap.add_argument("--列状态", nargs="+", metavar="结构.nbt", help="只列结构里用到的方块状态")
+    a = ap.parse_args()
+    if a.列状态:
+        acc = defaultdict(int)
+        for f in a.列状态:
+            for k, v in structure_states(f).items(): acc[k] += v
+        for n, props in sorted(acc): print(state_name(n, dict(props)))
+        return
+    if not a.jar: sys.exit("要 --jar <原版客户端 jar> [--jar <模组 jar>]…（配方里写 {jar:<id>}）")
+    JARS[:] = [Path(j) for x in a.jar for j in x.split(",") if j]   # 配方里 {jar:a,b} 展开成逗号隔开的路径
+    game = os.environ.get("ANIM_GAME")
+    for d in a.存档:
+        d = Path(d)
+        if not d.is_absolute():
+            if not game: sys.exit(f"--存档 {d} 是相对路径，要环境变量 ANIM_GAME")
+            d = Path(game) / d
+        if not d.is_dir(): sys.exit(f"存档不在：{d}")
+        SAVES.append(d)
+    (incremental if a.基 else full)(a)
 
 
 if __name__ == "__main__":

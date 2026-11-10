@@ -434,3 +434,70 @@
 "sha1" = "ca3b05128e164bf09de1caad4638cd754e92b0cb"
 "许可" = { "代码" = "GPL-3.0-only", "资源" = "GPL-3.0-only", "模型" = "GPL-3.0-only", "原文" = "GPL v3", "依据" = "包里 ysm.json metadata.license.type = GPL v3（没写 or later），authors = 4911；包里没有 LICENSE 全文" }
 "来源页" = "https://www.bilibili.com/video/BV1GSoUBYEK7"
+
+# 粉色婚礼教堂（整合包《诡厄：使徒》的结构 graemod:0721）里的模组方块：给《亚波伦不放水》的附加方块表读 blockstates、模型、贴图用（extract.toml「方块附加-亚波伦不放水」）。
+# 这几条和分支 亚波伦-教堂 登记的是同一批 jar、同样的 id
+[["模组"]]
+"id" = "youkaishomecoming"
+"名称" = "妖怪们的归家 Youkai's Homecoming"
+"文件" = "youkaishomecoming-2.6.9.jar"
+"版本" = "2.6.9"
+"到" = "缓存/mods/youkaishomecoming-2.6.9.jar"
+"下载" = "https://cdn.modrinth.com/data/uJT3ahxz/versions/6TedUGDi/youkaishomecoming-2.6.9.jar"
+"sha256" = "1395903ba21cef8a0fb833303eaa70cf5a2ae5e8ab23ba0185a5392e02dfffcd"
+"sha1" = "ccac305a9948b8c9256bf33bdf361d073f67fb4c"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "All rights reserved", "依据" = "jar 里 META-INF/mods.toml license = All rights reserved；jar 里没有 LICENSE 文件" }
+"来源页" = "https://modrinth.com/mod/uJT3ahxz"
+"用途" = "教堂的樱花木扶手 cherry_handrail（97 格）；内嵌 l2library slim、l2harvester、TerraBlender"
+
+[["模组"]]
+"id" = "alexscaves"
+"名称" = "Alex 的洞穴 Alex's Caves"
+"文件" = "alexscaves-2.0.2.jar"
+"版本" = "2.0.2"
+"到" = "缓存/mods/alexscaves-2.0.2.jar"
+"下载" = "https://cdn.modrinth.com/data/U6GY0xp0/versions/lC8HHXOF/alexscaves-2.0.2.jar"
+"sha256" = "131e205ce3eed384d701b336d8a0d4a671108ed56b6eff6014f0e407db2997f0"
+"sha1" = "a1e5c7b7c7eadda4c8e954acbcbaf75a7b500d53"
+"许可" = { "代码" = "LicenseRef-LGPL-Unversioned", "资源" = "LicenseRef-LGPL-Unversioned", "原文" = "GNU LESSER GENERAL PUBLIC LICENSE", "依据" = "jar 里 META-INF/mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE，没写版本；jar 里没有 LICENSE 文件" }
+"来源页" = "https://modrinth.com/mod/U6GY0xp0"
+"用途" = "教堂的粉色氡灯、糖霜块、甜浆果冰淇淋；前置 citadel"
+
+[["模组"]]
+"id" = "prefab"
+"名称" = "预制建筑 Prefab"
+"文件" = "prefab-1.10.0.1.jar"
+"版本" = "1.10.0.1"
+"到" = "缓存/mods/prefab-1.10.0.1.jar"
+"下载" = "https://cdn.modrinth.com/data/pTJ1ZloG/versions/ZlrnxNhh/prefab-1.10.0.1.jar"
+"sha256" = "4f63c3d8037814c6c86b57f7d97617951d661c3ee947b2f6e0c4dc11339b4824"
+"sha1" = "a1b04571bda501cb059dbb14d79eaa466b2a5e15"
+"许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "All Rights Reserved", "依据" = "jar 里 META-INF/mods.toml license = 'All Rights Reserved'；jar 里没有 LICENSE 文件" }
+"来源页" = "https://modrinth.com/mod/pTJ1ZloG"
+"用途" = "教堂的石英混凝土墙 block_quartz_crete_wall（54 格，贴图用的是原版石英块侧面）"
+
+[["模组"]]
+"id" = "bosses_of_mass_destruction"
+"名称" = "祸乱鬼魅 Bosses of Mass Destruction (Forge)"
+"文件" = "BOMD-Forge-1.20.1-1.1.2.jar"
+"版本" = "1.1.2"
+"到" = "缓存/mods/BOMD-Forge-1.20.1-1.1.2.jar"
+"下载" = "https://edge.forgecdn.net/files/5067/728/BOMD-Forge-1.20.1-1.1.2.jar"
+"sha256" = "9d064557007fbf8a48da92034209b209edd99a16a5017ee104cdc13206390441"
+"sha1" = "2caa8739ed9702c5ad87b6c5436432f8be755217"
+"许可" = { "代码" = "LicenseRef-LGPL-Unversioned", "资源" = "LicenseRef-LGPL-Unversioned", "原文" = "GNU LESSER GENERAL PUBLIC LICENSE", "依据" = "jar 里 META-INF/mods.toml license = GNU LESSER GENERAL PUBLIC LICENSE，没写版本；jar 里没有 LICENSE 文件" }
+"来源页" = "https://www.curseforge.com/minecraft/mc-mods/bosses-of-mass-destruction-forge"
+"用途" = "教堂院子里 12 根 mob_ward 柱子；前置 cerbons_api、geckolib、cloth_config"
+
+[["模组"]]
+"id" = "celestial_core"
+"名称" = "星月核心 Celestial Core"
+"文件" = "celestial_core-1.5.7.jar"
+"版本" = "1.5.7"
+"到" = "缓存/mods/celestial_core-1.5.7.jar"
+"下载" = "https://edge.forgecdn.net/files/7695/718/celestial_core-1.5.7.jar"
+"sha256" = "b288fdb5fba00b9fdb2e4e54edfdfa5f61188495c4fb83a2660de51d7e74c620"
+"sha1" = "dd431a7dccac87eaf4f9e80def6d1e4188a09c2f"
+"许可" = { "代码" = "LGPL-2.1-only", "资源" = "LGPL-2.1-only", "原文" = "LGPL-2.1", "依据" = "jar 里 META-INF/mods.toml license = LGPL-2.1（没写 or later）；jar 里没有 LICENSE 文件" }
+"来源页" = "https://www.curseforge.com/minecraft/mc-mods/celestial-core"
+"用途" = "教堂的樱钢块 sakura_steel_block（6 格）；内嵌 l2library slim"
