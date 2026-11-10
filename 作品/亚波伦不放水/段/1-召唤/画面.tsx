@@ -63,7 +63,7 @@ export default 定义画面(段, 声音, () => {
           {提示 && (
             <div style={{ position: 'absolute', left: 0, right: 0, bottom: 画幅.高 * 0.2, textAlign: 'center', color: '#FF5555', fontFamily: 'Minecraft, monospace', fontSize: 26, textShadow: '2px 2px 0 #3F1515' }}>{游戏.提示文字}</div>
           )}
-          {血条透明 > 0 && <亚波伦血条 宽={画幅.宽} s={3} 血比={1} 透明度={血条透明} />}
+          {血条透明 > 0 && <亚波伦血条 宽={画幅.宽} s={2} 血比={1} 透明度={血条透明} />}
         </>
       }
     >
