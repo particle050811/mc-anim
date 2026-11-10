@@ -127,7 +127,8 @@ def expand_event(ev: dict, ns: str, volume_mul=1.0, pitch_mul=1.0, weight_overri
                 x['引用'] = e['name']
             out += sub
         else:
-            n = e['name'] if ':' in e['name'] else f'{ns}:{e["name"]}'
+            # 声音名不带命名空间的是原版的（游戏用 new ResourceLocation(name)，默认 minecraft），和事件在哪个模组无关：goety:apostle_teleport 引的就是原版 mob/endermen/portal
+            n = e['name'] if ':' in e['name'] else f'minecraft:{e["name"]}'
             out.append({**e, 'name': n, 'volume': v, 'pitch': p, 'weight': weight_override if weight_override is not None else e.get('weight', 1)})
     return out
 

@@ -543,6 +543,7 @@ def main():
                 data["animations"][nm] = next(iter(got.values()))
             else:
                 data["animations"].update(got)
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     json.dump(data, open(out, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
     from PIL import Image
     import io
