@@ -2453,6 +2453,20 @@
 "模型/物品/下界魔杖" = "src/模型/物品/下界魔杖.模型.json"
 "贴图/物品/下界魔杖" = "src/模型/物品/下界魔杖.模型.png"
 
+# 下界岩的方块贴图：封面草稿（核对-封面草稿）的地面先铺一张平的，没做地形。
+[["取材"]]
+"名称" = "亚波伦下界岩"
+"作品" = "亚波伦不放水"
+"需要" = ["client-1.20.1"]
+"公开版" = "提取"
+"来源" = "原版 Minecraft 1.20.1"
+"许可" = "Mojang EULA"
+"步骤" = [
+  ["导出模型", "{jar:client-1.20.1}", "src/模型/方块/下界岩.png", "netherrack=assets/minecraft/textures/block/netherrack.png"],
+]
+["取材"."产物"]
+"贴图/方块/下界岩" = "src/模型/方块/下界岩.png"
+
 # 亚波伦的 boss 血条（ApollyonBossbar，都是 256×256 的图集，按代码里的 UV 切）：boss_bar 是现在的完整版（一二阶段边框、弓形装饰），
 # boss_bar_simple 是配置 simpleApollyonBossbar 开着时的简版，old_boss_bar、old_boss_bar_nether 是旧式（renderClassicApollyonBar，主世界、下界各一张）。
 # 名牌没有自己的贴图：名字和称号是游戏字体配 dissolve_text 着色器画的（DissolveApollyonFont），溶解用的噪声是 noise.png；血条里流动的「宇宙」填充是 cosmic 着色器。着色器没取。
