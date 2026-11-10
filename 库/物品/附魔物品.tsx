@@ -25,11 +25,11 @@ const glint = () => {
   }
   return glintTex;
 };
-const glintMatrix = (sec: number, out: THREE.Matrix3) => {
+const glintMatrix = (sec: number, out: THREE.Matrix3, texPx = 16) => {
   const i = Math.floor(sec * 1000 * GLINT.speed * 8);
   const shiftU = (i % 110000) / 110000;
   const f1 = (i % 30000) / 30000;
-  const k = GLINT.scale * (16 / GLINT.atlasWidth);
+  const k = GLINT.scale * (texPx / GLINT.atlasWidth);
   const cosK = Math.cos(GLINT.rotZ) * k;
   const sinK = Math.sin(GLINT.rotZ) * k;
   return out.set(cosK, -sinK, -shiftU, sinK, cosK, f1, 0, 0, 1);
@@ -66,6 +66,36 @@ export const GlintItem: React.FC<{ layers: ItemLayer[]; sec: number; glint?: boo
   }, [tex, withGlint, emissive]);
   glintMatrix(sec, uMat.value);
   return <mesh geometry={geo} material={mat} castShadow receiveShadow />;
+};
+
+/**
+ * 给 3D 物品模型（BlockModel 这类自己建材质的）加同一套附魔光效：patch 交给建材质的地方过一遍，设秒 每帧调一次。
+ * 贴图宽：模型贴图的像素宽（uv 0～1 对应这么多像素），光效的疏密按它在图集里占的大小算，和 GlintItem 的 16 像素同一个算法。
+ */
+export const 附魔光效补丁 = (贴图宽: number): { patch: (mat: THREE.MeshStandardMaterial) => void; 设秒: (秒: number) => void } => {
+  const uMat = { value: new THREE.Matrix3() };
+  const patch = (mat: THREE.MeshStandardMaterial) => {
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.glintMat = uMat;
+      sh.uniforms.glintMap = { value: glint() };
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nuniform mat3 glintMat;\nvarying vec2 vGlintUv;')
+        .replace('#include <begin_vertex>', 'vGlintUv = ( glintMat * vec3( uv, 1.0 ) ).xy;\n#include <begin_vertex>');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nuniform sampler2D glintMap;\nvarying vec2 vGlintUv;')
+        .replace(
+          '#include <opaque_fragment>',
+          [
+            'vec4 glintC = texture2D( glintMap, vGlintUv );',
+            `vec3 gc = glintC.rgb * ${GLINT.strength.toFixed(2)};`,
+            'outgoingLight = sRGBTransferEOTF( vec4( sRGBTransferOETF( vec4( outgoingLight, 1.0 ) ).rgb + gc * gc, 1.0 ) ).rgb;',
+            '#include <opaque_fragment>',
+          ].join('\n'),
+        );
+    };
+    mat.customProgramCacheKey = () => 'item-glint';
+  };
+  return { patch, 设秒: (秒) => void glintMatrix(秒, uMat.value, 贴图宽) };
 };
 
 // 拿在手上：挂到 骨架.tsx 的手插槽（handR / handL，原点在肩下 9 像素，1 = 1 像素）。

@@ -16,7 +16,7 @@ export type BlockModelData = {
 
 const CENTER = [0.5, -0.5, 0.5];
 
-const build = (model: BlockModelData, atlas: Png, part: string, opacity = 1, ghost?: string) => {
+const build = (model: BlockModelData, atlas: Png, part: string, opacity = 1, ghost?: string, patch?: (mat: THREE.MeshStandardMaterial) => void) => {
   const partData = model.parts[part];
   if (!partData) throw new Error(`模型里没有部件「${part}」，现有：${Object.keys(model.parts).join('、')}`);
   const byTex = new Map<number, { pos: number[]; nor: number[]; uv: number[]; idx: number[] }>();
@@ -49,6 +49,7 @@ const build = (model: BlockModelData, atlas: Png, part: string, opacity = 1, gho
       Object.assign(mat, { color: new THREE.Color(ghost), emissive: new THREE.Color(ghost), emissiveIntensity: 1.1, roughness: 0.6, side: THREE.DoubleSide, transparent: true, opacity, depthWrite: false, alphaTest: t.cutout ? 0.5 * opacity : 0 });
       mat.needsUpdate = true;
     }
+    patch?.(mat);
     const mesh = new THREE.Mesh(geom, mat);
     mesh.castShadow = !ghost;
     mesh.receiveShadow = !ghost;
@@ -57,9 +58,10 @@ const build = (model: BlockModelData, atlas: Png, part: string, opacity = 1, gho
   });
 };
 
-// atlas：和模型数据同名的图集 .png（用 png() 读）；opacity：整体透明度（默认 1 不透明）；ghost：虚影的颜色（给了就按虚影画，见 build）
-export const BlockModel: React.FC<{ data: BlockModelData; atlas: Png; part: string; opacity?: number; ghost?: string }> = ({ data, atlas, part, opacity = 1, ghost }) => {
-  const meshes = useMemo(() => build(data, atlas, part, opacity, ghost), [data, atlas, part, opacity, ghost]);
+// atlas：和模型数据同名的图集 .png（用 png() 读）；opacity：整体透明度（默认 1 不透明）；ghost：虚影的颜色（给了就按虚影画，见 build）；
+// patch：每个材质建好后过一遍（给物品模型加附魔光效这类），要传稳定的函数，换了函数会重建网格
+export const BlockModel: React.FC<{ data: BlockModelData; atlas: Png; part: string; opacity?: number; ghost?: string; patch?: (mat: THREE.MeshStandardMaterial) => void }> = ({ data, atlas, part, opacity = 1, ghost, patch }) => {
+  const meshes = useMemo(() => build(data, atlas, part, opacity, ghost, patch), [data, atlas, part, opacity, ghost, patch]);
   return (
     <group>
       {meshes.map((m, i) => (
