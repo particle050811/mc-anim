@@ -18,12 +18,16 @@ import { useMemo, type FC, type ReactNode } from 'react';
 import * as THREE from 'three';
 import type { Molang环境 } from '@engine/anim/Molang.ts';
 import { 二阶推进器, 二阶稳态, type 二阶函数 } from '@engine/anim/二阶系统.ts';
+import { 混合层 } from '@engine/anim/基岩动画.ts';
+import { rad } from '@engine/anim/anim.ts';
+import type { V3 } from '@engine/model/parts.tsx';
 import { 动画姿势, type 动画层设定 } from '@engine/model/基岩实体.tsx';
+import { 骨骼矩阵 } from '@engine/model/基岩正解.ts';
 import type { BedrockBone, BedrockCube, BedrockModel, BonePose } from '@engine/model/基岩模型.tsx';
 import type { 实体光照 } from '@engine/model/实体材质.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
-import { 定义生物 } from '@库/生物/定义生物.ts';
-import { 手持下界魔杖 } from '../物品/下界魔杖.tsx';
+import { 合并环境, 定义生物 } from '@库/生物/定义生物.ts';
+import { 手持下界魔杖, 手持杖矩阵, 杖尖, 杖尾, 杖头芯 } from '../物品/下界魔杖.tsx';
 import 表情动画 from 'asset:动画/角色/娘化亚波伦/extra';
 import 主动画 from 'asset:动画/角色/娘化亚波伦/main';
 import 模型 from 'asset:模型/角色/娘化亚波伦';
@@ -211,4 +215,37 @@ export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站�
   const 图 = 娘化亚波伦生物.取模型(其余.变体).texture;
   const 挂 = useMemo(() => ({ ...描边挂载(图), ...(持杖 ? 杖挂载 : undefined), ...挂载 }), [图, 持杖, 挂载]);
   return <娘化亚波伦生物 {...其余} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
+};
+
+export type 杖位姿 = {
+  /** 杖头最顶上那一点（场景坐标，格） */
+  尖: V3;
+  /** 杖头的芯 */
+  芯: V3;
+  /** 杖尾 */
+  尾: V3;
+  /** 杖身的方向：从杖尾指向杖尖的单位向量 */
+  轴: V3;
+};
+
+/**
+ * 她右手里的下界魔杖这一刻在场景里的位置和朝向：不渲染，按同一张姿势表（动画 + 手摆的姿势）做骨骼正解算出来。
+ * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思
+ */
+export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'>): 杖位姿 => {
+  const 定 = 娘化亚波伦生物.定义;
+  const 动画骨骼 = 动画姿势(
+    { 文件: 娘化亚波伦生物.动画文件!, 层们: 表演.层们(秒), 口径: 定.动画!.口径, 环境: 合并环境(定.动画!.环境, { ...表演.环境(秒), 函数: { 'ysm.second_order': 表演.二阶在(秒) } }) },
+    秒,
+  );
+  // 姿势按通道盖在动画上，同 基岩实体.tsx
+  const 表 = 混合层([{ 骨骼: 动画骨骼 }, { 骨骼: 姿势 ?? {} }], 'TLM');
+  const m = new THREE.Matrix4()
+    .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
+    .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
+    .multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 定.缩放))
+    .multiply(手持杖矩阵());
+  const 点 = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
+  const [尖, 尾] = [点(杖尖), 点(杖尾)];
+  return { 尖: 尖.toArray(), 芯: 点(杖头芯).toArray(), 尾: 尾.toArray(), 轴: 尖.clone().sub(尾).normalize().toArray() };
 };

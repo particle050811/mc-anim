@@ -7,6 +7,7 @@
 // 接口：<下界魔杖 />      物品空间（单位格，原点 = 模型 (8, 8, 8)，Y 朝上，游戏的北 = −Z），核对图、掉落物用。
 //       <手持下界魔杖 />  挂在基岩模型的手部定位骨上（骨骼坐标：原点 = pivot，单位像素，Y 朝上，正面 −Z）。
 import type { FC, ReactNode } from 'react';
+import * as THREE from 'three';
 import { BlockModel, type BlockModelData } from '@engine/model/方块模型.tsx';
 import { ItemDisplay, type ItemTransform } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
@@ -28,6 +29,11 @@ export const 下界魔杖显示 = {
 
 /** 杖头那颗 3×3×3 的芯的中心（物品空间，单位格）：模型像素 (8, 27.5, 8.5) */
 export const 杖头芯 = [0, 19.5 / 16, 0.5 / 16] as const;
+
+/** 杖头最顶上那一点（物品空间，单位格）：芯的正上方、模型像素 y = 31。轮盘以它为圆心张开（用户 11-10 定） */
+export const 杖尖 = [0, 23 / 16, 0.5 / 16] as const;
+/** 杖尾（物品空间）：杖身底、模型像素 y = 0 */
+export const 杖尾 = [0, -8 / 16, 0.5 / 16] as const;
 
 // BlockModel 的坐标是 游戏的上 = +Z、游戏的北 = +Y，绕 X 转 −90 度换回物品空间
 export const 下界魔杖: FC = () => (
@@ -51,3 +57,18 @@ export const 手持下界魔杖: FC<{ 左手?: boolean; /** 跟着杖走的东�
     </group>
   </group>
 );
+
+/**
+ * 物品空间 → 手部定位骨的骨骼坐标：和 <手持下界魔杖> 里那几层 group 是同一个变换，不渲染要算杖尖在哪时用（角色/娘化亚波伦.tsx 的 持杖位姿）。
+ * 显示变换只有平移，这里也只认平移；json 哪天有了旋转、缩放就报错，免得两边对不上
+ */
+export const 手持杖矩阵 = (左手?: boolean): THREE.Matrix4 => {
+  const t: ItemTransform = 下界魔杖显示[左手 ? 'thirdperson_lefthand' : 'thirdperson_righthand'];
+  if (t.rotation || t.scale) throw new Error('手持杖矩阵：第三人称显示变换有旋转或缩放，这里没算');
+  const [tx, ty, tz] = t.translation ?? [0, 0, 0];
+  return new THREE.Matrix4()
+    .makeScale(16, 16, 16)
+    .multiply(new THREE.Matrix4().makeTranslation(0, -1 / 16, -0.1))
+    .multiply(new THREE.Matrix4().makeRotationX(-Math.PI / 2))
+    .multiply(new THREE.Matrix4().makeTranslation(((左手 ? -1 : 1) * tx!) / 16, ty! / 16, tz! / 16));
+};
