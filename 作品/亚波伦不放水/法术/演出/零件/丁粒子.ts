@@ -18,6 +18,46 @@ import 火5 from 'asset:贴图/法术/goety/particle/big_fire_5';
 import 火6 from 'asset:贴图/法术/goety/particle/big_fire_6';
 import 火7 from 'asset:贴图/法术/goety/particle/big_fire_7';
 import 火8 from 'asset:贴图/法术/goety/particle/big_fire_8';
+import 云0 from 'asset:贴图/法术/goety/particle/spell_cloud_0';
+import 云1 from 'asset:贴图/法术/goety/particle/spell_cloud_1';
+import 云2 from 'asset:贴图/法术/goety/particle/spell_cloud_2';
+import 云3 from 'asset:贴图/法术/goety/particle/spell_cloud_3';
+import 云4 from 'asset:贴图/法术/goety/particle/spell_cloud_4';
+import 云5 from 'asset:贴图/法术/goety/particle/spell_cloud_5';
+import 云6 from 'asset:贴图/法术/goety/particle/spell_cloud_6';
+import 云7 from 'asset:贴图/法术/goety/particle/spell_cloud_7';
+import 云8 from 'asset:贴图/法术/goety/particle/spell_cloud_8';
+import 云9 from 'asset:贴图/法术/goety/particle/spell_cloud_9';
+import 云10 from 'asset:贴图/法术/goety/particle/spell_cloud_10';
+import 云11 from 'asset:贴图/法术/goety/particle/spell_cloud_11';
+import 沙0 from 'asset:贴图/特效/粒子/generic_0';
+import 沙1 from 'asset:贴图/特效/粒子/generic_1';
+import 沙2 from 'asset:贴图/特效/粒子/generic_2';
+import 沙3 from 'asset:贴图/特效/粒子/generic_3';
+import 沙4 from 'asset:贴图/特效/粒子/generic_4';
+import 沙5 from 'asset:贴图/特效/粒子/generic_5';
+import 沙6 from 'asset:贴图/特效/粒子/generic_6';
+import 沙7 from 'asset:贴图/特效/粒子/generic_7';
+import 溅0 from 'asset:贴图/特效/粒子/splash_0';
+import 溅1 from 'asset:贴图/特效/粒子/splash_1';
+import 溅2 from 'asset:贴图/特效/粒子/splash_2';
+import 溅3 from 'asset:贴图/特效/粒子/splash_3';
+import 地火1 from 'asset:贴图/法术/goety/particle/big_fire_ground_1';
+import 地火2 from 'asset:贴图/法术/goety/particle/big_fire_ground_2';
+import 地火3 from 'asset:贴图/法术/goety/particle/big_fire_ground_3';
+import 地火4 from 'asset:贴图/法术/goety/particle/big_fire_ground_4';
+import 地火5 from 'asset:贴图/法术/goety/particle/big_fire_ground_5';
+import 地火6 from 'asset:贴图/法术/goety/particle/big_fire_ground_6';
+import 地火7 from 'asset:贴图/法术/goety/particle/big_fire_ground_7';
+import 地火8 from 'asset:贴图/法术/goety/particle/big_fire_ground_8';
+import 火柱1 from 'asset:贴图/法术/goety/particle/big_fire_drop_1';
+import 火柱2 from 'asset:贴图/法术/goety/particle/big_fire_drop_2';
+import 火柱3 from 'asset:贴图/法术/goety/particle/big_fire_drop_3';
+import 火柱4 from 'asset:贴图/法术/goety/particle/big_fire_drop_4';
+import 火柱5 from 'asset:贴图/法术/goety/particle/big_fire_drop_5';
+import 火柱6 from 'asset:贴图/法术/goety/particle/big_fire_drop_6';
+import 火柱7 from 'asset:贴图/法术/goety/particle/big_fire_drop_7';
+import 火柱8 from 'asset:贴图/法术/goety/particle/big_fire_drop_8';
 import 带图 from 'asset:贴图/法术/goety/particle/trail';
 
 /** RisingParticle / FireParticle 的构造：先过 Particle 的随机速度，再 × 0.01 + 给定速度；位置抖 ±0.05（RisingParticle 才抖）。位、速都是场景坐标 */
@@ -60,4 +100,46 @@ export const 方块类: 粒子类 = {
   重力: -0.1,
   混合: '半透明',
   透明度: (年龄, 寿命) => 1 - Math.min(1, Math.max(0, 年龄 / 寿命)),
+};
+
+/** SPELL_CLOUD：FireParticle.ColorProvider，半边长 × 3、寿命 8、不动、不透明，颜色给定；贴图 spell_cloud_0～11 按年龄 */
+export const 云片类: 粒子类 = {
+  帧: [云0, 云1, 云2, 云3, 云4, 云5, 云6, 云7, 云8, 云9, 云10, 云11].map(png),
+  选帧: '按年龄',
+  摩擦: 0.96,
+};
+export const 云片寿命 = 8;
+
+/** FALLING_DUST（方块粒子）：generic_0～7 按年龄，每刻竖直 −0.003（游戏里下限 −0.14，这里没封），不吃摩擦，颜色出生时定，半边长 × 0.675 */
+export const 落尘类 = (地面: number): 粒子类 => ({
+  帧: [沙0, 沙1, 沙2, 沙3, 沙4, 沙5, 沙6, 沙7].map(png),
+  选帧: '按年龄',
+  重力: 0.075,
+  摩擦: 1,
+  地面,
+});
+
+/** RAIN（WaterDropParticle）：splash_0～3 随机一张，每刻竖直 −0.06（它自己的 tick 直接减 gravity，不乘 0.04，所以这里重力写 1.5），蓝色 (0.2, 0.3, 1.0)，出生竖直速度 0.1～0.3 */
+export const 雨滴类: 粒子类 = {
+  帧: [溅0, 溅1, 溅2, 溅3].map(png),
+  选帧: '随机',
+  重力: 1.5,
+  摩擦: 0.98,
+  色: [0.2, 0.3, 1],
+};
+
+/** BIG_FIRE_GROUND：FireParticle（半边长 × 3、寿命 8、不动），贴图 big_fire_ground_1～8 按年龄，不透明 */
+export const 地火类: 粒子类 = {
+  帧: [地火1, 地火2, 地火3, 地火4, 地火5, 地火6, 地火7, 地火8].map(png),
+  选帧: '按年龄',
+  摩擦: 0.96,
+};
+
+/** FIERY_PILLAR：半边长出生 0.4～0.65，之后每刻 1.0 + 年龄比 × 0.5；摩擦 0.99，寿命 10～29；半透明满亮度；贴图 big_fire_drop_1～8 按年龄 */
+export const 火柱类: 粒子类 = {
+  帧: [火柱1, 火柱2, 火柱3, 火柱4, 火柱5, 火柱6, 火柱7, 火柱8].map(png),
+  选帧: '按年龄',
+  摩擦: 0.99,
+  混合: '半透明',
+  大小: (年龄, 寿命) => (1 + (年龄 / 寿命) * 0.5) / 1,
 };
