@@ -3,14 +3,14 @@
 //   速度 = (−sin(a) × f, 0.2, cos(a) × f) 格/刻，f = 随机 × 0.5、a = 随机 × 2π。死的那一刻就掉，不等倒下。
 // - 运动：ItemEntity.tick：先竖直 − 0.04，再挪，再水平 × 0.98（落地后 × 0.6 × 0.98）、竖直 × 0.98；撞地竖直速度清零。只算一块平地。
 // - 画：ItemEntityRenderer：抬 sin(刻 ÷ 10 + 相位) × 0.1 + 0.1 + 0.25 × ground 的 scale.y，绕竖轴转 刻 ÷ 20 + 相位 弧度，再套物品的 ground 显示变换。
-// 掉哪几件是本片定的（他身上有的：四件神灵金甲、断曜流光、晋升之环、盾、弓、金苹果），图腾已经用掉不掉。经验球没做。
+// 掉哪几件是本片定的（他身上有的：四件神灵金甲、断曜流光、晋升之环、弓、金苹果），图腾已经用掉不掉。用户 11-10 定他全片不拿盾，所以不掉盾。
+// 箭（item/arrow.png）库里还没有，没掉；经验球没做。
 import React from 'react';
 import { ItemDisplay, DISPLAY, ItemSprite, type ItemTransform } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
 import { rng, type V3 } from '@engine/model/parts.tsx';
 import { GlintItem } from '@库/物品/附魔物品.tsx';
 import { STEVE, steveSize } from '@库/角色/史蒂夫.tsx';
-import { 盾, 盾显示 } from '../物品/盾.tsx';
 import { 断曜流光, 断曜流光显示 } from '../物品/断曜流光.tsx';
 import { 默认外观 } from '../物品/装备外观.ts';
 import { 弓 } from './反应史蒂夫.tsx';
@@ -66,7 +66,7 @@ export type 掉落件 = { 节点: React.ReactNode; 显示: ItemTransform };
 
 const 附魔图标: React.FC<{ 图: string; 秒: number }> = ({ 图, 秒 }) => <GlintItem layers={[{ tex: png(图) }]} sec={秒} />;
 
-/** 本片史蒂夫死后掉的 9 件（顺序固定，和 死亡掉落轨迹 的下标对应）。光泽秒：附魔光效的时钟 */
+/** 本片史蒂夫死后掉的 8 件（顺序固定，和 死亡掉落轨迹 的下标对应）。光泽秒：附魔光效的时钟 */
 export const 史蒂夫掉落件 = (光泽秒: number): 掉落件[] => {
   const 平 = DISPLAY.generated.ground;
   return [
@@ -76,12 +76,11 @@ export const 史蒂夫掉落件 = (光泽秒: number): 掉落件[] => {
     { 节点: <附魔图标 图={旧靴子图标} 秒={光泽秒} />, 显示: 平 },
     { 节点: <断曜流光 外观={默认外观} 光泽秒={光泽秒} />, 显示: 断曜流光显示[默认外观].ground },
     { 节点: <ItemSprite layers={[{ tex: png(环图标) }]} />, 显示: 平 },
-    { 节点: <盾 />, 显示: 盾显示.平时.ground },
     { 节点: <弓 />, 显示: 平 },
     { 节点: <ItemSprite layers={[{ tex: png(金苹果图) }]} />, 显示: 平 },
   ];
 };
-export const 史蒂夫掉落件数 = 9;
+export const 史蒂夫掉落件数 = 8;
 
 /** 死后 秒 秒时的掉落物。轨迹 用 死亡掉落轨迹 算一次；件 和轨迹一一对应 */
 export const 死亡掉落: React.FC<{ 轨迹: readonly 掉落轨迹[]; 件: readonly 掉落件[]; 秒: number }> = ({ 轨迹, 件, 秒 }) => {
