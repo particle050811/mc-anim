@@ -19,5 +19,10 @@ import void_flash from '../法术/void_flash.元.ts';
 import electrocute from '../法术/electrocute.元.ts';
 import ice_storm from '../法术/ice_storm.元.ts';
 import cyclone from '../法术/cyclone.元.ts';
+import tidal from '../法术/tidal.元.ts';
+import blossoming from '../法术/blossoming.元.ts';
+import meteor_shower from '../法术/meteor_shower.元.ts';
+import arrow_rain from '../法术/arrow_rain.元.ts';
+import blizzard from '../法术/blizzard.元.ts';
 
-export const 甲元: readonly 法术元[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, stellar, void_flash, electrocute, ice_storm, cyclone];
+export const 甲元: readonly 法术元[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, stellar, void_flash, electrocute, ice_storm, cyclone, tidal, blossoming, meteor_shower, arrow_rain, blizzard];
