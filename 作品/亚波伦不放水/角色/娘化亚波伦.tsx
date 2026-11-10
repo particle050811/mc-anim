@@ -330,12 +330,10 @@ export type 杖位姿 = {
  * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势），不给 杖 就是原版的下界魔杖。
  * 旧握法：不做握杖修正，杖照定位骨原样挂（<手持下界魔杖> 直接挂 RightHandLocator）；只给封面草稿五稿及以前的旧案留着，不改它们的画面
  */
-export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 握偏, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖' | '握偏'> & { 旧握法?: boolean }): 杖位姿 => {
-  const 表 = 姿势表(秒, 表演, 姿势);
-export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖'> & { 旧握法?: boolean }): 杖位姿 =>
-  表到杖位姿(pose, 姿势表(秒, 表演, 姿势), 杖, 旧握法);
+export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 握偏, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖' | '握偏'> & { 旧握法?: boolean }): 杖位姿 =>
+  表到杖位姿(pose, 姿势表(秒, 表演, 姿势), 杖, 旧握法, 握偏);
 
-const 表到杖位姿 = (pose: 娘化亚波伦属性['pose'], 表: Readonly<Record<string, BonePose>>, 杖?: 手持杖款, 旧握法?: boolean): 杖位姿 => {
+const 表到杖位姿 = (pose: 娘化亚波伦属性['pose'], 表: Readonly<Record<string, BonePose>>, 杖?: 手持杖款, 旧握法?: boolean, 握偏?: number): 杖位姿 => {
   const m = new THREE.Matrix4()
     .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
     .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
