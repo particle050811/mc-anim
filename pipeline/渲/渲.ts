@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
 import { 备浏览器 } from './浏览器.ts';
+import { 开浏览器看崩 } from './页面崩溃.ts';
 import { getCompositions, openBrowser, renderFrames, renderStill, type HeadlessBrowser } from './渲染器.ts';
 import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
@@ -79,21 +80,29 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签, 打包选项));
   let browser: HeadlessBrowser | undefined;
   try {
-    browser = await 量阶段(收, 标签, '开浏览器', async () => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error', browserExecutable: await 备浏览器() }));
+    const 开了 = await 量阶段(收, 标签, '开浏览器', async () => {
+      const 可执行 = await 备浏览器();
+      return 开浏览器看崩(() => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error', browserExecutable: 可执行 }), 可执行, (b) => b.close({ silent: true }));
+    });
+    browser = 开了.browser;
+    const 看守 = 开了.看守;
     // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
     收求解缓存(browser);
     收地形用量(browser);
+    const b = browser;
     const 组合 = await 量阶段(收, 标签, '读组合', () =>
-      getCompositions(serveUrl, {
-        inputProps: 参数.inputProps,
-        puppeteerInstance: browser,
-        chromiumOptions: { gl: 参数.gl },
-        timeoutInMilliseconds: 等帧超时毫秒,
-        logLevel: 'error',
-      }),
+      看守.包(() =>
+        getCompositions(serveUrl, {
+          inputProps: 参数.inputProps,
+          puppeteerInstance: b,
+          chromiumOptions: { gl: 参数.gl },
+          timeoutInMilliseconds: 等帧超时毫秒,
+          logLevel: 'error',
+        }),
+      ),
     );
     if (收) console.log(`会话就绪：${阶段小结(收.slice(起))}`);
-    return await fn({ serveUrl, browser, 参数, 组合 });
+    return await 看守.包(() => fn({ serveUrl, browser: b, 参数, 组合 }));
   } finally {
     try {
       await 等地形用量写完();
