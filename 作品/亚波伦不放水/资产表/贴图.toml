@@ -5032,11 +5032,3 @@ id = "贴图/方块附加/方块表"
 "许可" = "LicenseRef-Minecraft-EULA AND CC-BY-NC-SA-4.0 AND CC-BY-NC-SA-3.0 AND MIT AND LicenseRef-LGPL-Unversioned AND LGPL-2.1-only AND LicenseRef-All-Rights-Reserved"
 "可见性" = "私有"
 "说明" = "本作品体素方块表的贴图竖条（16 宽、一格一张）：全局图集原样 + 追加的 24 张模组贴图；换用.toml 让本作品用它顶替全局图集。私有"
-
-[["资产"]]
-id = "贴图/物品/下界魔杖重做"
-"类别" = "贴图"
-"来源" = "手工:本片自己画的像素贴图，python3 assets/tools/画下界魔杖重做贴图.py 出（只用标准库，重跑字节一样）；颜色自己配，没抄游戏或模组的像素"
-"许可" = "MIT"
-"可见性" = "公开"
-"说明" = "重做的下界魔杖（物品/下界魔杖重做.tsx，三个候选共用）的料：64×32，8 块 16×16（黑石、黑石亮棱、金、芯、岩浆、熔核、绯红、烈焰），一个模型像素一个贴图像素"

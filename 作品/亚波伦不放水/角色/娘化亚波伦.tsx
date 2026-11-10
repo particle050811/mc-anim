@@ -232,20 +232,15 @@ export type 娘化亚波伦属性 = {
   透明度?: number;
   /** 右手拿下界魔杖（用户 11-09 定亚波伦手持）：挂在定位骨 RightHandLocator 上，右臂默认斜举（见 斜举）；默认不拿 */
   持杖?: boolean;
-  /** 持杖时拿哪一根：不给就是原版的下界魔杖。重做的候选（物品/下界魔杖重做.tsx 的 重做杖款）等用户挑，挑定前默认不动 */
-  杖?: 手持杖款;
   挂载?: Record<string, ReactNode>;
 };
 
-/** 一根能拿在右手上的杖：挂 = 挂到 RightHandLocator 上画的东西；矩阵 = 杖自己的空间 → 定位骨的骨骼坐标；尖、芯、尾 是杖自己空间里的点 */
-export type 手持杖款 = { 挂: ReactNode; 矩阵: THREE.Matrix4; 尖: readonly number[]; 芯: readonly number[]; 尾: readonly number[] };
-
 const 杖挂载 = { RightHandLocator: <手持下界魔杖 /> };
 
-export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 杖, 挂载, 姿势, ...其余 }) => {
+export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 挂载, 姿势, ...其余 }) => {
   const e = 表演.环境(秒);
   const 图 = 娘化亚波伦生物.取模型(其余.变体).texture;
-  const 挂 = useMemo(() => ({ ...描边挂载(图), ...(持杖 ? (杖 ? { RightHandLocator: 杖.挂 } : 杖挂载) : undefined), ...挂载 }), [图, 持杖, 杖, 挂载]);
+  const 挂 = useMemo(() => ({ ...描边挂载(图), ...(持杖 ? 杖挂载 : undefined), ...挂载 }), [图, 持杖, 挂载]);
   return <娘化亚波伦生物 {...其余} 姿势={姿势 ?? (持杖 ? 表演.持杖姿势 : undefined)} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
 };
 
@@ -262,9 +257,9 @@ export type 杖位姿 = {
 
 /**
  * 她右手里的下界魔杖这一刻在场景里的位置和朝向：不渲染，按同一张姿势表（动画 + 手摆的姿势）做骨骼正解算出来。
- * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势），不给 杖 就是原版的下界魔杖
+ * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势）
  */
-export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖'>): 杖位姿 => {
+export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'>): 杖位姿 => {
   const 定 = 娘化亚波伦生物.定义;
   const 动画骨骼 = 动画姿势(
     { 文件: 娘化亚波伦生物.动画文件!, 层们: 表演.层们(秒), 口径: 定.动画!.口径, 环境: 合并环境(定.动画!.环境, { ...表演.环境(秒), 函数: { 'ysm.second_order': 表演.二阶在(秒) } }) },
@@ -276,8 +271,8 @@ export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖 }: Pick<�
     .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
     .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
     .multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 定.缩放))
-    .multiply(杖?.矩阵 ?? 手持杖矩阵());
+    .multiply(手持杖矩阵());
   const 点 = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
-  const [尖, 尾] = [点(杖?.尖 ?? 杖尖), 点(杖?.尾 ?? 杖尾)];
-  return { 尖: 尖.toArray(), 芯: 点(杖?.芯 ?? 杖头芯).toArray(), 尾: 尾.toArray(), 轴: 尖.clone().sub(尾).normalize().toArray() };
+  const [尖, 尾] = [点(杖尖), 点(杖尾)];
+  return { 尖: 尖.toArray(), 芯: 点(杖头芯).toArray(), 尾: 尾.toArray(), 轴: 尖.clone().sub(尾).normalize().toArray() };
 };
