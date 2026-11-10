@@ -103,8 +103,11 @@ const 三波 = 摆(波.三[1], 8, [
   ['flame_strike', 11.4],
   ['blossoming', 11.6],
   ['electrocute', 11.8],
-  ['void_flash', 12],
-  ['rupture', 9.5, { 标: 14.9 }], // 命中秒 7：出手早 5.5 秒，爆炸落在 4-06 末
+  // 落地生的 8 颗虚空震弹 15～16.5 秒一颗颗撞他，每颗炸一个 3 格的紫球，4-06 里把他整个罩住：4-06 一开头硬切掉（同各波末的清场，Agent 取的，用户没看过）
+  ['void_flash', 12, { 止: 秒在(镜起.六) }],
+  // 命中秒 7：出手早 5.5 秒，爆炸落在 4-06 末。裂隙是一张 6 格大、朝镜头的方片，放在他脚下哪个机位都把他整个盖住，
+  // 照分镜「另一边撕开」挪到石墙外、4-06 镜头看过去他身后那一侧（Agent 取的，用户没看过）
+  ['rupture', 9.5, { 标: 14.9, 目标: [史蒂夫脚[0] - 2.5, 史蒂夫脚[1] + 2.5, 史蒂夫脚[2]] }],
   ['entangling', 14],
   ['eruption', 14.2],
   ['earth_punch', 14.4],
@@ -121,20 +124,22 @@ const 四波 = 摆(波.四[1], 7, [
 ]);
 
 // 4-09 七条线：各自放一次，再接着放到 28.5 秒（4-10 中段）一起断。雷霆只有 0.5 秒，寂灭光束 0.4 秒，隔着重放
+// 七条线都从杖尖出发，落点也都是他脚底的话叠成一根认不出：落点沿动作线前后错开、高低错开（落点是脚底，各法术自己再抬到半身高；
+// 水柱拿落点当地面，不抬高）。Agent 取的，用户没看过
 const 线断 = 28.5;
-const 线项 = (id: string, 秒: number, 重放: readonly number[] = []): 齐发[] => [
-  { id, 秒: 秒在(秒), 止: 秒在(线断), 签: true },
-  ...重放.map((s) => ({ id, 秒: 秒在(s), 止: 秒在(线断), 重复: true })),
-];
+const 线项 = (id: string, 秒: number, 重放: readonly number[], 前: number, 高: number): 齐发[] => {
+  const 目标 = 加(加(史蒂夫脚, 朝史蒂夫(站.五), 前), [0, 0, 高]);
+  return [{ id, 秒: 秒在(秒), 止: 秒在(线断), 签: true, 目标 }, ...重放.map((s) => ({ id, 秒: 秒在(s), 止: 秒在(线断), 重复: true, 目标 }))];
+};
 const 隔放 = (从: number, 隔: number): number[] => Array.from({ length: Math.ceil((线断 - 从) / 隔) }, (_, i) => 从 + i * 隔);
 const 五波: 齐发[] = [
-  ...线项('corruption', 23, [26]),
-  ...线项('leeching', 23.2, [26.2]),
-  ...线项('shocking', 23.4, [26.4]),
-  ...线项('thunderbolt', 23.6, 隔放(24.1, 0.5)),
-  ...线项('water_jet', 23.8, [27.3]),
-  ...线项('prisma_beam', 24),
-  ...线项('wither_quietus', 24.2, 隔放(24.9, 0.7)),
+  ...线项('corruption', 23, [26], -0.6, 0.3),
+  ...线项('leeching', 23.2, [26.2], 0, 0),
+  ...线项('shocking', 23.4, [26.4], -0.4, 0.6),
+  ...线项('thunderbolt', 23.6, 隔放(24.1, 0.5), 0.4, 0.5),
+  ...线项('water_jet', 23.8, [27.3], -0.2, 0),
+  ...线项('prisma_beam', 24, [], 0.3, 0.7),
+  ...线项('wither_quietus', 24.2, 隔放(24.9, 0.7), 0.6, 0),
 ];
 
 // 第 6 波：以自己为中心的都放在她身上（她落在史蒂夫面前 4.2 格）
@@ -168,11 +173,12 @@ const 前表: readonly 齐发[] = [...一波, ...二波, ...三波, ...四波, .
 const 新出手 = 前表.filter((发) => !发.重复);
 const 标秒 = (发: 齐发) => 发.标 ?? 发.秒;
 const 全部id = [...new Set([...点名表.map((发) => 发.id), ...前表.map((发) => 发.id)])].filter((id) => id !== 'revelation');
+const 绕身的 = ['whirlwind', 'shockwave', 'weakening', 'frost_nova', 'trembling', 'discharge', 'fire_blast', 'temblor_clap', 'quaking', 'ice'];
 const 终波起点 = (id: string): Pick<齐发, '起点' | '目标'> => {
   const 身 = 半身(站.处刑);
   const 地下 = (p: V3): V3 => [p[0], p[1], 史蒂夫脚[2] + 0.5];
   const 向 = 朝史蒂夫(站.处刑);
-  if (['whirlwind', 'shockwave', 'weakening', 'frost_nova', 'trembling', 'discharge', 'fire_blast', 'temblor_clap', 'quaking', 'ice'].includes(id)) return { 起点: 身 };
+  if (绕身的.includes(id)) return { 起点: 身 };
   if (['scatter', 'trident_storm'].includes(id)) return { 起点: 地下(身) };
   if (id === 'bolting') return { 起点: 身, 目标: 加(身, 向, 3) };
   if (id === 'water_whip') return { 起点: 加(身, 向, 1) };
@@ -198,6 +204,8 @@ const 终波: 齐发[] = 全部id.flatMap((id, i) => {
   const 起: number[] = [];
   const 额 = 终波起点(id);
   let s = 齐放起 + (((i * 37) % 全部id.length) / 全部id.length) * 错开秒;
+  // 以她为中心扩开的环、球一出手就把 4-15 里的盘整个罩住：这几个推到 4-16 开头再放，4-15 只看从杖尖出去的（Agent 取的，用户没看过）
+  if (绕身的.includes(id)) s += 镜起.十六 - 齐放起;
   // 障碍的石墙一围上，4-16～4-18 就只看得见墙、看不见他：只放一次、第一个放，4-15 切 4-16 时硬切掉（同各波末的清场；Agent 取的，用户没看过）
   if (id === 'barricade') return [{ id, 秒: 秒在(齐放起), 止: 秒在(镜起.十六), 重复: true, ...额 }];
   // 再放的那几轮要在 4-18 开头 1 秒内演完：拖进收缩焚烧的大件（飓风这类）会把缩成一人大小的结界整个罩住（Agent 取的，用户没看过）
