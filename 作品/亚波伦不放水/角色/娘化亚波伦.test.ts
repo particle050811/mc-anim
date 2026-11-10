@@ -108,10 +108,25 @@ describe.skipIf(!有字节)('娘化亚波伦', () => {
     expect(面纱).toBeGreaterThan(100);
     expect(漩涡).toBeGreaterThan(100);
   });
-  it('描边片（all_cutout 的面剔除）：环和浮块的零厚度片从模型里拿掉，另画的每一面都朝着芯；环是白边、浮块是黑边', () => {
+  it('浮块（用户 11-10 定不留）：ysmGlowbone54～61 一个方盒都不剩，骨骼还在；蜘蛛腿、头后大光环的方盒数和包里一样', () => {
     const 现 = 娘化亚波伦生物.取模型({});
-    const 原骨 = (json('模型/角色/娘化亚波伦', '{}').default.bones as BedrockBone[]).filter((b) => /^ysmGlowbone(5[4-9]|6[01]|17[2-9])$/.test(b.name));
-    expect(原骨.length).toBe(16);
+    const 原 = json('模型/角色/娘化亚波伦', '{}').default.bones as BedrockBone[];
+    const 现骨 = (名: string) => 现.bones.find((b) => b.name === 名)!;
+    for (let n = 54; n <= 61; n++) {
+      expect(原.find((b) => b.name === `ysmGlowbone${n}`)!.cubes!.length).toBe(7);
+      expect(现骨(`ysmGlowbone${n}`).cubes).toEqual([]);
+    }
+    // c1、c2 是两组蜘蛛腿的根，ysmGlowbone24 是头后大光环
+    const 子树 = (根: string): BedrockBone[] => [原.find((b) => b.name === 根)!, ...原.filter((b) => b.parent === 根).flatMap((b) => 子树(b.name))];
+    const 留着 = [...子树('c1'), ...子树('c2'), ...子树('ysmGlowbone24')];
+    expect(留着.reduce((n, b) => n + (b.cubes?.length ?? 0), 0)).toBeGreaterThan(20);
+    for (const b of 留着) expect(现骨(b.name).cubes).toEqual(b.cubes);
+  });
+
+  it('描边片（all_cutout 的面剔除）：缺口环的零厚度片从模型里拿掉，另画的每一面都朝着芯，白边', () => {
+    const 现 = 娘化亚波伦生物.取模型({});
+    const 原骨 = (json('模型/角色/娘化亚波伦', '{}').default.bones as BedrockBone[]).filter((b) => /^ysmGlowbone17[2-9]$/.test(b.name));
+    expect(原骨.length).toBe(8);
     for (const 骨 of 原骨) {
       const 留 = 现.bones.find((b) => b.name === 骨.name)!.cubes!;
       expect(留.length).toBe(1);
@@ -120,11 +135,10 @@ describe.skipIf(!有字节)('娘化亚波伦', () => {
       const 芯 = 留[0]!;
       const 心 = [-(芯.origin[0] + 芯.size[0] / 2) + 骨.pivot[0], 芯.origin[1] + 芯.size[1] / 2 - 骨.pivot[1], 芯.origin[2] + 芯.size[2] / 2 - 骨.pivot[2]];
       const 面们 = 描边面(骨, 现.texture);
-      const 环 = Number(骨.name.slice(11)) >= 172;
-      // 环：每段四面，两个缺口端头（176、178）多一面；浮块六面
-      expect(面们.length).toBe(环 ? (骨.name.endsWith('176') || 骨.name.endsWith('178') ? 5 : 4) : 6);
+      // 每段四面，两个缺口端头（176、178）多一面
+      expect(面们.length).toBe(骨.name.endsWith('176') || 骨.name.endsWith('178') ? 5 : 4);
       for (const f of 面们) {
-        expect(f.色).toEqual(环 ? [255, 255, 255] : [0, 0, 0]);
+        expect(f.色).toEqual([255, 255, 255]);
         const [a, b, , d] = f.角;
         const e1 = [d![0] - a![0], d![1] - a![1], d![2] - a![2]];
         const e2 = [b![0] - a![0], b![1] - a![1], b![2] - a![2]];

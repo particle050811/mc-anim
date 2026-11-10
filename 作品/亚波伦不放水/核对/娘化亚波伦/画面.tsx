@@ -7,7 +7,7 @@ import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
 import { 场景到three } from '@engine/core/three换算.ts';
 import { use视图下标 } from '@engine/段/时间.tsx';
-import { 娘化亚波伦, 定表演, 悬停, 站立, type 亚波伦表演 } from '../../角色/娘化亚波伦.tsx';
+import { 娘化亚波伦, 定表演, 悬停, 斜举, 站立, type 亚波伦表演 } from '../../角色/娘化亚波伦.tsx';
 import { ItemDisplay } from '@engine/model/物品贴图.tsx';
 import { 下界魔杖, 下界魔杖显示 } from '../../物品/下界魔杖.tsx';
 import { 画幅, 视图们, type 视图 } from './视图.ts';
@@ -15,7 +15,7 @@ import { 画幅, 视图们, type 视图 } from './视图.ts';
 // 受击：attacked 是整身的动作，顶掉 idle 播一遍（YSM 里受伤时主动画怎么让位没核实，这里当成整段换）
 const 受击 = 定表演({ 主: (秒) => [{ 名: 'attacked', 秒 }] });
 // 前飞：悬停 1 秒后水平速度跳到 20（YSM wiki：飞行时 ground_speed 是 20），看头发的弹簧
-const 前飞 = 定表演({ 主: () => [{ 名: 'fly' }], 环境: (秒) => ({ 查询: { ground_speed: 秒 >= 1 ? 20 : 0 } }) });
+const 前飞 = 定表演({ 主: () => [{ 名: 'fly' }], 环境: (秒) => ({ 查询: { ground_speed: 秒 >= 1 ? 20 : 0 } }), 持杖姿势: 斜举.飞 });
 const 表演们: Record<视图['表演'], 亚波伦表演> = { 站立, 悬停, 受击, 前飞 };
 
 const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
