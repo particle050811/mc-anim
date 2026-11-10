@@ -28,7 +28,13 @@
   "client": [
     "ClientLevelMixin",
     "MouseHandlerMixin",
-    "KeyboardHandlerMixin"
+    "KeyboardHandlerMixin",
+    "ParticleEngineMixin",
+    "ParticleAccessor",
+    "SingleQuadParticleAccessor",
+    "TextureSheetParticleAccessor",
+    "AbstractSoundInstanceAccessor",
+    "MinecraftInvoker"
   ],
   "injectors": {
     "defaultRequire": 1
