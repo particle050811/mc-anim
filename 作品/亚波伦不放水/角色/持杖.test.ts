@@ -29,6 +29,7 @@ vi.mock('asset:贴图/角色/娘化亚波伦/4default', 图);
 vi.mock('asset:贴图/角色/娘化亚波伦/5default', 图);
 vi.mock('asset:模型/物品/下界魔杖', () => ({ default: {} }));
 vi.mock('asset:贴图/物品/下界魔杖', 图);
+vi.mock('asset:贴图/特效/晋升之环/halo', 图);
 
 const 原点 = { loc: [0, 0, 0], yaw: 0 };
 const 离竖直 = (轴: readonly number[]) => (Math.acos(轴[2]!) * 180) / Math.PI;

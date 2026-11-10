@@ -2569,6 +2569,22 @@
 "贴图/界面/亚波伦血条/old_boss_bar_nether" = "src/模型/界面/亚波伦血条.贴图/old_boss_bar_nether.png"
 "贴图/界面/亚波伦血条/noise" = "src/模型/界面/亚波伦血条.贴图/noise.png"
 
+# 晋升之环（goety_revelation:ascension_halo，zh_cn「晋升之环」；用户 11-10 定史蒂夫戴它、娘化亚波伦头后的光环也换成它）戴在头后的那张贴图：
+# PlayerHaloLayer 把它贴在一张 16×16 的零厚度片上（PlayerHaloModel），画法见 作品/亚波伦不放水/特效/晋升之环形.ts 文件头。
+# 同目录的 halo_second.png（getMeteoring() > 0 时换用）、broken_halo.png（破碎之环）、halo3.png（没有类引用）和物品图标 item/curio/halo.png 没取，本片用不到。
+[["取材"]]
+"名称" = "晋升之环"
+"作品" = "亚波伦不放水"
+"需要" = ["goety_revelation"]
+"公开版" = "提取"
+"来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
+"许可" = "All Rights Reserved"
+"步骤" = [
+  ["导出模型", "{jar:goety_revelation}", "src/模型/特效/晋升之环.贴图", "halo=assets/goety_revelation/textures/entity/player/halo.png"],
+]
+["取材"."产物"]
+"贴图/特效/晋升之环/halo" = "src/模型/特效/晋升之环.贴图/halo.png"
+
 # 下界亚波伦进二阶段后客户端下的猩红雨（ClientEventsHandler 画，ClientLevelExpandedContext.isNetherScarletRaining 要 isSecondPhase；配置 enableScarletRain 默认开）：贴图在里层 RevelationFix jar 里，先解出里层再读。
 # 同时还有后处理着色器（the_end、aberration 等），没取。
 [["取材"]]
