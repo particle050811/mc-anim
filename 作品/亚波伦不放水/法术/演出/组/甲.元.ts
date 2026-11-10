@@ -14,6 +14,10 @@ import bombardment from '../法术/bombardment.元.ts';
 import wither_skull from '../法术/wither_skull.元.ts';
 import steaming from '../法术/steaming.元.ts';
 import surging from '../法术/surging.元.ts';
+import stellar from '../法术/stellar.元.ts';
+import void_flash from '../法术/void_flash.元.ts';
 import electrocute from '../法术/electrocute.元.ts';
+import ice_storm from '../法术/ice_storm.元.ts';
+import cyclone from '../法术/cyclone.元.ts';
 
-export const 甲元: readonly 法术元[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, electrocute];
+export const 甲元: readonly 法术元[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, stellar, void_flash, electrocute, ice_storm, cyclone];

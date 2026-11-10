@@ -14,6 +14,10 @@ import bombardment from '../法术/bombardment.tsx';
 import wither_skull from '../法术/wither_skull.tsx';
 import steaming from '../法术/steaming.tsx';
 import surging from '../法术/surging.tsx';
+import stellar from '../法术/stellar.tsx';
+import void_flash from '../法术/void_flash.tsx';
 import electrocute from '../法术/electrocute.tsx';
+import ice_storm from '../法术/ice_storm.tsx';
+import cyclone from '../法术/cyclone.tsx';
 
-export const 甲演出: readonly 法术演出条[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, electrocute];
+export const 甲演出: readonly 法术演出条[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, stellar, void_flash, electrocute, ice_storm, cyclone];
