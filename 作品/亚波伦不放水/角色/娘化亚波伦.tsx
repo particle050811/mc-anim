@@ -255,15 +255,18 @@ export type 娘化亚波伦属性 = {
 /** 一根能拿在右手上的杖：挂 = 挂到 RightHandLocator 上画的东西；矩阵 = 杖自己的空间 → 定位骨的骨骼坐标；尖、芯、尾 是杖自己空间里的点 */
 export type 手持杖款 = { 挂: ReactNode; 矩阵: THREE.Matrix4; 尖: readonly number[]; 芯: readonly number[]; 尾: readonly number[] };
 
-/** 这一刻合好的骨骼姿势表：动画各层，上面按通道盖手摆的姿势（同 基岩实体.tsx） */
-const 姿势表 = (秒: number, 表演: 亚波伦表演, 姿势: Readonly<Record<string, BonePose>> | undefined) => {
+/** 这一刻动画各层合出来的骨骼表（不含手摆的姿势）：按时间轴混姿势的（动作/亚波伦演出.ts）拿它当「没摆的骨骼现在转到哪」 */
+export const 动画骨骼表 = (秒: number, 表演: 亚波伦表演) => {
   const 定 = 娘化亚波伦生物.定义;
-  const 动画骨骼 = 动画姿势(
+  return 动画姿势(
     { 文件: 娘化亚波伦生物.动画文件!, 层们: 表演.层们(秒), 口径: 定.动画!.口径, 环境: 合并环境(定.动画!.环境, { ...表演.环境(秒), 函数: { 'ysm.second_order': 表演.二阶在(秒) } }) },
     秒,
   );
-  return 混合层([{ 骨骼: 动画骨骼 }, { 骨骼: 姿势 ?? 表演.持杖姿势 }], 'TLM');
 };
+
+/** 这一刻合好的骨骼姿势表：动画各层，上面按通道盖手摆的姿势（同 基岩实体.tsx） */
+const 姿势表 = (秒: number, 表演: 亚波伦表演, 姿势: Readonly<Record<string, BonePose>> | undefined) =>
+  混合层([{ 骨骼: 动画骨骼表(秒, 表演) }, { 骨骼: 姿势 ?? 表演.持杖姿势 }], 'TLM');
 
 // 手心：小臂方盒（RightForeArm，模型像素 x −5.29～−2.79、y 18.41～24.91、z −0.73～1.78）露在袖口（y ≈ 20.1）外面那一截的中心，
 // 写成 RightForeArm 的骨骼坐标（原点 = pivot (−4.125, 25.075, 0.025)，X 取负）。这个模型的手没有单独的方盒，RightHand 只是个转轴
@@ -329,6 +332,10 @@ export type 杖位姿 = {
  */
 export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 握偏, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖' | '握偏'> & { 旧握法?: boolean }): 杖位姿 => {
   const 表 = 姿势表(秒, 表演, 姿势);
+export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖'> & { 旧握法?: boolean }): 杖位姿 =>
+  表到杖位姿(pose, 姿势表(秒, 表演, 姿势), 杖, 旧握法);
+
+const 表到杖位姿 = (pose: 娘化亚波伦属性['pose'], 表: Readonly<Record<string, BonePose>>, 杖?: 手持杖款, 旧握法?: boolean): 杖位姿 => {
   const m = new THREE.Matrix4()
     .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
     .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
@@ -338,6 +345,47 @@ export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 握偏, 
   const 点 = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
   const [尖, 尾] = [点(杖?.尖 ?? 杖尖), 点(杖?.尾 ?? 杖尾)];
   return { 尖: 尖.toArray(), 芯: 点(杖?.芯 ?? 杖头芯).toArray(), 尾: 尾.toArray(), 轴: 尖.clone().sub(尾).normalize().toArray() };
+};
+
+/**
+ * 瞄杖：只转右肩（RightArm 的三个转角），让手里的杖身朝一个方向（杖尖朝目标、杖竖起来这类），返回改好右肩的 姿势。
+ * 姿势 里右臂三根骨骼先摆个大概（肘弯多少、手腕怎么握由它定），解出来的右肩离它最近：阻尼最小二乘，步数固定，结果只看输入、和取帧顺序无关。
+ * 朝 给目标点时方向 = 杖尖 → 目标（杖尖跟着手动，每步重算）；给 向 就是定死的方向。身子在动画里怎么倒、怎么晃都算在内，所以每帧解一次杖尖就一直指着目标。
+ */
+export const 瞄杖 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 朝 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '杖'> & { 姿势: Readonly<Record<string, BonePose>>; 朝: { 点: V3 } | { 向: V3 } }): Record<string, BonePose> => {
+  const 表 = 姿势表(秒, 表演, 姿势);
+  const 起 = (姿势.RightArm?.rot ?? [0, 0, 0]).slice();
+  const 带 = (r: readonly number[]) => ({ ...表, RightArm: { ...表.RightArm, rot: [...r] } });
+  // 残差：杖身方向 − 要的方向（三个分量）
+  const 差 = (r: readonly number[]): number[] => {
+    const 位 = 表到杖位姿(pose, 带(r), 杖);
+    const 要 = '点' in 朝 ? new THREE.Vector3(朝.点[0] - 位.尖[0], 朝.点[1] - 位.尖[1], 朝.点[2] - 位.尖[2]).normalize().toArray() : new THREE.Vector3(...朝.向).normalize().toArray();
+    return [位.轴[0] - 要[0]!, 位.轴[1] - 要[1]!, 位.轴[2] - 要[2]!];
+  };
+  let r = 起.slice();
+  const 步 = 0.5;
+  for (let 轮 = 0; 轮 < 16; 轮++) {
+    const e = 差(r);
+    if (Math.hypot(...e) < 1e-5) break;
+    // 雅可比（每度）：数值差分
+    const J = [0, 1, 2].map((j) => {
+      const q = r.slice();
+      q[j] = q[j]! + 步;
+      const e2 = 差(q);
+      return [(e2[0]! - e[0]!) / 步, (e2[1]! - e[1]!) / 步, (e2[2]! - e[2]!) / 步];
+    });
+    // (JᵀJ + λI) d = −Jᵀe；J[j] 是第 j 个转角那一列
+    const A = new THREE.Matrix3();
+    const 元: number[] = [];
+    for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) 元.push(J[a]![0]! * J[b]![0]! + J[a]![1]! * J[b]![1]! + J[a]![2]! * J[b]![2]! + (a === b ? 1e-5 : 0));
+    A.set(元[0]!, 元[1]!, 元[2]!, 元[3]!, 元[4]!, 元[5]!, 元[6]!, 元[7]!, 元[8]!).invert();
+    const g = new THREE.Vector3(...J.map((列) => -(列[0]! * e[0]! + 列[1]! * e[1]! + 列[2]! * e[2]!))).applyMatrix3(A);
+    // 一步最多转 25 度：离得远时线性化不准
+    const 长 = g.length();
+    if (长 > 25) g.multiplyScalar(25 / 长);
+    r = [r[0]! + g.x, r[1]! + g.y, r[2]! + g.z];
+  }
+  return { ...姿势, RightArm: { ...姿势.RightArm, rot: r } };
 };
 
 /** 她右手手心（握杖修正 对的那一点）在场景里的位置：核对握杖、给手部特写定机位用 */
