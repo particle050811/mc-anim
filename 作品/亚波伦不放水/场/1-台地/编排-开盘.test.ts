@@ -158,3 +158,35 @@ describe('第 1、2 幕编排', () => {
     expect(比).toBeLessThanOrEqual(0.2);
   });
 });
+
+describe('2-03 绕拍（用户 11-11「我要环绕 180 度」）', async () => {
+  const { 绕拍, 绕拍方位, 绕拍相对, 绕拍机位 } = await import('../../段/2-开盘/绕拍.ts');
+  const { 投影 } = await import('../../界面/指杖机位.ts');
+  const 帧们 = Array.from({ length: Math.floor((绕拍.止 - 绕拍.起) * 60) + 1 }, (_, i) => 绕拍.起 + i / 60);
+
+  it('世界里绕 180 度，相对她也转了 150 度以上（八版跟着她转身只差 10 度）', () => {
+    expect(绕拍方位(绕拍.止) - 绕拍方位(绕拍.起)).toBeCloseTo(180, 6);
+    // 相对角逐帧累加（跨 ±180 不跳）
+    let 累 = 0;
+    for (let i = 1; i < 帧们.length; i++) {
+      if (帧们[i]! < 绕拍.绕[0]) continue;
+      累 += ((((绕拍相对(帧们[i]!) - 绕拍相对(帧们[i - 1]!) + 180) % 360) + 360) % 360) - 180;
+    }
+    expect(累).toBeGreaterThanOrEqual(150);
+  });
+
+  it('她整个在画里，头不顶到血条底下（八版 10.6～10.9 秒顶着血条）；机位不入地', () => {
+    for (const s of 帧们) {
+      const t = 幕起 + 世界秒(s);
+      const c = 绕拍机位(s);
+      const p = 亚波伦位(t);
+      const 头 = 投影(c, 16 / 9, [p[0], p[1], p[2] + 2]);
+      const 脚 = 投影(c, 16 / 9, p);
+      // 血条（亚波伦血条 s=2）底边约在画面高 0.2
+      expect(头.y, `片秒 ${s.toFixed(3)}`).toBeGreaterThan(0.25);
+      expect(脚.y, `片秒 ${s.toFixed(3)}`).toBeLessThan(0.9);
+      for (const q of [头, 脚]) expect(q.x).toBeGreaterThan(0.15), expect(q.x).toBeLessThan(0.85), expect(q.深).toBeGreaterThan(1);
+      expect(c.pos[2] - 祭坛点[2] - 本地地高(c.pos[0] - 祭坛点[0], c.pos[1] - 祭坛点[1])).toBeGreaterThanOrEqual(0.8 - 1e-9);
+    }
+  });
+});
