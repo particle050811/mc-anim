@@ -7,12 +7,13 @@ import { clamp01, lerp as 混, lerpV, smoothstep01 as 平滑 } from '@engine/cor
 import type { V3 } from '@engine/model/parts.tsx';
 import { 史蒂夫掉落件数, 死亡掉落轨迹 } from '../../角色/史蒂夫掉落轨迹.ts';
 import { 台地点 } from './布局.ts';
+import { 慢放多出 } from './开盘拍.ts';
 import 线 from './时间线.ts';
 import { 冲进度, 史蒂夫脚, 眼高, 第五幕起位 } from './齐放拍.ts';
 
 const 事 = 线.事件;
-/** 本幕开头（编排的钟，现身后几秒）：他死的那一刻 */
-export const 幕起 = 事.齐放完.秒 - 事.现身.秒;
+/** 本幕开头（编排的钟，现身后几秒的世界秒，比片上慢第 2 幕的 慢放多出）：他死的那一刻 */
+export const 幕起 = 事.齐放完.秒 - 事.现身.秒 - 慢放多出;
 export const 幕长 = 事.击败完.秒 - 事.齐放完.秒;
 export const 秒在 = (s: number) => 幕起 + s;
 
