@@ -69,8 +69,10 @@ const 取熔岩材质 = (水: THREE.Material) => {
   return m;
 };
 
-export const 真下界: React.FC<{ 镜头: readonly number[]; 光: 下界光 }> = ({ 镜头, 光 }) => {
-  const t = useImportedTerrain(真下界包, 无挖);
+/** 挖：场地上自己摆了方块的地方，把导入地形的那几格挖掉，不然两层共面互相闪（要模块顶层的同一个数组）；键后缀 让挖法不同的不共用网格缓存 */
+export type 下界挖 = { 框: LandmarkCutout[]; 键后缀: string };
+export const 真下界: React.FC<{ 镜头: readonly number[]; 光: 下界光; 挖?: 下界挖 }> = ({ 镜头, 光, 挖 }) => {
+  const t = useImportedTerrain(真下界包, 挖?.框 ?? 无挖);
   const scene = useThree((s) => s.scene);
   const 组 = useRef<THREE.Group>(null);
   useSelfLight(0);
@@ -111,7 +113,7 @@ export const 真下界: React.FC<{ 镜头: readonly number[]; 光: 下界光 }> 
       <directionalLight color={补(面明暗.南北)} position={[0, 1, 0]} intensity={Math.PI} />
       <directionalLight color={补(面明暗.南北)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      {t && <VoxelWorld 键={t.键} 来源={t.来源} 中心={镜头 as number[]} 像素={LevelParams.视频.像素} 远={光.画远 ?? 光.雾.远} 高度={[0 - 真下界原点[1], 128 - 真下界原点[1]]} />}
+      {t && <VoxelWorld 键={t.键 + (挖?.键后缀 ?? '')} 来源={t.来源} 中心={镜头 as number[]} 像素={LevelParams.视频.像素} 远={光.画远 ?? 光.雾.远} 高度={[0 - 真下界原点[1], 128 - 真下界原点[1]]} />}
     </group>
   );
 };

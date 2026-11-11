@@ -9,6 +9,7 @@ import { 场景到three, 摆相机 } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { 下界提亮, 真下界 } from '../../地点/真下界.tsx';
+import { 祭坛底挖 } from './布局.ts';
 
 export const 画幅 = { 宽: 1280, 高: 720 } as const;
 
@@ -20,13 +21,14 @@ const 摆机位: React.FC<{ 机位: Cam }> = ({ 机位 }) => {
   return null;
 };
 
-export const 台地画布: React.FC<{ 机位: Cam; children: React.ReactNode; 界面?: React.ReactNode }> = ({ 机位, children, 界面 }) => (
+/** 仪式结构：这一段画了安息仪式的结构（黑曜石底换掉那一层地面），地形要挖掉对应的格 */
+export const 台地画布: React.FC<{ 机位: Cam; children: React.ReactNode; 界面?: React.ReactNode; 仪式结构?: boolean }> = ({ 机位, children, 界面, 仪式结构 = false }) => (
   <AbsoluteFill style={{ background: 下界提亮.雾.色 }}>
     <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
       <摆机位 机位={机位} />
       <ScreenAo />
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <真下界 镜头={机位.pos} 光={下界提亮} />
+        <真下界 镜头={机位.pos} 光={下界提亮} 挖={仪式结构 ? 祭坛底挖 : undefined} />
         {children}
       </group>
     </ThreeCanvas>
