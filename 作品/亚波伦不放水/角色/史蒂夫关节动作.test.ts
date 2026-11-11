@@ -78,4 +78,18 @@ describe('史蒂夫关节动作', () => {
     expect(收完.armR).toBeCloseTo(平.armR, 6);
     expect(收完.腕R).toBe(0);
   });
+
+  it('斩那几帧剑尖每帧走 0.4 格以上（Linker 知识库：快的出手剑尖每帧 ≥ 0.4 m）', () => {
+    // 近似：剑尖离肩约 1.25 格（上臂到握点 10 像素 + 握点到剑尖约 11 像素，× 0.9375 / 16）。下劈、上撩、跳劈按侧面剑的朝向
+    // （从正下方往前量 ≈ 臂 + 肘 + 90 − 腕 − 倾，见 剑招.ts 开头）蓄 → 中 → 末 转过的角算弧长；横斩按绕竖轴的 转 算
+    const 半径 = 1.25;
+    const 帧 = 剑招拍.斩 * 60;
+    const 侧角 = (p: (typeof 招表)['下劈']['蓄']) => p.臂 + p.肘 + 90 - p.腕 - p.倾;
+    const 每帧: Record<string, number> = {};
+    for (const [名, { 蓄, 中, 末 }] of Object.entries(招表)) {
+      const 角 = 名 === '横斩' ? Math.abs(中.转 - 蓄.转) + Math.abs(末.转 - 中.转) : Math.abs(侧角(中) - 侧角(蓄)) + Math.abs(侧角(末) - 侧角(中));
+      每帧[名] = ((角 * Math.PI) / 180) * 半径 / 帧;
+    }
+    for (const [名, v] of Object.entries(每帧)) expect(v, `${名} 剑尖每帧 ${v.toFixed(2)} 格`).toBeGreaterThanOrEqual(0.4);
+  });
 });
