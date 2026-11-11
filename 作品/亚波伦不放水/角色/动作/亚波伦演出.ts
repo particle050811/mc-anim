@@ -7,7 +7,9 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { 动画骨骼表, 定表演, 持杖位姿, 斜举, 瞄杖, type 亚波伦表演, type 杖位姿 } from '../娘化亚波伦.tsx';
 
-export type 姿势名 = '站立' | '起飞' | '悬停' | '指向' | '开盘' | '收盘' | '落地';
+export type 姿势名 = '站立' | '起飞' | '悬停' | '指向' | '开盘' | '收盘' | '落地' | 闪避姿势名;
+/** 第 1、2 幕的动作（用户 11-10 要她现身就做动作、张盘前「只躲不还手」地躲史蒂夫的追砍）：现身低头、甩杖，和几种躲法 */
+export type 闪避姿势名 = '低头' | '甩杖' | '后仰闪' | '侧飞' | '贴地滑' | '瞬移收' | '升空';
 
 type 手摆 = Readonly<Record<string, BonePose>>;
 export type 姿势定义 = {
@@ -34,7 +36,67 @@ const 收回: 手摆 = { ...扶正, RightArm: { rot: [-35, 10, 15] }, RightForeA
 // 起飞前蓄一下、落地缓一下：两膝微屈（袍子里只露出一点）
 const 屈膝: 手摆 = { RightLeg: { rot: [-22, 0, 0] }, RightLowerLeg: { rot: [40, 0, 0] }, LeftLeg: { rot: [-22, 0, 0] }, LeftLowerLeg: { rot: [40, 0, 0] } };
 
+// 第 1、2 幕的几种躲法（Agent 摆的，用户没看过；身子的前倾、侧倾不在这里，由 演出设定 的 倾 按她的速度、加速度算，见 倾角）。
+// 角度的正负照这个模型：腿、手臂 x 负 = 往前抬；UpBody、Head x 正 = 往前低；右臂 z 正 = 往外抬，左臂 z 负 = 往外抬
+const 双膝 = (大腿: number, 小腿: number, 左大腿 = 大腿, 左小腿 = 小腿): 手摆 => ({
+  RightLeg: { rot: [大腿, 0, 0] },
+  RightLowerLeg: { rot: [小腿, 0, 0] },
+  LeftLeg: { rot: [左大腿, 0, 0] },
+  LeftLowerLeg: { rot: [左小腿, 0, 0] },
+});
+const 闪避姿势们: Record<闪避姿势名, 姿势定义> = {
+  /** 刚现身：头垂着（眼睛闭着由 演出设定 的 闭眼 管），杖照斜举 */
+  低头: { 飞: 0, 浮: 0, 手: { ...斜举.站, UpBody: { rot: [6, 0, 0] }, Head: { rot: [24, 0, 0] } } },
+  /** 杖一甩：右臂把杖往外、往前甩开，左臂跟着摊开，头微抬；排完回 站立 */
+  甩杖: { 飞: 0, 浮: 0, 手: { ...扶正, LeftArm: { rot: [10, 0, -48] }, RightArm: { rot: [-38, 0, 78] }, RightForeArm: { rot: [-8, 0, 0] }, RightHand: { rot: [0, 70, 0] }, Head: { rot: [-6, 0, 0] } } },
+  /** 起身后退：上身往后仰、头跟着仰，左臂往上甩出去找平衡，杖往外撇，右膝提起来 */
+  后仰闪: {
+    飞: 0,
+    浮: 1,
+    手: {
+      ...双膝(-42, 62, 8, 22),
+      UpBody: { rot: [-26, 0, 0] },
+      Head: { rot: [-10, 0, 0] },
+      LeftArm: { rot: [-35, 0, -82] },
+      LeftForeArm: { rot: [-20, 0, 0] },
+      RightArm: { rot: [-15, 0, 72] },
+      RightForeArm: { rot: [-15, 0, 0] },
+      RightHand: { rot: [0, 70, 0] },
+    },
+  },
+  /** 横着飞开：两臂往两边张开找平衡，两腿一前一后带一点弯 */
+  侧飞: {
+    飞: 0,
+    浮: 1,
+    手: { ...双膝(-18, 34, 12, 20), LeftArm: { rot: [0, 0, -62] }, LeftForeArm: { rot: [-18, 0, 0] }, RightArm: { rot: [-8, 0, 66] }, RightForeArm: { rot: [-22, 0, 0] }, RightHand: { rot: [0, 70, 0] } },
+  },
+  /** 贴着地面滑开：两膝深屈（像蹲着滑），上身前压、头抬着看人，左手往后垂着快擦到地，杖往后撇 */
+  贴地滑: {
+    飞: 0,
+    浮: 0,
+    手: {
+      ...双膝(-55, 100, 18, 78),
+      UpBody: { rot: [20, 0, 0] },
+      Head: { rot: [-16, 0, 0] },
+      LeftArm: { rot: [28, 0, -48] },
+      LeftForeArm: { rot: [-8, 0, 0] },
+      RightArm: { rot: [32, 0, 52] },
+      RightForeArm: { rot: [-25, 0, 0] },
+      RightHand: { rot: [0, 70, 0] },
+    },
+  },
+  /** 瞬移前一收：身子缩一下、两手收到胸前，头低着 */
+  瞬移收: {
+    飞: 0,
+    浮: 1,
+    手: { ...双膝(-12, 26), UpBody: { rot: [12, 0, 0] }, Head: { rot: [12, 0, 0] }, LeftArm: { rot: [-25, 0, -12] }, LeftForeArm: { rot: [-85, 0, 0] }, RightArm: { rot: [-12, 0, 18] }, RightForeArm: { rot: [-62, 0, 0] }, RightHand: { rot: [0, 70, 0] } },
+  },
+  /** 往上拔高：两腿并拢往下垂，两臂稍稍张开压在身侧，头低下来看下面的人 */
+  升空: { 飞: 0, 浮: 1, 手: { ...双膝(6, 10), Head: { rot: [20, 0, 0] }, LeftArm: { rot: [8, 0, -32] }, LeftForeArm: { rot: [-12, 0, 0] }, ...斜举.站 } },
+};
+
 export const 姿势们: Record<姿势名, 姿势定义> = {
+  ...闪避姿势们,
   /** 现身站立：idle，杖斜举（用户 11-10 定魔杖平时「斜举着」） */
   站立: { 飞: 0, 浮: 0, 手: 斜举.站 },
   /** 起飞的中间一拍：还没完全进 fly，两膝屈着、杖略收 */
@@ -69,7 +131,16 @@ export type 演出设定 = {
   出手?: readonly number[];
   /** 弹簧（头发、胸）：默认 '推进' */
   弹簧?: '推进' | '稳态';
+  /** 身子跟着动作倾（见 倾角）；不给 = 不倾（第 4、5 幕照旧） */
+  倾?: 倾设定;
+  /** 位 在这些秒上跳变（瞬移）：算速度、加速度时不跨过去 */
+  断点?: readonly number[];
+  /** 闭眼 0～1（1 = 闭着）；不给 = 照动画眨眼 */
+  闭眼?: (秒: number) => number;
 };
+
+/** 倾：前倾、侧倾（度）= 速度（格/秒）× 每速 + 加速度（格/秒²）× 每加速，各自夹在 ±上限；加速度在前后 窗 秒里取三角加权平均，免得关键点上一顿 */
+export type 倾设定 = { 每速: number; 每加速: number; 上限: number; 窗: number };
 
 export type 演出此刻 = {
   /** 直接摊给 <娘化亚波伦 {...属性} 持杖 /> */
@@ -109,6 +180,47 @@ export const 轴上 = (轴: readonly 演出条[], 秒: number): 演出此刻['�
   return { 从: 轴[i - 1]!.做, 到: 条.做, 比: smoothstep01(t) };
 };
 
+const 差步 = 1 / 60;
+/** 秒 附近 [a, b] 里没有断点就返回 true */
+const 不跨 = (断点: readonly number[], a: number, b: number) => !断点.some((d) => d > a && d <= b);
+/** 位置的一阶、二阶差分（水平两分量），跨断点时换成单边差分 */
+export const 速加速 = (位: (秒: number) => V3, 秒: number, 断点: readonly number[] = []): { 速: [number, number]; 加速: [number, number] } => {
+  const h = 差步;
+  let [a, b] = [秒 - h, 秒 + h];
+  if (!不跨(断点, a, b)) [a, b] = 不跨(断点, 秒 - 2 * h, 秒) ? [秒 - 2 * h, 秒] : [秒, 秒 + 2 * h];
+  const m = (a + b) / 2;
+  const [p, q, r] = [位(a), 位(m), 位(b)];
+  const H = (b - a) / 2;
+  return {
+    速: [(r[0] - p[0]) / (2 * H), (r[1] - p[1]) / (2 * H)],
+    加速: [(r[0] - 2 * q[0] + p[0]) / (H * H), (r[1] - 2 * q[1] + p[1]) / (H * H)],
+  };
+};
+/**
+ * 跟着动作倾的角度（度，原创）：往哪边加速、往哪边飞，身子就往哪边倒（起步前压、刹住后仰、拐弯往里侧倒），这样闪避有预备和收势，
+ * 位置写成速度连续的曲线，倾也就跟着连续。前 = 身子正面的方向（yaw 0 朝 +y），右 = 她的右手边。返回 [前倾, 右倾]
+ */
+export const 倾角 = (设: 倾设定, 位: (秒: number) => V3, yaw: number, 秒: number, 断点: readonly number[] = []): [number, number] => {
+  const n = 4;
+  let [vx, vy, ax, ay, w和] = [0, 0, 0, 0, 0];
+  for (let k = -n; k <= n; k++) {
+    const t = 秒 + (k / n) * 设.窗;
+    if (!不跨(断点, Math.min(t, 秒), Math.max(t, 秒))) continue;
+    const w = n + 1 - Math.abs(k);
+    const { 速, 加速 } = 速加速(位, t, 断点);
+    vx += w * 速[0];
+    vy += w * 速[1];
+    ax += w * 加速[0];
+    ay += w * 加速[1];
+    w和 += w;
+  }
+  const r = (yaw * Math.PI) / 180;
+  const [前x, 前y, 右x, 右y] = [-Math.sin(r), Math.cos(r), Math.cos(r), Math.sin(r)];
+  const 夹 = (x: number) => Math.max(-设.上限, Math.min(设.上限, x));
+  const 倾 = (dx: number, dy: number) => 夹((设.每速 * (vx * dx + vy * dy) + 设.每加速 * (ax * dx + ay * dy)) / w和);
+  return [倾(前x, 前y), 倾(右x, 右y)];
+};
+
 export const 定演出 = (设定: 演出设定) => {
   const 位 = (秒: number) => 取(设定.位, 秒);
   const 目标 = (秒: number) => 取(设定.目标, 秒);
@@ -130,7 +242,9 @@ export const 定演出 = (设定: 演出设定) => {
     },
     // 头发、胸的弹簧吃速度：竖直速度按米/秒（YSM wiki）；水平速度 YSM 的单位没查到，飞行时写的是 20，这里按 10 格/秒 ≈ 20 估
     环境: (秒) => {
-      const [a, b] = [位(秒 - h), 位(秒 + h)];
+      const 断 = 设定.断点 ?? [];
+      const [甲, 乙] = 不跨(断, 秒 - h, 秒 + h) ? [秒 - h, 秒 + h] : 不跨(断, 秒 - 2 * h, 秒) ? [秒 - 2 * h, 秒] : [秒, 秒 + 2 * h];
+      const [a, b] = [位(甲), 位(乙)];
       return { 查询: { vertical_speed: (b[2] - a[2]) / (2 * h), ground_speed: Math.min(20, (Math.hypot(b[0] - a[0], b[1] - a[1]) / (2 * h)) * 2) } };
     },
     弹簧: 设定.弹簧,
@@ -162,6 +276,16 @@ export const 定演出 = (设定: 演出设定) => {
       const 肩 = (定: 姿势定义) => (定.杖朝 ? 解(定.杖朝) : 混).RightArm!.rot!;
       const [a, b] = [肩(甲), 肩(乙)];
       姿势 = { ...混, RightArm: { rot: [0, 1, 2].map((j) => lerp(a[j]!, b[j]!, k)) } };
+    }
+    if (设定.倾) {
+      // MAllBody（轴心在髋，idle 和 fly 都不动它）整个转：前倾 = 绕 x，侧倾 = 绕 z
+      const [前, 右] = 倾角(设定.倾, 位, pose.yaw, 秒, 设定.断点);
+      姿势 = { ...姿势, MAllBody: { rot: [前, 0, 右] } };
+    }
+    const 闭 = 设定.闭眼 ? Math.min(1, Math.max(0, 设定.闭眼(秒))) : 0;
+    if (闭 > 0) {
+      const 睑 = { scale: [1, 1 - 闭, 1] };
+      姿势 = { ...姿势, LeftEyelid: 睑, RightEyelid: 睑 };
     }
     const 抖 = 抖杖角(秒, 设定.出手 ?? []);
     if (抖) {
