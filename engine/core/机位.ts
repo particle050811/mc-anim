@@ -11,7 +11,7 @@
 import type { V3 } from '../model/parts.tsx';
 import type { 透视机位参数 } from '../三渲二/机位.tsx';
 import { 游戏到场景, 游戏朝向到场景, type 原点 } from './坐标.ts';
-import { clamp01, lerp, lerpV, rad } from './数学.ts';
+import { clamp01, hermite, lerp, lerpV, rad } from './数学.ts';
 
 export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
 
@@ -115,4 +115,46 @@ export const 从游戏机位 = (g: { 眼: readonly number[]; yaw: number; pitch:
   const pos = 游戏到场景(g.眼, o);
   const d = 游戏朝向到场景(g.yaw, g.pitch);
   return { pos, tgt: [pos[0] + d[0] * 看距, pos[1] + d[1] * 看距, pos[2] + d[2] * 看距], lens: 视角到焦距(g.视角 ?? 70, 宽高比) };
+};
+
+/** 样条关键点：秒（或帧，单位自定，递增）和那一刻的机位 */
+export type 样条关键 = readonly [时刻: number, 机位: Cam];
+export type 机位样条选项 = {
+  /** 两头的速度：带速（默认）= 照相邻一段的平均速度进出，镜头切进来时已经在动；停 = 速度为 0（从静止起、收到静止） */
+  头?: '带速' | '停';
+  尾?: '带速' | '停';
+};
+
+/**
+ * 一串关键机位连成一条速度连续的轨（三次埃尔米特，切线照不等间隔的 Catmull-Rom 取：前后两段平均速度按段长加权）。
+ * pos、tgt、log(lens) 各分量各自插；过每个关键点，关键点处不停顿（机位轨 是分段插，每个关键点速度都断一下）。两头之外停在端点。
+ * 关键点排得太密又来回折会过冲，摆的时候让相邻几点大致顺着一个方向。
+ */
+export const 机位样条 = (关键: readonly 样条关键[], 时刻: number, 选项: 机位样条选项 = {}): Cam => {
+  const n = 关键.length;
+  if (!n) throw new Error('机位样条至少要一个关键机位');
+  if (n === 1 || 时刻 <= 关键[0]![0]) return 关键[0]![1];
+  if (时刻 >= 关键[n - 1]![0]) return 关键[n - 1]![1];
+  let i = 0;
+  while (i + 2 < n && 时刻 >= 关键[i + 1]![0]) i++;
+  const 量 = (c: Cam): number[] => [...c.pos, ...c.tgt, Math.log(c.lens), c.roll ?? 0];
+  const [t0, t1] = [关键[i]![0], 关键[i + 1]![0]];
+  const h = t1 - t0;
+  const [p0, p1] = [量(关键[i]![1]), 量(关键[i + 1]![1])];
+  // 关键点 k 处的速度（每单位时刻）
+  const 速 = (k: number): number[] => {
+    const 此 = 量(关键[k]![1]);
+    const 前 = k > 0 ? 量(关键[k - 1]![1]) : null;
+    const 后 = k < n - 1 ? 量(关键[k + 1]![1]) : null;
+    if (!前) return 选项.头 === '停' ? 此.map(() => 0) : 此.map((v, j) => (后![j]! - v) / (关键[1]![0] - 关键[0]![0]));
+    if (!后) return 选项.尾 === '停' ? 此.map(() => 0) : 此.map((v, j) => (v - 前[j]!) / (关键[k]![0] - 关键[k - 1]![0]));
+    const [ha, hb] = [关键[k]![0] - 关键[k - 1]![0], 关键[k + 1]![0] - 关键[k]![0]];
+    return 此.map((v, j) => (((v - 前[j]!) / ha) * hb + ((后[j]! - v) / hb) * ha) / (ha + hb));
+  };
+  const [m0, m1] = [速(i), 速(i + 1)];
+  const s = (时刻 - t0) / h;
+  const v = p0.map((a, j) => hermite(a, m0[j]! * h, p1[j]!, m1[j]! * h, s));
+  const c: Cam = { pos: [v[0]!, v[1]!, v[2]!], tgt: [v[3]!, v[4]!, v[5]!], lens: Math.exp(v[6]!) };
+  if (关键.some(([, k]) => k.roll !== undefined)) c.roll = v[7]!;
+  return c;
 };

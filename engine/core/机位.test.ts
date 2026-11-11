@@ -142,4 +142,19 @@ describe('机位正本和旧副本对得上', () => {
       expect(帧.视角).toBeCloseTo(新.lens, 12);
     }
   });
+  it('机位样条：过每个关键点、关键点两侧速度连续、两头之外停在端点', () => {
+    const 丙: J.Cam = { pos: [2, 9, 4], tgt: [1, 1, 1], lens: 35 };
+    const 关键: J.样条关键[] = [[0, 甲], [1.5, 乙], [4, 丙]];
+    const 量 = (c: J.Cam) => [...c.pos, ...c.tgt, c.lens];
+    近(量(J.机位样条(关键, 0)), 量(甲));
+    近(量(J.机位样条(关键, 1.5)), 量(乙), 9);
+    近(量(J.机位样条(关键, 9)), 量(丙));
+    const e = 1e-5;
+    const 速 = (t: number) => 量(J.机位样条(关键, t + e)).map((v, i) => (v - 量(J.机位样条(关键, t - e))[i]!) / (2 * e));
+    const [左, 右] = [速(1.5 - 2 * e), 速(1.5 + 2 * e)];
+    左.forEach((v, i) => expect(Math.abs(v - 右[i]!)).toBeLessThan(1e-2));
+    // 停：头上的速度是 0
+    const 停 = J.机位样条(关键, e, { 头: '停' });
+    expect(Math.hypot(...停.pos.map((v, i) => v - 甲.pos[i]!)) / e).toBeLessThan(1e-3);
+  });
 });
