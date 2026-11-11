@@ -2,6 +2,7 @@
 // 用户 11-11：外立面全景「意义不明 去掉 直接跳」，「右边放一个躺在地上的史蒂夫表示也完全打不过投降」。
 // 史蒂夫在画面右边、她左手边地上仰面躺着，两手举向天、跟着曲子左右摆，一条腿屈着，头隔一阵抬起来看她一眼又躺回去。
 // 用户 11-11「战败了 怎么还穿着装备把装备下了呀」：不穿装备，原版史蒂夫皮肤（他第 5 幕死时东西撒了一地）；盔甲、披风、剑去掉，头后的晋升之环也是饰品，一起去掉（Agent 取的）。
+// 用户 11-11「跳舞这里衣服穿模了」：她的腿叉开、提膝时从袍子下摆戳出来，袍摆按腿让开（角色/袍摆让腿.ts），舞的动作不改。
 // 机位、他躺的位置和姿势、小动作都是 Agent 取的，用户没看过。天空是纯色淡蓝（教堂所在空间的天没核实，同 核对/粉色教堂）。
 // 底部字幕「亚波伦结算动画」用户 11-10 说多余，去掉了。没做：结算面板（分镜默认不要）。
 import { ThreeCanvas } from '@remotion/three';
@@ -14,13 +15,16 @@ import { smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import { 摆相机 } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import type { V3 } from '@engine/model/parts.tsx';
+import { 混合层 } from '@engine/anim/基岩动画.ts';
+import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { 定义画面, use段 } from '@engine/段/段画面.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import type { StevePose } from '@库/角色/史蒂夫.tsx';
 import { 教堂, 教堂灯光, 粉色教堂 } from '../../地点/粉色教堂.tsx';
 import { 忘情牛肉面姿势, 忘情牛肉面环境 } from '../../角色/动作/忘情牛肉面.ts';
 import { 曲晚秒 } from '../../角色/动作/忘情牛肉面时长.ts';
-import { 娘化亚波伦, 定表演 } from '../../角色/娘化亚波伦.tsx';
+import { 动画骨骼表, 娘化亚波伦, 娘化亚波伦生物, 定表演 } from '../../角色/娘化亚波伦.tsx';
+import { 袍摆让腿 } from '../../角色/袍摆让腿.ts';
 import { 装备史蒂夫 } from '../../角色/史蒂夫装备.tsx';
 import 段 from './段.ts';
 import 声音 from './声音地址.生成.ts';
@@ -30,6 +34,12 @@ const 天色 = '#b4cfff';
 // idle 垫底，舞的姿势盖在上面（同 核对/结算舞）
 const 跳舞 = 定表演({ 主: () => [{ 名: 'idle' }], 环境: 忘情牛肉面环境 });
 const 加 = (a: readonly number[], b: readonly number[]): V3 => [a[0]! + b[0]!, a[1]! + b[1]!, a[2]! + b[2]!];
+const 她的几何 = 娘化亚波伦生物.定义.模型 as Parameters<typeof 袍摆让腿>[0];
+/** 这一刻她的手摆姿势：舞的骨骼，加上按腿让开的袍摆（袍摆要看动画垫底的那份合起来以后腿在哪） */
+const 跳舞姿势 = (秒: number, 舞秒: number): Record<string, BonePose> => {
+  const 舞 = 忘情牛肉面姿势(舞秒);
+  return { ...舞, ...袍摆让腿(她的几何, 混合层([{ 骨骼: 动画骨骼表(秒, 跳舞) }, { 骨骼: 舞 }], 'TLM')).姿势 };
+};
 
 // 人站跳舞位面朝南，机位在南边过道里；横幅要把她脚底到举起的手、右边躺着的他都收进来
 const 中殿: Cam = { pos: 加(教堂.跳舞位, [0.5, -5.6, 2.0]), tgt: 加(教堂.跳舞位, [1.1, 0, 0.95]), lens: 23 };
@@ -117,7 +127,7 @@ export default 定义画面(段, 声音, () => {
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <教堂灯光 />
           <粉色教堂 />
-          <娘化亚波伦 pose={{ loc: 教堂.跳舞位, yaw: 180 }} 秒={Math.max(0, 舞秒)} 表演={跳舞} 姿势={忘情牛肉面姿势(舞秒)} />
+          <娘化亚波伦 pose={{ loc: 教堂.跳舞位, yaw: 180 }} 秒={Math.max(0, 舞秒)} 表演={跳舞} 姿势={跳舞姿势(Math.max(0, 舞秒), 舞秒)} />
           <躺着的史蒂夫 舞秒={舞秒} 秒={秒} />
         </group>
       </ThreeCanvas>
