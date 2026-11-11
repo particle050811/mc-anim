@@ -17,7 +17,21 @@ import { type 盔甲网格, type 神灵金件, 神灵金全套, use神灵金盔�
 import { 默认外观, type 装备外观 } from '../物品/装备外观.ts';
 import { 弯肢, type 弯层, 方盒三角 } from './弯肢.tsx';
 import { type 三角, 顶点表转三角 } from './弯折.ts';
-import { 关节, 关节根矩阵, 网格分节 } from './史蒂夫关节.ts';
+import { type 关节姿, 关节, 关节根矩阵, 网格分节 } from './史蒂夫关节.ts';
+
+/** 腕的转轴过手里拿东西的那一点（部件坐标，像素）：ItemInHandLayer 的 (1/16, 2/16, −10/16) 格换到手臂部件里 */
+const 握点 = [-1, 10, -2] as const;
+/** 剑绕握点转 腕 度（角色/剑招.ts；正 = 剑尖往前臂延长线那边压） */
+const 腕: React.FC<{ 度: number; children: React.ReactNode }> = ({ 度, children }) =>
+  度 === 0 ? (
+    <>{children}</>
+  ) : (
+    <group position={[...握点]}>
+      <group rotation={[(度 * Math.PI) / 180, 0, 0]}>
+        <group position={[-握点[0], -握点[1], -握点[2]]}>{children}</group>
+      </group>
+    </group>
+  );
 
 // 四肢：本体部件、外层部件、关节、角度取 pose 的哪个字段。弯折的角绕部件的 +x：膝往后折是正，肘往前折是负
 const 肢们 = [
@@ -59,11 +73,11 @@ export type 史蒂夫装备 = {
 };
 
 /** 秒：附魔光泽滚动、光环自转的时钟（段里传段内秒；游戏里这两样都按系统时间走，和人的动作无关）。
- *  pose 里的 elbowR / elbowL / kneeR / kneeL 是肘、膝的角（度）。
+ *  pose 里的 elbowR / elbowL / kneeR / kneeL 是肘、膝的角（度），腕R 是剑的腕（度）。
  *  改部件：steveParts 出来的原版部件表再改一道（举盾、拉弓、挥剑这类直接按原版部件转角写的姿势，见 角色/史蒂夫反应.ts）。
  *  受伤：原版受伤、死亡的变红 0～1，只红皮肤（原版盔甲层、手里的东西都不套受伤色） */
 export const 装备史蒂夫: React.FC<{
-  pose: StevePose;
+  pose: 关节姿;
   秒: number;
   装备?: 史蒂夫装备;
   改部件?: (部件: Record<string, PartPose>) => Record<string, PartPose>;
@@ -79,9 +93,11 @@ export const 装备史蒂夫: React.FC<{
     right_arm:
       右手 ??
       (剑 ? (
-        <HeldItem t={断曜流光显示[外观].thirdperson_righthand}>
-          <断曜流光 外观={外观} 光泽秒={附魔 ? 秒 : undefined} />
-        </HeldItem>
+        <腕 度={pose.腕R ?? 0}>
+          <HeldItem t={断曜流光显示[外观].thirdperson_righthand}>
+            <断曜流光 外观={外观} 光泽秒={附魔 ? 秒 : undefined} />
+          </HeldItem>
+        </腕>
       ) : null),
     left_arm: 左手,
   };

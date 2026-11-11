@@ -1,8 +1,9 @@
-// 走位里认腾空、往前还是倒着走，和带关节的动作的几个定点：站着不动腿是直的、蓄力和落地缓冲的起止、挥剑劈出去时肘伸直。
+// 走位里认腾空、往前还是倒着走，和带关节的动作的几个定点：站着不动腿是直的、蓄力和落地缓冲的起止、剑招的蓄斩停收。
 import { describe, expect, it, vi } from 'vitest';
 import type { V3 } from '@engine/model/parts.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
-import { 加关节动作, 挥剑肘, 落地权, 蓄力权 } from './史蒂夫关节动作.ts';
+import { 剑招拍, 剑招长, 招表 } from './剑招.ts';
+import { 加关节动作, 落地权, 蓄力权 } from './史蒂夫关节动作.ts';
 import { 定走位 } from './史蒂夫走位.ts';
 
 // 库里的史蒂夫一 import 就要模型和皮肤的字节；这里只算姿势，给个空模型和 1×1 的图
@@ -60,10 +61,18 @@ describe('史蒂夫关节动作', () => {
     expect(空.ground).toBe(0);
   });
 
-  it('挥剑：起手屈肘，劈到前面伸直，挥完回到平时', () => {
-    expect(挥剑肘(0, 22)).toBe(22);
-    expect(挥剑肘(0.15, 22)).toBeGreaterThan(60);
-    expect(挥剑肘(0.45, 22)).toBeLessThan(6);
-    expect(挥剑肘(1, 22)).toBe(22);
+  it('剑招：蓄力满摆到蓄，斩完停在末（剑身顺着手臂压下去），收完回到平时；斩、停的时候不管蓄力', () => {
+    const 平 = 加关节动作(stevePose([0, 0, 0], 0, { holdR: true }), 站);
+    const 在 = (挥秒: number | undefined, 蓄力 = 0) => 加关节动作(stevePose([0, 0, 0], 0, { holdR: true }), { ...站, ...(挥秒 === undefined ? {} : { 挥秒 }), 招: '下劈', 蓄招: '下劈', 蓄力 });
+    const 蓄 = 在(undefined, 1);
+    expect(蓄.armR).toBeCloseTo(招表.下劈.蓄.臂, 6);
+    expect(蓄.elbowR).toBeCloseTo(招表.下劈.蓄.肘, 6);
+    const 末 = 在(剑招拍.斩 + 0.01, 1);
+    expect(末.armR).toBeCloseTo(招表.下劈.末.臂, 6);
+    expect(末.腕R).toBeCloseTo(招表.下劈.末.腕, 6);
+    expect(末.pitch).toBeLessThan(平.pitch - 15);
+    const 收完 = 在(剑招长 + 0.01);
+    expect(收完.armR).toBeCloseTo(平.armR, 6);
+    expect(收完.腕R).toBe(0);
   });
 });

@@ -14,6 +14,9 @@ export const 关节 = {
   膝: { 切: 6, 铰z: 0 },
 } as const;
 
+/** 本片史蒂夫的姿势：库里的 StevePose 再加一个腕（剑绕手的左右轴转，度，正 = 剑尖往前臂的延长线那边压；角色/剑招.ts 用，画在 史蒂夫装备.tsx） */
+export type 关节姿 = StevePose & { 腕R?: number };
+
 const 腿长 = 12;
 /** 脚掌前后各半个宽（像素） */
 const 半脚 = 2;
