@@ -9,8 +9,7 @@ import 声2 from "asset:音效/entity.generic.small_fall";
 import 声3 from "asset:音效/entity.player.death.1";
 import 声4 from "asset:音效/ui.button.click";
 import 声5 from "asset:音效/诡厄巫法/goety.cast_spell.2";
-import 声6 from "asset:音效/诡厄巫法/goety.heavy_woosh.1";
-import 声7 from "asset:音效/诡厄巫法/goety.heavy_woosh.2";
+import 声6 from "asset:音效/诡厄巫法/goety.heavy_woosh.2";
 
 const 声音: 声音地址 = {
   地址: {
@@ -21,8 +20,7 @@ const 声音: 声音地址 = {
     "音效/entity.player.death.1": 声3,
     "音效/ui.button.click": 声4,
     "音效/诡厄巫法/goety.cast_spell.2": 声5,
-    "音效/诡厄巫法/goety.heavy_woosh.1": 声6,
-    "音效/诡厄巫法/goety.heavy_woosh.2": 声7,
+    "音效/诡厄巫法/goety.heavy_woosh.2": 声6,
   },
   表,
 };

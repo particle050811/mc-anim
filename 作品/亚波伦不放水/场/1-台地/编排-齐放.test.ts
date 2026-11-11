@@ -1,5 +1,5 @@
 // 第 4 幕的打击停顿落到真编排上（用户 11-11 定照 Linker 打戏知识库来）：索命劈中那 16 帧她的姿势、杖尖和他的样子都定住、索命的电弧也定住，
-// 别的法术、盘照走；冰川砸中那 10 帧只有他和冰块定住。只算位置和姿势，模型、贴图给空的。
+// 别的法术、盘照走。盘从第一帧就张着（第 2 幕末已张开）、连放的格一直亮着；他一直被结界钉着、死在幕末。只算位置和姿势，模型、贴图给空的。
 import { describe, expect, it, vi } from 'vitest';
 
 const 空图 = { default: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg==' };
@@ -27,8 +27,8 @@ vi.mock('asset:贴图/物品/下界魔杖', () => 空图);
 
 const 编 = await import('./编排-齐放.ts');
 const 拍模 = await import('./齐放拍.ts');
-const { 秒在, 拍, 演, 史蒂夫状态在, 出手表, 轮盘参 } = 编;
-const { 停索命, 停冰砸 } = 拍模;
+const { 秒在, 演, 史蒂夫状态在, 出手表, 轮盘参, 结界设定 } = 编;
+const { 停索命, 出手起, 第二幕末盘刻, 连放表, 死, 幕长 } = 拍模;
 const 帧 = 1 / 60;
 /** 数取到 1e-9（停顿里的钟是减出来的，差在 1e-15 上） */
 const 印 = (x: unknown) => JSON.stringify(x, (_k, v) => (typeof v === 'number' ? Math.round(v * 1e9) / 1e9 + 0 : v));
@@ -50,42 +50,39 @@ describe('第 4 幕打击停顿', () => {
     expect(他样(起 + 18 * 帧)).not.toBe(他样(起));
   });
 
-  it('冰川砸中：10 帧里他定住、她照飞', () => {
-    const 起 = 秒在(停冰砸.起);
-    for (let f = 1; f <= 10; f++) expect(他样(起 + f * 帧)).toBe(他样(起));
-    expect(她样(起 + 5 * 帧)).not.toBe(她样(起));
-  });
-
-  it('只有索命、冰川两发带自己的钟；停顿里它们定住，盘照转', () => {
-    expect(出手表.filter((x) => x.钟).map((x) => x.id).sort()).toEqual(['iceology', 'killing']);
+  it('只有索命和撕裂带自己的钟；停顿里索命定住，盘照转', () => {
+    expect([...new Set(出手表.filter((x) => x.钟).map((x) => x.id))].sort()).toEqual(['killing', 'rupture']);
     const 索 = 出手表.find((x) => x.id === 'killing')!;
     const 起 = 秒在(停索命.起);
     expect(索.钟!(起 + 10 * 帧)).toBeCloseTo(起, 9);
     expect(索.钟!(起 + 20 * 帧)).toBeCloseTo(起 + 4 * 帧, 9);
-    expect(轮盘参(起 + 10 * 帧)!.刻).not.toBe(轮盘参(起)!.刻);
+    expect(轮盘参(起 + 10 * 帧).刻).not.toBe(轮盘参(起).刻);
   });
+});
 
-  it('张盘（用户 11-11 挪到第 4 幕出手前）：开头盘收着，拍.张 起从杖尖张开，转角从 0 起、张开时不会一下转好几圈；弹完 71 格一齐亮', () => {
-    expect(轮盘参(秒在(0))).toBeNull();
-    expect(轮盘参(秒在(拍.张) - 帧)).toBeNull();
-    const 参 = 轮盘参(秒在(拍.张 + 0.5))!;
-    expect(参.刻).toBeCloseTo(10, 9);
+describe('第 4 幕开头接第 2 幕末', () => {
+  it('盘第一帧就张着（第 2 幕末的转角接着转），连放的格一直亮着，每出手一发那一格闪一下', () => {
+    const 参 = 轮盘参(秒在(0));
+    expect(参.刻).toBeCloseTo(第二幕末盘刻, 9);
     expect(参.开合?.转起刻 ?? 0).toBe(0);
-    expect(轮盘参(秒在(拍.亮) - 帧)!.选中).toEqual([]);
-    expect(轮盘参(秒在(拍.亮))!.选中).toHaveLength(71);
-    // 张盘不挥杖：从开头到挥杖出手之前，杖一直指着同一个方向
-    for (const k of [0, 拍.张, 拍.亮]) expect(Math.abs(演.杖(秒在(k)).轴[2] - 演.杖(秒在(拍.张 + 0.5)).轴[2])).toBeLessThan(0.02);
+    expect(参.选中?.length ?? 0).toBeGreaterThanOrEqual(连放表.length);
+    expect(Object.keys(轮盘参(秒在(出手起) + 帧).闪 ?? {}).length).toBeGreaterThan(0);
   });
 
-  it('出手不挥杖：顶到位那一帧之前 5 帧线性往前顶、再之前往回收，杖一直指着他、盘不翻', () => {
-    const 到 = 秒在(拍.放);
-    expect(演.在(到).过渡).toMatchObject({ 到: '开盘', 比: 1 });
-    expect(演.在(到 - 2.5 * 帧).过渡.比).toBeCloseTo(0.5, 9);
-    expect(演.在(到 - 6 * 帧).过渡.到).toBe('回拉');
-    const 轴0 = 演.杖(秒在(拍.张 + 0.5)).轴;
-    for (let t = 到 - 0.4; t <= 到 + 0.6; t += 帧) {
-      const 轴 = 演.杖(t).轴;
-      expect(轴[0] * 轴0[0] + 轴[1] * 轴0[1] + 轴[2] * 轴0[2]).toBeGreaterThan(0.9);
+  it('出手不挥杖（用户 11-11「甩法术面板的镜头很诡异」）：连放一整幕杖一帧里转不过 8 度，盘不甩', () => {
+    let 最小 = 1;
+    for (let t = 秒在(0); t < 秒在(幕长); t += 帧) {
+      const [a, b] = [演.杖(t).轴, 演.杖(t + 帧).轴];
+      最小 = Math.min(最小, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]);
     }
+    console.log(`杖一帧最多转 ${((Math.acos(Math.min(1, 最小)) * 180) / Math.PI).toFixed(2)} 度`);
+    expect(最小).toBeGreaterThan(Math.cos((8 * Math.PI) / 180));
+  });
+
+  it('结界：和第一轮一起扔出，罩到他死就没了，不收缩焚烧', () => {
+    expect(结界设定.收缩焚烧秒).toBe(0);
+    expect(编.扔).toBeCloseTo(秒在(出手起), 9);
+    expect(史蒂夫状态在(秒在(死) - 帧).死后秒).toBeUndefined();
+    expect(史蒂夫状态在(秒在(死) + 帧).死后秒).toBeCloseTo(帧, 9);
   });
 });
