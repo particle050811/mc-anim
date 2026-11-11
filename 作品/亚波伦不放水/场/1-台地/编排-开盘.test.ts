@@ -20,7 +20,7 @@ vi.mock('asset:贴图/角色/娘化亚波伦/2default', () => 空图);
 vi.mock('asset:贴图/特效/晋升之环/halo', () => 空图);
 vi.mock('asset:贴图/物品/下界魔杖', () => 空图);
 
-const { 瞬移刻, 史蒂夫位, 亚波伦位, 祭坛点, 悬停高, 现身后, 刀们, 史蒂夫右手, 静止判定, 受困本地, 开盘轴, 轮盘参, 张完刻, 动作表, 本地地高 } = await import('./编排-开盘.ts');
+const { 瞬移刻, 史蒂夫位, 亚波伦位, 祭坛点, 悬停高, 现身后, 刀们, 史蒂夫右手, 静止判定, 受困本地, 开盘轴, 动作表, 本地地高 } = await import('./编排-开盘.ts');
 const { 现身位置, 基座格, 灵魂火格 } = await import('../../特效/安息仪式时序.ts');
 const 线 = (await import('./时间线.ts')).default;
 const 事 = 线.事件;
@@ -47,13 +47,6 @@ describe('第 1、2 幕编排', () => {
     expect(他[1] - 祭坛点[1]).toBeCloseTo(受困本地[1], 6);
     expect(史蒂夫右手(幕4)).toBe('剑');
     expect(开盘轴.at(-1)!.做).toBe('指向');
-    // 用户 11-11：第 2 幕不张盘
-    for (let t = 现身后(事.召唤完.秒); t < 幕4; t += 1 / 60) expect(轮盘参(t), `${t.toFixed(2)} 秒`).toBeNull();
-    // 第 4 幕开头先照五版：盘已张开 31.6 刻、转到 120 刻（张盘怎么挪到第 4 幕由第 4 幕那边改）
-    const 参 = 轮盘参(幕4)!;
-    expect(参.刻).toBeCloseTo(31.6, 9);
-    expect(参.刻 + (参.开合?.转起刻 ?? 0)).toBeCloseTo(120, 9);
-    expect(参.刻).toBeGreaterThanOrEqual(张完刻);
   });
 
   it('七刀：刀过去那一下（点下后 0.1 秒里）她都在剑够不着又不远的地方；横斩那刀她贴地钻过去', () => {

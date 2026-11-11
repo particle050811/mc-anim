@@ -7,17 +7,18 @@ import 段4 from '../../段/4-齐放/段.ts';
 import 段5 from '../../段/5-击败/段.ts';
 import * as 五 from './击败拍.ts';
 import * as 四 from './齐放拍.ts';
+import 线 from './时间线.ts';
 
 const 帧 = 1 / 60;
 const 距 = (a: readonly number[], b: readonly number[]) => Math.hypot(a[0]! - b[0]!, a[1]! - b[1]!, a[2]! - b[2]!);
 /** 每一帧的速度（格/秒，前后各半帧的差分），幕内第 f 帧 */
 const 帧速 = (位: (t: number) => readonly number[], 幕起: number, 幕长: number): number[] =>
   Array.from({ length: Math.round(幕长 * 60) + 1 }, (_, f) => 距(位(幕起 + (f + 0.5) * 帧), 位(幕起 + (f - 0.5) * 帧)) / 帧);
-/** [起, 止] 这一段（幕内秒）里的峰值速度、几帧从 2 格/秒以下加到峰值的 90% */
+/** [起, 止] 这一段（幕内秒）里的峰值速度、几帧从「冲之前的速度 + 2 格/秒」以下加到峰值的 90%（第 4 幕两下冲之间还带着约 1.6 格/秒的漂） */
 const 一段 = (速: readonly number[], 起: number, 止: number) => {
   const 段 = 速.slice(Math.floor(起 * 60), Math.ceil(止 * 60) + 1);
   const 峰 = Math.max(...段);
-  const 开 = 段.findIndex((v) => v > 2);
+  const 开 = 段.findIndex((v) => v > 段[0]! + 2);
   const 到 = 段.findIndex((v) => v >= 0.9 * 峰);
   return { 峰, 加速帧: 到 - 开 + 1 };
 };
@@ -90,6 +91,29 @@ describe('第 4 幕 齐放', () => {
       expect(c.秒).toBeLessThan(段长);
     }
     console.log('第 4 幕声音', [...cue们(段4)].sort((a, b) => a.秒 - b.秒).map((c) => `${c.秒.toFixed(2)} ${c.名}`).join('；'));
+  });
+});
+
+describe('第 4 幕 齐放的声音（用户 11-11「音乐和放法术的音效你都得加上」）', () => {
+  it('张盘、蓄势卡在拍上；71 个每个都有施放声，落在它离手那一帧', () => {
+    expect(在(段4, '张盘')).toBe(四.拍.张);
+    expect(在(段4, '蓄势')).toBe(四.拍.蓄);
+    for (const 发 of 四.出手表) expect(在(段4, `施放-${发.id}`)).toBeCloseTo(四.离手(发.id) - 四.幕起, 9);
+    const 声们 = cue们(段4);
+    console.log(`第 4 幕 ${声们.length} 条 cue；出手后 0.6 秒里 ${声们.filter((c) => c.秒 >= 四.拍.放 && c.秒 < 四.拍.放 + 0.6).length} 条`);
+  });
+
+  it('战斗曲 27.0 秒那一下砸在出手那一刻：两条在 齐放出手 首尾接上，前一条的入点跟着第 2 幕长短走', () => {
+    const 事 = 线.事件;
+    expect(事.齐放出手.秒 - 事.开盘完.秒).toBeCloseTo(四.拍.放, 9);
+    const 前 = 线.声音!.find((x) => x.名 === '战斗曲')!;
+    const 后 = 线.声音!.find((x) => x.名 === '战斗曲-齐放')!;
+    expect(前.起秒).toBe(事.现身.秒);
+    expect(前.止秒).toBe(事.齐放出手.秒);
+    expect(前.入点秒! + 前.止秒! - 前.起秒).toBeCloseTo(27, 9);
+    expect(后.起秒).toBe(事.齐放出手.秒);
+    expect(后.入点秒).toBe(27);
+    console.log(`战斗曲：现身 ${事.现身.秒.toFixed(3)} 秒起从 ${前.入点秒!.toFixed(3)} 秒放，${事.齐放出手.秒.toFixed(3)} 秒（齐放出手）接后一条`);
   });
 });
 

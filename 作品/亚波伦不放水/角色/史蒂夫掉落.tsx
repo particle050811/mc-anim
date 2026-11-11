@@ -8,12 +8,16 @@
 import React from 'react';
 import { ItemDisplay, DISPLAY, ItemSprite, type ItemTransform } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import type { V3 } from '@engine/model/parts.tsx';
 import { GlintItem } from '@库/物品/附魔物品.tsx';
 import { STEVE, steveSize } from '@库/角色/史蒂夫.tsx';
 import { 断曜流光, 断曜流光显示 } from '../物品/断曜流光.tsx';
 import { 默认外观 } from '../物品/装备外观.ts';
 import { 弓 } from './反应史蒂夫.tsx';
+import { 死亡掉落轨迹 as 算掉落轨迹, type 掉落轨迹 } from './史蒂夫掉落轨迹.ts';
+
+export { 史蒂夫掉落件数 } from './史蒂夫掉落轨迹.ts';
+export type { 掉落轨迹 };
 import 金苹果图 from 'asset:贴图/法术/minecraft/item/golden_apple';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
 import 环图标 from 'asset:贴图/物品/晋升之环';
@@ -26,41 +30,9 @@ import 旧护腿图标 from 'asset:贴图/物品/神灵金护腿.旧版';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
 import 旧靴子图标 from 'asset:贴图/物品/神灵金靴子.旧版';
 
-export type 掉落轨迹 = { 路: V3[]; 相位: number };
-
-/** 件数 件物品从死的那一刻起每刻的位置（第 0 项是出生位置）。脚底：人的脚底中心；地面：落到这个高度停（不给 = 脚底的高度）；刻数：算多少刻 */
-export const 死亡掉落轨迹 = (脚底: V3, 件数: number, 种子: number, 选项: { 地面?: number; 刻数?: number } = {}): 掉落轨迹[] => {
-  const { 地面 = 脚底[2], 刻数 = 200 } = 选项;
-  const rand = rng(种子 * 69621 + 7);
-  const 眼 = steveSize(STEVE.scale).eye;
-  return Array.from({ length: 件数 }, () => {
-    const f = rand() * 0.5;
-    const a = rand() * Math.PI * 2;
-    const 相位 = rand() * Math.PI * 2;
-    // 游戏 (x, y, z) → 场景 (x, z 水平, y 竖直)
-    let [x, y, z] = [脚底[0], 脚底[1], 脚底[2] + 眼 - 0.3];
-    let [vx, vy, vz] = [-Math.sin(a) * f, Math.cos(a) * f, 0.2];
-    const 路: V3[] = [[x, y, z]];
-    let 着地 = false;
-    for (let k = 0; k < 刻数; k++) {
-      vz -= 0.04;
-      x += vx;
-      y += vy;
-      z += vz;
-      if (z <= 地面) {
-        z = 地面;
-        vz = 0;
-        着地 = true;
-      } else 着地 = false;
-      const 阻 = 着地 ? 0.6 * 0.98 : 0.98;
-      vx *= 阻;
-      vy *= 阻;
-      vz *= 0.98;
-      路.push([x, y, z]);
-    }
-    return { 路, 相位 };
-  });
-};
+/** 件数 件物品从死的那一刻起每刻的位置（第 0 项是出生位置），算法在 史蒂夫掉落轨迹.ts（纯模块，第 5 幕的编排也拿它躲开地上的东西）；眼高照史蒂夫模型 */
+export const 死亡掉落轨迹 = (脚底: V3, 件数: number, 种子: number, 选项: { 地面?: number; 刻数?: number } = {}): 掉落轨迹[] =>
+  算掉落轨迹(脚底, 件数, 种子, { 眼高: steveSize(STEVE.scale).eye, ...选项 });
 
 export type 掉落件 = { 节点: React.ReactNode; 显示: ItemTransform };
 
@@ -80,7 +52,6 @@ export const 史蒂夫掉落件 = (光泽秒: number): 掉落件[] => {
     { 节点: <ItemSprite layers={[{ tex: png(金苹果图) }]} />, 显示: 平 },
   ];
 };
-export const 史蒂夫掉落件数 = 8;
 
 /** 死后 秒 秒时的掉落物。轨迹 用 死亡掉落轨迹 算一次；件 和轨迹一一对应 */
 export const 死亡掉落: React.FC<{ 轨迹: readonly 掉落轨迹[]; 件: readonly 掉落件[]; 秒: number }> = ({ 轨迹, 件, 秒 }) => {
