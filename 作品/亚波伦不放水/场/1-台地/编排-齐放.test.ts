@@ -39,6 +39,35 @@ const 他样 = (t: number) => {
 };
 const 她样 = (t: number) => 印([演.在(t).属性.pose, 演.在(t).属性.姿势, 演.杖(t).尖]);
 
+const 二 = await import('./编排-开盘.ts');
+const { 第二幕末史蒂夫秒 } = await import('./开盘拍.ts');
+
+describe('第 2 幕末接第 4 幕开头', () => {
+  /** 两边的样子逐个数比，最大差多少；骨骼只在一边有的按 0 补（第 4 幕的姿势把腿的 0 也写出来了） */
+  const 差 = (a: unknown, b: unknown): number => {
+    if (typeof a === 'number' || typeof b === 'number') return Math.abs(((a as number) ?? 0) - ((b as number) ?? 0));
+    if (a === undefined || b === undefined) return 差(a ?? (Array.isArray(b) ? b.map(() => 0) : b === undefined ? 0 : {}), b ?? (Array.isArray(a) ? a.map(() => 0) : {}));
+    if (typeof a !== 'object' || a === null) return a === b ? 0 : Infinity;
+    const 键 = new Set([...Object.keys(a), ...Object.keys(b as object)]);
+    return Math.max(0, ...[...键].map((k) => 差((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])));
+  };
+  it('一帧对上：她的位置、浮动、朝向、姿势、杖尖，盘张开度和转角，他的位置、朝向、看哪、待机相位都一样', () => {
+    const t = 拍模.幕起;
+    expect(t).toBeCloseTo(二.幕末, 9);
+    const [甲, 乙] = [二.演.在(二.幕末).属性, 演.在(t).属性];
+    expect(差(甲.pose, 乙.pose)).toBeLessThan(1e-9);
+    expect(甲.秒).toBeCloseTo(乙.秒, 9);
+    // 第 4 幕开头她就开始漂，倾 往后看 0.08 秒，第一帧已经倾了 0.035 度（第 2 幕这一帧还停着）；看不出来，放 0.05 度
+    expect(差(甲.姿势, 乙.姿势)).toBeLessThan(0.05);
+    expect(差(二.演.杖(二.幕末).尖, 演.杖(t).尖)).toBeLessThan(1e-3);
+    const [盘甲, 盘乙] = [二.第二幕盘参(二.幕末)!, 轮盘参(t)];
+    expect(差([盘甲.放 === 盘乙.放 ? 0 : 1, 盘甲.刻, 盘甲.开合], [0, 盘乙.刻, 盘乙.开合])).toBeLessThan(1e-9);
+    const [他甲, 他乙] = [二.史蒂夫状态在(二.幕末, 第二幕末史蒂夫秒), 史蒂夫状态在(t)];
+    expect(差([他甲.位置, 他甲.朝向, 他甲.看, 他甲.秒, 他甲.潜行 ?? 0, 他甲.蓄力 ?? 0], [他乙.位置, 他乙.朝向, 他乙.看, 他乙.秒, 他乙.潜行 ?? 0, 他乙.蓄力 ?? 0])).toBeLessThan(1e-6);
+    expect([他甲.右手, 他甲.激流]).toEqual([他乙.右手, undefined]);
+  });
+});
+
 describe('第 4 幕打击停顿', () => {
   it('索命劈中：16 帧里她、他定住，过了停顿接着动', () => {
     const 起 = 秒在(停索命.起);

@@ -29,7 +29,8 @@ const { 世界秒, 片秒, 慢放率 } = await import('./开盘拍.ts');
 const { 现身位置, 基座格, 灵魂火格 } = await import('../../特效/安息仪式时序.ts');
 const 线 = (await import('./时间线.ts')).default;
 const 事 = 线.事件;
-const 幕4 = 现身后(事.开盘完.秒);
+/** 第 4 幕开头（编排的钟）：片上的 开盘完 减去慢放多出来的那段 = 幕末 */
+const 幕4 = (await import('./齐放拍.ts')).幕起;
 const 步 = 1 / 240;
 const 速 = (位: (t: number) => number[], t: number) => {
   const [a, b] = [位(t - 步 / 2), 位(t + 步 / 2)];
@@ -43,9 +44,10 @@ describe('第 1、2 幕编排', () => {
     expect(她[0]).toBeCloseTo(祭坛点[0] + 现身位置[0], 9);
     expect(她[1]).toBeCloseTo(祭坛点[1] + 现身位置[1], 9);
     expect(她[2]).toBeCloseTo(祭坛点[2] + 悬停高, 9);
-    // 第 2 幕的钟走世界秒，比片秒短：幕末 到第 4 幕开头之间两人都停着
-    expect(幕末).toBeLessThan(幕4);
-    for (const t of [幕末, 幕末 + 0.3, 幕4 - 0.3]) expect(Math.hypot(...亚波伦位(t).map((x, i) => x - 她[i]!))).toBeLessThan(1e-9);
+    // 第 2 幕的钟走世界秒，比片秒短；第 4 幕的钟减掉慢放多出来的，开头正好是 幕末
+    expect(幕4).toBeCloseTo(幕末, 9);
+    expect(现身后(事.开盘完.秒)).toBeGreaterThan(幕末);
+    for (const t of [幕末, 幕末 + 0.3]) expect(Math.hypot(...亚波伦位(t).map((x, i) => x - 她[i]!))).toBeLessThan(1e-9);
     const 他 = 史蒂夫位(幕4);
     for (const t of [幕末, 幕末 - 0.1]) expect(Math.hypot(...史蒂夫位(t).map((x, i) => x - 他[i]!))).toBeLessThan(1e-9);
     // 受困本地 [8, −6]：x 东、y 北；场景坐标里 祭坛点 往东 8、往北 −6（真下界场景是平移，不转）
