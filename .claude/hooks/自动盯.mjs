@@ -1,6 +1,6 @@
 // Claude Code 钩子：替主 Agent 一直挂着 `anim 调度 盯`（用户 11-10 定：「你自己写一个 hook，自动挂上……不要靠模型自己去约束」）。
-// settings.json 里以 asyncRewake 挂在 SessionStart、UserPromptSubmit、PostToolUse 上：后台跑，退出码 2 时 Claude Code 把 stderr 交给模型并叫醒它。
-// 一个会话只留一只（临时目录里一个 pid 文件）；已经有就立刻退 0。盯 到点（124）自己重挂，报了事就退 2，下一次工具调用或用户发话再起一只。
+// settings.json 里以 asyncRewake 只挂在 PostToolUse 上（SessionStart、UserPromptSubmit 不认 asyncRewake，会同步等它退出，新会话卡在「Running start-up hooks」）：后台跑，退出码 2 时 Claude Code 把 stderr 交给模型并叫醒它。
+// 一个会话只留一只（临时目录里一个 pid 文件）；已经有就立刻退 0。盯 到点（124）自己重挂，报了事就退 2，下一次工具调用再起一只。
 // 子 Agent 的工具调用不起：告警归主 Agent 管。
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
