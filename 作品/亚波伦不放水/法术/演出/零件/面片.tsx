@@ -1,7 +1,7 @@
 // 朝镜头的贴图面片（游戏里的粒子 SingleQuadParticle、物品片 ThrownItemRenderer 这类永远正对镜头的方片），同一张贴图的实例化一次画完。
 // 和 @库/特效/粒子面片.tsx 的 ParticleQuads 同一个画法，多了三样法术要用的：加色混合、绕视线转（粒子的 roll）、宽高不等。
 // 一张贴图一批：序列帧的粒子按帧分批，用 序列帧() 取当前帧。
-import React, { useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { Png } from '@engine/model/贴图.ts';
 import type { 点 } from '../接口.ts';
@@ -46,6 +46,12 @@ export const 片 = (
   半高?: number,
 ): 面片项 => new 面片项(位, 半宽, 色, uv, 透明度, 转角, 半高);
 
+/**
+ * 近镜淡出（原创，段自己开）：[起, 止] 格。面片离镜头的距离减去它的半边长不到 起 就不画，到 止 画全；不给（默认）= 不淡，和游戏一样。
+ * 用处：镜头跟进粒子堆里时，贴着镜头的几颗会放大成整屏的色块把人糊住（第 4 幕挥剑那一镜，火柱的火团贴在镜头前）
+ */
+export const 近镜淡 = createContext<readonly [number, number] | null>(null);
+
 const VERT = `
 #include <common>
 #include <fog_pars_vertex>
@@ -55,12 +61,14 @@ attribute vec3 iCenter;
 attribute vec3 iSize;
 attribute vec4 iUv;
 attribute vec4 iColor;
+uniform vec2 nearFade;
 varying vec2 vUv;
 varying vec4 vColor;
 void main() {
   vUv = vec2(mix(iUv.x, iUv.z, corner.x * 0.5 + 0.5), mix(iUv.w, iUv.y, corner.y * 0.5 + 0.5));
   vColor = iColor;
   vec4 mvPosition = modelViewMatrix * vec4(iCenter, 1.0);
+  if (nearFade.y > 0.0) vColor.a *= smoothstep(nearFade.x, nearFade.y, length(mvPosition.xyz) - max(iSize.x, iSize.y));
   vec2 o = corner * iSize.xy;
   float c = cos(iSize.z);
   float s = sin(iSize.z);
@@ -104,7 +112,7 @@ export const 面片们: React.FC<{ 图: Png; 项: readonly 面片项[]; 混合?:
     g.setAttribute('iUv', new THREE.InstancedBufferAttribute(new Float32Array(容量 * 4), 4));
     g.setAttribute('iColor', new THREE.InstancedBufferAttribute(new Float32Array(容量 * 4), 4));
     const mat = new THREE.ShaderMaterial({
-      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null }, alphaTest: { value: 混合 === '镂空' ? 0.1 : 0.004 } }]),
+      uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null }, alphaTest: { value: 混合 === '镂空' ? 0.1 : 0.004 }, nearFade: { value: new THREE.Vector2(0, 0) } }]),
       vertexShader: VERT,
       fragmentShader: FRAG,
       fog: true,
@@ -119,7 +127,9 @@ export const 面片们: React.FC<{ 图: Png; 项: readonly 面片项[]; 混合?:
     geo.dispose();
     (mesh.material as THREE.Material).dispose();
   }, [geo, mesh]);
+  const 淡 = useContext(近镜淡);
   (mesh.material as THREE.ShaderMaterial).uniforms.map!.value = 贴图(图);
+  ((mesh.material as THREE.ShaderMaterial).uniforms.nearFade!.value as THREE.Vector2).set(淡?.[0] ?? 0, 淡?.[1] ?? 0);
   const 心 = geo.getAttribute('iCenter') as THREE.InstancedBufferAttribute;
   const 大 = geo.getAttribute('iSize') as THREE.InstancedBufferAttribute;
   const uv = geo.getAttribute('iUv') as THREE.InstancedBufferAttribute;
