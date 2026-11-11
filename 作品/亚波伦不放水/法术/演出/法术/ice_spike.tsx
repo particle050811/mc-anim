@@ -15,9 +15,9 @@ import { 雪花, 雪花类 } from '../零件/甲/原版粒子.ts';
 import 元, { 冰刺道 } from './ice_spike.元.ts';
 import 冰刺图 from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
 
-const 冰刺: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const 冰刺: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 冰刺道(起点, 目标);
+  const { 道, 到刻 } = 冰刺道(起点, 目标, 选项?.高速);
   const r = rng(种子 * 3 + 1);
   const 雪 = 各刻(1, Math.min(刻, 到刻)).map((n) => {
     const 速 = 减(道(n + 1), 道(n));

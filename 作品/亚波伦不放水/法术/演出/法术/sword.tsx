@@ -15,9 +15,9 @@ import { 各刻, 箭角 } from '../零件/甲/共用.ts';
 import 元, { 魔力剑道 } from './sword.元.ts';
 import 剑图 from 'asset:贴图/法术/minecraft/item/diamond_sword';
 
-const 魔力剑: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const 魔力剑: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 魔力剑道(起点, 目标);
+  const { 道, 到刻 } = 魔力剑道(起点, 目标, 选项?.高速);
   const 粒: ParticleSpawn[] = 各刻(1, Math.min(刻, 到刻)).map((n) => {
     const 速 = 减(道(n + 1), 道(n));
     const p = 加(道(n), 乘(速, 0.75));

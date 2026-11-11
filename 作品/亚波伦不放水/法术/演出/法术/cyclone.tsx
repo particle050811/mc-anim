@@ -20,10 +20,10 @@ import 旋图 from 'asset:贴图/法术/goety/entity/projectiles/cyclone';
 
 const 模型 = 取模型(模型数据, 'CycloneModel');
 
-const 气旋: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const 气旋: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
-  const 道 = 气旋道(起点, 目标);
-  const 到 = 气旋到刻(起点, 目标);
+  const 道 = 气旋道(起点, 目标, 选项?.高速);
+  const 到 = 气旋到刻(起点, 目标, 选项?.高速);
   const 散 = 到 + 气旋卷刻;
   const r = rng(种子 * 37 + 3);
   const 云们: 粒子出生[] = 各刻(1, Math.min(刻, 到)).map((n) => 云(r, n, 道(n)));

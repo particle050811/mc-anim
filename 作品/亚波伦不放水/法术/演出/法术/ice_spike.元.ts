@@ -1,12 +1,12 @@
 // 冰刺（goety:ice_spike_focus）的元数据和弹道。出处见 ice_spike.tsx。
-import { 定义法术元, type 点 } from '../接口.ts';
+import { 定义法术元, type 法术选项, type 点 } from '../接口.ts';
 import { 抛射道, 瞄点 } from '../零件/甲/共用.ts';
 
-/** IceSpike 是箭一类（AbstractArrow）：出手 1.6 格/刻，阻力 0.99、重力 0.05 */
-export const 冰刺道 = (起点: 点, 目标: 点) => 抛射道(起点, 瞄点(目标), 1.6, { 阻力: 0.99, 重力: 0.05 });
+/** IceSpike 是箭一类（AbstractArrow）：出手 1.6 格/刻，阻力 0.99、重力 0.05；聚晶的高速（Velocity）附魔每级出手速度 +1/3 格/刻（IceSpikeSpell 等的 velocity += getLevels(VELOCITY) / 3） */
+export const 冰刺道 = (起点: 点, 目标: 点, 高速 = 0) => 抛射道(起点, 瞄点(目标), 1.6 + 高速 / 3, { 阻力: 0.99, 重力: 0.05 });
 
-const 时长 = (起点: 点, 目标: 点) => {
-  const 命中秒 = 冰刺道(起点, 目标).到刻 / 20;
+const 时长 = (起点: 点, 目标: 点, 选项?: 法术选项) => {
+  const 命中秒 = 冰刺道(起点, 目标, 选项?.高速).到刻 / 20;
   return { 长秒: 命中秒 + 2, 命中秒 };
 };
 
