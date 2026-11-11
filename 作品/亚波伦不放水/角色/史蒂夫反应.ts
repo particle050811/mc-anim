@@ -46,6 +46,8 @@ export type 史蒂夫状态 = {
   后仰度?: number;
   /** 被钉住挣扎的强度 0～1（自己补的）；不给 = 0 */
   挣扎?: number;
+  /** 走路的摆腿（原版 limbSwing、limbSwingAmount，角色/史蒂夫走位.ts 照轨迹算的）；不给 = 腿不动 */
+  走?: { 摆: number; 步幅: number };
   /** 死了几秒；不给 = 活着。1 秒（20 刻）后人消失 */
   死后秒?: number;
 };
@@ -125,8 +127,8 @@ export const 史蒂夫反应 = (状: 史蒂夫状态): 史蒂夫反应结果 => 
   const 拉弓 = 状.拉弓秒 !== undefined && 右手 === '弓';
   const 挣 = Math.min(1, Math.max(0, 状.挣扎 ?? 0));
   // 挣扎：照走路的摆法原地摆腿（步幅 0.5 × 强度，约每秒一步），脚不挪
-  const 步幅 = 0.5 * 挣;
-  const 摆 = 步幅 * 状.秒 * 20;
+  const 步幅 = 状.走 ? 状.走.步幅 : 0.5 * 挣;
+  const 摆 = 状.走 ? 状.走.摆 : 步幅 * 状.秒 * 20;
   let pose = stevePose(状.位置, 状.朝向, { sec: 状.秒, limbSwing: 摆, stride: 步幅, holdR: 右手 !== '空', holdL: 左手 !== '空' });
   if (状.看) pose = steveLookAt(pose, 状.看);
   if (挣 > 0) pose = { ...pose, twist: (pose.twist ?? 0) + Math.sin(状.秒 * Math.PI * 2 * 0.7) * 12 * 挣 };
