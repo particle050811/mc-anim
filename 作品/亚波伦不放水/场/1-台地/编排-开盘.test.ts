@@ -20,7 +20,7 @@ vi.mock('asset:贴图/角色/娘化亚波伦/2default', () => 空图);
 vi.mock('asset:贴图/特效/晋升之环/halo', () => 空图);
 vi.mock('asset:贴图/物品/下界魔杖', () => 空图);
 
-const { 瞬移刻, 史蒂夫位, 亚波伦位, 祭坛点, 悬停高, 现身后, 刀们, 史蒂夫右手, 静止判定, 受困本地, 开盘轴, 轮盘参, 张完刻, 动作表, 本地地高 } = await import('./编排-开盘.ts');
+const { 瞬移刻, 史蒂夫位, 亚波伦位, 祭坛点, 悬停高, 现身后, 刀们, 史蒂夫右手, 静止判定, 受困本地, 开盘轴, 动作表, 本地地高 } = await import('./编排-开盘.ts');
 const { 现身位置, 基座格, 灵魂火格 } = await import('../../特效/安息仪式时序.ts');
 const 线 = (await import('./时间线.ts')).default;
 const 事 = 线.事件;
@@ -32,20 +32,20 @@ const 速 = (位: (t: number) => number[], t: number) => {
 };
 
 describe('第 1、2 幕编排', () => {
-  it('第 2 幕末：她在祭坛上空 悬停高、盘张完；他在 受困本地 站住、拿着剑', () => {
+  it('第 2 幕末：她在祭坛上空 悬停高 停住；他在 受困本地 站住、拿着剑；第 2 幕里不出轮盘，第 4 幕开头的盘照五版', () => {
     const 她 = 亚波伦位(幕4);
     expect(她[0]).toBeCloseTo(祭坛点[0] + 现身位置[0], 9);
     expect(她[1]).toBeCloseTo(祭坛点[1] + 现身位置[1], 9);
     expect(她[2]).toBeCloseTo(祭坛点[2] + 悬停高, 9);
     for (const d of [0, 0.3]) expect(Math.hypot(...亚波伦位(幕4 - d).map((x, i) => x - 她[i]!))).toBeLessThan(1e-9);
+    // 他往后一缩、站住 0.15 秒以上就切
     const 他 = 史蒂夫位(幕4);
-    const 他后 = 史蒂夫位(幕4 - 0.3);
+    const 他后 = 史蒂夫位(幕4 - 0.15);
     expect(Math.hypot(他[0] - 他后[0], 他[1] - 他后[1], 他[2] - 他后[2])).toBeLessThan(1e-9);
     // 受困本地 [8, −6]：x 东、y 北；场景坐标里 祭坛点 往东 8、往北 −6（真下界场景是平移，不转）
     expect(他[0] - 祭坛点[0]).toBeCloseTo(受困本地[0], 6);
     expect(他[1] - 祭坛点[1]).toBeCloseTo(受困本地[1], 6);
     expect(史蒂夫右手(幕4)).toBe('剑');
-    expect(轮盘参(幕4)!.刻).toBeGreaterThanOrEqual(张完刻);
     expect(开盘轴.at(-1)!.做).toBe('指向');
   });
 
