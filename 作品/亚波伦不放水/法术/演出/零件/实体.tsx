@@ -7,13 +7,14 @@
 //   model.renderToBuffer(...)                      → <模型件 模型={…} 图={…} 类型=… 色=… 透明度=… />
 // 模型部件的姿态（setupAnim 里改的 xRot、yRot、zRot、位置、缩放）用 姿态 传，键是部件名（见导出的 json）。
 // 负的缩放（很多渲染器 scale(−1, −1, 1)）照写，three 会自己把正反面翻过来；材质两面都画。
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import * as THREE from 'three';
 import { ownPartGeometry, type EntityModelData, type EntityPart, type PartPose } from '@engine/model/实体模型.tsx';
 import type { Png } from '@engine/model/贴图.ts';
 import { rad } from '@engine/core/数学.ts';
 import type { 点 } from '../接口.ts';
 import { 混合参数, 贴图, type 混合, type 色 } from './材质.ts';
+import { 近镜淡 } from './面片.tsx';
 
 export type { EntityModelData, PartPose };
 /** 度 → 弧度 */
@@ -44,11 +45,18 @@ export type 模型画法 = '镂空' | '半透明' | '发光' | '加色';
 const MC_LIGHT0 = new THREE.Vector3(0.2, 1, -0.7).normalize();
 const MC_LIGHT1 = new THREE.Vector3(-0.2, 1, 0.7).normalize();
 const 材质缓存 = new Map<string, THREE.Material>();
-const 模型材质 = (图: Png, 画法: 模型画法, 色: 色, 透明度: number, 亮度: number) => {
+/** 近镜淡（面片.tsx 的 近镜淡，段自己开）落到模型上：逐像素量离镜头多远，半透明、加色、发光的乘透明度，镂空的不能半透，按屏幕抖点丢像素（离得越近丢得越多） */
+const 近淡片段 = (镂空: boolean) =>
+  [
+    'float mcNear = smoothstep( nearFade.x, nearFade.y, vNearDist );',
+    镂空 ? 'if ( mcNear < fract( 52.9829189 * fract( dot( gl_FragCoord.xy, vec2( 0.06711056, 0.00583715 ) ) ) ) ) discard;' : 'diffuseColor.a *= mcNear;',
+  ].join('\n');
+const 模型材质 = (图: Png, 画法: 模型画法, 色: 色, 透明度: number, 亮度: number, 淡: readonly [number, number] | null) => {
   const map = 贴图(图);
   const a = Math.round(透明度 * 256) / 256;
   const 亮 = 画法 === '镂空' || 画法 === '半透明' ? Math.round(亮度 * 256) / 256 : 1;
-  const 键 = `${map.uuid}|${画法}|${色.map((c) => c.toFixed(3)).join(',')}|${a}|${亮}`;
+  const 开淡 = !!淡 && 淡[1] > 0;
+  const 键 = `${map.uuid}|${画法}|${色.map((c) => c.toFixed(3)).join(',')}|${a}|${亮}|${开淡 ? 淡!.join(',') : ''}`;
   let m = 材质缓存.get(键);
   if (!m) {
     const 混: 混合 = 画法 === '加色' ? '加色' : 画法 === '镂空' ? '镂空' : '半透明';
@@ -60,10 +68,11 @@ const 模型材质 = (图: Png, 画法: 模型画法, 色: 色, 透明度: numbe
       side: THREE.DoubleSide,
       ...混合参数(混),
     });
-    if (画法 !== '加色') {
-      // 原版实体的方向明暗（minecraft_mix_light：两盏固定方向的灯 × 0.6 + 0.4），在 sRGB 数值上乘，同 @engine/model/实体模型.tsx 的 mcMaterial。
-      // 灯的方向是游戏世界坐标里的，这里的法线经 modelMatrix 到了 three 世界（场景再转一次 Y 朝上），和游戏世界同向
-      mm.onBeforeCompile = (shader) => {
+    const 明暗 = 画法 !== '加色';
+    mm.onBeforeCompile = (shader) => {
+      if (明暗) {
+        // 原版实体的方向明暗（minecraft_mix_light：两盏固定方向的灯 × 0.6 + 0.4），在 sRGB 数值上乘，同 @engine/model/实体模型.tsx 的 mcMaterial。
+        // 灯的方向是游戏世界坐标里的，这里的法线经 modelMatrix 到了 three 世界（场景再转一次 Y 朝上），和游戏世界同向
         shader.uniforms.mcLight0 = { value: MC_LIGHT0 };
         shader.uniforms.mcLight1 = { value: MC_LIGHT1 };
         shader.uniforms.mcBright = { value: 亮 };
@@ -81,9 +90,18 @@ const 模型材质 = (图: Png, 画法: 模型画法, 色: 色, 透明度: numbe
               '#include <opaque_fragment>',
             ].join('\n'),
           );
-      };
-      mm.customProgramCacheKey = () => `法术实体明暗${亮}`;
-    }
+      }
+      if (开淡) {
+        shader.uniforms.nearFade = { value: new THREE.Vector2(淡![0], 淡![1]) };
+        shader.vertexShader = shader.vertexShader
+          .replace('#include <common>', '#include <common>\nvarying float vNearDist;')
+          .replace('#include <project_vertex>', '#include <project_vertex>\nvNearDist = length( mvPosition.xyz );');
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nvarying float vNearDist;\nuniform vec2 nearFade;')
+          .replace('#include <alphatest_fragment>', `#include <alphatest_fragment>\n${近淡片段(混 === '镂空')}`);
+      }
+    };
+    mm.customProgramCacheKey = () => `法术实体${明暗 ? `明暗${亮}` : ''}${开淡 ? `近淡${混 === '镂空' ? '抖' : '透'}` : ''}`;
     m = mm;
     材质缓存.set(键, m);
   }
@@ -121,7 +139,7 @@ export const 模型件: React.FC<{
   亮度?: number;
   只画?: readonly string[];
 }> = ({ 模型, 图, 画法 = '镂空', 姿态, 色 = [1, 1, 1], 透明度 = 1, 亮度 = 1, 只画 }) => {
-  const 材质 = 模型材质(图, 画法, 色, 透明度, 亮度);
+  const 材质 = 模型材质(图, 画法, 色, 透明度, 亮度, useContext(近镜淡));
   const 缩 = useMemo(() => [1 / 16, 1 / 16, 1 / 16] as const, []);
   return (
     <group scale={缩 as unknown as [number, number, number]}>
