@@ -1,7 +1,7 @@
 // 第 5 幕击败的纯计算部分：幕内时刻、她怎么飞怎么落。段.ts 排声音也引，所以不引模型、贴图、React；她的姿势、盘在 编排-击败.ts。
 // 用户 11-11 嫌慢（「飞行速度也很慢」）：她不再慢慢滑、落地后也不走路。他一死她一下冲过去刹住（5-01），死亡界面后面慢慢往下漂（5-02），
 // 5-03 盘照原版的快慢收回（每圈 2.5 刻），一下俯冲落到那堆东西跟前、落地带着劲往前滑一小段站住低头看。时刻、冲法都是 Agent 取的，用户没看过。
-import { clamp01, lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
+import { clamp01, lerp as 混, lerpV, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { 台地点 } from './布局.ts';
 import 线 from './时间线.ts';
@@ -61,7 +61,7 @@ const 滑距 = Math.hypot(站脚[0] - 落脚[0], 站脚[1] - 落脚[1]);
 const 滑速 = (2 * 滑距) / 她拍.滑秒;
 /** 俯冲的水平一段照 滑速 匀速走（落地接得上滑），俯冲起点就在落脚外面这么远、5-02 漂到那里 */
 const 漂到: V3 = 空中点(3.4 + 滑速 * 她拍.降秒, 冲到[2] - 0.7);
-const 混3 = (a: V3, b: V3, u: number): V3 => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u];
+const 混3 = (a: V3, b: V3, u: number) => lerpV(a, b, u) as V3;
 
 /** 她的脚底（编排的钟） */
 export const 亚波伦位 = (t: number): V3 => {
