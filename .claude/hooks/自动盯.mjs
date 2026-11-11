@@ -24,6 +24,8 @@ const 活 = (pid) => {
   }
 };
 const 号 = path.join(os.tmpdir(), `anim-自动盯-${会话}.pid`);
+// 静音：这个会话闲着、告警都是别的会话的任务时，主 Agent 放一个 .静音 文件就不再挂（被叫醒本身算一次用户发话，不这样停不下来）；开工前删掉。
+if (fs.existsSync(号.replace(/\.pid$/, '.静音'))) process.exit(0);
 // O_EXCL 抢号：同一刻几个钩子一起起，只有一只留下
 const 抢 = () => {
   try {
