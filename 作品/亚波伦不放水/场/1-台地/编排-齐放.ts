@@ -129,6 +129,11 @@ export const 结界设定: 结界演出设定 = {
 // ── 出手表：结界之外的 70 个，都在 扔 起的 错开秒 里离手 ──
 /** 以施法者为中心的环、球、领域：起点在她半身（离手那一刻的位置）。都是一闪就散的，绝对零度的领域半径 24 格本来就罩着他 */
 const 绕身的 = ['shockwave', 'weakening', 'frost_nova', 'trembling', 'discharge', 'fire_blast', 'temblor_clap', 'quaking', 'ice'];
+/** 绕身的里画加色大球的（冲击波、释放、炎爆：以她为心、半径 3.5～4 格的青、黄、橙球，三个叠起来是白的）：出手那一镜贴着她拍，镜头就在球里，
+ *  球一出来整屏白、把她盖住。这三个推到切进 飞向（侧面全景）之后才放，在全景里看是她身边炸开一圈。游戏里它们放出来当刻就结算，
+ *  晚这 0.9～1 秒、三个错开 0.06 秒都是 Agent 取的，用户没看过（正片三版出手那一镜白球盖住她） */
+const 大球的 = ['shockwave', 'fire_blast', 'discharge'];
+const 大球秒 = (id: string) => 秒在(镜起.飞向 + 0.05 + 0.06 * 大球的.indexOf(id));
 /** 持续施法的光束、吐息：起点每帧跟着杖尖（她在飞） */
 const 跟杖的 = ['corruption', 'leeching', 'shocking', 'water_jet', 'prisma_beam', 'wither_quietus', 'frost_breath', 'fire_breath', 'swarm'];
 const 法们 = 盘项.map((项) => 项.法.注册名).filter((id) => id !== 'revelation');
@@ -136,7 +141,7 @@ const 法们 = 盘项.map((项) => 项.法.注册名).filter((id) => id !== 'rev
 const 离手 = (i: number) => 秒在(拍.放 + (((i * 37) % 法们.length) / 法们.length) * 错开秒);
 const 地下 = (p: V3): V3 => [p[0], p[1], 史蒂夫脚[2] + 0.5];
 const 摆一发 = (id: string, i: number): 一发 => {
-  const 秒 = id === 'killing' ? 秒在(拍.索命) : 离手(i);
+  const 秒 = id === 'killing' ? 秒在(拍.索命) : 大球的.includes(id) ? 大球秒(id) : 离手(i);
   const 身 = 她半身(秒);
   if (绕身的.includes(id)) return { id, 秒, 起点: 身, ...(id === 'quaking' ? { 目标: 史蒂夫脚 } : {}) };
   // 旋风的风带绕着施法者转，跟着她走
