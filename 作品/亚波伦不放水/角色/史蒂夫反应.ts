@@ -21,7 +21,8 @@ import { vanillaToppleAngle } from '@库/特效/原版死亡.tsx';
 import { 加关节动作 } from './史蒂夫关节动作.ts';
 import type { 腾空此刻 } from './史蒂夫走位.ts';
 
-export type 右手物 = '剑' | '弓' | '空';
+/** 环 = 破碎之环（第 1 幕他拿着走上去放到祭坛上） */
+export type 右手物 = '剑' | '弓' | '空' | '环';
 export type 左手物 = '盾' | '图腾' | '空';
 export type 弓贴图 = '弓' | '弓拉0' | '弓拉1' | '弓拉2';
 
