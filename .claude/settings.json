@@ -33,6 +33,18 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/自动盯.mjs\"",
+            "asyncRewake": true,
+            "timeout": 86400
+          }
+        ]
+      }
     ]
   }
 }
