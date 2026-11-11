@@ -79,8 +79,8 @@ describe('第 4 幕打击停顿', () => {
     expect(他样(起 + 18 * 帧)).not.toBe(他样(起));
   });
 
-  it('只有索命和撕裂带自己的钟；停顿里索命定住，盘照转', () => {
-    expect([...new Set(出手表.filter((x) => x.钟).map((x) => x.id))].sort()).toEqual(['killing', 'rupture']);
+  it('只有索命带自己的钟（撕裂照晋升之环缩过的施法刻，不再自己快放）；停顿里索命定住，盘照转', () => {
+    expect([...new Set(出手表.filter((x) => x.钟).map((x) => x.id))]).toEqual(['killing']);
     const 索 = 出手表.find((x) => x.id === 'killing')!;
     const 起 = 秒在(停索命.起);
     expect(索.钟!(起 + 10 * 帧)).toBeCloseTo(起, 9);
