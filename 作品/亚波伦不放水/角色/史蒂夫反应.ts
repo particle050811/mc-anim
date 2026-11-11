@@ -49,6 +49,8 @@ export type 史蒂夫状态 = {
   受击秒?: number;
   /** 挨打后仰的幅度（度，自己补的）；不给 = 10，0 = 只变红（原版） */
   后仰度?: number;
+  /** 后仰几秒仰到头、几秒回正（从挨打那一刻算）；不给 = 0.06、0.3。第 4 幕照 Linker 打戏知识库的受击反应拉长 */
+  后仰拍?: { 到顶: number; 回正: number };
   /** 被钉住挣扎的强度 0～1（自己补的）；不给 = 0 */
   挣扎?: number;
   /** 走路的摆腿（原版 limbSwing、limbSwingAmount，角色/史蒂夫走位.ts 照轨迹算的）；不给 = 腿不动。向：1 往前走、−1 倒着走（哪条腿收小腿），不给 = 1 */
@@ -65,11 +67,11 @@ export const 受伤秒 = 0.5; // hurtTime 10 刻
 export const 死亡消失秒 = 1; // deathTime 20 刻
 const 后仰用秒 = 0.3;
 
-/** 自己补的后仰包络：0.06 秒仰到头，再到 0.3 秒回正 */
-const 后仰包络 = (秒: number) => {
-  if (秒 < 0 || 秒 >= 后仰用秒) return 0;
-  if (秒 < 0.06) return 秒 / 0.06;
-  const u = (秒 - 0.06) / (后仰用秒 - 0.06);
+/** 自己补的后仰包络（0～1）：默认 0.06 秒仰到头，再到 0.3 秒回正 */
+export const 后仰包络 = (秒: number, 到顶 = 0.06, 回正 = 后仰用秒) => {
+  if (秒 < 0 || 秒 >= 回正) return 0;
+  if (秒 < 到顶) return 秒 / 到顶;
+  const u = (秒 - 到顶) / (回正 - 到顶);
   return (1 - u) * (1 - u);
 };
 
@@ -141,7 +143,7 @@ export const 史蒂夫反应 = (状: 史蒂夫状态): 史蒂夫反应结果 => 
   let pose = stevePose(状.位置, 状.朝向, { sec: 状.秒, limbSwing: 摆, stride: 步幅, holdR: 右手 !== '空', holdL: 左手 !== '空' });
   if (状.看) pose = steveLookAt(pose, 状.看);
   if (挣 > 0) pose = { ...pose, twist: (pose.twist ?? 0) + Math.sin(状.秒 * Math.PI * 2 * 0.7) * 12 * 挣 };
-  const 仰 = 状.受击秒 === undefined ? 0 : 后仰包络(状.受击秒) * (状.后仰度 ?? 10);
+  const 仰 = 状.受击秒 === undefined ? 0 : 后仰包络(状.受击秒, 状.后仰拍?.到顶, 状.后仰拍?.回正) * (状.后仰度 ?? 10);
   if (仰 > 0) pose = { ...pose, pitch: pose.pitch + 仰 }; // FigurePose 的 pitch 负 = 前倾
   const 挥 = 状.挥剑秒 === undefined ? 0 : 挥手进度(状.挥剑秒);
   pose = 加关节动作(pose, {
