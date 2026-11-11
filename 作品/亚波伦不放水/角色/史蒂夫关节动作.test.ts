@@ -61,14 +61,17 @@ describe('史蒂夫关节动作', () => {
     expect(空.ground).toBe(0);
   });
 
-  it('剑招：蓄力满摆到蓄，斩完停在末（剑身顺着手臂压下去），收完回到平时；斩、停的时候不管蓄力', () => {
+  it('剑招：蓄力满摆到蓄，斩完停在末（剑身顺着手臂压下去），收完回到平时；斩的时候不管蓄力，停的时候能蓄下一招', () => {
     const 平 = 加关节动作(stevePose([0, 0, 0], 0, { holdR: true }), 站);
     const 在 = (挥秒: number | undefined, 蓄力 = 0) => 加关节动作(stevePose([0, 0, 0], 0, { holdR: true }), { ...站, ...(挥秒 === undefined ? {} : { 挥秒 }), 招: '下劈', 蓄招: '下劈', 蓄力 });
     const 蓄 = 在(undefined, 1);
     expect(蓄.armR).toBeCloseTo(招表.下劈.蓄.臂, 6);
     expect(蓄.elbowR).toBeCloseTo(招表.下劈.蓄.肘, 6);
-    const 末 = 在(剑招拍.斩 + 0.01, 1);
+    const 半 = 在(剑招拍.斩 / 2, 1);
+    expect(半.armR).toBeCloseTo(招表.下劈.中.臂, 6);
+    const 末 = 在(剑招拍.斩 + 0.01);
     expect(末.armR).toBeCloseTo(招表.下劈.末.臂, 6);
+    expect(在(剑招拍.斩 + 0.01, 1).armR).toBeCloseTo(招表.下劈.蓄.臂, 6);
     expect(末.腕R).toBeCloseTo(招表.下劈.末.腕, 6);
     expect(末.pitch).toBeLessThan(平.pitch - 15);
     const 收完 = 在(剑招长 + 0.01);
