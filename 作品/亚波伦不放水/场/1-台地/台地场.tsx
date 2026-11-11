@@ -4,7 +4,7 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import type { Cam } from '@engine/core/机位.ts';
+import { 机位样条, type Cam } from '@engine/core/机位.ts';
 import { 场景到three, 摆相机 } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
@@ -19,6 +19,16 @@ const 摆机位: React.FC<{ 机位: Cam }> = ({ 机位 }) => {
   gl.toneMappingExposure = 1.0;
   摆相机(camera as THREE.PerspectiveCamera, 机位, 画幅.宽 / 画幅.高, { 近: 0.05, 远: 1400 });
   return null;
+};
+
+/** 跟拍：镜头里每隔约 步 秒按那一刻人在哪摆一个机位（摆(镜内秒, 进度)），连成速度连续的样条，镜头跟着动作走。镜头长 长 秒 */
+export const 跟拍 = (长: number, 摆: (镜内秒: number, k: number) => Cam, 步 = 0.25): 镜头['机位'] => {
+  const n = Math.max(1, Math.ceil(长 / 步));
+  const 关键 = Array.from({ length: n + 1 }, (_, i) => {
+    const s = (长 * i) / n;
+    return [s, 摆(s, i / n)] as const;
+  });
+  return (_u, s) => 机位样条(关键, s);
 };
 
 /** 仪式结构：这一段画了安息仪式的结构（黑曜石底换掉那一层地面），地形要挖掉对应的格 */
