@@ -221,6 +221,8 @@ const 排好: readonly 排一发[] = 连放表.flatMap((项, i) => {
 const 发钟 = (停: 一停) => (t: number) => 秒在(局部钟([停])(t - 幕起));
 /** 画的全部（编排-齐放.ts 给跟杖的接上真杖尖） */
 export const 出手表: readonly 一发[] = 排好.map(({ 快: _快, 命: _命, ...发 }) => (发.id === 'killing' ? { ...发, 钟: 发钟(停索命) } : 发));
+/** 出手表 每一发几时打到他（编排的钟，和 出手表 一一对应；没有命中一说的 undefined）：画面按镜头清场用 */
+export const 出手命中: readonly (number | undefined)[] = 排好.map((x) => x.命);
 /** 持续施法的光束：起点每帧跟着杖尖（她在飞） */
 export const 跟杖的 = ['prisma_beam'];
 /** 打得重的：大招里除了凋灵之首（它冷却 0、一直在连射，算轻的），加索命 */
