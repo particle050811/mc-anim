@@ -1,6 +1,7 @@
-// 第 4、5 幕的快慢和声音卡点（用户 11-11 嫌「人物动作怎么这么慢」「飞行速度也很慢」「为什么没有声音」）：
-// 她每一下冲峰值 20～30 格/秒、2～3 帧到全速、到位前刹住；打击停顿只停最重的两下、停的时候她和他真定住；
-// 声音 cue 落在 齐放拍.ts、击败拍.ts 导出的时刻上。量出来的数打在日志里（交片自查要用）。纯模块，不要模型。
+// 第 4、5 幕的快慢、连放和声音卡点（用户 11-11 嫌「人物动作怎么这么慢」「飞行速度也很慢」「为什么没有声音」，看完七版又要「每个法术是一直放」
+// 「大招要落到他身上」「短短几秒内就死去」）：她每一下冲峰值 20～30 格/秒、2～3 帧到全速、到位前刹住；打击停顿只停索命；
+// 每种法术按（施法 + 冷却）压缩后的间隔一直放到他死，11 个大招都在他死前打到他；声音 cue 落在 齐放拍.ts、击败拍.ts 导出的时刻上。
+// 量出来的数打在日志里（交片自查要用）。纯模块，不要模型。
 import { describe, expect, it } from 'vitest';
 import type { 段定义, 资产cue } from '@engine/段/段定义.ts';
 import 段4 from '../../段/4-齐放/段.ts';
@@ -29,12 +30,13 @@ const 在 = (段: 段定义, 名: string) => {
   return c.秒;
 };
 
-describe('第 4 幕 齐放', () => {
+describe('第 4 幕 轰炸', () => {
   const 速 = 帧速(四.亚波伦位, 四.幕起, 四.幕长);
 
   it('她每一下冲峰值 20～30 格/秒、3 帧内到全速，冲完刹到 3 格/秒以下', () => {
-    const 表 = 四.冲们.map((c) => ({ 起: c.起, ...一段(速, c.起 - 0.05, c.起 + c.秒 + 0.05), 刹完: 速[Math.round((c.起 + c.秒) * 60)]! }));
+    const 表 = 四.冲们.map((c) => ({ 起: c.起, ...一段(速, c.起 - 0.05, c.止 + 0.05), 刹完: 速[Math.round(c.止 * 60)]! }));
     console.log('第 4 幕她的冲（幕内秒、峰值格/秒、几帧到全速、冲完那帧格/秒）', 表.map((x) => `${x.起.toFixed(2)}s ${x.峰.toFixed(1)} ${x.加速帧}帧 ${x.刹完.toFixed(1)}`).join('；'));
+    expect(表.length).toBeGreaterThanOrEqual(3);
     for (const x of 表) {
       expect(x.峰).toBeGreaterThanOrEqual(20);
       expect(x.峰).toBeLessThanOrEqual(30);
@@ -43,69 +45,96 @@ describe('第 4 幕 齐放', () => {
     }
   });
 
-  it('出手的后坐力：挥到位那一帧还在原地，之后 2 帧内崩到峰值', () => {
-    const 崩 = 一段(速, 四.拍.放, 四.拍.放 + 0.3);
-    console.log(`出手后坐力峰值 ${崩.峰.toFixed(1)} 格/秒、${崩.加速帧} 帧到`);
-    expect(速[Math.round(四.拍.放 * 60) - 1]).toBeLessThan(0.5);
-    expect(崩.加速帧).toBeLessThanOrEqual(3);
-  });
-
-  it('静止占比（不到 0.05 格/秒的帧）：只有出手前的蓄势、索命那 16 帧和幕末刹停', () => {
+  it('不悬着不动：静止（不到 0.05 格/秒）的帧只有索命那 16 帧和幕末刹停', () => {
     const 静 = 速.filter((v) => v < 0.05).length / 速.length;
     const 慢 = 速.filter((v) => v < 1).length / 速.length;
     console.log(`第 4 幕她：静止 ${(静 * 100).toFixed(1)}%、慢于 1 格/秒 ${(慢 * 100).toFixed(1)}%、平均 ${(速.reduce((a, b) => a + b) / 速.length).toFixed(2)} 格/秒`);
     expect(静).toBeLessThan(0.15);
   });
 
-  it('打击停顿只停索命（重 16 帧）和冰川砸中（中 10 帧）；停的那几帧她（索命）和他的钟不走', () => {
+  it('打击停顿只停索命（16 帧）；停的那几帧她和他的钟不走', () => {
     expect(四.停索命.秒 * 60).toBeCloseTo(16, 9);
-    expect(四.停冰砸.秒 * 60).toBeCloseTo(10, 9);
-    const 定 = 四.亚波伦位(四.秒在(四.拍.索命));
-    for (let f = 1; f <= 16; f++) expect(距(四.亚波伦位(四.秒在(四.拍.索命 + f * 帧)), 定)).toBeLessThan(1e-9);
-    expect(距(四.亚波伦位(四.秒在(四.拍.索命 + 17 * 帧)), 定)).toBeGreaterThan(0);
-    for (const p of [四.停索命, 四.停冰砸]) {
-      expect(四.他钟(p.起 + p.秒) - 四.他钟(p.起)).toBeCloseTo(0, 9);
-      expect(四.他回世界(四.他钟(p.起 + p.秒 + 0.1))).toBeCloseTo(p.起 + p.秒 + 0.1, 9);
-    }
-    // 冰砸她不停
-    expect(四.她钟(四.停冰砸.起 + 0.1) - 四.她钟(四.停冰砸.起)).toBeCloseTo(0.1, 9);
+    const 定 = 四.亚波伦位(四.秒在(四.索命秒));
+    for (let f = 1; f <= 16; f++) expect(距(四.亚波伦位(四.秒在(四.索命秒 + f * 帧)), 定)).toBeLessThan(1e-9);
+    expect(距(四.亚波伦位(四.秒在(四.索命秒 + 17 * 帧)), 定)).toBeGreaterThan(0);
+    const p = 四.停索命;
+    expect(四.他钟(p.起 + p.秒) - 四.他钟(p.起)).toBeCloseTo(0, 9);
+    expect(四.他回世界(四.他钟(p.起 + p.秒 + 0.1))).toBeCloseTo(p.起 + p.秒 + 0.1, 9);
   });
 
-  it('声音：卡在导出的时刻上，都在段里', () => {
+  it('连放：每种按（施法 + 冷却）÷ 压缩 的间隔一直放到他死，第一轮在开幕 8 帧里', () => {
+    const 表: string[] = [];
+    for (const 项 of 四.连放表) {
+      const 发们 = 四.出手表.filter((x) => x.id === 项.id).map((x) => x.秒 - 四.幕起);
+      expect(发们.length).toBeGreaterThan(0);
+      if (项.id === 'killing') {
+        expect(发们).toHaveLength(1);
+        continue;
+      }
+      expect(发们[0]!).toBeGreaterThanOrEqual(四.出手起 - 1e-9);
+      expect(发们[0]!).toBeLessThanOrEqual(四.出手起 + 8 / 60 + 1e-9);
+      for (let k = 1; k < 发们.length; k++) expect(发们[k]! - 发们[k - 1]!).toBeCloseTo(四.隔(项.id), 9);
+      // 最后一发在他死前、再隔一发就过了
+      expect(发们[发们.length - 1]!).toBeLessThan(四.死 - 1e-6);
+      expect(发们[发们.length - 1]! + 四.隔(项.id)).toBeGreaterThanOrEqual(四.死 - 1e-9);
+      expect(四.隔(项.id)).toBeCloseTo(Math.max(四.最短隔, 项.周期刻 / 20 / 四.压缩), 9);
+      表.push(`${项.id} ${四.隔(项.id).toFixed(2)}s×${发们.length}`);
+    }
+    console.log(`第 4 幕连放 ${四.出手表.length} 发、打到他 ${四.命中们.length} 下：`, 表.join('；'));
+  });
+
+  it('11 个大招都在他死之前打到他；他死在幕末（卫射第二束照满），晋升之环在第一人称那一镜开头炸开', () => {
+    expect(四.大招们).toHaveLength(11);
+    for (const id of 四.大招们) {
+      expect(四.大招落[id]).toBeDefined();
+      expect(四.大招落[id]!).toBeLessThan(四.死);
+    }
+    expect(四.死).toBeCloseTo(四.幕长, 9);
+    expect(四.图腾秒 - 四.幕起).toBeGreaterThan(四.镜起.第一人称);
+    expect(四.图腾秒 - 四.幕起).toBeLessThan(四.镜起.挨炸);
+    console.log('大招第一下打到他（幕内秒）', Object.entries(四.大招落).map(([id, s]) => `${id} ${s!.toFixed(2)}`).join('；'), `；图腾 ${(四.图腾秒 - 四.幕起).toFixed(2)}；死 ${四.死.toFixed(2)}`);
+  });
+
+  it('他挨打最多 0.5 秒一下，挥剑至少隔 0.45 秒、死前 0.15 秒起不挥', () => {
+    for (let i = 1; i < 四.挨打们.length; i++) expect(四.挨打们[i]!.秒 - 四.挨打们[i - 1]!.秒).toBeGreaterThanOrEqual(0.5 - 1e-9);
+    for (let i = 1; i < 四.挥剑们.length; i++) expect(四.挥剑们[i]! - 四.挥剑们[i - 1]!).toBeGreaterThanOrEqual(0.45 - 1e-9);
+    expect(四.挥剑们[四.挥剑们.length - 1]!).toBeLessThan(四.他钟(四.死) - 0.15);
+  });
+
+  it('幕末她停在第 5 幕开头她在的地方，第 5 幕从那儿接', () => {
+    expect(距(四.亚波伦位(四.秒在(四.幕长)), 四.第五幕起位)).toBeLessThan(1e-9);
+    expect(距(五.亚波伦位(五.幕起), 四.第五幕起位)).toBeLessThan(1e-9);
+    expect(五.幕起).toBeCloseTo(四.秒在(四.幕长), 9);
+  });
+
+  it('声音：卡在导出的时刻上，都在段里；每一发（索命除外）离手那一帧有施放声', () => {
     const 段长 = 段4.秒;
     expect(段长).toBeCloseTo(四.幕长, 2);
-    expect(在(段4, '齐放')).toBe(四.拍.放);
-    expect(在(段4, '收缩')).toBe(四.拍.收缩);
-    expect(在(段4, '索命')).toBeCloseTo(四.拍.索命, 9);
+    expect(在(段4, '齐放')).toBe(四.出手起);
+    expect(在(段4, '索命')).toBeCloseTo(四.停索命.起, 9);
     expect(在(段4, '图腾')).toBeCloseTo(四.图腾秒 - 四.幕起, 9);
-    expect(在(段4, '冰川-砸中')).toBe(四.停冰砸.起);
-    expect(在(段4, '结界火')).toBe(四.拍.罩严);
-    expect(在(段4, '焚烧火')).toBe(四.拍.收缩);
+    expect(在(段4, '结界火')).toBeCloseTo(四.出手起 + 0.75, 9);
     四.挨打世界们.forEach((h, i) => expect(在(段4, `挨打${i + 1}`)).toBe(h.秒));
     四.挥剑世界们.forEach((c, i) => expect(在(段4, `挥剑${i + 1}`)).toBe(c));
-    四.焚伤们.forEach((x, i) => expect(在(段4, `焚伤${i + 1}`)).toBe(x));
     四.冲们.forEach((c, i) => expect(在(段4, `冲${i + 1}`)).toBe(c.起));
+    // 施放声：同一个声音事件 0.1 秒里只留一个，所以按「有」查，不按条数
+    const 施放 = cue们(段4).filter((c) => c.名.startsWith('施放-'));
+    for (const 发 of 四.出手表) {
+      if (发.id === 'killing') continue;
+      const 离 = 发.秒 - 四.幕起;
+      expect(施放.some((c) => c.名.startsWith(`施放-${发.id}-`) && Math.abs(c.秒 - 离) < 1e-9) || 施放.some((c) => Math.abs(c.秒 - 离) < 0.1)).toBe(true);
+    }
     const 自己的 = cue们(段4).filter((c) => !['战斗曲-齐放', '战斗曲'].includes(c.名));
     for (const c of 自己的) {
       expect(c.秒).toBeGreaterThanOrEqual(0);
       expect(c.秒).toBeLessThan(段长);
     }
-    console.log('第 4 幕声音', [...cue们(段4)].sort((a, b) => a.秒 - b.秒).map((c) => `${c.秒.toFixed(2)} ${c.名}`).join('；'));
-  });
-});
-
-describe('第 4 幕 齐放的声音（用户 11-11「音乐和放法术的音效你都得加上」）', () => {
-  it('张盘、蓄势卡在拍上；71 个每个都有施放声，落在它离手那一帧', () => {
-    expect(在(段4, '张盘')).toBe(四.拍.张);
-    expect(在(段4, '蓄势')).toBe(四.拍.蓄);
-    for (const 发 of 四.出手表) expect(在(段4, `施放-${发.id}`)).toBeCloseTo(四.离手(发.id) - 四.幕起, 9);
-    const 声们 = cue们(段4);
-    console.log(`第 4 幕 ${声们.length} 条 cue；出手后 0.6 秒里 ${声们.filter((c) => c.秒 >= 四.拍.放 && c.秒 < 四.拍.放 + 0.6).length} 条`);
+    console.log(`第 4 幕 ${cue们(段4).length} 条 cue，施放声 ${施放.length} 条`);
   });
 
-  it('战斗曲 27.0 秒那一下砸在出手那一刻：两条在 齐放出手 首尾接上，前一条的入点跟着第 2 幕长短走', () => {
+  it('战斗曲 27.0 秒那一下砸在第一轮出手那一刻：两条在 齐放出手 首尾接上，前一条的入点跟着第 2 幕长短走', () => {
     const 事 = 线.事件;
-    expect(事.齐放出手.秒 - 事.开盘完.秒).toBeCloseTo(四.拍.放, 9);
+    expect(事.齐放出手.秒 - 事.开盘完.秒).toBeCloseTo(四.出手起, 9);
     const 前 = 线.声音!.find((x) => x.名 === '战斗曲')!;
     const 后 = 线.声音!.find((x) => x.名 === '战斗曲-齐放')!;
     expect(前.起秒).toBe(事.现身.秒);
@@ -120,33 +149,25 @@ describe('第 4 幕 齐放的声音（用户 11-11「音乐和放法术的音效
 describe('第 5 幕 击败', () => {
   const 速 = 帧速(五.亚波伦位, 五.幕起, 五.幕长);
 
-  it('5-01 冲、5-03 俯冲峰值 20～30 格/秒、3 帧内到全速；落地后滑到站住、不走路', () => {
-    const 冲 = 一段(速, 五.她拍.冲起 - 0.05, 五.她拍.冲起 + 五.她拍.冲秒 + 0.05);
+  it('俯冲峰值 20～30 格/秒、3 帧内到全速；落地后滑到站住、不走路', () => {
     const 降 = 一段(速, 五.她拍.降起 - 0.05, 五.她拍.降起 + 五.她拍.降秒);
     const 落 = 五.落地 - 五.幕起;
-    console.log(`第 5 幕她：5-01 冲峰值 ${冲.峰.toFixed(1)} 格/秒 ${冲.加速帧} 帧；俯冲峰值 ${降.峰.toFixed(1)} 格/秒 ${降.加速帧} 帧；落地 ${落.toFixed(2)} 秒、着地水平 ${速[Math.round(落 * 60)]!.toFixed(1)} 格/秒`);
-    for (const x of [冲, 降]) {
-      expect(x.峰).toBeGreaterThanOrEqual(20);
-      expect(x.峰).toBeLessThanOrEqual(30);
-      expect(x.加速帧).toBeLessThanOrEqual(3);
-    }
-    // 站住以后不再挪
+    console.log(`第 5 幕她：俯冲峰值 ${降.峰.toFixed(1)} 格/秒 ${降.加速帧} 帧；落地 ${落.toFixed(2)} 秒、着地水平 ${速[Math.round(落 * 60)]!.toFixed(1)} 格/秒`);
+    expect(降.峰).toBeGreaterThanOrEqual(20);
+    expect(降.峰).toBeLessThanOrEqual(30);
+    expect(降.加速帧).toBeLessThanOrEqual(3);
     expect(距(五.亚波伦位(五.站住), 五.亚波伦位(五.秒在(五.幕长)))).toBeLessThan(1e-9);
     expect(五.站住).toBeLessThan(五.秒在(五.幕长));
   });
 
-  it('5-01 从第 4 幕末停的地方起', () => {
-    expect(距(五.亚波伦位(五.幕起), 四.亚波伦位(四.秒在(四.幕长)))).toBeLessThan(1e-9);
-    expect(五.幕起).toBeCloseTo(四.秒在(四.幕长), 9);
-  });
-
-  it('声音：他死、点重生、收盘、落地卡在导出的时刻上', () => {
+  it('声音：他死、收盘、俯冲、落地、点重生卡在导出的时刻上', () => {
     expect(段5.秒).toBeCloseTo(五.幕长, 2);
     expect(在(段5, '他死')).toBe(0);
-    expect(在(段5, '点重生')).toBe(五.镜起.二 + 五.光标.点);
+    expect(在(段5, '点重生')).toBe(五.光标.点);
     expect(在(段5, '收盘')).toBe(五.她拍.收起);
     expect(在(段5, '俯冲')).toBe(五.她拍.降起);
     expect(在(段5, '落地')).toBeCloseTo(五.落地 - 五.幕起, 9);
+    for (const c of cue们(段5)) expect(c.秒).toBeLessThan(段5.秒);
     console.log('第 5 幕声音', [...cue们(段5)].sort((a, b) => a.秒 - b.秒).map((c) => `${c.秒.toFixed(2)} ${c.名}`).join('；'));
   });
 });
