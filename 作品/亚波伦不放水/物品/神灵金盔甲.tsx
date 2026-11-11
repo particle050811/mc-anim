@@ -4,8 +4,9 @@
 // 四件共用一张 128×64 贴图（getArmorTexture 返回 textures/models/armor/apocalyptium_custom.png）。胸甲背后另有一幅披风（物品/神灵金披风.ts）。
 // 没有发光层；附魔光泽走原版 HumanoidArmorLayer.renderGlint，拿同一个模型再画一遍，披风也带。
 // 两套外观（物品/装备外观.ts）只差贴图：getArmorTexture 在 transformed 时返回 transform/apocalyptium_custom.png，模型类不看这个 NBT，网格、披风、uv 都是同一份。
-// 用法：const 挂 = use神灵金盔甲(件, 光泽秒, 外观)，把 挂.head、挂.body… 放进 EntityModel 的 attach（人形模型的同名部件）。
+// 用法：const 挂 = use神灵金盔甲(件, 光泽秒, 外观)，把 挂.head、挂.body… 放进 EntityModel 的 attach（人形模型的同名部件）；要自己画的用 use神灵金盔甲料。
 import React, { useMemo } from 'react';
+import type * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
 import { 四边形几何, 盔甲材质 } from '@库/角色/网格盔甲.tsx';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
@@ -33,20 +34,33 @@ const 几何 = (m: 网格) => {
   if (!g) 几何表.set(m, (g = 四边形几何(m.顶点)));
   return g;
 };
+let 披风顶点缓存: number[] | null = null;
 let 披风几何缓存: ReturnType<typeof 四边形几何> | null = null;
 // 披风只做了站着不动的样子（跑到稳的布料），不跟人的走动摆
-const 披风几何 = () => (披风几何缓存 ??= 四边形几何(披风顶点表(数据.披风, 披风站定(数据.披风))));
+const 披风顶点 = () => (披风顶点缓存 ??= 披风顶点表(数据.披风, 披风站定(数据.披风)));
+const 披风几何 = () => (披风几何缓存 ??= 四边形几何(披风顶点()));
 
-/** 件：穿哪几件，不给 = 全套。光泽秒：附魔光泽滚动的时钟，不给 = 没附魔。外观：不给 = 本片默认（旧版）。返回 { 部件名: 节点 }，没东西的部件不在里面 */
-export const use神灵金盔甲 = (件: readonly 神灵金件[] = 神灵金全套, 光泽秒?: number, 外观: 装备外观 = 默认外观): Record<string, React.ReactNode> => {
+export type 盔甲网格 = { 键: string; 骨: string; 顶点: readonly number[]; 几何: THREE.BufferGeometry };
+
+/** 件：穿哪几件，不给 = 全套。光泽秒：附魔光泽滚动的时钟，不给 = 没附魔。外观：不给 = 本片默认（旧版）。
+ *  返回材质和各块网格（跟哪个部件、顶点表、现成的几何），不包成节点：给要自己画的用（史蒂夫的四肢要在肘、膝处折，见 角色/史蒂夫装备.tsx） */
+export const use神灵金盔甲料 = (件: readonly 神灵金件[] = 神灵金全套, 光泽秒?: number, 外观: 装备外观 = 默认外观): { 材质: THREE.Material; 网格: 盔甲网格[] } => {
   const 附魔 = 光泽秒 !== undefined;
   const { 材质, 设秒 } = useMemo(() => 盔甲材质(png(贴图表[外观]), 附魔 ? png(光泽图) : undefined), [附魔, 外观]);
   if (附魔) 设秒(光泽秒);
-  const 挂: Record<string, React.ReactNode[]> = {};
+  const 网格: 盔甲网格[] = [];
   for (const 名 of 神灵金全套) {
     if (!件.includes(名)) continue;
-    数据.槽[槽名[名]].forEach((m, i) => (挂[数据.骨[m.骨]!] ??= []).push(<mesh key={`${名}${i}`} geometry={几何(m)} material={材质} castShadow receiveShadow />));
-    if (名 === '胸甲') (挂.body ??= []).push(<mesh key="披风" geometry={披风几何()} material={材质} castShadow receiveShadow />);
+    数据.槽[槽名[名]].forEach((m, i) => 网格.push({ 键: `${名}${i}`, 骨: 数据.骨[m.骨]!, 顶点: m.顶点, 几何: 几何(m) }));
+    if (名 === '胸甲') 网格.push({ 键: '披风', 骨: 'body', 顶点: 披风顶点(), 几何: 披风几何() });
   }
+  return { 材质, 网格 };
+};
+
+/** 同 use神灵金盔甲料，包成节点：返回 { 部件名: 节点 }，没东西的部件不在里面 */
+export const use神灵金盔甲 = (件: readonly 神灵金件[] = 神灵金全套, 光泽秒?: number, 外观: 装备外观 = 默认外观): Record<string, React.ReactNode> => {
+  const { 材质, 网格 } = use神灵金盔甲料(件, 光泽秒, 外观);
+  const 挂: Record<string, React.ReactNode[]> = {};
+  for (const m of 网格) (挂[m.骨] ??= []).push(<mesh key={m.键} geometry={m.几何} material={材质} castShadow receiveShadow />);
   return 挂;
 };
