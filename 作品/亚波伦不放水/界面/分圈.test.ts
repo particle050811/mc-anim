@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { 径向轮盘数, 格角, 轮盘态 } from '@库/界面/径向轮盘数.ts';
 import { 法术表 } from '../法术/法术表.ts';
-import { 分圈, 圈半径, 圈容量, 圈态, 开完刻, 收圈态, 最少圈数, 落格, 适配缩放, 默认开合, 默认圈形, type 分法 } from './分圈.ts';
+import { 分圈, 圈半径, 圈容量, 圈态, 开完刻, 收圈态, 最少圈数, 移出态, 落格, 适配缩放, 默认开合, 默认圈形, 默认移出, type 分法 } from './分圈.ts';
 import { 学派顺序, 排法术, 排盘, 选法术 } from './轮盘法术.ts';
 
 const 和 = (数: readonly number[]) => 数.reduce((a, b) => a + b, 0);
@@ -110,6 +110,26 @@ describe('开合', () => {
     expect(收圈态(0, 100, 6.25, 3)!.内).toBeCloseTo(15, 12);
     expect(收圈态(0, 100, 7.6, 3)).toBeNull();
     expect(收圈态(1, 100, 2, 3)!.转角).toBeCloseTo(圈态(1, 100)!.转角, 12);
+  });
+
+  it('盘心移出：开盘时各圈图标都缩在圆心，那一圈弹完正好落定（之后 null，照常画），中间往外走、变大、旋转都不回头', () => {
+    for (const k of [0, 1, 2]) {
+      expect(移出态(k, 0)).toEqual({ 比例: 0, 缩放: 默认移出.起缩放, 卷: (默认移出.卷 * Math.PI) / 180 });
+      const 到 = k * 默认开合.圈间隔刻 + 默认开合.每圈刻;
+      expect(移出态(k, 到)).toBeNull();
+      expect(圈态(k, 到)!.动画中).toBe(false);
+      expect(圈态(k, 到 - 1e-6)!.动画中).toBe(true);
+      const 末 = 移出态(k, 到 - 1e-6)!;
+      expect([末.比例, 末.缩放, 末.卷]).toEqual([expect.closeTo(1, 6), expect.closeTo(1, 6), expect.closeTo(0, 6)]);
+      let 前 = 移出态(k, 0)!;
+      for (let 刻 = 0.1; 刻 < 到; 刻 += 0.1) {
+        const 这 = 移出态(k, 刻)!;
+        expect(这.比例).toBeGreaterThanOrEqual(前.比例);
+        expect(这.缩放).toBeGreaterThanOrEqual(前.缩放);
+        expect(Math.abs(这.卷)).toBeLessThanOrEqual(Math.abs(前.卷));
+        前 = 这;
+      }
+    }
   });
 });
 
