@@ -107,6 +107,9 @@ const geoOf = (part: EntityPart, texW: number, texH: number) => {
 };
 // 一个部件自己的方盒几何（模型空间、像素单位，不含子部件），给要自己配材质的模型用（铁魔法护盾的叠加发光、苦力怕头）
 export const ownPartGeometry = (p: EntityPart, texSize: number[]) => geoOf(p, texSize[0], texSize[1]);
+// 方盒的六个面（顶点、贴图坐标、法线）和本体的场景光材质，给要把方盒拆开自己画的用（作品里给玩家模型加肘、膝：把四肢的方盒裁成两节）。
+// entityMaterial 的参数和 EntityModel 传的一样时拿到的是同一份材质
+export { cubeFaces as entityCubeFaces, material as entityMaterial };
 
 // 受伤变红（原版 OverlayTexture：红 (255,0,0)、alpha 0xB2，往纯红拉约 30%，再受光照）。原版只有满和无两档，这里 0～1 按比例给
 const HURT_MIX = 1 - 0xb2 / 255;
