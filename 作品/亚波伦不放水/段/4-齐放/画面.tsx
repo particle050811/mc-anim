@@ -14,15 +14,14 @@ import { 炼狱结界演出 } from '../../特效/炼狱结界演出.tsx';
 import { 出手们, 出手名签 } from '../../场/1-台地/出手.tsx';
 import { 取镜头, 台地画布, 画幅, type 镜头 } from '../../场/1-台地/台地场.tsx';
 import { 每像素格, 盘半径, 盘摆 } from '../../场/1-台地/编排-开盘.ts';
-import { 扔, 史蒂夫脚, 结界设定 } from '../../场/1-台地/编排-点名.ts';
-import { 亚波伦位, 幕起, 出手表, 况, 计数在, 签表, 史蒂夫状态在, 演, 盘位, 站, 轮盘参, 镜起 } from '../../场/1-台地/编排-齐放.ts';
+import { 亚波伦位, 幕起, 出手表, 况, 计数在, 签表, 史蒂夫状态在, 史蒂夫脚, 扔, 演, 盘位, 站, 结界设定, 轮盘参, 镜起 } from '../../场/1-台地/编排-齐放.ts';
 import 段 from './段.ts';
 import 声音 from './声音地址.生成.ts';
 
 const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 const 渐 = (a: readonly number[], b: readonly number[], u: number): V3 => [混(a[0]!, b[0]!, u), 混(a[1]!, b[1]!, u), 混(a[2]!, b[2]!, u)];
 const S = 史蒂夫脚;
-/** 从 p 到史蒂夫的水平方向、它的垂直方向（镜头按这条动作线摆，同第 3 幕） */
+/** 从 p 到史蒂夫的水平方向、它的垂直方向（镜头按这条动作线摆） */
 const 动作线 = (p: readonly number[]) => {
   const 长 = Math.hypot(S[0] - p[0]!, S[1] - p[1]!);
   const 向: V3 = [(S[0] - p[0]!) / 长, (S[1] - p[1]!) / 长, 0];

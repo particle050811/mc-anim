@@ -11,8 +11,7 @@ import { 排盘 } from '../../界面/轮盘法术.ts';
 import { 台地点 } from './布局.ts';
 import 线 from './时间线.ts';
 import { 开盘轴, 现身后, 盘摆, 轮盘参 as 开盘参 } from './编排-开盘.ts';
-import { 史蒂夫眼, 史蒂夫脚 } from './编排-点名.ts';
-import { 焚死, 站 } from './编排-齐放.ts';
+import { 史蒂夫眼, 史蒂夫脚, 焚死, 站 } from './编排-齐放.ts';
 
 const 事 = 线.事件;
 /** 本幕开头（编排的钟）：结界收缩焚烧完的那一刻 */
