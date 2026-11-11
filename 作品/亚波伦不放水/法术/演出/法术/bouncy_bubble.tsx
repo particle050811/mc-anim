@@ -1,7 +1,7 @@
 // 弹跳泡泡。出处 goety 2.5.60.6：BouncyBubbleSpell、BouncyBubble（SpellHurtingProjectile）、BouncyBubbleRenderer、SoulBoltModel；原版 DripParticle、SplashParticle。
 // - 弹：SoulBoltModel 换 bouncy_bubble 贴图，scale(−1, −1, 1) × (1 + size)（size 默认 0），发光层（eyes）alpha 0.5；碰到东西反弹，弹满 6 次或 100 刻爆。
 // - 每刻 3～4 颗 falling_water，出生在碰撞箱里随机处。爆：一片 splash。
-// 没核：重力（getGravity 的返回值没翻到，这里用 0.03）、反弹的算法（这里是镜面反射，不损速度）。
+// 重力：BouncyBubble.getGravity 返回 0，travel 不乘惯性，匀速 0.82 格/刻。没核：反弹的算法（这里是镜面反射，不损速度）。
 // 没做：爆的时候另有 8 颗 water_trail（程序画的带子）；爆的两声（BUBBLE_COLUMN_BUBBLE_POP、GENERIC_SPLASH）没进元数据（时刻随弹道变，元数据的 从命中 只能挂第一次碰到人）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
