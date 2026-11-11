@@ -1,6 +1,7 @@
 // 第 4、5 幕的快慢、连放和声音卡点（用户 11-11 嫌「人物动作怎么这么慢」「飞行速度也很慢」「为什么没有声音」，看完七版又要「每个法术是一直放」
 // 「大招要落到他身上」「短短几秒内就死去」）：她每一下冲峰值 20～30 格/秒、2～3 帧到全速、到位前刹住；打击停顿只停索命；
-// 每种法术按（施法 + 冷却）压缩后的间隔一直放到他死，11 个大招都在他死前打到他；声音 cue 落在 齐放拍.ts、击败拍.ts 导出的时刻上。
+// 每种法术按游戏里戴晋升之环连放的间隔一直放到他死（用户 11-11「晋升之环有 4 倍施法速度」），11 个大招都在他死前打到他；
+// 第一人称的受伤晃动照原版 bobHurt（用户 11-11「我记得原版受伤是屏幕是会抖的」）；声音 cue 落在 齐放拍.ts、击败拍.ts 导出的时刻上。
 // 量出来的数打在日志里（交片自查要用）。纯模块，不要模型。
 import { describe, expect, it } from 'vitest';
 import type { 段定义, 资产cue } from '@engine/段/段定义.ts';
@@ -62,13 +63,15 @@ describe('第 4 幕 轰炸', () => {
     expect(四.他回世界(四.他钟(p.起 + p.秒 + 0.1))).toBeCloseTo(p.起 + p.秒 + 0.1, 9);
   });
 
-  it('连放：每种按（施法 + 冷却）÷ 压缩 的间隔一直放到他死，第一轮在开幕 8 帧里', () => {
+  it('连放：每种按游戏里戴晋升之环的间隔（周期刻）一直放到他死，第一轮在开幕 8 帧里；满附魔高速 5', () => {
     const 表: string[] = [];
     for (const 项 of 四.连放表) {
       const 发们 = 四.出手表.filter((x) => x.id === 项.id).map((x) => x.秒 - 四.幕起);
       expect(发们.length).toBeGreaterThan(0);
+      for (const 发 of 四.出手表.filter((x) => x.id === 项.id)) expect(发.选项?.高速).toBe(5);
       if (项.id === 'killing') {
         expect(发们).toHaveLength(1);
+        expect(发们[0]!).toBeCloseTo(四.索命秒, 9);
         continue;
       }
       expect(发们[0]!).toBeGreaterThanOrEqual(四.出手起 - 1e-9);
@@ -77,21 +80,30 @@ describe('第 4 幕 轰炸', () => {
       // 最后一发在他死前、再隔一发就过了
       expect(发们[发们.length - 1]!).toBeLessThan(四.死 - 1e-6);
       expect(发们[发们.length - 1]! + 四.隔(项.id)).toBeGreaterThanOrEqual(四.死 - 1e-9);
-      expect(四.隔(项.id)).toBeCloseTo(Math.max(四.最短隔, 项.周期刻 / 20 / 四.压缩), 9);
+      expect(四.隔(项.id)).toBeCloseTo(项.周期刻 / 20, 9);
+      expect(项.周期刻).toBeGreaterThanOrEqual(4);
       表.push(`${项.id} ${四.隔(项.id).toFixed(2)}s×${发们.length}`);
     }
     console.log(`第 4 幕连放 ${四.出手表.length} 发、打到他 ${四.命中们.length} 下：`, 表.join('；'));
+    // 演出里画了蓄力的两个照晋升之环缩过的施法刻；雷暴不画预警圈（用户 11-11「雷暴预警圈全部删掉」）
+    expect(四.出手表.find((x) => x.id === 'prisma_beam')!.选项?.施法刻).toBe(20);
+    expect(四.出手表.find((x) => x.id === 'rupture')!.选项?.施法刻).toBe(30);
+    expect(四.出手表.filter((x) => x.id === 'thunderstorm').every((x) => x.选项?.无预警圈)).toBe(true);
   });
 
-  it('11 个大招都在他死之前打到他；他死在幕末（卫射第二束照满），晋升之环在第一人称那一镜开头炸开', () => {
+  it('11 个大招都在他死之前打到他；他死在幕末（大招齐了以后头一束卫射照满），晋升之环在第一人称那一镜开头炸开', () => {
     expect(四.大招们).toHaveLength(11);
     for (const id of 四.大招们) {
       expect(四.大招落[id]).toBeDefined();
       expect(四.大招落[id]!).toBeLessThan(四.死);
     }
     expect(四.死).toBeCloseTo(四.幕长, 9);
-    expect(四.图腾秒 - 四.幕起).toBeGreaterThan(四.镜起.第一人称);
-    expect(四.图腾秒 - 四.幕起).toBeLessThan(四.镜起.挨炸);
+    const 齐 = Math.max(...Object.values(四.大招落).map((x) => x!));
+    const 卫射结算 = 四.命中们.filter((h) => h.id === 'prisma_beam').map((h) => h.秒);
+    expect(卫射结算.every((x) => x < 齐)).toBe(true);
+    expect(Object.keys(四.镜起)).toEqual(['侧', '第一人称']);
+    expect(四.图腾秒 - 四.幕起).toBeGreaterThan(四.镜起.第一人称 + 0.2 - 1e-9);
+    expect(四.图腾秒 - 四.幕起 + 2).toBeLessThan(四.死);
     console.log('大招第一下打到他（幕内秒）', Object.entries(四.大招落).map(([id, s]) => `${id} ${s!.toFixed(2)}`).join('；'), `；图腾 ${(四.图腾秒 - 四.幕起).toFixed(2)}；死 ${四.死.toFixed(2)}`);
   });
 
@@ -113,7 +125,7 @@ describe('第 4 幕 轰炸', () => {
     expect(在(段4, '齐放')).toBe(四.出手起);
     expect(在(段4, '索命')).toBeCloseTo(四.停索命.起, 9);
     expect(在(段4, '图腾')).toBeCloseTo(四.图腾秒 - 四.幕起, 9);
-    expect(在(段4, '结界火')).toBeCloseTo(四.出手起 + 0.75, 9);
+    expect(在(段4, '结界火')).toBeCloseTo(四.罩严秒, 9);
     四.挨打世界们.forEach((h, i) => expect(在(段4, `挨打${i + 1}`)).toBe(h.秒));
     四.挥剑世界们.forEach((c, i) => expect(在(段4, `挥剑${i + 1}`)).toBe(c));
     四.冲们.forEach((c, i) => expect(在(段4, `冲${i + 1}`)).toBe(c.起));
@@ -130,6 +142,30 @@ describe('第 4 幕 轰炸', () => {
       expect(c.秒).toBeLessThan(段长);
     }
     console.log(`第 4 幕 ${cue们(段4).length} 条 cue，施放声 ${施放.length} 条`);
+  });
+
+  it('受伤晃动（原版 bobHurt）：罩严之前照无敌帧，罩严以后每刻都重来，一直歪着、一帧一帧地颤；打击停顿里定住', () => {
+    const 罩刻 = Math.ceil(四.他钟(四.罩严秒) * 20);
+    const 前 = 四.受伤们.filter((e) => e.刻 < 罩刻);
+    const 后 = 四.受伤们.filter((e) => e.刻 >= 罩刻).map((e) => e.刻);
+    expect(前.length).toBeGreaterThan(0);
+    expect(后).toEqual(Array.from({ length: 后.length }, (_, i) => 罩刻 + i));
+    expect(后[后.length - 1]!).toBe(Math.ceil(四.他钟(四.死) * 20) - 1);
+    // 第一下打到他之前不歪
+    expect(四.受伤倾(Math.min(...四.命中们.map((h) => h.秒)) - 帧).度).toBe(0);
+    // 罩严以后（第一人称那一镜）每一帧 7～14 度，挨着的三帧不一样
+    const 度们 = Array.from({ length: Math.floor((四.死 - 四.镜起.第一人称) * 60) }, (_, f) => 四.受伤倾(四.镜起.第一人称 + f * 帧).度);
+    console.log(`第一人称受伤晃动：${Math.min(...度们).toFixed(1)}～${Math.max(...度们).toFixed(1)} 度，罩严前完整受伤 ${前.length} 下`);
+    for (const d of 度们) {
+      expect(d).toBeGreaterThan(7);
+      expect(d).toBeLessThanOrEqual(14);
+    }
+    const 停 = 四.停索命;
+    const 停中 = Array.from({ length: 16 }, (_, f) => 四.受伤倾(停.起 + f * 帧).度);
+    expect(new Set(停中.map((d) => d.toFixed(9))).size).toBe(1);
+    expect(new Set(度们.slice(0, 3).map((d) => d.toFixed(6))).size).toBe(3);
+    // 她在他正前方附近：hurtDir 在 90 度上下（往下点头为主）
+    for (const e of 四.受伤们) expect(Math.abs(e.向 - 90)).toBeLessThan(60);
   });
 
   it('战斗曲 27.0 秒那一下砸在第一轮出手那一刻：两条在 齐放出手 首尾接上，前一条的入点跟着第 2 幕长短走', () => {

@@ -34,52 +34,54 @@ import 声27 from "asset:音效/entity.warden.sonic_boom.1";
 import 声28 from "asset:音效/entity.warden.sonic_charge.1";
 import 声29 from "asset:音效/entity.warden.sonic_charge.2";
 import 声30 from "asset:音效/entity.warden.sonic_charge.3";
-import 声31 from "asset:音效/entity.wither.shoot";
-import 声32 from "asset:音效/item.totem.use";
-import 声33 from "asset:音效/item.trident.hit.1";
-import 声34 from "asset:音效/诡厄巫法/goety.abyss_prepare_spell.1";
-import 声35 from "asset:音效/诡厄巫法/goety.abyss_prepare_spell.2";
-import 声36 from "asset:音效/诡厄巫法/goety.abyss_prepare_spell.3";
-import 声37 from "asset:音效/诡厄巫法/goety.apostle_cast_spell.1";
-import 声38 from "asset:音效/诡厄巫法/goety.apostle_prepare_spell.1";
-import 声39 from "asset:音效/诡厄巫法/goety.apostle_prepare_spell.2";
-import 声40 from "asset:音效/诡厄巫法/goety.blast_fungus_throw.1";
-import 声41 from "asset:音效/诡厄巫法/goety.cast_spell.1";
-import 声42 from "asset:音效/诡厄巫法/goety.cast_spell.2";
-import 声43 from "asset:音效/诡厄巫法/goety.cast_spell.3";
-import 声44 from "asset:音效/诡厄巫法/goety.cast_spell.4";
-import 声45 from "asset:音效/诡厄巫法/goety.flight";
-import 声46 from "asset:音效/诡厄巫法/goety.frost_prepare_spell.1";
-import 声47 from "asset:音效/诡厄巫法/goety.frost_prepare_spell.2";
-import 声48 from "asset:音效/诡厄巫法/goety.frost_prepare_spell.3";
-import 声49 from "asset:音效/诡厄巫法/goety.heavy_woosh.1";
-import 声50 from "asset:音效/诡厄巫法/goety.heavy_woosh.2";
-import 声51 from "asset:音效/诡厄巫法/goety.heavy_woosh.3";
-import 声52 from "asset:音效/诡厄巫法/goety.ice_spike_cast";
-import 声53 from "asset:音效/诡厄巫法/goety.ice_spike_hit.1";
-import 声54 from "asset:音效/诡厄巫法/goety.poison_quill_impact.1";
-import 声55 from "asset:音效/诡厄巫法/goety.poison_quill_vine_shoot.1";
-import 声56 from "asset:音效/诡厄巫法/goety.prepare_spell.1";
-import 声57 from "asset:音效/诡厄巫法/goety.prepare_spell.2";
-import 声58 from "asset:音效/诡厄巫法/goety.prepare_summon.1";
-import 声59 from "asset:音效/诡厄巫法/goety.prepare_summon.2";
-import 声60 from "asset:音效/诡厄巫法/goety.quick_growing_vine_burrow.1";
-import 声61 from "asset:音效/诡厄巫法/goety.rumble.1";
-import 声62 from "asset:音效/诡厄巫法/goety.shock_cast.1";
-import 声63 from "asset:音效/诡厄巫法/goety.soul_bolt_cast";
-import 声64 from "asset:音效/诡厄巫法/goety.teleport_orb_throw";
-import 声65 from "asset:音效/诡厄巫法/goety.thunder_strike_fast.1";
-import 声66 from "asset:音效/诡厄巫法/goety.thunderbolt.1";
-import 声67 from "asset:音效/诡厄巫法/goety.tooth_spawn.1";
-import 声68 from "asset:音效/诡厄巫法/goety.vex_vapor.1";
-import 声69 from "asset:音效/诡厄巫法/goety.void_prepare_spell.1";
-import 声70 from "asset:音效/诡厄巫法/goety.void_prepare_spell.2";
-import 声71 from "asset:音效/诡厄巫法/goety.void_prepare_spell.3";
-import 声72 from "asset:音效/诡厄巫法/goety.wall_erupt.1";
-import 声73 from "asset:音效/诡厄巫法/goety.wild_prepare_spell";
-import 声74 from "asset:音效/诡厄巫法/goety.wind.1";
-import 声75 from "asset:音效/诡厄巫法/goety.wind_blast.1";
-import 声76 from "asset:音效/诡厄巫法/goety.zap.1";
+import 声31 from "asset:音效/entity.warden.sonic_charge.4";
+import 声32 from "asset:音效/entity.wither.shoot";
+import 声33 from "asset:音效/item.totem.use";
+import 声34 from "asset:音效/item.trident.hit.1";
+import 声35 from "asset:音效/诡厄巫法/goety.abyss_prepare_spell.1";
+import 声36 from "asset:音效/诡厄巫法/goety.abyss_prepare_spell.2";
+import 声37 from "asset:音效/诡厄巫法/goety.abyss_prepare_spell.3";
+import 声38 from "asset:音效/诡厄巫法/goety.abyss_prepare_spell.4";
+import 声39 from "asset:音效/诡厄巫法/goety.apostle_cast_spell.1";
+import 声40 from "asset:音效/诡厄巫法/goety.apostle_prepare_spell.1";
+import 声41 from "asset:音效/诡厄巫法/goety.apostle_prepare_spell.2";
+import 声42 from "asset:音效/诡厄巫法/goety.blast_fungus_throw.1";
+import 声43 from "asset:音效/诡厄巫法/goety.cast_spell.1";
+import 声44 from "asset:音效/诡厄巫法/goety.cast_spell.2";
+import 声45 from "asset:音效/诡厄巫法/goety.cast_spell.3";
+import 声46 from "asset:音效/诡厄巫法/goety.cast_spell.4";
+import 声47 from "asset:音效/诡厄巫法/goety.flight";
+import 声48 from "asset:音效/诡厄巫法/goety.frost_prepare_spell.1";
+import 声49 from "asset:音效/诡厄巫法/goety.frost_prepare_spell.2";
+import 声50 from "asset:音效/诡厄巫法/goety.frost_prepare_spell.3";
+import 声51 from "asset:音效/诡厄巫法/goety.heavy_woosh.1";
+import 声52 from "asset:音效/诡厄巫法/goety.heavy_woosh.2";
+import 声53 from "asset:音效/诡厄巫法/goety.heavy_woosh.3";
+import 声54 from "asset:音效/诡厄巫法/goety.ice_spike_cast";
+import 声55 from "asset:音效/诡厄巫法/goety.ice_spike_hit.1";
+import 声56 from "asset:音效/诡厄巫法/goety.poison_quill_impact.1";
+import 声57 from "asset:音效/诡厄巫法/goety.poison_quill_vine_shoot.1";
+import 声58 from "asset:音效/诡厄巫法/goety.prepare_spell.1";
+import 声59 from "asset:音效/诡厄巫法/goety.prepare_spell.2";
+import 声60 from "asset:音效/诡厄巫法/goety.prepare_summon.1";
+import 声61 from "asset:音效/诡厄巫法/goety.prepare_summon.2";
+import 声62 from "asset:音效/诡厄巫法/goety.quick_growing_vine_burrow.1";
+import 声63 from "asset:音效/诡厄巫法/goety.rumble.1";
+import 声64 from "asset:音效/诡厄巫法/goety.shock_cast.1";
+import 声65 from "asset:音效/诡厄巫法/goety.soul_bolt_cast";
+import 声66 from "asset:音效/诡厄巫法/goety.teleport_orb_throw";
+import 声67 from "asset:音效/诡厄巫法/goety.thunder_strike_fast.1";
+import 声68 from "asset:音效/诡厄巫法/goety.thunderbolt.1";
+import 声69 from "asset:音效/诡厄巫法/goety.tooth_spawn.1";
+import 声70 from "asset:音效/诡厄巫法/goety.vex_vapor.1";
+import 声71 from "asset:音效/诡厄巫法/goety.void_prepare_spell.1";
+import 声72 from "asset:音效/诡厄巫法/goety.void_prepare_spell.2";
+import 声73 from "asset:音效/诡厄巫法/goety.void_prepare_spell.4";
+import 声74 from "asset:音效/诡厄巫法/goety.wall_erupt.1";
+import 声75 from "asset:音效/诡厄巫法/goety.wild_prepare_spell";
+import 声76 from "asset:音效/诡厄巫法/goety.wind.1";
+import 声77 from "asset:音效/诡厄巫法/goety.wind_blast.1";
+import 声78 from "asset:音效/诡厄巫法/goety.zap.1";
 
 const 声音: 声音地址 = {
   地址: {
@@ -115,52 +117,54 @@ const 声音: 声音地址 = {
     "音效/entity.warden.sonic_charge.1": 声28,
     "音效/entity.warden.sonic_charge.2": 声29,
     "音效/entity.warden.sonic_charge.3": 声30,
-    "音效/entity.wither.shoot": 声31,
-    "音效/item.totem.use": 声32,
-    "音效/item.trident.hit.1": 声33,
-    "音效/诡厄巫法/goety.abyss_prepare_spell.1": 声34,
-    "音效/诡厄巫法/goety.abyss_prepare_spell.2": 声35,
-    "音效/诡厄巫法/goety.abyss_prepare_spell.3": 声36,
-    "音效/诡厄巫法/goety.apostle_cast_spell.1": 声37,
-    "音效/诡厄巫法/goety.apostle_prepare_spell.1": 声38,
-    "音效/诡厄巫法/goety.apostle_prepare_spell.2": 声39,
-    "音效/诡厄巫法/goety.blast_fungus_throw.1": 声40,
-    "音效/诡厄巫法/goety.cast_spell.1": 声41,
-    "音效/诡厄巫法/goety.cast_spell.2": 声42,
-    "音效/诡厄巫法/goety.cast_spell.3": 声43,
-    "音效/诡厄巫法/goety.cast_spell.4": 声44,
-    "音效/诡厄巫法/goety.flight": 声45,
-    "音效/诡厄巫法/goety.frost_prepare_spell.1": 声46,
-    "音效/诡厄巫法/goety.frost_prepare_spell.2": 声47,
-    "音效/诡厄巫法/goety.frost_prepare_spell.3": 声48,
-    "音效/诡厄巫法/goety.heavy_woosh.1": 声49,
-    "音效/诡厄巫法/goety.heavy_woosh.2": 声50,
-    "音效/诡厄巫法/goety.heavy_woosh.3": 声51,
-    "音效/诡厄巫法/goety.ice_spike_cast": 声52,
-    "音效/诡厄巫法/goety.ice_spike_hit.1": 声53,
-    "音效/诡厄巫法/goety.poison_quill_impact.1": 声54,
-    "音效/诡厄巫法/goety.poison_quill_vine_shoot.1": 声55,
-    "音效/诡厄巫法/goety.prepare_spell.1": 声56,
-    "音效/诡厄巫法/goety.prepare_spell.2": 声57,
-    "音效/诡厄巫法/goety.prepare_summon.1": 声58,
-    "音效/诡厄巫法/goety.prepare_summon.2": 声59,
-    "音效/诡厄巫法/goety.quick_growing_vine_burrow.1": 声60,
-    "音效/诡厄巫法/goety.rumble.1": 声61,
-    "音效/诡厄巫法/goety.shock_cast.1": 声62,
-    "音效/诡厄巫法/goety.soul_bolt_cast": 声63,
-    "音效/诡厄巫法/goety.teleport_orb_throw": 声64,
-    "音效/诡厄巫法/goety.thunder_strike_fast.1": 声65,
-    "音效/诡厄巫法/goety.thunderbolt.1": 声66,
-    "音效/诡厄巫法/goety.tooth_spawn.1": 声67,
-    "音效/诡厄巫法/goety.vex_vapor.1": 声68,
-    "音效/诡厄巫法/goety.void_prepare_spell.1": 声69,
-    "音效/诡厄巫法/goety.void_prepare_spell.2": 声70,
-    "音效/诡厄巫法/goety.void_prepare_spell.3": 声71,
-    "音效/诡厄巫法/goety.wall_erupt.1": 声72,
-    "音效/诡厄巫法/goety.wild_prepare_spell": 声73,
-    "音效/诡厄巫法/goety.wind.1": 声74,
-    "音效/诡厄巫法/goety.wind_blast.1": 声75,
-    "音效/诡厄巫法/goety.zap.1": 声76,
+    "音效/entity.warden.sonic_charge.4": 声31,
+    "音效/entity.wither.shoot": 声32,
+    "音效/item.totem.use": 声33,
+    "音效/item.trident.hit.1": 声34,
+    "音效/诡厄巫法/goety.abyss_prepare_spell.1": 声35,
+    "音效/诡厄巫法/goety.abyss_prepare_spell.2": 声36,
+    "音效/诡厄巫法/goety.abyss_prepare_spell.3": 声37,
+    "音效/诡厄巫法/goety.abyss_prepare_spell.4": 声38,
+    "音效/诡厄巫法/goety.apostle_cast_spell.1": 声39,
+    "音效/诡厄巫法/goety.apostle_prepare_spell.1": 声40,
+    "音效/诡厄巫法/goety.apostle_prepare_spell.2": 声41,
+    "音效/诡厄巫法/goety.blast_fungus_throw.1": 声42,
+    "音效/诡厄巫法/goety.cast_spell.1": 声43,
+    "音效/诡厄巫法/goety.cast_spell.2": 声44,
+    "音效/诡厄巫法/goety.cast_spell.3": 声45,
+    "音效/诡厄巫法/goety.cast_spell.4": 声46,
+    "音效/诡厄巫法/goety.flight": 声47,
+    "音效/诡厄巫法/goety.frost_prepare_spell.1": 声48,
+    "音效/诡厄巫法/goety.frost_prepare_spell.2": 声49,
+    "音效/诡厄巫法/goety.frost_prepare_spell.3": 声50,
+    "音效/诡厄巫法/goety.heavy_woosh.1": 声51,
+    "音效/诡厄巫法/goety.heavy_woosh.2": 声52,
+    "音效/诡厄巫法/goety.heavy_woosh.3": 声53,
+    "音效/诡厄巫法/goety.ice_spike_cast": 声54,
+    "音效/诡厄巫法/goety.ice_spike_hit.1": 声55,
+    "音效/诡厄巫法/goety.poison_quill_impact.1": 声56,
+    "音效/诡厄巫法/goety.poison_quill_vine_shoot.1": 声57,
+    "音效/诡厄巫法/goety.prepare_spell.1": 声58,
+    "音效/诡厄巫法/goety.prepare_spell.2": 声59,
+    "音效/诡厄巫法/goety.prepare_summon.1": 声60,
+    "音效/诡厄巫法/goety.prepare_summon.2": 声61,
+    "音效/诡厄巫法/goety.quick_growing_vine_burrow.1": 声62,
+    "音效/诡厄巫法/goety.rumble.1": 声63,
+    "音效/诡厄巫法/goety.shock_cast.1": 声64,
+    "音效/诡厄巫法/goety.soul_bolt_cast": 声65,
+    "音效/诡厄巫法/goety.teleport_orb_throw": 声66,
+    "音效/诡厄巫法/goety.thunder_strike_fast.1": 声67,
+    "音效/诡厄巫法/goety.thunderbolt.1": 声68,
+    "音效/诡厄巫法/goety.tooth_spawn.1": 声69,
+    "音效/诡厄巫法/goety.vex_vapor.1": 声70,
+    "音效/诡厄巫法/goety.void_prepare_spell.1": 声71,
+    "音效/诡厄巫法/goety.void_prepare_spell.2": 声72,
+    "音效/诡厄巫法/goety.void_prepare_spell.4": 声73,
+    "音效/诡厄巫法/goety.wall_erupt.1": 声74,
+    "音效/诡厄巫法/goety.wild_prepare_spell": 声75,
+    "音效/诡厄巫法/goety.wind.1": 声76,
+    "音效/诡厄巫法/goety.wind_blast.1": 声77,
+    "音效/诡厄巫法/goety.zap.1": 声78,
   },
   表,
 };

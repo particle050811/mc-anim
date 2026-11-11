@@ -17,9 +17,9 @@ import 尾迹图 from 'asset:贴图/法术/goety/entity/projectiles/solid_trail'
 
 const 模型 = 取模型(模型数据, 'SmackStoneModel');
 
-const 重击石: React.FC<法术演出属性> = ({ 秒, 起点, 目标 }) => {
+const 重击石: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 选项 }) => {
   const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 重击石道(起点, 目标);
+  const { 道, 到刻 } = 重击石道(起点, 目标, 选项?.高速);
   if (刻 >= 到刻) return null;
   const { yaw, pitch } = 转向角(弹道方向(道, 刻));
   return (

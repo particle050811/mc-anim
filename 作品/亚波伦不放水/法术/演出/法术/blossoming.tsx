@@ -23,9 +23,9 @@ import 刺图 from 'asset:贴图/法术/goety/entity/projectiles/blossom_thorn';
 
 const 模型 = 取模型(模型数据, 'BlastFungusModel');
 
-const 绽放: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const 绽放: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 绽放道(起点, 目标);
+  const { 道, 到刻 } = 绽放道(起点, 目标, 选项?.高速);
   const r = rng(种子 * 47 + 1);
   const 息 = 各刻(1, Math.min(刻, 到刻)).map((n) => 龙息(r, n, 道(n)));
   const 向 = 弹道方向(道, Math.min(刻, 到刻 - 0.01));

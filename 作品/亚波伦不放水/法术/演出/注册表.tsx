@@ -21,6 +21,6 @@ export const 取法术演出 = (id: string): 法术演出条 => {
 /** 放一发法术：秒 是出手后的秒，[0, 这一发的长秒) 之外不画。放在场景坐标（Z 朝上）的 group 里 */
 export const 法术演出: React.FC<法术演出属性 & { id: string }> = ({ id, ...属性 }) => {
   const { 元, 画 } = 取法术演出(id);
-  if (属性.秒 < 0 || 属性.秒 >= 法术时长(元, 属性.起点, 属性.目标).长秒) return null;
+  if (属性.秒 < 0 || 属性.秒 >= 法术时长(元, 属性.起点, 属性.目标, 属性.选项).长秒) return null;
   return React.createElement(画, 属性);
 };

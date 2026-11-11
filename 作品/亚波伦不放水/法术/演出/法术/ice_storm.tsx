@@ -26,10 +26,10 @@ const 外壳 = 方盒('glass', 0);
 const 芯 = 方盒('cube', 32);
 const 斜转 = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(Math.SQRT1_2, 0, Math.SQRT1_2), Math.PI / 3);
 
-const 冰风暴: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const 冰风暴: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
-  const 道 = 冰风暴道(起点, 目标);
-  const 终 = 冰风暴终刻(起点, 目标);
+  const 道 = 冰风暴道(起点, 目标, 选项?.高速);
+  const 终 = 冰风暴终刻(起点, 目标, 选项?.高速);
   const r = rng(种子 * 29 + 7);
   const 雪: 粒子出生[] = 各刻(1, Math.min(刻, 终)).flatMap((n) => {
     const [p, size] = [道(n), n * 0.05];

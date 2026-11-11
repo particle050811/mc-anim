@@ -16,22 +16,23 @@ import { 束 } from '../零件/束.tsx';
 import { 片, 面片们, type 面片项 } from '../零件/面片.tsx';
 import { 四边面们, 轴架 } from '../零件/方管.tsx';
 import type { 色 } from '../零件/材质.ts';
-import 元, { 卫射蓄刻, 卫射落点 } from './卫射.元.ts';
+import 元, { 卫射照刻, 卫射落点 } from './卫射.元.ts';
 import 激光图数据 from 'asset:贴图/法术/minecraft/entity/guardian_beam';
 import 气泡图数据 from 'asset:贴图/法术/minecraft/particle/bubble';
 
 const 激光图 = png(激光图数据);
 const 气泡图 = png(气泡图数据);
 
-const 卫射: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const 卫射: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
-  if (刻 >= 卫射蓄刻) return null;
+  const 蓄刻 = 卫射照刻(选项);
+  if (刻 >= 蓄刻) return null;
   const 落 = 卫射落点(目标);
   const 向 = 单位(减(落, 起点));
   const 距 = 长(减(落, 起点));
   const 束长 = 距 + 1;
   const 终 = 加(起点, 乘(向, 束长));
-  const f = 刻 / 卫射蓄刻;
+  const f = 刻 / 蓄刻;
   const 色: 色 = [(64 + Math.floor(f * f * 191)) / 255, (32 + Math.floor(f * f * 191)) / 255, (128 - Math.floor(f * f * 64)) / 255];
   const 转 = -刻 * 0.075;
   const v0 = -1 + ((刻 * 0.5) % 1);
@@ -43,7 +44,7 @@ const 卫射: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) =
   // 气泡：这一刻撒的（只活到下一刻）
   const n = Math.floor(刻);
   const r = rng(种子 * 7919 + n);
-  const d5 = n / 卫射蓄刻;
+  const d5 = n / 蓄刻;
   const 泡: 面片项[] = [];
   for (let d4 = r(); d4 < 距; ) {
     d4 += 1.8 - d5 + r() * (1.7 - d5);

@@ -19,9 +19,9 @@ import 尾粒图 from 'asset:贴图/法术/goety/particle/trail';
 const 模型 = 取模型(模型数据, 'PoisonQuillModel');
 export const 尾粒类: 粒子类 = { 帧: [png(尾粒图)], 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', 透明度: (年龄, 寿命) => 1 - Math.floor(年龄) / 寿命 };
 
-const 毒镖: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const 毒镖: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 毒镖道(起点, 目标);
+  const { 道, 到刻 } = 毒镖道(起点, 目标, 选项?.高速);
   const r = rng(种子 * 5 + 2);
   const 色 = 十六色(0xefec8b);
   const 尾: 粒子出生[] = 各刻(1, Math.min(刻, 到刻)).flatMap((n) => {
