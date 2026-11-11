@@ -4,7 +4,8 @@
 // - 预热完：激活，换 rift_1，之后每 20 刻往后换一张（rift_1～5）；每刻从边长 2×16 的方框棱上抽 1/25 的点，放 PORTAL 往中心聚（速度 = 偏移 × 0.5）；
 // - 时间到：缩回 open_3 合上 20 刻，然后爆：冲击波环（0x7317D2，大小 8，淡出）加一团龙息粒子球（半径 8）。
 // 半径加成按 0 算（法术默认）。
-// 自己定的：预热 60 刻、张开 60 刻（游戏 115、300）；裂隙占位宽 1 格撒 PORTAL（没查实体碰撞箱）。
+// 预热：给了施法刻照游戏 施法刻 − 5（第 4 幕晋升之环 4 倍施法速度：120 → 30，预热 25 刻），不给是自己定的 60 刻（游戏 115）；
+// 自己定的：张开 60 刻（游戏 300）；裂隙占位宽 1 格撒 PORTAL（没查实体碰撞箱）。
 // 没做：吸人、拉方块、伤害、SpellExplosion 的击退和虚空侵蚀；爆炸点在地面上 0.5 格；PORTAL 的聚集中心取脚上 1.6 格（眼高没查）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
@@ -16,7 +17,7 @@ import { 面片 } from '../零件/面片.tsx';
 import { 十六色 } from '../零件/甲/共用.ts';
 import { 龙息, 龙息类 } from '../零件/甲/原版粒子.ts';
 import { VanillaParticles, type ParticleSpawn, 贴图粒子 } from '../零件/粒子.tsx';
-import 元, { 撕裂爆刻, 撕裂预热刻, 撕裂张开刻 } from './撕裂.元.ts';
+import 元, { 撕裂拍, 撕裂张开刻 } from './撕裂.元.ts';
 import 开1 from 'asset:贴图/法术/goety/entity/projectiles/void_rift/open_1';
 import 开2 from 'asset:贴图/法术/goety/entity/projectiles/void_rift/open_2';
 import 开3 from 'asset:贴图/法术/goety/entity/projectiles/void_rift/open_3';
@@ -42,8 +43,9 @@ const 棱点们: readonly [number, number, number][] = (() => {
   return 们;
 })();
 
-const 撕裂: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
+const 撕裂: React.FC<法术演出属性> = ({ 秒, 目标, 种子, 选项 }) => {
   const 刻 = 秒 * 20;
+  const { 预热: 撕裂预热刻, 爆: 撕裂爆刻 } = 撕裂拍(选项);
   const 激活 = 刻 >= 撕裂预热刻;
   const 合上 = 刻 >= 撕裂预热刻 + 撕裂张开刻;
   const 炸了 = 刻 >= 撕裂爆刻;
@@ -86,7 +88,7 @@ const 撕裂: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
       出.push(龙息(r, 撕裂爆刻, 中, [(d3 / d6) * 0.5, -(d5 / d6) * 0.5, (d4 / d6) * 0.5]));
     }
     return 出;
-  }, [目标[0], 目标[1], 目标[2], 种子]);
+  }, [目标[0], 目标[1], 目标[2], 种子, 撕裂爆刻]);
 
   return (
     <>
