@@ -18,7 +18,9 @@ import type { 段信息 } from '../清单/清单.ts';
 import type { 运行记录 } from '../运行记录/记录.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { 提交状态 } from '../环境/路径.ts';
-import { 段签目录 } from '../环境/配置.ts';
+import { 段签目录, 配置 } from '../环境/配置.ts';
+import { 新建预览目录 } from '../预览/预览.ts';
+import { 读基点, 交对照, 核对口径, 存样本图, 存取样表, type 取样证据 } from './基点对照.ts';
 import { 开会话, 找组合, 同页出帧, 缺的本机地形 } from '../渲/渲.ts';
 import { 段渲染环境 } from '../渲/地形注入.ts';
 import { 记已量帧 } from '../渲/地形用量.ts';
@@ -45,8 +47,12 @@ const 列出的不同帧最多 = 8;
 type 一段 = { 段: 段信息; 产物: 段产物; 新: 段指纹; 旧: 旧版; 帧: number[] };
 
 /** anim 认指纹：见 认指纹.ts 文件头。返回退出码：选中的过期段有没认下来的（不同、没有旧切片、静帧证明不了）是 1 */
-export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: string; 抽: number; 级别: 渲染级别; 只看: boolean; 记录: 运行记录 }): Promise<number> => {
+export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: string; 抽: number; 级别: 渲染级别; 只看: boolean; 记录: 运行记录; 存基点?: boolean; 对基点?: string }): Promise<number> => {
   const { 记录, 级别 } = o;
+  const 诊断 = !!(o.存基点 || o.对基点);
+  if (诊断 && (段们.length !== 1 || o.只看 || (o.存基点 && o.对基点))) throw new 用法错误('基点诊断一次只选一段；--存基点、--对基点、--只看不能并用');
+  const 基 = o.对基点 ? 读基点(o.对基点) : undefined;
+  if (基 && (基.口径.作品 !== 作品名() || 基.口径.段 !== 段们[0]!.键)) throw new 用法错误('基点的作品或段不匹配');
   let 没认 = 0;
   const 不认 = (文本: string) => {
     没认++;
@@ -63,7 +69,7 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
     const 产物 = 产物们[i]!;
     const 新 = 产物.画面指纹;
     const 已有 = 新指纹已有(s.键, 产物);
-    if (已有) {
+    if (已有 && !诊断) {
       本来最新++;
       console.log(`· ${s.键}：不过期（${已有}），不用认`);
       continue;
@@ -73,7 +79,7 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
       不认(`${s.键}：本机没有区段包 ${包}，出不了静帧（anim world bake 烘出来才能认）`);
       continue;
     }
-    const { 旧, 没用的 } = await 找旧版(s.键, 新, { 帧数: 产物.输出帧数, 等放行 });
+    const { 旧, 没用的 } = await 找旧版(s.键, 新, { 帧数: 产物.输出帧数, 等放行, 指定: 基?.口径.旧指纹, 含本版: 诊断 });
     if (!旧) {
       不认(`${s.键}：没有能比的旧切片（同一档渲过、切片和配的 wav 还在的）${没用的.length ? `\n    ${没用的.slice(0, 5).join('\n    ')}` : ''}`);
       continue;
@@ -83,7 +89,7 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
       不认(`${s.键}：和 ${旧.指纹.slice(0, 16)} 比，${拦.join('；')}；要重渲（anim film ${s.键}）`);
       continue;
     }
-    const 帧 = 抽帧(产物.输出帧数, o.抽);
+    const 帧 = 基?.口径.帧号 ?? 抽帧(产物.输出帧数, o.抽);
     console.log(`== ${s.键}：${新.指纹.slice(0, 16)} 和 ${旧.指纹.slice(0, 16)}（${旧.母版.split(/[\\/]/).pop()}）比 ${帧.length} 帧：${帧号文本(帧)}`);
     for (const d of 指纹差异(旧.记录, 新).slice(0, 12)) console.log(`    ${d}`);
     计划.push({ 段: s, 产物, 新, 旧, 帧 });
@@ -106,6 +112,10 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
           const 键 = x.段.键;
           const composition = 找组合(h, x.段, 全部);
           const { 宽, 高 } = x.旧.签.签名;
+          const 口径 = { 作品: 作品名(), 段: 键, 旧指纹: x.旧.指纹, 旧片sha: x.旧.签.母版.字节sha, 宽, 高, 总帧数: composition.durationInFrames, 帧号: x.帧, 级别, 主机: 配置('主机'), 平台: `${process.platform}-${process.arch}`, 后端: h.参数.gl, 输出fps: composition.fps, 缩放: h.参数.scale, 阈值: 稳定JSON(阈) };
+          if (基) 核对口径(基.口径, 口径);
+          const 样本目录 = 诊断 ? 新建预览目录(`工作-认指纹-${键}`) : null;
+          const 哈希 = new Map<number, string>();
           // 先解旧切片（过放行闸，一条命令只过一次），再拿渲染闸出新帧：解码不占渲染闸
           await 等放行();
           const 旧帧 = await 旧帧们(x.旧, x.帧);
@@ -125,6 +135,7 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
                   打开声音: true,
                   环境: 段渲染环境(键, x.新.项.地形),
                   每帧: (图, f) => {
+                    if (样本目录) 哈希.set(f, 存样本图(样本目录, f, 图));
                     转.push(帧转yuv(图, 宽, 高).then((y) => {
                       比们.push(比一帧(f, y, 旧帧.get(f)!, 宽, 高, 阈));
                       明细.帧完成(比们.length);
@@ -148,6 +159,22 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
             不认(`${键}：只出了 ${比们.length}/${x.帧.length} 帧，不认`);
             continue;
           }
+          if (样本目录) {
+            const 帧 = 比们.sort((甲, 乙) => 甲.帧 - 乙.帧).map(样 => ({ ...样, sha: 哈希.get(样.帧)! }));
+            if (帧.some((样, 序) => !样.sha || 样.帧 !== x.帧[序])) throw new Error('留样缺帧，不作归因');
+            const 表: 取样证据 = { 版本: 1, 口径, 指纹: x.新.指纹, 提交, 理由: o.理由, 帧 };
+            存取样表(样本目录, 表);
+            记录.产物.push(样本目录);
+            console.log(`样本在 ${样本目录}`);
+            if (基 && o.对基点) {
+              const 报 = 交对照(o.对基点, 基, 样本目录, 表);
+              console.log(`${报.判词}\n对照在 ${报.目录}`);
+              记录.产物.push(报.目录);
+              if (报.候选有差 && !不同.length) 不认('候选抽样与基点不同；交给用户看，不登记');
+            }
+            if (不同.length) 不认(`${键}：${不同.length}/${帧.length} 帧不认旧片（${帧号文本(不同.map(样 => 样.帧))}），不登记`);
+            continue;
+          }
           if (不同.length) {
             不认(
               [`${键}：${x.帧.length} 帧里 ${不同.length} 帧和 ${x.旧.指纹.slice(0, 16)} 的切片不同（${帧号文本(不同.map((b) => b.帧))}），不认，照常过期`, ...不同.slice(0, 列出的不同帧最多).map((b) => `第 ${b.帧} 帧：${b.说明}`)].join('\n    '),
@@ -164,6 +191,7 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
     );
   }
   if (o.只看) console.log(`\n--只看：${计划.length} 段能比，没出帧、没登记${没认 ? `；${没认} 段认不了` : ''}`);
+  else if (诊断) console.log('\n基点诊断没有登记沿用或认可；只比抽样画面，没比整段和声音。');
   else console.log(`\n${段们.length} 段：认了 ${认了} 段${没认 ? `，${没认} 段没认（照常过期，要重渲）` : ''}${本来最新 ? `，${本来最新} 段本来不过期` : ''}`);
   if (!o.只看 && 认了) console.log('认了的段没真渲过：没抽到的帧和声音没比。要补整段比对：anim --低优先 film <段> --重渲（同指纹重渲，段签自查会比签名和声音）');
   return 没认 ? 1 : 0;
@@ -171,20 +199,21 @@ export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: st
 
 export const 指纹命令: Record<string, 命令> = {
   认指纹: {
-    用法: '认指纹 <选择器…> --理由 <…> [--抽 <n>] [--级别 视频|预览] [--只看]',
+    用法: '认指纹 <选择器…> --理由 <…> [--抽 <n>] [--级别 视频|预览] [--只看 | --存基点 | --对基点 <草稿目录>]',
     说明: `过期的段抽 n 帧（默认 ${默认抽帧数}，含首尾；按输出帧）静帧和同一档最近一份旧切片比，都在压缩噪声内就把新指纹登记成沿用旧切片、不重渲；有一帧不同就不认、报是哪几帧。--只看 只列要比什么`,
     跑: async (args, 记录) => {
-      const p = 解析参数(args, { 值: ['--理由', '--抽', '--级别'], 开关: ['--只看'] });
+      const p = 解析参数(args, { 值: ['--理由', '--抽', '--级别', '--对基点'], 开关: ['--只看', '--存基点'] });
       if (!p.位置.length) throw new 用法错误('要给选择器（段键、段名、编号、场键、章）');
       const 理由 = p.值['--理由']?.trim();
       if (!理由) throw new 用法错误('要写 --理由（为什么认为画面没变，比如「three 0.186.1 → 0.186.2」「搬函数」），记进段签');
       const 抽 = p.值['--抽'] === undefined ? 默认抽帧数 : Number(p.值['--抽']);
       if (!Number.isInteger(抽) || 抽 < 2) throw new 用法错误('--抽 要是不小于 2 的整数（含首、尾帧）');
+      if (p.值['--对基点'] !== undefined && (!p.值['--对基点'] || p.值['--抽'] !== undefined)) throw new 用法错误('--对基点 需要草稿目录，沿用基点的帧号，不再指定 --抽');
       const 级别 = 取级别(p.值['--级别']);
       const cues = await 渲前跑cues();
       const 段们 = await 选段(p.位置);
       查所选段cues(cues, 段们);
-      return 跑认指纹(段们, { 理由, 抽, 级别, 只看: p.开关.has('--只看'), 记录 });
+      return 跑认指纹(段们, { 理由, 抽, 级别, 只看: p.开关.has('--只看'), 存基点: p.开关.has('--存基点'), 对基点: p.值['--对基点'], 记录 });
     },
   },
   stale: {

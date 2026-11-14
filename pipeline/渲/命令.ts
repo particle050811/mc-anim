@@ -13,6 +13,23 @@ import { 测速 } from './测速.ts';
 import { 解析光影 } from './光影试看.ts';
 import { 明细一览, 明细报告, 读明细们 } from '../运行记录/渲染明细.ts';
 import { 查所选段cues, 渲前跑cues } from '../段框架/自动.ts';
+import { 段帧数 } from '../../engine/段/段定义.ts';
+import { 成片档 } from './设置.ts';
+
+export const 静帧列表 = (参数: string[], 段: string, 总帧数: number) => {
+  const 结果 = new Set<number>();
+  for (const 参数项 of 参数) {
+    for (const 项 of 参数项.trim().split(/\s*,\s*|\s+/)) {
+      const 匹配 = /^(\d+)(?:-(\d+))?$/.exec(项);
+      if (!匹配) throw new 用法错误(`帧号要是非负整数或闭区间：${项}`);
+      const 起 = Number(匹配[1]), 止 = Number(匹配[2] ?? 匹配[1]);
+      if (起 > 止) throw new 用法错误(`帧范围起点比终点大：${项}`);
+      if (止 >= 总帧数) throw new 用法错误(`${段} 只有 ${总帧数} 帧，没有第 ${止} 帧`);
+      for (let 帧号 = 起; 帧号 <= 止; 帧号++) 结果.add(帧号);
+    }
+  }
+  return [...结果];
+};
 
 const 取级别 = (v: string | undefined): 渲染级别 => {
   const 级别 = (v ?? '视频') as 渲染级别;
@@ -22,7 +39,7 @@ const 取级别 = (v: string | undefined): 渲染级别 => {
 
 export const 渲染命令: Record<string, 命令> = {
   still: {
-    用法: 'still <段> <帧…> --到预览 <主题> [--级别 视频|预览] [--逐帧] [--光影 <配置>[;<配置>…]]',
+    用法: 'still <段> <帧…（空格、逗号或起-止）> --到预览 <主题> [--级别 视频|预览] [--逐帧] [--光影 <配置>[;<配置>…]]',
     说明: '渲几帧静帧（PNG）进预览。多帧默认在同一页面连出，快；--逐帧 每帧开新页面，慢但每帧都和单独出一帧相同，逐像素比或连出崩页时用它。--光影 把三渲二画布换成带光影层的试看画布，每份配置（预设名或 JSON）各出一遍，文件名带 -光影-<名>（pipeline/渲/光影试看.ts）',
     跑: async (args, 记录) => {
       const p = 解析参数(args, { 值: ['--级别', '--到预览', '--光影'], 开关: ['--逐帧'] });
@@ -32,10 +49,8 @@ export const 渲染命令: Record<string, 命令> = {
       const 段们 = await 选段([选择器]);
       if (段们.length !== 1) throw new 用法错误(`still 一次只渲一段，「${选择器}」对上了 ${段们.length} 段`);
       查所选段cues(cues, 段们);
-      const 帧们 = 帧.map((f) => {
-        if (!/^\d+$/.test(f)) throw new 用法错误(`帧号要是非负整数：${f}`);
-        return Number(f);
-      });
+      const 段 = 段们[0]!;
+      const 帧们 = 静帧列表(帧, 段.键, 段帧数(段.段, 成片档().fps));
       const dir = 新建预览目录(p.值['--到预览']);
       const 出 = await 渲静帧(段们[0]!, 帧们, 取级别(p.值['--级别']), dir, 记录, { 逐帧: p.开关.has('--逐帧'), 光影: p.值['--光影'] ? 解析光影(p.值['--光影']) : undefined });
       记录.产物.push(...出);

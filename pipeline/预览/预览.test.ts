@@ -10,9 +10,10 @@ describe('预览目录', () => {
     const ms = Date.UTC(2026, 9, 21, 9, 5);
     const dir = 新建预览目录('冒烟', 根, ms);
     expect(path.basename(dir)).toBe('1021-0905-冒烟');
-    expect(新建预览目录('冒烟', 根, ms)).toBe(dir); // 空的可以接着用
-    fs.writeFileSync(path.join(dir, 'a.png'), '');
-    expect(() => 新建预览目录('冒烟', 根, ms)).toThrow(/不覆盖/);
+    expect(新建预览目录('冒烟', 根, ms)).toBe(`${dir}-2`);
+    fs.writeFileSync(path.join(dir, 'a.png'), '原图');
+    expect(新建预览目录('冒烟', 根, ms)).toBe(`${dir}-3`);
+    expect(fs.readFileSync(path.join(dir, 'a.png'), 'utf8')).toBe('原图');
     expect(() => 新建预览目录('a/b', 根, ms)).toThrow(/不能当文件夹名/);
     fs.rmSync(根, { recursive: true });
   });

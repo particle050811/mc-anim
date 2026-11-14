@@ -50,10 +50,15 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
   }
   记阶段(记录?.阶段, 标签, '备素材', t备, (Date.now() - t备) / 1000);
   const t0 = Date.now();
+  const 配包 = 稳定缓存名(补缺字节占位(o.光影 ? 套光影试看(webpack改写(根)) : webpack改写(根), 根));
   const serveUrl = await bundle({
     entryPoint: path.join(作品根(), 'index.ts'),
     rootDir: 代码根(),
-    webpackOverride: 稳定缓存名(补缺字节占位(o.光影 ? 套光影试看(webpack改写(根)) : webpack改写(根), 根)),
+    webpackOverride: async (config) => {
+      const 包 = await 配包(config);
+      const 诊断 = { test: /[\\/]@remotion[\\/]media[\\/]dist[\\/]esm[\\/]index\.mjs$/, loader: path.join(代码根(), 'pipeline', '渲', '音频缓存日志.cjs') };
+      return { ...包, module: { ...包.module, rules: [...(包.module?.rules ?? []), 诊断] } };
+    },
     enableCaching: true,
     publicDir: 备好public目录(),
     // public 里只有指向数据根的链接，转发进包是预期的
