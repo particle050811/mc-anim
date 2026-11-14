@@ -1,6 +1,7 @@
 // 挂 GitHub Release 发字节（用户 10-25「地形太大了 放 release」「应力转动所有素材都公开」，见 docs/决策/0006-挂Release发字节.md）：
 // <作品根>/随发布.toml 写 仓库、标签、段；anim assets pack 照它现算要发的字节（随仓库.ts 的 算随仓库，和随仓库发同一个集合）和这些段声明的地形包，
 // 在 <数据根>/cache/发布/ 打成 tar、写 <作品根>/发布锁.json；--上传 用 gh 建 Release、传还没传的附件。anim assets pull 按发布锁下载、核 sha、解进数据根。
+// 字节在 私有/ 库、可见性不是私有的（用户 11-13 定全部公开，库不搬，docs/决策/0017-全部公开.md）也发：tar 里放在 私有/<sha 前两位>/<sha256>，锁记在 私有字节，pull 放回 私有/。
 // 附件名只用 ASCII（GitHub 会改掉非 ASCII 的附件名）、按内容取：字节 bytes-<sha 列表的 sha 前 12 位>.tar，地形 terrain-<版本>.tar。内容变了名字跟着变，
 // 旧附件留在 Release 上，和 store/ 一样只增不改；tar 每次打出来字节都不同（时间戳），所以发布锁里已有的同名附件不重打。
 // 下载用系统的 curl、解包用系统的 tar（Windows 10 起自带 curl.exe 和 bsdtar），代理认 HTTPS_PROXY 这类环境变量。
@@ -12,6 +13,7 @@ import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { 检查上下文 } from '../检查/上下文.ts';
 import { 包清单 } from '../检查/规则/资产.ts';
+import { 配置 } from '../环境/配置.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 跑, 试跑 } from '../环境/子进程.ts';
 import { 算随仓库 } from './随仓库.ts';
@@ -34,7 +36,9 @@ export const 读随发布表 = (文本: string): 随发布表 => {
 };
 
 const sha = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
-export const 字节附件名 = (shas: readonly string[]) => `bytes-${sha(shas.join('\n')).slice(0, 12)}.tar`;
+/** 没有 私有/ 库字节时和以前同名（旧发布锁照用） */
+export const 字节附件名 = (shas: readonly string[], 私有库: readonly string[] = []) =>
+  `bytes-${sha(shas.join('\n') + (私有库.length ? `\n私有\n${私有库.join('\n')}` : '')).slice(0, 12)}.tar`;
 export const 地形附件名 = (版本: string) => `terrain-${版本}.tar`;
 
 const 流sha = (f: string) =>
@@ -50,9 +54,9 @@ type 地形登记 = { 版本: string; 清单sha256?: string; 文件数?: number;
 const 读地形表 = (): Record<string, 地形登记> =>
   (JSON.parse(fs.readFileSync(path.join(代码根(), 'assets', '地形版本.json'), 'utf8')) as { 包?: Record<string, 地形登记> }).包 ?? {};
 
-export type 应发 = { 字节: string[]; 地形: { 包: string; 版本: string }[]; 段数: number; 私有: string[]; 问题: string[] };
+export type 应发 = { 字节: string[]; 私有库字节: string[]; 地形: { 包: string; 版本: string }[]; 段数: number; 私有: string[]; 问题: string[] };
 
-/** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节（私有的不发），加段声明的地形包 */
+/** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节、私有/ 库里可见性不是私有的字节（可见性私有的不发），加段声明的地形包 */
 export const 算应发 = async (c: 检查上下文, 表: 随发布表): Promise<应发> => {
   const 集合 = await 算随仓库(c, 表.段);
   const 地形表 = 读地形表();
@@ -65,7 +69,7 @@ export const 算应发 = async (c: 检查上下文, 表: 随发布表): Promise<
     }
     return [{ 包, 版本: v.版本 }];
   });
-  return { 字节: [...集合.件.keys()].sort(), 地形, 段数: 集合.段们.length, 私有: 集合.私有, 问题 };
+  return { 字节: [...集合.件.keys()].sort(), 私有库字节: [...集合.私有库件.keys()].sort(), 地形, 段数: 集合.段们.length, 私有: 集合.私有, 问题 };
 };
 
 /** 发布锁和现算的对不上的地方（anim check 用）；空就是一致 */
@@ -73,12 +77,17 @@ export const 比对发布锁 = (锁: 发布锁 | undefined, 应: 应发, 表: �
   if (!锁) return ['没有 发布锁.json'];
   const r: string[] = [];
   if (锁.仓库 !== 表.仓库 || 锁.标签 !== 表.标签) r.push(`发布锁是 ${锁.仓库}@${锁.标签}，${随发布表名} 写的是 ${表.仓库}@${表.标签}`);
-  const 有 = new Set(锁.附件.flatMap((a) => a.字节 ?? []));
-  const 缺 = 应.字节.filter((s) => !有.has(s));
-  const 多 = [...有].filter((s) => !应.字节.includes(s));
-  if (缺.length) r.push(`发布锁少 ${缺.length} 件字节`);
-  if (多.length) r.push(`发布锁多 ${多.length} 件字节（段现在用不到）`);
-  const 要名 = [字节附件名(应.字节), ...应.地形.map((x) => 地形附件名(x.版本))].sort();
+  for (const [名, 锁里, 应该] of [
+    ['', 锁.附件.flatMap((a) => a.字节 ?? []), 应.字节],
+    ['私有/ 库的', 锁.附件.flatMap((a) => a.私有库字节 ?? []), 应.私有库字节],
+  ] as const) {
+    const 有 = new Set(锁里);
+    const 缺 = 应该.filter((s) => !有.has(s));
+    const 多 = [...有].filter((s) => !应该.includes(s));
+    if (缺.length) r.push(`发布锁少 ${缺.length} 件${名}字节`);
+    if (多.length) r.push(`发布锁多 ${多.length} 件${名}字节（段现在用不到）`);
+  }
+  const 要名 = [字节附件名(应.字节, 应.私有库字节), ...应.地形.map((x) => 地形附件名(x.版本))].sort();
   const 锁名 = 锁.附件.map((a) => a.名).sort();
   if (要名.join() !== 锁名.join()) r.push(`附件该是 ${要名.join('、')}，发布锁里是 ${锁名.join('、')}`);
   return r;
@@ -115,16 +124,16 @@ export const 打包发布 = async (c: 检查上下文, 表: 随发布表, 作品
   const 附件们: 附件[] = [];
   const 新打: string[] = [];
 
-  const 字节名 = 字节附件名(应.字节);
+  const 字节名 = 字节附件名(应.字节, 应.私有库字节);
   const 旧字节 = 旧附件.get(字节名);
   if (旧字节) 附件们.push(旧字节);
   else {
-    const 列表 = 应.字节.map((s) => `store/${s.slice(0, 2)}/${s}`);
+    const 列表 = [...应.字节.map((s) => `store/${s.slice(0, 2)}/${s}`), ...应.私有库字节.map((s) => `私有/${s.slice(0, 2)}/${s}`)];
     const 缺 = 列表.filter((p) => !fs.existsSync(path.join(根, p)));
     if (缺.length) throw new Error(`数据根缺 ${缺.length} 件要发的字节（${缺.slice(0, 3).join('、')}…），这台机器打不了`);
     const 出 = path.join(dir, 字节名);
-    console.log(`打 ${字节名}：${应.字节.length} 件字节`);
-    附件们.push({ 名: 字节名, ...(await 打tar(出, 根, 列表)), 字节: 应.字节 });
+    console.log(`打 ${字节名}：${应.字节.length + 应.私有库字节.length} 件字节`);
+    附件们.push({ 名: 字节名, ...(await 打tar(出, 根, 列表)), 字节: 应.字节, ...(应.私有库字节.length ? { 私有库字节: 应.私有库字节 } : {}) });
     新打.push(出);
   }
 
@@ -167,9 +176,9 @@ export const 上传发布 = async (锁: 发布锁, 根: string) => {
   }
 };
 
-/** 字节搬进 store/：核 sha、只读、先临时名再改名；已有的不动 */
-const 放进store = (源: string, 根: string, s: string) => {
-  const 目标 = path.join(根, 'store', s.slice(0, 2), s);
+/** 字节搬进 store/（或 私有/）：核 sha、只读、先临时名再改名；已有的不动 */
+const 放进库 = (源: string, 根: string, s: string, 库: 'store' | '私有') => {
+  const 目标 = path.join(根, 库, s.slice(0, 2), s);
   if (fs.existsSync(目标)) return false;
   fs.mkdirSync(path.dirname(目标), { recursive: true });
   fs.chmodSync(源, 0o444);
@@ -187,8 +196,8 @@ const 附件没上传 = (url: string) =>
     execFile('curl', ['-sIL', '-o', os.devNull, '-w', '%{http_code}', '--connect-timeout', '20', '--max-time', '60', url], (_错, 出) => 好(String(出).trim().endsWith('404')));
   });
 
-/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 只有测试换 */
-export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 'https://github.com') => {
+/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 默认取 ANIM_GITHUB_MIRROR（github.com 或加速站前缀），测试换成本地服务 */
+export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 配置('github下载根').replace(/\/+$/, '')) => {
   const 要 = 锁.附件.filter((a) => 附件缺(a, 根) > 0);
   if (!要.length) {
     console.log(`${锁.附件.length} 个附件的东西数据根里都有`);
@@ -212,7 +221,7 @@ export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 'https:
           await 跑(['curl', '-fL', '-#', '--retry', '5', '--retry-all-errors', '-C', '-', '-o', tmp, url]);
           break;
         } catch (e) {
-          if (次 >= 5) throw e;
+          if (次 >= 5) throw new Error(`${(e as Error).message}\n${url} 下了 5 次都没下完。GitHub 在国外，最好开代理（设 HTTPS_PROXY）再跑 anim assets pull，或把 ANIM_GITHUB_MIRROR 设成加速站前缀；已下的部分留着，重跑接着下`);
           console.error(`!! 第 ${次} 次没下完（已有 ${((fs.existsSync(tmp) ? fs.statSync(tmp).size : 0) / 1e6).toFixed(0)} MB），接着下`);
         }
       }
@@ -239,13 +248,14 @@ export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 'https:
         console.log(`  地形包 ${包}/${版本}：${实.文件数} 个文件`);
       } else {
         let 放 = 0;
-        for (const s of a.字节 ?? []) {
-          const 源 = path.join(解, 'store', s.slice(0, 2), s);
-          if (!fs.existsSync(源)) throw new Error(`${a.名} 里没有 ${s}`);
+        const 件们 = [...(a.字节 ?? []).map((s) => ['store', s] as const), ...(a.私有库字节 ?? []).map((s) => ['私有', s] as const)];
+        for (const [库, s] of 件们) {
+          const 源 = path.join(解, 库, s.slice(0, 2), s);
+          if (!fs.existsSync(源)) throw new Error(`${a.名} 里没有 ${库}/${s}`);
           if ((await 流sha(源)) !== s) throw new Error(`${a.名} 里 ${s.slice(0, 12)} 的内容 sha256 和文件名对不上`);
-          if (放进store(源, 根, s)) 放++;
+          if (放进库(源, 根, s, 库)) 放++;
         }
-        console.log(`  ${(a.字节 ?? []).length} 件字节，新放进 store ${放} 件`);
+        console.log(`  ${件们.length} 件字节，新放进数据根 ${放} 件`);
       }
     } finally {
       fs.rmSync(解, { recursive: true, force: true });

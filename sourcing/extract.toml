@@ -935,14 +935,14 @@
 "数据/场景/关键帧/群系色" = "src/模型/场景/关键帧/群系色.json"
 
 # 作品 亚波伦不放水 的附加方块表：全局表 + 粉色教堂地上结构用到、全局表查不到的方块（Goety、Alex 的洞穴、BOMD、天体核心、灾变、妖怪归家、Prefab 和原版樱花系）。
-# 登记在作品资产表、可见性 私有：灾变、妖怪归家、Prefab 的资源保留所有权益，不能随 Release 公开发。作品的 换用.toml 让本作品把全局表的两个 id
+# 登记在作品资产表。灾变、妖怪归家、Prefab 的资源保留所有权益，原先按私有登记；用户 11-13 定全部公开，可见性改发布、随 Release 发（字节仍在 私有/ 库）。作品的 换用.toml 让本作品把全局表的两个 id
 # 换成这两件（pipeline/资产/资产锁.ts 套换用），别的作品还用全局表。输入是全局表：全局表换了要重跑，再 anim assets add … --替换
 [["取材"]]
 "名称" = "方块附加-亚波伦不放水"
 "作品" = "亚波伦不放水"
 "需要" = ["client-1.20.1", "twilightforest", "iceandfire", "tconstruct", "mantle", "create", "quark", "zeta", "goety", "alexscaves", "bosses_of_mass_destruction", "celestial_core", "cataclysm", "youkaishomecoming", "prefab"]
 "公开版" = "不提取"
-"可见性" = "私有"
+"可见性" = "发布"
 "步骤" = [
   ["uv", "run", "-q", "--with", "pillow==13.0.0", "python", "{脚本}/关键帧方块.py",
     "--jar", "{jar:client-1.20.1,twilightforest,iceandfire,tconstruct,mantle,create,quark,zeta,goety,alexscaves,bosses_of_mass_destruction,celestial_core,cataclysm,youkaishomecoming,prefab}",
@@ -964,7 +964,7 @@
 "作品" = "亚波伦不放水"
 "需要" = []
 "公开版" = "不提取"
-"可见性" = "私有"
+"可见性" = "发布"
 "来源" = "整合包《诡厄：使徒》1.3.1（落烟雨辰；教堂是群友做的）"
 "许可" = "保留所有权益（BBSMC）"
 "步骤" = [
@@ -2665,13 +2665,13 @@
 
 # 粉色婚礼教堂的结构文件：整合包《诡厄：使徒》1.3.1 里层 graemod-1.0.0.jar 的 data/graemod/structures/0721.nbt（87×83×97，sha256 01888225…）。
 # y 0～5 是地下室、19 个实体全在地下室，用户 11-09 定不入镜：裁成 y ≥ 6、整体下移 6 格、实体清空（87×77×97）。原文件不入库。
-# 整合包「保留所有权益」，结构按私有登记（字节只在数据根 私有/）。
+# 整合包「保留所有权益」，结构原先按私有登记；用户 11-13 定全部公开，可见性改发布、随 Release 发（字节仍在数据根 私有/）。
 [["取材"]]
 "名称" = "粉色教堂结构"
 "作品" = "亚波伦不放水"
 "需要" = ["诡厄使徒整合包"]
-"公开版" = "不提取"  # 私有，公开版不带；有整合包的人照这条自己裁
-"可见性" = "私有"
+"公开版" = "不提取"  # 字节随 Release 发；有整合包的人也可以照这条自己裁
+"可见性" = "发布"
 "许可部分" = ["结构"]
 "来源" = "整合包《诡厄：使徒》1.3.1（落烟雨辰；教堂是群友做的）"
 "许可" = "保留所有权益（BBSMC）"
@@ -2685,7 +2685,7 @@
 # origin 取 (0,194,0)：网格里的游戏坐标 = 原结构 0721.nbt 的坐标（地下室 y 0～5 裁掉了，草地 y 6，教堂地板顶面 y 9）。
 # 实例是从 取材客户端 复制的，多装 jars.toml 末尾那一批（教堂里的模组方块和它们的前置）；「需要」只列方块或贴图进了网格的 jar，前置不列。
 # goety、灾变、lootr 用的是本机已有的新版（整合包带 goety 2.5.52.1、灾变 3.16、lootr 0.7.35.93；用户 11-09 说版本差异没关系）。
-# 整合包「保留所有权益」，头、顶点、图集都按私有登记。步骤要先开着这个存档：MCAI_INSTANCE=取材客户端-诡厄 anim mcai game start world=教堂片场，
+# 整合包「保留所有权益」，头、顶点、图集原先按私有登记，用户 11-13 定全部公开、改发布。步骤要先开着这个存档：MCAI_INSTANCE=取材客户端-诡厄 anim mcai game start world=教堂片场，
 # 跑的时候同样带 MCAI_INSTANCE=取材客户端-诡厄。存档已经放好教堂，别再 place。实例或存档丢了照这样重建，再跑步骤：
 #   1. anim mcai game newinstance name=取材客户端-诡厄；把 jars.toml 里 youkaishomecoming、alexscaves、prefab、bosses_of_mass_destruction、celestial_core、
 #      sophisticatedbackpacks、lionfishapi、farmersdelight、curios、geckolib、cloth_config、cerbons_api、sophisticatedcore、patchouli、goety、cataclysm、lootr
@@ -2701,8 +2701,8 @@
 "作品" = "亚波伦不放水"
 "需要" = ["诡厄使徒整合包", "client-1.20.1", "goety", "cataclysm", "lootr", "youkaishomecoming", "alexscaves", "prefab", "bosses_of_mass_destruction", "celestial_core", "sophisticatedbackpacks", "quark", "twilightforest"]
 "要开游戏" = true
-"公开版" = "不提取"  # 私有，公开版不带
-"可见性" = "私有"
+"公开版" = "不提取"  # 字节随 Release 发
+"可见性" = "发布"
 "步骤" = [
   ["mcai", "cam", "pos=43.5,300,48.5", "pitch=90", "yaw=180", "fov=70", "dim=minecraft:overworld"],
   ["mcai", "cmd", "time", "set", "6000"],
@@ -3046,7 +3046,7 @@
 "作品" = "亚波伦不放水"
 "需要" = ["goety_revelation"]
 "公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
-"可见性" = "私有"
+"可见性" = "发布"
 "来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6"
 "许可" = "All Rights Reserved"
 "步骤" = [
@@ -3064,7 +3064,7 @@
 "作品" = "亚波伦不放水"
 "需要" = ["goety_revelation"]
 "公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
-"可见性" = "私有"
+"可见性" = "发布"
 "来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
 "许可" = "All Rights Reserved"
 "步骤" = [
@@ -3113,7 +3113,7 @@
 "作品" = "亚波伦不放水"
 "需要" = ["goety_revelation"]
 "公开版" = "不提取"  # 私有，公开版不带；有 jar 的人照这条自己导
-"可见性" = "私有"
+"可见性" = "发布"
 "来源" = "诡厄巫法启示录 Goety: Revelation 2.3.6（含内嵌的 RevelationFix 4.9）"
 "许可" = "All Rights Reserved"
 "步骤" = [

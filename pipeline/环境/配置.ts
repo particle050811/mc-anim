@@ -45,7 +45,22 @@ const 项表 = {
     默认: (v) => path.join(v.数据根!, 'run', 'locks'),
   },
   成片档: { 变量: 'ANIM_FILM_PROFILE', 说明: '成片档：4k60（默认，3 倍截图原生出 3840×2160、60 帧、码率上限 40 Mbps）或 1080p60（1.5 倍出 1920×1080、15 Mbps）；换档段全部重渲；见 pipeline/渲/设置.ts 的 成片档表', 是路径: false, 默认: () => '4k60' },
-  gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU；Docker 里没有 GPU 用 swangle）', 是路径: false, 默认: () => 'angle' },
+  // Windows 默认 vulkan：11-02 在 4060 笔记本上实测，ANGLE 默认的 D3D11 同一帧渲两遍有 45/86 帧不同，Vulkan 0/86、离 Mac 一样近，OpenGL 有大片黑斑
+  // （数据根 archive/预览/1102-0601-跨机画面差异）。用户 11-13 定要别人在 Windows 上从 GitHub 拉下来就能渲出一样的，所以不让人自己去配
+  gl: { 变量: 'ANIM_GL', 说明: '无头 Chrome 的 WebGL 后端（angle 走 GPU，Windows 默认 vulkan；Docker 里没有 GPU 用 swangle）', 是路径: false, 默认: () => (process.platform === 'win32' ? 'vulkan' : 'angle') },
+  // 下载源默认用国内镜像（用户 11-13「观众未必有代理」）；只有国外有的，下载失败时提示走代理
+  浏览器镜像: {
+    变量: 'ANIM_CHROME_MIRROR',
+    说明: '渲染用浏览器（Google 的 Chrome for Testing）的镜像根，默认 npmmirror；anim.local.toml 写 chrome_mirror = "" 就不走镜像、直接让 Remotion 从 Google 下',
+    是路径: false,
+    默认: () => 'https://registry.npmmirror.com/-/binary/chrome-for-testing',
+  },
+  github下载根: {
+    变量: 'ANIM_GITHUB_MIRROR',
+    说明: 'anim assets pull 下 Release 附件用的地址前缀，默认 https://github.com；连不上 GitHub 又没代理时可以换成加速站前缀（附件都核 sha256，换了不怕被改）',
+    是路径: false,
+    默认: () => 'https://github.com',
+  },
   ffmpeg: { 变量: 'ANIM_FFMPEG', 说明: 'ffmpeg 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffmpeg' },
   ffprobe: { 变量: 'ANIM_FFPROBE', 说明: 'ffprobe 程序（默认从 PATH 找）', 是路径: false, 默认: () => 'ffprobe' },
   渲染内存下限: { 变量: 'ANIM_RENDER_FREE_MIN', 说明: '渲染放行要的空闲内存百分比（照旧资源闸 30%）', 是路径: false, 默认: () => '30' },

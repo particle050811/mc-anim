@@ -19,9 +19,9 @@
 数据根（默认是仓库同级的 `mc-anim-data/`，环境变量 `ANIM_DATA` 可改）：
 
 - `store/<sha 前两位>/<sha256>`：可见性为 公开、提取、发布 的资产字节。
-- `私有/<sha 前两位>/<sha256>`：可见性为 私有 的资产字节，和 store 分开，打包公开版时整个不碰。
+- `私有/<sha 前两位>/<sha256>`：原先可见性为 私有 的资产字节，和 store 分开。11-13 起全部改成 发布、随 Release 发（`docs/决策/0017-全部公开.md`），字节仍留在这里（挪了按 cue 现取的配乐会改走打包，指纹全变）；现在能不能发只看可见性，还是 私有 的才不发。
 - 随仓库发的作品（`<作品根>/字节/`，布局同 `store/`）：`anim render`、`still`、`film`、`studio` 开头把 store 里还没有的核过 sha 补进去，也可以 `anim assets seed`。
-- 挂 Release 发的作品（`<作品根>/发布锁.json`）：`anim assets pull` 下载、核 sha，字节放进 `store/`、地形包放进 `terrain/`；render 这些命令开头缺了会提示。
+- 挂 Release 发的作品（`<作品根>/发布锁.json`）：`anim assets pull` 下载、核 sha，字节照原来的库放回 `store/` 或 `私有/`、地形包放进 `terrain/`；film、still、studio 开头缺了会提示。
 - `terrain/<包名>/<版本>/`：地形区段包，版本是内容指纹。换格式（`anim world 转码`）也是出新版本，旧目录不动。
 
 库里的对象按内容寻址，只增不改（文件是只读的）；同一份字节被几条资产引用只存一份。

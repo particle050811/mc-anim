@@ -106,7 +106,7 @@ describe('资产', () => {
     const v = (await 跑('资产', 根)).违规.join('\n');
     expect(v).toMatch(/「贴图\/乙」的许可「MIT 或 GPL」不是 SPDX 表达式/);
     expect(v).toMatch(/「贴图\/乙」登记了但不在资产锁里/);
-    expect(v).toMatch(/「贴图\/私」可见性是 私有，资产锁里却在 store 库/);
+    expect(v).toMatch(/「贴图\/私」可见性是私有，资产锁里却在 store 库/);
     expect(v).toMatch(/资产锁里的「贴图\/孤」没在资产表登记/);
     expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/画面.tsx asset:引用的「贴图\/没登记」没在资产表登记/);
     expect(v).toMatch(/公开构建的闭包里不能有私有资产：作品\/应力转动\/段\/7-甲\/画面.tsx import 了 asset:贴图\/私/);
