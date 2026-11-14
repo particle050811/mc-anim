@@ -827,6 +827,7 @@ export const drawPhotonClouds = (ctx: MidPassContext) => {
   if (!p.rt || p.rt.width !== ctx.width || p.rt.height !== ctx.height) {
     p.rt?.dispose();
     p.rt = new THREE.WebGLRenderTarget(ctx.width, ctx.height, { count: 2, type: THREE.FloatType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+    p.rt.textures[1].format = THREE.RedFormat;
   }
   updateCloudUniforms(cam);
   const u = mat.uniforms;
