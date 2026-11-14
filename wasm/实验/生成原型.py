@@ -39,3 +39,12 @@ for 方 in ['W','N','U']:
     编码 = 编码.replace(原,'(k < (nz >> 1) ? 65536 : 0) + palette[2 * '+方+']!))')
 编码 = 代(编码,'模型.map[s]! * 1371','(模型.map[s & 65535]! + (s >= 65536 ? 模型.classes : 0)) * 1371')
 (出/'上下半编码.ts').write_text(编码)
+
+引用 = 代(源,'const bW = 有W ? base - nz : 有N ? base - 边 * nz : -1, bN = 有N ? base - 边 * nz : bW;', 'const 西列 = 有W ? 取(数,c-1) : 有N ? 取(数,c-边) : -1, 北列 = 有N ? 取(数,c-边) : 西列;\n    const bW = 西列 < 0 ? -1 : 西列 * nz, bN = 北列 < 0 ? -1 : 北列 * nz;\n    const 两个邻居 = 有W && 有N;')
+引用 = 代(引用,'else if (bN != bW)', 'else if (两个邻居)')
+引用 = 代(引用,'源 = bW;', '源 = 西列;')
+引用 = 代(引用,'源 = bN;', '源 = 北列;')
+起 = 引用.index('      memory.copy(cm'); 止 = 引用.index('    let k = nz - 1',起)
+引用 = 引用[:起]+'      存(数,c,源);\n      continue;\n    }\n    存(数,c,c);\n'+引用[止:]
+引用 = 代(引用,'const base = c * nz, w0 = w;', 'const base = 取(数,c) * nz, w0 = w;')
+写模块('整列引用',引用,接口)
