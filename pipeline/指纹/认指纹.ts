@@ -66,10 +66,10 @@ export const 新指纹已有 = (键: string, 新: { 画面: string; 声音: stri
  * 切片和配的 wav 都在、切片帧数和这段现在的输出帧数一样。段签缺了、不是这一对派生的，过放行闸当场补。
  * 都不行返回 null 和每份为什么不行（最多几条）
  */
-export const 找旧版 = async (键: string, 新: 段指纹, o: { 帧数: number; 等放行: () => Promise<void>; 作品?: string }): Promise<{ 旧: 旧版 | null; 没用的: string[] }> => {
+export const 找旧版 = async (键: string, 新: 段指纹, o: { 帧数: number; 等放行: () => Promise<void>; 作品?: string; 指定?: string; 含本版?: boolean }): Promise<{ 旧: 旧版 | null; 没用的: string[] }> => {
   const 作品 = o.作品 ?? 作品名();
   const 没用的: string[] = [];
-  for (const h of 历史指纹(键, 母版目录(键, 作品)).filter((h) => h.指纹 !== 新.指纹 && 同档(h, 新))) {
+  for (const h of 历史指纹(键, 母版目录(键, 作品)).filter((h) => (o.指定 ? h.指纹 === o.指定 : o.含本版 || h.指纹 !== 新.指纹) && 同档(h, 新))) {
     const 名 = h.指纹.slice(0, 16);
     const 母版 = 段画面路径(键, h.指纹, 作品);
     if (!fs.existsSync(母版)) continue;
