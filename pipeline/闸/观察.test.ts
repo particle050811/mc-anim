@@ -21,9 +21,9 @@ it.each([['10-22',146],['11-01 15:51',21],['11-01 夜',144]])('%s 旧事故回�
   const s=基本();s.时=分钟*60_000;加票(s,1);s.票[0]!.内容!.等内存起=0;
   const e=取调度环境({锁目录:dir});let h=空历史();const alarms=判告警(s,s.时,undefined,h);expect(alarms.some(x=>x.类==='等内存')).toBe(true);记录告警(e,s,h,alarms);h=读监测(e);expect(判告警(s,s.时,undefined,h)).toHaveLength(0);
 });
-it('CPU 无队列也告警，swap 和孤儿依赖历史，队深只创新高',()=>{
+it('CPU 无队列也告警，孤儿依赖历史，swap 光涨没人变慢不报，队深只创新高',()=>{
   const s=基本();s.时=0;s.机.负载=30;let h=更新历史(s,空历史());for(const t of [30,60,90,120,150])h=更新历史({...s,时:t*1000},h);s.时=180_000;s.机.swap=2**30;s.机.孤儿=1;h=更新历史(s,h);h=更新历史(s,h);
-  const kinds=判告警(s,s.时,undefined,h).map(x=>x.类);expect(kinds).toEqual(expect.arrayContaining(['负载','swap增长','孤儿Chrome']));
+  const kinds=判告警(s,s.时,undefined,h).map(x=>x.类);expect(kinds).toEqual(expect.arrayContaining(['负载','孤儿Chrome']));expect(kinds).not.toContain('swap增长');
   加票(s,4);h.高水位=4;expect(判告警(s,s.时,undefined,h).some(x=>x.类==='队深')).toBe(false);
 });
 it('盯无事件 0 输出，到点 124；父死退出；重挂不重报',async()=>{
@@ -31,7 +31,7 @@ it('盯无事件 0 输出，到点 124；父死退出；重挂不重报',async()
   const o={最长:10,输出:(s:string)=>输出.push(s),读:()=>({...基本(),时:now}),睡:async(ms:number)=>{now+=ms;},父活:()=>true};
   expect(await 盯(e,o)).toBe(124);expect(输出).toEqual([]);
   expect(await 盯(e,{...o,父活:()=>false})).toBe(0);
-  now=0;const s=基本();s.机.压力=2;expect(await 盯(e,{...o,读:()=>({...s,时:now})})).toBe(0);expect(输出.length).toBe(1);
+  now=0;const s=基本();s.机.压力=4;expect(await 盯(e,{...o,读:()=>({...s,时:now})})).toBe(0);expect(输出.length).toBe(1);
   expect(await 盯(e,{...o,读:()=>({...s,时:now})})).toBe(124);expect(输出.length).toBe(1);
 });
 it('still 估计用明细首帧和纯跑，不把排队加进去',()=>{

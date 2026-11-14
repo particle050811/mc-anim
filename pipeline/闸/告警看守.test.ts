@@ -47,13 +47,13 @@ it('队列行的约几分只算自己这把锁和同队的票：放行票不等�
 describe('去重能复位', () => {
   it('压力：抖一下不重新叫醒，持续消失后是新事件；一天没人采样后再到也是新事件', () => {
     let h = 空历史(), a: string[];
-    [h, a] = 轮(h, 机(0, { 压力: 2 })); expect(a).toEqual(['内存压力#1']);
+    [h, a] = 轮(h, 机(0, { 压力: 4 })); expect(a).toEqual(['内存压力#1']);
     [h, a] = 轮(h, 机(30_000, { 压力: 1 })); expect(a).toEqual([]);
-    [h, a] = 轮(h, 机(60_000, { 压力: 2 })); expect(a).toEqual([]);
+    [h, a] = 轮(h, 机(60_000, { 压力: 4 })); expect(a).toEqual([]);
     for (let t = 90_000; t <= 390_000; t += 30_000) { [h, a] = 轮(h, 机(t, { 压力: 1 })); expect(a).toEqual([]); }
     expect(h.去重).toEqual({});
-    [h, a] = 轮(h, 机(420_000, { 压力: 2 })); expect(a).toEqual(['内存压力#1']);
-    [h, a] = 轮(h, 机(420_000 + 86_400_000, { 压力: 2 })); expect(a).toEqual(['内存压力#1']);
+    [h, a] = 轮(h, 机(420_000, { 压力: 4 })); expect(a).toEqual(['内存压力#1']);
+    [h, a] = 轮(h, 机(420_000 + 86_400_000, { 压力: 4 })); expect(a).toEqual(['内存压力#1']);
   });
   it('负载：第一夜三次，第二夜还能醒', () => {
     const 夜 = (起: number, h0: 监测历史) => { let h = h0; const out: string[] = []; for (let m = 0; m <= 15; m++) { const [n, a] = 轮(h, 机(起 + m * 60_000, { 负载: 30 })); h = n; out.push(...a); } return [h, out] as const; };
@@ -71,19 +71,47 @@ describe('去重能复位', () => {
   });
   it('落盘后也复位：不留挡住下一次的认领文件，删了监测文件也不会哑', () => {
     const e = 环(); const 类们 = (s: 调度状态) => 监测一轮(e, s).map(x => x.类);
-    expect(类们(机(0, { 压力: 2 }))).toEqual(['内存压力']);
-    expect(类们(机(5_000, { 压力: 2 }))).toEqual([]);
+    expect(类们(机(0, { 压力: 4 }))).toEqual(['内存压力']);
+    expect(类们(机(5_000, { 压力: 4 }))).toEqual([]);
     expect(类们(机(400_000, { 压力: 1 }))).toEqual([]);
     expect(读监测(e).去重).toEqual({});
-    expect(类们(机(405_000, { 压力: 2 }))).toEqual(['内存压力']);
+    expect(类们(机(405_000, { 压力: 4 }))).toEqual(['内存压力']);
     expect(fs.existsSync(path.join(e.调度目录, '告警'))).toBe(false);
     fs.rmSync(path.join(e.调度目录, '监测.json'));
-    expect(类们(机(410_000, { 压力: 2 }))).toEqual(['内存压力']);
+    expect(类们(机(410_000, { 压力: 4 }))).toEqual(['内存压力']);
     expect(读调度(e.日志目录).filter(x => x.事 === '告警')).toHaveLength(3);
   });
   it('监测文件是旧格式（去重存数字）时按事件已结束处理', () => {
     const h = { ...空历史(), 去重: { '内存压力:机器': 1 } } as unknown as 监测历史;
-    expect(更新历史(机(0, { 压力: 2 }), h).去重).toEqual({});
+    expect(更新历史(机(0, { 压力: 4 }), h).去重).toEqual({});
+  });
+});
+
+describe('内存类只在闸兜不住时报（用户 11-14 定）', () => {
+  /** 每 30 秒一轮跑到 分钟 分钟，帧速(秒) 给出这一刻每秒出几帧；返回全部告警 */
+  const 跑 = (分钟: number, 压力: (秒: number) => number, 帧速: (秒: number) => number, 有持锁 = true) => {
+    let h = 空历史(), 帧 = 0; const out: string[] = [];
+    for (let t = 0; t <= 分钟 * 60_000; t += 30_000) {
+      const s = 机(t, { 压力: 压力(t / 1000) }); if (有持锁) s.持锁 = [持({ 已出帧: Math.floor(帧), 总帧: 1e6, 帧时: t })];
+      const [n, a] = 轮(h, s); h = n; out.push(...a); 帧 += 帧速(t / 1000) * 30;
+    }
+    return out;
+  };
+  it('压力 2 一直在、帧速不变：不报', () => { expect(跑(20, () => 2, () => 1)).toEqual([]); });
+  it('压力 2 一直在、近 3 分钟帧速掉到五分之一：报', () => { expect(跑(15, () => 2, t => t < 600 ? 1 : 0.2)).toContain('内存压力#1'); });
+  it('帧速掉了但压力只有 1：不报（镜头变重本来就会慢）', () => { expect(跑(15, () => 1, t => t < 600 ? 1 : 0.2)).toEqual([]); });
+  it('压力 2 才出现不到 3 分钟：不报', () => { expect(跑(12, t => t >= 600 ? 2 : 1, t => t < 600 ? 1 : 0.2)).toEqual([]); });
+  it('压力 4：立刻报，不看帧速，没人渲也报', () => { expect(跑(1, () => 4, () => 1, false)).toEqual(['内存压力#1']); });
+  it('swap 3 分钟涨 1 GiB、压力 2，但没人变慢：不报', () => {
+    let h = 空历史(); const 态 = (t: number, swap: number) => { const s = 机(t, { 压力: 2, swap }); s.持锁 = [持({ 已出帧: t / 1000, 总帧: 1e6, 帧时: t })]; return s; };
+    for (let t = 0; t <= 600_000; t += 30_000) h = 更新历史(态(t, t >= 600_000 ? 2 ** 30 : 0), h);
+    expect(判告警(态(600_000, 2 ** 30), 600_000, undefined, h)).toEqual([]);
+  });
+  it('出帧样本约 25 秒一个、只留 15 分钟，持锁者走了就丢', () => {
+    let h = 空历史();
+    for (let t = 0; t <= 1_200_000; t += 3_000) { const s = 基本(t); s.持锁 = [持({ 已出帧: t / 1000, 总帧: 1e6 })]; h = 更新历史(s, h); }
+    const 样 = Object.values(h.帧)[0]!; expect(样.length).toBeLessThanOrEqual(37); expect(1_200_000 - 样[0]!.时).toBeLessThanOrEqual(900_000);
+    expect(更新历史(基本(1_203_000), h).帧).toEqual({});
   });
 });
 
@@ -95,10 +123,12 @@ describe('采样断档和读不到', () => {
     expect(h.负载起).toBe(六小时); expect(h.孤儿轮).toBe(1);
     expect(判告警(机(六小时, { 负载: 30, 孤儿: 1 }), 六小时, undefined, h)).toEqual([]);
   });
-  it('持锁者 30 秒一采、定时器略晚，swap 增长照样判得到', () => {
+  it('持锁者 30 秒一采、定时器略晚，swap 增长照样判得到（压力 2、有人变慢时）', () => {
+    const 起 = 600_000, 态 = (时: number, 帧: number, 改: Partial<调度状态['机']>) => { const s = 机(时, 改); s.持锁 = [持({ 已出帧: 帧, 总帧: 1e5 })]; return s; };
     let h = 空历史();
-    for (let i = 0; i <= 7; i++) h = 更新历史(机(i * 30_500, { swap: i === 7 ? 2 ** 30 : 0 }), h);
-    expect(判告警(机(7 * 30_500, { swap: 2 ** 30 }), 7 * 30_500, undefined, h).map(x => x.类)).toEqual(['swap增长']);
+    for (let t = 0; t <= 起; t += 30_000) h = 更新历史(态(t, t / 1000, { 压力: 2 }), h);
+    for (let i = 1; i <= 7; i++) h = 更新历史(态(起 + i * 30_500, 起 / 1000, { 压力: 2, swap: i === 7 ? 2 ** 30 : 0 }), h);
+    expect(判告警(态(起 + 7 * 30_500, 起 / 1000, { 压力: 2, swap: 2 ** 30 }), 起 + 7 * 30_500, undefined, h).map(x => x.类)).toContain('swap增长');
   });
   it('swap 读不到不入历史，恢复读数不算增长；负载、孤儿读不到不清零也不累加', () => {
     let h = 更新历史(机(0, { swap: null }), 空历史());
@@ -178,6 +208,10 @@ describe('告警对象', () => {
     expect(这次('t6')).toBeUndefined();
     记('t6', '720', '被杀', 30);
     expect(这次('t7')).toMatchObject({ 值: 4, 次数: 2 });
+  });
+  it('低优先的票不报排队类、不算队深', () => {
+    const s = 基本(2000_000); s.票 = Array.from({ length: 5 }, (_, i) => ({ ...票('8' + i, { 任务: 'L' + i, 声明: { 种: 'still', 低优先: true } }), 文件: i ? '/q/渲染.排队/8' + i : '/q/放行.排队/80' }));
+    expect(判告警(s, s.时)).toEqual([]);
   });
   it('still 只有预计缺失才算小任务', () => {
     const 判 = (声明: NonNullable<票['内容']>['声明'], 等: number) => { const s = 基本(等 * 1000); s.票 = [票('a', { 声明 })]; return 判告警(s, s.时).map(x => x.类); };
