@@ -1,0 +1,6 @@
+# 挂 GitHub Release 发的字节（docs/决策/0006-挂Release发字节.md）：这些段渲片要用的字节（连 私有/ 库里的歌）和它们声明的地形包，
+# anim assets pack 打附件、写 发布锁.json，anim assets pull 下载进数据根。用户 11-13 定所有作品连同以前私有的都公开、别人本地能渲出一样的
+# （docs/决策/0017-全部公开.md），所以写「全部」（清单里每一段）。改了段的引用，重跑 anim assets pack --上传，anim check 核对。
+"仓库" = "particle050811/mc-anim"
+"标签" = "assets-v1"
+"段" = ["全部"]
