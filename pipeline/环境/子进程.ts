@@ -67,8 +67,8 @@ export const 前台跑 = (cmd: readonly string[], opts: SpawnOptions = {}): Prom
     child.on('close', (code) => resolve(code ?? 1));
   });
 
-// Windows：系统用了 Modern Standby 时，闲置关屏就进待机、GPU 被挂起，渲染页丢 WebGL 上下文整次作废
-// （11-14 笔记本接着电源、「睡眠」设成从不，关屏 30 分钟一到照样进 S0 待机，十几分钟后渲染页丢上下文）。
+// Windows：系统用了 Modern Standby 时，闲置关屏就进待机（11-14 笔记本接着电源、「睡眠」设成从不，关屏 30 分钟一到照样进 S0 待机），长渲染不能让它睡。
+// 同一天笔记本渲穿塔约第 2400 帧丢 WebGL 上下文，当时归到待机，后来查明是显存越攒越多（engine/voxel/容器池.ts），不是这里。
 const 防睡脚本 = (pid: number) =>
   [
     `Add-Type -Name P -Namespace W -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint f);'`,
