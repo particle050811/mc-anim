@@ -12,6 +12,8 @@ export type 附件 = {
   大小: number;
   /** 一批 store/ 字节：sha256 */
   字节?: string[];
+  /** 同一个 tar 里 私有/ 库的字节（可见性已公开、库没搬的，docs/决策/0017-全部公开.md）：sha256 */
+  私有库字节?: string[];
   /** 一个地形包：解开是 terrain/<包>/<版本>/ 下的文件 */
   地形?: { 包: string; 版本: string };
 };
@@ -32,7 +34,8 @@ export const 地形目录 = (根: string, 包: string, 版本: string) => path.j
 /** 这个附件的东西数据根里还缺：字节缺几件，地形包整个目录不在 */
 export const 附件缺 = (a: 附件, 根: string): number => {
   if (a.地形) return fs.existsSync(地形目录(根, a.地形.包, a.地形.版本)) ? 0 : 1;
-  return (a.字节 ?? []).filter((sha) => !fs.existsSync(path.join(根, 'store', sha.slice(0, 2), sha))).length;
+  const 缺 = (库: string, shas: string[] = []) => shas.filter((sha) => !fs.existsSync(path.join(根, 库, sha.slice(0, 2), sha))).length;
+  return 缺('store', a.字节) + 缺('私有', a.私有库字节);
 };
 
 /** 有发布锁、数据根又缺它的东西时打一行（film、still、studio 开头）；不自动下：地形包上 GB */
