@@ -12,6 +12,21 @@ try {
   入 = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
 } catch {}
 if (入.agent_id || 入.agent_type) process.exit(0);
+// 非交互的 claude -p 也不起（用户 11-14 定）：没人会被叫醒；而且 -p 会同步等 UserPromptSubmit 钩子，没告警就一直挂着，
+// 有告警退 2 又会拦下唯一那条提示词（11-14 主会话用 -p 跑 Fable 5.2，卡了 85 分钟没出一个字）。
+// CLAUDE_CODE_ENTRYPOINT 从父会话继承，分不出 -p，只能往上看进程命令行；Windows 没有 ps，照旧挂。
+const 非交互 = () => {
+  let pid = Number(process.env.CLAUDE_PID) || process.ppid;
+  for (let i = 0; i < 4 && pid > 1; i++) {
+    const r = spawnSync('ps', ['-o', 'ppid=,args=', '-p', String(pid)], { encoding: 'utf8' });
+    const m = (r.stdout ?? '').trim().match(/^(\d+)\s+(.*)$/s);
+    if (!m) return false;
+    if (/^claude(\.exe)?$/.test(path.basename(m[2].split(/\s/)[0] ?? ''))) return /\s(-p|--print)(\s|$)/.test(m[2]);
+    pid = Number(m[1]);
+  }
+  return false;
+};
+if (process.platform !== 'win32' && 非交互()) process.exit(0);
 const 会话 = String(入.session_id ?? process.env.CLAUDE_CODE_SESSION_ID ?? '');
 if (!会话) process.exit(0);
 const 根 = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
