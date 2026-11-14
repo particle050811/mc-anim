@@ -7,7 +7,7 @@ id = "材质包/bare-bones"
 "类别" = "材质包"
 "来源" = "手工:下载 https://cdn.modrinth.com/data/rox3U8B6/versions/s3lwqPHV/Bare%20Bones%201.20.zip（Modrinth bare-bones 1.1.7，sha1 31d55c22f6f26529ff6ba810dba48873862ae358）"
 "许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "私有"
+"可见性" = "发布"
 "说明" = "RobotPantaloons 的 Bare Bones，16x，仿官方宣传片的扁平风。https://modrinth.com/resourcepack/bare-bones：「Do not reupload any instance of the Bare Bones texture pack.」商用要找作者授权（business.robotpantaloons@gmail.com）"
 
 [["资产"]]
@@ -39,7 +39,7 @@ id = "材质包/vanilla-tweaks-试样"
 "类别" = "材质包"
 "来源" = "手工:vanillatweaks.net 1.20 资源包拼装（11-02 选 CherryPicking、CircleLogTops、SmoothDirt、UniversalLushGrass、CircularSunandMoon、ClearerWater、BushyLeaves、CleanGlass、UnobtrusiveRain、VariatedGrass；r569351）"
 "许可" = "LicenseRef-VanillaTweaks-Terms"
-"可见性" = "私有"
+"可见性" = "发布"
 "说明" = "Vanilla Tweaks 挑选式小改。https://vanillatweaks.net/terms/：可在项目里用、改、分享，要 credits.txt 署名，不许收费；没写视频商用，再分发原样拼装包不明，先按私有"
 
 [["资产"]]
@@ -47,7 +47,7 @@ id = "材质包/sphax-32x"
 "类别" = "材质包"
 "来源" = "手工:下载 https://bdcraft.net/downloads/purebdcraft-minecraft/（PureBDcraft 32x MC120，11-05 用户授权代点 Accept Terms of Use 后下载，文件名「PureBDcraft  32x MC120.zip」）"
 "许可" = "LicenseRef-BDcraft-EULA"
-"可见性" = "私有"
+"可见性" = "发布"
 "说明" = "Sphax PureBDcraft 32x，漫画卡通风整套重画。https://bdcraft.net/eula/：可做视频（含变现），简介署名 BDcraft.net 并附链接；不许再分发。11-05 拿来和 Faithful 32x 比整体画风，没选用"
 
 [["资产"]]
@@ -63,7 +63,7 @@ id = "材质包/faithful-hd-x128"
 "类别" = "材质包"
 "来源" = "手工:下载 https://www.curseforge.com/api/v1/mods/545009/files/5842068/download（CurseForge Faithful HD x128 0.8 for 1.20.1，文件名 iFaithfulx128_1.20.1.zip，sha1 835c995963608a78f2a097570612e5fd8f9eddae）"
 "许可" = "LicenseRef-Faithful-License-3"
-"可见性" = "私有"
+"可见性" = "发布"
 "说明" = "isaiah 的 Faithful HD x128（不是 Faithful 官方，官方最高 64x），照 Faithful x32 的风格、拿 waifu2x 把原版放大当底稿描线重画，是他 x512 包缩出来的。只有方块 654、物品 386 张，实体、粒子没有。CurseForge 许可页挂的是 Faithful License v3：不许变现、要署名并带原样许可文件，保守按私有。用户 11-06 要看 128x 真上屏拿它试"
 
 [["资产"]]

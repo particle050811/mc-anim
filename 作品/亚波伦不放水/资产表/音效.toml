@@ -2230,7 +2230,7 @@ id = "音效/启示录/revelationfix.quietus_beam"
 "类别" = "音效"
 "来源" = "提取:亚波伦启示录素材@d7e53575be83"
 "许可" = "LicenseRef-All-Rights-Reserved"
-"可见性" = "私有"
+"可见性" = "发布"
 "说明" = "anim extract --登记 自动登记（src/音效/启示录/revelationfix.quietus_beam.ogg）"
 
 [["资产"]]
