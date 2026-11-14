@@ -16,6 +16,7 @@ import { 光影环境名, 套光影试看, type 光影配置 } from './光影试
 import { 稳定缓存名 } from '../资产/缓存名.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 数据根 } from '../环境/配置.ts';
+import { 防睡 } from '../环境/子进程.ts';
 import { 全部段, type 段信息 } from '../清单/清单.ts';
 import { 核对段材质包, 照段材质包, 读作品资产锁 } from '../资产/资产锁.ts';
 import { 补字节并报 } from '../资产/随仓库.ts';
@@ -66,8 +67,17 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
 
 type 会话 = { serveUrl: string; browser: HeadlessBrowser; 参数: 渲染参数表; 组合: Awaited<ReturnType<typeof getCompositions>> };
 
-/** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承 */
+/** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承；会话期间不让电脑闲置睡眠 */
 export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: { 光影?: boolean } = {}): Promise<T> => {
+  const 撤防睡 = 防睡();
+  try {
+    return await 会话里(级别, fn, 记录, 打包选项);
+  } finally {
+    撤防睡();
+  }
+};
+
+const 会话里 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: { 光影?: boolean } = {}): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {

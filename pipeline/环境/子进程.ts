@@ -2,7 +2,7 @@
 import spawn from 'cross-spawn';
 import {登记收尾} from '../闸/收尾.ts';
 import type { SpawnOptions } from 'node:child_process';
-import { isWindows } from './配置.ts';
+import { isMac, isWindows } from './配置.ts';
 
 export class 子进程失败 extends Error {
   退出码: number | null;
@@ -66,3 +66,30 @@ export const 前台跑 = (cmd: readonly string[], opts: SpawnOptions = {}): Prom
     child.on('error', reject);
     child.on('close', (code) => resolve(code ?? 1));
   });
+
+// Windows：系统用了 Modern Standby 时，闲置关屏就进待机、GPU 被挂起，渲染页丢 WebGL 上下文整次作废
+// （11-14 笔记本接着电源、「睡眠」设成从不，关屏 30 分钟一到照样进 S0 待机，十几分钟后渲染页丢上下文）。
+const 防睡脚本 = (pid: number) =>
+  [
+    `Add-Type -Name P -Namespace W -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint f);'`,
+    // ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED（0x80000003），进程退出就自动撤销。
+    // 写十进制：PowerShell 5.1 把 0x80000003 读成负的 Int32，转 uint 报错。ssh 进来的会话 0 没有显示器，只挂得上 SYSTEM
+    `[void][W.P]::SetThreadExecutionState(2147483651)`,
+    `Wait-Process -Id ${pid} -ErrorAction SilentlyContinue`,
+  ].join('; ');
+
+/** 本进程活着时不让电脑闲置睡眠（Mac caffeinate -i，Windows SetThreadExecutionState），返回撤销函数；起不来就照常跑 */
+export const 防睡 = (pid = process.pid): (() => void) => {
+  const cmd = isMac
+    ? ['caffeinate', '-i', '-w', String(pid)]
+    : isWindows
+      ? ['powershell.exe', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(防睡脚本(pid), 'utf16le').toString('base64')]
+      : null;
+  if (!cmd) return () => {};
+  const child = spawn(cmd[0]!, cmd.slice(1), { stdio: 'ignore', windowsHide: true });
+  child.on('error', () => {});
+  child.unref();
+  return () => {
+    child.kill();
+  };
+};
