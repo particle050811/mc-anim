@@ -3,7 +3,7 @@
 // 外面套 <group> 就能单独转动（风扇叶片、门、拉杆）。
 // 坐标：单位是格，原点在方块中心（导出数据里方块占 X 0..1、Y -1..0、Z 0..1，这里减掉了中心）。
 // 游戏里的北（-Z）= 这里的 +Y，游戏里的上 = 这里的 +Z。
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { type BlockSceneData, makeTexture } from './方块场景.tsx';
 import type { Png } from './贴图.ts';
@@ -54,7 +54,7 @@ const build = (model: BlockModelData, atlas: Png, part: string, opacity = 1, gho
     mesh.castShadow = !ghost;
     mesh.receiveShadow = !ghost;
     if (ghost) mesh.renderOrder = 10;
-    return mesh;
+    return { mesh, map };
   });
 };
 
@@ -62,10 +62,18 @@ const build = (model: BlockModelData, atlas: Png, part: string, opacity = 1, gho
 // patch：每个材质建好后过一遍（给物品模型加附魔光效这类），要传稳定的函数，换了函数会重建网格
 export const BlockModel: React.FC<{ data: BlockModelData; atlas: Png; part: string; opacity?: number; ghost?: string; patch?: (mat: THREE.MeshStandardMaterial) => void }> = ({ data, atlas, part, opacity = 1, ghost, patch }) => {
   const meshes = useMemo(() => build(data, atlas, part, opacity, ghost, patch), [data, atlas, part, opacity, ghost, patch]);
+  // primitive 不由 R3F 回收。只释放本次 build 裁出的贴图，不沿材质去释放补丁借来的贴图。
+  useEffect(() => () => {
+    for (const { mesh, map } of meshes) {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+      map.dispose();
+    }
+  }, [meshes]);
   return (
     <group>
-      {meshes.map((m, i) => (
-        <primitive key={i} object={m} />
+      {meshes.map(({ mesh }, i) => (
+        <primitive key={i} object={mesh} />
       ))}
     </group>
   );
