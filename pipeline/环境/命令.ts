@@ -5,6 +5,7 @@ import type { 命令 } from '../cli/命令.ts';
 import { 解析参数 } from '../cli/参数.ts';
 import { 读资产表 } from '../资产/资产表.ts';
 import { 字节路径, 读资产锁 } from '../资产/资产锁.ts';
+import { 读发布锁, 附件缺 } from '../资产/发布锁.ts';
 import { 全部配置, 配置, 数据路径 } from './配置.ts';
 import { 代码根, 主检出 } from './路径.ts';
 import { 当前作品, 作品们 } from './作品.ts';
@@ -64,9 +65,11 @@ export const 体检 = (): 结果[] => {
   const uv = 试跑(['uv', '--version']);
   查('uv', uv.退出码 === 0, uv.退出码 === 0 ? uv.stdout.trim() : '没装（Python 叶子工具要用；见 https://docs.astral.sh/uv/）', false);
 
+  // 子目录不在只提示：用到时各处自己建（从 GitHub 拉下来的新机器上，交付、基线、archive 渲之前都不在，用户 11-13 要照文档能一路走通）
   for (const 子 of ['store', '私有', 'terrain', 'cache', '交付', 'run', '基线', 'archive']) {
     const d = 数据路径(子);
-    查(`数据根/${子}`, fs.existsSync(d) && 可写(d), fs.existsSync(d) ? (可写(d) ? d : `${d} 不可写`) : `${d} 不在（建好或设 ANIM_DATA）`);
+    if (fs.existsSync(d)) 查(`数据根/${子}`, 可写(d), 可写(d) ? d : `${d} 不可写`);
+    else 查(`数据根/${子}`, false, `${d} 还不在（用到时自动建；要换位置设 ANIM_DATA）`, false);
   }
   const 锁目录 = 配置('锁目录');
   查('锁目录', fs.existsSync(锁目录) && 可写(锁目录), fs.existsSync(锁目录) ? 锁目录 : `${锁目录} 不在（第一次拿锁时会建）`, false);
@@ -79,15 +82,33 @@ export const 体检 = (): 结果[] => {
     查('作品', false, (e as Error).message, false);
   }
 
+  // 能不能渲看各作品的发布锁（段 = 全部，段要的字节、地形包都在里面）；共用资产锁里还有没段用到的参考图、旧版，Release 不发，缺了不算错
+  let 有发布锁 = false;
+  try {
+    for (const [名, 根] of 作品们()) {
+      const 发 = 读发布锁(根);
+      if (!发) continue;
+      有发布锁 = true;
+      const 缺 = 发.附件.filter((a) => 附件缺(a, 数据路径()) > 0);
+      查(`素材·${名}`, 缺.length === 0, 缺.length ? `Release ${发.标签} 的 ${发.附件.length} 个附件里有 ${缺.length} 个还没下（anim --作品 ${名} assets pull）` : `Release ${发.标签} 的 ${发.附件.length} 个附件都在数据根`, false);
+    }
+  } catch {
+    // 作品目录有问题上面「作品」一项已经报了
+  }
   const 锁 = 读资产锁();
   const 缺字节 = Object.entries(锁).filter(([, e]) => !fs.existsSync(字节路径(e))).map(([id]) => id);
-  查('资产字节', 缺字节.length === 0, 缺字节.length ? `${缺字节.length} 件不在数据根：${缺字节.slice(0, 5).join('、')}${缺字节.length > 5 ? '…' : ''}` : `资产锁 ${Object.keys(锁).length} 件都在`);
+  查(
+    '资产字节',
+    缺字节.length === 0,
+    缺字节.length ? `共用资产锁有 ${缺字节.length} 件不在数据根：${缺字节.slice(0, 5).join('、')}${缺字节.length > 5 ? '…' : ''}${有发布锁 ? '（没有段用到的参考图、旧版也算在里面；能不能渲看上面的「素材·<作品>」）' : ''}` : `资产锁 ${Object.keys(锁).length} 件都在`,
+    !有发布锁,
+  );
   const 表 = 读资产表();
   const 没登记 = Object.keys(锁).filter((id) => !表.条目.has(id));
   查('资产表', 表.问题.length === 0 && 没登记.length === 0, [...表.问题.slice(0, 5), ...(没登记.length ? [`资产锁里有 ${没登记.length} 件资产表没登记：${没登记.slice(0, 5).join('、')}`] : [])].join('；') || `${表.条目.size} 条`);
 
   const 浏览器 = 浏览器位置();
-  查('渲染浏览器', fs.existsSync(浏览器.可执行), fs.existsSync(浏览器.可执行) ? 浏览器.目录 : `数据根还没有 ${期望版本()}（第一次渲染时从 node_modules/.remotion 克隆，没有就下载）`, false);
+  查('渲染浏览器', fs.existsSync(浏览器.可执行), fs.existsSync(浏览器.可执行) ? 浏览器.目录 : `数据根还没有 ${期望版本()}（第一次渲染时补：从 node_modules/.remotion 克隆，没有就从国内镜像或 Remotion 下载）`, false);
 
   const m = 读内存();
   查('内存读数', m !== null, m ? 读数说明(m) : '读不到（资源闸不等内存，直接放行）', false);
