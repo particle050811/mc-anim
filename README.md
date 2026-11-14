@@ -2,12 +2,11 @@
 
 用 [Remotion](https://www.remotion.dev/) + [three.js](https://threejs.org/) 逐帧渲 Minecraft 动画。方块、模型、贴图、动作、音效、地形都取自原版和模组里的真实资源，不重画；画面在浏览器里用 WebGL 一帧一帧算出来，再接成成片。
 
-仓库里有三部作品，渲片要的全部素材（连配乐和配音）都挂在本仓库的 GitHub Release 上。clone 下来、拉完素材，就能在自己电脑上渲出和作者一样的成片：
+现在能渲的有两部作品，渲片要的全部素材（连配乐和配音）都挂在本仓库的 GitHub Release 上。clone 下来、拉完素材，就能在自己电脑上渲出和作者一样的成片：
 
 | 作品 | 是什么 | 成片长度 | 素材 |
 |---|---|---|---|
 | 把回忆拼好给你 | MC 短片，配歌 | 约 56 秒 | 25 MB |
-| 亚波伦不放水 | Goety 模组的战斗短片 | 约 33 秒 | 45 MB |
 | 应力转动 | 小说《机械动力应力转动》改编的漫剧，第 6、7 章 | 约 5 分 55 秒 | 1.05 GB |
 
 ## 在自己电脑上渲出来
@@ -17,10 +16,11 @@
 - **自己照着做**：[docs/从零渲染.md](docs/从零渲染.md)。从一台什么都没装的 Windows 电脑写起，每一步都写了「应该看到什么」；Mac / Linux 的差别在最后一节。
 - **交给 AI 编程助手**（DeepSeek、Claude Code、Codex、Cursor 之类能在终端里跑命令的）：把下面的 prompt 复制给它。
 
-### 复制给 AI 助手：渲出全部三部
+### 复制给 AI 助手：两部都渲
 
 ```text
-请在这台电脑上，把 GitHub 仓库 particle050811/mc-anim 里的三部作品渲成成片。
+请在这台电脑上，把 GitHub 仓库 particle050811/mc-anim 里的「把回忆拼好给你」和「应力转动」两部作品渲成成片。
+文档里写到的别的作品是还在做的，那几步跳过。
 
 完整步骤在仓库的 docs/从零渲染.md。先读这份文档：
   curl.exe -L -o 从零渲染.md https://raw.githubusercontent.com/particle050811/mc-anim/main/docs/%E4%BB%8E%E9%9B%B6%E6%B8%B2%E6%9F%93.md
@@ -34,7 +34,7 @@ clone 下来以后，以仓库里的 docs/从零渲染.md 为准。
 4. 碰到文档「常见问题」里没有的报错，停下来，把完整的命令和输出给我看，不要自己改代码绕过去。
 5. 我的代理是 http://127.0.0.1:7890 ，连 GitHub 的步骤照文档「6. 代理」设上。（没有代理就删掉这一条。）
 
-做完告诉我三部成片 mp4 的完整路径，和 ffprobe 量出来的时长。
+做完告诉我两部成片 mp4 的完整路径，和 ffprobe 量出来的时长。
 ```
 
 ### 复制给 AI 助手：只渲一部
@@ -46,7 +46,7 @@ clone 下来以后，以仓库里的 docs/从零渲染.md 为准。
 别的规矩照文档开头「给 AI 助手的规矩」。做完告诉我成片的完整路径和时长。
 ```
 
-把「把回忆拼好给你」换成「亚波伦不放水」或「应力转动」就是渲另外两部。
+把「把回忆拼好给你」换成「应力转动」就是渲另一部。
 
 ### 复制给 AI 助手：渲到一半出错了
 
@@ -75,7 +75,7 @@ clone 下来以后，以仓库里的 docs/从零渲染.md 为准。
 |---|---|
 | 电脑 | Windows 10 / 11（64 位）、Mac 或 Linux；独立显卡最好；内存 16 GB 起 |
 | 硬盘 | 留 40 GB（代码和依赖 2 GB，素材 1.1 GB，渲染用的浏览器 0.6 GB，切片和成片 10～20 GB） |
-| 时间 | 装工具、下载 0.5～1 小时。出片：作者的 Mac 上应力转动约 2 小时，另外两部各几十分钟，Windows 一般慢一半左右 |
+| 时间 | 装工具、下载 0.5～1 小时。出片：作者的 Mac 上应力转动约 2 小时，把回忆拼好给你几十分钟，Windows 一般慢一半左右 |
 
 ## 下载源
 
@@ -104,7 +104,7 @@ clone 下来以后，以仓库里的 docs/从零渲染.md 为准。
 - Minecraft 的贴图、模型、音效、字体和从游戏世界导出的场景版权归 Mojang。本项目是非官方作品，与 Mojang 无关。NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 - 车万女仆（Touhou Little Maid）的模型、贴图、音效，和魔法酒狐模型：模型作者星海ELIYA、伊蕾娜教代行教皇，贴图作者百花，CC BY-NC-SA 4.0。九胡的音色参考取自车万女仆自定义模型包里的语音。
 - 万法皆通（Touhou Little Maid: Spell，作者 yimeng261）的贴图和音效：MIT。
-- 铁魔法（Iron's Spells 'n Spellbooks）、Lootr、暮色森林（The Twilight Forest）、机械动力（Create）、Goety 及其附属模组、整合包《诡厄：使徒》的模型、贴图、音效、结构归各自作者。
+- 铁魔法（Iron's Spells 'n Spellbooks）、Lootr、暮色森林（The Twilight Forest）、机械动力（Create）和其他模组、整合包的模型、贴图、音效、结构归各自作者。
 - 大气光照代码改写自 Photon 光影，许可见 `engine/light/大气/Photon-LICENSE.txt`。
 - 「把回忆拼好给你」的原版贴图换成了 Faithful 64x 材质包（Faithful Resource Pack，https://faithfulpack.net ），按 Faithful License v4（https://faithfulpack.net/license ）使用和再分发；换了哪些见 `作品/把回忆拼好给你/材质包.锁.json`。本项目和 Faithful 团队无关。
 - 配乐里有第三方的歌和曲子（如「把回忆拼好给你」用的抖音原声），版权归原作者，这里只为能复现作品而附带，不授予任何使用许可。
