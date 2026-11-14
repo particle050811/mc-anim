@@ -103,15 +103,13 @@ const texel = (data: Float32Array, u: number, v: number, w: number, out: number[
   const [y0, y1, fy] = axis(v, 64);
   const [z0, z1, fz] = axis(w, 32);
   out[0] = out[1] = out[2] = 0;
-  for (const [zi, wz] of [[z0, 1 - fz], [z1, fz]])
-    for (const [yi, wy] of [[y0, 1 - fy], [y1, fy]])
-      for (const [xi, wx] of [[x0, 1 - fx], [x1, fx]]) {
-        const k = wx * wy * wz;
-        const o = ((zi * 64 + yi) * 32 + xi) * 3;
-        out[0] += data[o] * k;
-        out[1] += data[o + 1] * k;
-        out[2] += data[o + 2] * k;
-      }
+  for (let corner = 0; corner < 8; corner++) {
+    const weight = (corner & 1 ? fx : 1 - fx) * (corner & 2 ? fy : 1 - fy) * (corner & 4 ? fz : 1 - fz);
+    const offset = (((corner & 4 ? z1 : z0) * 64 + (corner & 2 ? y1 : y0)) * 32 + (corner & 1 ? x1 : x0)) * 3;
+    out[0] += data[offset] * weight;
+    out[1] += data[offset + 1] * weight;
+    out[2] += data[offset + 2] * weight;
+  }
 };
 // 太阳附近米氏前向的那一圈：atmosphere.glsl 用的 klein_nishina / cornette-shanks 面光源版本（太阳角半径 2°）
 const miePhase = (nu: number, g: number) => {
