@@ -106,6 +106,9 @@ export const 开任务 = (e: 调度环境, 声明: 任务声明, 结束?: (码: 
     return t;
 };
 export const 检查盯 = (e: 调度环境, 任务: 任务信息) => {
+    // 挂盯是 CLAUDE.md 给作者的 Claude、Codex 会话定的纪律；别人照 docs/从零渲染.md 跑（人或别家 AI 助手，来源都是「人」）看到这句只会困惑（11-14 在 Windows 上从 GitHub 走一遍时见到）
+    if (e.发起者.来源 === '人')
+        return;
     const dir = path.join(e.调度目录, '盯');
     if (列文件(dir).some(n => { const x = 读JSON<{
         pid: number;
