@@ -52,6 +52,9 @@ const trimKept = () => {
     if (keptFaces <= maxKeptFaces * 0.8) break;
     kept.delete(k);
     keptFaces -= keptCost(rec);
+    // 缓存里的 Entry 还指着这条记录（记最近画过用）：数组不放掉就一直被它钉着，一帧画 1900 万面时 CPU 这边多留一千多兆，上限等于没管住
+    rec.mesh = null;
+    rec.V = null;
   }
 };
 
@@ -183,11 +186,11 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
         for (;;) {
           const qs = toBuild.current.filter((q) => !cache.has(sectionKey(q)));
           if (!qs.length) break;
-          // 留着网格的区段不取；这一轮先把记录拿在手上，建到一半被挤掉也不用回头取
-          const keptNow = new Map<string, Kept>();
+          // 留着网格的区段不取；这一轮先把网格拿在手上（被挤掉的记录数组会清掉，不能回头从记录上读），建到一半被挤掉也不用回头取
+          const keptNow = new Map<string, { rec: Kept; mesh: SectionMesh | null; V: Kept['V'] }>();
           for (const q of qs) {
             const rec = kept.get(keptKey(worldKey, q));
-            if (rec) keptNow.set(sectionKey(q), rec);
+            if (rec) keptNow.set(sectionKey(q), { rec, mesh: rec.mesh, V: rec.V });
           }
           const toFetch = keptNow.size ? qs.filter((q) => !keptNow.has(sectionKey(q))) : qs;
           const prefetching = toFetch.length ? source.prefetch?.(toFetch) : undefined;
@@ -208,9 +211,9 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           const t = performance.now();
           for (const section of qs) {
             if (inFlight.length >= windowSize) await collectOne();
-            const rec = keptNow.get(sectionKey(section));
-            if (rec) {
-              inFlight.push({ q: section, V: rec.V, m: rec.mesh && Promise.resolve(rec.mesh), rec });
+            const had = keptNow.get(sectionKey(section));
+            if (had) {
+              inFlight.push({ q: section, V: had.V, m: had.mesh && Promise.resolve(had.mesh), rec: had.rec });
               continue;
             }
             const voxels = source.区段(section);
