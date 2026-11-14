@@ -78,6 +78,9 @@ export class CascadedShadow extends SunLightShadow {
 
   updateMatrices(light: THREE.Light, view?: THREE.Camera) {
     if (!view) return;
+    // three 先建阴影目标，再调这里，最后才分配显存。PCF 只采比较深度，颜色附件留一个通道即可；VSM 用颜色存矩，不动。
+    const target = this.map;
+    if (target?.depthTexture?.compareFunction != null && target.texture.format === THREE.RGBAFormat) target.texture.format = THREE.RedFormat;
     const internals = this as unknown as ShadowInternals;
     const cam = view as THREE.PerspectiveCamera;
     const far = Math.min(this.camera.far, cam.far);
