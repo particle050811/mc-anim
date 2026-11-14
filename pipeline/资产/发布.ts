@@ -13,6 +13,7 @@ import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { 检查上下文 } from '../检查/上下文.ts';
 import { 包清单 } from '../检查/规则/资产.ts';
+import { 配置 } from '../环境/配置.ts';
 import { 代码根 } from '../环境/路径.ts';
 import { 跑, 试跑 } from '../环境/子进程.ts';
 import { 算随仓库 } from './随仓库.ts';
@@ -195,8 +196,8 @@ const 附件没上传 = (url: string) =>
     execFile('curl', ['-sIL', '-o', os.devNull, '-w', '%{http_code}', '--connect-timeout', '20', '--max-time', '60', url], (_错, 出) => 好(String(出).trim().endsWith('404')));
   });
 
-/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 只有测试换 */
-export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 'https://github.com') => {
+/** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 默认取 ANIM_GITHUB_MIRROR（github.com 或加速站前缀），测试换成本地服务 */
+export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 配置('github下载根').replace(/\/+$/, '')) => {
   const 要 = 锁.附件.filter((a) => 附件缺(a, 根) > 0);
   if (!要.length) {
     console.log(`${锁.附件.length} 个附件的东西数据根里都有`);
@@ -220,7 +221,7 @@ export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 'https:
           await 跑(['curl', '-fL', '-#', '--retry', '5', '--retry-all-errors', '-C', '-', '-o', tmp, url]);
           break;
         } catch (e) {
-          if (次 >= 5) throw e;
+          if (次 >= 5) throw new Error(`${(e as Error).message}\n${url} 下了 5 次都没下完。GitHub 在国外，最好开代理（设 HTTPS_PROXY）再跑 anim assets pull，或把 ANIM_GITHUB_MIRROR 设成加速站前缀；已下的部分留着，重跑接着下`);
           console.error(`!! 第 ${次} 次没下完（已有 ${((fs.existsSync(tmp) ? fs.statSync(tmp).size : 0) / 1e6).toFixed(0)} MB），接着下`);
         }
       }
