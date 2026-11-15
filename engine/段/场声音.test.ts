@@ -7,7 +7,7 @@ import { defineSceneTimeline, windowSeg } from './窗口段.ts';
 const windSound: ResolvedSceneSound = { 资产: '音效/风', 名: '风', startSec: 1.25, 入点秒: 0.25, 速率: 1.25, 峰值: -12 };
 const windAudio = { 时长: 3, 峰值: -6 };
 
-/** 照 <段声音> 的放法（段画面.tsx）：段内第 t 秒落在哪条 cue、放到文件第几秒、增益多少；没有声音给 null */
+/** 照 <SegSound> 的放法（段画面.tsx）：段内第 t 秒落在哪条 cue、放到文件第几秒、增益多少；没有声音给 null */
 const placeCues = (cues: readonly AssetCue[], t: number, duration: number) => {
   const c = cues.find((x) => x.秒 <= t + 1e-9 && t < x.秒 + x.长秒 - 1e-9);
   if (!c) return null;
@@ -129,7 +129,7 @@ describe('场时间线的 声音 + 窗口段', () => {
     // 底乐 的淡出落在下段最后一条里
     expect(cutWindow.声音!.at(-1)).toMatchObject({ 增益: 0.3, fadeOutSec: 0.25 });
   });
-  it('不放场声音：全不放或按名挑；段没有自己的 cue、也没有场声音时不写 声音', () => {
+  it('excludeSceneSound：全不放或按名挑；段没有自己的 cue、也没有场声音时不写 声音', () => {
     expect(windowSeg(timeline, { 起: '切', 止: '收', soundTable: soundTable, excludeSceneSound: true }).声音).toBeUndefined();
     expect(windowSeg(timeline, { 起: '切', 止: '收', soundTable: soundTable, excludeSceneSound: ['底乐'] }).声音!.map((c) => c.台词 === undefined && c.名)).toEqual(['风']);
   });

@@ -32,7 +32,7 @@ export const checkLegacySegContinuity = async (c: CheckContext, report: CheckRep
     for (const x of checkOldSeg(segModule, (k) => segments.find((s) => s.键 === k)?.definition)) report.错(`${p}：${x}`, p);
     for (const x of checkLegacySegStartSec(segModule.legacySegs, segments.map((s) => s.键))) report.错(`${p}：${x}`, p);
   }
-  if (timelineFiles.length) report.infoLines.push(`接老段 的场时间线 ${timelineFiles.length} 条，抄的老段段长和 段.ts 核对了`);
+  if (timelineFiles.length) report.infoLines.push(`continueOldSeg 的场时间线 ${timelineFiles.length} 条，抄的老段段长和 段.ts 核对了`);
 };
 
 export const checkSegFramework = async (c: CheckContext, report: CheckReport, segments: readonly SegItem[]) => {

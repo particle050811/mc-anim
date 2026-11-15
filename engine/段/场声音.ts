@@ -1,13 +1,13 @@
 // 场声音：写在场时间线上、跨段放的音效或配乐（上段起、下段接着放，cue 只写一次）。纯模块。
-// 定义场时间线({ 声音: [...] }) 把起止解成场时间线的秒；窗口段 按自己的窗口取落在里面的那一截，各段的 cue 首尾相接起来和一口气放完一样
+// defineSceneTimeline({ 声音: [...] }) 把起止解成场时间线的秒；windowSeg 按自己的窗口取落在里面的那一截，各段的 cue 首尾相接起来和一口气放完一样
 // （同 作品/把回忆拼好给你/声音/跨段音效.ts 的 段里那截，那是老写法的手工版）。
 import { segFps, type AssetCue, type PerCellGain } from './段定义.ts';
 import type { AudioInfo } from './声音助手.ts';
 
-/** 场声音的放法（时刻用场时间线的事件名或时刻，见 窗口段.ts 的 定义场时间线） */
+/** 场声音的放法（时刻用场时间线的事件名或时刻，见 窗口段.ts 的 defineSceneTimeline） */
 export type SceneSoundOptions = {
   资产: string;
-  /** 片段名；同一条场时间线里不能重名（窗口段 的 不放场声音 按名挑）。默认取 id 最后一截 */
+  /** 片段名；同一条场时间线里不能重名（windowSeg 的 excludeSceneSound 按名挑）。默认取 id 最后一截 */
   名?: string;
   /** 目标采样峰值 dBFS、目标积分响度 LUFS、直接给的增益倍数：三选一，都不给 = 原样（同 声音助手.ts 的 放） */
   峰值?: number;

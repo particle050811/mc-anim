@@ -8,10 +8,10 @@ import { toAssetCue } from '../../声音/跨段音效.ts';
 const segKey = '1-一如既往';
 const clock = segClock(segKey);
 
-// 原声：固定增益，开头淡入（第 f 帧乘 (f 帧的秒 + 1/24 秒) / 淡入秒，到满为止：第 0 帧算已经走了 1/24 秒，同 24 fps 时）。定义画面 照这条 cue 出声
+// 原声：固定增益，开头淡入（第 f 帧乘 (f 帧的秒 + 1/24 秒) / 淡入秒，到满为止：第 0 帧算已经走了 1/24 秒，同 24 fps 时）。definePicture 照这条 cue 出声
 const originalGainFrames = Array.from({ length: clock.帧数 }, (_, f) => Math.round(originalGain * Math.min(1, (f / fps + legacyFrameSec(1)) / originalFadeInSec) * 1e6) / 1e6);
 
-// 咔哒：女仆相机的快门声，比定格那一帧早 起音秒 起放，主音落在定格（闪白）那一帧；放满整个文件。定义画面 照这条 cue 出声
+// 咔哒：女仆相机的快门声，比定格那一帧早 起音秒 起放，主音落在定格（闪白）那一帧；放满整个文件。definePicture 照这条 cue 出声
 const clickStartFrame = segEventFrames(segKey).clickFreeze - Math.round(clickSound.onsetSec * fps);
 const clickFrameCount = Math.min(Math.ceil(clickSound.时长秒 * fps), clock.帧数 - clickStartFrame);
 

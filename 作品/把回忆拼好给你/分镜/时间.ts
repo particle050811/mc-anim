@@ -1,4 +1,4 @@
-// 分镜的时间工具：全片「画面对歌」的时间轴和写法（fps、拍、小节、句、时刻、解事件、排段），不带具体事件。
+// 分镜的时间工具：全片「画面对歌」的时间轴和写法（fps、拍、小节、句、时刻、resolveEvents、arrangeSegs），不带具体事件。
 // 事件和段窗口按串拆在本目录（用户 11-06 定按句拆，改一句只过期那几段；原来 10-22 定的单独一个文件不再当约束）：一串一个文件，接 到别的串的事件就只引那一份。
 // 纯模块（段.ts 会 import），不许 import react、three、remotion。
 // 时间轴就是整首歌：歌曲帧 0 = 原声 0 秒，歌曲帧 = Math.round(秒 × fps)，帧号只在这里由秒数取整一次；网格和句的起止从 配乐/网格.ts 来。
@@ -47,7 +47,7 @@ export type EventDef = { 在: Moment; 依据: string };
 
 export type SongEvent = { 秒: number; 帧: number; 依据: string };
 
-/** 这首歌的时间轴：拍、小节、句换成秒用 engine/段/歌网格.ts，解时刻、排段用 engine/段/时间线.ts */
+/** 这首歌的时间轴：拍、小节、句换成秒用 engine/段/歌网格.ts，resolveMoment、arrangeSegs 用 engine/段/时间线.ts */
 const songAxis: timeline.TimeAxis<SongMoment> = { fps, resolveTime: parseSongGrid(beatGrid, sentences) };
 
 /** 时刻 → 秒；接 按名字去 表 里找（可以接在后面才写的事件上，接成环就报错） */

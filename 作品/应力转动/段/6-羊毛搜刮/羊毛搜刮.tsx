@@ -1,5 +1,5 @@
 // 6-4-1 羊毛搜刮：放大 4 倍的新城（古城4x画布，10-13）里，李樱从 6-3-6 的落点起一跳二十多米、落脚处垫羊毛，三镜跳切：大院 → 场子垫 F1 → 开 #212、跳走。
-// 戏在 跳搭.ts（剧情时间线），跳切和机位在 编排.ts；声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 6-4-1/声音.tsx。
+// 戏在 跳搭.ts（剧情时间线），跳切和机位在 编排.ts；声音照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 6-4-1/声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';

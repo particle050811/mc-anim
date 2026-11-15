@@ -177,7 +177,7 @@ export const EnterForest: React.FC = () => {
   const choreoFrame = frame + 1;
   const island = choreo.world(choreoFrame) === 'island';
   // 不超采样（用户 10-07 比过 2K 下超采样和不超采样，选不超采样，见 lib/渲染级别.ts）。
-  // 声音照 段.ts 的 cue 放（定义画面 自动挂，决策 0015），不在这里挂。
+  // 声音照 段.ts 的 cue 放（definePicture 自动挂，决策 0015），不在这里挂。
   if (island)
     return (
       <>

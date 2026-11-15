@@ -1,14 +1,14 @@
 // 段里取时间：一律用秒（用户 11-06 定「直接原生 60 FPS」「不应该都是按函数那种写的吗」，docs/决策/0015-原生60帧.md）。
-// use当前秒() = Composition 帧 ÷ 帧率，带小数；嵌套 Sequence 的偏移照常算进去（里面拿到的是从那个 Sequence 起算的秒）。
+// useCurrentSec() = Composition 帧 ÷ 帧率，带小数；嵌套 Sequence 的偏移照常算进去（里面拿到的是从那个 Sequence 起算的秒）。
 // Composition 按成片帧率跑，第 0 帧就是段起点（段长对齐到 1/60 秒，段界没有零头）。
-// 段、场、库代码不直接调 useCurrentFrame()（anim check 的「时间」规则）；非要一帧一个的（核对视图）用 use视图下标。
+// 段、场、库代码不直接调 useCurrentFrame()（anim check 的「时间」规则）；非要一帧一个的（核对视图）用 useViewIndex。
 import React, { type ReactNode } from 'react';
 import { Sequence, useCurrentFrame, useVideoConfig } from 'remotion';
 
 /** Composition 一秒几帧。只给时间工具自己和声音换算用，画面代码用秒 */
 export const useFrameRate = (): number => useVideoConfig().fps;
 
-/** 当前时刻（秒，带小数）：段内从段起点算，在 <秒Sequence> 里从它的起点算 */
+/** 当前时刻（秒，带小数）：段内从段起点算，在 <SecondSequence> 里从它的起点算 */
 export const useCurrentSec = (): number => useCurrentFrame() / useFrameRate();
 
 /** 按秒写的 Sequence：起秒、长秒、剪秒（= trimBefore，里面的第 0 秒对应外面内容的第几秒）。帧号可以是小数，不对齐到任何帧网格 */

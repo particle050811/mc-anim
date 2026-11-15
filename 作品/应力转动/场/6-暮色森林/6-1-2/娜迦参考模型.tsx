@@ -210,7 +210,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
   // 不超采样（用户 10-07 定，见 lib/渲染级别.ts）：720p 时 dpr=2 远处方块、树叶、海带出摩尔纹，超采样只减半，3 倍反而更差（非整数倍缩放）
   return (
     <>
-      {/* 声音照 段.ts 的 cue 放（定义画面 自动挂，决策 0015），不在这里挂 */}
+      {/* 声音照 段.ts 的 cue 放（definePicture 自动挂，决策 0015），不在这里挂 */}
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true }} dpr={canvasDpr(1)}>
         <color attach="background" args={[twilightFogColor]} />
         {/* 暮色森林的雾是很亮的薄荷绿；按全片规矩开满视距，只在视距边上淡出（lib/视距.ts） */}

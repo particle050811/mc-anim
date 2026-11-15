@@ -1,4 +1,4 @@
-// 抽到 engine/段 的通用部分和两部作品的用法对得上：清单.ts 尾部、分镜/时间.ts 的 解时刻、排段（那边现在包一层调 engine/段，这里守包法：歌时刻、键↔名的换法）。
+// 抽到 engine/段 的通用部分和两部作品的用法对得上：清单.ts 尾部、分镜/时间.ts 的 resolveMoment、arrangeSegs（那边现在包一层调 engine/段，这里守包法：歌时刻、键↔名的换法）。
 import { describe, expect, it } from 'vitest';
 import { manifestTools } from '../../engine/段/清单工具.ts';
 import { arrangeSegs, resolveMoment } from '../../engine/段/时间线.ts';
@@ -24,7 +24,7 @@ describe('清单工具 和两部作品 清单.ts 尾部逐键一样', () => {
   }
 });
 
-describe('时间线 + 歌网格 和 分镜.ts 的 解时刻、排段一样', () => {
+describe('时间线 + 歌网格 和 分镜.ts 的 resolveMoment、arrangeSegs 一样', () => {
   const axis = { fps: storyboard.fps, resolveTime: parseSongGrid(beatGrid, sentences) };
   it('拍、小节、句的各个点', () => {
     const times: SongMoment[] = [

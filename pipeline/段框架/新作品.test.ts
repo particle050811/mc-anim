@@ -62,7 +62,7 @@ describe('新段', () => {
     expect(readText(workRoot, '段/1-开门/画面.tsx')).not.toContain('1-开门');
   });
 
-  it('老场（只有定义段写的老段、没有场时间线）：用 接老段 摆上老段，新段接在最后一个老段后面，老段文件不动', async () => {
+  it('老场（只有 defineSeg 写的老段、没有场时间线）：用 continueOldSeg 摆上老段，新段接在最后一个老段后面，老段文件不动', async () => {
     newWork(tempDir, '试作');
     const workRoot = path.join(tempDir, '作品', '试作');
     const legacySegText = (durSec: number) => `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '1-老场', 秒: ${durSec}, 宽: 1280, 高: 720, 地形: [] });\n`;
@@ -79,7 +79,7 @@ describe('新段', () => {
     const seg = (await freshExec(path.join(workRoot, '段/1-新/段.ts'), codeRoot())).default as SegmentDef & { sceneWindow: unknown };
     expect([seg.场, seg.秒, seg.sceneWindow]).toEqual(['1-老场', 3, { startSec: 2, endSec: 5 }]);
     expect(readText(workRoot, '段/1-老一/段.ts')).toBe(legacySegText(1.25));
-    // 同场再加一段：认得 接老段 做的时间线
+    // 同场再加一段：认得 continueOldSeg 做的时间线
     newSegment(workRoot, '1-再新', { 场: '1-老场', 起: '结束', 止: '结束' });
   });
 
@@ -90,7 +90,7 @@ describe('新段', () => {
     expect(() => newSegment(workRoot, '1-开门', {})).toThrow(/--场/);
     fs.mkdirSync(path.join(workRoot, '场/1-老'), { recursive: true });
     fs.writeFileSync(path.join(workRoot, '场/1-老/时间线.ts'), 'export const 事件 = {};\n');
-    expect(() => newSegment(workRoot, '1-开门', { 场: '1-老' })).toThrow(/定义场时间线/);
+    expect(() => newSegment(workRoot, '1-开门', { 场: '1-老' })).toThrow(/defineSceneTimeline/);
     expect(fs.existsSync(path.join(workRoot, '段/1-开门'))).toBe(false);
     newSegment(workRoot, '核对-试声', {});
     expect(() => newSegment(workRoot, '核对-试声', {})).toThrow(/已经有了/);

@@ -90,13 +90,13 @@ export const segFrameCommands: Record<string, Command> = {
       const [targetKind, name] = p.位置;
       if (p.位置.length !== 2 || (targetKind !== 'work' && targetKind !== 'seg')) throw new UsageError('要 anim new work <作品名> 或 anim new seg <段键> [--场 <场键>]');
       const scene = p.值['--场'];
-      // 场时间线还没有、本场有老段（定义段 写的）的：照清单找出来，新时间线用 接老段 把它们摆上去，新段接在后面
+      // 场时间线还没有、本场有老段（defineSeg 写的）的：照清单找出来，新时间线用 continueOldSeg 把它们摆上去，新段接在后面
       let legacySegs: SceneLegacySeg[] | undefined;
       if (targetKind === 'seg' && scene && !fs.existsSync(path.join(workRoot(), '场', scene, '时间线.ts'))) {
         legacySegs = (await loadAllSegments())
           .filter((s) => s.章 !== '核对' && s.段.场 === scene && !isFrameworkSeg(s.段))
           .map((s) => ({ 键: s.键, 秒: s.段.秒, ...(s.段.sceneWindow ? { startSec: s.段.sceneWindow.startSec } : {}), 宽: s.段.宽, 高: s.段.高 }));
-        if (legacySegs.length) console.log(`场 ${scene} 有 ${legacySegs.length} 个老段（${legacySegs.map((x) => x.键).join('、')}），场时间线用 接老段 摆上去，新段接在后面`);
+        if (legacySegs.length) console.log(`场 ${scene} 有 ${legacySegs.length} 个老段（${legacySegs.map((x) => x.键).join('、')}），场时间线用 continueOldSeg 摆上去，新段接在后面`);
       }
       const written = targetKind === 'work' ? newWork(codeRoot(), name!) : newSegment(workRoot(), name!, { 场: scene, 起: p.值['--起'], 止: p.值['--止'], legacySegs });
       for (const f of written) {

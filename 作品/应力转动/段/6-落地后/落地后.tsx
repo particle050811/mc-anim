@@ -77,7 +77,7 @@ export const AfterLandingView: React.FC<{ f: number; cam?: ReturnType<typeof cho
   <OnerFrame F={choreo.toGlobalFrame(frame)} cam={camOverride ?? choreo.camPose(frame)} tweakRiders={tweakRiders(frame)} extra={<LandingParticles F={choreo.toGlobalFrame(frame)} />} />
 );
 
-// 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（定义画面 自动挂）；f 是第几格（1/24 秒一格，带小数）
+// 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（definePicture 自动挂）；f 是第几格（1/24 秒一格，带小数）
 export const AfterLanding: React.FC = () => {
   const frame = useCurrentSec() * choreo.FPS;
   return (

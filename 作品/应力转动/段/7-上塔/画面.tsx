@@ -1,5 +1,5 @@
 // 7-3-2 上塔：整场共用的 ../7-3/画面.tsx 按本段的场时刻和机位画出来；
-// 编排里的帧是 1/24 秒一格（7-3/时间线.ts 的 FPS），按秒换算。声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 7-3/声音.tsx。
+// 编排里的帧是 1/24 秒一格（7-3/时间线.ts 的 FPS），按秒换算。声音照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 7-3/声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { definePicture } from '@engine/段/段画面.tsx';

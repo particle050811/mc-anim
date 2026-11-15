@@ -1,7 +1,7 @@
-// 老场接新段的适配层：老段（定义段 手写段长，没有 定义场时间线 做的场时间线，如应力转动第 6、7 章）一个不改，
+// 老场接新段的适配层：老段（defineSeg 手写段长，没有 defineSceneTimeline 做的场时间线，如应力转动第 6、7 章）一个不改，
 // 在 场/<场键>/时间线.ts 里把它们按清单顺序首尾相接摆上一条场时间线，事件 `<段键>.起`、`<段键>.止`；新段（窗口段）从这条线取窗口、写跨段的场声音。纯模块。
 // 老段的段长抄成数写在这里，不 import 老段的 段.ts：场不许引段（分层），老场自己的时间线文件（如 地点/古城4x/7-1/时间线.ts）闭包里有 asset:，也进不了纯模块。
-// 抄的数由 anim new seg 照老段写，anim check 的「加载」逐个和老段的 段.ts 对（pipeline/段框架/核对.ts 的 查老段接续）。
+// 抄的数由 anim new seg 照老段写，anim check 的「加载」逐个和老段的 段.ts 对（pipeline/段框架/核对.ts 的 checkOldSeg）。
 import type { EventDef } from './时间线.ts';
 import { defineSceneTimeline, type SceneSoundDef, type SceneTimeline } from './窗口段.ts';
 
@@ -10,12 +10,12 @@ export type LegacySeg = { 键: string; 秒: number; startSec?: number };
 
 export type LegacySegEvent<K extends string> = `${K}.起` | `${K}.止`;
 
-/** 接老段 做的场时间线多带一张老段表（解出的起秒），anim check 拿它和老段的 段.ts 对 */
+/** continueOldSeg 做的场时间线多带一张老段表（解出的起秒），anim check 拿它和老段的 段.ts 对 */
 export type ContinueOldSegTimeline<K extends string, Ext> = SceneTimeline<K, Ext> & { legacySegs: readonly { 键: string; startSec: number; 秒: number }[] };
 
 /**
- * 老段摆成的场时间线。画幅要和老段的一样（不给就是 默认段格式）；事件 里可以再加新段要用的事件，接在 `<段键>.止` 上。
- * 声音、时长同 定义场时间线。老段本身不读这条线，场声音只放进新段。
+ * 老段摆成的场时间线。画幅要和老段的一样（不给就是 defaultSegFormat）；事件 里可以再加新段要用的事件，接在 `<段键>.止` 上。
+ * 声音、时长同 defineSceneTimeline。老段本身不读这条线，场声音只放进新段。
  */
 export const continueOldSeg = <const K extends string, const E extends string = never, Ext = never>(d: {
   场: string;

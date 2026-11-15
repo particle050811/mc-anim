@@ -1,4 +1,4 @@
-// 段框架示范的画面：夜空里一发火箭升起、炸开、火星闪烁。时刻全从 use段() 的事件段内秒取，声音由 定义画面 照 段.ts 的 cue 自动放。
+// 段框架示范的画面：夜空里一发火箭升起、炸开、火星闪烁。时刻全从 useSeg() 的事件段内秒取，声音由 definePicture 照 段.ts 的 cue 自动放。
 import { AbsoluteFill, interpolate } from 'remotion';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
 import seg from './段.ts';

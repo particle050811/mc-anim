@@ -1,5 +1,5 @@
 // 6-4-7至9 贪功钻出Warden：刘心忠一跳踩出第四次尖啸 → 监守者钻出、二人急退摆架势 → 三个短特写、二人横挪逼近、吼，吼到一半硬切 7-1-1。
-// 三截怎么拼见 时间线.ts，声音照 段.ts 的 cue 放（定义画面 自动挂），各截的画面是 ../6-4-7/贪功.tsx、../6-4-8/钻出.tsx、../6-4-9/登场.tsx。
+// 三截怎么拼见 时间线.ts，声音照 段.ts 的 cue 放（definePicture 自动挂），各截的画面是 ../6-4-7/贪功.tsx、../6-4-8/钻出.tsx、../6-4-9/登场.tsx。
 import React from 'react';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { GloryGrabView } from '../6-4-7/贪功.tsx';
