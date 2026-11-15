@@ -1,4 +1,4 @@
-// anim check 的十类规则（方案三-6，副本是 10-30 整体优化方案 0.6 加的，时间是 11-06 原生 60 帧加的）：类型、结构、清单、加载、台词、资产、规矩、平台、副本、时间。没有白名单：违规就改代码或改表。
+// anim check 的十一类规则（方案三-6，副本是 10-30 整体优化方案 0.6 加的，时间是 11-06 原生 60 帧加的，标识符是 11-15 代码名改英文加的）：类型、结构、清单、加载、台词、资产、规矩、平台、副本、时间、标识符。没有白名单：违规就改代码或改表。
 // 一次查一部作品（选项 作品；不给且只有一部就查它）；漫剧专属的表（台词、旧名、规矩）作品里没有、也没用到就跳过。
 // 「待迁移」不算违规：落点、例外还在旧项目、对应的段或场没搬进来的，列出来提醒，搬完自然消失。
 import { CheckReport, CheckContext, ruleNames, type RuleKind } from './上下文.ts';
@@ -12,6 +12,7 @@ import { ruleCheck } from './规则/规矩.ts';
 import { checkPlatform } from './规则/平台.ts';
 import { copyRule } from './规则/副本.ts';
 import { time } from './规则/时间.ts';
+import { hanIdentifierRule } from './规则/标识符.ts';
 
 export const ruleTable: Record<RuleKind, { 说明: string; 跑: (c: CheckContext, report: CheckReport) => Promise<void> | void }> = {
   types: { 说明: 'tsc strict；Python 的 ruff、pyright；改到 mod 时编译 mod、跑暮色网格核对和游戏导表出表核对（test/twilight-grid-test.sh、game-data-test.sh）', 跑: typeCheck },
@@ -24,6 +25,7 @@ export const ruleTable: Record<RuleKind, { 说明: string; 跑: (c: CheckContext
   platform: { 说明: 'Windows 合法文件名、结构层 ASCII、不开 shell、不用 fcntl', 跑: checkPlatform },
   dupes: { 说明: 'lerp、toThree、Cam 这类共用函数不许新写副本（import engine/core、库 的正本）；旧副本冻在 docs/副本表.tsv，只许减少', 跑: copyRule },
   time: { 说明: '段、场、库的画面按秒写，不直接调 useCurrentFrame()（用 engine/段/时间.tsx），没有例外', 跑: time },
+  idents: { 说明: '代码里不新增中文标识符（字符串、注释、文件名不算）；现有的冻在 pipeline/检查/中文标识符基线.txt，只许减少', 跑: hanIdentifierRule },
 };
 
 export type CheckOptions = { 只?: readonly RuleKind[]; 快?: boolean; depthCheck?: boolean; dataRoot?: string; 作品?: string };

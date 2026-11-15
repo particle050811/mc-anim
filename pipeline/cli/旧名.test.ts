@@ -14,6 +14,7 @@ describe('旧名', () => {
     expect(oldNameError(['world', '远景', '任务', '暮色'])).toMatch(/anim world 远景 任务 → anim world far tasks/);
     expect(oldNameError(['world', 'far', '任务', '暮色'])).toMatch(/anim world far 任务 → anim world far tasks/);
     expect(oldNameError(['check', '类型', 'structure', '资产', '--快'])).toMatch(/anim check 类型 structure 资产 → anim check types structure assets[\s\S]*--快 → --fast/);
+    expect(oldNameError(['check', 'idents', '类型'])).toMatch(/anim check idents 类型 → anim check idents types/);
     expect(oldNameError(['bili', '导入', 'a.json'])).toMatch(/anim bili 导入 → anim platform import/);
     expect(oldNameError(['still', '6-追来', '0', '--到预览=主题'])).toMatch(/--到预览 → --to-preview/);
     expect(oldNameError(['sched', '--oneline'])).toBeNull();

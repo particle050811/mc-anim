@@ -13,7 +13,7 @@ import { esbuildAliasPlugin, nonCodeLoaders } from '../资产/esbuild插件.ts';
 import { readAssetLock, type AssetLock } from '../资产/资产锁.ts';
 import { WorkSelectError } from '../环境/作品.ts';
 
-export const ruleNames = ['types', 'structure', 'manifest', 'load', 'lines', 'assets', 'rules', 'platform', 'dupes', 'time'] as const;
+export const ruleNames = ['types', 'structure', 'manifest', 'load', 'lines', 'assets', 'rules', 'platform', 'dupes', 'time', 'idents'] as const;
 export type RuleKind = (typeof ruleNames)[number];
 
 export type Issue = { 文件?: string; 行?: number; 文本: string };

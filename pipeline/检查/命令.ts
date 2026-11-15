@@ -11,7 +11,7 @@ import { ruleTable, runChecks, violationCount } from './检查.ts';
 export const checkCommands: Record<string, Command> = {
   check: {
     用法: `check [${ruleNames.join('|')}…] [--fast] [--deep] [--verbose]`,
-    说明: '查类型、结构、清单、加载、台词、资产、规矩、平台卫生、共用函数副本；--fast 不跑类型检查，--deep 逐个核对资产字节、tsc 不用增量缓存从头查，--verbose 列出全部待迁移',
+    说明: '查类型、结构、清单、加载、台词、资产、规矩、平台卫生、共用函数副本、按秒写、新增中文标识符；--fast 不跑类型检查，--deep 逐个核对资产字节、tsc 不用增量缓存从头查，--verbose 列出全部待迁移',
     跑: async (args, runRecord) => {
       const p = parseArgs(args, { toggles: ['--fast', '--deep', '--verbose'] });
       const unknownRules = p.位置.filter((x) => !(ruleNames as readonly string[]).includes(x));

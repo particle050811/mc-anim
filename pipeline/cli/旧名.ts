@@ -222,11 +222,11 @@ export const oldNameError = (argv: readonly string[]): string | null => {
   let parent = '', renamed = false;
   for (let j = i; j < head.length && !head[j]!.startsWith('-'); j++) {
     const w = head[j]!;
-    // check 的规则名可以连写几个，都挂在 check 下
+    // check 的规则名可以连写几个，都挂在 check 下；没有旧名的新规则（idents）也照样往后认
     const at = parent.startsWith('check ') ? 'check' : parent;
     const sub = subRenames.get(`${at}\0${w}`);
     if (sub !== undefined) renamed = true;
-    else if (j > i && !newSubs.has(`${at}\0${w}`)) break;
+    else if (j > i && at !== 'check' && !newSubs.has(`${at}\0${w}`)) break;
     oldWords.push(w);
     newWords.push(sub ?? w);
     parent = `${at} ${sub ?? w}`.trim();
