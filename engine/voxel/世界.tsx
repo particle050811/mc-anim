@@ -100,7 +100,7 @@ const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxe
 
 // ---------- 预取下一帧（用户 11-15 定做）----------
 // 一帧画完放行截图后，显卡还在画、Node 在等截图的两三百毫秒里页面主线程空着；镜头在动时下一帧又要等新进视野的区段取、解、建网格（每帧 40～60 ms）。
-// 所以放行后按前后两帧镜头位姿的变化外推下一帧的视野，把那时要的新区段先取、先建好网格放进 `kept`。
+// 所以放行后按前几帧镜头的变化（位置、朝向、细分中心、视角；步长在变时带上二阶）外推下一帧的视野，把那时要的新区段先取、先建好网格放进 `kept`。
 // 只动 `kept`（CPU 这边的数组）：不进 `cache`、不传显存、不挂场景。下一帧照旧自己挑区段、按挑的先后建，要的在 `kept` 里就直接用，不在（猜错、没猜、还没建完）就照旧取、照旧等，
 // 所以画出来的和没预取时一样，跳着渲、单出静帧也一样，只是省不到。猜的区段多取了也不进地形用量（来源的 prefetch 带 猜的，见 生成.ts）。
 const 预取在途 = new Map<string, Promise<void>>(); // keptKey → 这一块预取结束（进了 kept，或者失败）
@@ -217,7 +217,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
       },
     });
   const list = pick(inView, camPos);
-  // 前后两个镜头位姿（预取下一帧用）：同一帧重画几次位姿不变，不算新的
+  // 最近三个镜头位姿（预取下一帧用）：同一帧重画几次位姿不变，不算新的
   camera.matrixWorld.decompose(_位, _向, _缩);
   if (!world.本 || !world.本.位.equals(_位) || !world.本.向.equals(_向) || world.本.心.some((v, i) => v !== camPos[i]) || !world.本.投.equals(camera.projectionMatrix)) {
     world.上上 = world.上;
