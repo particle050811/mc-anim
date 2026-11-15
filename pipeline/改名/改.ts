@@ -141,14 +141,22 @@ export const apply = (root: string, scan: ScanResult, table: TableEntry[], opt: 
     }
     const old = ws.text(s.file).slice(s.start, s.end);
     let text: string;
-    if (s.plain !== undefined) {
-      if (s.p !== undefined || s.v !== undefined) errors.push(`${s.file}:${s.start} 既有整体改名又有简写两面的改名`);
+    if (s.v !== undefined || s.p !== undefined) {
+      // 简写两面（`{ 段目录 } = f()` 这类）：导出的解构绑定会把同一个新名同时记成整体和值面，两者一致就按值面拼
+      if (s.plain !== undefined && s.v !== undefined && s.plain !== s.v) errors.push(`${s.file}:${s.start} 整体改成 ${s.plain}、值面改成 ${s.v}，对不上`);
+      const P = s.p ?? old;
+      const V = s.v ?? s.plain ?? old;
+      // 解构剩余 { ...名 } 扫描时也当简写记了属性面，但剩余元素没有属性名，只按值面改
+      text = P === V || ws.text(s.file).slice(s.start - 3, s.start) === '...' ? V : `${P}: ${V}`;
+    } else if (s.plain !== undefined) {
       text = s.plain;
     } else {
       const P = s.p ?? old;
       const V = s.v ?? old;
       text = P === V ? P : `${P}: ${V}`;
     }
+    // 私有成员 #名 的位置连着 #，表里的新名不带 #（核名不许 #）：补上，不然 #作品 → workName 就成了公有属性，还会和同名 getter 撞
+    if (old.startsWith('#') && !s.str && !text.startsWith('#')) text = `#${text}`;
     if (s.str && !HAN.test(old) && old !== text) errors.push(`${s.file}:${s.start} 的字符串「${old}」不含汉字，不像要改的`);
     const list = perFile.get(s.file) ?? [];
     list.push({ start: s.start, end: s.end, text });

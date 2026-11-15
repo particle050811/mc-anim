@@ -407,6 +407,8 @@ class Scanner:
                             occ(l2, c2, a.asname, k, "导入别名")
                         else:
                             self.add(info, l, c, a.name, f"F:{a.name}", "模块名")
+                            # 没有 as 时本地名就是文件名：用处（处理.出成品 的 处理）也并进模块名组，不然会只改用处、import 那行留着
+                            self.uf.union(k, f"F:{a.name}")
                         continue
                     target = f"G:{src.rel}:{a.name}" if src else None
                     if a.asname:
@@ -481,7 +483,8 @@ class Scanner:
                 self.unmapped.append(f"{rel}:{line}:{col + 1} {name}")
 
     def string_key(self, info: FileInfo, node: ast.AST, ns: str = "S") -> None:
-        if isinstance(node, ast.Constant) and isinstance(node.value, str) and HAN.search(node.value) and IDENT_LIKE.match(node.value):
+        # 核对（all_names）时 getattr 的英文名也要收：成员连着 getattr(x, '名') 一起改成英文后，不收就会被当成划分变了
+        if isinstance(node, ast.Constant) and isinstance(node.value, str) and (HAN.search(node.value) or (self.all_names and ns == "M")) and IDENT_LIKE.match(node.value):
             line = node.lineno
             seg = info.lines[line - 1]
             c0 = char_col(seg, node.col_offset)
