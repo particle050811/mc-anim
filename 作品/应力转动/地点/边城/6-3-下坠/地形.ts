@@ -9,6 +9,11 @@ import { shaftCellCenter, shaftHalfWidth } from './编排.ts';
 
 const shaftCutout = shaftCutouts(shaftCellCenter(), shaftHalfWidth - 0.5);
 const townFlatten = borderTownFlatten();
+// 地形改动.ts 只登记了整平罩（anim check 核它落在主世界-116 的保真范围里，可见变换不碰那些区段），竖井、古城挖框要落在罩的外框里
+for (const b of shaftCutout) {
+  const f = townFlatten[0]!;
+  if (b.from[0] < f.x0 || b.from[2] < f.z0 || b.to[0] >= f.x0 + f.nx || b.to[2] >= f.z0 + f.nz) throw new Error(`下坠地形：挖框 ${JSON.stringify(b)} 出了边城整平罩的外框，挖开会露出可见变换换过的格：要在 地形改动.ts 登记、世界声明加保真、重烘`);
+}
 
 export const useFallTerrain = () => {
   const t = useOverworldTerrain(overworldPackName, `${overworldPackName}-远景`, shaftCutout, townFlatten, '边城整平');

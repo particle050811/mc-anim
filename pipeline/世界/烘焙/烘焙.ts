@@ -8,6 +8,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { 默认模型, 模型字节, 模型文件名 } from '../../../engine/voxel/区段模型.ts';
 import { 转码目录 } from './转码.ts';
+import type { 可见设置 } from './可见.ts';
 import { 遍历区段 } from './读区段.ts';
 import type { 包信息 } from '../../../engine/voxel/区段包.ts';
 import type { 解开的列段 } from '../列段.ts';
@@ -32,6 +33,8 @@ export type 烘焙参数 = {
   输出: string;
   库: 体素库;
   日志?: (s: string) => void;
+  /** 可见变换（可见.ts）：定稿时埋住的格换填充方块、封死的腔填实，保真范围原样。不给 = 原样（anim world bake 按世界声明总是给） */
+  可见?: 可见设置 | null;
 };
 
 export type 烘焙结果 = { 包: 包信息; 缺状态: Map<string, number>; 缺群系: Map<string, number>; 级: 级统计[]; 块文件数: number; 条目数: number };
@@ -260,10 +263,11 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
     ...[...missingBiomes].sort((a, b) => b[1] - a[1]).map(([k, count]) => `群系\t${k}\t${count}`),
   ];
   writeFileSync(path.join(p.输出, '缺失.tsv'), ['类\t名\t第0级格数', ...missingRows].join('\n') + '\n');
-  const 训练 = await 转码目录(p.输出, 输出, 1);
+  const 训练 = await 转码目录(p.输出, 输出, 1, undefined, p.可见);
   for (const st of 写手.levelStats) st.bytes = 0;
   for (const s of 遍历区段(库, 输出)) 写手.levelStats[s.id.L]!.bytes += s.字节.length;
   rmSync(p.输出, { recursive: true });
+  if (p.可见) { const v = 训练.变换; p.日志?.(`可见变换：改了 ${v.改段} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.填}、埋格换 ${v.埋}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格，填充 ${p.可见.填充}`); }
   p.日志?.(`模型 ${训练.模型类数} 类、${训练.模型字节} 字节，训练 ${训练.样本数} 区段；定稿完成`);
   return { 包, 缺状态: missingStates, 缺群系: missingBiomes, 级: 写手.levelStats, 块文件数: 写手.tileFileCount, 条目数: entryState.length };
 };

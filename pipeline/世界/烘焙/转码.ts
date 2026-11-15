@@ -1,5 +1,5 @@
-// anim world 转码：把现有地形包（格式 1、2）转成现行格式。只写新版本目录（版本是内容指纹），旧目录一个字节不动；转完逐格比过才登记。
-// 转的结果和拿同一个存档重新 anim world bake 字节相同（区段先后、包.json 的写法都一样），所以换格式不用回去烘存档。
+// anim world 转码：把现有地形包（格式 1、2，或还没做可见变换的格式 3）转成现行格式、过可见变换（可见.ts）。只写新版本目录（版本是内容指纹），旧目录一个字节不动；
+// 转完逐格比过（做了变换的另核格和网格，可见核对.ts）才登记。转的结果和拿同一个存档重新 anim world bake 字节相同（区段先后、包.json 的写法都一样），所以不用回去烘存档。
 import fs from 'node:fs';
 import { 模型字节, 模型文件名 } from '../../../engine/voxel/区段模型.ts';
 import { 训练包模型 } from './模型.ts';
@@ -7,6 +7,8 @@ import path from 'node:path';
 import { Worker } from 'node:worker_threads';
 import { 载入体素库 } from '../体素库.ts';
 import { 发布, 新暂存, 版本目录, 登记, 登记条目, 读地形表 } from '../版本.ts';
+import { 包的世界 } from '../声明.ts';
+import { 可见环境, 成记录, 记录盖住, type 可见记录, type 可见设置 } from './可见.ts';
 import { 块文件们, 块格式 } from './读区段.ts';
 import type { 转码活, 转码果 } from './转码工人.ts';
 
@@ -38,31 +40,49 @@ const 工人们干 = async (活们: 转码活[], 线程: number, 进度: (完: n
   return 果们;
 };
 
-const 合计 = (果们: 转码果[]) => 果们.reduce((a, b) => ({ 区段: a.区段 + b.区段, 旧字节: a.旧字节 + b.旧字节, 新字节: a.新字节 + b.新字节, 格: a.格 + b.格, 非空气格: a.非空气格 + b.非空气格, 解毫秒: a.解毫秒 + b.解毫秒 }), { 区段: 0, 旧字节: 0, 新字节: 0, 格: 0, 非空气格: 0, 解毫秒: 0 });
+// 工人模块不能在主线程 import（它一载入就接 parentPort），所以不拿它的 空果，按第一个结果的键清零
+const 合计 = (果们: 转码果[]) => {
+  const 和 = Object.fromEntries(Object.keys(果们[0] ?? {}).map((k) => [k, 0])) as unknown as 转码果;
+  for (const b of 果们) for (const k of Object.keys(和) as (keyof 转码果)[]) if (k !== '名') 和[k] += b[k];
+  和.名 = '合计';
+  return 和;
+};
 
-/** 旧目录（格式 1、2）→ 新目录（现行格式）：块文件、包.json、缺失.tsv */
-export const 转码目录 = async (旧: string, 新: string, 线程: number, 进度: (完: number, 总: number) => void = () => {}) => {
+/** 包.json 的 可见：做过可见变换的包记着按什么做的（可见.ts 的 可见记录）；没有 = 原样 */
+export const 读可见记录 = (dir: string) => (JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as { 可见?: 可见记录 }).可见 ?? null;
+
+/** 旧目录（格式 1、2、3）→ 新目录（现行格式）：块文件、包.json、缺失.tsv。给了 可见 就过可见变换，训练也拿变换后的格子学，包.json 记下 可见 */
+export const 转码目录 = async (旧: string, 新: string, 线程: number, 进度: (完: number, 总: number) => void = () => {}, 可见: 可见设置 | null = null) => {
   const 库 = await 载入体素库();
   const t0 = performance.now();
-  const { 模型, ...训练 } = 训练包模型(库, 旧);
+  const 环 = 可见 ? new 可见环境(库, 旧, 可见) : null;
+  let 训练全: ReturnType<typeof 训练包模型>;
+  try {
+    训练全 = 训练包模型(库, 旧, 环 ? (d) => 环.变换(d).d : undefined);
+  } finally {
+    环?.关();
+  }
+  const { 模型, ...训练 } = 训练全;
   const 表 = 模型字节(模型);
   fs.writeFileSync(path.join(新, 模型文件名), 表);
   const 训练秒 = (performance.now() - t0) / 1000, t1 = performance.now();
-  await 工人们干(块文件们(旧).map((名) => ({ 动作: '转' as const, 旧, 新, 名 })), 线程, 进度);
-  const info = JSON.parse(fs.readFileSync(path.join(旧, '包.json'), 'utf8')) as { 版本: number };
-  fs.writeFileSync(path.join(新, '包.json'), JSON.stringify({ ...info, 版本: 库.区段包.formatVersion }));
+  const 果 = 合计(await 工人们干(块文件们(旧).map((名) => ({ 动作: '转' as const, 旧, 新, 名, 可见 })), 线程, 进度));
+  const info = JSON.parse(fs.readFileSync(path.join(旧, '包.json'), 'utf8')) as { 版本: number; 可见?: 可见记录 };
+  fs.writeFileSync(path.join(新, '包.json'), JSON.stringify({ ...info, 版本: 库.区段包.formatVersion, ...(可见 ? { 可见: 成记录(可见) } : {}) }));
   fs.copyFileSync(path.join(旧, '缺失.tsv'), path.join(新, '缺失.tsv'));
-  return { ...训练, 训练秒, 转码秒: (performance.now() - t1) / 1000, 模型字节: 表.length, 模型类数: 模型.classes };
+  return { ...训练, 训练秒, 转码秒: (performance.now() - t1) / 1000, 模型字节: 表.length, 模型类数: 模型.classes, 变换: 果 };
 };
 
-/** 从磁盘上两边各解一遍逐格比，不一样抛错；包.json 除版本外也要一样。旧、新可以是任何格式的包 */
-export const 逐格比目录 = async (旧: string, 新: string, 线程: number, 进度: (完: number, 总: number) => void = () => {}) => {
+/** 从磁盘上两边各解一遍逐格比，不一样抛错；包.json 除版本（和 可见）外也要一样。旧、新可以是任何格式的包。
+ *  给了 可见：新包要记着这份 可见，旧包的格子重做一遍变换再比，改了的区段另核格和网格 */
+export const 逐格比目录 = async (旧: string, 新: string, 线程: number, 进度: (完: number, 总: number) => void = () => {}, 可见: 可见设置 | null = null) => {
   if (!fs.readFileSync(path.join(旧, '缺失.tsv')).equals(fs.readFileSync(path.join(新, '缺失.tsv')))) throw new Error('缺失.tsv 不一样');
   const 名们 = 块文件们(旧);
   if (JSON.stringify(块文件们(新)) !== JSON.stringify(名们)) throw new Error('两边的块文件不一样');
-  const 读 = (d: string) => ({ ...(JSON.parse(fs.readFileSync(path.join(d, '包.json'), 'utf8')) as object), 版本: 0 });
-  if (JSON.stringify(读(旧)) !== JSON.stringify(读(新))) throw new Error('包.json 除版本外不一样');
-  return 合计(await 工人们干(名们.map((名) => ({ 动作: '比' as const, 旧, 新, 名 })), 线程, 进度));
+  const 读 = (d: string) => ({ ...(JSON.parse(fs.readFileSync(path.join(d, '包.json'), 'utf8')) as object), 版本: 0, 可见: null });
+  if (JSON.stringify(读(旧)) !== JSON.stringify(读(新))) throw new Error('包.json 除版本、可见外不一样');
+  if (可见 && JSON.stringify(读可见记录(新)) !== JSON.stringify(成记录(可见))) throw new Error('新包 包.json 的 可见 和这次的设置不一样');
+  return 合计(await 工人们干(名们.map((名) => ({ 动作: '比' as const, 旧, 新, 名, 可见 })), 线程, 进度));
 };
 
 export type 转码选项 = { 从?: string; 不登记?: boolean; 线程: number; 日志: (s: string) => void };
@@ -73,6 +93,7 @@ export const 转码包 = async (包: string, o: 转码选项) => {
   if (!旧版本) throw new Error(`地形包 ${包} 没登记，用 --从 <版本> 指定转哪一版`);
   const 旧 = 版本目录(包, 旧版本);
   if (!fs.existsSync(旧)) throw new Error(`没有 ${旧}`);
+  const 库格式 = (await 载入体素库()).区段包.formatVersion;
   const 名们 = 块文件们(旧);
   if (!名们.length) throw new Error(`${旧} 里没有块文件，不是区段格式的包（主世界-116-远景 是整文件的高度、群系网格，不用转）`);
   const 头 = new Uint8Array(16);
@@ -80,7 +101,15 @@ export const 转码包 = async (包: string, o: 转码选项) => {
   fs.readSync(fd, 头, 0, 16, 0);
   fs.closeSync(fd);
   const 格式 = 块格式(头);
-  if (格式 !== 1 && 格式 !== 2) throw new Error(`${包}/${旧版本} 已经是格式 ${格式}，不用转`);
+  // 可见变换的设置跟着烘这个包的世界声明走；没有声明的包（旧项目烘的试验包）只换格式
+  const 世界 = 包的世界(包);
+  const 可见: 可见设置 | null = 世界 ? { 填充: 世界.可见.填充, 保真: 世界.可见.保真.map((b) => b.盒) } : null;
+  const 已做 = 读可见记录(旧);
+  if (已做 && 可见 && !记录盖住(已做, 成记录(可见))) throw new Error(`${包}/${旧版本} 做过可见变换，世界声明 ${世界!.名称} 现在的保真范围或填充它没有：保真范围里埋着的格已经换掉了，要 anim world bake 从存档重烘`);
+  if (格式 === 库格式 && (已做 || !可见)) throw new Error(`${包}/${旧版本} 已经是格式 ${格式}${已做 ? '、做过可见变换' : `，也没有世界声明（${包} 不在 sourcing/worlds/ 的哪个 [[烘焙.包]] 里），不做可见变换`}，不用转`);
+  if (格式 !== 1 && 格式 !== 2 && 格式 !== 库格式) throw new Error(`${包}/${旧版本} 是格式 ${格式}，不认`);
+  if (可见) o.日志(`${包}：可见变换按 ${世界!.名称} 的声明，填充 ${可见.填充}，保真范围 ${可见.保真.length} 个盒`);
+  else o.日志(`${包}：没有世界声明，只换格式，不做可见变换`);
 
   const 暂存 = 新暂存(包);
   const 进度 = (做: string) => (完: number, 总: number) => {
@@ -90,8 +119,9 @@ export const 转码包 = async (包: string, o: 转码选项) => {
   let 训练: Awaited<ReturnType<typeof 转码目录>>;
   try {
     const t0 = performance.now();
-    训练 = await 转码目录(旧, 暂存.dir, o.线程, 进度('转'));
+    训练 = await 转码目录(旧, 暂存.dir, o.线程, 进度('转'), 可见);
     o.日志(`  训练 ${训练.样本数}/${训练.区段} 区段 ${训练.训练秒.toFixed(3)} 秒，模型 ${训练.模型字节} 字节（${训练.模型类数} 类）；转码 ${训练.转码秒.toFixed(3)} 秒`);
+    if (可见) { const v = 训练.变换; o.日志(`  可见变换：改了 ${v.改段} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.填}、埋格换 ${v.埋}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格`); }
     o.日志(`  转完 ${((performance.now() - t0) / 1000).toFixed(0)} 秒`);
     ({ 版本, 目录: dir, 已有 } = 发布(包, 暂存.dir));
   } finally {
@@ -99,17 +129,18 @@ export const 转码包 = async (包: string, o: 转码选项) => {
   }
 
   const 比起 = performance.now();
-  const 果 = await 逐格比目录(旧, dir, o.线程, 进度('逐格比'));
+  const 果 = await 逐格比目录(旧, dir, o.线程, 进度('逐格比'), 可见);
   const 验证秒 = (performance.now() - 比起) / 1000;
   const 比例 = ((100 * 果.新字节) / 果.旧字节).toFixed(1);
   o.日志(`${包}：${旧版本} → ${版本}${已有 ? '（这一版已经有了）' : ''}`);
-  o.日志(`  ${名们.length} 个块文件、${果.区段} 个区段、${果.格} 格（非空气 ${果.非空气格}）逐格相同，读盘验证 ${验证秒.toFixed(3)} 秒`);
+  o.日志(`  ${名们.length} 个块文件、${果.区段} 个区段、${果.格} 格（非空气 ${果.非空气格}）逐格${可见 ? '和重做一遍变换的' : ''}相同，读盘验证 ${验证秒.toFixed(3)} 秒`);
+  if (可见) o.日志(`  改了的 ${果.改段} 个区段核过格（只换埋住的、封死的、邻圈不挡面的）和网格（${果.网格核} 个区段原样、改后各建一遍：前七组不变或只少腔壁，裙边只换贴图）`);
   o.日志(`  区段字节 ${果.旧字节} → ${果.新字节}（${比例}%），平均解一个区段 ${(果.解毫秒 / 果.区段).toFixed(3)} 毫秒（工人并行时测的，机器忙时偏大）`);
 
   const 原 = 表[包];
   const 要登记 = !o.不登记 && 原 !== undefined;
   if (要登记 && 原.版本 !== 版本) {
-    const 来源 = `${原.来源}；anim world 转码 从 ${旧版本} 转成格式 3（每包状态条件模型；docs/决策/0011-地形压缩.md）`;
+    const 来源 = `${原.来源}；anim world 转码 从 ${旧版本} ${格式 === 库格式 ? '过可见变换（只保真看得见的格子' : `转成格式 3（每包状态条件模型${可见 ? '，过可见变换' : ''}`}；docs/决策/0011-地形压缩.md）`;
     const 条目 = await 登记条目(包, 版本, { 来源, 许可: 原.许可, 可见性: 原.可见性, ...(原.说明 ? { 说明: 原.说明 } : {}) });
     登记(包, 条目);
     o.日志('  已登记进 assets/地形版本.json，要随代码提交');

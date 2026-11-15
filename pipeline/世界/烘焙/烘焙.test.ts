@@ -1,4 +1,5 @@
 // 烘焙端到端：小存档 → 套编辑 → 区段包，再用查询的两种来源（存档、包）对每列最高的方块，并核对同样的输入烘两次逐字节一样（版本 = 目录指纹靠这个）；旧格式转码回来也一样。
+// 可见变换：烘焙时做和烘完再 转码（格式 3 → 3）做逐字节一样，封死的腔填实、埋住的换石头，保真范围碰到的区段原样。
 // 体素库要在 Node 里注册 asset: 钩子才载得进来，vitest 自己转 import 不认，所以起一个子进程跑；数据根里没有方块表字节（刚 clone）就跳过。
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -197,5 +198,74 @@ describe.skipIf(!有字节)('烘焙 全高（有顶的维度）', () => {
       ['minecraft:air', 40, 59],
       ['minecraft:netherrack', 6, 39],
     ]);
+  });
+});
+
+// 可见变换：不做、做、保真盒罩住 各烘一次，再把不做的那份 转码 做上，比目录指纹和几列
+const 可见脚本 = (世界: string, 输出: string) => `
+import { 载入体素库 } from ${模('../体素库.ts')};
+import { 烘焙 } from ${模('./烘焙.ts')};
+import { 区域源 } from ${模('../区域源.ts')};
+import { 目录指纹 } from ${模('../版本.ts')};
+import { 转码目录, 逐格比目录 } from ${模('./转码.ts')};
+import { 包方块源 } from ${模('../查询/源.ts')};
+import fs from 'node:fs';
+import path from 'node:path';
+const 库 = await 载入体素库();
+const 区目录 = path.join(${JSON.stringify(世界)}, 'region'), 根 = ${JSON.stringify(输出)};
+const 远 = { 填充: 'minecraft:stone', 保真: [[1000, 1000, 1001, 1001]] }, 罩 = { 填充: 'minecraft:stone', 保真: [[9, 9, 9, 9]] };
+const 出 = {};
+for (const [名, 可见] of [['原样', null], ['做', 远], ['罩住', 罩]]) {
+  const dir = path.join(根, 名);
+  fs.mkdirSync(dir, { recursive: true });
+  const 源 = new 区域源(区目录, '1', null);
+  await 烘焙({ 区域们: [[0, 0]], 取区域: (rx, rz) => 源.区域(rx, rz), 维度: '主世界', 原点: [0, 64, 0], 输出: dir, 库, 可见 });
+  const 包 = new 包方块源(dir, 库, 名);
+  出[名] = { 版本: 目录指纹(dir), 腔: 包.列(9, 9), 地: 包.列(20, 5), 可见: JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')).可见 ?? null };
+}
+fs.mkdirSync(path.join(根, '后做'));
+const 变换 = (await 转码目录(path.join(根, '原样'), path.join(根, '后做'), 2, undefined, 远)).变换;
+出.后做 = 目录指纹(path.join(根, '后做'));
+出.逐格 = await 逐格比目录(path.join(根, '原样'), path.join(根, '做'), 1, undefined, 远);
+出.变换 = 变换;
+出.设置不符 = await 逐格比目录(path.join(根, '原样'), path.join(根, '做'), 1, undefined, 罩).then(() => '没报', (e) => e.message);
+console.log(JSON.stringify(出));
+`;
+
+describe.skipIf(!有字节)('烘焙 可见变换', () => {
+  it('烘时做和烘完转码做一样；腔填实、埋住的换石头、地表不动；保真盒罩住的区段原样', () => {
+    const 世界 = path.join(临时, '可见');
+    // 两个区块（x 0～31，z 0～15）：y 60 草方块，往下泥土；x 8～10、z 8～10、y 57～58 一个封死的空腔（四面、顶上是泥土）；(3, 14) 一根石柱露出地面（状态表里要有石头）
+    const 腔 = (x: number, y: number, z: number) => x >= 8 && x <= 10 && z >= 8 && z <= 10 && y >= 57 && y <= 58;
+    造世界(世界, 1n, [
+      [0, 0, (x, y, z) => (腔(x, y, z) ? 'minecraft:air' : x === 3 && z === 14 && y <= 62 ? 'minecraft:stone' : y < 60 ? 'minecraft:dirt' : y === 60 ? 'minecraft:grass_block[snowy=false]' : 'minecraft:air')],
+      [1, 0, (_x, y) => (y < 60 ? 'minecraft:dirt' : y === 60 ? 'minecraft:grass_block[snowy=false]' : 'minecraft:air')],
+    ]);
+    const 脚本文件 = path.join(临时, '跑可见.mjs');
+    fs.writeFileSync(脚本文件, 可见脚本(世界, path.join(临时, '可见包')));
+    const r = spawnSync(process.execPath, [脚本文件], { encoding: 'utf8', cwd: path.join(import.meta.dirname, '..', '..', '..') });
+    expect(r.status, r.stderr).toBe(0);
+    type 列 = { 段: { 底: number; 顶: number; 状态: string | null }[] } | null;
+    type 包 = { 版本: string; 腔: 列; 地: 列; 可见: unknown };
+    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { 原样: 包; 做: 包; 罩住: 包; 后做: string; 逐格: Record<string, number>; 变换: Record<string, number>; 设置不符: string };
+    const 段 = (c: 列) => c!.段.filter((s) => s.状态 !== 'minecraft:air').map((s) => [s.状态, s.底, s.顶]);
+    expect(o.后做).toBe(o.做.版本); // 烘焙、转码同一条路
+    expect(o.做.版本).not.toBe(o.原样.版本);
+    expect(o.做.可见).toEqual({ 填充: 'minecraft:stone', 保真: [[1000, 1000, 1001, 1001]] });
+    expect(o.原样.可见).toBeNull();
+    // 包只存到地表往下 3 格（y 57），腔贴着最下一层（再往下当实心）。原样：腔在；做了：腔填实，草下面埋住的泥土换石头，草不动
+    const 草 = ['minecraft:grass_block[snowy=false]', 60, 60];
+    expect(段(o.原样.腔)).toEqual([草, ['minecraft:dirt', 59, 59]]);
+    expect(段(o.原样.地)).toEqual([草, ['minecraft:dirt', 57, 59]]);
+    expect(段(o.做.腔)).toEqual([草, ['minecraft:stone', 57, 59]]);
+    expect(段(o.做.地)).toEqual([草, ['minecraft:stone', 57, 59]]);
+    // 保真盒碰到这个区段，整块原样（各级都是）
+    expect(段(o.罩住.腔)).toEqual(段(o.原样.腔));
+    expect(段(o.罩住.地)).toEqual(段(o.原样.地));
+    expect(o.变换.填).toBe(9 * 2);
+    expect(o.变换.埋).toBeGreaterThan(0);
+    expect(o.逐格.改段).toBeGreaterThan(0);
+    expect(o.逐格.网格核).toBe(o.逐格.改段);
+    expect(o.设置不符).toMatch(/可见/);
   });
 });

@@ -17,35 +17,24 @@ import { cancelRender } from 'remotion';
 import type { V3 } from '@engine/model/parts.tsx';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
-import type { LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { useOverworldTerrain, overworldPack, overworldDistantPack, overworldWindowView } from '@engine/voxel/主世界地形.ts';
 import { overworldOrigin, gameToScene } from './主世界116.ts';
+import { basePoolBlock, baseIslandDigBoxes } from './基地小岛挖框.ts';
 
 export const baseSite = { x: 39740, z: -1130, groundY: 68 };
 // 房间本地 → 世界：只平移，不转（本地轴就是世界轴）
 export const roomOrigin: V3 = gameToScene([baseSite.x, baseSite.groundY + 1, baseSite.z]);
 export const roomHeading = 0;
 
-// 水池 2×2 西北角那一块（游戏方块坐标）。传送门海岛 网格里的水池是方块 x 1372～1373、z 199～200（导出原点 (1373.5, 63, 192.5)，原点那一层 y 63）
-const poolBlock = { x: 39675, z: -1332 };
+// 水池 2×2 西北角那一块（游戏方块坐标，基地小岛挖框.ts）。传送门海岛 网格里的水池是方块 x 1372～1373、z 199～200（导出原点 (1373.5, 63, 192.5)，原点那一层 y 63）
+const poolBlock = basePoolBlock;
 export const islandOffset: V3 = [1373.5 + (poolBlock.x - 1372) - overworldOrigin[0], overworldOrigin[2] - 192.5 - (poolBlock.z - 199), 63 - overworldOrigin[1]];
 export const islandToWorld = (p: number[]): V3 => [p[0] + islandOffset[0], p[1] + islandOffset[1], p[2] + islandOffset[2]];
 
-const digTop = 319;
-// 挖框在各帧要是同一个数组（use导入地形 的要求），放在模块顶层
-const digBoxes: LandmarkCutout[] = [
-  { from: [39733, 68, -1139], to: [39746, digTop, -1123] }, // 屋身（地板那层起）
-  { from: [39732, 69, -1140], to: [39747, digTop, -1122] }, // 墙外一圈：勒脚、挑檐、门前、风车轴承
-  { from: [39731, 69, -1126], to: [39731, digTop, -1125] }, // 烟囱伸出勒脚的那一列（本地 y -6～-5；10-12 西墙开门，烟囱从 y 4～5 挪过来）
-  { from: [poolBlock.x, 64, poolBlock.z], to: [poolBlock.x + 1, digTop, poolBlock.z + 1] }, // 水池（水面用导出的网格）
-  // 水池四周一片草坪：花圈上原来的草、两人站的地方、往镜头那边（南）几格的草都拔掉，只留地面方块（虞美人用导出的网格）。
-  // 一格高的草会把腿和花圈前沿挡住；玩家在自家水池边拔过草也说得通
-  { from: [poolBlock.x - 3, 65, poolBlock.z - 3], to: [poolBlock.x + 6, 66, poolBlock.z + 6], 留: ['grass_block', 'dirt', 'sand', 'stone', 'gravel'] },
-];
 
 // 地形只画到 主世界窗外.远（30 公里）：这几段镜头都在岛上贴着地面，雾用 主世界窗外.能见度（12 公里），30 公里外画了也看不见
 export const BaseIslandTerrain: React.FC<{ camPos: number[] }> = ({ camPos: camPos }) => {
-  const terrain = useOverworldTerrain(overworldPack, overworldDistantPack, digBoxes, undefined, '基地小岛');
+  const terrain = useOverworldTerrain(overworldPack, overworldDistantPack, baseIslandDigBoxes, undefined, '基地小岛');
   useEffect(() => {
     if (!terrain) return;
     const packOrigin = terrain.位置([0, 0, 0]);

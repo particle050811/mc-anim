@@ -9,7 +9,7 @@ import { 场景到three, 摆相机 } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { 下界提亮, 真下界 } from '../../地点/真下界.tsx';
-import { 祭坛底挖 } from './布局.ts';
+import { 祭坛底挖 } from '../../地点/地形改动.ts';
 
 export const 画幅 = { 宽: 1280, 高: 720 } as const;
 
