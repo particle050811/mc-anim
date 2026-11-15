@@ -189,22 +189,24 @@ void main() {
 // 第 1 遍的反向深度 → 对数深度（three 的写法：log2(1 + w) / log2(far + 1)）；没画到的地方（清成 0）是天空，写 1。
 // 解析出来的深度是像素里偏离中心的一点的（uOff，见 engine/core/光栅深度.ts 的 `解析偏移`），先推回像素中心：片元写对数深度时存的就是像素中心的，
 // 第 3 遍贴着地面的东西（积雪层）按像素中心的深度比。反向深度在同一个面上沿屏幕是线性的，按左右、上下相邻像素的差推：
-// 两边各一个差，取小的那边（不跨物体边缘，同第 2 遍还原法线）；一边是天空或出了画面只看另一边；两边一正一负（只占一个像素的东西、棱）不推。
+// - 一般：两边各一个差，取小的那边（不跨物体边缘，同第 2 遍还原法线）；一边是天空或出了画面只看另一边；两边一正一负（只占一个像素的东西、棱）不推。
+// - 方块的面都沿世界轴：三个轴向各算一遍「过这一点、朝这个轴的面」每像素该差多少，和左、右、下、上四个差对，对上两个以上、没有并列的就按这个面推。
+//   台阶地形顶面和立面交替、深度连着，「取小的」会拿到立面的斜率，顶面推不够，上面的积雪层成片输掉（飞越第 713 帧背光坡发灰）；
+//   只有一个像素高的横条上下都是别的面，靠左右两个差也认得出朝向。
 const 换算FS = /* glsl */ `
 uniform sampler2D tRev;
 uniform vec2 uAB;
 uniform float uLogFar;
 uniform vec2 uOff;
+uniform vec4 uRay; // 镜头空间视线（z = −1）的 x、y = 像素坐标 × uRay.xy + uRay.zw
+uniform vec2 uGrad; // 面的法线 ÷ 平面常数 的 x、y = 反向深度每像素的差 × uGrad
+uniform mat3 uToView; // 各列是世界轴在镜头空间的方向
 float at(ivec2 p) { return texelFetch(tRev, p, 0).r; }
-float slope(float c, ivec2 p, ivec2 e, ivec2 hi) {
-  ivec2 pa = p - e, pb = p + e;
-  float a = pa.x < 0 || pa.y < 0 ? 0.0 : at(pa);
-  float b = pb.x > hi.x || pb.y > hi.y ? 0.0 : at(pb);
-  float da = c - a, db = b - c;
-  if (a <= 0.0) return b <= 0.0 ? 0.0 : db;
-  if (b <= 0.0) return da;
-  if (da * db < 0.0) return 0.0;
-  return abs(da) < abs(db) ? da : db;
+float pick(vec2 s, bvec2 ok) {
+  if (!ok.x) return ok.y ? s.y : 0.0;
+  if (!ok.y) return s.x;
+  if (s.x * s.y < 0.0) return 0.0;
+  return abs(s.x) < abs(s.y) ? s.x : s.y;
 }
 void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
@@ -212,9 +214,34 @@ void main() {
   float logD = 1.0;
   if (c > 0.0) {
     ivec2 hi = textureSize(tRev, 0) - 1;
-    float d = c - uOff.x * slope(c, p, ivec2(1, 0), hi) - uOff.y * slope(c, p, ivec2(0, 1), hi);
+    float l = p.x > 0 ? at(p - ivec2(1, 0)) : 0.0;
+    float r = p.x < hi.x ? at(p + ivec2(1, 0)) : 0.0;
+    float dn = p.y > 0 ? at(p - ivec2(0, 1)) : 0.0;
+    float up = p.y < hi.y ? at(p + ivec2(0, 1)) : 0.0;
+    vec2 sx = vec2(c - l, r - c), sy = vec2(c - dn, up - c);
+    bvec2 okx = bvec2(l > 0.0, r > 0.0), oky = bvec2(dn > 0.0, up > 0.0);
+    vec2 s = vec2(pick(sx, okx), pick(sy, oky));
+    // 平面 n·X = k、X = 视线 × 纵深：1 ÷ 纵深 = n·视线 ÷ k，沿屏幕线性；面朝某个轴、又过这一点，n ÷ k 就定了
+    float q = (c + uAB.y) / uAB.x;
+    vec3 ray = vec3(gl_FragCoord.xy * uRay.xy + uRay.zw, -1.0);
+    vec4 seen = vec4(sx, sy);
+    int most = 1;
+    bool tie = false;
+    vec2 along = vec2(0.0);
+    for (int a = 0; a < 3; a++) {
+      vec3 n = uToView[a];
+      float t = dot(n, ray);
+      if (abs(t) < 1e-4) continue;
+      vec2 g = n.xy * (q / t) / uGrad;
+      vec2 tol = 0.02 * abs(g) + 2e-6 * c;
+      vec4 e = abs(seen - g.xxyy);
+      int hit = int(okx.x && e.x <= tol.x) + int(okx.y && e.y <= tol.x) + int(oky.x && e.z <= tol.y) + int(oky.y && e.w <= tol.y);
+      if (hit > most) { most = hit; along = g; tie = false; }
+      else if (hit == most && hit > 1) tie = true;
+    }
+    if (most > 1 && !tie) s = along;
     // 贴着地平线的像素斜率和深度本身一样大，别推过头
-    d = clamp(d, 0.25 * c, 1.0);
+    float d = clamp(c - dot(uOff, s), 0.25 * c, 1.0);
     logD = log2(1.0 + uAB.x / (d + uAB.y)) / uLogFar;
   }
   gl_FragColor = vec4(logD, 0.0, 0.0, 1.0);
@@ -274,7 +301,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     // 对数深度图：单通道 32 位浮点，最近点采样（和深度纹理一样）
     const logRt = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false, generateMipmaps: false });
     const logMat = new THREE.ShaderMaterial({
-      uniforms: { tRev: { value: depth }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 }, uOff: { value: new THREE.Vector2() } },
+      uniforms: { tRev: { value: depth }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 }, uOff: { value: new THREE.Vector2() }, uRay: { value: new THREE.Vector4() }, uGrad: { value: new THREE.Vector2() }, uToView: { value: new THREE.Matrix3() } },
       vertexShader: VS,
       fragmentShader: 换算FS,
       depthTest: false,
@@ -439,6 +466,11 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       logMat.uniforms.tRev.value = rt.depthTexture;
       (logMat.uniforms.uAB.value as THREE.Vector2).set(a, b);
       (logMat.uniforms.uOff.value as THREE.Vector2).copy(resolveOff!);
+      // 这时投影已经还原：x、y 两行反向投影没动过
+      const pe = cam.projectionMatrix.elements;
+      (logMat.uniforms.uRay.value as THREE.Vector4).set(2 / (width * pe[0]!), 2 / (height * pe[5]!), (pe[8]! - 1) / pe[0]!, (pe[9]! - 1) / pe[5]!);
+      (logMat.uniforms.uGrad.value as THREE.Vector2).set((width * pe[0]!) / (2 * a), (height * pe[5]!) / (2 * a));
+      (logMat.uniforms.uToView.value as THREE.Matrix3).setFromMatrix4(cam.matrixWorldInverse);
       logMat.uniforms.uLogFar.value = Math.log2(cam.far + 1);
       gl.setRenderTarget(logRt);
       gl.render(resources.logScene, resources.camera);
