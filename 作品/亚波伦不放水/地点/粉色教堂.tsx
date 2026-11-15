@@ -36,10 +36,6 @@ export const church = {
   /** 中殿过道：结构 x 42～44（3 格宽），z 34～66，两边是长椅 */
   aisle: [42, -67, 45, -34] as [number, number, number, number],
 };
-
-/** 发光方块的位置（方块底面中心，网格本地）。取材时用 mark 记下的 8 种，现在的灯没用到，留给以后按灯位打光 */
-export const churchLampPos = Object.fromEntries(Object.entries(meshInfo.markers).map(([blockId, posList]) => [blockId, posList.map(fromGame)])) as Record<string, V3[]>;
-
 // hide 之类的数组要各帧同一个（换了会重建网格），由调用的地方放在模块级
 export const PinkChurch: React.FC<{ hide?: number[][]; clearPlants?: number[][] }> = ({ hide, clearPlants }) => (
   <BlockMesh info={meshInfo} bin={pinkChurchVertexBin} atlas={pinkChurchAtlas} hide={hide} clearPlants={clearPlants} />

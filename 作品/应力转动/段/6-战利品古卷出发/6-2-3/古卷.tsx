@@ -2,8 +2,5 @@
 // 戏、时刻、机位在 6-2-1/编排.ts，画面在 6-2-1/画面.tsx，声音照 6-战利品古卷出发 段.ts 的 cue 放；指南针（指针会转）是 模型/物品/结构指南针.tsx，
 // 中间插的结构罗盘搜索界面（游戏里录的）是 模型/界面/结构罗盘.tsx。段长见 6-2-1/编排/时间线.ts 的段表（含插入的 66 帧界面）。
 import React from 'react';
-import { segmentFrames } from '../6-2-1/编排.ts';
 import { BasePlanSegment } from '../6-2-1/画面.tsx';
-
-export const SCROLL_FRAMES = segmentFrames('6-2-3');
 export const AncientScroll: React.FC = () => <BasePlanSegment segment="6-2-3" />;

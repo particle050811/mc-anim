@@ -20,7 +20,5 @@ export const terracePoint = (x: number, z: number, lift = 0): V3 => realNetherSc
 
 /** 祭坛那一列的中心（安息仪式结构的原点：黑曜石底的顶）。7×7 黑曜石底换掉 x 895～901、z −303～−297 的地面那一层，这 49 列脚高都是 50 */
 export const altar = terracePoint(898.5, -299.5);
-/** 史蒂夫召唤时站的地方：祭坛南边 5 格（基座圈外），面朝北看祭坛 */
-export const steveSummonPos = terracePoint(898.5, -293.5);
 /** 结界罩住他的地方（第 3 幕起他被钉在这里）：祭坛东南，四周 10 格内脚高 49～51 */
 export const steveTrappedPos = terracePoint(906.5, -293.5);

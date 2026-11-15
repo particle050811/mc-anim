@@ -47,8 +47,6 @@ const itemTable = {
   扫帚: { tex: broomPng, 大小: 0.5 },
 } satisfies Record<string, ItemDef>;
 export type DropName = keyof typeof itemTable;
-export const dropSize = (name: DropName) => itemTable[name].大小;
-
 const layersCache = new Map<string, { tex: ReturnType<typeof png> }[]>();
 const layersOf = (name: DropName) => {
   let layers = layersCache.get(name);

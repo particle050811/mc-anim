@@ -19,56 +19,20 @@ import { rad, smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
 export const FPS = 24;
 
 export const toScene = (x: number, y: number, z: number): V3 => [x + 720, 240 - z, y + 50];
-// 放在方块 (bx, bz) 上、站立面高 top（游戏 y）的一块羊毛：返回羊毛方块的底面中心（场景坐标）
-export const woolAt = (bx: number, top: number, bz: number): V3 => [bx + 720.5, 239.5 - bz, top + 50];
-export const onWool = (w: V3): V3 => [w[0], w[1], w[2] + 1];
-export const blockFoot = (bx: number, top: number, bz: number): V3 => [bx + 720.5, 239.5 - bz, top + 50];
-
 // 朝向：骨架默认面朝 +Y，yaw 正 = 往左转。面朝 (dx, dy) 方向时的 yaw（度）
 export const yawTo = (dx: number, dy: number) => (Math.atan2(-dx, dy) * 180) / Math.PI;
 // 从 a 转到 b 走近的那一边：返回和 a 连续的 b（可能加减 360）
 export const nearYaw = (a: number, b: number) => a + ((((b - a + 540) % 360) + 360) % 360) - 180;
 
 // ---------- 位置 ----------
-export const chestB = { block: [-687, -50, 272], facing: 'north' as const }; // 6-4-1
-export const chestC = { block: [-673, -49, 227], facing: 'north' as const }; // 6-4-3
-export const shriekers = {
-  besideB: [-689, -50, 271], // 箱子 B 西北角
-  fieldWest: [-695, -51, 259], // 6-4-7 第四次警告、6-4-8 监守者在它旁边钻出
-  corridorTop: [-694, -45, 243],
-  houseC: [-676, -49, 223],
-};
 export const blockCenter = ([x, y, z]: number[]): V3 => [x + 720.5, 239.5 - z, y + 50];
-// 6-4-8：监守者钻出的地方（脚底，地面 y -51）、二人站的地方
-export const wardenLanding: V3 = toScene(-695.5, -51, 254.5);
-export const liuStandPos: V3 = toScene(-694.2, -51, 249.4);
-export const huangStandPos: V3 = toScene(-697.5, -51, 248.6);
-
 // ---------- 羊毛 ----------
-// [方块 x, 站立面 y, 方块 z]：羊毛放在站立面上，人踩在羊毛顶（站立面 + 1）。高度从网格量的。
-// 李樱一路垫的羊毛（一跳一块，见文件头）。跳与跳之间（米）：起跳点→A1 23，A1→B 26，B→A3 20，A3→A4 22，A4→D 20，D→C 5
-export const woolSpots = {
-  A1: [-697, -51, 247], // 田西北角，紧挨回廊南墙根（6-4-8 二人就从它旁边走过）
-  B: [-687, -50, 271], // 箱子 B 北边一格
-  A3: [-685, -51, 251], // 田中间，两座石像之间、正对箱子屋 B 两根石柱的口子
-  A4: [-663, -51, 247], // 田东头
-  D: [-667, -50, 227], // 石屋 C 东边空地（6-4-2 先落这里再小跳上 C）；6-4-3、6-4-8 也画它，那两段机位拍不到
-  C: [-672, -49, 227], // 石屋 C 箱子东边的台子（6-4-3 李樱站在这块上开箱）
-} satisfies Record<string, [number, number, number]>;
-export const allWool: V3[] = Object.values(woolSpots).map(([x, t, z]) => woolAt(x, t, z));
-export const footOnWool = (k: keyof typeof woolSpots): V3 => onWool(woolAt(...woolSpots[k]));
-
 // ---------- 大跳 ----------
 const gravity = 32; // 格/秒²：游戏里玩家下落的重力（0.08 格/刻²）
 const bump = (x: number, a: number, b: number) => Math.sin(Math.PI * clamp01((x - a) / (b - a)));
 
 // 一跳：从脚底 p0 离地（第 f0 帧）跳到 p1，最高点脚底高 top（场景 z）。水平匀速，竖直按重力 G 的抛物线；有 hang 时沿弧的快慢按 `flightWarp`。
 export type Leap = { p0: V3; p1: V3; top: number; f0: number; T: number; tUp: number; f1: number; yaw: number; hang?: number };
-export const leap = (p0: V3, p1: V3, top: number, f0: number): Leap => {
-  const tUp = Math.sqrt((2 * (top - p0[2])) / gravity);
-  const airSec = tUp + Math.sqrt((2 * (top - p1[2])) / gravity);
-  return { p0, p1, top, f0, T: airSec, tUp, f1: f0 + airSec * FPS, yaw: yawTo(p1[0] - p0[0], p1[1] - p0[1]) };
-};
 // 第 f 帧的脚底位置（空中；f 在 f0～f1 之外时夹到两端）
 export const leapAt = (jump: Leap, frame: number): V3 => {
   const t0 = Math.min(jump.T, Math.max(0, (frame - jump.f0) / FPS));

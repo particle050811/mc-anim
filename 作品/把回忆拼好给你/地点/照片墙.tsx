@@ -14,7 +14,7 @@ import { mapWallOffset, photoWallFaceY, type PhotoWallCell } from './照片墙�
 import backPanelUrl from 'asset:贴图/物品/荧光物品展示框/背板';
 import woodFrameUrl from 'asset:贴图/物品/荧光物品展示框/木框';
 
-export { photoWallCells, photoWallCellPos, type PhotoWallCell } from './照片墙格.ts';
+export { photoWallCells, type PhotoWallCell } from './照片墙格.ts';
 
 // ---------- 贴图、材质 ----------
 const makePixelTexture = (px: Uint8Array, w: number, h: number) => {

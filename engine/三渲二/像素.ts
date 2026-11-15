@@ -4,12 +4,5 @@
 
 /** 成片输出对页面的倍数（pipeline/渲/设置.ts 视频级 scale 2） */
 export const filmScale = 2;
-
-/** 一个贴图像素 / 界面像素在页面上占多少 CSS 像素：给 2D 界面当缩放用（如 ChatOverlay 的 s） */
-export const pagePixel = (N: number) => N / filmScale;
-
 /** 画在 2D 画布上时一个界面像素占多少画布像素：画布按 页面尺寸 × dpr 建（渲染时 dpr 就是截图放大倍数） */
 export const canvasPixel = (N: number, dpr: number) => (N * dpr) / filmScale;
-
-/** 一格（16 个贴图像素）在页面上多少 CSS 像素 */
-export const pagePixelsPerCell = (N: number) => 16 * pagePixel(N);

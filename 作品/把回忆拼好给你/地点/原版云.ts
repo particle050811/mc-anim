@@ -3,7 +3,7 @@
 import { cloudCells as engineCloudCells, scatterRadius as engineScatterRadius, type CloudCell, type CloudExtent } from '@engine/light/云/原版方块.ts';
 import { legacyFrameSec } from '../分镜/时间.ts';
 
-export { cloudCell, cloudThickness, cloudCenter, type CloudCell, type CloudExtent } from '@engine/light/云/原版方块.ts';
+export { type CloudCell, type CloudExtent } from '@engine/light/云/原版方块.ts';
 
 /** 小木屋头顶那层云（同 场/2-雷雨/参数.ts，数的来由见那边，都是 Agent 暂定）：
  *  底高 = 云底离屋前地面多高（格）；偏 = clouds.png 在世界里平移多少格（挑的是光柱头顶一大团连成片的云）；每刻飘 = 原版每刻往西 0.03 格；

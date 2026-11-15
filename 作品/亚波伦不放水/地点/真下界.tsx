@@ -17,13 +17,12 @@ import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { LevelParams } from '@engine/core/渲染级别.ts';
 import { useSelfLight } from '@engine/light/光照配比.ts';
-import type { V3 } from '@engine/model/parts.tsx';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { voxelMaterial } from '@engine/voxel/材质.ts';
 import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
-export { realNetherPack, realNetherOrigin, realNetherScene, realNetherPick, realNetherVenue } from './真下界位置.ts';
+export { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
 export type NetherLight = {
   /** 光照图在方块光 0 级的颜色（sRGB 数值上的倍数，原版 [0.393, 0.323, 0.267]）；乘面明暗后折到线性 */

@@ -1100,10 +1100,6 @@ const sheathKit = () => {
 const HILT_PARTS = hiltKit();
 const BLADE_PARTS = bladeKit();
 const SHEATH_PARTS = sheathKit();
-
-const triCount = (parts: { geo: THREE.BufferGeometry }[]) => parts.reduce((n, p) => n + p.geo.getAttribute('position').count / 3, 0);
-export const KATANA_TRIS = { hilt: triCount(HILT_PARTS), blade: triCount(BLADE_PARTS), sheath: triCount(SHEATH_PARTS) };
-
 // 高光会溢出泛光的只有刀身（拔刀剑泛光.tsx）：网格多开一层，画布由 useKatanaBloom 挂上泛光。
 // 金具不算：参考图里溢光的是刀身中段那片高光，金的鞘尾、鯉口在暗处会成一圈发光的帽子
 const BLOOM_CLS: Cls = 'steel';

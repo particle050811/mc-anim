@@ -24,9 +24,6 @@ export type TierName = (typeof tierNames)[number];
 /** 天气：雨、雷各 0～1（游戏里 rainLevel、thunderLevel）。雷只在下雨时起作用（getThunderLevel 乘了雨） */
 export type Weather = { 雨: number; 雷: number };
 export const clearWeather: Weather = { 雨: 0, 雷: 0 };
-export const rainWeather: Weather = { 雨: 1, 雷: 0 };
-export const thunderWeather: Weather = { 雨: 1, 雷: 1 };
-
 /** 场景的雾（three 的 fog）：线性同 TwilightLighting，指数平方同 FlightFog（能见度 = 雾浓到一半的距离，米）。色不给按画法的默认色 */
 export type Fog = { 种类: '线性'; near: number; far: number; 色?: string } | { 种类: '指数平方'; visibility: number; 色?: string } | { 种类: '无' };
 

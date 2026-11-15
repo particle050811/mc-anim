@@ -180,10 +180,6 @@ const BLOCKS: Record<string, MeshPart> = Object.fromEntries(
     ];
   }),
 );
-export const allParts4x = Object.keys(BLOCKS);
-// 各块的游戏范围（两端都含）
-export const parts4x = Object.values(BLOCKS).map(({ 名: partName, x, y, z, info }) => ({ name: partName, x, y, z, 面数: info.layers.reduce((s, l) => s + l.quads, 0) }));
-
 const ORIGIN: V3 = [-720, -50, 240];
 // 游戏坐标 → 场景坐标（和 古城.tsx 的 G 一样）
 export const G4 = (x: number, y: number, z: number): V3 => fromGame([x - ORIGIN[0], y - ORIGIN[1], z - ORIGIN[2]]);
@@ -195,14 +191,6 @@ export const partAt = (x: number, z: number) => Object.values(BLOCKS).find((b) =
 // 游戏 (x, z) 周围 r 格（正方形）碰到的块
 export const partsAround = (x: number, z: number, r: number) =>
   Object.values(BLOCKS).filter((b) => b.x[0] <= x + r && b.x[1] + 1 >= x - r && b.z[0] <= z + r && b.z[1] + 1 >= z - r).map((b) => b.名);
-// 一段箭路、跑位：从 a 到 b（游戏 [x, z]）两边各 r 格碰到的块
-export const partsAlong = (start: number[], end: number[], radius: number) => {
-  const steps = Math.ceil(Math.hypot(end[0] - start[0], end[1] - start[1]) / 32) + 1;
-  const found = new Set<string>();
-  for (let i = 0; i <= steps; i++) for (const k of partsAround(start[0] + ((end[0] - start[0]) * i) / steps, start[1] + ((end[1] - start[1]) * i) / steps, radius)) found.add(k);
-  return [...found];
-};
-
 // 视距、雾：全片通用的满视距（lib/视距.ts）。雾色照 1.20.1 FogRenderer：
 // - setupColor 雾色（清屏色同它）：群系雾色 deep_dark 0xC0D8FF × 白天亮度系数（白天 1）；32 区块时不混天色；地下按镜头高度压暗（(y+64)/32 再平方）；
 //   夜视再把最大分量拉回 1（项目按夜视画，见 古城.tsx），压暗就被抵掉，结果就是 #C0D8FF。身上有黑暗时不提亮，见 模型/特效/黑暗效果.tsx。

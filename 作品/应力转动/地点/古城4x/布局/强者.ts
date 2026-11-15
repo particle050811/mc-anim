@@ -53,19 +53,6 @@ export const eliteLeap = (p0: V3, p1: V3, apexHeight = elite.apexHeight, f0 = 0,
     horizontal: horizDist, horizSpeed: horizDist / flightSec, launchVz: gravity * tUp,
   };
 };
-// 给定水平速度（米/秒）反求离地：一跳正好用 水平 / 速 秒（二分；速太慢、要的离地超过 离地范围 上限时夹到上限）
-export const eliteLeapAtSpeed = (p0: V3, p1: V3, speed = elite.sprint, f0 = 0, fps = 24): Jump => {
-  const horizDist = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
-  const targetSec = horizDist / speed;
-  let lo = 0.05;
-  let hi = elite.apexHeightRange[1];
-  for (let i = 0; i < 40; i++) {
-    const mid = (lo + hi) / 2;
-    if (eliteLeap(p0, p1, mid).T < targetSec) lo = mid;
-    else hi = mid;
-  }
-  return eliteLeap(p0, p1, (lo + hi) / 2, f0, fps);
-};
 // 跳的走法（用户 10-18 定：跳跃优先观感、不必严格重力）：空中的画面进度 u（0 离地、1 落地）→ 弧上的进度。顶点（ua）两边各一段，
 // 蹬地后快、到顶点只剩 1 − hang 倍速、落地前又快到 1 + hang 倍；弧的形状、总时长、顶点时刻都不变，落点照旧准。同 ../6-4-1/跳搭.ts 的 warp
 export const flightWarp = (u: number, ua: number, hang: number) => {

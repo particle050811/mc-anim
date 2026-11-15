@@ -5,10 +5,7 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { GloryGrabView } from '../6-4-7/贪功.tsx';
 import { EmergeView } from '../6-4-8/钻出.tsx';
 import { RevealView } from '../6-4-9/登场.tsx';
-import { FPS, frameCount, partAt } from './时间线.ts';
-
-export const gloryEmergeRevealFrames = frameCount;
-
+import { FPS, partAt } from './时间线.ts';
 export const GloryEmergeReveal: React.FC = () => {
   const { id, f } = partAt(useCurrentSec() * FPS);
   return id === '6-4-7' ? <GloryGrabView f={f} /> : id === '6-4-8' ? <EmergeView f={f} /> : <RevealView f={f} />;

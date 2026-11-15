@@ -2,7 +2,4 @@
 // 声音照 6-举锤砸穿 段.ts 的 cue 放（定义画面 自动挂），不再挂 6-3-下坠/声音.tsx。
 import React from 'react';
 import { FallSegment } from '../../../场/6-边城/6-3-下坠/画面.tsx';
-import { segFrameCount } from '../../../地点/边城/6-3-下坠/时间线.ts';
-
-export const SmashThrough_FRAMES = segFrameCount('6-3-6');
 export const SmashThrough: React.FC = () => <FallSegment segment="6-3-6" />;

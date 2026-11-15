@@ -39,7 +39,7 @@ import { drydenField, lowAltTurbulence, modeVariance } from './真实飞行/湍�
 import { integStepSec, springTable } from './真实飞行/弹簧.ts';
 import { smootherstep01, hermite } from '../core/数学.ts';
 
-export { defaultParams, type BumpMode, type ChannelParams, type RealFlightParams } from './真实飞行/参数.ts';
+export { defaultParams, type BumpMode, type RealFlightParams } from './真实飞行/参数.ts';
 export { lowAltTurbulence } from './真实飞行/湍流.ts';
 export { integStepSec, springTable } from './真实飞行/弹簧.ts';
 
@@ -368,4 +368,3 @@ export const realFlight = (opts: RealFlightOptions) => {
     stepCount: steps,
   };
 };
-export type RealFlightResult = ReturnType<typeof realFlight>;

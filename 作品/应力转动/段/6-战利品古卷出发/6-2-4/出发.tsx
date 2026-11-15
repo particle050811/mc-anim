@@ -24,8 +24,6 @@ import { BaseIslandTerrain } from '../../../地点/基地小岛.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import * as choreo from './编排.ts';
 import { rad } from '@engine/core/数学.ts';
-
-export const SET_OFF_FRAMES = choreo.FRAMES;
 // 编排.ts 的帧号是 1/24 秒一格
 const perSec = 24;
 

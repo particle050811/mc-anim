@@ -89,11 +89,3 @@ export const IceShieldBlock: React.FC<{ p: V3; q?: THREE.Quaternion; s?: number;
     <mesh geometry={iceGeo} material={opacity < 1 ? iceFadeMat(opacity) : iceBlockMat()} position={center} quaternion={tumbleQuat} scale={scale} castShadow={opacity >= 1} receiveShadow />
   );
 
-// 绕着女王转的一整圈冰盾（不跟女王的朝向转，方块始终和世界坐标轴对齐）。放在女王脚底的位置上
-export const SnowQueenShields: React.FC<{ sec: number }> = ({ sec: sec }) => (
-  <>
-    {iceShieldCenters(sec).map((c, i) => (
-      <IceShieldBlock key={i} p={c} />
-    ))}
-  </>
-);

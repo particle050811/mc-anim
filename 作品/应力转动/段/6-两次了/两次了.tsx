@@ -4,9 +4,6 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DeflectView } from '../../场/6-古城/6-4-3/画面.tsx';
 import * as choreo from '../../场/6-古城/6-4-4/编排.ts';
 import { mouthAt } from '../../配音/口型.ts';
-
-export const twiceFrames = choreo.frameCount;
-
 export const Twice: React.FC = () => {
   const segFrame = useCurrentSec() * choreo.FPS;
   return <DeflectView g={choreo.deflectFrameAt(segFrame)} cam={choreo.camera(segFrame)} mouth={mouthAt([choreo.lines.annoyed], '李樱', segFrame)} />;

@@ -3,7 +3,7 @@
 import { cloudCells as engineCloudCells, scatterRadius as engineScatterRadius, type CloudCell } from '@engine/light/云/原版方块.ts';
 import * as params from './参数.ts';
 
-export { cloudCell, cloudThickness, cloudCenter, type CloudCell } from '@engine/light/云/原版方块.ts';
+export { cloudCell, type CloudCell } from '@engine/light/云/原版方块.ts';
 
 /** 铺得到的云格（偏 = 贴图在世界里平移几格，默认 参.云偏；铺默认 参.云铺） */
 export const cloudCells = (isOccupied: (u: number, v: number) => boolean, offset: readonly [number, number] = params.cloudOffset, extent = params.cloudExtent): CloudCell[] => engineCloudCells(isOccupied, offset, extent);

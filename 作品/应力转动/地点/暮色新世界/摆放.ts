@@ -161,8 +161,6 @@ const mainCutoutsByName = Object.fromEntries(
   }),
 ) as Record<TwilightLandmarkName, CutoutEntry[]>;
 const cutoutsByName = Object.fromEntries(twilightLandmarkNames.map((name) => [name, [...mainCutoutsByName[name], ...(landmarkDefs[name].extraDig ?? [])]])) as Record<TwilightLandmarkName, CutoutEntry[]>;
-// 一座地标的挖框（游戏坐标）：工具/一镜到底/离树3D.py 拼「新世界 + 摆好的网格」时照它挖（经 诊断.ts --几何输出 导出）
-export const twilightCutouts = (name: TwilightLandmarkName) => cutoutsByName[name];
 // 删掉的巨魔云（游戏坐标，云和云上巨人的房子、树整团挖掉）：新世界生成的巨魔云带着巨人房子，一镜到底里远远看得见的这四团和 6-1-8b 的云中小屋像同一样东西重复出现（用户 10-06 定的接缝修法）。
 // 四团按一镜到底每帧镜头量过进画面的：巫妖怪塔西北、终焉高原西北、北边、东边各一团；其余三团（娜迦庭院、巫妖怪塔以西）看不到，不动。
 // 只挖 y 150 以上（云团在 y 160～195）；不算地标范围：粗高度图还当云在，航线、镜头不变（离航线都在 900 米以外）
@@ -190,13 +188,6 @@ const rangeBoxesByName = Object.fromEntries(
 export const landmarkRanges = twilightLandmarkNames.flatMap((name) =>
   rangeBoxesByName[name].map((m) => ({ name: name, box: [m.from[0] - POX, POZ - 1 - m.to[2], m.to[0] + 1 - POX, POZ - m.from[2]], remainTop: m.remainTop === undefined ? null : m.remainTop - POY })),
 );
-// 画不画迁移的网格（九头蛇巢穴用新世界自己的那座：6-1-6/戏.tsx、地标巡检、离树都照它）
-export const twilightDrawsMesh = (name: TwilightLandmarkName) => landmarkDefs[name].网格 !== false;
-// 核心、转（工具/地标巡检/归边.ts 用）
-export const twilightCore = (name: TwilightLandmarkName) => landmarkDefs[name].core ?? [];
-export const twilightRotation = (name: TwilightLandmarkName) => landmarkDefs[name].转;
-// 巡检工具（工具/地标巡检/共用.ts）分开看的几样：主挖框（网格范围、核心、另给的挖，连归边另挖的格）、补挖、地标范围（只看水平，游戏方块列都含）、平整
-export const twilightPlacement = (name: TwilightLandmarkName) => ({ mainCutouts: mainCutoutsByName[name], extraCutouts: landmarkDefs[name].extraDig ?? [], rangeBoxes: rangeBoxesByName[name], flattens: landmarkDefs[name].flattens ?? [] });
 // 有 核心 的地标：核心外面的网格不画（BlockMesh 的 hideBlocks：按方块藏，网格本地坐标，按 1 米一格扫出核心外面的格子、一行行并成盒子）；
 // 没有核心的是空数组。各帧同一个数组。有归边的：核心外留下树干在核心里的旧树（藏免），核心里另藏树干在外面的新树伸进来的树冠（藏加）
 export const landmarkHideOutsideCore = Object.fromEntries(

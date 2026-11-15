@@ -6,16 +6,14 @@
 //   打中生物：点燃 1 秒，伤害照原版箭。
 // - 物品：quark:item/torch_arrow（item/generated，16×16）。
 // - 火把方块（原版 `TorchBlock` / `WallTorchBlock`）：模型 minecraft:block/torch，亮度 14；`animateTick` 在 (方块中心, 高 0.7)（墙上火把再往墙那边挪 0.27、高 0.92）各放 1 个 smoke 和 1 个 flame，速度 0。
-//   `animateTick` 不是每刻都调：`ClientLevel.animateTick` 每刻在玩家周围随机抽方块（半径 16 抽 667 次、半径 32 抽 667 次），所以每刻冒烟概率取决于离玩家多远，见 `torchTickChance`()（脚下附近约 0.18，离 8 格约 0.05）。
+//   `animateTick` 不是每刻都调：`ClientLevel.animateTick` 每刻在玩家周围随机抽方块（半径 16 抽 667 次、半径 32 抽 667 次），所以每刻冒烟概率取决于离玩家多远（脚下附近约 0.18，离 8 格约 0.05）。
 // 坐标：场景坐标（Z 朝上），单位格；时间：刻。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { type V3 } from '../../engine/model/parts.tsx';
 import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
-import { DISPLAY, ItemDisplay, ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import type { ParticleSpawn } from '../特效/原版粒子.tsx';
-import itemPng from 'asset:贴图/物品/杂项物品/火把箭';
 import torchRaw from 'asset:模型/物品/火把';
 import torchAtlas from 'asset:贴图/物品/火把';
 import { mulberry32 } from '../../engine/core/数学.ts';
@@ -79,12 +77,6 @@ export const torchFlamePos = (cell: V3, wallFacing?: V3): V3 =>
     ? [cell[0] + 0.5 - wallFacing[0] * 0.27, cell[1] + 0.5 - wallFacing[1] * 0.27, cell[2] + 0.92]
     : [cell[0] + 0.5, cell[1] + 0.5, cell[2] + 0.7];
 
-// 一个火把每刻被 animateTick 抽到的概率（d = 火把相对玩家的格子偏移，场景坐标）
-export const torchTickChance = (offset: V3) => {
-  const pickChance = (R: number) => offset.reduce((s, x) => s * Math.max(0, R - Math.abs(Math.round(x))) / (R * R), 1);
-  return 667 * pickChance(16) + 667 * pickChance(32);
-};
-
 // 火把冒的烟和火：t0～t1 刻，每刻按 概率 抽一次
 export const torchParticles = (flamePos: V3, chance: number, t0: number, t1: number, seed: number): ParticleSpawn[] => {
   const rand = mulberry32(seed * 5153 + 9);
@@ -97,8 +89,3 @@ export const torchParticles = (flamePos: V3, chance: number, t0: number, t1: num
   return out;
 };
 
-// 物品（拿在手上、地上的掉落物用）：item/generated，物品空间（贴图正面 +Z、中心在原点、1 = 1 格）
-export const TorchArrowItem: React.FC<{ display?: 'ground' | 'thirdperson_righthand' }> = ({ display }) => {
-  const sprite = <ItemSprite layers={[{ tex: png(itemPng) }]} />;
-  return display ? <ItemDisplay t={DISPLAY.generated[display]}>{sprite}</ItemDisplay> : sprite;
-};

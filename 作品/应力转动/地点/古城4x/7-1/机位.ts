@@ -21,5 +21,3 @@ export const camPoses = (shots: ShotCam[]) => {
 export const addOffset = (a: V3, b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 // 场时刻 t 落在某段的第几帧（切点按剧情时刻写）
 export const frameAt = (segId: timeline.SegmentId, t: number) => Math.round((t - timeline.segmentStartT(segId)) * timeline.FPS);
-// 跟拍：主体（场景脚底，按场时刻）+ 偏移
-export const follow = (segId: timeline.SegmentId, subject: (t: number) => V3, offset: number[]) => (f: number): V3 => addOffset(subject(timeline.tAt(segId, f)), offset);

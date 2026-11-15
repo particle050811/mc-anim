@@ -1,7 +1,7 @@
 // 主世界统一的那套（主世界光照.tsx 的 SUN_OW、OverworldSky，飞行镜头.tsx 的 FlightSky、FlightFog）写成环境描述，给新段用：
 // <环境 描述={主世界环境({ 能见度, 投影远 })} 镜头={cam.pos} 离地={…} /> 和 <FlightFog visibility /> + <FlightSky camPos shadow={{ shadowFar, aboveGround }} /> 出一样的画面
 // （核对/环境/ 逐像素比过）。坐标是主世界-116 的场景坐标。
-import { defineEnvironment, lightDirToVec, skyAngleToGameTime, type EnvDescription } from '@engine/light/环境.ts';
+import { defineEnvironment, type EnvDescription } from '@engine/light/环境.ts';
 import { overworld } from '@engine/light/维度.ts';
 import { SUN_OW } from './主世界光照.tsx';
 import { borderTownPos } from './主世界116.ts';
@@ -26,10 +26,3 @@ export const overworldEnv = (o: { visibility: number; shadowFar?: number; photon
     },
     '主世界环境',
   );
-
-/** SUN_OW（正西、仰角 20°）正好在原版的太阳轨道上（南北分量 0），换成游戏时间约 11510 刻（下午五点半上下）。
- *  新段写 时刻: SUN_OW时刻 得到同一个太阳方向，但灯按时刻调（天光约 × 0.91），不和美术光向那版逐像素一样 */
-export const OVERWORLD_SUN_TIME = (() => {
-  const d = lightDirToVec(SUN_OW);
-  return skyAngleToGameTime(Math.atan2(-d[0], d[2]) / (2 * Math.PI));
-})();

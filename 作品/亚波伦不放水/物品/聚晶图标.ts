@@ -137,13 +137,6 @@ import dragonSkyrocketFocusPng from 'asset:贴图/物品/聚晶/goety_revelation
 import iceFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/ice_focus';
 import shadowCloneFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/shadow_clone_focus';
 import netherMeteorFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/nether_meteor_focus';
-import haloFireballFocusPng from 'asset:贴图/物品/聚晶/光环版/fireball_focus';
-import haloBarricadeFocusPng from 'asset:贴图/物品/聚晶/光环版/barricade_focus';
-import haloCycloneFocusPng from 'asset:贴图/物品/聚晶/光环版/cyclone_focus';
-import haloHailFocusPng from 'asset:贴图/物品/聚晶/光环版/hail_focus';
-import haloSkullFocusPng from 'asset:贴图/物品/聚晶/光环版/skull_focus';
-import haloUpdraftFocusPng from 'asset:贴图/物品/聚晶/光环版/updraft_focus';
-import haloWitherSkullFocusPng from 'asset:贴图/物品/聚晶/光环版/wither_skull_focus';
 
 export const focusIcons = {
   'goety:empty_focus': emptyFocusPng,
@@ -281,15 +274,3 @@ export const focusIcons = {
   'goety_revelation:shadow_clone_focus': shadowCloneFocusPng,
   'goety_revelation:nether_meteor_focus': netherMeteorFocusPng,
 } as const;
-
-export type FocusRegistryName = keyof typeof focusIcons;
-
-export const haloFocusIcons: Partial<Record<FocusRegistryName, string>> = {
-  'goety:fireball_focus': haloFireballFocusPng,
-  'goety:barricade_focus': haloBarricadeFocusPng,
-  'goety:cyclone_focus': haloCycloneFocusPng,
-  'goety:hail_focus': haloHailFocusPng,
-  'goety:skull_focus': haloSkullFocusPng,
-  'goety:updraft_focus': haloUpdraftFocusPng,
-  'goety:wither_skull_focus': haloWitherSkullFocusPng,
-};

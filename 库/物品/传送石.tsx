@@ -26,9 +26,6 @@ import warpStonePng from 'asset:贴图/物品/杂项物品/传送石';
 import { mulberry32 } from '../../engine/core/数学.ts';
 
 export const WARP = { holdTicks: 32, warpParticleCount: 128 };
-// UseAnim.BOW 时原版 HumanoidModel 的手臂（BOW_AND_ARROW，右手用）：两臂 xRot = −90° + 头仰，右 yRot = −0.1 + 头偏（弧度）、左 yRot = 0.1 + 头偏 + 0.4
-export const BOW_ARMS = { xRot: -90, rightYRot: (-0.1 * 180) / Math.PI, leftYRot: (0.5 * 180) / Math.PI };
-
 export const WarpStone: React.FC<{ sec: number; charged?: boolean }> = ({ sec: sec, charged = true }) => <GlintItem layers={[{ tex: png(warpStonePng) }]} sec={sec} glint={charged} />;
 const heldTransform = { ...DISPLAY.handheld.thirdperson_righthand, scale: [0.55, 0.55, 0.55] as [number, number, number] };
 export const HeldWarpStone: React.FC<{ sec: number; left?: boolean; charged?: boolean }> = ({ sec: sec, left = false, charged }) => (

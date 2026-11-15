@@ -15,15 +15,10 @@ import { png, type Png } from '../../engine/model/贴图.ts';
 import { drawText, textWidth, lineHeight } from '../界面/像素字.ts';
 import bookGuiPng from 'asset:贴图/物品/书/书界面';
 import featherPng from 'asset:贴图/物品/书/羽毛';
-import writableBookPng from 'asset:贴图/物品/书/书与笔';
-import writtenBookPng from 'asset:贴图/物品/书/成书';
 import { rad } from '../../engine/core/数学.ts';
 
 const bookGuiTex = png(bookGuiPng);
 export const featherTex = png(featherPng);
-export const writableBookTex = png(writableBookPng);
-export const writtenBookTex = png(writtenBookPng);
-
 const paperRect = { x: 20, y: 1, w: 146, h: 180 };
 const textArea = { x: 16, y: 31, 宽: 114, maxLines: 14 };
 const pageNumAnchor = { x: 128, y: 17 };

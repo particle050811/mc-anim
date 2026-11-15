@@ -19,24 +19,15 @@ import { twilightPackName, type TwilightLandmarkName } from './暮色新世界/�
 import { frameByName, allCutouts, allFlattens, landmarkHideOutsideCore, castleMeshHide } from './暮色新世界/摆放.ts';
 import { twilightDistantPack, twilightFarLandmarkPack, farViewOf, type TwilightFarView } from './暮色新世界/超远景.ts';
 
-export { twilightPackName, twilightFrozen, gameToWorld, yetiCore, twilightLandmarkNames, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
+export { twilightPackName, twilightFrozen, type TwilightLandmarkName } from './暮色新世界/地标表.ts';
 export {
   twilightLandmark,
-  twilightCutouts,
-  twilightRemovedClouds,
-  twilightDrawsMesh,
-  twilightCore,
-  twilightRotation,
-  twilightPlacement,
   landmarkHideOutsideCore,
-  castleMeshHide,
-  type LandmarkFrame,
+  castleMeshHide
 } from './暮色新世界/摆放.ts';
 export {
   twilightCellTop,
   isInTwilightLandmark,
-  twilightFeatureTop,
-  twilightCameraGround,
   cruiseClearanceM,
   canopySurface,
   cruiseHeight,

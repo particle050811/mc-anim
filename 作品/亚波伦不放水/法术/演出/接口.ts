@@ -68,4 +68,3 @@ export const spellSoundAt = (meta: SpellMeta, from: Vec3, target: Vec3, options?
 
 /** 游戏刻：秒 × 20 */
 export const ticksPerSec = 20;
-export const secToTicks = (sec: number) => sec * ticksPerSec;

@@ -70,6 +70,3 @@ export const slashStateAt = (move: MoveName, s: number): { pose: MovePose; blend
   if (s < slash + hold) return { pose: poseTable.followThrough, blendWeight: 1 };
   return { pose: poseTable.followThrough, blendWeight: 1 - smoothstep01(clamp01((s - slash - hold) / recoverSec)) };
 };
-
-/** 把平时的姿势（同样的字段）按权混到招姿上：臂、滚、转、肘、腕、左臂、左滚是绝对值，拧、倾、沉是叠加的 */
-export const blendMove = (basePose: MovePose, movePose: MovePose, blendWeight: number): MovePose => mix(basePose, { ...movePose, 拧: basePose.拧 + movePose.拧, 倾: basePose.倾 + movePose.倾, 沉: basePose.沉 + movePose.沉 }, blendWeight);

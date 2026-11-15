@@ -5,4 +5,4 @@ import lineTable from 'asset:数据/配音/台词表';
 import { buildLipData } from '@库/角色/口型.ts';
 
 export const { mouthAt, withTalkNod } = buildLipData(mouthTable, lineTable);
-export { CLOSED, MOUTH_SHAPES, type Mouth } from '@库/角色/口型.ts';
+export { MOUTH_SHAPES, type Mouth } from '@库/角色/口型.ts';

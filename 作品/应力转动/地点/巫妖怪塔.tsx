@@ -5,18 +5,12 @@
 //   （= mcai mesh from=-43,0,209 to=42,95,261 origin=0,0,235.5 merge=0 mark=twilightforest:lich_boss_spawner）
 // 坐标：原点 (0, 0, 235.5)，南 = -Y；范围见 巫妖怪塔.网格.json。三个 巫妖怪塔.网格.* 不要手改。
 import React from 'react';
-import { BlockMesh, type BlockMeshInfo, fromGame } from '@engine/voxel/方块网格.tsx';
+import { BlockMesh, type BlockMeshInfo } from '@engine/voxel/方块网格.tsx';
 import raw from 'asset:网格/巫妖怪塔/头';
 import bin from 'asset:网格/巫妖怪塔/顶点';
 import atlas from 'asset:网格/巫妖怪塔/图集';
 
 const INFO = raw as unknown as BlockMeshInfo;
-
-export const LICH_TOWER = {
-  spawner: fromGame(INFO.markers['twilightforest:lich_boss_spawner'][0]),
-  size: [INFO.to[0] - INFO.from[0] + 1, INFO.to[2] - INFO.from[2] + 1, INFO.to[1] - INFO.from[1] + 1],
-};
-
 // `hide`：这些盒子里的面不画（镜头里撞开的洞，见 特效/方块飞溅.tsx）；`clearPlants`：这些矩形里不画花草。
 // `hideBlocks`：按方块藏（暮色新世界.tsx 的 `landmarkHideOutsideCore` 放这里，不放 `hide`）；`patchEdges`：补边，地标默认开（见 lib/方块网格.tsx）
 export const LichTower: React.FC<{ hide?: number[][]; clearPlants?: number[][]; hideBlocks?: number[][]; patchEdges?: boolean | number }> = ({

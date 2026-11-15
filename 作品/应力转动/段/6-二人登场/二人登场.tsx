@@ -2,8 +2,5 @@
 // 卫兵看坑 → 黄叛「上次抢劫我们城市的家伙又来了，我们快追！」→ 一齐出发（两人和卫兵先后从走道内沿跳进墙脚的落水池），切坑前一帧为止。
 // 戏、时刻、机位在 6-3-8/编排.ts，画面在 6-3-8/画面.tsx；台词和音效照本段 段.ts 的 cue 放（定义画面 自动挂）。
 import React from 'react';
-import { segmentFrames } from '../../地点/边城/6-3-8/编排.ts';
 import { PursuerSegment } from '../../地点/边城/6-3-8/画面.tsx';
-
-export const MEET_FRAMES = segmentFrames('6-3-8');
 export const TwoArrive: React.FC = () => <PursuerSegment segment="6-3-8" />;

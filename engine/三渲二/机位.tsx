@@ -145,10 +145,6 @@ export const CameraRig: React.FC<{ 参数: CameraRigParams }> = ({ 参数: param
   }
   return null;
 };
-
-export const OrthoPixelRig: React.FC<Omit<OrthoRigParams, '种'>> = (p) => <CameraRig 参数={{ 种: '正交', ...p }} />;
-export const PerspectiveRig: React.FC<Omit<PerspectiveRigParams, '种'>> = (p) => <CameraRig 参数={{ 种: '透视', ...p }} />;
-
 /** 在画布外面另建一台和画布里一样的相机，给 2D 叠层用 库/界面/投影.ts 的 投影到页面 算头顶气泡这类的位置（场景坐标先过 Z朝上转three）。
  *  宽高、dpr 要和画布一样（三渲二画布 的 dpr 是 canvasDpr(1)），正交的吸附才对得上 */
 export const makeRigCamera = (p: CameraRigParams, width: number, height: number, dpr: number): THREE.OrthographicCamera | THREE.PerspectiveCamera => {

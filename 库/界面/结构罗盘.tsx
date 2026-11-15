@@ -25,9 +25,6 @@ for (const k of ctx.keys()) {
   const pngModule = ctx(k);
   pngUrls[k.replace(/^\.\//, '')] = typeof pngModule === 'string' ? pngModule : pngModule.default;
 }
-
-export const compassFrameCount: number = frameTable.帧数;
-
 // 帧：界面开着的第几帧（0 = 刚打开）；不在 0～帧数-1 里就不画
 export const CompassUi: React.FC<{ frame: number }> = ({ frame: frame }) => {
   const i = Math.floor(frame);

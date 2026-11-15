@@ -16,9 +16,6 @@ import pullInJson from 'asset:数据/镜头/一镜到底/收表';
 import { interpTable } from '@engine/段/按时取值.ts';
 import { lerp, smoothstep01, smootherstep01, rad } from '@engine/core/数学.ts';
 const pullInData = pullInJson as unknown as { 收: number[][] };
-
-export { chaseSpans, camWindows } from './镜段.ts';
-
 export type Cam = { pos: number[]; tgt: number[]; lens: number };
 
 // ---------- 合成：每一帧的 P 和位置 ----------
@@ -80,10 +77,6 @@ const placeCam = (Fg: number) => {
 // 同游戏第三人称镜头碰到方块就往玩家身上收（用户 10-07）：沿「镜头 → 骑手中心」往里收到不被挡为止，骑手在画面上位置不变只是变大；
 // 收多少沿时间先取 ±`收宽` 帧里最多的、再三角窗抹平。挡不挡按真方块算（`收表`.json，工具/一镜到底/收表.ts 量好写进来；镜头路线一改要重跑）
 const pullInHalfWin = 6;
-export const camBeforePullIn = (Fg: number) => {
-  const placed = placeCam(Fg);
-  return { pos: placed.pos, rider: placed.B, pullInStartDist: 20 };
-};
 const pullInTable = (() => {
   const frameCount = route.totalFrames;
   const raw = new Float64Array(frameCount).fill(1);

@@ -5,7 +5,6 @@ import { lerpV } from '@engine/core/数学.ts';
 
 export type RGB = readonly [number, number, number];
 const hexToRgb = (hex: string): RGB => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as unknown as RGB;
-export const colorToHex = (c: RGB) => '#' + c.map((x) => Math.round(Math.min(1, Math.max(0, x)) * 255).toString(16).padStart(2, '0')).join('');
 const luminance = (c: RGB) => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
 
 /** 平原的天色（sky_color 7907327）、雾色（fog_color 12638463） */

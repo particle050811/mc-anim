@@ -10,9 +10,6 @@ import { png } from '@engine/model/贴图.ts';
 import raw from 'asset:模型/物品/女仆床';
 import tex from 'asset:贴图/物品/女仆床';
 import type { BedFacing } from './床尺寸.ts';
-
-export { maidBedSurfaceHeight } from './床尺寸.ts';
-
 export const maidBedModel = { ...(raw as unknown as object), texture: png(tex) } as unknown as BedrockModel;
 
 /** 场景里绕 Z 转多少（弧度）：朝南 0，朝东 +90°（南转到东），朝北 180° */

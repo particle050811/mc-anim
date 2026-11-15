@@ -35,9 +35,6 @@ const texOf = (k: number) => {
 
 // 飞行刻数（游戏的 lifetime / 感测体收到振动前的等待）= floor(直线距离)
 export const vibrationTravelTicks = (from: V3, to: V3) => Math.floor(Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]));
-// 飞行秒数：感测体在这么多秒之后激活
-export const vibrationTravelSec = (from: V3, to: V3) => vibrationTravelTicks(from, to) / 20;
-
 // 第 sec 秒（从发出算起）粒子在哪、是否还在。lifetime = L 刻：
 // 渲染位置 = from + (to − from) × max(0, τ−1)/(L−1)（τ = sec×20），τ ≥ L 时没了（游戏里最后一刻除以 0 得到无穷远）
 export const vibrationParticlePos = (from: V3, to: V3, sec: number): V3 | null => {

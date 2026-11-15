@@ -130,13 +130,6 @@ export type NoteBox = {
   nearTarget?: boolean; // placeNearTarget：框不离被指的点太远（x 不超过点 + 50）
   fade: number; // 0～1
 };
-export type PonderState = {
-  visibility: number; // 整个界面淡入淡出（PonderUI.fadeIn）
-  title: string;
-  progressBar: number; // 0～1
-  keyframes: number[]; // 0～1
-  textWindows: NoteBox[];
-};
 const { W: uiWidth, H: uiHeight } = ponderScreen;
 
 // 底（世界画面上盖的暗色）

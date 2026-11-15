@@ -2,8 +2,6 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { pick } from '../core/数学.ts';
-
 export type V3 = [number, number, number];
 
 // 残影：同一个角色在前几帧的位置再画一遍，所有零件换成半透明单色
@@ -74,53 +72,6 @@ export const Ball: React.FC<Common & { rad: number; detail?: number }> = ({ rad,
       <Mat {...matProps} />
     </mesh>
   );
-};
-
-// 齿轮：带齿的低面数圆盘，轴沿本地 Y（贴在朝 +Y 或 -Y 的面上）
-export const Gear: React.FC<{ p: V3; rad: number; depth: number; c: string; teeth?: number; axis?: 'x' | 'y' }> = ({ p: pos, rad: radius, depth, c: color, teeth = 8, axis = 'y' }) => (
-  <group position={pos} rotation={axis === 'x' ? [0, 0, Math.PI / 2] : [0, 0, 0]}>
-    <mesh castShadow>
-      <cylinderGeometry args={[radius * 0.78, radius * 0.78, depth, 12]} />
-      <Mat c={color} metal={0.4} rough={0.5} />
-    </mesh>
-    {Array.from({ length: teeth }, (_, i) => {
-      const angle = (i / teeth) * Math.PI * 2;
-      return (
-        <mesh key={i} position={[Math.cos(angle) * radius * 0.85, 0, Math.sin(angle) * radius * 0.85]} rotation={[0, -angle, 0]} castShadow>
-          <boxGeometry args={[radius * 0.35, depth, radius * 0.3]} />
-          <Mat c={color} metal={0.4} rough={0.5} />
-        </mesh>
-      );
-    })}
-    <mesh position={[0, depth * 0.1, 0]}>
-      <cylinderGeometry args={[radius * 0.3, radius * 0.3, depth * 1.05, 8]} />
-      <Mat c="#3a2a1e" />
-    </mesh>
-  </group>
-);
-
-// 大量静态小方块（地砖、树叶、灌木）用一个 InstancedMesh 画，每块单独颜色
-export type Inst = { p: V3; s: V3; c: string; rz?: number };
-export const Instanced: React.FC<{ items: Inst[]; shadow?: boolean; mat?: THREE.Material }> = ({ items, shadow = true, mat: custom }) => {
-  const mesh = useMemo(() => {
-    const geo = new THREE.BoxGeometry(1, 1, 1);
-    const mat = custom ?? new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true });
-    const instMesh = new THREE.InstancedMesh(geo, mat, items.length);
-    const placer = new THREE.Object3D();
-    const col = new THREE.Color();
-    items.forEach((it, i) => {
-      placer.position.set(...it.p);
-      placer.rotation.set(0, 0, it.rz ?? 0);
-      placer.scale.set(...it.s);
-      placer.updateMatrix();
-      instMesh.setMatrixAt(i, placer.matrix);
-      instMesh.setColorAt(i, col.set(it.c));
-    });
-    instMesh.castShadow = shadow;
-    instMesh.receiveShadow = true;
-    return instMesh;
-  }, [items, shadow, custom]);
-  return <primitive object={mesh} />;
 };
 
 // 确定性随机数：每帧重算的场景必须每次得到同样的布局

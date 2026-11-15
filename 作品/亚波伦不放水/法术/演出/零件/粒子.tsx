@@ -11,7 +11,7 @@ import { facePatch, QuadGroup, sequenceFrame, type QuadItem } from './面片.tsx
 import type { Blend, RgbColor } from './材质.ts';
 import { mulberry32 } from '@engine/core/数学.ts';
 
-export { deathPoof, serverSendParticles, VanillaParticles, type ParticleKind, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
+export { serverSendParticles, VanillaParticles, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
 export { particleInitVel as vanillaParticleInitSpeed };
 
 export interface ParticleClass {

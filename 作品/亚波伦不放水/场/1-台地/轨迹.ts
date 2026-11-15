@@ -35,11 +35,3 @@ export const pointTrack = (waypoints: readonly TrackPoint[]) => {
     return Array.from({ length: dimCount }, (_, j) => hermite(p0[j]!, speeds[i]![j]! * h, p1[j]!, speeds[i + 1]![j]! * h, s));
   };
 };
-
-/** 跳的重力（格/秒²）：原版玩家每刻 −0.08 再乘 0.98，折合约 32 */
-export const jumpGravity = 32;
-/** 从 起高 跳到 落高，空中 T 秒，起跳后第 τ 秒的高度（抛物线） */
-export const arcHeight = (τ: number, T: number, startHeight: number, landHeight: number, g = jumpGravity) => {
-  const v0 = (landHeight - startHeight + (g / 2) * T * T) / T;
-  return startHeight + v0 * τ - (g / 2) * τ * τ;
-};

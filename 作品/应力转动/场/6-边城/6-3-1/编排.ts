@@ -192,8 +192,6 @@ const jiuhuBones = (t: number, globalFrame: number) => {
   bones.RightForeArm = { ...bones.RightForeArm, rot: mix(bones.RightForeArm?.rot, ARM_HOLD.RightForeArm) };
   return bones;
 };
-export const jiuhuHoldPose = ARM_HOLD; // 核对用
-
 // ---------- 结构指南针（九胡右手里） ----------
 // 平时握在手里跟着手动（`jiuhuCompassMatrix`，和 6-2-4～6-2-6 一样）；手放到身前低处看的时候，平托在手上，表盘朝上、往她的脸那边（后方）仰 25°，
 // 贴图上方朝前（朝李樱），指针指着正下方（表盘上就是指针收在表心不动；原版指针对着水平方向，正下方的结构它会乱转）。两种拿法按 `holdK` 过渡。

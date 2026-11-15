@@ -21,9 +21,6 @@ export type SoundItem = {
   /** 同一个文件和前面某一声叠着放时，给 src 加的区分标记（engine/audio/同源区分.ts） */
   distinctKey?: string;
 };
-
-export const isMusic = (asset: string) => asset.startsWith('配乐/');
-
 const assetSound = (c: AssetCue): SoundItem => {
   if (c.循环 && (c.入点秒 ?? 0) > 0) throw new Error(`${c.名}（第 ${c.秒} 秒）：循环的 cue 不能带入点秒（段框架还不支持从文件中间起循环，拆成两条 cue）`);
   return {

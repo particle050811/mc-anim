@@ -4,9 +4,6 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { PursuerScene } from '../../场/6-古城/6-4-6/场景.tsx';
 import * as choreo from './编排.ts';
 import { withTalkNod } from '../../配音/口型.ts';
-
-export const chaseInFrames = choreo.frameCount;
-
 export const ChaseIn: React.FC = () => {
   const frame = useCurrentSec() * choreo.FPS;
   const poses = choreo.pursuers(frame);

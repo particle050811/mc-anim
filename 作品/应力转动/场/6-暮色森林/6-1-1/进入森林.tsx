@@ -35,9 +35,6 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad, mulberry32 } from '@engine/core/数学.ts';
 import { sceneToThree } from '@engine/core/three换算.ts';
 import { lensToFov } from '@engine/core/机位.ts';
-
-export const ENTER_FOREST_FRAMES = choreo.END - 1;
-
 // 李樱边引手边说「是时候出征暮色了！」（用户 10-17：进暮色前得说句话；10-20 定的字），雷声（STRIKE）前说完。开口帧是段内帧（cue 在 段/6-进入森林/段.ts）
 const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 }];
 // 台词口型：段内帧，编排帧 = 段内帧 + 1

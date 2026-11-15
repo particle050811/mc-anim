@@ -24,9 +24,6 @@ export const sceneTime = (G: number) => (G - segTable['6-3-2'].起) / FPS - uiOp
 export const tMatch = sceneTime(0);
 // 思索层的不透明度：全局帧 0 起淡掉
 export const ponderLayerOpacity = (G: number) => 1 - smoothstep01(G / fadeOutFrameCount);
-// 下坠的风声从推近开始（全局帧，负的）起，随推近渐强，淡到天空时到足（6-3-下坠/声音.tsx；用户 10-19：转场里不要一段没声音）
-export const windStartFrame = Math.round((cues.close[1] - tMatch) * FPS);
-export const windFadeIn = (G: number) => smoothstep01((G - windStartFrame) / (fadeOutFrameCount - windStartFrame));
 // 全局帧 0 以后思索里的李樱按下坠的物理时间摆（之前停在 `刻`.俯冲起 的架势上）
 export const transitionW = (t: number) => (t >= tMatch ? tick.diveStart + (t - tMatch) : undefined);
 

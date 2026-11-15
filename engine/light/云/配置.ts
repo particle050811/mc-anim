@@ -132,13 +132,6 @@ export const getQuality = (q: CloudConfig['quality']): CloudQuality => {
   const { 档: qualityLevel, ...overrides } = q;
   return { ...getQuality(qualityLevel ?? '快'), ...overrides };
 };
-
-/** 一份配置里在光影层画的层（开了才有） */
-export const shadingLayers = (c: CloudConfig | false | undefined, seaLevel: number): CloudLayer[] => {
-  if (!c || c.开 === false) return [];
-  return (c.层 ?? defaultLayers(c.海平面 ?? seaLevel)).filter((l) => isShadingLayerAlgorithm(l.算法));
-};
-
 // ---------- 天气 → 各层参数（Photon include/weather/clouds.glsl 的 get_clouds_parameters；不下雨。同 大气/云.ts 的 cloudParams） ----------
 // 下面照 Photon 的函数名写，好和 clouds.glsl 逐行对；它的 dampen 就是 easeOutQuad，cubic_smooth 这里的参数都已夹到 0～1，等于 smoothstep01
 const linearStep = linearstep, smooth = smoothstep, cubicSmooth = smoothstep01, mix = lerp;

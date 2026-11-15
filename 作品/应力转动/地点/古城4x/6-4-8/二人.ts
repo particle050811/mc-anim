@@ -83,9 +83,6 @@ export const huangAimPose = (feet: number[], yaw: number, s: number, r: number, 
   pose.headPitch = aimPitch - 1.2 * b * (1 - d);
   return pose;
 };
-// 拉弓贴图：照原版三档（拉到 0.65、0.9 换），d 不到 0.05 算没拉
-export const bowPull = (d: number) => ({ pulling: d > 0.05, pull: d });
-
 // ---------- 动作叠加 ----------
 // 一激灵（j 0～1 的一下，用 bump）：身子往后一挺、头一抬、两手一缩
 export const startle = (pose: FigurePose, j: number): FigurePose => ({

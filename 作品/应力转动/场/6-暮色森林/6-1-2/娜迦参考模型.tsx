@@ -180,7 +180,6 @@ const nagaLandmarks: ['娜迦庭院'] = ['娜迦庭院'];
 // 新机位：迅冲、俯拍斩击拉近，收刀换成参考的近景低机位（动作改进.ts 的 `cameraV2`）；
 // 收刀修前：不加收刀约束（修穿模以前的样子，核对用）；跟拍：机位跟着李樱（全身 / 腰间特写），只用来新旧对比、核对穿模
 export type NagaShotProps = { mazeLight?: MazeLightPreset; motionImproved?: boolean; hitStopFrames?: number; newCams?: boolean; preSheathFix?: boolean; followMode?: '全身' | '腰' };
-export const nagaShotFrames = (p: NagaShotProps) => choreo.FRAMES + (p.hitStopFrames ?? 0);
 const preFixLiying = (f: number) => choreo.liying(f, { sheathTiming: '关' });
 const followCamPose = (frame: number, mode: '全身' | '腰'): CamPose => {
   const [x, y, z] = choreo.liyingLoc(frame);

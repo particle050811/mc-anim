@@ -10,7 +10,6 @@ type SkeletonTable = Record<string, SkeletonPose>;
 export const magicalWineFoxCellSize = 0.9;
 
 export type MagicalWineFoxExExpression = '认出你' | '哈气';
-export const magicalWineFoxExExpressions: readonly MagicalWineFoxExExpression[] = ['认出你', '哈气'];
 export type MagicalWineFoxAllExpression = MagicalWineFoxExpression | MagicalWineFoxExExpression;
 
 /**
@@ -18,8 +17,6 @@ export type MagicalWineFoxAllExpression = MagicalWineFoxExpression | MagicalWine
  * 坐：TLM 的待命坐（sit，跪坐）；其余是新做的
  */
 export type MagicalWineFoxExPose = '站' | '静站' | '坐' | '蹲' | '抱膝坐' | '张望' | '哈气';
-export const magicalWineFoxExPoses: readonly MagicalWineFoxExPose[] = ['站', '静站', '坐', '蹲', '抱膝坐', '张望', '哈气'];
-
 /** 原版生物的头最多比身子多转 75°（LivingEntity.tickHeadTurn 把身子拽过来），左右超了就夹 */
 export const magicalWineFoxHeadTurnLimitDeg = 75;
 

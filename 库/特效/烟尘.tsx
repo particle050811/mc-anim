@@ -5,25 +5,6 @@ import { pick, mulberry32 } from '../../engine/core/数学.ts';
 
 export const FX = { smoke: '#c4c6bc', smokeDark: '#9ea096', dust: '#b8a888' };
 
-// 化烟：一团团圆烟往上冒、变大、变淡。t 0→1 为整个过程，size 为冒烟物体的尺寸
-export const SmokePuffs: React.FC<{ t: number; size: number; seed: number; count?: number }> = ({ t, size, seed, count = 6 }) => {
-  if (t < 0 || t > 1) return null;
-  const rand = mulberry32(seed);
-  return (
-    <>
-      {Array.from({ length: count }, (_, k) => {
-        const jitter = rand();
-        const angle = (k / count) * Math.PI * 2 + jitter * 1.2;
-        const dist = size * (0.2 + 0.8 * t) * (0.6 + 0.6 * rand());
-        const rad = size * (0.25 + 0.4 * t) * (0.7 + 0.5 * jitter);
-        return (
-          <Ball key={k} p={[Math.cos(angle) * dist, Math.sin(angle) * dist, size * 0.4 + t * size * 1.5 * (0.5 + jitter)]} rad={rad} c={k % 3 ? FX.smoke : FX.smokeDark} opacity={0.85 * (1 - t) ** 1.3} shadow={false} />
-        );
-      })}
-    </>
-  );
-};
-
 // 扬尘：落点处贴地散开的尘团。puffs 里每个元素是 [位置, 已经过去的比例 0→1]
 export const DustPuffs: React.FC<{ puffs: [V3, number][] }> = ({ puffs }) => (
   <>

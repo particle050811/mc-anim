@@ -8,9 +8,6 @@ import { MaceInHand } from '@库/物品/重锤.tsx';
 import { AncientCity4xCanvas, LiYingWithBlade } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as choreo from '../../场/6-古城/6-4-1/编排.ts';
 import * as jumpBuild from '../../场/6-古城/6-4-1/跳搭.ts';
-
-export const WOOL_SEARCH_FRAMES = choreo.END;
-
 // 剧情帧 f 的画面（核对静帧也用）
 export const WoolSearchView: React.FC<{ f: number; g: number }> = ({ f: frame, g: cutFrame }) => {
   const { width, height } = useVideoConfig();

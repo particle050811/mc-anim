@@ -2,8 +2,8 @@
 // 纯模块（画面和测试都引）：时刻取 分镜 的正片事件，分寸取 场/2-第一晚/参数.ts。原版的东西按刻走（20 刻一秒），段内帧 × 20/fps。
 // 镜头、快进前的天（边挖边天黑）、撤排照 场/2-新世界/编排.ts（和 2-初入 同一套函数，接缝那一帧对得上）；你、掉落物、裂纹、僵尸的坐标是剖面里的（见 场/2-第一晚/参数.ts）。
 import { lerpTone, type Tone as Tone } from '@engine/三渲二/调子.ts';
-import { fps, oneFrameSec } from '../../分镜/时间.ts';
-import { segmentWindow, segClock, segEventFrames as segMainCutEventFrames } from '../../分镜/正片第2句.ts';
+import { fps } from '../../分镜/时间.ts';
+import { segmentWindow, segEventFrames as segMainCutEventFrames } from '../../分镜/正片第2句.ts';
 import { skyBrightness } from '../../地点/天体.ts';
 import { headAngles, zombie, groundLayers, skylightDigSec, fastForward, lookUpSec, digFacing, drop, holeDarkParams, standingVelY, shrinkSec } from '../../场/2-第一晚/参数.ts';
 import type { PitState as PitState } from '../../场/2-新世界/地形.ts';
@@ -13,7 +13,6 @@ import { clamp01, lerp, mulberry32 } from '@engine/core/数学.ts';
 
 const segKey = '2-第一晚';
 export const events = segMainCutEventFrames(segKey);
-export const frameCount = segClock(segKey).帧数;
 const startFrame = segmentWindow(segKey).起帧;
 /** 段内帧 → 歌曲帧（颗粒的种子、新世界的编排用它） */
 export const toSongFrame = (f: number) => startFrame + f;

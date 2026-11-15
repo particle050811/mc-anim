@@ -5,7 +5,7 @@
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { useCurrentSec, useViewIndex } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
@@ -107,9 +107,3 @@ export const PursuerSegment: React.FC<{ segment: choreo.SegmentName }> = ({ segm
   return <PursuerScene t={choreo.toSec(segment, sec * choreo.FPS)} />;
 };
 
-// 核对：一帧一个视图（编排秒 + 可选机位），出静帧定机位、动作用：npx remotion render 6-3-8至10-核对 <目录> --sequence --props=<json>
-export type CheckView = { t: number; cameraRig?: choreo.Cam };
-export const PursuerCheck: React.FC<{ views: CheckView[] }> = ({ views }) => {
-  const view = views[Math.min(useViewIndex(), views.length - 1)];
-  return <PursuerScene t={view.t} cam={view.cameraRig} />;
-};

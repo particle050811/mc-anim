@@ -9,7 +9,7 @@
 // 全部在髋坐标系（骨架 hip 插槽：脚底为原点、腰在 z=12、单位像素，跟着转身和前倾、不跟胸扭转）里算；纯函数，只看剧情帧和当帧姿态。
 import * as THREE from 'three';
 import { bladeInHand, type FigurePose, handMatrix, hipMatrix } from '../角色/骨架.tsx';
-import { bladeCenterY, KATANA_DIMS as katanaDims, SHEATH_HANG_QUAT, SHEATHED_BLADE, sheathCenterY } from './拔刀剑.tsx';
+import { KATANA_DIMS as katanaDims, SHEATH_HANG_QUAT, SHEATHED_BLADE } from './拔刀剑.tsx';
 import { rad, smoothstep01 } from '../../engine/core/数学.ts';
 const vec3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const figureHeight = 1.875;
@@ -178,12 +178,3 @@ export const sheathConstraint = (pose: FigurePose, frame: number, timing: Sheath
   return { sheath: targets.sheath, blade: targets.sheathInHip.clone().invert().multiply(targets.bladeInHip), bladeOut: true };
 };
 
-// 核对用：刀身中心线上一点（出鞘坐标 z，像素；刀身往刀背 +Y 弯）在髋坐标系里的位置；刀在手里时按手算
-export const bladePtInHip = (pose: FigurePose, blade: number, side: number, result: SheathResult, z: number): THREE.Vector3 => {
-  const bladeMat = result.blade
-    ? new THREE.Matrix4().makeTranslation(sheathMount.x, sheathMount.y, sheathMount.z).multiply(result.sheath).multiply(result.blade)
-    : handBladeMat(pose, blade, side);
-  return vec3(0, bladeCenterY(z), z).applyMatrix4(bladeMat);
-};
-export const sheathPtInHip = (r: SheathResult, p: THREE.Vector3) => p.clone().applyMatrix4(new THREE.Matrix4().makeTranslation(sheathMount.x, sheathMount.y, sheathMount.z).multiply(r.sheath));
-export const sheathArc = (s: number) => vec3(0, sheathCenterY(s), s); // 鞘中心线（鞘本地）

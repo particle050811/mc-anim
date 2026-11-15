@@ -24,9 +24,6 @@ import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
 import { LichScene } from '../6-1-5/戏.tsx';
 import { pierceTimes } from '../一镜到底/路线.ts';
-
-export const SUN = twilightSunDir;
-
 const sheath = <WornSheath />;
 
 // 只画画面，第几格 = 秒 × 24（带小数）；声音照用到它的段（6-起飞、6-穿塔斩首领）段.ts 的 cue 放

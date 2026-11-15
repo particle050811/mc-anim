@@ -30,8 +30,6 @@ const MODEL_SCALE = 1.5; // mace_wield 给 rightitem 的缩放：模型一个单
 const HANDLE_AXIS: [number, number] = [-0.5, -0.20711]; // 柄轴在 item2 文件坐标里的 x、z
 const HEAD_CENTER_Y = 4.70711 + 5 / 2; // 锤头中心沿柄的位置（item2 的 y，握持点为 0）
 const TIP_Y = 9.60711 + 1.2; // 顶钮最远处
-export const MACE_POMMEL_END = -2.29289 * (MODEL_SCALE / 16); // 柄尾最远处（格，握持点为 0，负的）
-
 export const MACE = {
   head: (HEAD_CENTER_Y * MODEL_SCALE) / 16, // 握持点到锤头中心（格，沿锤柄方向）
   tip: (TIP_Y * MODEL_SCALE) / 16, // 握持点到顶钮最远处

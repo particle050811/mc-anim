@@ -4,7 +4,6 @@
 //   每一下都落在某个镜头那一截里（编排.ts 载入时查）。位置同 7-3：锚点跟着它走；炮从碰撞箱顶（2.9）起飘，箭从箭钉处往上 0.2 起飘。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import * as THREE from 'three';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
@@ -33,4 +32,3 @@ export const DamageLayer741: React.FC = () => {
     .map((h) => ({ damage: h.damage, crit: h.crit, anchor: damageNumberAnchor(feet, h.height, h.seed), ticks: (T - h.T) * 20 }));
   return <DamageNumberLayer camera={cam3} width={width} height={height} numbers={numbers} />;
 };
-export const shownHits = shown;

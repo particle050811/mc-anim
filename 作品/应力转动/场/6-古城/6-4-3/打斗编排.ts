@@ -50,8 +50,6 @@ export const deflectArrowFrames = tl.帧(bEnd) - startFrame;
 export const flickArrowFrames = tl.帧(cuts.C3) - cutStartFrame;
 // 给 工具/机位核对/导出.ts：段内第 0 帧在这条时间线上的全局帧；全局帧 → 主方案时间线上（带小数）的帧
 export const segStartFrame = { '6-4-3b': startFrame, '6-4-3c': cutStartFrame };
-export const mainPlanFrame = (f: number) => mainFrameFractional(tl.storyTime(f));
-
 export const liying = choreo.makeLiying({ windup: true });
 // 镜头（用户 10-18：一直在箭右侧往左看、贴近，箭越快视角拉得越广，同一镜到底飞行巡航换广角）：
 // 跟拍在箭右 1.5 米、上 0.6 米（2 米以外在箭路 192～196 米处撞墙，工具/挡箭/机位核对.py --跟拍 每 0.5 米核过），看点在箭前 1 米，箭在画面偏左、往右飞；

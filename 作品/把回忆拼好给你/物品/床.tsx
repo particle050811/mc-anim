@@ -13,7 +13,7 @@ import raw from 'asset:模型/物品/床';
 import redBedPng from 'asset:贴图/物品/床/红';
 import { type BedFacing, facingStep } from './床尺寸.ts';
 
-export { type BedFacing, bedSurfaceHeight } from './床尺寸.ts';
+export { type BedFacing } from './床尺寸.ts';
 
 const models = (raw as unknown as { models: { 床头: EntityModelData; 床尾: EntityModelData } }).models;
 const red = png(redBedPng);

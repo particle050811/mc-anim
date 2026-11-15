@@ -6,16 +6,10 @@ import { useThree } from '@react-three/fiber';
 import React, { useLayoutEffect, useRef } from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import type { EntityModelData } from '../../engine/model/实体模型.tsx';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';
-import { png, type Png } from '../../engine/model/贴图.ts';
-import giantRaw from 'asset:模型/角色/巨人';
-import steveUri from 'asset:贴图/角色/巨人/史蒂夫';
+import { type Png } from '../../engine/model/贴图.ts';
 import { ponderScreen, drawBackground, drawTitle, drawButtons, drawProgressBar, drawTextWindow, itemFramePos, type NoteBox } from './思索界面.tsx';
 // 按钮声文件放在 6-3-2 段目录（那一段先做的）
-
-export const PLAYER = (giantRaw as unknown as { models: Record<'宽', EntityModelData> }).models.宽;
-export const STEVE = png(steveUri);
 export const PX_W = ponderScreen.W * ponderScreen.s;
 export const PX_H = ponderScreen.H * ponderScreen.s;
 type V3 = [number, number, number];

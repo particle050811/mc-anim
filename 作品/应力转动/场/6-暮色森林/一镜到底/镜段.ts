@@ -344,5 +344,3 @@ addFarSpan(farList[2]);
 addNearSpan('冰雪女王', queenOrbit, 1);
 addGiantSpan();
 addLandingSpan();
-// 各处的镜头窗口（全局帧）：起～止 是关键帧头尾（外面是巡航），核起～核止 是不能切的那一截（段表.ts 按它挑段切点）
-export const camWindows = camSpans.filter((s) => s.名 !== '起飞').map((s) => ({ name: s.名, start: s.起, end: s.止, coreStart: s.coreStart, coreEnd: s.coreEnd }));

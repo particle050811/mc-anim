@@ -13,7 +13,7 @@ import retreatBin from 'asset:网格/隐世之境一楼/顶点-归隐之地';
 import houseAtlas from 'asset:网格/隐世之境一楼/图集';
 import { mainHall, mainHallDoors, type Box, type Leaf, type DoorName } from './隐世之境主厅门数据.ts';
 
-export { mainHall, mainHallDoors, openDoorOpening, type Door, type DoorName, type DoorOpening } from './隐世之境主厅门数据.ts';
+export { mainHall, mainHallDoors, openDoorOpening, type DoorName } from './隐世之境主厅门数据.ts';
 
 const houseInfo = houseRaw as unknown as BlockMeshInfo;
 

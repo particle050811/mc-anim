@@ -29,9 +29,6 @@ import type { Cam } from '@engine/core/机位.ts';
 // 同 6-4-3/画面.tsx：只要击穿的那几格（外圈和取贴图用的那一格不画），洞壁另补；碎块贴图取自击穿那几格所在的网格块 古城4x-西3（同 6-4-3/画面.tsx 的 ATLAS_C）
 const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < G3.breachBlocks.length), lining: K3.holeWalls };
 const debrisAtlas = png(atlasWest3);
-
-export const lureFrames = choreo.frameCount;
-
 // 4×4 变换拆成 group 的位置、朝向（同 6-1-2/娜迦参考模型.tsx）
 const matrixToProps = (matrix?: THREE.Matrix4) => {
   if (!matrix) return {};

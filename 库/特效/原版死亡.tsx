@@ -6,9 +6,6 @@
 // - 化烟：`LivingEntity.tickDeath`，deathTime 到 20 刻实体移除、放实体事件 60 → `makePoofParticles`（20 个 poof，见 原版粒子.tsx 的 死亡烟雾）。
 // 音效：各生物自己的死亡声（entity.vex.death、entity.warden.death、entity.horse.death）在死的那一刻放。
 import React from 'react';
-
-export const vanillaDeath = { toppleFlatTick: 13.5, poofTick: 20, redChannel: 1 - 0xb2 / 255 };
-
 // 死后 秒 时倒下的角度（弧度）
 export const vanillaToppleAngle = (secSinceDeath: number) => {
   const toppleProgress = ((secSinceDeath * 20 - 1) / 20) * 1.6;

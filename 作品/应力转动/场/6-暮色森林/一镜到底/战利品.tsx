@@ -114,9 +114,6 @@ export const lootChests: ChestState[] = ORDER.flatMap((bossName) => {
     };
   });
 });
-// 一镜到底的各段核对用：每个箱子打碎（没有箱子的：掉东西）那一刻的全局帧
-export const chestBreakFrames = lootChests.map((c) => ({ 名: c.名, 帧: route.frameAt(route.pierceTimes[c.名] + c.breakT) }));
-
 // 战利品层：这一帧所有在场的箱子和物品（世界坐标）。T：物理时间；扫帚：这一帧扫帚本地 → 场景的矩阵；镜头：镜头位置
 export const LootLayer: React.FC<{ T: number; broom: THREE.Matrix4; camPos: number[] }> = ({ T: physT, broom: broom, camPos: camPos }) => {
   const target = toScene(broom, liYingChest);

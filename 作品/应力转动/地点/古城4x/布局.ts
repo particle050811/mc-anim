@@ -17,18 +17,18 @@
 // → 6-4-7 刘心忠往西一踩 → 第四次 → 6-4-8 监守者在二人西边 7 米钻出 → 第 7 章场子里打，马跳上场子北墙墙头 → 7-3 马沿墙头往东、上塔、下到墙外大道，监守者绕城门洞和台阶追
 // → 7-4-1 硬切到城心大院环道上兜圈风筝（马回城心不演）→ 7-4-2 北墙外石龛 #213 又一只。
 // 各部分在 古城4x布局/ 下：换算、强者（参数和弹道）、竖井、射箭（含剧情补块）、羊毛、场子（6-4-6～6-4-8）、第7章、衔接、箱子（哪段开过哪只）；本文件只转出。
-export { type BlockPos, type PlanePoint, footOf, blockBottomCenter, cellCenter, woolBlockAt, feetOnWool } from './布局/换算.ts';
-export { baseSpeed, gravity, elite, vanilla, type Jump, eliteLeap, eliteLeapAtSpeed, leapFeetAt, flightWarp, withHang } from './布局/强者.ts';
+export { type BlockPos, footOf, blockBottomCenter, cellCenter, woolBlockAt, feetOnWool } from './布局/换算.ts';
+export { baseSpeed, elite, vanilla, type Jump, eliteLeap, leapFeetAt, withHang } from './布局/强者.ts';
 export { shaftLayout } from './布局/竖井.ts';
-export { storyPatchBlocks, archery, chestArchery, liYingDeflectFeet, huangPanArcheryFeet, liuXinzhongArcheryFeet } from './布局/射箭.ts';
-export { liYingStart, wool641, chestB, wool642, lastFrame642, wool645, wool722, allWool, type WoolName, woolOrder, woolLeapApex } from './布局/羊毛.ts';
+export { archery, chestArchery, liYingDeflectFeet, huangPanArcheryFeet, liuXinzhongArcheryFeet } from './布局/射箭.ts';
+export { wool641, chestB, wool642, lastFrame642, wool645, wool722, allWool, type WoolName, woolOrder, woolLeapApex } from './布局/羊毛.ts';
 export {
   arena, pursuerPath, shrieks, liuXinzhongStompPoint, wardenEmerge, liuXinzhongSpot, huangPanSpot, pursuerApexHeights, liuXinzhongPursuitPath,
   liuXinzhongApexHeights, liuXinzhongStartDelaySec, pursuerStops, liuXinzhongStompApex, huangPanLanding647,
 } from './布局/场子.ts';
 export {
-  escapeLoop, huangPanPerch, shieldPoint, wallJumpTakeoff, wallTopLanding, scene71, lookoutFeet, wideShotCenter, chest722, sensors722,
-  shriekers722, chest742, backToCityCenter, scene73, huangPanPortal741,
+  huangPanPerch, shieldPoint, wallJumpTakeoff, wallTopLanding, scene71, lookoutFeet, wideShotCenter, chest722, sensors722,
+  shriekers722, chest742, scene73, huangPanPortal741,
 } from './布局/第7章.ts';
 export { handoffs } from './布局/衔接.ts';
-export { ancientCitySegmentOrder, type AncientCitySegment, chestOpenings, openedBefore, checkChestEvent } from './布局/箱子.ts';
+export { type AncientCitySegment, openedBefore, checkChestEvent } from './布局/箱子.ts';

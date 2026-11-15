@@ -1,7 +1,6 @@
 // 飞行路径：一条过若干航点的平滑曲线（向心 Catmull-Rom），按弧长取点；再配一条速度曲线（米/秒，按帧给关键帧），
 // 积分出每一帧走到曲线上的哪里。路线形状和快慢分开调：卡点（第几帧到哪个航点附近）靠速度曲线对。
 // 6-1-4、6-2-5、6-2-6 的扫帚轨迹用它；镜头另外按扫帚的位置算。
-import { type Key, sample } from '../anim/anim.ts';
 import type { V3 } from '../model/parts.tsx';
 
 // 高速飞行用广角（用户 10-14 定：参考视频是游戏里竖直视野 90° 以上，约等于 10mm，四周的地面往后掠得快才有速度感）：
@@ -90,29 +89,11 @@ const catmull = (p0: V3, p1: V3, p2: V3, p3: V3, t: number): V3 => {
   return lerp(B1, B2, t1, t2);
 };
 
-// 速度曲线（[帧, 米/秒]）积分成每帧走过的弧长：返回 s(f)，f 可以是小数。fps 默认 24
-export const odometer = (speedKeys: Key[], frameCount: number, fps = 24) => {
-  const substeps = 4;
-  const acc = new Float64Array(frameCount * substeps + 1);
-  for (let i = 1; i <= frameCount * substeps; i++) {
-    const frame = (i - 0.5) / substeps;
-    acc[i] = acc[i - 1] + sample(speedKeys, frame) / fps / substeps;
-  }
-  return (frame: number) => {
-    const x = Math.min(Math.max(frame * substeps, 0), frameCount * substeps);
-    const i = Math.min(Math.floor(x), frameCount * substeps - 1);
-    return acc[i] + (acc[i + 1] - acc[i]) * (x - i);
-  };
-};
-
 // 方向 → 扫帚的朝向、俯仰（度；朝向 0 = +Y、正 = 往左转，俯仰正 = 抬头，和 骑扫帚.tsx 一致）
 export const headingPitch = (d: number[]) => ({
   yaw: (Math.atan2(-d[0], d[1]) * 180) / Math.PI,
   pitch: (Math.atan2(d[2], Math.hypot(d[0], d[1])) * 180) / Math.PI,
 });
-
-// 角度插值时绕近路（-180～180 的跳变接上）
-export const unwrapAngle = (a: number, ref: number) => a + 360 * Math.round((ref - a) / 360);
 
 // 转弯内倾：扫帚转弯时往里压一点（度，正 = 往右压，和 骑扫帚.tsx 的 横滚 同号；往左转 = 负）。用户 10-01 嫌翻滚画面头晕，所以：
 //   不按协调转弯 atan(v·ω/g) 算坡度（16 倍世界速度下一点转向就压到七八十度），只按转得多快给温和坡度，tanh 软限幅到 `maxBankDeg` 18°，

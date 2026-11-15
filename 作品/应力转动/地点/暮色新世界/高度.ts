@@ -27,9 +27,6 @@ export const twilightFeatureTop = (x: number, y: number) => {
   for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) top = Math.max(top, featureTopCell(x + dx * coarse.格, y + dy * coarse.格));
   return top;
 };
-// 镜头不钻地用的地面（世界 z）：镜头在地标范围里不按地形压（-∞）：洞道、墙洞、屋里由各段编排的路线和孔道管；在外面按 `暮色地物顶`（3×3 取最高，宁高勿低）。
-// 地标里不按 3×3：雪怪洞窟核心只有土丘一块，镜头在孔道里靠近核心边时邻格一会儿在外（树顶）一会儿全在里（地标地面），镜头一帧上下跳 15 米、钻进云杉
-export const twilightCameraGround = (x: number, y: number) => (isInTwilightLandmark(x, y) ? -Infinity : twilightFeatureTop(x, y));
 // 巡航高度（用户 10-07：离脚下树冠 60 米上下）：树冠取方圆 `半径` 米里各格（粗高度图一格 16 米、取格里最高的）的中位，即林海的树冠面；
 // 零星的巨树（能到 y 80～95）不把整片巡航高度顶上去，离巨树多近由 一镜到底/诊断 查
 export const cruiseClearanceM = 60;

@@ -83,13 +83,3 @@ export const GameNaga: React.FC<{ pose: GameNagaPose }> = ({ pose }) => {
   );
 };
 
-// 沿一条路径摆出整条娜迦：path(d) 给出离头 d 格处的平面位置，身体节每隔 2 格放一个，朝向指向前一节
-export const nagaAlong = (path: (distFromHead: number) => [number, number], z = 0, segCount = NAGA.maxSegments, state?: GameNagaState): GameNagaPose => {
-  const pts = Array.from({ length: segCount + 1 }, (_, i) => path(i * NAGA.segmentSpacing));
-  // 脸朝 -Y 时 yaw=0；朝向 (dx, dy) 对应的 yaw = atan2(dx, -dy)
-  const yawTo = (a: [number, number], b: [number, number]) => (Math.atan2(b[0] - a[0], -(b[1] - a[1])) * 180) / Math.PI;
-  return {
-    head: { loc: [pts[0][0], pts[0][1], z], yaw: yawTo(pts[1], pts[0]), state },
-    segs: pts.slice(1).map((p, i) => ({ loc: [p[0], p[1], z], yaw: yawTo(p, pts[i]) })),
-  };
-};

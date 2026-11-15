@@ -29,7 +29,7 @@ import { segmentProducts, type SegArtifact } from './段产物.ts';
 import { frameTimeoutMs } from './设置.ts';
 import { videoInfo } from './探测.ts';
 
-export { segPicturePath, segSoundPath, segmentProducts, type SegArtifact } from './段产物.ts';
+export { segmentProducts, type SegArtifact } from './段产物.ts';
 
 /** 这段的当前画面、声音指纹（删旧时都不算旧） */
 const currentFingerprints = (r: SegArtifact) => [r.画面指纹.指纹, r.声音指纹.指纹];

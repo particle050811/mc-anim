@@ -3,8 +3,6 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../古城4x.tsx';
 import { feetOnWool, type BlockPos } from './换算.ts';
 import { archery } from './射箭.ts';
-// 一跳一块，按落地顺序。全程只踩羊毛（落地、垫羊毛不发振动）；开箱照游戏发振动。每一跳的离地见 `woolLeapApex`，跳远、滞空、碰撞由 工具/古城4x布局/核对.py 核。
-export const liYingStart = [-710, -50, 240] as BlockPos; // 6-3-6 落地处（GUCHENG4X.落点 那一格），他从地面直接起跳（刚砸地，不讲究）
 export const wool641 = {
   P1: [-713, -46, 217], // 内院东通道往北，跳上大院北墙头（墙道）
   P2: [-755, -44, 217], // 越过传送门北头、出大院，大道南边一座屋顶

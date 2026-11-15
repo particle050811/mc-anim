@@ -398,33 +398,3 @@ export const rightHandCenter = ({ pose, 秒: sec, act = stand, bonePose }: Pick<
     )
     .toArray();
 
-// 脸的中心：头的方盒（Head，模型像素 x −3.42～3.58、y 33.13～40.13、z −3～4）正面（−Z）那一面的中心，写成 Head 的骨骼坐标（原点 = pivot (0, 33.05, 0)）
-const faceCenter = new THREE.Vector3(-0.08, 3.58, -3);
-
-// 量她在画面上占多高用的骨骼：帽子、头、躯干、两臂、两腿、两只鞋。不算头后的眼形光环、蜘蛛腿、头发和裙摆（都在这些方盒的上下范围以内）
-const bodySkeleton = ['mao', 'Head', 'UpperBody2', 'LeftArm', 'LeftForeArm', 'RightArm', 'RightForeArm', 'LeftLeg', 'LeftLowerLeg', 'RightLeg', 'RightLowerLeg', 'bone16', 'bone20'];
-
-/**
- * 她的脸在场景里的位置和朝向、身子（胸，UpperBody）的朝向、身体各方盒的角（身体骨骼 那几根，不算头后光环）：不渲染，同一张姿势表做骨骼正解。
- * 核对「她是不是朝着镜头、脸落在画面哪、在画面上占多高」用（封面草稿八稿的自检）
- */
-export const headBodyFacing = ({ pose, 秒: sec, act = stand, bonePose }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | 'bonePose'>): { face: V3; faceDir: V3; bodyDir: V3; bodyPoints: V3[] } => {
-  const boneTable = poseTable(sec, act, bonePose);
-  const bottomMatrix = new THREE.Matrix4().makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!).multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)));
-  const boneMatrix = (boneName: string) => bottomMatrix.clone().multiply(skeletonMatrix(origGeometry, boneName, boneTable, GirlYaBoLunCreature.definition.缩放));
-  // 骨骼坐标的正面是 −Z
-  const forwardDir = (m: THREE.Matrix4) => new THREE.Vector3(0, 0, -1).transformDirection(m).toArray();
-  const headBone = boneMatrix('Head');
-  const bodyPoints: V3[] = [];
-  for (const b of origGeometry.bones) {
-    if (!bodySkeleton.includes(b.name)) continue;
-    const m = boneMatrix(b.name);
-    // 方盒的角写成骨骼坐标：原点 = pivot，X 取负（同 描边面）；方盒自己带转角的这几根里没有
-    for (const c of b.cubes ?? [])
-      for (let k = 0; k < 8; k++) {
-        const corner = [0, 1, 2].map((i) => c.origin[i]! + (k & (1 << i) ? c.size[i]! : 0));
-        bodyPoints.push(new THREE.Vector3(-(corner[0]! - b.pivot[0]), corner[1]! - b.pivot[1], corner[2]! - b.pivot[2]).applyMatrix4(m).toArray());
-      }
-  }
-  return { face: faceCenter.clone().applyMatrix4(headBone).toArray(), faceDir: forwardDir(headBone), bodyDir: forwardDir(boneMatrix('UpperBody')), bodyPoints };
-};
