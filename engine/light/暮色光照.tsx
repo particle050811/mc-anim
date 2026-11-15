@@ -57,7 +57,8 @@ export const TwilightSunLight: React.FC<{ lightDir?: V3; shadowFar: number; spli
   const light = useMemo(() => {
     const sunLight = new SunLight(twilightDusk?.keyLight ?? TWILIGHT.light, twilightMix.直射);
     const sh = new CascadedShadow();
-    sh.mapSize.set(4096, 4096);
+    // 每级 3072（原 4096；用户 11-14 看过 穿塔 对照定采用，静帧看不出运动中的闪烁）
+    sh.mapSize.set(3072, 3072);
     // 阴影遍画的是背光面（three 对正面材质画背面），受光面不会被自己的影子盖住，偏移只留一点点
     sh.bias = 0;
     sh.normalBias = 0.02;

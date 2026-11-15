@@ -610,7 +610,7 @@ precision highp float;
 uniform sampler2D tCloud;
 uniform sampler2D tCloudDepth;
 uniform sampler2D tDepth;
-uniform bool uDepthOnly;
+const bool uDepthOnly = DEPTH_ONLY != 0;
 void main() {
   ivec2 c = ivec2(gl_FragCoord.xy);
   ivec2 hi = textureSize(tDepth, 0) - 1;
@@ -665,6 +665,8 @@ let pass: {
   mat: THREE.ShaderMaterial;
   scene: THREE.Scene;
   compMat: THREE.ShaderMaterial;
+  depthMat: THREE.ShaderMaterial;
+  compQuad: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   compScene: THREE.Scene;
   camera: THREE.Camera;
   rt: THREE.WebGLRenderTarget | null;
@@ -697,9 +699,10 @@ const getPass = () => {
   const scene = new THREE.Scene();
   scene.add(quad);
   const compMat = new THREE.ShaderMaterial({
-    uniforms: { tCloud: { value: null }, tCloudDepth: { value: null }, tDepth: { value: null }, uDepthOnly: { value: false } },
+    uniforms: { tCloud: { value: null }, tCloudDepth: { value: null }, tDepth: { value: null } },
     vertexShader: /* glsl */ `void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }`,
     fragmentShader: COMPOSITE_FS,
+    defines: { DEPTH_ONLY: 0 },
     blending: THREE.CustomBlending,
     blendSrc: THREE.OneFactor,
     blendDst: THREE.OneMinusSrcAlphaFactor,
@@ -709,11 +712,16 @@ const getPass = () => {
     depthWrite: false,
     toneMapped: false,
   });
+  // 叠色和写深度编成两个程序，不再每帧改同一个材质的状态和 uniform 分支（用户 11-14 看过对照定采用）
+  const depthMat = compMat.clone();
+  depthMat.uniforms = compMat.uniforms;
+  depthMat.defines = { DEPTH_ONLY: 1 };
+  Object.assign(depthMat, { colorWrite: false, depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true });
   const compQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compMat);
   compQuad.frustumCulled = false;
   const compScene = new THREE.Scene();
   compScene.add(compQuad);
-  pass = { mat, scene, compMat, compScene, camera: new THREE.OrthographicCamera(), rt: null };
+  pass = { mat, scene, compMat, compScene, compQuad, depthMat, camera: new THREE.OrthographicCamera(), rt: null };
   return pass;
 };
 
@@ -827,6 +835,8 @@ export const drawPhotonClouds = (ctx: MidPassContext) => {
   if (!p.rt || p.rt.width !== ctx.width || p.rt.height !== ctx.height) {
     p.rt?.dispose();
     p.rt = new THREE.WebGLRenderTarget(ctx.width, ctx.height, { count: 2, type: THREE.FloatType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+    // 预乘颜色用半精度（用户 11-14 看过 穿塔 对照定采用，4K 少约 63 MiB 显存）
+    p.rt.textures[0].type = THREE.HalfFloatType;
     p.rt.textures[1].format = THREE.RedFormat;
   }
   updateCloudUniforms(cam);
@@ -852,13 +862,10 @@ export const drawPhotonClouds = (ctx: MidPassContext) => {
   cu.tCloudDepth.value = p.rt.textures[1];
   cu.tDepth.value = ctx.depth;
   gl.setRenderTarget(ctx.target);
-  const m = p.compMat;
-  cu.uDepthOnly.value = false;
+  p.compQuad.material = p.compMat;
   gl.render(p.compScene, camera);
-  Object.assign(m, { colorWrite: false, depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true });
-  cu.uDepthOnly.value = true;
+  p.compQuad.material = p.depthMat;
   gl.render(p.compScene, camera);
-  Object.assign(m, { colorWrite: true, depthTest: false, depthWrite: false });
   gl.autoClear = ac;
 };
 

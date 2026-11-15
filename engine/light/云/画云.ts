@@ -278,6 +278,30 @@ const 摆资源 = (宽: number, 高: number, 半: boolean, 槽: string) => {
 };
 
 const 镜头位 = new THREE.Vector3();
+// 积云最低那层朝太阳的光学厚度先烘成表（用户 11-14 看过 日落划船 对照定采用，划船 4K 热帧快 13%～16%）：
+// 镜头周围 48 公里见方 128×128、层厚分 32 片，取的时候横向双线性、纵向线性插值，代替每个采样点各自抖动走光步。
+// 表外（云最远到 75 公里）取边上那格。输入一变（键同云复用的键）就重烘；烘的片元程序是云片元的前半截（各层函数）接一个 main。
+const 体表 = new WeakMap<THREE.ShaderMaterial, { rt: THREE.WebGLRenderTarget; scene: THREE.Scene; key: string }>();
+const 烘太阳 = (gl: THREE.WebGLRenderer, 材质: THREE.ShaderMaterial, 键: string) => {
+  let bake = 体表.get(材质);
+  if (!bake) {
+    const rt = new THREE.WebGLRenderTarget(128, 4096, { type: THREE.FloatType, format: THREE.RedFormat, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
+    const 源 = 材质.fragmentShader.split('uniform sampler2D tPrep;')[0] + `layout(location=0) out vec4 skyOD;
+    void main(){ vec2 coord=vec2(gl_FragCoord.x,mod(gl_FragCoord.y,128.0))/128.0; float slice=floor(gl_FragCoord.y/128.0);vec2 xz=(coord-0.5)*48000.0;
+    vec3 pos=vec3(xz.x,PC_CU0_R+(slice+0.5)/32.0*(PC_CU0_BH+PC_CU0_T),xz.y); skyOD=vec4(pcCu0OD(pos,atmoSun,0.5,PC_CU0_LIGHT)); }`;
+    const bakeMat = new THREE.ShaderMaterial({ uniforms: 材质.uniforms, vertexShader: 全屏顶点, fragmentShader: 源, glslVersion: THREE.GLSL3, blending: THREE.NoBlending, depthTest: false, depthWrite: false });
+    bake = { rt, scene: 新片(bakeMat), key: '' };
+    体表.set(材质, bake);
+  }
+  if (bake.key !== 键) {
+    const old = gl.getRenderTarget();
+    gl.setRenderTarget(bake.rt);
+    gl.render(bake.scene, 机);
+    gl.setRenderTarget(old);
+    bake.key = 键;
+  }
+  材质.uniforms.tSunBake = { value: bake.rt.texture };
+};
 
 let 蓝噪声纹理: THREE.DataTexture | null = null;
 const 取蓝噪声纹理 = () => {
@@ -334,7 +358,7 @@ export const 画云 = (x: 画云输入): boolean => {
   // 复用的键：着色器、所有 uniform 的值、天色图、尺寸（镜头矩阵在 uniform 里）。横条位置、准备图是这一遍自己摆的，不算输入（算进去就每帧都对不上）
   const 值们: unknown[] = [p.材质.fragmentShader.length, atmosphere.skyKey, w, h, x.太阳框];
   for (const [k, v] of Object.entries(u)) {
-    if (k === 'uStrip' || k === 'tPrep') continue;
+    if (k === 'uStrip' || k === 'tPrep' || k === 'tSunBake') continue;
     const val = v.value as unknown;
     if (val && typeof val === 'object' && 'isTexture' in val) 值们.push(k, (val as THREE.Texture).uuid);
     else if (val && typeof val === 'object' && 'toArray' in val) 值们.push(k, (val as { toArray(): number[] }).toArray());
@@ -344,6 +368,7 @@ export const 画云 = (x: 画云输入): boolean => {
   }
   const 键 = JSON.stringify(值们) + 源键(p);
   const 同 = e.质量.复用 && 键 === r.键;
+  if (e.层们[0]?.算法 === 'Photon积云') 烘太阳(gl, p.材质, 键);
 
   const 自动清 = gl.autoClear;
   gl.autoClear = false;
