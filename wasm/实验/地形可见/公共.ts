@@ -34,6 +34,8 @@ export type 包 = {
   石状态: number;
   /** 色板号 → 是不是整格不透明（网格.ts 的 occlusionMask 第 0 位）；按状态号查 */
   状态满: Uint8Array;
+  /** 状态号 → 网格.ts 的挡面掩码：1 整格不透明、2 树叶、4 水这一层 */
+  状态罩: Uint8Array;
   读: (s: 区段项) => Buffer;
   解: (s: 区段项) => SectionData;
   体素上下文: 导入区段模块.区段上下文;
@@ -71,9 +73,11 @@ export const 开包 = (环: 环境, terrain根: string, 名: string): 包 => {
   const FULL = 环.库.方块表.blockProps.full;
   const 状态满 = Uint8Array.from(info.状态, (_, s) => FULL[tables.值[s]!]!);
   if (!状态满[石状态]) throw new Error('石头不是整格不透明');
+  const { leaf: LEAF, layer: CLS } = 环.库.方块表.blockProps;
+  const 状态罩 = Uint8Array.from(info.状态, (_, s) => { const v = tables.值[s]!; return FULL[v]! | (LEAF[v]! << 1) | (CLS[v] === 3 ? 4 : 0); });
   const 读 = (s: 区段项) => { const raw = Buffer.alloc(s.len); if (fs.readSync(fd(s.file), raw, 0, s.len, s.off) !== s.len) throw new Error('读短了'); return raw; };
   const 体素上下文 = { info, tables, variesByPos: info.群系.map(环.库.群系色.variesByPos), cutBoxes: [], flattenAreas: [] };
-  return { 名, dir, 模型, info, tables, 级, 查, 石状态, 状态满, 读, 解: (s) => 环.库.区段解码.解区段(读(s), s.id, 模型), 体素上下文 };
+  return { 名, dir, 模型, info, tables, 级, 查, 石状态, 状态满, 状态罩, 读, 解: (s) => 环.库.区段解码.解区段(读(s), s.id, 模型), 体素上下文 };
 };
 
 /** 和 wasm/实验/测地形.mjs 同一个留出集：种子 31841，各 L 打乱后取前 min(⌊半数⌋, 96) 个测，接着最多 384 个训练。会打乱 包.级 */

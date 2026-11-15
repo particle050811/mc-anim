@@ -107,3 +107,67 @@ export const 按列定底 = (g: 格子, 范: 范围 = 留裙边): number => {
   }
   return n;
 };
+
+/** 变换 2 的不截面版（用户 11-14 要）：每列的下限 = 自己和周围 8 列里最低的「有面露出来的格」，下限以下到 k底 全换石头。
+ *  有面露出来 = 不是整格不透明（空气、水、花草……），或者整格不透明但六个邻格里有不是整格的（侧面露出也算）。
+ *  下限以下的格按这个定义都是六面被埋的整格，所以它动的格是 埋格换石 的子集：这个函数只用来拿数据证实这一点。返回换了几格 */
+export const 不截面定底 = (g: 格子): number => {
+  const { nz, cm, 满, 石 } = g, 行 = 边 * nz, 露低 = new Int32Array(列数).fill(nz);
+  // 第 1～32 列的六个邻格都在窗口里；第 0、33 列用不到（可动的列是 2～31，周围 8 列是 1～32）
+  for (let y = 1; y < 边 - 1; y++) for (let x = 1; x < 边 - 1; x++) {
+    const base = (y * 边 + x) * nz;
+    for (let k = 0; k < nz; k++) {
+      const at = base + k;
+      if (满[cm[at]!] && k < nz - 1 && 满[cm[at + 1]!] && (k === 0 || 满[cm[at - 1]!]) && 满[cm[at - nz]!] && 满[cm[at + nz]!] && 满[cm[at - 行]!] && 满[cm[at + 行]!]) continue;
+      露低[y * 边 + x] = k;
+      break;
+    }
+  }
+  let n = 0;
+  for (let y = 留裙边.lo; y <= 留裙边.hi; y++) for (let x = 留裙边.lo; x <= 留裙边.hi; x++) {
+    let 低 = nz;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) 低 = Math.min(低, 露低[(y + dy) * 边 + x + dx]!);
+    const base = (y * 边 + x) * nz;
+    for (let k = 0; k < 低; k++) if (cm[base + k] !== 石) { cm[base + k] = 石; n++; }
+  }
+  return n;
+};
+
+/** 邻圈（第 0、33 列）是相邻区段的格，本段从不出它们的面，网格只看它挡不挡核心边上的面（网格.ts 的 occlusionMask）。
+ *  所以邻圈里整格不透明的格换石头，网格十一组都不变；同一格在邻段里那份抄本不跟着动，两份只是不透明性一样。
+ *  只埋 = true：只换六面被埋的（窗口外当整格），露在地表的那层照旧，和旁边核心边那一列长得像，区间编码的上下文更准；false：整格的全换。
+ *  归空 给了的话（色板号 → 挡面掩码是不是 0，即不是整格、不是树叶、不是水这一层），这类非空气格再换成空气。返回换了几格 */
+export const 邻圈归一 = (g: 格子, 只埋: boolean, 归空?: Uint8Array): number => {
+  const { nz, cm, 满, 石 } = g, 边 = g.宽 ?? 窗边, 行 = 边 * nz, 改: number[] = [];
+  for (let c = 0; c < 边 * 边; c++) {
+    const x = c % 边, y = (c - x) / 边;
+    if (x > 0 && y > 0 && x < 边 - 1 && y < 边 - 1) continue;
+    for (let k = 0; k < nz; k++) {
+      const at = c * nz + k, p = cm[at]!;
+      if (!满[p]) { if (p !== 0 && 归空?.[p]) 改.push(at); continue; }
+      if (p === 石) continue;
+      if (只埋 && (k === nz - 1 || !满[cm[at + 1]!] || (k > 0 && !满[cm[at - 1]!]) || (x > 0 && !满[cm[at - nz]!]) || (x < 边 - 1 && !满[cm[at + nz]!]) || (y > 0 && !满[cm[at - 行]!]) || (y < 边 - 1 && !满[cm[at + 行]!]))) continue;
+      改.push(at);
+    }
+  }
+  for (const at of 改) cm[at] = 满[cm[at]!] ? 石 : 0;
+  return 改.length;
+};
+
+/** 核心的边（34 列的窗口里是第 1、32 列）上六面被埋的整格换石头。这些格网格只给它出朝邻圈的裙边面，换了以后裙边的贴图变成石头、能并得更大，其余七组不变。
+ *  有邻 = [+x, −x, +y, −y] 那一侧同一级的区段在不在包里：不在的那一侧（包的边）裙边一直在画、外面没有东西挡，那一侧的格不动。返回换掉的格（下标） */
+export const 核心边换石 = (g: 格子, 有邻: boolean[]): Int32Array => {
+  const { nz, cm, 满, 石 } = g, 边 = g.宽 ?? 窗边, 行 = 边 * nz, 改: number[] = [];
+  for (let y = 1; y < 边 - 1; y++) for (let x = 1; x < 边 - 1; x++) {
+    if (x > 1 && x < 边 - 2 && y > 1 && y < 边 - 2) continue;
+    if ((x === 边 - 2 && !有邻[0]) || (x === 1 && !有邻[1]) || (y === 边 - 2 && !有邻[2]) || (y === 1 && !有邻[3])) continue;
+    const base = (y * 边 + x) * nz;
+    for (let k = 0; k < nz - 1; k++) {
+      const at = base + k, p = cm[at]!;
+      if (p === 石 || !满[p] || !满[cm[at + 1]!] || (k > 0 && !满[cm[at - 1]!]) || !满[cm[at - nz]!] || !满[cm[at + nz]!] || !满[cm[at - 行]!] || !满[cm[at + 行]!]) continue;
+      改.push(at);
+    }
+  }
+  for (const at of 改) cm[at] = 石;
+  return Int32Array.from(改);
+};
