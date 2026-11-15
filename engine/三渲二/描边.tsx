@@ -24,7 +24,7 @@ const canDerive = (m: MarkedMaterial) => !!(m.isMeshBasicMaterial || m.isMeshSta
 // 什么都不画的材质：遮罩那遍里不该出现、又不能把子节点一起藏掉的网格换成它
 const hiddenMaterial = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false, depthTest: false });
 
-const variantMap = new WeakMap<THREE.Material, { 遮罩?: THREE.Material; 深度?: THREE.Material }>();
+const variantMap = new WeakMap<THREE.Material, { mask?: THREE.Material; depth?: THREE.Material }>();
 const makeVariant = (m: THREE.Material, masked: boolean): THREE.Material => {
   if ((m.transparent && !m.depthWrite) || !m.visible || !canDerive(m as MarkedMaterial)) return hiddenMaterial;
   let e = variantMap.get(m);
@@ -33,11 +33,11 @@ const makeVariant = (m: THREE.Material, masked: boolean): THREE.Material => {
     variantMap.set(m, e);
     const outlineTable = e;
     m.addEventListener('dispose', () => {
-      outlineTable.遮罩?.dispose();
-      outlineTable.深度?.dispose();
+      outlineTable.mask?.dispose();
+      outlineTable.depth?.dispose();
     });
   }
-  const passKey = masked ? '遮罩' : '深度';
+  const passKey = masked ? 'mask' : 'depth';
   let v = e[passKey];
   if (!v) {
     v = m.clone();

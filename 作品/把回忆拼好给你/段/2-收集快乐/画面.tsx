@@ -30,7 +30,7 @@ import { LiYingState, youState, framing, wallPhotoCount, bubbleState, photoState
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const width = aspect.宽, height = aspect.高;
 const standY = entrance.standRowY;
@@ -79,7 +79,7 @@ const CollectHappyBubble: React.FC<{ f: number; framing: DoorFraming }> = ({ f, 
 };
 
 const picture: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   const tone = gradeAt(f);
   const photoWall = photoWallCells([...line8Photos.slice(0, wallPhotoCount(f)), null].slice(0, 4));
   return (

@@ -12,13 +12,13 @@ import { shadingBySeg } from '../../默认.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const startFrame = segClock('2-摇铃').起帧;
 const lyrics = retreatLyrics(startFrame);
 
 const picture: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   const frame = startFrame + f;
   return (
     <AbsoluteFill style={{ background: '#000' }}>

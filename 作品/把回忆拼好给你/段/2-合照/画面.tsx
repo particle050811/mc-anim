@@ -12,7 +12,7 @@ import { GroupPhotoPicture } from '../../场/2-隐世之境/合照.tsx';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const segKey = '2-合照';
 const startFrame = segClock(segKey).起帧;
@@ -21,7 +21,7 @@ const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, 
 const lyricStyle = { ...line15RuneStyle, outlineColor: palette['归隐之地'].outlineColor };
 
 const picture: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <GroupPhotoPicture 帧={startFrame + f} 叠层={<RuneLyric lines={lyricLines} 样式={lyricStyle} 收={eventFrames.groupPhotoClick} />} />

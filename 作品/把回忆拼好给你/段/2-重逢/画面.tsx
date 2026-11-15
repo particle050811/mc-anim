@@ -21,7 +21,7 @@ import { chatLineOpacity, reunionRig } from '../../场/2-隐世之境/重逢动�
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const segKey = '2-重逢';
 const startFrame = segClock(segKey).起帧;
@@ -33,7 +33,7 @@ const referenceRig = reunionRig((startFrame + 57) / fps);
 const shadingScene = { sunRefDir: [referenceRig.看[0] - referenceRig.眼[0], referenceRig.看[1] - referenceRig.眼[1], referenceRig.看[2] - referenceRig.眼[2]] as const };
 
 const picture: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   const frame = startFrame + f;
   const chatAlpha = chatLineOpacity(frame / fps);
   return (

@@ -8,7 +8,7 @@ describe('清单工具：作品 清单.ts 尾部的通用部分', () => {
     { 键: '6-斩娜迦', 章: 6 },
     { 键: '7-黑暗降临', 章: 7 },
   ];
-  const { segDir, segmentName, 编号: segmentCode } = manifestTools(manifest);
+  const { segDir, segmentName, segmentCode } = manifestTools(manifest);
   it('段目录、段名、编号', () => {
     expect(segDir('核对-冒烟')).toBe('核对/冒烟');
     expect(segDir('6-斩娜迦')).toBe('段/6-斩娜迦');

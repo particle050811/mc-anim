@@ -103,15 +103,15 @@ export const landingE: [number, number] = [ringE, 259.5];
 export const horseLoop = buildLoop([[ringW, ringN], takeoffW, plinthW, plinthE, landingE, [ringE, ringN]], [1.2, 2.0, 2.0, 2.0, 2.0, 1.2]);
 // 各拐点的程（马那一圈）
 export const horseMarks = {
-  起跳: horseLoop.marks[1],
-  上台: horseLoop.marks[2],
-  台东: horseLoop.marks[3],
-  落环: horseLoop.marks[4],
+  takeoff: horseLoop.marks[1],
+  mountPlinth: horseLoop.marks[2],
+  plinthEast: horseLoop.marks[3],
+  landRing: horseLoop.marks[4],
 };
 // 两跳：脚底 rel 从 5 → 8（上台）、8 → 5（下环道），最高点比高的那头高 `apex`（方块.py 查过 1.5～3 都不撞；落地时后蹄擦过东环道里沿那一格矮垛）
 export const leaps = [
-  { s0: horseMarks.起跳, s1: horseMarks.上台, rel0: 5, rel1: 8, apex: 1.8 },
-  { s0: horseMarks.台东, s1: horseMarks.落环, rel0: 8, rel1: 5, apex: 2.2 },
+  { s0: horseMarks.takeoff, s1: horseMarks.mountPlinth, rel0: 5, rel1: 8, apex: 1.8 },
+  { s0: horseMarks.plinthEast, s1: horseMarks.landRing, rel0: 8, rel1: 5, apex: 2.2 },
 ];
 
 // ---------- 高度表：每 0.5 米一个 rel，平滑同老版（先在前后 reach 米取最高，再前后 radius 米取平均） ----------

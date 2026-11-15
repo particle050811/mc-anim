@@ -28,7 +28,7 @@ import { Polaroid } from '../../特效/拍立得.tsx';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const segKey = '1-一如既往';
 const startFrame = segClock(segKey).起帧;
@@ -163,7 +163,7 @@ const bigFadeOutSec = legacyFrameSec(6);
 
 // 核卡点的标注：按真实帧走，定格以后照常往下数
 const CheckpointAnnotation: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   const { durationInFrames } = useVideoConfig();
   const songFrame = startFrame + f;
   const latest = eventEntries.filter(([, frame]) => frame <= f).at(-1);
@@ -208,7 +208,7 @@ const CheckpointAnnotation: React.FC = () => {
 
 // 四个要卡的事件的大字：从事件那一帧起留 1 秒再淡掉；头 2/24 秒反色、头 3/24 秒略放大，看得出正好落在哪一帧
 const EventBigCaption: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   const onScreen = bigCaptionEvents
     .map((x) => ({ ...x, 帧: eventFrames[x.名], t: f - eventFrames[x.名] }))
     .filter((x) => x.t >= 0 && (x.t - captionHoldFrames) / fps < bigFadeOutSec);

@@ -19,7 +19,7 @@ export const liuLeaps = (() => {
   const J3 = leapAtSec(geom.spots.eastWallRidge, geom.spots.C1, geom.leapApex.J3, timeline.liuJ3TakeoffT);
   const J4 = leapAtSec(geom.spots.C1, geom.spots.C2, geom.leapApex.J4, landT(J3) + elite.landingSquatSec);
   const dodge = leapAtSec(geom.spots.C2, geom.spots.shieldPoint, geom.dodgeLeap.apexHeight, timeline.liuDodgeT);
-  return { J1, J2, J3, J4, 闪: dodge };
+  return { J1, J2, J3, J4, dodge: dodge };
 })();
 export const huangLeaps = (() => {
   const H1 = leapAtSec(huangStart.loc as V3, geom.spots.huangPlatform, geom.leapApex.H1, timeline.huangTakeoffT);

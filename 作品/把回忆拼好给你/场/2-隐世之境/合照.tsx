@@ -33,7 +33,7 @@ import { shoulderRig, leanProgress } from './合照动作.ts';
 import { groupPhotoShadingScene, groupPhotoStand, groupPhotoAngleDeg, groupPhotoShot, steveScale, youHead, lineBubbleHandedOver, windowView, line11PolaroidStyle, leanShoulder, leanBubble, leanShoulderStart } from './合照参数.ts';
 import { lineBubble, laugh } from './重逢参数.ts';
 import { NoFade, BackgroundFade } from './褪色.tsx';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const tone = '归隐之地' as const;
 const events = mainCutEvents;
@@ -174,7 +174,7 @@ const polaroidSettleFrame = Math.ceil(Math.max(line11PolaroidStyle.whiteFlashSec
  *  定格帧取「这一帧往前 停稳帧」，拍立得 每一帧都画成停稳的样子；坑：不能用 remotion 的 Freeze 把它冻在停稳帧上，
  *  里面的 ThreeCanvas 在 renderStill 单出这一帧时一直等不到放行（anim still 超时），renderMedia 整段渲却没事 */
 export const GroupPhotoPolaroid: React.FC<{ withPost?: boolean; 字?: string }> = ({ withPost = true, 字: text }) => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   return (
     <Polaroid freezeFrame={f - polaroidSettleFrame} 样式={line11PolaroidStyle} 字={text}>
       {() => <GroupPhotoPrint withPost={withPost} />}

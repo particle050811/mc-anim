@@ -5,7 +5,7 @@ import { HIT_STOP_FRAMES } from '../../../默认.ts';
 import { ss } from './戏/公用.ts';
 import * as timeline from './时间线.ts';
 
-export type ClockPoint = [t: number, 时钟: number, 对数?: boolean];
+export type ClockPoint = [t: number, clock: number, 对数?: boolean];
 export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[], stops: number[] = []) => {
   const FPS = timeline.FPS;
   const clock = (t: number) => {

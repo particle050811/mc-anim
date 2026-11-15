@@ -26,7 +26,7 @@ export const firstFloor = {
   mainHall: [8, -18, 17, -7] as [number, number, number, number],
 };
 
-export type LampPos = { 种: '灯笼' | '蜡烛'; 位: V3; lit: boolean };
+export type LampPos = { 种: 'lantern' | 'candle'; 位: V3; lit: boolean };
 
 // markers 是方块底面中心（游戏坐标减 origin）。结构 NBT 里主厅的灯笼全是挂着的；蜡烛 3 根一组，模板 (16,5,8) 那组 lit=false
 const unlitSpots = [[16.5, 4, 8.5]];
@@ -37,7 +37,7 @@ const fetchLamps = (blockId: string, kind: LampPos['种']): LampPos[] =>
   (houseInfo.markers[blockId] ?? []).filter(inMainHall).map((m) => ({ 种: kind, 位: fromGame(m), lit: !unlitSpots.some((n) => samePoint(m, n)) }));
 
 /** 主厅的灯：灯笼 9 盏、蜡烛 3 组（西墙门洞那盏和别的屋子的不算），位置是方块底面中心 */
-export const hallLamps: readonly LampPos[] = [...fetchLamps('minecraft:lantern', '灯笼'), ...fetchLamps('minecraft:candle', '蜡烛')];
+export const hallLamps: readonly LampPos[] = [...fetchLamps('minecraft:lantern', 'lantern'), ...fetchLamps('minecraft:candle', 'candle')];
 
 // hide 之类的数组要各帧同一个（换了会重建网格），由调用的地方放在模块级
 export const HiddenWorldFloor: React.FC<{ hide?: number[][] }> = ({ hide }) => <BlockMesh info={houseInfo} bin={houseBin} atlas={houseAtlas} hide={hide} />;
@@ -47,16 +47,16 @@ export const HiddenWorldFloor: React.FC<{ hide?: number[][] }> = ({ hide }) => <
 // 坑：机位的 NeutralToneMapping 会把暗色里最小的那个通道压下去（深色木头的蓝几乎归零，比游戏饱和），这不是灯能补的。
 export const firstFloorLight = {
   /** 每盏点光源的强度（three 的物理单位）；灯心：离方块底面多高（挂着的灯笼身子中间、蜡烛火苗） */
-  灯笼: 0.8,
-  蜡烛: 1.0,
-  灯心: { 灯笼: 0.3, 蜡烛: 0.5 },
+  lantern: 0.8,
+  candle: 1.0,
+  wick: { lantern: 0.3, candle: 0.5 },
   /** 从窗、门缝进来的天光：从上来的是略暖的白，从地上反上来的是木地板的暖色（侧面吃两者的平均，比顶面暗一些） */
-  天光: { 天: '#fff4e6', ground: '#e2cca6', 强: 1.8 },
-  环境光: { 色: '#fff0dc', 强: 0.3 },
+  skyLight: { 天: '#fff4e6', ground: '#e2cca6', 强: 1.8 },
+  ambient: { 色: '#fff0dc', 强: 0.3 },
   /** 东窗晨光：隐世之境锁在 2000 刻，原版这时太阳在正东、仰角约 42°（DimensionType.timeOfDay） */
-  晨光: { 色: '#fff1d6', 强: 3.0, elevationDeg: 42 },
+  morningLight: { 色: '#fff1d6', 强: 3.0, elevationDeg: 42 },
   /** 东窗透进来的天光：窗里面一格放一盏冷白的点光源，屋子东半边亮一些（游戏截图里也是东边亮） */
-  窗光: { 色: '#e8efff', 强: 2.5, 位: [16, -12.5, 2.5] as V3, 距离: 12, decay: 1.2 },
+  windowLight: { 色: '#e8efff', 强: 2.5, 位: [16, -12.5, 2.5] as V3, 距离: 12, decay: 1.2 },
 };
 
 // 晨光的阴影只要罩住主厅：中心、半边宽（格）
@@ -69,7 +69,7 @@ const MorningLight: React.FC = () => {
     gl.shadowMap.enabled = true;
     gl.shadowMap.type = THREE.PCFShadowMap;
   }
-  const { 色: color, 强: strength, elevationDeg } = firstFloorLight.晨光;
+  const { 色: color, 强: strength, elevationDeg } = firstFloorLight.morningLight;
   const light = useMemo(() => {
     const a = (elevationDeg * Math.PI) / 180;
     const sunDir = new THREE.Vector3(Math.cos(a), 0, Math.sin(a)); // 指向太阳：正东（+x）往上
@@ -98,7 +98,7 @@ const MorningLight: React.FC = () => {
 export const FirstFloorLighting: React.FC = () => {
   // 方块材质的自发光打底关掉：屋里和她（实体材质没有这一项）只吃同一套灯
   useSelfLight(0);
-  const { 天光: skylight, 环境光: ambient, 窗光: windowLight } = firstFloorLight;
+  const { skyLight: skylight, ambient: ambient, windowLight: windowLight } = firstFloorLight;
   return (
     <>
       {/* 天光的「上」是灯的位置方向（Z 朝上） */}
@@ -110,7 +110,7 @@ export const FirstFloorLighting: React.FC = () => {
         .map((l, i) => (
           <pointLight
             key={i}
-            position={[l.位[0], l.位[1], l.位[2] + firstFloorLight.灯心[l.种]]}
+            position={[l.位[0], l.位[1], l.位[2] + firstFloorLight.wick[l.种]]}
             color="#ffb565"
             intensity={firstFloorLight[l.种]}
             distance={9}

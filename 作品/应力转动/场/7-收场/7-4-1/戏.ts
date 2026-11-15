@@ -81,7 +81,7 @@ const draftLiuEye = (T: number): V3 => {
 export const firstLap = 1;
 // ======================= 音爆：成片第 2、4 圈马跃上台面的半空中放出 =======================
 const boomLaps = [firstLap + 1, firstLap + 3];
-export const boomFireTs = boomLaps.map((n) => (chase.horseLapS(n, '起跳') + 0.6 * (geom.horseMarks.上台 - geom.horseMarks.起跳)) / chase.horseSpeed);
+export const boomFireTs = boomLaps.map((n) => (chase.horseLapS(n, 'takeoff') + 0.6 * (geom.horseMarks.mountPlinth - geom.horseMarks.takeoff)) / chase.horseSpeed);
 export const boomStarts = boomFireTs.map((t) => t - WARDEN.sonicBoomHitSec);
 const aimLagSec = 0.1;
 
@@ -198,8 +198,8 @@ const seed = (() => {
     const k = killIndexOf(hits);
     if (k < 0 || hits[k].kind !== '箭') continue;
     const T = hits[k].T;
-    const lap = Math.floor((chase.horseSpeed * T - geom.horseMarks.上台) / geom.horseLoop.len) + 1;
-    if (T < chase.horseLapS(lap, '上台') / chase.horseSpeed - 0.15) return s;
+    const lap = Math.floor((chase.horseSpeed * T - geom.horseMarks.mountPlinth) / geom.horseLoop.len) + 1;
+    if (T < chase.horseLapS(lap, 'mountPlinth') / chase.horseSpeed - 0.15) return s;
   }
   throw new Error('挑不出最后一下是风矢的伤害种子');
 })();

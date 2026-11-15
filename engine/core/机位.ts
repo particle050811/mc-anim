@@ -87,7 +87,7 @@ export const lerpRig = (a: Cam, b: Cam, k: number, options: InterpRigOptions = {
 };
 
 /** 一串关键机位按帧插值：帧在两个关键机位之间时，进度先过 缓动（默认不缓，线性）再插；两头之外停在端点 */
-export const rigTrack = (keyframes: readonly (readonly [帧: number, 机位: Cam])[], frame: number, ease: (t: number) => number = (t) => t, options?: InterpRigOptions): Cam => {
+export const rigTrack = (keyframes: readonly (readonly [帧: number, rig: Cam])[], frame: number, ease: (t: number) => number = (t) => t, options?: InterpRigOptions): Cam => {
   if (!keyframes.length) throw new Error('机位轨至少要一个关键机位');
   if (frame <= keyframes[0]![0]) return keyframes[0]![1];
   for (let i = 0; i < keyframes.length - 1; i++) {
@@ -118,7 +118,7 @@ export const fromGameRig = (g: { 眼: readonly number[]; yaw: number; pitch: num
 };
 
 /** 样条关键点：秒（或帧，单位自定，递增）和那一刻的机位 */
-export type SplineKey = readonly [时刻: number, 机位: Cam];
+export type SplineKey = readonly [time: number, rig: Cam];
 export type RigSplineOptions = {
   /** 两头的速度：带速（默认）= 照相邻一段的平均速度进出，镜头切进来时已经在动；停 = 速度为 0（从静止起、收到静止） */
   头?: '带速' | '停';

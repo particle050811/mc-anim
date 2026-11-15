@@ -72,7 +72,7 @@ export type SplitState = {
   /** 她这一帧是第几个姿势（时差分屏.tsx 的 她的姿势们） */
   poseChangeCount: number;
   /** 服务器那半从 夏日白天 往 褪色 插多少 */
-  褪色: number;
+  fade: number;
   /** 日历最上面那页的天数 */
   calendar: number;
   /** 还在空中的日历纸 */
@@ -87,14 +87,14 @@ export const SplitState = (frame: number): SplitState => {
     growth: forestGrowth(calendar),
     doorGrown: frame >= doorGrowFrame,
     poseChangeCount: poseSwapFrames.filter((f) => f <= frame).length,
-    褪色: fadeLevel(frame),
+    fade: fadeLevel(frame),
     calendar,
     flyPages: flyingPages(sec, calendarWindow),
   };
 };
 
 /** 服务器那半这一帧的调子（夏日白天往褪色插 分屏态.褪色）。第 12 句末横移出屋时，屋外和整片后期也往 分屏起 这一帧的调子走（段/2-空床/编排.ts） */
-export const serverToneAt = (frame: number): Tone => lerpTone(palette.夏日白天, palette.褪色, SplitState(frame).褪色);
+export const serverToneAt = (frame: number): Tone => lerpTone(palette.夏日白天, palette.褪色, SplitState(frame).fade);
 
 // ---------- 接进来（段 2-时差 开头） ----------
 /** 第 12 句末（段 2-空床）镜头往右横移出屋、越走越快，最后一帧还在最快的时候切过来（三稿「横移进分屏」）。

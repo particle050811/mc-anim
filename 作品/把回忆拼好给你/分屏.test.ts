@@ -38,10 +38,10 @@ const toScreenY = (z: number, y: number) => 720 - (z + oblique * y - realFraming
 describe('第 13 句分屏', () => {
   it('分屏起：坡上没有樱花树、门口是树苗、日历 100、坐着、不褪色；日历到一：林子长满、树苗长成、停在 1、褪到 0.2', () => {
     const a = SplitState(startFrame);
-    expect([a.growth, a.doorGrown, a.calendar, a.poseChangeCount, a.褪色]).toEqual([0, false, 100, 0, 0]);
+    expect([a.growth, a.doorGrown, a.calendar, a.poseChangeCount, a.fade]).toEqual([0, false, 100, 0, 0]);
     const b = SplitState(events.calendarAtOne.帧);
     expect([b.growth, b.doorGrown, b.calendar, b.poseChangeCount]).toEqual([1, true, 1, 1]);
-    expect(b.褪色).toBeCloseTo(0.2, 9);
+    expect(b.fade).toBeCloseTo(0.2, 9);
     expect(SplitState(splitFrame - 1).calendar).toBe(1);
   });
 

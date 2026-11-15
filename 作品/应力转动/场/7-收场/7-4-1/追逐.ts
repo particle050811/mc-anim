@@ -9,8 +9,8 @@ export const horseSpeed = baseSpeed.horse;
 export const wardenSpeed = baseSpeed.监守者;
 // 第一圈马起跳那一刻它在马身后多少米（顺着西环道）；之后每圈少 0.6 米，第五圈还剩 10 米上下
 export const takeoffGap = 12;
-const firstTakeoffT = geom.horseMarks.起跳 / horseSpeed;
-const wardenS0 = geom.horseMarks.起跳 - takeoffGap - wardenSpeed * firstTakeoffT;
+const firstTakeoffT = geom.horseMarks.takeoff / horseSpeed;
+const wardenS0 = geom.horseMarks.takeoff - takeoffGap - wardenSpeed * firstTakeoffT;
 
 // 马第 n 圈（0 起）各拐点的程（没绕圈展开，程一直往上加）
 export const horseLapS = (n: number, mark: keyof typeof geom.horseMarks) => n * geom.horseLoop.len + geom.horseMarks[mark];
@@ -23,8 +23,8 @@ export const simulate = (stopAfterT = Infinity): Chase => {
   let brakeT = Infinity;
   if (stopAfterT < Infinity) {
     const s = horseSpeed * stopAfterT;
-    const lap = Math.floor((s - geom.horseMarks.上台) / geom.horseLoop.len) + 1;
-    brakeT = horseLapS(lap, '上台') / horseSpeed;
+    const lap = Math.floor((s - geom.horseMarks.mountPlinth) / geom.horseLoop.len) + 1;
+    brakeT = horseLapS(lap, 'mountPlinth') / horseSpeed;
   }
   const stopT = brakeT + brakeSec;
   const stopS = horseSpeed * brakeT + (horseSpeed * brakeSec) / 2;
@@ -38,6 +38,6 @@ export const simulate = (stopAfterT = Infinity): Chase => {
 };
 export const wardenS = (T: number) => wardenS0 + wardenSpeed * T;
 // 马第 n 圈起跳那一刻（没勒马的跑法）
-export const takeoffT = (n: number) => horseLapS(n, '起跳') / horseSpeed;
+export const takeoffT = (n: number) => horseLapS(n, 'takeoff') / horseSpeed;
 // 它在自己那一圈上走到程 s（展开的）是哪一刻
 export const wardenTAt = (s: number) => (s - wardenS0) / wardenSpeed;

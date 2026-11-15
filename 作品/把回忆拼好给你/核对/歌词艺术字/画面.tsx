@@ -43,7 +43,7 @@ const picture: React.FC = () => {
   if (v.bottomBackdrop === '分屏') {
     // 同 2-时差：描边色取服务器那半的调子
     const splitState = SplitState(v.帧);
-    return <TimeLagSplit 帧={v.帧} 种子={v.帧} 叠层={lyricsLayer(v.帧, lerpTone(palette.夏日白天, palette.褪色, splitState.褪色).outlineColor)} />;
+    return <TimeLagSplit 帧={v.帧} 种子={v.帧} 叠层={lyricsLayer(v.帧, lerpTone(palette.夏日白天, palette.褪色, splitState.fade).outlineColor)} />;
   }
   if (v.bottomBackdrop === '归隐') return <RetreatPicture 帧={v.帧} 种子={v.帧} 叠层={lyricsLayer(v.帧, leftToneAt(v.帧).outlineColor)} />;
   const bottomBackdrop = fixedBottoms[v.bottomBackdrop];

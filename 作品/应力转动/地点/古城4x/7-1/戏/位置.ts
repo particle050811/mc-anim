@@ -29,7 +29,7 @@ export const horseState = (t: number) => {
   return { p: geom.spots.wallEntry, yaw: northYaw, entityYaw: northYaw + 180, walkCycle: { legPhase: landPhase, amplitude: 0 }, 速: 0, rear };
 };
 
-export const liuLeapList = [liuLeaps.J1, liuLeaps.J2, liuLeaps.J3, liuLeaps.J4, liuLeaps.闪];
+export const liuLeapList = [liuLeaps.J1, liuLeaps.J2, liuLeaps.J3, liuLeaps.J4, liuLeaps.dodge];
 export const liuXinzhongPos = (t: number): V3 => {
   if (t >= timeline.mountT) {
     const horse = horseState(t);

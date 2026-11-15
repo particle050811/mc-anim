@@ -193,7 +193,7 @@ describe('照片墙', () => {
 
 describe('调子', () => {
   it('左屏从第 13 句末的褪色起，合屏到位那一拍到 2-摇铃 开头的调子', () => {
-    expect(SplitState(events.splitSceneChange.帧 - 1).褪色).toBeCloseTo(fadeStart, 9);
+    expect(SplitState(events.splitSceneChange.帧 - 1).fade).toBeCloseTo(fadeStart, 9);
     expect(fadeEnd).toBeCloseTo(1 - colorBackRange.起, 12);
   });
 });

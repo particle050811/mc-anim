@@ -6,4 +6,4 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { fps } from './分镜/时间.ts';
 
 /** 当前时刻在本作品时间轴上是第几帧（1/60 秒一帧，从当前 Sequence 起算，带小数） */
-export const use当前帧 = (): number => snapToFrame(useCurrentSec() * fps);
+export const useSnappedFrame = (): number => snapToFrame(useCurrentSec() * fps);

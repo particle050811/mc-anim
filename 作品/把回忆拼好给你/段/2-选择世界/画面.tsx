@@ -12,14 +12,14 @@ import { oldIcon } from '../../场/2-选择世界/图标源.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const startFrame = segmentWindow('2-选择世界').起帧;
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
 const tone = palette.现实;
 
 const picture: React.FC = () => {
-  const songFrame = startFrame + use当前帧();
+  const songFrame = startFrame + useSnappedFrame();
   return (
     <>
       <FilmPost grade={tone.grade} 种子={songFrame}>

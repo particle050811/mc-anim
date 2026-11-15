@@ -30,4 +30,4 @@ export const manifest: readonly ManifestEntry[] = [
   { 键: '6-结算舞', 章: 6 },
 ];
 
-export const { segDir, segmentName, 编号: segmentCode } = manifestTools(manifest);
+export const { segDir, segmentName, segmentCode } = manifestTools(manifest);

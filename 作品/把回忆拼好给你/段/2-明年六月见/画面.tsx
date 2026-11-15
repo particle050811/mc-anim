@@ -12,7 +12,7 @@ import { shadingBySeg } from '../../默认.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const startFrame = segClock('2-明年六月见').起帧;
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
@@ -20,7 +20,7 @@ const lyricStyle = { ...runeLyricDefault, outlineColor: palette.夜.outlineColor
 
 /** 前帧 取上一帧：屋后远景按它算画布高，学的是顺序渲染「读上一帧的高度」（docs/渲染性能.md 的 E）。原来取 1/24 秒以前，用户 11-03「统统改成 60 帧」 */
 const picture: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <FilmPost grade={palette.夜.grade} 种子={startFrame + f} grainYield={signFaceRects(startFrame + f)}>

@@ -20,7 +20,7 @@ import { useViewIndex } from '@engine/段/时间.tsx';
 
 const liftTopBox = [[-1, -27, 5.97, 22, 1, 10]];
 const unitBox = new THREE.BoxGeometry(1, 1, 1);
-const frameColor = (l: LampPos) => (l.种 === '灯笼' ? '#ffd23f' : l.lit ? '#ff7a1a' : '#9a9a9a');
+const frameColor = (l: LampPos) => (l.种 === 'lantern' ? '#ffd23f' : l.lit ? '#ff7a1a' : '#9a9a9a');
 
 /** 一格方块的线框（位 = 方块底面中心） */
 const BlockFrame: React.FC<{ 位: V3; 色: string }> = ({ 位: pos, 色: color }) => (
@@ -56,7 +56,7 @@ const FlatLight: React.FC = () => {
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
   const size = { width: v.宽, height: v.高 };
-  const lanternCount = hallLamps.filter((l) => l.种 === '灯笼').length;
+  const lanternCount = hallLamps.filter((l) => l.种 === 'lantern').length;
   const candleCount = hallLamps.length - lanternCount;
   return (
     <AbsoluteFill style={{ background: '#1b1d22' }}>

@@ -31,7 +31,7 @@ export const manifest: readonly ManifestEntry[] = [
   { 键: '${firstSeg}', 章: '核对' },
 ];
 
-export const { segDir, segmentName, 编号: segmentCode } = manifestTools(manifest);
+export const { segDir, segmentName, segmentCode } = manifestTools(manifest);
 `;
 
 // webpackContext 的参数 webpack 要在打包时读出来，只能就地写字面量，所以每部作品各有一份（内容和 作品/应力转动/注册.tsx 一样）

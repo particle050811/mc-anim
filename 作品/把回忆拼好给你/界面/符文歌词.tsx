@@ -27,7 +27,7 @@ import { fps, legacyFrameSec } from '../分镜/时间.ts';
 import { brightEffect, brightTier, instantEffect, instantBlock, putDown, putDownBlock, timeLag, firework, fireworkSparks, inWord } from './歌词字效.ts';
 import { splitBlocks, glyphSeed, gatherFactor, runeScale, flyBlocks, flyPos, type RuneBlock } from './符文拼字.ts';
 import { makeGlyphSource, mergeStyle, charStates, layoutLine, decodeTimeSpans, type CharState, type PlacedChar, type RuneLyricStyle, type RuneLyricLine } from './符文排版.ts';
-import { use当前帧 } from '../当前帧.ts';
+import { useSnappedFrame } from '../当前帧.ts';
 
 export { runeLyricDefault } from './符文排版.ts';
 export type { RuneLyricStyle, RuneLyricLine };
@@ -473,7 +473,7 @@ const drawLine = (
 
 /** 铺满画面，放在 position 不是 static 的容器里（如 AbsoluteFill）。行们按 入 从早到晚排 */
 export const RuneLyric: React.FC<{ lines: readonly RuneLyricLine[]; 样式: RuneLyricStyle; 收?: number; 帧?: number }> = ({ lines, 样式: lyricStyle, 收: fadeOutFrame, 帧: frame }) => {
-  const current = use当前帧();
+  const current = useSnappedFrame();
   const f = frame ?? current;
   const { width, height } = useVideoConfig();
   const ref = useRef<HTMLCanvasElement>(null);

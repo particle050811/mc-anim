@@ -42,7 +42,7 @@ export type SegmentName = '6-3-1' | '6-3-2' | '6-3-3' | '6-3-4' | '6-3-5' | '6-3
 // 6-3-4 城防各拍的帧数（按顺序，第一拍从段首帧起；含义见 `城防`）。分拍依据用户 10-13：先瞭望、听到回头、看到金光再举镜。
 // 瞭望原速，太长的话卫兵举镜时他已经砸地了。回头、见光两拍按卫兵的反应（编排/卫兵.ts 的 `REACT`）一起缩（用户 10-20：反应太慢，「整个镜头都要对应缩短」）。
 // 举镜：一排人在物理时间 0.3 秒里先后举好，全举好再停一下就切镜中
-export const cityDefenseBeats = { 瞭望: 24, 回头: 23, 见光: 20, 举镜: 30, 镜中: 30 };
+export const cityDefenseBeats = { lookout: 24, turnBack: 23, seeLight: 20, raiseScope: 30, inScope: 30 };
 export const segLengthFrames: Record<SegmentName, number> = {
   // 6-3-1 在负的全局帧上（用户 10-02 要在悬停处预留确认古城在边城的对话）；11 秒：两句台词按正常语速各留足加 0.5 秒（镜头/6-3-1/编排.ts 的 `cues631`）
   '6-3-1': 265, // 11.0 秒
@@ -92,10 +92,10 @@ const cityDefenseMarks = () => {
   const beatLen = cityDefenseBeats;
   let cursorFrame = segTable['6-3-4'].起;
   const cutToWall = cursorFrame;
-  const notice = (cursorFrame += beatLen.瞭望);
-  const glanceBack = (cursorFrame += beatLen.回头);
-  const raiseScope = (cursorFrame += beatLen.见光);
-  const inScope = (cursorFrame += beatLen.举镜);
+  const notice = (cursorFrame += beatLen.lookout);
+  const glanceBack = (cursorFrame += beatLen.turnBack);
+  const raiseScope = (cursorFrame += beatLen.seeLight);
+  const inScope = (cursorFrame += beatLen.raiseScope);
   return { cutToWall: cutToWall, notice: notice, 回看: glanceBack, raiseScope: raiseScope, inScope: inScope };
 };
 export const cityDefense = cityDefenseMarks();

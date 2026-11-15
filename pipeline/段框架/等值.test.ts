@@ -18,7 +18,7 @@ describe('清单工具 和两部作品 清单.ts 尾部逐键一样', () => {
       for (const t of m.manifest) {
         expect(rebuilt.segDir(t.键)).toBe(m.segDir(t.键));
         expect(rebuilt.segmentName(t)).toBe(m.segmentName(t));
-        expect(rebuilt.编号(t.键)).toBe(m.segmentCode(t.键));
+        expect(rebuilt.segmentCode(t.键)).toBe(m.segmentCode(t.键));
       }
     });
   }

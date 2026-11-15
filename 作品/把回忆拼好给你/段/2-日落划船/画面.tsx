@@ -16,7 +16,7 @@ import { AltarPicture } from '../../场/2-祭坛/祭坛.tsx';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, segWindow.起帧));
 // 眼睛特写是 2-祭坛召唤 那一镜接着推，光影跟它走（接缝上不跳）；海那块照本段的（海上.tsx）
@@ -27,7 +27,7 @@ const eyeView = (g: number) => (
 );
 
 const picture: React.FC = () => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   const g = toSongFrame(f);
   // 叠化过半就换成海那套的描边色
   const outlineColor = palette[crossfade(g) < 0.5 ? eyeToneName : seaToneName].outlineColor;

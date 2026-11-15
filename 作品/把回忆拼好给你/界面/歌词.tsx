@@ -6,7 +6,7 @@ import { AbsoluteFill } from 'remotion';
 import { clamp01 } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { fps, oneFrameSec } from '../分镜/时间.ts';
-import { use当前帧 } from '../当前帧.ts';
+import { useSnappedFrame } from '../当前帧.ts';
 
 /** 一句：入 = 从这一段内帧起淡入 */
 export type LyricLine = { text: string; 入: number };
@@ -39,7 +39,7 @@ export const lyricOpacity = (lines: readonly LyricLine[], f: number, lyricStyle:
   });
 
 export const Lyrics: React.FC<{ lines: readonly LyricLine[]; 样式: LyricStyle; 收?: number }> = ({ lines, 样式: lyricStyle, 收: fadeOutFrame }) => {
-  const f = use当前帧();
+  const f = useSnappedFrame();
   for (let i = 1; i < lines.length; i++) if (lines[i].入 < lines[i - 1].入) throw new Error(`歌词「${lines[i].text}」的入帧比上一句早`);
   const alpha = lyricOpacity(lines, f, lyricStyle, fadeOutFrame);
   return (

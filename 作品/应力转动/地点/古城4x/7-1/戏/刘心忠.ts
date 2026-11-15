@@ -41,7 +41,7 @@ export const liuXinzhongPose = (t: number): FigurePose => {
       const yaw = lerp(leap.yaw, nearYaw(leap.yaw, liuFacingYaw(t, leapFeetAt(leap, t * FPS))), turnBack);
       return withSummonArm(airPose(leap, t, yaw), t);
     }
-    if (leapName === '闪') {
+    if (leapName === 'dodge') {
       // 后跃：面朝监守者往后飞
       return airPose(leap, t, nearYaw(leap.yaw + 180, liuFacingYaw(t, leapFeetAt(leap, t * FPS))));
     }
@@ -58,7 +58,7 @@ export const liuXinzhongPose = (t: number): FigurePose => {
     pose = withSummonArm({ ...base, yaw, squash: (base.squash ?? 1) * (1 - 0.04 * flinch), headYaw: glance, headPitch: base.headPitch * (1 - 0.6 * flinch) }, t);
   } else {
     // 站着：朝监守者（召马时朝北）；起跳前先转向跳的方向、落地后慢慢转回来（J1、闪避跳在空中已经回身朝着监守者）
-    const landYawFor = (J: Jump) => (J === liuLeaps.J1 || J === liuLeaps.闪 ? liuFacingYaw(landT(J), J.p1) : J.yaw);
+    const landYawFor = (J: Jump) => (J === liuLeaps.J1 || J === liuLeaps.dodge ? liuFacingYaw(landT(J), J.p1) : J.yaw);
     let yaw = leapTurnYaw(liuLeapList, t, t < takeoffT(liuLeaps.J1) ? liuStart.yaw ?? 0 : liuFacingYaw(t, feet), landYawFor);
     if (t >= timeline.summonHorseT - 0.1 && t < timeline.mountT) yaw = lerp(nearYaw(0, yaw), 0, ss((t - timeline.summonHorseT + 0.1) / 0.25));
     pose = { ...standPose(feet), yaw, armR: 30, armRRoll: 4, armL: 10, armLRoll: 4 };

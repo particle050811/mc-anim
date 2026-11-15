@@ -235,13 +235,13 @@ export const OutsideCherryGrove: React.FC = () => {
     const dirtMaterial = addFog(new THREE.MeshStandardMaterial({ map: loadImgTexture(dirtUri, true), roughness: 1 }));
     // 占地里去掉缺口的格子，顶面压低 0.01 藏在方块顶面底下；占地里整块再垫在 z −1.01。占地外面是远山的地形（同样压低 0.01）
     const faces = terrain();
-    const geometries = { 占地: planeGeometry(footprintPaving(), -0.01), 垫层: planeGeometry([structFootprint], -1.01), 顶: buildFaceGeometry(faces.top), 草侧: buildFaceGeometry(faces.grassSide), 土侧: buildFaceGeometry(faces.dirtSide) };
+    const geometries = { footprint: planeGeometry(footprintPaving(), -0.01), bedding: planeGeometry([structFootprint], -1.01), top: buildFaceGeometry(faces.top), grassSide: buildFaceGeometry(faces.grassSide), dirtSide: buildFaceGeometry(faces.dirtSide) };
     const groundParts = [
-      new THREE.Mesh(geometries.占地, groundMaterial),
-      new THREE.Mesh(geometries.垫层, groundMaterial),
-      new THREE.Mesh(geometries.顶, groundMaterial),
-      new THREE.Mesh(geometries.草侧, grassSideMaterial),
-      new THREE.Mesh(geometries.土侧, dirtMaterial),
+      new THREE.Mesh(geometries.footprint, groundMaterial),
+      new THREE.Mesh(geometries.bedding, groundMaterial),
+      new THREE.Mesh(geometries.top, groundMaterial),
+      new THREE.Mesh(geometries.grassSide, grassSideMaterial),
+      new THREE.Mesh(geometries.dirtSide, dirtMaterial),
     ];
     const petalMaterial = addFog(new THREE.MeshStandardMaterial({ map: loadImgTexture(petalsUri), alphaTest: 0.5, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 }));
     const petalPlane = new THREE.PlaneGeometry(1, 1);
