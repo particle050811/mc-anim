@@ -238,6 +238,18 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     return true;
   });
   if (unkept.length) source.prefetch?.(unkept);
+  // 要建的都留着网格（预取好的）、块数又不多：当场传显存、进缓存，这一次渲染就画上，不绕后台那一圈（拦截图、等一轮定时器、重画一次）。
+  // 先后和后台建的一样（都按 unbuilt 的顺序），所以画面一样；后台正在建时不插队
+  if (unbuilt.length && unbuilt.length <= 预取最多块 && !building.current && delayHandle.current === null) {
+    const recs = unbuilt.map((q) => kept.get(keptKey(worldKey, q)));
+    if (recs.every((rec) => rec)) {
+      unbuilt.forEach((q, i) => {
+        const rec = recs[i]!;
+        putEntry(q, rec.V && rec.mesh ? meshToEntry(ctx, rec.mesh, rec.V, q, rec) : emptyEntry(rec));
+      });
+      unbuilt.length = 0;
+    }
+  }
   // 后台建的是最近一次渲染要的（每次渲染都换成这一次的 `unbuilt`）：后台还没建完、要的区段变了，新的照样排进去，不会一直等到超时。
   // 后台每建一小批就回头看一次要建什么、要的齐不齐（`prefetch` 可能把没建的丢了要重取），都建完了重画一次，还有没建的就再开后台，都齐了才放行截图（见下面的 useEffect）
   toBuild.current = unbuilt;
