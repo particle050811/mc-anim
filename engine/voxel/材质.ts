@@ -159,7 +159,18 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
 
 // 所有网格共用一份四边形索引（0 1 2 0 2 3，每面 +4），按用到的最大面数长；共用同一个 BufferAttribute，显存里只有一份
 let sharedQuadIndex: THREE.BufferAttribute | null = null;
-const quadIndexFor = (quads: number) => {
+const 花草短面数 = 16383;
+let 花草短索引: THREE.BufferAttribute | null = null;
+const quadIndexFor = (quads: number, 花草: boolean) => {
+  if (花草 && quads <= 花草短面数) {
+    if (!花草短索引) {
+      // WebGL2 保留 65535 作图元重启，不能画满第 16384 个四边形。
+      const indices = new Uint16Array(花草短面数 * 6);
+      for (let quad = 0; quad < 花草短面数; quad++) indices.set([quad * 4, quad * 4 + 1, quad * 4 + 2, quad * 4, quad * 4 + 2, quad * 4 + 3], quad * 6);
+      花草短索引 = new THREE.BufferAttribute(indices, 1);
+    }
+    return 花草短索引;
+  }
   if (!sharedQuadIndex || sharedQuadIndex.count < quads * 6) {
     const quadCount = Math.max(quads, sharedQuadIndex ? (sharedQuadIndex.count / 6) * 2 : 1 << 16);
     const indices = new Uint32Array(quadCount * 6);
@@ -188,7 +199,7 @@ export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, mat
   geo.setAttribute('uv', uv);
   geo.setAttribute('tex', tex);
   geo.setAttribute('col', col);
-  geo.setIndex(quadIndexFor(group.n));
+  geo.setIndex(quadIndexFor(group.n, materialClass === '花草'));
   geo.setDrawRange(0, group.n * 6);
   // 位置存的是 以格为单位 × 64 的整数：网格缩小 64 / 格 倍；包围球按盒子给（three 自己算会按整数坐标算）
   const k = posScale / cellM;
