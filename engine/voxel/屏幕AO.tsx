@@ -8,6 +8,10 @@
 // 1. 不透明的先画进离屏图（颜色 + 深度，抗锯齿同画布）。离屏图标成「XR 渲染目标」、sRGB，three 按画到屏幕的写法出色，存的就是画面数值，乘 AO 即 Voxy 的「在 sRGB 上乘」。半透明的（云、粒子、星星、虚影、加色特效）这遍先藏起来。
 //    要压暗的材质（`material.userData.ScreenAo = '压暗'`：体素世界方块，见 lib/体素/材质.ts）改成自定义混合、alpha 写 0，别的不透明写 1，背景清成 1：离屏图 alpha = 1 − 体素方块覆盖率。
 //    导出网格（lib/方块网格.tsx，平滑光照已烤进顶点色）、人物、物品不压，只当遮挡物。
+//    这一遍不在片元写对数深度，用光栅器的反向深度（engine/core/光栅深度.ts）：被挡住的片元不再全额着色。阴影图照旧画（普通深度），画完才换；
+//    画完把反向深度换算成对数深度存进一张单通道浮点图，第 2 遍和中间步骤（云）读的还是对数深度。
+//    有一份不透明材质不认（自己写着色器又没接 three 的对数深度片段、透射，见 光栅深度.ts 的 `光栅兼容`）、画布没开对数深度、不是透视镜头、浏览器没有 EXT_clip_control 时，整遍退回片元写对数深度的老路。
+//    多边形偏移这一遍关掉：对数深度下它本来就不起作用（片元写的深度盖掉了偏移），照旧。
 //    体素世界花草（`userData.ScreenAo = '不挡'`）挪到第 3 遍画，不挡别人也不压：花草只在第 0 级有，当遮挡物会让近处草地整片发暗、外圈不暗，镜头一动是跟着走的暗圈（6-1-4 第 96 帧）；游戏平滑光照里花草本来也不挡光。
 // 2. 全屏片元着色器画到画布：读离屏颜色和深度，算 AO 乘上去，并把深度写回画布。深度是对数深度（一镜画面开了 `logarithmicDepthBuffer`）：three 写 log2(1 + w) / log2(far + 1)，反推。
 //    法线没有 Voxy 的面朝向标记，用深度还原（左右、上下各取差得少的一边，不跨物体边缘），翻到朝镜头那面。
@@ -27,6 +31,7 @@ import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, type MidPassContext } from './中间步骤.ts';
 import { 渲染输入 } from '../core/渲染设置.ts';
 import { 切换着色宏 } from '../core/着色宏.ts';
+import { 光栅兼容, 切光栅宏, 反向比较, 反向系数, 换成反向投影 } from '../core/光栅深度.ts';
 
 export type ScreenAoProps = {
   // 每个像素的采样数：Voxy BEST = 24、BETTER = 12；离线渲染用 24
@@ -181,11 +186,26 @@ void main() {
   gl_FragDepth = d;
 }`;
 
+// 第 1 遍的反向深度 → 对数深度（three 的写法：log2(1 + w) / log2(far + 1)）；没画到的地方（清成 0）是天空，写 1
+const 换算FS = /* glsl */ `
+uniform sampler2D tRev;
+uniform vec2 uAB;
+uniform float uLogFar;
+void main() {
+  float d = texelFetch(tRev, ivec2(gl_FragCoord.xy), 0).r;
+  gl_FragColor = vec4(d <= 0.0 ? 1.0 : log2(1.0 + uAB.x / (d + uAB.y)) / uLogFar, 0.0, 0.0, 1.0);
+}`;
+
+// 比改前改后用：渲染输入给 `光栅深度: false`，第 1 遍退回片元写对数深度
+const rasterDepthOff = (渲染输入() as { 光栅深度?: boolean }).光栅深度 === false;
+const warned = new WeakSet<THREE.Material>();
+type ClipControl = { clipControlEXT: (origin: number, depth: number) => void; LOWER_LEFT_EXT: number; ZERO_TO_ONE_EXT: number; NEGATIVE_ONE_TO_ONE_EXT: number };
+
 // 第 1 遍藏起来、留到第 3 遍画的：三维画布本来就按半透明另排一队的（transparent）、不是普通混合的（加色的特效之类）、标了不挡的
 const aoDisabled = (渲染输入() as { 屏幕AO?: boolean }).屏幕AO === false;
 const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.NormalBlending || m.userData.屏幕AO === '不挡';
 
-type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null };
+type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null; depthFunc: THREE.DepthModes; polygonOffset: boolean; raster: boolean };
 
 export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 24, radius: radius = 1.5, maxScreenRadius = 0.1, applyToMesh = false, atmosphereCamera }) => {
   const resources = useMemo(() => {
@@ -227,13 +247,29 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     quad.frustumCulled = false;
     const quadScene = new THREE.Scene();
     quadScene.add(quad);
-    return { rt, mat, quadScene: quadScene, camera: new THREE.OrthographicCamera(), bufSize: new THREE.Vector2(), saved: [] as SavedMaterial[] };
+    // 对数深度图：单通道 32 位浮点，最近点采样（和深度纹理一样）
+    const logRt = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false, generateMipmaps: false });
+    const logMat = new THREE.ShaderMaterial({
+      uniforms: { tRev: { value: depth }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 } },
+      vertexShader: VS,
+      fragmentShader: 换算FS,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    });
+    const logQuad = new THREE.Mesh(quad.geometry, logMat);
+    logQuad.frustumCulled = false;
+    const logScene = new THREE.Scene();
+    logScene.add(logQuad);
+    return { rt, mat, quadScene: quadScene, logRt, logMat, logScene, camera: new THREE.OrthographicCamera(), bufSize: new THREE.Vector2(), saved: [] as SavedMaterial[], proj: new THREE.Matrix4(), projInv: new THREE.Matrix4() };
   }, [sampleCount, radius, maxScreenRadius]);
   useEffect(
     () => () => {
       resources.rt.depthTexture?.dispose();
       resources.rt.dispose();
       resources.mat.dispose();
+      resources.logRt.dispose();
+      resources.logMat.dispose();
     },
     [resources],
   );
@@ -272,15 +308,36 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       for (const x of Array.isArray(material) ? material : [material]) {
         if (seen.has(x)) continue;
         seen.add(x);
-        saved.push({ m: x, visible: x.visible, blending: x.blending, src: x.blendSrc, dst: x.blendDst, srcA: x.blendSrcAlpha, dstA: x.blendDstAlpha });
+        saved.push({ m: x, visible: x.visible, blending: x.blending, src: x.blendSrc, dst: x.blendDst, srcA: x.blendSrcAlpha, dstA: x.blendDstAlpha, depthFunc: x.depthFunc, polygonOffset: x.polygonOffset, raster: false });
       }
     });
 
     // 第 1 遍：不透明的画进离屏图；要压暗的 alpha 写 0
+    const cam = camera as THREE.PerspectiveCamera;
+    const clip = gl.extensions.has('EXT_clip_control') ? (gl.extensions.get('EXT_clip_control') as ClipControl) : null;
+    let raster = !rasterDepthOff && clip !== null && gl.capabilities.logarithmicDepthBuffer && cam.isPerspectiveCamera === true;
     for (const entry of saved) {
       const material = entry.m;
       if (drawLater(material)) material.visible = false;
-      else if (material.userData.屏幕AO === '压暗' || (applyToMesh && material.userData.方块网格)) {
+      else if (raster && entry.visible && !光栅兼容(material)) {
+        raster = false;
+        if (!warned.has(material)) {
+          warned.add(material);
+          console.warn(`[屏幕AO] 不透明一遍退回片元写对数深度：${material.type}${material.name ? ` ${material.name}` : ''} 不认光栅深度（engine/core/光栅深度.ts 的 光栅兼容）`);
+        }
+      }
+    }
+    for (const entry of saved) {
+      const material = entry.m;
+      if (drawLater(material)) continue;
+      if (raster) {
+        // 记在条目上：下面压暗的材质会改混合方式，画完再用 drawLater 判就认不出它了
+        entry.raster = true;
+        切光栅宏(material, true);
+        material.depthFunc = 反向比较[material.depthFunc]!;
+        material.polygonOffset = false;
+      }
+      if (material.userData.屏幕AO === '压暗' || (applyToMesh && material.userData.方块网格)) {
         material.blending = THREE.CustomBlending;
         material.blendSrc = THREE.OneFactor;
         material.blendDst = THREE.ZeroFactor;
@@ -292,10 +349,47 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     const prevTarget = gl.getRenderTarget();
     gl.setRenderTarget(rt);
     aoPassUniform.value = 1;
-    gl.render(scene, camera);
+    if (raster && clip) {
+      // 阴影图在 gl.render 里先画（正交投影、普通深度），画完才清深度、换裁剪范围和投影；three 没有「阴影画完」的钩子，包一下它的入口
+      const ctx = gl.getContext();
+      const shadowRender = gl.shadowMap.render;
+      const autoClearDepth = gl.autoClearDepth;
+      let entered = false;
+      gl.shadowMap.render = function (this: unknown, ...a: Parameters<typeof shadowRender>) {
+        shadowRender.apply(this, a);
+        // 深度清成 0（最远）。three 记着的清屏值是 1，这里绕过它设、清完设回；颜色由 three 接着清
+        ctx.clearDepth(0);
+        gl.state.buffers.depth.setMask(true);
+        ctx.clear(ctx.DEPTH_BUFFER_BIT);
+        ctx.clearDepth(1);
+        clip.clipControlEXT(clip.LOWER_LEFT_EXT, clip.ZERO_TO_ONE_EXT);
+        resources.proj.copy(cam.projectionMatrix);
+        resources.projInv.copy(cam.projectionMatrixInverse);
+        换成反向投影(cam.projectionMatrix, cam.near, cam.far);
+        cam.projectionMatrixInverse.copy(cam.projectionMatrix).invert();
+        entered = true;
+      } as typeof shadowRender;
+      gl.autoClearDepth = false;
+      try {
+        gl.render(scene, camera);
+      } finally {
+        gl.shadowMap.render = shadowRender;
+        gl.autoClearDepth = autoClearDepth;
+        if (entered) {
+          clip.clipControlEXT(clip.LOWER_LEFT_EXT, clip.NEGATIVE_ONE_TO_ONE_EXT);
+          cam.projectionMatrix.copy(resources.proj);
+          cam.projectionMatrixInverse.copy(resources.projInv);
+        }
+      }
+    } else gl.render(scene, camera);
     aoPassUniform.value = 0;
     for (const entry of saved) {
       const material = entry.m;
+      if (entry.raster) {
+        切光栅宏(material, false);
+        material.depthFunc = entry.depthFunc;
+        material.polygonOffset = entry.polygonOffset;
+      }
       material.blending = entry.blending;
       material.blendSrc = entry.src;
       material.blendDst = entry.dst;
@@ -304,9 +398,23 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       material.visible = entry.visible;
     }
 
+    // 反向深度 → 对数深度，下面两遍和中间步骤都读这张
+    let depthTex: THREE.Texture = rt.depthTexture as THREE.DepthTexture;
+    if (raster) {
+      const { logRt, logMat } = resources;
+      if (logRt.width !== width || logRt.height !== height) logRt.setSize(width, height);
+      const { a, b } = 反向系数(cam.near, cam.far);
+      logMat.uniforms.tRev.value = rt.depthTexture;
+      (logMat.uniforms.uAB.value as THREE.Vector2).set(a, b);
+      logMat.uniforms.uLogFar.value = Math.log2(cam.far + 1);
+      gl.setRenderTarget(logRt);
+      gl.render(resources.logScene, resources.camera);
+      depthTex = logRt.texture;
+    }
+
     // 第 2 遍：算 AO、乘上去、深度写回画布
-    const cam = camera as THREE.PerspectiveCamera;
     const uniforms = mat.uniforms;
+    uniforms.tDepth.value = depthTex;
     (uniforms.uSize.value as THREE.Vector2).set(width, height);
     (uniforms.uProj.value as THREE.Matrix4).copy(cam.projectionMatrix);
     (uniforms.uInvProj.value as THREE.Matrix4).copy(cam.projectionMatrixInverse);
@@ -339,7 +447,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       ctx = {
         gl,
         camera: cam,
-        depth: rt.depthTexture as THREE.DepthTexture,
+        depth: depthTex,
         width: width,
         height: height,
         target: prevTarget,
