@@ -64,8 +64,9 @@ const trimKept = () => {
 // items：水以外各类的面（交给代理物体画），类号是 materialClasses 里的下标；casters：其中投影的（花草不投影）；water：水类的网格（逐网格画）
 type Entry = { items: [number, 批项][]; casters: 批项[]; water: VoxelMesh | null; plants: 批项 | null; box: number[]; faceCount: number; used: number; kept: Kept };
 // batches：各类的代理物体（下标同 materialClasses，水那一格空着）；shadowBatch：只进阴影图的
-type 镜头位姿 = { 位: THREE.Vector3; 向: THREE.Quaternion; 心: number[] };
-type World = { 上?: 镜头位姿; 本?: 镜头位姿; 预取过?: 镜头位姿; cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number; batches: (类批 | null)[]; shadowBatch: 类批 };
+// 投、像素角：变焦的镜头（穿塔加速时视角一帧宽 1.4%）细分门槛跟着视角走，不一起外推就猜不中
+type 镜头位姿 = { 位: THREE.Vector3; 向: THREE.Quaternion; 心: number[]; 投: THREE.Matrix4; 像素角: number };
+type World = { 上上?: 镜头位姿; 上?: 镜头位姿; 本?: 镜头位姿; 预取过?: 镜头位姿; cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number; batches: (类批 | null)[]; shadowBatch: 类批 };
 // 按渲染器分：three 网格的顶点在显存里，属于这个 WebGL 上下文（容器池.ts），换了上下文（拼段的下一截是新的 Canvas）要重建（区段网格还在 `kept` 里就从那里拿）
 const worlds = new WeakMap<THREE.WebGLRenderer, Map<string, World>>();
 // 还在后台建区段、这一帧画不全的体素世界：屏幕AO 看到不空就跳过这一次绘制（反正截图前建齐了还要再画一次），省掉一整遍画半截场景的 GPU 活
@@ -103,10 +104,11 @@ const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxe
 // 只动 `kept`（CPU 这边的数组）：不进 `cache`、不传显存、不挂场景。下一帧照旧自己挑区段、按挑的先后建，要的在 `kept` 里就直接用，不在（猜错、没猜、还没建完）就照旧取、照旧等，
 // 所以画出来的和没预取时一样，跳着渲、单出静帧也一样，只是省不到。猜的区段多取了也不进地形用量（来源的 prefetch 带 猜的，见 生成.ts）。
 const 预取在途 = new Map<string, Promise<void>>(); // keptKey → 这一块预取结束（进了 kept，或者失败）
-// 镜头一帧里挪了视距的 `预取最远比` 以上、转了 `预取最大转角` 弧度以上，当成切镜头，不猜（飞越一帧走 17 米，不能按固定米数卡）；
+// 镜头一帧里挪了视距的 `预取最远比` 以上、转了 `预取最大转角` 弧度以上、视角变了 `预取最大变焦` 以上，当成切镜头，不猜（飞越一帧走 17 米，不能按固定米数卡）；
 // 外推出来要新建的块比 `预取最多块` 多也不猜（切镜头后漏过来的；同时压在内存里的体素块也有个数）
 const 预取最远比 = 0.25;
 const 预取最大转角 = 0.2;
+const 预取最大变焦 = 0.05;
 const 预取最多块 = 128;
 const 预取 = (worldKey: string, source: VoxelSource, 要: SectionId[]) => {
   const 完 = (async () => {
@@ -202,10 +204,10 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const sy = lh ? (-shadowLightDir![1] / lh) * shadowMarginM : 0;
   const backlit = shadowLightDir ? backlitDirs(shadowLightDir) : null;
   const pixelAngle = (camera.fov * Math.PI) / 180 / size.height;
-  const pick = (test: ReturnType<typeof makeFrustumTest>, center: number[]): SectionId[] =>
+  const pick = (test: ReturnType<typeof makeFrustumTest>, center: number[], angle = pixelAngle): SectionId[] =>
     pickSections({
       camPos: center,
-      pixelAngle,
+      pixelAngle: angle,
       splitPixels: splitPixels,
       farM: farM,
       inView: (x0, y0, x1, y1) => test(Math.min(x0, x0 + sx) - 8, Math.min(y0, y0 + sy) - 8, heightRange[0], Math.max(x1, x1 + sx) + 8, Math.max(y1, y1 + sy) + 8, heightRange[1]),
@@ -217,9 +219,10 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const list = pick(inView, camPos);
   // 前后两个镜头位姿（预取下一帧用）：同一帧重画几次位姿不变，不算新的
   camera.matrixWorld.decompose(_位, _向, _缩);
-  if (!world.本 || !world.本.位.equals(_位) || !world.本.向.equals(_向) || world.本.心.some((v, i) => v !== camPos[i])) {
+  if (!world.本 || !world.本.位.equals(_位) || !world.本.向.equals(_向) || world.本.心.some((v, i) => v !== camPos[i]) || !world.本.投.equals(camera.projectionMatrix)) {
+    world.上上 = world.上;
     world.上 = world.本;
-    world.本 = { 位: _位.clone(), 向: _向.clone(), 心: [...camPos] };
+    world.本 = { 位: _位.clone(), 向: _向.clone(), 心: [...camPos], 投: camera.projectionMatrix.clone(), 像素角: pixelAngle };
   }
   const putEntry = (section: SectionId, entry: Entry) => {
     const k = sectionKey(section);
@@ -379,22 +382,28 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   });
   // 预取下一帧：这一帧放行以后（排在上面那个 effect 后面，再让出一轮）才开始，不占出这一帧的时间
   useEffect(() => {
-    const { 上, 本 } = world;
+    const { 上上, 上, 本 } = world;
     if (!allBuilt || !本 || world.预取过 === 本 || !getRemotionEnvironment().isRendering) return;
     world.预取过 = 本;
-    if (!上 || 本.位.distanceTo(上.位) > farM * 预取最远比 || 本.向.angleTo(上.向) > 预取最大转角) return;
+    if (!上 || 本.位.distanceTo(上.位) > farM * 预取最远比 || 本.向.angleTo(上.向) > 预取最大转角 || Math.abs(本.像素角 / 上.像素角 - 1) > 预取最大变焦) return;
     setTimeout(() => {
       // 有体素世界还在建（同一个来源可能两个世界共用）就不猜，理由同上
       if (voxelsPending.size) return;
-      // 外推：位置再走一步，朝向再转一步（本 × 上⁻¹ × 本）；视角、近远面照这一帧的
-      预测机.projectionMatrix.copy(camera.projectionMatrix);
-      预测机.projectionMatrixInverse.copy(camera.projectionMatrixInverse);
-      预测机.position.copy(本.位).multiplyScalar(2).sub(上.位);
+      // 外推：位置、投影矩阵、每像素张角逐项再变一步，朝向再转一步（本 × 上⁻¹ × 本）。
+      // 前两步差不多大（镜头在匀着加速、变焦）时，位置和视角把步长的变化也带上：只照最近一步外推，穿塔加速那段每帧有一两块猜不中，当场建就用不上
+      const 步 = 本.位.distanceTo(上.位);
+      const 焦 = 本.像素角 - 上.像素角;
+      const 二阶 = 上上 && Math.abs(步 - 上.位.distanceTo(上上.位)) <= 步 / 2 && Math.abs(焦 - (上.像素角 - 上上.像素角)) <= Math.abs(焦) / 2 ? 上上 : null;
+      const 下 = (取: (p: 镜头位姿) => number) => (二阶 ? 3 * 取(本) - 3 * 取(上) + 取(二阶) : 2 * 取(本) - 取(上));
+      for (let i = 0; i < 16; i++) 预测机.projectionMatrix.elements[i] = 下((p) => p.投.elements[i]!);
+      预测机.projectionMatrixInverse.copy(预测机.projectionMatrix).invert();
+      预测机.position.set(下((p) => p.位.x), 下((p) => p.位.y), 下((p) => p.位.z));
       预测机.quaternion.copy(本.向).multiply(_向.copy(上.向).invert()).multiply(本.向).normalize();
       预测机.updateMatrixWorld();
       const 要 = pick(
         makeFrustumTest(预测机),
-        本.心.map((v, i) => 2 * v - 上.心[i]!),
+        本.心.map((_, i) => 下((p) => p.心[i]!)),
+        下((p) => p.像素角),
       ).filter((q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !预取在途.has(keptKey(worldKey, q)));
       if (要.length && 要.length <= 预取最多块) 预取(worldKey, source, 要);
     }, 0);
