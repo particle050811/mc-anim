@@ -7,6 +7,7 @@ import { 一行状态, 渲染看, 读状态, type 调度状态 } from './看.ts'
 import { 判告警, 监测一轮 } from './告警.ts';
 import { 盯 } from './盯.ts';
 import { 取调度环境 } from './任务.ts';
+import { 读发起者 } from './发起者.ts';
 import { 过渲染闸 } from './闸.ts';
 import { 读调度 } from './调度日志.ts';
 
@@ -36,7 +37,8 @@ it.each([null, 0, 1, 2, 3, 4])('发热等级 %s：仅 ≥3 告警，温度高本
 
 it('2 不叫醒，3 叫醒一次，重挂及升到 4 仍按现有公式去重', async () => {
   let now = 0, 等级 = 2;
-  const e = 取调度环境({ 锁目录: dir, 现在毫秒: () => now }), 输出: string[] = [];
+  // 没有会话的 盯 什么都报，测的只是阈值和去重，不随跑测试的会话变
+  const e = 取调度环境({ 锁目录: dir, 现在毫秒: () => now, 发起者: 读发起者({}, [], dir, false) }), 输出: string[] = [];
   const opts = { 最长: 10, 父活: () => true, 输出: (s: string) => 输出.push(s), 读: () => ({ ...状态(等级), 时: now }), 睡: async (ms: number) => { now += ms; } };
   expect(await 盯(e, opts)).toBe(124);
   expect(输出).toHaveLength(0);
