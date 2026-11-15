@@ -19,9 +19,9 @@
 | 发哪些字节 | 和随仓库发同一个算法（`随仓库.ts` 的 `算随仓库`），加这些段 `段.ts` 声明的地形包，版本取 `assets/地形版本.json` |
 | 附件 | 字节一个 tar `bytes-<sha 列表的 sha 前 12 位>.tar`，布局同 `store/`；地形每个包版本一个 tar `terrain-<版本>.tar`，布局同 `terrain/<包>/<版本>/`。名字只用 ASCII（GitHub 会改掉非 ASCII 的附件名），单个附件不超过 2 GiB |
 | 锁 | `<作品根>/发布锁.json`（`anim assets pack` 生成，不手改）：仓库、标签，每个附件的名字、sha256、大小、里面是什么 |
-| 打包、上传 | `anim assets pack [--上传]`：tar 打在 `<数据根>/cache/发布/`；锁里已有的同名附件不重打（tar 带时间戳，重打字节会变）；`--上传` 用 `gh` 建 Release、只传 Release 上还没有的 |
+| 打包、上传 | `anim assets pack [--upload]`：tar 打在 `<数据根>/cache/发布/`；锁里已有的同名附件不重打（tar 带时间戳，重打字节会变）；`--upload` 用 `gh` 建 Release、只传 Release 上还没有的 |
 | 下载 | `anim assets pull`：先问附件在不在，404（发布锁比 Release 新）直接报清楚；系统 curl 下载（断点续传，认 `HTTPS_PROXY`）、核附件 sha、系统 tar 解开（Windows 10 起自带 curl.exe、bsdtar，UTF-8 文件名两边都对）；字节逐件核 sha 放进 `store/`，地形包核清单 sha、文件数、大小再放进 `terrain/`；已有的跳过 |
-| 核对 | `anim check` 的 资产：发布锁和照当前代码现算的一致（少了字节、换了地形版本、换了标签都报），不一致提示 `anim assets pack --上传` |
+| 核对 | `anim check` 的 资产：发布锁和照当前代码现算的一致（少了字节、换了地形版本、换了标签都报），不一致提示 `anim assets pack --upload` |
 | 缺了提示 | `anim still`、`film`、`studio` 开头：数据根缺发布锁里的东西时打一行「先 anim assets pull」。不自动下：地形包上 GB |
 
 - 内容变了附件名跟着变，旧附件留在 Release 上，和 `store/` 一样只增不改。

@@ -4,7 +4,7 @@
 
 ## 目录
 - `docs/`：架构、命名、迁移差异表、决策记录（`决策/`）、外部复用（`外部复用.md`）、`待办.md`（做完就删）。动手前先读 `docs/架构.md`、`docs/命名.md`
-- `作品/<名>/`：一部作品自带的一切：`清单.ts`（唯一的段顺序表）、`场/<场键>/`、`段/<段键>/`、`核对/`、`注册.tsx`、`index.ts`、`台词.toml`、`旧名.tsv`、`默认.ts`（全片默认值）、`认可/<平台>/<段键>.toml`（用户认可的画面指纹），和本作品专有的角色、地点、配乐、配音。现有 `应力转动`、`把回忆拼好给你`、`亚波伦不放水`（Goety 短片，筹备中）。命令选作品：`--作品 <名>` > 当前目录 > `anim.local.toml` 的 `work` > 只有一部就用它（`docs/决策/0004-多作品.md`）。作品默认进 Git、开源（用户 10-22 定）；要私有的逐个挡：`.gitignore` 加 `/作品/<名>/`，或放 `作品/` 外用 `[works]` 登记
+- `作品/<名>/`：一部作品自带的一切：`清单.ts`（唯一的段顺序表）、`场/<场键>/`、`段/<段键>/`、`核对/`、`注册.tsx`、`index.ts`、`台词.toml`、`旧名.tsv`、`默认.ts`（全片默认值）、`认可/<平台>/<段键>.toml`（用户认可的画面指纹），和本作品专有的角色、地点、配乐、配音。现有 `应力转动`、`把回忆拼好给你`、`亚波伦不放水`（Goety 短片，筹备中）。命令选作品：`--work <名>` > 当前目录 > `anim.local.toml` 的 `work` > 只有一部就用它（`docs/决策/0004-多作品.md`）。作品默认进 Git、开源（用户 10-22 定）；要私有的逐个挡：`.gitignore` 加 `/作品/<名>/`，或放 `作品/` 外用 `[works]` 登记
 - `作品/应力转动/规矩.toml`：本作品的成片规矩（默认值、级别、原话、出处、落点、例外）。**规矩只登记在这里，不写进本文件**；`rules/通用.toml` 放各作品都守的，现在空着，升格要用户逐条定
 - `engine/`：纯技术，不含剧情；`engine/段/` 是各作品共用的段框架。`库/`：多部作品会用的角色、生物、物品、界面、特效（原版、模组照原样做）。作品里引用写 `@engine/`、`@库/`
 - `pipeline/`：`anim` 的实现。`py/anim_py/`：Python 叶子工具。`wasm/`：编成 WASM 的源码
@@ -16,26 +16,26 @@
 
 ## 常用命令（Mac/Linux 用 `anim`，Windows 用 `anim.cmd`；以 `anim help` 和各子命令 `--help` 为准）
 ```
-anim 调度 [--json|--一行] | 调度 盯 | 调度 预计 <选择器> | 调度 等锁表 [--从 <时刻>]    改调度必填 --为什么（docs/调度.md）
-anim --低优先 <命令>                      排在全部普通票后面，给静帧让路（合并后统一渲用）
-anim env | doctor | check [--快|--深] | studio        全局 --调试 打调用栈（或 ANIM_DEBUG=1）
-anim film <选择器…> [--重渲] [--级别 视频|预览] [--分享版] [--名 <名>]   唯一的出片路：缺的段当场渲成切片再接成片（docs/决策/0014-单一出片路.md）
-anim still <段> <帧…> --到预览 <主题> [--逐帧] [--望远 …]   多帧默认同页连出，逐像素比用 --逐帧；看远处细节用 --望远 原生渲，不要裁图放大（docs/望远.md）
-anim stale [<选择器>] [--严格]  |  anim bench <段> [--帧 a-b]  |  anim 耗时 [<段>] [--最近 n]
-anim 认指纹 <选择器…> --理由 "…" [--抽 N] [--只看]   过期段抽帧和旧切片比，在压缩噪声内就沿用，不比声音（docs/决策/0013-认指纹.md）
-anim verify [<段>] [--渲]  |  verify accept <段…> --理由 …  |  verify 补参考 [<选择器>]
-anim verify 逐帧 <选择器…> [--帧 a-b] --存 <名> | --比 <名> [--留图 <目录>]   不写切片，不碰段签和认可
-anim assets add <id> <文件> | measure [--检查] | vendor | seed | pack [--上传] | pull   （0005、0006）
-anim extract <配方|组…> | --全部 [--只打印|--检查] [--登记] | --许可 | --补网格配方 | --下载 | --粒子帧 […]
-anim preview new <主题> | preview 清理 [--执行]   anim cache gc [--执行]
-anim new work <作品> | new seg <段键> [--场 <场键>]   anim cues [--检查]   段框架（docs/新段.md）
-anim wt new <名> [--从 <分支>]          开 worktree 并备好依赖
+anim sched [--json|--oneline] | sched watch | sched estimate <选择器> | sched lock-waits [--from <时刻>]    改调度必填 --why（docs/调度.md）
+anim --low-priority <命令>                      排在全部普通票后面，给静帧让路（合并后统一渲用）
+anim env | doctor | check [--fast|--deep] | studio        全局 --debug 打调用栈（或 ANIM_DEBUG=1）
+anim film <选择器…> [--rerender] [--level 视频|预览] [--share] [--name <名>]   唯一的出片路：缺的段当场渲成切片再接成片（docs/决策/0014-单一出片路.md）
+anim still <段> <帧…> --to-preview <主题> [--per-frame] [--tele …]   多帧默认同页连出，逐像素比用 --per-frame；看远处细节用 --tele 原生渲，不要裁图放大（docs/望远.md）
+anim stale [<选择器>] [--strict]  |  anim bench <段> [--frames a-b]  |  anim timing [<段>] [--last n]
+anim reuse <选择器…> --reason "…" [--sample N] [--dry-run]   过期段抽帧和旧切片比，在压缩噪声内就沿用，不比声音（docs/决策/0013-认指纹.md）
+anim verify [<段>] [--render]  |  verify accept <段…> --reason …  |  verify backfill [<选择器>]
+anim verify frames <选择器…> [--frames a-b] --save <名> | --compare <名> [--keep-images <目录>]   不写切片，不碰段签和认可
+anim assets add <id> <文件> | measure [--check] | vendor | seed | pack [--upload] | pull   （0005、0006）
+anim extract <配方|组…> | --all [--print-only|--check] [--register] | --licenses | --backfill-mesh | --download | --particle-frames […]
+anim preview new <主题> | preview clean [--apply]   anim cache gc [--apply]
+anim new work <作品> | new seg <段键> [--scene <场键>]   anim cues [--check]   段框架（docs/新段.md）
+anim wt new <名> [--from <分支>]          开 worktree 并备好依赖
 anim voice list|check|gen|review|use|lip|backends   配音链（台词.toml 一句一处）
-anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
-anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行、从游戏导群系色和方块表
-anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心数据（旧名 anim bili）
+anim world list|bake|transcode|far|decoder|edit|pregen|server|install-server|new|freeze|block|heightmap|map|slice   世界（docs/世界.md）
+anim mcai <动作…>  |  anim gamedata export|verify    取材 mod 的命令行、从游戏导群系色和方块表
+anim platform import <json>  |  anim platform analyze     B 站、抖音创作中心数据
 ```
-还没实现：`anim music`、`anim assets import|verify`（字节核对用 `anim check --深`）。取材 mod 的录制（`mcai record`）见 `docs/决策/0016-法术录制.md`。
+还没实现：`anim music`、`anim assets import|verify`（字节核对用 `anim check --deep`）。取材 mod 的录制（`mcai record`）见 `docs/决策/0016-法术录制.md`。
 
 Remotion 官方 skill `remotion-best-practices` 只当 API 参考：它说的 `npx remotion …` 一律换成 `anim studio|film|still`，不照它自行升级 Remotion；装法和其余差别见 `docs/新段.md`「Remotion skill」。
 
@@ -46,10 +46,10 @@ Remotion 官方 skill `remotion-best-practices` 只当 API 参考：它说的 `n
 ## 工作纪律
 - 逐文件 `git add <文件>`，不用 `-A` 或 `.`；按逻辑拆提交。不 push，要推送先问用户。
 - 并行任务（包括子 Agent）各开 worktree，一律用 `anim wt new <名>`：不手动 `git worktree add`、不在 worktree 里自己装依赖、不整份克隆 `node_modules`（缓存会跟过去，一个 worktree 涨到 25 GB）、不软链主检出的（用户 11-06 定）。依赖用 pnpm（用户 11-06 定），只留 `pnpm-lock.yaml`，加减依赖用 `pnpm add`，不用 npm 装。做完当次 `git merge --no-ff` 合进 main，`git cherry main <分支>` 没有 `+` 才删分支和 worktree，删前先清点被忽略的文件。不留没合并的分支。
-- 子 Agent 在 worktree 里只出静帧看效果（看动作可 `anim still` 连出几帧），不渲整段、不做逐帧校验；这些由主 Agent 合并后用 `anim --低优先 …` 排（用户 11-06 定，依据见 `docs/决策/0012-调度.md`）。改渲染管线本身、必须真渲才验得了的活例外，派活时写明。
+- 子 Agent 在 worktree 里只出静帧看效果（看动作可 `anim still` 连出几帧），不渲整段、不做逐帧校验；这些由主 Agent 合并后用 `anim --low-priority …` 排（用户 11-06 定，依据见 `docs/决策/0012-调度.md`）。改渲染管线本身、必须真渲才验得了的活例外，派活时写明。
 - 合并前 `anim check` 必须过。说「改好了」之前在 main 上核对：用户这次定的每一条都要在代码里查到，或者出静帧确认。
-- 预期不改画面的改动（重构、搬代码、提速）用 `anim 认指纹` 验收，不要求逐字节不变（用户 11-11 定）；认不下的出改前改后并排静帧给用户定。`anim verify 逐帧` 只用来查同一份代码走不同路径出的图是否一致。
-- 要看清远处或小处的细节（自己判断、给用户看都算），一律用 `anim still --望远` 原生渲（`docs/望远.md`），不把整张静帧裁一块放大；裁图放大的图不能当证据（用户 11-15 定）。派子 Agent 出静帧时，任务书里写上这条。
+- 预期不改画面的改动（重构、搬代码、提速）用 `anim reuse` 验收，不要求逐字节不变（用户 11-11 定）；认不下的出改前改后并排静帧给用户定。`anim verify frames` 只用来查同一份代码走不同路径出的图是否一致。
+- 要看清远处或小处的细节（自己判断、给用户看都算），一律用 `anim still --tele` 原生渲（`docs/望远.md`），不把整张静帧裁一块放大；裁图放大的图不能当证据（用户 11-15 定）。派子 Agent 出静帧时，任务书里写上这条。
 - 给用户看的东西放 `预览/<月日-时分>-<主题>/`，时间用 UTC（`date -u +%m%d-%H%M`，代码里用 `time.gmtime()`）。一层平铺，文件名带编号，附 `00-说明.md`，末尾留「你的回复：」。数据根里已有的大文件（成片、整段视频）不复制进来，在 `00-说明.md` 里写 `![名](绝对路径)`，用户在 image-flow 侧栏「本页引用」里看（用户 11-05 定）。不覆盖旧的；换了变量就另开一个文件夹。
 - **版本锁死**：Remotion 4.0.537（用户 10-22 定）、three 0.186.1、react 19.3.0、esbuild 0.28.1、Node 24，升级要用户点名。
 - 全片默认值改在共用的地方（`作品/应力转动/默认.ts` 或对应的共用模块），段里不覆盖。确实要例外的，写成 `exception('规矩id', 值, {段, 原因})`（`engine/core/例外.ts`），同时登记进规矩表。
