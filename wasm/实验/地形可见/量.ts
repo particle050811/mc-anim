@@ -1,5 +1,6 @@
 // 抽样实测：每种变换和叠加的体积、网格核对、解码耗时。只读包、只抽样，单线程；用 nice -n 19 跑。
-//   node wasm/实验/地形可见/量.ts <包名> [--集 <每行一个 L/i/j 的文件>] [--保真 <保真范围.ts 出的清单>] [--不计时] > 结果.json
+//   node wasm/实验/地形可见/量.ts <包名> [--集 <每行一个 L/i/j 的文件> | --随机 <每级几段>] [--保真 <保真范围.ts 出的清单>] [--不计时] > 结果.json
+// --随机：各级另抽一份大一点的样本（种子 20261114，和留出集无关），第 0 级占全包七成多字节、留出集只有 96 段，估全包用它更稳。
 // 不给 --集 就用和 wasm/实验/测地形.mjs 同一个留出集（种子 31841，按 L 分层）。--保真 里的区段各方案都原样不动，加权时全包的保真字节按 100% 算。
 import fs from 'node:fs';
 import os from 'node:os';
@@ -14,7 +15,11 @@ const 全包级字节 = 包.级.map((b) => b.reduce((s, x) => s + x.len, 0)), �
 let 测: 区段项[];
 const 集文件 = 取参('--集');
 if (集文件) 测 = fs.readFileSync(集文件, 'utf8').split('\n').map((l) => l.trim().split(/\s+/)[0]!).filter(Boolean).map((k) => { const s = 包.查.get(k); if (!s) throw new Error(`包里没有区段 ${k}`); return s; });
-else 测 = 留出集(包).测;
+else if (取参('--随机')) {
+  const 每级 = Number(取参('--随机'));
+  let seed = 20261114;
+  测 = 包.级.flatMap((bin) => { const a = bin.slice(); for (let k = a.length - 1; k > 0; k--) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; const j = seed % (k + 1); [a[k], a[j]] = [a[j]!, a[k]!]; } return a.slice(0, 每级); });
+} else 测 = 留出集(包).测;
 const 保真文件 = 取参('--保真'), 保真 = new Set(保真文件 ? fs.readFileSync(保真文件, 'utf8').split('\n').filter(Boolean) : []);
 const 全包保真级字节 = Array.from({ length: 7 }, () => 0);
 for (const k of 保真) 全包保真级字节[+k.split('/')[0]!]! += 包.查.get(k)!.len;
@@ -123,7 +128,7 @@ for (const 名 of 方案) for (let L = 0; L < 7; L++) {
 }
 const 全包区段字节 = 全包级字节.reduce((a, b) => a + b, 0);
 console.log(JSON.stringify({
-  包: 包名, 集: 集文件 ?? '留出集', 段数: 测.length, 负载: os.loadavg(), 变换秒,
+  包: 包名, 集: 集文件 ?? (取参('--随机') ? `随机每级 ${取参('--随机')}` : '留出集'), 段数: 测.length, 负载: os.loadavg(), 变换秒,
   全包: { 级字节: 全包级字节, 级段数: 全包级段数, 区段字节: 全包区段字节, 保真级字节: 全包保真级字节 }, 保真: 保真文件 ?? null, 样本里保真的段,
   样本字节, 样本比: Object.fromEntries(方案.map((k) => [k, 样本字节[k] / 样本字节.原样])),
   加权估计比: 集文件 ? undefined : Object.fromEntries(方案.map((k) => [k, 合计[k] / 全包区段字节])),
