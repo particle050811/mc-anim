@@ -12,7 +12,7 @@ import { YETI_CAVE } from '../../../地点/雪怪洞窟.tsx';
 import { UR_GHAST } from '@库/生物/暮初恶魂.tsx';
 import { ALPHA_YETI } from '@库/生物/雪怪首领.tsx';
 import { SPEAR_FIT } from '@库/物品/动力钻头.tsx';
-import type { 矛管 } from '@库/特效/方块飞溅.tsx';
+import type { SpearTube } from '@库/特效/方块飞溅.tsx';
 import { integrateProfile, profileLookup, pierceProfileLimits } from '@engine/flight/平顺航迹.ts';
 
 export const speed = 320;
@@ -33,11 +33,11 @@ const GY = Math.cos((GHAST_HEADING * Math.PI) / 180);
 export const ghastPierceLine = {
   名: '暮初恶魂',
   V: speed,
-  朝向: towerFrame.朝向(GHAST_HEADING),
-  矛尖: (a: number): V3 => towerFrame.到世界([GHAST_AT[0] + GX * a, GHAST_AT[1] + GY * a, GHAST_AT[2]]),
+  facing: towerFrame.facing(GHAST_HEADING),
+  tip: (a: number): V3 => towerFrame.toWorld([GHAST_AT[0] + GX * a, GHAST_AT[1] + GY * a, GHAST_AT[2]]),
   前: -UR_GHAST.bodySize / 2 - speed,
   后: UR_GHAST.bodySize / 2 + 100,
-  撞: -UR_GHAST.bodySize / 2,
+  impactPos: -UR_GHAST.bodySize / 2,
   出: UR_GHAST.bodySize / 2,
 };
 export const GHAST_DEATH = { boom: 3 / 24, gone: 6 / 24 };
@@ -71,7 +71,7 @@ const pierceAngle = -2 * deg; // 贯穿雪怪胸口时的俯仰：还在往下�
 const climbAngle = 20 * deg;
 const tailLen = 20;
 const cruiseZAt = (dist: number) => {
-  const worldPt = caveFrame.到世界([YETI_AT[0] + HX * dist, YETI_AT[1] + HY * dist, 0]);
+  const worldPt = caveFrame.toWorld([YETI_AT[0] + HX * dist, YETI_AT[1] + HY * dist, 0]);
   return cruiseHeight(worldPt[0], worldPt[1]) - caveFrame.原点[2];
 };
 // 从压机头那一点（a 0、高 高）往前积，保持 直 米；找俯仰过 贯穿角 的那一点（洞里那段弧上），把它挪到 (0, 胸口)
@@ -112,12 +112,12 @@ export const yetiProfileInfo = { diveStartA: yetiProfile.diveStart.a, climbEndA:
 export const yetiPierceLine = {
   名: '雪怪首领',
   V: speed,
-  朝向: caveFrame.朝向(YETI_HEADING),
-  矛尖: (a: number): V3 => caveFrame.到世界(yetiTipLocal(a)),
+  facing: caveFrame.facing(YETI_HEADING),
+  tip: (a: number): V3 => caveFrame.toWorld(yetiTipLocal(a)),
   // 起点：压机头之前 对正 米，这一秒在巡航高度上平飞、目标在画面正中越来越大，再压机头扎下去
   前: yetiProfile.diveStart.a - alignDist,
   后: yetiProfile.climbEndA + tailLen,
-  撞: yetiTunnels.enterGround,
+  impactPos: yetiTunnels.enterGround,
   出: yetiTunnels.exitGround,
 };
 export const YETI_T_DIVE = yetiProfile.diveStart.s / speed;
@@ -147,11 +147,11 @@ export const yetiTimeAt = (dist: number) => {
   const frac = (dist - arcLen.as[k]) * 2;
   return (arcLen.s[k] + (arcLen.s[k + 1] - arcLen.s[k]) * frac) / speed;
 };
-const tubeFor = (impactA: number): 矛管 => ({
+const tubeFor = (impactA: number): SpearTube => ({
   点: arcLen.as.flatMap((a, k) => (a >= tubeStartA && a <= tubeEndA ? [[...yetiTipLocal(a), arcLen.s[k] / speed - yetiTimeAt(impactA)]] : [])),
-  半径: SPEAR_FIT.tubeRadius,
+  radius: SPEAR_FIT.tubeRadius,
   particleClockScale: 1,
-  密度: 2,
+  density: 2,
 });
 // 三次撞击（碎块.json 的三组，组界见 取材清单 的「6-1-7碎块」：盒子序号 16、56，即 a −20、+20）：撞时刻 a、飞散的起点 心（矛尖在 a 处的位置）。
 // 新线从两头的洞口进出、不碰洞顶：西口坡顶那几格和挂得低的冰锥、雪怪头顶的刷怪笼、东口台阶那几格（核心里的网格，管子盒子取到的）

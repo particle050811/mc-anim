@@ -13,24 +13,24 @@ import { TexBox } from '../../engine/model/贴图方盒.tsx';
 import vanillaPng from 'asset:贴图/物品/箱子';
 import lootrPng from 'asset:贴图/物品/战利品箱';
 import lootrOpenedPng from 'asset:贴图/物品/战利品箱-已开';
-import { 资产目录 } from '../../engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/物品/暮色箱子/暗木';
-import 资_1 from 'asset:贴图/物品/暮色箱子/暮色橡木';
-import 资_2 from 'asset:贴图/物品/暮色箱子/林冠木';
-import 资_3 from 'asset:贴图/物品/暮色箱子/红树木';
+import { assetDir } from '../../engine/core/资产目录.ts';
+import darkwoodPng from 'asset:贴图/物品/暮色箱子/暗木';
+import twilightOakPng from 'asset:贴图/物品/暮色箱子/暮色橡木';
+import canopyPng from 'asset:贴图/物品/暮色箱子/林冠木';
+import mangrovePng from 'asset:贴图/物品/暮色箱子/红树木';
 
 export const VANILLA_CHEST_TEX = png(vanillaPng);
 export const LOOTR_TEX = png(lootrPng);
 export const LOOTR_OPENED_TEX = png(lootrOpenedPng);
-const TF = pngDir(资产目录({ './暗木.png': 资_0, './暮色橡木.png': 资_1, './林冠木.png': 资_2, './红树木.png': 资_3 }));
+const TF = pngDir(assetDir({ './暗木.png': darkwoodPng, './暮色橡木.png': twilightOakPng, './林冠木.png': canopyPng, './红树木.png': mangrovePng }));
 export type TwilightChestWood = '暮色橡木' | '林冠木' | '红树木' | '暗木';
 export const TWILIGHT_CHEST_TEX: Record<TwilightChestWood, Png> = { 暮色橡木: TF.暮色橡木, 林冠木: TF.林冠木, 红树木: TF.红树木, 暗木: TF.暗木 };
-export const lootrTex = (开过: boolean) => (开过 ? LOOTR_OPENED_TEX : LOOTR_TEX);
+export const lootrTex = (opened: boolean) => (opened ? LOOTR_OPENED_TEX : LOOTR_TEX);
 
 const PX = 1 / 16;
 export const CHEST = {
   openPerTick: 0.1, // openness 每刻变化
-  开满盖沿高: 23 * PX, // 盖子开满竖起来的上沿：铰链高 9 像素 + 盖长 14 像素
+  lidOpenRimHeight: 23 * PX, // 盖子开满竖起来的上沿：铰链高 9 像素 + 盖长 14 像素
 };
 
 // ---------- 开盖 ----------
@@ -46,23 +46,23 @@ export const chestOpenness = (sec: number, openSec: number, closeSec = Infinity)
 export const chestLidAngle = (openness: number) => (1 - (1 - Math.min(1, Math.max(0, openness))) ** 3) * (Math.PI / 2);
 
 // 一段里开关一只箱子，都按这一段自己的钟（秒）：开 = 右键开箱、盖子开始抬；关 = 关界面、盖子开始合，不给 = 一直开着；秒 = 这一帧
-export type 开关 = { 开: number; 关?: number; 秒: number };
+export type Toggle = { 开: number; closeSec?: number; 秒: number };
 // 这一帧的开度和开过没有：开过从盖子开始抬（秒 > 开）起算，关上也不换回
-export const chestState = ({ 开, 关, 秒 }: 开关) => ({ 开度: chestOpenness(秒, 开, 关), 开过: 秒 > 开 });
+export const chestState = ({ 开: openSec, closeSec, 秒: sec }: Toggle) => ({ openness: chestOpenness(sec, openSec, closeSec), opened: sec > openSec });
 
 // 开关箱声：原版 ChestBlockEntity.playSound（Lootr 沿用）block.chest.open / close，volume 0.5、pitch 0.9 + r × 0.1，在开关那一刻、箱子中心响。
 // rand 先取音高、再取挑文件（各段的随机数串照这个顺序排过，不能换）
-export const chestSound = (动作: '开' | '关', rand: () => number) => ({
-  事件: 动作 === '开' ? 'block.chest.open' : 'block.chest.close',
+export const chestSound = (action: '开' | '关', rand: () => number) => ({
+  事件: action === '开' ? 'block.chest.open' : 'block.chest.close',
   音量: 0.5,
   音高: 0.9 + rand() * 0.1,
   选: rand(),
 });
 
 // ---------- 模型 ----------
-export type 箱子朝向 = 'north' | 'south' | 'east' | 'west';
+export type ChestFacing = 'north' | 'south' | 'east' | 'west';
 // 正面朝 -Y（南）转到 朝向 那边
-const FACING_Z: Record<箱子朝向, number> = { south: 0, north: Math.PI, east: Math.PI / 2, west: -Math.PI / 2 };
+const FACING_Z: Record<ChestFacing, number> = { south: 0, north: Math.PI, east: Math.PI / 2, west: -Math.PI / 2 };
 
 // 箱子的展开图是上下颠倒的：箱子模型直接画在 Y 朝上的方块空间里，不像生物模型先上下翻转，且带锁扣的正面在模型 +Z 侧（展开图第 4 格）。所以把 TexBox 绕 X 轴转 180°。
 const Part: React.FC<{ tex: Png; px: [number, number, number]; uv: [number, number]; c: V3; emissive: number }> = ({ tex, px, uv, c: center, emissive }) => (
@@ -72,7 +72,7 @@ const Part: React.FC<{ tex: Png; px: [number, number, number]; uv: [number, numb
 );
 
 // 贴图：不给 = Lootr 没开过的；开度：0~1（chestState / chestOpenness 算）；p：底面中心；朝向：锁扣朝哪边
-export const Chest: React.FC<{ 贴图?: Png; 开度?: number; p?: V3; 朝向?: 箱子朝向; 自发光?: number }> = ({ 贴图: tex = LOOTR_TEX, 开度: openness = 0, p, 朝向: facing = 'south', 自发光: emissive = 0 }) => (
+export const Chest: React.FC<{ 贴图?: Png; openness?: number; p?: V3; facing?: ChestFacing; selfLight?: number }> = ({ 贴图: tex = LOOTR_TEX, openness: openness = 0, p, facing: facing = 'south', selfLight: emissive = 0 }) => (
   <group position={p} rotation={[0, 0, FACING_Z[facing]]}>
     {/* 箱体：高 0..10 像素 */}
     <Part tex={tex} px={[14, 10, 14]} uv={[0, 19]} c={[0, 0, 5 * PX]} emissive={emissive} />

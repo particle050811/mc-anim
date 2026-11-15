@@ -27,8 +27,8 @@ const deg = (r: number) => (r * 180) / Math.PI;
 const angleDiff = (a: number, b: number) => ((((b - a) % 360) + 540) % 360) - 180; // a → b 转多少（正 = 右转）
 
 // 限值：见 路线.ts 的输入表
-export type 限值型 = { 视角转速: number; angAccel: number; pitchRate: number; vertNormalAccel: number; tangAccel: number; tangJerk: number; maxSlopeDeg: number };
-export const makeSolver = (limits: 限值型, skeletonRadii: number[]) => {
+export type LimitSpec = { viewTurnSpeed: number; angAccel: number; pitchRate: number; vertNormalAccel: number; tangAccel: number; tangJerk: number; maxSlopeDeg: number };
+export const makeSolver = (limits: LimitSpec, skeletonRadii: number[]) => {
   // 竖直：俯仰的转动排程。γ(t)（度）由 起点俯仰 + 几个梯形转动叠出来；
   // 两截：穿出来先转到 ±最陡 爬（降）到巡航层、放平，进下一处前再转到 ±最陡 降（爬）到穿刺线的高度、接上穿刺线的俯仰；
   // 一截（两截叠在一起放不下，或程短、两头都比巡航层高）：整程一个 γm，起点转过去、终点转回来，中间匀着爬
@@ -327,5 +327,5 @@ export const makeSolver = (limits: 限值型, skeletonRadii: number[]) => {
       够: finalLeg.vert.speedProfile.fits,
     };
   };
-  return { 解程: solveLeg };
+  return { solveLeg: solveLeg };
 };

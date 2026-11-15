@@ -2,47 +2,47 @@
 // 报错：预期内的（用法错、选不出作品、我们自己 throw new Error 的业务错、esbuild 构建失败）只打信息不打调用栈，加 --调试 才打；
 // 别的（TypeError 这类、库里抛的）照旧打调用栈。调用栈总记进运行记录，事后能查。
 import path from 'node:path';
-import {调度让路} from '../闸/指令.ts';
-import {开任务,取调度环境} from '../闸/任务.ts';
+import {SchedYieldError} from '../闸/指令.ts';
+import {openTask,resolveSchedulerEnv} from '../闸/任务.ts';
 import { fileURLToPath } from 'node:url';
-import { 用法错误 } from './参数.ts';
-import type { 命令 } from './命令.ts';
-import { 代码根 } from '../环境/路径.ts';
-import { 取作品参数, 当前作品, 指定作品, 选作品错误 } from '../环境/作品.ts';
-import { 运行记录, utc时间 } from '../运行记录/记录.ts';
+import { UsageError } from './参数.ts';
+import type { Command } from './命令.ts';
+import { codeRoot } from '../环境/路径.ts';
+import { parseWorkArg, currentWork, setSpecifiedWork, WorkSelectError } from '../环境/作品.ts';
+import { RunRecord, utcTime } from '../运行记录/记录.ts';
 
-export type 输出 = { log: (s: string) => void; error: (s: string) => void };
-export type 路由选项 = {
-  命令表: Record<string, 命令>;
+export type Output = { log: (s: string) => void; error: (s: string) => void };
+export type RouteOptions = {
+  commandTable: Record<string, Command>;
   /** 测试换成不写盘的 */
-  新记录?: (名: string, args: string[]) => 运行记录;
-  输出?: 输出;
+  newRecord?: (commandName: string, args: string[]) => RunRecord;
+  输出?: Output;
   /** ANIM_DEBUG=1 和 --调试 一样 */
-  环境变量?: NodeJS.ProcessEnv;
+  env?: NodeJS.ProcessEnv;
 };
 
 /** 从参数里取出 --调试（-- 之后的不管），返回剩下的 */
-export const 取调试参数 = (args: readonly string[]): { 调试: boolean; 其余: string[] } => {
-  const 停 = args.indexOf('--');
-  const 前 = 停 < 0 ? args : args.slice(0, 停);
-  return { 调试: 前.includes('--调试'), 其余: [...前.filter((a) => a !== '--调试'), ...(停 < 0 ? [] : args.slice(停))] };
+export const takeDebugArgs = (args: readonly string[]): { debug: boolean; rest: string[] } => {
+  const sepIndex = args.indexOf('--');
+  const head = sepIndex < 0 ? args : args.slice(0, sepIndex);
+  return { debug: head.includes('--调试'), rest: [...head.filter((a) => a !== '--调试'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
 };
 
 /** 低优先（用户 11-06 定：子 Agent 只出静帧，整段渲染由主 Agent 合并后用 --低优先 排，给静帧让路）：
  *  取走 --低优先，设 ANIM_PRIORITY=low，这条命令和它起的子进程过闸都排在普通票后面（闸/票.ts 领票） */
-export const 低优先变量 = 'ANIM_PRIORITY';
-export const 取低优先参数 = (args: readonly string[]): { 低优先: boolean; 其余: string[] } => {
-  const 停 = args.indexOf('--');
-  const 前 = 停 < 0 ? args : args.slice(0, 停);
-  return { 低优先: 前.includes('--低优先'), 其余: [...前.filter((a) => a !== '--低优先'), ...(停 < 0 ? [] : args.slice(停))] };
+export const lowPriorityEnv = 'ANIM_PRIORITY';
+export const takeLowPriorityArgs = (args: readonly string[]): { 低优先: boolean; rest: string[] } => {
+  const sepIndex = args.indexOf('--');
+  const head = sepIndex < 0 ? args : args.slice(0, sepIndex);
+  return { 低优先: head.includes('--低优先'), rest: [...head.filter((a) => a !== '--低优先'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
 };
 
-const 内置错误 = [TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError];
+const builtinErrors = [TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError];
 
 /** 调用栈第一帧的文件（file:// 地址转成路径）；取不到返回 null */
-export const 首帧文件 = (stack: string | undefined): string | null => {
-  const 帧 = stack?.split('\n').find((l) => /^\s+at /.test(l));
-  const m = 帧 && /\(?((?:file:\/\/)?[^()\s]+?):\d+:\d+\)?\s*$/.exec(帧);
+export const firstFrameFile = (stack: string | undefined): string | null => {
+  const stackFrame = stack?.split('\n').find((l) => /^\s+at /.test(l));
+  const m = stackFrame && /\(?((?:file:\/\/)?[^()\s]+?):\d+:\d+\)?\s*$/.exec(stackFrame);
   if (!m) return null;
   try {
     return m[1]!.startsWith('file://') ? fileURLToPath(m[1]!) : m[1]!;
@@ -52,88 +52,88 @@ export const 首帧文件 = (stack: string | undefined): string | null => {
 };
 
 /** 预期内的错：只打信息就够，调用栈帮不上忙 */
-export const 是预期错误 = (e: unknown, 根 = 代码根()): boolean => {
-  if (e instanceof 用法错误 || e instanceof 选作品错误) return true;
-  if (!(e instanceof Error) || 内置错误.some((c) => e instanceof c)) return false;
+export const isExpectedError = (e: unknown, root = codeRoot()): boolean => {
+  if (e instanceof UsageError || e instanceof WorkSelectError) return true;
+  if (!(e instanceof Error) || builtinErrors.some((c) => e instanceof c)) return false;
   // esbuild 构建失败：报错文本里已经有文件和行号
   if (Array.isArray((e as { errors?: unknown }).errors) && Array.isArray((e as { warnings?: unknown }).warnings)) return true;
-  const f = 首帧文件(e.stack);
+  const f = firstFrameFile(e.stack);
   // node:fs 这类内置模块的帧不是路径（按相对路径算会随 cwd 落进仓库里），算库里抛的
   if (!f || !path.isAbsolute(f)) return false;
-  const 相对 = path.relative(根, f);
-  return !相对.startsWith('..') && !path.isAbsolute(相对) && !相对.split(path.sep).includes('node_modules');
+  const relPath = path.relative(root, f);
+  return !relPath.startsWith('..') && !path.isAbsolute(relPath) && !relPath.split(path.sep).includes('node_modules');
 };
 
-export const 帮助文本 = (命令表: Record<string, 命令>) =>
-  ['用法：anim [--作品 <名>] [--调试] [--低优先] <命令> [参数]\n', ...Object.values(命令表).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
+export const helpText = (commandTable: Record<string, Command>) =>
+  ['用法：anim [--作品 <名>] [--调试] [--低优先] <命令> [参数]\n', ...Object.values(commandTable).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
 
 /** 一条命令的帮助：自带的详细帮助，没有就是 用法 和 说明 */
-export const 命令帮助 = (c: 命令) => c.帮助?.() ?? `用法：anim ${c.用法}\n      ${c.说明}`;
+export const commandHelp = (c: Command) => c.help?.() ?? `用法：anim ${c.用法}\n      ${c.说明}`;
 
 /** 子命令后面带了 --help 或 -h（-- 之后的不算）：段键、段名都不以 - 开头，不会和选择器撞 */
-export const 要帮助 = (args: readonly string[]) => {
-  const 停 = args.indexOf('--');
-  return (停 < 0 ? args : args.slice(0, 停)).some((a) => a === '--help' || a === '-h');
+export const wantsHelp = (args: readonly string[]) => {
+  const sepIndex = args.indexOf('--');
+  return (sepIndex < 0 ? args : args.slice(0, sepIndex)).some((a) => a === '--help' || a === '-h');
 };
 
 /** 跑一条 anim 命令，返回退出码 */
-export const 跑命令行 = async (argv: readonly string[], o: 路由选项): Promise<number> => {
-  const 出 = o.输出 ?? { log: (s) => console.log(s), error: (s) => console.error(s) };
-  const { 低优先, 其余: 去低优先 } = 取低优先参数(argv);
-  if (低优先) process.env[低优先变量] = 'low';
-  const { 调试: 加了调试, 其余: 去调试 } = 取调试参数(去低优先);
-  const 调试 = 加了调试 || o.环境变量?.ANIM_DEBUG === '1';
+export const runCommandLine = async (argv: readonly string[], o: RouteOptions): Promise<number> => {
+  const sink = o.输出 ?? { log: (s) => console.log(s), error: (s) => console.error(s) };
+  const { 低优先: lowPriority, rest: withoutLowPriority } = takeLowPriorityArgs(argv);
+  if (lowPriority) process.env[lowPriorityEnv] = 'low';
+  const { debug: addedDebug, rest: withoutDebug } = takeDebugArgs(withoutLowPriority);
+  const debug = addedDebug || o.env?.ANIM_DEBUG === '1';
   // --作品 对所有命令都有效，这里统一取走（选作品的顺序见 环境/作品.ts）
-  let 拆: ReturnType<typeof 取作品参数>;
+  let parsed: ReturnType<typeof parseWorkArg>;
   try {
-    拆 = 取作品参数(去调试);
-    指定作品(拆.作品);
-    if (拆.作品) 当前作品();
+    parsed = parseWorkArg(withoutDebug);
+    setSpecifiedWork(parsed.作品);
+    if (parsed.作品) currentWork();
   } catch (e) {
-    出.error((e as Error).message);
+    sink.error((e as Error).message);
     return 2;
   }
-  const [名, ...args] = 拆.其余;
-  if (!名 || 名 === 'help' || 名 === '--help' || 名 === '-h') {
-    const 问 = 名 === 'help' && args[0] !== undefined ? o.命令表[args[0]] : undefined;
-    出.log(问 ? 命令帮助(问) : 帮助文本(o.命令表));
-    return 名 ? 0 : 1;
+  const [commandName, ...args] = parsed.rest;
+  if (!commandName || commandName === 'help' || commandName === '--help' || commandName === '-h') {
+    const topic = commandName === 'help' && args[0] !== undefined ? o.commandTable[args[0]] : undefined;
+    sink.log(topic ? commandHelp(topic) : helpText(o.commandTable));
+    return commandName ? 0 : 1;
   }
-  const c = o.命令表[名];
+  const c = o.commandTable[commandName];
   if (!c) {
-    出.error(`没有 ${名} 这个命令`);
-    出.log(帮助文本(o.命令表));
+    sink.error(`没有 ${commandName} 这个命令`);
+    sink.log(helpText(o.commandTable));
     return 1;
   }
-  if (!c.透传 && 要帮助(args)) {
-    出.log(命令帮助(c));
+  if (!c.passThrough && wantsHelp(args)) {
+    sink.log(commandHelp(c));
     return 0;
   }
-  const 记录 = (o.新记录 ?? ((n, a) => new 运行记录(n, a)))(名, args);
-  const 任务 = !c.不记录 && !o.新记录 && /^(still|bench|verify|film|extract|world|mcai|voice|cache|批)$/.test(名) ? 开任务(取调度环境(), {种:名,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>记录.结束(code)) : null;
-  if(任务)记录.任务=任务.info.任务;
-  let code = 1, 错误: string | undefined;
+  const runRecord = (o.newRecord ?? ((n, a) => new RunRecord(n, a)))(commandName, args);
+  const task = !c.noRecord && !o.newRecord && /^(still|bench|verify|film|extract|world|mcai|voice|cache|批)$/.test(commandName) ? openTask(resolveSchedulerEnv(), {种:commandName,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>runRecord.结束(code)) : null;
+  if(task)runRecord.任务=task.info.任务;
+  let code = 1, errorText: string | undefined;
   try {
-    code = (await c.跑(args, 记录)) ?? 0;
+    code = (await c.跑(args, runRecord)) ?? 0;
   } catch (e) {
-    const 栈 = e instanceof Error ? e.stack : undefined;
-    const 信息 = e instanceof Error ? e.message : String(e);
-    错误 = 信息.slice(0, 200);
-    if(e instanceof 调度让路){出.error(`调度让路：${信息}；不算失败，不要原样重发`);code=75;} else if (e instanceof 选作品错误) {
-      出.error(信息);
+    const stack = e instanceof Error ? e.stack : undefined;
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    errorText = errorMessage.slice(0, 200);
+    if(e instanceof SchedYieldError){sink.error(`调度让路：${errorMessage}；不算失败，不要原样重发`);code=75;} else if (e instanceof WorkSelectError) {
+      sink.error(errorMessage);
       code = 2;
-    } else if (e instanceof 用法错误) {
-      出.error(`${信息}\n用法：anim ${c.用法}`);
+    } else if (e instanceof UsageError) {
+      sink.error(`${errorMessage}\n用法：anim ${c.用法}`);
       code = 2;
     } else {
-      出.error(调试 || !是预期错误(e) ? (栈 ?? 信息) : `✗ ${信息}`);
+      sink.error(debug || !isExpectedError(e) ? (stack ?? errorMessage) : `✗ ${errorMessage}`);
       code = 1;
     }
-    if (调试 && 栈 && (e instanceof 选作品错误 || e instanceof 用法错误)) 出.error(栈);
+    if (debug && stack && (e instanceof WorkSelectError || e instanceof UsageError)) sink.error(stack);
     // 上面已打过，不经 记录.记 再打一遍；调用栈总记下
-    记录.事件.push({ 时间: utc时间(), 级别: '错误', 文本: 信息, ...(栈 ? { 调用栈: 栈 } : {}) });
+    runRecord.事件.push({ 时间: utcTime(), 级别: '错误', 文本: errorMessage, ...(stack ? { callStack: stack } : {}) });
   }
-  if(任务)任务.结束(code,undefined,错误);
-  else if (!c.不记录) 记录.结束(code);
+  if(task)task.结束(code,undefined,errorText);
+  else if (!c.noRecord) runRecord.结束(code);
   return code;
 };

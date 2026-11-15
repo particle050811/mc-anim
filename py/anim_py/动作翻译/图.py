@@ -37,7 +37,7 @@ def i64(x: int) -> int:
     return x - (1 << 64) if x & (1 << 63) else x
 
 
-def _转整(x: float, lo: int, hi: int) -> int:
+def _to_int(x: float, lo: int, hi: int) -> int:
     if math.isnan(x):
         return 0
     if x >= hi:
@@ -47,32 +47,32 @@ def _转整(x: float, lo: int, hi: int) -> int:
     return int(x)  # 向零
 
 
-def 转换(v: Any, 从: str, 到: str) -> Any:
-    if 从 == 到:
+def convert(v: Any, src_type: str, to_type: str) -> Any:
+    if src_type == to_type:
         return v
-    if 到 == "f":
+    if to_type == "f":
         return f32(float(v))
-    if 到 == "d":
+    if to_type == "d":
         return float(v)
-    if 到 == "i":
-        return _转整(v, -(2**31), 2**31 - 1) if 从 in "fd" else i32(int(v))
-    if 到 == "j":
-        return _转整(v, -(2**63), 2**63 - 1) if 从 in "fd" else i64(int(v))
-    raise ValueError(f"不支持的转换 {从}→{到}")
+    if to_type == "i":
+        return _to_int(v, -(2**31), 2**31 - 1) if src_type in "fd" else i32(int(v))
+    if to_type == "j":
+        return _to_int(v, -(2**63), 2**63 - 1) if src_type in "fd" else i64(int(v))
+    raise ValueError(f"不支持的转换 {src_type}→{to_type}")
 
 
-def _窄(v: Any, t: str) -> Any:
+def _narrow(v: Any, t: str) -> Any:
     return f32(v) if t == "f" else i32(v) if t == "i" else i64(v) if t == "j" else v
 
 
-def _整除(a: int, b: int) -> int:
+def _floor_div(a: int, b: int) -> int:
     if b == 0:
         raise ZeroDivisionError("整数除以 0（JVM 会抛 ArithmeticException）")
     q = abs(a) // abs(b)
     return q if (a >= 0) == (b >= 0) else -q
 
 
-def _浮余(a: float, b: float) -> float:
+def _float_mod(a: float, b: float) -> float:
     if math.isnan(a) or math.isnan(b) or math.isinf(a) or b == 0:
         return math.nan
     if math.isinf(b):
@@ -80,9 +80,9 @@ def _浮余(a: float, b: float) -> float:
     return math.fmod(a, b)
 
 
-def 算术(op: str, t: str, a: Any, b: Any = None) -> Any:
+def arithmetic(op: str, t: str, a: Any, b: Any = None) -> Any:
     if op == "neg":
-        return _窄(-a, t)
+        return _narrow(-a, t)
     if t in "fd":
         if op == "+":
             r = a + b
@@ -96,11 +96,11 @@ def 算术(op: str, t: str, a: Any, b: Any = None) -> Any:
             else:
                 r = a / b
         elif op == "%":
-            r = _浮余(a, b)
+            r = _float_mod(a, b)
         else:
             raise ValueError(op)
-        return _窄(r, t)
-    位 = 32 if t == "i" else 64
+        return _narrow(r, t)
+    bit_width = 32 if t == "i" else 64
     if op == "+":
         r = a + b
     elif op == "-":
@@ -108,15 +108,15 @@ def 算术(op: str, t: str, a: Any, b: Any = None) -> Any:
     elif op == "*":
         r = a * b
     elif op == "/":
-        r = _整除(a, b)
+        r = _floor_div(a, b)
     elif op == "%":
-        r = a - _整除(a, b) * b
+        r = a - _floor_div(a, b) * b
     elif op == "shl":
-        r = a << (b & (位 - 1))
+        r = a << (b & (bit_width - 1))
     elif op == "shr":
-        r = a >> (b & (位 - 1))
+        r = a >> (b & (bit_width - 1))
     elif op == "ushr":
-        r = (a & ((1 << 位) - 1)) >> (b & (位 - 1))
+        r = (a & ((1 << bit_width) - 1)) >> (b & (bit_width - 1))
     elif op == "and":
         r = a & b
     elif op == "or":
@@ -125,10 +125,10 @@ def 算术(op: str, t: str, a: Any, b: Any = None) -> Any:
         r = a ^ b
     else:
         raise ValueError(op)
-    return _窄(r, t)
+    return _narrow(r, t)
 
 
-def 比较(op: str, a: Any, b: Any) -> bool:
+def compare(op: str, a: Any, b: Any) -> bool:
     if op == "<":
         return a < b
     if op == "<=":
@@ -149,20 +149,20 @@ _SIN = [f32(math.sin(i * math.pi * 2.0 / 65536.0)) for i in range(65536)]
 
 
 def _mth_sin(x: float) -> float:
-    return _SIN[_转整(f32(x * f32(10430.378)), -(2**31), 2**31 - 1) & 65535]
+    return _SIN[_to_int(f32(x * f32(10430.378)), -(2**31), 2**31 - 1) & 65535]
 
 
 def _mth_cos(x: float) -> float:
-    return _SIN[_转整(f32(f32(x * f32(10430.378)) + 16384.0), -(2**31), 2**31 - 1) & 65535]
+    return _SIN[_to_int(f32(f32(x * f32(10430.378)) + 16384.0), -(2**31), 2**31 - 1) & 65535]
 
 
 def _mth_sin_d(x: float) -> float:
     """1.21.x 的 Mth.sin(D)F：乘的是 double 常量、(long) 强转再 & 65535（1.20.1 是 float 乘、(int)）"""
-    return _SIN[_转整(x * 10430.378350470453, -(2**63), 2**63 - 1) & 65535]
+    return _SIN[_to_int(x * 10430.378350470453, -(2**63), 2**63 - 1) & 65535]
 
 
 def _mth_cos_d(x: float) -> float:
-    return _SIN[_转整(x * 10430.378350470453 + 16384.0, -(2**63), 2**63 - 1) & 65535]
+    return _SIN[_to_int(x * 10430.378350470453 + 16384.0, -(2**63), 2**63 - 1) & 65535]
 
 
 def _jmin(a: float, b: float) -> float:
@@ -188,13 +188,13 @@ def _clampf(v: float, lo: float, hi: float) -> float:
 
 def _mth_floor_f(x: float) -> int:
     # 1.20.1 Mth.floor(F)I：i = (int) x；x < (float) i ? i - 1 : i。比 -2^31 还小时 i - 1 溢出成 2^31 - 1，照抄
-    i = _转整(x, -(2**31), 2**31 - 1)
+    i = _to_int(x, -(2**31), 2**31 - 1)
     return i32(i - 1) if x < f32(float(i)) else i
 
 
 def _wrap_deg_f(x: float) -> float:
     # Mth.wrapDegrees(F)F：f = x % 360；f >= 180 → f - 360；f < -180 → f + 360
-    f = f32(_浮余(x, 360.0))
+    f = f32(_float_mod(x, 360.0))
     if f >= 180.0:
         f = f32(f - 360.0)
     if f < -180.0:
@@ -252,7 +252,7 @@ def _pow(a: float, b: float) -> float:
         return math.inf if a > 0 or b.is_integer() and b % 2 == 0 else -math.inf
 
 
-内建: dict[str, tuple[str, Any]] = {
+builtin_funcs: dict[str, tuple[str, Any]] = {
     # 类型, 实现（参数已是对应 JVM 类型的值）
     "net/minecraft/util/Mth.sin(F)F": ("f", _mth_sin),
     "net/minecraft/util/Mth.cos(F)F": ("f", _mth_cos),
@@ -292,175 +292,175 @@ def _pow(a: float, b: float) -> float:
 }
 
 
-class 图:
+class ExprGraph:
     def __init__(self) -> None:
-        self.节点: list[tuple] = []
-        self._号: dict[tuple, int] = {}
+        self.graph_nodes: list[tuple] = []
+        self._ids: dict[tuple, int] = {}
 
-    def 类型(self, n: int) -> str:
-        return self.节点[n][1]
+    def node_type(self, n: int) -> str:
+        return self.graph_nodes[n][1]
 
-    def 常量值(self, n: int) -> Any:
-        e = self.节点[n]
+    def constant_of(self, n: int) -> Any:
+        e = self.graph_nodes[n]
         return e[2] if e[0] == "c" else None
 
-    def 是常量(self, n: int) -> bool:
-        return self.节点[n][0] == "c"
+    def is_constant(self, n: int) -> bool:
+        return self.graph_nodes[n][0] == "c"
 
-    def _加(self, e: tuple) -> int:
+    def _add(self, e: tuple) -> int:
         k = tuple(tuple(x) if isinstance(x, list) else x for x in e)
         if e[0] == "c":
             # 0.0 和 -0.0、NaN 按位区分
             v = e[2]
             k = ("c", e[1], struct.pack(">d", v) if isinstance(v, float) else v)
-        got = self._号.get(k)
+        got = self._ids.get(k)
         if got is not None:
             return got
-        self.节点.append(e)
-        self._号[k] = len(self.节点) - 1
-        return len(self.节点) - 1
+        self.graph_nodes.append(e)
+        self._ids[k] = len(self.graph_nodes) - 1
+        return len(self.graph_nodes) - 1
 
-    def 常(self, t: str, v: Any) -> int:
+    def const_node(self, t: str, v: Any) -> int:
         if t == "z":
             v = bool(v)
         else:
-            v = _窄(v if t in "fd" else int(v), t) if t != "d" else float(v)
-        return self._加(("c", t, v))
+            v = _narrow(v if t in "fd" else int(v), t) if t != "d" else float(v)
+        return self._add(("c", t, v))
 
-    def 真(self) -> int:
-        return self.常("z", True)
+    def const_true(self) -> int:
+        return self.const_node("z", True)
 
-    def 假(self) -> int:
-        return self.常("z", False)
+    def false_node(self) -> int:
+        return self.const_node("z", False)
 
-    def 输入(self, t: str, 名: str) -> int:
-        return self._加(("in", t, 名))
+    def input_node(self, t: str, input_name: str) -> int:
+        return self._add(("in", t, input_name))
 
-    def 初始(self, 部件: str, 字段: str) -> int:
-        return self._加(("rest", "f", 部件, 字段))
+    def initial(self, part: str, field: str) -> int:
+        return self._add(("rest", "f", part, field))
 
-    def 算(self, op: str, t: str, a: int, b: int | None = None) -> int:
+    def calc(self, op: str, t: str, a: int, b: int | None = None) -> int:
         if op == "neg":
-            if self.是常量(a):
-                return self.常(t, 算术("neg", t, self.常量值(a)))
-            return self._加(("neg", t, a))
+            if self.is_constant(a):
+                return self.const_node(t, arithmetic("neg", t, self.constant_of(a)))
+            return self._add(("neg", t, a))
         assert b is not None
-        if self.是常量(a) and self.是常量(b):
-            return self.常(t, 算术(op, t, self.常量值(a), self.常量值(b)))
+        if self.is_constant(a) and self.is_constant(b):
+            return self.const_node(t, arithmetic(op, t, self.constant_of(a), self.constant_of(b)))
         if op == "*" and t in "fd":
             # x*1 和 1*x 对所有浮点数（含 NaN、-0）都等于 x
-            if self.常量值(b) == 1.0 and self.是常量(b):
+            if self.constant_of(b) == 1.0 and self.is_constant(b):
                 return a
-            if self.常量值(a) == 1.0 and self.是常量(a):
+            if self.constant_of(a) == 1.0 and self.is_constant(a):
                 return b
-        return self._加((op, t, a, b))
+        return self._add((op, t, a, b))
 
-    def 转(self, 到: str, a: int) -> int:
-        从 = self.类型(a)
-        if 从 == 到:
+    def convert_node(self, to_type: str, a: int) -> int:
+        src_type = self.node_type(a)
+        if src_type == to_type:
             return a
-        if self.是常量(a):
-            return self.常(到, 转换(self.常量值(a), 从, 到))
-        return self._加(("conv", 到, a))
+        if self.is_constant(a):
+            return self.const_node(to_type, convert(self.constant_of(a), src_type, to_type))
+        return self._add(("conv", to_type, a))
 
-    def 比(self, op: str, a: int, b: int) -> int:
-        if self.是常量(a) and self.是常量(b):
-            return self.常("z", 比较(op, self.常量值(a), self.常量值(b)))
+    def compare(self, op: str, a: int, b: int) -> int:
+        if self.is_constant(a) and self.is_constant(b):
+            return self.const_node("z", compare(op, self.constant_of(a), self.constant_of(b)))
         # sel(c, k1, k2) 和常量比：boolean 局部变量（iconst_1/iconst_0 在汇合处合成 sel）再 ifeq 时化回 c
         for x, y, flip in ((a, b, False), (b, a, True)):
-            ex = self.节点[x]
-            if ex[0] == "sel" and self.是常量(y) and self.是常量(ex[3]) and self.是常量(ex[4]):
-                yo = self.常量值(y)
+            ex = self.graph_nodes[x]
+            if ex[0] == "sel" and self.is_constant(y) and self.is_constant(ex[3]) and self.is_constant(ex[4]):
+                yo = self.constant_of(y)
                 o = {"<": ">", ">": "<", "<=": ">=", ">=": "<="}.get(op, op) if flip else op
-                r1, r2 = 比较(o, self.常量值(ex[3]), yo), 比较(o, self.常量值(ex[4]), yo)
+                r1, r2 = compare(o, self.constant_of(ex[3]), yo), compare(o, self.constant_of(ex[4]), yo)
                 if r1 and not r2:
                     return ex[2]
                 if r2 and not r1:
-                    return self.非(ex[2])
-                return self.常("z", r1)
-        return self._加((op, "z", a, b))
+                    return self.logical_not(ex[2])
+                return self.const_node("z", r1)
+        return self._add((op, "z", a, b))
 
-    def 非(self, a: int) -> int:
-        e = self.节点[a]
+    def logical_not(self, a: int) -> int:
+        e = self.graph_nodes[a]
         if e[0] == "c":
-            return self.常("z", not e[2])
+            return self.const_node("z", not e[2])
         if e[0] == "not":
             return e[2]
-        return self._加(("not", "z", a))
+        return self._add(("not", "z", a))
 
-    def 且(self, a: int, b: int) -> int:
+    def logical_and(self, a: int, b: int) -> int:
         for x, y in ((a, b), (b, a)):
-            if self.是常量(x):
-                return y if self.常量值(x) else self.假()
+            if self.is_constant(x):
+                return y if self.constant_of(x) else self.false_node()
         if a == b:
             return a
-        return self._加(("and", "z", a, b))
+        return self._add(("and", "z", a, b))
 
-    def 或(self, a: int, b: int) -> int:
+    def logical_or(self, a: int, b: int) -> int:
         for x, y in ((a, b), (b, a)):
-            if self.是常量(x):
-                return self.真() if self.常量值(x) else y
+            if self.is_constant(x):
+                return self.const_true() if self.constant_of(x) else y
         if a == b:
             return a
-        return self._加(("or", "z", a, b))
+        return self._add(("or", "z", a, b))
 
-    def 选(self, c: int, a: int, b: int) -> int:
+    def select(self, c: int, a: int, b: int) -> int:
         if a == b:
             return a
-        if self.是常量(c):
-            return a if self.常量值(c) else b
-        t = self.类型(a)
-        if t != self.类型(b):
-            raise ValueError(f"sel 两边类型不同：{t} / {self.类型(b)}")
-        if self.节点[c][0] == "not":
-            return self.选(self.节点[c][2], b, a)
+        if self.is_constant(c):
+            return a if self.constant_of(c) else b
+        t = self.node_type(a)
+        if t != self.node_type(b):
+            raise ValueError(f"sel 两边类型不同：{t} / {self.node_type(b)}")
+        if self.graph_nodes[c][0] == "not":
+            return self.select(self.graph_nodes[c][2], b, a)
         if t == "z":
-            return self.或(self.且(c, a), self.且(self.非(c), b))
-        return self._加(("sel", t, c, a, b))
+            return self.logical_or(self.logical_and(c, a), self.logical_and(self.logical_not(c), b))
+        return self._add(("sel", t, c, a, b))
 
-    def 调(self, 函数: str, 参数: list[int]) -> int:
-        t, impl = 内建[函数]
-        if all(self.是常量(p) for p in 参数):
-            return self.常(t, impl(*[self.常量值(p) for p in 参数]))
-        return self._加(("call", t, 函数, *参数))
+    def call_node(self, func_sig: str, params: list[int]) -> int:
+        t, impl = builtin_funcs[func_sig]
+        if all(self.is_constant(p) for p in params):
+            return self.const_node(t, impl(*[self.constant_of(p) for p in params]))
+        return self._add(("call", t, func_sig, *params))
 
-    def 查表(self, t: str, 值们: list[Any], 下标: int) -> int:
-        if self.是常量(下标):
-            k = self.常量值(下标)
-            return self.常(t, 值们[k] if 0 <= k < len(值们) else 0)
-        if all(v == 值们[0] for v in 值们):
-            return self.常(t, 值们[0])
-        return self._加(("tab", t, list(值们), 下标))
+    def table_lookup(self, t: str, values: list[Any], index_node: int) -> int:
+        if self.is_constant(index_node):
+            k = self.constant_of(index_node)
+            return self.const_node(t, values[k] if 0 <= k < len(values) else 0)
+        if all(v == values[0] for v in values):
+            return self.const_node(t, values[0])
+        return self._add(("tab", t, list(values), index_node))
 
     # ---------- 输出 ----------
-    def 导出(self, 根们: list[int]) -> tuple[list[list[Any]], dict[int, int]]:
+    def export_graph(self, roots: list[int]) -> tuple[list[list[Any]], dict[int, int]]:
         """只留根们用到的节点，按拓扑序（参数在前）重新编号"""
-        用: set[int] = set()
-        待 = list(根们)
-        while 待:
-            n = 待.pop()
-            if n in 用:
+        used: set[int] = set()
+        pending = list(roots)
+        while pending:
+            n = pending.pop()
+            if n in used:
                 continue
-            用.add(n)
-            待.extend(self.子(n))
-        新号: dict[int, int] = {}
+            used.add(n)
+            pending.extend(self.child_ids(n))
+        new_ids: dict[int, int] = {}
         out: list[list[Any]] = []
-        for n in sorted(用):
-            e = self.节点[n]
-            子们 = set(self.子(n))
+        for n in sorted(used):
+            e = self.graph_nodes[n]
+            children = set(self.child_ids(n))
             row: list[Any] = [e[0], e[1]]
             for i, x in enumerate(e[2:]):
                 pos = i + 2
-                if self._是引用位(e, pos) and x in 子们:
-                    row.append(新号[x])
+                if self._is_ref_slot(e, pos) and x in children:
+                    row.append(new_ids[x])
                 else:
-                    row.append(_json值(x))
-            新号[n] = len(out)
+                    row.append(_json_value(x))
+            new_ids[n] = len(out)
             out.append(row)
-        return out, 新号
+        return out, new_ids
 
     @staticmethod
-    def _是引用位(e: tuple, pos: int) -> bool:
+    def _is_ref_slot(e: tuple, pos: int) -> bool:
         op = e[0]
         if op in ("c", "in", "rest"):
             return False
@@ -470,22 +470,22 @@ class 图:
             return pos == 3
         return True
 
-    def 子(self, n: int) -> list[int]:
-        e = self.节点[n]
-        return [x for i, x in enumerate(e[2:]) if self._是引用位(e, i + 2)]
+    def child_ids(self, n: int) -> list[int]:
+        e = self.graph_nodes[n]
+        return [x for i, x in enumerate(e[2:]) if self._is_ref_slot(e, i + 2)]
 
 
-def _json值(x: Any) -> Any:
+def _json_value(x: Any) -> Any:
     if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
         return "NaN" if math.isnan(x) else ("Infinity" if x > 0 else "-Infinity")
     if isinstance(x, int) and not isinstance(x, bool) and abs(x) > 2**53:
         return str(x)  # long 常量：JS 的 JSON.parse 读成 double 会丢位，写成串
     if isinstance(x, list):
-        return [_json值(v) for v in x]
+        return [_json_value(v) for v in x]
     return x
 
 
-def _读值(x: Any) -> Any:
+def _read_value(x: Any) -> Any:
     if x == "NaN":
         return math.nan
     if x == "Infinity":
@@ -497,23 +497,23 @@ def _读值(x: Any) -> Any:
     return x
 
 
-def 求值(节点们: list[list[Any]], 输入: dict[str, Any], 初始: dict[str, dict[str, float]]) -> list[Any]:
+def evaluate(nodes: list[list[Any]], inputs: dict[str, Any], initial: dict[str, dict[str, float]]) -> list[Any]:
     """参考实现：按 JVM 语义算导出后的节点表，返回每个节点的值"""
     v: list[Any] = []
-    for e in 节点们:
+    for e in nodes:
         op, t = e[0], e[1]
         if op == "c":
-            r = _读值(e[2])
+            r = _read_value(e[2])
         elif op == "in":
-            r = 输入[e[2]]
+            r = inputs[e[2]]
             if t == "f":
                 r = f32(float(r))
         elif op == "rest":
-            r = f32(初始[e[2]][e[3]])
+            r = f32(initial[e[2]][e[3]])
         elif op == "conv":
-            r = 转换(v[e[2]], 节点们[e[2]][1], t)
+            r = convert(v[e[2]], nodes[e[2]][1], t)
         elif op in ("<", "<=", ">", ">=", "==", "!="):
-            r = 比较(op, v[e[2]], v[e[3]])
+            r = compare(op, v[e[2]], v[e[3]])
         elif op == "not":
             r = not v[e[2]]
         elif op == "and" and t == "z":  # 逻辑与；int / long 的 and 是按位与，走 算术
@@ -523,13 +523,13 @@ def 求值(节点们: list[list[Any]], 输入: dict[str, Any], 初始: dict[str,
         elif op == "sel":
             r = v[e[3]] if v[e[2]] else v[e[4]]
         elif op == "call":
-            r = 内建[e[2]][1](*[v[a] for a in e[3:]])
+            r = builtin_funcs[e[2]][1](*[v[a] for a in e[3:]])
         elif op == "tab":
             k = v[e[3]]
-            r = _读值(e[2][k]) if 0 <= k < len(e[2]) else 0
+            r = _read_value(e[2][k]) if 0 <= k < len(e[2]) else 0
         elif op == "neg":
-            r = 算术("neg", t, v[e[2]])
+            r = arithmetic("neg", t, v[e[2]])
         else:
-            r = 算术(op, t, v[e[2]], v[e[3]])
+            r = arithmetic(op, t, v[e[2]], v[e[3]])
         v.append(r)
     return v

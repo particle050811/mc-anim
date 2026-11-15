@@ -4,7 +4,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { broomMatrix, jiuhuRideBones, RIDE } from '@库/角色/骑扫帚.tsx';
 import { JIUHU } from '@库/角色/九胡.tsx';
-import { 刻, 起点, 思索拉高, yawVec } from '../时间线.ts';
+import { tick, start, thinkPullUp, yawVec } from '../时间线.ts';
 import { ss, lerp } from './工具.ts';
 
 const JH_PX = JIUHU.scale; // 九胡：一像素多少格（YSM 0.7/16）
@@ -16,17 +16,17 @@ const JH_HIP = 18.95; // 九胡腿的关节（RightLeg pivot）离脚底的像�
 const kickSettle = (u: number, T: number) => (u <= 0 ? 0 : (u / T) * Math.exp(1 - u / T)); // 冲一下再回落（u = T 时到顶 = 1）
 export type BroomState = { pos: V3; yaw: number; pitch: number; roll: number };
 export const broomState = (physSec: number): BroomState => {
-  const startBroom = 起点.broom;
-  const liftZ = startBroom.位置[2] + 思索拉高 * ss(physSec / 刻.standUp);
-  const sinceLeap = physSec - 刻.leap;
-  if (sinceLeap <= 0) return { pos: [startBroom.位置[0], startBroom.位置[1], liftZ], yaw: startBroom.朝向, pitch: startBroom.俯仰, roll: startBroom.横滚 };
-  const { fwd } = yawVec(startBroom.朝向);
+  const startBroom = start.broom;
+  const liftZ = startBroom.位置[2] + thinkPullUp * ss(physSec / tick.standUp);
+  const sinceLeap = physSec - tick.leap;
+  if (sinceLeap <= 0) return { pos: [startBroom.位置[0], startBroom.位置[1], liftZ], yaw: startBroom.facing, pitch: startBroom.pitch, roll: startBroom.roll };
+  const { fwd } = yawVec(startBroom.facing);
   const k = kickSettle(sinceLeap, 0.35);
   return {
     pos: [startBroom.位置[0] - fwd[0] * 0.4 * k, startBroom.位置[1] - fwd[1] * 0.4 * k, liftZ + 0.25 * k] as V3,
-    yaw: startBroom.朝向,
-    pitch: startBroom.俯仰 + 5 * k,
-    roll: startBroom.横滚,
+    yaw: startBroom.facing,
+    pitch: startBroom.pitch + 5 * k,
+    roll: startBroom.roll,
   };
 };
 export const broomMatrixAt = (physSec: number) => {
@@ -36,17 +36,17 @@ export const broomMatrixAt = (physSec: number) => {
 
 // ---------- 九胡 ----------
 // 一直跨坐在后座驾驶扫帚：起先抱着李樱的腰（6-2-6 末帧的姿势），他站起时松开、改扶扫帚杆；他跃出后她低头看着他扎下去
-const JH0 = 起点.riders.九胡;
+const JH0 = start.riders.九胡;
 const rideBones = (physSec: number) => {
-  const k = ss((physSec - 刻.releaseWaist) / 0.5);
-  const watchHim = ss((physSec - 刻.leap - 0.1) / 0.5); // 跃出以后低头往下看
+  const k = ss((physSec - tick.releaseWaist) / 0.5);
+  const watchHim = ss((physSec - tick.leap - 0.1) / 0.5); // 跃出以后低头往下看
   return jiuhuRideBones({
     lean: lerp(JH0.lean, 8, k) + 10 * watchHim,
-    hugWaist: lerp(JH0.hugWaist, 0, ss((physSec - 刻.releaseWaist) / 0.45)),
+    hugWaist: lerp(JH0.hugWaist, 0, ss((physSec - tick.releaseWaist) / 0.45)),
     headRaise: lerp(JH0.headRaise, -10, k) - 30 * watchHim,
     headTurn: lerp(JH0.headTurn ?? 0, 0, k),
     tailPhase: physSec * 2,
-    风: 0,
+    wind: 0,
   });
 };
 export type JiuhuState = { matrix: THREE.Matrix4; bones: Record<string, BonePose>; hip: V3; onBroom: boolean };

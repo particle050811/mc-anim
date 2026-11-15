@@ -1,20 +1,20 @@
 // 15 尾的声音：54.65「咔哒」（车万女仆相机的快门声，同 1-一如既往 的咔哒定格；三稿：Java 版截图没有声音，算演绎）。纯数据（段.ts 读）。
 // 从咔哒前约 0.13 秒（起音秒）放起、放满文件 0.88 秒：主音前那一截在 2-合照 段尾，主音（咔哒那一帧 = 2-拼回 段头）起的在 2-拼回（后半是卷片声），两段的 段.ts 各用 声音/跨段音效.ts 的 段里那截 放自己窗口里的那一截。
 import { fps } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片15尾.ts';
-import type { 歌上音效 } from '../../声音/跨段音效.ts';
+import { events as mainCutEvents } from '../../分镜/正片15尾.ts';
+import type { SongSound } from '../../声音/跨段音效.ts';
 
 /** 文件本身的两个数照 场/1-隐世之境一楼/参数.ts 的 咔哒声（ffmpeg 解码实测）：开头约 0.11 秒近乎静音，主音的峰在 0.13 秒；文件长 0.88 秒。
  *  场之间不互相 import，抄过来 */
-export const 咔哒声文件 = { 资产: '音效/车万女仆/item.camera_use', 起音秒: 0.13, 时长秒: 0.88 } as const;
+export const clickSoundFile = { 资产: '音效/车万女仆/item.camera_use', onsetSec: 0.13, 时长秒: 0.88 } as const;
 /** 增益同 1-一如既往（0.7：叠着原声 × 0.5，母版样本峰值 −1.33 dBFS，同一个小节下拍、同一条原声） */
-export const 咔哒增益 = 0.7;
+export const clickGain = 0.7;
 
 /** cue 照 起音秒 提前，主音落在 合照咔哒 那一帧（闪白那一拍） */
-export const 合照咔哒声: 歌上音效 = {
-  资产: 咔哒声文件.资产,
+export const groupPhotoClickSound: SongSound = {
+  资产: clickSoundFile.资产,
   名: '咔哒',
-  起帧: 正片事件.合照咔哒.帧 - Math.round(咔哒声文件.起音秒 * fps),
-  时长秒: 咔哒声文件.时长秒,
-  增益: () => 咔哒增益,
+  起帧: mainCutEvents.合照咔哒.帧 - Math.round(clickSoundFile.onsetSec * fps),
+  时长秒: clickSoundFile.时长秒,
+  增益: () => clickGain,
 };

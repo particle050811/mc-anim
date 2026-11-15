@@ -8,37 +8,37 @@ import { canvasDpr, LevelParams } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { FlightFog, FlightRig, FlightSky, type CamPose } from '../../地点/飞行镜头.tsx';
-import { use按版本的地形 } from './地形.ts';
+import { useVersionedTerrain } from './地形.ts';
 
-const 包 = '测试-修整-岛-编辑示例';
-const 版本 = 'e02fae21f596';
-const 原点 = [38912, 64, -2048];
-const 场景 = (x: number, y: number, z: number) => [x - 原点[0], 原点[2] - z, y - 原点[1]];
+const pack = '测试-修整-岛-编辑示例';
+const terrainVersion = 'e02fae21f596';
+const originPos = [38912, 64, -2048];
+const toScene = (x: number, y: number, z: number) => [x - originPos[0], originPos[2] - z, y - originPos[1]];
 
-const 机位: CamPose = { pos: 场景(39748, 92, -1176), tgt: 场景(39712, 67, -1226), lens: 24 };
+const cameraRig: CamPose = { pos: toScene(39748, 92, -1176), tgt: toScene(39712, 67, -1226), lens: 24 };
 
-const 地形: React.FC = () => {
-  const t = use按版本的地形(包, 版本);
+const Terrain: React.FC = () => {
+  const t = useVersionedTerrain(pack, terrainVersion);
   if (!t) return null;
-  if (t.原点.some((v, i) => v !== 原点[i])) throw new Error(`${包}/${版本} 的原点是 ${t.原点}，画面按 ${原点} 算的`);
-  return <VoxelWorld 键={t.键} 来源={t.来源} 中心={机位.pos} 像素={LevelParams.视频.像素} 远={2000} 高度={t.高度} />;
+  if (t.原点.some((v, i) => v !== originPos[i])) throw new Error(`${pack}/${terrainVersion} 的原点是 ${t.原点}，画面按 ${originPos} 算的`);
+  return <VoxelWorld 键={t.键} 来源={t.来源} 中心={cameraRig.pos} pixel={LevelParams.视频.pixel} far={2000} heightRange={t.heightRange} />;
 };
 
-const 画面: React.FC = () => {
+const picture: React.FC = () => {
   const { width, height } = useVideoConfig();
   return (
     <AbsoluteFill>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
         <FlightFog visibility={3000} />
-        <FlightRig c={机位} near={0.05} />
+        <FlightRig c={cameraRig} near={0.05} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <FlightSky camPos={机位.pos} />
-          <地形 />
+          <FlightSky camPos={cameraRig.pos} />
+          <Terrain />
         </group>
       </ThreeCanvas>
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

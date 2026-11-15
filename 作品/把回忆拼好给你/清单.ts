@@ -1,10 +1,10 @@
 // 段清单：进成片的段按剪辑顺序排，anim film、注册.tsx 都读它（唯一顺序表）。纯数据。
 // 段键是永久身份（<章>-<段名>）。章 1 是验证片；以后做正片另开章 2，验证片的段不用改名、改窗口。
 // 核对段（键以 核对- 开头）放 核对/，不进章节编号。
-import type { 清单条目 } from '@engine/段/清单条目.ts';
-export type { 清单条目 };
+import type { ManifestEntry } from '@engine/段/清单条目.ts';
+export type { ManifestEntry };
 
-export const 清单: readonly 清单条目[] = [
+export const manifest: readonly ManifestEntry[] = [
   { 键: '核对-魔法酒狐', 章: '核对' },
   { 键: '核对-聊天栏爱心', 章: '核对' },
   { 键: '核对-第一人称', 章: '核对' },
@@ -56,15 +56,15 @@ export const 清单: readonly 清单条目[] = [
 ];
 
 /** 段目录（相对作品根） */
-export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice('核对-'.length)}` : `段/${键}`);
+export const segDir = (segKey: string) => (segKey.startsWith('核对-') ? `核对/${segKey.slice('核对-'.length)}` : `段/${segKey}`);
 
 /** 段名 = 段键去掉「<章>-」 */
-export const 段名 = (条目: 清单条目) => 条目.键.slice(String(条目.章).length + 1);
+export const segmentName = (entry: ManifestEntry) => entry.键.slice(String(entry.章).length + 1);
 
 /** 编号：章内按清单顺序的两位序号；核对段没有 */
-export const 编号 = (键: string): string | null => {
-  const 条目 = 清单.find((t) => t.键 === 键);
-  if (!条目 || 条目.章 === '核对') return null;
-  const 序 = 清单.filter((t) => t.章 === 条目.章).findIndex((t) => t.键 === 键) + 1;
-  return `${条目.章}-${String(序).padStart(2, '0')}`;
+export const segmentCode = (segKey: string): string | null => {
+  const entry = manifest.find((t) => t.键 === segKey);
+  if (!entry || entry.章 === '核对') return null;
+  const chapterIndex = manifest.filter((t) => t.章 === entry.章).findIndex((t) => t.键 === segKey) + 1;
+  return `${entry.章}-${String(chapterIndex).padStart(2, '0')}`;
 };

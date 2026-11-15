@@ -56,7 +56,7 @@ export const WARDEN = {
   // 开始时身子、腿整体往下沉 63 像素，全身埋在地下；0.52 秒手先伸出地面、0.6 触角、0.8 头顶、1.08 肩冒头；1.2～3.0 秒撑着地面停住；
   // 3.2 头整个出来、3.86 身子、4.7 腿全部出来；4.4～5.8 蹲着往前趴，6.0～6.64 站直。（3.4～6.0 秒双手撑地，手掌会插进地面 0.1～0.2 格，原版就是这样）
   emergeDepth: 63 / 16,
-  emergeProgress: { 手: 0.52, 触角: 0.6, 头顶: 0.8, 肩: 1.08, headOut: 3.22, bodyOut: 3.86, feetDown: 4.7, 站直: 6.64 },
+  emergeProgress: { 手: 0.52, tendril: 0.6, headTop: 0.8, shoulder: 1.08, headOut: 3.22, bodyOut: 3.86, feetDown: 4.7, standUp: 6.64 },
   // 碎屑配色（取自本体贴图）：近黑的青灰身体、深青、手臂和肋骨的骨白、发光的青色
   debris: ['#0d1217', '#111b21', '#034150', '#062e37', '#bbc39b', '#29dfeb'],
 };
@@ -75,10 +75,10 @@ export type WardenProps = {
   攻击?: number;
   音爆?: number;
   挖地?: number;
-  行走?: { 相位: number; 幅度: number }; // limbSwing（走过的距离累计，格）、limbSwingAmount（0～1，速度换算的摆幅；摆幅 = min(0.5, 3×幅度)，幅度 ≥ 0.17 就到顶）
-  头偏?: number; // 度（netHeadYaw，正 = 往实体自己的右手边转）
+  walkCycle?: { legPhase: number; amplitude: number }; // limbSwing（走过的距离累计，格）、limbSwingAmount（0～1，速度换算的摆幅；摆幅 = min(0.5, 3×幅度)，幅度 ≥ 0.17 就到顶）
+  headYaw?: number; // 度（netHeadYaw，正 = 往实体自己的右手边转）
   headPitch?: number; // 度（headPitch，正 = 低头）
-  触角?: number; // tendrilAnimation 0～1：触角摆动 + 触角发光；不给 = 0
+  tendril?: number; // tendrilAnimation 0～1：触角摆动 + 触角发光；不给 = 0
   心跳?: number; // heartAnimation 0～1；不给就按 秒 和 心跳间隔 自动算（每次心跳从 1 降到 0，用 10 刻）
   heartbeatTicks?: number; // 刻，默认 40（不生气）
   // 光照：默认照原版实体的光照画本体（不受场景光影响）——贴图 × 方向明暗（顶 1、前后 0.74、左右 0.5、底 0.4）× 亮度，
@@ -87,7 +87,7 @@ export type WardenProps = {
   sceneLight?: boolean; // true = 本体改用场景里的灯（MeshStandardMaterial，和巫妖等其他实体模型一样），亮度 不起作用
   opacity?: number;
   // 第 7 章补的：
-  受伤?: number; // 0～1：受伤变红（hurtTime > 0，原版 10 刻），见 特效/原版死亡.tsx
+  hurt?: number; // 0～1：受伤变红（hurtTime > 0，原版 10 刻），见 特效/原版死亡.tsx
   secSinceDeath?: number; // 死了多久（秒）：照原版 `LivingEntityRenderer` 往实体左边倒下、变红，满 1 秒实体移除不再画（白烟用 原版粒子.tsx 的 死亡烟雾）
 };
 
@@ -103,9 +103,9 @@ export const wardenPose = (props: WardenProps) => {
   const pose = restPose(MODEL.root);
   const { head, body, left_arm, right_arm, left_leg, right_leg, left_tendril, right_tendril } = pose;
   head.rot[0] = Math.fround((props.headPitch ?? 0) * DEG);
-  head.rot[1] = Math.fround((props.头偏 ?? 0) * DEG);
-  const ls = props.行走?.相位 ?? 0;
-  const la = props.行走?.幅度 ?? 0;
+  head.rot[1] = Math.fround((props.headYaw ?? 0) * DEG);
+  const ls = props.walkCycle?.legPhase ?? 0;
+  const la = props.walkCycle?.amplitude ?? 0;
   const swingAmp = Math.min(0.5, 3 * la);
   const f1 = ls * 0.8662;
   const f2 = mthCos(f1);
@@ -132,7 +132,7 @@ export const wardenPose = (props: WardenProps) => {
   head.rot[0] += 0.06 * gs;
   body.rot[2] += 0.025 * gs;
   body.rot[0] += 0.025 * gc;
-  const tf = (props.触角 ?? 0) * Math.fround(Math.cos(age * 2.25) * Math.PI * 0.10000000149011612);
+  const tf = (props.tendril ?? 0) * Math.fround(Math.cos(age * 2.25) * Math.PI * 0.10000000149011612);
   left_tendril.rot[0] = tf;
   right_tendril.rot[0] = -tf;
   // 关键帧动画（游戏里的顺序：攻击、音爆、挖地、钻出、吼叫、嗅）
@@ -154,14 +154,14 @@ export const wardenLayers = (props: WardenProps): EntityLayer[] => {
     { tex: TEX.bio, alpha: 1 * k, parts: BIO_PARTS },
     { tex: TEX.spots1, alpha: Math.max(0, mthCos(age * 0.045) * 0.25) * k, parts: SPOT_PARTS },
     { tex: TEX.spots2, alpha: Math.max(0, mthCos(age * 0.045 + 3.1415927) * 0.25) * k, parts: SPOT_PARTS },
-    { tex: TEX.body, alpha: (props.触角 ?? 0) * k, parts: TENDRIL_PARTS },
+    { tex: TEX.body, alpha: (props.tendril ?? 0) * k, parts: TENDRIL_PARTS },
     { tex: TEX.heart, alpha: heart * k, parts: HEART_PARTS },
   ];
 };
 
 // ---------- 钉在身子上的东西（箭）：跟着 body 部件走（走路摆、音爆后仰、攻击），不只跟着实体 ----------
 // 监守者在世界里：脚底位置、实体朝向、前倾（画面里外面套的两层 group：先绕 Z 转朝向、再绕 X 前倾），加上画模型的参数
-export type WardenFrame = { p: V3; entityYaw: number; 前倾?: number; props: WardenProps };
+export type WardenFrame = { p: V3; entityYaw: number; forwardLean?: number; props: WardenProps };
 const pathTo = (part: EntityPart, name: string): EntityPart[] | null => {
   if (part.name === name) return [part];
   for (const child of part.children) {
@@ -178,7 +178,7 @@ const bodyMatrix = (f: WardenFrame) => {
   const m = new THREE.Matrix4()
     .makeTranslation(f.p[0], f.p[1], f.p[2])
     .multiply(new THREE.Matrix4().makeRotationZ((f.entityYaw * Math.PI) / 180))
-    .multiply(new THREE.Matrix4().makeRotationX(((f.前倾 ?? 0) * Math.PI) / 180))
+    .multiply(new THREE.Matrix4().makeRotationX(((f.forwardLean ?? 0) * Math.PI) / 180))
     .multiply(new THREE.Matrix4().makeTranslation(0, 0, 1.501))
     .multiply(MODEL_TO_ENTITY)
     .multiply(new THREE.Matrix4().makeScale(1 / 16, 1 / 16, 1 / 16));
@@ -238,7 +238,7 @@ export const wardenBodyHit = (f: WardenFrame, start: V3, dir: V3): V3 | undefine
 export const Warden: React.FC<WardenProps> = (props) => {
   const dead = props.secSinceDeath !== undefined && props.secSinceDeath >= 0;
   if (dead && props.secSinceDeath! >= 1) return null;
-  const red = dead ? 1 : (props.受伤 ?? 0);
+  const red = dead ? 1 : (props.hurt ?? 0);
   return (
     <VanillaTopple secSinceDeath={props.secSinceDeath}>
       <EntityModel

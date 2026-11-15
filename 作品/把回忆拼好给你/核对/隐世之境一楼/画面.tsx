@@ -13,76 +13,76 @@ import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import shot from 'asset:截图/隐世之境/一楼机位';
-import { 第一人称机位 } from '../../地点/机位.tsx';
-import { 一楼, 一楼灯光, 主厅灯, 隐世之境一楼, type 灯位 } from '../../地点/隐世之境一楼.tsx';
-import { 视图们 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { FirstPersonRig } from '../../地点/机位.tsx';
+import { firstFloor, FirstFloorLighting, hallLamps, HiddenWorldFloor, type LampPos } from '../../地点/隐世之境一楼.tsx';
+import { views } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 掀顶盒 = [[-1, -27, 5.97, 22, 1, 10]];
-const 单位盒 = new THREE.BoxGeometry(1, 1, 1);
-const 框色 = (l: 灯位) => (l.种 === '灯笼' ? '#ffd23f' : l.点着 ? '#ff7a1a' : '#9a9a9a');
+const liftTopBox = [[-1, -27, 5.97, 22, 1, 10]];
+const unitBox = new THREE.BoxGeometry(1, 1, 1);
+const frameColor = (l: LampPos) => (l.种 === '灯笼' ? '#ffd23f' : l.lit ? '#ff7a1a' : '#9a9a9a');
 
 /** 一格方块的线框（位 = 方块底面中心） */
-const 方块框: React.FC<{ 位: V3; 色: string }> = ({ 位, 色 }) => (
-  <lineSegments position={[位[0], 位[1], 位[2] + 0.5]} renderOrder={10}>
-    <edgesGeometry args={[单位盒]} />
-    <lineBasicMaterial color={色} depthTest={false} toneMapped={false} />
+const BlockFrame: React.FC<{ 位: V3; 色: string }> = ({ 位: pos, 色: color }) => (
+  <lineSegments position={[pos[0], pos[1], pos[2] + 0.5]} renderOrder={10}>
+    <edgesGeometry args={[unitBox]} />
+    <lineBasicMaterial color={color} depthTest={false} toneMapped={false} />
   </lineSegments>
 );
 
 // 她面朝南（yaw 180），脚底在地毯顶面
-const 女仆姿势 = { ...standPose(一楼.女仆), yaw: 180 };
-const 站位: React.FC<{ 种: '灰盒' | '酒狐'; 眼: V3 }> = ({ 种, 眼 }) =>
-  种 === '灰盒' ? (
-    <mesh position={[一楼.女仆[0], 一楼.女仆[1], 一楼.女仆[2] + 0.425]} castShadow receiveShadow>
+const maidPose = { ...standPose(firstFloor.maid), yaw: 180 };
+const StandFigure: React.FC<{ 种: '灰盒' | '酒狐'; 眼: V3 }> = ({ 种: figureKind, 眼: eye }) =>
+  figureKind === '灰盒' ? (
+    <mesh position={[firstFloor.maid[0], firstFloor.maid[1], firstFloor.maid[2] + 0.425]} castShadow receiveShadow>
       <boxGeometry args={[0.5, 0.5, 0.85]} />
       <meshStandardMaterial color="#b5b5b5" />
     </mesh>
   ) : (
-    <MagicalWineFox pose={女仆姿势} 看={magicalWineFoxLookAt(女仆姿势, 眼)} />
+    <MagicalWineFox pose={maidPose} 看={magicalWineFoxLookAt(maidPose, eye)} />
   );
 
 // 排在 第一人称机位 后面，盖掉它设的色调映射；和它一样订阅整个 useThree，它重渲时这里也跟着重渲、仍在它后面
-const 不压色调: React.FC = () => {
+const KeepTone: React.FC = () => {
   useThree().gl.toneMapping = THREE.NoToneMapping;
   return null;
 };
 
-const 平光: React.FC = () => {
+const FlatLight: React.FC = () => {
   useSelfLight(0);
   return <ambientLight intensity={Math.PI} />;
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 尺寸 = { width: v.宽, height: v.高 };
-  const 灯笼 = 主厅灯.filter((l) => l.种 === '灯笼').length;
-  const 蜡烛 = 主厅灯.length - 灯笼;
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const size = { width: v.宽, height: v.高 };
+  const lanternCount = hallLamps.filter((l) => l.种 === '灯笼').length;
+  const candleCount = hallLamps.length - lanternCount;
   return (
     <AbsoluteFill style={{ background: '#1b1d22' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, ...尺寸 }}>
-        {v.截图 !== 1 && (
-          <ThreeCanvas {...尺寸} gl={{ antialias: true }}>
+      <div style={{ position: 'absolute', left: 0, top: 0, ...size }}>
+        {v.screenshot !== 1 && (
+          <ThreeCanvas {...size} gl={{ antialias: true }}>
             <color attach="background" args={['#9fc4ff']} />
-            <第一人称机位 眼={v.机位.眼} 看={v.机位.看} 视角={v.机位.视角} />
-            {v.不压色调 && <不压色调 />}
+            <FirstPersonRig 眼={v.cameraRig.眼} 看={v.cameraRig.看} fov={v.cameraRig.fov} />
+            {v.keepTone && <KeepTone />}
             <group rotation={[-Math.PI / 2, 0, 0]}>
-              {v.成片灯 ? <一楼灯光 /> : <平光 />}
-              <隐世之境一楼 hide={v.掀顶 ? 掀顶盒 : undefined} />
-              {v.站位 && <站位 种={v.站位} 眼={v.机位.眼} />}
-              {v.灯位 && 主厅灯.map((l, i) => <方块框 key={i} 位={l.位} 色={框色(l)} />)}
-              {v.灯位 && <方块框 位={一楼.女仆} 色="#ff4fd8" />}
+              {v.filmLamp ? <FirstFloorLighting /> : <FlatLight />}
+              <HiddenWorldFloor hide={v.liftTop ? liftTopBox : undefined} />
+              {v.figure && <StandFigure 种={v.figure} 眼={v.cameraRig.眼} />}
+              {v.showLamps && hallLamps.map((l, i) => <BlockFrame key={i} 位={l.位} 色={frameColor(l)} />)}
+              {v.showLamps && <BlockFrame 位={firstFloor.maid} 色="#ff4fd8" />}
             </group>
           </ThreeCanvas>
         )}
-        {v.截图 ? <Img src={shot} style={{ position: 'absolute', left: 0, top: 0, ...尺寸, opacity: v.截图 }} /> : null}
+        {v.screenshot ? <Img src={shot} style={{ position: 'absolute', left: 0, top: 0, ...size, opacity: v.screenshot }} /> : null}
         <div style={{ position: 'absolute', left: 16, top: 12, fontFamily: uiFontFamily, fontSize: 22, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
           核对-隐世之境一楼 · {v.名}
-          {v.灯位 ? `（灯笼 ${灯笼} 黄、蜡烛 ${蜡烛} 橙/灰没点、女仆 粉）` : ''}
+          {v.showLamps ? `（灯笼 ${lanternCount} 黄、蜡烛 ${candleCount} 橙/灰没点、女仆 粉）` : ''}
         </div>
       </div>
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

@@ -2,16 +2,16 @@
 // 用户 11-10 定：法术都从法杖尖放，不从盘上那一格放（「不然看着很诡异」），盘上那格只管亮。
 // 连带算出史蒂夫几时挨打。用户 11-10 定画面上不出法术名签和计数「n / 71」。时钟由段定（本目录各幕的 编排-<幕>.ts，几幕共用一个钟所以放在场里 用「现身后几秒」）。
 import React from 'react';
-import { 法术演出 } from '../../法术/演出/注册表.tsx';
-import { 发起点, 发目标, type 一发, type 场况 } from './出手表.ts';
+import { SpellPerformance } from '../../法术/演出/注册表.tsx';
+import { launchFrom, launchTarget, type Launch, type SceneCtx } from './出手表.ts';
 
 export * from './出手表.ts';
 
 /** 画这一刻还在演的每一发；放在场景坐标的 group 里 */
-export const 出手们: React.FC<{ 表: readonly 一发[]; 秒: number; 况: 场况 }> = ({ 表, 秒, 况 }) => (
+export const CastLaunches: React.FC<{ 表: readonly Launch[]; 秒: number; sceneCtx: SceneCtx }> = ({ 表: shotTable, 秒: sec, sceneCtx }) => (
   <>
-    {表.map((发, i) =>
-      秒 < 发.秒 || (发.止 !== undefined && 秒 >= 发.止) ? null : <法术演出 key={`${发.id}-${i}`} id={发.id} 秒={(发.钟?.(秒) ?? 秒) - 发.秒} 起点={发.随?.(秒) ?? 发起点(发, 况)} 目标={发目标(发, 况)} 种子={发.种子 ?? 101 + i * 7} 选项={发.选项} />,
+    {shotTable.map((cast, i) =>
+      sec < cast.秒 || (cast.止 !== undefined && sec >= cast.止) ? null : <SpellPerformance key={`${cast.id}-${i}`} id={cast.id} 秒={(cast.clock?.(sec) ?? sec) - cast.秒} from={cast.follow?.(sec) ?? launchFrom(cast, sceneCtx)} 目标={launchTarget(cast, sceneCtx)} 种子={cast.种子 ?? 101 + i * 7} options={cast.options} />,
     )}
   </>
 );

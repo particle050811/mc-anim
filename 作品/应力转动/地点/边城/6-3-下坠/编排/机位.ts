@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { BORDER_TOWN } from '../../../边城轮廓.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
-import { 城防, 撞击段内帧, 段表, 物理时间, 起点, yawVec } from '../时间线.ts';
+import { cityDefense, impactSegFrame, segTable, physicalTime, start, yawVec } from '../时间线.ts';
 import { ss, lerp, lerp3, add, sub } from './工具.ts';
 import { groundZ, caveCeilingZ, ancientCityFloorZ } from './地面.ts';
 import { liYing, liYingShaft, maceHeadPos } from './李樱.ts';
@@ -13,9 +13,9 @@ import { diveCam } from '../../6-3-2/转场.ts';
 
 // ---------- 机位 ----------
 export type Cam = { pos: V3; tgt: V3; lens: number; scope?: number };
-const WG = 物理时间;
+const WG = physicalTime;
 const camAbs = (c: Cam, o: number[]): Cam => ({ pos: add(c.pos, o), tgt: add(c.tgt, o), lens: c.lens });
-const { fwd: broomFwd, right: broomRight } = yawVec(起点.broom.朝向);
+const { fwd: broomFwd, right: broomRight } = yawVec(start.broom.facing);
 const at = (o: V3, f: number, r: number, u: number): V3 => [o[0] + broomFwd[0] * f + broomRight[0] * r, o[1] + broomFwd[1] * f + broomRight[1] * r, o[2] + u];
 const norm = (vec: number[]): V3 => {
   const len = Math.hypot(vec[0], vec[1], vec[2]) || 1;
@@ -67,28 +67,28 @@ const lensLerp = (a: number, b: number, k: number) => Math.exp(lerp(Math.log(a),
 // 他们朝南仰着头，陆续把望远镜举到眼前。巡逻的 5 号离镜头近，放在画面右边，不挡 4 号；整镜横着慢慢往西挪 1 米
 const ROW = { pos0: town(37.5, NORTH - 6.5, WALK + 0.4), pos1: town(36.5, NORTH - 6.5, WALK + 0.4), tgt: town(39, NORTH + 2, WALK + 2.0), lens: 24 };
 const cam634 = (globalFrame: number): Cam => {
-  if (globalFrame < 城防.回看) {
+  if (globalFrame < cityDefense.回看) {
     // ①② 开阔的中远景：整个瞭望、回头一个镜头，慢慢平移
-    const k = ss((globalFrame - 城防.切墙) / (城防.回看 - 城防.切墙));
+    const k = ss((globalFrame - cityDefense.cutToWall) / (cityDefense.回看 - cityDefense.cutToWall));
     const pos = lerp3(WIDE.pos0, WIDE.pos1, k);
     return withDir(pos, norm(sub(lerp3(WIDE.tgt0, WIDE.tgt1, k), pos)), WIDE.lens);
   }
-  if (globalFrame < 城防.举镜) {
+  if (globalFrame < cityDefense.raiseScope) {
     // ③ 背后往下看一排仰着的头，前 1/5 停住，再顺着目光抬到天上的金光、推到 LENS_FIND，最后 1/4 停在金光上（看见了）
-    const g0 = 城防.回看 + Math.round(0.2 * (城防.举镜 - 城防.回看));
-    const g1 = 城防.举镜 - Math.round(0.25 * (城防.举镜 - 城防.回看));
+    const g0 = cityDefense.回看 + Math.round(0.2 * (cityDefense.raiseScope - cityDefense.回看));
+    const g1 = cityDefense.raiseScope - Math.round(0.25 * (cityDefense.raiseScope - cityDefense.回看));
     const k = ss((globalFrame - g0) / (g1 - g0));
     const viewDir = slerpDir(norm(sub(rowTarget, HIGH)), norm(sub(aimPoint(WG(globalFrame)), HIGH)), k);
     return withDir(HIGH, viewDir, lensLerp(LENS_WIDE, LENS_FIND, ss((globalFrame - g0 - 4) / (g1 - g0 - 2))));
   }
-  if (globalFrame < 城防.镜中) {
-    const k = ss((globalFrame - 城防.举镜) / (城防.镜中 - 1 - 城防.举镜));
+  if (globalFrame < cityDefense.inScope) {
+    const k = ss((globalFrame - cityDefense.raiseScope) / (cityDefense.inScope - 1 - cityDefense.raiseScope));
     const pos = lerp3(ROW.pos0, ROW.pos1, k);
     return withDir(pos, norm(sub(lerp3(ROW.tgt, add(ROW.tgt, [-1, 0, 0]), k), pos)), ROW.lens);
   }
   const eye = guardEye(GUARD_I, globalFrame);
   // ⑤ 望远镜里：镜头就在他右眼上；切进来时遮罩已经在，焦距 10 帧里拉到放宽的望远镜倍率，视线同时挪到李樱正中
-  const z = ss((globalFrame - 城防.镜中) / SCOPE_IN.frames);
+  const z = ss((globalFrame - cityDefense.inScope) / SCOPE_IN.frames);
   return { ...withDir(eye.pos, scopeViewDir(globalFrame, eye, z), lensLerp(SCOPE_IN.startLens, LENS_SCOPE, z)), scope: 1 };
 };
 // 镜头离卫兵的身子（脚上 0.2 到头顶 1.9 米那一段）不到 1 米就不画他：望远镜里镜头在他眼睛上
@@ -103,8 +103,8 @@ export const hiddenGuardIdx = (cam: number[]) => {
 // 6-3-5：从望远镜硬切到他左侧（垂直于抡锤的那个竖直面：锤头在他前方、头顶之间来回，见 李樱.ts 的 `STRIKE`），跟着往下掉，一直慢慢推近到砸地。
 // 正侧面抡起、砸下的弧线在画面里整段看得清；锤在右手，从左边拍身子在压路机虚影前面，虚影不挡他（用户 10-19：「6-3-5 抡锤看不出来」）
 const cam635Rel = (globalFrame: number): Cam => {
-  const g0 = 段表['6-3-5'].起;
-  const progress = ss((globalFrame - g0) / (段表['6-3-6'].起 + 撞击段内帧 - g0));
+  const g0 = segTable['6-3-5'].起;
+  const progress = ss((globalFrame - g0) / (segTable['6-3-6'].起 + impactSegFrame - g0));
   const pos: V3 = lerp3(at([0, 0, 0], 0.5, -7, 0.6), at([0, 0, 0], 0.4, -5.6, 0.5), progress);
   return { pos, tgt: at([0, 0, 0], 0.5, 0, -0.6), lens: 28 };
 };
@@ -112,17 +112,17 @@ const cam635 = (globalFrame: number): Cam => camAbs(cam635Rel(globalFrame), liYi
 // 6-3-6：撞击前同 6-3-5；撞上后镜头先停在地面上方 5 米、6 帧挪到坑口正上方，再追进竖井（他上方 6 米，略偏心免得正对竖直往下），
 // 打穿洞顶后跟进古城，在古城地面上方 16 米缓缓停住，看他砸地、翻身站起
 const cam636 = (globalFrame: number): Cam => {
-  const g6 = 段表['6-3-6'].起;
+  const g6 = segTable['6-3-6'].起;
   const segFrame = globalFrame - g6;
   const shaft = liYingShaft();
   const ly = liYing(WG(globalFrame)).hip;
-  if (segFrame <= 撞击段内帧) return camAbs(cam635Rel(globalFrame), ly);
+  if (segFrame <= impactSegFrame) return camAbs(cam635Rel(globalFrame), ly);
   const center = shaftCellCenter();
-  const start = camAbs(cam635Rel(g6 + 撞击段内帧), liYing(WG(g6 + 撞击段内帧)).hip);
-  const kIn = ss((segFrame - 撞击段内帧) / 6);
+  const start = camAbs(cam635Rel(g6 + impactSegFrame), liYing(WG(g6 + impactSegFrame)).hip);
+  const kIn = ss((segFrame - impactSegFrame) / 6);
   const hover = lerp(start.pos[2], groundZ + 5, kIn);
   const stopZ = ancientCityFloorZ + 16;
-  const gap = lerp(18, 6, ss((segFrame - 撞击段内帧 - 6) / 18));
+  const gap = lerp(18, 6, ss((segFrame - impactSegFrame - 6) / 18));
   // 往下追：取「悬在坑口」和「李樱上方 gap 米」里低的那个；快到停的高度时按指数贴近
   let zz = Math.min(hover, ly[2] + gap);
   const x = zz - stopZ;
@@ -133,15 +133,15 @@ const cam636 = (globalFrame: number): Cam => {
   const cam: Cam = { pos, tgt: look, lens: zz < caveCeilingZ ? 28 : lerp(start.lens, 22, kIn) };
   // 落地以后：镜头往东、往下退到离地 4 米（竖井这列往东几格从地面到洞顶都是空的），看点在他身上，往西斜着往下看他半蹲、起身、扭头。
   // 锤砸地前 0.05 秒就开始往下落、0.6 秒到位
-  const k = ss((WG(globalFrame) - shaft.落地 + 0.05) / 0.6);
+  const k = ss((WG(globalFrame) - shaft.landSec + 0.05) / 0.6);
   if (k <= 0) return cam;
   const end: Cam = { pos: [center[0] + 4, center[1] - 0.5, ancientCityFloorZ + 4], tgt: [center[0] - 1, center[1], ancientCityFloorZ + 1.0], lens: 20 };
   // 砸地不震屏、不推焦（用户 10-18 嫌冲击镜头不好，全删）
   return { pos: lerp3(cam.pos, end.pos, k), tgt: lerp3(cam.tgt, end.tgt, k), lens: lerp(cam.lens, end.lens, k) };
 };
 export const camPose = (globalFrame: number): Cam => {
-  if (globalFrame < 段表['6-3-4'].起) return diveCam(globalFrame);
-  if (globalFrame < 段表['6-3-5'].起) return cam634(globalFrame);
-  if (globalFrame < 段表['6-3-6'].起) return cam635(globalFrame);
+  if (globalFrame < segTable['6-3-4'].起) return diveCam(globalFrame);
+  if (globalFrame < segTable['6-3-5'].起) return cam634(globalFrame);
+  if (globalFrame < segTable['6-3-6'].起) return cam635(globalFrame);
   return cam636(globalFrame);
 };

@@ -7,106 +7,106 @@
 // 坐标照 地点/门口小木屋.tsx（Z 朝上：x 东 = 画面右、y 北、z 上，单位格；人站在 y = 0.5）。yaw 同 FigurePose：180 朝镜头、−90 朝东；骨骼角同 MagicalWineFoxEx 的 骨骼。
 import { clamp01 } from '@engine/anim/anim.ts';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
-import { fps, 旧帧 } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
-import type { 地图边长 } from '../../特效/地图画.ts';
-import { 楼下N } from '../../现实/楼下布局.ts';
-import { 分屏版式 } from './分屏参数.ts';
-import { 整屏镜头, 整屏镜头N } from './参数.ts';
-import { 回色 } from './第15句.ts';
+import { fps, legacyFrameSec } from '../../分镜/时间.ts';
+import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
+import type { MapSize } from '../../特效/地图画.ts';
+import { downstairsCount } from '../../现实/楼下布局.ts';
+import { splitLayout } from './分屏参数.ts';
+import { fullScreenShot, fullScreenShotCount } from './参数.ts';
+import { colorBackRange } from './第15句.ts';
 
-const 事 = 正片事件;
+const events = mainCutEvents;
 
 // ---------- 版式、取景、合屏 ----------
 /** 两屏的像素密度：同 2-摇铃 的整屏镜头（N = 10），合屏时只挪不缩（像素画缩放会糊）。她不用再放大（第 13 句 N = 8 时放大 1.25 倍，同样大） */
-export const 归隐N = 整屏镜头N;
+export const retreatCount = fullScreenShotCount;
 
 /** 版式（页面像素）：同第 13 句，左服务器、右现实，分屏线一条（宽、色同第 13 句，歌词排版表的分屏句按这条线让字） */
-export const 归隐版式 = { 左宽: 分屏版式.服务器宽, 右宽: 分屏版式.现实宽, 线宽: 分屏版式.线宽, 线色: 分屏版式.线色 } as const;
+export const retreatLayout = { leftWidth: splitLayout.serverWidth, rightWidth: splitLayout.realWidth, lineWidth: splitLayout.lineWidth, lineColor: splitLayout.lineColor } as const;
 
 /** 一格几个页面像素；整页多宽 */
-const 每格页 = 整屏镜头.取景.每格 / 2;
-const 画宽 = 1280;
+const cellPerPage = fullScreenShot.framing.pxPerCell / 2;
+const drawWidthPx = 1280;
 
 /** 合屏前左屏比整屏镜头往左挪几格：左屏 640 页面像素是 8 格，取景中心 x 0（告示牌 −3.5 到合照格 3.5 都在里面，两边各空半格）；
  *  整张画（画到整屏宽）的中心就在 0 + 4 = 4，合屏时从 4 挪到整屏镜头的 0 */
-export const 合屏前偏 = 归隐版式.左宽 / 每格页 / 2;
+export const mergedScreenOffset = retreatLayout.leftWidth / cellPerPage / 2;
 
 /** 右屏（教学楼下）取景：x −4～4，地面线和左屏是同一条横线（像一个画面切成两半） */
-export const 楼下取景 = { 中心: [0, 整屏镜头.取景.中心[1]] as const, 每格: 16 * 楼下N };
+export const downstairsFraming = { 中心: [0, fullScreenShot.framing.中心[1]] as const, pxPerCell: 16 * downstairsCount };
 
-const 缓 = (t: number) => t * t * (3 - 2 * t);
+const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /** 合屏到哪了（0～1，两头慢）：合屏起 那一帧 0 到 合屏到位 那一帧 1（按两头的帧算，不按拍上的秒：两头那一帧正好是分屏、整屏） */
-export const 合屏进度 = (秒: number) => 缓(clamp01((秒 * fps - 事.合屏起.帧) / (事.合屏到位.帧 - 事.合屏起.帧)));
+export const mergeProgress = (sec: number) => smoothstep(clamp01((sec * fps - events.合屏起.帧) / (events.合屏到位.帧 - events.合屏起.帧)));
 
 /** 服务器那张整屏宽的画这一刻的取景中心 x（格）：合屏前 合屏前偏，合屏到位 0，两头都在整格上。
  *  挪的时候不吸：原来吸到一个贴图像素（1/16 格，10 成片像素），60 fps 下两头一帧挪 10 像素、一帧不挪，一顿一顿（用户 11-03「统统改成 60 帧」）；
  *  不吸时贴图像素宽窄差 1 像素，动着看不出来 */
-export const 服务器中心x = (秒: number) => 合屏前偏 * (1 - 合屏进度(秒));
+export const serverCenterX = (sec: number) => mergedScreenOffset * (1 - mergeProgress(sec));
 
 /** 分屏线（现实那半的左沿）这一刻在哪（页面 x）：合屏前 640，合屏到位推到画外 1280；比画面挪得快一倍，左屏两边一起露出更多（往外拉开） */
-export const 分屏线x = (秒: number) => Math.round(归隐版式.左宽 + (画宽 - 归隐版式.左宽) * 合屏进度(秒));
+export const splitLineX = (sec: number) => Math.round(retreatLayout.leftWidth + (drawWidthPx - retreatLayout.leftWidth) * mergeProgress(sec));
 
 /** 照片墙一格几个地图像素（特效/地图画.ts）：N = 10 用 32（同 2-摇铃） */
-export const 照片墙边长: 地图边长 = 32;
+export const photoWallEdge: MapSize = 32;
 
 // ---------- 她：挂铃 ----------
 /** 挂铃时站哪：告示牌右边，朝镜头；主手（画面左边）往左上伸到铃的挂点（第15句.ts 的 铃.挂点，牌面右上角 x −2.5）。
  *  帽檐（半径 0.5）左沿不压到牌子（核查 10-24：−1.8 时帽子盖着牌子右半） */
-export const 挂铃站位 = -1.75;
+export const hangBellStandPos = -1.75;
 /** 挂铃时朝镜头（90° 的整数倍，贴图像素对得齐；脸、铃都朝着看的人） */
-export const 挂铃朝向 = 180;
+export const hangBellFacing = 180;
 /** 挂上（挂铃）以后手停 挂铃停秒 再放下（用 挂铃放下秒；24 fps 时停 2 帧、放下 4 帧） */
-export const 挂铃停秒 = 旧帧(2);
-export const 挂铃放下秒 = 旧帧(4);
+export const hangBellPauseSec = legacyFrameSec(2);
+export const hangBellPutDownSec = legacyFrameSec(4);
 
 /** 刚挂上的铃晃几下（度、秒、每秒衰减），同第 15 句摇铃的摆法，幅度小一点（松手碰了一下）。2-摇铃 开头（合屏到位）前收到 0 */
-export const 挂铃摆 = { 振幅: 14, 周期: 0.32, 衰减: 0.08 } as const;
+export const hangBellSwing = { amplitude: 14, periodSec: 0.32, damping: 0.08 } as const;
 
 // ---------- 她：走到照片墙前 ----------
 /** 取照时站哪：合照格（x 2.5～3.5、z 1～2）左边，朝东（−90，侧身对着照片墙那一格；她从西边走过来，停下就伸手，不用回身）。
  *  帽檐右沿 2.5，不压合照；身子挡住右边那一列夏天的照片（她走了以后露出来） */
-export const 取照站位 = 2;
+export const photoStandPos = 2;
 /** 走路朝东 */
-export const 走路朝向 = -90;
+export const walkFacing = -90;
 /** 转身（朝镜头 ↔ 朝东）用几秒（24 fps 时 3 帧） */
-export const 转身秒 = 旧帧(3);
+export const turnSec = legacyFrameSec(3);
 /** 走路：走向照片墙 那一帧起步，到 手按合照 前 按伸秒 停下；起步、停下各 走缓秒 秒加减速，中间匀速（3.75 格、约 4.6 格/秒，原版走路 4.3、疾跑 5.6） */
-export const 走缓秒 = 0.15;
+export const walkEaseSec = 0.15;
 /** 步子：一步周期走多远（格，原版 HumanoidModel 一个 limbSwing 周期 9.43、走路每格 limbSwing 约 3.6，一周期 2.67 格，同 库/角色/跑步.ts）、腿和胳膊摆多大（度） */
-export const 步 = { 周期格: 2.67, 腿: 38, 胳膊: 24 } as const;
+export const gait = { periodCells: 2.67, legAmp: 38, armSwing: 24 } as const;
 
 /** 她这一刻走到哪（脚底 x）、走了几个步周期：走向照片墙 前在挂铃站位，到站以后停在取照站位 */
-export const 走到 = (帧: number): { x: number; 周期: number } => {
-  const 起 = 事.走向照片墙.帧;
-  const 止 = 事.手按合照.帧 - 按伸秒 * fps;
-  const 全 = 取照站位 - 挂铃站位;
-  const T = (止 - 起) / fps;
-  const a = 走缓秒;
+export const walkTo = (frame: number): { x: number; cycles: number } => {
+  const startFrame = events.走向照片墙.帧;
+  const endFrame = events.手按合照.帧 - pressReachSec * fps;
+  const span = photoStandPos - hangBellStandPos;
+  const T = (endFrame - startFrame) / fps;
+  const a = walkEaseSec;
   // 梯形速度：加速 a 秒、匀速、减速 a 秒，走完 全
-  const v = 全 / (T - a);
-  const t = clamp01((帧 - 起) / (止 - 起)) * T;
-  const 路 = t < a ? (v * t * t) / (2 * a) : t > T - a ? 全 - (v * (T - t) ** 2) / (2 * a) : (v * a) / 2 + v * (t - a);
-  return { x: 挂铃站位 + 路, 周期: 路 / 步.周期格 };
+  const v = span / (T - a);
+  const t = clamp01((frame - startFrame) / (endFrame - startFrame)) * T;
+  const travelled = t < a ? (v * t * t) / (2 * a) : t > T - a ? span - (v * (T - t) ** 2) / (2 * a) : (v * a) / 2 + v * (t - a);
+  return { x: hangBellStandPos + travelled, cycles: travelled / gait.periodCells };
 };
 
 // ---------- 她：照片墙前 ----------
 /** 头（[俯仰, 左右]，度，相对身子；正 = 抬头、往她左边）：挂铃时看铃，走路平视，到墙前抬头看合照，取下以后低头看手里的合照 */
-export const 她的头 = {
-  看铃: [-5, -40] as [number, number],
-  平视: [0, 0] as [number, number],
-  看合照: [25, 0] as [number, number],
-  看手里: [-22, 0] as [number, number],
+export const liYingHead = {
+  lookBell: [-5, -40] as [number, number],
+  levelLook: [0, 0] as [number, number],
+  lookGroupPhoto: [25, 0] as [number, number],
+  lookInHand: [-22, 0] as [number, number],
 };
 /** 头转过去用几秒（24 fps 时 3 帧） */
-export const 转头秒 = 旧帧(3);
+export const turnHeadSec = legacyFrameSec(3);
 
 /** 主手（右臂）几个摆法（骨骼整条替换；RightArm 的 x 负 = 往前抬，z 正 = 往她右边抬；UpperBody 的 z 负 = 上身往她右边歪）：
  *  挂铃：朝镜头往左上伸到牌子右上角的钉子；按：朝东往前平伸，手按在合照格左边的框上（站在 取照站位 手够不进格里；帽檐不压合照，不再往前站；
  *    核查 10-24：抬 125° 手举到帽檐后面，看不出按在照片上，放平到 100°）；收：打之前往回收一下；打：伸直、比按高一点；
  *  垂：转回来朝镜头，拿着合照垂在身前（合照在手里露出来）。每个摆法都给全 UpperBody、RightArm、RightForeArm 三根，插值才不跳 */
-export const 主手 = {
+export const mainHand = {
   静: { UpperBody: { rot: [0, 0, 0] }, RightArm: { rot: [0, 0, 5] }, RightForeArm: { rot: [-10, 0, 0] } },
   挂铃: { UpperBody: { rot: [0, 0, -8] }, RightArm: { rot: [-10, 0, 66] }, RightForeArm: { rot: [-8, 0, 0] } },
   按: { UpperBody: { rot: [-6, 0, 0] }, RightArm: { rot: [-100, 0, 0] }, RightForeArm: { rot: [-5, 0, 0] } },
@@ -115,23 +115,23 @@ export const 主手 = {
   垂: { UpperBody: { rot: [0, 0, 0] }, RightArm: { rot: [-35, 0, 8] }, RightForeArm: { rot: [-35, 0, 0] } },
 } satisfies Record<string, Record<string, BonePose>>;
 /** 副手（左臂）把花捧在胸前（花在她的衣服前面，不落在后面工作台、熔炉的灰上） */
-export const 副手捧花 = { LeftArm: { rot: [-45, 0, -10] }, LeftForeArm: { rot: [-50, 0, 0] } };
+export const offHandFlower = { LeftArm: { rot: [-45, 0, -10] }, LeftForeArm: { rot: [-50, 0, 0] } };
 
 /** 按框：手按合照 那一拍前 按伸秒 开始伸，拍上按到（24 fps 时 4 帧） */
-export const 按伸秒 = 旧帧(4);
+export const pressReachSec = legacyFrameSec(4);
 /** 打框：打框 前 打框收秒 往回收、打框那一帧打上去（24 fps 时收 2 帧）；打完手放下来，取照 那一帧合照在手里（照片方案「照片落进她垂下的手里」） */
-export const 打框收秒 = 旧帧(2);
+export const boxFoldSec = legacyFrameSec(2);
 
 /** 合照在手里多大（手持物的显示缩放乘多少）：原版 item/generated 第三人称 0.55 格，再放大到看得出是那张合照 */
-export const 合照手持倍 = 1.6;
+export const groupPhotoHandheldScale = 1.6;
 
 /** 她传送走（她消失）：原版末影人瞬移的紫色传送粒子（库/特效/传送粒子.tsx 的 body 那种），一刻放 放几颗、放 放刻 刻，寿命乘 寿命（原版 2 秒多，收短，2-摇铃 你转向铃以前散完）、大小乘 大小。
  *  原版瞬移一下冒 128 颗（LivingEntity 实体事件 46），这里三刻共 120 颗；核查 10-24 静帧：原来 18 颗、2 倍大，只剩几个紫点，看不出她是传送走的。
  *  前刻：她消失 前几刻就开始冒（粒子刚冒出来很小，拍上才冒的话人没了那一帧画面里几乎没有粒子，像一刀剪掉） */
-export const 传送 = { 放: 40, 放刻: 3, 前刻: 2, 寿命: 0.4, 大小: 3, 种子: 1438 } as const;
+export const teleport = { 放: 40, releaseTick: 3, preTick: 2, 寿命: 0.4, 大小: 3, 种子: 1438 } as const;
 
 // ---------- 调子 ----------
 /** 左屏的调子：从第 13 句末（夏日白天往褪色插 0.2，分屏参数.ts 的 褪色程度 封顶）一路褪到 2-摇铃 开头那样（第15句.ts 的 回色.起：褪色往夏日白天回 1/3），
  *  合屏到位那一拍到，2-摇铃 再从这里回色 */
-export const 褪色起 = 0.2;
-export const 褪色止 = 1 - 回色.起;
+export const fadeStart = 0.2;
+export const fadeEnd = 1 - colorBackRange.起;

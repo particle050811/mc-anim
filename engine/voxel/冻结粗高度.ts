@@ -2,28 +2,28 @@
 // 不在打包时 import Git 外的区段包：没有地形包也能打包、渲古城这类不用地形的段；别人重烘地形、换平台重烘，已经卡好配乐的航线也不跟着变（报告第 5 条）。
 // 用到哪个包的编排自己 import 那一份交进来，engine 不登记有哪些包：加一份不用改 engine，也不让没用到它的段跟着过期。
 // 重新生成：anim world freeze --写（pipeline/世界/冻结.ts），从登记的那版区段包拷。渲染时导入地形取到 包.json 后和这里比指纹，对不上只报警。
-import { coarseHeightFingerprint, decodeCoarseHeight, type 包信息, type 粗高度图 } from './区段包.ts';
+import { coarseHeightFingerprint, decodeCoarseHeight, type PackageInfo, type CoarseHeightMap } from './区段包.ts';
 
-export type 冻结粗高度文件 = { 说明: string; 包: string; 版本: string; 指纹: string; 维度: string; 原点: [number, number, number]; 粗高度: 包信息['粗高度'] };
+export type FrozenCoarseHeightFile = { 说明: string; 包: string; 版本: string; 指纹: string; 维度: string; 原点: [number, number, number]; 粗高度: PackageInfo['粗高度'] };
 
 // 本页面里用过的冻结文件（包名 → 文件），导入地形时拿来比指纹
-const used = new Map<string, 冻结粗高度文件>();
-const decoded = new Map<string, 粗高度图>();
+const used = new Map<string, FrozenCoarseHeightFile>();
+const decoded = new Map<string, CoarseHeightMap>();
 
-const remember = (file: 冻结粗高度文件) => {
+const remember = (file: FrozenCoarseHeightFile) => {
   used.set(file.包, file);
   return file;
 };
 // 包的原点 [ox, oy, oz]（游戏坐标，见 区段包.ts 文件头）
-export const frozenOrigin = (file: 冻结粗高度文件) => remember(file).原点;
-export const frozenCoarse = (file: 冻结粗高度文件): 粗高度图 => {
+export const frozenOrigin = (file: FrozenCoarseHeightFile) => remember(file).原点;
+export const frozenCoarse = (file: FrozenCoarseHeightFile): CoarseHeightMap => {
   let coarse = decoded.get(file.包);
   if (!coarse) decoded.set(file.包, (coarse = decodeCoarseHeight(remember(file))));
   return coarse;
 };
 
 // 导入地形取到的那版包的粗高度和冻结的对不上：画面上的地形是新的，航线还按冻结的那份排，可能钻地、离树太近
-export const checkFrozenCoarse = (packName: string, runtime: 粗高度图) => {
+export const checkFrozenCoarse = (packName: string, runtime: CoarseHeightMap) => {
   const file = used.get(packName);
   if (!file) return;
   const fingerprint = coarseHeightFingerprint(runtime);

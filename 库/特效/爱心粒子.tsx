@@ -13,26 +13,26 @@ import { type Particle, ParticleQuads, particleInitVel, particleTexture } from '
 import heartPng from 'asset:贴图/特效/爱心粒子';
 
 const HEART = png(heartPng);
-const 寿命 = 16;
-const 摩擦 = 0.86;
+const lifetime = 16;
+const friction = 0.86;
 
 // 一颗爱心的出生：刻 = 出生时刻；p = 出生位置；种子 = 这颗自己的随机数
 export type HeartSpawn = { 刻: number; p: V3; 种子: number };
 
 // 驯服那一下的 7 颗。脚：实体脚底中心；宽、高：碰撞箱；刻：驯服那一刻
-export const tamingHearts = (脚: V3, 宽: number, 高: number, 刻: number, seed: number): HeartSpawn[] => {
+export const tamingHearts = (feet: V3, width: number, height: number, tick: number, seed: number): HeartSpawn[] => {
   const rand = rng(seed * 7349 + 13);
   return Array.from({ length: 7 }, (_, i) => ({
-    刻,
-    p: [脚[0] + 宽 * (2 * rand() - 1), 脚[1] + 宽 * (2 * rand() - 1), 脚[2] + 高 * rand() + 0.5] as V3,
+    刻: tick,
+    p: [feet[0] + width * (2 * rand() - 1), feet[1] + width * (2 * rand() - 1), feet[2] + height * rand() + 0.5] as V3,
     种子: seed * 389 + i,
   }));
 };
 
 // 一颗爱心在 刻 时的位置和半边长；没出生或已消失返回 null
-export const heartStateAt = (spawn: HeartSpawn, 刻: number): { p: V3; half: number } | null => {
-  const τ = 刻 - spawn.刻;
-  if (τ < 0 || τ >= 寿命 + 1) return null;
+export const heartStateAt = (spawn: HeartSpawn, tick: number): { p: V3; half: number } | null => {
+  const τ = tick - spawn.刻;
+  if (τ < 0 || τ >= lifetime + 1) return null;
   const rand = rng(spawn.种子 * 2654435761 + 31);
   const half = 0.1 * (rand() * 0.5 + 0.5) * 2 * 1.5;
   const [gx, gy, gz] = particleInitVel(rand, 0, 0, 0);
@@ -45,11 +45,11 @@ export const heartStateAt = (spawn: HeartSpawn, 刻: number): { p: V3; half: num
   for (let k = 0; k < age; k++) {
     prev = cur;
     cur = [cur[0] + v[0], cur[1] + v[1], cur[2] + v[2]];
-    v = [v[0] * 摩擦, v[1] * 摩擦, v[2] * 摩擦];
+    v = [v[0] * friction, v[1] * friction, v[2] * friction];
   }
   const pt = τ - age;
   const p: V3 = [prev[0] + (cur[0] - prev[0]) * pt, prev[1] + (cur[1] - prev[1]) * pt, prev[2] + (cur[2] - prev[2]) * pt];
-  return { p, half: half * Math.min(1, Math.max(0, (τ / 寿命) * 32)) };
+  return { p, half: half * Math.min(1, Math.max(0, (τ / lifetime) * 32)) };
 };
 
 // size：整体放大（默认 1 = 原版）

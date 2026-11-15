@@ -20,14 +20,14 @@ import raw from 'asset:模型/角色/恼鬼';
 import texVex from 'asset:贴图/角色/恼鬼/恼鬼';
 import texCharge from 'asset:贴图/角色/恼鬼/蓄力';
 
-const MODEL = (raw as unknown as { models: { 恼鬼: EntityModelData } }).models.恼鬼;
+const MODEL = (raw as unknown as { models: { vex: EntityModelData } }).models.vex;
 const TEX = { normal: png(texVex), charging: png(texCharge) };
 const DEG = Math.fround(0.017453292);
 
 export const VEX = {
   box: [0.4, 0.8] as [number, number], // 碰撞箱 宽、高
   height: 0.72, // 头顶离脚底（模型）
-  summonRange: { 水平: 2, 高: 1 }, // 出生在施法者眼睛 + (±2, +1, ±2)
+  summonRange: { horizontal: 2, 高: 1 }, // 出生在施法者眼睛 + (±2, +1, ±2)
   lifeTicks: 12000,
 };
 

@@ -5,7 +5,7 @@ import * as THREE from 'three';
 
 const HEIGHT_THRESHOLD = 0.56;
 let heightMap: { nearest: THREE.DataTexture; smooth: THREE.DataTexture } | null = null;
-export const 积云高度图 = (noise: Uint8Array) => {
+export const cumulusHeightMap = (noise: Uint8Array) => {
   if (heightMap) return heightMap;
   const N = 512;
   const parent = new Int32Array(N * N).map((_, i) => i);

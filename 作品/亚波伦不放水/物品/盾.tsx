@@ -8,9 +8,9 @@ import React from 'react';
 import type { ItemTransform } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
 import { TexBox } from '@engine/model/贴图方盒.tsx';
-import 盾图 from 'asset:贴图/法术/minecraft/entity/shield_base_nopattern';
+import shieldPng from 'asset:贴图/法术/minecraft/entity/shield_base_nopattern';
 
-export const 盾显示 = {
+export const shieldDisplay = {
   平时: {
     thirdperson_righthand: { rotation: [0, 90, 0], translation: [10, 6, -4], scale: [1, 1, 1] },
     thirdperson_lefthand: { rotation: [0, 90, 0], translation: [10, 6, 12], scale: [1, 1, 1] },
@@ -24,12 +24,12 @@ export const 盾显示 = {
 } satisfies Record<string, Record<string, ItemTransform>>;
 
 /** 物品空间里的盾。TexBox 用实体坐标（X = 模型 x、Y = 模型 z、Z = −模型 y），绕 X 转 −90 度正好是 renderByItem 的 scale(1, −1, −1) 之后的朝向 */
-export const 盾: React.FC = () => {
-  const 图 = png(盾图);
+export const Shield: React.FC = () => {
+  const image = png(shieldPng);
   return (
     <group position={[-0.5, -0.5, -0.5]} rotation={[-Math.PI / 2, 0, 0]}>
-      <TexBox tex={图} px={[12, 22, 1]} uv={[0, 0]} s={[12 / 16, 1 / 16, 22 / 16]} p={[0, -1.5 / 16, 0]} />
-      <TexBox tex={图} px={[2, 6, 6]} uv={[26, 0]} s={[2 / 16, 6 / 16, 6 / 16]} p={[0, 2 / 16, 0]} />
+      <TexBox tex={image} px={[12, 22, 1]} uv={[0, 0]} s={[12 / 16, 1 / 16, 22 / 16]} p={[0, -1.5 / 16, 0]} />
+      <TexBox tex={image} px={[2, 6, 6]} uv={[26, 0]} s={[2 / 16, 6 / 16, 6 / 16]} p={[0, 2 / 16, 0]} />
     </group>
   );
 };

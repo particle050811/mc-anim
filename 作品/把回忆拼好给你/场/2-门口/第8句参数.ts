@@ -4,104 +4,104 @@
 // 镜头（第8句镜头，N = 16）和哈气那一拍（27.80，静帧「门口哈气」）的站位、朝向、头、爪子、尾巴、调子在 第8句.ts，这里不重写；整句的动作在它前后接上。
 // 用户 10-24「全部收集 动态放 4 幅画时间上就来不及 需要取舍」：墙上已经挂着三张，她一直站在门洞里（哈气站位.她），只把最新那张挂进最后一只空框；
 // 原来的箱子、四张照片一张张落进箱子、从箱子边扑进门洞，都删了。
-import { fps, 旧帧 } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第8句.ts';
-import { 照片墙格角, 照片墙格位 } from '../../地点/照片墙格.ts';
-import { 你的头, 哈气站位, 第8句镜头 } from './第8句.ts';
+import { fps, legacyFrameSec } from '../../分镜/时间.ts';
+import { events as mainCutEvents } from '../../分镜/正片第8句.ts';
+import { photoCellCorner, photoWallCellPos } from '../../地点/照片墙格.ts';
+import { youHead, hissStandPos, line8Shot } from './第8句.ts';
 
 // ---------- 云 ----------
 /** 头顶云洞的半径（以第 7 句光柱打的那一点为心，格；地点/原版云.ts 的 小木屋上空云）。第 7 句末洞开到 64（末地雷雨 那一路 参数.ts 的 云洞.r2），
  *  切到门口时已经开到这里，整段不再变。原来段首接 64、到 第8句晴定 才缓到 96：门这个机位眼睛平着看，头半秒那圈云压成一堵云墙慢慢退，
  *  用户 11-03 看了说「应该前面就消退完了」。那圈云远远地压在樱花林上沿、淡在雾里 */
-export const 云洞半径 = 96;
+export const cloudHoleRadius = 96;
 /** 云顶色（sRGB 数值）：原版晴天白天的云色（ClientLevel.getCloudColor：白天亮度系数 7000 刻时是 1，不下雨不拉灰），同第 7 句雨停以后 */
-export const 云色 = [1, 1, 1] as const;
+export const cloudColor = [1, 1, 1] as const;
 
 // ---------- 挂照片（26.53，一拍完成） ----------
 /** 右手（面朝镜头时在画面左边）：自然垂在身侧、往前一点（同 库/角色/魔法酒狐新动作.ts 的 右手垂着）。
  *  原来只摆左手，右手照模型的原样摆，宽袖子往外后方翻出去，像拧过去了（用户 11-07「这边的手可以拧到这里吗 感觉已经非人类了」） */
-const 右手垂着 = { RightArm: { rot: [-12, 0, -6] }, RightForeArm: { rot: [-25, 0, 0] } };
+const rightArmDown = { RightArm: { rot: [-12, 0, -6] }, RightForeArm: { rot: [-25, 0, 0] } };
 /** 她左手（面朝镜头时在画面右边，挨着照片墙那一侧）垂在身边拿着光柱破云，照片正面朝镜头、立在空框前面，下沿离地一点、上沿到她下巴旁边，不挡脸；
  *  比框里大一圈（照片手持边），手机上认得出是哪张（核查 10-24：原来一格大、手机上 39 像素看不清）。左手握点在照片左沿中间、挡在照片前面。
  *  MagicalWineFoxEx 的骨骼整条替换；LeftArm 的 x 负 = 往前抬、z 负 = 往她左边（画面右）张开（同 场/2-门口/归隐参数.ts 的 副手） */
-export const 拿照片手 = { ...右手垂着, LeftArm: { rot: [-15, 0, -25] }, LeftForeArm: { rot: [-20, 0, 0] } };
+export const holdPhotoHand = { ...rightArmDown, LeftArm: { rot: [-15, 0, -25] }, LeftForeArm: { rot: [-20, 0, 0] } };
 /** 照片在手里多大（格）：1.25 格 = N 16 时 320 成片像素，一个地图像素 5 个成片像素（整数，不糊），手机上约 49 像素 */
-export const 照片手持边 = 1.25;
+export const photoHoldEdge = 1.25;
 /** 照片在手里的左下角（场景坐标，格）：左沿 x 0.375（她左手握点 x 0.44 左右，脸在 x 0.3 以左），立在空框前面（框在 x 0.5～1.5、z 0～1）；
  *  y 0.4375 在她的手后面、身子前面，斜投影里往上挪 0.4375 × 顶面 ÷ N = 14 成片像素，正好整数 */
-export const 照片手持角 = [0.375, 0.4375, 0.125] as const;
+export const photoHoldAngle = [0.375, 0.4375, 0.125] as const;
 /** 往框里放：照片从手里那个位置、大小挪进空框（框里那张的位置、一格大），手跟着往框那边伸（握点到 x 0.54、z 0.82）。
  *  游戏里右键一下照片就进框，这里演绎成几帧推进去（核查 10-24：原来 4 帧伸手、照片一下跳进框，看不清） */
-export const 挂照片手 = { ...右手垂着, LeftArm: { rot: [-5, 0, -40] }, LeftForeArm: { rot: [-15, 0, 0] } };
+export const hangPhotoHand = { ...rightArmDown, LeftArm: { rot: [-5, 0, -40] }, LeftForeArm: { rot: [-15, 0, 0] } };
 /** 空框那一格的地图左下角（照片墙格位.夏天 第四格） */
-export const 照片框角 = 照片墙格角(...照片墙格位.夏天[3]);
+export const photoFrameAngle = photoCellCorner(...photoWallCellPos.summer[3]);
 /** 放下来的左手（照片墙前手里空了） */
-export const 空手 = { ...右手垂着, LeftArm: { rot: [0, 0, -5] }, LeftForeArm: { rot: [-10, 0, 0] } };
+export const emptyHand = { ...rightArmDown, LeftArm: { rot: [0, 0, -5] }, LeftForeArm: { rot: [-10, 0, 0] } };
 /** 挂照片 前多久开始往框里推（推到 挂照片 那一帧正好进框）；挂上以后多久收回手（24 fps 时 7 帧、4 帧） */
-export const 挂伸秒 = 旧帧(7);
-export const 收手秒 = 旧帧(4);
+export const hangReachSec = legacyFrameSec(7);
+export const retractHandSec = legacyFrameSec(4);
 
 /** 她的头 [俯仰, 左右]（度，正 = 抬头、往她左边）。机位往下斜着看，她的大帽檐会盖住脸：转过 50° 或低头太多，脸就只剩一侧头发和帽檐，
  *  所以转得都不大（哈气的头抬 18°）。看手里：往她左边（画面右，照片那边）低一点 */
-export const 看手里: [number, number] = [-6, 32];
+export const lookInHand: [number, number] = [-6, 32];
 /** 伸手挂的时候看着框 */
-export const 看框: [number, number] = [-12, 42];
+export const lookFrame: [number, number] = [-12, 42];
 /** 挂好了、苦力怕还没到：她笑着看你（往她左边，画面右） */
-export const 看你: [number, number] = [10, 35];
+export const lookAtYou: [number, number] = [10, 35];
 /** 27.38 看见苦力怕：头往她右边（画面左）转，惊讶的眼睛露在帽檐下 */
-export const 看苦力怕: [number, number] = [10, -40];
+export const lookAtCreeper: [number, number] = [10, -40];
 /** 头转过去用多久（24 fps 时 3 帧） */
-export const 转头秒 = 旧帧(3);
+export const turnHeadSec = legacyFrameSec(3);
 
 // ---------- 苦力怕 ----------
 /** 走：苦力怕冒头（前脚刚进画框左边）、27.80 哈气那一拍正好停在 哈气站位.苦力怕，匀速走，速度由这两点倒推（编排.ts），
  *  算出来 3.6 米/秒，比原版追人（库/生物/苦力怕.tsx 的 CREEPER.speed.chase，2.70 米/秒）快三成（冒头让开挂照片挪到下半句开头）；腿照这个速度按原版摆。
  *  苦力怕侧着（朝东）时前脚伸出脚底中心 6/16 格，再留一个贴图像素 */
-export const 苦力怕前沿 = 7 / 16;
+export const creeperFront = 7 / 16;
 /** 走速（米/秒）：画框左沿往左 苦力怕前沿 处走到 哈气站位.苦力怕，用冒头到哈气那几帧 */
-export const 苦力怕走速 =
-  ((哈气站位.苦力怕 - (-1280 / 第8句镜头.取景.每格 - 苦力怕前沿)) * fps) / (正片事件.哈气.帧 - 正片事件.苦力怕冒头.帧);
+export const creeperWalkSpeed =
+  ((hissStandPos.苦力怕 - (-1280 / line8Shot.framing.pxPerCell - creeperFront)) * fps) / (mainCutEvents.哈气.帧 - mainCutEvents.苦力怕冒头.帧);
 /** 逃：原版躲猫近处的速度（CREEPER.speed.flee，3.89 米/秒）再快一倍（演绎）：三稿要 28.23 逃出画框，原版速度从停的地方跑出画框要 0.9 秒；
  *  快一倍以后 28.5 秒出画框，段尾（第 9 句匹配剪之前）已经不在画里。28.23「淘」那一拍它还在画框左边跑。
  *  原版 limbSwingAmount 封顶 1（库/角色/史蒂夫.tsx 的 vanillaWalk），腿摆得跟不上这个速度，有点滑步（原版跑快了也是这样） */
-export const 苦力怕逃倍率 = 2;
+export const creeperFleeMult = 2;
 /** 掉头用多久（24 fps 时 2 帧）：原版转身每刻最多 90°，180° 两刻 */
-export const 苦力怕掉头秒 = 旧帧(2);
+export const creeperTurnSec = legacyFrameSec(2);
 
 // ---------- 她回头得意（28.23 起） ----------
 /** 面朝镜头，头往她左边（你那边）转、往一边歪（Head 的滚转，度），闭着眼笑（「(✿◠‿◠)」的眼睛）。第 9 句匹配剪进来从这个头接（门口之夜编排.ts 的 末态头） */
-export const 得意看: [number, number] = [12, 30];
-export const 得意歪 = 14;
-export const 得意气泡字 = '(✿◠‿◠)';
+export const proudLook: [number, number] = [12, 30];
+export const proudTilt = 14;
+export const proudBubbleText = '(✿◠‿◠)';
 
 // ---------- 声音 ----------
 /** 原声在母版里的固定增益（同 场/1-隐世之境一楼/参数.ts 的 原声增益，−6 dB 留余量）；段在一串歌里中间，不淡入 */
-export const 原声增益 = 0.5;
+export const originalGain = 0.5;
 /** 照片挂进框：原版荧光框放东西的声音（entity.glow_item_frame.add_item.1，0.09 秒，一开头就是最响的 −4.3 dBFS，ffmpeg 按 48 kHz 每 1/24 秒 2000 个样本一格量的），
  *  起音落在 挂照片 那一帧。增益压到峰值 −11 dBFS 左右，叠在原声（× 0.5）上听得出一下「咔」（Agent 暂定） */
-export const 挂照片声 = { 资产: '音效/把回忆拼好给你/entity.glow_item_frame.add_item.1', 秒: 0.093, 增益: 0.45 } as const;
+export const hangPhotoSound = { 资产: '音效/把回忆拼好给你/entity.glow_item_frame.add_item.1', 秒: 0.093, 增益: 0.45 } as const;
 /** 原版 item.book.page_turn 三个文件的纸声：峰秒、峰值是实测（按 48 kHz 每 1/24 秒 2000 个样本一格量峰值，格从文件头数起，峰秒 = 那一格的起点）：
  *  .1 第 10 格 −6.9 dBFS（前面 0.4 秒是很轻的翻页声）、.2 第 6 格 −20.9（第 4～6 格差不多响）、.3 第 6 格 −15.7；长度是文件时长。原来量给第 8 句放照片进箱子用，箱子删了以后第 14 句的撕书、撒手（第14句声音.ts）还在用 */
-export const 纸声们 = [
-  { 资产: '音效/item.book.page_turn.1', 峰秒: 旧帧(10), 峰值: -6.9, 秒: 0.729 },
-  { 资产: '音效/item.book.page_turn.2', 峰秒: 旧帧(6), 峰值: -20.9, 秒: 0.7 },
-  { 资产: '音效/item.book.page_turn.3', 峰秒: 旧帧(6), 峰值: -15.7, 秒: 0.537 },
+export const paperSounds = [
+  { 资产: '音效/item.book.page_turn.1', peakSec: legacyFrameSec(10), 峰值: -6.9, 秒: 0.729 },
+  { 资产: '音效/item.book.page_turn.2', peakSec: legacyFrameSec(6), 峰值: -20.9, 秒: 0.7 },
+  { 资产: '音效/item.book.page_turn.3', peakSec: legacyFrameSec(6), 峰值: -15.7, 秒: 0.537 },
 ] as const;
 /** 纸声在母版里的峰值（dBFS）：原声（× 0.5）峰值 −3～−5、每 1/24 秒的响度 −10～−20 dBFS，纸声压在它底下，只听得到一下轻轻的「唰」（Agent 暂定） */
-export const 纸声峰值 = -20;
+export const paperSoundPeakDb = -20;
 /** 猫的哈气声（entity.cat.hiss.1，文件峰值 −0.4 dBFS，原版 volume 0.4）。给 1 时叠着原声削顶到 0 dBFS（预览二实测），
  *  收到 0.55、原声在哈气最响那一截让一让，母版峰值留在 −1 dBFS 以下 */
-export const 哈气声增益 = 0.55;
+export const puffSoundGain = 0.55;
 /** 哈气最响那一截（从哈气那一帧前 1/12 秒到后 0.58 秒，文件里 0～0.7 秒）原声压到多少，前后各用多久渐变（24 fps 时前 2 帧、后 14 帧、渐 2 帧） */
-export const 原声让哈气 = { 增益: 0.35, 前秒: 旧帧(2), 后秒: 旧帧(14), 渐秒: 旧帧(2) } as const;
+export const originalSoundDuck = { 增益: 0.35, preSec: legacyFrameSec(2), afterSec: legacyFrameSec(14), rampSec: legacyFrameSec(2) } as const;
 
 // ---------- 末态（第 9 句同一机位匹配剪到夜里，从这里接） ----------
-export const 第8句末态 = {
-  门开: true,
+export const line8EndState = {
+  doorOpen: true,
   /** 照片墙四张都挂上了（照片墙格位.夏天，地点/照片墙格.ts），合照格还没有框；没有箱子 */
-  照片墙: '夏天四张' as const,
+  photoWallPreset: '夏天四张' as const,
   远景: true,
-  她: { x: 哈气站位.她, yaw: 180, 看: 得意看, 歪: 得意歪, 气泡: 得意气泡字 },
-  你: { x: 哈气站位.你, yaw: 180, 头: 你的头 },
+  liYing: { x: hissStandPos.liYingX, yaw: 180, 看: proudLook, tilt: proudTilt, bubbleText: proudBubbleText },
+  你: { x: hissStandPos.你, yaw: 180, 头: youHead },
   苦力怕: '逃出画框左边' as const,
 } as const;

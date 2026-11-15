@@ -21,10 +21,10 @@
 //   const 色 = 方块染色(体素值(状态), 区块里读出的群系(qx, qy, qz), x, z)   // lib/真实方块表.ts：按染色路（草、树叶、林冠叶、红树叶、水、定值）取色
 import biomeData from 'asset:数据/场景/关键帧/群系色';
 
-type BiomeEntry = { 草: string; 叶: string; 水: string; 草修饰?: string; 叶修饰?: string };
+type BiomeEntry = { grass: string; foliage: string; 水: string; grassModifier?: string; leafModifier?: string };
 const biomeTable = (biomeData as unknown as { 群系: Record<string, BiomeEntry> }).群系;
 const hex = (s: string) => parseInt(s.slice(1), 16);
-const colorTable = new Map(Object.entries(biomeTable).map(([k, entry]) => [k, { grass: hex(entry.草), foliage: hex(entry.叶), water: hex(entry.水), grassModifier: entry.草修饰, leafModifier: entry.叶修饰 }]));
+const colorTable = new Map(Object.entries(biomeTable).map(([k, entry]) => [k, { grass: hex(entry.grass), foliage: hex(entry.foliage), water: hex(entry.水), grassModifier: entry.grassModifier, leafModifier: entry.leafModifier }]));
 
 export const biomeIds: readonly string[] = Object.keys(biomeTable);
 

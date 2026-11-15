@@ -20,9 +20,9 @@ import * as THREE from 'three';
 import { type BedrockModel, BedrockModelView } from '../../engine/model/基岩模型.tsx';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png } from '../../engine/model/贴图.ts';
-import raw资产 from 'asset:模型/物品/重锤';
+import heavyHammerRawAsset from 'asset:模型/物品/重锤';
 import tex from 'asset:贴图/物品/重锤';
-const raw = raw资产 as unknown as object;
+const raw = heavyHammerRawAsset as unknown as object;
 
 const MODEL = { ...raw, texture: png(tex) } as unknown as BedrockModel;
 

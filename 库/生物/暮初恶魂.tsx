@@ -47,15 +47,15 @@ export const urGhastScale = (charge = 0) => {
 
 // 秒：游戏时间（触手摆动）；头偏 / 头仰：视线角（弧度，整个身子跟着转；头仰正 = 往下看）；蓄力：0～1，attackTimer/20（>0.5 换喷火的脸，=1 那一刻喷火球、身子压扁鼓起最厉害）；
 // 表情：不给就按游戏规则——蓄力过半是 喷火，否则 睁眼（打 boss 时它一直盯着人；没有目标才是 闭眼）；发光：受击时闪白（0～1）；受伤：受伤 / 死亡时变红（0～1，同巫妖）
-export const UrGhast: React.FC<{ 秒: number; 头偏?: number; headPitch?: number; charge?: number; face?: UrGhastFace; opacity?: number; hitFlash?: number; 受伤?: number }> = ({
+export const UrGhast: React.FC<{ 秒: number; headYaw?: number; headPitch?: number; charge?: number; face?: UrGhastFace; opacity?: number; hitFlash?: number; hurt?: number }> = ({
   秒: sec,
-  头偏: headYaw = 0,
+  headYaw: headYaw = 0,
   headPitch = 0,
   charge: charge = 0,
   face: faceOverride,
   opacity = 1,
   hitFlash = 0,
-  受伤: hurt = 0,
+  hurt: hurt = 0,
 }) => {
   const age = sec * 20;
   const pose: Record<string, { rot: number[] }> = { body: { rot: [headPitch, headYaw, 0] } };

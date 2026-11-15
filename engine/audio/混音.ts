@@ -1,10 +1,10 @@
-import { 渲染输入 } from '../core/渲染设置.ts';
+import { renderInput } from '../core/渲染设置.ts';
 
 // 去台词开关（默认关）：只在 工具/剪辑微调/导出剪辑包.py --正式 / --渲去台词 时打开，渲染时给 --props='{"去台词":true}'，台词总线整条静音，别的原样。
 // 拼出来是整片去掉台词以后的声音，台词另按各句的落点和增益铺成片段，给用户在剪辑软件里拖着试节奏（用户 10-11 要求）
 function stripped(bus: '去台词'): boolean {
   try {
-    return Boolean((渲染输入() as Record<string, unknown>)[bus]);
+    return Boolean((renderInput() as Record<string, unknown>)[bus]);
   } catch {
     return false; // 诊断脚本在 node 里跑，没有 Remotion 环境
   }
@@ -32,19 +32,19 @@ export const majorActionFloor = 10 ** (-12 / 20);
 // 目标是在音效总线上的响度、不再乘 `sfxVolume`；台词 −18 LUFS，整片最后统一拉响度。初值用户 10-18 说先填、听了再改
 // 用户 10-18 听了整章分档的初值后改成：重 −10，脚步 −30（「脚步声还是太大了」），原来的持续、细节、各声直接给的数都归中。
 // 「细节」只留给慢放回到原速后接着放的余音（旧 慢放.ts）：照游戏规则跟着远近走，不按档再响一遍
-export type 音效档 = '重' | '中' | '脚步' | '细节';
-export const tierLoudness: Record<Exclude<音效档, '细节'>, number> = {
+export type SfxTier = '重' | '中' | '脚步' | '细节';
+export const tierLoudness: Record<Exclude<SfxTier, '细节'>, number> = {
   重: -10, // 招架、尖啸、boss 死、爆炸：比台词响
   中: -20, // 其余：和台词差不多
   脚步: -30, // 走、跑、起跳落地的 step 声；剧情上算落地动作的在镜头里给「中」
 };
 // 没给档的声音按事件归档（初值；用户 10-18 让整章都分档，按剧情要改的在镜头里给 `档`）。从上往下第一条对上的算；循环声（LoopSound）不走这里
-const tierRules: [RegExp, 音效档][] = [
+const tierRules: [RegExp, SfxTier][] = [
   [/death|shriek|warden\.(roar|sonic_boom)|parry|explode|lightning_bolt|attack_impact|force_impact/, '重'],
   [/\.step$/, '脚步'],
   [/./, '中'],
 ];
-export const defaultTier = (event: string): 音效档 => tierRules.find(([re]) => re.test(event))![1];
+export const defaultTier = (event: string): SfxTier => tierRules.find(([re]) => re.test(event))![1];
 // 远近感：只留一点（用户 10-18：「距离只留一点远近感」），0～50 格线性小到 −6 dB，再远不再小
 export const distanceFeel = (dist: number) => 10 ** ((-6 * Math.min(1, dist / 50)) / 20);
 
@@ -54,9 +54,9 @@ export const distanceFeel = (dist: number) => 10 ** ((-6 * Math.min(1, dist / 50
 // 包络按全局帧算，各段渲自己那一截，剪映清单和成片是同一份增益。哪些切点用了：6-3-3 → 6-3-4 切城墙（6-3-下坠/声音.tsx）
 export const cutCrossfade = { 前: 6, 后: 12 };
 export const acrossCut =
-  (before: (frame: number) => number, after: (frame: number) => number, cut: number, { 前, 后 } = cutCrossfade) =>
+  (before: (frame: number) => number, after: (frame: number) => number, cut: number, { 前: preCutFrames, 后: postCutFrames } = cutCrossfade) =>
   (frame: number) => {
-    const k = Math.min(1, Math.max(0, (frame - (cut - 前)) / (前 + 后)));
+    const k = Math.min(1, Math.max(0, (frame - (cut - preCutFrames)) / (preCutFrames + postCutFrames)));
     const w = k * k * (3 - 2 * k);
     if (w <= 0) return before(frame);
     if (w >= 1) return after(frame);

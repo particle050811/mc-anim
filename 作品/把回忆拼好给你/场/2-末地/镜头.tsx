@@ -4,60 +4,60 @@
 // 干净 = 不画歌词（第 8 句收的照片用：这一镜没有气泡、聊天栏，只差歌词）。
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
+import { ToonCanvas } from '@engine/三渲二/画布.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
 import { VanillaParticles } from '@库/特效/原版粒子.tsx';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段窗口 } from '../../分镜/正片第5句.ts';
-import { 画布调子, 描边 as 描边默认 } from '../../画风.ts';
-import { 色板 } from '../../色板.ts';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 末地布景, 龙蛋 } from './布景.tsx';
-import { 你态, 传送粒子们, 刻, 她态, 机位, 歌曲帧, 蛋格 } from './编排.ts';
-import { 末地天空 } from './末地天空.tsx';
-import { 末地传送门 } from './末地传送门.tsx';
-import { 末地角色 } from './角色.tsx';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segmentWindow } from '../../分镜/正片第5句.ts';
+import { canvasTone, outline as defaultOutline } from '../../画风.ts';
+import { palette } from '../../色板.ts';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { EndSet, DragonEgg } from './布景.tsx';
+import { YouState, teleportParticles, frameToTick, LiYingState, cameraRig, toSongFrame, eggCell } from './编排.ts';
+import { EndSky } from './末地天空.tsx';
+import { EndPortal } from './末地传送门.tsx';
+import { EndCharacter } from './角色.tsx';
 
-const 调 = 色板.末地;
-const 宽 = 画幅.宽, 高 = 画幅.高;
+const tone = palette.末地;
+const width = aspect.宽, height = aspect.高;
 
 /** 全片 15 句的符文歌词行（段内帧），样式照歌词艺术字定稿、描边色跟末地调子 */
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 段窗口('2-抢龙蛋').起帧));
-const 歌词样式 = { ...符文歌词默认, 描边色: 调.描边 };
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, segmentWindow('2-抢龙蛋').起帧));
+const lyricStyle = { ...runeLyricDefault, outlineColor: tone.outlineColor };
 
 /** 三渲二画布里的东西（场景坐标） */
-export const 末地场景: React.FC<{ f: number }> = ({ f }) => (
+export const EndScene: React.FC<{ f: number }> = ({ f }) => (
   <>
-    <末地天空 眼={机位(f).眼} />
-    <末地布景 />
-    <末地传送门 刻={刻(f)} />
-    <龙蛋 格={蛋格(f)} />
-    <末地角色 她={她态(f)} 你={你态(f)} 描边={描边默认.开} />
-    <VanillaParticles spawns={传送粒子们} 秒={f / fps} />
+    <EndSky 眼={cameraRig(f).眼} />
+    <EndSet />
+    <EndPortal 刻={frameToTick(f)} />
+    <DragonEgg 格={eggCell(f)} />
+    <EndCharacter liYing={LiYingState(f)} 你={YouState(f)} outline={defaultOutline.开} />
+    <VanillaParticles spawns={teleportParticles} 秒={f / fps} />
   </>
 );
 
-export type 末地镜头属性 = {
+export type EndShotProps = {
   /** 段内帧 */
   f: number;
   /** 不画歌词 */
-  干净?: boolean;
+  clean?: boolean;
   /** 整片后期（只在核对里关，比较用） */
-  后期?: boolean;
+  withPost?: boolean;
   /** 叠在末地上面、歌词下面的一层（自带后期）；给了就把末地这层的暗角、颗粒去掉，由盖层那份整片后期管（不叠两遍） */
-  盖层?: React.ReactNode;
+  overlay?: React.ReactNode;
 };
 
 /** 一整帧（1280×720 页面） */
-export const 末地镜头: React.FC<末地镜头属性> = ({ f, 干净 = false, 后期 = true, 盖层 }) => (
+export const EndShot: React.FC<EndShotProps> = ({ f, clean = false, withPost = true, overlay }) => (
   <AbsoluteFill>
-    <整片后期 调色={后期 ? (盖层 ? { ...调.调色, 暗角: 0, 颗粒: 0 } : 调.调色) : null} 种子={歌曲帧(f)}>
-      <三渲二画布 宽={宽} 高={高} 机位={机位(f)} {...画布调子('末地')}>
-        <末地场景 f={f} />
-      </三渲二画布>
-    </整片后期>
-    {盖层}
-    {!干净 && <符文歌词 行们={行们} 样式={歌词样式} 帧={f} />}
+    <FilmPost grade={withPost ? (overlay ? { ...tone.grade, 暗角: 0, 颗粒: 0 } : tone.grade) : null} 种子={toSongFrame(f)}>
+      <ToonCanvas 宽={width} 高={height} cameraRig={cameraRig(f)} {...canvasTone('末地')}>
+        <EndScene f={f} />
+      </ToonCanvas>
+    </FilmPost>
+    {overlay}
+    {!clean && <RuneLyric lines={lyricLines} 样式={lyricStyle} 帧={f} />}
   </AbsoluteFill>
 );

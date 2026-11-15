@@ -1,53 +1,53 @@
 // 第 6、7 句的声音：雨声（第 6 句首字前一点从 2-抢龙蛋 末尾淡进来，两段一直下，破云起收掉）、第 6 句两声雷、第 7 句光柱撞云时的信标声。按歌曲帧排，段.ts 用 声音/跨段音效.ts 切出落在自己窗口里的那一截。
 // 纯数据。增益、文件长度在 参数.ts。
 import { clamp01 } from '@engine/anim/anim.ts';
-import { fps, 一帧秒 } from '../../分镜/时间.ts';
-import { 事件 as 正片第6到7句事件 } from '../../分镜/正片第6到7句.ts';
-import { 事件 as 正片第8句事件 } from '../../分镜/正片第8句.ts';
-import type { 歌上音效 } from '../../声音/跨段音效.ts';
-import * as 参 from './参数.ts';
+import { fps, oneFrameSec } from '../../分镜/时间.ts';
+import { events as mainCut6to7Events } from '../../分镜/正片第6到7句.ts';
+import { events as mainCut8Events } from '../../分镜/正片第8句.ts';
+import type { SongSound } from '../../声音/跨段音效.ts';
+import * as params from './参数.ts';
 
-const 正片事件 = { ...正片第6到7句事件, ...正片第8句事件 };
+const mainCutEvents = { ...mainCut6to7Events, ...mainCut8Events };
 
 /** 雨量（0～1，歌曲帧）：破云前满，破云到阳光铺地之间收到 0（演绎：原版雨停要 5 秒，雨量每刻减 0.01） */
-export const 雨量 = (帧: number) => clamp01((正片事件.阳光铺地.帧 - 帧) / (正片事件.阳光铺地.帧 - 正片事件.破云.帧));
+export const rainAmount = (frame: number) => clamp01((mainCutEvents.阳光铺地.帧 - frame) / (mainCutEvents.阳光铺地.帧 - mainCutEvents.破云.帧));
 
 /** 雨声从哪一帧起：比第 6 句首字早 雨声提前秒，先在 2-抢龙蛋 末尾淡进来；按秒淡入，起那一帧已经淡进一帧 */
-export const 雨声起帧 = 正片事件.第6句开口.帧 - Math.round(参.雨声提前秒 * fps);
-const 雨淡入 = (帧: number) => clamp01(((帧 - 雨声起帧) / fps + 一帧秒) / ((正片事件.第6句开口.帧 - 雨声起帧) / fps));
+export const rainSoundStartFrame = mainCutEvents.第6句开口.帧 - Math.round(params.rainSoundLeadSec * fps);
+const rainFadeIn = (frame: number) => clamp01(((frame - rainSoundStartFrame) / fps + oneFrameSec) / ((mainCutEvents.第6句开口.帧 - rainSoundStartFrame) / fps));
 
 /** 雨声：rain 1～4 首尾相接，从第 6 句首字前一点起一直接到雨停 */
-export const 雨声们: readonly 歌上音效[] = (() => {
-  const out: 歌上音效[] = [];
-  const 止 = 正片事件.阳光铺地.帧;
-  for (let 起 = 雨声起帧, k = 0; 起 < 止; k++) {
-    const 文件 = 参.雨声们[k % 参.雨声们.length]!;
-    const 帧数 = Math.min(Math.round(文件.秒 * fps), 止 - 起);
-    out.push({ 资产: 文件.资产, 名: `雨声${k + 1}`, 起帧: 起, 帧数, 时长秒: 文件.秒, 增益: (帧) => 参.雨声增益 * 雨量(帧) * 雨淡入(帧) });
-    起 += 帧数;
+export const rainSounds: readonly SongSound[] = (() => {
+  const out: SongSound[] = [];
+  const endFrame = mainCutEvents.阳光铺地.帧;
+  for (let startFrame = rainSoundStartFrame, k = 0; startFrame < endFrame; k++) {
+    const rainSoundFile = params.rainSounds[k % params.rainSounds.length]!;
+    const frameCount = Math.min(Math.round(rainSoundFile.秒 * fps), endFrame - startFrame);
+    out.push({ 资产: rainSoundFile.资产, 名: `雨声${k + 1}`, 起帧: startFrame, 帧数: frameCount, 时长秒: rainSoundFile.秒, 增益: (frame) => params.rainSoundGain * rainAmount(frame) * rainFadeIn(frame) });
+    startFrame += frameCount;
   }
   return out;
 })();
 
 /** 一声雷：滚雷和闪光同时到；她站起来放法术（第 7 句首字）之前淡掉，只落在 2-雷雨 里 */
-const 雷止 = 正片事件.她站起.帧;
-const 一声雷 = (闪帧: number, 名: string): 歌上音效 => {
-  const 起 = 闪帧 - Math.round(参.雷声.提前秒 * fps);
-  return { 资产: 参.雷声.资产, 名, 起帧: 起, 帧数: 雷止 - 起, 时长秒: 参.雷声.秒, 增益: (帧) => 参.雷声.增益 * clamp01((雷止 - 帧) / fps / 参.雷声.淡出秒) };
+const thunderEndFrame = mainCutEvents.她站起.帧;
+const thunderClap = (flashFrame: number, name: string): SongSound => {
+  const startFrame = flashFrame - Math.round(params.thunderSound.leadSec * fps);
+  return { 资产: params.thunderSound.资产, 名: name, 起帧: startFrame, 帧数: thunderEndFrame - startFrame, 时长秒: params.thunderSound.秒, 增益: (frame) => params.thunderSound.增益 * clamp01((thunderEndFrame - frame) / fps / params.thunderSound.fadeOutSec) };
 };
 /** 切点那一道闪电的闷雷 */
-export const 雷 = 一声雷(正片事件.第6句闷雷.帧, '闷雷');
+export const thunder = thunderClap(mainCutEvents.第6句闷雷.帧, '闷雷');
 /** 推到缺口那一道闪电的雷（原版每道闪电都响一声雷；同一个文件，叠在第一声滚雷的尾巴上） */
-export const 近雷 = 一声雷(正片事件.雷照缺口.帧, '近雷');
+export const nearThunder = thunderClap(mainCutEvents.雷照缺口.帧, '近雷');
 
 /** 信标声：「拨」那一帧起放，接第 8 句时截掉，截之前淡掉 */
-const 信标起 = 正片事件.拨.帧;
-const 信标止 = 正片事件.第8句开口.帧;
-export const 信标: 歌上音效 = {
-  资产: 参.信标声.资产,
+const beaconStartFrame = mainCutEvents.拨.帧;
+const beaconEndFrame = mainCutEvents.第8句开口.帧;
+export const beaconSound: SongSound = {
+  资产: params.beaconSoundParams.资产,
   名: '信标激活',
-  起帧: 信标起,
-  帧数: 信标止 - 信标起,
-  时长秒: 参.信标声.秒,
-  增益: (帧) => 参.信标声.增益 * clamp01((信标止 - 帧) / fps / 参.信标声.淡出秒),
+  起帧: beaconStartFrame,
+  帧数: beaconEndFrame - beaconStartFrame,
+  时长秒: params.beaconSoundParams.秒,
+  增益: (frame) => params.beaconSoundParams.增益 * clamp01((beaconEndFrame - frame) / fps / params.beaconSoundParams.fadeOutSec),
 };

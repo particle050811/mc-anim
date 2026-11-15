@@ -13,17 +13,17 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { 代码根, 相对代码根 } from '../环境/路径.ts';
-import { 作品根 } from '../环境/作品.ts';
-import { 建默克尔图, 文本哈希, 编译选项, 锁定版本, 默克尔算法, type 默克尔明细 } from './默克尔.ts';
-import { 数据根 } from '../环境/配置.ts';
-import { 按材质包分组, 照材质包选用, 读作品资产锁 } from '../资产/资产锁.ts';
-import { 段私有配乐, 私有配乐模块 } from '../资产/私有配乐.ts';
-import { 缺字节 } from '../资产/缺字节.ts';
-import type { 段信息 } from '../清单/清单.ts';
-import { 段长秒 } from '../../engine/段/段定义.ts';
+import { codeRoot, relativeToCodeRoot } from '../环境/路径.ts';
+import { workRoot } from '../环境/作品.ts';
+import { buildMerkleGraph, textFileHash, compileOptions, lockedVersion, MERKLE_ALGORITHM, type MerkleDetail } from './默克尔.ts';
+import { dataRoot } from '../环境/配置.ts';
+import { groupByResourcePackSelection, withResourcePackSelection, readWorkAssetLock } from '../资产/资产锁.ts';
+import { segPrivateMusic, privateMusicModule } from '../资产/私有配乐.ts';
+import { missingBytes } from '../资产/缺字节.ts';
+import type { SegInfo } from '../清单/清单.ts';
+import { segDurSec } from '../../engine/段/段定义.ts';
 
-export type 指纹项 = {
+export type FingerprintItem = {
   代码: { 画面根: string; 段根: string; 设置根: string; 外壳根: string };
   地形: Record<string, string>;
   渲染设置: Record<string, unknown>;
@@ -31,136 +31,136 @@ export type 指纹项 = {
   打包规则: Record<string, string>;
   平台: string;
   私有配乐?: Record<string, string>;
-  缺字节?: string[];
+  missingBytes?: string[];
 };
-export type 段指纹 = { 段: string; 指纹: string; 算法: typeof 默克尔算法; 项: 指纹项; 明细: 默克尔明细 };
-export { 锁定版本 };
+export type SegFingerprint = { 段: string; 指纹: string; 算法: typeof MERKLE_ALGORITHM; 项: FingerprintItem; 明细: MerkleDetail };
+export { lockedVersion };
 
 /** 决定像素和声音的包，不管闭包里直接引没引都记版本 */
-const 关键依赖 = ['remotion', '@remotion/bundler', '@remotion/renderer', '@remotion/media', '@remotion/three', 'three', 'react', 'react-dom', 'webpack', 'esbuild'];
+const keyDependencies = ['remotion', '@remotion/bundler', '@remotion/renderer', '@remotion/media', '@remotion/three', 'three', 'react', 'react-dom', 'webpack', 'esbuild'];
 /** 外壳入口是所选作品的 index.ts（和 渲.ts 的 entryPoint 同一个） */
-const 外壳入口 = () => 相对代码根(path.join(作品根(), 'index.ts'));
-const 打包规则文件 = ['pipeline/资产/webpack.ts', 'pipeline/资产/ogg解码.cjs', 'pipeline/资产/媒体字面量.cjs'];
+const shellEntry = () => relativeToCodeRoot(path.join(workRoot(), 'index.ts'));
+const bundleRuleFiles = ['pipeline/资产/webpack.ts', 'pipeline/资产/ogg解码.cjs', 'pipeline/资产/媒体字面量.cjs'];
 
 const sha = (buf: crypto.BinaryLike) => crypto.createHash('sha256').update(buf).digest('hex');
 
 /** 键排序的 JSON（指纹要和对象键的插入顺序无关） */
-export const 稳定JSON = (x: unknown): string => {
-  if (Array.isArray(x)) return `[${x.map(稳定JSON).join(',')}]`;
+export const stableJson = (x: unknown): string => {
+  if (Array.isArray(x)) return `[${x.map(stableJson).join(',')}]`;
   if (x && typeof x === 'object') {
     const o = x as Record<string, unknown>;
     return `{${Object.keys(o)
       .sort()
       .filter((k) => o[k] !== undefined)
-      .map((k) => `${JSON.stringify(k)}:${稳定JSON(o[k])}`)
+      .map((k) => `${JSON.stringify(k)}:${stableJson(o[k])}`)
       .join(',')}}`;
   }
   return JSON.stringify(x);
 };
 
-export const 读地形版本表 = (): Record<string, string> => {
-  const file = path.join(代码根(), 'assets', '地形版本.json');
+export const readTerrainVersionTable = (): Record<string, string> => {
+  const file = path.join(codeRoot(), 'assets', '地形版本.json');
   if (!fs.existsSync(file)) return {};
-  const 包 = (JSON.parse(fs.readFileSync(file, 'utf8')).包 ?? {}) as Record<string, { 版本: string }>;
-  return Object.fromEntries(Object.entries(包).map(([k, v]) => [k, v.版本]));
+  const packs = (JSON.parse(fs.readFileSync(file, 'utf8')).包 ?? {}) as Record<string, { 版本: string }>;
+  return Object.fromEntries(Object.entries(packs).map(([k, v]) => [k, v.版本]));
 };
 
 /** 段声明的包 → 登记的版本，键排好。指纹的地形项用它；切片的页面直接拿算好的这份，不重读表（渲/地形注入.ts） */
-export const 段地形版本 = (键: string, 声明: readonly string[], 版本表: Record<string, string>): Record<string, string> =>
+export const segTerrainVersion = (segKey: string, decls: readonly string[], versionTable: Record<string, string>): Record<string, string> =>
   Object.fromEntries(
-    [...声明].sort().map((名) => {
-      if (!版本表[名]) throw new Error(`${键} 用的地形包 ${名} 没在 assets/地形版本.json 登记版本`);
-      return [名, 版本表[名]!];
+    [...decls].sort().map((packName) => {
+      if (!versionTable[packName]) throw new Error(`${segKey} 用的地形包 ${packName} 没在 assets/地形版本.json 登记版本`);
+      return [packName, versionTable[packName]!];
     }),
   );
 
 /** 外壳到作品 清单.ts 的边不跟（加段、改顺序不影响已有段的像素） */
-const 略过清单 = (importer: string, 目标: string) => path.basename(importer) === '注册.tsx' && path.basename(目标) === '清单.ts';
+const skipImport = (importer: string, target: string) => path.basename(importer) === '注册.tsx' && path.basename(target) === '清单.ts';
 
 /** 段的默克尔入口：画面、段.ts、设置.ts、外壳 */
-const 段入口 = (s: 段信息) => [相对代码根(s.画面), 相对代码根(s.段文件), 'engine/段/设置.ts', 外壳入口()];
+const segEntries = (s: SegInfo) => [relativeToCodeRoot(s.画面), relativeToCodeRoot(s.段文件), 'engine/段/设置.ts', shellEntry()];
 
-export type 指纹任务 = { 段: 段信息; 渲染设置: Record<string, unknown> };
+export type FingerprintTask = { 段: SegInfo; 渲染设置: Record<string, unknown> };
 
 /** 一批段一次打包算指纹（建一张默克尔图，按段取闭包），顺序和任务一样；每一份都和单独算这一段的一样。
  *  材质包按段选的（资产锁.ts）按选用分组，一组一张图：asset: 叶子是这一段选用下的 sha */
-export const 算全部段指纹 = async (任务: readonly 指纹任务[]): Promise<段指纹[]> => {
-  const 组们 = 按材质包分组(作品根(), 任务.map((t, i) => ({ t, i })), (x) => x.t.段.键);
-  const 出: 段指纹[] = [];
-  for (const g of 组们) {
-    const r = await 照材质包选用(g.选, () => 算一组指纹(g.项们.map((x) => x.t)));
-    g.项们.forEach((x, j) => (出[x.i] = r[j]!));
+export const computeSegFingerprints = async (tasks: readonly FingerprintTask[]): Promise<SegFingerprint[]> => {
+  const groups = groupByResourcePackSelection(workRoot(), tasks.map((t, i) => ({ t, i })), (x) => x.t.段.键);
+  const fingerprints: SegFingerprint[] = [];
+  for (const g of groups) {
+    const r = await withResourcePackSelection(g.选, () => computeGroupFingerprints(g.items.map((x) => x.t)));
+    g.items.forEach((x, j) => (fingerprints[x.i] = r[j]!));
   }
-  return 出;
+  return fingerprints;
 };
 
-const 算一组指纹 = async (任务: readonly 指纹任务[]): Promise<段指纹[]> => {
-  if (!任务.length) return [];
-  const 图 = await 建默克尔图(
-    任务.flatMap((t) => 段入口(t.段)),
-    { 略过: 略过清单 },
+const computeGroupFingerprints = async (tasks: readonly FingerprintTask[]): Promise<SegFingerprint[]> => {
+  if (!tasks.length) return [];
+  const merkleTree = await buildMerkleGraph(
+    tasks.flatMap((t) => segEntries(t.段)),
+    { skip: skipImport },
   );
-  const 版本表 = 读地形版本表();
-  const 打包规则: Record<string, string> = { tsconfig: sha(稳定JSON(编译选项())) };
-  for (const f of 打包规则文件) 打包规则[f] = await 文本哈希(f);
-  const 依赖版本 = Object.fromEntries(关键依赖.map((k) => [k, 锁定版本(k)]));
-  const 锁 = 读作品资产锁(作品根());
+  const versionTable = readTerrainVersionTable();
+  const bundleRules: Record<string, string> = { tsconfig: sha(stableJson(compileOptions())) };
+  for (const f of bundleRuleFiles) bundleRules[f] = await textFileHash(f);
+  const dependencyVersions = Object.fromEntries(keyDependencies.map((k) => [k, lockedVersion(k)]));
+  const assetLock = readWorkAssetLock(workRoot());
   // 先把整把锁里缺的挑出来，各段再按自己闭包里的 id 取（和逐段 缺字节(闭包 id) 同一个判据，只是不重复查盘）
-  const 锁里缺的 = new Set(缺字节(Object.keys(锁), 锁, 数据根()));
-  return 任务.map(({ 段: s, 渲染设置 }) => {
-    const { 根, 明细 } = 图.取(段入口(s));
-    const 项: 指纹项 = {
-      代码: { 画面根: 根[0]!, 段根: 根[1]!, 设置根: 根[2]!, 外壳根: 根[3]! },
-      地形: 段地形版本(s.键, s.段.地形, 版本表),
-      渲染设置: { ...渲染设置, 秒: 段长秒(s.段), 宽: s.段.宽, 高: s.段.高 },
-      依赖版本: { ...依赖版本 },
-      打包规则: { ...打包规则 },
+  const lockMissing = new Set(missingBytes(Object.keys(assetLock), assetLock, dataRoot()));
+  return tasks.map(({ 段: s, 渲染设置: renderSettings }) => {
+    const { 根: roots, 明细: detail } = merkleTree.取(segEntries(s));
+    const fingerprintItems: FingerprintItem = {
+      代码: { 画面根: roots[0]!, 段根: roots[1]!, 设置根: roots[2]!, 外壳根: roots[3]! },
+      地形: segTerrainVersion(s.键, s.段.地形, versionTable),
+      渲染设置: { ...renderSettings, 秒: segDurSec(s.段), 宽: s.段.宽, 高: s.段.高 },
+      依赖版本: { ...dependencyVersions },
+      打包规则: { ...bundleRules },
       平台: `${process.platform}-${process.arch}`,
     };
     // 私有配乐、缺字节都按本段的闭包判（明细是本段单独打包时的那份）
-    if (私有配乐模块 in 明细.模块) {
-      const 配乐 = 段私有配乐(s.段, 锁, 数据根());
-      if (Object.keys(配乐).length) 项.私有配乐 = 配乐;
+    if (privateMusicModule in detail.模块) {
+      const music = segPrivateMusic(s.段, assetLock, dataRoot());
+      if (Object.keys(music).length) fingerprintItems.私有配乐 = music;
     }
-    const 缺 = Object.keys(明细.资产).filter((id) => 锁里缺的.has(id)).sort();
-    if (缺.length) 项.缺字节 = 缺;
-    return { 段: s.键, 指纹: sha(稳定JSON(项)), 算法: 默克尔算法, 项, 明细 };
+    const missing = Object.keys(detail.资产).filter((id) => lockMissing.has(id)).sort();
+    if (missing.length) fingerprintItems.missingBytes = missing;
+    return { 段: s.键, 指纹: sha(stableJson(fingerprintItems)), 算法: MERKLE_ALGORITHM, 项: fingerprintItems, 明细: detail };
   });
 };
 
 /** 两份指纹哪些项变了；给了明细就细到文件（只挪了路径的记成「挪了」）。旧算法的记录不逐项比 */
-export const 指纹差异 = (旧: Pick<段指纹, '项'> & { 明细?: 默克尔明细; 算法?: string }, 新: Pick<段指纹, '项'> & { 明细?: 默克尔明细; 算法?: string }): string[] => {
-  if (旧.算法 !== 新.算法 || !('代码' in 旧.项)) return [`指纹算法换过（${旧.算法 ?? '旧算法'} → ${新.算法 ?? '旧算法'}），不逐项比`];
-  const 差: string[] = [];
-  const 比表 = (名: string, a: Record<string, unknown>, b: Record<string, unknown>) => {
+export const fingerprintDiff = (oldFingerprint: Pick<SegFingerprint, '项'> & { 明细?: MerkleDetail; 算法?: string }, newFingerprint: Pick<SegFingerprint, '项'> & { 明细?: MerkleDetail; 算法?: string }): string[] => {
+  if (oldFingerprint.算法 !== newFingerprint.算法 || !('代码' in oldFingerprint.项)) return [`指纹算法换过（${oldFingerprint.算法 ?? '旧算法'} → ${newFingerprint.算法 ?? '旧算法'}），不逐项比`];
+  const diffs: string[] = [];
+  const compareTable = (displayName: string, a: Record<string, unknown>, b: Record<string, unknown>) => {
     for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
-      if (!(k in a)) 差.push(`${名} 多了 ${k}`);
-      else if (!(k in b)) 差.push(`${名} 少了 ${k}`);
-      else if (稳定JSON(a[k]) !== 稳定JSON(b[k])) 差.push(`${名} 改了 ${k}`);
+      if (!(k in a)) diffs.push(`${displayName} 多了 ${k}`);
+      else if (!(k in b)) diffs.push(`${displayName} 少了 ${k}`);
+      else if (stableJson(a[k]) !== stableJson(b[k])) diffs.push(`${displayName} 改了 ${k}`);
     }
   };
-  比表('代码', 旧.项.代码, 新.项.代码);
-  if (旧.明细 && 新.明细 && 差.length) {
-    const a = 旧.明细.模块;
-    const b = 新.明细.模块;
-    const 旧哈希 = new Map(Object.entries(a).map(([p, h]) => [h, p]));
-    const 新哈希 = new Set(Object.values(b));
+  compareTable('代码', oldFingerprint.项.代码, newFingerprint.项.代码);
+  if (oldFingerprint.明细 && newFingerprint.明细 && diffs.length) {
+    const a = oldFingerprint.明细.模块;
+    const b = newFingerprint.明细.模块;
+    const oldHashes = new Map(Object.entries(a).map(([p, h]) => [h, p]));
+    const newHashes = new Set(Object.values(b));
     for (const [p, h] of Object.entries(b)) {
       if (p in a) {
-        if (a[p] !== h) 差.push(`模块 改了 ${p}`);
-      } else if (旧哈希.has(h)) 差.push(`模块 挪了 ${旧哈希.get(h)} → ${p}`);
-      else 差.push(`模块 多了 ${p}`);
+        if (a[p] !== h) diffs.push(`模块 改了 ${p}`);
+      } else if (oldHashes.has(h)) diffs.push(`模块 挪了 ${oldHashes.get(h)} → ${p}`);
+      else diffs.push(`模块 多了 ${p}`);
     }
-    for (const [p, h] of Object.entries(a)) if (!(p in b) && !新哈希.has(h)) 差.push(`模块 少了 ${p}`);
-    比表('资产', 旧.明细.资产, 新.明细.资产);
+    for (const [p, h] of Object.entries(a)) if (!(p in b) && !newHashes.has(h)) diffs.push(`模块 少了 ${p}`);
+    compareTable('资产', oldFingerprint.明细.资产, newFingerprint.明细.资产);
   }
-  比表('地形', 旧.项.地形, 新.项.地形);
-  比表('渲染设置', 旧.项.渲染设置, 新.项.渲染设置);
-  比表('依赖版本', 旧.项.依赖版本, 新.项.依赖版本);
-  比表('打包规则', 旧.项.打包规则, 新.项.打包规则);
-  if (旧.项.平台 !== 新.项.平台) 差.push(`平台 ${旧.项.平台} → ${新.项.平台}`);
-  比表('私有配乐', 旧.项.私有配乐 ?? {}, 新.项.私有配乐 ?? {});
-  const 缺表 = (x?: string[]) => Object.fromEntries((x ?? []).map((id) => [id, '缺字节']));
-  比表('缺字节', 缺表(旧.项.缺字节), 缺表(新.项.缺字节));
-  return 差;
+  compareTable('地形', oldFingerprint.项.地形, newFingerprint.项.地形);
+  compareTable('渲染设置', oldFingerprint.项.渲染设置, newFingerprint.项.渲染设置);
+  compareTable('依赖版本', oldFingerprint.项.依赖版本, newFingerprint.项.依赖版本);
+  compareTable('打包规则', oldFingerprint.项.打包规则, newFingerprint.项.打包规则);
+  if (oldFingerprint.项.平台 !== newFingerprint.项.平台) diffs.push(`平台 ${oldFingerprint.项.平台} → ${newFingerprint.项.平台}`);
+  compareTable('私有配乐', oldFingerprint.项.私有配乐 ?? {}, newFingerprint.项.私有配乐 ?? {});
+  const missingTable = (x?: string[]) => Object.fromEntries((x ?? []).map((id) => [id, '缺字节']));
+  compareTable('缺字节', missingTable(oldFingerprint.项.missingBytes), missingTable(newFingerprint.项.missingBytes));
+  return diffs;
 };

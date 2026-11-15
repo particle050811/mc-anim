@@ -1,27 +1,27 @@
 // 正片第 14 句「也为你骗自己放下」：她归隐。分屏（左她挂铃、进屋取下合照、传送走；右教学楼下你仰头看纸飘下来），纸和花瓣两边一样地飘，
 //   她走以后同一个镜头拉开、47.83 合成门口一整个画面（2-摇铃 接着这个镜头）。
 // 帧数、场窗口、原声 cue 从 分镜 推（[第 14 句前导, 合屏到位)），段里不写数字。音效见 场/2-门口/第14句声音.ts，全在本段里放完。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段时钟 } from '../../分镜/正片第13至14句.ts';
-import { 正片原声增益 } from '../../配乐/正片.ts';
-import { 段里那截 } from '../../声音/跨段音效.ts';
-import { 第14句声音们 } from '../../场/2-门口/第14句声音.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segClock } from '../../分镜/正片第13至14句.ts';
+import { mainCutOriginalGain } from '../../配乐/正片.ts';
+import { clipToSegment } from '../../声音/跨段音效.ts';
+import { line14Sounds } from '../../场/2-门口/第14句声音.ts';
 
-const 钟 = 段时钟('2-归隐');
-const 截 = (音: Parameters<typeof 段里那截>[1]) => {
-  const c = 段里那截(钟.场窗口, 音);
-  if (!c) throw new Error(`${音.名} 不在 2-归隐 的窗口里`);
+const clock = segClock('2-归隐');
+const toCue = (cue: Parameters<typeof clipToSegment>[1]) => {
+  const c = clipToSegment(clock.sceneWindow, cue);
+  if (!c) throw new Error(`${cue.名} 不在 2-归隐 的窗口里`);
   return c;
 };
 
-export default 定义段({
+export default defineSeg({
   场: '2-门口',
-  秒: 钟.秒,
-  宽: 画幅.宽,
-  高: 画幅.高,
+  秒: clock.秒,
+  宽: aspect.宽,
+  高: aspect.高,
   地形: [],
-  场窗口: 钟.场窗口,
+  sceneWindow: clock.sceneWindow,
   // 段在一串歌中间，不淡入、不淡出
-  声音: [{ ...钟.原声, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: 正片原声增益 }, ...第14句声音们.map(截)],
+  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: mainCutOriginalGain }, ...line14Sounds.map(toCue)],
 });

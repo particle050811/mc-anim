@@ -3,293 +3,293 @@
 // 有实现的 revelation、heretic、wither_quietus、ice，空壳 dementor、dragon_nirvana、dragon_skyrocket、shadow_clone、nether_meteor）。
 // 顺序照两个模组注册物品的先后（Goety ModItems、启示录 GRItems）。图标按物品模型 layer0 取，配方见 sourcing/extract.toml「诡厄巫法聚晶图标」「启示录聚晶图标」。
 // 光环版：启示录给持有者戴光环时换的 7 张（贴图/物品/聚晶/光环版/<本体注册名>），键仍是本体聚晶；用不用没定，没列的聚晶没有这一版。
-import 图_0 from 'asset:贴图/物品/聚晶/goety/empty_focus';
-import 图_1 from 'asset:贴图/物品/聚晶/goety/vexing_focus';
-import 图_2 from 'asset:贴图/物品/聚晶/goety/biting_focus';
-import 图_3 from 'asset:贴图/物品/聚晶/goety/feast_focus';
-import 图_4 from 'asset:贴图/物品/聚晶/goety/teeth_focus';
-import 图_5 from 'asset:贴图/物品/聚晶/goety/shredding_focus';
-import 图_6 from 'asset:贴图/物品/聚晶/goety/illusion_focus';
-import 图_7 from 'asset:贴图/物品/聚晶/goety/ignite_focus';
-import 图_8 from 'asset:贴图/物品/聚晶/goety/soul_bolt_focus';
-import 图_9 from 'asset:贴图/物品/聚晶/goety/magic_bolt_focus';
-import 图_10 from 'asset:贴图/物品/聚晶/goety/sword_focus';
-import 图_11 from 'asset:贴图/物品/聚晶/goety/soul_light_focus';
-import 图_12 from 'asset:贴图/物品/聚晶/goety/glow_light_focus';
-import 图_13 from 'asset:贴图/物品/聚晶/goety/illuminate_focus';
-import 图_14 from 'asset:贴图/物品/聚晶/goety/crafting_focus';
-import 图_15 from 'asset:贴图/物品/聚晶/goety/iron_hide_focus';
-import 图_16 from 'asset:贴图/物品/聚晶/goety/bulwark_focus';
-import 图_17 from 'asset:贴图/物品/聚晶/goety/soul_heal_focus';
-import 图_18 from 'asset:贴图/物品/聚晶/goety/shockwave_focus';
-import 图_19 from 'asset:贴图/物品/聚晶/goety/weakening_focus';
-import 图_20 from 'asset:贴图/物品/聚晶/goety/arrow_rain_focus';
-import 图_21 from 'asset:贴图/物品/聚晶/goety/telekinesis_focus';
-import 图_22 from 'asset:贴图/物品/聚晶/goety/command_focus';
-import 图_23 from 'asset:贴图/物品/聚晶/goety/order_focus';
-import 图_24 from 'asset:贴图/物品/聚晶/goety/sonic_boom_focus';
-import 图_25 from 'asset:贴图/物品/聚晶/goety/corruption_focus';
-import 图_26 from 'asset:贴图/物品/聚晶/goety/rotting_focus';
-import 图_27 from 'asset:贴图/物品/聚晶/goety/osseous_focus';
-import 图_28 from 'asset:贴图/物品/聚晶/goety/ghost_fire_focus';
-import 图_29 from 'asset:贴图/物品/聚晶/goety/reaping_focus';
-import 图_30 from 'asset:贴图/物品/聚晶/goety/spooky_focus';
-import 图_31 from 'asset:贴图/物品/聚晶/goety/phantasm_focus';
-import 图_32 from 'asset:贴图/物品/聚晶/goety/vanguard_focus';
-import 图_33 from 'asset:贴图/物品/聚晶/goety/blackguard_focus';
-import 图_34 from 'asset:贴图/物品/聚晶/goety/leeching_focus';
-import 图_35 from 'asset:贴图/物品/聚晶/goety/killing_focus';
-import 图_36 from 'asset:贴图/物品/聚晶/goety/skull_focus';
-import 图_37 from 'asset:贴图/物品/聚晶/goety/barricade_focus';
-import 图_38 from 'asset:贴图/物品/聚晶/goety/quaking_focus';
-import 图_39 from 'asset:贴图/物品/聚晶/goety/earth_punch_focus';
-import 图_40 from 'asset:贴图/物品/聚晶/goety/smack_stone_focus';
-import 图_41 from 'asset:贴图/物品/聚晶/goety/temblor_clap_focus';
-import 图_42 from 'asset:贴图/物品/聚晶/goety/ministrous_focus';
-import 图_43 from 'asset:贴图/物品/聚晶/goety/pulverize_focus';
-import 图_44 from 'asset:贴图/物品/聚晶/goety/rotation_focus';
-import 图_45 from 'asset:贴图/物品/聚晶/goety/burrowing_focus';
-import 图_46 from 'asset:贴图/物品/聚晶/goety/sensing_focus';
-import 图_47 from 'asset:贴图/物品/聚晶/goety/scatter_focus';
-import 图_48 from 'asset:贴图/物品/聚晶/goety/eruption_focus';
-import 图_49 from 'asset:贴图/物品/聚晶/goety/frost_breath_focus';
-import 图_50 from 'asset:贴图/物品/聚晶/goety/ice_spike_focus';
-import 图_51 from 'asset:贴图/物品/聚晶/goety/ice_storm_focus';
-import 图_52 from 'asset:贴图/物品/聚晶/goety/hail_focus';
-import 图_53 from 'asset:贴图/物品/聚晶/goety/iceology_focus';
-import 图_54 from 'asset:贴图/物品/聚晶/goety/blizzard_focus';
-import 图_55 from 'asset:贴图/物品/聚晶/goety/chilling_focus';
-import 图_56 from 'asset:贴图/物品/聚晶/goety/frost_nova_focus';
-import 图_57 from 'asset:贴图/物品/聚晶/goety/frostborn_focus';
-import 图_58 from 'asset:贴图/物品/聚晶/goety/swarm_focus';
-import 图_59 from 'asset:贴图/物品/聚晶/goety/poison_dart_focus';
-import 图_60 from 'asset:贴图/物品/聚晶/goety/blossoming_focus';
-import 图_61 from 'asset:贴图/物品/聚晶/goety/grapple_focus';
-import 图_62 from 'asset:贴图/物品/聚晶/goety/hunting_focus';
-import 图_63 from 'asset:贴图/物品/聚晶/goety/mauling_focus';
-import 图_64 from 'asset:贴图/物品/聚晶/goety/slimy_focus';
-import 图_65 from 'asset:贴图/物品/聚晶/goety/carrion_focus';
-import 图_66 from 'asset:贴图/物品/聚晶/goety/overgrowth_focus';
-import 图_67 from 'asset:贴图/物品/聚晶/goety/entangling_focus';
-import 图_68 from 'asset:贴图/物品/聚晶/goety/whispering_focus';
-import 图_69 from 'asset:贴图/物品/聚晶/goety/leaping_focus';
-import 图_70 from 'asset:贴图/物品/聚晶/goety/launch_focus';
-import 图_71 from 'asset:贴图/物品/聚晶/goety/flying_focus';
-import 图_72 from 'asset:贴图/物品/聚晶/goety/cushion_focus';
-import 图_73 from 'asset:贴图/物品/聚晶/goety/whirlwind_focus';
-import 图_74 from 'asset:贴图/物品/聚晶/goety/cyclone_focus';
-import 图_75 from 'asset:贴图/物品/聚晶/goety/updraft_focus';
-import 图_76 from 'asset:贴图/物品/聚晶/goety/wind_blast_focus';
-import 图_77 from 'asset:贴图/物品/聚晶/goety/razor_wind_focus';
-import 图_78 from 'asset:贴图/物品/聚晶/goety/trembling_focus';
-import 图_79 from 'asset:贴图/物品/聚晶/goety/charge_focus';
-import 图_80 from 'asset:贴图/物品/聚晶/goety/shocking_focus';
-import 图_81 from 'asset:贴图/物品/聚晶/goety/thunderbolt_focus';
-import 图_82 from 'asset:贴图/物品/聚晶/goety/electrocute_focus';
-import 图_83 from 'asset:贴图/物品/聚晶/goety/surging_focus';
-import 图_84 from 'asset:贴图/物品/聚晶/goety/sprightly_focus';
-import 图_85 from 'asset:贴图/物品/聚晶/goety/monsoon_focus';
-import 图_86 from 'asset:贴图/物品/聚晶/goety/discharge_focus';
-import 图_87 from 'asset:贴图/物品/聚晶/goety/bolting_focus';
-import 图_88 from 'asset:贴图/物品/聚晶/goety/lightning_focus';
-import 图_89 from 'asset:贴图/物品/聚晶/goety/thunderstorm_focus';
-import 图_90 from 'asset:贴图/物品/聚晶/goety/water_jet_focus';
-import 图_91 from 'asset:贴图/物品/聚晶/goety/bouncy_bubble_focus';
-import 图_92 from 'asset:贴图/物品/聚晶/goety/steaming_focus';
-import 图_93 from 'asset:贴图/物品/聚晶/goety/trident_storm_focus';
-import 图_94 from 'asset:贴图/物品/聚晶/goety/prisma_beam_focus';
-import 图_95 from 'asset:贴图/物品/聚晶/goety/guardian_focus';
-import 图_96 from 'asset:贴图/物品/聚晶/goety/biomine_focus';
-import 图_97 from 'asset:贴图/物品/聚晶/goety/water_whip_focus';
-import 图_98 from 'asset:贴图/物品/聚晶/goety/tidal_focus';
-import 图_99 from 'asset:贴图/物品/聚晶/goety/fire_breath_focus';
-import 图_100 from 'asset:贴图/物品/聚晶/goety/fireball_focus';
-import 图_101 from 'asset:贴图/物品/聚晶/goety/lavaball_focus';
-import 图_102 from 'asset:贴图/物品/聚晶/goety/bombardment_focus';
-import 图_103 from 'asset:贴图/物品/聚晶/goety/meteor_shower_focus';
-import 图_104 from 'asset:贴图/物品/聚晶/goety/magma_bomb_focus';
-import 图_105 from 'asset:贴图/物品/聚晶/goety/fire_blast_focus';
-import 图_106 from 'asset:贴图/物品/聚晶/goety/flame_strike_focus';
-import 图_107 from 'asset:贴图/物品/聚晶/goety/wither_skull_focus';
-import 图_108 from 'asset:贴图/物品/聚晶/goety/ghastly_focus';
-import 图_109 from 'asset:贴图/物品/聚晶/goety/blazing_focus';
-import 图_110 from 'asset:贴图/物品/聚晶/goety/hogging_focus';
-import 图_111 from 'asset:贴图/物品/聚晶/goety/call_focus';
-import 图_112 from 'asset:贴图/物品/聚晶/goety/troop_focus';
-import 图_113 from 'asset:贴图/物品/聚晶/goety/recall_focus';
-import 图_114 from 'asset:贴图/物品/聚晶/goety/ender_chest_focus';
-import 图_115 from 'asset:贴图/物品/聚晶/goety/end_walk_focus';
-import 图_116 from 'asset:贴图/物品/聚晶/goety/blink_focus';
-import 图_117 from 'asset:贴图/物品/聚晶/goety/banish_focus';
-import 图_118 from 'asset:贴图/物品/聚晶/goety/tunnel_focus';
-import 图_119 from 'asset:贴图/物品/聚晶/goety/rupture_focus';
-import 图_120 from 'asset:贴图/物品/聚晶/goety/stellar_focus';
-import 图_121 from 'asset:贴图/物品/聚晶/goety/void_flash_focus';
-import 图_122 from 'asset:贴图/物品/聚晶/goety/watching_focus';
-import 图_123 from 'asset:贴图/物品/聚晶/goety/blasting_focus';
-import 图_124 from 'asset:贴图/物品/聚晶/goety/snaring_focus';
-import 图_125 from 'asset:贴图/物品/聚晶/goety_revelation/revelation_focus';
-import 图_126 from 'asset:贴图/物品/聚晶/goety_revelation/heretic_focus';
-import 图_127 from 'asset:贴图/物品/聚晶/goety_revelation/wither_quietus_focus';
-import 图_128 from 'asset:贴图/物品/聚晶/goety_revelation/dementor_focus';
-import 图_129 from 'asset:贴图/物品/聚晶/goety_revelation/dragon_nirvana_focus';
-import 图_130 from 'asset:贴图/物品/聚晶/goety_revelation/dragon_skyrocket_focus';
-import 图_131 from 'asset:贴图/物品/聚晶/goety_revelation/ice_focus';
-import 图_132 from 'asset:贴图/物品/聚晶/goety_revelation/shadow_clone_focus';
-import 图_133 from 'asset:贴图/物品/聚晶/goety_revelation/nether_meteor_focus';
-import 图_134 from 'asset:贴图/物品/聚晶/光环版/fireball_focus';
-import 图_135 from 'asset:贴图/物品/聚晶/光环版/barricade_focus';
-import 图_136 from 'asset:贴图/物品/聚晶/光环版/cyclone_focus';
-import 图_137 from 'asset:贴图/物品/聚晶/光环版/hail_focus';
-import 图_138 from 'asset:贴图/物品/聚晶/光环版/skull_focus';
-import 图_139 from 'asset:贴图/物品/聚晶/光环版/updraft_focus';
-import 图_140 from 'asset:贴图/物品/聚晶/光环版/wither_skull_focus';
+import emptyFocusPng from 'asset:贴图/物品/聚晶/goety/empty_focus';
+import vexingFocusPng from 'asset:贴图/物品/聚晶/goety/vexing_focus';
+import bitingFocusPng from 'asset:贴图/物品/聚晶/goety/biting_focus';
+import feastFocusPng from 'asset:贴图/物品/聚晶/goety/feast_focus';
+import teethFocusPng from 'asset:贴图/物品/聚晶/goety/teeth_focus';
+import shreddingFocusPng from 'asset:贴图/物品/聚晶/goety/shredding_focus';
+import illusionFocusPng from 'asset:贴图/物品/聚晶/goety/illusion_focus';
+import igniteFocusPng from 'asset:贴图/物品/聚晶/goety/ignite_focus';
+import soulBoltFocusPng from 'asset:贴图/物品/聚晶/goety/soul_bolt_focus';
+import magicBoltFocusPng from 'asset:贴图/物品/聚晶/goety/magic_bolt_focus';
+import swordFocusPng from 'asset:贴图/物品/聚晶/goety/sword_focus';
+import soulLightFocusPng from 'asset:贴图/物品/聚晶/goety/soul_light_focus';
+import glowLightFocusPng from 'asset:贴图/物品/聚晶/goety/glow_light_focus';
+import illuminateFocusPng from 'asset:贴图/物品/聚晶/goety/illuminate_focus';
+import craftingFocusPng from 'asset:贴图/物品/聚晶/goety/crafting_focus';
+import ironHideFocusPng from 'asset:贴图/物品/聚晶/goety/iron_hide_focus';
+import bulwarkFocusPng from 'asset:贴图/物品/聚晶/goety/bulwark_focus';
+import soulHealFocusPng from 'asset:贴图/物品/聚晶/goety/soul_heal_focus';
+import shockwaveFocusPng from 'asset:贴图/物品/聚晶/goety/shockwave_focus';
+import weakeningFocusPng from 'asset:贴图/物品/聚晶/goety/weakening_focus';
+import arrowRainFocusPng from 'asset:贴图/物品/聚晶/goety/arrow_rain_focus';
+import telekinesisFocusPng from 'asset:贴图/物品/聚晶/goety/telekinesis_focus';
+import commandFocusPng from 'asset:贴图/物品/聚晶/goety/command_focus';
+import orderFocusPng from 'asset:贴图/物品/聚晶/goety/order_focus';
+import sonicBoomFocusPng from 'asset:贴图/物品/聚晶/goety/sonic_boom_focus';
+import corruptionFocusPng from 'asset:贴图/物品/聚晶/goety/corruption_focus';
+import rottingFocusPng from 'asset:贴图/物品/聚晶/goety/rotting_focus';
+import osseousFocusPng from 'asset:贴图/物品/聚晶/goety/osseous_focus';
+import ghostFireFocusPng from 'asset:贴图/物品/聚晶/goety/ghost_fire_focus';
+import reapingFocusPng from 'asset:贴图/物品/聚晶/goety/reaping_focus';
+import spookyFocusPng from 'asset:贴图/物品/聚晶/goety/spooky_focus';
+import phantasmFocusPng from 'asset:贴图/物品/聚晶/goety/phantasm_focus';
+import vanguardFocusPng from 'asset:贴图/物品/聚晶/goety/vanguard_focus';
+import blackguardFocusPng from 'asset:贴图/物品/聚晶/goety/blackguard_focus';
+import leechingFocusPng from 'asset:贴图/物品/聚晶/goety/leeching_focus';
+import killingFocusPng from 'asset:贴图/物品/聚晶/goety/killing_focus';
+import skullFocusPng from 'asset:贴图/物品/聚晶/goety/skull_focus';
+import barricadeFocusPng from 'asset:贴图/物品/聚晶/goety/barricade_focus';
+import quakingFocusPng from 'asset:贴图/物品/聚晶/goety/quaking_focus';
+import earthPunchFocusPng from 'asset:贴图/物品/聚晶/goety/earth_punch_focus';
+import smackStoneFocusPng from 'asset:贴图/物品/聚晶/goety/smack_stone_focus';
+import temblorClapFocusPng from 'asset:贴图/物品/聚晶/goety/temblor_clap_focus';
+import ministrousFocusPng from 'asset:贴图/物品/聚晶/goety/ministrous_focus';
+import pulverizeFocusPng from 'asset:贴图/物品/聚晶/goety/pulverize_focus';
+import rotationFocusPng from 'asset:贴图/物品/聚晶/goety/rotation_focus';
+import burrowingFocusPng from 'asset:贴图/物品/聚晶/goety/burrowing_focus';
+import sensingFocusPng from 'asset:贴图/物品/聚晶/goety/sensing_focus';
+import scatterFocusPng from 'asset:贴图/物品/聚晶/goety/scatter_focus';
+import eruptionFocusPng from 'asset:贴图/物品/聚晶/goety/eruption_focus';
+import frostBreathFocusPng from 'asset:贴图/物品/聚晶/goety/frost_breath_focus';
+import iceSpikeFocusPng from 'asset:贴图/物品/聚晶/goety/ice_spike_focus';
+import iceStormFocusPng from 'asset:贴图/物品/聚晶/goety/ice_storm_focus';
+import hailFocusPng from 'asset:贴图/物品/聚晶/goety/hail_focus';
+import iceologyFocusPng from 'asset:贴图/物品/聚晶/goety/iceology_focus';
+import blizzardFocusPng from 'asset:贴图/物品/聚晶/goety/blizzard_focus';
+import chillingFocusPng from 'asset:贴图/物品/聚晶/goety/chilling_focus';
+import frostNovaFocusPng from 'asset:贴图/物品/聚晶/goety/frost_nova_focus';
+import frostbornFocusPng from 'asset:贴图/物品/聚晶/goety/frostborn_focus';
+import swarmFocusPng from 'asset:贴图/物品/聚晶/goety/swarm_focus';
+import poisonDartFocusPng from 'asset:贴图/物品/聚晶/goety/poison_dart_focus';
+import blossomingFocusPng from 'asset:贴图/物品/聚晶/goety/blossoming_focus';
+import grappleFocusPng from 'asset:贴图/物品/聚晶/goety/grapple_focus';
+import huntingFocusPng from 'asset:贴图/物品/聚晶/goety/hunting_focus';
+import maulingFocusPng from 'asset:贴图/物品/聚晶/goety/mauling_focus';
+import slimyFocusPng from 'asset:贴图/物品/聚晶/goety/slimy_focus';
+import carrionFocusPng from 'asset:贴图/物品/聚晶/goety/carrion_focus';
+import overgrowthFocusPng from 'asset:贴图/物品/聚晶/goety/overgrowth_focus';
+import entanglingFocusPng from 'asset:贴图/物品/聚晶/goety/entangling_focus';
+import whisperingFocusPng from 'asset:贴图/物品/聚晶/goety/whispering_focus';
+import leapingFocusPng from 'asset:贴图/物品/聚晶/goety/leaping_focus';
+import launchFocusPng from 'asset:贴图/物品/聚晶/goety/launch_focus';
+import flyingFocusPng from 'asset:贴图/物品/聚晶/goety/flying_focus';
+import cushionFocusPng from 'asset:贴图/物品/聚晶/goety/cushion_focus';
+import whirlwindFocusPng from 'asset:贴图/物品/聚晶/goety/whirlwind_focus';
+import cycloneFocusPng from 'asset:贴图/物品/聚晶/goety/cyclone_focus';
+import updraftFocusPng from 'asset:贴图/物品/聚晶/goety/updraft_focus';
+import windBlastFocusPng from 'asset:贴图/物品/聚晶/goety/wind_blast_focus';
+import razorWindFocusPng from 'asset:贴图/物品/聚晶/goety/razor_wind_focus';
+import tremblingFocusPng from 'asset:贴图/物品/聚晶/goety/trembling_focus';
+import chargeFocusPng from 'asset:贴图/物品/聚晶/goety/charge_focus';
+import shockingFocusPng from 'asset:贴图/物品/聚晶/goety/shocking_focus';
+import thunderboltFocusPng from 'asset:贴图/物品/聚晶/goety/thunderbolt_focus';
+import electrocuteFocusPng from 'asset:贴图/物品/聚晶/goety/electrocute_focus';
+import surgingFocusPng from 'asset:贴图/物品/聚晶/goety/surging_focus';
+import sprightlyFocusPng from 'asset:贴图/物品/聚晶/goety/sprightly_focus';
+import monsoonFocusPng from 'asset:贴图/物品/聚晶/goety/monsoon_focus';
+import dischargeFocusPng from 'asset:贴图/物品/聚晶/goety/discharge_focus';
+import boltingFocusPng from 'asset:贴图/物品/聚晶/goety/bolting_focus';
+import lightningFocusPng from 'asset:贴图/物品/聚晶/goety/lightning_focus';
+import thunderstormFocusPng from 'asset:贴图/物品/聚晶/goety/thunderstorm_focus';
+import waterJetFocusPng from 'asset:贴图/物品/聚晶/goety/water_jet_focus';
+import bouncyBubbleFocusPng from 'asset:贴图/物品/聚晶/goety/bouncy_bubble_focus';
+import steamingFocusPng from 'asset:贴图/物品/聚晶/goety/steaming_focus';
+import tridentStormFocusPng from 'asset:贴图/物品/聚晶/goety/trident_storm_focus';
+import prismaBeamFocusPng from 'asset:贴图/物品/聚晶/goety/prisma_beam_focus';
+import guardianFocusPng from 'asset:贴图/物品/聚晶/goety/guardian_focus';
+import biomineFocusPng from 'asset:贴图/物品/聚晶/goety/biomine_focus';
+import waterWhipFocusPng from 'asset:贴图/物品/聚晶/goety/water_whip_focus';
+import tidalFocusPng from 'asset:贴图/物品/聚晶/goety/tidal_focus';
+import fireBreathFocusPng from 'asset:贴图/物品/聚晶/goety/fire_breath_focus';
+import fireballFocusPng from 'asset:贴图/物品/聚晶/goety/fireball_focus';
+import lavaballFocusPng from 'asset:贴图/物品/聚晶/goety/lavaball_focus';
+import bombardmentFocusPng from 'asset:贴图/物品/聚晶/goety/bombardment_focus';
+import meteorShowerFocusPng from 'asset:贴图/物品/聚晶/goety/meteor_shower_focus';
+import magmaBombFocusPng from 'asset:贴图/物品/聚晶/goety/magma_bomb_focus';
+import fireBlastFocusPng from 'asset:贴图/物品/聚晶/goety/fire_blast_focus';
+import flameStrikeFocusPng from 'asset:贴图/物品/聚晶/goety/flame_strike_focus';
+import witherSkullFocusPng from 'asset:贴图/物品/聚晶/goety/wither_skull_focus';
+import ghastlyFocusPng from 'asset:贴图/物品/聚晶/goety/ghastly_focus';
+import blazingFocusPng from 'asset:贴图/物品/聚晶/goety/blazing_focus';
+import hoggingFocusPng from 'asset:贴图/物品/聚晶/goety/hogging_focus';
+import callFocusPng from 'asset:贴图/物品/聚晶/goety/call_focus';
+import troopFocusPng from 'asset:贴图/物品/聚晶/goety/troop_focus';
+import recallFocusPng from 'asset:贴图/物品/聚晶/goety/recall_focus';
+import enderChestFocusPng from 'asset:贴图/物品/聚晶/goety/ender_chest_focus';
+import endWalkFocusPng from 'asset:贴图/物品/聚晶/goety/end_walk_focus';
+import blinkFocusPng from 'asset:贴图/物品/聚晶/goety/blink_focus';
+import banishFocusPng from 'asset:贴图/物品/聚晶/goety/banish_focus';
+import tunnelFocusPng from 'asset:贴图/物品/聚晶/goety/tunnel_focus';
+import ruptureFocusPng from 'asset:贴图/物品/聚晶/goety/rupture_focus';
+import stellarFocusPng from 'asset:贴图/物品/聚晶/goety/stellar_focus';
+import voidFlashFocusPng from 'asset:贴图/物品/聚晶/goety/void_flash_focus';
+import watchingFocusPng from 'asset:贴图/物品/聚晶/goety/watching_focus';
+import blastingFocusPng from 'asset:贴图/物品/聚晶/goety/blasting_focus';
+import snaringFocusPng from 'asset:贴图/物品/聚晶/goety/snaring_focus';
+import revelationFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/revelation_focus';
+import hereticFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/heretic_focus';
+import witherQuietusFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/wither_quietus_focus';
+import dementorFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/dementor_focus';
+import dragonNirvanaFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/dragon_nirvana_focus';
+import dragonSkyrocketFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/dragon_skyrocket_focus';
+import iceFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/ice_focus';
+import shadowCloneFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/shadow_clone_focus';
+import netherMeteorFocusPng from 'asset:贴图/物品/聚晶/goety_revelation/nether_meteor_focus';
+import haloFireballFocusPng from 'asset:贴图/物品/聚晶/光环版/fireball_focus';
+import haloBarricadeFocusPng from 'asset:贴图/物品/聚晶/光环版/barricade_focus';
+import haloCycloneFocusPng from 'asset:贴图/物品/聚晶/光环版/cyclone_focus';
+import haloHailFocusPng from 'asset:贴图/物品/聚晶/光环版/hail_focus';
+import haloSkullFocusPng from 'asset:贴图/物品/聚晶/光环版/skull_focus';
+import haloUpdraftFocusPng from 'asset:贴图/物品/聚晶/光环版/updraft_focus';
+import haloWitherSkullFocusPng from 'asset:贴图/物品/聚晶/光环版/wither_skull_focus';
 
-export const 聚晶图标 = {
-  'goety:empty_focus': 图_0,
-  'goety:vexing_focus': 图_1,
-  'goety:biting_focus': 图_2,
-  'goety:feast_focus': 图_3,
-  'goety:teeth_focus': 图_4,
-  'goety:shredding_focus': 图_5,
-  'goety:illusion_focus': 图_6,
-  'goety:ignite_focus': 图_7,
-  'goety:soul_bolt_focus': 图_8,
-  'goety:magic_bolt_focus': 图_9,
-  'goety:sword_focus': 图_10,
-  'goety:soul_light_focus': 图_11,
-  'goety:glow_light_focus': 图_12,
-  'goety:illuminate_focus': 图_13,
-  'goety:crafting_focus': 图_14,
-  'goety:iron_hide_focus': 图_15,
-  'goety:bulwark_focus': 图_16,
-  'goety:soul_heal_focus': 图_17,
-  'goety:shockwave_focus': 图_18,
-  'goety:weakening_focus': 图_19,
-  'goety:arrow_rain_focus': 图_20,
-  'goety:telekinesis_focus': 图_21,
-  'goety:command_focus': 图_22,
-  'goety:order_focus': 图_23,
-  'goety:sonic_boom_focus': 图_24,
-  'goety:corruption_focus': 图_25,
-  'goety:rotting_focus': 图_26,
-  'goety:osseous_focus': 图_27,
-  'goety:ghost_fire_focus': 图_28,
-  'goety:reaping_focus': 图_29,
-  'goety:spooky_focus': 图_30,
-  'goety:phantasm_focus': 图_31,
-  'goety:vanguard_focus': 图_32,
-  'goety:blackguard_focus': 图_33,
-  'goety:leeching_focus': 图_34,
-  'goety:killing_focus': 图_35,
-  'goety:skull_focus': 图_36,
-  'goety:barricade_focus': 图_37,
-  'goety:quaking_focus': 图_38,
-  'goety:earth_punch_focus': 图_39,
-  'goety:smack_stone_focus': 图_40,
-  'goety:temblor_clap_focus': 图_41,
-  'goety:ministrous_focus': 图_42,
-  'goety:pulverize_focus': 图_43,
-  'goety:rotation_focus': 图_44,
-  'goety:burrowing_focus': 图_45,
-  'goety:sensing_focus': 图_46,
-  'goety:scatter_focus': 图_47,
-  'goety:eruption_focus': 图_48,
-  'goety:frost_breath_focus': 图_49,
-  'goety:ice_spike_focus': 图_50,
-  'goety:ice_storm_focus': 图_51,
-  'goety:hail_focus': 图_52,
-  'goety:iceology_focus': 图_53,
-  'goety:blizzard_focus': 图_54,
-  'goety:chilling_focus': 图_55,
-  'goety:frost_nova_focus': 图_56,
-  'goety:frostborn_focus': 图_57,
-  'goety:swarm_focus': 图_58,
-  'goety:poison_dart_focus': 图_59,
-  'goety:blossoming_focus': 图_60,
-  'goety:grapple_focus': 图_61,
-  'goety:hunting_focus': 图_62,
-  'goety:mauling_focus': 图_63,
-  'goety:slimy_focus': 图_64,
-  'goety:carrion_focus': 图_65,
-  'goety:overgrowth_focus': 图_66,
-  'goety:entangling_focus': 图_67,
-  'goety:whispering_focus': 图_68,
-  'goety:leaping_focus': 图_69,
-  'goety:launch_focus': 图_70,
-  'goety:flying_focus': 图_71,
-  'goety:cushion_focus': 图_72,
-  'goety:whirlwind_focus': 图_73,
-  'goety:cyclone_focus': 图_74,
-  'goety:updraft_focus': 图_75,
-  'goety:wind_blast_focus': 图_76,
-  'goety:razor_wind_focus': 图_77,
-  'goety:trembling_focus': 图_78,
-  'goety:charge_focus': 图_79,
-  'goety:shocking_focus': 图_80,
-  'goety:thunderbolt_focus': 图_81,
-  'goety:electrocute_focus': 图_82,
-  'goety:surging_focus': 图_83,
-  'goety:sprightly_focus': 图_84,
-  'goety:monsoon_focus': 图_85,
-  'goety:discharge_focus': 图_86,
-  'goety:bolting_focus': 图_87,
-  'goety:lightning_focus': 图_88,
-  'goety:thunderstorm_focus': 图_89,
-  'goety:water_jet_focus': 图_90,
-  'goety:bouncy_bubble_focus': 图_91,
-  'goety:steaming_focus': 图_92,
-  'goety:trident_storm_focus': 图_93,
-  'goety:prisma_beam_focus': 图_94,
-  'goety:guardian_focus': 图_95,
-  'goety:biomine_focus': 图_96,
-  'goety:water_whip_focus': 图_97,
-  'goety:tidal_focus': 图_98,
-  'goety:fire_breath_focus': 图_99,
-  'goety:fireball_focus': 图_100,
-  'goety:lavaball_focus': 图_101,
-  'goety:bombardment_focus': 图_102,
-  'goety:meteor_shower_focus': 图_103,
-  'goety:magma_bomb_focus': 图_104,
-  'goety:fire_blast_focus': 图_105,
-  'goety:flame_strike_focus': 图_106,
-  'goety:wither_skull_focus': 图_107,
-  'goety:ghastly_focus': 图_108,
-  'goety:blazing_focus': 图_109,
-  'goety:hogging_focus': 图_110,
-  'goety:call_focus': 图_111,
-  'goety:troop_focus': 图_112,
-  'goety:recall_focus': 图_113,
-  'goety:ender_chest_focus': 图_114,
-  'goety:end_walk_focus': 图_115,
-  'goety:blink_focus': 图_116,
-  'goety:banish_focus': 图_117,
-  'goety:tunnel_focus': 图_118,
-  'goety:rupture_focus': 图_119,
-  'goety:stellar_focus': 图_120,
-  'goety:void_flash_focus': 图_121,
-  'goety:watching_focus': 图_122,
-  'goety:blasting_focus': 图_123,
-  'goety:snaring_focus': 图_124,
-  'goety_revelation:revelation_focus': 图_125,
-  'goety_revelation:heretic_focus': 图_126,
-  'goety_revelation:wither_quietus_focus': 图_127,
-  'goety_revelation:dementor_focus': 图_128,
-  'goety_revelation:dragon_nirvana_focus': 图_129,
-  'goety_revelation:dragon_skyrocket_focus': 图_130,
-  'goety_revelation:ice_focus': 图_131,
-  'goety_revelation:shadow_clone_focus': 图_132,
-  'goety_revelation:nether_meteor_focus': 图_133,
+export const focusIcons = {
+  'goety:empty_focus': emptyFocusPng,
+  'goety:vexing_focus': vexingFocusPng,
+  'goety:biting_focus': bitingFocusPng,
+  'goety:feast_focus': feastFocusPng,
+  'goety:teeth_focus': teethFocusPng,
+  'goety:shredding_focus': shreddingFocusPng,
+  'goety:illusion_focus': illusionFocusPng,
+  'goety:ignite_focus': igniteFocusPng,
+  'goety:soul_bolt_focus': soulBoltFocusPng,
+  'goety:magic_bolt_focus': magicBoltFocusPng,
+  'goety:sword_focus': swordFocusPng,
+  'goety:soul_light_focus': soulLightFocusPng,
+  'goety:glow_light_focus': glowLightFocusPng,
+  'goety:illuminate_focus': illuminateFocusPng,
+  'goety:crafting_focus': craftingFocusPng,
+  'goety:iron_hide_focus': ironHideFocusPng,
+  'goety:bulwark_focus': bulwarkFocusPng,
+  'goety:soul_heal_focus': soulHealFocusPng,
+  'goety:shockwave_focus': shockwaveFocusPng,
+  'goety:weakening_focus': weakeningFocusPng,
+  'goety:arrow_rain_focus': arrowRainFocusPng,
+  'goety:telekinesis_focus': telekinesisFocusPng,
+  'goety:command_focus': commandFocusPng,
+  'goety:order_focus': orderFocusPng,
+  'goety:sonic_boom_focus': sonicBoomFocusPng,
+  'goety:corruption_focus': corruptionFocusPng,
+  'goety:rotting_focus': rottingFocusPng,
+  'goety:osseous_focus': osseousFocusPng,
+  'goety:ghost_fire_focus': ghostFireFocusPng,
+  'goety:reaping_focus': reapingFocusPng,
+  'goety:spooky_focus': spookyFocusPng,
+  'goety:phantasm_focus': phantasmFocusPng,
+  'goety:vanguard_focus': vanguardFocusPng,
+  'goety:blackguard_focus': blackguardFocusPng,
+  'goety:leeching_focus': leechingFocusPng,
+  'goety:killing_focus': killingFocusPng,
+  'goety:skull_focus': skullFocusPng,
+  'goety:barricade_focus': barricadeFocusPng,
+  'goety:quaking_focus': quakingFocusPng,
+  'goety:earth_punch_focus': earthPunchFocusPng,
+  'goety:smack_stone_focus': smackStoneFocusPng,
+  'goety:temblor_clap_focus': temblorClapFocusPng,
+  'goety:ministrous_focus': ministrousFocusPng,
+  'goety:pulverize_focus': pulverizeFocusPng,
+  'goety:rotation_focus': rotationFocusPng,
+  'goety:burrowing_focus': burrowingFocusPng,
+  'goety:sensing_focus': sensingFocusPng,
+  'goety:scatter_focus': scatterFocusPng,
+  'goety:eruption_focus': eruptionFocusPng,
+  'goety:frost_breath_focus': frostBreathFocusPng,
+  'goety:ice_spike_focus': iceSpikeFocusPng,
+  'goety:ice_storm_focus': iceStormFocusPng,
+  'goety:hail_focus': hailFocusPng,
+  'goety:iceology_focus': iceologyFocusPng,
+  'goety:blizzard_focus': blizzardFocusPng,
+  'goety:chilling_focus': chillingFocusPng,
+  'goety:frost_nova_focus': frostNovaFocusPng,
+  'goety:frostborn_focus': frostbornFocusPng,
+  'goety:swarm_focus': swarmFocusPng,
+  'goety:poison_dart_focus': poisonDartFocusPng,
+  'goety:blossoming_focus': blossomingFocusPng,
+  'goety:grapple_focus': grappleFocusPng,
+  'goety:hunting_focus': huntingFocusPng,
+  'goety:mauling_focus': maulingFocusPng,
+  'goety:slimy_focus': slimyFocusPng,
+  'goety:carrion_focus': carrionFocusPng,
+  'goety:overgrowth_focus': overgrowthFocusPng,
+  'goety:entangling_focus': entanglingFocusPng,
+  'goety:whispering_focus': whisperingFocusPng,
+  'goety:leaping_focus': leapingFocusPng,
+  'goety:launch_focus': launchFocusPng,
+  'goety:flying_focus': flyingFocusPng,
+  'goety:cushion_focus': cushionFocusPng,
+  'goety:whirlwind_focus': whirlwindFocusPng,
+  'goety:cyclone_focus': cycloneFocusPng,
+  'goety:updraft_focus': updraftFocusPng,
+  'goety:wind_blast_focus': windBlastFocusPng,
+  'goety:razor_wind_focus': razorWindFocusPng,
+  'goety:trembling_focus': tremblingFocusPng,
+  'goety:charge_focus': chargeFocusPng,
+  'goety:shocking_focus': shockingFocusPng,
+  'goety:thunderbolt_focus': thunderboltFocusPng,
+  'goety:electrocute_focus': electrocuteFocusPng,
+  'goety:surging_focus': surgingFocusPng,
+  'goety:sprightly_focus': sprightlyFocusPng,
+  'goety:monsoon_focus': monsoonFocusPng,
+  'goety:discharge_focus': dischargeFocusPng,
+  'goety:bolting_focus': boltingFocusPng,
+  'goety:lightning_focus': lightningFocusPng,
+  'goety:thunderstorm_focus': thunderstormFocusPng,
+  'goety:water_jet_focus': waterJetFocusPng,
+  'goety:bouncy_bubble_focus': bouncyBubbleFocusPng,
+  'goety:steaming_focus': steamingFocusPng,
+  'goety:trident_storm_focus': tridentStormFocusPng,
+  'goety:prisma_beam_focus': prismaBeamFocusPng,
+  'goety:guardian_focus': guardianFocusPng,
+  'goety:biomine_focus': biomineFocusPng,
+  'goety:water_whip_focus': waterWhipFocusPng,
+  'goety:tidal_focus': tidalFocusPng,
+  'goety:fire_breath_focus': fireBreathFocusPng,
+  'goety:fireball_focus': fireballFocusPng,
+  'goety:lavaball_focus': lavaballFocusPng,
+  'goety:bombardment_focus': bombardmentFocusPng,
+  'goety:meteor_shower_focus': meteorShowerFocusPng,
+  'goety:magma_bomb_focus': magmaBombFocusPng,
+  'goety:fire_blast_focus': fireBlastFocusPng,
+  'goety:flame_strike_focus': flameStrikeFocusPng,
+  'goety:wither_skull_focus': witherSkullFocusPng,
+  'goety:ghastly_focus': ghastlyFocusPng,
+  'goety:blazing_focus': blazingFocusPng,
+  'goety:hogging_focus': hoggingFocusPng,
+  'goety:call_focus': callFocusPng,
+  'goety:troop_focus': troopFocusPng,
+  'goety:recall_focus': recallFocusPng,
+  'goety:ender_chest_focus': enderChestFocusPng,
+  'goety:end_walk_focus': endWalkFocusPng,
+  'goety:blink_focus': blinkFocusPng,
+  'goety:banish_focus': banishFocusPng,
+  'goety:tunnel_focus': tunnelFocusPng,
+  'goety:rupture_focus': ruptureFocusPng,
+  'goety:stellar_focus': stellarFocusPng,
+  'goety:void_flash_focus': voidFlashFocusPng,
+  'goety:watching_focus': watchingFocusPng,
+  'goety:blasting_focus': blastingFocusPng,
+  'goety:snaring_focus': snaringFocusPng,
+  'goety_revelation:revelation_focus': revelationFocusPng,
+  'goety_revelation:heretic_focus': hereticFocusPng,
+  'goety_revelation:wither_quietus_focus': witherQuietusFocusPng,
+  'goety_revelation:dementor_focus': dementorFocusPng,
+  'goety_revelation:dragon_nirvana_focus': dragonNirvanaFocusPng,
+  'goety_revelation:dragon_skyrocket_focus': dragonSkyrocketFocusPng,
+  'goety_revelation:ice_focus': iceFocusPng,
+  'goety_revelation:shadow_clone_focus': shadowCloneFocusPng,
+  'goety_revelation:nether_meteor_focus': netherMeteorFocusPng,
 } as const;
 
-export type 聚晶注册名 = keyof typeof 聚晶图标;
+export type FocusRegistryName = keyof typeof focusIcons;
 
-export const 光环版聚晶图标: Partial<Record<聚晶注册名, string>> = {
-  'goety:fireball_focus': 图_134,
-  'goety:barricade_focus': 图_135,
-  'goety:cyclone_focus': 图_136,
-  'goety:hail_focus': 图_137,
-  'goety:skull_focus': 图_138,
-  'goety:updraft_focus': 图_139,
-  'goety:wither_skull_focus': 图_140,
+export const haloFocusIcons: Partial<Record<FocusRegistryName, string>> = {
+  'goety:fireball_focus': haloFireballFocusPng,
+  'goety:barricade_focus': haloBarricadeFocusPng,
+  'goety:cyclone_focus': haloCycloneFocusPng,
+  'goety:hail_focus': haloHailFocusPng,
+  'goety:skull_focus': haloSkullFocusPng,
+  'goety:updraft_focus': haloUpdraftFocusPng,
+  'goety:wither_skull_focus': haloWitherSkullFocusPng,
 };

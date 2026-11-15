@@ -90,12 +90,12 @@ export const GUCHENG = {
   // 结构范围（游戏坐标）
   structureBox: { from: [-826, -52, 131], to: [-609, -22, 334] },
   // 传送门：强化深板岩框，竖在 x = 0.5 那一格的南北向平面上，框外沿 y -11.5～10.5、z 15～23（游戏 x -720、z 230～251、y -35～-28）
-  传送门: { x: 0.5, y: [-11.5, 10.5], z: [15, 23] },
+  portal: { x: 0.5, y: [-11.5, 10.5], z: [15, 23] },
   landingPos: cityFromGame(-709.5, -50, 240.5), // (10.5, -0.5, 0)
   dome: cityFromGame(-709.5, -5, 240.5), // (10.5, -0.5, 45)：洞顶的底面
-  箱子: marks('minecraft:chest'),
-  尖啸体: marks('minecraft:sculk_shrieker'),
-  感测体: marks('minecraft:sculk_sensor'),
+  chest: marks('minecraft:chest'),
+  sculkShrieker: marks('minecraft:sculk_shrieker'),
+  sculkSensor: marks('minecraft:sculk_sensor'),
 };
 
 // 夜视下的灯：日光从东南高处来（和地标场景同一套强度），不投影；地下没有天，天光的地面色压低一点让顶面和底面分得开

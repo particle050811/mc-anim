@@ -6,84 +6,84 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 场景到three } from '@engine/core/three换算.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
-import { 戴环史蒂夫 } from '../../角色/戴环史蒂夫.tsx';
-import { 娘化亚波伦, 悬停, 站立 } from '../../角色/娘化亚波伦.tsx';
-import { 晋升之环 } from '../../特效/晋升之环.tsx';
-import { 两人位, 单看, 并排, 画幅, 视图们, type 视图 } from './视图.ts';
+import { RingedSteve } from '../../角色/戴环史蒂夫.tsx';
+import { GirlYaBoLun, hover, stand } from '../../角色/娘化亚波伦.tsx';
+import { AscensionHalo } from '../../特效/晋升之环.tsx';
+import { twoPeoplePos, singleView, sideBySide, aspect, views, type View } from './视图.ts';
 
 // 暗红底：背景、雾取封面草稿段的雾色，地面取暗的下界岩色
-const 底色 = { 灰: { 背景: '#5a5e66', 地: '#8a8f98' }, 暗红: { 背景: '#3a0a07', 地: '#3b1513' } } as const;
+const baseColors = { 灰: { background: '#5a5e66', ground: '#8a8f98' }, 暗红: { background: '#3a0a07', ground: '#3b1513' } } as const;
 
-const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
+const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  const 抬 = v.画.类 === '戴' ? (v.画.离地 ?? 0) : 0;
-  cam.fov = v.视角;
+  const lift = v.pictureMode.类 === '戴' ? (v.pictureMode.lift ?? 0) : 0;
+  cam.fov = v.fov;
   cam.near = 0.05;
   cam.far = 256;
-  cam.position.copy(场景到three([v.眼[0], v.眼[1], v.眼[2] + 抬]));
+  cam.position.copy(sceneToThree([v.眼[0], v.眼[1], v.眼[2] + lift]));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three([v.看[0], v.看[1], v.看[2] + 抬]));
+  cam.lookAt(sceneToThree([v.看[0], v.看[1], v.看[2] + lift]));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
-const 内容: React.FC<{ v: 视图 }> = ({ v }) => {
-  if (v.画.类 === '并排') {
+const Content: React.FC<{ v: View }> = ({ v }) => {
+  if (v.pictureMode.类 === '并排') {
     return (
       <>
-        {并排.款们.map((款, i) => (
+        {sideBySide.variants.map((variant, i) => (
           // 环坐标（+Y 上、+Z 朝观众）→ 场景（Z 上、观众在南）：绕 X 转 +90 度
-          <group key={款} position={[并排.x[i]!, 0, 并排.高]} rotation={[Math.PI / 2, 0, 0]} scale={并排.每像素格}>
-            <晋升之环 款={款} 秒={v.环秒} />
+          <group key={variant} position={[sideBySide.x[i]!, 0, sideBySide.高]} rotation={[Math.PI / 2, 0, 0]} scale={sideBySide.cellsPerPixel}>
+            <AscensionHalo variant={variant} 秒={v.ringSec} />
           </group>
         ))}
       </>
     );
   }
-  if (v.画.类 === '单看') {
+  if (v.pictureMode.类 === '单看') {
     return (
-      <group position={[0, 0, 单看.高]} rotation={[Math.PI / 2, 0, 0]} scale={单看.每像素格}>
-        <晋升之环 款={v.画.款} 秒={v.环秒} />
+      <group position={[0, 0, singleView.高]} rotation={[Math.PI / 2, 0, 0]} scale={singleView.cellsPerPixel}>
+        <AscensionHalo variant={v.pictureMode.variant} 秒={v.ringSec} />
       </group>
     );
   }
-  const { 谁, 款, 表演, 离地 = 0 } = v.画;
-  const 两人 = 谁 === '两人';
+  const { 谁: actor, variant, act, lift = 0 } = v.pictureMode;
+  const twoPeople = actor === '两人';
   return (
     <>
-      {谁 !== '史蒂夫' && (
-        <娘化亚波伦 pose={{ loc: [两人 ? 两人位.亚波伦 : 0, 0, 两人 ? 0.6 : 离地], yaw: 180 }} 秒={0.5} 表演={表演 === '悬停' ? 悬停 : 站立} 持杖={两人} 头后环={款} 环秒={v.环秒} />
+      {actor !== '史蒂夫' && (
+        <GirlYaBoLun pose={{ loc: [twoPeople ? twoPeoplePos.yaBoLun : 0, 0, twoPeople ? 0.6 : lift], yaw: 180 }} 秒={0.5} act={act === '悬停' ? hover : stand} holdWand={twoPeople} headRing={variant} ringSec={v.ringSec} />
       )}
-      {谁 !== '亚波伦' && <戴环史蒂夫 pose={stevePose([两人 ? 两人位.史蒂夫 : 0, 0, 0], 180)} mcLight={1} 环={款} 环秒={v.环秒} />}
+      {actor !== '亚波伦' && <RingedSteve pose={stevePose([twoPeople ? twoPeoplePos.steve : 0, 0, 0], 180)} mcLight={1} ring={variant} ringSec={v.ringSec} />}
     </>
   );
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 色 = 底色[v.底];
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const colorSet = baseColors[v.bottomBackground];
   return (
-    <AbsoluteFill style={{ background: 色.背景 }}>
-      <div style={{ width: 画幅.宽, height: 画幅.高 }}>
-        <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
-          <color attach="background" args={[色.背景]} />
-          {v.底 === '暗红' && <fog attach="fog" args={[色.背景, 30, 140]} />}
-          <机位 v={v} />
+    <AbsoluteFill style={{ background: colorSet.background }}>
+      <div style={{ width: aspect.宽, height: aspect.高 }}>
+        <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+          <color attach="background" args={[colorSet.background]} />
+          {v.bottomBackground === '暗红' && <fog attach="fog" args={[colorSet.background, 30, 140]} />}
+          <CameraRig v={v} />
           <group rotation={[-Math.PI / 2, 0, 0]}>
             <ambientLight intensity={0.55 * Math.PI} />
             <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
             <mesh position={[0, 0, -0.05]}>
               <boxGeometry args={[160, 160, 0.1]} />
-              <meshStandardMaterial color={色.地} />
+              <meshStandardMaterial color={colorSet.ground} />
             </mesh>
-            <内容 v={v} />
+            <Content v={v} />
           </group>
         </ThreeCanvas>
       </div>
@@ -95,4 +95,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

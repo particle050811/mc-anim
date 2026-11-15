@@ -41,7 +41,7 @@ const GHOST_ATLAS: Png = (() => {
 const BLADE_TEX = MODEL.textures.findIndex((t) => t.key === 'create:block/fan_blades');
 const D_SHAFT: BlockModelData = {
   ...MODEL,
-  parts: { ...MODEL.parts, 叶片轴: { color: MODEL.parts.叶片.color, quads: MODEL.parts.叶片.quads.filter((q) => q[0] !== BLADE_TEX) } },
+  parts: { ...MODEL.parts, 叶片轴: { color: MODEL.parts.blade.color, quads: MODEL.parts.blade.quads.filter((q) => q[0] !== BLADE_TEX) } },
 };
 
 export const FAN = {
@@ -57,7 +57,7 @@ const thickBlades = () => {
   const px = crop(ATLAS, t.x, t.y, t.size);
   const texSize = t.size;
   // 薄片在模型里的四个角（方块中心为原点）和对应的贴图坐标：从叶片部件里那张面片读
-  const bladeQuad = MODEL.parts.叶片.quads.find((qq) => qq[0] === BLADE_TEX)!;
+  const bladeQuad = MODEL.parts.blade.quads.find((qq) => qq[0] === BLADE_TEX)!;
   const origin = [0.5, -0.5, 0.5];
   const corner = (k: number) => new THREE.Vector3(bladeQuad[1 + k * 3] - origin[0], bladeQuad[2 + k * 3] - origin[1], bladeQuad[3 + k * 3] - origin[2]);
   const uvOf = (k: number) => [bladeQuad[13 + k * 2], bladeQuad[14 + k * 2]];

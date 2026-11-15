@@ -3,32 +3,32 @@
 // 不写视图名：静帧就是成片的样子。
 // 时刻取歌曲帧 正片事件.哈气.帧（片子里真有的那一帧），颗粒的种子取它（同成片）。这一拍三个角色都定住，不按时间取样。
 import React from 'react';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 事件 as 正片事件 } from '../../分镜/正片第8句.ts';
-import { 照片墙格们 } from '../../地点/照片墙.tsx';
-import { 哈气角色, 哈气气泡 } from '../../场/2-门口/哈气.tsx';
-import { 取景 as N6取景 } from '../../场/2-门口/参数.ts';
-import { 门口画布 } from '../../场/2-门口/门口.tsx';
-import { 第8句调子, 第8句镜头 } from '../../场/2-门口/第8句.ts';
-import { 第8句云 } from '../../场/2-门口/第8句云.ts';
-import { 第8句照片们 } from '../../特效/照片画.ts';
-import { 视图们 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { events as mainCutEvents } from '../../分镜/正片第8句.ts';
+import { photoWallCells } from '../../地点/照片墙.tsx';
+import { PuffCharacter, PuffBubble } from '../../场/2-门口/哈气.tsx';
+import { framing as n6Framing } from '../../场/2-门口/参数.ts';
+import { DoorCanvas } from '../../场/2-门口/门口.tsx';
+import { line8Tone, line8Shot } from '../../场/2-门口/第8句.ts';
+import { line8Cloud } from '../../场/2-门口/第8句云.ts';
+import { line8Photos } from '../../特效/照片画.ts';
+import { views } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 帧 = 正片事件.哈气.帧;
-const 墙 = 照片墙格们(第8句照片们);
+const frame = mainCutEvents.哈气.帧;
+const photoWall = photoWallCells(line8Photos);
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
   // N = 6 不是 4 的倍数：地图画按 32 格画（特效/地图画.ts），天、太阳用 门口画布 的默认
-  const 镜 = v.N6 ? { 取景: N6取景, 照片墙边长: 32 as const } : { ...第8句镜头, 照片墙边长: 64 as const, 弧: null };
+  const shot = v.N6 ? { framing: n6Framing, photoWallEdge: 32 as const } : { ...line8Shot, photoWallEdge: 64 as const, arc: null };
   return (
-    <整片后期 调色={v.后期 ? 第8句调子.调色 : null} 种子={帧}>
-      <门口画布 门开 照片墙={墙} 远景={v.远景 && { 云: 第8句云(帧) }} 调子={第8句调子} {...镜} 叠层={<哈气气泡 取景={镜.取景} />}>
-        <哈气角色 你={v.你} />
-      </门口画布>
-    </整片后期>
+    <FilmPost grade={v.withPost ? line8Tone.grade : null} 种子={frame}>
+      <DoorCanvas doorOpen photoWall={photoWall} 远景={v.远景 && { clouds: line8Cloud(frame) }} tone={line8Tone} {...shot} 叠层={<PuffBubble framing={shot.framing} />}>
+        <PuffCharacter 你={v.你} />
+      </DoorCanvas>
+    </FilmPost>
   );
 };
 
-export default 画面;
+export default picture;

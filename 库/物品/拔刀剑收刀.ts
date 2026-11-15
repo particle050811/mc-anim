@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { rad } from '../../engine/anim/anim.ts';
 import { bladeInHand, type FigurePose, handMatrix, hipMatrix } from '../角色/骨架.tsx';
-import { bladeCenterY, KATANA_DIMS as 尺, SHEATH_HANG_QUAT, SHEATHED_BLADE, sheathCenterY } from './拔刀剑.tsx';
+import { bladeCenterY, KATANA_DIMS as katanaDims, SHEATH_HANG_QUAT, SHEATHED_BLADE, sheathCenterY } from './拔刀剑.tsx';
 
 const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
 const vec3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -30,10 +30,10 @@ const tipInGrip = vec3(12.5, 6.5, 19.5);
 const receiveDir = tipInGrip.clone().sub(receiveMouth).normalize();
 const pullBack = 1.5;
 // 刀身横在肚子前不碰身体（离胸口最近约 0.3 像素，在对口那帧身体右前角）；鞘尾离地（6-1-2 的实际姿态）迎刀时约 4 像素，鞘从腰上转过来的半路最低、约 3.4 像素。刀和鞘的弯是同一段圆弧
-const arcRadius = 尺.arcR;
-const bladeLen = 尺.tipZ - 尺.tsubaZ; // 18.6：刀尖在鞘口 → 护手贴鞘口
+const arcRadius = katanaDims.arcR;
+const bladeLen = katanaDims.tipZ - katanaDims.tsubaZ; // 18.6：刀尖在鞘口 → 护手贴鞘口
 // 对口那一刻刀尖已进鞘口多少：握点到鞘口差一点不到一把刀长
-const tipInDepth = bladeLen + 尺.tsubaZ - receiveMouth.clone().addScaledVector(receiveDir, -pullBack).distanceTo(tipInGrip);
+const tipInDepth = bladeLen + katanaDims.tsubaZ - receiveMouth.clone().addScaledVector(receiveDir, -pullBack).distanceTo(tipInGrip);
 // 新版刀先横在身体右侧（参考的第一拍）：握点在右腰外侧，刀尖朝右、略朝前、水平（世界坐标），刀背朝上
 const sideGrip = vec3(11, 0.5, 16);
 const sideDir = vec3(1, 0.35, -0.05).normalize();
@@ -137,7 +137,7 @@ const targetsAt = (frame: number, timing: SheathTiming, startBlade: THREE.Matrix
   }
   // 握持点离鞘口沿刀不到 6.4 像素时右手够不着，顺着刀柄往柄头滑（最多 3.3）；入鞘后按在柄头上
   const insertDepth = frame < timing.tipIn ? 0 : frame < timing.sheathed ? tipInDepth + (bladeLen - tipInDepth) * ss((frame - timing.tipIn) / (timing.sheathed - timing.tipIn)) : bladeLen;
-  const gripSlide = Math.min(3.3, Math.max(0, 6.4 - (bladeLen + 尺.tsubaZ - insertDepth)));
+  const gripSlide = Math.min(3.3, Math.max(0, 6.4 - (bladeLen + katanaDims.tsubaZ - insertDepth)));
   const gripPt = vec3(0, 0, -gripSlide).applyMatrix4(bladeInHip ?? sheathInHip.clone().multiply(bladeInSheath(0)));
   // 左手扶鞘：握在鞘口往里 3.3 像素、偏刀背一侧的鞘身上（握鞘口上刀尖进口会穿过手）
   const holdPt = vec3(0, 0.8, 3.3).applyMatrix4(sheathInHip);

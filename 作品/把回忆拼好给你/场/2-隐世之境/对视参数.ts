@@ -4,41 +4,41 @@
 // 页面坐标按各画幅自己的页面尺寸（成片 = 页面 × 2，engine/三渲二/像素.ts 的 成片倍数），缩放都是成片像素 / 界面像素（气泡是 / 气泡像素）。
 // 下面写的落点是按机位投出来的，测试（对视参数.test.ts）守着。
 import { fps } from '../../分镜/时间.ts';
-import { 事件 as 歌词事件 } from '../../分镜/歌词.ts';
-import { 事件 as 正片第15句事件 } from '../../分镜/正片第15句.ts';
-import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
-import { 气泡字, 门光参数 } from './参数.ts';
+import { events as lyricEvents } from '../../分镜/歌词.ts';
+import { events as mainCutLine15Events } from '../../分镜/正片第15句.ts';
+import { line15ChatWidth } from '../../界面/聊天栏宽.ts';
+import { bubbleText, doorLightParams } from './参数.ts';
 
-const 正片事件 = { ...歌词事件, ...正片第15句事件 };
+const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 
-type 点 = [number, number, number];
+type Vec3 = [number, number, number];
 
 /** 歌上的秒（她的呼吸、尾巴、法杖浮动都按它取样） */
-export const 对视秒 = 正片事件.第15句对视.秒;
+export const eyeContactSec = mainCutEvents.第15句对视.秒;
 /** 48.61 进聊天栏的「Steve加入了游戏」到这一帧多少刻（按两边取整后的帧算，约 27 刻，还满亮） */
-export const 聊天年龄刻 = ((正片事件.第15句对视.帧 - 正片事件.第15句加入游戏.帧) / fps) * 20;
+export const chatAgeTick = ((mainCutEvents.第15句对视.帧 - mainCutEvents.第15句加入游戏.帧) / fps) * 20;
 
 /** 你站在哪（脚底）：参数.ts 门口机位的 y（−10.5），往屋里（东）挪 0.1 格，还在西门门洞那一格里。
  *  玩家碰撞箱 0.6 宽，北沿到 −10.2，碰不到开着的西门门扇（y −10.1875 以北，地点/隐世之境主厅门数据.ts），原版站得到这里 */
-export const 对视脚: 点 = [6.9, -10.5, 0];
+export const eyeContactFoot: Vec3 = [6.9, -10.5, 0];
 
 /** 竖直视角（度）：40，比原版默认 70 收窄（原版视角设置能拉到 30～110，游戏里调得出来）。
  *  主会话 10-24 美术定稿：推近，B 站 320 宽缩略图上她的脸至少占卡片宽 20%。脸连两边头发宽 0.416 格（模型 x −4.42～5.82，按 0.65/16 缩），
  *  40 下头那里一格 617 页面像素，脸连头发 257 = 16:9 宽的 20.1%（4:3 里 26.7%；光算皮肤那 7 格是 12.5%）。
  *  再窄就放不下：气泡（16 倍，盒子高 152 页面像素）整个要在画里，帽顶到下巴 0.66 格，下巴又不能进 B 站封面底边 20%。
  *  以前是 52（脸连头发 14.8%）。视角窄了透视也平，近大远小没那么冲，少点 CG 味（05 原则 2） */
-export const 对视视角 = 40;
+export const eyeContactFov = 40;
 
 /** 画幅（三版都是封面，都挂气泡、带聊天）：片 = 成片画幅（1280×720 页面、出 2560×1440），左下是原版位置的聊天栏；B站封面 = 交 B 站的 1920×1080（同一机位，聊天行放大）；
  *  竖版 = 抖音 3:4 封面 1080×1440。键名「片」说的是画幅，片里 2-重逢 这一帧不挂气泡、不留聊天行（核对-封面帧 最后两张是片里这一帧的样子） */
-export type 对视版 = '片' | 'B站封面' | '竖版';
+export type EyeContactVersion = '片' | 'B站封面' | '竖版';
 
 /** 各画幅的页面尺寸（成片 ×2）和看点；眼睛都在 对视脚 + 1.62，视角都是 对视视角，看点取在离眼 1.65 格（和她差不多远）的视线上。
  *  片、B站封面（同一个机位）：她头（脚底以上 1.33 格）落在片那一版的 (878, 435)（1280×720 计），气泡锚点（帽顶 1.76）在 y 166：
  *  气泡在她头上、画面上沿底下，下巴（1.1）在 y 573，刚好在 B 站封面底边 20% 那条线（576）上面；头偏右，左下空给封面那行黄字，
  *  下巴的 x 874 没进 B 站右下角时长角标那块（x > 883）。
  *  竖版：头落在 (300, 428)（540×720 计），正中略偏右，气泡在上（锚点同样 y 166），黄字在左下、举花那只手的袖口底下（下巴 562 底下） */
-export const 对视取景: Record<对视版, { 宽: number; 高: number; 看: 点 }> = {
+export const eyeContactFraming: Record<EyeContactVersion, { 宽: number; 高: number; 看: Vec3 }> = {
   片: { 宽: 1280, 高: 720, 看: [8.407, -11.149, 1.446] },
   B站封面: { 宽: 960, 高: 540, 看: [8.407, -11.149, 1.446] },
   竖版: { 宽: 540, 高: 720, 看: [8.24, -11.447, 1.442] },
@@ -46,7 +46,7 @@ export const 对视取景: Record<对视版, { 宽: number; 高: number; 看: �
 
 /** 封面（B站封面、竖版）她头顶气泡里的那句。用户 10-25 看 预览/1025-0124-封面和标题简介/01 说「C 位应该是您的手艺 一如既往那一句话」，替掉哭脸「( •́ _ •̀)」。
  *  同 2-重逢 驯服那一下的台词（三稿 50.81，万法皆通驯服隐世之境女仆时发的那行淡紫字）。03-封面 原来因为 B 站有酒狐稿件用过这句、不放进封面，这次是用户点名放 */
-export const 封面台词 = '您的手艺，一如既往呢';
+export const coverLine = '您的手艺，一如既往呢';
 
 /** 她头顶的车万女仆气泡，这一镜不照游戏大小挂（游戏里挂在脚底 + 2 格、一个气泡像素 0.025 格；这么挂的话这个视角下气泡顶出画）：
  *  锚高：气泡底边落在她帽顶上（脚底以上这么多格的那一点投到画面上），尾巴往下压住帽顶一点，看得出是她头上冒的；
@@ -61,40 +61,40 @@ export const 封面台词 = '您的手艺，一如既往呢';
  *  尾巴落在 x 1548～1560，压在她帽顶右半边；照「中」摆的话尾巴在盒子正中 x 960，底下是帽檐左尖和墙，看不出是她说的。
  *  竖版 她的头在正中略偏右（x 600），照「中」摆、往左挪 6 个气泡像素，尾巴在 x 540，还在帽顶上。
  *  片 照原样（中、锚点就在她头顶正上方） */
-export const 对视气泡: {
-  锚高: number;
-  缩放: Record<对视版, number>;
-  字: Record<对视版, string>;
-  位置: Record<对视版, '中' | '左'>;
-  居中: Record<对视版, boolean>;
+export const eyeContactBubble: {
+  anchorHeight: number;
+  缩放: Record<EyeContactVersion, number>;
+  字: Record<EyeContactVersion, string>;
+  位置: Record<EyeContactVersion, '中' | '左'>;
+  centered: Record<EyeContactVersion, boolean>;
 } = {
-  锚高: 1.76,
+  anchorHeight: 1.76,
   缩放: { 片: 16, B站封面: 12, 竖版: 10 },
-  字: { 片: 气泡字, B站封面: 封面台词, 竖版: 封面台词 },
+  字: { 片: bubbleText, B站封面: coverLine, 竖版: coverLine },
   位置: { 片: '中', B站封面: '左', 竖版: '中' },
-  居中: { 片: false, B站封面: true, 竖版: true },
+  centered: { 片: false, B站封面: true, 竖版: true },
 };
 
 /** 拿花（对视那一帧起）：在组件「站」拿东西的姿势（右手胸前）上，几根骨骼各再转多少度（直接加在转角上，[x, y, z]）。
  *  主会话 10-24 美术定稿：花衬在深色背景上、不叠在头发上，B 站封面那行大字也不压手和花。所以手抬到脸左边（画面上）、头发外面，
  *  花立在帽檐左下那块紫色前面，大字在花底下。花本身怎么画、怎么朝向见 铃兰.tsx。以前是前臂抬 26°、花头到嘴边，叠在她头发上 */
-export const 拿花 = { 大臂: [-60, -15, 0] as [number, number, number], 前臂: [0, 0, 0] as [number, number, number], 手: [0, 0, 0] as [number, number, number], 歪: 18 };
+export const holdFlower = { upperArm: [-60, -15, 0] as [number, number, number], foreArm: [0, 0, 0] as [number, number, number], 手: [0, 0, 0] as [number, number, number], tilt: 18 };
 
 /** 「认出你」的瞳孔放回眼睛中间（模型单位，一格 = 0.9，库/角色/魔法酒狐新动作.ts 的 魔法酒狐一格）。主会话 10-24 美术定稿：现在有点斗鸡、往上翻。
  *  认出你把眼皮连虹膜抬了一格、底下补一排，眼睛三格高，瞳孔（ysmGlow…EyePublic）还在上面两格的正中，比眼睛正中高半格：往下挪半格。
  *  虹膜只有 1.4 格宽、贴着眼睛靠鼻子那边，瞳孔中心比眼白中心往里 0.16：往外挪回去，两只眼对称 */
-export const 瞳孔挪 = { 下: 0.45, 往外: 0.08 };
+export const pupilShift = { 下: 0.45, outward: 0.08 };
 
 /** 眉毛往前挪（模型单位）：认出你抬了一格的眉毛在刘海（Bangs、bone5，最前到 z −3.3）后面，帽子抬了也看不见；往前挪到刘海前面 */
-export const 眉毛往前 = 1.4;
+export const browForward = 1.4;
 
 /** 帽子整顶往上抬几格（模型单位，一格 0.9）：眉毛（认出你抬了一格）被刘海和帽檐挡着，帽檐抬起来露出眉眼（主会话 10-24 美术定稿：帽檐抬 1～2 格） */
-export const 帽子抬 = 2 * 0.9;
+export const hatLift = 2 * 0.9;
 
 /** 片那一版左下的聊天栏，照 2-摇铃 片里那一行画：原版位置的像素聊天栏，缩放 6（2560×1440 下原版自动选的界面尺寸，同 画风.ts 的 像素N） */
-export const 片里聊天缩放 = 6;
+export const movieChatScale = 6;
 /** 那一行聊天栏的宽（界面像素）：同第 15 句门口那一镜（界面/聊天栏宽.ts） */
-export const 片里聊天宽 = 第15句聊天宽;
+export const movieChatWidth = line15ChatWidth;
 
 /** 封面上的那行黄字「Steve加入了游戏」（场/2-隐世之境/叠层.tsx 的 封面聊天行，布局：缩放 = 成片像素 / 界面像素，左、下 = 该版的页面像素）。不画左边那根灰竖条（叠层.tsx 的 竖条）。
  *  放左下角：用户 10-25 定「加入游戏放左下角」（C 位让给气泡，见 对视气泡）。原版聊天栏也在左下。
@@ -103,19 +103,19 @@ export const 片里聊天宽 = 第15句聊天宽;
  *  10 倍（810 宽、90 高）要到 x 1110，压住花，所以取 8 倍（字高 64；03-封面说 110 才认得出，C 位的气泡字 96，这行退到次要）。
  *  竖版：同样 8 倍（黑条 648 宽），左边、下边各留 40（x 40～688，y 1328～1400，1080×1440 计），在举花那只手的袖口底下、她身子前面。
  *  取偶数倍（汉字是 unifont，一个点半个界面像素，奇数倍会一宽一窄） */
-export const 封面大字: Record<Exclude<对视版, '片'>, { 缩放: number; 左: number; 下: number }> = {
-  B站封面: { 缩放: 8, 左: 150, 下: 414 },
-  竖版: { 缩放: 8, 左: 20, 下: 700 },
+export const coverBigText: Record<Exclude<EyeContactVersion, '片'>, { 缩放: number; left: number; 下: number }> = {
+  B站封面: { 缩放: 8, left: 150, 下: 414 },
+  竖版: { 缩放: 8, left: 20, 下: 700 },
 };
 
 /** 门外的暖光从镜头后面灌进来（03-封面：暖粉加暖金）：镜头看得见的面都被门光照着，平涂的整体色调从 归隐之地 的 #fff6f2 往暖金里乘一点。
  *  只这一帧（和第 15 句门口这一镜）用，色板不动 */
-export const 门光色调 = '#ffe8d6';
+export const doorLightTint = '#ffe8d6';
 
 /** 门光（参数.ts 的 门光参数）不撒浮尘：镜头站在门洞里，光带关着（见 参数.ts），看不见光柱，浮尘只剩地上几粒亮方块，
  *  离镜头近的有半个格子大，静帧里像坏点 */
-export const 对视门光 = { ...门光参数, 浮尘: { ...门光参数.浮尘, 数: 0 } };
+export const eyeContactDoorLight = { ...doorLightParams, floatDust: { ...doorLightParams.floatDust, 数: 0 } };
 
 /** 背景褪色（褪色.tsx）：布景（不含她和爱心）按 sRGB 数值去 20% 饱和、压暗 15%，粉的她和粉紫的地毯分开。
  *  主会话 10-24 美术定稿（Opus 的数）：只在正片这一镜（含封面），不改地点本身 */
-export const 背景褪色参数 = { 明度: 0.85, 饱和: 0.8 };
+export const backgroundFadeParams = { lightness: 0.85, saturation: 0.8 };

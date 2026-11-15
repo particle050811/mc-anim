@@ -1,63 +1,63 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { 配置 } from '../环境/配置.ts';
-import { 列文件 } from './文件.ts';
-import { 遮密, 敏感名, type 发起者 } from './发起者.ts';
-export type 调度事件 = {
+import { config } from '../环境/配置.ts';
+import { listFiles } from './文件.ts';
+import { maskSecret, sensitiveRe, type Caller } from './发起者.ts';
+export type SchedulerEvent = {
     v: number;
     时: string;
     事: string;
     任务?: string;
     票?: string;
-    锁?: string;
+    lock?: string;
     主机: string;
     [k: string]: unknown;
 };
-const 行上限 = 4096;
-const 放得下 = (行: 调度事件) => Buffer.byteLength(JSON.stringify(行)) + 1 < 行上限;
-const 短发起 = (x: unknown) => { const { 来源, 会话, 路, 工作区, pid, 子会话, 代理标 } = x as Partial<发起者>; return { 来源, 会话, 路, 工作区, pid, 子会话, 代理标 }; };
-const 按字节截 = (s: string, n: number) => Buffer.byteLength(s) <= n ? s : Buffer.from(s).subarray(0, n).toString('utf8').replace(/\uFFFD+$/, '') + '…';
+const maxRowBytes = 4096;
+const fitsLimit = (record: SchedulerEvent) => Buffer.byteLength(JSON.stringify(record)) + 1 < maxRowBytes;
+const shortInitiator = (x: unknown) => { const { 来源: source, 会话: sessionId, 路: lane, 工作区: workspace, pid, 子会话: isChildSession, 代理标: agentTag } = x as Partial<Caller>; return { 来源: source, 会话: sessionId, 路: lane, 工作区: workspace, pid, 子会话: isChildSession, 代理标: agentTag }; };
+const truncateBytes = (s: string, n: number) => Buffer.byteLength(s) <= n ? s : Buffer.from(s).subarray(0, n).toString('utf8').replace(/\uFFFD+$/, '') + '…';
 /** 按丢失的代价从小到大退。决定、为什么、谁 是这条日志存在的理由，只收缩不删。 */
-const 压行 = (行: 调度事件): 调度事件 => {
-    const a: 调度事件 = { ...行, 截断: true }, 看 = a.看到 as { 人工?: string; 摘要?: string } | string | undefined;
-    if (看 && typeof 看 === 'object')
-        a.看到 = [看.人工, 看.摘要].filter(Boolean).join('；');
+const compactLine = (record: SchedulerEvent): SchedulerEvent => {
+    const a: SchedulerEvent = { ...record, 截断: true }, seen = a.看到 as { manualNote?: string; 摘要?: string } | string | undefined;
+    if (seen && typeof seen === 'object')
+        a.看到 = [seen.manualNote, seen.摘要].filter(Boolean).join('；');
     delete a.队;
     delete a.机;
-    if (放得下(a))
+    if (fitsLimit(a))
         return a;
     for (const k of ['发起', '谁'])
         if (a[k] && typeof a[k] === 'object')
-            a[k] = 短发起(a[k]);
-    if (放得下(a))
+            a[k] = shortInitiator(a[k]);
+    if (fitsLimit(a))
         return a;
     for (const k of ['看到', '决定', '为什么'])
         if (typeof a[k] === 'string')
-            a[k] = 按字节截(a[k], 900);
-    return 放得下(a) ? a : { v: a.v, 时: a.时, 事: a.事, 任务: a.任务, 票: a.票, 主机: a.主机, 截断: true, 谁: a.谁, 决定: a.决定, 为什么: a.为什么 };
+            a[k] = truncateBytes(a[k], 900);
+    return fitsLimit(a) ? a : { v: a.v, 时: a.时, 事: a.事, 任务: a.任务, 票: a.票, 主机: a.主机, 截断: true, 谁: a.谁, 决定: a.决定, 为什么: a.为什么 };
 };
 /** 单次 O_APPEND write，不能先读再写；多进程和跨月均不轮转正在打开的文件。 */
-export const 记调度 = (目录: string, 事: string, 字段: Record<string, unknown> = {}, now = Date.now()) => {
+export const recordSchedulerEvent = (schedDir: string, eventName: string, fields: Record<string, unknown> = {}, now = Date.now()) => {
     try {
-        fs.mkdirSync(目录, { recursive: true });
-        const 清 = (x: unknown, key = ''): unknown => {
-            if (敏感名.test(key))
+        fs.mkdirSync(schedDir, { recursive: true });
+        const sanitize = (x: unknown, key = ''): unknown => {
+            if (sensitiveRe.test(key))
                 return '[已遮蔽]';
             if (typeof x === 'string')
-                return 遮密(x).slice(0, 400);
+                return maskSecret(x).slice(0, 400);
             if (Array.isArray(x))
-                return x.slice(0, 8).map(v => 清(v));
+                return x.slice(0, 8).map(v => sanitize(v));
             if (x && typeof x === 'object')
-                return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, 清(v, k)]));
+                return Object.fromEntries(Object.entries(x).map(([k, v]) => [k, sanitize(v, k)]));
             return x;
         };
-        const 行: 调度事件 = { ...(清(字段) as Record<string, unknown>), v: 1, 时: new Date(now).toISOString(), 事, 主机: 配置('主机') };
-        let text = JSON.stringify(行) + '\n';
-        if (!放得下(行)) {
-            text = JSON.stringify(压行(行)) + '\n';
-            console.error(`!! 调度日志一行超过 ${行上限} 字节，已压缩：${事}`);
+        const record: SchedulerEvent = { ...(sanitize(fields) as Record<string, unknown>), v: 1, 时: new Date(now).toISOString(), 事: eventName, 主机: config('主机') };
+        let text = JSON.stringify(record) + '\n';
+        if (!fitsLimit(record)) {
+            text = JSON.stringify(compactLine(record)) + '\n';
+            console.error(`!! 调度日志一行超过 ${maxRowBytes} 字节，已压缩：${eventName}`);
         }
-        const fd = fs.openSync(path.join(目录, 行.时.slice(0, 7) + '.jsonl'), 'a');
+        const fd = fs.openSync(path.join(schedDir, record.时.slice(0, 7) + '.jsonl'), 'a');
         try {
             fs.writeSync(fd, text);
         }
@@ -69,13 +69,13 @@ export const 记调度 = (目录: string, 事: string, 字段: Record<string, un
         console.error(`!! 调度日志写失败：${(e as Error).message}`);
     }
 };
-const 月文件们 = (目录: string) => 列文件(目录).filter(x => /^\d{4}-\d{2}\.jsonl$/.test(x)).sort();
+const monthFiles = (schedDir: string) => listFiles(schedDir).filter(x => /^\d{4}-\d{2}\.jsonl$/.test(x)).sort();
 /** 起：给定文件大小，定从哪个字节读起。月文件可能尚未创建，读不到返回 null。 */
-const 读字节 = (file: string, 起: (size: number) => number) => {
+const readBytes = (file: string, startOffsetOf: (size: number) => number) => {
     let fd: number | undefined;
     try {
         fd = fs.openSync(file, 'r');
-        const size = fs.fstatSync(fd).size, offset = 起(size), b = Buffer.alloc(size - offset);
+        const size = fs.fstatSync(fd).size, offset = startOffsetOf(size), b = Buffer.alloc(size - offset);
         fs.readSync(fd, b, 0, b.length, offset);
         return b;
     }
@@ -87,53 +87,53 @@ const 读字节 = (file: string, 起: (size: number) => number) => {
             fs.closeSync(fd);
     }
 };
-export const 读调度 = (目录: string, 尾字节?: number): 调度事件[] => {
-    let out: 调度事件[] = [], 余 = 尾字节 ?? Infinity;
-    for (const name of 月文件们(目录).reverse()) {
-        if (余 <= 0)
+export const readSchedulerEvents = (schedDir: string, tailBytes?: number): SchedulerEvent[] => {
+    let out: SchedulerEvent[] = [], remainingBytes = tailBytes ?? Infinity;
+    for (const name of monthFiles(schedDir).reverse()) {
+        if (remainingBytes <= 0)
             break;
-        let 截了 = false, 读了 = 0;
-        const b = 读字节(path.join(目录, name), size => { const offset = Math.max(0, size - 余); 截了 = offset > 0; 读了 = size - offset; return offset; });
+        let truncated = false, bytesRead = 0;
+        const b = readBytes(path.join(schedDir, name), size => { const offset = Math.max(0, size - remainingBytes); truncated = offset > 0; bytesRead = size - offset; return offset; });
         if (!b)
             continue;
-        余 -= 读了;
-        const lines = b.toString('utf8').split('\n'), 本月: 调度事件[] = [];
-        if (截了)
+        remainingBytes -= bytesRead;
+        const lines = b.toString('utf8').split('\n'), tailEvents: SchedulerEvent[] = [];
+        if (truncated)
             lines.shift();
         for (const l of lines) {
             try {
-                本月.push(JSON.parse(l));
+                tailEvents.push(JSON.parse(l));
             }
             catch { /* 并发写入的末行下一次再读 */ }
         }
-        out = [...本月, ...out];
+        out = [...tailEvents, ...out];
     }
     return out;
 };
 /** UTC 月文件名和字节偏移，跨月、尾部滑出都不丢。 */
-export type 日志位置 = {
+export type LogPosition = {
     月: string;
-    偏移: number;
+    offset: number;
 };
 /** 从位置读到末尾，只吃整行（末行可能还在写）。每行带读完它的位置，调用方可以只把报过的算已读。 */
-export const 读新事件 = (目录: string, 从?: 日志位置 | null) => {
-    const 行: { 事件: 调度事件; 到: 日志位置 }[] = [];
-    let 末: 日志位置 = 从 ?? { 月: '', 偏移: 0 };
-    for (const name of 月文件们(目录)) {
-        const 月 = name.slice(0, 7);
-        if (从 && 月 < 从.月)
+export const readNewEvents = (schedDir: string, fromCursor?: LogPosition | null) => {
+    const rows: { 事件: SchedulerEvent; 到: LogPosition }[] = [];
+    let endCursor: LogPosition = fromCursor ?? { 月: '', offset: 0 };
+    for (const name of monthFiles(schedDir)) {
+        const month = name.slice(0, 7);
+        if (fromCursor && month < fromCursor.月)
             continue;
-        let 基 = 0;
-        const b = 读字节(path.join(目录, name), size => (基 = 从?.月 === 月 && 从.偏移 <= size ? 从.偏移 : 0));
+        let startOffset = 0;
+        const b = readBytes(path.join(schedDir, name), size => (startOffset = fromCursor?.月 === month && fromCursor.offset <= size ? fromCursor.offset : 0));
         if (!b)
             continue;
-        for (let 头 = 0, 尾 = b.indexOf(10); 尾 >= 0; 头 = 尾 + 1, 尾 = b.indexOf(10, 头)) {
-            末 = { 月, 偏移: 基 + 尾 + 1 };
+        for (let lineStart = 0, lineEnd = b.indexOf(10); lineEnd >= 0; lineStart = lineEnd + 1, lineEnd = b.indexOf(10, lineStart)) {
+            endCursor = { 月: month, offset: startOffset + lineEnd + 1 };
             try {
-                行.push({ 事件: JSON.parse(b.toString('utf8', 头, 尾)), 到: 末 });
+                rows.push({ 事件: JSON.parse(b.toString('utf8', lineStart, lineEnd)), 到: endCursor });
             }
             catch { /* 坏行跳过，不卡住后面 */ }
         }
     }
-    return { 行, 末 };
+    return { 行: rows, endCursor };
 };

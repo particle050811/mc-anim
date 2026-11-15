@@ -192,8 +192,8 @@ export const warden = (f: number) => {
   const h = handoffAt(f);
   return {
     秒: gameSecAt(f),
-    触角: tendrilAt(f),
-    头偏: K648.wardenHeadYawTo(liuPoseAt(f).loc) * (1 - h),
+    tendril: tendrilAt(f),
+    headYaw: K648.wardenHeadYawTo(liuPoseAt(f).loc) * (1 - h),
     headPitch: 12 - 4 * h,
     吼叫: roarAnimSec(f),
   };

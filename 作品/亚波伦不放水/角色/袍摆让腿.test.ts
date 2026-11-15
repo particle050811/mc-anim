@@ -4,57 +4,57 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { 骨骼矩阵 } from '@engine/model/基岩正解.ts';
+import { skeletonMatrix } from '@engine/model/基岩正解.ts';
 import type { BedrockBone } from '@engine/model/基岩模型.tsx';
-import { 字节路径, 读资产锁 } from '../../../pipeline/资产/资产锁.ts';
-import { 一遍秒, 忘情牛肉面姿势 } from './动作/忘情牛肉面.ts';
-import { 相对矩阵, 袍摆穿出明细, 袍摆让腿 } from './袍摆让腿.ts';
+import { bytesPath, readAssetLock } from '../../../pipeline/资产/资产锁.ts';
+import { onePassSec, noodleDancePose } from './动作/忘情牛肉面.ts';
+import { relativeMatrix, hemPierceDetails, hemYieldLeg } from './袍摆让腿.ts';
 
-const 锁 = 读资产锁(path.join(import.meta.dirname, '..', '资产锁'));
-const 文件 = 锁['模型/角色/娘化亚波伦'] && 字节路径(锁['模型/角色/娘化亚波伦']!);
-const 几何 = 文件 && fs.existsSync(文件) ? (JSON.parse(fs.readFileSync(文件, 'utf8')) as { bones: BedrockBone[] }) : undefined;
+const assetLock = readAssetLock(path.join(import.meta.dirname, '..', '资产锁'));
+const file = assetLock['模型/角色/娘化亚波伦'] && bytesPath(assetLock['模型/角色/娘化亚波伦']!);
+const boneModel = file && fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf8')) as { bones: BedrockBone[] }) : undefined;
 
-describe.skipIf(!几何)('袍摆让腿', () => {
-  const g = 几何!;
+describe.skipIf(!boneModel)('袍摆让腿', () => {
+  const g = boneModel!;
 
   it('自己的骨骼算式和 engine 的 骨骼矩阵 一样（带转角、平移、横向缩放）', () => {
-    const t = { ...忘情牛肉面姿势(7.8), FrontSkirt: { rot: [-20, 0, 0] }, bone27: { scale: [1.4, 1, 1], pos: [0.6, 0, 0] } };
-    const 根 = 骨骼矩阵(g, 'Skirt', t, 1);
-    for (const 名 of ['bone29', 'bone153', 'LeftLowerLeg']) {
-      const 祖 = 名 === 'LeftLowerLeg' ? 'DownBody' : 'Skirt';
-      const 要 = (祖 === 'Skirt' ? 根 : 骨骼矩阵(g, 祖, t, 1)).clone().multiply(相对矩阵(g, 祖, 名, t));
-      const 实 = 骨骼矩阵(g, 名, t, 1);
-      for (let i = 0; i < 16; i++) expect(要.elements[i]).toBeCloseTo(实.elements[i]!, 9);
+    const t = { ...noodleDancePose(7.8), FrontSkirt: { rot: [-20, 0, 0] }, bone27: { scale: [1.4, 1, 1], pos: [0.6, 0, 0] } };
+    const rootMatrix = skeletonMatrix(g, 'Skirt', t, 1);
+    for (const boneName of ['bone29', 'bone153', 'LeftLowerLeg']) {
+      const ancestor = boneName === 'LeftLowerLeg' ? 'DownBody' : 'Skirt';
+      const expected = (ancestor === 'Skirt' ? rootMatrix : skeletonMatrix(g, ancestor, t, 1)).clone().multiply(relativeMatrix(g, ancestor, boneName, t));
+      const actual = skeletonMatrix(g, boneName, t, 1);
+      for (let i = 0; i < 16; i++) expect(expected.elements[i]).toBeCloseTo(actual.elements[i]!, 9);
     }
   });
 
   it('站着不动（空姿势表）不改袍摆', () => {
-    const r = 袍摆让腿(g, {});
-    expect(r.姿势).toEqual({});
-    expect(r.剩).toBe(0);
+    const r = hemYieldLeg(g, {});
+    expect(r.bonePose).toEqual({});
+    expect(r.remain).toBe(0);
   });
 
   it('改过的骨骼喂回 骨骼矩阵 也有限（scale、pos 的写法 engine 认）', () => {
-    const t = 忘情牛肉面姿势(7.8);
-    const r = 袍摆让腿(g, t);
-    const m = 骨骼矩阵(g, 'bone29', { ...t, ...r.姿势 });
+    const t = noodleDancePose(7.8);
+    const r = hemYieldLeg(g, t);
+    const m = skeletonMatrix(g, 'bone29', { ...t, ...r.bonePose });
     expect(m.elements.every(Number.isFinite)).toBe(true);
     expect(new THREE.Vector3().setFromMatrixPosition(m).length()).toBeGreaterThan(0);
   });
 
   it('忘情牛肉面每 1/60 秒：腿不穿出袍子，各组甩的角度逐帧连续', () => {
-    let 上: ReturnType<typeof 袍摆让腿>['角'] | undefined;
-    const 最大 = { 前: 0, 后: 0, 左: 0, 右: 0 };
-    let 最大跳 = 0;
-    for (let f = 0; f <= Math.ceil(一遍秒 * 60); f++) {
-      const r = 袍摆让腿(g, 忘情牛肉面姿势(f / 60));
-      if (r.剩) expect.fail(`第 ${f} 帧还有点露在外面：${JSON.stringify(袍摆穿出明细(g, 忘情牛肉面姿势(f / 60)))}`);
+    let prevAngles: ReturnType<typeof hemYieldLeg>['角'] | undefined;
+    const maxAngles = { 前: 0, 后: 0, 左: 0, 右: 0 };
+    let maxJump = 0;
+    for (let f = 0; f <= Math.ceil(onePassSec * 60); f++) {
+      const r = hemYieldLeg(g, noodleDancePose(f / 60));
+      if (r.remain) expect.fail(`第 ${f} 帧还有点露在外面：${JSON.stringify(hemPierceDetails(g, noodleDancePose(f / 60)))}`);
       for (const k of ['前', '后', '左', '右'] as const) {
-        最大[k] = Math.max(最大[k], r.角[k]);
-        if (上) 最大跳 = Math.max(最大跳, Math.abs(r.角[k] - 上[k]));
+        maxAngles[k] = Math.max(maxAngles[k], r.角[k]);
+        if (prevAngles) maxJump = Math.max(maxJump, Math.abs(r.角[k] - prevAngles[k]));
       }
-      上 = r.角;
+      prevAngles = r.角;
     }
-    expect(最大跳).toBeLessThan(8);
+    expect(maxJump).toBeLessThan(8);
   });
 });

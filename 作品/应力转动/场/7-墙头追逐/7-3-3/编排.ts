@@ -8,20 +8,20 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { addOffset } from '../../../地点/古城4x/7-1/机位.ts';
 import { lerpV, ss } from '../../../地点/古城4x/7-1/戏/公用.ts';
-import { 建变速 } from '../../../地点/古城4x/7-1/变速.ts';
-import { 建机位 } from '../../../地点/古城4x/7-1/变速段.tsx';
+import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';
+import { buildCameraRig } from '../../../地点/古城4x/7-1/变速段.tsx';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
 import { G4 } from '../../../地点/古城4x.tsx';
-export const 号 = '7-3-3' as const;
+export const segmentId = '7-3-3' as const;
 export const FPS = timeline.FPS;
 
-const startT = timeline.segmentStartT(号);
-const endT = timeline.segmentEndT(号);
+const startT = timeline.segmentStartT(segmentId);
+const endT = timeline.segmentEndT(segmentId);
 const fireT = timeline.sonicBoomFireT;
 // 定在放出后 0.02 秒：音波粒子（第 34 刻一次撒满整条线）已经出来
 const stopT = fireT + 0.02;
-export const 变速 = 建变速(
+export const speedRamp = buildSpeedRamp(
   startT,
   endT,
   [
@@ -34,8 +34,8 @@ export const 变速 = 建变速(
   ],
   [stopT],
 );
-export const END = 变速.总帧数;
-export const T于 = 变速.剧情时间;
+export const END = speedRamp.总帧数;
+export const timeAt = speedRamp.storyTime;
 
 const cuts = [startT, timeline.hitT + 0.3, timeline.leap3T + 0.45]; // 箭的暴击数字、他头上的数字在同框镜头里弹出来再切
 const horseAtFire = play.horseState(fireT).p;
@@ -66,4 +66,4 @@ const shots: { 起: number; cam: (t: number) => Cam }[] = [
     cam: (t) => ({ pos: G4(-816.5, -48.5, 202.5) as V3, tgt: horseChest(t), lens: 16 }),
   },
 ];
-export const camera = 建机位(变速, shots);
+export const camera = buildCameraRig(speedRamp, shots);

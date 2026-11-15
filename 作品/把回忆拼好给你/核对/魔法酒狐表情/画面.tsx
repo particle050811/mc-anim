@@ -5,41 +5,41 @@ import { AbsoluteFill } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
-import { 画幅 } from '../../分镜/时间.ts';
-import { 第一人称机位 } from '../../地点/机位.tsx';
-import { 视图们 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { aspect } from '../../分镜/时间.ts';
+import { FirstPersonRig } from '../../地点/机位.tsx';
+import { views } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 她 = { ...standPose([0, 0, 0]), yaw: 180 };
-const 九胡 = { ...standPose([0, 0, 0]), yaw: 180 };
-const 地毯厚 = 1 / 16;
+const liYing = { ...standPose([0, 0, 0]), yaw: 180 };
+const jiuHu = { ...standPose([0, 0, 0]), yaw: 180 };
+const carpetThickness = 1 / 16;
 
-const 地面: React.FC = () => (
+const Ground: React.FC = () => (
   <>
-    <mesh position={[0, 0, -地毯厚 - 0.05]}>
+    <mesh position={[0, 0, -carpetThickness - 0.05]}>
       <boxGeometry args={[9, 9, 0.1]} />
       <meshStandardMaterial color="#b8945f" />
     </mesh>
-    <mesh position={[0, 0, -地毯厚 / 2]}>
-      <boxGeometry args={[3, 3, 地毯厚]} />
+    <mesh position={[0, 0, -carpetThickness / 2]}>
+      <boxGeometry args={[3, 3, carpetThickness]} />
       <meshStandardMaterial color="#b84a9e" />
     </mesh>
   </>
 );
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 看 = v.头 === '看玩家' ? magicalWineFoxLookAt(她, v.眼) : undefined;
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const gaze = v.头 === '看玩家' ? magicalWineFoxLookAt(liYing, v.眼) : undefined;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
         <color attach="background" args={['#5a5e66']} />
-        <第一人称机位 眼={v.眼} 看={v.看} 视角={v.视角} />
+        <FirstPersonRig 眼={v.眼} 看={v.看} fov={v.fov} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
-          <地面 />
-          {v.九胡 ? <Jiuhu pose={九胡} tail={(v.秒 ?? 0) * 2} /> : <MagicalWineFox pose={她} 看={看} 表情={v.表情} 眨眼={v.眨眼} 秒={v.秒} />}
+          <Ground />
+          {v.九胡 ? <Jiuhu pose={jiuHu} tail={(v.秒 ?? 0) * 2} /> : <MagicalWineFox pose={liYing} 看={gaze} expression={v.expression} blink={v.blink} 秒={v.秒} />}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
@@ -50,4 +50,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

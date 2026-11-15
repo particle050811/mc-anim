@@ -1,36 +1,36 @@
 // 第 3 句的最后一帧（2-祭坛召唤 的末帧），也是第 4 句眼睛特写的第一帧：她怎么站、看哪，镜头在哪、推多快。第 4 句（场/2-海上）从这里接着往里推，两段接成一个推镜。纯数据。
 // 坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格），她站在原点、面朝南。
-import { 画幅 } from '../../分镜/时间.ts';
+import { aspect } from '../../分镜/时间.ts';
 
 /** 她最后一帧的样子：站着、朝南、头正对镜头（看 [0, 0]）、笑着、不眨眼（眨眼会把眼珠压扁，第 4 句叠化时对不上太阳），背后的法杖不画（同第 8 句门口） */
-export const 末她 = { 脚: [0, 0, 0] as [number, number, number], 朝向: 180, 看: [0, 0] as [number, number], 表情: '微笑' as const };
+export const liYingFinal = { feet: [0, 0, 0] as [number, number, number], facing: 180, 看: [0, 0] as [number, number], expression: '微笑' as const };
 
 /** 模型一像素多少格（TLM render_entity_scale 0.65） */
-const 模像素 = 0.65 / 16;
+const modelPixel = 0.65 / 16;
 /** 她右眼眼珠（ysmGlowRightEyePublic 那块紫色）正面的中心和高、头宽（格，末她 那样站时）。
  *  按 基岩模型.tsx 的变换对模型做正向运动学算的（魔法酒狐新动作组件 的 ysmGlowRightEyePublic 骨骼原点 x −0.0529、z 1.224 上下，随呼吸差几毫格）。
  *  坑：眼珠方块写的是 1.095 × 1.41 像素，但带 inflate −0.3，四边各缩 0.3，画出来只有 0.495 × 0.81 像素，正面也往里退 0.3 */
-export const 眼珠 = {
-  右: [-0.0529, -(2.02358 - 0.3) * 模像素, 1.2255] as [number, number, number],
-  高: (1.41 - 2 * 0.3) * 模像素,
-  脸宽: 6.3 * 模像素,
+export const eyeBall = {
+  rightEye: [-0.0529, -(2.02358 - 0.3) * modelPixel, 1.2255] as [number, number, number],
+  高: (1.41 - 2 * 0.3) * modelPixel,
+  faceWidth: 6.3 * modelPixel,
 };
 
 /** 最后一帧的竖直视角（度）：比原版默认 70 收一些，近处的脸不变形 */
-export const 末视角 = 30;
+export const finalFov = 30;
 /** 最后一帧脸宽占画面宽几倍：0.25 倍是脸的近景（两只眼睛、帽檐都在），对着右眼；第 4 句从这里接着推到右眼眼珠和太阳一样大。
  *  Agent 暂定：两句平分这一推（第 3 句从递蛋糕推到这里、第 4 句从这里推到「眼化日」，每 1/24 秒都放大 6% 上下），接缝上看不出换段 */
-export const 末脸宽 = 0.25;
+export const finalFaceWidth = 0.25;
 /** 最后一帧镜头离她右眼眼珠正面多远（格），约 1.07 */
-export const 末距 = 眼珠.脸宽 / (末脸宽 * 2 * Math.tan((末视角 * Math.PI) / 360) * (画幅.宽 / 画幅.高));
+export const finalDist = eyeBall.faceWidth / (finalFaceWidth * 2 * Math.tan((finalFov * Math.PI) / 360) * (aspect.宽 / aspect.高));
 
 /** 最后一帧的镜头：在右眼眼珠正前方（南边）末距 格，看着它 */
-export const 末机 = {
-  眼: [眼珠.右[0], 眼珠.右[1] - 末距, 眼珠.右[2]] as [number, number, number],
-  看: 眼珠.右,
-  视角: 末视角,
+export const endRig = {
+  眼: [eyeBall.rightEye[0], eyeBall.rightEye[1] - finalDist, eyeBall.rightEye[2]] as [number, number, number],
+  看: eyeBall.rightEye,
+  fov: finalFov,
 };
 
 /** 接缝处镜头往里推的速度：离眼珠距离的对数每秒变多少（负 = 越来越近；24 fps 时每帧 −0.062）。第 4 句从这个速度接着推，推镜不停、不跳
  *  （Agent 暂定：约等于第 4 句眼睛特写从这里推到眼珠和太阳一样大的平均速度，那一推收在「眼化日」停稳） */
-export const 末速 = -1.488;
+export const finalSpeed = -1.488;

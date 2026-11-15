@@ -3,22 +3,22 @@
 //   每颗在那一列从上往下找到的第一块实心地面上（施法者飞在天上时，牙出在她脚下到目标这条线的地面上，会越过目标继续排完）。
 // 没做：潜行时绕身两圈的摆法；配灾厄法杖的 spawnFangLine。
 import React from 'react';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 尖牙, 尖牙暴击, 暴击星 } from '../零件/尖牙.tsx';
-import 元, { 撕咬一排 } from './撕咬.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { Fang, fangCritSpawns, CritStar } from '../零件/尖牙.tsx';
+import meta, { biteRow } from './撕咬.元.ts';
 
-const 撕咬: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 排 = 撕咬一排(起点, 目标);
+const Bite: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const teeth = biteRow(from, target);
   return (
     <>
-      {排.map((牙, i) => (
-        <尖牙 key={i} {...牙} 刻={刻} />
+      {teeth.map((fang, i) => (
+        <Fang key={i} {...fang} 刻={tick} />
       ))}
-      <暴击星 出生们={排.flatMap((牙, i) => 尖牙暴击(牙.位, 牙.warmup, 刻, 种子 * 100 + i))} 秒={秒} />
+      <CritStar spawns={teeth.flatMap((fang, i) => fangCritSpawns(fang.位, fang.warmup, tick, seed * 100 + i))} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 撕咬);
+export default defineSpellPerformance(meta, Bite);

@@ -1,158 +1,158 @@
 // 第 6、7 句这一个镜头（段 2-雷雨、2-拨开阴霾，照片「光柱破云」也取这里）每一帧的样子：镜头、她和你、闪电、魔法阵、光柱、云洞、天气颜色、阳光、雨、掉落物。
 // 按歌曲帧算（两段是同一个镜头，照片按歌上的时刻取帧），时刻取 分镜/正片第6到7句.ts 的事件，分寸取 参数.ts。纯模块（测试也引）。
 import { clamp01 } from '@engine/anim/anim.ts';
-import type { 方块 } from '@engine/model/方块拼搭.tsx';
+import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
-import type { 光影场参数 } from '@engine/三渲二/光影/预设.ts';
-import { 插骨, 合并骨骼表, type 骨骼表 } from '@库/角色/骨骼表.ts';
+import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
+import type { ShadingSceneParams } from '@engine/三渲二/光影/预设.ts';
+import { lerpBonePose, mergeSkeleton, type SkeletonTable } from '@库/角色/骨骼表.ts';
 import { magicalWineFoxExMotion } from '@库/角色/魔法酒狐新动作.ts';
-import { fps, 一帧秒 } from '../../分镜/时间.ts';
-import { 段窗口, 事件 as 正片事件 } from '../../分镜/正片第6到7句.ts';
-import { 色板 } from '../../色板.ts';
-import * as 参 from './参数.ts';
-import { 云格, 散起半径, type 云格子 } from './云.ts';
-import { 坑, 小木屋, 抗爆, 掉落位, 南墙, 箱里掉落们, type 掉落 } from './弹坑.ts';
-import { 四周方块 } from './地形.ts';
-import { 雨量 } from './声音.ts';
-import { 云色, 天色, 雾色, type RGB } from './天气.ts';
-import type { 雨片 } from './雨.tsx';
+import { fps, oneFrameSec } from '../../分镜/时间.ts';
+import { segmentWindow, events as mainCutEvents } from '../../分镜/正片第6到7句.ts';
+import { palette } from '../../色板.ts';
+import * as params from './参数.ts';
+import { cloudCell, scatterRadius, type CloudCell } from './云.ts';
+import { crater, cabin, blastResist, dropPos, southWall, chestDrops, type Drop } from './弹坑.ts';
+import { SurroundBlocks } from './地形.ts';
+import { rainAmount } from './声音.ts';
+import { cloudColor, weatherSky, weatherFog, type RGB } from './天气.ts';
+import type { RainStreak } from './雨.tsx';
 
-type 事名 = keyof typeof 正片事件;
-export const 事 = (名: 事名) => 正片事件[名].帧;
+type EventName = keyof typeof mainCutEvents;
+export const eventFrame = (eventName: EventName) => mainCutEvents[eventName].帧;
 /** 这个镜头的头尾（歌曲帧，[起, 止)）：2-雷雨 的起到 2-拨开阴霾 的止 */
-export const 镜头起帧 = 段窗口('2-雷雨').起帧;
-export const 镜头止帧 = 段窗口('2-拨开阴霾').止帧;
+export const shotStartFrame = segmentWindow('2-雷雨').起帧;
+export const shotEndFrame = segmentWindow('2-拨开阴霾').止帧;
 /** 歌上的秒、游戏刻（雨、光柱、掉落物、云飘都按它走） */
-export const 歌秒 = (帧: number) => 帧 / fps;
-export const 刻 = (帧: number) => 歌秒(帧) * 20;
+export const songSec = (frame: number) => frame / fps;
+export const frameToTick = (frame: number) => songSec(frame) * 20;
 
-const 插 = (a: number, b: number, t: number) => a + (b - a) * t;
-const 插3 = (a: readonly number[], b: readonly number[], t: number): V3 => [插(a[0]!, b[0]!, t), 插(a[1]!, b[1]!, t), 插(a[2]!, b[2]!, t)];
-export const 缓 = (t: number) => {
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const lerpVec3 = (a: readonly number[], b: readonly number[], t: number): V3 => [lerp(a[0]!, b[0]!, t), lerp(a[1]!, b[1]!, t), lerp(a[2]!, b[2]!, t)];
+export const ease = (t: number) => {
   const x = clamp01(t);
   return x * x * (3 - 2 * x);
 };
-const 缓出 = (t: number) => 1 - (1 - clamp01(t)) ** 2;
+const easeOutQuad = (t: number) => 1 - (1 - clamp01(t)) ** 2;
 /** 从 起 那一帧开始、秒 秒走完的进度：起那一帧已经走了一帧（原来走了 1/24 秒，用户 11-03「统统改成 60 帧」）；
  *  起 之前是 0（不提前动）。起 可以带小数（帧） */
-const 走 = (帧: number, 起: number, 秒: number) => (帧 < 起 ? 0 : clamp01(((帧 - 起) / fps + 一帧秒) / 秒));
+const progress = (frame: number, startFrame: number, durSec: number) => (frame < startFrame ? 0 : clamp01(((frame - startFrame) / fps + oneFrameSec) / durSec));
 
 // ---------- 镜头 ----------
-export type 机位 = { 种: '透视'; 眼: V3; 看: V3; 视角: number; 远: number };
+export type CameraRig = { 种: '透视'; 眼: V3; 看: V3; fov: number; farPlane: number };
 /** 第 6 句从 全 推到 近（缓起缓停，雷照缺口 那一帧推到，停到这句完），第 7 句从 近 退到 仰（退镜秒 里缓起缓停），之后停住 */
-export const 机位 = (帧: number): 机位 => {
-  const { 全, 近, 仰 } = 参.机位们;
-  const 七 = 事('她站起');
-  const [a, b, t] = 帧 < 七 ? [全, 近, 缓((帧 - 镜头起帧) / (事('雷照缺口') - 镜头起帧))] : [近, 仰, 缓((帧 - 七) / (参.退镜秒 * fps))];
-  return { 种: '透视', 眼: 插3(a.眼, b.眼, t), 看: 插3(a.看, b.看, t), 视角: 插(a.视角, b.视角, t), 远: 1200 };
+export const CameraRig = (frame: number): CameraRig => {
+  const { 全: wide, 近: near, 仰: lowAngle } = params.cameraRigs;
+  const standUp = eventFrame('她站起');
+  const [a, b, t] = frame < standUp ? [wide, near, ease((frame - shotStartFrame) / (eventFrame('雷照缺口') - shotStartFrame))] : [near, lowAngle, ease((frame - standUp) / (params.pullBackSec * fps))];
+  return { 种: '透视', 眼: lerpVec3(a.眼, b.眼, t), 看: lerpVec3(a.看, b.看, t), fov: lerp(a.fov, b.fov, t), farPlane: 1200 };
 };
 
 // ---------- 闪电 ----------
 /** 第 6 句的两道闪电：切点那一道、推到缺口那一道 */
-export const 闪电们 = ['第6句闷雷', '雷照缺口'] as const;
+export const lightningEvents = ['第6句闷雷', '雷照缺口'] as const;
 /** 这一帧在不在闪（每道闪电起的那两下）：按秒比，歌上同一时刻和 24 fps 时一样亮不亮 */
-export const 闪 = (帧: number) =>
-  闪电们.some((名) => {
-    const 秒 = (帧 - 事(名)) / fps;
-    return 参.闪秒们.some(([a, b]) => 秒 >= a && 秒 < b);
+export const isFlashing = (frame: number) =>
+  lightningEvents.some((lightningName) => {
+    const sec = (frame - eventFrame(lightningName)) / fps;
+    return params.flashRanges.some(([a, b]) => sec >= a && sec < b);
   });
 
 // ---------- 她、你 ----------
-export type 她态 = { loc: V3; yaw: number; 姿势: '抱膝坐' | '站'; 看: [number, number]; 表情: '难过' | '微笑'; 施法: boolean; 骨骼?: 骨骼表 };
+export type LiYingState = { loc: V3; yaw: number; stancePose: '抱膝坐' | '站'; 看: [number, number]; expression: '难过' | '微笑'; casting: boolean; skeleton?: SkeletonTable };
 /** 头转过去：起 那一帧起 转头秒 转到位 */
-const 转头 = (帧: number, 起: number) => 缓(走(帧, 起, 参.转头秒));
+const turnHead = (frame: number, startFrame: number) => ease(progress(frame, startFrame, params.turnHeadSec));
 
 /** 起身插值的两头：抱膝坐、站着举手的整张骨骼（不带头：头由 看 管）；只留两头不一样的骨骼，其余照组件自己算 */
-const 起身两头 = (() => {
-  const 坐 = magicalWineFoxExMotion({ 姿势: '抱膝坐', 眨眼: 0 }).骨骼;
-  const 站 = 合并骨骼表(magicalWineFoxExMotion({ 姿势: '站', 眨眼: 0 }).骨骼, { RightArm: { rot: 参.施法臂.右 }, LeftArm: { rot: 参.施法臂.左 } });
-  const 键们 = [...new Set([...Object.keys(坐), ...Object.keys(站)])].filter((k) => k !== 'Head' && JSON.stringify(坐[k]) !== JSON.stringify(站[k]));
-  const 取 = (t: 骨骼表) => Object.fromEntries(键们.map((k) => [k, t[k] ?? {}]));
-  return { 坐: 取(坐), 站: 取(站) };
+const standUpPoses = (() => {
+  const sitBones = magicalWineFoxExMotion({ stancePose: '抱膝坐', blink: 0 }).skeleton;
+  const standPose = mergeSkeleton(magicalWineFoxExMotion({ stancePose: '站', blink: 0 }).skeleton, { RightArm: { rot: params.castArm.rightArm }, LeftArm: { rot: params.castArm.leftArm } });
+  const boneKeys = [...new Set([...Object.keys(sitBones), ...Object.keys(standPose)])].filter((k) => k !== 'Head' && JSON.stringify(sitBones[k]) !== JSON.stringify(standPose[k]));
+  const pickBones = (t: SkeletonTable) => Object.fromEntries(boneKeys.map((k) => [k, t[k] ?? {}]));
+  return { sit: pickBones(sitBones), standPose: pickBones(standPose) };
 })();
 /** 抱膝坐时头的俯仰折成「站」的 看：抱膝坐的头补偿多抬 6°（库/角色/魔法酒狐新动作.ts 的 头补偿），起身那一帧头不跳 */
-const 坐头补 = 6;
+const sitHeadCompDeg = 6;
 
-export const 她态 = (帧: number): 她态 => {
-  const loc = 参.站位.她;
+export const LiYingState = (frame: number): LiYingState => {
+  const loc = params.standPos.liYingPos;
   // 看你：你在她东边（右手边），头往右转（看 的左右正 = 往左）
-  const 你方位 = (Math.atan2(参.站位.你[1] - loc[1], 参.站位.你[0] - loc[0]) * 180) / Math.PI - 90 - 参.朝向.她;
-  if (帧 >= 事('她站起')) {
-    const k = 缓(走(帧, 事('她站起'), 参.起身秒));
-    if (k >= 1) return { loc, yaw: 参.朝向.她, 姿势: '站', 看: [参.施法仰, 0], 表情: '微笑', 施法: true };
+  const youBearing = (Math.atan2(params.standPos.你[1] - loc[1], params.standPos.你[0] - loc[0]) * 180) / Math.PI - 90 - params.facing.liYingYaw;
+  if (frame >= eventFrame('她站起')) {
+    const k = ease(progress(frame, eventFrame('她站起'), params.standUpSec));
+    if (k >= 1) return { loc, yaw: params.facing.liYingYaw, stancePose: '站', 看: [params.castLookUp, 0], expression: '微笑', casting: true };
     // 站起来：腿、上身、两只胳膊从抱膝坐一起插到站着举手，头从看你转到仰头
-    const 看: [number, number] = [插(-6 - 坐头补, 参.施法仰, k), 插(你方位, 0, k)];
-    return { loc, yaw: 参.朝向.她, 姿势: '站', 看, 表情: '微笑', 施法: true, 骨骼: 插骨(起身两头.坐, 起身两头.站, k) };
+    const gaze: [number, number] = [lerp(-6 - sitHeadCompDeg, params.castLookUp, k), lerp(youBearing, 0, k)];
+    return { loc, yaw: params.facing.liYingYaw, stancePose: '站', 看: gaze, expression: '微笑', casting: true, skeleton: lerpBonePose(standUpPoses.sit, standUpPoses.standPose, k) };
   }
-  return { loc, yaw: 参.朝向.她, 姿势: '抱膝坐', 看: [-6, 插(0, 你方位, 转头(帧, 事('她看你')))], 表情: '难过', 施法: false };
+  return { loc, yaw: params.facing.liYingYaw, stancePose: '抱膝坐', 看: [-6, lerp(0, youBearing, turnHead(frame, eventFrame('她看你')))], expression: '难过', casting: false };
 };
 
-export type 你态 = { loc: V3; yaw: number; 头偏: number; 头仰: number };
-export const 你态 = (帧: number): 你态 => {
-  const [x, y, z] = 参.站位.你;
-  const loc: V3 = [x, y, z - 参.你坐.低];
-  const 她方位 = (Math.atan2(参.站位.她[1] - y, 参.站位.她[0] - x) * 180) / Math.PI - 90 - 参.朝向.你;
-  if (帧 >= 事('她站起')) {
+export type YouState = { loc: V3; yaw: number; headYaw: number; headPitch: number };
+export const YouState = (frame: number): YouState => {
+  const [x, y, z] = params.standPos.你;
+  const loc: V3 = [x, y, z - params.youSit.sitDrop];
+  const liYingBearing = (Math.atan2(params.standPos.liYingPos[1] - y, params.standPos.liYingPos[0] - x) * 180) / Math.PI - 90 - params.facing.你;
+  if (frame >= eventFrame('她站起')) {
     // 仰头看光柱（光柱在她头顶，偏左）
-    const t = 转头(帧, 事('她站起'));
-    return { loc, yaw: 参.朝向.你, 头偏: 插(她方位, 她方位 * 0.5, t), 头仰: 插(0, 参.你仰, t) };
+    const t = turnHead(frame, eventFrame('她站起'));
+    return { loc, yaw: params.facing.你, headYaw: lerp(liYingBearing, liYingBearing * 0.5, t), headPitch: lerp(0, params.youLookUp, t) };
   }
-  const t = 转头(帧, 事('你看她'));
-  return { loc, yaw: 参.朝向.你, 头偏: 插(0, 她方位, t), 头仰: 插(参.你低头, 0, t) };
+  const t = turnHead(frame, eventFrame('你看她'));
+  return { loc, yaw: params.facing.你, headYaw: lerp(0, liYingBearing, t), headPitch: lerp(params.youHeadDownDeg, 0, t) };
 };
 
 // ---------- 魔法阵、光柱 ----------
 /** 魔法阵展开到多大（0～1） */
-export const 阵大小 = (帧: number) => (帧 < 事('阵起') ? 0 : 缓出(走(帧, 事('阵起'), 参.魔法阵.展开秒)));
+export const circleSize = (frame: number) => (frame < eventFrame('阵起') ? 0 : easeOutQuad(progress(frame, eventFrame('阵起'), params.magicCircle.expandSec)));
 /** 魔法阵转了几度 */
-export const 阵转 = (帧: number) => 歌秒(帧) * 参.魔法阵.每秒转;
+export const circleSpin = (frame: number) => songSec(frame) * params.magicCircle.turnsPerSec;
 /** 光柱顶（z，格）：光柱起 起从底往上冲，越冲越快，零点几秒冲出画面顶，拨 那一帧冲到 顶高（60 fps 下 拨 前一两帧已经到），之后停在那里 */
-export const 光柱顶 = (帧: number, 底: number) => {
-  if (帧 < 事('光柱起')) return 底;
-  return 插(底, 参.光柱.顶高, 走(帧, 事('光柱起'), (事('拨') - 事('光柱起')) / fps) ** 参.光柱.冲幂);
+export const beamTop = (frame: number, bottom: number) => {
+  if (frame < eventFrame('光柱起')) return bottom;
+  return lerp(bottom, params.lightPillar.topHeight, progress(frame, eventFrame('光柱起'), (eventFrame('拨') - eventFrame('光柱起')) / fps) ** params.lightPillar.surgeExp);
 };
 /** 光柱的不透明度：光柱退 起 退秒 里淡掉 */
-export const 光柱透 = (帧: number) => 1 - 缓(走(帧, 事('光柱退'), 参.光柱.退秒));
+export const beamOpacity = (frame: number) => 1 - ease(progress(frame, eventFrame('光柱退'), params.lightPillar.fadeSec));
 /** 光柱撞云：撞的那一片云底往光柱色亮多少（0～1）：拨 起亮，破云 起 退秒 里退掉 */
-export const 撞亮 = (帧: number) => (帧 < 事('拨') ? 0 : 参.撞云.亮 * (1 - 缓(走(帧, 事('破云'), 参.撞云.退秒))));
+export const impactBrightness = (frame: number) => (frame < eventFrame('拨') ? 0 : params.impactCloud.brightness * (1 - ease(progress(frame, eventFrame('破云'), params.impactCloud.fadeSec))));
 
 // ---------- 云 ----------
 /** 云往东挪了多少（格）：原版每刻往西 0.03 格 */
-export const 云飘 = (帧: number) => -刻(帧) * 参.云每刻飘;
+export const cloudDrift = (frame: number) => -frameToTick(frame) * params.cloudDriftPerTick;
 /** 云洞半径（格）：破云 起开，云洞开大 时到 r1（缓出），之后按比例长到 r2，越开越快。按秒算（破云 那一帧已经开了一帧）：
  *  镜头止前一帧（段的最后一帧）开到 r2 */
-export const 洞半径 = (帧: number) => {
-  if (帧 < 事('破云')) return 0;
-  const { r1, r2 } = 参.云洞;
-  if (帧 < 事('云洞开大')) return r1 * 缓出(((帧 - 事('破云')) / fps + 一帧秒) / ((事('云洞开大') - 事('破云')) / fps + 一帧秒));
-  return r1 * (r2 / r1) ** clamp01((帧 - 事('云洞开大')) / fps / ((镜头止帧 - 事('云洞开大')) / fps - 一帧秒));
+export const holeRadius = (frame: number) => {
+  if (frame < eventFrame('破云')) return 0;
+  const { r1, r2 } = params.cloudHole;
+  if (frame < eventFrame('云洞开大')) return r1 * easeOutQuad(((frame - eventFrame('破云')) / fps + oneFrameSec) / ((eventFrame('云洞开大') - eventFrame('破云')) / fps + oneFrameSec));
+  return r1 * (r2 / r1) ** clamp01((frame - eventFrame('云洞开大')) / fps / ((shotEndFrame - eventFrame('云洞开大')) / fps - oneFrameSec));
 };
 /** 洞心：光柱（她站的地方） */
-export const 洞心 = (): [number, number] => [参.站位.她[0], 参.站位.她[1]];
+export const holeCenter = (): [number, number] => [params.standPos.liYingPos[0], params.standPos.liYingPos[1]];
 /** 这一格云还剩多少（0～1）：洞半径走过它的 散起半径 那一刻起，散秒 里淡掉。
  *  那一刻从 破云 起一帧一帧往后找（原来按 1/24 秒一步，用户 11-03「统统改成 60 帧」），淡掉的进度按秒连续走 */
-export const 云剩 = (c: 云格子, 帧: number) => {
-  if (帧 < 事('破云')) return 1;
-  const r0 = 散起半径(c, 洞心(), 云飘(帧));
-  let 起 = 事('破云');
-  while (起 <= 帧 && 洞半径(起) < r0) 起++;
-  if (起 > 帧) return 1;
-  return 1 - 走(帧, 起, 参.云洞.散秒);
+export const cloudRemain = (c: CloudCell, frame: number) => {
+  if (frame < eventFrame('破云')) return 1;
+  const r0 = scatterRadius(c, holeCenter(), cloudDrift(frame));
+  let cursorFrame = eventFrame('破云');
+  while (cursorFrame <= frame && holeRadius(cursorFrame) < r0) cursorFrame++;
+  if (cursorFrame > frame) return 1;
+  return 1 - progress(frame, cursorFrame, params.cloudHole.scatterSec);
 };
 /** 天从哪里透出晴天：视线在云底那一层落到的那一格（同云的格子，跟着云飘）散了多少，0 = 雷雨天、1 = 晴天；破云 前没有（null）。
  *  跟着云格一格一格变（核查 10-24：按正圆判断的话，云还没散、0.8 透明的云后面先透出一块正圆的蓝天）；clouds.png 上空着的格照同一个 散起半径 算 */
-export const 天晴在 = (帧: number): ((x: number, y: number) => number) | null => {
-  if (帧 < 事('破云')) return null;
-  const 飘 = 云飘(帧);
-  const 表 = new Map<string, number>();
+export const clearSkyAt = (frame: number): ((x: number, y: number) => number) | null => {
+  if (frame < eventFrame('破云')) return null;
+  const drift = cloudDrift(frame);
+  const valueMap = new Map<string, number>();
   return (x, y) => {
-    const a = Math.floor((x - 飘) / 云格), b = Math.floor(y / 云格);
+    const a = Math.floor((x - drift) / cloudCell), b = Math.floor(y / cloudCell);
     const k = `${a},${b}`;
-    let v = 表.get(k);
+    let v = valueMap.get(k);
     if (v === undefined) {
-      v = 1 - 云剩({ a, b }, 帧);
-      表.set(k, v);
+      v = 1 - cloudRemain({ a, b }, frame);
+      valueMap.set(k, v);
     }
     return v;
   };
@@ -160,113 +160,113 @@ export const 天晴在 = (帧: number): ((x: number, y: number) => number) | nul
 
 // ---------- 天气、调子 ----------
 /** 雷暴等级跟着雨量收 */
-const 雷 = (帧: number) => 参.雷暴 * 雨量(帧);
+const thunder = (frame: number) => params.thunderStrength * rainAmount(frame);
 /** 这一帧的颜色：天、雾（洞外）、晴天、晴雾（洞里）、云（云顶色） */
-export const 天气色 = (帧: number): { 天: RGB; 雾: RGB; 晴天: RGB; 晴雾: RGB; 云: RGB } => {
-  const 雨 = 雨量(帧);
-  const 亮 = 闪(帧);
-  return { 天: 天色(雨, 雷(帧), 亮), 雾: 雾色(雨, 雷(帧), 亮), 晴天: 天色(0, 0), 晴雾: 雾色(0, 0), 云: 云色(雨, 雷(帧)) };
+export const weatherColors = (frame: number): { 天: RGB; fog: RGB; clearSky: RGB; clearFog: RGB; cloudColor: RGB } => {
+  const rain = rainAmount(frame);
+  const flashBrightness = isFlashing(frame);
+  return { 天: weatherSky(rain, thunder(frame), flashBrightness), fog: weatherFog(rain, thunder(frame), flashBrightness), clearSky: weatherSky(0, 0), clearFog: weatherFog(0, 0), cloudColor: cloudColor(rain, thunder(frame)) };
 };
 /** 从雷雨往晴走了多少（0～1）：跟着雨量 */
-export const 转晴 = (帧: number) => 缓(1 - 雨量(帧));
+export const clearing = (frame: number) => ease(1 - rainAmount(frame));
 /** 这一帧的调子：整片后期、3D 受光面都从 雷雨 往 晴调子 走；闪的那两刻受光面满亮 */
-export const 这帧调子 = (帧: number): { 后期: 调子; 色调: string } => {
-  const 后期 = 插调子(色板.雷雨, 色板[参.晴调子], 转晴(帧));
-  return { 后期, 色调: 闪(帧) ? 参.闪电.色调 : 后期.色调 };
+export const frameGrade = (frame: number): { postTone: Tone; tint: string } => {
+  const grade = lerpTone(palette.雷雨, palette[params.clearGrade], clearing(frame));
+  return { postTone: grade, tint: isFlashing(frame) ? params.lightning.tint : grade.tint };
 };
 
 /** 光影场（三渲二画布）：太阳、Photon 雨云这一帧的洞、撞亮（拨 到 破云 越撞越亮，见 参.雨云.蓄）、曝光（光影选项没开云时光影层不看云这几项） */
-export const 光影场 = (帧: number): 光影场参数 => {
-  const 云 = 参.雨云;
-  const 心 = 洞心();
-  const r = 洞半径(帧) * 云.洞比;
-  const 蓄 = clamp01((帧 - 事('拨')) / (事('破云') - 事('拨'))) ** 云.蓄.幂;
-  const 跳 = 帧 < 事('破云') ? 1 + 云.蓄.跳幅 * Math.sin((2 * Math.PI * 云.蓄.跳 * (帧 - 事('拨'))) / fps) : 1;
-  const 亮 = 撞亮(帧) * 插(云.蓄.起, 云.蓄.到, 蓄) * 跳;
+export const shadingSceneAt = (frame: number): ShadingSceneParams => {
+  const rainCloud = params.rainCloud;
+  const center = holeCenter();
+  const r = holeRadius(frame) * rainCloud.holeRatio;
+  const cloudCharge = clamp01((frame - eventFrame('拨')) / (eventFrame('破云') - eventFrame('拨'))) ** rainCloud.cloudCharge.exponent;
+  const flicker = frame < eventFrame('破云') ? 1 + rainCloud.cloudCharge.pulseAmp * Math.sin((2 * Math.PI * rainCloud.cloudCharge.跳 * (frame - eventFrame('拨'))) / fps) : 1;
+  const flashBrightness = impactBrightness(frame) * lerp(rainCloud.cloudCharge.起, rainCloud.cloudCharge.到, cloudCharge) * flicker;
   return {
-    太阳: 云.太阳,
-    海平面: 云.海平面,
-    云层: 云.层,
-    云: {
-      ...(r > 0 ? { 洞: [心[0], 心[1], r, 云.软边] as const } : {}),
-      ...(亮 > 0 ? { 亮: { 心, 半径: 参.撞云.半径 * 云.亮比 * 插(1, 云.蓄.半径倍, 蓄), 强: 亮 * 云.亮倍, 色: 参.光柱.色 } } : {}),
-      曝光倍: 插(云.雨曝光, 1, 转晴(帧)) * (闪(帧) ? 云.闪曝光 : 1),
+    sun: rainCloud.sun,
+    海平面: rainCloud.海平面,
+    cloudLayers: rainCloud.层,
+    cloud: {
+      ...(r > 0 ? { hole: [center[0], center[1], r, rainCloud.softEdge] as const } : {}),
+      ...(flashBrightness > 0 ? { brightness: { 心: center, radius: params.impactCloud.radius * rainCloud.brightRatio * lerp(1, rainCloud.cloudCharge.radiusMul, cloudCharge), 强: flashBrightness * rainCloud.brightnessMult, 色: params.lightPillar.色 } } : {}),
+      exposureMult: lerp(rainCloud.rainExposure, 1, clearing(frame)) * (isFlashing(frame) ? rainCloud.flashExposure : 1),
     },
   };
 };
 
 // ---------- 发光区：她被自己的阵照亮、阳光 ----------
 /** 阳光照到多远（格，以洞心为心） */
-export const 阳光半径 = (帧: number) => 洞半径(帧) * 参.阳光.比;
+export const sunRadius = (frame: number) => holeRadius(frame) * params.sunRays.比;
 /** 平涂的发光区（场景坐标的盒子）：她那一块从 阵起 起；阳光那片用 条数 条横条拼成阶梯状的圆 */
-export const 发光区 = (帧: number): number[][] => {
+export const glowRegionsAt = (frame: number): number[][] => {
   const out: number[][] = [];
-  const [x, y, z] = 参.站位.她;
-  if (帧 >= 事('阵起')) {
-    const { 半宽, 高 } = 参.她亮区;
-    out.push([x - 半宽, y - 半宽, z - 0.05, x + 半宽, y + 半宽, z + 高]);
+  const [x, y, z] = params.standPos.liYingPos;
+  if (frame >= eventFrame('阵起')) {
+    const { 半宽: halfWidth, 高: height } = params.herBrightZone;
+    out.push([x - halfWidth, y - halfWidth, z - 0.05, x + halfWidth, y + halfWidth, z + height]);
   }
-  const r = 阳光半径(帧);
+  const r = sunRadius(frame);
   if (r > 0) {
-    const n = 参.阳光.条数;
+    const n = params.sunRays.rayCount;
     for (let k = 0; k < n; k++) {
       const y0 = -r + (2 * r * k) / n, y1 = -r + (2 * r * (k + 1)) / n;
       const ym = Math.min(Math.abs(y0), Math.abs(y1));
-      const 半 = Math.sqrt(Math.max(0, r * r - ym * ym));
-      out.push([x - 半, y + y0, -16, x + 半, y + y1, 参.云底高 - 1]);
+      const halfChord = Math.sqrt(Math.max(0, r * r - ym * ym));
+      out.push([x - halfChord, y + y0, -16, x + halfChord, y + y1, params.cloudBottomHeight - 1]);
     }
   }
   return out;
 };
 /** 屋子离洞心最远那个角（格）：阳光铺地 时阳光要铺过它 */
-export const 屋子最远 = () => {
-  const [x, y] = 洞心();
-  const 角们 = [[小木屋.西墙 - 1.5, 南墙], [小木屋.东墙 + 1.5, 南墙], [小木屋.西墙 - 1.5, 小木屋.后墙 + 1], [小木屋.东墙 + 1.5, 小木屋.后墙 + 1]] as const;
-  return Math.max(...角们.map(([a, b]) => Math.hypot(a - x, b - y)));
+export const houseFarthest = () => {
+  const [x, y] = holeCenter();
+  const corners = [[cabin.westWall - 1.5, southWall], [cabin.eastWall + 1.5, southWall], [cabin.westWall - 1.5, cabin.backWall + 1], [cabin.eastWall + 1.5, cabin.backWall + 1]] as const;
+  return Math.max(...corners.map(([a, b]) => Math.hypot(a - x, b - y)));
 };
 
 // ---------- 雨 ----------
-let 地表缓存: Map<string, number> | undefined;
+let surfaceCache: Map<string, number> | undefined;
 /** 每一列最高的挡雨方块顶面（花草、火把不挡） */
-export const 地表 = () => {
-  if (!地表缓存) {
+export const surface = () => {
+  if (!surfaceCache) {
     const m = new Map<string, number>();
-    const 四周 = 四周方块();
-    for (const b of [...坑().留下, ...四周.平原, ...四周.樱花林] as 方块[]) {
-      if ((抗爆[b.状态.replace(/\[.*$/, '')] ?? 0) === 0 && !/grass_block|dirt|stone|log|leaves/.test(b.状态)) continue;
+    const surroundings = SurroundBlocks();
+    for (const b of [...crater().remainingBlocks, ...surroundings.plains, ...surroundings.cherryGrove] as PlacedBlock[]) {
+      if ((blastResist[b.状态.replace(/\[.*$/, '')] ?? 0) === 0 && !/grass_block|dirt|stone|log|leaves/.test(b.状态)) continue;
       const k = `${b.位[0]},${b.位[1]}`;
       m.set(k, Math.max(m.get(k) ?? -Infinity, b.位[2] + 1));
     }
-    地表缓存 = m;
+    surfaceCache = m;
   }
-  return 地表缓存;
+  return surfaceCache;
 };
 
 /** 透视镜头的雨：照原版，镜头所在那格周围 透视雨半径 以内每一列一张竖片，正对镜头（片的横向垂直于镜头到那一列的方向），
  *  底在那一列的地表，顶在镜头以上 半径 格；越远越淡（(1 − d²/r²)·0.5 + 0.5） */
-export const 透视雨片们 = (眼: V3): 雨片[] => {
-  const r = 参.透视雨半径;
-  const 表 = 地表();
-  const [ci, cj] = [Math.round(眼[0]), Math.floor(眼[1])];
-  const out: 雨片[] = [];
+export const perspectiveRainPlanes = (eye: V3): RainStreak[] => {
+  const r = params.perspRainRadius;
+  const groundMap = surface();
+  const [ci, cj] = [Math.round(eye[0]), Math.floor(eye[1])];
+  const out: RainStreak[] = [];
   for (let i = ci - r; i <= ci + r; i++)
     for (let j = cj - r; j <= cj + r; j++) {
       const [x, y] = [i, j + 0.5];
-      const [dx, dy] = [x - 眼[0], y - 眼[1]];
+      const [dx, dy] = [x - eye[0], y - eye[1]];
       const d = Math.hypot(dx, dy);
       if (d > r || d < 0.01) continue;
-      const 底 = Math.max(表.get(`${i},${j}`) ?? -Infinity, 眼[2] - r);
-      if (!Number.isFinite(底)) continue;
-      out.push({ i, j, 中心: [x, y], 半宽: [(-dy / d) * 0.5, (dx / d) * 0.5], 底, 顶: 眼[2] + r, 透: (1 - (d * d) / (r * r)) * 0.5 + 0.5 });
+      const bottom = Math.max(groundMap.get(`${i},${j}`) ?? -Infinity, eye[2] - r);
+      if (!Number.isFinite(bottom)) continue;
+      out.push({ i, j, 中心: [x, y], 半宽: [(-dy / d) * 0.5, (dx / d) * 0.5], bottom, topY: eye[2] + r, alpha: (1 - (d * d) / (r * r)) * 0.5 + 0.5 });
     }
   return out;
 };
 
 // ---------- 掉落物 ----------
 /** 浮在坑里的掉落物（ItemEntity 的位置），照 弹坑.ts 原版算出来的：炸掉的方块掉的几堆、箱子里洒出来的东西 */
-export const 掉落物们 = (): { 物品: string; 个数: number; 位: V3; 浮动偏: number }[] => [
-  ...坑().掉落们.map((d: 掉落) => ({ 物品: d.物品, 个数: d.个数, 位: 掉落位(坑().留下, d), 浮动偏: d.浮动偏 })),
-  ...箱里掉落们(坑().留下),
+export const dropItems = (): { item: string; itemCount: number; 位: V3; floatOffset: number }[] => [
+  ...crater().drops.map((d: Drop) => ({ item: d.item, itemCount: d.itemCount, 位: dropPos(crater().remainingBlocks, d), floatOffset: d.floatOffset })),
+  ...chestDrops(crater().remainingBlocks),
 ];
 /** 掉落物的 age（刻）：炸了一阵子了（演绎，任取一个数，只管浮动、转圈的相位） */
-export const 掉落刻 = (帧: number) => 1200 + 刻(帧 - 镜头起帧);
+export const dropTick = (frame: number) => 1200 + frameToTick(frame - shotStartFrame);

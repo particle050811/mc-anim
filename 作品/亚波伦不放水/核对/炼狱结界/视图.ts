@@ -2,59 +2,59 @@
 // 前半是原版的线框（@库/特效/炼狱结界.tsx），后半是本片的演法（../../特效/炼狱结界演出.tsx，线是本片的辉线）：史蒂夫站在原点，亚波伦悬在西边空中。
 // 演法的几个视图灰底、暗红底（下界的雾色，带雾）各一组，各带一张和原版线并排的对比。
 import type { V3 } from '@engine/model/parts.tsx';
-import { 结界演出默认, 结界演出时刻, type 结界演出设定 } from '../../特效/炼狱结界演出状态.ts';
+import { cagePerformanceDefaults, cagePerformanceTimes, type CagePerformanceSetting } from '../../特效/炼狱结界演出状态.ts';
 
-export const 画幅 = { 宽: 1280, 高: 720 } as const;
+export const aspect = { 宽: 1280, 高: 720 } as const;
 
-export const 亚波伦位置: V3 = [-13, 0, 5];
-export const 演出设定: 结界演出设定 = { ...结界演出默认, 起点: [-12, 0, 6.2], 目标: [0, 0, 0.9] };
-const 时刻 = 结界演出时刻(演出设定);
+export const yaBoLunPos: V3 = [-13, 0, 5];
+export const performanceSettings: CagePerformanceSetting = { ...cagePerformanceDefaults, from: [-12, 0, 6.2], 目标: [0, 0, 0.9] };
+const barrierTime = cagePerformanceTimes(performanceSettings);
 
-type 机位 = { 眼: V3; 看: V3; 视角: number };
-export type 视图 = 机位 & {
+type CameraRig = { 眼: V3; 看: V3; fov: number };
+export type View = CameraRig & {
   名: string;
   说明?: string;
   /** 原版：只画线框（中心在史蒂夫半身高，原版结界长在施法者身上）；演出：本片演法 */
-  画: { 类: '原版'; 转动秒: number; 活了几刻?: number; 地面: boolean } | { 类: '演出'; 秒: number } | { 类: '并排'; 转动秒: number };
+  pictureMode: { 类: '原版'; spinSec: number; ageTicks?: number; ground: boolean } | { 类: '演出'; 秒: number } | { 类: '并排'; spinSec: number };
   /** 底色，默认灰。暗红：封面草稿那种下界的雾色，带场景雾（16～70 格），看辉线在暗红里够不够亮 */
-  底?: '灰' | '暗红';
+  bottomBackground?: '灰' | '暗红';
 };
 
 /** 并排对比里两个结界的中心：左原版线、右辉线 */
-export const 并排中心: readonly [V3, V3] = [[-11.5, 0, 0.9], [11.5, 0, 0.9]];
+export const sideBySideCenters: readonly [V3, V3] = [[-11.5, 0, 0.9], [11.5, 0, 0.9]];
 
-const 正面: 机位 = { 眼: [0, -34, 0.9], 看: [0, 0, 0.9], 视角: 40 };
-const 地面斜俯: 机位 = { 眼: [-14, -30, 12], 看: [0, 0, 3], 视角: 40 };
-const 侧面全景: 机位 = { 眼: [-4, -40, 5], 看: [-4, 0, 5], 视角: 40 };
-const 结界里: 机位 = { 眼: [2.2, -5.5, 1.5], 看: [0, 0, 2.6], 视角: 60 };
-const 并排机位: 机位 = { 眼: [0, -50, 6], 看: [0, 0, 4], 视角: 40 };
-const 焚烧近景: 机位 = { 眼: [0, -8, 1.6], 看: [0, 0, 1.1], 视角: 35 };
+const front: CameraRig = { 眼: [0, -34, 0.9], 看: [0, 0, 0.9], fov: 40 };
+const groundObliqueRig: CameraRig = { 眼: [-14, -30, 12], 看: [0, 0, 3], fov: 40 };
+const sideWideRig: CameraRig = { 眼: [-4, -40, 5], 看: [-4, 0, 5], fov: 40 };
+const insideCageRig: CameraRig = { 眼: [2.2, -5.5, 1.5], 看: [0, 0, 2.6], fov: 60 };
+const sideBySideRig: CameraRig = { 眼: [0, -50, 6], 看: [0, 0, 4], fov: 40 };
+const burnCloseRig: CameraRig = { 眼: [0, -8, 1.6], 看: [0, 0, 1.1], fov: 35 };
 
-const 飞出中途: 视图 = { 名: '演出-飞出0.75秒', ...侧面全景, 画: { 类: '演出', 秒: 0.75 }, 说明: '飞出 1.5 秒的一半：位置、半径走了 75%，透明度 0.5' };
-const 罩住全景: 视图 = { 名: '演出-罩住-全景', ...侧面全景, 画: { 类: '演出', 秒: 时刻.罩住 + 3 } };
-const 罩住结界里: 视图 = { 名: '演出-罩住-结界里', ...结界里, 画: { 类: '演出', 秒: 时刻.罩住 + 3 }, 说明: '史蒂夫身边往上看' };
-const 收缩中途: 视图 = { 名: '演出-收缩中途', ...侧面全景, 画: { 类: '演出', 秒: 时刻.收缩焚烧 + 0.75 }, 说明: '收缩 1.5 秒的一半' };
-const 并排: 视图 = { 名: '并排-左原版线-右辉线', ...并排机位, 画: { 类: '并排', 转动秒: 1 }, 说明: '同一个大小（半径系数 5.89）、同一个转角；左：照原版的线，右：本片的辉线' };
-const 暗红 = (v: 视图): 视图 => ({ ...v, 名: `暗红底-${v.名}`, 底: '暗红' });
+const flyOutMidView: View = { 名: '演出-飞出0.75秒', ...sideWideRig, pictureMode: { 类: '演出', 秒: 0.75 }, 说明: '飞出 1.5 秒的一半：位置、半径走了 75%，透明度 0.5' };
+const enclosedWideView: View = { 名: '演出-罩住-全景', ...sideWideRig, pictureMode: { 类: '演出', 秒: barrierTime.engulf + 3 } };
+const enclosedInsideCageView: View = { 名: '演出-罩住-结界里', ...insideCageRig, pictureMode: { 类: '演出', 秒: barrierTime.engulf + 3 }, 说明: '史蒂夫身边往上看' };
+const shrinkMidView: View = { 名: '演出-收缩中途', ...sideWideRig, pictureMode: { 类: '演出', 秒: barrierTime.shrinkBurnSec + 0.75 }, 说明: '收缩 1.5 秒的一半' };
+const sideBySide: View = { 名: '并排-左原版线-右辉线', ...sideBySideRig, pictureMode: { 类: '并排', spinSec: 1 }, 说明: '同一个大小（半径系数 5.89）、同一个转角；左：照原版的线，右：本片的辉线' };
+const withDarkRed = (v: View): View => ({ ...v, 名: `暗红底-${v.名}`, bottomBackground: '暗红' });
 
-export const 视图们: readonly 视图[] = [
-  { 名: '原版-正面-没转', ...正面, 画: { 类: '原版', 转动秒: 0, 地面: false }, 说明: '没有地面，看整个线框：正十二面体，原版半径系数 5.89，中间是史蒂夫（1.8 格高）' },
-  { 名: '原版-转1秒', ...正面, 画: { 类: '原版', 转动秒: 1, 地面: false }, 说明: '绕 X、Y、Z 各转 50°' },
-  { 名: '原版-转2.5秒', ...正面, 画: { 类: '原版', 转动秒: 2.5, 地面: false }, 说明: '各转 125°' },
-  { 名: '原版-转4秒', ...正面, 画: { 类: '原版', 转动秒: 4, 地面: false }, 说明: '各转 200°' },
-  { 名: '原版-地面上', ...地面斜俯, 画: { 类: '原版', 转动秒: 1, 地面: true }, 说明: '游戏里的样子：中心在施法者半身高，下半截埋在地下' },
-  { 名: '原版-淡入15刻', ...地面斜俯, 画: { 类: '原版', 转动秒: 0.75, 活了几刻: 15, 地面: true }, 说明: '30 刻淡入的一半，透明度 0.5' },
-  { 名: '演出-飞出0.3秒', ...侧面全景, 画: { 类: '演出', 秒: 0.3 }, 说明: '刚离手' },
-  飞出中途,
-  罩住全景,
-  罩住结界里,
-  收缩中途,
-  { 名: '演出-焚烧-全景', ...侧面全景, 画: { 类: '演出', 秒: 时刻.收缩焚烧 + 2.1 }, 说明: '缩到一人大小；火是占位' },
-  { 名: '演出-焚烧-近景', ...焚烧近景, 画: { 类: '演出', 秒: 时刻.收缩焚烧 + 2.1 }, 说明: '火是占位（原版 flame、smoke 粒子放大 3 倍）' },
-  并排,
-  暗红(飞出中途),
-  暗红(罩住全景),
-  暗红(罩住结界里),
-  暗红(收缩中途),
-  暗红(并排),
+export const views: readonly View[] = [
+  { 名: '原版-正面-没转', ...front, pictureMode: { 类: '原版', spinSec: 0, ground: false }, 说明: '没有地面，看整个线框：正十二面体，原版半径系数 5.89，中间是史蒂夫（1.8 格高）' },
+  { 名: '原版-转1秒', ...front, pictureMode: { 类: '原版', spinSec: 1, ground: false }, 说明: '绕 X、Y、Z 各转 50°' },
+  { 名: '原版-转2.5秒', ...front, pictureMode: { 类: '原版', spinSec: 2.5, ground: false }, 说明: '各转 125°' },
+  { 名: '原版-转4秒', ...front, pictureMode: { 类: '原版', spinSec: 4, ground: false }, 说明: '各转 200°' },
+  { 名: '原版-地面上', ...groundObliqueRig, pictureMode: { 类: '原版', spinSec: 1, ground: true }, 说明: '游戏里的样子：中心在施法者半身高，下半截埋在地下' },
+  { 名: '原版-淡入15刻', ...groundObliqueRig, pictureMode: { 类: '原版', spinSec: 0.75, ageTicks: 15, ground: true }, 说明: '30 刻淡入的一半，透明度 0.5' },
+  { 名: '演出-飞出0.3秒', ...sideWideRig, pictureMode: { 类: '演出', 秒: 0.3 }, 说明: '刚离手' },
+  flyOutMidView,
+  enclosedWideView,
+  enclosedInsideCageView,
+  shrinkMidView,
+  { 名: '演出-焚烧-全景', ...sideWideRig, pictureMode: { 类: '演出', 秒: barrierTime.shrinkBurnSec + 2.1 }, 说明: '缩到一人大小；火是占位' },
+  { 名: '演出-焚烧-近景', ...burnCloseRig, pictureMode: { 类: '演出', 秒: barrierTime.shrinkBurnSec + 2.1 }, 说明: '火是占位（原版 flame、smoke 粒子放大 3 倍）' },
+  sideBySide,
+  withDarkRed(flyOutMidView),
+  withDarkRed(enclosedWideView),
+  withDarkRed(enclosedInsideCageView),
+  withDarkRed(shrinkMidView),
+  withDarkRed(sideBySide),
 ];

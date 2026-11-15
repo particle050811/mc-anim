@@ -17,29 +17,29 @@ import json
 import os
 import sys
 
-from .执行 import 不支持, 翻译器
-from .映射 import 读映射
-from .类文件 import 类路径
+from .执行 import Unsupported, Translator
+from .映射 import read_mapping
+from .类文件 import ClassPath
 
 
-def 读模型树(说明: str) -> dict[str, list[str]]:
-    文件, _, 名字 = 说明.rpartition(":")
-    data = json.load(open(文件, encoding="utf-8"))
-    root = data["models"][名字]["root"]
-    树: dict[str, list[str]] = {}
+def read_model_tree(spec: str) -> dict[str, list[str]]:
+    file_path, _, model_name = spec.rpartition(":")
+    data = json.load(open(file_path, encoding="utf-8"))
+    root = data["models"][model_name]["root"]
+    tree: dict[str, list[str]] = {}
 
     def walk(p: dict) -> None:
-        树[p["name"]] = [c["name"] for c in p["children"]]
+        tree[p["name"]] = [c["name"] for c in p["children"]]
         for c in p["children"]:
             walk(c)
 
     walk(root)
-    return 树
+    return tree
 
 
-def 解析固定(项们: list[str]) -> dict[str, object]:
+def parse_fixed(items: list[str]) -> dict[str, object]:
     out: dict[str, object] = {}
-    for x in 项们:
+    for x in items:
         k, _, v = x.partition("=")
         try:
             out[k] = int(v)
@@ -62,15 +62,15 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--固定", action="append", default=[])
     ap.add_argument("--不带prepare", action="store_true")
     a = ap.parse_args(argv)
-    映射 = 读映射(a.映射)
-    路径 = 类路径(a.jar.split(","), 映射)
-    t = 翻译器(路径, a.类, 解析固定(a.固定), 读模型树(a.模型) if a.模型 else None, 层=a.层)
+    mapping = read_mapping(a.映射)
+    classpath = ClassPath(a.jar.split(","), mapping)
+    t = Translator(classpath, a.类, parse_fixed(a.固定), read_model_tree(a.模型) if a.模型 else None, 层=a.层)
     try:
-        prog = t.翻译(带prepare=not a.不带prepare)
-    except 不支持 as e:
+        prog = t.translate(with_prepare=not a.不带prepare)
+    except Unsupported as e:
         print(f"翻译不了 {a.类}：{e}", file=sys.stderr)
         return 2
-    prog["来源"] = {"jar": [os.path.basename(j) for j in a.jar.split(",")], "映射": 映射.名称}
+    prog["来源"] = {"jar": [os.path.basename(j) for j in a.jar.split(",")], "映射": mapping.mapping_name}
     os.makedirs(os.path.dirname(os.path.abspath(a.输出)), exist_ok=True)
     with open(a.输出, "w", encoding="utf-8") as f:
         json.dump(prog, f, ensure_ascii=False, separators=(",", ":"))

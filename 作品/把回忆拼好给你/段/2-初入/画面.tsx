@@ -3,61 +3,61 @@
 // 镜头跟着往前、往下落到地面高度，聊天行淡掉，你和镜头之间的地一排排撤掉，露出你脚下的地面剖面；第 2 句（2-第一晚）同一个镜头接着拍（天在第 2 句里才黑）。
 // 调子跟着透掉的比例从现实回暖到新世界的下午。
 import type React from 'react';
-import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
+import { shadingScope } from '@engine/三渲二/画布.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
-import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 画幅 } from '../../分镜/时间.ts';
-import { 段窗口 } from '../../分镜/正片开场.ts';
-import { 像素字 } from '../../界面/像素字.ts';
-import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 选择世界 } from '../../场/2-选择世界/选择世界.tsx';
-import { 钻入取景, 钻入进度, 钻入透, 阈 } from '../../场/2-选择世界/编排.ts';
-import { 旧图标 } from '../../场/2-选择世界/图标源.ts';
-import { 聊天 } from '../../场/2-新世界/参数.ts';
-import { 你在, 剥了, 天刻在, 新世界光影场, 聊天刻在 } from '../../场/2-新世界/编排.ts';
-import { 新世界 } from '../../场/2-新世界/世界.tsx';
-import { 光影段 } from '../../默认.ts';
-import { 调子在, 钻完, 镜头在 } from './编排.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { PixelChatBar } from '@库/界面/像素聊天栏.tsx';
+import { aspect } from '../../分镜/时间.ts';
+import { segmentWindow } from '../../分镜/正片开场.ts';
+import { pixelFont } from '../../界面/像素字.ts';
+import { line15ChatWidth } from '../../界面/聊天栏宽.ts';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { SelectWorld } from '../../场/2-选择世界/选择世界.tsx';
+import { drillInFraming, drillInProgress, drillInAlpha, threshold } from '../../场/2-选择世界/编排.ts';
+import { oldIcon } from '../../场/2-选择世界/图标源.ts';
+import { chatOverlay } from '../../场/2-新世界/参数.ts';
+import { youAt, peeledRows, skyTickAt, newWorldShadingScene, chatTickAt } from '../../场/2-新世界/编排.ts';
+import { NewWorld } from '../../场/2-新世界/世界.tsx';
+import { shadingBySeg } from '../../默认.ts';
+import { gradeAt, drillDone, shotAt } from './编排.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useCurrentFrame } from '../../当前帧.ts';
 
-const 起帧 = 段窗口('2-初入').起帧;
-const 宽 = 画幅.宽, 高 = 画幅.高;
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
+const startFrame = segmentWindow('2-初入').起帧;
+const width = aspect.宽, height = aspect.高;
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
 
-const 黄 = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
+const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 /** 系统消息：加入游戏（黄），聊天栏的钟从这一刻起算 */
-const 聊天行们 = [{ text: 'Steve加入了游戏', color: 黄, 起刻: 0 }];
+const chatLines = [{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }];
 /** 剖面那一格还没挖 */
-const 没挖 = { 挖掉: 0, 顶土: false };
+const notDug = { dugCount: 0, dirtCovered: false };
 
-const 画面: React.FC = () => {
-  const 歌帧 = 起帧 + use当前帧();
-  const 调 = 调子在(歌帧);
-  const 样 = 你在(歌帧);
-  const 你姿 = stevePose(样.脚, 样.朝向, { sec: 样.秒, limbSwing: 样.摆, stride: 样.步幅, headPitch: 样.头 });
-  const { q } = 钻入进度(歌帧);
-  const 透 = 钻入透(q);
+const picture: React.FC = () => {
+  const songFrame = startFrame + useCurrentFrame();
+  const tone = gradeAt(songFrame);
+  const sample = youAt(songFrame);
+  const youPose = stevePose(sample.feet, sample.facing, { sec: sample.秒, limbSwing: sample.swing, stride: sample.stride, headPitch: sample.头 });
+  const { q } = drillInProgress(songFrame);
+  const alpha = drillInAlpha(q);
   return (
     <>
-      <整片后期 调色={调.调色} 种子={歌帧}>
+      <FilmPost grade={tone.grade} 种子={songFrame}>
         {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
-        <光影范围.Provider value={{ 光影: 光影段['2-初入'], 光影场: 新世界光影场 }}>
-          <新世界 机位={镜头在(歌帧)} 你={你姿} 色调={调.色调} 刻={天刻在(歌帧)} 剖={{ 坑: 没挖, 剥: 剥了(歌帧) }} 宽={宽} 高={高} />
-        </光影范围.Provider>
-        {歌帧 < 钻完 && (
-          <选择世界 状态={{ 取景: 钻入取景(q), 指着: 0, 选中: true, 框光标: false, 光标: null, 图标: 旧图标, 图标透: (i, j) => 阈(i, j) < 透 }} 宽={宽} 高={高} />
+        <shadingScope.Provider value={{ shading: shadingBySeg['2-初入'], shadingScene: newWorldShadingScene }}>
+          <NewWorld cameraRig={shotAt(songFrame)} 你={youPose} tint={tone.tint} 刻={skyTickAt(songFrame)} section={{ pit: notDug, peeled: peeledRows(songFrame) }} 宽={width} 高={height} />
+        </shadingScope.Provider>
+        {songFrame < drillDone && (
+          <SelectWorld 状态={{ framing: drillInFraming(q), pointAt: 0, selected: true, frameCursor: false, cursor: null, iconMap: oldIcon, iconSeeThrough: (i, j) => threshold(i, j) < alpha }} 宽={width} 高={height} />
         )}
-        <像素聊天栏 lines={聊天行们} 刻={聊天刻在(歌帧)} 缩放={聊天.缩放} 字体={像素字} 宽={宽} 高={高} 聊天宽={第15句聊天宽} />
-        <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色: 调.描边 }} />
-      </整片后期>
+        <PixelChatBar lines={chatLines} 刻={chatTickAt(songFrame)} 缩放={chatOverlay.缩放} 字体={pixelFont} 宽={width} 高={height} chatWidth={line15ChatWidth} />
+        <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.outlineColor }} />
+      </FilmPost>
     </>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

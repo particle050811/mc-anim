@@ -10,21 +10,21 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export const 防暗曲线 = (Y: number, 抬: number): number => (Y >= 1 ? Y : Y + 抬 * (1 - Math.max(0, Y)) ** 2);
+export const antiDarkCurve = (Y: number, lift: number): number => (Y >= 1 ? Y : Y + lift * (1 - Math.max(0, Y)) ** 2);
 
 // 原材质 → 提亮后的克隆，按 抬 分；原材质被释放后跟着回收
-const 缓存 = new Map<number, WeakMap<THREE.Material, THREE.Material>>();
+const antiDarkCache = new Map<number, WeakMap<THREE.Material, THREE.Material>>();
 
-const 提亮材质 = (原: THREE.MeshStandardMaterial, 抬: number): THREE.Material => {
-  let 表 = 缓存.get(抬);
-  if (!表) 缓存.set(抬, (表 = new WeakMap()));
-  let mat = 表.get(原);
+const brightenMaterial = (baseMaterial: THREE.MeshStandardMaterial, lift: number): THREE.Material => {
+  let brightMap = antiDarkCache.get(lift);
+  if (!brightMap) antiDarkCache.set(lift, (brightMap = new WeakMap()));
+  let mat = brightMap.get(baseMaterial);
   if (mat) return mat;
-  const 新 = 原.clone();
+  const brightened = baseMaterial.clone();
   // clone 不带 onBeforeCompile：原来有注入（受伤变红）的先照跑
-  新.onBeforeCompile = (sh, r) => {
-    原.onBeforeCompile?.(sh, r);
-    sh.uniforms.fangAnLift = { value: 抬 };
+  brightened.onBeforeCompile = (sh, r) => {
+    baseMaterial.onBeforeCompile?.(sh, r);
+    sh.uniforms.fangAnLift = { value: lift };
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nuniform float fangAnLift;')
       .replace(
@@ -42,26 +42,26 @@ const 提亮材质 = (原: THREE.MeshStandardMaterial, 抬: number): THREE.Mater
         ].join('\n'),
       );
   };
-  新.customProgramCacheKey = () => `${原.customProgramCacheKey?.() ?? ''}|防暗`;
-  mat = 新;
-  表.set(原, mat);
+  brightened.customProgramCacheKey = () => `${baseMaterial.customProgramCacheKey?.() ?? ''}|防暗`;
+  mat = brightened;
+  brightMap.set(baseMaterial, mat);
   return mat;
 };
 
 /** 抬：全黑处抬到的明度（sRGB 数值，0～0.5）；0 = 不提亮 */
-export const 防暗: React.FC<{ 抬: number; children: React.ReactNode }> = ({ 抬, children }) => {
+export const AntiDark: React.FC<{ lift: number; children: React.ReactNode }> = ({ lift, children }) => {
   const ref = useRef<THREE.Group>(null);
   // 每次出画前都扫一遍：里面的组件（基岩实体的换材质）自己重新提交时会把材质换回原样，而这里未必跟着重渲
   useFrame(() => {
-    if (!ref.current || 抬 <= 0) return;
+    if (!ref.current || lift <= 0) return;
     ref.current.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh || Array.isArray(mesh.material)) return;
       const m = mesh.material as THREE.MeshStandardMaterial;
-      if (!m.isMeshStandardMaterial || m.userData.防暗) return;
-      const 新 = 提亮材质(m, 抬);
-      新.userData.防暗 = true;
-      mesh.material = 新;
+      if (!m.isMeshStandardMaterial || m.userData.AntiDark) return;
+      const brightened = brightenMaterial(m, lift);
+      brightened.userData.AntiDark = true;
+      mesh.material = brightened;
     });
   });
   return <group ref={ref}>{children}</group>;

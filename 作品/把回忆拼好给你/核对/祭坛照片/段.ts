@@ -1,5 +1,5 @@
 // 祭坛照片核对：第 8 句第一张照片「祭坛前递蛋糕」的底片，第 3 句 照片-祭坛递蛋糕 那一帧的干净画面（场/2-祭坛），一帧。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { 画幅 } from '../../分镜/时间.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { aspect } from '../../分镜/时间.ts';
 
-export default 定义段({ 场: '核对', 秒: 1, 宽: 画幅.宽, 高: 画幅.高, 地形: [] });
+export default defineSeg({ 场: '核对', 秒: 1, 宽: aspect.宽, 高: aspect.高, 地形: [] });

@@ -23,11 +23,11 @@ const blastwaveSize = 12; // 冲击波环放大一倍（用户 10-18：威力特
 const particles: ParticleSpawn[] = (() => {
   const out: ParticleSpawn[] = [];
   play.mortars.forEach((mortar, i) => {
-    out.push(...mortarTrailSmoke(mortar.trajectory, mortar.出T * 20, mortar.中T * 20, 7301 + 10 * i));
-    out.push(...mortarBlastParticles(mortar.blastPos, mortar.中T * 20, 7302 + 10 * i));
+    out.push(...mortarTrailSmoke(mortar.trajectory, mortar.fireT * 20, mortar.hitT * 20, 7301 + 10 * i));
+    out.push(...mortarBlastParticles(mortar.blastPos, mortar.hitT * 20, 7302 + 10 * i));
     // 爆炸做大（用户 10-18）：照原版 TNT 的 explosion_emitter，8 刻里每刻撒一把 explosion，再炸开一圈 poof
-    for (let j = 0; j < 8; j++) out.push(...serverSendParticles('explosion', mortar.中T * 20 + j, mortar.blastPos, 5, [1.6, 1.6, 1.0], 0, 7306 + 10 * i + 1000 * j));
-    out.push(...serverSendParticles('poof', mortar.中T * 20, mortar.blastPos, 30, [0.6, 0.6, 0.4], 0.5, 7307 + 10 * i));
+    for (let j = 0; j < 8; j++) out.push(...serverSendParticles('explosion', mortar.hitT * 20 + j, mortar.blastPos, 5, [1.6, 1.6, 1.0], 0, 7306 + 10 * i + 1000 * j));
+    out.push(...serverSendParticles('poof', mortar.hitT * 20, mortar.blastPos, 30, [0.6, 0.6, 0.4], 0.5, 7307 + 10 * i));
   });
   out.push(...sonicBoomParticles(play.sonicBoomOrigin(), play.sonicBoomTarget(), timeline.sonicBoomFireT * 20, 7303));
   out.push(...steedParticles((k) => play.horseState(k / 20).p, 0, play.endT * 20 + 20, 7304));
@@ -43,11 +43,11 @@ export const ScenePicture: React.FC<{ T: number; cam: Cam; width: number; height
   const huangPan = play.huangPanState(sceneT);
   const shield = play.shieldState(sceneT);
   return (
-    <AncientCity4xCanvas 段="7-3" cam={cam} width={width} height={height} 羊毛={woolBlocks}>
+    <AncientCity4xCanvas 段="7-3" cam={cam} width={width} height={height} wool={woolBlocks}>
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
         {/* 冲刺往前扑（模型本地的前方是 −Y，绕 X 转正角就是往前倒） */}
-        <group rotation={[rad(warden.前倾), 0, 0]}>
-          <Warden 秒={warden.秒} 行走={warden.行走} 受伤={warden.受伤} 头偏={warden.头偏} headPitch={warden.头仰} 音爆={warden.音爆} />
+        <group rotation={[rad(warden.forwardLean), 0, 0]}>
+          <Warden 秒={warden.秒} walkCycle={warden.walkCycle} hurt={warden.hurt} headYaw={warden.headYaw} headPitch={warden.headPitch} 音爆={warden.音爆} />
         </group>
       </group>
       {play.stuckArrows(sceneT).map((a, i) => (
@@ -57,17 +57,17 @@ export const ScenePicture: React.FC<{ T: number; cam: Cam; width: number; height
         <Arrow key={`飞${i}`} p={a.p} dir={a.dir} />
       ))}
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-        <SpectralSteed 秒={play.horseSec(sceneT)} 行走={horse.行走} 人立={horse.人立.马} 有人骑 />
+        <SpectralSteed 秒={play.horseSec(sceneT)} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
       </group>
-      <LiuXinzhong pose={liu.pose} 受伤={liu.hurt} />
-      <HuangPan pose={huangPan.pose} 弓={huangPan.弓} />
+      <LiuXinzhong pose={liu.pose} hurt={liu.hurt} />
+      <HuangPan pose={huangPan.pose} bow={huangPan.bow} />
       <BowFans t={sceneT} fans={play.fansAt(sceneT)} />
       {shield && <MagicShield at={shield.at} dir={shield.dir} sec={shield.sec} />}
       {play.mortarShells(sceneT).map((b, i) => (
         <CreeperHead key={`弹${i}`} at={b.at} vel={b.vel} />
       ))}
       {play.mortars.map((c, i) => (
-        <Blastwave key={`波${i}`} at={c.blastPos} tick={(sceneT - c.中T) * 20} seed={7305 + i} size={blastwaveSize} />
+        <Blastwave key={`波${i}`} at={c.blastPos} tick={(sceneT - c.hitT) * 20} seed={7305 + i} size={blastwaveSize} />
       ))}
       {play.torches.map((c, i) => (
         <TorchBlock key={i} cell={c.cell} 光={2} />

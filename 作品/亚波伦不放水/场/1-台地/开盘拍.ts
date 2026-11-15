@@ -6,91 +6,91 @@
 // 世界秒 = 动作的钟（人怎么动、盘怎么张、粒子怎么飘都按它）；片秒 = 画面的钟（段内秒）。慢放以外两个钟一样。
 
 /** 幕内世界秒 */
-export const 拍 = {
+export const beats = {
   /** 她从祭坛上飞起来、飞到他东北边六格外悬停（贴地，脚离地 0.4 格） */
-  起飞: 0,
-  到位: 0.3,
+  takeoff: 0,
+  arriveSec: 0.3,
   /** 他按下潜行（断曜流光冲刺要潜行着挥） */
-  潜一: 0.14,
+  sneakFirstSec: 0.14,
   /** 第一次：挥剑冲出去 */
-  冲一: 0.4,
+  dashFirstSec: 0.4,
   /** 瞬移：她刹住就冒烟（预兆；她看见他蹲下了）；他冲出去 0.04 秒（他头离她还有一格多）她挪走；挪到他冲完要回头的方向（他第二次冲的那条线上） */
-  烟起: 0.3,
+  smokeStart: 0.3,
   移: 0.44,
   /** 冲完（转完 15 刻）蹲着回头看她；物品冷却也是 15 刻，冲一 + 0.75 才能再冲 */
-  回头: [1.15, 1.23] as const,
+  lookBack: [1.15, 1.23] as const,
   /** 她看他回头就往下一沉（预备），他挥剑前 0.06 秒（他蓄剑的时候）就往上一拉：防守的比出手早几帧动（打戏记忆），他冲到她底下时她已经离地 */
-  沉: 1.05,
-  拉起: 1.19,
-  冲二: 1.25,
+  sinkSec: 1.05,
+  liftStart: 1.19,
+  dashSecondSec: 1.25,
   /** 她拉到祭坛上空刹住 */
-  到顶: 1.87,
+  peakSec: 1.87,
   /** 拉升里伸杖指着他：他从她脚底下穿过去她一甩身（编排-开盘.ts 的 转身，1.31～1.46），转到一半就伸，杖不往背后指；伸完正好张盘。
    *  八版 1.4～1.62，慢放里伸到 2.3 片秒才伸完，前一半杖还垂着（用户 11-11 看八版 11.03 秒那一帧「飞行姿势很诡异」） */
-  伸杖: [1.36, 1.5] as const,
+  staffExtend: [1.36, 1.5] as const,
   /** 杖尖张盘（原版快慢：三圈 7.5 刻 = 0.375 秒，慢放里看着是 1.5 秒） */
-  张盘: 1.5,
+  openWheelSec: 1.5,
   /** 慢放过了、她出了画（2-04 拍他），伸直的手臂收回第 4 幕用的 指向（第 4 幕从这里一帧接上） */
-  收势: [1.95, 2.3] as const,
+  finishStanceSec: [1.95, 2.3] as const,
   /** 他冲完站起来（松开潜行），抬头看她 */
-  起身: 2.06,
+  standUp: 2.06,
   /** 幕末 */
-  末: 2.4,
+  endSec: 2.4,
 };
 
 /** 慢放：片秒 起 开始 入 秒里减到 率，世界秒到 止 以后 出 秒里回到原速（速率对片秒线性变，世界钟一阶连续，不会一顿）。
  *  起 = 他从她脚底下冲过去那一下（冲二后 0.07 秒）；止 = 她刹住、盘张完以后 */
-export const 慢放 = { 起: 拍.冲二 + 0.07, 入: 0.15, 率: 0.25, 止: 1.91, 出: 0.25 };
+export const slowMo = { 起: beats.dashSecondSec + 0.07, 入: 0.15, slowRate: 0.25, 止: 1.91, 出: 0.25 };
 
 // 速率 r(片秒)：起 之前 1；[起, 起 + 入] 线性降到 率；保持到 持止；[持止, 持止 + 出] 线性回 1
-const 入末世界 = 慢放.起 + (慢放.入 * (1 + 慢放.率)) / 2;
-const 持止 = 慢放.起 + 慢放.入 + (慢放.止 - 入末世界) / 慢放.率;
-const 出末 = 持止 + 慢放.出;
-const 出末世界 = 慢放.止 + (慢放.出 * (1 + 慢放.率)) / 2;
+const inEndWorld = slowMo.起 + (slowMo.入 * (1 + slowMo.slowRate)) / 2;
+const holdEndSec = slowMo.起 + slowMo.入 + (slowMo.止 - inEndWorld) / slowMo.slowRate;
+const slowExitEnd = holdEndSec + slowMo.出;
+const outEndWorld = slowMo.止 + (slowMo.出 * (1 + slowMo.slowRate)) / 2;
 /** 慢放各段的片秒：开始减速、减完、开始回速、回完 */
-export const 慢放片秒 = { 起: 慢放.起, 减完: 慢放.起 + 慢放.入, 回起: 持止, 回完: 出末 };
+export const slowClipMarks = { 起: slowMo.起, decelEndSec: slowMo.起 + slowMo.入, returnStart: holdEndSec, returnEndSec: slowExitEnd };
 
 /** 幕内片秒 → 幕内世界秒 */
-export const 世界秒 = (s: number): number => {
-  const { 起, 入, 率, 出 } = 慢放;
-  if (s <= 起) return s;
-  if (s <= 起 + 入) {
-    const u = s - 起;
-    return 起 + u - ((1 - 率) * u * u) / (2 * 入);
+export const toWorldSec = (s: number): number => {
+  const { 起: startSec, 入: easeInSec, slowRate, 出: easeOutSec } = slowMo;
+  if (s <= startSec) return s;
+  if (s <= startSec + easeInSec) {
+    const u = s - startSec;
+    return startSec + u - ((1 - slowRate) * u * u) / (2 * easeInSec);
   }
-  if (s <= 持止) return 入末世界 + 率 * (s - 起 - 入);
-  if (s <= 出末) {
-    const u = s - 持止;
-    return 慢放.止 + 率 * u + ((1 - 率) * u * u) / (2 * 出);
+  if (s <= holdEndSec) return inEndWorld + slowRate * (s - startSec - easeInSec);
+  if (s <= slowExitEnd) {
+    const u = s - holdEndSec;
+    return slowMo.止 + slowRate * u + ((1 - slowRate) * u * u) / (2 * easeOutSec);
   }
-  return 出末世界 + (s - 出末);
+  return outEndWorld + (s - slowExitEnd);
 };
 /** 幕内世界秒 → 幕内片秒（世界秒单调增，二分） */
-export const 片秒 = (w: number): number => {
-  if (w <= 慢放.起) return w;
-  if (w >= 出末世界) return 出末 + (w - 出末世界);
-  let [a, b] = [慢放.起, 出末];
+export const toClipSec = (w: number): number => {
+  if (w <= slowMo.起) return w;
+  if (w >= outEndWorld) return slowExitEnd + (w - outEndWorld);
+  let [a, b] = [slowMo.起, slowExitEnd];
   for (let i = 0; i < 60; i++) {
     const m = (a + b) / 2;
-    if (世界秒(m) < w) a = m;
+    if (toWorldSec(m) < w) a = m;
     else b = m;
   }
   return (a + b) / 2;
 };
 /** 这一刻世界钟走多快（世界秒每片秒） */
-export const 慢放率 = (s: number): number => {
-  const { 起, 入, 率 } = 慢放;
-  if (s <= 起 || s >= 出末) return 1;
-  if (s <= 起 + 入) return 1 - ((1 - 率) * (s - 起)) / 入;
-  if (s <= 持止) return 率;
-  return 率 + ((1 - 率) * (s - 持止)) / 慢放.出;
+export const slowRateAt = (s: number): number => {
+  const { 起: startSec, 入: easeInSec, slowRate } = slowMo;
+  if (s <= startSec || s >= slowExitEnd) return 1;
+  if (s <= startSec + easeInSec) return 1 - ((1 - slowRate) * (s - startSec)) / easeInSec;
+  if (s <= holdEndSec) return slowRate;
+  return slowRate + ((1 - slowRate) * (s - holdEndSec)) / slowMo.出;
 };
 /** 第 2 幕多长（片秒） */
-export const 幕长 = 片秒(拍.末);
+export const actDur = toClipSec(beats.endSec);
 /** 慢放多出来的片秒：第 2 幕末以后，编排的钟（世界秒，现身后几秒）比片上的「现身后几秒」慢这么多。
  *  第 4、5 幕的幕起、仪式结构的钟都按片秒减去它取，和第 2 幕末一帧接上（浮动、头发、盘转角、火不跳） */
-export const 慢放多出 = 幕长 - 拍.末;
+export const slowExtraSec = actDur - beats.endSec;
 /** 第 2 幕末盘张开后第几刻（三圈 7.5 刻张完，再转一会儿）；第 4 幕的盘从这一刻接着转 */
-export const 第二幕末盘刻 = (拍.末 - 拍.张盘) * 20;
+export const act2EndWheelTick = (beats.endSec - beats.openWheelSec) * 20;
 /** 第 2 幕末史蒂夫的 秒（第 2 幕传的是幕内世界秒）；第 4 幕他的待机、光泽、光环自转从这里接着走 */
-export const 第二幕末史蒂夫秒 = 拍.末;
+export const act2EndSteveSec = beats.endSec;

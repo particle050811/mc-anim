@@ -2,41 +2,41 @@
 // 机位不给就是 参数 的门口机位（49.96、封面帧）；身子朝向不给就照 参数。
 import type { V3 } from '@engine/model/parts.tsx';
 
-export type 视图 = {
+export type View = {
   名: string;
-  机位?: { 眼: V3; 看: V3; 视角: number; 近?: number };
-  她?: boolean;
-  身子朝向?: number;
-  门光?: boolean;
+  cameraRig?: { 眼: V3; 看: V3; fov: number; nearClip?: number };
+  hasLiYing?: boolean;
+  bodyFacing?: number;
+  doorLight?: boolean;
   /** 她头顶的气泡（参数 的 气泡字，按机位挂） */
-  气泡?: boolean;
+  showBubble?: boolean;
   /** 左下的聊天：片 = 成片画幅那一版封面的原版位置像素聊天栏（缩放 6，同 2-摇铃 片里那一行），封面 = 封面版聊天行 */
-  聊天?: '片' | '封面';
+  chatMode?: '片' | '封面';
   /** 盖上 B 站封面的安全区（4:3 取中间、底部 20%、右下角时长角标） */
-  安全区?: boolean;
+  safeArea?: boolean;
   /** 平面图上标出机位、视线、她 */
-  标注?: boolean;
+  showAnnotation?: boolean;
 };
 
 // 从主厅正上方往下看（近裁剪面切掉二楼和屋顶）
-const 平面图 = { 眼: [11, -11.5, 40] as V3, 看: [11, -11.49, 0] as V3, 视角: 24, 近: 34.2 };
+const floorPlan = { 眼: [11, -11.5, 40] as V3, 看: [11, -11.49, 0] as V3, fov: 24, nearClip: 34.2 };
 // 窗外远山（场/2-隐世之境/远山.ts）：从门口收窄了看东窗（东窗 x 17.5、y −14～−11、z 1～4），看清窗里那一小块的山、樱花林、雾和天；
 // 再从屋顶上面往东看一大片（窗外近处那几棵树冠挡着，站低了看不远），看坡上的树有没有悬空、雾淡得对不对
-const 门口望东窗 = { 眼: [6.8, -10.5, 1.62] as V3, 看: [17.5, -12.5, 2.3] as V3, 视角: 20 };
-const 屋顶往东 = { 眼: [18, -12.5, 18] as V3, 看: [80, -22, 8] as V3, 视角: 70 };
+const doorLookEastWindow = { 眼: [6.8, -10.5, 1.62] as V3, 看: [17.5, -12.5, 2.3] as V3, fov: 20 };
+const roofLookEast = { 眼: [18, -12.5, 18] as V3, 看: [80, -22, 8] as V3, fov: 70 };
 // 南头地洞（楼梯口）：站在洞北边的栏杆前往下看，洞底是暗色封底，不能露出草地
-const 看地洞 = { 眼: [14, -15.1, 1.62] as V3, 看: [14, -16.6, -0.8] as V3, 视角: 70 };
+const lookGroundHole = { 眼: [14, -15.1, 1.62] as V3, 看: [14, -16.6, -0.8] as V3, fov: 70 };
 
-export const 视图们: readonly 视图[] = [
-  { 名: '门口-带她', 她: true },
-  { 名: '门口-去掉她', 她: false },
-  { 名: '门口-成片画幅的封面：气泡、原版聊天栏（片里这一帧不挂）', 她: true, 气泡: true, 聊天: '片' },
-  { 名: '封面：气泡、封面聊天行', 她: true, 气泡: true, 聊天: '封面' },
-  { 名: '封面-安全区', 她: true, 气泡: true, 聊天: '封面', 安全区: true },
-  { 名: '对比-身子朝向-35（侧到 90°）', 她: true, 气泡: true, 身子朝向: -35 },
-  { 名: '对比-不加门光', 她: true, 门光: false },
-  { 名: '平面图', 她: true, 机位: 平面图, 标注: true },
-  { 名: '窗外-门口望东窗（视角 20）', 她: false, 机位: 门口望东窗 },
-  { 名: '窗外-屋顶往东看', 她: false, 机位: 屋顶往东 },
-  { 名: '南头地洞', 她: false, 机位: 看地洞 },
+export const views: readonly View[] = [
+  { 名: '门口-带她', hasLiYing: true },
+  { 名: '门口-去掉她', hasLiYing: false },
+  { 名: '门口-成片画幅的封面：气泡、原版聊天栏（片里这一帧不挂）', hasLiYing: true, showBubble: true, chatMode: '片' },
+  { 名: '封面：气泡、封面聊天行', hasLiYing: true, showBubble: true, chatMode: '封面' },
+  { 名: '封面-安全区', hasLiYing: true, showBubble: true, chatMode: '封面', safeArea: true },
+  { 名: '对比-身子朝向-35（侧到 90°）', hasLiYing: true, showBubble: true, bodyFacing: -35 },
+  { 名: '对比-不加门光', hasLiYing: true, doorLight: false },
+  { 名: '平面图', hasLiYing: true, cameraRig: floorPlan, showAnnotation: true },
+  { 名: '窗外-门口望东窗（视角 20）', hasLiYing: false, cameraRig: doorLookEastWindow },
+  { 名: '窗外-屋顶往东看', hasLiYing: false, cameraRig: roofLookEast },
+  { 名: '南头地洞', hasLiYing: false, cameraRig: lookGroundHole },
 ];

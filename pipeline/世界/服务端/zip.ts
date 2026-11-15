@@ -3,14 +3,14 @@
 import fs from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 
-export type zip条目 = { 名: string; 方法: number; 压缩长: number; 原长: number; 本地头: number };
+export type ZipEntry = { 名: string; 方法: number; compressedLen: number; uncompressedSize: number; localHeaderOffset: number };
 
-export class 只读zip {
+export class ReadOnlyZip {
   private buf: Buffer;
-  readonly 条目 = new Map<string, zip条目>();
+  readonly entryMap = new Map<string, ZipEntry>();
 
-  constructor(文件: string) {
-    this.buf = fs.readFileSync(文件);
+  constructor(file: string) {
+    this.buf = fs.readFileSync(file);
     const b = this.buf;
     // 中央目录结尾记录在最后 22 + 注释（≤ 65535）字节里，从后往前找签名
     let eocd = -1;
@@ -19,30 +19,30 @@ export class 只读zip {
         eocd = i;
         break;
       }
-    if (eocd < 0) throw new Error(`${文件} 不是 zip（找不到中央目录）`);
-    const 个数 = b.readUInt16LE(eocd + 10);
+    if (eocd < 0) throw new Error(`${file} 不是 zip（找不到中央目录）`);
+    const entryCount = b.readUInt16LE(eocd + 10);
     let p = b.readUInt32LE(eocd + 16);
-    for (let n = 0; n < 个数; n++) {
-      if (b.readUInt32LE(p) !== 0x02014b50) throw new Error(`${文件} 的中央目录坏了`);
-      const 名长 = b.readUInt16LE(p + 28), 额外长 = b.readUInt16LE(p + 30), 注释长 = b.readUInt16LE(p + 32);
-      const 名 = b.toString('utf8', p + 46, p + 46 + 名长);
-      this.条目.set(名, { 名, 方法: b.readUInt16LE(p + 10), 压缩长: b.readUInt32LE(p + 20), 原长: b.readUInt32LE(p + 24), 本地头: b.readUInt32LE(p + 42) });
-      p += 46 + 名长 + 额外长 + 注释长;
+    for (let n = 0; n < entryCount; n++) {
+      if (b.readUInt32LE(p) !== 0x02014b50) throw new Error(`${file} 的中央目录坏了`);
+      const nameLen = b.readUInt16LE(p + 28), extraLen = b.readUInt16LE(p + 30), commentLen = b.readUInt16LE(p + 32);
+      const entryName = b.toString('utf8', p + 46, p + 46 + nameLen);
+      this.entryMap.set(entryName, { 名: entryName, 方法: b.readUInt16LE(p + 10), compressedLen: b.readUInt32LE(p + 20), uncompressedSize: b.readUInt32LE(p + 24), localHeaderOffset: b.readUInt32LE(p + 42) });
+      p += 46 + nameLen + extraLen + commentLen;
     }
   }
 
-  名们() {
-    return [...this.条目.keys()];
+  names() {
+    return [...this.entryMap.keys()];
   }
 
-  读(名: string): Buffer {
-    const e = this.条目.get(名);
-    if (!e) throw new Error(`zip 里没有 ${名}`);
+  读(entryName: string): Buffer {
+    const e = this.entryMap.get(entryName);
+    if (!e) throw new Error(`zip 里没有 ${entryName}`);
     const b = this.buf;
-    const 起 = e.本地头 + 30 + b.readUInt16LE(e.本地头 + 26) + b.readUInt16LE(e.本地头 + 28);
-    const 数据 = b.subarray(起, 起 + e.压缩长);
-    if (e.方法 === 0) return Buffer.from(数据);
-    if (e.方法 === 8) return inflateRawSync(数据);
-    throw new Error(`zip 条目 ${名} 的压缩方法 ${e.方法} 不认`);
+    const startOffset = e.localHeaderOffset + 30 + b.readUInt16LE(e.localHeaderOffset + 26) + b.readUInt16LE(e.localHeaderOffset + 28);
+    const compressedBytes = b.subarray(startOffset, startOffset + e.compressedLen);
+    if (e.方法 === 0) return Buffer.from(compressedBytes);
+    if (e.方法 === 8) return inflateRawSync(compressedBytes);
+    throw new Error(`zip 条目 ${entryName} 的压缩方法 ${e.方法} 不认`);
   }
 }

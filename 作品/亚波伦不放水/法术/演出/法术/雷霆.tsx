@@ -5,17 +5,17 @@
 // - 出手后只有这一道电弧：ThunderboltSpell.SpellResult 里不放粒子（目标身上的 ELECTRIC 火花是 BoltingSpell 的，不是它）。
 // 没做：蓄力期间施法者身上每 5 刻一撮 SPELL_ELECTRIC（Spell.useParticle，在出手前，归施法姿势那块）；5% 概率给目标上痉挛效果（没有画面）。
 import React from 'react';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 电弧 } from '../零件/电弧.tsx';
-import { 电弧预设 } from '../零件/电弧形.ts';
-import { 十六进制色 } from '../零件/材质.ts';
-import 元, { 雷霆寿命刻, 雷霆落点 } from './雷霆.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { ElectricArc } from '../零件/电弧.tsx';
+import { arcPresets } from '../零件/电弧形.ts';
+import { hexColor } from '../零件/材质.ts';
+import meta, { thunderLifeTicks, boltLandPoint } from './雷霆.元.ts';
 
-const 雷色 = 十六进制色(0xb1abf1);
+const thunderColor = hexColor(0xb1abf1);
 
-const 雷霆: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => (
-  <电弧 起={起点} 终={雷霆落点(目标)} 设定={电弧预设.thunderBolt} 刻={秒 * 20} 寿命刻={雷霆寿命刻} 色={雷色} 种子={种子} />
+const thunder: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => (
+  <ElectricArc 起={from} end={boltLandPoint(target)} settings={arcPresets.thunderBolt} 刻={sec * 20} lifeTicks={thunderLifeTicks} 色={thunderColor} 种子={seed} />
 );
 
-export default 定义法术演出(元, 雷霆);
+export default defineSpellPerformance(meta, thunder);

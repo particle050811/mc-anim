@@ -2,14 +2,14 @@
 // 照旧项目 工具/导入/烘焙/合并.ts，逐字节一致靠的是挑代表、并段的先后都不变。
 // W × W 列，第 c 列的段是 runStarts[c]～runStarts[c+1]，从上往下；第一段的顶是这一级最高一格 kt，往后每段的顶 = 上一段的底 − 1，最后一段的底是 kb。
 // 段数 0 = 没有数据。surface：列里（第 0 级的各列里）最低的地表（场景 z）；tops：最高的非空气格的格号。
-import type { 条目表 } from './条目.ts';
+import type { EntryTable } from './条目.ts';
 
-export const 无地表 = 32767;
-export const 无顶 = -32768;
+export const noSurface = 32767;
+export const noTop = -32768;
 
-export type 层级 = { L: number; W: number; kb: number; kt: number; runStarts: Uint32Array; entries: Uint16Array; bottoms: Int16Array; surface: Int16Array; tops: Int16Array };
+export type Level = { L: number; W: number; kb: number; kt: number; runStarts: Uint32Array; entries: Uint16Array; bottoms: Int16Array; surface: Int16Array; tops: Int16Array };
 
-export class 段缓冲 {
+export class SegmentBuffer {
   n = 0;
   entries = new Uint16Array(1 << 20);
   bottoms = new Int16Array(1 << 20);
@@ -28,17 +28,17 @@ export class 段缓冲 {
 }
 
 /** 第 L 级 ← 第 L−1 级；zb、zt 是第 0 级最低、最高一格（场景 z） */
-export const 合并一级 = (prev: 层级, 表: 条目表, 合并键: (op: number, L: number, lx: number, ly: number, lz: number, prio: number) => number, zb: number, zt: number): 层级 => {
+export const mergeLevel = (prev: Level, entryTable: EntryTable, mergeKey: (op: number, L: number, lx: number, ly: number, lz: number, prio: number) => number, zb: number, zt: number): Level => {
   const levelNo = prev.L + 1;
   const width = prev.W >> 1;
   const kb = Math.floor(zb / 2 ** levelNo);
   const kt = Math.floor(zt / 2 ** levelNo);
   const runStarts = new Uint32Array(width * width + 1);
-  const surfaces = new Int16Array(width * width).fill(无地表);
-  const tops = new Int16Array(width * width).fill(无顶);
-  const runBuf = new 段缓冲();
+  const surfaces = new Int16Array(width * width).fill(noSurface);
+  const tops = new Int16Array(width * width).fill(noTop);
+  const runBuf = new SegmentBuffer();
   const { entries: pe, bottoms: pb } = prev;
-  const { entryAsAir, entryOpaque } = 表;
+  const { entryAsAir, entryOpaque } = entryTable;
   const cur = new Int32Array(4);
   const end = new Int32Array(4);
   // 子列 t = b·2 + a：a 是 x 方向（东），b 是场景 y 方向（北）
@@ -46,7 +46,7 @@ export const 合并一级 = (prev: 层级, 表: 条目表, 合并键: (op: numbe
     for (let gx = 0; gx < width; gx++) {
       const levelCol = gy * width + gx;
       let hasData = false;
-      let minSurface = 无地表;
+      let minSurface = noSurface;
       for (let t = 0; t < 4; t++) {
         const ci = (2 * gy + (t >> 1)) * prev.W + 2 * gx + (t & 1);
         cur[t] = prev.runStarts[ci]!;
@@ -78,7 +78,7 @@ export const 合并一级 = (prev: 层级, 表: 条目表, 合并键: (op: numbe
             const subX = t & 1, subY = t >> 1;
             const eh = pe[runIdx]!;
             if (!entryAsAir[eh]) {
-              const key = 合并键(entryOpaque[eh]!, 1, subX, subY, 1, 0);
+              const key = mergeKey(entryOpaque[eh]!, 1, subX, subY, 1, 0);
               if (key > best) (best = key), (bestEntry = eh);
             }
             if (wholeRun) continue;
@@ -87,12 +87,12 @@ export const 合并一级 = (prev: 层级, 表: 条目表, 合并键: (op: numbe
             if (r2 >= end[t]!) continue;
             const el = pe[r2]!;
             if (!entryAsAir[el]) {
-              const key = 合并键(entryOpaque[el]!, 1, subX, subY, 0, 0);
+              const key = mergeKey(entryOpaque[el]!, 1, subX, subY, 0, 0);
               if (key > best) (best = key), (bestEntry = el);
             }
           }
           const stepCells = wholeRun ? uniformCells : 1;
-          if (bestEntry && tops[levelCol] === 无顶) tops[levelCol] = k;
+          if (bestEntry && tops[levelCol] === noTop) tops[levelCol] = k;
           if (runBuf.n > s0 && runBuf.entries[runBuf.n - 1] === bestEntry) runBuf.bottoms[runBuf.n - 1] = k - stepCells + 1;
           else runBuf.push(bestEntry, k - stepCells + 1);
           k -= stepCells;

@@ -20,15 +20,15 @@ import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { FPS, PLACE_BEFORE, airPose, groundPose, landPose, mixPose, nearYaw, pivotStep, standAt, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import * as choreo643 from '../6-4-3/编排.ts';
 import * as timeline643 from '../6-4-3/时间线.ts';
-import { allWool, elite, eliteLeap, feetOnWool, withHang, woolBlockAt, wool645, woolLeapApex, liYingDeflectFeet, huangPanArcheryFeet, archery, woolOrder, type WoolName, type 跳 } from '../../../地点/古城4x/布局.ts';
+import { allWool, elite, eliteLeap, feetOnWool, withHang, woolBlockAt, wool645, woolLeapApex, liYingDeflectFeet, huangPanArcheryFeet, archery, woolOrder, type WoolName, type Jump } from '../../../地点/古城4x/布局.ts';
 import { lineTable } from '../../../配音/台词轨.tsx';
 import type * as THREE from 'three';
-import { sheathConstraint as 收刀约束, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
+import { sheathConstraint as sheathConstraint, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
 
 export { FPS };
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 // 6-4-3c 末帧（主时间线的全局帧）
-export const startGlobalFrame = timeline643.总帧数 - 1;
+export const startGlobalFrame = timeline643.totalFrames - 1;
 export const globalFrameAt = (f: number) => startGlobalFrame + f;
 export const storySecAt = (f: number) => choreo643.storySecAt(globalFrameAt(f));
 export const FOOT: V3 = liYingDeflectFeet;
@@ -43,17 +43,17 @@ export const turnEndSec = 2.95; // 也是切第二镜
 const crouchEndSec = 3.25; // 第一跳离地
 // 台词落点（段内帧，A8 字幕读这里）：1.4 秒开口，有声 2.95 秒、说到 4.35 秒，「有你们好受的」落在他蹲下、蹬起那一下
 export const lineDuration = lineTable['6-4-5-李樱-会会你们'].有声长;
-export const lines = { 会会你们: { id: '6-4-5-李樱-会会你们', 帧: 1.4 * FPS } } as const;
+export const lines = { challenge: { id: '6-4-5-李樱-会会你们', 帧: 1.4 * FPS } } as const;
 
 // ---------- 李樱绕行：C → R1 → … → V（追兵钟 = 段内秒） ----------
 const landAbsorbSec = elite.landingSquatSec;
-export const liYingDetour: { name: WoolName; jump: 跳 }[] = (() => {
-  const out: { name: WoolName; jump: 跳 }[] = [];
+export const liYingDetour: { name: WoolName; jump: Jump }[] = (() => {
+  const out: { name: WoolName; jump: Jump }[] = [];
   let pos = FOOT;
   let t = crouchEndSec;
   for (const k of Object.keys(wool645) as (keyof typeof wool645)[]) {
     const nextPos = feetOnWool(wool645[k]);
-    const jump = withHang(eliteLeap(pos, nextPos, woolLeapApex[k] ?? elite.离地, t * FPS, FPS), out.length);
+    const jump = withHang(eliteLeap(pos, nextPos, woolLeapApex[k] ?? elite.apexHeight, t * FPS, FPS), out.length);
     out.push({ name: k, jump: jump });
     pos = nextPos;
     t = jump.f1 / FPS + landAbsorbSec;
@@ -63,12 +63,12 @@ export const liYingDetour: { name: WoolName; jump: 跳 }[] = (() => {
 export const jump1 = liYingDetour[0].jump;
 export const jump2 = liYingDetour[1].jump;
 // 垫羊毛的那一帧（落地前 0.22 秒）
-const placeWoolFrame = (J: 跳) => J.f1 - PLACE_BEFORE * FPS;
+const placeWoolFrame = (J: Jump) => J.f1 - PLACE_BEFORE * FPS;
 export const placeR1Frame = placeWoolFrame(jump1);
 export const placeR2Frame = placeWoolFrame(jump2);
 // 李樱到第 t 秒（追兵钟 = 本段秒，可以超过本段，6-4-6、6-4-7 接着用）已经垫好的羊毛（名字，给 古城4x画布 的 羊毛）和正在长出来的那块
 const woolBefore = woolOrder.slice(0, woolOrder.indexOf('C') + 1);
-export const woolAt = (t: number): { 羊毛: WoolName[]; growingWool: { w: WoolName; k: number }[] } => {
+export const woolAt = (t: number): { wool: WoolName[]; growingWool: { w: WoolName; k: number }[] } => {
   const frame = t * FPS;
   const placed: WoolName[] = [...woolBefore];
   const growing: { w: WoolName; k: number }[] = [];
@@ -77,10 +77,10 @@ export const woolAt = (t: number): { 羊毛: WoolName[]; growingWool: { w: WoolN
     if (frame >= pf + 2) placed.push(name);
     else if (frame >= pf) growing.push({ w: name, k: (frame - pf + 1) / 3 });
   }
-  return { 羊毛: placed, growingWool: growing };
+  return { wool: placed, growingWool: growing };
 };
 // 7-2/几何.ts 还在用的老名字：6-4-5 以后场景里的全部羊毛（李樱绕到 V 为止垫的；场景坐标的羊毛方块底面中心）
-export const allWoolAfter: V3[] = woolAt(99).羊毛.map((k) => woolBlockAt(allWool[k]));
+export const allWoolAfter: V3[] = woolAt(99).wool.map((k) => woolBlockAt(allWool[k]));
 
 // ---------- 李樱 ----------
 const guard0 = choreo643.liying(startGlobalFrame); // 6-4-3c 末帧：握刀戒备
@@ -119,7 +119,7 @@ const scrapPose = (o: number): FigurePose => ({
 // 转头带着身子转（用户 10-19：「你转头不转身体 很诡异」）：头先到，胸对髋拧一点（`twistFollow`），身子（连脚，挪步见 `pivotStep`）晚 0.1～0.2 秒跟上；
 // 看尖啸体时身子只转到离它 50°（余下的靠拧胸、扭头），看传送门、转向起跳时身子转正
 const startLook = { yaw: guard.pose.yaw! + (guard.pose.twist ?? 0) + guard.pose.headYaw, pitch: guard.pose.headPitch + guard.pose.pitch };
-const shriekerTop: V3 = G4(archery.尖啸体[0] + 0.5, archery.尖啸体[1] + 0.5, archery.尖啸体[2] + 0.5);
+const shriekerTop: V3 = G4(archery.sculkShrieker[0] + 0.5, archery.sculkShrieker[1] + 0.5, archery.sculkShrieker[2] + 0.5);
 const lookShrieker = lookAtPoint(shriekerTop);
 const jump1Yaw = nearYaw(HEADING, jump1.yaw);
 const near = (a: number, b: number) => nearYaw(a, b);
@@ -219,7 +219,7 @@ export const sheatheRhythm645: SheathTiming = { start: sheatheStartSec * FPS, ti
 export const liying = (segFrame: number, rawSheathe = false): LiYingPose => {
   const raw = liyingRaw(segFrame);
   if (rawSheathe) return raw;
-  const constrained = 收刀约束(raw.pose, segFrame, sheatheRhythm645, (t) => {
+  const constrained = sheathConstraint(raw.pose, segFrame, sheatheRhythm645, (t) => {
     const rawAt = liyingRaw(t);
     return [rawAt.pose, rawAt.blade, rawAt.bladeSide];
   });

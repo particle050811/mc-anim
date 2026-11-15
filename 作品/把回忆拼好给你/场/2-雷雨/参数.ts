@@ -1,89 +1,89 @@
 // 第 6、7 句（段 2-雷雨、2-拨开阴霾）的数：机位、站位、天气、云、光柱、阳光、声音。纯数据（段.ts、测试都能读）。
 // 除了注明出处的都是 Agent 暂定，用户没看过；用户改了只改这里。坐标同 地点/门口小木屋.tsx（Z 朝上：x 东、y 北、z 上，单位格，屋前地面顶 z = 0），屋子和坑在 弹坑.ts、四周的地在 地形.ts。
 // yaw 同 FigurePose：0 朝北（背对镜头）、正 = 往左（西）。
-import type { 云层 } from '@engine/light/云/配置.ts';
+import type { CloudLayer } from '@engine/light/云/配置.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 旧帧 } from '../../分镜/时间.ts';
+import { legacyFrameSec } from '../../分镜/时间.ts';
 
 /** 屋前那块平地的草、树叶按哪个群系染色：同门口那一场（场/2-门口/参数.ts 的 群系；场之间不互引，抄一份） */
-export const 群系 = 'minecraft:plains';
+export const biome = 'minecraft:plains';
 /** 顶上歌词那一行的下沿（成片像素）：符文歌词默认样式一行字到 200 左右，留一点空。第 7 句在顶上一行（被光柱劈成两半），第 6 句放在右下（界面/歌词排版表.ts）；关键的东西（人、屋子、光柱撞云那一点）放在这条下面 */
-export const 歌词下沿 = 240;
+export const lyricBottomPx = 240;
 
 // ---------- 机位：两段一个镜头（透视），从西南边朝东北偏北看屋子 ----------
-export type 机位帧 = { 眼: V3; 看: V3; 视角: number };
+export type CameraRigFrame = { 眼: V3; 看: V3; fov: number };
 /** 第 6 句：从西南偏南、高一点往下看（朝东北偏北，大体同第 8 句门这个机位一个方向：屋子朝南那面、门在左边），全景（整座屋子、炸开的西南角、两个人、雷雨）慢慢推到两人和缺口的近景，雷照缺口 那一帧推到、停住。
  *  两个人坐在缺口左边（西），镜头从他们左后方看过去，人挡不住缺口和坑；近 贴到人的背后、从一人多高往下看进坑里，炸掉的那些格占画面三成，坑底浮着的掉落物在手机上也看得出（核查 10-24：原来近景眼睛压在 2 格高，坑底被地面挡住）。
  *  第 7 句：她站起来放法术，镜头往后退、往上抬，跟着光柱往上看，到 仰 落定：屋子和她在画面下沿、光柱竖在中间、撞云那一点在歌词下面，云洞在上半屏撕开。
  *  仰 的视角 75°（原版视角滑条 30～110，默认 70）：光柱撞的云底在头顶 24 格，要把她的脚和撞云那一点同时放进歌词下面那一截，镜头又不能退太远（退得越远越快）。
  *  一个镜头不切（用户 10-24「镜头少而连贯」）。眼、看都是场景坐标 */
-export const 机位们 = {
-  全: { 眼: [-3.6, -11.0, 5.0], 看: [2.2, 0.0, 1.8], 视角: 55 },
-  近: { 眼: [-0.4, -6.6, 2.8], 看: [0.4, -0.3, 0.5], 视角: 52 },
-  仰: { 眼: [-1.5, -19.5, 3.0], 看: [-1.5, -2.1, 11], 视角: 75 },
-} as const satisfies Record<string, 机位帧>;
+export const cameraRigs = {
+  全: { 眼: [-3.6, -11.0, 5.0], 看: [2.2, 0.0, 1.8], fov: 55 },
+  近: { 眼: [-0.4, -6.6, 2.8], 看: [0.4, -0.3, 0.5], fov: 52 },
+  仰: { 眼: [-1.5, -19.5, 3.0], 看: [-1.5, -2.1, 11], fov: 75 },
+} as const satisfies Record<string, CameraRigFrame>;
 /** 第 7 句往后退、往上抬用几秒（从第 7 句首字起，缓起缓停）：镜头跟着光柱往上抬，光柱撞云（拨）时快停住了 */
-export const 退镜秒 = 1.5;
+export const pullBackSec = 1.5;
 
 // ---------- 站位、动作 ----------
 /** 两个人紧挨着炸开的西南角坐在外面的草地上（屋子西南角那根原木、门、南墙西半截炸没了，地板炸成一个浅坑），朝东北看那个缺口；她在东、你在她左手边（西），从南边看过去两个人并排、不挡缺口。
  *  她紧挨着缺口（核查 10-24：原来手机上看不出是坐在坑边），坑里浮着的掉落物照原版捡不到（测试对过）；她再往东，第 7 句的光柱就挡在缺口前面了 */
-export const 站位 = { 她: [-1.4, -2.3, 0] as V3, 你: [-2.5, -2.2, 0] as V3 };
+export const standPos = { liYingPos: [-1.4, -2.3, 0] as V3, 你: [-2.5, -2.2, 0] as V3 };
 /** 朝向（度）：都朝东北看缺口中间 */
-export const 朝向 = { 她: -45, 你: -55 } as const;
+export const facing = { liYingYaw: -45, 你: -55 } as const;
 /** 你坐在地上（演绎：原版玩家只能坐在坐骑上；腿照原版骑乘姿势 xRot −81°、yRot ±18°，胳膊往前 36°），脚底原点往下放到屁股贴地 */
-export const 你坐 = { 低: 0.59, 腿: 81, 腿张: 18, 臂: 36 } as const;
+export const youSit = { sitDrop: 0.59, legPitch: 81, legSpread: 18, armPitch: 36 } as const;
 /** 你发呆时低一点头；第 6 句「你」后面你转过来看她 */
-export const 你低头 = -12;
+export const youHeadDownDeg = -12;
 /** 她转头、你转头用几秒（头转过去，原版头转得快；24 fps 时 4 帧） */
-export const 转头秒 = 旧帧(4);
+export const turnHeadSec = legacyFrameSec(4);
 /** 第 7 句她站起来放法术：两只胳膊往天上举（TLM 没有施法动作，演绎；骨骼按 魔法酒狐 的 RightArm、LeftArm 整条替换），仰着头看光柱 */
-export const 施法臂 = { 右: [-165, 0, -12] as V3, 左: [-165, 0, 12] as V3 } as const;
-export const 施法仰 = 35;
+export const castArm = { rightArm: [-165, 0, -12] as V3, leftArm: [-165, 0, 12] as V3 } as const;
+export const castLookUp = 35;
 /** 从抱膝坐站起来、两手举到头顶用几秒（起那一帧开始插，原来一帧弹起来；用户 11-03 看了打磨提议第 4 条的改前改后，定「就用改后的那个 缓慢弹起」）。光柱 23.54 才起，起身在那之前早就到位 */
-export const 起身秒 = 0.4;
+export const standUpSec = 0.4;
 /** 你看光柱：仰头（度） */
-export const 你仰 = 40;
+export const youLookUp = 40;
 
 // ---------- 天气、天色（原版 1.20.1 的算法，见 天气.ts） ----------
 /** 白天几刻：同第 8 句门口白天（场/2-门口 的 白天刻 7000），雷雨是白天的雷雨（原版雷雨天把白天压得像夜里），破云后硬切第 8 句同一个时辰 */
-export const 白天刻 = 7000;
+export const dayTick = 7000;
 /** 雷暴等级（原版 thunderLevel 0～1）：原版满雷暴时天色、云色都压到 0.15 上下，云和天一样黑、手机上看不出一层一层的云。
  *  这里取 0.6（演绎：雷暴等级在游戏里本来就是慢慢涨落的，取一个没涨满的时候），云比天暗一档、看得出是厚云。下雨等级满（1） */
-export const 雷暴 = 0.6;
+export const thunderStrength = 0.6;
 /** 渲染距离 12 区块 = 192 格（原版默认，同第 1 句 新世界） */
-export const 渲染距离 = 192;
+export const renderDistance = 192;
 /** 天幕在眼睛上方 16 格（原版 SkyRenderer），天的球形雾按天幕那一点的距离 */
-export const 天幕高 = 16;
+export const skyDomeHeight = 16;
 /** 天的一格多大（成片像素）：同 新世界 的 天格 6，天的渐变一格一格地变 */
-export const 天格 = 6;
+export const skyCellPx = 6;
 /** 闪电那两刻：原版 skyFlashTime 时天色往 (0.8, 0.8, 1.0) 混 45%、亮度图拉满（世界亮得像白天） */
-export const 闪电 = { 天混: 0.45, 天色: '#ccccff', 色调: '#e8ecff' } as const;
+export const lightning = { skyMix: 0.45, skyTint: '#ccccff', tint: '#e8ecff' } as const;
 /** 一道闪电闪几下（秒，相对 第6句闷雷、雷照缺口 那一帧，[起, 止)）：原版 LightningBolt 亮 2 刻，再随机补闪 1～3 次（life 重置成 1）。
  *  这里亮 1/12 秒、隔 1/8 秒再亮 1/24 秒（24 fps 时亮 2 帧、隔 3 帧再亮 1 帧；60 fps 下是亮 5 帧、隔 8 帧再亮 2 帧） */
-export const 闪秒们: readonly (readonly [number, number])[] = [
-  [0, 旧帧(2)],
-  [旧帧(5), 旧帧(6)],
+export const flashRanges: readonly (readonly [number, number])[] = [
+  [0, legacyFrameSec(2)],
+  [legacyFrameSec(5), legacyFrameSec(6)],
 ];
 
 // ---------- 云（原版 fancy 云，见 云.ts） ----------
 /** 云底离屋前地面多高（格）。原版云底在 y 192；屋子盖在樱花林边上（樱花林是山地群系，原版长在 y 100～170 上下），这里当地面在 y 168（演绎，Agent 暂定），
  *  云就在头顶 24 格：仰看一格云 12 格见方、4 格厚，侧面、底面看得清，是厚厚一层，不是天上一小块 */
-export const 云底高 = 24;
+export const cloudBottomHeight = 24;
 /** clouds.png 在世界里平移多少格（12 的倍数）：挑的是光柱头顶上一大团连成片的云（以光柱为心五格云以内九成是云，往北一大片），
  *  洞开在这团云里才看得出是撕开的（clouds.png 整张只有两成是云，挑到稀的地方开洞就看不出来）。原版看世界坐标，这里等于挑屋子盖在哪。Agent 暂定 */
-export const 云偏 = [1368, 1476] as const;
+export const cloudOffset = [1368, 1476] as const;
 /** 云往西飘：原版每刻 0.03 格 */
-export const 云每刻飘 = 0.03;
+export const cloudDriftPerTick = 0.03;
 /** 铺多大一片云（格，以光柱为心的方块）：仰机位视角 62°、画面宽 94°，朝北 192 格雾止以内都要有云 */
-export const 云铺 = { 西: -260, 东: 260, 南: -60, 北: 230 } as const;
+export const cloudExtent = { west: -260, east: 260, south: -60, north: 230 } as const;
 
 // ---------- 魔法阵、光柱、云洞、阳光 ----------
 /** 魔法阵：阵起 那一帧起几秒展开（24 fps 时 3 帧），每秒转几度。
  *  地光（演绎，同 2-祭坛 的画法）：阵底下两层同心圆片（圆边按贴图像素走成阶梯），硬边、普通半透明叠，阵的细线在远机位、手机上看不清时，地上还有一圈亮 */
-export const 魔法阵 = { 展开秒: 旧帧(3), 每秒转: 30, 地光: { 色: '#e8d6ff', 半径: [1.0, 0.62] as const, 强: [0.28, 0.3] as const } } as const;
+export const magicCircle = { expandSec: legacyFrameSec(3), turnsPerSec: 30, groundGlow: { 色: '#e8d6ff', radiusList: [1.0, 0.62] as const, 强: [0.28, 0.3] as const } } as const;
 /** 她被自己的阵照亮（发光区：身子那一块不乘雷雨的色调） */
-export const 她亮区 = { 半宽: 0.6, 高: 2.6 } as const;
+export const herBrightZone = { 半宽: 0.6, 高: 2.6 } as const;
 /** 光柱（演绎，用户 11-03「这个类似信标光柱的特效有点太潦草了吧 这个重点优化一下吧」重做，原来是原版信标光柱的方柱）。画法见 光柱.tsx。
  *  底在她举着的两只手上面（离头顶 离头 格）；光柱起 起往上冲、越冲越快（进度的 冲幂 次方），零点几秒冲出画面顶，拨 那一帧冲到 顶高（云在几百格高）；
  *  光柱退 起 退秒 里变细、一格格碎掉（段尾离 光柱退 0.22 秒）。色 = 撞云的颜色（engine/light/云/原版方块云.tsx 的 撞）。
@@ -92,30 +92,30 @@ export const 她亮区 = { 半宽: 0.6, 高: 2.6 } as const;
  *  流：往上流的光纹（一像素一列，每列速度、长度在范围里取）；旋：几股绕着往上转的细光（半径、一圈走多高、每秒几圈、宽）；
  *  星：手上那颗像素星（十字臂长、芯半径，格；蓄 = 阵起 到 光柱起 蓄力时的臂长，闪 = 起柱、破云那一下多长出来的）；环：柱上一环环往上走（每隔几秒一环、速度、从手上到淡高半径从几到几、到多高淡完）；
  *  冲击：起柱、破云时手上冲出的圈（最大半径、几秒）、地上的圈；光点：末地烛那种 glitter 绕着往上飘（数、半边长）；符文：阵边飞到手上的附魔台符文 */
-export const 光柱 = {
+export const lightPillar = {
   色: '#efe2ff',
-  离头: 0.35,
-  顶高: 320,
-  冲幂: 2.5,
-  退秒: 0.2,
-  芯: { 半: 0.09, 色: '#ffffff', 亮: 1.3 },
-  里: { 半: 0.25, 色: '#cfb4ff', 亮: 1.0 },
-  晕: { 半: 0.6, 色: '#9a66ff', 透: [0.62, 0.32] as const },
-  胀秒: 0.12,
-  涌: { 起: { 粗: 0, 亮: 0.25, 秒: 0.16 }, 拨: { 粗: 0.12, 亮: 0.15, 秒: 0.1 }, 蓄: { 粗: 0.25, 亮: 0.25 }, 破云: { 粗: 0.35, 亮: 0.3, 秒: 0.14 } },
-  流: { 速: [22, 40] as const, 长: [1.6, 4.5] as const, 占: 0.32 },
-  旋: { 股: 2, 半: 0.4, 圈高: 3.4, 每秒圈: 2.6, 宽: 1 / 16 },
-  星: { 臂: 0.55, 芯: 0.12, 蓄: 0.4, 闪: [0.5, 0.35] as const },
-  环: { 隔秒: 0.28, 速: 16, 半: [0.6, 1.3] as const, 淡高: 40 },
-  冲击: { 手: { 半: 2.2, 秒: 0.34 }, 地: { 半: 7, 秒: 0.55 } },
-  光点: { 数: 80, 半: [0.11, 0.17] as const },
-  符文: { 数: 18, 半: 0.11 },
+  headGap: 0.35,
+  topHeight: 320,
+  surgeExp: 2.5,
+  fadeSec: 0.2,
+  core: { coreRadius: 0.09, 色: '#ffffff', brightness: 1.3 },
+  里: { innerRadius: 0.25, 色: '#cfb4ff', brightness: 1.0 },
+  halo: { haloRadius: 0.6, 色: '#9a66ff', alphas: [0.62, 0.32] as const },
+  swellSec: 0.12,
+  surge: { 起: { 粗: 0, 亮: 0.25, 秒: 0.16 }, 拨: { 粗: 0.12, 亮: 0.15, 秒: 0.1 }, charge: { 粗: 0.25, 亮: 0.25 }, cloudBreak: { 粗: 0.35, 亮: 0.3, 秒: 0.14 } },
+  flow: { 速: [22, 40] as const, 长: [1.6, 4.5] as const, duty: 0.32 },
+  swirl: { strands: 2, radius: 0.4, ringHeight: 3.4, ringsPerSec: 2.6, 宽: 1 / 16 },
+  starBurst: { armLen: 0.55, core: 0.12, starCharge: 0.4, flash: [0.5, 0.35] as const },
+  ring: { gapSec: 0.28, 速: 16, radiusRange: [0.6, 1.3] as const, fadeHeight: 40 },
+  impact: { 手: { endRadius: 2.2, 秒: 0.34 }, ground: { endRadius: 7, 秒: 0.55 } },
+  lightDot: { 数: 80, radiusRange: [0.11, 0.17] as const },
+  rune: { 数: 18, halfSize: 0.11 },
 } as const;
 /** 光柱撞云：撞的那一格云底往光柱的颜色亮，亮到多远（格），破云 以后 退秒 里退掉（24 fps 时 8 帧） */
-export const 撞云 = { 半径: 14, 亮: 0.7, 退秒: 旧帧(8) } as const;
+export const impactCloud = { radius: 14, brightness: 0.7, fadeSec: legacyFrameSec(8) } as const;
 /** 云洞（以光柱为心，格）：破云 起一圈一圈散开，云洞开大 时到 r1，段尾到 r2；一格云中心离洞心比半径近就散掉（半径按格子哈希抖 ±毛边/2，洞口参差），
  *  散的时候 散秒 里变淡没掉（24 fps 时 3 帧；原版云没有散的动画，演绎） */
-export const 云洞 = { r1: 20, r2: 64, 毛边: 8, 散秒: 旧帧(3) } as const;
+export const cloudHole = { r1: 20, r2: 64, edgeFuzz: 8, scatterSec: legacyFrameSec(3) } as const;
 /** Photon 的雨云（光影开了云时用，样式在 默认.ts）：用户 11-03「这里的天空怎么还是原版的天空 是不是可以重做一下？」，
  *  看了压低的一整层说「这云太厚了 没有那种质感 层叠的质感」「你就不能用我们那个通用的云组件嘛 只不过把密度改高一点」「显然 高度和密度都可以调一下了 为了画面观感」：
  *  通用云，密度在 默认.ts；高度（层，世界高度、格）：积云云底离地 70 格起（再低仰看是平平一整片灰，没有层次），各团高低差收到 120 格（原样差 800 格，仰看头顶是一道道断崖）；
@@ -126,48 +126,48 @@ export const 云洞 = { r1: 20, r2: 64, 毛边: 8, 散秒: 旧帧(3) } as const;
  *  蓄：拨 到 破云 这 0.43 秒越撞越亮，亮从 起 倍长到 到 倍、亮的那片漫到 半径倍 倍（进度的 幂 次方，越来越快；到 破云 前别亮成一整片白，破云 那一下还要冲得出来），一跳一跳（每秒 跳 下，±跳幅）。
  *  云底在头顶 70 格、画面顶边才到 36 格高，撞的那一点在画外，原来亮一下就不动了，镜头又刚停，这一截像卡住（用户 11-03「为什么还卡了一下？」）；
  *  雨里曝光压到 雨曝光、闪电那两刻 闪曝光，转晴时回到 1。太阳从镜头背后（南偏西）高高照下来，洞开了阳光照在屋子正面。Agent 暂定 */
-export const 雨云 = {
+export const rainCloud = {
   海平面: 0,
   层: [
-    { 算法: 'Photon积云', 底高: 70, 高低差: 120 },
-    { 算法: '贴图层', 底高: 837 },
-    { 算法: 'Photon卷云', 底高: 1770 },
-  ] satisfies readonly 云层[],
-  洞比: 24,
-  软边: 20,
-  亮倍: 1,
-  亮比: 2,
-  蓄: { 起: 0.3, 到: 2.5, 半径倍: 2.2, 幂: 1.5, 跳: 7, 跳幅: 0.12 },
-  雨曝光: 0.3,
-  闪曝光: 3,
-  太阳: [-0.3, -0.55, 0.78],
+    { 算法: 'Photon积云', bottomHeight: 70, heightDiff: 120 },
+    { 算法: '贴图层', bottomHeight: 837 },
+    { 算法: 'Photon卷云', bottomHeight: 1770 },
+  ] satisfies readonly CloudLayer[],
+  holeRatio: 24,
+  softEdge: 20,
+  brightnessMult: 1,
+  brightRatio: 2,
+  cloudCharge: { 起: 0.3, 到: 2.5, radiusMul: 2.2, exponent: 1.5, 跳: 7, pulseAmp: 0.12 },
+  rainExposure: 0.3,
+  flashExposure: 3,
+  sun: [-0.3, -0.55, 0.78],
 } as const;
 
 /** 阳光从洞里照到地上（演绎：原版没有云影、光斑，雨停了全世界一起亮）：洞下面一块阶梯状的圆不乘雷雨的色调，跟着洞往外铺，最后半秒铺过整座屋子。
  *  半径 = 洞半径 × 比（光斑比洞小一圈：云洞开大 那一帧还没铺到屋角，阳光铺地 那一帧刚好铺过整座屋子），条数 = 拼成圆的横条数（发光区最多 16 个） */
-export const 阳光 = { 比: 0.46, 条数: 12 } as const;
+export const sunRays = { 比: 0.46, rayCount: 12 } as const;
 /** 破云前后整体色调：3D 受光面从雷雨走到雨后（第 8 句门口白天前的调子），雨量 收到 0 时走完 */
-export const 晴调子 = '雨后暖阳' as const;
+export const clearGrade = '雨后暖阳' as const;
 
 // ---------- 雨（原版 LevelRenderer.renderSnowAndRain） ----------
 /** 原版雨只画在镜头周围这么远（格，「高」画质 10、「快」5） */
-export const 透视雨半径 = 10;
+export const perspRainRadius = 10;
 /** 雨的颜色（乘在 rain.png 上）：原版乘亮度图，雷雨天光压到很低；闪电时满亮 */
-export const 雨色 = { 平时: '#8a96b0', 闪: '#ffffff' } as const;
+export const rainColor = { normal: '#8a96b0', flash: '#ffffff' } as const;
 
 // ---------- 声音（增益是线性倍数） ----------
 /** 闷雷：原版 entity.lightning_bolt.thunder 第 2 个（7.25 秒，前 0.25 秒几乎没声，之后是滚雷、没有落地那声炸响），起点往前挪 0.25 秒让滚雷和闪光同时到；
  *  第 7 句首字截掉，截之前 淡出秒 里线性淡掉（24 fps 时 12 帧） */
-export const 雷声 = { 资产: '音效/entity.lightning_bolt.thunder.2', 秒: 7.25, 提前秒: 0.25, 增益: 0.4, 淡出秒: 0.5 } as const;
+export const thunderSound = { 资产: '音效/entity.lightning_bolt.thunder.2', 秒: 7.25, leadSec: 0.25, 增益: 0.4, fadeOutSec: 0.5 } as const;
 /** 雨声：原版 weather.rain 1～4（各 2 秒左右）接着放，铺满两段。原版 0.2 音量、随机挑；这里按顺序接，增益 Agent 暂定 */
-export const 雨声们: readonly { 资产: string; 秒: number }[] = [
+export const rainSounds: readonly { 资产: string; 秒: number }[] = [
   { 资产: '音效/把回忆拼好给你/weather.rain.1', 秒: 2.010667 },
   { 资产: '音效/把回忆拼好给你/weather.rain.2', 秒: 1.978667 },
   { 资产: '音效/把回忆拼好给你/weather.rain.3', 秒: 2.085333 },
   { 资产: '音效/把回忆拼好给你/weather.rain.4', 秒: 2.165333 },
 ];
-export const 雨声增益 = 0.4;
+export const rainSoundGain = 0.4;
 /** 雨声比第 6 句首字早进来几秒（2-抢龙蛋 最后这一截，淡入）：末地硬切雷雨，先听见雨再看见雨，两句接得上（核查 10-24「转场要丝滑」，Agent 暂定） */
-export const 雨声提前秒 = 0.35;
+export const rainSoundLeadSec = 0.35;
 /** 光柱起来：原版 block.beacon.activate（2.95 秒），接第 8 句之前截掉，截之前 淡出秒 里淡掉（24 fps 时 8 帧） */
-export const 信标声 = { 资产: '音效/把回忆拼好给你/block.beacon.activate', 秒: 2.953292, 增益: 0.55, 淡出秒: 旧帧(8) } as const;
+export const beaconSoundParams = { 资产: '音效/把回忆拼好给你/block.beacon.activate', 秒: 2.953292, 增益: 0.55, fadeOutSec: legacyFrameSec(8) } as const;

@@ -7,14 +7,14 @@ import type { Png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { rng } from '@engine/model/parts.tsx';
 import { interpPathPos, particleInitVel, particlePath, ParticlePhysics } from '@库/特效/粒子面片.tsx';
-import type { 点 } from '../接口.ts';
-import { 片, 面片们, 序列帧, type 面片项 } from './面片.tsx';
-import type { 混合, 色 } from './材质.ts';
+import type { Vec3 } from '../接口.ts';
+import { facePatch, QuadGroup, sequenceFrame, type QuadItem } from './面片.tsx';
+import type { Blend, RgbColor } from './材质.ts';
 
 export { deathPoof, serverSendParticles, VanillaParticles, type ParticleKind, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
-export { particleInitVel as 原版粒子初速 };
+export { particleInitVel as vanillaParticleInitSpeed };
 
-export interface 粒子类 {
+export interface ParticleClass {
   /** 贴图序列，顺序照粒子定义 json 的 textures */
   readonly 帧: readonly Png[];
   /** 按年龄 = setSpriteFromAge（年龄 × 帧数 ÷ 寿命）；随机 = pickSprite（出生时随机挑一张不换） */
@@ -24,65 +24,65 @@ export interface 粒子类 {
   /** friction，默认 0.98 */
   readonly 摩擦?: number;
   /** 碰地面的高度（hasPhysics 的粒子给）；不给 = 不碰 */
-  readonly 地面?: number;
-  readonly 混合?: 混合;
-  readonly 色?: 色;
+  readonly ground?: number;
+  readonly 混合?: Blend;
+  readonly 色?: RgbColor;
   /** 透明度、大小随年龄变的（年龄 刻，带小数）；大小是乘在出生 半径 上的倍数（getQuadSize） */
-  readonly 透明度?: (年龄: number, 寿命: number) => number;
-  readonly 大小?: (年龄: number, 寿命: number) => number;
+  readonly opacity?: (age: number, lifetime: number) => number;
+  readonly 大小?: (age: number, lifetime: number) => number;
 }
 
-export interface 粒子出生 {
+export interface ParticleBirth {
   /** 出生的刻（和组件的 秒 × 20 同一个钟，可以带小数） */
   readonly 刻: number;
-  readonly 位: 点;
+  readonly 位: Vec3;
   /** 构造函数算完之后的速度（格/刻，场景坐标）；要父类那套随机化的先过 原版粒子初速（它进出都是游戏坐标 [x, y 竖直, z 南]，换成场景是 [x, −z, y]） */
-  readonly 速?: 点;
+  readonly 速?: Vec3;
   /** lifetime（刻）：年龄到这个数的那一刻消失 */
   readonly 寿命: number;
   /** quadSize（半边长，格） */
-  readonly 半径: number;
+  readonly radius: number;
   readonly 种子?: number;
-  readonly 转角?: number;
-  readonly 色?: 色;
+  readonly angleRad?: number;
+  readonly 色?: RgbColor;
 }
 
 /** ServerLevel.sendParticles(类型, x,y,z, 数量, dx,dy,dz, 速度)：数量 > 0 时每颗 位置 = 中心 + 高斯 × 散布，速度 = 高斯 × 速度（场景坐标：散布第三个分量是竖直） */
-export const 服务端撒 = (中心: 点, 数量: number, 散布: 点, 速度: number, 种子: number): { 位: 点; 速: 点 }[] => {
-  const r = rng(种子);
-  const 高斯 = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
-  return Array.from({ length: 数量 }, () => ({
-    位: [中心[0] + 高斯() * 散布[0], 中心[1] + 高斯() * 散布[1], 中心[2] + 高斯() * 散布[2]] as const,
-    速: [高斯() * 速度, 高斯() * 速度, 高斯() * 速度] as const,
+export const scatterServer = (center: Vec3, count: number, spread: Vec3, speed: number, seed: number): { 位: Vec3; 速: Vec3 }[] => {
+  const r = rng(seed);
+  const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+  return Array.from({ length: count }, () => ({
+    位: [center[0] + gaussian() * spread[0], center[1] + gaussian() * spread[1], center[2] + gaussian() * spread[2]] as const,
+    速: [gaussian() * speed, gaussian() * speed, gaussian() * speed] as const,
   }));
 };
 
 /** 一颗粒子在某一刻的面片和它用的贴图；没出生或已经消失返回 null */
-export const 粒子面片 = (类: 粒子类, 生: 粒子出生, 刻: number): readonly [Png, 面片项] | null => {
-  const 年龄 = 刻 - 生.刻;
-  if (年龄 < 0 || 年龄 >= 生.寿命) return null;
-  const 路 = particlePath([...生.位] as V3, [...(生.速 ?? [0, 0, 0])] as V3, Math.ceil(年龄) + 1, new ParticlePhysics(类.重力 ?? 0, 类.摩擦 ?? 0.98, 类.地面));
+export const particleQuad = (particleType: ParticleClass, spawn: ParticleBirth, tick: number): readonly [Png, QuadItem] | null => {
+  const age = tick - spawn.刻;
+  if (age < 0 || age >= spawn.寿命) return null;
+  const trail = particlePath([...spawn.位] as V3, [...(spawn.速 ?? [0, 0, 0])] as V3, Math.ceil(age) + 1, new ParticlePhysics(particleType.重力 ?? 0, particleType.摩擦 ?? 0.98, particleType.ground));
   // 游戏画的是上一刻到这一刻之间（interpPathPos 的 tau 从 1 起才开始动），年龄 0～1 之间粒子还在出生位置
-  const 位 = interpPathPos(路, 年龄);
-  const 图 = 类.选帧 === '随机' ? 类.帧[Math.floor(rng((生.种子 ?? 0) ^ 0x5bd1e995)() * 类.帧.length)]! : 序列帧(类.帧, (Math.floor(年龄) * 类.帧.length) / 生.寿命);
-  return [图, 片(位, 生.半径 * (类.大小?.(年龄, 生.寿命) ?? 1), 生.色 ?? 类.色, undefined, 类.透明度?.(年龄, 生.寿命) ?? 1, 生.转角)];
+  const pos = interpPathPos(trail, age);
+  const image = particleType.选帧 === '随机' ? particleType.帧[Math.floor(rng((spawn.种子 ?? 0) ^ 0x5bd1e995)() * particleType.帧.length)]! : sequenceFrame(particleType.帧, (Math.floor(age) * particleType.帧.length) / spawn.寿命);
+  return [image, facePatch(pos, spawn.radius * (particleType.大小?.(age, spawn.寿命) ?? 1), spawn.色 ?? particleType.色, undefined, particleType.opacity?.(age, spawn.寿命) ?? 1, spawn.angleRad)];
 };
 
 /** 画一批同类粒子。秒 × 20 和出生的 刻 是同一个钟 */
-export const 贴图粒子: React.FC<{ 类: 粒子类; 出生们: readonly 粒子出生[]; 秒: number; 写深度?: boolean }> = ({ 类, 出生们, 秒, 写深度 }) => {
-  const 按图 = new Map<Png, 面片项[]>();
-  for (const 生 of 出生们) {
-    const 这颗 = 粒子面片(类, 生, 秒 * 20);
-    if (!这颗) continue;
-    const [图, 项] = 这颗;
-    if (!按图.has(图)) 按图.set(图, []);
-    按图.get(图)!.push(项);
+export const TexturedParticles: React.FC<{ 类: ParticleClass; spawns: readonly ParticleBirth[]; 秒: number; depthWrite?: boolean }> = ({ 类: particleType, spawns, 秒: sec, depthWrite }) => {
+  const byImage = new Map<Png, QuadItem[]>();
+  for (const spawn of spawns) {
+    const frameQuad = particleQuad(particleType, spawn, sec * 20);
+    if (!frameQuad) continue;
+    const [image, item] = frameQuad;
+    if (!byImage.has(image)) byImage.set(image, []);
+    byImage.get(image)!.push(item);
   }
   // 每张贴图一批，批数固定成帧数（没有粒子的批画 0 个），免得每帧批数变了重建
   return (
     <>
-      {类.帧.map((图, i) => (
-        <面片们 key={i} 图={图} 项={按图.get(图) ?? []} 混合={类.混合 ?? '镂空'} 写深度={写深度} />
+      {particleType.帧.map((image, i) => (
+        <QuadGroup key={i} 图={image} 项={byImage.get(image) ?? []} 混合={particleType.混合 ?? '镂空'} depthWrite={depthWrite} />
       ))}
     </>
   );

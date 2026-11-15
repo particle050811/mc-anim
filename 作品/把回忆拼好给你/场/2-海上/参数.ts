@@ -1,32 +1,32 @@
 // 第 4 句（段 2-日落划船）的机位、海、天、浪的参数：除了注明「原版」的，都是 Agent 暂定（用户没看过，改了只改这里）。纯数据（段.ts 也能读）。
 // 坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格）；海面在 z = 0。yaw 同 FigurePose：0 朝北（+Y），90 朝西，180 朝南。
 // 时刻都在 分镜 的正片事件里，这里只放形状和数值。
-import { 旧帧 } from '../../分镜/时间.ts';
+import { legacyFrameSec } from '../../分镜/时间.ts';
 
 /** 两个镜头的调子（色板.ts 里现成的）：眼睛特写就是第 3 句祭坛那一镜接着推，白天；海用「日落」 */
-export const 眼调子名 = '夏日白天' as const;
-export const 海调子名 = '日落' as const;
+export const eyeToneName = '夏日白天' as const;
+export const seaToneName = '日落' as const;
 
 // ---------- 海 ----------
 // 用户 10-24 看整片粗剪：「这里大海太敷衍了」。原来整片海是一块压暗的深蓝（日落色调整套乘上去、又混了海底的黑），镜头贴着水面，海挤成画面下面一条，
 // 远近一个样、也看不出在动。重做：原版水贴图和动画、海洋的水色；镜头抬高一些，近处的水纹看得清；远处分档往地平线的颜色靠（远近分层）；
 // 太阳底下一条按像素台阶断开的光路，一行一行地闪。都是平涂、硬边，不做反光、菲涅尔、波浪起伏（五家评审 10-24 说 CG 反光不像 MC）。
 /** 原版海洋群系的水色（Biome water_color，ocean 4159204 = #3F76E4），乘在灰的 water_still 上 */
-export const 水色 = '#3F76E4';
+export const waterColor = '#3F76E4';
 /** 水面底下的颜色：水贴图半透明（alpha 180/255），原版透出海底；这里把它当一个颜色混进去、整片不透明。
  *  Agent 暂定：取比水色暗一截的海蓝，不取海底的黑（原来的 #14203c 把整片海压成了深夜的颜色） */
-export const 海底色 = '#2a4f9c';
+export const seabedColor = '#2a4f9c';
 /** 海面乘的色调：从 夏日白天 往 日落 插到这么多（0 = 不压色，1 = 整套日落）。整套乘上去蓝色的海成了灰紫（核查 10-24 看着像夜里）；
  *  原版日落时水也不变橙，只有天和雾是日落色。Agent 暂定：同船和人（人船日落） */
-export const 海日落 = 0.35;
+export const seaSunset = 0.35;
 /** 视距（格）：原版默认 12 区块。水面画到这里为止，最后 10%（原版 FogRenderer：视距 − clamp(视距/10, 4, 64)）淡进雾色；再往外到地平线是雾色 */
-export const 视距 = 12 * 16;
+export const viewDistance = 12 * 16;
 /** 雾淡进去分几档：像素画不出平滑渐变，雾的那一圈按距离分几档硬边 */
-export const 雾档数 = 3;
+export const fogTierCount = 3;
 /** 远近分层：视线比海平线低不到这么多度的水，往同一方位的地平色（天色.ts）混这么多，硬边分档。
  *  原版只在视距最后 10% 起雾，镜头离水一格多时那一圈只有两三个像素高，远处的海和近处一个颜色；这几档是 Agent 加的（像素画远景的做法），越远越淡进天边。
  *  核查 10-24：原来三档到 3.4°、最近一档混 0.7，海平线底下一条没纹理的灰紫带子占画面一成高；收窄、混得轻，水纹透得出来 */
-export const 远档: readonly (readonly [number, number])[] = [
+export const farTiers: readonly (readonly [number, number])[] = [
   [0.4, 0.5],
   [1.0, 0.28],
   [1.9, 0.12],
@@ -38,64 +38,64 @@ export const 远档: readonly (readonly [number, number])[] = [
  *  宽、张：光路的半宽（方位角）= 太阳本体半张角 ×（宽 + 张 × 下视角），越近越散开；截：一行最多几截，每截半长是半宽的 0.2～0.55，
  *  中心在 ±抖 个半宽里；缺：一截不出现的机会，越往近越大（光路往船这边渐渐稀了），近：下视角超过它就没有了；换刻：每行几刻换一次；
  *  芯、边：每截中间那一段（芯宽 以内）和两头的颜色（不乘色调，同太阳） */
-export const 光路 = {
-  贴: 0.5,
+export const lightPath = {
+  startDist: 0.5,
   比: 1.13,
-  厚起: 2.5,
+  thickStart: 2.5,
   宽: 0.8,
-  张: 0.05,
-  截: 3,
-  抖: 0.75,
-  缺: 0.2,
-  近: 20,
-  换刻: 4,
-  芯: '#fff0c0',
-  边: '#ffa860',
-  芯宽: 0.45,
+  spread: 0.05,
+  cuts: 3,
+  jitter: 0.75,
+  missingBase: 0.2,
+  near: 20,
+  stepTicks: 4,
+  coreColor: '#fff0c0',
+  edgeColor: '#ffa860',
+  coreWidth: 0.45,
 } as const;
 /** 光路、远档在屏幕上按多大的块算（成片像素，同 天.tsx 的天色块）：边是一格一格的台阶 */
-export const 海块 = 8;
+export const seaBlockSize = 8;
 
 // ---------- 天 ----------
 // 原版 1.20.1 日落时的天：天顶 = 群系天色（海洋温度 0.5 → #7BA5FF）× 天亮程度（ClientLevel.getSkyColor，太阳在地平线时 0.5），
 // 地平线一圈 = 雾色（群系雾色 #C0D8FF × (天亮 × 0.94 + 0.06)），朝太阳那边混进日出日落色（DimensionSpecialEffects.getSunriseColor：太阳正在地平线时 (0.85, 0.375, 0.2)，不透明）。
 // 下面三个色是照这几条算出来再往色板「日落」（天 #f39a6b）那边靠的：天顶偏蓝紫、背着太阳那边灰蓝、朝太阳那边橙红。
-export const 天色 = {
+export const skyColors = {
   /** 天顶 */
-  顶: '#3e4f86',
+  topColor: '#3e4f86',
   /** 背着太阳那边的地平线（雾色） */
-  背日地平: '#9a7f9e',
+  awaySunHorizon: '#9a7f9e',
   /** 朝太阳那边的地平线（日落色，色板「日落」的 天） */
-  向日地平: '#f39a6b',
+  towardSunHorizon: '#f39a6b',
   /** 太阳正下方贴着地平线那一档（原版日出日落色最浓处） */
-  日下: '#ffb46e',
+  belowSun: '#ffb46e',
 } as const;
 /** 天色从地平线往上多高（仰角，度）过渡到天顶；分成几档硬边 */
-export const 天渐变高 = 38;
-export const 天档数 = 9;
+export const skyGradientHeight = 38;
+export const skyTierCount = 9;
 /** 日落色往两边铺多宽（方位角，度）：原版日出日落那一扇横着差不多 ±60° */
-export const 晚霞宽 = 70;
+export const afterglowWidth = 70;
 
 /** 太阳中心比地平线高几度（第 31 拍「海平线」那一刻）。原版太阳本体半格见方、离镜头 100 格（半边 7.5/100），张角 8.58°；
  *  中心高 5.2° 时下沿离海平线差不多一个贴图像素，整个方块太阳都露在外面，匹配剪辑时对得上她的眼珠 */
-export const 太阳高 = 5.2;
+export const sunHeight = 5.2;
 
 // ---------- 船 ----------
 /** 船头朝南偏西 20°（yaw 160），太阳在右前方：船斜着往太阳那边划。
  *  要太阳在画里，镜头就得朝西；要看得见你（驾船的，身子朝船头）的脸，镜头又得在船头那一侧。船朝太阳划（朝西）时镜头只能在船尾后面，
  *  你的脸永远背着镜头、还被坐后面的她挡住（核查 10-24：手机上认不出是你在划）。船头转到南偏西，镜头在东南边、差不多正对船的左舷：
  *  你是侧脸、划桨的手臂朝画面左边伸，她侧坐正对镜头，两个人前后错开不挡（Agent 暂定） */
-export const 船头 = 160;
+export const boatYaw = 160;
 /** 你们俩开始划的时刻：比「桨入水」早一桨零两刻，原版第二刻放第一声桨声，这样第二桨的水声落在第 8 小节下拍上 */
-export const 开划提前刻 = 16 + 2;
+export const rowStartLeadTicks = 16 + 2;
 /** 她侧坐、往船头左边转 90°（原版满员时动物转 90° 或 270°，按实体 id 单双），朝东偏南：正对镜头这边，脸露出来 */
-export const 她朝左 = true;
+export const herFacesLeft = true;
 /** 她的头（度，正 = 抬头、往左）：往右（船头那边）转一点、稍微抬头，望着前面的海 */
-export const 她看 = { 俯仰: 5, 左右: -25 } as const;
+export const herLook = { pitch: 5, yaw: -25 } as const;
 /** 船和船上两个人乘的色调：从 夏日白天 往 日落 插到这么多（0 = 不压色，1 = 和海一样整套日落）。
  *  原版日落时实体不变橙，只有天和雾是日落色；整套日落色调乘上去，樱花木船成了橡木、金合欢木那种橙褐，你的青色上衣成了绿色（核查 10-24），
  *  只乘一小半，船还认得出是樱花木的粉、你还是史蒂夫（Agent 暂定） */
-export const 人船日落 = 0.35;
+export const personBoatSunset = 0.35;
 
 // ---------- 机位（跟着船走） ----------
 /** 海上镜头的两个机位，镜头跟着船走（相对船中心）。东、南、高：镜头在船中心东边、南边多远，离海面多高（格）；
@@ -105,9 +105,9 @@ export const 人船日落 = 0.35;
  *  到位：「拉远到位」以后。中间按 拉远 平滑过去（只拉一次、变化不大：视角 36 → 52，太阳缩到七成，往下摇 4°，镜头往东挪一格不到，船从右边进画）。
  *  到位时太阳和它底下的光路在左边三分之一，船和你们俩在右边、头顶压着海平线，中间一大片海（Agent 暂定）。
  *  高 1.1：比原来（0.9）高一点，画面下沿离镜头两格多，近处水纹一格贴图像素有十几个页面像素；再高船就掉出画面下沿，要拉远，人就小了 */
-export const 海镜 = {
-  匹配: { 东: 1.7, 南: 2.4, 高: 1.1, 偏: 14, 俯: -3, 视角: 36 },
-  到位: { 东: 2.6, 南: 2.1, 高: 1.1, 偏: 17, 俯: 1, 视角: 52 },
+export const seaCamera = {
+  匹配: { east: 1.7, south: 2.4, 高: 1.1, yawOffset: 14, pitchDeg: -3, fov: 36 },
+  arrive: { east: 2.6, south: 2.1, 高: 1.1, yawOffset: 17, pitchDeg: 1, fov: 52 },
 } as const;
 
 // ---------- 叠化、浪 ----------
@@ -116,41 +116,41 @@ export const 海镜 = {
  *  模糊溶解 = 交叉淡化，眼睛那层边淡边糊开、海那层从微糊变清楚（模糊 的两个数，页面像素）；
  *  按亮度溶解 = 眼睛那层按亮度一片一片透出海：暗的先透（瞳孔先变成太阳，再是虹膜、眼白、皮肤），边是软的（亮度溶解 的边宽）；
  *  细颗粒溶解 = 一颗一颗随机换成海，颗粒 颗粒格 见方（页面像素），硬边 */
-export type 叠化样式名 = '方格' | '交叉淡化' | '模糊溶解' | '按亮度溶解' | '细颗粒溶解';
-export const 叠化样式: 叠化样式名 = '模糊溶解'; // 用户 11-02 看了预览 1103-0217 的五种并排定：「淡化方案用模糊溶解」
+export type CrossfadeStyleName = '方格' | '交叉淡化' | '模糊溶解' | '按亮度溶解' | '细颗粒溶解';
+export const crossfadeStyle: CrossfadeStyleName = '模糊溶解'; // 用户 11-02 看了预览 1103-0217 的五种并排定：「淡化方案用模糊溶解」
 /** 匹配剪辑的抖动叠化：4×4 Bayer 阵，一格多少页面像素（成片 ×2） */
-export const 叠化格 = 16;
+export const crossfadeCell = 16;
 /** 细颗粒溶解的一颗多少页面像素（成片 ×2） */
-export const 颗粒格 = 2;
+export const grainCell = 2;
 /** 模糊溶解：眼睛那层糊到多少、海那层从多少糊变清楚（高斯模糊半径，页面像素） */
-export const 模糊 = { 眼: 10, 海: 4 } as const;
+export const blurAmounts = { 眼: 10, 海: 4 } as const;
 /** 按亮度溶解：眼睛那一镜的亮度（sRGB 数值，0～1）从 起 到 止 依次透掉，一个亮度的透明度从 1 到 0 要走过 边宽 这么多亮度 */
-export const 亮度溶解 = { 起: 0.3, 止: 0.95, 边宽: 0.12 } as const;
+export const brightnessDissolve = { 起: 0.3, 止: 0.95, edgeWidth: 0.12 } as const;
 /** 浪的像素：一格多少页面像素 */
-export const 浪格 = 8;
+export const waveCell = 8;
 /** 浪头起伏：振幅、波长（格），浪头横着漂多快（每进 1 漂几格） */
-export const 浪形 = { 振幅: 3, 波长: 46, 漂: 18 } as const;
+export const waveShape = { amplitude: 3, wavelength: 46, drift: 18 } as const;
 /** 浪的颜色（sRGB，过整片后期之前）：浪尖的沫、沫下面亮的一层、浪身、深处；照重做以后的海面（海洋水色、乘一小半日落色调）取，同一片海涌起来，沫偏暖（日落） */
-export const 浪色 = { 沫: '#f6e4d6', 亮: '#7c9ee6', 身: '#3d5fb0', 深: '#2e4a93' } as const;
+export const waveColor = { foam: '#f6e4d6', bright: '#7c9ee6', body: '#3d5fb0', deep: '#2e4a93' } as const;
 /** 浪的画法（浪.tsx，第 4 句涌上来、第 5 句段首退出去是同一道浪，两段都照它画）：
  *  像素 = 一格 浪格 见方、硬边（用户看过的样子）；像素减半、像素四分之一 = 浪形、颜色、时刻不变，格子缩到一半、四分之一（对上 Faithful 32x 的贴图像素）；
  *  平滑 = 浪头、浪身连续（浪形、时刻同像素版），浪色 几层之间平滑过渡，浪身上加横着的波纹和碎光；平滑海面色 = 平滑，颜色换成 浪色海面 */
-export type 浪样式名 = '像素' | '像素减半' | '像素四分之一' | '平滑' | '平滑海面色';
-export const 浪样式: 浪样式名 = '平滑'; // 用户 11-03 看了预览 1103-0217 的五种定：「水的转场选平滑」
+export type WaveStyleName = '像素' | '像素减半' | '像素四分之一' | '平滑' | '平滑海面色';
+export const waveStyle: WaveStyleName = '平滑'; // 用户 11-03 看了预览 1103-0217 的五种定：「水的转场选平滑」
 /** 平滑海面色 的颜色（sRGB，过整片后期之前）：照开了光影（粉彩、平滑波纹）的这片海取，浪身是偏紫的灰蓝、近浪头那层映着晚霞，碎光偏金（Agent 暂定） */
-export const 浪色海面 = { 沫: '#fbeee2', 亮: '#b8a0b0', 身: '#76698c', 深: '#585074', 光: '#ffd6a0' } as const;
+export const seaWaveColors = { foam: '#fbeee2', bright: '#b8a0b0', body: '#76698c', deep: '#585074', 光: '#ffd6a0' } as const;
 /** 平滑版浪身上的碎光颜色（浪色 那套没有这一项）：浪尖那层的亮色再提亮 */
-export const 浪碎光 = '#cfe0ff';
+export const waveSparkleColor = '#cfe0ff';
 
 // ---------- 声音 ----------
 /** 原声在母版里的固定增益（同 场/2-门口/第8句参数.ts，−6 dB 留余量）；段在一串歌中间，不淡入 */
-export const 原声增益 = 0.5;
+export const originalGain = 0.5;
 /** 桨声：原版 sounds.json 音量 0.8 × playSound 音量 1，听的人（你）就在船上、不衰减；两支桨同一刻各响一声，各给 0.7（文件本身就轻，RMS 约 −33 dB） */
-export const 桨声增益 = 0.7;
+export const oarSoundGain = 0.7;
 /** 每一桨两支桨各放哪个文件（原版每次从 8 个里随机挑，这里挑定，顺着往下轮） */
-export const 桨声文件 = [[1, 2], [3, 4], [5, 6], [7, 8]] as const;
+export const oarSoundFiles = [[1, 2], [3, 4], [5, 6], [7, 8]] as const;
 /** 浪：原版 entity.player.splash.high_speed（玩家高速落水，3 秒，前 0.4 秒最响），浪起那一帧起放；段尾截掉的是尾巴，最后 浪声淡出秒 里淡掉（24 fps 时 4 帧）。
  *  浪起正好是这句最后一个字「海」（15.02～15.44）：增益压到浪声峰值比原声低 10 dB 左右，混出来的峰值和原声差不多
  *  （核查 10-24：0.45 时是全段最响的一下，盖住了「海」；0.22 时混出来还比原声峰值高 2 dB） */
-export const 浪声增益 = 0.15;
-export const 浪声淡出秒 = 旧帧(4);
+export const waveSoundGain = 0.15;
+export const waveSoundFadeSec = legacyFrameSec(4);

@@ -29,7 +29,7 @@ import type { ParticleSpawn } from '../特效/原版粒子.tsx';
 import raw from 'asset:模型/角色/幽灵马';
 import tex from 'asset:贴图/角色/幽灵马';
 
-const MODEL = (raw as unknown as { models: { 幽灵马: EntityModelData } }).models.幽灵马;
+const MODEL = (raw as unknown as { models: { spectralHorse: EntityModelData } }).models.spectralHorse;
 const TEX = png(tex);
 const DEG = Math.fround(0.017453292);
 
@@ -44,21 +44,21 @@ export const VANILLA_RIDE = { legXRot: -81, legYRot: 18, armXRot: -36 };
 
 export type SteedProps = {
   秒: number; // 游戏时间
-  行走?: { 相位: number; 幅度: number }; // limbSwing（累计）、limbSwingAmount（0～1）；用 马步态() 从速度算
-  头偏?: number; // 度，夹在 ±20
+  walkCycle?: { legPhase: number; amplitude: number }; // limbSwing（累计）、limbSwingAmount（0～1）；用 马步态() 从速度算
+  headYaw?: number; // 度，夹在 ±20
   headPitch?: number; // 度
-  人立?: number; // 原版 standAnim（0～1），起跳时用 steedStand() 从起跳时刻算
-  有人骑?: boolean; // 画缰绳
+  rearAmount?: number; // 原版 standAnim（0～1），起跳时用 steedStand() 从起跳时刻算
+  hasRider?: boolean; // 画缰绳
   brightness?: number; // 原版实体光照的亮度，默认 1（夜视）
   secSinceDeath?: number;
-  受伤?: number;
+  hurt?: number;
 };
 
 // 匀速跑时的 limbSwingAmount、limbSwing：原版 WalkAnimationState.update(min(每刻位移×4, 1), 0.4)，匀速时 amount 收敛到 min(1, 4×速度/20)，
 // limbSwing 每刻 += amount。速度单位 格/秒；秒 = 跑了多久
 export const horseGait = (speed: number, runSec: number) => {
   const swingAmount = Math.min(1, (4 * speed) / 20);
-  return { 相位: runSec * 20 * swingAmount, 幅度: swingAmount };
+  return { legPhase: runSec * 20 * swingAmount, amplitude: swingAmount };
 };
 
 const RIDING = ['left_saddle_line', 'right_saddle_line'];
@@ -66,11 +66,11 @@ const BABY = ['left_hind_baby_leg', 'right_hind_baby_leg', 'left_front_baby_leg'
 
 export const steedPose = (props: SteedProps) => {
   const pose = restPose(MODEL.root);
-  const ls = props.行走?.相位 ?? 0;
-  const la = props.行走?.幅度 ?? 0;
-  const s = props.人立 ?? 0; // f11（standAnim）；eat 是 0，所以 1 − max(stand, eat) = 1 − s
+  const ls = props.walkCycle?.legPhase ?? 0;
+  const la = props.walkCycle?.amplitude ?? 0;
+  const s = props.rearAmount ?? 0; // f11（standAnim）；eat 是 0，所以 1 − max(stand, eat) = 1 − s
   const r = 1 - s;
-  const f3 = Math.max(-20, Math.min(20, props.头偏 ?? 0));
+  const f3 = Math.max(-20, Math.min(20, props.headYaw ?? 0));
   let f4 = (props.headPitch ?? 0) * DEG;
   if (la > 0.2) f4 += mthCos(ls * 0.8) * 0.15 * la;
   // 人立：头组往上往后挪到 (−4, −4)、低头角从 30° 收到 15°；身子绕后胯 (y 11, z 5) 往上翻 45°；前腿挪上去刨（cos(age×0.6 + π) 来回 ±1 弧度，围着 −60°），后腿往前 15°
@@ -119,7 +119,7 @@ export const steedStand = (takeoffs: readonly number[], t: number): number => {
   return prev + (cur - prev) * (tau - k);
 };
 // 马和骑手的人立量：骑手（positionRider）用的是上一刻的 standAnimO，比马晚 1 刻
-export const steedRear = (takeoffs: readonly number[], t: number) => ({ 马: steedStand(takeoffs, t), 骑手: steedStand(takeoffs, t - 1 / 20) });
+export const steedRear = (takeoffs: readonly number[], t: number) => ({ horse: steedStand(takeoffs, t), rider: steedStand(takeoffs, t - 1 / 20) });
 // 骑手脚底（AbstractHorse.positionRider）：马脚底 + 骑乘高，人立时再往后 0.7 格、往上 0.15 格 × 骑手人立量。yaw 同骨架（正 = 往左，0 朝 +Y）
 export const riderFeet = (horseFeet: V3, yaw: number, rear = 0): V3 => {
   const yawRad = (yaw * Math.PI) / 180;
@@ -130,8 +130,8 @@ export const SpectralSteed: React.FC<SteedProps> = (props) => {
   if (props.secSinceDeath !== undefined && props.secSinceDeath >= 1) return null;
   const pose = toPartPoses(steedPose(props));
   for (const partName of BABY) pose[partName] = { ...pose[partName], hide: true };
-  if (!props.有人骑) for (const partName of RIDING) pose[partName] = { ...pose[partName], hide: true };
-  const red = props.secSinceDeath !== undefined && props.secSinceDeath >= 0 ? 1 : (props.受伤 ?? 0);
+  if (!props.hasRider) for (const partName of RIDING) pose[partName] = { ...pose[partName], hide: true };
+  const red = props.secSinceDeath !== undefined && props.secSinceDeath >= 0 ? 1 : (props.hurt ?? 0);
   return (
     <VanillaTopple secSinceDeath={props.secSinceDeath}>
       <EntityModel model={MODEL} tex={TEX} pose={pose} scale={STEED.scale} hurt={red} mcLight={props.brightness ?? 1} />

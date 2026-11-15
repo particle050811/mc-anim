@@ -1,60 +1,60 @@
 import { describe, expect, it } from 'vitest';
-import { 核老段, 接老段 } from './老段接续.ts';
-import { 窗口段 } from './窗口段.ts';
+import { checkOldSeg, continueOldSeg } from './老段接续.ts';
+import { windowSeg } from './窗口段.ts';
 
 describe('接老段：老场（定义段 写的）摆上场时间线，新段接得上', () => {
-  const 线 = 接老段({
+  const timeline = continueOldSeg({
     场: '7-墙头追逐',
-    老段: [
+    legacySegs: [
       { 键: '7-墙头', 秒: 1.25 },
       { 键: '7-音波', 秒: 3.7 },
       { 键: '7-上塔', 秒: 1.2 },
     ],
-    事件: { 新起: { 在: { 接: '7-上塔.止' } }, 新止: { 在: { 接: '新起', 加秒: 2 } } },
+    事件: { 新起: { 在: { after: '7-上塔.止' } }, 新止: { 在: { after: '新起', addSec: 2 } } },
     声音: [{ 资产: '音效/风', 在: '7-上塔.起', 增益: 0.5 }],
   });
 
   it('老段按清单顺序首尾相接；画幅默认 1280×720；带一张老段表', () => {
-    expect(线.事件['7-墙头.起'].秒).toBe(0);
-    expect(线.事件['7-音波.起'].秒).toBe(1.25);
-    expect(线.事件['7-上塔.止'].秒).toBeCloseTo(6.15);
-    expect([线.宽, 线.高]).toEqual([1280, 720]);
-    expect(线.老段.map((x) => x.起秒)).toEqual([0, 1.25, 4.95]);
+    expect(timeline.事件['7-墙头.起'].秒).toBe(0);
+    expect(timeline.事件['7-音波.起'].秒).toBe(1.25);
+    expect(timeline.事件['7-上塔.止'].秒).toBeCloseTo(6.15);
+    expect([timeline.宽, timeline.高]).toEqual([1280, 720]);
+    expect(timeline.legacySegs.map((x) => x.startSec)).toEqual([0, 1.25, 4.95]);
   });
 
   it('新段从老段的止起；场声音从老段里起的，新段只放落进来的那截', () => {
-    const 新 = 窗口段(线, { 起: '新起', 止: '新止', 声音表: { 资产: { '音效/风': { 时长: 2 } }, 台词: {} } });
-    expect(新.场窗口.起秒).toBeCloseTo(6.15);
-    expect(新.秒).toBeCloseTo(2);
+    const nextSeg = windowSeg(timeline, { 起: '新起', 止: '新止', soundTable: { 资产: { '音效/风': { 时长: 2 } }, 台词: {} } });
+    expect(nextSeg.sceneWindow.startSec).toBeCloseTo(6.15);
+    expect(nextSeg.秒).toBeCloseTo(2);
     // 风 在 7-上塔 起（4.95 秒）放 2 秒：新段里还剩 0.8 秒，从文件第 1.2 秒接着放
-    const [c] = 新.声音!;
+    const [c] = nextSeg.声音!;
     expect(c).toMatchObject({ 秒: 0, 资产: '音效/风', 名: '风', 增益: 0.5 });
     expect(c!.台词 === undefined && [c!.长秒, c!.入点秒].map((x) => Math.round(x! * 1e9) / 1e9)).toEqual([0.8, 1.2]);
   });
 
   it('起秒 可以手给（老时间线里段间跳过一截的、有场窗口的）', () => {
-    const 跳 = 接老段({ 场: '7-墙头追逐', 老段: [{ 键: 'a', 秒: 1 }, { 键: 'b', 秒: 1, 起秒: 3 }] });
-    expect(跳.事件['b.止'].秒).toBe(4);
+    const resolved = continueOldSeg({ 场: '7-墙头追逐', legacySegs: [{ 键: 'a', 秒: 1 }, { 键: 'b', 秒: 1, startSec: 3 }] });
+    expect(resolved.事件['b.止'].秒).toBe(4);
   });
 
   it('重复、重名、段长不对、空表都报错', () => {
-    expect(() => 接老段({ 场: '7-墙头追逐', 老段: [{ 键: 'a', 秒: 1 }, { 键: 'a', 秒: 1 }] })).toThrow(/列了两次/);
-    expect(() => 接老段({ 场: '7-墙头追逐', 老段: [{ 键: 'a', 秒: 1 }], 事件: { 'a.止': { 在: { 秒: 1 } } } as never })).toThrow(/重名/);
-    expect(() => 接老段({ 场: '7-墙头追逐', 老段: [{ 键: 'a', 秒: 0 }] })).toThrow(/正数/);
-    expect(() => 接老段({ 场: '7-墙头追逐', 老段: [] })).toThrow(/至少一个/);
+    expect(() => continueOldSeg({ 场: '7-墙头追逐', legacySegs: [{ 键: 'a', 秒: 1 }, { 键: 'a', 秒: 1 }] })).toThrow(/列了两次/);
+    expect(() => continueOldSeg({ 场: '7-墙头追逐', legacySegs: [{ 键: 'a', 秒: 1 }], 事件: { 'a.止': { 在: { 秒: 1 } } } as never })).toThrow(/重名/);
+    expect(() => continueOldSeg({ 场: '7-墙头追逐', legacySegs: [{ 键: 'a', 秒: 0 }] })).toThrow(/正数/);
+    expect(() => continueOldSeg({ 场: '7-墙头追逐', legacySegs: [] })).toThrow(/至少一个/);
   });
 
   it('核老段：抄的段长、场、画幅和老段的 段.ts 对', () => {
-    const 段们: Record<string, { 场: string; 秒: number; 宽: number; 高: number }> = {
+    const segments: Record<string, { 场: string; 秒: number; 宽: number; 高: number }> = {
       '7-墙头': { 场: '7-墙头追逐', 秒: 1.25, 宽: 1280, 高: 720 },
       '7-音波': { 场: '7-墙头追逐', 秒: 3.75, 宽: 1280, 高: 720 },
       '7-上塔': { 场: '7-收场', 秒: 1.2, 宽: 1920, 高: 720 },
     };
-    expect(核老段(线, (k) => 段们[k])).toEqual([
+    expect(checkOldSeg(timeline, (k) => segments[k])).toEqual([
       '老段 7-音波 的段长：时间线里抄的 3.7 秒，段.ts 里 3.75 秒',
       '老段 7-上塔 是场 7-收场 的段，不在 7-墙头追逐',
       '老段 7-上塔 的画幅（1920×720）和场时间线（1280×720）不一样',
     ]);
-    expect(核老段(线, () => undefined)[0]).toBe('老段 7-墙头 不在清单里');
+    expect(checkOldSeg(timeline, () => undefined)[0]).toBe('老段 7-墙头 不在清单里');
   });
 });

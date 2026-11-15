@@ -3,49 +3,49 @@
 // 服务端目录里的世界（带 level.dat 的子目录）、日志、崩溃报告不拷。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 数据路径, isMac } from '../../环境/配置.ts';
-import { 跑出 } from '../../环境/子进程.ts';
-import { utc月日时分 } from '../../运行记录/记录.ts';
+import { dataPath, isMac } from '../../环境/配置.ts';
+import { runCapture } from '../../环境/子进程.ts';
+import { utcMonthDayTime } from '../../运行记录/记录.ts';
 
-const 不拷 = new Set(['logs', 'crash-reports', 'debug', '.anim-服务端.pid', '.anim-临时模组.json']);
+const NO_COPY = new Set(['logs', 'crash-reports', 'debug', '.anim-服务端.pid', '.anim-临时模组.json']);
 
-const 克隆 = (源: string, 到: string) => {
-  if (isMac) 跑出(['cp', '-cR', 源, 到]);
-  else fs.cpSync(源, 到, { recursive: true, preserveTimestamps: true });
+const cloneTree = (sourcePath: string, destPath: string) => {
+  if (isMac) runCapture(['cp', '-cR', sourcePath, destPath]);
+  else fs.cpSync(sourcePath, destPath, { recursive: true, preserveTimestamps: true });
 };
 
-export type 沙盒 = { 根: string; 服务端: string; 存档: string };
+export type Sandbox = { 根: string; 服务端: string; 存档: string };
 
-const 新沙盒目录 = (名: string, 根: string) => {
-  const dir = path.join(根, `${utc月日时分(Date.now())}-${名}`);
+const newSandboxDir = (displayName: string, root: string) => {
+  const dir = path.join(root, `${utcMonthDayTime(Date.now())}-${displayName}`);
   if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了（同一分钟建了两次？）`);
   return dir;
 };
 
 /** 服务端程序和配置克隆到 到（不带里面的世界、日志） */
-const 克隆服务端 = (服务端目录: string, 到: string) => {
-  fs.mkdirSync(到, { recursive: true });
-  for (const e of fs.readdirSync(服务端目录, { withFileTypes: true })) {
-    if (不拷.has(e.name)) continue;
-    const f = path.join(服务端目录, e.name);
+const cloneServer = (serverDir: string, destPath: string) => {
+  fs.mkdirSync(destPath, { recursive: true });
+  for (const e of fs.readdirSync(serverDir, { withFileTypes: true })) {
+    if (NO_COPY.has(e.name)) continue;
+    const f = path.join(serverDir, e.name);
     if (e.isDirectory() && fs.existsSync(path.join(f, 'level.dat'))) continue;
-    克隆(f, path.join(到, e.name));
+    cloneTree(f, path.join(destPath, e.name));
   }
 };
 
 /** 建新世界用的沙盒：只克隆服务端，存档路径给出来但还不存在（anim world new --沙盒 在里面建） */
-export const 建新世界沙盒 = (服务端目录: string, 存档名: string, 名: string, 根 = 数据路径('run', '沙盒')): 沙盒 => {
-  const dir = 新沙盒目录(名, 根);
-  克隆服务端(服务端目录, path.join(dir, '服务端'));
-  return { 根: dir, 服务端: path.join(dir, '服务端'), 存档: path.join(dir, 存档名) };
+export const makeNewWorldSandbox = (serverDir: string, saveName: string, displayName: string, root = dataPath('run', '沙盒')): Sandbox => {
+  const dir = newSandboxDir(displayName, root);
+  cloneServer(serverDir, path.join(dir, '服务端'));
+  return { 根: dir, 服务端: path.join(dir, '服务端'), 存档: path.join(dir, saveName) };
 };
 
-export const 建沙盒 = (服务端目录: string, 存档: string, 名: string, 根 = 数据路径('run', '沙盒')): 沙盒 => {
-  const dir = 新沙盒目录(名, 根);
-  const 服 = path.join(dir, '服务端');
-  克隆服务端(服务端目录, 服);
-  const 世 = path.join(dir, path.basename(存档));
-  克隆(存档, 世);
-  fs.rmSync(path.join(世, 'session.lock'), { force: true });
-  return { 根: dir, 服务端: 服, 存档: 世 };
+export const makeSandbox = (serverDir: string, saveDir: string, displayName: string, root = dataPath('run', '沙盒')): Sandbox => {
+  const dir = newSandboxDir(displayName, root);
+  const server = path.join(dir, '服务端');
+  cloneServer(serverDir, server);
+  const world = path.join(dir, path.basename(saveDir));
+  cloneTree(saveDir, world);
+  fs.rmSync(path.join(world, 'session.lock'), { force: true });
+  return { 根: dir, 服务端: server, 存档: world };
 };

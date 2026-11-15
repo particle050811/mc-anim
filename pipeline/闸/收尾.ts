@@ -1,29 +1,29 @@
 import fs from 'node:fs';
-const 回调 = new Set<(码: number, 信号?: string) => void>();
-let 已装 = false, 已收 = false;
-export const 信号码 = { SIGINT: 130, SIGTERM: 143, SIGHUP: 129 } as const;
-export const 收尾 = (码: number, 信号?: string) => {
-    if (已收)
+const callbacks = new Set<(exitCode: number, signal?: string) => void>();
+let installed = false, cleaned = false;
+export const signalCodes = { SIGINT: 130, SIGTERM: 143, SIGHUP: 129 } as const;
+export const finalize = (exitCode: number, signal?: string) => {
+    if (cleaned)
         return;
-    已收 = true;
-    for (const fn of [...回调].reverse()) {
+    cleaned = true;
+    for (const fn of [...callbacks].reverse()) {
         try {
-            fn(码, 信号);
+            fn(exitCode, signal);
         }
         catch (e) {
             console.error(`!! 收尾失败：${(e as Error).message}`);
         }
     }
 };
-export const 闸记被杀 = (信号: keyof typeof 信号码) => 收尾(信号码[信号], 信号);
-export const 登记收尾 = (fn: (码: number, 信号?: string) => void) => {
-    回调.add(fn);
-    if (!已装) {
-        已装 = true;
-        process.on('exit', code => 收尾(code));
-        for (const sig of Object.keys(信号码) as (keyof typeof 信号码)[])
-            process.on(sig, () => { 闸记被杀(sig); process.exit(信号码[sig]); });
+export const gateRecordKilled = (signal: keyof typeof signalCodes) => finalize(signalCodes[signal], signal);
+export const registerCleanup = (fn: (exitCode: number, signal?: string) => void) => {
+    callbacks.add(fn);
+    if (!installed) {
+        installed = true;
+        process.on('exit', code => finalize(code));
+        for (const sig of Object.keys(signalCodes) as (keyof typeof signalCodes)[])
+            process.on(sig, () => { gateRecordKilled(sig); process.exit(signalCodes[sig]); });
     }
-    return () => { 回调.delete(fn); };
+    return () => { callbacks.delete(fn); };
 };
-export const 登记临时文件 = (file: string) => 登记收尾(() => fs.rmSync(file, { force: true }));
+export const registerTempFile = (file: string) => registerCleanup(() => fs.rmSync(file, { force: true }));

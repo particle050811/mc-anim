@@ -14,21 +14,21 @@ import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
-import { 桨姿 } from './船原版.ts';
+import { oarPose } from './船原版.ts';
 import raw from 'asset:模型/物品/船';
-import 樱花木 from 'asset:贴图/物品/船/樱花木';
+import cherryWoodPng from 'asset:贴图/物品/船/樱花木';
 
 const MODEL = (raw as unknown as { models: { 船: EntityModelData } }).models.船;
-const 贴图们 = { 樱花木: png(樱花木) };
-export type 船木 = keyof typeof 贴图们;
+const boatTextures = { 樱花木: png(cherryWoodPng) };
+export type BoatWood = keyof typeof boatTextures;
 
 /** loc：船实体的位置（船底）；yaw：船头朝向（度，0 朝 +Y，正 = 往左，同 FigurePose）；桨：rowingTime（弧度），不划给 null */
-export const 原版船: React.FC<{ loc: V3; yaw: number; 桨: number | null; 木?: 船木 }> = ({ loc, yaw, 桨, 木 = '樱花木' }) => (
+export const VanillaBoat: React.FC<{ loc: V3; yaw: number; oar: number | null; woodType?: BoatWood }> = ({ loc, yaw, oar, woodType = '樱花木' }) => (
   // EntityModel 自己是 (x, z, 1.501 − y)/16、正面朝 −Y；BoatRenderer 的变换换到场景里是 (z, −x, 0.375 − y)/16，即绕 Z 转 −90° 再降 1.126 格；
   // 再转 180° 让船头朝 +Y
   <group position={loc} rotation={[0, 0, rad(yaw) + Math.PI / 2]}>
     <group position={[0, 0, 0.375 - 1.501]}>
-      <EntityModel model={MODEL} tex={贴图们[木]} pose={桨姿(桨)} />
+      <EntityModel model={MODEL} tex={boatTextures[woodType]} pose={oarPose(oar)} />
     </group>
   </group>
 );

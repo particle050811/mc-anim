@@ -4,10 +4,10 @@
 import { G4 } from '../../地点/古城4x.tsx';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import { camPoses, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
-export const 号 = '7-1-6' as const;
+export const segmentId = '7-1-6' as const;
 export const FPS = timeline.FPS;
-export const END = timeline.frameCountOf(号);
-export const t于 = (f: number) => timeline.tAt(号, f);
+export const END = timeline.frameCountOf(segmentId);
+export const timeAt = (f: number) => timeline.tAt(segmentId, f);
 const shots: ShotCam[] = [
   {
     start: 0,
@@ -18,4 +18,4 @@ const shots: ShotCam[] = [
     lens: [[0, 18], [END - 1, 19]],
   },
 ];
-export const { 镜号, camera } = camPoses(shots);
+export const { shotIndex, camera } = camPoses(shots);

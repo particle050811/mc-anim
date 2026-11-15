@@ -11,51 +11,51 @@ import * as geom from './几何.ts';
 
 export const FPS = 24;
 const ss = geom.ss;
-const arrivalSec = (s: number) => geom.放箭 + geom.来箭到(s); // 箭（实体位置）走到离搭箭点 s 米的剧情时刻
+const arrivalSec = (s: number) => geom.shootTime + geom.arrowArriveTime(s); // 箭（实体位置）走到离搭箭点 s 米的剧情时刻
 
 // 镜头切换的剧情时刻（也是段的分界）
 // 放箭以后的切点都跟着弹开走；黄叛离得越远放箭越晚
-export const 切 = {
+export const cuts = {
   A2: 1.6, // 李樱翻箱子到这里；A2 黄叛蓄力那一镜删了（用户 10-18），帧号和 A3 相同
-  A3: geom.放箭 - 0.002, // → 黄叛左边，1/120 下 6 帧后松手（喊声在放箭前开口，见下面的 `shoutLine`）
-  B1: arrivalSec(geom.风道末程 + 1.5), // 6-4-3a | 6-4-3b：箭出风道 1.5 米、飞出侧面机位的画面，切到跟拍
-  C1: geom.弹开 + 8 / geom.箭速上限, // 6-4-3b | 6-4-3c：挑飞 8 米（箭已飞出 6-4-3b 的画面），切到李樱北边看他的右侧身（编排.ts 的 C1a）
-  C2: geom.弹开 + 0.424, // 李樱抬头看洞顶（编排.ts 的 抬头）→ 黄叛（愣住：看见招架的闪光，头 0.3 秒转过去，切过去时正转到一半）
-  C3: geom.弹开 + 1.174, // → 李樱身后（东边，越过他右肩往西看；洞顶掉下来的石块从画面左上方砸下来，落到他左前方那道墙后面，见编排.ts 的 C3a、落石落地）
-  END: geom.弹开 + 2.924,
+  A3: geom.shootTime - 0.002, // → 黄叛左边，1/120 下 6 帧后松手（喊声在放箭前开口，见下面的 `shoutLine`）
+  B1: arrivalSec(geom.ductEndDist + 1.5), // 6-4-3a | 6-4-3b：箭出风道 1.5 米、飞出侧面机位的画面，切到跟拍
+  C1: geom.deflect + 8 / geom.arrowMaxSpeed, // 6-4-3b | 6-4-3c：挑飞 8 米（箭已飞出 6-4-3b 的画面），切到李樱北边看他的右侧身（编排.ts 的 C1a）
+  C2: geom.deflect + 0.424, // 李樱抬头看洞顶（编排.ts 的 抬头）→ 黄叛（愣住：看见招架的闪光，头 0.3 秒转过去，切过去时正转到一半）
+  C3: geom.deflect + 1.174, // → 李樱身后（东边，越过他右肩往西看；洞顶掉下来的石块从画面左上方砸下来，落到他左前方那道墙后面，见编排.ts 的 C3a、落石落地）
+  END: geom.deflect + 2.924,
 };
 // 剧情时间在这两刻之间的不演（用户 10-18 定：删掉等拉弓），A1 最后一帧之后直接是 A3
-const 跳过 = [切.A2, 切.A3] as const;
+const skipTimes = [cuts.A2, cuts.A3] as const;
 // 跟拍里时钟的几个点（箭的程，米）：快起来、开始慢、慢到 1/500
-export const 跟拍程 = { 快: geom.风道末程 + 5.5, 慢起: geom.弹开程 - 7, 慢止: geom.弹开程 - 1.5 };
+export const followDist = { 快: geom.ductEndDist + 5.5, slowStart: geom.deflectDist - 7, slowEnd: geom.deflectDist - 1.5 };
 
-export type 时间线 = ReturnType<typeof 建时间线>;
+export type Timeline = ReturnType<typeof buildTimeline>;
 // [剧情秒, 时钟, 这一段按对数过渡?]
-export type 时钟点 = [number, number, boolean?];
+export type ClockPoint = [number, number, boolean?];
 // 换演法（打斗编排.ts）：`跟拍后` 换掉跟拍快起来以后的时钟点；`停顿` 在这一剧情秒把整个世界定住（打击停顿，帧数用 lib/anim.ts 的默认 `HIT_STOP_FRAMES`）
-export type 演法 = { 跟拍后: 时钟点[]; 停顿?: { 剧情秒: number } };
-export const 建时间线 = (followClock: number, variant?: 演法) => {
-  const CLOCK: 时钟点[] = [
+export type Staging = { followAfter: ClockPoint[]; pause?: { storySec: number } };
+export const buildTimeline = (followClock: number, variant?: Staging) => {
+  const CLOCK: ClockPoint[] = [
     [0, 1],
     // A2～A3 跳过（`跳过`），这一截的时钟用不到；放箭前后的 1/120 不动（风道推箭是看点）
-    [切.A2, 1],
-    [切.A3, 1 / 120],
-    [切.B1, 1 / 120],
-    [arrivalSec(跟拍程.快), followClock, true],
-    ...(variant ? variant.跟拍后 : ([
-      [arrivalSec(跟拍程.慢起), followClock],
-      [arrivalSec(跟拍程.慢止), 1 / 500, true],
+    [cuts.A2, 1],
+    [cuts.A3, 1 / 120],
+    [cuts.B1, 1 / 120],
+    [arrivalSec(followDist.快), followClock, true],
+    ...(variant ? variant.followAfter : ([
+      [arrivalSec(followDist.slowStart), followClock],
+      [arrivalSec(followDist.slowEnd), 1 / 500, true],
       // 弹开以后 1/120 → 1/80（再慢画面上几乎不动），招架闪光照样看得清
-      [geom.弹开 + 0.0015, 1 / 500],
-      [geom.弹开 + 0.004, 1 / 120],
-      [切.C1, 1 / 80],
+      [geom.deflect + 0.0015, 1 / 500],
+      [geom.deflect + 0.004, 1 / 120],
+      [cuts.C1, 1 / 80],
       // 6-4-3c：画外击穿洞顶的碎裂声在慢放里拉开一点（八声一声挨一声），洞顶击穿完几帧后回到原速（箭接着往上打穿岩层，碎裂声越来越远）；
       // 不拍箭，刀光、招架闪光在 6-4-3b 末尾已经慢放了两秒多，这里只留一秒多就回到原速
-      [geom.弹开 + geom.击穿时刻[0], 1 / 30, true],
-      [geom.洞顶击穿完 + 0.002, 1 / 25, true],
-      [geom.洞顶击穿完 + 0.02, 1 / 5, true],
-      [geom.洞顶击穿完 + 0.05, 1],
-    ] as 时钟点[])),
+      [geom.deflect + geom.breachTimes[0], 1 / 30, true],
+      [geom.caveBreachDone + 0.002, 1 / 25, true],
+      [geom.caveBreachDone + 0.02, 1 / 5, true],
+      [geom.caveBreachDone + 0.05, 1],
+    ] as ClockPoint[])),
     [99, 1],
   ];
   const clock = (storySec: number) => {
@@ -74,21 +74,21 @@ export const 建时间线 = (followClock: number, variant?: 演法) => {
   const STORY: number[] = (() => {
     const out = [0];
     let storySec = 0;
-    const stop = variant?.停顿;
-    while (storySec < 切.END) {
+    const stop = variant?.pause;
+    while (storySec < cuts.END) {
       for (let k = 0; k < SUB; k++) {
         const subStep = 1 / FPS / SUB;
         const k1 = clock(storySec);
         const k2 = clock(storySec + (k1 * subStep) / 2);
         const next = storySec + k2 * subStep;
         // 跳过：跨过 A2 这一帧直接落在 A3
-        if (storySec < 跳过[0] && next >= 跳过[0]) {
-          storySec = 跳过[1];
+        if (storySec < skipTimes[0] && next >= skipTimes[0]) {
+          storySec = skipTimes[1];
           break;
         }
         // 跨过停顿那一刻：这一帧落在那一刻上，再重复几帧
-        if (stop && storySec < stop.剧情秒 && next >= stop.剧情秒) {
-          storySec = stop.剧情秒;
+        if (stop && storySec < stop.storySec && next >= stop.storySec) {
+          storySec = stop.storySec;
           for (let n = 0; n < HIT_STOP_FRAMES; n++) out.push(storySec);
           break;
         }
@@ -112,50 +112,50 @@ export const 建时间线 = (followClock: number, variant?: 演法) => {
   const frameFractional = (storySec: number) => {
     const i = frameAt(storySec);
     if (i <= 0) return 0;
-    if (storySec >= 跳过[0] && storySec <= 跳过[1]) return i; // 跳过的那截都算在 A3 切进来那一帧
+    if (storySec >= skipTimes[0] && storySec <= skipTimes[1]) return i; // 跳过的那截都算在 A3 切进来那一帧
     const t0 = STORY[i - 1];
     const t1 = STORY[i];
     return i - 1 + (t1 > t0 ? Math.min(1, Math.max(0, (storySec - t0) / (t1 - t0))) : 1);
   };
   // 段表（全局帧，[起, 止)）
-  const segmentTable: Record<段名, { 起: number; 止: number; 名: string }> = {
-    '6-4-3a': { 起: 0, 止: frameAt(切.B1), 名: '风矢' },
-    '6-4-3b': { 起: frameAt(切.B1), 止: frameAt(切.C1), 名: '挡箭' },
-    '6-4-3c': { 起: frameAt(切.C1), 止: totalFrames, 名: '挑飞' },
+  const segmentTable: Record<SegmentName, { 起: number; 止: number; 名: string }> = {
+    '6-4-3a': { 起: 0, 止: frameAt(cuts.B1), 名: '风矢' },
+    '6-4-3b': { 起: frameAt(cuts.B1), 止: frameAt(cuts.C1), 名: '挡箭' },
+    '6-4-3c': { 起: frameAt(cuts.C1), 止: totalFrames, 名: '挑飞' },
   };
-  return { FPS, 跟拍时钟: followClock, 时钟: clock, 总帧数: totalFrames, 剧情时间: storyTime, 帧: frameAt, 帧小数: frameFractional, 段表: segmentTable, 段帧数: (segment: 段名) => segmentTable[segment].止 - segmentTable[segment].起 };
+  return { FPS, followClock: followClock, clock: clock, 总帧数: totalFrames, storyTime: storyTime, 帧: frameAt, frameFractional: frameFractional, segTable: segmentTable, 段帧数: (segment: SegmentName) => segmentTable[segment].止 - segmentTable[segment].起 };
 };
-export type 段名 = '6-4-3a' | '6-4-3b' | '6-4-3c';
+export type SegmentName = '6-4-3a' | '6-4-3b' | '6-4-3c';
 
 // ---------- 主方案 ----------
 // 跟拍 1/12：箭一帧走 3.5 米（83 米/秒），洞里的岩壁离镜头两三米，一帧掠过一两个身位，看得出快；
 // 再快（1/8）两边的房子跳得认不出是什么；再慢（1/40）就像一支普通的箭在飞（用户 10-12 嫌 1/16 慢）。备选见 段.tsx
-export const 主跟拍时钟 = 1 / 12;
-const mainTimeline = 建时间线(主跟拍时钟);
-export const 时钟 = mainTimeline.时钟;
-export const 总帧数 = mainTimeline.总帧数;
-export const 剧情时间 = mainTimeline.剧情时间;
-export const 帧 = mainTimeline.帧;
-export const 帧小数 = mainTimeline.帧小数;
-export const 段表 = mainTimeline.段表;
-export const 段帧数 = mainTimeline.段帧数;
+export const mainFollowClock = 1 / 12;
+const mainTimeline = buildTimeline(mainFollowClock);
+export const clock = mainTimeline.clock;
+export const totalFrames = mainTimeline.总帧数;
+export const storyTime = mainTimeline.storyTime;
+export const frameAt = mainTimeline.帧;
+export const frameFractional = mainTimeline.frameFractional;
+export const segTable = mainTimeline.segTable;
+export const segFrameCount = mainTimeline.段帧数;
 // 机位切换的全局帧
-export const 切帧 = {
-  A2: 帧(切.A2),
-  A3: 帧(切.A3),
-  B1: 段表['6-4-3b'].起,
-  弹开: 帧(geom.弹开),
-  C1: 段表['6-4-3c'].起,
-  C2: 帧(切.C2),
-  C3: 帧(切.C3),
+export const cutFrames = {
+  A2: frameAt(cuts.A2),
+  A3: frameAt(cuts.A3),
+  B1: segTable['6-4-3b'].起,
+  deflect: frameAt(geom.deflect),
+  C1: segTable['6-4-3c'].起,
+  C2: frameAt(cuts.C2),
+  C3: frameAt(cuts.C3),
 };
 // 给 6-4-3b 刀光那一路对时间用（主方案的全局帧；段内帧 = 全局帧 − `段表['6-4-3b'].起`）：
 // `挥刀开始帧` = 刀开始动（6-1-2 帧 98、拔刀起）；`斩击生成帧` = 刀挥到正前方（6-1-2 帧 104，斩击实体生成），两者之间剧情上 0.045 秒；
 // `弹开帧` = 刀刃扫过箭路、箭被挑开的那一帧（6-1-2 帧 104.576，见 几何.ts 的 弹开关键帧）。
-export const 挥刀开始帧 = 帧(geom.拔刀起);
-export const 弹开帧 = 帧(geom.弹开);
-export const 斩击生成帧 = 帧(geom.挥刀);
+export const swingStartFrame = frameAt(geom.drawStart);
+export const deflectFrame = frameAt(geom.deflect);
+export const slashSpawnFrame = frameAt(geom.swingTime);
 // 黄叛「纳命来」的开口（全局帧）：放箭前 18 帧（用户 10-12 在剪映里放的位置，「来」正对放箭）；用户 10-18 删了等拉弓以后前半句落在李樱翻箱子的镜头里。
 // 画面的点头口型用；声音照 段/6-规矩风矢 段.ts 的台词 cue 放（原来在 声音.tsx，那份声音表 11-06 迁成原生段后没人用、删了）
 export const shoutLeadFrames = 18;
-export const shoutLine = { id: '6-4-3a-黄叛-纳命来', 帧: Math.round(帧小数(geom.放箭)) - shoutLeadFrames };
+export const shoutLine = { id: '6-4-3a-黄叛-纳命来', 帧: Math.round(frameFractional(geom.shootTime)) - shoutLeadFrames };

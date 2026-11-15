@@ -1,14 +1,14 @@
 // 幽灵火（goety:ghost_fire_focus）的元数据。出处见 幽灵火.tsx。
-import { 定义法术元 } from '../接口.ts';
+import { defineSpellMeta } from '../接口.ts';
 
 /** IceBouquet 的 lifeTicks：服务端 100 刻后移除 */
-export const 幽灵火寿命刻 = 100;
+export const ghostFireLifeTicks = 100;
 
-export default 定义法术元({
+export default defineSpellMeta({
   id: 'ghost_fire',
   // 火在第 98 刻缩没，烟冒到实体移除（第 100 刻），一颗最长活 19 刻
-  长秒: (幽灵火寿命刻 + 20) / 20,
-  命中秒: 12 / 20, // IceBouquet.tick：tickCount ≥ 12 起每刻对碰撞箱里的生物结算伤害
+  长秒: (ghostFireLifeTicks + 20) / 20,
+  hitSec: 12 / 20, // IceBouquet.tick：tickCount ≥ 12 起每刻对碰撞箱里的生物结算伤害
   // IceBouquetSpell：SoundUtil.playNecromancerSummon（音量 1.4、音高 0.7）；中心那丛出生时 WRAITH_FIRE，其余三丛第 12 刻各响 REDSTONE_FIRE_PROJECTILE、FIRE_PROJECTILE_FLY（音量 0.3、音高 1.3，这里各记一声）
   声音: [
     { 资产: '音效/诡厄巫法/goety.necromancer_summon.1', 秒: 0, 音量: 1.4, 音高: 0.7 },

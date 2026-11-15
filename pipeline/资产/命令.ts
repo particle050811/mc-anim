@@ -6,174 +6,174 @@
 // anim assets pack [--上传]：照 <作品根>/随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json；anim assets pull：按发布锁下载进数据根（资产/发布.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
-import type { 命令 } from '../cli/命令.ts';
-import { 用法错误, 解析参数 } from '../cli/参数.ts';
-import { 作品们, 作品名, 作品根 } from '../环境/作品.ts';
-import { 过放行闸 } from '../闸/闸.ts';
-import { 代码根, 相对代码根 } from '../环境/路径.ts';
-import { 数据根 } from '../环境/配置.ts';
-import { 检查上下文 } from '../检查/上下文.ts';
-import { 上传发布, 打包发布, 拉发布, 读随发布表, 随发布表名 } from './发布.ts';
-import { 写发布锁, 读发布锁, 发布锁名 } from './发布锁.ts';
-import { 补字节, 写随仓库, 算随仓库, 读随仓库表, 随仓库表名, 字节目录 } from './随仓库.ts';
-import { 库名, 读两侧资产表 } from './资产表.ts';
-import { 作品材质包表路径, 作品的材质包选用们, 作品资产锁路径, 入库, 写资产锁, 资产锁路径, 读材质包选用, 读资产锁, type 锁条目 } from './资产锁.ts';
-import { 带音频元数据 } from './音频量.ts';
-import { 建材质包覆盖 } from './材质包.ts';
-import { 补音频元数据 } from './补量.ts';
+import type { Command } from '../cli/命令.ts';
+import { UsageError, parseArgs } from '../cli/参数.ts';
+import { listWorks, workName, workRoot } from '../环境/作品.ts';
+import { passGate } from '../闸/闸.ts';
+import { codeRoot, relativeToCodeRoot } from '../环境/路径.ts';
+import { dataRoot } from '../环境/配置.ts';
+import { CheckContext } from '../检查/上下文.ts';
+import { uploadRelease, packRelease, pullRelease, readReleaseManifest, releaseTableName } from './发布.ts';
+import { writeReleaseLock, readReleaseLock, releaseLockName } from './发布锁.ts';
+import { fillBytes, writeRepoBundle, computeRepoBundle, readRepoManifest, repoTableName, bytesDir } from './随仓库.ts';
+import { libName, readAssetRegistryBoth } from './资产表.ts';
+import { workResourcePackTablePath, workResourcePackSelections, workAssetLockPath, importToStore, writeAssetLock, assetLockPath, readResourcePackSelection, readAssetLock, type LockEntry } from './资产锁.ts';
+import { withAudioMetadata } from './音频量.ts';
+import { buildResourcePackOverride } from './材质包.ts';
+import { fillAudioMetadata } from './补量.ts';
 
 /** 量音频：音频文件顺手量时长、峰值、响度写进锁（默认量，false 不量） */
-export type 登记入库选项 = { 作品根: string; 替换?: boolean; 共用表目录?: string; 共用锁?: string; 数据根?: string; 量音频?: boolean };
+export type IngestOptions = { workRoot: string; replace?: boolean; sharedTableDir?: string; sharedLockPath?: string; dataRoot?: string; measureAudio?: boolean };
 
 /** 一件资产入库、写锁；返回锁条目、写的是哪份锁、有没有从另一份锁挪过来 */
-export const 登记入库 = (id: string, 文件: string, o: 登记入库选项): { 条目: 锁条目; 锁文件: string; 挪自?: string } => {
-  const { 条目: 登记, 重复 } = 读两侧资产表(o.作品根, o.共用表目录);
-  const e = 登记.get(id);
+export const registerAsset = (id: string, file: string, o: IngestOptions): { entry: LockEntry; lockFile: string; movedFrom?: string } => {
+  const { entryMap: entries, duplicates } = readAssetRegistryBoth(o.workRoot, o.sharedTableDir);
+  const e = entries.get(id);
   if (!e) throw new Error(`资产表里没有「${id}」，先在 assets/registry/<类>.toml（各作品共用）或 <作品根>/资产表/<类>.toml（只有这部作品用）里写好 id、类别、来源、许可、可见性`);
-  if (重复.some((x) => x.id === id)) throw new Error(`「${id}」在共用表和作品资产表里都登记了，删掉一侧再入库`);
-  if (!fs.statSync(文件).isFile()) throw new Error(`${文件} 不是文件`);
-  const 共用锁 = o.共用锁 ?? 资产锁路径();
-  const [锁文件, 另一份] = e.侧 === '作品' ? [作品资产锁路径(o.作品根), 共用锁] : [共用锁, 作品资产锁路径(o.作品根)];
-  const 锁 = 读资产锁(锁文件);
-  const 另锁 = 读资产锁(另一份);
-  const 字节 = 入库(path.resolve(文件), 库名(e.可见性), o.数据根);
-  const 新 = o.量音频 === false ? 字节 : 带音频元数据(字节, 文件);
-  const 旧 = 锁[id] ?? 另锁[id];
-  if (旧 && 旧.sha256 !== 新.sha256 && !o.替换) {
-    throw new Error(`「${id}」资产锁里已有另一份（sha ${旧.sha256.slice(0, 12)}），确实要换成新的加 --替换（旧字节留在库里）`);
+  if (duplicates.some((x) => x.id === id)) throw new Error(`「${id}」在共用表和作品资产表里都登记了，删掉一侧再入库`);
+  if (!fs.statSync(file).isFile()) throw new Error(`${file} 不是文件`);
+  const sharedLockPath = o.sharedLockPath ?? assetLockPath();
+  const [lockFile, otherLockFile] = e.side === '作品' ? [workAssetLockPath(o.workRoot), sharedLockPath] : [sharedLockPath, workAssetLockPath(o.workRoot)];
+  const assetLock = readAssetLock(lockFile);
+  const otherLock = readAssetLock(otherLockFile);
+  const storedBytes = importToStore(path.resolve(file), libName(e.可见性), o.dataRoot);
+  const nextEntry = o.measureAudio === false ? storedBytes : withAudioMetadata(storedBytes, file);
+  const prevEntry = assetLock[id] ?? otherLock[id];
+  if (prevEntry && prevEntry.sha256 !== nextEntry.sha256 && !o.replace) {
+    throw new Error(`「${id}」资产锁里已有另一份（sha ${prevEntry.sha256.slice(0, 12)}），确实要换成新的加 --替换（旧字节留在库里）`);
   }
-  锁[id] = 新;
-  写资产锁(锁, 锁文件);
+  assetLock[id] = nextEntry;
+  writeAssetLock(assetLock, lockFile);
   // 登记从一侧挪到另一侧（比如原来共用、改成只给一部作品用）：锁跟着挪，不留两份
-  if (!另锁[id]) return { 条目: 新, 锁文件 };
-  delete 另锁[id];
-  写资产锁(另锁, 另一份);
-  return { 条目: 新, 锁文件, 挪自: 另一份 };
+  if (!otherLock[id]) return { entry: nextEntry, lockFile };
+  delete otherLock[id];
+  writeAssetLock(otherLock, otherLockFile);
+  return { entry: nextEntry, lockFile, movedFrom: otherLockFile };
 };
 
 /** anim assets vendor：照 随仓库.toml 重算集合、重写 字节/；--检查 只报要改什么，有改动返回 1 */
-const 写字节 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => {
-  const 根 = 作品根();
-  const 表 = path.join(根, 随仓库表名);
-  if (!fs.existsSync(表)) throw new Error(`${相对代码根(表)} 不存在：这部作品没定随仓库发哪些段的字节（写 "段" = ["<段键或章>", …]）`);
-  if (path.relative(path.join(代码根(), '作品', 作品名()), 根) !== '') throw new Error(`${作品名()} 不在 作品/ 下，随仓库发字节只管仓库里的作品`);
-  const c = new 检查上下文(代码根(), { 作品: 作品名() });
+const writeBytes = async (checkOnly: boolean, runRecord: Parameters<Command['跑']>[1]) => {
+  const workDir = workRoot();
+  const repoListPath = path.join(workDir, repoTableName);
+  if (!fs.existsSync(repoListPath)) throw new Error(`${relativeToCodeRoot(repoListPath)} 不存在：这部作品没定随仓库发哪些段的字节（写 "段" = ["<段键或章>", …]）`);
+  if (path.relative(path.join(codeRoot(), '作品', workName()), workDir) !== '') throw new Error(`${workName()} 不在 作品/ 下，随仓库发字节只管仓库里的作品`);
+  const c = new CheckContext(codeRoot(), { 作品: workName() });
   try {
-    const 集合 = await 算随仓库(c, 读随仓库表(fs.readFileSync(表, 'utf8')).段);
-    if (集合.问题.length) throw new Error(`算不出随仓库的集合：\n  ${集合.问题.join('\n  ')}`);
-    const r = 写随仓库(集合, 根, 数据根(), 只查);
-    const 位 = 相对代码根(字节目录(根));
-    console.log(`${集合.段们.length} 段要 ${r.件数} 件字节（${(r.大小 / 1e6).toFixed(1)} MB）；私有不带 ${集合.私有.length} 件${集合.私有.length ? `：${集合.私有.join('、')}` : ''}`);
-    const 改 = r.添.length + r.改.length + r.删.length;
-    if (!改) console.log(`${位} 已经一致`);
-    else console.log(`${位}${只查 ? ' 要' : ' '}添 ${r.添.length} 件、重拷 ${r.改.length} 件、删 ${r.删.length} 件${只查 ? '（anim assets vendor 写进去）' : ''}`);
-    if (!只查 && 改) 记录.产物.push(字节目录(根));
-    return 只查 && 改 ? 1 : 0;
+    const bundleSet = await computeRepoBundle(c, readRepoManifest(fs.readFileSync(repoListPath, 'utf8')).段);
+    if (bundleSet.issues.length) throw new Error(`算不出随仓库的集合：\n  ${bundleSet.issues.join('\n  ')}`);
+    const r = writeRepoBundle(bundleSet, workDir, dataRoot(), checkOnly);
+    const relDir = relativeToCodeRoot(bytesDir(workDir));
+    console.log(`${bundleSet.segKeys.length} 段要 ${r.fileCount} 件字节（${(r.大小 / 1e6).toFixed(1)} MB）；私有不带 ${bundleSet.privateFiles.length} 件${bundleSet.privateFiles.length ? `：${bundleSet.privateFiles.join('、')}` : ''}`);
+    const changeCount = r.added.length + r.改.length + r.removed.length;
+    if (!changeCount) console.log(`${relDir} 已经一致`);
+    else console.log(`${relDir}${checkOnly ? ' 要' : ' '}添 ${r.added.length} 件、重拷 ${r.改.length} 件、删 ${r.removed.length} 件${checkOnly ? '（anim assets vendor 写进去）' : ''}`);
+    if (!checkOnly && changeCount) runRecord.产物.push(bytesDir(workDir));
+    return checkOnly && changeCount ? 1 : 0;
   } finally {
-    c.收尾();
+    c.finalize();
   }
 };
 
 /** anim assets pack：照 随发布.toml 打附件、写发布锁；--上传 建 Release、传附件 */
-const 打发布 = async (上传: boolean, 记录: Parameters<命令['跑']>[1]) => {
-  const 根 = 作品根();
-  const 表文件 = path.join(根, 随发布表名);
-  if (!fs.existsSync(表文件)) throw new Error(`${相对代码根(表文件)} 不存在：这部作品没定挂 Release 发哪些段（写 "仓库"、"标签"、"段"）`);
-  const 表 = 读随发布表(fs.readFileSync(表文件, 'utf8'));
-  const c = new 检查上下文(代码根(), { 作品: 作品名() });
+const runPackRelease = async (upload: boolean, runRecord: Parameters<Command['跑']>[1]) => {
+  const workDir = workRoot();
+  const tableFile = path.join(workDir, releaseTableName);
+  if (!fs.existsSync(tableFile)) throw new Error(`${relativeToCodeRoot(tableFile)} 不存在：这部作品没定挂 Release 发哪些段（写 "仓库"、"标签"、"段"）`);
+  const releaseTable = readReleaseManifest(fs.readFileSync(tableFile, 'utf8'));
+  const c = new CheckContext(codeRoot(), { 作品: workName() });
   try {
-    const { 锁, 新打, 应 } = await 打包发布(c, 表, 根, 数据根());
-    写发布锁(锁, 根);
-    记录.产物.push(path.join(根, 发布锁名), ...新打);
-    const 大 = 锁.附件.reduce((s, a) => s + a.大小, 0);
-    console.log(`${应.段数} 段：${应.字节.length + 应.私有库字节.length} 件字节${应.私有库字节.length ? `（私有/ 库 ${应.私有库字节.length} 件）` : ''}、${应.地形.length} 个地形包，${锁.附件.length} 个附件共 ${(大 / 1e9).toFixed(2)} GB；新打 ${新打.length} 个${应.私有.length ? `；私有不发 ${应.私有.length} 件：${应.私有.join('、')}` : ''}`);
-    console.log(`写了 ${相对代码根(path.join(根, 发布锁名))}`);
-    if (上传) await 上传发布(锁, 数据根());
-    else if (新打.length) console.log(`传上去：anim assets pack --上传（要 gh 登录），或手动 gh release upload ${锁.标签} <cache/发布/ 里的附件> --repo ${锁.仓库}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
+    const { releaseLock, newPacks, expected } = await packRelease(c, releaseTable, workDir, dataRoot());
+    writeReleaseLock(releaseLock, workDir);
+    runRecord.产物.push(path.join(workDir, releaseLockName), ...newPacks);
+    const totalBytes = releaseLock.附件.reduce((s, a) => s + a.大小, 0);
+    console.log(`${expected.段数} 段：${expected.字节.length + expected.私有库字节.length} 件字节${expected.私有库字节.length ? `（私有/ 库 ${expected.私有库字节.length} 件）` : ''}、${expected.地形.length} 个地形包，${releaseLock.附件.length} 个附件共 ${(totalBytes / 1e9).toFixed(2)} GB；新打 ${newPacks.length} 个${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件：${expected.privateFiles.join('、')}` : ''}`);
+    console.log(`写了 ${relativeToCodeRoot(path.join(workDir, releaseLockName))}`);
+    if (upload) await uploadRelease(releaseLock, dataRoot());
+    else if (newPacks.length) console.log(`传上去：anim assets pack --上传（要 gh 登录），或手动 gh release upload ${releaseLock.标签} <cache/发布/ 里的附件> --repo ${releaseLock.仓库}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
   } finally {
-    c.收尾();
+    c.finalize();
   }
 };
 
 /** anim assets measure：共用锁和每部作品的锁里，没量过的音频条目量了补上；--检查 只报，有能补的返回 1；有量不出的也返回 1 */
-const 补量 = async (只查: boolean, 记录: Parameters<命令['跑']>[1]) => {
-  const 锁们 = [资产锁路径(), ...[...作品们().values()].map(作品资产锁路径).filter((f) => fs.existsSync(f))];
-  const 跑 = async () => {
-    let 能补 = 0;
-    let 量不出 = 0;
-    for (const 锁文件 of 锁们) {
-      const 位 = 相对代码根(锁文件);
-      const r = 补音频元数据(读资产锁(锁文件), {
-        数据根: 数据根(),
-        只查,
+const fillMeasure = async (checkOnly: boolean, runRecord: Parameters<Command['跑']>[1]) => {
+  const lockFiles = [assetLockPath(), ...[...listWorks().values()].map(workAssetLockPath).filter((f) => fs.existsSync(f))];
+  const run = async () => {
+    let filled = 0;
+    let unmeasuredCount = 0;
+    for (const lockFile of lockFiles) {
+      const relPath = relativeToCodeRoot(lockFile);
+      const r = fillAudioMetadata(readAssetLock(lockFile), {
+        dataRoot: dataRoot(),
+        checkOnly,
         进度: (i, n) => {
-          if (i % 100 === 0 || i === n) console.error(`  ${位}：量到 ${i}/${n}`);
+          if (i % 100 === 0 || i === n) console.error(`  ${relPath}：量到 ${i}/${n}`);
         },
       });
-      能补 += r.缺.length - r.没字节.length;
-      console.log(`${位}：音频 ${r.音频} 件，缺数 ${r.缺.length} 件${r.没字节.length ? `，字节不在本机跳过 ${r.没字节.length} 件` : ''}${只查 ? '' : `，补了 ${r.补了.length} 件`}`);
-      量不出 += r.量不出.length;
-      for (const x of r.量不出) console.log(`  量不出 ${x.id}：${x.原因}`);
-      if (r.仍缺.length) console.log(`  量完还缺字段 ${r.仍缺.length} 件（静音没有峰值、太短没有积分响度）：${r.仍缺.slice(0, 10).map((x) => `${x.id}（${x.字段.join('、')}）`).join('、')}${r.仍缺.length > 10 ? ' …' : ''}`);
-      if (!只查 && r.补了.length) {
-        写资产锁(r.锁, 锁文件);
-        记录.产物.push(锁文件);
+      filled += r.missing.length - r.noBytes.length;
+      console.log(`${relPath}：音频 ${r.音频} 件，缺数 ${r.missing.length} 件${r.noBytes.length ? `，字节不在本机跳过 ${r.noBytes.length} 件` : ''}${checkOnly ? '' : `，补了 ${r.patched.length} 件`}`);
+      unmeasuredCount += r.unmeasured.length;
+      for (const x of r.unmeasured) console.log(`  量不出 ${x.id}：${x.原因}`);
+      if (r.stillMissing.length) console.log(`  量完还缺字段 ${r.stillMissing.length} 件（静音没有峰值、太短没有积分响度）：${r.stillMissing.slice(0, 10).map((x) => `${x.id}（${x.missingFields.join('、')}）`).join('、')}${r.stillMissing.length > 10 ? ' …' : ''}`);
+      if (!checkOnly && r.patched.length) {
+        writeAssetLock(r.assetLock, lockFile);
+        runRecord.产物.push(lockFile);
       }
     }
-    if (只查 && 能补) console.log(`能补 ${能补} 件：anim assets measure`);
+    if (checkOnly && filled) console.log(`能补 ${filled} 件：anim assets measure`);
     // 量不出的（字节坏了、ffmpeg 解不开）补了别的照样写锁，但退出码 1，别让批处理当成全补齐了
-    return (只查 && 能补) || 量不出 ? 1 : 0;
+    return (checkOnly && filled) || unmeasuredCount ? 1 : 0;
   };
   // 一千来件挨个解码，重任务过放行闸；只查不解码
-  return 只查 ? 跑() : 过放行闸(跑);
+  return checkOnly ? run() : passGate(run);
 };
 
-export const 资产命令: Record<string, 命令> = {
+export const assetCommands: Record<string, Command> = {
   assets: {
     用法: 'assets add <id> <文件> [--替换] | assets measure [--检查] | assets vendor [--检查] | assets seed | assets pack [--上传] | assets pull | assets 材质包',
     说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--检查 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（film、still、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--上传 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "包"、"封顶"，[段] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
-    跑: async (args, 记录) => {
-      const p = 解析参数(args, { 开关: ['--替换', '--检查', '--上传'] });
-      const [子, id, 文件] = p.位置;
-      if (子 === 'measure' && p.位置.length === 1 && [...p.开关].every((k) => k === '--检查')) return 补量(p.开关.has('--检查'), 记录);
-      if (子 === 'vendor' && p.位置.length === 1 && !p.开关.has('--替换')) return 写字节(p.开关.has('--检查'), 记录);
-      if (子 === 'pack' && p.位置.length === 1 && [...p.开关].every((k) => k === '--上传')) return 打发布(p.开关.has('--上传'), 记录);
-      if (子 === 'pull' && p.位置.length === 1 && !p.开关.size) {
-        const 锁 = 读发布锁(作品根());
-        if (!锁) throw new Error(`${作品名()} 没有 ${发布锁名}：这部作品没有挂 Release 发的字节`);
-        await 拉发布(锁, 数据根());
+    跑: async (args, runRecord) => {
+      const p = parseArgs(args, { toggles: ['--替换', '--检查', '--上传'] });
+      const [subcommand, id, file] = p.位置;
+      if (subcommand === 'measure' && p.位置.length === 1 && [...p.toggles].every((k) => k === '--检查')) return fillMeasure(p.toggles.has('--检查'), runRecord);
+      if (subcommand === 'vendor' && p.位置.length === 1 && !p.toggles.has('--替换')) return writeBytes(p.toggles.has('--检查'), runRecord);
+      if (subcommand === 'pack' && p.位置.length === 1 && [...p.toggles].every((k) => k === '--上传')) return runPackRelease(p.toggles.has('--上传'), runRecord);
+      if (subcommand === 'pull' && p.位置.length === 1 && !p.toggles.size) {
+        const releaseLock = readReleaseLock(workRoot());
+        if (!releaseLock) throw new Error(`${workName()} 没有 ${releaseLockName}：这部作品没有挂 Release 发的字节`);
+        await pullRelease(releaseLock, dataRoot());
         return;
       }
-      if (子 === '材质包' && p.位置.length === 1 && !p.开关.size) {
+      if (subcommand === '材质包' && p.位置.length === 1 && !p.toggles.size) {
         // 试样（环境变量）只建那一份；不然 材质包.toml 里的每一种选用（"包" 和 [段] 另选的）各建一份
-        const 选们 = 读材质包选用(作品根()).来自 === '环境' ? [读材质包选用(作品根())] : 作品的材质包选用们(作品根());
-        if (!选们.length) throw new Error(`这部作品没选用材质包：在 ${相对代码根(作品材质包表路径(作品根()))} 写 "包" = ["材质包/<名>"]（或 [段] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
-        for (const 选 of 选们) {
-          const r = 建材质包覆盖(作品根(), 选);
-          const 报 = r.盖.报告 as { 分辨率: { 规则: string; 方块图集格: number }; 方块图集: { 换: number; 共: number; 包里没有: number; 不合: number }; 单张: { 共: number; 换: number; 包里没有: number; 包里没有但同组放大: string[]; 不合: { id: string; 原因: string }[] }; 缩放: Record<string, number>; 各包贡献: Record<string, number>; 群系色: { 改: number } | null; 警告: string[] };
-          console.log(`选用（${r.选.来自}，上面的盖下面的）：${r.包们.map((p) => `${p.id}（${p.许可}，${p.可见性}）`).join(' > ')} > 原版`);
-          console.log(`分辨率：${报.分辨率.规则}；方块图集一格 ${报.分辨率.方块图集格} 像素`);
-          console.log(`方块图集换了 ${报.方块图集.换}/${报.方块图集.共} 格（包里没有 ${报.方块图集.包里没有}，尺寸不合 ${报.方块图集.不合}）；照搬的单张贴图 ${报.单张.共} 件，换了 ${报.单张.换} 件，包里没有 ${报.单张.包里没有} 件（其中 ${报.单张.包里没有但同组放大.length} 件跟同组放大）`);
-          for (const x of 报.单张.不合) console.log(`  不合 ${x.id}：${x.原因}`);
-          console.log(`缩放：${Object.entries(报.缩放).map(([k, n]) => `${k} ${n}`).join('、')}；各包贡献：${Object.entries(报.各包贡献).map(([k, n]) => `${k} ${n}`).join('、')}`);
-          console.log(报.群系色 ? `群系色：按包的 colormap 改了 ${报.群系色.改} 处` : '群系色：包里没有 colormap，照原版');
-          for (const w of 报.警告) console.log(`  !! ${w}`);
-          console.log(`覆盖层 ${Object.keys(r.盖.覆盖).length} 件，写了 ${相对代码根(r.锁文件)}`);
-          记录.产物.push(r.锁文件);
+        const selections = readResourcePackSelection(workRoot()).source === '环境' ? [readResourcePackSelection(workRoot())] : workResourcePackSelections(workRoot());
+        if (!selections.length) throw new Error(`这部作品没选用材质包：在 ${relativeToCodeRoot(workResourcePackTablePath(workRoot()))} 写 "包" = ["材质包/<名>"]（或 [段] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
+        for (const packSelection of selections) {
+          const r = buildResourcePackOverride(workRoot(), packSelection);
+          const report = r.resourcePackLock.报告 as { 分辨率: { 规则: string; 方块图集格: number }; 方块图集: { 换: number; 共: number; 包里没有: number; 不合: number }; 单张: { 共: number; 换: number; 包里没有: number; 包里没有但同组放大: string[]; 不合: { id: string; 原因: string }[] }; 缩放: Record<string, number>; 各包贡献: Record<string, number>; 群系色: { 改: number } | null; 警告: string[] };
+          console.log(`选用（${r.选.source}，上面的盖下面的）：${r.packs.map((p) => `${p.id}（${p.许可}，${p.可见性}）`).join(' > ')} > 原版`);
+          console.log(`分辨率：${report.分辨率.规则}；方块图集一格 ${report.分辨率.方块图集格} 像素`);
+          console.log(`方块图集换了 ${report.方块图集.换}/${report.方块图集.共} 格（包里没有 ${report.方块图集.包里没有}，尺寸不合 ${report.方块图集.不合}）；照搬的单张贴图 ${report.单张.共} 件，换了 ${report.单张.换} 件，包里没有 ${report.单张.包里没有} 件（其中 ${report.单张.包里没有但同组放大.length} 件跟同组放大）`);
+          for (const x of report.单张.不合) console.log(`  不合 ${x.id}：${x.原因}`);
+          console.log(`缩放：${Object.entries(report.缩放).map(([k, n]) => `${k} ${n}`).join('、')}；各包贡献：${Object.entries(report.各包贡献).map(([k, n]) => `${k} ${n}`).join('、')}`);
+          console.log(report.群系色 ? `群系色：按包的 colormap 改了 ${report.群系色.改} 处` : '群系色：包里没有 colormap，照原版');
+          for (const w of report.警告) console.log(`  !! ${w}`);
+          console.log(`覆盖层 ${Object.keys(r.resourcePackLock.覆盖).length} 件，写了 ${relativeToCodeRoot(r.lockFile)}`);
+          runRecord.产物.push(r.lockFile);
         }
         return 0;
       }
-      if (子 === 'seed' && p.位置.length === 1 && !p.开关.size) {
-        const r = 补字节(作品根(), 数据根());
-        console.log(`${相对代码根(字节目录(作品根()))}：${r.共} 件，补进 ${path.join(数据根(), 'store')} ${r.补} 件（其余已有）`);
+      if (subcommand === 'seed' && p.位置.length === 1 && !p.toggles.size) {
+        const r = fillBytes(workRoot(), dataRoot());
+        console.log(`${relativeToCodeRoot(bytesDir(workRoot()))}：${r.共} 件，补进 ${path.join(dataRoot(), 'store')} ${r.copied} 件（其余已有）`);
         return;
       }
-      if (子 !== 'add' || !id || !文件 || p.位置.length !== 3 || p.开关.has('--检查')) throw new 用法错误('要 anim assets add <id> <文件> [--替换]、anim assets measure [--检查]、anim assets vendor [--检查]、anim assets seed、anim assets pack [--上传] 或 anim assets pull');
-      const { 条目: 新, 锁文件, 挪自 } = 登记入库(id, 文件, { 作品根: 作品根(), 替换: p.开关.has('--替换') });
-      记录.产物.push(`${id} → ${新.库}/${新.sha256}`);
-      const 音 = 新.时长 !== undefined ? `，${新.时长} 秒、峰值 ${新.峰值 ?? '-inf'} dBFS、响度 ${新.响度 ?? '?'} LUFS` : '';
-      console.log(`${id}：${新.库}/${新.sha256.slice(0, 2)}/${新.sha256}（${新.大小} 字节，${新.后缀}${音}）→ ${相对代码根(锁文件)}`);
-      if (挪自) console.log(`  从 ${相对代码根(挪自)} 挪过来（登记换了一侧）`);
+      if (subcommand !== 'add' || !id || !file || p.位置.length !== 3 || p.toggles.has('--检查')) throw new UsageError('要 anim assets add <id> <文件> [--替换]、anim assets measure [--检查]、anim assets vendor [--检查]、anim assets seed、anim assets pack [--上传] 或 anim assets pull');
+      const { entry: entry, lockFile, movedFrom } = registerAsset(id, file, { workRoot: workRoot(), replace: p.toggles.has('--替换') });
+      runRecord.产物.push(`${id} → ${entry.库}/${entry.sha256}`);
+      const meterText = entry.时长 !== undefined ? `，${entry.时长} 秒、峰值 ${entry.峰值 ?? '-inf'} dBFS、响度 ${entry.响度 ?? '?'} LUFS` : '';
+      console.log(`${id}：${entry.库}/${entry.sha256.slice(0, 2)}/${entry.sha256}（${entry.大小} 字节，${entry.后缀}${meterText}）→ ${relativeToCodeRoot(lockFile)}`);
+      if (movedFrom) console.log(`  从 ${relativeToCodeRoot(movedFrom)} 挪过来（登记换了一侧）`);
     },
   },
 };

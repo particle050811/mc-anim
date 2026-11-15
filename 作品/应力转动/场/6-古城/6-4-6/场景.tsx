@@ -15,7 +15,7 @@ import { chain } from './追兵.ts';
 import { sensorBaseCenter, sensorCells, sensorHideBoxes, cellKey } from './振动链.ts';
 
 // 收到过振动的感测体：网格里画死的藏掉，换成会抖的（一次建好，BlockMesh 按数组引用判断要不要重建）
-const shakingSensors = sensorCells.filter((b) => chain.激活.has(cellKey(b)));
+const shakingSensors = sensorCells.filter((b) => chain.activatedAt.has(cellKey(b)));
 const hideBoxes = sensorHideBoxes(shakingSensors);
 
 // τ：追兵钟（秒，6-4-5 第 0 帧起）；段：6-4-6 还是 6-4-7（开过哪些箱子按它算）
@@ -23,17 +23,17 @@ export const PursuerScene: React.FC<{ 段: '6-4-6' | '6-4-7'; τ: number; cam: C
   const { width, height } = useVideoConfig();
   const wool = K645.woolAt(τ);
   return (
-    <AncientCity4xCanvas 段={segment} cam={cam} width={width} height={height} hide={hideBoxes} 羊毛={wool.羊毛} growingWool={wool.growingWool}>
+    <AncientCity4xCanvas 段={segment} cam={cam} width={width} height={height} hide={hideBoxes} wool={wool.wool} growingWool={wool.growingWool}>
       <LiYingWithBlade pose={K645.detourPose(τ)} />
       <LiuXinzhong pose={liu} />
       <HuangPan pose={huang} />
       {shakingSensors.map((b, i) => (
-        <SculkSensor key={i} p={sensorBaseCenter(b)} 秒={τ} 激活秒={τ - chain.激活.get(cellKey(b))!} seed={i + 1} />
+        <SculkSensor key={i} p={sensorBaseCenter(b)} 秒={τ} secSinceActive={τ - chain.activatedAt.get(cellKey(b))!} seed={i + 1} />
       ))}
       {chain.vibrations.map((v, i) => (
         <VibrationSignal key={i} from={v.from} to={v.to} sec={τ - v.t} 帧={i * 3} />
       ))}
-      {chain.尖啸们.map((s, i) => (
+      {chain.shrieks.map((s, i) => (
         <ShriekRings key={i} p={s.p} sec={τ - s.t} />
       ))}
     </AncientCity4xCanvas>

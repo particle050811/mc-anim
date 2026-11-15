@@ -15,27 +15,27 @@
 import type { V3 } from '../model/parts.tsx';
 
 /** 游戏或场景的原点：游戏坐标 (ox, oy, oz) 落在场景 (0, 0, 0) */
-export type 原点 = readonly [number, number, number];
-const 零: 原点 = [0, 0, 0];
+export type Origin = readonly [number, number, number];
+const zero: Origin = [0, 0, 0];
 
 /** three → 场景（three 的 Vector3 或任何带 x、y、z 的对象） */
-export const three到场景 = (v: { x: number; y: number; z: number }): V3 => [v.x, -v.z, v.y];
+export const threeToScene = (v: { x: number; y: number; z: number }): V3 => [v.x, -v.z, v.y];
 
 /** 游戏 → 场景（连续坐标；fromGame 带原点的版本） */
-export const 游戏到场景 = (g: readonly number[], o: 原点 = 零): V3 => [g[0]! - o[0], o[2] - g[2]!, g[1]! - o[1]];
+export const gameToScene = (g: readonly number[], o: Origin = zero): V3 => [g[0]! - o[0], o[2] - g[2]!, g[1]! - o[1]];
 
 /** 场景 → 游戏 */
-export const 场景到游戏 = (s: readonly number[], o: 原点 = 零): V3 => [s[0]! + o[0], s[2]! + o[1], o[2] - s[1]!];
+export const sceneToGame = (s: readonly number[], o: Origin = zero): V3 => [s[0]! + o[0], s[2]! + o[1], o[2] - s[1]!];
 
 /** 游戏方块 → 它占的那一格在场景里的最小角（整数格号；同 区段包 的约定：场景 y 朝北，所以是 oz − 1 − z） */
-export const 方块到场景格 = ([x, y, z]: readonly number[], o: 原点 = 零): V3 => [x! - o[0], o[2] - 1 - z!, y! - o[1]];
+export const blockToSceneCell = ([x, y, z]: readonly number[], o: Origin = zero): V3 => [x! - o[0], o[2] - 1 - z!, y! - o[1]];
 
 /** 场景格号 → 游戏方块 */
-export const 场景格到方块 = ([i, j, k]: readonly number[], o: 原点 = 零): V3 => [i! + o[0], k! + o[1], o[2] - 1 - j!];
+export const sceneCellToBlock = ([i, j, k]: readonly number[], o: Origin = zero): V3 => [i! + o[0], k! + o[1], o[2] - 1 - j!];
 
 /** 游戏方块的中心在场景里的位置 */
-export const 方块中心 = (b: readonly number[], o: 原点 = 零): V3 => {
-  const [i, j, k] = 方块到场景格(b, o);
+export const blockCenter = (b: readonly number[], o: Origin = zero): V3 => {
+  const [i, j, k] = blockToSceneCell(b, o);
   return [i + 0.5, j + 0.5, k + 0.5];
 };
 
@@ -43,7 +43,7 @@ export const 方块中心 = (b: readonly number[], o: 原点 = 零): V3 => {
  * 游戏的视线方向（yaw、pitch，度）→ 场景里的单位向量。原版 Entity.calculateViewVector：
  * 游戏向量 = (−sin yaw · cos pitch, −sin pitch, cos yaw · cos pitch)，再按上面的轴换到场景。
  */
-export const 游戏朝向到场景 = (yaw: number, pitch: number): V3 => {
+export const gameFacingToScene = (yaw: number, pitch: number): V3 => {
   const y = (yaw * Math.PI) / 180;
   const p = (pitch * Math.PI) / 180;
   const g = [-Math.sin(y) * Math.cos(p), -Math.sin(p), Math.cos(y) * Math.cos(p)];
@@ -51,10 +51,10 @@ export const 游戏朝向到场景 = (yaw: number, pitch: number): V3 => {
 };
 
 /** 场景里的方向 → 游戏 yaw、pitch（度，yaw 在 (−180, 180]）。方向不用是单位向量；竖直朝上、朝下时 yaw 给 0 */
-export const 场景到游戏朝向 = (d: readonly number[]): { yaw: number; pitch: number } => {
+export const sceneToGameFacing = (d: readonly number[]): { yaw: number; pitch: number } => {
   const [gx, gy, gz] = [d[0]!, d[2]!, -d[1]!];
-  const 水平 = Math.hypot(gx, gz);
-  const pitch = (-Math.atan2(gy, 水平) * 180) / Math.PI;
-  const yaw = 水平 < 1e-12 ? 0 : (Math.atan2(-gx, gz) * 180) / Math.PI;
+  const horizLen = Math.hypot(gx, gz);
+  const pitch = (-Math.atan2(gy, horizLen) * 180) / Math.PI;
+  const yaw = horizLen < 1e-12 ? 0 : (Math.atan2(-gx, gz) * 180) / Math.PI;
   return { yaw: yaw === -180 ? 180 : yaw, pitch };
 };

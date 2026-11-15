@@ -3,43 +3,43 @@
 // 也就是站在女仆南边 2 格的地毯上、眼高 1.62；换算是 网格本地 = (x, −z, y − 201)。
 import type { V3 } from '@engine/model/parts.tsx';
 
-export type 视图 = {
+export type View = {
   名: string;
   宽: number;
   高: number;
-  机位: { 眼: V3; 看: V3; 视角: number };
+  cameraRig: { 眼: V3; 看: V3; fov: number };
   /** 盖在画面上的游戏截图的不透明度：0 不盖，1 只看截图，中间是叠加 */
-  截图?: number;
+  screenshot?: number;
   /** 画出 主厅灯 的方块框（灯笼黄、点着的蜡烛橙、没点的灰） */
-  灯位?: boolean;
+  showLamps?: boolean;
   /** 藏掉二楼楼板和天花板（面心高过 5.97 格的面），从上往下看主厅 */
-  掀顶?: boolean;
+  liftTop?: boolean;
   /** 用成片的灯（地点 一楼灯光），不给就是核对平光 */
-  成片灯?: boolean;
+  filmLamp?: boolean;
   /** 女仆的位置放什么：灰盒（同占位画面的 0.5×0.5×0.85）或魔法酒狐（看向机位） */
-  站位?: '灰盒' | '酒狐';
+  figure?: '灰盒' | '酒狐';
   /** 关掉机位的 NeutralToneMapping，看色调映射对暗部颜色的影响（游戏里没有色调映射） */
-  不压色调?: boolean;
+  keepTone?: boolean;
 };
 
-const 一楼机位 = { 眼: [11.5, -12.5, 1.6825] as V3, 看: [11.5, -10.5, 0.8] as V3, 视角: 70 };
-const 主厅鸟瞰 = { 眼: [12.5, -24, 16] as V3, 看: [12.5, -12.5, 1] as V3, 视角: 60 };
+const firstFloorRig = { 眼: [11.5, -12.5, 1.6825] as V3, 看: [11.5, -10.5, 0.8] as V3, fov: 70 };
+const hallBirdsEye = { 眼: [12.5, -24, 16] as V3, 看: [12.5, -12.5, 1] as V3, fov: 60 };
 // 看灯光用：从主厅西边往东看东窗（晨光落在窗下的地上）；从南头往北看整个主厅的灯笼
-const 主厅东望 = { 眼: [9.5, -12.5, 1.6825] as V3, 看: [16.5, -12.5, 1] as V3, 视角: 70 };
-const 主厅北望 = { 眼: [12.5, -16.5, 2.2] as V3, 看: [12.5, -9, 1.2] as V3, 视角: 70 };
+const hallLookEast = { 眼: [9.5, -12.5, 1.6825] as V3, 看: [16.5, -12.5, 1] as V3, fov: 70 };
+const hallLookNorth = { 眼: [12.5, -16.5, 2.2] as V3, 看: [12.5, -9, 1.2] as V3, fov: 70 };
 
-export const 视图们: readonly 视图[] = [
-  { 名: '一楼机位', 宽: 1280, 高: 720, 机位: 一楼机位 },
-  { 名: '一楼机位-游戏截图', 宽: 1280, 高: 720, 机位: 一楼机位, 截图: 1 },
-  { 名: '一楼机位-叠加', 宽: 1280, 高: 720, 机位: 一楼机位, 截图: 0.5 },
-  { 名: '一楼机位-灯位', 宽: 1280, 高: 720, 机位: 一楼机位, 灯位: true },
-  { 名: '主厅鸟瞰-灯位', 宽: 1280, 高: 720, 机位: 主厅鸟瞰, 灯位: true, 掀顶: true },
-  { 名: '一楼机位-成片灯-灰盒', 宽: 1280, 高: 720, 机位: 一楼机位, 成片灯: true, 站位: '灰盒' },
-  { 名: '一楼机位-成片灯-酒狐', 宽: 1280, 高: 720, 机位: 一楼机位, 成片灯: true, 站位: '酒狐' },
-  { 名: '一楼机位-成片灯-酒狐-不压色调', 宽: 1280, 高: 720, 机位: 一楼机位, 成片灯: true, 站位: '酒狐', 不压色调: true },
-  { 名: '主厅东望-成片灯', 宽: 1280, 高: 720, 机位: 主厅东望, 成片灯: true, 站位: '灰盒' },
-  { 名: '主厅北望-成片灯', 宽: 1280, 高: 720, 机位: 主厅北望, 成片灯: true, 站位: '灰盒' },
+export const views: readonly View[] = [
+  { 名: '一楼机位', 宽: 1280, 高: 720, cameraRig: firstFloorRig },
+  { 名: '一楼机位-游戏截图', 宽: 1280, 高: 720, cameraRig: firstFloorRig, screenshot: 1 },
+  { 名: '一楼机位-叠加', 宽: 1280, 高: 720, cameraRig: firstFloorRig, screenshot: 0.5 },
+  { 名: '一楼机位-灯位', 宽: 1280, 高: 720, cameraRig: firstFloorRig, showLamps: true },
+  { 名: '主厅鸟瞰-灯位', 宽: 1280, 高: 720, cameraRig: hallBirdsEye, showLamps: true, liftTop: true },
+  { 名: '一楼机位-成片灯-灰盒', 宽: 1280, 高: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '灰盒' },
+  { 名: '一楼机位-成片灯-酒狐', 宽: 1280, 高: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '酒狐' },
+  { 名: '一楼机位-成片灯-酒狐-不压色调', 宽: 1280, 高: 720, cameraRig: firstFloorRig, filmLamp: true, figure: '酒狐', keepTone: true },
+  { 名: '主厅东望-成片灯', 宽: 1280, 高: 720, cameraRig: hallLookEast, filmLamp: true, figure: '灰盒' },
+  { 名: '主厅北望-成片灯', 宽: 1280, 高: 720, cameraRig: hallLookNorth, filmLamp: true, figure: '灰盒' },
 ];
 
-export const 页宽 = Math.max(...视图们.map((v) => v.宽));
-export const 页高 = Math.max(...视图们.map((v) => v.高));
+export const pageWidth = Math.max(...views.map((v) => v.宽));
+export const pageHeight = Math.max(...views.map((v) => v.高));

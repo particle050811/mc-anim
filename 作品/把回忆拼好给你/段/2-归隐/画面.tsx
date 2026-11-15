@@ -2,33 +2,33 @@
 // 符文歌词同 2-时差：叠在两屏上面、整页那层质感里面，描边色取服务器那半的调子；第 15 句放到底部（场/2-门口/归隐歌词.ts）。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 段时钟 } from '../../分镜/正片第13至14句.ts';
-import { 左调子, 归隐画面 } from '../../场/2-门口/归隐.tsx';
-import { 归隐歌词, 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 光影段 } from '../../默认.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { segClock } from '../../分镜/正片第13至14句.ts';
+import { leftToneAt, RetreatPicture } from '../../场/2-门口/归隐.tsx';
+import { retreatLyrics, line15RuneStyle } from '../../场/2-门口/归隐歌词.ts';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { shadingBySeg } from '../../默认.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useCurrentFrame } from '../../当前帧.ts';
 
-const 起帧 = 段时钟('2-归隐').起帧;
-const 歌词 = 归隐歌词(起帧);
+const startFrame = segClock('2-归隐').起帧;
+const lyrics = retreatLyrics(startFrame);
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const 帧 = 起帧 + f;
+const picture: React.FC = () => {
+  const f = useCurrentFrame();
+  const frame = startFrame + f;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <归隐画面
-        帧={帧}
-        种子={帧}
-        光影={光影段['2-归隐']}
-        现实光影={光影段['2-归隐/现实']}
+      <RetreatPicture
+        帧={frame}
+        种子={frame}
+        shading={shadingBySeg['2-归隐']}
+        realShading={shadingBySeg['2-归隐/现实']}
         叠层={
           <>
-            <符文歌词 行们={歌词.上行们} 样式={{ ...符文歌词默认, 描边色: 左调子(帧).描边 }} />
-            <符文歌词 行们={歌词.下行们} 样式={{ ...第15句符文样式, 描边色: 左调子(帧).描边 }} />
+            <RuneLyric lines={lyrics.upperLines} 样式={{ ...runeLyricDefault, outlineColor: leftToneAt(frame).outlineColor }} />
+            <RuneLyric lines={lyrics.lowerLines} 样式={{ ...line15RuneStyle, outlineColor: leftToneAt(frame).outlineColor }} />
           </>
         }
       />
@@ -36,4 +36,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

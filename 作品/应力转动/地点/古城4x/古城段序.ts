@@ -3,8 +3,8 @@
 // Python、node 工具读 工具/段清单/导出.ts 现导的 JSON（见 工具/段清单/读段清单.mjs）；注册（src/注册/）不由它生成，两边一致靠 node 工具/段清单/段清单.mjs 检查（检查.ts）。
 // 加一段：这里加一行、清单帧数.ts 加一行、注册里登记 Composition。
 
-export const 章名 = { 6: '古城寻卷', 7: '监守者之怒' } as const;
-export const 场名 = {
+export const chapterNames = { 6: '古城寻卷', 7: '监守者之怒' } as const;
+export const sceneNames = {
   6: { 1: '暮色森林', 2: '基地谋划', 3: '边城', 4: '古城' },
   7: { 1: '黑暗监守', 2: '李樱撤离', 3: '墙头追逐', 4: '收场' },
 } as const;
@@ -12,9 +12,9 @@ export const 场名 = {
 // id：段号（「章-场-段」，几段不切的合成一段写「至」）；名：Composition id 去掉段号的部分。场：段号的场，跨场的段算它开头那一场。
 // 故事：这一段演的是故事里的哪几个原段（整场一条时间线的第 7 章写场号，如 7-1），按编号比先后就是故事先后（不是剪辑先后）。
 // 古城4x：画在古城4x画布上，开过的箱子按 故事 排先后（古城4x布局/箱子.ts 的 古城段序）。集：第几集（一集可含几章，剪辑包一集一个）。
-type 段定义 = { id: string; 名: string; 章: keyof typeof 章名; 场: number; 集: number; 故事: readonly string[]; 古城4x?: true };
+type SegmentDef = { id: string; 名: string; 章: keyof typeof chapterNames; 场: number; 集: number; 故事: readonly string[]; 古城4x?: true };
 
-export const 段清单 = [
+export const segmentList = [
   { id: '6-1-1', 名: '进入森林', 章: 6, 场: 1, 集: 1, 故事: ['6-1-1'] },
   { id: '6-1-2', 名: '斩娜迦', 章: 6, 场: 1, 集: 1, 故事: ['6-1-2'] },
   { id: '6-1-3', 名: '起飞', 章: 6, 场: 1, 集: 1, 故事: ['6-1-3'] },
@@ -56,21 +56,21 @@ export const 段清单 = [
   { id: '7-4-2', 名: '又一只', 章: 7, 场: 4, 集: 1, 故事: ['7-4-2'], 古城4x: true },
   { id: '7-4-3', 名: '报告', 章: 7, 场: 4, 集: 1, 故事: ['7-4-3'] },
   { id: '7-4-4', 名: '起疑', 章: 7, 场: 4, 集: 1, 故事: ['7-4-4'] },
-] as const satisfies readonly 段定义[];
+] as const satisfies readonly SegmentDef[];
 
-export type 段 = (typeof 段清单)[number];
-export type 段号 = 段['id'];
+export type Segment = (typeof segmentList)[number];
+export type SegmentId = Segment['id'];
 
-export const compositionOf = (s: 段定义) => `${s.id}-${s.名}`;
+export const compositionOf = (s: SegmentDef) => `${s.id}-${s.名}`;
 
 // 单段视频在输出根下的相对路径，照 CLAUDE.md 的 视频/ 目录结构：<NN-章名>/<场号>-<场名>/<段号>-<段名>.mp4
-export const 输出路径 = (s: 段定义) => {
-  const scenes: Record<number, string> = 场名[s.章];
-  return `${String(s.章).padStart(2, '0')}-${章名[s.章]}/${s.场}-${scenes[s.场]}/${compositionOf(s)}.mp4`;
+export const outputPath = (s: SegmentDef) => {
+  const scenes: Record<number, string> = sceneNames[s.章];
+  return `${String(s.章).padStart(2, '0')}-${chapterNames[s.章]}/${s.场}-${scenes[s.场]}/${compositionOf(s)}.mp4`;
 };
 
 // 段号、原段号按数字一节一节比：6-4-10 在 6-4-9 后面，7-1 在 6-4-9 后面、7-2 前面，6-1-9b 在 6-1-9 后面
-export const 比编号 = (a: string, b: string) => {
+export const compareIds = (a: string, b: string) => {
   const pa = a.split('-');
   const pb = b.split('-');
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
@@ -83,5 +83,5 @@ export const 比编号 = (a: string, b: string) => {
 };
 
 // 故事先后：清单里挑出的段演到的原段，去重后按编号排
-export const 故事段序 = (pick: (s: 段) => boolean = () => true): string[] =>
-  [...new Set(段清单.filter(pick).flatMap((s) => s.故事))].sort(比编号);
+export const storySegmentOrder = (pick: (s: Segment) => boolean = () => true): string[] =>
+  [...new Set(segmentList.filter(pick).flatMap((s) => s.故事))].sort(compareIds);

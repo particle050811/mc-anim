@@ -3,29 +3,29 @@
 // 自己在画布上画用 engine/三渲二/像素.ts 的 画布像素(像素N, dpr)。
 // 段里一般这么用：<三渲二画布 宽 高 机位={正交机位({ 看, 朝 })} {...画布调子('夏日白天')}>，外面包 <整片后期 调色={色板.夏日白天.调色}>。
 import type { V3 } from '@engine/model/parts.tsx';
-import type { 正交机位参数 } from '@engine/三渲二/机位.tsx';
-import { 页面像素 } from '@engine/三渲二/像素.ts';
-import { 色板, type 调子名 } from './色板.ts';
+import type { OrthoRigParams } from '@engine/三渲二/机位.tsx';
+import { pagePixel } from '@engine/三渲二/像素.ts';
+import { palette, type ToneName } from './色板.ts';
 
 /** 一个贴图像素 = 成片上 6 个像素。和原版在 2560×1440 下自动选的界面尺寸 6 一样，聊天栏、像素字在这个尺寸下正好是游戏里的样子；
  *  正交机位一屏 15 格高、26.7 格宽，门这个机位放得下屋子、门前空地和长高的樱花树 */
-export const 像素N = 6;
+export const pixelCount = 6;
 
 /** 2D 界面的缩放（CSS 像素 / 界面像素），给 ChatOverlay 这类按 CSS 像素排版的组件 */
-export const 界面缩放 = 页面像素(像素N);
+export const uiScale = pagePixel(pixelCount);
 
 /** 正交机位的俯角：顶面一个贴图像素 2 个像素高（往里每格画面上升 1/3 格）。纯侧面看不出地面和屋顶是平的，再大正面就被顶面压住 */
-export const 正交顶面 = 2;
+export const orthoTop = 2;
 
 /** 描边：全片关（用户 10-24 定，原话「你不要搞这个阴影效果行不行？」「一开始就感觉很奇怪 你为什么要描这个阴影？」，规矩表 不描边）。
  *  开的话是一个贴图像素宽的暗色外轮廓，只描角色和手里、地上的小物件；段里不要自己打开 */
-export const 描边 = { 开: false, 宽: 像素N } as const;
+export const outline = { 开: false, 宽: pixelCount } as const;
 
 /** 本作品默认的正交像素机位：N、顶面照上面，段里只给看点、朝向（要剖面再给 剖） */
-export const 正交机位 = (p: { 看: V3; 朝: 正交机位参数['朝']; 剖?: number; 深?: number }): 正交机位参数 => ({ 种: '正交', N: 像素N, 顶面: 正交顶面, ...p });
+export const orthoRig = (p: { 看: V3; facing: OrthoRigParams['facing']; section?: number; depth?: number }): OrthoRigParams => ({ 种: '正交', N: pixelCount, topDepth: orthoTop, ...p });
 
 /** 三渲二画布跟调子走的几项：天色、平涂色调、描边（照上面的默认开关和宽，颜色取调子的） */
-export const 画布调子 = (名: 调子名) => {
-  const t = 色板[名];
-  return { 天: t.天, 色调: t.色调, 描边: 描边.开 ? { 宽: 描边.宽, 色: t.描边 } : (false as const) };
+export const canvasTone = (toneName: ToneName) => {
+  const t = palette[toneName];
+  return { 天: t.天, tint: t.tint, outline: outline.开 ? { 宽: outline.宽, 色: t.outlineColor } : (false as const) };
 };

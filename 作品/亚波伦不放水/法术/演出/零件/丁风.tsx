@@ -3,15 +3,15 @@
 // 寿命没给就是 20～39 刻；透明度 1 − 年龄 ÷ 寿命；带子取最近 4 段、高 0.5（WindTrailParticle 的 sampleSize 4），贴图 trail，亮度 240。
 import React from 'react';
 import { rng } from '@engine/model/parts.tsx';
-import type { 点 } from '../接口.ts';
-import type { 色 } from './材质.ts';
-import { 风带 } from './游带.tsx';
+import type { Vec3 } from '../接口.ts';
+import type { RgbColor } from './材质.ts';
+import { WindBand } from './游带.tsx';
 
-export interface 风粒生 {
+export interface WindBirth {
   /** 出生的刻 */
   刻: number;
   /** 主人在绝对刻 k 末的位置（场景坐标） */
-  主人: (绝对刻: number) => 点;
+  originAt: (absTick: number) => Vec3;
   宽: number;
   高: number;
   种子: number;
@@ -19,26 +19,26 @@ export interface 风粒生 {
 }
 
 /** 游戏 Vec3(0, 高, 宽).yRot(θ) → 场景坐标的偏移 */
-const 轨道偏移 = (宽: number, 高: number, 角度: number): 点 => {
-  const t = (角度 * Math.PI) / 180;
-  return [宽 * Math.sin(t), -宽 * Math.cos(t), 高];
+const orbitOffset = (orbitWidth: number, height: number, angleDeg: number): Vec3 => {
+  const t = (angleDeg * Math.PI) / 180;
+  return [orbitWidth * Math.sin(t), -orbitWidth * Math.cos(t), height];
 };
 
-export const 风粒们: React.FC<{ 出生们: readonly 风粒生[]; 刻: number; 色: 色 }> = ({ 出生们, 刻, 色 }) => (
+export const WindParticles: React.FC<{ spawns: readonly WindBirth[]; 刻: number; 色: RgbColor }> = ({ spawns, 刻: tick, 色: color }) => (
   <>
-    {出生们.map((生, i) => {
-      const 龄 = 刻 - 生.刻;
-      const r = rng(生.种子 * 2654435761 + 97);
-      const 寿命 = 生.寿命 ?? 20 + Math.floor(r() * 20);
-      const 初角 = r() * 360;
-      const 转速 = (10 + r() * 10) * (Math.floor(r() * 3) - 1);
-      if (龄 < 0 || 龄 >= 寿命) return null;
-      const 位置 = (k: number): 点 => {
-        const 主 = 生.主人(生.刻 + k);
-        const 偏 = 轨道偏移(生.宽, 生.高, 初角 + 转速 * k);
-        return [主[0] + 偏[0], 主[1] + 偏[1], 主[2] + 偏[2]];
+    {spawns.map((spawn, i) => {
+      const age = tick - spawn.刻;
+      const r = rng(spawn.种子 * 2654435761 + 97);
+      const lifetime = spawn.寿命 ?? 20 + Math.floor(r() * 20);
+      const initAngleDeg = r() * 360;
+      const rotSpeed = (10 + r() * 10) * (Math.floor(r() * 3) - 1);
+      if (age < 0 || age >= lifetime) return null;
+      const positionAt = (k: number): Vec3 => {
+        const ownerPos = spawn.originAt(spawn.刻 + k);
+        const offset = orbitOffset(spawn.宽, spawn.高, initAngleDeg + rotSpeed * k);
+        return [ownerPos[0] + offset[0], ownerPos[1] + offset[1], ownerPos[2] + offset[2]];
       };
-      return <风带 key={i} 位置={位置} 年龄={龄} 段数={4} 高={0.5} 色={色} 透明度={1 - Math.floor(龄) / 寿命} />;
+      return <WindBand key={i} 位置={positionAt} age={age} 段数={4} 高={0.5} 色={color} opacity={1 - Math.floor(age) / lifetime} />;
     })}
   </>
 );

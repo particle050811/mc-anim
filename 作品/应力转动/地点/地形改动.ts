@@ -9,8 +9,8 @@ import { overworldPackName } from './主世界116.ts';
 import { allCutouts, allFlattens } from './暮色新世界/摆放.ts';
 import { twilightPackName } from './暮色新世界/地标表.ts';
 
-export const 地形改动: { 名: string; 包: string; 挖: LandmarkCutout[]; 平: FlattenArea[] }[] = [
-  { 名: '基地小岛', 包: overworldPackName, 挖: baseIslandDigBoxes, 平: [] },
-  { 名: '边城（竖井、古城挖框在整平罩里，见上）', 包: overworldPackName, 挖: [], 平: borderTownFlatten() },
-  { 名: '暮色地标', 包: twilightPackName, 挖: allCutouts, 平: allFlattens },
+export const terrainEdits: { 名: string; 包: string; digBoxes: LandmarkCutout[]; flattenAreas: FlattenArea[] }[] = [
+  { 名: '基地小岛', 包: overworldPackName, digBoxes: baseIslandDigBoxes, flattenAreas: [] },
+  { 名: '边城（竖井、古城挖框在整平罩里，见上）', 包: overworldPackName, digBoxes: [], flattenAreas: borderTownFlatten() },
+  { 名: '暮色地标', 包: twilightPackName, digBoxes: allCutouts, flattenAreas: allFlattens },
 ];

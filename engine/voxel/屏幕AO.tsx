@@ -40,9 +40,9 @@ import { PHOTON_CLOUD_COMMON_GLSL, PHOTON_CLOUD_SHADOW_GLSL, cloudUniforms, upda
 import { aoPassUniform } from './材质.ts';
 import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, sceneDepthNeeded, type MidPassContext } from './中间步骤.ts';
-import { 渲染输入 } from '../core/渲染设置.ts';
-import { 切换着色宏 } from '../core/着色宏.ts';
-import { 光栅兼容, 切光栅宏, 反向比较, 反向系数, 换成反向投影, 解析偏移 } from '../core/光栅深度.ts';
+import { renderInput } from '../core/渲染设置.ts';
+import { toggleShaderMacro } from '../core/着色宏.ts';
+import { rasterCompatible, toggleRasterMacro, reverseCompare, reverseCoeffs, toReverseProjection, analyticOffset } from '../core/光栅深度.ts';
 
 export type ScreenAoProps = {
   // 每个像素的采样数：Voxy BEST = 24、BETTER = 12；离线渲染用 24
@@ -224,7 +224,7 @@ void main() {
 //   在镜头自己的地平线那几行朝上的面上下该差极大，认错了整条推到近裁面，把后面画的闪电切出一道缝（亚波伦 4-齐放 第 99 帧）。
 //   所以另一个方向得像棱：有邻居、两边自己不成一个平面、哪边的差都不小于这个面该有的一成（正对镜头的面片是 0；台阶上只有一个像素高的顶面，
 //   上下两个差是顶面和立面的斜率按棱的位置混出来的，门槛提到四分之一就有一半顶面认不出）。
-const 换算FS = /* glsl */ `
+const convertFragment = /* glsl */ `
 uniform sampler2D tRev;
 uniform vec2 uAB;
 uniform float uLogFar;
@@ -297,7 +297,7 @@ void main() {
 }`;
 
 // 三遍离屏画完，离屏图解析出来的颜色原样拷到画布；WITH_DEPTH：连深度（反向深度换算回对数深度，没画到的是 1）一起写
-const 拷贝FS = /* glsl */ `
+const copyFragment = /* glsl */ `
 uniform sampler2D tColor;
 #ifdef WITH_DEPTH
 uniform sampler2D tRev;
@@ -314,14 +314,14 @@ void main() {
 }`;
 
 // 比改前改后用：渲染输入给 `光栅深度: false`，第 1 遍退回片元写对数深度；`三遍离屏: false`，第 2、3 遍照旧上画布
-const rasterDepthOff = (渲染输入() as { 光栅深度?: boolean }).光栅深度 === false;
-const offscreenOff = (渲染输入() as { 三遍离屏?: boolean }).三遍离屏 === false;
+const rasterDepthOff = (renderInput() as { rasterDepth?: boolean }).rasterDepth === false;
+const offscreenOff = (renderInput() as { threePassOffscreen?: boolean }).threePassOffscreen === false;
 const warned = new WeakSet<object>();
 type ClipControl = { clipControlEXT: (origin: number, depth: number) => void; LOWER_LEFT_EXT: number; ZERO_TO_ONE_EXT: number; NEGATIVE_ONE_TO_ONE_EXT: number };
 
 // 第 1 遍藏起来、留到第 3 遍画的：三维画布本来就按半透明另排一队的（transparent）、不是普通混合的（加色的特效之类）、标了不挡的
-const aoDisabled = (渲染输入() as { 屏幕AO?: boolean }).屏幕AO === false;
-const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.NormalBlending || m.userData.屏幕AO === '不挡';
+const aoDisabled = (renderInput() as { screenAo?: boolean }).screenAo === false;
+const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.NormalBlending || m.userData.screenAo === '不挡';
 
 type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null; depthFunc: THREE.DepthModes; offsetFactor: number; raster: boolean };
 
@@ -365,14 +365,14 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       blending: THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.SrcAlphaFactor, blendSrcAlpha: THREE.ZeroFactor, blendDstAlpha: THREE.OneFactor,
     });
     const copyUniforms = { tColor: { value: rt.texture }, tRev: { value: depth }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 } };
-    const copyMat = new THREE.ShaderMaterial({ uniforms: copyUniforms, vertexShader: VS, fragmentShader: 拷贝FS, depthTest: false, depthWrite: false, toneMapped: false });
-    const copyDepthMat = new THREE.ShaderMaterial({ uniforms: copyUniforms, vertexShader: VS, fragmentShader: 拷贝FS, defines: { WITH_DEPTH: '' }, depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true, toneMapped: false });
+    const copyMat = new THREE.ShaderMaterial({ uniforms: copyUniforms, vertexShader: VS, fragmentShader: copyFragment, depthTest: false, depthWrite: false, toneMapped: false });
+    const copyDepthMat = new THREE.ShaderMaterial({ uniforms: copyUniforms, vertexShader: VS, fragmentShader: copyFragment, defines: { WITH_DEPTH: '' }, depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true, toneMapped: false });
     // 对数深度图：单通道 32 位浮点，最近点采样（和深度纹理一样）
     const logRt = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false, generateMipmaps: false });
     const logMat = new THREE.ShaderMaterial({
       uniforms: { tRev: { value: depth }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 }, uOff: { value: new THREE.Vector2() }, uRay: { value: new THREE.Vector4() }, uGrad: { value: new THREE.Vector2() }, uToView: { value: new THREE.Matrix3() } },
       vertexShader: VS,
-      fragmentShader: 换算FS,
+      fragmentShader: convertFragment,
       depthTest: false,
       depthWrite: false,
       toneMapped: false,
@@ -445,7 +445,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       const material = entry.m;
       const later = drawLater(material);
       if (later) material.visible = false;
-      if (!raster || !entry.visible || 光栅兼容(material)) continue;
+      if (!raster || !entry.visible || rasterCompatible(material)) continue;
       if (later) offscreen = false;
       else raster = false;
       if (!warned.has(material)) {
@@ -455,7 +455,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     }
     offscreen &&= raster;
     // 第 3 遍留在画布上时才要推回像素中心
-    const resolveOff = raster && !offscreen ? 解析偏移(gl, samples) : null;
+    const resolveOff = raster && !offscreen ? analyticOffset(gl, samples) : null;
     if (raster && !offscreen && !resolveOff) {
       raster = false;
       if (!warned.has(gl)) {
@@ -467,15 +467,15 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     const toRaster = (entry: SavedMaterial) => {
       const material = entry.m;
       entry.raster = true;
-      切光栅宏(material, true);
-      material.depthFunc = 反向比较[material.depthFunc]!;
+      toggleRasterMacro(material, true);
+      material.depthFunc = reverseCompare[material.depthFunc]!;
       material.polygonOffsetFactor = 0;
       material.polygonOffsetUnits = -material.polygonOffsetUnits;
     };
     const fromRaster = (entry: SavedMaterial) => {
       const material = entry.m;
       entry.raster = false;
-      切光栅宏(material, false);
+      toggleRasterMacro(material, false);
       material.depthFunc = entry.depthFunc;
       material.polygonOffsetFactor = entry.offsetFactor;
       material.polygonOffsetUnits = -material.polygonOffsetUnits;
@@ -497,7 +497,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
         clip!.clipControlEXT(clip!.LOWER_LEFT_EXT, clip!.ZERO_TO_ONE_EXT);
         resources.proj.copy(cam.projectionMatrix);
         resources.projInv.copy(cam.projectionMatrixInverse);
-        换成反向投影(cam.projectionMatrix, cam.near, cam.far);
+        toReverseProjection(cam.projectionMatrix, cam.near, cam.far);
         cam.projectionMatrixInverse.copy(cam.projectionMatrix).invert();
         entered = true;
       } as typeof shadowRender;
@@ -516,12 +516,12 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       const material = entry.m;
       if (drawLater(material)) continue;
       if (raster) toRaster(entry);
-      if (material.userData.屏幕AO === '压暗' || (applyToMesh && material.userData.方块网格)) {
+      if (material.userData.screenAo === '压暗' || (applyToMesh && material.userData.blockMesh)) {
         material.blending = THREE.CustomBlending;
         material.blendSrc = THREE.OneFactor;
         material.blendDst = THREE.ZeroFactor;
         // `userData.AO按alpha` 的（体素材质）alpha 写材质给的值：按离镜头距离减掉的比例（lib/体素/材质.ts 的 `远处AO`），抗锯齿边照样按覆盖率混。别的压暗材质照旧写 0
-        material.blendSrcAlpha = material.userData.AO按alpha ? THREE.OneFactor : THREE.ZeroFactor;
+        material.blendSrcAlpha = material.userData.aoByAlpha ? THREE.OneFactor : THREE.ZeroFactor;
         material.blendDstAlpha = THREE.ZeroFactor;
       }
     }
@@ -552,11 +552,11 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
 
     // 反向深度 → 对数深度，第 2 遍和中间步骤都读这张
     let depthTex: THREE.Texture = rt.depthTexture as THREE.DepthTexture;
-    const { a: revA, b: revB } = 反向系数(cam.near, cam.far);
+    const { a: revA, b: revB } = reverseCoeffs(cam.near, cam.far);
     if (raster) {
       const { logRt, logMat } = resources;
       if (logRt.width !== width || logRt.height !== height) logRt.setSize(width, height);
-      切换着色宏(logMat, 'CENTER', !offscreen);
+      toggleShaderMacro(logMat, 'CENTER', !offscreen);
       logMat.uniforms.tRev.value = rt.depthTexture;
       (logMat.uniforms.uAB.value as THREE.Vector2).set(revA, revB);
       if (resolveOff) (logMat.uniforms.uOff.value as THREE.Vector2).copy(resolveOff);
@@ -594,7 +594,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     const atmo = atmoOn() || atmosphereCamera !== undefined;
     // 离开天空后关闭大气后期；需要保留已认可效果的镜头必须显式给参考相机。
     const aoMat = offscreen ? resources.blendMat : mat;
-    切换着色宏(aoMat, 'ATMO', atmo);
+    toggleShaderMacro(aoMat, 'ATMO', atmo);
     if (atmo) updateCloudUniforms(atmosphereCamera ?? cam);
     const ac = [gl.autoClearColor, gl.autoClearDepth, gl.autoClearStencil];
     const shadowAuto = gl.shadowMap.autoUpdate;
@@ -650,8 +650,8 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       }
       const drawScene = () => (offscreen ? renderReversed(false) : gl.render(scene, camera));
       if (any && latePasses.length && ctx) {
-        const water = saved.filter((e) => drawLater(e.m) && e.visible && e.m.userData.水面);
-        for (const e of saved) if (drawLater(e.m) && !e.m.userData.水面) e.m.visible = false;
+        const water = saved.filter((e) => drawLater(e.m) && e.visible && e.m.userData.waterLevel);
+        for (const e of saved) if (drawLater(e.m) && !e.m.userData.waterLevel) e.m.visible = false;
         // 水这一下写深度：花草（屏幕AO 不挡）挪到水后面画了，水不写深度的话水下的海草、海带会盖在海面上（6-1-1 远处整片海成了草地）
         const waterDepthWrite = water.map((e) => e.m.depthWrite);
         for (const e of water) e.m.depthWrite = true;
@@ -659,7 +659,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
         water.forEach((e, i) => (e.m.depthWrite = waterDepthWrite[i]));
         for (const pass of latePasses) pass.draw(ctx);
         gl.setRenderTarget(target);
-        for (const e of saved) if (drawLater(e.m)) e.m.visible = e.visible && !e.m.userData.水面;
+        for (const e of saved) if (drawLater(e.m)) e.m.visible = e.visible && !e.m.userData.waterLevel;
         drawScene();
       } else {
         if (latePasses.length && ctx) {

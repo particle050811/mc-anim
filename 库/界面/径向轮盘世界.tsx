@@ -3,26 +3,26 @@
 // 放大用最近邻（走近了图标像素不糊），缩小用多级贴图加各向异性（斜着看、离远了不闪）。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import type { 画布位 } from './径向轮盘画.ts';
+import type { CanvasPos } from './径向轮盘画.ts';
 
-export const 轮盘世界面: React.FC<{
-  画: (位: 画布位) => void;
+export const WheelWorldPlane: React.FC<{
+  draw: (canvasPos: CanvasPos) => void;
   /** 面从圆心到边盖多少 GUI 像素（要不小于轮盘最外沿，原版带背景贴图是 128） */
-  半径: number;
+  radius: number;
   /** 一个 GUI 像素在世界里多少格 */
-  每像素格: number;
+  cellsPerPixel: number;
   /** 贴图上一个 GUI 像素几个贴图像素，默认 8 */
-  贴图倍?: number;
+  textureScale?: number;
   /** 这些值变了才重画贴图（画 里用到的会变的参数都列上） */
-  依赖: readonly unknown[];
+  deps: readonly unknown[];
   renderOrder?: number;
-}> = ({ 画, 半径, 每像素格, 贴图倍 = 8, 依赖, renderOrder }) => {
-  const 贴图 = useMemo(() => {
-    const 边 = Math.round(半径 * 2 * 贴图倍);
+}> = ({ draw, radius, cellsPerPixel, textureScale = 8, deps, renderOrder }) => {
+  const texture = useMemo(() => {
+    const side = Math.round(radius * 2 * textureScale);
     const canvas = document.createElement('canvas');
-    canvas.width = 边;
-    canvas.height = 边;
-    画({ ctx: canvas.getContext('2d')!, 心x: 边 / 2, 心y: 边 / 2, 倍: 贴图倍 });
+    canvas.width = side;
+    canvas.height = side;
+    draw({ ctx: canvas.getContext('2d')!, centerX: side / 2, centerY: side / 2, scale: textureScale });
     const t = new THREE.CanvasTexture(canvas);
     t.magFilter = THREE.NearestFilter;
     t.minFilter = THREE.LinearMipmapLinearFilter;
@@ -30,13 +30,13 @@ export const 轮盘世界面: React.FC<{
     t.anisotropy = 8;
     return t;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [半径, 贴图倍, ...依赖]);
-  useEffect(() => () => 贴图.dispose(), [贴图]);
-  const 边格 = 半径 * 2 * 每像素格;
+  }, [radius, textureScale, ...deps]);
+  useEffect(() => () => texture.dispose(), [texture]);
+  const planeSize = radius * 2 * cellsPerPixel;
   return (
     <mesh renderOrder={renderOrder}>
-      <planeGeometry args={[边格, 边格]} />
-      <meshBasicMaterial map={贴图} transparent depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
+      <planeGeometry args={[planeSize, planeSize]} />
+      <meshBasicMaterial map={texture} transparent depthWrite={false} side={THREE.DoubleSide} toneMapped={false} />
     </mesh>
   );
 };

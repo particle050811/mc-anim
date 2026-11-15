@@ -1,274 +1,274 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import type { 资产cue } from '@engine/段/段定义.ts';
-import 摇铃段 from './段/2-摇铃/段.ts';
-import 重逢段 from './段/2-重逢/段.ts';
-import { fps, 拍, 旧帧, 段内正片事件帧, 段窗口, 正片事件 } from './分镜.ts';
-import { 正片原声增益 } from './配乐/正片.ts';
-import { 樱花风默认, 造风墙, 墙瓣在, 风墙沿, 风墙底, 风墙盖满 } from './特效/樱花风参数.ts';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
-import { 铃声, 铃声文件, 风 } from './场/2-门口/第15句声音.ts';
-import { 推门声 } from './场/2-隐世之境/重逢声音.ts';
-import { 对视取景, 对视气泡, 对视脚, 对视视角 } from './场/2-隐世之境/对视参数.ts';
-import { 台词弹出, 回头进度, 对视那帧秒, 笑了, 聊天行不透明, 重逢机位 } from './场/2-隐世之境/重逢动作.ts';
-import { 她 } from './场/2-隐世之境/参数.ts';
-import { 台词气泡, 推镜, 风散心高 } from './场/2-隐世之境/重逢参数.ts';
-import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
-import { 做像素字 } from '@库/界面/像素字表.ts';
-import { 字节路径, 读作品资产锁 } from '../../pipeline/资产/资产锁.ts';
-import { 回帧们, 帧数于, 窗帧 } from './声音/回帧.ts';
+import type { AssetCue } from '@engine/段/段定义.ts';
+import shakeBellSegment from './段/2-摇铃/段.ts';
+import reunionSegment from './段/2-重逢/段.ts';
+import { fps, beatAt, legacyFrameSec, segMainCutEventFrames, SegmentWindow, mainCutEvents } from './分镜.ts';
+import { mainCutOriginalGain } from './配乐/正片.ts';
+import { sakuraWindDefaults, makeWindWall, wallPetalAt, windWallEdge, windWallBottom, windWallCovered } from './特效/樱花风参数.ts';
+import { filmScale } from '@engine/三渲二/像素.ts';
+import { bellSound, bellFile, windSound } from './场/2-门口/第15句声音.ts';
+import { doorOpenSound } from './场/2-隐世之境/重逢声音.ts';
+import { eyeContactFraming, eyeContactBubble, eyeContactFoot, eyeContactFov } from './场/2-隐世之境/对视参数.ts';
+import { linePop, turnBackProgress, eyeContactFrameSec, hasLaughed, chatLineOpacity, reunionRig } from './场/2-隐世之境/重逢动作.ts';
+import { liYing } from './场/2-隐世之境/参数.ts';
+import { lineBubble, pushShot, windScatterHeight } from './场/2-隐世之境/重逢参数.ts';
+import { makePerspectiveCamera, projectToPage, zUpToThree } from '@库/界面/投影.ts';
+import { makePixelFont } from '@库/界面/像素字表.ts';
+import { bytesPath, readWorkAssetLock } from '../../pipeline/资产/资产锁.ts';
+import { toFrameCues, frameCountOf, sceneWindowFrames } from './声音/回帧.ts';
 
-const 事 = 正片事件;
-const 风时刻 = { 起: 事.摇铃.秒, 满: 事.风散开.秒 };
-const 秒 = (歌曲帧: number) => 歌曲帧 / fps;
-const 找 = (段: typeof 摇铃段, 名: string) => 回帧们(段).find((c) => c.名 === 名);
+const events = mainCutEvents;
+const windMoments = { 起: events.摇铃.秒, full: events.风散开.秒 };
+const toSec = (songFrame: number) => songFrame / fps;
+const findCue = (seg: typeof shakeBellSegment, name: string) => toFrameCues(seg).find((c) => c.名 === name);
 
 describe('正片第 15 句：两段的窗口和事件', () => {
   it('2-摇铃 [2895, 2985)（48.25–49.75 秒）、2-重逢 [2985, 3177)，首尾相接', () => {
-    expect(段窗口('2-摇铃')).toMatchObject({ 起帧: 2895, 止帧: 2985, 帧数: 90 });
-    expect(段窗口('2-重逢')).toMatchObject({ 起帧: 2985, 止帧: 3177, 帧数: 192 });
-    expect(帧数于(摇铃段)).toBe(90);
-    expect(帧数于(重逢段)).toBe(192);
+    expect(SegmentWindow('2-摇铃')).toMatchObject({ 起帧: 2895, 止帧: 2985, 帧数: 90 });
+    expect(SegmentWindow('2-重逢')).toMatchObject({ 起帧: 2985, 止帧: 3177, 帧数: 192 });
+    expect(frameCountOf(shakeBellSegment)).toBe(90);
+    expect(frameCountOf(reunionSegment)).toBe(192);
   });
 
   it('段内帧：上线 13、摇铃 64；风散开 0、回头 0（风散开时已经在转）、对视 25（封面帧）、换上蛋糕 40、驯服 89（她同一帧笑、冒台词气泡）、段尾 192', () => {
-    expect([段内正片事件帧('2-摇铃').第15句加入游戏, 段内正片事件帧('2-摇铃').摇铃]).toEqual([13, 64]);
-    const 内 = 段内正片事件帧('2-重逢');
-    expect([内.风散开, 内.回头, 内.第15句对视, 内.换上蛋糕, 内.第15句驯服, 内.第15句笑, 内.第15句台词, 内.第15句段尾]).toEqual([0, 0, 25, 40, 89, 89, 89, 192]);
+    expect([segMainCutEventFrames('2-摇铃').第15句加入游戏, segMainCutEventFrames('2-摇铃').摇铃]).toEqual([13, 64]);
+    const mainEvents = segMainCutEventFrames('2-重逢');
+    expect([mainEvents.风散开, mainEvents.回头, mainEvents.第15句对视, mainEvents.换上蛋糕, mainEvents.第15句驯服, mainEvents.第15句笑, mainEvents.第15句台词, mainEvents.第15句段尾]).toEqual([0, 0, 25, 40, 89, 89, 89, 192]);
   });
 
   it('门在风里推开，开门声落在风散开那一拍', () => {
-    expect(事.推门.帧).toBe(事.风散开.帧);
+    expect(events.推门.帧).toBe(events.风散开.帧);
   });
 
   it('对视（封面帧）干净地停 0.25 秒再换上蛋糕，蛋糕升上来（0.4 秒）再举着停 0.35 秒以上才右键；右键在驯服前一刻；驯服落在第 120 拍，她笑、冒台词气泡同一帧', () => {
-    expect(事.换上蛋糕.秒 - 事.第15句对视.秒).toBeGreaterThanOrEqual(0.25);
-    expect(事.递蛋糕右键.秒 - 事.换上蛋糕.秒).toBeGreaterThanOrEqual(0.75);
-    expect((事.第15句驯服.秒 - 事.递蛋糕右键.秒) * 20).toBeCloseTo(1, 9);
-    expect(事.第15句驯服.秒).toBeCloseTo(拍(120), 9);
-    expect([事.第15句笑.帧, 事.第15句台词.帧]).toEqual([事.第15句驯服.帧, 事.第15句驯服.帧]);
-    expect(笑了(秒(事.第15句台词.帧))).toBe(true);
-    expect(笑了(秒(事.第15句台词.帧 - 1))).toBe(false);
+    expect(events.换上蛋糕.秒 - events.第15句对视.秒).toBeGreaterThanOrEqual(0.25);
+    expect(events.递蛋糕右键.秒 - events.换上蛋糕.秒).toBeGreaterThanOrEqual(0.75);
+    expect((events.第15句驯服.秒 - events.递蛋糕右键.秒) * 20).toBeCloseTo(1, 9);
+    expect(events.第15句驯服.秒).toBeCloseTo(beatAt(120), 9);
+    expect([events.第15句笑.帧, events.第15句台词.帧]).toEqual([events.第15句驯服.帧, events.第15句驯服.帧]);
+    expect(hasLaughed(toSec(events.第15句台词.帧))).toBe(true);
+    expect(hasLaughed(toSec(events.第15句台词.帧 - 1))).toBe(false);
   });
 
   it('台词气泡（用户 10-25「唱到段尾插不进气泡 不能提前一点放吗？」）：在画面上 2.5 秒以上、2-重逢 里 1.7 秒以上；接进 2-合照、她靠好那一帧收，咔哒那张新合照里没有', () => {
-    expect((事.第15句台词收.帧 - 事.第15句台词.帧) / fps).toBeGreaterThanOrEqual(2.5);
-    expect((事.第15句段尾.帧 - 事.第15句台词.帧) / fps).toBeGreaterThanOrEqual(1.7);
-    expect(事.第15句台词收.帧).toBe(事.靠肩.帧);
-    expect(事.第15句台词收.帧).toBeLessThan(事['照片-合照'].帧);
+    expect((events.第15句台词收.帧 - events.第15句台词.帧) / fps).toBeGreaterThanOrEqual(2.5);
+    expect((events.第15句段尾.帧 - events.第15句台词.帧) / fps).toBeGreaterThanOrEqual(1.7);
+    expect(events.第15句台词收.帧).toBe(events.靠肩.帧);
+    expect(events.第15句台词收.帧).toBeLessThan(events['照片-合照'].帧);
   });
 });
 
 describe('樱花风转场', () => {
   it('转场前 1/24 秒到转场那一帧（2-摇铃 末尾、2-重逢 段头）风墙整屏盖住', () => {
-    const 转场 = 段窗口('2-重逢').起帧;
-    expect(段窗口('2-摇铃').止帧).toBe(转场);
-    for (let 帧 = 转场 - Math.floor(旧帧(1) * fps); 帧 <= 转场; 帧++) expect(风墙盖满(秒(帧), 风时刻), `帧 ${帧}`).toBe(true);
-    expect(风墙盖满(秒(转场) - 旧帧(1), 风时刻)).toBe(true);
+    const sceneTransitionFrame = SegmentWindow('2-重逢').起帧;
+    expect(SegmentWindow('2-摇铃').止帧).toBe(sceneTransitionFrame);
+    for (let frame = sceneTransitionFrame - Math.floor(legacyFrameSec(1) * fps); frame <= sceneTransitionFrame; frame++) expect(windWallCovered(toSec(frame), windMoments), `帧 ${frame}`).toBe(true);
+    expect(windWallCovered(toSec(sceneTransitionFrame) - legacyFrameSec(1), windMoments)).toBe(true);
   });
 
   it('摇铃那一帧风墙还没进画；对视（封面帧）之前风墙的每一片花瓣、风流都吹出画', () => {
-    const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
-    expect(风墙沿(事.摇铃.秒, 风时刻, 樱花风默认, W).右沿).toBeLessThanOrEqual(0);
-    const t = 秒(事.第15句对视.帧 - 1);
-    expect(风墙底(t, 风时刻, 樱花风默认, W)).toBeNull();
-    for (const q of 造风墙(樱花风默认, W, H)) {
-      const { x, y } = 墙瓣在(q, t, 风时刻, 樱花风默认, W, H);
-      const 边 = q.档 * 3;
-      expect(x + 边 <= 0 || x >= W || y + 边 <= 0 || y >= H).toBe(true);
+    const [W, H] = [1280 * filmScale, 720 * filmScale];
+    expect(windWallEdge(events.摇铃.秒, windMoments, sakuraWindDefaults, W).rightEdge).toBeLessThanOrEqual(0);
+    const t = toSec(events.第15句对视.帧 - 1);
+    expect(windWallBottom(t, windMoments, sakuraWindDefaults, W)).toBeNull();
+    for (const q of makeWindWall(sakuraWindDefaults, W, H)) {
+      const { x, y } = wallPetalAt(q, t, windMoments, sakuraWindDefaults, W, H);
+      const side = q.档 * 3;
+      expect(x + side <= 0 || x >= W || y + side <= 0 || y >= H).toBe(true);
     }
-    expect(事.风散开.秒 + 樱花风默认.风流.散完秒).toBeLessThan(t);
+    expect(events.风散开.秒 + sakuraWindDefaults.windFlow.scatterDoneSec).toBeLessThan(t);
   });
 
   it('她的背影那块先散开：散心方圆 200 页面像素，转场后 0.125 秒（24 fps 时第 3 帧）起一片花瓣都没有', () => {
-    const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
-    const 机 = 重逢机位(事.风散开.帧 / fps);
-    const cam = 做透视相机({ 眼: Z朝上转three(机.眼), 看: Z朝上转three(机.看), 视角: 机.视角, 宽: 1280, 高: 720 });
-    const c = 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + 风散心高]), 1280, 720);
-    const 心: [number, number] = [c.x * 成片倍数, c.y * 成片倍数];
-    const 墙 = 造风墙(樱花风默认, W, H);
-    const 挨着 = (t: number) =>
-      墙.filter((q) => {
-        const { x, y } = 墙瓣在(q, t, 风时刻, 樱花风默认, W, H, 心);
-        const 边 = q.档 * 3;
-        const [nx, ny] = [Math.max(x, Math.min(心[0], x + 边)), Math.max(y, Math.min(心[1], y + 边))];
-        return Math.hypot(nx - 心[0], ny - 心[1]) < 200 * 成片倍数;
+    const [W, H] = [1280 * filmScale, 720 * filmScale];
+    const rig = reunionRig(events.风散开.帧 / fps);
+    const cam = makePerspectiveCamera({ 眼: zUpToThree(rig.眼), 看: zUpToThree(rig.看), fov: rig.fov, 宽: 1280, 高: 720 });
+    const c = projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + windScatterHeight]), 1280, 720);
+    const center: [number, number] = [c.x * filmScale, c.y * filmScale];
+    const wallPetals = makeWindWall(sakuraWindDefaults, W, H);
+    const nearby = (t: number) =>
+      wallPetals.filter((q) => {
+        const { x, y } = wallPetalAt(q, t, windMoments, sakuraWindDefaults, W, H, center);
+        const side = q.档 * 3;
+        const [nx, ny] = [Math.max(x, Math.min(center[0], x + side)), Math.max(y, Math.min(center[1], y + side))];
+        return Math.hypot(nx - center[0], ny - center[1]) < 200 * filmScale;
       }).length;
-    expect(挨着(秒(事.风散开.帧))).toBeGreaterThan(0);
-    const 净 = 秒(事.风散开.帧) + 旧帧(3);
-    expect(挨着(净)).toBe(0);
-    for (let 帧 = 事.风散开.帧; 帧 <= 事.第15句对视.帧; 帧++) if (秒(帧) >= 净) expect(挨着(秒(帧)), `帧 ${帧}`).toBe(0);
+    expect(nearby(toSec(events.风散开.帧))).toBeGreaterThan(0);
+    const clearedAt = toSec(events.风散开.帧) + legacyFrameSec(3);
+    expect(nearby(clearedAt)).toBe(0);
+    for (let frame = events.风散开.帧; frame <= events.第15句对视.帧; frame++) if (toSec(frame) >= clearedAt) expect(nearby(toSec(frame)), `帧 ${frame}`).toBe(0);
   });
 
   it('风散开时她已经在转：散心那块散完（转场后 0.125 秒）时头转了不到一半、身子不到三成，之后每一帧都在转，到对视那一帧才转完', () => {
-    const 净 = 秒(事.风散开.帧) + 旧帧(3);
-    const k = 回头进度(净);
+    const clearedAt = toSec(events.风散开.帧) + legacyFrameSec(3);
+    const k = turnBackProgress(clearedAt);
     expect(k.头).toBeGreaterThan(0);
     expect(k.头).toBeLessThan(0.5);
-    expect(k.身).toBeLessThan(0.3);
-    for (let 帧 = 事.风散开.帧 + 1; 帧 <= 事.第15句对视.帧; 帧++) expect(回头进度(秒(帧)).身, `帧 ${帧}`).toBeGreaterThan(回头进度(秒(帧 - 1)).身);
-    expect(回头进度(秒(事.第15句对视.帧 - 1)).身).toBeLessThan(1);
+    expect(k.bodyTurn).toBeLessThan(0.3);
+    for (let frame = events.风散开.帧 + 1; frame <= events.第15句对视.帧; frame++) expect(turnBackProgress(toSec(frame)).bodyTurn, `帧 ${frame}`).toBeGreaterThan(turnBackProgress(toSec(frame - 1)).bodyTurn);
+    expect(turnBackProgress(toSec(events.第15句对视.帧 - 1)).bodyTurn).toBeLessThan(1);
   });
 
   it('风散开那一下不是一下散光：转场后 0.125 秒（24 fps 时第 3 帧）还有一半以上的花瓣在画里', () => {
-    const [W, H] = [1280 * 成片倍数, 720 * 成片倍数];
-    const 墙 = 造风墙(樱花风默认, W, H);
-    const 在画里 = (t: number) =>
-      墙.filter((q) => {
-        const { x, y } = 墙瓣在(q, t, 风时刻, 樱花风默认, W, H);
-        const 边 = q.档 * 3;
-        return x + 边 > 0 && x < W && y + 边 > 0 && y < H;
+    const [W, H] = [1280 * filmScale, 720 * filmScale];
+    const wallPetals = makeWindWall(sakuraWindDefaults, W, H);
+    const inPicture = (t: number) =>
+      wallPetals.filter((q) => {
+        const { x, y } = wallPetalAt(q, t, windMoments, sakuraWindDefaults, W, H);
+        const side = q.档 * 3;
+        return x + side > 0 && x < W && y + side > 0 && y < H;
       }).length;
-    expect(在画里(秒(事.风散开.帧) + 旧帧(3))).toBeGreaterThan(在画里(秒(事.风散开.帧)) / 2);
+    expect(inPicture(toSec(events.风散开.帧) + legacyFrameSec(3))).toBeGreaterThan(inPicture(toSec(events.风散开.帧)) / 2);
   });
 });
 
 describe('隐世之境一镜到底：回头', () => {
   it('对视那一帧她回头转完，风散开那一帧还背对着门', () => {
-    expect(对视那帧秒).toBeCloseTo(事.第15句对视.帧 / fps, 12);
-    expect(回头进度(秒(事.第15句对视.帧))).toEqual({ 身: 1, 头: 1 });
-    expect(回头进度(秒(事.风散开.帧))).toEqual({ 身: 0, 头: 0 });
+    expect(eyeContactFrameSec).toBeCloseTo(events.第15句对视.帧 / fps, 12);
+    expect(turnBackProgress(toSec(events.第15句对视.帧))).toEqual({ bodyTurn: 1, 头: 1 });
+    expect(turnBackProgress(toSec(events.风散开.帧))).toEqual({ bodyTurn: 0, 头: 0 });
   });
 });
 
 describe('隐世之境一镜到底：接过来的聊天行', () => {
   it('接缝那一帧（风散开）同 2-摇铃 末帧满亮，跟着风散开一路淡，对视那一帧以前淡完', () => {
-    expect(聊天行不透明(秒(事.风散开.帧))).toBe(1);
-    for (let 帧 = 事.风散开.帧 + 1; 帧 < 事.第15句对视.帧; 帧++) {
-      const [前, 这] = [聊天行不透明(秒(帧 - 1)), 聊天行不透明(秒(帧))];
-      expect(这 < 前 || 这 === 0, `帧 ${帧}`).toBe(true);
+    expect(chatLineOpacity(toSec(events.风散开.帧))).toBe(1);
+    for (let frame = events.风散开.帧 + 1; frame < events.第15句对视.帧; frame++) {
+      const [prev, curAlpha] = [chatLineOpacity(toSec(frame - 1)), chatLineOpacity(toSec(frame))];
+      expect(curAlpha < prev || curAlpha === 0, `帧 ${frame}`).toBe(true);
     }
-    expect(聊天行不透明(秒(事.第15句对视.帧 - 1))).toBe(0);
+    expect(chatLineOpacity(toSec(events.第15句对视.帧 - 1))).toBe(0);
   });
 });
 
 describe('声音：跨段的那几截首尾相接', () => {
   it('原声：两段各放满自己的窗口，入点接上，增益固定（不淡）', () => {
-    const a = 找(摇铃段, '原声')!;
-    const b = 找(重逢段, '原声')!;
-    expect(a).toMatchObject({ 帧: 0, 帧数: 90, 入点秒: 2895 / fps, 增益: 正片原声增益 });
-    expect(b).toMatchObject({ 帧: 0, 帧数: 192, 入点秒: 2985 / fps, 增益: 正片原声增益 });
+    const a = findCue(shakeBellSegment, '原声')!;
+    const b = findCue(reunionSegment, '原声')!;
+    expect(a).toMatchObject({ 帧: 0, 帧数: 90, 入点秒: 2895 / fps, 增益: mainCutOriginalGain });
+    expect(b).toMatchObject({ 帧: 0, 帧数: 192, 入点秒: 2985 / fps, 增益: mainCutOriginalGain });
   });
 
   it('铃声、风声：摇铃段放前一截，重逢段从段头接着放，入点 = 已放的帧数 ÷ fps，增益逐帧连得上', () => {
-    for (const 音 of [铃声, 风]) {
-      const a = 找(摇铃段, 音.名)!;
-      const b = 找(重逢段, 音.名)!;
-      expect(a.帧).toBe(音.起帧 - 2895);
+    for (const cue of [bellSound, windSound]) {
+      const a = findCue(shakeBellSegment, cue.名)!;
+      const b = findCue(reunionSegment, cue.名)!;
+      expect(a.帧).toBe(cue.起帧 - 2895);
       expect(a.帧 + a.帧数).toBe(90);
       expect(a.入点秒).toBeUndefined();
       expect(b.帧).toBe(0);
       expect(b.入点秒).toBeCloseTo(a.帧数 / fps, 12);
-      const 总 = 音.帧数 ?? Math.ceil(音.时长秒 * fps);
-      expect(a.帧数 + b.帧数).toBe(总);
-      const 增益 = [...(a.增益 as readonly number[]), ...(b.增益 as readonly number[])];
-      expect(增益).toEqual(Array.from({ length: 总 }, (_, i) => Math.round(音.增益(音.起帧 + i) * 1e6) / 1e6));
+      const totalFrames = cue.帧数 ?? Math.ceil(cue.时长秒 * fps);
+      expect(a.帧数 + b.帧数).toBe(totalFrames);
+      const gain = [...(a.增益 as readonly number[]), ...(b.增益 as readonly number[])];
+      expect(gain).toEqual(Array.from({ length: totalFrames }, (_, i) => Math.round(cue.增益(cue.起帧 + i) * 1e6) / 1e6));
     }
   });
 
   it('铃声起音离摇铃那一拍不到半帧；风声淡进淡出，两头是 0 附近、转场前最后一帧最响、转场起淡、0.35 秒淡完', () => {
-    expect(Math.abs(铃声.起帧 / fps + 铃声文件.起音秒 - 事.摇铃.秒)).toBeLessThan(0.5 / fps);
-    const g = 风.增益;
-    expect(g(风.起帧)).toBeLessThan(0.2);
-    expect(g(风.起帧 + 风.帧数! - 1)).toBeLessThan(0.1);
-    expect(g(事.风散开.帧 - 1)).toBeCloseTo(0.6, 6);
+    expect(Math.abs(bellSound.起帧 / fps + bellFile.onsetSec - events.摇铃.秒)).toBeLessThan(0.5 / fps);
+    const g = windSound.增益;
+    expect(g(windSound.起帧)).toBeLessThan(0.2);
+    expect(g(windSound.起帧 + windSound.帧数! - 1)).toBeLessThan(0.1);
+    expect(g(events.风散开.帧 - 1)).toBeCloseTo(0.6, 6);
     // 60 fps 时 风止 取整后淡出正好从转场那一帧起（24 fps 时早 0.4 帧，转场那一帧已经在淡）
-    expect(g(事.风散开.帧)).toBeLessThanOrEqual(0.6);
-    expect(g(事.风散开.帧 + 1)).toBeLessThan(g(事.风散开.帧));
+    expect(g(events.风散开.帧)).toBeLessThanOrEqual(0.6);
+    expect(g(events.风散开.帧 + 1)).toBeLessThan(g(events.风散开.帧));
   });
 
   it('推门声在重逢段里从推门那一帧（段头）起、放满文件', () => {
-    const c = 找(重逢段, '推门')!;
-    expect(c.帧).toBe(段内正片事件帧('2-重逢').推门);
+    const c = findCue(reunionSegment, '推门')!;
+    expect(c.帧).toBe(segMainCutEventFrames('2-重逢').推门);
     expect(c.帧).toBe(0);
-    expect(c.帧数 / fps).toBeGreaterThanOrEqual(推门声.时长秒);
-    expect(找(摇铃段, '推门')).toBeUndefined();
+    expect(c.帧数 / fps).toBeGreaterThanOrEqual(doorOpenSound.时长秒);
+    expect(findCue(shakeBellSegment, '推门')).toBeUndefined();
   });
 });
 
 describe('隐世之境一镜到底：机位', () => {
-  const 机 = (帧: number) => 重逢机位(秒(帧));
+  const rigAt = (frame: number) => reunionRig(toSec(frame));
   it('对视那一帧的机位就是封面帧（片）的：眼、看点、视角', () => {
-    const c = 机(事.第15句对视.帧);
-    expect(c.眼).toEqual([对视脚[0], 对视脚[1], 对视脚[2] + 1.62]);
-    expect(c.看).toEqual(对视取景.片.看);
-    expect(c.视角).toBe(对视视角);
+    const c = rigAt(events.第15句对视.帧);
+    expect(c.眼).toEqual([eyeContactFoot[0], eyeContactFoot[1], eyeContactFoot[2] + 1.62]);
+    expect(c.看).toEqual(eyeContactFraming.片.看);
+    expect(c.fov).toBe(eyeContactFov);
   });
 
   it('整镜眼睛不动；对视以前看点就是封面帧的，以后才挪', () => {
-    for (let 帧 = 事.风散开.帧; 帧 < 事.第15句段尾.帧; 帧++) expect(机(帧).眼, `帧 ${帧}`).toEqual(机(事.第15句对视.帧).眼);
-    for (let 帧 = 事.风散开.帧; 帧 <= 事.第15句对视.帧; 帧++) expect(机(帧).看, `帧 ${帧}`).toEqual(对视取景.片.看);
+    for (let frame = events.风散开.帧; frame < events.第15句段尾.帧; frame++) expect(rigAt(frame).眼, `帧 ${frame}`).toEqual(rigAt(events.第15句对视.帧).眼);
+    for (let frame = events.风散开.帧; frame <= events.第15句对视.帧; frame++) expect(rigAt(frame).看, `帧 ${frame}`).toEqual(eyeContactFraming.片.看);
   });
 
   it('对视以前（封面帧以前的画面）的机位同 10-24：风散开那一帧视角 41.718°，按 原速末视角 的速度收', () => {
     // 24 fps 时 41.713°：推速按 对视到段尾 的长度算，段尾帧取整到 60 fps 早了 1/120 秒，视角差 0.005°（页面上不到 0.1 像素）
-    expect(机(事.风散开.帧).视角).toBeCloseTo(41.7183411514613, 12);
-    expect(推镜.原速末视角).toBe(30);
+    expect(rigAt(events.风散开.帧).fov).toBeCloseTo(41.7183411514613, 12);
+    expect(pushShot.origSpeedEndFov).toBe(30);
   });
 
   it('推速在对视那一帧前后接得上（对数半正切每帧的步长差不到 5%）', () => {
-    const 步 = (帧: number) => Math.log(Math.tan((机(帧).视角 * Math.PI) / 360) / Math.tan((机(帧 - 1).视角 * Math.PI) / 360));
-    const [前, 后] = [步(事.第15句对视.帧), 步(事.第15句对视.帧 + 1)];
-    expect(Math.abs(后 - 前) / Math.abs(前)).toBeLessThan(0.05);
+    const zoomStep = (frame: number) => Math.log(Math.tan((rigAt(frame).fov * Math.PI) / 360) / Math.tan((rigAt(frame - 1).fov * Math.PI) / 360));
+    const [before, after] = [zoomStep(events.第15句对视.帧), zoomStep(events.第15句对视.帧 + 1)];
+    expect(Math.abs(after - before) / Math.abs(before)).toBeLessThan(0.05);
   });
 
   it('视角整镜一直收（一刻不停、不回头），段尾那一刻收到 末视角', () => {
-    for (let 帧 = 事.风散开.帧 + 1; 帧 < 事.第15句段尾.帧; 帧++) expect(机(帧).视角, `帧 ${帧}`).toBeLessThan(机(帧 - 1).视角);
-    expect(机(事.第15句段尾.帧 - 1).视角).toBeGreaterThan(推镜.末视角);
-    expect(机(事.第15句段尾.帧).视角).toBeCloseTo(推镜.末视角, 9);
+    for (let frame = events.风散开.帧 + 1; frame < events.第15句段尾.帧; frame++) expect(rigAt(frame).fov, `帧 ${frame}`).toBeLessThan(rigAt(frame - 1).fov);
+    expect(rigAt(events.第15句段尾.帧 - 1).fov).toBeGreaterThan(pushShot.finalFov);
+    expect(rigAt(events.第15句段尾.帧).fov).toBeCloseTo(pushShot.finalFov, 9);
   });
 
   it('推完最后 1 秒：她的脸在画面中间三分之一，下巴在底部歌词（页面 y 623 起）上面', () => {
-    for (let 帧 = 事.第15句段尾.帧 - fps; 帧 < 事.第15句段尾.帧; 帧++) {
-      const c = 机(帧);
-      const cam = 做透视相机({ 眼: Z朝上转three(c.眼), 看: Z朝上转three(c.看), 视角: c.视角, 宽: 1280, 高: 720 });
-      const 投 = (z: number) => 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + z]), 1280, 720);
-      expect(投(1.1).y, `帧 ${帧}`).toBeLessThan(600);
-      expect(投(1.25).x, `帧 ${帧}`).toBeGreaterThan(1280 / 3);
-      expect(投(1.25).x, `帧 ${帧}`).toBeLessThan((1280 * 2) / 3);
+    for (let frame = events.第15句段尾.帧 - fps; frame < events.第15句段尾.帧; frame++) {
+      const c = rigAt(frame);
+      const cam = makePerspectiveCamera({ 眼: zUpToThree(c.眼), 看: zUpToThree(c.看), fov: c.fov, 宽: 1280, 高: 720 });
+      const projectAt = (z: number) => projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + z]), 1280, 720);
+      expect(projectAt(1.1).y, `帧 ${frame}`).toBeLessThan(600);
+      expect(projectAt(1.25).x, `帧 ${frame}`).toBeGreaterThan(1280 / 3);
+      expect(projectAt(1.25).x, `帧 ${frame}`).toBeLessThan((1280 * 2) / 3);
     }
   });
 });
 
 // 台词气泡的构图：像素字表在数据根里，没有就跳过（同 对视参数.test.ts）
-const 字条 = 读作品资产锁(path.resolve(import.meta.dirname))['字体/把回忆拼好给你/像素字'];
-const 有表 = !!字条 && fs.existsSync(字节路径(字条));
+const fontLockEntry = readWorkAssetLock(path.resolve(import.meta.dirname))['字体/把回忆拼好给你/像素字'];
+const hasTable = !!fontLockEntry && fs.existsSync(bytesPath(fontLockEntry));
 
-describe.skipIf(!有表)('隐世之境一镜到底：台词气泡', () => {
-  const 字 = 做像素字(JSON.parse(fs.readFileSync(字节路径(字条!), 'utf8')), '字体/把回忆拼好给你/像素字');
+describe.skipIf(!hasTable)('隐世之境一镜到底：台词气泡', () => {
+  const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(fontLockEntry!), 'utf8')), '字体/把回忆拼好给你/像素字');
   // 气泡（库/界面/女仆气泡.tsx）：底边在锚点上，宽 = 字宽 + 10、高 19、尾巴往下 8；页面上一个气泡像素 = 缩放 / 2
-  const 框 = (帧: number) => {
-    const c = 重逢机位(秒(帧));
-    const cam = 做透视相机({ 眼: Z朝上转three(c.眼), 看: Z朝上转three(c.看), 视角: c.视角, 宽: 1280, 高: 720 });
-    const 锚 = 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + 对视气泡.锚高]), 1280, 720);
-    const [页, 宽] = [台词气泡.缩放 / 2, 字.字宽(台词气泡.字) + 10];
-    return { x0: 锚.x - (宽 / 2) * 页, x1: 锚.x + (宽 / 2) * 页, y0: 锚.y - 19 * 页, y1: 锚.y + 8 * 页, 下巴: 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + 1.1]), 1280, 720).y };
+  const boxAt = (frame: number) => {
+    const c = reunionRig(toSec(frame));
+    const cam = makePerspectiveCamera({ 眼: zUpToThree(c.眼), 看: zUpToThree(c.看), fov: c.fov, 宽: 1280, 高: 720 });
+    const anchor = projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + eyeContactBubble.anchorHeight]), 1280, 720);
+    const [halfScale, width] = [lineBubble.缩放 / 2, pixelFont.textWidth(lineBubble.字) + 10];
+    return { x0: anchor.x - (width / 2) * halfScale, x1: anchor.x + (width / 2) * halfScale, y0: anchor.y - 19 * halfScale, y1: anchor.y + 8 * halfScale, chin: projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + 1.1]), 1280, 720).y };
   };
 
   it('一行放得下（不折行），缩放是偶数', () => {
-    expect(字.折行(台词气泡.字, 200)).toHaveLength(1);
-    expect(台词气泡.缩放 % 2).toBe(0);
+    expect(pixelFont.wrapText(lineBubble.字, 200)).toHaveLength(1);
+    expect(lineBubble.缩放 % 2).toBe(0);
   });
 
   it('对视（封面帧）那一帧不挂；驯服那一帧起 啵秒 弹到原大（驯服那一帧算已经走了一帧），之后一直在', () => {
-    expect(台词弹出(事.第15句对视.帧)).toBe(0);
-    expect(台词弹出(事.第15句台词.帧 - 1)).toBe(0);
-    expect(台词弹出(事.第15句台词.帧)).toBeGreaterThan(0);
-    const 满 = 事.第15句台词.帧 + Math.round(台词气泡.啵秒 * fps) - 1;
-    expect(台词弹出(满 - 1)).toBeLessThan(1);
-    expect(台词弹出(满)).toBe(1);
-    for (let 帧 = 满; 帧 < 事.第15句段尾.帧; 帧++) expect(台词弹出(帧)).toBe(1);
+    expect(linePop(events.第15句对视.帧)).toBe(0);
+    expect(linePop(events.第15句台词.帧 - 1)).toBe(0);
+    expect(linePop(events.第15句台词.帧)).toBeGreaterThan(0);
+    const bubbleEndFrame = events.第15句台词.帧 + Math.round(lineBubble.popSec * fps) - 1;
+    expect(linePop(bubbleEndFrame - 1)).toBeLessThan(1);
+    expect(linePop(bubbleEndFrame)).toBe(1);
+    for (let frame = bubbleEndFrame; frame < events.第15句段尾.帧; frame++) expect(linePop(frame)).toBe(1);
   });
 
   it('驯服到段尾每一帧：气泡整个在画里（离上沿至少 14、左右至少 16），尾巴尖在底部歌词（页面 y 623 起）上面，下巴也在 600 上面', () => {
-    for (let 帧 = 事.第15句台词.帧; 帧 < 事.第15句段尾.帧; 帧++) {
-      const b = 框(帧);
-      expect(b.y0, `帧 ${帧}`).toBeGreaterThanOrEqual(14);
-      expect(b.x0, `帧 ${帧}`).toBeGreaterThanOrEqual(16);
-      expect(b.x1, `帧 ${帧}`).toBeLessThanOrEqual(1280 - 16);
-      expect(b.y1, `帧 ${帧}`).toBeLessThan(623);
-      expect(b.下巴, `帧 ${帧}`).toBeLessThan(600);
+    for (let frame = events.第15句台词.帧; frame < events.第15句段尾.帧; frame++) {
+      const b = boxAt(frame);
+      expect(b.y0, `帧 ${frame}`).toBeGreaterThanOrEqual(14);
+      expect(b.x0, `帧 ${frame}`).toBeGreaterThanOrEqual(16);
+      expect(b.x1, `帧 ${frame}`).toBeLessThanOrEqual(1280 - 16);
+      expect(b.y1, `帧 ${frame}`).toBeLessThan(623);
+      expect(b.chin, `帧 ${frame}`).toBeLessThan(600);
     }
   });
 });

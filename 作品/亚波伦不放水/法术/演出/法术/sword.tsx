@@ -5,44 +5,44 @@
 // 和游戏的差别：物品在游戏里有 1/16 格的厚度，这里是一张两面画的平片。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 减, 加, 乘, 弹道位置, 弹道方向 } from '../零件/弹道.ts';
-import { MC空间, 度 } from '../零件/实体.tsx';
-import { 面材质 } from '../零件/材质.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { sub, addVec, scaleVec, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
+import { MinecraftSpace, degToRad } from '../零件/实体.tsx';
+import { faceMaterial } from '../零件/材质.ts';
 import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
-import { 各刻, 箭角 } from '../零件/甲/共用.ts';
-import 元, { 魔力剑道 } from './sword.元.ts';
-import 剑图 from 'asset:贴图/法术/minecraft/item/diamond_sword';
+import { eachTick, arrowYawPitch } from '../零件/甲/共用.ts';
+import meta, { magicSwordPath } from './sword.元.ts';
+import diamondSwordPng from 'asset:贴图/法术/minecraft/item/diamond_sword';
 
-const 魔力剑: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
-  const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 魔力剑道(起点, 目标, 选项?.高速);
-  const 粒: ParticleSpawn[] = 各刻(1, Math.min(刻, 到刻)).map((n) => {
-    const 速 = 减(道(n + 1), 道(n));
-    const p = 加(道(n), 乘(速, 0.75));
-    return { 种: 'enchant', 刻: n, p: [p[0], p[1], p[2]], v: [速[0], 速[1], 速[2]], 种子: 种子 * 53 + n };
+const magicSword: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+  const tick = sec * 20;
+  const { trajectory, arriveTick } = magicSwordPath(from, target, options?.highSpeed);
+  const particles: ParticleSpawn[] = eachTick(1, Math.min(tick, arriveTick)).map((n) => {
+    const speedVec = sub(trajectory(n + 1), trajectory(n));
+    const p = addVec(trajectory(n), scaleVec(speedVec, 0.75));
+    return { 种: 'enchant', 刻: n, p: [p[0], p[1], p[2]], v: [speedVec[0], speedVec[1], speedVec[2]], 种子: seed * 53 + n };
   });
-  const { yaw, pitch } = 箭角(弹道方向(道, 刻));
+  const { yaw, pitch } = arrowYawPitch(trajectoryDir(trajectory, tick));
   return (
     <>
-      {刻 >= 2 && 刻 < 到刻 && (
-        <MC空间 位={弹道位置(道, 刻)}>
+      {tick >= 2 && tick < arriveTick && (
+        <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
           <group scale={[1.25, 1.25, 1.25]}>
-            <group rotation={[0, 度(yaw - 90), 0]}>
-              <group rotation={[0, 0, 度(pitch - 45)]}>
+            <group rotation={[0, degToRad(yaw - 90), 0]}>
+              <group rotation={[0, 0, degToRad(pitch - 45)]}>
                 {/* GROUND：translate(0, 2/16, 0)、scale 0.5；贴图第一行朝上，planeGeometry 的 v 反着，y 取负 */}
-                <mesh position={[0, 0.125, 0]} scale={[0.5, -0.5, 0.5]} material={面材质(png(剑图), { 混合: '镂空' })} frustumCulled={false}>
+                <mesh position={[0, 0.125, 0]} scale={[0.5, -0.5, 0.5]} material={faceMaterial(png(diamondSwordPng), { 混合: '镂空' })} frustumCulled={false}>
                   <planeGeometry args={[1, 1]} />
                 </mesh>
               </group>
             </group>
           </group>
-        </MC空间>
+        </MinecraftSpace>
       )}
-      <VanillaParticles spawns={粒} 秒={秒} />
+      <VanillaParticles spawns={particles} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 魔力剑);
+export default defineSpellPerformance(meta, magicSword);

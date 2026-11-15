@@ -6,25 +6,25 @@ import { camPoses, addOffset, type ShotCam } from '../../../地点/古城4x/7-1/
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { lerpV } from '../../../地点/古城4x/7-1/戏/公用.ts';
-export const 号 = '7-3-2' as const;
+export const segmentId = '7-3-2' as const;
 export const FPS = timeline.FPS;
-export const END = timeline.frameCountOf(号);
-export const T于 = (f: number) => timeline.tAt(号, f);
-const frameAt = (T: number) => Math.round((T - timeline.segmentStartT(号)) * FPS);
-export const 镜2起 = frameAt(timeline.leap2LandT - 0.3);
-const horseChest = (f: number) => addOffset(play.horseState(T于(f)).p, [0, 0, 2.2]);
+export const END = timeline.frameCountOf(segmentId);
+export const timeAt = (f: number) => timeline.tAt(segmentId, f);
+const frameAt = (T: number) => Math.round((T - timeline.segmentStartT(segmentId)) * FPS);
+export const shot2Start = frameAt(timeline.leap2LandT - 0.3);
+const horseChest = (f: number) => addOffset(play.horseState(timeAt(f)).p, [0, 0, 2.2]);
 const shots: ShotCam[] = [
   {
     start: 0,
-    pos: [[0, G4(-853.0, -38.5, 196.0)], [镜2起 - 1, G4(-850.0, -38.5, 196.0)]],
-    tgt: (f) => lerpV(horseChest(f), play.wardenChest(T于(f)), 0.45),
+    pos: [[0, G4(-853.0, -38.5, 196.0)], [shot2Start - 1, G4(-850.0, -38.5, 196.0)]],
+    tgt: (f) => lerpV(horseChest(f), play.wardenChest(timeAt(f)), 0.45),
     lens: [[0, 15]],
   },
   {
-    start: 镜2起,
-    pos: [[镜2起, G4(-873.0, -40.0, 207.5)]],
-    tgt: (f) => lerpV(horseChest(f), play.wardenChest(T于(f)), 0.6),
-    lens: [[镜2起, 22]],
+    start: shot2Start,
+    pos: [[shot2Start, G4(-873.0, -40.0, 207.5)]],
+    tgt: (f) => lerpV(horseChest(f), play.wardenChest(timeAt(f)), 0.6),
+    lens: [[shot2Start, 22]],
   },
 ];
-export const { 镜号, camera } = camPoses(shots);
+export const { shotIndex, camera } = camPoses(shots);

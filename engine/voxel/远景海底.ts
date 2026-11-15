@@ -13,26 +13,26 @@ import { hash2, simplex2 } from '../core/噪声.ts';
 import raw from 'asset:数据/体素/远景海底';
 
 type SeabedStats = {
-  深档: number[];
-  群系: Record<string, { 级: { 档: ({ n: number; 实: [string, number][]; 草: [string, number][] } | null)[] }[]; 草高: ([string, number, number][] | null)[] }>;
+  depthBands: number[];
+  群系: Record<string, { 级: { 档: ({ n: number; 实: [string, number][]; grass: [string, number][] } | null)[] }[]; grassHeights: ([string, number, number][] | null)[] }>;
 };
 const stats = raw as unknown as SeabedStats;
-const depthBandCount = stats.深档.length + 1;
+const depthBandCount = stats.depthBands.length + 1;
 // 水深（米：水面 y 62 到海底最高实心方块 y 的格数）→ 档号
 export const seabedBand = (depthM: number) => {
   let k = 0;
-  while (k < stats.深档.length && depthM >= stats.深档[k]) k++;
+  while (k < stats.depthBands.length && depthM >= stats.depthBands[k]) k++;
   return k;
 };
 
-const biomeAnalogs: Record<string, { 用: string; dropPlants?: RegExp }> = {
-  'minecraft:cold_ocean': { 用: 'minecraft:ocean' },
-  'minecraft:deep_cold_ocean': { 用: 'minecraft:deep_ocean' },
-  'minecraft:frozen_ocean': { 用: 'minecraft:ocean', dropPlants: /./ },
-  'minecraft:deep_frozen_ocean': { 用: 'minecraft:deep_ocean', dropPlants: /./ },
-  'minecraft:warm_ocean': { 用: 'minecraft:lukewarm_ocean', dropPlants: /kelp/ },
-  'minecraft:frozen_river': { 用: 'minecraft:river' },
-  'minecraft:snowy_beach': { 用: 'minecraft:beach' },
+const biomeAnalogs: Record<string, { analog: string; dropPlants?: RegExp }> = {
+  'minecraft:cold_ocean': { analog: 'minecraft:ocean' },
+  'minecraft:deep_cold_ocean': { analog: 'minecraft:deep_ocean' },
+  'minecraft:frozen_ocean': { analog: 'minecraft:ocean', dropPlants: /./ },
+  'minecraft:deep_frozen_ocean': { analog: 'minecraft:deep_ocean', dropPlants: /./ },
+  'minecraft:warm_ocean': { analog: 'minecraft:lukewarm_ocean', dropPlants: /kelp/ },
+  'minecraft:frozen_river': { analog: 'minecraft:river' },
+  'minecraft:snowy_beach': { analog: 'minecraft:beach' },
 };
 
 // 挑好的一档：实（海底最上面那块）累计比例；草（第 0 级）[方块, 格数, 比例]，比例加起来不到 1，剩下的是不长
@@ -46,7 +46,7 @@ const findEntry = (biome: string, level: number, k: number) => {
     const LL = level + dL, kk = k + dk;
     if (LL < 0 || LL >= biomeStats.级.length || kk < 0 || kk >= depthBandCount) continue;
     const entry = biomeStats.级[LL].档[kk];
-    if (entry) return { e: entry, plantHeights: biomeStats.草高[kk] ?? biomeStats.草高.find(Boolean) ?? [] };
+    if (entry) return { e: entry, plantHeights: biomeStats.grassHeights[kk] ?? biomeStats.grassHeights.find(Boolean) ?? [] };
   }
   return null;
 };
@@ -56,7 +56,7 @@ export const seabedFor = (biome: string, level: number, depthM: number): SeabedS
   let setup = setupCache.get(key);
   if (setup !== undefined) return setup;
   const analog = biomeAnalogs[biome];
-  const biomeChain = [biome, analog?.用, k <= 1 ? 'minecraft:river' : 'minecraft:ocean'].filter(Boolean) as string[];
+  const biomeChain = [biome, analog?.analog, k <= 1 ? 'minecraft:river' : 'minecraft:ocean'].filter(Boolean) as string[];
   setup = null;
   for (const biomeName of biomeChain) {
     const found = findEntry(biomeName, level, k);

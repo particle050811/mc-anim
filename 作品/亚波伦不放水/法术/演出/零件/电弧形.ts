@@ -5,111 +5,111 @@
 //   lightningBolt：粗 0.5，散开 线性升，平行噪声 1、散开系数 0.001
 // 段数默认 (int)sqrt(距离 × 100)，一条（count 1），寿命由发包的地方给（雷霆 10 刻），淡入淡出各占寿命的一半（FadeFunction.fade(0.5)）。
 // 游戏用 java.util.Random 不带种子，每次形状都不同；这里换成带种子的随机数，形状固定。
-import { 场景到游戏, 游戏到场景 } from '@engine/core/坐标.ts';
+import { sceneToGame, gameToScene } from '@engine/core/坐标.ts';
 import { gaussian, mulberry32 } from '@engine/core/数学.ts';
-import type { 点 } from '../接口.ts';
+import type { Vec3 } from '../接口.ts';
 
-export type 散开函数 = '正弦' | '线性升' | '线性升降';
-export interface 电弧设定 {
+export type SpreadMode = '正弦' | '线性升' | '线性升降';
+export interface ArcSettings {
   /** 一段的粗细（格），越靠终点越细：粗 × (0.5 + (1 − 进度) × 0.5) */
   readonly 粗: number;
-  readonly 散开: 散开函数;
+  readonly spreadMode: SpreadMode;
   readonly 段数?: number;
-  readonly 条数?: number;
+  readonly arcCount?: number;
   /** parallelNoise：每段沿主方向走多远的随机量，默认 0.1 */
-  readonly 平行噪声?: number;
+  readonly parallelNoise?: number;
   /** spreadFactor：横向最多偏出 距离 × 它 × 散开函数，默认 0.1 */
-  readonly 散开系数?: number;
+  readonly spreadFactor?: number;
   /** branchInitiationFactor、branchContinuationFactor：分叉，默认都是 0（Goety 的三种都没开） */
-  readonly 分叉起?: number;
-  readonly 分叉续?: number;
+  readonly forkStart?: number;
+  readonly forkContinue?: number;
 }
-export const 电弧预设 = {
-  shock: { 粗: 0.04, 散开: '正弦' },
-  thunderBolt: { 粗: 0.25, 散开: '线性升' },
-  lightningBolt: { 粗: 0.5, 散开: '线性升', 平行噪声: 1, 散开系数: 0.001 },
-} as const satisfies Record<string, 电弧设定>;
+export const arcPresets = {
+  shock: { 粗: 0.04, spreadMode: '正弦' },
+  thunderBolt: { 粗: 0.25, spreadMode: '线性升' },
+  lightningBolt: { 粗: 0.5, spreadMode: '线性升', parallelNoise: 1, spreadFactor: 0.001 },
+} as const satisfies Record<string, ArcSettings>;
 
-type 三 = [number, number, number];
-const 加 = (a: 三, b: 三): 三 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const 减 = (a: 三, b: 三): 三 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const 乘 = (a: 三, k: number): 三 => [a[0] * k, a[1] * k, a[2] * k];
-const 叉 = (a: 三, b: 三): 三 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-const 长 = (a: 三) => Math.hypot(a[0], a[1], a[2]);
+type GameVec3 = [number, number, number];
+const addVec = (a: GameVec3, b: GameVec3): GameVec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const sub = (a: GameVec3, b: GameVec3): GameVec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const scaleVec = (a: GameVec3, k: number): GameVec3 => [a[0] * k, a[1] * k, a[2] * k];
+const cross = (a: GameVec3, b: GameVec3): GameVec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const vecLength = (a: GameVec3) => Math.hypot(a[0], a[1], a[2]);
 // Vec3.normalize：长度 < 1e-4 返回零向量
-const 归一 = (a: 三): 三 => {
-  const l = 长(a);
-  return l < 1e-4 ? [0, 0, 0] : 乘(a, 1 / l);
+const normalize = (a: GameVec3): GameVec3 => {
+  const l = vecLength(a);
+  return l < 1e-4 ? [0, 0, 0] : scaleVec(a, 1 / l);
 };
 // 游戏坐标（y 朝上、z 朝南）↔ 场景坐标（z 朝上、y 朝北）：截面朝哪边是按游戏坐标叉出来的，在游戏坐标里算完再换回来
-const 进游戏 = (p: 点): 三 => 场景到游戏(p);
-const 出游戏 = (p: 三): 点 => 游戏到场景(p);
+const toGame = (p: Vec3): GameVec3 => sceneToGame(p);
+const toScene = (p: GameVec3): Vec3 => gameToScene(p);
 
-const 随机 = (种子: number) => {
-  const 浮 = mulberry32(种子);
-  return { 浮, 高斯: () => gaussian(浮) };
+const rng = (seed: number) => {
+  const rng = mulberry32(seed);
+  return { rng, gaussian: () => gaussian(rng) };
 };
 
-const 散开值 = (f: 散开函数, 进度: number) =>
-  f === '正弦' ? Math.sin(Math.PI * 进度) : f === '线性升' ? 进度 : (进度 - Math.max(0, 2 * 进度 - 1)) / 0.5;
+const spreadValue = (f: SpreadMode, progress: number) =>
+  f === '正弦' ? Math.sin(Math.PI * progress) : f === '线性升' ? progress : (progress - Math.max(0, 2 * progress - 1)) / 0.5;
 
 /** 一段 = 4 个四边形（两个面各画正反）共 16 个顶点，场景坐标；按生成顺序排，淡入淡出按这个顺序截 */
-export type 电弧段 = readonly 点[];
+export type ArcSeg = readonly Vec3[];
 
-export const 默认段数 = (起: 点, 终: 点) => Math.floor(Math.sqrt(Math.hypot(终[0] - 起[0], 终[1] - 起[1], 终[2] - 起[2]) * 100));
+export const defaultSegCount = (startPos: Vec3, end: Vec3) => Math.floor(Math.sqrt(Math.hypot(end[0] - startPos[0], end[1] - startPos[1], end[2] - startPos[2]) * 100));
 
-export const 生成电弧 = (起点: 点, 终点: 点, 设: 电弧设定, 种子: number): 电弧段[] => {
-  const 机 = 随机(种子);
-  const 起 = 进游戏(起点);
-  const 终 = 进游戏(终点);
-  const 差 = 减(终, 起);
-  const 总长 = 长(差);
-  const 段数 = 设.段数 ?? 默认段数(起点, 终点);
-  const 平行噪声 = 设.平行噪声 ?? 0.1;
-  const 散开系数 = 设.散开系数 ?? 0.1;
-  const 出: 电弧段[] = [];
-  if (段数 < 1 || 总长 === 0) return 出;
-  type 缓存 = { 末: 三; 末右: 三; 末后: 三 };
-  type 指令 = { 起: 三; 进度: number; 缓: 缓存 | null; 支: boolean };
-  for (let 条 = 0; 条 < (设.条数 ?? 1); 条++) {
-    const 队: 指令[] = [{ 起, 进度: 0, 缓: null, 支: false }];
-    while (队.length > 0) {
-      const 令 = 队.shift()!;
-      const 进度 = 令.进度 + (1 / 段数) * (1 - 平行噪声 + 机.浮() * 平行噪声 * 2);
-      const 散 = 散开值(设.散开, 进度);
-      let 段终: 三;
-      if (进度 >= 1 && 散 <= 0) {
-        段终 = 终;
+export const generateArc = (from: Vec3, endPoint: Vec3, settings: ArcSettings, seed: number): ArcSeg[] => {
+  const rand = rng(seed);
+  const startPos = toGame(from);
+  const end = toGame(endPoint);
+  const startToEndDiff = sub(end, startPos);
+  const totalLength = vecLength(startToEndDiff);
+  const segCount = settings.段数 ?? defaultSegCount(from, endPoint);
+  const parallelNoise = settings.parallelNoise ?? 0.1;
+  const spreadFactor = settings.spreadFactor ?? 0.1;
+  const arcSegments: ArcSeg[] = [];
+  if (segCount < 1 || totalLength === 0) return arcSegments;
+  type ArcCache = { end: GameVec3; endRight: GameVec3; endBack: GameVec3 };
+  type Directive = { 起: GameVec3; 进度: number; cache: ArcCache | null; isBranch: boolean };
+  for (let arcIndex = 0; arcIndex < (settings.arcCount ?? 1); arcIndex++) {
+    const queue: Directive[] = [{ 起: startPos, 进度: 0, cache: null, isBranch: false }];
+    while (queue.length > 0) {
+      const head = queue.shift()!;
+      const progress = head.进度 + (1 / segCount) * (1 - parallelNoise + rand.rng() * parallelNoise * 2);
+      const spread = spreadValue(settings.spreadMode, progress);
+      let segEnd: GameVec3;
+      if (progress >= 1 && spread <= 0) {
+        segEnd = end;
       } else {
-        const 最大偏 = 散开系数 * 散 * 总长;
-        const 随向 = 归一(叉(差, [-0.5 + 机.浮(), -0.5 + 机.浮(), -0.5 + 机.浮()]));
+        const maxOffset = spreadFactor * spread * totalLength;
+        const randomDir = normalize(cross(startToEndDiff, [-0.5 + rand.rng(), -0.5 + rand.rng(), -0.5 + rand.rng()]));
         // SegmentSpreader.NO_MEMORY：每段的横偏各算各的，不累加
-        段终 = 加(加(起, 乘(差, 进度)), 乘(随向, 最大偏 * 机.高斯()));
+        segEnd = addVec(addVec(startPos, scaleVec(startToEndDiff, progress)), scaleVec(randomDir, maxOffset * rand.gaussian()));
       }
-      const 粗 = 设.粗 * (0.5 + (1 - 进度) * 0.5);
+      const thick = settings.粗 * (0.5 + (1 - progress) * 0.5);
       // createQuads
-      const 段差 = 减(段终, 令.起);
-      const 右 = 乘(归一(叉(段差, [0.5, 0.5, 0.5])), 粗);
-      const 后 = 乘(归一(叉(段差, 右)), 粗);
-      const 半右 = 乘(右, 0.5);
-      const 始 = 令.缓 ? 令.缓.末 : 令.起;
-      const 始右 = 令.缓 ? 令.缓.末右 : 加(始, 右);
-      const 始后 = 令.缓 ? 令.缓.末后 : 加(加(始, 半右), 后);
-      const 终右 = 加(段终, 右);
-      const 终后 = 加(加(段终, 半右), 后);
-      出.push([始, 段终, 终右, 始右, 始右, 终右, 段终, 始, 始右, 终右, 终后, 始后, 始后, 终后, 终右, 始右].map(出游戏));
-      if (进度 >= 1) break;
-      const 缓: 缓存 = { 末: 段终, 末右: 终右, 末后: 终后 };
-      if (!令.支) 队.push({ 起: 段终, 进度, 缓, 支: false });
-      else if (机.浮() < (设.分叉续 ?? 0)) 队.push({ 起: 段终, 进度, 缓, 支: true });
-      while (机.浮() < (设.分叉起 ?? 0) * (1 - 进度)) 队.push({ 起: 段终, 进度, 缓, 支: true });
+      const segDelta = sub(segEnd, head.起);
+      const right = scaleVec(normalize(cross(segDelta, [0.5, 0.5, 0.5])), thick);
+      const normalOffset = scaleVec(normalize(cross(segDelta, right)), thick);
+      const halfRight = scaleVec(right, 0.5);
+      const startPoint = head.cache ? head.cache.end : head.起;
+      const startRight = head.cache ? head.cache.endRight : addVec(startPoint, right);
+      const startBack = head.cache ? head.cache.endBack : addVec(addVec(startPoint, halfRight), normalOffset);
+      const endRight = addVec(segEnd, right);
+      const endBack = addVec(addVec(segEnd, halfRight), normalOffset);
+      arcSegments.push([startPoint, segEnd, endRight, startRight, startRight, endRight, segEnd, startPoint, startRight, endRight, endBack, startBack, startBack, endBack, endRight, startRight].map(toScene));
+      if (progress >= 1) break;
+      const cache: ArcCache = { end: segEnd, endRight: endRight, endBack: endBack };
+      if (!head.isBranch) queue.push({ 起: segEnd, 进度: progress, cache, isBranch: false });
+      else if (rand.rng() < (settings.forkContinue ?? 0)) queue.push({ 起: segEnd, 进度: progress, cache, isBranch: true });
+      while (rand.rng() < (settings.forkStart ?? 0) * (1 - progress)) queue.push({ 起: segEnd, 进度: progress, cache, isBranch: true });
     }
   }
-  return 出;
+  return arcSegments;
 };
 
 /** FadeFunction.fade(淡)：活了寿命的几分之几时，画第 [始, 止) 段。前 淡 的时间从起点一段段长出来，最后 淡 的时间从起点一段段消失 */
-export const 电弧可见段 = (总段: number, 寿命比: number, 淡 = 0.5): readonly [number, number] => [
-  寿命比 > 1 - 淡 ? Math.trunc((总段 * (寿命比 - (1 - 淡))) / 淡) : 0,
-  寿命比 < 淡 ? Math.trunc(总段 * (寿命比 / 淡)) : 总段,
+export const visibleSegRange = (totalSegs: number, lifeRatio: number, fadeRatio = 0.5): readonly [number, number] => [
+  lifeRatio > 1 - fadeRatio ? Math.trunc((totalSegs * (lifeRatio - (1 - fadeRatio))) / fadeRatio) : 0,
+  lifeRatio < fadeRatio ? Math.trunc(totalSegs * (lifeRatio / fadeRatio)) : totalSegs,
 ];

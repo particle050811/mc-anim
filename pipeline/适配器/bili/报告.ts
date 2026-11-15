@@ -1,75 +1,75 @@
 // 平台数据分析报告里 B 站的一节和 B 站的建议。B 站是先看封面标题、点进来才播：第一指标是封标点击率；
 // 点进来的人已经主动选过一次，开头流失更说明开头没兑现封面标题的承诺。
-import type { 稿件 } from './数据.ts';
-import { 弹幕下限, 弹幕最多段, 开头时段对比, 拖沓段, 按段小节, 时段表, 段名们, 版本提示, 留得住段, 百, 秒, type 对上 } from '../平台/图与排名.ts';
+import type { Submission } from './数据.ts';
+import { danmakuMin, mostDanmakuSegments, openingWindowCompare, saggingSegments, perSegmentSection, windowTable, segNames, versionNote, retainedSegments, percent, fmtSecClock, type MatchedRow } from '../平台/图与排名.ts';
 
-const 指标表 = (稿们: 稿件[]) => {
-  const 头 = '| 稿件 | 时长 | 播放 | 封标超过同类 | 封标点击率 | 3 秒跳出 | 完播率 | 互动率 | 播转粉 | 游客占比 | 点赞 | 投币 | 收藏 | 弹幕 | 评论 | 涨粉 |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|';
-  const 过往 = (v: '高于' | '低于' | null) => (v ? `，${v}过往` : '');
-  const 行 = 稿们.map((s) => {
+const metricTable = (submissions: Submission[]) => {
+  const tableHeader = '| 稿件 | 时长 | 播放 | 封标超过同类 | 封标点击率 | 3 秒跳出 | 完播率 | 互动率 | 播转粉 | 游客占比 | 点赞 | 投币 | 收藏 | 弹幕 | 评论 | 涨粉 |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|';
+  const vsPast = (v: '高于' | '低于' | null) => (v ? `，${v}过往` : '');
+  const rows = submissions.map((s) => {
     const m = s.指标;
-    return `| ${s.标题} | ${秒(s.时长)} | ${m.播放} | ${百(s.超过同类.封标点击率, 0)}${过往(s.较过往.封标点击率)} | ${百(m.封标点击率)} | ${百(m.三秒跳出率)}${过往(s.较过往.三秒跳出率)} | ${百(m.完播率)} | ${百(m.互动率)}${过往(s.较过往.互动率)} | ${百(m.播转粉率, 2)} | ${百(m.游客占比)} | ${m.点赞} | ${m.投币} | ${m.收藏} | ${m.弹幕} | ${m.评论} | ${m.涨粉} |`;
+    return `| ${s.标题} | ${fmtSecClock(s.时长)} | ${m.plays} | ${percent(s.beatPeers.coverCtr, 0)}${vsPast(s.vsPast.coverCtr)} | ${percent(m.coverCtr)} | ${percent(m.threeSecBounceRate)}${vsPast(s.vsPast.threeSecBounceRate)} | ${percent(m.completionRate)} | ${percent(m.interactRate)}${vsPast(s.vsPast.interactRate)} | ${percent(m.playToFanRate, 2)} | ${percent(m.visitorShare)} | ${m.likes} | ${m.coins} | ${m.favorites} | ${m.弹幕} | ${m.评论} | ${m.newFans} |`;
   });
-  return [头, ...行].join('\n');
+  return [tableHeader, ...rows].join('\n');
 };
 
 /** 系列名：标题开头到第一个数字或括号前（「应力转动 6 出征暮色」「应力转动（1-3）」都是 应力转动） */
-const 系列 = (s: 稿件) => /^([^\d（(\s-]+)/.exec(s.标题)?.[1] ?? '';
+const seriesKey = (s: Submission) => /^([^\d（(\s-]+)/.exec(s.标题)?.[1] ?? '';
 
-export const B站建议 = (稿们: 稿件[], 对上们: 对上<稿件>[]) => {
+export const bilibiliAdvice = (submissions: Submission[], matched: MatchedRow<Submission>[]) => {
   const out: string[] = [];
-  for (const x of 对上们) {
-    const { 稿, 段 } = x;
-    const m = 稿.指标;
-    const 同系列 = 稿们.filter((o) => o.bvid !== 稿.bvid && 系列(o) && 系列(o) === 系列(稿));
-    const 系列封标 = 同系列.map((o) => o.超过同类.封标点击率).filter((v): v is number => v !== null);
-    const 本封标 = 稿.超过同类.封标点击率;
-    if (本封标 !== null && (稿.较过往.封标点击率 === '低于' || (系列封标.length && 本封标 < Math.min(...系列封标))))
-      out.push(`**封面标题**：「${稿.标题}」封标点击率只超过 ${百(本封标, 0)} 同类稿件${稿.较过往.封标点击率 === '低于' ? '、低于过往' : ''}${系列封标.length ? `，本系列其他集是 ${系列封标.map((v) => 百(v, 0)).join('、')}` : ''}；游客占比 ${百(m.游客占比)}，几乎全靠推荐流。标题只写集数和地名不够，换成能看出冲突或看点的说法，封面放最强的一帧动作画面。`);
-    const 高 = 开头时段对比(稿, 稿们).filter((c) => c.判断.startsWith('高于') || c.判断.endsWith('偏高'));
-    if (高.length)
-      out.push(`**开头是否兑现封面**：${高.map((c) => `${秒(c.起)}–${秒(c.止)}（${段名们(段, c.起, c.止)}）在场每 10 秒流失 ${百(c.本稿)}，${c.判断}（中位 ${百(c.中位)}）`).join('；')}。B 站观众是看了封面标题点进来的，这里掉人多可能是开头给的和封面标题承诺的不一致：封面标题写什么，开头 20 秒内就要让人看到。`);
-    const 陡 = 拖沓段(段, 稿.留存);
-    if (陡.length) out.push(`**可能拖沓的段**：${陡.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${百(s.每10秒相对流失)}）`).join('、')}，先看这几段是不是在交代、赶路、等待，压缩或加转折、台词钩子。`);
-    const 稳 = 留得住段(段, 稿.留存);
-    if (稳.length) out.push(`**留得住的段**：${稳.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${百(s.每10秒相对流失)}）`).join('、')}，这类内容可以在封面标题里点出来。`);
-    const 同 = 稿们.filter((o) => 系列(o) && 系列(o) === 系列(稿)).sort((a, b) => a.时长 - b.时长);
-    if (同.length >= 2)
-      out.push(`**单集时长**：本系列按时长排 ${同.map((o) => `${秒(o.时长)} 完播 ${百(o.指标.完播率)}`).join('、')}。长集完播自然低，可以按场拆成 1～2 分钟一集连发，每集结尾留钩子。`);
+  for (const x of matched) {
+    const { curve: submission, 段: segments } = x;
+    const m = submission.指标;
+    const sameSeries = submissions.filter((o) => o.bvid !== submission.bvid && seriesKey(o) && seriesKey(o) === seriesKey(submission));
+    const seriesCoverCtr = sameSeries.map((o) => o.beatPeers.coverCtr).filter((v): v is number => v !== null);
+    const thisCoverCtr = submission.beatPeers.coverCtr;
+    if (thisCoverCtr !== null && (submission.vsPast.coverCtr === '低于' || (seriesCoverCtr.length && thisCoverCtr < Math.min(...seriesCoverCtr))))
+      out.push(`**封面标题**：「${submission.标题}」封标点击率只超过 ${percent(thisCoverCtr, 0)} 同类稿件${submission.vsPast.coverCtr === '低于' ? '、低于过往' : ''}${seriesCoverCtr.length ? `，本系列其他集是 ${seriesCoverCtr.map((v) => percent(v, 0)).join('、')}` : ''}；游客占比 ${percent(m.visitorShare)}，几乎全靠推荐流。标题只写集数和地名不够，换成能看出冲突或看点的说法，封面放最强的一帧动作画面。`);
+    const highItems = openingWindowCompare(submission, submissions).filter((c) => c.verdict.startsWith('高于') || c.verdict.endsWith('偏高'));
+    if (highItems.length)
+      out.push(`**开头是否兑现封面**：${highItems.map((c) => `${fmtSecClock(c.起)}–${fmtSecClock(c.止)}（${segNames(segments, c.起, c.止)}）在场每 10 秒流失 ${percent(c.ownValue)}，${c.verdict}（中位 ${percent(c.median)}）`).join('；')}。B 站观众是看了封面标题点进来的，这里掉人多可能是开头给的和封面标题承诺的不一致：封面标题写什么，开头 20 秒内就要让人看到。`);
+    const steep = saggingSegments(segments, submission.留存);
+    if (steep.length) out.push(`**可能拖沓的段**：${steep.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${percent(s.relDropPer10s)}）`).join('、')}，先看这几段是不是在交代、赶路、等待，压缩或加转折、台词钩子。`);
+    const retained = retainedSegments(segments, submission.留存);
+    if (retained.length) out.push(`**留得住的段**：${retained.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${percent(s.relDropPer10s)}）`).join('、')}，这类内容可以在封面标题里点出来。`);
+    const seriesByDuration = submissions.filter((o) => seriesKey(o) && seriesKey(o) === seriesKey(submission)).sort((a, b) => a.时长 - b.时长);
+    if (seriesByDuration.length >= 2)
+      out.push(`**单集时长**：本系列按时长排 ${seriesByDuration.map((o) => `${fmtSecClock(o.时长)} 完播 ${percent(o.指标.completionRate)}`).join('、')}。长集完播自然低，可以按场拆成 1～2 分钟一集连发，每集结尾留钩子。`);
   }
   return out;
 };
 
-export const B站节 = (稿们: 稿件[], 对上们: 对上<稿件>[], 包信息: { 取于: string; 请求数: number; 文件: string }, 图: Map<string, string>) => {
-  const 没对上 = 稿们.filter((s) => !对上们.some((x) => x.稿.bvid === s.bvid));
-  const 段节 = 对上们
+export const bilibiliSection = (submissions: Submission[], matched: MatchedRow<Submission>[], packageInfo: { 取于: string; 请求数: number; 文件: string }, imageNames: Map<string, string>) => {
+  const unmatched = submissions.filter((s) => !matched.some((x) => x.curve.bvid === s.bvid));
+  const segmentSection = matched
     .map((x) => {
-      const { 稿 } = x;
-      const 版 = 版本提示(x);
-      const 多 = 稿.弹幕秒.length >= 弹幕下限 ? 弹幕最多段(x.段).map((s) => `${s.编号} ${s.名}（${s.弹幕} 条）`).join('、') : `只有 ${稿.弹幕秒.length} 条，不按段排`;
-      return `### ${稿.标题} ↔ 交付 ${x.交付名}
-${版 ? `\n> **版本提示**：${版}\n` : ''}
-图：\`${图.get(稿.标识)}\`
+      const { curve: submission } = x;
+      const note = versionNote(x);
+      const topDanmaku = submission.danmakuSec.length >= danmakuMin ? mostDanmakuSegments(x.段).map((s) => `${s.编号} ${s.名}（${s.弹幕} 条）`).join('、') : `只有 ${submission.danmakuSec.length} 条，不按段排`;
+      return `### ${submission.标题} ↔ 交付 ${x.deliveryName}
+${note ? `\n> **版本提示**：${note}\n` : ''}
+图：\`${imageNames.get(submission.id)}\`
 
-**先看封面标题**：封标点击率超过 ${百(稿.超过同类.封标点击率, 0)} 同类稿件${稿.较过往.封标点击率 ? `，${稿.较过往.封标点击率}过往` : ''}；3 秒跳出 ${百(稿.指标.三秒跳出率)}；完播率 ${百(稿.指标.完播率)}。
+**先看封面标题**：封标点击率超过 ${percent(submission.beatPeers.coverCtr, 0)} 同类稿件${submission.vsPast.coverCtr ? `，${submission.vsPast.coverCtr}过往` : ''}；3 秒跳出 ${percent(submission.指标.threeSecBounceRate)}；完播率 ${percent(submission.指标.completionRate)}。
 
-**开头各时段和同账号其他稿件比**（开头窗 ${x.窗.开头} 秒是假设，用这张表检验：同一时段其他稿件也掉这么多，说明是推荐流普遍的划走；明显更高，才是这时在播的内容的问题）：
+**开头各时段和同账号其他稿件比**（开头窗 ${x.窗.headSec} 秒是假设，用这张表检验：同一时段其他稿件也掉这么多，说明是推荐流普遍的划走；明显更高，才是这时在播的内容的问题）：
 
-${时段表(x, 开头时段对比(稿, 稿们))}
+${windowTable(x, openingWindowCompare(submission, submissions))}
 
-${按段小节(x)}
-- 弹幕最多：${多}${稿.平台解读 ? `\n- 平台解读：${稿.平台解读}` : ''}`;
+${perSegmentSection(x)}
+- 弹幕最多：${topDanmaku}${submission.platformReading ? `\n- 平台解读：${submission.platformReading}` : ''}`;
     })
     .join('\n\n');
   return `## B 站
 
-数据：\`${包信息.文件}\`（取于 ${包信息.取于}，${包信息.请求数} 次请求）。B 站是观众先看到封面标题、点进来才播放：**封标点击率**是第一指标（「超过 x% 同类」「高于/低于过往」是页面上的评价，比原值稳）；点进来的人已经主动选过一次，留存基线本来就比刷到即播的平台高，开头掉人更说明开头和封面标题的预期不符。留存约 20 秒一档，段内是插值。
+数据：\`${packageInfo.文件}\`（取于 ${packageInfo.取于}，${packageInfo.请求数} 次请求）。B 站是观众先看到封面标题、点进来才播放：**封标点击率**是第一指标（「超过 x% 同类」「高于/低于过往」是页面上的评价，比原值稳）；点进来的人已经主动选过一次，留存基线本来就比刷到即播的平台高，开头掉人更说明开头和封面标题的预期不符。留存约 20 秒一档，段内是插值。
 
 ### 各稿件指标
 
-${指标表(稿们)}
+${metricTable(submissions)}
 
-${段节 || '没有稿件对上本地交付。'}
+${segmentSection || '没有稿件对上本地交付。'}
 
-${没对上.length ? `没对上本地交付、只做指标汇总的：${没对上.map((s) => `「${s.标题}」`).join('、')}。` : ''}`;
+${unmatched.length ? `没对上本地交付、只做指标汇总的：${unmatched.map((s) => `「${s.标题}」`).join('、')}。` : ''}`;
 };

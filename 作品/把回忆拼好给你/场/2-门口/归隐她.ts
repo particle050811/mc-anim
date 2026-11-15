@@ -3,102 +3,102 @@
 // 头上不冒气泡：这一句顶上有歌词，文字一时只走一路（规矩 看得懂的速度）。纯模块（第14句.test.ts 也读），画法在 归隐.tsx。
 import { clamp01 } from '@engine/anim/anim.ts';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
-import type { 魔法酒狐全部表情 } from '@库/角色/魔法酒狐新动作.ts';
-import { fps, 旧帧 } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
+import type { MagicalWineFoxAllExpression } from '@库/角色/魔法酒狐新动作.ts';
+import { fps, legacyFrameSec } from '../../分镜/时间.ts';
+import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
 import {
-  主手,
-  副手捧花,
-  她的头,
-  取照站位,
-  按伸秒,
-  打框收秒,
-  挂铃停秒,
-  挂铃放下秒,
-  挂铃站位,
-  挂铃朝向,
-  步,
-  走到,
-  走路朝向,
-  转头秒,
-  转身秒,
+  mainHand,
+  offHandFlower,
+  liYingHead,
+  photoStandPos,
+  pressReachSec,
+  boxFoldSec,
+  hangBellPauseSec,
+  hangBellPutDownSec,
+  hangBellStandPos,
+  hangBellFacing,
+  gait,
+  walkTo,
+  walkFacing,
+  turnHeadSec,
+  turnSec,
 } from './归隐参数.ts';
 
-const 事 = 正片事件;
+const events = mainCutEvents;
 
-type 骨表 = Record<string, BonePose>;
-const 缓 = (t: number) => t * t * (3 - 2 * t);
-const 插 = (a: readonly number[], b: readonly number[], t: number) => a.map((v, i) => v + (b[i]! - v) * t);
+type BoneTable = Record<string, BonePose>;
+const smoothstep = (t: number) => t * t * (3 - 2 * t);
+const lerpVec = (a: readonly number[], b: readonly number[], t: number) => a.map((v, i) => v + (b[i]! - v) * t);
 /** 两个骨骼摆法之间插（只插 rot；两边都要有同一批骨骼） */
-const 插骨 = (a: 骨表, b: 骨表, t: number): 骨表 =>
-  Object.fromEntries(Object.keys(b).map((k) => [k, { rot: 插(a[k]?.rot ?? [0, 0, 0], b[k]!.rot ?? [0, 0, 0], t) as [number, number, number] }]));
+const lerpBonePose = (a: BoneTable, b: BoneTable, t: number): BoneTable =>
+  Object.fromEntries(Object.keys(b).map((k) => [k, { rot: lerpVec(a[k]?.rot ?? [0, 0, 0], b[k]!.rot ?? [0, 0, 0], t) as [number, number, number] }]));
 /** 从 起 那一帧起 秒数 秒里从 0 缓到 1 */
-const 过 = (帧: number, 起: number, 秒数: number) => 缓(clamp01((帧 - 起) / fps / 秒数));
+const progressAt = (frame: number, startFrame: number, durSec: number) => smoothstep(clamp01((frame - startFrame) / fps / durSec));
 /** 旧帧(1) 秒是几帧 */
-const 一旧帧 = 旧帧(1) * fps;
+const oldFrameStep = legacyFrameSec(1) * fps;
 
-export type 她态 = {
+export type LiYingState = {
   x: number;
   yaw: number;
   看: [number, number];
-  表情: 魔法酒狐全部表情;
-  骨骼: 骨表;
-  右手: '合照' | null;
-  左手: '花';
+  expression: MagicalWineFoxAllExpression;
+  skeleton: BoneTable;
+  rightHand: '合照' | null;
+  leftHand: '花';
 };
 
 /** 主手这一帧怎么摆（没加走路的摆臂） */
-const 主手于 = (帧: number): 骨表 => {
-  const 放下起 = 事.挂铃.帧 + 挂铃停秒 * fps;
-  const 按起 = 事.手按合照.帧 - 按伸秒 * fps;
-  const 收起 = 事.打框.帧 - 打框收秒 * fps;
-  if (帧 >= 事.取照.帧) return 主手.垂;
-  if (帧 > 事.打框.帧) return 插骨(主手.打, 主手.垂, (帧 - 事.打框.帧) / (事.取照.帧 - 事.打框.帧));
-  if (帧 === 事.打框.帧) return 主手.打;
-  if (帧 > 收起) return 插骨(主手.按, 主手.收, (帧 - 收起) / (打框收秒 * fps));
-  if (帧 >= 事.手按合照.帧) return 主手.按;
-  if (帧 > 按起) return 插骨(主手.静, 主手.按, 过(帧, 按起, 按伸秒));
-  return 插骨(主手.挂铃, 主手.静, 过(帧, 放下起, 挂铃放下秒));
+const mainHandAt = (frame: number): BoneTable => {
+  const putDownStart = events.挂铃.帧 + hangBellPauseSec * fps;
+  const pressStart = events.手按合照.帧 - pressReachSec * fps;
+  const retractStart = events.打框.帧 - boxFoldSec * fps;
+  if (frame >= events.取照.帧) return mainHand.垂;
+  if (frame > events.打框.帧) return lerpBonePose(mainHand.打, mainHand.垂, (frame - events.打框.帧) / (events.取照.帧 - events.打框.帧));
+  if (frame === events.打框.帧) return mainHand.打;
+  if (frame > retractStart) return lerpBonePose(mainHand.按, mainHand.收, (frame - retractStart) / (boxFoldSec * fps));
+  if (frame >= events.手按合照.帧) return mainHand.按;
+  if (frame > pressStart) return lerpBonePose(mainHand.静, mainHand.按, progressAt(frame, pressStart, pressReachSec));
+  return lerpBonePose(mainHand.挂铃, mainHand.静, progressAt(frame, putDownStart, hangBellPutDownSec));
 };
 
 /** 她在 帧（歌曲帧）的样子；她消失 以后不在了 */
-export const 她于 = (帧: number): 她态 | null => {
-  if (帧 >= 事.她消失.帧) return null;
-  const 走 = 走到(帧);
-  const 在走 = 帧 > 事.走向照片墙.帧 && 走.x < 取照站位;
+export const liYingAt = (frame: number): LiYingState | null => {
+  if (frame >= events.她消失.帧) return null;
+  const walkState = walkTo(frame);
+  const walking = frame > events.走向照片墙.帧 && walkState.x < photoStandPos;
 
   // 身子：挂铃朝镜头 → 走向照片墙 起转朝东 → 取照 那一帧起转回来朝镜头（拿着合照看）
-  const 转东 = 过(帧, 事.走向照片墙.帧, 转身秒);
-  const 转回 = 过(帧, 事.取照.帧, 转身秒);
-  const yaw = 挂铃朝向 + (走路朝向 - 挂铃朝向) * 转东 * (1 - 转回);
+  const turnEast = progressAt(frame, events.走向照片墙.帧, turnSec);
+  const turnBack = progressAt(frame, events.取照.帧, turnSec);
+  const yaw = hangBellFacing + (walkFacing - hangBellFacing) * turnEast * (1 - turnBack);
 
   // 头：看铃 → 走路平视 → 到站前 旧帧(1) 秒起抬头看合照 → 取照起低头看手里的
-  let 看 = 插(她的头.看铃, 她的头.平视, 过(帧, 事.走向照片墙.帧, 转头秒)) as [number, number];
-  const 到站 = 事.手按合照.帧 - 按伸秒 * fps;
-  if (帧 >= 到站 - 一旧帧) 看 = 插(她的头.平视, 她的头.看合照, 过(帧, 到站 - 一旧帧, 转头秒)) as [number, number];
-  if (帧 >= 事.取照.帧) 看 = 插(她的头.看合照, 她的头.看手里, 过(帧, 事.取照.帧, 转头秒)) as [number, number];
+  let gaze = lerpVec(liYingHead.lookBell, liYingHead.levelLook, progressAt(frame, events.走向照片墙.帧, turnHeadSec)) as [number, number];
+  const arriveFrame = events.手按合照.帧 - pressReachSec * fps;
+  if (frame >= arriveFrame - oldFrameStep) gaze = lerpVec(liYingHead.levelLook, liYingHead.lookGroupPhoto, progressAt(frame, arriveFrame - oldFrameStep, turnHeadSec)) as [number, number];
+  if (frame >= events.取照.帧) gaze = lerpVec(liYingHead.lookGroupPhoto, liYingHead.lookInHand, progressAt(frame, events.取照.帧, turnHeadSec)) as [number, number];
 
   // 走路：原版那样腿、空着的右胳膊前后摆（相位按走过的路），副手一直捧着花；起步、停下时摆幅跟着速度收（前后各 旧帧(1) 秒走的路）
-  let 骨骼: 骨表 = { ...主手于(帧), ...副手捧花 };
-  if (在走) {
-    const s = Math.sin(走.周期 * Math.PI * 2);
-    const 前后 = 走到(帧 + 一旧帧).x - 走到(帧 - 一旧帧).x;
-    const 幅 = clamp01(前后 / 0.35);
-    const 臂 = 骨骼.RightArm!.rot!;
-    骨骼 = {
-      ...骨骼,
-      RightLeg: { rot: [步.腿 * s * 幅, 0, 2.5] },
-      LeftLeg: { rot: [-步.腿 * s * 幅, 0, -2.5] },
-      RightArm: { rot: [臂[0] - 步.胳膊 * s * 幅, 臂[1], 臂[2]] },
+  let skeleton: BoneTable = { ...mainHandAt(frame), ...offHandFlower };
+  if (walking) {
+    const s = Math.sin(walkState.cycles * Math.PI * 2);
+    const strideDelta = walkTo(frame + oldFrameStep).x - walkTo(frame - oldFrameStep).x;
+    const amplitude = clamp01(strideDelta / 0.35);
+    const armRot = skeleton.RightArm!.rot!;
+    skeleton = {
+      ...skeleton,
+      RightLeg: { rot: [gait.legAmp * s * amplitude, 0, 2.5] },
+      LeftLeg: { rot: [-gait.legAmp * s * amplitude, 0, -2.5] },
+      RightArm: { rot: [armRot[0] - gait.armSwing * s * amplitude, armRot[1], armRot[2]] },
     };
   }
   return {
-    x: 走.x,
+    x: walkState.x,
     yaw,
-    看,
-    表情: 帧 >= 事.取照.帧 ? '难过' : '无',
-    骨骼,
-    右手: 帧 >= 事.取照.帧 ? '合照' : null,
-    左手: '花',
+    看: gaze,
+    expression: frame >= events.取照.帧 ? '难过' : '无',
+    skeleton,
+    rightHand: frame >= events.取照.帧 ? '合照' : null,
+    leftHand: '花',
   };
 };

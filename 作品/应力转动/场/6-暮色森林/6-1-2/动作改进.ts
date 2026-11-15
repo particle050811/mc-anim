@@ -6,7 +6,7 @@
 // 3. 急停收势：120 米/秒急停时前倾、下沉、右臂前甩，按欠阻尼弹簧冲过再回弹；
 // 4. 微动：迅冲时身体随气流起伏，站定后呼吸、头左右看、重心左右挪。
 // 全部是剧情帧的纯函数（弹簧从固定起点积分打表），Remotion 每帧单独算也一样。
-import { 例外 } from '@engine/core/例外.ts';
+import { exception } from '@engine/core/例外.ts';
 import { type Key, rad, holdTime } from '@engine/anim/anim.ts';
 import { springTable } from '@engine/flight/真实飞行.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
@@ -17,7 +17,7 @@ const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return 
 
 // ---------- 1. 打击停顿 ----------
 // 停 3 帧：刀穿过脖子那一帧连放 4 次（1/6 秒）
-export const nagaHitStop = 例外('打击停顿', 3, { 段: '6-斩娜迦', 原因: '刀穿过脖子那帧连放 4 次；用户 10-21 定按看过的版本' });
+export const nagaHitStop = exception('打击停顿', 3, { 段: '6-斩娜迦', 原因: '刀穿过脖子那帧连放 4 次；用户 10-21 定按看过的版本' });
 // 输出剧情帧 → 原剧情帧：在 CUT_FRAME 停住 n 帧，之后整体顺延 n 帧（人、娜迦、刀光、粒子、镜头一起停）
 export const hitStopFrames = (n: number) => (n > 0 ? holdTime([choreo.CUT_FRAME, n]) : (f: number) => f);
 
@@ -128,7 +128,7 @@ const overlay = (pose: FigurePose, frame: number) => {
 export const liyingTweakV2: choreo.LiyingTweak = { keys: keyOverrides, delay, overlay, sheathTiming: sheathTimingV2 };
 export const liyingV2 = (f: number) => choreo.liying(f, liyingTweakV2);
 // 核对用
-export const stopSprings = { 前倾弹簧: pitchSpring, 下沉弹簧: sinkSpring, 右臂弹簧: armRSpring };
+export const stopSprings = { leanForwardSpring: pitchSpring, sinkSpring: sinkSpring, rightArmSpring: armRSpring };
 
 // ---------- 新机位（用户 10-13：镜头里人太小，收刀要像参考那样拉近）----------
 // 只给正式版用，旧动作版机位不动。
@@ -150,7 +150,7 @@ export const cameraV2 = (frame: number) => {
 // ---------- 正式版（用户 10-13 看完新旧对比「就这样可以」，新版转正） ----------
 // 正式 Composition 6-1-2-斩娜迦 = 动作改进 + 打击停顿 3 帧 + 新机位，不震屏（用户 10-18 嫌冲击镜头不好）、不闪白。凡要和正式 6-1-2 同帧对齐的（伤害数字层、6-1-3 接台词和声音、6-1-3 首帧接末帧的李樱）都从这里取，
 // 不要拿 编排.ts 的 `FRAMES`、台词开口、`liying`（原版时间轴）
-export const official = { 动作改进: true, hitStopFrames: nagaHitStop, newCams: true } as const;
+export const official = { motionImproved: true, hitStopFrames: nagaHitStop, newCams: true } as const;
 export const officialFrames = choreo.FRAMES + official.hitStopFrames;
 export const officialStoryFrame = (frame: number) => hitStopFrames(official.hitStopFrames)(choreo.story(frame + 1));
 // 剧情帧 → 正式版段内帧：这一剧情帧第一次出现的那一帧（切镜的剧情帧换成段内帧，第 1 场段界用）

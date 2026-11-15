@@ -11,24 +11,24 @@ import sys
 from pathlib import Path
 
 
-def 裁(源: Path, 出: Path, 宽: int, 高: int, x: int = 0, y: int = 0, 缩到宽: int | None = None) -> None:
-    滤镜 = f"crop={宽}:{高}:{x}:{y}"
-    if 缩到宽:
-        滤镜 += f",scale={缩到宽}:-1:flags=area"
-    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(源), "-vf", 滤镜, str(出)], check=True)
+def crop_image(src: Path, out_path: Path, width: int, height: int, x: int = 0, y: int = 0, scale_to_width: int | None = None) -> None:
+    ffmpeg_filter = f"crop={width}:{height}:{x}:{y}"
+    if scale_to_width:
+        ffmpeg_filter += f",scale={scale_to_width}:-1:flags=area"
+    subprocess.run(["ffmpeg", "-loglevel", "error", "-y", "-i", str(src), "-vf", ffmpeg_filter, str(out_path)], check=True)
 
 
 def main() -> None:
     if len(sys.argv) != 4:
         sys.exit(__doc__)
-    b站, 竖版, 目录 = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
-    目录.mkdir(parents=True, exist_ok=True)
-    裁(b站, 目录 / "10-B站封面-16比9-1920x1080.png", 1920, 1080)
-    裁(b站, 目录 / "11-B站封面-4比3-1440x1080.png", 1440, 1080, 240)
-    裁(b站, 目录 / "12-B站封面-16比9-缩略320.png", 1920, 1080, 缩到宽=320)
-    裁(b站, 目录 / "13-B站封面-4比3-缩略320.png", 1440, 1080, 240, 缩到宽=320)
-    裁(竖版, 目录 / "14-抖音封面-3比4-1080x1440.png", 1080, 1440)
-    裁(竖版, 目录 / "15-抖音封面-3比4-缩略320.png", 1080, 1440, 缩到宽=320)
+    bilibili, portrait, dir_path = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
+    dir_path.mkdir(parents=True, exist_ok=True)
+    crop_image(bilibili, dir_path / "10-B站封面-16比9-1920x1080.png", 1920, 1080)
+    crop_image(bilibili, dir_path / "11-B站封面-4比3-1440x1080.png", 1440, 1080, 240)
+    crop_image(bilibili, dir_path / "12-B站封面-16比9-缩略320.png", 1920, 1080, scale_to_width=320)
+    crop_image(bilibili, dir_path / "13-B站封面-4比3-缩略320.png", 1440, 1080, 240, scale_to_width=320)
+    crop_image(portrait, dir_path / "14-抖音封面-3比4-1080x1440.png", 1080, 1440)
+    crop_image(portrait, dir_path / "15-抖音封面-3比4-缩略320.png", 1080, 1440, scale_to_width=320)
 
 
 if __name__ == "__main__":

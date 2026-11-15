@@ -3,9 +3,9 @@
 // 和 sit 比：腿一样跪坐，但没有 MRoot、mofazhang2 往下 11 的那一截（船上的座位本来就低），Root 往上 2；右手多一个 RightHand 转角；
 // 没给 Tail2、背后法杖，所以尾巴照 pre_parallel2 摆、背后法杖照 pre_parallel1 上下浮（组件 姿势 给 '站' 就是这样）。
 // 动画里还有 LeftClothe2、RightClothe2（模型里没有这两根骨骼）和 FOX（小狐狸形态，模型里去掉了），不抄。
-import type { 骨骼姿势 } from './魔法酒狐动作.ts';
+import type { SkeletonPose } from './魔法酒狐动作.ts';
 
-export const magicalWineFoxBoatBones: Readonly<Record<string, 骨骼姿势>> = {
+export const magicalWineFoxBoatBones: Readonly<Record<string, SkeletonPose>> = {
   Root: { pos: [0, 2, 2] },
   UpBody: { rot: [20, 0, 0] },
   UpperBody: { rot: [-20, 0, 0] },

@@ -5,45 +5,45 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 场景到three } from '@engine/core/three换算.ts';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
-import { 反应史蒂夫 } from '../../角色/反应史蒂夫.tsx';
-import { 蹲腿角 } from '../../角色/史蒂夫关节.ts';
-import { 装备史蒂夫 } from '../../角色/史蒂夫装备.tsx';
-import { 画幅, 视图在, type 人, type 视图 } from './视图.ts';
+import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
+import { squatLegAngle } from '../../角色/史蒂夫关节.ts';
+import { EquippedSteve } from '../../角色/史蒂夫装备.tsx';
+import { aspect, viewAt, type Person, type View } from './视图.ts';
 
-const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
+const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = v.视角;
+  cam.fov = v.fov;
   cam.near = 0.05;
   cam.far = 256;
-  cam.position.copy(场景到three(v.眼));
+  cam.position.copy(sceneToThree(v.眼));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three(v.看));
+  cam.lookAt(sceneToThree(v.看));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
-const 画人: React.FC<{ 人: 人 }> = ({ 人 }) => {
-  if ('状态' in 人) return <反应史蒂夫 状态={人.状态} 装备={人.装备} />;
-  const 拿剑 = 人.装备?.剑 !== false;
-  const 腿 = 蹲腿角(人.膝);
-  const pose = { ...stevePose(人.位, 180, { sec: 0, holdR: 拿剑 }), elbowR: 人.肘, elbowL: 人.肘, kneeR: 人.膝, kneeL: 人.膝, legR: 腿 + (人.迈 ?? 0), legL: 腿 - (人.迈 ?? 0), ground: 1 };
-  return <装备史蒂夫 pose={pose} 秒={0.5} 装备={人.装备} 受伤={人.受伤} />;
+const DrawPerson: React.FC<{ 人: Person }> = ({ 人: person }) => {
+  if ('状态' in person) return <ReactingSteve 状态={person.状态} equipment={person.equipment} />;
+  const holdSword = person.equipment?.剑 !== false;
+  const legPitch = squatLegAngle(person.knee);
+  const pose = { ...stevePose(person.位, 180, { sec: 0, holdR: holdSword }), elbowR: person.elbow, elbowL: person.elbow, kneeR: person.knee, kneeL: person.knee, legR: legPitch + (person.stride ?? 0), legL: legPitch - (person.stride ?? 0), ground: 1 };
+  return <EquippedSteve pose={pose} 秒={0.5} equipment={person.equipment} hurt={person.hurt} />;
 };
 
-const 画面: React.FC = () => {
-  const { v, τ } = 视图在(use当前秒());
+const picture: React.FC = () => {
+  const { v, τ } = viewAt(useCurrentSec());
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: false }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
         <color attach="background" args={['#5a5e66']} />
-        <机位 v={v} />
+        <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
@@ -51,8 +51,8 @@ const 画面: React.FC = () => {
             <boxGeometry args={[24, 24, 0.1]} />
             <meshStandardMaterial color="#8a8f98" />
           </mesh>
-          {v.人们(τ).map((人, i) => (
-            <画人 key={i} 人={人} />
+          {v.people(τ).map((person, i) => (
+            <DrawPerson key={i} 人={person} />
           ))}
         </group>
       </ThreeCanvas>
@@ -64,4 +64,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

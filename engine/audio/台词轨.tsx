@@ -8,31 +8,31 @@ import { Audio } from '@remotion/media';
 import React from 'react';
 import { Sequence } from 'remotion';
 import { lineVolume } from './混音.ts';
-import { use帧率 } from '../段/时间.tsx';
+import { useFrameRate } from '../段/时间.tsx';
 
 export type LineEntry = { 字: string; 角色: string; 段: string; 文件: string | null; 时长: number; 开口: number; 有声长: number };
 export type LineCue = { id: string; 帧: number; 音量?: number };
 
 /** 台词表：资产 数据/配音/台词表 的内容；wav们：台词表里的 文件 名 → 打包后的地址 */
-export const 做台词轨 = (台词表: unknown, wav们: Readonly<Record<string, string>>) => {
-  const lineTable = 台词表 as Record<string, LineEntry>;
+export const makeLineTrack = (rawLineTable: unknown, wavs: Readonly<Record<string, string>>) => {
+  const lineTable = rawLineTable as Record<string, LineEntry>;
   // 一句从开口到说完要几帧（有声的长度）
   const lineFrameCount = (id: string, fps = 24) => Math.ceil(lineTable[id].有声长 * fps);
-  const LineTrack: React.FC<{ 句们: LineCue[]; 每秒?: number }> = ({ 句们: lines, 每秒 = 24 }) => {
-    const fps = use帧率();
+  const LineTrack: React.FC<{ lines: LineCue[]; 每秒?: number }> = ({ lines: lines, 每秒: perSec = 24 }) => {
+    const fps = useFrameRate();
     return (
       <>
-        {lines.map(({ id, 帧: 格, 音量: volume = 1 }) => {
+        {lines.map(({ id, 帧: lineFrame, 音量: volume = 1 }) => {
           const entry = lineTable[id];
           if (!entry?.文件) throw new Error(`台词表里没有 ${id} 的副本`);
-          const fileStartFrame = (格 / 每秒 - entry.开口) * fps; // 文件开头（Composition 帧，带小数）
+          const fileStartFrame = (lineFrame / perSec - entry.开口) * fps; // 文件开头（Composition 帧，带小数）
           const from = Math.max(0, Math.ceil(fileStartFrame - 1e-6));
           const skipFrames = from - fileStartFrame;
           // 放到文件完再多一格（旧 24 帧时的「多 1 帧」）
-          const frameCount = Math.ceil((entry.时长 + 1 / 每秒) * fps - skipFrames);
+          const frameCount = Math.ceil((entry.时长 + 1 / perSec) * fps - skipFrames);
           return (
-            <Sequence key={id + 格} from={from} durationInFrames={frameCount} layout="none" name={id}>
-              <Audio src={wav们[entry.文件]} trimBefore={skipFrames} volume={lineVolume * volume} />
+            <Sequence key={id + lineFrame} from={from} durationInFrames={frameCount} layout="none" name={id}>
+              <Audio src={wavs[entry.文件]} trimBefore={skipFrames} volume={lineVolume * volume} />
             </Sequence>
           );
         })}

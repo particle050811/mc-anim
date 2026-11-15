@@ -70,7 +70,7 @@ export const hydraNeckBase = (i: number): V3 => {
 // 朝向：实体坐标里朝 d 方向的转角（绕 Z，0 = 朝 -Y）和仰角（正 = 往上）
 const aim = (d: number[]) => ({ yaw: Math.atan2(d[0], -d[1]), pitch: Math.atan2(d[2], Math.hypot(d[0], d[1])) });
 
-export type HydraPose = { heads: HydraHead[]; 腿?: number };
+export type HydraPose = { heads: HydraHead[]; legPitch?: number };
 
 export const hydraParts = (p: HydraPose, sec: number) =>
   p.heads.map((head, i) => {

@@ -5,45 +5,45 @@
 // 苦力怕从左边门外走过来，停在门外离你四五格；27.80 她转身挡在你和苦力怕中间冲它哈气，门框正好框住她。画面从左到右：苦力怕 → 空当 → 她（门洞里）→ 照片墙 → 你。
 // 哈气要有方向（主会话 10-24 美术定稿，五家看图评审）：她侧身朝左对着苦力怕、上身前倾，头转三分之四让脸和张开的嘴露出来，两只爪子伸出帽檐外朝它，
 // 尾巴竖得比帽子高、炸开、比裙子浅一档；苦力怕侧身朝右；你在她身后看着她。原来「身子、头取 90° 的整数倍」在这里让位给看清（同一份定稿）。
-import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
-import { 色板 } from '../../色板.ts';
-import { 格像素, type 门口取景 } from './参数.ts';
+import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
+import { palette } from '../../色板.ts';
+import { cellPx, type DoorFraming } from './参数.ts';
 
 // ---------- 镜头 ----------
 /** 第 8 句整句（段 2-收集快乐）和静帧「门口哈气」的像素密度：一个贴图像素 = 成片 16 像素。主会话 10-24 美术定稿：整句推近、N 取 14～16，
  *  以手机竖屏宽（390 像素）上看得出她的爪子、张嘴、炸毛的尾巴为准。取 16：一个贴图像素在手机上 2.4 像素，她戴帽 1.79 格约 70 像素高；
  *  取偶数，预览级（成片的一半）里贴图像素也落在整像素上。门这个机位的远景（第 9、10 句）还是 参数.ts 的 整屏镜头（N = 10） */
-export const 第8句镜头N = 16;
+export const line8ShotCount = 16;
 /** 地面线离画面下边几格：露出草方块的侧面（定稿要「地面线往下放」）。一屏 5.6 格高：人占地面往上 2 格，屋檐（z 3）往上只剩三分之一屏 */
-export const 第8句镜头地面离底 = 0.75;
+export const line8ShotGroundFromBottom = 0.75;
 /** 给 门口画布 的取景（用法同 参数.ts 的 整屏镜头：<门口画布 {...第8句镜头} …>，气泡缩放给 第8句镜头N；全片不描边，不带描边宽）。
  *  门那一格在画面正中（一屏 10 格宽，左右各 5 格）：哈气时苦力怕、她、你都在里面；苦力怕从画框左边走进来（定稿：不用一开始就在画里） */
-export const 第8句镜头 = {
-  取景: { 中心: [0, 1440 / 2 / 格像素(第8句镜头N) - 第8句镜头地面离底], 每格: 格像素(第8句镜头N) } as 门口取景,
+export const line8Shot = {
+  framing: { 中心: [0, 1440 / 2 / cellPx(line8ShotCount) - line8ShotGroundFromBottom], pxPerCell: cellPx(line8ShotCount) } as DoorFraming,
 } as const;
 
 // ---------- 哈气那一拍 ----------
 /** 雨过天晴：雨后暖阳（第 7 句末阳光铺到地上）和夏日白天各一半。纯雨后暖阳天发灰、像傍晚，纯夏日白天又没了暖意 */
-export const 第8句调子: 调子 = 插调子(色板.雨后暖阳, 色板.夏日白天, 0.5);
+export const line8Tone: Tone = lerpTone(palette.雨后暖阳, palette.夏日白天, 0.5);
 
 /** 站位（脚底的 x）。她整句在门洞正中；你在 x 3，照片墙（x 0.5～2.5）露在你们两个中间，帽檐（她脚底 ± 0.5 格）和你的胳膊（± 0.5 格）都不压照片；
  *  苦力怕离你 5 格（三稿「四五格」），整只在门外开着的门板（x −1.5～−0.5）左边，前脚到她伸出去的爪尖约 1 格 */
-export const 哈气站位 = { 你: 3, 她: 0, 苦力怕: -2 } as const;
+export const hissStandPos = { 你: 3, liYingX: 0, 苦力怕: -2 } as const;
 
 /** 身子朝向（yaw，度）：她侧身朝左、苦力怕侧身朝右，面对面。你身子朝镜头（侧着的史蒂夫只有 4 个贴图像素宽，缩到手机上是一根青条），头转过去看她 */
-export const 哈气朝向 = { 你: 180, 她: 90, 苦力怕: -90 } as const;
+export const hissFacing = { 你: 180, liYingYaw: 90, 苦力怕: -90 } as const;
 
 /** 你的头（stevePose 的 headYaw，度）：往你右边（画面左，她和苦力怕那边）转 40°。整句都这样看着她（定稿：你在她身后看她或看苦力怕）。
  *  转满 90° 只剩一侧头发，缩到手机上像背对镜头；原版玩家头最多比身子多转 50° */
-export const 你的头 = -40;
+export const youHead = -40;
 
 /** 她的头 [俯仰, 左右]（MagicalWineFoxEx 的 看，度，正 = 抬头、往她左边）：侧身朝左，头往她左边（朝镜头）转 45°，三分之四脸，
  *  张开的嘴和眼睛都露出来；下巴抬 18°（机位往下斜着看，不抬眼睛压在大帽檐下）。转过 50° 帽檐就把脸盖住（预览 1024-0856 量过） */
-export const 哈气看: [number, number] = [18, 45];
+export const puffLook: [number, number] = [18, 45];
 
 /** 她的爪子（给 MagicalWineFoxEx 的 骨骼，整条替换）：两条胳膊都朝前（苦力怕那边）伸直、一高一低错开，爪尖伸到帽檐前沿，衬在开着的门板上：
  *  近镜头的左手抬到比肩高 20°，远的右手平伸略低。她胳膊短（上臂、前臂一共约 0.47 格），举过头顶爪子就缩回帽檐底下，所以往前伸不往上举 */
-export const 哈气爪 = {
+export const puffPaws = {
   LeftArm: { rot: [-98, -10, 0] },
   LeftForeArm: { rot: [-6, 0, 0] },
   RightArm: { rot: [-72, 10, 0] },
@@ -52,14 +52,14 @@ export const 哈气爪 = {
 
 /** 她的尾巴（骨骼 Tail，盖在哈气姿势的炸毛上）：根部再往上翘，尾尖竖到帽子顶上面、在帽子后面（画面右边）分开，不卷过帽子。
  *  炸开的毛尖、提亮在 第8句炸毛.tsx */
-export const 哈气尾 = { Tail: { rot: [62, 0, 0], scale: 1.3 }, Tail2: { rot: [-50, 0, 0] } };
+export const hissTail = { Tail: { rot: [62, 0, 0], scale: 1.3 }, Tail2: { rot: [-50, 0, 0] } };
 
 /** 史蒂夫画 1 倍：一个贴图像素正好 N 个成片像素，和方块、苦力怕对得上（预览 1024-0603-工作-史蒂夫苦力怕-终稿 的乙方案）。
  *  原版是 0.9375 倍（一个贴图像素 9.375 成片像素，最近邻下宽窄不一）；用户还没定，核对-门口哈气 有 0.9375 倍的对照帧（Agent 暂定） */
-export const 史蒂夫倍数 = 1;
+export const steveScale = 1;
 
 /** 苦力怕刚停住：腿并拢（叉开的腿正交里斜成锯齿），身子、头都侧着朝右（定稿：侧身朝右走过来），下一拍掉头逃 */
-export const 苦力怕停步 = { limbSwing: 0, stride: 0, headYaw: 0 } as const;
+export const creeperStill = { limbSwing: 0, stride: 0, headYaw: 0 } as const;
 
 /** 她头顶的气泡：车万女仆受伤的颜文字 */
-export const 哈气气泡字 = '˃ʍ˂';
+export const hissBubbleText = '˃ʍ˂';

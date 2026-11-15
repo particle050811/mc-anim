@@ -13,22 +13,22 @@ import struct
 from dataclasses import dataclass, field
 from typing import Any
 
-from .图 import _json值, 内建, 图
-from .库类 import 库模拟
-from .类文件 import ACC_ABSTRACT, ACC_BRIDGE, ACC_ENUM, ACC_STATIC, 动态调用, 引用, 方法, 方法句柄, 类文件, 类路径
+from .图 import _json_value, builtin_funcs, ExprGraph
+from .库类 import LibrarySim
+from .类文件 import ACC_ABSTRACT, ACC_BRIDGE, ACC_ENUM, ACC_STATIC, InvokeDynamic, Ref, Method, MethodHandle, ClassFile, ClassPath
 
-部件类 = "net/minecraft/client/model/geom/ModelPart"
-实体类 = "net/minecraft/world/entity/Entity"
-渲染状态类 = "net/minecraft/client/renderer/entity/state/EntityRenderState"
-姿态字段 = ("x", "y", "z", "xRot", "yRot", "zRot", "xScale", "yScale", "zScale", "visible", "skipDraw")
-setupAnim参数 = ("limbSwing", "limbSwingAmount", "ageInTicks", "netHeadYaw", "headPitch")
-prepare参数 = ("limbSwing", "limbSwingAmount", "partialTick")
-向量类 = ("org/joml/Vector3f", "org/joml/Vector3fc")
+part_class = "net/minecraft/client/model/geom/ModelPart"
+entity_class = "net/minecraft/world/entity/Entity"
+render_state_class = "net/minecraft/client/renderer/entity/state/EntityRenderState"
+pose_fields = ("x", "y", "z", "xRot", "yRot", "zRot", "xScale", "yScale", "zScale", "visible", "skipDraw")
+setup_anim_params = ("limbSwing", "limbSwingAmount", "ageInTicks", "netHeadYaw", "headPitch")
+prepare_params = ("limbSwing", "limbSwingAmount", "partialTick")
+vector_classes = ("org/joml/Vector3f", "org/joml/Vector3fc")
 # 从实体上取到的这些类的对象，方法照字节码跑：字段读成输入（默认值取无参构造跑完的值），写进去的本次求值里记着。
 # AnimationState：HierarchicalModel.animate 先 updateTime 再 ifStarted，累计时间写了马上又读
-照跑类默认 = ("net/minecraft/world/entity/AnimationState",)
+DEFAULT_NATIVE_CLASSES = ("net/minecraft/world/entity/AnimationState",)
 # 静态字段是这些类型的，具体跑所属类的 <clinit>（关键帧动画定义、插值方式、通道目标）；注册表对象（Items.BOW）这类照旧当不透明
-具体初始化类型默认 = (
+DEFAULT_CONCRETE_INIT_TYPES = (
     "net/minecraft/client/animation/AnimationDefinition",
     "net/minecraft/client/animation/AnimationChannel$Interpolation",
     "net/minecraft/client/animation/AnimationChannel$Target",
@@ -36,7 +36,7 @@ prepare参数 = ("limbSwing", "limbSwingAmount", "partialTick")
 )
 
 
-class 不支持(Exception):
+class Unsupported(Exception):
     pass
 
 
@@ -50,51 +50,51 @@ class N:
 
 
 @dataclass(frozen=True)
-class 部件:
+class Part:
     名: str
 
 
 @dataclass(frozen=True)
-class 模型实例:
+class ModelInstance:
     pass
 
 
 @dataclass(frozen=True)
-class 不透明:
+class Opaque:
     路径: str
     类: str | None = None
 
 
 @dataclass(eq=False)
-class 对象:
+class JavaObject:
     类: str
-    号: int
+    serial: int
 
 
 @dataclass(eq=False)
-class 数组:
-    元素: list
-    元素描述: str
+class Array:
+    array_items: list
+    element_descriptor: str
 
 
 @dataclass(frozen=True)
-class 初始姿态:
-    部件: str
+class InitialPose:
+    part_name: str
 
 
 @dataclass(frozen=True)
-class 部件流:
-    根: str
+class PartStream:
+    root_key: str
 
 
 @dataclass(frozen=True)
-class 闭包:
-    句柄: 方法句柄
-    捕获: tuple
+class Closure:
+    handle: MethodHandle
+    captured: tuple
 
 
 @dataclass(frozen=True)
-class 比较值:
+class CompareValue:
     """lcmp / fcmpl / fcmpg / dcmpl / dcmpg 的结果，留到紧跟的 ifXX 再化成条件（NaN 的规矩不同）"""
 
     nan: int  # NaN 时的结果：-1（fcmpl）或 1（fcmpg）；lcmp 是 0（不会 NaN）
@@ -103,26 +103,26 @@ class 比较值:
 
 
 @dataclass(frozen=True)
-class 条件引用:
+class CondRef:
     """几个引用里按条件取一个（互斥且穷尽），如 HumanoidModel.getArm(arm) 的结果"""
 
-    分支: tuple
+    branches: tuple
 
 
 @dataclass(frozen=True)
-class 类常量:
+class ClassConstant:
     名: str
 
 
-续 = object()  # 二槽值的第二槽
+second_slot = object()  # 二槽值的第二槽
 
 
-def 二槽(v: Any) -> bool:
+def is_two_slot(v: Any) -> bool:
     return isinstance(v, N) and v.t in "jd"
 
 
 # ---------- 描述符 ----------
-def 拆描述(d: str) -> tuple[list[str], str]:
+def split_descriptor(d: str) -> tuple[list[str], str]:
     assert d[0] == "("
     i, ps = 1, []
     while d[i] != ")":
@@ -136,51 +136,51 @@ def 拆描述(d: str) -> tuple[list[str], str]:
     return ps, d[i + 1 :]
 
 
-def 基本类型(d: str) -> str | None:
+def primitive_type(d: str) -> str | None:
     return {"F": "f", "D": "d", "J": "j", "I": "i", "Z": "i", "B": "i", "S": "i", "C": "i"}.get(d)
 
 
 # ---------- 状态 ----------
 @dataclass
-class 堆态:
-    堆: dict = field(default_factory=dict)
-    事实: dict = field(default_factory=dict)
-    复位: bool = False
-    死: bool = False
+class HeapState:
+    heap: dict = field(default_factory=dict)
+    facts: dict = field(default_factory=dict)
+    reset: bool = False
+    dead: bool = False
 
-    def 复制(self) -> 堆态:
-        return 堆态(dict(self.堆), dict(self.事实), self.复位, self.死)
-
-
-@dataclass
-class 帧:
-    局部: list
-    栈: list
-    态: 堆态
-    返回: Any = None
-    已返回: bool = False
-
-    def 复制(self) -> 帧:
-        return 帧(list(self.局部), list(self.栈), self.态.复制(), self.返回, self.已返回)
+    def clone(self) -> HeapState:
+        return HeapState(dict(self.heap), dict(self.facts), self.reset, self.dead)
 
 
 @dataclass
-class 方法码:
-    类: 类文件
-    方法: 方法
-    指令: dict
-    _汇合: dict | None = None
+class Frame:
+    local_vars: list
+    operand_stack: list
+    heap_state: HeapState
+    return_value: Any = None
+    has_returned: bool = False
+
+    def clone(self) -> Frame:
+        return Frame(list(self.local_vars), list(self.operand_stack), self.heap_state.clone(), self.return_value, self.has_returned)
+
+
+@dataclass
+class MethodCode:
+    类: ClassFile
+    method_ref: method_ref
+    instructions: dict
+    _join_points: dict | None = None
 
     @property
-    def 汇合(self) -> dict:
+    def join_points(self) -> dict:
         # 用到符号分支才算：后必经是 n² 位运算，关键帧动画定义的 <clinit> 上万条指令、全是常量分支，算它要几分钟
-        if self._汇合 is None:
-            self._汇合 = 后必经(self.指令)
-        return self._汇合
+        if self._join_points is None:
+            self._join_points = post_dominators(self.instructions)
+        return self._join_points
 
 
 # ---------- 解码 ----------
-_长 = {
+_op_lengths = {
     16: 1,
     17: 2,
     18: 1,
@@ -225,12 +225,12 @@ _长 = {
     201: 4,
 }
 for _o in range(21, 26):
-    _长[_o] = 1
+    _op_lengths[_o] = 1
 for _o in range(54, 59):
-    _长[_o] = 1
+    _op_lengths[_o] = 1
 
 
-def 解码(code: bytes) -> dict:
+def decode_code(code: bytes) -> dict:
     """pc → (操作码, 操作数, 下一条 pc, 跳转目标们)"""
     out, pc = {}, 0
     while pc < len(code):
@@ -239,18 +239,18 @@ def 解码(code: bytes) -> dict:
             p = (pc + 4) & ~3
             dflt, lo, hi = struct.unpack_from(">iii", code, p)
             offs = struct.unpack_from(f">{hi - lo + 1}i", code, p + 12)
-            表 = {lo + i: pc + o for i, o in enumerate(offs)}
+            table = {lo + i: pc + o for i, o in enumerate(offs)}
             nxt = p + 12 + 4 * (hi - lo + 1)
-            out[pc] = (op, (pc + dflt, 表), nxt, [pc + dflt, *表.values()])
+            out[pc] = (op, (pc + dflt, table), nxt, [pc + dflt, *table.values()])
         elif op == 171:  # lookupswitch
             p = (pc + 4) & ~3
             dflt, n = struct.unpack_from(">ii", code, p)
-            表 = {}
+            table = {}
             for i in range(n):
                 k, o = struct.unpack_from(">ii", code, p + 8 + 8 * i)
-                表[k] = pc + o
+                table[k] = pc + o
             nxt = p + 8 + 8 * n
-            out[pc] = (op, (pc + dflt, 表), nxt, [pc + dflt, *表.values()])
+            out[pc] = (op, (pc + dflt, table), nxt, [pc + dflt, *table.values()])
         elif op == 196:  # wide
             op2 = code[pc + 1]
             if op2 == 132:
@@ -259,7 +259,7 @@ def 解码(code: bytes) -> dict:
             else:
                 out[pc] = (op2, (struct.unpack_from(">H", code, pc + 2)[0],), pc + 4, [])
         else:
-            n = _长.get(op, 0)
+            n = _op_lengths.get(op, 0)
             raw = code[pc + 1 : pc + 1 + n]
             if op in (16,):
                 arg: tuple = (struct.unpack(">b", raw)[0],)
@@ -288,18 +288,18 @@ def 解码(code: bytes) -> dict:
     return out
 
 
-_出口 = -1
+EXIT_PC = -1
 
 
-def 后必经(指令: dict) -> dict:
+def post_dominators(instructions: dict) -> dict:
     """每条指令的直接后必经点（汇合处）；出口记 -1"""
-    pcs = sorted(指令)
+    pcs = sorted(instructions)
     idx = {pc: i for i, pc in enumerate(pcs)}
     n = len(pcs)
     EXIT = n
     succ: list[list[int]] = []
     for pc in pcs:
-        op, arg, nxt, tg = 指令[pc]
+        op, arg, nxt, tg = instructions[pc]
         if 172 <= op <= 177 or op == 191:
             s = [EXIT]
         elif op in (167, 200):
@@ -311,13 +311,13 @@ def 后必经(指令: dict) -> dict:
         else:
             s = [idx[nxt]] if nxt in idx else [EXIT]
         succ.append(s)
-    全 = (1 << (n + 1)) - 1
-    pd = [全] * n + [1 << EXIT]
+    full_mask = (1 << (n + 1)) - 1
+    pd = [full_mask] * n + [1 << EXIT]
     changed = True
     while changed:
         changed = False
         for i in range(n - 1, -1, -1):
-            m = 全
+            m = full_mask
             for s in succ[i]:
                 m &= pd[s]
             v = m | (1 << i)
@@ -336,241 +336,241 @@ def 后必经(指令: dict) -> dict:
                     best, best_n = j, c
             m >>= 1
             j += 1
-        out[pc] = _出口 if best is None or best == EXIT else pcs[best]
+        out[pc] = EXIT_PC if best is None or best == EXIT else pcs[best]
     return out
 
 
-class 翻译器(库模拟):
+class Translator(LibrarySim):
     def __init__(
         self,
-        路径: 类路径,
-        模型类: str,
-        固定: dict[str, Any] | None = None,
-        模型树: dict[str, list[str]] | None = None,
-        步数上限: int = 3_000_000,
-        照跑类: tuple[str, ...] = 照跑类默认,
-        具体初始化类型: tuple[str, ...] = 具体初始化类型默认,
+        classpath: ClassPath,
+        model_class: str,
+        fixed: dict[str, Any] | None = None,
+        model_tree: dict[str, list[str]] | None = None,
+        step_limit: int = 3_000_000,
+        passthrough_classes: tuple[str, ...] = DEFAULT_NATIVE_CLASSES,
+        concrete_init_types: tuple[str, ...] = DEFAULT_CONCRETE_INIT_TYPES,
         层: str | None = None,
     ):
-        self.g = 图()
-        self.路径 = 路径
-        self.模型类 = 模型类.replace(".", "/")
-        self.固定 = dict(固定 or {})
-        self.模型树 = 模型树
-        self.输入表: dict[str, dict] = {}
-        self.警告: list[str] = []
-        self.静态: dict[tuple[str, str], Any] = {}
-        self._已初始化: set[str] = set()
-        self._枚举对象: dict[str, list[对象]] = {}
-        self._码: dict[tuple[str, str, str], 方法码] = {}
-        self._对象号 = 0
-        self.模型 = 模型实例()
-        self.结构字段: dict[str, Any] = {}
-        self.字段默认: dict[str, Any] = {}
-        self.根部件 = "root"
-        self.步 = 0
-        self.步数上限 = 步数上限
-        self._分叉中: set[tuple[str, int]] = set()
-        self._深度 = 0
-        self._链: list[str] = []
-        self.用到的类: set[str] = set()
-        self._静态堆 = 堆态()
-        self.照跑类 = set(照跑类)
-        self.具体初始化类型 = set(具体初始化类型)
-        self._照跑默认: dict[str, dict[str, Any]] = {}
+        self.g = ExprGraph()
+        self.路径 = classpath
+        self.model_class = model_class.replace(".", "/")
+        self.固定 = dict(fixed or {})
+        self.model_tree = model_tree
+        self.input_table: dict[str, dict] = {}
+        self.warnings: list[str] = []
+        self.static_fields: dict[tuple[str, str], Any] = {}
+        self._initialized_classes: set[str] = set()
+        self._objects_by_class: dict[str, list[JavaObject]] = {}
+        self._method_codes: dict[tuple[str, str, str], MethodCode] = {}
+        self._object_counter = 0
+        self.模型 = ModelInstance()
+        self.struct_fields: dict[str, Any] = {}
+        self.field_defaults: dict[str, Any] = {}
+        self.root_part = "root"
+        self.step_count = 0
+        self.step_limit = step_limit
+        self._forking_keys: set[tuple[str, int]] = set()
+        self._depth = 0
+        self._chain: list[str] = []
+        self.used_classes: set[str] = set()
+        self._static_heap = HeapState()
+        self.passthrough_classes = set(passthrough_classes)
+        self.concrete_init_types = set(concrete_init_types)
+        self._native_defaults: dict[str, dict[str, Any]] = {}
         # 没给 模型树 又要按名字找部件时，从这个无参层定义方法跑出树（None = 模型类里唯一的那个）
         self.层 = 层
 
     # ---------- 类和方法 ----------
-    def 类(self, 名: str) -> 类文件 | None:
-        c = self.路径.找(名)
+    def 类(self, class_name: str) -> ClassFile | None:
+        c = self.路径.find_class(class_name)
         if c is not None:
-            self.用到的类.add(名)
+            self.used_classes.add(class_name)
         return c
 
-    def 是枚举(self, 名: str) -> bool:
-        c = self.类(名)
-        return c is not None and bool(c.访问 & ACC_ENUM) and c.父类 == "java/lang/Enum"
+    def is_enum(self, class_name: str) -> bool:
+        c = self.类(class_name)
+        return c is not None and bool(c.access_flags & ACC_ENUM) and c.parent_class == "java/lang/Enum"
 
-    def 枚举常量(self, 名: str) -> list[str]:
-        c = self.类(名)
+    def enum_constants(self, class_name: str) -> list[str]:
+        c = self.类(class_name)
         assert c is not None
-        return [f.名 for f in c.字段们 if f.访问 & ACC_ENUM]
+        return [f.名 for f in c.fields if f.access_flags & ACC_ENUM]
 
-    def 找方法(self, 类名: str, 名: str, 描述: str, 虚: bool = True) -> tuple[类文件, 方法] | None:
+    def find_method(self, class_name: str, method_name: str, descriptor: str, virtual: bool = True) -> tuple[ClassFile, Method] | None:
         """从 类名 往父类找（虚调用、invokespecial 的父类调用都这样找）；接口的默认方法最后找"""
-        c = self.类(类名)
-        接口们: list[str] = []
+        c = self.类(class_name)
+        interfaces: list[str] = []
         while c is not None:
-            m = c.找方法(名, 描述)
-            if m is not None and not (m.访问 & ACC_ABSTRACT):
+            m = c.find_method(method_name, descriptor)
+            if m is not None and not (m.access_flags & ACC_ABSTRACT):
                 return c, m
-            接口们.extend(c.接口)
-            c = self.类(c.父类) if c.父类 else None
-        while 接口们:
-            i = self.类(接口们.pop(0))
+            interfaces.extend(c.is_interface)
+            c = self.类(c.parent_class) if c.parent_class else None
+        while interfaces:
+            i = self.类(interfaces.pop(0))
             if i is None:
                 continue
-            m = i.找方法(名, 描述)
-            if m is not None and m.代码 is not None:
+            m = i.find_method(method_name, descriptor)
+            if m is not None and m.bytecode is not None:
                 return i, m
-            接口们.extend(i.接口)
+            interfaces.extend(i.is_interface)
         return None
 
-    def 是子类(self, 类名: str | None, 祖先: str) -> bool:
-        while 类名:
-            if 类名 == 祖先:
+    def is_subclass(self, class_name: str | None, ancestor: str) -> bool:
+        while class_name:
+            if class_name == ancestor:
                 return True
-            c = self.类(类名)
+            c = self.类(class_name)
             if c is None:
                 return False
-            if 祖先 in c.接口:
+            if ancestor in c.is_interface:
                 return True
-            类名 = c.父类
+            class_name = c.parent_class
         return False
 
-    def 码(self, c: 类文件, m: 方法) -> 方法码:
-        k = (c.名, m.名, m.描述)
-        if k not in self._码:
-            if m.代码 is None:
-                raise 不支持(f"{c.名}.{m.名}{m.描述} 没有字节码（抽象或 native）")
-            ins = 解码(m.代码)
-            self._码[k] = 方法码(c, m, ins)
-        return self._码[k]
+    def get_method_code(self, c: ClassFile, m: Method) -> MethodCode:
+        k = (c.名, m.名, m.map_descriptor)
+        if k not in self._method_codes:
+            if m.bytecode is None:
+                raise Unsupported(f"{c.名}.{m.名}{m.map_descriptor} 没有字节码（抽象或 native）")
+            ins = decode_code(m.bytecode)
+            self._method_codes[k] = MethodCode(c, m, ins)
+        return self._method_codes[k]
 
     # ---------- 值的工具 ----------
-    def 常(self, t: str, v: Any) -> N:
-        return N(self.g.常(t, v), t)
+    def const_node(self, t: str, v: Any) -> N:
+        return N(self.g.const_node(t, v), t)
 
-    def 输入(self, 名: str, t: str, 来源: str, 枚举: str | None = None, 默认: Any = None) -> N:
-        if 名 in self.固定:
-            v = self.固定[名]
-            if 枚举 and isinstance(v, str):
-                v = self.枚举常量(枚举).index(v)
-            return self.常(t, v)
-        meta = self.输入表.setdefault(名, {"类型": t, "来源": 来源})
-        if 枚举:
-            meta["枚举"] = self.枚举常量(枚举)
-            meta["枚举类"] = 枚举
-        if 默认 is not None:
-            meta["默认"] = 默认
-        return N(self.g.输入(t, 名), t)
+    def input_node(self, input_name: str, t: str, source: str, enum_class: str | None = None, fallback_value: Any = None) -> N:
+        if input_name in self.固定:
+            v = self.固定[input_name]
+            if enum_class and isinstance(v, str):
+                v = self.enum_constants(enum_class).index(v)
+            return self.const_node(t, v)
+        meta = self.input_table.setdefault(input_name, {"类型": t, "来源": source})
+        if enum_class:
+            meta["枚举"] = self.enum_constants(enum_class)
+            meta["枚举类"] = enum_class
+        if fallback_value is not None:
+            meta["默认"] = fallback_value
+        return N(self.g.input_node(t, input_name), t)
 
-    def 按描述输入(self, 名: str, 描述: str, 来源: str, 默认: Any = None) -> Any:
-        t = 基本类型(描述)
+    def input_by_desc(self, input_name: str, descriptor: str, source: str, fallback_value: Any = None) -> Any:
+        t = primitive_type(descriptor)
         if t:
-            return self.输入(名, t, 来源, 默认=默认)
-        if 描述.startswith("L"):
-            cls = 描述[1:-1]
-            if self.是枚举(cls):
-                return self.输入(名, "i", 来源, 枚举=cls, 默认=默认)
-            return 不透明(名, cls)
-        return 不透明(名, None)
+            return self.input_node(input_name, t, source, fallback_value=fallback_value)
+        if descriptor.startswith("L"):
+            cls = descriptor[1:-1]
+            if self.is_enum(cls):
+                return self.input_node(input_name, "i", source, enum_class=cls, fallback_value=fallback_value)
+            return Opaque(input_name, cls)
+        return Opaque(input_name, None)
 
-    def 新对象号(self) -> int:
-        self._对象号 += 1
-        return self._对象号
+    def new_object_id(self) -> int:
+        self._object_counter += 1
+        return self._object_counter
 
     # ---------- 堆 ----------
-    def 键(self, obj: Any) -> tuple:
-        if isinstance(obj, 部件):
+    def heap_key(self, obj: Any) -> tuple:
+        if isinstance(obj, Part):
             return ("部件", obj.名)
-        if isinstance(obj, 模型实例):
+        if isinstance(obj, ModelInstance):
             return ("模型",)
-        if isinstance(obj, 对象):
-            return ("对象", obj.号)
-        if isinstance(obj, 不透明) and self.是照跑(obj):
+        if isinstance(obj, JavaObject):
+            return ("对象", obj.serial)
+        if isinstance(obj, Opaque) and self.is_native(obj):
             return ("不透明", obj.路径, obj.类)
-        raise 不支持(f"不能当对象读写字段：{obj!r}")
+        raise Unsupported(f"不能当对象读写字段：{obj!r}")
 
-    def 是照跑(self, obj: Any) -> bool:
-        return isinstance(obj, 不透明) and any(self.是子类(obj.类, c) for c in self.照跑类)
+    def is_native(self, obj: Any) -> bool:
+        return isinstance(obj, Opaque) and any(self.is_subclass(obj.类, c) for c in self.passthrough_classes)
 
-    def 照跑默认(self, 类名: str) -> dict[str, Any]:
+    def native_defaults(self, class_name: str) -> dict[str, Any]:
         """照跑类的字段默认值：对一个新对象具体跑无参构造，常量字段记下来（AnimationState.lastTime = Long.MAX_VALUE，即没开始）"""
-        if 类名 not in self._照跑默认:
+        if class_name not in self._native_defaults:
             out: dict[str, Any] = {}
-            self._照跑默认[类名] = out
-            found = self.找方法(类名, "<init>", "()V")
+            self._native_defaults[class_name] = out
+            found = self.find_method(class_name, "<init>", "()V")
             if found is not None:
-                o = 对象(类名, self.新对象号())
+                o = JavaObject(class_name, self.new_object_id())
                 try:
-                    _, 态 = self.跑(found[0], found[1], [o], 堆态())
-                    for (k, 字段), v in 态.堆.items():
-                        if k == ("对象", o.号) and isinstance(v, N) and self.g.是常量(v.id):
-                            out[字段] = self.g.常量值(v.id)
-                except 不支持 as e:
-                    self.警告.append(f"{类名} 的无参构造跑不了（{e}），字段默认按 0")
-        return self._照跑默认[类名]
+                    _, state = self.run_method(found[0], found[1], [o], HeapState())
+                    for (k, field), v in state.heap.items():
+                        if k == ("对象", o.serial) and isinstance(v, N) and self.g.is_constant(v.id):
+                            out[field] = self.g.constant_of(v.id)
+                except Unsupported as e:
+                    self.warnings.append(f"{class_name} 的无参构造跑不了（{e}），字段默认按 0")
+        return self._native_defaults[class_name]
 
-    def 字段描述(self, 类名: str | None, 字段: str) -> str | None:
-        c = self.类(类名) if 类名 else None
+    def field_descriptor(self, class_name: str | None, field: str) -> str | None:
+        c = self.类(class_name) if class_name else None
         while c is not None:
-            f = c.找字段(字段)
+            f = c.find_field(field)
             if f is not None:
-                return f.描述
-            c = self.类(c.父类) if c.父类 else None
+                return f.map_descriptor
+            c = self.类(c.parent_class) if c.parent_class else None
         return None
 
-    def 初值(self, k: tuple, 字段: str, 描述: str) -> Any:
+    def initial_value(self, k: tuple, field: str, descriptor: str) -> Any:
         if k[0] == "部件":
-            if 字段 in ("x", "y", "z", "xRot", "yRot", "zRot"):
-                return N(self.g.初始(k[1], 字段), "f")
-            if 字段 in ("xScale", "yScale", "zScale"):
-                return self.常("f", 1.0)
-            if 字段 == "visible":
-                return self.常("i", 1)
-            if 字段 == "skipDraw":
-                return self.常("i", 0)
-            if 字段 == "initialPose":
-                return 初始姿态(k[1])
-            return 不透明(f"{k[1]}.{字段}", 描述[1:-1] if 描述.startswith("L") else None)
+            if field in ("x", "y", "z", "xRot", "yRot", "zRot"):
+                return N(self.g.initial(k[1], field), "f")
+            if field in ("xScale", "yScale", "zScale"):
+                return self.const_node("f", 1.0)
+            if field == "visible":
+                return self.const_node("i", 1)
+            if field == "skipDraw":
+                return self.const_node("i", 0)
+            if field == "initialPose":
+                return InitialPose(k[1])
+            return Opaque(f"{k[1]}.{field}", descriptor[1:-1] if descriptor.startswith("L") else None)
         if k[0] == "模型":
-            if 字段 in self.结构字段:
-                return self.结构字段[字段]
-            return self.按描述输入(f"model.{字段}", 描述, "模型字段", 默认=self.字段默认.get(字段))
+            if field in self.struct_fields:
+                return self.struct_fields[field]
+            return self.input_by_desc(f"model.{field}", descriptor, "模型字段", fallback_value=self.field_defaults.get(field))
         if k[0] == "不透明":
-            return self.按描述输入(f"{k[1]}.{字段}", 描述, "实体", 默认=self.照跑默认(k[2]).get(字段))
-        t = 基本类型(描述)
-        return self.常(t, 0) if t else None
+            return self.input_by_desc(f"{k[1]}.{field}", descriptor, "实体", fallback_value=self.native_defaults(k[2]).get(field))
+        t = primitive_type(descriptor)
+        return self.const_node(t, 0) if t else None
 
-    def 读字段(self, 态: 堆态, obj: Any, 字段: str, 描述: str) -> Any:
-        if isinstance(obj, 条件引用):
-            vals = [(c, self.读字段(态, o, 字段, 描述)) for c, o in obj.分支]
+    def read_field(self, state: HeapState, obj: Any, field: str, descriptor: str) -> Any:
+        if isinstance(obj, CondRef):
+            vals = [(c, self.read_field(state, o, field, descriptor)) for c, o in obj.branches]
             r = vals[-1][1]
             for c, v in reversed(vals[:-1]):
-                r = self.合值(c, v, r)
+                r = self.merge_value(c, v, r)
             return r
-        if isinstance(obj, 初始姿态):
-            if 字段 in ("x", "y", "z", "xRot", "yRot", "zRot"):
-                return N(self.g.初始(obj.部件, 字段), "f")
-            if 字段 in ("xScale", "yScale", "zScale"):
-                return self.常("f", 1.0)
-            raise 不支持(f"PartPose.{字段}")
-        if isinstance(obj, 不透明) and not self.是照跑(obj):
-            return self.按描述输入(f"{obj.路径}.{字段}", 描述, "实体")
-        return self._堆读(态, self.键(obj), 字段, 描述)
+        if isinstance(obj, InitialPose):
+            if field in ("x", "y", "z", "xRot", "yRot", "zRot"):
+                return N(self.g.initial(obj.part_name, field), "f")
+            if field in ("xScale", "yScale", "zScale"):
+                return self.const_node("f", 1.0)
+            raise Unsupported(f"PartPose.{field}")
+        if isinstance(obj, Opaque) and not self.is_native(obj):
+            return self.input_by_desc(f"{obj.路径}.{field}", descriptor, "实体")
+        return self._heap_read(state, self.heap_key(obj), field, descriptor)
 
-    def _堆读(self, 态: 堆态, k: tuple, 字段: str, 描述: str) -> Any:
-        if (k, 字段) in 态.堆:
-            return 态.堆[(k, 字段)]
-        if k[0] == "对象" and (k, 字段) in self._静态堆.堆:
-            return self._静态堆.堆[(k, 字段)]
-        return self.初值(k, 字段, 描述)
+    def _heap_read(self, state: HeapState, k: tuple, field: str, descriptor: str) -> Any:
+        if (k, field) in state.heap:
+            return state.heap[(k, field)]
+        if k[0] == "对象" and (k, field) in self._static_heap.heap:
+            return self._static_heap.heap[(k, field)]
+        return self.initial_value(k, field, descriptor)
 
-    def 写字段(self, 态: 堆态, obj: Any, 字段: str, 值: Any, 描述: str) -> None:
-        if isinstance(obj, 条件引用):
-            for c, o in obj.分支:
-                old = self.读字段(态, o, 字段, 描述)
-                self.写字段(态, o, 字段, self.合值(c, 值, old), 描述)
+    def write_field(self, state: HeapState, obj: Any, field: str, value: Any, descriptor: str) -> None:
+        if isinstance(obj, CondRef):
+            for c, o in obj.branches:
+                old = self.read_field(state, o, field, descriptor)
+                self.write_field(state, o, field, self.merge_value(c, value, old), descriptor)
             return
-        if isinstance(obj, 不透明) and not self.是照跑(obj):
-            self.警告.append(f"写了实体字段 {obj.路径}.{字段}，忽略")
+        if isinstance(obj, Opaque) and not self.is_native(obj):
+            self.warnings.append(f"写了实体字段 {obj.路径}.{field}，忽略")
             return
-        态.堆[(self.键(obj), 字段)] = 值
+        state.heap[(self.heap_key(obj), field)] = value
 
     # ---------- 合并 ----------
-    def 合值(self, c: int, a: Any, b: Any) -> Any:
+    def merge_value(self, c: int, a: Any, b: Any) -> Any:
         if a is b:
             return a
         if isinstance(a, N) and isinstance(b, N):
@@ -578,153 +578,153 @@ class 翻译器(库模拟):
                 return None
             if a.id == b.id:
                 return a
-            return N(self.g.选(c, a.id, b.id), a.t)
-        if a is None or b is None or a is 续 or b is 续:
+            return N(self.g.select(c, a.id, b.id), a.t)
+        if a is None or b is None or a is second_slot or b is second_slot:
             return None
-        if a == b and not isinstance(a, (对象, 数组)):
+        if a == b and not isinstance(a, (JavaObject, Array)):
             return a
-        if isinstance(a, (N, 比较值)) or isinstance(b, (N, 比较值)):
-            if isinstance(a, 比较值) or isinstance(b, 比较值):
-                a, b = self.落比较(a), self.落比较(b)
-                return self.合值(c, a, b)
+        if isinstance(a, (N, CompareValue)) or isinstance(b, (N, CompareValue)):
+            if isinstance(a, CompareValue) or isinstance(b, CompareValue):
+                a, b = self.resolve_compare(a), self.resolve_compare(b)
+                return self.merge_value(c, a, b)
             return None
         opts: list[tuple[int, Any]] = []
-        for cond, v in ((c, a), (self.g.非(c), b)):
-            if isinstance(v, 条件引用):
-                opts.extend((self.g.且(cond, ci), vi) for ci, vi in v.分支)
+        for cond, v in ((c, a), (self.g.logical_not(c), b)):
+            if isinstance(v, CondRef):
+                opts.extend((self.g.logical_and(cond, ci), vi) for ci, vi in v.branches)
             else:
                 opts.append((cond, v))
         merged: list[tuple[int, Any]] = []
         for cond, v in opts:
             for i, (c2, v2) in enumerate(merged):
-                if v2 == v if not isinstance(v, (对象, 数组)) else v2 is v:
-                    merged[i] = (self.g.或(c2, cond), v2)
+                if v2 == v if not isinstance(v, (JavaObject, Array)) else v2 is v:
+                    merged[i] = (self.g.logical_or(c2, cond), v2)
                     break
             else:
                 merged.append((cond, v))
         if len(merged) == 1:
             return merged[0][1]
-        return 条件引用(tuple(merged))
+        return CondRef(tuple(merged))
 
-    def 落比较(self, v: Any) -> Any:
-        if not isinstance(v, 比较值):
+    def resolve_compare(self, v: Any) -> Any:
+        if not isinstance(v, CompareValue):
             return v
         g = self.g
-        lt = g.比("<", v.a.id, v.b.id)
-        gt = g.比(">", v.a.id, v.b.id)
-        eq = g.比("==", v.a.id, v.b.id)
-        nan = g.常("i", v.nan)
-        return N(g.选(lt, g.常("i", -1), g.选(gt, g.常("i", 1), g.选(eq, g.常("i", 0), nan))), "i")
+        lt = g.compare("<", v.a.id, v.b.id)
+        gt = g.compare(">", v.a.id, v.b.id)
+        eq = g.compare("==", v.a.id, v.b.id)
+        nan = g.const_node("i", v.nan)
+        return N(g.select(lt, g.const_node("i", -1), g.select(gt, g.const_node("i", 1), g.select(eq, g.const_node("i", 0), nan))), "i")
 
-    def 合帧(self, c: int, f1: 帧, f2: 帧, 起号: int | None = None) -> 帧:
+    def merge_frames(self, c: int, f1: Frame, f2: Frame, start_object_id: int | None = None) -> Frame:
         """起号：分叉前的对象号。分叉后才建的对象只有建它的那边有，它的字段照那边取（另一边引用不到它）"""
-        if f1.态.死:
+        if f1.heap_state.dead:
             return f2
-        if f2.态.死:
+        if f2.heap_state.dead:
             return f1
-        if f1.已返回 != f2.已返回:
-            raise 不支持("一边返回了、一边没返回的分支")
-        n = max(len(f1.局部), len(f2.局部))
-        局部 = [self.合值(c, f1.局部[i] if i < len(f1.局部) else None, f2.局部[i] if i < len(f2.局部) else None) for i in range(n)]
-        if len(f1.栈) != len(f2.栈):
-            raise 不支持("汇合处两边栈深不同")
-        栈 = []
-        for a, b in zip(f1.栈, f2.栈):
-            v = self.合值(c, a, b)
+        if f1.has_returned != f2.has_returned:
+            raise Unsupported("一边返回了、一边没返回的分支")
+        n = max(len(f1.local_vars), len(f2.local_vars))
+        local_vars = [self.merge_value(c, f1.local_vars[i] if i < len(f1.local_vars) else None, f2.local_vars[i] if i < len(f2.local_vars) else None) for i in range(n)]
+        if len(f1.operand_stack) != len(f2.operand_stack):
+            raise Unsupported("汇合处两边栈深不同")
+        stack = []
+        for a, b in zip(f1.operand_stack, f2.operand_stack):
+            v = self.merge_value(c, a, b)
             if v is None:
-                raise 不支持(f"汇合处栈上的值合不起来：{a!r} / {b!r}")
-            栈.append(v)
-        态 = 堆态()
-        for k in sorted(set(f1.态.堆) | set(f2.态.堆), key=repr):
-            obj, 字段 = k
-            desc = "F" if 字段 not in ("visible", "skipDraw") else "Z"
-            if obj[0] == "模型" and 字段 not in self.结构字段:
-                desc = self._模型字段描述(字段)
+                raise Unsupported(f"汇合处栈上的值合不起来：{a!r} / {b!r}")
+            stack.append(v)
+        state = HeapState()
+        for k in sorted(set(f1.heap_state.heap) | set(f2.heap_state.heap), key=repr):
+            obj, field = k
+            desc = "F" if field not in ("visible", "skipDraw") else "Z"
+            if obj[0] == "模型" and field not in self.struct_fields:
+                desc = self._model_field_descriptor(field)
             if obj[0] == "不透明":
-                desc = self.字段描述(obj[2], 字段) or desc
-            if obj[0] == "对象" and 起号 is not None and obj[1] > 起号 and (k not in f1.态.堆 or k not in f2.态.堆):
-                态.堆[k] = f1.态.堆[k] if k in f1.态.堆 else f2.态.堆[k]
+                desc = self.field_descriptor(obj[2], field) or desc
+            if obj[0] == "对象" and start_object_id is not None and obj[1] > start_object_id and (k not in f1.heap_state.heap or k not in f2.heap_state.heap):
+                state.heap[k] = f1.heap_state.heap[k] if k in f1.heap_state.heap else f2.heap_state.heap[k]
                 continue
-            a = f1.态.堆[k] if k in f1.态.堆 else self._堆读(f1.态, obj, 字段, desc)
-            b = f2.态.堆[k] if k in f2.态.堆 else self._堆读(f2.态, obj, 字段, desc)
-            if obj[0] == "部件" and (k not in f1.态.堆 and not f1.态.复位 or k not in f2.态.堆 and not f2.态.复位):
-                w = f"部件 {obj[1]}.{字段} 只在部分分支里写：没写的那支游戏里沿用上一帧的值，这里按初始姿态算"
-                if w not in self.警告:
-                    self.警告.append(w)
-            v = self.合值(c, a, b)
+            a = f1.heap_state.heap[k] if k in f1.heap_state.heap else self._heap_read(f1.heap_state, obj, field, desc)
+            b = f2.heap_state.heap[k] if k in f2.heap_state.heap else self._heap_read(f2.heap_state, obj, field, desc)
+            if obj[0] == "部件" and (k not in f1.heap_state.heap and not f1.heap_state.reset or k not in f2.heap_state.heap and not f2.heap_state.reset):
+                w = f"部件 {obj[1]}.{field} 只在部分分支里写：没写的那支游戏里沿用上一帧的值，这里按初始姿态算"
+                if w not in self.warnings:
+                    self.warnings.append(w)
+            v = self.merge_value(c, a, b)
             if v is None:
-                raise 不支持(f"汇合处字段 {obj}.{字段} 合不起来")
-            态.堆[k] = v
-        态.事实 = {k: v for k, v in f1.态.事实.items() if f2.态.事实.get(k) == v}
-        态.复位 = f1.态.复位 and f2.态.复位
-        out = 帧(局部, 栈, 态, None, f1.已返回)
-        if f1.已返回:
-            out.返回 = self.合值(c, f1.返回, f2.返回) if (f1.返回 is not None or f2.返回 is not None) else None
+                raise Unsupported(f"汇合处字段 {obj}.{field} 合不起来")
+            state.heap[k] = v
+        state.facts = {k: v for k, v in f1.heap_state.facts.items() if f2.heap_state.facts.get(k) == v}
+        state.reset = f1.heap_state.reset and f2.heap_state.reset
+        out = Frame(local_vars, stack, state, None, f1.has_returned)
+        if f1.has_returned:
+            out.return_value = self.merge_value(c, f1.return_value, f2.return_value) if (f1.return_value is not None or f2.return_value is not None) else None
         return out
 
-    def _模型字段描述(self, 字段: str) -> str:
-        c = self.类(self.模型类)
+    def _model_field_descriptor(self, field: str) -> str:
+        c = self.类(self.model_class)
         while c is not None:
-            f = c.找字段(字段)
+            f = c.find_field(field)
             if f is not None:
-                return f.描述
-            c = self.类(c.父类) if c.父类 else None
+                return f.map_descriptor
+            c = self.类(c.parent_class) if c.parent_class else None
         return "F"
 
     # ---------- 条件 ----------
-    def 定值(self, 态: 堆态, c: int) -> bool | None:
+    def known_value(self, state: HeapState, c: int) -> bool | None:
         g = self.g
-        if g.是常量(c):
-            return bool(g.常量值(c))
-        if c in 态.事实:
-            return 态.事实[c]
-        e = g.节点[c]
-        if e[0] == "not" and e[2] in 态.事实:
-            return not 态.事实[e[2]]
+        if g.is_constant(c):
+            return bool(g.constant_of(c))
+        if c in state.facts:
+            return state.facts[c]
+        e = g.graph_nodes[c]
+        if e[0] == "not" and e[2] in state.facts:
+            return not state.facts[e[2]]
         return None
 
-    def 记事实(self, 态: 堆态, c: int, v: bool) -> None:
-        e = self.g.节点[c]
+    def record_fact(self, state: HeapState, c: int, v: bool) -> None:
+        e = self.g.graph_nodes[c]
         if e[0] == "not":
-            态.事实[e[2]] = not v
+            state.facts[e[2]] = not v
         else:
-            态.事实[c] = v
+            state.facts[c] = v
 
     # ---------- 跑方法 ----------
-    def 跑(self, c: 类文件, m: 方法, 实参: list, 态: 堆态) -> tuple[Any, 堆态]:
-        self._深度 += 1
-        self._链.append(f"{c.名.split('/')[-1]}.{m.名}")
-        if self._深度 > 60:
-            raise 不支持("调用太深（递归？）")
+    def run_method(self, c: ClassFile, m: Method, actual_args: list, state: HeapState) -> tuple[Any, HeapState]:
+        self._depth += 1
+        self._chain.append(f"{c.名.split('/')[-1]}.{m.名}")
+        if self._depth > 60:
+            raise Unsupported("调用太深（递归？）")
         try:
-            mc = self.码(c, m)
-            局部: list = [None] * max(m.最大局部, 1)
+            mc = self.get_method_code(c, m)
+            local_vars: list = [None] * max(m.max_locals, 1)
             i = 0
-            for v in 实参:
-                局部[i] = v
-                i += 2 if 二槽(v) else 1
-            fr = self.区间(mc, 帧(局部, [], 态), 0, _出口)
-            if not fr.已返回 and not fr.态.死:
-                raise 不支持(f"{c.名}.{m.名} 没走到 return")
-            return fr.返回, fr.态
+            for v in actual_args:
+                local_vars[i] = v
+                i += 2 if is_two_slot(v) else 1
+            fr = self.run_range(mc, Frame(local_vars, [], state), 0, EXIT_PC)
+            if not fr.has_returned and not fr.heap_state.dead:
+                raise Unsupported(f"{c.名}.{m.名} 没走到 return")
+            return fr.return_value, fr.heap_state
         finally:
-            self._深度 -= 1
-            self._链.pop()
+            self._depth -= 1
+            self._chain.pop()
 
-    def 区间(self, mc: 方法码, fr: 帧, pc: int, 终: int) -> 帧:
+    def run_range(self, mc: MethodCode, fr: Frame, pc: int, end: int) -> Frame:
         g = self.g
         while True:
-            if pc == 终:
+            if pc == end:
                 return fr
-            self.步 += 1
-            if self.步 > self.步数上限:
-                raise 不支持("步数超过上限（死循环？）")
-            op, arg, nxt, tg = mc.指令[pc]
+            self.step_count += 1
+            if self.step_count > self.step_limit:
+                raise Unsupported("步数超过上限（死循环？）")
+            op, arg, nxt, tg = mc.instructions[pc]
             try:
-                r: Any = self.一条(mc, fr, pc, op, arg, nxt)
-            except 不支持 as e:
+                r: Any = self.exec_insn(mc, fr, pc, op, arg, nxt)
+            except Unsupported as e:
                 if "@" not in str(e):
-                    raise 不支持(f"{e} @ {mc.类.名}.{mc.方法.名}{mc.方法.描述} pc={pc} op={op}；调用链 {' → '.join(self._链)}") from None
+                    raise Unsupported(f"{e} @ {mc.类.名}.{mc.method_ref.名}{mc.method_ref.map_descriptor} pc={pc} op={op}；调用链 {' → '.join(self._chain)}") from None
                 raise
             if r is None:
                 pc = nxt
@@ -733,61 +733,61 @@ class 翻译器(库模拟):
             if kind == "跳":
                 pc = r[1]
             elif kind == "返回":
-                fr.已返回 = True
-                fr.返回 = r[1]
+                fr.has_returned = True
+                fr.return_value = r[1]
                 return fr
             elif kind == "死":
-                fr.态.死 = True
-                fr.已返回 = 终 == _出口
+                fr.heap_state.dead = True
+                fr.has_returned = end == EXIT_PC
                 return fr
             elif kind == "分":
                 # r[1]：[(条件或 None=其余, 目标 pc)]，条件互斥；全是符号的
-                j = mc.汇合[pc]
-                key = (mc.类.名 + "." + mc.方法.名 + mc.方法.描述, pc)
-                if key in self._分叉中:
-                    raise 不支持(f"条件是符号的循环（{mc.类.名}.{mc.方法.名} pc={pc}）")
-                self._分叉中.add(key)
-                起号 = self._对象号
+                j = mc.join_points[pc]
+                key = (mc.类.名 + "." + mc.method_ref.名 + mc.method_ref.map_descriptor, pc)
+                if key in self._forking_keys:
+                    raise Unsupported(f"条件是符号的循环（{mc.类.名}.{mc.method_ref.名} pc={pc}）")
+                self._forking_keys.add(key)
+                start_object_id = self._object_counter
                 try:
-                    结果: list[tuple[int, 帧]] = []
-                    其余 = g.真()
+                    results: list[tuple[int, Frame]] = []
+                    default_cond = g.const_true()
                     for cond, target in r[1]:
-                        f2 = fr.复制()
-                        c2 = 其余 if cond is None else cond
+                        f2 = fr.clone()
+                        c2 = default_cond if cond is None else cond
                         if cond is not None:
-                            其余 = g.且(其余, g.非(cond))
-                        if g.是常量(c2) and not g.常量值(c2):
+                            default_cond = g.logical_and(default_cond, g.logical_not(cond))
+                        if g.is_constant(c2) and not g.constant_of(c2):
                             continue
-                        if not g.是常量(c2):
-                            self.记事实(f2.态, c2, True)
-                        结果.append((c2, self.区间(mc, f2, target, j)))
+                        if not g.is_constant(c2):
+                            self.record_fact(f2.heap_state, c2, True)
+                        results.append((c2, self.run_range(mc, f2, target, j)))
                 finally:
-                    self._分叉中.discard(key)
-                合 = 结果[-1][1]
-                for c2, f2 in reversed(结果[:-1]):
-                    合 = self.合帧(c2, f2, 合, 起号)
-                fr = 合
-                if j == _出口 or fr.已返回:
-                    if j != _出口:
-                        raise 不支持("汇合点不是出口却已返回")
+                    self._forking_keys.discard(key)
+                merged = results[-1][1]
+                for c2, f2 in reversed(results[:-1]):
+                    merged = self.merge_frames(c2, f2, merged, start_object_id)
+                fr = merged
+                if j == EXIT_PC or fr.has_returned:
+                    if j != EXIT_PC:
+                        raise Unsupported("汇合点不是出口却已返回")
                     return fr
-                if fr.态.死:
+                if fr.heap_state.dead:
                     return fr
                 pc = j
             else:
                 raise AssertionError(kind)
 
     # 条件跳转：可定就走一边，不可定交给 区间 分叉
-    def 条件跳(self, fr: 帧, c: int, target: int, nxt: int):
-        v = self.定值(fr.态, c)
+    def conditional_jump(self, fr: Frame, c: int, target: int, nxt: int):
+        v = self.known_value(fr.heap_state, c)
         if v is not None:
             return ("跳", target if v else nxt)
         return ("分", [(c, target), (None, nxt)])
 
-    def 条件(self, op: str, a: Any, b: Any = None) -> int:
+    def condition(self, op: str, a: Any, b: Any = None) -> int:
         """ifXX 的条件：a 是 比较值（fcmpl 等）或 int；b 给了是 if_icmpXX"""
         g = self.g
-        if isinstance(a, 比较值):
+        if isinstance(a, CompareValue):
             x, y = a.a.id, a.b.id
             if a.nan == -1:  # fcmpl/dcmpl：NaN → -1
                 m = {"==": ("==", False), "!=": ("==", True), "<": (">=", True), ">=": (">=", False), ">": (">", False), "<=": (">", True)}
@@ -796,227 +796,227 @@ class 翻译器(库模拟):
             else:
                 m = {k: (k, False) for k in ("==", "!=", "<", ">=", ">", "<=")}
             o, neg = m[op]
-            c = g.比(o, x, y)
-            return g.非(c) if neg else c
+            c = g.compare(o, x, y)
+            return g.logical_not(c) if neg else c
         if b is None:
-            b = self.常("i", 0)
-        a, b = self.落比较(a), self.落比较(b)
+            b = self.const_node("i", 0)
+        a, b = self.resolve_compare(a), self.resolve_compare(b)
         if not (isinstance(a, N) and isinstance(b, N)):
-            raise 不支持(f"比较的不是数：{a!r} {b!r}")
-        return g.比(op, a.id, b.id)
+            raise Unsupported(f"比较的不是数：{a!r} {b!r}")
+        return g.compare(op, a.id, b.id)
 
-    def 引用相等(self, a: Any, b: Any) -> int:
+    def ref_equal(self, a: Any, b: Any) -> int:
         g = self.g
         if isinstance(a, N) and isinstance(b, N):
-            return g.比("==", a.id, b.id)
-        if isinstance(a, 条件引用) or isinstance(b, 条件引用):
-            多, 另 = (a, b) if isinstance(a, 条件引用) else (b, a)
-            assert isinstance(多, 条件引用)
-            r = g.假()
-            for ci, vi in 多.分支:
-                r = g.或(r, g.且(ci, self.引用相等(vi, 另)))
+            return g.compare("==", a.id, b.id)
+        if isinstance(a, CondRef) or isinstance(b, CondRef):
+            cond_ref, other = (a, b) if isinstance(a, CondRef) else (b, a)
+            assert isinstance(cond_ref, CondRef)
+            r = g.false_node()
+            for ci, vi in cond_ref.branches:
+                r = g.logical_or(r, g.logical_and(ci, self.ref_equal(vi, other)))
             return r
-        if a is b or (a == b and not isinstance(a, (对象, 数组))):
-            return g.真()
+        if a is b or (a == b and not isinstance(a, (JavaObject, Array))):
+            return g.const_true()
         if a is None or b is None:
-            return g.假()
-        if isinstance(a, 不透明) or isinstance(b, 不透明):
-            raise 不支持(f"比较不透明对象的引用：{a!r} / {b!r}")
-        return g.假()
+            return g.false_node()
+        if isinstance(a, Opaque) or isinstance(b, Opaque):
+            raise Unsupported(f"比较不透明对象的引用：{a!r} / {b!r}")
+        return g.false_node()
 
     # ---------- 一条指令 ----------
-    def 一条(self, mc: 方法码, fr: 帧, pc: int, op: int, arg: tuple, nxt: int):
-        g, st, loc = self.g, fr.栈, fr.局部
-        cp = mc.类.常量池
+    def exec_insn(self, mc: MethodCode, fr: Frame, pc: int, op: int, arg: tuple, nxt: int):
+        g, st, loc = self.g, fr.operand_stack, fr.local_vars
+        cp = mc.类.const_pool
         if op == 0:
             return None
         if op == 1:
             st.append(None)
         elif 2 <= op <= 8:
-            st.append(self.常("i", op - 3))
+            st.append(self.const_node("i", op - 3))
         elif op in (9, 10):
-            st.append(self.常("j", op - 9))
+            st.append(self.const_node("j", op - 9))
         elif 11 <= op <= 13:
-            st.append(self.常("f", float(op - 11)))
+            st.append(self.const_node("f", float(op - 11)))
         elif op in (14, 15):
-            st.append(self.常("d", float(op - 14)))
+            st.append(self.const_node("d", float(op - 14)))
         elif op in (16, 17):
-            st.append(self.常("i", arg[0]))
+            st.append(self.const_node("i", arg[0]))
         elif op in (18, 19, 20):
             v = cp[arg[0]]
             if isinstance(v, tuple):
                 kind = v[0]
                 if kind in ("int", "float", "long", "double"):
-                    st.append(self.常({"int": "i", "float": "f", "long": "j", "double": "d"}[kind], v[1]))
+                    st.append(self.const_node({"int": "i", "float": "f", "long": "j", "double": "d"}[kind], v[1]))
                 elif kind == "string":
                     st.append(v[1])
                 elif kind == "class":
-                    st.append(类常量(v[1]))
+                    st.append(ClassConstant(v[1]))
                 else:
-                    raise 不支持(f"ldc {kind}")
+                    raise Unsupported(f"ldc {kind}")
             else:
-                raise 不支持(f"ldc {v!r}")
+                raise Unsupported(f"ldc {v!r}")
         elif 21 <= op <= 25:
             st.append(loc[arg[0]])
         elif 26 <= op <= 45:
             st.append(loc[(op - 26) % 4])
         elif 46 <= op <= 53:
             i, a = st.pop(), st.pop()
-            st.append(self.数组读(a, i))
+            st.append(self.array_read(a, i))
         elif 54 <= op <= 58:
-            self.存局部(loc, arg[0], st.pop())
+            self.store_local(loc, arg[0], st.pop())
         elif 59 <= op <= 78:
-            self.存局部(loc, (op - 59) % 4, st.pop())
+            self.store_local(loc, (op - 59) % 4, st.pop())
         elif 79 <= op <= 86:
             v, i, a = st.pop(), st.pop(), st.pop()
-            if not isinstance(a, 数组):
-                raise 不支持(f"往非数组里存：{a!r}")
-            if not (isinstance(i, N) and g.是常量(i.id)):
-                raise 不支持("数组下标是符号")
-            a.元素[g.常量值(i.id)] = v
+            if not isinstance(a, Array):
+                raise Unsupported(f"往非数组里存：{a!r}")
+            if not (isinstance(i, N) and g.is_constant(i.id)):
+                raise Unsupported("数组下标是符号")
+            a.array_items[g.constant_of(i.id)] = v
         elif op == 87:
-            self.弹槽(st, 1)
+            self.pop_slots(st, 1)
         elif op == 88:
-            self.弹槽(st, 2)
+            self.pop_slots(st, 2)
         elif 89 <= op <= 95:
             if op == 89:
-                s = self.弹槽(st, 1)
-                self.压槽(st, s + s)
+                s = self.pop_slots(st, 1)
+                self.push_slots(st, s + s)
             elif op == 90:
-                a, b = self.弹槽(st, 1), self.弹槽(st, 1)
-                self.压槽(st, a + b + a)
+                a, b = self.pop_slots(st, 1), self.pop_slots(st, 1)
+                self.push_slots(st, a + b + a)
             elif op == 91:
-                a, bc = self.弹槽(st, 1), self.弹槽(st, 2)
-                self.压槽(st, a + bc + a)
+                a, bc = self.pop_slots(st, 1), self.pop_slots(st, 2)
+                self.push_slots(st, a + bc + a)
             elif op == 92:
-                s = self.弹槽(st, 2)
-                self.压槽(st, s + s)
+                s = self.pop_slots(st, 2)
+                self.push_slots(st, s + s)
             elif op == 93:
-                ab, c = self.弹槽(st, 2), self.弹槽(st, 1)
-                self.压槽(st, ab + c + ab)
+                ab, c = self.pop_slots(st, 2), self.pop_slots(st, 1)
+                self.push_slots(st, ab + c + ab)
             elif op == 94:
-                ab, cd = self.弹槽(st, 2), self.弹槽(st, 2)
-                self.压槽(st, ab + cd + ab)
+                ab, cd = self.pop_slots(st, 2), self.pop_slots(st, 2)
+                self.push_slots(st, ab + cd + ab)
             else:
-                a, b = self.弹槽(st, 1), self.弹槽(st, 1)
-                self.压槽(st, a + b)
+                a, b = self.pop_slots(st, 1), self.pop_slots(st, 1)
+                self.push_slots(st, a + b)
         elif 96 <= op <= 131:
             t = "ijfd"[(op - 96) % 4] if op < 120 else "ij"[(op - 120) % 2]
             if op < 116:
                 name = ["+", "-", "*", "/", "%"][(op - 96) // 4]
                 b, a = st.pop(), st.pop()
-                st.append(self.算(name, t, a, b))
+                st.append(self.calc(name, t, a, b))
             elif op < 120:
                 a = st.pop()
-                st.append(N(g.算("neg", t, self.数(a).id), t))
+                st.append(N(g.calc("neg", t, self.to_number(a).id), t))
             else:
                 name = ["shl", "shr", "ushr", "and", "or", "xor"][(op - 120) // 2]
                 b, a = st.pop(), st.pop()
                 if name in ("shl", "shr", "ushr"):
-                    b = N(g.转(t, self.数(b).id), t) if t == "j" else b
-                st.append(self.算(name, t, a, b))
+                    b = N(g.convert_node(t, self.to_number(b).id), t) if t == "j" else b
+                st.append(self.calc(name, t, a, b))
         elif op == 132:
             idx, c = arg
-            loc[idx] = self.算("+", "i", loc[idx], self.常("i", c))
+            loc[idx] = self.calc("+", "i", loc[idx], self.const_node("i", c))
         elif 133 <= op <= 147:
-            a = self.数(st.pop())
-            到 = {133: "j", 134: "f", 135: "d", 136: "i", 137: "f", 138: "d", 139: "i", 140: "j", 141: "d", 142: "i", 143: "j", 144: "f"}.get(op)
-            if 到:
-                st.append(N(g.转(到, a.id), 到))
+            a = self.to_number(st.pop())
+            result_types = {133: "j", 134: "f", 135: "d", 136: "i", 137: "f", 138: "d", 139: "i", 140: "j", 141: "d", 142: "i", 143: "j", 144: "f"}.get(op)
+            if result_types:
+                st.append(N(g.convert_node(result_types, a.id), result_types))
             else:  # i2b i2c i2s
                 bits, signed = {145: (8, True), 146: (16, False), 147: (16, True)}[op]
-                if g.是常量(a.id):
-                    v = g.常量值(a.id) & ((1 << bits) - 1)
+                if g.is_constant(a.id):
+                    v = g.constant_of(a.id) & ((1 << bits) - 1)
                     if signed and v >= 1 << (bits - 1):
                         v -= 1 << bits
-                    st.append(self.常("i", v))
+                    st.append(self.const_node("i", v))
                 else:
-                    raise 不支持("i2b/i2c/i2s 作用在符号上")
+                    raise Unsupported("i2b/i2c/i2s 作用在符号上")
         elif op == 148:
             b, a = st.pop(), st.pop()
-            st.append(比较值(0, self.数(a), self.数(b)))
+            st.append(CompareValue(0, self.to_number(a), self.to_number(b)))
         elif op in (149, 150, 151, 152):
             b, a = st.pop(), st.pop()
-            st.append(比较值(-1 if op in (149, 151) else 1, self.数(a), self.数(b)))
+            st.append(CompareValue(-1 if op in (149, 151) else 1, self.to_number(a), self.to_number(b)))
         elif 153 <= op <= 158:
             a = st.pop()
             o = ["==", "!=", "<", ">=", ">", "<="][op - 153]
-            return self.条件跳(fr, self.条件(o, a), arg[0], nxt)
+            return self.conditional_jump(fr, self.condition(o, a), arg[0], nxt)
         elif 159 <= op <= 164:
             b, a = st.pop(), st.pop()
             o = ["==", "!=", "<", ">=", ">", "<="][op - 159]
-            return self.条件跳(fr, self.条件(o, a, b), arg[0], nxt)
+            return self.conditional_jump(fr, self.condition(o, a, b), arg[0], nxt)
         elif op in (165, 166):
             b, a = st.pop(), st.pop()
-            c = self.引用相等(a, b)
-            return self.条件跳(fr, c if op == 165 else g.非(c), arg[0], nxt)
+            c = self.ref_equal(a, b)
+            return self.conditional_jump(fr, c if op == 165 else g.logical_not(c), arg[0], nxt)
         elif op in (167, 200):
             return ("跳", arg[0])
         elif op in (168, 169, 201):
-            raise 不支持("jsr/ret")
+            raise Unsupported("jsr/ret")
         elif op in (170, 171):
-            dflt, 表 = arg
-            k = self.数(self.落比较(st.pop()))
-            if g.是常量(k.id):
-                return ("跳", 表.get(g.常量值(k.id), dflt))
+            dflt, table = arg
+            k = self.to_number(self.resolve_compare(st.pop()))
+            if g.is_constant(k.id):
+                return ("跳", table.get(g.constant_of(k.id), dflt))
             by_target: dict[int, int] = {}
-            for val, t in 表.items():
-                by_target[t] = g.或(by_target.get(t, g.假()), g.比("==", k.id, g.常("i", val)))
-            分 = [(c, t) for t, c in by_target.items() if t != dflt]
+            for val, t in table.items():
+                by_target[t] = g.logical_or(by_target.get(t, g.false_node()), g.compare("==", k.id, g.const_node("i", val)))
+            branches = [(c, t) for t, c in by_target.items() if t != dflt]
             others = by_target.get(dflt)
             if others is not None:
-                分.append((others, dflt))
+                branches.append((others, dflt))
             # 定得了的分支直接选
-            for c, t in 分:
-                if self.定值(fr.态, c) is True:
+            for c, t in branches:
+                if self.known_value(fr.heap_state, c) is True:
                     return ("跳", t)
-            分 = [(c, t) for c, t in 分 if self.定值(fr.态, c) is not False]
+            branches = [(c, t) for c, t in branches if self.known_value(fr.heap_state, c) is not False]
             # 同一目标的合到一条，条件按「前面的都不成立」由 区间 处理
-            return ("分", [*分, (None, dflt)])
+            return ("分", [*branches, (None, dflt)])
         elif 172 <= op <= 176:
             return ("返回", st.pop())
         elif op == 177:
             return ("返回", None)
         elif op in (178, 179):
-            ref: 引用 = cp[arg[0]]
+            ref: Ref = cp[arg[0]]
             if op == 178:
-                st.append(self.读静态(ref))
+                st.append(self.read_static(ref))
             else:
-                self.静态[(ref.类, ref.名)] = st.pop()
+                self.static_fields[(ref.类, ref.名)] = st.pop()
         elif op == 180:
             ref = cp[arg[0]]
             obj = st.pop()
-            st.append(self.取字段(fr.态, obj, ref))
+            st.append(self.get_field(fr.heap_state, obj, ref))
         elif op == 181:
             ref = cp[arg[0]]
             v, obj = st.pop(), st.pop()
-            if isinstance(obj, N) and self.是枚举(ref.类):
-                raise 不支持("给枚举字段赋值")
-            self.写字段(fr.态, obj, ref.名, v, ref.描述)
+            if isinstance(obj, N) and self.is_enum(ref.类):
+                raise Unsupported("给枚举字段赋值")
+            self.write_field(fr.heap_state, obj, ref.名, v, ref.map_descriptor)
         elif 182 <= op <= 185:
             ref = cp[arg[0]]
-            return self.调用(mc, fr, {182: "virtual", 183: "special", 184: "static", 185: "interface"}[op], ref)
+            return self.invoke(mc, fr, {182: "virtual", 183: "special", 184: "static", 185: "interface"}[op], ref)
         elif op == 186:
-            return self.动态(fr, cp[arg[0]])
+            return self.dynamic_call(fr, cp[arg[0]])
         elif op == 187:
             cls = cp[arg[0]][1]
-            st.append(对象(cls, self.新对象号()))
+            st.append(JavaObject(cls, self.new_object_id()))
         elif op == 188:
-            n = self.数(st.pop())
-            if not g.是常量(n.id):
-                raise 不支持("数组长度是符号")
+            n = self.to_number(st.pop())
+            if not g.is_constant(n.id):
+                raise Unsupported("数组长度是符号")
             t = {4: "i", 5: "i", 6: "f", 7: "d", 8: "i", 9: "i", 10: "i", 11: "j"}[arg[0]]
-            st.append(数组([self.常(t, 0) for _ in range(g.常量值(n.id))], t))
+            st.append(Array([self.const_node(t, 0) for _ in range(g.constant_of(n.id))], t))
         elif op == 189:
-            n = self.数(st.pop())
-            if not g.是常量(n.id):
-                raise 不支持("数组长度是符号")
-            st.append(数组([None] * g.常量值(n.id), "L"))
+            n = self.to_number(st.pop())
+            if not g.is_constant(n.id):
+                raise Unsupported("数组长度是符号")
+            st.append(Array([None] * g.constant_of(n.id), "L"))
         elif op == 190:
             a = st.pop()
-            if not isinstance(a, 数组):
-                raise 不支持(f"arraylength 作用在 {a!r}")
-            st.append(self.常("i", len(a.元素)))
+            if not isinstance(a, Array):
+                raise Unsupported(f"arraylength 作用在 {a!r}")
+            st.append(self.const_node("i", len(a.array_items)))
         elif op == 191:
             return ("死",)
         elif op == 192:
@@ -1024,533 +1024,533 @@ class 翻译器(库模拟):
         elif op == 193:
             cls = cp[arg[0]][1]
             v = st.pop()
-            st.append(self.是实例(v, cls))
+            st.append(self.is_instance(v, cls))
         elif op in (194, 195):
             st.pop()
         elif op == 197:
-            raise 不支持("multianewarray")
+            raise Unsupported("multianewarray")
         elif op in (198, 199):
             v = st.pop()
-            if isinstance(v, 不透明) and v.路径.startswith("entity"):
+            if isinstance(v, Opaque) and v.路径.startswith("entity"):
                 # 从实体取的东西可能是 null（getVehicle()、getTarget()）：是不是 null 当输入，不给按非 null 算
-                c = g.比("!=", self.输入(f"{v.路径} == null", "i", "实体").id, g.常("i", 0))
-                return self.条件跳(fr, c if op == 198 else g.非(c), arg[0], nxt)
-            if isinstance(v, 不透明):
+                c = g.compare("!=", self.input_node(f"{v.路径} == null", "i", "实体").id, g.const_node("i", 0))
+                return self.conditional_jump(fr, c if op == 198 else g.logical_not(c), arg[0], nxt)
+            if isinstance(v, Opaque):
                 isnull = False  # 注册表对象（Items.BOW）、构造参数这些不会是 null
-            elif isinstance(v, 条件引用):
+            elif isinstance(v, CondRef):
                 isnull = None
-                c = g.假()
-                for ci, vi in v.分支:
+                c = g.false_node()
+                for ci, vi in v.branches:
                     if vi is None:
-                        c = g.或(c, ci)
-                return self.条件跳(fr, c if op == 198 else g.非(c), arg[0], nxt)
+                        c = g.logical_or(c, ci)
+                return self.conditional_jump(fr, c if op == 198 else g.logical_not(c), arg[0], nxt)
             else:
                 isnull = v is None
             return ("跳", arg[0] if (isnull if op == 198 else not isnull) else nxt)
         else:
-            raise 不支持(f"操作码 {op}")
+            raise Unsupported(f"操作码 {op}")
         return None
 
-    def 数(self, v: Any) -> N:
-        v = self.落比较(v)
+    def to_number(self, v: Any) -> N:
+        v = self.resolve_compare(v)
         if not isinstance(v, N):
-            raise 不支持(f"要数却是 {v!r}")
+            raise Unsupported(f"要数却是 {v!r}")
         return v
 
-    def 算(self, name: str, t: str, a: Any, b: Any) -> N:
-        a, b = self.数(a), self.数(b)
-        return N(self.g.算(name, t, a.id, b.id), t)
+    def calc(self, name: str, t: str, a: Any, b: Any) -> N:
+        a, b = self.to_number(a), self.to_number(b)
+        return N(self.g.calc(name, t, a.id, b.id), t)
 
-    def 存局部(self, loc: list, i: int, v: Any) -> None:
+    def store_local(self, loc: list, i: int, v: Any) -> None:
         while len(loc) <= i + 1:
             loc.append(None)
         loc[i] = v
-        if 二槽(v):
-            loc[i + 1] = 续
+        if is_two_slot(v):
+            loc[i + 1] = second_slot
 
-    def 弹槽(self, st: list, n: int) -> list:
+    def pop_slots(self, st: list, n: int) -> list:
         out: list = []
         while len(out) < n:
             v = st.pop()
-            out[:0] = [v, 续] if 二槽(v) else [v]
+            out[:0] = [v, second_slot] if is_two_slot(v) else [v]
         if len(out) != n:
-            raise 不支持("栈操作拆开了 long/double")
+            raise Unsupported("栈操作拆开了 long/double")
         return out
 
-    def 压槽(self, st: list, s: list) -> None:
+    def push_slots(self, st: list, s: list) -> None:
         for v in s:
-            if v is not 续:
+            if v is not second_slot:
                 st.append(v)
 
-    def 数组读(self, a: Any, i: Any) -> Any:
+    def array_read(self, a: Any, i: Any) -> Any:
         g = self.g
-        if isinstance(a, 不透明):
-            return self.按描述输入(f"{a.路径}[…]", "F", "实体")
-        if not isinstance(a, 数组):
-            raise 不支持(f"从非数组读：{a!r}")
-        i = self.数(i)
-        if g.是常量(i.id):
-            return a.元素[g.常量值(i.id)]
-        if a.元素 and all(isinstance(e, N) and g.是常量(e.id) for e in a.元素):
-            t = a.元素[0].t
-            return N(g.查表(t, [g.常量值(e.id) for e in a.元素], i.id), t)
-        if not a.元素:
-            raise 不支持("符号下标读空数组")
+        if isinstance(a, Opaque):
+            return self.input_by_desc(f"{a.路径}[…]", "F", "实体")
+        if not isinstance(a, Array):
+            raise Unsupported(f"从非数组读：{a!r}")
+        i = self.to_number(i)
+        if g.is_constant(i.id):
+            return a.array_items[g.constant_of(i.id)]
+        if a.array_items and all(isinstance(e, N) and g.is_constant(e.id) for e in a.array_items):
+            t = a.array_items[0].t
+            return N(g.table_lookup(t, [g.constant_of(e.id) for e in a.array_items], i.id), t)
+        if not a.array_items:
+            raise Unsupported("符号下标读空数组")
         # 符号下标：数合成 sel 链，引用合成条件引用（关键帧数组 kfs[i]，同一个对象的几格并成一支）。越界在 JVM 是异常，这里按最后一格算
-        if all(isinstance(e, N) for e in a.元素) and len({e.t for e in a.元素}) == 1:
-            r = a.元素[-1]
-            for k in range(len(a.元素) - 2, -1, -1):
-                r = N(g.选(g.比("==", i.id, g.常("i", k)), a.元素[k].id, r.id), r.t)
+        if all(isinstance(e, N) for e in a.array_items) and len({e.t for e in a.array_items}) == 1:
+            r = a.array_items[-1]
+            for k in range(len(a.array_items) - 2, -1, -1):
+                r = N(g.select(g.compare("==", i.id, g.const_node("i", k)), a.array_items[k].id, r.id), r.t)
             return r
-        if any(isinstance(e, (N, 条件引用)) for e in a.元素):
-            raise 不支持("符号下标读到数和引用混着的数组")
-        组: list[list] = []
-        for k, e in enumerate(a.元素):
-            c = g.比("==", i.id, g.常("i", k))
-            for x in 组:
-                if x[1] is e or (not isinstance(e, (对象, 数组)) and x[1] == e):
-                    x[0] = g.或(x[0], c)
+        if any(isinstance(e, (N, CondRef)) for e in a.array_items):
+            raise Unsupported("符号下标读到数和引用混着的数组")
+        groups: list[list] = []
+        for k, e in enumerate(a.array_items):
+            c = g.compare("==", i.id, g.const_node("i", k))
+            for x in groups:
+                if x[1] is e or (not isinstance(e, (JavaObject, Array)) and x[1] == e):
+                    x[0] = g.logical_or(x[0], c)
                     break
             else:
-                组.append([c, e])
-        if len(组) == 1:
-            return 组[0][1]
-        return 条件引用(tuple((c, e) for c, e in 组))
+                groups.append([c, e])
+        if len(groups) == 1:
+            return groups[0][1]
+        return CondRef(tuple((c, e) for c, e in groups))
 
-    def 是实例(self, v: Any, cls: str) -> Any:
+    def is_instance(self, v: Any, cls: str) -> Any:
         if v is None:
-            return self.常("i", 0)
-        if isinstance(v, 不透明):
-            if v.类 and self.是子类(v.类, cls):
-                return self.常("i", 1)
-            return self.输入(f"{v.路径} instanceof {cls.split('/')[-1]}", "i", "实体")
-        if isinstance(v, 部件):
-            return self.常("i", int(self.是子类(部件类, cls)))
-        if isinstance(v, 模型实例):
-            return self.常("i", int(self.是子类(self.模型类, cls)))
-        if isinstance(v, 对象):
-            return self.常("i", int(self.是子类(v.类, cls)))
-        raise 不支持(f"instanceof {v!r}")
+            return self.const_node("i", 0)
+        if isinstance(v, Opaque):
+            if v.类 and self.is_subclass(v.类, cls):
+                return self.const_node("i", 1)
+            return self.input_node(f"{v.路径} instanceof {cls.split('/')[-1]}", "i", "实体")
+        if isinstance(v, Part):
+            return self.const_node("i", int(self.is_subclass(part_class, cls)))
+        if isinstance(v, ModelInstance):
+            return self.const_node("i", int(self.is_subclass(self.model_class, cls)))
+        if isinstance(v, JavaObject):
+            return self.const_node("i", int(self.is_subclass(v.类, cls)))
+        raise Unsupported(f"instanceof {v!r}")
 
     # ---------- 字段 ----------
-    def 取字段(self, 态: 堆态, obj: Any, ref: 引用) -> Any:
+    def get_field(self, state: HeapState, obj: Any, ref: Ref) -> Any:
         g = self.g
         if isinstance(obj, N):
             # 枚举常量（按序号）的字段：每个常量的值查表
-            if not self.是枚举(ref.类):
-                raise 不支持(f"在数上读字段 {ref.类}.{ref.名}")
-            objs = self.枚举对象(ref.类)
-            vals = [self.读字段(态, o, ref.名, ref.描述) for o in objs]
-            if g.是常量(obj.id):
-                return vals[g.常量值(obj.id)]
-            if all(isinstance(v, N) and g.是常量(v.id) for v in vals):
+            if not self.is_enum(ref.类):
+                raise Unsupported(f"在数上读字段 {ref.类}.{ref.名}")
+            objs = self.enumerate_objects(ref.类)
+            vals = [self.read_field(state, o, ref.名, ref.map_descriptor) for o in objs]
+            if g.is_constant(obj.id):
+                return vals[g.constant_of(obj.id)]
+            if all(isinstance(v, N) and g.is_constant(v.id) for v in vals):
                 t = vals[0].t
-                return N(g.查表(t, [g.常量值(v.id) for v in vals], obj.id), t)
-            raise 不支持(f"符号枚举的引用字段 {ref.类}.{ref.名}")
-        return self.读字段(态, obj, ref.名, ref.描述)
+                return N(g.table_lookup(t, [g.constant_of(v.id) for v in vals], obj.id), t)
+            raise Unsupported(f"符号枚举的引用字段 {ref.类}.{ref.名}")
+        return self.read_field(state, obj, ref.名, ref.map_descriptor)
 
-    def 读静态(self, ref: 引用) -> Any:
+    def read_static(self, ref: Ref) -> Any:
         k = (ref.类, ref.名)
         c = self.类(ref.类)
         if c is not None:
-            f = c.找字段(ref.名)
-            if f is not None and f.访问 & ACC_ENUM:
-                return self.常("i", self.枚举常量(ref.类).index(ref.名))
-            if f is not None and f.常量 is not None and f.访问 & ACC_STATIC:
-                t = 基本类型(f.描述)
-                return self.常(t, f.常量) if t else f.常量
-        if k in self.静态:
-            return self.静态[k]
-        if c is not None and ref.类 not in self._已初始化 and self._跑静态初始化(c, ref):
-            self.初始化类(ref.类)
-            if k in self.静态:
-                return self.静态[k]
-        return 不透明(f"{ref.类.split('/')[-1]}.{ref.名}", ref.描述[1:-1] if ref.描述.startswith("L") else None)
+            f = c.find_field(ref.名)
+            if f is not None and f.access_flags & ACC_ENUM:
+                return self.const_node("i", self.enum_constants(ref.类).index(ref.名))
+            if f is not None and f.constant_value is not None and f.access_flags & ACC_STATIC:
+                t = primitive_type(f.map_descriptor)
+                return self.const_node(t, f.constant_value) if t else f.constant_value
+        if k in self.static_fields:
+            return self.static_fields[k]
+        if c is not None and ref.类 not in self._initialized_classes and self._run_static_init(c, ref):
+            self.init_class(ref.类)
+            if k in self.static_fields:
+                return self.static_fields[k]
+        return Opaque(f"{ref.类.split('/')[-1]}.{ref.名}", ref.map_descriptor[1:-1] if ref.map_descriptor.startswith("L") else None)
 
-    def _跑静态初始化(self, c: 类文件, ref: 引用) -> bool:
+    def _run_static_init(self, c: ClassFile, ref: Ref) -> bool:
         """只为枚举、数值和数组（SwitchMap 这类表）、模型自己类层级的静态字段跑 <clinit>；
         Items.BOW、Blocks.X 这类注册表对象当不透明，不然要具体跑整个注册表（SkeletonModel 卡几分钟）"""
-        if self.是枚举(c.名) or 基本类型(ref.描述) or ref.描述.startswith("["):
+        if self.is_enum(c.名) or primitive_type(ref.map_descriptor) or ref.map_descriptor.startswith("["):
             return True
-        if ref.描述.startswith("L") and ref.描述[1:-1] in self.具体初始化类型:
+        if ref.map_descriptor.startswith("L") and ref.map_descriptor[1:-1] in self.concrete_init_types:
             return True
-        return self.是子类(self.模型类, c.名)
+        return self.is_subclass(self.model_class, c.名)
 
-    def 初始化类(self, 类名: str) -> None:
-        self._已初始化.add(类名)
-        c = self.类(类名)
+    def init_class(self, class_name: str) -> None:
+        self._initialized_classes.add(class_name)
+        c = self.类(class_name)
         if c is None:
             return
-        m = c.找方法("<clinit>", "()V")
+        m = c.find_method("<clinit>", "()V")
         if m is None:
             return
-        步, 上限 = self.步, self.步数上限
-        self.步数上限 = self.步 + 200_000
+        step_count, saved_step_limit = self.step_count, self.step_limit
+        self.step_limit = self.step_count + 200_000
         try:
-            _, 态 = self.跑(c, m, [], 堆态())
-            self._静态堆.堆.update(态.堆)
-        except 不支持 as e:
-            self.警告.append(f"{类名} 的静态初始化跑不了（{e}），它的静态字段当不透明")
+            _, state = self.run_method(c, m, [], HeapState())
+            self._static_heap.heap.update(state.heap)
+        except Unsupported as e:
+            self.warnings.append(f"{class_name} 的静态初始化跑不了（{e}），它的静态字段当不透明")
         finally:
-            self.步数上限 = 上限
-            self.步 = 步
+            self.step_limit = saved_step_limit
+            self.step_count = step_count
 
-    def 枚举对象(self, 类名: str) -> list:
-        if 类名 in self._枚举对象:
-            return self._枚举对象[类名]
+    def enumerate_objects(self, class_name: str) -> list:
+        if class_name in self._objects_by_class:
+            return self._objects_by_class[class_name]
         # 跑 <clinit>，按 putstatic 记下每个常量对应的对象
-        c = self.类(类名)
+        c = self.类(class_name)
         assert c is not None
-        m = c.找方法("<clinit>", "()V")
+        m = c.find_method("<clinit>", "()V")
         if m is None:
-            raise 不支持(f"{类名} 没有静态初始化")
-        旧 = dict(self.静态)
-        _, 态 = self.跑(c, m, [], 堆态())
+            raise Unsupported(f"{class_name} 没有静态初始化")
+        before = dict(self.static_fields)
+        _, state = self.run_method(c, m, [], HeapState())
         objs = []
-        for name in self.枚举常量(类名):
-            o = self.静态.get((类名, name))
-            if not isinstance(o, 对象):
-                raise 不支持(f"枚举 {类名}.{name} 没建出对象")
+        for name in self.enum_constants(class_name):
+            o = self.static_fields.get((class_name, name))
+            if not isinstance(o, JavaObject):
+                raise Unsupported(f"枚举 {class_name}.{name} 没建出对象")
             objs.append(o)
-        self._静态堆.堆.update(态.堆)
+        self._static_heap.heap.update(state.heap)
         # 枚举常量在别处按序号读，这里不留对象
-        for k in list(self.静态):
-            if k not in 旧 and k[0] == 类名 and k[1] in self.枚举常量(类名):
-                del self.静态[k]
-        self._枚举对象[类名] = objs
+        for k in list(self.static_fields):
+            if k not in before and k[0] == class_name and k[1] in self.enum_constants(class_name):
+                del self.static_fields[k]
+        self._objects_by_class[class_name] = objs
         return objs
 
     # ---------- 调用 ----------
-    def 弹参数(self, st: list, 描述: str) -> list:
-        ps, _ = 拆描述(描述)
+    def pop_args(self, st: list, descriptor: str) -> list:
+        ps, _ = split_descriptor(descriptor)
         args = [st.pop() for _ in ps][::-1]
         return args
 
-    def 调用(self, mc: 方法码, fr: 帧, kind: str, ref: 引用):
-        st = fr.栈
-        args = self.弹参数(st, ref.描述)
+    def invoke(self, mc: MethodCode, fr: Frame, kind: str, ref: Ref):
+        st = fr.operand_stack
+        args = self.pop_args(st, ref.map_descriptor)
         recv = None if kind == "static" else st.pop()
-        rv, 态 = self.派发(fr.态, kind, ref, recv, args)
-        fr.态 = 态
-        if 态.死:
+        rv, state = self.dispatch_call(fr.heap_state, kind, ref, recv, args)
+        fr.heap_state = state
+        if state.dead:
             return ("死",)
-        _, ret = 拆描述(ref.描述)
+        _, ret = split_descriptor(ref.map_descriptor)
         if ret != "V":
-            if rv is None and 基本类型(ret):
-                raise 不支持(f"{ref.类}.{ref.名} 没给返回值")
+            if rv is None and primitive_type(ret):
+                raise Unsupported(f"{ref.类}.{ref.名} 没给返回值")
             st.append(rv)
         return None
 
-    def 派发(self, 态: 堆态, kind: str, ref: 引用, recv: Any, args: list) -> tuple[Any, 堆态]:
+    def dispatch_call(self, state: HeapState, kind: str, ref: Ref, recv: Any, args: list) -> tuple[Any, HeapState]:
         g = self.g
-        sig = f"{ref.类}.{ref.名}{ref.描述}"
-        _, ret = 拆描述(ref.描述)
+        sig = f"{ref.类}.{ref.名}{ref.map_descriptor}"
+        _, ret = split_descriptor(ref.map_descriptor)
         if kind == "static":
-            if sig in 内建:
-                ids = [self.数(a).id for a in args]
-                t = 内建[sig][0]
-                return N(g.调(sig, ids), t), 态
-            ok, rv, 态 = self.库静态(态, ref.类, ref.名, ref.描述, args)
+            if sig in builtin_funcs:
+                ids = [self.to_number(a).id for a in args]
+                t = builtin_funcs[sig][0]
+                return N(g.call_node(sig, ids), t), state
+            ok, rv, state = self.lib_static(state, ref.类, ref.名, ref.map_descriptor, args)
             if ok:
-                return rv, 态
+                return rv, state
             if sig == "net/minecraft/util/Mth.binarySearch(IILjava/util/function/IntPredicate;)I":
-                return self.二分查找(态, args), 态
-            if ref.名 == "values" and self.是枚举(ref.类) and ref.描述 == f"()[L{ref.类};":
-                return 数组([self.常("i", i) for i in range(len(self.枚举常量(ref.类)))], "i"), 态
-            if ret != "V" and any(isinstance(a, 不透明) for a in args) and not any(isinstance(a, (部件, 条件引用, 模型实例)) for a in args):
+                return self.binary_search(state, args), state
+            if ref.名 == "values" and self.is_enum(ref.类) and ref.map_descriptor == f"()[L{ref.类};":
+                return Array([self.const_node("i", i) for i in range(len(self.enum_constants(ref.类)))], "i"), state
+            if ret != "V" and any(isinstance(a, Opaque) for a in args) and not any(isinstance(a, (Part, CondRef, ModelInstance)) for a in args):
                 # 拿实体（或从实体取的东西）算个值的静态方法（CrossbowItem.getChargeDuration(entity.getUseItem()) 这类）：结果当输入
-                return self.按描述输入(f"{ref.类.split('/')[-1]}.{ref.名}({', '.join(self.参数名(a) for a in args)})", ret, "实体"), 态
-            found = self.找方法(ref.类, ref.名, ref.描述)
+                return self.input_by_desc(f"{ref.类.split('/')[-1]}.{ref.名}({', '.join(self.arg_name(a) for a in args)})", ret, "实体"), state
+            found = self.find_method(ref.类, ref.名, ref.map_descriptor)
             if found is None:
-                raise 不支持(f"不认识的静态方法 {sig}")
-            return self.跑(found[0], found[1], args, 态)
-        if ref.类 in 向量类 and self._是向量(recv):
-            return self.向量方法(态, ref, recv, args)
-        if isinstance(recv, 条件引用):
-            结果 = []
-            起号 = self._对象号
-            for ci, vi in recv.分支:
-                s2 = 态.复制()
-                if not g.是常量(ci):
-                    self.记事实(s2, ci, True)
-                r, s2 = self.派发(s2, kind, ref, vi, args)
-                结果.append((ci, 帧([], [], s2, r, True)))
-            合 = 结果[-1][1]
-            for ci, f2 in reversed(结果[:-1]):
-                合 = self.合帧(ci, f2, 合, 起号)
-            return 合.返回, 合.态
+                raise Unsupported(f"不认识的静态方法 {sig}")
+            return self.run_method(found[0], found[1], args, state)
+        if ref.类 in vector_classes and self._is_vector(recv):
+            return self.vector_method(state, ref, recv, args)
+        if isinstance(recv, CondRef):
+            results = []
+            start_object_id = self._object_counter
+            for ci, vi in recv.branches:
+                s2 = state.clone()
+                if not g.is_constant(ci):
+                    self.record_fact(s2, ci, True)
+                r, s2 = self.dispatch_call(s2, kind, ref, vi, args)
+                results.append((ci, Frame([], [], s2, r, True)))
+            merged = results[-1][1]
+            for ci, f2 in reversed(results[:-1]):
+                merged = self.merge_frames(ci, f2, merged, start_object_id)
+            return merged.return_value, merged.heap_state
         # 构造函数
         if ref.名 == "<init>":
             if ref.类 in ("java/lang/Object", "java/lang/Enum", "java/lang/Record"):
-                return None, 态
-            if self.库构造(态, ref.类, ref.描述, recv, args):
-                return None, 态
-            found = self.找方法(ref.类, "<init>", ref.描述)
+                return None, state
+            if self.library_construct(state, ref.类, ref.map_descriptor, recv, args):
+                return None, state
+            found = self.find_method(ref.类, "<init>", ref.map_descriptor)
             if found is None:
-                if isinstance(recv, 模型实例):
-                    return None, 态  # 父类构造在 jar 外（不影响部件字段）
-                raise 不支持(f"不认识的构造 {sig}")
-            return self.跑(found[0], found[1], [recv, *args], 态)
-        if isinstance(recv, 闭包):
-            found = self.找方法(ref.类, ref.名, ref.描述)  # 函数式接口的默认方法（andThen 这类）照字节码跑
+                if isinstance(recv, ModelInstance):
+                    return None, state  # 父类构造在 jar 外（不影响部件字段）
+                raise Unsupported(f"不认识的构造 {sig}")
+            return self.run_method(found[0], found[1], [recv, *args], state)
+        if isinstance(recv, Closure):
+            found = self.find_method(ref.类, ref.名, ref.map_descriptor)  # 函数式接口的默认方法（andThen 这类）照字节码跑
             if found is not None:
-                return self.跑(found[0], found[1], [recv, *args], 态)
-            return self.调闭包(态, recv, args)
-        if self.是库对象(recv):
-            return self.库方法(态, ref.名, ref.描述, recv, args)
+                return self.run_method(found[0], found[1], [recv, *args], state)
+            return self.call_closure(state, recv, args)
+        if self.is_library_object(recv):
+            return self.lib_method(state, ref.名, ref.map_descriptor, recv, args)
         if isinstance(recv, str):
-            if ref.名 == "equals" and ref.描述 == "(Ljava/lang/Object;)Z":
-                return self.常("i", int(isinstance(args[0], str) and args[0] == recv)), 态
-            if ref.名 == "hashCode" and ref.描述 == "()I":
+            if ref.名 == "equals" and ref.map_descriptor == "(Ljava/lang/Object;)Z":
+                return self.const_node("i", int(isinstance(args[0], str) and args[0] == recv)), state
+            if ref.名 == "hashCode" and ref.map_descriptor == "()I":
                 from .库类 import java_hash
 
                 h = java_hash(recv)
-                return self.常("i", h - (1 << 32) if h & 0x80000000 else h), 态
-            raise 不支持(f"字符串方法 {sig}")
+                return self.const_node("i", h - (1 << 32) if h & 0x80000000 else h), state
+            raise Unsupported(f"字符串方法 {sig}")
         # 枚举（按序号）上的方法：对每个常量具体跑，查表
         if isinstance(recv, N):
-            if ref.名 == "ordinal" and ref.描述 == "()I":
-                return recv, 态
-            if ref.名 == "hashCode" and ref.描述 == "()I":
-                return recv, 态
-            if not self.是枚举(ref.类) and not self.是枚举(self._枚举所属(ref.类)):
-                raise 不支持(f"在数上调用 {sig}")
-            enum_cls = ref.类 if self.是枚举(ref.类) else self._枚举所属(ref.类)
-            n = len(self.枚举常量(enum_cls))
-            if g.是常量(recv.id):
-                k = g.常量值(recv.id)
-                found = self.找方法(enum_cls, ref.名, ref.描述)
+            if ref.名 == "ordinal" and ref.map_descriptor == "()I":
+                return recv, state
+            if ref.名 == "hashCode" and ref.map_descriptor == "()I":
+                return recv, state
+            if not self.is_enum(ref.类) and not self.is_enum(self._enum_owner(ref.类)):
+                raise Unsupported(f"在数上调用 {sig}")
+            enum_cls = ref.类 if self.is_enum(ref.类) else self._enum_owner(ref.类)
+            n = len(self.enum_constants(enum_cls))
+            if g.is_constant(recv.id):
+                k = g.constant_of(recv.id)
+                found = self.find_method(enum_cls, ref.名, ref.map_descriptor)
                 if found is None:
-                    raise 不支持(f"枚举方法 {sig} 找不到")
-                return self.跑(found[0], found[1], [self.常("i", k), *args], 态)
+                    raise Unsupported(f"枚举方法 {sig} 找不到")
+                return self.run_method(found[0], found[1], [self.const_node("i", k), *args], state)
             vals = []
             for k in range(n):
-                r, s2 = self.派发(态.复制(), kind, ref, self.常("i", k), args)
-                if s2.堆 != 态.堆:
-                    raise 不支持(f"枚举方法 {sig} 改了状态")
+                r, s2 = self.dispatch_call(state.clone(), kind, ref, self.const_node("i", k), args)
+                if s2.heap != state.heap:
+                    raise Unsupported(f"枚举方法 {sig} 改了状态")
                 vals.append(r)
-            if all(isinstance(v, N) and g.是常量(v.id) for v in vals):
+            if all(isinstance(v, N) and g.is_constant(v.id) for v in vals):
                 t = vals[0].t
-                return N(g.查表(t, [g.常量值(v.id) for v in vals], recv.id), t), 态
+                return N(g.table_lookup(t, [g.constant_of(v.id) for v in vals], recv.id), t), state
             if all(isinstance(v, N) for v in vals):
                 r = vals[-1]
                 for k in range(n - 2, -1, -1):
-                    r = N(g.选(g.比("==", recv.id, g.常("i", k)), vals[k].id, r.id), r.t)
-                return r, 态
-            raise 不支持(f"符号枚举上 {sig} 返回引用")
-        if self.是照跑(recv):
-            found = self.找方法(ref.类 if kind == "special" else recv.类 or ref.类, ref.名, ref.描述)
+                    r = N(g.select(g.compare("==", recv.id, g.const_node("i", k)), vals[k].id, r.id), r.t)
+                return r, state
+            raise Unsupported(f"符号枚举上 {sig} 返回引用")
+        if self.is_native(recv):
+            found = self.find_method(ref.类 if kind == "special" else recv.类 or ref.类, ref.名, ref.map_descriptor)
             if found is None:
-                raise 不支持(f"照跑类上找不到方法 {sig}")
-            return self.跑(found[0], found[1], [recv, *args], 态)
-        if isinstance(recv, 不透明):
+                raise Unsupported(f"照跑类上找不到方法 {sig}")
+            return self.run_method(found[0], found[1], [recv, *args], state)
+        if isinstance(recv, Opaque):
             if ref.名 in ("equals",) and ret == "Z":
-                return self.常("i", int(len(args) == 1 and args[0] == recv)), 态
-            名 = f"{recv.路径}.{ref.名}({', '.join(self.参数名(a) for a in args)})"
+                return self.const_node("i", int(len(args) == 1 and args[0] == recv)), state
+            call_name = f"{recv.路径}.{ref.名}({', '.join(self.arg_name(a) for a in args)})"
             if ret == "V":
-                self.警告.append(f"忽略了实体上的调用 {名}")
-                return None, 态
-            return self.按描述输入(名, ret, "实体"), 态
-        if isinstance(recv, 部件):
-            return self.部件方法(态, recv, kind, ref, args)
-        if isinstance(recv, 部件流):
-            if ref.名 == "forEach" and args and isinstance(args[0], 闭包):
-                h = args[0].句柄.目标
-                if h.类 == 部件类 and h.名 == "resetPose":
-                    return None, self.全部复位(态, recv.根)
-            raise 不支持(f"部件流上的 {sig}")
-        if isinstance(recv, 模型实例) and ref.名 == "resetPose" and ref.描述 == "()V":
+                self.warnings.append(f"忽略了实体上的调用 {call_name}")
+                return None, state
+            return self.input_by_desc(call_name, ret, "实体"), state
+        if isinstance(recv, Part):
+            return self.part_method(state, recv, kind, ref, args)
+        if isinstance(recv, PartStream):
+            if ref.名 == "forEach" and args and isinstance(args[0], Closure):
+                h = args[0].handle.handle_target
+                if h.类 == part_class and h.名 == "resetPose":
+                    return None, self.reset_all(state, recv.root_key)
+            raise Unsupported(f"部件流上的 {sig}")
+        if isinstance(recv, ModelInstance) and ref.名 == "resetPose" and ref.map_descriptor == "()V":
             # 1.21.2 起 EntityModel.setupAnim 先 Model.resetPose()：对造模型时 root.getAllParts() 存下的表逐个 resetPose，等于整棵复位
-            found = self.找方法(self.模型类, ref.名, ref.描述)
+            found = self.find_method(self.model_class, ref.名, ref.map_descriptor)
             if found is not None and found[0].名 == "net/minecraft/client/model/Model":
-                return None, self.全部复位(态, self.根部件)
-        if isinstance(recv, 模型实例) and ref.名 == "getAnyDescendantWithName" and ref.描述 == "(Ljava/lang/String;)Ljava/util/Optional;":
-            found = self.找方法(self.模型类, ref.名, ref.描述)
+                return None, self.reset_all(state, self.root_part)
+        if isinstance(recv, ModelInstance) and ref.名 == "getAnyDescendantWithName" and ref.map_descriptor == "(Ljava/lang/String;)Ljava/util/Optional;":
+            found = self.find_method(self.model_class, ref.名, ref.map_descriptor)
             if found is not None and found[0].名 == "net/minecraft/client/model/HierarchicalModel":
-                return self.按名找部件(态, args[0])
-        if isinstance(recv, (模型实例, 对象)):
-            cls = self.模型类 if isinstance(recv, 模型实例) else recv.类
+                return self.find_part_by_name(state, args[0])
+        if isinstance(recv, (ModelInstance, JavaObject)):
+            cls = self.model_class if isinstance(recv, ModelInstance) else recv.类
             start = ref.类 if kind == "special" else cls
-            found = self.找方法(start, ref.名, ref.描述)
+            found = self.find_method(start, ref.名, ref.map_descriptor)
             if found is None:
-                raise 不支持(f"找不到方法 {sig}（{cls}）")
-            return self.跑(found[0], found[1], [recv, *args], 态)
-        raise 不支持(f"在 {recv!r} 上调用 {sig}")
+                raise Unsupported(f"找不到方法 {sig}（{cls}）")
+            return self.run_method(found[0], found[1], [recv, *args], state)
+        raise Unsupported(f"在 {recv!r} 上调用 {sig}")
 
-    def 调闭包(self, 态: 堆态, f: Any, args: list) -> tuple[Any, 堆态]:
+    def call_closure(self, state: HeapState, f: Any, args: list) -> tuple[Any, HeapState]:
         """调用 lambda、方法引用（invokedynamic 造的 闭包）：捕获的值在前，调用的实参在后，按句柄种类派发"""
-        if not isinstance(f, 闭包):
-            raise 不支持(f"当函数调用的不是 lambda：{f!r}")
-        h, 全 = f.句柄, [*f.捕获, *args]
-        t = h.目标
-        if h.种类 == 6:  # REF_invokeStatic
-            return self.派发(态, "static", t, None, 全)
-        if h.种类 in (5, 7, 9):  # REF_invokeVirtual、invokeSpecial、invokeInterface
-            return self.派发(态, {5: "virtual", 7: "special", 9: "interface"}[h.种类], t, 全[0], 全[1:])
-        if h.种类 == 8:  # REF_newInvokeSpecial：构造器引用
-            o = 对象(t.类, self.新对象号())
-            _, 态 = self.派发(态, "special", t, o, 全)
-            return o, 态
-        raise 不支持(f"方法句柄种类 {h.种类}")
+        if not isinstance(f, Closure):
+            raise Unsupported(f"当函数调用的不是 lambda：{f!r}")
+        h, full_args = f.handle, [*f.captured, *args]
+        t = h.handle_target
+        if h.ref_kind == 6:  # REF_invokeStatic
+            return self.dispatch_call(state, "static", t, None, full_args)
+        if h.ref_kind in (5, 7, 9):  # REF_invokeVirtual、invokeSpecial、invokeInterface
+            return self.dispatch_call(state, {5: "virtual", 7: "special", 9: "interface"}[h.ref_kind], t, full_args[0], full_args[1:])
+        if h.ref_kind == 8:  # REF_newInvokeSpecial：构造器引用
+            o = JavaObject(t.类, self.new_object_id())
+            _, state = self.dispatch_call(state, "special", t, o, full_args)
+            return o, state
+        raise Unsupported(f"方法句柄种类 {h.ref_kind}")
 
-    def 二分查找(self, 态: 堆态, args: list) -> N:
+    def binary_search(self, state: HeapState, args: list) -> N:
         """Mth.binarySearch(lo, hi, 谓词)：循环次数看谓词，谓词是符号的就把整棵判定树展开（每个 mid 判一次，共 hi - lo 个节点），
         和 JVM 一样不假定谓词单调。关键帧动画拿它找当前时刻落在哪两帧之间"""
         g = self.g
-        lo, hi, p = self.数(args[0]), self.数(args[1]), args[2]
-        if not (g.是常量(lo.id) and g.是常量(hi.id)):
-            raise 不支持("binarySearch 的范围是符号")
+        lo, hi, p = self.to_number(args[0]), self.to_number(args[1]), args[2]
+        if not (g.is_constant(lo.id) and g.is_constant(hi.id)):
+            raise Unsupported("binarySearch 的范围是符号")
 
-        def 搜(lo: int, n: int) -> N:
+        def search(lo: int, n: int) -> N:
             if n <= 0:
-                return self.常("i", lo)
+                return self.const_node("i", lo)
             half = n // 2
             mid = lo + half
-            r, 态2 = self.调闭包(态, p, [self.常("i", mid)])
-            if 态2.堆 != 态.堆:
-                raise 不支持("binarySearch 的谓词改了状态")
-            c = self.条件("!=", r)
-            a, b = 搜(lo, half), 搜(mid + 1, n - half - 1)
-            return N(g.选(c, a.id, b.id), "i")
+            r, state_after_call = self.call_closure(state, p, [self.const_node("i", mid)])
+            if state_after_call.heap != state.heap:
+                raise Unsupported("binarySearch 的谓词改了状态")
+            c = self.condition("!=", r)
+            a, b = search(lo, half), search(mid + 1, n - half - 1)
+            return N(g.select(c, a.id, b.id), "i")
 
-        return 搜(g.常量值(lo.id), g.常量值(hi.id) - g.常量值(lo.id))
+        return search(g.constant_of(lo.id), g.constant_of(hi.id) - g.constant_of(lo.id))
 
-    def 按名找部件(self, 态: 堆态, 名: Any) -> tuple[Any, 堆态]:
+    def find_part_by_name(self, state: HeapState, part_name: Any) -> tuple[Any, HeapState]:
         """HierarchicalModel.getAnyDescendantWithName：根叫 root；其余在部件树里找（模型里没有的名字给空 Optional，游戏里同样跳过）"""
-        from .库类 import 可选
+        from .库类 import OPTIONAL_CLASS
 
-        if not isinstance(名, str):
-            raise 不支持("按名字找部件，名字不是常量")
-        if 名 == "root":
-            found = self.找方法(self.模型类, "root", f"()L{部件类};")
+        if not isinstance(part_name, str):
+            raise Unsupported("按名字找部件，名字不是常量")
+        if part_name == "root":
+            found = self.find_method(self.model_class, "root", f"()L{part_class};")
             if found is None:
-                raise 不支持("模型没有 root()")
-            p, 态 = self.跑(found[0], found[1], [self.模型], 态)
-            return self.新库对象(态, 可选, (True, p)), 态
-        if self.模型树 is None:
-            from .部件树 import 从层定义取树
+                raise Unsupported("模型没有 root()")
+            p, state = self.run_method(found[0], found[1], [self.模型], state)
+            return self.new_library_object(state, OPTIONAL_CLASS, (True, p)), state
+        if self.model_tree is None:
+            from .部件树 import tree_from_layer_def
 
             try:
-                self.模型树 = 从层定义取树(self, self.层)
-            except 不支持 as e:
-                raise 不支持(f"按名字找部件 {名}（HierarchicalModel.getAnyDescendantWithName，关键帧动画用）要知道部件树：{e}") from e
-        有 = any(名 in cs for cs in self.模型树.values())
-        return self.新库对象(态, 可选, (有, 部件(名) if 有 else None)), 态
+                self.model_tree = tree_from_layer_def(self, self.层)
+            except Unsupported as e:
+                raise Unsupported(f"按名字找部件 {part_name}（HierarchicalModel.getAnyDescendantWithName，关键帧动画用）要知道部件树：{e}") from e
+        present = any(part_name in cs for cs in self.model_tree.values())
+        return self.new_library_object(state, OPTIONAL_CLASS, (present, Part(part_name) if present else None)), state
 
-    def _是向量(self, v: Any) -> bool:
-        if isinstance(v, 条件引用):
-            return all(self._是向量(o) for _, o in v.分支)
-        return isinstance(v, 对象) and v.类 == 向量类[0]
+    def _is_vector(self, v: Any) -> bool:
+        if isinstance(v, CondRef):
+            return all(self._is_vector(o) for _, o in v.branches)
+        return isinstance(v, JavaObject) and v.类 == vector_classes[0]
 
-    def 向量方法(self, 态: 堆态, ref: 引用, v: Any, args: list) -> tuple[Any, 堆态]:
+    def vector_method(self, state: HeapState, ref: Ref, v: Any, args: list) -> tuple[Any, HeapState]:
         """org.joml.Vector3f 照 JOML 1.10.5（1.20.1 带的）的语义算，不跑它的字节码（不在游戏 jar 里）。
         lerp 里的 Math.fma 在没开 joml.useMathFma（默认）时是 a * b + c，两次舍入"""
-        名, d = ref.名, ref.描述
-        读 = lambda o, f: self.数(self.读字段(态, o, f, "F"))  # noqa: E731
-        写 = lambda o, f, x: self.写字段(态, o, f, x, "F")  # noqa: E731
-        if 名 == "<init>":
+        name, d = ref.名, ref.map_descriptor
+        read_field = lambda o, f: self.to_number(self.read_field(state, o, f, "F"))  # noqa: E731
+        write_field = lambda o, f, x: self.write_field(state, o, f, x, "F")  # noqa: E731
+        if name == "<init>":
             if d == "(FFF)V":
                 for f, a in zip("xyz", args):
-                    写(v, f, a)
-                return None, 态
+                    write_field(v, f, a)
+                return None, state
             if d in ("()V", "(F)V"):
                 for f in "xyz":
-                    写(v, f, args[0] if args else self.常("f", 0.0))
-                return None, 态
+                    write_field(v, f, args[0] if args else self.const_node("f", 0.0))
+                return None, state
             if d == "(Lorg/joml/Vector3fc;)V":
                 for f in "xyz":
-                    写(v, f, 读(args[0], f))
-                return None, 态
-        if 名 in ("x", "y", "z") and d == "()F":
-            return 读(v, 名), 态
-        if 名 == "set" and d == "(FFF)Lorg/joml/Vector3f;":
+                    write_field(v, f, read_field(args[0], f))
+                return None, state
+        if name in ("x", "y", "z") and d == "()F":
+            return read_field(v, name), state
+        if name == "set" and d == "(FFF)Lorg/joml/Vector3f;":
             for f, a in zip("xyz", args):
-                写(v, f, a)
-            return v, 态
-        if 名 == "set" and d == "(Lorg/joml/Vector3fc;)Lorg/joml/Vector3f;":
+                write_field(v, f, a)
+            return v, state
+        if name == "set" and d == "(Lorg/joml/Vector3fc;)Lorg/joml/Vector3f;":
             for f in "xyz":
-                写(v, f, 读(args[0], f))
-            return v, 态
-        if 名 == "lerp" and d in ("(Lorg/joml/Vector3fc;FLorg/joml/Vector3f;)Lorg/joml/Vector3f;", "(Lorg/joml/Vector3fc;F)Lorg/joml/Vector3f;"):
+                write_field(v, f, read_field(args[0], f))
+            return v, state
+        if name == "lerp" and d in ("(Lorg/joml/Vector3fc;FLorg/joml/Vector3f;)Lorg/joml/Vector3f;", "(Lorg/joml/Vector3fc;F)Lorg/joml/Vector3f;"):
             other, t = args[0], args[1]
             dest = args[2] if len(args) > 2 else v
             for f in "xyz":
-                a = 读(v, f)
-                写(dest, f, self.算("+", "f", self.算("*", "f", self.算("-", "f", 读(other, f), a), t), a))
-            return dest, 态
-        if 名 == "mul" and d == "(F)Lorg/joml/Vector3f;":
+                a = read_field(v, f)
+                write_field(dest, f, self.calc("+", "f", self.calc("*", "f", self.calc("-", "f", read_field(other, f), a), t), a))
+            return dest, state
+        if name == "mul" and d == "(F)Lorg/joml/Vector3f;":
             for f in "xyz":
-                写(v, f, self.算("*", "f", 读(v, f), args[0]))
-            return v, 态
-        if 名 in ("mul", "add") and d == "(FFF)Lorg/joml/Vector3f;":
+                write_field(v, f, self.calc("*", "f", read_field(v, f), args[0]))
+            return v, state
+        if name in ("mul", "add") and d == "(FFF)Lorg/joml/Vector3f;":
             for f, a in zip("xyz", args):
-                写(v, f, self.算("*" if 名 == "mul" else "+", "f", 读(v, f), a))
-            return v, 态
-        raise 不支持(f"Vector3f.{名}{d}")
+                write_field(v, f, self.calc("*" if name == "mul" else "+", "f", read_field(v, f), a))
+            return v, state
+        raise Unsupported(f"Vector3f.{name}{d}")
 
-    def 参数名(self, a: Any) -> str:
-        if isinstance(a, 不透明):
+    def arg_name(self, a: Any) -> str:
+        if isinstance(a, Opaque):
             return a.路径
-        if isinstance(a, N) and self.g.是常量(a.id):
-            return str(self.g.常量值(a.id))
+        if isinstance(a, N) and self.g.is_constant(a.id):
+            return str(self.g.constant_of(a.id))
         if isinstance(a, str):
             return repr(a)
         return "…"
 
-    def _枚举所属(self, 类名: str) -> str:
+    def _enum_owner(self, class_name: str) -> str:
         # 枚举常量带类体时是匿名子类（HumanoidModel$ArmPose$1），方法引用写的是父类
-        c = self.类(类名)
-        return c.父类 if c is not None and c.父类 else 类名
+        c = self.类(class_name)
+        return c.parent_class if c is not None and c.parent_class else class_name
 
-    def 部件方法(self, 态: 堆态, p: 部件, kind: str, ref: 引用, args: list) -> tuple[Any, 堆态]:
-        if ref.名 == "getChild" and ref.描述 == "(Ljava/lang/String;)L" + 部件类 + ";":
+    def part_method(self, state: HeapState, p: Part, kind: str, ref: Ref, args: list) -> tuple[Any, HeapState]:
+        if ref.名 == "getChild" and ref.map_descriptor == "(Ljava/lang/String;)L" + part_class + ";":
             name = args[0]
             if not isinstance(name, str):
-                raise 不支持("getChild 的名字不是常量")
+                raise Unsupported("getChild 的名字不是常量")
             if name == "root" and p.名 == "root":
                 # 构造参数是网格根，模型的 root 是它底下同名的那个（部件树.py 把外面一层去掉了，两层都叫 root）
-                return 部件(name), 态
-            if self.模型树 is not None and name not in self.模型树.get(p.名, []):
-                raise 不支持(f"模型里 {p.名} 下没有 {name}")
-            return 部件(name), 态
+                return Part(name), state
+            if self.model_tree is not None and name not in self.model_tree.get(p.名, []):
+                raise Unsupported(f"模型里 {p.名} 下没有 {name}")
+            return Part(name), state
         if ref.名 == "hasChild":
-            if self.模型树 is None:
-                raise 不支持("hasChild 要给 --模型")
-            return self.常("i", int(args[0] in self.模型树.get(p.名, []))), 态
+            if self.model_tree is None:
+                raise Unsupported("hasChild 要给 --模型")
+            return self.const_node("i", int(args[0] in self.model_tree.get(p.名, []))), state
         if ref.名 == "getAllParts":
-            return 部件流(p.名), 态
+            return PartStream(p.名), state
         if ref.名 in ("render", "visit", "translateAndRotate", "compile", "getRandomCube"):
-            raise 不支持(f"setupAnim 里调用 ModelPart.{ref.名}")
-        found = self.找方法(部件类, ref.名, ref.描述)
+            raise Unsupported(f"setupAnim 里调用 ModelPart.{ref.名}")
+        found = self.find_method(part_class, ref.名, ref.map_descriptor)
         if found is None:
-            raise 不支持(f"ModelPart.{ref.名}{ref.描述} 找不到")
-        return self.跑(found[0], found[1], [p, *args], 态)
+            raise Unsupported(f"ModelPart.{ref.名}{ref.map_descriptor} 找不到")
+        return self.run_method(found[0], found[1], [p, *args], state)
 
-    def 全部复位(self, 态: 堆态, 根: str) -> 堆态:
+    def reset_all(self, state: HeapState, root: str) -> HeapState:
         """root().getAllParts().forEach(ModelPart::resetPose)：有模型树就对子树每个部件照字节码跑 resetPose，没有就只认根部件（清掉所有部件的位置、转角）"""
-        if self.模型树 is not None:
-            待 = [根]
-            ref = 引用(部件类, "resetPose", "()V")
-            while 待:
-                n = 待.pop()
-                _, 态 = self.部件方法(态, 部件(n), "virtual", ref, [])
-                待.extend(self.模型树.get(n, []))
-            态.复位 = 根 == self.根部件
-            return 态
-        if 根 != self.根部件:
-            raise 不支持("子树复位要给 --模型")
-        态 = 态.复制()
-        for k in [k for k in 态.堆 if k[0][0] == "部件" and k[1] in ("x", "y", "z", "xRot", "yRot", "zRot")]:
-            del 态.堆[k]
-        态.复位 = True
-        return 态
+        if self.model_tree is not None:
+            pending = [root]
+            ref = Ref(part_class, "resetPose", "()V")
+            while pending:
+                n = pending.pop()
+                _, state = self.part_method(state, Part(n), "virtual", ref, [])
+                pending.extend(self.model_tree.get(n, []))
+            state.reset = root == self.root_part
+            return state
+        if root != self.root_part:
+            raise Unsupported("子树复位要给 --模型")
+        state = state.clone()
+        for k in [k for k in state.heap if k[0][0] == "部件" and k[1] in ("x", "y", "z", "xRot", "yRot", "zRot")]:
+            del state.heap[k]
+        state.reset = True
+        return state
 
-    def 动态(self, fr: 帧, d: 动态调用):
-        st = fr.栈
-        args = self.弹参数(st, d.描述)
-        boot = d.引导.目标
+    def dynamic_call(self, fr: Frame, d: InvokeDynamic):
+        st = fr.operand_stack
+        args = self.pop_args(st, d.map_descriptor)
+        boot = d.bootstrap.handle_target
         if boot.类 == "java/lang/invoke/StringConcatFactory" and boot.名 == "makeConcatWithConstants":
-            recipe = d.引导参数[0][1]
+            recipe = d.bootstrap_args[0][1]
             it = iter(args)
             out = ""
             for ch in recipe:
@@ -1558,125 +1558,125 @@ class 翻译器(库模拟):
                     v = next(it)
                     if isinstance(v, str):
                         out += v
-                    elif isinstance(v, N) and self.g.是常量(v.id):
-                        x = self.g.常量值(v.id)
+                    elif isinstance(v, N) and self.g.is_constant(v.id):
+                        x = self.g.constant_of(v.id)
                         out += str(x)
                     else:
-                        raise 不支持("拼接符号字符串")
+                        raise Unsupported("拼接符号字符串")
                 else:
                     out += ch
             st.append(out)
             return None
         if boot.类 == "java/lang/invoke/LambdaMetafactory":
-            impl = d.引导参数[1]
-            st.append(闭包(impl, tuple(args)))
+            impl = d.bootstrap_args[1]
+            st.append(Closure(impl, tuple(args)))
             return None
-        raise 不支持(f"invokedynamic {boot.类}.{boot.名}")
+        raise Unsupported(f"invokedynamic {boot.类}.{boot.名}")
 
     # ---------- 入口 ----------
-    def 构造(self, 描述: str | None = None) -> None:
-        c = self.类(self.模型类)
+    def construct(self, descriptor: str | None = None) -> None:
+        c = self.类(self.model_class)
         if c is None:
-            raise 不支持(f"jar 里没有 {self.模型类}")
+            raise Unsupported(f"jar 里没有 {self.model_class}")
         ctor = None
-        for m in c.方法们:
-            if m.名 == "<init>" and (描述 is None and m.描述.startswith(f"(L{部件类};") or m.描述 == 描述):
+        for m in c.method_list:
+            if m.名 == "<init>" and (descriptor is None and m.map_descriptor.startswith(f"(L{part_class};") or m.map_descriptor == descriptor):
                 ctor = m
                 break
         if ctor is None:
-            raise 不支持(f"{self.模型类} 没有以 ModelPart 开头的构造函数")
-        ps, _ = 拆描述(ctor.描述)
-        args: list[Any] = [self.模型, 部件(self.根部件)]
+            raise Unsupported(f"{self.model_class} 没有以 ModelPart 开头的构造函数")
+        ps, _ = split_descriptor(ctor.map_descriptor)
+        args: list[Any] = [self.模型, Part(self.root_part)]
         for p in ps[1:]:
-            t = 基本类型(p)
-            args.append(self.常(t, 0) if t else 不透明(f"构造参数 {p}"))
-        _, 态 = self.跑(c, ctor, args, 堆态())
-        for (k, 字段), v in 态.堆.items():
+            t = primitive_type(p)
+            args.append(self.const_node(t, 0) if t else Opaque(f"构造参数 {p}"))
+        _, state = self.run_method(c, ctor, args, HeapState())
+        for (k, field), v in state.heap.items():
             if k != ("模型",):
                 continue
-            if isinstance(v, (部件, 数组, 不透明, 闭包, 对象)) or v is None:
-                self.结构字段[字段] = v
-            elif isinstance(v, N) and self.g.是常量(v.id):
-                desc = self._模型字段描述(字段)
-                val = self.g.常量值(v.id)
-                if desc.startswith("L") and self.是枚举(desc[1:-1]):
-                    val = self.枚举常量(desc[1:-1])[val]
-                self.字段默认[字段] = val
-        self.构造后堆 = {k: v for k, v in 态.堆.items() if k[0] != ("模型",)}
+            if isinstance(v, (Part, Array, Opaque, Closure, JavaObject)) or v is None:
+                self.struct_fields[field] = v
+            elif isinstance(v, N) and self.g.is_constant(v.id):
+                desc = self._model_field_descriptor(field)
+                val = self.g.constant_of(v.id)
+                if desc.startswith("L") and self.is_enum(desc[1:-1]):
+                    val = self.enum_constants(desc[1:-1])[val]
+                self.field_defaults[field] = val
+        self.heap_after_ctor = {k: v for k, v in state.heap.items() if k[0] != ("模型",)}
 
-    def 翻译(self, 带prepare: bool = True) -> dict:
+    def translate(self, with_prepare: bool = True) -> dict:
         # 映射和 jar 对不上时 ModelPart.xRot 这些字段名认不出来，写进去的姿态会被当成别的字段丢掉，静默翻出空程序
-        mp = self.类(部件类)
-        if mp is None or mp.找字段("xRot") is None:
-            raise 不支持(f"类路径里认不出 {部件类}.xRot：映射和 jar 对不上（混淆的客户端配 proguard:，SRG 名的 jar 配 srg:），或者没带客户端 jar")
-        self.构造()
-        ent = 不透明("entity", 实体类)
-        态 = 堆态()
+        mp = self.类(part_class)
+        if mp is None or mp.find_field("xRot") is None:
+            raise Unsupported(f"类路径里认不出 {part_class}.xRot：映射和 jar 对不上（混淆的客户端配 proguard:，SRG 名的 jar 配 srg:），或者没带客户端 jar")
+        self.construct()
+        ent = Opaque("entity", entity_class)
+        state = HeapState()
         # 构造函数里改过的部件字段（少见）、建的对象（存部件的 ArrayList、Vector3f 这些，内容在堆里）带进来
-        for k, v in getattr(self, "构造后堆", {}).items():
+        for k, v in getattr(self, "heap_after_ctor", {}).items():
             if k[0][0] in ("部件", "对象"):
-                态.堆[k] = v
-        方法们 = []
-        if 带prepare:
-            found = self.找方法(self.模型类, "prepareMobModel", f"(L{实体类};FFF)V")
+                state.heap[k] = v
+        methods = []
+        if with_prepare:
+            found = self.find_method(self.model_class, "prepareMobModel", f"(L{entity_class};FFF)V")
             if found is not None and found[0].名 != "net/minecraft/client/model/EntityModel":
-                args = [self.模型, ent] + [self.输入(n, "f", "参数") for n in prepare参数]
-                _, 态 = self.跑(found[0], found[1], args, 态)
-                方法们.append(f"{found[0].名}.prepareMobModel")
-        found = self.找方法(self.模型类, "setupAnim", f"(L{实体类};FFFFF)V")
+                args = [self.模型, ent] + [self.input_node(n, "f", "参数") for n in prepare_params]
+                _, state = self.run_method(found[0], found[1], args, state)
+                methods.append(f"{found[0].名}.prepareMobModel")
+        found = self.find_method(self.model_class, "setupAnim", f"(L{entity_class};FFFFF)V")
         if found is not None:
-            args = [self.模型, ent] + [self.输入(n, "f", "参数") for n in setupAnim参数]
+            args = [self.模型, ent] + [self.input_node(n, "f", "参数") for n in setup_anim_params]
         else:
             # 1.21.2 起 setupAnim(渲染状态)：状态是不透明对象，读它的字段、调它的方法都成输入（state.walkAnimationPos 这样）
-            found = self.找渲染状态入口()
+            found = self.find_render_entry()
             if found is None:
-                raise 不支持(f"{self.模型类} 找不到 setupAnim（老签名 实体 + 5 个 float，或 1.21.2 起收 EntityRenderState 子类的）")
-            状态类 = 拆描述(found[1].描述)[0][0][1:-1]
-            args = [self.模型, 不透明("state", 状态类)]
-        _, 态 = self.跑(found[0], found[1], args, 态)
-        方法们.append(f"{found[0].名}.setupAnim")
-        return self.导出(态, 方法们)
+                raise Unsupported(f"{self.model_class} 找不到 setupAnim（老签名 实体 + 5 个 float，或 1.21.2 起收 EntityRenderState 子类的）")
+            state_class = split_descriptor(found[1].map_descriptor)[0][0][1:-1]
+            args = [self.模型, Opaque("state", state_class)]
+        _, state = self.run_method(found[0], found[1], args, state)
+        methods.append(f"{found[0].名}.setupAnim")
+        return self.export_graph(state, methods)
 
-    def 找渲染状态入口(self) -> tuple[类文件, 方法] | None:
+    def find_render_entry(self) -> tuple[ClassFile, Method] | None:
         """模型类（沿父类）里 setupAnim(X)V、X 是 EntityRenderState 子类的那个。桥方法不算：除了 setupAnim(Object)，
         子类收窄状态类型时（1.21.11 的 SkeletonModel 收 SkeletonRenderState、父类 HumanoidModel 收 HumanoidRenderState）桥方法的参数也是渲染状态"""
-        名 = self.模型类
-        while 名:
-            c = self.类(名)
+        class_name = self.model_class
+        while class_name:
+            c = self.类(class_name)
             if c is None:
                 return None
-            for m in c.方法们:
-                if m.名 != "setupAnim" or m.访问 & (ACC_ABSTRACT | ACC_BRIDGE):
+            for m in c.method_list:
+                if m.名 != "setupAnim" or m.access_flags & (ACC_ABSTRACT | ACC_BRIDGE):
                     continue
-                ps, r = 拆描述(m.描述)
-                if r == "V" and len(ps) == 1 and ps[0].startswith("L") and self.是子类(ps[0][1:-1], 渲染状态类):
+                ps, r = split_descriptor(m.map_descriptor)
+                if r == "V" and len(ps) == 1 and ps[0].startswith("L") and self.is_subclass(ps[0][1:-1], render_state_class):
                     return c, m
-            名 = c.父类 or ""
+            class_name = c.parent_class or ""
         return None
 
-    def 导出(self, 态: 堆态, 方法们: list[str]) -> dict:
+    def export_graph(self, state: HeapState, methods: list[str]) -> dict:
         outs: dict[str, dict[str, int]] = {}
         roots: list[int] = []
-        for (k, 字段), v in sorted(态.堆.items(), key=lambda kv: (str(kv[0][0]), kv[0][1])):
-            if k[0] != "部件" or 字段 not in 姿态字段:
+        for (k, field), v in sorted(state.heap.items(), key=lambda kv: (str(kv[0][0]), kv[0][1])):
+            if k[0] != "部件" or field not in pose_fields:
                 continue
             if not isinstance(v, N):
-                raise 不支持(f"部件 {k[1]}.{字段} 的值不是数：{v!r}")
-            outs.setdefault(k[1], {})[字段] = v.id
+                raise Unsupported(f"部件 {k[1]}.{field} 的值不是数：{v!r}")
+            outs.setdefault(k[1], {})[field] = v.id
             roots.append(v.id)
-        nodes, 新号 = self.g.导出(roots)
-        输出 = {p: {f: 新号[i] for f, i in fs.items()} for p, fs in outs.items()}
-        用到 = {e[2] for e in nodes if e[0] == "in"}
+        nodes, new_ids = self.g.export_graph(roots)
+        outputs = {p: {f: new_ids[i] for f, i in fs.items()} for p, fs in outs.items()}
+        used_inputs = {e[2] for e in nodes if e[0] == "in"}
         # 默认值过一遍 JSON 规矩：AnimationState.lastTime 的 Long.MAX_VALUE 这类超出 2^53 的写成串
-        输入 = {k: ({**v, "默认": _json值(v["默认"])} if "默认" in v else v) for k, v in self.输入表.items() if k in 用到}
+        inputs = {k: ({**v, "默认": _json_value(v["默认"])} if "默认" in v else v) for k, v in self.input_table.items() if k in used_inputs}
         return {
             "格式": "姿态程序/1",
-            "模型类": self.模型类.replace("/", "."),
-            "方法": 方法们,
-            "复位": 态.复位,
-            "输入": 输入,
+            "模型类": self.model_class.replace("/", "."),
+            "方法": methods,
+            "复位": state.reset,
+            "输入": inputs,
             "固定": self.固定,
             "节点": nodes,
-            "输出": 输出,
-            "警告": self.警告,
+            "输出": outputs,
+            "警告": self.warnings,
         }

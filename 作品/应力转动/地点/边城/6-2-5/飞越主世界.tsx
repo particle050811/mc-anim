@@ -4,7 +4,7 @@
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { FlightFog, FlightRig, FlightSky, overworldShadowFar } from '../../飞行镜头.tsx';
 import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
@@ -25,7 +25,7 @@ export const sheath = <WornSheath />;
 // 渐弱照原来的意思放在悬停那一刻起、三小节（原来是 46.1 悬停、渐弱到 49.1），(1 − x)² 曲线；第六章飞行.ts 里后一半的 淡出 还是按小节写的旧位置，比现在的悬停早 4 秒，没用。
 
 // 编排.ts 的全局帧 G 是 1/24 秒一格
-const 每秒 = 24;
+const perSec = 24;
 
 export const FlightView: React.FC<{ G: number }> = ({ G: globalFrame }) => {
   const { width, height } = useVideoConfig();
@@ -43,11 +43,11 @@ export const FlightView: React.FC<{ G: number }> = ({ G: globalFrame }) => {
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 天、灯、云（lib/主世界光照.tsx）；日光投影见 lib/飞行镜头.tsx 的 `OverworldSunLight` */}
           <FlightSky camPos={cam.pos} shadow={{ shadowFar: overworldShadowFar(choreo.visibility(globalFrame)), aboveGround: cam.pos[2] - choreo.routeGround(cam.pos[0], cam.pos[1]) }} />
-          <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} 像素={LevelParams.视频.像素} 远={terrain.远} 高度={terrain.高度} shadowLightDir={SUN_OW_DIR} />
+          <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />
           <group position={borderTownPos}>
             <BorderTown />
           </group>
-          <RideBroom pos={broomState.位置} yaw={broomState.朝向} pitch={broomState.俯仰} roll={broomState.横滚} liYing={{ ...riders.李樱, hipItem: sheath }} jiuhu={{ ...riders.九胡, 右手: <JiuhuHandCompass ride /> }} />
+          <RideBroom pos={broomState.位置} yaw={broomState.facing} pitch={broomState.pitch} roll={broomState.roll} liYing={{ ...riders.李樱, hipItem: sheath }} jiuhu={{ ...riders.九胡, rightHand: <JiuhuHandCompass ride /> }} />
         </group>
       </ThreeCanvas>
     </AbsoluteFill>
@@ -55,6 +55,6 @@ export const FlightView: React.FC<{ G: number }> = ({ G: globalFrame }) => {
 };
 
 export const FlyOverworld: React.FC = () => {
-  const frame = use当前秒() * 每秒;
+  const frame = useCurrentSec() * perSec;
   return <FlightView G={choreo.segmentTable['6-2-5'].起 + frame} />;
 };

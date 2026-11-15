@@ -25,15 +25,15 @@ export const frameCount = frameCount646;
 export const τ = τ646;
 // 第三次尖啸（段内秒）：振动链算出来的
 export const shriekSec = thirdShriekSec - τ(0);
-export const shriekerPos: V3 = G4(shrieks.第三次[0] + 0.5, shrieks.第三次[1], shrieks.第三次[2] + 0.5);
+export const shriekerPos: V3 = G4(shrieks.third[0] + 0.5, shrieks.third[1], shrieks.third[2] + 0.5);
 export const shriekSource: V3 = [shriekerPos[0], shriekerPos[1], shriekerPos[2] + 0.5];
 const huangLandSec = huangRoute.landSec - τ(0);
 // 台词落点（段内帧，A8 字幕读这里）：刘心忠「那家伙果然是怕了我们……」0.6 秒，黄叛那句在第三次尖啸后 0.9 秒开口
 export const hurryLineSec = lineTable['6-4-6-刘心忠-怕了我们'].有声长;
 export const strangeLineStart = shriekSec + 0.9;
 export const lines = {
-  怕了我们: { id: '6-4-6-刘心忠-怕了我们', 帧: 0.6 * FPS },
-  结构奇怪: { id: '6-4-6-黄叛-结构奇怪', 帧: strangeLineStart * FPS },
+  fearUs: { id: '6-4-6-刘心忠-怕了我们', 帧: 0.6 * FPS },
+  structureStrange: { id: '6-4-6-黄叛-结构奇怪', 帧: strangeLineStart * FPS },
 } as const;
 
 // ---------- 二人 ----------
@@ -65,7 +65,7 @@ export const pursuers = (frame: number): { 刘: FigurePose; 黄: FigurePose } =>
 
 // ---------- 振动、感测体（画面.tsx 画） ----------
 export const vibrations = chain.vibrations;
-export const activatedAt = chain.激活;
+export const activatedAt = chain.activatedAt;
 
 // ---------- 机位 ----------
 // 切在二人从镜头头顶掠过的半空里（黄叛蹿向东墙头那一跳过了镜头所在的 x）

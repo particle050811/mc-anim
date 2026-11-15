@@ -5,7 +5,7 @@
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒, use视图下标 } from '@engine/段/时间.tsx';
+import { useCurrentSec, useViewIndex } from '@engine/段/时间.tsx';
 import { rad } from '@engine/anim/anim.ts';
 import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
@@ -32,8 +32,8 @@ let FX: FxParams | null = null;
 const fx = (): FxParams => {
   if (FX) return FX;
   const shaft = fallChoreo.liYingShaft();
-  const imp = fallTimeline.撞击时刻();
-  FX = { impact: imp, 中心: fallChoreo.shaftCellCenter(), groundZ: fallChoreo.groundZ, caveCeilingZ: fallChoreo.caveCeilingZ, ancientCityFloorZ: fallChoreo.ancientCityFloorZ, breachSec: imp + shaft.breachDelay, landSec: shaft.落地 };
+  const imp = fallTimeline.impactTime();
+  FX = { impact: imp, 中心: fallChoreo.shaftCellCenter(), groundZ: fallChoreo.groundZ, caveCeilingZ: fallChoreo.caveCeilingZ, ancientCityFloorZ: fallChoreo.ancientCityFloorZ, breachSec: imp + shaft.breachDelay, landSec: shaft.landSec };
   return FX;
 };
 
@@ -41,7 +41,7 @@ const fx = (): FxParams => {
 let SPLASHES: ParticleSpawn[] | null = null;
 const splashes = (): ParticleSpawn[] => {
   if (SPLASHES) return SPLASHES;
-  const jumps = [choreo.leaderPoolJump('刘'), choreo.leaderPoolJump('黄'), ...choreo.卫兵位置.map((_, i) => choreo.guardPoolJump(i))];
+  const jumps = [choreo.leaderPoolJump('刘'), choreo.leaderPoolJump('黄'), ...choreo.guardPositions.map((_, i) => choreo.guardPoolJump(i))];
   SPLASHES = jumps.flatMap((jump, k) => waterSplash(jump.entry.pos, jump.entry.vel, jump.entry.sec * 20, 0.6, poolSurfaceZ, 63 + k));
   return SPLASHES;
 };
@@ -61,16 +61,16 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
   return (
     <AbsoluteFill style={{ backgroundColor: UNDER_BACKGROUND }}>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
-        {under ? <UnderFog /> : <FlightFog visibility={fallTimeline.起点.visibility} />}
+        {under ? <UnderFog /> : <FlightFog visibility={fallTimeline.start.visibility} />}
         <FlightRig c={cam} near={0.02} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {/* 灯：同 6-3-下坠/画面.tsx 地面上那一套（天空穹顶跟着镜头） */}
           <FlightSky camPos={cam.pos} photon={!under} />
-          {!under && <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} 像素={LevelParams.视频.像素} 远={terrain.远} 高度={terrain.高度} />}
+          {!under && <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit.holeRect} />
-            {!actors && t < choreo.cues.切坑 && <VanillaParticles spawns={splashes()} 秒={t} />}
+            {!actors && t < choreo.cues.cutToPit && <VanillaParticles spawns={splashes()} 秒={t} />}
           </group>
           <SlabFloor holeRect={pit.holeRect} />
           <group position={[fxParams.中心[0], fxParams.中心[1], 0]}>
@@ -81,7 +81,7 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
           {actors ?? (
             <>
             {/* 卫兵（每人一张脸，同 6-3-4） */}
-            {choreo.卫兵位置.map((_, i) => {
+            {choreo.guardPositions.map((_, i) => {
               const guard = choreo.guardPoseAt(t, i);
               if (!guard.present) return null;
               const pos = guard.pos;
@@ -104,13 +104,13 @@ export const PursuerScene: React.FC<{ t: number; cam?: choreo.Cam; actors?: Reac
 
 // 段内秒换成这条时间线的格（1/24 秒）再走 toSec（跳下城墙那一截跳切）
 export const PursuerSegment: React.FC<{ segment: choreo.SegmentName }> = ({ segment: segment }) => {
-  const 秒 = use当前秒();
-  return <PursuerScene t={choreo.toSec(segment, 秒 * choreo.FPS)} />;
+  const sec = useCurrentSec();
+  return <PursuerScene t={choreo.toSec(segment, sec * choreo.FPS)} />;
 };
 
 // 核对：一帧一个视图（编排秒 + 可选机位），出静帧定机位、动作用：npx remotion render 6-3-8至10-核对 <目录> --sequence --props=<json>
-export type CheckView = { t: number; 机位?: choreo.Cam };
+export type CheckView = { t: number; cameraRig?: choreo.Cam };
 export const PursuerCheck: React.FC<{ views: CheckView[] }> = ({ views }) => {
-  const view = views[Math.min(use视图下标(), views.length - 1)];
-  return <PursuerScene t={view.t} cam={view.机位} />;
+  const view = views[Math.min(useViewIndex(), views.length - 1)];
+  return <PursuerScene t={view.t} cam={view.cameraRig} />;
 };

@@ -12,51 +12,51 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
-import { 描边 } from '@engine/三渲二/描边.tsx';
-import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
-import { 画布调子, 正交机位 as 成片正交机位 } from '../../画风.ts';
+import { Outline } from '@engine/三渲二/描边.tsx';
+import { ToonCanvas } from '@engine/三渲二/画布.tsx';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
+import { canvasTone, orthoRig as filmOrthoRig } from '../../画风.ts';
 import { magicalWineFoxTurnTo } from '@库/角色/魔法酒狐新动作.ts';
-import { MagicalWineFoxEx, magicalWineFoxBoneAt, magicalWineFoxExBones, type 手持物, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { 画幅 } from '../../分镜/时间.ts';
-import { 第一人称机位 } from '../../地点/机位.tsx';
-import { 月铃兰 } from '../../物品/月铃兰.tsx';
-import { 视图们, type 视图 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { MagicalWineFoxEx, magicalWineFoxBoneAt, magicalWineFoxExBones, type HeldItem, type MagicalWineFoxExProps } from '@库/角色/魔法酒狐新动作组件.tsx';
+import { aspect } from '../../分镜/时间.ts';
+import { FirstPersonRig } from '../../地点/机位.tsx';
+import { MoonBellLily } from '../../物品/月铃兰.tsx';
+import { views, type View } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 原点: V3 = [0, 0, 0];
+const originPos: V3 = [0, 0, 0];
 // 封面：你站在她南边 2.6 格的门口，眼高 1.62
-const 封面眼: V3 = [0, -2.6, 1.62];
+const coverEye: V3 = [0, -2.6, 1.62];
 
-const 地面: React.FC = () => (
+const Ground: React.FC = () => (
   <mesh position={[0, 0, -0.05]}>
     <boxGeometry args={[9, 9, 0.1]} />
     <meshStandardMaterial color="#b8945f" />
   </mesh>
 );
 
-const 加 = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
+const addVec = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 
 /** 机位：她面朝南（yaw 180），正前方 −Y、右手边 −X */
-const 方向 = (机位: 视图['机位']): V3 => {
+const rigDir = (cameraRig: View['cameraRig']): V3 => {
   const s = Math.SQRT1_2;
-  if (机位 === '四分之三') return [-s, -s, 0];
-  if (机位 === '侧面') return [-1, 0, 0];
-  if (机位 === '左侧面') return [1, 0, 0];
+  if (cameraRig === '四分之三') return [-s, -s, 0];
+  if (cameraRig === '侧面') return [-1, 0, 0];
+  if (cameraRig === '左侧面') return [1, 0, 0];
   return [0, -1, 0];
 };
 
 // 正交：她站着连帽子约 1.8 格高，每格 300 页面像素让她占画面八成高（核对看得清；成片的像素密度另定）
-const 正交每格 = 300;
+const orthoPerCell = 300;
 const toThree = ([x, y, z]: V3) => new THREE.Vector3(x, z, -y);
-const 正交机位: React.FC<{ 眼: V3; 看: V3 }> = ({ 眼, 看 }) => {
+const OrthoRig: React.FC<{ 眼: V3; 看: V3 }> = ({ 眼: eye, 看: lookAt }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   const cam = camera as THREE.OrthographicCamera;
-  cam.position.copy(toThree(眼));
+  cam.position.copy(toThree(eye));
   cam.up.set(0, 1, 0);
-  cam.lookAt(toThree(看));
-  cam.zoom = 正交每格;
+  cam.lookAt(toThree(lookAt));
+  cam.zoom = orthoPerCell;
   cam.near = 0.1;
   cam.far = 100;
   cam.updateProjectionMatrix();
@@ -64,93 +64,93 @@ const 正交机位: React.FC<{ 眼: V3; 看: V3 }> = ({ 眼, 看 }) => {
   return null;
 };
 
-const 摆 = (v: 视图) => {
-  const 她 = v.机位 === '封面' ? { ...standPose(原点), yaw: magicalWineFoxTurnTo(原点, 封面眼, 50, '左').yaw } : { ...standPose(原点), yaw: 180 };
-  const 显示 = v.手持显示 ? DISPLAY.handheld.thirdperson_righthand : undefined;
-  const 花 = (朝向?: 手持物['朝向']): Partial<魔法酒狐新动作Props> => (v.拿花 ? { [v.左手 ? '左手' : '右手']: { 物品: <月铃兰 />, 显示, 朝向 } } : {});
-  const 底: 魔法酒狐新动作Props = { pose: 她, 姿势: v.姿势, 表情: v.表情, 眨眼: v.眨眼, 秒: v.秒, 看: Array.isArray(v.看) ? v.看 : undefined, ...花() };
-  const 骨 = magicalWineFoxExBones(底);
-  const 头 = 加(magicalWineFoxBoneAt(她, 骨, 'Head'), [0, 0, 0.12]);
-  let 眼: V3;
-  let 看: V3;
-  let 视角: number;
-  if (v.机位 === '封面') [眼, 看, 视角] = [封面眼, 头, 40];
-  else if (v.远近 === '脸') [看, 视角] = [头, 26];
-  else if (v.远近 === '手') [看, 视角] = [magicalWineFoxBoneAt(她, 骨, v.左手 ? 'LeftHandLocator' : 'RightHandLocator'), 24];
-  else [看, 视角] = [[0, 0, 0.55 * (头[2] + 0.3)], 30];
-  if (v.机位 !== '封面') {
-    const 远 = v.正交 ? 30 : v.远近 === '脸' ? 1.5 : v.远近 === '手' ? 1.3 : 4.6;
-    眼 = 加(看, 方向(v.机位), 远);
-    if (v.远近 === '全身' && !v.正交) 眼[2] += 0.35;
+const setupView = (v: View) => {
+  const liYing = v.cameraRig === '封面' ? { ...standPose(originPos), yaw: magicalWineFoxTurnTo(originPos, coverEye, 50, '左').yaw } : { ...standPose(originPos), yaw: 180 };
+  const display = v.handheldDisplay ? DISPLAY.handheld.thirdperson_righthand : undefined;
+  const holdFlowerProps = (facing?: HeldItem['facing']): Partial<MagicalWineFoxExProps> => (v.holdFlower ? { [v.leftHand ? '左手' : '右手']: { item: <MoonBellLily />, display, facing } } : {});
+  const bottomProps: MagicalWineFoxExProps = { pose: liYing, stancePose: v.stancePose, expression: v.expression, blink: v.blink, 秒: v.秒, 看: Array.isArray(v.看) ? v.看 : undefined, ...holdFlowerProps() };
+  const bones = magicalWineFoxExBones(bottomProps);
+  const headPos = addVec(magicalWineFoxBoneAt(liYing, bones, 'Head'), [0, 0, 0.12]);
+  let eye: V3;
+  let lookAt: V3;
+  let fov: number;
+  if (v.cameraRig === '封面') [eye, lookAt, fov] = [coverEye, headPos, 40];
+  else if (v.distance === '脸') [lookAt, fov] = [headPos, 26];
+  else if (v.distance === '手') [lookAt, fov] = [magicalWineFoxBoneAt(liYing, bones, v.leftHand ? 'LeftHandLocator' : 'RightHandLocator'), 24];
+  else [lookAt, fov] = [[0, 0, 0.55 * (headPos[2] + 0.3)], 30];
+  if (v.cameraRig !== '封面') {
+    const dist = v.ortho ? 30 : v.distance === '脸' ? 1.5 : v.distance === '手' ? 1.3 : 4.6;
+    eye = addVec(lookAt, rigDir(v.cameraRig), dist);
+    if (v.distance === '全身' && !v.ortho) eye[2] += 0.35;
   }
-  const props: 魔法酒狐新动作Props = {
-    ...底,
-    看向: v.看 === '镜头' ? 眼! : undefined,
-    ...花(v.拿花 === '原样' ? '原样' : { 偏: magicalWineFoxLookAt(她, 眼!, '站')[1] }),
+  const props: MagicalWineFoxExProps = {
+    ...bottomProps,
+    lookAt: v.看 === '镜头' ? eye! : undefined,
+    ...holdFlowerProps(v.holdFlower === '原样' ? '原样' : { yawOffset: magicalWineFoxLookAt(liYing, eye!, '站')[1] }),
   };
-  return { props, 眼: 眼!, 看, 视角 };
+  return { props, 眼: eye!, 看: lookAt, fov };
 };
 
-const 三渲二放大 = 4;
-const 三渲二朝: Record<视图['机位'], '北' | '东' | '西'> = { 正面: '北', 四分之三: '北', 封面: '北', 侧面: '东', 左侧面: '西' };
-const 三渲二地面: React.FC = () => (
+const toonScale = 4;
+const toonFacing: Record<View['cameraRig'], '北' | '东' | '西'> = { 正面: '北', 四分之三: '北', 封面: '北', 侧面: '东', 左侧面: '西' };
+const ToonGround: React.FC = () => (
   <mesh position={[0, 0, -0.5]}>
     <boxGeometry args={[6, 3, 1]} />
     <meshStandardMaterial color="#7fb238" />
   </mesh>
 );
 
-const 三渲二画面: React.FC<{ v: 视图; props: 魔法酒狐新动作Props }> = ({ v, props }) => (
-  <div style={{ position: 'absolute', left: 0, top: 0, width: 画幅.宽 / 三渲二放大, height: 画幅.高 / 三渲二放大, transform: `scale(${三渲二放大})`, transformOrigin: '0 0', imageRendering: 'pixelated' }}>
-    <三渲二画布 宽={画幅.宽 / 三渲二放大} 高={画幅.高 / 三渲二放大} 机位={成片正交机位({ 看: [0, 0, 0.9], 朝: 三渲二朝[v.机位] })} {...画布调子('夏日白天')}>
-      <三渲二地面 />
-      <描边>
-        <贴图像素对齐 锚={props.pose.loc as V3}>
+const ToonPicture: React.FC<{ v: View; props: MagicalWineFoxExProps }> = ({ v, props }) => (
+  <div style={{ position: 'absolute', left: 0, top: 0, width: aspect.宽 / toonScale, height: aspect.高 / toonScale, transform: `scale(${toonScale})`, transformOrigin: '0 0', imageRendering: 'pixelated' }}>
+    <ToonCanvas 宽={aspect.宽 / toonScale} 高={aspect.高 / toonScale} cameraRig={filmOrthoRig({ 看: [0, 0, 0.9], facing: toonFacing[v.cameraRig] })} {...canvasTone('夏日白天')}>
+      <ToonGround />
+      <Outline>
+        <TexturePixelAlign 锚={props.pose.loc as V3}>
           <MagicalWineFoxEx {...props} />
-        </贴图像素对齐>
-      </描边>
-    </三渲二画布>
+        </TexturePixelAlign>
+      </Outline>
+    </ToonCanvas>
   </div>
 );
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const { props, 眼, 看, 视角 } = 摆(v);
-  if (v.三渲二)
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const { props, 眼: eye, 看: lookAt, fov } = setupView(v);
+  if (v.toon)
     return (
       <AbsoluteFill style={{ background: '#000000' }}>
-        <三渲二画面 v={v} props={props} />
+        <ToonPicture v={v} props={props} />
         <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
           <div>{v.名}</div>
-          <div style={{ fontSize: 16 }}>成片像素密度，最近邻放大 {三渲二放大} 倍</div>
+          <div style={{ fontSize: 16 }}>成片像素密度，最近邻放大 {toonScale} 倍</div>
         </div>
       </AbsoluteFill>
     );
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas key={v.正交 ? '正交' : '透视'} orthographic={!!v.正交} width={画幅.宽} height={画幅.高} gl={{ antialias: !v.正交 }}>
+      <ThreeCanvas key={v.ortho ? '正交' : '透视'} orthographic={!!v.ortho} width={aspect.宽} height={aspect.高} gl={{ antialias: !v.ortho }}>
         <color attach="background" args={['#5a5e66']} />
-        {v.正交 ? <正交机位 眼={眼} 看={看} /> : <第一人称机位 眼={眼} 看={看} 视角={视角} />}
+        {v.ortho ? <OrthoRig 眼={eye} 看={lookAt} /> : <FirstPersonRig 眼={eye} 看={lookAt} fov={fov} />}
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
-          <地面 />
-          {v.旧组件 ? <MagicalWineFox pose={props.pose} 姿势="站" 眨眼={v.眨眼} 秒={v.秒} /> : <MagicalWineFoxEx {...props} />}
+          <Ground />
+          {v.legacyComponent ? <MagicalWineFox pose={props.pose} stancePose="站" blink={v.blink} 秒={v.秒} /> : <MagicalWineFoxEx {...props} />}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
         <div>{v.名}</div>
         <div style={{ fontSize: 16 }}>
-          姿势 {v.姿势}
-          {v.表情 ? `，表情 ${v.表情}` : ''}
+          姿势 {v.stancePose}
+          {v.expression ? `，表情 ${v.expression}` : ''}
           {v.看 ? `，看 ${Array.isArray(v.看) ? `[${v.看.join(', ')}]` : '镜头'}` : ''}
-          {v.拿花 ? `，${v.左手 ? '左手' : ''}拿花（${v.拿花}${v.手持显示 ? '，handheld 显示' : ''}）` : ''}
-          {v.旧组件 ? '，旧组件 MagicalWineFox 姿势=站' : ''}
-          {v.正交 ? '，正交' : ''}
+          {v.holdFlower ? `，${v.leftHand ? '左手' : ''}拿花（${v.holdFlower}${v.handheldDisplay ? '，handheld 显示' : ''}）` : ''}
+          {v.legacyComponent ? '，旧组件 MagicalWineFox 姿势=站' : ''}
+          {v.ortho ? '，正交' : ''}
         </div>
       </div>
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

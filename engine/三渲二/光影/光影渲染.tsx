@@ -12,153 +12,153 @@ import React, { useEffect, useMemo } from 'react';
 import { cancelRender, continueRender, delayRender, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import sunPng from 'asset:贴图/场景/天空/sun';
-import { 场景到three } from '../../core/three换算.ts';
+import { sceneToThree } from '../../core/three换算.ts';
 import { atmoUniforms, atmosphere } from '../../light/大气.ts';
-import { Photon天, 备天色图 } from '../../light/天/Photon天.ts';
-import { 画云 as 画云层, 预编云 } from '../../light/云/画云.ts';
+import { PhotonSky, prepareSkyColorMap } from '../../light/天/Photon天.ts';
+import { shouldDrawClouds as drawCloudLayer, precompileClouds } from '../../light/云/画云.ts';
 import { png } from '../../model/贴图.ts';
 import { OceanSim, defaultOceanParams } from 'gelatin-game-engine/src/water/OceanSim.js';
-import { 全屏顶点, 合成片元, 取亮片元, 对数深度片元, 水下片元, 新光影统一量, 是粒子材质, 最多粒子光, 最多补光, 糊片元, 缩片元, 补受光, 补水面, 补粒子源, type 光影统一量 } from './着色.ts';
-import { 光影画云, 取光影参数, type 光影选项, type 时段, type 时段光, type 补光 } from './预设.ts';
-import { 抗锯齿分片元, 抗锯齿补片元, 中心片元, 摆光线, 新光线资源, 释放光线, type 光线统一量 } from './光线影子.ts';
-import type { 光线模式 } from './着色.ts';
-import { use当前秒 } from '../../段/时间.tsx';
+import { fullscreenVertex, compositeFragment, brightFrag, logDepthFrag, underwaterFrag, newShadingUniforms, isParticleMaterial, MAX_PARTICLE_LIGHTS, MAX_FILL_LIGHTS, blurFrag, shrinkFrag, patchLit, patchWaterSurface, patchParticleSource, type ShadingUniforms } from './着色.ts';
+import { shadingDrawsCloud, getShadingParams, type ShadingOptions, type TimeOfDay, type DaypartLight, type FillLight } from './预设.ts';
+import { aaSplitFrag, aaPatchFrag, centerFrag, setRayShadow, newRayResources, releaseRay, type RayUniforms } from './光线影子.ts';
+import type { RayMode } from './着色.ts';
+import { useCurrentSec } from '../../段/时间.tsx';
 
 /** 影子图默认边长（纹素）；光影参数.影子图边 可改，资源按需改尺寸 */
-const 默认影子图边 = 4096;
+const DEFAULT_SHADOW_MAP_SIZE = 4096;
 /** 透视镜头的影子只算到这么远（格） */
-const 透视影距 = 80;
+const perspShadowDist = 80;
 /** Photon 天的空气雾算到多远（米）：同 engine/light/环境.ts 主世界画法不给时的地形远端 */
-const 天远 = 40000;
+const skyFar = 40000;
 /** 原版太阳：贴图 32×32 里本体是正中 8×8（第 12～19 格），本体离镜头 100 格、半边 7.5 格（同 作品/把回忆拼好给你/场/2-海上/天.tsx 的 2D 天）。
  *  材质包的高清太阳是原版的 k 倍（Faithful 32x 是 64×64，本体 16×16 在第 24～39 格），本体起、本体边都乘 k（用户 11-03 看了 2-日落划船 的高清太阳定「高清版对」，不退回原版粗格子） */
-const 本体起 = 12;
-const 本体边 = 8;
-const 太阳距 = 100;
-const 太阳半边 = 7.5;
+const sunBodyStart = 12;
+const sunBodyLength = 8;
+const sunDist = 100;
+const sunHalfSide = 7.5;
 
-const 平涂受光 = (m: THREE.Material) => !!m.userData.平涂 && m.customProgramCacheKey().includes('|平涂');
+const isFlatLit = (m: THREE.Material) => !!m.userData.平涂 && m.customProgramCacheKey().includes('|平涂');
 
 /** 场景没说时段时按平涂色调猜：暗 = 夜，偏红 = 日落 */
-export const 猜时段 = (色调: string | undefined): 时段 => {
-  const c = new THREE.Color().setStyle(色调 ?? '#ffffff', THREE.LinearSRGBColorSpace);
+export const guessDaypart = (tint: string | undefined): TimeOfDay => {
+  const c = new THREE.Color().setStyle(tint ?? '#ffffff', THREE.LinearSRGBColorSpace);
   const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
   if (l < 0.55) return '夜';
   if (c.r > c.b * 1.25) return '日落';
   return '白天';
 };
 
-type 变体 = { 光: THREE.Material };
-const 变体表 = new WeakMap<THREE.Material, 变体 | null>();
+type Variant = { 光: THREE.Material };
+const variantMap = new WeakMap<THREE.Material, Variant | null>();
 /** 影子按光线算的受光变体（光线影子.ts）：和影子图的变体分开存，影子图那份照旧。按模式各一份（着色.ts 的 光线模式） */
-const 光线变体表 = new WeakMap<THREE.Material, Map<光线模式, THREE.Material>>();
+const rayVariantMap = new WeakMap<THREE.Material, Map<RayMode, THREE.Material>>();
 
 /** 半透明（混色）的材质几何罩接不上（混出来的不是一个起点），主画面里自己打（直） */
-const 光线主模式 = (m: THREE.Material): 光线模式 => (m.transparent ? '直' : '主');
+const rayMainMode = (m: THREE.Material): RayMode => (m.transparent ? '直' : '主');
 
-const 取光线变体 = (m: THREE.Material, u: 光影统一量, 光线: 光线统一量, 模式: 光线模式) => {
-  let 表 = 光线变体表.get(m);
-  if (!表) 光线变体表.set(m, (表 = new Map()));
-  let v = 表.get(模式);
+const getRayVariant = (m: THREE.Material, u: ShadingUniforms, rayUniforms: RayUniforms, lightMode: RayMode) => {
+  let variantMap = rayVariantMap.get(m);
+  if (!variantMap) rayVariantMap.set(m, (variantMap = new Map()));
+  let v = variantMap.get(lightMode);
   if (!v) {
-    const 新 = m.clone();
-    新.userData.光影 = true;
-    新.onBeforeCompile = (shader, renderer) => {
+    const variant = m.clone();
+    variant.userData.shading = true;
+    variant.onBeforeCompile = (shader, renderer) => {
       m.onBeforeCompile(shader, renderer);
-      补受光(shader, u, 光线, 模式);
+      patchLit(shader, u, rayUniforms, lightMode);
     };
-    新.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影|光线${模式 === '直' ? '' : `|${模式}`}`;
-    m.addEventListener('dispose', () => 新.dispose());
-    表.set(模式, 新);
-    v = 新;
+    variant.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影|光线${lightMode === '直' ? '' : `|${lightMode}`}`;
+    m.addEventListener('dispose', () => variant.dispose());
+    variantMap.set(lightMode, variant);
+    v = variant;
   }
   return v;
 };
 
-const 取变体 = (m: THREE.Material, u: 光影统一量, 光线?: 光线统一量): THREE.Material | null => {
-  if (光线 && 平涂受光(m)) return 取光线变体(m, u, 光线, 光线主模式(m));
-  let e = 变体表.get(m);
+const getVariant = (m: THREE.Material, u: ShadingUniforms, rayUniforms?: RayUniforms): THREE.Material | null => {
+  if (rayUniforms && isFlatLit(m)) return getRayVariant(m, u, rayUniforms, rayMainMode(m));
+  let e = variantMap.get(m);
   if (e === undefined) {
     e = null;
-    const 种 = 平涂受光(m) ? '' : 是粒子材质(m) ? '粒子' : (m as THREE.MeshBasicMaterial).isMeshBasicMaterial ? '水' : null;
-    if (种 !== null) {
+    const variant = isFlatLit(m) ? '' : isParticleMaterial(m) ? '粒子' : (m as THREE.MeshBasicMaterial).isMeshBasicMaterial ? '水' : null;
+    if (variant !== null) {
       const v = m.clone();
       // 粒子的 uniform 每帧在原材质上改（贴图），变体和它共用同一份；粒子的变体只用来画泛光源。叠在一起的取最亮的（同画面里看得到的那一个），
       // 不加起来：加起来密的一团（照片里缩小的烟花）会叠成一大团白
-      if (种 === '粒子')
+      if (variant === '粒子')
         Object.assign(v, { uniforms: (m as THREE.ShaderMaterial).uniforms, blending: THREE.CustomBlending, blendEquation: THREE.MaxEquation, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, depthTest: false, depthWrite: false, transparent: true });
-      v.userData.光影 = true;
+      v.userData.shading = true;
       v.onBeforeCompile = (shader, renderer) => {
         m.onBeforeCompile(shader, renderer);
-        if (种 === '') 补受光(shader, u);
-        else if (种 === '粒子') 补粒子源(shader, u);
-        else 补水面(shader, u);
+        if (variant === '') patchLit(shader, u);
+        else if (variant === '粒子') patchParticleSource(shader, u);
+        else patchWaterSurface(shader, u);
       };
-      v.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影${种}`;
+      v.customProgramCacheKey = () => `${m.customProgramCacheKey()}|光影${variant}`;
       m.addEventListener('dispose', () => v.dispose());
       e = { 光: v };
     }
-    变体表.set(m, e);
+    variantMap.set(m, e);
   }
   return e?.光 ?? null;
 };
 
 /** 水面材质：基础色材质里只有着色器认得的（海面）才换；不认得的换上去也只是原样，但多编一份程序，所以先按缓存键筛一下 */
-const 像水 = (m: THREE.Material) => (m as THREE.MeshBasicMaterial).isMeshBasicMaterial && /海面|水面/.test(m.customProgramCacheKey());
+const isWaterLike = (m: THREE.Material) => (m as THREE.MeshBasicMaterial).isMeshBasicMaterial && /海面|水面/.test(m.customProgramCacheKey());
 
-type 资源 = ReturnType<typeof 建资源>;
+type Resource = ReturnType<typeof buildResources>;
 
 // 起伏网格：海面（场景里平放在 z = 0、以眼为中心的一块方板）在 Photon 式、FFT 时换成这张极坐标网格，同样以眼为中心、铺到方板的角上；
 // 圈距按指数往外疏（近处 5 厘米一圈、视距边上几米一圈），每圈 720 段。只在画主画面那一下换上，画完换回去，场景自己的网格不动
-let 起伏网格: THREE.BufferGeometry | null = null;
-const 取起伏网格 = (原: THREE.BufferGeometry, 远: number) => {
-  原.computeBoundingBox();
-  const b = 原.boundingBox!;
-  const R = Math.max(远, Math.hypot(b.max.x - b.min.x, b.max.y - b.min.y) / 2);
-  if (起伏网格 && 起伏网格.userData.R === R) return 起伏网格;
-  起伏网格?.dispose();
-  const 圈 = 640;
-  const 段 = 720;
+let waveMesh: THREE.BufferGeometry | null = null;
+const getWaveMesh = (geometry: THREE.BufferGeometry, farDist: number) => {
+  geometry.computeBoundingBox();
+  const b = geometry.boundingBox!;
+  const R = Math.max(farDist, Math.hypot(b.max.x - b.min.x, b.max.y - b.min.y) / 2);
+  if (waveMesh && waveMesh.userData.R === R) return waveMesh;
+  waveMesh?.dispose();
+  const sampleCount = 640;
+  const segCount = 720;
   const k = Math.log(R / 0.05);
   const pos: number[] = [0, 0, 0];
-  for (let i = 0; i < 圈; i++) {
-    const r = 0.05 * Math.exp((k * i) / (圈 - 1));
-    for (let j = 0; j < 段; j++) {
-      const a = (j / 段) * Math.PI * 2;
+  for (let i = 0; i < sampleCount; i++) {
+    const r = 0.05 * Math.exp((k * i) / (sampleCount - 1));
+    for (let j = 0; j < segCount; j++) {
+      const a = (j / segCount) * Math.PI * 2;
       pos.push(r * Math.cos(a), r * Math.sin(a), 0);
     }
   }
   const idx: number[] = [];
-  for (let j = 0; j < 段; j++) idx.push(0, 1 + j, 1 + ((j + 1) % 段));
-  for (let i = 0; i < 圈 - 1; i++)
-    for (let j = 0; j < 段; j++) {
-      const a = 1 + i * 段 + j;
-      const c = 1 + i * 段 + ((j + 1) % 段);
-      idx.push(a, a + 段, c, c, a + 段, c + 段);
+  for (let j = 0; j < segCount; j++) idx.push(0, 1 + j, 1 + ((j + 1) % segCount));
+  for (let i = 0; i < sampleCount - 1; i++)
+    for (let j = 0; j < segCount; j++) {
+      const a = 1 + i * segCount + j;
+      const c = 1 + i * segCount + ((j + 1) % segCount);
+      idx.push(a, a + segCount, c, c, a + segCount, c + segCount);
     }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setIndex(idx);
   g.userData.R = R;
-  起伏网格 = g;
+  waveMesh = g;
   return g;
 };
 
 // FFT 海：Ultra-Water 的模拟（4 层 256² 的谱，按画面秒数直接算到那一刻，不靠上一帧，乱序出帧一样；它的白沫要逐帧累积，这里不用）。
 // 每个渲染器一份，风速变了重算谱
-const FFT们 = new WeakMap<THREE.WebGLRenderer, OceanSim>();
-const 备FFT海 = (gl: THREE.WebGLRenderer, u: 光影统一量, 秒: number, 风速: number, 涌浪: number) => {
-  let sim = FFT们.get(gl);
+const fftSims = new WeakMap<THREE.WebGLRenderer, OceanSim>();
+const prepFftSea = (gl: THREE.WebGLRenderer, u: ShadingUniforms, sec: number, windSpeed: number, swell: number) => {
+  let sim = fftSims.get(gl);
   if (!sim) {
     sim = new OceanSim(gl, defaultOceanParams());
-    FFT们.set(gl, sim);
+    fftSims.set(gl, sim);
   }
-  if (sim.params.windSpeed !== 风速 || sim.params.swellScale !== 涌浪) {
-    sim.params.windSpeed = 风速;
-    sim.params.swellScale = 涌浪;
+  if (sim.params.windSpeed !== windSpeed || sim.params.swellScale !== swell) {
+    sim.params.windSpeed = windSpeed;
+    sim.params.swellScale = swell;
     sim.dirty = true;
   }
-  sim.time = 秒 % 300;
+  sim.time = sec % 300;
   sim.update(0);
   u.gySlope0.value = sim.slope[0]!;
   u.gySlope1.value = sim.slope[1]!;
@@ -170,37 +170,37 @@ const 备FFT海 = (gl: THREE.WebGLRenderer, u: 光影统一量, 秒: number, 风
   u.gyFftLen.value.set(sim.lengths[0]!, sim.lengths[1]!, sim.lengths[2]!, sim.lengths[3]!);
 };
 
-const 新全屏 = (fragmentShader: string, uniforms: Record<string, THREE.IUniform>) => {
-  const 材质 = new THREE.ShaderMaterial({ uniforms, vertexShader: 全屏顶点, fragmentShader, depthTest: false, depthWrite: false, toneMapped: false });
-  const 片 = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), 材质);
-  片.frustumCulled = false;
-  const 场 = new THREE.Scene();
-  场.add(片);
-  return { 材质, 片, 场 };
+const newFullscreen = (fragmentShader: string, uniforms: Record<string, THREE.IUniform>) => {
+  const material = new THREE.ShaderMaterial({ uniforms, vertexShader: fullscreenVertex, fragmentShader, depthTest: false, depthWrite: false, toneMapped: false });
+  const quadMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+  quadMesh.frustumCulled = false;
+  const scene = new THREE.Scene();
+  scene.add(quadMesh);
+  return { material, 片: quadMesh, 场: scene };
 };
 
 // 水面反射的云：镜头位置、朝向不变，往上抬到看 −5°～65° 仰角，横向比镜头宽一些（反射方向的方位角和视线差不多）。
 // 这台相机里没有东西挡（对数深度全是 1、主画面全透明），云照主画面那一遍的配置画，各用各的离屏图（画云 的 槽）
-const 画反射云 = (gl: THREE.WebGLRenderer, r: 资源, cam: THREE.PerspectiveCamera, w: number, h: number, 选项: 光影选项, 秒: number) => {
-  const 云 = 选项.云;
-  if (!云) return;
+const drawReflectCloud = (gl: THREE.WebGLRenderer, r: Resource, cam: THREE.PerspectiveCamera, w: number, h: number, options: ShadingOptions, sec: number) => {
+  const cloud = options.cloud;
+  if (!cloud) return;
   const pw = Math.max(64, Math.round(w / 2)), ph = Math.max(32, Math.round(h / 2));
-  for (const t of [r.反云, r.反云深, r.反云空]) 设尺寸(t, pw, ph);
-  const 清 = gl.getClearColor(new THREE.Color()), 清a = gl.getClearAlpha();
+  for (const t of [r.reflectCloud, r.reflectCloudDepth, r.reflectCloudSky]) setSize(t, pw, ph);
+  const savedClearColor = gl.getClearColor(new THREE.Color()), clearAlpha = gl.getClearAlpha();
   gl.setClearColor(0xffffff, 1);
-  gl.setRenderTarget(r.反云深);
+  gl.setRenderTarget(r.reflectCloudDepth);
   gl.clear(true, false, false);
   gl.setClearColor(0x000000, 0);
-  gl.setRenderTarget(r.反云空);
+  gl.setRenderTarget(r.reflectCloudSky);
   gl.clear(true, false, false);
-  gl.setRenderTarget(r.反云);
+  gl.setRenderTarget(r.reflectCloud);
   gl.clear(true, false, false);
-  gl.setClearColor(清, 清a);
-  const m = r.反云机;
+  gl.setClearColor(savedClearColor, clearAlpha);
+  const m = r.reflectCloudCam;
   m.position.setFromMatrixPosition(cam.matrixWorld);
-  const 向 = new THREE.Vector3();
-  cam.getWorldDirection(向);
-  m.rotation.set(0, Math.atan2(-向.x, -向.z), 0, 'YXZ');
+  const viewDir = new THREE.Vector3();
+  cam.getWorldDirection(viewDir);
+  m.rotation.set(0, Math.atan2(-viewDir.x, -viewDir.z), 0, 'YXZ');
   m.rotateX((42 * Math.PI) / 180);
   m.fov = 120;
   m.aspect = pw / ph;
@@ -208,23 +208,23 @@ const 画反射云 = (gl: THREE.WebGLRenderer, r: 资源, cam: THREE.Perspective
   m.far = cam.far;
   m.updateProjectionMatrix();
   m.updateMatrixWorld(true);
-  画云层({ gl, camera: m, 深度: r.反云深.texture, 主画面: r.反云空.texture, 宽: pw, 高: ph, 目标: r.反云, 配置: 云, 场: 选项.云场 ?? {}, 海平面: 云.海平面 ?? 0, 秒, 太阳框: null, 槽: '水面反射' });
-  r.u.gyCloudMap.value = r.反云.texture;
+  drawCloudLayer({ gl, camera: m, depthTexture: r.reflectCloudDepth.texture, mainPicture: r.reflectCloudSky.texture, 宽: pw, 高: ph, 目标: r.reflectCloud, config: cloud, 场: options.cloudScene ?? {}, 海平面: cloud.海平面 ?? 0, 秒: sec, sunBox: null, 槽: '水面反射' });
+  r.u.gyCloudMap.value = r.reflectCloud.texture;
   r.u.gyCloudVP.value.multiplyMatrices(m.projectionMatrix, m.matrixWorldInverse);
   r.u.gyCloudOn.value = 1;
 };
 
-const 建资源 = () => {
-  const u = 新光影统一量();
-  const 影 = new THREE.WebGLRenderTarget(默认影子图边, 默认影子图边, {
+const buildResources = () => {
+  const u = newShadingUniforms();
+  const shadowMap = new THREE.WebGLRenderTarget(DEFAULT_SHADOW_MAP_SIZE, DEFAULT_SHADOW_MAP_SIZE, {
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
     depthBuffer: true,
-    depthTexture: new THREE.DepthTexture(默认影子图边, 默认影子图边, THREE.UnsignedIntType),
+    depthTexture: new THREE.DepthTexture(DEFAULT_SHADOW_MAP_SIZE, DEFAULT_SHADOW_MAP_SIZE, THREE.UnsignedIntType),
   });
-  const 影机 = new THREE.OrthographicCamera();
-  const 浮点 = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false } as const;
-  const 主 = new THREE.WebGLRenderTarget(1, 1, {
+  const shadowCam = new THREE.OrthographicCamera();
+  const floatOpts = { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false } as const;
+  const mainTarget = new THREE.WebGLRenderTarget(1, 1, {
     type: THREE.HalfFloatType,
     minFilter: THREE.NearestFilter,
     magFilter: THREE.NearestFilter,
@@ -233,27 +233,27 @@ const 建资源 = () => {
   });
   // 主画面照画布那样存 sRGB 编码后的值（混色也在 sRGB 上做，同画布）。坑：three 画进离屏图一律输出线性（r186 WebGLPrograms 的 outputColorSpace），
   // 只有标成 XR 的离屏图才按它贴图的色彩空间输出；场景里有接在 colorspace_fragment 后面、按 sRGB 数值混的补丁（原版柱形雾），输出线性时雾色会发白
-  主.texture.colorSpace = THREE.SRGBColorSpace;
-  (主 as unknown as { isXRRenderTarget: boolean }).isXRRenderTarget = true;
+  mainTarget.texture.colorSpace = THREE.SRGBColorSpace;
+  (mainTarget as unknown as { isXRRenderTarget: boolean }).isXRRenderTarget = true;
   // 云：对数深度（浮点，一像素一值）、云画好的图（画面值、预乘）
-  const 深 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
-  const 云 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
-  const 对数深 = 新全屏(对数深度片元, { tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
+  const depthTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const cloudTarget = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
+  const logDepth = newFullscreen(logDepthFrag, { tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
   // 透水：先画水以外的，抄成这张（rgb 画面、a 视深），水面再取它
-  const 水下 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const underwater = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
   // 水面反射的云：朝天另画一张（半宽半高的那么多像素，不用全分辨率：反射本来就被浪揉碎了）
-  const 反云 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false });
-  const 反云深 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
-  const 反云空 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
-  const 反云机 = new THREE.PerspectiveCamera();
-  const 抄水下 = 新全屏(水下片元, { tColor: { value: null }, tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
+  const reflectCloud = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false });
+  const reflectCloudDepth = new THREE.WebGLRenderTarget(1, 1, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const reflectCloudSky = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const reflectCloudCam = new THREE.PerspectiveCamera();
+  const copyUnderwater = newFullscreen(underwaterFrag, { tColor: { value: null }, tDepth: { value: null }, cNear: { value: 0.1 }, cFar: { value: 1000 } });
   // 泛光六层：1/2 到 1/64，每层一对（糊的时候来回倒）；后两层只在 泛光.宽 大于 0 时有分量（烟花那种大光晕）
-  const 层 = Array.from({ length: 6 }, () => [new THREE.WebGLRenderTarget(1, 1, 浮点), new THREE.WebGLRenderTarget(1, 1, 浮点)] as const);
-  const 粒源 = new THREE.WebGLRenderTarget(1, 1, 浮点);
-  const 取亮 = 新全屏(取亮片元, { tSrc: { value: null }, tAdd: { value: null }, addK: { value: 0 }, texel: { value: new THREE.Vector2() }, threshold: { value: 1 }, knee: { value: 0.2 } });
-  const 缩 = 新全屏(缩片元, { tSrc: { value: null }, texel: { value: new THREE.Vector2() } });
-  const 糊 = 新全屏(糊片元, { tSrc: { value: null }, dir: { value: new THREE.Vector2() } });
-  const 合 = 新全屏(合成片元, {
+  const pingPongLayers = Array.from({ length: 6 }, () => [new THREE.WebGLRenderTarget(1, 1, floatOpts), new THREE.WebGLRenderTarget(1, 1, floatOpts)] as const);
+  const particleSource = new THREE.WebGLRenderTarget(1, 1, floatOpts);
+  const brightPass = newFullscreen(brightFrag, { tSrc: { value: null }, tAdd: { value: null }, addK: { value: 0 }, texel: { value: new THREE.Vector2() }, threshold: { value: 1 }, knee: { value: 0.2 } });
+  const downscale = newFullscreen(shrinkFrag, { tSrc: { value: null }, texel: { value: new THREE.Vector2() } });
+  const blurPass = newFullscreen(blurFrag, { tSrc: { value: null }, dir: { value: new THREE.Vector2() } });
+  const composite = newFullscreen(compositeFragment, {
     tColor: { value: null },
     tB0: { value: null },
     tB1: { value: null },
@@ -280,7 +280,7 @@ const 建资源 = () => {
     tSun: { value: null },
     sunMin: { value: new THREE.Vector2() },
     sunN: { value: 1 },
-    sunBody: { value: 本体边 },
+    sunBody: { value: sunBodyLength },
     haloCol: { value: new THREE.Color() },
     zenCol: { value: new THREE.Color() },
     zenK: { value: 0 },
@@ -292,169 +292,169 @@ const 建资源 = () => {
   });
   // 几何罩只写起点、导数、法线和朝光标记，不带 BVH 求交。中心射线单放全屏遍，避免求交和场景材质一起编译、执行。
   // 三张 32 位浮点保持原来的几何精度；中心可见度只有 0/1，用 RGBA8。抗锯齿的 k/8 用半精度可以精确表示。
-  const 罩 = new THREE.WebGLRenderTarget(1, 1, { count: 3, format: THREE.RGBAFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
-  const 抗 = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
-  const 光线 = 新光线资源();
-  const 中心图 = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
-  const 罩图 = { gyRtA: { value: 罩.textures[0] }, gyRtB: { value: 罩.textures[1] }, gyRtC: { value: 罩.textures[2] }, gyRtCenterMap: { value: 中心图.texture } };
-  const 中心 = 新全屏(中心片元, { ...光线.u, gySun: u.gySun, ...罩图 });
-  const 抗分 = 新全屏(抗锯齿分片元, 罩图);
-  Object.assign(抗分.材质, { depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true });
+  const mrtTarget = new THREE.WebGLRenderTarget(1, 1, { count: 3, format: THREE.RGBAFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
+  const antiAlias = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.HalfFloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: true });
+  const rayResources = newRayResources();
+  const centerMap = new THREE.WebGLRenderTarget(1, 1, { type: THREE.UnsignedByteType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false });
+  const maskTextures = { gyRtA: { value: mrtTarget.textures[0] }, gyRtB: { value: mrtTarget.textures[1] }, gyRtC: { value: mrtTarget.textures[2] }, gyRtCenterMap: { value: centerMap.texture } };
+  const center = newFullscreen(centerFrag, { ...rayResources.u, gySun: u.gySun, ...maskTextures });
+  const aaSplit = newFullscreen(aaSplitFrag, maskTextures);
+  Object.assign(aaSplit.material, { depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true });
   // 全屏片的深度是 0.5：第一遍写 0 的（影子边上）才过
   // 不给 gyRtMask：它就是这一遍要画的 抗（着色器里没用到，也不绑，免得读写同一张图）
-  const { gyRtMask: _, ...求交 } = 光线.u;
-  const 抗补 = 新全屏(抗锯齿补片元, { ...求交, gySun: u.gySun, ...罩图 });
-  Object.assign(抗补.材质, { depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
-  return { u, 光线, 罩, 中心图, 中心, 抗, 抗分, 抗补, 影, 影机, 主, 深, 云, 对数深, 水下, 抄水下, 反云, 反云深, 反云空, 反云机, 层, 粒源, 取亮, 缩, 糊, 合, 屏机: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), 清色: new THREE.Color(), 剖面: new THREE.Plane(), 太阳图: 建太阳图() };
+  const { gyRtMask: _, ...rayPassUniforms } = rayResources.u;
+  const aaPatch = newFullscreen(aaPatchFrag, { ...rayPassUniforms, gySun: u.gySun, ...maskTextures });
+  Object.assign(aaPatch.material, { depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: false });
+  return { u, rayResources, mrtTarget, centerMap, 中心: center, antiAlias, aaSplit, aaPatch, shadowMap, shadowCam, 主: mainTarget, depthTarget, cloudTarget, logDepth, underwater, copyUnderwater, reflectCloud, reflectCloudDepth, reflectCloudSky, reflectCloudCam, 层: pingPongLayers, particleSource, brightPass, downscale, blurPass, 合: composite, screenCam: new THREE.OrthographicCamera(), 尺寸: new THREE.Vector2(), clearColor: new THREE.Color(), crossSection: new THREE.Plane(), sunMap: buildSunMap() };
 };
 
 /** 太阳本体（原版 8×8，材质包高清的 8k×8k）进一张小图（第 0 行 = 最下面一行，texelFetch 按画布坐标取）；边 = 本体几个贴图像素；
  *  光圈色 = 本体正上方紧挨着的那一格（同 2D 天 的光圈），画面值。
  *  坑：高清贴图要按 k 倍的格子取；按原版 32×32 的格子取，取到的是本体外面那圈快黑的光晕，太阳整个看不见 */
-const 建太阳图 = () => {
+const buildSunMap = () => {
   const t = png(sunPng);
   const k = Math.max(1, Math.round(t.w / 32));
-  const 边 = 本体边 * k;
-  const 起 = 本体起 * k;
-  const px = new Uint8Array(边 * 边 * 4);
-  for (let y = 0; y < 边; y++)
-    for (let x = 0; x < 边; x++) {
-      const o = ((起 + 边 - 1 - y) * t.w + 起 + x) * 4;
-      px.set(t.px.subarray(o, o + 4), (y * 边 + x) * 4);
+  const side = sunBodyLength * k;
+  const startOffset = sunBodyStart * k;
+  const px = new Uint8Array(side * side * 4);
+  for (let y = 0; y < side; y++)
+    for (let x = 0; x < side; x++) {
+      const o = ((startOffset + side - 1 - y) * t.w + startOffset + x) * 4;
+      px.set(t.px.subarray(o, o + 4), (y * side + x) * 4);
     }
-  const 图 = new THREE.DataTexture(px, 边, 边, THREE.RGBAFormat);
-  图.minFilter = 图.magFilter = THREE.NearestFilter;
-  图.needsUpdate = true;
-  const 晕 = ((起 - 1) * t.w + 16 * k) * 4;
-  return { 图, 边, 晕: new THREE.Color(t.px[晕]! / 255, t.px[晕 + 1]! / 255, t.px[晕 + 2]! / 255) };
+  const sunImage = new THREE.DataTexture(px, side, side, THREE.RGBAFormat);
+  sunImage.minFilter = sunImage.magFilter = THREE.NearestFilter;
+  sunImage.needsUpdate = true;
+  const haloIdx = ((startOffset - 1) * t.w + 16 * k) * 4;
+  return { 图: sunImage, side, halo: new THREE.Color(t.px[haloIdx]! / 255, t.px[haloIdx + 1]! / 255, t.px[haloIdx + 2]! / 255) };
 };
 
-const 释放 = (r: 资源) => {
-  释放光线(r.光线);
-  r.罩.dispose();
-  r.中心图.dispose();
-  r.抗.dispose();
-  for (const x of [r.中心, r.抗分, r.抗补]) {
-    x.材质.dispose();
+const release = (r: Resource) => {
+  releaseRay(r.rayResources);
+  r.mrtTarget.dispose();
+  r.centerMap.dispose();
+  r.antiAlias.dispose();
+  for (const x of [r.中心, r.aaSplit, r.aaPatch]) {
+    x.material.dispose();
     x.片.geometry.dispose();
   }
-  r.影.depthTexture?.dispose();
-  r.影.dispose();
+  r.shadowMap.depthTexture?.dispose();
+  r.shadowMap.dispose();
   r.主.depthTexture?.dispose();
   r.主.dispose();
-  r.深.dispose();
-  r.粒源.dispose();
-  r.云.dispose();
-  r.太阳图.图.dispose();
+  r.depthTarget.dispose();
+  r.particleSource.dispose();
+  r.cloudTarget.dispose();
+  r.sunMap.图.dispose();
   for (const [a, b] of r.层) {
     a.dispose();
     b.dispose();
   }
-  for (const x of [r.取亮, r.缩, r.糊, r.合, r.对数深, r.抄水下]) {
-    x.材质.dispose();
+  for (const x of [r.brightPass, r.downscale, r.blurPass, r.合, r.logDepth, r.copyUnderwater]) {
+    x.material.dispose();
     x.片.geometry.dispose();
   }
 };
 
-const sRGB乘数 = (c: THREE.Color, hex: string, 强 = 1) => c.setStyle(hex, THREE.LinearSRGBColorSpace).multiplyScalar(强);
+const srgbMul = (c: THREE.Color, hex: string, strength = 1) => c.setStyle(hex, THREE.LinearSRGBColorSpace).multiplyScalar(strength);
 
 /** 太阳方向（three 世界，指向太阳）：场景给了用场景的，不然按时段的仰角、方位跟着镜头摆（给了 太阳参照朝向 就跟它，不跟这一帧的镜头） */
-const 太阳方向 = (选: 光影选项, 光: 时段光, camera: THREE.Camera, out: THREE.Vector3) => {
-  if (选.太阳) return out.copy(场景到three(选.太阳)).normalize();
+const sunDirection = (opts: ShadingOptions, timeLight: DaypartLight, camera: THREE.Camera, out: THREE.Vector3) => {
+  if (opts.sun) return out.copy(sceneToThree(opts.sun)).normalize();
   const f = new THREE.Vector3();
-  if (选.太阳参照朝向) f.copy(场景到three(选.太阳参照朝向));
+  if (opts.sunRefDir) f.copy(sceneToThree(opts.sunRefDir));
   else camera.getWorldDirection(f);
   f.y = 0;
   if (f.lengthSq() < 1e-6) f.set(0, 0, -1);
   f.normalize();
   // 从镜头那边照过去：太阳在镜头背后，方位往右偏
-  const 方 = Math.PI + (光.太阳方位 * Math.PI) / 180;
-  const 仰 = (光.太阳仰角 * Math.PI) / 180;
-  const h = f.applyAxisAngle(new THREE.Vector3(0, 1, 0), -方);
-  return out.set(h.x * Math.cos(仰), Math.sin(仰), h.z * Math.cos(仰)).normalize();
+  const azimuth = Math.PI + (timeLight.sunAzimuth * Math.PI) / 180;
+  const sunElevation = (timeLight.sunElevation * Math.PI) / 180;
+  const h = f.applyAxisAngle(new THREE.Vector3(0, 1, 0), -azimuth);
+  return out.set(h.x * Math.cos(sunElevation), Math.sin(sunElevation), h.z * Math.cos(sunElevation)).normalize();
 };
 
 /** 镜头的近裁剪面（世界坐标，镜头看得见的那一边为正）：剖面镜头的近裁剪面放在看点前面 剖 格（机位.tsx） */
-const 近裁剪面 = (camera: THREE.Camera, out: THREE.Plane) => {
+const nearClipPlane = (camera: THREE.Camera, out: THREE.Plane) => {
   const f = camera.getWorldDirection(new THREE.Vector3());
   const p = camera.getWorldPosition(new THREE.Vector3()).addScaledVector(f, (camera as THREE.OrthographicCamera).near);
   return out.setFromNormalAndCoplanarPoint(f, p);
 };
 
-const 角点 = (camera: THREE.Camera): THREE.Vector3[] => {
-  const 透视 = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
-  const 点们: THREE.Vector3[] = [];
+const frustumCorners = (camera: THREE.Camera): THREE.Vector3[] => {
+  const isPerspective = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
+  const points: THREE.Vector3[] = [];
   for (const x of [-1, 1])
     for (const y of [-1, 1]) {
-      const 近 = new THREE.Vector3(x, y, -1).applyMatrix4(camera.projectionMatrixInverse).applyMatrix4(camera.matrixWorld);
-      const 远 = new THREE.Vector3(x, y, 1).applyMatrix4(camera.projectionMatrixInverse).applyMatrix4(camera.matrixWorld);
-      if (透视) {
-        const d = 远.clone().sub(近);
-        const 长 = d.length();
-        if (长 > 透视影距) 远.copy(近).addScaledVector(d, 透视影距 / 长);
+      const nearPoint = new THREE.Vector3(x, y, -1).applyMatrix4(camera.projectionMatrixInverse).applyMatrix4(camera.matrixWorld);
+      const farCorner = new THREE.Vector3(x, y, 1).applyMatrix4(camera.projectionMatrixInverse).applyMatrix4(camera.matrixWorld);
+      if (isPerspective) {
+        const d = farCorner.clone().sub(nearPoint);
+        const vecLength = d.length();
+        if (vecLength > perspShadowDist) farCorner.copy(nearPoint).addScaledVector(d, perspShadowDist / vecLength);
       }
-      点们.push(近, 远);
+      points.push(nearPoint, farCorner);
     }
-  return 点们;
+  return points;
 };
 
 /** 摆影子机：受光网格的包围盒和镜头视体（在太阳的视角下）取交，纹素吸附。没有要画影子的东西返回 false。
  *  对齐（光影参数.影子对齐）：影子图的横轴转到画面里最横的那条方块轴（世界 X 或 Z）在太阳视角下的投影上，那个方向的方块边正好落在一行纹素上，投出来是直的；
  *  不对齐时影子图的格子跟着太阳方向随便转，直的屋檐边在影子图里斜穿纹素行、存成台阶，落到被光斜擦的墙上拉长成一排锯齿（用户 11-07 看 2-收集快乐）。
  *  对齐时纹素也按框取到最细（不取 2 的幂） */
-const 摆影子机 = (r: 资源, scene: THREE.Scene, camera: THREE.Camera, L: THREE.Vector3, 受光网格: THREE.Mesh[], 起纹素: number, 对齐 = false) => {
-  const 影子图边 = r.影.width;
-  const 上 = Math.abs(L.y) > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
-  const 视 = 对齐 ? 对齐影子基(camera, L) ?? new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上) : new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), 上);
-  const 逆 = 视.clone().invert();
+const setShadowCam = (r: Resource, scene: THREE.Scene, camera: THREE.Camera, L: THREE.Vector3, litMeshes: THREE.Mesh[], startTexel: number, alignToLight = false) => {
+  const shadowMapSize = r.shadowMap.width;
+  const up = Math.abs(L.y) > 0.99 ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0, 1, 0);
+  const viewMatrix = alignToLight ? alignShadowBase(camera, L) ?? new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), up) : new THREE.Matrix4().lookAt(new THREE.Vector3(0, 0, 0), L.clone().negate(), up);
+  const invMatrix = viewMatrix.clone().invert();
   // 用包围球：方块网格的 CPU 数组上传后就释放，包围盒事后算不出；包围球第一次画（视锥裁剪）之前就算好了
-  const 场盒 = new THREE.Box3();
-  const 球 = new THREE.Sphere();
-  for (const m of 受光网格) {
-    const 原球 = (m as THREE.Mesh & { boundingSphere?: THREE.Sphere | null }).boundingSphere ?? 包围球(m.geometry);
-    if (!原球) continue;
-    球.copy(原球).applyMatrix4(m.matrixWorld).applyMatrix4(逆);
-    场盒.expandByPoint(球.center.clone().addScalar(-球.radius)).expandByPoint(球.center.clone().addScalar(球.radius));
+  const sceneBox = new THREE.Box3();
+  const worldSphere = new THREE.Sphere();
+  for (const m of litMeshes) {
+    const origSphere = (m as THREE.Mesh & { boundingSphere?: THREE.Sphere | null }).boundingSphere ?? boundingSphere(m.geometry);
+    if (!origSphere) continue;
+    worldSphere.copy(origSphere).applyMatrix4(m.matrixWorld).applyMatrix4(invMatrix);
+    sceneBox.expandByPoint(worldSphere.center.clone().addScalar(-worldSphere.radius)).expandByPoint(worldSphere.center.clone().addScalar(worldSphere.radius));
   }
-  if (场盒.isEmpty()) return false;
-  const 视盒 = new THREE.Box3();
-  for (const q of 角点(camera)) 视盒.expandByPoint(q.applyMatrix4(逆));
-  const x0 = Math.max(场盒.min.x, 视盒.min.x), x1 = Math.min(场盒.max.x, 视盒.max.x);
-  const y0 = Math.max(场盒.min.y, 视盒.min.y), y1 = Math.min(场盒.max.y, 视盒.max.y);
+  if (sceneBox.isEmpty()) return false;
+  const viewBox = new THREE.Box3();
+  for (const q of frustumCorners(camera)) viewBox.expandByPoint(q.applyMatrix4(invMatrix));
+  const x0 = Math.max(sceneBox.min.x, viewBox.min.x), x1 = Math.min(sceneBox.max.x, viewBox.max.x);
+  const y0 = Math.max(sceneBox.min.y, viewBox.min.y), y1 = Math.min(sceneBox.max.y, viewBox.max.y);
   if (x0 >= x1 || y0 >= y1) return false;
   // 纹素：起纹素起，框装不下就翻倍
-  let 纹素 = 起纹素;
-  while (Math.max(x1 - x0, y1 - y0) + 2 > 影子图边 * 纹素) 纹素 *= 2;
-  if (对齐) 纹素 = Math.max(起纹素, (Math.max(x1 - x0, y1 - y0) + 2) / 影子图边);
-  const 半 = (影子图边 * 纹素) / 2;
-  const 吸 = (v: number) => Math.round(v / 纹素) * 纹素;
-  const cx = 吸((x0 + x1) / 2), cy = 吸((y0 + y1) / 2);
-  const 机 = r.影机;
-  机.matrixAutoUpdate = false;
-  机.matrix.copy(视);
-  机.matrixWorld.copy(视);
-  机.matrixWorldInverse.copy(逆);
+  let texel = startTexel;
+  while (Math.max(x1 - x0, y1 - y0) + 2 > shadowMapSize * texel) texel *= 2;
+  if (alignToLight) texel = Math.max(startTexel, (Math.max(x1 - x0, y1 - y0) + 2) / shadowMapSize);
+  const halfExtent = (shadowMapSize * texel) / 2;
+  const snap = (v: number) => Math.round(v / texel) * texel;
+  const cx = snap((x0 + x1) / 2), cy = snap((y0 + y1) / 2);
+  const shadowCamera = r.shadowCam;
+  shadowCamera.matrixAutoUpdate = false;
+  shadowCamera.matrix.copy(viewMatrix);
+  shadowCamera.matrixWorld.copy(viewMatrix);
+  shadowCamera.matrixWorldInverse.copy(invMatrix);
   // 光的视空间里 z 越大越靠太阳；正交机看 −z，near/far 是到 −z 方向的距离
-  Object.assign(机, { left: cx - 半, right: cx + 半, bottom: cy - 半, top: cy + 半, near: -场盒.max.z - 1, far: -场盒.min.z + 1 });
-  机.updateProjectionMatrix();
-  r.u.gyShadowMat.value.multiplyMatrices(机.projectionMatrix, 逆);
-  r.u.gyShadowBias.value = Math.max(0.03, 纹素 * 1.5);
+  Object.assign(shadowCamera, { left: cx - halfExtent, right: cx + halfExtent, bottom: cy - halfExtent, top: cy + halfExtent, near: -sceneBox.max.z - 1, far: -sceneBox.min.z + 1 });
+  shadowCamera.updateProjectionMatrix();
+  r.u.gyShadowMat.value.multiplyMatrices(shadowCamera.projectionMatrix, invMatrix);
+  r.u.gyShadowBias.value = Math.max(0.03, texel * 1.5);
   return true;
 };
 
 /** 影子机的朝向：z = 指向太阳，x = 画面横向最接近的那条水平方块轴（世界 X 或 Z）去掉太阳方向的分量，y = z × x。太阳正对那条轴（投影退化）时返回 null */
-const 对齐影子基 = (camera: THREE.Camera, L: THREE.Vector3) => {
-  const 横 = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
-  const 轴 = Math.abs(横.x) >= Math.abs(横.z) ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+const alignShadowBase = (camera: THREE.Camera, L: THREE.Vector3) => {
+  const cameraRight = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0);
+  const axis = Math.abs(cameraRight.x) >= Math.abs(cameraRight.z) ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
   const z = L.clone().normalize();
-  const x = 轴.addScaledVector(z, -轴.dot(z));
+  const x = axis.addScaledVector(z, -axis.dot(z));
   if (x.lengthSq() < 1e-4) return null;
   x.normalize();
   const y = new THREE.Vector3().crossVectors(z, x);
   return new THREE.Matrix4().makeBasis(x, y, z);
 };
 
-const 包围球 = (g: THREE.BufferGeometry): THREE.Sphere | null => {
+const boundingSphere = (g: THREE.BufferGeometry): THREE.Sphere | null => {
   if (!g.boundingSphere) {
     try {
       g.computeBoundingSphere();
@@ -466,124 +466,124 @@ const 包围球 = (g: THREE.BufferGeometry): THREE.Sphere | null => {
 };
 
 /** 只挡光（./只挡光.tsx）组里的网格 */
-const 在挡光组 = (o: THREE.Object3D) => {
+const inBlockerGroup = (o: THREE.Object3D) => {
   for (let p: THREE.Object3D | null = o; p; p = p.parent) if (p.userData.只挡光) return true;
   return false;
 };
 
-const 收受光网格 = (scene: THREE.Scene) => {
-  const 受光: THREE.Mesh[] = [];
-  const 别的: THREE.Object3D[] = [];
+const collectLitMeshes = (scene: THREE.Scene) => {
+  const litMeshes: THREE.Mesh[] = [];
+  const others: THREE.Object3D[] = [];
   scene.traverseVisible((o) => {
     const mesh = o as THREE.Mesh;
     if (mesh.isMesh) {
       const ms = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-      if (ms.some(平涂受光) || 在挡光组(mesh)) 受光.push(mesh);
-      else 别的.push(o);
-    } else if ((o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite) 别的.push(o);
+      if (ms.some(isFlatLit) || inBlockerGroup(mesh)) litMeshes.push(mesh);
+      else others.push(o);
+    } else if ((o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite) others.push(o);
   });
-  return { 受光, 别的 };
+  return { litMeshes, others };
 };
 
 /** 同一镜头先写几何罩；别的材质只写深度，挡住后面的受光面。随后独立算中心可见度、同面边检测、边上补 8 条。
  *  中心射线和补采样都不进场景材质：不改变采样位置和判边，只隔离 BVH 的着色器开销；主画面仍按像素取最终可见度。 */
-const 画罩 = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, r: 资源, u: 光影统一量, w: number, h: number) => {
-  设尺寸(r.罩, w, h);
-  设尺寸(r.抗, w, h);
-  设尺寸(r.中心图, w, h);
-  const 还原: (() => void)[] = [];
-  const 关色 = new Set<THREE.Material>();
-  const 换 = (m: THREE.Material) => {
-    if (平涂受光(m) && 光线主模式(m) === '主') return 取光线变体(m, u, r.光线.u, '罩');
-    关色.add(m);
+const drawMask = (gl: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera, r: Resource, u: ShadingUniforms, w: number, h: number) => {
+  setSize(r.mrtTarget, w, h);
+  setSize(r.antiAlias, w, h);
+  setSize(r.centerMap, w, h);
+  const restores: (() => void)[] = [];
+  const colorOffSet = new Set<THREE.Material>();
+  const swapMaterial = (m: THREE.Material) => {
+    if (isFlatLit(m) && rayMainMode(m) === '主') return getRayVariant(m, u, r.rayResources.u, '罩');
+    colorOffSet.add(m);
     return m;
   };
   scene.traverse((o) => {
     const mesh = o as THREE.Mesh;
-    const 原 = mesh.material as THREE.Material | THREE.Material[] | undefined;
-    if (!原) return;
+    const originalMaterial = mesh.material as THREE.Material | THREE.Material[] | undefined;
+    if (!originalMaterial) return;
     // 点、线、精灵也只写深度
     if (!mesh.isMesh) {
-      for (const m of Array.isArray(原) ? 原 : [原]) 关色.add(m);
+      for (const m of Array.isArray(originalMaterial) ? originalMaterial : [originalMaterial]) colorOffSet.add(m);
       return;
     }
-    mesh.material = Array.isArray(原) ? 原.map(换) : 换(原);
-    还原.push(() => (mesh.material = 原));
+    mesh.material = Array.isArray(originalMaterial) ? originalMaterial.map(swapMaterial) : swapMaterial(originalMaterial);
+    restores.push(() => (mesh.material = originalMaterial));
   });
-  const 原色写 = [...关色].map((m) => [m, m.colorWrite] as const);
-  for (const m of 关色) m.colorWrite = false;
-  const 背景 = scene.background;
+  const origColorWrite = [...colorOffSet].map((m) => [m, m.colorWrite] as const);
+  for (const m of colorOffSet) m.colorWrite = false;
+  const savedBackground = scene.background;
   scene.background = null;
   // 清成全 0（调用处清色已设成 0、透明）：没画东西的像素导数是 0，抗锯齿那遍据此跳过
-  gl.setRenderTarget(r.罩);
+  gl.setRenderTarget(r.mrtTarget);
   gl.clear(true, true, true);
   gl.render(scene, camera);
-  scene.background = 背景;
-  for (const [m, c] of 原色写) m.colorWrite = c;
-  还原.forEach((f) => f());
-  gl.setRenderTarget(r.中心图);
-  gl.render(r.中心.场, r.屏机);
-  gl.setRenderTarget(r.抗);
+  scene.background = savedBackground;
+  for (const [m, c] of origColorWrite) m.colorWrite = c;
+  restores.forEach((f) => f());
+  gl.setRenderTarget(r.centerMap);
+  gl.render(r.中心.场, r.screenCam);
+  gl.setRenderTarget(r.antiAlias);
   gl.clear(true, true, false);
-  const 自动清 = gl.autoClear;
+  const autoClear = gl.autoClear;
   gl.autoClear = false;
-  gl.render(r.抗分.场, r.屏机);
-  gl.render(r.抗补.场, r.屏机);
-  gl.autoClear = 自动清;
-  r.光线.u.gyRtMask.value = r.抗.texture;
+  gl.render(r.aaSplit.场, r.screenCam);
+  gl.render(r.aaPatch.场, r.screenCam);
+  gl.autoClear = autoClear;
+  r.rayResources.u.gyRtMask.value = r.antiAlias.texture;
 };
 
 /** 泛光六层叠回去的权重：窄（泛光.宽 = 0）只用前四层，宽（= 1）往粗的层挪 */
-const 窄权 = [0.4, 0.3, 0.2, 0.1, 0, 0];
-const 宽权 = [0.1, 0.12, 0.16, 0.2, 0.22, 0.2];
+const narrowWeights = [0.4, 0.3, 0.2, 0.1, 0, 0];
+const wideWeights = [0.1, 0.12, 0.16, 0.2, 0.22, 0.2];
 
 /** 看得见的粒子面片（单一材质） */
-const 收粒子 = (scene: THREE.Scene) => {
-  const 们: THREE.Mesh[] = [];
+const collectParticles = (scene: THREE.Scene) => {
+  const meshes: THREE.Mesh[] = [];
   scene.traverseVisible((o) => {
     const m = o as THREE.Mesh;
-    if (m.isMesh && !Array.isArray(m.material) && 是粒子材质(m.material)) 们.push(m);
+    if (m.isMesh && !Array.isArray(m.material) && isParticleMaterial(m.material)) meshes.push(m);
   });
-  return 们;
+  return meshes;
 };
 
 /** 粒子照亮的光源：粒子按 并格 格见方的格子并成团（颜色 × 不透明度加起来、位置按亮度平均），取最亮的几团。
  *  一团的颜色 = 平均颜色 × 强 × √(粒子数 / 满团)，封到 满团 个粒子：火花多的一团亮一些，但不按个数线性翻上去 */
-const 并格 = 6;
-const 满团 = 60;
+const cellGroupSize = 6;
+const fullClusterCount = 60;
 /** 补光进统一量：方向光的方向、点光的位置换到 three 世界；'镜头' 取镜头朝向反过来、往上抬 20°。要在日光、阴影摆好之后调（受光减影子 要用） */
-const 摆补光 = (u: 光影统一量, 们: readonly 补光[], camera: THREE.Camera) => {
-  if (们.length > 最多补光) throw new Error(`补光最多 ${最多补光} 盏，给了 ${们.length} 盏`);
-  u.gyFillN.value = 们.length;
-  们.forEach((b, i) => {
+const setFillLights = (u: ShadingUniforms, lights: readonly FillLight[], camera: THREE.Camera) => {
+  if (lights.length > MAX_FILL_LIGHTS) throw new Error(`补光最多 ${MAX_FILL_LIGHTS} 盏，给了 ${lights.length} 盏`);
+  u.gyFillN.value = lights.length;
+  lights.forEach((b, i) => {
     const p = u.gyFillPos.value[i];
     if (b.位置) {
-      p.copy(场景到three(b.位置));
-      u.gyFillR.value[i] = b.半径 ?? 8;
+      p.copy(sceneToThree(b.位置));
+      u.gyFillR.value[i] = b.radius ?? 8;
     } else {
-      if (b.方向 === '镜头' || !b.方向) {
+      if (b.lightDir === '镜头' || !b.lightDir) {
         camera.getWorldDirection(p).negate();
-        const 抬 = (20 * Math.PI) / 180;
+        const elevationRad = (20 * Math.PI) / 180;
         p.y = Math.max(p.y, 0);
         const h = Math.hypot(p.x, p.z) || 1;
-        p.set((p.x / h) * Math.cos(抬), Math.sin(抬), (p.z / h) * Math.cos(抬));
-      } else p.copy(场景到three(b.方向));
+        p.set((p.x / h) * Math.cos(elevationRad), Math.sin(elevationRad), (p.z / h) * Math.cos(elevationRad));
+      } else p.copy(sceneToThree(b.lightDir));
       p.normalize();
       u.gyFillR.value[i] = 0;
     }
-    u.gyFillSh.value[i] = b.只补影子里 ? 1 : 0;
+    u.gyFillSh.value[i] = b.fillShadowOnly ? 1 : 0;
     const c = u.gyFillCol.value[i];
     if (b.色 === '受光减影子') {
       c.copy(u.gySunCol.value).sub(u.gyShadeCol.value).multiplyScalar(b.强);
       c.setRGB(Math.max(c.r, 0), Math.max(c.g, 0), Math.max(c.b, 0));
-    } else sRGB乘数(c, b.色, b.强);
+    } else srgbMul(c, b.色, b.强);
   });
 };
 
-const 摆粒子光 = (u: 光影统一量, 们: THREE.Mesh[], 半径: number, 强: number) => {
-  const 团 = new Map<string, { p: THREE.Vector3; c: THREE.Color; w: number; n: number }>();
+const setParticleLights = (u: ShadingUniforms, meshes: THREE.Mesh[], radius: number, strength: number) => {
+  const cluster = new Map<string, { p: THREE.Vector3; c: THREE.Color; w: number; n: number }>();
   const v = new THREE.Vector3();
-  for (const m of 们) {
+  for (const m of meshes) {
     const g = m.geometry as THREE.InstancedBufferGeometry;
     const pc = g.getAttribute('iCenter') as THREE.BufferAttribute | undefined;
     const cc = g.getAttribute('iColor') as THREE.BufferAttribute | undefined;
@@ -592,8 +592,8 @@ const 摆粒子光 = (u: 光影统一量, 们: THREE.Mesh[], 半径: number, 强
       const a = cc.getW(i);
       if (a <= 0) continue;
       v.fromBufferAttribute(pc, i).applyMatrix4(m.matrixWorld);
-      const k = `${Math.floor(v.x / 并格)},${Math.floor(v.y / 并格)},${Math.floor(v.z / 并格)}`;
-      const e = 团.get(k) ?? 团.set(k, { p: new THREE.Vector3(), c: new THREE.Color(0, 0, 0), w: 0, n: 0 }).get(k)!;
+      const k = `${Math.floor(v.x / cellGroupSize)},${Math.floor(v.y / cellGroupSize)},${Math.floor(v.z / cellGroupSize)}`;
+      const e = cluster.get(k) ?? cluster.set(k, { p: new THREE.Vector3(), c: new THREE.Color(0, 0, 0), w: 0, n: 0 }).get(k)!;
       const r = cc.getX(i) * a, gg = cc.getY(i) * a, b = cc.getZ(i) * a;
       const l = r * 0.2126 + gg * 0.7152 + b * 0.0722 + 1e-4;
       e.p.addScaledVector(v, l);
@@ -604,21 +604,21 @@ const 摆粒子光 = (u: 光影统一量, 们: THREE.Mesh[], 半径: number, 强
       e.n += a;
     }
   }
-  const 排 = [...团.values()].sort((x, y) => y.w - x.w).slice(0, 最多粒子光);
-  u.gyFlashN.value = 排.length;
-  u.gyFlashR.value = 半径;
-  排.forEach((e, i) => {
+  const topLights = [...cluster.values()].sort((x, y) => y.w - x.w).slice(0, MAX_PARTICLE_LIGHTS);
+  u.gyFlashN.value = topLights.length;
+  u.gyFlashR.value = radius;
+  topLights.forEach((e, i) => {
     u.gyFlashPos.value[i]!.copy(e.p).divideScalar(e.w);
-    u.gyFlashCol.value[i]!.copy(e.c).multiplyScalar((强 / e.n) * Math.sqrt(Math.min(e.n, 满团) / 满团));
+    u.gyFlashCol.value[i]!.copy(e.c).multiplyScalar((strength / e.n) * Math.sqrt(Math.min(e.n, fullClusterCount) / fullClusterCount));
   });
 };
 
 /** 像素格光晕的格子（画布像素）和格线起点：正交镜头取 1/16 格在屏幕上的大小、格线对上世界原点；透视镜头按 6 个成片像素 */
-const 光晕格 = (camera: THREE.Camera, w: number, h: number, 成片宽: number, out: THREE.Vector2) => {
+const glowCell = (camera: THREE.Camera, w: number, h: number, filmWidth: number, out: THREE.Vector2) => {
   const o = camera as THREE.OrthographicCamera;
   if (!o.isOrthographicCamera) {
     out.set(0, 0);
-    return Math.max(1, Math.round((6 * w) / 成片宽));
+    return Math.max(1, Math.round((6 * w) / filmWidth));
   }
   const n = ((h / ((o.top - o.bottom) / o.zoom)) / 16);
   const p = new THREE.Vector3(0, 0, 0).project(camera);
@@ -626,337 +626,337 @@ const 光晕格 = (camera: THREE.Camera, w: number, h: number, 成片宽: number
   return n;
 };
 
-const 设尺寸 = (rt: THREE.WebGLRenderTarget, w: number, h: number) => {
+const setSize = (rt: THREE.WebGLRenderTarget, w: number, h: number) => {
   if (rt.width !== w || rt.height !== h) rt.setSize(w, h);
 };
 
-export type 光影渲染属性 = {
+export type ShadingRenderProps = {
   /** 已经合上场景给的事实（预设.ts 的 合光影） */
-  选项: 光影选项;
+  options: ShadingOptions;
   /** 平涂色调：没给时段时拿它猜 */
-  色调?: string;
+  tint?: string;
 };
 
-export const 光影渲染: React.FC<光影渲染属性> = ({ 选项, 色调 }) => {
+export const ShadingRender: React.FC<ShadingRenderProps> = ({ options, tint }) => {
   // 水面波纹的时间取画面秒数（每帧单独算）
-  const { width: 成片宽 } = useVideoConfig();
-  const 秒 = use当前秒();
-  const r = useMemo(建资源, []);
-  useEffect(() => () => 释放(r), [r]);
+  const { width: filmWidth } = useVideoConfig();
+  const sec = useCurrentSec();
+  const r = useMemo(buildResources, []);
+  useEffect(() => () => release(r), [r]);
   // 云的着色器（按配置拼的一大段）趁取素材的时候并行先编（用户 11-04 定 A4），编完才放行截图；不然头一帧画的时候才同步编
   const gl = useThree((s) => s.gl);
-  const 云键 = 光影画云(选项) && 选项.云 ? JSON.stringify(选项.云) : '';
+  const cloudKey = shadingDrawsCloud(options) && options.cloud ? JSON.stringify(options.cloud) : '';
   useEffect(() => {
-    if (!云键 || !选项.云) return;
-    const 手 = delayRender('云的着色器');
-    预编云(gl, 选项.云, 选项.云.海平面 ?? 0).then(() => continueRender(手), (e) => cancelRender(e));
-  }, [gl, 云键]);
+    if (!cloudKey || !options.cloud) return;
+    const renderHandle = delayRender('云的着色器');
+    precompileClouds(gl, options.cloud, options.cloud.海平面 ?? 0).then(() => continueRender(renderHandle), (e) => cancelRender(e));
+  }, [gl, cloudKey]);
   useFrame(({ gl, scene, camera }) => {
     // 世界矩阵 three 在 gl.render 里才更新，下面摆影子机、摆粒子光先要用：不先更新就拿上一次画的（刚挂上的网格还是单位阵），
     // 同一帧单独渲和接在别的帧后面渲出来不一样（2-截图下线 第 163 帧逐像素对不上查出来的）
     scene.updateMatrixWorld();
     camera.updateMatrixWorld();
     // GPU 天色图换了太阳要先画好：水面（第 2 步）、云、合成都取它
-    备天色图(gl);
-    const 参 = 取光影参数(选项.预设);
-    const 段 = 选项.时段 ?? 猜时段(色调);
-    const 光 = 参[段];
+    prepareSkyColorMap(gl);
+    const shadingParams = getShadingParams(options.preset);
+    const timeOfDay = options.timeOfDay ?? guessDaypart(tint);
+    const timeLight = shadingParams[timeOfDay];
     const u = r.u;
-    太阳方向(选项, 光, camera, u.gySun.value);
+    sunDirection(options, timeLight, camera, u.gySun.value);
     // 基准亮度：受光、影子、灯、粒子照的光一起乘（发光区不乘），不给是 1
-    const 基 = 选项.基准亮度 ?? 1;
-    sRGB乘数(u.gySunCol.value, 光.日光, 光.日光强 * 基);
-    sRGB乘数(u.gyShadeCol.value, 光.阴影, 光.阴影强 * 基);
-    if (选项.光强 !== undefined) u.gySunCol.value.lerp(u.gyShadeCol.value, 1 - 选项.光强);
-    u.gyDirK.value = 光.朝向;
-    u.gyFaceK.value = 光.面明暗;
-    u.gyGlowK.value = 光.发光强;
-    u.gyLampR.value = 光.灯照.半径;
-    sRGB乘数(u.gyLampCol.value, 光.灯照.色, 光.灯照.强 * 基);
-    u.gyPixel.value = 参.像素阴影 ? 1 : 0;
-    const 影边 = 参.影子图边 ?? 默认影子图边;
-    if (r.影.width !== 影边) r.影.setSize(影边, 影边);
-    u.gyShadowFilter.value = !参.像素阴影 && 参.影子过滤 ? 1 / 影边 : 0;
-    u.gyTime.value = 秒;
-    const 水 = 选项.水 ?? '原版贴图';
-    const 改水 = 水 !== '原版贴图';
-    u.gyWaterPix.value = 水 === '像素波纹' || 水 === 'FFT像素' ? 1 : 0;
-    u.gyWaterMode.value = 水 === '像素波纹' ? 1 : 水 === 'Photon波纹' ? 2 : 水 === 'FFT海' || 水 === 'FFT像素' ? 3 : 0;
-    u.gyWaveK.value = 选项.水浪强 ?? 1;
-    const 散 = 选项.水散射;
-    u.gyScatOn.value = 散 ? 1 : 0;
-    if (散) {
-      u.gyScat.value.setRGB(...(散.色 ?? [0, 0.05, 0.08]), THREE.LinearSRGBColorSpace);
-      u.gySSS.value.set(1.6 * (散.透光 ?? 1), 0.06 * (散.透光 ?? 1), 0.05 * (散.透光 ?? 1));
+    const baseBrightness = options.baseBrightness ?? 1;
+    srgbMul(u.gySunCol.value, timeLight.sunColor, timeLight.sunIntensity * baseBrightness);
+    srgbMul(u.gyShadeCol.value, timeLight.shadowColor, timeLight.shadowStrength * baseBrightness);
+    if (options.lightIntensity !== undefined) u.gySunCol.value.lerp(u.gyShadeCol.value, 1 - options.lightIntensity);
+    u.gyDirK.value = timeLight.facing;
+    u.gyFaceK.value = timeLight.faceShadeK;
+    u.gyGlowK.value = timeLight.glowStrength;
+    u.gyLampR.value = timeLight.lampLight.radius;
+    srgbMul(u.gyLampCol.value, timeLight.lampLight.色, timeLight.lampLight.强 * baseBrightness);
+    u.gyPixel.value = shadingParams.pixelShadow ? 1 : 0;
+    const shadowSize = shadingParams.shadowMapSize ?? DEFAULT_SHADOW_MAP_SIZE;
+    if (r.shadowMap.width !== shadowSize) r.shadowMap.setSize(shadowSize, shadowSize);
+    u.gyShadowFilter.value = !shadingParams.pixelShadow && shadingParams.shadowFilter ? 1 / shadowSize : 0;
+    u.gyTime.value = sec;
+    const waterStyle = options.水 ?? '原版贴图';
+    const changeWater = waterStyle !== '原版贴图';
+    u.gyWaterPix.value = waterStyle === '像素波纹' || waterStyle === 'FFT像素' ? 1 : 0;
+    u.gyWaterMode.value = waterStyle === '像素波纹' ? 1 : waterStyle === 'Photon波纹' ? 2 : waterStyle === 'FFT海' || waterStyle === 'FFT像素' ? 3 : 0;
+    u.gyWaveK.value = options.waveStrength ?? 1;
+    const waterScatter = options.waterScatter;
+    u.gyScatOn.value = waterScatter ? 1 : 0;
+    if (waterScatter) {
+      u.gyScat.value.setRGB(...(waterScatter.色 ?? [0, 0.05, 0.08]), THREE.LinearSRGBColorSpace);
+      u.gySSS.value.set(1.6 * (waterScatter.transmission ?? 1), 0.06 * (waterScatter.transmission ?? 1), 0.05 * (waterScatter.transmission ?? 1));
     }
-    u.gyThruOn.value = 散 && 选项.水透 ? 1 : 0;
-    u.gyLinMix.value = 选项.水线性混 ? 1 : 0;
-    if (散 && 选项.水透) u.gyAtt.value.set(...(选项.水透.衰减 ?? [0.46, 0.07, 0.025]));
-    u.gyFarR.value = 选项.水远?.远 ?? 0;
-    u.gyHaze.value = 选项.水远?.雾 ?? 0;
-    u.gyEdgeFlat.value = 选项.水远?.边平 ? 1 : 0;
-    if (u.gyWaterMode.value === 3) 备FFT海(gl, u, 秒, 选项.水风速 ?? 5, 选项.水涌浪 ?? 0.7);
-    sRGB乘数(u.gyZenith.value, 选项.水天顶 ?? 光.水.天顶);
-    u.gyRefl.value = 光.水.反射;
-    sRGB乘数(u.gyGlintCol.value, 光.水.碎光色, 光.水.碎光强);
-    sRGB乘数(u.gyWaterBody.value, 选项.水体 ?? 光.水.水体);
-    u.gyReflMin.value = 光.水.近反射;
-    const 透视 = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
-    const 画天 = 选项.天 === 'Photon平滑' && 透视 && atmosphere.sky !== null;
-    const 画云 = 画天 && 光影画云(选项) && atmosphere.clouds !== null;
-    const 光照 = 选项.光照 !== false;
-    u.gyAtmoOn.value = 画天 ? 1 : 0;
+    u.gyThruOn.value = waterScatter && options.seeThrough ? 1 : 0;
+    u.gyLinMix.value = options.waterLinearMix ? 1 : 0;
+    if (waterScatter && options.seeThrough) u.gyAtt.value.set(...(options.seeThrough.attenuation ?? [0.46, 0.07, 0.025]));
+    u.gyFarR.value = options.waterFar?.farDist ?? 0;
+    u.gyHaze.value = options.waterFar?.fog ?? 0;
+    u.gyEdgeFlat.value = options.waterFar?.edgeFlat ? 1 : 0;
+    if (u.gyWaterMode.value === 3) prepFftSea(gl, u, sec, options.waterWindSpeed ?? 5, options.waterSwell ?? 0.7);
+    srgbMul(u.gyZenith.value, options.waterZenith ?? timeLight.水.zenithColor);
+    u.gyRefl.value = timeLight.水.reflectivity;
+    srgbMul(u.gyGlintCol.value, timeLight.水.glintColor, timeLight.水.glintStrength);
+    srgbMul(u.gyWaterBody.value, options.waterBodyColor ?? timeLight.水.waterBodyColor);
+    u.gyReflMin.value = timeLight.水.nearReflect;
+    const isPerspective = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
+    const drawSky = options.天 === 'Photon平滑' && isPerspective && atmosphere.sky !== null;
+    const drawClouds = drawSky && shadingDrawsCloud(options) && atmosphere.clouds !== null;
+    const lightingEnabled = options.lighting !== false;
+    u.gyAtmoOn.value = drawSky ? 1 : 0;
     u.gyAtmoSky.value = atmosphere.sky;
-    const 顶 = 选项.天顶;
-    sRGB乘数(u.gyZenCol.value, 顶?.色 ?? '#000000');
-    u.gyZenK.value = 顶 ? 顶.拉 : 0;
-    u.gyZenH.value = Math.sin(((顶?.高 ?? 38) * Math.PI) / 180);
-    const 粒子们 = 光.粒子晕 > 0 || 选项.粒子照亮 ? 收粒子(scene) : [];
+    const topZenith = options.zenith;
+    srgbMul(u.gyZenCol.value, topZenith?.色 ?? '#000000');
+    u.gyZenK.value = topZenith ? topZenith.stretch : 0;
+    u.gyZenH.value = Math.sin(((topZenith?.高 ?? 38) * Math.PI) / 180);
+    const particles = timeLight.particleGlow > 0 || options.particleLit ? collectParticles(scene) : [];
     u.gyFlashN.value = 0;
-    if (选项.粒子照亮 && 光.粒子照.强 > 0) 摆粒子光(u, 粒子们, 光.粒子照.半径, 光.粒子照.强 * 基);
-    摆补光(u, 选项.补光 ?? [], camera);
+    if (options.particleLit && timeLight.particleLight.强 > 0) setParticleLights(u, particles, timeLight.particleLight.radius, timeLight.particleLight.强 * baseBrightness);
+    setFillLights(u, options.fillLights ?? [], camera);
 
-    const 背景 = scene.background;
-    const 清透明 = gl.getClearAlpha();
-    gl.getClearColor(r.清色);
+    const savedBackground = scene.background;
+    const clearTransparency = gl.getClearAlpha();
+    gl.getClearColor(r.clearColor);
     gl.setClearColor(0x000000, 0);
 
     // 1. 影子图：只挡光的组（平时藏着）只在这一步露出来
-    const 挡光组: THREE.Object3D[] = [];
+    const blockers: THREE.Object3D[] = [];
     scene.traverse((o) => {
-      if (o.userData.只挡光) 挡光组.push(o);
+      if (o.userData.只挡光) blockers.push(o);
     });
-    for (const o of 挡光组) o.visible = true;
-    const { 受光, 别的 } = 收受光网格(scene);
+    for (const o of blockers) o.visible = true;
+    const { litMeshes, others } = collectLitMeshes(scene);
     u.gyShadowOn.value = 0;
     // 光线影子：不画影子图，挡光的三角形建 BVH（像素阴影开着时照旧走影子图）
-    const 光线 = 光照 && 参.影子算法 === '光线' && !参.像素阴影;
-    if (光线) u.gyShadowOn.value = 受光.length && 摆光线(r.光线, 受光, 选项.剖掉的不挡光 ? 近裁剪面(camera, r.剖面) : null) > 0 ? 1 : 0;
-    else if (光照 && 受光.length && 摆影子机(r, scene, camera, u.gySun.value, 受光, 参.像素阴影 ? 1 / 32 : 1 / 256, !参.像素阴影 && !!参.影子对齐)) {
-      const 藏 = 别的.filter((o) => o.visible);
-      for (const o of 藏) o.visible = false;
+    const rayOn = lightingEnabled && shadingParams.shadowAlgo === '光线' && !shadingParams.pixelShadow;
+    if (rayOn) u.gyShadowOn.value = litMeshes.length && setRayShadow(r.rayResources, litMeshes, options.clipNoBlockLight ? nearClipPlane(camera, r.crossSection) : null) > 0 ? 1 : 0;
+    else if (lightingEnabled && litMeshes.length && setShadowCam(r, scene, camera, u.gySun.value, litMeshes, shadingParams.pixelShadow ? 1 / 32 : 1 / 256, !shadingParams.pixelShadow && !!shadingParams.shadowAlign)) {
+      const hiddenObjects = others.filter((o) => o.visible);
+      for (const o of hiddenObjects) o.visible = false;
       scene.background = null;
-      gl.setRenderTarget(r.影);
+      gl.setRenderTarget(r.shadowMap);
       gl.clear(true, true, true);
-      const 原裁 = gl.clippingPlanes;
-      if (选项.剖掉的不挡光) gl.clippingPlanes = [近裁剪面(camera, r.剖面)];
-      gl.render(scene, r.影机);
-      gl.clippingPlanes = 原裁;
-      scene.background = 背景;
-      for (const o of 藏) o.visible = true;
-      u.gyShadowMap.value = r.影.depthTexture;
+      const origClipPlanes = gl.clippingPlanes;
+      if (options.clipNoBlockLight) gl.clippingPlanes = [nearClipPlane(camera, r.crossSection)];
+      gl.render(scene, r.shadowCam);
+      gl.clippingPlanes = origClipPlanes;
+      scene.background = savedBackground;
+      for (const o of hiddenObjects) o.visible = true;
+      u.gyShadowMap.value = r.shadowMap.depthTexture;
       u.gyShadowOn.value = 1;
     }
-    for (const o of 挡光组) o.visible = false;
+    for (const o of blockers) o.visible = false;
 
     // 2. 主画面
     const [w, h] = gl.getDrawingBufferSize(r.尺寸).toArray();
     u.gyCloudOn.value = 0;
-    if (画云 && 选项.云 && 选项.水反云 && u.gyWaterMode.value > 1.5) 画反射云(gl, r, camera as THREE.PerspectiveCamera, w, h, 选项, 秒);
-    设尺寸(r.主, w, h);
-    if (光线 && u.gyShadowOn.value) 画罩(gl, scene, camera, r, u, w, h);
-    const 还原: (() => void)[] = [];
-    const 水们: THREE.Object3D[] = [];
-    const 换 = (m: THREE.Material) => ((光照 && 平涂受光(m)) || (改水 && 像水(m)) ? (取变体(m, u, 光线 ? r.光线.u : undefined) ?? m) : m);
+    if (drawClouds && options.cloud && options.waterReflectCloud && u.gyWaterMode.value > 1.5) drawReflectCloud(gl, r, camera as THREE.PerspectiveCamera, w, h, options, sec);
+    setSize(r.主, w, h);
+    if (rayOn && u.gyShadowOn.value) drawMask(gl, scene, camera, r, u, w, h);
+    const restores: (() => void)[] = [];
+    const waterMeshes: THREE.Object3D[] = [];
+    const toVariant = (m: THREE.Material) => ((lightingEnabled && isFlatLit(m)) || (changeWater && isWaterLike(m)) ? (getVariant(m, u, rayOn ? r.rayResources.u : undefined) ?? m) : m);
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
-      const 原 = mesh.material;
-      const 新 = Array.isArray(原) ? 原.map(换) : 换(原);
-      if (新 === 原 || (Array.isArray(新) && 新.every((m, i) => m === (原 as THREE.Material[])[i]))) return;
-      mesh.material = 新;
-      还原.push(() => (mesh.material = 原));
-      if (!Array.isArray(原) && 像水(原)) 水们.push(mesh);
-      if (u.gyWaterMode.value > 1.5 && !Array.isArray(原) && 像水(原)) {
-        const 原网格 = mesh.geometry;
-        mesh.geometry = 取起伏网格(原网格, u.gyFarR.value);
+      const originalMaterial = mesh.material;
+      const replaced = Array.isArray(originalMaterial) ? originalMaterial.map(toVariant) : toVariant(originalMaterial);
+      if (replaced === originalMaterial || (Array.isArray(replaced) && replaced.every((m, i) => m === (originalMaterial as THREE.Material[])[i]))) return;
+      mesh.material = replaced;
+      restores.push(() => (mesh.material = originalMaterial));
+      if (!Array.isArray(originalMaterial) && isWaterLike(originalMaterial)) waterMeshes.push(mesh);
+      if (u.gyWaterMode.value > 1.5 && !Array.isArray(originalMaterial) && isWaterLike(originalMaterial)) {
+        const origMesh = mesh.geometry;
+        mesh.geometry = getWaveMesh(origMesh, u.gyFarR.value);
         // 起伏以后包围盒变了，不让 three 按方板的包围盒剔掉
-        const 原剔 = mesh.frustumCulled;
+        const origFrustumCull = mesh.frustumCulled;
         mesh.frustumCulled = false;
-        还原.push(() => {
-          mesh.geometry = 原网格;
-          mesh.frustumCulled = 原剔;
+        restores.push(() => {
+          mesh.geometry = origMesh;
+          mesh.frustumCulled = origFrustumCull;
         });
       }
     });
     gl.setRenderTarget(r.主);
     gl.clear(true, true, true);
-    if (u.gyThruOn.value && 水们.length) {
+    if (u.gyThruOn.value && waterMeshes.length) {
       // 透水：水以外的先画进主画面，抄一份（画面 + 视深）给水面取，再只画水、叠在上面（深度照旧比）
-      for (const o of 水们) o.visible = false;
+      for (const o of waterMeshes) o.visible = false;
       gl.render(scene, camera);
-      for (const o of 水们) o.visible = true;
-      设尺寸(r.水下, w, h);
+      for (const o of waterMeshes) o.visible = true;
+      setSize(r.underwater, w, h);
       const cam = camera as THREE.PerspectiveCamera;
-      Object.assign(r.抄水下.材质.uniforms, { tColor: { value: r.主.texture }, tDepth: { value: r.主.depthTexture }, cNear: { value: cam.near }, cFar: { value: cam.far } });
-      gl.setRenderTarget(r.水下);
-      gl.render(r.抄水下.场, r.屏机);
-      u.gyUnder.value = r.水下.texture;
+      Object.assign(r.copyUnderwater.material.uniforms, { tColor: { value: r.主.texture }, tDepth: { value: r.主.depthTexture }, cNear: { value: cam.near }, cFar: { value: cam.far } });
+      gl.setRenderTarget(r.underwater);
+      gl.render(r.copyUnderwater.场, r.screenCam);
+      u.gyUnder.value = r.underwater.texture;
       u.gyRes.value.set(w, h);
-      const 藏: THREE.Object3D[] = [];
+      const lineSprites: THREE.Object3D[] = [];
       scene.traverseVisible((o) => {
-        if (o !== scene && !水们.includes(o) && ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite)) 藏.push(o);
+        if (o !== scene && !waterMeshes.includes(o) && ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite)) lineSprites.push(o);
       });
-      for (const o of 藏) o.visible = false;
-      const 背 = scene.background;
+      for (const o of lineSprites) o.visible = false;
+      const prevBackground = scene.background;
       scene.background = null;
-      const 清 = gl.autoClear;
+      const savedAutoClear = gl.autoClear;
       gl.autoClear = false;
       gl.setRenderTarget(r.主);
       gl.render(scene, camera);
-      gl.autoClear = 清;
-      scene.background = 背;
-      for (const o of 藏) o.visible = true;
+      gl.autoClear = savedAutoClear;
+      scene.background = prevBackground;
+      for (const o of lineSprites) o.visible = true;
     } else gl.render(scene, camera);
-    还原.forEach((f) => f());
+    restores.forEach((f) => f());
 
     // 3. 泛光
-    if (光.粒子晕 > 0 && 粒子们.length) {
-      设尺寸(r.粒源, w, h);
+    if (timeLight.particleGlow > 0 && particles.length) {
+      setSize(r.particleSource, w, h);
       u.gyDepth.value = r.主.depthTexture;
-      const 藏: THREE.Object3D[] = [];
+      const lineSprites: THREE.Object3D[] = [];
       scene.traverseVisible((o) => {
-        if (o !== scene && !粒子们.includes(o as THREE.Mesh) && ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite)) 藏.push(o);
+        if (o !== scene && !particles.includes(o as THREE.Mesh) && ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite)) lineSprites.push(o);
       });
-      for (const o of 藏) o.visible = false;
-      const 原材: THREE.Material[] = 粒子们.map((m) => m.material as THREE.Material);
-      粒子们.forEach((m, i) => (m.material = 取变体(原材[i]!, u) ?? 原材[i]!));
+      for (const o of lineSprites) o.visible = false;
+      const origMaterials: THREE.Material[] = particles.map((m) => m.material as THREE.Material);
+      particles.forEach((m, i) => (m.material = getVariant(origMaterials[i]!, u) ?? origMaterials[i]!));
       scene.background = null;
-      gl.setRenderTarget(r.粒源);
+      gl.setRenderTarget(r.particleSource);
       gl.clear(true, true, true);
       gl.render(scene, camera);
-      scene.background = 背景;
-      粒子们.forEach((m, i) => (m.material = 原材[i]!));
-      for (const o of 藏) o.visible = true;
+      scene.background = savedBackground;
+      particles.forEach((m, i) => (m.material = origMaterials[i]!));
+      for (const o of lineSprites) o.visible = true;
     }
-    const 自动清 = gl.autoClear;
+    const autoClear = gl.autoClear;
     gl.autoClear = false;
-    const 画 = (x: { 场: THREE.Scene }, 到: THREE.WebGLRenderTarget | null) => {
-      gl.setRenderTarget(到);
-      gl.render(x.场, r.屏机);
+    const renderPass = (x: { 场: THREE.Scene }, renderTarget: THREE.WebGLRenderTarget | null) => {
+      gl.setRenderTarget(renderTarget);
+      gl.render(x.场, r.screenCam);
     };
-    let 源: THREE.Texture = r.主.texture;
+    let textureSource: THREE.Texture = r.主.texture;
     let sw = w, sh = h;
     r.层.forEach(([a, b], i) => {
       const lw = Math.max(1, Math.round(w / 2 ** (i + 1))), lh = Math.max(1, Math.round(h / 2 ** (i + 1)));
-      设尺寸(a, lw, lh);
-      设尺寸(b, lw, lh);
-      const 用 = i === 0 ? r.取亮 : r.缩;
-      用.材质.uniforms.tSrc!.value = 源;
-      (用.材质.uniforms.texel!.value as THREE.Vector2).set(0.5 / sw, 0.5 / sh);
+      setSize(a, lw, lh);
+      setSize(b, lw, lh);
+      const pass = i === 0 ? r.brightPass : r.downscale;
+      pass.material.uniforms.tSrc!.value = textureSource;
+      (pass.material.uniforms.texel!.value as THREE.Vector2).set(0.5 / sw, 0.5 / sh);
       if (i === 0) {
-        用.材质.uniforms.threshold!.value = 光.泛光.阈;
-        用.材质.uniforms.knee!.value = 光.泛光.软;
-        用.材质.uniforms.tAdd!.value = r.粒源.texture;
-        用.材质.uniforms.addK!.value = 粒子们.length ? 光.粒子晕 : 0;
+        pass.material.uniforms.threshold!.value = timeLight.bloom.threshold;
+        pass.material.uniforms.knee!.value = timeLight.bloom.softKnee;
+        pass.material.uniforms.tAdd!.value = r.particleSource.texture;
+        pass.material.uniforms.addK!.value = particles.length ? timeLight.particleGlow : 0;
       }
-      画(用, a);
-      r.糊.材质.uniforms.tSrc!.value = a.texture;
-      (r.糊.材质.uniforms.dir!.value as THREE.Vector2).set(1 / lw, 0);
-      画(r.糊, b);
-      r.糊.材质.uniforms.tSrc!.value = b.texture;
-      (r.糊.材质.uniforms.dir!.value as THREE.Vector2).set(0, 1 / lh);
-      画(r.糊, a);
-      源 = a.texture;
+      renderPass(pass, a);
+      r.blurPass.material.uniforms.tSrc!.value = a.texture;
+      (r.blurPass.material.uniforms.dir!.value as THREE.Vector2).set(1 / lw, 0);
+      renderPass(r.blurPass, b);
+      r.blurPass.material.uniforms.tSrc!.value = b.texture;
+      (r.blurPass.material.uniforms.dir!.value as THREE.Vector2).set(0, 1 / lh);
+      renderPass(r.blurPass, a);
+      textureSource = a.texture;
       sw = lw;
       sh = lh;
     });
 
     // 太阳摆在哪先算好：云要连太阳本体那一块一起算（合成按它上面云的不透明度压暗太阳）
-    const cu = r.合.材质.uniforms;
-    if (画天) 摆太阳(cu, camera, 选项.太阳, w, h, r.太阳图);
+    const cu = r.合.material.uniforms;
+    if (drawSky) setSun(cu, camera, options.sun, w, h, r.sunMap);
 
     // 4. 云
-    if (画云 && 选项.云) {
-      const 机 = camera as THREE.PerspectiveCamera;
-      设尺寸(r.深, w, h);
-      设尺寸(r.云, w, h);
-      const du = r.对数深.材质.uniforms;
+    if (drawClouds && options.cloud) {
+      const perspCamera = camera as THREE.PerspectiveCamera;
+      setSize(r.depthTarget, w, h);
+      setSize(r.cloudTarget, w, h);
+      const du = r.logDepth.material.uniforms;
       du.tDepth!.value = r.主.depthTexture;
-      du.cNear!.value = 机.near;
-      du.cFar!.value = 机.far;
-      画(r.对数深, r.深);
-      gl.setRenderTarget(r.云);
+      du.cNear!.value = perspCamera.near;
+      du.cFar!.value = perspCamera.far;
+      renderPass(r.logDepth, r.depthTarget);
+      gl.setRenderTarget(r.cloudTarget);
       gl.clear(true, true, true);
       const n = cu.sunN!.value as number, b = cu.sunBody!.value as number, m = cu.sunMin!.value as THREE.Vector2;
-      画云层({
+      drawCloudLayer({
         gl,
-        camera: 机,
-        深度: r.深.texture,
-        主画面: r.主.texture,
+        camera: perspCamera,
+        depthTexture: r.depthTarget.texture,
+        mainPicture: r.主.texture,
         宽: w,
         高: h,
-        目标: r.云,
-        配置: 选项.云,
-        场: 选项.云场 ?? {},
-        海平面: 选项.云.海平面 ?? 0,
-        秒,
-        太阳框: cu.sunOn!.value ? [m.x, m.y, n * b, n * b] : null,
+        目标: r.cloudTarget,
+        config: options.cloud,
+        场: options.cloudScene ?? {},
+        海平面: options.cloud.海平面 ?? 0,
+        秒: sec,
+        sunBox: cu.sunOn!.value ? [m.x, m.y, n * b, n * b] : null,
       });
       gl.autoClear = false;
     }
 
     // 5. 合成
-    cu.skyOn!.value = 画天 ? 1 : 0;
-    cu.cloudOn!.value = 画云 ? 1 : 0;
-    cu.tCloud!.value = r.云.texture;
+    cu.skyOn!.value = drawSky ? 1 : 0;
+    cu.cloudOn!.value = drawClouds ? 1 : 0;
+    cu.tCloud!.value = r.cloudTarget.texture;
     cu.atmoSky!.value = atmosphere.sky;
-    if (画天) {
+    if (drawSky) {
       (cu.uInvProj!.value as THREE.Matrix4).copy(camera.projectionMatrixInverse);
       (cu.uCamWorld!.value as THREE.Matrix4).copy(camera.matrixWorld);
       (cu.uCamPos!.value as THREE.Vector3).setFromMatrixPosition(camera.matrixWorld);
     }
     cu.tColor!.value = r.主.texture;
     r.层.forEach(([a], i) => (cu[`tB${i}`]!.value = a.texture));
-    cu.bloom!.value = 光.泛光.强;
-    const 宽 = 光.泛光.宽 ?? 0;
-    cu.bw!.value = 窄权.map((a, i) => a + (宽权[i]! - a) * 宽);
-    cu.sat!.value = 参.调色.饱和;
-    cu.con!.value = 参.调色.对比;
-    sRGB乘数(cu.darkTint!.value as THREE.Color, 参.调色.暗色);
-    sRGB乘数(cu.lightTint!.value as THREE.Color, 参.调色.亮色);
-    cu.split!.value = 参.调色.分离;
+    cu.bloom!.value = timeLight.bloom.强;
+    const bloomWidth = timeLight.bloom.宽 ?? 0;
+    cu.bw!.value = narrowWeights.map((a, i) => a + (wideWeights[i]! - a) * bloomWidth);
+    cu.sat!.value = shadingParams.grade.saturation;
+    cu.con!.value = shadingParams.grade.对比;
+    srgbMul(cu.darkTint!.value as THREE.Color, shadingParams.grade.darkColor);
+    srgbMul(cu.lightTint!.value as THREE.Color, shadingParams.grade.brightColor);
+    cu.split!.value = shadingParams.grade.colorSplit;
     (cu.zenCol!.value as THREE.Color).copy(u.gyZenCol.value);
     cu.zenK!.value = u.gyZenK.value;
     cu.zenH!.value = u.gyZenH.value;
     (cu.res!.value as THREE.Vector2).set(w, h);
-    cu.denseK!.value = 选项.压密光晕 ?? 0;
-    cu.glowCell!.value = 选项.光晕 === '像素格' ? 光晕格(camera, w, h, 成片宽, cu.glowOff!.value as THREE.Vector2) : 0;
-    gl.setClearColor(r.清色, 清透明);
+    cu.denseK!.value = options.denseGlow ?? 0;
+    cu.glowCell!.value = options.glowMode === '像素格' ? glowCell(camera, w, h, filmWidth, cu.glowOff!.value as THREE.Vector2) : 0;
+    gl.setClearColor(r.clearColor, clearTransparency);
     gl.setRenderTarget(null);
     gl.clear(true, true, true);
-    gl.render(r.合.场, r.屏机);
-    gl.autoClear = 自动清;
+    gl.render(r.合.场, r.screenCam);
+    gl.autoClear = autoClear;
   }, 1);
-  if (选项.天 !== 'Photon平滑' || !选项.太阳) return null;
-  return <Photon天 sun={[...选项.太阳] as [number, number, number]} far={天远} 算法={选项.天算法 ?? 'GPU'} />;
+  if (options.天 !== 'Photon平滑' || !options.sun) return null;
+  return <PhotonSky sun={[...options.sun] as [number, number, number]} far={skyFar} 算法={options.skyAlgo ?? 'GPU'} />;
 };
 
 /** 原版方形太阳在画布上的位置：同 2D 天（作品/把回忆拼好给你/场/2-海上/编排.ts 的 太阳屏幕），本体边长 = 上下沿（沿太阳走的方向各偏半边）投影的距离，
  *  一个贴图像素（高清贴图按高清像素）取整成几个画布像素，左下角取整；屏幕上横平竖直 */
-const 摆太阳 = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, 太阳: 光影选项['太阳'], w: number, h: number, 图: { 图: THREE.Texture; 边: number; 晕: THREE.Color }) => {
+const setSun = (cu: Record<string, THREE.IUniform>, camera: THREE.Camera, sun: ShadingOptions['sun'], w: number, h: number, sunImageSet: { 图: THREE.Texture; side: number; halo: THREE.Color }) => {
   cu.sunOn!.value = 0;
-  if (!太阳) return;
-  const d = new THREE.Vector3(...太阳).normalize();
-  const 沿 = new THREE.Vector3(0, 1, 0).cross(d).normalize();
-  const 眼 = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld);
-  const 投 = (v: THREE.Vector3) => {
-    const p = 场景到three([v.x, v.y, v.z]).add(眼).project(camera);
+  if (!sun) return;
+  const d = new THREE.Vector3(...sun).normalize();
+  const sideDir = new THREE.Vector3(0, 1, 0).cross(d).normalize();
+  const eye = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld);
+  const projectDir = (v: THREE.Vector3) => {
+    const p = sceneToThree([v.x, v.y, v.z]).add(eye).project(camera);
     return p.z < 1 ? new THREE.Vector2(((p.x + 1) / 2) * w, ((p.y + 1) / 2) * h) : null;
   };
-  const c = 投(d.clone().multiplyScalar(太阳距));
-  const 上 = 投(d.clone().multiplyScalar(太阳距).addScaledVector(沿, 太阳半边));
-  const 下 = 投(d.clone().multiplyScalar(太阳距).addScaledVector(沿, -太阳半边));
-  if (!c || !上 || !下) return;
-  const 边 = 图.边;
-  const n = Math.max(1, Math.round(上.distanceTo(下) / 边));
+  const c = projectDir(d.clone().multiplyScalar(sunDist));
+  const sunTop = projectDir(d.clone().multiplyScalar(sunDist).addScaledVector(sideDir, sunHalfSide));
+  const sunBottom = projectDir(d.clone().multiplyScalar(sunDist).addScaledVector(sideDir, -sunHalfSide));
+  if (!c || !sunTop || !sunBottom) return;
+  const side = sunImageSet.side;
+  const n = Math.max(1, Math.round(sunTop.distanceTo(sunBottom) / side));
   // 2D 天按左上角取整（y 朝下），这里换成左下角
-  const x0 = Math.round(c.x - (边 / 2) * n);
-  const y0上 = Math.round(h - c.y - (边 / 2) * n);
-  (cu.sunMin!.value as THREE.Vector2).set(x0, h - y0上 - 边 * n);
+  const x0 = Math.round(c.x - (side / 2) * n);
+  const y0Top = Math.round(h - c.y - (side / 2) * n);
+  (cu.sunMin!.value as THREE.Vector2).set(x0, h - y0Top - side * n);
   cu.sunN!.value = n;
-  cu.sunBody!.value = 边;
-  cu.tSun!.value = 图.图;
-  (cu.haloCol!.value as THREE.Color).copy(图.晕);
+  cu.sunBody!.value = side;
+  cu.tSun!.value = sunImageSet.图;
+  (cu.haloCol!.value as THREE.Color).copy(sunImageSet.halo);
   cu.sunOn!.value = 1;
 };

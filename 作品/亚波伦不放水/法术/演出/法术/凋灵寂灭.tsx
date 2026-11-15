@@ -14,26 +14,26 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 加, 减, 乘, 长, 单位 } from '../零件/弹道.ts';
-import { 服务端撒, 贴图粒子, VanillaParticles, type ParticleSpawn, type 粒子出生, type 粒子类 } from '../零件/粒子.tsx';
-import 元, { 寂灭束刻, 寂灭落点 } from './凋灵寂灭.元.ts';
-import 魂0 from 'asset:贴图/法术/minecraft/particle/soul_0';
-import 魂1 from 'asset:贴图/法术/minecraft/particle/soul_1';
-import 魂2 from 'asset:贴图/法术/minecraft/particle/soul_2';
-import 魂3 from 'asset:贴图/法术/minecraft/particle/soul_3';
-import 魂4 from 'asset:贴图/法术/minecraft/particle/soul_4';
-import 魂5 from 'asset:贴图/法术/minecraft/particle/soul_5';
-import 魂6 from 'asset:贴图/法术/minecraft/particle/soul_6';
-import 魂7 from 'asset:贴图/法术/minecraft/particle/soul_7';
-import 魂8 from 'asset:贴图/法术/minecraft/particle/soul_8';
-import 魂9 from 'asset:贴图/法术/minecraft/particle/soul_9';
-import 魂10 from 'asset:贴图/法术/minecraft/particle/soul_10';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { addVec, sub, scaleVec, vecLength, unitVec } from '../零件/弹道.ts';
+import { scatterServer, TexturedParticles, VanillaParticles, type ParticleSpawn, type ParticleBirth, type ParticleClass } from '../零件/粒子.tsx';
+import meta, { annihilationBeamTicks, annihilateLandPoint } from './凋灵寂灭.元.ts';
+import soul0Png from 'asset:贴图/法术/minecraft/particle/soul_0';
+import soul1Png from 'asset:贴图/法术/minecraft/particle/soul_1';
+import soul2Png from 'asset:贴图/法术/minecraft/particle/soul_2';
+import soul3Png from 'asset:贴图/法术/minecraft/particle/soul_3';
+import soul4Png from 'asset:贴图/法术/minecraft/particle/soul_4';
+import soul5Png from 'asset:贴图/法术/minecraft/particle/soul_5';
+import soul6Png from 'asset:贴图/法术/minecraft/particle/soul_6';
+import soul7Png from 'asset:贴图/法术/minecraft/particle/soul_7';
+import soul8Png from 'asset:贴图/法术/minecraft/particle/soul_8';
+import soul9Png from 'asset:贴图/法术/minecraft/particle/soul_9';
+import soul10Png from 'asset:贴图/法术/minecraft/particle/soul_10';
 
-const 魂类: 粒子类 = { 帧: [魂0, 魂1, 魂2, 魂3, 魂4, 魂5, 魂6, 魂7, 魂8, 魂9, 魂10].map(png), 选帧: '按年龄', 重力: 0, 摩擦: 0.96, 混合: '半透明' };
+const soulParticleClass: ParticleClass = { 帧: [soul0Png, soul1Png, soul2Png, soul3Png, soul4Png, soul5Png, soul6Png, soul7Png, soul8Png, soul9Png, soul10Png].map(png), 选帧: '按年龄', 重力: 0, 摩擦: 0.96, 混合: '半透明' };
 
-const 顶点着色 = `
+const vertexShaderSource = `
 #include <common>
 #include <logdepthbuf_pars_vertex>
 uniform float uLength;
@@ -55,7 +55,7 @@ void main() {
   #include <logdepthbuf_vertex>
 }
 `;
-const 片元着色 = `
+const fragmentShaderSource = `
 #include <common>
 #include <logdepthbuf_pars_fragment>
 uniform float uProgress;
@@ -116,53 +116,53 @@ void main() {
 }
 `;
 
-const 光束: React.FC<{ 起: 点; 终: 点; 进度: number; 种子: number }> = ({ 起, 终, 进度, 种子 }) => {
+const LightBeam: React.FC<{ 起: Vec3; end: Vec3; 进度: number; 种子: number }> = ({ 起: startPos, end, 进度: progress, 种子: seed }) => {
   const { geo, mat } = useMemo(() => {
     // 圆柱沿局部 +Y，底在原点、高 1、半径 1（长度和半径在着色器里乘）
     const g = new THREE.CylinderGeometry(1, 1, 1, 24, 1, false);
     g.translate(0, 0.5, 0);
     const m = new THREE.ShaderMaterial({
       uniforms: { uLength: { value: 1 }, uProgress: { value: 0 }, uSeed: { value: 0 } },
-      vertexShader: 顶点着色,
-      fragmentShader: 片元着色,
+      vertexShader: vertexShaderSource,
+      fragmentShader: fragmentShaderSource,
       transparent: true,
       depthWrite: false,
       side: THREE.FrontSide,
     });
     return { geo: g, mat: m };
   }, []);
-  const 向 = 减(终, 起);
-  mat.uniforms.uLength!.value = 长(向);
-  mat.uniforms.uProgress!.value = 进度;
-  mat.uniforms.uSeed!.value = 种子 * 0.125;
-  const d = 单位(向);
+  const beamVec = sub(end, startPos);
+  mat.uniforms.uLength!.value = vecLength(beamVec);
+  mat.uniforms.uProgress!.value = progress;
+  mat.uniforms.uSeed!.value = seed * 0.125;
+  const d = unitVec(beamVec);
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(d[0], d[1], d[2]));
-  return <mesh geometry={geo} material={mat} position={[起[0], 起[1], 起[2]]} quaternion={q} frustumCulled={false} />;
+  return <mesh geometry={geo} material={mat} position={[startPos[0], startPos[1], startPos[2]]} quaternion={q} frustumCulled={false} />;
 };
 
-const 凋灵寂灭: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 落 = 寂灭落点(目标);
-  const 向 = 单位(减(落, 起点));
-  const 距 = 长(减(落, 起点));
-  const 烟: ParticleSpawn[] = [];
-  for (let i = 1, k = 0; i < 距; i += 0.5, k++) {
-    const p = 加(起点, 乘(向, i));
-    烟.push({ 种: 'smoke', 刻: 1, p: [p[0], p[1], p[2]], v: [0, 0, 0], 种子: 种子 * 211 + k });
+const WitherAnnihilate: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const landing = annihilateLandPoint(target);
+  const dir = unitVec(sub(landing, from));
+  const distance = vecLength(sub(landing, from));
+  const smokeSpawns: ParticleSpawn[] = [];
+  for (let i = 1, k = 0; i < distance; i += 0.5, k++) {
+    const p = addVec(from, scaleVec(dir, i));
+    smokeSpawns.push({ 种: 'smoke', 刻: 1, p: [p[0], p[1], p[2]], v: [0, 0, 0], 种子: seed * 211 + k });
   }
-  const r = rng(种子 * 7919 + 17);
-  const 魂数 = 18 + Math.floor(r() * 7) + 10;
-  const 魂们: 粒子出生[] = 服务端撒(落, 魂数, [0, 0, 0.02], 0.12, 种子 + 3).map((撒, i) => {
-    const 抽 = rng(种子 * 131 + i);
-    return { 刻: 0, 位: 撒.位, 速: 撒.速, 寿命: Math.floor(4 / (抽() * 0.9 + 0.1)), 半径: 0.1 * (抽() * 0.5 + 0.5) * 2 * 1.5, 种子: i };
+  const r = rng(seed * 7919 + 17);
+  const soulCount = 18 + Math.floor(r() * 7) + 10;
+  const souls: ParticleBirth[] = scatterServer(landing, soulCount, [0, 0, 0.02], 0.12, seed + 3).map((spawn, i) => {
+    const rand = rng(seed * 131 + i);
+    return { 刻: 0, 位: spawn.位, 速: spawn.速, 寿命: Math.floor(4 / (rand() * 0.9 + 0.1)), radius: 0.1 * (rand() * 0.5 + 0.5) * 2 * 1.5, 种子: i };
   });
   return (
     <>
-      {刻 < 寂灭束刻 && <光束 起={起点} 终={落} 进度={刻 / 寂灭束刻} 种子={种子} />}
-      <VanillaParticles spawns={烟} 秒={秒} />
-      <贴图粒子 类={魂类} 出生们={魂们} 秒={秒} />
+      {tick < annihilationBeamTicks && <LightBeam 起={from} end={landing} 进度={tick / annihilationBeamTicks} 种子={seed} />}
+      <VanillaParticles spawns={smokeSpawns} 秒={sec} />
+      <TexturedParticles 类={soulParticleClass} spawns={souls} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 凋灵寂灭);
+export default defineSpellPerformance(meta, WitherAnnihilate);

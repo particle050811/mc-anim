@@ -4,117 +4,117 @@
 // 结尾横移出屋（给 屋外）时，东墙外是早上的天和林间背景（同门口身后那片地，地点/林间背景.tsx）：用户 10-24 问「怎么超平坦背景 合理吗？」，
 //   原来屋外是一整块平涂的日出橙和一大片草地顶面。后窗里那块天色盖在上面、跟着横移淡掉（天亮），淡完和屋外是同一片天。
 import type React from 'react';
-import { 三渲二画布, 光影范围 } from '@engine/三渲二/画布.tsx';
-import { 只挡光 } from '@engine/三渲二/光影/只挡光.tsx';
-import type { 光影场参数, 光影选项 } from '@engine/三渲二/光影/预设.ts';
-import type { 调子 } from '@engine/三渲二/调子.ts';
-import { 侧机位, 侧投影, type 侧取景 } from '../../地点/侧剖面.tsx';
-import { 侧剖面天空, type 天色 } from '../../地点/天空.tsx';
-import { 林间背景 } from '../../地点/林间背景.tsx';
-import { 东墙外沿, 卧室, 小木屋卧室, 屋外区, 门外区 } from '../../地点/小木屋卧室.tsx';
-import { 描边 as 描边默认, 像素N } from '../../画风.ts';
-import { 卧室N, 卧室取景, 卧室顶面, type 窗光档 } from './参数.ts';
-import { 窗光 } from './窗光.tsx';
+import { ToonCanvas, shadingScope } from '@engine/三渲二/画布.tsx';
+import { ShadowOnly } from '@engine/三渲二/光影/只挡光.tsx';
+import type { ShadingSceneParams, ShadingOptions } from '@engine/三渲二/光影/预设.ts';
+import type { Tone } from '@engine/三渲二/调子.ts';
+import { sideRig, sideProjection, type SideFraming } from '../../地点/侧剖面.tsx';
+import { SideSectionSky, type SkyColors } from '../../地点/天空.tsx';
+import { ForestBackdrop } from '../../地点/林间背景.tsx';
+import { eastWallOuterEdge, bedroom, CabinBedroom, outsideZone, doorOutsideZone } from '../../地点/小木屋卧室.tsx';
+import { outline as defaultOutline, pixelCount } from '../../画风.ts';
+import { bedroomRes, bedroomFraming, bedroomTop, type WindowLevel } from './参数.ts';
+import { WindowLight } from './窗光.tsx';
 
 /** 屋外（结尾横移出屋时）：亮 = 后窗那块天色淡掉多少（0～1）；色调 = 林子的平涂色调；天色、刻、群系 同门口（场/2-门口/参数.ts，段里给）；
  *  生长、林偏、天每格 见 地点/林间背景.tsx 和 段/2-空床/编排.ts */
-export type 卧室屋外 = { 亮: number; 色调: string; 天色: 天色; 刻: number; 群系: string; 生长: number; 林偏: number; 天每格: number };
+export type BedroomOutside = { bright: number; tint: string; skyColors: SkyColors; 刻: number; 群系: string; growth: number; forestOffset: number; skyPerCell: number };
 
-export type 卧室画布属性 = {
+export type BedroomCanvasProps = {
   宽?: number;
   高?: number;
   /** 默认 参数.ts 的 卧室取景（N = 26）；结尾横移时段里传挪过的 */
-  取景?: 侧取景;
-  顶面?: number;
+  framing?: SideFraming;
+  topDepth?: number;
   /** 3D 的调子：平涂色调、描边色从这里取 */
-  调子: 调子;
+  tone: Tone;
   /** 背景（后窗里、屋外的天）；默认用调子的天 */
   天?: string;
   /** 这一档窗光（几束光，空 = 没有光斑） */
-  光: 窗光档;
+  光: WindowLevel;
   /** 天亮了：门外（过道、门板、门洞里那截墙）照原色画、不乘调子；有 屋外 时东墙外也是 */
-  门外亮?: boolean;
+  outsideLit?: boolean;
   /** 结尾横移出屋时给：东墙外画早上的天和林子 */
-  屋外?: 卧室屋外;
+  outside?: BedroomOutside;
   /** 光影的样式：不给 = 不开（画 光 那几档光斑）。开了 光 不画，光从南窗照进来，月亮、太阳在哪、照进来几成看 光影场 */
-  光影?: 光影选项;
-  光影场?: 光影场参数;
+  shading?: ShadingOptions;
+  shadingScene?: ShadingSceneParams;
   /** 屋外的林子（屋外 给了才画）开不开光影、太阳在哪：接下一段的屋外，照下一段的给 */
-  屋外光影?: { 光影?: 光影选项; 光影场?: 光影场参数 };
+  outsideShading?: { shading?: ShadingOptions; shadingScene?: ShadingSceneParams };
   children?: React.ReactNode;
 };
 
 /** 剖掉的南墙只留那扇窗（x、z 照 卧室.南窗）：左右到过道西头、东墙外沿，上下盖过屋顶、地面剖面（屋外不挡，横移出屋时屋外的地照得到太阳）。
  *  厚 1/16 格，同窗光.tsx 只看墙内面那一层：一整格厚时窗洞太深，第一档那种陡的月光进不来，地上没有光斑 */
-const 南墙厚 = 1 / 16;
-const 南墙盒们 = (() => {
-  const { x0, x1, z0, z1 } = 卧室.南窗;
-  const 西 = -3, 东 = 东墙外沿, 底 = -15, 顶 = 6;
+const southWallThick = 1 / 16;
+const southWallBoxes = (() => {
+  const { x0, x1, z0, z1 } = bedroom.southWindow;
+  const west = -3, east = eastWallOuterEdge, bottom = -15, topEdge = 6;
   return [
-    [西, x0, 底, 顶],
-    [x1, 东, 底, 顶],
-    [x0, x1, 底, z0],
-    [x0, x1, z1, 顶],
+    [west, x0, bottom, topEdge],
+    [x1, east, bottom, topEdge],
+    [x0, x1, bottom, z0],
+    [x0, x1, z1, topEdge],
   ] as const;
 })();
 
-const 南墙: React.FC = () => (
-  <只挡光>
-    {南墙盒们.map(([a, b, c, d], i) => (
-      <mesh key={i} position={[(a + b) / 2, -南墙厚 / 2, (c + d) / 2]}>
-        <boxGeometry args={[b - a, 南墙厚, d - c]} />
+const SouthWall: React.FC = () => (
+  <ShadowOnly>
+    {southWallBoxes.map(([a, b, c, d], i) => (
+      <mesh key={i} position={[(a + b) / 2, -southWallThick / 2, (c + d) / 2]}>
+        <boxGeometry args={[b - a, southWallThick, d - c]} />
         <meshBasicMaterial />
       </mesh>
     ))}
-  </只挡光>
+  </ShadowOnly>
 );
 
-export const 卧室画布: React.FC<卧室画布属性> = ({ 宽 = 1280, 高 = 720, 取景 = 卧室取景, 顶面 = 卧室顶面, 调子: t, 天, 光, 门外亮 = false, 屋外, 光影, 光影场, 屋外光影, children }) => {
-  const 投 = 侧投影(取景, 宽, 高, 顶面);
-  const 发光区 = 门外亮 ? (屋外 ? [...门外区, 屋外区] : 门外区) : undefined;
+export const BedroomCanvas: React.FC<BedroomCanvasProps> = ({ 宽: width = 1280, 高: height = 720, framing = bedroomFraming, topDepth = bedroomTop, tone: t, 天: sky, 光: windowLights, outsideLit = false, outside, shading, shadingScene, outsideShading, children }) => {
+  const project = sideProjection(framing, width, height, topDepth);
+  const glowRegions = outsideLit ? (outside ? [...doorOutsideZone, outsideZone] : doorOutsideZone) : undefined;
   // 天的渐变照 天每格 的像素大小算（地面线同近景），不照卧室 N = 26：那样一屏只有渐变底下那一截，整片是地平色
-  const 天取景: 侧取景 | undefined = 屋外 && { 中心: [0, ((投(0, 0).y - 高 / 2) * 2) / 屋外.天每格], 每格: 屋外.天每格 };
+  const skyFraming: SideFraming | undefined = outside && { 中心: [0, ((project(0, 0).y - height / 2) * 2) / outside.skyPerCell], pxPerCell: outside.skyPerCell };
   return (
-    <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden' }}>
-      {屋外 && 天取景 && (
-        <光影范围.Provider value={屋外光影 ?? {}}>
-          <侧剖面天空 取景={天取景} 宽={宽} 高={高} 色={屋外.天色} 刻={屋外.刻} />
-          <林间背景
-            宽={宽}
-            高={高}
-            取景={取景}
-            顶面={顶面}
-            色调={屋外.色调}
-            雾色={屋外.天色.地平}
-            生长={屋外.生长}
-            群系={屋外.群系}
-            对齐={{ 近景排: 1, 林偏: 屋外.林偏 }}
+    <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden' }}>
+      {outside && skyFraming && (
+        <shadingScope.Provider value={outsideShading ?? {}}>
+          <SideSectionSky framing={skyFraming} 宽={width} 高={height} 色={outside.skyColors} 刻={outside.刻} />
+          <ForestBackdrop
+            宽={width}
+            高={height}
+            framing={framing}
+            topDepth={topDepth}
+            tint={outside.tint}
+            fogColor={outside.skyColors.horizon}
+            growth={outside.growth}
+            群系={outside.群系}
+            alignment={{ nearRow: 1, forestOffset: outside.forestOffset }}
           />
           <div
-            style={{ position: 'absolute', left: 0, top: 0, width: Math.max(0, 投(东墙外沿, 0).x), height: 高, background: 天 ?? t.天, opacity: 1 - 屋外.亮 }}
+            style={{ position: 'absolute', left: 0, top: 0, width: Math.max(0, project(eastWallOuterEdge, 0).x), height: height, background: sky ?? t.天, opacity: 1 - outside.bright }}
           />
-        </光影范围.Provider>
+        </shadingScope.Provider>
       )}
-      <三渲二画布
-        宽={宽}
-        高={高}
-        机位={侧机位(取景, 顶面)}
-        天={屋外 ? undefined : (天 ?? t.天)}
-        色调={t.色调}
-        发光区={发光区}
-        描边={描边默认.开 ? { 宽: (卧室N * 描边默认.宽) / 像素N, 色: t.描边 } : false}
-        光影={光影}
-        光影场={光影场}
-        style={屋外 ? { position: 'absolute', left: 0, top: 0, width: 宽, height: 高 } : undefined}
+      <ToonCanvas
+        宽={width}
+        高={height}
+        cameraRig={sideRig(framing, topDepth)}
+        天={outside ? undefined : (sky ?? t.天)}
+        tint={t.tint}
+        glowRegions={glowRegions}
+        outline={defaultOutline.开 ? { 宽: (bedroomRes * defaultOutline.宽) / pixelCount, 色: t.outlineColor } : false}
+        shading={shading}
+        shadingScene={shadingScene}
+        style={outside ? { position: 'absolute', left: 0, top: 0, width: width, height: height } : undefined}
       >
-        <小木屋卧室 门外亮={门外亮} />
-        {光影 ? (
-          <南墙 />
+        <CabinBedroom outsideLit={outsideLit} />
+        {shading ? (
+          <SouthWall />
         ) : (
-          光.map((b, i) => <窗光 key={`${i}-${b.从}`} 从={b.从} 方向={b.方向} 倍={b.倍} />)
+          windowLights.map((b, i) => <WindowLight key={`${i}-${b.从}`} 从={b.从} lightDir={b.lightDir} colorScale={b.colorScale} />)
         )}
         {children}
-      </三渲二画布>
+      </ToonCanvas>
     </div>
   );
 };

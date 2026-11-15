@@ -12,100 +12,100 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 加, 减, 弹道位置, 弹道方向 } from '../零件/弹道.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 带 } from '../零件/束.tsx';
-import { 十六进制色 } from '../零件/材质.ts';
-import { 原版粒子初速, 贴图粒子, type 粒子出生, type 粒子类 } from '../零件/粒子.tsx';
-import 元, { 灵魂束命中刻, 灵魂束道 } from './灵魂束.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/SoulBoltModel';
-import 弹图1 from 'asset:贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_1';
-import 弹图2 from 'asset:贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_2';
-import 弹图3 from 'asset:贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_3';
-import 尾迹图 from 'asset:贴图/法术/goety/entity/projectiles/trail';
-import 粒1 from 'asset:贴图/法术/goety/particle/bullet_effect1';
-import 粒2 from 'asset:贴图/法术/goety/particle/bullet_effect2';
-import 粒3 from 'asset:贴图/法术/goety/particle/bullet_effect3';
-import 粒4 from 'asset:贴图/法术/goety/particle/bullet_effect4';
-import 粒5 from 'asset:贴图/法术/goety/particle/bullet_effect5';
-import 粒6 from 'asset:贴图/法术/goety/particle/bullet_effect6';
-import 粒7 from 'asset:贴图/法术/goety/particle/bullet_effect7';
-import 迹0 from 'asset:贴图/法术/goety/particle/summon_0';
-import 迹1 from 'asset:贴图/法术/goety/particle/summon_1';
-import 迹2 from 'asset:贴图/法术/goety/particle/summon_2';
-import 迹3 from 'asset:贴图/法术/goety/particle/summon_3';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { addVec, sub, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { Band } from '../零件/束.tsx';
+import { hexColor } from '../零件/材质.ts';
+import { vanillaParticleInitSpeed, TexturedParticles, type ParticleBirth, type ParticleClass } from '../零件/粒子.tsx';
+import meta, { soulBeamHitTick, soulBeamPath } from './灵魂束.元.ts';
+import soulBoltModelData from 'asset:模型/法术/goety/SoulBoltModel';
+import soulBolt1Png from 'asset:贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_1';
+import soulBolt2Png from 'asset:贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_2';
+import soulBolt3Png from 'asset:贴图/法术/goety/entity/projectiles/soul_bolt/soul_bolt_3';
+import trailPng from 'asset:贴图/法术/goety/entity/projectiles/trail';
+import bulletEffect1Png from 'asset:贴图/法术/goety/particle/bullet_effect1';
+import bulletEffect2Png from 'asset:贴图/法术/goety/particle/bullet_effect2';
+import bulletEffect3Png from 'asset:贴图/法术/goety/particle/bullet_effect3';
+import bulletEffect4Png from 'asset:贴图/法术/goety/particle/bullet_effect4';
+import bulletEffect5Png from 'asset:贴图/法术/goety/particle/bullet_effect5';
+import bulletEffect6Png from 'asset:贴图/法术/goety/particle/bullet_effect6';
+import bulletEffect7Png from 'asset:贴图/法术/goety/particle/bullet_effect7';
+import summonTrail0Png from 'asset:贴图/法术/goety/particle/summon_0';
+import summonTrail1Png from 'asset:贴图/法术/goety/particle/summon_1';
+import summonTrail2Png from 'asset:贴图/法术/goety/particle/summon_2';
+import summonTrail3Png from 'asset:贴图/法术/goety/particle/summon_3';
 
-const 模型 = 取模型(模型数据, 'SoulBoltModel');
-const 弹图 = [弹图1, 弹图2, 弹图3].map(png);
-const 尾色 = 十六进制色(0xdafdff);
-const 实体高 = 0.3125;
+const soulBoltModel = getModel(soulBoltModelData, 'SoulBoltModel');
+const projectileFrames = [soulBolt1Png, soulBolt2Png, soulBolt3Png].map(png);
+const trailColor = hexColor(0xdafdff);
+const entityHeight = 0.3125;
 
 // AdditiveSpellParticle（AlphaProvider：alpha 恒 1）：摩擦 0.96、重力 −0.1（往上飘），贴图按年龄换；bullet_effect.json 的顺序是 7 → 1
-const 命中粒子类: 粒子类 = { 帧: [粒7, 粒6, 粒5, 粒4, 粒3, 粒2, 粒1].map(png), 选帧: '按年龄', 摩擦: 0.96, 重力: -0.1, 混合: '加色' };
+const hitParticleClass: ParticleClass = { 帧: [bulletEffect7Png, bulletEffect6Png, bulletEffect5Png, bulletEffect4Png, bulletEffect3Png, bulletEffect2Png, bulletEffect1Png].map(png), 选帧: '按年龄', 摩擦: 0.96, 重力: -0.1, 混合: '加色' };
 
-const 命中粒子 = (位: 点, 刻: number, 种子: number): 粒子出生[] => {
-  const r = rng(种子);
+const hitParticles = (pos: Vec3, tick: number, seed: number): ParticleBirth[] => {
+  const r = rng(seed);
   return Array.from({ length: 32 }, (_, i) => {
-    const 生位: 点 = [位[0] + r(), 位[1] + r(), 位[2] + r()];
+    const spawnPos: Vec3 = [pos[0] + r(), pos[1] + r(), pos[2] + r()];
     // 构造函数：super(…, 0.5 − 随机, yd, 0.5 − 随机) 过父类的随机化，再 yd × 0.2（给的 xd、zd 不是 0，水平不缩）。原版粒子初速 进出都是游戏坐标（y 竖直）
-    const [vx, vy, vz] = 原版粒子初速(r, 0.5 - r(), 0.225, 0.5 - r());
-    return { 刻, 位: 生位, 速: [vx, -vz, vy * 0.2], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)), 半径: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75, 种子: 种子 + i };
+    const [vx, vy, vz] = vanillaParticleInitSpeed(r, 0.5 - r(), 0.225, 0.5 - r());
+    return { 刻: tick, 位: spawnPos, 速: [vx, -vz, vy * 0.2], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)), radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75, 种子: seed + i };
   });
 };
 
 // SummonTrailParticle：getQuadSize = 大小 × clamp(年龄 ÷ 寿命 × 32, 0, 1)
-const 飞行粒子类: 粒子类 = { 帧: [迹0, 迹1, 迹2, 迹3].map(png), 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', 大小: (年龄, 寿命) => Math.min(1, Math.max(0, (年龄 / 寿命) * 32)) };
+const flightParticleClass: ParticleClass = { 帧: [summonTrail0Png, summonTrail1Png, summonTrail2Png, summonTrail3Png].map(png), 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', 大小: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
 
 /** 第 1 刻到命中前，每刻在弹后面留一颗 */
-const 飞行粒子 = (道: (n: number) => 点, 命中: number, 种子: number): 粒子出生[] =>
-  Array.from({ length: Math.max(0, Math.ceil(命中) - 1) }, (_, i) => {
+const flightParticles = (trajectory: (n: number) => Vec3, hitTick: number, seed: number): ParticleBirth[] =>
+  Array.from({ length: Math.max(0, Math.ceil(hitTick) - 1) }, (_, i) => {
     const n = i + 1;
-    const r = rng(种子 * 977 + n);
-    const 偏 = () => (r() / 4) * (Math.floor(r() * 3) - 1);
+    const r = rng(seed * 977 + n);
+    const randomOffset = () => (r() / 4) * (Math.floor(r() * 3) - 1);
     // 位置 − 速度：tick 里 travel 已经把速度更新成下一刻要走的那段
-    const 后 = 减(弹道位置(道, n), 减(弹道位置(道, n + 1), 弹道位置(道, n)));
-    return { 刻: n, 位: [后[0] + 偏(), 后[1] + 偏(), 后[2] + 0.15], 寿命: 8, 半径: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75 * 1.5, 种子: 种子 + n };
+    const prevPoint = sub(trajectoryPos(trajectory, n), sub(trajectoryPos(trajectory, n + 1), trajectoryPos(trajectory, n)));
+    return { 刻: n, 位: [prevPoint[0] + randomOffset(), prevPoint[1] + randomOffset(), prevPoint[2] + 0.15], 寿命: 8, radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75 * 1.5, 种子: seed + n };
   });
 
-const 折角 = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
+const wrapAngle = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
 /** rotateTowardsMovement(0.2)：从 0 出发，第 2 刻起每刻靠近目标角 20%；刻与刻之间线性插值（渲染器 rotLerp） */
-const 摆正 = (目标角: number, 刻: number) => {
-  const 差 = 折角(-目标角);
-  const 在 = (n: number) => 目标角 + 差 * 0.8 ** Math.max(0, n - 1);
-  const n = Math.floor(刻);
-  return 在(n) + (在(n + 1) - 在(n)) * (刻 - n);
+const straighten = (targetAngle: number, tick: number) => {
+  const angleDiff = wrapAngle(-targetAngle);
+  const angleAt = (n: number) => targetAngle + angleDiff * 0.8 ** Math.max(0, n - 1);
+  const n = Math.floor(tick);
+  return angleAt(n) + (angleAt(n + 1) - angleAt(n)) * (tick - n);
 };
 
-const 灵魂束: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
-  const 刻 = 秒 * 20;
-  const 道 = 灵魂束道(起点, 目标, 选项?.高速);
-  const 命中 = 灵魂束命中刻(起点, 目标, 选项?.高速);
-  const 命中位 = 弹道位置(道, 命中);
-  const 心 = (t: number): 点 => 加(弹道位置(道, t), [0, 0, 实体高 / 2]);
+const SoulBeam: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+  const tick = sec * 20;
+  const trajectory = soulBeamPath(from, target, options?.highSpeed);
+  const hitTick = soulBeamHitTick(from, target, options?.highSpeed);
+  const hitPos = trajectoryPos(trajectory, hitTick);
+  const centerAt = (t: number): Vec3 => addVec(trajectoryPos(trajectory, t), [0, 0, entityHeight / 2]);
   // 飞行方向不变（加速方向固定），取稳态的方向当目标角
-  const 向 = 弹道方向(道, Math.max(刻, 2));
+  const dir = trajectoryDir(trajectory, Math.max(tick, 2));
   // ProjectileUtil.rotateTowardsMovement：yaw = atan2(vz, vx) + 90°，pitch = atan2(水平, vy) − 90°（游戏坐标：vy 竖直，vz = −场景 y）
-  const yaw = 摆正((Math.atan2(-向[1], 向[0]) * 180) / Math.PI + 90, 刻);
-  const pitch = 摆正((Math.atan2(Math.hypot(向[0], 向[1]), 向[2]) * 180) / Math.PI - 90, 刻);
-  const u = (Math.floor(刻) % 8) / 8;
+  const yaw = straighten((Math.atan2(-dir[1], dir[0]) * 180) / Math.PI + 90, tick);
+  const pitch = straighten((Math.atan2(Math.hypot(dir[0], dir[1]), dir[2]) * 180) / Math.PI - 90, tick);
+  const u = (Math.floor(tick) % 8) / 8;
   return (
     <>
-      {刻 < 命中 && (
+      {tick < hitTick && (
         <>
-          <MC空间 位={弹道位置(道, 刻)}>
+          <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
             <group scale={[-1.25, -1.25, 1.25]}>
-              <模型件 模型={模型} 图={弹图[Math.floor(刻) % 3]!} 画法="发光" 透明度={0.5} 姿态={{ bolt: { rot: [度(pitch), 度(yaw), 0] } }} />
+              <ModelPart 模型={soulBoltModel} 图={projectileFrames[Math.floor(tick) % 3]!} 画法="发光" opacity={0.5} partPoses={{ bolt: { rot: [degToRad(pitch), degToRad(yaw), 0] } }} />
             </group>
-          </MC空间>
-          <带 点们={[心(刻), 心(刻 - 8)]} 半宽向={[0, 0, 0.25]} 图={png(尾迹图)} u们={[u, u + 0.5]} 重复 色={尾色} 透明度={0.6} 混合="半透明" />
+          </MinecraftSpace>
+          <Band points={[centerAt(tick), centerAt(tick - 8)]} halfWidthDir={[0, 0, 0.25]} 图={png(trailPng)} uValues={[u, u + 0.5]} repeat 色={trailColor} opacity={0.6} 混合="半透明" />
         </>
       )}
-      <贴图粒子 类={飞行粒子类} 出生们={飞行粒子(道, 命中, 种子)} 秒={秒} />
-      <贴图粒子 类={命中粒子类} 出生们={命中粒子(命中位, 命中, 种子)} 秒={秒} />
+      <TexturedParticles 类={flightParticleClass} spawns={flightParticles(trajectory, hitTick, seed)} 秒={sec} />
+      <TexturedParticles 类={hitParticleClass} spawns={hitParticles(hitPos, hitTick, seed)} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 灵魂束);
+export default defineSpellPerformance(meta, SoulBeam);

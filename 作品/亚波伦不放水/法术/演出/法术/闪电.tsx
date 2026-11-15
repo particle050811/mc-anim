@@ -6,37 +6,37 @@
 import React from 'react';
 import { rng } from '@engine/model/parts.tsx';
 import { LightningBolt } from '@库/特效/闪电.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import 元, { 闪电最长刻 } from './闪电.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import meta, { lightningMaxTicks } from './闪电.元.ts';
 
 /** 照 tick 走一遍：每一轮从第几刻起、用哪个形状种子；末 = 实体消失的刻 */
-const 走 = (种子: number): { 轮们: { 起刻: number; 形: number }[]; 末: number } => {
-  const r = rng(种子 * 31337 + 11);
-  const 整 = (n: number) => Math.floor(r() * n);
+const makeBolts = (seed: number): { bolts: { startTick: number; shapeSeed: number }[]; endTick: number } => {
+  const r = rng(seed * 31337 + 11);
+  const randBelow = (n: number) => Math.floor(r() * n);
   let life = 2;
-  let flashes = 整(3) + 1;
-  const 轮们 = [{ 起刻: 0, 形: 种子 * 13 + 1 }];
-  for (let 刻 = 1; 刻 <= 闪电最长刻; 刻++) {
+  let flashes = randBelow(3) + 1;
+  const bolts = [{ startTick: 0, shapeSeed: seed * 13 + 1 }];
+  for (let tick = 1; tick <= lightningMaxTicks; tick++) {
     life--;
     if (life < 0) {
-      if (flashes === 0) return { 轮们, 末: 刻 };
-      if (life < -整(10)) {
+      if (flashes === 0) return { bolts, endTick: tick };
+      if (life < -randBelow(10)) {
         flashes--;
         life = 1;
-        轮们.push({ 起刻: 刻, 形: 种子 * 13 + 1 + 轮们.length });
+        bolts.push({ startTick: tick, shapeSeed: seed * 13 + 1 + bolts.length });
       }
     }
   }
-  return { 轮们, 末: 闪电最长刻 };
+  return { bolts, endTick: lightningMaxTicks };
 };
 
-const 闪电: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const { 轮们, 末 } = 走(种子);
-  if (刻 >= 末) return null;
-  const 轮 = [...轮们].reverse().find((x) => x.起刻 <= 刻)!;
-  return <LightningBolt seed={轮.形} flash={1} position={[目标[0], 目标[1], 目标[2]]} />;
+const Lightning: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const { bolts: flashes, endTick } = makeBolts(seed);
+  if (tick >= endTick) return null;
+  const bolt = [...flashes].reverse().find((x) => x.startTick <= tick)!;
+  return <LightningBolt seed={bolt.shapeSeed} flash={1} position={[target[0], target[1], target[2]]} />;
 };
 
-export default 定义法术演出(元, 闪电);
+export default defineSpellPerformance(meta, Lightning);

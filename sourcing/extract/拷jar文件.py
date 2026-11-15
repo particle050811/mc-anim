@@ -15,17 +15,17 @@ def main(argv: list[str]) -> int:
     if len(argv) != 3:
         print(__doc__, file=sys.stderr)
         return 2
-    jar, 条目, 输出 = argv
+    jar, entry_name, out_path = argv
     with zipfile.ZipFile(jar) as z:
         try:
-            字节 = z.read(条目)
+            file_bytes = z.read(entry_name)
         except KeyError:
-            print(f"jar 里没有 {条目}：{jar}", file=sys.stderr)
+            print(f"jar 里没有 {entry_name}：{jar}", file=sys.stderr)
             return 1
-    out = Path(输出)
+    out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_bytes(字节)
-    print(f"{条目} → {out}（{len(字节)} 字节）")
+    out.write_bytes(file_bytes)
+    print(f"{entry_name} → {out}（{len(file_bytes)} 字节）")
     return 0
 
 

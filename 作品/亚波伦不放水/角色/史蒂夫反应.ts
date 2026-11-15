@@ -19,199 +19,199 @@
 import type { PartPose } from '@engine/model/实体模型.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { type StevePose, steveLookAt, stevePose, steveSize, STEVE } from '@库/角色/史蒂夫.tsx';
-import { 挥手进度, 挥手部件 } from '@库/角色/史蒂夫挥手.ts';
+import { waveProgress, waveParts } from '@库/角色/史蒂夫挥手.ts';
 import { vanillaToppleAngle } from '@库/特效/原版死亡.tsx';
-import type { 招名 } from './剑招.ts';
-import type { 关节姿 } from './史蒂夫关节.ts';
-import { 加关节动作 } from './史蒂夫关节动作.ts';
-import type { 腾空此刻 } from './史蒂夫走位.ts';
+import type { MoveName } from './剑招.ts';
+import type { JointPose } from './史蒂夫关节.ts';
+import { addJointAction } from './史蒂夫关节动作.ts';
+import type { AirSnapshot } from './史蒂夫走位.ts';
 
 /** 环 = 破碎之环（第 1 幕他拿着走上去放到祭坛上） */
-export type 右手物 = '剑' | '弓' | '空' | '环';
-export type 左手物 = '盾' | '图腾' | '空';
-export type 弓贴图 = '弓' | '弓拉0' | '弓拉1' | '弓拉2';
+export type RightHandItem = '剑' | '弓' | '空' | '环';
+export type LeftHandItem = '盾' | '图腾' | '空';
+export type BowTexture = '弓' | '弓拉0' | '弓拉1' | '弓拉2';
 
-export type 史蒂夫状态 = {
+export type SteveState = {
   /** 脚底中心（场景坐标，Z 朝上，格） */
   位置: V3;
   /** 身子朝向（度，0 朝 +Y，正 = 往左） */
-  朝向: number;
+  facing: number;
   /** 头看向的点；偏出 50 度身子跟着转（原版）。不给 = 平视前方 */
   看?: V3;
   /** 时钟（秒）：两臂轻晃、挣扎的摆动 */
   秒: number;
   /** 不给 = 剑 */
-  右手?: 右手物;
+  rightHand?: RightHandItem;
   /** 不给 = 空 */
-  左手?: 左手物;
+  leftHand?: LeftHandItem;
   /** 举着盾挡（左手要是盾） */
-  举盾?: boolean;
+  shieldUp?: boolean;
   /** 开始拉弓过了几秒（右手要是弓）；不给 = 没在拉 */
-  拉弓秒?: number;
+  drawSec?: number;
   /** 距上次挥剑点击几秒；不给 = 没挥 */
-  挥剑秒?: number;
+  swingSec?: number;
   /** 拿剑时上次点下去的是哪一招、正在蓄的是哪一招（角色/剑招.ts）；不给 = 下劈 */
-  招?: 招名;
-  蓄招?: 招名;
+  move?: MoveName;
+  chargeMove?: MoveName;
   /** 距上次挨打几秒；不给 = 没挨打 */
-  受击秒?: number;
+  hitReactSec?: number;
   /** 挨打后仰的幅度（度，自己补的）；不给 = 10，0 = 只变红（原版） */
-  后仰度?: number;
+  backLeanDeg?: number;
   /** 后仰几秒仰到头、几秒回正（从挨打那一刻算）；不给 = 0.06、0.3。第 4 幕照 Linker 打戏知识库的受击反应拉长 */
-  后仰拍?: { 到顶: number; 回正: number };
+  leanTiming?: { peakSec: number; restoreSec: number };
   /** 被钉住挣扎的强度 0～1（自己补的）；不给 = 0 */
-  挣扎?: number;
+  struggle?: number;
   /** 走路的摆腿（原版 limbSwing、limbSwingAmount，角色/史蒂夫走位.ts 照轨迹算的）；不给 = 腿不动。向：1 往前走、−1 倒着走（哪条腿收小腿），不给 = 1 */
-  走?: { 摆: number; 步幅: number; 向?: number };
+  走?: { swing: number; stride: number; walkDir?: number };
   /** 这一刻和跳的关系（角色/史蒂夫走位.ts 从轨迹里认的）：起跳前下蹲、空中收腿、落地缓冲；不给 = 一直在地上 */
-  跳?: 腾空此刻;
+  跳?: AirSnapshot;
   /** 举剑蓄力 0～1（摆到 蓄招 的蓄）；不给 = 拿着剑往前跳、这一段还没挥过剑时自己举 */
-  蓄力?: number;
+  charge?: number;
   /** 死了几秒；不给 = 活着。1 秒（20 刻）后人消失 */
-  死后秒?: number;
+  afterDeathSec?: number;
   /** 潜行 0～1（原版一刻切过去，中间值给过渡）；不给 = 0 */
-  潜行?: number;
+  sneak?: number;
   /** 激流姿势：转了几刻（tickCount 从开始转算）、视线仰角（度，往上为正）、权（1 = 横躺，0 = 站着，给收势的过渡）；不给 = 不在转 */
-  激流?: { 刻: number; 仰角: number; 权?: number };
+  surge?: { 刻: number; elevationDeg: number; weight?: number };
 };
 
-export const 受伤秒 = 0.5; // hurtTime 10 刻
-export const 死亡消失秒 = 1; // deathTime 20 刻
-const 后仰用秒 = 0.3;
+export const hurtSec = 0.5; // hurtTime 10 刻
+export const deathVanishSec = 1; // deathTime 20 刻
+const leanBackSec = 0.3;
 
 /** 自己补的后仰包络（0～1）：默认 0.06 秒仰到头，再到 0.3 秒回正 */
-export const 后仰包络 = (秒: number, 到顶 = 0.06, 回正 = 后仰用秒) => {
-  if (秒 < 0 || 秒 >= 回正) return 0;
-  if (秒 < 到顶) return 秒 / 到顶;
-  const u = (秒 - 到顶) / (回正 - 到顶);
+export const leanBackEnvelope = (sec: number, peakSec = 0.06, restoreSec = leanBackSec) => {
+  if (sec < 0 || sec >= restoreSec) return 0;
+  if (sec < peakSec) return sec / peakSec;
+  const u = (sec - peakSec) / (restoreSec - peakSec);
   return (1 - u) * (1 - u);
 };
 
 /** bow.json 的 overrides：拉了几秒 → 用哪张贴图 */
-export const 弓贴图按拉 = (拉弓秒: number | undefined): 弓贴图 => {
-  if (拉弓秒 === undefined || 拉弓秒 < 0) return '弓';
-  const pull = Math.min(1, 拉弓秒);
+export const bowTextureByPull = (drawSec: number | undefined): BowTexture => {
+  if (drawSec === undefined || drawSec < 0) return '弓';
+  const pull = Math.min(1, drawSec);
   return pull >= 0.9 ? '弓拉2' : pull >= 0.65 ? '弓拉1' : '弓拉0';
 };
 
 /** BowItem.getPowerForTime：拉了几秒 → 力 0～1（1 秒拉满） */
-export const 弓力 = (拉弓秒: number) => {
-  const p = Math.max(0, 拉弓秒);
+export const bowForce = (drawSec: number) => {
+  const p = Math.max(0, drawSec);
   return Math.min(1, (p * p + 2 * p) / 3);
 };
 
 /** 箭出手的位置：眼高下 0.1 格（AbstractArrow 的构造） */
-export const 出箭点 = (位置: V3): V3 => [位置[0], 位置[1], 位置[2] + steveSize(STEVE.scale).eye - 0.1];
+export const arrowLaunchPoint = (position: V3): V3 => [position[0], position[1], position[2] + steveSize(STEVE.scale).eye - 0.1];
 
 /** 箭出手后第 秒 秒的位置和飞行方向（AbstractArrow.tick，不算随机散布）。朝：出手方向（不用归一），力：弓力 */
-export const 箭飞行 = (起: V3, 朝: V3, 力: number, 秒: number): { p: V3; dir: V3 } => {
-  const 长 = Math.hypot(朝[0], 朝[1], 朝[2]) || 1;
-  let v: V3 = [(朝[0] / 长) * 力 * 3, (朝[1] / 长) * 力 * 3, (朝[2] / 长) * 力 * 3];
-  let p: V3 = [...起];
-  let 前: V3 = p;
-  const 刻 = Math.max(0, 秒) * 20;
-  for (let k = 0; k < Math.ceil(刻); k++) {
-    前 = p;
+export const arrowFlight = (startPos: V3, dir: V3, force: number, sec: number): { p: V3; dir: V3 } => {
+  const vecLength = Math.hypot(dir[0], dir[1], dir[2]) || 1;
+  let v: V3 = [(dir[0] / vecLength) * force * 3, (dir[1] / vecLength) * force * 3, (dir[2] / vecLength) * force * 3];
+  let p: V3 = [...startPos];
+  let prev: V3 = p;
+  const tick = Math.max(0, sec) * 20;
+  for (let k = 0; k < Math.ceil(tick); k++) {
+    prev = p;
     p = [p[0] + v[0], p[1] + v[1], p[2] + v[2]];
     v = [v[0] * 0.99, v[1] * 0.99, v[2] * 0.99 - 0.05];
   }
   // 两刻之间线性插值（同游戏的 partialTick）
-  const f = 刻 - Math.floor(刻);
-  const 位: V3 = f === 0 ? p : [前[0] + (p[0] - 前[0]) * f, 前[1] + (p[1] - 前[1]) * f, 前[2] + (p[2] - 前[2]) * f];
-  return { p: 位, dir: v };
+  const f = tick - Math.floor(tick);
+  const pos: V3 = f === 0 ? p : [prev[0] + (p[0] - prev[0]) * f, prev[1] + (p[1] - prev[1]) * f, prev[2] + (p[2] - prev[2]) * f];
+  return { p: pos, dir: v };
 };
 
-const 加晃 = (rot: number[], 刻: number, 号: 1 | -1): number[] => [
-  rot[0]! + 号 * Math.sin(刻 * 0.067) * 0.05,
+const addSway = (rot: number[], tick: number, sign: 1 | -1): number[] => [
+  rot[0]! + sign * Math.sin(tick * 0.067) * 0.05,
   rot[1]!,
-  rot[2]! + 号 * (Math.cos(刻 * 0.09) * 0.05 + 0.05),
+  rot[2]! + sign * (Math.cos(tick * 0.09) * 0.05 + 0.05),
 ];
 
-export type 史蒂夫反应结果 = {
-  pose: 关节姿;
+export type SteveReactionResult = {
+  pose: JointPose;
   /** 给 装备史蒂夫 的 改部件 */
-  改部件: (部件: Record<string, PartPose>) => Record<string, PartPose>;
-  右手: 右手物;
-  左手: 左手物;
-  举盾: boolean;
-  弓贴图: 弓贴图;
+  editParts: (poses: Record<string, PartPose>) => Record<string, PartPose>;
+  rightHand: RightHandItem;
+  leftHand: LeftHandItem;
+  shieldUp: boolean;
+  bowTexture: BowTexture;
   /** 受伤色 0 或 1 */
-  受伤: number;
+  hurt: number;
   /** 照原版倒下的角（弧度），0 = 没倒 */
-  倒角: number;
+  toppleAngle: number;
   /** 人还画不画（死后 20 刻消失） */
   在: boolean;
-  激流?: 史蒂夫状态['激流'];
+  surge?: SteveState['surge'];
 };
 
-export const 史蒂夫反应 = (状: 史蒂夫状态): 史蒂夫反应结果 => {
-  const 右手 = 状.右手 ?? '剑';
-  const 左手 = 状.左手 ?? '空';
-  const 举盾 = !!状.举盾 && 左手 === '盾';
-  const 拉弓 = 状.拉弓秒 !== undefined && 右手 === '弓';
-  const 挣 = Math.min(1, Math.max(0, 状.挣扎 ?? 0));
+export const steveReaction = (state: SteveState): SteveReactionResult => {
+  const rightHand = state.rightHand ?? '剑';
+  const leftHand = state.leftHand ?? '空';
+  const shieldUp = !!state.shieldUp && leftHand === '盾';
+  const drawBow = state.drawSec !== undefined && rightHand === '弓';
+  const struggleAmount = Math.min(1, Math.max(0, state.struggle ?? 0));
   // 挣扎：照走路的摆法原地摆腿（步幅 0.5 × 强度，约每秒一步），脚不挪
-  const 步幅 = 状.走 ? 状.走.步幅 : 0.5 * 挣;
-  const 摆 = 状.走 ? 状.走.摆 : 步幅 * 状.秒 * 20;
-  let pose = stevePose(状.位置, 状.朝向, { sec: 状.秒, limbSwing: 摆, stride: 步幅, holdR: 右手 !== '空', holdL: 左手 !== '空', crouch: 状.潜行 ?? 0 });
-  if (状.看) pose = steveLookAt(pose, 状.看);
-  if (挣 > 0) pose = { ...pose, twist: (pose.twist ?? 0) + Math.sin(状.秒 * Math.PI * 2 * 0.7) * 12 * 挣 };
-  const 仰 = 状.受击秒 === undefined ? 0 : 后仰包络(状.受击秒, 状.后仰拍?.到顶, 状.后仰拍?.回正) * (状.后仰度 ?? 10);
-  if (仰 > 0) pose = { ...pose, pitch: pose.pitch + 仰 }; // FigurePose 的 pitch 负 = 前倾
+  const stride = state.走 ? state.走.stride : 0.5 * struggleAmount;
+  const swing = state.走 ? state.走.swing : stride * state.秒 * 20;
+  let pose = stevePose(state.位置, state.facing, { sec: state.秒, limbSwing: swing, stride: stride, holdR: rightHand !== '空', holdL: leftHand !== '空', crouch: state.sneak ?? 0 });
+  if (state.看) pose = steveLookAt(pose, state.看);
+  if (struggleAmount > 0) pose = { ...pose, twist: (pose.twist ?? 0) + Math.sin(state.秒 * Math.PI * 2 * 0.7) * 12 * struggleAmount };
+  const backLean = state.hitReactSec === undefined ? 0 : leanBackEnvelope(state.hitReactSec, state.leanTiming?.peakSec, state.leanTiming?.restoreSec) * (state.backLeanDeg ?? 10);
+  if (backLean > 0) pose = { ...pose, pitch: pose.pitch + backLean }; // FigurePose 的 pitch 负 = 前倾
   // 原版挥手只给空手、拿环的时候用；拿剑时由 加关节动作 照剑招摆
-  const 持剑 = 右手 === '剑';
-  const 挥 = 状.挥剑秒 === undefined || 持剑 ? 0 : 挥手进度(状.挥剑秒);
-  const 关节 = 加关节动作(pose, {
-    摆,
-    步幅,
-    向: 状.走?.向,
-    跳: 状.跳,
-    挣,
-    秒: 状.秒,
-    仰: 仰 / 10,
-    右持: 右手 !== '空',
-    左持: 左手 !== '空',
-    持剑,
-    拉弓,
-    举盾,
-    ...(状.挥剑秒 !== undefined ? { 挥秒: 状.挥剑秒 } : {}),
-    挥过: 状.挥剑秒 !== undefined && 状.挥剑秒 >= 0,
-    ...(状.招 ? { 招: 状.招 } : {}),
-    ...(状.蓄招 ? { 蓄招: 状.蓄招 } : {}),
-    ...(状.蓄力 !== undefined ? { 蓄力: 状.蓄力 } : {}),
+  const holdingSword = rightHand === '剑';
+  const swingProgress = state.swingSec === undefined || holdingSword ? 0 : waveProgress(state.swingSec);
+  const jointPose = addJointAction(pose, {
+    swing,
+    stride,
+    walkDir: state.走?.walkDir,
+    跳: state.跳,
+    struggleAmount,
+    秒: state.秒,
+    backLean: backLean / 10,
+    holdRight: rightHand !== '空',
+    holdLeft: leftHand !== '空',
+    holdingSword,
+    drawBow,
+    shieldUp,
+    ...(state.swingSec !== undefined ? { swingSec: state.swingSec } : {}),
+    swungPast: state.swingSec !== undefined && state.swingSec >= 0,
+    ...(state.move ? { move: state.move } : {}),
+    ...(state.chargeMove ? { chargeMove: state.chargeMove } : {}),
+    ...(state.charge !== undefined ? { charge: state.charge } : {}),
   });
 
-  const 刻 = 状.秒 * 20;
-  const 臂摆左 = Math.cos(摆 * 0.6662) * 步幅;
-  const 改部件 = (部件: Record<string, PartPose>): Record<string, PartPose> => {
-    let 出 = { ...部件 };
-    const 头 = 部件.head?.rot ?? [0, 0, 0];
-    const 身转 = 部件.body?.rot?.[1] ?? 0;
-    const 设臂 = (名: 'right' | 'left', rot: number[]) => {
-      const 臂 = { ...出[`${名}_arm`], rot };
-      出 = { ...出, [`${名}_arm`]: 臂, [`${名}_sleeve`]: 臂 };
+  const tick = state.秒 * 20;
+  const armSwingL = Math.cos(swing * 0.6662) * stride;
+  const editParts = (poses: Record<string, PartPose>): Record<string, PartPose> => {
+    let parts = { ...poses };
+    const headRot = poses.head?.rot ?? [0, 0, 0];
+    const bodyTwist = poses.body?.rot?.[1] ?? 0;
+    const setArm = (sideName: 'right' | 'left', rot: number[]) => {
+      const armPart = { ...parts[`${sideName}_arm`], rot };
+      parts = { ...parts, [`${sideName}_arm`]: armPart, [`${sideName}_sleeve`]: armPart };
     };
-    if (拉弓) {
-      设臂('right', 加晃([-Math.PI / 2 + 头[0]!, -0.1 + 头[1]! + 身转, 0], 刻, 1));
-      设臂('left', 加晃([-Math.PI / 2 + 头[0]!, 0.1 + 头[1]! + 0.4 + 身转, 0], 刻, -1));
-    } else if (举盾) {
-      设臂('left', 加晃([臂摆左 * 0.5 - 0.9424779, 0.5235988 + 身转, 0], 刻, -1));
+    if (drawBow) {
+      setArm('right', addSway([-Math.PI / 2 + headRot[0]!, -0.1 + headRot[1]! + bodyTwist, 0], tick, 1));
+      setArm('left', addSway([-Math.PI / 2 + headRot[0]!, 0.1 + headRot[1]! + 0.4 + bodyTwist, 0], tick, -1));
+    } else if (shieldUp) {
+      setArm('left', addSway([armSwingL * 0.5 - 0.9424779, 0.5235988 + bodyTwist, 0], tick, -1));
     }
-    if (挥 > 0) 出 = 挥手部件(出, 挥);
-    return 出;
+    if (swingProgress > 0) parts = waveParts(parts, swingProgress);
+    return parts;
   };
 
-  const 死 = 状.死后秒;
+  const sinceDeath = state.afterDeathSec;
   return {
-    pose: 关节,
-    改部件,
-    右手,
-    左手,
-    举盾,
-    弓贴图: 拉弓 ? 弓贴图按拉(状.拉弓秒) : '弓',
-    受伤: (状.受击秒 !== undefined && 状.受击秒 >= 0 && 状.受击秒 < 受伤秒) || (死 !== undefined && 死 >= 0) ? 1 : 0,
-    倒角: 死 === undefined ? 0 : vanillaToppleAngle(死),
-    在: 死 === undefined || 死 < 死亡消失秒,
-    ...(状.激流 ? { 激流: 状.激流 } : {}),
+    pose: jointPose,
+    editParts,
+    rightHand,
+    leftHand,
+    shieldUp,
+    bowTexture: drawBow ? bowTextureByPull(state.drawSec) : '弓',
+    hurt: (state.hitReactSec !== undefined && state.hitReactSec >= 0 && state.hitReactSec < hurtSec) || (sinceDeath !== undefined && sinceDeath >= 0) ? 1 : 0,
+    toppleAngle: sinceDeath === undefined ? 0 : vanillaToppleAngle(sinceDeath),
+    在: sinceDeath === undefined || sinceDeath < deathVanishSec,
+    ...(state.surge ? { surge: state.surge } : {}),
   };
 };

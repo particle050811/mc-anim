@@ -26,12 +26,12 @@ import { broomFromTip, TIP_LOCAL } from '../../../角色/骑扫帚持矛.tsx';
 import { bossDeathOpacity } from '@库/特效/战利品箱碎裂.tsx';
 import { SPEAR_FIT } from '@库/物品/动力钻头.tsx';
 import { closeupBreakClockScale } from '@库/特效/方块破坏粒子.tsx';
-import type { 矛管 } from '@库/特效/方块飞溅.tsx';
+import type { SpearTube } from '@库/特效/方块飞溅.tsx';
 import { twilightLandmark } from '../../../地点/暮色新世界.tsx';
 import debrisRaw from 'asset:碎块/镜头/6-1-5/碎块';
 import { toppleDuration, deathToFlatRatio, knockbackOffsetAt } from '@库/特效/生物死亡.tsx';
 
-export const 塔框 = twilightLandmark('巫妖怪塔');
+export const towerFrame = twilightLandmark('巫妖怪塔');
 export const V = 320; // 扫帚穿塔的物理速度（米/秒）
 
 // ---------- 几何（塔的本地坐标） ----------
@@ -42,33 +42,33 @@ const CHEST = FLOOR + LICH.chest; // 矛尖高度
 export const BROOM_YAW = 165;
 const yawR = (BROOM_YAW * Math.PI) / 180;
 // 飞行方向、扫帚左手边（本地水平单位向量）；来向：扫帚和药水从哪边过来
-export const 前向: V3 = [-Math.sin(yawR), Math.cos(yawR), 0];
-export const 左向: V3 = [-Math.cos(yawR), -Math.sin(yawR), 0];
-const incomingDir = [-前向[0], -前向[1]];
+export const forwardDir: V3 = [-Math.sin(yawR), Math.cos(yawR), 0];
+export const leftDir: V3 = [-Math.cos(yawR), -Math.sin(yawR), 0];
+const incomingDir = [-forwardDir[0], -forwardDir[1]];
 // 巫妖侧着身子对着扫帚飞来的方向站（原来由北往南穿时朝东站，左侧对着北边），跟着穿刺线一起转：本地朝向 75°，方位 105°
 export const LICH_YAW = BROOM_YAW - 90;
 const NORTH_FACE = 11.5; // 北墙外表面
 const SOUTH_INNER = -2.5; // 房间南墙内表面
 const EXIT_Y = -12.5; // 副楼西南角（矛尖从这里出来）
 // 矛尖走到本地 y 处时的 a（墙都是东西走向，按 y 量）
-const aAtY = (y: number) => (y - LICH_AT[1]) / 前向[1];
+const aAtY = (y: number) => (y - LICH_AT[1]) / forwardDir[1];
 
 // 穿刺线：a = 矛尖从贯穿点沿飞行方向走过的距离（米，贯穿 = 0，撞墙在负的那边）。一镜到底按这条线排路线（见 一镜到底/路线.ts 的 穿刺）
-export const tipLocal = (a: number): V3 => [LICH_AT[0] + 前向[0] * a, LICH_AT[1] + 前向[1] * a, CHEST];
-export const toWorld = (p: number[]): V3 => 塔框.到世界(p);
+export const tipLocal = (a: number): V3 => [LICH_AT[0] + forwardDir[0] * a, LICH_AT[1] + forwardDir[1] * a, CHEST];
+export const toWorld = (p: number[]): V3 => towerFrame.toWorld(p);
 const impactA = aAtY(NORTH_FACE); // -11.39：矛尖碰到北墙外表面（正南穿时是 -11，斜 15° 长 1/cos15°）
 const exitA = aAtY(EXIT_Y);
-export const 穿刺线 = {
+export const pierceLine = {
   名: '巫妖',
   V,
-  朝向: ((((塔框.朝向(BROOM_YAW) + 180) % 360) + 360) % 360) - 180, // 世界朝向 -105（方位 105°）
-  矛尖: (a: number) => toWorld(tipLocal(a)),
+  facing: ((((towerFrame.facing(BROOM_YAW) + 180) % 360) + 360) % 360) - 180, // 世界朝向 -105（方位 105°）
+  tip: (a: number) => toWorld(tipLocal(a)),
   前: impactA - 320, // 撞墙前对准北墙直飞 320 米（1 秒），镜头里塔越来越近（直航定稿的对正段）
   后: exitA + 100, // 穿出以后直飞 100 米再拐（右转 8° 往九头蛇巢穴）
-  撞: impactA,
+  impactPos: impactA,
   出: exitA,
   // 巫妖侧着身子，矛从来向扎进它的左侧：身子 8 像素宽，矛尖在 -0.25 碰到它（举过头顶的左臂在胸口高度以上，碰不到）
-  身: [{ 心: 0, 触: -0.25 }],
+  bodies: [{ 心: 0, touch: -0.25 }],
 };
 // 扫帚在塔本地坐标里的位置（t：贯穿后的物理秒数）。平飞
 export const broomLocal = (t: number): V3 => broomFromTip(tipLocal(V * t), BROOM_YAW);
@@ -76,22 +76,22 @@ export const broomLocal = (t: number): V3 => broomFromTip(tipLocal(V * t), BROOM
 export const broomToLocal = (t: number, p: number[]): V3 => toScene(broomMatrix(broomLocal(t), BROOM_YAW), p);
 
 // ---------- 物理时刻（秒，贯穿 = 0） ----------
-export const T_IMPACT = 穿刺线.撞 / V;
+export const T_IMPACT = pierceLine.impactPos / V;
 export const T_SOUTH = aAtY(SOUTH_INNER) / V;
-export const T_EXIT = 穿刺线.出 / V; // 矛尖从副楼西南角出来
+export const T_EXIT = pierceLine.出 / V; // 矛尖从副楼西南角出来
 export const T_THROW = T_IMPACT + 0.004; // 药水脱手（撞墙后 1.3 米）
 // 六层护盾碎的时刻：脱手后均匀排到贯穿前 0.004 秒
 export const T_SHIELDS = [0, 1, 2, 3, 4, 5].map((i) => T_THROW + 0.008 + (i * (-0.0045 - (T_THROW + 0.008))) / 5);
 // 矛尖碰到巫妖：这一刻它就死了（用户 2026-10-02：死的一瞬间虚化 50%，免得挡住同一刻在它身上冒出来的战利品箱，见 一镜到底/战利品.tsx）
-export const T_TOUCH = 穿刺线.身[0].触 / V;
+export const T_TOUCH = pierceLine.bodies[0].touch / V;
 // 倒平、化成白烟（模型/特效/生物死亡.tsx 的 倒地：胸口绕脚底的线速度 = 飞行速度）
-export const T_倒 = toppleDuration(LICH.chest, V);
-export const T_DEATH = T_TOUCH + T_倒 * deathToFlatRatio;
+export const T_TOPPLE = toppleDuration(LICH.chest, V);
+export const T_DEATH = T_TOUCH + T_TOPPLE * deathToFlatRatio;
 // 一镜到底的时钟在这几个时刻之间放慢（路线.ts 读）：撞墙前一点开始全速放慢，巫妖化烟以后开始恢复
-export const 放慢 = { 起: T_IMPACT - 0.003, 止: T_DEATH + 0.004 };
-export const 特效倍速 = 28;
+export const slowMo = { 起: T_IMPACT - 0.003, 止: T_DEATH + 0.004 };
+export const fxSpeed = 28;
 // 药水炸开的粒子、巫妖死时的白烟按更快的时钟走（碎得更猛、散得更快），镜头钻过去之前就散干净了
-export const 药水特效倍速 = 55;
+export const potionFxSpeed = 55;
 
 // 墙：撞开的洞（导出碎块用的同一组盒子：npm run 取材 -- 6-1-5碎块 经 工具/一镜到底/巫妖墙洞.ts 打印）
 // 洞是顺着穿刺线斜过去的一条：矛尖线两边各 `holeHalfWidth` 米（覆盖扫帚杆、右手边的人、跟在后面的镜头和左手前的鼓风机），z 64～68。
@@ -106,24 +106,24 @@ const holeSections: number[][] = [
 ];
 const holeRowBox = (yc: number): number[] => {
   const xc = tipLocal(aAtY(yc))[0];
-  const halfSpan = holeHalfWidth / Math.abs(前向[1]) + (0.5 * Math.abs(前向[0])) / Math.abs(前向[1]);
+  const halfSpan = holeHalfWidth / Math.abs(forwardDir[1]) + (0.5 * Math.abs(forwardDir[0])) / Math.abs(forwardDir[1]);
   const i0 = Math.floor(xc - halfSpan); // 和 [xc − w, xc + w] 有交的格 i0 … i1（格 i 是 x i～i+1）
   const i1 = Math.ceil(xc + halfSpan) - 1;
   return [i0 + 0.1, yc - 0.45, 64, i1 + 0.9, yc + 0.45, 67.9].map((v) => Math.round(v * 100) / 100);
 };
 export const HOLE_BOXES = holeSections.flatMap((row) => row.map(holeRowBox));
 // 碎块分组的边界：盒子序号 < 2 是北墙、< 4 南墙、< 9 隧道，其余出口
-export const 洞截边界 = holeSections.slice(0, -1).map((_, i) => holeSections.slice(0, i + 1).reduce((n, row) => n + row.length, 0));
+export const holeSectionBounds = holeSections.slice(0, -1).map((_, i) => holeSections.slice(0, i + 1).reduce((n, row) => n + row.length, 0));
 // 碎块：被 320 米/秒的扫帚撞出去，沿飞行方向约 0.6 倍扫帚速度，往四周散开几十米/秒；塔外看到的出塔那一下也是这个速度
 const DEB = { speed: 0.6 * V, spread: 34, spin: 70, gravity: 16 };
 // 矛管：矛尖连钻头虚影扫过的那一管方块当场崩成原版破坏粒子，不整块飞（用户 10-02；模型/特效/方块飞溅.tsx）；点的时刻相对各自那次撞击（北墙、南墙、副楼出口）。常量对象：哪些格子在管里只算一次
-const tubeFor = (impactTime: number): 矛管 => ({
+const tubeFor = (impactTime: number): SpearTube => ({
   点: Array.from({ length: 31 }, (_, k) => {
     const dist = k - 14;
     return [...tipLocal(dist), dist / V - impactTime];
   }),
-  半径: SPEAR_FIT.tubeRadius,
-  particleClockScale: closeupBreakClockScale.墙,
+  radius: SPEAR_FIT.tubeRadius,
+  particleClockScale: closeupBreakClockScale.wall,
 });
 const northTube = tubeFor(T_IMPACT);
 const southTube = tubeFor(T_SOUTH);
@@ -133,20 +133,20 @@ const wallCenter = (dist: number): V3 => {
   const tip = tipLocal(dist);
   return [tip[0], tip[1], 65.5];
 };
-const alongFlight = (left: number, up: number): V3 => [前向[0] + 左向[0] * left, 前向[1] + 左向[1] * left, up];
+const alongFlight = (left: number, up: number): V3 => [forwardDir[0] + leftDir[0] * left, forwardDir[1] + leftDir[1] * left, up];
 // 南墙那一截（连同副楼隧道、出口）晚到矛尖快碰到南墙上挂的画前半毫秒才从网格里藏：挂画那一行在洞里的几格是贴着墙面的薄板（1/16 厚、y −2.47），矛尖到 y −2.4 才碰得到，只比碰到墙面（`T_SOUTH`）早零点几毫秒。
 // 撞北墙时一起藏、南墙几行由碎块补画的话，那幅大画被切成竖条、贴图错开、骷髅出现两次，正好是镜头在屋里绕圈那两秒的背景，所以分两步藏。
-export const T_南藏 = aAtY(-2.4) / V - 0.0005;
+export const southHideTime = aAtY(-2.4) / V - 0.0005;
 export const debrisBursts = (t: number) => {
   const tN = t - T_IMPACT;
   const tS = t - T_SOUTH;
   const tE = t - T_EXIT;
-  const southHidden = t >= T_南藏;
+  const southHidden = t >= southHideTime;
   return [
-    { sec: tN, dir: alongFlight(0.05, 0.04), origin: wallCenter(aAtY(11)), speed: DEB.speed, spread: DEB.spread, seed: 11, gravity: DEB.gravity, stagger: 0.0004, chips: 28, spin: DEB.spin, 管: northTube },
-    { sec: tS, dir: alongFlight(0, 0), origin: wallCenter(aAtY(-3)), speed: DEB.speed, spread: DEB.spread, seed: 12, gravity: DEB.gravity, stagger: 0.0004, chips: 16, spin: DEB.spin, hidden: southHidden, 管: southTube },
+    { sec: tN, dir: alongFlight(0.05, 0.04), origin: wallCenter(aAtY(11)), speed: DEB.speed, spread: DEB.spread, seed: 11, gravity: DEB.gravity, stagger: 0.0004, chips: 28, spin: DEB.spin, tube: northTube },
+    { sec: tS, dir: alongFlight(0, 0), origin: wallCenter(aAtY(-3)), speed: DEB.speed, spread: DEB.spread, seed: 12, gravity: DEB.gravity, stagger: 0.0004, chips: 16, spin: DEB.spin, hidden: southHidden, tube: southTube },
     { sec: -1, dir: alongFlight(0, 0), origin: wallCenter(aAtY(-6)), speed: 0, spread: 0, seed: 13, skip: true, hidden: southHidden },
-    { sec: tE, dir: alongFlight(0, 0), origin: wallCenter(exitA - 0.5), speed: DEB.speed, spread: DEB.spread * 1.3, seed: 14, gravity: DEB.gravity, stagger: 0.0004, chips: 30, spin: DEB.spin, hidden: southHidden, 管: exitTube },
+    { sec: tE, dir: alongFlight(0, 0), origin: wallCenter(exitA - 0.5), speed: DEB.speed, spread: DEB.spread * 1.3, seed: 14, gravity: DEB.gravity, stagger: 0.0004, chips: 30, spin: DEB.spin, hidden: southHidden, tube: exitTube },
   ];
 };
 // 房间正中吊着一盏木栅栏和火把搭的大吊灯（z 65～72，挡在航线上），刷怪方块在它下面；游戏里巫妖刷出来以后刷怪方块就没了。这两样整段都不画（四壁的画、书架、玻璃地板留着）
@@ -156,9 +156,9 @@ export const ROOM_CLEAR = [2.6, -1.4, 64.05, 12.4, 8.4, 72.9];
 // 洞的盒子各自外扩一格以后的范围（碎块.json 的 `hide`，工具/游戏取材/网格碎块.py 算的）：整块从网格里拿掉，由碎块和原地的外圈方块顶替
 const HIDES = (debrisRaw as unknown as { hide: number[][] }).hide;
 const HIDE_BEFORE = [ROOM_CLEAR];
-const HIDE_NORTH = [ROOM_CLEAR, ...HIDES.slice(0, 洞截边界[0])];
+const HIDE_NORTH = [ROOM_CLEAR, ...HIDES.slice(0, holeSectionBounds[0])];
 const HIDE_ALL = [ROOM_CLEAR, ...HIDES];
-export const hideFor = (t: number) => (t < T_IMPACT ? HIDE_BEFORE : t < T_南藏 ? HIDE_NORTH : HIDE_ALL);
+export const hideFor = (t: number) => (t < T_IMPACT ? HIDE_BEFORE : t < southHideTime ? HIDE_NORTH : HIDE_ALL);
 
 // ---------- 巫妖 ----------
 const ly = (LICH_YAW * Math.PI) / 180;
@@ -214,7 +214,7 @@ export const SHIELD_PLAN = T_SHIELDS.map((tt, i) => {
   return { shield: best, n: remaining, tau: tt, clock, center, push };
 });
 export const shieldCount = (t: number) => LICH.shields - SHIELD_PLAN.filter((p) => t >= p.tau).length;
-export const 砸点 = (i: number): V3 => {
+export const smashPoint = (i: number): V3 => {
   const center = SHIELD_PLAN[i].center;
   return [center[0] + incomingDir[0] * 0.35, center[1] + incomingDir[1] * 0.35, center[2]];
 };
@@ -222,13 +222,13 @@ export const 砸点 = (i: number): V3 => {
 // 矛尖一碰到就死：一下子变成半透明、整只变红（原版死亡的红色覆盖，不渐变）；朝矛的方向倒下、被击退（模型/特效/生物死亡.tsx 的 `DeathTopple`，用户 10-07），`T_DEATH` 化成白烟。
 // 变红是用户 10-02 要先在巫妖身上试的（其他 boss 还是闪白：不给方块生物加红色，怕成片画出血过不了审核）
 export const lichState = (t: number) => {
-  if (t < T_TOUCH) return { pos: LICH_AT, alive: true, hurt: 0, opacity: 1, 倒: 0, knockbackOffset: [0, 0, 0] as V3 };
-  return { pos: LICH_AT, alive: t < T_DEATH, hurt: 1, opacity: bossDeathOpacity, 倒: (t - T_TOUCH) / T_倒, knockbackOffset: knockbackOffsetAt(前向, t - T_TOUCH) };
+  if (t < T_TOUCH) return { pos: LICH_AT, alive: true, hurt: 0, opacity: 1, fall: 0, knockbackOffset: [0, 0, 0] as V3 };
+  return { pos: LICH_AT, alive: t < T_DEATH, hurt: 1, opacity: bossDeathOpacity, fall: (t - T_TOUCH) / T_TOPPLE, knockbackOffset: knockbackOffsetAt(forwardDir, t - T_TOUCH) };
 };
 // 白烟的中心往扫帚左手边挪开、压低到它腰的高度：镜头绕完一圈回到扫帚正后方以后要顺着矛尖的路线钻过去，烟团在路上或和镜头一样高会糊满画面；它化烟时镜头正绕到扫帚右前方（一镜到底/镜头.ts 的 `lichOrbit`），烟也不能在那边
 export const LICH_DEATH_POS: V3 = [
-  LICH_AT[0] + 左向[0] * 2.3,
-  LICH_AT[1] + 左向[1] * 2.3,
+  LICH_AT[0] + leftDir[0] * 2.3,
+  LICH_AT[1] + leftDir[1] * 2.3,
   LICH_AT[2] + 0.9,
 ];
 
@@ -247,7 +247,7 @@ export const potion = (i: number, t: number) => {
   // 出手点：鼓风机出风口前方一点，六瓶稍微错开
   const spread: V3 = [(i % 2 ? -0.07 : 0.07) * (1 + (i % 3)), 0.15 * (i % 3), 0.07 * ((i * 7) % 3) - 0.07];
   const start = broomToLocal(T_THROW, [FAN_FRONT[0] + spread[0], FAN_FRONT[1] + 0.2 + spread[1], FAN_FRONT[2] + spread[2]]);
-  const end = 砸点(i);
+  const end = smashPoint(i);
   const progress = (t - T_THROW) / (plan.tau - T_THROW);
   const eased = progress ** 1.35;
   const pos: V3 = [start[0] + (end[0] - start[0]) * eased, start[1] + (end[1] - start[1]) * eased, start[2] + (end[2] - start[2]) * eased];
@@ -268,5 +268,5 @@ export const leftArm = (t: number) => {
 
 // 权杖：巫妖拿在手里，跟着它一起化成白烟，不脱手、九胡也不接（用户 10-07 去掉了九胡拿权杖）
 // 一镜到底读：这一处要把哪些部件画出来、什么时候开始画（贯穿前后多少秒内）
-export const 出场 = { 起: -40, 止: 30 };
+export const visibleWindow = { 起: -40, 止: 30 };
 export { TIP_LOCAL };

@@ -4,24 +4,24 @@
 import { chestArchery } from './射箭.ts';
 import { chestB } from './羊毛.ts';
 import { chest722, chest742 } from './第7章.ts';
-import { 故事段序, type 段 } from '../古城段序.ts';
+import { storySegmentOrder, type Segment } from '../古城段序.ts';
 
 // 古城各段的故事先后，取自段清单里画在古城4x上的段（6-4-4 是 6-4-3 的回放；6-4-2至3a 这类合成段，各截按自己的原段算）
-type 古城4x段 = Extract<段, { 古城4x: true }>;
-export type 古城段 = 古城4x段['故事'][number];
-export const 古城段序 = 故事段序((s) => '古城4x' in s) as 古城段[];
+type AncientCity4xSegment = Extract<Segment, { 古城4x: true }>;
+export type AncientCitySegment = AncientCity4xSegment['故事'][number];
+export const ancientCitySegmentOrder = storySegmentOrder((s) => '古城4x' in s) as AncientCitySegment[];
 
-export const 开箱表: { 号: number; 段: 古城段; 谁: string }[] = [
-  { 号: chestB.号, 段: '6-4-1', 谁: '李樱' }, // #212 开箱拿东西
-  { 号: chestArchery.号, 段: '6-4-2', 谁: '李樱' }, // #210 第一次警告
-  { 号: chest722.号, 段: '7-2', 谁: '李樱' }, // #240 开到古卷
-  { 号: chest742.号, 段: '7-4-2', 谁: '刘心忠' }, // #213 又一只
+export const chestOpenings: { chestId: number; 段: AncientCitySegment; 谁: string }[] = [
+  { chestId: chestB.chestId, 段: '6-4-1', 谁: '李樱' }, // #212 开箱拿东西
+  { chestId: chestArchery.chestId, 段: '6-4-2', 谁: '李樱' }, // #210 第一次警告
+  { chestId: chest722.chestId, 段: '7-2', 谁: '李樱' }, // #240 开到古卷
+  { chestId: chest742.chestId, 段: '7-4-2', 谁: '刘心忠' }, // #213 又一只
 ];
-const 段号 = (段: 古城段) => 古城段序.indexOf(段);
+const segmentIndex = (segment: AncientCitySegment) => ancientCitySegmentOrder.indexOf(segment);
 // 这一段开头已经开过的箱子号
-export const openedBefore = (段: 古城段): number[] => 开箱表.filter((c) => 段号(c.段) < 段号(段)).map((c) => c.号);
+export const openedBefore = (segment: AncientCitySegment): number[] => chestOpenings.filter((c) => segmentIndex(c.段) < segmentIndex(segment)).map((c) => c.chestId);
 // 这一段里开关的箱子（画布的 开箱）要么以前开过，要么开箱表记在这一段
-export const checkChestEvent = (段: 古城段, 号: number) => {
-  if (openedBefore(段).includes(号) || 开箱表.some((c) => c.号 === 号 && c.段 === 段)) return;
-  throw new Error(`#${号} 在 ${段} 开关，但 古城4x布局/箱子.ts 的开箱表里没记：记进去，后面的段才画得出它开过`);
+export const checkChestEvent = (segment: AncientCitySegment, chestId: number) => {
+  if (openedBefore(segment).includes(chestId) || chestOpenings.some((c) => c.chestId === chestId && c.段 === segment)) return;
+  throw new Error(`#${chestId} 在 ${segment} 开关，但 古城4x布局/箱子.ts 的开箱表里没记：记进去，后面的段才画得出它开过`);
 };

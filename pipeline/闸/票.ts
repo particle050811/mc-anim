@@ -1,55 +1,55 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pid换人了, 进程在吗, 重试 } from './锁.ts';
-import { 读JSON, 写JSON, 列文件 } from './文件.ts';
-import type { 任务信息, 任务声明 } from './任务.ts';
-import type { 发起者 } from './发起者.ts';
-export type 票内容 = {
+import { pidReplaced, processAlive, retry } from './锁.ts';
+import { readJson, writeJson, listFiles } from './文件.ts';
+import type { TaskInfo, TaskDecl } from './任务.ts';
+import type { Caller } from './发起者.ts';
+export type TicketContent = {
     v: 1;
     任务: string;
     /** 这一轮等待的起点；暂缓结束时重新起算，否则一恢复就按等了半小时告警。 */
     起: number;
-    发起: 发起者;
-    声明: 任务声明;
-    原序?: string;
-    暂缓至?: number;
-    暂缓因?: string;
-    等内存起?: number;
-    卡在?: string;
-    已被越?: number;
+    发起: Caller;
+    声明: TaskDecl;
+    origOrder?: string;
+    deferredUntilMs?: number;
+    deferReason?: string;
+    waitMemStart?: number;
+    stuckOn?: string;
+    overtaken?: number;
 };
-export type 票 = {
+export type Ticket = {
     文件: string;
     名: string;
     pid: number;
     主机: string;
     时间: number;
-    内容: 票内容 | null;
+    ticketContent: TicketContent | null;
     /** 读状态才算；死票要等下一个等待者回收，读的人不能把它算占用。 */
     死?: boolean;
 };
-export const 主机片段 = (s: string) => s.replace(/[^A-Za-z0-9._-]/g, '_');
-export const 解析票 = (名: string) => { const m = /^(\d+)-(.+)-(\d+)$/.exec(名); return m ? { 时间: Number(m[1]), 主机: m[2]!, pid: Number(m[3]) } : null; };
-export const 列票 = (dir: string): 票[] => 列文件(dir).sort().flatMap(名 => { const x = 解析票(名); if (!x)
-    return []; const 文件 = path.join(dir, 名), 内容 = 读JSON<票内容>(文件); return [{ ...x, 文件, 名, 内容: 内容?.v === 1 ? 内容 : null }]; });
-let 序 = 0;
+export const hostSlug = (s: string) => s.replace(/[^A-Za-z0-9._-]/g, '_');
+export const parseTicket = (ticketName: string) => { const m = /^(\d+)-(.+)-(\d+)$/.exec(ticketName); return m ? { 时间: Number(m[1]), 主机: m[2]!, pid: Number(m[3]) } : null; };
+export const listTickets = (dir: string): Ticket[] => listFiles(dir).sort().flatMap(ticketName => { const x = parseTicket(ticketName); if (!x)
+    return []; const file = path.join(dir, ticketName), ticketContent = readJson<TicketContent>(file); return [{ ...x, 文件: file, 名: ticketName, ticketContent: ticketContent?.v === 1 ? ticketContent : null }]; });
+let seqIndex = 0;
 /** 队序就是票名：普通票 0 开头（领票毫秒），低优先 8 开头（排在全部普通票后面，彼此仍先来先渲），暂缓 9 开头 */
-const 低优先基 = 800000000000000;
-export const 是低优先票 = (t: Pick<票, '时间'>) => t.时间 >= 低优先基 && t.时间 < 900000000000000;
-const 普通票 = (x: 票) => !x.名.startsWith('9') && !是低优先票(x);
-export const 领票 = (dir: string, 本机: string, 任务: 任务信息, now: number): 票 => {
+const lowPriorityBase = 800000000000000;
+export const isLowPriorityTicket = (t: Pick<Ticket, '时间'>) => t.时间 >= lowPriorityBase && t.时间 < 900000000000000;
+const isNormalTicket = (x: Ticket) => !x.名.startsWith('9') && !isLowPriorityTicket(x);
+export const claimTicket = (dir: string, localHost: string, task: TaskInfo, now: number): Ticket => {
     fs.mkdirSync(dir, { recursive: true });
-    序 = Math.max(Date.now(), 序 + 1);
-    const 名 = `${String(任务.声明.低优先 ? 低优先基 + 序 : 序).padStart(15, '0')}-${主机片段(本机)}-${process.pid}`;
-    const 内容: 票内容 = { v: 1, 任务: 任务.任务, 起: now, 发起: 任务.发起, 声明: 任务.声明 };
-    const 文件 = path.join(dir, 名);
-    写JSON(文件, 内容);
-    return { 名, 文件, 内容, pid: process.pid, 主机: 主机片段(本机), 时间: Number(名.split('-')[0]) };
+    seqIndex = Math.max(Date.now(), seqIndex + 1);
+    const ticketName = `${String(task.声明.低优先 ? lowPriorityBase + seqIndex : seqIndex).padStart(15, '0')}-${hostSlug(localHost)}-${process.pid}`;
+    const ticketContent: TicketContent = { v: 1, 任务: task.任务, 起: now, 发起: task.发起, 声明: task.声明 };
+    const file = path.join(dir, ticketName);
+    writeJson(file, ticketContent);
+    return { 名: ticketName, 文件: file, ticketContent, pid: process.pid, 主机: hostSlug(localHost), 时间: Number(ticketName.split('-')[0]) };
 };
-export const 票活着 = (t: 票, 本机: string) => {
-    if (t.主机 === 主机片段(本机))
-        return 进程在吗(t.pid) && (()=>{try{const m=fs.statSync(t.文件).mtimeMs;return m>=Date.now()-os.uptime()*1000&&!pid换人了(t.pid,m);}catch{return false;}})();
+export const ticketAlive = (t: Ticket, localHost: string) => {
+    if (t.主机 === hostSlug(localHost))
+        return processAlive(t.pid) && (()=>{try{const m=fs.statSync(t.文件).mtimeMs;return m>=Date.now()-os.uptime()*1000&&!pidReplaced(t.pid,m);}catch{return false;}})();
     try {
         return Date.now() - fs.statSync(t.文件).mtimeMs < 60000;
     }
@@ -57,29 +57,29 @@ export const 票活着 = (t: 票, 本机: string) => {
         return false;
     }
 };
-export const 改序 = (t: 票, 序: string) => {
-    if (!t.内容)
+export const setOrder = (t: Ticket, seqIndex: string) => {
+    if (!t.ticketContent)
         throw Error('旧票拒绝改名：旧代码不能重新找票；只能等或取消');
-    const 名 = `${序.padStart(15, '0')}-${t.主机}-${t.pid}`, 文件 = path.join(path.dirname(t.文件), 名);
-    fs.renameSync(t.文件, 文件);
-    return { ...t, 名, 文件, 时间: Number(序) };
+    const newTicketName = `${seqIndex.padStart(15, '0')}-${t.主机}-${t.pid}`, file = path.join(path.dirname(t.文件), newTicketName);
+    fs.renameSync(t.文件, file);
+    return { ...t, 名: newTicketName, 文件: file, 时间: Number(seqIndex) };
 };
 /** 票可能刚被改名或删除：往旧路径写会把它复活成残留活票。 */
-export const 写票 = (t: 票) => { if (fs.existsSync(t.文件))
-    写JSON(t.文件, t.内容); };
+export const writeTicket = (t: Ticket) => { if (fs.existsSync(t.文件))
+    writeJson(t.文件, t.ticketContent); };
 /** 写进别人的票，票主人每轮重读；撞上改名或删票至多丢一次计数。暂缓的本来就不在等，不算被越。 */
-export const 记被越 = (们: 票[], 本机: string) => { for (const q of 们)
-    if (q.内容 && !q.内容.暂缓至 && 票活着(q, 本机)) {
-        q.内容.已被越 = (q.内容.已被越 ?? 0) + 1;
-        写票(q);
+export const recordOvertaken = (tickets: Ticket[], localHost: string) => { for (const q of tickets)
+    if (q.ticketContent && !q.ticketContent.deferredUntilMs && ticketAlive(q, localHost)) {
+        q.ticketContent.overtaken = (q.ticketContent.overtaken ?? 0) + 1;
+        writeTicket(q);
     } };
 /** anim 调度 随时可能改票名，记下的文件名靠不住，按任务和 pid 扫。 */
-export const 清任务票 = (dir: string, 任务: string) => { for (const x of 列票(dir))
-    if (x.pid === process.pid && x.内容?.任务 === 任务)
-        重试(() => fs.rmSync(x.文件, { force: true })); };
+export const clearTaskTickets = (dir: string, task: string) => { for (const x of listTickets(dir))
+    if (x.pid === process.pid && x.ticketContent?.任务 === task)
+        retry(() => fs.rmSync(x.文件, { force: true })); };
 /** 低优先的票回到低优先那一档的队尾，普通票回普通票的队尾 */
-export const 回队尾 = (t: 票) => {
-    const 低 = Boolean(t.内容?.声明?.低优先), 基 = 低 ? 低优先基 : 0;
-    const 同档 = 列票(path.dirname(t.文件)).filter(x => (低 ? 是低优先票(x) : 普通票(x))).map(x => x.时间 - 基);
-    return 改序(t, String(基 + Math.max(Date.now(), ...同档) + 1));
+export const requeueTail = (t: Ticket) => {
+    const lowPriority = Boolean(t.ticketContent?.声明?.低优先), baseTime = lowPriority ? lowPriorityBase : 0;
+    const sameTierTimes = listTickets(path.dirname(t.文件)).filter(x => (lowPriority ? isLowPriorityTicket(x) : isNormalTicket(x))).map(x => x.时间 - baseTime);
+    return setOrder(t, String(baseTime + Math.max(Date.now(), ...sameTierTimes) + 1));
 };

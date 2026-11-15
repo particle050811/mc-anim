@@ -8,8 +8,8 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { toScene } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { chest742, huangPanPortal741 } from '../../../地点/古城4x/布局.ts';
-import heights资产 from 'asset:数据/镜头/7-4-1/高度';
-const heights = heights资产 as unknown as { 步: number; 马: number[]; 监守者: number[] };
+import heightsJson from 'asset:数据/镜头/7-4-1/高度';
+const heights = heightsJson as unknown as { 步: number; horse: number[]; 监守者: number[] };
 
 export const FPS = 24;
 export const relY = (rel: number) => rel - 51;
@@ -132,7 +132,7 @@ const smoothTable = (table: number[], step: number, reach: number, radius: numbe
     return sum / (n + 1);
   };
 };
-const horseRelTable = smoothTable(heights.马, heights.步, 0.75, 0.75, horseLoop.len);
+const horseRelTable = smoothTable(heights.horse, heights.步, 0.75, 0.75, horseLoop.len);
 export const wardenRelAt = smoothTable(heights.监守者, heights.步, 1.5, 0.8, wardenLoop.len);
 const wrap = (s: number, len: number) => ((s % len) + len) % len;
 // 马脚底 rel：跳的那两截按抛物线（最高点在两头之间按高低差摆），其余查表
@@ -171,7 +171,7 @@ export const huangSpot = huangPanPortal741;
 //   幽灵马：龛里东半边（游戏 (-707.5, -49, 200.5)），马头朝箱子；刘心忠在马上探身开箱。黄叛：马的北边（游戏 (-706.5, -49, 197.2)）。
 // 石龛在北墙外 9 格（游戏 x −713～−705、z 193～202，地台 y −50、站立面 −49），龛里一只箱子 (-712, -49, 198) 朝东，古城4x画布里已换成 Lootr 战利品箱（#213）。
 // 箱子东边 2～3 格：感测体 (-711,-49,196)、(-709,-49,197)、(-709,-49,198)，尖啸体 (-708,-49,198)、(-709,-49,199)（读自片场存档）。
-export const chest = { 号: chest742.号, block: [...chest742.block] as V3 };
+export const chest = { chestId: chest742.chestId, block: [...chest742.block] as V3 };
 export const sensors: V3[] = [
   [-711, -49, 196],
   [-709, -49, 197],

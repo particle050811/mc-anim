@@ -11,7 +11,7 @@ import { ponderScreen } from '@库/界面/思索界面.tsx';
 import type { Cam } from '../6-3-下坠/编排/机位.ts';
 import type { PonderPerspective } from '@库/界面/思索场景.tsx';
 import { liYing } from '../6-3-下坠/编排/李樱.ts';
-import { FPS, 段表, 刻, 物理时间 } from '../6-3-下坠/时间线.ts';
+import { FPS, segTable, tick, physicalTime } from '../6-3-下坠/时间线.ts';
 import { cues, figureAt, figureRef, sceneCenter, pixelsPerBlock, viewRotation, toGame, toScene } from './编排.ts';
 import { uiOpen } from './台词.ts';
 
@@ -22,17 +22,17 @@ const ss = (x: number) => {
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const logLerp = (a: number, b: number, k: number) => Math.exp(lerp(Math.log(a), Math.log(b), k));
 
-export const 淡出帧数 = 10;
+export const fadeOutFrameCount = 10;
 // 全局帧 → 思索场景时间（6-3-3 开头几帧接着 6-3-2 往下算）
-export const sceneTime = (G: number) => (G - 段表['6-3-2'].起) / FPS - uiOpen;
+export const sceneTime = (G: number) => (G - segTable['6-3-2'].起) / FPS - uiOpen;
 export const tMatch = sceneTime(0);
 // 思索层的不透明度：全局帧 0 起淡掉
-export const ponderLayerOpacity = (G: number) => 1 - ss(G / 淡出帧数);
+export const ponderLayerOpacity = (G: number) => 1 - ss(G / fadeOutFrameCount);
 // 下坠的风声从推近开始（全局帧，负的）起，随推近渐强，淡到天空时到足（6-3-下坠/声音.tsx；用户 10-19：转场里不要一段没声音）
-export const 风起帧 = Math.round((cues.close[1] - tMatch) * FPS);
-export const windFadeIn = (G: number) => ss((G - 风起帧) / (淡出帧数 - 风起帧));
+export const windStartFrame = Math.round((cues.close[1] - tMatch) * FPS);
+export const windFadeIn = (G: number) => ss((G - windStartFrame) / (fadeOutFrameCount - windStartFrame));
 // 全局帧 0 以后思索里的李樱按下坠的物理时间摆（之前停在 `刻`.俯冲起 的架势上）
-export const transitionW = (t: number) => (t >= tMatch ? 刻.俯冲起 + (t - tMatch) : undefined);
+export const transitionW = (t: number) => (t >= tMatch ? tick.diveStart + (t - tMatch) : undefined);
 
 // 焦距 → 竖直视角（度），同 lib/飞行镜头.tsx 的 FlightRig（36 毫米宽的底片、16:9）
 const aspect = ponderScreen.W / ponderScreen.H;
@@ -50,7 +50,7 @@ const up = new THREE.Vector3(0, 1, 0).applyQuaternion(viewInv);
 let HIP: { pos: THREE.Vector3; restNdc: [number, number] } | null = null;
 const hipRef = () => {
   if (HIP) return HIP;
-  const pos = new THREE.Vector3(...toGame(figureAt(tMatch, 刻.俯冲起).hip));
+  const pos = new THREE.Vector3(...toGame(figureAt(tMatch, tick.diveStart).hip));
   const rel = pos.clone().sub(new THREE.Vector3(...sceneCenter));
   HIP = { pos, restNdc: [rel.dot(right) / (restHeight * aspect / 2), rel.dot(up) / (restHeight / 2)] };
   return HIP;
@@ -74,8 +74,8 @@ export const ponderCamAt = (t: number): PonderCam => {
 // 6-3-3 俯冲的镜头（下坠的场景坐标）：思索镜头相对思索里李樱髋的位置转回 −ψ，挂到真李樱的髋上
 export const diveCam = (G: number): Cam => {
   const cam = ponderCamAt(sceneTime(G));
-  const hipPonder = figureAt(tMatch, 刻.俯冲起).hip;
-  const hipReal = liYing(物理时间(G)).hip;
+  const hipPonder = figureAt(tMatch, tick.diveStart).hip;
+  const hipReal = liYing(physicalTime(G)).hip;
   const unRotate = figureRef().psi.clone().invert();
   const rel = (p: V3): V3 => {
     const v = new THREE.Vector3(...toScene(p)).sub(new THREE.Vector3(...hipPonder)).applyMatrix4(unRotate);

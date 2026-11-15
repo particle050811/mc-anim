@@ -5,31 +5,31 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 减, 加, 乘, 弹道位置, 弹道方向 } from '../零件/弹道.ts';
-import { 贴图粒子 } from '../零件/粒子.tsx';
-import { 各刻 } from '../零件/甲/共用.ts';
-import { 箭形 } from '../零件/甲/箭形.tsx';
-import { 雪花, 雪花类 } from '../零件/甲/原版粒子.ts';
-import 元, { 冰刺道 } from './ice_spike.元.ts';
-import 冰刺图 from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { sub, addVec, scaleVec, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
+import { TexturedParticles } from '../零件/粒子.tsx';
+import { eachTick } from '../零件/甲/共用.ts';
+import { ArrowShape } from '../零件/甲/箭形.tsx';
+import { snowflake, snowflakeClass } from '../零件/甲/原版粒子.ts';
+import meta, { iceSpikePath } from './ice_spike.元.ts';
+import iceSpikePng from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
 
-const 冰刺: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
-  const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 冰刺道(起点, 目标, 选项?.高速);
-  const r = rng(种子 * 3 + 1);
-  const 雪 = 各刻(1, Math.min(刻, 到刻)).map((n) => {
-    const 速 = 减(道(n + 1), 道(n));
-    return 雪花(r, n, 加(道(n), 乘(速, 0.75)), 速);
+const iceSpike: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+  const tick = sec * 20;
+  const { trajectory, arriveTick } = iceSpikePath(from, target, options?.highSpeed);
+  const r = rng(seed * 3 + 1);
+  const snow = eachTick(1, Math.min(tick, arriveTick)).map((n) => {
+    const speedVec = sub(trajectory(n + 1), trajectory(n));
+    return snowflake(r, n, addVec(trajectory(n), scaleVec(speedVec, 0.75)), speedVec);
   });
-  if (刻 >= 到刻) 雪.push(雪花(r, 到刻, 道(到刻), [0, 0, 0.5]));
+  if (tick >= arriveTick) snow.push(snowflake(r, arriveTick, trajectory(arriveTick), [0, 0, 0.5]));
   return (
     <>
-      {刻 < 到刻 && <箭形 位={弹道位置(道, 刻)} 向={弹道方向(道, 刻)} 图={png(冰刺图)} />}
-      <贴图粒子 类={{ ...雪花类, 地面: 目标[2] }} 出生们={雪} 秒={秒} />
+      {tick < arriveTick && <ArrowShape 位={trajectoryPos(trajectory, tick)} dir={trajectoryDir(trajectory, tick)} 图={png(iceSpikePng)} />}
+      <TexturedParticles 类={{ ...snowflakeClass, ground: target[2] }} spawns={snow} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 冰刺);
+export default defineSpellPerformance(meta, iceSpike);

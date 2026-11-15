@@ -4,8 +4,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { encode } from 'fast-png';
-import { 配置 } from '../../../pipeline/环境/配置.ts';
-import { 跑出 } from '../../../pipeline/环境/子进程.ts';
+import { config } from '../../../pipeline/环境/配置.ts';
+import { runCapture } from '../../../pipeline/环境/子进程.ts';
 
 const out = process.argv[2];
 if (!out) throw new Error('用法：node assets/src/核对/生成冒烟资产.ts <输出目录>');
@@ -20,5 +20,5 @@ for (let y = 0; y < 8; y++) {
 }
 fs.writeFileSync(path.join(out, '冒烟色块.png'), encode({ width: 8, height: 8, data: px, channels: 4, depth: 8 }));
 
-跑出([配置('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=1', '-ac', '2', '-c:a', 'vorbis', '-strict', '-2', '-q:a', '5', path.join(out, '冒烟音.ogg')]);
+runCapture([config('ffmpeg'), '-v', 'error', '-y', '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=1', '-ac', '2', '-c:a', 'vorbis', '-strict', '-2', '-q:a', '5', path.join(out, '冒烟音.ogg')]);
 console.log(`写在 ${out}`);

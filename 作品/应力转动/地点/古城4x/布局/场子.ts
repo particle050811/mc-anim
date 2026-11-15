@@ -21,12 +21,12 @@ export const pursuerPath: BlockPos[] = [
   [-852, -51, 226], // 越过东墙落进场子（第三次尖啸）
 ];
 export const shrieks = {
-  第一次: archery.尖啸体, // 6-4-2 开 #210
-  第二次: archery.尖啸体, // 6-4-3 挥刀
-  第三次: [-855, -51, 227] as BlockPos, // 6-4-6 追兵落进场子；收的是感测体 (−850, −51, 226)
-  第三次感测体: [-850, -51, 226] as BlockPos,
-  第四次: [-869, -51, 218] as BlockPos, // 6-4-7 刘心忠踩；收的是感测体 (−868, −51, 218)。这一对是 剧情补块
-  第四次感测体: [-868, -51, 218] as BlockPos,
+  first: archery.sculkShrieker, // 6-4-2 开 #210
+  second: archery.sculkShrieker, // 6-4-3 挥刀
+  third: [-855, -51, 227] as BlockPos, // 6-4-6 追兵落进场子；收的是感测体 (−850, −51, 226)
+  thirdSculkSensor: [-850, -51, 226] as BlockPos,
+  fourth: [-869, -51, 218] as BlockPos, // 6-4-7 刘心忠踩；收的是感测体 (−868, −51, 218)。这一对是 剧情补块
+  fourthSculkSensor: [-868, -51, 218] as BlockPos,
 };
 export const liuXinzhongStompPoint = G4(-864.5, -51, 219.5); // 离感测体 (−868, −51, 218) 3.8 米；踩完往西再走 1.2 米停到 刘心忠站位
 // 6-4-8 / 6-4-9 / 7-1-1 开头的站位（场景）
@@ -39,7 +39,7 @@ export const huangPanSpot = G4(-864.5, -51, 223.5);
 // 落进场子那一跳从墙头往下扑、离地 2（跳得短，再低也快不了多少）。落点都不在别的感测体 8 格内（不然路上就叫了）。
 export const pursuerApexHeights = [6, 2, 4.75, 2.5, 2]; // 黄叛：追兵路 每一跳
 export const liuXinzhongPursuitPath: BlockPos[] = [
-  archery.刘心忠脚底格,
+  archery.liuXinzhongFootCell,
   [-732, -46, 257],
   [-762, -51, 231],
   [-802, -50, 229],

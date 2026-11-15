@@ -4,41 +4,41 @@
 // 这里是她（开幕一顶、每一下冲）、索命劈中和晋升之环炸开、他（挨打、挥剑）、结界的火。
 // 响度两档（三个 Agent 统一，用户没听过）：主要的峰值 −10 dBFS、次要的 −18 dBFS；结界的火是环境，−26 LUFS。配乐在场时间线上（−22 LUFS）。
 // 挑哪几个、哪个算主要都是 Agent 取的，用户没听过。
-import { 窗口段 } from '@engine/段/窗口段.ts';
-import { 真下界包 } from '../../地点/真下界位置.ts';
-import 线 from '../../场/1-台地/时间线.ts';
-import { 停索命, 冲们, 出手起, 图腾秒, 幕起, 幕长, 挥剑世界们, 挨打世界们, 死, 罩严秒 } from '../../场/1-台地/齐放拍.ts';
-import { 齐放声们 } from '../../场/1-台地/齐放声.ts';
-import 声音表 from './声音表.生成.ts';
+import { windowSeg } from '@engine/段/窗口段.ts';
+import { realNetherPack } from '../../地点/真下界位置.ts';
+import timeline from '../../场/1-台地/时间线.ts';
+import { killingPause, dashRanges, castStart, totemSec, actStart, actDur, swingWorldTimes, takenHitsWorld, deathTime, coverFullSec } from '../../场/1-台地/齐放拍.ts';
+import { massCastSounds } from '../../场/1-台地/齐放声.ts';
+import soundTable from './声音表.生成.ts';
 
-const 主 = -10;
-const 次 = -18;
+const mainPeakDb = -10;
+const peakDb = -18;
 /** 一个事件有几个文件的，轮着用 */
-const 轮 = (前: string, n: number, i: number) => `${前}.${(i % n) + 1}`;
+const roundRobin = (prefix: string, n: number, i: number) => `${prefix}.${(i % n) + 1}`;
 
-export default 窗口段(线, {
+export default windowSeg(timeline, {
   起: '开盘完',
   止: '齐放完',
-  地形: [真下界包],
-  声音表,
-  声音: ({ 放, 秒 }) => {
-    if (Math.abs(秒 - 幕长) > 1 / 60) throw new Error(`齐放段长 ${秒} 秒和 齐放拍.ts 的幕长 ${幕长} 对不上`);
+  地形: [realNetherPack],
+  soundTable,
+  声音: ({ 放: play, 秒: durSec }) => {
+    if (Math.abs(durSec - actDur) > 1 / 60) throw new Error(`齐放段长 ${durSec} 秒和 齐放拍.ts 的幕长 ${actDur} 对不上`);
     return [
       // 她：开幕杖往前一顶、第一轮离手（结界的施放声就是使徒这一声，游戏里她起手放炼狱）
-      放('音效/诡厄巫法/goety.apostle_cast_spell.1', 出手起, { 峰值: 主, 名: '齐放' }),
+      play('音效/诡厄巫法/goety.apostle_cast_spell.1', castStart, { 峰值: mainPeakDb, 名: '齐放' }),
       // 她每一下冲：一声破风
-      ...冲们.map((c, i) => 放(轮('音效/诡厄巫法/goety.heavy_woosh', 5, i), c.起, { 峰值: 次, 名: `冲${i + 1}` })),
+      ...dashRanges.map((c, i) => play(roundRobin('音效/诡厄巫法/goety.heavy_woosh', 5, i), c.起, { 峰值: peakDb, 名: `冲${i + 1}` })),
       // 每一发的起手、出手、飞行、命中（场/1-台地/齐放声.ts）
-      ...齐放声们().map((x) => 放(x.资产, x.秒, { 峰值: x.峰值, 名: x.名, ...(x.速率 ? { 速率: x.速率 } : {}) })),
+      ...massCastSounds().map((x) => play(x.资产, x.秒, { 峰值: x.峰值, 名: x.名, ...(x.速率 ? { 速率: x.速率 } : {}) })),
       // 索命劈中（打击停顿 16 帧的开头）：雷霆、闪电劈，游戏里两个一起响；同一刻晋升之环炸开，照不死图腾响 item.totem.use
-      放('音效/诡厄巫法/goety.thunderbolt.1', 停索命.起, { 峰值: 主, 名: '索命' }),
-      放('音效/entity.lightning_bolt.impact.1', 停索命.起, { 峰值: 主, 名: '索命-劈' }),
-      放('音效/item.totem.use', 图腾秒 - 幕起, { 峰值: 主, 名: '图腾' }),
+      play('音效/诡厄巫法/goety.thunderbolt.1', killingPause.起, { 峰值: mainPeakDb, 名: '索命' }),
+      play('音效/entity.lightning_bolt.impact.1', killingPause.起, { 峰值: mainPeakDb, 名: '索命-劈' }),
+      play('音效/item.totem.use', totemSec - actStart, { 峰值: mainPeakDb, 名: '图腾' }),
       // 他：挨打（0.5 秒里挨几下只响一下，同变红）、挥剑
-      ...挨打世界们.map((h, i) => 放(轮('音效/entity.player.hurt', 3, i), h.秒, { 峰值: h.重 ? 主 : 次, 名: `挨打${i + 1}` })),
-      ...挥剑世界们.map((c, i) => 放(轮('音效/entity.player.attack.sweep', 7, i), c, { 峰值: 次, 名: `挥剑${i + 1}` })),
+      ...takenHitsWorld.map((h, i) => play(roundRobin('音效/entity.player.hurt', 3, i), h.秒, { 峰值: h.重 ? mainPeakDb : peakDb, 名: `挨打${i + 1}` })),
+      ...swingWorldTimes.map((c, i) => play(roundRobin('音效/entity.player.attack.sweep', 7, i), c, { 峰值: peakDb, 名: `挥剑${i + 1}` })),
       // 结界：罩严后人在火里，原版每刻烧人响 block.fire.ambient；他死就停
-      放('音效/block.fire.ambient', 罩严秒, { 响度: -26, 循环: true, 长秒: 死 - 罩严秒, 名: '结界火' }),
+      play('音效/block.fire.ambient', coverFullSec, { 响度: -26, 循环: true, 长秒: deathTime - coverFullSec, 名: '结界火' }),
     ];
   },
 });

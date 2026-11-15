@@ -8,7 +8,7 @@ import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { FlightRig } from '../../../地点/飞行镜头.tsx';
 import { TwilightLighting, twilightFogNear } from '@engine/light/暮色光照.tsx';
 import { twilightSunDir } from '@engine/light/光照配比.ts';
@@ -23,7 +23,7 @@ import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
 import { LichScene } from '../6-1-5/戏.tsx';
-import { 贯穿时刻 } from '../一镜到底/路线.ts';
+import { pierceTimes } from '../一镜到底/路线.ts';
 
 export const SUN = twilightSunDir;
 
@@ -31,7 +31,7 @@ const sheath = <WornSheath />;
 
 // 只画画面，第几格 = 秒 × 24（带小数）；声音照用到它的段（6-起飞、6-穿塔斩首领）段.ts 的 cue 放
 export const TakeOff: React.FC = () => {
-  const frame = use当前秒() * 24;
+  const frame = useCurrentSec() * 24;
   const { width, height } = useVideoConfig();
   const local = choreo.camera(frame);
   const origin = choreo.courtyard.原点;
@@ -56,7 +56,7 @@ export const TakeOff: React.FC = () => {
           {/* 巫妖怪塔：起飞朝东南 135° 以后它就在正前方 2 公里（直航，用户 10-05「为什么起飞的时候就不能把那个扫帚摆好方向」），升上林海以后地平线上看得见塔尖。
               一镜到底（6-1-4+5）从第 0 帧起画它，这里不画的话末帧接 6-1-4+5 首帧时塔尖一下子冒出来（整合时逐像素比出来的）。
               时间照一镜到底的口径：6-1-3 末帧 = 一镜到底第 0 帧（物理时间 0），塔还没被撞 */}
-          {frame >= choreo.beats.起飞 && <LichScene t={(frame - choreo.beats.末帧) / 24 - 贯穿时刻.巫妖} />}
+          {frame >= choreo.beats.takeoff && <LichScene t={(frame - choreo.beats.末帧) / 24 - pierceTimes.巫妖} />}
           <LandmarkPlacement 名="娜迦庭院">
             {broom.appear > 0 && (
               <RideBroom
@@ -65,15 +65,15 @@ export const TakeOff: React.FC = () => {
                 pitch={broom.pitch}
                 roll={broom.roll}
                 broom={{ appear: broom.appear }}
-                liYing={riders.liYing ? { ...riders.liYing, hipItem: sheath, 嘴: liYingMouth } : false}
-                jiuhu={riders.jiuhu ? { ...riders.jiuhu, 嘴: jiuhuMouth } : riders.jiuhu}
+                liYing={riders.liYing ? { ...riders.liYing, hipItem: sheath, mouth: liYingMouth } : false}
+                jiuhu={riders.jiuhu ? { ...riders.jiuhu, mouth: jiuhuMouth } : riders.jiuhu}
               />
             )}
             <group position={choreo.CHEST as [number, number, number]}>
               <Chest 贴图={TWILIGHT_CHEST_TEX.暮色橡木} />
             </group>
-            {ly && <LiYing pose={ly} hipL={sheath} 嘴={liYingMouth} />}
-            {jh && <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} 嘴={jiuhuMouth} />}
+            {ly && <LiYing pose={ly} hipL={sheath} mouth={liYingMouth} />}
+            {jh && <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} mouth={jiuhuMouth} />}
           </LandmarkPlacement>
         </group>
       </ThreeCanvas>

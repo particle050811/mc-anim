@@ -2,32 +2,32 @@
 // 符文歌词（全片 15 行，按歌自己进出）叠在两屏和分屏线上面、整页那层质感里面：不跟哪一屏调色（两屏一冷一暖），描边色取服务器那半的调子。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 插调子 } from '@engine/三渲二/调子.ts';
-import { 段时钟 } from '../../分镜/正片第13至14句.ts';
-import { 分屏态 } from '../../场/2-门口/分屏参数.ts';
-import { 时差分屏 } from '../../场/2-门口/时差分屏.tsx';
-import { 色板 } from '../../色板.ts';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 光影段 } from '../../默认.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { lerpTone } from '@engine/三渲二/调子.ts';
+import { segClock } from '../../分镜/正片第13至14句.ts';
+import { SplitState } from '../../场/2-门口/分屏参数.ts';
+import { TimeLagSplit } from '../../场/2-门口/时差分屏.tsx';
+import { palette } from '../../色板.ts';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { shadingBySeg } from '../../默认.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useCurrentFrame } from '../../当前帧.ts';
 
-const 起帧 = 段时钟('2-时差').起帧;
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
+const startFrame = segClock('2-时差').起帧;
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const 帧 = 起帧 + f;
+const picture: React.FC = () => {
+  const f = useCurrentFrame();
+  const frame = startFrame + f;
   // 同 时差分屏.tsx 的 服务器调子
-  const 描边色 = 插调子(色板.夏日白天, 色板.褪色, 分屏态(帧).褪色).描边;
+  const outlineColor = lerpTone(palette.夏日白天, palette.褪色, SplitState(frame).褪色).outlineColor;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <时差分屏 帧={帧} 接入 种子={帧} 光影={光影段['2-时差']} 现实光影={光影段['2-时差/现实']} 叠层={<符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色 }} />} />
+      <TimeLagSplit 帧={frame} joining 种子={frame} shading={shadingBySeg['2-时差']} realShading={shadingBySeg['2-时差/现实']} 叠层={<RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor }} />} />
     </AbsoluteFill>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

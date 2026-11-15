@@ -1,23 +1,23 @@
 // 正片第 7 句「你让我学会如何拨开阴霾」：接着 2-雷雨 那个镜头，她站起来两手举向天，镜头往后退、往上抬；脚下展开魔法阵，光柱冲上云、撞亮云底，
 // 云一圈一圈散开、撕出蓝天，阳光从洞里照下来铺过炸掉一角的屋子、雨停（画法在 场/2-雷雨/画面.tsx）。
 // 帧数、场窗口、原声和音效 cue 都从 分镜 推（雨声接着上一段放到雨停，信标声从「拨」起），增益在场参数，段里不写数字。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段时钟 } from '../../分镜/正片第6到7句.ts';
-import { 正片原声增益 } from '../../配乐/正片.ts';
-import { 段里那截 } from '../../声音/跨段音效.ts';
-import { 雨声们, 信标 } from '../../场/2-雷雨/声音.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segClock } from '../../分镜/正片第6到7句.ts';
+import { mainCutOriginalGain } from '../../配乐/正片.ts';
+import { clipToSegment } from '../../声音/跨段音效.ts';
+import { rainSounds, beaconSound } from '../../场/2-雷雨/声音.ts';
 
-const 键 = '2-拨开阴霾';
-const 钟 = 段时钟(键);
-const 截们 = [信标, ...雨声们].map((音) => 段里那截(钟.场窗口, 音)).filter((c) => c !== null);
+const segKey = '2-拨开阴霾';
+const clock = segClock(segKey);
+const soundCuts = [beaconSound, ...rainSounds].map((cue) => clipToSegment(clock.sceneWindow, cue)).filter((c) => c !== null);
 
-export default 定义段({
+export default defineSeg({
   场: '2-雷雨',
-  秒: 钟.秒,
-  宽: 画幅.宽,
-  高: 画幅.高,
+  秒: clock.秒,
+  宽: aspect.宽,
+  高: aspect.高,
   地形: [],
-  场窗口: 钟.场窗口,
-  声音: [{ ...钟.原声, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: 正片原声增益 }, ...截们],
+  sceneWindow: clock.sceneWindow,
+  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: mainCutOriginalGain }, ...soundCuts],
 });

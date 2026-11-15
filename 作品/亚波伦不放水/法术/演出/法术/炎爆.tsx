@@ -6,34 +6,34 @@
 // 没做：半径内生物受击着火；BIG_FIRE 随机左右翻转。
 import React from 'react';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 十六进制色 } from '../零件/材质.ts';
-import { 冲击波环 } from '../零件/冲击波.tsx';
-import { 默认半径, 上升初值, 大火类, 大火寿命 } from '../零件/丁粒子.ts';
-import { 球爆 } from '../零件/甲/爆.tsx';
-import { 贴图粒子, type 粒子出生 } from '../零件/粒子.tsx';
-import 元 from './炎爆.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { hexColor } from '../零件/材质.ts';
+import { ShockwaveRing } from '../零件/冲击波.tsx';
+import { defaultRadius, risingInitial, bigFireClass, bigFireLifetime } from '../零件/丁粒子.ts';
+import { SphereBurst } from '../零件/甲/爆.tsx';
+import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
+import meta from './炎爆.元.ts';
 
-const 橙金 = 十六进制色(0xdd9c16);
-const 半径 = 3.5;
+const orangeGold = hexColor(0xdd9c16);
+const radius = 3.5;
 
-const 炎爆: React.FC<法术演出属性> = ({ 秒, 起点, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const r = rng(种子 * 7919 + 17);
-  const 颗数 = 4 + Math.floor(r() * 13);
-  const 火们: 粒子出生[] = Array.from({ length: 颗数 }, (_, i) => {
-    const 位: [number, number, number] = [起点[0] + (r() - 0.5) * 半径, 起点[1] + (r() - 0.5) * 半径, 起点[2] + (r() - 0.5) * 半径];
-    const 初 = 上升初值(种子 * 101 + i, 位, [0, 0, 0], false);
-    return { 刻: 0, 位: 初.位, 速: 初.速, 寿命: 大火寿命, 半径: 默认半径(r) * 3, 种子: 初.种子 };
+const FlameBurst: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+  const tick = sec * 20;
+  const r = rng(seed * 7919 + 17);
+  const particleCount = 4 + Math.floor(r() * 13);
+  const flames: ParticleBirth[] = Array.from({ length: particleCount }, (_, i) => {
+    const pos: [number, number, number] = [from[0] + (r() - 0.5) * radius, from[1] + (r() - 0.5) * radius, from[2] + (r() - 0.5) * radius];
+    const initial = risingInitial(seed * 101 + i, pos, [0, 0, 0], false);
+    return { 刻: 0, 位: initial.位, 速: initial.速, 寿命: bigFireLifetime, radius: defaultRadius(r) * 3, 种子: initial.种子 };
   });
   return (
     <>
-      <冲击波环 位={起点} 刻={刻} 大小={半径} 色={橙金} 速={1} />
-      <球爆 位={起点} 刻={刻} 色={橙金} 尺寸={半径} 速={1} />
-      <贴图粒子 类={大火类} 出生们={火们} 秒={秒} />
+      <ShockwaveRing 位={from} 刻={tick} 大小={radius} 色={orangeGold} 速={1} />
+      <SphereBurst 位={from} 刻={tick} 色={orangeGold} 尺寸={radius} 速={1} />
+      <TexturedParticles 类={bigFireClass} spawns={flames} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 炎爆);
+export default defineSpellPerformance(meta, FlameBurst);

@@ -86,13 +86,13 @@ let textureCache: { maille: Png; blazingBloodBucket: Png } | null = null;
 const processTextures = () => (textureCache ??= { maille: recolorGrayscale(png(maillePartPng), alphaFurPalette), blazingBloodBucket: bucketWithFluid(png(blazingBloodPng)) });
 
 // ---------- 冶炼炉燃料 ----------
-type SmelteryFuel = { fluidName: string; 贴图: string; ticksPerFrame: number; 染色?: string; 温度: number; rate: number; 持续: number; 量: number; sourceMod: string };
+type SmelteryFuel = { fluidName: string; 贴图: string; ticksPerFrame: number; tint?: string; temperature: number; rate: number; duration: number; amount: number; sourceMod: string };
 export const fuelData: Record<'Cloudertinker' | 'Twilight Construct', SmelteryFuel> = {
   // cloudertinker-1.20.1-forge-1.2.11.jar data/cloudertinker/recipes/fuel/fireblood.json；液体贴图 tconstruct:fluid/slime/fiery/still（32 帧、每帧 3 刻）
-  Cloudertinker: { fluidName: '炽热的液体', 贴图: fieryLiquidPng, ticksPerFrame: 3, 温度: 2000, rate: 40, 持续: 500, 量: 25, sourceMod: 'cloudertinker' },
+  Cloudertinker: { fluidName: '炽热的液体', 贴图: fieryLiquidPng, ticksPerFrame: 3, temperature: 2000, rate: 40, duration: 500, amount: 25, sourceMod: 'cloudertinker' },
   // twilight_construct-1.0.7.jar data/twilight_construct/recipes/smeltery/fuel/fiery.json；
   // 液体贴图借匠魂的 tconstruct:fluid/food/stew/still（每帧 2 刻），染成 FF4F1010（assets/twilight_construct/mantle/fluid_texture/fiery_blood.json）
-  'Twilight Construct': { fluidName: '炽热精华', 贴图: stewPng, ticksPerFrame: 2, 染色: '#4F1010', 温度: 1700, rate: 17, 持续: 400, 量: 10, sourceMod: 'twilight_construct' },
+  'Twilight Construct': { fluidName: '炽热精华', 贴图: stewPng, ticksPerFrame: 2, tint: '#4F1010', temperature: 1700, rate: 17, duration: 400, amount: 10, sourceMod: 'twilight_construct' },
 };
 // 画面上用哪一份：Cloudertinker 同时有雪怪首领毛皮材料，一个附属把两件战利品都讲通，先用它
 export const fuelSource: keyof typeof fuelData = 'Cloudertinker';
@@ -100,7 +100,7 @@ export const fuelSource: keyof typeof fuelData = 'Cloudertinker';
 export const fuelRecipeSize = { width: 132, height: 40 };
 export const FuelRecipe: React.FC<{ s: number; t: number }> = ({ s: scale, t }) => {
   const fuel = fuelData[fuelSource];
-  const fluidHeight = (32 * fuel.量) / 100; // JEI 液体槽按 100 mB 的容量画
+  const fluidHeight = (32 * fuel.amount) / 100; // JEI 液体槽按 100 mB 的容量画
   const frame = Math.floor((t * 20) / fuel.ticksPerFrame);
   const tex = png(fuel.贴图);
   const textRow = (y: number, text: string, c = jeiGray, shadow = false) => (
@@ -118,15 +118,15 @@ export const FuelRecipe: React.FC<{ s: number; t: number }> = ({ s: scale, t }) 
         <div style={{ position: 'absolute', left: 0, bottom: 0 }}>
           <PixelSprite tex={tex} size={16 * scale} frame={frame} />
         </div>
-        {fuel.染色 && <div style={{ position: 'absolute', inset: 0, background: fuel.染色, mixBlendMode: 'multiply' }} />}
+        {fuel.tint && <div style={{ position: 'absolute', inset: 0, background: fuel.tint, mixBlendMode: 'multiply' }} />}
       </div>
       {textRow(0, fuel.fluidName, chatColors.white, true)}
-      {textRow(11, `${fuel.温度}°C`)}
+      {textRow(11, `${fuel.temperature}°C`)}
       {textRow(21, `速度倍率：${(fuel.rate / 10).toFixed(1)}x`)}
       {textRow(31, '持续：')}
       <div style={{ position: 'absolute', left: 21 * scale, top: 31 * scale, width: 105 * scale, textAlign: 'right' }}>
         <UiText fontSize={8.6 * scale} color={jeiGray} shadow={false}>
-          {`${fuel.持续 / 5} 秒 / ${fuel.量} mB`}
+          {`${fuel.duration / 5} 秒 / ${fuel.amount} mB`}
         </UiText>
       </div>
     </>

@@ -6,25 +6,25 @@ import React from 'react';
 import * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
 import { entityTexture } from '@engine/model/贴图方盒.tsx';
-import 裂0 from 'asset:贴图/特效/方块裂纹/0';
-import 裂1 from 'asset:贴图/特效/方块裂纹/1';
-import 裂2 from 'asset:贴图/特效/方块裂纹/2';
-import 裂3 from 'asset:贴图/特效/方块裂纹/3';
-import 裂4 from 'asset:贴图/特效/方块裂纹/4';
-import 裂5 from 'asset:贴图/特效/方块裂纹/5';
-import 裂6 from 'asset:贴图/特效/方块裂纹/6';
-import 裂7 from 'asset:贴图/特效/方块裂纹/7';
-import 裂8 from 'asset:贴图/特效/方块裂纹/8';
-import 裂9 from 'asset:贴图/特效/方块裂纹/9';
+import crack0Png from 'asset:贴图/特效/方块裂纹/0';
+import crack1Png from 'asset:贴图/特效/方块裂纹/1';
+import crack2Png from 'asset:贴图/特效/方块裂纹/2';
+import crack3Png from 'asset:贴图/特效/方块裂纹/3';
+import crack4Png from 'asset:贴图/特效/方块裂纹/4';
+import crack5Png from 'asset:贴图/特效/方块裂纹/5';
+import crack6Png from 'asset:贴图/特效/方块裂纹/6';
+import crack7Png from 'asset:贴图/特效/方块裂纹/7';
+import crack8Png from 'asset:贴图/特效/方块裂纹/8';
+import crack9Png from 'asset:贴图/特效/方块裂纹/9';
 
-const 图们 = [裂0, 裂1, 裂2, 裂3, 裂4, 裂5, 裂6, 裂7, 裂8, 裂9];
-const 材质们 = new Map<number, THREE.MeshBasicMaterial>();
-let 盒: THREE.BoxGeometry | null = null;
-const 材质 = (级: number) => {
-  let m = 材质们.get(级);
+const textures = [crack0Png, crack1Png, crack2Png, crack3Png, crack4Png, crack5Png, crack6Png, crack7Png, crack8Png, crack9Png];
+const materials = new Map<number, THREE.MeshBasicMaterial>();
+let boxGeometry: THREE.BoxGeometry | null = null;
+const crackMaterial = (level: number) => {
+  let m = materials.get(level);
   if (!m) {
     m = new THREE.MeshBasicMaterial({
-      map: entityTexture(png(图们[级]!)),
+      map: entityTexture(png(textures[level]!)),
       transparent: true,
       alphaTest: 0.1,
       depthWrite: false,
@@ -36,14 +36,14 @@ const 材质 = (级: number) => {
       blendDstAlpha: THREE.OneFactor,
       toneMapped: false,
     });
-    材质们.set(级, m);
+    materials.set(level, m);
   }
   return m;
 };
 
 /** 级：0～9（原版 destroyProgress × 10 取整）；格：被挖方块的中心（剖面坐标） */
-export const 裂纹: React.FC<{ 格: readonly [number, number, number]; 级: number }> = ({ 格, 级 }) => {
-  盒 ??= new THREE.BoxGeometry(1.002, 1.002, 1.002);
-  const 级整 = Math.max(0, Math.min(9, Math.floor(级)));
-  return <mesh geometry={盒} material={材质(级整)} position={[格[0], 格[1], 格[2]]} />;
+export const BlockCracks: React.FC<{ 格: readonly [number, number, number]; 级: number }> = ({ 格: cellPos, 级: level }) => {
+  boxGeometry ??= new THREE.BoxGeometry(1.002, 1.002, 1.002);
+  const levelInt = Math.max(0, Math.min(9, Math.floor(level)));
+  return <mesh geometry={boxGeometry} material={crackMaterial(levelInt)} position={[cellPos[0], cellPos[1], cellPos[2]]} />;
 };

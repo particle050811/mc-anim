@@ -7,7 +7,7 @@ import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { bowPointWorld, BOW_ARROW_TIP, bowTextureFor, type BowTexture } from '@库/物品/弓.tsx';
 import { ARROW } from '@库/物品/箭.tsx';
 import { nearYaw, yawTo } from '../../6-4-1/古城戏.ts';
-import type { 弓前风扇 } from '../弓前风扇.tsx';
+import type { BowWindFan } from '../弓前风扇.tsx';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
 import { elevationDeg, lerp, lerpV, pulseWindow, pursuersAfter649, ss, yawFromTo } from './公用.ts';
@@ -20,31 +20,31 @@ const huangHeight = 1.875;
 // - 满风（风矢）：同 6-4-3，满转 256、快放 880，箭出风道 1000 米/秒。
 // - 小风（照亮用的火把箭）：转速开到四分之一（风道 2.2 格）、快放 132，箭约 150 米/秒，末端的风（165 米/秒）还比箭快；
 //   这个速度扎进幽匿块地面就停住、按夸克火把箭立成火把，不会像风矢那样把方块打穿（6-4-3 挑飞击穿）。
-export type 风档 = { 转速: number; 快放: number; 箭速: number };
-const 满风: 风档 = { 转速: 256, 快放: 880, 箭速: 1000 };
-const 小风: 风档 = { 转速: 64, 快放: 132, 箭速: 150 };
-export type ArrowShot = { 放: number; 中: number; 起: V3; 落: V3; yaw: number; 俯仰: number; 火把?: V3; 风矢?: boolean; 风: 风档; drawSec: number; hitsWarden?: boolean };
-type ArrowOpts = { 火把?: V3; 风矢?: boolean; drawSec: number; hitsWarden?: boolean };
+export type WindGear = { rotSpeedRpm: number; fastForward: number; arrowSpeed: number };
+const fullWind: WindGear = { rotSpeedRpm: 256, fastForward: 880, arrowSpeed: 1000 };
+const smallWind: WindGear = { rotSpeedRpm: 64, fastForward: 132, arrowSpeed: 150 };
+export type ArrowShot = { 放: number; 中: number; 起: V3; landing: V3; yaw: number; pitch: number; torchPos?: V3; windCharge?: boolean; wind: WindGear; drawSec: number; hitsWarden?: boolean };
+type ArrowOpts = { torchPos?: V3; windCharge?: boolean; drawSec: number; hitsWarden?: boolean };
 // 放箭那一刻的拉弓姿势（空中放的按那一刻的空中位置）：箭从满弓的箭尖出
 const makeArrow = (releaseT: number, aimTarget: V3 | ((t: number) => V3), opts: ArrowOpts): ArrowShot => {
-  const wind = opts.风矢 ? 满风 : 小风;
-  const speed = wind.箭速;
+  const wind = opts.windCharge ? fullWind : smallWind;
+  const speed = wind.arrowSpeed;
   const targetAt = typeof aimTarget === 'function' ? aimTarget : () => aimTarget;
   const feet = huangPanPos(releaseT);
   const eye: V3 = [feet[0], feet[1], feet[2] + 1.62];
   let hitPos = targetAt(releaseT + 0.1);
   const aimAt = (point: V3) => {
     const delta = [point[0] - eye[0], point[1] - eye[1], point[2] - eye[2]];
-    return { yaw: yawTo(delta[0], delta[1]), 俯仰: (Math.atan2(delta[2], Math.hypot(delta[0], delta[1])) * 180) / Math.PI };
+    return { yaw: yawTo(delta[0], delta[1]), pitch: (Math.atan2(delta[2], Math.hypot(delta[0], delta[1])) * 180) / Math.PI };
   };
   let aim = aimAt(hitPos);
-  let startPos = bowPointWorld(drawBowPose(feet, aim.yaw, 0, aim.俯仰, 1), huangHeight, 'L', BOW_ARROW_TIP.弓拉2);
+  let startPos = bowPointWorld(drawBowPose(feet, aim.yaw, 0, aim.pitch, 1), huangHeight, 'L', BOW_ARROW_TIP.弓拉2);
   let hitT = releaseT + Math.hypot(hitPos[0] - startPos[0], hitPos[1] - startPos[1], hitPos[2] - startPos[2]) / speed;
   hitPos = targetAt(hitT);
   aim = aimAt(hitPos);
-  startPos = bowPointWorld(drawBowPose(feet, aim.yaw, 0, aim.俯仰, 1), huangHeight, 'L', BOW_ARROW_TIP.弓拉2);
+  startPos = bowPointWorld(drawBowPose(feet, aim.yaw, 0, aim.pitch, 1), huangHeight, 'L', BOW_ARROW_TIP.弓拉2);
   hitT = releaseT + Math.hypot(hitPos[0] - startPos[0], hitPos[1] - startPos[1], hitPos[2] - startPos[2]) / speed;
-  return { 放: releaseT, 中: hitT, 起: startPos, 落: hitPos, yaw: aim.yaw, 俯仰: aim.俯仰, 风: wind, ...opts };
+  return { 放: releaseT, 中: hitT, 起: startPos, landing: hitPos, yaw: aim.yaw, pitch: aim.pitch, wind: wind, ...opts };
 };
 // 按要钉中的时刻倒推放箭（先按飞 0.01 秒放一次，再把差的补上）
 const arrowHittingAt = (hitT: number, aimTarget: (t: number) => V3, opts: ArrowOpts) => {
@@ -54,55 +54,55 @@ const arrowHittingAt = (hitT: number, aimTarget: (t: number) => V3, opts: ArrowO
 const cellCenter = (c: V3): V3 => [c[0] + 0.5, c[1] + 0.5, c[2] + 0.05];
 // 照亮的火把箭（小风，飞行简化成直线）：落地立成火把
 export const torchArrows: ArrowShot[] = [
-  ...timeline.torchArrowReleaseTs.map((t, i) => makeArrow(t, cellCenter(geom.torchBlocks[i]), { 火把: geom.torchBlocks[i], drawSec: 0.6 })),
-  makeArrow(timeline.woolTorchReleaseT, cellCenter(geom.torchBlocks[4]), { 火把: geom.torchBlocks[4], drawSec: timeline.woolTorchReleaseT - timeline.woolTorchDrawT }),
+  ...timeline.torchArrowReleaseTs.map((t, i) => makeArrow(t, cellCenter(geom.torchBlocks[i]), { torchPos: geom.torchBlocks[i], drawSec: 0.6 })),
+  makeArrow(timeline.woolTorchReleaseT, cellCenter(geom.torchBlocks[4]), { torchPos: geom.torchBlocks[4], drawSec: timeline.woolTorchReleaseT - timeline.woolTorchDrawT }),
 ];
 // 风矢（7-1-5）：H3 最高点放，千米每秒级，一闪就钉进后背（同 6-4-3、7-4-1 的 1000 米/秒）
-export const windArrowShot = makeArrow(windArrowReleaseT, wardenChestPos, { 风矢: true, drawSec: windArrowReleaseT - timeline.windArrowDrawT, hitsWarden: true });
+export const windArrowShot = makeArrow(windArrowReleaseT, wardenChestPos, { windCharge: true, drawSec: windArrowReleaseT - timeline.windArrowDrawT, hitsWarden: true });
 // 7-1-7：黄叛在黄叛高台上接着射，两支都是风矢、钉在监守者身上（钉中时刻见 时间线.ts 的 huangFollowArrowHitTs，伤害见 ./伤害.ts）。
 //   两支放箭只隔 0.82 秒，拉弓 0.5 秒：前一支的鼓风机散了后一支的才化出来
-export const huangFollowArrows: ArrowShot[] = timeline.huangFollowArrowHitTs.map((t) => arrowHittingAt(t, wardenChestPos, { 风矢: true, drawSec: 0.5, hitsWarden: true }));
+export const huangFollowArrows: ArrowShot[] = timeline.huangFollowArrowHitTs.map((t) => arrowHittingAt(t, wardenChestPos, { windCharge: true, drawSec: 0.5, hitsWarden: true }));
 export const allArrows = [...torchArrows, windArrowShot, ...huangFollowArrows];
 hurtTs.push(windArrowShot.中, ...huangFollowArrows.map((a) => a.中));
 // 钉在身子上（跟着 body 部件走路摆、攻击），按钉中那一刻的位置换到身子坐标里
 export const wardenFrame = (t: number): WardenFrame => {
   const w = wardenState(t);
-  return { p: w.p, entityYaw: w.entityYaw, 前倾: w.前倾, props: w };
+  return { p: w.p, entityYaw: w.entityYaw, forwardLean: w.forwardLean, props: w };
 };
 const pins = new Map<ArrowShot, BodyPin>();
 const pinOf = (arrow: ArrowShot) => {
   if (!pins.has(arrow)) {
-    const shaftVec = [arrow.落[0] - arrow.起[0], arrow.落[1] - arrow.起[1], arrow.落[2] - arrow.起[2]];
+    const shaftVec = [arrow.landing[0] - arrow.起[0], arrow.landing[1] - arrow.起[1], arrow.landing[2] - arrow.起[2]];
     const shaftLen = Math.hypot(shaftVec[0], shaftVec[1], shaftVec[2]);
     const dir: V3 = [shaftVec[0] / shaftLen, shaftVec[1] / shaftLen, shaftVec[2] / shaftLen];
     // 箭尖扎到身子中轴前 0.075 格
     const back = 0.3;
-    pins.set(arrow, pinToWardenBody(wardenFrame(arrow.中), [arrow.落[0] - dir[0] * back, arrow.落[1] - dir[1] * back, arrow.落[2] - dir[2] * back], dir));
+    pins.set(arrow, pinToWardenBody(wardenFrame(arrow.中), [arrow.landing[0] - dir[0] * back, arrow.landing[1] - dir[1] * back, arrow.landing[2] - dir[2] * back], dir));
   }
   return pins.get(arrow)!;
 };
 export const stuckArrows = (t: number) =>
   [windArrowShot, ...huangFollowArrows]
     .filter((a) => t >= a.中)
-    .map((arrow) => ({ ...wardenBodyPinAt(wardenFrame(t), pinOf(arrow)), 火把箭: false }));
-export const torches = (t: number) => torchArrows.filter((a) => a.火把 && t >= a.中).map((a) => ({ cell: a.火把!, 起: a.中 }));
+    .map((arrow) => ({ ...wardenBodyPinAt(wardenFrame(t), pinOf(arrow)), torchArrow: false }));
+export const torches = (t: number) => torchArrows.filter((a) => a.torchPos && t >= a.中).map((a) => ({ cell: a.torchPos!, 起: a.中 }));
 export const flyingArrows = (t: number) =>
   allArrows
     .filter((a) => t >= a.放 && t < a.中)
     .map((arrow) => {
       const k = (t - arrow.放) / (arrow.中 - arrow.放);
-      const shaftVec = [arrow.落[0] - arrow.起[0], arrow.落[1] - arrow.起[1], arrow.落[2] - arrow.起[2]];
+      const shaftVec = [arrow.landing[0] - arrow.起[0], arrow.landing[1] - arrow.起[1], arrow.landing[2] - arrow.起[2]];
       const shaftLen = Math.hypot(shaftVec[0], shaftVec[1], shaftVec[2]);
-      return { p: lerpV(arrow.起, arrow.落, k), dir: [shaftVec[0] / shaftLen, shaftVec[1] / shaftLen, shaftVec[2] / shaftLen] as V3, 火把箭: !arrow.风矢 };
+      return { p: lerpV(arrow.起, arrow.landing, k), dir: [shaftVec[0] / shaftLen, shaftVec[1] / shaftLen, shaftVec[2] / shaftLen] as V3, torchArrow: !arrow.windCharge };
     });
 // 鼓风机虚影（6-4-3a 同款，每一箭都有）：放箭前 拉弓时长（最多 0.6 秒）化出、放箭后 0.3 秒散，跟着弓走（空中放的人在飞，按这一刻和放箭那一刻的脚底差平移）
 export const fanSize = 0.3;
-export const fansAt = (t: number): 弓前风扇[] =>
+export const fansAt = (t: number): BowWindFan[] =>
   allArrows.flatMap((arrow, i) => {
     const lead = Math.min(0.6, arrow.drawSec);
     const visibility = ss((t - (arrow.放 - lead)) / 0.15) * (1 - ss((t - arrow.放) / 0.3));
     if (visibility <= 0) return [];
-    const shaftVec = [arrow.落[0] - arrow.起[0], arrow.落[1] - arrow.起[1], arrow.落[2] - arrow.起[2]];
+    const shaftVec = [arrow.landing[0] - arrow.起[0], arrow.landing[1] - arrow.起[1], arrow.landing[2] - arrow.起[2]];
     const shaftLen = Math.hypot(shaftVec[0], shaftVec[1], shaftVec[2]);
     const dir: V3 = [shaftVec[0] / shaftLen, shaftVec[1] / shaftLen, shaftVec[2] / shaftLen];
     const feet = huangPanPos(t);
@@ -110,11 +110,11 @@ export const fansAt = (t: number): 弓前风扇[] =>
     const off = ARROW.tipAhead + 0.04 + fanSize / 2;
     const center: V3 = [0, 1, 2].map((k) => arrow.起[k] + feet[k] - feetAtRelease[k] + dir[k] * off) as V3;
     const mouth: V3 = [0, 1, 2].map((k) => center[k] + (dir[k] * fanSize) / 2) as V3;
-    return [{ 显: visibility, dir, 心: center, 口: mouth, 边长: fanSize, 转起: arrow.放 - lead, 风停: arrow.放 + 0.25, 转速: arrow.风.转速, 快放: arrow.风.快放, 种子: arrow === windArrowShot ? 71 : 101 + 2 * i }];
+    return [{ visibility: visibility, dir, 心: center, mouth: mouth, sideLength: fanSize, spinStart: arrow.放 - lead, windStop: arrow.放 + 0.25, rotSpeedRpm: arrow.wind.rotSpeedRpm, fastForward: arrow.wind.fastForward, 种子: arrow === windArrowShot ? 71 : 101 + 2 * i }];
   });
 
 // 黄叛：拉弓的那几下朝着箭；空中照 空中 的腿；其余时候看监守者
-export const huangPanState = (t: number): { pose: FigurePose; 弓: BowTexture } => {
+export const huangPanState = (t: number): { pose: FigurePose; bow: BowTexture } => {
   const nearestArrow = allArrows.reduce((b, c) => (Math.abs(c.放 - t) < Math.abs(b.放 - t) ? c : b));
   const drawSec = nearestArrow.drawSec;
   const draw = t < nearestArrow.放 ? ss((t - (nearestArrow.放 - drawSec)) / Math.min(0.45, drawSec * 0.7)) : 1 - ss((t - nearestArrow.放 - 0.3) / 0.4);
@@ -127,7 +127,7 @@ export const huangPanState = (t: number): { pose: FigurePose; 弓: BowTexture } 
   let pose: FigurePose;
   const leap = huangLeapList.find((j) => isAirborne(j, t));
   if (draw > 0) {
-    pose = drawBowPose(feet, yaw, 0, nearestArrow.俯仰 * ss(draw * 2), draw);
+    pose = drawBowPose(feet, yaw, 0, nearestArrow.pitch * ss(draw * 2), draw);
     if (leap) {
       const air = airPose(leap, t, yaw);
       pose = { ...pose, loc: air.loc, legR: air.legR, legL: air.legL, kneeR: air.kneeR, kneeL: air.kneeL, ground: 0, pitch: air.pitch * 0.4 };
@@ -151,7 +151,7 @@ export const huangPanState = (t: number): { pose: FigurePose; 弓: BowTexture } 
   if (rel > 0) pose = { ...pose, armR: pose.armR - 15 * rel, elbowR: 25 * rel };
   pose = crouch(pose, crouchAmount(huangLeapList, t));
   const drawing = t >= nearestArrow.放 - drawSec && t < nearestArrow.放;
-  return { pose, 弓: bowTextureFor(drawing, (t - (nearestArrow.放 - drawSec)) / drawSec) };
+  return { pose, bow: bowTextureFor(drawing, (t - (nearestArrow.放 - drawSec)) / drawSec) };
 };
 // 黄叛末帧在黄叛高台（7-3 接着用）
 export const huangPanFeet = geom.spots.huangPanPerch;

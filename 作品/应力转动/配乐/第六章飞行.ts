@@ -10,7 +10,7 @@ export type MusicHalf = {
   名: HalfName;
   起: MusicPos; // 卡点画面从这里开始（也是音乐的起点）
   止: MusicPos; // 卡点画面到这里结束；音乐在淡出结束时就没了，之后是按台词定长的部分
-  淡入?: readonly [MusicPos, MusicPos];
+  fadeIn?: readonly [MusicPos, MusicPos];
   fadeOut?: readonly [MusicPos, MusicPos];
   说明: string;
 };
@@ -47,7 +47,7 @@ export const ch6FlightMusic: MusicTable = {
       名: '后一半',
       起: [29, 1],
       止: [49, 1],
-      淡入: [
+      fadeIn: [
         [29, 1],
         [29, 2],
       ],
@@ -247,8 +247,8 @@ export const ch6FlightMusic: MusicTable = {
 export const halfGain = (table: MusicTable, halfName: HalfName, t: number): number => {
   const half = table.halves[halfName];
   let gain = 1;
-  if (half.淡入) {
-    const [fadeStart, fadeEnd] = [posToSec(table.song, half.淡入[0]), posToSec(table.song, half.淡入[1])];
+  if (half.fadeIn) {
+    const [fadeStart, fadeEnd] = [posToSec(table.song, half.fadeIn[0]), posToSec(table.song, half.fadeIn[1])];
     if (t < fadeStart) return 0;
     if (t < fadeEnd) gain *= Math.sin(((t - fadeStart) / (fadeEnd - fadeStart)) * (Math.PI / 2));
   }

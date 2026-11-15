@@ -4,22 +4,22 @@
 // 这里把 起点 当成施法者（脚底 = 起点 − 0.5 格）。持续刻数是自己定的（见 旋风.元.ts）。
 // 没做：施法者被托起（竖直每刻 +0.04）和周围生物被吹开。
 import React from 'react';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 风粒们, type 风粒生 } from '../零件/丁风.tsx';
-import 元, { 旋风持续刻 } from './旋风.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { WindParticles, type WindBirth } from '../零件/丁风.tsx';
+import meta, { whirlwindDurTicks } from './旋风.元.ts';
 
-const 旋风: React.FC<法术演出属性> = ({ 秒, 起点, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 脚: 点 = [起点[0], 起点[1], 起点[2] - 0.5];
-  const 出生们: 风粒生[] = [];
-  for (let t = 0; t < 旋风持续刻; t++) {
-    if (t > 刻) break;
-    for (const [i, [宽, 高]] of ([[1, -0.5], [1, 1.0], [2, 0.5]] as const).entries()) {
-      出生们.push({ 刻: t, 主人: () => 脚, 宽, 高, 种子: 种子 * 1009 + t * 3 + i });
+const Whirlwind: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+  const tick = sec * 20;
+  const feet: Vec3 = [from[0], from[1], from[2] - 0.5];
+  const spawns: WindBirth[] = [];
+  for (let t = 0; t < whirlwindDurTicks; t++) {
+    if (t > tick) break;
+    for (const [i, [width, height]] of ([[1, -0.5], [1, 1.0], [2, 0.5]] as const).entries()) {
+      spawns.push({ 刻: t, originAt: () => feet, 宽: width, 高: height, 种子: seed * 1009 + t * 3 + i });
     }
   }
-  return <风粒们 出生们={出生们} 刻={刻} 色={[1, 1, 1]} />;
+  return <WindParticles spawns={spawns} 刻={tick} 色={[1, 1, 1]} />;
 };
 
-export default 定义法术演出(元, 旋风);
+export default defineSpellPerformance(meta, Whirlwind);

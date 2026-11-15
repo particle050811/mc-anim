@@ -6,193 +6,193 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { bundle } from '@remotion/bundler';
-import { 备浏览器 } from './浏览器.ts';
-import { 开浏览器看崩 } from './页面崩溃.ts';
+import { prepareBrowser } from './浏览器.ts';
+import { openBrowserWithWatchdog } from './页面崩溃.ts';
 import { getCompositions, openBrowser, renderFrames, renderStill, type HeadlessBrowser } from './渲染器.ts';
-import { 代码根, 相对代码根 } from '../环境/路径.ts';
-import { 作品名, 作品根 } from '../环境/作品.ts';
-import { webpack改写 } from '../资产/webpack.ts';
-import { 光影环境名, 套光影试看, type 光影配置 } from './光影试看.ts';
-import { 望远环境名, 套望远, type 望远配置 } from './望远.ts';
-import { 稳定缓存名 } from '../资产/缓存名.ts';
-import { 过渲染闸 } from '../闸/闸.ts';
-import { 数据根 } from '../环境/配置.ts';
-import { 防睡 } from '../环境/子进程.ts';
-import { 全部段, type 段信息 } from '../清单/清单.ts';
-import { 核对段材质包, 照段材质包, 读作品资产锁 } from '../资产/资产锁.ts';
-import { 补字节并报 } from '../资产/随仓库.ts';
-import { 补缺字节占位 } from '../资产/缺字节.ts';
-import { 备好私有配乐, 缺配乐提示 } from '../资产/私有配乐.ts';
-import { 缺的注册目录, 缺目录提示 } from '../段框架/注册目录.ts';
-import type { 运行记录 } from '../运行记录/记录.ts';
-import { 出帧编码计时, 记阶段, 量阶段, 阶段小结, type 阶段记录 } from '../运行记录/阶段.ts';
-import { 明细收集 } from '../运行记录/渲染明细.ts';
-import { 备好public目录 } from './public目录.ts';
-import { 删打包, 登记打包 } from './打包残留.ts';
-import { 收求解缓存, 等求解缓存写完 } from './求解缓存收集.ts';
-import { 段渲染环境, 段现在的地形, 试看地形, 试看环境 } from './地形注入.ts';
-import { 收地形用量, 记已量帧, 等地形用量写完 } from './地形用量.ts';
-import { 段画面参数们, 段输出窗于 } from './段产物.ts';
-import { 成片档, 渲染参数, 等帧超时毫秒, type 渲染参数表 } from './设置.ts';
-import type { 渲染级别 } from '../../engine/段/设置值.ts';
+import { codeRoot, relativeToCodeRoot } from '../环境/路径.ts';
+import { workName, workRoot } from '../环境/作品.ts';
+import { webpackOverride } from '../资产/webpack.ts';
+import { shadingEnvName, applyShadingTrial, type ShadingConfig } from './光影试看.ts';
+import { telescopeEnvName, applyTelescope, type TelescopeConfig } from './望远.ts';
+import { stableCacheName } from '../资产/缓存名.ts';
+import { passRenderGate } from '../闸/闸.ts';
+import { dataRoot } from '../环境/配置.ts';
+import { keepAwake } from '../环境/子进程.ts';
+import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
+import { verifySegResourcePacks, withSegResourcePack, readWorkAssetLock } from '../资产/资产锁.ts';
+import { fillBytesAndReport } from '../资产/随仓库.ts';
+import { fillMissingBytePlaceholders } from '../资产/缺字节.ts';
+import { preparePrivateMusic, missingMusicHint } from '../资产/私有配乐.ts';
+import { missingRegistryDirs, missingDirHint } from '../段框架/注册目录.ts';
+import type { RunRecord } from '../运行记录/记录.ts';
+import { frameEncodeTiming, recordPhase, measureStage, stageSummary, type StageRecord } from '../运行记录/阶段.ts';
+import { DetailCollector } from '../运行记录/渲染明细.ts';
+import { ensurePublicDir } from './public目录.ts';
+import { removeBundles, registerBundle } from './打包残留.ts';
+import { collectSolveCache, waitSolveCacheWrites } from './求解缓存收集.ts';
+import { segRenderEnv, segTerrainNow, trialTerrain, trialEnv } from './地形注入.ts';
+import { collectTerrainUsage, recordMeasuredFrames, waitTerrainUsageWrites } from './地形用量.ts';
+import { segPictureParams, segOutputWindow } from './段产物.ts';
+import { filmProfile, renderParams, frameTimeoutMs, type RenderParamsTable } from './设置.ts';
+import type { RenderLevel } from '../../engine/段/设置值.ts';
 
-export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
+export const renderLabel = (segKey: string, level: RenderLevel) => `render:${workName()}/${segKey}:${level}`;
 
 /** 光影：换上光影试看画布（光影试看.ts，只给 still、bench）；望远：入口加上望远（望远.ts，只给 still） */
-export type 打包选项 = { 光影?: boolean; 望远?: boolean };
-export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`, o: 打包选项 = {}) => {
-  const 根 = 作品根();
-  const 缺目录 = 缺的注册目录(根);
-  if (缺目录.length) throw new Error(缺目录.map((d) => 缺目录提示(相对代码根(根), d)).join('\n'));
-  const t备 = Date.now();
-  补字节并报(根, 数据根());
-  for (const x of 备好私有配乐(await 全部段(), 读作品资产锁(根), 数据根())) {
-    if (记录) 记录.记('警告', 缺配乐提示(x));
-    else console.error(`!! ${缺配乐提示(x)}`);
+export type BundleOpts = { shading?: boolean; telescope?: boolean };
+export const bundleProject = async (runRecord?: RunRecord, label = `会话:${workName()}`, o: BundleOpts = {}) => {
+  const workDir = workRoot();
+  const missingDirs = missingRegistryDirs(workDir);
+  if (missingDirs.length) throw new Error(missingDirs.map((d) => missingDirHint(relativeToCodeRoot(workDir), d)).join('\n'));
+  const prepStartMs = Date.now();
+  fillBytesAndReport(workDir, dataRoot());
+  for (const x of preparePrivateMusic(await loadAllSegments(), readWorkAssetLock(workDir), dataRoot())) {
+    if (runRecord) runRecord.log('警告', missingMusicHint(x));
+    else console.error(`!! ${missingMusicHint(x)}`);
   }
-  记阶段(记录?.阶段, 标签, '备素材', t备, (Date.now() - t备) / 1000);
+  recordPhase(runRecord?.阶段, label, '备素材', prepStartMs, (Date.now() - prepStartMs) / 1000);
   const t0 = Date.now();
-  const 入口 = path.join(作品根(), 'index.ts');
-  const 基 = o.光影 ? 套光影试看(webpack改写(根)) : webpack改写(根);
-  const 配包 = 稳定缓存名(补缺字节占位(o.望远 ? 套望远(基, 入口) : 基, 根));
+  const entryFile = path.join(workRoot(), 'index.ts');
+  const rewrittenRoot = o.shading ? applyShadingTrial(webpackOverride(workDir)) : webpackOverride(workDir);
+  const bundleFor = stableCacheName(fillMissingBytePlaceholders(o.telescope ? applyTelescope(rewrittenRoot, entryFile) : rewrittenRoot, workDir));
   const serveUrl = await bundle({
-    entryPoint: 入口,
-    rootDir: 代码根(),
+    entryPoint: entryFile,
+    rootDir: codeRoot(),
     webpackOverride: async (config) => {
-      const 包 = await 配包(config);
-      const 诊断 = { test: /[\\/]@remotion[\\/]media[\\/]dist[\\/]esm[\\/]index\.mjs$/, loader: path.join(代码根(), 'pipeline', '渲', '音频缓存日志.cjs') };
-      return { ...包, module: { ...包.module, rules: [...(包.module?.rules ?? []), 诊断] } };
+      const baseConfig = await bundleFor(config);
+      const mediaRule = { test: /[\\/]@remotion[\\/]media[\\/]dist[\\/]esm[\\/]index\.mjs$/, loader: path.join(codeRoot(), 'pipeline', '渲', '音频缓存日志.cjs') };
+      return { ...baseConfig, module: { ...baseConfig.module, rules: [...(baseConfig.module?.rules ?? []), mediaRule] } };
     },
     enableCaching: true,
-    publicDir: 备好public目录(),
+    publicDir: ensurePublicDir(),
     // public 里只有指向数据根的链接，转发进包是预期的
     onSymlinkDetected: () => {},
   });
-  登记打包(serveUrl);
-  记阶段(记录?.阶段, 标签, 'webpack', t0, (Date.now() - t0) / 1000);
+  registerBundle(serveUrl);
+  recordPhase(runRecord?.阶段, label, 'webpack', t0, (Date.now() - t0) / 1000);
   console.log(`打包 ${((Date.now() - t0) / 1000).toFixed(0)} 秒`);
   return serveUrl;
 };
 
-type 会话 = { serveUrl: string; browser: HeadlessBrowser; 参数: 渲染参数表; 组合: Awaited<ReturnType<typeof getCompositions>> };
+type RenderSession = { serveUrl: string; browser: HeadlessBrowser; 参数: RenderParamsTable; compositions: Awaited<ReturnType<typeof getCompositions>> };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承；会话期间不让电脑闲置睡眠 */
-export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: 打包选项 = {}): Promise<T> => {
-  const 撤防睡 = 防睡();
+export const openSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, bundleOpts: BundleOpts = {}): Promise<T> => {
+  const releaseAntiSleep = keepAwake();
   try {
-    return await 会话里(级别, fn, 记录, 打包选项);
+    return await inSession(level, fn, runRecord, bundleOpts);
   } finally {
-    撤防睡();
+    releaseAntiSleep();
   }
 };
 
-const 会话里 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: 打包选项 = {}): Promise<T> => {
+const inSession = async <T>(level: RenderLevel, fn: (h: RenderSession) => Promise<T>, runRecord?: RunRecord, bundleOpts: BundleOpts = {}): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {
     // 没权限改优先级就照常跑
   }
-  const 参数 = 渲染参数(级别);
-  const 标签 = `会话:${作品名()}:${级别}`;
-  const 收 = 记录?.阶段;
-  const 起 = 收?.length ?? 0;
-  const serveUrl = await 量阶段(收, 标签, '打包', () => 打包(记录, 标签, 打包选项));
+  const params = renderParams(level);
+  const label = `会话:${workName()}:${level}`;
+  const records = runRecord?.阶段;
+  const startIndex = records?.length ?? 0;
+  const serveUrl = await measureStage(records, label, '打包', () => bundleProject(runRecord, label, bundleOpts));
   let browser: HeadlessBrowser | undefined;
   try {
-    const 开了 = await 量阶段(收, 标签, '开浏览器', async () => {
-      const 可执行 = await 备浏览器();
-      return 开浏览器看崩(() => openBrowser('chrome', { chromiumOptions: { gl: 参数.gl }, forceDeviceScaleFactor: 参数.scale, logLevel: 'error', browserExecutable: 可执行 }), 可执行, (b) => b.close({ silent: true }));
+    const opened = await measureStage(records, label, '开浏览器', async () => {
+      const exePath = await prepareBrowser();
+      return openBrowserWithWatchdog(() => openBrowser('chrome', { chromiumOptions: { gl: params.gl }, forceDeviceScaleFactor: params.scale, logLevel: 'error', browserExecutable: exePath }), exePath, (b) => b.close({ silent: true }));
     });
-    browser = 开了.browser;
-    const 看守 = 开了.看守;
+    browser = opened.browser;
+    const watchdog = opened.watchdog;
     // 读 Composition 列表的页面先把模块初始化里没命中缓存的求解算一遍，关页面时收走写盘，后面各段的页面直接读
-    收求解缓存(browser);
-    收地形用量(browser);
+    collectSolveCache(browser);
+    collectTerrainUsage(browser);
     const b = browser;
-    const 组合 = await 量阶段(收, 标签, '读组合', () =>
-      看守.包(() =>
+    const compositions = await measureStage(records, label, '读组合', () =>
+      watchdog.包(() =>
         getCompositions(serveUrl, {
-          inputProps: 参数.inputProps,
+          inputProps: params.inputProps,
           puppeteerInstance: b,
-          chromiumOptions: { gl: 参数.gl },
-          timeoutInMilliseconds: 等帧超时毫秒,
+          chromiumOptions: { gl: params.gl },
+          timeoutInMilliseconds: frameTimeoutMs,
           logLevel: 'error',
         }),
       ),
     );
-    if (收) console.log(`会话就绪：${阶段小结(收.slice(起))}`);
-    return await 看守.包(() => fn({ serveUrl, browser: b, 参数, 组合 }));
+    if (records) console.log(`会话就绪：${stageSummary(records.slice(startIndex))}`);
+    return await watchdog.包(() => fn({ serveUrl, browser: b, 参数: params, compositions }));
   } finally {
     try {
-      await 等地形用量写完();
+      await waitTerrainUsageWrites();
       await browser?.close({ silent: true });
     } finally {
-      删打包(serveUrl);
+      removeBundles(serveUrl);
     }
   }
 };
 
 /** 渲一次的共用部分：Remotion 开 verbose（日志级别不进指纹），日志和进度进明细，出帧、编码分开计时 */
-export const 量渲染 = async (标签: string, 收: 阶段记录[], t0: number, fn: (钩子: { logLevel: 'verbose'; onProgress: (p: { renderedFrames: number; renderedDoneIn: number | null }) => void }) => Promise<unknown>) => {
-  const 计 = 出帧编码计时();
-  const 明细 = new 明细收集(标签);
-  await 明细.包(() =>
+export const measureRender = async (label: string, records: StageRecord[], t0: number, fn: (hooks: { logLevel: 'verbose'; onProgress: (p: { renderedFrames: number; renderedDoneIn: number | null }) => void }) => Promise<unknown>) => {
+  const timer = frameEncodeTiming();
+  const detail = new DetailCollector(label);
+  await detail.包(() =>
     fn({
       logLevel: 'verbose',
       onProgress: (p) => {
-        计.onProgress(p);
-        明细.帧完成(p.renderedFrames);
+        timer.onProgress(p);
+        detail.frameDone(p.renderedFrames);
       },
     }),
   );
-  记出帧编码(收, 标签, t0, 计);
-  return 明细;
+  recordFrameEncode(records, label, t0, timer);
+  return detail;
 };
 
-const 记出帧编码 = (收: 阶段记录[], 标签: string, t0: number, 计: ReturnType<typeof 出帧编码计时>) => {
-  const { 出帧秒, 编码秒 } = 计.拆(Date.now() - t0);
-  记阶段(收, 标签, '出帧', t0, 出帧秒);
-  记阶段(收, 标签, '编码', t0 + 出帧秒 * 1000, 编码秒);
+const recordFrameEncode = (records: StageRecord[], label: string, t0: number, timer: ReturnType<typeof frameEncodeTiming>) => {
+  const { 出帧秒: frameOutSec, encodeSec } = timer.split(Date.now() - t0);
+  recordPhase(records, label, '出帧', t0, frameOutSec);
+  recordPhase(records, label, '编码', t0 + frameOutSec * 1000, encodeSec);
 };
 
 /**
  * 打包里这段的 Composition，核对和切片的输出窗一样：打包按成片档的输出帧率注册（engine/段/注册工厂.tsx），帧数 = 段长 × 帧率，
  * 这里用同一个算法（段产物.ts 的 段输出窗于）算应有的帧数，差一帧也不认。全部 = 整部作品的段（段要在清单里）
  */
-export const 找组合 = (h: Pick<会话, '组合'>, s: 段信息, 全部: readonly 段信息[], id = s.键) => {
-  核对段材质包(作品根(), s.键);
-  const c = h.组合.find((x) => x.id === id);
+export const findComposition = (h: Pick<RenderSession, 'compositions'>, s: SegInfo, allSegments: readonly SegInfo[], id = s.键) => {
+  verifySegResourcePacks(workRoot(), s.键);
+  const c = h.compositions.find((x) => x.id === id);
   if (!c) throw new Error(`打包里没有 Composition ${id}（作品的 注册.tsx 按清单和 段.ts 的叠层登记，清单里有它吗？）`);
-  const 窗 = 段输出窗于(全部, s);
-  if (c.fps !== 成片档().fps || c.durationInFrames !== 窗.帧数 || c.width !== s.段.宽 || c.height !== s.段.高) {
-    throw new Error(`${id} 的 Composition（${c.durationInFrames} 帧 ${c.fps}fps ${c.width}×${c.height}）和 段.ts、全片位置对不上（应是 ${窗.帧数} 帧 ${成片档().fps}fps ${s.段.宽}×${s.段.高}）`);
+  const outputWindow = segOutputWindow(allSegments, s);
+  if (c.fps !== filmProfile().fps || c.durationInFrames !== outputWindow.帧数 || c.width !== s.段.宽 || c.height !== s.段.高) {
+    throw new Error(`${id} 的 Composition（${c.durationInFrames} 帧 ${c.fps}fps ${c.width}×${c.height}）和 段.ts、全片位置对不上（应是 ${outputWindow.帧数} 帧 ${filmProfile().fps}fps ${s.段.宽}×${s.段.高}）`);
   }
   return c;
 };
 
 /** 段目录下的 本机地形.txt 写着这段要的、没登记发布的区段包（核对-世界编辑）。换台机器没有这个包就跳过：不让一条批量渲染死在核对段上（用户 10-31 定）。放段外的文件不进指纹 */
-export const 缺的本机地形 = (s: Pick<段信息, '目录'>, 地形根 = path.join(数据根(), 'terrain')): string | null => {
+export const missingLocalTerrain = (s: Pick<SegInfo, '目录'>, terrainDir = path.join(dataRoot(), 'terrain')): string | null => {
   const f = path.join(s.目录, '本机地形.txt');
   if (!fs.existsSync(f)) return null;
-  const 包 = fs.readFileSync(f, 'utf8').trim();
-  return fs.existsSync(path.join(地形根, 包)) ? null : 包;
+  const pack = fs.readFileSync(f, 'utf8').trim();
+  return fs.existsSync(path.join(terrainDir, pack)) ? null : pack;
 };
 
 /**
  * 同一页面、并发 1 按帧号升序出 PNG（Remotion 自己排序，帧号不能重复）；不写母版、不编码。
  * 打开声音：renderStill 是关的、renderMedia 是开的。静帧照 renderStill（声音文件也不用下），逐帧校验照 renderMedia
  */
-export const 同页出帧 = (
-  h: Pick<会话, 'serveUrl' | 'browser' | '参数'>,
-  composition: 会话['组合'][number],
-  帧们: readonly number[],
-  o: { 打开声音: boolean; 环境: Record<string, string>; 每帧: (png: Buffer, 帧: number) => void | Promise<void> },
+export const renderFramesSamePage = (
+  h: Pick<RenderSession, 'serveUrl' | 'browser' | '参数'>,
+  composition: RenderSession['compositions'][number],
+  frames: readonly number[],
+  o: { withAudio: boolean; 环境: Record<string, string>; onFrame: (png: Buffer, frame: number) => void | Promise<void> },
 ) =>
   renderFrames({
     serveUrl: h.serveUrl,
     composition,
     outputDir: null,
-    frames: [...帧们],
+    frames: [...frames],
     inputProps: h.参数.inputProps,
     envVariables: o.环境,
     puppeteerInstance: h.browser,
@@ -200,38 +200,38 @@ export const 同页出帧 = (
     imageFormat: 'png',
     scale: h.参数.scale,
     concurrency: 1,
-    muted: !o.打开声音,
-    timeoutInMilliseconds: 等帧超时毫秒,
+    muted: !o.withAudio,
+    timeoutInMilliseconds: frameTimeoutMs,
     logLevel: 'verbose',
     onStart: () => {},
     onFrameUpdate: () => {},
-    onFrameBuffer: o.每帧,
+    onFrameBuffer: o.onFrame,
   });
 
-export const 静帧文件 = (出到: string, 段键: string, 帧: number, 后缀 = '') => path.join(出到, `${段键}-第${String(帧).padStart(4, '0')}帧${后缀}.png`);
+export const stillFile = (outDir: string, segKey: string, frame: number, suffix = '') => path.join(outDir, `${segKey}-第${String(frame).padStart(4, '0')}帧${suffix}.png`);
 
 /**
  * 多帧默认同页连出（第一帧之后不用从头读地形）；逐帧 = 每帧一个新页面，等于旧做法。两边文件名一样，已有的文件都不覆盖。
  * 用户 10-31 定做连出。同一帧单出和连出已知的例外见 连出提醒（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。
  */
-export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参数'>, composition: 会话['组合'][number], 段键: string, 帧们: readonly number[], 出到: string, o: { 逐帧?: boolean; 环境: Record<string, string>; 完成: (已出: number) => void; 后缀?: string }) => {
-  if (帧们.length > 1 && !o.逐帧) {
-    let 已出 = 0;
-    await 同页出帧(h, composition, 帧们, {
-      打开声音: false,
+export const renderStills = async (h: Pick<RenderSession, 'serveUrl' | 'browser' | '参数'>, composition: RenderSession['compositions'][number], segKey: string, frames: readonly number[], outDir: string, o: { frameByFrame?: boolean; 环境: Record<string, string>; 完成: (emitted: number) => void; 后缀?: string }) => {
+  if (frames.length > 1 && !o.frameByFrame) {
+    let emitted = 0;
+    await renderFramesSamePage(h, composition, frames, {
+      withAudio: false,
       环境: o.环境,
-      每帧: (png, f) => {
-        fs.writeFileSync(静帧文件(出到, 段键, f, o.后缀), png, { flag: 'wx' });
-        o.完成(++已出);
+      onFrame: (png, f) => {
+        fs.writeFileSync(stillFile(outDir, segKey, f, o.后缀), png, { flag: 'wx' });
+        o.完成(++emitted);
       },
     });
     return;
   }
-  for (const [i, f] of 帧们.entries()) {
+  for (const [i, f] of frames.entries()) {
     await renderStill({
       serveUrl: h.serveUrl,
       composition,
-      output: 静帧文件(出到, 段键, f, o.后缀),
+      output: stillFile(outDir, segKey, f, o.后缀),
       frame: f,
       inputProps: h.参数.inputProps,
       envVariables: o.环境,
@@ -239,7 +239,7 @@ export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参
       chromiumOptions: { gl: h.参数.gl },
       imageFormat: 'png',
       scale: h.参数.scale,
-      timeoutInMilliseconds: 等帧超时毫秒,
+      timeoutInMilliseconds: frameTimeoutMs,
       overwrite: false,
       logLevel: 'verbose',
     });
@@ -248,50 +248,50 @@ export const 出静帧们 = async (h: Pick<会话, 'serveUrl' | 'browser' | '参
 };
 
 /** 连出才有的提醒 */
-export const 连出提醒 = (段键: string, 帧们: readonly number[], 逐帧?: boolean) =>
-  帧们.length > 1 && !逐帧
-    ? `${段键} 这 ${帧们.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：核对-门口哈气，没进成片）。要和单帧或母版逐像素比，加 --逐帧；连出崩页（Page crashed）也改用 --逐帧`
+export const batchHint = (segKey: string, frames: readonly number[], frameByFrame?: boolean) =>
+  frames.length > 1 && !frameByFrame
+    ? `${segKey} 这 ${frames.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：核对-门口哈气，没进成片）。要和单帧或母版逐像素比，加 --逐帧；连出崩页（Page crashed）也改用 --逐帧`
     : null;
 
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
 /** 光影：每份配置各出一遍这几帧，文件名带「-光影-<名>」（光影试看.ts）；望远：每块矩形各出一遍，文件名带「-望远-<名>」（望远.ts）。两样不同时给 */
-export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录, o: { 逐帧?: boolean; 光影?: 光影配置[]; 望远?: 望远配置[] } = {}) => {
-  const 要出 = [...new Set(帧们)];
-  const 提醒 = 连出提醒(s.键, 要出, o.逐帧);
-  if (提醒) 记录?.记('警告', 提醒);
-  if (o.光影 && o.望远) throw new Error('--光影 和 --望远 不能同时给');
+export const renderStillFrames = async (s: SegInfo, frames: number[], level: RenderLevel, outDir: string, runRecord?: RunRecord, o: { frameByFrame?: boolean; shading?: ShadingConfig[]; telescope?: TelescopeConfig[] } = {}) => {
+  const toEmit = [...new Set(frames)];
+  const hint = batchHint(s.键, toEmit, o.frameByFrame);
+  if (hint) runRecord?.log('警告', hint);
+  if (o.shading && o.telescope) throw new Error('--光影 和 --望远 不能同时给');
   // 各出一遍的变体：页面环境变量和文件名后缀
-  const 变体: { 环境: Record<string, string>; 后缀: string }[] | undefined =
-    o.光影?.map((c) => ({ 环境: { [光影环境名]: c.值 }, 后缀: `-光影-${c.名}` })) ?? o.望远?.map((c) => ({ 环境: { [望远环境名]: c.值 }, 后缀: `-望远-${c.名}` }));
-  await 照段材质包(作品根(), s.键, () => 开会话(级别, async (h) => {
-    const 全部 = await 全部段();
-    const composition = 找组合(h, s, 全部);
-    for (const f of 要出) {
+  const variants: { 环境: Record<string, string>; 后缀: string }[] | undefined =
+    o.shading?.map((c) => ({ 环境: { [shadingEnvName]: c.值 }, 后缀: `-光影-${c.名}` })) ?? o.telescope?.map((c) => ({ 环境: { [telescopeEnvName]: c.值 }, 后缀: `-望远-${c.名}` }));
+  await withSegResourcePack(workRoot(), s.键, () => openSession(level, async (h) => {
+    const allSegments = await loadAllSegments();
+    const composition = findComposition(h, s, allSegments);
+    for (const f of toEmit) {
       if (!(f >= 0 && f < composition.durationInFrames)) throw new Error(`${s.键} 只有 ${composition.durationInFrames} 帧，没有第 ${f} 帧`);
     }
     // 段里画的字幕（母版 = 成片切片，用户 11-05 定）静帧也画上，和成片这一帧一样
-    const 带字幕 = { ...h, 参数: 段画面参数们(全部, [s], 级别)[0]! };
-    await 等求解缓存写完();
-    const 标签 = `still:${作品名()}/${s.键}:${级别}`;
-    const 排队起 = Date.now();
-    await 过渲染闸(async () => {
+    const subtitled = { ...h, 参数: segPictureParams(allSegments, [s], level)[0]! };
+    await waitSolveCacheWrites();
+    const label = `still:${workName()}/${s.键}:${level}`;
+    const queueStartMs = Date.now();
+    await passRenderGate(async () => {
       const t0 = Date.now();
-      const 收 = 记录?.阶段;
-      const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
-      const 明细 = new 明细收集(标签);
-      const 环境 = { ...段渲染环境(s.键, 段现在的地形(s, 试看地形())), ...试看环境() };
-      if (!变体) await 明细.包(() => 出静帧们(带字幕, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境, 完成: (已出) => 明细.帧完成(已出) }));
+      const records = runRecord?.阶段;
+      const gateWait = recordPhase(records, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
+      const detail = new DetailCollector(label);
+      const env = { ...segRenderEnv(s.键, segTerrainNow(s, trialTerrain())), ...trialEnv() };
+      if (!variants) await detail.包(() => renderStills(subtitled, composition, s.键, toEmit, outDir, { frameByFrame: o.frameByFrame, 环境: env, 完成: (emitted) => detail.frameDone(emitted) }));
       else {
-        await 明细.包(async () => {
-          for (const [i, c] of 变体.entries())
-            await 出静帧们(带字幕, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境: { ...环境, ...c.环境 }, 后缀: c.后缀, 完成: (已出) => 明细.帧完成(i * 要出.length + 已出) });
+        await detail.包(async () => {
+          for (const [i, c] of variants.entries())
+            await renderStills(subtitled, composition, s.键, toEmit, outDir, { frameByFrame: o.frameByFrame, 环境: { ...env, ...c.环境 }, 后缀: c.后缀, 完成: (emitted) => detail.frameDone(i * toEmit.length + emitted) });
         });
       }
-      await 记已量帧(s.键, 要出);
-      const 出帧 = 记阶段(收, 标签, '出帧', t0, (Date.now() - t0) / 1000);
-      await 明细.写出(收 ?? []);
-      console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
-    }, undefined, {}, {种:'still',作品:作品名(),段:s.键,级别,帧数:要出.length,帧:要出.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
-  }, 记录, { 光影: !!o.光影, 望远: !!o.望远 }));
-  return 变体 ? 变体.flatMap((c) => 要出.map((f) => 静帧文件(出到, s.键, f, c.后缀))) : 要出.map((f) => 静帧文件(出到, s.键, f));
+      await recordMeasuredFrames(s.键, toEmit);
+      const outputTime = recordPhase(records, label, '出帧', t0, (Date.now() - t0) / 1000);
+      await detail.writeOut(records ?? []);
+      console.log(`${stageSummary([gateWait, outputTime])}（${toEmit.length} 帧）`);
+    }, undefined, {}, {种:'still',作品:workName(),段:s.键,级别: level,帧数:toEmit.length,帧:toEmit.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
+  }, runRecord, { shading: !!o.shading, telescope: !!o.telescope }));
+  return variants ? variants.flatMap((c) => toEmit.map((f) => stillFile(outDir, s.键, f, c.后缀))) : toEmit.map((f) => stillFile(outDir, s.键, f));
 };

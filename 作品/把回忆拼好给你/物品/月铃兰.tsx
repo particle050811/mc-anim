@@ -5,7 +5,7 @@ import { ItemSprite, type ItemLayer } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
 import img from 'asset:贴图/物品/月铃兰';
 
-export const 月铃兰层: ItemLayer[] = [{ tex: png(img) }];
+export const moonBellLayers: ItemLayer[] = [{ tex: png(img) }];
 
 // 不加自发光打底（ItemSprite 默认 0.25）：拿在她手里，和她身上同一套受光
-export const 月铃兰: React.FC = () => <ItemSprite layers={月铃兰层} emissive={0} />;
+export const MoonBellLily: React.FC = () => <ItemSprite layers={moonBellLayers} emissive={0} />;

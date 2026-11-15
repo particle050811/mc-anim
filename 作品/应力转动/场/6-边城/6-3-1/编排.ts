@@ -18,7 +18,7 @@ import { jiuhuCompassMatrix } from '../../../角色/九胡持指南针.tsx';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import jiuhuRaw from 'asset:模型/角色/九胡';
 import * as fallChoreo from '../../../地点/边城/6-3-下坠/编排.ts';
-import { FPS, 段表, 物理时间, 起点 } from '../../../地点/边城/6-3-下坠/时间线.ts';
+import { FPS, segTable, physicalTime, start } from '../../../地点/边城/6-3-下坠/时间线.ts';
 
 const ss = (x: number) => {
   const clamped = Math.min(1, Math.max(0, x));
@@ -28,8 +28,8 @@ const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const D2R = Math.PI / 180;
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 
-export const G0 = 段表['6-3-1'].起;
-export const segmentSec = (段表['6-3-1'].止 - G0) / FPS; // 秒
+export const G0 = segTable['6-3-1'].起;
+export const segmentSec = (segTable['6-3-1'].止 - G0) / FPS; // 秒
 // 段内秒数
 const toSegSec = (G: number) => (G - G0) / FPS;
 
@@ -61,11 +61,11 @@ export const lines = [
 ];
 
 // ---------- 扫帚、骑乘的基准（6-2-6 末帧 = 6-3-2 首帧） ----------
-const broomStart = 起点.broom;
-const BM = broomMatrix(broomStart.位置, broomStart.朝向, broomStart.俯仰, broomStart.横滚);
+const broomStart = start.broom;
+const BM = broomMatrix(broomStart.位置, broomStart.facing, broomStart.pitch, broomStart.roll);
 const toWorld = (p: number[]): V3 => v3(new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(BM));
-const LY0 = 起点.riders.李樱 as { lean?: number; headRaise?: number };
-const JH0 = 起点.riders.九胡;
+const LY0 = start.riders.李樱 as { lean?: number; headRaise?: number };
+const JH0 = start.riders.九胡;
 
 // ---------- 李樱 ----------
 // 两手一直握着扫帚杆（不再掏指南针）。头：相对骑乘姿态的增量（低头为负、往右转为负）
@@ -123,7 +123,7 @@ export const jiuhuBonePoint = (bones: Record<string, BonePose>, name: string, lo
 };
 
 // 尾巴摆动的相位：首帧接 6-2-6 末帧（它按帧数 / 9 走），段末接 6-3-2（物理时间 × 2）。中间按 6-3-2 的走法，差的相位（折到 ±π）在整段里慢慢补掉
-const tailBase = (G: number) => 2 * 物理时间(G);
+const tailBase = (G: number) => 2 * physicalTime(G);
 const TAIL_FIX = (() => {
   const phaseDiff = JH0.tailPhase - tailBase(G0);
   return phaseDiff - 2 * Math.PI * Math.round(phaseDiff / (2 * Math.PI));
@@ -147,7 +147,7 @@ const JH_TURN: [number, number][] = [
 // 问的时候头往右歪一点（Head 的 z）
 const JH_TILT: [number, number][] = [[0, 0], [cues631.jiuhuAsk[0], 0], [8.7, 9], [cues631.settleBack[0], 9], [cues631.settleBack[1], 0]];
 const jhBody = (t: number, globalFrame: number) => {
-  const bones = jiuhuRideBones({ lean: JH0.lean, hugWaist: 1, headRaise: JH0.headRaise + track(JH_LOOKUP, t), headTurn: (JH0.headTurn ?? 0) + track(JH_TURN, t), tailPhase: tail(globalFrame), 风: JH0.风 });
+  const bones = jiuhuRideBones({ lean: JH0.lean, hugWaist: 1, headRaise: JH0.headRaise + track(JH_LOOKUP, t), headTurn: (JH0.headTurn ?? 0) + track(JH_TURN, t), tailPhase: tail(globalFrame), wind: JH0.wind });
   const headRot = bones.Head?.rot ?? [0, 0, 0];
   bones.Head = { ...bones.Head, rot: [headRot[0], headRot[1], headRot[2] + track(JH_TILT, t)] };
   return bones;
@@ -186,7 +186,7 @@ const ARM_HOLD = (() => {
       }
     if (!better) step /= 2;
   }
-  return { RightArm: [x[0], x[1], x[2]], RightForeArm: [x[3], 0, 0], 误差: Math.sqrt(error) };
+  return { RightArm: [x[0], x[1], x[2]], RightForeArm: [x[3], 0, 0], error: Math.sqrt(error) };
 })();
 const holdK = (t: number) => ss((t - cues631.grab[0]) / (cues631.grab[1] - cues631.grab[0])) * (1 - ss((t - cues631.handBack[0]) / (cues631.handBack[1] - cues631.handBack[0])));
 const jiuhuBones = (t: number, globalFrame: number) => {
@@ -234,7 +234,7 @@ const compass = (t: number, bones: Record<string, BonePose>): CompassState => {
 // 中景不放在扫帚后上方：从后面看九胡的大尾巴和后背把人挡住了；右前方看得到李樱的脸和他身后的九胡。
 // 推拉时绕两人中间的一点走，方位角、仰角、距离分开插值（距离按对数插值，人在画面里匀匀地变大）：高处几乎朝正下方看时转方位，画面像横滚打转（用户嫌头晕），
 // 所以推近时先降下来再绕到侧前方，拉回时先绕回后面再升上去。看的点在两头视线之间平移
-const C0: fallChoreo.Cam = { pos: [...起点.camera.pos] as V3, tgt: [...起点.camera.tgt] as V3, lens: 起点.camera.lens };
+const C0: fallChoreo.Cam = { pos: [...start.camera.pos] as V3, tgt: [...start.camera.tgt] as V3, lens: start.camera.lens };
 const PIVOT = new THREE.Vector3(...toWorld([0.05, 0, 0.8]));
 const MID: [fallChoreo.Cam, fallChoreo.Cam] = [
   // 说话时慢慢再推近一点
@@ -278,7 +278,7 @@ const camera = (t: number): fallChoreo.Cam => {
 export type BackToTownState = { cam: fallChoreo.Cam; liYing: fallChoreo.LiYingState; liYingMouth?: Mouth; jiuhuMouth?: Mouth; jiuhu: fallChoreo.JiuhuState; compass: CompassState | null };
 export const backToTown = (globalFrame: number): BackToTownState => {
   const t = toSegSec(globalFrame);
-  const physSec = 物理时间(globalFrame);
+  const physSec = physicalTime(globalFrame);
   const cam = camera(t);
   const ly = fallChoreo.liYing(physSec); // 物理时间 < 0：坐在扫帚上（扫帚的矩阵、髋都不变），只换姿势
   const jh = fallChoreo.jiuhu(physSec);

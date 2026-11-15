@@ -5,11 +5,11 @@
 // 跳：古城4x布局/强者.ts 的 `eliteLeap`（重力 32），起点在井下 15 米、落点井心往北 4.5 米；往上冲出井口时竖直 30 米/秒，出井口时水平才走了 1 米，不擦井壁。
 import type { V3 } from '@engine/model/parts.tsx';
 import { type FigurePose } from '@库/角色/骨架.tsx';
-import { eliteLeap, type 跳 } from '../../../地点/古城4x/布局/强者.ts';
+import { eliteLeap, type Jump } from '../../../地点/古城4x/布局/强者.ts';
 import { flightPose, landPose, mixPose, nearYaw, standAt } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { shaftCellCenter } from '../../../地点/边城/6-3-下坠/编排.ts';
 import pitSurfaceTable from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
-import { guardPoseAt, lastSec as lastSec6, 卫兵位置, type GuardPose } from '../../../地点/边城/6-3-8/编排.ts';
+import { guardPoseAt, lastSec as lastSec6, guardPositions, type GuardPose } from '../../../地点/边城/6-3-8/编排.ts';
 import { borderTownPos } from '../../../地点/主世界116.ts';
 
 const FPS = 24;
@@ -38,7 +38,7 @@ const onSurface = (dx: number, dy: number): V3 => {
 // ---------- 两人 ----------
 const LAND_LEN = 6; // 落地深蹲（强者.ts 的 landingSquatSec 0.25 秒）
 const RISE_LEN = 8; // 蹲完站直
-type Leaper = { leap: 跳; armRScale: number; look: (f: number) => { yaw: number; headYaw: number; headPitch: number } };
+type Leaper = { leap: Jump; armRScale: number; look: (f: number) => { yaw: number; headYaw: number; headPitch: number } };
 const leaper = (dx0: number, dy0: number, dx1: number, dy1: number, f0: number) => {
   const c = shaftCellCenter();
   return eliteLeap(add(c, [dx0, dy0, -15]), onSurface(dx1, dy1), 7, f0);
@@ -47,7 +47,7 @@ const liuLeap = leaper(-0.6, -0.7, -1.3, 4.7, 10);
 const huangLeap = leaper(0.6, -0.5, 1.4, 4.4, 15);
 export const landFrame = { 刘: liuLeap.f1, 黄: huangLeap.f1 };
 // 冒出井口（脚底高过井口一圈的坑面）的那一帧，卫兵从这一刻起反应
-const emergeFrame = (L: 跳) => L.f0 + (L.tUp - Math.sqrt(Math.max(0, L.top - (L.p0[2] + 7)) / 16)) * FPS;
+const emergeFrame = (L: Jump) => L.f0 + (L.tUp - Math.sqrt(Math.max(0, L.top - (L.p0[2] + 7)) / 16)) * FPS;
 export const firstEmergeFrame = emergeFrame(liuLeap);
 
 // 落地站直以后：黄叛先扭头看刘心忠、身子跟着侧过来；刘心忠扫一眼东边围着的卫兵，身子也带过去一点
@@ -88,7 +88,7 @@ const jitter01 = (i: number, k: number) => {
   const x = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
   return x - Math.floor(x);
 };
-export const guardCount = 卫兵位置.length;
+export const guardCount = guardPositions.length;
 // 盯着的人：落点离自己近的那一个；冒出井口后 3～8 帧反应过来
 const guardReaction = (i: number) => {
   const feet = add(borderTownPos, guardPoseAt(guardBaseSec, i).pos);

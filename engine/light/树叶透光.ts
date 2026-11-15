@@ -5,10 +5,10 @@
 // 强度 0.25：叶子背面最多亮到正面受光的四分之一上下（要克制）；0.35 在 6-1-2 逆光帧会让整面树墙一片黄绿。
 // 判叶：GLSL 布尔表达式。镂空层里还有玻璃、铁栏杆这类不染色的，叶子按群系染成绿色（顶点色饱和），所以按顶点色认
 import type * as THREE from 'three';
-import { 渲染输入 } from '../core/渲染设置.ts';
+import { renderInput } from '../core/渲染设置.ts';
 
 // 比改前改后：--props='{"树叶透光":false}' 关掉
-const translucencyOff = (渲染输入() as { 树叶透光?: boolean }).树叶透光 === false;
+const translucencyOff = (renderInput() as { leafTranslucency?: boolean }).leafTranslucency === false;
 
 export const translucencyStrength = 0.25;
 

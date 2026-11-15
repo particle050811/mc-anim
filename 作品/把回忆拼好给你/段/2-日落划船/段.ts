@@ -1,42 +1,42 @@
 // 正片第 4 句「眼睛里看到的都是广袤无垠的大海」：她眼睛的特写匹配剪辑到日落的海，你划着樱花木船、她坐在船上，最后一道浪盖满画面。
 // 帧数、场窗口、原声和各音效 cue 的帧都从 分镜、场/2-海上/编排.ts 推，增益在场参数，段里不写数字。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段时钟, 段内事件帧 as 段内正片事件帧 } from '../../分镜/正片第4句.ts';
-import { 原声增益, 桨声增益, 桨声文件, 浪声增益, 浪声淡出秒 } from '../../场/2-海上/参数.ts';
-import { 桨声秒们, 窗 } from '../../场/2-海上/编排.ts';
-import { 按帧cue, type 帧上cue } from '../../声音/跨段音效.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segClock, segEventFrames as segMainCutEventFrames } from '../../分镜/正片第4句.ts';
+import { originalGain, oarSoundGain, oarSoundFiles, waveSoundGain, waveSoundFadeSec } from '../../场/2-海上/参数.ts';
+import { oarSoundSecs, segWindow } from '../../场/2-海上/编排.ts';
+import { toAssetCue, type FrameCue } from '../../声音/跨段音效.ts';
 
-const 键 = '2-日落划船';
-const 钟 = 段时钟(键);
-const 事 = 段内正片事件帧(键);
+const segKey = '2-日落划船';
+const clock = segClock(segKey);
+const events = segMainCutEventFrames(segKey);
 
 /** 文件实长（秒，ffprobe 量的），cue 不超过段尾 */
-const 桨声长: Readonly<Record<number, number>> = { 1: 0.901, 2: 0.851, 3: 1.001, 4: 1.037, 5: 1.213, 6: 1.051, 7: 0.8, 8: 0.901 };
-const 浪声长 = 3.027;
-const 到段尾 = (起: number, 秒: number) => Math.min(Math.ceil(秒 * fps), 钟.帧数 - 起);
+const oarSoundDurSec: Readonly<Record<number, number>> = { 1: 0.901, 2: 0.851, 3: 1.001, 4: 1.037, 5: 1.213, 6: 1.051, 7: 0.8, 8: 0.901 };
+const waveSoundDurSec = 3.027;
+const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
 
 // 划桨水声：原版桨转过 π/4 的那一刻两支桨各放一声（编排.ts 的 桨声秒们）
-const 桨声们: 帧上cue[] = 桨声秒们().flatMap((秒, i) => {
-  const 帧 = Math.round(秒 * fps) - 窗.起帧;
-  return 桨声文件[i % 桨声文件.length]!.map((n, j) => ({
-    帧,
+const oarSounds: FrameCue[] = oarSoundSecs().flatMap((sec, i) => {
+  const startFrame = Math.round(sec * fps) - segWindow.起帧;
+  return oarSoundFiles[i % oarSoundFiles.length]!.map((n, j) => ({
+    帧: startFrame,
     资产: `音效/把回忆拼好给你/entity.boat.paddle_water.${n}`,
     名: `桨声${i + 1}${j ? '右' : '左'}`,
-    帧数: 到段尾(帧, 桨声长[n]!),
-    增益: 桨声增益,
+    帧数: clampFramesToSegEnd(startFrame, oarSoundDurSec[n]!),
+    增益: oarSoundGain,
   }));
 });
 
-const 浪声: 帧上cue = { 帧: 事.浪起, 资产: '音效/entity.player.splash.high_speed', 名: '浪', 帧数: 到段尾(事.浪起, 浪声长), 增益: 浪声增益, 淡出: Math.round(浪声淡出秒 * fps) };
+const waveSound: FrameCue = { 帧: events.浪起, 资产: '音效/entity.player.splash.high_speed', 名: '浪', 帧数: clampFramesToSegEnd(events.浪起, waveSoundDurSec), 增益: waveSoundGain, fadeOutFrames: Math.round(waveSoundFadeSec * fps) };
 
-export default 定义段({
+export default defineSeg({
   场: '2-海上',
-  秒: 钟.秒,
-  宽: 画幅.宽,
-  高: 画幅.高,
+  秒: clock.秒,
+  宽: aspect.宽,
+  高: aspect.高,
   地形: [],
-  场窗口: 钟.场窗口,
+  sceneWindow: clock.sceneWindow,
   // 原声：固定增益；段在一串歌中间，不淡入
-  声音: [{ ...钟.原声, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: 原声增益 }, ...桨声们.map(按帧cue), 按帧cue(浪声)],
+  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }, ...oarSounds.map(toAssetCue), toAssetCue(waveSound)],
 });

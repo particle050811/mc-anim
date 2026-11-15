@@ -2,44 +2,44 @@
 // 纯数据（段.ts 读）。增益是 Agent 暂定（三稿「克制」：压在歌下面，听得出来就行），文件本身的数是 ffmpeg 量的（每 20 毫秒一窗的 RMS）。
 import { clamp01 } from '@engine/anim/anim.ts';
 import { fps } from '../../分镜/时间.ts';
-import { 段窗口, 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
-import type { 歌上音效 } from '../../声音/跨段音效.ts';
-import { 纸声们, 纸声峰值 } from './第8句参数.ts';
-import { 铃声文件 } from './第15句声音.ts';
+import { segmentWindow, events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
+import type { SongSound } from '../../声音/跨段音效.ts';
+import { paperSounds, paperSoundPeakDb } from './第8句参数.ts';
+import { bellFile } from './第15句声音.ts';
 
-const 事 = 正片事件;
+const events = mainCutEvents;
 /** 段 2-归隐 的止帧（第 15 句起，2-摇铃 的第一帧） */
-const 段尾 = 段窗口('2-归隐').止帧;
+const segEndFrame = segmentWindow('2-归隐').止帧;
 
 /** 纸飘下：原版 item.book.page_turn.2（第8句参数.ts 量过峰秒、峰值），最响那一下落在 纸飘下 那一帧（头一把纸飘进画面），比第 8 句放照片轻一点（纸在楼上、离你远） */
-const 纸 = 纸声们[1]!;
-export const 纸飘下声: 歌上音效 = {
-  资产: 纸.资产,
+const paperSound = paperSounds[1]!;
+export const paperFloatSound: SongSound = {
+  资产: paperSound.资产,
   名: '纸飘下',
-  起帧: 事.纸飘下.帧 - Math.round(纸.峰秒 * fps),
-  时长秒: 纸.秒,
-  增益: () => Math.round(10 ** ((纸声峰值 - 4 - 纸.峰值) / 20) * 1e6) / 1e6,
+  起帧: events.纸飘下.帧 - Math.round(paperSound.peakSec * fps),
+  时长秒: paperSound.秒,
+  增益: () => Math.round(10 ** ((paperSoundPeakDb - 4 - paperSound.峰值) / 20) * 1e6) / 1e6,
 };
 
 /** 荧光框取出声（entity.glow_item_frame.remove_item.1，0.1 秒，第一窗 −40 dB、第二窗起 −10.8 dB）：落在取照那一帧（照片方案：合照落进手里、那一格变暗同一帧） */
-export const 取出声: 歌上音效 = {
+export const takeOutSound: SongSound = {
   资产: '音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1',
   名: '荧光框取出',
-  起帧: 事.取照.帧,
+  起帧: events.取照.帧,
   时长秒: 0.1,
   增益: () => 0.35,
 };
 
 /** 挂铃的铃声（同第 15 句的寻风之铃）：起音落在挂铃那一帧，轻一点（挂上去碰了一下）；段尾前 淡出秒 淡掉 */
-export const 挂铃声参数 = { 增益: 0.25, 淡出秒: 0.3 } as const;
-const 铃起 = 事.挂铃.帧 - Math.round(铃声文件.起音秒 * fps);
-export const 挂铃声: 歌上音效 = {
+export const hangBellSoundParams = { 增益: 0.25, fadeOutSec: 0.3 } as const;
+const bellStart = events.挂铃.帧 - Math.round(bellFile.onsetSec * fps);
+export const hangBellSound: SongSound = {
   资产: '音效/万法皆通/wind_seeking_bell',
   名: '挂铃',
-  起帧: 铃起,
-  帧数: 段尾 - 铃起,
-  时长秒: 铃声文件.时长秒,
-  增益: (帧) => 挂铃声参数.增益 * clamp01((段尾 - 帧) / (挂铃声参数.淡出秒 * fps)),
+  起帧: bellStart,
+  帧数: segEndFrame - bellStart,
+  时长秒: bellFile.时长秒,
+  增益: (frame) => hangBellSoundParams.增益 * clamp01((segEndFrame - frame) / (hangBellSoundParams.fadeOutSec * fps)),
 };
 
-export const 第14句声音们: readonly 歌上音效[] = [纸飘下声, 取出声, 挂铃声];
+export const line14Sounds: readonly SongSound[] = [paperFloatSound, takeOutSound, hangBellSound];

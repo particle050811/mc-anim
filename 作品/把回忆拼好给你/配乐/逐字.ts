@@ -6,9 +6,9 @@
 //   10-24 量的）逐字认，拿旋律同型的句互相核：第 11 句 = 第 10 句后 2 小节，第 13、14、15 句 = 第 11、12、13 句后 4 小节（6.818 秒），
 //   对得上的差都在 0.05 秒内。拿不准、按拍推的写在那一句后面。
 // 第 5 句唱的是「有你在的日子里不可能被取代」，比 网格.ts 的词多一个「里」：显示照 网格.ts，这里去掉「里」那一拍（16.95）。第 8 句唱的「全部」显示「全都」，时刻不变。
-import { 句们 } from './网格.ts';
+import { sentences } from './网格.ts';
 
-export const 逐字: Readonly<Record<number, readonly number[]>> = {
+export const perChar: Readonly<Record<number, readonly number[]>> = {
   1: [1.54, 1.77, 2.43, 2.61, 3.27, 3.47, 3.67, 3.87, 4.08, 4.32],
   2: [4.95, 5.33, 5.59, 5.83, 6.03, 6.45, 6.71, 7.09, 7.27, 7.47, 7.72],
   3: [8.39, 8.59, 8.85, 9.01, 9.29, 9.49, 9.73, 9.91, 10.13, 10.31, 10.55, 10.71, 10.97],
@@ -31,27 +31,27 @@ export const 逐字: Readonly<Record<number, readonly number[]>> = {
 };
 
 /** 第 序 句第 i 个字的起唱秒 */
-export const 字起 = (序: number, i: number): number => {
-  const t = 逐字[序]?.[i];
-  if (t === undefined) throw new Error(`配乐/逐字.ts 里没有第 ${序} 句第 ${i} 个字`);
+export const charStart = (lineIndex: number, i: number): number => {
+  const t = perChar[lineIndex]?.[i];
+  if (t === undefined) throw new Error(`配乐/逐字.ts 里没有第 ${lineIndex} 句第 ${i} 个字`);
   return t;
 };
 
 /** 核对用：每句字数和 网格.ts 的词一样、时刻递增、落在 [开口 − 0.05, 止] 里；返回不对的地方 */
-export const 逐字问题 = (): string[] => {
+export const perCharIssues = (): string[] => {
   const out: string[] = [];
-  for (const s of 句们) {
-    const ts = 逐字[s.序];
-    const 字们 = [...s.词];
+  for (const s of sentences) {
+    const ts = perChar[s.序];
+    const chars = [...s.text];
     if (!ts) {
       out.push(`第 ${s.序} 句没有逐字时刻`);
       continue;
     }
-    if (ts.length !== 字们.length) out.push(`第 ${s.序} 句「${s.词}」${字们.length} 个字，逐字给了 ${ts.length} 个`);
-    const 开口 = s.前导 ?? s.起;
+    if (ts.length !== chars.length) out.push(`第 ${s.序} 句「${s.text}」${chars.length} 个字，逐字给了 ${ts.length} 个`);
+    const mouthOpenSec = s.leadIn ?? s.起;
     ts.forEach((t, i) => {
-      if (i > 0 && t <= ts[i - 1]!) out.push(`第 ${s.序} 句第 ${i + 1} 个字「${字们[i]}」${t} 不比前一个字晚`);
-      if (t < 开口 - 0.05 || t > s.止) out.push(`第 ${s.序} 句「${字们[i]}」${t} 出了 [${开口}, ${s.止}]`);
+      if (i > 0 && t <= ts[i - 1]!) out.push(`第 ${s.序} 句第 ${i + 1} 个字「${chars[i]}」${t} 不比前一个字晚`);
+      if (t < mouthOpenSec - 0.05 || t > s.止) out.push(`第 ${s.序} 句「${chars[i]}」${t} 出了 [${mouthOpenSec}, ${s.止}]`);
     });
   }
   return out;

@@ -13,8 +13,8 @@ import { broom, routeYaw, type BroomState } from './扫帚.ts';
 export type Cam = { pos: number[]; tgt: number[]; lens: number; roll?: number };
 // 扫帚本地坐标 → 场景（先俯仰再朝向；首帧要贴在草束后面，不考虑横滚）
 const local = (state: BroomState, localPt: number[]) => {
-  const y = (state.朝向 * Math.PI) / 180;
-  const pi = (state.俯仰 * Math.PI) / 180;
+  const y = (state.facing * Math.PI) / 180;
+  const pi = (state.pitch * Math.PI) / 180;
   const x1 = localPt[0];
   const y1 = localPt[1] * Math.cos(pi) - localPt[2] * Math.sin(pi);
   const z1 = localPt[1] * Math.sin(pi) + localPt[2] * Math.cos(pi);
@@ -67,7 +67,7 @@ const diveMargin = 10; // 度：镜头离骑手的仰角约 28°，扫帚扎得�
 const diveOrbitUp = (globalFrame: number) => {
   if (globalFrame >= beats.levelOff || globalFrame <= 14) return 0;
   const soft = (x: number) => 3 * Math.log1p(Math.exp(x / 3));
-  return triangleSmooth((g) => soft(-broom(g).俯仰 - diveMargin), globalFrame, 24) * (1 - ss((globalFrame - (beats.levelOff - 20)) / 20));
+  return triangleSmooth((g) => soft(-broom(g).pitch - diveMargin), globalFrame, 24) * (1 - ss((globalFrame - (beats.levelOff - 20)) / 20));
 };
 const cross3 = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 // 绕水平轴 a（单位向量）转 θ 弧度（Rodrigues）
@@ -86,9 +86,9 @@ const chase = (globalFrame: number): Cam => {
   const pert = perturb.at(globalFrame);
   // 航线自己的转弯照原来晚 5 帧跟（摆位、视线都是）；扰动的那一份：摆位按扫帚当前的航向扰动放在它正后方，视线按弹簧跟随后的
   const baseYaw = routeYaw(Math.max(0, globalFrame - 5));
-  const yaw = ((baseYaw + pert.航向) * Math.PI) / 180;
+  const yaw = ((baseYaw + pert.heading) * Math.PI) / 180;
   const fwd = [-Math.sin(yaw), Math.cos(yaw)];
-  const lookYaw = ((baseYaw + pert.镜头.航向) * Math.PI) / 180;
+  const lookYaw = ((baseYaw + pert.cameraAim.lookHeading) * Math.PI) / 180;
   const fwdV = [-Math.sin(lookYaw), Math.cos(lookYaw)];
   const back = sample(BACK, globalFrame);
   const up = sample(UP, globalFrame);
@@ -102,9 +102,9 @@ const chase = (globalFrame: number): Cam => {
   const uT = norm([TOWN_AIM[0] - pos[0], TOWN_AIM[1] - pos[1], TOWN_AIM[2] - pos[2]]);
   const aimWeight = ss((globalFrame - (beats.townWall - 10)) / (beats.decelStart - beats.townWall + 10));
   const dir0 = norm(lerp3(uRun, norm(lerp3(uB, uT, sample(AIM, globalFrame))), aimWeight));
-  const elevation = Math.asin(Math.max(-1, Math.min(1, dir0[2]))) + (pert.镜头.俯仰 * Math.PI) / 180;
+  const elevation = Math.asin(Math.max(-1, Math.min(1, dir0[2]))) + (pert.cameraAim.pitch * Math.PI) / 180;
   const horizLen = Math.hypot(dir0[0], dir0[1]) || 1;
-  const dir = pert.镜头.俯仰 === 0 ? dir0 : [(dir0[0] / horizLen) * Math.cos(elevation), (dir0[1] / horizLen) * Math.cos(elevation), Math.sin(elevation)];
+  const dir = pert.cameraAim.pitch === 0 ? dir0 : [(dir0[0] / horizLen) * Math.cos(elevation), (dir0[1] / horizLen) * Math.cos(elevation), Math.sin(elevation)];
   // 视线按原来的机位算好，机位再往骑手推近（见上面「拉近」），俯冲时再连视线一起绕到上方（见上面「俯冲绕上」）
   const k = sample(pullIn, globalFrame);
   const riderPt = riderCenter(state);

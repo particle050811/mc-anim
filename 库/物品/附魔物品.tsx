@@ -72,7 +72,7 @@ export const GlintItem: React.FC<{ layers: ItemLayer[]; sec: number; glint?: boo
  * 给 3D 物品模型（BlockModel 这类自己建材质的）加同一套附魔光效：patch 交给建材质的地方过一遍，设秒 每帧调一次。
  * 贴图宽：模型贴图的像素宽（uv 0～1 对应这么多像素），光效的疏密按它在图集里占的大小算，和 GlintItem 的 16 像素同一个算法。
  */
-export const 附魔光效补丁 = (贴图宽: number): { patch: (mat: THREE.MeshStandardMaterial) => void; 设秒: (秒: number) => void } => {
+export const enchantGlintPatch = (textureWidth: number): { patch: (mat: THREE.MeshStandardMaterial) => void; setGlintSec: (sec: number) => void } => {
   const uMat = { value: new THREE.Matrix3() };
   const patch = (mat: THREE.MeshStandardMaterial) => {
     mat.onBeforeCompile = (sh) => {
@@ -95,7 +95,7 @@ export const 附魔光效补丁 = (贴图宽: number): { patch: (mat: THREE.Mesh
     };
     mat.customProgramCacheKey = () => 'item-glint';
   };
-  return { patch, 设秒: (秒) => void glintMatrix(秒, uMat.value, 贴图宽) };
+  return { patch, setGlintSec: (sec) => void glintMatrix(sec, uMat.value, textureWidth) };
 };
 
 // 拿在手上：挂到 骨架.tsx 的手插槽（handR / handL，原点在肩下 9 像素，1 = 1 像素）。

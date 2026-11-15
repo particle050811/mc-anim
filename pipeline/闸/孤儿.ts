@@ -1,12 +1,12 @@
 import { execFileSync } from 'node:child_process';
-export type 孤儿进程 = {
+export type OrphanProcess = {
     pid: number;
     ppid: number;
     rss: number;
     命令: string;
 };
 /** 浏览器目录（数据根 cache/浏览器/，或 Remotion 默认的 node_modules 下）+ headless shell + ppid 三项同时满足，不碰 Playwright 或普通 Chrome。 */
-export const 找孤儿 = (text: string): 孤儿进程[] => text.split('\n').flatMap(l => {
+export const findOrphans = (text: string): OrphanProcess[] => text.split('\n').flatMap(l => {
     const m = /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(.+)$/.exec(l);
     if (!m)
         return [];
@@ -19,14 +19,14 @@ export const 读进程 = () => { try {
 catch {
     return '';
 } };
-export const 清孤儿 = (text = 读进程(), 杀 = (pid: number) => process.kill(pid, 'SIGTERM')) => {
-    const 清掉: 孤儿进程[] = [];
-    for (const p of 找孤儿(text)) {
+export const clearOrphans = (text = 读进程(), kill = (pid: number) => process.kill(pid, 'SIGTERM')) => {
+    const cleared: OrphanProcess[] = [];
+    for (const p of findOrphans(text)) {
         try {
-            杀(p.pid);
-            清掉.push(p);
+            kill(p.pid);
+            cleared.push(p);
         }
         catch { /* 进程已退出 */ }
     }
-    return 清掉;
+    return cleared;
 };

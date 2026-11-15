@@ -29,10 +29,10 @@ export const RulesView: React.FC<{ f: number; cam?: Cam }> = ({ f: storyFrame, c
   const t = storyFrame / choreo.FPS;
   const tendrilClock = choreo.sensorClock(storyFrame);
   return (
-    <AncientCity4xCanvas 段="6-4-2" cam={cam ?? choreo.camera(storyFrame)} width={width} height={height} hide={HIDE} 羊毛={woolState.羊毛} growingWool={woolState.长羊毛} 开箱={choreo.openChest(storyFrame)}>
+    <AncientCity4xCanvas 段="6-4-2" cam={cam ?? choreo.camera(storyFrame)} width={width} height={height} hide={HIDE} wool={woolState.wool} growingWool={woolState.growingWool} chestOpening={choreo.openChest(storyFrame)}>
       <LiYingWithBlade pose={choreo.liying(storyFrame)} />
       {choreo.sensors.map((b, i) => (
-        <SculkSensor key={i} p={blockBottomCenter(b)} 秒={tendrilClock} 激活秒={t - choreo.activateSecs[i]} seed={i + 1} />
+        <SculkSensor key={i} p={blockBottomCenter(b)} 秒={tendrilClock} secSinceActive={t - choreo.activateSecs[i]} seed={i + 1} />
       ))}
       {choreo.vibrations.map((v, i) => (
         <VibrationSignal key={i} from={v.from} to={v.to} sec={t - v.t} 帧={i * 3} />

@@ -2,11 +2,11 @@
 // - 每发同火球术的小火球；配下界魔杖每发 3 颗。
 // 自己定的：游戏里按住多久放多久，片里一次演 5 发（轰击发数）。没做：点着的火。
 import React from 'react';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 火球们 } from '../零件/甲/火球片.tsx';
-import 元, { 轰击弹 } from './bombardment.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { FireballGroup } from '../零件/甲/火球片.tsx';
+import meta, { bombardmentShots } from './bombardment.元.ts';
 
-const 轰击: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => <火球们 弹们={轰击弹(起点, 目标, 种子)} 秒={秒} 倍={0.75} 种子={种子} />;
+const bombardment: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => <FireballGroup projectiles={bombardmentShots(from, target, seed)} 秒={sec} scale={0.75} 种子={seed} />;
 
-export default 定义法术演出(元, 轰击);
+export default defineSpellPerformance(meta, bombardment);

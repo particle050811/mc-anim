@@ -13,17 +13,17 @@ import type { V3 } from '../../engine/model/parts.tsx';
 import { hash2 } from '../../engine/core/噪声.ts';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { type Particle, particleTexture, ParticleQuads } from './粒子面片.tsx';
-import { 资产目录 } from '../../engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/特效/粒子/generic_0';
-import 资_1 from 'asset:贴图/特效/粒子/generic_1';
-import 资_2 from 'asset:贴图/特效/粒子/generic_2';
-import 资_3 from 'asset:贴图/特效/粒子/generic_3';
-import 资_4 from 'asset:贴图/特效/粒子/generic_4';
-import 资_5 from 'asset:贴图/特效/粒子/generic_5';
-import 资_6 from 'asset:贴图/特效/粒子/generic_6';
-import 资_7 from 'asset:贴图/特效/粒子/generic_7';
+import { assetDir } from '../../engine/core/资产目录.ts';
+import generic0Png from 'asset:贴图/特效/粒子/generic_0';
+import generic1Png from 'asset:贴图/特效/粒子/generic_1';
+import generic2Png from 'asset:贴图/特效/粒子/generic_2';
+import generic3Png from 'asset:贴图/特效/粒子/generic_3';
+import generic4Png from 'asset:贴图/特效/粒子/generic_4';
+import generic5Png from 'asset:贴图/特效/粒子/generic_5';
+import generic6Png from 'asset:贴图/特效/粒子/generic_6';
+import generic7Png from 'asset:贴图/特效/粒子/generic_7';
 
-const GENERIC = pngDir(资产目录({ './generic_0.png': 资_0, './generic_1.png': 资_1, './generic_2.png': 资_2, './generic_3.png': 资_3, './generic_4.png': 资_4, './generic_5.png': 资_5, './generic_6.png': 资_6, './generic_7.png': 资_7 }));
+const GENERIC = pngDir(assetDir({ './generic_0.png': generic0Png, './generic_1.png': generic1Png, './generic_2.png': generic2Png, './generic_3.png': generic3Png, './generic_4.png': generic4Png, './generic_5.png': generic5Png, './generic_6.png': generic6Png, './generic_7.png': generic7Png }));
 
 export const airFlowConsts = {
   color: [0xee / 255, 0xee / 255, 0xee / 255] as [number, number, number],
@@ -78,44 +78,44 @@ const halfOf = (r: number, sizeScale: number) => 0.1 * (r * 0.5 + 0.5) * 2 * 0.7
 const spriteOf = (frac: number, r4: number) => 7 - Math.floor((clamp(Math.floor(frac * 8 + r4), 0, 7) * 7) / 8);
 
 // ---------- (a) 直吹风道 ----------
-export type 直吹参数 = {
+export type DirectBlowParams = {
   种子: number;
-  时刻: number; // 剧情秒
-  风口: V3; // 出风口那一面的中心（d = 0）
-  方向: V3; // 风向（不必是单位向量）
-  转速: number | ((t: number) => number); // rpm；函数时按剧情秒取（升速、停转）
-  最大距离?: number | ((t: number) => number); // 不给就按 风道长度(转速)
-  密度?: number; // 每刻出生几个，游戏 0.5；参考视频要看得清，可以加密
-  散布?: number; // 出生时横向偏 ±散布（游戏 0.25）。顺风向的偏移照游戏 ±0.25，另给 出生距离 时按它
+  storyTime: number; // 剧情秒
+  outlet: V3; // 出风口那一面的中心（d = 0）
+  windDir: V3; // 风向（不必是单位向量）
+  rotSpeedRpm: number | ((t: number) => number); // rpm；函数时按剧情秒取（升速、停转）
+  maxDist?: number | ((t: number) => number); // 不给就按 风道长度(转速)
+  density?: number; // 每刻出生几个，游戏 0.5；参考视频要看得清，可以加密
+  spread?: number; // 出生时横向偏 ±散布（游戏 0.25）。顺风向的偏移照游戏 ±0.25，另给 出生距离 时按它
   // 出生时离出风口多远（顺风向，格）[近, 远]。不给 = 游戏的 [−0.25, 0.25]：一半生在风扇方块里，会从半透明风扇虚影里透出来。
   // 6-4-3 风矢给 [0, 0.15]（游戏 0.5 格宽按 0.3 格风扇缩，挪到出风口前，见 镜头/6-4-3/编排.ts）
-  出生距离?: [number, number];
-  扩张?: number; // 横向偏移随 d 放大：× (1 + 扩张 × d/最大距离)，游戏是 0（直筒）
+  spawnDist?: [number, number];
+  expansion?: number; // 横向偏移随 d 放大：× (1 + 扩张 × d/最大距离)，游戏是 0（直筒）
   大小?: number; // 粒子大小倍数
-  透明度?: number; // 乘在 0.25 上（淡入淡出）
+  opacity?: number; // 乘在 0.25 上（淡入淡出）
   起?: number; // 剧情秒：只在 [起, 止] 里出生；之前出生的照样飞完
   止?: number;
-  法向?: V3; // 横向基的参考方向（只影响随机偏移落在哪，不影响样子）
+  normal?: V3; // 横向基的参考方向（只影响随机偏移落在哪，不影响样子）
   // 快放：整条风道照原版逐刻推，但一刻只占 1/(20×快放) 剧情秒，任一瞬间的样子和原版一样、只是动得快。不给 = 1。
   // 6-4-3 风矢用（剧情设定：应力转动之力把风吹到原版的几百倍快），见 镜头/6-4-3/几何.ts 的 `windFastForward`
-  快放?: number;
+  fastForward?: number;
   // 末端渐稀：给了就按离出风口的距离随机去掉一部分粒子，从 渐稀×最大距离 起到末端越来越稀、透明度也减半，不到某个长度一齐消失。
   // 原版粒子越近末端越慢、挤成一团，到 最大距离+0.25 一齐移除；这里先按速度抵掉这团堆积再渐稀。去留的随机数每个粒子固定，不闪
-  渐稀?: number;
+  fadeThin?: number;
 };
 
-export const directBlowDuct = (opts: 直吹参数): AirFlowParticle[] => {
-  const { 种子: seed, 时刻: sec, 风口: outlet, 密度: density = airFlowConsts.defaultDensity, 散布: scatter = airFlowConsts.jitter, 扩张: expansion = 0, 大小: sizeScale = 1, 透明度: opacity = 1, 快放: fastForward = 1 } = opts;
+export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
+  const { 种子: seed, storyTime: sec, outlet: outlet, density: density = airFlowConsts.defaultDensity, spread: scatter = airFlowConsts.jitter, expansion: expansion = 0, 大小: sizeScale = 1, opacity: opacity = 1, fastForward: fastForward = 1 } = opts;
   if (density <= 0 || opacity <= 0) return [];
-  const rpmAt = typeof opts.转速 === 'function' ? opts.转速 : () => opts.转速 as number;
-  const maxDistAt = opts.最大距离 === undefined ? (t: number) => ductLength(rpmAt(t)) : typeof opts.最大距离 === 'function' ? opts.最大距离 : () => opts.最大距离 as number;
-  const dir = norm(opts.方向);
-  const sideA = perp(dir, opts.法向);
+  const rpmAt = typeof opts.rotSpeedRpm === 'function' ? opts.rotSpeedRpm : () => opts.rotSpeedRpm as number;
+  const maxDistAt = opts.maxDist === undefined ? (t: number) => ductLength(rpmAt(t)) : typeof opts.maxDist === 'function' ? opts.maxDist : () => opts.maxDist as number;
+  const dir = norm(opts.windDir);
+  const sideA = perp(dir, opts.normal);
   const sideB = cross(dir, sideA);
   const ticksPerSec = 20 * fastForward;
   const tau = sec * ticksPerSec;
   const lifespan = airFlowConsts.lifeTicks;
-  const fadeFrom = opts.渐稀;
+  const fadeFrom = opts.fadeThin;
   const out: AirFlowParticle[] = [];
   const k0 = Math.floor((tau - lifespan - 1) * density);
   const k1 = Math.ceil(tau * density);
@@ -126,7 +126,7 @@ export const directBlowDuct = (opts: 直吹参数): AirFlowParticle[] => {
     const tb = birthTick / ticksPerSec;
     if ((opts.起 !== undefined && tb < opts.起) || (opts.止 !== undefined && tb > opts.止)) continue;
     if (rpmAt(tb) === 0) continue;
-    const [nearDist, farDist] = opts.出生距离 ?? [-airFlowConsts.jitter, airFlowConsts.jitter];
+    const [nearDist, farDist] = opts.spawnDist ?? [-airFlowConsts.jitter, airFlowConsts.jitter];
     let dist = nearDist + slotRand(seed, k, 1) * (farDist - nearDist);
     const wholeTicks = Math.floor(age);
     let dead = false;
@@ -169,11 +169,11 @@ export const directBlowDuct = (opts: 直吹参数): AirFlowParticle[] => {
 
 // 散花风道：6-4-3a、7-1-5、7-4-1 弓前风扇虚影吹出的风道，细的芯 + 往外散开的一大团花，横截面按风扇边长缩。
 // 用户 10-18 定：都照 6-4-3a「哄」那一帧（原来只在那 0.05 秒加的一团）的散花样子，末端越往外越稀
-export const 散花风道 = (opts: Omit<直吹参数, '密度' | '散布' | '扩张' | '大小' | '渐稀'> & { 边长: number }): AirFlowParticle[] => {
-  const { 边长: side, ...rest } = opts;
+export const scatterDuct = (opts: Omit<DirectBlowParams, 'density' | 'spread' | 'expansion' | '大小' | 'fadeThin'> & { sideLength: number }): AirFlowParticle[] => {
+  const { sideLength: side, ...rest } = opts;
   return [
-    ...directBlowDuct({ ...rest, 密度: 15, 散布: 0.45 * side, 扩张: 0.6, 大小: 0.65, 渐稀: 0.3 }),
-    ...directBlowDuct({ ...rest, 种子: rest.种子 + 1, 密度: 40, 散布: 0.9 * side, 扩张: 1.6, 大小: 0.75, 渐稀: 0.3 }),
+    ...directBlowDuct({ ...rest, density: 15, spread: 0.45 * side, expansion: 0.6, 大小: 0.65, fadeThin: 0.3 }),
+    ...directBlowDuct({ ...rest, 种子: rest.种子 + 1, density: 40, spread: 0.9 * side, expansion: 1.6, 大小: 0.75, fadeThin: 0.3 }),
   ];
 };
 

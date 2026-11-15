@@ -3,53 +3,53 @@
 // 那份没改（改了让 42 段过期），新作品、新段用这里。帧 = Math.round(秒 × fps)，帧号只在这里由秒取整一次（和 分镜/时间.ts 的 歌曲帧 一样）。
 
 /** 时间轴上的一个时刻。秒、帧：直接给；接：表里另一个事件再往后几秒或几帧（负数往前），可以接在后面才写的事件上 */
-export type 基本时刻 = { 秒: number } | { 帧: number } | { 接: string; 加秒?: number; 加帧?: number };
+export type BaseMoment = { 秒: number } | { 帧: number } | { after: string; addSec?: number; addFrames?: number };
 /** 扩展的时刻（如歌网格的 拍、小节、句，见 歌网格.ts）由 解析 换成秒 */
-export type 时刻<扩展 = never> = 基本时刻 | 扩展;
+export type Moment<Ext = never> = BaseMoment | Ext;
 
-export type 事件定义<扩展 = never> = { 在: 时刻<扩展>; /** 为什么在这一刻（用户定的写「用户 MM-DD 定」，Agent 暂定的写暂定） */ 依据?: string };
-export type 解出事件 = { 秒: number; 帧: number; 依据: string };
+export type EventDef<Ext = never> = { 在: Moment<Ext>; /** 为什么在这一刻（用户定的写「用户 MM-DD 定」，Agent 暂定的写暂定） */ 依据?: string };
+export type ResolvedEvent = { 秒: number; 帧: number; 依据: string };
 
-export type 时间轴<扩展 = never> = {
+export type TimeAxis<Ext = never> = {
   fps: number;
   /** 扩展时刻 → 秒；没有扩展的时间线不给 */
-  解析?: (t: 扩展) => number;
+  resolveTime?: (t: Ext) => number;
 };
 
-const 是基本 = (t: object): t is 基本时刻 => '秒' in t || '帧' in t || '接' in t;
+const isBasicTime = (t: object): t is BaseMoment => '秒' in t || '帧' in t || 'after' in t;
 
 /** 时刻 → 秒；帧 给的按 帧 ÷ fps */
-export const 解时刻 = <扩展 = never>(t: 时刻<扩展>, 表: Readonly<Record<string, 事件定义<扩展>>>, 轴: 时间轴<扩展>, 路: readonly string[] = []): number => {
+export const resolveMoment = <Ext = never>(t: Moment<Ext>, eventTable: Readonly<Record<string, EventDef<Ext>>>, axis: TimeAxis<Ext>, visited: readonly string[] = []): number => {
   const o = t as object;
-  if (!是基本(o)) {
-    if (!轴.解析) throw new Error(`不认识的时刻 ${JSON.stringify(t)}：这条时间线没给 解析（基本时刻只有 秒、帧、接）`);
-    return 轴.解析(t as 扩展);
+  if (!isBasicTime(o)) {
+    if (!axis.resolveTime) throw new Error(`不认识的时刻 ${JSON.stringify(t)}：这条时间线没给 解析（基本时刻只有 秒、帧、接）`);
+    return axis.resolveTime(t as Ext);
   }
   if ('秒' in o) return o.秒;
-  if ('帧' in o) return o.帧 / 轴.fps;
-  const 被接 = 表[o.接];
-  if (!被接) throw new Error(`接的事件「${o.接}」不在表里`);
-  if (路.includes(o.接)) throw new Error(`事件接成了环：${[...路, o.接].join(' → ')}`);
-  return 解时刻(被接.在, 表, 轴, [...路, o.接]) + (o.加秒 ?? 0) + (o.加帧 ?? 0) / 轴.fps;
+  if ('帧' in o) return o.帧 / axis.fps;
+  const linked = eventTable[o.after];
+  if (!linked) throw new Error(`接的事件「${o.after}」不在表里`);
+  if (visited.includes(o.after)) throw new Error(`事件接成了环：${[...visited, o.after].join(' → ')}`);
+  return resolveMoment(linked.在, eventTable, axis, [...visited, o.after]) + (o.addSec ?? 0) + (o.addFrames ?? 0) / axis.fps;
 };
 
 /** 时刻 → 帧（取整一次）。直接给 帧 的不经秒绕一圈，免得 帧 ÷ fps × fps 的浮点误差 */
-export const 时刻帧 = <扩展 = never>(t: 时刻<扩展>, 表: Readonly<Record<string, 事件定义<扩展>>>, 轴: 时间轴<扩展>): number => {
+export const momentFrame = <Ext = never>(t: Moment<Ext>, eventTable: Readonly<Record<string, EventDef<Ext>>>, axis: TimeAxis<Ext>): number => {
   const o = t as object;
-  if ('帧' in o && 是基本(o)) {
+  if ('帧' in o && isBasicTime(o)) {
     if (!Number.isInteger(o.帧)) throw new Error(`时刻的帧要是整数：${o.帧}`);
     return o.帧;
   }
-  return Math.round(解时刻(t, 表, 轴) * 轴.fps);
+  return Math.round(resolveMoment(t, eventTable, axis) * axis.fps);
 };
 
 /** 整张事件表解成秒和帧 */
-export const 解事件 = <K extends string, 扩展 = never>(表: Readonly<Record<K, 事件定义<扩展>>>, 轴: 时间轴<扩展>): Record<K, 解出事件> => {
-  const r = {} as Record<K, 解出事件>;
-  for (const 名 of Object.keys(表) as K[]) {
-    const 在 = 表[名].在;
-    const 秒 = 解时刻(在, 表, 轴, [名]);
-    r[名] = { 秒, 帧: 时刻帧(在, 表, 轴), 依据: 表[名].依据 ?? '' };
+export const resolveEvents = <K extends string, Ext = never>(eventTable: Readonly<Record<K, EventDef<Ext>>>, axis: TimeAxis<Ext>): Record<K, ResolvedEvent> => {
+  const r = {} as Record<K, ResolvedEvent>;
+  for (const eventName of Object.keys(eventTable) as K[]) {
+    const at = eventTable[eventName].在;
+    const sec = resolveMoment(at, eventTable, axis, [eventName]);
+    r[eventName] = { 秒: sec, 帧: momentFrame(at, eventTable, axis), 依据: eventTable[eventName].依据 ?? '' };
   }
   return r;
 };
@@ -57,35 +57,35 @@ export const 解事件 = <K extends string, 扩展 = never>(表: Readonly<Record
 // ---------- 串：同一条时间轴上首尾相接的几段（分镜/时间.ts 的 排段，泛化） ----------
 
 /** 段窗口的止：时刻、按画面长度给帧数，或 放完 = 时间轴最后一个整帧（要给 时长） */
-export type 窗口止<扩展 = never> = 时刻<扩展> | { 帧数: number } | '放完';
+export type WindowEnd<Ext = never> = Moment<Ext> | { 帧数: number } | '放完';
 /** 串里第一段要写 起；后面的段不写就接上一段的止，写了就要正好等于上一段的止。名 只用来报错和查找（不必是段键） */
-export type 串段定义<扩展 = never> = { 名: string; 起?: 时刻<扩展>; 止: 窗口止<扩展>; 依据?: string };
-export type 串定义<扩展 = never> = { 名: string; /** 时间轴总长（秒）：给了就查窗口不超出 */ 时长?: number; 段们: readonly 串段定义<扩展>[] };
-export type 串窗口 = { 名: string; 串: string; 起帧: number; 止帧: number; 帧数: number; 依据: string };
+export type SeriesSegDef<Ext = never> = { 名: string; 起?: Moment<Ext>; 止: WindowEnd<Ext>; 依据?: string };
+export type SeriesDef<Ext = never> = { 名: string; /** 时间轴总长（秒）：给了就查窗口不超出 */ 时长?: number; segments: readonly SeriesSegDef<Ext>[] };
+export type SeriesWindow = { 名: string; sequenceName: string; 起帧: number; 止帧: number; 帧数: number; 依据: string };
 
 /** 推出一串里每段的窗口（时间轴帧 [起帧, 止帧)），并查首尾相接、不重叠、不超出时长 */
-export const 排段 = <扩展 = never>(串: 串定义<扩展>, 表: Readonly<Record<string, 事件定义<扩展>>>, 轴: 时间轴<扩展>): 串窗口[] => {
-  const r: 串窗口[] = [];
-  const 末帧 = 串.时长 === undefined ? Infinity : Math.floor(串.时长 * 轴.fps + 1e-9);
-  for (const d of 串.段们) {
-    const 名 = `串「${串.名}」的 ${d.名}`;
-    if (r.some((w) => w.名 === d.名)) throw new Error(`${名} 出现了两次`);
-    const 上 = r.at(-1);
-    let 起帧: number;
+export const arrangeSegs = <Ext = never>(sequence: SeriesDef<Ext>, eventTable: Readonly<Record<string, EventDef<Ext>>>, axis: TimeAxis<Ext>): SeriesWindow[] => {
+  const r: SeriesWindow[] = [];
+  const lastFrame = sequence.时长 === undefined ? Infinity : Math.floor(sequence.时长 * axis.fps + 1e-9);
+  for (const d of sequence.segments) {
+    const displayName = `串「${sequence.名}」的 ${d.名}`;
+    if (r.some((w) => w.名 === d.名)) throw new Error(`${displayName} 出现了两次`);
+    const prevSegment = r.at(-1);
+    let startFrame: number;
     if (d.起) {
-      起帧 = 时刻帧(d.起, 表, 轴);
-      if (上 && 起帧 !== 上.止帧) throw new Error(`${名} 起在第 ${起帧} 帧，上一段 ${上.名} 止在第 ${上.止帧} 帧：${起帧 > 上.止帧 ? '中间空了' : '重叠了'} ${Math.abs(起帧 - 上.止帧)} 帧`);
-    } else if (上) 起帧 = 上.止帧;
-    else throw new Error(`${名} 是串里第一段，要写 起`);
-    let 止帧: number;
+      startFrame = momentFrame(d.起, eventTable, axis);
+      if (prevSegment && startFrame !== prevSegment.止帧) throw new Error(`${displayName} 起在第 ${startFrame} 帧，上一段 ${prevSegment.名} 止在第 ${prevSegment.止帧} 帧：${startFrame > prevSegment.止帧 ? '中间空了' : '重叠了'} ${Math.abs(startFrame - prevSegment.止帧)} 帧`);
+    } else if (prevSegment) startFrame = prevSegment.止帧;
+    else throw new Error(`${displayName} 是串里第一段，要写 起`);
+    let endFrame: number;
     if (d.止 === '放完') {
-      if (末帧 === Infinity) throw new Error(`${名} 写了 放完，串要给 时长`);
-      止帧 = 末帧;
-    } else if (typeof d.止 === 'object' && d.止 !== null && '帧数' in d.止) 止帧 = 起帧 + d.止.帧数;
-    else 止帧 = 时刻帧(d.止 as 时刻<扩展>, 表, 轴);
-    if (!Number.isInteger(止帧) || 止帧 <= 起帧) throw new Error(`${名} 的窗口 [${起帧}, ${止帧}) 是空的或反了`);
-    if (起帧 < 0 || 止帧 > 末帧) throw new Error(`${名} 的窗口 [${起帧}, ${止帧}) 超出时间轴（0 到第 ${末帧} 帧）`);
-    r.push({ 名: d.名, 串: 串.名, 起帧, 止帧, 帧数: 止帧 - 起帧, 依据: d.依据 ?? '' });
+      if (lastFrame === Infinity) throw new Error(`${displayName} 写了 放完，串要给 时长`);
+      endFrame = lastFrame;
+    } else if (typeof d.止 === 'object' && d.止 !== null && '帧数' in d.止) endFrame = startFrame + d.止.帧数;
+    else endFrame = momentFrame(d.止 as Moment<Ext>, eventTable, axis);
+    if (!Number.isInteger(endFrame) || endFrame <= startFrame) throw new Error(`${displayName} 的窗口 [${startFrame}, ${endFrame}) 是空的或反了`);
+    if (startFrame < 0 || endFrame > lastFrame) throw new Error(`${displayName} 的窗口 [${startFrame}, ${endFrame}) 超出时间轴（0 到第 ${lastFrame} 帧）`);
+    r.push({ 名: d.名, sequenceName: sequence.名, 起帧: startFrame, 止帧: endFrame, 帧数: endFrame - startFrame, 依据: d.依据 ?? '' });
   }
   return r;
 };

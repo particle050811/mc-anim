@@ -20,23 +20,23 @@ import { type Png, pngDir } from '@engine/model/贴图.ts';
 import { Spyglass } from '@库/物品/望远镜.tsx';
 import raw from 'asset:模型/角色/巨人';
 import { giantPose } from '@库/角色/巨人.tsx';
-import { 资产目录 } from '@engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/角色/卫兵/披风';
-import 资_1 from 'asset:贴图/角色/卫兵/皮肤0-kai';
-import 资_2 from 'asset:贴图/角色/卫兵/皮肤1-noor';
-import 资_3 from 'asset:贴图/角色/卫兵/皮肤2-efe';
-import 资_4 from 'asset:贴图/角色/卫兵/皮肤3-makena';
-import 资_5 from 'asset:贴图/角色/卫兵/皮肤4-sunny';
-import 资_6 from 'asset:贴图/角色/卫兵/皮肤5-ari';
-import 资_7 from 'asset:贴图/角色/卫兵/皮肤6-zuri';
-import 资_8 from 'asset:贴图/角色/卫兵/皮肤7-alex';
-import 资_9 from 'asset:贴图/角色/卫兵/皮肤8-steve';
-import 资_10 from 'asset:贴图/角色/卫兵/钻石甲1';
-import 资_11 from 'asset:贴图/角色/卫兵/钻石甲2';
-import 资_12 from 'asset:贴图/角色/卫兵/附魔光泽';
+import { assetDir } from '@engine/core/资产目录.ts';
+import guardCapePng from 'asset:贴图/角色/卫兵/披风';
+import guardSkin0KaiPng from 'asset:贴图/角色/卫兵/皮肤0-kai';
+import guardSkin1NoorPng from 'asset:贴图/角色/卫兵/皮肤1-noor';
+import guardSkin2EfePng from 'asset:贴图/角色/卫兵/皮肤2-efe';
+import guardSkin3MakenaPng from 'asset:贴图/角色/卫兵/皮肤3-makena';
+import guardSkin4SunnyPng from 'asset:贴图/角色/卫兵/皮肤4-sunny';
+import guardSkin5AriPng from 'asset:贴图/角色/卫兵/皮肤5-ari';
+import guardSkin6ZuriPng from 'asset:贴图/角色/卫兵/皮肤6-zuri';
+import guardSkin7AlexPng from 'asset:贴图/角色/卫兵/皮肤7-alex';
+import guardSkin8StevePng from 'asset:贴图/角色/卫兵/皮肤8-steve';
+import guardDiamondArmor1Png from 'asset:贴图/角色/卫兵/钻石甲1';
+import diamondArmor2Png from 'asset:贴图/角色/卫兵/钻石甲2';
+import enchantGlintPng from 'asset:贴图/角色/卫兵/附魔光泽';
 
 const MODELS = (raw as unknown as { models: Record<'宽' | '细' | '内甲' | '外甲', EntityModelData> }).models;
-const TEX = pngDir(资产目录({ './披风.png': 资_0, './皮肤0-kai.png': 资_1, './皮肤1-noor.png': 资_2, './皮肤2-efe.png': 资_3, './皮肤3-makena.png': 资_4, './皮肤4-sunny.png': 资_5, './皮肤5-ari.png': 资_6, './皮肤6-zuri.png': 资_7, './皮肤7-alex.png': 资_8, './皮肤8-steve.png': 资_9, './钻石甲1.png': 资_10, './钻石甲2.png': 资_11, './附魔光泽.png': 资_12 })) as Record<string, Png>;
+const TEX = pngDir(assetDir({ './披风.png': guardCapePng, './皮肤0-kai.png': guardSkin0KaiPng, './皮肤1-noor.png': guardSkin1NoorPng, './皮肤2-efe.png': guardSkin2EfePng, './皮肤3-makena.png': guardSkin3MakenaPng, './皮肤4-sunny.png': guardSkin4SunnyPng, './皮肤5-ari.png': guardSkin5AriPng, './皮肤6-zuri.png': guardSkin6ZuriPng, './皮肤7-alex.png': guardSkin7AlexPng, './皮肤8-steve.png': guardSkin8StevePng, './钻石甲1.png': guardDiamondArmor1Png, './钻石甲2.png': diamondArmor2Png, './附魔光泽.png': enchantGlintPng })) as Record<string, Png>;
 // 皮肤：文件名 皮肤<号>-<原版皮肤名>，按号排
 const SKINS = Object.keys(TEX)
   .filter((k) => k.startsWith('皮肤'))
@@ -125,7 +125,7 @@ export const Guard: React.FC<{ sec: number; headPitch?: number; headYaw?: number
     pose.right_arm = { rot: rightArm, offset: pose.right_arm.offset };
     pose.right_sleeve = pose.right_arm;
   }
-  const glint = { tex: TEX.附魔光泽, 秒: glintSec ?? sec };
+  const glint = { tex: TEX.enchantGlint, 秒: glintSec ?? sec };
   const skin = SKINS[((Math.round(skinIndex) % SKINS.length) + SKINS.length) % SKINS.length];
   const crouchAmt = Math.min(1, Math.max(0, crouch));
   if (crouchAmt > 0) {
@@ -158,8 +158,8 @@ export const Guard: React.FC<{ sec: number; headPitch?: number; headYaw?: number
     <group scale={GUARD.scale}>
       <EntityModel model={MODELS.宽} tex={skin} pose={pose} attach={attach} />
       {/* 头盔、胸甲、靴子：外层模型；护腿：内层模型的身子和两腿；四件都附魔，各叠一层光泽 */}
-      <EntityModel model={MODELS.外甲} tex={TEX.钻石甲1} pose={pose} glint={glint} />
-      <EntityModel model={MODELS.内甲} tex={TEX.钻石甲2} pose={{ ...pose, head: { hide: true }, hat: { hide: true }, right_arm: { hide: true }, left_arm: { hide: true } }} glint={glint} />
+      <EntityModel model={MODELS.外甲} tex={TEX.diamondArmor1} pose={pose} glint={glint} />
+      <EntityModel model={MODELS.内甲} tex={TEX.diamondArmor2} pose={{ ...pose, head: { hide: true }, hat: { hide: true }, right_arm: { hide: true }, left_arm: { hide: true } }} glint={glint} />
       <EntityModel model={CAPE} tex={TEX.披风} pose={cape} />
     </group>
     </group>

@@ -14,7 +14,7 @@ export const HydraScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) => 
   const parts = hydraParts({ heads }, t + 30);
   const headW = (i: number) => choreo.hydraToLocal([parts[i].pos[0], parts[i].pos[1], parts[i].pos[2] + HYDRA.partLift]);
   const body = choreo.hydraToLocal([0, 3.2, 2.4]);
-  const show = t > choreo.出场.起 && t < choreo.出场.止;
+  const show = t > choreo.visibleWindow.起 && t < choreo.visibleWindow.止;
   return (
     <LandmarkPlacement 名="九头蛇巢穴">
       {show && (
@@ -35,8 +35,8 @@ export const HydraScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) => 
           ))}
           <Debris sec={t - 0.08} origin={[choreo.PIERCE[0] + choreo.DIR[0] * 6, choreo.PIERCE[1] + choreo.DIR[1] * 6, choreo.FLOOR]} seed={63} colors={['#4a2416', '#5c2c18', '#2f160c', '#6e3a1e']} count={22} speed={7} />
           {/* 钻穿土丘：撞进洞的东侧壁、从土丘东坡钻出来时各喷一把石块和土（侧壁里是石头、煤矿，外面是草皮和土） */}
-          <Debris sec={t - choreo.侧壁时刻(choreo.侧壁.进)} origin={choreo.侧壁点(choreo.侧壁.进)} seed={64} colors={['#7a7a7a', '#5e5e5e', '#8a8a8a', '#3a3a3a']} count={26} speed={9} />
-          <Debris sec={t - choreo.侧壁时刻(choreo.侧壁.出)} origin={choreo.侧壁点(choreo.侧壁.出)} seed={65} colors={['#7a7a7a', '#6b4a2e', '#4f7a2a', '#5e5e5e']} count={34} speed={12} />
+          <Debris sec={t - choreo.sideWallTime(choreo.sideWall.inSec)} origin={choreo.sideWallPoint(choreo.sideWall.inSec)} seed={64} colors={['#7a7a7a', '#5e5e5e', '#8a8a8a', '#3a3a3a']} count={26} speed={9} />
+          <Debris sec={t - choreo.sideWallTime(choreo.sideWall.出)} origin={choreo.sideWallPoint(choreo.sideWall.出)} seed={65} colors={['#7a7a7a', '#6b4a2e', '#4f7a2a', '#5e5e5e']} count={34} speed={12} />
         </>
       )}
     </LandmarkPlacement>

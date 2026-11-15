@@ -4,29 +4,29 @@
 // 画法不放在一张总表里：加一种画法（下界、末地、模组维度）只加一个模块，已有段的依赖不变、不过期。
 // 云要画布挂 <ScreenAo />；投影要画布开 shadows，投影的东西自己开 castShadow（体素世界给同一个 shadowLightDir）。
 import React from 'react';
-import { 是环境轨, 灯光系数, 环境在, type 环境描述, type 环境轨 } from './环境.ts';
-import type { 画法模块 } from './环境部件.tsx';
+import { isEnvTrack, LightCoeffs, envAtFrame, type EnvDescription, type EnvTrack } from './环境.ts';
+import type { DrawModule } from './环境部件.tsx';
 
-export type 环境属性 = {
-  描述: 环境描述 | 环境轨;
+export type EnvProps = {
+  description: EnvDescription | EnvTrack;
   /** 画法模块；描述在段里换画法（比如从主世界进暮色）就给几个，按描述的 画法 挑 */
-  画法: 画法模块 | readonly 画法模块[];
+  画法: DrawModule | readonly DrawModule[];
   /** 镜头位置（场景坐标）：穹顶跟着它，平行主光照着它 */
-  镜头: readonly number[];
+  cameraPos: readonly number[];
   /** 镜头离地多高（米）：投影的中、远两级切在 max(300, 2 × 离地)。不给 = 镜头 z */
-  离地?: number;
+  eyeHeight?: number;
   /** 给了穹顶就固定在这里（暮色画法不放大，同 TwilightLighting 的 domeCenter）；不给跟着镜头 */
-  穹顶中心?: readonly number[];
+  domeCenter?: readonly number[];
   /** 描述是环境轨时，关键帧按第几帧取（帧是环境轨自己的格，调用处按秒换算好传进来）；描述是固定的不用给 */
   帧?: number;
 };
 
-export const 环境: React.FC<环境属性> = ({ 描述, 画法, 镜头, 离地, 穹顶中心, 帧 }) => {
-  if (是环境轨(描述) && 帧 === undefined) throw new Error('<环境> 的描述是环境轨，要给 帧');
-  const e = 环境在(描述, 帧 ?? 0);
-  const 灯 = 灯光系数(e);
-  const 们: readonly 画法模块[] = Array.isArray(画法) ? 画法 : [画法 as 画法模块];
-  const 画 = 们.find((m) => m.名 === e.画法);
-  if (!画) throw new Error(`描述的画法是「${e.画法}」，<环境 画法> 给的是 ${们.map((m) => `「${m.名}」`).join('、')}：引 engine/light/画法/${e.画法}.tsx 传进来`);
-  return <画.组件 e={e} 灯={灯} 镜头={镜头} 离地={离地 ?? 镜头[2]!} 穹顶中心={穹顶中心} />;
+export const Environment: React.FC<EnvProps> = ({ description, 画法: renderer, cameraPos, eyeHeight, domeCenter, 帧: frame }) => {
+  if (isEnvTrack(description) && frame === undefined) throw new Error('<环境> 的描述是环境轨，要给 帧');
+  const e = envAtFrame(description, frame ?? 0);
+  const lighting = LightCoeffs(e);
+  const modules: readonly DrawModule[] = Array.isArray(renderer) ? renderer : [renderer as DrawModule];
+  const renderMode = modules.find((m) => m.名 === e.画法);
+  if (!renderMode) throw new Error(`描述的画法是「${e.画法}」，<环境 画法> 给的是 ${modules.map((m) => `「${m.名}」`).join('、')}：引 engine/light/画法/${e.画法}.tsx 传进来`);
+  return <renderMode.component e={e} lighting={lighting} cameraPos={cameraPos} eyeHeight={eyeHeight ?? cameraPos[2]!} domeCenter={domeCenter} />;
 };

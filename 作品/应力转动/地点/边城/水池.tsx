@@ -9,7 +9,7 @@ import { png } from '@engine/model/贴图.ts';
 import { patchWaterShader } from '@engine/voxel/水面.ts';
 import { fallPool } from './布局/共用.ts';
 import stillUri from 'asset:贴图/场景/边城/水面';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 
 export const poolSurfaceZ = fallPool.waterTop - 1 + 8 / 9;
 
@@ -44,7 +44,7 @@ const waterMaterial = () => {
     patchWaterShader(sh);
   };
   material.customProgramCacheKey = () => '边城水池';
-  material.userData.水面 = true;
+  material.userData.waterLevel = true;
   mat = material;
   return material;
 };
@@ -61,10 +61,10 @@ const surfaceGeometry = () => {
 };
 
 export const PoolWater: React.FC = () => {
-  const 秒 = use当前秒();
+  const sec = useCurrentSec();
   const geo = useMemo(surfaceGeometry, []);
   const material = waterMaterial();
   const all = waterFrames();
-  material.map = all[Math.floor((秒 * 20) / FRAME_TICKS) % all.length];
+  material.map = all[Math.floor((sec * 20) / FRAME_TICKS) % all.length];
   return <mesh geometry={geo} material={material} receiveShadow />;
 };

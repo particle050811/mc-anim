@@ -6,22 +6,22 @@
 import React from 'react';
 import { EntityModel, type EntityModelData } from '@engine/model/实体模型.tsx';
 import { png } from '@engine/model/贴图.ts';
-import 旋风图 from 'asset:贴图/法术/minecraft/entity/trident_riptide';
+import whirlwindPng from 'asset:贴图/法术/minecraft/entity/trident_riptide';
 
-const 盒: EntityModelData = {
+const model: EntityModelData = {
   texSize: [64, 64],
   root: { name: 'box', pose: { offset: [0, 0, 0], rot: [0, 0, 0] }, cubes: [{ uv: [0, 0], from: [-8, -16, -8], size: [16, 32, 16], grow: [0, 0, 0], mirror: false }], children: [] },
 };
 
 /** 刻：开始转后第几刻（同人的 tickCount 相位）；放在人的脚底坐标系里（已经横躺、没打转），玩家缩放由外面给 */
-export const 激流旋风: React.FC<{ 刻: number; 缩放?: number }> = ({ 刻, 缩放 = 0.9375 }) => {
-  const tex = png(旋风图);
+export const RiptideWhirl: React.FC<{ 刻: number; 缩放?: number }> = ({ 刻: tick, 缩放: scale = 0.9375 }) => {
+  const tex = png(whirlwindPng);
   return (
     <>
       {[1, 2].map((i) => {
-        const 缩 = 0.75 * i;
-        const 转 = (((30 - 5 * i) * 刻) / 180) * Math.PI;
-        return <EntityModel key={i} model={盒} tex={tex} scale={缩放} pose={{ box: { offset: [0, 缩 * (-0.2 + 0.6 * i) * 16, 0], rot: [0, 转, 0], scale: [缩, 缩, 缩] } }} />;
+        const shrink = 0.75 * i;
+        const angleRad = (((30 - 5 * i) * tick) / 180) * Math.PI;
+        return <EntityModel key={i} model={model} tex={tex} scale={scale} pose={{ box: { offset: [0, shrink * (-0.2 + 0.6 * i) * 16, 0], rot: [0, angleRad, 0], scale: [shrink, shrink, shrink] } }} />;
       })}
     </>
   );

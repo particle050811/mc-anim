@@ -1,33 +1,33 @@
 // 合照核对的画面：按视图表一帧画一个视图，整页就是成片那一帧（不写视图名）。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 合照拍立得, 合照照片, 靠肩画面 } from '../../场/2-隐世之境/合照.tsx';
-import { 对视机位 } from '../../场/2-隐世之境/对视.tsx';
-import { 重逢画面 } from '../../场/2-隐世之境/重逢.tsx';
-import { 视图们, type 视图 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { GroupPhotoPolaroid, GroupPhotoPrint, LeanPicture } from '../../场/2-隐世之境/合照.tsx';
+import { eyeContactRig } from '../../场/2-隐世之境/对视.tsx';
+import { ReunionPicture } from '../../场/2-隐世之境/重逢.tsx';
+import { views, type View } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 一帧: React.FC<{ v: 视图 }> = ({ v }) => {
-  const 帧 = v.帧 ?? 0;
+const SingleFrame: React.FC<{ v: View }> = ({ v }) => {
+  const frame = v.帧 ?? 0;
   switch (v.种) {
     case '照片':
-      return <合照照片 后期={v.后期 ?? true} />;
+      return <GroupPhotoPrint withPost={v.withPost ?? true} />;
     case '拍立得':
-      return <合照拍立得 后期={v.后期 ?? true} />;
+      return <GroupPhotoPolaroid withPost={v.withPost ?? true} />;
     case '重逢':
-      return <重逢画面 帧={帧} 气泡字={v.气泡字} 机位={v.封面机位 ? 对视机位('片') : undefined} 后期={v.后期 ?? true} />;
+      return <ReunionPicture 帧={frame} bubbleText={v.bubbleText} cameraRig={v.coverRig ? eyeContactRig('片') : undefined} withPost={v.withPost ?? true} />;
     case '靠肩':
-      return <靠肩画面 帧={帧} 气泡={v.气泡} 褪色={v.褪色} 机位={v.机位} 窗景={v.窗景} 后期={v.后期 ?? true} />;
+      return <LeanPicture 帧={frame} showBubble={v.showBubble} fade={v.fade} cameraRig={v.cameraRig} windowView={v.windowView} withPost={v.withPost ?? true} />;
   }
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <一帧 v={v} />
+      <SingleFrame v={v} />
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

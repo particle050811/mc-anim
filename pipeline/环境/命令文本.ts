@@ -3,18 +3,18 @@
 // 坑：cmd 里双引号挡不住 %变量%，PowerShell 里挡不住 $ 和 `；路径里很少有，不另处理。
 import { isWindows } from './配置.ts';
 
-export type 壳 = 'posix' | 'windows';
-export const 本机壳 = (): 壳 => (isWindows ? 'windows' : 'posix');
+export type ShellKind = 'posix' | 'windows';
+export const localShell = (): ShellKind => (isWindows ? 'windows' : 'posix');
 
-const 引posix = (a: string) => (!a || /[\s'"$`\\|&;<>()*?[\]{}!#~]/.test(a) ? `'${a.replaceAll("'", `'\\''`)}'` : a);
+const quotePosix = (a: string) => (!a || /[\s'"$`\\|&;<>()*?[\]{}!#~]/.test(a) ? `'${a.replaceAll("'", `'\\''`)}'` : a);
 
 /** Windows 程序自己拆命令行（CommandLineToArgvW）：引号前的反斜杠成对、引号前加反斜杠；末尾的反斜杠也要成对，免得吃掉收尾的引号。通配符不用引：cmd 不展开 */
-const 引windows = (a: string) => {
+const quoteWindows = (a: string) => {
   if (a && !/[\s"&|<>^()]/.test(a)) return a;
-  const 里 = a.replace(/(\\*)"/g, (_, 斜: string) => `${斜}${斜}\\"`).replace(/(\\+)$/, '$1$1');
-  return `"${里}"`;
+  const inner = a.replace(/(\\*)"/g, (_, backslashes: string) => `${backslashes}${backslashes}\\"`).replace(/(\\+)$/, '$1$1');
+  return `"${inner}"`;
 };
 
-export const 引参数 = (a: string, 用: 壳 = 本机壳()) => (用 === 'windows' ? 引windows(a) : 引posix(a));
+export const quoteArg = (a: string, shell: ShellKind = localShell()) => (shell === 'windows' ? quoteWindows(a) : quotePosix(a));
 
-export const 命令行文本 = (argv: readonly string[], 用: 壳 = 本机壳()) => argv.map((a) => 引参数(a, 用)).join(' ');
+export const commandLineText = (argv: readonly string[], shell: ShellKind = localShell()) => argv.map((a) => quoteArg(a, shell)).join(' ');

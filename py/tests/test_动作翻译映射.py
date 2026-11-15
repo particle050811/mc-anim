@@ -9,7 +9,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from anim_py.动作翻译.映射 import ProGuard映射, SRG映射, 读映射, 恒等映射
+from anim_py.动作翻译.映射 import ProGuardMapping, SrgMapping, read_mapping, IdentityMapping
 
 CLIENT_TXT = """\
 # {"fileName":"client.txt","id":"sourceFile"}
@@ -63,7 +63,7 @@ ehv net/minecraft/src/C_3_ 3
 """
 
 # ForgeGradle 的 build/createMcpToSrg/output.tsrg（tsrg2「left right」：官方名 → SRG）
-TSRG2_官方 = """\
+tsrg2_official = """\
 tsrg2 left right
 net/minecraft/client/main/Main net/minecraft/client/main/Main
 \tmain ([Ljava/lang/String;)V main
@@ -82,7 +82,7 @@ net/minecraft/client/model/EntityModel net/minecraft/client/model/EntityModel
 \tsetupAnim (Lnet/minecraft/world/entity/Entity;FFFFF)V m_6973_
 """
 
-SRG期望 = {
+srg_expected = {
     ("字段", "f_104203_"): "xRot",
     ("字段", "f_104213_"): "children",
     ("字段", "f_19861_"): "onGround",
@@ -101,52 +101,52 @@ def client(tmp_path: Path) -> Path:
     return p
 
 
-class _假路径:
+class FakePath:
     """映射沿类层级找成员时要的 原始类：egu（CreeperModel）的父类是 ehv（EntityModel）"""
 
-    def 原始类(self, 名: str):
-        return {"egu": SimpleNamespace(父类="ehv", 接口=[]), "ehv": SimpleNamespace(父类="java/lang/Object", 接口=[])}.get(名)
+    def raw_class(self, class_name: str):
+        return {"egu": SimpleNamespace(parent_class="ehv", is_interface=[]), "ehv": SimpleNamespace(parent_class="java/lang/Object", is_interface=[])}.get(class_name)
 
 
-def test_ProGuard_类名成员名换回官方名并沿父类找(client: Path) -> None:
-    m = ProGuard映射(str(client))
-    m.绑定(_假路径())
+def test_proguard_names_revert_and_search_parent(client: Path) -> None:
+    m = ProGuardMapping(str(client))
+    m.bind_path(FakePath())
     assert m.类("fee") == "net/minecraft/client/model/geom/ModelPart"
-    assert m.反查类("net/minecraft/client/model/CreeperModel") == "egu"
+    assert m.reverse_lookup_class("net/minecraft/client/model/CreeperModel") == "egu"
     assert m.类("[Lfee;") == "[Lnet/minecraft/client/model/geom/ModelPart;"
-    assert m.描述("(Lbfj;FFFFF)V") == "(Lnet/minecraft/world/entity/Entity;FFFFF)V"
-    assert m.字段("fee", "d", "F") == "xRot"
-    assert m.字段("fee", "m", "Ljava/util/Map;") == "children"
+    assert m.map_descriptor("(Lbfj;FFFFF)V") == "(Lnet/minecraft/world/entity/Entity;FFFFF)V"
+    assert m.field("fee", "d", "F") == "xRot"
+    assert m.field("fee", "m", "Ljava/util/Map;") == "children"
     # 同名不同描述符的方法分得开
-    assert m.方法("fee", "a", "()V") == "resetPose"
-    assert m.方法("fee", "a", "(Ljava/lang/String;)Lfee;") == "getChild"
+    assert m.method_ref("fee", "a", "()V") == "resetPose"
+    assert m.method_ref("fee", "a", "(Ljava/lang/String;)Lfee;") == "getChild"
     # 子类里引用父类的成员（字节码写的所属类是 egu）
-    assert m.方法("egu", "a", "(Lbfj;FFFFF)V") == "setupAnim"
-    assert m.字段("egu", "c", "F") == "attackTime"
+    assert m.method_ref("egu", "a", "(Lbfj;FFFFF)V") == "setupAnim"
+    assert m.field("egu", "c", "F") == "attackTime"
     # 没混淆的类、JDK 的成员原样
     assert m.类("net/minecraft/client/main/Main") == "net/minecraft/client/main/Main"
-    assert m.方法("java/lang/Math", "sin", "(D)D") == "sin"
+    assert m.method_ref("java/lang/Math", "sin", "(D)D") == "sin"
 
 
-@pytest.mark.parametrize("名, 内容, 带client", [("tsrg", TSRG_V1, True), ("tsrg2-obf", TSRG2_OBF, True), ("tsrg2-官方", TSRG2_官方, False), ("tsrg2-官方+client", TSRG2_官方, True)])
-def test_SRG_三种表都换回官方名(tmp_path: Path, client: Path, 名: str, 内容: str, 带client: bool) -> None:
-    t = tmp_path / f"{名}.tsrg"
-    t.write_text(内容, encoding="utf-8")
-    m = 读映射(f"srg:{t},{client}" if 带client else f"srg:{t}")
-    assert isinstance(m, SRG映射)
-    for (种类, srg), 官 in SRG期望.items():
-        got = m.字段("任意类", srg, "F") if 种类 == "字段" else m.方法("任意类", srg, "()V")
-        assert got == 官, f"{名}：{srg} → {got}，应为 {官}"
+@pytest.mark.parametrize("名, 内容, 带client", [("tsrg", TSRG_V1, True), ("tsrg2-obf", TSRG2_OBF, True), ("tsrg2-官方", tsrg2_official, False), ("tsrg2-官方+client", tsrg2_official, True)])
+def test_srg_three_tables_revert_to_official(tmp_path: Path, client: Path, table_name: str, content: str, with_client: bool) -> None:
+    t = tmp_path / f"{table_name}.tsrg"
+    t.write_text(content, encoding="utf-8")
+    m = read_mapping(f"srg:{t},{client}" if with_client else f"srg:{t}")
+    assert isinstance(m, SrgMapping)
+    for (kind, srg), official in srg_expected.items():
+        got = m.field("任意类", srg, "F") if kind == "字段" else m.method_ref("任意类", srg, "()V")
+        assert got == official, f"{table_name}：{srg} → {got}，应为 {official}"
     # 不在表里的名字（JDK 方法、没改名的覆写）原样
-    assert m.方法("java/lang/Math", "sin", "(D)D") == "sin"
-    assert m.方法("x", "main", "([Ljava/lang/String;)V") == "main"
+    assert m.method_ref("java/lang/Math", "sin", "(D)D") == "sin"
+    assert m.method_ref("x", "main", "([Ljava/lang/String;)V") == "main"
     # 运行时类名已是官方名
     assert m.类("net/minecraft/client/model/geom/ModelPart") == "net/minecraft/client/model/geom/ModelPart"
 
 
-def test_读映射的写法(client: Path) -> None:
-    assert isinstance(读映射(None), 恒等映射)
-    assert isinstance(读映射("恒等"), 恒等映射)
-    assert isinstance(读映射(f"proguard:{client}"), ProGuard映射)
+def test_read_mapping_form(client: Path) -> None:
+    assert isinstance(read_mapping(None), IdentityMapping)
+    assert isinstance(read_mapping("恒等"), IdentityMapping)
+    assert isinstance(read_mapping(f"proguard:{client}"), ProGuardMapping)
     with pytest.raises(ValueError, match="不认识的映射"):
-        读映射("yarn:x")
+        read_mapping("yarn:x")

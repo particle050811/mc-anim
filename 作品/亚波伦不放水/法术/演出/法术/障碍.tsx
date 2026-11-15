@@ -8,38 +8,38 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { MC空间, 取模型, 模型件 } from '../零件/实体.tsx';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { MinecraftSpace, getModel, ModelPart } from '../零件/实体.tsx';
 import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
-import 元, { 墙龄, 障碍墙位 } from './障碍.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/MonolithModel';
-import 图数据 from 'asset:贴图/法术/goety/entity/monolith/totemic_wall';
+import meta, { wallAge, wallPositions } from './障碍.元.ts';
+import monolithModelData from 'asset:模型/法术/goety/MonolithModel';
+import totemicWallPng from 'asset:贴图/法术/goety/entity/monolith/totemic_wall';
 
-const 模型 = 取模型(模型数据, 'MonolithModel');
-const 图 = png(图数据);
+const monolithModel = getModel(monolithModelData, 'MonolithModel');
+const image = png(totemicWallPng);
 
-const 障碍: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 龄 = 墙龄(刻);
-  const 位们 = 障碍墙位(目标);
-  const 烟: ParticleSpawn[] = 位们.flatMap((位, i) => {
-    const n = 10 + Math.floor(rng(种子 * 37 + i)() * 35);
-    return Array.from({ length: n }, (_, k): ParticleSpawn => ({ 种: 'poof', 刻: 0, p: [位[0], 位[1], 位[2]], 种子: 种子 * 5000 + i * 60 + k }));
+const obstacle: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const age = wallAge(tick);
+  const positions = wallPositions(target);
+  const smokeSpawns: ParticleSpawn[] = positions.flatMap((pos, i) => {
+    const n = 10 + Math.floor(rng(seed * 37 + i)() * 35);
+    return Array.from({ length: n }, (_, k): ParticleSpawn => ({ 种: 'poof', 刻: 0, p: [pos[0], pos[1], pos[2]], 种子: seed * 5000 + i * 60 + k }));
   });
   return (
     <>
-      {龄 > 0 &&
-        位们.map((位, i) => (
-          <MC空间 key={i} 位={位}>
+      {age > 0 &&
+        positions.map((pos, i) => (
+          <MinecraftSpace key={i} 位={pos}>
             <group scale={[-1, -1, 1]}>
-              <模型件 模型={模型} 图={图} 姿态={{ monolith: { offset: [0, 60 - 龄, 0] } }} />
+              <ModelPart 模型={monolithModel} 图={image} partPoses={{ monolith: { offset: [0, 60 - age, 0] } }} />
             </group>
-          </MC空间>
+          </MinecraftSpace>
         ))}
-      <VanillaParticles spawns={烟} 秒={秒} />
+      <VanillaParticles spawns={smokeSpawns} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 障碍);
+export default defineSpellPerformance(meta, obstacle);

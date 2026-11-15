@@ -1,84 +1,84 @@
 // 卧室这一场（第 12 句「我却已无法自拔」）的机位、站位、窗光和调子。时刻全在 分镜 的正片事件（抚平被子 … 横移起），这里只放分寸。
 // 全部是 Agent 暂定（用户 10-24 把制作交给主会话），理由写在各项旁边。纯模块。
-import { 旧帧 } from '../../分镜/时间.ts';
-import type { 侧取景 } from '../../地点/侧剖面.tsx';
-import { 卧室 } from '../../地点/小木屋卧室布局.ts';
-import { 床面高 } from '../../物品/床尺寸.ts';
+import { legacyFrameSec } from '../../分镜/时间.ts';
+import type { SideFraming } from '../../地点/侧剖面.tsx';
+import { bedroom } from '../../地点/小木屋卧室布局.ts';
+import { bedSurfaceHeight } from '../../物品/床尺寸.ts';
 
 /** 一格在成片（2560×1440）上几个像素 */
-export const 格像素 = (N: number) => 16 * N;
+export const cellPx = (N: number) => 16 * N;
 
 // ---------- 机位 ----------
 /** 一个贴图像素 = 成片 26 个像素：一屏 6.15 格宽、3.46 格高，左边门板到右边后墙的窗，门、她、两张床占满一屏。
  *  手机竖屏宽 390 上一格约 63 像素，她坐着连帽子约 1.2 格（75 像素）。核查 10-24：N = 22、一屏 7.3 格时手机上抹被子、转头、门口都读不出来，
  *  屋子收窄（门和床之间只留一格，地点/小木屋卧室布局.ts）再推近两档（主会话 10-24 美术定稿：N 按镜头定、看清优先） */
-export const 卧室N = 26;
+export const bedroomRes = 26;
 /** 斜投影俯角：顶面一个贴图像素 8 个像素高（往里每格画面上升 8/26 格）。门口那几镜用 2；这里要从床尾看得出是两张床（枕头、被面）、看得见抹被子的手：
  *  6 时（初稿）被面只有 0.5 格高，夜里两张床读成一红一紫两只箱子（核查 10-24）；8 时 0.6 格，她坐在床沿连帽子也离画面上沿还有一行字高（第 12 句放在她左边，界面/歌词排版表.ts） */
-export const 卧室顶面 = 8;
+export const bedroomTop = 8;
 /** 剖面地面线（y = 0 上的地板顶面）离画面下边几格：只留一条地板剖面，往上全给屋里 */
-export const 地面离底 = 0.25;
+export const groundAboveBottom = 0.25;
 /** 画面中心对着的 x：左边露出过道里开着的门板（x −1.5～−0.5），右边到后墙的窗（x 3.5～4.5） */
-export const 中心x = 1.5;
-export const 卧室取景: 侧取景 = { 中心: [中心x, 1440 / 2 / 格像素(卧室N) - 地面离底], 每格: 格像素(卧室N) };
+export const centerX = 1.5;
+export const bedroomFraming: SideFraming = { 中心: [centerX, 1440 / 2 / cellPx(bedroomRes) - groundAboveBottom], pxPerCell: cellPx(bedroomRes) };
 
 /** 开头从第 11 句末（下线后那块深蓝底、褪色的方形图标、聊天栏黄字「Steve退出了游戏」，段 2-截图下线）化进卧室用几秒（24 fps 时 10 帧）：
  *  核查 10-24「2-空床 开头从第 11 句接过来太硬」，原来一刀切进屋里。两边夜里的调子一样，只化画面。Agent 暂定 */
-export const 开场化秒 = 旧帧(10);
+export const openingSceneMorphSec = legacyFrameSec(10);
 
 /** 结尾往右横移出屋（三稿「横移进分屏」）：从 横移起 到段尾，取景中心往右（东）挪 右 格，先慢后快（进度 = t^幂），段的最后一帧走完、还在最快，速度交给分屏那一路接（末速度 = 幂 × 右 ÷ 横移秒数，
  *  约 25 格/秒，分屏参数.ts 的 成形 按它定）。6.1 格：走完那一刻画面 x 4.5～10.7，只剩东墙一格在左沿（6 格时后窗还露一条），其余是屋外早上的天和林子（卧室.tsx 的 屋外），地面线离底 0.25 格，
  *  接分屏那边的草地和天（用户 10-24 粗剪「2-空床 → 2-时差 亮度跳」：原来往下沉 3.4 格进土里，末帧一整屏暗土，切到分屏的亮天跳一下；
  *  核查 10-24：4.5 格、二次方时末帧屋里还占四成，切过去平均亮度还跳 27）。往左：门外西边只有过道那一面墙，会穿帮。Agent 暂定 */
-export const 横移 = { 右: 6.1, 幂: 1.5 } as const;
+export const sideMove = { right: 6.1, exponent: 1.5 } as const;
 
 // ---------- 她 ----------
 /** 她整个人的平涂色调往白里提多少（0 = 和屋里一样）：夜里屋子乘 色板.夜 的蓝灰，她粉紫的身子压在灰墙、红床上，不描边（用户 10-24 定）以后手机上分不出轮廓；
  *  提四成读成「月光落在她身上」，屋里照旧暗（主会话 10-24：靠描边才看清的地方改用调平涂明暗） */
-export const 她提亮 = 0.4;
+export const liYingLift = 0.4;
 /** 魔女帽：她的辨认标志（三稿「已定」：粉色、戴魔女帽），第 6、8、13、15 句都戴着，这句也戴（核查 10-24：初稿为了露脸摘了帽，用户没定过）。
  *  帽檐盖脸的问题靠机位（她 3/4 朝镜头）和 帽子抬 解决 */
-export const 戴帽子 = true;
+export const wearsHat = true;
 /** 帽子整顶往上抬几格（模型单位，一格 0.9），同 场/2-隐世之境/对视参数.ts 的做法：天亮抬头那一下帽檐不压眉眼 */
-export const 帽子抬 = 1 * 0.9;
+export const hatLift = 1 * 0.9;
 
 /** 抚平被子时站在你床的西边（床 x 1.5～2.5），床脚往里那格（y 1.75），侧着朝床；离床沿 0.25 格：深弯腰时裙摆不碰床 */
-export const 抚平站位: readonly [number, number, number] = [1.25, 1.75, 0];
+export const smoothStandPos: readonly [number, number, number] = [1.25, 1.75, 0];
 /** 抚平时身子的朝向（度，−90 朝东对着床、−180 朝镜头）：正朝东，伸出去的右手在离镜头近的这边；魔女帽的帽檐（垂直于脊背的一片）在斜投影里侧着只剩一条，
  *  盖不住手（往镜头偏 15° 时帽檐正对镜头，弯腰时整片挡在手前面，手机上只看得见一顶帽子） */
-export const 抚平朝向 = -90;
+export const smoothYaw = -90;
 /** 抚平的手：抹 = 0 时手心落在被面靠里（离她远），抹 = 1 时抹回床沿；手离她脚底往前多远（格），弯腰 [腰, 胸] 度跟着手远近变（够远处弯得深），头抬一点看着手。
  *  够得最远约 0.7 格（TLM 女仆 0.65 倍、胳膊 0.47 格，弯 90° 肩才往前 0.29 格）；初稿只抹 0.24 格，手机上 13 像素看不出（核查 10-24） */
-export const 抚平手 = { 远: 0.68, 近: 0.32, 远弯: [38, 52] as const, 近弯: [22, 34] as const, 头抬: 18 };
+export const smoothHand = { far: 0.68, near: 0.32, farBend: [38, 52] as const, nearBend: [22, 34] as const, headLift: 18 };
 /** 抚平时尾巴（Tail 根节）往下压多少度：弯腰时尾巴跟着腰翘起来、横着往后伸，和弯下去的上身连成「带翅膀」的剪影（核查 10-24），压下来斜着垂在腿后（55° 时还横着） */
-export const 抚平尾压 = 80;
+export const smoothTailPress = 80;
 /** 坐在你床沿（西边那条长边）：髋在床沿往里 0.15 格，屁股落在床垫顶面（9/16），比抚平时往里半格多（y 2.1），离门远一点、身子能斜着朝门 */
-export const 床沿坐位: readonly [number, number, number] = [卧室.你的床.位[0] - 0.5 + 0.15, 2.1, 床面高];
+export const bedEdgeSeat: readonly [number, number, number] = [bedroom.yourBed.位[0] - 0.5 + 0.15, 2.1, bedSurfaceHeight];
 /** 坐床沿时身子的朝向（度，0 朝北、90 朝西、180 朝镜头）：朝门（门洞中心 (0, 0.5) 在她的 134°）；3/4 朝镜头，天亮转头那一下脸看得见 */
-export const 坐朝向 = 132;
+export const seatYaw = 132;
 /** 转身（朝东 → 朝门，转 138°）几秒：直起腰、从朝镜头那边转过去（看得见一眼脸）；弯腰的骨骼在这几秒里插回站直（核查 10-24：原来一帧弹直）。
  *  24 fps 时 5 帧，每帧最多转 41°，4 帧要 47° */
-export const 转身秒 = 旧帧(5);
+export const turnSec = legacyFrameSec(5);
 /** 坐下几秒（24 fps 时 4 帧）：退半步、屁股落到床沿 */
-export const 坐下秒 = 旧帧(4);
+export const sitDownSec = legacyFrameSec(4);
 
 /** 守夜时头的 [俯仰, 左右]（正 = 抬头、往她左边，也就是往镜头这边）：身子朝门，头低着、往镜头这边偏，看着脚前的地板；帽檐盖住半张脸。
  *  三稿「一动不动」，不眨眼、不呼吸 */
-export const 守夜看: [number, number] = [-32, 22];
+export const nightWatchLook: [number, number] = [-32, 22];
 /** 天亮转头看门口：头抬起来、往右转到正对门口（脸朝 134°，还是 3/4 朝镜头，惊讶的眼睛看得见）；转头秒 里转完（「猛地」）：前一半转到过头一点，后一半停在过头，到 转头秒 回来（原来 24 fps 时两帧转完，第二帧过头、第三帧回来） */
-export const 看门口: [number, number] = [6, 2];
-export const 看门口过头: [number, number] = [11, -3];
+export const lookAtDoor: [number, number] = [6, 2];
+export const lookDoorOver: [number, number] = [11, -3];
 /** 转头时上身往后一挺（度，UpperBody 的 rot.x，负 = 往后仰）：只转头的话手机上看不出「猛地」（核查 10-24）；过头那一下挺得多一点 */
-export const 转头上身挺 = -6;
-export const 转头上身挺过头 = -10;
-export const 转头秒 = 旧帧(2);
+export const turnTorsoUpright = -6;
+export const turnTorsoOver = -10;
+export const turnHeadSec = legacyFrameSec(2);
 
 // ---------- 窗光 ----------
 /** 一束光：从 = 哪个开口（场/2-卧室/光斑.ts 的 卧室开口），方向 = 光往哪走（南窗：每往北走 1 格，x、z 各走多少；门：每往东走 1 格，y、z 各走多少），
  *  倍 = 光斑里受光面的颜色乘多少（r、g、b，sRGB 数值） */
-export type 光束 = { 从: '南窗' | '门'; 方向: readonly [number, number, number]; 倍: readonly [number, number, number] };
+export type LightBeam = { 从: '南窗' | '门'; lightDir: readonly [number, number, number]; colorScale: readonly [number, number, number] };
 /** 一档窗光：几束光，空 = 没有光斑 */
-export type 窗光档 = readonly 光束[];
+export type WindowLevel = readonly LightBeam[];
 /** 第 12 句窗光的五档（39.31–40.59 一档比一档换得快：93、94、94.5、95 拍，抚平那一拍也照第一档）。月亮越升越高、再往西落（游戏里月亮东升西落），光斑一档一档往右、往里挪：
  *  一档：落在床前的地板、床尾和她脚边（地上的光斑）；二档：铺在两张床的被面上；三档：爬上女仆床那边的后墙；月落：没有光斑；
  *  天亮：太阳从东边上来，光往西走，落在她脚边、你床的床尾（暖），卧室门外前屋的光也从门洞斜着铺到她脚前的地上。
@@ -86,35 +86,35 @@ export type 窗光档 = readonly 光束[];
  *  后墙那一档光很平（每格只降 0.2），整片落在后墙 x 2.9～4.5，不在女仆床被面上留一条发亮的紫条）。
  *  倍：夜里屋子压得很暗，落在木地板、木墙上的抬到 2～3 倍、偏蓝，才读成月光；被面那一档压到 2 倍上下、不太偏蓝（女仆床紫被子的蓝通道先顶满，2.6 倍以上读成荧光紫）；
  *  天亮屋里整体已经亮了，两束只抬 1.1～1.9 倍、偏橙（再高红床读成霓虹红） */
-export const 窗光档们: readonly 窗光档[] = [
-  [{ 从: '南窗', 方向: [0, 1, -1.4], 倍: [2.3, 2.5, 3.0] }],
-  [{ 从: '南窗', 方向: [0.45, 1, -0.6], 倍: [1.9, 2.0, 2.2] }],
-  [{ 从: '南窗', 方向: [0.8, 1, -0.2], 倍: [2.0, 2.2, 2.7] }],
+export const windowLightLevels: readonly WindowLevel[] = [
+  [{ 从: '南窗', lightDir: [0, 1, -1.4], colorScale: [2.3, 2.5, 3.0] }],
+  [{ 从: '南窗', lightDir: [0.45, 1, -0.6], colorScale: [1.9, 2.0, 2.2] }],
+  [{ 从: '南窗', lightDir: [0.8, 1, -0.2], colorScale: [2.0, 2.2, 2.7] }],
   [],
   [
-    { 从: '南窗', 方向: [-0.35, 1, -0.8], 倍: [1.6, 1.35, 1.1] },
-    { 从: '门', 方向: [1, 0.15, -0.9], 倍: [1.9, 1.6, 1.25] },
+    { 从: '南窗', lightDir: [-0.35, 1, -0.8], colorScale: [1.6, 1.35, 1.1] },
+    { 从: '门', lightDir: [1, 0.15, -0.9], colorScale: [1.9, 1.6, 1.25] },
   ],
 ];
 
 /** 每一档屋里的调子从 夜 往 日落（天亮的暖光，游戏里日出日落同一种天色）插多少：月光那三档都是夜；月落那一档往暖里走一点点（天边发白），
  *  天亮那一档插到一半多一点，还是清晨、不是白天 */
-export const 晓们: readonly number[] = [0, 0, 0, 0.12, 0.58];
+export const dawnLevels: readonly number[] = [0, 0, 0, 0.12, 0.58];
 /** 天亮那一档 门外（过道、门板、门洞里那截墙）照原色画、不乘调子：前屋的窗朝东，光先到那边 */
-export const 门外亮档 = 4;
+export const outsideLitLevel = 4;
 /** 后窗（右上角，还有屋外右边那一小截）看得见的天色，每档一个：夜里深蓝，月落时发灰，天亮是日出的橙 */
-export const 天们: readonly string[] = ['#101838', '#111a3c', '#131d40', '#2b3560', '#f0a070'];
+export const skyColors: readonly string[] = ['#101838', '#111a3c', '#131d40', '#2b3560', '#f0a070'];
 
 // ---------- 开光影时的月亮、太阳 ----------
 /** 开光影时（默认.ts 的 光影段 有 2-空床）月亮在哪（光影场 的 太阳：场景坐标，指向月亮），照 窗光档们 南窗那一束反过来：坐床沿 时第一档、窗光二 第二档、窗光三 前后第三档，
  *  月落 落到西边地平线上。用户 11-02 看了一档一档跳的窗光：「这边光照是不是 帧率应该开高一点？ 直接用真实点的光影」：月亮连着挪，每帧都动 */
-export const 月亮们: readonly (readonly [number, number, number])[] = [
+export const moonPositions: readonly (readonly [number, number, number])[] = [
   [0, -1, 1.4],
   [-0.45, -1, 0.6],
   [-0.8, -1, 0.2],
   [-1, -1, 0],
 ];
 /** 从坐床沿到月落月亮走了几成：进度 = t^幂，越走越快（同 窗光档们 一档比一档换得快）；1.2 时 窗光二 那一帧正好到第二档 */
-export const 月行幂 = 1.2;
+export const moonPathPow = 1.2;
 /** 月落到天亮转头，太阳从东南边地平线附近升到第五档南窗那一束的方向（指向太阳），光跟着淡进来；门那一束光影层画不了（只有一个太阳），不画 */
-export const 日出: { 起: readonly [number, number, number]; 止: readonly [number, number, number] } = { 起: [0.6, -1, 0.3], 止: [0.35, -1, 0.8] };
+export const sunrise: { 起: readonly [number, number, number]; 止: readonly [number, number, number] } = { 起: [0.6, -1, 0.3], 止: [0.35, -1, 0.8] };

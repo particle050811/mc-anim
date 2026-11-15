@@ -2,7 +2,7 @@
 // 一句一个模块，段只 import 自己用的那几句：加一句、改一句只让用到它的段过期（一次引全表的旧 台词轨.tsx 一改全过期）。
 // 声音另引 asset:<配音>，见 台词句轨.tsx；嘴见 库/角色/句口型.ts。
 
-export type 台词句 = {
+export type LineSentence = {
   id: string;
   角色: string;
   /** 念的字（交给 TTS、对口型的；字幕的 文本 只在 台词.toml，改字幕不让段过期） */
@@ -25,7 +25,7 @@ export type 台词句 = {
 };
 
 /** 段里放一句：帧 = 开口落在段内第几格（1/24 秒一格，可带小数、可为负：上一段就开口了） */
-export type 台词句cue = { 句: 台词句; 帧: number; 音量?: number };
+export type LineCue = { 句: LineSentence; 帧: number; 音量?: number };
 
 /** 一句从开口到说完要几帧 */
-export const 句帧数 = (句: 台词句, fps = 24) => Math.ceil(句.有声长 * fps);
+export const lineFrames = (sentence: LineSentence, fps = 24) => Math.ceil(sentence.有声长 * fps);

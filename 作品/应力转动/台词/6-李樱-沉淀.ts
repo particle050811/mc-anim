@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 883571cce8a7），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-沉淀（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "6-李樱-沉淀",
   "角色": "李樱",
   "念": "接下来，还有哪些地方可以沉淀呢？",
@@ -52,4 +52,4 @@ const 句: 台词句 = {
     [2.48,"X"],
   ],
 };
-export default 句;
+export default sentence;

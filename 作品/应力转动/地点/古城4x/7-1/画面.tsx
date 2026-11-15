@@ -35,10 +35,10 @@ const particles: ParticleSpawn[] = (() => {
   play.torchArrows.forEach((arrow, i) => {
     const pathAt = (k: number): V3 => {
       const progress = Math.min(1, Math.max(0, (k / 20 - arrow.放) / (arrow.中 - arrow.放)));
-      return [arrow.起[0] + (arrow.落[0] - arrow.起[0]) * progress, arrow.起[1] + (arrow.落[1] - arrow.起[1]) * progress, arrow.起[2] + (arrow.落[2] - arrow.起[2]) * progress];
+      return [arrow.起[0] + (arrow.landing[0] - arrow.起[0]) * progress, arrow.起[1] + (arrow.landing[1] - arrow.起[1]) * progress, arrow.起[2] + (arrow.landing[2] - arrow.起[2]) * progress];
     };
     out.push(...torchArrowFlames(pathAt, arrow.放 * 20, arrow.中 * 20, 7120 + i));
-    if (arrow.火把) out.push(...torchParticles(torchFlamePos(arrow.火把), 0.25, arrow.中 * 20, 60 * 20, 7130 + i));
+    if (arrow.torchPos) out.push(...torchParticles(torchFlamePos(arrow.torchPos), 0.25, arrow.中 * 20, 60 * 20, 7130 + i));
   });
   // 马身上的附魔字母
   out.push(...steedParticles((k) => play.horseState(Math.max(timeline.horseSpawnT, k / 20))!.p, timeline.horseSpawnT, play.sceneEndT + 3, 7140));
@@ -61,22 +61,22 @@ export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
   return (
     <>
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
-        <Warden 秒={warden.秒} 行走={warden.行走} 攻击={warden.攻击} 受伤={warden.受伤} 头偏={warden.头偏} headPitch={warden.headPitch} 吼叫={warden.吼叫} />
+        <Warden 秒={warden.秒} walkCycle={warden.walkCycle} 攻击={warden.攻击} hurt={warden.hurt} headYaw={warden.headYaw} headPitch={warden.headPitch} 吼叫={warden.吼叫} />
       </group>
       {Array.from({ length: play.vexCount }, (_, i) => {
         const vex = play.vexState(i, t);
         if (!vex.visible || (vex.secSinceDeath ?? 0) >= 1) return null;
         return (
           <group key={i} position={vex.p} rotation={[0, 0, rad(vex.entityYaw)]}>
-            <Vex sec={t} charging={vex.冲锋} secSinceDeath={vex.secSinceDeath} />
+            <Vex sec={t} charging={vex.charging} secSinceDeath={vex.secSinceDeath} />
           </group>
         );
       })}
       <LiuXinzhong pose={withTalkNod(play.liuXinzhongPose(t), sceneLineCues, '刘心忠', t * timeline.FPS)} />
-      <HuangPan pose={withTalkNod(huangPan.pose, sceneLineCues, '黄叛', t * timeline.FPS)} 弓={huangPan.弓} />
+      <HuangPan pose={withTalkNod(huangPan.pose, sceneLineCues, '黄叛', t * timeline.FPS)} bow={huangPan.bow} />
       {horse && (
         <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-          <SpectralSteed 秒={t} 行走={horse.行走} 人立={horse.人立.马} 有人骑={t >= timeline.mountT} />
+          <SpectralSteed 秒={t} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider={t >= timeline.mountT} />
         </group>
       )}
       {shield && <MagicShield at={shield.at} dir={shield.dir} sec={shield.秒} fade={shield.opacity} />}
@@ -86,7 +86,7 @@ export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
       {play.stuckArrows(t).map((a, i) => (
         <Arrow key={`插${i}`} p={a.p} dir={a.dir} />
       ))}
-      {play.flyingArrows(t).map((a, i) => (a.火把箭 ? <TorchArrow key={i} p={a.p} dir={a.dir} /> : <Arrow key={i} p={a.p} dir={a.dir} />))}
+      {play.flyingArrows(t).map((a, i) => (a.torchArrow ? <TorchArrow key={i} p={a.p} dir={a.dir} /> : <Arrow key={i} p={a.p} dir={a.dir} />))}
       <BowFans t={t} fans={play.fansAt(t)} />
       <VanillaParticles spawns={particles} 秒={t} />
     </>
@@ -94,7 +94,7 @@ export const SceneActors: React.FC<{ t: number }> = ({ t }) => {
 };
 
 export const ScenePicture: React.FC<{ t: number; cam: Cam; width: number; height: number }> = ({ t, cam, width, height }) => (
-  <AncientCity4xCanvas 段="7-1" cam={cam} width={width} height={height} 羊毛={K648.woolNames}>
+  <AncientCity4xCanvas 段="7-1" cam={cam} width={width} height={height} wool={K648.woolNames}>
     {t < darknessEndT && <DarknessEffect sec={play.darknessSec(t)} durationSec={play.darknessDuration} minFogDist={shotDarknessFog} fogColor={FOG_4X.color} normalFogNear={FOG_4X.near} normalFogFar={FOG_4X.far} fogBackground />}
     <SceneActors t={t} />
   </AncientCity4xCanvas>

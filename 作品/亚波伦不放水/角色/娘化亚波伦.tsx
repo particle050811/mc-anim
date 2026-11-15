@@ -19,72 +19,72 @@
 // 用户 11-10 定换成晋升之环（特效/晋升之环.tsx，同样挂在 aaabody 上、不跟头转）；候选还没挑，所以先做成属性 头后环：不给时画面不变，给了就藏掉眼形光环换上。
 import { useMemo, type FC, type ReactNode } from 'react';
 import * as THREE from 'three';
-import type { Molang环境 } from '@engine/anim/Molang.ts';
-import { 二阶推进器, 二阶稳态, type 二阶函数 } from '@engine/anim/二阶系统.ts';
-import { 混合层 } from '@engine/anim/基岩动画.ts';
+import type { MolangEnv } from '@engine/anim/Molang.ts';
+import { SecondOrderStepper, secondOrderSteady, type SecondOrderFn } from '@engine/anim/二阶系统.ts';
+import { blendLayers } from '@engine/anim/基岩动画.ts';
 import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 动画姿势, type 动画层设定 } from '@engine/model/基岩实体.tsx';
-import { 骨骼矩阵 } from '@engine/model/基岩正解.ts';
+import { animationPose, type AnimationLayerSetting } from '@engine/model/基岩实体.tsx';
+import { skeletonMatrix } from '@engine/model/基岩正解.ts';
 import type { BedrockBone, BedrockCube, BedrockModel, BonePose } from '@engine/model/基岩模型.tsx';
-import type { 实体光照 } from '@engine/model/实体材质.ts';
+import type { EntityLighting } from '@engine/model/实体材质.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
-import { 合并环境, 定义生物 } from '@库/生物/定义生物.ts';
-import { 手持下界魔杖, 手持杖矩阵, 杖尖, 杖尾, 杖头芯, 杖握点 } from '../物品/下界魔杖.tsx';
-import { 亚波伦头后环 } from '../特效/晋升之环.tsx';
-import type { 环款 } from '../特效/晋升之环形.ts';
-import 表情动画 from 'asset:动画/角色/娘化亚波伦/extra';
-import 主动画 from 'asset:动画/角色/娘化亚波伦/main';
-import 模型 from 'asset:模型/角色/娘化亚波伦';
-import 贴图2 from 'asset:贴图/角色/娘化亚波伦/2default';
-import 贴图3 from 'asset:贴图/角色/娘化亚波伦/3default';
-import 贴图4 from 'asset:贴图/角色/娘化亚波伦/4default';
-import 贴图5 from 'asset:贴图/角色/娘化亚波伦/5default';
-import 贴图1 from 'asset:贴图/角色/娘化亚波伦/default';
+import { mergeEnv, defineCreature } from '@库/生物/定义生物.ts';
+import { HeldNetherWand, heldStaffMatrix, wandTip, staffTail, staffHeadCore, gripPoint } from '../物品/下界魔杖.tsx';
+import { yaBoLunHeadRing } from '../特效/晋升之环.tsx';
+import type { RingVariant } from '../特效/晋升之环形.ts';
+import expressionAnimJson from 'asset:动画/角色/娘化亚波伦/extra';
+import mainAnimJson from 'asset:动画/角色/娘化亚波伦/main';
+import girlYaBoLunModel from 'asset:模型/角色/娘化亚波伦';
+import skin2Texture from 'asset:贴图/角色/娘化亚波伦/2default';
+import skin3Texture from 'asset:贴图/角色/娘化亚波伦/3default';
+import skin4Texture from 'asset:贴图/角色/娘化亚波伦/4default';
+import skin5Texture from 'asset:贴图/角色/娘化亚波伦/5default';
+import defaultSkinTexture from 'asset:贴图/角色/娘化亚波伦/default';
 
-const 贴图们 = { default: 贴图1, '2default': 贴图2, '3default': 贴图3, '4default': 贴图4, '5default': 贴图5 } as const;
-export type 亚波伦贴图 = keyof typeof 贴图们;
+const skinTextures = { default: defaultSkinTexture, '2default': skin2Texture, '3default': skin3Texture, '4default': skin4Texture, '5default': skin5Texture } as const;
+export type YaBoLunTexture = keyof typeof skinTextures;
 
 // 贴图上的两块 UV（像素，左上角起，[x0, y0, x1, y1)）：bone25 六个面合起来的范围、ysmGlowbone185 的上下两面
-const 面纱块 = [218, 339, 241, 372] as const;
-const 漩涡块 = [192, 0, 256, 64] as const;
+const veilBox = [218, 339, 241, 372] as const;
+const swirlBox = [192, 0, 256, 64] as const;
 /** 只留一块矩形里的像素，别处全透明（当一层叠到别的贴图上） */
-const 只留 = (图: Png, [x0, y0, x1, y1]: readonly [number, number, number, number]): Png => {
-  const px = new Uint8Array(图.px.length);
-  for (let y = y0; y < y1; y++) px.set(图.px.subarray((y * 图.w + x0) * 4, (y * 图.w + x1) * 4), (y * 图.w + x0) * 4);
-  return { w: 图.w, h: 图.h, px };
+const keepOnly = (image: Png, [x0, y0, x1, y1]: readonly [number, number, number, number]): Png => {
+  const px = new Uint8Array(image.px.length);
+  for (let y = y0; y < y1; y++) px.set(image.px.subarray((y * image.w + x0) * 4, (y * image.w + x1) * 4), (y * image.w + x0) * 4);
+  return { w: image.w, h: image.h, px };
 };
-let 层缓存: { 面纱: Png; 漩涡: Png } | undefined;
-const 补层 = () => (层缓存 ??= { 面纱: 只留(png(贴图2), 面纱块), 漩涡: 只留(png(贴图2), 漩涡块) });
+let layerCache: { veil: Png; vortex: Png } | undefined;
+const patchLayers = () => (layerCache ??= { veil: keepOnly(png(skin2Texture), veilBox), vortex: keepOnly(png(skin2Texture), swirlBox) });
 
 // main 50 段和 extra 8 段（extra0～extra7）名字不重，并成一份
-const 动画文件 = { animations: { ...(主动画 as unknown as { animations: object }).animations, ...(表情动画 as unknown as { animations: object }).animations } };
+const animationFiles = { animations: { ...(mainAnimJson as unknown as { animations: object }).animations, ...(expressionAnimJson as unknown as { animations: object }).animations } };
 
 /** 动画里读到的查询和 ysm.* 变量，站着不动时的值（没列的按 0 算）。飞、走的镜头按时间给 ground_speed（走约 1.7、跑约 3.2、飞 20，YSM wiki）、
  *  vertical_speed（米/秒，朝上为正）、yaw_speed、head_yaw、head_pitch（度）：头发、胸部的弹簧就吃这几个 */
-export const 静止环境: Molang环境 = {
-  查询: { ground_speed: 0, vertical_speed: 0, yaw_speed: 0 },
-  外部: { 'ysm.head_yaw': 0, 'ysm.head_pitch': 0, 'ysm.elytra_rot_z': 0 },
+export const staticEnv: MolangEnv = {
+  query: { ground_speed: 0, vertical_speed: 0, yaw_speed: 0 },
+  external: { 'ysm.head_yaw': 0, 'ysm.head_pitch': 0, 'ysm.elytra_rot_z': 0 },
 };
 
 // ── 描边片（面剔除，见文件头） ──
-type 面名 = 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
-const 发光骨号 = (名: string) => Number(/^ysmGlowbone(\d+)$/.exec(名)?.[1] ?? -1);
-const 号在 = (名: string, 起: number, 止: number) => 发光骨号(名) >= 起 && 发光骨号(名) <= 止;
+type FaceName = 'north' | 'south' | 'east' | 'west' | 'up' | 'down';
+const glowBoneIndex = (boneName: string) => Number(/^ysmGlowbone(\d+)$/.exec(boneName)?.[1] ?? -1);
+const glowInRange = (boneName: string, startNo: number, end: number) => glowBoneIndex(boneName) >= startNo && glowBoneIndex(boneName) <= end;
 /** 缺口环：描边片另画 */
-const 描边骨骼 = (名: string) => 号在(名, 172, 179);
+const isOutlineSkeleton = (boneName: string) => glowInRange(boneName, 172, 179);
 /** 身边的 8 个浮块：用户 11-10 定不留，整根骨骼的方盒（芯和描边片）都拿掉 */
-const 浮块骨骼 = (名: string) => 号在(名, 54, 61);
-const 是片 = (c: BedrockCube) => c.size.some((v) => Math.abs(v) < 1e-6);
-type 几何 = Omit<BedrockModel, 'texture'>;
-const 原几何 = 模型 as unknown as 几何;
+const isFloatSkeleton = (boneName: string) => glowInRange(boneName, 54, 61);
+const isFlatCube = (c: BedrockCube) => c.size.some((v) => Math.abs(v) < 1e-6);
+type UntexturedModel = Omit<BedrockModel, 'texture'>;
+const origGeometry = girlYaBoLunModel as unknown as UntexturedModel;
 /** 交给 定义生物 的几何：浮块不留，描边骨骼只留有厚度的芯 */
-export const 去描边片 = (g: 几何): 几何 => ({
+export const stripOutlineFlats = (g: UntexturedModel): UntexturedModel => ({
   ...g,
   bones: g.bones.map((b): BedrockBone => {
     if (!b.cubes) return b;
-    if (浮块骨骼(b.name)) return { ...b, cubes: [] };
-    return 描边骨骼(b.name) ? { ...b, cubes: b.cubes.filter((c) => !是片(c)) } : b;
+    if (isFloatSkeleton(b.name)) return { ...b, cubes: [] };
+    return isOutlineSkeleton(b.name) ? { ...b, cubes: b.cubes.filter((c) => !isFlatCube(c)) } : b;
   }),
 });
 
@@ -92,13 +92,13 @@ export const 去描边片 = (g: 几何): 几何 => ({
  * 一根描边骨骼上各片的面，照贴图上色（片上都是纯色，取 UV 矩形正中那个像素；透明的面不出）。
  * 坐标是骨骼坐标（原点 = pivot，单位像素，X 取负，同 基岩模型.tsx），每面四个角从它朝的那一侧看是 左上、右上、右下、左下。
  */
-export const 描边面 = (骨: BedrockBone, 图: Png): { 面: 面名; 角: [number, number, number][]; 色: [number, number, number] }[] => {
-  const 出: ReturnType<typeof 描边面> = [];
-  for (const c of 骨.cubes ?? []) {
-    if (!是片(c) || Array.isArray(c.uv)) continue;
+export const outlineFace = (bone: BedrockBone, image: Png): { 面: FaceName; 角: [number, number, number][]; 色: [number, number, number] }[] => {
+  const outlines: ReturnType<typeof outlineFace> = [];
+  for (const c of bone.cubes ?? []) {
+    if (!isFlatCube(c) || Array.isArray(c.uv)) continue;
     const [sx, sy, sz] = c.size;
     const [x0, x1, y0, y1, z0, z1] = [-(c.origin[0] + sx), -c.origin[0], c.origin[1], c.origin[1] + sy, c.origin[2], c.origin[2] + sz];
-    const 各面: Record<面名, [number, number, number][]> = {
+    const allFaces: Record<FaceName, [number, number, number][]> = {
       north: [[x1, y1, z0], [x0, y1, z0], [x0, y0, z0], [x1, y0, z0]],
       south: [[x0, y1, z1], [x1, y1, z1], [x1, y0, z1], [x0, y0, z1]],
       east: [[x1, y1, z1], [x1, y1, z0], [x1, y0, z0], [x1, y0, z1]],
@@ -106,79 +106,79 @@ export const 描边面 = (骨: BedrockBone, 图: Png): { 面: 面名; 角: [numb
       up: [[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]],
       down: [[x0, y0, z1], [x1, y0, z1], [x1, y0, z0], [x0, y0, z0]],
     };
-    const 面积 = { north: sx * sy, south: sx * sy, east: sy * sz, west: sy * sz, up: sx * sz, down: sx * sz };
-    for (const 面 of Object.keys(c.uv) as 面名[]) {
-      const u = c.uv[面]!;
-      if (面积[面] < 1e-9 || u.uv_size[0] === 0 || u.uv_size[1] === 0) continue;
-      const px = Math.min(图.w - 1, Math.max(0, Math.floor(u.uv[0] + u.uv_size[0] / 2)));
-      const py = Math.min(图.h - 1, Math.max(0, Math.floor(u.uv[1] + u.uv_size[1] / 2)));
-      const i = (py * 图.w + px) * 4;
-      if (图.px[i + 3]! < 26) continue;
-      出.push({ 面, 角: 各面[面].map(([x, y, z]) => [x + 骨.pivot[0], y - 骨.pivot[1], z - 骨.pivot[2]]), 色: [图.px[i]!, 图.px[i + 1]!, 图.px[i + 2]!] });
+    const faceArea = { north: sx * sy, south: sx * sy, east: sy * sz, west: sy * sz, up: sx * sz, down: sx * sz };
+    for (const face of Object.keys(c.uv) as FaceName[]) {
+      const u = c.uv[face]!;
+      if (faceArea[face] < 1e-9 || u.uv_size[0] === 0 || u.uv_size[1] === 0) continue;
+      const px = Math.min(image.w - 1, Math.max(0, Math.floor(u.uv[0] + u.uv_size[0] / 2)));
+      const py = Math.min(image.h - 1, Math.max(0, Math.floor(u.uv[1] + u.uv_size[1] / 2)));
+      const i = (py * image.w + px) * 4;
+      if (image.px[i + 3]! < 26) continue;
+      outlines.push({ 面: face, 角: allFaces[face].map(([x, y, z]) => [x + bone.pivot[0], y - bone.pivot[1], z - bone.pivot[2]]), 色: [image.px[i]!, image.px[i + 1]!, image.px[i + 2]!] });
     }
   }
-  return 出;
+  return outlines;
 };
 
 // 只画正面、不受光、不过色调映射（这 8 根都是 ysmGlow 发光骨骼，和 engine 的发光材质一个算法）。受伤发红、透明度没接：用到再说
-const 描边材质 = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.FrontSide, toneMapped: false });
-const 描边缓存 = new WeakMap<Png, Record<string, ReactNode>>();
+const outlineMaterial = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.FrontSide, toneMapped: false });
+const outlineCache = new WeakMap<Png, Record<string, ReactNode>>();
 /** 一张贴图对应的描边片，按骨骼名给 挂载 用 */
-const 描边挂载 = (图: Png): Record<string, ReactNode> => {
-  let 表 = 描边缓存.get(图);
-  if (表) return 表;
-  表 = {};
-  for (const 骨 of 原几何.bones) {
-    if (!描边骨骼(骨.name)) continue;
-    const 面们 = 描边面(骨, 图);
-    if (!面们.length) continue;
+const outlineMount = (image: Png): Record<string, ReactNode> => {
+  let outlineMap = outlineCache.get(image);
+  if (outlineMap) return outlineMap;
+  outlineMap = {};
+  for (const bone of origGeometry.bones) {
+    if (!isOutlineSkeleton(bone.name)) continue;
+    const outlineFaces = outlineFace(bone, image);
+    if (!outlineFaces.length) continue;
     const pos: number[] = [];
     const col: number[] = [];
     const idx: number[] = [];
-    const 色 = new THREE.Color();
-    for (const f of 面们) {
-      const 底 = pos.length / 3;
-      色.setRGB(f.色[0] / 255, f.色[1] / 255, f.色[2] / 255, THREE.SRGBColorSpace);
+    const color = new THREE.Color();
+    for (const f of outlineFaces) {
+      const bottomIndex = pos.length / 3;
+      color.setRGB(f.色[0] / 255, f.色[1] / 255, f.色[2] / 255, THREE.SRGBColorSpace);
       for (const p of f.角) {
         pos.push(...p);
-        col.push(色.r, 色.g, 色.b);
+        col.push(color.r, color.g, color.b);
       }
-      idx.push(底, 底 + 3, 底 + 2, 底, 底 + 2, 底 + 1);
+      idx.push(bottomIndex, bottomIndex + 3, bottomIndex + 2, bottomIndex, bottomIndex + 2, bottomIndex + 1);
     }
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
     g.setIndex(idx);
-    表[骨.name] = <mesh geometry={g} material={描边材质} />;
+    outlineMap[bone.name] = <mesh geometry={g} material={outlineMaterial} />;
   }
-  描边缓存.set(图, 表);
-  return 表;
+  outlineCache.set(image, outlineMap);
+  return outlineMap;
 };
 
-export const 娘化亚波伦生物 = 定义生物({
+export const GirlYaBoLunCreature = defineCreature({
   名: '娘化亚波伦',
-  模型: 去描边片(原几何),
-  贴图: (v) => [贴图们[v.贴图], ...(v.面纱 === '加' ? [补层().面纱] : []), ...(v.漩涡光环 === '加' ? [补层().漩涡] : [])],
-  变体: { 贴图: ['default', '2default', '3default', '4default', '5default'], 面纱: ['原样', '加'], 漩涡光环: ['原样', '加'] },
+  模型: stripOutlineFlats(origGeometry),
+  贴图: (v) => [skinTextures[v.贴图], ...(v.veil === '加' ? [patchLayers().veil] : []), ...(v.vortexHalo === '加' ? [patchLayers().vortex] : [])],
+  variant: { 贴图: ['default', '2default', '3default', '4default', '5default'], veil: ['原样', '加'], vortexHalo: ['原样', '加'] },
   缩放: 0.7 / 16,
-  动画: { 文件: 动画文件, 默认层们: [], 口径: '通用', 环境: 静止环境 },
+  动画: { 文件: animationFiles, defaultLayers: [], 口径: '通用', 环境: staticEnv },
 });
 
 // 低优先级并行（主动画盖它）：0 头发的弹簧，1 眨眼（4 秒一遍，0.083～0.208 秒闭着），2 把拔刀剑的两个定位骨骼缩没。3～7 是空的
-const 低优先并行: readonly 动画层设定[] = ['pre_parallel0', 'pre_parallel1', 'pre_parallel2'].map((名) => ({ 名 }));
+const lowPriorityParallel: readonly AnimationLayerSetting[] = ['pre_parallel0', 'pre_parallel1', 'pre_parallel2'].map((name) => ({ 名: name }));
 // 并行（盖主动画，转角相加）：0 眼睛跟头、胸部弹簧、浮块（藏掉了，骨骼照转）和漩涡光环自转，1 头饰开关（写的 Ribbon 这个模型没有）。2～7 是空的
-const 并行: readonly 动画层设定[] = ['parallel0', 'parallel1'].map((名) => ({ 名, 模式: '叠加' as const }));
+const parallel: readonly AnimationLayerSetting[] = ['parallel0', 'parallel1'].map((name) => ({ 名: name, blendMode: '叠加' as const }));
 
 /** 一刻的整套层：低优先并行 → 主（从下到上，后面的盖前面的；动作层的 秒 是这段动作自己播到第几秒）→ 并行 */
-export const 亚波伦层们 = (主: readonly 动画层设定[]): 动画层设定[] => [...低优先并行, ...主, ...并行];
+export const yaBoLunLayers = (mainLayers: readonly AnimationLayerSetting[]): AnimationLayerSetting[] => [...lowPriorityParallel, ...mainLayers, ...parallel];
 
-export type 亚波伦表演 = {
-  层们: (秒: number) => readonly 动画层设定[];
-  环境: (秒: number) => Molang环境;
+export type YaBoLunAct = {
+  layers: (sec: number) => readonly AnimationLayerSetting[];
+  环境: (sec: number) => MolangEnv;
   /** 这一刻头发、胸部各弹簧的输出（ysm.second_order） */
-  二阶在: (秒: number) => 二阶函数;
+  secondOrderAt: (sec: number) => SecondOrderFn;
   /** 持杖 而没另给 姿势 时右臂怎么摆 */
-  持杖姿势: Readonly<Record<string, BonePose>>;
+  wandHoldPose: Readonly<Record<string, BonePose>>;
 };
 
 /**
@@ -191,7 +191,7 @@ export type 亚波伦表演 = {
  * 手腕带 x、z 转角的话杖身斜着顺向小臂，会从袖口里穿过去、手被袖口挡住。飞 的三组角是固定杖的方向按这个条件搜出来的，手比原来往里收了约 0.19 格。
  * 角度是对着核对段的静帧取的（各比过几组），没经用户看过。
  */
-export const 斜举 = {
+export const raisedPose = {
   站: { RightArm: { rot: [10, 0, 40] }, RightForeArm: { rot: [-30, 0, 0] }, RightHand: { rot: [0, 70, 0] } },
   飞: { RightArm: { rot: [40.5, -40, 74] }, RightForeArm: { rot: [-64, 0, 0] }, RightHand: { rot: [0, 122, 0] } },
 } satisfies Record<string, Record<string, BonePose>>;
@@ -201,128 +201,128 @@ export const 斜举 = {
  * 弹簧 '推进'（默认）：ysm.second_order 从第 0 秒按 1/60 秒一步推到要的时刻（engine/anim/二阶系统.ts，结果只看时间）；
  * '稳态'：弹簧直接等于输入，不晃。
  */
-export const 定表演 = (设定: {
-  主: (秒: number) => readonly 动画层设定[];
-  环境?: (秒: number) => Molang环境;
-  弹簧?: '推进' | '稳态';
+export const defineAct = (settings: {
+  主: (sec: number) => readonly AnimationLayerSetting[];
+  环境?: (sec: number) => MolangEnv;
+  springMode?: '推进' | '稳态';
   /** 默认 斜举.站；主动作是 fly 的给 斜举.飞 */
-  持杖姿势?: Readonly<Record<string, BonePose>>;
-}): 亚波伦表演 => {
-  const 层们 = (秒: number) => 亚波伦层们(设定.主(秒));
-  const 环境 = (秒: number): Molang环境 => 设定.环境?.(秒) ?? {};
-  const 文件 = 娘化亚波伦生物.动画文件!;
-  const 底 = 娘化亚波伦生物.定义.动画!.环境!;
-  const 推进器 = 二阶推进器((秒, second_order) => {
-    const e = 环境(秒);
-    动画姿势({ 文件, 层们: 层们(秒), 口径: '通用', 环境: { 查询: { ...底.查询, ...e.查询 }, 外部: { ...底.外部, ...e.外部 }, 函数: { 'ysm.second_order': second_order } } }, 秒);
+  wandHoldPose?: Readonly<Record<string, BonePose>>;
+}): YaBoLunAct => {
+  const layers = (sec: number) => yaBoLunLayers(settings.主(sec));
+  const envAt = (sec: number): MolangEnv => settings.环境?.(sec) ?? {};
+  const animFile = GirlYaBoLunCreature.animationFiles!;
+  const bottomEnv = GirlYaBoLunCreature.definition.动画!.环境!;
+  const thruster = SecondOrderStepper((sec, second_order) => {
+    const e = envAt(sec);
+    animationPose({ 文件: animFile, layers: layers(sec), 口径: '通用', 环境: { query: { ...bottomEnv.query, ...e.query }, external: { ...bottomEnv.external, ...e.external }, functions: { 'ysm.second_order': second_order } } }, sec);
   });
-  return { 层们, 环境, 二阶在: 设定.弹簧 === '稳态' ? () => 二阶稳态 : 推进器.在, 持杖姿势: 设定.持杖姿势 ?? 斜举.站 };
+  return { layers, 环境: envAt, secondOrderAt: settings.springMode === '稳态' ? () => secondOrderSteady : thruster.在, wandHoldPose: settings.wandHoldPose ?? raisedPose.站 };
 };
 
 /** 站着：idle 3 秒一遍 */
-export const 站立 = 定表演({ 主: () => [{ 名: 'idle' }] });
+export const stand = defineAct({ 主: () => [{ 名: 'idle' }] });
 /** 悬停：fly 3 秒一遍，蜘蛛腿 c1、c2 跟着扇 */
-export const 悬停 = 定表演({ 主: () => [{ 名: 'fly' }], 持杖姿势: 斜举.飞 });
+export const hover = defineAct({ 主: () => [{ 名: 'fly' }], wandHoldPose: raisedPose.飞 });
 
-export type 娘化亚波伦属性 = {
+export type GirlYaBoLunProps = {
   pose: { loc: number[]; yaw?: number };
   秒: number;
   /** 默认 站立 */
-  表演?: 亚波伦表演;
+  act?: YaBoLunAct;
   /** 默认 default（下界二阶段），面纱、漩涡光环照贴图原样 */
-  变体?: { 贴图?: 亚波伦贴图; 面纱?: '原样' | '加'; 漩涡光环?: '原样' | '加' };
+  variant?: { 贴图?: YaBoLunTexture; veil?: '原样' | '加'; vortexHalo?: '原样' | '加' };
   /** 叠在动画上面，按通道覆盖。持杖 而不给时用表演的 持杖姿势（斜举）；给了就只用给的（开盘、指向结界这些自己摆右臂） */
-  姿势?: Readonly<Record<string, BonePose>>;
-  受伤?: number;
-  光照?: 实体光照;
-  透明度?: number;
+  bonePose?: Readonly<Record<string, BonePose>>;
+  hurt?: number;
+  lighting?: EntityLighting;
+  opacity?: number;
   /** 头后换成晋升之环的哪一款（特效/晋升之环形.ts）：给了就藏掉包里的眼形大光环（ysmGlowbone24），在头后挂晋升之环（挂 aaabody）；不给照旧画眼形大光环。
    *  用户 11-10 定要换，候选没挑，挑定后再把默认改过来 */
-  头后环?: 环款;
+  headRing?: RingVariant;
   /** 晋升之环转到第几秒的样子，不给用 秒 */
-  环秒?: number;
+  ringSec?: number;
   /** 右手拿下界魔杖（用户 11-09 定亚波伦手持）：挂在定位骨 RightHandLocator 上、握点对到手心（见 握杖修正），右臂默认斜举（见 斜举）；默认不拿 */
-  持杖?: boolean;
+  holdWand?: boolean;
   /** 持杖 时握点沿杖身往杖尾挪几格（物品空间的格，见 握杖修正）；默认 0 = 握杖身正中。只有封面草稿八稿用（握近杖尾，伸到身前的那一截更长），正片没用过 */
-  握偏?: number;
+  gripOffset?: number;
   /** 持杖 时跟着杖走的东西，物品空间（杖头的芯在 物品/下界魔杖.tsx 的 杖头芯） */
-  杖上?: ReactNode;
+  wandOverlay?: ReactNode;
   /** 持杖时拿哪一根：不给就是原版的下界魔杖。细做的候选（物品/下界魔杖细做.tsx 的 细做杖款）；握点和原版落在同一处，握杖修正照用 */
-  杖?: 手持杖款;
-  挂载?: Record<string, ReactNode>;
+  杖?: HeldStaff;
+  attach?: Record<string, ReactNode>;
 };
 
 /** 一根能拿在右手上的杖：挂 = 挂到 RightHandLocator 上画的东西；矩阵 = 杖自己的空间 → 定位骨的骨骼坐标；尖、芯、尾 是杖自己空间里的点 */
-export type 手持杖款 = { 挂: ReactNode; 矩阵: THREE.Matrix4; 尖: readonly number[]; 芯: readonly number[]; 尾: readonly number[] };
+export type HeldStaff = { 挂: ReactNode; matrix: THREE.Matrix4; tip: readonly number[]; core: readonly number[]; tail: readonly number[] };
 
 /** 这一刻动画各层合出来的骨骼表（不含手摆的姿势）：按时间轴混姿势的（动作/亚波伦演出.ts）拿它当「没摆的骨骼现在转到哪」 */
-export const 动画骨骼表 = (秒: number, 表演: 亚波伦表演) => {
-  const 定 = 娘化亚波伦生物.定义;
-  return 动画姿势(
-    { 文件: 娘化亚波伦生物.动画文件!, 层们: 表演.层们(秒), 口径: 定.动画!.口径, 环境: 合并环境(定.动画!.环境, { ...表演.环境(秒), 函数: { 'ysm.second_order': 表演.二阶在(秒) } }) },
-    秒,
+export const animSkeletonTable = (sec: number, act: YaBoLunAct) => {
+  const entityDef = GirlYaBoLunCreature.definition;
+  return animationPose(
+    { 文件: GirlYaBoLunCreature.animationFiles!, layers: act.layers(sec), 口径: entityDef.动画!.口径, 环境: mergeEnv(entityDef.动画!.环境, { ...act.环境(sec), functions: { 'ysm.second_order': act.secondOrderAt(sec) } }) },
+    sec,
   );
 };
 
 /** 这一刻合好的骨骼姿势表：动画各层，上面按通道盖手摆的姿势（同 基岩实体.tsx） */
-const 姿势表 = (秒: number, 表演: 亚波伦表演, 姿势: Readonly<Record<string, BonePose>> | undefined) =>
-  混合层([{ 骨骼: 动画骨骼表(秒, 表演) }, { 骨骼: 姿势 ?? 表演.持杖姿势 }], 'TLM');
+const poseTable = (sec: number, act: YaBoLunAct, bonePose: Readonly<Record<string, BonePose>> | undefined) =>
+  blendLayers([{ skeleton: animSkeletonTable(sec, act) }, { skeleton: bonePose ?? act.wandHoldPose }], 'TLM');
 
 // 手心：小臂方盒（RightForeArm，模型像素 x −5.29～−2.79、y 18.41～24.91、z −0.73～1.78）露在袖口（y ≈ 20.1）外面那一截的中心，
 // 写成 RightForeArm 的骨骼坐标（原点 = pivot (−4.125, 25.075, 0.025)，X 取负）。这个模型的手没有单独的方盒，RightHand 只是个转轴
-const 手心 = new THREE.Vector3(-0.08, -5.78, 0.5);
+const handCenter = new THREE.Vector3(-0.08, -5.78, 0.5);
 /**
  * 握杖修正（用户 11-10：「这法杖都没有拿到手上」）：定位骨 RightHandLocator 在手腕（袖口里面），照 手持下界魔杖 原样挂的话杖身贴着袖口过、不穿过露出来的手。
  * 这里在定位骨坐标里再平移一下，把杖的握点正好放到手心上：杖身从手那一截方盒的正中穿过去，手腕怎么转都在。返回定位骨坐标里的平移矩阵。
  * 握偏：握点沿杖身往杖尾挪几格（物品空间；杖全长 31/16，默认的握点到杖尾 15/16），默认 0 = 模型 display 定的握点（杖身正中）
  */
-const 握杖修正 = (表: Readonly<Record<string, BonePose>>, 握偏 = 0): THREE.Matrix4 => {
-  const 缩 = 娘化亚波伦生物.定义.缩放;
-  const 腕到臂 = 骨骼矩阵(原几何, 'RightForeArm', 表, 缩).invert().multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 缩));
-  const 要 = 手心.clone().applyMatrix4(腕到臂.invert());
-  const 现 = new THREE.Vector3(杖握点[0], 杖握点[1] - 握偏, 杖握点[2]).applyMatrix4(手持杖矩阵());
-  return new THREE.Matrix4().makeTranslation(要.x - 现.x, 要.y - 现.y, 要.z - 现.z);
+const staffGripCorrection = (boneTable: Readonly<Record<string, BonePose>>, gripOffset = 0): THREE.Matrix4 => {
+  const scale = GirlYaBoLunCreature.definition.缩放;
+  const forearmToHand = skeletonMatrix(origGeometry, 'RightForeArm', boneTable, scale).invert().multiply(skeletonMatrix(origGeometry, 'RightHandLocator', boneTable, scale));
+  const desired = handCenter.clone().applyMatrix4(forearmToHand.invert());
+  const handPoint = new THREE.Vector3(gripPoint[0], gripPoint[1] - gripOffset, gripPoint[2]).applyMatrix4(heldStaffMatrix());
+  return new THREE.Matrix4().makeTranslation(desired.x - handPoint.x, desired.y - handPoint.y, desired.z - handPoint.z);
 };
 
 // 整根骨骼缩成 0，基岩模型就不画它（engine/model/基岩模型.tsx）
-const 藏眼形光环: Readonly<Record<string, BonePose>> = { ysmGlowbone24: { scale: 0 } };
+const hideGlowPose: Readonly<Record<string, BonePose>> = { ysmGlowbone24: { scale: 0 } };
 
-export const 娘化亚波伦: FC<娘化亚波伦属性> = ({ 秒, 表演 = 站立, 持杖, 握偏, 杖, 杖上, 挂载, 姿势, 头后环, 环秒, ...其余 }) => {
-  const e = 表演.环境(秒);
-  const 图 = 娘化亚波伦生物.取模型(其余.变体).texture;
-  const 修正 = 持杖 ? 握杖修正(姿势表(秒, 表演, 姿势), 握偏) : undefined;
-  const 修正键 = 修正?.elements.join(',');
-  const 转秒 = 环秒 ?? 秒;
-  const 挂 = useMemo(
+export const GirlYaBoLun: FC<GirlYaBoLunProps> = ({ 秒: sec, act = stand, holdWand, gripOffset, 杖: staff, wandOverlay, attach, bonePose, headRing, ringSec, ...rest }) => {
+  const e = act.环境(sec);
+  const image = GirlYaBoLunCreature.getModel(rest.variant).texture;
+  const correction = holdWand ? staffGripCorrection(poseTable(sec, act, bonePose), gripOffset) : undefined;
+  const correctionKey = correction?.elements.join(',');
+  const turnSec = ringSec ?? sec;
+  const attachments = useMemo(
     () => ({
-      ...描边挂载(图),
-      ...(修正 && {
+      ...outlineMount(image),
+      ...(correction && {
         RightHandLocator: (
-          <group matrix={修正} matrixAutoUpdate={false}>
-            {杖 ? 杖.挂 : <手持下界魔杖>{杖上}</手持下界魔杖>}
+          <group matrix={correction} matrixAutoUpdate={false}>
+            {staff ? staff.挂 : <HeldNetherWand>{wandOverlay}</HeldNetherWand>}
           </group>
         ),
       }),
-      ...(头后环 ? { aaabody: 亚波伦头后环(头后环, 转秒) } : undefined),
-      ...挂载,
+      ...(headRing ? { aaabody: yaBoLunHeadRing(headRing, turnSec) } : undefined),
+      ...attach,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [图, 修正键, 杖, 杖上, 头后环, 转秒, 挂载],
+    [image, correctionKey, staff, wandOverlay, headRing, turnSec, attach],
   );
-  const 摆 = 姿势 ?? (持杖 ? 表演.持杖姿势 : undefined);
-  const 全姿势 = useMemo(() => (头后环 ? { ...摆, ...藏眼形光环 } : 摆), [头后环, 摆]);
-  return <娘化亚波伦生物 {...其余} 姿势={全姿势} 挂载={挂} 秒={秒} 层们={表演.层们(秒)} 环境={{ ...e, 函数: { 'ysm.second_order': 表演.二阶在(秒) } }} />;
+  const basePose = bonePose ?? (holdWand ? act.wandHoldPose : undefined);
+  const fullPose = useMemo(() => (headRing ? { ...basePose, ...hideGlowPose } : basePose), [headRing, basePose]);
+  return <GirlYaBoLunCreature {...rest} bonePose={fullPose} attach={attachments} 秒={sec} layers={act.layers(sec)} 环境={{ ...e, functions: { 'ysm.second_order': act.secondOrderAt(sec) } }} />;
 };
 
-export type 杖位姿 = {
+export type WandPose = {
   /** 杖头最顶上那一点（场景坐标，格） */
-  尖: V3;
+  tip: V3;
   /** 杖头的芯 */
-  芯: V3;
+  core: V3;
   /** 杖尾 */
-  尾: V3;
+  tail: V3;
   /** 杖身的方向：从杖尾指向杖尖的单位向量 */
-  轴: V3;
+  axis: V3;
 };
 
 /**
@@ -330,19 +330,19 @@ export type 杖位姿 = {
  * 给轮盘定圆心（界面/杖尖轮盘.tsx）、给法术定出手点用；属性和 <娘化亚波伦> 的同名项一个意思，不给 姿势 就是持杖的默认摆法（表演的 持杖姿势），不给 杖 就是原版的下界魔杖。
  * 旧握法：不做握杖修正，杖照定位骨原样挂（<手持下界魔杖> 直接挂 RightHandLocator）；只给封面草稿五稿及以前的旧案留着，不改它们的画面
  */
-export const 持杖位姿 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 握偏, 旧握法 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势' | '杖' | '握偏'> & { 旧握法?: boolean }): 杖位姿 =>
-  表到杖位姿(pose, 姿势表(秒, 表演, 姿势), 杖, 旧握法, 握偏);
+export const holdWandPose = ({ pose, 秒: sec, act = stand, bonePose, 杖: staff, gripOffset, oldGrip }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | 'bonePose' | '杖' | 'gripOffset'> & { oldGrip?: boolean }): WandPose =>
+  tableToWandPose(pose, poseTable(sec, act, bonePose), staff, oldGrip, gripOffset);
 
-const 表到杖位姿 = (pose: 娘化亚波伦属性['pose'], 表: Readonly<Record<string, BonePose>>, 杖?: 手持杖款, 旧握法?: boolean, 握偏?: number): 杖位姿 => {
+const tableToWandPose = (pose: GirlYaBoLunProps['pose'], boneTable: Readonly<Record<string, BonePose>>, staff?: HeldStaff, oldGrip?: boolean, gripOffset?: number): WandPose => {
   const m = new THREE.Matrix4()
     .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
     .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
-    .multiply(骨骼矩阵(原几何, 'RightHandLocator', 表, 娘化亚波伦生物.定义.缩放));
-  if (!旧握法) m.multiply(握杖修正(表, 握偏));
-  m.multiply(杖?.矩阵 ?? 手持杖矩阵());
-  const 点 = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
-  const [尖, 尾] = [点(杖?.尖 ?? 杖尖), 点(杖?.尾 ?? 杖尾)];
-  return { 尖: 尖.toArray(), 芯: 点(杖?.芯 ?? 杖头芯).toArray(), 尾: 尾.toArray(), 轴: 尖.clone().sub(尾).normalize().toArray() };
+    .multiply(skeletonMatrix(origGeometry, 'RightHandLocator', boneTable, GirlYaBoLunCreature.definition.缩放));
+  if (!oldGrip) m.multiply(staffGripCorrection(boneTable, gripOffset));
+  m.multiply(staff?.matrix ?? heldStaffMatrix());
+  const transformPoint = (p: readonly number[]) => new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(m);
+  const [tip, tail] = [transformPoint(staff?.tip ?? wandTip), transformPoint(staff?.tail ?? staffTail)];
+  return { tip: tip.toArray(), core: transformPoint(staff?.core ?? staffHeadCore).toArray(), tail: tail.toArray(), axis: tip.clone().sub(tail).normalize().toArray() };
 };
 
 /**
@@ -350,81 +350,81 @@ const 表到杖位姿 = (pose: 娘化亚波伦属性['pose'], 表: Readonly<Reco
  * 姿势 里右臂三根骨骼先摆个大概（肘弯多少、手腕怎么握由它定），解出来的右肩离它最近：阻尼最小二乘，步数固定，结果只看输入、和取帧顺序无关。
  * 朝 给目标点时方向 = 杖尖 → 目标（杖尖跟着手动，每步重算）；给 向 就是定死的方向。身子在动画里怎么倒、怎么晃都算在内，所以每帧解一次杖尖就一直指着目标。
  */
-export const 瞄杖 = ({ pose, 秒, 表演 = 站立, 姿势, 杖, 朝 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '杖'> & { 姿势: Readonly<Record<string, BonePose>>; 朝: { 点: V3 } | { 向: V3 } }): Record<string, BonePose> => {
-  const 表 = 姿势表(秒, 表演, 姿势);
-  const 起 = (姿势.RightArm?.rot ?? [0, 0, 0]).slice();
-  const 带 = (r: readonly number[]) => ({ ...表, RightArm: { ...表.RightArm, rot: [...r] } });
+export const aimStaff = ({ pose, 秒: sec, act = stand, bonePose, 杖: staff, aim }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | '杖'> & { bonePose: Readonly<Record<string, BonePose>>; aim: { 点: V3 } | { dir: V3 } }): Record<string, BonePose> => {
+  const boneTable = poseTable(sec, act, bonePose);
+  const startRot = (bonePose.RightArm?.rot ?? [0, 0, 0]).slice();
+  const withRightArm = (r: readonly number[]) => ({ ...boneTable, RightArm: { ...boneTable.RightArm, rot: [...r] } });
   // 残差：杖身方向 − 要的方向（三个分量）
-  const 差 = (r: readonly number[]): number[] => {
-    const 位 = 表到杖位姿(pose, 带(r), 杖);
-    const 要 = '点' in 朝 ? new THREE.Vector3(朝.点[0] - 位.尖[0], 朝.点[1] - 位.尖[1], 朝.点[2] - 位.尖[2]).normalize().toArray() : new THREE.Vector3(...朝.向).normalize().toArray();
-    return [位.轴[0] - 要[0]!, 位.轴[1] - 要[1]!, 位.轴[2] - 要[2]!];
+  const rotDiff = (r: readonly number[]): number[] => {
+    const staffPose = tableToWandPose(pose, withRightArm(r), staff);
+    const toTarget = '点' in aim ? new THREE.Vector3(aim.点[0] - staffPose.tip[0], aim.点[1] - staffPose.tip[1], aim.点[2] - staffPose.tip[2]).normalize().toArray() : new THREE.Vector3(...aim.dir).normalize().toArray();
+    return [staffPose.axis[0] - toTarget[0]!, staffPose.axis[1] - toTarget[1]!, staffPose.axis[2] - toTarget[2]!];
   };
-  let r = 起.slice();
-  const 步 = 0.5;
-  for (let 轮 = 0; 轮 < 16; 轮++) {
-    const e = 差(r);
+  let r = startRot.slice();
+  const increment = 0.5;
+  for (let step = 0; step < 16; step++) {
+    const e = rotDiff(r);
     if (Math.hypot(...e) < 1e-5) break;
     // 雅可比（每度）：数值差分
     const J = [0, 1, 2].map((j) => {
       const q = r.slice();
-      q[j] = q[j]! + 步;
-      const e2 = 差(q);
-      return [(e2[0]! - e[0]!) / 步, (e2[1]! - e[1]!) / 步, (e2[2]! - e[2]!) / 步];
+      q[j] = q[j]! + increment;
+      const e2 = rotDiff(q);
+      return [(e2[0]! - e[0]!) / increment, (e2[1]! - e[1]!) / increment, (e2[2]! - e[2]!) / increment];
     });
     // (JᵀJ + λI) d = −Jᵀe；J[j] 是第 j 个转角那一列
     const A = new THREE.Matrix3();
-    const 元: number[] = [];
-    for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) 元.push(J[a]![0]! * J[b]![0]! + J[a]![1]! * J[b]![1]! + J[a]![2]! * J[b]![2]! + (a === b ? 1e-5 : 0));
-    A.set(元[0]!, 元[1]!, 元[2]!, 元[3]!, 元[4]!, 元[5]!, 元[6]!, 元[7]!, 元[8]!).invert();
-    const g = new THREE.Vector3(...J.map((列) => -(列[0]! * e[0]! + 列[1]! * e[1]! + 列[2]! * e[2]!))).applyMatrix3(A);
+    const elements: number[] = [];
+    for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) elements.push(J[a]![0]! * J[b]![0]! + J[a]![1]! * J[b]![1]! + J[a]![2]! * J[b]![2]! + (a === b ? 1e-5 : 0));
+    A.set(elements[0]!, elements[1]!, elements[2]!, elements[3]!, elements[4]!, elements[5]!, elements[6]!, elements[7]!, elements[8]!).invert();
+    const g = new THREE.Vector3(...J.map((colVec) => -(colVec[0]! * e[0]! + colVec[1]! * e[1]! + colVec[2]! * e[2]!))).applyMatrix3(A);
     // 一步最多转 25 度：离得远时线性化不准
-    const 长 = g.length();
-    if (长 > 25) g.multiplyScalar(25 / 长);
+    const vecLength = g.length();
+    if (vecLength > 25) g.multiplyScalar(25 / vecLength);
     r = [r[0]! + g.x, r[1]! + g.y, r[2]! + g.z];
   }
-  return { ...姿势, RightArm: { ...姿势.RightArm, rot: r } };
+  return { ...bonePose, RightArm: { ...bonePose.RightArm, rot: r } };
 };
 
 /** 她右手手心（握杖修正 对的那一点）在场景里的位置：核对握杖、给手部特写定机位用 */
-export const 右手心 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'>): V3 =>
-  手心
+export const rightHandCenter = ({ pose, 秒: sec, act = stand, bonePose }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | 'bonePose'>): V3 =>
+  handCenter
     .clone()
     .applyMatrix4(
       new THREE.Matrix4()
         .makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!)
         .multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)))
-        .multiply(骨骼矩阵(原几何, 'RightForeArm', 姿势表(秒, 表演, 姿势), 娘化亚波伦生物.定义.缩放)),
+        .multiply(skeletonMatrix(origGeometry, 'RightForeArm', poseTable(sec, act, bonePose), GirlYaBoLunCreature.definition.缩放)),
     )
     .toArray();
 
 // 脸的中心：头的方盒（Head，模型像素 x −3.42～3.58、y 33.13～40.13、z −3～4）正面（−Z）那一面的中心，写成 Head 的骨骼坐标（原点 = pivot (0, 33.05, 0)）
-const 脸心 = new THREE.Vector3(-0.08, 3.58, -3);
+const faceCenter = new THREE.Vector3(-0.08, 3.58, -3);
 
 // 量她在画面上占多高用的骨骼：帽子、头、躯干、两臂、两腿、两只鞋。不算头后的眼形光环、蜘蛛腿、头发和裙摆（都在这些方盒的上下范围以内）
-const 身体骨骼 = ['mao', 'Head', 'UpperBody2', 'LeftArm', 'LeftForeArm', 'RightArm', 'RightForeArm', 'LeftLeg', 'LeftLowerLeg', 'RightLeg', 'RightLowerLeg', 'bone16', 'bone20'];
+const bodySkeleton = ['mao', 'Head', 'UpperBody2', 'LeftArm', 'LeftForeArm', 'RightArm', 'RightForeArm', 'LeftLeg', 'LeftLowerLeg', 'RightLeg', 'RightLowerLeg', 'bone16', 'bone20'];
 
 /**
  * 她的脸在场景里的位置和朝向、身子（胸，UpperBody）的朝向、身体各方盒的角（身体骨骼 那几根，不算头后光环）：不渲染，同一张姿势表做骨骼正解。
  * 核对「她是不是朝着镜头、脸落在画面哪、在画面上占多高」用（封面草稿八稿的自检）
  */
-export const 头身朝向 = ({ pose, 秒, 表演 = 站立, 姿势 }: Pick<娘化亚波伦属性, 'pose' | '秒' | '表演' | '姿势'>): { 脸: V3; 脸朝向: V3; 身朝向: V3; 身体点: V3[] } => {
-  const 表 = 姿势表(秒, 表演, 姿势);
-  const 底 = new THREE.Matrix4().makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!).multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)));
-  const 骨 = (名: string) => 底.clone().multiply(骨骼矩阵(原几何, 名, 表, 娘化亚波伦生物.定义.缩放));
+export const headBodyFacing = ({ pose, 秒: sec, act = stand, bonePose }: Pick<GirlYaBoLunProps, 'pose' | '秒' | 'act' | 'bonePose'>): { face: V3; faceDir: V3; bodyDir: V3; bodyPoints: V3[] } => {
+  const boneTable = poseTable(sec, act, bonePose);
+  const bottomMatrix = new THREE.Matrix4().makeTranslation(pose.loc[0]!, pose.loc[1]!, pose.loc[2]!).multiply(new THREE.Matrix4().makeRotationZ(rad(pose.yaw ?? 0)));
+  const boneMatrix = (boneName: string) => bottomMatrix.clone().multiply(skeletonMatrix(origGeometry, boneName, boneTable, GirlYaBoLunCreature.definition.缩放));
   // 骨骼坐标的正面是 −Z
-  const 正面 = (m: THREE.Matrix4) => new THREE.Vector3(0, 0, -1).transformDirection(m).toArray();
-  const 头 = 骨('Head');
-  const 身体点: V3[] = [];
-  for (const b of 原几何.bones) {
-    if (!身体骨骼.includes(b.name)) continue;
-    const m = 骨(b.name);
+  const forwardDir = (m: THREE.Matrix4) => new THREE.Vector3(0, 0, -1).transformDirection(m).toArray();
+  const headBone = boneMatrix('Head');
+  const bodyPoints: V3[] = [];
+  for (const b of origGeometry.bones) {
+    if (!bodySkeleton.includes(b.name)) continue;
+    const m = boneMatrix(b.name);
     // 方盒的角写成骨骼坐标：原点 = pivot，X 取负（同 描边面）；方盒自己带转角的这几根里没有
     for (const c of b.cubes ?? [])
       for (let k = 0; k < 8; k++) {
-        const 角 = [0, 1, 2].map((i) => c.origin[i]! + (k & (1 << i) ? c.size[i]! : 0));
-        身体点.push(new THREE.Vector3(-(角[0]! - b.pivot[0]), 角[1]! - b.pivot[1], 角[2]! - b.pivot[2]).applyMatrix4(m).toArray());
+        const corner = [0, 1, 2].map((i) => c.origin[i]! + (k & (1 << i) ? c.size[i]! : 0));
+        bodyPoints.push(new THREE.Vector3(-(corner[0]! - b.pivot[0]), corner[1]! - b.pivot[1], corner[2]! - b.pivot[2]).applyMatrix4(m).toArray());
       }
   }
-  return { 脸: 脸心.clone().applyMatrix4(头).toArray(), 脸朝向: 正面(头), 身朝向: 正面(骨('UpperBody')), 身体点 };
+  return { face: faceCenter.clone().applyMatrix4(headBone).toArray(), faceDir: forwardDir(headBone), bodyDir: forwardDir(boneMatrix('UpperBody')), bodyPoints };
 };

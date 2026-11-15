@@ -1,34 +1,34 @@
 // 时差分屏核对的视图表（纯数据，段.ts 也读）：一帧一个视图。帧 = 歌曲帧（分镜 的 正片事件），画的就是片子里那一帧。
 // 定稿是第 13 句 生长三（43.57）：风正吹着日历、身后坡上冒出几棵樱花树、她蹲在树苗旁；描边开、关和后期关各一张，和定稿只差这一个变量。
 // 对照帧用 她 盖掉她这一页的几个字段，也只差写出来的那几个。
-import { fps, 旧帧 } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
-import type { 她这一页 } from '../../场/2-门口/时差分屏.tsx';
+import { fps, legacyFrameSec } from '../../分镜/时间.ts';
+import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
+import type { HerPage } from '../../场/2-门口/时差分屏.tsx';
 
-export type 视图 = {
+export type View = {
   名: string;
   帧: number;
-  描边?: boolean;
-  后期?: boolean;
+  outline?: boolean;
+  withPost?: boolean;
   /** 盖在她这一页的样子上（对照帧） */
-  她?: Partial<她这一页>;
+  liYing?: Partial<HerPage>;
 };
 
-const 静帧 = 正片事件.生长三.帧;
+const stillFrame = mainCutEvents.生长三.帧;
 /** 事件那一帧往后 n 个 24 fps 的帧（按秒取到最近的一帧） */
-const 后 = (帧: number, n: number) => 帧 + Math.round(旧帧(n) * fps);
+const frameAfter = (frame: number, n: number) => frame + Math.round(legacyFrameSec(n) * fps);
 
-export const 视图们: readonly 视图[] = [
-  { 名: '定稿', 帧: 静帧 },
-  { 名: '描边开', 帧: 静帧, 描边: true },
-  { 名: '描边关', 帧: 静帧, 描边: false },
-  { 名: '后期关', 帧: 静帧, 后期: false },
+export const views: readonly View[] = [
+  { 名: '定稿', 帧: stillFrame },
+  { 名: '描边开', 帧: stillFrame, outline: true },
+  { 名: '描边关', 帧: stillFrame, outline: false },
+  { 名: '后期关', 帧: stillFrame, withPost: false },
   // 自检：起风前（分屏停稳、日历还没动）、头一页刚飞起来（头一棵樱花树一起冒）、远景冒满中景冒头一棵、门口树苗长成前一帧、停在 1 以后
-  { 名: '自检-起风前', 帧: 后(正片事件.课表亮二.帧, 1) },
-  { 名: '自检-头一页飞', 帧: 后(正片事件.风吹日历.帧, 3) },
-  { 名: '自检-中景头一棵', 帧: 后(正片事件.生长四.帧, 1) },
-  { 名: '自检-树苗长成前', 帧: 正片事件.日历到一.帧 - 1 },
-  { 名: '自检-停在1', 帧: 后(正片事件.日历到一.帧, 6) },
+  { 名: '自检-起风前', 帧: frameAfter(mainCutEvents.课表亮二.帧, 1) },
+  { 名: '自检-头一页飞', 帧: frameAfter(mainCutEvents.风吹日历.帧, 3) },
+  { 名: '自检-中景头一棵', 帧: frameAfter(mainCutEvents.生长四.帧, 1) },
+  { 名: '自检-树苗长成前', 帧: mainCutEvents.日历到一.帧 - 1 },
+  { 名: '自检-停在1', 帧: frameAfter(mainCutEvents.日历到一.帧, 6) },
   // 对照：蹲着她身子往镜头斜转 30°（yaw −120）、头转 20°，胳膊和花同定稿，只差朝向（定稿是正侧面 yaw −90、头转 40°）
-  { 名: '对照-蹲身子斜转30', 帧: 静帧, 她: { yaw: -120, 看: [5, -20] } },
+  { 名: '对照-蹲身子斜转30', 帧: stillFrame, liYing: { yaw: -120, 看: [5, -20] } },
 ];

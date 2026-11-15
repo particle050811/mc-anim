@@ -1,103 +1,103 @@
 // 平台数据分析报告里抖音的一节和抖音的建议。抖音刷到就自动播，观众没主动选：第一看前 5 秒（2s 跳出、5s 完播、前几档留存），
 // 开头几秒的画面就是「封面」；5 秒后的留存才更说明内容。留存 3 秒一档，能看单个段进段前后有没有陡降。
-import { 每10秒流失, 留存于, type 段统计 } from '../bili/时间轴.ts';
-import { 开头时段对比, 拖沓段, 按段小节, 时段表, 段名们, 版本提示, 留得住段, 百, 秒, type 对上 } from '../平台/图与排名.ts';
-import type { 抖音作品 } from './数据.ts';
+import { dropPer10s, retentionAt, type SegmentStat } from '../bili/时间轴.ts';
+import { openingWindowCompare, saggingSegments, perSegmentSection, windowTable, segNames, versionNote, retainedSegments, percent, fmtSecClock, type MatchedRow } from '../平台/图与排名.ts';
+import type { DouyinWork } from './数据.ts';
 
 /** 段起点前后各 6 秒的在场每 10 秒流失；后/前 > 1.3 算进段后陡降（留存本来随时间放缓，持平就已经略高于趋势） */
-export type 进段检验 = { 段: 段统计; 前: number; 后: number; 判断: string };
-export const 进段前后 = (曲: 抖音作品['留存'], 段: 段统计[], 从 = 3, 到 = 90, 半宽 = 6): 进段检验[] =>
-  段.filter((s) => s.起 >= 从 + 半宽 && s.起 <= 到).map((s) => {
-    const 前 = 每10秒流失(曲, s.起 - 半宽, s.起);
-    const 后 = 每10秒流失(曲, s.起, s.起 + 半宽);
-    const 比 = 后 / 前;
-    const 判断 = !Number.isFinite(比) ? '—' : 比 > 1.3 ? '进段后陡降' : 比 < 0.77 ? '进段后放缓' : '和进段前持平';
-    return { 段: s, 前, 后, 判断 };
+export type SegmentEntryCheck = { 段: SegmentStat; 前: number; 后: number; verdict: string };
+export const segmentEntryBeforeAfter = (curve: DouyinWork['留存'], segments: SegmentStat[], fromSec = 3, endSec = 90, halfWindow = 6): SegmentEntryCheck[] =>
+  segments.filter((s) => s.起 >= fromSec + halfWindow && s.起 <= endSec).map((s) => {
+    const before = dropPer10s(curve, s.起 - halfWindow, s.起);
+    const lossAfter = dropPer10s(curve, s.起, s.起 + halfWindow);
+    const afterRatio = lossAfter / before;
+    const verdict = !Number.isFinite(afterRatio) ? '—' : afterRatio > 1.3 ? '进段后陡降' : afterRatio < 0.77 ? '进段后放缓' : '和进段前持平';
+    return { 段: s, 前: before, 后: lossAfter, verdict };
   });
 
-const 进段表 = (们: 进段检验[]) =>
-  ['| 段 | 起 | 进段前 6 秒 | 进段后 6 秒 | 判断 |\n|---|---|---|---|---|', ...们.map((c) => `| ${c.段.编号} ${c.段.名} | ${秒(c.段.起)}（${c.段.起.toFixed(1)}） | ${百(c.前)} | ${百(c.后)} | ${c.判断} |`)].join('\n');
+const segmentEntryTable = (checks: SegmentEntryCheck[]) =>
+  ['| 段 | 起 | 进段前 6 秒 | 进段后 6 秒 | 判断 |\n|---|---|---|---|---|', ...checks.map((c) => `| ${c.段.编号} ${c.段.名} | ${fmtSecClock(c.段.起)}（${c.段.起.toFixed(1)}） | ${percent(c.前)} | ${percent(c.后)} | ${c.verdict} |`)].join('\n');
 
 /** 前 5 秒：3 秒、5 秒（插值）、6 秒处的留存，和同类作者参考线 */
-const 前五秒 = (作: 抖音作品) => {
-  const m = 作.指标;
-  const 点 = [3, 5, 6].map((t) => `${t} 秒 ${百(留存于(作.留存, t))}${作.同类留存.length ? `（同类作者 ${百(留存于(作.同类留存, t))}）` : ''}`).join('，');
-  return `2s 跳出率 ${百(m.两秒跳出率)}，5s 完播率 ${百(m.五秒完播率)}；留存 ${点}。`;
+const first5sText = (work: DouyinWork) => {
+  const m = work.指标;
+  const retentionText = [3, 5, 6].map((t) => `${t} 秒 ${percent(retentionAt(work.留存, t))}${work.peerRetention.length ? `（同类作者 ${percent(retentionAt(work.peerRetention, t))}）` : ''}`).join('，');
+  return `2s 跳出率 ${percent(m.两秒跳出率)}，5s 完播率 ${percent(m.五秒完播率)}；留存 ${retentionText}。`;
 };
 
 /** 2s 跳出、5s 完播和同账号其他作品比（平台给旧作品也有这两个指标，留存曲线却只给近期作品） */
-export const 前五秒对比 = (作: 抖音作品, 作们: 抖音作品[]) => {
-  const 其他 = 作们.filter((a) => a.标识 !== 作.标识);
-  const 比 = (k: '两秒跳出率' | '五秒完播率', 越低越好: boolean) => {
-    const 值 = 其他.map((a) => a.指标[k]).filter((v): v is number => v !== null);
-    const 本 = 作.指标[k];
-    if (本 === null || 值.length < 2) return null;
-    const 好于 = 值.filter((v) => (越低越好 ? 本 < v : 本 > v)).length;
-    return `${k === '两秒跳出率' ? '2s 跳出' : '5s 完播'} ${百(本)}，好于其他 ${值.length} 个作品中的 ${好于} 个（${值.map((v) => 百(v)).join('、')}）`;
+export const first5sCompare = (work: DouyinWork, works: DouyinWork[]) => {
+  const others = works.filter((a) => a.id !== work.id);
+  const judgeMetric = (k: '两秒跳出率' | '五秒完播率', lowerIsBetter: boolean) => {
+    const values = others.map((a) => a.指标[k]).filter((v): v is number => v !== null);
+    const ownValue = work.指标[k];
+    if (ownValue === null || values.length < 2) return null;
+    const betterCount = values.filter((v) => (lowerIsBetter ? ownValue < v : ownValue > v)).length;
+    return `${k === '两秒跳出率' ? '2s 跳出' : '5s 完播'} ${percent(ownValue)}，好于其他 ${values.length} 个作品中的 ${betterCount} 个（${values.map((v) => percent(v)).join('、')}）`;
   };
-  return [比('两秒跳出率', true), 比('五秒完播率', false)].filter(Boolean).join('；');
+  return [judgeMetric('两秒跳出率', true), judgeMetric('五秒完播率', false)].filter(Boolean).join('；');
 };
 
-const 最多档 = (档们: { 秒: number; 值: number }[], 段: 段统计[], n = 3) =>
-  [...档们].sort((a, b) => b.值 - a.值).slice(0, n).map((d) => `${秒(d.秒 - 6)}–${秒(d.秒 + 6)}（${百(d.值)}，${段名们(段, d.秒 - 6, d.秒 + 6)}）`).join('；');
+const topBuckets = (buckets: { 秒: number; 值: number }[], segments: SegmentStat[], n = 3) =>
+  [...buckets].sort((a, b) => b.值 - a.值).slice(0, n).map((d) => `${fmtSecClock(d.秒 - 6)}–${fmtSecClock(d.秒 + 6)}（${percent(d.值)}，${segNames(segments, d.秒 - 6, d.秒 + 6)}）`).join('；');
 
-export const 抖音建议 = (对上们: 对上<抖音作品>[], 作们: 抖音作品[] = []) => {
+export const douyinAdvice = (matched: MatchedRow<DouyinWork>[], works: DouyinWork[] = []) => {
   const out: string[] = [];
-  for (const x of 对上们) {
-    const { 稿, 段 } = x;
-    const m = 稿.指标;
-    const 同5 = 稿.同类留存.length ? 留存于(稿.同类留存, 5) : NaN;
-    const 本5 = 留存于(稿.留存, 5);
-    out.push(`**开头 5 秒（抖音的「封面」）**：2s 跳出 ${百(m.两秒跳出率)}、5s 完播 ${百(m.五秒完播率)}${Number.isFinite(同5) ? `，5 秒留存 ${百(本5)}，${本5 >= 同5 ? '不低于' : '低于'}同类作者参考线 ${百(同5)}` : ''}${前五秒对比(稿, 作们) ? `；${前五秒对比(稿, 作们)}` : ''}。开头「${段[0]?.名 ?? ''}」要在头 2 秒给出动作或冲突，不要先铺环境。`);
-    const 陡 = 进段前后(稿.留存, 段).filter((c) => c.判断 === '进段后陡降');
-    if (陡.length) out.push(`**进段后陡降**：${陡.map((c) => `${c.段.编号} ${c.段.名}（进段前每 10 秒走 ${百(c.前)}，进段后 ${百(c.后)}）`).join('、')}，看这些段的头几秒是不是节奏断了。`);
-    const 拖 = 拖沓段(段, 稿.留存);
-    if (拖.length) out.push(`**可能拖沓的段**：${拖.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${百(s.每10秒相对流失)}）`).join('、')}。`);
-    if (稿.跳过.length) out.push(`**观众拖进度条跳过最多**：${最多档(稿.跳过, 段)}。`);
-    const 稳 = 留得住段(段, 稿.留存);
-    if (稳.length) out.push(`**留得住的段**：${稳.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${百(s.每10秒相对流失)}）`).join('、')}，可以剪 1～2 秒放到开头当钩子。`);
+  for (const x of matched) {
+    const { curve: work, 段: segments } = x;
+    const m = work.指标;
+    const peer5sRetention = work.peerRetention.length ? retentionAt(work.peerRetention, 5) : NaN;
+    const own5sRetention = retentionAt(work.留存, 5);
+    out.push(`**开头 5 秒（抖音的「封面」）**：2s 跳出 ${percent(m.两秒跳出率)}、5s 完播 ${percent(m.五秒完播率)}${Number.isFinite(peer5sRetention) ? `，5 秒留存 ${percent(own5sRetention)}，${own5sRetention >= peer5sRetention ? '不低于' : '低于'}同类作者参考线 ${percent(peer5sRetention)}` : ''}${first5sCompare(work, works) ? `；${first5sCompare(work, works)}` : ''}。开头「${segments[0]?.名 ?? ''}」要在头 2 秒给出动作或冲突，不要先铺环境。`);
+    const steep = segmentEntryBeforeAfter(work.留存, segments).filter((c) => c.verdict === '进段后陡降');
+    if (steep.length) out.push(`**进段后陡降**：${steep.map((c) => `${c.段.编号} ${c.段.名}（进段前每 10 秒走 ${percent(c.前)}，进段后 ${percent(c.后)}）`).join('、')}，看这些段的头几秒是不是节奏断了。`);
+    const sluggish = saggingSegments(segments, work.留存);
+    if (sluggish.length) out.push(`**可能拖沓的段**：${sluggish.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${percent(s.relDropPer10s)}）`).join('、')}。`);
+    if (work.跳过.length) out.push(`**观众拖进度条跳过最多**：${topBuckets(work.跳过, segments)}。`);
+    const retained = retainedSegments(segments, work.留存);
+    if (retained.length) out.push(`**留得住的段**：${retained.map((s) => `${s.编号} ${s.名}（每 10 秒走 ${percent(s.relDropPer10s)}）`).join('、')}，可以剪 1～2 秒放到开头当钩子。`);
   }
   return out;
 };
 
-export const 抖音节 = (作们: 抖音作品[], 对上们: 对上<抖音作品>[], 包信息: { 取于: string; 请求数: number; 文件: string; 说明?: string }, 图: Map<string, string>) => {
-  const 指标表 = [
+export const douyinSection = (works: DouyinWork[], matched: MatchedRow<DouyinWork>[], packageInfo: { 取于: string; 请求数: number; 文件: string; 说明?: string }, imageNames: Map<string, string>) => {
+  const metricTable = [
     '| 作品 | 时长 | 播放 | 2s 跳出 | 5s 完播 | 平均播放 | 平均播放占比 | 完播率 | 封面点击率（曝光） | 点赞率 | 涨粉 |\n|---|---|---|---|---|---|---|---|---|---|---|',
-    ...作们.map((a) => {
+    ...works.map((a) => {
       const m = a.指标;
-      return `| ${a.标题} | ${秒(a.时长)} | ${m.播放} | ${百(m.两秒跳出率)} | ${百(m.五秒完播率)} | ${m.平均播放秒?.toFixed(1) ?? '—'} 秒 | ${百(m.平均播放占比)} | ${百(m.完播率)} | ${百(m.封面点击率)}（${m.封面曝光 ?? '—'}） | ${百(m.点赞率, 2)} | ${m.涨粉} |`;
+      return `| ${a.标题} | ${fmtSecClock(a.时长)} | ${m.plays} | ${percent(m.两秒跳出率)} | ${percent(m.五秒完播率)} | ${m.avgViewSec?.toFixed(1) ?? '—'} 秒 | ${percent(m.avgViewShare)} | ${percent(m.completionRate)} | ${percent(m.coverClickRate)}（${m.coverExposure ?? '—'}） | ${percent(m.likeRate, 2)} | ${m.newFans} |`;
     }),
   ].join('\n');
-  const 段节 = 对上们
+  const segmentSection = matched
     .map((x) => {
-      const { 稿 } = x;
-      const 版 = 版本提示(x);
-      const 前段 = 进段前后(稿.留存, x.段);
-      return `### ${稿.标题} ↔ 交付 ${x.交付名}
-${版 ? `\n> **版本提示**：${版}\n` : ''}
-图：\`${图.get(稿.标识)}\`
+      const { curve: work } = x;
+      const note = versionNote(x);
+      const segmentEntryChecks = segmentEntryBeforeAfter(work.留存, x.段);
+      return `### ${work.标题} ↔ 交付 ${x.deliveryName}
+${note ? `\n> **版本提示**：${note}\n` : ''}
+图：\`${imageNames.get(work.id)}\`
 
-**先看前 5 秒**：${前五秒(稿)}${前五秒对比(稿, 作们) ? `和同账号其他作品比：${前五秒对比(稿, 作们)}。` : ''}流量来源：${稿.来源.map((s) => `${s.名} ${百(s.占比)}`).join('、') || '—'}。
+**先看前 5 秒**：${first5sText(work)}${first5sCompare(work, works) ? `和同账号其他作品比：${first5sCompare(work, works)}。` : ''}流量来源：${work.来源.map((s) => `${s.名} ${percent(s.share)}`).join('、') || '—'}。
 
-**开头各时段和同账号其他作品比**：${作们.filter((a) => a.留存.length > 2).length > 1 ? `\n\n${时段表(x, 开头时段对比(稿, 作们))}` : `同账号其他作品${作们.length > 1 ? '平台没给留存曲线（只给近期作品）' : '没有数据'}，没有逐段基线，开头窗是否合适不确定。`}
+**开头各时段和同账号其他作品比**：${works.filter((a) => a.留存.length > 2).length > 1 ? `\n\n${windowTable(x, openingWindowCompare(work, works))}` : `同账号其他作品${works.length > 1 ? '平台没给留存曲线（只给近期作品）' : '没有数据'}，没有逐段基线，开头窗是否合适不确定。`}
 
 **进段前后**（3 秒一档，看段开头有没有异常陡降；前 90 秒内起的段）：
 
-${进段表(前段)}
+${segmentEntryTable(segmentEntryChecks)}
 
-${按段小节(x)}
-- 拖进度条跳过最多的档（12 秒一档）：${稿.跳过.length ? 最多档(稿.跳过, x.段) : '—'}
-- 回看最多的档：${稿.回看.length ? 最多档(稿.回看, x.段) : '—'}
-- 看完后常搜：${稿.看后搜.map((k) => `「${k.词}」${百(k.占比)}`).join('、') || '—'}`;
+${perSegmentSection(x)}
+- 拖进度条跳过最多的档（12 秒一档）：${work.跳过.length ? topBuckets(work.跳过, x.段) : '—'}
+- 回看最多的档：${work.回看.length ? topBuckets(work.回看, x.段) : '—'}
+- 看完后常搜：${work.看后搜.map((k) => `「${k.keyword}」${percent(k.share)}`).join('、') || '—'}`;
     })
     .join('\n\n');
   return `## 抖音
 
-数据：\`${包信息.文件}\`（取于 ${包信息.取于}${包信息.请求数 ? `，${包信息.请求数} 次请求` : ''}）。${包信息.说明 ? `${包信息.说明}。` : ''}抖音刷到就自动播放，观众没有主动选：**前 5 秒**（2s 跳出、5s 完播、前几档留存）是第一指标，开头几秒的画面就是「封面」，开头流失主要反映开场钩子；5 秒后的留存才更说明内容。留存 3 秒一档；图上的灰色虚线是平台给的同类作者参考线，只作参考、不参与计算。
+数据：\`${packageInfo.文件}\`（取于 ${packageInfo.取于}${packageInfo.请求数 ? `，${packageInfo.请求数} 次请求` : ''}）。${packageInfo.说明 ? `${packageInfo.说明}。` : ''}抖音刷到就自动播放，观众没有主动选：**前 5 秒**（2s 跳出、5s 完播、前几档留存）是第一指标，开头几秒的画面就是「封面」，开头流失主要反映开场钩子；5 秒后的留存才更说明内容。留存 3 秒一档；图上的灰色虚线是平台给的同类作者参考线，只作参考、不参与计算。
 
 ### 各作品指标
 
-${指标表}
+${metricTable}
 
-${段节 || '没有作品对上本地交付。'}`;
+${segmentSection || '没有作品对上本地交付。'}`;
 };

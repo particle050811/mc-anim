@@ -7,33 +7,33 @@ import React from 'react';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
-import { 平涂 } from '@engine/三渲二/平涂.tsx';
-import { 月铃兰层 } from '../../物品/月铃兰.tsx';
+import { FlatShade } from '@engine/三渲二/平涂.tsx';
+import { moonBellLayers } from '../../物品/月铃兰.tsx';
 
 /** 整张贴图多大（格） */
-const 大 = 0.65 * 0.55;
+const flowerScale = 0.65 * 0.55;
 /** 握点：茎上第 13 行那一格（物品空间，贴图中心为原点、上 = +Y），拳头握在这里，下面露一小截茎 */
-const 握点: [number, number] = [8.5 / 16 - 0.5, 0.5 - 13.5 / 16];
-const 各面一样亮 = { 顶: 1, 南北: 1, 东西: 1, 底: 1 };
+const gripPoint: [number, number] = [8.5 / 16 - 0.5, 0.5 - 13.5 / 16];
+const evenFaceLight = { top: 1, northSouth: 1, eastWest: 1, bottom: 1 };
 
 /** 朝向：物品的 +Z（贴图正面）对着 眼，+Y 尽量朝世界的上（场景 Z 朝上）；再绕正面那根轴歪 歪 度（正 = 顶往她右手边歪） */
-const 朝向 = (在: V3, 眼: V3, 歪: number) => {
-  const z = new THREE.Vector3(眼[0] - 在[0], 眼[1] - 在[1], 眼[2] - 在[2]).normalize();
+const facingToward = (pos: V3, eye: V3, tilt: number) => {
+  const z = new THREE.Vector3(eye[0] - pos[0], eye[1] - pos[1], eye[2] - pos[2]).normalize();
   const x = new THREE.Vector3(0, 0, 1).cross(z).normalize();
   const y = z.clone().cross(x);
   const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
-  return q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), (歪 * Math.PI) / 180));
+  return q.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), (tilt * Math.PI) / 180));
 };
 
 /** 她手里的月铃兰，场景坐标（Z 朝上）：握点在 在（她右手握持点），正面朝 眼 */
-export const 亮月铃兰: React.FC<{ 在: V3; 眼: V3; 歪?: number }> = ({ 在, 眼, 歪 = 0 }) => {
-  const q = 朝向(在, 眼, 歪);
+export const BrightMoonLily: React.FC<{ 在: V3; 眼: V3; tilt?: number }> = ({ 在: pos, 眼: eye, tilt = 0 }) => {
+  const q = facingToward(pos, eye, tilt);
   return (
-    <group position={在} quaternion={q}>
-      <group scale={大} position={[-握点[0] * 大, -握点[1] * 大, 0]}>
-        <平涂 色调="#ffffff" 面明暗={各面一样亮}>
-          <ItemSprite layers={月铃兰层} emissive={0} shadow={false} />
-        </平涂>
+    <group position={pos} quaternion={q}>
+      <group scale={flowerScale} position={[-gripPoint[0] * flowerScale, -gripPoint[1] * flowerScale, 0]}>
+        <FlatShade tint="#ffffff" faceShade={evenFaceLight}>
+          <ItemSprite layers={moonBellLayers} emissive={0} shadow={false} />
+        </FlatShade>
       </group>
     </group>
   );

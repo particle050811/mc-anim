@@ -6,11 +6,11 @@ import type { V3 } from '@engine/model/parts.tsx';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import { camPoses, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
-export const 号 = '7-1-1' as const;
+export const segmentId = '7-1-1' as const;
 export const FPS = timeline.FPS;
-export const END = timeline.frameCountOf(号);
-export const t于 = (f: number) => timeline.tAt(号, f);
-const t0 = timeline.segmentStartT(号);
+export const END = timeline.frameCountOf(segmentId);
+export const timeAt = (f: number) => timeline.tAt(segmentId, f);
+const t0 = timeline.segmentStartT(segmentId);
 const warden = play.wardenChest(t0);
 const liu = play.liuXinzhongPos(t0);
 const huang = play.huangPanPos(t0);
@@ -23,4 +23,4 @@ const camAt = (back: number): V3 => [warden[0] - ux * back + uy * 2.4, warden[1]
 const shots: ShotCam[] = [
   { start: 0, pos: [[0, camAt(4.0)], [END - 1, camAt(3.6)]], tgt: [[0, mid], [END - 1, mid]], lens: [[0, 35], [END - 1, 35]] },
 ];
-export const { 镜号, camera } = camPoses(shots);
+export const { shotIndex, camera } = camPoses(shots);

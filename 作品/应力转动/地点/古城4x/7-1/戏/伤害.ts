@@ -7,11 +7,11 @@ import type { ArrowShot } from './黄叛.ts';
 import { windArrowShot, huangFollowArrows } from './黄叛.ts';
 
 export const wardenMaxHp = 50000;
-export type WardenHit = { t: number; damage: number; crit: boolean; 箭: ArrowShot };
+export type WardenHit = { t: number; damage: number; crit: boolean; arrow: ArrowShot };
 const followDamages = [1503.6, 1461.2];
 export const wardenHits: WardenHit[] = [
-  { t: windArrowShot.中, damage: 1527, crit: true, 箭: windArrowShot },
-  ...huangFollowArrows.map((a, i) => ({ t: a.中, damage: followDamages[i], crit: true, 箭: a })),
+  { t: windArrowShot.中, damage: 1527, crit: true, arrow: windArrowShot },
+  ...huangFollowArrows.map((a, i) => ({ t: a.中, damage: followDamages[i], crit: true, arrow: a })),
 ].sort((a, b) => a.t - b.t);
 // 场时刻 t 那一刻的血（命中那一刻已经扣掉），保留一位小数
 export const wardenHpAt = (t: number) => Math.round((wardenMaxHp - wardenHits.filter((h) => h.t <= t).reduce((sum, h) => sum + h.damage, 0)) * 10) / 10;

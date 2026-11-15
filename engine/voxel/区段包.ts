@@ -33,14 +33,14 @@
 // 方块状态存字符串（包.json 的 `state` 表），解的时候才用 lib/真实方块表.ts 的 `voxelFromState()` 换成体素值，所以方块表往后加方块、换编号，旧包照样解得对。
 // 群系只给染色的方块记（草、树叶、水……），颜色解的时候按群系取固定色、不做混合（用户 10-04 定，和 mcai mesh 导出的网格一致）。
 // 第 1 级以上的格子是烘焙时照 Voxy Mipper 合并好的（比不透明度，要查方块表），所以方块表改了不透明度、补了缺的方块，要重新烘焙。
-import { 区段格式版本 } from './区段模型.ts';
+import { sectionFormatVersion } from './区段模型.ts';
 import { voxelFromState, blockProps, buildTintTable, biomeIndex } from './真实方块表.ts';
 import { sectionCells, coarsestLevel, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
 
 export const paddedSectionCols = sectionCells + 2; // 带相邻那一圈，一边 34 列
 // 1：行程 gzip；2：全局初值逐格预测；3：每包模型（模型.bin）、32 类状态条件概率。旧格式只由转码工具读取。
-export const formatVersion = 区段格式版本;
+export const formatVersion = sectionFormatVersion;
 export const noBiome = 65535;
 
 // ---------- 块文件 ----------
@@ -91,7 +91,7 @@ export const decodeTileHeader = (raw: Uint8Array): Uint32Array => {
   return Uint32Array.from({ length: 2 * tileEntryCount }, (_, k) => dv.getUint32(16 + 4 * k, true));
 };
 
-export type 包信息 = {
+export type PackageInfo = {
   版本: number;
   维度: string; // 暮色 / 主世界
   原点: [number, number, number]; // [ox, oy, oz]，见文件头
@@ -116,8 +116,8 @@ export type SectionData = {
 };
 
 // 包里的状态号、群系号 → 体素值、染色（每个包建一次）
-export type 包表 = { 值: Uint16Array; 色: (stateIdx: number, biomeIdx: number) => PaletteEntry['c'] };
-export const buildPackTables = (info: Pick<包信息, '状态' | '群系'>): 包表 => {
+export type PackTable = { 值: Uint16Array; 色: (stateIdx: number, biomeIdx: number) => PaletteEntry['c'] };
+export const buildPackTables = (info: Pick<PackageInfo, '状态' | '群系'>): PackTable => {
   const voxelByState = Uint16Array.from(info.状态, (s) => voxelFromState(s));
   const { t, C: tintRoutes } = buildTintTable();
   const globalBiome = info.群系.map(biomeIndex);
@@ -134,7 +134,7 @@ export const buildPackTables = (info: Pick<包信息, '状态' | '群系'>): 包
 };
 
 // 区段数据 → 体素块（lib/体素/生成.ts 的格式：x、y 两边各带一圈相邻格，原点是下标 (1, 1, 0) 那一格的最小角）
-export const sectionToVoxels = (data: SectionData, tables: 包表): VoxelGrid => {
+export const sectionToVoxels = (data: SectionData, tables: PackTable): VoxelGrid => {
   const cellM = 2 ** data.L;
   const cols = paddedSectionCols;
   const palette: PaletteEntry[] = [];
@@ -153,19 +153,19 @@ export const sectionToVoxels = (data: SectionData, tables: 包表): VoxelGrid =>
       z = z0;
     }
   }
-  return { nx: cols, ny: cols, nz: data.nz, 格: cellM, 原点: [data.i * sectionCells * cellM, data.j * sectionCells * cellM, data.kBottom * cellM], vox, 色板: palette };
+  return { nx: cols, ny: cols, nz: data.nz, 格: cellM, 原点: [data.i * sectionCells * cellM, data.j * sectionCells * cellM, data.kBottom * cellM], vox, palette: palette };
 };
 
 // ---------- 粗高度图 ----------
 // 给 lib/地形跟随.ts（航线下面的地面）和 lib/体素/区段.ts 的 选区段（地物顶）同步查，体积小，可以直接打进包里
-export type 粗高度图 = { 格: number; x0: number; y0: number; nx: number; ny: number; 高: Int16Array };
-export const decodeCoarseHeight = (info: Pick<包信息, '粗高度'>): 粗高度图 => {
+export type CoarseHeightMap = { 格: number; x0: number; y0: number; nx: number; ny: number; 高: Int16Array };
+export const decodeCoarseHeight = (info: Pick<PackageInfo, '粗高度'>): CoarseHeightMap => {
   const { 格: cellM, x0, y0, nx, ny, 高: heightsB64 } = info.粗高度;
   const bytes = Uint8Array.from(atob(heightsB64), (ch) => ch.charCodeAt(0));
   return { 格: cellM, x0, y0, nx, ny, 高: new Int16Array(bytes.buffer, 0, nx * ny) };
 };
 // 场景坐标 (x, y) 那一格里最高那块方块的顶（场景 z）；没有数据是 −Infinity（地形跟随取最高时不算它；选区段 用时 lib/体素/导入地形.ts 换成 0，见那里）
-export const coarseHeightAt = (heightMap: 粗高度图, x: number, y: number) => {
+export const coarseHeightAt = (heightMap: CoarseHeightMap, x: number, y: number) => {
   const col = Math.floor((x - heightMap.x0) / heightMap.格);
   const row = Math.floor((y - heightMap.y0) / heightMap.格);
   if (col < 0 || row < 0 || col >= heightMap.nx || row >= heightMap.ny) return -Infinity;
@@ -174,7 +174,7 @@ export const coarseHeightAt = (heightMap: 粗高度图, x: number, y: number) =>
 };
 // 粗高度图的指纹（FNV-1a，范围和每一格的值）：导入范围变了它就变。交界修正（工具/导入/交界.ts）记下算时的指纹，
 // lib/体素/主世界地形.ts 取的时候对不上就提示重跑，免得拿旧范围的修正去修新交界
-export const coarseHeightFingerprint = (heightMap: 粗高度图) => {
+export const coarseHeightFingerprint = (heightMap: CoarseHeightMap) => {
   let hash = 0x811c9dc5;
   const mix = (value: number) => {
     hash = Math.imul(hash ^ (value & 0xffff), 0x01000193);
@@ -184,7 +184,7 @@ export const coarseHeightFingerprint = (heightMap: 粗高度图) => {
   return (hash >>> 0).toString(16).padStart(8, '0');
 };
 // 包里有没有这个区段：核心范围里有一格粗高度有数据就有（烘焙时区段核心有一列数据就写，粗高度格对齐区段边界，两边一致）
-export const hasSection = (heightMap: 粗高度图, section: SectionId) => {
+export const hasSection = (heightMap: CoarseHeightMap, section: SectionId) => {
   const sizeM = sectionCells * 2 ** section.L;
   const a0 = Math.max(0, (section.i * sizeM - heightMap.x0) / heightMap.格), a1 = Math.min(heightMap.nx, (section.i * sizeM + sizeM - heightMap.x0) / heightMap.格);
   const b0 = Math.max(0, (section.j * sizeM - heightMap.y0) / heightMap.格), b1 = Math.min(heightMap.ny, (section.j * sizeM + sizeM - heightMap.y0) / heightMap.格);

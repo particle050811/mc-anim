@@ -1,30 +1,30 @@
 // 段框架示范的画面：夜空里一发火箭升起、炸开、火星闪烁。时刻全从 use段() 的事件段内秒取，声音由 定义画面 照 段.ts 的 cue 自动放。
 import { AbsoluteFill, interpolate } from 'remotion';
-import { 定义画面, use段 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音 from './声音地址.生成.ts';
+import { definePicture, useSeg } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
 
-const 火星数 = 16;
+const sparkCount = 16;
 
-export default 定义画面(段, 声音, () => {
-  const { 秒, 事件, 段: 本段 } = use段(段);
-  const 升 = interpolate(秒, [事件.发射, 事件.炸开], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const 散 = interpolate(秒, [事件.炸开, 事件.炸开 + 0.75], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const 暗 = interpolate(秒, [事件.炸开 + 0.25, 本段.秒], [1, 0.25], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const 中x = 本段.宽 / 2;
-  const 炸点y = 本段.高 * 0.32;
-  const 火箭y = interpolate(升, [0, 1], [本段.高 * 0.95, 炸点y]);
+export default definePicture(seg, soundUrl, () => {
+  const { 秒: sec, 事件: events, 段: thisSegment } = useSeg(seg);
+  const riseProgress = interpolate(sec, [events.发射, events.炸开], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const scatter = interpolate(sec, [events.炸开, events.炸开 + 0.75], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const dim = interpolate(sec, [events.炸开 + 0.25, thisSegment.秒], [1, 0.25], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const centerX = thisSegment.宽 / 2;
+  const blastPointY = thisSegment.高 * 0.32;
+  const rocketY = interpolate(riseProgress, [0, 1], [thisSegment.高 * 0.95, blastPointY]);
   return (
     <AbsoluteFill style={{ background: 'linear-gradient(#0b1030, #1d2450)' }}>
-      <svg width={本段.宽} height={本段.高}>
-        {秒 >= 事件.发射 && 秒 < 事件.炸开 && <rect x={中x - 3} y={火箭y} width={6} height={18} fill="#f4d58d" />}
-        {秒 >= 事件.炸开 &&
-          Array.from({ length: 火星数 }, (_, i) => {
-            const 角 = (i / 火星数) * Math.PI * 2;
-            const r = 散 * 160;
+      <svg width={thisSegment.宽} height={thisSegment.高}>
+        {sec >= events.发射 && sec < events.炸开 && <rect x={centerX - 3} y={rocketY} width={6} height={18} fill="#f4d58d" />}
+        {sec >= events.炸开 &&
+          Array.from({ length: sparkCount }, (_, i) => {
+            const angle = (i / sparkCount) * Math.PI * 2;
+            const r = scatter * 160;
             // 火星 1/6 秒闪一回，相邻的错开 1/24 秒
-            const 闪 = 秒 >= 事件.噼啪 && (秒 * 24 + i) % 4 < 2 ? 1 : 0.55;
-            return <rect key={i} x={中x + Math.cos(角) * r - 4} y={炸点y + Math.sin(角) * r + 散 * 散 * 40 - 4} width={8} height={8} fill={i % 2 ? '#ff7eb6' : '#ffd166'} opacity={暗 * 闪} />;
+            const flicker = sec >= events.噼啪 && (sec * 24 + i) % 4 < 2 ? 1 : 0.55;
+            return <rect key={i} x={centerX + Math.cos(angle) * r - 4} y={blastPointY + Math.sin(angle) * r + scatter * scatter * 40 - 4} width={8} height={8} fill={i % 2 ? '#ff7eb6' : '#ffd166'} opacity={dim * flicker} />;
           })}
       </svg>
     </AbsoluteFill>

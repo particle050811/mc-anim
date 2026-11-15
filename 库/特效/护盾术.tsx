@@ -17,7 +17,7 @@ import raw from 'asset:模型/特效/护盾术';
 import texOverlay from 'asset:贴图/特效/护盾术/护盾';
 import texTrim from 'asset:贴图/特效/护盾术/边框';
 
-const DATA = (raw as unknown as { models: { 护盾: EntityModelData; 边框: EntityModelData } }).models;
+const DATA = (raw as unknown as { models: { shieldModel: EntityModelData; frame: EntityModelData } }).models;
 export const SHIELD = { 宽: 5, scale: 5 * 0.65, castRange: 3, lifeTicks: 400, tint: 0.65 };
 
 const swirlNoise = (x: number) => (Math.sin(x / 4) + 2 * Math.sin(x / 3) + 3 * Math.sin(x / 2) + 4 * Math.sin(x)) * 0.25;
@@ -98,8 +98,8 @@ export const MagicShield: React.FC<{ at: V3; dir: V3; sec: number; fade?: number
       <group rotation={[0, 0, (-yRot * Math.PI) / 180]}>
         <group rotation={[(xRot * Math.PI) / 180, 0, 0]}>
           <group rotation={[Math.PI / 2, 0, 0]} scale={modelScale}>
-            <mesh geometry={ownPartGeometry(DATA.护盾.root.children[0], DATA.护盾.texSize)} material={mats.body} renderOrder={5} />
-            <mesh geometry={ownPartGeometry(DATA.边框.root.children[0], DATA.边框.texSize)} material={mats.trim} renderOrder={5} />
+            <mesh geometry={ownPartGeometry(DATA.shieldModel.root.children[0], DATA.shieldModel.texSize)} material={mats.body} renderOrder={5} />
+            <mesh geometry={ownPartGeometry(DATA.frame.root.children[0], DATA.frame.texSize)} material={mats.trim} renderOrder={5} />
           </group>
         </group>
       </group>

@@ -9,7 +9,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
-import { cellCenter, blockBottomCenter, chest722, wideShotCenter as 布局远景中心, lookoutFeet, feetOnWool, wool722, sensors722, shriekers722, type BlockPos } from '../../../地点/古城4x/布局.ts';
+import { cellCenter, blockBottomCenter, chest722, wideShotCenter as layoutWideCenter, lookoutFeet, feetOnWool, wool722, sensors722, shriekers722, type BlockPos } from '../../../地点/古城4x/布局.ts';
 
 // ---------- 站的地方 ----------
 export const roofFeet: V3 = lookoutFeet; // V 上的羊毛
@@ -17,16 +17,16 @@ export const chestFrontFeet: V3 = feetOnWool(wool722.X);
 export const newWool = { X: wool722.X } as const;
 
 // ---------- 箱子 ----------
-export const chest = { id: chest722.号, block: chest722.block };
+export const chest = { id: chest722.chestId, block: chest722.block };
 export const chestCenter: V3 = cellCenter(chest722.block);
 
 // ---------- 感测体、尖啸体（游戏方块坐标，布局文件核过） ----------
 export const sensors: BlockPos[] = sensors722;
 export const shriekers: BlockPos[] = shriekers722;
-export { cellCenter as 方块中心, blockBottomCenter as 方块底心 };
+export { cellCenter as blockCenter, blockBottomCenter as blockBottomCenter };
 
 // ---------- 朝向（骨架 yaw，度：默认面朝 +Y、正 = 往左转） ----------
-export const wideShotCenter: V3 = 布局远景中心;
+export const wideShotCenter: V3 = layoutWideCenter;
 export const lookoutYaw = yawTo(wideShotCenter[0] - roofFeet[0], wideShotCenter[1] - roofFeet[1]); // ≈ −71°（东北偏东）
 export const leapToChestYaw = yawTo(chestFrontFeet[0] - roofFeet[0], chestFrontFeet[1] - roofFeet[1]); // ≈ 120°（西北偏西）
 export const openChestYaw = yawTo(chestCenter[0] - chestFrontFeet[0], chestCenter[1] - chestFrontFeet[1]); // 90 = 面朝西（箱子在他正西）

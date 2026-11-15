@@ -3,18 +3,18 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import type { 报告, 检查上下文 } from '../上下文.ts';
-import { 试跑 } from '../../环境/子进程.ts';
-import { isWindows, 配置 } from '../../环境/配置.ts';
-import { 代码根 } from '../../环境/路径.ts';
+import type { CheckReport, CheckContext } from '../上下文.ts';
+import { tryRun } from '../../环境/子进程.ts';
+import { isWindows, config } from '../../环境/配置.ts';
+import { codeRoot } from '../../环境/路径.ts';
 
-const 包目录 = (包: string) => path.dirname(createRequire(import.meta.url).resolve(`${包}/package.json`));
+const packageDir = (pkg: string) => path.dirname(createRequire(import.meta.url).resolve(`${pkg}/package.json`));
 
-const 收错 = (c: 检查上下文, 输出: string, 报: 报告, 前缀: string, 行规则: RegExp) => {
-  const 行们 = 输出.split('\n').map((l) => l.trimEnd().replaceAll(c.根 + path.sep, '')).filter(Boolean);
-  const 错 = 行们.filter((l) => 行规则.test(l));
-  for (const l of (错.length ? 错 : 行们.slice(-10)).slice(0, 50)) 报.错(`${前缀}：${l.trim()}`);
-  if (错.length > 50) 报.错(`${前缀}：另有 ${错.length - 50} 条，没列出`);
+const collectErrors = (c: CheckContext, output: string, report: CheckReport, labelPrefix: string, lineRule: RegExp) => {
+  const lines = output.split('\n').map((l) => l.trimEnd().replaceAll(c.根 + path.sep, '')).filter(Boolean);
+  const errorLines = lines.filter((l) => lineRule.test(l));
+  for (const l of (errorLines.length ? errorLines : lines.slice(-10)).slice(0, 50)) report.错(`${labelPrefix}：${l.trim()}`);
+  if (errorLines.length > 50) report.错(`${labelPrefix}：另有 ${errorLines.length - 50} 条，没列出`);
 };
 
 /**
@@ -22,27 +22,27 @@ const 收错 = (c: 检查上下文, 输出: string, 报: 报告, 前缀: string,
  * 错误也记在里面，没改文件再跑照样报。anim check --深 不读不写缓存，从头查一遍。
  * ruff 不开缓存：Python 文件少，省不出时间。
  */
-export const tsc缓存文件 = (c: 检查上下文) => c.绝对('node_modules/.cache/anim-check/tsc.tsbuildinfo');
+export const tscCacheFile = (c: CheckContext) => c.absPath('node_modules/.cache/anim-check/tsc.tsbuildinfo');
 
-export const 跑tsc = (c: 检查上下文, 报: 报告) => {
-  if (!c.存在('tsconfig.json')) return 报.跳过.push('tsc：没有 tsconfig.json');
-  const 增量 = c.深 ? [] : ['--incremental', '--tsBuildInfoFile', tsc缓存文件(c)];
-  const r = 试跑([process.execPath, path.join(包目录('typescript'), 'bin', 'tsc'), '-p', c.绝对('tsconfig.json'), '--noEmit', '--pretty', 'false', ...增量], { cwd: c.根 });
-  if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'tsc', /error TS\d+/);
+export const runTsc = (c: CheckContext, report: CheckReport) => {
+  if (!c.exists('tsconfig.json')) return report.跳过.push('tsc：没有 tsconfig.json');
+  const incrementalFlags = c.deep ? [] : ['--incremental', '--tsBuildInfoFile', tscCacheFile(c)];
+  const r = tryRun([process.execPath, path.join(packageDir('typescript'), 'bin', 'tsc'), '-p', c.absPath('tsconfig.json'), '--noEmit', '--pretty', 'false', ...incrementalFlags], { cwd: c.根 });
+  if (r.退出码 !== 0) collectErrors(c, r.stdout + r.stderr, report, 'tsc', /error TS\d+/);
 };
 
-export const 跑ruff = (c: 检查上下文, 报: 报告) => {
-  const 本地 = path.join(代码根(), '.venv', isWindows ? 'Scripts' : 'bin', isWindows ? 'ruff.exe' : 'ruff');
-  const 命令 = fs.existsSync(本地) ? [本地] : ['uv', 'run', '--frozen', '--project', 代码根(), 'ruff'];
-  const r = 试跑([...命令, 'check', '--no-cache', '--output-format', 'concise', '.'], { cwd: c.根 });
-  if (r.退出码 === null) return 报.跳过.push(`ruff：跑不起来（${r.stderr.trim().split('\n')[0]}；装 uv 后 uv sync）`);
-  if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'ruff', /:\d+:\d+: /);
+export const runRuff = (c: CheckContext, report: CheckReport) => {
+  const localBin = path.join(codeRoot(), '.venv', isWindows ? 'Scripts' : 'bin', isWindows ? 'ruff.exe' : 'ruff');
+  const commandArgs = fs.existsSync(localBin) ? [localBin] : ['uv', 'run', '--frozen', '--project', codeRoot(), 'ruff'];
+  const r = tryRun([...commandArgs, 'check', '--no-cache', '--output-format', 'concise', '.'], { cwd: c.根 });
+  if (r.退出码 === null) return report.跳过.push(`ruff：跑不起来（${r.stderr.trim().split('\n')[0]}；装 uv 后 uv sync）`);
+  if (r.退出码 !== 0) collectErrors(c, r.stdout + r.stderr, report, 'ruff', /:\d+:\d+: /);
 };
 
-export const 跑pyright = (c: 检查上下文, 报: 报告) => {
-  const r = 试跑([process.execPath, path.join(包目录('pyright'), 'index.js'), '--project', c.根], { cwd: c.根 });
-  if (r.退出码 === null) return 报.跳过.push(`pyright：跑不起来（${r.stderr.trim().split('\n')[0]}）`);
-  if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'pyright', / - error: /);
+export const runPyright = (c: CheckContext, report: CheckReport) => {
+  const r = tryRun([process.execPath, path.join(packageDir('pyright'), 'index.js'), '--project', c.根], { cwd: c.根 });
+  if (r.退出码 === null) return report.跳过.push(`pyright：跑不起来（${r.stderr.trim().split('\n')[0]}）`);
+  if (r.退出码 !== 0) collectErrors(c, r.stdout + r.stderr, report, 'pyright', / - error: /);
 };
 
 /**
@@ -50,32 +50,32 @@ export const 跑pyright = (c: 检查上下文, 报: 报告) => {
  * 这里跑 twilight-grid-test.sh（先 gradlew build，再核对暮色网格和 mixin 织入）和 game-data-test.sh（游戏导表的出表，不开游戏）；ancient-city-test.sh 是重任务、
  * terrain-edit-test.sh 要旧项目的选种工具，都不在这里跑。Windows 没有 sh，只编译。
  */
-export const 跑gradle = (c: 检查上下文, 报: 报告) => {
+export const runGradle = (c: CheckContext, report: CheckReport) => {
   const mod = 'sourcing/mod';
   const wrapper = `${mod}/${isWindows ? 'gradlew.bat' : 'gradlew'}`;
-  if (!c.存在(wrapper)) return 报.跳过.push(`mod 编译：还没有 ${wrapper}`);
-  const 改了 = [试跑(['git', '-C', c.根, 'diff', '--name-only', 'main...HEAD']), 试跑(['git', '-C', c.根, 'status', '--porcelain'])];
-  const 不在git = 改了.some((x) => x.退出码 !== 0);
-  if (!不在git && !改了.some((x) => x.stdout.includes(`${mod}/`))) return 报.跳过.push('mod 编译和核对：这次没改到 sourcing/mod/');
+  if (!c.exists(wrapper)) return report.跳过.push(`mod 编译：还没有 ${wrapper}`);
+  const diffProbes = [tryRun(['git', '-C', c.根, 'diff', '--name-only', 'main...HEAD']), tryRun(['git', '-C', c.根, 'status', '--porcelain'])];
+  const notInGit = diffProbes.some((x) => x.退出码 !== 0);
+  if (!notInGit && !diffProbes.some((x) => x.stdout.includes(`${mod}/`))) return report.跳过.push('mod 编译和核对：这次没改到 sourcing/mod/');
   // build.gradle 从 MCAI_GAME 读暮色森林的 jar；1.20.1 的 ForgeGradle 要 JDK 17，配了 ANIM_JAVA_HOME 就用它
-  const java = 配置('java_home');
-  const env = { ...process.env, MCAI_GAME: 配置('游戏'), ...(java ? { JAVA_HOME: java, MCAI_JAVA_HOME: java } : {}) };
+  const java = config('java_home');
+  const env = { ...process.env, MCAI_GAME: config('游戏'), ...(java ? { JAVA_HOME: java, MCAI_JAVA_HOME: java } : {}) };
   if (isWindows) {
-    const r = 试跑([c.绝对(wrapper), 'build', '--console=plain'], { cwd: c.绝对(mod), env });
-    if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'mod 编译', /FAILED|error:/);
-    return 报.跳过.push('mod 核对：Windows 上没有 sh，只编译，test/twilight-grid-test.sh 没跑');
+    const r = tryRun([c.absPath(wrapper), 'build', '--console=plain'], { cwd: c.absPath(mod), env });
+    if (r.退出码 !== 0) collectErrors(c, r.stdout + r.stderr, report, 'mod 编译', /FAILED|error:/);
+    return report.跳过.push('mod 核对：Windows 上没有 sh，只编译，test/twilight-grid-test.sh 没跑');
   }
-  const r = 试跑(['sh', 'test/twilight-grid-test.sh'], { cwd: c.绝对(mod), env });
-  if (r.退出码 !== 0) 收错(c, r.stdout + r.stderr, 报, 'mod 编译和暮色网格核对', /FAILED|error:|错误|Exception/);
-  const g = 试跑(['sh', 'test/game-data-test.sh'], { cwd: c.绝对(mod), env });
-  if (g.退出码 !== 0) 收错(c, g.stdout + g.stderr, 报, '游戏导表出表核对', /没过|error:|Exception/);
+  const r = tryRun(['sh', 'test/twilight-grid-test.sh'], { cwd: c.absPath(mod), env });
+  if (r.退出码 !== 0) collectErrors(c, r.stdout + r.stderr, report, 'mod 编译和暮色网格核对', /FAILED|error:|错误|Exception/);
+  const g = tryRun(['sh', 'test/game-data-test.sh'], { cwd: c.absPath(mod), env });
+  if (g.退出码 !== 0) collectErrors(c, g.stdout + g.stderr, report, '游戏导表出表核对', /没过|error:|Exception/);
 };
 
-export const 类型 = async (c: 检查上下文, 报: 报告) => {
-  跑tsc(c, 报);
+export const typeCheck = async (c: CheckContext, report: CheckReport) => {
+  runTsc(c, report);
   if (c.文件().some((p) => p.endsWith('.py'))) {
-    跑ruff(c, 报);
-    跑pyright(c, 报);
+    runRuff(c, report);
+    runPyright(c, report);
   }
-  跑gradle(c, 报);
+  runGradle(c, report);
 };

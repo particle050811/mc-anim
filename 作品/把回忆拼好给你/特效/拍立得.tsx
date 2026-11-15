@@ -8,38 +8,38 @@ import { useId } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { clamp01, rad, sample } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
-import { fps, 一帧秒 } from '../分镜/时间.ts';
-import { use当前帧 } from '../当前帧.ts';
+import { fps, oneFrameSec } from '../分镜/时间.ts';
+import { useCurrentFrame } from '../当前帧.ts';
 
-export type 拍立得样式 = {
+export type PolaroidStyle = {
   /** 照片里的画面最后缩到原来的几倍（白边另加在外面） */
   缩放: number;
   /** 最后斜几度，负数是逆时针 */
-  斜度: number;
+  tiltDeg: number;
   /** 闪白从定格帧起持续几秒（定格那一下全白，平方衰减） */
-  闪白秒: number;
+  whiteFlashSec: number;
   /** 从定格帧起缩小、转斜用几秒（缓入缓出） */
-  缩小秒: number;
+  shrinkSec: number;
   /** 定格后几秒起字开始淡入，淡入用几秒 */
-  字延迟秒: number;
-  字淡入秒: number;
+  textDelaySec: number;
+  textFadeInSec: number;
   /** 左、上、右白边，下白边：占画面宽的比例（缩放前） */
-  边: number;
-  下边: number;
+  borderWidth: number;
+  bottomEdge: number;
   /** 照片停稳以后字在画面上的像素大小 */
   字号: number;
-  字色: string;
+  textColor: string;
   /** 白边的颜色（相纸） */
-  相纸: string;
+  photoPaper: string;
   /** 照片缩小后露出来的底色；纸纹：上面再叠一层很淡的纸张颗粒 */
-  背景: string;
-  纸纹: boolean;
+  background: string;
+  paperGrain: boolean;
 };
 
 // 投影（缩放前的画面像素，跟着卡片一起缩）：往下错开、模糊，浓度随缩小进度淡入。第 11 句的拍立得（场/2-门口/门口之夜照片.tsx）也取这一份
-export const 投影 = { 下错: 18, 模糊: 46, 浓度: 0.38 };
+export const polaroidShadow = { shadowDrop: 18, shadowBlur: 46, density: 0.38 };
 
-const 纸纹: React.FC<{ 色: string }> = ({ 色 }) => {
+const PaperGrain: React.FC<{ 色: string }> = ({ 色: color }) => {
   // useId 在 React 19 里会带非字母数字的符号，url(#…) 里只留 ASCII 安全字符
   const id = `paper${useId().replace(/[^A-Za-z0-9_-]/g, '')}`;
   return (
@@ -53,7 +53,7 @@ const 纸纹: React.FC<{ 色: string }> = ({ 色 }) => {
         <stop offset="55%" stopColor="#000" stopOpacity={0} />
         <stop offset="100%" stopColor="#000" stopOpacity={0.12} />
       </radialGradient>
-      <rect width="100%" height="100%" fill={色} />
+      <rect width="100%" height="100%" fill={color} />
       <rect width="100%" height="100%" filter={`url(#${id})`} />
       {/* 四角压暗一点，像台面上打了灯，照片不至于浮在一片平的颜色上 */}
       <rect width="100%" height="100%" fill={`url(#${id}-vignette)`} />
@@ -61,82 +61,82 @@ const 纸纹: React.FC<{ 色: string }> = ({ 色 }) => {
   );
 };
 
-export const 拍立得: React.FC<{
-  定格帧: number;
+export const Polaroid: React.FC<{
+  freezeFrame: number;
   字?: string;
-  样式: 拍立得样式;
-  浮层?: React.ReactNode;
+  样式: PolaroidStyle;
+  overlay?: React.ReactNode;
   children: (fs: number) => React.ReactNode;
-}> = ({ 定格帧, 字, 样式, 浮层, children }) => {
-  const f = use当前帧();
+}> = ({ freezeFrame, 字: text, 样式: polaroidStyle, overlay, children }) => {
+  const f = useCurrentFrame();
   const { width: W, height: H } = useVideoConfig();
-  const fs = Math.min(f, 定格帧);
-  const 已定格 = f >= 定格帧;
-  const t = (f - 定格帧) / fps;
+  const fs = Math.min(f, freezeFrame);
+  const isFrozen = f >= freezeFrame;
+  const t = (f - freezeFrame) / fps;
 
   // 进度 p：定格帧是 0，比 缩小秒 早一帧走完
-  const p = sample([[0, 0], [Math.max(一帧秒, 样式.缩小秒 - 一帧秒), 1]], t);
-  const k = 1 + (样式.缩放 - 1) * p;
-  const θ = 样式.斜度 * p;
-  const 边 = 样式.边 * W;
-  const 下边 = 样式.下边 * W;
+  const p = sample([[0, 0], [Math.max(oneFrameSec, polaroidStyle.shrinkSec - oneFrameSec), 1]], t);
+  const k = 1 + (polaroidStyle.缩放 - 1) * p;
+  const θ = polaroidStyle.tiltDeg * p;
+  const borderWidth = polaroidStyle.borderWidth * W;
+  const bottomEdge = polaroidStyle.bottomEdge * W;
   // 卡片中心比画面中心低 (下边−边)/2；按当前缩放、斜度把它挪回画面中心，p=0 时不挪（画面正好铺满）
-  const d = (下边 - 边) / 2;
+  const d = (bottomEdge - borderWidth) / 2;
   const tx = p * k * d * Math.sin(rad(θ));
   const ty = -p * k * d * Math.cos(rad(θ));
 
-  const 闪 = 已定格 && t < 样式.闪白秒 ? (1 - t / 样式.闪白秒) ** 2 : 0;
+  const flash = isFrozen && t < polaroidStyle.whiteFlashSec ? (1 - t / polaroidStyle.whiteFlashSec) ** 2 : 0;
   // 淡入那一刻已经走了一帧；那一刻之前截成 0
-  const 字透明 = t < 样式.字延迟秒 ? 0 : clamp01((t - 样式.字延迟秒 + 一帧秒) / Math.max(一帧秒, 样式.字淡入秒));
+  const textOpacity = t < polaroidStyle.textDelaySec ? 0 : clamp01((t - polaroidStyle.textDelaySec + oneFrameSec) / Math.max(oneFrameSec, polaroidStyle.textFadeInSec));
 
   return (
-    <AbsoluteFill style={{ overflow: 'hidden', backgroundColor: 已定格 ? 样式.背景 : undefined }}>
-      {已定格 && 样式.纸纹 ? <纸纹 色={样式.背景} /> : null}
+    <AbsoluteFill style={{ overflow: 'hidden', backgroundColor: isFrozen ? polaroidStyle.background : undefined }}>
+      {isFrozen && polaroidStyle.paperGrain ? <PaperGrain 色={polaroidStyle.background} /> : null}
       <AbsoluteFill style={{ transform: `translate(${tx}px, ${ty}px) rotate(${θ}deg) scale(${k})`, transformOrigin: '50% 50%' }}>
-        {已定格 ? (
+        {isFrozen ? (
           <div
             style={{
               position: 'absolute',
-              left: -边,
-              top: -边,
-              width: W + 2 * 边,
-              height: H + 边 + 下边,
-              background: 样式.相纸,
-              borderRadius: 边 * 0.12,
-              boxShadow: `0 ${投影.下错}px ${投影.模糊}px rgba(0, 0, 0, ${投影.浓度 * p})`,
+              left: -borderWidth,
+              top: -borderWidth,
+              width: W + 2 * borderWidth,
+              height: H + borderWidth + bottomEdge,
+              background: polaroidStyle.photoPaper,
+              borderRadius: borderWidth * 0.12,
+              boxShadow: `0 ${polaroidShadow.shadowDrop}px ${polaroidShadow.shadowBlur}px rgba(0, 0, 0, ${polaroidShadow.density * p})`,
             }}
           />
         ) : null}
         <AbsoluteFill style={{ overflow: 'hidden' }}>{children(fs)}</AbsoluteFill>
-        {已定格 ? (
+        {isFrozen ? (
           // 相片和相纸交界处一圈很细的暗线，像相纸上压出来的画框
           <AbsoluteFill style={{ boxShadow: `inset 0 0 0 ${Math.max(1, W / 1280)}px rgba(0, 0, 0, ${0.12 * p})` }} />
         ) : null}
-        {已定格 && 字 ? (
+        {isFrozen && text ? (
           <div
             style={{
               position: 'absolute',
               left: 0,
               top: H,
               width: W,
-              height: 下边,
+              height: bottomEdge,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontFamily: uiFontFamily,
-              fontSize: 样式.字号 / 样式.缩放,
+              fontSize: polaroidStyle.字号 / polaroidStyle.缩放,
               letterSpacing: '0.12em',
-              color: 样式.字色,
+              color: polaroidStyle.textColor,
               whiteSpace: 'nowrap',
-              opacity: 字透明,
+              opacity: textOpacity,
             }}
           >
-            {字}
+            {text}
           </div>
         ) : null}
       </AbsoluteFill>
-      {浮层}
-      {闪 > 0 ? <AbsoluteFill style={{ backgroundColor: '#ffffff', opacity: 闪 }} /> : null}
+      {overlay}
+      {flash > 0 ? <AbsoluteFill style={{ backgroundColor: '#ffffff', opacity: flash }} /> : null}
     </AbsoluteFill>
   );
 };

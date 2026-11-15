@@ -8,59 +8,59 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 加, 乘, 单位, 弹道位置, 弹道方向 } from '../零件/弹道.ts';
-import { 电弧 } from '../零件/电弧.tsx';
-import { 电弧预设 } from '../零件/电弧形.ts';
-import { 面片 } from '../零件/面片.tsx';
-import { 球爆 } from '../零件/甲/爆.tsx';
-import { 十六色, 道上 } from '../零件/甲/共用.ts';
-import { 尾迹 } from '../零件/甲/尾迹.tsx';
-import 元, { 电涌弹 } from './surging.元.ts';
-import 球图 from 'asset:贴图/法术/goety/entity/projectiles/scatter_bolt_orange';
-import 尾迹图 from 'asset:贴图/法术/goety/entity/projectiles/pointed_trail';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { addVec, scaleVec, unitVec, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
+import { ElectricArc } from '../零件/电弧.tsx';
+import { arcPresets } from '../零件/电弧形.ts';
+import { Quad } from '../零件/面片.tsx';
+import { SphereBurst } from '../零件/甲/爆.tsx';
+import { hexColor, trajectoryAt } from '../零件/甲/共用.ts';
+import { Trail } from '../零件/甲/尾迹.tsx';
+import meta, { surgeShots } from './surging.元.ts';
+import scatterBoltPng from 'asset:贴图/法术/goety/entity/projectiles/scatter_bolt_orange';
+import pointedTrailPng from 'asset:贴图/法术/goety/entity/projectiles/pointed_trail';
 
-const 金 = 十六色(0xffaa00);
-const 半高 = 0.15;
+const gold = hexColor(0xffaa00);
+const halfHeight = 0.15;
 
-const 电涌: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
+const Surge: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
   return (
     <>
-      {电涌弹(起点, 目标).map((弹, i) => {
-        const t = 刻 - 弹.出刻;
+      {surgeShots(from, target).map((projectile, i) => {
+        const t = tick - projectile.launchTick;
         if (t < 0) return null;
-        if (t >= 弹.飞刻) {
-          const 位 = 加(道上(弹.道, 弹.飞刻), [0, 0, 半高]);
-          const r = rng(种子 * 19 + i);
+        if (t >= projectile.flightTick) {
+          const pos = addVec(trajectoryAt(projectile.trajectory, projectile.flightTick), [0, 0, halfHeight]);
+          const r = rng(seed * 19 + i);
           return (
             <React.Fragment key={i}>
-              <球爆 位={位} 刻={t - 弹.飞刻} 色={金} 尺寸={0.5} 速={1} />
+              <SphereBurst 位={pos} 刻={t - projectile.flightTick} 色={gold} 尺寸={0.5} 速={1} />
               {Array.from({ length: 8 }, (_, k) => (
-                <电弧 key={k} 起={位} 终={[位[0] + r() * 2 - 1, 位[1] + r() * 2 - 1, 位[2] + r() * 2 - 1]} 设定={电弧预设.shock} 刻={t - 弹.飞刻} 寿命刻={8} 色={金} 透明度={0.8} 种子={种子 * 23 + i * 8 + k} />
+                <ElectricArc key={k} 起={pos} end={[pos[0] + r() * 2 - 1, pos[1] + r() * 2 - 1, pos[2] + r() * 2 - 1]} settings={arcPresets.shock} 刻={t - projectile.flightTick} lifeTicks={8} 色={gold} opacity={0.8} 种子={seed * 23 + i * 8 + k} />
               ))}
             </React.Fragment>
           );
         }
-        const p = 弹道位置(弹.道, t);
-        const 向 = 弹道方向(弹.道, t);
+        const p = trajectoryPos(projectile.trajectory, t);
+        const dir = trajectoryDir(projectile.trajectory, t);
         // 和飞行方向垂直的两个轴
-        const 甲: 点 = 单位([-向[1], 向[0], 0]);
-        const 乙: 点 = [向[1] * 甲[2] - 向[2] * 甲[1], 向[2] * 甲[0] - 向[0] * 甲[2], 向[0] * 甲[1] - 向[1] * 甲[0]];
-        const 螺 = (刻前: number, 相: number): 点 => {
-          const 年龄 = Math.max(0, t - 刻前);
-          const 角 = 年龄 / 4 + 相;
-          return 加(加(弹道位置(弹.道, 年龄), [0, 0, 半高]), 加(乘(甲, Math.cos(角) * 0.15), 乘(乙, Math.sin(角) * 0.15)));
+        const perp: Vec3 = unitVec([-dir[1], dir[0], 0]);
+        const perpVec: Vec3 = [dir[1] * perp[2] - dir[2] * perp[1], dir[2] * perp[0] - dir[0] * perp[2], dir[0] * perp[1] - dir[1] * perp[0]];
+        const spiral = (priorTick: number, phase: number): Vec3 => {
+          const age = Math.max(0, t - priorTick);
+          const angle = age / 4 + phase;
+          return addVec(addVec(trajectoryPos(projectile.trajectory, age), [0, 0, halfHeight]), addVec(scaleVec(perp, Math.cos(angle) * 0.15), scaleVec(perpVec, Math.sin(angle) * 0.15)));
         };
-        const 边 = 0.25 + (Math.sin(t / 5) * 0.2 + 0.2) * Math.min(1, t * 0.2);
+        const beamWidth = 0.25 + (Math.sin(t / 5) * 0.2 + 0.2) * Math.min(1, t * 0.2);
         const u = (Math.floor(t) % 16) / 16;
         return (
           <React.Fragment key={i}>
             {[0, 1, 2].map((k) => (
-              <尾迹 key={k} 点们={Array.from({ length: Math.min(12, Math.floor(t) + 1) }, (_, j) => 螺(j * 0.5, (k * 2 * Math.PI) / 3))} 宽={0.05} 长={1.75} 图={png(尾迹图)} 色={金} 实心 混合="镂空" />
+              <Trail key={k} points={Array.from({ length: Math.min(12, Math.floor(t) + 1) }, (_, j) => spiral(j * 0.5, (k * 2 * Math.PI) / 3))} 宽={0.05} 长={1.75} 图={png(pointedTrailPng)} 色={gold} 实心 混合="镂空" />
             ))}
-            <面片 图={png(球图)} 位={[p[0], p[1], p[2] + 半高]} 半宽={边 / 2} uv={[u, 0, u + 1 / 16, 1]} 混合="半透明" />
+            <Quad 图={png(scatterBoltPng)} 位={[p[0], p[1], p[2] + halfHeight]} 半宽={beamWidth / 2} uv={[u, 0, u + 1 / 16, 1]} 混合="半透明" />
           </React.Fragment>
         );
       })}
@@ -68,4 +68,4 @@ const 电涌: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) =
   );
 };
 
-export default 定义法术演出(元, 电涌);
+export default defineSpellPerformance(meta, Surge);

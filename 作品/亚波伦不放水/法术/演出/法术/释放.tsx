@@ -11,49 +11,49 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 电弧 } from '../零件/电弧.tsx';
-import { 电弧预设 } from '../零件/电弧形.ts';
-import { 地面贴花 } from '../零件/地面贴花.tsx';
-import { 十六进制色, 面材质 } from '../零件/材质.ts';
-import 元, { 释放环寿命 } from './释放.元.ts';
-import 环图数据 from 'asset:贴图/法术/goety/particle/shockwave';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { ElectricArc } from '../零件/电弧.tsx';
+import { arcPresets } from '../零件/电弧形.ts';
+import { GroundDecal } from '../零件/地面贴花.tsx';
+import { hexColor, faceMaterial } from '../零件/材质.ts';
+import meta, { releaseRingLifeTicks } from './释放.元.ts';
+import shockwavePng from 'asset:贴图/法术/goety/particle/shockwave';
 
-const 环图 = png(环图数据);
-const 电黄 = 十六进制色(0xfef597);
-const 球大小 = 4;
-const 球寿命 = 30;
+const ringImg = png(shockwavePng);
+const electricYellow = hexColor(0xfef597);
+const orbSize = 4;
+const orbLifeTicks = 30;
 
-const 释放: React.FC<法术演出属性> = ({ 秒, 起点, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 脚: 点 = [起点[0], 起点[1], 起点[2] - 0.5];
+const releaseSpell: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+  const tick = sec * 20;
+  const feet: Vec3 = [from[0], from[1], from[2] - 0.5];
   // 球：年龄一刻跳 2
-  const 球龄 = Math.floor(刻) * 2 + (刻 - Math.floor(刻));
-  const 段 = 球寿命 / 5;
-  const 球透 = 球龄 >= 球寿命 ? 0 : 球龄 < 段 ? 1 - (1 - 球龄 / 段) ** 4 : (1 - Math.min(1, (球龄 - 段) / 段)) ** 3;
-  const 球径 = 球大小 * (0.5 + 0.5 * Math.sin(((球龄 / 球寿命) * Math.PI) / 2));
-  const r = rng(种子 * 7919 + 13);
-  const 整 = () => Math.floor(r() * 9) - 4;
-  const 弧们 = Array.from({ length: 16 }, (): 点 => {
+  const orbAge = Math.floor(tick) * 2 + (tick - Math.floor(tick));
+  const fadeSeg = orbLifeTicks / 5;
+  const orbAlpha = orbAge >= orbLifeTicks ? 0 : orbAge < fadeSeg ? 1 - (1 - orbAge / fadeSeg) ** 4 : (1 - Math.min(1, (orbAge - fadeSeg) / fadeSeg)) ** 3;
+  const orbScale = orbSize * (0.5 + 0.5 * Math.sin(((orbAge / orbLifeTicks) * Math.PI) / 2));
+  const r = rng(seed * 7919 + 13);
+  const jitter = () => Math.floor(r() * 9) - 4;
+  const arcs = Array.from({ length: 16 }, (): Vec3 => {
     // 游戏坐标的 (x, y, z) 偏移 → 场景 (x, −z, y)
-    const [a, b, c] = [整(), 整(), 整()];
+    const [a, b, c] = [jitter(), jitter(), jitter()];
     const [dx, dy, dz] = [r() * a, r() * b, r() * c];
-    return [脚[0] + dx, 脚[1] - dz, 脚[2] + dy];
+    return [feet[0] + dx, feet[1] - dz, feet[2] + dy];
   });
   return (
     <>
-      {刻 < 释放环寿命 && <地面贴花 位={起点} 图={环图} 半径={10 * Math.min(2, Math.max(0, (刻 / 释放环寿命) * 0.75))} 抬高={0} 混合="半透明" 色={电黄} 透明度={1 - 刻 / 释放环寿命} />}
-      {球透 > 0 && (
-        <mesh position={[起点[0], 起点[1], 起点[2]]} scale={球径} material={面材质(null, { 混合: '加色', 色: 电黄, 透明度: 球透 })}>
+      {tick < releaseRingLifeTicks && <GroundDecal 位={from} 图={ringImg} radius={10 * Math.min(2, Math.max(0, (tick / releaseRingLifeTicks) * 0.75))} lift={0} 混合="半透明" 色={electricYellow} opacity={1 - tick / releaseRingLifeTicks} />}
+      {orbAlpha > 0 && (
+        <mesh position={[from[0], from[1], from[2]]} scale={orbScale} material={faceMaterial(null, { 混合: '加色', 色: electricYellow, opacity: orbAlpha })}>
           <sphereGeometry args={[1, 32, 24]} />
         </mesh>
       )}
-      {弧们.map((终, i) => (
-        <电弧 key={i} 起={脚} 终={终} 设定={电弧预设.shock} 刻={刻} 寿命刻={12} 色={电黄} 种子={种子 * 131 + i} />
+      {arcs.map((end, i) => (
+        <ElectricArc key={i} 起={feet} end={end} settings={arcPresets.shock} 刻={tick} lifeTicks={12} 色={electricYellow} 种子={seed * 131 + i} />
       ))}
     </>
   );
 };
 
-export default 定义法术演出(元, 释放);
+export default defineSpellPerformance(meta, releaseSpell);

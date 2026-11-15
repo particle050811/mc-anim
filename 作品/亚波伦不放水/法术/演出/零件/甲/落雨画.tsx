@@ -1,21 +1,21 @@
 // 画落雨的一群箭形弹和头顶的雾云。每颗生出来时在生位放一片雾云（FoggyCloudParticle，尺寸 1.5、速 6：很快就散）。
 import React from 'react';
 import type { Png } from '@engine/model/贴图.ts';
-import type { 色 } from '../材质.ts';
-import { 弹道位置, 弹道方向 } from '../弹道.ts';
-import { 雾云 } from './爆.tsx';
-import { 箭形 } from './箭形.tsx';
-import type { 落雨弹 } from './落雨.ts';
+import type { RgbColor } from '../材质.ts';
+import { trajectoryPos, trajectoryDir } from '../弹道.ts';
+import { FogCloud } from './爆.tsx';
+import { ArrowShape } from './箭形.tsx';
+import type { ArrowRainShot } from './落雨.ts';
 
-export const 落雨们: React.FC<{ 弹们: readonly 落雨弹[]; 秒: number; 图: Png; 雾色: 色; 种子: number }> = ({ 弹们, 秒, 图, 雾色, 种子 }) => {
-  const 刻 = 秒 * 20;
+export const ArrowRainGroup: React.FC<{ projectiles: readonly ArrowRainShot[]; 秒: number; 图: Png; fogColor: RgbColor; 种子: number }> = ({ projectiles, 秒: sec, 图: image, fogColor, 种子: seed }) => {
+  const tick = sec * 20;
   return (
     <>
-      {弹们.map((弹, i) => {
-        const t = 刻 - 弹.出刻;
-        return t >= 0 && t < 弹.飞刻 ? <箭形 key={i} 位={弹道位置(弹.道, t)} 向={弹道方向(弹.道, t)} 图={图} /> : null;
+      {projectiles.map((projectile, i) => {
+        const t = tick - projectile.launchTick;
+        return t >= 0 && t < projectile.flightTick ? <ArrowShape key={i} 位={trajectoryPos(projectile.trajectory, t)} dir={trajectoryDir(projectile.trajectory, t)} 图={image} /> : null;
       })}
-      <雾云 出生们={弹们.map((弹, i) => ({ 刻: 弹.出刻, 位: 弹.生位, 色: 雾色, 尺寸: 1.5, 速: 6, 种子: 种子 * 101 + i }))} 刻={刻} />
+      <FogCloud spawns={projectiles.map((projectile, i) => ({ 刻: projectile.launchTick, 位: projectile.spawnPos, 色: fogColor, 尺寸: 1.5, 速: 6, 种子: seed * 101 + i }))} 刻={tick} />
     </>
   );
 };

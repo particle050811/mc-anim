@@ -375,7 +375,7 @@ const ringGeometry = new THREE.CircleGeometry(1, 96);
 
 // t：撞击以后的物理秒数；at：撞击点（地面上）；残光：撞地前那一段光尾（轨迹函数和长度，同 李樱金光），撞地后留在原地散掉；
 // scale：光团、冲击波环、火星飞出去的距离一起缩放（6-3-6 落进古城那下用小一号的，不打点光）
-export const GoldGlowBurst: React.FC<{ t: number; at: V3; cam: number[]; afterglow?: { 轨迹: (secBeforeImpact: number) => V3; trailSec: number }; scale?: number }> = ({ t, at, cam, afterglow, scale = 1 }) => {
+export const GoldGlowBurst: React.FC<{ t: number; at: V3; cam: number[]; afterglow?: { trajectory: (secBeforeImpact: number) => V3; trailSec: number }; scale?: number }> = ({ t, at, cam, afterglow, scale = 1 }) => {
   const materials = mats();
   const sparks = useMemo(() => {
     const rand = rng(6361);
@@ -408,7 +408,7 @@ export const GoldGlowBurst: React.FC<{ t: number; at: V3; cam: number[]; aftergl
   const afterglowTrails = useMemo<Ribbon[]>(() => {
     if (!afterglow || t < 0 || t > 0.45) return [];
     const fadeFrac = t / 0.45;
-    const raw = Array.from({ length: 20 }, (_, j) => afterglow.轨迹(afterglow.trailSec * (j / 19) ** 1.5));
+    const raw = Array.from({ length: 20 }, (_, j) => afterglow.trajectory(afterglow.trailSec * (j / 19) ** 1.5));
     const pts = smoothPath(raw);
     const count = pts.length;
     return [{

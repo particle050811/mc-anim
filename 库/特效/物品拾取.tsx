@@ -9,19 +9,19 @@ import * as THREE from 'three';
 import { rng, type V3 } from '../../engine/model/parts.tsx';
 import { DropItem, type DropName } from '../物品/掉落物.tsx';
 
-export type 拾取件 = { 名: DropName; p0: V3; v0: V3; spinAxis: V3; spinSpeed: number; 起吸: number; 吸完: number };
+export type PickupItem = { 名: DropName; p0: V3; v0: V3; spinAxis: V3; spinSpeed: number; suckStart: number; suckEnd: number };
 export type BurstParams = {
   forwardSpeed: [number, number]; // 沿冲击方向的速度范围（米/秒）
   spreadSpeed: [number, number]; // 往四周（垂直于冲击方向）的速度范围
   upSpeed: [number, number]; // 往上的速度范围（原版容器被打掉时掉出来的东西也是往上一蹦）
-  起吸: [number, number]; // 打碎后多少秒开始被吸（每件在范围里随机）
-  吸完: [number, number]; // 打碎后多少秒被吸到玩家身上
+  suckStart: [number, number]; // 打碎后多少秒开始被吸（每件在范围里随机）
+  suckEnd: [number, number]; // 打碎后多少秒被吸到玩家身上
 };
 const drag = 8; // 1/秒（物品比箱子碎块轻，阻力大一些）
 const gravity = 16; // 原版物品 0.04 格/刻²
 
 // 一箱物品迸出去的初始状态：中心 = 箱子中心（世界），前 = 冲击方向（世界，单位向量）
-export const burstItems = (names: DropName[], center: V3, forward: V3, params: BurstParams, seed: number): 拾取件[] => {
+export const burstItems = (names: DropName[], center: V3, forward: V3, params: BurstParams, seed: number): PickupItem[] => {
   const rand = rng(seed * 613 + 11);
   // 和 前 垂直的两根轴
   const up: V3 = Math.abs(forward[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1];
@@ -36,16 +36,16 @@ export const burstItems = (names: DropName[], center: V3, forward: V3, params: B
     const vu = params.upSpeed[0] + (params.upSpeed[1] - params.upSpeed[0]) * rand();
     const v0: V3 = [forward[0] * vf + outward.x * vo, forward[1] * vf + outward.y * vo, forward[2] * vf + outward.z * vo + vu];
     const p0: V3 = [center[0] + (rand() - 0.5) * 0.3, center[1] + (rand() - 0.5) * 0.3, center[2] + (rand() - 0.5) * 0.3];
-    const suckStart = params.起吸[0] + (params.起吸[1] - params.起吸[0]) * rand();
-    const suckEnd = params.吸完[0] + (params.吸完[1] - params.吸完[0]) * rand();
-    return { 名: name, p0, v0, spinAxis: [rand() - 0.5, rand() - 0.5, rand() - 0.5], spinSpeed: 25 + 45 * rand(), 起吸: suckStart, 吸完: suckEnd };
+    const suckStart = params.suckStart[0] + (params.suckStart[1] - params.suckStart[0]) * rand();
+    const suckEnd = params.suckEnd[0] + (params.suckEnd[1] - params.suckEnd[0]) * rand();
+    return { 名: name, p0, v0, spinAxis: [rand() - 0.5, rand() - 0.5, rand() - 0.5], spinSpeed: 25 + 45 * rand(), suckStart: suckStart, suckEnd: suckEnd };
   });
 };
 
 // 打碎后 τ 秒时这一件在哪、多大（0～1，0 = 已经被吸进去了），目标 = 玩家身上那一点（这一帧）
-export const pickupStateAt = (k: 拾取件, τ: number, target: V3): { p: V3; s: number } | null => {
+export const pickupStateAt = (k: PickupItem, τ: number, target: V3): { p: V3; s: number } | null => {
   if (τ < 0) return null;
-  const suckProgress = Math.min(1, Math.max(0, (τ - k.起吸) / (k.吸完 - k.起吸)));
+  const suckProgress = Math.min(1, Math.max(0, (τ - k.suckStart) / (k.suckEnd - k.suckStart)));
   if (suckProgress >= 1) return null;
   const dragTravel = (1 - Math.exp(-drag * τ)) / drag;
   const free = [0, 1, 2].map((i) => k.p0[i] + k.v0[i] * dragTravel) as V3;
@@ -67,7 +67,7 @@ const faceCamera = (pos: V3, cameraPos: number[], sway: number) => {
 };
 
 // τ：打碎后的物理秒数；目标：玩家身上那一点（世界）；镜头：镜头位置；放大：按位置给一个额外的缩放（远景看得出有东西被吸过来）；亮：自发光打底
-export const ItemPickup: React.FC<{ items: 拾取件[]; τ: number; target: V3; camPos: number[]; scale?: (pos: V3) => number; glow?: number }> = ({ items: items, τ, target: target, camPos: cameraPos, scale: scaleAt, glow: glow }) => (
+export const ItemPickup: React.FC<{ items: PickupItem[]; τ: number; target: V3; camPos: number[]; scale?: (pos: V3) => number; glow?: number }> = ({ items: items, τ, target: target, camPos: cameraPos, scale: scaleAt, glow: glow }) => (
   <>
     {items.map((k, i) => {
       const st = pickupStateAt(k, τ, target);

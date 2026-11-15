@@ -47,19 +47,19 @@ const LOOT_LEN = 28; // 同 6-4-1：开箱、伸手拿东西这一套 1.2 秒
 const FACE_CHEST = yawTo(0, -1); // 面朝南（#210 在 C 南边一格）
 // 箱盖：弯腰后 4 帧掀开（同 6-4-1），一直开着（他开着箱子定住、黑暗过去接着翻，6-4-3a 开头箱子还开着）
 export const lidOpenSec = (LOOT0 + 4) / FPS;
-export const openChest = (f: number): ChestOpening => ({ 号: chestArchery.号, 开: lidOpenSec, 秒: f / FPS });
+export const openChest = (f: number): ChestOpening => ({ chestId: chestArchery.chestId, 开: lidOpenSec, 秒: f / FPS });
 
 // ---------- 羊毛（6-4-1 一路垫的那些在场景里一直留着） ----------
 export const wool = (f: number) => jumpBuild.woolStateAt(toJumpFrame(f));
 
 // ---------- 感测体、尖啸体（振动链，见文件头） ----------
-const sensorBlock: V3 = archery.感测体 as V3;
+const sensorBlock: V3 = archery.sculkSensor as V3;
 export const sensors: V3[] = [sensorBlock];
-const shriekers: V3[] = [archery.尖啸体 as V3, [-1098, -47, 189]]; // 第二个收到时已在冷却里，不叫
+const shriekers: V3[] = [archery.sculkShrieker as V3, [-1098, -47, 189]]; // 第二个收到时已在冷却里，不叫
 const blockCenter = (b: number[]): V3 => cellCenter(b as [number, number, number]);
 const blockBottomCenter = (b: number[]): V3 => footOf(b as [number, number, number]);
 const flightTicks = (a: V3, b: V3) => Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]));
-export const chestCenter: V3 = blockCenter(archery.箱子);
+export const chestCenter: V3 = blockCenter(archery.chest);
 type Vibration = { from: V3; to: V3; t: number };
 const soundChain = (() => {
   const t0 = lidOpenSec;
@@ -263,18 +263,18 @@ export const camera = (storyFrame: number): Cam => {
 
 // 核对、字幕用：几个时刻（剧情帧，成片帧用 `toCutFrame` 换）
 export const keyMoments = {
-  落Q4: jumpBuild.landFrame('Q4') - start642,
-  成片起: cutStart,
-  落C: landCFrame,
-  开盖: lidOpenSec * FPS,
-  尖啸: shriek.t * FPS,
-  黑暗起: darknessStartSec * FPS,
-  黑暗止: darknessEndSec * FPS,
-  切A: cutA,
-  切B: cutB,
-  跳切: jumpCutFrame,
-  续起: resumeFrame,
-  界面开: lootUiOpenSec * FPS,
-  拿完: lootTakeSecs[lootTakeSecs.length - 1] * FPS,
+  landQ4: jumpBuild.landFrame('Q4') - start642,
+  filmStart: cutStart,
+  landC: landCFrame,
+  lidOpen: lidOpenSec * FPS,
+  shriek: shriek.t * FPS,
+  darknessStart: darknessStartSec * FPS,
+  darknessEnd: darknessEndSec * FPS,
+  cutA: cutA,
+  cutB: cutB,
+  jumpCut: jumpCutFrame,
+  resumeFrame: resumeFrame,
+  lootUiOpen: lootUiOpenSec * FPS,
+  lootTakeDone: lootTakeSecs[lootTakeSecs.length - 1] * FPS,
   末帧: STORY_END - 1,
 };

@@ -7,7 +7,7 @@
 // 音效：各生物自己的死亡声（entity.vex.death、entity.warden.death、entity.horse.death）在死的那一刻放。
 import React from 'react';
 
-export const vanillaDeath = { toppleFlatTick: 13.5, poofTick: 20, 红: 1 - 0xb2 / 255 };
+export const vanillaDeath = { toppleFlatTick: 13.5, poofTick: 20, redChannel: 1 - 0xb2 / 255 };
 
 // 死后 秒 时倒下的角度（弧度）
 export const vanillaToppleAngle = (secSinceDeath: number) => {

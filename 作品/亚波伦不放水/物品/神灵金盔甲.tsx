@@ -8,59 +8,59 @@
 import React, { useMemo } from 'react';
 import type * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
-import { 四边形几何, 盔甲材质 } from '@库/角色/网格盔甲.tsx';
+import { quadGeometry, armorMaterial } from '@库/角色/网格盔甲.tsx';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 网格数据 from 'asset:数据/角色/史蒂夫装备/神灵金盔甲网格';
+import armorMeshData from 'asset:数据/角色/史蒂夫装备/神灵金盔甲网格';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 新版贴图 from 'asset:贴图/角色/史蒂夫装备/神灵金盔甲';
+import newTexturePng from 'asset:贴图/角色/史蒂夫装备/神灵金盔甲';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 旧版贴图 from 'asset:贴图/角色/史蒂夫装备/神灵金盔甲.旧版';
-import 光泽图 from 'asset:贴图/角色/卫兵/附魔光泽';
-import { 默认外观, type 装备外观 } from './装备外观.ts';
-import { 披风站定, 披风顶点表, type 披风数据 } from './神灵金披风.ts';
+import oldTexturePng from 'asset:贴图/角色/史蒂夫装备/神灵金盔甲.旧版';
+import enchantGlintPng from 'asset:贴图/角色/卫兵/附魔光泽';
+import { defaultAppearance, type EquipAppearance } from './装备外观.ts';
+import { settleCape, capeVertexTable, type CapeData } from './神灵金披风.ts';
 
-const 贴图表 = { 旧版: 旧版贴图, 新版: 新版贴图 } as const;
+const textureMap = { 旧版: oldTexturePng, 新版: newTexturePng } as const;
 
-type 网格 = { 骨: number; 顶点: number[] };
-const 数据 = 网格数据 as unknown as { 骨: string[]; 槽: Record<'head' | 'chest' | 'legs' | 'feet', 网格[]>; 披风: 披风数据 };
+type RawArmorMesh = { 骨: number; 顶点: number[] };
+const armorData = armorMeshData as unknown as { 骨: string[]; 槽: Record<'head' | 'chest' | 'legs' | 'feet', RawArmorMesh[]>; 披风: CapeData };
 
-export type 神灵金件 = '头盔' | '胸甲' | '护腿' | '靴子';
-export const 神灵金全套: readonly 神灵金件[] = ['头盔', '胸甲', '护腿', '靴子'];
-const 槽名 = { 头盔: 'head', 胸甲: 'chest', 护腿: 'legs', 靴子: 'feet' } as const;
+export type ApocalyptiumPiece = '头盔' | '胸甲' | '护腿' | '靴子';
+export const apocalyptiumFullSet: readonly ApocalyptiumPiece[] = ['头盔', '胸甲', '护腿', '靴子'];
+const slotNames = { 头盔: 'head', 胸甲: 'chest', 护腿: 'legs', 靴子: 'feet' } as const;
 
-const 几何表 = new Map<网格, ReturnType<typeof 四边形几何>>();
-const 几何 = (m: 网格) => {
-  let g = 几何表.get(m);
-  if (!g) 几何表.set(m, (g = 四边形几何(m.顶点)));
+const geometryTable = new Map<RawArmorMesh, ReturnType<typeof quadGeometry>>();
+const buildMeshGeometry = (m: RawArmorMesh) => {
+  let g = geometryTable.get(m);
+  if (!g) geometryTable.set(m, (g = quadGeometry(m.顶点)));
   return g;
 };
-let 披风顶点缓存: number[] | null = null;
-let 披风几何缓存: ReturnType<typeof 四边形几何> | null = null;
+let capeVerticesCache: number[] | null = null;
+let capeGeometryCache: ReturnType<typeof quadGeometry> | null = null;
 // 披风只做了站着不动的样子（跑到稳的布料），不跟人的走动摆
-const 披风顶点 = () => (披风顶点缓存 ??= 披风顶点表(数据.披风, 披风站定(数据.披风)));
-const 披风几何 = () => (披风几何缓存 ??= 四边形几何(披风顶点()));
+const capeVertices = () => (capeVerticesCache ??= capeVertexTable(armorData.披风, settleCape(armorData.披风)));
+const capeGeometry = () => (capeGeometryCache ??= quadGeometry(capeVertices()));
 
-export type 盔甲网格 = { 键: string; 骨: string; 顶点: readonly number[]; 几何: THREE.BufferGeometry };
+export type ArmorMesh = { 键: string; 骨: string; 顶点: readonly number[]; geometry: THREE.BufferGeometry };
 
 /** 件：穿哪几件，不给 = 全套。光泽秒：附魔光泽滚动的时钟，不给 = 没附魔。外观：不给 = 本片默认（旧版）。
  *  返回材质和各块网格（跟哪个部件、顶点表、现成的几何），不包成节点：给要自己画的用（史蒂夫的四肢要在肘、膝处折，见 角色/史蒂夫装备.tsx） */
-export const use神灵金盔甲料 = (件: readonly 神灵金件[] = 神灵金全套, 光泽秒?: number, 外观: 装备外观 = 默认外观): { 材质: THREE.Material; 网格: 盔甲网格[] } => {
-  const 附魔 = 光泽秒 !== undefined;
-  const { 材质, 设秒 } = useMemo(() => 盔甲材质(png(贴图表[外观]), 附魔 ? png(光泽图) : undefined), [附魔, 外观]);
-  if (附魔) 设秒(光泽秒);
-  const 网格: 盔甲网格[] = [];
-  for (const 名 of 神灵金全套) {
-    if (!件.includes(名)) continue;
-    数据.槽[槽名[名]].forEach((m, i) => 网格.push({ 键: `${名}${i}`, 骨: 数据.骨[m.骨]!, 顶点: m.顶点, 几何: 几何(m) }));
-    if (名 === '胸甲') 网格.push({ 键: '披风', 骨: 'body', 顶点: 披风顶点(), 几何: 披风几何() });
+export const useApocalyptiumArmorMaterials = (pieces: readonly ApocalyptiumPiece[] = apocalyptiumFullSet, glintSec?: number, appearance: EquipAppearance = defaultAppearance): { material: THREE.Material; 网格: ArmorMesh[] } => {
+  const enchanted = glintSec !== undefined;
+  const { material, setGlintSec } = useMemo(() => armorMaterial(png(textureMap[appearance]), enchanted ? png(enchantGlintPng) : undefined), [enchanted, appearance]);
+  if (enchanted) setGlintSec(glintSec);
+  const meshes: ArmorMesh[] = [];
+  for (const pieceName of apocalyptiumFullSet) {
+    if (!pieces.includes(pieceName)) continue;
+    armorData.槽[slotNames[pieceName]].forEach((m, i) => meshes.push({ 键: `${pieceName}${i}`, 骨: armorData.骨[m.骨]!, 顶点: m.顶点, geometry: buildMeshGeometry(m) }));
+    if (pieceName === '胸甲') meshes.push({ 键: '披风', 骨: 'body', 顶点: capeVertices(), geometry: capeGeometry() });
   }
-  return { 材质, 网格 };
+  return { material, 网格: meshes };
 };
 
 /** 同 use神灵金盔甲料，包成节点：返回 { 部件名: 节点 }，没东西的部件不在里面 */
-export const use神灵金盔甲 = (件: readonly 神灵金件[] = 神灵金全套, 光泽秒?: number, 外观: 装备外观 = 默认外观): Record<string, React.ReactNode> => {
-  const { 材质, 网格 } = use神灵金盔甲料(件, 光泽秒, 外观);
-  const 挂: Record<string, React.ReactNode[]> = {};
-  for (const m of 网格) (挂[m.骨] ??= []).push(<mesh key={m.键} geometry={m.几何} material={材质} castShadow receiveShadow />);
-  return 挂;
+export const useApocalyptiumArmor = (pieces: readonly ApocalyptiumPiece[] = apocalyptiumFullSet, glintSec?: number, appearance: EquipAppearance = defaultAppearance): Record<string, React.ReactNode> => {
+  const { material, 网格: meshes } = useApocalyptiumArmorMaterials(pieces, glintSec, appearance);
+  const attachments: Record<string, React.ReactNode[]> = {};
+  for (const m of meshes) (attachments[m.骨] ??= []).push(<mesh key={m.键} geometry={m.geometry} material={material} castShadow receiveShadow />);
+  return attachments;
 };

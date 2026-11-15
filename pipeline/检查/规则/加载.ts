@@ -3,23 +3,23 @@
 // 段框架的段（窗口段）另核对 anim cues 生成的声音表、声音地址和 段.ts 的 cue 对得上（段框架/生成.ts 的 核对一段）。
 // 段、场、核对目录下的 环境.ts 另查声明（环境声明.ts：描述合法、画法有模块、关键帧在段里）。
 // 作品的 地点/地形改动.ts 另核挖框、整平都落在世界声明的保真范围里（地形改动.ts）。
-import { 读内容 } from '../内容.ts';
-import { 是纯模块, type 报告, type 检查上下文 } from '../上下文.ts';
-import { 查段框架 } from '../../段框架/核对.ts';
-import { 查环境声明 } from '../环境声明.ts';
-import { 查地形改动 } from '../地形改动.ts';
+import { readContent } from '../内容.ts';
+import { isPureModule, type CheckReport, type CheckContext } from '../上下文.ts';
+import { checkSegFramework } from '../../段框架/核对.ts';
+import { checkEnvDecl } from '../环境声明.ts';
+import { checkTerrainChanges } from '../地形改动.ts';
 
-export const 加载 = async (c: 检查上下文, 报: 报告) => {
-  const 纯们 = c.本作品文件().filter(是纯模块);
-  for (const p of 纯们) {
-    const r = await c.加载(p);
-    if (r.错误) 报.错(`执行出错：${r.错误}`, p);
+export const checkLoad = async (c: CheckContext, report: CheckReport) => {
+  const pureFiles = c.workFiles().filter(isPureModule);
+  for (const p of pureFiles) {
+    const r = await c.loadModule(p);
+    if (r.错误) report.错(`执行出错：${r.错误}`, p);
   }
-  const 内容 = await 读内容(c);
-  if ('错误' in 内容) return; // 清单本身执行出错，上面已报
-  for (const s of 内容.段们) if (s.错误 && !s.错误.includes('执行出错')) 报.错(s.错误, s.段文件);
-  报.信息.push(`执行了 ${纯们.length} 个纯模块`);
-  await 查段框架(c, 报, 内容.段们);
-  await 查环境声明(c, 报, 内容.段们);
-  await 查地形改动(c, 报);
+  const parsedContent = await readContent(c);
+  if ('错误' in parsedContent) return; // 清单本身执行出错，上面已报
+  for (const s of parsedContent.segments) if (s.错误 && !s.错误.includes('执行出错')) report.错(s.错误, s.段文件);
+  report.infoLines.push(`执行了 ${pureFiles.length} 个纯模块`);
+  await checkSegFramework(c, report, parsedContent.segments);
+  await checkEnvDecl(c, report, parsedContent.segments);
+  await checkTerrainChanges(c, report);
 };

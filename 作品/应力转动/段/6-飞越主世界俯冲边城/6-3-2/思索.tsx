@@ -8,7 +8,7 @@
 // cue 只放「改字」那版配音：渲染输入 台词 选「五句」「原文」时画面跟着换，声音不换。
 import React, { useMemo } from 'react';
 import { AbsoluteFill } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { pngDir, type Png } from '@engine/model/贴图.ts';
@@ -27,35 +27,35 @@ import {
 } from '@库/界面/思索场景.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import { FallScene } from '../../../场/6-边城/6-3-下坠/画面.tsx';
-import { 段表, 刻, 李樱下落 } from '../../../地点/边城/6-3-下坠/时间线.ts';
+import { segTable, tick, liYingFall } from '../../../地点/边城/6-3-下坠/时间线.ts';
 import * as LY from '../../../地点/边城/6-3-下坠/编排/李樱.ts';
 import { liYingHip } from '../../../地点/边城/6-3-下坠/编排/金光.ts';
 import * as choreo from '../../../地点/边城/6-3-2/编排.ts';
 import { uiOpen } from '../../../地点/边城/6-3-2/台词.ts';
 import { glowCamAt, ponderCamAt, ponderLayerOpacity, tMatch, transitionW } from '../../../地点/边城/6-3-2/转场.ts';
-import ponderText资产 from 'asset:数据/镜头/6-3-2/文案';
-import { 资产目录 } from '@engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/镜头/6-3-2/方块/平滑石台阶侧';
-import 资_1 from 'asset:贴图/镜头/6-3-2/方块/平滑石头';
-import 资_2 from 'asset:贴图/镜头/6-3-2/方块/泥土';
-import 资_3 from 'asset:贴图/镜头/6-3-2/方块/深板岩';
-import 资_4 from 'asset:贴图/镜头/6-3-2/方块/深板岩顶';
-import 资_5 from 'asset:贴图/镜头/6-3-2/方块/白色混凝土';
-import 资_6 from 'asset:贴图/镜头/6-3-2/方块/石头';
-import 资_7 from 'asset:贴图/镜头/6-3-2/方块/裂纹0';
-import 资_8 from 'asset:贴图/镜头/6-3-2/方块/裂纹1';
-import 资_9 from 'asset:贴图/镜头/6-3-2/方块/裂纹2';
-import 资_10 from 'asset:贴图/镜头/6-3-2/方块/裂纹3';
-import 资_11 from 'asset:贴图/镜头/6-3-2/方块/裂纹4';
-import 资_12 from 'asset:贴图/镜头/6-3-2/方块/裂纹5';
-import 资_13 from 'asset:贴图/镜头/6-3-2/方块/裂纹6';
-import 资_14 from 'asset:贴图/镜头/6-3-2/方块/裂纹7';
-import 资_15 from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
-import 资_16 from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
-import 资_17 from 'asset:贴图/镜头/6-3-2/方块/雪块';
-const ponderText = ponderText资产 as unknown as { 标题: string; 说明: string[] };
+import ponderTextAsset from 'asset:数据/镜头/6-3-2/文案';
+import { assetDir } from '@engine/core/资产目录.ts';
+import smoothStoneSlabSidePng from 'asset:贴图/镜头/6-3-2/方块/平滑石台阶侧';
+import smoothStonePng from 'asset:贴图/镜头/6-3-2/方块/平滑石头';
+import dirtPng from 'asset:贴图/镜头/6-3-2/方块/泥土';
+import deepslatePng from 'asset:贴图/镜头/6-3-2/方块/深板岩';
+import deepslateTopPng from 'asset:贴图/镜头/6-3-2/方块/深板岩顶';
+import whiteConcretePng from 'asset:贴图/镜头/6-3-2/方块/白色混凝土';
+import stonePng from 'asset:贴图/镜头/6-3-2/方块/石头';
+import crack0Png from 'asset:贴图/镜头/6-3-2/方块/裂纹0';
+import crack1Png from 'asset:贴图/镜头/6-3-2/方块/裂纹1';
+import crack2Png from 'asset:贴图/镜头/6-3-2/方块/裂纹2';
+import crack3Png from 'asset:贴图/镜头/6-3-2/方块/裂纹3';
+import crack4Png from 'asset:贴图/镜头/6-3-2/方块/裂纹4';
+import crack5Png from 'asset:贴图/镜头/6-3-2/方块/裂纹5';
+import crack6Png from 'asset:贴图/镜头/6-3-2/方块/裂纹6';
+import crack7Png from 'asset:贴图/镜头/6-3-2/方块/裂纹7';
+import crack8Png from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
+import crack9Png from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
+import snowBlockPng from 'asset:贴图/镜头/6-3-2/方块/雪块';
+const ponderText = ponderTextAsset as unknown as { 标题: string; 说明: string[] };
 
-const TEX = pngDir(资产目录({ './平滑石台阶侧.png': 资_0, './平滑石头.png': 资_1, './泥土.png': 资_2, './深板岩.png': 资_3, './深板岩顶.png': 资_4, './白色混凝土.png': 资_5, './石头.png': 资_6, './裂纹0.png': 资_7, './裂纹1.png': 资_8, './裂纹2.png': 资_9, './裂纹3.png': 资_10, './裂纹4.png': 资_11, './裂纹5.png': 资_12, './裂纹6.png': 资_13, './裂纹7.png': 资_14, './裂纹8.png': 资_15, './裂纹9.png': 资_16, './雪块.png': 资_17 })) as Record<string, Png>;
+const TEX = pngDir(assetDir({ './平滑石台阶侧.png': smoothStoneSlabSidePng, './平滑石头.png': smoothStonePng, './泥土.png': dirtPng, './深板岩.png': deepslatePng, './深板岩顶.png': deepslateTopPng, './白色混凝土.png': whiteConcretePng, './石头.png': stonePng, './裂纹0.png': crack0Png, './裂纹1.png': crack1Png, './裂纹2.png': crack2Png, './裂纹3.png': crack3Png, './裂纹4.png': crack4Png, './裂纹5.png': crack5Png, './裂纹6.png': crack6Png, './裂纹7.png': crack7Png, './裂纹8.png': crack8Png, './裂纹9.png': crack9Png, './雪块.png': snowBlockPng })) as Record<string, Png>;
 
 // ---------- 场景板的方块 ----------
 // 每种方块每个面用哪张贴图（平滑石台阶的侧面只用下半张：原版 block/slab 的 side uv 是 [0, 8, 16, 16]）
@@ -118,9 +118,9 @@ const PonderLights: React.FC = () => {
   const sun = useMemo(() => new THREE.Vector3(...SUN_OW).normalize().applyMatrix4(choreo.figureRef().psi), []);
   return (
     <>
-      <directionalLight position={[sun.x, sun.y, sun.z]} color={SKY.sunLight} intensity={overworldMix.直射} />
-      <hemisphereLight args={[SKY.skyLight, SKY.groundLight, overworldMix.天光]} position={[0, 0, 1]} />
-      <ambientLight intensity={overworldMix.环境光} />
+      <directionalLight position={[sun.x, sun.y, sun.z]} color={SKY.sunLight} intensity={overworldMix.direct} />
+      <hemisphereLight args={[SKY.skyLight, SKY.groundLight, overworldMix.skylight]} position={[0, 0, 1]} />
+      <ambientLight intensity={overworldMix.ambient} />
     </>
   );
 };
@@ -144,14 +144,14 @@ const PonderLiYing: React.FC<{ t: number }> = ({ t }) => {
   // 转场里光尾跟着思索层淡掉的进度从无长出来：推完时他停在底板上没有光尾，全局帧 0 一下子冒出整条会跳
   const head = LY.maceHeadPos(state);
   const off = [head[0] - f.hip[0], head[1] - f.hip[1], head[2] - f.hip[2]];
-  const speed = w !== undefined && w > 刻.leap ? Math.hypot(...李樱下落(w).v) : 0;
+  const speed = w !== undefined && w > tick.leap ? Math.hypot(...liYingFall(w).v) : 0;
   const trailSec = 0.3 * Math.min(1, 150 / Math.max(speed, 1));
   const sampleExp = 1 + Math.min(1, Math.max(0, (speed - 20) / 80));
   const pathAt = (secAgo: number): V3 => {
     if (w !== undefined) {
       const now = liYingHip(w);
       const grow = 1 - ponderLayerOpacity((t - tMatch) * choreo.FPS);
-      const then = liYingHip(Math.max(刻.leap, w - secAgo * grow));
+      const then = liYingHip(Math.max(tick.leap, w - secAgo * grow));
       const d = new THREE.Vector3(then[0] - now[0], then[1] - now[1], then[2] - now[2]).applyMatrix4(choreo.figureRef().psi);
       return [f.hip[0] + d.x + off[0], f.hip[1] + d.y + off[1], f.hip[2] + d.z + off[2]];
     }
@@ -171,7 +171,7 @@ const PonderLiYing: React.FC<{ t: number }> = ({ t }) => {
 };
 
 // ---------- 方块碎屑（原版 TerrainParticle，按刻算；初速度和逐刻推算见 思索场景.tsx） ----------
-type Debris = { start: number; p: number[]; v: number[]; lifeTicks: number; 半: number; texName: string; uo: number; vo: number };
+type Debris = { start: number; p: number[]; v: number[]; lifeTicks: number; halfSize: number; texName: string; uo: number; vo: number };
 const debrisList: Debris[] = (() => {
   const out: Debris[] = [];
   let seed = 1;
@@ -187,13 +187,13 @@ const debrisList: Debris[] = (() => {
       for (let j = 0; j < nj; j++)
         for (let k = 0; k < 4; k++) {
           const dx = (i + 0.5) / 4, dy = (j + 0.5) / nj, dz = (k + 0.5) / 4;
-          const { v, lifeTicks, 半 } = destroyParticle(dx, dy, dz, rand);
+          const { v, lifeTicks, halfSize } = destroyParticle(dx, dy, dz, rand);
           out.push({
             start: tb,
             p: [block.x + dx, block.y + dy * height, block.z + dz],
             v,
             lifeTicks,
-            半,
+            halfSize,
             texName: texName,
             uo: Math.floor(rand() * 3 * 4) / 16,
             vo: Math.floor(rand() * 3 * 4) / 16,
@@ -239,7 +239,7 @@ const DebrisMesh: React.FC<{ t: number }> = ({ t }) => {
       if (!group) groups.set(debris.texName, (group = { pos: [], uv: [], idx: [] }));
       const base = group.pos.length / 3;
       for (const [cornerX, cornerY] of QUAD_CORNERS) {
-        group.pos.push(pos[0] + (camRight.x * cornerX + camUp.x * cornerY) * debris.半, pos[1] + (camRight.y * cornerX + camUp.y * cornerY) * debris.半, pos[2] + (camRight.z * cornerX + camUp.z * cornerY) * debris.半);
+        group.pos.push(pos[0] + (camRight.x * cornerX + camUp.x * cornerY) * debris.halfSize, pos[1] + (camRight.y * cornerX + camUp.y * cornerY) * debris.halfSize, pos[2] + (camRight.z * cornerX + camUp.z * cornerY) * debris.halfSize);
         // DataTexture 第一行（贴图最上面）在 v = 0：方片上边对着贴图块的上边
         group.uv.push(debris.uo + (cornerX > 0 ? 0.25 : 0), debris.vo + (cornerY > 0 ? 0 : 0.25));
       }
@@ -286,9 +286,9 @@ const RollerItem: React.FC = () => {
 
 // 帧：段内第几帧（1/24 秒一格，不给就是当前时刻；6-3-3 开头叠思索层时接着往下数）。世界：画不画底下的世界画面（不画就是透明底）
 export const PonderSegment: React.FC<{ world?: boolean; frame?: number }> = ({ world: showWorld = true, frame: frameOverride }) => {
-  const cur = use当前秒() * choreo.FPS;
+  const cur = useCurrentSec() * choreo.FPS;
   const frame = frameOverride ?? cur;
-  const G = 段表['6-3-2'].起 + frame;
+  const G = segTable['6-3-2'].起 + frame;
   const t = frame / choreo.FPS - uiOpen; // 思索场景时间（开界面以前是负的）
   // 整层（底色、场景板、李樱）：开界面时淡入盖住扫帚，6-3-3 开头淡掉露出真的俯冲；标题、按钮、说明框另外在关界面时淡掉
   const layerOpacity = G > 0 ? ponderLayerOpacity(G) : t < choreo.cues.close[0] ? choreo.uiOpacityAt(t) : 1;
@@ -297,7 +297,7 @@ export const PonderSegment: React.FC<{ world?: boolean; frame?: number }> = ({ w
   const captions = ponderText.说明.map((text, i) => {
     const caption = choreo.captionTable[i];
     const anchor = choreo.pointerTarget(caption.pointsAt, caption.start);
-    return { 字: text, ponderPalette: caption.palette, 点: anchor ? choreo.projectUi(anchor) : null, 高度: caption.height, nearTarget: caption.nearTarget ?? true, fade: choreo.captionOpacity(i, t) };
+    return { 字: text, ponderPalette: caption.palette, 点: anchor ? choreo.projectUi(anchor) : null, fallbackY: caption.height, nearTarget: caption.nearTarget ?? true, fade: choreo.captionOpacity(i, t) };
   });
   const redBox = choreo.redBoxAt(t);
   const greenBox = choreo.greenBox(t);

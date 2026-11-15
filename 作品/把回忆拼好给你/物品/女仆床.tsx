@@ -9,20 +9,20 @@ import { type BedrockModel, BedrockModelView } from '@engine/model/基岩模型.
 import { png } from '@engine/model/贴图.ts';
 import raw from 'asset:模型/物品/女仆床';
 import tex from 'asset:贴图/物品/女仆床';
-import type { 床朝向 } from './床尺寸.ts';
+import type { BedFacing } from './床尺寸.ts';
 
-export { 女仆床面高 } from './床尺寸.ts';
+export { maidBedSurfaceHeight } from './床尺寸.ts';
 
-export const 女仆床模型 = { ...(raw as unknown as object), texture: png(tex) } as unknown as BedrockModel;
+export const maidBedModel = { ...(raw as unknown as object), texture: png(tex) } as unknown as BedrockModel;
 
 /** 场景里绕 Z 转多少（弧度）：朝南 0，朝东 +90°（南转到东），朝北 180° */
-const 转角: Record<床朝向, number> = { south: 0, east: Math.PI / 2, north: Math.PI, west: -Math.PI / 2 };
+const bedRotation: Record<BedFacing, number> = { south: 0, east: Math.PI / 2, north: Math.PI, west: -Math.PI / 2 };
 
 /** 一张女仆床。受光材质，放进三渲二画布由平涂接管 */
-export const 女仆床: React.FC<{ 位: V3; 朝?: 床朝向 }> = ({ 位, 朝 = 'north' }) => (
-  <group position={位} rotation={[0, 0, 转角[朝]]}>
+export const MaidBed: React.FC<{ 位: V3; facing?: BedFacing }> = ({ 位: pos, facing = 'north' }) => (
+  <group position={pos} rotation={[0, 0, bedRotation[facing]]}>
     <group position={[0, 1, 0]}>
-      <BedrockModelView model={女仆床模型} />
+      <BedrockModelView model={maidBedModel} />
     </group>
   </group>
 );

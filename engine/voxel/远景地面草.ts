@@ -6,12 +6,12 @@
 import { hash2 } from '../core/噪声.ts';
 import raw from 'asset:数据/体素/远景地面草';
 
-type LevelEntry = { n: number; 草: [string, number][] } | null;
-type SurfaceEntry = { 级: LevelEntry[]; 草高: [string, number, number][] | null };
+type LevelEntry = { n: number; grass: [string, number][] } | null;
+type SurfaceEntry = { 级: LevelEntry[]; grassHeights: [string, number, number][] | null };
 const stats = raw as unknown as { 群系: Record<string, Record<string, SurfaceEntry>> };
 const seed = 23;
 const id = (s: string) => s.replace(/\[.*$/, '');
-const totalShare = (e: NonNullable<LevelEntry>) => e.草.reduce((a, [, share]) => a + share, 0);
+const totalShare = (e: NonNullable<LevelEntry>) => e.grass.reduce((a, [, share]) => a + share, 0);
 const lookup = (biome: string, surfaceName: string) => {
   const surfaceId = id(surfaceName);
   return [stats.群系[biome]?.[surfaceId], stats.群系['*']?.[surfaceId]];
@@ -25,7 +25,7 @@ const plantState = (b: string, h: number, i: number) => (h === 2 ? `${b}[half=${
 
 // 第 0 级（远景）游戏坐标 (gx, gz) 这一列地表上长什么：[下面那格, 最上面那格, 格数]，不长是 null
 export const fineGroundPlant = (biome: string, surfaceName: string, gx: number, gz: number): [string, string, number] | null => {
-  const t = level0Entry(biome, surfaceName)?.草高;
+  const t = level0Entry(biome, surfaceName)?.grassHeights;
   if (!t) return null;
   const roll = hash2(gx, gz, seed);
   let acc = 0;
@@ -57,7 +57,7 @@ export const coarseGroundPlant = (biome: string, surfaceName: string, gx0: numbe
   if (roll >= fillProb) return undefined;
   const scaledRoll = (roll / fillProb) * r0;
   let acc = 0;
-  for (const [block, share] of e0.草) {
+  for (const [block, share] of e0.grass) {
     acc += share;
     if (scaledRoll < acc) return plantState(block, 2, 0);
   }

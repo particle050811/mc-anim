@@ -2,18 +2,18 @@
 // 管线在 Node 里 import() 的作品文件（清单.ts、段.ts、场的时间线和末态）才认得这两个前缀。静态 import 图在注册之前就解析完了，
 // 所以 pipeline 自己的代码不写别名，只有动态 import 进来的作品文件可以写。
 import { pathToFileURL } from 'node:url';
-import { 解析别名 } from './别名.ts';
+import { resolveAlias } from './别名.ts';
 
-type 解析结果 = { url: string; format?: string | null; shortCircuit?: boolean };
-type 下一步 = (说明符: string, 上下文?: unknown) => 解析结果 | Promise<解析结果>;
+type ResolveResult = { url: string; format?: string | null; shortCircuit?: boolean };
+type NextHook = (specifier: string, context?: unknown) => ResolveResult | Promise<ResolveResult>;
 
-let 代码根 = '';
+let codeRoot = '';
 
-export const initialize = (data: { 代码根: string }) => {
-  代码根 = data.代码根;
+export const initialize = (data: { codeRoot: string }) => {
+  codeRoot = data.codeRoot;
 };
 
-export const resolve = (说明符: string, 上下文: unknown, next: 下一步) => {
-  const 目标 = 代码根 ? 解析别名(说明符, 代码根) : null;
-  return next(目标 ? pathToFileURL(目标).href : 说明符, 上下文);
+export const resolve = (specifier: string, context: unknown, next: NextHook) => {
+  const resolvedTarget = codeRoot ? resolveAlias(specifier, codeRoot) : null;
+  return next(resolvedTarget ? pathToFileURL(resolvedTarget).href : specifier, context);
 };

@@ -3,8 +3,8 @@
 // 出照片：python3 assets/tools/照片底片.py 光柱破云（收集快乐 那一路的工具）：渲这一段第 0 帧（2560×1440），按 裁心 0.55 裁整幅高的正方形、缩成 256×256，登记成 贴图/照片/第7句光柱破云。
 // 第 7 句画面改了就重跑；扑龙蛋（核对-扑龙蛋照片）同理。
 import type React from 'react';
-import { 光柱破云画面 } from '../../场/2-雷雨/画面.tsx';
+import { BeamBreakCloudPicture } from '../../场/2-雷雨/画面.tsx';
 
-const 画面: React.FC = () => <光柱破云画面 后期={false} />;
+const picture: React.FC = () => <BeamBreakCloudPicture withPost={false} />;
 
-export default 画面;
+export default picture;

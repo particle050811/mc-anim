@@ -11,46 +11,46 @@
 // 群系摊到每一格（游戏里 4×4×4 共用一个），群系变了也切段；方块实际取哪个群系格要按种子抖动，是烘焙的事。
 import { gunzipSync, gzipSync } from 'node:zlib';
 
-export const 区域列数 = 512 * 512;
-const 魔数 = 0x444c434d; // "MCLD" 按小端读出来的数
-const 格式版本 = 2;
-const 头长 = 32;
+export const REGION_COLUMN_COUNT = 512 * 512;
+const magic = 0x444c434d; // "MCLD" 按小端读出来的数
+const FORMAT_VERSION = 2;
+const HEADER_LENGTH = 32;
 
-export type 列段区域 = {
+export type ColumnSegmentRegion = {
   rx: number;
   rz: number;
-  y底: number;
-  y顶: number;
-  状态表: string[];
-  群系表: string[];
+  yBottom: number;
+  yTop: number;
+  stateTable: string[];
+  biomeTable: string[];
   /** 世界种子，十进制 */
   种子: string;
   段数: Uint16Array;
   状态: Uint16Array;
-  底: Int16Array;
+  bottom: Int16Array;
   群系: Uint8Array;
 };
 /** 解码出来的多一张 runStarts：第 k 列第一段在段数组里的下标（区域列数 + 1 个） */
-export type 解开的列段 = 列段区域 & { runStarts: Uint32Array };
+export type UnpackedColumnSegmentRegion = ColumnSegmentRegion & { runStarts: Uint32Array };
 
-export const 编码列段 = (region: 列段区域): Buffer => {
-  if (region.群系表.length > 256) throw new Error(`r.${region.rx}.${region.rz} 群系超过 256 种，群系号放不进 u8`);
-  if (region.状态表.length > 65536) throw new Error(`r.${region.rx}.${region.rz} 方块状态超过 65536 种，放不进 u16`);
+export const encodeColumnSegments = (region: ColumnSegmentRegion): Buffer => {
+  if (region.biomeTable.length > 256) throw new Error(`r.${region.rx}.${region.rz} 群系超过 256 种，群系号放不进 u8`);
+  if (region.stateTable.length > 65536) throw new Error(`r.${region.rx}.${region.rz} 方块状态超过 65536 种，放不进 u16`);
   const runCount = region.状态.length;
-  const tableJson = Buffer.from(JSON.stringify({ 状态: region.状态表, 群系: region.群系表, 种子: region.种子 }), 'utf8');
+  const tableJson = Buffer.from(JSON.stringify({ 状态: region.stateTable, 群系: region.biomeTable, 种子: region.种子 }), 'utf8');
   const tableBytes = (tableJson.length + 3) & ~3;
-  const buf = Buffer.alloc(头长 + tableBytes + 区域列数 * 2 + runCount * 5, 0x20);
-  buf.writeUInt32LE(魔数, 0);
-  buf.writeUInt32LE(格式版本, 4);
+  const buf = Buffer.alloc(HEADER_LENGTH + tableBytes + REGION_COLUMN_COUNT * 2 + runCount * 5, 0x20);
+  buf.writeUInt32LE(magic, 0);
+  buf.writeUInt32LE(FORMAT_VERSION, 4);
   buf.writeInt32LE(region.rx, 8);
   buf.writeInt32LE(region.rz, 12);
-  buf.writeInt32LE(region.y底, 16);
-  buf.writeInt32LE(region.y顶, 20);
+  buf.writeInt32LE(region.yBottom, 16);
+  buf.writeInt32LE(region.yTop, 20);
   buf.writeUInt32LE(runCount, 24);
   buf.writeUInt32LE(tableBytes, 28);
-  tableJson.copy(buf, 头长);
-  let offset = 头长 + tableBytes;
-  for (const array of [region.段数, region.状态, region.底, region.群系]) {
+  tableJson.copy(buf, HEADER_LENGTH);
+  let offset = HEADER_LENGTH + tableBytes;
+  for (const array of [region.段数, region.状态, region.bottom, region.群系]) {
     const bytes = Buffer.from(array.buffer, array.byteOffset, array.byteLength);
     bytes.copy(buf, offset);
     offset += bytes.length;
@@ -58,63 +58,63 @@ export const 编码列段 = (region: 列段区域): Buffer => {
   return gzipSync(buf, { level: 6 });
 };
 
-export const 起点表 = (段数: Uint16Array) => {
-  const runStarts = new Uint32Array(区域列数 + 1);
-  for (let k = 0; k < 区域列数; k++) runStarts[k + 1] = runStarts[k]! + 段数[k]!;
+export const startTable = (segRunCounts: Uint16Array) => {
+  const runStarts = new Uint32Array(REGION_COLUMN_COUNT + 1);
+  for (let k = 0; k < REGION_COLUMN_COUNT; k++) runStarts[k + 1] = runStarts[k]! + segRunCounts[k]!;
   return runStarts;
 };
 
-export const 解码列段 = (gz: Uint8Array): 解开的列段 => {
+export const decodeColumnSegments = (gz: Uint8Array): UnpackedColumnSegmentRegion => {
   const raw = gunzipSync(gz);
   // 拷进一块新的 ArrayBuffer，偏移从 0 起，u16 / i16 数组才对得齐
   const ab = raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength);
   const dv = new DataView(ab);
-  if (dv.getUint32(0, true) !== 魔数 || dv.getUint32(4, true) !== 格式版本) throw new Error('不是版本 2 的列段文件');
+  if (dv.getUint32(0, true) !== magic || dv.getUint32(4, true) !== FORMAT_VERSION) throw new Error('不是版本 2 的列段文件');
   const runCount = dv.getUint32(24, true);
   const tableBytes = dv.getUint32(28, true);
-  const table = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, 头长, tableBytes))) as { 状态: string[]; 群系: string[]; 种子: string };
-  let offset = 头长 + tableBytes;
-  const 段数 = new Uint16Array(ab, offset, 区域列数);
-  offset += 区域列数 * 2;
-  const 状态 = new Uint16Array(ab, offset, runCount);
+  const table = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, HEADER_LENGTH, tableBytes))) as { 状态: string[]; 群系: string[]; 种子: string };
+  let offset = HEADER_LENGTH + tableBytes;
+  const segRunCounts = new Uint16Array(ab, offset, REGION_COLUMN_COUNT);
+  offset += REGION_COLUMN_COUNT * 2;
+  const stateIds = new Uint16Array(ab, offset, runCount);
   offset += runCount * 2;
-  const 底 = new Int16Array(ab, offset, runCount);
+  const bottom = new Int16Array(ab, offset, runCount);
   offset += runCount * 2;
-  const 群系 = new Uint8Array(ab, offset, runCount);
-  return { rx: dv.getInt32(8, true), rz: dv.getInt32(12, true), y底: dv.getInt32(16, true), y顶: dv.getInt32(20, true), 状态表: table.状态, 群系表: table.群系, 种子: table.种子, 段数, 状态, 底, 群系, runStarts: 起点表(段数) };
+  const biomeIds = new Uint8Array(ab, offset, runCount);
+  return { rx: dv.getInt32(8, true), rz: dv.getInt32(12, true), yBottom: dv.getInt32(16, true), yTop: dv.getInt32(20, true), stateTable: table.状态, biomeTable: table.群系, 种子: table.种子, 段数: segRunCounts, 状态: stateIds, bottom, 群系: biomeIds, runStarts: startTable(segRunCounts) };
 };
 
 /** 游戏坐标 (x, z) 在区域里的列号 */
-export const 列号 = (rx: number, rz: number, x: number, z: number) => (z - 512 * rz) * 512 + (x - 512 * rx);
+export const columnIndex = (rx: number, rz: number, x: number, z: number) => (z - 512 * rz) * 512 + (x - 512 * rx);
 
 /** 一列里 y 处的段下标；列没有数据或 y 出界返回 −1 */
-export const 段于 = (r: 解开的列段, col: number, y: number) => {
+export const segAt = (r: UnpackedColumnSegmentRegion, col: number, y: number) => {
   const s = r.runStarts[col]!, e = r.runStarts[col + 1]!;
-  if (s === e || y < r.y底 || y > r.y顶) return -1;
-  for (let k = s; k < e; k++) if (r.底[k]! <= y) return k;
+  if (s === e || y < r.yBottom || y > r.yTop) return -1;
+  for (let k = s; k < e; k++) if (r.bottom[k]! <= y) return k;
   return -1;
 };
 
 /** 游戏方块 (x, y, z) 的状态和群系；不在这个区域、没数据返回 null */
-export const 方块于 = (r: 解开的列段, x: number, y: number, z: number): { 状态: string; 群系: string } | null => {
+export const blockAt = (r: UnpackedColumnSegmentRegion, x: number, y: number, z: number): { 状态: string; 群系: string } | null => {
   if (x >> 9 !== r.rx || z >> 9 !== r.rz) return null;
-  const k = 段于(r, 列号(r.rx, r.rz, x, z), y);
-  return k < 0 ? null : { 状态: r.状态表[r.状态[k]!]!, 群系: r.群系表[r.群系[k]!]! };
+  const k = segAt(r, columnIndex(r.rx, r.rz, x, z), y);
+  return k < 0 ? null : { 状态: r.stateTable[r.状态[k]!]!, 群系: r.biomeTable[r.群系[k]!]! };
 };
 
 /** 一列摊开成逐格（下标 y − y底），状态、群系是区域表的下标；没数据返回 null */
-export const 摊开列 = (r: 解开的列段, col: number): { 状态: Uint16Array; 群系: Uint8Array } | null => {
+export const spreadColumn = (r: UnpackedColumnSegmentRegion, col: number): { 状态: Uint16Array; 群系: Uint8Array } | null => {
   const s = r.runStarts[col]!, e = r.runStarts[col + 1]!;
   if (s === e) return null;
-  const 高 = r.y顶 - r.y底 + 1;
-  const 状态 = new Uint16Array(高);
-  const 群系 = new Uint8Array(高);
-  let top = r.y顶;
+  const height = r.yTop - r.yBottom + 1;
+  const stateIds = new Uint16Array(height);
+  const biomeIds = new Uint8Array(height);
+  let top = r.yTop;
   for (let k = s; k < e; k++) {
-    const b = r.底[k]!;
-    状态.fill(r.状态[k]!, b - r.y底, top - r.y底 + 1);
-    群系.fill(r.群系[k]!, b - r.y底, top - r.y底 + 1);
+    const b = r.bottom[k]!;
+    stateIds.fill(r.状态[k]!, b - r.yBottom, top - r.yBottom + 1);
+    biomeIds.fill(r.群系[k]!, b - r.yBottom, top - r.yBottom + 1);
     top = b - 1;
   }
-  return { 状态, 群系 };
+  return { 状态: stateIds, 群系: biomeIds };
 };

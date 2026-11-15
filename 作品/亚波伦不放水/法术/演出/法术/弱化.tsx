@@ -7,43 +7,43 @@
 // 没做：半径内生物的 SAPPED / 虚弱效果。
 import React from 'react';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 十六进制色 } from '../零件/材质.ts';
-import { 冲击波环 } from '../零件/冲击波.tsx';
-import { 方块类, 默认半径 } from '../零件/丁粒子.ts';
-import { 原版粒子初速, 贴图粒子, type 粒子出生 } from '../零件/粒子.tsx';
-import 元 from './弱化.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { hexColor } from '../零件/材质.ts';
+import { ShockwaveRing } from '../零件/冲击波.tsx';
+import { blockClass, defaultRadius } from '../零件/丁粒子.ts';
+import { vanillaParticleInitSpeed, TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
+import meta from './弱化.元.ts';
 
-const 粉 = 十六进制色(0xff55ff);
-const 半径格 = 7;
+const pink = hexColor(0xff55ff);
+const radiusCells = 7;
 
-const 弱化: React.FC<法术演出属性> = ({ 秒, 起点, 种子 }) => {
-  const 脚z = 起点[2] - 0.5;
-  const r = rng(种子 * 7919 + 3);
-  const 方块: 粒子出生[] = [];
-  const bx = Math.floor(起点[0]);
-  const by = Math.floor(起点[1]);
-  for (let i = -半径格; i < 半径格; i++) {
-    for (let k = -半径格; k < 半径格; k++) {
+const weaken: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
+  const footZ = from[2] - 0.5;
+  const r = rng(seed * 7919 + 3);
+  const blockParticles: ParticleBirth[] = [];
+  const bx = Math.floor(from[0]);
+  const by = Math.floor(from[1]);
+  for (let i = -radiusCells; i < radiusCells; i++) {
+    for (let k = -radiusCells; k < radiusCells; k++) {
       if (r() > 0.25) continue;
-      const 色 = [粉[0] * 0.5, 粉[1] * 0.5, 粉[2] * 0.5] as const;
+      const color = [pink[0] * 0.5, pink[1] * 0.5, pink[2] * 0.5] as const;
       // SpellSquareParticle：super 收到 (0.5 − rand, 绿色参数, 0.5 − rand) 过一遍 Particle 的随机速度，竖直再 × 0.2；绿色参数非 0，水平不缩
       const rr = rng(Math.floor(r() * 1e9));
-      const [gx, gy, gz] = 原版粒子初速(rr, 0.5 - rr(), 色[1], 0.5 - rr());
-      const 速: [number, number, number] = [gx, -gz, gy * 0.2];
-      const 半 = 默认半径(rr);
-      const 寿命 = Math.floor(8 / (rr() * 0.8 + 0.2));
-      const 位: 点 = [bx + i, by + k, 脚z];
-      方块.push({ 刻: 0, 位, 速, 寿命, 半径: 半, 种子: 1, 色 });
+      const [gx, gy, gz] = vanillaParticleInitSpeed(rr, 0.5 - rr(), color[1], 0.5 - rr());
+      const speedVec: [number, number, number] = [gx, -gz, gy * 0.2];
+      const radius = defaultRadius(rr);
+      const lifetime = Math.floor(8 / (rr() * 0.8 + 0.2));
+      const pos: Vec3 = [bx + i, by + k, footZ];
+      blockParticles.push({ 刻: 0, 位: pos, 速: speedVec, 寿命: lifetime, radius: radius, 种子: 1, 色: color });
     }
   }
   return (
     <>
-      <冲击波环 位={[起点[0], 起点[1], 脚z + 0.25]} 刻={秒 * 20} 大小={半径格} 色={粉} 速={1} />
-      <贴图粒子 类={方块类} 出生们={方块} 秒={秒} />
+      <ShockwaveRing 位={[from[0], from[1], footZ + 0.25]} 刻={sec * 20} 大小={radiusCells} 色={pink} 速={1} />
+      <TexturedParticles 类={blockClass} spawns={blockParticles} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 弱化);
+export default defineSpellPerformance(meta, weaken);

@@ -9,23 +9,23 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { png } from '@engine/model/贴图.ts';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
-import { 船数 } from '@库/物品/船原版.ts';
-import { 水色, 海块, 海底色, 视距, 雾档数 } from './参数.ts';
-import type { 透视 } from './编排.ts';
-import { 海面图案 } from './光路.ts';
-import { 地平色表 } from './天色.ts';
+import { filmScale } from '@engine/三渲二/像素.ts';
+import { boatParams } from '@库/物品/船原版.ts';
+import { waterColor, seaBlockSize, seabedColor, viewDistance, fogTierCount } from './参数.ts';
+import type { Perspective } from './编排.ts';
+import { seaPattern } from './光路.ts';
+import { horizonColorTable } from './天色.ts';
 import stillUri from 'asset:贴图/场景/边城/水面';
 
 /** 原版 water_still.png.mcmeta：frametime 2 */
-const 每帧刻 = 2;
+const ticksPerFrame = 2;
 
-let 帧们: THREE.DataTexture[] | null = null;
-const 水帧们 = () => {
-  if (帧们) return 帧们;
+let frameTextures: THREE.DataTexture[] | null = null;
+const waterFrames = () => {
+  if (frameTextures) return frameTextures;
   const strip = png(stillUri);
   const n = strip.w;
-  帧们 = Array.from({ length: strip.h / n }, (_, k) => {
+  frameTextures = Array.from({ length: strip.h / n }, (_, k) => {
     const tex = new THREE.DataTexture(strip.px.slice(k * n * n * 4, (k + 1) * n * n * 4), n, n, THREE.RGBAFormat);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -36,35 +36,35 @@ const 水帧们 = () => {
     tex.needsUpdate = true;
     return tex;
   });
-  return 帧们;
+  return frameTextures;
 };
 
-const 雾表 = () => {
-  const tex = new THREE.DataTexture(地平色表(), 181, 1, THREE.RGBAFormat);
+const fogTable = () => {
+  const tex = new THREE.DataTexture(horizonColorTable(), 181, 1, THREE.RGBAFormat);
   tex.colorSpace = THREE.NoColorSpace; // 字节原样是 sRGB 数值
   tex.magFilter = tex.minFilter = THREE.NearestFilter;
   tex.needsUpdate = true;
   return tex;
 };
 
-const sRGB数 = (hex: string) => new THREE.Color().setStyle(hex, THREE.LinearSRGBColorSpace);
+const srgbColor = (hex: string) => new THREE.Color().setStyle(hex, THREE.LinearSRGBColorSpace);
 
 // 平涂派生的材质也跑同一个 onBeforeCompile，统一量是这一份对象，改一次全跟着变
-const 统一量 = {
+const uniforms = {
   seaTex: { value: null as THREE.Texture | null },
   seaFog: { value: null as THREE.Texture | null },
-  seaWater: { value: sRGB数(水色) },
-  seaDeep: { value: sRGB数(海底色) },
+  seaWater: { value: srgbColor(waterColor) },
+  seaDeep: { value: srgbColor(seabedColor) },
   seaTint: { value: new THREE.Color(1, 1, 1) },
   seaBoat: { value: new THREE.Vector4(0, 0, 1, 0) },
-  seaHole: { value: new THREE.Vector2(船数.船舱.横, 船数.船舱.纵) },
-  seaFar: { value: 视距 },
-  seaBands: { value: 雾档数 },
+  seaHole: { value: new THREE.Vector2(boatParams.cabinHole.xFrac, boatParams.cabinHole.vertical) },
+  seaFar: { value: viewDistance },
+  seaBands: { value: fogTierCount },
   seaPat: { value: null as THREE.Texture | null },
 };
 
 // three 的世界 Y 朝上（场景 Z 朝上的 group 转过来）：场景 x = W.x、y = −W.z
-const 片元头 = /* glsl */ `
+const fragmentHead = /* glsl */ `
 uniform sampler2D seaTex;
 uniform sampler2D seaFog;
 uniform vec3 seaWater;
@@ -78,7 +78,7 @@ uniform sampler2D seaPat;
 varying vec3 vSeaW;
 varying vec4 vSeaClip;
 `;
-const 挖 = /* glsl */ `
+const holeShader = /* glsl */ `
 vec2 seaP = vec2( vSeaW.x, - vSeaW.z );
 vec2 seaD = seaP - vec2( cameraPosition.x, - cameraPosition.z );
 float seaDist = length( seaD );
@@ -88,7 +88,7 @@ vec2 seaL = vec2( seaBoat.z * seaB.x + seaBoat.w * seaB.y, - seaBoat.w * seaB.x 
 if ( abs( seaL.x ) < seaHole.x && abs( seaL.y ) < seaHole.y ) discard;
 `;
 // 雾：原版 FogRenderer 从 视距 − clamp(视距/10, 4, 64) 起淡，到视距全是雾色；这里分 seaBands 档，最后一档之外是天。雾色按方位差查表（太阳在正西，−x）
-const 着色 = /* glsl */ `
+const shadeChunk = /* glsl */ `
 vec4 seaT = texture2D( seaTex, vec2( seaP.x, - seaP.y ) );
 vec3 seaC = mix( seaDeep, sRGBTransferOETF( vec4( seaT.rgb, 1.0 ) ).rgb * seaWater, seaT.a ) * seaTint;
 float seaStart = seaFar - clamp( seaFar / 10.0, 4.0, 64.0 );
@@ -102,44 +102,44 @@ outgoingLight = sRGBTransferEOTF( vec4( mix( seaC, seaFogC, seaF ), 1.0 ) ).rgb;
 diffuseColor.a = 1.0;
 `;
 
-let 材质: THREE.MeshBasicMaterial | null = null;
-const 海材质 = () => {
-  if (材质) return 材质;
+let cachedMaterial: THREE.MeshBasicMaterial | null = null;
+const seaMaterial = () => {
+  if (cachedMaterial) return cachedMaterial;
   const m = new THREE.MeshBasicMaterial({ color: '#ffffff' });
   m.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, 统一量);
+    Object.assign(sh.uniforms, uniforms);
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vSeaW;\nvarying vec4 vSeaClip;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvSeaW = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvSeaClip = gl_Position;');
     sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\n${片元头}`)
-      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\n${挖}`)
-      .replace('#include <opaque_fragment>', `${着色}\n#include <opaque_fragment>`);
+      .replace('#include <common>', `#include <common>\n${fragmentHead}`)
+      .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\n${holeShader}`)
+      .replace('#include <opaque_fragment>', `${shadeChunk}\n#include <opaque_fragment>`);
   };
   m.customProgramCacheKey = () => '把回忆拼好给你-日落海面';
-  统一量.seaFog.value = 雾表();
-  材质 = m;
+  uniforms.seaFog.value = fogTable();
+  cachedMaterial = m;
   return m;
 };
 
 /** 光路、远档那张图：按块数建一次，每帧换字节 */
-let 图: THREE.DataTexture | null = null;
-const 图案贴图 = (字节: Uint8Array, 列: number, 行: number) => {
-  if (!图 || 图.image.width !== 列 || 图.image.height !== 行) {
-    图 = new THREE.DataTexture(new Uint8Array(列 * 行 * 4), 列, 行, THREE.RGBAFormat);
-    图.colorSpace = THREE.NoColorSpace; // 字节原样是 sRGB 数值
-    图.magFilter = 图.minFilter = THREE.NearestFilter;
-    图.generateMipmaps = false;
-    图.flipY = false;
+let seaTexImg: THREE.DataTexture | null = null;
+const patternTexture = (bytes: Uint8Array, cols: number, rows: number) => {
+  if (!seaTexImg || seaTexImg.image.width !== cols || seaTexImg.image.height !== rows) {
+    seaTexImg = new THREE.DataTexture(new Uint8Array(cols * rows * 4), cols, rows, THREE.RGBAFormat);
+    seaTexImg.colorSpace = THREE.NoColorSpace; // 字节原样是 sRGB 数值
+    seaTexImg.magFilter = seaTexImg.minFilter = THREE.NearestFilter;
+    seaTexImg.generateMipmaps = false;
+    seaTexImg.flipY = false;
   }
-  (图.image.data as Uint8Array).set(字节);
-  图.needsUpdate = true;
-  return 图;
+  (seaTexImg.image.data as Uint8Array).set(bytes);
+  seaTexImg.needsUpdate = true;
+  return seaTexImg;
 };
 
-export type 海面属性 = {
+export type SeaSurfaceProps = {
   /** 海上的镜头（和画布同一个）：水面以眼为中心铺，光路、远档按它算 */
-  机: 透视;
+  机: Perspective;
   /** 页面尺寸（和画布同一个） */
   宽: number;
   高: number;
@@ -148,19 +148,19 @@ export type 海面属性 = {
   /** 游戏刻：贴图动画、光路闪的节奏 */
   刻: number;
   /** 色调（sRGB），乘在水上 */
-  色调: string;
+  tint: string;
 };
 
 /** 放在三渲二画布里（场景坐标），水面在 z = 0 */
-export const 海面: React.FC<海面属性> = ({ 机, 宽, 高, 船, 刻, 色调 }) => {
-  const geo = useMemo(() => new THREE.PlaneGeometry((视距 + 4) * 2, (视距 + 4) * 2), []);
-  const m = 海材质();
-  const 帧 = 水帧们();
-  统一量.seaTex.value = 帧[Math.floor(刻 / 每帧刻) % 帧.length]!;
-  统一量.seaTint.value.setStyle(色调, THREE.LinearSRGBColorSpace);
-  const a = (船.yaw * Math.PI) / 180;
-  统一量.seaBoat.value.set(船.loc[0], 船.loc[1], Math.cos(a), Math.sin(a));
-  const 案 = 海面图案(机, 刻, 宽, 高, 海块 / 成片倍数);
-  统一量.seaPat.value = 图案贴图(案.字节, 案.列, 案.行);
-  return <mesh geometry={geo} material={m} position={[机.眼[0], 机.眼[1], 0]} />;
+export const SeaSurface: React.FC<SeaSurfaceProps> = ({ 机: rig, 宽: width, 高: height, 船: boat, 刻: tick, tint }) => {
+  const geo = useMemo(() => new THREE.PlaneGeometry((viewDistance + 4) * 2, (viewDistance + 4) * 2), []);
+  const m = seaMaterial();
+  const seaFrames = waterFrames();
+  uniforms.seaTex.value = seaFrames[Math.floor(tick / ticksPerFrame) % seaFrames.length]!;
+  uniforms.seaTint.value.setStyle(tint, THREE.LinearSRGBColorSpace);
+  const a = (boat.yaw * Math.PI) / 180;
+  uniforms.seaBoat.value.set(boat.loc[0], boat.loc[1], Math.cos(a), Math.sin(a));
+  const pattern = seaPattern(rig, tick, width, height, seaBlockSize / filmScale);
+  uniforms.seaPat.value = patternTexture(pattern.字节, pattern.列, pattern.行);
+  return <mesh geometry={geo} material={m} position={[rig.眼[0], rig.眼[1], 0]} />;
 };

@@ -8,7 +8,7 @@ import { odometer, cloudPierceG, decelStartG, stopG } from './时间线.ts';
 import { baseline, baselineDir, rightNormal, perturb } from './真实飞行.ts';
 
 // ---------- 扫帚 ----------
-export type BroomState = { 位置: V3; 朝向: number; 俯仰: number; 横滚: number; 速度: number };
+export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; 速度: number };
 const raw = (globalFrame: number) => {
   const dist = Math.min(odometer(globalFrame), ROUTE.length);
   return { s: dist, p: baseline(dist), d: ROUTE.dir(Math.min(dist, ROUTE.length - 3)), dz: baselineDir(Math.min(dist, ROUTE.length - 3)), v: (odometer(globalFrame + 0.5) - odometer(globalFrame - 0.5)) * 24 };
@@ -42,7 +42,7 @@ export const routeYaw = (globalFrame: number) => {
 // 航线的俯仰（含真实飞行的那一份）。穿云那一下从 58° 的俯冲转到 31° 的下滑：航线在航点 W2 上是个折角，向心 Catmull-Rom 过折角时切线在三帧里
 // 先翘到 −26° 再落回 −31°（每帧 11°、12°、−4.5°），推近以后人在画面中间猛地一点头，是穿云那段「一抖」里最大的一下。
 // 前后各 拉起半宽 帧换成一段三次 Hermite（两头的值和斜率照原样），扫帚在不到一秒里平滑地拉起来；位置不动，只改画出来的俯仰
-const routePitch = (G: number) => headingPitch(raw(G).dz).pitch + perturb.at(G).俯仰;
+const routePitch = (G: number) => headingPitch(raw(G).dz).pitch + perturb.at(G).pitch;
 const pullUpHalfWidth = 10;
 const pullUpPitch = (() => {
   const winStart = cloudPierceG - pullUpHalfWidth;
@@ -68,19 +68,19 @@ export const broom = (globalFrame: number): BroomState => {
   let pitch = lerp(firstPitch, Math.abs(globalFrame - cloudPierceG) < pullUpHalfWidth ? pullUpPitch(globalFrame) : routePitch(globalFrame), ss(globalFrame / 14));
   if (globalFrame > stopG - 48) pitch *= flattenWeight(globalFrame);
   const ys = ss((globalFrame - turnSouth[0]) / (turnSouth[1] - turnSouth[0]));
-  const yaw = routeYaw(globalFrame) + pert.航向;
+  const yaw = routeYaw(globalFrame) + pert.heading;
   const hover = globalFrame > stopG ? 0.6 * Math.sin(((globalFrame - stopG) * 2 * Math.PI) / 48) : 0;
   return {
-    位置: [track.p[0] + normal[0] * pert.横, track.p[1] + normal[1] * pert.横, track.p[2] + pert.竖 + hover],
-    朝向: yaw,
-    俯仰: pitch,
-    横滚: roll * ss((globalFrame - 6) / 10) * (1 - ys),
+    位置: [track.p[0] + normal[0] * pert.lateral, track.p[1] + normal[1] * pert.lateral, track.p[2] + pert.竖 + hover],
+    facing: yaw,
+    pitch: pitch,
+    roll: roll * ss((globalFrame - 6) / 10) * (1 - ys),
     速度: track.v,
   };
 };
 
 // ---------- 骑手 ----------
-export type Riders = { 李樱: RideLiYing; 九胡: { lean: number; hugWaist: number; tailPhase: number; 风: number; headRaise: number; headTurn?: number } };
+export type Riders = { 李樱: RideLiYing; 九胡: { lean: number; hugWaist: number; tailPhase: number; wind: number; headRaise: number; headTurn?: number } };
 export const riders = (globalFrame: number): Riders => {
   // 收势：减速开始后一秒半里慢慢直起身子
   const brake = ss((globalFrame - decelStartG) / 36) * (1 - ss((globalFrame - stopG) / 12));
@@ -89,6 +89,6 @@ export const riders = (globalFrame: number): Riders => {
   return {
     // 起飞时身子压低；减速时慢慢直起身子，停住以后坐直往下看
     李樱: { lean: lerp(lerp(lerp(30, 46, go), 12, brake), 18, stop), headRaise: lerp(25, -20, stop) },
-    九胡: { lean: lerp(lerp(lerp(25, 34, go), 10, brake), 20, stop), hugWaist: 1, tailPhase: globalFrame / 9, 风: ss(globalFrame / 10) * (1 - stop), headRaise: lerp(10, -25, stop), headTurn: 20 * stop },
+    九胡: { lean: lerp(lerp(lerp(25, 34, go), 10, brake), 20, stop), hugWaist: 1, tailPhase: globalFrame / 9, wind: ss(globalFrame / 10) * (1 - stop), headRaise: lerp(10, -25, stop), headTurn: 20 * stop },
   };
 };

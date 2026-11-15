@@ -9,7 +9,7 @@ import { useThree } from '@react-three/fiber';
 import React, { useEffect, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
-import { use写入者, 新写入槽 } from '../core/写入者.ts';
+import { useWriter, newWriteSlot } from '../core/写入者.ts';
 import scatteringBin from 'asset:数据/大气/散射';
 import noiseBin from 'asset:数据/大气/噪声';
 import worleyBubblyBin from 'asset:数据/大气/沃利-泡';
@@ -221,8 +221,8 @@ export const atmoLightAt = (h: number) => atmosphere.cloudLight ?? sunlightAt(at
 // 要不要画 Photon 的云：大气打开，或只开云
 export const photonCloudsOn = () => atmoOn() || atmosphere.cloudsOnly;
 // 全开（Atmosphere）和只开云（CloudOnlyAtmosphere）共用一个槽，切点两边可以是不同的一种：接手的组件自己把另一种的开关关掉，不等旧画布卸载
-const 大气槽 = 新写入槽();
-const 关大气 = () => {
+const atmosphereSlot = newWriteSlot();
+const disableAtmosphere = () => {
   atmoPVec.x = 0;
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;
@@ -293,7 +293,7 @@ const apply = (data: Float32Array, sunIn: [number, number, number], far: number)
 
 // 放进画布里打开：sun = 场景坐标指向太阳；far = 地形远端（米，边界雾在这里融进天色）。卸载时关
 export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number; enabled?: boolean }> = ({ sun, far, enabled = true }) => {
-  use写入者(大气槽, 关大气);
+  useWriter(atmosphereSlot, disableAtmosphere);
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;
   const advance = useThree((s) => s.advance);
@@ -328,7 +328,7 @@ export const Atmosphere: React.FC<{ sun: [number, number, number]; far: number; 
 // 只开 Photon 的云（暮色森林，用户 10-15 定「Photon 云 + 暮色光照」）：天、雾、灯都还是那个世界自己的（atmoP 不开，材质的雾、穹顶不换），
 // 云远处融进的天色图按 skyAt（场景坐标的方向 → 线性颜色）展开，日光 light、天光 ambient 是线性颜色。key：天色、光变了就换一个（同一个 key 只展开一次）
 export const CloudOnlyAtmosphere: React.FC<{ sun: [number, number, number]; skyAt: (d: number[]) => number[]; light: number[]; ambient: number[]; skyKey: string }> = ({ sun, skyAt, light, ambient, skyKey }) => {
-  use写入者(大气槽, 关大气);
+  useWriter(atmosphereSlot, disableAtmosphere);
   const advance = useThree((s) => s.advance);
   const [ready, setReady] = useState(atmosphere.clouds !== null);
   const [release] = useState(() => {

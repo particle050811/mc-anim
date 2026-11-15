@@ -15,15 +15,15 @@ type Vibration = { from: V3; to: V3; t: number };
 const blockCenter = ([x, y, z]: V3): V3 => gameToScene(x + 0.5, y + 0.5, z + 0.5);
 const blockBottomCenter = ([x, y, z]: V3): V3 => gameToScene(x + 0.5, y, z + 0.5);
 // 离挥刀点 8 格内的感测体（游戏坐标）
-export const sensors: V3[] = [archery.感测体 as V3];
+export const sensors: V3[] = [archery.sculkSensor as V3];
 // 离那个感测体 8 格以内的尖啸体
-const shriekers: V3[] = [archery.尖啸体 as V3, archery.尖啸体西 as V3];
+const shriekers: V3[] = [archery.sculkShrieker as V3, archery.shriekerWest as V3];
 const tickSec = 1 / 20;
 const flightTicks = (a: V3, b: V3) => Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]));
 export const soundChain = (() => {
   const soundSources = [
-    { t: geom.挥刀, p: geom.斩击位置 },
-    { t: geom.弹开, p: geom.弹开点 },
+    { t: geom.swingTime, p: geom.slashPos },
+    { t: geom.deflect, p: geom.deflectPoint },
   ];
   const vibrations: Vibration[] = [];
   const activateSecs: number[] = sensors.map(() => Infinity);

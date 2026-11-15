@@ -3,15 +3,15 @@
 // 配乐、下界氛围垫底在场时间线上；游戏里提示那一刻还会放一声 ambient.nether_wastes.mood，和垫底的 mood.2 重了，这里不放。
 // 响度三档（同 声音表.md 6.1 节）：仪式开始、完成、现身的雷峰值 −10 dBFS；仪式循环 −28 LUFS（环境）；低语、祭品被吃、扣灵魂、脚步、拔剑、甩杖峰值 −18 dBFS。
 // 一个事件有几个文件的挑哪个、多响都是 Agent 取的，用户没听过。
-import { 窗口段 } from '@engine/段/窗口段.ts';
-import { 真下界包 } from '../../地点/真下界位置.ts';
-import { 召唤方案们, 召唤声音 } from '../../特效/安息仪式时序.ts';
-import { 第一幕, 第一幕步们 } from '../../场/1-台地/开盘时刻.ts';
-import 线 from '../../场/1-台地/时间线.ts';
-import 声音表 from './声音表.生成.ts';
+import { windowSeg } from '@engine/段/窗口段.ts';
+import { realNetherPack } from '../../地点/真下界位置.ts';
+import { summonPlans, summonSounds } from '../../特效/安息仪式时序.ts';
+import { act1, act1Steps } from '../../场/1-台地/开盘时刻.ts';
+import timeline from '../../场/1-台地/时间线.ts';
+import soundTable from './声音表.生成.ts';
 
 /** 召唤声音 的名 → 怎么放（不在表里的不放） */
-const 仪式响度: Record<string, { 峰值: number } | { 响度: number }> = {
+const ritualLoudness: Record<string, { 峰值: number } | { 响度: number }> = {
   仪式开始: { 峰值: -10 },
   仪式完成: { 峰值: -10 },
   雷声: { 峰值: -10 },
@@ -20,30 +20,30 @@ const 仪式响度: Record<string, { 峰值: number } | { 响度: number }> = {
   祭品被吃: { 峰值: -18 },
 };
 
-export default 窗口段(线, {
+export default windowSeg(timeline, {
   起: '开始',
   止: '召唤完',
-  地形: [真下界包],
-  声音表,
-  声音: ({ 放, 事件 }) => {
-    const 出: ReturnType<typeof 放>[] = [];
+  地形: [realNetherPack],
+  soundTable,
+  声音: ({ 放: play, 事件: events }) => {
+    const sounds: ReturnType<typeof play>[] = [];
     // 仪式：多选一的取第一个；扣灵魂（幽匿催发体绽放声，13 个文件）一秒一声，轮着用
-    let 扣 = 0;
-    for (const 声 of 召唤声音(召唤方案们.短)) {
-      const 秒 = 事件.放环 + 声.秒;
-      if (声.名.startsWith('扣灵魂')) {
-        出.push(放(声.资产[扣++ % 声.资产.length]!, 秒, { 峰值: -18, 名: 声.名 }));
+    let cycleIndex = 0;
+    for (const summonSound of summonSounds(summonPlans.短)) {
+      const sec = events.放环 + summonSound.秒;
+      if (summonSound.名.startsWith('扣灵魂')) {
+        sounds.push(play(summonSound.资产[cycleIndex++ % summonSound.资产.length]!, sec, { 峰值: -18, 名: summonSound.名 }));
         continue;
       }
-      const 档 = 仪式响度[声.名];
-      if (档) 出.push(放(声.资产[0]!, 秒, { ...档, 名: 声.名 }));
+      const loudLevel = ritualLoudness[summonSound.名];
+      if (loudLevel) sounds.push(play(summonSound.资产[0]!, sec, { ...loudLevel, 名: summonSound.名 }));
     }
     // 编排的钟（现身后几秒）→ 段内秒
-    const 段秒 = (t: number) => 事件.现身 + t;
-    for (const [i, t] of 第一幕步们.entries()) 出.push(放(`音效/block.stone.step.${(i % 6) + 1}`, 段秒(t), { 峰值: -18, 名: `脚步${i + 1}` }));
+    const segSec = (t: number) => events.现身 + t;
+    for (const [i, t] of act1Steps.entries()) sounds.push(play(`音效/block.stone.step.${(i % 6) + 1}`, segSec(t), { 峰值: -18, 名: `脚步${i + 1}` }));
     // 拔剑：原版没有拔剑声，借穿装备的声音
-    出.push(放('音效/item.armor.equip_generic.1', 段秒(第一幕.拔剑), { 峰值: -18, 名: '拔剑' }));
-    出.push(放('音效/诡厄巫法/goety.wind.1', 段秒(第一幕.甩杖[0]), { 峰值: -18, 名: '甩杖' }));
-    return 出;
+    sounds.push(play('音效/item.armor.equip_generic.1', segSec(act1.drawSwordSec), { 峰值: -18, 名: '拔剑' }));
+    sounds.push(play('音效/诡厄巫法/goety.wind.1', segSec(act1.staffFlick[0]), { 峰值: -18, 名: '甩杖' }));
+    return sounds;
   },
 });

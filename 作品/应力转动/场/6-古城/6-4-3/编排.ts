@@ -17,7 +17,7 @@ export const WOOL_NAMES = placedWoolThrough('C');
 // 同一批羊毛的方块底面中心（场景坐标；6-4-4、6-4-5 用）
 export const WOOL: V3[] = WOOL_NAMES.map((n) => woolBlockAt(allWool[n]));
 
-export { openChest, rummageFacing, swingTurnDeg, liying, makeLiying, type 李樱演法 } from './编排/李樱.ts';
+export { openChest, rummageFacing, swingTurnDeg, liying, makeLiying, type LiYingStaging } from './编排/李樱.ts';
 export { huangpan, liuxinzhong } from './编排/追兵.ts';
 export { fanFadeSec, fanStopSec, fanRpm, fanVisibility, fanState, airflow } from './编排/风.ts';
 export { arrowAt, critParticles } from './编排/箭.ts';

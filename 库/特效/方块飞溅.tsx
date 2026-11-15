@@ -131,8 +131,8 @@ export type DebrisBurst = {
   spin?: number;
   hidden?: boolean;
   skip?: boolean;
-  管?: 矛管; // 矛尖（连钻头虚影）扫过的那一管：管里的方块崩成粒子，不飞
-  地面?: number; // 落地的高度（场景 z）：给了就让碎块、碎渣掉到这个高度停住；不给就一直往下掉
+  tube?: SpearTube; // 矛尖（连钻头虚影）扫过的那一管：管里的方块崩成粒子，不飞
+  ground?: number; // 落地的高度（场景 z）：给了就让碎块、碎渣掉到这个高度停住；不给就一直往下掉
 };
 // 从 z0 以竖直速度 vz、重力 g 往下掉，底面（离中心 half）碰到 `地面` 的时刻；碰不到（地面在上面）就是 Infinity
 const landingSec = (z0: number, vz: number, gravity: number, half: number, groundZ?: number) => {
@@ -143,11 +143,11 @@ const landingSec = (z0: number, vz: number, gravity: number, half: number, groun
 };
 // 矛管：点 = 矛尖路线上的点 [x, y, z, 相对这次撞击的物理秒数]，半径 = 管的半径（格）；粒子倍速：粒子时钟比物理时钟快多少（慢放的近景按特效倍速）；
 // 密度：每格每轴几份粒子（原版 4）。各段 编排.ts 里做成常量（同一个对象），哪些格子在管里只算一次
-export type 矛管 = { 点: number[][]; 半径: number; particleClockScale: number; 密度?: number };
+export type SpearTube = { 点: number[][]; radius: number; particleClockScale: number; density?: number };
 const open = (B?: DebrisBurst) => !!B && (B.sec >= 0 || !!B.hidden);
 
 // 一格（中心、尺寸）离矛尖路线最近的那一点：距离、矛尖到那一点的时刻（相对撞击）、位置和路线方向。路线按 0.1 格细分
-export const closestOnTube = (center: number[], size: number[], tube: 矛管) => {
+export const closestOnTube = (center: number[], size: number[], tube: SpearTube) => {
   let best = Infinity;
   let bt = 0;
   let bq: number[] = center;
@@ -189,7 +189,7 @@ const drillFling = (q: number[], dir: number[]) => (p0: V3, rand: () => number):
   return [radial[0] * scale, radial[1] * scale, radial[2] * scale];
 };
 type TubeCells = Map<number, { t: number; ps: BreakParticle[] }>;
-const tubeCache = new WeakMap<DebrisData, WeakMap<矛管, TubeCells>>();
+const tubeCache = new WeakMap<DebrisData, WeakMap<SpearTube, TubeCells>>();
 
 const matCache = new WeakMap<THREE.Texture, THREE.MeshStandardMaterial>();
 // 两面都画（树叶这种镂空方块从窟窿里看得到里面的面）；打底的自发光也乘上顶点色（染色），不然草、树叶这类靠顶点色染绿的贴图会发灰（同 lib/方块网格.tsx）
@@ -208,9 +208,9 @@ export const debrisMat = (tex: THREE.Texture) => {
 // 离镜头太近的飞散碎块淡出（一镜到底近景：镜头和扫帚一样快，会追上往前飞的碎块、从碎块云中穿过，整屏一块灰石砖）。
 // 镜头：镜头在这份数据本地坐标里的位置；碎块（外接球）离镜头 `近` 米内不画，`近`～`远` 之间按距离淡出。只管已飞起来的碎块和小碎渣，
 // 还在原位的是墙，镜头离墙多远由编排和孔道管，淡掉会在墙上开窟窿。矛管里崩出的破坏粒子离镜头 1 米内不画（零点一几米的方片贴镜头前就是半个画面）。
-export type NearHide = { 镜头: number[]; 近: number; 远: number };
+export type NearHide = { cameraPos: number[]; near: number; far: number };
 // 一镜到底近景用的距离（米，碎块外接球的面到镜头）：0.6 米以内不画，0.6～1.6 米淡出
-export const debrisNearHide = { 近: 0.6, 远: 1.6 };
+export const debrisNearHide = { near: 0.6, far: 1.6 };
 const fadeCache = new WeakMap<THREE.MeshStandardMaterial, THREE.MeshStandardMaterial[]>();
 const fadeSteps = 8;
 const fadeMat = (baseMat: THREE.MeshStandardMaterial, alpha: number) => {
@@ -234,9 +234,9 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
   const mat = debrisMat(tex);
   const visibleFrac = (pos: number[], radius: number) => {
     if (!nearHide) return 1;
-    const camPos = nearHide.镜头;
+    const camPos = nearHide.cameraPos;
     const dist = Math.hypot(pos[0] - camPos[0], pos[1] - camPos[1], pos[2] - camPos[2]) - radius;
-    const frac = Math.min(1, Math.max(0, (dist - nearHide.近) / (nearHide.远 - nearHide.近)));
+    const frac = Math.min(1, Math.max(0, (dist - nearHide.near) / (nearHide.far - nearHide.near)));
     return frac * frac * (3 - 2 * frac);
   };
   // 外圈（`ring`）：每个盒子合成一个几何，原地画（往里收一丝，和场景网格里没藏掉的同一个面重合时让网格的面在前面）
@@ -292,10 +292,10 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
     return per.map(toGeo);
   }, [data, bursts.length, fixWinding]);
   const tubes = bursts.map((burst, bi) => {
-    if (!burst.管 || burst.skip) return null;
+    if (!burst.tube || burst.skip) return null;
     let byTube = tubeCache.get(data);
     if (!byTube) tubeCache.set(data, (byTube = new WeakMap()));
-    let tubeCells = byTube.get(burst.管);
+    let tubeCells = byTube.get(burst.tube);
     if (!tubeCells) {
       tubeCells = new Map();
       const tint = tintsOf(data);
@@ -304,15 +304,15 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
         const size = pc.cell.size ?? [1, 1, 1];
         const offset = pc.cell.off ?? [0, 0, 0];
         const center = [pc.cell.p[0] + offset[0], pc.cell.p[1] + offset[1], pc.cell.p[2] + offset[2]];
-        const nearest = closestOnTube(center, size, burst.管!);
-        if (nearest.d > burst.管!.半径) return;
+        const nearest = closestOnTube(center, size, burst.tube!);
+        if (nearest.d > burst.tube!.radius) return;
         // 粒子贴图取这一格的侧面；颜色原版 0.6，再乘这张贴图的染色（树叶、草）
         const sideFace = pc.faces['+x'];
         const t = tint.get(texKey(sideFace)) ?? [255, 255, 255];
         const col = t.map((v) => (0.6 * Math.min(255, v)) / 255) as [number, number, number];
-        tubeCells!.set(i, { t: nearest.t, ps: spawnBlockBreak(center as V3, size as V3, [sideFace[0], sideFace[1], sideFace[2], sideFace[3]], col, burst.seed * 97 + i, burst.管!.密度 ?? 4, drillFling(nearest.q, nearest.dir)) });
+        tubeCells!.set(i, { t: nearest.t, ps: spawnBlockBreak(center as V3, size as V3, [sideFace[0], sideFace[1], sideFace[2], sideFace[3]], col, burst.seed * 97 + i, burst.tube!.density ?? 4, drillFling(nearest.q, nearest.dir)) });
       });
-      byTube.set(burst.管, tubeCells);
+      byTube.set(burst.tube, tubeCells);
     }
     return tubeCells;
   });
@@ -351,7 +351,7 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
       if (sec < 0) {
         const offset = pc.cell.off ?? [0, 0, 0];
         nodes.push(<mesh key={`c${i}`} geometry={pc.geo} material={mat} position={[pc.cell.p[0] + offset[0], pc.cell.p[1] + offset[1], pc.cell.p[2] + offset[2]]} castShadow receiveShadow />);
-      } else collectBreakParticles(tc.ps, sec * burst.管!.particleClockScale, particles);
+      } else collectBreakParticles(tc.ps, sec * burst.tube!.particleClockScale, particles);
       return;
     }
     const rand = rng(burst.seed * 1000 + i * 17 + 3);
@@ -371,7 +371,7 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
     const vel = [0, 1, 2].map((k) => burst.dir[k] * sp + (side[k] / sl) * out + (rand() - 0.5) * burst.spread * 0.5);
     vel[2] += burst.spread * 0.3 * rand();
     const gravity = burst.gravity ?? 16;
-    const tt = Math.min(t, landingSec(p0[2], vel[2], gravity, 0.5, burst.地面));
+    const tt = Math.min(t, landingSec(p0[2], vel[2], gravity, 0.5, burst.ground));
     const pos: V3 = [p0[0] + vel[0] * tt, p0[1] + vel[1] * tt, p0[2] + vel[2] * tt - 0.5 * gravity * tt * tt];
     const axis = new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize();
     const spinRate = (burst.spin ?? 6) * (0.5 + rand());
@@ -391,7 +391,7 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
     vel[2] += burst.spread * 0.5 * rand();
     const gravity = burst.gravity ?? 16;
     const p0 = [pc.cell.p[0] + (rand() - 0.5) * 0.8, pc.cell.p[1] + (rand() - 0.5) * 0.8, pc.cell.p[2] + (rand() - 0.5) * 0.8];
-    const tt = Math.min(t, landingSec(p0[2], vel[2], gravity, ch.size / 2, burst.地面));
+    const tt = Math.min(t, landingSec(p0[2], vel[2], gravity, ch.size / 2, burst.ground));
     const pos: V3 = [p0[0] + vel[0] * tt, p0[1] + vel[1] * tt, p0[2] + vel[2] * tt - 0.5 * gravity * tt * tt];
     const quat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(rand() - 0.5, rand() - 0.5, rand() - 0.5).normalize(), (burst.spin ?? 6) * 1.6 * (0.5 + rand()) * tt);
     const alpha = visibleFrac(pos, (ch.size / 2) * Math.sqrt(3));

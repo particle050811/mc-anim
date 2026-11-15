@@ -3,23 +3,23 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { 备好私有配乐, 段私有配乐, 私有配乐目录, 缺字节, 静音wav } from './私有配乐.ts';
-import type { 资产锁, 锁条目 } from './资产锁.ts';
+import { preparePrivateMusic, segPrivateMusic, privateMusicDir, missingMarker, silentWav } from './私有配乐.ts';
+import type { AssetLock, LockEntry } from './资产锁.ts';
 
-const tmp = (名: string) => fs.mkdtempSync(path.join(os.tmpdir(), `anim-${名}-`));
+const tmp = (prefix: string) => fs.mkdtempSync(path.join(os.tmpdir(), `anim-${prefix}-`));
 const sha = (b: string | Buffer) => crypto.createHash('sha256').update(b).digest('hex');
-const 放 = (根: string, 库: 'store' | '私有', 内容: string) => {
-  const h = sha(内容);
-  fs.mkdirSync(path.join(根, 库, h.slice(0, 2)), { recursive: true });
-  fs.writeFileSync(path.join(根, 库, h.slice(0, 2), h), 内容);
+const putFile = (dataRoot: string, storage: 'store' | '私有', content: string) => {
+  const h = sha(content);
+  fs.mkdirSync(path.join(dataRoot, storage, h.slice(0, 2)), { recursive: true });
+  fs.writeFileSync(path.join(dataRoot, storage, h.slice(0, 2), h), content);
 };
 
 describe('私有配乐', () => {
   const id = '配乐/某歌';
-  const 段 = (长秒: number, 入点秒 = 0) => ({ 段: { 声音: [{ 秒: 0, 资产: id, 名: '歌', 长秒, 入点秒 }, { 秒: 0.1, 资产: '音效/甲', 名: '甲', 长秒: 0.3 }] } });
+  const makeSegment = (durSec: number, inSec = 0) => ({ 段: { 声音: [{ 秒: 0, 资产: id, 名: '歌', 长秒: durSec, 入点秒: inSec }, { 秒: 0.1, 资产: '音效/甲', 名: '甲', 长秒: 0.3 }] } });
 
   it('静音 wav：48 kHz 单声道 16 位，秒数向上取整，数据全零', () => {
-    const b = 静音wav(1.2);
+    const b = silentWav(1.2);
     expect(b.toString('ascii', 0, 4)).toBe('RIFF');
     expect(b.readUInt32LE(24)).toBe(48000);
     expect(b.readUInt16LE(22)).toBe(1);
@@ -29,26 +29,26 @@ describe('私有配乐', () => {
   });
 
   it('数据根里没有：写一份盖住所有 cue 的静音并报出来；补上字节后换成原样字节；只认私有库里 配乐/ 开头的', () => {
-    const 根 = tmp('私有配乐');
-    const 条目: 锁条目 = { sha256: sha('歌的字节'), 后缀: '.m4a', 大小: 12, 库: '私有' };
-    const 锁: 资产锁 = { [id]: 条目, '音效/甲': { sha256: 'a'.repeat(64), 后缀: '.ogg', 大小: 1, 库: 'store' } };
-    const 目标 = path.join(私有配乐目录(根), '配乐', '某歌');
+    const dataRoot = tmp('私有配乐');
+    const entry: LockEntry = { sha256: sha('歌的字节'), 后缀: '.m4a', 大小: 12, 库: '私有' };
+    const assetLock: AssetLock = { [id]: entry, '音效/甲': { sha256: 'a'.repeat(64), 后缀: '.ogg', 大小: 1, 库: 'store' } };
+    const targetPath = path.join(privateMusicDir(dataRoot), '配乐', '某歌');
 
-    expect(段私有配乐(段(2).段, 锁, 根)).toEqual({ [id]: 缺字节 });
+    expect(segPrivateMusic(makeSegment(2).段, assetLock, dataRoot)).toEqual({ [id]: missingMarker });
     // 两段：2 秒从 0 秒起、1 秒从 2.5 秒起 → 盖到 3.5 秒，多留 1 秒取整 = 5 秒
-    const 缺 = 备好私有配乐([段(2), 段(1, 2.5)], 锁, 根);
-    expect(缺).toEqual([{ id, 秒: 5, 应在: path.join(根, '私有', 条目.sha256.slice(0, 2), 条目.sha256) }]);
-    expect(fs.readFileSync(目标).equals(静音wav(4.5))).toBe(true);
-    const 修改时间 = fs.statSync(目标).mtimeMs;
-    expect(备好私有配乐([段(2), 段(1, 2.5)], 锁, 根)).toHaveLength(1);
-    expect(fs.statSync(目标).mtimeMs).toBe(修改时间);
+    const missing = preparePrivateMusic([makeSegment(2), makeSegment(1, 2.5)], assetLock, dataRoot);
+    expect(missing).toEqual([{ id, 秒: 5, expectedPath: path.join(dataRoot, '私有', entry.sha256.slice(0, 2), entry.sha256) }]);
+    expect(fs.readFileSync(targetPath).equals(silentWav(4.5))).toBe(true);
+    const mtimeBefore = fs.statSync(targetPath).mtimeMs;
+    expect(preparePrivateMusic([makeSegment(2), makeSegment(1, 2.5)], assetLock, dataRoot)).toHaveLength(1);
+    expect(fs.statSync(targetPath).mtimeMs).toBe(mtimeBefore);
 
-    放(根, '私有', '歌的字节');
-    fs.chmodSync(path.join(根, '私有', 条目.sha256.slice(0, 2), 条目.sha256), 0o444);
-    expect(段私有配乐(段(2).段, 锁, 根)).toEqual({ [id]: 条目.sha256 });
-    expect(备好私有配乐([段(2)], 锁, 根)).toEqual([]);
-    expect(fs.readFileSync(目标, 'utf8')).toBe('歌的字节');
+    putFile(dataRoot, '私有', '歌的字节');
+    fs.chmodSync(path.join(dataRoot, '私有', entry.sha256.slice(0, 2), entry.sha256), 0o444);
+    expect(segPrivateMusic(makeSegment(2).段, assetLock, dataRoot)).toEqual({ [id]: entry.sha256 });
+    expect(preparePrivateMusic([makeSegment(2)], assetLock, dataRoot)).toEqual([]);
+    expect(fs.readFileSync(targetPath, 'utf8')).toBe('歌的字节');
     // 公开的配乐不走这里（照常打进包）
-    expect(段私有配乐(段(2).段, { ...锁, [id]: { ...条目, 库: 'store' } }, 根)).toEqual({});
+    expect(segPrivateMusic(makeSegment(2).段, { ...assetLock, [id]: { ...entry, 库: 'store' } }, dataRoot)).toEqual({});
   });
 });

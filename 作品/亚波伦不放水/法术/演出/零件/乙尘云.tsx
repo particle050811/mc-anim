@@ -4,22 +4,22 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import type { 点 } from '../接口.ts';
-import type { 色 } from './材质.ts';
-import { 贴图粒子, type 粒子出生, type 粒子类 } from './粒子.tsx';
-import 图0 from 'asset:贴图/法术/goety/particle/cult_spell_0';
-import 图1 from 'asset:贴图/法术/goety/particle/cult_spell_1';
-import 图2 from 'asset:贴图/法术/goety/particle/cult_spell_2';
-import 图3 from 'asset:贴图/法术/goety/particle/cult_spell_3';
-import 图4 from 'asset:贴图/法术/goety/particle/cult_spell_4';
-import 图5 from 'asset:贴图/法术/goety/particle/cult_spell_5';
-import 图6 from 'asset:贴图/法术/goety/particle/cult_spell_6';
-import 图7 from 'asset:贴图/法术/goety/particle/cult_spell_7';
+import type { Vec3 } from '../接口.ts';
+import type { RgbColor } from './材质.ts';
+import { TexturedParticles, type ParticleBirth, type ParticleClass } from './粒子.tsx';
+import cultSpell0Png from 'asset:贴图/法术/goety/particle/cult_spell_0';
+import cultSpell1Png from 'asset:贴图/法术/goety/particle/cult_spell_1';
+import cultSpell2Png from 'asset:贴图/法术/goety/particle/cult_spell_2';
+import cultSpell3Png from 'asset:贴图/法术/goety/particle/cult_spell_3';
+import cultSpell4Png from 'asset:贴图/法术/goety/particle/cult_spell_4';
+import cultSpell5Png from 'asset:贴图/法术/goety/particle/cult_spell_5';
+import cultSpell6Png from 'asset:贴图/法术/goety/particle/cult_spell_6';
+import cultSpell7Png from 'asset:贴图/法术/goety/particle/cult_spell_7';
 
-const 类: 粒子类 = { 帧: [图0, 图1, 图2, 图3, 图4, 图5, 图6, 图7].map(png), 选帧: '按年龄', 混合: '半透明', 透明度: (年龄) => Math.max(0, 0.9 - 0.015 * 年龄) };
+const particleType: ParticleClass = { 帧: [cultSpell0Png, cultSpell1Png, cultSpell2Png, cultSpell3Png, cultSpell4Png, cultSpell5Png, cultSpell6Png, cultSpell7Png].map(png), 选帧: '按年龄', 混合: '半透明', opacity: (age) => Math.max(0, 0.9 - 0.015 * age) };
 
 /** 一批尘云的出生表：位们 每处一颗 */
-export const 尘云出生 = (位们: readonly 点[], 刻: number, 大小: number, 颜色: 色, 种子: number): 粒子出生[] =>
-  位们.map((位, i) => ({ 刻, 位, 寿命: Math.floor(8 / (rng(种子 * 71 + i)() * 0.8 + 0.2)), 半径: 大小, 色: 颜色, 种子: i }));
+export const dustCloudSpawns = (positions: readonly Vec3[], tick: number, size: number, color: RgbColor, seed: number): ParticleBirth[] =>
+  positions.map((pos, i) => ({ 刻: tick, 位: pos, 寿命: Math.floor(8 / (rng(seed * 71 + i)() * 0.8 + 0.2)), radius: size, 色: color, 种子: i }));
 
-export const 尘云: React.FC<{ 出生们: readonly 粒子出生[]; 秒: number }> = ({ 出生们, 秒 }) => <贴图粒子 类={类} 出生们={出生们} 秒={秒} />;
+export const DustCloud: React.FC<{ spawns: readonly ParticleBirth[]; 秒: number }> = ({ spawns, 秒: sec }) => <TexturedParticles 类={particleType} spawns={spawns} 秒={sec} />;

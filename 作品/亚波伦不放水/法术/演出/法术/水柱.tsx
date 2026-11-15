@@ -10,87 +10,87 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 减, 乘, 长, 混 } from '../零件/弹道.ts';
-import { 带 } from '../零件/束.tsx';
-import { 四边面们, 方管面 } from '../零件/方管.tsx';
-import { 垂向 } from '../零件/游带.tsx';
-import 元, { 水柱持续刻, 水柱落点 } from './水柱.元.ts';
-import 里图数据 from 'asset:贴图/法术/goety/entity/water_jet/jet_inner';
-import 外图数据 from 'asset:贴图/法术/goety/entity/water_jet/jet_outer';
-import 水拖图数据 from 'asset:贴图/法术/goety/particle/water_trail';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { sub, scaleVec, vecLength, mix } from '../零件/弹道.ts';
+import { Band } from '../零件/束.tsx';
+import { SquareTubeFaces, squareTubeFace } from '../零件/方管.tsx';
+import { perpendicular } from '../零件/游带.tsx';
+import meta, { waterPillarDurTicks, waterLandPoint } from './水柱.元.ts';
+import jetInnerPng from 'asset:贴图/法术/goety/entity/water_jet/jet_inner';
+import jetOuterPng from 'asset:贴图/法术/goety/entity/water_jet/jet_outer';
+import waterTrailPng from 'asset:贴图/法术/goety/particle/water_trail';
 
-const 里图 = png(里图数据);
-const 外图 = png(外图数据);
-const 水拖图 = png(水拖图数据);
+const innerImg = png(jetInnerPng);
+const outerPng = png(jetOuterPng);
+const waterTrailImg = png(waterTrailPng);
 
 /** 一颗水拖各刻末的位置（第 0 项 = 出生处），到落地为止 */
-const 水拖路 = (生: 点, 种子: number, 地面: number): 点[] => {
-  const r = rng(种子);
-  const 高斯 = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
-  let v: 点 = [高斯() * 0.15, 高斯() * 0.15, 高斯() * 0.15];
-  let p = 生;
-  const 路 = [p];
-  for (let k = 0; k < 200 && p[2] > 地面; k++) {
+const waterDragPath = (startPoint: Vec3, seed: number, ground: number): Vec3[] => {
+  const r = rng(seed);
+  const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+  let v: Vec3 = [gaussian() * 0.15, gaussian() * 0.15, gaussian() * 0.15];
+  let p = startPoint;
+  const trail = [p];
+  for (let k = 0; k < 200 && p[2] > ground; k++) {
     v = [v[0], v[1], v[2] - 0.04 * 0.5];
-    p = [p[0] + v[0], p[1] + v[1], Math.max(地面, p[2] + v[2])];
-    v = 乘(v, 0.99);
-    路.push(p);
+    p = [p[0] + v[0], p[1] + v[1], Math.max(ground, p[2] + v[2])];
+    v = scaleVec(v, 0.99);
+    trail.push(p);
   }
-  return 路;
+  return trail;
 };
 
-const 水拖: React.FC<{ 路: 点[]; 年龄: number }> = ({ 路, 年龄 }) => {
+const WaterTrail: React.FC<{ 路: Vec3[]; age: number }> = ({ 路: trail, age }) => {
   // 游戏画上一刻到这一刻之间：年龄 a 时头在 路(a − 1)
-  const a = 年龄 - 1;
-  if (a <= 0 || a >= 路.length - 1) return null;
+  const a = age - 1;
+  if (a <= 0 || a >= trail.length - 1) return null;
   const k = Math.floor(a);
-  const 点们: 点[] = [混(路[k]!, 路[k + 1]!, a - k)];
-  const 进度 = [1];
-  let 剩 = 0.6;
-  for (let i = k; i >= 0 && 剩 > 0; i--) {
-    const 上 = 点们[点们.length - 1]!;
-    const d = 长(减(路[i]!, 上));
+  const points: Vec3[] = [mix(trail[k]!, trail[k + 1]!, a - k)];
+  const progresses = [1];
+  let remain = 0.6;
+  for (let i = k; i >= 0 && remain > 0; i--) {
+    const lastPoint = points[points.length - 1]!;
+    const d = vecLength(sub(trail[i]!, lastPoint));
     if (d < 1e-6) continue;
-    if (d >= 剩) {
-      点们.push(混(上, 路[i]!, 剩 / d));
-      剩 = 0;
+    if (d >= remain) {
+      points.push(mix(lastPoint, trail[i]!, remain / d));
+      remain = 0;
     } else {
-      点们.push(路[i]!);
-      剩 -= d;
+      points.push(trail[i]!);
+      remain -= d;
     }
-    进度.push(剩 / 0.6);
+    progresses.push(remain / 0.6);
   }
-  if (点们.length < 2) return null;
+  if (points.length < 2) return null;
   return (
     <>
-      {垂向(减(点们[0]!, 点们[点们.length - 1]!)).map((侧, i) => (
-        <带 key={i} 点们={点们} 半宽向={乘(侧, 0.03)} 图={水拖图} u们={进度} 混合="镂空" />
+      {perpendicular(sub(points[0]!, points[points.length - 1]!)).map((side, i) => (
+        <Band key={i} points={points} halfWidthDir={scaleVec(side, 0.03)} 图={waterTrailImg} uValues={progresses} 混合="镂空" />
       ))}
     </>
   );
 };
 
-const 水柱: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 落 = 水柱落点(目标);
-  const 全长 = 长(减(落, 起点));
-  const 滴们: number[] = [];
-  for (let n = Math.max(0, Math.floor(刻) - 60); n <= Math.min(Math.floor(刻), 水柱持续刻 - 1); n++) 滴们.push(n);
+const WaterJet: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const landing = waterLandPoint(target);
+  const fullLength = vecLength(sub(landing, from));
+  const drops: number[] = [];
+  for (let n = Math.max(0, Math.floor(tick) - 60); n <= Math.min(Math.floor(tick), waterPillarDurTicks - 1); n++) drops.push(n);
   return (
     <>
-      {刻 < 水柱持续刻 && (
+      {tick < waterPillarDurTicks && (
         <>
-          <四边面们 面们={方管面(起点, 落, 0.04, { 沿: 'u', 长起: -刻 * 0.4, 长终: 全长 / 1.28 - 刻 * 0.4 })} 图={里图} 混合="半透明" 重复 无深度测试 序={1} />
-          <四边面们 面们={方管面(起点, 落, 0.05, { 沿: 'u', 长起: -刻 * 0.08, 长终: 全长 / 12.8 - 刻 * 0.08 })} 图={外图} 混合="半透明" 重复 无深度测试 序={2} />
+          <SquareTubeFaces quads={squareTubeFace(from, landing, 0.04, { alongAxis: 'u', lengthStart: -tick * 0.4, lengthEnd: fullLength / 1.28 - tick * 0.4 })} 图={innerImg} 混合="半透明" repeat noDepthTest 序={1} />
+          <SquareTubeFaces quads={squareTubeFace(from, landing, 0.05, { alongAxis: 'u', lengthStart: -tick * 0.08, lengthEnd: fullLength / 12.8 - tick * 0.08 })} 图={outerPng} 混合="半透明" repeat noDepthTest 序={2} />
         </>
       )}
-      {滴们.map((n) => (
-        <水拖 key={n} 路={水拖路(落, 种子 * 7919 + n, 目标[2])} 年龄={刻 - n} />
+      {drops.map((n) => (
+        <WaterTrail key={n} 路={waterDragPath(landing, seed * 7919 + n, target[2])} age={tick - n} />
       ))}
     </>
   );
 };
 
-export default 定义法术演出(元, 水柱);
+export default defineSpellPerformance(meta, WaterJet);

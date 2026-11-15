@@ -5,102 +5,102 @@
 // 拍他都从前方、侧前方（他脑后斜挂着晋升之环，从背后拍挡脸，11-11 看片意见），广角跟着动作，不震屏。镜头都是 Agent 摆的，用户没看过。
 import React from 'react';
 import type { Cam } from '@engine/core/机位.ts';
-import { lerp as 混, smoothstep01 as 平滑 } from '@engine/core/数学.ts';
+import { lerp as mix, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 混合层 } from '@engine/anim/基岩动画.ts';
-import { 定义画面, use段 } from '@engine/段/段画面.tsx';
-import { 动画骨骼表, 娘化亚波伦, 娘化亚波伦生物 } from '../../角色/娘化亚波伦.tsx';
-import { 袍摆让腿 } from '../../角色/袍摆让腿.ts';
-import { 反应史蒂夫 } from '../../角色/反应史蒂夫.tsx';
-import { 亚波伦血条 } from '../../界面/战斗界面.tsx';
-import { 杖尖轮盘 } from '../../界面/杖尖轮盘.tsx';
-import { 安息仪式演出 } from '../../特效/安息仪式.tsx';
-import { 召唤方案们 } from '../../特效/安息仪式时序.ts';
-import { 瞬移烟 } from '../../特效/瞬移烟.tsx';
-import { 祭坛 } from '../../场/1-台地/布局.ts';
-import { 取镜头, 台地画布, 画幅, 跟拍, type 镜头 } from '../../场/1-台地/台地场.tsx';
-import { 一向, 悬一, 拍 } from '../../场/1-台地/开盘时刻.ts';
-import { 世界秒, 片秒 } from '../../场/1-台地/开盘拍.ts';
-import 线 from '../../场/1-台地/时间线.ts';
-import { 亚波伦位, 史蒂夫位, 史蒂夫眼, 史蒂夫状态在, 幕起, 演, 瞬移们, 第二幕盘参, 盘摆, 每像素格 } from '../../场/1-台地/编排-开盘.ts';
-import 段 from './段.ts';
-import { 绕拍, 绕拍机位 } from './绕拍.ts';
-import 声音 from './声音地址.生成.ts';
+import { blendLayers } from '@engine/anim/基岩动画.ts';
+import { definePicture, useSeg } from '@engine/段/段画面.tsx';
+import { animSkeletonTable, GirlYaBoLun, GirlYaBoLunCreature } from '../../角色/娘化亚波伦.tsx';
+import { hemYieldLeg } from '../../角色/袍摆让腿.ts';
+import { ReactingSteve } from '../../角色/反应史蒂夫.tsx';
+import { YaBoLunHealthBar } from '../../界面/战斗界面.tsx';
+import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
+import { RestRitualPerformance } from '../../特效/安息仪式.tsx';
+import { summonPlans } from '../../特效/安息仪式时序.ts';
+import { TeleportSmoke } from '../../特效/瞬移烟.tsx';
+import { altar } from '../../场/1-台地/布局.ts';
+import { pickShot, TerraceCanvas, aspect, followShot, type Shot } from '../../场/1-台地/台地场.tsx';
+import { firstDir, hoverFirst, beats } from '../../场/1-台地/开盘时刻.ts';
+import { toWorldSec, toClipSec } from '../../场/1-台地/开盘拍.ts';
+import timeline from '../../场/1-台地/时间线.ts';
+import { yaBoLunPos, stevePos, steveEye, steveStateAt, actStart, perform, teleports, act2WheelParams, wheelPlace, cellsPerPixel } from '../../场/1-台地/编排-开盘.ts';
+import seg from './段.ts';
+import { orbitBeat, orbitRig } from './绕拍.ts';
+import soundUrl from './声音地址.生成.ts';
 
-const 她的几何 = 娘化亚波伦生物.定义.模型 as Parameters<typeof 袍摆让腿>[0];
-const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const 插 = (a: readonly number[], b: readonly number[], k: number): V3 => [混(a[0]!, b[0]!, k), 混(a[1]!, b[1]!, k), 混(a[2]!, b[2]!, k)];
+const yaBoLunGeometry = GirlYaBoLunCreature.definition.模型 as Parameters<typeof hemYieldLeg>[0];
+const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
+const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [mix(a[0]!, b[0]!, k), mix(a[1]!, b[1]!, k), mix(a[2]!, b[2]!, k)];
 /** 段内片秒 → 编排的钟（世界秒） */
-const 钟 = (s: number) => 幕起 + 世界秒(s);
-const 史胸 = (t: number) => 加(史蒂夫位(t), [0, 0, 1.0]);
-const 她胸 = (t: number) => 加(亚波伦位(t), [0, 0, 1.1]);
+const clock = (s: number) => actStart + toWorldSec(s);
+const steveChest = (t: number) => addVec(stevePos(t), [0, 0, 1.0]);
+const yaBoLunChest = (t: number) => addVec(yaBoLunPos(t), [0, 0, 1.1]);
 /** 水平单位向量 a → b */
-const 朝 = (a: readonly number[], b: readonly number[]): V3 => {
+const dirTo = (a: readonly number[], b: readonly number[]): V3 => {
   const [x, y] = [b[0]! - a[0]!, b[1]! - a[1]!];
   const n = Math.hypot(x, y) || 1;
   return [x / n, y / n, 0];
 };
 /** 往左转 90 度（水平） */
-const 左 = (v: readonly number[]): V3 => [-v[1]!, v[0]!, 0];
+const perpLeft = (v: readonly number[]): V3 => [-v[1]!, v[0]!, 0];
 
 /** 镜头从片秒 起 到 止，跟拍；摆(镜内片秒, 进度) */
-const 跟 = (名: string, 起: number, 止: number, 摆: (s: number, k: number) => Cam, 步 = 0.05): 镜头 => ({ 名, 起, 机位: 跟拍(止 - 起, (s, k) => 摆(起 + s, k), 步) });
+const follow = (name: string, startSec: number, endSec: number, cameraPath: (s: number, k: number) => Cam, stepSec = 0.05): Shot => ({ 名: name, 起: startSec, cameraRig: followShot(endSec - startSec, (s, k) => cameraPath(startSec + s, k), stepSec) });
 
 // 切点（片秒）：2-01 一直到他冲到半路、她已经瞬移走；2-02 她从烟里出来、他滑停在原地打转、回头蹲下蓄剑；2-03 切在她往上一拉那一下，他冲过来从她底下过去、她拉升，整段慢放在这一镜；2-04 他站起来抬头看她
-const 切 = [0, 拍.移 + 0.1, 绕拍.起, 绕拍.止] as const;
-const 段长 = 线.事件.开盘完.秒 - 线.事件.召唤完.秒;
-const 镜头表: 镜头[] = [
+const cuts = [0, beats.移 + 0.1, orbitBeat.起, orbitBeat.止] as const;
+const segLengthSec = timeline.事件.开盘完.秒 - timeline.事件.召唤完.秒;
+const shotTable: Shot[] = [
   // 2-01 他冲的那条线东边、和人差不多高（16 mm）：她从祭坛一蹬飞出来、刹在他东北边，他蹲下、挥剑冲出去，她冒烟一缩没了，他冲进烟里。
   // 机位不动、只摇：72 格/秒冲过去跟着摇是甩镜头；取景点从两人中间慢慢移到她刹住的地方
-  跟('2-01', 切[0], 切[1], (_s, k) => {
-    const 线中 = 插(史胸(幕起), 加(悬一, [祭坛[0], 祭坛[1], 祭坛[2] + 1.1]), 0.55);
-    const 右: V3 = [一向[1], -一向[0], 0];
-    const pos = 加(加(线中, 右, 6.2), [0, 0, 0.7]);
-    return { pos, tgt: 插(线中, 加(悬一, [祭坛[0], 祭坛[1], 祭坛[2] + 1.1]), 0.3 * 平滑(k)), lens: 16 };
+  follow('2-01', cuts[0], cuts[1], (_s, k) => {
+    const pathMid = lerpVec(steveChest(actStart), addVec(hoverFirst, [altar[0], altar[1], altar[2] + 1.1]), 0.55);
+    const right: V3 = [firstDir[1], -firstDir[0], 0];
+    const pos = addVec(addVec(pathMid, right, 6.2), [0, 0, 0.7]);
+    return { pos, tgt: lerpVec(pathMid, addVec(hoverFirst, [altar[0], altar[1], altar[2] + 1.1]), 0.3 * unitSmoothStep(k)), lens: 16 };
   }),
   // 2-02 两人西边、略高：她从烟里冒出来带着冲势往东南一飘、刹住转向他；他滑停在她北边几格、原地横着打转，转完蹲着一扭身回头、蓄剑，她往下一沉。他在画面左、她在右
-  跟('2-02', 切[1], 切[2], (s) => {
-    const t = 钟(s);
-    const m = 插(她胸(t), 史胸(t), 0.5);
-    return { pos: 加(m, [-4.6, 0.3, 0.9]), tgt: m, lens: 18 };
+  follow('2-02', cuts[1], cuts[2], (s) => {
+    const t = clock(s);
+    const m = lerpVec(yaBoLunChest(t), steveChest(t), 0.5);
+    return { pos: addVec(m, [-4.6, 0.3, 0.9]), tgt: m, lens: 18 };
   }),
   // 2-03 绕着她转 180 度（绕拍.ts）：她往上一拉，他冲过来从她脚底下过去（这一下起慢放），她一甩身对着他、伸杖、杖尖张盘、拉升到祭坛上空，
   // 镜头在世界里从她右后方逆时针绕到她左前方，四件事同时在这一镜里
-  跟('2-03', 切[2], 切[3], (s) => 绕拍机位(s)),
+  follow('2-03', cuts[2], cuts[3], (s) => orbitRig(s)),
   // 2-04 他右前方、比他头顶高一点：他转完停住、松开潜行站起来、转过来仰着脸看祭坛上空的她（她在镜头后上方）；镜头往他身上推一点。
   // 机位在她左手那一侧（= 他右手那侧），和第 4 幕第一镜在两人连线同一边，切过去不跳轴
-  跟('2-04', 切[3], 段长, (s, k) => {
-    const t = 钟(s);
-    const [胸, 眼] = [她胸(t), 史蒂夫眼(t)];
-    const 前 = 朝(眼, 胸);
-    const 远 = 混(1, 0.85, k);
-    const pos = 加(加(加(眼, 前, 2.4 * 远), 左(前), -0.5 * 远), [0, 0, 0.9]);
-    return { pos, tgt: 加(眼, [0, 0, 0.1]), lens: 24 };
+  follow('2-04', cuts[3], segLengthSec, (s, k) => {
+    const t = clock(s);
+    const [chest, eye] = [yaBoLunChest(t), steveEye(t)];
+    const forward = dirTo(eye, chest);
+    const distFactor = mix(1, 0.85, k);
+    const pos = addVec(addVec(addVec(eye, forward, 2.4 * distFactor), perpLeft(forward), -0.5 * distFactor), [0, 0, 0.9]);
+    return { pos, tgt: addVec(eye, [0, 0, 0.1]), lens: 24 };
   }),
 ];
 /** 给测试查机位不入地、不穿基座（钟：片秒） */
-export const 第二幕镜头表 = 镜头表;
-if (Math.abs(片秒(拍.冲二) - 拍.冲二) > 1e-9) throw new Error('2-开盘：慢放要在第二次冲之后才起');
+export const actTwoShotTable = shotTable;
+if (Math.abs(toClipSec(beats.dashSecondSec) - beats.dashSecondSec) > 1e-9) throw new Error('2-开盘：慢放要在第二次冲之后才起');
 
-export default 定义画面(段, 声音, () => {
-  const { 秒, 段: 本段 } = use段(段);
-  const w = 世界秒(秒);
-  const t = 幕起 + w;
-  const 她 = 演.在(t);
+export default definePicture(seg, soundUrl, () => {
+  const { 秒: sec, 段: thisSegment } = useSeg(seg);
+  const w = toWorldSec(sec);
+  const t = actStart + w;
+  const yaBoLun = perform.在(t);
   // 飞的时候两腿一前一后错开（角色/动作/亚波伦演出.ts 的 飞行、升空、升指），腿从袍子里戳出来的地方袍摆让开（同 6-结算舞）；腿收着时不改
-  const 她姿势 = { ...她.属性.姿势, ...袍摆让腿(她的几何, 混合层([{ 骨骼: 动画骨骼表(她.属性.秒, 她.属性.表演) }, { 骨骼: 她.属性.姿势 }], 'TLM')).姿势 };
-  const { 机位 } = 取镜头(镜头表, 秒, 本段.秒);
-  const 盘 = 第二幕盘参(t);
+  const yaBoLunPose = { ...yaBoLun.props.bonePose, ...hemYieldLeg(yaBoLunGeometry, blendLayers([{ skeleton: animSkeletonTable(yaBoLun.props.秒, yaBoLun.props.act) }, { skeleton: yaBoLun.props.bonePose }], 'TLM')).bonePose };
+  const { cameraRig } = pickShot(shotTable, sec, thisSegment.秒);
+  const disc = act2WheelParams(t);
   return (
-    <台地画布 仪式结构 机位={机位} 界面={<亚波伦血条 宽={画幅.宽} s={2} 血比={1} />}>
+    <TerraceCanvas ritualStructure cameraRig={cameraRig} ui={<YaBoLunHealthBar 宽={aspect.宽} s={2} healthRatio={1} />}>
       {/* 仪式做完后留在台地上的结构：方案的 总秒 之后就是静态的结构和火 */}
-      <group position={祭坛}>
-        <安息仪式演出 秒={线.事件.召唤完.秒 - 线.事件.放环.秒 + w} 方案={召唤方案们.短} />
+      <group position={altar}>
+        <RestRitualPerformance 秒={timeline.事件.召唤完.秒 - timeline.事件.放环.秒 + w} plan={summonPlans.短} />
       </group>
-      <娘化亚波伦 {...她.属性} 姿势={她姿势} 持杖 />
-      {盘 && <杖尖轮盘 杖={演.杖(t)} {...盘摆} 参={盘} 每像素格={每像素格} />}
-      <瞬移烟 瞬移们={瞬移们} 秒={t} />
-      <反应史蒂夫 状态={史蒂夫状态在(t, w)} />
-    </台地画布>
+      <GirlYaBoLun {...yaBoLun.props} bonePose={yaBoLunPose} holdWand />
+      {disc && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={disc} cellsPerPixel={cellsPerPixel} />}
+      <TeleportSmoke teleports={teleports} 秒={t} />
+      <ReactingSteve 状态={steveStateAt(t, w)} />
+    </TerraceCanvas>
   );
 });

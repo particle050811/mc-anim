@@ -5,148 +5,148 @@
 import { clamp01 } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
-import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
+import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
 import { vanillaWalk } from '@库/角色/史蒂夫.tsx';
-import type { 魔法酒狐全部表情, 魔法酒狐新姿势 } from '@库/角色/魔法酒狐新动作.ts';
+import type { MagicalWineFoxAllExpression, MagicalWineFoxExPose } from '@库/角色/魔法酒狐新动作.ts';
 import { CREEPER, type CreeperPose } from '@库/生物/苦力怕.tsx';
-import { fps, 一帧秒, 旧帧 } from '../../分镜/时间.ts';
-import { 段窗口, 段内事件帧 as 段内正片事件帧 } from '../../分镜/正片第8句.ts';
-import { 门口 } from '../../地点/门口小木屋.tsx';
-import type { 门口取景 } from '../../场/2-门口/参数.ts';
-import * as 参 from '../../场/2-门口/第8句参数.ts';
-import * as 八 from '../../场/2-门口/第8句.ts';
-import { 色板 } from '../../色板.ts';
+import { fps, oneFrameSec, legacyFrameSec } from '../../分镜/时间.ts';
+import { segmentWindow, segEventFrames as segMainCutEventFrames } from '../../分镜/正片第8句.ts';
+import { entrance } from '../../地点/门口小木屋.tsx';
+import type { DoorFraming } from '../../场/2-门口/参数.ts';
+import * as params from '../../场/2-门口/第8句参数.ts';
+import * as sentence8 from '../../场/2-门口/第8句.ts';
+import { palette } from '../../色板.ts';
 
-const 键 = '2-收集快乐';
-export const 事 = 段内正片事件帧(键);
-const 起帧 = 段窗口(键).起帧;
+const segKey = '2-收集快乐';
+export const events = segMainCutEventFrames(segKey);
+const startFrame = segmentWindow(segKey).起帧;
 /** 段内帧 → 歌曲帧（颗粒的种子取它，和核对段的静帧同一颗粒） */
-export const 歌曲帧 = (f: number) => 起帧 + f;
+export const toSongFrame = (f: number) => startFrame + f;
 /** 段内帧 → 歌上的秒（她的呼吸、尾巴按它走） */
-export const 歌秒 = (f: number) => (起帧 + f) / fps;
-const 站 = 门口.站排y;
+export const songSec = (f: number) => (startFrame + f) / fps;
+const standY = entrance.standRowY;
 
-const 插 = (a: number, b: number, t: number) => a + (b - a) * t;
-const 插3 = (a: readonly number[], b: readonly number[], t: number): V3 => [插(a[0]!, b[0]!, t), 插(a[1]!, b[1]!, t), 插(a[2]!, b[2]!, t)];
-type 骨表 = Record<string, BonePose>;
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const lerpVec3 = (a: readonly number[], b: readonly number[], t: number): V3 => [lerp(a[0]!, b[0]!, t), lerp(a[1]!, b[1]!, t), lerp(a[2]!, b[2]!, t)];
+type BoneTable = Record<string, BonePose>;
 /** 两张骨骼表按转角插值（一边没有的骨骼当 0°） */
-const 插骨 = (a: 骨表, b: 骨表, t: number): 骨表 => {
-  const r: 骨表 = {};
-  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) r[k] = { rot: 插3(a[k]?.rot ?? [0, 0, 0], b[k]?.rot ?? [0, 0, 0], t) };
+const lerpBonePose = (a: BoneTable, b: BoneTable, t: number): BoneTable => {
+  const r: BoneTable = {};
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) r[k] = { rot: lerpVec3(a[k]?.rot ?? [0, 0, 0], b[k]?.rot ?? [0, 0, 0], t) };
   return r;
 };
-const 看插 = (a: [number, number], b: [number, number], t: number): [number, number] => [插(a[0], b[0], clamp01(t)), 插(a[1], b[1], clamp01(t))];
+const lookLerp = (a: [number, number], b: [number, number], t: number): [number, number] => [lerp(a[0], b[0], clamp01(t)), lerp(a[1], b[1], clamp01(t))];
 
 // ---------- 镜头、调子 ----------
 /** 取景（第8句镜头）：整句不动。第 7 句末朝北仰看着远处的屋子，这里同一个朝向直接切到门口这一面，一切进来就是她拿着照片站在空框前，
  *  挂照片前有一秒看清。不从天往下摇：切过来先摇半秒，头几帧是大半屏的山墙和天，看不出到了哪（核查 10-24，Agent 暂定） */
-export const 取景: 门口取景 = 八.第8句镜头.取景;
+export const framing: DoorFraming = sentence8.line8Shot.framing;
 /** 转晴走了多少（0 段首 → 1 第8句晴定），两头缓 */
-export const 转晴进度 = (f: number) => {
-  const t = clamp01(f / 事.第8句晴定);
+export const clearingProgress = (f: number) => {
+  const t = clamp01(f / events.第8句晴定);
   return t * t * (3 - 2 * t);
 };
 /** 调子：段首接第 7 句末的雨后暖阳，第8句晴定 时到 第8句调子（雨后暖阳和夏日白天各一半） */
-export const 调子在 = (f: number): 调子 => 插调子(色板.雨后暖阳, 色板.夏日白天, 0.5 * 转晴进度(f));
+export const gradeAt = (f: number): Tone => lerpTone(palette.雨后暖阳, palette.夏日白天, 0.5 * clearingProgress(f));
 
 // ---------- 照片墙 ----------
 /** 夏天那四格里放了几张：段首前三张，挂照片 那一帧起四张（第 4 格先是空框） */
-export const 墙上几张 = (f: number) => (f < 事.挂照片 ? 3 : 4);
+export const wallPhotoCount = (f: number) => (f < events.挂照片 ? 3 : 4);
 
 // ---------- 她 ----------
-export type 她态 = {
+export type LiYingState = {
   loc: V3;
   yaw: number;
-  姿势: 魔法酒狐新姿势;
-  表情: 魔法酒狐全部表情;
+  stancePose: MagicalWineFoxExPose;
+  expression: MagicalWineFoxAllExpression;
   /** 头 [俯仰, 左右]；给了 骨骼.Head 就不用它 */
   看?: [number, number];
-  骨骼: 骨表;
-  眨眼: number | 'auto';
+  skeleton: BoneTable;
+  blink: number | 'auto';
   /** 不给 = 不呼吸、尾巴不摆（屏住气哈） */
   秒?: number;
 };
 
 /** 段内帧 f 离 挂照片 几秒（之前是负的） */
-const 距挂 = (f: number) => (f - 事.挂照片) / fps;
+const distSinceHang = (f: number) => (f - events.挂照片) / fps;
 /** 往框里推走了多少（0 手里 → 1 进框）：挂照片 前 挂伸秒 起，挂照片 前一帧到 1（正好落在框里那张的位置、大小），两头缓（进框时慢下来） */
-const 推进度 = (f: number) => {
-  const t = clamp01((距挂(f) + 参.挂伸秒) / (参.挂伸秒 - 一帧秒));
+const pushProgress = (f: number) => {
+  const t = clamp01((distSinceHang(f) + params.hangReachSec) / (params.hangReachSec - oneFrameSec));
   return t * t * (3 - 2 * t);
 };
 
-export const 她态 = (f: number): 她态 => {
-  const loc: V3 = [八.哈气站位.她, 站, 0];
-  const 秒 = 歌秒(f);
-  if (f < 事.她看见苦力怕) {
-    let 手: 骨表 = 参.拿照片手;
-    let 看 = 参.看手里;
-    if (f >= 事.挂照片) {
+export const LiYingState = (f: number): LiYingState => {
+  const loc: V3 = [sentence8.hissStandPos.liYingX, standY, 0];
+  const sec = songSec(f);
+  if (f < events.她看见苦力怕) {
+    let handPose: BoneTable = params.holdPhotoHand;
+    let gaze = params.lookInHand;
+    if (f >= events.挂照片) {
       // 挂上了：手收回来，看一眼框再转过来看你
-      手 = 插骨(参.挂照片手, 参.空手, 距挂(f) / 参.收手秒);
-      看 = 看插(参.看框, 参.看你, (距挂(f) - 参.收手秒 + 一帧秒) / 参.转头秒);
-    } else if (距挂(f) >= -参.挂伸秒) {
-      手 = 插骨(参.拿照片手, 参.挂照片手, 推进度(f));
-      看 = 看插(参.看手里, 参.看框, (距挂(f) + 参.挂伸秒 + 一帧秒) / 参.转头秒);
+      handPose = lerpBonePose(params.hangPhotoHand, params.emptyHand, distSinceHang(f) / params.retractHandSec);
+      gaze = lookLerp(params.lookFrame, params.lookAtYou, (distSinceHang(f) - params.retractHandSec + oneFrameSec) / params.turnHeadSec);
+    } else if (distSinceHang(f) >= -params.hangReachSec) {
+      handPose = lerpBonePose(params.holdPhotoHand, params.hangPhotoHand, pushProgress(f));
+      gaze = lookLerp(params.lookInHand, params.lookFrame, (distSinceHang(f) + params.hangReachSec + oneFrameSec) / params.turnHeadSec);
     }
-    return { loc, yaw: 180, 姿势: '站', 表情: '微笑', 看, 骨骼: 手, 眨眼: 'auto', 秒 };
+    return { loc, yaw: 180, stancePose: '站', expression: '微笑', 看: gaze, skeleton: handPose, blink: 'auto', 秒: sec };
   }
-  if (f < 事.哈气) {
+  if (f < events.哈气) {
     // 看见苦力怕：头往画面左边转过去（1/12 秒，24 fps 时两帧），吓一跳
-    return { loc, yaw: 180, 姿势: '站', 表情: '惊讶', 看: 看插(参.看你, 参.看苦力怕, ((f - 事.她看见苦力怕) / fps + 一帧秒) / 旧帧(2)), 骨骼: 参.空手, 眨眼: 0, 秒 };
+    return { loc, yaw: 180, stancePose: '站', expression: '惊讶', 看: lookLerp(params.lookAtYou, params.lookAtCreeper, ((f - events.她看见苦力怕) / fps + oneFrameSec) / legacyFrameSec(2)), skeleton: params.emptyHand, blink: 0, 秒: sec };
   }
-  if (f < 事.苦力怕逃) {
-    return { loc, yaw: 八.哈气朝向.她, 姿势: '哈气', 表情: '哈气', 看: 八.哈气看, 骨骼: { ...八.哈气爪, ...八.哈气尾 }, 眨眼: 0 };
+  if (f < events.苦力怕逃) {
+    return { loc, yaw: sentence8.hissFacing.liYingYaw, stancePose: '哈气', expression: '哈气', 看: sentence8.puffLook, skeleton: { ...sentence8.puffPaws, ...sentence8.hissTail }, blink: 0 };
   }
   // 回头冲你得意地一歪头：转身朝镜头，头转向你、歪过去（1/8 秒歪到位，24 fps 时三帧），闭眼笑
-  const 歪 = 参.得意歪 * clamp01(((f - 事.苦力怕逃) / fps + 一帧秒) / 旧帧(3));
-  const [俯仰, 左右] = 参.得意看;
-  return { loc, yaw: 180, 姿势: '站', 表情: '微笑', 骨骼: { Head: { rot: [-俯仰, -左右, 歪] } }, 眨眼: 1, 秒 };
+  const tilt = params.proudTilt * clamp01(((f - events.苦力怕逃) / fps + oneFrameSec) / legacyFrameSec(3));
+  const [pitch, yaw] = params.proudLook;
+  return { loc, yaw: 180, stancePose: '站', expression: '微笑', skeleton: { Head: { rot: [-pitch, -yaw, tilt] } }, blink: 1, 秒: sec };
 };
 
 /** 不在框里的那张光柱破云（照片墙.tsx 的 地图画片）：挂照片 之前在她手里，挂照片 前 挂伸秒 起从手里的位置、大小挪进空框，前一帧已经和框里那张一样，
  *  挂照片 那一帧（咔哒一声）换成框里那张（这里给 null），画面不跳。角的 x、z 吸到整成片像素（贴图像素的边落在整像素上） */
-export const 照片态 = (f: number): { 角: V3; 边: number } | null => {
-  if (f >= 事.挂照片) return null;
-  const t = 推进度(f);
-  const 吸 = (v: number) => Math.round(v * 取景.每格) / 取景.每格;
-  const 角 = 插3(参.照片手持角, 参.照片框角, t);
-  return { 角: [吸(角[0]), 角[1], 吸(角[2])], 边: 插(参.照片手持边, 1, t) };
+export const photoState = (f: number): { 角: V3; side: number } | null => {
+  if (f >= events.挂照片) return null;
+  const t = pushProgress(f);
+  const snap = (v: number) => Math.round(v * framing.pxPerCell) / framing.pxPerCell;
+  const corner = lerpVec3(params.photoHoldAngle, params.photoFrameAngle, t);
+  return { 角: [snap(corner[0]), corner[1], snap(corner[2])], side: lerp(params.photoHoldEdge, 1, t) };
 };
 
 // ---------- 苦力怕 ----------
-const 走速 = 参.苦力怕走速;
-const 逃速 = CREEPER.speed.flee * 参.苦力怕逃倍率;
+const walkSpeed = params.creeperWalkSpeed;
+const fleeSpeed = CREEPER.speed.flee * params.creeperFleeMult;
 /** 段内帧 f 离 苦力怕掉头 几秒 */
-const 距掉头 = (f: number) => (f - 事.苦力怕掉头) / fps;
+const distSinceTurn = (f: number) => (f - events.苦力怕掉头) / fps;
 
-export const 苦力怕态 = (f: number): CreeperPose => {
-  const 停 = 八.哈气站位.苦力怕;
-  if (f < 事.哈气) {
-    const x = 停 - (走速 * (事.哈气 - f)) / fps;
+export const creeperPose = (f: number): CreeperPose => {
+  const stopX = sentence8.hissStandPos.苦力怕;
+  if (f < events.哈气) {
+    const x = stopX - (walkSpeed * (events.哈气 - f)) / fps;
     // 一直在走（不是从站着起步）；腿的相位按到哈气那一帧还差几秒倒推
-    const 腿 = vanillaWalk(走速, 10 - (事.哈气 - f) / fps);
-    return { loc: [x, 站, 0], yaw: 八.哈气朝向.苦力怕, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
+    const walk = vanillaWalk(walkSpeed, 10 - (events.哈气 - f) / fps);
+    return { loc: [x, standY, 0], yaw: sentence8.hissFacing.苦力怕, limbSwing: walk.limbSwing, stride: walk.stride, headYaw: 0 };
   }
-  if (f < 事.苦力怕掉头) return { loc: [停, 站, 0], yaw: 八.哈气朝向.苦力怕, ...八.苦力怕停步 };
-  if (距掉头(f) < 参.苦力怕掉头秒) {
+  if (f < events.苦力怕掉头) return { loc: [stopX, standY, 0], yaw: sentence8.hissFacing.苦力怕, ...sentence8.creeperStill };
+  if (distSinceTurn(f) < params.creeperTurnSec) {
     // 往右（顺时针）转过来：先正脸朝镜头，再朝西（起那一帧已经转了一帧）
-    const k = clamp01((距掉头(f) + 一帧秒) / 参.苦力怕掉头秒);
-    return { loc: [停, 站, 0], yaw: 八.哈气朝向.苦力怕 - 180 * k, limbSwing: 0, stride: 0, headYaw: 0 };
+    const k = clamp01((distSinceTurn(f) + oneFrameSec) / params.creeperTurnSec);
+    return { loc: [stopX, standY, 0], yaw: sentence8.hissFacing.苦力怕 - 180 * k, limbSwing: 0, stride: 0, headYaw: 0 };
   }
-  const 秒 = 距掉头(f) - 参.苦力怕掉头秒 + 一帧秒;
-  const x = 停 - 逃速 * 秒;
-  const 腿 = vanillaWalk(逃速, 秒, true);
-  return { loc: [x, 站, 0], yaw: 八.哈气朝向.苦力怕 - 180, limbSwing: 腿.limbSwing, stride: 腿.stride, headYaw: 0 };
+  const sec = distSinceTurn(f) - params.creeperTurnSec + oneFrameSec;
+  const x = stopX - fleeSpeed * sec;
+  const walk = vanillaWalk(fleeSpeed, sec, true);
+  return { loc: [x, standY, 0], yaw: sentence8.hissFacing.苦力怕 - 180, limbSwing: walk.limbSwing, stride: walk.stride, headYaw: 0 };
 };
 
 // ---------- 你 ----------
 /** 你一直站在照片墙右边、身子朝镜头，头转过去看着她（定稿：你在她身后看她或看苦力怕） */
-export const 你态 = (_f: number) => ({ x: 八.哈气站位.你, yaw: 八.哈气朝向.你, headYaw: 八.你的头, 倍数: 八.史蒂夫倍数 });
+export const youState = (_f: number) => ({ x: sentence8.hissStandPos.你, yaw: sentence8.hissFacing.你, headYaw: sentence8.youHead, scale: sentence8.steveScale });
 
 // ---------- 气泡 ----------
-export const 气泡态 = (f: number): { 字: string; x: number } | null => {
-  if (f < 事.哈气) return null;
-  if (f < 事.苦力怕逃) return { 字: 八.哈气气泡字, x: 八.哈气站位.她 };
-  return { 字: 参.得意气泡字, x: 八.哈气站位.她 };
+export const bubbleState = (f: number): { 字: string; x: number } | null => {
+  if (f < events.哈气) return null;
+  if (f < events.苦力怕逃) return { 字: sentence8.hissBubbleText, x: sentence8.hissStandPos.liYingX };
+  return { 字: params.proudBubbleText, x: sentence8.hissStandPos.liYingX };
 };

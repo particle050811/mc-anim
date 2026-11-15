@@ -1,28 +1,28 @@
 // 边城的方块：贴图图集（方块贴图.png，工具/游戏取材/边城贴图.py 从 1.20.1 客户端 jar 取），方块的六个面各贴哪张，方块的形状。
 // 体素.ts 用「方块 + 形状」的编号（1～255）记每一格，合并成长方体后交给 渲染.ts 画。
-import raw资产 from 'asset:数据/场景/边城/方块贴图';
+import blockAtlasRawAsset from 'asset:数据/场景/边城/方块贴图';
 // 贴图名照 方块贴图.json 的键
 export type TextureName =
   '石砖' | '裂纹石砖' | '苔石砖' | '錾制石砖' | '平滑石头' | '平滑石台阶侧' | '石头' | '圆石' | '苔石' | '磨制安山岩' | '安山岩' | '橡木木板' | '云杉木板' | '深色橡木木板' | '白桦木板' | '橡木原木' | '橡木原木顶'
   | '云杉原木' | '云杉原木顶' | '深色橡木原木' | '深色橡木原木顶' | '去皮云杉原木' | '去皮云杉原木顶' | '去皮橡木原木' | '去皮橡木原木顶' | '砖块' | '深板岩瓦' | '深板岩砖' | '黑色混凝土' | '磨制黑石' | '泥土' | '砂砾'
   | '土径顶' | '干草块侧' | '干草块顶' | '木桶侧' | '木桶顶' | '白色羊毛' | '红色羊毛' | '蓝色羊毛' | '黄色羊毛' | '绿色羊毛' | '橙色羊毛' | '白色陶瓦' | '方解石' | '云杉活板门' | '水' | '草方块顶' | '草方块侧'
   | '橡树叶' | '窗' | '铁闸' | '橡木门上' | '橡木门下' | '云杉门上' | '云杉门下' | '深色橡木门上' | '深色橡木门下' | '暗';
-const raw = raw资产 as unknown as { 列: number; 行: number; 贴图: Record<TextureName, { 序号: number; 来源: string; 平均色: number[] }> };
+const raw = blockAtlasRawAsset as unknown as { 列: number; 行: number; 贴图: Record<TextureName, { 序号: number; 来源: string; 平均色: number[] }> };
 
 export const ATLAS = { cols: raw.列, rows: raw.行 };
 export const textureIndex = (n: TextureName) => raw.贴图[n].序号;
 
 // 方块：X / Y 是朝东西 / 南北的侧面，顶 / 底；换：这几个朝向的面把贴图转 90°（横放的原木），位 1 = X 面、2 = Y 面、4 = 顶底；
 // 变体：同一种方块里按格子随机换成别的贴图（石砖里混裂纹石砖、苔石砖，和游戏里建城墙的做法一样），[贴图, 比例] 最多两种
-export type BlockDef = { X: number; Y: number; 顶: number; 底: number; 换: number; 变: [number, number, number, number] };
+export type BlockDef = { X: number; Y: number; topTexIndex: number; bottom: number; 换: number; variants: [number, number, number, number] };
 const uniformBlock = (n: TextureName, variants: [TextureName, number][] = []): BlockDef => facesBlock(n, n, n, n, 0, variants);
 const facesBlock = (x: TextureName, y: TextureName, topTex: TextureName, bottomTex: TextureName, rotateMask = 0, variants: [TextureName, number][] = []): BlockDef => ({
   X: textureIndex(x),
   Y: textureIndex(y),
-  顶: textureIndex(topTex),
-  底: textureIndex(bottomTex),
+  topTexIndex: textureIndex(topTex),
+  bottom: textureIndex(bottomTex),
   换: rotateMask,
-  变: [variants[0] ? textureIndex(variants[0][0]) : -1, variants[1] ? textureIndex(variants[1][0]) : -1, variants[0]?.[1] ?? 0, variants[1]?.[1] ?? 0],
+  variants: [variants[0] ? textureIndex(variants[0][0]) : -1, variants[1] ? textureIndex(variants[1][0]) : -1, variants[0]?.[1] ?? 0, variants[1]?.[1] ?? 0],
 });
 // 原木：竖着放（顶底是年轮），沿 X 横放（东西两面是年轮，其余的面贴图转 90°，纹理顺着原木），沿 Y 横放
 const logBlock = (sideTex: TextureName, endTex: TextureName) => ({

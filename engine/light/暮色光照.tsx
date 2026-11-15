@@ -53,9 +53,9 @@ export const useTwilightFog = (sunDir: V3 = twilightSunDir, heightFogScale = 1) 
 // 画面里的东西要投影得自己开 castShadow（体素世界给 `shadowLightDir` 才建投影网格，见 lib/体素/世界.tsx；光向要和这里一样）
 // 倍：这一场的灯（直射、天光、环境光、自发光）一起乘，同 lib/光照配比.ts 的 `lightGain`，只管这一处（6-1-2 太阳抬高后庭院大片受光，压一点免得冲白）
 export const TwilightSunLight: React.FC<{ lightDir?: V3; shadowFar: number; splitDist?: number; gain?: number }> = ({ lightDir = twilightSunDir, shadowFar: shadowFar, splitDist = 300, gain: gain = 1 }) => {
-  useSelfLight(twilightMix.自发光 * gain);
+  useSelfLight(twilightMix.selfLight * gain);
   const light = useMemo(() => {
-    const sunLight = new SunLight(twilightDusk?.keyLight ?? TWILIGHT.light, twilightMix.直射);
+    const sunLight = new SunLight(twilightDusk?.keyLight ?? TWILIGHT.light, twilightMix.direct);
     const sh = new CascadedShadow();
     // 每级 3072（原 4096；用户 11-14 看过 穿塔 对照定采用，静帧看不出运动中的闪烁）
     sh.mapSize.set(3072, 3072);
@@ -68,7 +68,7 @@ export const TwilightSunLight: React.FC<{ lightDir?: V3; shadowFar: number; spli
   }, []);
   useEffect(() => () => light.dispose(), [light]);
   light.position.set(...lightDir);
-  light.intensity = twilightMix.直射 * gain;
+  light.intensity = twilightMix.direct * gain;
   const sh = light.shadow as CascadedShadow;
   sh.camera.far = shadowFar;
   sh.splitDist = splitDist;
@@ -76,8 +76,8 @@ export const TwilightSunLight: React.FC<{ lightDir?: V3; shadowFar: number; spli
     <>
       <primitive object={light} />
       {/* 天光的"上"是灯的位置方向，场景坐标 Z 朝上 */}
-      <hemisphereLight args={[twilightDusk?.skyLight ?? TWILIGHT.skyLight, twilightDusk?.groundLight ?? TWILIGHT.groundLight, twilightMix.天光 * gain]} position={[0, 0, 1]} />
-      <ambientLight intensity={twilightMix.环境光 * gain} />
+      <hemisphereLight args={[twilightDusk?.skyLight ?? TWILIGHT.skyLight, twilightDusk?.groundLight ?? TWILIGHT.groundLight, twilightMix.skylight * gain]} position={[0, 0, 1]} />
+      <ambientLight intensity={twilightMix.ambient * gain} />
     </>
   );
 };
@@ -154,7 +154,7 @@ const twilightSkyAt = (sun: V3) => (d: number[]) => {
   }
   return col;
 };
-const cloudLight = linColor(twilightDusk?.keyLight ?? TWILIGHT.light).map((x) => x * twilightMix.直射 * 0.9);
+const cloudLight = linColor(twilightDusk?.keyLight ?? TWILIGHT.light).map((x) => x * twilightMix.direct * 0.9);
 const cloudAmbient = (sun: V3) => {
   const l = Math.hypot(sun[0], sun[1]);
   const c = Math.sqrt(1 - 0.78 * 0.78);

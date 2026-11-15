@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 5fd0bda19dfb），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-边城脚下（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const line: LineSentence = {
   "id": "6-九胡-边城脚下",
   "角色": "九胡",
   "念": "狗修金要找的古城，就在这座边城的脚下。",
@@ -59,4 +59,4 @@ const 句: 台词句 = {
     [3.14,"X"],
   ],
 };
-export default 句;
+export default line;

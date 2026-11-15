@@ -15,71 +15,71 @@
 import type { PartPose } from '../../engine/model/实体模型.tsx';
 import type { FigurePose } from './骨架.tsx';
 
-const 度 = 180 / Math.PI;
+const degPerRad = 180 / Math.PI;
 
 /** 普通挥手几刻挥完（LivingEntity.getCurrentSwingDuration，没有急迫、挖掘疲劳时是 6） */
-export const 挥手刻数 = 6;
+export const waveTicks = 6;
 
 /** 挥手进度：距点击几秒 → attackTime（不在挥的时候是 0）。挥手刻数 可以换（急迫 6 − 级数、挖掘疲劳 6 + 2·级数） */
-export const 挥手进度 = (距点击秒: number, 刻数 = 挥手刻数) => {
-  const t = (距点击秒 * 20) / 刻数;
+export const waveProgress = (sinceClickSec: number, tickCount = waveTicks) => {
+  const t = (sinceClickSec * 20) / tickCount;
   return t > 0 && t < 1 ? t : 0;
 };
 
-export type 出手 = '右' | '左';
+export type SwingHand = '右' | '左';
 
 /** 一次挥手在原版部件上的增量（弧度、像素），t = attackTime，头x = 头的 xRot（弧度） */
-export const 挥手量 = (t: number, 头x: number, 手: 出手 = '右') => {
-  const 身转 = Math.sin(Math.sqrt(t) * Math.PI * 2) * 0.2 * (手 === '右' ? 1 : -1);
+export const waveAmount = (t: number, headX: number, hand: SwingHand = '右') => {
+  const bodyTwist = Math.sin(Math.sqrt(t) * Math.PI * 2) * 0.2 * (hand === '右' ? 1 : -1);
   const f = 1 - (1 - t) ** 4;
-  const 甩 = Math.sin(f * Math.PI) * 1.2 + Math.sin(t * Math.PI) * -(头x - 0.7) * 0.75;
-  const 收 = Math.sin(t * Math.PI) * -0.4;
-  const 出 = { x: -甩, y: 身转 * 2, z: 收 };
-  const 右: [number, number, number] = [0, 身转, 0];
-  const 左: [number, number, number] = [身转, 身转, 0];
-  const 臂 = 手 === '右' ? 右 : 左;
-  臂[0] += 出.x;
-  臂[1] += 出.y;
-  臂[2] += 出.z;
+  const swing = Math.sin(f * Math.PI) * 1.2 + Math.sin(t * Math.PI) * -(headX - 0.7) * 0.75;
+  const zOffset = Math.sin(t * Math.PI) * -0.4;
+  const waveAmount = { x: -swing, y: bodyTwist * 2, z: zOffset };
+  const rightRot: [number, number, number] = [0, bodyTwist, 0];
+  const leftArmRot: [number, number, number] = [bodyTwist, bodyTwist, 0];
+  const armVec = hand === '右' ? rightRot : leftArmRot;
+  armVec[0] += waveAmount.x;
+  armVec[1] += waveAmount.y;
+  armVec[2] += waveAmount.z;
   return {
-    身转,
+    bodyTwist,
     /** 两臂 [xRot, yRot, zRot] 的增量 */
-    右臂: 右,
-    左臂: 左,
+    rightArm: rightRot,
+    leftArm: leftArmRot,
     /** 两肩的 (x, z)（原版直接设，不是增量；y 不动） */
-    右肩: [-Math.cos(身转) * 5, Math.sin(身转) * 5] as const,
-    左肩: [Math.cos(身转) * 5, -Math.sin(身转) * 5] as const,
+    rightShoulder: [-Math.cos(bodyTwist) * 5, Math.sin(bodyTwist) * 5] as const,
+    leftShoulder: [Math.cos(bodyTwist) * 5, -Math.sin(bodyTwist) * 5] as const,
   };
 };
 
-const 加 = (a: readonly number[] | undefined, d: readonly number[]) => [0, 1, 2].map((i) => (a?.[i] ?? 0) + d[i]!);
+const addRot = (a: readonly number[] | undefined, d: readonly number[]) => [0, 1, 2].map((i) => (a?.[i] ?? 0) + d[i]!);
 
 /** 在原版部件表上叠一次挥手（t 不在 (0, 1) 里原样返回）。身子、外套共用一份，手臂、袖子共用一份；返回新表 */
-export const 挥手部件 = (部件: Readonly<Record<string, PartPose>>, t: number, 手: 出手 = '右'): Record<string, PartPose> => {
-  if (!(t > 0 && t < 1)) return { ...部件 };
-  const 量 = 挥手量(t, 部件.head?.rot?.[0] ?? 0, 手);
-  const 身: PartPose = { ...部件.body, rot: 加(部件.body?.rot, [0, 量.身转, 0]) };
-  const 臂 = (p: PartPose | undefined, d: readonly number[], 肩: readonly [number, number]): PartPose => ({
+export const waveParts = (poses: Readonly<Record<string, PartPose>>, t: number, hand: SwingHand = '右'): Record<string, PartPose> => {
+  if (!(t > 0 && t < 1)) return { ...poses };
+  const wave = waveAmount(t, poses.head?.rot?.[0] ?? 0, hand);
+  const body: PartPose = { ...poses.body, rot: addRot(poses.body?.rot, [0, wave.bodyTwist, 0]) };
+  const armPart = (p: PartPose | undefined, d: readonly number[], shoulderOffset: readonly [number, number]): PartPose => ({
     ...p,
-    offset: [肩[0], p?.offset?.[1] ?? 2, 肩[1]],
-    rot: 加(p?.rot, d),
+    offset: [shoulderOffset[0], p?.offset?.[1] ?? 2, shoulderOffset[1]],
+    rot: addRot(p?.rot, d),
   });
-  const 右 = 臂(部件.right_arm, 量.右臂, 量.右肩);
-  const 左 = 臂(部件.left_arm, 量.左臂, 量.左肩);
-  return { ...部件, body: 身, jacket: 身, right_arm: 右, right_sleeve: 右, left_arm: 左, left_sleeve: 左 };
+  const rightArm = armPart(poses.right_arm, wave.rightArm, wave.rightShoulder);
+  const leftArm = armPart(poses.left_arm, wave.leftArm, wave.leftShoulder);
+  return { ...poses, body: body, jacket: body, right_arm: rightArm, right_sleeve: rightArm, left_arm: leftArm, left_sleeve: leftArm };
 };
 
 /** 在 FigurePose 上叠一次右手挥手（t 不在 (0, 1) 里原样返回）。和 库/角色/挥手.ts 的 加挥手 一样 */
-export const 加挥手 = <P extends FigurePose>(pose: P, t: number): P => {
+export const addWave = <P extends FigurePose>(pose: P, t: number): P => {
   if (!(t > 0 && t < 1)) return pose;
-  const 量 = 挥手量(t, (-pose.headPitch * Math.PI) / 180);
+  const wave = waveAmount(t, (-pose.headPitch * Math.PI) / 180);
   return {
     ...pose,
-    twist: (pose.twist ?? 0) - 量.身转 * 度,
+    twist: (pose.twist ?? 0) - wave.bodyTwist * degPerRad,
     // FigurePose 的 armR 正 = 往前抬，和原版 xRot 反号；右臂已经跟着 twist 转了一份 身转，原版的三份只再加两份
-    armR: pose.armR - 量.右臂[0] * 度,
-    armRYaw: (pose.armRYaw ?? 0) - 2 * 量.身转 * 度,
-    armRRoll: pose.armRRoll - 量.右臂[2] * 度,
-    armL: pose.armL - 量.身转 * 度,
+    armR: pose.armR - wave.rightArm[0] * degPerRad,
+    armRYaw: (pose.armRYaw ?? 0) - 2 * wave.bodyTwist * degPerRad,
+    armRRoll: pose.armRRoll - wave.rightArm[2] * degPerRad,
+    armL: pose.armL - wave.bodyTwist * degPerRad,
   };
 };

@@ -40,11 +40,11 @@ export const lineFrames = (() => {
   const summonFrame = Math.max(JH_ARRIVE + 24, nagaLineEnd + 12, jiuhuLineEnd + 12); // 她停稳以后喘口气（24 帧），话也说完了，他再唤出扫帚
   const seatedFrame = summonFrame + 61;
   const speedrunLine = summonFrame + 10; // 扫帚冒出来停稳（`broom` 的 appear）
-  return { naga: nagaLine, 娜迦完: nagaLineEnd, jiuhu: jiuhuLine, jiuhuLineEnd, summon: summonFrame, 速通: speedrunLine, 坐稳: seatedFrame };
+  return { naga: nagaLine, nagaLineEnd: nagaLineEnd, jiuhu: jiuhuLine, jiuhuLineEnd, summon: summonFrame, speedrun: speedrunLine, seated: seatedFrame };
 })();
-export const speedrunLine = { id: '6-1-3-李樱-看我速通暮色', 帧: lineFrames.速通 };
+export const speedrunLine = { id: '6-1-3-李樱-看我速通暮色', 帧: lineFrames.speedrun };
 // 娜迦那句有没有说进本段（句子短，可能在 6-1-2 里就说完了）
-export const nagaLineCarriesOver = lineFrames.娜迦完 > 0;
+export const nagaLineCarriesOver = lineFrames.nagaLineEnd > 0;
 // 台词轨（声音.tsx）和口型（起飞.tsx）共用；九胡那句开口在本段之前（负的），只放说进来的半截
 export const lineCues = [
   ...(nagaLineCarriesOver ? [{ id: '6-1-2-李樱-不值一提', 帧: lineFrames.naga }] : []),
@@ -52,7 +52,7 @@ export const lineCues = [
   speedrunLine,
 ];
 const summonFrame = lineFrames.summon;
-const takeoffFrame = lineFrames.坐稳 + seatedHold + 15;
+const takeoffFrame = lineFrames.seated + seatedHold + 15;
 // 速度：起飞瞬间 40 米/秒，之后 v = 1000 - 960·e^(-t/τ)，τ ≈ 3.16 秒（1 秒时正好 300 米/秒）。
 const V_CRUISE = 1000;
 const V_KICK = 40;
@@ -84,7 +84,7 @@ const climbHeight = (flipFrame: number) => {
 export const courtyard = twilightLandmark('娜迦庭院');
 // 平飞高度取起飞方位前方 820 米处（末帧前后）的巡航高；取样点要跟着起飞方位转，否则末帧比一镜到底的起点低 17 米接不上
 const levelFlightZ = (() => {
-  const point = courtyard.到世界([820 * forwardXY[0], 820 * forwardXY[1], 0]);
+  const point = courtyard.toWorld([820 * forwardXY[0], 820 * forwardXY[1], 0]);
   return cruiseHeight(point[0], point[1]) - courtyard.原点[2];
 })();
 const flipDelay = (() => {
@@ -100,12 +100,12 @@ export const beats = {
   jiuHuUp: summonFrame + 46,
   seated: summonFrame + 61,
   sinkStart: takeoffFrame - 15,
-  起飞: takeoffFrame,
+  takeoff: takeoffFrame,
   flip: takeoffFrame + flipDelay,
   末帧: takeoffFrame + postTakeoffFrames,
 };
 // 配乐晚几帧进（用户 10-10 定）：整条往后推，让 drop（[5, 1]）落在起飞那一帧，渐大的几拍落在扫帚下沉蓄力上；前奏（没有鼓）垫在九胡跑来、两人上扫帚的几秒（drop 前的前奏比本段这一截长，段首切进去的是前奏中间），之前没有配乐
-export const musicDelay = beats.起飞 - frameInSegment(segmentId, [5, 1]);
+export const musicDelay = beats.takeoff - frameInSegment(segmentId, [5, 1]);
 export const songSec = (f: number) => (f - musicDelay) / 24;
 export const FRAMES = beats.末帧 + 1;
 
@@ -125,7 +125,7 @@ const HOVER = 0.65;
 const Z_SINK = 0.35; // 4.4 一沉到底的高度
 export type BroomState = { pos: V3; yaw: number; pitch: number; roll: number; appear: number; speed: number };
 
-const LAUNCH = beats.起飞 - 0.5; // 起飞的瞬间（取帧的中点：5.1 那一帧已经离地）
+const LAUNCH = beats.takeoff - 0.5; // 起飞的瞬间（取帧的中点：5.1 那一帧已经离地）
 const speedAt = (f: number) => (f < LAUNCH ? 0 : speedAfter(f - LAUNCH));
 const GAMMA: Key[] = pathAngleKeys(flipDelay).map(([frame, angle]) => [LAUNCH + frame, angle]);
 const gammaAt = (f: number) => sample(GAMMA, f);
@@ -152,9 +152,9 @@ const flightAt = (frame: number): V3 => {
 };
 export const broom = (frame: number): BroomState => {
   const appear = frame < beats.summon ? 0 : sample([[beats.summon, 0], [beats.summon + 6, 1.15], [beats.summon + 10, 1]], frame);
-  if (frame >= beats.起飞) {
+  if (frame >= beats.takeoff) {
     // 扫帚头：4 帧内翘起来、跟上航迹角（笔直往上冲时也竖起来，最多 88°，封顶太低会像斜着往上滑），之后跟着航迹角压下来，末帧和速度方向一致；人往前压着贴住扫帚（见 `riders` 的前倾）
-    const pitch = frame < beats.起飞 + 4 ? lerp(6, Math.min(88, gammaAt(frame)), ss((frame - beats.起飞) / 4)) : Math.min(88, gammaAt(frame));
+    const pitch = frame < beats.takeoff + 4 ? lerp(6, Math.min(88, gammaAt(frame)), ss((frame - beats.takeoff) / 4)) : Math.min(88, gammaAt(frame));
     return { pos: flightAt(frame), yaw: takeoffYaw, pitch: pitch, roll: 0, appear, speed: speedAt(frame) };
   }
   const bob = 0.05 * Math.sin((2 * Math.PI * frame) / 40);
@@ -245,15 +245,15 @@ export const liyingOnFoot = (frame: number): FigurePose | null => {
 };
 
 // ---------- 骑在扫帚上 ----------
-export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: { lean: number; hugWaist: number; tailPhase: number; 风: number; headRaise: number } | false } => {
+export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: { lean: number; hugWaist: number; tailPhase: number; wind: number; headRaise: number } | false } => {
   const sink = frame >= beats.sinkStart ? ss((frame - beats.sinkStart) / 6) : 0;
-  const launched = ss((frame - beats.起飞) / 4);
+  const launched = ss((frame - beats.takeoff) / 4);
   // 竖直往上冲时（航迹角大过 25°）再往前压一点，贴住竖起来的扫帚
-  const vertical = frame >= beats.起飞 ? Math.max(0, (gammaAt(frame) - 25) / (90 - 25)) : 0;
+  const vertical = frame >= beats.takeoff ? Math.max(0, (gammaAt(frame) - 25) / (90 - 25)) : 0;
   const lean = 22 + 26 * sink + 10 * launched * (1 - ss((frame - beats.flip) / 10)) + 8 * vertical * launched;
   return {
     liYing: frame >= beats.liYingMount ? { lean, headRaise: 10 * (1 - sink) + 20 * launched } : false,
-    jiuhu: frame >= beats.jiuHuUp ? { lean: 18 + 20 * sink, hugWaist: ss((frame - beats.jiuHuUp) / 6), tailPhase: frame / 9, 风: launched, headRaise: 10 * launched } : false,
+    jiuhu: frame >= beats.jiuHuUp ? { lean: 18 + 20 * sink, hugWaist: ss((frame - beats.jiuHuUp) / 6), tailPhase: frame / 9, wind: launched, headRaise: 10 * launched } : false,
   };
 };
 export const liyingRidePose = (frame: number) => {
@@ -287,18 +287,18 @@ export const camera = (frame: number): Cam => {
     return { pos: lerp3(C2.pos[0][1], C2.pos[1][1], eased), tgt: lerp3(C2.tgt0, C2.tgt1, ss((frame - beats.cutToMedium - 10) / 40)), lens: lerp(24, 30, eased) };
   }
   const bp = broom(frame).pos;
-  if (frame < beats.起飞) return { pos: lerp3(C3_START, C3_PRE, (frame - beats.sinkStart) / (beats.起飞 - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
+  if (frame < beats.takeoff) return { pos: lerp3(C3_START, C3_PRE, (frame - beats.sinkStart) / (beats.takeoff - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
   // 起飞那一帧起镜头跟着扫帚一起往上冲（相对位置从低机位慢慢挪到后上方），不原地仰头追（那样背景几乎全是天）：镜头和扫帚一样高平视，10 帧内挪到后上方往下看
-  const pre = broom(beats.起飞 - 1).pos;
+  const pre = broom(beats.takeoff - 1).pos;
   const off0 = [C3_PRE[0] - pre[0], C3_PRE[1] - pre[1], C3_PRE[2] - pre[2]];
-  const k = ss((frame - beats.起飞) / 10);
+  const k = ss((frame - beats.takeoff) / 10);
   const off = lerp3(off0, C3_OFF, k);
   const pos = [bp[0] + off[0], bp[1] + off[1], bp[2] + off[2]];
   const kl = ss((frame - (beats.flip - 12)) / (beats.末帧 - beats.flip + 12));
   const nearLook = broomToCourtyard([0, 1, 0.8]);
   const farLook = broomToCourtyard([0, 40, -24]);
   const look = lerp3([bp[0] + nearLook[0], bp[1] + nearLook[1], bp[2] + nearLook[2]], [bp[0] + farLook[0], bp[1] + farLook[1], bp[2] + farLook[2]], kl);
-  return { pos, tgt: look, lens: lerp(24, 18, ss((frame - beats.起飞) / 30)) };
+  return { pos, tgt: look, lens: lerp(24, 18, ss((frame - beats.takeoff) / 30)) };
 };
 // 清草：中心空地（一格高的草会挡住人的脚和悬在离地 0.65 格的扫帚）。迷宫通道里的草和 6-1-2 一样留着
 export const CLEAR_PLANTS = [[-5.5, -9.5, 9.5, 5.5]];
@@ -310,18 +310,18 @@ export const LAST = { camera: () => camera(beats.末帧), broom: () => broom(bea
 // 镜头离脚下地物多高（起飞后在世界坐标里量；起飞前就是离庭院地面的高度）
 export const aboveGround = (frame: number) => {
   const camPos = camera(frame).pos;
-  return frame < beats.起飞 ? camPos[2] : twilightHeightAboveGround(courtyard.到世界(camPos));
+  return frame < beats.takeoff ? camPos[2] : twilightHeightAboveGround(courtyard.toWorld(camPos));
 };
 // 雾的远端（米）：同 6-1-2 的暮色线性雾，地面上是满视距（lib/视距.ts），升空后按镜头离地高度放远（lib/暮色光照.tsx）。起飞到放平那一帧放到一镜到底的巡航下限（`TWILIGHT_CRUISE_FOG_FAR`），
 // 才和 6-1-4 首帧接得上；往导入范围边上看时压到边以内（`clampFogToEdge`）。
 // 超远景（用户 11-07 定 10 公里，暮色新世界/超远景.ts）：起飞后跟着这条放远的曲线一起放进（`farViewRamp`），起飞前林子里的雾、高度雾不变，首帧接得上 6-1-2
 export const farView = () => farViewOf(TWILIGHT_FAR_VIEW);
-export const farViewRamp = (frame: number) => (frame < beats.起飞 ? 0 : ss((frame - beats.起飞) / flipDelay));
+export const farViewRamp = (frame: number) => (frame < beats.takeoff ? 0 : ss((frame - beats.takeoff) / flipDelay));
 export const fogFar = (frame: number) => {
   const nearFog = twilightFogFar(aboveGround(frame));
-  if (frame < beats.起飞) return nearFog;
+  if (frame < beats.takeoff) return nearFog;
   const cam = camera(frame);
   const farFog = Math.max(nearFog, VIEW_DISTANCE + (TWILIGHT_CRUISE_FOG_FAR - VIEW_DISTANCE) * farViewRamp(frame));
-  return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.到世界(cam.pos), courtyard.到世界(cam.tgt)), clampFogToEdge, farView(), farViewRamp(frame));
+  return cruiseFogFar(farFog, () => viewEdgeDistance(courtyard.toWorld(cam.pos), courtyard.toWorld(cam.tgt)), clampFogToEdge, farView(), farViewRamp(frame));
 };
 export const T612 = (officialFrames - 1) / 24;

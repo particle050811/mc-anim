@@ -8,50 +8,50 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 关键帧姿态, 取动画 } from '../零件/关键帧.ts';
-import { 圆里撒, 方块屑, type 屑出生 } from '../零件/方块屑.tsx';
-import 元, { 藤蔓位, 藤蔓寿命刻, 藤蔓破土刻, 藤蔓缩回用刻, 藤蔓闲刻 } from './过度生长.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/QuickGrowingVineModel';
-import 动画数据 from 'asset:动画/法术/goety/QuickGrowingVineAnimations';
-import 图数据 from 'asset:贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine';
-import 亮图数据 from 'asset:贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_glow';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { keyframePose, getAnim } from '../零件/关键帧.ts';
+import { scatterInCircle, BlockDebris, type DebrisBirth } from '../零件/方块屑.tsx';
+import meta, { vinePositions, vineLifeTicks, vineEmergeTick, vineRetractSpanTicks, vineIdleTicks } from './过度生长.元.ts';
+import quickGrowingVineModelData from 'asset:模型/法术/goety/QuickGrowingVineModel';
+import quickGrowingVineAnims from 'asset:动画/法术/goety/QuickGrowingVineAnimations';
+import quickGrowingVinePng from 'asset:贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine';
+import quickGrowingVineGlowPng from 'asset:贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_glow';
 
-const 模型 = 取模型(模型数据, 'QuickGrowingVineModel');
-const [破土, 闲, 缩回] = [取动画(动画数据, 'BURST'), 取动画(动画数据, 'IDLE'), 取动画(动画数据, 'BURROW')];
+const quickGrowingVineModel = getModel(quickGrowingVineModelData, 'QuickGrowingVineModel');
+const [burstAnim, idleAnim, burrowAnim] = [getAnim(quickGrowingVineAnims, 'BURST'), getAnim(quickGrowingVineAnims, 'IDLE'), getAnim(quickGrowingVineAnims, 'BURROW')];
 
-const 过度生长: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 位们 = 藤蔓位(目标);
-  const 屑: 屑出生[] = 位们.flatMap((位, i) => [
-    ...圆里撒([位[0], 位[1], 位[2] + 0.25], 1, 藤蔓破土刻(i), 种子 * 53 + i),
-    ...圆里撒([位[0], 位[1], 位[2] + 0.25], 1, 藤蔓破土刻(i) + 藤蔓寿命刻, 种子 * 59 + i),
+const overgrowth: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const positions = vinePositions(target);
+  const debris: DebrisBirth[] = positions.flatMap((pos, i) => [
+    ...scatterInCircle([pos[0], pos[1], pos[2] + 0.25], 1, vineEmergeTick(i), seed * 53 + i),
+    ...scatterInCircle([pos[0], pos[1], pos[2] + 0.25], 1, vineEmergeTick(i) + vineLifeTicks, seed * 59 + i),
   ]);
   return (
     <>
-      {位们.map((位, i) => {
-        const 活 = 刻 - 藤蔓破土刻(i);
-        if (活 < 0 || 活 >= 藤蔓寿命刻 + 藤蔓缩回用刻) return null;
-        const 姿态 = 关键帧姿态(模型, [活 >= 藤蔓寿命刻 ? [缩回, (活 - 藤蔓寿命刻) / 20] : 活 >= 藤蔓闲刻 ? [闲, (活 - 藤蔓闲刻) / 20] : [破土, 活 / 20]]);
-        const 朝 = Math.floor(rng(种子 * 97 + i)() * 4) * 90;
+      {positions.map((pos, i) => {
+        const ageTicks = tick - vineEmergeTick(i);
+        if (ageTicks < 0 || ageTicks >= vineLifeTicks + vineRetractSpanTicks) return null;
+        const partPoses = keyframePose(quickGrowingVineModel, [ageTicks >= vineLifeTicks ? [burrowAnim, (ageTicks - vineLifeTicks) / 20] : ageTicks >= vineIdleTicks ? [idleAnim, (ageTicks - vineIdleTicks) / 20] : [burstAnim, ageTicks / 20]]);
+        const angleDeg = Math.floor(rng(seed * 97 + i)() * 4) * 90;
         return (
-          <MC空间 key={i} 位={位}>
-            <group rotation={[0, 度(180 - 朝), 0]}>
+          <MinecraftSpace key={i} 位={pos}>
+            <group rotation={[0, degToRad(180 - angleDeg), 0]}>
               <group scale={[-1, -1, 1]}>
                 <group position={[0, -1.501, 0]}>
-                  <模型件 模型={模型} 图={png(图数据)} 姿态={姿态} />
-                  <模型件 模型={模型} 图={png(亮图数据)} 画法="发光" 姿态={姿态} />
+                  <ModelPart 模型={quickGrowingVineModel} 图={png(quickGrowingVinePng)} partPoses={partPoses} />
+                  <ModelPart 模型={quickGrowingVineModel} 图={png(quickGrowingVineGlowPng)} 画法="发光" partPoses={partPoses} />
                 </group>
               </group>
             </group>
-          </MC空间>
+          </MinecraftSpace>
         );
       })}
-      <方块屑 出生们={屑} 秒={秒} 地面={目标[2]} />
+      <BlockDebris spawns={debris} 秒={sec} ground={target[2]} />
     </>
   );
 };
 
-export default 定义法术演出(元, 过度生长);
+export default defineSpellPerformance(meta, overgrowth);

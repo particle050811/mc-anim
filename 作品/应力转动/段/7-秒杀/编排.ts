@@ -9,24 +9,24 @@ import type { Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { lerpV, ss } from '../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
-import { 建变速 } from '../../地点/古城4x/7-1/变速.ts';
-import { 建机位, type 变速镜 } from '../../地点/古城4x/7-1/变速段.tsx';
-export const 号 = '7-1-3' as const;
+import { buildSpeedRamp } from '../../地点/古城4x/7-1/变速.ts';
+import { buildCameraRig, type SpeedRampShot } from '../../地点/古城4x/7-1/变速段.tsx';
+export const segmentId = '7-1-3' as const;
 export const FPS = timeline.FPS;
 
 const [s1, s2, s3, s4, s5] = play.swingTs; // 攻击动画起点；打中在 +0.1（../7-1/声音.tsx 的 attack_impact、恼鬼同一刻死）
 const hitT = (s: number) => s + 0.1 + 0.002;
-const startT = timeline.segmentStartT(号);
-const endT = timeline.segmentEndT(号);
+const startT = timeline.segmentStartT(segmentId);
+const endT = timeline.segmentEndT(segmentId);
 play.checkVexSwings();
-export const 变速 = 建变速(
+export const speedRamp = buildSpeedRamp(
   startT,
   endT,
   [[startT, 1]],
   [s1, s2, s3, s4, s5].map(hitT),
 );
-export const END = 变速.总帧数;
-export const t于 = 变速.剧情时间;
+export const END = speedRamp.总帧数;
+export const timeAt = speedRamp.storyTime;
 
 const head = (p: V3, h: number): V3 => [p[0], p[1], p[2] + h];
 // 机位在 t0～t1 之间从 p0 慢慢挪到 p1；看点是几个主体按权重的中点（主体随场时刻动）
@@ -42,7 +42,7 @@ const contactOf = (s: number): V3 => {
 };
 const fixed = (p: V3) => () => p;
 const cuts = [startT, s2 - 0.45, s3 - 0.45, s4 - 0.45, s5 - 0.45, timeline.impossibleT - 0.05];
-const shots: 变速镜[] = [
+const shots: SpeedRampShot[] = [
   // 拍 1：监守者东北脚下仰拍，恼鬼从黄台那边俯冲下来，黄叛在台上拉弓
   { 起: cuts[0], cam: drift(cuts[0], cuts[1], [-146.2, 23.6, 0.4], [-146.6, 23.2, 0.4], between(fixed(contactOf(s1)), huangHead, 0.4), 16) },
   // 拍 2：监守者东北半高处，下面它拍从北边冲来的那只，上面黄台上的黄叛蹲下蹬地往南跳走（机位再往南，接触点会被黄台北沿挡住）
@@ -56,5 +56,5 @@ const shots: 变速镜[] = [
   // 刘心忠侧面：「一百级的恼鬼……」，监守者掉头朝他扑过来，南台顶上黄叛伸手
   { 起: cuts[5], cam: drift(cuts[5], endT, [-129.4, 4.2, 7.7], [-129.8, 4.0, 7.6], between(liuHead, wardenChest, 0.45), 20) },
 ];
-export const camera = 建机位(变速, shots);
-export const 镜号 = (frame: number) => cuts.filter((c) => t于(frame) >= c).length - 1;
+export const camera = buildCameraRig(speedRamp, shots);
+export const shotIndex = (frame: number) => cuts.filter((c) => timeAt(frame) >= c).length - 1;

@@ -142,13 +142,13 @@ export const legSpeed = (v0: number, a0: number, cruiseSpeed: number, v1: number
 //   { 到角: γ } —— 俯仰转到 γ（梯形：曲率上限 κ = q/v、曲率变化上限 q̇/v²，这里直接给路程上的 曲率、曲率变化率）；
 //   { 直: L } —— 保持当前俯仰飞 L 米（沿路程）；
 // 积出的是路程 s 上的 a(s)、z(s)、γ(s)，再按 a 查。往后积（方向 −1）用来从贯穿点往回排俯冲。
-export type ProfileStep = { toAngle: number; 曲率?: number; curvatureRate?: number } | { 直: number };
-export type ProfileLimits = { 曲率: number; curvatureRate: number }; // 曲率：1/米（俯仰每米最多转几弧度）；变率：1/米²
+export type ProfileStep = { toAngle: number; curvature?: number; curvatureRate?: number } | { 直: number };
+export type ProfileLimits = { curvature: number; curvatureRate: number }; // 曲率：1/米（俯仰每米最多转几弧度）；变率：1/米²
 // 穿刺线（扫帚 320 米/秒贴 boss 飞的那一截）的俯仰上限：角速度 2°/帧（用户 10-08：h = R(1 − cos γ)、R = v / ω，半径 382 米），角加速度 2°/帧²（一帧转满）；竖直加速度 0.47 米/帧²，在 0.5 以内。
 // 用全程的 0.3°/帧²（一镜到底/路线.ts 的 `limits`）会让拉平的底变成贯穿点前后各六七十米的平底，矛尖钻进地里。验收.ts 在穿刺线上按这一组验
 export const pierceLimits = { pitchRate: 2, pitchAccel: 2 }; // °/帧、°/帧²
 export const pierceProfileLimits = (V: number): ProfileLimits => ({
-  曲率: (pierceLimits.pitchRate * 24 * Math.PI) / 180 / V,
+  curvature: (pierceLimits.pitchRate * 24 * Math.PI) / 180 / V,
   curvatureRate: (pierceLimits.pitchAccel * 576 * Math.PI) / 180 / (V * V),
 });
 export type ProfilePoint = { s: number; a: number; z: number; γ: number };
@@ -177,7 +177,7 @@ export const integrateProfile = (start: { a: number; z: number; γ: number }, st
       continue;
     }
     // 俯仰转动：在路程上就是曲率的梯形（往后积时转动方向反过来：从终点往回看，俯仰是倒着变的）
-    const k = step.曲率 ?? limits.曲率;
+    const k = step.curvature ?? limits.curvature;
     const kk = step.curvatureRate ?? limits.curvatureRate;
     const Δ = step.toAngle - γ;
     const turn = trapezoidTurn(Δ, k, kk); // 把「度/秒」当成「弧度/米」用：数学一样

@@ -7,7 +7,7 @@
 // - 镜头：跟拍一直在箭的右手边（北）贴着侧拍往左看（用户 10-18）；切到南侧对着李樱拍挥刀，一直慢推，弹开不震屏（用户 10-18 嫌冲击镜头不好，全删）。
 //   用户 10-18 删掉了刹车、等他直身转身（「还等他转身干嘛」）和挥完抬头看那两截：6-4-3b 挥完就完，6-4-3c 从切黄叛（C2）起，中间跳过的 0.3 秒不演；
 //   用户 10-18 定：删掉意义不明的运镜，6-4-3c 只留黄叛愣住（C2），C3 李樱身后慢推那一镜不演，接 6-4-4。
-import { 例外 } from '@engine/core/例外.ts';
+import { exception } from '@engine/core/例外.ts';
 import { HIT_STOP_FRAMES } from '../../../默认.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
@@ -15,70 +15,70 @@ import * as choreo from './编排.ts';
 import { sideCamPos, sideTarget } from './编排/机位.ts';
 import { add, cross, lerpV, norm, ss } from './编排/公用.ts';
 import * as geom from './几何.ts';
-import { 建时间线, 帧小数 as 主帧小数, 切, 切帧 as 主切帧 } from './时间线.ts';
+import { buildTimeline, frameFractional as mainFrameFractional, cuts, cutFrames as mainCutFrames } from './时间线.ts';
 
 // 6-1-2 居合关键帧 → 剧情秒（同 编排/李樱.ts 的 OLD）
-const iaiSec = (k: number) => (k <= 104 ? geom.拔刀起 + ((k - 98) / 6) * (geom.挥刀 - geom.拔刀起) : geom.挥刀 + ((k - 104) / 4) * 0.03);
+const iaiSec = (k: number) => (k <= 104 ? geom.drawStart + ((k - 98) / 6) * (geom.swingTime - geom.drawStart) : geom.swingTime + ((k - 104) / 4) * 0.03);
 // 定在弹开后 0.4 毫秒：招架闪光（按主方案弹开帧的剧情秒起算）刚亮出来，箭刚被挑开 0.4 米
-const 停顿时刻 = geom.弹开 + 0.0004;
-const 余势止 = iaiSec(108);
-const 回原速 = 余势止 + 0.04;
+const pauseTime = geom.deflect + 0.0004;
+const momentumEnd = iaiSec(108);
+const returnSpeedTime = momentumEnd + 0.04;
 // 切到李樱：刀甩出（关键帧 102.2，这时早已转过身、刀拔到一半），箭还在十几米外，两三帧后撞上刀
-const 切李樱 = iaiSec(102.2);
+const cutToLiYing = iaiSec(102.2);
 // 挥完、开始抬头（编排/李樱.ts 的 lookUpAt）之前收尾
-const b止 = geom.弹开 + 0.1;
-const 跟拍时钟 = 1 / 2;
-export const tl = 建时间线(跟拍时钟, {
-  跟拍后: 例外(
+const bEnd = geom.deflect + 0.1;
+const followClock = 1 / 2;
+export const tl = buildTimeline(followClock, {
+  followAfter: exception(
     '不放慢',
     [
-      [切李樱, 跟拍时钟],
-      [切李樱 + 1e-6, 1 / 6],
-      [geom.弹开, 1 / 6],
-      [geom.弹开 + 0.003, 1 / 16, true],
-      [余势止, 1 / 16],
-      [回原速, 1, true],
+      [cutToLiYing, followClock],
+      [cutToLiYing + 1e-6, 1 / 6],
+      [geom.deflect, 1 / 6],
+      [geom.deflect + 0.003, 1 / 16, true],
+      [momentumEnd, 1 / 16],
+      [returnSpeedTime, 1, true],
     ],
     { 段: '6-挡箭', 原因: '用户 10-10 点名要弹开慢动作' },
   ),
-  停顿: { 剧情秒: 停顿时刻 },
+  pause: { storySec: pauseTime },
 });
-const 起帧 = tl.段表['6-4-3b'].起;
-const c起帧 = tl.帧(切.C2);
-export const deflectArrowFrames = tl.帧(b止) - 起帧;
-export const flickArrowFrames = tl.帧(切.C3) - c起帧;
+const startFrame = tl.segTable['6-4-3b'].起;
+const cutStartFrame = tl.帧(cuts.C2);
+export const deflectArrowFrames = tl.帧(bEnd) - startFrame;
+export const flickArrowFrames = tl.帧(cuts.C3) - cutStartFrame;
 // 给 工具/机位核对/导出.ts：段内第 0 帧在这条时间线上的全局帧；全局帧 → 主方案时间线上（带小数）的帧
-export const 段起帧 = { '6-4-3b': 起帧, '6-4-3c': c起帧 };
-export const 主方案帧 = (f: number) => 主帧小数(tl.剧情时间(f));
+export const segStartFrame = { '6-4-3b': startFrame, '6-4-3c': cutStartFrame };
+export const mainPlanFrame = (f: number) => mainFrameFractional(tl.storyTime(f));
 
-export const liying = choreo.makeLiying({ 蓄势: true });
+export const liying = choreo.makeLiying({ windup: true });
 // 镜头（用户 10-18：一直在箭右侧往左看、贴近，箭越快视角拉得越广，同一镜到底飞行巡航换广角）：
 // 跟拍在箭右 1.5 米、上 0.6 米（2 米以外在箭路 192～196 米处撞墙，工具/挡箭/机位核对.py --跟拍 每 0.5 米核过），看点在箭前 1 米，箭在画面偏左、往右飞；
 // 焦距按画面上的箭速（米/画面秒）从 22mm 广到 12mm，同时镜头往后落 1 米。
 // 切到李樱用主方案的侧面机位（弹开点正南，往人身上挪近 55%、16mm），之后一直慢推到回原速；箭从画面右边飞进来。
 // 挡箭不放北侧：李樱北边、东边是台阶柱和兵营东墙，北侧机位（机位核对.py --搜 搜的几处，静帧比过）都只拍到墙后面他一个头
-const cutFrame = tl.帧小数(切李樱);
-const push1 = tl.帧小数(回原速);
-const stopFrame = tl.帧(停顿时刻);
-const arrowRight: V3 = norm(cross(geom.来向, [0, 0, 1]));
-const arrowUp: V3 = norm(cross(arrowRight, geom.来向));
+const cutFrame = tl.frameFractional(cutToLiYing);
+const push1 = tl.frameFractional(returnSpeedTime);
+const stopFrame = tl.帧(pauseTime);
+const arrowRight: V3 = norm(cross(geom.incomingDir, [0, 0, 1]));
+const arrowUp: V3 = norm(cross(arrowRight, geom.incomingDir));
 // 画面上的箭速 → 0（慢）～1（快）：8 米/秒（接 6-4-3a 风道里的 1/120）起，167 米/秒以上算满
 const speedWeight = (f: number) => {
-  const t = tl.剧情时间(f);
-  const screenSpeed = geom.箭速(Math.max(0, geom.来箭程(t - geom.放箭))) * tl.时钟(t);
+  const t = tl.storyTime(f);
+  const screenSpeed = geom.arrowSpeed(Math.max(0, geom.incomingArrowDist(t - geom.shootTime))) * tl.clock(t);
   return ss(Math.log(Math.max(1, screenSpeed) / 8) / Math.log(167 / 8));
 };
 const followPose = (dist: number, speed: number): Cam => {
-  const arrowPos = add(geom.搭箭点, geom.来向, dist);
-  const pos = add(add(add(arrowPos, arrowRight, 1.5), arrowUp, 0.6), geom.来向, -speed);
-  return { pos, tgt: add(arrowPos, geom.来向, 1), lens: Math.exp(Math.log(22) + (Math.log(12) - Math.log(22)) * speed) };
+  const arrowPos = add(geom.nockPoint, geom.incomingDir, dist);
+  const pos = add(add(add(arrowPos, arrowRight, 1.5), arrowUp, 0.6), geom.incomingDir, -speed);
+  return { pos, tgt: add(arrowPos, geom.incomingDir, 1), lens: Math.exp(Math.log(22) + (Math.log(12) - Math.log(22)) * speed) };
 };
-const arrowDistAt = (f: number) => Math.max(0, geom.来箭程(tl.剧情时间(f) - geom.放箭));
+const arrowDistAt = (f: number) => Math.max(0, geom.incomingArrowDist(tl.storyTime(f) - geom.shootTime));
 export const cameraAt = (f: number): Cam => {
-  const t = tl.剧情时间(f);
+  const t = tl.storyTime(f);
   // 主方案按整帧切机位（主切帧），这条时间线切在剧情时间上：剧情时间过了切点、换到主方案还差不到一帧的，算到切点那一帧，不然 6-4-3c 第 0 帧还是上一个机位
-  if (t >= 切.C2) return choreo.camera(Math.max(主帧小数(t), 主切帧.C2, t >= 切.C3 ? 主切帧.C3 : 0));
-  if (t < 切李樱) return followPose(arrowDistAt(f), speedWeight(f));
+  if (t >= cuts.C2) return choreo.camera(Math.max(mainFrameFractional(t), mainCutFrames.C2, t >= cuts.C3 ? mainCutFrames.C3 : 0));
+  if (t < cutToLiYing) return followPose(arrowDistAt(f), speedWeight(f));
   const push = ss((f - cutFrame) / (push1 - cutFrame));
   return { pos: lerpV(sideCamPos, sideTarget, 0.55 + 0.12 * push), tgt: sideTarget, lens: 16 + push };
 };
@@ -86,11 +86,11 @@ export const cameraAt = (f: number): Cam => {
 // 特效按画面时间（用户 10-17：格挡特效存在时间太长）：招架闪光在定住的那几帧停在第一帧，之后按画面时间放完寿命 4 刻（0.2 秒），不跟慢放拉长；
 // 刀光拖尾留的长度也按画面时间算成 0.15 秒（剧情秒 = 0.15 × 时钟），挥完以后按余势的时钟定住长度、0.2 秒画面时间淡掉，免得时钟回到原速时拖尾又往回长
 export const fxAt = (f: number) => {
-  const t = tl.剧情时间(f);
+  const t = tl.storyTime(f);
   const sinceStop = f - stopFrame;
   return {
     parrySec: sinceStop < 0 ? -1 : Math.max(0, sinceStop - HIT_STOP_FRAMES) / tl.FPS,
-    trailVisibleSec: 0.15 * (t < 余势止 ? tl.时钟(t) : 1 / 16),
+    trailVisibleSec: 0.15 * (t < momentumEnd ? tl.clock(t) : 1 / 16),
     trailFadeSec: 0.2 / 16,
     exactParry: true,
   };

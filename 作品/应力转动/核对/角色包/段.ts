@@ -1,5 +1,5 @@
 // 角色包核对：李樱、九胡（库/角色/）和旧项目同姿势、同机位逐像素比，一秒一个视图（视图.ts）。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { 视图们, 页宽, 页高 } from './视图.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { views, pageWidth, pageHeight } from './视图.ts';
 
-export default 定义段({ 场: '核对', 秒: 视图们.length, 宽: 页宽, 高: 页高, 地形: [] });
+export default defineSeg({ 场: '核对', 秒: views.length, 宽: pageWidth, 高: pageHeight, 地形: [] });

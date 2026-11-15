@@ -3,11 +3,11 @@
 // 地上用主世界-116 的真实地形（城址整平、竖井和古城挖掉，见 地形.ts）+ 边城 + 云，光照同 6-2-5、6-2-6（飞行镜头.tsx 的灯），地形加屏幕空间 AO；
 // 地下（竖井、古城）用这套灯、不投影，像开了夜视（用户 10-02），不画天空；雾同古城4x 满视距（竖井.tsx 的 `UnderFog`）。
 // 不画推力来源（用户 10-10 删了脚底鼓风机虚影和气流）。金光、望远镜视野（原版镜筒遮罩）、6-3-6 撞击的金白闪光是画面层。
-import { 例外 } from '@engine/core/例外.ts';
+import { exception } from '@engine/core/例外.ts';
 import { ThreeCanvas } from '@remotion/three';
 import React, { useMemo } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import * as THREE from 'three';
 import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
@@ -18,7 +18,7 @@ import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { FlightFog, FlightRig, overworldShadowOn, overworldShadowFar, OverworldSunLight } from '../../../地点/飞行镜头.tsx';
 import { JIUHU, jiuhuMouthAttach } from '@库/角色/九胡.tsx';
-import jiuhuRaw资产 from 'asset:模型/角色/九胡';
+import jiuHuModelData from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
 import { LiYing } from '@库/角色/李樱.tsx';
 import { RideBroom } from '@库/角色/骑扫帚.tsx';
@@ -46,7 +46,7 @@ import { HeldCompass } from '../6-3-1/指南针.tsx';
 import { JiuhuHandCompass } from '../../../角色/九胡持指南针.tsx';
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
 import { mouthAt } from '../../../配音/口型.ts';
-const jiuhuRaw = jiuhuRaw资产 as unknown as object;
+const jiuhuRaw = jiuHuModelData as unknown as object;
 
 const JIUHU_MODEL = { ...jiuhuRaw, texture: png(jiuhuSkin) } as unknown as BedrockModel;
 // 望远镜视野（原版 Gui.renderSpyglassOverlay）：misc/spyglass_scope.png 画成边长 = 画面高 × 1.125 的正方形放在正中，四周补黑
@@ -70,7 +70,7 @@ const landBurstScale = 0.35; // 落进古城那下的金光：冲击波环半径
 // 灯：同 飞行镜头.tsx 的 `FlightSky`（主世界统一的天、云、灯，lib/主世界光照.tsx），地下不画天空穹顶、不开 Photon 的天和云。地面以上（`dome`）日光投影（同 6-2-5，`OverworldSunLight`）；
 // 钻进地下改用不投影的日光：投影的话井外整片地下都在地形影子里
 const Lights: React.FC<{ camPos: number[]; dome: boolean }> = ({ camPos: camPos, dome }) => {
-  const light = useMemo(() => new THREE.DirectionalLight(SKY.sunLight, overworldMix.直射), []);
+  const light = useMemo(() => new THREE.DirectionalLight(SKY.sunLight, overworldMix.direct), []);
   const sunOffset = new THREE.Vector3(...SUN_OW).normalize().multiplyScalar(1000);
   light.position.set(camPos[0] + sunOffset.x, camPos[1] + sunOffset.y, camPos[2] + sunOffset.z);
   light.target.position.set(camPos[0], camPos[1], camPos[2]);
@@ -83,15 +83,15 @@ const Lights: React.FC<{ camPos: number[]; dome: boolean }> = ({ camPos: camPos,
         </group>
       )}
       {dome && overworldShadowOn ? (
-        <OverworldSunLight shadowFar={overworldShadowFar(timeline.起点.visibility)} aboveGround={camPos[2] - choreo.groundZ} />
+        <OverworldSunLight shadowFar={overworldShadowFar(timeline.start.visibility)} aboveGround={camPos[2] - choreo.groundZ} />
       ) : (
         <>
           <primitive object={light} />
           <primitive object={light.target} />
         </>
       )}
-      <hemisphereLight args={[SKY.skyLight, SKY.groundLight, overworldMix.天光]} position={[0, 0, 1]} />
-      <ambientLight intensity={overworldMix.环境光} />
+      <hemisphereLight args={[SKY.skyLight, SKY.groundLight, overworldMix.skylight]} position={[0, 0, 1]} />
+      <ambientLight intensity={overworldMix.ambient} />
     </>
   );
 };
@@ -101,7 +101,7 @@ let FX: FxParams | null = null;
 const fx = (): FxParams => {
   if (FX) return FX;
   const shaft = choreo.liYingShaft();
-  const imp = timeline.撞击时刻();
+  const imp = timeline.impactTime();
   FX = {
     impact: imp,
     中心: choreo.shaftCellCenter(),
@@ -109,7 +109,7 @@ const fx = (): FxParams => {
     caveCeilingZ: choreo.caveCeilingZ,
     ancientCityFloorZ: choreo.ancientCityFloorZ,
     breachSec: imp + shaft.breachDelay,
-    landSec: shaft.落地,
+    landSec: shaft.landSec,
   };
   return FX;
 };
@@ -117,21 +117,21 @@ const fx = (): FxParams => {
 // 6-3-5 喊「ロードローラーだッ！」时动嘴：开口帧（全局帧）取 编排/李樱.ts 的 shoutLine（6-举锤砸穿 段.ts 的台词 cue 就是它）；台词只在 6-3-5 放，别的段不动嘴
 const shoutMouth = (globalFrame: number) => mouthAt([choreo.shoutLine], '李樱', globalFrame);
 
-export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G: globalFrame, segment: segment }) => {
+export const FallScene: React.FC<{ G: number; segment: timeline.SegmentName }> = ({ G: globalFrame, segment: segment }) => {
   const { width, height } = useVideoConfig();
   const terrain = useFallTerrain();
-  const physSec = timeline.物理时间(globalFrame);
-  const imp = timeline.撞击时刻();
+  const physSec = timeline.physicalTime(globalFrame);
+  const imp = timeline.impactTime();
   const after = physSec >= imp;
   // 6-3-1、6-3-2（G < 0）：机位、两人姿势、李樱手里的指南针换成 6-3-1/编排.ts、6-3-2/扫帚上.ts 的
-  const preLeap = globalFrame < timeline.段表['6-3-1'].止 ? backToTown(globalFrame) : globalFrame < 0 ? onBroomState(globalFrame) : null;
+  const preLeap = globalFrame < timeline.segTable['6-3-1'].止 ? backToTown(globalFrame) : globalFrame < 0 ? onBroomState(globalFrame) : null;
   const cam = preLeap?.cam ?? choreo.camPose(globalFrame);
   const under = cam.pos[2] < choreo.groundZ - 0.5;
   // 已看过的顺序画面在入井后保留了入井前最后一帧的大气后期和云影。
   // 明确从时间线求这台参考相机，而不是沿用浏览器实际渲过的上一帧；地下雾和灯不变。
   const atmosphereReference = useMemo(() => {
     if (segment !== '6-3-6') return undefined;
-    const span = timeline.段表['6-3-6'];
+    const span = timeline.segTable['6-3-6'];
     let last: ReturnType<typeof choreo.camPose> | undefined;
     let lastFrame = 0;
     // 拼段跳过了 6-3-6 的第 0 帧；这里只求相机参数，不预渲任何历史帧。
@@ -168,19 +168,19 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
         <MaceInHand headSlot={phantom} glow={choreo.goldGlow(physSec)} />
       </group>
     ) : undefined;
-  const g6 = timeline.段表['6-3-6'].起;
-  const flash = segment === '6-3-6' ? Math.max(0, 1 - Math.abs(globalFrame - g6 - timeline.撞击段内帧 - 0.5) / 2) * 0.55 : 0;
+  const g6 = timeline.segTable['6-3-6'].起;
+  const flash = segment === '6-3-6' ? Math.max(0, 1 - Math.abs(globalFrame - g6 - timeline.impactSegFrame - 0.5) / 2) * 0.55 : 0;
   // 金光：锤头、光尾（沿走过的路往回取点，平移到锤头上）
-  const glowLevel = 例外('不加自制特效', choreo.goldGlow(physSec), { 段: ['6-飞越主世界俯冲边城', '6-城墙瞭望', '6-举锤砸穿'], 原因: '剧情要的锤头金色光尾和撞击金光' });
+  const glowLevel = exception('不加自制特效', choreo.goldGlow(physSec), { 段: ['6-飞越主世界俯冲边城', '6-城墙瞭望', '6-举锤砸穿'], 原因: '剧情要的锤头金色光尾和撞击金光' });
   const head = choreo.maceHeadPos(ly);
   const off = [head[0] - ly.hip[0], head[1] - ly.hip[1], head[2] - ly.hip[2]];
   // 光尾往回取 0.3 秒，长度封顶 45 米（快时按速度缩）；钻进地里后只留 0.12 秒（再长会从井口一路拖到镜头身上）。用户 10-10 嫌太长，减半
-  const speed = physSec > timeline.刻.leap && physSec <= imp ? Math.hypot(...timeline.李樱下落(physSec).v) : 0;
+  const speed = physSec > timeline.tick.leap && physSec <= imp ? Math.hypot(...timeline.liYingFall(physSec).v) : 0;
   const trailSec = physSec > imp ? 0.12 : 0.3 * Math.min(1, 150 / Math.max(speed, 1));
   // 取点越靠近锤头越密（往回 尾长 × (j/n)^指数）：跟拍时镜头离他只三四米，等距取点的话近镜头那几米又淡掉（锤击金光.tsx），整条光尾看不见；指数随速度从 1 升到 2（20～100 米/秒）
-  const 指数 = 1 + Math.min(1, Math.max(0, (speed - 20) / 80));
+  const exponent = 1 + Math.min(1, Math.max(0, (speed - 20) / 80));
   const pathAt = (secAgo: number): V3 => {
-    const hip = choreo.liYingHip(Math.max(timeline.刻.leap, physSec - secAgo));
+    const hip = choreo.liYingHip(Math.max(timeline.tick.leap, physSec - secAgo));
     return [hip[0] + off[0], hip[1] + off[1], hip[2] + off[2]];
   };
   // 撞地前那段光尾（撞地后留在原地散掉）：撞击那一刻锤头相对髋的偏移，光尾长度按撞击速度（同上）
@@ -189,11 +189,11 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
     const impactHead = choreo.maceHeadPos(impactState);
     const impactOff = [impactHead[0] - impactState.hip[0], impactHead[1] - impactState.hip[1], impactHead[2] - impactState.hip[2]];
     return {
-      轨迹: (secBeforeImpact: number): V3 => {
-        const hip = choreo.liYingHip(Math.max(timeline.刻.leap, imp - secBeforeImpact));
+      trajectory: (secBeforeImpact: number): V3 => {
+        const hip = choreo.liYingHip(Math.max(timeline.tick.leap, imp - secBeforeImpact));
         return [hip[0] + impactOff[0], hip[1] + impactOff[1], hip[2] + impactOff[2]];
       },
-      trailSec: 0.3 * Math.min(1, 150 / Math.max(Math.hypot(...timeline.李樱下落(imp).v), 1)),
+      trailSec: 0.3 * Math.min(1, 150 / Math.max(Math.hypot(...timeline.liYingFall(imp).v), 1)),
     };
   })() : undefined;
   const jhDist = dist(jh.hip);
@@ -205,7 +205,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
   return (
     <AbsoluteFill style={{ backgroundColor: UNDER_BACKGROUND }}>
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(LevelParams.视频.dpr)}>
-        {under ? <UnderFog /> : <FlightFog visibility={timeline.起点.visibility} />}
+        {under ? <UnderFog /> : <FlightFog visibility={timeline.start.visibility} />}
         <FlightRig c={cam} near={0.02} />
         <ScreenAo atmosphereCamera={under ? atmosphereReference?.camera : undefined} />
         <OverworldSky active={!under} />
@@ -214,7 +214,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
         <group rotation={[-Math.PI / 2, 0, 0]}>
           {cam.pos[2] < choreo.caveCeilingZ ? <GuchengLight /> : <Lights camPos={cam.pos} dome={!under} />}
           {/* 地形：坑和竖井那一圈在导入的地形里一直是挖开的（地形.ts），砸穿以前城的地面盖在上面 */}
-          {!under && <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} 像素={LevelParams.视频.像素} 远={terrain.远} 高度={terrain.高度} shadowLightDir={SUN_OW_DIR} />}
+          {!under && <VoxelWorld 键={terrain.键} 来源={terrain.来源} 中心={cam.pos} pixel={LevelParams.视频.pixel} far={terrain.farM} heightRange={terrain.heightRange} shadowLightDir={SUN_OW_DIR} />}
           <group position={borderTownPos}>
             <BorderTown holeRect={pit?.holeRect} />
           </group>
@@ -239,9 +239,9 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
             </group>
           )}
           {preLeap?.compass && <HeldCompass s={preLeap.compass} />}
-          <LiYingGoldGlow g={glowLevel} head={head} hip={ly.hip} w={physSec} pathAt={pathAt} trailSec={trailSec} sampleExp={指数} cam={cam.pos} zoom={zoom} />
+          <LiYingGoldGlow g={glowLevel} head={head} hip={ly.hip} w={physSec} pathAt={pathAt} trailSec={trailSec} sampleExp={exponent} cam={cam.pos} zoom={zoom} />
           <group matrix={ly.matrix} matrixAutoUpdate={false}>
-            <LiYing pose={ly.pose} handR={mace} hipL={sheath} 嘴={preLeap?.liYingMouth ?? (segment === '6-3-5' ? shoutMouth(globalFrame) : undefined)} />
+            <LiYing pose={ly.pose} handR={mace} hipL={sheath} mouth={preLeap?.liYingMouth ?? (segment === '6-3-5' ? shoutMouth(globalFrame) : undefined)} />
           </group>
           {/* 北城墙上的卫兵（每人一张脸：号 = 第几张原版默认皮肤；巡逻的 5 号有位移和走路的摆腿，见 编排.ts 的 卫兵） */}
           {nearTown &&
@@ -249,8 +249,8 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
               if (i === hidden) return null;
               const pose = choreo.guardPoseAt(globalFrame, i);
               return (
-                <group key={i} position={[borderTownPos[0] + guardPos[0] + pose.偏移[0], borderTownPos[1] + guardPos[1] + pose.偏移[1], borderTownPos[2] + guardPos[2] + pose.偏移[2]]} rotation={[0, 0, rad(180 + pose.转身)]}>
-                  <Guard sec={physSec + i * 0.7} glintSec={physSec} headPitch={pose.画头仰} headYaw={pose.头偏} raiseSpyglass={pose.举镜} skinIndex={i} limbSwing={pose.步} stride={pose.stride} />
+                <group key={i} position={[borderTownPos[0] + guardPos[0] + pose.offset[0], borderTownPos[1] + guardPos[1] + pose.offset[1], borderTownPos[2] + guardPos[2] + pose.offset[2]]} rotation={[0, 0, rad(180 + pose.bodyTurn)]}>
+                  <Guard sec={physSec + i * 0.7} glintSec={physSec} headPitch={pose.pictureHeadPitch} headYaw={pose.headYaw} raiseSpyglass={pose.raiseSpyglass} skinIndex={i} limbSwing={pose.步} stride={pose.stride} />
                 </group>
               );
             })}
@@ -271,7 +271,7 @@ export const FallScene: React.FC<{ G: number; segment: timeline.段名 }> = ({ G
 };
 
 // G 是下坠时间线的格（1/24 秒），由段内秒现算、带小数
-export const FallSegment: React.FC<{ segment: timeline.段名 }> = ({ segment: segment }) => {
-  const 秒 = use当前秒();
-  return <FallScene G={timeline.段表[segment].起 + 秒 * timeline.FPS} segment={segment} />;
+export const FallSegment: React.FC<{ segment: timeline.SegmentName }> = ({ segment: segment }) => {
+  const sec = useCurrentSec();
+  return <FallScene G={timeline.segTable[segment].起 + sec * timeline.FPS} segment={segment} />;
 };

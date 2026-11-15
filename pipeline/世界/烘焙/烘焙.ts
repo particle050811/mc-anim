@@ -6,94 +6,94 @@
 // 只管算和写进给定目录；版本、登记、锁在 版本.ts 和 命令.ts。
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { 默认模型, 模型字节, 模型文件名 } from '../../../engine/voxel/区段模型.ts';
-import { 转码目录 } from './转码.ts';
-import type { 可见设置 } from './可见.ts';
-import { 遍历区段 } from './读区段.ts';
-import type { 包信息 } from '../../../engine/voxel/区段包.ts';
-import type { 解开的列段 } from '../列段.ts';
-import type { 体素库 } from '../体素库.ts';
-import { 浮空下地表 } from './地表.ts';
-import { 段缓冲, 合并一级, 无地表, 无顶, type 层级 } from './合并.ts';
-import { 条目表, 不染色 } from './条目.ts';
-import { 区段写手, type 级统计 } from './写区段.ts';
+import { defaultModel, modelBytes, modelFileName } from '../../../engine/voxel/区段模型.ts';
+import { transcodeDir } from './转码.ts';
+import type { VisibleSettings } from './可见.ts';
+import { walkSections } from './读区段.ts';
+import type { PackageInfo } from '../../../engine/voxel/区段包.ts';
+import type { UnpackedColumnSegmentRegion } from '../列段.ts';
+import type { VoxelLib } from '../体素库.ts';
+import { surfaceUnderFloating } from './地表.ts';
+import { SegmentBuffer, mergeLevel, noSurface, noTop, type Level } from './合并.ts';
+import { EntryTable, noBiome } from './条目.ts';
+import { SectionWriter, type LevelStats } from './写区段.ts';
 
-export type 烘焙参数 = {
+export type BakeParams = {
   /** 这个包的区域（有数据的），[rx, rz] */
-  区域们: (readonly [number, number])[];
+  regions: (readonly [number, number])[];
   /** 取一个区域的列段；不在 区域们 里的返回 null（多带的那圈落到包外就当没数据） */
-  取区域: (rx: number, rz: number) => 解开的列段 | null;
+  getRegion: (rx: number, rz: number) => UnpackedColumnSegmentRegion | null;
   /** 包.json 的 维度（暮色 / 主世界 …） */
   维度: string;
   /** 场景原点 [ox, oy, oz]：ox、oz 是 2048 的整数倍 */
   原点: readonly [number, number, number];
   /** 有顶的维度（下界）：整个高度都存。地表不取「最高整格方块的顶」（那是基岩顶，底下的洞腔全丢），改取这一列最低的非整格方块的底，
    *  即从维度底往上那一摞实心的顶：熔岩海、洞腔、岩顶都在它上面，照存；它下面全是整格方块，照旧当实心不存。不给 = 照旧（露天维度），烘出来和以前逐字节一样 */
-  全高?: boolean;
+  fullHeight?: boolean;
   输出: string;
-  库: 体素库;
-  日志?: (s: string) => void;
+  库: VoxelLib;
+  log?: (s: string) => void;
   /** 可见变换（可见.ts）：定稿时埋住的格换填充方块、封死的腔填实，保真范围原样。不给 = 原样（anim world bake 按世界声明总是给） */
-  可见?: 可见设置 | null;
+  visible?: VisibleSettings | null;
 };
 
-export type 烘焙结果 = { 包: 包信息; 缺状态: Map<string, number>; 缺群系: Map<string, number>; 级: 级统计[]; 块文件数: number; 条目数: number };
+export type BakeResult = { 包: PackageInfo; missingStates: Map<string, number>; missingBiomes: Map<string, number>; 级: LevelStats[]; blockFileCount: number; entryCount: number };
 
-const 粗高度格 = 16; // 粗高度图一格 16 米
+const coarseCellMeters = 16; // 粗高度图一格 16 米
 
-export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
-  const { 库 } = p;
-  const { coarsestLevel } = 库.区段;
-  const tileCols = 库.区段包.tileSizeM;
+export const bake = async (p: BakeParams): Promise<BakeResult> => {
+  const { 库: voxelLib } = p;
+  const { coarsestLevel } = voxelLib.区段;
+  const tileCols = voxelLib.sectionPack.tileSizeM;
   const [OX, OY, OZ] = p.原点;
   if (OX % tileCols || OZ % tileCols) throw new Error(`原点的 x、z 要是 ${tileCols} 的整数倍，给的是 ${OX},${OZ}`);
-  if (!p.区域们.length) throw new Error('没有区域可烘');
+  if (!p.regions.length) throw new Error('没有区域可烘');
   // 先落中性表的暂存包，等状态号和全部区段固定后再学一次；和转码共用定稿路径。
-  const 输出 = p.输出;
-  p = { ...p, 输出: path.join(输出, '.训练输入') };
+  const outDir = p.输出;
+  p = { ...p, 输出: path.join(outDir, '.训练输入') };
   mkdirSync(p.输出, { recursive: true });
-  writeFileSync(path.join(p.输出, 模型文件名), 模型字节(默认模型()));
+  writeFileSync(path.join(p.输出, modelFileName), modelBytes(defaultModel()));
   const padCols = 2 ** coarsestLevel; // 每块四周多带的列数
   const paddedCols = tileCols + 2 * padCols;
-  const 表 = new 条目表(库.知识);
-  const { entryState, entryBiome, entryFullCube, stateVoxel, biomeKnown, biomeList, stateList, missingStates, missingBiomes } = 表;
-  const 有 = new Set(p.区域们.map(([rx, rz]) => `${rx},${rz}`));
-  const loadRegion = (rx: number, rz: number) => (有.has(`${rx},${rz}`) ? p.取区域(rx, rz) : null);
+  const entryTable = new EntryTable(voxelLib.knowledge);
+  const { entryState, entryBiome, entryFullCube, stateVoxel, biomeKnown, biomeList, stateList, missingStates, missingBiomes } = entryTable;
+  const regionKeys = new Set(p.regions.map(([rx, rz]) => `${rx},${rz}`));
+  const loadRegion = (rx: number, rz: number) => (regionKeys.has(`${rx},${rz}`) ? p.getRegion(rx, rz) : null);
   // 区域自己的 (状态, 群系) → 条目号、区域群系 → 群系号的缓存，挂在区域对象上（区域对象由 取区域 缓存，换了对象就重查，结果一样）
-  const 区域缓存 = new WeakMap<解开的列段, { entryIds: Int32Array; biomeIds: Int32Array }>();
-  const 缓存于 = (r: 解开的列段) => {
-    let c = 区域缓存.get(r);
-    if (!c) 区域缓存.set(r, (c = { entryIds: new Int32Array(r.状态表.length * r.群系表.length).fill(-1), biomeIds: new Int32Array(r.群系表.length).fill(-1) }));
+  const regionCache = new WeakMap<UnpackedColumnSegmentRegion, { entryIds: Int32Array; biomeIds: Int32Array }>();
+  const cacheKeyFor = (r: UnpackedColumnSegmentRegion) => {
+    let c = regionCache.get(r);
+    if (!c) regionCache.set(r, (c = { entryIds: new Int32Array(r.stateTable.length * r.biomeTable.length).fill(-1), biomeIds: new Int32Array(r.biomeTable.length).fill(-1) }));
     return c;
   };
 
   // ---------- 范围 ----------
-  const [r0x, r0z] = p.区域们[0]!;
+  const [r0x, r0z] = p.regions[0]!;
   const firstRegion = loadRegion(r0x, r0z);
   if (!firstRegion) throw new Error(`区域 r.${r0x}.${r0z} 没有数据`);
-  const zb = firstRegion.y底 - OY; // 最低一格（场景 z）
-  const zt = firstRegion.y顶 - OY;
+  const zb = firstRegion.yBottom - OY; // 最低一格（场景 z）
+  const zt = firstRegion.yTop - OY;
   // 区域 (rx, rz) 在场景里：X ∈ [512rx − ox, 512rx + 512 − ox)，Y ∈ [oz − 512rz − 512, oz − 512rz)
   const regionX0 = (rx: number) => 512 * rx - OX;
   const regionY0 = (rz: number) => OZ - 512 * rz - 512;
   const tiles = new Map<string, [number, number]>();
-  for (const [rx, rz] of p.区域们) {
+  for (const [rx, rz] of p.regions) {
     const ti = Math.floor(regionX0(rx) / tileCols), tj = Math.floor(regionY0(rz) / tileCols);
     tiles.set(`${ti},${tj}`, [ti, tj]);
   }
-  const coarseX0 = Math.min(...p.区域们.map(([rx]) => regionX0(rx)));
-  const coarseY0 = Math.min(...p.区域们.map(([, rz]) => regionY0(rz)));
-  const coarseNx = (Math.max(...p.区域们.map(([rx]) => regionX0(rx))) + 512 - coarseX0) / 粗高度格;
-  const coarseNy = (Math.max(...p.区域们.map(([, rz]) => regionY0(rz))) + 512 - coarseY0) / 粗高度格;
-  const coarseHeights = new Int16Array(coarseNx * coarseNy).fill(无顶);
+  const coarseX0 = Math.min(...p.regions.map(([rx]) => regionX0(rx)));
+  const coarseY0 = Math.min(...p.regions.map(([, rz]) => regionY0(rz)));
+  const coarseNx = (Math.max(...p.regions.map(([rx]) => regionX0(rx))) + 512 - coarseX0) / coarseCellMeters;
+  const coarseNy = (Math.max(...p.regions.map(([, rz]) => regionY0(rz))) + 512 - coarseY0) / coarseCellMeters;
+  const coarseHeights = new Int16Array(coarseNx * coarseNy).fill(noTop);
 
   // ---------- 方块在哪个群系 ----------
   // 游戏取方块群系不是直接取 pos >> 2，而是给相邻 8 个群系格按种子抖动后挑最近的（BiomeManager.getBiome，见 群系色.ts 的 biomeCell）。
   // 只有染色方块要挑；8 个候选都一样就不算抖动。y 超界按边界格取，挑中的格没数据就用自己那格。
   // 候选群系格摊成一张表，下标 ((qz − 格z0)·格宽 + qx − 格x0)·NQ + qy − qy底
-  const qyBottom = firstRegion.y底 >> 2;
-  const NQ = (firstRegion.y顶 - firstRegion.y底 + 1) >> 2;
-  const zoomSeed = await 库.知识.群系缩放种子(firstRegion.种子);
+  const qyBottom = firstRegion.yBottom >> 2;
+  const NQ = (firstRegion.yTop - firstRegion.yBottom + 1) >> 2;
+  const zoomSeed = await voxelLib.knowledge.biomeScaleSeed(firstRegion.种子);
   let cellBiomes = new Uint16Array(0);
   let cellX0 = 0, cellZ0 = 0, cellWidth = 0;
   // 游戏方块 x ∈ [x0, x0 + W)、z ∈ [z0, z0 + W) 要用到的群系格：x 的候选是 (x − 2) >> 2 和它 + 1
@@ -110,16 +110,16 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
         const col = (z - 512 * rz) * 512 + (x - 512 * rx);
         const cellBase = (cellRow * cellWidth + cellCol) * NQ;
         if (!region || !region.段数[col]) {
-          cellBiomes.fill(不染色, cellBase, cellBase + NQ);
+          cellBiomes.fill(noBiome, cellBase, cellBase + NQ);
           continue;
         }
-        const rc = 缓存于(region);
+        const rc = cacheKeyFor(region);
         // 群系格里的方块群系都一样，取格子最低那一格所在的段
         let runIdx = region.runStarts[col]!;
         for (let cellY = NQ - 1; cellY >= 0; cellY--) {
-          while (region.底[runIdx]! > firstRegion.y底 + 4 * cellY) runIdx++;
+          while (region.bottom[runIdx]! > firstRegion.yBottom + 4 * cellY) runIdx++;
           const lb = region.群系[runIdx]!;
-          if (rc.biomeIds[lb]! < 0) rc.biomeIds[lb] = 表.internBiome(region.群系表[lb]!);
+          if (rc.biomeIds[lb]! < 0) rc.biomeIds[lb] = entryTable.internBiome(region.biomeTable[lb]!);
           cellBiomes[cellBase + cellY] = rc.biomeIds[lb]!;
         }
       }
@@ -129,7 +129,7 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
     const m0 = Math.min(NQ - 1, Math.max(0, qyBase - qyBottom)), m1 = Math.min(NQ - 1, Math.max(0, qyBase + 1 - qyBottom));
     const baseIdx = ((((z - 2) >> 2) - cellZ0) * cellWidth + ((x - 2) >> 2) - cellX0) * NQ, dx = NQ, dz = cellWidth * NQ;
     const biome = cellBiomes[baseIdx + m0]!;
-    return biome !== 不染色 &&
+    return biome !== noBiome &&
       cellBiomes[baseIdx + m1] === biome &&
       cellBiomes[baseIdx + dx + m0] === biome &&
       cellBiomes[baseIdx + dx + m1] === biome &&
@@ -142,24 +142,24 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
   };
   // 游戏方块 (x, y, z) 按抖动挑中的群系号；ownBiome：它自己那个群系格的
   const jitteredBiome = (x: number, y: number, z: number, ownBiome: number) => {
-    const [qx, qy, qz] = 库.知识.群系格(zoomSeed, x, y, z);
+    const [qx, qy, qz] = voxelLib.knowledge.biomeCell(zoomSeed, x, y, z);
     const picked = cellBiomes[((qz - cellZ0) * cellWidth + qx - cellX0) * NQ + Math.min(NQ - 1, Math.max(0, qy - qyBottom))]!;
-    return picked === 不染色 ? ownBiome : picked;
+    return picked === noBiome ? ownBiome : picked;
   };
 
   // ---------- 第 0 级：块（连同四周多带的）里每一列从列段取 ----------
-  const buildLevel0 = (X0: number, Y0: number): 层级 => {
+  const buildLevel0 = (X0: number, Y0: number): Level => {
     const width = paddedCols;
     const runStarts = new Uint32Array(width * width + 1);
-    const surfaces = new Int16Array(width * width).fill(无地表);
-    const tops = new Int16Array(width * width).fill(无顶);
-    const runBuf = new 段缓冲();
+    const surfaces = new Int16Array(width * width).fill(noSurface);
+    const tops = new Int16Array(width * width).fill(noTop);
+    const runBuf = new SegmentBuffer();
     fillCellBiomes(X0 + OX, OZ - Y0 - width, width);
     for (let gy = 0; gy < width; gy++) {
       const z = OZ - 1 - (Y0 + gy);
       const rz = Math.floor(z / 512);
       const coreRow = gy >= padCols && gy < padCols + tileCols;
-      let region: 解开的列段 | null = null;
+      let region: UnpackedColumnSegmentRegion | null = null;
       let curRx = NaN;
       for (let gx = 0; gx < width; gx++) {
         const levelCol = gy * width + gx;
@@ -172,7 +172,7 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
         const col = (z - 512 * rz) * 512 + (x - 512 * rx);
         const runCount = region ? region.段数[col]! : 0;
         if (region && runCount) {
-          const rc = 缓存于(region);
+          const rc = cacheKeyFor(region);
           const inCore = coreRow && gx >= padCols && gx < padCols + tileCols;
           const s0 = runBuf.n;
           const pushRun = (entry: number, bottom: number) => {
@@ -182,18 +182,18 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
           let top = zt; // 这一段的顶
           let lowestOpen = zt + 1; // 全高：最低的非整格方块（空气、熔岩、花草）的底；一列全是整格方块就留在最高一格上面
           for (let k = region.runStarts[col]!, ke = k + runCount; k < ke; k++) {
-            const li = region.状态[k]! * region.群系表.length + region.群系[k]!;
+            const li = region.状态[k]! * region.biomeTable.length + region.群系[k]!;
             let entry = rc.entryIds[li]!;
-            if (entry < 0) entry = rc.entryIds[li] = 表.internEntry(表.internState(region.状态表[region.状态[k]!]!), 表.internBiome(region.群系表[region.群系[k]!]!));
-            const bottom = region.底[k]! - OY;
+            if (entry < 0) entry = rc.entryIds[li] = entryTable.internEntry(entryTable.internState(region.stateTable[region.状态[k]!]!), entryTable.internBiome(region.biomeTable[region.群系[k]!]!));
+            const bottom = region.bottom[k]! - OY;
             const st = entryState[entry]!;
             if (inCore && st && !stateVoxel[st]) missingStates.set(stateList[st]!, (missingStates.get(stateList[st]!) ?? 0) + top - bottom + 1);
-            if (p.全高) {
+            if (p.fullHeight) {
               if (!entryFullCube[entry]) lowestOpen = bottom;
-            } else if (surfaces[levelCol] === 无地表 && entryFullCube[entry]) surfaces[levelCol] = top + 1;
-            if (tops[levelCol] === 无顶 && entry) tops[levelCol] = top;
+            } else if (surfaces[levelCol] === noSurface && entryFullCube[entry]) surfaces[levelCol] = top + 1;
+            if (tops[levelCol] === noTop && entry) tops[levelCol] = top;
             const ownBiome = entryBiome[entry]!;
-            if (ownBiome === 不染色) pushRun(entry, bottom);
+            if (ownBiome === noBiome) pushRun(entry, bottom);
             // 染色的方块挑群系：候选格一样的一组（竖着最多 4 格）一起定，离交界近的逐格算抖动
             else
               for (let k2 = top; k2 >= bottom; ) {
@@ -202,33 +202,33 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
                 const groupBiome = uniformCandidateBiome(x, qyBase, z);
                 if (groupBiome >= 0) {
                   if (inCore && !biomeKnown[groupBiome]) missingBiomes.set(biomeList[groupBiome]!, (missingBiomes.get(biomeList[groupBiome]!) ?? 0) + k2 - groupBottom + 1);
-                  pushRun(groupBiome === ownBiome ? entry : 表.internEntry(st, groupBiome), groupBottom);
+                  pushRun(groupBiome === ownBiome ? entry : entryTable.internEntry(st, groupBiome), groupBottom);
                   k2 = groupBottom - 1;
                   continue;
                 }
                 for (; k2 >= groupBottom; k2--) {
                   const pickedBiome = jitteredBiome(x, k2 + OY, z, ownBiome);
                   if (inCore && !biomeKnown[pickedBiome]) missingBiomes.set(biomeList[pickedBiome]!, (missingBiomes.get(biomeList[pickedBiome]!) ?? 0) + 1);
-                  pushRun(pickedBiome === ownBiome ? entry : 表.internEntry(st, pickedBiome), k2);
+                  pushRun(pickedBiome === ownBiome ? entry : entryTable.internEntry(st, pickedBiome), k2);
                 }
               }
             top = bottom - 1;
           }
-          if (p.全高) surfaces[levelCol] = lowestOpen;
-          else if (surfaces[levelCol] === 无地表) surfaces[levelCol] = zb; // 一列里没有整格方块：一直通到底
+          if (p.fullHeight) surfaces[levelCol] = lowestOpen;
+          else if (surfaces[levelCol] === noSurface) surfaces[levelCol] = zb; // 一列里没有整格方块：一直通到底
         }
         runStarts[levelCol + 1] = runBuf.n;
       }
     }
     const runEntries = runBuf.entries.slice(0, runBuf.n), runBottoms = runBuf.bottoms.slice(0, runBuf.n);
-    if (!p.全高) 浮空下地表(width, runStarts, runEntries, runBottoms, surfaces, entryFullCube, zb, zt); // 全高的地表已经在所有空当下面
+    if (!p.fullHeight) surfaceUnderFloating(width, runStarts, runEntries, runBottoms, surfaces, entryFullCube, zb, zt); // 全高的地表已经在所有空当下面
     return { L: 0, W: width, kb: zb, kt: zt, runStarts, entries: runEntries, bottoms: runBottoms, surface: surfaces, tops };
   };
 
   // ---------- 主流程 ----------
-  const 写手 = new 区段写手(库, 表, p.输出, padCols, tileCols);
+  const writer = new SectionWriter(voxelLib, entryTable, p.输出, padCols, tileCols);
   const t0 = performance.now();
-  p.日志?.(`烘焙 → ${p.输出}\n  ${p.维度}，原点 游戏 (${OX}, ${OY}, ${OZ})，${p.区域们.length} 个区域、${tiles.size} 块（${tileCols} 米一块），z ${zb}～${zt}`);
+  p.log?.(`烘焙 → ${p.输出}\n  ${p.维度}，原点 游戏 (${OX}, ${OY}, ${OZ})，${p.regions.length} 个区域、${tiles.size} 块（${tileCols} 米一块），z ${zb}～${zt}`);
   for (const [ti, tj] of [...tiles.values()].sort((a, b) => a[1] - b[1] || a[0] - b[0])) {
     const X0 = ti * tileCols - padCols, Y0 = tj * tileCols - padCols;
     let level = buildLevel0(X0, Y0);
@@ -236,38 +236,38 @@ export const 烘焙 = async (p: 烘焙参数): Promise<烘焙结果> => {
     for (let gy = padCols; gy < padCols + tileCols; gy++)
       for (let gx = padCols; gx < padCols + tileCols; gx++) {
         const colTop = level.tops[gy * paddedCols + gx]!;
-        if (colTop === 无顶) continue;
-        const k = Math.floor((Y0 + gy - coarseY0) / 粗高度格) * coarseNx + Math.floor((X0 + gx - coarseX0) / 粗高度格);
+        if (colTop === noTop) continue;
+        const k = Math.floor((Y0 + gy - coarseY0) / coarseCellMeters) * coarseNx + Math.floor((X0 + gx - coarseX0) / coarseCellMeters);
         coarseHeights[k] = Math.max(coarseHeights[k]!, colTop + 1);
       }
-    写手.写一级(level, ti, tj);
+    writer.writeLevel(level, ti, tj);
     for (let levelNo = 1; levelNo <= coarsestLevel; levelNo++) {
-      level = 合并一级(level, 表, 库.知识.合并键, zb, zt);
-      写手.写一级(level, ti, tj);
+      level = mergeLevel(level, entryTable, voxelLib.knowledge.mergeKey, zb, zt);
+      writer.writeLevel(level, ti, tj);
     }
-    写手.写块(ti, tj);
-    p.日志?.(`  块 (${ti}, ${tj}) 完，累计 ${((performance.now() - t0) / 1000).toFixed(1)} 秒`);
+    writer.writeBlock(ti, tj);
+    p.log?.(`  块 (${ti}, ${tj}) 完，累计 ${((performance.now() - t0) / 1000).toFixed(1)} 秒`);
   }
 
-  const 包: 包信息 = {
-    版本: 库.区段包.formatVersion,
+  const packInfo: PackageInfo = {
+    版本: voxelLib.sectionPack.formatVersion,
     维度: p.维度,
     原点: [OX, OY, OZ],
     状态: stateList,
     群系: biomeList,
-    粗高度: { 格: 粗高度格, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, 高: Buffer.from(coarseHeights.buffer).toString('base64') },
+    粗高度: { 格: coarseCellMeters, x0: coarseX0, y0: coarseY0, nx: coarseNx, ny: coarseNy, 高: Buffer.from(coarseHeights.buffer).toString('base64') },
   };
-  writeFileSync(path.join(p.输出, '包.json'), JSON.stringify(包));
+  writeFileSync(path.join(p.输出, '包.json'), JSON.stringify(packInfo));
   const missingRows = [
     ...[...missingStates].sort((a, b) => b[1] - a[1]).map(([k, count]) => `状态\t${k}\t${count}`),
     ...[...missingBiomes].sort((a, b) => b[1] - a[1]).map(([k, count]) => `群系\t${k}\t${count}`),
   ];
   writeFileSync(path.join(p.输出, '缺失.tsv'), ['类\t名\t第0级格数', ...missingRows].join('\n') + '\n');
-  const 训练 = await 转码目录(p.输出, 输出, 1, undefined, p.可见);
-  for (const st of 写手.levelStats) st.bytes = 0;
-  for (const s of 遍历区段(库, 输出)) 写手.levelStats[s.id.L]!.bytes += s.字节.length;
+  const training = await transcodeDir(p.输出, outDir, 1, undefined, p.visible);
+  for (const st of writer.levelStats) st.bytes = 0;
+  for (const s of walkSections(voxelLib, outDir)) writer.levelStats[s.id.L]!.bytes += s.字节.length;
   rmSync(p.输出, { recursive: true });
-  if (p.可见) { const v = 训练.变换; p.日志?.(`可见变换：改了 ${v.改段} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.填}、埋格换 ${v.埋}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格，填充 ${p.可见.填充}`); }
-  p.日志?.(`模型 ${训练.模型类数} 类、${训练.模型字节} 字节，训练 ${训练.样本数} 区段；定稿完成`);
-  return { 包, 缺状态: missingStates, 缺群系: missingBiomes, 级: 写手.levelStats, 块文件数: 写手.tileFileCount, 条目数: entryState.length };
+  if (p.visible) { const v = training.transformCounts; p.log?.(`可见变换：改了 ${v.changedSectionCount} 个区段（保真范围里原样 ${v.保真段} 个）；封腔填 ${v.filledCount}、埋格换 ${v.buriedCount}、邻圈换 ${v.邻圈}、核心边换 ${v.核心边} 格，填充 ${p.visible.fillBlock}`); }
+  p.log?.(`模型 ${training.modelClassCount} 类、${training.modelBytesCount} 字节，训练 ${training.样本数} 区段；定稿完成`);
+  return { 包: packInfo, missingStates: missingStates, missingBiomes: missingBiomes, 级: writer.levelStats, blockFileCount: writer.tileFileCount, entryCount: entryState.length };
 };

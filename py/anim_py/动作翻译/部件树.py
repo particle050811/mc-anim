@@ -12,53 +12,53 @@ from typing import TYPE_CHECKING, Any
 from .类文件 import ACC_STATIC
 
 if TYPE_CHECKING:
-    from .执行 import 翻译器
+    from .执行 import Translator
 
-层定义类 = "net/minecraft/client/model/geom/builders/LayerDefinition"
+layer_def_class = "net/minecraft/client/model/geom/builders/LayerDefinition"
 
 
-def 层定义方法(t: 翻译器, 方法名: str | None = None) -> list[str]:
-    c = t.类(t.模型类)
+def methods_from_layer_def(t: Translator, method_name: str | None = None) -> list[str]:
+    c = t.类(t.model_class)
     if c is None:
         return []
-    return [m.名 for m in c.方法们 if m.访问 & ACC_STATIC and m.描述 == f"()L{层定义类};" and (方法名 is None or m.名 == 方法名)]
+    return [m.名 for m in c.method_list if m.access_flags & ACC_STATIC and m.map_descriptor == f"()L{layer_def_class};" and (method_name is None or m.名 == method_name)]
 
 
-def 从层定义取树(t: 翻译器, 方法名: str | None = None) -> dict[str, list[str]]:
+def tree_from_layer_def(t: Translator, method_name: str | None = None) -> dict[str, list[str]]:
     """{部件名: [子部件名…]}，根叫 root；找不到唯一的无参层定义方法、或者跑不了时抛 不支持"""
-    from .执行 import 不支持, 堆态, 翻译器
+    from .执行 import Unsupported, HeapState, Translator
 
-    名们 = 层定义方法(t, 方法名)
-    if len(名们) != 1:
-        raise 不支持(f"{t.模型类} 里无参、返回 LayerDefinition 的静态方法有 {len(名们)} 个（{'、'.join(名们) or '没有'}），认不出部件树：给 --模型，或 --层 <方法名>")
-    跑者 = 翻译器(t.路径, t.模型类)
-    c = 跑者.类(跑者.模型类)
+    names = methods_from_layer_def(t, method_name)
+    if len(names) != 1:
+        raise Unsupported(f"{t.model_class} 里无参、返回 LayerDefinition 的静态方法有 {len(names)} 个（{'、'.join(names) or '没有'}），认不出部件树：给 --模型，或 --层 <方法名>")
+    runner = Translator(t.路径, t.model_class)
+    c = runner.类(runner.model_class)
     assert c is not None
-    m = c.找方法(名们[0], f"()L{层定义类};")
+    m = c.find_method(names[0], f"()L{layer_def_class};")
     assert m is not None
     try:
-        层, 态 = 跑者.跑(c, m, [], 堆态())
-    except 不支持 as e:
-        raise 不支持(f"从 {名们[0]}() 取部件树：{e}") from e
+        layer, state = runner.run_method(c, m, [], HeapState())
+    except Unsupported as e:
+        raise Unsupported(f"从 {names[0]}() 取部件树：{e}") from e
 
-    def 读(o: Any, 字段: str) -> Any:
-        return 跑者.读字段(态, o, 字段, "L")
+    def read_field(o: Any, field: str) -> Any:
+        return runner.read_field(state, o, field, "L")
 
-    树: dict[str, list[str]] = {}
+    tree: dict[str, list[str]] = {}
 
-    def 走(pd: Any, 名: str) -> None:
-        if 名 in 树:
-            raise 不支持(f"层定义里部件名 {名} 出现了两次（按名字找部件时取哪个看遍历序，没做）")
-        子们 = 跑者._遍历序(态, 读(pd, "children"))
-        树[名] = [k for k, _ in 子们]
-        for k, x in 子们:
-            走(x, k)
+    def walk(pd: Any, name: str) -> None:
+        if name in tree:
+            raise Unsupported(f"层定义里部件名 {name} 出现了两次（按名字找部件时取哪个看遍历序，没做）")
+        children = runner._iter_order(state, read_field(pd, "children"))
+        tree[name] = [k for k, _ in children]
+        for k, x in children:
+            walk(x, k)
 
-    根 = 读(读(层, "mesh"), "root")
+    root = read_field(read_field(layer, "mesh"), "root")
     # 青蛙、嗅探兽：网格根底下只挂一个同样叫 root 的部件，模型的 root() 取的是里面这个（构造里 getChild("root")）。
     # 外面一层谁也不摆姿态、也不会被按名字找到（getAnyDescendantWithName("root") 直接给 root()），树从里面这个起算
-    唯一子 = 跑者._遍历序(态, 读(根, "children"))
-    if len(唯一子) == 1 and 唯一子[0][0] == "root":
-        根 = 唯一子[0][1]
-    走(根, "root")
-    return 树
+    only_child = runner._iter_order(state, read_field(root, "children"))
+    if len(only_child) == 1 and only_child[0][0] == "root":
+        root = only_child[0][1]
+    walk(root, "root")
+    return tree

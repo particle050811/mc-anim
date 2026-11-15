@@ -57,7 +57,7 @@ export const torchArrowFlames = (pathAt: (tick: number) => V3, t0: number, t1: n
 // ---- 火把方块 ----
 // cell：火把所在那一格的最小角（整数格，场景坐标；即打中的那一格外面那格）；墙上：命中面朝哪（场景方向，水平单位向量），不给 = 立着
 // 光：给了就在火焰处放一盏点光（亮度 14 的方块光照，半径约 14 格；原版是方块光照图，不是实时光，这里近似）
-export const TorchBlock: React.FC<{ cell: V3; 墙上?: V3; 光?: number }> = ({ cell, 墙上: wallFacing, 光: light }) => {
+export const TorchBlock: React.FC<{ cell: V3; wallFacing?: V3; 光?: number }> = ({ cell, wallFacing: wallFacing, 光: light }) => {
   const atlas = png(torchAtlas);
   // 墙上火把的模型是 facing=north（贴在南边的墙上、朝北）：游戏北 = 场景 +Y，绕 Z 转到 墙上 方向
   const yaw = wallFacing ? Math.atan2(-wallFacing[0], wallFacing[1]) : 0;

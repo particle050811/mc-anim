@@ -4,14 +4,14 @@
 // 写要标签类型，所以写入用带类型的 写标签；测试造结构文件、以后写回 .mca 用。
 import { gunzipSync, inflateSync } from 'node:zlib';
 
-export type 长数组 = { 长: Buffer };
-export type NBT值 = number | bigint | string | Buffer | Int32Array | 长数组 | NBT值[] | 复合;
-export type 复合 = { [k: string]: NBT值 };
+export type LongArray = { 长: Buffer };
+export type NbtValue = number | bigint | string | Buffer | Int32Array | LongArray | NbtValue[] | Compound;
+export type Compound = { [k: string]: NbtValue };
 
 /** 读一份未压缩的 NBT，返回根复合标签（根名丢掉；要根名用 读NBT带名） */
-export const 读NBT = (buf: Buffer): 复合 => 读NBT带名(buf).值;
+export const readNbt = (buf: Buffer): Compound => readNbtNamed(buf).值;
 
-export const 读NBT带名 = (buf: Buffer): { 名: string; 值: 复合 } => {
+export const readNbtNamed = (buf: Buffer): { 名: string; 值: Compound } => {
   let pos = 0;
   const readString = () => {
     const len = buf.readUInt16BE(pos);
@@ -19,7 +19,7 @@ export const 读NBT带名 = (buf: Buffer): { 名: string; 值: 复合 } => {
     pos += 2 + len;
     return str;
   };
-  const readValue = (t: number): NBT值 => {
+  const readValue = (t: number): NbtValue => {
     switch (t) {
       case 1:
         return buf.readInt8(pos++);
@@ -49,12 +49,12 @@ export const 读NBT带名 = (buf: Buffer): { 名: string; 值: 复合 } => {
         const et = buf.readInt8(pos);
         const count = buf.readInt32BE(pos + 1);
         pos += 5;
-        const list: NBT值[] = new Array(count);
+        const list: NbtValue[] = new Array(count);
         for (let i = 0; i < count; i++) list[i] = readValue(et);
         return list;
       }
       case 10: {
-        const compound: 复合 = {};
+        const compound: Compound = {};
         for (let tt = buf.readInt8(pos++); tt !== 0; tt = buf.readInt8(pos++)) {
           const k = readString();
           compound[k] = readValue(tt);
@@ -78,28 +78,28 @@ export const 读NBT带名 = (buf: Buffer): { 名: string; 值: 复合 } => {
   };
   const t = buf.readInt8(pos++);
   if (t !== 10) throw new Error(`NBT 根不是复合标签（是 ${t}）`);
-  const 名 = readString();
-  return { 名, 值: readValue(t) as 复合 };
+  const name = readString();
+  return { 名: name, 值: readValue(t) as Compound };
 };
 
 /** 按开头的魔数自动解 gzip（1f 8b）、zlib（78 xx），否则当未压缩 */
-export const 解压NBT = (buf: Buffer): Buffer => (buf[0] === 0x1f && buf[1] === 0x8b ? gunzipSync(buf) : buf[0] === 0x78 ? inflateSync(buf) : buf);
+export const decompressNbt = (buf: Buffer): Buffer => (buf[0] === 0x1f && buf[1] === 0x8b ? gunzipSync(buf) : buf[0] === 0x78 ? inflateSync(buf) : buf);
 
 // ---------- 写 ----------
-export type 标签 =
+export type NbtLabel =
   | { t: 'byte' | 'short' | 'int' | 'float' | 'double'; v: number }
   | { t: 'long'; v: bigint }
   | { t: 'string'; v: string }
   | { t: 'byteArray'; v: Uint8Array }
   | { t: 'intArray'; v: ArrayLike<number> }
   | { t: 'longArray'; v: ArrayLike<bigint> }
-  | { t: 'list'; 元素: 标签['t'] | 'end'; v: 标签[] }
-  | { t: 'compound'; v: Record<string, 标签> };
+  | { t: 'list'; elementType: NbtLabel['t'] | 'end'; v: NbtLabel[] }
+  | { t: 'compound'; v: Record<string, NbtLabel> };
 
-const 类型号: Record<标签['t'] | 'end', number> = { end: 0, byte: 1, short: 2, int: 3, long: 4, float: 5, double: 6, byteArray: 7, string: 8, list: 9, compound: 10, intArray: 11, longArray: 12 };
+const tagTypeId: Record<NbtLabel['t'] | 'end', number> = { end: 0, byte: 1, short: 2, int: 3, long: 4, float: 5, double: 6, byteArray: 7, string: 8, list: 9, compound: 10, intArray: 11, longArray: 12 };
 
 /** 写成未压缩的 NBT（根是复合标签） */
-export const 写NBT = (根: Record<string, 标签>, 根名 = ''): Buffer => {
+export const writeNbt = (root: Record<string, NbtLabel>, rootName = ''): Buffer => {
   const parts: Buffer[] = [];
   const u8 = (n: number) => parts.push(Buffer.from([n & 255]));
   const str = (s: string) => {
@@ -108,7 +108,7 @@ export const 写NBT = (根: Record<string, 标签>, 根名 = ''): Buffer => {
     h.writeUInt16BE(b.length);
     parts.push(h, b);
   };
-  const val = (x: 标签) => {
+  const val = (x: NbtLabel) => {
     const b = (n: number) => Buffer.alloc(n);
     switch (x.t) {
       case 'byte': {
@@ -161,7 +161,7 @@ export const 写NBT = (根: Record<string, 标签>, 根名 = ''): Buffer => {
         return parts.push(o);
       }
       case 'list': {
-        u8(类型号[x.v.length ? x.v[0]!.t : x.元素]);
+        u8(tagTypeId[x.v.length ? x.v[0]!.t : x.elementType]);
         const o = b(4);
         o.writeInt32BE(x.v.length);
         parts.push(o);
@@ -170,7 +170,7 @@ export const 写NBT = (根: Record<string, 标签>, 根名 = ''): Buffer => {
       }
       case 'compound':
         for (const [k, e] of Object.entries(x.v)) {
-          u8(类型号[e.t]);
+          u8(tagTypeId[e.t]);
           str(k);
           val(e);
         }
@@ -178,7 +178,7 @@ export const 写NBT = (根: Record<string, 标签>, 根名 = ''): Buffer => {
     }
   };
   u8(10);
-  str(根名);
-  val({ t: 'compound', v: 根 });
+  str(rootName);
+  val({ t: 'compound', v: root });
   return Buffer.concat(parts);
 };

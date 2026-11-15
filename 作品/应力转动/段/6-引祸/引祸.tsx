@@ -5,7 +5,7 @@
 // 声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { png } from '@engine/model/贴图.ts';
 import atlasWest3 from 'asset:网格/古城4x/西3/图集';
 import { Arrow } from '@库/物品/箭.tsx';
@@ -26,7 +26,7 @@ import * as choreo from '../../场/6-古城/6-4-5/编排.ts';
 import { mouthAt, type Mouth } from '../../配音/口型.ts';
 
 // 同 6-4-3/画面.tsx：只要击穿的那几格（外圈和取贴图用的那一格不画），洞壁另补；碎块贴图取自击穿那几格所在的网格块 古城4x-西3（同 6-4-3/画面.tsx 的 ATLAS_C）
-const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < G3.击穿方块.length), lining: K3.holeWalls };
+const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < G3.breachBlocks.length), lining: K3.holeWalls };
 const debrisAtlas = png(atlasWest3);
 
 export const lureFrames = choreo.frameCount;
@@ -40,10 +40,10 @@ const matrixToProps = (matrix?: THREE.Matrix4) => {
   return { position, quaternion };
 };
 // 李樱（同 6-4-1/古城画面.tsx 的 李樱，多了收刀约束：收刀那几帧鞘被左手转过来迎刀，刀画在鞘的坐标系里、顺着鞘滑进去，见 编排.ts 的 liying）
-const SheathingLiYing: React.FC<{ ly: ReturnType<typeof choreo.liying>; 嘴?: Mouth }> = ({ ly, 嘴: mouth }) => (
+const SheathingLiYing: React.FC<{ ly: ReturnType<typeof choreo.liying>; mouth?: Mouth }> = ({ ly, mouth: mouth }) => (
   <LiYing
     pose={ly.pose}
-    嘴={mouth}
+    mouth={mouth}
     hipL={
       <group {...(ly.sheathedState ? matrixToProps(ly.sheathedState) : { quaternion: SHEATH_HANG_QUAT })}>
         <Sheath sheathed={!ly.bladeOn} />
@@ -65,10 +65,10 @@ const closeupCam = (ly: ReturnType<typeof choreo.liying>, bearingDeg: number): C
   const yawRad = rad((choreo.liying(0).pose.yaw ?? 0) + bearingDeg);
   return { pos: [x - 2.3 * Math.sin(yawRad), y + 2.3 * Math.cos(yawRad), z + 1.0], tgt: [x, y, z + 0.8], lens: 30 };
 };
-export type LureParams = { rawSheathe?: boolean; 特写?: number };
+export type LureParams = { rawSheathe?: boolean; closeup?: number };
 
-export const Lure: React.FC<LureParams> = ({ rawSheathe = false, 特写: closeupBearing }) => {
-  const segFrame = use当前秒() * choreo.FPS;
+export const Lure: React.FC<LureParams> = ({ rawSheathe = false, closeup: closeupBearing }) => {
+  const segFrame = useCurrentSec() * choreo.FPS;
   const { width, height } = useVideoConfig();
   const globalFrame = choreo.globalFrameAt(segFrame);
   const ly = choreo.liying(segFrame, rawSheathe);
@@ -76,12 +76,12 @@ export const Lure: React.FC<LureParams> = ({ rawSheathe = false, 特写: closeup
   const wool = choreo.woolAt(segFrame / choreo.FPS);
   return (
     <>
-      <AncientCity4xCanvas 段="6-4-5" cam={closeupBearing === undefined ? choreo.camera(segFrame) : closeupCam(ly, closeupBearing)} width={width} height={height} hide={K3.HIDE} 开箱={K3.openChest(globalFrame)} 羊毛={wool.羊毛} growingWool={wool.growingWool}>
-        <SheathingLiYing ly={ly} 嘴={mouthAt([choreo.lines.会会你们], '李樱', segFrame)} />
+      <AncientCity4xCanvas 段="6-4-5" cam={closeupBearing === undefined ? choreo.camera(segFrame) : closeupCam(ly, closeupBearing)} width={width} height={height} hide={K3.HIDE} chestOpening={K3.openChest(globalFrame)} wool={wool.wool} growingWool={wool.growingWool}>
+        <SheathingLiYing ly={ly} mouth={mouthAt([choreo.lines.challenge], '李樱', segFrame)} />
         {(arrow.阶段 === '来' || arrow.阶段 === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
         <BlockDebris data={DEBRIS} atlas={debrisAtlas} bursts={K3.debrisBursts(globalFrame)} fixWinding />
         {K3.sensorStates(globalFrame).map((q, i) => (
-          <SculkSensor key={i} p={q.p} 秒={q.sec} 激活秒={q.secSinceActive} seed={i + 1} />
+          <SculkSensor key={i} p={q.p} 秒={q.sec} secSinceActive={q.secSinceActive} seed={i + 1} />
         ))}
         {K3.vibrations.map((v, i) => (
           <VibrationSignal key={i} from={v.from} to={v.to} sec={K3.storySecAt(globalFrame) - v.t} 帧={i * 3} />

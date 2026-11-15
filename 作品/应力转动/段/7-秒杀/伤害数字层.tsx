@@ -8,7 +8,7 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as choreo from './编排.ts';
@@ -25,9 +25,9 @@ const hits = play.swingTs.map((s, k) => {
 });
 
 export const VexSwipeDamageLayer: React.FC = () => {
-  const frame = use当前秒() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
+  const frame = useCurrentSec() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
   const { width, height } = useVideoConfig();
-  const t = choreo.t于(frame);
+  const t = choreo.timeAt(frame);
   const cam = choreo.camera(frame);
   const camera = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
   const numbers: DamageNumberItem[] = hits.map((h) => ({ damage: h.damage, crit: false, anchor: h.anchor, ticks: (t - h.T) * 20 }));

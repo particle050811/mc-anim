@@ -7,15 +7,15 @@ import type { PlanePoint } from './换算.ts';
 
 export const shaftLayout = {
   列: [-710, 240] as PlanePoint, // 同老城：城心传送门那条南北线往东 10 格，中心大院内院东通道
-  洞顶最下块y: -6, // 老片场 −5：幽匿重长后原挂在洞顶的一片脉络没了，两个世界实心洞顶都是 −5；
+  caveCeilingBottomY: -6, // 老片场 −5：幽匿重长后原挂在洞顶的一片脉络没了，两个世界实心洞顶都是 −5；
   //   竖井网格（竖井4x.*，没重导）和 6-3 编排按 −6 / 141，差 1 格不改（核对.py 认这一格）
-  古城地面方块y: -51, // 脚底 y −50
-  地表最高块y: 134,
-  城石半砖y: 135, // 边城地面那层石半砖在这一列的 y
-  洞顶深: 141, // = 135 − (−6)；../6-3-下坠/编排.ts 的 古城.洞顶深
-  地面深: 185, // = 135 − (−50)；古城.地面深
+  ancientCityFloorBlockY: -51, // 脚底 y −50
+  surfaceTopY: 134,
+  cityStoneSlabY: 135, // 边城地面那层石半砖在这一列的 y
+  ceilingDepth: 141, // = 135 − (−6)；../6-3-下坠/编排.ts 的 古城.洞顶深
+  groundDepth: 185, // = 135 − (−50)；古城.地面深
   rockDepthBlocks: 141,
-  气穴: { y: [53, 58] as [number, number], 深: [76, 82] as [number, number] }, // 竖井那一列岩层里唯一的一段空气（砸穿时有 6 格不出碎块）
+  airPocket: { y: [53, 58] as [number, number], depth: [76, 82] as [number, number] }, // 竖井那一列岩层里唯一的一段空气（砸穿时有 6 格不出碎块）
   落点: GUCHENG4X.landingPos, // 6-3-6 落地处（场景），6-4-1 从这里起跳
-  旧: { 洞顶深: 78, 地面深: 123 },
+  legacy: { ceilingDepth: 78, groundDepth: 123 },
 };

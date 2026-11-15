@@ -8,67 +8,67 @@ import { useFrame } from '@react-three/fiber';
 import React, { useRef } from 'react';
 import * as THREE from 'three';
 
-export type 褪色参数 = { 明度: number; 饱和: number };
+export type FadeParams = { lightness: number; saturation: number };
 
-type 有标记 = THREE.Material & {
+type MarkedMaterial = THREE.Material & {
   isMeshStandardMaterial?: boolean;
   isMeshLambertMaterial?: boolean;
   isMeshPhongMaterial?: boolean;
   isMeshToonMaterial?: boolean;
   isMeshBasicMaterial?: boolean;
 };
-const 能派生 = (m: 有标记) => !!(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial || m.isMeshToonMaterial || m.isMeshBasicMaterial);
+const canDerive = (m: MarkedMaterial) => !!(m.isMeshStandardMaterial || m.isMeshLambertMaterial || m.isMeshPhongMaterial || m.isMeshToonMaterial || m.isMeshBasicMaterial);
 
-const 小数 = (v: number) => v.toFixed(4);
-const 片元 = (p: 褪色参数) =>
+const formatDecimal = (v: number) => v.toFixed(4);
+const buildFragment = (p: FadeParams) =>
   [
     '#include <opaque_fragment>',
     '{',
     '\tvec3 fadeC = sRGBTransferOETF( vec4( gl_FragColor.rgb, 1.0 ) ).rgb;',
     '\tfloat fadeL = dot( fadeC, vec3( 0.2126, 0.7152, 0.0722 ) );',
-    `\tfadeC = mix( vec3( fadeL ), fadeC, ${小数(p.饱和)} ) * ${小数(p.明度)};`,
+    `\tfadeC = mix( vec3( fadeL ), fadeC, ${formatDecimal(p.saturation)} ) * ${formatDecimal(p.lightness)};`,
     '\tgl_FragColor.rgb = sRGBTransferEOTF( vec4( fadeC, 1.0 ) ).rgb;',
     '}',
   ].join('\n');
 
 // 原材质 → 派生材质（按参数分表）；派生的标 userData.褪色，平涂从它派生出的材质 userData 里也带着这个标记（clone 照抄 userData）
-const 表们 = new Map<string, WeakMap<THREE.Material, THREE.Material>>();
-const 派生 = (m: THREE.Material, p: 褪色参数): THREE.Material => {
-  const 键 = `${小数(p.明度)}|${小数(p.饱和)}`;
-  let 表 = 表们.get(键);
-  if (!表) 表们.set(键, (表 = new WeakMap()));
-  let d = 表.get(m);
+const materialMaps = new Map<string, WeakMap<THREE.Material, THREE.Material>>();
+const derive = (m: THREE.Material, p: FadeParams): THREE.Material => {
+  const cacheKey = `${formatDecimal(p.lightness)}|${formatDecimal(p.saturation)}`;
+  let derivedMap = materialMaps.get(cacheKey);
+  if (!derivedMap) materialMaps.set(cacheKey, (derivedMap = new WeakMap()));
+  let d = derivedMap.get(m);
   if (!d) {
-    const 新 = m.clone();
-    新.userData.褪色 = 键;
-    新.onBeforeCompile = (shader, renderer) => {
+    const derived = m.clone();
+    derived.userData.褪色 = cacheKey;
+    derived.onBeforeCompile = (shader, renderer) => {
       m.onBeforeCompile(shader, renderer);
-      shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>', 片元(p));
+      shader.fragmentShader = shader.fragmentShader.replace('#include <opaque_fragment>', buildFragment(p));
     };
-    新.customProgramCacheKey = () => `${m.customProgramCacheKey()}|褪色${键}`;
-    m.addEventListener('dispose', () => 新.dispose());
-    表.set(m, 新);
-    d = 新;
+    derived.customProgramCacheKey = () => `${m.customProgramCacheKey()}|褪色${cacheKey}`;
+    m.addEventListener('dispose', () => derived.dispose());
+    derivedMap.set(m, derived);
+    d = derived;
   }
   return d;
 };
 
-const 换 = (m: THREE.Material, p: 褪色参数) => (m.userData.褪色 !== undefined || m.userData.平涂 || !能派生(m as 有标记) ? m : 派生(m, p));
+const fadeMaterial = (m: THREE.Material, p: FadeParams) => (m.userData.褪色 !== undefined || m.userData.平涂 || !canDerive(m as MarkedMaterial) ? m : derive(m, p));
 
 /** 套住的子树（除了 userData.不褪色 的组）按 p 褪色。放在三渲二画布（平涂）里面 */
-export const 背景褪色: React.FC<{ 参数: 褪色参数; children: React.ReactNode }> = ({ 参数: p, children }) => {
+export const BackgroundFade: React.FC<{ 参数: FadeParams; children: React.ReactNode }> = ({ 参数: p, children }) => {
   const ref = useRef<THREE.Group>(null);
   useFrame(() => {
-    const 走 = (o: THREE.Object3D) => {
+    const walk = (o: THREE.Object3D) => {
       if (o.userData.不褪色) return;
       const mesh = o as THREE.Mesh;
-      if (mesh.isMesh) mesh.material = Array.isArray(mesh.material) ? mesh.material.map((m) => 换(m, p)) : 换(mesh.material, p);
-      for (const c of o.children) 走(c);
+      if (mesh.isMesh) mesh.material = Array.isArray(mesh.material) ? mesh.material.map((m) => fadeMaterial(m, p)) : fadeMaterial(mesh.material, p);
+      for (const c of o.children) walk(c);
     };
-    if (ref.current) 走(ref.current);
+    if (ref.current) walk(ref.current);
   });
   return <group ref={ref}>{children}</group>;
 };
 
 /** 套住的东西不褪色（她、爱心） */
-export const 不褪色: React.FC<{ children: React.ReactNode }> = ({ children }) => <group userData={{ 不褪色: true }}>{children}</group>;
+export const NoFade: React.FC<{ children: React.ReactNode }> = ({ children }) => <group userData={{ noFade: true }}>{children}</group>;

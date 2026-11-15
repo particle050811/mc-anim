@@ -4,17 +4,17 @@
 // 自己写的（用户 11-02 定），没有搬光影包的代码；天色、云用仓库里已经移植的 Photon（engine/light/大气.ts、大气/云.ts，许可证见 engine/light/大气/Photon-LICENSE.txt）。
 import * as THREE from 'three';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoUniforms } from '../../light/大气.ts';
-import { 最多发光区 } from '../平涂.tsx';
-import { 光线头, type 光线统一量 } from './光线影子.ts';
+import { maxGlowRegions } from '../平涂.tsx';
+import { rayHeader, type RayUniforms } from './光线影子.ts';
 
-export type 光影统一量 = ReturnType<typeof 新光影统一量>;
+export type ShadingUniforms = ReturnType<typeof newShadingUniforms>;
 
 /** 粒子照亮最多几个点光源（粒子按格子并成团，取最亮的几团） */
-export const 最多粒子光 = 8;
+export const MAX_PARTICLE_LIGHTS = 8;
 /** 补光最多几盏（光影选项.补光） */
-export const 最多补光 = 4;
+export const MAX_FILL_LIGHTS = 4;
 
-export const 新光影统一量 = () => ({
+export const newShadingUniforms = () => ({
   gyShadowMap: { value: null as THREE.Texture | null },
   gyShadowMat: { value: new THREE.Matrix4() },
   gyShadowOn: { value: 0 },
@@ -83,18 +83,18 @@ export const 新光影统一量 = () => ({
   gyZenH: { value: 0.6 },
   /** 粒子照亮：几个点光源（three 世界坐标、线性颜色）和半径（格） */
   gyFlashN: { value: 0 },
-  gyFlashPos: { value: Array.from({ length: 最多粒子光 }, () => new THREE.Vector3()) },
-  gyFlashCol: { value: Array.from({ length: 最多粒子光 }, () => new THREE.Color()) },
+  gyFlashPos: { value: Array.from({ length: MAX_PARTICLE_LIGHTS }, () => new THREE.Vector3()) },
+  gyFlashCol: { value: Array.from({ length: MAX_PARTICLE_LIGHTS }, () => new THREE.Color()) },
   gyFlashR: { value: 16 },
   /** 补光：几盏不打影子的灯（three 世界）。半径 0 = 方向光，Pos 是指向光源的方向；不然是点光，Pos 是位置 */
   gyFillN: { value: 0 },
-  gyFillPos: { value: Array.from({ length: 最多补光 }, () => new THREE.Vector3()) },
-  gyFillCol: { value: Array.from({ length: 最多补光 }, () => new THREE.Color()) },
-  gyFillR: { value: Array.from({ length: 最多补光 }, () => 0) },
-  gyFillSh: { value: Array.from({ length: 最多补光 }, () => 0) },
+  gyFillPos: { value: Array.from({ length: MAX_FILL_LIGHTS }, () => new THREE.Vector3()) },
+  gyFillCol: { value: Array.from({ length: MAX_FILL_LIGHTS }, () => new THREE.Color()) },
+  gyFillR: { value: Array.from({ length: MAX_FILL_LIGHTS }, () => 0) },
+  gyFillSh: { value: Array.from({ length: MAX_FILL_LIGHTS }, () => 0) },
 });
 
-const 受光头 = /* glsl */ `
+const litHeader = /* glsl */ `
 uniform sampler2D gyShadowMap;
 uniform mat4 gyShadowMat;
 uniform float gyShadowOn;
@@ -110,14 +110,14 @@ uniform float gyLampR;
 uniform vec3 gyLampCol;
 uniform float gyPixel;
 uniform int gyFlashN;
-uniform vec3 gyFlashPos[ ${最多粒子光} ];
-uniform vec3 gyFlashCol[ ${最多粒子光} ];
+uniform vec3 gyFlashPos[ ${MAX_PARTICLE_LIGHTS} ];
+uniform vec3 gyFlashCol[ ${MAX_PARTICLE_LIGHTS} ];
 uniform float gyFlashR;
 uniform int gyFillN;
-uniform vec3 gyFillPos[ ${最多补光} ];
-uniform vec3 gyFillCol[ ${最多补光} ];
-uniform float gyFillR[ ${最多补光} ];
-uniform float gyFillSh[ ${最多补光} ];
+uniform vec3 gyFillPos[ ${MAX_FILL_LIGHTS} ];
+uniform vec3 gyFillCol[ ${MAX_FILL_LIGHTS} ];
+uniform float gyFillR[ ${MAX_FILL_LIGHTS} ];
+uniform float gyFillSh[ ${MAX_FILL_LIGHTS} ];
 float gyShadowAt( vec3 p ) {
   vec4 c = gyShadowMat * vec4( p, 1.0 );
   vec3 u = c.xyz / c.w * 0.5 + 0.5;
@@ -136,14 +136,14 @@ float gyShadowAt( vec3 p ) {
 `;
 
 // 像素阴影：面上的两个方向吸到贴图像素中心，法线那个方向不动（面所在的那一层），一个贴图像素里影子只有一个值
-const 受光身 = /* glsl */ `
+const litBody = /* glsl */ `
 vec3 gyA = abs( flatN );
 vec3 gyAxis = ( gyA.x >= gyA.y && gyA.x >= gyA.z ) ? vec3( 1.0, 0.0, 0.0 ) : ( ( gyA.y >= gyA.z ) ? vec3( 0.0, 1.0, 0.0 ) : vec3( 0.0, 0.0, 1.0 ) );
 vec3 gyP = gyPixel > 0.5 ? mix( ( floor( vFlatW * 16.0 ) + 0.5 ) / 16.0, vFlatW, gyAxis ) : vFlatW;
 vec3 gyPL = ( flatToLocal * vec4( gyP, 1.0 ) ).xyz;
 bool gyGlow = false;
 float gyLampD = 1e5;
-for ( int i = 0; i < ${最多发光区}; i ++ ) {
+for ( int i = 0; i < ${maxGlowRegions}; i ++ ) {
   if ( i >= flatGlowCount ) break;
   if ( all( greaterThanEqual( flatL, flatGlowMin[ i ] ) ) && all( lessThanEqual( flatL, flatGlowMax[ i ] ) ) ) gyGlow = true;
   gyLampD = min( gyLampD, length( gyPL - clamp( gyPL, flatGlowMin[ i ], flatGlowMax[ i ] ) ) );
@@ -157,7 +157,7 @@ float gyLv = floor( clamp( 1.0 - gyLampD / gyLampR, 0.0, 1.0 ) * 15.0 + 0.5 ) / 
 float gyLb = gyLv / ( 4.0 - 3.0 * gyLv );
 // 粒子照亮：每团粒子当一个点光源，距离照原版方块光一格降一级（同灯光），再乘朝向（背着的面不亮），不打影子
 vec3 gyFl = vec3( 0.0 );
-for ( int i = 0; i < ${最多粒子光}; i ++ ) {
+for ( int i = 0; i < ${MAX_PARTICLE_LIGHTS}; i ++ ) {
   if ( i >= gyFlashN ) break;
   vec3 d = gyFlashPos[ i ] - gyP;
   float l = length( d );
@@ -166,7 +166,7 @@ for ( int i = 0; i < ${最多粒子光}; i ++ ) {
 }
 // 补光：不打影子；点光按距离平方衰减到半径处为 0（平滑，不分级），朝向同粒子照亮（背着的面留四分之一）；只补影子里的按太阳照到几成减掉
 vec3 gyFi = vec3( 0.0 );
-for ( int i = 0; i < ${最多补光}; i ++ ) {
+for ( int i = 0; i < ${MAX_FILL_LIGHTS}; i ++ ) {
   if ( i >= gyFillN ) break;
   vec3 d = gyFillPos[ i ];
   float a = 1.0;
@@ -185,31 +185,31 @@ outgoingLight = sRGBTransferEOTF( vec4( gyOut, 1.0 ) ).rgb;
 `;
 
 // 光线影子（光线影子.ts）：查影子图换成朝太阳打射线，起点沿法线挪一点防自身打影；只在这个变体里换，影子图的变体源码一字不动
-const 查影子图 = 'gyShadowAt( gyP + flatN * gyShadowBias )';
-const 打射线 = {
+const shadowLookup = 'gyShadowAt( gyP + flatN * gyShadowBias )';
+const rayCastModes = {
   直: 'gyRtLit( gyP + flatN * gyRtBias, flatN, gyPdx, gyPdy )',
   // 几何罩只标记朝光面；中心射线在独立的全屏遍里算，不能在这里重新引入求交。
   罩: '1.0',
   主: 'texelFetch( gyRtMask, ivec2( gl_FragCoord.xy ), 0 ).r',
 };
 /** 光线影子的三种变体：直 = 每像素自己打（先打四条、边上补到 8 条）；罩 = 输出起点、导数、法线和朝光标记（先画的几何遍）；主 = 取抗锯齿那遍算好的，自己不打 */
-export type 光线模式 = keyof typeof 打射线;
+export type RayMode = keyof typeof rayCastModes;
 // 抗锯齿要这个像素在面上占的那一块：导数在分支外取（三元式里取导数是未定义的）
-const 取导数 = 'vec3 gyPL = ( flatToLocal * vec4( gyP, 1.0 ) ).xyz;';
-const 取导数后 = `${取导数}\nvec3 gyPdx = dFdx( gyP ), gyPdy = dFdy( gyP );`;
+const derivCode = 'vec3 gyPL = ( flatToLocal * vec4( gyP, 1.0 ) ).xyz;';
+const derivWithDdx = `${derivCode}\nvec3 gyPdx = dFdx( gyP ), gyPdy = dFdy( gyP );`;
 
 /** 补在平涂派生的受光材质上（平涂那段已经插在 opaque_fragment 前，这段跟在它后面）。给了 光线 = 影子按光线求交算（光影参数.影子算法 '光线'） */
-export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量, 光线?: 光线统一量, 模式: 光线模式 = '直') => {
+export const patchLit = (shader: THREE.WebGLProgramParametersWithUniforms, u: ShadingUniforms, rayUniforms?: RayUniforms, lightMode: RayMode = '直') => {
   Object.assign(shader.uniforms, u);
-  if (光线) Object.assign(shader.uniforms, 光线);
+  if (rayUniforms) Object.assign(shader.uniforms, rayUniforms);
   // 主画面和几何罩不调用 BVH；不把求交源码带进它们，避免驱动为无关材质编译大着色器。
-  const 光线声明 = 模式 === '直' ? 光线头 : 'uniform float gyRtBias;\nuniform sampler2D gyRtMask;';
-  const 头 = 光线 ? `${受光头}\n${光线声明}` : 受光头;
-  const 身 = 光线 ? 受光身.replace(查影子图, 打射线[模式]).replace(取导数, 取导数后) : 受光身;
-  let f = shader.fragmentShader.replace('#include <common>', `#include <common>\n${头}`).replace('#include <opaque_fragment>', `${身}\n#include <opaque_fragment>`);
+  const rayDecl = lightMode === '直' ? rayHeader : 'uniform float gyRtBias;\nuniform sampler2D gyRtMask;';
+  const shaderHeader = rayUniforms ? `${litHeader}\n${rayDecl}` : litHeader;
+  const shaderBody = rayUniforms ? litBody.replace(shadowLookup, rayCastModes[lightMode]).replace(derivCode, derivWithDdx) : litBody;
+  let f = shader.fragmentShader.replace('#include <common>', `#include <common>\n${shaderHeader}`).replace('#include <opaque_fragment>', `${shaderBody}\n#include <opaque_fragment>`);
   // 罩：画进三张图（光线影子.ts 的 读罩、解罩 怎么读），颜色、雾、色彩空间都不要；第 0 张是 three 自己声明的 location 0
-  if (光线 && 模式 === '罩' && !f.includes('#include <dithering_fragment>')) throw new Error('光线影子：材质的片元着色器里没有 dithering_fragment，罩那遍接不上');
-  if (光线 && 模式 === '罩')
+  if (rayUniforms && lightMode === '罩' && !f.includes('#include <dithering_fragment>')) throw new Error('光线影子：材质的片元着色器里没有 dithering_fragment，罩那遍接不上');
+  if (rayUniforms && lightMode === '罩')
     f = f
       .replace('#include <common>', '#include <common>\nlayout( location = 1 ) out highp vec4 gyRtO1;\nlayout( location = 2 ) out highp vec4 gyRtO2;')
       .replace(
@@ -219,7 +219,7 @@ export const 补受光 = (shader: THREE.WebGLProgramParametersWithUniforms, u: �
   shader.fragmentShader = f;
 };
 
-const 浪函数 = /* glsl */ `
+const waveFunc = /* glsl */ `
 float gyHash12( vec2 p ) { vec3 p3 = fract( vec3( p.xyx ) * 0.1031 ); p3 += dot( p3, p3.yzx + 33.33 ); return fract( ( p3.x + p3.y ) * p3.z ); }
 float gyVnoise( vec2 p ) {
   vec2 i = floor( p ), f = fract( p );
@@ -248,7 +248,7 @@ float gyPhotonH( vec2 c, float t ) {
 }
 `;
 
-const 水头 = /* glsl */ `
+const waterHeader = /* glsl */ `
 uniform vec3 gySun;
 uniform float gyTime;
 uniform float gyWaterPix;
@@ -286,7 +286,7 @@ uniform sampler2D gyCloudMap;
 uniform mat4 gyCloudVP;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
-${浪函数}
+${waveFunc}
 `;
 
 // 水面：认的是 作品/把回忆拼好给你/场/2-海上/海面.tsx 着色器里的变量（seaT 水贴图、seaDeep、seaWater、seaTint、seaFogC 这一方位的地平色、seaF 远处雾档、seaDist），
@@ -296,7 +296,7 @@ ${浪函数}
 // 波纹：几道方向、波长不同的正弦（深水色散 ω = √(gk)），时间取画面秒数，乱序出帧一样。远处波纹的细节在一个像素里平均掉了，
 // 不做抗锯齿就会闪成噪点，所以按距离把高光的锐度降下来、范围放大（远处的碎光连成一条）。
 // 像素版：波纹按贴图像素（1/16 格）的格子取值，一格一个法线、一个高光，和水贴图的像素一样大。
-const 水身 = /* glsl */ `
+const waterBody = /* glsl */ `
 vec3 gyHor = seaFogC;
 vec3 gyC;
 if ( gyWaterMode < 1.5 ) {
@@ -463,11 +463,11 @@ outgoingLight = sRGBTransferEOTF( vec4( mix( gyC, gyHor, gyFog ), 1.0 ) ).rgb;
 `;
 
 /** 这份着色器是不是认得的水面 */
-export const 是水面着色器 = (shader: THREE.WebGLProgramParametersWithUniforms) => shader.fragmentShader.includes('seaFogC') && shader.fragmentShader.includes('vSeaW');
+export const isWaterShader = (shader: THREE.WebGLProgramParametersWithUniforms) => shader.fragmentShader.includes('seaFogC') && shader.fragmentShader.includes('vSeaW');
 
 // 海面起伏（Photon 式、FFT）：网格换成 光影渲染.tsx 的 起伏网格（围着镜头、越远越疏），顶点在三维世界里按浪高挪：
 // FFT 取 Ultra-Water 三层的位移（含水平挤压，浪顶变尖），Photon 式取同一个高度函数，高 = 0.04 × 浪强 × 高度（和法线用的坡度一致）
-const 起伏顶点头 = /* glsl */ `
+const waveVertHeader = /* glsl */ `
 uniform float gyWaterMode;
 uniform float gyTime;
 uniform float gyWaveK;
@@ -480,9 +480,9 @@ uniform float gyEdgeFlat;
 uniform float seaFar;
 varying vec2 gyU;
 varying float gyHgt;
-${浪函数}
+${waveFunc}
 `;
-const 起伏顶点身 = /* glsl */ `
+const waveVertBody = /* glsl */ `
 vec4 gyW = modelMatrix * vec4( transformed, 1.0 );
 gyU = gyW.xz;
 gyHgt = 0.0;
@@ -502,22 +502,22 @@ vSeaW = gyW.xyz;
 vSeaClip = gl_Position;
 `;
 
-export const 补水面 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量) => {
-  if (!是水面着色器(shader)) return;
+export const patchWaterSurface = (shader: THREE.WebGLProgramParametersWithUniforms, u: ShadingUniforms) => {
+  if (!isWaterShader(shader)) return;
   Object.assign(shader.uniforms, atmoUniforms, u);
   if (!shader.vertexShader.includes('vSeaClip = gl_Position;')) throw new Error('海面顶点着色器认不出（没有 vSeaClip = gl_Position;）');
-  shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${起伏顶点头}`).replace('vSeaClip = gl_Position;', `vSeaClip = gl_Position;\nif ( gyWaterMode > 1.5 ) {\n${起伏顶点身}\n}`);
+  shader.vertexShader = shader.vertexShader.replace('#include <common>', `#include <common>\n${waveVertHeader}`).replace('vSeaClip = gl_Position;', `vSeaClip = gl_Position;\nif ( gyWaterMode > 1.5 ) {\n${waveVertBody}\n}`);
   if (!shader.fragmentShader.includes('if ( seaDist > seaFar ) discard;')) throw new Error('海面片元着色器认不出（没有 seaDist > seaFar 的 discard）');
   shader.fragmentShader = shader.fragmentShader
-    .replace('#include <common>', `#include <common>\n${水头}`)
+    .replace('#include <common>', `#include <common>\n${waterHeader}`)
     .replace('if ( seaDist > seaFar ) discard;', 'if ( seaDist > ( gyWaterMode > 1.5 && gyFarR > 0.0 ? gyFarR : seaFar ) ) discard;')
-    .replace('#include <opaque_fragment>', `${水身}\n#include <opaque_fragment>`);
+    .replace('#include <opaque_fragment>', `${waterBody}\n#include <opaque_fragment>`);
 };
 
 // 粒子面片（库/特效/粒子面片.tsx 的着色器：烟花火花、闪光）：主画面里照原样画（颜色不变）；另画一遍只有粒子的「泛光源」，
 // 被主画面挡住的丢掉（和主画面的深度比），不过阈直接进泛光。这样烟花有光晕，人物的发光贴图（同样满亮度）不晕
-export const 是粒子材质 = (m: THREE.Material) => (m as THREE.ShaderMaterial).isShaderMaterial && (m as THREE.ShaderMaterial).vertexShader.includes('attribute vec3 iCenter');
-export const 补粒子源 = (shader: THREE.WebGLProgramParametersWithUniforms, u: 光影统一量) => {
+export const isParticleMaterial = (m: THREE.Material) => (m as THREE.ShaderMaterial).isShaderMaterial && (m as THREE.ShaderMaterial).vertexShader.includes('attribute vec3 iCenter');
+export const patchParticleSource = (shader: THREE.WebGLProgramParametersWithUniforms, u: ShadingUniforms) => {
   shader.uniforms.gyDepth = u.gyDepth;
   shader.fragmentShader = shader.fragmentShader
     .replace('void main() {', 'uniform sampler2D gyDepth;\nvoid main() {\n  if ( gl_FragCoord.z > texelFetch( gyDepth, ivec2( gl_FragCoord.xy ), 0 ).r + 1e-5 ) discard;')
@@ -529,7 +529,7 @@ export const 补粒子源 = (shader: THREE.WebGLProgramParametersWithUniforms, u
 
 /** 主画面的深度 → Photon 云要的对数深度（log2(1 + 视深) / log2(远 + 1)，天 = 1；同 engine/light/大气/云.ts 读的那种） */
 /** 水下那遍：rgb 照抄主画面，a = 视深（格；没东西 = 1e9），水面着色器按它算水里走了多远 */
-export const 水下片元 = /* glsl */ `
+export const underwaterFrag = /* glsl */ `
 #include <packing>
 uniform sampler2D tColor;
 uniform sampler2D tDepth;
@@ -541,7 +541,7 @@ void main() {
   gl_FragColor = vec4( texture2D( tColor, vUv ).rgb, z >= 1.0 ? 1e9 : - perspectiveDepthToViewZ( z, cNear, cFar ) );
 }`;
 
-export const 对数深度片元 = /* glsl */ `
+export const logDepthFrag = /* glsl */ `
 #include <packing>
 uniform sampler2D tDepth;
 uniform float cNear;
@@ -554,11 +554,11 @@ void main() {
   gl_FragColor = vec4( log2( 1.0 + d ) / log2( cFar + 1.0 ) );
 }`;
 
-export const 全屏顶点 = 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = vec4( position.xy, 0.0, 1.0 ); }';
+export const fullscreenVertex = 'varying vec2 vUv;\nvoid main() { vUv = uv; gl_Position = vec4( position.xy, 0.0, 1.0 ); }';
 
 /** 取亮部顺带缩到一半：主画面（sRGB 编码、预乘）解回线性（预乘照原样），四个采样平均；粒子泛光源（线性）不过阈，乘 addK 直接加。
  *  透明度通道带粒子的覆盖率（这一块有几成是粒子），跟着各层一起缩、一起糊，合成时按它压粒子挤成一团的地方（压密光晕） */
-export const 取亮片元 = /* glsl */ `
+export const brightFrag = /* glsl */ `
 uniform sampler2D tSrc;
 uniform sampler2D tAdd;
 uniform float addK;
@@ -581,7 +581,7 @@ void main() {
 }`;
 
 /** 缩一半 */
-export const 缩片元 = /* glsl */ `
+export const shrinkFrag = /* glsl */ `
 uniform sampler2D tSrc;
 uniform vec2 texel;
 varying vec2 vUv;
@@ -594,7 +594,7 @@ void main() {
 }`;
 
 /** 9 抽头高斯（双线性取 5 次），dir 是一个纹素的步长 */
-export const 糊片元 = /* glsl */ `
+export const blurFrag = /* glsl */ `
 uniform sampler2D tSrc;
 uniform vec2 dir;
 varying vec2 vUv;
@@ -613,7 +613,7 @@ void main() {
  *  云（cloudOn）：Photon 云那一遍画好的（画面值、预乘）叠在天上、画面底下；
  *  太阳：按 2D 天那样叠原版方形太阳（本体 sunBody × sunBody 个贴图像素：原版 8，材质包高清的按高清像素；外面两圈硬边光圈各一个贴图像素宽，加色），
  *  叠在云上、整块按云挡了多少压暗 */
-export const 合成片元 = /* glsl */ `
+export const compositeFragment = /* glsl */ `
 uniform sampler2D atmoSky;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}

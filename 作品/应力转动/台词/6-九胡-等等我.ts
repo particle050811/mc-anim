@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 a39667ed75eb），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-等等我（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const line: LineSentence = {
   "id": "6-九胡-等等我",
   "角色": "九胡",
   "念": "等等我啊狗修金Sama！",
@@ -41,4 +41,4 @@ const 句: 台词句 = {
     [1.85,"X"],
   ],
 };
-export default 句;
+export default line;

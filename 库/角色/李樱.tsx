@@ -303,7 +303,7 @@ const Mouth: React.FC<{ mouth: MouthState }> = ({ mouth }) => {
 };
 
 // handR / handL：手里拿的东西（握持点坐标系）；hipL：挂在左腰的东西（刀鞘），跟着髋、不跟胸扭转；嘴：说话时的口型（见 口型.ts）
-export const LiYing: React.FC<{ pose: FigurePose; handR?: React.ReactNode; handL?: React.ReactNode; hipL?: React.ReactNode; 嘴?: MouthState }> = ({ pose, handR, handL, hipL, 嘴: mouth }) => (
+export const LiYing: React.FC<{ pose: FigurePose; handR?: React.ReactNode; handL?: React.ReactNode; hipL?: React.ReactNode; mouth?: MouthState }> = ({ pose, handR, handL, hipL, mouth: mouth }) => (
   <Figure
     pose={pose}
     // 玩家模型 32 像素高，游戏里按 0.9375 倍渲染，实际 1.875 格（碰撞箱才是 1.8）。李樱的身体就是史蒂夫的标准尺寸（头 8、身 12、腿 12）

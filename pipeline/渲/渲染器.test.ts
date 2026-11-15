@@ -3,14 +3,14 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { 查渲染器入口 } from '../检查/规则/结构.ts';
+import { checkRendererEntry } from '../检查/规则/结构.ts';
 import { describe, expect, it } from 'vitest';
 
-const 根 = fileURLToPath(new URL('../../', import.meta.url));
+const root = fileURLToPath(new URL('../../', import.meta.url));
 
 describe('渲染器入口', () => {
   it('导出 CJS 的同一份函数，加载即固定实际下载表的混音器', () => {
-    const 输出 = execFileSync(process.execPath, ['--input-type=module', '-e', `
+    const output = execFileSync(process.execPath, ['--input-type=module', '-e', `
       import assert from 'node:assert/strict';
       import { createRequire } from 'node:module';
       import path from 'node:path';
@@ -48,24 +48,24 @@ describe('渲染器入口', () => {
         assert.deepEqual(hashes, [...hashes].sort(), '真实混音项必须按内容排序');
         console.log('全部值导出与 CJS 严格同一 ' + entries.length + '/' + entries.length + '；下载表调用替换工厂 1 次；真实声音 3 条按内容排序');
       } finally { cleanDownloadMap(map); }
-    `], { cwd: 根, encoding: 'utf8' });
-    expect(输出).toContain('全部值导出与 CJS 严格同一');
+    `], { cwd: root, encoding: 'utf8' });
+    expect(output).toContain('全部值导出与 CJS 严格同一');
   });
 
   it('pipeline 除统一入口外不直接取渲染器的值，测试 mock 统一入口（与 anim check 共用）', () => {
-    const 违规: string[] = [];
-    const 扫 = (目录: string) => {
-      for (const e of fs.readdirSync(目录, { withFileTypes: true })) {
-        const 文件 = path.join(目录, e.name);
-        if (e.isDirectory()) { 扫(文件); continue; }
+    const violations: string[] = [];
+    const scanDir = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const file = path.join(dir, e.name);
+        if (e.isDirectory()) { scanDir(file); continue; }
         if (!/\.[cm]?[jt]s$/.test(e.name)) continue;
-        const 相对路径 = path.relative(根, 文件).split(path.sep).join('/');
-        for (const q of 查渲染器入口(相对路径, fs.readFileSync(文件, 'utf8'))) {
-          违规.push(`${相对路径}:${q.行} ${q.文本}`);
+        const relPath = path.relative(root, file).split(path.sep).join('/');
+        for (const q of checkRendererEntry(relPath, fs.readFileSync(file, 'utf8'))) {
+          violations.push(`${relPath}:${q.行} ${q.文本}`);
         }
       }
     };
-    扫(path.join(根, 'pipeline'));
-    expect(违规, '值导入必须通过 pipeline/渲/渲染器.ts').toEqual([]);
+    scanDir(path.join(root, 'pipeline'));
+    expect(violations, '值导入必须通过 pipeline/渲/渲染器.ts').toEqual([]);
   });
 });

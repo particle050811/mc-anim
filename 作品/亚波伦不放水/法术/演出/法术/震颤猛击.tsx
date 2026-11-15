@@ -5,14 +5,14 @@
 // 这里把 起点 当成中心（施法者脚底 + 0.5 格）。
 // 没做：半径内生物的震飞和方块崩起。
 import React from 'react';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 十六进制色 } from '../零件/材质.ts';
-import { 砸地墙 } from '../零件/冲击波.tsx';
-import 元 from './震颤猛击.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { hexColor } from '../零件/材质.ts';
+import { SlamWall } from '../零件/冲击波.tsx';
+import meta from './震颤猛击.元.ts';
 
-const 地图色 = 十六进制色(0x700000);
+const groundColor = hexColor(0x700000);
 
-const 震颤猛击: React.FC<法术演出属性> = ({ 秒, 起点 }) => <砸地墙 位={起点} 刻={秒 * 20} 宽={3.5} 色={地图色} 寿命={10} />;
+const temblorClap: React.FC<SpellPerformanceProps> = ({ 秒: sec, from }) => <SlamWall 位={from} 刻={sec * 20} 宽={3.5} 色={groundColor} 寿命={10} />;
 
-export default 定义法术演出(元, 震颤猛击);
+export default defineSpellPerformance(meta, temblorClap);

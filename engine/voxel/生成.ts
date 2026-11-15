@@ -16,9 +16,9 @@ export type VoxelSource = {
   // 预取：这一帧要用的区段，没取到的开始取，返回取齐的 Promise；都在手上返回 undefined（体素世界据此决定同步建还是先等）。
   // 猜的 = true：体素世界替下一帧先取的（世界.tsx 的「预取下一帧」），不一定真用上，记用量的来源先不记，等不带 猜的 再要到同一块时补记
   区段: (section: SectionId) => VoxelGrid | null;
-  prefetch?: (qs: SectionId[], 猜的?: boolean) => Promise<void> | undefined;
+  prefetch?: (qs: SectionId[], guessed?: boolean) => Promise<void> | undefined;
   // 转交：`区段` 每次返回新建的体素块、自己不留着，体素世界把它转交给网格工人（不拷贝，交完这边就用不了了）
-  转交?: boolean;
+  transferOwnership?: boolean;
 };
 // 色板：体素值 + 染色（sRGB 0～255，游戏在 sRGB 上乘染色；不染色的方块是白色）
 export type PaletteEntry = { v: number; c: RGB };
@@ -27,7 +27,7 @@ export type PaletteEntry = { v: number; c: RGB };
 // z = 0 以下当实心，nz 以上当空气
 // 水面（可选）：海面高度（场景 z，最上一格海水的上表面，主世界 −1）。给了的话，跨着海面那一格的液体顶面画在真实的海面上（见 lib/体素/网格.ts）
 // 挖空（可选）：导入地形挖地标时整列挖空的列（下标 y * nx + x，1 = 挖之前有方块、挖完一块不剩），见 lib/体素/导入地形.ts 的 建地形
-export type VoxelGrid = { nx: number; ny: number; nz: number; 格: number; 原点: [number, number, number]; vox: Uint16Array; 色板: PaletteEntry[]; 水面?: number; 挖空?: Uint8Array };
+export type VoxelGrid = { nx: number; ny: number; nz: number; 格: number; 原点: [number, number, number]; vox: Uint16Array; palette: PaletteEntry[]; waterLevel?: number; carveMask?: Uint8Array };
 
 const { opaque: OPAQ, leaf: LEAF } = blockProps;
 // 位序：一个数的各位隔两位摊开（第 b 位放到第 3b 位），三个轴交错成粗格子里的位序

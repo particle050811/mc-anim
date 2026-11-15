@@ -13,7 +13,7 @@ import { sample, type Key } from '@engine/anim/anim.ts';
 import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import * as choreo643 from '../6-4-3/编排.ts';
-import { 帧小数 } from '../6-4-3/时间线.ts';
+import { frameFractional } from '../6-4-3/时间线.ts';
 
 export const FPS = 24;
 // 李樱旁边那个感测体（6-4-3/编排.ts 的 感测体们[0]）激活、尖啸体喷声波的剧情时刻
@@ -28,13 +28,13 @@ const startStoryT = sensor0StoryT - leadSec;
 export const clickSec = leadSec;
 export const shriekSec = clickSec + (shriekStoryT - sensor0StoryT);
 // 台词落点（段内帧，A8 字幕读这里）：李樱「烦死了！」（src/配音/6-4-4-李樱-烦死了.wav，从原来「两次了。烦死了！」的配音里切出来的后半句）
-export const lines = { 烦死了: { id: '6-4-4-李樱-烦死了', 帧: Math.round((shriekSec + lineDelaySec) * FPS) } } as const;
+export const lines = { annoyed: { id: '6-4-4-李樱-烦死了', 帧: Math.round((shriekSec + lineDelaySec) * FPS) } } as const;
 export const frameCount = Math.round((shriekSec + lineDelaySec + lineSec + tailSec) * FPS);
 
 // ---------- 时钟 ----------
 export const storySecAt = (f: number) => startStoryT + f / FPS;
 // 6-4-3 主时间线上带小数的全局帧（挡箭画面 按它画）
-export const deflectFrameAt = (f: number) => 帧小数(storySecAt(f));
+export const deflectFrameAt = (f: number) => frameFractional(storySecAt(f));
 
 // ---------- 机位 ----------
 const camPose: Cam = { pos: G4(-1092.3, -45.3, 189.7), tgt: G4(-1087.2, -45.0, 194.2), lens: 22 };

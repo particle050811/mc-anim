@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 28fd3aec257e），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-压路机（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "6-李樱-压路机",
   "角色": "李樱",
   "念": "手持重锤类武器，可以召唤出体内空间的动力压路机，能使重锤的高度伤害倍率增加，并破坏接触到的方块，应力转动之力，实际全能！",
@@ -137,4 +137,4 @@ const 句: 台词句 = {
     [10.88,"X"],
   ],
 };
-export default 句;
+export default sentence;

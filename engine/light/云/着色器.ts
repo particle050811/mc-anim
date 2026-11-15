@@ -4,18 +4,18 @@
 // 坑：质量档 精确、默认三层时拼出来的运算要和 engine/light/大气/云.ts 一模一样（用户看过的 2-日落划船 等逐字节不变），
 // 那边的式子照抄、只换名字；风、偏移、尺寸、密度这些不是默认值才多拼一截，不往默认的式子里加「+ 0」「× 1」（编译器合并乘加的方式会变）。
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL } from '../大气.ts';
-import type { 云抖动 } from './配置.ts';
-import type { 展开层 } from './展开.ts';
-import { 蓝噪声边 } from './蓝噪声.ts';
+import type { CloudDither } from './配置.ts';
+import type { ExpandedLayer } from './展开.ts';
+import { blueNoiseEdge } from './蓝噪声.ts';
 
-const 阈 = (l: { 透射率阈值: number }) => (l.透射率阈值 === 0.075 ? '0.075' : f(l.透射率阈值));
+const threshold = (l: { transmittanceThreshold: number }) => (l.transmittanceThreshold === 0.075 ? '0.075' : f(l.transmittanceThreshold));
 const f = (x: number) => {
   const s = String(x);
   return /[.eE]/.test(s) ? s : `${s}.0`;
 };
 
 // 共用：常数、工具函数、去云和让开、加云（同 大气/云.ts 的 PHOTON_CLOUD_COMMON_GLSL 前半）
-const 共用 = (S: number) => /* glsl */ `
+const sharedGlsl = (S: number) => /* glsl */ `
 precision highp sampler3D;
 uniform sampler2D pcNoise;
 uniform sampler2D pcCuHeight;
@@ -108,32 +108,32 @@ PcRes pcBlend(PcRes a, PcRes b) {
 }`;
 
 /** 云形状取样的水平位置：风、偏移、尺寸不是默认值才多拼一截 */
-const 形 = (l: 展开层, 名: string, xz: string) => {
-  const 移 = l.有偏 ? `(${xz} + ${名}Off)` : `(${xz})`;
-  return l.尺寸 === 1 ? 移 : `(${移} * ${f(1 / l.尺寸)})`;
+const coverageArg = (l: ExpandedLayer, varName: string, xz: string) => {
+  const shifted = l.hasOffset ? `(${xz} + ${varName}Off)` : `(${xz})`;
+  return l.尺寸 === 1 ? shifted : `(${shifted} * ${f(1 / l.尺寸)})`;
 };
 
 /** 积云主步进怎么走：起 = 循环前定 steps、起点 ro；取点 = 每一步开头定这一步的点 p、步长 sl。两者都只用 len、slP、dither */
-type 走法 = { 起: string; 取点: string };
+type MarchPlan = { 起: string; samplePoint: string };
 
 /** 等步长：同 大气/云.ts（精确档逐字节不变靠它） */
-const 等步长 = (D: string): 走法 => ({
+const uniformMarch = (D: string): MarchPlan => ({
   起: `int steps = int(min(ceil(len / max(slP, 1.0)), float(${D}_MAX)));
   float sl = len / float(max(steps, 1));
   vec3 st = rd * sl;
   vec3 ro = o + rd * (ds.x + sl * dither);`,
-  取点: 'vec3 p = ro + st * float(i);',
+  samplePoint: 'vec3 p = ro + st * float(i);',
 });
 
 /** 几何增步长（质量.远步增，docs/云.md 第 3 节）：第一步约 slP，往后每步乘 G，几何级数正好加到 len */
-const 几何增步长 = (D: string, 增: number): 走法 => {
-  const G = f(增);
+const geometricMarch = (D: string, growth: number): MarchPlan => {
+  const G = f(growth);
   return {
     起: `int steps = int(min(ceil(log(1.0 + len * (${G} - 1.0) / max(slP, 1.0)) / log(${G})), float(${D}_MAX)));
   float slN = len * (${G} - 1.0) / (pow(${G}, float(max(steps, 1))) - 1.0);
   vec3 ro = o + rd * ds.x;
   float tAt = 0.0;`,
-    取点: `float sl = slN;
+    samplePoint: `float sl = slN;
     vec3 p = ro + rd * (tAt + sl * dither);
     tAt += sl;
     slN *= ${G};`,
@@ -141,31 +141,31 @@ const 几何增步长 = (D: string, 增: number): 走法 => {
 };
 
 // ---- 积云（同 大气/云.ts 的 pcCuBase、pcCuCoverage、pcCuDensity、pcCuOD、pcCumulus） ----
-const 积云 = (l: 展开层) => {
-  const n = `pcCu${l.号}`, D = `PC_CU${l.号}`;
+const cumulus = (l: ExpandedLayer) => {
+  const n = `pcCu${l.layerIndex}`, D = `PC_CU${l.layerIndex}`;
   const q = l.步;
-  const 高度图 = l.平滑 ? 'pcCuHeightS' : 'pcCuHeight';
-  const 留 = l.受洞 ? 'keep.x * keep.y' : 'keep.x';
-  const 密 = l.密度 === 1 ? '' : ` * ${f(l.密度)}`;
-  const 走 = q.增 === 1 ? 等步长(D) : 几何增步长(D, q.增);
+  const heightMap = l.smooth ? 'pcCuHeightS' : 'pcCuHeight';
+  const keepTerm = l.acceptsHoles ? 'keep.x * keep.y' : 'keep.x';
+  const densityExpr = l.density === 1 ? '' : ` * ${f(l.density)}`;
+  const stepper = q.growth === 1 ? uniformMarch(D) : geometricMarch(D, q.growth);
   return /* glsl */ `
 uniform vec4 ${n}A;
 uniform vec4 ${n}B;
 uniform vec4 ${n}C;
 uniform float ${n}BH;
 uniform vec3 ${n}L;
-${l.有偏 ? `uniform vec2 ${n}Off;` : ''}
+${l.hasOffset ? `uniform vec2 ${n}Off;` : ''}
 #define ${D}_R (PC_R + ${f(l.R)})
-#define ${D}_BH ${f(l.壳BH)}
+#define ${D}_BH ${f(l.shellHeight)}
 #define ${D}_T ${f(l.T)}
 #define ${D}_TOP (${D}_R + ${D}_BH + ${D}_T)
-#define ${D}_H ${q.主H}
-#define ${D}_Z ${q.主Z}
+#define ${D}_H ${q.mainHeight}
+#define ${D}_Z ${q.mainDepth}
 #define ${D}_MAX ${q.最多}
 #define ${D}_LIGHT ${q.光}
-#define ${D}_AMB ${q.环}
-#define ${D}_MS ${q.散射}
-float ${n}Base(vec2 xz) { return ${D}_R + ${n}BH * texture(${高度图}, 0.000027 * xz).r; }
+#define ${D}_AMB ${q.ambient}
+#define ${D}_MS ${q.scatterSteps}
+float ${n}Base(vec2 xz) { return ${D}_R + ${n}BH * texture(${heightMap}, 0.000027 * xz).r; }
 float ${n}Coverage(vec2 xz) {
   vec2 n = vec2(texture(pcNoise, 0.000002 * xz).x, texture(pcNoise, 0.000027 * xz).w);
   float cu = 0.0, st = 0.0;
@@ -182,16 +182,16 @@ float ${n}Density(vec3 pos, bool detail) {
   if (r < ${D}_R || r > ${D}_TOP) return 0.0;
   vec2 xz = pos.xz + pcCamXZ;
   vec2 keep = pcKeep(pos, xz);
-  float d = ${n}Coverage(${形(l, n, 'xz')}) * ${留};
+  float d = ${n}Coverage(${coverageArg(l, n, 'xz')}) * ${keepTerm};
   if (d < PC_EPS) return 0.0;
-  float h = r - ${n}Base(${形(l, n, 'xz')});
+  float h = r - ${n}Base(${coverageArg(l, n, 'xz')});
   if (h < 0.0 || h > ${D}_T) return 0.0;
   float af = h * ${n}B.z;
   if (${n}B.w > PC_EPS) d = mix(d, clamp(d * pcDampen(clamp(2.0 * af, 0.0, 1.0) * pcLs(0.0, 0.1, af) * pcLs(0.0, 0.6, 1.0 - af)), 0.0, 1.0), ${n}B.w);
   d -= smoothstep(0.2, 1.0, af) * (0.6 - 0.3 * ${n}B.w);
   d *= smoothstep(0.0, 0.2, af);
   if (d < PC_EPS) return 0.0;
-  vec2 sxz = ${形(l, n, 'xz')};
+  vec2 sxz = ${coverageArg(l, n, 'xz')};
   vec3 wp = vec3(sxz.x, pos.y, sxz.y);
   float w0 = detail ? texture(pcWorleyB, wp * 0.0009).x : 0.5;
   float w1 = detail ? texture(pcWorleyS, wp * 0.005).x : 0.5;
@@ -220,19 +220,19 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
   if (ds.y < 0.0 || planet && r < ${D}_R || dT >= 0.0 && r < ${D}_R && dT < ds.x) return pcNone();
   float len = clamp((dT >= 0.0 ? dT : ds.y) - ds.x, 0.0, 2e4);
   float slP = ${D}_T / max(abs(rd.y), ${D}_T / 2e4) / mix(float(${D}_H), float(${D}_Z), abs(rd.y));
-  ${走.起}
+  ${stepper.起}
   vec3 L = atmoSun;
   float c = dot(rd, L);
   float bounced = 0.4 * L.y / PC_PI;
-  float ext = ${n}C.x${密}, sh = ${n}C.y;
+  float ext = ${n}C.x${densityExpr}, sh = ${n}C.y;
   float fall = 0.55 * mix(pcLift(clamp(ext / 0.1, 0.0, 1.0), 0.33), 1.0, c * 0.5 + 0.5);
   float ph0 = pcPhaseSingle(c);
   vec2 sc = vec2(0.0);
   float T = 1.0, dsum = 0.0, wsum = 0.0, glow = 0.0;
-  ${l.受亮 ? `float glowBase = pcGlow.w > 0.0 ? ${n}Base(${形(l, n, 'pcGlow.xy')}) : 0.0;` : ''}
+  ${l.receivesLight ? `float glowBase = pcGlow.w > 0.0 ? ${n}Base(${coverageArg(l, n, 'pcGlow.xy')}) : 0.0;` : ''}
   for (int i = 0; i < ${D}_MAX; i++) {
-    if (i >= steps || T < ${阈(l)}) break;
-    ${走.取点}
+    if (i >= steps || T < ${threshold(l)}) break;
+    ${stepper.samplePoint}
     float dens = ${n}Density(p, true);
     if (dens < PC_EPS) continue;
     float dist = distance(ro, p);
@@ -240,9 +240,9 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
     dens *= smoothstep(1.0, 0.9, length(p.xz) / 7.5e4);
     float sT = exp(-dens * ext * sl);
     vec2 h = pcHash2(fract(p));
-    float lod = ${l.号 === 0 ? `bakeOD(p, ${D}_R, ${D}_BH+${D}_T)` : `${n}OD(p, L, h.x, ${D}_LIGHT)`};
+    float lod = ${l.layerIndex === 0 ? `bakeOD(p, ${D}_R, ${D}_BH+${D}_T)` : `${n}OD(p, L, h.x, ${D}_LIGHT)`};
     float sod = ${n}OD(p, vec3(0.0, 1.0, 0.0), h.y, ${D}_AMB);
-    float af = (length(p) - ${n}Base(${形(l, n, 'p.xz + pcCamXZ')})) / ${D}_T;
+    float af = (length(p) - ${n}Base(${coverageArg(l, n, 'p.xz + pcCamXZ')})) / ${D}_T;
     float god = mix(dens, 1.0, clamp(af * 2.0 - 1.0, 0.0, 1.0)) * af * ${D}_T;
     vec2 s = vec2(0.0);
     float sa = ext, ea = ext;
@@ -261,7 +261,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
       ph = pcPhaseMulti(c, g);
     }
     sc += s * ((1.0 - sT) / ext) * T;
-    ${l.受亮 ? `if (pcGlow.w > 0.0) {
+    ${l.receivesLight ? `if (pcGlow.w > 0.0) {
       vec2 gd = p.xz + pcCamXZ - pcGlow.xy;
       float gh = length(p) - glowBase;
       glow += (1.0 - sT) * T / (1.0 + (dot(gd, gd) + gh * gh) / (pcGlow.z * pcGlow.z));
@@ -270,37 +270,37 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
     dsum += dist * dens;
     wsum += dens;
   }
-  float cT = pcLs(${阈(l)}, 1.0, T);
+  float cT = pcLs(${threshold(l)}, 1.0, T);
   vec3 col = pcAerial(sc.x * ${n}L + sc.y * atmoAmb, cT, o, ro, rd, sky);
-  ${l.受亮 ? `if (pcGlow.w > 0.0) col += pcGlowCol * (pcGlow.w * glow * dot(${n}L, vec3(0.2126, 0.7152, 0.0722)));` : ''}
+  ${l.receivesLight ? `if (pcGlow.w > 0.0) col += pcGlowCol * (pcGlow.w * glow * dot(${n}L, vec3(0.2126, 0.7152, 0.0722)));` : ''}
   return PcRes(col, cT, wsum == 0.0 ? 1e6 : dsum / wsum + distance(o, ro));
 }`;
 };
 
 // ---- 高积云（同 大气/云.ts 的 pcAcDensity、pcAcOD、pcAltocumulus） ----
-const 高积云 = (l: 展开层) => {
-  const n = `pcAc${l.号}`, D = `PC_AC${l.号}`;
+const altocumulus = (l: ExpandedLayer) => {
+  const n = `pcAc${l.layerIndex}`, D = `PC_AC${l.layerIndex}`;
   const q = l.步;
-  const 留 = l.受洞 ? 'keep.x * max(keep.y, added)' : 'keep.x';
-  const 密 = l.密度 === 1 ? '' : ` * ${f(l.密度)}`;
+  const keepTerm = l.acceptsHoles ? 'keep.x * max(keep.y, added)' : 'keep.x';
+  const densityExpr = l.density === 1 ? '' : ` * ${f(l.density)}`;
   return /* glsl */ `
 uniform vec4 ${n}P;
 uniform vec3 ${n}L;
-${l.有偏 ? `uniform vec2 ${n}Off;` : ''}
+${l.hasOffset ? `uniform vec2 ${n}Off;` : ''}
 #define ${D}_R (PC_R + ${f(l.R)})
 #define ${D}_T ${f(l.T)}
 #define ${D}_TOP (PC_R + ${f(l.R + l.T)})
-#define ${D}_H ${q.主H}
-#define ${D}_Z ${q.主Z}
+#define ${D}_H ${q.mainHeight}
+#define ${D}_Z ${q.mainDepth}
 #define ${D}_LIGHT ${q.光}
-#define ${D}_AMB ${q.环}
-#define ${D}_MS ${q.散射}
+#define ${D}_AMB ${q.ambient}
+#define ${D}_MS ${q.scatterSteps}
 float ${n}Density(vec3 pos, bool detail) {
   float r = length(pos);
   if (r < ${D}_R || r > ${D}_TOP) return 0.0;
   float af = 0.8 * (r - ${D}_R) / (${D}_T * mix(0.5, 1.0, smoothstep(0.4, 0.6, ${n}P.y)));
   vec2 xz = pos.xz + pcCamXZ;
-  vec2 sxz = ${形(l, n, 'xz')};
+  vec2 sxz = ${coverageArg(l, n, 'xz')};
   vec4 n = vec4(texture(pcNoise, 0.000005 * sxz + 0.01).x, texture(pcNoise, 0.000047 * sxz + 0.3).wx, texture(pcNoise, 0.0001 * sxz + 0.6).w);
   float boost = pcAddBoost(xz);
   float added = pcAddN > 0 ? boost / pcAdd[0].w : 0.0;
@@ -316,10 +316,10 @@ float ${n}Density(vec3 pos, bool detail) {
   as_ *= pcDampen(clamp(2.0 * af, 0.0, 1.0) * pcLs(0.0, 0.1, af) * pcLs(0.0, 0.6, 1.0 - af));
   as_ = clamp(as_, 0.0, 1.0);
   vec2 keep = pcKeep(pos, xz);
-  float d = mix(ac, as_, ${n}P.z * (1.0 - added)) * ${留};
+  float d = mix(ac, as_, ${n}P.z * (1.0 - added)) * ${keepTerm};
   if (d < PC_EPS) return 0.0;
   float w = detail ? texture(pcWorleyS, vec3(sxz.x, pos.y, sxz.y) * 0.003).x : 0.5;
-  d -= ${l.细节 === 1 ? '0.3' : f(0.3 * l.细节)} * pcSqr(w) * pcDampen(1.0 - d) * (1.0 - 0.85 * ${n}P.z);
+  d -= ${l.detail === 1 ? '0.3' : f(0.3 * l.detail)} * pcSqr(w) * pcDampen(1.0 - d) * (1.0 - 0.85 * ${n}P.z);
   vec2 e = mix(vec2(3.0, 14.0), vec2(2.0, 7.0), ${n}P.z);
   d = max(d, 0.0);
   d = pcLift(d, mix(e.x, e.y, af));
@@ -346,7 +346,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
   float sl = len / float(steps);
   vec3 st = rd * sl;
   vec3 ro = o + rd * (ds.x + sl * dither);
-  float ext = mix(0.08, 0.16, pcDay) * 0.1 * (2.0 - ${n}P.z)${密};
+  float ext = mix(0.08, 0.16, pcDay) * 0.1 * (2.0 - ${n}P.z)${densityExpr};
   vec3 L = atmoSun;
   float c = dot(rd, L);
   float bounced = 0.4 * L.y / PC_PI;
@@ -355,7 +355,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
   vec2 sc = vec2(0.0);
   float T = 1.0, dsum = 0.0, wsum = 0.0;
   for (int i = 0; i < ${D}_H; i++) {
-    if (i >= steps || T < ${阈(l)}) break;
+    if (i >= steps || T < ${threshold(l)}) break;
     vec3 p = ro + st * float(i);
     float dens = ${n}Density(p, true);
     if (dens < PC_EPS) continue;
@@ -387,7 +387,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
     dsum += dist * dens;
     wsum += dens;
   }
-  float cT = pcLs(${阈(l)}, 1.0, T);
+  float cT = pcLs(${threshold(l)}, 1.0, T);
   vec3 light = ${n}L * (1.0 + 0.4 * pcLs(0.5, 0.6, ${n}P.x) * ${n}P.w);
   vec3 col = pcAerial(sc.x * light + sc.y * atmoAmb, cT, o, ro, rd, sky);
   return PcRes(col, cT, wsum == 0.0 ? 1e6 : dsum / wsum + distance(o, ro));
@@ -395,20 +395,20 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
 };
 
 // ---- 卷云、卷积云（平面；同 大气/云.ts 的 pcCiDensity、pcCiOD、pcCirrus） ----
-const 卷云 = (l: 展开层) => {
-  const n = `pcCi${l.号}`, D = `PC_CI${l.号}`;
+const cirrus = (l: ExpandedLayer) => {
+  const n = `pcCi${l.layerIndex}`, D = `PC_CI${l.layerIndex}`;
   // 厚：大气/云.ts 写死 PC_CI_THICK 1500、PC_CI_T 900（云空间米），按厚等比
-  const 比 = l.T / 1500;
+  const normTime = l.T / 1500;
   return /* glsl */ `
 uniform vec2 ${n}P;
 uniform vec3 ${n}L;
-${l.有偏 ? `uniform vec2 ${n}Off;` : ''}
+${l.hasOffset ? `uniform vec2 ${n}Off;` : ''}
 #define ${D}_R (PC_R + ${f(l.R)})
 #define ${D}_THICK ${f(l.T)}
-#define ${D}_T ${f(900 * 比)}
-#define ${D}_EXT ${l.密度 === 1 ? '0.15' : f(0.15 * l.密度)}
+#define ${D}_T ${f(900 * normTime)}
+#define ${D}_EXT ${l.density === 1 ? '0.15' : f(0.15 * l.density)}
 float ${n}Density(vec2 coord, float af) {
-  coord += pcCamXZ${l.有偏 ? ` + ${n}Off` : ''};
+  coord += pcCamXZ${l.hasOffset ? ` + ${n}Off` : ''};
   ${l.尺寸 === 1 ? '' : `coord *= ${f(1 / l.尺寸)};`}
   vec2 curl = pcCurl(0.00002 * coord) * 0.5 + pcCurl(0.00004 * coord) * 0.25 + pcCurl(0.00008 * coord) * 0.125;
   float hs = 1.0 - abs(1.0 - 2.0 * af);
@@ -490,22 +490,22 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
 // ---- 贴图层（Agent 写的便宜算法，用户 11-04 定 B5 远层改用它）：一层薄云当一张球面上的贴图，覆盖照高积云的平面噪声（同一套 noise.png 取样，
 // 形状和 Photon 高积云一个路数），只在层中间取一次密度；透过率按厚 ÷ 视线仰角，朝太阳只看前后两点的覆盖（自阴影），多次散射 4 次。
 // 每像素一次球面求交 + 十来次贴图取样，比体积的高积云（几十步 × 每步十几次）便宜两个数量级 ----
-const 贴图层 = (l: 展开层) => {
-  const n = `pcTx${l.号}`, D = `PC_TX${l.号}`;
+const textureLayer = (l: ExpandedLayer) => {
+  const n = `pcTx${l.layerIndex}`, D = `PC_TX${l.layerIndex}`;
   return /* glsl */ `
 uniform vec4 ${n}P;
 uniform vec3 ${n}L;
-${l.有偏 ? `uniform vec2 ${n}Off;` : ''}
+${l.hasOffset ? `uniform vec2 ${n}Off;` : ''}
 #define ${D}_R (PC_R + ${f(l.R + l.T / 2)})
 #define ${D}_T ${f(l.T)}
 float ${n}Cov(vec2 xz) {
-  vec2 sxz = ${形(l, n, 'xz')};
+  vec2 sxz = ${coverageArg(l, n, 'xz')};
   vec4 n = vec4(texture(pcNoise, 0.000005 * sxz + 0.01).x, texture(pcNoise, 0.000047 * sxz + 0.3).wx, texture(pcNoise, 0.0001 * sxz + 0.6).w);
   float ac = mix(${n}P.x, ${n}P.y, pcDampen(n.x));
   ac = pcLs(pcSqr(1.0 - ac), 1.0, n.y);
   ac -= 1.9 * pcSqr(1.0 - n.w) * pcDampen(1.0 - ac);
   ac -= 0.25 * pcSqr(texture(pcNoise, 0.0004 * sxz + 0.2).y) * ${n}P.z;
-  ${l.受洞 ? 'ac *= pcKeep(vec3(0.0, PC_R + 1e7, 0.0), xz).y;' : ''}
+  ${l.acceptsHoles ? 'ac *= pcKeep(vec3(0.0, PC_R + 1e7, 0.0), xz).y;' : ''}
   return max(ac, 0.0);
 }
 PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
@@ -546,60 +546,60 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
 }`;
 };
 
-const 层码 = { Photon积云: 积云, Photon高积云: 高积云, Photon卷云: 卷云, 贴图层 } as const;
-const 前缀 = { Photon积云: 'pcCu', Photon高积云: 'pcAc', Photon卷云: 'pcCi', 贴图层: 'pcTx' } as const;
-const 底宏 = { Photon积云: 'PC_CU', Photon高积云: 'PC_AC', Photon卷云: 'PC_CI', 贴图层: 'PC_TX' } as const;
+const layerCode = { Photon积云: cumulus, Photon高积云: altocumulus, Photon卷云: cirrus, 贴图层: textureLayer } as const;
+const shaderPrefix = { Photon积云: 'pcCu', Photon高积云: 'pcAc', Photon卷云: 'pcCi', 贴图层: 'pcTx' } as const;
+const baseMacro = { Photon积云: 'PC_CU', Photon高积云: 'PC_AC', Photon卷云: 'PC_CI', 贴图层: 'PC_TX' } as const;
 
 /** 按高低前后叠（同 大气/云.ts 的 pcDrawClouds：低的一层挡死、镜头又在它下面就不再往上算） */
-const 叠 = (层们: readonly 展开层[]) => {
-  const 调 = (l: 展开层) => `${前缀[l.算法]}${l.号}March(o, rd, sky, dTc, dither)`;
-  const 递 = (i: number): string => {
-    if (i >= 层们.length) return '';
-    const l = 层们[i - 1]!;
-    const 下 = 递(i + 1);
-    return `if (!(res.T < 1e-3 && pcCamR < ${底宏[l.算法]}${l.号}_R)) {\n    res = pcBlend(res, ${调(层们[i]!)});\n    ${下}\n  }`;
+const stackLayers = (layers: readonly ExpandedLayer[]) => {
+  const layerCall = (l: ExpandedLayer) => `${shaderPrefix[l.算法]}${l.layerIndex}March(o, rd, sky, dTc, dither)`;
+  const chainFrom = (i: number): string => {
+    if (i >= layers.length) return '';
+    const l = layers[i - 1]!;
+    const nextCode = chainFrom(i + 1);
+    return `if (!(res.T < 1e-3 && pcCamR < ${baseMacro[l.算法]}${l.layerIndex}_R)) {\n    res = pcBlend(res, ${layerCall(layers[i]!)});\n    ${nextCode}\n  }`;
   };
-  return 层们.length
-    ? `PcRes res = ${调(层们[0]!)};\n  ${递(1)}`
+  return layers.length
+    ? `PcRes res = ${layerCall(layers[0]!)};\n  ${chainFrom(1)}`
     : 'PcRes res = pcNone();';
 };
 
 /** 画云：返回 (散射光, 透过率)，apparent = 云的视距离（方块米） */
-const 画云函数 = (层们: readonly 展开层[]) => /* glsl */ `
+const drawCloudGlsl = (layers: readonly ExpandedLayer[]) => /* glsl */ `
 vec4 pcDrawClouds(vec3 rd, vec3 sky, float dT, float dither, out float apparent) {
   vec3 o = vec3(0.0, pcCamR, 0.0);
   float dTc = dT < 0.0 ? -1.0 : dT * PC_S;
-  ${叠(层们)}
+  ${stackLayers(layers)}
   apparent = res.dist / PC_S;
   return vec4(res.s, res.T);
 }`;
 
 /** 步进起点错开多少（0～1，定义 dither），只按像素坐标取 */
-const 抖动码: Record<云抖动, string> = {
+const ditherCode: Record<CloudDither, string> = {
   Bayer: `const float BAYER[16] = float[16](0.0, 8.0, 2.0, 10.0, 12.0, 4.0, 14.0, 6.0, 3.0, 11.0, 1.0, 9.0, 15.0, 7.0, 13.0, 5.0);
   ivec2 bq = ivec2(gl_FragCoord.xy) & 3;
   float dither = (BAYER[bq.y * 4 + bq.x] + 0.5) / 16.0;`,
   交错梯度: 'float dither = fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(0.06711056, 0.00583715))));',
-  蓝噪声: `float dither = texelFetch(tBlue, ivec2(gl_FragCoord.xy) & ${蓝噪声边 - 1}, 0).r;`,
+  蓝噪声: `float dither = texelFetch(tBlue, ivec2(gl_FragCoord.xy) & ${blueNoiseEdge - 1}, 0).r;`,
 };
 
 /** 片元着色器（GLSL3）：tPrep 是这一遍分辨率上的 (对数深度, 这一帧要不要算)；要算的才步进，别的像素 discard、离屏图里留着上一帧的 */
-export const 云片元 = (层们: readonly 展开层[], S: number, 抖动: 云抖动, 半: boolean) => /* glsl */ `
+export const cloudFragment = (layers: readonly ExpandedLayer[], S: number, dither: CloudDither, halfRes: boolean) => /* glsl */ `
 precision highp float;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
-${共用(S)}
-${层们[0]?.算法 === 'Photon积云' ? `uniform sampler2D tSunBake;
+${sharedGlsl(S)}
+${layers[0]?.算法 === 'Photon积云' ? `uniform sampler2D tSunBake;
 float bakeOD(vec3 pos,float bottom,float thick) {
  vec2 uv=clamp(pos.xz/48000.0+0.5,vec2(0.5/128.0),vec2(1.0-0.5/128.0));
  float z=clamp((pos.y-bottom)/thick*32.0-0.5,0.0,31.0); float lo=floor(z), hi=min(lo+1.0,31.0);
  vec2 vlo=vec2(uv.x,(lo+uv.y)/32.0), vhi=vec2(uv.x,(hi+uv.y)/32.0);
  return mix(texture(tSunBake,vlo).r,texture(tSunBake,vhi).r,fract(z)); }` : ''}
-${层们.map((l) => 层码[l.算法](l)).join('\n')}
-${画云函数(层们)}
+${layers.map((l) => layerCode[l.算法](l)).join('\n')}
+${drawCloudGlsl(layers)}
 uniform sampler2D tPrep;
 uniform sampler2D atmoSky;
-${抖动 === '蓝噪声' ? 'uniform sampler2D tBlue;' : ''}
+${dither === '蓝噪声' ? 'uniform sampler2D tBlue;' : ''}
 uniform vec2 uSize;
 uniform mat4 uInvProj;
 uniform mat4 uCamWorld;
@@ -610,13 +610,13 @@ void main() {
   vec4 prep = texelFetch(tPrep, ivec2(gl_FragCoord.xy), 0);
   if (prep.b < 0.5) discard;
   float d = prep.r;
-  vec2 uv = ${半 ? '(2.0 * gl_FragCoord.xy - 0.5) / uSize' : 'gl_FragCoord.xy / uSize'};
+  vec2 uv = ${halfRes ? '(2.0 * gl_FragCoord.xy - 0.5) / uSize' : 'gl_FragCoord.xy / uSize'};
   vec4 vp = uInvProj * vec4(uv * 2.0 - 1.0, -1.0, 1.0);
   vec3 vdir = normalize(vp.xyz / vp.w);
   float fwdK = -vdir.z;
   vec3 wdir = mat3(uCamWorld) * vdir;
   float tScene = d >= 1.0 ? -1.0 : (exp2(d * uLogFar) - 1.0) / fwdK;
-  ${抖动码[抖动]}
+  ${ditherCode[dither]}
   vec3 sky = atmoSkyAt(atmoSky, vec3(wdir.x, -wdir.z, wdir.y));
   float apparent;
   vec4 c = pcDrawClouds(wdir, sky, tScene, dither, apparent);

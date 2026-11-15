@@ -7,40 +7,40 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
-type 混音项 = { outName: string; startInSamples: number; durationInSamples: number };
+type MixItem = { outName: string; startInSamples: number; durationInSamples: number };
 
-export const 按起点和内容排 = <T extends 混音项>(列表: readonly T[]): T[] => {
-  const 内容 = new Map<string, string>();
-  const 校验 = (文件: string) => {
-    let v = 内容.get(文件);
+export const sortByStartAndContent = <T extends MixItem>(items: readonly T[]): T[] => {
+  const contentByFile = new Map<string, string>();
+  const checkFile = (file: string) => {
+    let v = contentByFile.get(file);
     if (v === undefined) {
-      v = crypto.createHash('sha256').update(fs.readFileSync(文件)).digest('hex');
-      内容.set(文件, v);
+      v = crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+      contentByFile.set(file, v);
     }
     return v;
   };
-  return [...列表].sort((a, b) => {
+  return [...items].sort((a, b) => {
     if (a.startInSamples !== b.startInSamples) return a.startInSamples - b.startInSamples;
-    const x = 校验(a.outName);
-    const y = 校验(b.outName);
+    const x = checkFile(a.outName);
+    const y = checkFile(b.outName);
     return x < y ? -1 : x > y ? 1 : 0;
   });
 };
 
-const 已固定 = Symbol('混音顺序已固定');
+const mixOrderPinned = Symbol('混音顺序已固定');
 
 /** 只供渲染器.ts 绑定 CJS 入口：download-map 每次从导出上取工厂；ESM 的内置工厂不受此补丁影响 */
-export const 固定混音顺序 = () => {
+export const pinMixOrder = () => {
   const require = createRequire(import.meta.url);
-  const 模块路径 = path.join(path.dirname(require.resolve('@remotion/renderer')), 'assets', 'inline-audio-mixing.js');
-  const 模块 = require(模块路径) as { makeInlineAudioMixing?: ((...a: unknown[]) => { getListOfAssets: () => 混音项[] }) & { [已固定]?: true } };
-  const 原 = 模块.makeInlineAudioMixing;
-  if (typeof 原 !== 'function') throw new Error(`${模块路径} 没有 makeInlineAudioMixing：Remotion 布局变了，要重新核对混音顺序`);
-  if (原[已固定]) return;
-  const 换 = ((...参数: unknown[]) => {
-    const 混 = 原(...参数);
-    return { ...混, getListOfAssets: () => 按起点和内容排(混.getListOfAssets()) };
-  }) as NonNullable<typeof 模块.makeInlineAudioMixing>;
-  换[已固定] = true;
-  模块.makeInlineAudioMixing = 换;
+  const modulePath = path.join(path.dirname(require.resolve('@remotion/renderer')), 'assets', 'inline-audio-mixing.js');
+  const mixingModule = require(modulePath) as { makeInlineAudioMixing?: ((...a: unknown[]) => { getListOfAssets: () => MixItem[] }) & { [mixOrderPinned]?: true } };
+  const makeMixing = mixingModule.makeInlineAudioMixing;
+  if (typeof makeMixing !== 'function') throw new Error(`${modulePath} 没有 makeInlineAudioMixing：Remotion 布局变了，要重新核对混音顺序`);
+  if (makeMixing[mixOrderPinned]) return;
+  const patched = ((...params: unknown[]) => {
+    const base = makeMixing(...params);
+    return { ...base, getListOfAssets: () => sortByStartAndContent(base.getListOfAssets()) };
+  }) as NonNullable<typeof mixingModule.makeInlineAudioMixing>;
+  patched[mixOrderPinned] = true;
+  mixingModule.makeInlineAudioMixing = patched;
 };

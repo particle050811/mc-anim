@@ -5,7 +5,7 @@ import { RAMP_SEC } from '@库/角色/跑步.ts';
 import { baseSpeed } from '../../../地点/古城4x/布局.ts';
 import * as geom from './几何.ts';
 
-export const horseSpeed = baseSpeed.马;
+export const horseSpeed = baseSpeed.horse;
 export const wardenSpeed = baseSpeed.监守者;
 // 第一圈马起跳那一刻它在马身后多少米（顺着西环道）；之后每圈少 0.6 米，第五圈还剩 10 米上下
 export const takeoffGap = 12;

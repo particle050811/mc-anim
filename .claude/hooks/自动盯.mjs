@@ -7,15 +7,15 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-let 入 = {};
+let payload = {};
 try {
-  入 = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
+  payload = JSON.parse(fs.readFileSync(0, 'utf8') || '{}');
 } catch {}
-if (入.agent_id || 入.agent_type) process.exit(0);
+if (payload.agent_id || payload.agent_type) process.exit(0);
 // 非交互的 claude -p 也不起（用户 11-14 定）：没人会被叫醒；而且 -p 会同步等 UserPromptSubmit 钩子，没告警就一直挂着，
 // 有告警退 2 又会拦下唯一那条提示词（11-14 主会话用 -p 跑 Fable 5.2，卡了 85 分钟没出一个字）。
 // CLAUDE_CODE_ENTRYPOINT 从父会话继承，分不出 -p，只能往上看进程命令行；Windows 没有 ps，照旧挂。
-const 非交互 = () => {
+const nonInteractive = () => {
   let pid = Number(process.env.CLAUDE_PID) || process.ppid;
   for (let i = 0; i < 4 && pid > 1; i++) {
     const r = spawnSync('ps', ['-o', 'ppid=,args=', '-p', String(pid)], { encoding: 'utf8' });
@@ -26,11 +26,11 @@ const 非交互 = () => {
   }
   return false;
 };
-if (process.platform !== 'win32' && 非交互()) process.exit(0);
-const 会话 = String(入.session_id ?? process.env.CLAUDE_CODE_SESSION_ID ?? '');
-if (!会话) process.exit(0);
-const 根 = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-const 活 = (pid) => {
+if (process.platform !== 'win32' && nonInteractive()) process.exit(0);
+const sessionId = String(payload.session_id ?? process.env.CLAUDE_CODE_SESSION_ID ?? '');
+if (!sessionId) process.exit(0);
+const projectRoot = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+const isAlive = (pid) => {
   try {
     process.kill(pid, 0);
     return true;
@@ -38,40 +38,40 @@ const 活 = (pid) => {
     return e.code === 'EPERM';
   }
 };
-const 号 = path.join(os.tmpdir(), `anim-自动盯-${会话}.pid`);
+const pidFile = path.join(os.tmpdir(), `anim-自动盯-${sessionId}.pid`);
 // 静音：告警已按归属分发（docs/调度.md「盯与等」），但主人没挂 盯 时会兜底广播；闲着的会话被这种广播反复叫醒时，主 Agent 放一个 .静音 文件就不再挂（被叫醒本身算一次用户发话，不这样停不下来）；开工前删掉。
-if (fs.existsSync(号.replace(/\.pid$/, '.静音'))) process.exit(0);
+if (fs.existsSync(pidFile.replace(/\.pid$/, '.静音'))) process.exit(0);
 // O_EXCL 抢号：同一刻几个钩子一起起，只有一只留下
-const 抢 = () => {
+const claim = () => {
   try {
-    fs.writeFileSync(号, String(process.pid), { flag: 'wx' });
+    fs.writeFileSync(pidFile, String(process.pid), { flag: 'wx' });
     return true;
   } catch {
     return false;
   }
 };
-if (!抢()) {
-  const 旧 = Number(fs.readFileSync(号, 'utf8').trim());
-  if (旧 > 0 && 活(旧)) process.exit(0);
-  fs.rmSync(号, { force: true });
-  if (!抢()) process.exit(0);
+if (!claim()) {
+  const oldPid = Number(fs.readFileSync(pidFile, 'utf8').trim());
+  if (oldPid > 0 && isAlive(oldPid)) process.exit(0);
+  fs.rmSync(pidFile, { force: true });
+  if (!claim()) process.exit(0);
 }
-const 收 = () => {
+const onExit = () => {
   try {
-    if (fs.readFileSync(号, 'utf8').trim() === String(process.pid)) fs.rmSync(号);
+    if (fs.readFileSync(pidFile, 'utf8').trim() === String(process.pid)) fs.rmSync(pidFile);
   } catch {}
 };
-process.on('exit', 收);
+process.on('exit', onExit);
 for (const s of ['SIGTERM', 'SIGINT', 'SIGHUP']) process.on(s, () => process.exit(0));
 
-const 主 = Number(process.env.CLAUDE_PID) || process.ppid;
-const 入口 = path.join(根, 'pipeline', 'cli', 'main.ts');
-while (活(主)) {
+const rootPid = Number(process.env.CLAUDE_PID) || process.ppid;
+const entryFile = path.join(projectRoot, 'pipeline', 'cli', 'main.ts');
+while (isAlive(rootPid)) {
   // 短挂：Claude Code 退了最多多留这么久（盯 只认自己的父进程，也就是本脚本）
-  const r = spawnSync(process.execPath, [入口, '调度', '盯', '--最长', '300'], { cwd: 根, encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: 会话 } });
-  const 话 = (r.stdout ?? '').trim();
-  if (r.status === 0 && 话) {
-    process.stderr.write(`调度告警（钩子自动盯，不用自己挂 Monitor）：${话}\n看全貌：./anim 调度 --一行；处理完接着干，下一次工具调用钩子会自动再挂。\n`);
+  const r = spawnSync(process.execPath, [entryFile, '调度', '盯', '--最长', '300'], { cwd: projectRoot, encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: sessionId } });
+  const output = (r.stdout ?? '').trim();
+  if (r.status === 0 && output) {
+    process.stderr.write(`调度告警（钩子自动盯，不用自己挂 Monitor）：${output}\n看全貌：./anim 调度 --一行；处理完接着干，下一次工具调用钩子会自动再挂。\n`);
     process.exitCode = 2;
     break;
   }

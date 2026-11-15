@@ -2,30 +2,30 @@
 // 旧项目 取材服务端.py 只认取材 mod 的生成时修整（mcai:region / mcai:edit），这里写成一张表，以后加别的「数据包要靠模组才读得进」照样加一行。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 只读zip } from './zip.ts';
+import { ReadOnlyZip } from './zip.ts';
 
 /** 数据包 data/ 下的文件：相对路径（data/…）→ 读内容 */
-export const 包条目 = (src: string): Map<string, () => Buffer> => {
+export const packEntries = (src: string): Map<string, () => Buffer> => {
   const o = new Map<string, () => Buffer>();
   if (fs.statSync(src).isDirectory()) {
-    const 走 = (d: string) => {
+    const walk = (d: string) => {
       for (const e of fs.readdirSync(d, { withFileTypes: true })) {
         const f = path.join(d, e.name);
-        if (e.isDirectory()) 走(f);
+        if (e.isDirectory()) walk(f);
         else o.set(path.relative(src, f).split(path.sep).join('/'), () => fs.readFileSync(f));
       }
     };
-    if (fs.existsSync(path.join(src, 'data'))) 走(path.join(src, 'data'));
+    if (fs.existsSync(path.join(src, 'data'))) walk(path.join(src, 'data'));
   } else if (src.endsWith('.zip')) {
-    const z = new 只读zip(src);
-    for (const n of z.名们()) if (n.startsWith('data/') && !n.endsWith('/')) o.set(n, () => z.读(n));
+    const z = new ReadOnlyZip(src);
+    for (const n of z.names()) if (n.startsWith('data/') && !n.endsWith('/')) o.set(n, () => z.读(n));
   }
   return o;
 };
 
 /** 世界 datapacks/ 里的数据包（zip，或带 pack.mcmeta 的目录），按名字排（服务端也按 id 排序加载） */
-export const 世界数据包 = (存档: string) => {
-  const d = path.join(存档, 'datapacks');
+export const worldDatapacks = (saveDir: string) => {
+  const d = path.join(saveDir, 'datapacks');
   if (!fs.existsSync(d)) return [];
   return fs
     .readdirSync(d)
@@ -34,103 +34,103 @@ export const 世界数据包 = (存档: string) => {
     .map((n) => ({ 名: n, 路径: path.join(d, n) }));
 };
 
-export type 模组要求 = {
+export type ModRequirement = {
   名: string;
   /** 数据包里有没有用到 */
-  用到: (条目: Map<string, () => Buffer>) => boolean;
+  applies: (entryMap: Map<string, () => Buffer>) => boolean;
   /** mods/ 里哪个 jar 要有哪个类 */
   jar: RegExp;
   类: string;
   /** 用到它的包要排在它覆盖的包之上（后加载的盖前面的） */
-  要盖住别人: boolean;
-  缺了: string;
+  overridesOthers: boolean;
+  missing: string;
   /** 开服后启动日志里模组认出这个包时打的话（没有就是模组没生效，数据包白放）；条件省了 = 总要有 */
-  开服日志?: { 行: string; 条件?: (条目: Map<string, () => Buffer>) => boolean }[];
+  startupLogs?: { 行: string; condition?: (entryMap: Map<string, () => Buffer>) => boolean }[];
 };
 
-export const 模组要求表: 模组要求[] = [
+export const MOD_REQUIREMENTS: ModRequirement[] = [
   {
     名: '生成时修整',
-    用到: (e) => [...e].some(([k, r]) => /^data\/[^/]+\/worldgen\/density_function\/.+\.json$/.test(k) && /"mcai:(edit|region)"/.test(r().toString('utf8'))),
+    applies: (e) => [...e].some(([k, r]) => /^data\/[^/]+\/worldgen\/density_function\/.+\.json$/.test(k) && /"mcai:(edit|region)"/.test(r().toString('utf8'))),
     jar: /^mcai-.*\.jar$/,
     类: 'mcai/terrain/TerrainTypes.class',
-    要盖住别人: true,
-    缺了: '取材 mod 没有修整（mcai:region、mcai:edit）：专用服务端读不进修整包会起不来。anim mcai build 装上含修整的 jar（别的分支 build 的可能不含）',
+    overridesOthers: true,
+    missing: '取材 mod 没有修整（mcai:region、mcai:edit）：专用服务端读不进修整包会起不来。anim mcai build 装上含修整的 jar（别的分支 build 的可能不含）',
   },
   {
     // 暮色放大 4 倍：mod 认包里的标记文件才放大地标网格，只有数据包的话首领建筑会重复十几座（sourcing/mod/MANUAL.md「暮色森林放大 4 倍」）
     名: '暮色放大 4 倍',
-    用到: (e) => e.has('data/mcai/twilight_x4.json'),
+    applies: (e) => e.has('data/mcai/twilight_x4.json'),
     jar: /^mcai-.*\.jar$/,
     类: 'mcai/TwilightGrid.class',
-    要盖住别人: false,
-    缺了: '取材 mod 没有暮色地标网格（TwilightGrid）：只有数据包的话暮色首领建筑会重复十几座。anim mcai build 装上',
-    开服日志: [{ 行: '暮色地标网格：64 区块' }],
+    overridesOthers: false,
+    missing: '取材 mod 没有暮色地标网格（TwilightGrid）：只有数据包的话暮色首领建筑会重复十几座。anim mcai build 装上',
+    startupLogs: [{ 行: '暮色地标网格：64 区块' }],
   },
   {
     // 古城放大 4 倍（第 6 章第 4 场、第 7 章）：mod 的 BigJigsaw 放开原版拼图 8 区块上限，没有的话服务端读不进放大的古城
     名: '古城放大 4 倍',
-    用到: (e) => e.has('data/minecraft/worldgen/structure/ancient_city.json') && [...e.keys()].some((k) => k.startsWith('data/mcai/')),
+    applies: (e) => e.has('data/minecraft/worldgen/structure/ancient_city.json') && [...e.keys()].some((k) => k.startsWith('data/mcai/')),
     jar: /^mcai-.*\.jar$/,
     类: 'mcai/BigJigsaw.class',
-    要盖住别人: false,
-    缺了: '取材 mod 没有 BigJigsaw：读不进放大的远古城市。anim mcai build 装上',
-    开服日志: [
+    overridesOthers: false,
+    missing: '取材 mod 没有 BigJigsaw：读不进放大的远古城市。anim mcai build 装上',
+    startupLogs: [
       { 行: '大拼图结构：minecraft:ancient_city' },
       // 带结构标签 mcai:fill_biome 的包，城底下那一层铺成深暗之域（mcai.FillBiome）
-      { 行: '铺满群系：minecraft:ancient_city → minecraft:deep_dark', 条件: (e) => e.has('data/mcai/tags/worldgen/structure/fill_biome.json') },
+      { 行: '铺满群系：minecraft:ancient_city → minecraft:deep_dark', condition: (e) => e.has('data/mcai/tags/worldgen/structure/fill_biome.json') },
     ],
   },
 ];
 
 /** 开服前：世界用到的数据包要的模组类都在吗；返回问题列表和要盖住别人的包 */
-export const 开服前核对 = (服务端目录: string, 存档: string) => {
-  const 问题: string[] = [];
-  const 要盖: string[] = [];
-  const mods = path.join(服务端目录, 'mods');
+export const checkBeforeStart = (serverDir: string, saveDir: string) => {
+  const issues: string[] = [];
+  const overrides: string[] = [];
+  const mods = path.join(serverDir, 'mods');
   const jars = fs.existsSync(mods) ? fs.readdirSync(mods).filter((n) => n.endsWith('.jar')) : [];
-  for (const p of 世界数据包(存档)) {
-    const e = 包条目(p.路径);
-    for (const r of 模组要求表) {
-      if (!r.用到(e)) continue;
-      if (r.要盖住别人) 要盖.push(p.名);
-      const 有 = jars.filter((n) => r.jar.test(n)).some((n) => new 只读zip(path.join(mods, n)).条目.has(r.类));
-      if (!有) 问题.push(`数据包 ${p.名} 用到${r.名}，可 ${mods} 里没有含 ${r.类} 的 jar：${r.缺了}`);
+  for (const p of worldDatapacks(saveDir)) {
+    const e = packEntries(p.路径);
+    for (const r of MOD_REQUIREMENTS) {
+      if (!r.applies(e)) continue;
+      if (r.overridesOthers) overrides.push(p.名);
+      const hasClass = jars.filter((n) => r.jar.test(n)).some((n) => new ReadOnlyZip(path.join(mods, n)).entryMap.has(r.类));
+      if (!hasClass) issues.push(`数据包 ${p.名} 用到${r.名}，可 ${mods} 里没有含 ${r.类} 的 jar：${r.missing}`);
     }
   }
-  return { 问题, 要盖 };
+  return { issues, overrides };
 };
 
 /** 开服后启动日志里该有哪几句：世界里的数据包用到的模组功能，模组认出来时会打 */
-export const 开服要有的日志 = (存档: string): { 包: string; 行: string }[] => {
+export const requiredStartupLogs = (saveDir: string): { 包: string; 行: string }[] => {
   const o: { 包: string; 行: string }[] = [];
-  for (const p of 世界数据包(存档)) {
-    const e = 包条目(p.路径);
-    for (const r of 模组要求表) if (r.用到(e)) for (const l of r.开服日志 ?? []) if (!l.条件 || l.条件(e)) o.push({ 包: p.名, 行: l.行 });
+  for (const p of worldDatapacks(saveDir)) {
+    const e = packEntries(p.路径);
+    for (const r of MOD_REQUIREMENTS) if (r.applies(e)) for (const l of r.startupLogs ?? []) if (!l.condition || l.condition(e)) o.push({ 包: p.名, 行: l.行 });
   }
   return o;
 };
 
 /** 开服后：/datapack list enabled 那一行解析出启用的包（按加载顺序） */
-export const 解析启用包 = (行: string) => [...行.matchAll(/\[(\S+) \(/g)].map((m) => m[1]!);
+export const parseEnabledPacks = (line: string) => [...line.matchAll(/\[(\S+) \(/g)].map((m) => m[1]!);
 
 /** 要盖住别人的包启用了、并且排在和它有重叠文件的包之上 */
-export const 排序核对 = (存档: string, 要盖: readonly string[], 启用: readonly string[]) => {
-  const 问题: string[] = [];
-  const 包们 = 世界数据包(存档);
-  for (const 名 of 要盖) {
-    const 我 = `file/${名}`;
-    if (!启用.includes(我)) {
-      问题.push(`数据包 ${我} 没有启用（启用的：${启用.join('、') || '无'}）`);
+export const checkOrder = (saveDir: string, overrides: readonly string[], enabled: readonly string[]) => {
+  const issues: string[] = [];
+  const packs = worldDatapacks(saveDir);
+  for (const dataPackName of overrides) {
+    const fileKey = `file/${dataPackName}`;
+    if (!enabled.includes(fileKey)) {
+      issues.push(`数据包 ${fileKey} 没有启用（启用的：${enabled.join('、') || '无'}）`);
       continue;
     }
-    const 我的 = new Set(包条目(path.join(存档, 'datapacks', 名)).keys());
-    for (const p of 包们) {
-      if (p.名 === 名) continue;
-      const 别人 = `file/${p.名}`;
-      if (!启用.includes(别人) || 启用.indexOf(别人) < 启用.indexOf(我)) continue;
-      if ([...包条目(p.路径).keys()].some((k) => 我的.has(k))) 问题.push(`数据包 ${我} 排在 ${别人} 下面，覆盖的文件会被它盖回去`);
+    const mine = new Set(packEntries(path.join(saveDir, 'datapacks', dataPackName)).keys());
+    for (const p of packs) {
+      if (p.名 === dataPackName) continue;
+      const other = `file/${p.名}`;
+      if (!enabled.includes(other) || enabled.indexOf(other) < enabled.indexOf(fileKey)) continue;
+      if ([...packEntries(p.路径).keys()].some((k) => mine.has(k))) issues.push(`数据包 ${fileKey} 排在 ${other} 下面，覆盖的文件会被它盖回去`);
     }
   }
-  return 问题;
+  return issues;
 };

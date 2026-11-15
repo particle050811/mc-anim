@@ -2,62 +2,62 @@
 // 只补缺的字段，已有的数、sha256、大小、库、后缀一个不动（指纹只认 sha，补了不让段过期）；字节不在本机的（多半是私有的）跳过并报件数。
 // 量法和入库、anim cues 现量同一个函数（音频量.ts 的 量音频数）。
 import fs from 'node:fs';
-import { 字节路径, type 资产锁, type 锁条目 } from './资产锁.ts';
-import { 量音频数, 音频后缀, type 音频元数据 } from './音频量.ts';
+import { bytesPath, type AssetLock, type LockEntry } from './资产锁.ts';
+import { measureAudio, audioExtensions, type AudioMetadata } from './音频量.ts';
 
-const 字段 = ['时长', '峰值', '响度'] as const;
+const measureFields = ['时长', '峰值', '响度'] as const;
 
-export const 是音频条目 = (e: 锁条目) => 音频后缀.has(e.后缀.toLowerCase());
+export const isAudioEntry = (e: LockEntry) => audioExtensions.has(e.后缀.toLowerCase());
 /** 还没量过的音频条目。有时长就算量过：量音频数 量得出时长才写，峰值、响度和它一起写；
  *  量过仍缺峰值（静音）、响度（太短）的重量也量不出，不再挑，免得 --检查 永远报能补、每次重量 */
-export const 缺音频元数据 = (e: 锁条目) => 是音频条目(e) && e.时长 === undefined;
+export const lacksAudioMetadata = (e: LockEntry) => isAudioEntry(e) && e.时长 === undefined;
 
-export type 补量结果 = {
-  锁: 资产锁;
+export type FillMeasureResult = {
+  assetLock: AssetLock;
   音频: number;
-  缺: string[];
-  补了: string[];
-  没字节: string[];
-  量不出: { id: string; 原因: string }[];
+  missing: string[];
+  patched: string[];
+  noBytes: string[];
+  unmeasured: { id: string; 原因: string }[];
   /** 量完还缺字段的（静音没有峰值、太短没有积分响度） */
-  仍缺: { id: string; 字段: string[] }[];
+  stillMissing: { id: string; missingFields: string[] }[];
 };
 
-export type 补量选项 = { 数据根: string; 只查?: boolean; 量?: (文件: string) => 音频元数据; 进度?: (已: number, 共: number) => void };
+export type FillMeasureOptions = { dataRoot: string; checkOnly?: boolean; measure?: (file: string) => AudioMetadata; 进度?: (done: number, total: number) => void };
 
 /** 只把量出来、条目里原来没有的字段并进去 */
-export const 并缺的 = (e: 锁条目, 量: 音频元数据): 锁条目 => {
-  const 加 = Object.fromEntries(字段.filter((k) => e[k] === undefined && 量[k] !== undefined).map((k) => [k, 量[k]]));
-  return { ...e, ...加 };
+export const mergeMissing = (e: LockEntry, measured: AudioMetadata): LockEntry => {
+  const fill = Object.fromEntries(measureFields.filter((k) => e[k] === undefined && measured[k] !== undefined).map((k) => [k, measured[k]]));
+  return { ...e, ...fill };
 };
 
 /** 返回新的锁对象（不改传进来的）；只查 时不量、不改，只报缺多少、字节在不在 */
-export const 补音频元数据 = (锁: 资产锁, o: 补量选项): 补量结果 => {
-  const 量 = o.量 ?? 量音频数;
-  const 新: 资产锁 = { ...锁 };
-  const r: 补量结果 = { 锁: 新, 音频: 0, 缺: [], 补了: [], 没字节: [], 量不出: [], 仍缺: [] };
-  const ids = Object.keys(锁).sort();
-  for (const id of ids) if (是音频条目(锁[id]!)) r.音频++;
-  r.缺 = ids.filter((id) => 缺音频元数据(锁[id]!));
-  r.缺.forEach((id, i) => {
-    const e = 锁[id]!;
-    const 文件 = 字节路径(e, o.数据根);
-    if (!fs.existsSync(文件)) return void r.没字节.push(id);
-    if (o.只查) return;
-    o.进度?.(i + 1, r.缺.length);
-    let 数: 音频元数据;
+export const fillAudioMetadata = (assetLock: AssetLock, o: FillMeasureOptions): FillMeasureResult => {
+  const measure = o.measure ?? measureAudio;
+  const nextLock: AssetLock = { ...assetLock };
+  const r: FillMeasureResult = { assetLock: nextLock, 音频: 0, missing: [], patched: [], noBytes: [], unmeasured: [], stillMissing: [] };
+  const ids = Object.keys(assetLock).sort();
+  for (const id of ids) if (isAudioEntry(assetLock[id]!)) r.音频++;
+  r.missing = ids.filter((id) => lacksAudioMetadata(assetLock[id]!));
+  r.missing.forEach((id, i) => {
+    const e = assetLock[id]!;
+    const file = bytesPath(e, o.dataRoot);
+    if (!fs.existsSync(file)) return void r.noBytes.push(id);
+    if (o.checkOnly) return;
+    o.进度?.(i + 1, r.missing.length);
+    let audioMeta: AudioMetadata;
     try {
-      数 = 量(文件);
+      audioMeta = measure(file);
     } catch (err) {
-      return void r.量不出.push({ id, 原因: (err as Error).message.split('\n')[0]! });
+      return void r.unmeasured.push({ id, 原因: (err as Error).message.split('\n')[0]! });
     }
-    const 后 = 并缺的(e, 数);
-    if (字段.some((k) => 后[k] !== e[k])) {
-      新[id] = 后;
-      r.补了.push(id);
+    const filled = mergeMissing(e, audioMeta);
+    if (measureFields.some((k) => filled[k] !== e[k])) {
+      nextLock[id] = filled;
+      r.patched.push(id);
     }
-    const 还缺 = 字段.filter((k) => 后[k] === undefined);
-    if (还缺.length) r.仍缺.push({ id, 字段: [...还缺] });
+    const missingKeys = measureFields.filter((k) => filled[k] === undefined);
+    if (missingKeys.length) r.stillMissing.push({ id, missingFields: [...missingKeys] });
   });
   return r;
 };

@@ -31,7 +31,7 @@ let geos: { g: THREE.BufferGeometry; tex: number }[] | null = null;
 const geometries = () =>
   (geos ??= (() => {
     const byTex = new Map<number, { pos: number[]; nor: number[]; uv: number[]; idx: number[] }>();
-    for (const quad of MODEL.parts.钻头.quads) {
+    for (const quad of MODEL.parts.drill.quads) {
       if (!byTex.has(quad[0])) byTex.set(quad[0], { pos: [], nor: [], uv: [], idx: [] });
       const buf = byTex.get(quad[0])!;
       const base = buf.pos.length / 3;

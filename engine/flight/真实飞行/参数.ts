@@ -15,53 +15,53 @@
 // 7. 镜头弹簧：游戏常用临界阻尼弹簧（Daniel Holden「Spring-It-On」、Ryan Juckett「Damped Springs」），半衰期 ≈ 1.68/ω。
 
 export type ChannelParams = {
-  频率: number; // 闭环自然频率 ω（rad/s）
-  阻尼: number; // 阻尼比 ζ
-  漂移: number; // 航向（俯仰）漂移的均方根（度）
-  漂移尺度: number; // 漂移的长度尺度（米）
-  漂移高通: number; // 漂移去掉多长的波长（一阶高通的长度尺度，米；0 = 不去）
+  frequency: number; // 闭环自然频率 ω（rad/s）
+  damping: number; // 阻尼比 ζ
+  drift: number; // 航向（俯仰）漂移的均方根（度）
+  driftScale: number; // 漂移的长度尺度（米）
+  driftHighPass: number; // 漂移去掉多长的波长（一阶高通的长度尺度，米；0 = 不去）
 };
-export type BumpMode = { 幅度: number; 频率: number; 阻尼: number }; // 幅度：参考速度下的均方根（度）；频率：赫兹
-export type 真实飞行参数 = {
-  侧向: ChannelParams;
-  竖直: ChannelParams;
-  阵风: {
-    离地: number; // 米：定 Dryden 低空的长度尺度和强度
+export type BumpMode = { amplitude: number; frequency: number; damping: number }; // 幅度：参考速度下的均方根（度）；频率：赫兹
+export type RealFlightParams = {
+  lateral: ChannelParams;
+  vertical: ChannelParams;
+  gust: {
+    altitudeM: number; // 米：定 Dryden 低空的长度尺度和强度
     W20: number; // 离地 6 米的风速（米/秒）：轻度 7.7、中度 15.4、重度 23.2
-    风速: number; // 平均风（米/秒）：冻结的阵风场随它平移，悬停时也有一点颠簸
-    导纳: number; // k（1/米）：阵风 → 加速度 = k·V·g
+    windSpeed: number; // 平均风（米/秒）：冻结的阵风场随它平移，悬停时也有一点颠簸
+    admittance: number; // k（1/米）：阵风 → 加速度 = k·V·g
   };
-  颠簸: { 俯仰: BumpMode; 横滚: BumpMode; 朝向: BumpMode; 升沉: BumpMode; 参考速度: number; 速度指数: number }; // 升沉 的幅度是米
-  镜头: { 频率: number; 阻尼: number };
-  输入提前: number; // 锚点前输入渐弱的长度是输出渐变的几倍
-  软度: number; // 竖直软下限的过渡宽度（米）
-  下限平滑: number; // 竖直下限沿里程取最大、再抹平的半宽（米）
+  bump: { pitch: BumpMode; roll: BumpMode; facing: BumpMode; heave: BumpMode; refSpeed: number; speedExponent: number }; // 升沉 的幅度是米
+  cameraSpring: { frequency: number; damping: number };
+  inputLead: number; // 锚点前输入渐弱的长度是输出渐变的几倍
+  softWidth: number; // 竖直软下限的过渡宽度（米）
+  floorSmooth: number; // 竖直下限沿里程取最大、再抹平的半宽（米）
 };
-export const defaultParams: 真实飞行参数 = {
-  侧向: { 频率: 1.0, 阻尼: 0.55, 漂移: 2.4, 漂移尺度: 500, 漂移高通: 2500 },
-  竖直: { 频率: 1.4, 阻尼: 0.65, 漂移: 0.6, 漂移尺度: 600, 漂移高通: 2500 },
-  阵风: { 离地: 80, W20: 7.7, 风速: 8, 导纳: 0.0025 },
-  颠簸: {
-    俯仰: { 幅度: 0.8, 频率: 3.0, 阻尼: 0.3 },
-    横滚: { 幅度: 1.0, 频率: 2.4, 阻尼: 0.3 },
-    朝向: { 幅度: 0.4, 频率: 2.0, 阻尼: 0.3 },
-    升沉: { 幅度: 0.06, 频率: 2.5, 阻尼: 0.3 },
-    参考速度: 1000,
-    速度指数: 1,
+export const defaultParams: RealFlightParams = {
+  lateral: { frequency: 1.0, damping: 0.55, drift: 2.4, driftScale: 500, driftHighPass: 2500 },
+  vertical: { frequency: 1.4, damping: 0.65, drift: 0.6, driftScale: 600, driftHighPass: 2500 },
+  gust: { altitudeM: 80, W20: 7.7, windSpeed: 8, admittance: 0.0025 },
+  bump: {
+    pitch: { amplitude: 0.8, frequency: 3.0, damping: 0.3 },
+    roll: { amplitude: 1.0, frequency: 2.4, damping: 0.3 },
+    facing: { amplitude: 0.4, frequency: 2.0, damping: 0.3 },
+    heave: { amplitude: 0.06, frequency: 2.5, damping: 0.3 },
+    refSpeed: 1000,
+    speedExponent: 1,
   },
-  镜头: { 频率: 2.5, 阻尼: 1.0 },
-  输入提前: 1.5,
-  软度: 4,
-  下限平滑: 1000,
+  cameraSpring: { frequency: 2.5, damping: 1.0 },
+  inputLead: 1.5,
+  softWidth: 4,
+  floorSmooth: 1000,
 };
-export type 部分<Shape> = { [Key in keyof Shape]?: Shape[Key] extends object ? 部分<Shape[Key]> : Shape[Key] };
-export const deepMerge = <Shape>(defaults: Shape, overrides?: 部分<Shape>): Shape => {
+export type DeepPartial<Shape> = { [Key in keyof Shape]?: Shape[Key] extends object ? DeepPartial<Shape[Key]> : Shape[Key] };
+export const deepMerge = <Shape>(defaults: Shape, overrides?: DeepPartial<Shape>): Shape => {
   if (!overrides) return defaults;
   const merged: Record<string, unknown> = { ...(defaults as Record<string, unknown>) };
   for (const [k, value] of Object.entries(overrides)) {
     if (value === undefined) continue;
     const base = (defaults as Record<string, unknown>)[k];
-    merged[k] = base && typeof base === 'object' && typeof value === 'object' ? deepMerge(base, value as 部分<typeof base>) : value;
+    merged[k] = base && typeof base === 'object' && typeof value === 'object' ? deepMerge(base, value as DeepPartial<typeof base>) : value;
   }
   return merged as Shape;
 };

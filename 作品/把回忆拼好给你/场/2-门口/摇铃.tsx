@@ -9,151 +9,151 @@
 import type React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
 import { clamp01, sample } from '@engine/anim/anim.ts';
-import { 描边 as 描边组 } from '@engine/三渲二/描边.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
-import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 插调子 } from '@engine/三渲二/调子.ts';
+import { Outline as OutlineGroup } from '@engine/三渲二/描边.tsx';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
+import type { ShadingOptions } from '@engine/三渲二/光影/预设.ts';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { lerpTone } from '@engine/三渲二/调子.ts';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
-import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 事件 as 歌词事件 } from '../../分镜/歌词.ts';
-import { 事件 as 正片第15句事件 } from '../../分镜/正片第15句.ts';
-import { 侧投影 } from '../../地点/侧剖面.tsx';
-import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
-import { 照片墙格们 } from '../../地点/照片墙.tsx';
-import { 门口 } from '../../地点/门口小木屋.tsx';
-import { 描边 as 描边默认 } from '../../画风.ts';
-import { 色板 } from '../../色板.ts';
-import { 像素字 } from '../../界面/像素字.ts';
-import { 第15句聊天宽 } from '../../界面/聊天栏宽.ts';
-import { 第8句照片们 } from '../../特效/照片画.ts';
-import { 樱花风 } from '../../特效/樱花风.tsx';
-import type { 樱花风时刻 } from '../../特效/樱花风参数.ts';
-import { 告示牌行们, 白天刻, 整屏镜头, 正交顶面 } from './参数.ts';
-import { 林间门口画布 } from './林间门口.tsx';
-import { 她走的粒子, 挂着的铃 } from './归隐.tsx';
-import { 照片墙边长 } from './归隐参数.ts';
-import { 纸花层 } from './纸花层.tsx';
-import { 回色, 你x, 你朝向, 你的头, 你的右臂, 铃, 铃摆 } from './第15句.ts';
+import { PixelChatBar } from '@库/界面/像素聊天栏.tsx';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { events as lyricEvents } from '../../分镜/歌词.ts';
+import { events as mainCutLine15Events } from '../../分镜/正片第15句.ts';
+import { sideProjection } from '../../地点/侧剖面.tsx';
+import { SignPixelText } from '../../地点/告示牌字.tsx';
+import { photoWallCells } from '../../地点/照片墙.tsx';
+import { entrance } from '../../地点/门口小木屋.tsx';
+import { outline as defaultOutline } from '../../画风.ts';
+import { palette } from '../../色板.ts';
+import { pixelFont } from '../../界面/像素字.ts';
+import { line15ChatWidth } from '../../界面/聊天栏宽.ts';
+import { line8Photos } from '../../特效/照片画.ts';
+import { SakuraWind } from '../../特效/樱花风.tsx';
+import type { SakuraWindMoment } from '../../特效/樱花风参数.ts';
+import { signRows, dayTick, fullScreenShot, orthoTop } from './参数.ts';
+import { ForestDoorCanvas } from './林间门口.tsx';
+import { LiYingWalkParticles, HangingBell } from './归隐.tsx';
+import { photoWallEdge } from './归隐参数.ts';
+import { PaperLayer } from './纸花层.tsx';
+import { colorBackRange, youX, youFacing, youHead, yourRightArm, bell, bellSwing } from './第15句.ts';
 
-const 正片事件 = { ...歌词事件, ...正片第15句事件 };
+const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 
-const 黄 = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
-const 事 = 正片事件;
+const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
+const events = mainCutEvents;
 
 /** 樱花风的时间轴：摇铃起风，风散开（转场）那一拍整屏盖住。隐世之境那一镜接着用同一个 */
-export const 第15句风: 樱花风时刻 = { 起: 事.摇铃.秒, 满: 事.风散开.秒 };
+export const bellWind: SakuraWindMoment = { 起: events.摇铃.秒, full: events.风散开.秒 };
 
 /** 「Steve加入了游戏」那一行进聊天栏以后过了多少刻（原版聊天按刻走）：歌曲帧 → 刻 */
-export const 加入游戏刻 = (帧: number) => ((帧 - 事.第15句加入游戏.帧) / fps) * 20;
+export const joinGameTick = (frame: number) => ((frame - events.第15句加入游戏.帧) / fps) * 20;
 
 /** 原版聊天栏的缩放：2560×1440 下原版自动选的界面尺寸 6（同 场/2-隐世之境 对视那一帧，同一行字跨镜头一样大）；聊天宽也同那一帧（界面/聊天栏宽.ts） */
-export const 聊天缩放 = 6;
+export const chatScale = 6;
 
 /** 左下的原版聊天栏，只有「Steve加入了游戏」一行（帧：歌曲帧） */
-export const 加入游戏聊天: React.FC<{ 帧: number }> = ({ 帧 }) => (
-  <像素聊天栏
-    lines={[{ text: 'Steve加入了游戏', color: 黄, 起刻: 0 }]}
-    刻={加入游戏刻(帧)}
-    缩放={聊天缩放}
-    字体={像素字}
-    宽={画幅.宽}
-    高={画幅.高}
-    聊天宽={第15句聊天宽}
+export const JoinGameChat: React.FC<{ 帧: number }> = ({ 帧: frame }) => (
+  <PixelChatBar
+    lines={[{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }]}
+    刻={joinGameTick(frame)}
+    缩放={chatScale}
+    字体={pixelFont}
+    宽={aspect.宽}
+    高={aspect.高}
+    chatWidth={line15ChatWidth}
   />
 );
 
-const 投 = 侧投影(整屏镜头.取景, 画幅.宽, 画幅.高, 正交顶面);
-const 铃心: V3 = [铃.挂点[0], 铃.挂点[1], 铃.挂点[2] - 铃.垂];
+const project = sideProjection(fullScreenShot.framing, aspect.宽, aspect.高, orthoTop);
+const bellCenter: V3 = [bell.hangPoint[0], bell.hangPoint[1], bell.hangPoint[2] - bell.hangLength];
 /** 铃心在画面上的位置（页面坐标）：樱花风从这里起 */
-export const 铃在画面 = 投(铃心[0], 铃心[2], 铃心[1]);
+export const bellInPicture = project(bellCenter[0], bellCenter[2], bellCenter[1]);
 
-const 缓 = (t: number) => t * t * (3 - 2 * t);
+const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /** 你这一刻的姿势（秒：歌上的秒） */
-const 你的姿势 = (秒: number) => {
-  const 转 = 事.转向铃.秒;
-  const 摇 = 事.摇铃.秒;
+const youPose = (sec: number) => {
+  const turnToBellSec = events.转向铃.秒;
+  const shakeStart = events.摇铃.秒;
   // 头：看树 → 转向铃时转去看铃（0.15 秒转过去）→ 摇铃后 0.1 秒起抬头看风（0.2 秒）
-  const 看 = (a: [number, number], b: [number, number], k: number) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
-  let 头 = 你的头.看树 as number[];
-  if (秒 >= 转) 头 = 看(你的头.看树, 你的头.看铃, 缓(clamp01((秒 - 转) / 0.15)));
-  if (秒 >= 摇 + 0.1) 头 = 看(你的头.看铃, 你的头.看风, 缓(clamp01((秒 - 摇 - 0.1) / 0.2)));
+  const lerpGaze = (a: [number, number], b: [number, number], k: number) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
+  let headPose = youHead.lookTree as number[];
+  if (sec >= turnToBellSec) headPose = lerpGaze(youHead.lookTree, youHead.lookBell, smoothstep(clamp01((sec - turnToBellSec) / 0.15)));
+  if (sec >= shakeStart + 0.1) headPose = lerpGaze(youHead.lookBell, youHead.lookWind, smoothstep(clamp01((sec - shakeStart - 0.1) / 0.2)));
   // 右胳膊：转向铃起抬到铃上（摇铃那一刻到位），摇铃时晃几下，之后放下
-  const 起 = 缓(clamp01((秒 - 转) / (摇 - 转)));
-  const 落 = 缓(clamp01((秒 - 摇 - 你的右臂.晃秒) / 你的右臂.放下秒));
-  const 举 = 起 * (1 - 落);
-  const 晃 = 秒 >= 摇 && 秒 < 摇 + 你的右臂.晃秒 ? Math.sin((秒 - 摇) * 你的右臂.晃频 * Math.PI * 2) * 你的右臂.晃 : 0;
-  const p = stevePose([你x, 门口.站排y, 0], 你朝向, { sec: 秒, scale: 1, headPitch: 头[0], headYaw: 头[1] });
-  return { ...p, armR: p.armR + 你的右臂.够铃.抬 * 举, armRRoll: p.armRRoll + 你的右臂.够铃.张 * 举 + 晃 };
+  const raise = smoothstep(clamp01((sec - turnToBellSec) / (shakeStart - turnToBellSec)));
+  const lowerProgress = smoothstep(clamp01((sec - shakeStart - yourRightArm.swaySec) / yourRightArm.putDownSec));
+  const raiseAmount = raise * (1 - lowerProgress);
+  const sway = sec >= shakeStart && sec < shakeStart + yourRightArm.swaySec ? Math.sin((sec - shakeStart) * yourRightArm.swayFreq * Math.PI * 2) * yourRightArm.swayAmp : 0;
+  const p = stevePose([youX, entrance.standRowY, 0], youFacing, { sec: sec, scale: 1, headPitch: headPose[0], headYaw: headPose[1] });
+  return { ...p, armR: p.armR + yourRightArm.reachBell.lift * raiseAmount, armRRoll: p.armRRoll + yourRightArm.reachBell.rollDeg * raiseAmount + sway };
 };
 
 /** 铃绕挂点摆的角（度，正 = 铃往画面右边甩）：摇铃时被手往左一拨，之后衰减着摆 */
-const 铃角 = (秒: number) => {
-  const t = 秒 - 事.摇铃.秒;
+const bellAngle = (sec: number) => {
+  const t = sec - events.摇铃.秒;
   if (t < 0) return 0;
-  return -铃摆.振幅 * Math.sin((t / 铃摆.周期) * Math.PI * 2) * 铃摆.衰减 ** t;
+  return -bellSwing.amplitude * Math.sin((t / bellSwing.periodSec) * Math.PI * 2) * bellSwing.damping ** t;
 };
 
 /** 这一帧的调子：上线时还是第 14 句末的褪色（回色.起），樱花风卷起来以后颜色跟着回来，盖满时到夏日白天 */
-export const 摇铃调子 = (帧: number) => {
-  const 回 = 回色.起 + (回色.止 - 回色.起) * sample([[第15句风.起, 0], [第15句风.满, 1]], 帧 / fps);
-  return 插调子(色板.褪色, 色板.夏日白天, 回);
+export const bellShakeTone = (frame: number) => {
+  const restoreMix = colorBackRange.起 + (colorBackRange.止 - colorBackRange.起) * sample([[bellWind.起, 0], [bellWind.full, 1]], frame / fps);
+  return lerpTone(palette.褪色, palette.夏日白天, restoreMix);
 };
 
-export type 摇铃画面属性 = {
+export type BellShakePictureProps = {
   /** 歌曲帧 */
   帧: number;
-  描边?: boolean;
-  后期?: boolean;
+  outline?: boolean;
+  withPost?: boolean;
   /** 盖在最上面、整片后期里面的东西（符文歌词），页面坐标 1280×720 */
   叠层?: React.ReactNode;
   /** 整片后期颗粒的种子，不给 = 当前帧号；段里给歌曲帧 */
   种子?: number;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只开门口这边（见 门口.tsx 的 门口画布）；不给 = 不开 */
-  光影?: 光影选项 | null;
+  shading?: ShadingOptions | null;
 };
 
 /** 一整帧（1280×720 页面），自己铺满 */
-export const 摇铃画面: React.FC<摇铃画面属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 叠层, 种子, 光影 }) => {
-  const 秒 = 帧 / fps;
-  const 调 = 摇铃调子(帧);
-  const 你 = 你的姿势(秒);
+export const ShakeBellPicture: React.FC<BellShakePictureProps> = ({ 帧: frame, outline = defaultOutline.开, withPost = true, 叠层: overlay, 种子: seed, shading }) => {
+  const sec = frame / fps;
+  const tone = bellShakeTone(frame);
+  const you = youPose(sec);
   return (
-    <整片后期 调色={后期 ? 调.调色 : null} 种子={种子}>
-      <林间门口画布
-        宽={画幅.宽}
-        高={画幅.高}
-        {...整屏镜头}
-        刻={白天刻}
-        调子={调}
-        光影={光影}
-        门开
-        树进度={1}
-        告示牌
-        告示牌字={<告示牌像素字 行们={告示牌行们} />}
-        照片墙={照片墙格们(第8句照片们, null)}
-        照片墙边长={照片墙边长}
+    <FilmPost grade={withPost ? tone.grade : null} 种子={seed}>
+      <ForestDoorCanvas
+        宽={aspect.宽}
+        高={aspect.高}
+        {...fullScreenShot}
+        刻={dayTick}
+        tone={tone}
+        shading={shading}
+        doorOpen
+        treeProgress={1}
+        hasSign
+        signText={<SignPixelText lines={signRows} />}
+        photoWall={photoWallCells(line8Photos, null)}
+        photoWallEdge={photoWallEdge}
         叠层={
           <>
-            <纸花层 秒={秒} />
-            <樱花风 秒={秒} 时刻={第15句风} 源={铃在画面} />
-            <加入游戏聊天 帧={帧} />
+            <PaperLayer 秒={sec} />
+            <SakuraWind 秒={sec} windTime={bellWind} 源={bellInPicture} />
+            <JoinGameChat 帧={frame} />
           </>
         }
       >
-        <挂着的铃 角={铃角(秒)} />
-        <她走的粒子 秒={秒} />
-        {帧 >= 事.第15句加入游戏.帧 && (
-          <描边组 开={描边}>
-            <贴图像素对齐 锚={你.loc as V3}>
-              <Steve pose={你} />
-            </贴图像素对齐>
-          </描边组>
+        <HangingBell 角={bellAngle(sec)} />
+        <LiYingWalkParticles 秒={sec} />
+        {frame >= events.第15句加入游戏.帧 && (
+          <OutlineGroup 开={outline}>
+            <TexturePixelAlign 锚={you.loc as V3}>
+              <Steve pose={you} />
+            </TexturePixelAlign>
+          </OutlineGroup>
         )}
-      </林间门口画布>
-      {叠层}
-    </整片后期>
+      </ForestDoorCanvas>
+      {overlay}
+    </FilmPost>
   );
 };

@@ -5,42 +5,42 @@
 import React from 'react';
 import { AbsoluteFill, Composition, Img } from 'remotion';
 import '../core/稳定排序.ts';
-import { 段帧数, 段格, type 段定义 } from './段定义.ts';
-import { 设置Provider, use设置, 读设置 } from './设置.ts';
-import { use输出帧 } from './时间.tsx';
+import { segFrameCount, segFps, type SegmentDef } from './段定义.ts';
+import { SettingsProvider, useSettings, readSettings } from './设置.ts';
+import { useOutputFrame } from './时间.tsx';
 
 /** import.meta.webpackContext 的返回值 */
-export type 模块目录 = { keys(): string[]; (key: string): unknown };
+export type ModuleDir = { keys(): string[]; (key: string): unknown };
 
-export type 注册参数 = {
-  清单: readonly { 键: string }[];
+export type RegisterParams = {
+  manifest: readonly { 键: string }[];
   /** 段键 → 段目录（相对作品根，如 段/6-斩娜迦、核对/冒烟） */
-  段目录: (键: string) => string;
+  segDir: (segKey: string) => string;
   /** 段目录的第一层（段、核对）→ 扫这一层的 webpackContext，键形如 ./<段名>/段.ts */
-  模块: Readonly<Record<string, 模块目录>>;
+  模块: Readonly<Record<string, ModuleDir>>;
 };
 
-export const 做注册 = ({ 清单, 段目录, 模块 }: 注册参数): React.FC => {
-  const 取 = <T,>(键: string, 文件: string, 导出: string): T => {
-    const 目录 = 段目录(键);
-    const [层, ...其余] = 目录.split('/');
-    const 表 = 模块[层!];
-    const key = `./${[...其余, 文件].join('/')}`;
-    if (!表 || !表.keys().includes(key)) throw new Error(`清单里的 ${键} 缺 ${目录}/${文件}`);
-    const m = 表(key) as Record<string, unknown>;
-    if (!(导出 in m)) throw new Error(`${目录}/${文件} 没有导出 ${导出}`);
-    return m[导出] as T;
+export const makeRegistry = ({ manifest, segDir, 模块: modules }: RegisterParams): React.FC => {
+  const loadExport = <T,>(segKey: string, file: string, exportName: string): T => {
+    const dir = segDir(segKey);
+    const [topLayer, ...restSegments] = dir.split('/');
+    const moduleMap = modules[topLayer!];
+    const key = `./${[...restSegments, file].join('/')}`;
+    if (!moduleMap || !moduleMap.keys().includes(key)) throw new Error(`清单里的 ${segKey} 缺 ${dir}/${file}`);
+    const m = moduleMap(key) as Record<string, unknown>;
+    if (!(exportName in m)) throw new Error(`${dir}/${file} 没有导出 ${exportName}`);
+    return m[exportName] as T;
   };
 
-  const 设置 = 读设置();
+  const settings = readSettings();
 
   /** 这一段的字幕：输出帧 */
-  const 字幕层: React.FC = () => {
-    const 帧 = use输出帧();
-    const 屏 = use设置().字幕.filter((p) => p.起 <= 帧 && 帧 < p.止);
+  const SubtitleLayer: React.FC = () => {
+    const frame = useOutputFrame();
+    const activeSubtitles = useSettings().字幕.filter((p) => p.起 <= frame && frame < p.止);
     return (
       <>
-        {屏.map((p, i) => (
+        {activeSubtitles.map((p, i) => (
           <AbsoluteFill key={i}>
             <Img src={p.图} style={{ width: '100%', height: '100%', imageRendering: 'pixelated' }} />
           </AbsoluteFill>
@@ -49,44 +49,44 @@ export const 做注册 = ({ 清单, 段目录, 模块 }: 注册参数): React.FC
     );
   };
 
-  const 段们 = 清单.map(({ 键 }) => ({ 键, 段: 取<段定义>(键, '段.ts', 'default') }));
-  const 输出fps = 设置.输出fps ?? 段格;
+  const segments = manifest.map(({ 键: segKey }) => ({ 键: segKey, 段: loadExport<SegmentDef>(segKey, '段.ts', 'default') }));
+  const outputFps = settings.输出fps ?? segFps;
 
-  const 组合们 = 段们.flatMap(({ 键, 段 }) => {
-    const 帧数 = 段帧数(段, 输出fps);
-    const 画面 = 取<React.FC>(键, '画面.tsx', 'default');
-    const 叠层们 = (段.叠层 ?? []).map((l) => ({ 名: l.名, 组件: 取<React.FC>(键, l.入口, 'default') }));
-    const 包 = (里: React.ReactNode, 带字幕: boolean): React.FC => {
-      const 组件: React.FC = () => (
-        <设置Provider 设置={设置}>
-          {里}
-          {带字幕 && <字幕层 />}
-        </设置Provider>
+  const compositions = segments.flatMap(({ 键: segKey, 段: seg }) => {
+    const frameCount = segFrameCount(seg, outputFps);
+    const Picture = loadExport<React.FC>(segKey, '画面.tsx', 'default');
+    const overlays = (seg.叠层 ?? []).map((l) => ({ 名: l.名, component: loadExport<React.FC>(segKey, l.entry, 'default') }));
+    const wrap = (children: React.ReactNode, withSubtitles: boolean): React.FC => {
+      const component: React.FC = () => (
+        <SettingsProvider settings={settings}>
+          {children}
+          {withSubtitles && <SubtitleLayer />}
+        </SettingsProvider>
       );
-      return 组件;
+      return component;
     };
-    const 主 = (
+    const mainComp = (
       <>
-        <画面 />
-        {叠层们.map(({ 名, 组件: 层 }) => (
-          <AbsoluteFill key={名}>
-            <层 />
+        <Picture />
+        {overlays.map(({ 名: overlayName, component: OverlayLayer }) => (
+          <AbsoluteFill key={overlayName}>
+            <OverlayLayer />
           </AbsoluteFill>
         ))}
       </>
     );
     return [
-      { id: 键, 组件: 包(主, true), 段, 帧数 },
-      ...叠层们.map(({ 名, 组件: 层 }) => ({ id: `${键}-${名}`, 组件: 包(<层 />, false), 段, 帧数 })),
+      { id: segKey, component: wrap(mainComp, true), 段: seg, 帧数: frameCount },
+      ...overlays.map(({ 名: overlayName, component: OverlayLayer }) => ({ id: `${segKey}-${overlayName}`, component: wrap(<OverlayLayer />, false), 段: seg, 帧数: frameCount })),
     ];
   });
 
-  const 注册: React.FC = () => (
+  const registration: React.FC = () => (
     <>
-      {组合们.map(({ id, 段, 组件, 帧数 }) => (
-        <Composition key={id} id={id} component={组件} durationInFrames={帧数} fps={输出fps} width={段.宽} height={段.高} />
+      {compositions.map(({ id, 段: seg, component, 帧数: frameCount }) => (
+        <Composition key={id} id={id} component={component} durationInFrames={frameCount} fps={outputFps} width={seg.宽} height={seg.高} />
       ))}
     </>
   );
-  return 注册;
+  return registration;
 };

@@ -5,7 +5,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { RAMP_SEC } from '@库/角色/跑步.ts';
 import { G4 } from '../../古城4x.tsx';
-import { vanilla, elite, baseSpeed, shieldPoint, scene71, wallTopLanding as 上墙点4x, wallJumpTakeoff, footOf, handoffs, huangPanPerch, type BlockPos } from '../布局.ts';
+import { vanilla, elite, baseSpeed, shieldPoint, scene71, wallTopLanding as wallEntry4x, wallJumpTakeoff, footOf, handoffs, huangPanPerch, type BlockPos } from '../布局.ts';
 import * as K649 from '../6-4-9/编排.ts';
 
 export const FPS = 24;
@@ -22,7 +22,7 @@ export const pursuersStart = K649.pursuers(handoffFrame649); // { 刘, 黄 } 的
 export const wardenSpeed = baseSpeed.监守者;
 export const wardenAccel = wardenSpeed / RAMP_SEC;
 export const attackCooldownSec = vanilla.监守者.attackCooldownTicks / 20; // 0.9
-export const dodgeLeap = elite.闪避跳;
+export const dodgeLeap = elite.dodgeLeap;
 // 每一跳的离地（`eliteLeap` 的 apexHeight）：照 6-4 的 `woolLeapApex`（用户 10-18 定人跑跳 30 米/秒），取水平 ≥ 28 米/秒里最高的；
 //   墙高、跳得短到不了 28 的取不撞里最快的：多数是 1.5（最高点只比两头较高的那头高 1.5，`eliteLeap` 的下限）；
 //   J4 从 C1 往西要越过土丘北脚那道幽匿坡（(−859～−861, 221)，一格一格往上），4.5 以下都撞。核对.py「7-1 跳」查同一条弧
@@ -36,17 +36,17 @@ export const flatDist = (a: V3, b: V3) => Math.hypot(b[0] - a[0], b[1] - a[1]);
 
 // ---------- 落脚点（场景脚底） ----------
 export const spots = {
-  hillTop: footOf(scene71.丘顶),
-  eastWallRidge: footOf(scene71.东墙脊),
+  hillTop: footOf(scene71.hillTop),
+  eastWallRidge: footOf(scene71.eastWallRidge),
   C1: footOf(scene71.C1),
   C2: footOf(scene71.C2),
-  huangPlatform: footOf(scene71.黄台),
-  southPlatformTop: footOf(scene71.南台顶),
+  huangPlatform: footOf(scene71.huangPlatform),
+  southPlatformTop: footOf(scene71.southPlatformTop),
   huangPanPerch: footOf(huangPanPerch),
-  belowWardenPlatform: footOf(scene71.监守者台下),
+  belowWardenPlatform: footOf(scene71.belowWardenPlatform),
   shieldPoint: shieldPoint,
-  上墙起跳: wallJumpTakeoff,
-  wallEntry: 上墙点4x,
+  wallJumpTakeoff: wallJumpTakeoff,
+  wallEntry: wallEntry4x,
 };
 // 监守者追人时停下来的地方（够得着就挥臂）：东墙脚（刘心忠在墙脊上，它够不着）、C2 东边 2.5 格
 // 东墙脚取墙里侧离墙根一格：再靠外会站进羊毛墙里；x −840 那列是墙根深板岩柱子，贴着站 7-1-5 镜 3 从墙外往下看会挡住下半身；往南一格避开北边石柱（工具/机位核对/核对.py 的「陷」「挡」）
@@ -62,11 +62,11 @@ export const horseLeapApex = 2.5;
 export const plannedShieldCenter: V3 = [shieldPoint[0] + 3, shieldPoint[1], floorZ];
 export const shieldFront: V3 = [plannedShieldCenter[0] + 1.1, plannedShieldCenter[1], floorZ];
 // 护盾碎了以后循着马蹬地的振动追到马起跳的墙脚下 = 7-1-7 末帧（衔接.七三首.监守者），第 3 场从这里接着追
-export const belowHorse: V3 = handoffs.七三首.监守者;
+export const belowHorse: V3 = handoffs.handoffTo73.监守者;
 // 6-4-8 钻出以后先往东扑刘心忠那一步停在这里
 export const firstLungeStep: V3 = G4(-867.5, -51, 219.8);
 
 // ---------- 火把（箭插在地上变成的火把方块） ----------
 // TorchBlock 的 cell 是场景整数格的最小角：游戏方块 (x, y, z) → (x + 720, 239 − z, y + 50)
-export const torchBlocks: V3[] = scene71.火把格.map(([x, y, z]: BlockPos) => [x + 720, 239 - z, y + 50] as V3);
+export const torchBlocks: V3[] = scene71.torchCells.map(([x, y, z]: BlockPos) => [x + 720, 239 - z, y + 50] as V3);
 

@@ -3,91 +3,91 @@
 // 谁在哪、什么姿势、窗光哪一档、镜头挪到哪、屋外和后期怎么接 2-时差 全在 编排.ts，这里只按它画。全片不描边（用户 10-24 定）：她单独套一层平涂，色调比屋里提亮（编排.ts 的 她色调）。
 import type React from 'react';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
-import { 平涂 } from '@engine/三渲二/平涂.tsx';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
+import { FlatShade } from '@engine/三渲二/平涂.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
-import { MagicalWineFoxEx, magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { fps, 一帧秒 } from '../../分镜/时间.ts';
-import { 帽子抬, 开场化秒, 戴帽子 } from '../../场/2-卧室/参数.ts';
-import { 白天光影场 } from '../../场/2-门口/参数.ts';
-import { 卧室画布 } from '../../场/2-卧室/卧室.tsx';
-import { 门口之夜照片 } from '../../场/2-门口/门口之夜照片.tsx';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 光影段 } from '../../默认.ts';
-import { 光影场于, 光态, 后期调色, 她态, 她色调, 屋外态, 歌曲帧, 镜 } from './编排.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { MagicalWineFoxEx, magicalWineFoxExBones, type MagicalWineFoxExProps } from '@库/角色/魔法酒狐新动作组件.tsx';
+import { fps, oneFrameSec } from '../../分镜/时间.ts';
+import { hatLift, openingSceneMorphSec, wearsHat } from '../../场/2-卧室/参数.ts';
+import { dayShadingScene } from '../../场/2-门口/参数.ts';
+import { BedroomCanvas } from '../../场/2-卧室/卧室.tsx';
+import { DoorwayNightPhoto } from '../../场/2-门口/门口之夜照片.tsx';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { shadingBySeg } from '../../默认.ts';
+import { shadingSceneAt, lightState, postGrade, LiYingState, herTone, outdoorState, toSongFrame, shotAt } from './编排.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useCurrentFrame } from '../../当前帧.ts';
 
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 歌曲帧(0)));
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, toSongFrame(0)));
 
 /** 帽子整顶往上抬 帽子抬（同 场/2-隐世之境/对视.tsx 的做法），在组件摆好的 witchcap 上加 */
-const 抬帽 = (p: 魔法酒狐新动作Props): BonePose => {
+const raiseCap = (p: MagicalWineFoxExProps): BonePose => {
   const w = magicalWineFoxExBones(p).witchcap ?? {};
   const [px = 0, py = 0, pz = 0] = (w.pos as number[] | undefined) ?? [];
-  return { ...w, pos: [px, py + 帽子抬, pz] };
+  return { ...w, pos: [px, py + hatLift, pz] };
 };
 
-const 她: React.FC<{ f: number; 色调: string }> = ({ f, 色调 }) => {
-  const s = 她态(f);
-  const p: 魔法酒狐新动作Props = {
+const LiYing: React.FC<{ f: number; tint: string }> = ({ f, tint }) => {
+  const s = LiYingState(f);
+  const p: MagicalWineFoxExProps = {
     pose: { ...standPose(s.loc), yaw: s.yaw },
-    姿势: '静站',
-    表情: s.表情,
+    stancePose: '静站',
+    expression: s.expression,
     看: s.看,
-    眨眼: 0,
-    帽子: 戴帽子,
-    背后法杖: false,
-    骨骼: s.骨骼,
+    blink: 0,
+    hat: wearsHat,
+    backStaff: false,
+    skeleton: s.skeleton,
   };
   return (
-    <平涂 色调={色调}>
-      <贴图像素对齐 锚={s.loc}>
-        <MagicalWineFoxEx {...p} 骨骼={{ ...s.骨骼, ...(戴帽子 ? { witchcap: 抬帽(p) } : {}) }} />
-      </贴图像素对齐>
-    </平涂>
+    <FlatShade tint={tint}>
+      <TexturePixelAlign 锚={s.loc}>
+        <MagicalWineFoxEx {...p} skeleton={{ ...s.skeleton, ...(wearsHat ? { witchcap: raiseCap(p) } : {}) }} />
+      </TexturePixelAlign>
+    </FlatShade>
   );
 };
 
 /** 开头 开场化秒 盖在卧室上的第 11 句末画面（照 2-截图下线 按歌曲帧接着画，最后一帧之后图标、聊天栏不动），不透明度两头慢地退到 0（第一帧已经退了一帧） */
-const 下线余影: React.FC<{ f: number }> = ({ f }) => {
-  if (f / fps >= 开场化秒 - 1e-9) return null;
-  const t = (f / fps + 一帧秒) / (开场化秒 + 一帧秒);
+const LogoffAfterimage: React.FC<{ f: number }> = ({ f }) => {
+  if (f / fps >= openingSceneMorphSec - 1e-9) return null;
+  const t = (f / fps + oneFrameSec) / (openingSceneMorphSec + oneFrameSec);
   return (
     <div style={{ position: 'absolute', inset: 0, opacity: 1 - t * t * (3 - 2 * t) }}>
-      <门口之夜照片 帧={歌曲帧(f)} />
+      <DoorwayNightPhoto 帧={toSongFrame(f)} />
     </div>
   );
 };
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const 光 = 光态(f);
+const picture: React.FC = () => {
+  const f = useCurrentFrame();
+  const light = lightState(f);
   return (
     <>
-      <整片后期 调色={后期调色(f)} 种子={歌曲帧(f)}>
-        <卧室画布
-          调子={光.调子}
-          天={光.天}
-          光={光.光}
-          门外亮={光.门外亮}
-          屋外={屋外态(f)}
-          取景={镜(f)}
-          光影={光影段['2-空床']}
-          光影场={光影场于(f)}
+      <FilmPost grade={postGrade(f)} 种子={toSongFrame(f)}>
+        <BedroomCanvas
+          tone={light.tone}
+          天={light.天}
+          光={light.光}
+          outsideLit={light.outsideLit}
+          outside={outdoorState(f)}
+          framing={shotAt(f)}
+          shading={shadingBySeg['2-空床']}
+          shadingScene={shadingSceneAt(f)}
           // 横移出屋看得见的林子接 2-时差 第一帧服务器那半，照它的光影；这一段不开光影时照旧不开
-          屋外光影={光影段['2-空床'] ? { 光影: 光影段['2-时差'], 光影场: 白天光影场 } : undefined}
+          outsideShading={shadingBySeg['2-空床'] ? { shading: shadingBySeg['2-时差'], shadingScene: dayShadingScene } : undefined}
         >
-          <她 f={f} 色调={她色调(光.调子.色调)} />
-        </卧室画布>
-        <下线余影 f={f} />
-        <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色: 光.调子.描边 }} />
-      </整片后期>
+          <LiYing f={f} tint={herTone(light.tone.tint)} />
+        </BedroomCanvas>
+        <LogoffAfterimage f={f} />
+        <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: light.tone.outlineColor }} />
+      </FilmPost>
     </>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

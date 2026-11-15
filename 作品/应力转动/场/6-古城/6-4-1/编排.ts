@@ -38,7 +38,7 @@ const windows = cutPlan.windows;
 
 // ---------- 箱子 ----------
 // 开 #212：开盖、已开贴图都由画布按 模型/物品/箱子.tsx 算
-export const openChest = (f: number): ChestOpening => ({ 号: chestB.号, 开: jumpBuild.openLidSecB, 关: jumpBuild.closeLidSecB, 秒: f / FPS });
+export const openChest = (f: number): ChestOpening => ({ chestId: chestB.chestId, 开: jumpBuild.openLidSecB, closeSec: jumpBuild.closeLidSecB, 秒: f / FPS });
 
 // ---------- 机位（f 是剧情帧） ----------
 const torsoAt = (f: number) => up(jumpBuild.footAt(f), 1.1);

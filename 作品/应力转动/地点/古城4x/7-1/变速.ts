@@ -5,8 +5,8 @@ import { HIT_STOP_FRAMES } from '../../../默认.ts';
 import { ss } from './戏/公用.ts';
 import * as timeline from './时间线.ts';
 
-export type 时钟点 = [t: number, 时钟: number, 对数?: boolean];
-export const 建变速 = (startT: number, endT: number, points: 时钟点[], stops: number[] = []) => {
+export type ClockPoint = [t: number, 时钟: number, 对数?: boolean];
+export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[], stops: number[] = []) => {
   const FPS = timeline.FPS;
   const clock = (t: number) => {
     if (t <= points[0][0]) return points[0][1];
@@ -57,6 +57,6 @@ export const 建变速 = (startT: number, endT: number, points: 时钟点[], sto
     const t1 = SCENE_T[i];
     return i - 1 + (t1 > t0 ? Math.min(1, Math.max(0, (t - t0) / (t1 - t0))) : 1);
   };
-  return { FPS, 总帧数: totalFrames, 剧情时间: sceneT, 帧: frameAt, 帧小数: frameFractional, 时钟: clock };
+  return { FPS, 总帧数: totalFrames, storyTime: sceneT, 帧: frameAt, frameFractional: frameFractional, clock: clock };
 };
-export type 变速 = ReturnType<typeof 建变速>;
+export type SpeedRamp = ReturnType<typeof buildSpeedRamp>;

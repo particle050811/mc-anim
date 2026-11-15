@@ -167,7 +167,7 @@ export const jiuhuStandBones = bonePose;
 // run：跑步的权重（0 站着、1 全速跑），尾巴按它在轻摆和跑步左右甩之间过渡；bend：腰往前弯的角度（上半身连头、手、尾巴一起），弯腰喘气用。
 // 整体前倾用 pose.pitch 是绕脚底转，腿也跟着斜，弯腰只能弯腰上。嘴：说话时的口型。
 // 骨骼：最后叠上的骨骼姿势（Figure 没有九胡的肘，弯肘给 RightForeArm）；右手：挂在右手握持点（RightHandLocator）上的东西，坐标见 engine/model/基岩模型.tsx 的 attach
-export const Jiuhu: React.FC<{ pose: FigurePose; tail: number; bend?: number; gait?: number; run?: number; 嘴?: Mouth; 骨骼?: Record<string, BonePose>; 右手?: React.ReactNode }> = ({ pose, tail, bend = 0, gait = 0, run = 0, 嘴: mouth, 骨骼: boneOverrides, 右手: rightHand }) => (
+export const Jiuhu: React.FC<{ pose: FigurePose; tail: number; bend?: number; gait?: number; run?: number; mouth?: Mouth; skeleton?: Record<string, BonePose>; rightHand?: React.ReactNode }> = ({ pose, tail, bend = 0, gait = 0, run = 0, mouth: mouth, skeleton: boneOverrides, rightHand: rightHand }) => (
   <group position={pose.loc as V3} rotation={[0, 0, rad(pose.yaw ?? 0)]}>
     <group rotation={[rad(pose.pitch), 0, 0]} scale={[1, 1, pose.squash]}>
       <BedrockModelView

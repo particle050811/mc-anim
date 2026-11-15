@@ -6,16 +6,16 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
-import { use写入者, 新写入槽 } from '../core/写入者.ts';
-import { skyBandCount, waterSky, skyReflMax, 复位水面天色 } from '../voxel/水面.ts';
+import { useWriter, newWriteSlot } from '../core/写入者.ts';
+import { skyBandCount, waterSky, skyReflMax, resetWaterSky } from '../voxel/水面.ts';
 import * as THREE from 'three';
 import { rng } from '../model/parts.tsx';
 import { overworldMix, brighten, twilightSunDir, twilightDusk } from './光照配比.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms, atmosphere } from './大气.ts';
 import cloudsPng from 'asset:贴图/场景/天空/clouds';
 import sunPng from 'asset:贴图/场景/天空/sun';
-import { use当前秒 } from '../段/时间.tsx';
-import { 深度钉在最远 } from '../core/光栅深度.ts';
+import { useCurrentSec } from '../段/时间.tsx';
+import { pinDepthFar } from '../core/光栅深度.ts';
 
 export const SKY = {
   top: '#7ea2cc',
@@ -102,7 +102,7 @@ const atmoSkyMaterial = () =>
     toneMapped: false,
     uniforms: { ...atmoUniforms, atmoSky: { value: null } },
     vertexShader: SKY_VERT,
-    userData: { 光栅深度: true },
+    userData: { rasterDepth: true },
     fragmentShader: `uniform sampler2D atmoSky;
     ${ATMO_PARS_GLSL}
     ${ATMO_FN_GLSL}
@@ -145,7 +145,7 @@ const Sun: React.FC<{ sun: [number, number, number] }> = ({ sun }) => {
     const dist = R_SKY - 20;
     const mat = new THREE.MeshBasicMaterial({ map: tex, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, toneMapped: false });
     // 太阳在无穷远：方片只放在 460 米外，按方片的深度做深度测试的话，云（lib/大气/云.ts）写回的深度（一公里以外）挡不住它。对数深度下把它的深度定在最远处（天空是 1.0），任何写了深度的东西都挡住它
-    深度钉在最远(mat);
+    pinDepthFar(mat);
     const sunQuad = new THREE.Mesh(new THREE.PlaneGeometry(0.6 * dist, 0.6 * dist), mat);
     const dir = new THREE.Vector3(...sun).normalize();
     sunQuad.position.copy(dir.clone().multiplyScalar(dist));
@@ -158,11 +158,11 @@ const Sun: React.FC<{ sun: [number, number, number] }> = ({ sun }) => {
 };
 
 // 水面反射的天色和波纹时间（lib/水面.ts）：天色取穹顶按仰角的渐变，时间按当前秒（Remotion 逐帧独立）。条：暮色天的色条；null = 主世界穹顶
-const 水面天色槽 = 新写入槽();
-const useWaterSky = (bands: [number, string][] | null, 指定秒?: number) => {
-  use写入者(水面天色槽, 复位水面天色);
-  const 当前秒 = use当前秒();
-  waterSky.time.value = 指定秒 ?? 当前秒;
+const waterSkySlot = newWriteSlot();
+const useWaterSky = (bands: [number, string][] | null, specifiedSec?: number) => {
+  useWriter(waterSkySlot, resetWaterSky);
+  const currentSec = useCurrentSec();
+  waterSky.time.value = specifiedSec ?? currentSec;
   waterSky.reflectionMax.value = skyReflMax(bands !== null);
   {
     const domeColors = [new THREE.Color(SKY.horizon), new THREE.Color(SKY.top)];
@@ -185,8 +185,8 @@ const useWaterSky = (bands: [number, string][] | null, 指定秒?: number) => {
 };
 // 没挂 `SkyDome` 的画布（6-1-1 海岛：天是背景色）也要给水面写天色和时间，不然水反射的是 `waterSky` 的默认灰蓝、波纹不动
 // 秒：水面波纹定在这一刻（不给就跟当前秒走）
-export const OverworldWaterSky: React.FC<{ 秒?: number }> = ({ 秒 }) => {
-  useWaterSky(null, 秒);
+export const OverworldWaterSky: React.FC<{ 秒?: number }> = ({ 秒: sec }) => {
+  useWaterSky(null, sec);
   return null;
 };
 
@@ -217,7 +217,7 @@ export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: bool
           at: { value: (afterglow?.skyColors ?? TWILIGHT.sky).map(([elev]) => elev) },
         },
         vertexShader: SKY_VERT,
-        userData: { 光栅深度: true },
+        userData: { rasterDepth: true },
         fragmentShader: skyShader(twilight),
       }),
     [sun[0], sun[1], sun[2], twilight, afterglow?.色, afterglow?.强],
@@ -326,10 +326,10 @@ export const SunLight: React.FC<{ sun: [number, number, number]; center: [number
   center,
   extent,
   intensity,
-  sky = overworldMix.天光,
+  sky = overworldMix.skylight,
 }) => {
   const light = useMemo(() => {
-    const dirLight = new THREE.DirectionalLight(SKY.sunLight, intensity ?? overworldMix.直射);
+    const dirLight = new THREE.DirectionalLight(SKY.sunLight, intensity ?? overworldMix.direct);
     const sunOffset = new THREE.Vector3(...sun).normalize().multiplyScalar(150);
     dirLight.position.set(center[0] + sunOffset.x, center[1] + sunOffset.y, center[2] + sunOffset.z);
     dirLight.target.position.set(...center);

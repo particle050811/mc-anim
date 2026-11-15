@@ -7,7 +7,7 @@ import { cancelRender, continueRender, delayRender } from 'remotion';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { selfLight } from '../light/光照配比.ts';
-import { 排在后面 } from '../core/稳定排序.ts';
+import { placeBehind } from '../core/稳定排序.ts';
 import { type Png, png } from '../model/贴图.ts';
 import { flattenAtlasColors, flatColorBlocks } from './纯色方块.ts';
 import type { V3 } from '../model/parts.tsx';
@@ -261,13 +261,13 @@ const build = (info: BlockMeshInfo, data: Uint8Array, { base: baseTex, plant: pl
         patchWaterShader(shader, '(max(vColor.r, max(vColor.g, vColor.b)) - min(vColor.r, min(vColor.g, vColor.b))) > 0.25 * max(vColor.r, max(vColor.g, vColor.b))');
       };
       mat.customProgramCacheKey = () => 'blockmesh-water';
-      mat.userData.水面 = true;
+      mat.userData.waterLevel = true;
     } else {
       mat.onBeforeCompile = (shader) => tiled(shader, true);
     }
     // 屏幕 AO 的 压网格 认这个（lib/体素/屏幕AO.tsx），花草层不算（同体素世界的花草：不压）
-    if (layer.name !== 'plants') mat.userData.方块网格 = true;
-    排在后面(mat);
+    if (layer.name !== 'plants') mat.userData.blockMesh = true;
+    placeBehind(mat);
     const mesh = new THREE.Mesh(geom, mat);
     if (mat.alphaTest > 0) {
       // 镂空的面（树叶）投影时也要按平铺取图集，否则合并出来的大面投下的影子是错的

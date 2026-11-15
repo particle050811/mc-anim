@@ -13,7 +13,7 @@ import gzip
 import sys
 
 
-def 色(hex_: str) -> tuple[int, int, int]:
+def color_from_hex(hex_: str) -> tuple[int, int, int]:
     h = hex_.lstrip('#')
     return int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
 
@@ -21,28 +21,28 @@ def 色(hex_: str) -> tuple[int, int, int]:
 def main() -> None:
     if len(sys.argv) < 5:
         sys.exit(__doc__)
-    入, 出, 新, *原们 = sys.argv[1:]
-    新色 = 色(新)
-    原色们 = [色(x) for x in 原们]
-    raw = open(入, 'rb').read()
+    in_path, out_path, new_hex, *orig_args = sys.argv[1:]
+    new_color = color_from_hex(new_hex)
+    orig_colors = [color_from_hex(x) for x in orig_args]
+    raw = open(in_path, 'rb').read()
     if raw[:2] == b'\x1f\x8b':
         raw = gzip.decompress(raw)
     buf = bytearray(raw)
-    步 = 28
-    if len(buf) % 步:
-        sys.exit(f'{入}：长度 {len(buf)} 不是 28 的倍数')
-    改了 = 0
-    for at in range(20, len(buf), 步):
+    stride = 28
+    if len(buf) % stride:
+        sys.exit(f'{in_path}：长度 {len(buf)} 不是 28 的倍数')
+    changed_count = 0
+    for at in range(20, len(buf), stride):
         r, g, b = buf[at], buf[at + 1], buf[at + 2]
         if r == g == b or g == 0 or b > g:
             continue
-        原 = min(原色们, key=lambda o: (r / g - o[0] / o[1]) ** 2 + (b / g - o[2] / o[1]) ** 2)
-        k = g / 原[1]
-        buf[at:at + 3] = bytes(min(255, round(c * k)) for c in 新色)
-        改了 += 1
-    with open(出, 'wb') as f:
+        nearest_color = min(orig_colors, key=lambda o: (r / g - o[0] / o[1]) ** 2 + (b / g - o[2] / o[1]) ** 2)
+        k = g / nearest_color[1]
+        buf[at:at + 3] = bytes(min(255, round(c * k)) for c in new_color)
+        changed_count += 1
+    with open(out_path, 'wb') as f:
         f.write(gzip.compress(bytes(buf), compresslevel=9, mtime=0))
-    print(f'改了 {改了} 个顶点的颜色 → {出}')
+    print(f'改了 {changed_count} 个顶点的颜色 → {out_path}')
 
 
 if __name__ == '__main__':

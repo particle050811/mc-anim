@@ -30,9 +30,9 @@ import { LiYing } from './李樱.tsx';
 import { JIUHU_TALK_BONES, jiuhuMouthAttach } from './九胡.tsx';
 import type { Mouth } from './口型.ts';
 import type { FigurePose } from './骨架.tsx';
-import jiuhuRaw资产 from 'asset:模型/角色/九胡';
+import jiuHuModelData from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
-const jiuhuRaw = jiuhuRaw资产 as unknown as object;
+const jiuhuRaw = jiuHuModelData as unknown as object;
 
 // 九胡的模型：和 九胡.tsx 同一份数据（那边的组件只做站立和跑步的骨骼映射，坐姿在这里另写，不改原文件）
 const JIUHU_MODEL = { ...jiuhuRaw, texture: png(jiuhuSkin) } as unknown as BedrockModel;
@@ -137,8 +137,8 @@ export const handAim = (pose: FigurePose, dir: number[], hand: 'R' | 'L' = 'R'):
 // 风只吹尾巴，不吹裙子。
 const HIDE: BonePose = { scale: 0 };
 const TAIL_BONES = ['Tail', 'Tail2', 'Tail3', 'Tail4', 'Tail5', 'Tail6', 'Tail7'];
-export const jiuhuRideBones = (opts: { lean?: number; hugWaist?: number; headRaise?: number; headTurn?: number; tailPhase?: number; 风?: number } = {}): Record<string, BonePose> => {
-  const { lean = 20, hugWaist = 1, headRaise = 0, headTurn = 0, tailPhase = 0, 风: wind = 0 } = opts;
+export const jiuhuRideBones = (opts: { lean?: number; hugWaist?: number; headRaise?: number; headTurn?: number; tailPhase?: number; wind?: number } = {}): Record<string, BonePose> => {
+  const { lean = 20, hugWaist = 1, headRaise = 0, headTurn = 0, tailPhase = 0, wind: wind = 0 } = opts;
   const k = Math.min(1, Math.max(0, hugWaist));
   const mix = (a: number[], b: number[]) => a.map((v, i) => v + (b[i] - v) * k);
   const bones: Record<string, BonePose> = {
@@ -194,13 +194,13 @@ export type RideLiYing = {
   headRaise?: number;
   headTurn?: number;
   poseOverride?: Partial<FigurePose> | ((base: FigurePose) => FigurePose);
-  右手?: React.ReactNode | ((finalPose: FigurePose) => React.ReactNode);
+  rightHand?: React.ReactNode | ((finalPose: FigurePose) => React.ReactNode);
   leftHand?: React.ReactNode | ((finalPose: FigurePose) => React.ReactNode);
   hipItem?: React.ReactNode;
-  嘴?: Mouth; // 说话时的口型（src/lib/口型.ts 的 mouthAt）
+  mouth?: Mouth; // 说话时的口型（src/lib/口型.ts 的 mouthAt）
 };
 // 右手：挂在九胡右手握持点（RightHandLocator）上的东西（6-2-4 起手里的结构指南针，见 九胡持指南针.tsx）
-export type RideJiuhu = { lean?: number; hugWaist?: number; headRaise?: number; headTurn?: number; tailPhase?: number; 风?: number; boneOverrides?: Record<string, BonePose>; offset?: V3; 嘴?: Mouth; 右手?: React.ReactNode };
+export type RideJiuhu = { lean?: number; hugWaist?: number; headRaise?: number; headTurn?: number; tailPhase?: number; wind?: number; boneOverrides?: Record<string, BonePose>; offset?: V3; mouth?: Mouth; rightHand?: React.ReactNode };
 export type RideBroomProps = {
   pos: V3;
   yaw?: number;
@@ -227,18 +227,18 @@ const hipTilt = (pose: FigurePose, appear: number) => Math.min(0, -pose.pitch - 
 
 export const RideBroom: React.FC<RideBroomProps> = ({ pos: pos, yaw: yaw = 0, pitch: pitch = 0, roll: roll = 0, liYing: liYing, jiuhu: jiuhu, broom: broom }) => {
   const ly = liYing === false ? null : liYingFinalPose(liYing ?? {});
-  const at = (x: RideLiYing['右手']) => (typeof x === 'function' ? (ly ? x(ly) : null) : x);
+  const at = (x: RideLiYing['rightHand']) => (typeof x === 'function' ? (ly ? x(ly) : null) : x);
   const jh = jiuhu === false ? null : jiuhu ?? {};
   return (
     <group position={pos} rotation={[rad(pitch), rad(roll), rad(yaw), 'ZXY']}>
       <group position={[0, 0, -RIDE.stickZ]}>
         <Broom appear={broom?.appear} grassStrands={broom?.grassStrands} />
       </group>
-      {ly && liYing !== false && <LiYing pose={ly} handR={at(liYing?.右手)} handL={at(liYing?.leftHand)} hipL={liYing?.hipItem && <group rotation={[rad(hipTilt(ly, broom?.appear ?? 1)), 0, 0]}>{liYing.hipItem}</group>} 嘴={liYing?.嘴} />}
+      {ly && liYing !== false && <LiYing pose={ly} handR={at(liYing?.rightHand)} handL={at(liYing?.leftHand)} hipL={liYing?.hipItem && <group rotation={[rad(hipTilt(ly, broom?.appear ?? 1)), 0, 0]}>{liYing.hipItem}</group>} mouth={liYing?.mouth} />}
       {jh && (
         // 九胡：腿的关节放在后座杆顶上方，模型原点（脚底）在它下方 JIUHU_HIP 像素
         <group position={[jh.offset?.[0] ?? 0, RIDE.back + (jh.offset?.[1] ?? 0), RIDE.jiuhuHipZ - JIUHU_HIP * JIUHU_PX + (jh.offset?.[2] ?? 0)]}>
-          <BedrockModelView model={JIUHU_MODEL} scale={JIUHU_PX} pose={{ ...jiuhuRideBones(jh), ...(jh.boneOverrides ?? {}), ...(jh.嘴 ? JIUHU_TALK_BONES : {}) }} attach={jh.右手 ? { ...jiuhuMouthAttach(jh.嘴), RightHandLocator: jh.右手 } : jiuhuMouthAttach(jh.嘴)} />
+          <BedrockModelView model={JIUHU_MODEL} scale={JIUHU_PX} pose={{ ...jiuhuRideBones(jh), ...(jh.boneOverrides ?? {}), ...(jh.mouth ? JIUHU_TALK_BONES : {}) }} attach={jh.rightHand ? { ...jiuhuMouthAttach(jh.mouth), RightHandLocator: jh.rightHand } : jiuhuMouthAttach(jh.mouth)} />
         </group>
       )}
     </group>

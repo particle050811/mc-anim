@@ -1,5 +1,5 @@
 // 6-3-8、6-3-10 的卫兵：城墙上放镜、低头、探身，出发从内沿跳进墙脚的落水池、上岸往西跑，坑口散开围住往下看。
-import { 例外 } from '@engine/core/例外.ts';
+import { exception } from '@engine/core/例外.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
 import pitSurfaceTable from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面'; // 古城4x 那一份（坑口形状和老片场那份一样，同一个种子）
@@ -81,13 +81,13 @@ const guardStanding = (t: number, i: number): GuardPose => {
 // 走道上原版疾跑 5.6 米/秒，起步 0.25 秒加到全速（离内沿两三米，要落进 4 米宽的池子不能冲快）。跳下去、落水、上岸见 编排/落水.ts，上了路 20 米/秒。
 // 跑的时候不举镜、抬头看路，披风往后扬（原版 CapeLayer 最多扬 75°）
 const sprintSpeed = 5.6;
-const walkwayRampSec = 例外('起停', 0.25, { 段: '6-二人登场', 原因: '卫兵走道起步；用户 10-21 定按看过的版本，RAMP_SEC 的原话是针对古城说的' });
+const walkwayRampSec = exception('起停', 0.25, { 段: '6-二人登场', 原因: '卫兵走道起步；用户 10-21 定按看过的版本，RAMP_SEC 的原话是针对古城说的' });
 const capeAt = (speed: number) => Math.min(75, (40 * speed) / sprintSpeed);
-const guardStartSec = (i: number) => cues.出发 + 0.3 * jitter01(i, 11) + 0.02 * i + (leaners.includes(i) ? 0.45 : 0); // 蹲着探身的先站起来
+const guardStartSec = (i: number) => cues.setOff + 0.3 * jitter01(i, 11) + 0.02 * i + (leaners.includes(i) ? 0.45 : 0); // 蹲着探身的先站起来
 const hoppers = [0, 2, 3, 4, 5, 6, 7, 8]; // 在内沿上一跳；1 号跑到沿上直接迈出去
 const runDistAt = (elapsed: number) => (elapsed < walkwayRampSec ? (sprintSpeed * elapsed * elapsed) / (2 * walkwayRampSec) : sprintSpeed * (elapsed - walkwayRampSec / 2));
 const guardJumps = guardPositions.map((_, i): { from: V3; to: V3; jump: PoolJump } => {
-  const from = guardStanding(cues.出发, i).pos;
+  const from = guardStanding(cues.setOff, i).pos;
   const hop = hoppers.includes(i);
   const takeoffY = hop ? 197.2 : 196.7; // 跳：碰撞箱还踩着内沿就起跳；迈：碰撞箱整个离开内沿才往下掉
   const x = from[0] + 0.5 * jitter(i, 18) + (i === 0 ? 0.8 : 0); // 0 号让开刚跳下去的黄叛（x 23.3）
@@ -96,7 +96,7 @@ const guardJumps = guardPositions.map((_, i): { from: V3; to: V3; jump: PoolJump
   const takeoffSec = guardStartSec(i) + (runDist < (sprintSpeed * walkwayRampSec) / 2 ? Math.sqrt((2 * walkwayRampSec * runDist) / sprintSpeed) : runDist / sprintSpeed + walkwayRampSec / 2);
   const vz0 = hop ? 0.42 : 0;
   const drop = (hop ? 2.8 : 2.4) + 0.9 * jitter01(i, 19);
-  return { from, to, jump: poolJump({ takeoffSec, x, y: takeoffY, vz0, vh0: vhForDrop(drop, vz0), wadeDelay: 0.12 + 0.25 * jitter01(i, 20), topSpeed: chaseSpeed.卫兵 }) };
+  return { from, to, jump: poolJump({ takeoffSec, x, y: takeoffY, vz0, vh0: vhForDrop(drop, vz0), wadeDelay: 0.12 + 0.25 * jitter01(i, 20), topSpeed: chaseSpeed.guard }) };
 });
 export const guardPoolJump = (i: number) => guardJumps[i].jump;
 // 走道上跑向内沿
@@ -147,7 +147,7 @@ const groundHeight = (x: number, y: number) => {
   return typeof height === 'number' ? Math.max(height, -2) : 0;
 };
 // 离停下还有 s 秒时：还剩多少路、多快、步态周期数（倒着算）
-const pitRun = speedProfile([[0, 0], [RAMP_SEC, chaseSpeed.卫兵]]);
+const pitRun = speedProfile([[0, 0], [RAMP_SEC, chaseSpeed.guard]]);
 // 折线 path（path[0] 是停的位置，往后是来路）上离停的位置还有 d 米的点
 const pointBack = (path: V3[], d: number): V3 => {
   let left = Math.max(0, d);
@@ -167,9 +167,9 @@ const pitSpot = (i: number) => {
   const stop: V3 = [center[0] + Math.sin(angle) * radius, center[1] + Math.cos(angle) * radius, 0];
   // 到的先后：按绕的角度排（|角| 小的先到）
   const order = [...pitAngles].map(Math.abs).sort((p, q) => p - q).indexOf(Math.abs(pitAngles[i]));
-  const arriveSec = cues.卫兵到 + 0.17 * order + 0.2 * jitter01(i, 13);
+  const arriveSec = cues.guardsArrive + 0.17 * order + 0.2 * jitter01(i, 13);
   // 起点：北边大街上，按到的时刻往后推满这一路（切坑时离井心 45～65 米）
-  const pathLen = pitRun(arriveSec - cues.切坑).dist;
+  const pathLen = pitRun(arriveSec - cues.cutToPit).dist;
   const bend: V3 | null = Math.abs(pitAngles[i]) >= 80 ? [center[0] + Math.sign(stop[0] - center[0]) * outerLane, stop[1] + 3, 0] : null;
   const lead = bend ?? stop;
   const startX = bend ? bend[0] : center[0] + 0.8 * (stop[0] - center[0]) + 1.5 * jitter(i, 14);
@@ -184,7 +184,7 @@ const guardAtPit = (t: number, i: number): GuardPose => {
   const spot = PIT_SPOTS[i];
   const timeLeft = Math.max(0, spot.arriveSec - t); // 离停下还有几秒
   const run = pitRun(timeLeft);
-  const speedFrac = run.speed / chaseSpeed.卫兵;
+  const speedFrac = run.speed / chaseSpeed.guard;
   const lean = runLean(run.speed);
   const [x, y] = pointBack(spot.path, run.dist);
   const pos: V3 = sub([x, y, groundZ + groundHeight(x, y)], borderTownPos);
@@ -198,15 +198,15 @@ const guardAtPit = (t: number, i: number): GuardPose => {
   const lookDown = Math.atan2(1.62, Math.max(spot.r - 2, 1)) / D2R + 10;
   return {
     raiseSpyglass: 0, headPitch: lerp(6, lookDown + 6 * jitter(i, 15), stopK) - lean, headYaw: 6 * jitter(i, 16) * stopK, bodyYaw: runYaw + yawDelta * stopK,
-    pos: pos, crouch, limbSwing: (pitRun(spot.arriveSec - cues.切坑).cycles - run.cycles) * LIMB_SWING_PER_CYCLE + 37 * i, stride: speedFrac, capeLift: capeAt(run.speed), present: true, lean,
+    pos: pos, crouch, limbSwing: (pitRun(spot.arriveSec - cues.cutToPit).cycles - run.cycles) * LIMB_SWING_PER_CYCLE + 37 * i, stride: speedFrac, capeLift: capeAt(run.speed), present: true, lean,
   };
 };
 export const guardPoseAt = (t: number, i: number): GuardPose => {
-  if (t >= cues.切坑) return guardAtPit(t, i);
+  if (t >= cues.cutToPit) return guardAtPit(t, i);
   if (t >= guardJumps[i].jump.takeoffSec) return guardInPool(t, i);
   if (t >= guardStartSec(i)) return guardRunning(t, i);
   return guardStanding(t, i);
 };
 // 发望远镜收起声的时刻（剧情秒）：同 卫兵 里放下望远镜的那一刻
 export const guardLowerSec = (i: number) => guardReaction(i).lowerScope;
-export { guardPositions as 卫兵位置 };
+export { guardPositions as guardPositions };

@@ -1,9 +1,9 @@
 // 6-1-9b 落地后（画面）：一镜到底的画面（一镜到底/画面.tsx 的 一镜画面）按全局帧 F0 + f 接着往下画，机位换成 编排.ts 的 机位，
 // 两人的姿势在一镜到底落地站定的站姿上先叠 落地编排.ts 的从天落地，再叠 编排.ts 的增量（改骑手）。
-import { 插表 } from '@engine/段/按时取值.ts';
+import { interpTable } from '@engine/段/按时取值.ts';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import type { RideJiuhu, RideLiYing } from '@库/角色/骑扫帚.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
@@ -42,7 +42,7 @@ export const tweakRiders = (f: number) => (onerRiders: Riders): Riders => {
   const basePose = riders.liYing.poseOverride;
   const liYing: RideLiYing = {
     ...riders.liYing,
-    嘴: mouthAt(choreo.lineCues, '李樱', f),
+    mouth: mouthAt(choreo.lineCues, '李樱', f),
     poseOverride: (base: FigurePose) => {
       const pose = typeof basePose === 'function' ? basePose(base) : { ...base, ...basePose };
       return {
@@ -59,7 +59,7 @@ export const tweakRiders = (f: number) => (onerRiders: Riders): Riders => {
   };
   const jh = choreo.jiuhuTweak(t);
   const bones = { ...(riders.jiuhu.boneOverrides ?? {}) };
-  const φ = 插表(tailPhases, f);
+  const φ = interpTable(tailPhases, f);
   TAIL.forEach((boneName, i) => {
     bones[boneName] = { ...bones[boneName], rot: [0, Math.sin(φ - i * 0.6) * (i < 3 ? 8 : 5), 0] };
   });
@@ -69,7 +69,7 @@ export const tweakRiders = (f: number) => (onerRiders: Riders): Riders => {
   bones.Left_ear = addRot(bones.Left_ear, [jh.earFlick, 0, 0]);
   bones.Right_ear = addRot(bones.Right_ear, [jh.earFlick, 0, 0]);
   const baseOffset = riders.jiuhu.offset ?? [0, 0, 0];
-  const jiuHu: RideJiuhu = { ...riders.jiuhu, 嘴: mouthAt(choreo.lineCues, '九胡', f), boneOverrides: bones, offset: [baseOffset[0] + jh.offset[0], baseOffset[1] + jh.offset[1], baseOffset[2] + jh.offset[2]] };
+  const jiuHu: RideJiuhu = { ...riders.jiuhu, mouth: mouthAt(choreo.lineCues, '九胡', f), boneOverrides: bones, offset: [baseOffset[0] + jh.offset[0], baseOffset[1] + jh.offset[1], baseOffset[2] + jh.offset[2]] };
   return { ...riders, liYing: liYing, jiuhu: jiuHu };
 };
 
@@ -79,7 +79,7 @@ export const AfterLandingView: React.FC<{ f: number; cam?: ReturnType<typeof cho
 
 // 声音（配乐、落地、台词）照本段 段.ts 的 cue 放（定义画面 自动挂）；f 是第几格（1/24 秒一格，带小数）
 export const AfterLanding: React.FC = () => {
-  const frame = use当前秒() * choreo.FPS;
+  const frame = useCurrentSec() * choreo.FPS;
   return (
     <AbsoluteFill>
       <AfterLandingView f={frame} />

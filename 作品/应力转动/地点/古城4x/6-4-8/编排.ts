@@ -20,7 +20,7 @@ import { bowTextureFor } from '@库/物品/弓.tsx';
 import type { Cam } from '../6-4-1/古城画面.tsx';
 import { FPS, blockCenter, nearYaw, yawTo } from '../6-4-1/古城戏.ts';
 import { G4 } from '../../古城4x.tsx';
-import { allWool, liuXinzhongSpot, shrieks, wardenEmerge, handoffs, huangPanSpot, woolBlockAt, woolOrder, eliteLeap, leapFeetAt, type 跳 } from '../布局.ts';
+import { allWool, liuXinzhongSpot, shrieks, wardenEmerge, handoffs, huangPanSpot, woolBlockAt, woolOrder, eliteLeap, leapFeetAt, type Jump } from '../布局.ts';
 import { bump, crouchBy, elevationTo, glanceAt, hopAir, hopTo, huangAimPose, landingCushion, lerp, liuGuardPose, pulse, rampIn, ss, startle, stepLeg, yawToWarden } from './二人.ts';
 
 export { FPS };
@@ -58,8 +58,8 @@ export const warden = (frame: number) => {
   return {
     秒: gameSecAt(frame),
     钻出: animSec <= WARDEN.emergeSec ? Math.max(0, animSec) : undefined,
-    触角: tendril,
-    头偏: wardenHeadYawTo(liuPoseAt(frame).loc) * turn,
+    tendril: tendril,
+    headYaw: wardenHeadYawTo(liuPoseAt(frame).loc) * turn,
     headPitch: animSec > WARDEN.emergeSec ? 8 + 4 * turn : 0,
   };
 };
@@ -69,7 +69,7 @@ export const woolNames = woolOrder.slice(0, woolOrder.indexOf('V') + 1);
 // 同一批羊毛的方块底面中心（场景坐标，给老的 羊毛们 blocks 用）
 export const WOOL: V3[] = woolNames.map((n) => woolBlockAt(allWool[n]));
 // 第四次尖啸体 (−869, −51, 218)：尖啸在本段开头前 1 秒
-export const SHRIEKER: V3 = blockCenter(shrieks.第四次);
+export const SHRIEKER: V3 = blockCenter(shrieks.fourth);
 export const shriekSec = (f: number) => f / FPS + 1.0;
 
 // ---------- 二人 ----------
@@ -77,9 +77,9 @@ export const shriekSec = (f: number) => f / FPS + 1.0;
 // 手撑出地面 0.2 秒后一激灵（黄叛先、刘心忠晚 0.06 秒），一蹲往后急退（强者的闪避小跳：离地 1.5 米、三四米远、0.6 秒，刘心忠退往东北、黄叛退往东南，岔开拉开），
 // 空中就把家伙举起来：黄叛弓举到身前、落地搭箭拉满瞄着它，刘心忠落地右脚往前一踏、举杖戒备（这一踏的振动 0.5 秒后到，监守者刚站直就听见，触角一抖）；
 // 站定后交换一个眼神（刘心忠扭头看黄叛、点一下头，黄叛飞快瞟他一眼又盯回去）。姿势零件见 二人.ts。
-const handoff = handoffs.六四八首;
+const handoff = handoffs.handoffTo648;
 const FACE_W = yawTo(-1, 0);
-const walkDist = (handoff.walkSpeed * handoff.停帧) / FPS; // 1.2
+const walkDist = (handoff.walkSpeed * handoff.holdFrames) / FPS; // 1.2
 const hopApex = 1.5; // 强者跳的最低离地（古城4x布局/强者.ts 的 eliteLeap 最低 1.5）
 const beats = {
   黄: { jolt: 0.84, crouch: 0.96, takeoff: 1.08, raise: [1.25, 1.7], draw: [1.95, 2.55] },
@@ -98,7 +98,7 @@ const feetAt = (who: '刘' | '黄', frame: number): V3 => {
   const spot = who === '刘' ? liuXinzhongSpot : huangPanSpot;
   const hop = hops[who];
   if (frame < hop.f0) {
-    const walked = walkDist * Math.min(1, frame / handoff.停帧);
+    const walked = walkDist * Math.min(1, frame / handoff.holdFrames);
     return [spot[0] + walkDist - walked, spot[1], spot[2]];
   }
   return leapFeetAt(hop, frame);
@@ -109,8 +109,8 @@ const lookWeight = (f: number) => ss(rampIn(emergeSec(f), 0.08, 0.45));
 const lookPitchAt = (feet: number[], f: number) => elevationTo(feet, 2.6 * ss(rampIn(emergeSec(f), 0.1, 1.5))) * lookWeight(f);
 const bodyYaw = (feet: number[], f: number) => lerp(FACE_W, nearYaw(FACE_W, yawToWarden(feet)), lookWeight(f));
 // 站着的那些喘气、晃动在走路停下以后才加进来
-const settle = (f: number) => ss(rampIn(f, handoff.停帧, handoff.停帧 + 8));
-const airAndLand = (pose: FigurePose, s: number, b: { jolt: number; crouch: number; takeoff: number }, hop: 跳, rightTuck = 1) => {
+const settle = (f: number) => ss(rampIn(f, handoff.holdFrames, handoff.holdFrames + 8));
+const airAndLand = (pose: FigurePose, s: number, b: { jolt: number; crouch: number; takeoff: number }, hop: Jump, rightTuck = 1) => {
   let p = startle(pose, bump(s, b.jolt, b.crouch + 0.02));
   p = crouchBy(p, ss(rampIn(s, b.crouch, b.takeoff)) * (s < b.takeoff ? 1 : 0));
   const landSec = hop.f1 / FPS;
@@ -126,7 +126,7 @@ export const liuPoseAt = (frame: number): FigurePose => {
   let pose = liuGuardPose(feet, yaw, s, g, lookPitchAt(feet, frame), settle(frame));
   const amp = sample(walkAmp, frame);
   if (amp > 0) {
-    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, frame / handoff.停帧)) * 4, amp, 0);
+    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, frame / handoff.holdFrames)) * 4, amp, 0);
     pose = { ...pose, legR: walk.legR, legL: walk.legL, kneeR: walk.kneeR, kneeL: walk.kneeL, armR: walk.armR, armL: walk.armL };
   }
   pose = airAndLand(pose, s, b, hops.刘, -0.6);
@@ -144,7 +144,7 @@ export const huangPoseAt = (frame: number): FigurePose => {
   let pose = huangAimPose(feet, yaw, s, r, bowDrawAt(frame), lookPitchAt(feet, frame), settle(frame));
   const amp = sample(walkAmp, frame);
   if (amp > 0) {
-    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, frame / handoff.停帧)) * 4 + 1.3, amp, 0);
+    const walk = walkPose(feet, yaw, (walkDist * Math.min(1, frame / handoff.holdFrames)) * 4 + 1.3, amp, 0);
     pose = { ...pose, legR: walk.legR, legL: walk.legL, kneeR: walk.kneeR, kneeL: walk.kneeL, armR: walk.armR, armL: walk.armL };
   }
   pose = airAndLand(pose, s, b, hops.黄);

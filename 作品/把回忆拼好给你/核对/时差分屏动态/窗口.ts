@@ -1,8 +1,8 @@
 // 时差分屏动态核对放的那一截歌（纯数据，段.ts 也读）：第 13 句分屏整句，从前导音 41.58（分屏起）到句止 44.97，歌曲帧 [起帧, 止帧)。
-import { 歌曲帧, 第几句 } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
+import { toSongFrame, lineAt } from '../../分镜/时间.ts';
+import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
 
-const 起帧 = 正片事件.分屏起.帧;
-const 止帧 = 歌曲帧(第几句(13).止);
+const startFrame = mainCutEvents.分屏起.帧;
+const endFrame = toSongFrame(lineAt(13).止);
 
-export const 窗口 = { 起帧, 止帧, 帧数: 止帧 - 起帧 } as const;
+export const frameWindow = { 起帧: startFrame, 止帧: endFrame, 帧数: endFrame - startFrame } as const;

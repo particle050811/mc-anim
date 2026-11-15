@@ -8,7 +8,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { broomMatrix } from '@库/角色/骑扫帚.tsx';
 import { backToTown, type BackToTownState } from '../6-3-1/编排.ts';
 import * as choreo from '../../../地点/边城/6-3-下坠/编排.ts';
-import { 段表, 物理时间, 起点 } from '../../../地点/边城/6-3-下坠/时间线.ts';
+import { segTable, physicalTime, start } from '../../../地点/边城/6-3-下坠/时间线.ts';
 import { FPS } from '../../../地点/边城/6-3-2/台词.ts';
 
 const ss = (x: number) => {
@@ -19,7 +19,7 @@ const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 const D2R = Math.PI / 180;
 
-const G0 = 段表['6-3-2'].起;
+const G0 = segTable['6-3-2'].起;
 const sec = (G: number) => (G - G0) / FPS;
 
 // ---------- 时刻（段内秒数） ----------
@@ -29,8 +29,8 @@ const cues632 = {
 };
 
 // ---------- 扫帚本地坐标（悬停，不动） ----------
-const broom = 起点.broom;
-const BM = broomMatrix(broom.位置, broom.朝向, broom.俯仰, broom.横滚);
+const broom = start.broom;
+const BM = broomMatrix(broom.位置, broom.facing, broom.pitch, broom.roll);
 const toWorld = (p: number[]): V3 => v3(new THREE.Vector3(p[0], p[1], p[2]).applyMatrix4(BM));
 
 // ---------- 李樱 ----------
@@ -82,7 +82,7 @@ const MID = mediumShot(6.2, 5.0, 2.4, 28);
 // 段首：6-3-1 末帧的机位（现在是悬停机位）
 let startCam: choreo.Cam | null = null;
 const camera = (t: number): choreo.Cam => {
-  startCam ??= backToTown(段表['6-3-1'].止).cam;
+  startCam ??= backToTown(segTable['6-3-1'].止).cam;
   const pushFrac = Math.min(1, t / cues632.pushIn[1]);
   return camBetween(startCam, MID, ss(pushFrac / 0.75), ss((pushFrac - 0.2) / 0.8));
 };
@@ -90,7 +90,7 @@ const camera = (t: number): choreo.Cam => {
 // ---------- 一帧的全部覆盖量（只在 6-3-2 的帧上用，类型同 6-3-1） ----------
 export const onBroomState = (globalFrame: number): BackToTownState => {
   const t = sec(globalFrame);
-  const physSec = 物理时间(globalFrame); // 负的：两人坐在扫帚上（扫帚的矩阵、髋都不变），只换头的姿势
+  const physSec = physicalTime(globalFrame); // 负的：两人坐在扫帚上（扫帚的矩阵、髋都不变），只换头的姿势
   const ly = choreo.liYing(physSec);
   const jh = choreo.jiuhu(physSec);
   const pose = { ...ly.pose, loc: [...ly.pose.loc] as V3 };

@@ -9,10 +9,10 @@ import type { V3 } from '../../../engine/model/parts.tsx';
 import { pngDir } from '../../../engine/model/贴图.ts';
 import { interpPathPos, ParticleQuads, particleTexture, particlePath } from '../粒子面片.tsx';
 import { Billboard, bloomLayer, bloomMaterial, bloomTexture, rng } from './共用.tsx';
-import { 资产目录 } from '../../../engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/特效/粒子/drip_hang';
+import { assetDir } from '../../../engine/core/资产目录.ts';
+import dripHangPng from 'asset:贴图/特效/粒子/drip_hang';
 
-const dripPng = pngDir(资产目录({ './drip_hang.png': 资_0 })).drip_hang;
+const dripPng = pngDir(assetDir({ './drip_hang.png': dripHangPng })).drip_hang;
 
 const flashLifeTicks = 4;
 const flashHalfSize = 3.0;

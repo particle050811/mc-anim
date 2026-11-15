@@ -156,15 +156,15 @@ const belowMask = FULL[STONE] | (LEAF[STONE] << 1) | (CLS[STONE] === 3 ? 4 : 0);
 // 体素块给了 `水面`（海面的场景 z）时，跨着最上一格海水的那一格，液体顶面一律画在 水面 − 1 + h（和第 0 级一样高），各级海面齐平；
 // 不给就照旧（湖、河这些不在海面上的水也照旧，粗格子里不知道真实水面在哪）
 const liquidTop = (voxels: VoxelGrid, k: number, modelHeight: number) => {
-  if (voxels.水面 === undefined || voxels.格 === 1) return k + modelHeight;
+  if (voxels.waterLevel === undefined || voxels.格 === 1) return k + modelHeight;
   const z0 = voxels.原点[2] + k * voxels.格;
-  if (!(z0 <= voxels.水面 - 1 && voxels.水面 - 1 < z0 + voxels.格)) return k + modelHeight;
-  return (voxels.水面 - 1 + modelHeight - voxels.原点[2]) / voxels.格;
+  if (!(z0 <= voxels.waterLevel - 1 && voxels.waterLevel - 1 < z0 + voxels.格)) return k + modelHeight;
+  return (voxels.waterLevel - 1 + modelHeight - voxels.原点[2]) / voxels.格;
 };
 
 // 实心树叶：树叶画成实心（粗级）
 export const buildSectionMesh = (voxels: VoxelGrid, solidLeaves: boolean): SectionMesh => {
-  const { nx, ny, nz, vox, 色板: palette } = voxels;
+  const { nx, ny, nz, vox, palette: palette } = voxels;
   const sz = nx * ny;
   const paletteSize = palette.length;
   const PV = new Uint16Array(paletteSize);

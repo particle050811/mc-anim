@@ -5,24 +5,24 @@
 
 /** 你站在哪（脚底 x）：门板（开着，x −1.5～−0.5）前面、告示牌右边。站 −2（牌和门板正中）的话，右胳膊挡在铃前面；
  *  −1.5 时右胳膊（脸朝镜头时在画面左边）在 x −2.0～−1.75，和铃（x −2.75～−2.25）隔着四分之一格，抬手往外一张正好够到 */
-export const 你x = -1.5;
+export const youX = -1.5;
 
 /** 身子一直面朝镜头（180，正面最好认；朝向取 90° 的整数倍，贴图像素才对得齐）。头和右胳膊按下面几拍动 */
-export const 你朝向 = 180;
+export const youFacing = 180;
 
 /** 头（[俯仰, 左右]，度；俯仰正 = 抬头，左右正 = 往他自己左边、面朝镜头时是画面右边）：
  *  上线：微微抬头看长高的樱花树（树在他右手边、画面左边，转得太多脸就认不出）；转向铃：低头看右手边的铃；摇铃以后：抬头看卷起来的花瓣 */
-export const 你的头 = { 看树: [12, -20] as [number, number], 看铃: [-28, -48] as [number, number], 看风: [30, -15] as [number, number] };
+export const youHead = { lookTree: [12, -20] as [number, number], lookBell: [-28, -48] as [number, number], lookWind: [30, -15] as [number, number] };
 
 /** 右胳膊（度）：armRRoll 负 = 往外张，armR 正 = 往前抬。转向铃到摇铃这几帧抬到铃上，摇铃时晃两下，之后放下 */
-export const 你的右臂 = { 够铃: { 抬: 25, 张: -48 }, 晃: 10, 晃频: 7, 晃秒: 0.25, 放下秒: 0.35 };
+export const yourRightArm = { reachBell: { lift: 25, rollDeg: -48 }, swayAmp: 10, swayFreq: 7, swaySec: 0.25, putDownSec: 0.35 };
 
 /** 铃：挂在告示牌牌面右上角的钉子上（牌面 x −3.5～−2.5、z 0.58～1.08，字面在 y 1.458），垂在牌面右边那一截前面，不挡牌上的两行字。
  *  大小 0.5 格（一个铃的贴图像素 = 方块的一半，同原版物品展示框里的物品）；挂点在牌面顶上 0.05 格，铃心在挂点下 0.35 格 */
-export const 铃 = { 挂点: [-2.5, 1.43, 1.13] as [number, number, number], 垂: 0.35, 大小: 0.5 };
+export const bell = { hangPoint: [-2.5, 1.43, 1.13] as [number, number, number], hangLength: 0.35, 大小: 0.5 };
 
 /** 摇铃后铃绕挂点摆：振幅（度）、周期（秒）、衰减（每秒乘多少） */
-export const 铃摆 = { 振幅: 28, 周期: 0.32, 衰减: 0.08 };
+export const bellSwing = { amplitude: 28, periodSec: 0.32, damping: 0.08 };
 
 /** 调子：上线时还是第 12～14 句她那边的褪色（插到夏日白天 1/3），樱花风卷起来以后颜色跟着回来，盖满时到夏日白天 */
-export const 回色 = { 起: 1 / 3, 止: 1 };
+export const colorBackRange = { 起: 1 / 3, 止: 1 };

@@ -3,7 +3,7 @@
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { FlightRig } from '../../../地点/飞行镜头.tsx';
@@ -17,9 +17,9 @@ import type { FigurePose } from '@库/角色/骨架.tsx';
 import { SPEAR_RIDER } from '../../../角色/骑扫帚持矛.tsx';
 import { WornSheath } from '@库/物品/拔刀剑.tsx';
 import { SpearInHand } from '@库/物品/下界合金长矛.tsx';
-import { ItemPickup, type 拾取件 } from '@库/特效/物品拾取.tsx';
+import { ItemPickup, type PickupItem } from '@库/特效/物品拾取.tsx';
 import { TwilightTerrain, twilightLandmark, twilightHeightAboveGround, viewEdgeDistance, type TwilightLandmarkName } from '../../../地点/暮色新世界.tsx';
-import { cruiseFogFar, farViewOf, farViewLighting, TWILIGHT_FAR_VIEW, type 暮色超远景 } from '../../../地点/暮色新世界/超远景.ts';
+import { cruiseFogFar, farViewOf, farViewLighting, TWILIGHT_FAR_VIEW, type TwilightFarView } from '../../../地点/暮色新世界/超远景.ts';
 import * as P613 from '../6-1-3/编排.ts';
 import * as castleChoreo from '../6-1-9/编排.ts';
 import { LichScene, lichRiderTweak } from '../6-1-5/戏.tsx';
@@ -43,7 +43,7 @@ const sheath = <WornSheath />;
 // 首帧 = 6-1-3 末帧的姿势；30 帧内压成高速飞行的姿势（李樱前倾 46、抬头看前面，九胡抱腰贴着他）。
 // 长矛：离巫妖怪塔的穿刺线还有 1.5 公里时亮出来（按物品切换：矛从手里长出来），之后一直平端到降落；起飞后 1.5 公里前姿势还在往高速飞行压，所以不早于第 30 帧。
 // 每次冲刺击杀，矛头外面包一个动力钻头的虚影（用户 10-02，见 战利品.tsx）
-const F_SPEAR = Math.max(30, route.帧(route.时刻(route.标记路程('巫妖.前') - 1500)));
+const F_SPEAR = Math.max(30, route.frameAt(route.timeAtDist(route.markDist('巫妖.前') - 1500)));
 const END613 = P613.riders(P613.beats.末帧);
 const ly613 = END613.liYing as { lean: number; headRaise: number };
 const jh613 = END613.jiuhu as { lean: number; headRaise: number };
@@ -64,7 +64,7 @@ export const ridersAt = (frame: number, physT: number) => {
       armRRoll: lerp(b.armRRoll, SPEAR_RIDER.poseOverride.armRRoll, ks),
       elbowR: lerp(b.elbowR ?? 0, SPEAR_RIDER.poseOverride.elbowR, ks),
     }),
-    右手:
+    rightHand:
       grow > 0
         ? (pose) => (
             <group quaternion={handAim(pose, [0, 1, 0])}>
@@ -80,17 +80,17 @@ export const ridersAt = (frame: number, physT: number) => {
     lean: lerp(jh613.lean, 30, k0),
     hugWaist: 1,
     tailPhase: (P613.beats.末帧 + frame) / 9,
-    风: 1,
+    wind: 1,
     headRaise: lerp(jh613.headRaise, 10, k0),
   };
   // 巫妖：左手甩药水、鼓风机
-  const tl = physT - route.贯穿时刻.巫妖;
+  const tl = physT - route.pierceTimes.巫妖;
   if (tl > -0.2 && tl < 1) {
     liYing = { ...lichRiderTweak(tl, liYing), hipItem: sheath };
   }
   let broomAppear = 1;
   const td = physT - route.T_ARRIVE;
-  if (td >= 0) ({ 李樱: liYing, 九胡: jiuHu, 扫帚出现: broomAppear } = releasedRiders(td, liYing, jiuHu));
+  if (td >= 0) ({ 李樱: liYing, 九胡: jiuHu, broomAppear: broomAppear } = releasedRiders(td, liYing, jiuHu));
   return { liYing: liYing, jiuhu: jiuHu, broomAppear: broomAppear };
 };
 
@@ -111,7 +111,7 @@ const mixBones = (from: Record<string, BonePose>, to: Record<string, BonePose>, 
   return mixed;
 };
 const releasedRiders = (td: number, liYing: RideLiYing, jiuHu: RideJiuhu) => {
-  const fallDur = route.落地时长();
+  const fallDur = route.landingDuration();
   // 在空中把腿放下来、身子直起来，着地那一刻正好站直；两手微微张开保持平衡。着地后 `站正` 秒内回到正常站姿
   // （一直保持着地姿势会显得人是歪的，用户 10-09 指出）
   const k = ss(td / fallDur);
@@ -144,7 +144,7 @@ const releasedRiders = (td: number, liYing: RideLiYing, jiuHu: RideJiuhu) => {
       };
       return result;
     },
-    右手: undefined, // 长矛直接收起来（按物品切换，原版一换手就没了）
+    rightHand: undefined, // 长矛直接收起来（按物品切换，原版一换手就没了）
   };
   const standBones: Record<string, BonePose> = {};
   ['Tail', 'Tail2', 'Tail3', 'Tail4', 'Tail5', 'Tail6', 'Tail7'].forEach((boneName, i) => {
@@ -156,30 +156,30 @@ const releasedRiders = (td: number, liYing: RideLiYing, jiuHu: RideJiuhu) => {
     // 跨坐时模型原点在 jiuhuHipZ − 站髋；站着时要在 −落地杆高（屋顶）
     offset: [0, 0, k * (RIDE.jiuhuStandHip - RIDE.jiuhuHipZ - dismount.landingStickHeight)],
   };
-  return { 李樱: ly, 九胡: jh, 扫帚出现: 0 };
+  return { 李樱: ly, 九胡: jh, broomAppear: 0 };
 };
 
 // 收扫帚：扫帚一收起来就变成它的物品（掉落物，车万女仆的扫帚物品贴图），带着脱手时的冲劲被吸进李樱身体里，不落地（用户 10-09）。吸的动作同战利品（模型/特效/物品拾取.tsx），吸多久见 `dismount.absorbSec`
-let broomItems: 拾取件[] | undefined;
+let broomItems: PickupItem[] | undefined;
 const stowBroom = (physT: number) => {
   const td = physT - route.T_ARRIVE;
   if (td < 0 || td >= dismount.absorbSec) return null;
   if (!broomItems) {
     // 原版实体收起时掉落物生成在实体原点（扫帚杆中心往下 `stickZ`），自己不带速度：两人冲出去，它留在身后一点，再追上去被吸进李樱身体里。
     // 放在杆中心、带着冲劲的话整段都藏在两人中间被九胡尾巴挡住
-    const P0 = route.扫帚(route.F_LAND).位置;
-    broomItems = [{ 名: '扫帚', p0: [P0[0], P0[1], P0[2] - RIDE.stickZ + 0.25], v0: [0, 0, 0], spinAxis: [0.2, -0.1, 0.3], spinSpeed: 20, 起吸: 0, 吸完: dismount.absorbSec }];
+    const P0 = route.broom(route.F_LAND).位置;
+    broomItems = [{ 名: '扫帚', p0: [P0[0], P0[1], P0[2] - RIDE.stickZ + 0.25], v0: [0, 0, 0], spinAxis: [0.2, -0.1, 0.3], spinSpeed: 20, suckStart: 0, suckEnd: dismount.absorbSec }];
   }
   // 吸到李樱胸口（他在前座）
-  const broom = route.扫帚(route.帧(physT));
-  const yaw = rad(broom.朝向);
+  const broom = route.broom(route.frameAt(physT));
+  const yaw = rad(broom.facing);
   const chest: V3 = [broom.位置[0] - Math.sin(yaw) * RIDE.front, broom.位置[1] + Math.cos(yaw) * RIDE.front, broom.位置[2] + 0.8];
   return { items: broomItems, τ: td, target: chest };
 };
 
 // 娜迦庭院的网格 4 公里以内才画：没开超远景时雾压在导入范围的边以内（最远 4 公里），再远看不见；超远景把雾放远了，跟着放到雾外 500 米，
 // 不然 4 公里外导入地形里挖掉庭院的那块是个坑
-const nagaDrawDist = (fogFar: number, far: 暮色超远景 | undefined) => (far ? Math.max(4000, fogFar + 500) : 4000);
+const nagaDrawDist = (fogFar: number, far: TwilightFarView | undefined) => (far ? Math.max(4000, fogFar + 500) : 4000);
 // 这些地标离镜头多远以内才画（米）：雾最远 22 公里，新世界整片不到 13 公里，基本都画
 const isNear = (landmark: TwilightLandmarkName, camPos: number[], maxDist = 16000) => {
   const origin = twilightLandmark(landmark).原点;
@@ -193,7 +193,7 @@ const isNear = (landmark: TwilightLandmarkName, camPos: number[], maxDist = 1600
 // `extra`：另外画进场景的东西（场景坐标 Z 朝上）；`loot={false}` 不画战利品箱和掉落物（封面.tsx）
 // `farView`：超远景（暮色新世界/超远景.ts），不给不开；6-穿塔斩首领（`OnerSegment`）给，6-落地后、封面不给（用户 11-07 只定了两个飞行段）
 export type Riders = ReturnType<typeof ridersAt>;
-export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: 暮色超远景 } & Partial<LevelParams>> = ({
+export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; screenAo?: boolean; tweakRiders?: (base: Riders) => Riders; extra?: React.ReactNode; loot?: boolean; farView?: TwilightFarView } & Partial<LevelParams>> = ({
   F: frame,
   cam: camOverride,
   level: level = '视频',
@@ -205,14 +205,14 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   ...overrides
 }) => {
   const far = farViewOf(officialFar);
-  const { 像素: lodPixels, 远: farDist, dpr } = { ...LevelParams[level], ...overrides };
+  const { pixel: lodPixels, far: farDist, dpr } = { ...LevelParams[level], ...overrides };
   const { width, height } = useVideoConfig();
   const cam = camOverride ?? cameraAt(frame);
-  const broom = route.扫帚(frame);
+  const broom = route.broom(frame);
   const physT = broom.T;
   const riders = tweakRiders ? tweakRiders(ridersAt(frame, physT)) : ridersAt(frame, physT);
   const stow = stowBroom(physT);
-  const broomMat = broomMatrix(broom.位置, broom.朝向, broom.俯仰, broom.横滚);
+  const broomMat = broomMatrix(broom.位置, broom.facing, broom.pitch, broom.roll);
   // 雾和投影的级联按镜头离脚下地物多高算（新世界的地面不在 z = 0：终焉高原在 z 96）；
   // 往导入范围的边那边看时，雾的远端压到边以内（lib/暮色光照 的 `clampFogToEdge`）；超远景开着时按它的雾远封顶（暮色新世界/超远景.ts）
   const aboveGround = twilightHeightAboveGround(cam.pos);
@@ -220,8 +220,8 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
   // 镜头钻进结构里（巫妖的房间、宫殿顶层、小屋、雪怪的洞）时补一盏不投影的点光，免得黑成一片
   const indoorLights: V3[] = [];
   for (const [bossName, halfSpan] of [['巫妖', 0.6], ['冰雪女王', 0.5], ['巨人', 0.5], ['雪怪首领', 0.8]] as const) {
-    const t = route.局部时间(bossName, frame);
-    if (t > -halfSpan && t < halfSpan) indoorLights.push(route.穿刺表[bossName].矛尖(0));
+    const t = route.localTime(bossName, frame);
+    if (t > -halfSpan && t < halfSpan) indoorLights.push(route.pierceTable[bossName].tip(0));
   }
   return (
     <AbsoluteFill>
@@ -238,18 +238,18 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
             landmarks={[...(isNear('娜迦庭院', cam.pos, nagaDrawDist(fogFar, far)) ? ['娜迦庭院' as const] : []), ...(isNear('终焉高原城堡', cam.pos) ? ['终焉高原城堡' as const] : [])]}
             t={P613.T612 + (P613.beats.末帧 + frame) / 24}
             clearPlants={P613.CLEAR_PLANTS}
-            像素={lodPixels}
-            远={farDist}
+            pixel={lodPixels}
+            far={farDist}
             shadowLightDir={twilightSunDir}
             farView={officialFar}
           />
-          {isNear('巫妖怪塔', cam.pos) && <LichScene t={route.局部时间('巫妖', frame)} camPos={cam.pos} />}
-          {isNear('九头蛇巢穴', cam.pos) && <HydraScene t={route.局部时间('九头蛇', frame)} broom={broom.位置} />}
-          {isNear('幽冥高塔', cam.pos) && <UrGhastScene t={route.局部时间('暮初恶魂', frame)} broom={broom.位置} />}
-          {isNear('雪怪洞窟', cam.pos) && <AlphaYetiScene t={route.局部时间('雪怪首领', frame)} camPos={cam.pos} />}
-          {isNear('极光宫殿', cam.pos) && <SnowQueenScene t={route.局部时间('冰雪女王', frame)} camPos={cam.pos} />}
-          {isNear('云中小屋', cam.pos) && <GiantScene t={route.局部时间('巨人', frame)} camPos={cam.pos} />}
-          <RideBroom pos={broom.位置} yaw={broom.朝向} pitch={broom.俯仰} roll={broom.横滚} liYing={riders.liYing} jiuhu={riders.jiuhu} broom={{ appear: riders.broomAppear }} />
+          {isNear('巫妖怪塔', cam.pos) && <LichScene t={route.localTime('巫妖', frame)} camPos={cam.pos} />}
+          {isNear('九头蛇巢穴', cam.pos) && <HydraScene t={route.localTime('九头蛇', frame)} broom={broom.位置} />}
+          {isNear('幽冥高塔', cam.pos) && <UrGhastScene t={route.localTime('暮初恶魂', frame)} broom={broom.位置} />}
+          {isNear('雪怪洞窟', cam.pos) && <AlphaYetiScene t={route.localTime('雪怪首领', frame)} camPos={cam.pos} />}
+          {isNear('极光宫殿', cam.pos) && <SnowQueenScene t={route.localTime('冰雪女王', frame)} camPos={cam.pos} />}
+          {isNear('云中小屋', cam.pos) && <GiantScene t={route.localTime('巨人', frame)} camPos={cam.pos} />}
+          <RideBroom pos={broom.位置} yaw={broom.facing} pitch={broom.pitch} roll={broom.roll} liYing={riders.liYing} jiuhu={riders.jiuhu} broom={{ appear: riders.broomAppear }} />
           {stow && <ItemPickup items={stow.items} τ={stow.τ} target={stow.target} camPos={cam.pos} />}
           {/* 冲刺击杀时冒出来、被矛打碎的战利品箱，物品被吸到李樱身上（用户 2026-10-02） */}
           {loot && <LootLayer T={physT} broom={broomMat} camPos={cam.pos} />}
@@ -263,7 +263,7 @@ export const OnerFrame: React.FC<{ F: number; cam?: Cam; level?: RenderLevel; sc
 // 一镜到底的一截：段内第 frame 格（1/24 秒一格，带小数）= 全局帧 `起` + frame。整条一镜到底是 6-1-4至9 的一截（6-1/段界.ts）。
 // 声音（配乐接着 6-1-3 往下放、原版音效）照 6-穿塔斩首领 段.ts 的 cue 放（11-06 迁成原生段，决策 0015），这里只画画面
 export const OnerSegment: React.FC<{ 起: number }> = ({ 起: startFrame }) => {
-  const frame = use当前秒() * route.FPS;
+  const frame = useCurrentSec() * route.FPS;
   return (
     <AbsoluteFill>
       <OnerFrame F={startFrame + frame} farView={TWILIGHT_FAR_VIEW} />

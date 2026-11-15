@@ -1,94 +1,94 @@
 // 清单：作品的 段/、核对/ 下的目录和清单一一对应；段键合规（<章>-<段名>，段名只用汉字、字母、数字，全片唯一）、
 // 不撞旧名表；场键合规、不撞旧名；同一场里标了「连续」的段，起帧正好接上一段末帧的下一帧。旧名表本身的格式也在这查。
-import { 读内容, 实有目录 } from '../内容.ts';
-import { 撞旧名, 撞旧段名, 读旧名 } from '../旧名.ts';
-import type { 报告, 检查上下文 } from '../上下文.ts';
-import { 注册收的目录, 缺目录提示 } from '../../段框架/注册目录.ts';
-import { 段格 } from '../../../engine/段/段定义.ts';
+import { readContent, listExistingDirs } from '../内容.ts';
+import { findOldNameClashes, findOldSegNameClashes, readOldNames } from '../旧名.ts';
+import type { CheckReport, CheckContext } from '../上下文.ts';
+import { registeredDirs, missingDirHint } from '../../段框架/注册目录.ts';
+import { segFps } from '../../../engine/段/段定义.ts';
 
 /** Remotion 的 Composition id 只认 a-z A-Z 0-9 - 和 CJK（validate-composition-id.js） */
-const 名字符 = '[A-Za-z0-9\\u4e00-\\u9fff]';
-export const 段键合法 = (键: string, 章: number | '核对') =>
-  章 === '核对' ? new RegExp(`^核对-${名字符}+(-${名字符}+)*$`).test(键) : new RegExp(`^${章}-${名字符}+$`).test(键);
-export const 场键合法 = (键: string) => new RegExp(`^\\d+-${名字符}+$`).test(键);
+const nameChar = '[A-Za-z0-9\\u4e00-\\u9fff]';
+export const isSegKeyValid = (segKey: string, chapter: number | '核对') =>
+  chapter === '核对' ? new RegExp(`^核对-${nameChar}+(-${nameChar}+)*$`).test(segKey) : new RegExp(`^${chapter}-${nameChar}+$`).test(segKey);
+export const isSceneKeyValid = (sceneKey: string) => new RegExp(`^\\d+-${nameChar}+$`).test(sceneKey);
 
-export const 清单 = async (c: 检查上下文, 报: 报告) => {
-  const 旧名 = 读旧名(c, 报);
-  const 内容 = await 读内容(c);
-  const 清单文件 = c.作品路径('清单.ts');
-  if ('错误' in 内容) return 报.错(内容.错误, 清单文件);
-  const { 段们 } = 内容;
+export const checkManifest = async (c: CheckContext, report: CheckReport) => {
+  const oldName = readOldNames(c, report);
+  const parsedContent = await readContent(c);
+  const manifestPath = c.workPath('清单.ts');
+  if ('错误' in parsedContent) return report.错(parsedContent.错误, manifestPath);
+  const { segments } = parsedContent;
 
-  const 键们 = new Set<string>();
-  const 段名们 = new Map<string, string>();
-  for (const s of 段们) {
-    if (键们.has(s.键)) 报.错(`段键 ${s.键} 在清单里出现了两次`, 清单文件);
-    键们.add(s.键);
-    if (!段键合法(s.键, s.章)) {
-      报.错(
+  const segKeys = new Set<string>();
+  const segNames = new Map<string, string>();
+  for (const s of segments) {
+    if (segKeys.has(s.键)) report.错(`段键 ${s.键} 在清单里出现了两次`, manifestPath);
+    segKeys.add(s.键);
+    if (!isSegKeyValid(s.键, s.章)) {
+      report.错(
         s.章 === '核对' ? `核对段的键要是 核对-<名>（汉字、字母、数字）：${s.键}` : `段键要是 ${s.章}-<段名>，段名只用汉字、字母、数字：${s.键}`,
-        清单文件,
+        manifestPath,
       );
       continue;
     }
     if (s.章 !== '核对') {
-      const 名 = s.键.slice(String(s.章).length + 1);
-      if (段名们.has(名)) 报.错(`段名「${名}」重复：${段名们.get(名)} 和 ${s.键}（段名全片唯一）`, 清单文件);
-      段名们.set(名, s.键);
-      for (const x of [...撞旧名(旧名, s.键), ...撞旧段名(旧名, 名, s.键)]) {
-        报.错(`段键 ${s.键} 撞了旧名表第 ${x.行} 行的旧名「${x.旧名}」（${x.类别}${x.新键 ? ` → ${x.新键}` : '，已删'}）：旧名永不复用`, 清单文件);
+      const segName = s.键.slice(String(s.章).length + 1);
+      if (segNames.has(segName)) report.错(`段名「${segName}」重复：${segNames.get(segName)} 和 ${s.键}（段名全片唯一）`, manifestPath);
+      segNames.set(segName, s.键);
+      for (const x of [...findOldNameClashes(oldName, s.键), ...findOldSegNameClashes(oldName, segName, s.键)]) {
+        report.错(`段键 ${s.键} 撞了旧名表第 ${x.行} 行的旧名「${x.oldName}」（${x.类别}${x.newKey ? ` → ${x.newKey}` : '，已删'}）：旧名永不复用`, manifestPath);
       }
     }
     if (s.错误) continue; // 加载 规则报
-    const 场 = s.定义!.场;
-    if (s.章 === '核对' ? 场 !== '核对' : !场键合法(场)) 报.错(`${s.键} 的 场 写的是「${场}」：${s.章 === '核对' ? '核对段写 核对' : '场键要是 <章>-<场名>'}`, s.段文件);
+    const scene = s.definition!.场;
+    if (s.章 === '核对' ? scene !== '核对' : !isSceneKeyValid(scene)) report.错(`${s.键} 的 场 写的是「${scene}」：${s.章 === '核对' ? '核对段写 核对' : '场键要是 <章>-<场名>'}`, s.段文件);
   }
 
   // 目录和清单一一对应
-  for (const 层 of ['段', '核对'] as const) {
-    const 前缀 = c.作品路径(`${层}/`);
-    const 清单里 = new Set(段们.filter((s) => s.目录.startsWith(前缀)).map((s) => s.目录.slice(前缀.length)));
-    for (const d of 实有目录(c, 层)) if (!清单里.has(d)) 报.错(`${前缀}${d}/ 不在清单里（加进 ${清单文件}，或删掉这个目录）`, `${前缀}${d}`);
-    for (const d of 清单里) if (!c.存在(`${前缀}${d}`)) 报.错(`清单里有 ${层 === '核对' ? `核对-${d}` : d}，但没有 ${前缀}${d}/`, 清单文件);
+  for (const layerKind of ['段', '核对'] as const) {
+    const dirPrefix = c.workPath(`${layerKind}/`);
+    const listedDirs = new Set(segments.filter((s) => s.目录.startsWith(dirPrefix)).map((s) => s.目录.slice(dirPrefix.length)));
+    for (const d of listExistingDirs(c, layerKind)) if (!listedDirs.has(d)) report.错(`${dirPrefix}${d}/ 不在清单里（加进 ${manifestPath}，或删掉这个目录）`, `${dirPrefix}${d}`);
+    for (const d of listedDirs) if (!c.exists(`${dirPrefix}${d}`)) report.错(`清单里有 ${layerKind === '核对' ? `核对-${d}` : d}，但没有 ${dirPrefix}${d}/`, manifestPath);
   }
 
   // 注册.tsx 用 webpackContext 收的目录要有文件（git 不记空目录，没有文件别处 clone 下来就打不了包）
-  const 注册文件 = c.作品路径('注册.tsx');
-  if (c.存在(注册文件)) {
-    const 有文件 = c.本作品文件();
-    for (const d of 注册收的目录(c.读(注册文件))) {
-      if (!有文件.some((p) => p.startsWith(c.作品路径(`${d}/`)))) 报.错(缺目录提示(c.作品目录, d), 注册文件);
+  const registerFile = c.workPath('注册.tsx');
+  if (c.exists(registerFile)) {
+    const workFiles = c.workFiles();
+    for (const d of registeredDirs(c.读(registerFile))) {
+      if (!workFiles.some((p) => p.startsWith(c.workPath(`${d}/`)))) report.错(missingDirHint(c.workDir, d), registerFile);
     }
   }
 
   // 场键：清单里用到的和 场/ 下的目录
-  const 场键们 = new Set([...段们.flatMap((s) => (s.定义 && s.定义.场 !== '核对' ? [s.定义.场] : [])), ...实有目录(c, '场')]);
-  for (const k of 场键们) {
-    if (!场键合法(k)) {
-      if (c.存在(c.作品路径(`场/${k}`))) 报.错(`场目录名要是 <章>-<场名>：${k}`, c.作品路径(`场/${k}`));
+  const sceneKeys = new Set([...segments.flatMap((s) => (s.definition && s.definition.场 !== '核对' ? [s.definition.场] : [])), ...listExistingDirs(c, '场')]);
+  for (const k of sceneKeys) {
+    if (!isSceneKeyValid(k)) {
+      if (c.exists(c.workPath(`场/${k}`))) report.错(`场目录名要是 <章>-<场名>：${k}`, c.workPath(`场/${k}`));
       continue;
     }
-    for (const x of 撞旧名(旧名, k)) 报.错(`场键 ${k} 撞了旧名表第 ${x.行} 行的旧名「${x.旧名}」：旧名永不复用`);
+    for (const x of findOldNameClashes(oldName, k)) report.错(`场键 ${k} 撞了旧名表第 ${x.行} 行的旧名「${x.oldName}」：旧名永不复用`);
   }
 
   // 连续的相邻段
-  for (let i = 0; i < 段们.length; i++) {
-    const s = 段们[i]!;
-    if (!s.定义?.连续) continue;
-    const 前 = [...段们.slice(0, i)].reverse().find((x) => x.定义?.场 === s.定义!.场);
-    if (!前 || 段们[i - 1] !== 前) {
-      报.错(`${s.键} 标了 连续，但清单里紧挨着的上一段${前 ? `（${段们[i - 1]!.键}）不是同一场的` : '不存在或不在同一场'}`, s.段文件);
+  for (let i = 0; i < segments.length; i++) {
+    const s = segments[i]!;
+    if (!s.definition?.continuous) continue;
+    const prev = [...segments.slice(0, i)].reverse().find((x) => x.definition?.场 === s.definition!.场);
+    if (!prev || segments[i - 1] !== prev) {
+      report.错(`${s.键} 标了 连续，但清单里紧挨着的上一段${prev ? `（${segments[i - 1]!.键}）不是同一场的` : '不存在或不在同一场'}`, s.段文件);
       continue;
     }
-    const a = 前.定义!.场窗口;
-    const b = s.定义.场窗口;
+    const a = prev.definition!.sceneWindow;
+    const b = s.definition.sceneWindow;
     if (!a || !b) {
-      报.错(`${s.键} 标了 连续，它和上一段 ${前.键} 都要写 场窗口`, s.段文件);
+      report.错(`${s.键} 标了 连续，它和上一段 ${prev.键} 都要写 场窗口`, s.段文件);
       continue;
     }
     // 场窗口两端都对齐到 1/段格 秒（窗口段.ts），差不到半格就是接上了
-    if (Math.abs(b.起秒 - a.止秒) >= 0.5 / 段格) {
-      报.错(`${s.键} 标了 连续：上一段 ${前.键} 止于场时间线第 ${a.止秒} 秒，本段起于第 ${b.起秒} 秒，要正好接上`, s.段文件);
+    if (Math.abs(b.startSec - a.endSec) >= 0.5 / segFps) {
+      report.错(`${s.键} 标了 连续：上一段 ${prev.键} 止于场时间线第 ${a.endSec} 秒，本段起于第 ${b.startSec} 秒，要正好接上`, s.段文件);
     }
   }
 };

@@ -19,8 +19,8 @@ import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
 import type { V3 } from '../model/parts.tsx';
 import { pickDirs, backlitDirs, faceGroupMesh, releaseVoxelMeshes, voxelMaterial, type VoxelMesh, type MaterialClass } from './材质.ts';
-import { 建批项, 放批项, 清批绘制, 类批, 影材质, type 批项 } from './批绘制.ts';
-import { 清空容器池 } from './容器池.ts';
+import { buildBatchItem, releaseBatchItems, clearBatchState, ClassBatch, shadowMaterial, type BatchItem } from './批绘制.ts';
+import { clearBufferPool } from './容器池.ts';
 import { posScale, visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
@@ -34,7 +34,7 @@ const materialClasses: MaterialClass[] = ['实心', '镂空', '实心树叶', '�
 // 显存里那份归各上下文（faceGroupMesh 传完不留 CPU 数组），这里留的就是这批数组。总面数有上限（每面 88 字节），超了丢最久没画的。
 // 上限要装得下一整帧（飞越边城一帧约 560 万面），装不下的话切截时只有一部分接得上
 // 猜的：替下一帧预取进来、还没有哪一帧真要过（见「预取下一帧」）
-type Kept = { mesh: SectionMesh | null; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null; used: number; 猜的?: boolean };
+type Kept = { mesh: SectionMesh | null; V: Pick<VoxelGrid, '原点' | '格' | 'nz'> | null; used: number; guessed?: boolean };
 const kept = new Map<string, Kept>();
 const maxKeptFaces = 7_000_000;
 let keptFaces = 0;
@@ -62,11 +62,11 @@ const trimKept = () => {
 };
 
 // items：水以外各类的面（交给代理物体画），类号是 materialClasses 里的下标；casters：其中投影的（花草不投影）；water：水类的网格（逐网格画）
-type Entry = { items: [number, 批项][]; casters: 批项[]; water: VoxelMesh | null; plants: 批项 | null; box: number[]; faceCount: number; used: number; kept: Kept };
+type Entry = { items: [number, BatchItem][]; casters: BatchItem[]; water: VoxelMesh | null; plants: BatchItem | null; box: number[]; faceCount: number; used: number; kept: Kept };
 // batches：各类的代理物体（下标同 materialClasses，水那一格空着）；shadowBatch：只进阴影图的
 // 投、像素角：变焦的镜头（穿塔加速时视角一帧宽 1.4%）细分门槛跟着视角走，不一起外推就猜不中
-type 镜头位姿 = { 位: THREE.Vector3; 向: THREE.Quaternion; 心: number[]; 投: THREE.Matrix4; 像素角: number };
-type World = { 上上?: 镜头位姿; 上?: 镜头位姿; 本?: 镜头位姿; 预取过?: 镜头位姿; cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number; batches: (类批 | null)[]; shadowBatch: 类批 };
+type CameraPose = { 位: THREE.Vector3; dirQuat: THREE.Quaternion; 心: number[]; projection: THREE.Matrix4; pixelAngle: number };
+type World = { prevPrev?: CameraPose; 上?: CameraPose; 本?: CameraPose; prefetchedPose?: CameraPose; cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number; batches: (ClassBatch | null)[]; shadowBatch: ClassBatch };
 // 按渲染器分：three 网格的顶点在显存里，属于这个 WebGL 上下文（容器池.ts），换了上下文（拼段的下一截是新的 Canvas）要重建（区段网格还在 `kept` 里就从那里拿）
 const worlds = new WeakMap<THREE.WebGLRenderer, Map<string, World>>();
 // 还在后台建区段、这一帧画不全的体素世界：屏幕AO 看到不空就跳过这一次绘制（反正截图前建齐了还要再画一次），省掉一整遍画半截场景的 GPU 活
@@ -79,10 +79,10 @@ const emptyEntry = (rec: Kept): Entry => ({ items: [], casters: [], water: null,
 const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, '原点' | '格' | 'nz'>, section: SectionId, rec: Kept): Entry => {
   const [x0, y0, sizeM] = sectionBounds(section);
   const box = [x0, y0, voxels.原点[2], x0 + sizeM, y0 + sizeM, voxels.原点[2] + voxels.nz * voxels.格];
-  const items: [number, 批项][] = [];
-  const casters: 批项[] = [];
+  const items: [number, BatchItem][] = [];
+  const casters: BatchItem[] = [];
   let water: VoxelMesh | null = null;
-  let plants: 批项 | null = null;
+  let plants: BatchItem | null = null;
   materialClasses.forEach((materialClass, classNo) => {
     const faces = sectionMesh[materialClass];
     if (!faces.n) return;
@@ -90,7 +90,7 @@ const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxe
       water = faceGroupMesh(ctx, faces, materialClass, voxels.原点, voxels.格, box);
       return;
     }
-    const item = 建批项(ctx, faces, materialClass === '花草', voxels.原点, posScale / voxels.格, box);
+    const item = buildBatchItem(ctx, faces, materialClass === '花草', voxels.原点, posScale / voxels.格, box);
     items.push([classNo, item]);
     if (materialClass === '花草') plants = item;
     else casters.push(item);
@@ -103,45 +103,45 @@ const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxe
 // 所以放行后按前几帧镜头的变化（位置、朝向、细分中心、视角；步长在变时带上二阶）外推下一帧的视野，把那时要的新区段先取、先建好网格放进 `kept`。
 // 只动 `kept`（CPU 这边的数组）：不进 `cache`、不传显存、不挂场景。下一帧照旧自己挑区段、按挑的先后建，要的在 `kept` 里就直接用，不在（猜错、没猜、还没建完）就照旧取、照旧等，
 // 所以画出来的和没预取时一样，跳着渲、单出静帧也一样，只是省不到。猜的区段多取了也不进地形用量（来源的 prefetch 带 猜的，见 生成.ts）。
-const 预取在途 = new Map<string, Promise<void>>(); // keptKey → 这一块预取结束（进了 kept，或者失败）
+const prefetchInFlight = new Map<string, Promise<void>>(); // keptKey → 这一块预取结束（进了 kept，或者失败）
 // 镜头一帧里挪了视距的 `预取最远比` 以上、转了 `预取最大转角` 弧度以上、视角变了 `预取最大变焦` 以上，当成切镜头，不猜（飞越一帧走 17 米，不能按固定米数卡）；
 // 外推出来要新建的块比 `预取最多块` 多也不猜（切镜头后漏过来的；同时压在内存里的体素块也有个数）
-const 预取最远比 = 0.25;
-const 预取最大转角 = 0.2;
-const 预取最大变焦 = 0.05;
-const 预取最多块 = 128;
-const 预取 = (worldKey: string, source: VoxelSource, 要: SectionId[]) => {
-  const 完 = (async () => {
+const prefetchMaxFarRatio = 0.25;
+const prefetchMaxTurn = 0.2;
+const prefetchMaxZoom = 0.05;
+const prefetchMaxSections = 128;
+const prefetch = (worldKey: string, source: VoxelSource, toPrefetch: SectionId[]) => {
+  const prefetchPromise = (async () => {
     // 取齐的那一刻同步把体素块都拿出来：再等一轮，来源可能已经把它们丢了（导入地形.ts 的 ready、缓存上限）
-    for (let 等 = source.prefetch?.(要, true); 等; 等 = source.prefetch?.(要, true)) await 等;
+    for (let pending = source.prefetch?.(toPrefetch, true); pending; pending = source.prefetch?.(toPrefetch, true)) await pending;
     await Promise.all(
-      要.map(async (q) => {
+      toPrefetch.map(async (q) => {
         const voxels = source.区段(q);
         const V = voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz };
-        const mesh = voxels ? await buildMeshInPool(voxels, q.L >= 1, source.转交) : null;
-        keep(keptKey(worldKey, q), { mesh, V, used: keptClock, 猜的: true });
+        const mesh = voxels ? await buildMeshInPool(voxels, q.L >= 1, source.transferOwnership) : null;
+        keep(keptKey(worldKey, q), { mesh, V, used: keptClock, guessed: true });
       }),
     );
   })()
     // 失败不报：哪一帧真要到这一块，照旧那一路会再取一遍，错在那里报
     .catch(() => undefined)
     .finally(() => {
-      for (const q of 要) 预取在途.delete(keptKey(worldKey, q));
+      for (const q of toPrefetch) prefetchInFlight.delete(keptKey(worldKey, q));
     });
-  for (const q of 要) 预取在途.set(keptKey(worldKey, q), 完);
+  for (const q of toPrefetch) prefetchInFlight.set(keptKey(worldKey, q), prefetchPromise);
 };
-const 预测机 = new THREE.PerspectiveCamera();
-const _位 = new THREE.Vector3();
-const _向 = new THREE.Quaternion();
-const _缩 = new THREE.Vector3();
+const predictCamera = new THREE.PerspectiveCamera();
+const _position = new THREE.Vector3();
+const _orientation = new THREE.Quaternion();
+const _scale = new THREE.Vector3();
 
 export type VoxelWorldProps = {
   键: string; // 缓存用，不同的世界不能重名
   来源: VoxelSource;
   中心: number[]; // 镜头位置（场景坐标）
-  像素: number; // 细一级的一格在画面上还有这么多像素（画面的 CSS 像素）就细分，见 lib/渲染级别.ts
-  远: number; // 最远画到多远（米）
-  高度?: [number, number]; // 地面和树最低、最高大概在哪（米），判断区段在不在视野里用
+  pixel: number; // 细一级的一格在画面上还有这么多像素（画面的 CSS 像素）就细分，见 lib/渲染级别.ts
+  far: number; // 最远画到多远（米）
+  heightRange?: [number, number]; // 地面和树最低、最高大概在哪（米），判断区段在不在视野里用
   shadowLightDir?: V3; // 地形投影的光向（指向光源）：给了才建投影网格
 };
 // 投影要多留的距离（米）：仰角 32° 时影长是高度的 1.6 倍，够 180 米高的东西
@@ -157,7 +157,7 @@ const plantFarM = 256;
 const distToBox = (b: number[], p: number[]) =>
   Math.hypot(Math.max(b[0] - p[0], 0, p[0] - b[3]), Math.max(b[1] - p[1], 0, p[1] - b[4]), Math.max(b[2] - p[2], 0, p[2] - b[5]));
 
-export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: source, 中心: camPos, 像素: splitPixels, 远: farM, 高度: heightRange = [-30, 140], shadowLightDir }) => {
+export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: source, 中心: camPos, pixel: splitPixels, far: farM, heightRange: heightRange = [-30, 140], shadowLightDir }) => {
   const camera = useThree((st) => st.camera) as THREE.PerspectiveCamera;
   const size = useThree((st) => st.size);
   const advance = useThree((st) => st.advance);
@@ -184,14 +184,14 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     // Studio 里丢了接着看：恢复后旧容器全部作废，还拿它们画不报错、只是地形没了（three 重传不了：容器归 容器池.ts 管）。清掉，下一次渲染整个重建，网格从 `kept` 拿
     canvas.addEventListener('webglcontextrestored', () => {
       newWorlds.clear();
-      清空容器池(ctx);
-      清批绘制(ctx);
+      clearBufferPool(ctx);
+      clearBatchState(ctx);
     });
   }
   let maybeWorld = glWorlds.get(worldKey);
   if (!maybeWorld) {
-    const batches = materialClasses.map((materialClass) => (materialClass === '水' ? null : new 类批(voxelMaterial(materialClass), false)));
-    glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0, batches, shadowBatch: new 类批(影材质, true) }));
+    const batches = materialClasses.map((materialClass) => (materialClass === '水' ? null : new ClassBatch(voxelMaterial(materialClass), false)));
+    glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0, batches, shadowBatch: new ClassBatch(shadowMaterial, true) }));
   }
   const world = maybeWorld;
   const { cache, group } = world;
@@ -204,7 +204,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const sy = lh ? (-shadowLightDir![1] / lh) * shadowMarginM : 0;
   const backlit = shadowLightDir ? backlitDirs(shadowLightDir) : null;
   const pixelAngle = (camera.fov * Math.PI) / 180 / size.height;
-  const 挑这帧 = (test: ReturnType<typeof makeFrustumTest>, center: number[], angle = pixelAngle): SectionId[] =>
+  const pickThisFrame = (test: ReturnType<typeof makeFrustumTest>, center: number[], angle = pixelAngle): SectionId[] =>
     pickSections({
       camPos: center,
       pixelAngle: angle,
@@ -216,13 +216,13 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
         return probe.z + probe.crown + 5;
       },
     });
-  const list = 挑这帧(inView, camPos);
+  const list = pickThisFrame(inView, camPos);
   // 最近三个镜头位姿（预取下一帧用）：同一帧重画几次位姿不变，不算新的
-  camera.matrixWorld.decompose(_位, _向, _缩);
-  if (!world.本 || !world.本.位.equals(_位) || !world.本.向.equals(_向) || world.本.心.some((v, i) => v !== camPos[i]) || !world.本.投.equals(camera.projectionMatrix)) {
-    world.上上 = world.上;
+  camera.matrixWorld.decompose(_position, _orientation, _scale);
+  if (!world.本 || !world.本.位.equals(_position) || !world.本.dirQuat.equals(_orientation) || world.本.心.some((v, i) => v !== camPos[i]) || !world.本.projection.equals(camera.projectionMatrix)) {
+    world.prevPrev = world.上;
     world.上 = world.本;
-    world.本 = { 位: _位.clone(), 向: _向.clone(), 心: [...camPos], 投: camera.projectionMatrix.clone(), 像素角: pixelAngle };
+    world.本 = { 位: _position.clone(), dirQuat: _orientation.clone(), 心: [...camPos], projection: camera.projectionMatrix.clone(), pixelAngle: pixelAngle };
   }
   const putEntry = (section: SectionId, entry: Entry) => {
     const k = sectionKey(section);
@@ -236,14 +236,14 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   // 预取进来的（猜的）这一帧真要了：也告诉来源一声，让它把这几块补记进地形用量
   const unkept = unbuilt.filter((q) => {
     const rec = kept.get(keptKey(worldKey, q));
-    if (!rec?.猜的) return !rec;
-    rec.猜的 = false;
+    if (!rec?.guessed) return !rec;
+    rec.guessed = false;
     return true;
   });
   if (unkept.length) source.prefetch?.(unkept);
   // 要建的都留着网格（预取好的）、块数又不多：当场传显存、进缓存，这一次渲染就画上，不绕后台那一圈（拦截图、等一轮定时器、重画一次）。
   // 先后和后台建的一样（都按 unbuilt 的顺序），所以画面一样；后台正在建时不插队
-  if (unbuilt.length && unbuilt.length <= 预取最多块 && !building.current && delayHandle.current === null) {
+  if (unbuilt.length && unbuilt.length <= prefetchMaxSections && !building.current && delayHandle.current === null) {
     const recs = unbuilt.map((q) => kept.get(keptKey(worldKey, q)));
     if (recs.every((rec) => rec)) {
       unbuilt.forEach((q, i) => {
@@ -269,8 +269,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
           if (!qs.length) break;
           // 还有预取没结束就等它：要的块多半就在里面，不重复建（建完进 `kept`，下一轮从那里拿）；
           // 也不让它和这里交错着问来源要区段（来源按「最近谁要过」丢缓存，交错会把这边正要用的丢掉）
-          if (预取在途.size) {
-            await Promise.all(new Set(预取在途.values()));
+          if (prefetchInFlight.size) {
+            await Promise.all(new Set(prefetchInFlight.values()));
             continue;
           }
           // 留着网格的区段不取；这一轮先把网格拿在手上（被挤掉的记录数组会清掉，不能回头从记录上读），建到一半被挤掉也不用回头取
@@ -304,7 +304,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
               continue;
             }
             const voxels = source.区段(section);
-            inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.转交) : null, rec: null });
+            inFlight.push({ q: section, V: voxels && { 原点: voxels.原点, 格: voxels.格, nz: voxels.nz }, m: voxels ? buildMeshInPool(voxels, section.L >= 1, source.transferOwnership) : null, rec: null });
             if (performance.now() - t > 1000) break; // 隔一会儿回头看一次要建的变没变
           }
           while (inFlight.length) await collectOne();
@@ -321,8 +321,8 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   // 代理物体放在镜头附近的整数格点上（批绘制.ts 文件头）
   const { batches, shadowBatch } = world;
   const anchor = [Math.round(camPos[0]), Math.round(camPos[1]), Math.round(camPos[2])];
-  for (const batch of batches) batch?.清(anchor);
-  shadowBatch.清(anchor);
+  for (const batch of batches) batch?.reset(anchor);
+  shadowBatch.reset(anchor);
   const frameClock = world.clock;
   const keptStamp = ++keptClock;
   // 裙边（lib/体素/网格.ts 文件头）：这一侧同一级的邻居这一帧也在画，裙边就藏在它的地面底下，不画
@@ -360,7 +360,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
     for (const [k, entry] of all) {
       if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
-      放批项(
+      releaseBatchItems(
         ctx,
         entry.items.map((x) => x[1]),
       );
@@ -382,30 +382,30 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   });
   // 预取下一帧：这一帧放行以后（排在上面那个 effect 后面，再让出一轮）才开始，不占出这一帧的时间
   useEffect(() => {
-    const { 上上, 上, 本 } = world;
-    if (!allBuilt || !本 || world.预取过 === 本 || !getRemotionEnvironment().isRendering) return;
-    world.预取过 = 本;
-    if (!上 || 本.位.distanceTo(上.位) > farM * 预取最远比 || 本.向.angleTo(上.向) > 预取最大转角 || Math.abs(本.像素角 / 上.像素角 - 1) > 预取最大变焦) return;
+    const { prevPrev, 上: prevPose, 本: current } = world;
+    if (!allBuilt || !current || world.prefetchedPose === current || !getRemotionEnvironment().isRendering) return;
+    world.prefetchedPose = current;
+    if (!prevPose || current.位.distanceTo(prevPose.位) > farM * prefetchMaxFarRatio || current.dirQuat.angleTo(prevPose.dirQuat) > prefetchMaxTurn || Math.abs(current.pixelAngle / prevPose.pixelAngle - 1) > prefetchMaxZoom) return;
     setTimeout(() => {
       // 有体素世界还在建（同一个来源可能两个世界共用）就不猜，理由同上
       if (voxelsPending.size) return;
       // 外推：位置、投影矩阵、每像素张角逐项再变一步，朝向再转一步（本 × 上⁻¹ × 本）。
       // 前两步差不多大（镜头在匀着加速、变焦）时，位置和视角把步长的变化也带上：只照最近一步外推，穿塔加速那段每帧有一两块猜不中，当场建就用不上
-      const 步 = 本.位.distanceTo(上.位);
-      const 焦 = 本.像素角 - 上.像素角;
-      const 二阶 = 上上 && Math.abs(步 - 上.位.distanceTo(上上.位)) <= 步 / 2 && Math.abs(焦 - (上.像素角 - 上上.像素角)) <= Math.abs(焦) / 2 ? 上上 : null;
-      const 下 = (取: (p: 镜头位姿) => number) => (二阶 ? 3 * 取(本) - 3 * 取(上) + 取(二阶) : 2 * 取(本) - 取(上));
-      for (let i = 0; i < 16; i++) 预测机.projectionMatrix.elements[i] = 下((p) => p.投.elements[i]!);
-      预测机.projectionMatrixInverse.copy(预测机.projectionMatrix).invert();
-      预测机.position.set(下((p) => p.位.x), 下((p) => p.位.y), 下((p) => p.位.z));
-      预测机.quaternion.copy(本.向).multiply(_向.copy(上.向).invert()).multiply(本.向).normalize();
-      预测机.updateMatrixWorld();
-      const 要 = 挑这帧(
-        makeFrustumTest(预测机),
-        本.心.map((_, i) => 下((p) => p.心[i]!)),
-        下((p) => p.像素角),
-      ).filter((q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !预取在途.has(keptKey(worldKey, q)));
-      if (要.length && 要.length <= 预取最多块) 预取(worldKey, source, 要);
+      const spacing = current.位.distanceTo(prevPose.位);
+      const zoomDelta = current.pixelAngle - prevPose.pixelAngle;
+      const secondOrderPose = prevPrev && Math.abs(spacing - prevPose.位.distanceTo(prevPrev.位)) <= spacing / 2 && Math.abs(zoomDelta - (prevPose.pixelAngle - prevPrev.pixelAngle)) <= Math.abs(zoomDelta) / 2 ? prevPrev : null;
+      const extrapolate = (readField: (p: CameraPose) => number) => (secondOrderPose ? 3 * readField(current) - 3 * readField(prevPose) + readField(secondOrderPose) : 2 * readField(current) - readField(prevPose));
+      for (let i = 0; i < 16; i++) predictCamera.projectionMatrix.elements[i] = extrapolate((p) => p.projection.elements[i]!);
+      predictCamera.projectionMatrixInverse.copy(predictCamera.projectionMatrix).invert();
+      predictCamera.position.set(extrapolate((p) => p.位.x), extrapolate((p) => p.位.y), extrapolate((p) => p.位.z));
+      predictCamera.quaternion.copy(current.dirQuat).multiply(_orientation.copy(prevPose.dirQuat).invert()).multiply(current.dirQuat).normalize();
+      predictCamera.updateMatrixWorld();
+      const toPrefetch = pickThisFrame(
+        makeFrustumTest(predictCamera),
+        current.心.map((_, i) => extrapolate((p) => p.心[i]!)),
+        extrapolate((p) => p.pixelAngle),
+      ).filter((q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !prefetchInFlight.has(keptKey(worldKey, q)));
+      if (toPrefetch.length && toPrefetch.length <= prefetchMaxSections) prefetch(worldKey, source, toPrefetch);
     }, 0);
   });
   return <primitive object={group} />;

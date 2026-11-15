@@ -10,72 +10,72 @@
 // 手画在另一张三渲二画布上（原版手那一遍：竖直视角固定 70、不跟视角设置和推镜走），同样平涂。
 import type React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
-import type { 光影场参数 } from '@engine/三渲二/光影/预设.ts';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
+import { ToonCanvas } from '@engine/三渲二/画布.tsx';
+import type { ShadingSceneParams } from '@engine/三渲二/光影/预设.ts';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { HAND_FOV, HAND_NEAR, FirstPersonHand, handTimeline, type HandScript } from '@库/角色/第一人称.tsx';
 import { SteveFirstPersonArm } from '@库/角色/史蒂夫第一人称.tsx';
-import { magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { 女仆气泡 } from '@库/界面/女仆气泡.tsx';
-import { 做透视相机, 投影到页面, Z朝上转three } from '@库/界面/投影.ts';
-import { 方块显示, 蛋糕方块 } from '@库/物品/蛋糕方块.tsx';
+import { magicalWineFoxExBones, type MagicalWineFoxExProps } from '@库/角色/魔法酒狐新动作组件.tsx';
+import { MaidBubble } from '@库/界面/女仆气泡.tsx';
+import { makePerspectiveCamera, projectToPage, zUpToThree } from '@库/界面/投影.ts';
+import { blockDisplay, CakeBlock } from '@库/物品/蛋糕方块.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 事件 as 歌词事件 } from '../../分镜/歌词.ts';
-import { 事件 as 正片第15句事件 } from '../../分镜/正片第15句.ts';
-import { 画布调子 } from '../../画风.ts';
-import { 色板 } from '../../色板.ts';
-import { 像素字 } from '../../界面/像素字.ts';
-import { 她看你, 重逢发光区, 隐世之境重逢布景 } from './布景.tsx';
-import { 她 } from './参数.ts';
-import { 对视气泡, 对视门光, 背景褪色参数, 门光色调 } from './对视参数.ts';
-import { 加滚, 拿着花的她, 空手拿 } from './对视.tsx';
-import { 台词气泡, 背身, 笑, 风散心高, 驯服爱心种子 } from './重逢参数.ts';
-import { 台词弹出, 回头进度, 笑了, 笑进度, 重逢机位 } from './重逢动作.ts';
-import { 不褪色, 背景褪色 } from './褪色.tsx';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { events as lyricEvents } from '../../分镜/歌词.ts';
+import { events as mainCutLine15Events } from '../../分镜/正片第15句.ts';
+import { canvasTone } from '../../画风.ts';
+import { palette } from '../../色板.ts';
+import { pixelFont } from '../../界面/像素字.ts';
+import { liYingLookAt, reunionGlowRegions, HiddenLandReunionBackdrop } from './布景.tsx';
+import { liYing } from './参数.ts';
+import { eyeContactBubble, eyeContactDoorLight, backgroundFadeParams, doorLightTint } from './对视参数.ts';
+import { addRoll, LiYingHoldingFlower, holdNothing } from './对视.tsx';
+import { lineBubble, backTurned, laugh, windScatterHeight, tameHeartSeed } from './重逢参数.ts';
+import { linePop, turnBackProgress, hasLaughed, smileProgress, reunionRig } from './重逢动作.ts';
+import { NoFade, BackgroundFade } from './褪色.tsx';
 
-const 正片事件 = { ...歌词事件, ...正片第15句事件 };
+const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 
-const 调子 = '归隐之地' as const;
-const 事 = 正片事件;
+const tone = '归隐之地' as const;
+const events = mainCutEvents;
 
 /** 她：回头之前背对着门（背身），回头时头先转、身子跟着转，对视那一帧起同 对视.tsx 的 对视她（站、侧身、头转过来看你、认出你、举着月铃兰），
  *  头跟着你的眼睛走。花跟着身子转一起举起来。笑了以后换成微笑、闭眼，头在看着你的上面往你那边歪（笑） */
-const 重逢她: React.FC<{ 秒: number; 眼: V3 }> = ({ 秒, 眼 }) => {
-  const { 身: 身k, 头: 头k } = 回头进度(秒);
-  const pose: FigurePose = { ...standPose(她.脚), yaw: 身k >= 1 ? 她.身子朝向 : 背身.朝向 + (她.身子朝向 - 背身.朝向) * 身k };
-  const 末看 = 她看你(眼, pose);
-  const 笑着 = 笑了(秒);
-  const 歪k = 笑进度(秒);
-  const p: 魔法酒狐新动作Props = {
+const LiYingReunion: React.FC<{ 秒: number; 眼: V3 }> = ({ 秒: sec, 眼: eye }) => {
+  const { bodyTurn: bodyProgress, 头: headProgress } = turnBackProgress(sec);
+  const pose: FigurePose = { ...standPose(liYing.feet), yaw: bodyProgress >= 1 ? liYing.bodyFacing : backTurned.facing + (liYing.bodyFacing - backTurned.facing) * bodyProgress };
+  const endLook = liYingLookAt(eye, pose);
+  const smiling = hasLaughed(sec);
+  const tiltProgress = smileProgress(sec);
+  const p: MagicalWineFoxExProps = {
     pose,
-    姿势: '站',
-    表情: 笑着 ? 笑.表情 : 身k >= 0.5 ? '认出你' : 背身.表情,
-    看: 头k >= 1 ? [末看[0] + 笑.抬 * 歪k, 末看[1]] : [背身.看[0] + (末看[0] - 背身.看[0]) * 头k, 背身.看[1] + (末看[1] - 背身.看[1]) * 头k],
-    眨眼: 笑着 ? 笑.眨眼 : 0,
-    秒,
-    右手: 空手拿,
+    stancePose: '站',
+    expression: smiling ? laugh.expression : bodyProgress >= 0.5 ? '认出你' : backTurned.expression,
+    看: headProgress >= 1 ? [endLook[0] + laugh.lift * tiltProgress, endLook[1]] : [backTurned.看[0] + (endLook[0] - backTurned.看[0]) * headProgress, backTurned.看[1] + (endLook[1] - backTurned.看[1]) * headProgress],
+    blink: smiling ? laugh.blink : 0,
+    秒: sec,
+    rightHand: holdNothing,
   };
-  const 叠 = 歪k > 0 ? { Head: 加滚(magicalWineFoxExBones(p).Head, 笑.歪 * 歪k) } : undefined;
-  return <拿着花的她 p={p} 举={身k} 起={背身.拿花} 叠骨骼={叠} />;
+  const overlay = tiltProgress > 0 ? { Head: addRoll(magicalWineFoxExBones(p).Head, laugh.tilt * tiltProgress) } : undefined;
+  return <LiYingHoldingFlower p={p} raiseAmount={bodyProgress} 起={backTurned.holdFlower} overlaySkeleton={overlay} />;
 };
 
 /** 驯服的 7 颗爱心（碰撞箱 0.6 × 1.5，同 1-一如既往） */
-const 爱心 = tamingHearts(她.脚, 0.6, 1.5, 0, 驯服爱心种子);
+const hearts = tamingHearts(liYing.feet, 0.6, 1.5, 0, tameHeartSeed);
 /** 段内帧那一套换成歌曲帧：从某个事件那一帧起数的原版刻 */
-const 刻 = (帧: number, 起帧: number) => ((帧 - 起帧) / fps) * 20;
+const elapsedTick = (frame: number, startFrame: number) => ((frame - startFrame) / fps) * 20;
 
 /** 三渲二画布里的东西：布景、门、门光同封面帧（隐世之境重逢布景，西门开着、不放灯、门光不撒浮尘，背景褪色） */
-const 场景: React.FC<{ 帧: number; 秒: number; 眼: V3 }> = ({ 帧, 秒, 眼 }) => (
-  <背景褪色 参数={背景褪色参数}>
-    <隐世之境重逢布景 眼={眼} 秒={秒} 灯光={false} 门光参数={对视门光}>
-      <不褪色>
-        <重逢她 秒={秒} 眼={眼} />
-        <HeartParticles spawns={爱心} 刻={刻(帧, 事.第15句驯服.帧)} />
-      </不褪色>
-    </隐世之境重逢布景>
-  </背景褪色>
+const Scene: React.FC<{ 帧: number; 秒: number; 眼: V3 }> = ({ 帧: frame, 秒: sec, 眼: eye }) => (
+  <BackgroundFade 参数={backgroundFadeParams}>
+    <HiddenLandReunionBackdrop 眼={eye} 秒={sec} lighting={false} doorLightParams={eyeContactDoorLight}>
+      <NoFade>
+        <LiYingReunion 秒={sec} 眼={eye} />
+        <HeartParticles spawns={hearts} 刻={elapsedTick(frame, events.第15句驯服.帧)} />
+      </NoFade>
+    </HiddenLandReunionBackdrop>
+  </BackgroundFade>
 );
 
 // 手：右键在第 0 刻；换上蛋糕在右键前 8 刻（分镜的 换上蛋糕）；第 1 刻蛋糕被吃掉，手降下去（同 1-一如既往）。
@@ -83,88 +83,88 @@ const 场景: React.FC<{ 帧: number; 秒: number; 眼: V3 }> = ({ 帧, 秒, 眼
 // 原版拿法里半格高的蛋糕贴在方块格子底下，几乎全在画面下沿外（预览/1102-1722-立体蛋糕 02～04 的「中原版拿法」）；
 // 抬半格露出顶面和侧面，像拿着草方块的上半截。成片候选先用这版，等用户在预览里选；选原版拿法就把 蛋糕拿法 换回 方块显示.firstperson_righthand。
 // 只画拿着蛋糕的那一截：对视那一帧不画手（对视.tsx 文件头：空手的右臂会压在她身上），蛋糕吃掉以后空手的右臂也不升上来（不压她的笑脸，前后一致）
-const 换上蛋糕刻 = Math.round((事.换上蛋糕.秒 - 事.递蛋糕右键.秒) * 20);
+const cakeSwapTick = Math.round((events.换上蛋糕.秒 - events.递蛋糕右键.秒) * 20);
 /** 显示变换的 translation 按 1/16 格、在缩放前：模型里抬 8 像素 × 缩放 0.4 = 3.2。
  *  转 46° 不是原版的 45°：正好 45° 时两个侧面的法线和世界轴夹角相等，平涂按法线最大分量挑面明暗（engine/三渲二/平涂.tsx）挑不定，
  *  片元里现算的法线有一点误差，一个面上逐像素在 0.8、0.6 两档间乱跳，成了满面竖条噪点；偏 1° 朝镜头的左面稳定取 0.8、右面 0.6 */
-const 蛋糕拿法 = { ...方块显示.firstperson_righthand, rotation: [0, 46, 0], translation: [0, 3.2, 0] };
-const 手剧本: HandScript = { start: null, swings: [0], changes: [{ tick: 换上蛋糕刻, to: '蛋糕' }, { tick: 1, to: null }] };
+const cakeHoldDisplay = { ...blockDisplay.firstperson_righthand, rotation: [0, 46, 0], translation: [0, 3.2, 0] };
+const handScript: HandScript = { start: null, swings: [0], changes: [{ tick: cakeSwapTick, to: '蛋糕' }, { tick: 1, to: null }] };
 
-const 手: React.FC<{ 帧: number }> = ({ 帧 }) => {
-  const h = handTimeline(刻(帧, 事.递蛋糕右键.帧), 手剧本);
+const Hand: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
+  const h = handTimeline(elapsedTick(frame, events.递蛋糕右键.帧), handScript);
   if (h.item !== '蛋糕') return null;
   // 手那一遍的视图坐标（Y 朝上、−Z 朝前）放进三渲二画布 Z 朝上的场景里：画布的看点朝 +y（北）就是视图的 −Z，再把画布里那层 −90° 转回来
   return (
-    <三渲二画布
-      宽={画幅.宽}
-      高={画幅.高}
-      机位={{ 种: '透视', 眼: [0, 0, 0], 看: [0, 1, 0], 视角: HAND_FOV, 近: HAND_NEAR, 远: 16 }}
-      色调={门光色调}
+    <ToonCanvas
+      宽={aspect.宽}
+      高={aspect.高}
+      cameraRig={{ 种: '透视', 眼: [0, 0, 0], 看: [0, 1, 0], fov: HAND_FOV, near: HAND_NEAR, farPlane: 16 }}
+      tint={doorLightTint}
       style={{ position: 'absolute', left: 0, top: 0 }}
     >
       <group rotation={[Math.PI / 2, 0, 0]}>
-        <FirstPersonHand held={<蛋糕方块 />} display={蛋糕拿法} arm={<SteveFirstPersonArm />} swing={h.swing} equip={h.equip} />
+        <FirstPersonHand held={<CakeBlock />} display={cakeHoldDisplay} arm={<SteveFirstPersonArm />} swing={h.swing} equip={h.equip} />
       </group>
-    </三渲二画布>
+    </ToonCanvas>
   );
 };
 
-export type 透视机 = { 眼: V3; 看: V3; 视角: number };
+export type PerspectiveRig = { 眼: V3; 看: V3; fov: number };
 
 /** 她头顶的气泡锚点（页面坐标）：这一刻的机位下，帽顶（对视气泡.锚高）投到画面上的位置 */
-export const 重逢气泡锚 = (机: 透视机) => {
-  const cam = 做透视相机({ 眼: Z朝上转three(机.眼), 看: Z朝上转three(机.看), 视角: 机.视角, 宽: 画幅.宽, 高: 画幅.高 });
-  const p = 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + 对视气泡.锚高]), 画幅.宽, 画幅.高);
+export const reunionBubbleAnchor = (rig: PerspectiveRig) => {
+  const cam = makePerspectiveCamera({ 眼: zUpToThree(rig.眼), 看: zUpToThree(rig.看), fov: rig.fov, 宽: aspect.宽, 高: aspect.高 });
+  const p = projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + eyeContactBubble.anchorHeight]), aspect.宽, aspect.高);
   return { x: p.x, y: p.y };
 };
 
 /** 她头顶的气泡：挂在帽顶。片里驯服起是台词气泡（重逢参数.ts 的 台词气泡，12 倍、啵地弹出）；
  *  核对出 B 站多封面那张给了别的字，倍数同封面「片」那一版（16） */
-const 气泡: React.FC<{ 机: 透视机; 字: string; 缩放: number; 锚对齐: number; 弹出?: number }> = ({ 机, 字, 缩放, 锚对齐, 弹出 = 1 }) => (
-  <女仆气泡 锚={重逢气泡锚(机)} 缩放={缩放} 锚对齐={锚对齐} 文字={字} 字体={像素字} 弹出={弹出} />
+const ReunionBubble: React.FC<{ 机: PerspectiveRig; 字: string; 缩放: number; anchorAlign: number; popProgress?: number }> = ({ 机: rig, 字: text, 缩放: scale, anchorAlign, popProgress = 1 }) => (
+  <MaidBubble 锚={reunionBubbleAnchor(rig)} 缩放={scale} anchorAlign={anchorAlign} 文字={text} 字体={pixelFont} popProgress={popProgress} />
 );
 
 /** 樱花风从这里散开（页面坐标）：风散开那一帧的机位下，她脚底以上 风散心高 那一点在画面上的位置。花瓣先从她的背影那块吹开 */
-export const 风散心 = (() => {
-  const 机 = 重逢机位(事.风散开.帧 / fps);
-  const cam = 做透视相机({ 眼: Z朝上转three(机.眼), 看: Z朝上转three(机.看), 视角: 机.视角, 宽: 画幅.宽, 高: 画幅.高 });
-  const p = 投影到页面(cam, Z朝上转three([她.脚[0], 她.脚[1], 她.脚[2] + 风散心高]), 画幅.宽, 画幅.高);
+export const windScatterCenter = (() => {
+  const rig = reunionRig(events.风散开.帧 / fps);
+  const cam = makePerspectiveCamera({ 眼: zUpToThree(rig.眼), 看: zUpToThree(rig.看), fov: rig.fov, 宽: aspect.宽, 高: aspect.高 });
+  const p = projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + windScatterHeight]), aspect.宽, aspect.高);
   return { x: p.x, y: p.y };
 })();
 
-export type 重逢画面属性 = {
+export type ReunionPictureProps = {
   /** 歌曲帧 */
   帧: number;
   /** 她头顶换挂一个气泡、写这一句（核对出 B 站多封面用，封面的 16 倍）；不给 = 片里的样子：驯服起挂台词气泡 */
-  气泡字?: string;
+  bubbleText?: string;
   /** 换一个机位（核对出 B 站多封面第三张用封面帧的机位），不给 = 这一刻的 重逢机位 */
-  机位?: 透视机;
+  cameraRig?: PerspectiveRig;
   /** 叠在 3D 和气泡上面、整片后期里面的 2D（樱花风、歌词） */
   叠层?: React.ReactNode;
-  后期?: boolean;
+  withPost?: boolean;
   /** 整片后期颗粒的种子，不给 = 当前帧号（核对一帧一个视图用）；段里给歌曲帧 */
   种子?: number;
   /** 开光影时交给屋里那张画布的事实（手那张不给：手的镜头不动，太阳本来就不转） */
-  光影场?: 光影场参数;
+  shadingScene?: ShadingSceneParams;
 };
 
 /** 一整帧（1280×720 页面），自己铺满 */
-export const 重逢画面: React.FC<重逢画面属性> = ({ 帧, 气泡字: 字, 机位, 叠层, 后期 = true, 种子, 光影场 }) => {
-  const 秒 = 帧 / fps;
-  const t = 色板[调子];
-  const 机 = 机位 ? { 种: '透视' as const, ...机位 } : 重逢机位(秒);
+export const ReunionPicture: React.FC<ReunionPictureProps> = ({ 帧: frame, bubbleText: bubbleText, cameraRig, 叠层: overlay, withPost = true, 种子: seed, shadingScene }) => {
+  const sec = frame / fps;
+  const t = palette[tone];
+  const rig = cameraRig ? { 种: '透视' as const, ...cameraRig } : reunionRig(sec);
   return (
-    <整片后期 调色={后期 ? t.调色 : null} 种子={种子}>
-      <三渲二画布 宽={画幅.宽} 高={画幅.高} 机位={机} {...画布调子(调子)} 色调={门光色调} 发光区={重逢发光区} 光影场={光影场}>
-        <场景 帧={帧} 秒={秒} 眼={机.眼} />
-      </三渲二画布>
-      <手 帧={帧} />
-      {字 !== undefined ? (
-        <气泡 机={机} 字={字} 缩放={对视气泡.缩放.片} 锚对齐={对视气泡.缩放.片} />
+    <FilmPost grade={withPost ? t.grade : null} 种子={seed}>
+      <ToonCanvas 宽={aspect.宽} 高={aspect.高} cameraRig={rig} {...canvasTone(tone)} tint={doorLightTint} glowRegions={reunionGlowRegions} shadingScene={shadingScene}>
+        <Scene 帧={frame} 秒={sec} 眼={rig.眼} />
+      </ToonCanvas>
+      <Hand 帧={frame} />
+      {bubbleText !== undefined ? (
+        <ReunionBubble 机={rig} 字={bubbleText} 缩放={eyeContactBubble.缩放.片} anchorAlign={eyeContactBubble.缩放.片} />
       ) : (
-        台词弹出(帧) > 0 && <气泡 机={机} 字={台词气泡.字} 缩放={台词气泡.缩放} 锚对齐={台词气泡.锚对齐} 弹出={台词弹出(帧)} />
+        linePop(frame) > 0 && <ReunionBubble 机={rig} 字={lineBubble.字} 缩放={lineBubble.缩放} anchorAlign={lineBubble.anchorAlign} popProgress={linePop(frame)} />
       )}
-      {叠层}
-    </整片后期>
+      {overlay}
+    </FilmPost>
   );
 };

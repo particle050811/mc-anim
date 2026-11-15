@@ -16,7 +16,7 @@ export const camPoses = (shots: ShotCam[]) => {
     const shot = shots[shotIndex(frame)];
     return { pos: resolveKey(shot.pos, frame), tgt: resolveKey(shot.tgt, frame), lens: sample(shot.lens, frame) };
   };
-  return { 镜号: shotIndex, camera };
+  return { shotIndex: shotIndex, camera };
 };
 export const addOffset = (a: V3, b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 // 场时刻 t 落在某段的第几帧（切点按剧情时刻写）

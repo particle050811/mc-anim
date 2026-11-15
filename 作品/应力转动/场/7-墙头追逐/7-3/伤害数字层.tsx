@@ -12,7 +12,7 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
@@ -24,18 +24,18 @@ import * as K733 from '../7-3-3/编排.ts';
 const { mortarDamages, arrowDamage, sonicBoomDamage } = play;
 const hitboxHeight = 2.9;
 const hits = [
-  ...play.mortars.map((m, i) => ({ T: m.中T, damage: mortarDamages[i], crit: false, height: hitboxHeight, seed: 7331 + i })),
-  ...play.huangArrows.map((a, i) => ({ T: a.中, damage: arrowDamage, crit: true, height: a.钉[2] - play.wardenState(a.中).p[2] + 0.2, seed: 7341 + i })),
+  ...play.mortars.map((m, i) => ({ T: m.hitT, damage: mortarDamages[i], crit: false, height: hitboxHeight, seed: 7331 + i })),
+  ...play.huangArrows.map((a, i) => ({ T: a.中, damage: arrowDamage, crit: true, height: a.stuck[2] - play.wardenState(a.中).p[2] + 0.2, seed: 7341 + i })),
 ];
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 const liuEyeAtHit = play.liuEye(timeline.hitT);
 const liuHit = { T: timeline.hitT, damage: sonicBoomDamage, anchor: damageNumberAnchor(toThree([liuEyeAtHit[0], liuEyeAtHit[1], liuEyeAtHit[2] - 1.62]), 1.8, 7351) };
 
-const makeLayer = (T于: (frame: number) => number, camera: (frame: number) => Cam): React.FC => () => {
-  const frame = use当前秒() * timeline.FPS; // 编排的帧是 1/24 秒一格
+const makeLayer = (timeAt: (frame: number) => number, camera: (frame: number) => Cam): React.FC => () => {
+  const frame = useCurrentSec() * timeline.FPS; // 编排的帧是 1/24 秒一格
   const { width, height } = useVideoConfig();
-  const T = T于(frame);
+  const T = timeAt(frame);
   const cam = camera(frame);
   const cam3 = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
   const feet = toThree(play.wardenState(T).p);
@@ -45,6 +45,6 @@ const makeLayer = (T于: (frame: number) => number, camera: (frame: number) => C
   ];
   return <DamageNumberLayer camera={cam3} width={width} height={height} numbers={numbers} />;
 };
-export const DamageLayer731 = makeLayer(K731.T于, K731.camera);
-export const DamageLayer732 = makeLayer(K732.T于, K732.camera);
-export const DamageLayer733 = makeLayer(K733.T于, K733.camera);
+export const DamageLayer731 = makeLayer(K731.timeAt, K731.camera);
+export const DamageLayer732 = makeLayer(K732.timeAt, K732.camera);
+export const DamageLayer733 = makeLayer(K733.timeAt, K733.camera);

@@ -10,181 +10,181 @@ from __future__ import annotations
 import re
 from typing import Any
 
-_基本 = {"int": "I", "float": "F", "boolean": "Z", "byte": "B", "char": "C", "short": "S", "long": "J", "double": "D", "void": "V"}
+_basic_desc = {"int": "I", "float": "F", "boolean": "Z", "byte": "B", "char": "C", "short": "S", "long": "J", "double": "D", "void": "V"}
 
 
-def 换描述符(d: str, 换类) -> str:
-    return re.sub(r"L([^;]+);", lambda m: "L" + 换类(m.group(1)) + ";", d)
+def remap_descriptor(d: str, remap_class) -> str:
+    return re.sub(r"L([^;]+);", lambda m: "L" + remap_class(m.group(1)) + ";", d)
 
 
-class 恒等映射:
-    名称 = "恒等"
+class IdentityMapping:
+    mapping_name = "恒等"
 
-    def 绑定(self, 路径: Any) -> None:
-        self.路径 = 路径
+    def bind_path(self, classpath: Any) -> None:
+        self.路径 = classpath
 
-    def 类(self, jar名: str) -> str:
-        return jar名
+    def 类(self, jar_name: str) -> str:
+        return jar_name
 
-    def 反查类(self, 名: str) -> str:
-        return 名
+    def reverse_lookup_class(self, class_name: str) -> str:
+        return class_name
 
-    def 描述(self, d: str) -> str:
-        return 换描述符(d, self.类)
+    def map_descriptor(self, d: str) -> str:
+        return remap_descriptor(d, self.类)
 
-    def 字段(self, 所属: str, 名: str, 描述: str) -> str:
-        return 名
+    def field(self, owner: str, field_name: str, descriptor: str) -> str:
+        return field_name
 
-    def 方法(self, 所属: str, 名: str, 描述: str) -> str:
-        return 名
+    def method_ref(self, owner: str, method_name: str, descriptor: str) -> str:
+        return method_name
 
 
-class ProGuard映射(恒等映射):
+class ProGuardMapping(IdentityMapping):
     """client.txt：`官方类 -> 混淆类:`，下面缩进的成员行 `[行:行:]类型 名字[(参数)] -> 混淆名`"""
 
-    名称 = "ProGuard"
+    mapping_name = "ProGuard"
 
-    def __init__(self, 文件: str):
-        官到混: dict[str, str] = {}
-        成员: dict[str, list[tuple[str, str, str | None, str]]] = {}
-        当前 = ""
-        with open(文件, encoding="utf-8") as f:
-            for 行 in f:
-                if not 行.strip() or 行.startswith("#"):
+    def __init__(self, file_path: str):
+        official_to_mixed: dict[str, str] = {}
+        members: dict[str, list[tuple[str, str, str | None, str]]] = {}
+        current_class = ""
+        with open(file_path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip() or line.startswith("#"):
                     continue
-                if not 行[0].isspace():
-                    m = re.match(r"(\S+) -> (\S+):", 行)
+                if not line[0].isspace():
+                    m = re.match(r"(\S+) -> (\S+):", line)
                     if not m:
                         continue
-                    当前 = m.group(1).replace(".", "/")
-                    官到混[当前] = m.group(2).replace(".", "/")
-                    成员[当前] = []
+                    current_class = m.group(1).replace(".", "/")
+                    official_to_mixed[current_class] = m.group(2).replace(".", "/")
+                    members[current_class] = []
                     continue
-                m = re.match(r"\s+(?:\d+:\d+:)?(\S+) ([^\s(]+)(\(([^)]*)\))?(?::\d+:\d+)? -> (\S+)", 行)
+                m = re.match(r"\s+(?:\d+:\d+:)?(\S+) ([^\s(]+)(\(([^)]*)\))?(?::\d+:\d+)? -> (\S+)", line)
                 if m:
-                    成员[当前].append((m.group(1), m.group(2), m.group(4) if m.group(3) else None, m.group(5)))
-        self.官到混 = 官到混
-        self.混到官 = {v: k for k, v in 官到混.items()}
+                    members[current_class].append((m.group(1), m.group(2), m.group(4) if m.group(3) else None, m.group(5)))
+        self.official_to_mixed = official_to_mixed
+        self.obf_to_official = {v: k for k, v in official_to_mixed.items()}
 
-        def 类型描述(t: str) -> str:
+        def type_descriptor(t: str) -> str:
             n = 0
             while t.endswith("[]"):
                 t, n = t[:-2], n + 1
-            base = _基本.get(t) or "L" + 官到混.get(t.replace(".", "/"), t.replace(".", "/")) + ";"
+            base = _basic_desc.get(t) or "L" + official_to_mixed.get(t.replace(".", "/"), t.replace(".", "/")) + ";"
             return "[" * n + base
 
         # 按混淆名建表：字段 (名, 描述) → 官方名，方法 (名, 描述) → 官方名
-        self.字段表: dict[str, dict[tuple[str, str], str]] = {}
-        self.方法表: dict[str, dict[tuple[str, str], str]] = {}
-        for 官, 列 in 成员.items():
-            混 = 官到混[官]
-            字, 方 = self.字段表.setdefault(混, {}), self.方法表.setdefault(混, {})
-            for 类型, 名, 参数, 混名 in 列:
-                if 参数 is None:
-                    字[(混名, 类型描述(类型))] = 名
+        self.field_map: dict[str, dict[tuple[str, str], str]] = {}
+        self.method_map: dict[str, dict[tuple[str, str], str]] = {}
+        for official, column_entries in members.items():
+            mixed_name = official_to_mixed[official]
+            fields, methods = self.field_map.setdefault(mixed_name, {}), self.method_map.setdefault(mixed_name, {})
+            for value_type, name, params, obf_name in column_entries:
+                if params is None:
+                    fields[(obf_name, type_descriptor(value_type))] = name
                 else:
-                    ps = "".join(类型描述(p) for p in 参数.split(",") if p)
-                    方[(混名, f"({ps}){类型描述(类型)}")] = 名
-        self._原始: dict[str, Any] = {}
+                    ps = "".join(type_descriptor(p) for p in params.split(",") if p)
+                    methods[(obf_name, f"({ps}){type_descriptor(value_type)}")] = name
+        self._raw_cache: dict[str, Any] = {}
 
-    def 类(self, jar名: str) -> str:
-        if jar名.startswith("["):
-            return 换描述符(jar名, self.类)
-        return self.混到官.get(jar名, jar名)
+    def 类(self, jar_name: str) -> str:
+        if jar_name.startswith("["):
+            return remap_descriptor(jar_name, self.类)
+        return self.obf_to_official.get(jar_name, jar_name)
 
-    def 反查类(self, 名: str) -> str:
-        return self.官到混.get(名, 名)
+    def reverse_lookup_class(self, class_name: str) -> str:
+        return self.official_to_mixed.get(class_name, class_name)
 
-    def _父们(self, 混类: str) -> list[str]:
-        if 混类 not in self._原始:
-            self._原始[混类] = self.路径.原始类(混类) if hasattr(self, "路径") else None
-        c = self._原始[混类]
+    def _parents(self, mixed_class: str) -> list[str]:
+        if mixed_class not in self._raw_cache:
+            self._raw_cache[mixed_class] = self.路径.raw_class(mixed_class) if hasattr(self, "路径") else None
+        c = self._raw_cache[mixed_class]
         if c is None:
             return []
-        return ([c.父类] if c.父类 else []) + list(c.接口)
+        return ([c.parent_class] if c.parent_class else []) + list(c.is_interface)
 
-    def _沿层级(self, 表: dict[str, dict[tuple[str, str], str]], 所属: str, 名: str, 描述: str) -> str:
-        if 名 in ("<init>", "<clinit>"):
-            return 名
-        待, 见 = [所属], set()
-        while 待:
-            c = 待.pop(0)
-            if c in 见:
+    def _walk_hierarchy(self, table: dict[str, dict[tuple[str, str], str]], owner: str, member_name: str, descriptor: str) -> str:
+        if member_name in ("<init>", "<clinit>"):
+            return member_name
+        pending, seen = [owner], set()
+        while pending:
+            c = pending.pop(0)
+            if c in seen:
                 continue
-            见.add(c)
-            got = 表.get(c, {}).get((名, 描述))
+            seen.add(c)
+            got = table.get(c, {}).get((member_name, descriptor))
             if got is not None:
                 return got
-            待.extend(self._父们(c))
-        return 名
+            pending.extend(self._parents(c))
+        return member_name
 
-    def 字段(self, 所属: str, 名: str, 描述: str) -> str:
-        return self._沿层级(self.字段表, 所属, 名, 描述)
+    def field(self, owner: str, field_name: str, descriptor: str) -> str:
+        return self._walk_hierarchy(self.field_map, owner, field_name, descriptor)
 
-    def 方法(self, 所属: str, 名: str, 描述: str) -> str:
-        return self._沿层级(self.方法表, 所属, 名, 描述)
+    def method_ref(self, owner: str, method_name: str, descriptor: str) -> str:
+        return self._walk_hierarchy(self.method_map, owner, method_name, descriptor)
 
 
-class SRG映射(恒等映射):
+class SrgMapping(IdentityMapping):
     """tsrg / tsrg2 表，两种方向都认：
     - 混淆名 → SRG：mcp_config 的 obf_to_srg.tsrg（tsrg）、config/joined.tsrg（tsrg2「obf srg id」），要配 client.txt 经混淆名接到官方名
     - 官方名 → SRG：ForgeGradle 的 build/createMcpToSrg/output.tsrg（tsrg2「left right」），直接反过来，不要 client.txt
     方向按整个文件定：tsrg2 头写 obf 的是前一种；否则看第一个改了名的类，第一列在 client.txt 的混淆类名里就是前一种。
     成员行按第二列是不是描述符分字段、方法：tsrg2 的字段行也是三列（多一列 id），不能按列数分"""
 
-    名称 = "SRG"
+    mapping_name = "SRG"
 
-    def __init__(self, tsrg文件: str, 官方: ProGuard映射 | None = None):
-        self.srg到官: dict[str, str] = {}
-        当前 = ""
-        混方向: bool | None = False if 官方 is None else None
-        混字段: dict[str, str] = {}
-        with open(tsrg文件, encoding="utf-8") as f:
-            for 行 in f:
-                if not 行.strip():
+    def __init__(self, tsrg_path: str, official_mapping: ProGuardMapping | None = None):
+        self.srg_to_official: dict[str, str] = {}
+        current_class = ""
+        obf_direction: bool | None = False if official_mapping is None else None
+        mixed_fields: dict[str, str] = {}
+        with open(tsrg_path, encoding="utf-8") as f:
+            for line in f:
+                if not line.strip():
                     continue
-                if 行.startswith("tsrg2"):
-                    if 混方向 is None and 行.split()[1:2] == ["obf"]:
-                        混方向 = True
+                if line.startswith("tsrg2"):
+                    if obf_direction is None and line.split()[1:2] == ["obf"]:
+                        obf_direction = True
                     continue
-                if not 行[0].isspace():
-                    当前 = 行.split()[0]
-                    if 混方向 is None and 官方 is not None and 官方.混到官.get(当前, 当前) != 当前:
-                        混方向 = True
-                    elif 混方向 is None and 官方 is not None and 官方.官到混.get(当前, 当前) != 当前:
-                        混方向 = False
-                    if 混方向 and 官方 is not None:
-                        混字段 = {混名: 官 for (混名, _d), 官 in 官方.字段表.get(当前, {}).items()}
+                if not line[0].isspace():
+                    current_class = line.split()[0]
+                    if obf_direction is None and official_mapping is not None and official_mapping.obf_to_official.get(current_class, current_class) != current_class:
+                        obf_direction = True
+                    elif obf_direction is None and official_mapping is not None and official_mapping.official_to_mixed.get(current_class, current_class) != current_class:
+                        obf_direction = False
+                    if obf_direction and official_mapping is not None:
+                        mixed_fields = {obf_name: official for (obf_name, _d), official in official_mapping.field_map.get(current_class, {}).items()}
                     continue
-                if 行.startswith("\t\t"):
+                if line.startswith("\t\t"):
                     continue  # tsrg2 的参数、static 标记
-                parts = 行.split()
-                是方法 = len(parts) >= 3 and parts[1].startswith("(")
-                srg = parts[2] if 是方法 else parts[1]
+                parts = line.split()
+                is_method = len(parts) >= 3 and parts[1].startswith("(")
+                srg = parts[2] if is_method else parts[1]
                 if srg == parts[0]:
                     continue  # <init>、没改名的覆写（toString 等）
-                if not 混方向 or 官方 is None:
-                    self.srg到官[srg] = parts[0]
+                if not obf_direction or official_mapping is None:
+                    self.srg_to_official[srg] = parts[0]
                     continue
-                官 = 官方.方法表.get(当前, {}).get((parts[0], parts[1])) if 是方法 else 混字段.get(parts[0])
-                if 官 is not None:
-                    self.srg到官[srg] = 官
+                official = official_mapping.method_map.get(current_class, {}).get((parts[0], parts[1])) if is_method else mixed_fields.get(parts[0])
+                if official is not None:
+                    self.srg_to_official[srg] = official
 
-    def 字段(self, 所属: str, 名: str, 描述: str) -> str:
-        return self.srg到官.get(名, 名)
+    def field(self, owner: str, field_name: str, descriptor: str) -> str:
+        return self.srg_to_official.get(field_name, field_name)
 
-    def 方法(self, 所属: str, 名: str, 描述: str) -> str:
-        return self.srg到官.get(名, 名)
+    def method_ref(self, owner: str, method_name: str, descriptor: str) -> str:
+        return self.srg_to_official.get(method_name, method_name)
 
 
-def 读映射(说明: str | None):
+def read_mapping(spec: str | None):
     """命令行写法：不给 = 恒等；proguard:<client.txt>；srg:<tsrg>[,<client.txt>]（混淆名 → SRG 的表要带 client.txt）"""
-    if not 说明 or 说明 == "恒等":
-        return 恒等映射()
-    kind, _, rest = 说明.partition(":")
+    if not spec or spec == "恒等":
+        return IdentityMapping()
+    kind, _, rest = spec.partition(":")
     if kind == "proguard":
-        return ProGuard映射(rest)
+        return ProGuardMapping(rest)
     if kind == "srg":
         tsrg, _, client = rest.partition(",")
-        return SRG映射(tsrg, ProGuard映射(client) if client else None)
-    raise ValueError(f"不认识的映射：{说明}（恒等 | proguard:<client.txt> | srg:<tsrg>[,<client.txt>]）")
+        return SrgMapping(tsrg, ProGuardMapping(client) if client else None)
+    raise ValueError(f"不认识的映射：{spec}（恒等 | proguard:<client.txt> | srg:<tsrg>[,<client.txt>]）")

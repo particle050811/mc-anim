@@ -12,8 +12,8 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { vanilla, type BlockPos } from '../../../地点/古城4x/布局.ts';
-import blockData资产 from 'asset:碎块/镜头/6-4-6/振动方块';
-const blockData = blockData资产 as unknown as { 感测体: number[][]; 尖啸体: number[][]; 羊毛: number[][] };
+import blockDataJson from 'asset:碎块/镜头/6-4-6/振动方块';
+const blockData = blockDataJson as unknown as { sculkSensors: number[][]; sculkShrieker: number[][]; woolBlocks: number[][] };
 
 type VibrationEvent = { 名: string; t: number; p: V3 }; // p：场景坐标（脚底）
 export type Vibration = { from: V3; to: V3; t: number; 到: number; 收: string };
@@ -23,9 +23,9 @@ const cellCenter = ([x, y, z]: number[]): V3 => G4(x + 0.5, y + 0.5, z + 0.5);
 const dist = (a: V3, b: V3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 const toGame = (p: V3): V3 => [p[0] - 720, p[2] - 50, 240 - p[1]];
 
-const worldWool = new Set((blockData.羊毛 as number[][]).map(posKey));
-export const sensorCells: BlockPos[] = blockData.感测体 as BlockPos[];
-export const shriekerCells: BlockPos[] = blockData.尖啸体 as BlockPos[];
+const worldWool = new Set((blockData.woolBlocks as number[][]).map(posKey));
+export const sensorCells: BlockPos[] = blockData.sculkSensors as BlockPos[];
+export const shriekerCells: BlockPos[] = blockData.sculkShrieker as BlockPos[];
 // 两点（场景坐标）连线上有没有羊毛：两头取格心，0.02 格一步（同 工具/古城4x布局/方块.py 的 挡振动）
 const isOccluded = (start: V3, end: V3, placedWool: Set<string>) => {
   const startCell = toGame(start).map((v) => Math.floor(v) + 0.5);
@@ -42,9 +42,9 @@ const isOccluded = (start: V3, end: V3, placedWool: Set<string>) => {
 
 export type ChainResult = {
   vibrations: Vibration[];
-  激活: Map<string, number>; // 感测体（格的键）→ 激活的秒
-  尖啸们: { 体: BlockPos; p: V3; t: number }[]; // p：尖啸体底面中心（场景）
-  收到不叫: { 体: BlockPos; t: number }[]; // 冷却里收到的
+  activatedAt: Map<string, number>; // 感测体（格的键）→ 激活的秒
+  shrieks: { block: BlockPos; p: V3; t: number }[]; // p：尖啸体底面中心（场景）
+  silentReceipts: { block: BlockPos; t: number }[]; // 冷却里收到的
 };
 // 事件们按时间排好；冷却到：上一次尖啸 + 10 秒（追兵钟）；垫的：李樱垫的羊毛（羊毛条目 [x, 站立面 y, z] = 羊毛方块所在格）
 export const computeChain = (events: VibrationEvent[], cooldownUntil: number, placedWool: BlockPos[]): ChainResult => {
@@ -81,17 +81,17 @@ export const computeChain = (events: VibrationEvent[], cooldownUntil: number, pl
     }
   }
   receipts.sort((a, b) => a.t - b.t);
-  const shrieks: ChainResult['尖啸们'] = [];
-  const silentReceipts: ChainResult['收到不叫'] = [];
+  const shrieks: ChainResult['shrieks'] = [];
+  const silentReceipts: ChainResult['silentReceipts'] = [];
   let cooldownEnd = cooldownUntil;
   for (const receipt of receipts) {
     vibrations.push({ from: receipt.from, to: cellCenter(receipt.shrieker), t: receipt.emitT, 到: receipt.t, 收: `尖啸体 ${posKey(receipt.shrieker)}` });
     if (receipt.t >= cooldownEnd) {
-      shrieks.push({ 体: receipt.shrieker, p: G4(receipt.shrieker[0] + 0.5, receipt.shrieker[1], receipt.shrieker[2] + 0.5), t: receipt.t });
+      shrieks.push({ block: receipt.shrieker, p: G4(receipt.shrieker[0] + 0.5, receipt.shrieker[1], receipt.shrieker[2] + 0.5), t: receipt.t });
       cooldownEnd = receipt.t + vanilla.warningCooldownSec;
-    } else silentReceipts.push({ 体: receipt.shrieker, t: receipt.t });
+    } else silentReceipts.push({ block: receipt.shrieker, t: receipt.t });
   }
-  return { vibrations, 激活: activatedAt, 尖啸们: shrieks, 收到不叫: silentReceipts };
+  return { vibrations, activatedAt: activatedAt, shrieks: shrieks, silentReceipts: silentReceipts };
 };
 
 // 网格里画死的感测体藏掉、换成会抖的（同 ../6-4-3/编排.ts 的 感测体HIDE：底座侧面、顶面和触须分两个盒子藏）

@@ -2,7 +2,7 @@
 // 改一句配音不会让只动嘴的段跟着过期。
 import mouthTable from 'asset:数据/配音/口型';
 import lineTable from 'asset:数据/配音/台词表';
-import { 做口型 } from '@库/角色/口型.ts';
+import { buildLipData } from '@库/角色/口型.ts';
 
-export const { mouthAt, withTalkNod } = 做口型(mouthTable, lineTable);
+export const { mouthAt, withTalkNod } = buildLipData(mouthTable, lineTable);
 export { CLOSED, MOUTH_SHAPES, type Mouth } from '@库/角色/口型.ts';

@@ -15,13 +15,13 @@ export const wool641 = {
   P6: [-927, -50, 190],
   B: [-966, -49, 197], // #212 箱子北边一格（锁扣朝北正对着他，开箱面朝南；6-4-1 开箱拿东西；#212 8 格内没有感测体，开箱不响）
 } satisfies Record<string, BlockPos>;
-export const chestB = { 号: 212, block: [-966, -49, 198] as BlockPos };
+export const chestB = { chestId: 212, block: [-966, -49, 198] as BlockPos };
 export const wool642 = {
   Q1: [-1001, -45, 207],
   Q2: [-1037, -49, 228],
   Q3: [-1055, -51, 192],
   Q4: [-1094, -51, 201], // 兵营南门外
-  C: archery.李樱羊毛, // 一小跳进兵营，落在 #210 跟前开箱（第一次警告），6-4-3 接着站在这里
+  C: archery.liYingWool, // 一小跳进兵营，落在 #210 跟前开箱（第一次警告），6-4-3 接着站在这里
 } satisfies Record<string, BlockPos>;
 // 6-4-2 → 6-4-3a 是一个不切的镜头，合成一段 6-4-2至3a（用户 10-18 定的段界规矩）；6-4-2 末帧是 6-4-3a 首帧的前一刻（两边都 import 这里，不 import 对方的编排）：
 //   李樱站在 `wool642.C` 上面朝南（yaw −180，#210 在南边一格）弯腰翻箱，箱盖开满；#212、#210 都已开过（Lootr 已开贴图，见 箱子.ts 的 开箱表）；羊毛 P1～C 全在；黑暗已退干净。
@@ -29,11 +29,11 @@ export const wool642 = {
 //   `archery.感测体` 不激活，触须钟同老 6-4-2（6-4-3 剧情 0 秒 + 32 秒）。
 //   `cam` 是 6-4-3a 第 0 帧的机位（A1 起点）：箱子南边偏西、和他头差不多高，越过箱子看他低头翻箱（东边是来箭方向，画面右边留着）。
 //   6-4-2 镜头 3 慢慢落到这里、末帧停住，6-4-3a 从静止起推。兵营门洞两根柱子之间会贴墙，所以比原位往北挪 1.1 米、抬 0.3 米（工具/机位核对/核对.py 的「近」）。
-const feet642 = feetOnWool(archery.李樱羊毛);
+const feet642 = feetOnWool(archery.liYingWool);
 export const lastFrame642 = {
-  脚底: feet642,
-  朝向: -180,
-  开盖: 1,
+  feet: feet642,
+  facing: -180,
+  lidOpen: 1,
   cam: { pos: G4(-1087.5, -45.0, 197.5), tgt: [feet642[0], feet642[1], feet642[2] + 1.0], lens: 24 } as { pos: V3; tgt: V3; lens: number }, // 看点在他脚底以上 1 米
 };
 // 6-4-5 引祸：从 C 往南跳出兵营南门（第一跳入画），之后出画绕到场子西边的屋顶 V（7-2-1 他在 V 上远望）

@@ -11,22 +11,22 @@
 //   double：GeckoLib 4 用的 mclib（IValue.get()、Operation.calculate 都是 double，geckolib-forge-1.20.1-4.8.4 的 jarjar/mclib-20.jar，javap 看的）。
 // float 做法：字面量、读到的数、每步算术和函数结果都过 Math.fround（Java 的 float 运算就是每步舍入到 float）。
 
-export type Molang值 = number | string;
+export type MolangValue = number | string;
 
-type 节点 =
+type MolangNode =
   | { k: '数'; v: number }
   | { k: '串'; v: string }
   | { k: '名'; 名: string }
-  | { k: '调'; 名: string; 参: 节点[] }
-  | { k: '一元'; op: '-' | '!'; a: 节点 }
-  | { k: '二元'; op: string; a: 节点; b: 节点 }
-  | { k: '条件'; c: 节点; a: 节点; b?: 节点 }
-  | { k: '赋值'; 名: string; v: 节点 }
-  | { k: '返回'; v: 节点 }
-  | { k: '块'; 句: 节点[] };
+  | { k: '调'; 名: string; callParams: MolangNode[] }
+  | { k: '一元'; op: '-' | '!'; a: MolangNode }
+  | { k: '二元'; op: string; a: MolangNode; b: MolangNode }
+  | { k: '条件'; c: MolangNode; a: MolangNode; b?: MolangNode }
+  | { k: '赋值'; 名: string; v: MolangNode }
+  | { k: '返回'; v: MolangNode }
+  | { k: '块'; 句: MolangNode[] };
 
 /** 编译好的表达式：源文、语法树，以及能不能在解析时就算成常数（只含数字和 math 纯函数） */
-export type Molang式 = { readonly 源: string; readonly 树: 节点; readonly 常量: boolean };
+export type MolangExpr = { readonly 源: string; readonly 树: MolangNode; readonly isConst: boolean };
 
 /**
  * 求值环境。变量表是唯一会被写的东西（赋值 v.x = …），调用方显式传进来、自己决定跨帧留不留；除此之外求值是纯函数。
@@ -34,188 +34,188 @@ export type Molang式 = { readonly 源: string; readonly 树: 节点; readonly �
  * 外部：别的命名空间按全名查，如 { 'ysm.has_helmet': 1 }。
  * 没给的名字一律得 0（和游戏里一样不报错），名字记进 未知（给了的话），检查用。
  */
-export type Molang环境 = {
-  查询?: Readonly<Record<string, number | ((...参: number[]) => number)>>;
-  变量?: Record<string, Molang值>;
-  上下文?: Readonly<Record<string, number>>;
-  外部?: Readonly<Record<string, number | ((...参: number[]) => number)>>;
+export type MolangEnv = {
+  query?: Readonly<Record<string, number | ((...queryParams: number[]) => number)>>;
+  变量?: Record<string, MolangValue>;
+  context?: Readonly<Record<string, number>>;
+  external?: Readonly<Record<string, number | ((...extParams: number[]) => number)>>;
   /** 要原样拿参数（含字符串）的函数，按全名查，先于 查询、外部：ysm.second_order('名字', 输入, …) 靠第一个字符串参数认是哪一个系统 */
-  函数?: Readonly<Record<string, (参: readonly Molang值[]) => Molang值>>;
+  functions?: Readonly<Record<string, (argParams: readonly MolangValue[]) => MolangValue>>;
   /** 'float' 每步舍入到 32 位（mocha、基岩版），'double'（默认）不舍入（GeckoLib 4 的 mclib） */
-  数值?: 'float' | 'double';
+  precision?: 'float' | 'double';
   /** math.random、math.die_roll 用的随机源（0～1）；不给按 0 算，保证可复现 */
-  随机?: () => number;
-  未知?: Set<string>;
+  rng?: () => number;
+  unresolved?: Set<string>;
 };
 
 // ---- 词法 ----
-type 记号 = { t: '数'; v: number } | { t: '串'; v: string } | { t: '名'; v: string } | { t: '符'; v: string };
-const 符号们 = ['??', '&&', '||', '==', '!=', '<=', '>=', '->', '+', '-', '*', '/', '<', '>', '!', '?', ':', '(', ')', ',', '=', ';', '{', '}', '[', ']'];
+type Token = { t: '数'; v: number } | { t: '串'; v: string } | { t: '名'; v: string } | { t: '符'; v: string };
+const operators = ['??', '&&', '||', '==', '!=', '<=', '>=', '->', '+', '-', '*', '/', '<', '>', '!', '?', ':', '(', ')', ',', '=', ';', '{', '}', '[', ']'];
 
-const 切词 = (源: string): 记号[] => {
-  const 出: 记号[] = [];
+const tokenize = (sourceText: string): Token[] => {
+  const tokens: Token[] = [];
   let i = 0;
-  while (i < 源.length) {
-    const c = 源[i]!;
+  while (i < sourceText.length) {
+    const c = sourceText[i]!;
     if (/\s/.test(c)) {
       i++;
       continue;
     }
-    const 数 = /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?f?/.exec(源.slice(i));
-    if (数) {
-      出.push({ t: '数', v: Number.parseFloat(数[0]) });
-      i += 数[0].length;
+    const numToken = /^(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?f?/.exec(sourceText.slice(i));
+    if (numToken) {
+      tokens.push({ t: '数', v: Number.parseFloat(numToken[0]) });
+      i += numToken[0].length;
       continue;
     }
     if (c === "'") {
-      const j = 源.indexOf("'", i + 1);
-      if (j < 0) throw new Error(`Molang：字符串没闭合：${源}`);
-      出.push({ t: '串', v: 源.slice(i + 1, j) });
+      const j = sourceText.indexOf("'", i + 1);
+      if (j < 0) throw new Error(`Molang：字符串没闭合：${sourceText}`);
+      tokens.push({ t: '串', v: sourceText.slice(i + 1, j) });
       i = j + 1;
       continue;
     }
-    const 名 = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/.exec(源.slice(i));
-    if (名) {
-      出.push({ t: '名', v: 名[0].toLowerCase() });
-      i += 名[0].length;
+    const identName = /^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*/.exec(sourceText.slice(i));
+    if (identName) {
+      tokens.push({ t: '名', v: identName[0].toLowerCase() });
+      i += identName[0].length;
       continue;
     }
-    const 符 = 符号们.find((s) => 源.startsWith(s, i));
-    if (!符) throw new Error(`Molang：认不出的字符 ${c}：${源}`);
-    出.push({ t: '符', v: 符 });
-    i += 符.length;
+    const symbol = operators.find((s) => sourceText.startsWith(s, i));
+    if (!symbol) throw new Error(`Molang：认不出的字符 ${c}：${sourceText}`);
+    tokens.push({ t: '符', v: symbol });
+    i += symbol.length;
   }
-  return 出;
+  return tokens;
 };
 
 // ---- 语法（优先级爬升） ----
-const 二元优先级: Record<string, number> = {
+const binaryPrecedence: Record<string, number> = {
   '??': 1200, '||': 1600, '&&': 1800, '==': 2000, '!=': 2000,
   '<': 2200, '<=': 2200, '>': 2200, '>=': 2200, '+': 2400, '-': 2400, '*': 2600, '/': 2600,
 };
-const 条件优先级 = 1400;
-const 一元优先级 = 2800;
+const ternaryPrecedence = 1400;
+const unaryPrecedence = 2800;
 
 // 命名空间别名统一成短写
-const 规范名 = (名: string): string =>
-  名.replace(/^query\./, 'q.').replace(/^variable\./, 'v.').replace(/^temp\./, 't.').replace(/^context\./, 'c.');
+const canonicalName = (rawName: string): string =>
+  rawName.replace(/^query\./, 'q.').replace(/^variable\./, 'v.').replace(/^temp\./, 't.').replace(/^context\./, 'c.');
 
-const 解析 = (源: string): 节点 => {
-  const 词 = 切词(源);
+const parse = (sourceText: string): MolangNode => {
+  const tokens = tokenize(sourceText);
   let p = 0;
-  const 看 = () => 词[p];
-  const 是符 = (v: string) => 看()?.t === '符' && 看()!.v === v;
-  const 吃 = (v: string) => {
-    if (!是符(v)) throw new Error(`Molang：这里要 ${v}：${源}`);
+  const peek = () => tokens[p];
+  const isSymbol = (v: string) => peek()?.t === '符' && peek()!.v === v;
+  const consume = (v: string) => {
+    if (!isSymbol(v)) throw new Error(`Molang：这里要 ${v}：${sourceText}`);
     p++;
   };
 
-  const 单项 = (): 节点 => {
-    const w = 词[p++];
-    if (!w) throw new Error(`Molang：表达式没写完：${源}`);
+  const parseTerm = (): MolangNode => {
+    const w = tokens[p++];
+    if (!w) throw new Error(`Molang：表达式没写完：${sourceText}`);
     if (w.t === '数') return { k: '数', v: w.v };
     if (w.t === '串') return { k: '串', v: w.v };
     if (w.t === '符') {
       if (w.v === '(') {
-        const e = 表达式(0);
-        吃(')');
+        const e = parseExpression(0);
+        consume(')');
         return e;
       }
       if (w.v === '{') {
-        const 句 = 句们('}');
-        吃('}');
-        return { k: '块', 句 };
+        const statements = parseStatements('}');
+        consume('}');
+        return { k: '块', 句: statements };
       }
-      if (w.v === '-' || w.v === '!') return { k: '一元', op: w.v, a: 表达式(一元优先级) };
-      throw new Error(`Molang：不支持的写法 ${w.v}：${源}`);
+      if (w.v === '-' || w.v === '!') return { k: '一元', op: w.v, a: parseExpression(unaryPrecedence) };
+      throw new Error(`Molang：不支持的写法 ${w.v}：${sourceText}`);
     }
     if (w.v === 'true' || w.v === 'false') return { k: '数', v: w.v === 'true' ? 1 : 0 };
-    if (w.v === 'return') return { k: '返回', v: 表达式(0) };
-    if (['loop', 'for_each', 'break', 'continue'].includes(w.v)) throw new Error(`Molang：不支持 ${w.v}：${源}`);
-    const 名 = 规范名(w.v);
-    if (是符('(')) {
+    if (w.v === 'return') return { k: '返回', v: parseExpression(0) };
+    if (['loop', 'for_each', 'break', 'continue'].includes(w.v)) throw new Error(`Molang：不支持 ${w.v}：${sourceText}`);
+    const name = canonicalName(w.v);
+    if (isSymbol('(')) {
       p++;
-      const 参: 节点[] = [];
-      while (!是符(')')) {
-        参.push(表达式(0));
-        if (是符(',')) p++;
+      const callParams: MolangNode[] = [];
+      while (!isSymbol(')')) {
+        callParams.push(parseExpression(0));
+        if (isSymbol(',')) p++;
         else break;
       }
-      吃(')');
-      return { k: '调', 名, 参 };
+      consume(')');
+      return { k: '调', 名: name, callParams };
     }
-    if (是符('=')) {
+    if (isSymbol('=')) {
       p++;
-      return { k: '赋值', 名, v: 表达式(0) };
+      return { k: '赋值', 名: name, v: parseExpression(0) };
     }
-    return { k: '名', 名 };
+    return { k: '名', 名: name };
   };
 
-  const 表达式 = (最低: number): 节点 => {
-    let 左 = 单项();
+  const parseExpression = (minPrec: number): MolangNode => {
+    let leftOperand = parseTerm();
     for (;;) {
-      const w = 看();
+      const w = peek();
       if (!w || w.t !== '符') break;
-      if (w.v === '?' && 条件优先级 >= 最低) {
+      if (w.v === '?' && ternaryPrecedence >= minPrec) {
         p++;
-        const a = 表达式(条件优先级);
-        let b: 节点 | undefined;
-        if (是符(':')) {
+        const a = parseExpression(ternaryPrecedence);
+        let b: MolangNode | undefined;
+        if (isSymbol(':')) {
           p++;
-          b = 表达式(条件优先级);
+          b = parseExpression(ternaryPrecedence);
         }
-        左 = { k: '条件', c: 左, a, b };
+        leftOperand = { k: '条件', c: leftOperand, a, b };
         continue;
       }
-      const 级 = 二元优先级[w.v];
-      if (级 === undefined || 级 < 最低) break;
-      if (w.v === '->') throw new Error(`Molang：不支持 ->：${源}`);
+      const precedence = binaryPrecedence[w.v];
+      if (precedence === undefined || precedence < minPrec) break;
+      if (w.v === '->') throw new Error(`Molang：不支持 ->：${sourceText}`);
       p++;
-      左 = { k: '二元', op: w.v, a: 左, b: 表达式(级 + 1) };
+      leftOperand = { k: '二元', op: w.v, a: leftOperand, b: parseExpression(precedence + 1) };
     }
-    return 左;
+    return leftOperand;
   };
 
-  const 句们 = (结束?: string): 节点[] => {
-    const 出: 节点[] = [];
-    while (p < 词.length && !(结束 && 是符(结束))) {
-      if (是符(';')) {
+  const parseStatements = (closer?: string): MolangNode[] => {
+    const nodes: MolangNode[] = [];
+    while (p < tokens.length && !(closer && isSymbol(closer))) {
+      if (isSymbol(';')) {
         p++;
         continue;
       }
-      出.push(表达式(0));
-      if (p < 词.length && !(结束 && 是符(结束))) 吃(';');
+      nodes.push(parseExpression(0));
+      if (p < tokens.length && !(closer && isSymbol(closer))) consume(';');
     }
-    return 出;
+    return nodes;
   };
 
   // 有分号就是「复合表达式」：按基岩规范，没有 return 时得 0
-  const 有分号 = 词.some((w) => w.t === '符' && w.v === ';');
-  const 句 = 句们();
-  if (p !== 词.length) throw new Error(`Molang：多余的内容：${源}`);
-  if (!有分号 && 句.length === 1) return 句[0]!;
-  return { k: '块', 句 };
+  const hasSemicolon = tokens.some((w) => w.t === '符' && w.v === ';');
+  const statements = parseStatements();
+  if (p !== tokens.length) throw new Error(`Molang：多余的内容：${sourceText}`);
+  if (!hasSemicolon && statements.length === 1) return statements[0]!;
+  return { k: '块', 句: statements };
 };
 
 // ---- math（角度制，照基岩规范） ----
-const 度 = Math.PI / 180;
-const 数学: Record<string, (参: number[], 环境: Molang环境) => number> = {
+const radPerDeg = Math.PI / 180;
+const mathFuncs: Record<string, (mathParams: number[], env: MolangEnv) => number> = {
   abs: ([a = 0]) => Math.abs(a),
-  acos: ([a = 0]) => Math.acos(a) / 度,
-  asin: ([a = 0]) => Math.asin(a) / 度,
-  atan: ([a = 0]) => Math.atan(a) / 度,
-  atan2: ([y = 0, x = 0]) => Math.atan2(y, x) / 度,
+  acos: ([a = 0]) => Math.acos(a) / radPerDeg,
+  asin: ([a = 0]) => Math.asin(a) / radPerDeg,
+  atan: ([a = 0]) => Math.atan(a) / radPerDeg,
+  atan2: ([y = 0, x = 0]) => Math.atan2(y, x) / radPerDeg,
   ceil: ([a = 0]) => Math.ceil(a),
   clamp: ([v = 0, lo = 0, hi = 0]) => Math.min(hi, Math.max(lo, v)),
-  cos: ([a = 0]) => Math.cos(a * 度),
-  sin: ([a = 0]) => Math.sin(a * 度),
+  cos: ([a = 0]) => Math.cos(a * radPerDeg),
+  sin: ([a = 0]) => Math.sin(a * radPerDeg),
   exp: ([a = 0]) => Math.exp(a),
   floor: ([a = 0]) => Math.floor(a),
   hermite_blend: ([t = 0]) => 3 * t * t - 2 * t * t * t,
   lerp: ([a = 0, b = 0, t = 0]) => a + (b - a) * t,
   lerprotate: ([a = 0, b = 0, t = 0]) => {
-    const 差 = ((((b - a) % 360) + 540) % 360) - 180;
-    return a + 差 * t;
+    const angleDiff = ((((b - a) % 360) + 540) % 360) - 180;
+    return a + angleDiff * t;
   },
   ln: ([a = 0]) => Math.log(a),
   max: ([a = 0, b = 0]) => Math.max(a, b),
@@ -229,17 +229,17 @@ const 数学: Record<string, (参: number[], 环境: Molang环境) => number> = 
   trunc: ([a = 0]) => Math.trunc(a),
   sign: ([a = 0]) => (a >= 0 ? 1 : -1),
   copy_sign: ([a = 0, b = 0]) => Math.abs(a) * (b >= 0 ? 1 : -1),
-  random: ([lo = 0, hi = 0], 环境) => lo + (环境.随机?.() ?? 0) * (hi - lo),
-  random_integer: ([lo = 0, hi = 0], 环境) => Math.round(lo + (环境.随机?.() ?? 0) * (hi - lo)),
-  die_roll: ([n = 0, lo = 0, hi = 0], 环境) => {
+  random: ([lo = 0, hi = 0], env) => lo + (env.rng?.() ?? 0) * (hi - lo),
+  random_integer: ([lo = 0, hi = 0], env) => Math.round(lo + (env.rng?.() ?? 0) * (hi - lo)),
+  die_roll: ([n = 0, lo = 0, hi = 0], env) => {
     let s = 0;
-    for (let i = 0; i < n; i++) s += lo + (环境.随机?.() ?? 0) * (hi - lo);
+    for (let i = 0; i < n; i++) s += lo + (env.rng?.() ?? 0) * (hi - lo);
     return s;
   },
 };
-const 纯数学 = new Set(Object.keys(数学).filter((k) => !['random', 'random_integer', 'die_roll'].includes(k)));
+const pureMath = new Set(Object.keys(mathFuncs).filter((k) => !['random', 'random_integer', 'die_roll'].includes(k)));
 
-const 是常量树 = (n: 节点): boolean => {
+const isConstTree = (n: MolangNode): boolean => {
   switch (n.k) {
     case '数':
     case '串':
@@ -247,102 +247,102 @@ const 是常量树 = (n: 节点): boolean => {
     case '名':
       return n.名 === 'math.pi';
     case '调':
-      return n.名.startsWith('math.') && 纯数学.has(n.名.slice(5)) && n.参.every(是常量树);
+      return n.名.startsWith('math.') && pureMath.has(n.名.slice(5)) && n.callParams.every(isConstTree);
     case '一元':
-      return 是常量树(n.a);
+      return isConstTree(n.a);
     case '二元':
-      return 是常量树(n.a) && 是常量树(n.b);
+      return isConstTree(n.a) && isConstTree(n.b);
     case '条件':
-      return 是常量树(n.c) && 是常量树(n.a) && (!n.b || 是常量树(n.b));
+      return isConstTree(n.c) && isConstTree(n.a) && (!n.b || isConstTree(n.b));
     default:
       return false;
   }
 };
 
 /** 编译一段 Molang；语法错误直接抛（解析期就暴露，不等渲染） */
-export const 编译 = (源: string): Molang式 => {
-  const 树 = 解析(源);
-  return { 源, 树, 常量: 是常量树(树) };
+export const compile = (sourceText: string): MolangExpr => {
+  const tree = parse(sourceText);
+  return { 源: sourceText, 树: tree, isConst: isConstTree(tree) };
 };
 
-const 转数 = (v: Molang值): number => (typeof v === 'number' ? v : 0);
-const 真 = (v: Molang值): boolean => (typeof v === 'number' ? v !== 0 : v.length > 0);
+const toNumber = (v: MolangValue): number => (typeof v === 'number' ? v : 0);
+const truthy = (v: MolangValue): boolean => (typeof v === 'number' ? v !== 0 : v.length > 0);
 
-class 返回信号 {
-  v: Molang值;
-  constructor(v: Molang值) {
+class ReturnSignal {
+  v: MolangValue;
+  constructor(v: MolangValue) {
     this.v = v;
   }
 }
 
-const 取名 = (名: string, 环境: Molang环境, 临时: Record<string, Molang值>): Molang值 | undefined => {
-  const 点 = 名.indexOf('.');
-  const 空间 = 点 < 0 ? '' : 名.slice(0, 点);
-  const 余 = 名.slice(点 + 1);
-  if (空间 === 'v') return 环境.变量?.[余];
-  if (空间 === 't') return 临时[余];
-  if (空间 === 'c') return 环境.上下文?.[余];
-  if (空间 === 'q') {
-    const q = 环境.查询?.[余];
+const lookupName = (qualifiedName: string, env: MolangEnv, tempVars: Record<string, MolangValue>): MolangValue | undefined => {
+  const dotIndex = qualifiedName.indexOf('.');
+  const space = dotIndex < 0 ? '' : qualifiedName.slice(0, dotIndex);
+  const varName = qualifiedName.slice(dotIndex + 1);
+  if (space === 'v') return env.变量?.[varName];
+  if (space === 't') return tempVars[varName];
+  if (space === 'c') return env.context?.[varName];
+  if (space === 'q') {
+    const q = env.query?.[varName];
     return typeof q === 'function' ? q() : q;
   }
-  if (名 === 'math.pi') return Math.PI;
-  const x = 环境.外部?.[名];
+  if (qualifiedName === 'math.pi') return Math.PI;
+  const x = env.external?.[qualifiedName];
   return typeof x === 'function' ? x() : x;
 };
 
-const 不舍入 = (x: number) => x;
-const 舍入 = (环境: Molang环境) => (环境.数值 === 'float' ? Math.fround : 不舍入);
+const noRound = (x: number) => x;
+const rounder = (env: MolangEnv) => (env.precision === 'float' ? Math.fround : noRound);
 
-const 求 = (n: 节点, 环境: Molang环境, 临时: Record<string, Molang值>): Molang值 => {
-  const r = 舍入(环境);
-  const 数 = (v: Molang值): Molang值 => (typeof v === 'number' ? r(v) : v);
+const evalNode = (n: MolangNode, env: MolangEnv, tempVars: Record<string, MolangValue>): MolangValue => {
+  const r = rounder(env);
+  const evalValue = (v: MolangValue): MolangValue => (typeof v === 'number' ? r(v) : v);
   switch (n.k) {
     case '数':
       return r(n.v);
     case '串':
       return n.v;
     case '名': {
-      const v = 取名(n.名, 环境, 临时);
+      const v = lookupName(n.名, env, tempVars);
       if (v === undefined) {
-        环境.未知?.add(n.名);
+        env.unresolved?.add(n.名);
         return 0;
       }
-      return 数(v);
+      return evalValue(v);
     }
     case '调': {
-      const 原参 = n.参.map((a) => 求(a, 环境, 临时));
-      const 原样 = 环境.函数?.[n.名];
-      if (原样) return 数(原样(原参));
-      const 参 = 原参.map(转数);
+      const rawArgs = n.callParams.map((a) => evalNode(a, env, tempVars));
+      const original = env.functions?.[n.名];
+      if (original) return evalValue(original(rawArgs));
+      const numParams = rawArgs.map(toNumber);
       if (n.名.startsWith('math.')) {
-        const f = 数学[n.名.slice(5)];
-        if (f) return r(f(参, 环境));
+        const f = mathFuncs[n.名.slice(5)];
+        if (f) return r(f(numParams, env));
       } else {
-        const f = n.名.startsWith('q.') ? 环境.查询?.[n.名.slice(2)] : 环境.外部?.[n.名];
-        if (typeof f === 'function') return r(f(...参));
+        const f = n.名.startsWith('q.') ? env.query?.[n.名.slice(2)] : env.external?.[n.名];
+        if (typeof f === 'function') return r(f(...numParams));
         if (typeof f === 'number') return r(f);
       }
-      环境.未知?.add(n.名);
+      env.unresolved?.add(n.名);
       return 0;
     }
     case '一元': {
-      const a = 求(n.a, 环境, 临时);
-      return n.op === '-' ? -转数(a) : 真(a) ? 0 : 1; // 取负、取非不会多出精度
+      const a = evalNode(n.a, env, tempVars);
+      return n.op === '-' ? -toNumber(a) : truthy(a) ? 0 : 1; // 取负、取非不会多出精度
     }
     case '二元': {
-      if (n.op === '&&') return 真(求(n.a, 环境, 临时)) && 真(求(n.b, 环境, 临时)) ? 1 : 0;
-      if (n.op === '||') return 真(求(n.a, 环境, 临时)) || 真(求(n.b, 环境, 临时)) ? 1 : 0;
+      if (n.op === '&&') return truthy(evalNode(n.a, env, tempVars)) && truthy(evalNode(n.b, env, tempVars)) ? 1 : 0;
+      if (n.op === '||') return truthy(evalNode(n.a, env, tempVars)) || truthy(evalNode(n.b, env, tempVars)) ? 1 : 0;
       if (n.op === '??') {
         // 左边是没定义的名字才取右边
-        if (n.a.k === '名' && 取名(n.a.名, 环境, 临时) === undefined) return 求(n.b, 环境, 临时);
-        return 求(n.a, 环境, 临时);
+        if (n.a.k === '名' && lookupName(n.a.名, env, tempVars) === undefined) return evalNode(n.b, env, tempVars);
+        return evalNode(n.a, env, tempVars);
       }
-      const a = 求(n.a, 环境, 临时);
-      const b = 求(n.b, 环境, 临时);
+      const a = evalNode(n.a, env, tempVars);
+      const b = evalNode(n.b, env, tempVars);
       if (n.op === '==') return a === b ? 1 : 0;
       if (n.op === '!=') return a !== b ? 1 : 0;
-      const [x, y] = [转数(a), 转数(b)];
+      const [x, y] = [toNumber(a), toNumber(b)];
       switch (n.op) {
         case '+': return r(x + y);
         case '-': return r(x - y);
@@ -356,40 +356,40 @@ const 求 = (n: 节点, 环境: Molang环境, 临时: Record<string, Molang值>)
       throw new Error(`Molang：不认识的运算 ${n.op}`);
     }
     case '条件':
-      return 真(求(n.c, 环境, 临时)) ? 求(n.a, 环境, 临时) : n.b ? 求(n.b, 环境, 临时) : 0;
+      return truthy(evalNode(n.c, env, tempVars)) ? evalNode(n.a, env, tempVars) : n.b ? evalNode(n.b, env, tempVars) : 0;
     case '赋值': {
-      const v = 求(n.v, 环境, 临时);
+      const v = evalNode(n.v, env, tempVars);
       if (n.名.startsWith('v.')) {
-        if (!环境.变量) throw new Error(`Molang：给 ${n.名} 赋值要传变量表`);
-        环境.变量[n.名.slice(2)] = v;
-      } else if (n.名.startsWith('t.')) 临时[n.名.slice(2)] = v;
+        if (!env.变量) throw new Error(`Molang：给 ${n.名} 赋值要传变量表`);
+        env.变量[n.名.slice(2)] = v;
+      } else if (n.名.startsWith('t.')) tempVars[n.名.slice(2)] = v;
       else throw new Error(`Molang：只能给 v.、t. 赋值：${n.名}`);
       return v;
     }
     case '返回':
-      throw new 返回信号(求(n.v, 环境, 临时));
+      throw new ReturnSignal(evalNode(n.v, env, tempVars));
     case '块':
-      for (const s of n.句) 求(s, 环境, 临时);
+      for (const s of n.句) evalNode(s, env, tempVars);
       return 0;
   }
 };
 
 /** 求一段 Molang 的值（数）。字符串结果按 0 算 */
-export const 求值 = (式: Molang式, 环境: Molang环境 = {}): number => {
+export const evaluate = (expr: MolangExpr, env: MolangEnv = {}): number => {
   try {
-    return 转数(求(式.树, 环境, {}));
+    return toNumber(evalNode(expr.树, env, {}));
   } catch (e) {
-    if (e instanceof 返回信号) return 转数(e.v);
+    if (e instanceof ReturnSignal) return toNumber(e.v);
     throw e;
   }
 };
 
 /** 数或 Molang 源文 → 数（常量直接算掉）或编译好的式子。动画文件里的值都过这一步，取材时就把能算的算成数；数值 同 Molang环境 */
-export const 烘焙 = (值: number | string, 数值?: Molang环境['数值']): number | Molang式 => {
-  if (typeof 值 === 'number') return 值;
-  const 式 = 编译(值);
-  return 式.常量 ? 求值(式, { 数值 }) : 式;
+export const bake = (value: number | string, precision?: MolangEnv['precision']): number | MolangExpr => {
+  if (typeof value === 'number') return value;
+  const expr = compile(value);
+  return expr.isConst ? evaluate(expr, { precision }) : expr;
 };
 
 /** 值（数或式子）在环境里取数 */
-export const 取值 = (值: number | Molang式, 环境: Molang环境): number => (typeof 值 === 'number' ? 值 : 求值(值, 环境));
+export const getValue = (value: number | MolangExpr, env: MolangEnv): number => (typeof value === 'number' ? value : evaluate(value, env));

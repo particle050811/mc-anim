@@ -5,9 +5,9 @@
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { Png } from '@engine/model/贴图.ts';
-import type { 点 } from '../../接口.ts';
-import { 混合参数, 贴图, type 混合, type 色 } from '../材质.ts';
-import { 减, 加, 乘, 长 as 向量长, 单位, 弹道位置, type 弹道 } from '../弹道.ts';
+import type { Vec3 } from '../../接口.ts';
+import { blendParams, toTexture, type Blend, type RgbColor } from '../材质.ts';
+import { sub, addVec, scaleVec, vecLength as vecLength, unitVec, trajectoryPos, type Trajectory } from '../弹道.ts';
 
 const VERT = `
 #include <common>
@@ -58,63 +58,63 @@ void main() {
 const s2l = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 
 /** 弹的尾迹点列（新的在前）：当前插值位置，再往回每刻一个旧位置。偏 = 加在每个点上的偏移（渲染器记的是 位置 + 半高） */
-export const 尾迹点 = (道: 弹道, 刻: number, 选: { 起刻?: number; 最多?: number; 偏?: 点 } = {}): 点[] => {
-  const 偏 = 选.偏 ?? [0, 0, 0];
-  const 点们: 点[] = [加(弹道位置(道, 刻), 偏)];
+export const trailPoints = (trajectory: Trajectory, tick: number, opts: { startTick?: number; 最多?: number; offset?: Vec3 } = {}): Vec3[] => {
+  const offset = opts.offset ?? [0, 0, 0];
+  const points: Vec3[] = [addVec(trajectoryPos(trajectory, tick), offset)];
   // TrailEffect 在 tickCount > 起刻 之后才开始记，记的是那一刻之前的位置
-  for (let n = Math.floor(刻); n >= (选.起刻 ?? 0) && 点们.length < (选.最多 ?? 64); n--) 点们.push(加(道(n), 偏));
-  return 点们;
+  for (let n = Math.floor(tick); n >= (opts.startTick ?? 0) && points.length < (opts.最多 ?? 64); n--) points.push(addVec(trajectory(n), offset));
+  return points;
 };
 
-export const 尾迹: React.FC<{
+export const Trail: React.FC<{
   /** 新的在前，场景坐标 */
-  点们: readonly 点[];
+  points: readonly Vec3[];
   /** TrailEffect 的 width（整条宽的一半是它的一半）、length（格） */
   宽: number;
   长: number;
   图: Png;
-  色?: 色;
-  透明度?: number;
+  色?: RgbColor;
+  opacity?: number;
   /** solid：alpha 不随进度淡 */
   实心?: boolean;
-  混合?: 混合;
-}> = ({ 点们, 宽, 长, 图, 色 = [1, 1, 1], 透明度 = 1, 实心 = false, 混合 = '半透明' }) => {
-  const 键 = JSON.stringify(点们);
+  混合?: Blend;
+}> = ({ points, 宽: width, 长: length, 图: image, 色: color = [1, 1, 1], opacity = 1, 实心: solid = false, 混合: blend = '半透明' }) => {
+  const cacheKey = JSON.stringify(points);
   const geo = useMemo(() => {
     // 沿点列走到 长 为止，最后一段截断
-    const 路: { p: 点; 走: number }[] = [];
-    let 走 = 0;
-    for (let i = 0; i < 点们.length; i++) {
-      const p = 点们[i]!;
+    const trail: { p: Vec3; 走: number }[] = [];
+    let walked = 0;
+    for (let i = 0; i < points.length; i++) {
+      const p = points[i]!;
       if (i === 0) {
-        路.push({ p, 走: 0 });
+        trail.push({ p, 走: 0 });
         continue;
       }
-      const 上 = 点们[i - 1]!;
-      const 段 = 向量长(减(p, 上));
-      if (段 < 1e-6) continue;
-      if (走 + 段 >= 长) {
-        路.push({ p: 加(上, 乘(单位(减(p, 上)), 长 - 走)), 走: 长 });
-        走 = 长;
+      const prevPoint = points[i - 1]!;
+      const segLength = vecLength(sub(p, prevPoint));
+      if (segLength < 1e-6) continue;
+      if (walked + segLength >= length) {
+        trail.push({ p: addVec(prevPoint, scaleVec(unitVec(sub(p, prevPoint)), length - walked)), 走: length });
+        walked = length;
         break;
       }
-      走 += 段;
-      路.push({ p, 走 });
+      walked += segLength;
+      trail.push({ p, 走: walked });
     }
-    if (路.length < 2 || 走 <= 0) return null;
+    if (trail.length < 2 || walked <= 0) return null;
     const pos: number[] = [];
     const tan: number[] = [];
     const uvw: number[] = [];
     const side: number[] = [];
     const idx: number[] = [];
-    路.forEach(({ p, 走: s }, i) => {
-      const t = 单位(减(路[Math.min(路.length - 1, i + 1)]!.p, 路[Math.max(0, i - 1)]!.p));
-      const 进度 = (走 - s) / 走;
-      for (const 边 of [-1, 1]) {
+    trail.forEach(({ p, 走: s }, i) => {
+      const t = unitVec(sub(trail[Math.min(trail.length - 1, i + 1)]!.p, trail[Math.max(0, i - 1)]!.p));
+      const progress = (walked - s) / walked;
+      for (const sign of [-1, 1]) {
         pos.push(p[0], p[1], p[2]);
         tan.push(t[0], t[1], t[2]);
-        uvw.push(进度, 进度);
-        side.push(边);
+        uvw.push(progress, progress);
+        side.push(sign);
       }
       if (i > 0) idx.push(i * 2 - 2, i * 2 - 1, i * 2, i * 2 - 1, i * 2 + 1, i * 2);
     });
@@ -125,24 +125,24 @@ export const 尾迹: React.FC<{
     g.setAttribute('side', new THREE.Float32BufferAttribute(side, 1));
     g.setIndex(idx);
     return g;
-  }, [键, 长]);
+  }, [cacheKey, length]);
   const mat = useMemo(
     () =>
       new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null }, tint: { value: new THREE.Vector4(1, 1, 1, 1) }, solid: { value: 0 }, halfWidth: { value: 0.1 }, alphaTest: { value: 混合 === '镂空' ? 0.1 : 0.004 } }]),
+        uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { map: { value: null }, tint: { value: new THREE.Vector4(1, 1, 1, 1) }, solid: { value: 0 }, halfWidth: { value: 0.1 }, alphaTest: { value: blend === '镂空' ? 0.1 : 0.004 } }]),
         vertexShader: VERT,
         fragmentShader: FRAG,
         fog: true,
         side: THREE.DoubleSide,
-        ...混合参数(混合),
+        ...blendParams(blend),
       }),
-    [混合],
+    [blend],
   );
   useEffect(() => () => mat.dispose(), [mat]);
   useEffect(() => () => geo?.dispose(), [geo]);
-  mat.uniforms.map!.value = 贴图(图);
-  (mat.uniforms.tint!.value as THREE.Vector4).set(s2l(色[0]), s2l(色[1]), s2l(色[2]), 透明度);
-  mat.uniforms.solid!.value = 实心 ? 1 : 0;
-  mat.uniforms.halfWidth!.value = 宽 / 2;
+  mat.uniforms.map!.value = toTexture(image);
+  (mat.uniforms.tint!.value as THREE.Vector4).set(s2l(color[0]), s2l(color[1]), s2l(color[2]), opacity);
+  mat.uniforms.solid!.value = solid ? 1 : 0;
+  mat.uniforms.halfWidth!.value = width / 2;
   return geo ? <mesh geometry={geo} material={mat} frustumCulled={false} /> : null;
 };

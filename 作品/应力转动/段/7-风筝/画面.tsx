@@ -5,8 +5,8 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { rad } from '@engine/anim/anim.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { HuangPan, LiuXinzhong } from '../../角色/追兵.tsx';
 import { SpectralSteed, steedParticles } from '@库/生物/幽灵马.tsx';
 import { Warden } from '@库/生物/监守者.tsx';
@@ -19,8 +19,8 @@ import { BowFans } from '../../地点/古城4x/7-1/弓前风扇.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
 import { withTalkNod } from '../../配音/口型.ts';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
 
 const woolBlocks = placedWoolThrough('V');
 const blastwaveSize = 12; // 同 7-3（用户 10-18：威力特效大一点）
@@ -28,10 +28,10 @@ const blastwaveSize = 12; // 同 7-3（用户 10-18：威力特效大一点）
 const particles: ParticleSpawn[] = (() => {
   const out: ParticleSpawn[] = [];
   play.mortars.forEach((mortar, i) => {
-    out.push(...mortarTrailSmoke(mortar.trajectory, mortar.出T * 20, mortar.中T * 20, 7411 + 10 * i));
-    out.push(...mortarBlastParticles(mortar.blastPos, mortar.中T * 20, 7412 + 10 * i));
-    for (let j = 0; j < 8; j++) out.push(...serverSendParticles('explosion', mortar.中T * 20 + j, mortar.blastPos, 5, [1.6, 1.6, 1.0], 0, 7416 + 10 * i + 1000 * j));
-    out.push(...serverSendParticles('poof', mortar.中T * 20, mortar.blastPos, 30, [0.6, 0.6, 0.4], 0.5, 7417 + 10 * i));
+    out.push(...mortarTrailSmoke(mortar.trajectory, mortar.fireT * 20, mortar.hitT * 20, 7411 + 10 * i));
+    out.push(...mortarBlastParticles(mortar.blastPos, mortar.hitT * 20, 7412 + 10 * i));
+    for (let j = 0; j < 8; j++) out.push(...serverSendParticles('explosion', mortar.hitT * 20 + j, mortar.blastPos, 5, [1.6, 1.6, 1.0], 0, 7416 + 10 * i + 1000 * j));
+    out.push(...serverSendParticles('poof', mortar.hitT * 20, mortar.blastPos, 30, [0.6, 0.6, 0.4], 0.5, 7417 + 10 * i));
   });
   play.booms.forEach((boom, i) => out.push(...sonicBoomParticles(boom.origin, boom.target, boom.fireT * 20, 7413 + 10 * i)));
   out.push(...steedParticles((k) => play.horseState(k / 20).p, 0, play.endStoryT, 741));
@@ -46,15 +46,15 @@ export const KitePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam 
   const warden = play.wardenState(T);
   const huangPan = play.huangPanState(T);
   return (
-    <AncientCity4xCanvas 段="7-4-1" cam={cam ?? choreo.camera(frame)} width={width} height={height} 羊毛={woolBlocks}>
+    <AncientCity4xCanvas 段="7-4-1" cam={cam ?? choreo.camera(frame)} width={width} height={height} wool={woolBlocks}>
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-        <SpectralSteed 秒={T} 行走={horse.行走} 人立={horse.人立.马} 有人骑 />
+        <SpectralSteed 秒={T} walkCycle={horse.walkCycle} rearAmount={horse.rear.horse} hasRider />
       </group>
-      <LiuXinzhong pose={withTalkNod(choreo.liuXinzhongPose(frame), choreo.lines.map(({ id, 开口帧 }) => ({ id, 帧: 开口帧 })), '刘心忠', frame)} />
+      <LiuXinzhong pose={withTalkNod(choreo.liuXinzhongPose(frame), choreo.lines.map(({ id, 开口帧: speechStartFrame }) => ({ id, 帧: speechStartFrame })), '刘心忠', frame)} />
       <group position={warden.p} rotation={[0, 0, rad(warden.entityYaw)]}>
         {/* 跑起来往前扑（同 7-3） */}
-        <group rotation={[rad(warden.前倾), 0, 0]}>
-          <Warden 秒={warden.秒} 行走={warden.行走} 受伤={warden.受伤} headPitch={warden.头仰} 音爆={warden.音爆} secSinceDeath={warden.secSinceDeath} />
+        <group rotation={[rad(warden.forwardLean), 0, 0]}>
+          <Warden 秒={warden.秒} walkCycle={warden.walkCycle} hurt={warden.hurt} headPitch={warden.headPitch} 音爆={warden.音爆} secSinceDeath={warden.secSinceDeath} />
         </group>
       </group>
       {play.stuckArrows(T).map((a, i) => (
@@ -63,13 +63,13 @@ export const KitePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam 
       {play.flyingArrows(T).map((a, i) => (
         <Arrow key={`飞${i}`} p={a.p} dir={a.dir} />
       ))}
-      <HuangPan pose={huangPan.pose} 弓={huangPan.bow} />
+      <HuangPan pose={huangPan.pose} bow={huangPan.bow} />
       <BowFans t={T} fans={play.fansAt(T)} />
       {play.mortarShells(T).map((b, i) => (
         <CreeperHead key={`弹${i}`} at={b.at} vel={b.vel} />
       ))}
       {play.mortars.map((c, i) => (
-        <Blastwave key={`波${i}`} at={c.blastPos} tick={(T - c.中T) * 20} seed={7415 + i} size={blastwaveSize} />
+        <Blastwave key={`波${i}`} at={c.blastPos} tick={(T - c.hitT) * 20} seed={7415 + i} size={blastwaveSize} />
       ))}
       <VanillaParticles spawns={particles} 秒={T} />
     </AncientCity4xCanvas>
@@ -77,5 +77,5 @@ export const KitePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame, cam 
 };
 
 export const kiteFrameCount = choreo.END;
-export const Kite: React.FC = () => <KitePicture f={use当前秒() * choreo.FPS} />;
-export default 定义画面(段, 声音地址, Kite);
+export const Kite: React.FC = () => <KitePicture f={useCurrentSec() * choreo.FPS} />;
+export default definePicture(seg, soundUrl, Kite);

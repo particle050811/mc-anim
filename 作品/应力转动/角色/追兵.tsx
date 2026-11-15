@@ -58,7 +58,7 @@ const Quiver: React.FC = () => (
 );
 
 // 弓：用哪张弓的贴图（拉弓的三档自带搭着的箭，见 弓.tsx 的 弓态）
-export const HuangPan: React.FC<{ pose: FigurePose; 弓?: BowTexture }> = ({ pose, 弓: bowTex = '弓' }) => (
+export const HuangPan: React.FC<{ pose: FigurePose; bow?: BowTexture }> = ({ pose, bow: bowTex = '弓' }) => (
   <Figure
     pose={pose}
     height={1.875}
@@ -187,16 +187,16 @@ export const liuStaffQuat = (pose: FigurePose, staffSide = 0): THREE.Quaternion 
 };
 // 左手：左手插槽里拿的东西（6-3-10 的铁链，模型/物品/铁链.tsx 的 `HeldChain`），不给就空着。
 // pose 是编排给的原姿势，右臂先过 `liuHoldStaff`；右手给了别的东西（7-4-3 写报告时拿羽毛笔、成书）就不拿杖，右臂照编排原样。受伤：true = 原版受伤变红
-type LiuXinzhongProps = { pose: FigurePose; leftHand?: React.ReactNode; 右手?: React.ReactNode; staffSide?: number; 受伤?: boolean };
+type LiuXinzhongProps = { pose: FigurePose; leftHand?: React.ReactNode; rightHand?: React.ReactNode; staffSide?: number; hurt?: boolean };
 export const LiuXinzhong: React.FC<LiuXinzhongProps> = (p) =>
-  p.受伤 ? (
+  p.hurt ? (
     <HurtContext.Provider value>
-      <LiuXinzhongBody {...p} pose={p.右手 ? p.pose : liuHoldStaff(p.pose)} />
+      <LiuXinzhongBody {...p} pose={p.rightHand ? p.pose : liuHoldStaff(p.pose)} />
     </HurtContext.Provider>
   ) : (
-    <LiuXinzhongBody {...p} pose={p.右手 ? p.pose : liuHoldStaff(p.pose)} />
+    <LiuXinzhongBody {...p} pose={p.rightHand ? p.pose : liuHoldStaff(p.pose)} />
   );
-const LiuXinzhongBody: React.FC<LiuXinzhongProps> = ({ pose, leftHand, 右手: rightHand, staffSide }) => (
+const LiuXinzhongBody: React.FC<LiuXinzhongProps> = ({ pose, leftHand, rightHand: rightHand, staffSide }) => (
   <Figure
     pose={pose}
     height={liuHeight}
@@ -265,8 +265,8 @@ export const walkPose = (loc: V3, yaw: number, phase: number, amp: number, lean 
 // 骑马坐姿（7-4-1 加）：照原版 `HumanoidModel.setupAnim` 的 riding——两腿 xRot −81°、yRot ±18°（骨架.tsx 的 `legRYaw` / `legLYaw`），两臂 xRot −36°（去拉缰绳），身子头不动。
 // 脚底 = 幽灵马.tsx 的 `riderFeet`（马脚底 + 骑乘高 0.85 格，马起跳人立时往后上挪），ground 0（原版骑马模型不下沉）。
 // horse：马脚底（场景坐标）、yaw（同 `FigurePose`，正 = 往左）、人立量（各镜头 horseState 用 `steedRear` 算的）。o 里的字段盖在原版姿势上（前倾、回头、举杖等由编排加）。
-export const ridePose = (horse: { p: V3; yaw: number; 人立?: { 骑手: number } }, o: Partial<FigurePose> = {}): FigurePose => ({
-  ...standPose(riderFeet(horse.p, horse.yaw, horse.人立?.骑手 ?? 0)),
+export const ridePose = (horse: { p: V3; yaw: number; rear?: { rider: number } }, o: Partial<FigurePose> = {}): FigurePose => ({
+  ...standPose(riderFeet(horse.p, horse.yaw, horse.rear?.rider ?? 0)),
   ground: 0,
   yaw: horse.yaw,
   legR: -VANILLA_RIDE.legXRot,

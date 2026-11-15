@@ -6,133 +6,133 @@
 //   --分享版 另从成片压一份 B 站 1080P60 AV1 档的（参数、文件名照旧 成片.ts，用户 11-05 定），只在要时加。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 交付根, 配置 } from '../环境/配置.ts';
-import { 提交状态, 相对代码根 } from '../环境/路径.ts';
-import { 作品名 } from '../环境/作品.ts';
-import { 低优先级, 跑, 跑出 } from '../环境/子进程.ts';
-import { 全部段, type 段信息 } from '../清单/清单.ts';
-import { 原子写 } from '../渲/母版.ts';
-import { 渲染段们 } from '../渲/渲段.ts';
-import { 成片档 } from '../渲/设置.ts';
-import { 时长秒, 视频信息 } from '../渲/探测.ts';
-import { utc时间, utc月日时分, type 运行记录 } from '../运行记录/记录.ts';
-import { 分段计时 } from '../运行记录/阶段.ts';
-import type { 渲染级别 } from '../../engine/段/设置值.ts';
-import { 未拉响度文件, 拼未拉响度 } from './交付.ts';
-import { 分享音频kbps, 压分享声音, 压分享版, 量响度 } from './成片.ts';
-import { 排全片字幕 } from './段字幕.ts';
-import { srt, 字幕表tsv } from './字幕.ts';
+import { deliveryRoot, config } from '../环境/配置.ts';
+import { commitStatus, relativeToCodeRoot } from '../环境/路径.ts';
+import { workName } from '../环境/作品.ts';
+import { lowPriority, runCmd, runCapture } from '../环境/子进程.ts';
+import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
+import { atomicWrite } from '../渲/母版.ts';
+import { renderSegments } from '../渲/渲段.ts';
+import { filmProfile } from '../渲/设置.ts';
+import { probeDurationSec, videoInfo } from '../渲/探测.ts';
+import { utcTime, utcMonthDayTime, type RunRecord } from '../运行记录/记录.ts';
+import { stageTiming } from '../运行记录/阶段.ts';
+import type { RenderLevel } from '../../engine/段/设置值.ts';
+import { unnormalizedFile, concatUnnormalized } from './交付.ts';
+import { shareAudioKbps, compressShareAudio, encodeShareVersion, measureLoudness } from './成片.ts';
+import { placeFilmSubtitles } from './段字幕.ts';
+import { srt, subtitleTableTsv } from './字幕.ts';
 
-const 目标响度 = -16;
-const 真峰值上限 = -1;
-const 采样率 = 48000;
+const targetLoudness = -16;
+const truePeakLimit = -1;
+const sampleRate = 48000;
 
-export const 拼成片 = async (段们: 段信息[], opts: { 级别: 渲染级别; 名: string; 范围: string[]; 重渲?: boolean; 分享版?: boolean; 记录: 运行记录 }) => {
-  const 开始 = Date.now();
-  const 全部 = await 全部段();
-  const 点 = 分段计时(opts.记录.阶段, `film:${作品名()}/${opts.名}:${opts.级别}`);
-  const 产物们 = await 渲染段们(全部, 段们, opts.级别, { 重渲: opts.重渲, 记录: opts.记录 });
-  点('渲段');
-  const 跳过 = 段们.filter((s) => !产物们.some((r) => r.段 === s));
-  if (跳过.length) throw new Error(`${跳过.map((s) => s.键).join('、')} 没渲（本机没有区段包），接不成成片；别的段已渲好`);
-  for (let k = 1; k < 产物们.length; k++) {
-    const a = 产物们[k - 1]!;
-    const b = 产物们[k]!;
-    if (a.输出起帧 + a.输出帧数 !== b.输出起帧) throw new Error(`${a.段.键} 和 ${b.段.键} 在清单里不挨着，接不成一条（各段已渲好；要成片的话范围要是清单里连续的一串段，或者一段一段出）`);
+export const assembleFilm = async (segments: SegInfo[], opts: { 级别: RenderLevel; 名: string; 范围: string[]; rerender?: boolean; 分享版?: boolean; runRecord: RunRecord }) => {
+  const startMs = Date.now();
+  const allSegments = await loadAllSegments();
+  const timer = stageTiming(opts.runRecord.阶段, `film:${workName()}/${opts.名}:${opts.级别}`);
+  const outputs = await renderSegments(allSegments, segments, opts.级别, { rerender: opts.rerender, runRecord: opts.runRecord });
+  timer('渲段');
+  const skipped = segments.filter((s) => !outputs.some((r) => r.段 === s));
+  if (skipped.length) throw new Error(`${skipped.map((s) => s.键).join('、')} 没渲（本机没有区段包），接不成成片；别的段已渲好`);
+  for (let k = 1; k < outputs.length; k++) {
+    const a = outputs[k - 1]!;
+    const b = outputs[k]!;
+    if (a.outputStartFrame + a.outputFrames !== b.outputStartFrame) throw new Error(`${a.段.键} 和 ${b.段.键} 在清单里不挨着，接不成一条（各段已渲好；要成片的话范围要是清单里连续的一串段，或者一段一段出）`);
   }
-  const 档 = 成片档();
-  const dir = path.join(交付根(), `${utc月日时分(开始)}-${opts.名}`);
+  const filmTier = filmProfile();
+  const dir = path.join(deliveryRoot(), `${utcMonthDayTime(startMs)}-${opts.名}`);
   if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --名）`);
-  const 工作 = path.join(dir, '_工作');
-  fs.mkdirSync(工作, { recursive: true });
-  const ffmpeg = 配置('ffmpeg');
+  const workDir = path.join(dir, '_工作');
+  fs.mkdirSync(workDir, { recursive: true });
+  const ffmpeg = config('ffmpeg');
 
   // 声音
-  const 未拉 = path.join(dir, 未拉响度文件);
+  const unnormalizedPath = path.join(dir, unnormalizedFile);
   // 每段管到下一段的声音起点为止（wav 是这段的输出窗，短了补静音）
-  const 样本数们 = 产物们.map((r, k) => Math.round(((产物们[k + 1]?.声音起秒 ?? r.声音止秒) - r.声音起秒) * 采样率));
-  await 拼未拉响度(产物们.map((r) => r.声音), 样本数们, 未拉);
-  const 原 = 量响度(未拉);
-  const 静音 = !Number.isFinite(原.lufs) || 原.lufs < -70;
-  if (静音) opts.记录.记('警告', `整片几乎没声音（${原.lufs} LUFS），不拉响度`);
-  const 增益 = 静音 ? 0 : 目标响度 - 原.lufs;
-  const 拉好 = path.join(工作, '全片声音.wav');
-  const 成品音 = path.join(工作, '全片声音.m4a');
-  let 余量 = 0.5;
-  let 终 = 原;
-  const 拉 = (余: number, 出: string) => {
-    const limit = 10 ** ((真峰值上限 - 余) / 20);
-    跑出([ffmpeg, '-v', 'error', '-y', '-i', 未拉, '-vn', '-af', `volume=${增益.toFixed(2)}dB,alimiter=limit=${limit.toFixed(4)}:attack=1:release=50:level=disabled:asc=0`, '-ar', String(采样率), '-c:a', 'pcm_s24le', 出]);
+  const sampleCounts = outputs.map((r, k) => Math.round(((outputs[k + 1]?.soundStartSec ?? r.soundEndSec) - r.soundStartSec) * sampleRate));
+  await concatUnnormalized(outputs.map((r) => r.声音), sampleCounts, unnormalizedPath);
+  const loudness = measureLoudness(unnormalizedPath);
+  const silent = !Number.isFinite(loudness.lufs) || loudness.lufs < -70;
+  if (silent) opts.runRecord.log('警告', `整片几乎没声音（${loudness.lufs} LUFS），不拉响度`);
+  const gain = silent ? 0 : targetLoudness - loudness.lufs;
+  const normalizedPath = path.join(workDir, '全片声音.wav');
+  const finishedAudioPath = path.join(workDir, '全片声音.m4a');
+  let margin = 0.5;
+  let finalSound = loudness;
+  const progress = (levelDb: number, outPath: string) => {
+    const limit = 10 ** ((truePeakLimit - levelDb) / 20);
+    runCapture([ffmpeg, '-v', 'error', '-y', '-i', unnormalizedPath, '-vn', '-af', `volume=${gain.toFixed(2)}dB,alimiter=limit=${limit.toFixed(4)}:attack=1:release=50:level=disabled:asc=0`, '-ar', String(sampleRate), '-c:a', 'pcm_s24le', outPath]);
   };
   for (let i = 0; i < 4; i++) {
-    拉(余量, 拉好);
-    跑出([ffmpeg, '-v', 'error', '-y', '-i', 拉好, '-c:a', 'aac', '-b:a', '192k', 成品音]);
-    终 = 量响度(成品音);
-    console.log(`响度：原 ${原.lufs.toFixed(1)} LUFS → 加 ${增益.toFixed(1)} dB、限幅 ${(真峰值上限 - 余量).toFixed(1)} dBFS → ${终.lufs.toFixed(1)} LUFS、真峰值 ${终.真峰值.toFixed(1)} dBTP`);
-    if (终.真峰值 <= 真峰值上限) break;
-    余量 += 终.真峰值 - 真峰值上限 + 0.2;
+    progress(margin, normalizedPath);
+    runCapture([ffmpeg, '-v', 'error', '-y', '-i', normalizedPath, '-c:a', 'aac', '-b:a', '192k', finishedAudioPath]);
+    finalSound = measureLoudness(finishedAudioPath);
+    console.log(`响度：原 ${loudness.lufs.toFixed(1)} LUFS → 加 ${gain.toFixed(1)} dB、限幅 ${(truePeakLimit - margin).toFixed(1)} dBFS → ${finalSound.lufs.toFixed(1)} LUFS、真峰值 ${finalSound.truePeak.toFixed(1)} dBTP`);
+    if (finalSound.truePeak <= truePeakLimit) break;
+    margin += finalSound.truePeak - truePeakLimit + 0.2;
   }
-  点('声音');
+  timer('声音');
 
   // 画面：直接拷流接起来，和声音封进一个 mp4
-  const 表 = path.join(工作, '接.txt');
-  fs.writeFileSync(表, 产物们.map((r) => `file '${r.画面.replace(/'/g, "'\\''")}'\n`).join(''));
-  const 成片 = path.join(dir, `${opts.名}.mp4`);
-  const 写入中 = path.join(工作, '成片.写入中.mp4');
-  await 跑(低优先级([ffmpeg, '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', 表, '-i', 成品音, '-map', '0:v', '-map', '1:a', '-c', 'copy', '-movflags', '+faststart', 写入中]));
-  const 总帧数 = 产物们.reduce((a, r) => a + r.输出帧数, 0);
-  const 出帧 = 视频信息(写入中).帧数;
-  if (出帧 !== 总帧数) throw new Error(`成片 ${出帧} 帧，各段加起来是 ${总帧数} 帧`);
-  fs.renameSync(写入中, 成片);
-  点('接画面');
+  const concatListPath = path.join(workDir, '接.txt');
+  fs.writeFileSync(concatListPath, outputs.map((r) => `file '${r.画面.replace(/'/g, "'\\''")}'\n`).join(''));
+  const filmPath = path.join(dir, `${opts.名}.mp4`);
+  const writingPath = path.join(workDir, '成片.写入中.mp4');
+  await runCmd(lowPriority([ffmpeg, '-v', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', concatListPath, '-i', finishedAudioPath, '-map', '0:v', '-map', '1:a', '-c', 'copy', '-movflags', '+faststart', writingPath]));
+  const totalFrames = outputs.reduce((a, r) => a + r.outputFrames, 0);
+  const outputFrames = videoInfo(writingPath).帧数;
+  if (outputFrames !== totalFrames) throw new Error(`成片 ${outputFrames} 帧，各段加起来是 ${totalFrames} 帧`);
+  fs.renameSync(writingPath, filmPath);
+  timer('接画面');
 
-  let 分享: { kbps: number; MB: number; 真峰值: number; 限幅dBFS: number } | null = null;
-  const 分享文件 = path.join(dir, `${opts.名}-分享版1080p60.mp4`);
+  let shareInfo: { kbps: number; MB: number; truePeak: number; 限幅dBFS: number } | null = null;
+  const shareFile = path.join(dir, `${opts.名}-分享版1080p60.mp4`);
   if (opts.分享版) {
-    const 分享声音 = 压分享声音(拉, 余量, 工作);
-    分享 = { ...(await 压分享版(成片, 分享声音.声音, 分享文件)), 真峰值: 量响度(分享文件).真峰值, 限幅dBFS: 分享声音.限幅dBFS };
-    if (分享.真峰值 > 真峰值上限) opts.记录.记('警告', `分享版真峰值 ${分享.真峰值.toFixed(1)} dBTP，压低限幅 6 次还超过 ${真峰值上限}`);
-    opts.记录.产物.push(分享文件);
-    点('分享版');
+    const shareAudio = compressShareAudio(progress, margin, workDir);
+    shareInfo = { ...(await encodeShareVersion(filmPath, shareAudio.声音, shareFile)), truePeak: measureLoudness(shareFile).truePeak, 限幅dBFS: shareAudio.限幅dBFS };
+    if (shareInfo.truePeak > truePeakLimit) opts.runRecord.log('警告', `分享版真峰值 ${shareInfo.truePeak.toFixed(1)} dBTP，压低限幅 6 次还超过 ${truePeakLimit}`);
+    opts.runRecord.产物.push(shareFile);
+    timer('分享版');
   }
 
   // 表：拼接表、字幕表和 SRT（都是输出帧，换成本片从 0 起）
-  原子写(path.join(dir, '拼接表.tsv'), '编号\t段\t画面指纹\t声音指纹\t帧数\t全片起帧\n' + 产物们.map((r) => `${r.段.编号 ?? ''}\t${r.段.键}\t${r.画面指纹.指纹.slice(0, 16)}\t${r.声音指纹.指纹.slice(0, 16)}\t${r.输出帧数}\t${r.输出起帧 - 产物们[0]!.输出起帧}\n`).join(''));
-  const 字幕 = 排全片字幕(全部, 档.fps);
-  const 片起 = 字幕.起帧.get(段们[0]!.键)!;
-  const 片止 = 片起 + 总帧数;
-  const 屏们 = 字幕.屏们.filter((p) => p.止帧 > 片起 && p.起帧 < 片止).map((p) => ({ ...p, 起帧: Math.max(0, p.起帧 - 片起), 止帧: Math.min(片止, p.止帧) - 片起 }));
-  const 文件: Record<string, string> = { 成片: path.basename(成片), 拼接表: '拼接表.tsv', 未拉响度: 未拉响度文件 };
-  if (分享) 文件.分享版 = path.basename(分享文件);
-  if (屏们.length) {
-    原子写(path.join(dir, '字幕表.tsv'), 字幕表tsv(屏们, 档.fps));
-    原子写(path.join(dir, `${opts.名}.srt`), srt(屏们, 档.fps));
-    Object.assign(文件, { 字幕表: '字幕表.tsv', SRT: `${opts.名}.srt` });
+  atomicWrite(path.join(dir, '拼接表.tsv'), '编号\t段\t画面指纹\t声音指纹\t帧数\t全片起帧\n' + outputs.map((r) => `${r.段.编号 ?? ''}\t${r.段.键}\t${r.画面指纹.指纹.slice(0, 16)}\t${r.声音指纹.指纹.slice(0, 16)}\t${r.outputFrames}\t${r.outputStartFrame - outputs[0]!.outputStartFrame}\n`).join(''));
+  const subtitles = placeFilmSubtitles(allSegments, filmTier.fps);
+  const filmStart = subtitles.起帧.get(segments[0]!.键)!;
+  const filmEnd = filmStart + totalFrames;
+  const screens = subtitles.屏们.filter((p) => p.止帧 > filmStart && p.起帧 < filmEnd).map((p) => ({ ...p, 起帧: Math.max(0, p.起帧 - filmStart), 止帧: Math.min(filmEnd, p.止帧) - filmStart }));
+  const files: Record<string, string> = { 成片: path.basename(filmPath), 拼接表: '拼接表.tsv', 未拉响度: unnormalizedFile };
+  if (shareInfo) files.分享版 = path.basename(shareFile);
+  if (screens.length) {
+    atomicWrite(path.join(dir, '字幕表.tsv'), subtitleTableTsv(screens, filmTier.fps));
+    atomicWrite(path.join(dir, `${opts.名}.srt`), srt(screens, filmTier.fps));
+    Object.assign(files, { 字幕表: '字幕表.tsv', SRT: `${opts.名}.srt` });
   }
   const manifest = {
     版本: 4,
-    作品: 作品名(),
+    作品: workName(),
     名: opts.名,
     范围: opts.范围,
     级别: opts.级别,
-    开始: utc时间(开始),
-    完成: utc时间(),
-    代码: 提交状态(),
-    主机: 配置('主机'),
-    成片档: 档.名,
-    帧率: 档.fps,
-    总帧数,
-    时长秒: 时长秒(成片),
-    响度: { 原LUFS: 原.lufs, 增益dB: Number(增益.toFixed(2)), 限幅dBFS: Number((真峰值上限 - 余量).toFixed(2)), 成片LUFS: 终.lufs, 真峰值dBTP: 终.真峰值 },
-    段: 产物们.map((r) => ({ 编号: r.段.编号, 键: r.段.键, 段文件: 相对代码根(r.段.段文件), 画面指纹: r.画面指纹.指纹, 声音指纹: r.声音指纹.指纹, 帧数: r.输出帧数, 全片起帧: r.输出起帧 - 产物们[0]!.输出起帧 })),
-    字幕: { 屏数: 屏们.length },
-    分享版: 分享 && { 视频kbps: 分享.kbps, 音频kbps: 分享音频kbps, MB: Number(分享.MB.toFixed(2)), 限幅dBFS: Number(分享.限幅dBFS.toFixed(2)), 真峰值dBTP: 分享.真峰值 },
-    文件,
+    开始: utcTime(startMs),
+    完成: utcTime(),
+    代码: commitStatus(),
+    主机: config('主机'),
+    成片档: filmTier.名,
+    帧率: filmTier.fps,
+    总帧数: totalFrames,
+    时长秒: probeDurationSec(filmPath),
+    响度: { 原LUFS: loudness.lufs, 增益dB: Number(gain.toFixed(2)), 限幅dBFS: Number((truePeakLimit - margin).toFixed(2)), 成片LUFS: finalSound.lufs, 真峰值dBTP: finalSound.truePeak },
+    段: outputs.map((r) => ({ 编号: r.段.编号, 键: r.段.键, 段文件: relativeToCodeRoot(r.段.段文件), 画面指纹: r.画面指纹.指纹, 声音指纹: r.声音指纹.指纹, 帧数: r.outputFrames, 全片起帧: r.outputStartFrame - outputs[0]!.outputStartFrame })),
+    字幕: { 屏数: screens.length },
+    分享版: shareInfo && { 视频kbps: shareInfo.kbps, 音频kbps: shareAudioKbps, MB: Number(shareInfo.MB.toFixed(2)), 限幅dBFS: Number(shareInfo.限幅dBFS.toFixed(2)), 真峰值dBTP: shareInfo.truePeak },
+    文件: files,
   };
-  原子写(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-  fs.rmSync(工作, { recursive: true, force: true });
-  点('写表');
-  opts.记录.产物.push(成片);
-  console.log(`成片 ${成片}：${manifest.时长秒.toFixed(2)} 秒，${总帧数} 帧，${终.lufs.toFixed(1)} LUFS`);
-  return { dir, 成片, manifest };
+  atomicWrite(path.join(dir, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
+  fs.rmSync(workDir, { recursive: true, force: true });
+  timer('写表');
+  opts.runRecord.产物.push(filmPath);
+  console.log(`成片 ${filmPath}：${manifest.时长秒.toFixed(2)} 秒，${totalFrames} 帧，${finalSound.lufs.toFixed(1)} LUFS`);
+  return { dir, 成片: filmPath, manifest };
 };

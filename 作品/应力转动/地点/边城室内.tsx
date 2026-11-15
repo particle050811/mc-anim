@@ -37,9 +37,9 @@ export const guardRoom = {
   chair: [7.5, -2.5, 0.5] as V3, // 楼梯椅子坐面中心（坐面高 0.5）
   窗: [8, -4, 9, -1] as [number, number, number, number], // 东窗玻璃板所在的那一列（窗高 z 1～3）
   门: [7.5, -4.5, 0] as V3, // 东墙的门口（门洞西边屋里那一格）
-  灯笼: [4.5, -2.5, 3.4] as V3,
+  lantern: [4.5, -2.5, 3.4] as V3,
   candle: [6.5, -3.5, 1.3] as V3,
-  屋里: [1, -5, 0, 8, -1, 4] as number[], // 屋里的空间 [x0, y0, z0, x1, y1, z1]
+  roomBounds: [1, -5, 0, 8, -1, 4] as number[], // 屋里的空间 [x0, y0, z0, x1, y1, z1]
 };
 export const lordStudy = {
   原点: [-5, -10, 6.5] as V3,
@@ -49,7 +49,7 @@ export const lordStudy = {
   窗: [3, -1, 8, 0] as [number, number, number, number], // 北窗（窗高 z 1～5）
   lanterns: [[2.5, -4.5, 4.5], [8.5, -4.5, 4.5]] as V3[],
   candle: [6.5, -1.5, 1.3] as V3,
-  屋里: [1, -8, 0, 10, -1, 6] as number[],
+  roomBounds: [1, -8, 0, 10, -1, 6] as number[],
 };
 // 网格本地坐标 → 城的局部坐标
 export const toTownPoint = (room: { 原点: V3 }, p: number[]): V3 => [room.原点[0] + p[0], room.原点[1] + p[1], room.原点[2] + p[2]];

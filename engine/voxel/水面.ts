@@ -6,10 +6,10 @@
 // - 太阳高光：粗糙度压到 0.12，主光高光照着波纹法线落出碎亮点（逆光最明显）。
 // 接口：`水面GLSL`（片元函数）、`patchWaterShader`(shader, 判水) 在 onBeforeCompile 里调；`waterSky` 是共用 uniform。
 import * as THREE from 'three';
-import { 渲染输入 } from '../core/渲染设置.ts';
+import { renderInput } from '../core/渲染设置.ts';
 
 // 试档用：--props='{"waterReflMax":0.3}'，给了就盖掉下面按天定的上限
-const cliReflMax = (渲染输入() as { waterReflMax?: number }).waterReflMax;
+const cliReflMax = (renderInput() as { waterReflMax?: number }).waterReflMax;
 export const skyBandCount = 8;
 // 天色：穹顶按仰角正弦的渐变（线性颜色，同穹顶着色器里的 Color）；时间：秒（帧号 / fps）
 export const waterSky = {
@@ -20,15 +20,15 @@ export const waterSky = {
   reflectionMax: { value: cliReflMax ?? 0.6 },
 };
 export const skyReflMax = (isTwilight: boolean) => cliReflMax ?? (isTwilight ? 0.6 : 0);
-const 默认天色 = waterSky.skyColors.value.map((c) => c.clone());
-const 默认仰角 = [...waterSky.elevation.value];
-const 默认反射上限 = waterSky.reflectionMax.value;
+const defaultSkyColors = waterSky.skyColors.value.map((c) => c.clone());
+const defaultElevation = [...waterSky.elevation.value];
+const defaultReflectionMax = waterSky.reflectionMax.value;
 // uniform 和颜色数组已经被水材质引用，卸载最后一片天空时原地恢复，不能换对象让旧材质继续读残留值。
-export const 复位水面天色 = () => {
-  waterSky.skyColors.value.forEach((c, i) => c.copy(默认天色[i]));
-  waterSky.elevation.value.splice(0, skyBandCount, ...默认仰角);
+export const resetWaterSky = () => {
+  waterSky.skyColors.value.forEach((c, i) => c.copy(defaultSkyColors[i]));
+  waterSky.elevation.value.splice(0, skyBandCount, ...defaultElevation);
   waterSky.time.value = 0;
-  waterSky.reflectionMax.value = 默认反射上限;
+  waterSky.reflectionMax.value = defaultReflectionMax;
 };
 
 const VERT_HEAD = /* glsl */ `

@@ -10,68 +10,68 @@
 import * as THREE from 'three';
 
 // 一次挤掉 20% 的缓存（世界.tsx），一批的容器要放得下，不然省不到
-export const 最多空壳 = 20000;
+export const maxEmptyShells = 20000;
 // 空壳撑到过的字节合计的上限：一次挤掉的 20% 缓存约 120 万面 × 88 字节 ≈ 106 MB，要放得下。
 // 开超远景的段一帧画的就超过缓存上限，每帧挤掉的比这多，超出的真删（穿塔 0～1500 帧约七成），出帧时间没变
-export const 最多留字节 = 128 * 1024 * 1024;
-export type 顶点数组 = Int16Array | Uint16Array | Uint8Array;
+export const maxKeptBytes = 128 * 1024 * 1024;
+export type VertexArray = Int16Array | Uint16Array | Uint8Array;
 // 档：按撑到过的字节数的 2 的幂分，第 k 档是 [2^k, 2^(k+1))
-type 池 = { 档: WebGLBuffer[][]; 个: number; 字节: number };
-const 池表 = new WeakMap<WebGL2RenderingContext, 池>();
-const 撑到 = new WeakMap<WebGLBuffer, number>();
-const 档位 = (字节: number) => 31 - Math.clz32(字节 | 1);
+type Pool = { 档: WebGLBuffer[][]; count: number; 字节: number };
+const poolTable = new WeakMap<WebGL2RenderingContext, Pool>();
+const allocatedBytes = new WeakMap<WebGLBuffer, number>();
+const sizeTier = (bytesCount: number) => 31 - Math.clz32(bytesCount | 1);
 
-const 取池 = (ctx: WebGL2RenderingContext) => {
-  let 池 = 池表.get(ctx);
-  if (!池) 池表.set(ctx, (池 = { 档: [], 个: 0, 字节: 0 }));
-  return 池;
+const getPool = (ctx: WebGL2RenderingContext) => {
+  let pool = poolTable.get(ctx);
+  if (!pool) poolTable.set(ctx, (pool = { 档: [], count: 0, 字节: 0 }));
+  return pool;
 };
-const 出档 = (池: 池, k: number) => {
-  const 壳 = 池.档[k]!.pop()!;
-  池.个--;
-  池.字节 -= 撑到.get(壳) ?? 0;
-  return 壳;
+const popBucket = (pool: Pool, k: number) => {
+  const shell = pool.档[k]!.pop()!;
+  pool.count--;
+  pool.字节 -= allocatedBytes.get(shell) ?? 0;
+  return shell;
 };
 // 撑到过的不超过 `字节` 的空壳：同档只看栈顶，不够小就往下一档找（下面各档的都比这次小），从大的档找起，小壳留给小数组
-const 取壳 = (池: 池, 字节: number) => {
-  const k = 档位(字节);
-  const 同档 = 池.档[k];
-  if (同档?.length && (撑到.get(同档[同档.length - 1]!) ?? 0) <= 字节) return 出档(池, k);
-  for (let j = k - 1; j >= 0; j--) if (池.档[j]?.length) return 出档(池, j);
+const takeShell = (pool: Pool, bytesCount: number) => {
+  const k = sizeTier(bytesCount);
+  const sameTier = pool.档[k];
+  if (sameTier?.length && (allocatedBytes.get(sameTier[sameTier.length - 1]!) ?? 0) <= bytesCount) return popBucket(pool, k);
+  for (let j = k - 1; j >= 0; j--) if (pool.档[j]?.length) return popBucket(pool, j);
   return null;
 };
 
-const 类型 = (ctx: WebGL2RenderingContext, 数组: 顶点数组) => (数组 instanceof Int16Array ? ctx.SHORT : 数组 instanceof Uint16Array ? ctx.UNSIGNED_SHORT : ctx.UNSIGNED_BYTE);
+const glType = (ctx: WebGL2RenderingContext, vertexArray: VertexArray) => (vertexArray instanceof Int16Array ? ctx.SHORT : vertexArray instanceof Uint16Array ? ctx.UNSIGNED_SHORT : ctx.UNSIGNED_BYTE);
 
 /** 一个顶点数组对应的属性。容器先空着：哪个视锥都碰不到的网格不传（材质.ts 的 `uploadWhenHit`），和 three 自己管 BufferAttribute 时一样，不多占显存 */
-export const 顶点属性 = (ctx: WebGL2RenderingContext, 数组: 顶点数组, 每点几个: number, 归一 = false) =>
-  new THREE.GLBufferAttribute(null as unknown as WebGLBuffer, 类型(ctx, 数组), 每点几个, 数组.BYTES_PER_ELEMENT as 1 | 2, 数组.length / 每点几个, 归一);
+export const vertexAttribute = (ctx: WebGL2RenderingContext, vertexArray: VertexArray, componentsPerVertex: number, normalized = false) =>
+  new THREE.GLBufferAttribute(null as unknown as WebGLBuffer, glType(ctx, vertexArray), componentsPerVertex, vertexArray.BYTES_PER_ELEMENT as 1 | 2, vertexArray.length / componentsPerVertex, normalized);
 
 /** 取一个容器（优先用池里撑到过的不超过这次大小的）给属性，把数组传进显存 */
-export const 传顶点 = (ctx: WebGL2RenderingContext, 属性: THREE.GLBufferAttribute, 数组: 顶点数组) => {
-  const 容器 = 取壳(取池(ctx), 数组.byteLength) ?? ctx.createBuffer();
-  属性.buffer = 容器;
-  ctx.bindBuffer(ctx.ARRAY_BUFFER, 容器);
-  ctx.bufferData(ctx.ARRAY_BUFFER, 数组, ctx.STATIC_DRAW);
-  if (数组.byteLength > (撑到.get(容器) ?? 0)) 撑到.set(容器, 数组.byteLength);
+export const uploadVertices = (ctx: WebGL2RenderingContext, attribute: THREE.GLBufferAttribute, vertexArray: VertexArray) => {
+  const buffer = takeShell(getPool(ctx), vertexArray.byteLength) ?? ctx.createBuffer();
+  attribute.buffer = buffer;
+  ctx.bindBuffer(ctx.ARRAY_BUFFER, buffer);
+  ctx.bufferData(ctx.ARRAY_BUFFER, vertexArray, ctx.STATIC_DRAW);
+  if (vertexArray.byteLength > (allocatedBytes.get(buffer) ?? 0)) allocatedBytes.set(buffer, vertexArray.byteLength);
 };
 
 /** 还回一个容器。调用方要保证这之后没有东西还会画它（指着它的 VAO 同一轮就释放） */
-export const 还容器 = (ctx: WebGL2RenderingContext, 容器: WebGLBuffer | null) => {
-  if (!容器) return; // 没画过的网格没有容器
-  const 池 = 取池(ctx);
-  const 字节 = 撑到.get(容器) ?? 0;
+export const returnBuffer = (ctx: WebGL2RenderingContext, buffer: WebGLBuffer | null) => {
+  if (!buffer) return; // 没画过的网格没有容器
+  const pool = getPool(ctx);
+  const bytesCount = allocatedBytes.get(buffer) ?? 0;
   // 清成 0 字节：Metal 上存储马上放掉；Vulkan、D3D11 上是空操作，存储要等这个壳被更大的数组复用或删掉
-  ctx.bindBuffer(ctx.ARRAY_BUFFER, 容器);
+  ctx.bindBuffer(ctx.ARRAY_BUFFER, buffer);
   ctx.bufferData(ctx.ARRAY_BUFFER, 0, ctx.STATIC_DRAW);
-  (池.档[档位(字节)] ??= []).push(容器);
-  池.个++;
-  池.字节 += 字节;
+  (pool.档[sizeTier(bytesCount)] ??= []).push(buffer);
+  pool.count++;
+  pool.字节 += bytesCount;
   // 超了从撑得最大的删起：大壳占得多，又只有更大的数组才用得上
-  for (let k = 池.档.length - 1; k >= 0 && (池.个 > 最多空壳 || 池.字节 > 最多留字节); k--) {
-    const 这档 = 池.档[k];
-    while (这档?.length && (池.个 > 最多空壳 || 池.字节 > 最多留字节)) ctx.deleteBuffer(出档(池, k));
+  for (let k = pool.档.length - 1; k >= 0 && (pool.count > maxEmptyShells || pool.字节 > maxKeptBytes); k--) {
+    const thisBucket = pool.档[k];
+    while (thisBucket?.length && (pool.count > maxEmptyShells || pool.字节 > maxKeptBytes)) ctx.deleteBuffer(popBucket(pool, k));
   }
 };
 
-export const 清空容器池 = (ctx: WebGL2RenderingContext) => void 池表.delete(ctx);
+export const clearBufferPool = (ctx: WebGL2RenderingContext) => void poolTable.delete(ctx);

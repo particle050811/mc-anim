@@ -27,36 +27,36 @@
 // 候选里提炼成金的器物加这几色的宝石和光，数值在 晋升之环几何.ts。
 
 /** 原版：每秒转几度（从正面看顺时针）、相对头的位置（头部件坐标换成环坐标：原点 = 头的转轴，脖子根）、上沿朝前倾几度、片的边长 */
-export const 原版环 = { 每秒度: 18, 位: [0, 12, -5] as const, 前倾度: 45, 边长: 16 } as const;
+export const vanillaRing = { degPerSec: 18, 位: [0, 12, -5] as const, tiltDeg: 45, sideLength: 16 } as const;
 /** 原版贴片这一刻绕环坐标 Z 轴的转角（度，正 = 从正面看逆时针，所以是负的） */
-export const 原版转角 = (秒: number): number => -原版环.每秒度 * 秒;
+export const vanillaSpinAngle = (sec: number): number => -vanillaRing.degPerSec * sec;
 
 /**
  * 候选：外径 = 最外沿离环心多远（像素，摆大小用，含转动；不含后面垫的光晕）；层速 = 各层绕环心每秒转几度（正 = 从正面看逆时针）。
  * 外层都照原版的每秒 18 度顺时针，里层反着慢转。
  */
-export const 候选们 = {
+export const candidateSpecs = {
   甲: {
     名: '甲 金属圣环',
     说明: '精工金环：带槽的棱环，槽里一道波纹金丝加珠粒，外沿一圈绞丝；四个对角镶回字方座和阶梯切方宝石（原贴图四角的方块），正上下左右镶黄绿圆宝石；里面一圈联珠双丝环反着转，中心是镂空的十字加圆（原贴图中心）',
-    外径: 10.4,
-    层速: { 外环: -18, 内环: 12, 十字: -6 },
+    outerRadius: 10.4,
+    layerSpeeds: { outerSpeed: -18, innerSpeed: 12, crossSpeed: -6 },
   },
   乙: {
     名: '乙 光之环',
     说明: '以光为主：三道细亮的光环，外放 32 道长短相间的细针光芒（白金到橙、红、品红收尖），环上四个对角各一个菱形小光框；环里贯通的十字细光加中心小圆，像圣像的头光',
-    外径: 14.5,
-    层速: { 光环: -12, 十字: 6 },
+    outerRadius: 14.5,
+    layerSpeeds: { haloSpeed: -12, crossSpeed: 6 },
   },
   丙: {
     名: '丙 星环',
     说明: '一道细光丝串起 16 件小件绕头慢转：正上下左右四颗双尖切面晶体（红、橙、品红、黄绿，腰上箍金丝），四个对角四块回字金牌（中心嵌宝石），其间八个包镶小圆宝石的金链节',
-    外径: 10.8,
-    层速: { 整圈: -18, 晶体自转: 40, 金牌摆: 1.6, 链节摆: 2.3 },
+    outerRadius: 10.8,
+    layerSpeeds: { fullTurnSpeed: -18, crystalSpinSpeed: 40, medalSwingSpeed: 1.6, chainSwingSpeed: 2.3 },
   },
 } as const;
-export type 候选名 = keyof typeof 候选们;
-export type 环款 = '原版' | 候选名;
+export type CandidateName = keyof typeof candidateSpecs;
+export type RingVariant = '原版' | CandidateName;
 
 /**
  * 戴在头后怎么摆（头坐标：原点 = 头的转轴，+Y 朝上，+Z 朝脸的前方，单位是那个人的模型像素）：环心的位置、上沿朝前倾几度、放大几倍。
@@ -65,19 +65,19 @@ export type 环款 = '原版' | 候选名;
  * fly 里头和上身往一边倒近 90 度，跟头的话环躺到身子后面、被身后的缺口环挡住（核对段第一轮试过）。位置按站姿时 Head 的转轴写，画的时候换算到 aaabody。
  * 原版照游戏的数；亚波伦戴原版贴片按头的大小比（7/8）缩，只当对照。候选的数是对着核对段的静帧取的，没经用户看过。
  */
-export const 戴法: Record<'史蒂夫' | '亚波伦', Record<环款, { 位: readonly [number, number, number]; 前倾度: number; 倍: number }>> = {
+export const wearSpec: Record<'史蒂夫' | '亚波伦', Record<RingVariant, { 位: readonly [number, number, number]; tiltDeg: number; scale: number }>> = {
   史蒂夫: {
-    原版: { 位: 原版环.位, 前倾度: 原版环.前倾度, 倍: 1 },
-    甲: { 位: [0, 6.5, -5.2], 前倾度: 10, 倍: 0.85 },
-    乙: { 位: [0, 6.5, -5.2], 前倾度: 10, 倍: 0.8 },
-    丙: { 位: [0, 6.5, -5.2], 前倾度: 10, 倍: 0.95 },
+    原版: { 位: vanillaRing.位, tiltDeg: vanillaRing.tiltDeg, scale: 1 },
+    甲: { 位: [0, 6.5, -5.2], tiltDeg: 10, scale: 0.85 },
+    乙: { 位: [0, 6.5, -5.2], tiltDeg: 10, scale: 0.8 },
+    丙: { 位: [0, 6.5, -5.2], tiltDeg: 10, scale: 0.95 },
   },
   亚波伦: {
-    原版: { 位: [0, 10.6, -4.9], 前倾度: 原版环.前倾度, 倍: 7 / 8 },
-    甲: { 位: [0, 12, -10], 前倾度: 8, 倍: 1.3 },
-    乙: { 位: [0, 12, -10], 前倾度: 8, 倍: 1.2 },
-    丙: { 位: [0, 12, -10], 前倾度: 8, 倍: 1.4 },
+    原版: { 位: [0, 10.6, -4.9], tiltDeg: vanillaRing.tiltDeg, scale: 7 / 8 },
+    甲: { 位: [0, 12, -10], tiltDeg: 8, scale: 1.3 },
+    乙: { 位: [0, 12, -10], tiltDeg: 8, scale: 1.2 },
+    丙: { 位: [0, 12, -10], tiltDeg: 8, scale: 1.4 },
   },
 };
 /** 娘化亚波伦模型里 Head 转轴相对 aaabody 转轴的位置（模型像素，models/main.json：Head pivot y 33.05，aaabody pivot y 49.65） */
-export const 亚波伦头轴 = [0, 33.05 - 49.65, 0] as const;
+export const yaBoLunHeadAxis = [0, 33.05 - 49.65, 0] as const;

@@ -104,8 +104,8 @@ export const cuboidMesh = (boxes: Cuboid[]) => {
   boxes.forEach(([x, y, z, sx, sy, sz, blockIdx], i) => {
     arr.set([sx, 0, 0, 0, 0, sy, 0, 0, 0, 0, sz, 0, x, y, z, 1], i * 16);
     const def = blockTable[blockNames[blockIdx]];
-    tiles.set([def.X, def.Y, def.顶, def.底], i * 4);
-    alt.set(def.变, i * 4);
+    tiles.set([def.X, def.Y, def.topTexIndex, def.bottom], i * 4);
+    alt.set(def.variants, i * 4);
     swap[i] = def.换;
   });
   mesh.instanceMatrix.needsUpdate = true;

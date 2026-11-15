@@ -5,54 +5,54 @@
 // 箱子里洒出来的树苗、花、蛋糕是平面物品（item/generated）：挤出 1 像素厚的薄片（engine/model/物品贴图.tsx），ground 显示变换抬 2/16、缩到 1/2，往上抬 0.25 × 0.5 格；
 //   几份前后错开 0.09375 格、横竖在 ±0.075 里错开（ItemEntityRenderer 不是 3D 物品的那一支）。树苗、花的物品图就是方块贴图（item/poppy.json 的 layer0 = block/poppy），从方块图集里切。
 import React from 'react';
-import { 方块拼搭 } from '@engine/model/方块拼搭.tsx';
+import { BlockAssembly } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite, type ItemLayer } from '@engine/model/物品贴图.tsx';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { textureNames } from '@engine/voxel/真实方块表.ts';
-import { 按原版坐标 } from '@engine/model/贴图倍数.ts';
+import { toVanillaCoords } from '@engine/model/贴图倍数.ts';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
-import 方块表图 from 'asset:贴图/场景/关键帧/方块表';
-import { Java随机 } from './弹坑.ts';
+import blockTablePng from 'asset:贴图/场景/关键帧/方块表';
+import { JavaRandom } from './弹坑.ts';
 
 /** 方块图集里的一张贴图（图集是 格 宽的竖条，一张 格×格 接一张，顺序同 textureNames；格 原版 16，材质包高清图集 32） */
-const 方块贴图 = (名: string): Png => {
-  const k = textureNames.indexOf(名);
-  if (k < 0) throw new Error(`方块图集里没有 ${名}`);
-  const 表 = png(方块表图);
-  const 格 = 表.w;
-  return { w: 格, h: 格, px: 表.px.subarray(k * 格 * 格 * 4, (k + 1) * 格 * 格 * 4) };
+const blockTexture = (blockName: string): Png => {
+  const k = textureNames.indexOf(blockName);
+  if (k < 0) throw new Error(`方块图集里没有 ${blockName}`);
+  const blockTableImg = png(blockTablePng);
+  const cellSize = blockTableImg.w;
+  return { w: cellSize, h: cellSize, px: blockTableImg.px.subarray(k * cellSize * cellSize * 4, (k + 1) * cellSize * cellSize * 4) };
 };
 /** 平面物品的贴图层 */
-const 平面物品: Record<string, () => ItemLayer[]> = {
-  'minecraft:cherry_sapling': () => [{ tex: 方块贴图('minecraft:block/cherry_sapling') }],
-  'minecraft:poppy': () => [{ tex: 方块贴图('minecraft:block/poppy') }],
+const flatItems: Record<string, () => ItemLayer[]> = {
+  'minecraft:cherry_sapling': () => [{ tex: blockTexture('minecraft:block/cherry_sapling') }],
+  'minecraft:poppy': () => [{ tex: blockTexture('minecraft:block/poppy') }],
   'minecraft:cake': () => CAKE,
 };
 
 /** 物品 id → 画成哪个方块状态（物品模型是方块的默认状态） */
-const 物品方块: Record<string, string> = {
+const itemBlocks: Record<string, string> = {
   'minecraft:furnace': 'minecraft:furnace[facing=north,lit=false]',
   'minecraft:oak_log': 'minecraft:oak_log[axis=y]',
 };
 
-const 份数 = (个数: number) => (个数 > 48 ? 5 : 个数 > 32 ? 4 : 个数 > 16 ? 3 : 个数 > 1 ? 2 : 1);
+const copyCount = (itemCount: number) => (itemCount > 48 ? 5 : itemCount > 32 ? 4 : itemCount > 16 ? 3 : itemCount > 1 ? 2 : 1);
 
-export type 掉落物 = { 物品: string; 个数: number; 位: V3; 浮动偏: number };
+export type Drop = { item: string; itemCount: number; 位: V3; floatOffset: number };
 
 /** 一堆掉落物：位 = 实体位置（落在地上的那点）；刻 = 它的 age（游戏刻，可带小数） */
-const 一堆: React.FC<{ d: 掉落物; 刻: number }> = ({ d, 刻 }) => {
-  const 浮 = Math.sin(刻 / 10 + d.浮动偏) * 0.1 + 0.1;
-  const 转 = 刻 / 20 + d.浮动偏;
-  const 状态 = 物品方块[d.物品] ?? d.物品;
-  const r = new Java随机(Math.round(d.位[0] * 1000) * 31 + d.个数);
-  const n = 份数(d.个数);
-  const 平面 = 平面物品[d.物品];
-  if (平面) {
-    const 层 = 平面();
+const ItemPile: React.FC<{ d: Drop; 刻: number }> = ({ d, 刻: tick }) => {
+  const floatOffset = Math.sin(tick / 10 + d.floatOffset) * 0.1 + 0.1;
+  const rotationRad = tick / 20 + d.floatOffset;
+  const blockState = itemBlocks[d.item] ?? d.item;
+  const r = new JavaRandom(Math.round(d.位[0] * 1000) * 31 + d.itemCount);
+  const n = copyCount(d.itemCount);
+  const flatItem = flatItems[d.item];
+  if (flatItem) {
+    const layers = flatItem();
     return (
-      <group position={[d.位[0], d.位[1], d.位[2] + 浮 + 0.25 * 0.5]} rotation={[0, 0, 转]}>
+      <group position={[d.位[0], d.位[1], d.位[2] + floatOffset + 0.25 * 0.5]} rotation={[0, 0, rotationRad]}>
         {/* 物品空间（Y 上、Z 朝前）转到场景（Z 上） */}
         <group rotation={[Math.PI / 2, 0, 0]}>
           <group position={[0, 0, (-0.09375 * (n - 1)) / 2]}>
@@ -60,7 +60,7 @@ const 一堆: React.FC<{ d: 掉落物; 刻: number }> = ({ d, 刻 }) => {
               const o = k === 0 ? [0, 0] : [(r.nextFloat() * 2 - 1) * 0.075, (r.nextFloat() * 2 - 1) * 0.075];
               return (
                 <group key={k} position={[o[0]!, o[1]! + 2 / 16, 0.09375 * k]} scale={0.5}>
-                  <ItemSprite layers={层} emissive={0} shadow={false} />
+                  <ItemSprite layers={layers} emissive={0} shadow={false} />
                 </group>
               );
             })}
@@ -70,12 +70,12 @@ const 一堆: React.FC<{ d: 掉落物; 刻: number }> = ({ d, 刻 }) => {
     );
   }
   return (
-    <group position={[d.位[0], d.位[1], d.位[2] + 浮 + 0.25 * 0.25]} rotation={[0, 0, 转]}>
+    <group position={[d.位[0], d.位[1], d.位[2] + floatOffset + 0.25 * 0.25]} rotation={[0, 0, rotationRad]}>
       {Array.from({ length: n }, (_, k) => {
         const o = k === 0 ? [0, 0, 0] : [(r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15, (r.nextFloat() * 2 - 1) * 0.15];
         return (
           <group key={k} position={[o[0]!, o[1]!, o[2]! + 3 / 16]} scale={0.25}>
-            {d.物品 === 'minecraft:chest' ? <Chest 贴图={按原版坐标(VANILLA_CHEST_TEX, [64, 64])} p={[0, 0, -0.5]} 朝向="south" /> : <方块拼搭 方块们={[{ 状态, 位: [0, 0, 0] }]} 原点={[-0.5, -0.5, -0.5]} />}
+            {d.item === 'minecraft:chest' ? <Chest 贴图={toVanillaCoords(VANILLA_CHEST_TEX, [64, 64])} p={[0, 0, -0.5]} facing="south" /> : <BlockAssembly blocks={[{ 状态: blockState, 位: [0, 0, 0] }]} 原点={[-0.5, -0.5, -0.5]} />}
           </group>
         );
       })}
@@ -83,10 +83,10 @@ const 一堆: React.FC<{ d: 掉落物; 刻: number }> = ({ d, 刻 }) => {
   );
 };
 
-export const 掉落物们: React.FC<{ 们: readonly 掉落物[]; 刻: number }> = ({ 们, 刻 }) => (
+export const dropItemLayer: React.FC<{ 们: readonly Drop[]; 刻: number }> = ({ 们: drops, 刻: tick }) => (
   <>
-    {们.map((d, k) => (
-      <一堆 key={k} d={d} 刻={刻} />
+    {drops.map((d, k) => (
+      <ItemPile key={k} d={d} 刻={tick} />
     ))}
   </>
 );

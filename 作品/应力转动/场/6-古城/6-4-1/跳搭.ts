@@ -11,7 +11,7 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { GUCHENG4X } from '../../../地点/古城4x.tsx';
-import { allWool, elite, eliteLeap, leapFeetAt, feetOnWool, wool641, wool642, woolLeapApex, chestB, type 跳, type WoolName } from '../../../地点/古城4x/布局.ts';
+import { allWool, elite, eliteLeap, leapFeetAt, feetOnWool, wool641, wool642, woolLeapApex, chestB, type Jump, type WoolName } from '../../../地点/古城4x/布局.ts';
 import { FPS, PLACE_BEFORE, crouchPose, lootPose, mixPose, nearYaw, placeFrame, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 
 export { FPS };
@@ -54,8 +54,8 @@ const warp = (u: number, ua: number, hang: number) => {
   const s = (u - ua) / (1 - ua);
   return ua + (1 - ua) * (s - hang * s * (1 - s));
 };
-const flightU = (jump: 跳, frame: number) => clamp01((frame - jump.f0) / FPS / jump.T);
-const flightFeetAt = (jump: 跳, i: number, frame: number): V3 =>
+const flightU = (jump: Jump, frame: number) => clamp01((frame - jump.f0) / FPS / jump.T);
+const flightFeetAt = (jump: Jump, i: number, frame: number): V3 =>
   leapFeetAt(jump, jump.f0 + warp(flightU(jump, frame), jump.tUp / jump.T, jumpStyle(i).hang) * jump.T * FPS);
 // 蹬离地面那一刻的样子（地上最后一帧和空中第一帧一样）：后腿（左）蹬直、前腿（右）提膝，上身前倾，两臂往前上方甩
 const launchShape = (foot: V3, yaw: number): FigurePose => ({
@@ -64,7 +64,7 @@ const launchShape = (foot: V3, yaw: number): FigurePose => ({
 });
 // 空中：蹬直的腿和甩起的手 → 收腿抱膝上到顶点 → 顶点前后两臂张开、身子舒展 → 伸腿找落点、头低下去盯着、右手往脚下一挥垫羊毛。
 // 刚离地和快落地时脚底贴着弧（ground 1），中间按髋算（ground 0），着地那帧不跳
-const flightPose = (jump: 跳, i: number, frame: number): FigurePose => {
+const flightPose = (jump: Jump, i: number, frame: number): FigurePose => {
   const u = flightU(jump, frame);
   const ua = jump.tUp / jump.T;
   const ext = 1 - ss(u / 0.2);
@@ -120,20 +120,20 @@ export const route: WoolName[] = [...(Object.keys(wool641) as WoolName[]), ...(O
 const LAND_B = 6; // 落在 #212 跟前，蹲一下卸力
 const LOOT_LEN = 28; // 开箱、伸手拿东西 1.2 秒
 const TURN_LEN = 7; // 收手的同时转身蹲下
-export const jumps: 跳[] = (() => {
-  const out: 跳[] = [];
+export const jumps: Jump[] = (() => {
+  const out: Jump[] = [];
   let p0 = startFoot;
   let f0 = firstJumpFrame;
   for (const k of route) {
     const p1 = feetOnWool(allWool[k]);
-    const jump = eliteLeap(p0, p1, woolLeapApex[k] ?? elite.离地, f0);
+    const jump = eliteLeap(p0, p1, woolLeapApex[k] ?? elite.apexHeight, f0);
     out.push(jump);
     p0 = p1;
     f0 = k === 'B' ? jump.f1 + LAND_B + LOOT_LEN - 4 + TURN_LEN : jump.f1 + jumpStyle(out.length - 1).groundFrames;
   }
   return out;
 })();
-export const jumpOnto = (k: WoolName): 跳 => jumps[route.indexOf(k)];
+export const jumpOnto = (k: WoolName): Jump => jumps[route.indexOf(k)];
 // 落在 k 上那一刻、从 k 起跳那一刻（剧情帧）
 export const landFrame = (k: WoolName) => jumpOnto(k).f1;
 export const takeoffFrame = (k: WoolName) => jumps[route.indexOf(k) + 1]?.f0 ?? Infinity;
@@ -159,7 +159,7 @@ export const woolStateAt = (frame: number) => {
     if (progress >= 1) placed.push(k);
     else growingWool.push({ w: k, k: 0.35 + 0.65 * progress });
   }
-  return { 羊毛: placed, 长羊毛: growingWool };
+  return { wool: placed, growingWool: growingWool };
 };
 
 // ---------- 李樱 ----------
@@ -170,7 +170,7 @@ export const landBeforeChest = (foot: V3, y0: number, chestYaw: number, sinceLan
   const k = clamp01((sinceLand - ABSORB) / Math.max(1, len - ABSORB));
   return crouchPose(foot, yaw, lerp(1.12, 0.35, ss(k)), lerp(25, 15, k));
 };
-const inAir = (J: 跳, f: number) => f >= J.f0 && f < J.f1;
+const inAir = (J: Jump, f: number) => f >= J.f0 && f < J.f1;
 // 剧情帧 f 的姿势（f 到 C 落地为止；C 之后归 6-4-2/编排.ts）；手里有没有锤看 有锤(f)
 export const hasHammer = (f: number) => f < stowHammerFrame;
 export const poseAt = (frame: number): FigurePose => {

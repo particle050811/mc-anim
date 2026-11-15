@@ -2,8 +2,8 @@
 // 为的是侧剖面剖掉的那面墙：镜头看不见它，可太阳（月亮）照进屋还得从墙上的窗口进（作品/把回忆拼好给你/场/2-卧室/）。
 import type React from 'react';
 
-export const 只挡光: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
-  <group visible={false} userData={{ 只挡光: true }}>
+export const ShadowOnly: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
+  <group visible={false} userData={{ shadowOnly: true }}>
     {children}
   </group>
 );

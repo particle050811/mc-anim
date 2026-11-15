@@ -1,29 +1,29 @@
 // 现实课桌核对的视图表（纯数据，段.ts 也读）：一帧一个视图，现实画布放在 1280×720 的左半（640×720，取景同第 13 句分屏右屏：场/2-门口/分屏参数.ts 的 现实取景），右半写视图名。
 // 日历停在 100、50、1，课表亮两格（周一第 1、2 节）；另加两帧自检：风吹到一半（空中有几张飞纸），课表亮到一半。不过整片后期，看的是贴图原色。
-import type { 亮格 } from '../../现实/课表数据.ts';
-import type { 飞页 } from '../../现实/日历.ts';
+import type { LitCell } from '../../现实/课表数据.ts';
+import type { FlyingPage } from '../../现实/日历.ts';
 
-export type 视图 = { 名: string; 日历: number; 飞?: 飞页[]; 亮格?: readonly 亮格[] };
+export type View = { 名: string; calendar: number; flyPages?: FlyingPage[]; litCells?: readonly LitCell[] };
 
-const 两格亮 = (亮: number): 亮格[] => [
-  { 周: '周一', 节: '第1节', 亮: 1 },
-  { 周: '周一', 节: '第2节', 亮 },
+const brightTwoCells = (brightness: number): LitCell[] => [
+  { 周: '周一', 节: '第1节', brightness: 1 },
+  { 周: '周一', 节: '第2节', brightness },
 ];
 
-export const 视图们: readonly 视图[] = [
-  { 名: '日历 100', 日历: 100 },
-  { 名: '日历 50', 日历: 50 },
-  { 名: '日历 1', 日历: 1 },
-  { 名: '课表亮两格（周一第 1、2 节）', 日历: 100, 亮格: 两格亮(1) },
+export const views: readonly View[] = [
+  { 名: '日历 100', calendar: 100 },
+  { 名: '日历 50', calendar: 50 },
+  { 名: '日历 1', calendar: 1 },
+  { 名: '课表亮两格（周一第 1、2 节）', calendar: 100, litCells: brightTwoCells(1) },
   {
     名: '自检：风吹到一半，空中四张',
-    日历: 50,
-    飞: [
-      { 数: 54, 龄: 0.8, 种: 0.2 },
-      { 数: 53, 龄: 0.55, 种: 0.7 },
-      { 数: 52, 龄: 0.3, 种: 0.4 },
-      { 数: 51, 龄: 0.08, 种: 0.9 },
+    calendar: 50,
+    flyPages: [
+      { 数: 54, age: 0.8, 种: 0.2 },
+      { 数: 53, age: 0.55, 种: 0.7 },
+      { 数: 52, age: 0.3, 种: 0.4 },
+      { 数: 51, age: 0.08, 种: 0.9 },
     ],
   },
-  { 名: '自检：第 2 节亮到一半', 日历: 100, 亮格: 两格亮(0.5) },
+  { 名: '自检：第 2 节亮到一半', calendar: 100, litCells: brightTwoCells(0.5) },
 ];

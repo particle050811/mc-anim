@@ -3,69 +3,69 @@
 // 每个视图都画全片 15 句（和段一样），这一帧前后句的进出场、退场和成片一样。
 // 飞来中：句中间那个字第一块落定前 2 帧（左半句已经拼好，中间几个字的符文正在飞）；落定闪：同一个字第一块落定那一帧；拼齐：最后一个字拼齐后 1 帧。
 // 这里写的「n 帧」都是 24 fps 时的，用 后 换成现在的帧数。
-import { fps, 旧帧 } from '../../分镜/时间.ts';
-import { 事件 as 歌词事件 } from '../../分镜/歌词.ts';
-import { 事件 as 正片第15句事件 } from '../../分镜/正片第15句.ts';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 符文歌词默认, 解码时段 } from '../../界面/符文排版.ts';
+import { fps, legacyFrameSec } from '../../分镜/时间.ts';
+import { events as lyricEvents } from '../../分镜/歌词.ts';
+import { events as mainCutLine15Events } from '../../分镜/正片第15句.ts';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { runeLyricDefault, decodeTimeSpans } from '../../界面/符文排版.ts';
 
-const 正片事件 = { ...歌词事件, ...正片第15句事件 };
+const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 
-export type 底 = '亮天空' | '门口' | '夜' | '对视' | '分屏' | '归隐';
-export type 阶段 = '飞来中' | '落定闪' | '拼齐';
+export type BottomBackdrop = '亮天空' | '门口' | '夜' | '对视' | '分屏' | '归隐';
+export type LyricStage = '飞来中' | '落定闪' | '拼齐';
 
-export type 视图 = {
+export type View = {
   名: string;
-  底: 底;
+  bottomBackdrop: BottomBackdrop;
   /** 歌词画哪一帧（歌曲帧）；分屏、归隐的底也画这一帧 */
   帧: number;
 };
 
 /** 每种底配哪一句：亮天空第 1 句（白天最亮的天，两行），门口第 8 句（哈气那个机位，15 个字断两行、错落），夜第 9 句（门口之夜，第 10 句留给烟花） */
-const 底句: Record<'亮天空' | '门口' | '夜', number> = { 亮天空: 1, 门口: 8, 夜: 9 };
+const bottomLine: Record<'亮天空' | '门口' | '夜', number> = { 亮天空: 1, 门口: 8, 夜: 9 };
 
-const 时段 = (句: number) => 解码时段(正片歌词行(句), 符文歌词默认);
+const timeSpans = (sentenceIndex: number) => decodeTimeSpans(mainCutLyricLine(sentenceIndex), runeLyricDefault);
 /** 24 fps 时 n 帧 → 现在几帧（取整） */
-const 后 = (n: number) => Math.round(旧帧(n) * fps);
+const frameOffset = (n: number) => Math.round(legacyFrameSec(n) * fps);
 
-const 阶段帧 = (句: number, 段: 阶段): number => {
-  const 段们 = 时段(句);
-  const 中 = 段们[Math.floor(段们.length / 2)]!;
-  if (段 === '飞来中') return Math.floor(中.起) - 后(2);
-  if (段 === '落定闪') return Math.ceil(中.起);
-  return Math.ceil(Math.max(...段们.map((d) => d.完))) + 后(1);
+const stageFrame = (sentenceIndex: number, stage: LyricStage): number => {
+  const segments = timeSpans(sentenceIndex);
+  const midSeg = segments[Math.floor(segments.length / 2)]!;
+  if (stage === '飞来中') return Math.floor(midSeg.起) - frameOffset(2);
+  if (stage === '落定闪') return Math.ceil(midSeg.起);
+  return Math.ceil(Math.max(...segments.map((d) => d.end))) + frameOffset(1);
 };
 
 /** 关键词拼齐那一帧（词里最后一个字的最后一块落定） */
-const 齐帧 = (句: number) => {
-  const 效 = 正片歌词行(句).字效!;
-  return Math.ceil(Math.max(...时段(句).slice(效.从, 效.到 + 1).map((d) => d.完)));
+const alignedFrame = (sentenceIndex: number) => {
+  const wordEffect = mainCutLyricLine(sentenceIndex).wordEffect!;
+  return Math.ceil(Math.max(...timeSpans(sentenceIndex).slice(wordEffect.从, wordEffect.到 + 1).map((d) => d.end)));
 };
 
-const 阶段们: readonly 阶段[] = ['飞来中', '落定闪', '拼齐'];
-const 裂 = 正片事件.第11句碎裂.帧;
+const phases: readonly LyricStage[] = ['飞来中', '落定闪', '拼齐'];
+const shatterFrame = mainCutEvents.第11句碎裂.帧;
 
-export const 视图们: readonly 视图[] = [
-  ...(['亮天空', '门口', '夜'] as const).flatMap((底) => 阶段们.map((段): 视图 => ({ 名: `${底}-${段}`, 底, 帧: 阶段帧(底句[底], 段) }))),
+export const views: readonly View[] = [
+  ...(['亮天空', '门口', '夜'] as const).flatMap((bottomBackdrop) => phases.map((stage): View => ({ 名: `${bottomBackdrop}-${stage}`, bottomBackdrop, 帧: stageFrame(bottomLine[bottomBackdrop], stage) }))),
   // 光明（第 3 句，祭坛那句的白天）：拼齐那一帧两档、之后留一档
-  { 名: '光明-一亮', 底: '亮天空', 帧: 齐帧(3) },
-  { 名: '光明-留光', 底: '亮天空', 帧: 齐帧(3) + 后(6) },
+  { 名: '光明-一亮', bottomBackdrop: '亮天空', 帧: alignedFrame(3) },
+  { 名: '光明-留光', bottomBackdrop: '亮天空', 帧: alignedFrame(3) + frameOffset(6) },
   // 烟花（第 10 句）：炸开后 2 帧、7 帧
-  { 名: '烟花-炸开', 底: '夜', 帧: 齐帧(10) + 后(2) },
-  { 名: '烟花-散开', 底: '夜', 帧: 齐帧(10) + 后(7) },
+  { 名: '烟花-炸开', bottomBackdrop: '夜', 帧: alignedFrame(10) + frameOffset(2) },
+  { 名: '烟花-散开', bottomBackdrop: '夜', 帧: alignedFrame(10) + frameOffset(7) },
   // 刹那（第 11 句）：「刹」冻住、「那」还在拼；整词冻住那一闪；裂开（第11句碎裂 那一帧）；往下掉；掉出字行（整句开始退）
-  { 名: '刹那-刹冻住', 底: '夜', 帧: Math.ceil(时段(11)[6]!.完) + 后(3) },
-  { 名: '刹那-冻住', 底: '夜', 帧: 齐帧(11) },
-  { 名: '刹那-裂开', 底: '夜', 帧: 裂 },
-  { 名: '刹那-掉落', 底: '夜', 帧: 裂 + 后(4) },
-  { 名: '刹那-掉出', 底: '夜', 帧: 裂 + 后(6) },
+  { 名: '刹那-刹冻住', bottomBackdrop: '夜', 帧: Math.ceil(timeSpans(11)[6]!.end) + frameOffset(3) },
+  { 名: '刹那-冻住', bottomBackdrop: '夜', 帧: alignedFrame(11) },
+  { 名: '刹那-裂开', bottomBackdrop: '夜', 帧: shatterFrame },
+  { 名: '刹那-掉落', bottomBackdrop: '夜', 帧: shatterFrame + frameOffset(4) },
+  { 名: '刹那-掉出', bottomBackdrop: '夜', 帧: shatterFrame + frameOffset(6) },
   // 时差（第 13 句，分屏）：本体拼齐、残影还在飞；残影也落定；本体退了、残影还在
-  { 名: '时差-残影在飞', 底: '分屏', 帧: 齐帧(13) + 后(2) },
-  { 名: '时差-残影落定', 底: '分屏', 帧: 齐帧(13) + 后(7) },
-  { 名: '时差-残影晚退', 底: '分屏', 帧: 正片歌词行(14).入 - 后(1) },
+  { 名: '时差-残影在飞', bottomBackdrop: '分屏', 帧: alignedFrame(13) + frameOffset(2) },
+  { 名: '时差-残影落定', bottomBackdrop: '分屏', 帧: alignedFrame(13) + frameOffset(7) },
+  { 名: '时差-残影晚退', bottomBackdrop: '分屏', 帧: mainCutLyricLine(14).入 - frameOffset(1) },
   // 放下（第 14 句，归隐的分屏）：刚飘起来、快退场（拼齐后 10 帧左右就合屏退场）
-  { 名: '放下-飘落', 底: '归隐', 帧: 齐帧(14) + 后(3) },
-  { 名: '放下-落远', 底: '归隐', 帧: 齐帧(14) + 后(8) },
+  { 名: '放下-飘落', bottomBackdrop: '归隐', 帧: alignedFrame(14) + frameOffset(3) },
+  { 名: '放下-落远', bottomBackdrop: '归隐', 帧: alignedFrame(14) + frameOffset(8) },
   // 第 15 句放底部（对视这一帧上面是她的脸和气泡），49.96 那一帧
-  { 名: '对视-第15句底部', 底: '对视', 帧: 正片事件.第15句对视.帧 },
+  { 名: '对视-第15句底部', bottomBackdrop: '对视', 帧: mainCutEvents.第15句对视.帧 },
 ];

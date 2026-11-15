@@ -138,7 +138,7 @@ blockNames.forEach((stateName, i) => {
   });
   FACES[voxel] = faceBuf;
 });
-export const blockProps = { full: FULL, 遮: OCC, leaf: LEAF, 光: AO, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS, plant: PLANT, cross: CROSS, opaque: OPAQ };
+export const blockProps = { full: FULL, occlusion: OCC, leaf: LEAF, 光: AO, layer: CLS, tint: TINT, spin: SPIN, offset: OFFS, plant: PLANT, cross: CROSS, opaque: OPAQ };
 export const voxelCount = tableSize;
 export const faceTable: readonly Float32Array[] = FACES;
 export const textureNames: readonly string[] = DATA.贴图;

@@ -86,4 +86,4 @@ export const PonderCallout: React.FC<{
   );
 };
 
-export { chatColors as 色 };
+export { chatColors as chatColors };

@@ -3,25 +3,25 @@ import { isFrozenZone } from './群系色.ts';
 import type { DistantGrid } from './远景网格.ts';
 
 // 树种：叶、干的方块；冠顶、冠底是离地多高（米）；半径是冠幅的一半；锥：云杉那样上尖下宽
-export type TreeKind = { 叶: string; 干: string; crownTop: number; crownBottom: number; 半径: number; conical?: boolean };
-const oak: TreeKind = { 叶: 'minecraft:oak_leaves', 干: 'minecraft:oak_log[axis=y]', crownTop: 7, crownBottom: 3, 半径: 2.5 };
-const bigOak: TreeKind = { 叶: 'minecraft:oak_leaves', 干: 'minecraft:oak_log[axis=y]', crownTop: 10, crownBottom: 4, 半径: 4 };
-const birch: TreeKind = { 叶: 'minecraft:birch_leaves', 干: 'minecraft:birch_log[axis=y]', crownTop: 8, crownBottom: 4, 半径: 2 };
-const tallBirch: TreeKind = { 叶: 'minecraft:birch_leaves', 干: 'minecraft:birch_log[axis=y]', crownTop: 13, crownBottom: 8, 半径: 2 };
-const spruce: TreeKind = { 叶: 'minecraft:spruce_leaves', 干: 'minecraft:spruce_log[axis=y]', crownTop: 10, crownBottom: 2, 半径: 2.5, conical: true };
-const megaSpruce: TreeKind = { 叶: 'minecraft:spruce_leaves', 干: 'minecraft:spruce_log[axis=y]', crownTop: 24, crownBottom: 8, 半径: 4, conical: true };
-const darkOak: TreeKind = { 叶: 'minecraft:dark_oak_leaves', 干: 'minecraft:dark_oak_log[axis=y]', crownTop: 9, crownBottom: 5, 半径: 3.5 };
-const jungleTree: TreeKind = { 叶: 'minecraft:jungle_leaves', 干: 'minecraft:jungle_log[axis=y]', crownTop: 12, crownBottom: 6, 半径: 3 };
-const megaJungle: TreeKind = { 叶: 'minecraft:jungle_leaves', 干: 'minecraft:jungle_log[axis=y]', crownTop: 26, crownBottom: 18, 半径: 5 };
-const bush: TreeKind = { 叶: 'minecraft:oak_leaves', 干: 'minecraft:jungle_log[axis=y]', crownTop: 3, crownBottom: 0, 半径: 2 };
-const acacia: TreeKind = { 叶: 'minecraft:acacia_leaves', 干: 'minecraft:acacia_log[axis=y]', crownTop: 8, crownBottom: 6, 半径: 3.5 };
-const mangrove: TreeKind = { 叶: 'minecraft:mangrove_leaves', 干: 'minecraft:mangrove_log[axis=y]', crownTop: 11, crownBottom: 5, 半径: 3 };
-const cherry: TreeKind = { 叶: 'minecraft:cherry_leaves', 干: 'minecraft:cherry_log[axis=y]', crownTop: 9, crownBottom: 5, 半径: 3.5 };
-const swampOak: TreeKind = { 叶: 'minecraft:oak_leaves', 干: 'minecraft:oak_log[axis=y]', crownTop: 8, crownBottom: 4, 半径: 3 };
+export type TreeKind = { leaf: string; trunk: string; crownTop: number; crownBottom: number; radius: number; conical?: boolean };
+const oak: TreeKind = { leaf: 'minecraft:oak_leaves', trunk: 'minecraft:oak_log[axis=y]', crownTop: 7, crownBottom: 3, radius: 2.5 };
+const bigOak: TreeKind = { leaf: 'minecraft:oak_leaves', trunk: 'minecraft:oak_log[axis=y]', crownTop: 10, crownBottom: 4, radius: 4 };
+const birch: TreeKind = { leaf: 'minecraft:birch_leaves', trunk: 'minecraft:birch_log[axis=y]', crownTop: 8, crownBottom: 4, radius: 2 };
+const tallBirch: TreeKind = { leaf: 'minecraft:birch_leaves', trunk: 'minecraft:birch_log[axis=y]', crownTop: 13, crownBottom: 8, radius: 2 };
+const spruce: TreeKind = { leaf: 'minecraft:spruce_leaves', trunk: 'minecraft:spruce_log[axis=y]', crownTop: 10, crownBottom: 2, radius: 2.5, conical: true };
+const megaSpruce: TreeKind = { leaf: 'minecraft:spruce_leaves', trunk: 'minecraft:spruce_log[axis=y]', crownTop: 24, crownBottom: 8, radius: 4, conical: true };
+const darkOak: TreeKind = { leaf: 'minecraft:dark_oak_leaves', trunk: 'minecraft:dark_oak_log[axis=y]', crownTop: 9, crownBottom: 5, radius: 3.5 };
+const jungleTree: TreeKind = { leaf: 'minecraft:jungle_leaves', trunk: 'minecraft:jungle_log[axis=y]', crownTop: 12, crownBottom: 6, radius: 3 };
+const megaJungle: TreeKind = { leaf: 'minecraft:jungle_leaves', trunk: 'minecraft:jungle_log[axis=y]', crownTop: 26, crownBottom: 18, radius: 5 };
+const bush: TreeKind = { leaf: 'minecraft:oak_leaves', trunk: 'minecraft:jungle_log[axis=y]', crownTop: 3, crownBottom: 0, radius: 2 };
+const acacia: TreeKind = { leaf: 'minecraft:acacia_leaves', trunk: 'minecraft:acacia_log[axis=y]', crownTop: 8, crownBottom: 6, radius: 3.5 };
+const mangrove: TreeKind = { leaf: 'minecraft:mangrove_leaves', trunk: 'minecraft:mangrove_log[axis=y]', crownTop: 11, crownBottom: 5, radius: 3 };
+const cherry: TreeKind = { leaf: 'minecraft:cherry_leaves', trunk: 'minecraft:cherry_log[axis=y]', crownTop: 9, crownBottom: 5, radius: 3.5 };
+const swampOak: TreeKind = { leaf: 'minecraft:oak_leaves', trunk: 'minecraft:oak_log[axis=y]', crownTop: 8, crownBottom: 4, radius: 3 };
 
 // 一个群系：地表方块（陡坡上换 陡）、底土、郁闭度（地面被树冠盖住的比例）、树种和比重
 // 混：[另一种地表, 比例]，按哈希一列列混（风袭砂砾丘陵是草和砾石各一片、冰刺之地是浮冰和雪）
-export type BiomeSetup = { 地表: string; subsoil: string; 陡?: string; 混?: [string, number]; 积雪?: boolean; 郁闭: number; 树: [TreeKind, number][] };
+export type BiomeSetup = { surfaceBlock: string; subsoil: string; steep?: string; mixBlock?: [string, number]; snowCover?: boolean; canopy: number; 树: [TreeKind, number][] };
 export const grassBlock = 'minecraft:grass_block[snowy=false]';
 export const snowyGrass = 'minecraft:grass_block[snowy=true]';
 const dirt = 'minecraft:dirt';
@@ -29,7 +29,7 @@ export const sand = 'minecraft:sand';
 export const gravel = 'minecraft:gravel';
 export const stone = 'minecraft:stone';
 const snowBlock = 'minecraft:snow_block';
-const defineBiome = (surfaceBlock: string, subsoil: string, canopyClosure = 0, trees: [TreeKind, number][] = [], extra: Partial<BiomeSetup> = {}): BiomeSetup => ({ 地表: surfaceBlock, subsoil, 郁闭: canopyClosure, 树: trees, ...extra });
+const defineBiome = (surfaceBlock: string, subsoil: string, canopyClosure = 0, trees: [TreeKind, number][] = [], extra: Partial<BiomeSetup> = {}): BiomeSetup => ({ surfaceBlock: surfaceBlock, subsoil, canopy: canopyClosure, 树: trees, ...extra });
 // 原版 1.20.1 的地表规则（SurfaceRuleData.overworld）大意：
 //   沙滩、沙漠、暖水海底是沙；冷海、深海底大多是砾石；山峰（尖峭、冰封）顶上是雪块、陡处石头；裸岩山峰石头；雪坡雪块；
 //   积雪的地方（群系温度按高度降到 0.15 以下）草方块上盖一层雪片：雪片不是整格（不透明度 0），粗级照 Mipper 露出的是下面的 `雪草方块`，
@@ -52,10 +52,10 @@ export const biomeSetups: Record<string, BiomeSetup> = {
   'minecraft:old_growth_pine_taiga': defineBiome('minecraft:podzol[snowy=false]', dirt, 0.7, [[megaSpruce, 0.5], [spruce, 0.5]]),
   'minecraft:old_growth_spruce_taiga': defineBiome('minecraft:podzol[snowy=false]', dirt, 0.75, [[megaSpruce, 0.6], [spruce, 0.4]]),
   'minecraft:grove': defineBiome(snowBlock, dirt, 0.27, [[spruce, 1]]),
-  'minecraft:windswept_forest': defineBiome(grassBlock, dirt, 0.45, [[spruce, 0.6], [oak, 0.4]], { 陡: stone }),
-  'minecraft:windswept_hills': defineBiome(grassBlock, dirt, 0.04, [[spruce, 0.5], [oak, 0.5]], { 陡: stone }),
-  'minecraft:windswept_gravelly_hills': defineBiome(grassBlock, dirt, 0.005, [[oak, 1]], { 陡: stone, 混: [gravel, 0.4] }),
-  'minecraft:windswept_savanna': defineBiome(grassBlock, dirt, 0.25, [[acacia, 0.45], [oak, 0.45], [birch, 0.1]], { 陡: stone }),
+  'minecraft:windswept_forest': defineBiome(grassBlock, dirt, 0.45, [[spruce, 0.6], [oak, 0.4]], { steep: stone }),
+  'minecraft:windswept_hills': defineBiome(grassBlock, dirt, 0.04, [[spruce, 0.5], [oak, 0.5]], { steep: stone }),
+  'minecraft:windswept_gravelly_hills': defineBiome(grassBlock, dirt, 0.005, [[oak, 1]], { steep: stone, mixBlock: [gravel, 0.4] }),
+  'minecraft:windswept_savanna': defineBiome(grassBlock, dirt, 0.25, [[acacia, 0.45], [oak, 0.45], [birch, 0.1]], { steep: stone }),
   'minecraft:savanna': defineBiome(grassBlock, dirt, 0.12, [[acacia, 0.8], [oak, 0.2]]),
   'minecraft:savanna_plateau': defineBiome(grassBlock, dirt, 0.15, [[acacia, 0.8], [oak, 0.2]]),
   'minecraft:jungle': defineBiome(grassBlock, dirt, 0.9, [[jungleTree, 0.5], [megaJungle, 0.2], [bush, 0.3]]),
@@ -66,15 +66,15 @@ export const biomeSetups: Record<string, BiomeSetup> = {
   'minecraft:cherry_grove': defineBiome(grassBlock, dirt, 0.08, [[cherry, 1]]),
   'minecraft:mushroom_fields': defineBiome('minecraft:mycelium[snowy=false]', dirt),
   'minecraft:desert': defineBiome(sand, 'minecraft:sandstone'),
-  'minecraft:badlands': defineBiome('minecraft:red_sand', 'minecraft:terracotta', 0, [], { 陡: 'minecraft:terracotta' }),
-  'minecraft:eroded_badlands': defineBiome('minecraft:red_sand', 'minecraft:terracotta', 0, [], { 陡: 'minecraft:terracotta' }),
-  'minecraft:wooded_badlands': defineBiome('minecraft:coarse_dirt', 'minecraft:terracotta', 0.12, [[oak, 1]], { 陡: 'minecraft:terracotta' }),
+  'minecraft:badlands': defineBiome('minecraft:red_sand', 'minecraft:terracotta', 0, [], { steep: 'minecraft:terracotta' }),
+  'minecraft:eroded_badlands': defineBiome('minecraft:red_sand', 'minecraft:terracotta', 0, [], { steep: 'minecraft:terracotta' }),
+  'minecraft:wooded_badlands': defineBiome('minecraft:coarse_dirt', 'minecraft:terracotta', 0.12, [[oak, 1]], { steep: 'minecraft:terracotta' }),
   'minecraft:snowy_plains': defineBiome(snowyGrass, dirt, 0.025, [[spruce, 0.6], [oak, 0.4]]),
-  'minecraft:ice_spikes': defineBiome('minecraft:packed_ice', snowBlock, 0, [], { 混: [snowBlock, 0.25] }),
+  'minecraft:ice_spikes': defineBiome('minecraft:packed_ice', snowBlock, 0, [], { mixBlock: [snowBlock, 0.25] }),
   'minecraft:snowy_slopes': defineBiome(snowBlock, snowBlock),
-  'minecraft:jagged_peaks': defineBiome(snowBlock, snowBlock, 0, [], { 陡: stone }),
-  'minecraft:frozen_peaks': defineBiome(snowBlock, 'minecraft:packed_ice', 0, [], { 陡: 'minecraft:packed_ice' }),
-  'minecraft:stony_peaks': defineBiome(stone, stone, 0, [], { 陡: 'minecraft:calcite' }),
+  'minecraft:jagged_peaks': defineBiome(snowBlock, snowBlock, 0, [], { steep: stone }),
+  'minecraft:frozen_peaks': defineBiome(snowBlock, 'minecraft:packed_ice', 0, [], { steep: 'minecraft:packed_ice' }),
+  'minecraft:stony_peaks': defineBiome(stone, stone, 0, [], { steep: 'minecraft:calcite' }),
   'minecraft:stony_shore': defineBiome(stone, stone),
   'minecraft:beach': defineBiome(sand, sand, 0.02, [[oak, 0.75], [birch, 0.25]]),
   'minecraft:snowy_beach': defineBiome(sand, sand),
@@ -95,16 +95,16 @@ export const biomeSetups: Record<string, BiomeSetup> = {
 // 郁闭度、冠顶照暮色放大-1752 存档量的（11-06，56 个区域隔 3 列取：陆地列最上面是树叶的比例；冠顶离地的中位、九成位）：
 //   萤火虫林 0.67（冠顶中位 29 米）、密林 0.92（30）、森林 0.40（27）、蘑菇林 0.46（24）、橡树草原 0.18（11，九成位 45）、雪林 0.55（6）、高地 0.37（12，九成位 22）、
 //   诡异林 0.12（8）、火焰沼泽 0.19（5）、沼泽 0.56（17）、荆棘地 0.94（5）、终焉高原 0.01、冰川 0。树种比重按各种树叶的列数除以冠面积折成棵数。
-const twilightOak: TreeKind = { 叶: 'twilightforest:twilight_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 8, crownBottom: 3, 半径: 2.5 };
-const smallTwilightOak: TreeKind = { 叶: 'twilightforest:twilight_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 5, crownBottom: 2, 半径: 2.5 };
-const largeTwilightOak: TreeKind = { 叶: 'twilightforest:twilight_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 26, crownBottom: 10, 半径: 6 };
-const canopyTree: TreeKind = { 叶: 'twilightforest:canopy_leaves', 干: 'twilightforest:canopy_log[axis=y]', crownTop: 30, crownBottom: 22, 半径: 5 };
-const twilightMangrove: TreeKind = { 叶: 'twilightforest:mangrove_leaves', 干: 'twilightforest:mangrove_log[axis=y]', crownTop: 17, crownBottom: 9, 半径: 4 };
-const rainbowOak: TreeKind = { 叶: 'twilightforest:rainbow_oak_leaves', 干: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 8, crownBottom: 3, 半径: 2.5 };
-const smallSpruce: TreeKind = { 叶: 'minecraft:spruce_leaves', 干: 'minecraft:spruce_log[axis=y]', crownTop: 7, crownBottom: 1, 半径: 2, conical: true };
-const brownMushroom: TreeKind = { 叶: 'minecraft:brown_mushroom_block', 干: 'minecraft:mushroom_stem', crownTop: 8, crownBottom: 5, 半径: 3 };
-const redMushroom: TreeKind = { 叶: 'minecraft:red_mushroom_block', 干: 'minecraft:mushroom_stem', crownTop: 7, crownBottom: 3, 半径: 2 };
-const thorns: TreeKind = { 叶: 'twilightforest:brown_thorns[axis=y]', 干: 'twilightforest:brown_thorns[axis=y]', crownTop: 5, crownBottom: 1, 半径: 3 };
+const twilightOak: TreeKind = { leaf: 'twilightforest:twilight_oak_leaves', trunk: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 8, crownBottom: 3, radius: 2.5 };
+const smallTwilightOak: TreeKind = { leaf: 'twilightforest:twilight_oak_leaves', trunk: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 5, crownBottom: 2, radius: 2.5 };
+const largeTwilightOak: TreeKind = { leaf: 'twilightforest:twilight_oak_leaves', trunk: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 26, crownBottom: 10, radius: 6 };
+const canopyTree: TreeKind = { leaf: 'twilightforest:canopy_leaves', trunk: 'twilightforest:canopy_log[axis=y]', crownTop: 30, crownBottom: 22, radius: 5 };
+const twilightMangrove: TreeKind = { leaf: 'twilightforest:mangrove_leaves', trunk: 'twilightforest:mangrove_log[axis=y]', crownTop: 17, crownBottom: 9, radius: 4 };
+const rainbowOak: TreeKind = { leaf: 'twilightforest:rainbow_oak_leaves', trunk: 'twilightforest:twilight_oak_log[axis=y]', crownTop: 8, crownBottom: 3, radius: 2.5 };
+const smallSpruce: TreeKind = { leaf: 'minecraft:spruce_leaves', trunk: 'minecraft:spruce_log[axis=y]', crownTop: 7, crownBottom: 1, radius: 2, conical: true };
+const brownMushroom: TreeKind = { leaf: 'minecraft:brown_mushroom_block', trunk: 'minecraft:mushroom_stem', crownTop: 8, crownBottom: 5, radius: 3 };
+const redMushroom: TreeKind = { leaf: 'minecraft:red_mushroom_block', trunk: 'minecraft:mushroom_stem', crownTop: 7, crownBottom: 3, radius: 2 };
+const thorns: TreeKind = { leaf: 'twilightforest:brown_thorns[axis=y]', trunk: 'twilightforest:brown_thorns[axis=y]', crownTop: 5, crownBottom: 1, radius: 3 };
 const podzol = 'minecraft:podzol[snowy=false]';
 const deadrock = 'twilightforest:weathered_deadrock';
 export const twilightBiomeSetups: Record<string, BiomeSetup> = {
@@ -138,9 +138,9 @@ export const defaultBiome = defineBiome(grassBlock, dirt, 0.03, [[oak, 1]]); // 
 // 冻洋（0.0）暖区以外都结冰；深冻洋（0.5）永远不结冰（游戏里只有冰山，这里不做）；冻河（0.0、没有修正）整片结冰；别的群系照温度（雪原、冰刺之地里的水也冻）。
 // 粗格子里冰和水不透明度一样（1）、又在同一层，Mipper 按位序挑东南角那一块，所以看格子东南角那一块方块冻没冻。导入的粗级补水面时也照这条（lib/体素/主世界地形.ts）
 const frozenModBiomes = new Set(['minecraft:frozen_ocean', 'minecraft:deep_frozen_ocean']);
-export const biomeTemperature = (W: DistantGrid, biome: string) => W.温度[W.群系名.indexOf(biome)] ?? 0.8;
+export const biomeTemperature = (W: DistantGrid, biome: string) => W.biomeTemperature[W.群系名.indexOf(biome)] ?? 0.8;
 export const waterFreezes = (W: DistantGrid, biome: string, x: number, z: number) => biomeTemperature(W, biome) < 0.15 && (!frozenModBiomes.has(biome) || isFrozenZone(x, z));
 // 积雪：照 地形.mjs 的 积雪（Biome.getHeightAdjustedTemperature 不算噪声那一项）：y > 80 每高一格降 0.00125，低于 0.15 积雪
-export const 积雪 = (temperature: number, y: number) => temperature - Math.max(0, y - 80) * 0.00125 < 0.15;
+export const snowCoverAt = (temperature: number, y: number) => temperature - Math.max(0, y - 80) * 0.00125 < 0.15;
 // 陡：一列和四邻的高差（米 / 米）超过 1.2（50°）算陡坡，山上露出石头（原版山地群系 steep 的那几条规则；门槛按导入校准定）
 export const steepSlope = 1.2;

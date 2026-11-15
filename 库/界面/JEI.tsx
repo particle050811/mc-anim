@@ -202,4 +202,4 @@ export const jeiPoint = (windowGeom: { s: number; x: number; y: number; recipeWi
   return [windowGeom.x + (layout.recipeOrigin.x + rx) * windowGeom.s, windowGeom.y + (layout.recipeOrigin.y + ry) * windowGeom.s];
 };
 
-export { chatColors as 色 };
+export { chatColors as chatColors };

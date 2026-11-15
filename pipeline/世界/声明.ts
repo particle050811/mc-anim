@@ -3,26 +3,26 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
-import { 配置 } from '../环境/配置.ts';
-import { 代码根 } from '../环境/路径.ts';
-import { 维度区域目录 } from './存档.ts';
+import { config } from '../环境/配置.ts';
+import { codeRoot } from '../环境/路径.ts';
+import { dimensionRegionDir } from './存档.ts';
 
-export type 区域范围 = { RX: [number, number]; RZ: [number, number] };
-export type 包声明 = {
+export type RegionRange = { RX: [number, number]; RZ: [number, number] };
+export type PackDecl = {
   名: string;
   /** 只烘这些区域（两端都含）；不写 = 存档里这个维度的全部区域文件 */
-  区域?: 区域范围;
+  区域?: RegionRange;
   /** [ox, oy, oz]；不写用 烘焙.原点 */
   原点: [number, number, number];
   来源?: string;
   /** false = 这个包不套编辑层（默认套） */
-  套编辑: boolean;
+  applyEdits: boolean;
   /** false = 烘了也不登记进 assets/地形版本.json（演示、试验用的包） */
   登记: boolean;
 };
 /** 矩形写 两角，或 中心 加 半边；走廊写 折线、半宽，可选 去掉（已在别的矩形块里的区块不重复生成）；区块表写 文件（相对 sourcing/worlds/ 的 JSON，{"区块": [[cx, cz], …]}，
  *  程序算出来的散点区块，例：anim world 远景 地标 排的远处地标小块）。怎么算区块见 预生成/范围.ts */
-export type 预生成块 = {
+export type PregenBox = {
   名: string;
   形状: '矩形' | '走廊' | '区块表';
   文件?: string;
@@ -34,197 +34,197 @@ export type 预生成块 = {
   去掉?: string[];
   依据?: string;
 };
-export type 世界声明 = {
+export type WorldDecl = {
   名称: string;
   文件: string;
   服务端: string;
   存档: string;
   维度: string;
   /** 包.json 的 维度：主世界 / 暮色 / 下界 … */
-  包维度: string;
+  packDimension: string;
   /** 烘焙时整个高度都存（有顶的维度：从上往下第一层是基岩顶，按「最高整格方块 = 地表」只会存下一层顶）；见 烘焙/烘焙.ts 的 全高 */
-  全高: boolean;
+  fullHeight: boolean;
   种子?: string;
   /** 建新世界时写进 server.properties 的 level-type；不写 minecraft:normal（地形模组改的是普通世界，large_biomes 和 Tectonic 互斥） */
-  世界类型: string;
+  worldType: string;
   /** 建新世界时写 generate-structures；不写 true。主世界取材一律 false（结构全禁，用户 10-04 定），它在 level.dat 里管所有维度，所以主世界和暮色各建各的存档 */
   生成结构: boolean;
   Forge?: string;
   模组: string[];
   另需模组文件: string[];
   数据包: string[];
-  预生成: { 区域文件范围?: 区域范围; 区块数?: number; 块: 预生成块[] };
-  包: 包声明[];
+  预生成: { 区域文件范围?: RegionRange; 区块数?: number; 块: PregenBox[] };
+  包: PackDecl[];
   /** 远景包（pipeline/世界/远景/）：导入范围（预生成的矩形块）外扩多远、中层（16 米）和细带（8 米）在交界外多宽，米 */
   远景?: { 包: string; 外扩: number; 中宽: number; 细宽: number };
   /** 烘焙、转码时的可见变换（烘焙/可见.ts）：埋住的格换成 填充；保真 盒碰到的区段原样保留（作品的挖框、整平要落在里面，anim check 核） */
-  可见: { 填充: string; 保真: { 名: string; 盒: [number, number, number, number]; 出处?: string }[] };
+  visible: { fillBlock: string; 保真: { 名: string; 盒: [number, number, number, number]; 出处?: string }[] };
 };
 
-export const 世界目录 = () => path.join(代码根(), 'sourcing', 'worlds');
-export const 声明文件 = (名: string) => path.join(世界目录(), `${名}.toml`);
-export const 编辑文件 = (名: string) => path.join(世界目录(), `${名}.编辑.toml`);
+export const worldDir = () => path.join(codeRoot(), 'sourcing', 'worlds');
+export const declFile = (worldName: string) => path.join(worldDir(), `${worldName}.toml`);
+export const editFile = (worldName: string) => path.join(worldDir(), `${worldName}.编辑.toml`);
 
-export const 列出世界 = () =>
-  fs.existsSync(世界目录())
+export const listWorlds = () =>
+  fs.existsSync(worldDir())
     ? fs
-        .readdirSync(世界目录())
+        .readdirSync(worldDir())
         .filter((f) => f.endsWith('.toml') && !f.endsWith('.编辑.toml'))
         .map((f) => f.slice(0, -'.toml'.length))
         .sort()
     : [];
 
 /** 维度 id → 包.json 的 维度 和默认 oy（场景 z = 0 对应的游戏 y） */
-const 已知维度: Record<string, { 包维度: string; oy: number; 全高?: boolean }> = {
-  'minecraft:overworld': { 包维度: '主世界', oy: 64 },
-  'twilightforest:twilight_forest': { 包维度: '暮色', oy: 0 },
+const knownDims: Record<string, { packDimension: string; oy: number; fullHeight?: boolean }> = {
+  'minecraft:overworld': { packDimension: '主世界', oy: 64 },
+  'twilightforest:twilight_forest': { packDimension: '暮色', oy: 0 },
   // 下界 y 0～127 是地形（min_y 0、logical_height 128），基岩顶在 y 127：场景 z = 游戏 y
-  'minecraft:the_nether': { 包维度: '下界', oy: 0, 全高: true },
+  'minecraft:the_nether': { packDimension: '下界', oy: 0, fullHeight: true },
 };
 
-const 数对 = (v: unknown, 何: string): [number, number] => {
-  if (!Array.isArray(v) || v.length !== 2 || !v.every(Number.isInteger)) throw new Error(`${何} 要写两个整数`);
+const toPair = (v: unknown, fieldName: string): [number, number] => {
+  if (!Array.isArray(v) || v.length !== 2 || !v.every(Number.isInteger)) throw new Error(`${fieldName} 要写两个整数`);
   return [v[0], v[1]];
 };
-const 范围 = (v: unknown, 何: string): 区域范围 | undefined => {
+const parseRegion = (v: unknown, fieldName: string): RegionRange | undefined => {
   if (v === undefined) return undefined;
   const o = v as Record<string, unknown>;
-  const r = { RX: 数对(o.RX, `${何}.RX`), RZ: 数对(o.RZ, `${何}.RZ`) };
-  if (r.RX[0] > r.RX[1] || r.RZ[0] > r.RZ[1]) throw new Error(`${何} 要小的在前`);
+  const r = { RX: toPair(o.RX, `${fieldName}.RX`), RZ: toPair(o.RZ, `${fieldName}.RZ`) };
+  if (r.RX[0] > r.RX[1] || r.RZ[0] > r.RZ[1]) throw new Error(`${fieldName} 要小的在前`);
   return r;
 };
-const 字符串组 = (v: unknown, 何: string): string[] => {
+const stringList = (v: unknown, fieldName: string): string[] => {
   if (v === undefined) return [];
-  if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) throw new Error(`${何} 要是字符串数组`);
+  if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) throw new Error(`${fieldName} 要是字符串数组`);
   return v;
 };
 
-export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`): 世界声明 => {
-  const d = parse(文本) as Record<string, unknown>;
-  const 错 = (s: string) => new Error(`${文件}：${s}`);
+export const parseDecl = (text: string, worldName: string, fileName = `${worldName}.toml`): WorldDecl => {
+  const d = parse(text) as Record<string, unknown>;
+  const fileError = (s: string) => new Error(`${fileName}：${s}`);
   try {
-    if (d.名称 !== 名) throw 错(`名称 要和文件名一致（${名}）`);
-    const 维度 = d.维度;
-    if (typeof 维度 !== 'string' || !维度.includes(':')) throw 错('维度 要写成 命名空间:名字');
-    if (typeof d.服务端 !== 'string') throw 错('要写 服务端（游戏环境 ANIM_GAME 下的服务端目录名）');
-    const 已知 = 已知维度[维度];
-    const 烘 = (d.烘焙 ?? {}) as Record<string, unknown>;
-    const 包维度 = typeof 烘.包维度 === 'string' ? 烘.包维度 : 已知?.包维度;
-    if (!包维度) throw 错(`维度 ${维度} 不认识，要在 [烘焙] 写 包维度（包.json 的 维度）`);
-    if (烘.全高 !== undefined && typeof 烘.全高 !== 'boolean') throw 错('烘焙.全高 要写 true 或 false');
-    const 全高 = typeof 烘.全高 === 'boolean' ? 烘.全高 : (已知?.全高 ?? false);
-    const 原点于 = (v: unknown, 何: string): [number, number, number] | undefined => {
+    if (d.名称 !== worldName) throw fileError(`名称 要和文件名一致（${worldName}）`);
+    const dimension = d.维度;
+    if (typeof dimension !== 'string' || !dimension.includes(':')) throw fileError('维度 要写成 命名空间:名字');
+    if (typeof d.服务端 !== 'string') throw fileError('要写 服务端（游戏环境 ANIM_GAME 下的服务端目录名）');
+    const knownDim = knownDims[dimension];
+    const bake = (d.bake ?? {}) as Record<string, unknown>;
+    const packDimension = typeof bake.packDimension === 'string' ? bake.packDimension : knownDim?.packDimension;
+    if (!packDimension) throw fileError(`维度 ${dimension} 不认识，要在 [烘焙] 写 包维度（包.json 的 维度）`);
+    if (bake.fullHeight !== undefined && typeof bake.fullHeight !== 'boolean') throw fileError('烘焙.全高 要写 true 或 false');
+    const fullHeight = typeof bake.fullHeight === 'boolean' ? bake.fullHeight : (knownDim?.fullHeight ?? false);
+    const parseOrigin = (v: unknown, fieldName: string): [number, number, number] | undefined => {
       if (v === undefined) return undefined;
-      if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isInteger)) throw 错(`${何} 要写 [ox, oy, oz] 三个整数`);
-      if (v[0] % 2048 || v[2] % 2048) throw 错(`${何} 的 ox、oz 要是 2048 的整数倍`);
+      if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isInteger)) throw fileError(`${fieldName} 要写 [ox, oy, oz] 三个整数`);
+      if (v[0] % 2048 || v[2] % 2048) throw fileError(`${fieldName} 的 ox、oz 要是 2048 的整数倍`);
       return [v[0], v[1], v[2]];
     };
-    const 默认原点 = 原点于(烘.原点, '烘焙.原点');
-    if (烘.填充 !== undefined && (typeof 烘.填充 !== 'string' || !烘.填充.includes(':'))) throw 错('烘焙.填充 要写方块状态（命名空间:名字）');
-    const 保真 = ((烘.保真 ?? []) as Record<string, unknown>[]).map((k, i) => {
-      const 何 = `烘焙.保真 第 ${i + 1} 个`;
-      if (typeof k.名 !== 'string' || !k.名) throw 错(`${何} 要写 名`);
-      const 盒 = k.盒 as number[];
-      if (!Array.isArray(盒) || 盒.length !== 4 || !盒.every(Number.isInteger) || 盒[0]! > 盒[2]! || 盒[1]! > 盒[3]!) throw 错(`${何}（${k.名}）的 盒 要写游戏坐标 [x0, z0, x1, z1]，两端都含、小的在前`);
-      return { 名: k.名, 盒: 盒 as [number, number, number, number], 出处: typeof k.出处 === 'string' ? k.出处 : undefined };
+    const defaultOrigin = parseOrigin(bake.原点, '烘焙.原点');
+    if (bake.fillBlock !== undefined && (typeof bake.fillBlock !== 'string' || !bake.fillBlock.includes(':'))) throw fileError('烘焙.填充 要写方块状态（命名空间:名字）');
+    const preserve = ((bake.保真 ?? []) as Record<string, unknown>[]).map((k, i) => {
+      const where = `烘焙.保真 第 ${i + 1} 个`;
+      if (typeof k.名 !== 'string' || !k.名) throw fileError(`${where} 要写 名`);
+      const box = k.盒 as number[];
+      if (!Array.isArray(box) || box.length !== 4 || !box.every(Number.isInteger) || box[0]! > box[2]! || box[1]! > box[3]!) throw fileError(`${where}（${k.名}）的 盒 要写游戏坐标 [x0, z0, x1, z1]，两端都含、小的在前`);
+      return { 名: k.名, 盒: box as [number, number, number, number], 出处: typeof k.出处 === 'string' ? k.出处 : undefined };
     });
-    const 包们 = ((烘.包 ?? []) as Record<string, unknown>[]).map((b, i): 包声明 => {
-      if (typeof b.名 !== 'string' || !b.名) throw 错(`烘焙.包 第 ${i + 1} 个要写 名`);
-      const 原点 = 原点于(b.原点, `包 ${b.名} 的 原点`) ?? 默认原点;
-      if (!原点) throw 错(`包 ${b.名} 没有原点（写在 [烘焙] 原点 或包里）`);
-      if (已知 && 原点[1] !== 已知.oy) throw 错(`包 ${b.名} 的 oy 是 ${原点[1]}，${维度} 一律 ${已知.oy}（engine 按这个换竖直坐标）`);
-      return { 名: b.名, 区域: 范围(b.区域, `包 ${b.名} 的 区域`), 原点, 来源: typeof b.来源 === 'string' ? b.来源 : undefined, 套编辑: b.套编辑 !== false, 登记: b.登记 !== false };
+    const packs = ((bake.包 ?? []) as Record<string, unknown>[]).map((b, i): PackDecl => {
+      if (typeof b.名 !== 'string' || !b.名) throw fileError(`烘焙.包 第 ${i + 1} 个要写 名`);
+      const origin = parseOrigin(b.原点, `包 ${b.名} 的 原点`) ?? defaultOrigin;
+      if (!origin) throw fileError(`包 ${b.名} 没有原点（写在 [烘焙] 原点 或包里）`);
+      if (knownDim && origin[1] !== knownDim.oy) throw fileError(`包 ${b.名} 的 oy 是 ${origin[1]}，${dimension} 一律 ${knownDim.oy}（engine 按这个换竖直坐标）`);
+      return { 名: b.名, 区域: parseRegion(b.区域, `包 ${b.名} 的 区域`), 原点: origin, 来源: typeof b.来源 === 'string' ? b.来源 : undefined, applyEdits: b.applyEdits !== false, 登记: b.登记 !== false };
     });
-    const 重名 = 包们.map((b) => b.名).filter((n, i, a) => a.indexOf(n) !== i);
-    if (重名.length) throw 错(`包重名：${重名.join('、')}`);
-    const 预 = (d.预生成 ?? {}) as Record<string, unknown>;
-    const 块们 = ((预.块 ?? []) as Record<string, unknown>[]).map((k, i): 预生成块 => {
-      const 何 = `预生成.块 第 ${i + 1} 个`;
-      if (typeof k.名 !== 'string') throw 错(`${何} 要写 名`);
-      const 依据 = typeof k.依据 === 'string' ? k.依据 : undefined;
-      const 形状 = k.形状 ?? (k.折线 !== undefined ? '走廊' : '矩形');
-      if (形状 === '走廊') {
-        const 线 = k.折线;
-        if (!Array.isArray(线) || 线.length < 2) throw 错(`${何}（${k.名}）是走廊，折线 要写至少两个 [x, z]`);
-        const 折线 = 线.map((p, j) => 数对(p, `${何}.折线 第 ${j + 1} 点`));
-        if (typeof k.半宽 !== 'number' || !(k.半宽 > 0)) throw 错(`${何}（${k.名}）是走廊，要写 半宽（米，正数）`);
-        return { 名: k.名, 形状, 折线, 半宽: k.半宽, 去掉: 字符串组(k.去掉, `${何}.去掉`), 依据 };
+    const dupNames = packs.map((b) => b.名).filter((n, i, a) => a.indexOf(n) !== i);
+    if (dupNames.length) throw fileError(`包重名：${dupNames.join('、')}`);
+    const pregen = (d.预生成 ?? {}) as Record<string, unknown>;
+    const chunks = ((pregen.块 ?? []) as Record<string, unknown>[]).map((k, i): PregenBox => {
+      const fieldName = `预生成.块 第 ${i + 1} 个`;
+      if (typeof k.名 !== 'string') throw fileError(`${fieldName} 要写 名`);
+      const basis = typeof k.依据 === 'string' ? k.依据 : undefined;
+      const shape = k.形状 ?? (k.折线 !== undefined ? '走廊' : '矩形');
+      if (shape === '走廊') {
+        const rawPolyline = k.折线;
+        if (!Array.isArray(rawPolyline) || rawPolyline.length < 2) throw fileError(`${fieldName}（${k.名}）是走廊，折线 要写至少两个 [x, z]`);
+        const polyline = rawPolyline.map((p, j) => toPair(p, `${fieldName}.折线 第 ${j + 1} 点`));
+        if (typeof k.半宽 !== 'number' || !(k.半宽 > 0)) throw fileError(`${fieldName}（${k.名}）是走廊，要写 半宽（米，正数）`);
+        return { 名: k.名, 形状: shape, 折线: polyline, 半宽: k.半宽, 去掉: stringList(k.去掉, `${fieldName}.去掉`), 依据: basis };
       }
-      if (形状 === '区块表') {
-        if (typeof k.文件 !== 'string' || !k.文件) throw 错(`${何}（${k.名}）是区块表，要写 文件`);
-        return { 名: k.名, 形状, 文件: k.文件, 依据 };
+      if (shape === '区块表') {
+        if (typeof k.文件 !== 'string' || !k.文件) throw fileError(`${fieldName}（${k.名}）是区块表，要写 文件`);
+        return { 名: k.名, 形状: shape, 文件: k.文件, 依据: basis };
       }
-      if (形状 !== '矩形') throw 错(`${何} 的 形状 只认 矩形、走廊、区块表`);
-      const 两角 = k.两角 as number[] | undefined;
-      if (两角 !== undefined && (!Array.isArray(两角) || 两角.length !== 4 || !两角.every(Number.isInteger))) throw 错(`${何} 的 两角 要写 [x1, z1, x2, z2]`);
-      if (!两角 && (k.中心 === undefined || k.半边 === undefined)) throw 错(`${何} 要写 两角，或 中心 加 半边（走廊写 折线、半宽）`);
-      return { 名: k.名, 形状, 两角: 两角 as 预生成块['两角'], 中心: k.中心 === undefined ? undefined : 数对(k.中心, `${何}.中心`), 半边: k.半边 === undefined ? undefined : 数对(k.半边, `${何}.半边`), 依据 };
+      if (shape !== '矩形') throw fileError(`${fieldName} 的 形状 只认 矩形、走廊、区块表`);
+      const corners = k.两角 as number[] | undefined;
+      if (corners !== undefined && (!Array.isArray(corners) || corners.length !== 4 || !corners.every(Number.isInteger))) throw fileError(`${fieldName} 的 两角 要写 [x1, z1, x2, z2]`);
+      if (!corners && (k.中心 === undefined || k.半边 === undefined)) throw fileError(`${fieldName} 要写 两角，或 中心 加 半边（走廊写 折线、半宽）`);
+      return { 名: k.名, 形状: shape, 两角: corners as PregenBox['两角'], 中心: k.中心 === undefined ? undefined : toPair(k.中心, `${fieldName}.中心`), 半边: k.半边 === undefined ? undefined : toPair(k.半边, `${fieldName}.半边`), 依据: basis };
     });
-    const 块名 = 块们.map((k) => k.名);
-    const 块重名 = 块名.filter((n, i) => 块名.indexOf(n) !== i);
-    if (块重名.length) throw 错(`预生成块重名：${块重名.join('、')}`);
-    for (const k of 块们) for (const n of k.去掉 ?? []) if (!块们.some((b) => b.名 === n && b.形状 === '矩形')) throw 错(`走廊 ${k.名} 的 去掉 写了 ${n}，没有这个矩形块`);
-    const 远 = d.远景 as Record<string, unknown> | undefined;
-    let 远景: 世界声明['远景'];
-    if (远 !== undefined) {
-      if (typeof 远.包 !== 'string' || !远.包) throw 错('远景 要写 包（远景包名）');
-      const 米 = (k: string) => {
-        const v = 远[k];
-        if (typeof v !== 'number' || !(v >= 0)) throw 错(`远景.${k} 要写非负的米数`);
+    const boxNames = chunks.map((k) => k.名);
+    const dupBoxNames = boxNames.filter((n, i) => boxNames.indexOf(n) !== i);
+    if (dupBoxNames.length) throw fileError(`预生成块重名：${dupBoxNames.join('、')}`);
+    for (const k of chunks) for (const n of k.去掉 ?? []) if (!chunks.some((b) => b.名 === n && b.形状 === '矩形')) throw fileError(`走廊 ${k.名} 的 去掉 写了 ${n}，没有这个矩形块`);
+    const farView = d.远景 as Record<string, unknown> | undefined;
+    let farTerrain: WorldDecl['远景'];
+    if (farView !== undefined) {
+      if (typeof farView.包 !== 'string' || !farView.包) throw fileError('远景 要写 包（远景包名）');
+      const toMeters = (k: string) => {
+        const v = farView[k];
+        if (typeof v !== 'number' || !(v >= 0)) throw fileError(`远景.${k} 要写非负的米数`);
         return v;
       };
-      远景 = { 包: 远.包, 外扩: 米('外扩'), 中宽: 米('中宽'), 细宽: 米('细宽') };
+      farTerrain = { 包: farView.包, 外扩: toMeters('外扩'), 中宽: toMeters('中宽'), 细宽: toMeters('细宽') };
     }
     return {
-      名称: 名,
-      文件,
+      名称: worldName,
+      文件: fileName,
       服务端: d.服务端,
-      存档: typeof d.存档 === 'string' ? d.存档 : 名,
-      维度,
-      包维度,
-      全高,
+      存档: typeof d.存档 === 'string' ? d.存档 : worldName,
+      维度: dimension,
+      packDimension,
+      fullHeight,
       种子: d.种子 === undefined ? undefined : String(d.种子),
-      世界类型: typeof d.世界类型 === 'string' ? d.世界类型 : 'minecraft:normal',
+      worldType: typeof d.worldType === 'string' ? d.worldType : 'minecraft:normal',
       生成结构: d.生成结构 !== false,
       Forge: typeof d.Forge === 'string' ? d.Forge : undefined,
-      模组: 字符串组(d.模组, '模组'),
-      另需模组文件: 字符串组(d.另需模组文件, '另需模组文件'),
-      数据包: 字符串组(d.数据包, '数据包'),
-      预生成: { 区域文件范围: 范围(预.区域文件范围, '预生成.区域文件范围'), 区块数: typeof 预.区块数 === 'number' ? 预.区块数 : undefined, 块: 块们 },
-      包: 包们,
-      远景,
-      可见: { 填充: typeof 烘.填充 === 'string' ? 烘.填充 : 'minecraft:stone', 保真 },
+      模组: stringList(d.模组, '模组'),
+      另需模组文件: stringList(d.另需模组文件, '另需模组文件'),
+      数据包: stringList(d.数据包, '数据包'),
+      预生成: { 区域文件范围: parseRegion(pregen.区域文件范围, '预生成.区域文件范围'), 区块数: typeof pregen.区块数 === 'number' ? pregen.区块数 : undefined, 块: chunks },
+      包: packs,
+      远景: farTerrain,
+      visible: { fillBlock: typeof bake.fillBlock === 'string' ? bake.fillBlock : 'minecraft:stone', 保真: preserve },
     };
   } catch (e) {
-    if ((e as Error).message.startsWith(文件)) throw e;
-    throw 错((e as Error).message);
+    if ((e as Error).message.startsWith(fileName)) throw e;
+    throw fileError((e as Error).message);
   }
 };
 
-export const 读声明 = (名: string): 世界声明 => {
-  const f = 声明文件(名);
-  if (!fs.existsSync(f)) throw new Error(`没有世界声明 ${path.relative(代码根(), f)}；有的：${列出世界().join('、') || '（无）'}`);
-  return 解析声明(fs.readFileSync(f, 'utf8'), 名, path.relative(代码根(), f));
+export const readDecl = (worldName: string): WorldDecl => {
+  const f = declFile(worldName);
+  if (!fs.existsSync(f)) throw new Error(`没有世界声明 ${path.relative(codeRoot(), f)}；有的：${listWorlds().join('、') || '（无）'}`);
+  return parseDecl(fs.readFileSync(f, 'utf8'), worldName, path.relative(codeRoot(), f));
 };
 
 /** 存档的世界目录：--存档 给了就用它，否则 <ANIM_GAME>/<服务端>/<存档> */
-export const 存档目录 = (w: 世界声明, 覆盖?: string) => (覆盖 ? path.resolve(覆盖) : path.isAbsolute(w.存档) ? w.存档 : path.join(配置('游戏'), w.服务端, w.存档));
-export const 区域目录 = (w: 世界声明, 覆盖?: string) => path.join(存档目录(w, 覆盖), 维度区域目录(w.维度));
+export const saveDir = (w: WorldDecl, overrideDir?: string) => (overrideDir ? path.resolve(overrideDir) : path.isAbsolute(w.存档) ? w.存档 : path.join(config('游戏'), w.服务端, w.存档));
+export const regionDir = (w: WorldDecl, overrideDir?: string) => path.join(saveDir(w, overrideDir), dimensionRegionDir(w.维度));
 
 /** 哪个世界声明烘这个包（转码按它取可见变换的设置）；没有返回 null */
-export const 包的世界 = (包: string): 世界声明 | null => {
-  for (const 名 of 列出世界()) {
-    const w = 读声明(名);
-    if (w.包.some((b) => b.名 === 包)) return w;
+export const packWorld = (packName: string): WorldDecl | null => {
+  for (const worldName of listWorlds()) {
+    const w = readDecl(worldName);
+    if (w.包.some((b) => b.名 === packName)) return w;
   }
   return null;
 };
 
 /** 包在世界声明里吗；不给名字且只有一个包就是它 */
-export const 选包 = (w: 世界声明, 名?: string) => {
-  if (名) {
-    const b = w.包.find((x) => x.名 === 名);
-    if (!b) throw new Error(`世界 ${w.名称} 没声明包 ${名}；有：${w.包.map((x) => x.名).join('、') || '（无）'}`);
+export const pickPack = (w: WorldDecl, packName?: string) => {
+  if (packName) {
+    const b = w.包.find((x) => x.名 === packName);
+    if (!b) throw new Error(`世界 ${w.名称} 没声明包 ${packName}；有：${w.包.map((x) => x.名).join('、') || '（无）'}`);
     return [b];
   }
   return w.包;

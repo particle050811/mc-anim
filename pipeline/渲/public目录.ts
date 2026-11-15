@@ -5,31 +5,31 @@
 // Windows 用 junction（不要管理员权限）。anim film 和 remotion.config.ts（studio）共用。
 import fs from 'node:fs';
 import path from 'node:path';
-import { isWindows, public目录, 地形根, 数据根, 求解缓存目录 } from '../环境/配置.ts';
-import { 私有配乐目录 } from '../资产/私有配乐.ts';
+import { isWindows, publicDir, terrainRoot, dataRoot, solveCacheDir } from '../环境/配置.ts';
+import { privateMusicDir } from '../资产/私有配乐.ts';
 
-const 链接表 = () => ({ terrain: 地形根(), 求解: 求解缓存目录(), 私有配乐: 私有配乐目录(数据根()) });
+const linkTable = () => ({ terrain: terrainRoot(), solveCache: solveCacheDir(), 私有配乐: privateMusicDir(dataRoot()) });
 
 /** 建好（或校正）public 目录里的链接，返回 public 目录的路径 */
-export const 备好public目录 = (): string => {
-  const dir = public目录();
+export const ensurePublicDir = (): string => {
+  const dir = publicDir();
   fs.mkdirSync(dir, { recursive: true });
-  for (const [名, 目标] of Object.entries(链接表())) {
-    fs.mkdirSync(目标, { recursive: true });
-    const 链接 = path.join(dir, 名);
-    const st = fs.lstatSync(链接, { throwIfNoEntry: false });
+  for (const [linkName, targetDir] of Object.entries(linkTable())) {
+    fs.mkdirSync(targetDir, { recursive: true });
+    const linkPath = path.join(dir, linkName);
+    const st = fs.lstatSync(linkPath, { throwIfNoEntry: false });
     if (st) {
-      if (!st.isSymbolicLink()) throw new Error(`${链接} 不是链接（public 目录里只放链接，数据放 ${目标}），先挪走它`);
-      let 指向: string | null = null;
+      if (!st.isSymbolicLink()) throw new Error(`${linkPath} 不是链接（public 目录里只放链接，数据放 ${targetDir}），先挪走它`);
+      let linkTarget: string | null = null;
       try {
-        指向 = fs.realpathSync(链接);
+        linkTarget = fs.realpathSync(linkPath);
       } catch {
         // 断了的链接：重建
       }
-      if (指向 === fs.realpathSync(目标)) continue;
-      fs.unlinkSync(链接);
+      if (linkTarget === fs.realpathSync(targetDir)) continue;
+      fs.unlinkSync(linkPath);
     }
-    fs.symlinkSync(目标, 链接, isWindows ? 'junction' : 'dir');
+    fs.symlinkSync(targetDir, linkPath, isWindows ? 'junction' : 'dir');
   }
   return dir;
 };

@@ -8,8 +8,8 @@
 // 代码分在 编排/ 下；这里留汇报和接 6-4-1 用的两个函数。
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
-import { FPS, 刻, 撞击时刻, 段表, 物理时间 } from './时间线.ts';
-import { shaftLayout as 竖井4x } from '../../古城4x/布局.ts';
+import { FPS, tick, impactTime, segTable, physicalTime } from './时间线.ts';
+import { shaftLayout as shaftLayout } from '../../古城4x/布局.ts';
 import { liYing, liYingShaft, strikeDepth, LY_LEAP_HIP } from './编排/李樱.ts';
 import { shaftCellCenter } from './编排/坑口.ts';
 
@@ -23,25 +23,25 @@ export { type Cam, hiddenGuardIdx, camPose } from './编排/机位.ts';
 
 // 撞击时李樱的速度、打穿洞顶的时刻等（汇报、核对用）
 export const fallStats = () => {
-  const imp = 撞击时刻();
+  const imp = impactTime();
   const shaft = liYingShaft();
-  return { leap: 刻.leap, 撞击: +imp.toFixed(3), impactSpeed: +shaft.impactSpeed.toFixed(1), shaftEntrySpeed: shaft.entrySpeed, ceilingBreach: +(imp + shaft.breachDelay).toFixed(3), 落地: +shaft.落地.toFixed(3), strikeDepth: +strikeDepth.toFixed(2), leapHip: LY_LEAP_HIP.map((v) => +v.toFixed(2)) };
+  return { leap: tick.leap, impactSec: +imp.toFixed(3), impactSpeed: +shaft.impactSpeed.toFixed(1), shaftEntrySpeed: shaft.entrySpeed, ceilingBreach: +(imp + shaft.breachDelay).toFixed(3), landSec: +shaft.landSec.toFixed(3), strikeDepth: +strikeDepth.toFixed(2), leapHip: LY_LEAP_HIP.map((v) => +v.toFixed(2)) };
 };
 // 6-3-6 末帧李樱的状态（6-4-1 首帧接它，G2 用）。古城场景坐标（古城4x.tsx 的 `G4`，同 `GUCHENG4X.落点`）：脚底 = 落点那格的格心、古城地面；
 // 朝向（度，0 = 北 +Y，正 = 往左转，同 古城戏.ts）；姿势是站直、双臂微垂、右手握锤
 export const liYingEnd636 = () => {
-  const globalFrame = 段表['6-3-6'].止;
-  const state = liYing(物理时间(globalFrame));
+  const globalFrame = segTable['6-3-6'].止;
+  const state = liYing(physicalTime(globalFrame));
   const center = shaftCellCenter();
   const fwd = new THREE.Vector3(0, 1, 0).transformDirection(state.matrix);
   const yawDeg = (Math.atan2(-fwd.x, fwd.y) * 180) / Math.PI;
-  const ancientLanding = 竖井4x.落点; // = GUCHENG4X.落点
+  const ancientLanding = shaftLayout.落点; // = GUCHENG4X.落点
   return {
-    全局帧: globalFrame,
-    脚底: [ancientLanding[0] + state.hip[0] - center[0], ancientLanding[1] + state.hip[1] - center[1], 0] as V3,
-    朝向: +yawDeg.toFixed(1),
+    globalFrame: globalFrame,
+    feet: [ancientLanding[0] + state.hip[0] - center[0], ancientLanding[1] + state.hip[1] - center[1], 0] as V3,
+    facing: +yawDeg.toFixed(1),
     pose: state.pose,
-    锤: '右手',
+    hammerHand: '右手',
   };
 };
 export { FPS };

@@ -10,17 +10,17 @@ import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { lerpV, ss } from '../../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-1/时间线.ts';
-import { 建变速 } from '../../../地点/古城4x/7-1/变速.ts';
-import { 建机位, type 变速镜 } from '../../../地点/古城4x/7-1/变速段.tsx';
-export const 号 = '7-1-5' as const;
+import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';
+import { buildCameraRig, type SpeedRampShot } from '../../../地点/古城4x/7-1/变速段.tsx';
+export const segmentId = '7-1-5' as const;
 export const FPS = timeline.FPS;
-const startT = timeline.segmentStartT(号);
-const endT = timeline.segmentEndT(号);
+const startT = timeline.segmentStartT(segmentId);
+const endT = timeline.segmentEndT(segmentId);
 const hitT = play.windArrowShot.中;
-export const 变速 = 建变速(startT, endT, [[startT, 1]], [hitT]);
-export const END = 变速.总帧数;
-export const t于 = 变速.剧情时间;
-export const 镜1止t = play.windArrowReleaseT;
+export const speedRamp = buildSpeedRamp(startT, endT, [[startT, 1]], [hitT]);
+export const END = speedRamp.总帧数;
+export const timeAt = speedRamp.storyTime;
+export const shot1End = play.windArrowReleaseT;
 // 丘顶（脚底 y −44）东北沿、眼高：监守者在东北 18 格，刘心忠扑到最高时仰角 +19°
 const shot2Pos = G4(-855, -42.4, 236.5);
 const huangHead = (t: number): V3 => {
@@ -34,9 +34,9 @@ const liuHead = (t: number): V3 => {
 // 镜 1 机位在南台顶（台面脚底 y −38）黄叛西边 4 格、高 3：再低，台东沿的台阶挡住墙脚的监守者（工具/机位核对/核对.py）
 const shot1From = G4(-875.5, -35.0, 233.6);
 const shot1To = G4(-875.3, -35.0, 233.8);
-const shots: 变速镜[] = [
-  { 起: startT, cam: (t): Cam => ({ pos: lerpV(shot1From, shot1To, ss((t - startT) / (镜1止t - startT))), tgt: lerpV(huangHead(t), play.wardenChest(t), 0.5), lens: 22 }) },
-  { 起: 镜1止t, cam: (t): Cam => ({ pos: shot2Pos, tgt: lerpV(play.wardenChest(t), liuHead(t), 0.5), lens: 16 }) },
+const shots: SpeedRampShot[] = [
+  { 起: startT, cam: (t): Cam => ({ pos: lerpV(shot1From, shot1To, ss((t - startT) / (shot1End - startT))), tgt: lerpV(huangHead(t), play.wardenChest(t), 0.5), lens: 22 }) },
+  { 起: shot1End, cam: (t): Cam => ({ pos: shot2Pos, tgt: lerpV(play.wardenChest(t), liuHead(t), 0.5), lens: 16 }) },
 ];
-export const camera = 建机位(变速, shots);
-export const 镜号 = (frame: number) => (t于(frame) >= 镜1止t ? 1 : 0);
+export const camera = buildCameraRig(speedRamp, shots);
+export const shotIndex = (frame: number) => (timeAt(frame) >= shot1End ? 1 : 0);

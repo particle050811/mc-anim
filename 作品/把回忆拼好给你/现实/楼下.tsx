@@ -2,64 +2,64 @@
 // 放进 现实画布（顶面 = 楼下顶面、天 = 楼下天色）。纯按 props 画，不读帧号。
 import type React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 方块拼搭, type 方块 } from '@engine/model/方块拼搭.tsx';
-import { 描边 } from '@engine/三渲二/描边.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
+import { BlockAssembly, type PlacedBlock } from '@engine/model/方块拼搭.tsx';
+import { Outline } from '@engine/三渲二/描边.tsx';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
-import { 你在楼下, 横幅, 楼, 空地 } from './楼下布局.ts';
-import { 新像素画, 成贴图 } from './像素图.ts';
-import { 像素空间, 正面, 用贴图 } from './像素块.tsx';
+import { youDownstairsPos, banner, building, emptyLot } from './楼下布局.ts';
+import { newPixelArt, makeTexture } from './像素图.ts';
+import { PixelSpace, FrontFace, useTexture } from './像素块.tsx';
 
-const 楼下方块 = (): 方块[] => {
-  const out: 方块[] = [];
-  const 放 = (状态: string, i: number, j: number, k: number) => out.push({ 状态, 位: [i, j, k] });
-  for (let i = 空地.左; i < 空地.右; i++)
-    for (let j = 0; j < 楼.j; j++) {
-      放(空地.面, i, j, -1);
-      放(空地.底, i, j, -2);
+const downstairsBlocks = (): PlacedBlock[] => {
+  const out: PlacedBlock[] = [];
+  const placeBlock = (blockState: string, i: number, j: number, k: number) => out.push({ 状态: blockState, 位: [i, j, k] });
+  for (let i = emptyLot.left; i < emptyLot.right; i++)
+    for (let j = 0; j < building.j; j++) {
+      placeBlock(emptyLot.面, i, j, -1);
+      placeBlock(emptyLot.bottomBlock, i, j, -2);
     }
-  for (let i = 楼.左; i < 楼.右; i++)
-    for (let k = 0; k < 楼.顶; k++) {
-      const 层内 = k % 楼.层高;
-      const 窗 = (层内 === 1 || 层内 === 2) && ((i % 楼.窗距) + 楼.窗距) % 楼.窗距 !== 0;
-      放(层内 === 0 ? 楼.楼板 : 窗 ? 楼.窗 : 楼.墙, i, 楼.j, k);
+  for (let i = building.left; i < building.right; i++)
+    for (let k = 0; k < building.topLayers; k++) {
+      const floorIndex = k % building.floorHeight;
+      const isWindow = (floorIndex === 1 || floorIndex === 2) && ((i % building.windowSpacing) + building.windowSpacing) % building.windowSpacing !== 0;
+      placeBlock(floorIndex === 0 ? building.floorSlab : isWindow ? building.窗 : building.wallBlock, i, building.j, k);
     }
   return out;
 };
-const 方块们 = 楼下方块();
+const blocks = downstairsBlocks();
 
 /** 横幅的贴图（贴图像素：宽 = 横幅宽 × 16，高 16）：红色羊毛的噪点、上下各一道暗边，不写字（看点是纸，见 楼下布局.ts 的 横幅） */
-const 画横幅 = () => {
-  const 宽 = (横幅.右 - 横幅.左) * 16;
-  const p = 新像素画(宽, 16);
-  p.噪(0, 0, 宽, 16, [横幅.红, 横幅.红暗], 1431, [5, 1]);
-  p.方(0, 0, 宽, 1, 横幅.红暗);
-  p.方(0, 15, 宽, 1, 横幅.红暗);
-  return 成贴图(p);
+const paintBanner = () => {
+  const width = (banner.right - banner.left) * 16;
+  const p = newPixelArt(width, 16);
+  p.noise(0, 0, width, 16, [banner.red, banner.darkRed], 1431, [5, 1]);
+  p.fillRect(0, 0, width, 1, banner.darkRed);
+  p.fillRect(0, 15, width, 1, banner.darkRed);
+  return makeTexture(p);
 };
 
 /** 横幅贴在立面正面前面一点（不和墙面打架） */
-const 横幅层: React.FC = () => {
-  const 图 = 用贴图(画横幅, []);
+const BannerLayer: React.FC = () => {
+  const image = useTexture(paintBanner, []);
   return (
-    <像素空间 位={[横幅.左, 楼.j - 0.02, 横幅.z]}>
-      <正面 x={0} y={0} z={0} 宽={(横幅.右 - 横幅.左) * 16} 高={16} 图={图} />
-    </像素空间>
+    <PixelSpace 位={[banner.left, building.j - 0.02, banner.z]}>
+      <FrontFace x={0} y={0} z={0} 宽={(banner.right - banner.left) * 16} 高={16} 图={image} />
+    </PixelSpace>
   );
 };
 
-export const 楼下: React.FC<{ 头: readonly [number, number]; 秒: number }> = ({ 头, 秒 }) => {
-  const 位: V3 = [你在楼下.x, 0.5, 0];
-  const 你 = stevePose(位, 你在楼下.朝向, { sec: 秒, scale: 你在楼下.倍, headPitch: 头[0], headYaw: 头[1] });
+export const Downstairs: React.FC<{ 头: readonly [number, number]; 秒: number }> = ({ 头: headPose, 秒: sec }) => {
+  const pos: V3 = [youDownstairsPos.x, 0.5, 0];
+  const you = stevePose(pos, youDownstairsPos.facing, { sec: sec, scale: youDownstairsPos.scale, headPitch: headPose[0], headYaw: headPose[1] });
   return (
     <>
-      <方块拼搭 方块们={方块们} />
-      <横幅层 />
-      <描边>
-        <贴图像素对齐 锚={位}>
-          <Steve pose={你} />
-        </贴图像素对齐>
-      </描边>
+      <BlockAssembly blocks={blocks} />
+      <BannerLayer />
+      <Outline>
+        <TexturePixelAlign 锚={pos}>
+          <Steve pose={you} />
+        </TexturePixelAlign>
+      </Outline>
     </>
   );
 };

@@ -9,7 +9,7 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { rng, type V3 } from '@engine/model/parts.tsx';
 import { pitSurfaceZAt, blockMaterial, blockPngs } from './竖井.tsx';
-import { SLAB_Y, fillCells, maceBottomSpeed, type 填格 } from './填块.tsx';
+import { SLAB_Y, fillCells, maceBottomSpeed, type FillCell } from './填块.tsx';
 
 type TexName = keyof typeof blockPngs;
 // 轴、壁：井里的碎块碰到井壁就停在井壁上（离井轴 壁 米），水平方向不再往外走，竖直方向照常（贴着井壁往下滑）
@@ -64,8 +64,8 @@ const build = (fx: FxParams): DebrisPiece[] => {
   const out: DebrisPiece[] = [];
   const [cx, cy] = fx.中心;
   const cells = fillCells();
-  const isShaftColumn = (c: 填格) => pitSurfaceZAt(c.dx, c.dy) === null; // 一直通到古城洞顶的那几列
-  const texOf = (c: 填格): TexName => (c.顶z - c.底z < 1 ? c.顶 : c.侧); // 石半砖的侧面贴图是半格高的，碎块用顶面的平滑石头
+  const isShaftColumn = (c: FillCell) => pitSurfaceZAt(c.dx, c.dy) === null; // 一直通到古城洞顶的那几列
+  const texOf = (c: FillCell): TexName => (c.topZ - c.bottomZ < 1 ? c.topTex : c.side); // 石半砖的侧面贴图是半格高的，碎块用顶面的平滑石头
   // 1. 地面炸开：50 块，从坑里（井口以外、坑面以上）碎掉的格子里挑，在那一格碎掉的那一刻，从格子里往上、往外迸（撞击坑的抛射物），
   //    方向是从井心（锤碰到地面的地方）往这一格的方位
   {
@@ -79,12 +79,12 @@ const build = (fx: FxParams): DebrisPiece[] => {
       const out_ = 4 + rand() * 11;
       const up = 7 + rand() * 16;
       const size = 0.25 + rand() * 0.6;
-      const z0 = (cell.底z + cell.顶z) / 2;
+      const z0 = (cell.bottomZ + cell.topZ) / 2;
       // 落点：按落回城的地面的时刻估水平位置，查那里的坑面；落进井口的掉到古城地面。从坑底迸起、够不到城的地面的，按升到最高的时刻估
       const tl = (up + Math.sqrt(Math.max(0, up * up + 2 * gravity * (z0 - fx.groundZ)))) / gravity;
       const landSurfaceZ = pitSurfaceZAt(px + Math.cos(azimuth) * out_ * tl - cx, py + Math.sin(azimuth) * out_ * tl - cy);
       out.push({
-        tex: texOf(cell), t0: cell.碎, p0: [px, py, z0], v0: [Math.cos(azimuth) * out_, Math.sin(azimuth) * out_, up], size,
+        tex: texOf(cell), t0: cell.breakSec, p0: [px, py, z0], v0: [Math.cos(azimuth) * out_, Math.sin(azimuth) * out_, up], size,
         axis: unit(rand), spin: 6 + rand() * 14, floor: (landSurfaceZ ?? fx.ancientCityFloorZ) + size / 2, life: 30,
       });
     }
@@ -97,12 +97,12 @@ const build = (fx: FxParams): DebrisPiece[] => {
   //    - 贴图：这一格原来的方块。
   {
     const rand = rng(632);
-    const layers = new Map<number, 填格[]>();
+    const layers = new Map<number, FillCell[]>();
     for (const cell of cells) if ((cell.y < SLAB_Y - 9 || isShaftColumn(cell)) && Math.hypot(cell.dx, cell.dy) >= 1.2) (layers.get(cell.y) ?? layers.set(cell.y, []).get(cell.y)!).push(cell);
     for (const [, list] of [...layers.entries()].sort((x, y) => y[0] - x[0])) {
       for (let k = 0; k < 2; k++) {
         const cell = list[Math.floor(rand() * list.length)];
-        if (!Number.isFinite(cell.碎)) continue;
+        if (!Number.isFinite(cell.breakSec)) continue;
         const px = cx + cell.dx + (rand() - 0.5) * 0.6;
         const py = cy + cell.dy + (rand() - 0.5) * 0.6;
         const ρ = Math.hypot(px - cx, py - cy);
@@ -110,9 +110,9 @@ const build = (fx: FxParams): DebrisPiece[] => {
         const uy = (py - cy) / ρ;
         const size = 0.15 + rand() * 0.2;
         const vr = 2 + rand() * 4;
-        const vz = -maceBottomSpeed(cell.碎) * (0.3 + rand() * 0.4);
+        const vz = -maceBottomSpeed(cell.breakSec) * (0.3 + rand() * 0.4);
         out.push({
-          tex: texOf(cell), t0: cell.碎, p0: [px, py, cell.顶z - 0.25], v0: [ux * vr, uy * vr, vz],
+          tex: texOf(cell), t0: cell.breakSec, p0: [px, py, cell.topZ - 0.25], v0: [ux * vr, uy * vr, vz],
           size, axis: unit(rand), spin: 8 + rand() * 16, floor: -1e9, life: 0.35, shaftAxis: [cx, cy], wallDist: Math.max(ρ, 2.12 - size * 0.6),
         });
       }
@@ -123,7 +123,7 @@ const build = (fx: FxParams): DebrisPiece[] => {
   {
     const rand = rng(633);
     const filled = new Set(cells.map((c) => `${c.dx},${c.dy},${c.y}`));
-    const pool = cells.filter((c) => c.y <= 0 && !filled.has(`${c.dx},${c.dy},${c.y - 1}`) && Number.isFinite(c.碎));
+    const pool = cells.filter((c) => c.y <= 0 && !filled.has(`${c.dx},${c.dy},${c.y - 1}`) && Number.isFinite(c.breakSec));
     for (let k = 0; k < 28 && pool.length; k++) {
       const cell = pool[Math.floor(rand() * pool.length)];
       const px = cx + cell.dx + (rand() - 0.5) * 0.6;
@@ -132,8 +132,8 @@ const build = (fx: FxParams): DebrisPiece[] => {
       const vr = 3 + rand() * 6;
       const size = 0.25 + rand() * 0.35;
       out.push({
-        tex: texOf(cell), t0: cell.碎, p0: [px, py, (cell.底z + cell.顶z) / 2],
-        v0: [Math.cos(azimuth) * vr, Math.sin(azimuth) * vr, -maceBottomSpeed(cell.碎) * (0.8 + rand() * 0.4)], size, axis: unit(rand), spin: 4 + rand() * 10,
+        tex: texOf(cell), t0: cell.breakSec, p0: [px, py, (cell.bottomZ + cell.topZ) / 2],
+        v0: [Math.cos(azimuth) * vr, Math.sin(azimuth) * vr, -maceBottomSpeed(cell.breakSec) * (0.8 + rand() * 0.4)], size, axis: unit(rand), spin: 4 + rand() * 10,
         floor: fx.ancientCityFloorZ + size / 2, life: 30,
       });
     }
