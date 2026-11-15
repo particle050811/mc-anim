@@ -37,7 +37,7 @@ const files: Record<string, string> = {
     '',
   ].join('\n'),
   // 类型守卫里 '秒' in t 的 t 是 object：按谓词的类型认
-  'e.ts': ["import type { 型 } from './a.ts';", "export const 是型 = (t: object): t is 型 => '秒' in t;", ''].join('\n'),
+  'e.ts': ["import type { 型 } from './a.ts';", "export const 是型 = (t: object): t is 型 => '秒' in t;", "export const 秒键: keyof 型 & keyof { 帧: number } | keyof 型 = '秒';", ''].join('\n'),
   // 字符串里写的代码：代码里的字符串（句、止）不算标识符
   'f.ts': [
     'export type 用 = { 在: number; 依据: string; 句: number; 拍: number; 止: number };',
@@ -105,6 +105,7 @@ describe('改名工具', () => {
     expect(b).toContain('x.seconds + 秒 + seconds');
     expect(fs.readFileSync(path.join(root, 'd.ts'), 'utf8')).toContain('const 值 = { seconds: 1, 帧: 2 };');
     expect(fs.readFileSync(path.join(root, 'e.ts'), 'utf8')).toContain("'seconds' in t");
+    expect(fs.readFileSync(path.join(root, 'e.ts'), 'utf8')).toContain("| keyof 型 = 'seconds';");
   });
 
   it('核：新名遮住、撞上原来的名字时不落盘', () => {

@@ -670,7 +670,9 @@ export const scan = (ws: Workspace, opt: ScanOptions = {}): ScanResult => {
     }
     // const k: keyof T = '名'
     if ((ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isPropertyDeclaration(p)) && p.initializer === s && p.type) {
-      if (ts.isTypeOperatorNode(p.type) && p.type.operator === ts.SyntaxKind.KeyOfKeyword) return propsOf(checker.getTypeFromTypeNode(p.type.type), s.text, checker);
+      // keyof T，或 keyof A & keyof B 这类几个 keyof 的交、并
+      const parts = ts.isIntersectionTypeNode(p.type) || ts.isUnionTypeNode(p.type) ? p.type.types : [p.type];
+      return parts.flatMap((t) => (ts.isTypeOperatorNode(t) && t.operator === ts.SyntaxKind.KeyOfKeyword ? propsOf(checker.getTypeFromTypeNode(t.type), s.text, checker) : []));
     }
     return [];
   };
