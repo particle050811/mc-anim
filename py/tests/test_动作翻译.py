@@ -73,6 +73,7 @@ def random_inputs(n: int) -> list[dict]:
     out = []
     for i in range(n):
 
+        # 只在本轮循环里当场调完、不留到循环外，引的循环变量就是本轮的值（ruff B023 误报）
         def fl(lo: float, hi: float) -> float:
             # 每 10 组掺一个特殊值（NaN、±0、无穷、超出 int 的大数），验 fcmpl/fcmpg、饱和强转
             return f32(r.choice(special_values) if i % 10 == 9 and r.random() < 0.3 else r.uniform(lo, hi))
