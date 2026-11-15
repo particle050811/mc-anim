@@ -7,6 +7,7 @@ import * as timeline from '../时间线.ts';
 import { groundZ } from './公用.ts';
 import { huangLeaps, landT, liuLeaps, takeoffT } from './跳.ts';
 import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
+import { ticksPerSec } from '@库/原版物理.ts';
 
 type WalkOrder = { t: number; path: V3[] };
 const walkOrders: WalkOrder[] = [
@@ -23,7 +24,7 @@ const walkOrders: WalkOrder[] = [
 export const shieldSwingTs = timeline.shieldSwingTs;
 export const shieldBreakT = () => timeline.shieldBreakT;
 
-export const tickSec = 1 / 20;
+export const tickSec = 1 / ticksPerSec;
 export const lastTick = Math.ceil((timeline.sceneEndT0 + 2) * 20);
 // 逐步推（每刻 12 步，命令的时刻按步对齐），存每一步；腿的相位照 7-3（每秒 4 × 速度，原版跑步动画最快那一档封顶）
 const SUB = 12;

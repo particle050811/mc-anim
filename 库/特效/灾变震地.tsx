@@ -29,8 +29,8 @@ import ring3Png from 'asset:贴图/特效/灾变圆环/ring_3';
 import ring4Png from 'asset:贴图/特效/灾变圆环/ring_4';
 import ring5Png from 'asset:贴图/特效/灾变圆环/ring_5';
 import { mulberry32 } from '../../engine/core/数学.ts';
+import { ticksPerSec } from '../原版物理.ts';
 
-const ticksPerSec = 20;
 // REINFORCED_SMASH：砸地（方块粒子、圆环）在第 3 刻，震波第 5 刻起每 2 刻往外一圈，3～10 格
 const quakeStartTick = 2; // 相对砸地那一刻
 const ticksPerRing = 2;

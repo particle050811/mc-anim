@@ -10,6 +10,7 @@
 // - 跳：从轨迹里认出腾空的那几段（竖直加速度接近重力、连着几个采样），给出离起跳、落地多久，蓄力下蹲、空中收腿、落地缓冲用。
 //   只看轨迹不看地形：脚下高一格一格变的地方竖直位置是跳变，只占一两个采样，不会认成腾空。
 import type { V3 } from '@engine/model/parts.tsx';
+import { ticksPerSec } from '@库/原版物理.ts';
 
 /** 这一刻和跳的关系（都不给 = 在地上、前后都没有跳）。空长 = 说的那一跳在空中一共多久 */
 export type AirSnapshot = {
@@ -24,7 +25,7 @@ export type AirSnapshot = {
 };
 export type WalkSnapshot = { 位置: V3; facing: number; 走: { swing: number; stride: number; walkDir: number }; 跳: AirSnapshot };
 
-const tickSec = 1 / 20;
+const tickSec = 1 / ticksPerSec;
 const wrap180 = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
 /** 认腾空：采样间隔（秒）、竖直加速度低于多少算腾空（格/秒²；原版重力折合 32，编排里的跳用 24.6）、至少连着几个采样、往前往后各找多远（秒） */
 const sampleStepSec = 1 / 120;

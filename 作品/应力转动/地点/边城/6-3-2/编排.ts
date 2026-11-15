@@ -26,6 +26,7 @@ import { broomState } from '../6-3-下坠/编排/扫帚.ts';
 import { tick, impactTime, yawVec } from '../6-3-下坠/时间线.ts';
 import { uiClose, uiFade, smashBeats, calloutBeats, matchSec as pushEnd } from './台词.ts';
 import { smoothstep01, lerp } from '@engine/core/数学.ts';
+import { ticksPerSec } from '@库/原版物理.ts';
 
 export const FPS = 24;
 const D2R = Math.PI / 180;
@@ -35,7 +36,7 @@ const D2R = Math.PI / 180;
 // （台词.ts 的 `calloutBeats`：每截话第一个字起音的时刻），砸穿挂在 `smashBeats`，所以换台词整页跟着重排。
 const [beat1, beat2, beat3, beat4, beat5] = calloutBeats;
 // 原版实体下落（LivingEntity.travel：每刻先挪，再 −0.08、×0.98）
-export const tickSec = 1 / 20;
+export const tickSec = 1 / ticksPerSec;
 // 虚影最低点开始时离石半砖几格（为什么是 4 见 `footStartY`）
 const dropHeight = 4;
 // 从静止落下 h 格要多久（秒）：和 `fallPath` 一样逐刻算、碰到那刻按比例插

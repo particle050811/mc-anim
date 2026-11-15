@@ -23,6 +23,7 @@ import generic5Png from 'asset:贴图/特效/粒子/generic_5';
 import generic6Png from 'asset:贴图/特效/粒子/generic_6';
 import generic7Png from 'asset:贴图/特效/粒子/generic_7';
 import { clamp, smoothstep01 } from '../../engine/core/数学.ts';
+import { ticksPerSec } from '../原版物理.ts';
 
 const GENERIC = pngDir(assetDir({ './generic_0.png': generic0Png, './generic_1.png': generic1Png, './generic_2.png': generic2Png, './generic_3.png': generic3Png, './generic_4.png': generic4Png, './generic_5.png': generic5Png, './generic_6.png': generic6Png, './generic_7.png': generic7Png }));
 
@@ -100,8 +101,8 @@ export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
   const dir = norm(opts.windDir);
   const sideA = perp(dir, opts.normal);
   const sideB = cross(dir, sideA);
-  const ticksPerSec = 20 * fastForward;
-  const tau = sec * ticksPerSec;
+  const storyTicksPerSec = ticksPerSec * fastForward;
+  const tau = sec * storyTicksPerSec;
   const lifespan = airFlowConsts.lifeTicks;
   const fadeFrom = opts.fadeThin;
   const out: AirFlowParticle[] = [];
@@ -111,7 +112,7 @@ export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
     const birthTick = (k + slotRand(seed, k, 0)) / density;
     const age = tau - birthTick;
     if (age < 0 || age >= lifespan) continue;
-    const tb = birthTick / ticksPerSec;
+    const tb = birthTick / storyTicksPerSec;
     if ((opts.起 !== undefined && tb < opts.起) || (opts.止 !== undefined && tb > opts.止)) continue;
     if (rpmAt(tb) === 0) continue;
     const [nearDist, farDist] = opts.spawnDist ?? [-airFlowConsts.jitter, airFlowConsts.jitter];
@@ -121,7 +122,7 @@ export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
     let dNext = dist;
     let Mn = 1;
     for (let j = 0; j <= wholeTicks; j++) {
-      const Mj = maxDistAt((birthTick + j) / ticksPerSec);
+      const Mj = maxDistAt((birthTick + j) / storyTicksPerSec);
       if (Mj < 0.25 || dist > Mj + 0.25 || dist < -0.25) {
         dead = true;
         break;

@@ -4,6 +4,7 @@ import { archery } from '../../../../地点/古城4x/布局.ts';
 import * as geom from '../几何.ts';
 import { gameToScene, storySecAt } from './公用.ts';
 import { DEBRIS_HIDE } from './碎块.ts';
+import { ticksPerSec } from '@库/原版物理.ts';
 // 照原版 1.20.1 推（VibrationSystem、SculkSensorBlock、SculkShriekerBlockEntity，见 模型/特效/振动粒子.tsx 等）：
 // - 声源：拔刀挑起的破空声（斩击实体位置）、箭被挑飞的「叮」（弹开点）。游戏里这两下其实都不发振动，是原文「拔刀剑的破空声与箭矢的掉落声」的对应。
 // - 感测体：离声源 8 格内、中间没有羊毛挡着就收，振动粒子飞 floor(距离) 刻，到了才激活（触须抖 30 刻 + 冷却 10 刻）；在路上或已激活/冷却的不收新的。
@@ -18,7 +19,7 @@ const blockBottomCenter = ([x, y, z]: V3): V3 => gameToScene(x + 0.5, y, z + 0.5
 export const sensors: V3[] = [archery.sculkSensor as V3];
 // 离那个感测体 8 格以内的尖啸体
 const shriekers: V3[] = [archery.sculkShrieker as V3, archery.shriekerWest as V3];
-const tickSec = 1 / 20;
+const tickSec = 1 / ticksPerSec;
 const flightTicks = (a: V3, b: V3) => Math.floor(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]));
 export const soundChain = (() => {
   const soundSources = [

@@ -71,7 +71,7 @@ export type EnvDescription = {
 
 // ---------- 时刻 → 天体 ----------
 export const dayTicks = 24000;
-/** 游戏每秒 20 刻 */
+/** 游戏每秒 20 刻。库、作品一律引 库/原版物理.ts 的；engine 不能 import 库，这里单留一份 */
 export const ticksPerSec = 20;
 const twoPi = Math.PI * 2;
 const frac = (x: number) => x - Math.floor(x);

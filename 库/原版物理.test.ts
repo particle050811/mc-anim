@@ -4,7 +4,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { getFunction } from '../pipeline/检查/副本识别.ts';
 import { lerp } from '../engine/core/数学.ts';
-import { vanillaMotion, fallOneTick, fallTable, fallHeightAtTick, sampleByTick, itemFallOptions, landTick } from './原版物理.ts';
+import { vanillaMotion, fallOneTick, fallTable, fallHeightAtTick, sampleByTick, itemFallOptions, landTick, ticksPerSec } from './原版物理.ts';
 
 const root = path.resolve(import.meta.dirname, '..');
 const copyFn = (file: string, fnName: string, extra?: Record<string, unknown>) =>
@@ -59,7 +59,7 @@ describe('原版下落正本', () => {
 
 describe('原版下落正本和旧副本对得上', () => {
   it('6-3-2 的 fallTime（秒）= 落地刻 / 20', () => {
-    const fallTime = copyFn('作品/应力转动/地点/边城/6-3-2/编排.ts', 'fallTime') as (h: number) => number;
+    const fallTime = copyFn('作品/应力转动/地点/边城/6-3-2/编排.ts', 'fallTime', { tickSec: 1 / ticksPerSec }) as (h: number) => number;
     for (const h of fallHeights) expect(fallTime(h)).toBeCloseTo(landTick(h) / 20, 12);
   });
   it('2-末地 的 原版下落（掉了多少格）= −下落高度', () => {
