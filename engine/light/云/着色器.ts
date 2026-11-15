@@ -240,7 +240,7 @@ PcRes ${n}March(vec3 o, vec3 rd, vec3 sky, float dT, float dither) {
     dens *= smoothstep(1.0, 0.9, length(p.xz) / 7.5e4);
     float sT = exp(-dens * ext * sl);
     vec2 h = pcHash2(fract(p));
-    float lod = ${n}OD(p, L, h.x, ${D}_LIGHT);
+    float lod = ${l.号 === 0 ? `bakeOD(p, ${D}_R, ${D}_BH+${D}_T)` : `${n}OD(p, L, h.x, ${D}_LIGHT)`};
     float sod = ${n}OD(p, vec3(0.0, 1.0, 0.0), h.y, ${D}_AMB);
     float af = (length(p) - ${n}Base(${形(l, n, 'p.xz + pcCamXZ')})) / ${D}_T;
     float god = mix(dens, 1.0, clamp(af * 2.0 - 1.0, 0.0, 1.0)) * af * ${D}_T;
@@ -589,6 +589,12 @@ precision highp float;
 ${ATMO_PARS_GLSL}
 ${ATMO_FN_GLSL}
 ${共用(S)}
+${层们[0]?.算法 === 'Photon积云' ? `uniform sampler2D tSunBake;
+float bakeOD(vec3 pos,float bottom,float thick) {
+ vec2 uv=clamp(pos.xz/48000.0+0.5,vec2(0.5/128.0),vec2(1.0-0.5/128.0));
+ float z=clamp((pos.y-bottom)/thick*32.0-0.5,0.0,31.0); float lo=floor(z), hi=min(lo+1.0,31.0);
+ vec2 vlo=vec2(uv.x,(lo+uv.y)/32.0), vhi=vec2(uv.x,(hi+uv.y)/32.0);
+ return mix(texture(tSunBake,vlo).r,texture(tSunBake,vhi).r,fract(z)); }` : ''}
 ${层们.map((l) => 层码[l.算法](l)).join('\n')}
 ${画云函数(层们)}
 uniform sampler2D tPrep;
