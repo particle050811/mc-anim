@@ -4,11 +4,11 @@ import { 二阶一步, 二阶常数, 二阶推进器, 二阶稳态, 二阶起始
 
 // 阶跃：第 1 秒起输入从 0 跳到 10
 const 阶跃 = (秒: number) => (秒 >= 1 ? 10 : 0);
-const 建 = (输入: (秒: number) => number, 参: [number, number, number] = [2, 0.6, 0], 记?: number[]) =>
+const 建 = (输入: (秒: number) => number, 参: [number, number, number] = [2, 0.6, 0], 记?: number[], 选项?: Parameters<typeof 二阶推进器>[1]) =>
   二阶推进器((秒, f) => {
     记?.push(秒);
     f(['头发', 输入(秒), ...参]);
-  });
+  }, 选项);
 const 取 = (f: 二阶函数) => f(['头发', 123, 2, 0.6, 0]);
 
 describe('二阶系统', () => {
@@ -55,17 +55,31 @@ describe('二阶系统', () => {
     expect(取(甲.在(7.25))).toBeCloseTo(10, 3);
   });
 
-  it('从最近的存档接着推，不从 0 重来', () => {
+  it('最近推过的各步留着，来回取不重推', () => {
     const 记: number[] = [];
     const 甲 = 建(阶跃, [2, 0.6, 0], 记);
+    const 末 = 取(甲.在(5));
+    expect(记.length).toBe(301);
+    记.length = 0;
+    const 中 = 取(甲.在(3.5));
+    甲.在(3.6);
+    expect(取(甲.在(5))).toBe(末);
+    expect(记.length).toBe(0);
+    expect(中).toBe(取(建(阶跃).在(3.5)));
+  });
+
+  it('留着的丢了，从最近的存档接着推，不从 0 重来', () => {
+    const 记: number[] = [];
+    const 甲 = 建(阶跃, [2, 0.6, 0], 记, { 留最近几步: 10 });
     甲.在(5);
     expect(记.length).toBe(301);
     记.length = 0;
-    甲.在(3.5); // 存档在第 3 秒（每 60 步一份），再推 30 步
+    const 中 = 取(甲.在(3.5)); // 存档在第 3 秒（每 60 步一份），再推 30 步
     expect(记.length).toBe(30);
     记.length = 0;
     甲.在(3.6); // 接着刚才的
     expect(记.length).toBe(6);
+    expect(中).toBe(取(建(阶跃).在(3.5)));
   });
 
   it('不在格上的时刻从前一格推不满一步，不影响格上的结果', () => {

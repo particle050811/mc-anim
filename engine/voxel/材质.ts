@@ -3,8 +3,8 @@
 //
 // 接口：
 //   `voxelMaterial`(类)：实心 / 镂空 / 实心树叶 / 水 / 花草 五种材质（共用一份）
-//   `faceGroupMesh`(面组, 类, 原点, 格)：一组面 → three 网格（一格 格 米）；`挑朝向`(网格, 看得见) 每帧只画朝着镜头的几组朝向
-//   `shadowMesh`(网格)：同一批顶点、只进阴影图的网格；`背光朝向`(光向) 是它要画的几组
+//   `faceGroupMesh`(面组, 类, 原点, 格)：一组面 → three 网格（一格 格 米）；`挑朝向`(网格, 看得见) 每帧只画朝着镜头的几组朝向。只有水类还逐网格画，
+//   其余四类和阴影由 批绘制.ts 的代理物体一次画完（顶点着色器里的 `uSec` 是它给每个区段设的平移缩放，逐网格画时是 (0,0,0,1)）；`背光朝向`(光向) 是阴影要画的几组
 // 顶点里带：位置（以格为单位 × 64 的整数）、uv（× 16，以格为单位）、贴图号（+ 4096 × 乘染色 + 8192 × 随机转）和叠加贴图号、染色 rgb（sRGB 字节）。
 //
 // 照 Voxy 做的（quads.frag）：
@@ -31,14 +31,15 @@ export const farAoKeep = (distM: number) => {
 import type { V3 } from '../model/parts.tsx';
 import { selfLight } from '../light/光照配比.ts';
 import { 成组排 } from '../core/稳定排序.ts';
-import { shadowFrustums } from '../light/级联阴影.ts';
 import { blockAtlas, blockAtlasGlsl } from './真实方块图集.ts';
 import { posScale, groupCount, skirtGroupStart, type FaceGroup } from './网格.ts';
 import { 传顶点, 顶点属性, 还容器, type 顶点数组 } from './容器池.ts';
+import { 区段位移, 位移声明, 位移顶点, 四边形索引 } from './批绘制.ts';
 import { patchWaterShader } from './水面.ts';
 import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
 
 const VERT_HEAD = `
+${位移声明}
 attribute vec4 tex;
 attribute vec4 col;
 varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varying float vTop;`;
@@ -124,10 +125,11 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     sh.uniforms.blockAtlas = { value: tex };
     sh.uniforms.selfLight = selfLight;
     sh.uniforms.aoPass = aoPassUniform;
-    // vW：世界坐标里的格（随机转按格算）：网格的 modelMatrix 已经含了缩放（一格 格 米），除回去
+    sh.uniforms.uSec = 区段位移;
+    // vW：世界坐标里的格（随机转按格算）：缩放（一格 格 米）逐网格画时在 modelMatrix 里、批绘制时在 uSec.w 里，除回去
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(position, 1.0)).xyz / max(length(modelMatrix[0].xyz) * 64.0, 1e-6);');
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${位移顶点}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6);`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
       .replace('#include <map_fragment>', fragMap(materialClass === '镂空' || materialClass === '花草'))
@@ -153,25 +155,12 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
   return mat;
 };
 
-// 所有网格共用一份四边形索引（0 1 2 0 2 3，每面 +4），按用到的最大面数长；共用同一个 BufferAttribute，显存里只有一份
+// 逐网格画的（水）共用一份四边形索引（0 1 2 0 2 3，每面 +4），按用到的最大面数长；共用同一个 BufferAttribute，显存里只有一份
 let sharedQuadIndex: THREE.BufferAttribute | null = null;
-const 花草短面数 = 16383;
-let 花草短索引: THREE.BufferAttribute | null = null;
-const quadIndexFor = (quads: number, 花草: boolean) => {
-  if (花草 && quads <= 花草短面数) {
-    if (!花草短索引) {
-      // WebGL2 保留 65535 作图元重启，不能画满第 16384 个四边形。
-      const indices = new Uint16Array(花草短面数 * 6);
-      for (let quad = 0; quad < 花草短面数; quad++) indices.set([quad * 4, quad * 4 + 1, quad * 4 + 2, quad * 4, quad * 4 + 2, quad * 4 + 3], quad * 6);
-      花草短索引 = new THREE.BufferAttribute(indices, 1);
-    }
-    return 花草短索引;
-  }
+const quadIndexFor = (quads: number) => {
   if (!sharedQuadIndex || sharedQuadIndex.count < quads * 6) {
     const quadCount = Math.max(quads, sharedQuadIndex ? (sharedQuadIndex.count / 6) * 2 : 1 << 16);
-    const indices = new Uint32Array(quadCount * 6);
-    for (let quad = 0; quad < quadCount; quad++) indices.set([quad * 4, quad * 4 + 1, quad * 4 + 2, quad * 4, quad * 4 + 2, quad * 4 + 3], quad * 6);
-    sharedQuadIndex = new THREE.BufferAttribute(indices, 1);
+    sharedQuadIndex = new THREE.BufferAttribute(四边形索引(new Uint32Array(quadCount * 6)), 1);
   }
   return sharedQuadIndex;
 };
@@ -195,7 +184,7 @@ export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, mat
   geo.setAttribute('uv', uv);
   geo.setAttribute('tex', tex);
   geo.setAttribute('col', col);
-  geo.setIndex(quadIndexFor(group.n, materialClass === '花草'));
+  geo.setIndex(quadIndexFor(group.n));
   geo.setDrawRange(0, group.n * 6);
   // 位置存的是 以格为单位 × 64 的整数：网格缩小 64 / 格 倍；包围球按盒子给（three 自己算会按整数坐标算）
   const k = posScale / cellM;
@@ -220,11 +209,11 @@ export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, mat
   return mesh;
 };
 
-// 释放一块区段的网格：顶点容器还回池（投影网格和画面网格共用属性，只还一遍）。three 的 dispose 会删它看到的属性和索引，所以先摘掉：
+// 释放逐网格画的网格：顶点容器还回池。three 的 dispose 会删它看到的属性和索引，所以先摘掉：
 // 共用索引还挂在别的网格上，删了下一帧又要重传 1.57 MB；它按用到的最大面数翻倍长，换下来的旧索引没人引用后由垃圾回收放掉，最多留一串翻倍的
-export const releaseVoxelMeshes = (ctx: WebGL2RenderingContext, meshes: VoxelMesh[], shadowMeshes: VoxelMesh[]) => {
-  for (const mesh of meshes) for (const attr of Object.values(mesh.geometry.attributes)) 还容器(ctx, (attr as unknown as THREE.GLBufferAttribute).buffer);
-  for (const mesh of [...meshes, ...shadowMeshes]) {
+export const releaseVoxelMeshes = (ctx: WebGL2RenderingContext, meshes: VoxelMesh[]) => {
+  for (const mesh of meshes) {
+    for (const attr of Object.values(mesh.geometry.attributes)) 还容器(ctx, (attr as unknown as THREE.GLBufferAttribute).buffer);
     const geo = mesh.geometry;
     geo.index = null;
     geo.attributes = {};
@@ -250,30 +239,8 @@ export const pickDirs = (mesh: VoxelMesh, visible: boolean[]) => {
 };
 
 // ---------- 投影（暮色主光的地形软投影，见 lib/级联阴影.ts）----------
-// 阴影遍按 geometry.groups 画，而 `挑朝向` 把一组都不剩的块整块 visible = false，影子会随镜头转向时有时无。所以另建一个只进阴影图的网格：
-// 和画面网格共用同一批 BufferAttribute，面组按光向挑背光的几组（three 阴影遍对正面材质画背面，背光面就是光看过去的「背面」，阴影图存出来那面的深度，受光面不会被自己的影子盖住）。
-// 主画面不画它：three 主画面和阴影遍都用 intersectsFrustum 挑物体，只有级联阴影的视锥才放行。
+// 阴影只画背光的几组朝向（three 阴影遍对正面材质画背面，背光面就是光看过去的「背面」，阴影图存出来那面的深度，受光面不会被自己的影子盖住），
+// 和画面挑的朝向不是一套，所以阴影单独一个代理物体、单独一份要画的段（批绘制.ts 的 `类批`，影 = true）：只有级联阴影的视锥才放行，主画面不画它。
 // 花草、水不投影；镂空树叶按实心投影（阴影图用 three 自带深度材质，远处看的是整团树冠的影子）。
-const shadowMaterial = new THREE.MeshBasicMaterial();
-function shadowOnlyFrustumTest(this: VoxelMesh, frustum: THREE.Frustum) {
-  const hit = shadowFrustums.has(frustum) && frustum.intersectsObject(this);
-  if (hit) this.userData.传();
-  return hit;
-}
-export const shadowMesh = (mesh: VoxelMesh): VoxelMesh => {
-  const geo = new THREE.BufferGeometry();
-  for (const [k, attr] of Object.entries(mesh.geometry.attributes)) geo.setAttribute(k, attr);
-  geo.setIndex(mesh.geometry.index);
-  geo.setDrawRange(0, mesh.geometry.drawRange.count);
-  geo.boundingSphere = mesh.geometry.boundingSphere;
-  const castMesh = new THREE.Mesh(geo, [shadowMaterial]) as unknown as VoxelMesh;
-  castMesh.userData.段 = mesh.userData.段;
-  castMesh.userData.传 = mesh.userData.传;
-  castMesh.matrix.copy(mesh.matrix);
-  castMesh.matrixAutoUpdate = false;
-  castMesh.castShadow = true;
-  castMesh.intersectsFrustum = shadowOnlyFrustumTest;
-  return castMesh;
-};
 // 背光的朝向（+x -x +y -y +z -z 不沿轴，裙边跟着各自的朝向，见 挑朝向）：法线和光向（指向光源）点积小于 0 的那几组，不沿轴的面两面都可能背光，都画
 export const backlitDirs = (lightDir: V3) => [lightDir[0] < 0, lightDir[0] > 0, lightDir[1] < 0, lightDir[1] > 0, lightDir[2] < 0, lightDir[2] > 0, true];

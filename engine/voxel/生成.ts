@@ -13,9 +13,10 @@ export type RGB = [number, number, number];
 export type VoxelSource = {
   采样: TerrainSampler; // 只给 `pickSections` 估镜头到区段的距离
   // 区段：这一块的方块，null = 包里没有（没生成的区块），画成空的；只在 `prefetch` 取齐后调。
-  // 预取：这一帧要用的区段，没取到的开始取，返回取齐的 Promise；都在手上返回 undefined（体素世界据此决定同步建还是先等）
+  // 预取：这一帧要用的区段，没取到的开始取，返回取齐的 Promise；都在手上返回 undefined（体素世界据此决定同步建还是先等）。
+  // 猜的 = true：体素世界替下一帧先取的（世界.tsx 的「预取下一帧」），不一定真用上，记用量的来源先不记，等不带 猜的 再要到同一块时补记
   区段: (section: SectionId) => VoxelGrid | null;
-  prefetch?: (qs: SectionId[]) => Promise<void> | undefined;
+  prefetch?: (qs: SectionId[], 猜的?: boolean) => Promise<void> | undefined;
   // 转交：`区段` 每次返回新建的体素块、自己不留着，体素世界把它转交给网格工人（不拷贝，交完这边就用不了了）
   转交?: boolean;
 };

@@ -153,6 +153,8 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
   // 工人那边只要换体素块用的几项，粗高度图不发
   const workerCtx = registerSource({ 原点: pack.info.原点, 状态: pack.info.状态, 群系: pack.info.群系 }, cutBoxes, flattenAreas);
   const ready = new Map<string, ReadyVoxels>();
+  // 替下一帧先取、还没记进地形用量的区段：哪一帧真要到了才记，没用上的不记（用量只记画面真用到的）
+  const 没记用量 = new Set<string>();
   const source: VoxelSource = {
     采样: sample,
     区段: (section) => {
@@ -166,12 +168,14 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
       return importedSectionVoxels(pack.data.get(k)!.d, ctx);
     },
     转交: true,
-    prefetch: (qs) => {
+    prefetch: (qs, 猜的) => {
       const round = ++pack.round;
       const waits = new Set<Promise<void>>();
       const toLoad: SectionId[] = [];
+      const 补记: string[] = [];
       for (const section of qs) {
         const k = sectionKey(section);
+        if (!猜的 && 没记用量.delete(k)) 补记.push(k);
         const done = ready.get(k);
         if (done) done.lastRound = round;
         const cached = pack.data.get(k);
@@ -186,8 +190,10 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
         if (promise) waits.add(promise);
         else toLoad.push(section);
       }
+      if (补记.length) 记读区段(pack.name, 补记);
       if (toLoad.length) {
-        记读区段(pack.name, toLoad.map(sectionKey));
+        if (猜的) for (const section of toLoad) 没记用量.add(sectionKey(section));
+        else 记读区段(pack.name, toLoad.map(sectionKey));
         const loading = loadSections(pack, toLoad, round, workerCtx, ready);
         for (const [k, promise] of loading) pack.inflight.set(k, promise);
         for (const promise of new Set(loading.values())) {
