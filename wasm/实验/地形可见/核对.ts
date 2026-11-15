@@ -45,9 +45,9 @@ export const 比面 = (旧: SectionMesh, 新: SectionMesh, nz: number, 贴: Uint
         let lo = [Infinity, Infinity, Infinity], 心 = [0, 0, 0];
         for (let v = 0; v < 4; v++) for (let t = 0; t < 3; t++) { const p = a.pos[q * 12 + v * 3 + t]! / 64; lo[t] = Math.min(lo[t]!, p); 心[t]! += p / 4; }
         const 向 = 组 >= 7 ? 组 - 7 : 组, e = 1 / 128;
-        let 贴着: boolean;
-        if (向 === 6) 贴着 = 在贴(心[0]!, 心[1]!, 心[2]!);
-        else {
+        // 面心在被填格里：被填格自己的面（封在腔里的花草、半砖；花草按位置挪过，角可能出格，心不会）
+        let 贴着 = 在贴(心[0]!, 心[1]!, 心[2]!);
+        if (!贴着 && 向 < 6) {
           // 取面的最小角往面内挪一点，再往面的前、后各挪一点：前面是它朝着的格，后面是它自己那格
           const 轴 = 向 >> 1, 正 = 向 & 1 ? -e : e, p = lo.map((v, t) => (t === 轴 ? v : v + e));
           const 前 = p.slice(), 后 = p.slice();
