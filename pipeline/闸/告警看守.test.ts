@@ -225,9 +225,11 @@ describe('告警对象', () => {
 });
 
 describe('盯', () => {
+  /** 机器类告警只醒此刻有活的会话：默认让挂 盯 的会话自己有一个在跑的任务。 */
+  const 有活 = (...会话: string[]) => { const s = 基本(Date.now()); s.在跑 = 会话.map(k => ({ 任务: 'M-' + k, 起: 0, 心跳: 0, 发起: 读发起者({ CLAUDE_CODE_SESSION_ID: k }, [], dir, false), 声明: { 种: 'render' }, 主机: 'h' })); return s; };
   const 跑 = async (e: 调度环境, o: Parameters<typeof 盯>[1] = {}) => {
     const out: string[] = [];
-    const code = await 盯(e, { 最长: 0.05, 读: () => 基本(Date.now()), 父活: () => true, 输出: x => out.push(x), 睡: () => new Promise<void>(r => setTimeout(r, 10)), ...o });
+    const code = await 盯(e, { 最长: 0.05, 读: () => 有活(e.发起者.会话), 父活: () => true, 输出: x => out.push(x), 睡: () => new Promise<void>(r => setTimeout(r, 10)), ...o });
     return { code, out };
   };
   /** 先挂一次定下游标，后面的事都算没挂时写入的。 */
@@ -270,6 +272,57 @@ describe('盯', () => {
     expect((await 跑(e)).out[0]).toContain('崩溃 #123 6-斩娜迦');
     记调度(e.日志目录, '回收死锁', { 任务: 'Y', 原持有者: { pid: 123 } });
     expect((await 跑(e)).out[0]).toContain('回收死锁 #123');
+  });
+  describe('按归属分发', () => {
+    const 任务告警 = (e: 调度环境, 会话: string) => 记调度(e.日志目录, '告警', { 类: '排队长', 对象: 'T9', 次数: 1, pid: 9, 会话 });
+    /** 让会话 k 看起来挂着 盯（本测试进程的 pid 是活的）。 */
+    const 在盯 = (e: 调度环境, k: string) => { fs.mkdirSync(path.join(e.调度目录, '盯'), { recursive: true }); fs.writeFileSync(path.join(e.调度目录, '盯', `其他-${k}.json`), JSON.stringify({ pid: process.pid, 会话: k })); };
+    const 离盯 = (e: 调度环境, k: string, 前毫秒: number) => { fs.mkdirSync(e.调度目录, { recursive: true }); fs.writeFileSync(path.join(e.调度目录, `离盯-${k}.json`), JSON.stringify({ 时: Date.now() - 前毫秒 })); };
+    it('任务类：自己的醒；别人的、主人在盯就不醒', async () => {
+      const e = 环(); await 定游标(e); 在盯(e, 'other');
+      任务告警(e, 'other'); expect((await 跑(e)).code).toBe(124);
+      任务告警(e, 'sess0001'); const r = await 跑(e); expect(r.code).toBe(0); expect(r.out[0]).toContain('排队长');
+    });
+    it('任务类兜底：主人没挂 盯、没有会话（人手起的）都照旧醒', async () => {
+      const e = 环(); await 定游标(e);
+      任务告警(e, 'other'); expect((await 跑(e)).out[0]).toContain('排队长');
+      任务告警(e, ''); expect((await 跑(e)).out[0]).toContain('排队长');
+    });
+    it('主人刚离开 盯（重挂空档）：先不广播、游标停住，过了宽限还没回来再醒', async () => {
+      const e = 环(); await 定游标(e); 离盯(e, 'other', 10_000);
+      任务告警(e, 'other'); expect((await 跑(e)).code).toBe(124);
+      离盯(e, 'other', 600_000); expect((await 跑(e)).out[0]).toContain('排队长');
+    });
+    it('主人在宽限里时，停在它前面的自己的告警照报', async () => {
+      const e = 环(); await 定游标(e); 离盯(e, 'other', 10_000);
+      任务告警(e, 'sess0001'); 任务告警(e, 'other');
+      const r = await 跑(e); expect(r.code).toBe(0); expect(r.out[0]!.match(/排队长/g)).toHaveLength(1);
+      expect((await 跑(e)).code).toBe(124);
+    });
+    it('回收死锁按原持有者的会话算，不按回收者', async () => {
+      const e = 环(); await 定游标(e); 在盯(e, 'other');
+      记调度(e.日志目录, '回收死锁', { 发起: { 会话: 'sess0001' }, 原持有者: { pid: 5, 发起: { 会话: 'other' } } }); expect((await 跑(e)).code).toBe(124);
+    });
+    it('机器类：谁都没活不醒；只有别人有活且在盯不醒；自己有活醒', async () => {
+      const e = 环(); await 定游标(e); 在盯(e, 'other');
+      告警(e, '负载'); expect((await 跑(e, { 读: () => 有活() })).code).toBe(124);
+      告警(e, '负载'); expect((await 跑(e, { 读: () => 有活('other') })).code).toBe(124);
+      告警(e, '负载'); expect((await 跑(e, { 读: () => 有活('other', 'sess0001') })).out[0]).toContain('负载');
+    });
+    it('机器类兜底：有活的会话没挂 盯 就照旧醒', async () => {
+      const e = 环(); await 定游标(e);
+      告警(e, '负载'); expect((await 跑(e, { 读: () => 有活('other') })).out[0]).toContain('负载');
+    });
+    it('没有会话的 盯（人手挂的）什么都看', async () => {
+      const e = 环({ 发起者: 读发起者({}, [], dir, false) }); await 定游标(e); 在盯(e, 'other');
+      任务告警(e, 'other'); expect((await 跑(e)).out[0]).toContain('排队长');
+    });
+  });
+  it('告警记下任务主人的会话：排队的取票上的发起者，持锁的取锁信息上的', () => {
+    const s = 基本(10_000_000), 别人 = 读发起者({ CLAUDE_CODE_SESSION_ID: 'other123' }, [], dir, false);
+    s.票 = [票('001-h-7', { 起: 0, 发起: 别人 })]; s.持锁 = [持({ 拿锁时: 0, 帧时: 0, 发起: 别人 })];
+    const a = 判告警(s, s.时); expect(a.length).toBeGreaterThan(1);
+    expect(a.every(x => x.会话 === 'other123')).toBe(true);
   });
   it('别的会话的路完不叫醒，同会话的叫醒', async () => {
     const e = 环(); await 定游标(e);
@@ -334,7 +387,7 @@ describe('盯', () => {
 const e=取调度环境({锁目录:${JSON.stringify(dir)},发起者:读发起者({CLAUDE_CODE_SESSION_ID:'sess0001'},[],${JSON.stringify(dir)},false)});
 const 机={负载:1,核:10,闸:40,压力:1,free:1,压缩:1,swap:0,换出:0,GPU:1,热:1,盘:1,孤儿:0,进程:''};
 console.log('ready');
-process.exitCode=await 盯(e,{最长:4,父活:()=>true,读:()=>({时:Date.now(),机,持锁:[],票:[],在跑:[],最近:[]}),睡:()=>new Promise(r=>setTimeout(r,20)),输出:s=>console.log(${JSON.stringify(标)}+s)});`;
+process.exitCode=await 盯(e,{最长:4,父活:()=>true,读:()=>({时:Date.now(),机,持锁:[],票:[],在跑:[{任务:'M',起:0,心跳:0,发起:e.发起者,声明:{种:'render'},主机:'h'}],最近:[]}),睡:()=>new Promise(r=>setTimeout(r,20)),输出:s=>console.log(${JSON.stringify(标)}+s)});`;
     const c = spawn(process.execPath, ['--input-type=module', '-e', 脚本], { stdio: ['ignore', 'pipe', 'inherit'] });
     children.push(c);
     let out = ''; c.stdout!.on('data', d => { out += d; });

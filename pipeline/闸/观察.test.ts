@@ -27,7 +27,7 @@ it('CPU 无队列也告警，孤儿依赖历史，swap 光涨没人变慢不报�
   加票(s,4);h.高水位=4;expect(判告警(s,s.时,undefined,h).some(x=>x.类==='队深')).toBe(false);
 });
 it('盯无事件 0 输出，到点 124；父死退出；重挂不重报',async()=>{
-  let now=0;const e=取调度环境({锁目录:dir,现在毫秒:()=>now});const 输出:string[]=[];
+  let now=0;const e=取调度环境({锁目录:dir,现在毫秒:()=>now,发起者:读发起者({},[],dir,false)});const 输出:string[]=[];
   const o={最长:10,输出:(s:string)=>输出.push(s),读:()=>({...基本(),时:now}),睡:async(ms:number)=>{now+=ms;},父活:()=>true};
   expect(await 盯(e,o)).toBe(124);expect(输出).toEqual([]);
   expect(await 盯(e,{...o,父活:()=>false})).toBe(0);
@@ -55,7 +55,7 @@ it('无帧、持锁死亡、持锁超时和连贯批都有 fixture，升级最�
   s.持锁=[持(true)];expect(判告警(s,s.时).filter(x=>x.对象.startsWith('x/')).map(x=>x.类)).toEqual(['持锁者死']);
 });
 it('等待者已写的告警能由后来挂上的盯消费，不能只更新去重表而漏叫醒',async()=>{
-  const e=取调度环境({锁目录:dir}),s=基本();s.时=Date.now();s.机.压力=4;
+  const e=取调度环境({锁目录:dir,发起者:读发起者({},[],dir,false)}),s=基本();s.时=Date.now();s.机.压力=4;
   const h=空历史();记录告警(e,s,h,判告警(s,s.时,undefined,h));const out:string[]=[];
   expect(await 盯(e,{读:()=>s,父活:()=>true,输出:x=>out.push(x)})).toBe(0);expect(out[0]).toContain('内存压力');
 });
