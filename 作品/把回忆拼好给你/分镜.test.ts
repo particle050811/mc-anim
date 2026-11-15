@@ -146,7 +146,7 @@ describe('排段', () => {
     ]);
   });
 
-  it('中间空了、重叠了、第一段没写起、超出原声都报错', () => {
+  it('中间空了、重叠了、第一段没写起、超出时间轴（原声）都报错', () => {
     const segments = (secondStart: number) => [
       { 键: '1-一', 起: { 秒: 1 }, 止: { 帧数: fps }, 依据: '' },
       { 键: '1-二', 起: { 秒: secondStart }, 止: { 帧数: fps }, 依据: '' },
@@ -155,7 +155,7 @@ describe('排段', () => {
     expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: segments(1.5) })).toThrow(/重叠了/);
     expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: segments(2) })).not.toThrow();
     expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: [{ 键: '1-一', 止: { 帧数: fps }, 依据: '' }] })).toThrow(/要写 起/);
-    expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: [{ 键: '1-一', 起: { 秒: 9 }, 止: { 帧数: 2 * fps }, 依据: '' }] })).toThrow(/超出原声/);
+    expect(() => arrangeSegs({ 名: '甲', 时长: duration, segments: [{ 键: '1-一', 起: { 秒: 9 }, 止: { 帧数: 2 * fps }, 依据: '' }] })).toThrow(/超出时间轴/);
   });
 
   it('接成环报错', () => {

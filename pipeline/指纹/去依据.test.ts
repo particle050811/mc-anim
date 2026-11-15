@@ -102,7 +102,7 @@ describe('去依据（模块哈希）', () => {
     const allText = fs.readdirSync(storyboardDir).filter((f) => f.endsWith('.ts')).sort().map((f) => fs.readFileSync(path.join(storyboardDir, f), 'utf8')).join('\n');
     const strippedText = stripBasis(allText.replace(/ as const satisfies [^;]+;/g, ';'));
     expect(strippedText).toContain('依据: eventTable[eventName].依据');
-    expect(strippedText).toContain('依据: d.依据');
+    expect(strippedText).toContain('依据: w.依据');
     // 进哈希的文本里，除了类型声明和透传，再没有写死的依据
     const remaining = [...strippedText.matchAll(/依据: ['"`]/g)];
     expect(remaining.length).toBe(0);

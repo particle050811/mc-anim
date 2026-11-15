@@ -1,4 +1,4 @@
-// 抽到 engine/段 的通用部分和两部作品里原来那几份算出来要一样（原来的不动，新段用新的）。
+// 抽到 engine/段 的通用部分和两部作品的用法对得上：清单.ts 尾部、分镜/时间.ts 的 解时刻、排段（那边现在包一层调 engine/段，这里守包法：歌时刻、键↔名的换法）。
 import { describe, expect, it } from 'vitest';
 import { manifestTools } from '../../engine/段/清单工具.ts';
 import { arrangeSegs, resolveMoment } from '../../engine/段/时间线.ts';

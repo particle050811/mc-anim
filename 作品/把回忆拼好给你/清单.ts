@@ -2,6 +2,7 @@
 // 段键是永久身份（<章>-<段名>）。章 1 是验证片；以后做正片另开章 2，验证片的段不用改名、改窗口。
 // 核对段（键以 核对- 开头）放 核对/，不进章节编号。
 import type { ManifestEntry } from '@engine/段/清单条目.ts';
+import { manifestTools } from '@engine/段/清单工具.ts';
 export type { ManifestEntry };
 
 export const manifest: readonly ManifestEntry[] = [
@@ -55,16 +56,4 @@ export const manifest: readonly ManifestEntry[] = [
   { 键: '核对-段框架示范续', 章: '核对' },
 ];
 
-/** 段目录（相对作品根） */
-export const segDir = (segKey: string) => (segKey.startsWith('核对-') ? `核对/${segKey.slice('核对-'.length)}` : `段/${segKey}`);
-
-/** 段名 = 段键去掉「<章>-」 */
-export const segmentName = (entry: ManifestEntry) => entry.键.slice(String(entry.章).length + 1);
-
-/** 编号：章内按清单顺序的两位序号；核对段没有 */
-export const segmentCode = (segKey: string): string | null => {
-  const entry = manifest.find((t) => t.键 === segKey);
-  if (!entry || entry.章 === '核对') return null;
-  const chapterIndex = manifest.filter((t) => t.章 === entry.章).findIndex((t) => t.键 === segKey) + 1;
-  return `${entry.章}-${String(chapterIndex).padStart(2, '0')}`;
-};
+export const { segDir, segmentName, segmentCode } = manifestTools(manifest);
