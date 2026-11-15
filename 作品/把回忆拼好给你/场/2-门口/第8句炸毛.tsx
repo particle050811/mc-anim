@@ -9,23 +9,15 @@ import React, { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { type BedrockBone, type BedrockCube, type BedrockModel, BedrockModelView, type BonePose } from '@engine/model/基岩模型.tsx';
-import { png } from '@engine/model/贴图.ts';
 import { MAGICAL_WINE_FOX } from '@库/角色/魔法酒狐.tsx';
-import { MagicalWineFoxEx, magicalWineFoxExBones, type MagicalWineFoxExProps } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { magicalWineFoxCellSize } from '@库/角色/魔法酒狐新动作.ts';
-import raw from 'asset:模型/角色/魔法酒狐';
-import skin from 'asset:贴图/角色/魔法酒狐/百花';
+import {
+  MagicalWineFoxEx, magicalWineFoxExBones, type MagicalWineFoxExProps,
+  wineFoxModel, wineFoxBoneByName, wineFoxBoneChain, facePlate, faceCenterX, faceBottom, faceQuarterCell, faceSolidUv, facePixelRect, facePink, faceWhite,
+} from '@库/角色/魔法酒狐新动作组件.tsx';
 import { rad } from '@engine/core/数学.ts';
 
-const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel;
-const boneByName = new Map(MODEL.bones.map((b) => [b.name, b]));
-const chain = (name: string) => {
-  const out: string[] = [];
-  for (let n: string | undefined = name; n; n = boneByName.get(n)?.parent) out.unshift(n);
-  return out;
-};
 /** 只为变换对得上的祖先骨骼（不带方块） */
-const emptyBones = (names: Iterable<string>): BedrockBone[] => [...new Set(names)].map((n) => ({ ...boneByName.get(n)!, cubes: undefined }));
+const emptyBones = (names: Iterable<string>): BedrockBone[] => [...new Set(names)].map((n) => ({ ...wineFoxBoneByName.get(n)!, cubes: undefined }));
 
 // ---------- 炸毛的尾巴 ----------
 const tailBones = ['Tail', 'Tail2', 'Tail3', 'Tail4', 'Tail5', 'Tail6', 'Tail7'];
@@ -57,11 +49,11 @@ const burstCube = (c: BedrockCube): BedrockCube[] => {
 };
 
 const tailModel: BedrockModel = {
-  ...MODEL,
+  ...wineFoxModel,
   bones: [
-    ...emptyBones(chain('Tail').slice(0, -1)),
+    ...emptyBones(wineFoxBoneChain('Tail').slice(0, -1)),
     ...tailBones.map((n) => {
-      const b = boneByName.get(n)!;
+      const b = wineFoxBoneByName.get(n)!;
       return { ...b, cubes: b.cubes?.flatMap(burstCube) };
     }),
   ],
@@ -74,19 +66,9 @@ const tailModel: BedrockModel = {
 // 所以哈气时眼睛眯成「> <」（和头顶气泡「˃ʍ˂」一个样），眼睛那块的下半让给嘴：近黑的嘴里 15 行四分之一格（3.75 格 = 2.2 个贴图像素）高，
 // 从下巴往下张开 9 行（像下巴掉下来），上沿挂两颗小白牙，外面一圈粉边（Agent 暂定）。第 8 句镜头（N = 16）里量过：头抬 18°、转 45° 以后
 // 近黑那块成片 33 像素高（2.06 个贴图像素），缩到手机竖屏宽是 5 像素的一个黑点。
-const centerX = 0.70064;
-const faceBottom = 28.36648;
-const quarterCell = magicalWineFoxCellSize / 4;
-const frontFaceUv = (u: number, v: number, w = 1, h = 1): BedrockCube['uv'] => ({ north: { uv: [u, v], uv_size: [w, h] } });
-// 纯色块只取这一格的中间（边上外插不到旁边的格子）
-const solidUv = (u: number, v: number) => frontFaceUv(u + 0.25, v + 0.25, 0.5, 0.5);
-const pink = solidUv(14, 124);
-const nearBlack = solidUv(194, 3);
-const white = solidUv(67, 0);
-const plate = (x0: number, y0: number, x1: number, y1: number, z: number, uv: BedrockCube['uv']): BedrockCube => ({ origin: [x0, y0, z], size: [x1 - x0, y1 - y0, 0.05], uv });
-const horizontalStrip = (k: number, halfWidth: number, z: number, uv: BedrockCube['uv']) => plate(centerX - halfWidth * quarterCell, faceBottom + k * quarterCell, centerX + halfWidth * quarterCell, faceBottom + (k + 1) * quarterCell, z, uv);
-const pixelRect = (k0: number, k1: number, i0: number, i1: number, z: number, uv: BedrockCube['uv']) =>
-  plate(centerX + i0 * quarterCell, faceBottom + k0 * quarterCell, centerX + i1 * quarterCell, faceBottom + k1 * quarterCell, z, uv);
+// 网格、粉、白、纯色取法同 库/角色/魔法酒狐新动作组件.tsx；近黑是贴图里最暗的那格
+const nearBlack = faceSolidUv(194, 3);
+const horizontalStrip = (k: number, halfWidth: number, z: number, uv: BedrockCube['uv']) => facePlate(faceCenterX - halfWidth * faceQuarterCell, faceBottom + k * faceQuarterCell, faceCenterX + halfWidth * faceQuarterCell, faceBottom + (k + 1) * faceQuarterCell, z, uv);
 
 /** 嘴：自下往上每行（k 从 嘴下 起）的半宽（四分之一格）。粉的外形；暗的里面收一圈、上下各少一行。
  *  上沿到 k 7（眼睛那块的下半），下沿在下巴往下 嘴下 行 */
@@ -99,22 +81,22 @@ const squintRows = [5, 7, 9] as const;
 const squint: BedrockCube[] = [-1, 1].flatMap((sign) =>
   squintRows.map((k0, r) => {
     const [i0, i1] = r === 1 ? [7, 10] : [9, 12];
-    return sign < 0 ? pixelRect(k0, k0 + 2, -i1, -i0, -1.69, nearBlack) : pixelRect(k0, k0 + 2, i0, i1, -1.69, nearBlack);
+    return sign < 0 ? facePixelRect(k0, k0 + 2, -i1, -i0, -1.69, nearBlack) : facePixelRect(k0, k0 + 2, i0, i1, -1.69, nearBlack);
   }),
 );
 const bigMouthBone: BedrockBone = {
   name: 'mcanim第8句大嘴',
   parent: 'Mouth',
-  pivot: boneByName.get('Mouth')!.pivot,
+  pivot: wineFoxBoneByName.get('Mouth')!.pivot,
   cubes: [
-    ...mouthShape.map((w, i) => horizontalStrip(mouthBottom + i, w, -1.68, pink)),
+    ...mouthShape.map((w, i) => horizontalStrip(mouthBottom + i, w, -1.68, facePink)),
     ...mouthInside.flatMap((w, i) => (w ? [horizontalStrip(mouthBottom + i, w, -1.69, nearBlack)] : [])),
-    pixelRect(4, 7, -4, -3, -1.7, white),
-    pixelRect(4, 7, 3, 4, -1.7, white),
+    facePixelRect(4, 7, -4, -3, -1.7, faceWhite),
+    facePixelRect(4, 7, 3, 4, -1.7, faceWhite),
     ...squint,
   ],
 };
-const mouthModel: BedrockModel = { ...MODEL, bones: [...emptyBones(chain('Mouth')), bigMouthBone] };
+const mouthModel: BedrockModel = { ...wineFoxModel, bones: [...emptyBones(wineFoxBoneChain('Mouth')), bigMouthBone] };
 
 const hiddenPose: BonePose = { scale: 0 };
 
