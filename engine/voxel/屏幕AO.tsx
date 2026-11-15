@@ -11,7 +11,10 @@
 //    这一遍不在片元写对数深度，用光栅器的反向深度（engine/core/光栅深度.ts）：被挡住的片元不再全额着色。阴影图照旧画（普通深度），画完才换；
 //    画完把反向深度换算成对数深度存进一张单通道浮点图，第 2 遍和中间步骤（云）读的还是对数深度。
 //    有一份不透明材质不认（自己写着色器又没接 three 的对数深度片段、透射，见 光栅深度.ts 的 `光栅兼容`）、画布没开对数深度、不是透视镜头、浏览器没有 EXT_clip_control 时，整遍退回片元写对数深度的老路。
-//    多边形偏移这一遍关掉：对数深度下它本来就不起作用（片元写的深度盖掉了偏移），照旧。
+//    多重采样解析出来的深度是像素里偏离中心的一点的，换算时推回像素中心（见下面 `换算FS`）；量不出是哪一点（`解析偏移` 返回 null）也退回老路。
+//    多边形偏移这一遍只留固定的那份（units，方向跟着反向深度反过来），按斜率的那份（factor）不要：对数深度下偏移本来不起作用（片元写的深度盖掉了），
+//    叠在同一个面上的两层（亚波伦祭坛的眼睛）靠浮点误差定谁赢，是一片雪花点；光栅深度下同一个三角形要么全赢要么全输，眼睛会整只没掉，所以让偏移起作用。
+//    factor 在侧着看的面上把贴层拉到挡在它前面的东西之前（祭坛侧面的眼睛从旁边的方块后面露出一条绿边），固定的那份够把共面的分开。
 //    体素世界花草（`userData.ScreenAo = '不挡'`）挪到第 3 遍画，不挡别人也不压：花草只在第 0 级有，当遮挡物会让近处草地整片发暗、外圈不暗，镜头一动是跟着走的暗圈（6-1-4 第 96 帧）；游戏平滑光照里花草本来也不挡光。
 // 2. 全屏片元着色器画到画布：读离屏颜色和深度，算 AO 乘上去，并把深度写回画布。深度是对数深度（一镜画面开了 `logarithmicDepthBuffer`）：three 写 log2(1 + w) / log2(far + 1)，反推。
 //    法线没有 Voxy 的面朝向标记，用深度还原（左右、上下各取差得少的一边，不跨物体边缘），翻到朝镜头那面。
@@ -193,6 +196,10 @@ void main() {
 // - 方块的面都沿世界轴：三个轴向各算一遍「过这一点、朝这个轴的面」每像素该差多少，和左、右、下、上四个差对，对上两个以上、没有并列的就按这个面推。
 //   台阶地形顶面和立面交替、深度连着，「取小的」会拿到立面的斜率，顶面推不够，上面的积雪层成片输掉（飞越第 713 帧背光坡发灰）；
 //   只有一个像素高的横条上下都是别的面，靠左右两个差也认得出朝向。
+//   只靠一个方向的两个差认朝向要防认错：正对镜头的面片（粒子、烟）左右差是 0，镜头不歪时朝上的面左右也该是 0，
+//   在镜头自己的地平线那几行朝上的面上下该差极大，认错了整条推到近裁面，把后面画的闪电切出一道缝（亚波伦 4-齐放 第 99 帧）。
+//   所以另一个方向得像棱：有邻居、两边自己不成一个平面、哪边的差都不小于这个面该有的一成（正对镜头的面片是 0；台阶上只有一个像素高的顶面，
+//   上下两个差是顶面和立面的斜率按棱的位置混出来的，门槛提到四分之一就有一半顶面认不出）。
 const 换算FS = /* glsl */ `
 uniform sampler2D tRev;
 uniform vec2 uAB;
@@ -207,6 +214,14 @@ float pick(vec2 s, bvec2 ok) {
   if (!ok.y) return s.x;
   if (s.x * s.y < 0.0) return 0.0;
   return abs(s.x) < abs(s.y) ? s.x : s.y;
+}
+// 一个方向左右（上下）两个差自己对得上：这一小块是一个平面，量出来的斜率就是它的
+bool plane(vec2 s, bvec2 ok, float c) { return ok.x && ok.y && abs(s.x - s.y) <= 0.02 * max(abs(s.x), abs(s.y)) + 2e-6 * c; }
+// 这个方向没有一个差对得上斜率 g 的面时，它像不像这个面的棱
+bool crease(vec2 s, bvec2 ok, bool isPlane, float g) {
+  if (isPlane || !(ok.x || ok.y)) return false;
+  float least = 0.1 * abs(g);
+  return (!ok.x || abs(s.x) >= least) && (!ok.y || abs(s.y) >= least);
 }
 void main() {
   ivec2 p = ivec2(gl_FragCoord.xy);
@@ -225,8 +240,9 @@ void main() {
     float q = (c + uAB.y) / uAB.x;
     vec3 ray = vec3(gl_FragCoord.xy * uRay.xy + uRay.zw, -1.0);
     vec4 seen = vec4(sx, sy);
+    bvec2 flat2 = bvec2(plane(sx, okx, c), plane(sy, oky, c));
     int most = 1;
-    bool tie = false;
+    bool tie = false, sure = false;
     vec2 along = vec2(0.0);
     for (int a = 0; a < 3; a++) {
       vec3 n = uToView[a];
@@ -235,11 +251,16 @@ void main() {
       vec2 g = n.xy * (q / t) / uGrad;
       vec2 tol = 0.02 * abs(g) + 2e-6 * c;
       vec4 e = abs(seen - g.xxyy);
-      int hit = int(okx.x && e.x <= tol.x) + int(okx.y && e.y <= tol.x) + int(oky.x && e.z <= tol.y) + int(oky.y && e.w <= tol.y);
-      if (hit > most) { most = hit; along = g; tie = false; }
-      else if (hit == most && hit > 1) tie = true;
+      int hx = int(okx.x && e.x <= tol.x) + int(okx.y && e.y <= tol.x);
+      int hy = int(oky.x && e.z <= tol.y) + int(oky.y && e.w <= tol.y);
+      int hit = hx + hy;
+      if (hit > most) {
+        most = hit; along = g; tie = false;
+        sure = (hx > 0 || crease(sx, okx, flat2.x, g.x)) && (hy > 0 || crease(sy, oky, flat2.y, g.y));
+      } else if (hit == most && hit > 1) tie = true;
     }
-    if (most > 1 && !tie) s = along;
+    // 并列先算（不看把关）：正对镜头的立面和顶面左右都对得上时，把关只会放过斜率小的立面，顶面上的像素就一点不推了
+    if (most > 1 && !tie && sure) s = along;
     // 贴着地平线的像素斜率和深度本身一样大，别推过头
     float d = clamp(c - dot(uOff, s), 0.25 * c, 1.0);
     logD = log2(1.0 + uAB.x / (d + uAB.y)) / uLogFar;
@@ -256,7 +277,7 @@ type ClipControl = { clipControlEXT: (origin: number, depth: number) => void; LO
 const aoDisabled = (渲染输入() as { 屏幕AO?: boolean }).屏幕AO === false;
 const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.NormalBlending || m.userData.屏幕AO === '不挡';
 
-type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null; depthFunc: THREE.DepthModes; polygonOffset: boolean; raster: boolean };
+type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null; depthFunc: THREE.DepthModes; offsetFactor: number; raster: boolean };
 
 export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 24, radius: radius = 1.5, maxScreenRadius = 0.1, applyToMesh = false, atmosphereCamera }) => {
   const resources = useMemo(() => {
@@ -359,7 +380,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       for (const x of Array.isArray(material) ? material : [material]) {
         if (seen.has(x)) continue;
         seen.add(x);
-        saved.push({ m: x, visible: x.visible, blending: x.blending, src: x.blendSrc, dst: x.blendDst, srcA: x.blendSrcAlpha, dstA: x.blendDstAlpha, depthFunc: x.depthFunc, polygonOffset: x.polygonOffset, raster: false });
+        saved.push({ m: x, visible: x.visible, blending: x.blending, src: x.blendSrc, dst: x.blendDst, srcA: x.blendSrcAlpha, dstA: x.blendDstAlpha, depthFunc: x.depthFunc, offsetFactor: x.polygonOffsetFactor, raster: false });
       }
     });
 
@@ -394,7 +415,8 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
         entry.raster = true;
         切光栅宏(material, true);
         material.depthFunc = 反向比较[material.depthFunc]!;
-        material.polygonOffset = false;
+        material.polygonOffsetFactor = 0;
+        material.polygonOffsetUnits = -material.polygonOffsetUnits;
       }
       if (material.userData.屏幕AO === '压暗' || (applyToMesh && material.userData.方块网格)) {
         material.blending = THREE.CustomBlending;
@@ -447,7 +469,8 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       if (entry.raster) {
         切光栅宏(material, false);
         material.depthFunc = entry.depthFunc;
-        material.polygonOffset = entry.polygonOffset;
+        material.polygonOffsetFactor = entry.offsetFactor;
+        material.polygonOffsetUnits = -material.polygonOffsetUnits;
       }
       material.blending = entry.blending;
       material.blendSrc = entry.src;
