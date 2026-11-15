@@ -160,7 +160,7 @@ export class 类批 extends THREE.Mesh {
   段起: number[] = [0];
   段: number[] = [];
   private 见 = new Int32Array(1024); // 这一遍在视锥里的项号
-  private z = new Float64Array(1024);
+  private 远 = new Float64Array(1024); // 排序用：各项离镜头的纵深
   private 影锥: THREE.Frustum | null = null;
 
   readonly 影: boolean;
@@ -216,7 +216,7 @@ export class 类批 extends THREE.Mesh {
     const n = 项们.length;
     if (this.见.length < n) {
       this.见 = new Int32Array(n * 2);
-      this.z = new Float64Array(n * 2);
+      this.远 = new Float64Array(n * 2);
     }
     const 见 = this.见;
     let 面 = 世界面;
@@ -250,16 +250,19 @@ export class 类批 extends THREE.Mesh {
     _投影.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     const n = this.挑(_锥.setFromProjectionMatrix(_投影, THREE.WebGLCoordinateSystem, camera.reversedDepth).planes);
     if (!n) return;
-    // 照 three 的不透明排序：包围球中心变到裁剪空间取 z（不除 w），从小到大；一样的留在加进来的先后
+    // 照 three 的不透明排序从近到远；一样的留在加进来的先后。three 排的是裁剪空间的 z，这里取 w（纵深）：
+    // 屏幕 AO 第 1 遍 three 排完才把投影换成反向深度（engine/core/光栅深度.ts），到这里 z 已经近大远小，照 z 排成了从远到近，被挡住的片元先全额着色。
+    // 正交投影 w 恒为 1，仍取 z
     if (this.parent) _投影.multiply(this.parent.matrixWorld);
     const e = _投影.elements;
-    const { 见, z, 项: 项们 } = this;
+    const 行 = camera.projectionMatrix.elements[11] ? 3 : 2;
+    const { 见, 远, 项: 项们 } = this;
     for (let i = 0; i < n; i++) {
       const k = 见[i]!;
       const c = 项们[k]!.球.center;
-      z[k] = e[2]! * c.x + e[6]! * c.y + e[10]! * c.z + e[14]!;
+      远[k] = e[行]! * c.x + e[行 + 4]! * c.y + e[行 + 8]! * c.z + e[行 + 12]!;
     }
-    见.subarray(0, n).sort((a, b) => z[a]! - z[b]! || a - b);
+    见.subarray(0, n).sort((a, b) => 远[a]! - 远[b]! || a - b);
     this.画(renderer, material, n);
   }
 
