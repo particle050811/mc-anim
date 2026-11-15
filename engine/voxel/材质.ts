@@ -14,7 +14,8 @@
 // 高光随贴图（用户 10-09）：很暗的方块（黑暗森林林冠，线性反照率 0.001～0.017）漫反射近乎 0，高光（F0 0.04）不乘贴图就是一片没花纹的平面；
 // 所以高光乘贴图明暗（该点亮度 ÷ 整张贴图平均亮度），整片平均亮度不变。
 // 台阶并色（用户 10-10，远山摩尔纹）：远处台阶顶面白、侧面棕，缩到一两个像素高时交替取样拍出同心弧纹，Voxy、DH 都不处理。
-// 一格在画布上约 6 个像素以下开始、约 2 个混满（`fwidth(vW)`）：顶面侧面往「两面各一半」混、侧面法线往上混、贴图往 1×1 平均色取，整片平均色不变。
+// 一格在画布上约 6 个像素以下开始、约 2 个混满（`fwidth(vW)`）：顶面侧面的颜色往「两面各一半」混、贴图往 1×1 平均色取；受光各按自己的朝向算。
+// 原先侧面法线也整个掰成朝上，朝太阳时背光的侧面按直射算，远山发白（望远真值对比，预览 1115-0912-远景发白-根因和修法），用户 11-15 定不再掰。
 // 屏幕 AO 按它减弱用户不要（「去 ao 不行 远处糊成一团」），只做 `farAo` 的按距离减弱；只把侧面混成顶面试过，积雪山变灰白，和近处对不上。
 import * as THREE from 'three';
 // 屏幕 AO 第 1 遍时置 1（lib/体素/屏幕AO.tsx），所有体素材质共用
@@ -41,13 +42,12 @@ const VERT_HEAD = `
 ${位移声明}
 attribute vec4 tex;
 attribute vec4 col;
-varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varying vec3 vUpV; varying float vTop;`;
+varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varying float vTop;`;
 const FRAG_HEAD = `
 uniform sampler2D blockAtlas;
 uniform float selfLight;
-varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varying vec3 vUpV; varying float vTop;
+varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varying float vTop;
 float specMask;
-float stepK;
 float farK;
 uniform float aoPass;
 ${blockAtlasGlsl()}`;
@@ -91,9 +91,7 @@ const fragMap = (cutout: boolean, cell = blockAtlas().cell, top = Math.log2(cell
     }
     // 台阶并色（见文件头）：一格在画面上小了，顶面、侧面都往两面各一半的颜色混
     {
-      vec3 gn = normalize(cross(dFdx(vViewPosition), dFdy(vViewPosition)));
       float k = farK;
-      stepK = k * (1.0 - abs(dot(gn, vUpV)));
       if (k > 0.0) {
         float tf = floor(vTop / 4096.0 + 0.001);
         vec4 tt = textureLod(blockAtlas, atlasUv(vTop - tf * 4096.0, f), lod);
@@ -131,12 +129,10 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     // vW：世界坐标里的格（随机转按格算）：缩放（一格 格 米）逐网格画时在 modelMatrix 里、批绘制时在 uSec.w 里，除回去
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${位移顶点}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6); vUpV = normalize(normalMatrix * vec3(0.0, 0.0, 1.0));`);
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${位移顶点}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6);`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
       .replace('#include <map_fragment>', fragMap(materialClass === '镂空' || materialClass === '花草'))
-      // 台阶并色：侧面的法线往竖直向上混一半，和顶面的光靠近
-      .replace('#include <normal_fragment_begin>', '#include <normal_fragment_begin>\n  normal = normalize(mix(normal, vUpV, stepK));')
       // 水的高光是倒影（粗糙度 0.1），不压
       .replace('#include <aomap_fragment>', materialClass === '水' ? '#include <aomap_fragment>' : '#include <aomap_fragment>\n  reflectedLight.directSpecular *= specMask;\n  reflectedLight.indirectSpecular *= specMask;')
       .replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance = diffuseColor.rgb * selfLight;')
