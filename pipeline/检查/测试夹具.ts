@@ -2,23 +2,23 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { 代码根 } from '../环境/路径.ts';
-import { 报告, 检查上下文, type 规则类 } from './上下文.ts';
-import { 规则表 } from './检查.ts';
+import { codeRoot } from '../环境/路径.ts';
+import { CheckReport, CheckContext, type RuleKind } from './上下文.ts';
+import { ruleTable } from './检查.ts';
 
-export type 文件表 = Record<string, string | Buffer | null>;
+export type FileTable = Record<string, string | Buffer | null>;
 
 /** 一个合规的最小仓库：一段 7-甲（场 7-场一）、一件公开资产、一条规矩、空台词表 */
-export const 基础 = (): 文件表 => ({
-  'engine/段/段定义.ts': fs.readFileSync(path.join(代码根(), 'engine', '段', '段定义.ts'), 'utf8'),
-  'engine/段/按时取值.ts': fs.readFileSync(path.join(代码根(), 'engine', '段', '按时取值.ts'), 'utf8'),
+export const base = (): FileTable => ({
+  'engine/段/段定义.ts': fs.readFileSync(path.join(codeRoot(), 'engine', '段', '段定义.ts'), 'utf8'),
+  'engine/段/按时取值.ts': fs.readFileSync(path.join(codeRoot(), 'engine', '段', '按时取值.ts'), 'utf8'),
   '作品/应力转动/清单.ts': [
-    "export const 清单 = [{ 键: '7-甲', 章: 7 }];",
-    "export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
+    "export const manifest = [{ 键: '7-甲', 章: 7 }];",
+    "export const segDir = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
-  '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
+  '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
   '作品/应力转动/段/7-甲/画面.tsx': "import 图 from 'asset:贴图/甲';\nexport default () => <img src={图} />;\n",
-  'engine/core/例外.ts': fs.readFileSync(path.join(代码根(), 'engine', 'core', '例外.ts'), 'utf8'),
+  'engine/core/例外.ts': fs.readFileSync(path.join(codeRoot(), 'engine', 'core', '例外.ts'), 'utf8'),
   '作品/应力转动/旧名.tsv': '类别\t旧名\t新键\t备注\n段号\t7-1-1\t7-甲\t\n段名\t7-老名\t7-甲\t改名\n',
   '作品/应力转动/规矩.toml': [
     '[["规矩"]]',
@@ -28,7 +28,7 @@ export const 基础 = (): 文件表 => ({
     '"原话" = []',
     '"针对" = "打中"',
     '"出处" = ["测试"]',
-    '"落点" = ["engine/core/例外.ts 例外", "旧:src/lib/anim.ts HIT_STOP_FRAMES"]',
+    '"落点" = ["engine/core/例外.ts exception", "旧:src/lib/anim.ts HIT_STOP_FRAMES"]',
     '"例外" = []',
   ].join('\n'),
   '作品/应力转动/台词.toml': '',
@@ -38,39 +38,39 @@ export const 基础 = (): 文件表 => ({
 });
 
 /** 文件表里的 '<目录>/资产锁.json' 是整份锁的简写（后面的层整份顶掉前面的），写进仓库时展开成 <目录>/资产锁/<id>.json 一件一个文件 */
-const 展开锁 = (合: 文件表): 文件表 => {
-  const 出: 文件表 = {};
-  for (const [p, 内容] of Object.entries(合)) {
-    if (!p.endsWith('资产锁.json') || typeof 内容 !== 'string') {
-      出[p] = 内容;
+const expandLocks = (files: FileTable): FileTable => {
+  const expanded: FileTable = {};
+  for (const [p, content] of Object.entries(files)) {
+    if (!p.endsWith('资产锁.json') || typeof content !== 'string') {
+      expanded[p] = content;
       continue;
     }
-    for (const [id, 条目] of Object.entries(JSON.parse(内容) as Record<string, unknown>)) 出[`${p.slice(0, -'.json'.length)}/${id}.json`] = JSON.stringify(条目);
+    for (const [id, entry] of Object.entries(JSON.parse(content) as Record<string, unknown>)) expanded[`${p.slice(0, -'.json'.length)}/${id}.json`] = JSON.stringify(entry);
   }
-  return 出;
+  return expanded;
 };
 
-export const 造仓库 = (...层: 文件表[]): string => {
-  const 根 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查样例-')));
-  const 合 = 展开锁(Object.assign({}, ...层) as 文件表);
-  for (const [p, 内容] of Object.entries(合)) {
-    if (内容 === null) continue;
-    const f = path.join(根, ...p.split('/'));
+export const makeRepo = (...fileLayers: FileTable[]): string => {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查样例-')));
+  const mergedFiles = expandLocks(Object.assign({}, ...fileLayers) as FileTable);
+  for (const [p, content] of Object.entries(mergedFiles)) {
+    if (content === null) continue;
+    const f = path.join(root, ...p.split('/'));
     fs.mkdirSync(path.dirname(f), { recursive: true });
-    fs.writeFileSync(f, 内容);
+    fs.writeFileSync(f, content);
   }
-  return 根;
+  return root;
 };
 
 /** 在样例仓库上跑一类规则，返回违规文本（带文件前缀，方便 toMatch）和整份报告 */
-export const 跑 = async (名: 规则类, 根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string; 作品?: string } = {}) => {
-  const c = new 检查上下文(根, 选项);
-  const 报 = new 报告();
+export const runRule = async (ruleName: RuleKind, root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; 作品?: string } = {}) => {
+  const c = new CheckContext(root, options);
+  const report = new CheckReport();
   try {
-    await 规则表[名].跑(c, 报);
+    await ruleTable[ruleName].跑(c, report);
   } finally {
-    c.收尾();
-    fs.rmSync(根, { recursive: true, force: true });
+    c.finalize();
+    fs.rmSync(root, { recursive: true, force: true });
   }
-  return { 违规: 报.违规.map((q) => `${q.文件 ?? ''}${q.行 ? `:${q.行}` : ''} ${q.文本}`), 报 };
+  return { violations: report.violations.map((q) => `${q.文件 ?? ''}${q.行 ? `:${q.行}` : ''} ${q.文本}`), report };
 };

@@ -4,65 +4,65 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 机位样条, type Cam } from '@engine/core/机位.ts';
-import { 场景到three, 摆相机 } from '@engine/core/three换算.ts';
+import { rigSpline, type Cam } from '@engine/core/机位.ts';
+import { sceneToThree, placeCamera } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
-import { 下界提亮, 真下界 } from '../../地点/真下界.tsx';
-import { 祭坛底挖 } from '../../地点/地形改动.ts';
+import { netherBrighter, RealNether } from '../../地点/真下界.tsx';
+import { altarBottomCut } from '../../地点/地形改动.ts';
 
-export const 画幅 = { 宽: 1280, 高: 720 } as const;
+export const aspect = { 宽: 1280, 高: 720 } as const;
 
-const 摆机位: React.FC<{ 机位: Cam }> = ({ 机位 }) => {
+const PlaceRig: React.FC<{ cameraRig: Cam }> = ({ cameraRig }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
-  摆相机(camera as THREE.PerspectiveCamera, 机位, 画幅.宽 / 画幅.高, { 近: 0.05, 远: 1400 });
+  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, aspect.宽 / aspect.高, { near: 0.05, far: 1400 });
   return null;
 };
 
 /** 跟拍：镜头里每隔约 步 秒按那一刻人在哪摆一个机位（摆(镜内秒, 进度)），连成速度连续的样条，镜头跟着动作走。镜头长 长 秒 */
-export const 跟拍 = (长: number, 摆: (镜内秒: number, k: number) => Cam, 步 = 0.25): 镜头['机位'] => {
-  const n = Math.max(1, Math.ceil(长 / 步));
-  const 关键 = Array.from({ length: n + 1 }, (_, i) => {
-    const s = (长 * i) / n;
-    return [s, 摆(s, i / n)] as const;
+export const followShot = (lengthSec: number, cameraPath: (shotSec: number, k: number) => Cam, stepSec = 0.25): Shot['cameraRig'] => {
+  const n = Math.max(1, Math.ceil(lengthSec / stepSec));
+  const keyframes = Array.from({ length: n + 1 }, (_, i) => {
+    const s = (lengthSec * i) / n;
+    return [s, cameraPath(s, i / n)] as const;
   });
-  return (_u, s) => 机位样条(关键, s);
+  return (_u, s) => rigSpline(keyframes, s);
 };
 
 /** 仪式结构：这一段画了安息仪式的结构（黑曜石底换掉那一层地面），地形要挖掉对应的格 */
-export const 台地画布: React.FC<{ 机位: Cam; children: React.ReactNode; 界面?: React.ReactNode; 仪式结构?: boolean }> = ({ 机位, children, 界面, 仪式结构 = false }) => (
-  <AbsoluteFill style={{ background: 下界提亮.雾.色 }}>
-    <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-      <摆机位 机位={机位} />
+export const TerraceCanvas: React.FC<{ cameraRig: Cam; children: React.ReactNode; ui?: React.ReactNode; ritualStructure?: boolean }> = ({ cameraRig, children, ui, ritualStructure = false }) => (
+  <AbsoluteFill style={{ background: netherBrighter.fog.色 }}>
+    <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
+      <PlaceRig cameraRig={cameraRig} />
       <ScreenAo />
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <真下界 镜头={机位.pos} 光={下界提亮} 挖={仪式结构 ? 祭坛底挖 : undefined} />
+        <RealNether cameraPos={cameraRig.pos} 光={netherBrighter} carve={ritualStructure ? altarBottomCut : undefined} />
         {children}
       </group>
     </ThreeCanvas>
-    {界面}
+    {ui}
   </AbsoluteFill>
 );
 
 /** 一幕里的镜头表：按段内秒切，机位是镜头内进度 u（0～1）的函数 */
-export type 镜头 = { 名: string; 起: number; 机位: (u: number, 秒: number) => Cam };
-export const 取镜头 = (表: readonly 镜头[], 秒: number, 段长: number): { 镜: 镜头; 机位: Cam; 镜内秒: number } => {
+export type Shot = { 名: string; 起: number; cameraRig: (u: number, sec: number) => Cam };
+export const pickShot = (shotTable: readonly Shot[], sec: number, segLengthSec: number): { shot: Shot; cameraRig: Cam; shotSec: number } => {
   let i = 0;
-  while (i + 1 < 表.length && 秒 >= 表[i + 1]!.起) i++;
-  const 镜 = 表[i]!;
-  const 止 = 表[i + 1]?.起 ?? 段长;
-  const 镜内秒 = 秒 - 镜.起;
-  return { 镜, 机位: 镜.机位(Math.min(1, Math.max(0, 镜内秒 / (止 - 镜.起))), 镜内秒), 镜内秒 };
+  while (i + 1 < shotTable.length && sec >= shotTable[i + 1]!.起) i++;
+  const shot = shotTable[i]!;
+  const end = shotTable[i + 1]?.起 ?? segLengthSec;
+  const shotSec = sec - shot.起;
+  return { shot, cameraRig: shot.cameraRig(Math.min(1, Math.max(0, shotSec / (end - shot.起))), shotSec), shotSec };
 };
 
-const 投影相机 = new THREE.PerspectiveCamera();
+const projCamera = new THREE.PerspectiveCamera();
 /** 场景里的一点落在画面上哪（像素，页面坐标）；前 = 在镜头前面 */
-export const 投到画面 = (机位: Cam, 点: readonly number[]): { x: number; y: number; 前: boolean } => {
-  摆相机(投影相机, 机位, 画幅.宽 / 画幅.高, { 近: 0.05, 远: 1400 });
-  投影相机.updateMatrixWorld();
-  投影相机.matrixWorldInverse.copy(投影相机.matrixWorld).invert();
-  const v = 场景到three(点).project(投影相机);
-  return { x: ((v.x + 1) / 2) * 画幅.宽, y: ((1 - v.y) / 2) * 画幅.高, 前: v.z < 1 };
+export const projectToPicture = (cameraRig: Cam, point: readonly number[]): { x: number; y: number; 前: boolean } => {
+  placeCamera(projCamera, cameraRig, aspect.宽 / aspect.高, { near: 0.05, far: 1400 });
+  projCamera.updateMatrixWorld();
+  projCamera.matrixWorldInverse.copy(projCamera.matrixWorld).invert();
+  const v = sceneToThree(point).project(projCamera);
+  return { x: ((v.x + 1) / 2) * aspect.宽, y: ((1 - v.y) / 2) * aspect.高, 前: v.z < 1 };
 };

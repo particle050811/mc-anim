@@ -3,17 +3,17 @@
 // 画面直接用 特效/炼狱结界演出.tsx（线框是暗红的正十二面体，火是它自己说明过的占位）。
 // 罩住只留 1 秒（见 炼狱.元.ts），全片里的 67.5 秒不在法术核对里演。
 import React from 'react';
-import { 炼狱结界演出 } from '../../../特效/炼狱结界演出.tsx';
-import { 结界演出默认 } from '../../../特效/炼狱结界演出状态.ts';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import 元, { 炼狱飞出秒, 炼狱收缩秒, 炼狱罩住秒 } from './炼狱.元.ts';
+import { RevelationCagePerformance } from '../../../特效/炼狱结界演出.tsx';
+import { cagePerformanceDefaults } from '../../../特效/炼狱结界演出状态.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import meta, { revelationFlySec, revelationShrinkSec, revelationCoverSec } from './炼狱.元.ts';
 
-const 炼狱: React.FC<法术演出属性> = ({ 秒, 起点, 目标 }) => (
-  <炼狱结界演出
-    秒={秒}
-    设定={{ ...结界演出默认, 飞出秒: 炼狱飞出秒, 罩住秒: 炼狱罩住秒, 收缩焚烧秒: 炼狱收缩秒, 起点: [起点[0], 起点[1], 起点[2]], 目标: [目标[0], 目标[1], 目标[2] + 0.9] }}
+const Revelation: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => (
+  <RevelationCagePerformance
+    秒={sec}
+    settings={{ ...cagePerformanceDefaults, flyOutSec: revelationFlySec, coverSec: revelationCoverSec, shrinkBurnSec: revelationShrinkSec, from: [from[0], from[1], from[2]], 目标: [target[0], target[1], target[2] + 0.9] }}
   />
 );
 
-export default 定义法术演出(元, 炼狱);
+export default defineSpellPerformance(meta, Revelation);

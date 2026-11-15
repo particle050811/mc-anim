@@ -4,59 +4,59 @@
 // 时刻都从 分镜 的正片事件来，这里只写相对的秒和空间分寸；没注出处的都是 Agent 暂定（用户 10-24 把制作交给主会话），理由写在各条上。
 // 坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格）。祭坛中心（六根柱子围成的圈的中心）在原点，鸟居在北（+y），入口朝南，你从南边进来。
 // 祭坛几何照 TLM 1.5.3 models/bedrock/block/altar.json（作品资产 模型/场景/女仆祭坛）：柱子 3 格高、截面 17 像素，前两根在 (±1.5, −3.5)，两侧四根在 (±3.5, ±1.5)，鸟居在 y 3.5、顶高 5.9 格。
-import { 旧帧 } from '../../分镜/时间.ts';
+import { legacyFrameSec } from '../../分镜/时间.ts';
 
-type 点 = [number, number, number];
+type Vec3 = [number, number, number];
 
 /** 柱顶的六样材料：原版 TLM 召唤女仆的祭坛配方（altar/spawn_box）钻石、金锭、红石、铁锭、青金石、煤炭各一。
  *  谁放哪根柱子是玩家自己摆的，这里按颜色排开：近处两根放最认得出的钻石、金锭，红的蓝的分两边 */
-export const 柱顶材料: readonly { 名: string; 柱: readonly [number, number]; 相位: number }[] = [
-  { 名: '钻石', 柱: [1.5, -3.5], 相位: 0.13 },
-  { 名: '金锭', 柱: [-1.5, -3.5], 相位: 0.71 },
-  { 名: '红石', 柱: [3.5, -1.5], 相位: 0.42 },
-  { 名: '青金石', 柱: [-3.5, -1.5], 相位: 0.95 },
-  { 名: '铁锭', 柱: [3.5, 1.5], 相位: 0.27 },
-  { 名: '煤炭', 柱: [-3.5, 1.5], 相位: 0.58 },
+export const pillarTopMaterials: readonly { 名: string; pillarPos: readonly [number, number]; phaseFrac: number }[] = [
+  { 名: '钻石', pillarPos: [1.5, -3.5], phaseFrac: 0.13 },
+  { 名: '金锭', pillarPos: [-1.5, -3.5], phaseFrac: 0.71 },
+  { 名: '红石', pillarPos: [3.5, -1.5], phaseFrac: 0.42 },
+  { 名: '青金石', pillarPos: [-3.5, -1.5], phaseFrac: 0.95 },
+  { 名: '铁锭', pillarPos: [3.5, 1.5], phaseFrac: 0.27 },
+  { 名: '煤炭', pillarPos: [-3.5, 1.5], phaseFrac: 0.58 },
 ];
 /** 柱顶那格方块的底面高（格）：柱子 3 格高，放东西的是第三格 */
-export const 柱顶格高 = 2;
+export const pillarTopHeight = 2;
 /** TileEntityAltarRenderer：物品在柱顶格上方 1.25 格、上下浮 0.1 格（3.6 秒一个来回）、绕竖轴每 3.6 秒转一圈，再按物品的 GROUND 显示变换画。
  *  原版的钟是 System.currentTimeMillis() + 方块坐标，各柱各一个相位（上面的 相位，0～1 一圈） */
-export const 浮物 = { 高: 1.25, 浮幅: 0.1, 周期秒: 3.6 } as const;
+export const floatItem = { 高: 1.25, floatAmp: 0.1, periodSec: 3.6 } as const;
 
 /** 点祭坛以后材料先整个变白 亮秒（24 fps 时 2 帧），再化成光点往圈心上方的 汇点 飞，正好在「她现身」那一帧汇齐（飞多久按两个事件现算）。
  *  演绎（三稿「材料化成光」）：原版合成时材料当刻没了，每根柱子和圈心各冒 5 个 CLOUD、5 个 SMOKE（BlockAltar.spawnParticleInCentre），没有光。
  *  原来飞 1/6 秒，光点在画面上一闪就过（用户 10-24「画面转太快就删」），现在飞满一拍（0.4 秒上下），汇点就是她出现的那道光里、她头顶的高度 */
-export const 化光 = { 亮秒: 旧帧(2), 汇点: [0, 0, 1.6] as 点 } as const;
+export const lightMelt = { brightSec: legacyFrameSec(2), convergePoint: [0, 0, 1.6] as Vec3 } as const;
 
 /** 她：站在圈心，身子朝南对着你。「现身」那一帧在光柱最亮时一下出现（原版实体生成就是一刻里出来，不淡入），一出来就抬着头看你（远景里看不出低头抬头，
  *  近景一开头再单独抬一次头，现身、抬头、换蛋糕、递蛋糕一拍一件，核查 10-24 说跟不上，删了）。
  *  原版是祭坛合成出蛋糕盒、你右键拆三下她才下来；用户 10-24 说「这里拆盒过程就多余了」，盒子整段删掉，祭坛一亮她直接站在光里 */
-export const 她 = { 脚: [0, 0, 0] as 点, 朝向: 180 } as const;
+export const liYing = { feet: [0, 0, 0] as Vec3, facing: 180 } as const;
 /** 递蛋糕以后几秒她从平脸换成笑（驯服的爱心冒出来那一下；24 fps 时 2 帧） */
-export const 笑起秒 = 旧帧(2);
+export const smileStartSec = legacyFrameSec(2);
 /** 推眼睛那一拍以后再等 转头迟秒，她的头从看着你转到正对镜头（看 [0, 0]，第 4 句眼睛特写就是这个姿势），转 转头秒（24 fps 时等 3 帧、转 9 帧）：
  *  递蛋糕、爱心冒出来这一下留够半秒多不被打断（核查 10-24），转完还剩 0.1 秒上下停稳接第 4 句 */
-export const 转头迟秒 = 旧帧(3);
-export const 转头秒 = 旧帧(9);
+export const turnHeadDelaySec = legacyFrameSec(3);
+export const turnHeadSec = legacyFrameSec(9);
 
 /** 你（史蒂夫）：站在她右前方（从镜头看在左边），朝着她。离她 1.6 格，原版生存模式够得着（实体交互 3 格）。
  *  不站在她和镜头之间：原来站在两根前柱子中间，镜头推她的脸要从你背后擦过去，你的后脑勺糊满半个画面（Agent 暂定） */
-export const 你 = { 脚: [-1.15, -1.1, 0] as 点 } as const;
+export const you = { feet: [-1.15, -1.1, 0] as Vec3 } as const;
 /** 递蛋糕那一下，右键驯服当刻就扣掉蛋糕；第三人称手里还留 留蛋糕秒（演绎：蛋糕、爱心、她笑同框停半秒多，核查 10-24 说原来 3 刻一闪就没）。
  *  原来写 11 刻、按 24 fps 往上取整成 14 帧，这里照看过的 14 帧写死 */
-export const 留蛋糕秒 = 旧帧(14);
+export const holdCakeSec = legacyFrameSec(14);
 /** 原版挥手（swingTime 6 刻），点祭坛、递蛋糕都挥一次 */
-export const 挥手刻 = 6;
+export const waveTicks = 6;
 
 /** 驯服爱心：她的碰撞箱 0.6 × 1.5（EntityMaid）。7 颗的位置全看种子（原版每次随机），爱心活 0.85 秒：
  *  种子按投影在 1～20000 里筛（祭坛召唤.test.ts 核这几条）：照片那一帧 7 颗都在画里，递蛋糕到照片后两帧都在歌词（顶上 14%）下面，
  *  不从她眼睛那一条前面压过去，至少 4 颗在肩膀以上（出生高 ≥ 1.2 格）；满足的里头挑推眼睛时画里最大的那颗最小的（390 宽的手机上半边 37 像素）。
  *  镜头改了路线就要重筛 */
-export const 爱心 = { 宽: 0.6, 高: 1.5, 种子: 3044 } as const;
+export const hearts = { 宽: 0.6, 高: 1.5, 种子: 3044 } as const;
 
 /** 远景的一条关键帧轨：[离段首几秒（'切' = 切近景前 1/24 秒，24 fps 时就是切前一帧）, 值] */
-export type 远轨 = readonly (readonly [number | '切', number])[];
+export type FarTrack = readonly (readonly [number | '切', number])[];
 
 /** 镜头：两个透视镜头，「光」那一拍顺着同一个方向硬切（往前跳进柱子圈里），光柱跨过这一刀接着亮。
  *  远景：每个量一条关键帧轨（时刻 = 离段首几秒；值），各自保单调三次插值，段首速度 0（第 2 句最后一帧是不动的），切走时还在慢慢往前飘。
@@ -72,19 +72,19 @@ export type 远轨 = readonly (readonly [number | '切', number])[];
  *    推眼睛：镜头推得快起来，推到末帧。
  *  用户 10-24「画面转太快就删」：原来整句一镜，段首一下冲出去四格、再从两根前柱子中间穿过去，柱子从画面两边扫过去；
  *  从柱子圈外推到她脸上，柱子总要从画边出去（试过一直停在圈外、视角收到 6°，递蛋糕时左前那根柱子和你的后背占掉半个画面），所以拆成两镜（Agent 暂定） */
-export const 镜头 = {
-  远: {
+export const shot = {
+  far: {
     x: 1.5,
-    y: [[0, -11.5], [旧帧(21), -11.0], ['切', -10.2]],
-    z: [[0, 2.1], [旧帧(21), 3.25], ['切', 3.45]],
-    仰: [[0, 0], [旧帧(22), -9], ['切', -11]],
-    偏: [[0, -2], [旧帧(22), -4], ['切', -5]],
-    视角: [[0, 48], [旧帧(22), 46], ['切', 40]],
+    y: [[0, -11.5], [legacyFrameSec(21), -11.0], ['切', -10.2]],
+    z: [[0, 2.1], [legacyFrameSec(21), 3.25], ['切', 3.45]],
+    pitch: [[0, 0], [legacyFrameSec(22), -9], ['切', -11]],
+    yawOffsetTrack: [[0, -2], [legacyFrameSec(22), -4], ['切', -5]],
+    fov: [[0, 48], [legacyFrameSec(22), 46], ['切', 40]],
   },
-  近: {
-    光: { 眼: [-0.02, -2.85, 1.5] as 点, 看: [-0.33, -0.05, 1.2] as 点, 视角: 53 },
-    递: { 眼: [-0.04, -2.7, 1.45] as 点, 看: [-0.3, -0.1, 1.45] as 点, 视角: 49 },
-    推: { 眼: [-0.05, -2.45, 1.38] as 点, 看: [-0.18, -0.05, 1.36] as 点, 视角: 45 },
+  near: {
+    光: { 眼: [-0.02, -2.85, 1.5] as Vec3, 看: [-0.33, -0.05, 1.2] as Vec3, fov: 53 },
+    handOff: { 眼: [-0.04, -2.7, 1.45] as Vec3, 看: [-0.3, -0.1, 1.45] as Vec3, fov: 49 },
+    pushIn: { 眼: [-0.05, -2.45, 1.38] as Vec3, 看: [-0.18, -0.05, 1.36] as Vec3, fov: 45 },
   },
 } as const;
 
@@ -92,19 +92,19 @@ export const 镜头 = {
  *  祭坛亮：点祭坛那一刻起圈里的地面亮起来，亮着等她现身，再分 三档 往下退；
  *  光柱：她现身前 起前秒 从她头顶往下罩一道光，宽 三档（格），留 留秒，退秒 里一档一档淡掉（24 fps 时起前 3 帧、留 12 帧、退 10 帧，祭坛亮退 9 帧）；颜色是暖白。
  *  强 = 每一层的不透明度，普通半透明叠（光.tsx：加法叠在草地上会发黄绿） */
-export const 光 = {
+export const lightParams = {
   色: '#fff2c4',
-  祭坛亮: { 半径: [3.2, 2.4, 1.6] as const, 强: [0.18, 0.18, 0.22] as const, 退秒: 旧帧(9) },
-  光柱: { 宽: [0.9, 1.3, 1.8] as const, 高: 7, 强: [0.34, 0.2, 0.12] as const, 起前秒: 旧帧(3), 留秒: 0.5, 退秒: 旧帧(10) },
+  altarLight: { radiusList: [3.2, 2.4, 1.6] as const, 强: [0.18, 0.18, 0.22] as const, fadeSec: legacyFrameSec(9) },
+  lightPillar: { 宽: [0.9, 1.3, 1.8] as const, 高: 7, 强: [0.34, 0.2, 0.12] as const, startBeforeSec: legacyFrameSec(3), holdSec: 0.5, fadeSec: legacyFrameSec(10) },
   /** 光柱里往上飘的光点（原版末地烛粒子的 glitter 贴图）：个数、半边长（格）、种子 */
-  光点: { 数: 18, 半: 0.07, 种子: 17 },
+  lightDot: { 数: 18, halfSize: 0.07, 种子: 17 },
 } as const;
 
 /** 原声在母版里的固定增益（同 场/1-隐世之境一楼/参数.ts、场/2-门口/第8句参数.ts 的 原声增益，−6 dB 留余量）；段在一串歌里中间，不淡入 */
-export const 原声增益 = 0.5;
+export const originalGain = 0.5;
 /** 音效（同第 8 句纸声的做法：峰值都配到 峰值 dBFS，压在歌底下，只听得到一下）。峰值是实测（按 48 kHz 每 2000 个样本（1/24 秒）一格量峰值，格从文件头数起）。
  *  祭坛合成（touhou_little_maid block.altar_craft 第 2 个文件，1.72 秒）：一开头就响（第 0 格 −5.5），第 8 格最响 −1.5 dBFS，文件头对着点祭坛那一帧 */
-export const 音效 = {
+export const soundFx = {
   祭坛: { 资产: '音效/把回忆拼好给你/touhou_little_maid.block.altar_craft.2', 峰值: -1.5, 秒: 1.719 },
   峰值: -20,
 } as const;
@@ -113,20 +113,20 @@ export const 音效 = {
 
 /** 第 1 句新世界那片地的生成参数，照抄 场/2-新世界/参数.ts 的 平原、樱花林（场之间不能互引；那边改了这里要一起改，两边一样才是同一片地）。
  *  地形.ts 照同一套生成法铺：原版平原起伏一两格，樱花林长在一座 9 格高的缓坡小山上 */
-export const 新世界地形 = {
-  平原: {
+export const newWorldTerrain = {
+  plainsParams: {
     种子: 20230607,
     起伏: 2.4,
-    起伏尺度: 64,
-    细起伏: 0.5,
-    细起伏尺度: 16,
-    出生平半径: 4,
-    草率: 0.3,
-    高草占: 0.16,
-    花率: 0.02,
-    郁金香尺度: 160,
-    郁金香阈: -0.22,
-    橡树们: [
+    undulationScale: 64,
+    fineUndulation: 0.5,
+    fineUndulationScale: 16,
+    spawnFlatRadius: 4,
+    grassRate: 0.3,
+    tallGrassShare: 0.16,
+    flowerRate: 0.02,
+    tulipScale: 160,
+    tulipThreshold: -0.22,
+    oaks: [
       [-22, 30, 5],
       [-37, 71, 6],
       [31, 46, 5],
@@ -135,19 +135,19 @@ export const 新世界地形 = {
       [7, 96, 5],
     ] as const,
   },
-  樱花林: {
+  cherryGrove: {
     心: [40, 160] as const,
-    山高: 9,
-    山半径: 42,
-    顶半径: 15,
-    山扰: 0.32,
-    山扰尺度: 34,
-    坡起伏: 1.6,
-    坡起伏尺度: 11,
-    林半径: 24,
-    树距: 7,
-    成树率: 0.85,
-    花簇率: 0.35,
+    mountainHeight: 9,
+    mountainRadius: 42,
+    topRadius: 15,
+    mountainJitter: 0.32,
+    mountainJitterScale: 34,
+    slopeUndulation: 1.6,
+    slopeUndulationScale: 11,
+    forestRadius: 24,
+    treeSpacing: 7,
+    treeRate: 0.85,
+    petalClusterRate: 0.35,
   },
 } as const;
 
@@ -158,28 +158,28 @@ export const 新世界地形 = {
  *  让树：树干离平台不到这么多格的不种（樱花树枝伸出去 4 格，会伸进祭坛、挡镜头）；
  *  圈让、镜头道：平台上不长花草的地方（祭坛圈里；镜头前面几格的草会大得糊住画面下沿）。
  *  范围：只铺镜头前方一扇（同第 1 句的做法），半径 200 > 雾止 192，地平线上是雾里的地，不露地形的边；植物半径以外的平原不长草（再远一株草不到几个像素） */
-export const 祭坛位 = {
+export const altarPos = {
   世界: [18, 128] as const,
-  地面: 2,
-  平台: { 西: -7, 东: 7, 南: -17, 北: 6, 缓: 7 },
-  让树: 3,
-  圈让: 4.6,
-  镜头道: { 西: -2.5, 东: 3.5, 南: -18, 北: -3.6 },
-  范围: { 南: -22, 北: 230, 西: -220, 东: 220, 扇心: [0.5, -22] as const, 扇宽: 16, 扇张: 1.05, 远心: [0.5, -8] as const, 半径: 200, 植物半径: 70 },
+  ground: 2,
+  平台: { west: -7, east: 7, south: -17, north: 6, fadeDist: 7 },
+  treeClearance: 3,
+  ringClear: 4.6,
+  shotBounds: { west: -2.5, east: 3.5, south: -18, north: -3.6 },
+  范围: { south: -22, north: 230, west: -220, east: 220, fanCenter: [0.5, -22] as const, fanWidth: 16, fanSpread: 1.05, rangeCenter: [0.5, -8] as const, radius: 200, plantRadius: 70 },
 } as const;
 
 // ---------- 天色、雾：同第 1 句（原版 1.20.1 平原白天、渲染距离 12 区块），照抄 场/2-新世界/参数.ts ----------
 
 /** 原版平原的天色（sky_color 7907327）、雾色（fog_color 12638463） */
-export const 天色 = '#78a7ff';
-const 原雾色 = [0xc0, 0xd8, 0xff];
-const 天 = [0x78, 0xa7, 0xff];
+export const skyColor = '#78a7ff';
+const baseFogColor = [0xc0, 0xd8, 0xff];
+const skyRgb = [0x78, 0xa7, 0xff];
 /** 渲染距离 12 区块 = 192 格（原版默认） */
-export const 渲染距离 = 192;
+export const renderDistance = 192;
 /** 原版 FogRenderer.setupColor：雾色往天色拉 1 − (0.25 + 0.75 × 区块数 / 32)^0.25 */
-const 拉天 = 1 - (0.25 + (0.75 * 渲染距离) / 16 / 32) ** 0.25;
-export const 雾色 = '#' + 原雾色.map((c, i) => Math.round(c + (天[i]! - c) * 拉天).toString(16).padStart(2, '0')).join('');
+const skyPull = 1 - (0.25 + (0.75 * renderDistance) / 16 / 32) ** 0.25;
+export const fogColor = '#' + baseFogColor.map((c, i) => Math.round(c + (skyRgb[i]! - c) * skyPull).toString(16).padStart(2, '0')).join('');
 /** 地形的雾（FOG_TERRAIN，柱形）：起 = 距离 − clamp(距离 / 10, 4, 64)，止 = 距离 */
-export const 地形雾 = { 起: 渲染距离 - Math.min(64, Math.max(4, 渲染距离 / 10)), 止: 渲染距离 };
+export const terrainFog = { 起: renderDistance - Math.min(64, Math.max(4, renderDistance / 10)), 止: renderDistance };
 /** 天的雾（FOG_SKY，球形，起 0、止 = 渲染距离）：天幕在眼睛上方 16 格 */
-export const 天幕高 = 16;
+export const skyDomeHeight = 16;

@@ -1,9 +1,9 @@
 // 第 0 级的地表修正：浮空的东西（云岛、空中史莱姆岛、大悬崖檐）底下和露天连通的空当，地表拉到空当底。照旧项目 工具/导入/烘焙/地表.ts。
 // 按「最高整格方块的顶 = 地表」算会把下面的地面丢掉，从侧面看是空的。所以浮空那块下面的空当若横着和露天空当连通，地表就拉到空当底。
 // 只顺着 ≥ 长空当 高的空当找，免得顺着洞穴把整片地下都存下来；只在本块（带四周 64 列）里找。
-const 长空当 = 16;
+const minGapLen = 16;
 
-export const 浮空下地表 = (width: number, runStarts: Uint32Array, runEntries: Uint16Array, runBottoms: Int16Array, surfaces: Int16Array, entryFullCube: Uint8Array, zb: number, zt: number) => {
+export const surfaceUnderFloating = (width: number, runStarts: Uint32Array, runEntries: Uint16Array, runBottoms: Int16Array, surfaces: Int16Array, entryFullCube: Uint8Array, zb: number, zt: number) => {
   // 每列最高的整格方块下面、≥ 长空当 的空当：[列, 底, 顶]
   const gapCols: number[] = [], gapBottoms: number[] = [], gapTops: number[] = [];
   const gapsByCol = new Map<number, number[]>();
@@ -19,7 +19,7 @@ export const 浮空下地表 = (width: number, runStarts: Uint32Array, runEntrie
       } else if (!solid && Number.isNaN(gapTop)) gapTop = top;
       if (pastFullTop && !Number.isNaN(gapTop) && (solid || k === runStarts[col + 1]! - 1)) {
         const lo = solid ? top + 1 : runBottoms[k]!;
-        if (gapTop - lo + 1 >= 长空当) {
+        if (gapTop - lo + 1 >= minGapLen) {
           let colGaps = gapsByCol.get(col);
           if (!colGaps) gapsByCol.set(col, (colGaps = []));
           colGaps.push(gapCols.length);

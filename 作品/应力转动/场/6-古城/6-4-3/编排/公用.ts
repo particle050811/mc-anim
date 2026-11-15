@@ -14,9 +14,9 @@ export const norm = (vec: V3): V3 => {
 };
 export const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
-export const storySecAt = (g: number) => timeline.剧情时间(g);
+export const storySecAt = (g: number) => timeline.storyTime(g);
 export const fromHuangPanLocal = (x: number, y: number, z: number): V3 => {
-  const yawRad = (geom.黄叛朝向 * Math.PI) / 180;
-  const foot = geom.黄叛脚底;
+  const yawRad = (geom.huangPanFacing * Math.PI) / 180;
+  const foot = geom.huangPanFeet;
   return [foot[0] + x * Math.cos(yawRad) - y * Math.sin(yawRad), foot[1] + x * Math.sin(yawRad) + y * Math.cos(yawRad), foot[2] + z];
 };

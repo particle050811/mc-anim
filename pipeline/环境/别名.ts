@@ -5,16 +5,16 @@
 import path from 'node:path';
 
 /** 前缀 → 相对代码根的目录 */
-export const 别名表: Readonly<Record<string, string>> = { '@engine/': 'engine/', '@库/': '库/' };
+export const aliasTable: Readonly<Record<string, string>> = { '@engine/': 'engine/', '@库/': '库/' };
 
 /** `@engine/x`、`@库/x` → 代码根下的绝对路径；别的说明符返回 null */
-export const 解析别名 = (说明符: string, 代码根: string): string | null => {
-  for (const [前缀, 目录] of Object.entries(别名表)) {
-    if (说明符.startsWith(前缀)) return path.join(代码根, ...目录.split('/'), ...说明符.slice(前缀.length).split('/'));
+export const resolveAlias = (specifier: string, codeRoot: string): string | null => {
+  for (const [aliasPrefix, dir] of Object.entries(aliasTable)) {
+    if (specifier.startsWith(aliasPrefix)) return path.join(codeRoot, ...dir.split('/'), ...specifier.slice(aliasPrefix.length).split('/'));
   }
   return null;
 };
 
 /** webpack 的 resolve.alias 形状：{ '@engine': <代码根>/engine, … } */
-export const 别名目录 = (代码根: string): Record<string, string> =>
-  Object.fromEntries(Object.entries(别名表).map(([前缀, 目录]) => [前缀.replace(/\/$/, ''), path.join(代码根, ...目录.split('/').filter(Boolean))]));
+export const aliasDir = (codeRoot: string): Record<string, string> =>
+  Object.fromEntries(Object.entries(aliasTable).map(([aliasPrefix, dir]) => [aliasPrefix.replace(/\/$/, ''), path.join(codeRoot, ...dir.split('/').filter(Boolean))]));

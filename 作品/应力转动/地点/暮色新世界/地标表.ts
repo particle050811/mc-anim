@@ -8,37 +8,37 @@
 // 周边对不上的一律用新世界的（用户 10-06「就按照新世界的来」），只留编排离不开的结构本体：九头蛇巢穴用新世界自己那座（不摆网格），巫妖怪塔四周换稀树草原，娜迦庭院东南角、雪怪洞窟、极光宫殿缩核心，终焉城堡只压平占地。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { LandmarkCutout, FlattenArea } from '@engine/voxel/导入地形.ts';
-import { frozenOrigin, type 冻结粗高度文件 } from '@engine/voxel/冻结粗高度.ts';
+import { frozenOrigin, type FrozenCoarseHeightFile } from '@engine/voxel/冻结粗高度.ts';
 import twilightFrozenFile from '../../../../assets/冻结粗高度/暮色放大-1752-扩展.json';
-import nagaMesh资产 from 'asset:网格/娜迦庭院/头';
-import lichMesh资产 from 'asset:网格/巫妖怪塔/头';
-import hydraMesh资产 from 'asset:网格/九头蛇巢穴/头';
-import darkTowerMesh资产 from 'asset:网格/幽冥高塔/头';
-import yetiMesh资产 from 'asset:网格/雪怪洞窟/头';
-import auroraMesh资产 from 'asset:网格/极光宫殿/头';
-import castleMesh资产 from 'asset:网格/终焉高原城堡/头';
-import castleFlattenMask资产 from 'asset:数据/场景/终焉高原城堡/平整罩';
-import cloudCottageMesh资产 from 'asset:网格/云中小屋/头';
-import yetiEdgeFix资产 from 'asset:数据/场景/雪怪洞窟/归边';
-import nagaEdgeFix资产 from 'asset:数据/场景/娜迦庭院/归边';
-import nagaTakeoffHide资产 from 'asset:数据/场景/娜迦庭院/起跳区藏';
-const nagaMesh = nagaMesh资产 as unknown as MeshInfo;
-const lichMesh = lichMesh资产 as unknown as MeshInfo;
-const hydraMesh = hydraMesh资产 as unknown as MeshInfo;
-const darkTowerMesh = darkTowerMesh资产 as unknown as MeshInfo;
-const yetiMesh = yetiMesh资产 as unknown as MeshInfo;
-const auroraMesh = auroraMesh资产 as unknown as MeshInfo;
-const castleMesh = castleMesh资产 as unknown as MeshInfo;
-const castleFlattenMask = castleFlattenMask资产 as unknown as { x0: number; z0: number; nx: number; nz: number; 行: [number, number][][] };
-const cloudCottageMesh = cloudCottageMesh资产 as unknown as MeshInfo;
-const yetiEdgeFix = yetiEdgeFix资产 as unknown as EdgeFixData;
-const nagaEdgeFix = nagaEdgeFix资产 as unknown as EdgeFixData;
-const nagaTakeoffHide = nagaTakeoffHide资产 as unknown as { 藏: number[][] };
+import nagaMeshAsset from 'asset:网格/娜迦庭院/头';
+import lichMeshAsset from 'asset:网格/巫妖怪塔/头';
+import hydraMeshAsset from 'asset:网格/九头蛇巢穴/头';
+import darkTowerMeshAsset from 'asset:网格/幽冥高塔/头';
+import yetiMeshAsset from 'asset:网格/雪怪洞窟/头';
+import auroraMeshAsset from 'asset:网格/极光宫殿/头';
+import castleMeshAsset from 'asset:网格/终焉高原城堡/头';
+import castleFlattenMaskAsset from 'asset:数据/场景/终焉高原城堡/平整罩';
+import cloudCottageMeshAsset from 'asset:网格/云中小屋/头';
+import yetiEdgeFixAsset from 'asset:数据/场景/雪怪洞窟/归边';
+import nagaEdgeFixAsset from 'asset:数据/场景/娜迦庭院/归边';
+import nagaTakeoffHideAsset from 'asset:数据/场景/娜迦庭院/起跳区藏';
+const nagaMesh = nagaMeshAsset as unknown as MeshInfo;
+const lichMesh = lichMeshAsset as unknown as MeshInfo;
+const hydraMesh = hydraMeshAsset as unknown as MeshInfo;
+const darkTowerMesh = darkTowerMeshAsset as unknown as MeshInfo;
+const yetiMesh = yetiMeshAsset as unknown as MeshInfo;
+const auroraMesh = auroraMeshAsset as unknown as MeshInfo;
+const castleMesh = castleMeshAsset as unknown as MeshInfo;
+const castleFlattenMask = castleFlattenMaskAsset as unknown as { x0: number; z0: number; nx: number; nz: number; 行: [number, number][][] };
+const cloudCottageMesh = cloudCottageMeshAsset as unknown as MeshInfo;
+const yetiEdgeFix = yetiEdgeFixAsset as unknown as EdgeFixData;
+const nagaEdgeFix = nagaEdgeFixAsset as unknown as EdgeFixData;
+const nagaTakeoffHide = nagaTakeoffHideAsset as unknown as { 藏: number[][] };
 
 // 区段包：另烘焙成 暮色放大-1752-扩展（npm run 导入:暮色放大1752扩展），预生成范围往四周补了一圈（工具/游戏取材/暮色范围.py），让一镜到底往前看 3 公里内都有地形；共用的 暮色放大-1752 不动
 export const twilightPackName = '暮色放大-1752-扩展';
 // 这个包冻结进仓库的粗高度和原点（engine/voxel/冻结粗高度.ts）：编排用的粗高度、原点都从这份取
-export const twilightFrozen = twilightFrozenFile as 冻结粗高度文件;
+export const twilightFrozen = twilightFrozenFile as FrozenCoarseHeightFile;
 // 原点按冻结的那份，和编排用的粗高度一致
 export const [POX, POY, POZ] = frozenOrigin(twilightFrozen);
 // 游戏坐标（连续）→ 世界坐标
@@ -58,7 +58,7 @@ type MeshInfo = { from: number[]; to: number[]; origin: number[] };
 // `FlattenArea`：按列整平的一片（游戏坐标的罩，见 lib/体素/导入地形.ts 的 `FlattenArea`；终焉高原城堡）
 export type Rect = [number, number, number, number];
 // `剩顶`：只挖了一截的框（补挖的巨树），框里挖剩下的东西最高到哪（游戏 y）；查高度时按它（见 `twilightCellTop`），不当成地标的地面
-export type CutoutEntry = LandmarkCutout & { 剩顶?: number };
+export type CutoutEntry = LandmarkCutout & { remainTop?: number };
 // `归边`（工具/地标巡检/归边.ts 量的）：`藏免` = 核心外、但树干在核心里的旧树的格（网格本地坐标，方块最小角），不藏；`藏加` = 核心里要藏的格（树干在核心外的新树伸进来的树冠）；
 // `挖加` = 核心外要挖的新世界的格（游戏坐标：树干在核心里、被挖掉的新树伸出去的树冠，和留下的旧树冠占的格）；`挖免` = 核心里不挖的格（游戏坐标，上面那些新树伸进来的树冠）
 type EdgeFixData = { 藏免: number[][]; 藏加: number[][]; 挖加: number[][]; 挖免: number[][] };
@@ -66,13 +66,13 @@ type LandmarkDef = {
   说明: MeshInfo;
   newOrigin: V3;
   转: 0 | 90 | 180 | -90;
-  地面: number;
+  ground: number;
   网格?: false;
   cutouts?: CutoutEntry[];
   cutFloorY?: number;
-  补挖?: CutoutEntry[];
-  核心?: Rect[];
-  归边?: EdgeFixData;
+  extraDig?: CutoutEntry[];
+  core?: Rect[];
+  edgeFix?: EdgeFixData;
   范围?: Rect[];
   flattens?: FlattenArea[];
 };
@@ -83,8 +83,8 @@ type LandmarkDef = {
 const understoryKeep = ['grass_block', 'dirt', 'coarse_dirt', 'podzol', 'rooted_dirt', 'stone', 'root', 'liveroot_block', 'lava', 'water', '*_leaves', 'grass', 'tall_grass', 'fern', 'large_fern',
   'brown_mushroom', 'red_mushroom', 'mayapple', 'cornflower', '*_tulip', 'dandelion', 'poppy', 'moss_patch', 'fallen_leaves', 'firefly', 'cicada'];
 const giantTreeCutouts = (crownBoxes: [number[], number[]][], trunkBox: [number[], number[]]): CutoutEntry[] => [
-  ...crownBoxes.map(([from, to]) => ({ from, to, 剩顶: from[1] })),
-  { from: trunkBox[0], to: trunkBox[1], 留: understoryKeep, 剩顶: trunkBox[1][1] + 1 },
+  ...crownBoxes.map(([from, to]) => ({ from, to, remainTop: from[1] })),
+  { from: trunkBox[0], to: trunkBox[1], 留: understoryKeep, remainTop: trunkBox[1][1] + 1 },
 ];
 // 终焉高原：两边的台地顶（游戏 y 96 是台地面那层方块的顶）
 export const plateauTopY = 96;
@@ -99,7 +99,7 @@ const castleFlatten: FlattenArea = (() => {
   const { x0, z0, nx, nz, 行: rows } = castleFlattenMask;
   const mask = new Uint8Array(nx * nz);
   rows.forEach((r, z) => r.forEach(([start, len]) => mask.fill(1, z * nx + start, z * nx + start + len)));
-  return { x0, z0, nx, nz, 罩: mask, 地面y: plateauTopY - 1, fillBlocks: ['twilightforest:weathered_deadrock'] };
+  return { x0, z0, nx, nz, mask: mask, groundY: plateauTopY - 1, fillBlocks: ['twilightforest:weathered_deadrock'] };
 })();
 // 雪怪洞窟的核心（网格本地）：新世界那座的土丘和旧网格在本地 ±32 以内逐列一样高（工具/地标巡检/复核雪极/雪怪环.ts）；
 // 工具/地标巡检/归边.ts 也按它算
@@ -115,8 +115,8 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   // - 南边（6-1-3 起飞朝东南 135°，用户 10-05 要扫帚摆好方向）：旧边是笔直红褐土线，另一条边压在新世界一条河的近岸切出土墙；新旧边落在南墙外 3 米（x −50.5 以东），被东、南墙挡着，x −50.5 那条边在起飞方向右后方，不进画。
   // 代价：6-1-2 林道上往东看时右边墙外那棵浅色大树换成红干树（最多 4.9% 像素），6-1-1 进不了画。
   // 归边（10-07）：核心边切到的树整棵归一边（工具/地标巡检/归边.ts 娜迦庭院）；片场存档开助跑道时起跳区清过树冠，跨在框边上的 9 棵树被切成两半（用户 10-07 要整棵切），框外剩下的也藏掉（工具/地标巡检/娜迦起跳区整棵.ts），并进 `藏加`
-  娜迦庭院: { 说明: nagaMesh, newOrigin: [-11191.5, 7, -887.5], 转: 0, 地面: 7, 核心: [[-264.5, -112.5, -50.5, 50.5], [-50.5, -50.5, 50.5, 50.5]],
-    归边: { ...nagaEdgeFix, 藏加: [...nagaEdgeFix.藏加, ...nagaTakeoffHide.藏] } },
+  娜迦庭院: { 说明: nagaMesh, newOrigin: [-11191.5, 7, -887.5], 转: 0, ground: 7, core: [[-264.5, -112.5, -50.5, 50.5], [-50.5, -50.5, 50.5, 50.5]],
+    edgeFix: { ...nagaEdgeFix, 藏加: [...nagaEdgeFix.藏加, ...nagaTakeoffHide.藏] } },
   // 原点在旧塔中心，新塔中心 (−9017, 1031)。逆时针转 90°：巫妖房间西、南、东三面都贴着别的塔楼，只有本地北墙外是空的，只能从本地北进；
   // 转后本地北 = 世界西，由西往东穿（对应用户 10-05 红笔从巫妖怪塔往东偏南拉到九头蛇巢穴），不转要进塔前右转 57°、出塔后左转 73°。
   // 穿刺线在塔里重瞄成本地 195°（世界 105°）：体素扫过，185°～195° 只撞北墙、屋里、副楼三截，比 180° 还短，200° 起又多撞别的塔楼。代价：6-1-5 的碎块、孔道、镜头绕圈按 195° 重排（6-1-5/编排.ts）。
@@ -131,9 +131,9 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
     说明: lichMesh,
     newOrigin: [-9016.5, 0, 1031],
     转: 90,
-    地面: 6,
+    ground: 6,
     范围: [[-56, -39.5, 56, 39.5]],
-    补挖: [
+    extraDig: [
       { from: [-9073, 7, 991], to: [-8962, 400, 1069], 留: lichOuterKeep },
       ...giantTreeCutouts([[[-9019, 22, 1075], [-8980, 79, 1117]]], [[-9007, 5, 1089], [-8992, 21, 1104]]),
       ...giantTreeCutouts(
@@ -159,11 +159,11 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
     说明: hydraMesh,
     newOrigin: [-6327.5, -6, 2184.5],
     转: 0,
-    地面: 5,
+    ground: 5,
     网格: false,
     // 钻穿土丘（用户 10-07）：扫帚扎穿洞口的九头蛇、飞过空心的洞，从洞的东侧壁钻出土丘东坡（穿刺线 a 31.5～52.5 管子碰地），见 6-1-6/编排.ts。
     // 盒子由 工具/一镜到底/隧道.ts 九头蛇 按穿刺线打印、写死在这里（这里不能 import 编排：编排 import 了这个文件）；树留着（隧道留）。
-    补挖: [
+    extraDig: [
       [[-6308, 2, 2187], [-6305, 6, 2191]],
       [[-6307, 2, 2187], [-6304, 6, 2192]],
       [[-6305, 2, 2188], [-6302, 6, 2192]],
@@ -184,7 +184,7 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   },
   // 不转：塔顶是露天平台，恶魂身子中心那个高度（本地 z 186.5，网格只导到 186）往哪个方向都是空的（体素扫过），
   // 所以只平移、穿刺方向照航线：从九头蛇巢穴往南偏西直飞过来、顺着来向横穿塔顶（约 205°），穿出来左转往东去雪怪洞窟（6-1-7/编排.ts）
-  幽冥高塔: { 说明: darkTowerMesh, newOrigin: [-7159.5, 0, 5064.5], 转: 0, 地面: 6 },
+  幽冥高塔: { 说明: darkTowerMesh, newOrigin: [-7159.5, 0, 5064.5], 转: 0, ground: 6 },
   // 不转：洞里是十字形大厅、四条臂一样宽，往东和往北扫过的方块差不多（体素扫过），所以只平移、在洞里重瞄成往东（来向约 84°，6-1-7/编排.ts 的 `YETI_HEADING`），穿出来一路往东去极光宫殿。
   // 核心：新旧一模一样的那块（雪怪核心，本地 ±31.5），旧网格只画这一块，外面全用新世界的（用户 10-06「就按照新世界的来」）：±32 以外旧网格是低洼冻湖，新世界是 y 5～6 的积雪森林，挖框边上东、南两边会露 5～7 米土墙。
   // 边上切到的树整棵归一边（归边，工具/地标巡检/归边.ts 生成 雪怪洞窟.归边.json）。
@@ -193,13 +193,13 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
     说明: yetiMesh,
     newOrigin: [-3959.5, -8, 5192.5],
     转: 0,
-    地面: 5,
-    核心: [yetiCore],
-    归边: yetiEdgeFix,
+    ground: 5,
+    core: [yetiCore],
+    edgeFix: yetiEdgeFix,
     范围: [[-42.5, -42.5, 42.5, 42.5]],
     // 进洞前、出洞后的两条隧道（穿刺线进洞 −18°、出洞 +12°，拉平要一百多米，核心外这两截在雪地底下，见 6-1-7/编排.ts）：
     // 穿刺线 a −61～−36、34～92.5 管子碰地。盒子由 工具/一镜到底/隧道.ts 雪怪首领 打印、写死在这里；树留着（隧道留）
-    补挖: [
+    extraDig: [
       [[-4022, 5, 5196], [-4020, 10, 5201]],
       [[-4021, 5, 5196], [-4019, 9, 5201]],
       [[-4019, 4, 5196], [-4017, 9, 5201]],
@@ -273,8 +273,8 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
     说明: auroraMesh,
     newOrigin: [-2930.5, 1, 5133],
     转: -90,
-    地面: 34,
-    核心: [[-38, -28.5, 38, 28.5]],
+    ground: 34,
+    core: [[-38, -28.5, 38, 28.5]],
     cutFloorY: 31,
     范围: [[-52, -42.5, 52, 42.5]],
   },
@@ -283,7 +283,7 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
     说明: castleMesh,
     newOrigin: castleNewOrigin,
     转: 0,
-    地面: plateauTopY,
+    ground: plateauTopY,
     cutouts: [{ from: [castleMesh.from[0] - 3384, plateauTopY, castleMesh.from[2] + 2632], to: [castleMesh.to[0] - 3384, 400, castleMesh.to[2] + 2632], 留: plateauKeep }],
     flattens: [castleFlatten],
   },
@@ -294,7 +294,7 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
     说明: cloudCottageMesh,
     newOrigin: [cloudCottageMesh.origin[0] - 3387, cloudCottageMesh.origin[1], cloudCottageMesh.origin[2] + 3472],
     转: 0,
-    地面: 40,
+    ground: 40,
     cutouts: [
       { from: [cloudCottageMesh.from[0] - 3387, cloudCottageMesh.from[1], cloudCottageMesh.from[2] + 3472], to: [cloudCottageMesh.to[0] - 3387, 400, cloudCottageMesh.to[2] + 3472] },
       { from: [-2998, 150, 3162], to: [-2887, 400, 3261] },

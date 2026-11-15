@@ -28,7 +28,7 @@ export { wardenMaxHp, wardenHits, wardenHpAt, type WardenHit };
 // 场时刻 0 就是 6-4-9 末帧：监守者、二人的位置朝向、头、吼叫、游戏秒、弓都得和 6-4-9/编排.ts 末帧一样，对不上就在加载时报错：段与段硬切，世界状态要连续（CLAUDE.md 漫剧规则，报告第 13 条）
 {
   const f = geom.handoffFrame649;
-  const end649 = { 监守者: K649.warden(f), 二人: K649.pursuers(f), 弓: K649.bowAt(f) };
+  const end649 = { 监守者: K649.warden(f), pursuers: K649.pursuers(f), bow: K649.bowAt(f) };
   const start71 = { 监守者: wardenState(0), 刘: liuXinzhongPose(0), 黄: huangPanState(0) };
   const off: string[] = [];
   const near = (what: string, a: number | undefined, b: number | undefined, tol: number) => {
@@ -41,19 +41,19 @@ export { wardenMaxHp, wardenHits, wardenHpAt, type WardenHit };
   };
   nearPos('监守者', K649.WARDEN_AT, start71.监守者.p);
   // 监守者朝向不比：7-1 开头它比 6-4-9 末帧多转约 20°，按已渲、用户看过的版本留着（用户 10-21：实际看过的才是权威）
-  near('监守者头偏（°）', end649.监守者.头偏, start71.监守者.头偏, 0.1);
+  near('监守者头偏（°）', end649.监守者.headYaw, start71.监守者.headYaw, 0.1);
   near('监守者低头（°）', end649.监守者.headPitch, start71.监守者.headPitch, 0.1);
   near('监守者吼叫（秒）', end649.监守者.吼叫, start71.监守者.吼叫, 1e-6);
-  near('监守者触角（7-1 不画亮）', end649.监守者.触角, 0, 0.01);
+  near('监守者触角（7-1 不画亮）', end649.监守者.tendril, 0, 0.01);
   near('游戏秒', end649.监守者.秒, start71.监守者.秒, 1e-6);
   for (const [who, pose] of [['刘', start71.刘], ['黄', start71.黄.pose]] as const) {
-    const end = end649.二人[who];
+    const end = end649.pursuers[who];
     nearPos(who, end.loc, pose.loc);
     near(`${who}朝向（°）`, end.yaw ?? 0, nearYaw(end.yaw ?? 0, pose.yaw ?? 0), 0.1);
     near(`${who}头偏（°）`, end.headYaw, pose.headYaw, 0.1);
     near(`${who}抬头（°）`, end.headPitch, pose.headPitch, 0.1);
   }
-  if (end649.弓 !== start71.黄.弓) off.push(`黄叛的弓：6-4-9 末 ${end649.弓}，7-1 首 ${start71.黄.弓}`);
+  if (end649.bow !== start71.黄.bow) off.push(`黄叛的弓：6-4-9 末 ${end649.bow}，7-1 首 ${start71.黄.bow}`);
   if (off.length) throw new Error(`7-1 接 6-4-9 末帧对不上：${off.join('；')}`);
 }
 
@@ -69,19 +69,19 @@ export const wideShotState = (t: number) => ({
   wardenEntityYaw: wardenState(t).entityYaw,
   刘: liuXinzhongPos(t),
   黄: huangPanPos(t),
-  马: horseState(t)?.p,
-  恼鬼: Array.from({ length: vexCount }, (_, i) => vexState(i, t)).filter((v) => v.visible).map((v) => v.p),
+  horse: horseState(t)?.p,
+  vex: Array.from({ length: vexCount }, (_, i) => vexState(i, t)).filter((v) => v.visible).map((v) => v.p),
 });
 
 // ======================= 第 3 场接这里（7-1-7 末帧） =======================
 // 7-1-7 末帧 = 场时刻 `末t`：马刚落上北墙头站着（= `handoffs.七三首.马`，朝北、不动）；监守者在墙脚下；黄叛在黄叛高台上。第 3 场只认这几个常量。
 export const scene3Handoff = {
   wallLandT,
-  上墙点: geom.spots.wallEntry,
+  wallEntry: geom.spots.wallEntry,
   wardenAtWallLand: wardenState(wallLandT).p,
-  末t: sceneEndT,
+  endTime: sceneEndT,
   endHorsePos: horseState(sceneEndT)!.p,
   endHorseSpeed: horseState(sceneEndT)!.速,
   endWarden: wardenState(sceneEndT).p,
-  黄叛脚底: geom.spots.huangPanPerch,
+  huangPanFeet: geom.spots.huangPanPerch,
 };

@@ -1,41 +1,41 @@
 // 正片第 2 句「祈愿小世界里不只有挫败」：你的第一晚。接着 2-初入 的地面剖面一镜不切，只拍「挖三填一」（用户 10-24「死多次表现不好 只留挖三填一就行」）、快进一夜（僵尸从洞顶走过）、挖开头顶。
 // 帧数、场窗口、原声和各音效 cue 的帧都从 分镜 推，增益按 场/2-第一晚/参数.ts 的实测峰值配，段里不写数字。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段时钟, 段内事件帧 as 段内正片事件帧 } from '../../分镜/正片第2句.ts';
-import { 僵尸吼提前秒, 原声增益, 音效们 } from '../../场/2-第一晚/参数.ts';
-import { 僵尸过洞帧 } from './编排.ts';
-import { 按帧cue, type 帧上cue } from '../../声音/跨段音效.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segClock, segEventFrames as segMainCutEventFrames } from '../../分镜/正片第2句.ts';
+import { roarLeadSec, originalGain, soundFx } from '../../场/2-第一晚/参数.ts';
+import { zombiePassHoleFrame } from './编排.ts';
+import { toAssetCue, type FrameCue } from '../../声音/跨段音效.ts';
 
-const 键 = '2-第一晚';
-const 钟 = 段时钟(键);
-const 事 = 段内正片事件帧(键);
-const 到段尾 = (起: number, 秒: number) => Math.min(Math.ceil(秒 * fps), 钟.帧数 - 起);
+const segKey = '2-第一晚';
+const clock = segClock(segKey);
+const events = segMainCutEventFrames(segKey);
+const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
 
-type 音效名 = keyof typeof 音效们;
+type SfxName = keyof typeof soundFx;
 /** 一个音效：在第 帧 帧起放，增益把文件峰值配到 参数.ts 的 到（dBFS），放到文件完或段尾 */
-const 放 = (名: 音效名, 帧: number): 帧上cue => {
-  const 声 = 音效们[名];
-  const 增益 = Math.round(10 ** ((声.到 - 声.峰值) / 20) * 1e6) / 1e6;
-  return { 帧, 资产: 声.资产, 名, 帧数: 到段尾(帧, 声.秒), 增益 };
+const playCue = (soundName: SfxName, startFrame: number): FrameCue => {
+  const sound = soundFx[soundName];
+  const gain = Math.round(10 ** ((sound.到 - sound.峰值) / 20) * 1e6) / 1e6;
+  return { 帧: startFrame, 资产: sound.资产, 名: soundName, 帧数: clampFramesToSegEnd(startFrame, sound.秒), 增益: gain };
 };
 
 // 挖、放土在方块碎、方块出现的那一帧；僵尸低吼最响那一下落在它走到洞顶正上方的时候
-const 音效cue们: readonly 帧上cue[] = [
-  放('挖一', 事.挖一),
-  放('挖二', 事.挖二),
-  放('挖三', 事.挖三),
-  放('填土', 事.填土),
-  放('僵尸', 僵尸过洞帧 - Math.round(僵尸吼提前秒 * fps)),
-  放('挖开天窗', 事.挖开天窗),
+const sfxCues: readonly FrameCue[] = [
+  playCue('挖一', events.digFirst),
+  playCue('挖二', events.digSecond),
+  playCue('挖三', events.digThird),
+  playCue('填土', events.fillHole),
+  playCue('僵尸', zombiePassHoleFrame - Math.round(roarLeadSec * fps)),
+  playCue('挖开天窗', events.digSkylight),
 ];
 
-export default 定义段({
+export default defineSeg({
   场: '2-第一晚',
-  秒: 钟.秒,
-  宽: 画幅.宽,
-  高: 画幅.高,
+  秒: clock.秒,
+  宽: aspect.宽,
+  高: aspect.高,
   地形: [],
-  场窗口: 钟.场窗口,
-  声音: [{ ...钟.原声, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: 原声增益 }, ...音效cue们.map(按帧cue)],
+  sceneWindow: clock.sceneWindow,
+  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }, ...sfxCues.map(toAssetCue)],
 });

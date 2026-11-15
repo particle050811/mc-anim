@@ -3,40 +3,40 @@
 // 歌词把 15 句都交给符文歌词（它自己按时刻挑出这一段里看得见的：第 3 句的退场、第 4 句、第 5 句的进场），描边色跟着当下的镜头走。
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { 色板 } from '../../色板.ts';
-import { 符文歌词 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 符文歌词默认 } from '../../界面/符文排版.ts';
-import { 光影段 } from '../../默认.ts';
-import { 叠化样式, 浪样式, 海调子名, 眼调子名 } from '../../场/2-海上/参数.ts';
-import { 叠化, 歌曲帧, 眼机位, 窗 } from '../../场/2-海上/编排.ts';
-import { 日落划船画面 } from '../../场/2-海上/海上.tsx';
-import { 祭坛画面 } from '../../场/2-祭坛/祭坛.tsx';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { shadingScope } from '@engine/三渲二/画布.tsx';
+import { palette } from '../../色板.ts';
+import { RuneLyric } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { runeLyricDefault } from '../../界面/符文排版.ts';
+import { shadingBySeg } from '../../默认.ts';
+import { crossfadeStyle, waveStyle, seaToneName, eyeToneName } from '../../场/2-海上/参数.ts';
+import { crossfade, toSongFrame, eyeCameraRig, segWindow } from '../../场/2-海上/编排.ts';
+import { SunsetRowingPicture } from '../../场/2-海上/海上.tsx';
+import { AltarPicture } from '../../场/2-祭坛/祭坛.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 窗.起帧));
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, segWindow.起帧));
 // 眼睛特写是 2-祭坛召唤 那一镜接着推，光影跟它走（接缝上不跳）；海那块照本段的（海上.tsx）
-const 眼睛 = (g: number) => (
-  <光影范围.Provider value={{ 光影: 光影段['2-祭坛召唤'] }}>
-    <祭坛画面 g={g} 机={眼机位(g)} />
-  </光影范围.Provider>
+const eyeView = (g: number) => (
+  <shadingScope.Provider value={{ shading: shadingBySeg['2-祭坛召唤'] }}>
+    <AltarPicture g={g} 机={eyeCameraRig(g)} />
+  </shadingScope.Provider>
 );
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const g = 歌曲帧(f);
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
+  const g = toSongFrame(f);
   // 叠化过半就换成海那套的描边色
-  const 描边色 = 色板[叠化(g) < 0.5 ? 眼调子名 : 海调子名].描边;
+  const outlineColor = palette[crossfade(g) < 0.5 ? eyeToneName : seaToneName].outlineColor;
   return (
     <AbsoluteFill>
-      <日落划船画面 歌曲帧={g} 眼睛={眼睛} 叠化样式={叠化样式} 浪样式={浪样式} />
-      <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色 }} />
+      <SunsetRowingPicture songFrame={g} eyeView={eyeView} crossfadeStyle={crossfadeStyle} waveStyle={waveStyle} />
+      <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor }} />
     </AbsoluteFill>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

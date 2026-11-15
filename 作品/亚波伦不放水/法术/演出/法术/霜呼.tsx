@@ -7,36 +7,36 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 减 } from '../零件/弹道.ts';
-import { 原始半径, 吐息粒子, 龙息撒, type 吐息出生, type 吐息粒子类 } from '../零件/吐息.tsx';
-import 元, { 霜呼持续刻, 霜呼粒子寿命 } from './霜呼.元.ts';
-import 霜1 from 'asset:贴图/法术/goety/particle/frost_1';
-import 霜2 from 'asset:贴图/法术/goety/particle/frost_2';
-import 霜3 from 'asset:贴图/法术/goety/particle/frost_3';
-import 霜4 from 'asset:贴图/法术/goety/particle/frost_4';
-import 霜5 from 'asset:贴图/法术/goety/particle/frost_5';
-import 霜6 from 'asset:贴图/法术/goety/particle/frost_6';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { sub } from '../零件/弹道.ts';
+import { initialRadius, BreathParticles, scatterDragonBreath, type BreathBirth, type BreathParticleClass } from '../零件/吐息.tsx';
+import meta, { frostBreathDurTicks, frostBreathParticleLifeTicks } from './霜呼.元.ts';
+import frost1Png from 'asset:贴图/法术/goety/particle/frost_1';
+import frost2Png from 'asset:贴图/法术/goety/particle/frost_2';
+import frost3Png from 'asset:贴图/法术/goety/particle/frost_3';
+import frost4Png from 'asset:贴图/法术/goety/particle/frost_4';
+import frost5Png from 'asset:贴图/法术/goety/particle/frost_5';
+import frost6Png from 'asset:贴图/法术/goety/particle/frost_6';
 
-const [一, 二, 三, 四, 五, 六] = [霜1, 霜2, 霜3, 霜4, 霜5, 霜6].map(png);
-const 霜呼: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 类: 吐息粒子类 = {
-    帧: [一!, 二!, 三!, 四!, 五!, 六!, 五!, 四!, 三!, 二!, 一!],
-    帧号: (年龄) => Math.floor(年龄 / 2) % 11,
-    寿命: 霜呼粒子寿命,
+const [frostFrame1, frostFrame2, frostFrame3, frostFrame4, frostFrame5, frostFrame6] = [frost1Png, frost2Png, frost3Png, frost4Png, frost5Png, frost6Png].map(png);
+const FrostBreath: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const breathKind: BreathParticleClass = {
+    帧: [frostFrame1!, frostFrame2!, frostFrame3!, frostFrame4!, frostFrame5!, frostFrame6!, frostFrame5!, frostFrame4!, frostFrame3!, frostFrame2!, frostFrame1!],
+    帧号: (age) => Math.floor(age / 2) % 11,
+    寿命: frostBreathParticleLifeTicks,
     重力: -0.1,
     摩擦: 0.96,
-    抖横: 1 / 500,
-    抖竖: 0,
-    地面: 目标[2],
+    jitterHoriz: 1 / 500,
+    jitterVert: 0,
+    ground: target[2],
   };
-  const 朝 = 减([目标[0], 目标[1], 目标[2] + 0.9], 起点);
-  const 出生们: 吐息出生[] = [];
-  for (let n = Math.max(0, Math.floor(刻) - 霜呼粒子寿命); n <= Math.min(Math.floor(刻), 霜呼持续刻 - 1); n++)
-    for (const 撒 of 龙息撒(起点, 朝, 10, 0.44, n, 种子)) 出生们.push({ 刻: n, ...撒, 半径: 原始半径(rng(撒.种子 + 9)()) * 3 * 0.5 });
-  return <吐息粒子 类={类} 出生们={出生们} 秒={秒} />;
+  const dir = sub([target[0], target[1], target[2] + 0.9], from);
+  const spawns: BreathBirth[] = [];
+  for (let n = Math.max(0, Math.floor(tick) - frostBreathParticleLifeTicks); n <= Math.min(Math.floor(tick), frostBreathDurTicks - 1); n++)
+    for (const spawn of scatterDragonBreath(from, dir, 10, 0.44, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(rng(spawn.种子 + 9)()) * 3 * 0.5 });
+  return <BreathParticles 类={breathKind} spawns={spawns} 秒={sec} />;
 };
 
-export default 定义法术演出(元, 霜呼);
+export default defineSpellPerformance(meta, FrostBreath);

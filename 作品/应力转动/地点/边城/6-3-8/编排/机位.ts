@@ -46,19 +46,19 @@ const buildCamKeys = (): [number, Cam][] => {
   const cue = cues;
   return [
     [0, C1a],
-    [cue.绕[0], C1b],
-    [cue.绕[1], C2],
-    [cue.出发 - 0.1, C3],
-    [cue.刘起跳 + 0.4, C4a],
-    [cue.跳切, C4b],
+    [cue.orbit[0], C1b],
+    [cue.orbit[1], C2],
+    [cue.setOff - 0.1, C3],
+    [cue.liuTakeoff + 0.4, C4a],
+    [cue.jumpCut, C4b],
   ];
 };
 const camKeys = buildCamKeys();
 export const camPose = (t: number): Cam => {
   const cue = cues;
-  if (t >= cue.切坑) return camLerp(C10a, C10b, ss((t - cue.切坑 - 0.3) / (cue.黄入井 - cue.切坑)));
-  if (t >= cue.落水镜) return camLerp(C5a, C5b, ss((t - cue.落水镜) / (cue.切坑 - cue.落水镜)));
-  if (t >= cue.绕[0] && t < cue.绕[1]) return orbit(ss((t - cue.绕[0]) / (cue.绕[1] - cue.绕[0])));
+  if (t >= cue.cutToPit) return camLerp(C10a, C10b, ss((t - cue.cutToPit - 0.3) / (cue.huangEntersShaft - cue.cutToPit)));
+  if (t >= cue.splashShot) return camLerp(C5a, C5b, ss((t - cue.splashShot) / (cue.cutToPit - cue.splashShot)));
+  if (t >= cue.orbit[0] && t < cue.orbit[1]) return orbit(ss((t - cue.orbit[0]) / (cue.orbit[1] - cue.orbit[0])));
   for (let i = 1; i < camKeys.length; i++) {
     const [t0, camA] = camKeys[i - 1];
     const [t1, camB] = camKeys[i];

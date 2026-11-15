@@ -7,7 +7,7 @@ import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad } from '@engine/anim/anim.ts';
 import { FlightFog, FlightRig, FlightSky } from '../../../地点/飞行镜头.tsx';
 import { Jiuhu } from '@库/角色/九胡.tsx';
@@ -38,7 +38,7 @@ const asV3 = (p: number[]) => p as [number, number, number];
 const LOOT_SIZE = 0.5;
 
 export const BasePlanSegment: React.FC<{ segment: choreo.SegmentName }> = ({ segment: segment }) => {
-  const frame = use当前秒() * choreo.FPS;
+  const frame = useCurrentSec() * choreo.FPS;
   const { width, height } = useVideoConfig();
   const globalFrame = choreo.segmentTable[segment].起 + frame;
   const cam = choreo.camera(globalFrame);
@@ -82,7 +82,7 @@ export const BasePlanSegment: React.FC<{ segment: choreo.SegmentName }> = ({ seg
                 <StructureCompass needle={choreo.needle(globalFrame)} />
               </group>
             </group>
-            <LiYing pose={ly} hipL={sheath} 嘴={liYingMouth} />
+            <LiYing pose={ly} hipL={sheath} mouth={liYingMouth} />
             <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} />
           </group>
         </group>

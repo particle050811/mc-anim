@@ -101,7 +101,7 @@ export const roundOff = (followed: ReturnType<typeof terrainFollow>, floorAt = f
   const z = gaussian(z2, finishHalfWidth, ds);
   z[0] = z1[0];
   z[count - 1] = z1[count - 1];
-  return { ...followed, points: followed.points.map((p, i) => [p[0], p[1], z[i]] as V3), 高度: (s: number) => z[Math.min(count - 1, Math.max(0, Math.round(s / ds)))] };
+  return { ...followed, points: followed.points.map((p, i) => [p[0], p[1], z[i]] as V3), heightAt: (s: number) => z[Math.min(count - 1, Math.max(0, Math.round(s / ds)))] };
 };
 // 交给 地形跟随 的「地面」= 要求高度 − 净空：地物面，和近处最高的顶 − (净空 − 最小净空) 取大。
 // 左右不再取宽（侧宽 0）：地物面本身就是方圆 250 米的中位，地物顶是 48 米见方里最高的

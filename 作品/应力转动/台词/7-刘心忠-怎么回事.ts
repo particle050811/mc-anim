@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 a9c82c3b8800），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-怎么回事（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "7-刘心忠-怎么回事",
   "角色": "刘心忠",
   "念": "这是怎么回事？",
@@ -32,4 +32,4 @@ const 句: 台词句 = {
     [0.8,"X"],
   ],
 };
-export default 句;
+export default sentence;

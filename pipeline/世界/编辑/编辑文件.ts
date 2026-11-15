@@ -8,96 +8,96 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
-import { 读资产锁, 解析资产 } from '../../资产/资产锁.ts';
-import type { 方块知识 } from '../体素库.ts';
-import { 世界目录 } from '../声明.ts';
-import { 解析命令, 命令错误, type 步 } from './命令.ts';
-import { 方块表索引, 状态写法错误 } from './方块状态.ts';
-import { 读结构, type 结构 } from './结构.ts';
+import { readAssetLock, resolveAsset } from '../../资产/资产锁.ts';
+import type { BlockKnowledge } from '../体素库.ts';
+import { worldDir } from '../声明.ts';
+import { parseCommand, CommandError, type EditStep } from './命令.ts';
+import { BlockTableIndex, StateSyntaxError } from './方块状态.ts';
+import { readStructure, type Structure } from './结构.ts';
 
-export type 编辑集 = {
+export type EditSet = {
   /** 编辑文件的绝对路径 */
   文件: string;
   说明?: string;
   /** 编辑文件和用到的结构文件的字节一起算的 sha256 */
   sha256: string;
-  步: 步[];
+  步: EditStep[];
   /** 结构里方块表没有的状态（烘焙时进 缺失.tsv），按结构名 */
-  结构缺状态: Record<string, string[]>;
+  structMissingStates: Record<string, string[]>;
 };
 
-export class 编辑文件错误 extends Error {}
+export class EditFileError extends Error {}
 
 /** 结构名 → 字节：asset:<id> 按资产锁取数据根；否则是相对 基目录 的路径 */
-export const 结构字节 = (名: string, 基目录: string): Buffer => {
-  if (名.startsWith('asset:')) return fs.readFileSync(解析资产(名.slice(6), 读资产锁()).文件);
-  const f = path.resolve(基目录, 名);
-  if (!fs.existsSync(f)) throw new 编辑文件错误(`结构文件不存在：${f}`);
+export const structureBytes = (structNameOrPath: string, baseDir: string): Buffer => {
+  if (structNameOrPath.startsWith('asset:')) return fs.readFileSync(resolveAsset(structNameOrPath.slice(6), readAssetLock()).文件);
+  const f = path.resolve(baseDir, structNameOrPath);
+  if (!fs.existsSync(f)) throw new EditFileError(`结构文件不存在：${f}`);
   return fs.readFileSync(f);
 };
 
 /** 把编辑文件里每步的命令摊平成 [命令, 出处] */
-const 摊命令 = (表: Record<string, unknown>, 文件名: string): [string, string, string | undefined][] => {
-  const 步们 = 表['步'];
-  if (步们 === undefined) return [];
-  if (!Array.isArray(步们)) throw new 编辑文件错误(`${文件名}：步 要写成 [["步"]]`);
+const spreadCommands = (commandTable: Record<string, unknown>, fileName: string): [string, string, string | undefined][] => {
+  const steps = commandTable['步'];
+  if (steps === undefined) return [];
+  if (!Array.isArray(steps)) throw new EditFileError(`${fileName}：步 要写成 [["步"]]`);
   const out: [string, string, string | undefined][] = [];
-  步们.forEach((s: Record<string, unknown>, i) => {
-    const 出处 = `${文件名} 第 ${i + 1} 步`;
-    const 说明 = typeof s['说明'] === 'string' ? (s['说明'] as string) : undefined;
-    const 命令 = s['命令'];
-    const 行们 = typeof 命令 === 'string' ? 命令.split('\n') : Array.isArray(命令) && 命令.every((c) => typeof c === 'string') ? (命令 as string[]) : null;
-    if (!行们) throw new 编辑文件错误(`${出处}：命令 要是字符串或字符串数组`);
-    for (const k of Object.keys(s)) if (k !== '说明' && k !== '命令') throw new 编辑文件错误(`${出处}：不认识的字段 ${k}（只有 说明、命令）`);
-    for (const 行 of 行们.map((x) => x.trim()).filter((x) => x && !x.startsWith('#'))) out.push([行, 出处, 说明]);
+  steps.forEach((s: Record<string, unknown>, i) => {
+    const stepSource = `${fileName} 第 ${i + 1} 步`;
+    const note = typeof s['说明'] === 'string' ? (s['说明'] as string) : undefined;
+    const command = s['命令'];
+    const lines = typeof command === 'string' ? command.split('\n') : Array.isArray(command) && command.every((c) => typeof c === 'string') ? (command as string[]) : null;
+    if (!lines) throw new EditFileError(`${stepSource}：命令 要是字符串或字符串数组`);
+    for (const k of Object.keys(s)) if (k !== '说明' && k !== '命令') throw new EditFileError(`${stepSource}：不认识的字段 ${k}（只有 说明、命令）`);
+    for (const line of lines.map((x) => x.trim()).filter((x) => x && !x.startsWith('#'))) out.push([line, stepSource, note]);
   });
   return out;
 };
 
 /** 解析编辑文本；结构用 取结构字节 取（测试里可以换） */
-export const 解析编辑 = (文本: string, 文件: string, 知识: Pick<方块知识, '全部状态'>, 取结构字节: (名: string) => Buffer): 编辑集 => {
-  const 文件名 = path.basename(文件);
-  let 表: Record<string, unknown>;
+export const parseEdits = (text: string, file: string, knowledge: Pick<BlockKnowledge, 'allStates'>, loadStructureBytes: (structNameOrPath: string) => Buffer): EditSet => {
+  const fileName = path.basename(file);
+  let editTable: Record<string, unknown>;
   try {
-    表 = parse(文本) as Record<string, unknown>;
+    editTable = parse(text) as Record<string, unknown>;
   } catch (e) {
-    throw new 编辑文件错误(`${文件名} 不是合法的 TOML：${(e as Error).message}`);
+    throw new EditFileError(`${fileName} 不是合法的 TOML：${(e as Error).message}`);
   }
-  for (const k of Object.keys(表)) if (k !== '说明' && k !== '步') throw new 编辑文件错误(`${文件名}：不认识的字段 ${k}（顶层只有 说明、[["步"]]）`);
-  const 索引 = new 方块表索引(知识.全部状态);
-  const 已有 = new Set(知识.全部状态);
-  const 结构们 = new Map<string, { 结构: 结构; 字节: Buffer }>();
-  const 结构缺状态: Record<string, string[]> = {};
-  const 环境 = {
-    校验: (s: Parameters<方块表索引['校验']>[0], 原文: string) => 索引.校验(s, 原文),
-    取结构: (名: string) => {
-      let e = 结构们.get(名);
+  for (const k of Object.keys(editTable)) if (k !== '说明' && k !== '步') throw new EditFileError(`${fileName}：不认识的字段 ${k}（顶层只有 说明、[["步"]]）`);
+  const stateIndex = new BlockTableIndex(knowledge.allStates);
+  const known = new Set(knowledge.allStates);
+  const structureCache = new Map<string, { 结构: Structure; 字节: Buffer }>();
+  const structMissingStates: Record<string, string[]> = {};
+  const env = {
+    validate: (s: Parameters<BlockTableIndex['validate']>[0], raw: string) => stateIndex.validate(s, raw),
+    getStructure: (structNameOrPath: string) => {
+      let e = structureCache.get(structNameOrPath);
       if (!e) {
-        const 字节 = 取结构字节(名);
-        const 结构 = 读结构(字节, 名);
-        e = { 结构, 字节 };
-        结构们.set(名, e);
-        const 缺 = [...new Set(结构.格.filter((x): x is string => !!x && x !== 'minecraft:air' && !已有.has(x)))].sort();
-        if (缺.length) 结构缺状态[名] = 缺;
+        const bytes = loadStructureBytes(structNameOrPath);
+        const structure = readStructure(bytes, structNameOrPath);
+        e = { 结构: structure, 字节: bytes };
+        structureCache.set(structNameOrPath, e);
+        const missing = [...new Set(structure.格.filter((x): x is string => !!x && x !== 'minecraft:air' && !known.has(x)))].sort();
+        if (missing.length) structMissingStates[structNameOrPath] = missing;
       }
       return e.结构;
     },
   };
-  const 步: 步[] = [];
-  const 错: string[] = [];
-  for (const [行, 出处] of 摊命令(表, 文件名)) {
+  const steps: EditStep[] = [];
+  const errors: string[] = [];
+  for (const [line, stepSource] of spreadCommands(editTable, fileName)) {
     try {
-      步.push(解析命令(行, 出处, 环境));
+      steps.push(parseCommand(line, stepSource, env));
     } catch (e) {
-      if (e instanceof 命令错误 || e instanceof 状态写法错误 || e instanceof 编辑文件错误) 错.push(`${出处}：${(e as Error).message}`);
-      else throw new Error(`${出处}：${(e as Error).message}`);
+      if (e instanceof CommandError || e instanceof StateSyntaxError || e instanceof EditFileError) errors.push(`${stepSource}：${(e as Error).message}`);
+      else throw new Error(`${stepSource}：${(e as Error).message}`);
     }
   }
-  if (错.length) throw new 编辑文件错误(`${文件名} 有 ${错.length} 处不对：\n  ${错.join('\n  ')}`);
-  const h = createHash('sha256').update(文本);
-  for (const [名, e] of [...结构们].sort((a, b) => (a[0] < b[0] ? -1 : 1))) h.update(`\0${名}\0`).update(e.字节);
-  return { 文件, 说明: typeof 表['说明'] === 'string' ? (表['说明'] as string) : undefined, sha256: h.digest('hex'), 步, 结构缺状态 };
+  if (errors.length) throw new EditFileError(`${fileName} 有 ${errors.length} 处不对：\n  ${errors.join('\n  ')}`);
+  const h = createHash('sha256').update(text);
+  for (const [structNameOrPath, e] of [...structureCache].sort((a, b) => (a[0] < b[0] ? -1 : 1))) h.update(`\0${structNameOrPath}\0`).update(e.字节);
+  return { 文件: file, 说明: typeof editTable['说明'] === 'string' ? (editTable['说明'] as string) : undefined, sha256: h.digest('hex'), 步: steps, structMissingStates };
 };
 
 /** 读一个世界的编辑文件；结构路径相对 sourcing/worlds/ */
-export const 读编辑 = (文件: string, 知识: Pick<方块知识, '全部状态'>): 编辑集 => 解析编辑(fs.readFileSync(文件, 'utf8'), 文件, 知识, (名) => 结构字节(名, 世界目录()));
+export const readEdits = (file: string, knowledge: Pick<BlockKnowledge, 'allStates'>): EditSet => parseEdits(fs.readFileSync(file, 'utf8'), file, knowledge, (structNameOrPath) => structureBytes(structNameOrPath, worldDir()));

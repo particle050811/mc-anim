@@ -18,6 +18,6 @@
 export { FPS, lineIds, huangLineSec, chaseCueOffset, cues, skipSec, storySec, afterImpact, fallTime, type SegmentName, jumpCutFrame, fallSkipFrames, frameToSec, cutFrameOf, cutToPitFrame, segmentTable, segmentFrames, lastFrame, lastSec, lineStartFrame, lineCuesBySegment, toSec } from './编排/时间线.ts';
 export { faceShaft } from './编排/站位.ts';
 export { leaderPoolJump, type Person, huangPanState, liuXinzhongState } from './编排/二人.ts';
-export { type GuardPose, guardPoseAt, guardLowerSec, guardPoolJump, 卫兵位置 } from './编排/卫兵.ts';
+export { type GuardPose, guardPoseAt, guardLowerSec, guardPoolJump, guardPositions } from './编排/卫兵.ts';
 export { type Cam, camPose } from './编排/机位.ts';
-export { groundZ as 地面z } from '../6-3-下坠/编排.ts';
+export { groundZ as groundZ } from '../6-3-下坠/编排.ts';

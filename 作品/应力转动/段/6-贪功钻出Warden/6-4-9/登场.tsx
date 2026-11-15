@@ -15,12 +15,12 @@ export const RevealView: React.FC<{ f: number }> = ({ f: frame }) => {
   const { width, height } = useVideoConfig();
   const pursuerPoses = choreo.pursuers(frame);
   return (
-    <AncientCity4xCanvas 段="6-4-9" cam={choreo.camera(frame)} width={width} height={height} 羊毛={K648.woolNames}>
+    <AncientCity4xCanvas 段="6-4-9" cam={choreo.camera(frame)} width={width} height={height} wool={K648.woolNames}>
       <group position={choreo.WARDEN_AT} rotation={[0, 0, rad(choreo.WARDEN_YAW)]}>
         <Warden {...choreo.warden(frame)} />
       </group>
       <LiuXinzhong pose={pursuerPoses.刘} />
-      <HuangPan pose={pursuerPoses.黄} 弓={choreo.bowAt(frame)} />
+      <HuangPan pose={pursuerPoses.黄} bow={choreo.bowAt(frame)} />
     </AncientCity4xCanvas>
   );
 };

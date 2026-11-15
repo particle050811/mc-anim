@@ -6,96 +6,96 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 场景到three } from '@engine/core/three换算.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
-import { 炼狱结界线框 } from '@库/特效/炼狱结界.tsx';
-import { 炼狱结界透明度 } from '@库/特效/炼狱结界线.ts';
-import { 娘化亚波伦, 悬停 } from '../../角色/娘化亚波伦.tsx';
-import { 炼狱结界辉线 } from '../../特效/炼狱结界辉线.tsx';
-import { 炼狱结界演出 } from '../../特效/炼狱结界演出.tsx';
-import { 结界演出状态在 } from '../../特效/炼狱结界演出状态.ts';
-import { 并排中心, 亚波伦位置, 演出设定, 画幅, 视图们, type 视图 } from './视图.ts';
+import { RevelationCageWire } from '@库/特效/炼狱结界.tsx';
+import { revelationCageOpacity } from '@库/特效/炼狱结界线.ts';
+import { GirlYaBoLun, hover } from '../../角色/娘化亚波伦.tsx';
+import { RevelationCageGlow } from '../../特效/炼狱结界辉线.tsx';
+import { RevelationCagePerformance } from '../../特效/炼狱结界演出.tsx';
+import { cagePerformanceStateAt } from '../../特效/炼狱结界演出状态.ts';
+import { sideBySideCenters, yaBoLunPos, performanceSettings, aspect, views, type View } from './视图.ts';
 
-const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
+const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = v.视角;
+  cam.fov = v.fov;
   cam.near = 0.05;
   cam.far = 256;
-  cam.position.copy(场景到three(v.眼));
+  cam.position.copy(sceneToThree(v.眼));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three(v.看));
+  cam.lookAt(sceneToThree(v.看));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
 // 暗红底：背景、雾取封面草稿段的雾色和雾距，地面取暗的下界岩色
-const 底色 = { 灰: { 背景: '#5a5e66', 地: '#8a8f98' }, 暗红: { 背景: '#3a0a07', 地: '#3b1513' } } as const;
+const baseColors = { 灰: { background: '#5a5e66', ground: '#8a8f98' }, 暗红: { background: '#3a0a07', ground: '#3b1513' } } as const;
 
-const 地面: React.FC<{ 色?: string }> = ({ 色 = 底色.灰.地 }) => (
+const Ground: React.FC<{ 色?: string }> = ({ 色: color = baseColors.灰.ground }) => (
   <mesh position={[0, 0, -0.05]}>
     <boxGeometry args={[160, 160, 0.1]} />
-    <meshStandardMaterial color={色} />
+    <meshStandardMaterial color={color} />
   </mesh>
 );
 
-const 内容: React.FC<{ v: 视图 }> = ({ v }) => {
-  if (v.画.类 === '原版') {
+const Content: React.FC<{ v: View }> = ({ v }) => {
+  if (v.pictureMode.类 === '原版') {
     return (
       <>
-        {v.画.地面 && <地面 />}
+        {v.pictureMode.ground && <Ground />}
         <Steve pose={stevePose([0, 0, 0], 180)} mcLight={1} />
         <group position={[0, 0, 0.9]}>
-          <炼狱结界线框 秒={v.画.转动秒} 透明度={v.画.活了几刻 === undefined ? 1 : 炼狱结界透明度(v.画.活了几刻)} />
+          <RevelationCageWire 秒={v.pictureMode.spinSec} opacity={v.pictureMode.ageTicks === undefined ? 1 : revelationCageOpacity(v.pictureMode.ageTicks)} />
         </group>
       </>
     );
   }
-  const 地色 = 底色[v.底 ?? '灰'].地;
-  if (v.画.类 === '并排') {
-    const 转动秒 = v.画.转动秒;
+  const groundColor = baseColors[v.bottomBackground ?? '灰'].ground;
+  if (v.pictureMode.类 === '并排') {
+    const spinSec = v.pictureMode.spinSec;
     return (
       <>
-        <地面 色={地色} />
-        {并排中心.map((c, i) => (
+        <Ground 色={groundColor} />
+        {sideBySideCenters.map((c, i) => (
           <React.Fragment key={i}>
             <Steve pose={stevePose([c[0], c[1], 0], 180)} mcLight={1} />
-            <group position={c}>{i === 0 ? <炼狱结界线框 秒={转动秒} /> : <炼狱结界辉线 秒={转动秒} />}</group>
+            <group position={c}>{i === 0 ? <RevelationCageWire 秒={spinSec} /> : <RevelationCageGlow 秒={spinSec} />}</group>
           </React.Fragment>
         ))}
       </>
     );
   }
-  const s = 结界演出状态在(v.画.秒, 演出设定);
+  const s = cagePerformanceStateAt(v.pictureMode.秒, performanceSettings);
   return (
     <>
-      <地面 色={地色} />
+      <Ground 色={groundColor} />
       {/* 史蒂夫面朝西看着亚波伦（yaw 正 = 往左转，0 朝 +Y） */}
-      <Steve pose={stevePose([0, 0, 0], 90)} mcLight={1} hurt={s.火势 > 0.6 ? 1 : 0} />
-      <娘化亚波伦 pose={{ loc: 亚波伦位置, yaw: -90 }} 秒={v.画.秒 % 3} 表演={悬停} />
-      <炼狱结界演出 秒={v.画.秒} 设定={演出设定} />
+      <Steve pose={stevePose([0, 0, 0], 90)} mcLight={1} hurt={s.fireIntensity > 0.6 ? 1 : 0} />
+      <GirlYaBoLun pose={{ loc: yaBoLunPos, yaw: -90 }} 秒={v.pictureMode.秒 % 3} act={hover} />
+      <RevelationCagePerformance 秒={v.pictureMode.秒} settings={performanceSettings} />
     </>
   );
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const s = v.画.类 === '演出' ? 结界演出状态在(v.画.秒, 演出设定) : undefined;
-  const 背景 = 底色[v.底 ?? '灰'].背景;
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const s = v.pictureMode.类 === '演出' ? cagePerformanceStateAt(v.pictureMode.秒, performanceSettings) : undefined;
+  const background = baseColors[v.bottomBackground ?? '灰'].background;
   return (
-    <AbsoluteFill style={{ background: 背景 }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: false }}>
-        <color attach="background" args={[背景]} />
-        {v.底 === '暗红' && <fog attach="fog" args={[背景, 16, 70]} />}
-        <机位 v={v} />
+    <AbsoluteFill style={{ background: background }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+        <color attach="background" args={[background]} />
+        {v.bottomBackground === '暗红' && <fog attach="fog" args={[background, 16, 70]} />}
+        <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
-          <内容 v={v} />
+          <Content v={v} />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
@@ -103,7 +103,7 @@ const 画面: React.FC = () => {
         {v.说明 && <div style={{ fontSize: 16 }}>{v.说明}</div>}
         {s && (
           <div style={{ fontSize: 16 }}>
-            演出第 {v.画.类 === '演出' ? v.画.秒.toFixed(2) : ''} 秒　阶段 {s.阶段}　半径系数 {s.半径系数.toFixed(2)}（顶点离中心 {s.外接球半径.toFixed(2)} 格）　透明度 {s.透明度.toFixed(2)}
+            演出第 {v.pictureMode.类 === '演出' ? v.pictureMode.秒.toFixed(2) : ''} 秒　阶段 {s.阶段}　半径系数 {s.radiusFactor.toFixed(2)}（顶点离中心 {s.circumRadius.toFixed(2)} 格）　透明度 {s.opacity.toFixed(2)}
           </div>
         )}
       </div>
@@ -111,4 +111,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

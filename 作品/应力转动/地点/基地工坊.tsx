@@ -185,7 +185,7 @@ export const BaseWorkshop: React.FC<{ t: number; loot?: boolean; lootFacing?: nu
       <Blocks part="齿轮" cells={COGS} spin={spin} />
       <WindmillSails t={t} />
       {/* 西墙边的箱子（正面朝屋里）；西墙 y 1～3 开门，所以放在工作台南边 */}
-      <Chest p={[-5.5, -3.5, 0]} 朝向="east" />
+      <Chest p={[-5.5, -3.5, 0]} facing="east" />
       {showLoot && (
         <>
           <Standing at={BASE.loot.炽热的血} face={lootFacing} size={0.5}>

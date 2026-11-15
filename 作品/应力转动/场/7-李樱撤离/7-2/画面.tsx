@@ -29,32 +29,32 @@ export const HIDE: number[][] = geom.sensors.flatMap(([x, y, z]) => {
 });
 
 // 嘴：李樱说话时的口型（各段用 src/lib/口型.ts 的 mouthAt 按本段台词算）；主观镜头（镜头在他眼睛上）不画他
-export const ScenePicture: React.FC<{ sf: number; cam: Cam; wideShot?: boolean; 嘴?: Mouth; pov?: boolean }> = ({ sf, cam, wideShot: wideShot = false, 嘴: mouth, pov = false }) => {
+export const ScenePicture: React.FC<{ sf: number; cam: Cam; wideShot?: boolean; mouth?: Mouth; pov?: boolean }> = ({ sf, cam, wideShot: wideShot = false, mouth: mouth, pov = false }) => {
   const { width, height } = useVideoConfig();
-  const sec = play.秒(sf);
-  const ly = play.李樱(sf);
-  const wool = play.羊毛(sf);
-  const sensorClock = play.感测体钟(sf);
+  const sec = play.toSec(sf);
+  const ly = play.liYingStateAt(sf);
+  const wool = play.wool(sf);
+  const sensorClock = play.sensorClock(sf);
   return (
-    <AncientCity4xCanvas 段="7-2" cam={cam} width={width} height={height} hide={HIDE} 羊毛={wool.已有} growingWool={wool.长} 开箱={play.开箱(sf)}>
+    <AncientCity4xCanvas 段="7-2" cam={cam} width={width} height={height} hide={HIDE} wool={wool.placed} growingWool={wool.长} chestOpening={play.chestOpeningAt(sf)}>
       {ly.在 && !pov && (
         <LiYing
           pose={ly.pose}
           hipL={<WornSheath />}
           handR={ly.teleportStone ? <HeldWarpStone sec={sec} /> : undefined}
-          嘴={mouth}
+          mouth={mouth}
         />
       )}
       {geom.sensors.map((b, i) => (
-        <SculkSensor key={i} p={geom.方块底心(b)} 秒={sensorClock} 激活秒={sec - play.最近激活秒(i, sec)} seed={i + 1} />
+        <SculkSensor key={i} p={geom.blockBottomCenter(b)} 秒={sensorClock} secSinceActive={sec - play.latestActiveSec(i, sec)} seed={i + 1} />
       ))}
-      {play.振动们.map((v, i) => (
+      {play.vibrations.map((v, i) => (
         <VibrationSignal key={i} from={v.from} to={v.to} sec={sec - v.t} 帧={i * 3} />
       ))}
-      <ShriekRings p={play.尖啸.p} sec={sec - play.尖啸.t} />
-      <VanillaParticles spawns={play.使用粒子} 秒={sec} />
-      <VanillaParticles spawns={play.传走粒子} 秒={sec} />
-      {wideShot && <SceneActors t={play.远景t(sf)} />}
+      <ShriekRings p={play.shriek.p} sec={sec - play.shriek.t} />
+      <VanillaParticles spawns={play.useParticles} 秒={sec} />
+      <VanillaParticles spawns={play.teleportAwayParticles} 秒={sec} />
+      {wideShot && <SceneActors t={play.wideTime(sf)} />}
     </AncientCity4xCanvas>
   );
 };

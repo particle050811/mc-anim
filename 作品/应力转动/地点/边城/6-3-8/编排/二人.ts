@@ -47,14 +47,14 @@ const huangKeyPoses = (): [number, PosePart][] => {
   const cue = cues;
   return [
     [0, huangStandPose],
-    [cue.黄开口 - 0.1, huangStandPose],
-    [cue.黄开口 + 0.35, { headYaw: -24, headPitch: huangShaftGaze.pitch + 4, armL: 58, armLYaw: 10, armLRoll: -6 }],
-    [cue.快追 - 0.35, { yaw: huangShaftGaze.yaw, headYaw: -10, armL: 58, armR: 0, armRRoll: 0 }],
-    [cue.快追, { yaw: huangShaftGaze.yaw + 34, headYaw: 26, headPitch: 2, armL: 14, armLYaw: 0, armR: 96, armRRoll: -10 }],
-    [cue.快追 + 0.3, { armR: 58 }],
-    [cue.快追 + 0.55, { armR: 92 }],
-    [cue.黄完 - 0.2, { yaw: huangShaftGaze.yaw + 20, headYaw: 10, armR: 30, armRRoll: 0 }],
-    [cue.黄起跳 - 0.12, { yaw: 180, pitch: -8, armL: 20, armLYaw: 0, armLRoll: -4, armR: 20, headYaw: 0, headPitch: -10 }],
+    [cue.huangSpeaks - 0.1, huangStandPose],
+    [cue.huangSpeaks + 0.35, { headYaw: -24, headPitch: huangShaftGaze.pitch + 4, armL: 58, armLYaw: 10, armLRoll: -6 }],
+    [cue.chaseCue - 0.35, { yaw: huangShaftGaze.yaw, headYaw: -10, armL: 58, armR: 0, armRRoll: 0 }],
+    [cue.chaseCue, { yaw: huangShaftGaze.yaw + 34, headYaw: 26, headPitch: 2, armL: 14, armLYaw: 0, armR: 96, armRRoll: -10 }],
+    [cue.chaseCue + 0.3, { armR: 58 }],
+    [cue.chaseCue + 0.55, { armR: 92 }],
+    [cue.huangDone - 0.2, { yaw: huangShaftGaze.yaw + 20, headYaw: 10, armR: 30, armRRoll: 0 }],
+    [cue.huangTakeoff - 0.12, { yaw: 180, pitch: -8, armL: 20, armLYaw: 0, armLRoll: -4, armR: 20, headYaw: 0, headPitch: -10 }],
   ];
 };
 // 刘心忠：右手法杖（追兵.tsx 的 LiuXinzhong，握杖、前倾照 刘持杖，这里不另算）。黄叛开口时侧过脸听，说到「快追」点一下头，转回去对着坑跳
@@ -65,13 +65,13 @@ const liuKeyPoses = (): [number, PosePart][] => {
   const cue = cues;
   return [
     [0, liuStandPose],
-    [cue.黄开口 + 0.2, liuStandPose],
-    [cue.黄开口 + 0.7, { headYaw: 28, headPitch: 0 }],
-    [cue.快追 + 0.15, { headYaw: 26, headPitch: 0 }],
-    [cue.快追 + 0.32, { headPitch: -16 }],
-    [cue.快追 + 0.5, { headPitch: 0, headYaw: 10 }],
-    [cue.刘起跳 - 0.5, { yaw: 180, headYaw: 0, headPitch: -6, armL: 0 }],
-    [cue.刘起跳 - 0.12, { yaw: 180, pitch: -8, armL: 20, armR: 26, headYaw: 0, headPitch: -10 }],
+    [cue.huangSpeaks + 0.2, liuStandPose],
+    [cue.huangSpeaks + 0.7, { headYaw: 28, headPitch: 0 }],
+    [cue.chaseCue + 0.15, { headYaw: 26, headPitch: 0 }],
+    [cue.chaseCue + 0.32, { headPitch: -16 }],
+    [cue.chaseCue + 0.5, { headPitch: 0, headYaw: 10 }],
+    [cue.liuTakeoff - 0.5, { yaw: 180, headYaw: 0, headPitch: -6, armL: 0 }],
+    [cue.liuTakeoff - 0.12, { yaw: 180, pitch: -8, armL: 20, armR: 26, headYaw: 0, headPitch: -10 }],
   ];
 };
 const HUANG_KEYS = huangKeyPoses();
@@ -82,10 +82,10 @@ const LIU_KEYS = liuKeyPoses();
 // 蹚到南池沿爬上岸，跳下池沿往西跑（路上精英 30 米/秒）。逐刻算法见 编排/落水.ts
 const leaderJump = (standPos: V3, takeoffSec: number) => {
   const local = sub(standPos, town(0, 0, 0));
-  return poolJump({ takeoffSec, x: local[0], y: local[1], vz0: 0.42, vh0: 0.48, wadeDelay: 0.1, topSpeed: chaseSpeed.精英 });
+  return poolJump({ takeoffSec, x: local[0], y: local[1], vz0: 0.42, vh0: 0.48, wadeDelay: 0.1, topSpeed: chaseSpeed.elite });
 };
-const LIU_JUMP = leaderJump(liuStand, cues.刘起跳);
-const HUANG_JUMP = leaderJump(huangStand, cues.黄起跳);
+const LIU_JUMP = leaderJump(liuStand, cues.liuTakeoff);
+const HUANG_JUMP = leaderJump(huangStand, cues.huangTakeoff);
 export const leaderPoolJump = (who: '刘' | '黄') => (who === '刘' ? LIU_JUMP : HUANG_JUMP);
 // 跳的时候：蹲一下（0.12 秒）、腾空（两腿一前一后、手往后甩）、下落（手往上）
 const leapPose = (pose: FigurePose, sec: number): FigurePose => {
@@ -105,11 +105,11 @@ const leapPose = (pose: FigurePose, sec: number): FigurePose => {
 const pitEdge = 5; // 起跳点在井心往北几格
 const takeoffSpeed = 0.48 * 20;
 // 离起跳还有 s 秒时：离起跳点多远、多快、步态周期数（倒着算）
-const pitApproach = speedProfile([[0, takeoffSpeed], [RAMP_SEC, chaseSpeed.精英]]);
+const pitApproach = speedProfile([[0, takeoffSpeed], [RAMP_SEC, chaseSpeed.elite]]);
 const pitRun = (who: '刘' | '黄') => {
   const center = shaftMouth();
   const dx = who === '刘' ? -0.7 : 0.7; // 两人一左一右（刘心忠在西）
-  const takeoffSec = who === '刘' ? cues.刘入井 : cues.黄入井;
+  const takeoffSec = who === '刘' ? cues.liuEntersShaft : cues.huangEntersShaft;
   return { start: [center[0] + dx, center[1] + pitEdge, groundZ] as V3, takeoffSec: takeoffSec };
 };
 // 疾跑起跳的水平、竖直位移（格，按刻打表）
@@ -170,5 +170,5 @@ const onWall = (keys: [number, PosePart][], base: FigurePose, t: number, phase: 
   if (s.phase === '水里') return { pose: wadePose(loc, s.heading, s.cycles), present: true };
   return { pose: runPose(loc, s.heading, s.cycles, s.speed), present: true };
 };
-export const huangPanState = (t: number): Person => (t >= cues.切坑 ? atPit('黄', t) : onWall(HUANG_KEYS, huangBase, t, 0, HUANG_JUMP, huangStand));
-export const liuXinzhongState = (t: number): Person => (t >= cues.切坑 ? atPit('刘', t) : onWall(LIU_KEYS, liuBase, t, 37, LIU_JUMP, liuStand));
+export const huangPanState = (t: number): Person => (t >= cues.cutToPit ? atPit('黄', t) : onWall(HUANG_KEYS, huangBase, t, 0, HUANG_JUMP, huangStand));
+export const liuXinzhongState = (t: number): Person => (t >= cues.cutToPit ? atPit('刘', t) : onWall(LIU_KEYS, liuBase, t, 37, LIU_JUMP, liuStand));

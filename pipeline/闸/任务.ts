@@ -1,15 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { 数据路径, 配置 } from '../环境/配置.ts';
-import { 读发起者, type 发起者 } from './发起者.ts';
-import { 记调度 } from './调度日志.ts';
-import { 读JSON, 写JSON, 列文件, 只提示 } from './文件.ts';
-import { 登记收尾 } from './收尾.ts';
-import { pid换人了, 进程在吗 } from './锁.ts';
-import { 取指令, 指令文件 } from './指令.ts';
-import { 一分钟负载 } from '../环境/资源.ts';
-export type 任务声明 = {
+import { dataPath, config } from '../环境/配置.ts';
+import { readCaller, type Caller } from './发起者.ts';
+import { recordSchedulerEvent } from './调度日志.ts';
+import { readJson, writeJson, listFiles, promptOnly } from './文件.ts';
+import { registerCleanup } from './收尾.ts';
+import { pidReplaced, processAlive } from './锁.ts';
+import { readDirective, directiveFile } from './指令.ts';
+import { load1Min } from '../环境/资源.ts';
+export type TaskDecl = {
     种?: string;
     作品?: string;
     段?: string;
@@ -29,107 +29,107 @@ export type 任务声明 = {
     低优先?: boolean;
     需负载?: boolean;
 };
-export type 调度环境 = {
-    锁目录: string;
-    日志目录: string;
-    调度目录: string;
-    本机: string;
-    发起者: 发起者;
-    现在毫秒: () => number;
+export type SchedulerEnv = {
+    lockDir: string;
+    logDir: string;
+    schedulerDir: string;
+    localHost: string;
+    caller: Caller;
+    nowMs: () => number;
 };
-export type 任务信息 = {
+export type TaskInfo = {
     任务: string;
     起: number;
     心跳: number;
-    发起: 发起者;
-    声明: 任务声明;
+    发起: Caller;
+    声明: TaskDecl;
     主机: string;
     票?: string;
     /** 被杀时说得清当时在干嘛；崩溃事件也从在跑文件带出来。 */
     当时?: '排队' | '持锁' | '';
 };
-const 活任务 = new Map<string, ReturnType<typeof 建任务>>();
-export const 取调度环境 = (e: Partial<调度环境> = {}): 调度环境 => ({ 锁目录: e.锁目录 ?? 配置('锁目录'),
-    日志目录: e.日志目录 ?? (e.锁目录 ? path.join(e.锁目录, 'logs') : 数据路径('run', 'logs', '调度')),
-    调度目录: e.调度目录 ?? (e.锁目录 ? path.join(e.锁目录, 'state') : 数据路径('run', '调度')), 本机: e.本机 ?? 配置('主机'),
-    发起者: e.发起者 ?? 读发起者(), 现在毫秒: e.现在毫秒 ?? Date.now });
-const 建任务 = (e: 调度环境, 声明: 任务声明, 结束回调?: (码: number) => void) => {
-    const now = e.现在毫秒();
-    const info: 任务信息 = { 任务: `${now.toString(36)}-${process.pid}-${randomUUID().slice(0, 8)}`, 起: now, 心跳: now, 发起: e.发起者, 声明, 主机: e.本机 };
-    const file = path.join(e.锁目录, '在跑', info.任务 + '.json');
-    const 存 = () => 只提示('在跑登记', () => 写JSON(file, info));
-    存();
-    const 记 = (事: string, 字段: Record<string, unknown> = {}) => 记调度(e.日志目录, 事, { 任务: info.任务, 发起: info.发起, 声明: info.声明, ...字段 }, e.现在毫秒());
-    记('任务起');
-    只提示('盯未挂记录', () => 检查盯(e, info));
-    let 完 = false;
-    const 结束 = (码 = 0, 信号?: string, 错误?: string) => {
-        if (完)
+const liveTasks = new Map<string, ReturnType<typeof buildTask>>();
+export const resolveSchedulerEnv = (e: Partial<SchedulerEnv> = {}): SchedulerEnv => ({ lockDir: e.lockDir ?? config('锁目录'),
+    logDir: e.logDir ?? (e.lockDir ? path.join(e.lockDir, 'logs') : dataPath('run', 'logs', '调度')),
+    schedulerDir: e.schedulerDir ?? (e.lockDir ? path.join(e.lockDir, 'state') : dataPath('run', '调度')), localHost: e.localHost ?? config('主机'),
+    caller: e.caller ?? readCaller(), nowMs: e.nowMs ?? Date.now });
+const buildTask = (e: SchedulerEnv, taskDecl: TaskDecl, onEnd?: (exitCode: number) => void) => {
+    const now = e.nowMs();
+    const info: TaskInfo = { 任务: `${now.toString(36)}-${process.pid}-${randomUUID().slice(0, 8)}`, 起: now, 心跳: now, 发起: e.caller, 声明: taskDecl, 主机: e.localHost };
+    const file = path.join(e.lockDir, '在跑', info.任务 + '.json');
+    const save = () => promptOnly('在跑登记', () => writeJson(file, info));
+    save();
+    const logEvent = (eventName: string, fields: Record<string, unknown> = {}) => recordSchedulerEvent(e.logDir, eventName, { 任务: info.任务, 发起: info.发起, 声明: info.声明, ...fields }, e.nowMs());
+    logEvent('任务起');
+    promptOnly('盯未挂记录', () => checkWatch(e, info));
+    let ended = false;
+    const finish = (exitCode = 0, signal?: string, errorText?: string) => {
+        if (ended)
             return;
-        完 = true;
+        ended = true;
         clearInterval(timer);
-        撤();
-        const 指令 = 取指令(e, info.任务), 取消 = 指令?.动作 === '取消' ? 指令 : undefined, 现在 = e.现在毫秒();
-        if (信号) {
-            if (取消)
-                console.error(`被调度取消：${取消.为什么}，不要原样重发`);
-            记('被杀', { 信号, 退出码: 码, 为什么: 取消?.为什么, 票: info.票, 当时: info.当时 || '其他', 已跑秒: (现在 - info.起) / 1000, 取消后秒: 取消?.时 ? (现在 - 取消.时) / 1000 : undefined, 机: { 负载: 一分钟负载() } });
+        undo();
+        const directive = readDirective(e, info.任务), cancel = directive?.动作 === '取消' ? directive : undefined, now = e.nowMs();
+        if (signal) {
+            if (cancel)
+                console.error(`被调度取消：${cancel.为什么}，不要原样重发`);
+            logEvent('被杀', { 信号: signal, 退出码: exitCode, 为什么: cancel?.为什么, 票: info.票, 当时: info.当时 || '其他', 已跑秒: (now - info.起) / 1000, 取消后秒: cancel?.时 ? (now - cancel.时) / 1000 : undefined, 机: { 负载: load1Min() } });
         }
-        记('任务止', { 票: info.票, 退出码: 码, 信号, 错误, 秒: (现在 - info.起) / 1000 });
-        只提示('耗时记录', () => {
-            if (结束回调)
-                结束回调(码);
+        logEvent('任务止', { 票: info.票, 退出码: exitCode, 信号: signal, 错误: errorText, 秒: (now - info.起) / 1000 });
+        promptOnly('耗时记录', () => {
+            if (onEnd)
+                onEnd(exitCode);
             else {
-                const 表 = path.join(e.日志目录, '..', '耗时.tsv');
-                fs.mkdirSync(path.dirname(表), { recursive: true });
-                const 行 = [new Date(info.起).toISOString(), `脚本 ${声明.种 ?? '过闸'}`, ((e.现在毫秒() - info.起) / 1000).toFixed(1), 码, e.本机, info.发起.命令].join('\t') + '\n';
-                fs.appendFileSync(表, 行);
+                const timingFile = path.join(e.logDir, '..', '耗时.tsv');
+                fs.mkdirSync(path.dirname(timingFile), { recursive: true });
+                const line = [new Date(info.起).toISOString(), `脚本 ${taskDecl.种 ?? '过闸'}`, ((e.nowMs() - info.起) / 1000).toFixed(1), exitCode, e.localHost, info.发起.命令].join('\t') + '\n';
+                fs.appendFileSync(timingFile, line);
             }
         });
-        只提示('在跑登记', () => {
+        promptOnly('在跑登记', () => {
             fs.rmSync(file, { force: true });
-            fs.rmSync(指令文件(e, info.任务), { force: true });
+            fs.rmSync(directiveFile(e, info.任务), { force: true });
         });
-        活任务.delete(e.锁目录);
+        liveTasks.delete(e.lockDir);
     };
-    const 撤 = 登记收尾(结束);
-    const timer = setInterval(() => { info.心跳 = e.现在毫秒(); 存(); }, 30000);
+    const undo = registerCleanup(finish);
+    const timer = setInterval(() => { info.心跳 = e.nowMs(); save(); }, 30000);
     timer.unref();
-    return { info, 记, 结束, 更新: (声明: 任务声明, 票?: string, 当时 = info.当时) => { info.声明 = 声明; info.票 = 票; info.当时 = 当时; 存(); } };
+    return { info, logEvent, 结束: finish, update: (taskDecl: TaskDecl, ticket?: string, phase = info.当时) => { info.声明 = taskDecl; info.票 = ticket; info.当时 = phase; save(); } };
 };
-export const 开任务 = (e: 调度环境, 声明: 任务声明, 结束?: (码: number) => void) => {
-    let t = 活任务.get(e.锁目录);
+export const openTask = (e: SchedulerEnv, taskDecl: TaskDecl, onDone?: (exitCode: number) => void) => {
+    let t = liveTasks.get(e.lockDir);
     if (!t) {
-        t = 建任务(e, 声明, 结束);
-        活任务.set(e.锁目录, t);
+        t = buildTask(e, taskDecl, onDone);
+        liveTasks.set(e.lockDir, t);
     }
     return t;
 };
-export const 检查盯 = (e: 调度环境, 任务: 任务信息) => {
+export const checkWatch = (e: SchedulerEnv, taskInfo: TaskInfo) => {
     // 挂盯是 CLAUDE.md 给作者的 Claude、Codex 会话定的纪律；别人照 docs/从零渲染.md 跑（人或别家 AI 助手，来源都是「人」）看到这句只会困惑（11-14 在 Windows 上从 GitHub 走一遍时见到）
-    if (e.发起者.来源 === '人')
+    if (e.caller.来源 === '人')
         return;
-    const dir = path.join(e.调度目录, '盯');
-    if (列文件(dir).some(n => { const x = 读JSON<{
+    const dir = path.join(e.schedulerDir, '盯');
+    if (listFiles(dir).some(n => { const x = readJson<{
         pid: number;
         会话: string;
-    }>(path.join(dir, n)); return x && 进程在吗(x.pid) && x.会话 === e.发起者.会话; }))
+    }>(path.join(dir, n)); return x && processAlive(x.pid) && x.会话 === e.caller.会话; }))
         return;
-    const f = path.join(e.调度目录, `未挂-${e.发起者.会话 || process.pid}.json`);
-    const 旧 = 读JSON<{
+    const f = path.join(e.schedulerDir, `未挂-${e.caller.会话 || process.pid}.json`);
+    const prevCheck = readJson<{
         时: number;
     }>(f);
-    if (旧 && e.现在毫秒() - 旧.时 < 600000)
+    if (prevCheck && e.nowMs() - prevCheck.时 < 600000)
         return;
-    写JSON(f, { 时: e.现在毫秒() });
+    writeJson(f, { 时: e.nowMs() });
     console.error('!! 盯未挂：请主 Agent 挂 anim 调度 盯；任务照常排队');
-    记调度(e.日志目录, '盯未挂', { 任务: 任务.任务, 发起: e.发起者 }, e.现在毫秒());
+    recordSchedulerEvent(e.logDir, '盯未挂', { 任务: taskInfo.任务, 发起: e.caller }, e.nowMs());
 };
 /** unlink 的胜者才记崩溃，多个等待者不会重复归因；跨主机不按本机 pid 猜死。 */
-export const 清崩溃 = (e: 调度环境, 活 = (pid: number, 心跳: number) => 进程在吗(pid) && !pid换人了(pid, 心跳)) => {
-    for (const 名 of 列文件(path.join(e.锁目录, '在跑'))) {
-        const file = path.join(e.锁目录, '在跑', 名), t = 读JSON<任务信息>(file);
-        if (!t || t.主机 !== e.本机 || 活(t.发起.pid, t.心跳))
+export const cleanCrashed = (e: SchedulerEnv, isAlive = (pid: number, heartbeat: number) => processAlive(pid) && !pidReplaced(pid, heartbeat)) => {
+    for (const fileName of listFiles(path.join(e.lockDir, '在跑'))) {
+        const file = path.join(e.lockDir, '在跑', fileName), t = readJson<TaskInfo>(file);
+        if (!t || t.主机 !== e.localHost || isAlive(t.发起.pid, t.心跳))
             continue;
         try {
             fs.unlinkSync(file);
@@ -137,7 +137,7 @@ export const 清崩溃 = (e: 调度环境, 活 = (pid: number, 心跳: number) =
         catch {
             continue;
         }
-        记调度(e.日志目录, '崩溃', t, e.现在毫秒());
+        recordSchedulerEvent(e.logDir, '崩溃', t, e.nowMs());
     }
 };
-export const 有任务 = (锁目录: string) => 活任务.has(锁目录);
+export const hasTask = (lockDir: string) => liveTasks.has(lockDir);

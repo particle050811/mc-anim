@@ -1,62 +1,62 @@
 // 回收用的保留集来源里要现算的那部分：一部作品各段、各渲染级别的当前切片（画面 mp4、声音 wav），和 anim film、anim stale 同一套算法（渲/段产物.ts）。
 // 算不出的（清单读不出、某段打包失败、指纹里记了缺字节）就整个目录留下：宁可少省，不删掉还要用的。
-import { 全部段, type 段信息 } from '../清单/清单.ts';
-import { 段产物们, type 段产物 } from '../渲/段产物.ts';
-import { 母版目录, 数据路径 } from '../环境/配置.ts';
-import { 指定作品, 指定的作品 } from '../环境/作品.ts';
-import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
-import type { 段指纹 } from '../指纹/指纹.ts';
-import type { 保留集 } from './回收.ts';
+import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
+import { segmentProducts, type SegArtifact } from '../渲/段产物.ts';
+import { masterDir, dataPath } from '../环境/配置.ts';
+import { setSpecifiedWork, getSpecifiedWork } from '../环境/作品.ts';
+import { renderLevels, type RenderLevel } from '../../engine/段/设置值.ts';
+import type { SegFingerprint } from '../指纹/指纹.ts';
+import type { KeepSet } from './回收.ts';
 
 /** 缺字节时打进包的是占位，出片会先补字节再算指纹，这里没补，算出来的和渲染时的对不上 */
-const 不可信 = (fp: 段指纹) => (fp.项.缺字节?.length ? `指纹里记了缺字节 ${fp.项.缺字节.length} 件（先 anim assets seed / pull）` : null);
+const untrustedReason = (fp: SegFingerprint) => (fp.项.缺字节?.length ? `指纹里记了缺字节 ${fp.项.缺字节.length} 件（先 anim assets seed / pull）` : null);
 
 /** 作品 的各段在各渲染级别下的当前切片进保留集；算的时候临时切到这部作品，算完切回去 */
-export const 加当前指纹 = async (保留: 保留集, 作品: string, 警告: (s: string) => void = () => {}, 进度: (s: string) => void = () => {}) => {
-  const 原 = 指定的作品();
-  指定作品(作品);
+export const addCurrentFingerprints = async (keep: KeepSet, work: string, warn: (s: string) => void = () => {}, onProgress: (s: string) => void = () => {}) => {
+  const prevWork = getSpecifiedWork();
+  setSpecifiedWork(work);
   try {
-    let 段们: 段信息[];
+    let segments: SegInfo[];
     try {
-      段们 = await 全部段();
+      segments = await loadAllSegments();
     } catch (e) {
-      警告(`${作品} 的清单读不出（${(e as Error).message.split('\n')[0]}），这部作品的母版整个留着`);
-      保留.加目录(数据路径('cache', '母版', 作品), { 类: '算不出', 说明: '清单读不出' });
+      warn(`${work} 的清单读不出（${(e as Error).message.split('\n')[0]}），这部作品的母版整个留着`);
+      keep.addDir(dataPath('cache', '母版', work), { 类: '算不出', 说明: '清单读不出' });
       return;
     }
-    进度(`${作品}：算 ${段们.length} 段 ${渲染级别取值.join('、')} 级的指纹`);
-    const 加 = (r: 段产物, 级别: 渲染级别) => {
-      const 不信 = 不可信(r.画面指纹) ?? 不可信(r.声音指纹);
-      if (不信) {
-        警告(`${作品}/${r.段.键}（${级别}）：${不信}，整个目录留着`);
-        保留.加目录(母版目录(r.段.键), { 类: '算不出', 说明: 不信 });
+    onProgress(`${work}：算 ${segments.length} 段 ${renderLevels.join('、')} 级的指纹`);
+    const addOne = (r: SegArtifact, level: RenderLevel) => {
+      const untrusted = untrustedReason(r.画面指纹) ?? untrustedReason(r.声音指纹);
+      if (untrusted) {
+        warn(`${work}/${r.段.键}（${level}）：${untrusted}，整个目录留着`);
+        keep.addDir(masterDir(r.段.键), { 类: '算不出', 说明: untrusted });
         return;
       }
-      保留.加(r.画面, { 类: '当前', 说明: 级别 });
-      保留.加(r.声音, { 类: '当前', 说明: 级别 });
+      keep.加(r.画面, { 类: '当前', 说明: level });
+      keep.加(r.声音, { 类: '当前', 说明: level });
     };
-    for (const 级别 of 渲染级别取值) {
+    for (const level of renderLevels) {
       // 一次打包算全部（逐段各打一次包要慢几十倍）；整批抛了再逐段算，把失败的那段单独留下（排字幕要全部段，失败的多半是字幕读不出，那就整部留下）
-      let 批: 段产物[] | null = null;
+      let products: SegArtifact[] | null = null;
       try {
-        批 = await 段产物们(段们, 段们, 级别);
+        products = await segmentProducts(segments, segments, level);
       } catch {
-        批 = null;
+        products = null;
       }
-      if (批) {
-        for (const r of 批) 加(r, 级别);
+      if (products) {
+        for (const r of products) addOne(r, level);
         continue;
       }
-      for (const s of 段们) {
+      for (const s of segments) {
         try {
-          加((await 段产物们(段们, [s], 级别))[0]!, 级别);
+          addOne((await segmentProducts(segments, [s], level))[0]!, level);
         } catch (e) {
-          警告(`${作品}/${s.键}（${级别}）的当前指纹算不出（${(e as Error).message.split('\n')[0]}），整个目录留着`);
-          保留.加目录(母版目录(s.键), { 类: '算不出', 说明: '当前指纹算不出' });
+          warn(`${work}/${s.键}（${level}）的当前指纹算不出（${(e as Error).message.split('\n')[0]}），整个目录留着`);
+          keep.addDir(masterDir(s.键), { 类: '算不出', 说明: '当前指纹算不出' });
         }
       }
     }
   } finally {
-    指定作品(原);
+    setSpecifiedWork(prevWork);
   }
 };

@@ -4,23 +4,23 @@
 // 平涂把 MeshBasicMaterial 当不受光的，不乘色调、面明暗，乘多少就是给的数（sRGB 数值上乘）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { type 光条, type 受光面, 卧室光斑, type 卧室开口 } from './光斑.ts';
+import { type LightStrip, type LitSurface, bedroomLightPatch, type bedroomOpenings } from './光斑.ts';
 
 /** 薄片离受光面多远（格）：盖过面、又不碰到前面的东西。她坐在床沿时裙摆斜着插进被面，插进去那条线上离面这么高的一截裙子也被乘亮，
  *  0.004 时裙边透出一道亮线；正交机位深度是线性的，0.001 也不和被面抢深度 */
-const 离面 = 0.001;
+const surfaceOffset = 0.001;
 
-const 几何 = (片们: readonly { 面: 受光面; 条: 光条[] }[]) => {
+const buildLightGeometry = (surfaces: readonly { 面: LitSurface; 条: LightStrip[] }[]) => {
   const pos: number[] = [];
   const idx: number[] = [];
-  for (const { 面, 条 } of 片们)
-    for (const c of 条) {
+  for (const { 面: face, 条: strips } of surfaces)
+    for (const c of strips) {
       const b = pos.length / 3;
-      if (面.种 === '竖') {
-        const y = 面.y - 离面;
+      if (face.种 === '竖') {
+        const y = face.y - surfaceOffset;
         pos.push(c.a0, y, c.b0, c.a1, y, c.b0, c.a1, y, c.b1, c.a0, y, c.b1);
       } else {
-        const z = 面.z + 离面;
+        const z = face.z + surfaceOffset;
         pos.push(c.a0, c.b0, z, c.a1, c.b0, z, c.a1, c.b1, z, c.a0, c.b1, z);
       }
       idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
@@ -32,16 +32,16 @@ const 几何 = (片们: readonly { 面: 受光面; 条: 光条[] }[]) => {
 };
 
 /** 一束光（从、方向、倍见 参数.ts 的 窗光档们）：倍 = 光斑里的颜色乘多少（r、g、b，sRGB 数值，≥ 1） */
-export const 窗光: React.FC<{ 从?: keyof typeof 卧室开口; 方向: readonly number[]; 倍: readonly number[] }> = ({ 从 = '南窗', 方向, 倍 }) => {
-  const g = useMemo(() => 几何(卧室光斑(方向, 从)), [从, 方向[0], 方向[1], 方向[2]]);
+export const WindowLight: React.FC<{ 从?: keyof typeof bedroomOpenings; lightDir: readonly number[]; colorScale: readonly number[] }> = ({ 从: fromOpening = '南窗', lightDir, colorScale }) => {
+  const g = useMemo(() => buildLightGeometry(bedroomLightPatch(lightDir, fromOpening)), [fromOpening, lightDir[0], lightDir[1], lightDir[2]]);
   const ms = useMemo(() => {
-    const 遍数 = Math.max(1, Math.ceil(Math.log2(Math.max(...倍)) - 1e-9));
-    const 每遍 = 倍.map((k) => Math.pow(k, 1 / 遍数) - 1);
+    const passCount = Math.max(1, Math.ceil(Math.log2(Math.max(...colorScale)) - 1e-9));
+    const perPassGain = colorScale.map((k) => Math.pow(k, 1 / passCount) - 1);
     return Array.from(
-      { length: 遍数 },
+      { length: passCount },
       () =>
         new THREE.MeshBasicMaterial({
-          color: new THREE.Color().setRGB(每遍[0]!, 每遍[1]!, 每遍[2]!, THREE.SRGBColorSpace),
+          color: new THREE.Color().setRGB(perPassGain[0]!, perPassGain[1]!, perPassGain[2]!, THREE.SRGBColorSpace),
           transparent: true,
           depthWrite: false,
           side: THREE.DoubleSide,
@@ -54,7 +54,7 @@ export const 窗光: React.FC<{ 从?: keyof typeof 卧室开口; 方向: readonl
           polygonOffsetUnits: -1,
         }),
     );
-  }, [倍[0], 倍[1], 倍[2]]);
+  }, [colorScale[0], colorScale[1], colorScale[2]]);
   return (
     <>
       {ms.map((m, i) => (

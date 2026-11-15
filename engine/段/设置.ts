@@ -1,16 +1,16 @@
 // 唯一读 getInputProps 的地方：读成 渲染设置，经 React context 交给各段（取值和校验在 设置值.ts）。
 import { createContext, createElement, useContext, type ReactNode } from 'react';
 import { getInputProps } from 'remotion';
-import { 设渲染设置 } from '../core/渲染设置.ts';
-import { 默认设置, 规范化设置, type 渲染设置 } from './设置值.ts';
+import { setRenderSettings } from '../core/渲染设置.ts';
+import { defaultSettings, normalizeSettings, type RenderSettings } from './设置值.ts';
 
-export const 读设置 = (): 渲染设置 => 规范化设置(getInputProps());
+export const readSettings = (): RenderSettings => normalizeSettings(getInputProps());
 
 // engine 里模块顶层要读的（渲染级别）经 渲染设置.ts 取，在任何段模块求值之前设好
-设渲染设置(读设置());
+setRenderSettings(readSettings());
 
-const 设置Context = createContext<渲染设置>(默认设置);
+const settingsContext = createContext<RenderSettings>(defaultSettings);
 
-export const 设置Provider = ({ 设置, children }: { 设置: 渲染设置; children: ReactNode }) => createElement(设置Context.Provider, { value: 设置 }, children);
+export const SettingsProvider = ({ settings, children }: { settings: RenderSettings; children: ReactNode }) => createElement(settingsContext.Provider, { value: settings }, children);
 
-export const use设置 = () => useContext(设置Context);
+export const useSettings = () => useContext(settingsContext);

@@ -15,7 +15,7 @@ export const twilightCellTop = (x: number, y: number, toleranceM = 0) => {
   const coarseTop = sampled === -Infinity ? 0 : sampled;
   let top = -Infinity;
   for (const range of landmarkRanges)
-    if (x >= range.box[0] - toleranceM && x < range.box[2] + toleranceM && y >= range.box[1] - toleranceM && y < range.box[3] + toleranceM) top = Math.max(top, range.remainTop === null ? frameByName[range.name].地面 : Math.min(coarseTop, range.remainTop));
+    if (x >= range.box[0] - toleranceM && x < range.box[2] + toleranceM && y >= range.box[1] - toleranceM && y < range.box[3] + toleranceM) top = Math.max(top, range.remainTop === null ? frameByName[range.name].ground : Math.min(coarseTop, range.remainTop));
   return top === -Infinity ? coarseTop : top;
 };
 const featureTopCell = (x: number, y: number) => twilightCellTop(x, y);
@@ -45,7 +45,7 @@ let terrainKey: unknown[] | null = null;
 export const twilightTerrainKey = () =>
   (terrainKey ??= [
     coarseHeightFingerprint(coarse),
-    landmarkRanges.map((r) => [r.name, r.box, r.remainTop, frameByName[r.name].地面]),
+    landmarkRanges.map((r) => [r.name, r.box, r.remainTop, frameByName[r.name].ground]),
     [twilightCellTop, featureTopCell, isInTwilightLandmark, canopySurface, coarseHeightAt].map((f) => hash64(f.toString())),
   ]);
 // 视野里离导入范围的边多远（米）：从镜头沿水平视线左右 ±55° 打 11 条线，每 24 米查一次粗高度图，碰到没有数据的格就停，取最近的。

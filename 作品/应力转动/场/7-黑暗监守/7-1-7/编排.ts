@@ -11,28 +11,28 @@ import { G4 } from '../../../地点/古城4x.tsx';
 import { lerpV, ss } from '../../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-1/时间线.ts';
-import { 建变速 } from '../../../地点/古城4x/7-1/变速.ts';
-import { 建机位, type 变速镜 } from '../../../地点/古城4x/7-1/变速段.tsx';
-export const 号 = '7-1-7' as const;
+import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';
+import { buildCameraRig, type SpeedRampShot } from '../../../地点/古城4x/7-1/变速段.tsx';
+export const segmentId = '7-1-7' as const;
 export const FPS = timeline.FPS;
 
-const startT = timeline.segmentStartT(号);
-const endT = timeline.segmentEndT(号);
+const startT = timeline.segmentStartT(segmentId);
+const endT = timeline.segmentEndT(segmentId);
 const swingT = timeline.lungeSwingT;
 const shieldHits = play.shieldSwingTs.map((s) => s + 0.1 + 0.002); // 打中护盾（../7-1/声音.tsx 的 force_impact）
-export const 变速 = 建变速(
+export const speedRamp = buildSpeedRamp(
   startT,
   endT,
   [[startT, 1]],
   shieldHits,
 );
-export const END = 变速.总帧数;
-export const t于 = 变速.剧情时间;
+export const END = speedRamp.总帧数;
+export const timeAt = speedRamp.storyTime;
 
 const horsePos = (t: number): V3 => play.horseState(t)?.p ?? play.liuXinzhongPos(t);
 const steady = (t0: number, t1: number, p0: V3, p1: V3, tgt: V3, lens: number) => (t: number) => ({ pos: lerpV(p0, p1, ss((t - t0) / (t1 - t0))), tgt, lens });
 const cuts = [startT, timeline.shieldT + 0.08, shieldHits[0] + 0.6, timeline.mountT - 0.03, shieldHits[2] + 0.32];
-const shots: 变速镜[] = [
+const shots: SpeedRampShot[] = [
   // 扑空：监守者扑来的路南边 5 米低处（两人中间那一片地面高低不平，放不下机位），先瞄它要扫的地方，扫空以后看点跟着刘心忠往西甩，他半空里甩出护盾就切
   //   （再往后他落向护盾点，被中央台北半的墙挡住）
   {
@@ -58,5 +58,5 @@ const shots: 变速镜[] = [
     },
   },
 ];
-export const camera = 建机位(变速, shots);
-export const 镜号 = (frame: number) => cuts.filter((c) => t于(frame) >= c).length - 1;
+export const camera = buildCameraRig(speedRamp, shots);
+export const shotIndex = (frame: number) => cuts.filter((c) => timeAt(frame) >= c).length - 1;

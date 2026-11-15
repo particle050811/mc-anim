@@ -9,13 +9,13 @@
 //   橡树照原版 oak（StraightTrunkPlacer 4～6、BlobFoliagePlacer 半径 2）；随机用定死的散列，同一组参数每次出一样的方块。
 // 坐标：每层自己的格（x 东、y 往里、z 上），这一层最前一排地面顶在 z = 0；树位、起伏、种下的先后都是 Agent 暂定。
 import { fbm, hash2, simplex2 } from '@engine/core/噪声.ts';
-import type { 方块 } from '@engine/model/方块拼搭.tsx';
+import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
 
-type 位 = [number, number, number];
+type Position = [number, number, number];
 
 /** 定死的随机数（mulberry32），一棵树一个种子 */
-const 随机 = (种子: number) => {
-  let a = 种子 >>> 0;
+const rng = (seed: number) => {
+  let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
     let t = a;
@@ -25,24 +25,24 @@ const 随机 = (种子: number) => {
   };
 };
 /** [lo, hi] 里的整数 */
-const 整 = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
+const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
 
-type 向 = readonly [number, number];
+type Dir2D = readonly [number, number];
 /** 水平四向（北、东、南、西；y 往里 = 北） */
-const 四向: readonly 向[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+const fourDirs: readonly Dir2D[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 /** 横着的原木：东西向是原版 axis=x，南北向是 axis=z */
-const 横木 = (d: 向) => `minecraft:cherry_log[axis=${d[0] !== 0 ? 'x' : 'z'}]`;
-const 竖木 = 'minecraft:cherry_log[axis=y]';
-const 樱叶 = 'minecraft:cherry_leaves';
+const horizontalLog = (d: Dir2D) => `minecraft:cherry_log[axis=${d[0] !== 0 ? 'x' : 'z'}]`;
+const verticalLog = 'minecraft:cherry_log[axis=y]';
+const cherryLeaves = 'minecraft:cherry_leaves';
 
 /** 一组方块，同一格只放第一次（原版树先放树干、枝，叶子不顶掉木头） */
-const 新方块组 = () => {
-  const 占 = new Map<string, 方块>();
-  const 放 = (b: 方块) => {
+const newBlockGroup = () => {
+  const occupiedBlocks = new Map<string, PlacedBlock>();
+  const place = (b: PlacedBlock) => {
     const k = b.位.join(',');
-    if (!占.has(k)) 占.set(k, b);
+    if (!occupiedBlocks.has(k)) occupiedBlocks.set(k, b);
   };
-  return { 放, 有: (x: number, y: number, z: number) => 占.has(`${x},${y},${z}`), 全: () => [...占.values()] };
+  return { 放: place, 有: (x: number, y: number, z: number) => occupiedBlocks.has(`${x},${y},${z}`), 全: () => [...occupiedBlocks.values()] };
 };
 
 /**
@@ -52,199 +52,199 @@ const 新方块组 = () => {
  * 叶子 CherryFoliagePlacer(半径 4, 高 5, 底层边上缺 0.25, 角上缺 0.25, 垂叶 1/6, 垂叶再长 1/3)：往上两层半径 1、2，中间、往下一层半径 3（边角随机缺），
  *   往下两层半径 2；下面两层的外圈底下随机垂一两格叶子。
  */
-export const 原版樱花树 = (种子: number): 方块[] => {
-  const 组 = 新方块组();
-  const 放 = (状态: string, x: number, y: number, z: number) => 组.放({ 状态, 位: [x, y, z] });
-  const r = 随机(种子 * 2654435761 + 97);
-  const 高 = 7 + 整(r, 0, 1);
-  const 枝起 = Math.max(0, 高 - 1 + 整(r, -4, -3));
-  let 枝起2 = Math.max(0, 高 - 1 + 整(r, -4, -4));
-  if (枝起2 >= 枝起) 枝起2++;
-  const 枝数 = 整(r, 1, 3);
-  const 干高 = 枝数 === 3 ? 高 : 枝数 === 2 ? Math.max(枝起, 枝起2) + 1 : 枝起 + 1;
-  for (let k = 0; k < 干高; k++) 放(竖木, 0, 0, k);
-  const 枝 = (d: 向, 起: number, 没到顶: boolean): 位 => {
-    const m: 位 = [0, 0, 起];
-    const 末 = 高 - 1 + 整(r, -1, 0);
-    const 先横 = 没到顶 || 末 < 起;
-    const 长 = 整(r, 2, 4) + (先横 ? 1 : 0);
-    const 终: 位 = [d[0] * 长, d[1] * 长, 末];
-    for (let l = 0; l < (先横 ? 2 : 1); l++) {
+export const vanillaCherryTree = (seed: number): PlacedBlock[] => {
+  const blockGroup = newBlockGroup();
+  const placeBlock = (blockState: string, x: number, y: number, z: number) => blockGroup.放({ 状态: blockState, 位: [x, y, z] });
+  const r = rng(seed * 2654435761 + 97);
+  const treeHeight = 7 + randInt(r, 0, 1);
+  const branchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -3));
+  let secondBranchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -4));
+  if (secondBranchStart >= branchStart) secondBranchStart++;
+  const branchCount = randInt(r, 1, 3);
+  const trunkHeight = branchCount === 3 ? treeHeight : branchCount === 2 ? Math.max(branchStart, secondBranchStart) + 1 : branchStart + 1;
+  for (let k = 0; k < trunkHeight; k++) placeBlock(verticalLog, 0, 0, k);
+  const branch = (d: Dir2D, start: number, notAtTop: boolean): Position => {
+    const m: Position = [0, 0, start];
+    const end = treeHeight - 1 + randInt(r, -1, 0);
+    const horizontalFirst = notAtTop || end < start;
+    const branchLength = randInt(r, 2, 4) + (horizontalFirst ? 1 : 0);
+    const tip: Position = [d[0] * branchLength, d[1] * branchLength, end];
+    for (let l = 0; l < (horizontalFirst ? 2 : 1); l++) {
       m[0] += d[0];
       m[1] += d[1];
-      放(横木(d), ...m);
+      placeBlock(horizontalLog(d), ...m);
     }
-    const 竖向 = 终[2] > m[2] ? 1 : -1;
+    const vertDir = tip[2] > m[2] ? 1 : -1;
     for (;;) {
-      const 差 = Math.abs(终[0] - m[0]) + Math.abs(终[1] - m[1]) + Math.abs(终[2] - m[2]);
-      if (差 === 0) return [终[0], 终[1], 终[2] + 1];
-      const 竖 = r() < Math.abs(终[2] - m[2]) / 差;
-      if (竖) m[2] += 竖向;
+      const manhattanDiff = Math.abs(tip[0] - m[0]) + Math.abs(tip[1] - m[1]) + Math.abs(tip[2] - m[2]);
+      if (manhattanDiff === 0) return [tip[0], tip[1], tip[2] + 1];
+      const vertical = r() < Math.abs(tip[2] - m[2]) / manhattanDiff;
+      if (vertical) m[2] += vertDir;
       else {
         m[0] += d[0];
         m[1] += d[1];
       }
-      放(竖 ? 竖木 : 横木(d), ...m);
+      placeBlock(vertical ? verticalLog : horizontalLog(d), ...m);
     }
   };
-  const 叶点: 位[] = [];
-  if (枝数 === 3) 叶点.push([0, 0, 干高]);
-  const d = 四向[整(r, 0, 3)]!;
-  叶点.push(枝(d, 枝起, 枝起 < 干高 - 1));
-  if (枝数 >= 2) 叶点.push(枝([-d[0], -d[1]], 枝起2, 枝起2 < 干高 - 1));
-  for (const p of 叶点) {
-    const 叶 = new Set<string>();
-    const 放叶 = (x: number, y: number, z: number) => {
-      叶.add(`${x},${y},${z}`);
-      放(樱叶, x, y, z);
+  const leafPoints: Position[] = [];
+  if (branchCount === 3) leafPoints.push([0, 0, trunkHeight]);
+  const d = fourDirs[randInt(r, 0, 3)]!;
+  leafPoints.push(branch(d, branchStart, branchStart < trunkHeight - 1));
+  if (branchCount >= 2) leafPoints.push(branch([-d[0], -d[1]], secondBranchStart, secondBranchStart < trunkHeight - 1));
+  for (const p of leafPoints) {
+    const leaves = new Set<string>();
+    const placeLeaves = (x: number, y: number, z: number) => {
+      leaves.add(`${x},${y},${z}`);
+      placeBlock(cherryLeaves, x, y, z);
     };
-    const 跳 = (ax: number, ly: number, ay: number, 圈: number) => {
-      if (ly === -1 && (ax === 圈 || ay === 圈) && r() < 0.25) return true;
-      const 角 = ax === 圈 && ay === 圈;
-      if (圈 > 2) return 角 || (ax + ay > 圈 * 2 - 2 && r() < 0.25);
-      return 角 && r() < 0.25;
+    const skipCell = (ax: number, ly: number, ay: number, ring: number) => {
+      if (ly === -1 && (ax === ring || ay === ring) && r() < 0.25) return true;
+      const corner = ax === ring && ay === ring;
+      if (ring > 2) return corner || (ax + ay > ring * 2 - 2 && r() < 0.25);
+      return corner && r() < 0.25;
     };
-    const 一层 = (圈: number, ly: number) => {
-      for (let dx = -圈; dx <= 圈; dx++) for (let dy = -圈; dy <= 圈; dy++) if (!跳(Math.abs(dx), ly, Math.abs(dy), 圈)) 放叶(p[0] + dx, p[1] + dy, p[2] + ly);
+    const leafLayer = (ring: number, ly: number) => {
+      for (let dx = -ring; dx <= ring; dx++) for (let dy = -ring; dy <= ring; dy++) if (!skipCell(Math.abs(dx), ly, Math.abs(dy), ring)) placeLeaves(p[0] + dx, p[1] + dy, p[2] + ly);
     };
-    const 垂 = (x: number, y: number, z: number, 几率: number) => {
+    const droop = (x: number, y: number, z: number, chance: number) => {
       if (Math.abs(x - p[0]) + Math.abs(y - p[1]) + Math.abs(z - (p[2] - 1)) >= 7) return false;
-      if (r() > 几率) return false;
-      放叶(x, y, z);
+      if (r() > chance) return false;
+      placeLeaves(x, y, z);
       return true;
     };
-    const 带垂一层 = (圈: number, ly: number) => {
-      一层(圈, ly);
-      四向.forEach((dd, k) => {
-        const d1 = 四向[(k + 1) % 4]!;
-        let x = p[0] + d1[0] * 圈 - dd[0] * 圈;
-        let y = p[1] + d1[1] * 圈 - dd[1] * 圈;
+    const droopLeafLayer = (ring: number, ly: number) => {
+      leafLayer(ring, ly);
+      fourDirs.forEach((dd, k) => {
+        const d1 = fourDirs[(k + 1) % 4]!;
+        let x = p[0] + d1[0] * ring - dd[0] * ring;
+        let y = p[1] + d1[1] * ring - dd[1] * ring;
         const z = p[2] + ly - 1;
-        for (let n = -圈; n < 圈; n++, x += dd[0], y += dd[1]) if (叶.has(`${x},${y},${z + 1}`) && 垂(x, y, z, 1 / 6)) 垂(x, y, z - 1, 1 / 3);
+        for (let n = -ring; n < ring; n++, x += dd[0], y += dd[1]) if (leaves.has(`${x},${y},${z + 1}`) && droop(x, y, z, 1 / 6)) droop(x, y, z - 1, 1 / 3);
       });
     };
-    一层(1, 2);
-    一层(2, 1);
-    一层(3, 0);
-    带垂一层(3, -1);
-    带垂一层(2, -2);
+    leafLayer(1, 2);
+    leafLayer(2, 1);
+    leafLayer(3, 0);
+    droopLeafLayer(3, -1);
+    droopLeafLayer(2, -2);
   }
-  return 组.全();
+  return blockGroup.全();
 };
 
 /** 一棵原版橡树（TreeFeatures.OAK：树干 4～6、BlobFoliagePlacer 半径 2 高 3），相对树根那格 */
-export const 原版橡树 = (种子: number): 方块[] => {
-  const 组 = 新方块组();
-  const r = 随机(种子 * 40503 + 11);
-  const 高 = 4 + 整(r, 0, 2);
-  for (let k = 0; k < 高; k++) 组.放({ 状态: 'minecraft:oak_log[axis=y]', 位: [0, 0, k] });
+export const vanillaOak = (seed: number): PlacedBlock[] => {
+  const blockGroup = newBlockGroup();
+  const r = rng(seed * 40503 + 11);
+  const treeHeight = 4 + randInt(r, 0, 2);
+  for (let k = 0; k < treeHeight; k++) blockGroup.放({ 状态: 'minecraft:oak_log[axis=y]', 位: [0, 0, k] });
   for (let dz = -3; dz <= 0; dz++) {
-    const 圈 = dz >= -1 ? 1 : 2;
-    for (let dx = -圈; dx <= 圈; dx++)
-      for (let dy = -圈; dy <= 圈; dy++) {
-        const 角 = Math.abs(dx) === 圈 && Math.abs(dy) === 圈;
-        if (角 && (dz === 0 || r() < 0.5)) continue;
-        组.放({ 状态: 'minecraft:oak_leaves', 位: [dx, dy, 高 + dz] });
+    const ring = dz >= -1 ? 1 : 2;
+    for (let dx = -ring; dx <= ring; dx++)
+      for (let dy = -ring; dy <= ring; dy++) {
+        const corner = Math.abs(dx) === ring && Math.abs(dy) === ring;
+        if (corner && (dz === 0 || r() < 0.5)) continue;
+        blockGroup.放({ 状态: 'minecraft:oak_leaves', 位: [dx, dy, treeHeight + dz] });
       }
   }
-  return 组.全();
+  return blockGroup.全();
 };
 
 /** 把相对树根的方块挪到 根 */
-const 挪 = (bs: readonly 方块[], 根: 位): 方块[] => bs.map((b) => ({ ...b, 位: [b.位[0] + 根[0], b.位[1] + 根[1], b.位[2] + 根[2]] as 位 }));
+const shiftBlocks = (bs: readonly PlacedBlock[], root: Position): PlacedBlock[] => bs.map((b) => ({ ...b, 位: [b.位[0] + root[0], b.位[1] + root[1], b.位[2] + root[2]] as Position }));
 
-const 樱缓存 = new Map<number, 方块[]>();
-const 橡缓存 = new Map<number, 方块[]>();
-const 取樱 = (种子: number) => {
-  let b = 樱缓存.get(种子);
-  if (!b) 樱缓存.set(种子, (b = 原版樱花树(种子)));
+const cherryCache = new Map<number, PlacedBlock[]>();
+const oakCache = new Map<number, PlacedBlock[]>();
+const getCherryBlocks = (seed: number) => {
+  let b = cherryCache.get(seed);
+  if (!b) cherryCache.set(seed, (b = vanillaCherryTree(seed)));
   return b;
 };
-const 取橡 = (种子: number) => {
-  let b = 橡缓存.get(种子);
-  if (!b) 橡缓存.set(种子, (b = 原版橡树(种子)));
+const getOakBlocks = (seed: number) => {
+  let b = oakCache.get(seed);
+  if (!b) oakCache.set(seed, (b = vanillaOak(seed)));
   return b;
 };
 
 /** 一棵树：出 = 生长到几时冒出来（0～1，见 冒出）；原有的橡树 −1，一直在 */
-export type 林木 = { x: number; y: number; 种: '樱' | '橡'; 种子: number; 出: number };
-type 待排 = Omit<林木, '出'>;
+export type ForestTree = { x: number; y: number; 种: '樱' | '橡'; 种子: number; 出: number };
+type PendingTree = Omit<ForestTree, '出'>;
 
 // ---------- 中景：她种下的那片樱花林 ----------
 
 /** 中景：N = 4（近景 N 8、10 的一半上下），顶面同近景（往里每排画面上升 32 成片像素）；铺 行 排、x 左～右；屋子东边（x > 林东）只有零星几棵原有的橡树 */
 /** 地左：地比树往左多铺一截（树照 左 种，改 左 树位全挪）。第 12 句末横移出卧室、2-时差 接入那几帧林子往左看得更远，原来左沿露出地的断面（核查 10-24） */
-export const 中景 = { N: 4, 顶面: 2, 行: 6, 左: -36, 地左: -56, 右: 32, 种子: 1310, 林东: 2 } as const;
+export const midGrove = { N: 4, topDepth: 2, 行: 6, left: -36, groundLeft: -56, right: 32, 种子: 1310, forestEast: 2 } as const;
 
-const 中噪 = simplex2(中景.种子);
+const midNoise = simplex2(midGrove.种子);
 
 /** 中景 (x, y) 那一列地面顶的高度（整数格）：往里慢慢抬，左右按噪声起伏；最前一排是 0（接近景草地的后沿） */
-export const 中景地面高 = (x: number, y: number): number =>
-  Math.max(0, Math.round(0.28 * y + 1.3 * fbm(中噪, x, 0, 11, 2) * Math.min(1, y / 2.5) + 0.4 * fbm(中噪, x + 300, y, 4, 1) * Math.min(1, y / 2)));
+export const midGroundHeight = (x: number, y: number): number =>
+  Math.max(0, Math.round(0.28 * y + 1.3 * fbm(midNoise, x, 0, 11, 2) * Math.min(1, y / 2.5) + 0.4 * fbm(midNoise, x + 300, y, 4, 1) * Math.min(1, y / 2)));
 
 /** 中景的树位：樱花树每 4～5 格一棵，前后两排错开；东边是原有的橡树。
  *  核查 10-24「2-时差 末尾要看得出是林子」：原来每 5 格一棵，门口那棵大树后面只露出两三根树干，加密到每 4 格 */
-const 中景树位: readonly 待排[] = (() => {
-  const out: 待排[] = [];
+const midTreePos: readonly PendingTree[] = (() => {
+  const out: PendingTree[] = [];
   let n = 0;
-  for (let x = 中景.左 + 2; x <= 中景.右 - 2; x += 4) {
+  for (let x = midGrove.left + 2; x <= midGrove.right - 2; x += 4) {
     n++;
-    const 排 = n % 2 === 0 ? 2 : 4;
+    const row = n % 2 === 0 ? 2 : 4;
     const xx = x + Math.round((hash2(x, 3, 7) - 0.5) * 2);
-    const 樱 = xx <= 中景.林东;
-    if (!樱 && hash2(x, 5, 9) < 0.45) continue;
-    out.push({ x: xx, y: 排, 种: 樱 ? '樱' : '橡', 种子: 7000 + n });
+    const inCherryZone = xx <= midGrove.forestEast;
+    if (!inCherryZone && hash2(x, 5, 9) < 0.45) continue;
+    out.push({ x: xx, y: row, 种: inCherryZone ? '樱' : '橡', 种子: 7000 + n });
   }
   return out;
 })();
 
 /** 地面：草方块，前面露出来的侧面往下填到前一排的顶；树底下换泥土。长满的樱花树脚下铺一圈粉红花簇，空地上零星短草、花 */
-const 铺地 = (左: number, 右: number, 行: number, 高: (x: number, y: number) => number, 组: ReturnType<typeof 新方块组>, 树格: Set<string>, 群系?: (x: number, y: number) => string | undefined, 草率 = 0.22) => {
-  for (let y = 0; y < 行; y++)
-    for (let x = 左; x <= 右; x++) {
-      const h = 高(x, y);
-      const 底 = y === 0 ? -3 : Math.min(h, 高(x, y - 1)) - 1;
-      const g = 群系?.(x, y);
-      const 树下 = 树格.has(`${x},${y}`);
-      组.放({ 状态: 树下 ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [x, y, h - 1], 群系: g });
-      for (let k = h - 2; k >= 底; k--) 组.放({ 状态: 'minecraft:dirt', 位: [x, y, k] });
-      if (树下 || 组.有(x, y, h)) continue;
+const layGround = (left: number, right: number, rows: number, heightAt: (x: number, y: number) => number, blockGroup: ReturnType<typeof newBlockGroup>, treeCells: Set<string>, biomeAt?: (x: number, y: number) => string | undefined, grassRate = 0.22) => {
+  for (let y = 0; y < rows; y++)
+    for (let x = left; x <= right; x++) {
+      const h = heightAt(x, y);
+      const bottom = y === 0 ? -3 : Math.min(h, heightAt(x, y - 1)) - 1;
+      const g = biomeAt?.(x, y);
+      const treeBelow = treeCells.has(`${x},${y}`);
+      blockGroup.放({ 状态: treeBelow ? 'minecraft:dirt' : 'minecraft:grass_block[snowy=false]', 位: [x, y, h - 1], 群系: g });
+      for (let k = h - 2; k >= bottom; k--) blockGroup.放({ 状态: 'minecraft:dirt', 位: [x, y, k] });
+      if (treeBelow || blockGroup.有(x, y, h)) continue;
       const s = hash2(x, y, 31);
-      if (s < 草率) 组.放({ 状态: 'minecraft:grass', 位: [x, y, h], 群系: g });
-      else if (s < 草率 + 0.03) 组.放({ 状态: hash2(x, y, 37) < 0.5 ? 'minecraft:dandelion' : 'minecraft:poppy', 位: [x, y, h] });
+      if (s < grassRate) blockGroup.放({ 状态: 'minecraft:grass', 位: [x, y, h], 群系: g });
+      else if (s < grassRate + 0.03) blockGroup.放({ 状态: hash2(x, y, 37) < 0.5 ? 'minecraft:dandelion' : 'minecraft:poppy', 位: [x, y, h] });
     }
 };
 
 /** 这一刻在不在：生长 到了它的 出（原有的橡树一直在） */
-export const 在了 = (t: 林木, 生长: number) => 生长 >= t.出;
+export const isPresent = (t: ForestTree, growth: number) => growth >= t.出;
 
-const 中景缓存 = new Map<string, 方块[]>();
+const midCache = new Map<string, PlacedBlock[]>();
 /** 中景的全部方块（群系 plains），生长 = 第 13 句的生长进度（0～1；第 14、15 句给 1）。按哪几棵在缓存 */
-export const 中景方块 = (生长: number): 方块[] => {
-  const 在们 = 中景树们.map((t) => 在了(t, 生长));
-  const 键 = 在们.map(Number).join('');
-  let out = 中景缓存.get(键);
+export const midBlocks = (growth: number): PlacedBlock[] => {
+  const presentTrees = midTrees.map((t) => isPresent(t, growth));
+  const cacheKey = presentTrees.map(Number).join('');
+  let out = midCache.get(cacheKey);
   if (out) return out;
-  const 组 = 新方块组();
-  const 树格 = new Set<string>();
-  中景树们.forEach((t, n) => {
-    if (!在们[n]) return;
-    const h = 中景地面高(t.x, t.y);
-    树格.add(`${t.x},${t.y}`);
-    const 根: 位 = [t.x, t.y, h];
-    const bs = 挪(t.种 === '橡' ? 取橡(t.种子) : 取樱(t.种子), 根);
+  const blockGroup = newBlockGroup();
+  const treeCells = new Set<string>();
+  midTrees.forEach((t, n) => {
+    if (!presentTrees[n]) return;
+    const h = midGroundHeight(t.x, t.y);
+    treeCells.add(`${t.x},${t.y}`);
+    const root: Position = [t.x, t.y, h];
+    const bs = shiftBlocks(t.种 === '橡' ? getOakBlocks(t.种子) : getCherryBlocks(t.种子), root);
     // 钻进地里的枝叶不放（原版树只长在空气里）
-    for (const b of bs) if (b.位[2] >= 中景地面高(b.位[0], b.位[1]) && b.位[1] >= 0 && b.位[1] < 中景.行 + 4) 组.放(b);
+    for (const b of bs) if (b.位[2] >= midGroundHeight(b.位[0], b.位[1]) && b.位[1] >= 0 && b.位[1] < midGrove.行 + 4) blockGroup.放(b);
     if (t.种 === '樱')
       for (let dx = -2; dx <= 2; dx++)
         for (let dy = -1; dy <= 1; dy++) {
           const x = t.x + dx, y = t.y + dy;
-          if ((dx || dy) && y >= 0 && y < 中景.行 && hash2(x, y, 41) < 0.6 && !组.有(x, y, 中景地面高(x, y)))
-            组.放({ 状态: `minecraft:pink_petals[facing=${['north', 'east', 'south', 'west'][(x + y + 8) % 4]},flower_amount=${(Math.abs(x * 3 + y) % 3) + 2}]`, 位: [x, y, 中景地面高(x, y)] });
+          if ((dx || dy) && y >= 0 && y < midGrove.行 && hash2(x, y, 41) < 0.6 && !blockGroup.有(x, y, midGroundHeight(x, y)))
+            blockGroup.放({ 状态: `minecraft:pink_petals[facing=${['north', 'east', 'south', 'west'][(x + y + 8) % 4]},flower_amount=${(Math.abs(x * 3 + y) % 3) + 2}]`, 位: [x, y, midGroundHeight(x, y)] });
         }
   });
-  铺地(中景.地左, 中景.右, 中景.行, 中景地面高, 组, 树格);
-  中景缓存.set(键, (out = 组.全()));
+  layGround(midGrove.groundLeft, midGrove.right, midGrove.行, midGroundHeight, blockGroup, treeCells);
+  midCache.set(cacheKey, (out = blockGroup.全()));
   return out;
 };
 
@@ -253,30 +253,30 @@ export const 中景方块 = (生长: number): 方块[] => {
 /** 远景：N = 2，纯侧面（顶面 0：远处的地往里不再上抬，只看得出山的轮廓）；铺 行 排。
  *  山：樱花林那座山在 山心x（屋子西边，同第 1 句「屋子在樱花林边上」），山高、山半径（格）；别处是平原的缓坡，屋子东边（东坡x）一道矮坡 */
 /** 地左：同 中景 的 地左 */
-export const 远景 = { N: 2, 顶面: 0, 行: 14, 左: -60, 地左: -100, 右: 60, 种子: 20230607, 山心x: -30, 山心y: 9, 山高: 11, 山半径: 26, 顶半径: 8, 东坡x: 30 } as const;
+export const farLayer = { N: 2, topDepth: 0, 行: 14, left: -60, groundLeft: -100, right: 60, 种子: 20230607, mountainCenterX: -30, mountainCenterY: 9, mountainHeight: 11, mountainRadius: 26, topRadius: 8, eastSlopeX: 30 } as const;
 
-const 远噪 = simplex2(远景.种子);
-const 在山上 = (x: number, y: number) => Math.hypot(x - 远景.山心x, (y - 远景.山心y) * 2) < 远景.山半径 * 0.75;
+const farNoise = simplex2(farLayer.种子);
+const onMountain = (x: number, y: number) => Math.hypot(x - farLayer.mountainCenterX, (y - farLayer.mountainCenterY) * 2) < farLayer.mountainRadius * 0.75;
 
 /** 远景 (x, y) 那一列地面顶的高度（整数格）：平原两三格的缓坡，西边一座樱花林的山 */
-export const 远景地面高 = (x: number, y: number): number => {
-  const 平原 = 3 + 2.6 * fbm(远噪, x, y, 15, 2) + 0.2 * y + 4 * Math.max(0, 1 - Math.abs(x - 远景.东坡x) / 18);
-  const 距 = Math.hypot(x - 远景.山心x, (y - 远景.山心y) * 2);
-  const 坡 = Math.max(0, Math.min(1, (远景.山半径 - 距) / (远景.山半径 - 远景.顶半径)));
-  const 山 = 远景.山高 * 坡 * 坡 * (3 - 2 * 坡) * (1 + 0.15 * fbm(远噪, x + 200, y, 9, 2));
-  return Math.max(1, Math.round(平原 + 山));
+export const farGroundHeight = (x: number, y: number): number => {
+  const plainHeight = 3 + 2.6 * fbm(farNoise, x, y, 15, 2) + 0.2 * y + 4 * Math.max(0, 1 - Math.abs(x - farLayer.eastSlopeX) / 18);
+  const distance = Math.hypot(x - farLayer.mountainCenterX, (y - farLayer.mountainCenterY) * 2);
+  const slope = Math.max(0, Math.min(1, (farLayer.mountainRadius - distance) / (farLayer.mountainRadius - farLayer.topRadius)));
+  const mountain = farLayer.mountainHeight * slope * slope * (3 - 2 * slope) * (1 + 0.15 * fbm(farNoise, x + 200, y, 9, 2));
+  return Math.max(1, Math.round(plainHeight + mountain));
 };
 
 /** 远景的树位：山上一片樱花树（每 4～5 格），平原上零星橡树 */
-const 远景树位: readonly 待排[] = (() => {
-  const out: 待排[] = [];
-  for (let y = 4; y < 远景.行; y += 3)
-    for (let x = 远景.左 + 2; x <= 远景.右 - 2; x += 4) {
+const farTreePos: readonly PendingTree[] = (() => {
+  const out: PendingTree[] = [];
+  for (let y = 4; y < farLayer.行; y += 3)
+    for (let x = farLayer.left + 2; x <= farLayer.right - 2; x += 4) {
       const xx = x + Math.round((hash2(x, y, 51) - 0.5) * 3);
-      const 种子 = 9000 + x * 37 + y;
-      if (在山上(xx, y)) {
-        if (hash2(x, y, 53) < 0.85) out.push({ x: xx, y, 种: '樱', 种子 });
-      } else if (hash2(x, y, 57) < 0.12) out.push({ x: xx, y, 种: '橡', 种子 });
+      const seed = 9000 + x * 37 + y;
+      if (onMountain(xx, y)) {
+        if (hash2(x, y, 53) < 0.85) out.push({ x: xx, y, 种: '樱', 种子: seed });
+      } else if (hash2(x, y, 57) < 0.12) out.push({ x: xx, y, 种: '橡', 种子: seed });
     }
   return out;
 })();
@@ -290,62 +290,62 @@ const 远景树位: readonly 待排[] = (() => {
  *  树冠先一棵棵散开在坡上、分得出一棵棵，再往空当里补满（试过按离树苗远近排：挨着的几棵树冠一冒就粘成一团粉）。
  *  左屏看得见的（树干在 看得见 里）匀开在吹走的页上：远景头一棵跟着头一页，单独站一会儿（她这时蹲下），其余匀开在 远景页；中景匀开在 中景页；
  *  页是越吹越快的，树也就越冒越快。树干在左屏外的都在最后一页（和门口那棵同一帧，分屏参数.ts 的 门口长成帧）。Agent 暂定 */
-export const 冒出 = { 近N: 8, 树苗x: -5, 看得见: [-9.5, 0.5], 页数: 99, 远景页: [7, 49], 中景页: [52, 92] } as const;
+export const popOut = { nearCount: 8, saplingX: -5, visibleRange: [-9.5, 0.5], pageCount: 99, farPages: [7, 49], midPages: [52, 92] } as const;
 
-const 排好 = (() => {
-  const 出 = new Map<待排, number>();
+const arranged = (() => {
+  const revealTimes = new Map<PendingTree, number>();
   /** 一层：N、顶面、地面高 用来算树冠在画面上的位置（这一层的格）；页们(r, K) = 第 r 个冒出来的在第几页 */
-  const 排一层 = (ts: readonly 待排[], N: number, 顶面: number, 地面高: (x: number, y: number) => number, 页们: (r: number, K: number) => number) => {
-    const 樱们 = ts.filter((t) => t.种 === '樱');
-    const 见们 = 樱们.filter((t) => {
-      const nx = (t.x * N) / 冒出.近N;
-      return nx >= 冒出.看得见[0] && nx <= 冒出.看得见[1];
+  const arrangeLayer = (ts: readonly PendingTree[], N: number, topDepth: number, groundHeight: (x: number, y: number) => number, pageOf: (r: number, K: number) => number) => {
+    const cherryTrees = ts.filter((t) => t.种 === '樱');
+    const visibleTrees = cherryTrees.filter((t) => {
+      const nx = (t.x * N) / popOut.nearCount;
+      return nx >= popOut.visibleRange[0] && nx <= popOut.visibleRange[1];
     });
     // 树冠中心在画面上：x，高 = 地面 + 往里每排上升 顶面/N + 原版樱花树冠中心离地约 6 格
-    const 位 = (t: 待排) => [t.x, 地面高(t.x, t.y) + (t.y * 顶面) / N + 6] as const;
-    const 苗x = (冒出.树苗x * 冒出.近N) / N;
-    const 剩 = [...见们];
-    const 已: 待排[] = [];
-    const 离 = (a: 待排, b: 待排) => Math.hypot(位(a)[0] - 位(b)[0], 位(a)[1] - 位(b)[1]);
-    while (剩.length) {
-      const 挑 = 已.length
-        ? 剩.reduce((最, t) => (Math.min(...已.map((u) => 离(t, u))) > Math.min(...已.map((u) => 离(最, u))) ? t : 最))
-        : 剩.reduce((最, t) => (Math.abs(t.x - 苗x) < Math.abs(最.x - 苗x) ? t : 最));
-      已.push(挑);
-      剩.splice(剩.indexOf(挑), 1);
+    const posOf = (t: PendingTree) => [t.x, groundHeight(t.x, t.y) + (t.y * topDepth) / N + 6] as const;
+    const saplingX = (popOut.saplingX * popOut.nearCount) / N;
+    const remaining = [...visibleTrees];
+    const placed: PendingTree[] = [];
+    const dist = (a: PendingTree, b: PendingTree) => Math.hypot(posOf(a)[0] - posOf(b)[0], posOf(a)[1] - posOf(b)[1]);
+    while (remaining.length) {
+      const pickIndex = placed.length
+        ? remaining.reduce((best, t) => (Math.min(...placed.map((u) => dist(t, u))) > Math.min(...placed.map((u) => dist(best, u))) ? t : best))
+        : remaining.reduce((best, t) => (Math.abs(t.x - saplingX) < Math.abs(best.x - saplingX) ? t : best));
+      placed.push(pickIndex);
+      remaining.splice(remaining.indexOf(pickIndex), 1);
     }
-    已.forEach((t, r) => 出.set(t, 页们(r, 已.length) / 冒出.页数));
-    for (const t of 樱们) if (!出.has(t)) 出.set(t, 1);
+    placed.forEach((t, r) => revealTimes.set(t, pageOf(r, placed.length) / popOut.pageCount));
+    for (const t of cherryTrees) if (!revealTimes.has(t)) revealTimes.set(t, 1);
   };
   /** 第 r 个（共 K 个）匀开在 [a, b] 页上 */
-  const 匀 = ([a, b]: readonly [number, number], r: number, K: number) => Math.round(a + ((b - a) * r) / Math.max(1, K - 1));
-  排一层(远景树位, 远景.N, 远景.顶面, 远景地面高, (r, K) => (r === 0 ? 1 : 匀(冒出.远景页, r - 1, K - 1)));
-  排一层(中景树位, 中景.N, 中景.顶面, 中景地面高, (r, K) => 匀(冒出.中景页, r, K));
-  const 定 = (ts: readonly 待排[]): 林木[] => ts.map((t) => ({ ...t, 出: 出.get(t) ?? -1 }));
-  return { 中: 定(中景树位), 远: 定(远景树位) };
+  const lerpRound = ([a, b]: readonly [number, number], r: number, K: number) => Math.round(a + ((b - a) * r) / Math.max(1, K - 1));
+  arrangeLayer(farTreePos, farLayer.N, farLayer.topDepth, farGroundHeight, (r, K) => (r === 0 ? 1 : lerpRound(popOut.farPages, r - 1, K - 1)));
+  arrangeLayer(midTreePos, midGrove.N, midGrove.topDepth, midGroundHeight, (r, K) => lerpRound(popOut.midPages, r, K));
+  const withExit = (ts: readonly PendingTree[]): ForestTree[] => ts.map((t) => ({ ...t, 出: revealTimes.get(t) ?? -1 }));
+  return { 中: withExit(midTreePos), far: withExit(farTreePos) };
 })();
 
 /** 中景的树（出 见 冒出） */
-export const 中景树们: readonly 林木[] = 排好.中;
+export const midTrees: readonly ForestTree[] = arranged.中;
 /** 远景的树（出 见 冒出） */
-export const 远景树们: readonly 林木[] = 排好.远;
+export const farTrees: readonly ForestTree[] = arranged.far;
 
-const 远景缓存 = new Map<string, 方块[]>();
+const farCache = new Map<string, PlacedBlock[]>();
 /** 远景的全部方块（山上的草、树叶按樱花林群系染色），生长 同 中景方块。按哪几棵在缓存 */
-export const 远景方块 = (生长: number): 方块[] => {
-  const 在们 = 远景树们.map((t) => 在了(t, 生长));
-  const 键 = 在们.map(Number).join('');
-  let out = 远景缓存.get(键);
+export const farBlocks = (growth: number): PlacedBlock[] => {
+  const presentFlags = farTrees.map((t) => isPresent(t, growth));
+  const cacheKey = presentFlags.map(Number).join('');
+  let out = farCache.get(cacheKey);
   if (out) return out;
-  const 组 = 新方块组();
-  const 在的 = 远景树们.filter((_, n) => 在们[n]);
-  const 树格 = new Set(在的.map((t) => `${t.x},${t.y}`));
-  for (const t of 在的) {
-    const 根: 位 = [t.x, t.y, 远景地面高(t.x, t.y)];
-    const bs = t.种 === '橡' ? 挪(取橡(t.种子), 根) : 挪(取樱(t.种子), 根);
-    for (const b of bs) if (b.位[2] >= 远景地面高(b.位[0], b.位[1])) 组.放({ ...b, 群系: t.种 === '樱' ? 'minecraft:cherry_grove' : undefined });
+  const blockGroup = newBlockGroup();
+  const presentTrees = farTrees.filter((_, n) => presentFlags[n]);
+  const treeCells = new Set(presentTrees.map((t) => `${t.x},${t.y}`));
+  for (const t of presentTrees) {
+    const root: Position = [t.x, t.y, farGroundHeight(t.x, t.y)];
+    const bs = t.种 === '橡' ? shiftBlocks(getOakBlocks(t.种子), root) : shiftBlocks(getCherryBlocks(t.种子), root);
+    for (const b of bs) if (b.位[2] >= farGroundHeight(b.位[0], b.位[1])) blockGroup.放({ ...b, 群系: t.种 === '樱' ? 'minecraft:cherry_grove' : undefined });
   }
-  铺地(远景.地左, 远景.右, 远景.行, 远景地面高, 组, 树格, (x, y) => (在山上(x, y) ? 'minecraft:cherry_grove' : undefined), 0);
-  远景缓存.set(键, (out = 组.全()));
+  layGround(farLayer.groundLeft, farLayer.right, farLayer.行, farGroundHeight, blockGroup, treeCells, (x, y) => (onMountain(x, y) ? 'minecraft:cherry_grove' : undefined), 0);
+  farCache.set(cacheKey, (out = blockGroup.全()));
   return out;
 };

@@ -1,9 +1,9 @@
 // 地标在新世界里怎么摆：每座的世界变换（`twilightLandmark`）、导入地形要挖的框和整平、按核心藏网格的方块。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { LandmarkCutout, FlattenArea } from '@engine/voxel/导入地形.ts';
-import castleMesh资产 from 'asset:网格/终焉高原城堡/头';
+import castleMeshAsset from 'asset:网格/终焉高原城堡/头';
 import { POX, POY, POZ, gameToWorld, plateauTopY, landmarkDefs, twilightLandmarkNames, type Rect, type CutoutEntry, type TwilightLandmarkName } from './地标表.ts';
-const castleMesh = castleMesh资产 as unknown as { origin: number[] };
+const castleMesh = castleMeshAsset as unknown as { origin: number[] };
 
 // ---------- 摆放 ----------
 const rot = (deg: number, point: number[]): V3 => {
@@ -14,10 +14,10 @@ const rot = (deg: number, point: number[]): V3 => {
 export type LandmarkFrame = {
   原点: V3; // 网格原点的世界坐标（网格组件放在这里、再转 转 度）
   转: number; // 逆时针度数
-  到世界: (localPos: number[]) => V3; // 网格本地坐标（场景坐标、原点 = 网格原点）→ 世界
+  toWorld: (localPos: number[]) => V3; // 网格本地坐标（场景坐标、原点 = 网格原点）→ 世界
   toLocal: (worldPos: number[]) => V3;
-  朝向: (localHeading: number) => number; // 本地的朝向（度，0 = 北、正 = 往左）→ 世界
-  地面: number; // 这一带的地面（世界 z）
+  facing: (localHeading: number) => number; // 本地的朝向（度，0 = 北、正 = 往左）→ 世界
+  ground: number; // 这一带的地面（世界 z）
 };
 export const frameByName = Object.fromEntries(
   twilightLandmarkNames.map((name) => {
@@ -34,10 +34,10 @@ export const frameByName = Object.fromEntries(
     const frame: LandmarkFrame = {
       原点: worldOrigin,
       转: def.转,
-      到世界: toWorld,
+      toWorld: toWorld,
       toLocal: (p) => rot(-def.转, [p[0] - worldOrigin[0], p[1] - worldOrigin[1], p[2] - worldOrigin[2]]),
-      朝向: (y) => y + def.转,
-      地面: def.地面 - POY,
+      facing: (y) => y + def.转,
+      ground: def.ground - POY,
     };
     return [name, frame];
   }),
@@ -48,8 +48,8 @@ export const twilightLandmark = (name: TwilightLandmarkName) => frameByName[name
 // 网格本地的矩形 [x0, y0, x1, y1] → 新世界的方块列 [x0, z0, x1, z1]（游戏坐标，都含）
 const columnRange = (name: TwilightLandmarkName, rect: number[]) => {
   const frame = frameByName[name];
-  const cornerA = frame.到世界([rect[0], rect[1], 0]);
-  const cornerB = frame.到世界([rect[2], rect[3], 0]);
+  const cornerA = frame.toWorld([rect[0], rect[1], 0]);
+  const cornerB = frame.toWorld([rect[2], rect[3], 0]);
   const [x0, x1] = [Math.min(cornerA[0], cornerB[0]), Math.max(cornerA[0], cornerB[0])];
   const [y0, y1] = [Math.min(cornerA[1], cornerB[1]), Math.max(cornerA[1], cornerB[1])];
   // 世界格 [x0, x1) × [y0, y1) → 游戏方块 x0 + ox … x1 − 1 + ox，z = oz − y1 … oz − 1 − y0
@@ -131,11 +131,11 @@ const groupByColumn = (cells: number[][], i: number, j: number, k: number) => {
 // 核心的主挖框：没有归边的一块核心一个盒子；有归边的按列并盒，每列 [挖底, 400] 里扣掉 挖免 的格
 function coreCutouts(name: TwilightLandmarkName): LandmarkCutout[] {
   const def = landmarkDefs[name];
-  if (!def.归边) return def.核心!.map((c) => meshCutout(name, c));
+  if (!def.edgeFix) return def.core!.map((c) => meshCutout(name, c));
   const bottomY = def.cutFloorY ?? meshBottomY(name);
-  const coreRanges = def.核心!.map((c) => columnRange(name, c));
+  const coreRanges = def.core!.map((c) => columnRange(name, c));
   const inCore = (x: number, z: number) => coreRanges.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
-  const exempt = groupByColumn(def.归边.挖免, 0, 1, 2);
+  const exempt = groupByColumn(def.edgeFix.挖免, 0, 1, 2);
   const [X0, Z0, X1, Z1] = [Math.min(...coreRanges.map((r) => r[0])), Math.min(...coreRanges.map((r) => r[1])), Math.max(...coreRanges.map((r) => r[2])), Math.max(...coreRanges.map((r) => r[3]))];
   return mergeBoxes(X0, X1 + 1, Z0, Z1 + 1, (x, z) => (inCore(x, z) ? subtractPoints(bottomY, 401, exempt.get(`${x},${z}`)) : null)).flatMap(([x0, z0, x1, z1, intervals]) =>
     intervals.map(([lo, hi]) => ({ from: [x0, lo, z0], to: [x1 - 1, hi - 1, z1 - 1] })),
@@ -143,7 +143,7 @@ function coreCutouts(name: TwilightLandmarkName): LandmarkCutout[] {
 }
 // 归边要另挖的格（游戏坐标）：按列连段，再按同一行相邻、段一样的并盒
 function edgeFixExtraCutouts(name: TwilightLandmarkName): LandmarkCutout[] {
-  const edgeFix = landmarkDefs[name].归边;
+  const edgeFix = landmarkDefs[name].edgeFix;
   if (!edgeFix?.挖加.length) return [];
   const byColumn = groupByColumn(edgeFix.挖加, 0, 1, 2);
   const xs = edgeFix.挖加.map((c) => c[0]), zs = edgeFix.挖加.map((c) => c[2]);
@@ -157,10 +157,10 @@ const mainCutoutsByName = Object.fromEntries(
   twilightLandmarkNames.map((name) => {
     const def = landmarkDefs[name];
     if (def.网格 === false && !def.cutouts) return [name, []];
-    return [name, [...(def.cutouts ?? (def.核心 ? coreCutouts(name) : [meshCutout(name)])), ...edgeFixExtraCutouts(name)]];
+    return [name, [...(def.cutouts ?? (def.core ? coreCutouts(name) : [meshCutout(name)])), ...edgeFixExtraCutouts(name)]];
   }),
 ) as Record<TwilightLandmarkName, CutoutEntry[]>;
-const cutoutsByName = Object.fromEntries(twilightLandmarkNames.map((name) => [name, [...mainCutoutsByName[name], ...(landmarkDefs[name].补挖 ?? [])]])) as Record<TwilightLandmarkName, CutoutEntry[]>;
+const cutoutsByName = Object.fromEntries(twilightLandmarkNames.map((name) => [name, [...mainCutoutsByName[name], ...(landmarkDefs[name].extraDig ?? [])]])) as Record<TwilightLandmarkName, CutoutEntry[]>;
 // 一座地标的挖框（游戏坐标）：工具/一镜到底/离树3D.py 拼「新世界 + 摆好的网格」时照它挖（经 诊断.ts --几何输出 导出）
 export const twilightCutouts = (name: TwilightLandmarkName) => cutoutsByName[name];
 // 删掉的巨魔云（游戏坐标，云和云上巨人的房子、树整团挖掉）：新世界生成的巨魔云带着巨人房子，一镜到底里远远看得见的这四团和 6-1-8b 的云中小屋像同一样东西重复出现（用户 10-06 定的接缝修法）。
@@ -184,29 +184,29 @@ const rangeBoxesByName = Object.fromEntries(
       const [x0, z0, x1, z1] = columnRange(name, rect);
       return { from: [x0, 0, z0], to: [x1, 0, z1] };
     }) ?? mainCutoutsByName[name];
-    return [name, [...mainBoxes, ...(def.补挖 ?? [])]];
+    return [name, [...mainBoxes, ...(def.extraDig ?? [])]];
   }),
 ) as Record<TwilightLandmarkName, CutoutEntry[]>;
 export const landmarkRanges = twilightLandmarkNames.flatMap((name) =>
-  rangeBoxesByName[name].map((m) => ({ name: name, box: [m.from[0] - POX, POZ - 1 - m.to[2], m.to[0] + 1 - POX, POZ - m.from[2]], remainTop: m.剩顶 === undefined ? null : m.剩顶 - POY })),
+  rangeBoxesByName[name].map((m) => ({ name: name, box: [m.from[0] - POX, POZ - 1 - m.to[2], m.to[0] + 1 - POX, POZ - m.from[2]], remainTop: m.remainTop === undefined ? null : m.remainTop - POY })),
 );
 // 画不画迁移的网格（九头蛇巢穴用新世界自己的那座：6-1-6/戏.tsx、地标巡检、离树都照它）
 export const twilightDrawsMesh = (name: TwilightLandmarkName) => landmarkDefs[name].网格 !== false;
 // 核心、转（工具/地标巡检/归边.ts 用）
-export const twilightCore = (name: TwilightLandmarkName) => landmarkDefs[name].核心 ?? [];
+export const twilightCore = (name: TwilightLandmarkName) => landmarkDefs[name].core ?? [];
 export const twilightRotation = (name: TwilightLandmarkName) => landmarkDefs[name].转;
 // 巡检工具（工具/地标巡检/共用.ts）分开看的几样：主挖框（网格范围、核心、另给的挖，连归边另挖的格）、补挖、地标范围（只看水平，游戏方块列都含）、平整
-export const twilightPlacement = (name: TwilightLandmarkName) => ({ mainCutouts: mainCutoutsByName[name], extraCutouts: landmarkDefs[name].补挖 ?? [], rangeBoxes: rangeBoxesByName[name], flattens: landmarkDefs[name].flattens ?? [] });
+export const twilightPlacement = (name: TwilightLandmarkName) => ({ mainCutouts: mainCutoutsByName[name], extraCutouts: landmarkDefs[name].extraDig ?? [], rangeBoxes: rangeBoxesByName[name], flattens: landmarkDefs[name].flattens ?? [] });
 // 有 核心 的地标：核心外面的网格不画（BlockMesh 的 hideBlocks：按方块藏，网格本地坐标，按 1 米一格扫出核心外面的格子、一行行并成盒子）；
 // 没有核心的是空数组。各帧同一个数组。有归边的：核心外留下树干在核心里的旧树（藏免），核心里另藏树干在外面的新树伸进来的树冠（藏加）
 export const landmarkHideOutsideCore = Object.fromEntries(
   twilightLandmarkNames.map((name) => {
     const def = landmarkDefs[name];
-    if (!def.核心) return [name, []];
+    if (!def.core) return [name, []];
     const [X0, Y0, X1, Y1] = meshRect(name);
-    const inCore = (x: number, y: number) => def.核心!.some(([cx0, cy0, cx1, cy1]) => x > cx0 && x < cx1 && y > cy0 && y < cy1);
-    const exempt = def.归边 && groupByColumn(def.归边.藏免, 0, 2, 1);
-    const extraHide = def.归边 && groupByColumn(def.归边.藏加, 0, 2, 1);
+    const inCore = (x: number, y: number) => def.core!.some(([cx0, cy0, cx1, cy1]) => x > cx0 && x < cx1 && y > cy0 && y < cy1);
+    const exempt = def.edgeFix && groupByColumn(def.edgeFix.藏免, 0, 2, 1);
+    const extraHide = def.edgeFix && groupByColumn(def.edgeFix.藏加, 0, 2, 1);
     const boxes = mergeBoxes(X0, X1, Y0, Y1, (x, y) => {
       if (!inCore(x + 0.5, y + 0.5)) return subtractPoints(-1e4, 1e4, exempt?.get(`${x},${y}`));
       const column = extraHide?.get(`${x},${y}`);

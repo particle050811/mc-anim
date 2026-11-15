@@ -37,7 +37,7 @@ export const buildMeshInPool = (voxels: VoxelGrid, solidLeaves: boolean, transfe
   const worker = ws[nextWorker++ % ws.length];
   return new Promise((resolve, reject) => {
     pendingJobs.set(id, { resolve: resolve, reject: reject });
-    const transfers = transfer ? [voxels.vox.buffer as ArrayBuffer, ...(voxels.挖空 ? [voxels.挖空.buffer as ArrayBuffer] : [])] : [];
+    const transfers = transfer ? [voxels.vox.buffer as ArrayBuffer, ...(voxels.carveMask ? [voxels.carveMask.buffer as ArrayBuffer] : [])] : [];
     worker.postMessage({ id, V: voxels, 实心树叶: solidLeaves }, transfers);
   });
 };

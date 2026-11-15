@@ -23,41 +23,41 @@ from collections import Counter
 
 from PIL import Image  # pyright: ignore[reportMissingImports]  Pillow 由 uv run --with 临时装，不进项目依赖
 
-单件上限 = 64 * 1024 * 1024
-像素上限 = 8192 * 8192
+SINGLE_FILE_MAX_BYTES = 64 * 1024 * 1024
+PIXEL_LIMIT = 8192 * 8192
 
 
-class 包:
-    def __init__(self, zip路径: str, 名: str):
-        self.名 = 名
-        self.z = zipfile.ZipFile(zip路径)
-        名们 = [n for n in self.z.namelist() if not n.endswith('/')]
+class Pack:
+    def __init__(self, zip_path: str, pack_name: str):
+        self.名 = pack_name
+        self.z = zipfile.ZipFile(zip_path)
+        names = [n for n in self.z.namelist() if not n.endswith('/')]
         # 有的包外面多套一层目录（<包名>/assets/...），按 pack.mcmeta 所在层定根；没有 pack.mcmeta 的（Vanilla Tweaks 拼出来的）按 assets/ 所在层
-        根们 = sorted({n[: -len('pack.mcmeta')] for n in 名们 if n.endswith('pack.mcmeta')}, key=len)
-        if not 根们:
-            根们 = sorted({n[: n.index('assets/')] for n in 名们 if 'assets/' in n}, key=len)
-        self.根 = 根们[0] if 根们 else ''
-        self.文件 = {n[len(self.根):] for n in 名们 if n.startswith(self.根)}
+        roots = sorted({n[: -len('pack.mcmeta')] for n in names if n.endswith('pack.mcmeta')}, key=len)
+        if not roots:
+            roots = sorted({n[: n.index('assets/')] for n in names if 'assets/' in n}, key=len)
+        self.root_key = roots[0] if roots else ''
+        self.pack_files = {n[len(self.root_key):] for n in names if n.startswith(self.root_key)}
 
-    def 读(self, 相对: str) -> bytes | None:
-        if 相对 not in self.文件:
+    def read_file(self, rel_path: str) -> bytes | None:
+        if rel_path not in self.pack_files:
             return None
-        n = self.根 + 相对
-        if self.z.getinfo(n).file_size > 单件上限:
-            raise ValueError(f'{self.名}：{相对} 解压后太大，不像贴图')
+        n = self.root_key + rel_path
+        if self.z.getinfo(n).file_size > SINGLE_FILE_MAX_BYTES:
+            raise ValueError(f'{self.名}：{rel_path} 解压后太大，不像贴图')
         return self.z.read(n)
 
-    def 图(self, 相对: str) -> Image.Image | None:
-        b = self.读(相对)
+    def image(self, rel_path: str) -> Image.Image | None:
+        b = self.read_file(rel_path)
         if b is None:
             return None
         im = Image.open(io.BytesIO(b))
-        if im.width * im.height > 像素上限:
-            raise ValueError(f'{self.名}：{相对} 尺寸 {im.size} 太大')
+        if im.width * im.height > PIXEL_LIMIT:
+            raise ValueError(f'{self.名}：{rel_path} 尺寸 {im.size} 太大')
         return im.convert('RGBA')
 
-    def json(self, 相对: str):
-        b = self.读(相对)
+    def json(self, rel_path: str):
+        b = self.read_file(rel_path)
         if b is None:
             return None
         try:
@@ -66,147 +66,147 @@ class 包:
             return None
 
 
-class 叠包:
+class PackStack:
     """按优先级从高到低叠的几个包：查一个路径，第一个有的包说了算"""
 
-    def __init__(self, 包们: list[包]):
-        self.包们 = 包们
-        self.贡献: Counter = Counter()
+    def __init__(self, packs: list[Pack]):
+        self.packs = packs
+        self.contributions: Counter = Counter()
 
-    def 找(self, 相对: str) -> 包 | None:
-        for p in self.包们:
-            if 相对 in p.文件:
+    def find_class(self, rel_path: str) -> Pack | None:
+        for p in self.packs:
+            if rel_path in p.pack_files:
                 return p
         return None
 
 
-def 贴图路径(名: str) -> str:
-    ns, _, p = 名.partition(':')
+def texture_path(texture_name: str) -> str:
+    ns, _, p = texture_name.partition(':')
     if not p:
-        ns, p = 'minecraft', 名
+        ns, p = 'minecraft', texture_name
     return f'assets/{ns}/textures/{p}.png'
 
 
-def 动画帧(p: 包, 相对: str, im: Image.Image) -> list[tuple[Image.Image, int]] | None:
+def animation_frames(p: Pack, rel_path: str, im: Image.Image) -> list[tuple[Image.Image, int]] | None:
     """有 animation 的按 MC 拆成 [(帧图, 时长 tick)]，frames 写的顺序、time 照写；没有 animation 返回 None"""
-    meta = p.json(相对 + '.mcmeta')
+    meta = p.json(rel_path + '.mcmeta')
     a = meta.get('animation') if isinstance(meta, dict) else None
     if not isinstance(a, dict):
         return None
     w, h = im.size
-    边 = min(w, h)
-    fw, fh = int(a.get('width', 边)), int(a.get('height', 边))
+    side = min(w, h)
+    fw, fh = int(a.get('width', side)), int(a.get('height', side))
     if fw <= 0 or fh <= 0 or w % fw or h % fh:
         return None
-    列 = w // fw
-    帧数 = 列 * (h // fh)
-    默认长 = max(1, int(a.get('frametime', 1)))
-    序 = a.get('frames') or list(range(帧数))
-    出 = []
-    for f in 序:
+    cols = w // fw
+    frame_count = cols * (h // fh)
+    default_frame_time = max(1, int(a.get('frametime', 1)))
+    index_order = a.get('frames') or list(range(frame_count))
+    out_frames = []
+    for f in index_order:
         i = int(f.get('index', 0) if isinstance(f, dict) else f)
-        t = int(f.get('time', 默认长)) if isinstance(f, dict) else 默认长
-        if not 0 <= i < 帧数:
+        t = int(f.get('time', default_frame_time)) if isinstance(f, dict) else default_frame_time
+        if not 0 <= i < frame_count:
             continue
-        x, y = (i % 列) * fw, (i // 列) * fh
-        出.append((im.crop((x, y, x + fw, y + fh)), max(1, t)))
-    return 出 or None
+        x, y = (i % cols) * fw, (i // cols) * fh
+        out_frames.append((im.crop((x, y, x + fw, y + fh)), max(1, t)))
+    return out_frames or None
 
 
-def 均匀取帧(帧们: list[tuple[Image.Image, int]], n: int) -> list[Image.Image]:
+def pick_frames_evenly(frames: list[tuple[Image.Image, int]], n: int) -> list[Image.Image]:
     """一整圈动画按时长均匀取 n 帧（第 k 帧取 k/n 圈处正在放的那帧），循环接得上"""
-    总 = sum(t for _, t in 帧们)
-    出 = []
+    total_ticks = sum(t for _, t in frames)
+    out_images = []
     for k in range(n):
-        at, 走 = k * 总 / n, 0
-        for 图, t in 帧们:
-            if at < 走 + t:
-                出.append(图)
+        at, frame_start = k * total_ticks / n, 0
+        for image, t in frames:
+            if at < frame_start + t:
+                out_images.append(image)
                 break
-            走 += t
+            frame_start += t
         else:
-            出.append(帧们[-1][0])
-    return 出
+            out_images.append(frames[-1][0])
+    return out_images
 
 
-def 规整(im: Image.Image, 目标: tuple[int, int]) -> tuple[Image.Image | None, str]:
+def normalize_image(im: Image.Image, target: tuple[int, int]) -> tuple[Image.Image | None, str]:
     """缩放到目标尺寸：大的盒子平均（预乘透明度，镂空处的颜色不会把边缘拖黑），小的最近邻放大。返回 (图, 倍率说明)"""
     w, h = im.size
-    tw, th = 目标
+    tw, th = target
     if (w, h) == (tw, th):
         return im, '原样'
     if w * th != h * tw:
         return None, f'{w}×{h} 和要出的 {tw}×{th} 比例不同'
     if w > tw:
-        倍 = w / tw
+        scale = w / tw
         out = im.convert('RGBa').resize((tw, th), Image.BOX).convert('RGBA')
-        return out, f'{倍:g}倍缩' + ('' if w % tw == 0 else '（非整数倍）')
-    倍 = tw / w
-    return im.resize((tw, th), Image.NEAREST), f'{倍:g}倍放' + ('' if tw % w == 0 else '（非整数倍）')
+        return out, f'{scale:g}倍缩' + ('' if w % tw == 0 else '（非整数倍）')
+    scale = tw / w
+    return im.resize((tw, th), Image.NEAREST), f'{scale:g}倍放' + ('' if tw % w == 0 else '（非整数倍）')
 
 
-def 找图(叠: 叠包, 相对: str):
+def find_image(pack_stack: PackStack, rel_path: str):
     """(包, 图, 动画帧们或 None)；包里没有 → None"""
-    p = 叠.找(相对)
+    p = pack_stack.find_class(rel_path)
     if p is None:
         return None
-    im = p.图(相对)
+    im = p.image(rel_path)
     assert im is not None  # 找() 已确认包里有这个文件
-    return p, im, 动画帧(p, 相对, im)
+    return p, im, animation_frames(p, rel_path, im)
 
 
-def 包倍(找到, 原宽: int) -> float:
+def pack_scale(found, orig_width: int) -> float:
     """包里一帧的宽是原版的几倍"""
-    _, im, 帧们 = 找到
-    return (帧们[0][0].width if 帧们 else im.width) / 原宽
+    _, im, frames = found
+    return (frames[0][0].width if frames else im.width) / orig_width
 
 
-def 有效倍(s: float, 上限: int) -> int:
+def effective_scale(s: float, max_factor: int) -> int:
     """包是原版的 s 倍：取不超过上限、整除 s 的最大 2 的幂；s 不是整数（24x）或比原版小 → 1"""
     if s < 1 or s != int(s):
         return 1
     f = 1
-    while f * 2 <= 上限 and int(s) % (f * 2) == 0:
+    while f * 2 <= max_factor and int(s) % (f * 2) == 0:
         f *= 2
     return f
 
 
-def 取贴图(找到, 原尺寸: tuple[int, int], f: int):
+def get_texture(found, orig_size: tuple[int, int], f: int):
     """包里的贴图出成原版尺寸的 f 倍，返回 (图, 说明)；尺寸对不上 → (None, 原因)"""
-    _, im, 帧们 = 找到
-    ow, oh = 原尺寸
+    _, im, frames = found
+    ow, oh = orig_size
     tw, th = ow * f, oh * f
     n = oh // ow if ow and oh % ow == 0 else 1
     if n == 1:
         # 原版一格：动画取第一帧
-        return 规整(帧们[0][0] if 帧们 else im, (tw, th))
+        return normalize_image(frames[0][0] if frames else im, (tw, th))
     # 原版是 n 帧竖条（动画），包里是动画、或者一张方图（静态）：按帧重排
-    if 帧们 is None and im.width == im.height:
-        帧们 = [(im, 1)]
-    if 帧们 is None:
-        return 规整(im, (tw, th))
-    条 = Image.new('RGBA', (tw, th))
-    说们 = set()
-    for k, 图 in enumerate(均匀取帧(帧们, n)):
-        g, 说 = 规整(图, (tw, tw))
+    if frames is None and im.width == im.height:
+        frames = [(im, 1)]
+    if frames is None:
+        return normalize_image(im, (tw, th))
+    strip = Image.new('RGBA', (tw, th))
+    notes = set()
+    for k, image in enumerate(pick_frames_evenly(frames, n)):
+        g, note = normalize_image(image, (tw, tw))
         if g is None:
-            return None, 说
-        条.paste(g, (0, k * tw))
-        说们.add(说)
-    return 条, '、'.join(sorted(说们)) + f'（动画 {len(帧们)} 帧→{n} 帧）'
+            return None, note
+        strip.paste(g, (0, k * tw))
+        notes.add(note)
+    return strip, '、'.join(sorted(notes)) + f'（动画 {len(frames)} 帧→{n} 帧）'
 
 
-def 最近邻放大(im: Image.Image, f: int) -> Image.Image:
+def nearest_upscale(im: Image.Image, f: int) -> Image.Image:
     return im if f == 1 else im.resize((im.width * f, im.height * f), Image.NEAREST)
 
 
-def 存(im: Image.Image, 出目录: str, 名: str) -> str:
-    f = os.path.join(出目录, 名.replace('/', '__') + '.png')
+def save_image(im: Image.Image, out_dir: str, name: str) -> str:
+    f = os.path.join(out_dir, name.replace('/', '__') + '.png')
     im.save(f, format='PNG')
     return f
 
 
-def 色图点(im: Image.Image, t: float, d: float) -> int:
+def colormap_point(im: Image.Image, t: float, d: float) -> int:
     # 原版 GrassColor.get / FoliageColor.get：t、d 夹到 0～1，d *= t，取 (255 − t·255, 255 − d·255)
     t = min(1.0, max(0.0, t))
     d = min(1.0, max(0.0, d)) * t
@@ -217,22 +217,22 @@ def 色图点(im: Image.Image, t: float, d: float) -> int:
     return (r << 16) | (g << 8) | b
 
 
-def 换群系色(叠: 叠包, jar: zipfile.ZipFile, 原表文件: str, 出目录: str, id: str):
-    改 = {}
-    原图 = {}
-    包图 = {}
-    for 键, 名 in (('草', 'grass'), ('叶', 'foliage')):
-        相对 = f'assets/minecraft/textures/colormap/{名}.png'
-        p = 叠.找(相对)
+def remap_biome_color(pack_stack: PackStack, jar: zipfile.ZipFile, source_table_path: str, out_dir: str, id: str):
+    changed = {}
+    original_images = {}
+    pack_images = {}
+    for tint_key, colormap_name in (('草', 'grass'), ('叶', 'foliage')):
+        rel_path = f'assets/minecraft/textures/colormap/{colormap_name}.png'
+        p = pack_stack.find_class(rel_path)
         if p is None:
             continue
-        包图[键] = (p.图(相对), p.名)
-        原图[键] = Image.open(io.BytesIO(jar.read(相对))).convert('RGBA')
-    if not 包图:
+        pack_images[tint_key] = (p.image(rel_path), p.名)
+        original_images[tint_key] = Image.open(io.BytesIO(jar.read(rel_path))).convert('RGBA')
+    if not pack_images:
         return None
-    表 = json.load(open(原表文件, encoding='utf-8'))
-    for 群系, e in 表['群系'].items():
-        ns, _, n = 群系.partition(':')
+    table = json.load(open(source_table_path, encoding='utf-8'))
+    for biome, e in table['群系'].items():
+        ns, _, n = biome.partition(':')
         if ns != 'minecraft':
             continue
         try:
@@ -240,139 +240,139 @@ def 换群系色(叠: 叠包, jar: zipfile.ZipFile, 原表文件: str, 出目录
         except KeyError:
             continue
         t, d = float(b.get('temperature', 0.5)), float(b.get('downfall', 0.5))
-        for 键 in 包图:
-            旧 = int(e[键][1:], 16)
-            if 色图点(原图[键], t, d) != 旧:
+        for tint_key in pack_images:
+            old_color = int(e[tint_key][1:], 16)
+            if colormap_point(original_images[tint_key], t, d) != old_color:
                 continue  # 写死颜色或带修饰的群系不跟色图
-            新 = 色图点(包图[键][0], t, d)
-            if 新 >= 0 and 新 != 旧:
-                e[键] = f'#{新:06x}'
-                改[群系 + '/' + 键] = (f'#{旧:06x}', e[键])
-    if not 改:
+            new_color = colormap_point(pack_images[tint_key][0], t, d)
+            if new_color >= 0 and new_color != old_color:
+                e[tint_key] = f'#{new_color:06x}'
+                changed[biome + '/' + tint_key] = (f'#{old_color:06x}', e[tint_key])
+    if not changed:
         return None
-    表['说明'] = 表.get('说明', '') + '；材质包兼容层按包里的 colormap 改过（pipeline/资产/材质包.ts）'
-    f = os.path.join(出目录, id.replace('/', '__') + '.json')
+    table['说明'] = table.get('说明', '') + '；材质包兼容层按包里的 colormap 改过（pipeline/资产/材质包.ts）'
+    f = os.path.join(out_dir, id.replace('/', '__') + '.json')
     with open(f, 'w', encoding='utf-8') as fp:
-        json.dump(表, fp, ensure_ascii=False, indent=2, sort_keys=True)
+        json.dump(table, fp, ensure_ascii=False, indent=2, sort_keys=True)
         fp.write('\n')
-    return {'文件': f, '改': len(改), '色图来自': sorted({v[1] for v in 包图.values()}), '例': dict(list(改.items())[:6])}
+    return {'文件': f, '改': len(changed), '色图来自': sorted({v[1] for v in pack_images.values()}), '例': dict(list(changed.items())[:6])}
 
 
-OptiFine目录 = ('optifine/', 'mcpatcher/')
+optifine_dirs = ('optifine/', 'mcpatcher/')
 
 
-def 体检(p: 包) -> dict:
+def health_check(p: Pack) -> dict:
     """统计包里兼容层不支持的东西，给警告"""
-    统计: Counter = Counter()
-    例: dict[str, list[str]] = {}
+    stats: Counter = Counter()
+    examples: dict[str, list[str]] = {}
 
-    def 记(k: str, n: str):
-        统计[k] += 1
-        例.setdefault(k, [])
-        if len(例[k]) < 4:
-            例[k].append(n)
+    def record(k: str, n: str):
+        stats[k] += 1
+        examples.setdefault(k, [])
+        if len(examples[k]) < 4:
+            examples[k].append(n)
 
-    for n in sorted(p.文件):
+    for n in sorted(p.pack_files):
         if not n.startswith('assets/'):
             continue
         _, ns, *rest = n.split('/')
         sub = '/'.join(rest)
-        if any(sub.startswith(d) for d in OptiFine目录):
+        if any(sub.startswith(d) for d in optifine_dirs):
             seg = sub.split('/')
-            功能 = seg[1] if len(seg) > 2 else seg[1].split('.')[0]
-            if 功能 == 'emissive' or n.endswith('emissive.properties'):
-                功能 = 'emissive'
-            记(f'OptiFine/{功能}', n)
+            feature = seg[1] if len(seg) > 2 else seg[1].split('.')[0]
+            if feature == 'emissive' or n.endswith('emissive.properties'):
+                feature = 'emissive'
+            record(f'OptiFine/{feature}', n)
         elif sub.startswith('models/block/'):
-            记('models/block', n)
+            record('models/block', n)
         elif sub.startswith('models/item/'):
-            记('models/item', n)
+            record('models/item', n)
         elif sub.startswith('blockstates/'):
-            记('blockstates', n)
+            record('blockstates', n)
         elif sub.startswith('shaders/'):
-            记('shaders', n)
+            record('shaders', n)
         elif sub.startswith(('font/', 'textures/font/')):
-            记('字体（不换：画面里的字是作品自己的点阵）', n)
+            record('字体（不换：画面里的字是作品自己的点阵）', n)
         elif sub.startswith('textures/gui/'):
-            记('界面（只换选择世界界面的泥土底、播放箭头）', n)
+            record('界面（只换选择世界界面的泥土底、播放箭头）', n)
         elif sub.startswith('textures/') and sub.endswith('.png'):
-            记('贴图', n)
+            record('贴图', n)
     meta = p.json('pack.mcmeta')
     pf = meta.get('pack', {}).get('pack_format') if isinstance(meta, dict) else None
     sf = meta.get('pack', {}).get('supported_formats') if isinstance(meta, dict) else None
-    return {'名': p.名, 'pack_format': pf, 'supported_formats': sf, '统计': dict(统计), '例': 例}
+    return {'名': p.名, 'pack_format': pf, 'supported_formats': sf, '统计': dict(stats), '例': examples}
 
 
 def main() -> None:
     with open(sys.argv[1], encoding='utf-8') as f:
         q = json.load(f)
-    叠 = 叠包([包(x['zip'], x['名']) for x in q['包们']])
+    pack_stack = PackStack([Pack(x['zip'], x['名']) for x in q['包们']])
     jar = zipfile.ZipFile(q['原版jar'])
-    出目录 = q['出目录']
-    倍上限 = int(q.get('倍上限', 1))
-    结果: dict = {'产物': [], '图集缺': 0, '图集不合': [], '单张缺': [], '单张原版放大': [], '单张不合': [], '图集格': {}, '缩放': Counter(), '各包贡献': Counter(), '体检': [体检(p) for p in 叠.包们]}
+    out_dir = q['出目录']
+    max_scale = int(q.get('倍上限', 1))
+    report: dict = {'产物': [], '图集缺': 0, '图集不合': [], '单张缺': [], '单张原版放大': [], '单张不合': [], '图集格': {}, '缩放': Counter(), '各包贡献': Counter(), '体检': [health_check(p) for p in pack_stack.packs]}
 
-    def 记缩放(s: float, f: int, 说: str):
-        结果['缩放'][f'包 {s:g} 倍 → 出 {f} 倍（{说}）'] += 1
+    def record_scale(s: float, f: int, note: str):
+        report['缩放'][f'包 {s:g} 倍 → 出 {f} 倍（{note}）'] += 1
 
     for t in q.get('图集', []):
-        原 = Image.open(t['原图']).convert('RGBA')
-        格 = t['格']
-        找到们 = [找图(叠, 贴图路径(名)) for 名 in t['贴图名']]
-        F = max([有效倍(包倍(x, 格), 倍上限) for x in 找到们 if x] or [1])
+        original = Image.open(t['原图']).convert('RGBA')
+        cell_size = t['格']
+        found_list = [find_image(pack_stack, texture_path(texture_name)) for texture_name in t['贴图名']]
+        F = max([effective_scale(pack_scale(x, cell_size), max_scale) for x in found_list if x] or [1])
         # 方块表.png 是竖条：格边长宽，第 i 张在 y = 格·i（engine/voxel/真实方块图集.ts 按竖条宽取格边长，读的时候才排成 16 列）
-        原 = 最近邻放大(原, F)
-        换 = 0
-        for i, (名, x) in enumerate(zip(t['贴图名'], 找到们)):
+        original = nearest_upscale(original, F)
+        replaced = 0
+        for i, (texture_name, x) in enumerate(zip(t['贴图名'], found_list)):
             if x is None:
-                结果['图集缺'] += 1
+                report['图集缺'] += 1
                 continue
-            cell, 说 = 取贴图(x, (格, 格), F)
+            cell, note = get_texture(x, (cell_size, cell_size), F)
             if cell is None:
-                结果['图集不合'].append({'名': 名, '包': x[0].名, '原因': 说})
+                report['图集不合'].append({'名': texture_name, '包': x[0].名, '原因': note})
                 continue
-            原.paste(cell, (0, i * 格 * F))
-            换 += 1
-            记缩放(包倍(x, 格), F, 说)
-            结果['各包贡献'][x[0].名] += 1
-        结果['图集格'][t['id']] = 格 * F
-        结果['产物'].append({'id': t['id'], '文件': 存(原, 出目录, t['id']), '换': 换, '共': len(t['贴图名'])})
-    单张们 = q.get('单张', [])
-    原图们 = {s['id']: Image.open(s['原图']).convert('RGBA') for s in 单张们}
-    找到们 = {s['id']: 找图(叠, s['包内']) for s in 单张们}
-    上限们 = {s['id']: min(倍上限, int(s.get('倍上限', 倍上限))) for s in 单张们}
-    组倍: dict[str, int] = {}
-    for s in 单张们:
-        x = 找到们[s['id']]
+            original.paste(cell, (0, i * cell_size * F))
+            replaced += 1
+            record_scale(pack_scale(x, cell_size), F, note)
+            report['各包贡献'][x[0].名] += 1
+        report['图集格'][t['id']] = cell_size * F
+        report['产物'].append({'id': t['id'], '文件': save_image(original, out_dir, t['id']), '换': replaced, '共': len(t['贴图名'])})
+    single_images = q.get('单张', [])
+    source_images = {s['id']: Image.open(s['原图']).convert('RGBA') for s in single_images}
+    found_list = {s['id']: find_image(pack_stack, s['包内']) for s in single_images}
+    caps = {s['id']: min(max_scale, int(s.get('倍上限', max_scale))) for s in single_images}
+    group_scale: dict[str, int] = {}
+    for s in single_images:
+        x = found_list[s['id']]
         if x:
-            组倍[s['组']] = max(组倍.get(s['组'], 1), 有效倍(包倍(x, 原图们[s['id']].width), 上限们[s['id']]))
-    for s in 单张们:
-        原 = 原图们[s['id']]
-        x = 找到们[s['id']]
-        f = min(组倍.get(s['组'], 1), 上限们[s['id']])
+            group_scale[s['组']] = max(group_scale.get(s['组'], 1), effective_scale(pack_scale(x, source_images[s['id']].width), caps[s['id']]))
+    for s in single_images:
+        original = source_images[s['id']]
+        x = found_list[s['id']]
+        f = min(group_scale.get(s['组'], 1), caps[s['id']])
         if x is None:
-            结果['单张缺'].append(s['id'])
+            report['单张缺'].append(s['id'])
             if f > 1:
                 # 同组别的贴图放大了，包里没有的原版贴图也跟着放大，一组一样大（消费处常把一组拼成一张图集）
-                结果['单张原版放大'].append(s['id'])
-                结果['产物'].append({'id': s['id'], '文件': 存(最近邻放大(原, f), 出目录, s['id']), '换': 0, '共': 1})
+                report['单张原版放大'].append(s['id'])
+                report['产物'].append({'id': s['id'], '文件': save_image(nearest_upscale(original, f), out_dir, s['id']), '换': 0, '共': 1})
             continue
-        im, 说 = 取贴图(x, 原.size, f)
+        im, note = get_texture(x, original.size, f)
         if im is None:
-            结果['单张不合'].append({'id': s['id'], '包': x[0].名, '原因': 说})
+            report['单张不合'].append({'id': s['id'], '包': x[0].名, '原因': note})
             continue
-        记缩放(包倍(x, 原.width), f, 说)
-        结果['各包贡献'][x[0].名] += 1
-        结果['产物'].append({'id': s['id'], '文件': 存(im, 出目录, s['id']), '换': 1, '共': 1})
+        record_scale(pack_scale(x, original.width), f, note)
+        report['各包贡献'][x[0].名] += 1
+        report['产物'].append({'id': s['id'], '文件': save_image(im, out_dir, s['id']), '换': 1, '共': 1})
     g = q.get('群系')
     if g:
-        r = 换群系色(叠, jar, g['原表'], 出目录, g['id'])
+        r = remap_biome_color(pack_stack, jar, g['原表'], out_dir, g['id'])
         if r:
-            结果['产物'].append({'id': g['id'], '文件': r['文件'], '换': r['改'], '共': r['改']})
-            结果['群系色'] = {k: r[k] for k in ('改', '色图来自', '例')}
-    结果['缩放'] = dict(结果['缩放'])
-    结果['各包贡献'] = dict(结果['各包贡献'])
-    print(json.dumps(结果, ensure_ascii=False))
+            report['产物'].append({'id': g['id'], '文件': r['文件'], '换': r['改'], '共': r['改']})
+            report['群系色'] = {k: r[k] for k in ('改', '色图来自', '例')}
+    report['缩放'] = dict(report['缩放'])
+    report['各包贡献'] = dict(report['各包贡献'])
+    print(json.dumps(report, ensure_ascii=False))
 
 
 if __name__ == '__main__':

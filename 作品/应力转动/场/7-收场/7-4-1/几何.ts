@@ -8,8 +8,8 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { toScene } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { chest742, huangPanPortal741 } from '../../../地点/古城4x/布局.ts';
-import heights资产 from 'asset:数据/镜头/7-4-1/高度';
-const heights = heights资产 as unknown as { 步: number; 马: number[]; 监守者: number[] };
+import heightsJson from 'asset:数据/镜头/7-4-1/高度';
+const heights = heightsJson as unknown as { 步: number; 马: number[]; 监守者: number[] };
 
 export const FPS = 24;
 export const relY = (rel: number) => rel - 51;
@@ -103,15 +103,15 @@ export const landingE: [number, number] = [ringE, 259.5];
 export const horseLoop = buildLoop([[ringW, ringN], takeoffW, plinthW, plinthE, landingE, [ringE, ringN]], [1.2, 2.0, 2.0, 2.0, 2.0, 1.2]);
 // 各拐点的程（马那一圈）
 export const horseMarks = {
-  起跳: horseLoop.marks[1],
-  上台: horseLoop.marks[2],
-  台东: horseLoop.marks[3],
-  落环: horseLoop.marks[4],
+  takeoff: horseLoop.marks[1],
+  mountPlinth: horseLoop.marks[2],
+  plinthEast: horseLoop.marks[3],
+  landRing: horseLoop.marks[4],
 };
 // 两跳：脚底 rel 从 5 → 8（上台）、8 → 5（下环道），最高点比高的那头高 `apex`（方块.py 查过 1.5～3 都不撞；落地时后蹄擦过东环道里沿那一格矮垛）
 export const leaps = [
-  { s0: horseMarks.起跳, s1: horseMarks.上台, rel0: 5, rel1: 8, apex: 1.8 },
-  { s0: horseMarks.台东, s1: horseMarks.落环, rel0: 8, rel1: 5, apex: 2.2 },
+  { s0: horseMarks.takeoff, s1: horseMarks.mountPlinth, rel0: 5, rel1: 8, apex: 1.8 },
+  { s0: horseMarks.plinthEast, s1: horseMarks.landRing, rel0: 8, rel1: 5, apex: 2.2 },
 ];
 
 // ---------- 高度表：每 0.5 米一个 rel，平滑同老版（先在前后 reach 米取最高，再前后 radius 米取平均） ----------
@@ -171,7 +171,7 @@ export const huangSpot = huangPanPortal741;
 //   幽灵马：龛里东半边（游戏 (-707.5, -49, 200.5)），马头朝箱子；刘心忠在马上探身开箱。黄叛：马的北边（游戏 (-706.5, -49, 197.2)）。
 // 石龛在北墙外 9 格（游戏 x −713～−705、z 193～202，地台 y −50、站立面 −49），龛里一只箱子 (-712, -49, 198) 朝东，古城4x画布里已换成 Lootr 战利品箱（#213）。
 // 箱子东边 2～3 格：感测体 (-711,-49,196)、(-709,-49,197)、(-709,-49,198)，尖啸体 (-708,-49,198)、(-709,-49,199)（读自片场存档）。
-export const chest = { 号: chest742.号, block: [...chest742.block] as V3 };
+export const chest = { chestId: chest742.chestId, block: [...chest742.block] as V3 };
 export const sensors: V3[] = [
   [-711, -49, 196],
   [-709, -49, 197],

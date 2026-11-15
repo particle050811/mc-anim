@@ -1,39 +1,39 @@
 // 正片第 8 句（段 2-收集快乐）的事件和段窗口。
 // 分镜按串拆开的一份（用户 11-06 定按句拆，改一句只过期那几段）；时刻、排段的写法见 ./时间.ts。纯模块，不许 import react、three、remotion。
-import { 原声时长 } from '../配乐/网格.ts';
-import { 串查法, 段内帧, 解事件, 排段, type 事件定义 } from './时间.ts';
+import { originalDurSec } from '../配乐/网格.ts';
+import { chainLookup, segmentFrames, resolveEvents, arrangeSegs, type EventDef } from './时间.ts';
 
-export const 定义 = {
-  第8句开口: { 在: { 句: 8, 点: '开口' }, 依据: '三稿第 8 句「将快乐全都收集将不开心全都淘汰」，门这个机位，整句一个镜头（第 7 句末朝北仰看着屋子，同一个朝向直接切到门口这一面，不再从天往下摇）' },
-  第8句晴定: {
-    在: { 拍: 60.75 },
+export const eventDefs = {
+  line8VocalIn: { 在: { 句: 8, 点: '开口' }, 依据: '三稿第 8 句「将快乐全都收集将不开心全都淘汰」，门这个机位，整句一个镜头（第 7 句末朝北仰看着屋子，同一个朝向直接切到门口这一面，不再从天往下摇）' },
+  clearSkySettles: {
+    在: { beat: 60.75 },
     依据: '25.99：段首接着第 7 句末的雨后暖阳，调子缓到第 8 句的晴天，头顶云洞也停住（演绎，Agent 暂定：接上第 7 句「阳光铺地」；比「收」早 13 帧定下来。核查 10-24：段首原来从天往下摇半秒，切过来头几帧是大半屏山墙，删了摇）',
   },
-  挂照片: {
-    在: { 拍: 62 },
+  hangPhoto: {
+    在: { beat: 62 },
     依据: '26.53「收」：墙上已经挂着三张（递蛋糕、日落划船、扑龙蛋），她把举在空框前的最新那张（光柱破云）推进最后一只空荧光框，这一帧挂上，一拍完成（用户 10-24「全部收集 动态放 4 幅画时间上就来不及 需要取舍」，主会话定）',
   },
-  苦力怕冒头: {
-    在: { 拍: 62.75 },
+  creeperAppears: {
+    在: { beat: 62.75 },
     依据: '26.85「集」后：苦力怕的前脚从画框左边进来，往门口走（三稿 26.53 起冒头；挪后 3/4 拍，挂上以后她回头看你那几帧先看完，一次只看一样，Agent 暂定）',
   },
-  她看见苦力怕: { 在: { 拍: 64 }, 依据: '三稿 27.38「不开心」：苦力怕摸到门外；她转头看见它（演绎，Agent 暂定）' },
-  哈气: { 在: { 拍: 65 }, 依据: '三稿 27.80：她就站在门洞里，转身挡在你和苦力怕中间冲它哈气，头上冒「˃ʍ˂」；苦力怕停住' },
-  苦力怕掉头: { 在: { 拍: 65.5 }, 依据: '三稿 27.80「掉头」：停住愣半拍再转身（演绎，Agent 暂定）' },
-  苦力怕逃: { 在: { 拍: 66 }, 依据: '三稿 28.23「淘」：苦力怕逃出画框，她回头冲你一歪头，头上冒「(✿◠‿◠)」' },
-} as const satisfies Record<string, 事件定义>;
+  liYingSpotsCreeper: { 在: { beat: 64 }, 依据: '三稿 27.38「不开心」：苦力怕摸到门外；她转头看见它（演绎，Agent 暂定）' },
+  hiss: { 在: { beat: 65 }, 依据: '三稿 27.80：她就站在门洞里，转身挡在你和苦力怕中间冲它哈气，头上冒「˃ʍ˂」；苦力怕停住' },
+  creeperTurnsAway: { 在: { beat: 65.5 }, 依据: '三稿 27.80「掉头」：停住愣半拍再转身（演绎，Agent 暂定）' },
+  creeperFlees: { 在: { beat: 66 }, 依据: '三稿 28.23「淘」：苦力怕逃出画框，她回头冲你一歪头，头上冒「(✿◠‿◠)」' },
+} as const satisfies Record<string, EventDef>;
 
 /** 接 能查到的事件：本串的，加上引来的那几份的（一路引上去） */
-export const 表: Readonly<Record<string, 事件定义>> = { ...定义 };
+export const eventTable: Readonly<Record<string, EventDef>> = { ...eventDefs };
 /** 本串事件在歌上的秒数和歌曲帧 */
-export const 事件 = 解事件(定义, 表);
+export const events = resolveEvents(eventDefs, eventTable);
 
 /** 正片第 8 句：一段，整句一个镜头。正片的段还没接成一串：前后的段做出来以后并进同一串（窗口首尾相接） */
-export const 正片第8句 = 排段(
+export const mainCutSentence8 = arrangeSegs(
   {
     名: '正片第8句',
-    时长: 原声时长,
-    段们: [
+    时长: originalDurSec,
+    segments: [
       {
         键: '2-收集快乐',
         起: { 句: 8, 点: '起' },
@@ -42,10 +42,10 @@ export const 正片第8句 = 排段(
       },
     ],
   },
-  表,
+  eventTable,
 );
 
 /** 只查本串的段（段.ts、画面用：帧数、场窗口、原声 cue 的入点） */
-export const { 段窗口, 段时钟 } = 串查法(正片第8句);
+export const { segmentWindow, segClock } = chainLookup(mainCutSentence8);
 /** 本串各事件在这一段里的段内帧（不在这段里的也照算，会是负数或不小于帧数） */
-export const 段内事件帧 = (键: string) => 段内帧(段窗口(键).起帧, 事件);
+export const segEventFrames = (segKey: string) => segmentFrames(segmentWindow(segKey).起帧, events);

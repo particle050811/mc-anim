@@ -8,16 +8,16 @@ import type React from 'react';
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { png, type Png } from '@engine/model/贴图.ts';
-import { 地图画像素, type 地图边长 } from '../特效/地图画.ts';
-import type { 照片源 } from '../特效/照片图.ts';
-import { 地图离墙, 照片墙面y, type 照片墙格 } from './照片墙格.ts';
-import 背板url from 'asset:贴图/物品/荧光物品展示框/背板';
-import 木框url from 'asset:贴图/物品/荧光物品展示框/木框';
+import { mapPixels, type MapSize } from '../特效/地图画.ts';
+import type { PhotoSource } from '../特效/照片图.ts';
+import { mapWallOffset, photoWallFaceY, type PhotoWallCell } from './照片墙格.ts';
+import backPanelUrl from 'asset:贴图/物品/荧光物品展示框/背板';
+import woodFrameUrl from 'asset:贴图/物品/荧光物品展示框/木框';
 
-export { 照片墙格们, 照片墙格位, type 照片墙格 } from './照片墙格.ts';
+export { photoWallCells, photoWallCellPos, type PhotoWallCell } from './照片墙格.ts';
 
 // ---------- 贴图、材质 ----------
-const 新贴图 = (px: Uint8Array, w: number, h: number) => {
+const makePixelTexture = (px: Uint8Array, w: number, h: number) => {
   const t = new THREE.DataTexture(px, w, h, THREE.RGBAFormat);
   t.colorSpace = THREE.SRGBColorSpace;
   t.magFilter = t.minFilter = THREE.NearestFilter;
@@ -28,28 +28,28 @@ const 新贴图 = (px: Uint8Array, w: number, h: number) => {
   return t;
 };
 
-const 框材质缓存 = new Map<string, THREE.MeshStandardMaterial>();
-const 框材质 = (url: string) => {
-  let m = 框材质缓存.get(url);
+const frameMaterialCache = new Map<string, THREE.MeshStandardMaterial>();
+const frameMaterial = (url: string) => {
+  let m = frameMaterialCache.get(url);
   if (!m) {
     const p: Png = png(url);
-    m = new THREE.MeshStandardMaterial({ map: 新贴图(p.px, p.w, p.h), alphaTest: 0.5, roughness: 1 });
-    框材质缓存.set(url, m);
+    m = new THREE.MeshStandardMaterial({ map: makePixelTexture(p.px, p.w, p.h), alphaTest: 0.5, roughness: 1 });
+    frameMaterialCache.set(url, m);
   }
   return m;
 };
 
-const 地图材质缓存 = new Map<照片源, Map<地图边长, THREE.MeshBasicMaterial>>();
-const 地图材质 = (画: 照片源, 边长: 地图边长) => {
-  let 表 = 地图材质缓存.get(画);
-  if (!表) 地图材质缓存.set(画, (表 = new Map()));
-  let m = 表.get(边长);
-  if (!m) 表.set(边长, (m = new THREE.MeshBasicMaterial({ map: 新贴图(地图画像素(画, 边长), 边长, 边长) })));
+const mapMaterialCache = new Map<PhotoSource, Map<MapSize, THREE.MeshBasicMaterial>>();
+const mapMaterial = (photo: PhotoSource, sideLength: MapSize) => {
+  let materialMap = mapMaterialCache.get(photo);
+  if (!materialMap) mapMaterialCache.set(photo, (materialMap = new Map()));
+  let m = materialMap.get(sideLength);
+  if (!m) materialMap.set(sideLength, (m = new THREE.MeshBasicMaterial({ map: makePixelTexture(mapPixels(photo, sideLength), sideLength, sideLength) })));
   return m;
 };
 
 /** 一片朝南的正面：x0～x1、z0～z1（格），在 y；贴图取 [u0, u1] × [v0, v1]（0～1，v 从图的上边往下） */
-const 片几何 = (x0: number, x1: number, z0: number, z1: number, u0: number, v0: number, u1: number, v1: number) => {
+const planeGeometry = (x0: number, x1: number, z0: number, z1: number, u0: number, v0: number, u1: number, v1: number) => {
   const g = new THREE.BufferGeometry();
   // 四个角：左下、右下、右上、左上（从南边看逆时针，法线朝 −y）
   g.setAttribute('position', new THREE.Float32BufferAttribute([x0, 0, z0, x1, 0, z0, x1, 0, z1, x0, 0, z1], 3));
@@ -61,26 +61,26 @@ const 片几何 = (x0: number, x1: number, z0: number, z1: number, u0: number, v
 
 // 空框：template_item_frame.json 里朝外那面（模型的 north 面，挂在北墙上转 180° 朝南）。[x0, y0, x1, y1] 是模型像素（y 往上）、离墙几个像素、用哪张贴图；
 // north 面的 uv 正好等于从南边看过去的 [左, 上, 右, 下]
-const 空框片们 = [
-  { 框: [3, 3, 13, 13], 离墙: 0.5, 图: 'back' },
-  { 框: [2, 2, 14, 3], 离墙: 1, 图: 'wood' },
-  { 框: [2, 13, 14, 14], 离墙: 1, 图: 'wood' },
-  { 框: [2, 3, 3, 13], 离墙: 1, 图: 'wood' },
-  { 框: [13, 3, 14, 13], 离墙: 1, 图: 'wood' },
+const emptyFramePlanes = [
+  { 框: [3, 3, 13, 13], wallOffset: 0.5, 图: 'back' },
+  { 框: [2, 2, 14, 3], wallOffset: 1, 图: 'wood' },
+  { 框: [2, 13, 14, 14], wallOffset: 1, 图: 'wood' },
+  { 框: [2, 3, 3, 13], wallOffset: 1, 图: 'wood' },
+  { 框: [13, 3, 14, 13], wallOffset: 1, 图: 'wood' },
 ] as const;
 
-const 空框几何 = 空框片们.map(({ 框: [x0, y0, x1, y1] }) => 片几何(x0 / 16 - 0.5, x1 / 16 - 0.5, y0 / 16, y1 / 16, x0 / 16, (16 - y1) / 16, x1 / 16, (16 - y0) / 16));
-const 满格几何 = 片几何(-0.5, 0.5, 0, 1, 0, 0, 1, 1);
+const emptyFrameGeometry = emptyFramePlanes.map(({ 框: [x0, y0, x1, y1] }) => planeGeometry(x0 / 16 - 0.5, x1 / 16 - 0.5, y0 / 16, y1 / 16, x0 / 16, (16 - y1) / 16, x1 / 16, (16 - y0) / 16));
+const fullCellGeometry = planeGeometry(-0.5, 0.5, 0, 1, 0, 0, 1, 1);
 
 /** 一只荧光物品展示框（画 null = 空的） */
-export const 荧光框: React.FC<{ i: number; k: number; 画: 照片源 | null; 边长?: 地图边长 }> = ({ i, k, 画, 边长 = 32 }) => {
-  const 地图 = useMemo(() => (画 ? 地图材质(画, 边长) : null), [画, 边长]);
+export const GlowFrame: React.FC<{ i: number; k: number; photo: PhotoSource | null; sideLength?: MapSize }> = ({ i, k, photo, sideLength = 32 }) => {
+  const mapTexture = useMemo(() => (photo ? mapMaterial(photo, sideLength) : null), [photo, sideLength]);
   return (
-    <group position={[i, 照片墙面y, k]}>
-      {地图 ? (
-        <mesh geometry={满格几何} material={地图} position={[0, -地图离墙, 0]} />
+    <group position={[i, photoWallFaceY, k]}>
+      {mapTexture ? (
+        <mesh geometry={fullCellGeometry} material={mapTexture} position={[0, -mapWallOffset, 0]} />
       ) : (
-        空框片们.map((p, n) => <mesh key={n} geometry={空框几何[n]} material={框材质(p.图 === 'back' ? 背板url : 木框url)} position={[0, -p.离墙 / 16, 0]} />)
+        emptyFramePlanes.map((p, n) => <mesh key={n} geometry={emptyFrameGeometry[n]} material={frameMaterial(p.图 === 'back' ? backPanelUrl : woodFrameUrl)} position={[0, -p.wallOffset / 16, 0]} />)
       )}
     </group>
   );
@@ -88,26 +88,26 @@ export const 荧光框: React.FC<{ i: number; k: number; 画: 照片源 | null; 
 
 /** 拿在手里的一张地图画（给 MagicalWineFoxEx 的 手持物.物品：物品空间里中心在原点、1 = 一格、正面朝 +Z、上 = +Y）。
  *  原版第三人称拿着地图画的是地图物品的图标，这里画地图画本身（演绎：手机上要认得出拿走的是哪张照片）；同框里一样满亮 */
-const 手持片 = (() => {
+const handHeldPlane = (() => {
   const g = new THREE.PlaneGeometry(1, 1);
   // 贴图第 0 行在 v = 0（新贴图 不翻），PlaneGeometry 的 v 朝上，翻过来
   const uv = g.getAttribute('uv');
   for (let n = 0; n < uv.count; n++) uv.setY(n, 1 - uv.getY(n));
   return g;
 })();
-export const 手持地图画: React.FC<{ 画: 照片源; 边长?: 地图边长 }> = ({ 画, 边长 = 32 }) => <mesh geometry={手持片} material={地图材质(画, 边长)} />;
+export const HandHeldMapArt: React.FC<{ photo: PhotoSource; sideLength?: MapSize }> = ({ photo, sideLength = 32 }) => <mesh geometry={handHeldPlane} material={mapMaterial(photo, sideLength)} />;
 
 /** 一张不在框里、也不挂在手上的地图画（场景内容，Z 朝上）：正面朝南、边 格见方，角 = 左下角（场景坐标）。
  *  第 8 句她把照片往空框里放的那几帧用它（从手边挪进框，最后一帧和框里那张重合）；同框里一样满亮 */
-export const 地图画片: React.FC<{ 画: 照片源; 边长?: 地图边长; 角: readonly [number, number, number]; 边: number }> = ({ 画, 边长 = 32, 角, 边 }) => (
-  <mesh geometry={满格几何} material={地图材质(画, 边长)} position={[角[0] + 边 / 2, 角[1], 角[2]]} scale={边} />
+export const MapArtCard: React.FC<{ photo: PhotoSource; sideLength?: MapSize; 角: readonly [number, number, number]; side: number }> = ({ photo, sideLength = 32, 角: corner, side }) => (
+  <mesh geometry={fullCellGeometry} material={mapMaterial(photo, sideLength)} position={[corner[0] + side / 2, corner[1], corner[2]]} scale={side} />
 );
 
 /** 一面照片墙：每格一只荧光框。边长 = 一格几个地图像素（特效/地图画.ts：N 是 4 的倍数给 64，N = 10 给 32） */
-export const 照片墙: React.FC<{ 格们: readonly 照片墙格[]; 边长?: 地图边长 }> = ({ 格们, 边长 }) => (
+export const PhotoWall: React.FC<{ cells: readonly PhotoWallCell[]; sideLength?: MapSize }> = ({ cells, sideLength }) => (
   <>
-    {格们.map((g) => (
-      <荧光框 key={`${g.i},${g.k}`} i={g.i} k={g.k} 画={g.画} 边长={边长} />
+    {cells.map((g) => (
+      <GlowFrame key={`${g.i},${g.k}`} i={g.i} k={g.k} photo={g.photo} sideLength={sideLength} />
     ))}
   </>
 );

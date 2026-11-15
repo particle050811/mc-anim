@@ -4,203 +4,203 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Worker } from 'node:worker_threads';
-import { 解码列段, 编码列段, type 解开的列段 } from './列段.ts';
-import { 区域文件名, 解析区域文件名, 读区域 } from './存档.ts';
+import { decodeColumnSegments, encodeColumnSegments, type UnpackedColumnSegmentRegion } from './列段.ts';
+import { regionFileName, parseRegionFileName, readRegion } from './存档.ts';
 
 /** 列段缓存的键随它变：读存档的写法（状态串、并段规则）改了就换一版 */
-const 读法版本 = 'mca-列段v2';
+const READ_METHOD = 'mca-列段v2';
 
 /** 读缓存时把修改时间推到现在（超过 1 天才动，省系统调用）：anim cache gc 按它算多久没用过 */
-const 记用过 = (f: string, 现在 = Date.now()) => {
+const markUsed = (f: string, now = Date.now()) => {
   try {
-    if (现在 - fs.statSync(f).mtimeMs > 24 * 3600 * 1000) fs.utimesSync(f, new Date(现在), new Date(现在));
+    if (now - fs.statSync(f).mtimeMs > 24 * 3600 * 1000) fs.utimesSync(f, new Date(now), new Date(now));
   } catch {
     // 别的进程刚回收了，或只读盘：不影响这次读
   }
 };
 
-export type 区域变换 = (r: 解开的列段) => 解开的列段;
+export type RegionTransform = (r: UnpackedColumnSegmentRegion) => UnpackedColumnSegmentRegion;
 
 // 缓存键（区域文件 sha256 接种子、读法版本）按「路径、大小、修改时间、种子」记在进程里：同一个存档常有两个区域源（套编辑的和编辑读原样的），共用一份
-const 键表 = new Map<string, string>();
+const keyTable = new Map<string, string>();
 
-export class 区域源 {
-  private 内存 = new Map<string, 解开的列段 | null>();
-  private 内存上限 = 40;
+export class RegionSource {
+  private cache = new Map<string, UnpackedColumnSegmentRegion | null>();
+  private memoryLimit = 40;
 
-  readonly 区域目录: string;
+  readonly regionDir: string;
   readonly 种子: string;
-  private 缓存目录: string | null;
-  private 变换: 区域变换 | null;
+  private cacheDir: string | null;
+  private transform: RegionTransform | null;
 
-  constructor(区域目录: string, 种子: string, 缓存目录: string | null, 变换: 区域变换 | null = null) {
-    this.区域目录 = 区域目录;
-    this.种子 = 种子;
-    this.缓存目录 = 缓存目录;
-    this.变换 = 变换;
+  constructor(regionDir: string, seed: string, cacheDir: string | null, transform: RegionTransform | null = null) {
+    this.regionDir = regionDir;
+    this.种子 = seed;
+    this.cacheDir = cacheDir;
+    this.transform = transform;
   }
 
   /** 存档里有的区域文件 [rx, rz]，按文件名排好 */
-  区域文件(): [number, number][] {
-    if (!fs.existsSync(this.区域目录)) throw new Error(`没有区域目录 ${this.区域目录}`);
+  regionFiles(): [number, number][] {
+    if (!fs.existsSync(this.regionDir)) throw new Error(`没有区域目录 ${this.regionDir}`);
     return fs
-      .readdirSync(this.区域目录)
+      .readdirSync(this.regionDir)
       .sort()
-      .map(解析区域文件名)
+      .map(parseRegionFileName)
       .filter((x): x is readonly [number, number] => !!x)
       .map(([a, b]) => [a, b]);
   }
 
   文件(rx: number, rz: number) {
-    return path.join(this.区域目录, 区域文件名(rx, rz));
+    return path.join(this.regionDir, regionFileName(rx, rz));
   }
 
-  private get 键后缀() {
-    return `\0${this.种子}\0${读法版本}`;
+  private get keySuffix() {
+    return `\0${this.种子}\0${READ_METHOD}`;
   }
 
   /** 区域文件的戳；文件不在返回 null */
-  private 戳(rx: number, rz: number) {
+  private stamp(rx: number, rz: number) {
     const f = this.文件(rx, rz);
     if (!fs.existsSync(f)) return null;
     const st = fs.statSync(f);
-    return { f, 戳: `${f}\0${st.size}\0${st.mtimeMs}\0${this.种子}` };
+    return { f, stamp: `${f}\0${st.size}\0${st.mtimeMs}\0${this.种子}` };
   }
 
-  private 缓存文件(rx: number, rz: number) {
-    if (!this.缓存目录) return null;
-    const s = this.戳(rx, rz);
+  private cacheFile(rx: number, rz: number) {
+    if (!this.cacheDir) return null;
+    const s = this.stamp(rx, rz);
     if (!s) return null;
-    let h = 键表.get(s.戳);
-    if (!h) 键表.set(s.戳, (h = createHash('sha256').update(fs.readFileSync(s.f)).update(this.键后缀).digest('hex')));
-    return path.join(this.缓存目录, h.slice(0, 2), h);
+    let h = keyTable.get(s.stamp);
+    if (!h) keyTable.set(s.stamp, (h = createHash('sha256').update(fs.readFileSync(s.f)).update(this.keySuffix).digest('hex')));
+    return path.join(this.cacheDir, h.slice(0, 2), h);
   }
 
   /** 在工作线程里先把这些区域的缓存键算好（之后 缓存文件 直接查表）；没缓存目录、文件不在的跳过 */
-  async 算键们(区域们: readonly [number, number][], 线程数: number) {
-    if (!this.缓存目录) return;
-    const 待 = 区域们.map(([rx, rz]) => this.戳(rx, rz)).filter((s): s is { f: string; 戳: string } => !!s && !键表.has(s.戳));
-    if (待.length <= 2) return; // 一两个文件起线程不划算，留给 缓存文件 当场算
-    let 下一个 = 0;
-    const 跑一个线程 = () =>
+  async computeKeys(regions: readonly [number, number][], threadCount: number) {
+    if (!this.cacheDir) return;
+    const pending = regions.map(([rx, rz]) => this.stamp(rx, rz)).filter((s): s is { f: string; stamp: string } => !!s && !keyTable.has(s.stamp));
+    if (pending.length <= 2) return; // 一两个文件起线程不划算，留给 缓存文件 当场算
+    let nextIndex = 0;
+    const runThread = () =>
       new Promise<void>((resolve, reject) => {
         const w = new Worker(new URL('./算键工人.ts', import.meta.url));
-        let 当前: { f: string; 戳: string } | undefined;
-        const 发 = () => {
-          当前 = 待[下一个++];
-          if (当前) w.postMessage({ 文件: 当前.f, 后缀: this.键后缀 });
+        let current: { f: string; stamp: string } | undefined;
+        const dispatch = () => {
+          current = pending[nextIndex++];
+          if (current) w.postMessage({ 文件: current.f, 后缀: this.keySuffix });
           else void w.terminate().then(() => resolve());
         };
         w.on('message', (h: string) => {
-          键表.set(当前!.戳, h);
-          发();
+          keyTable.set(current!.stamp, h);
+          dispatch();
         });
         w.on('error', reject);
-        发();
+        dispatch();
       });
-    await Promise.all(Array.from({ length: Math.max(1, Math.min(线程数, 待.length)) }, 跑一个线程));
+    await Promise.all(Array.from({ length: Math.max(1, Math.min(threadCount, pending.length)) }, runThread));
   }
 
   /** 列段缓存里已经有了（读它不用解存档） */
-  已缓存(rx: number, rz: number) {
-    const c = this.缓存文件(rx, rz);
+  isCached(rx: number, rz: number) {
+    const c = this.cacheFile(rx, rz);
     return !!c && (fs.existsSync(`${c}.列段`) || fs.existsSync(`${c}.空`));
   }
 
   /** 读一个区域（不套编辑）：先看缓存，没有就解存档并写缓存 */
-  原样(rx: number, rz: number): 解开的列段 | null {
+  原样(rx: number, rz: number): UnpackedColumnSegmentRegion | null {
     const f = this.文件(rx, rz);
     if (!fs.existsSync(f)) return null;
-    const c = this.缓存文件(rx, rz);
+    const c = this.cacheFile(rx, rz);
     if (c && fs.existsSync(`${c}.列段`)) {
-      记用过(`${c}.列段`);
-      return 解码列段(fs.readFileSync(`${c}.列段`));
+      markUsed(`${c}.列段`);
+      return decodeColumnSegments(fs.readFileSync(`${c}.列段`));
     }
     if (c && fs.existsSync(`${c}.空`)) {
-      记用过(`${c}.空`);
+      markUsed(`${c}.空`);
       return null;
     }
-    const r = 读区域(f, rx, rz, this.种子);
-    if (c) 写缓存(c, r ? 编码列段(r.列段) : null);
-    return r ? 解码列段(编码列段(r.列段)) : null;
+    const r = readRegion(f, rx, rz, this.种子);
+    if (c) writeCache(c, r ? encodeColumnSegments(r.columnSeg) : null);
+    return r ? decodeColumnSegments(encodeColumnSegments(r.columnSeg)) : null;
   }
 
   /** 套过编辑的区域；内存里留最近用的 */
-  区域(rx: number, rz: number): 解开的列段 | null {
+  区域(rx: number, rz: number): UnpackedColumnSegmentRegion | null {
     const k = `${rx},${rz}`;
-    let r = this.内存.get(k);
+    let r = this.cache.get(k);
     if (r !== undefined) {
-      this.内存.delete(k); // 挪到最新
-      this.内存.set(k, r);
+      this.cache.delete(k); // 挪到最新
+      this.cache.set(k, r);
       return r;
     }
     r = this.原样(rx, rz);
-    if (r && this.变换) r = this.变换(r);
-    this.内存.set(k, r);
-    if (this.内存.size > this.内存上限) this.内存.delete(this.内存.keys().next().value!);
+    if (r && this.transform) r = this.transform(r);
+    this.cache.set(k, r);
+    if (this.cache.size > this.memoryLimit) this.cache.delete(this.cache.keys().next().value!);
     return r;
   }
 
   /** 只解几个区块（查询小范围用，不写缓存、不进内存）；整区域已在缓存就用缓存 */
-  局部(rx: number, rz: number, 区块: ReadonlySet<number>): 解开的列段 | null {
+  partialRegion(rx: number, rz: number, chunkSet: ReadonlySet<number>): UnpackedColumnSegmentRegion | null {
     const k = `${rx},${rz}`;
-    if (this.内存.has(k)) return this.区域(rx, rz);
-    const c = this.缓存文件(rx, rz);
+    if (this.cache.has(k)) return this.区域(rx, rz);
+    const c = this.cacheFile(rx, rz);
     if (c && (fs.existsSync(`${c}.列段`) || fs.existsSync(`${c}.空`))) return this.区域(rx, rz);
     const f = this.文件(rx, rz);
     if (!fs.existsSync(f)) return null;
-    const r = 读区域(f, rx, rz, this.种子, 区块);
+    const r = readRegion(f, rx, rz, this.种子, chunkSet);
     if (!r) return null;
-    const d = 解码列段(编码列段(r.列段));
-    return this.变换 ? this.变换(d) : d;
+    const d = decodeColumnSegments(encodeColumnSegments(r.columnSeg));
+    return this.transform ? this.transform(d) : d;
   }
 
   /** 并行把没缓存的区域读进缓存；返回有数据的区域 */
-  async 预读(区域们: [number, number][], 线程数: number, 日志?: (s: string) => void): Promise<[number, number][]> {
-    if (!this.缓存目录) throw new Error('预读要有缓存目录');
-    await this.算键们(区域们, 线程数);
-    const 待: { rx: number; rz: number; 缓存: string }[] = [];
-    const 有数据: [number, number][] = [];
-    for (const [rx, rz] of 区域们) {
-      const c = this.缓存文件(rx, rz);
+  async preRead(regions: [number, number][], threadCount: number, log?: (s: string) => void): Promise<[number, number][]> {
+    if (!this.cacheDir) throw new Error('预读要有缓存目录');
+    await this.computeKeys(regions, threadCount);
+    const pending: { rx: number; rz: number; cachePath: string }[] = [];
+    const hasData: [number, number][] = [];
+    for (const [rx, rz] of regions) {
+      const c = this.cacheFile(rx, rz);
       if (!c) continue;
-      if (fs.existsSync(`${c}.列段`)) 有数据.push([rx, rz]);
-      else if (!fs.existsSync(`${c}.空`)) 待.push({ rx, rz, 缓存: c });
+      if (fs.existsSync(`${c}.列段`)) hasData.push([rx, rz]);
+      else if (!fs.existsSync(`${c}.空`)) pending.push({ rx, rz, cachePath: c });
     }
-    if (待.length) {
-      日志?.(`读存档：${待.length} 个区域没缓存，${Math.min(线程数, 待.length)} 个线程读`);
+    if (pending.length) {
+      log?.(`读存档：${pending.length} 个区域没缓存，${Math.min(threadCount, pending.length)} 个线程读`);
       const t0 = performance.now();
-      let 下一个 = 0;
-      const 跑一个线程 = () =>
+      let nextIndex = 0;
+      const runThread = () =>
         new Promise<void>((resolve, reject) => {
           const w = new Worker(new URL('./读区域工人.ts', import.meta.url), { workerData: { 种子: this.种子 } });
-          const 发 = () => {
-            const j = 待[下一个++];
-            if (j) w.postMessage({ 文件: this.文件(j.rx, j.rz), rx: j.rx, rz: j.rz, 缓存: j.缓存 });
+          const dispatch = () => {
+            const j = pending[nextIndex++];
+            if (j) w.postMessage({ 文件: this.文件(j.rx, j.rz), rx: j.rx, rz: j.rz, cachePath: j.cachePath });
             else void w.terminate().then(() => resolve());
           };
           w.on('message', (m: { rx: number; rz: number; 区块数: number; 字节: number }) => {
             if (m.区块数) {
-              有数据.push([m.rx, m.rz]);
-              日志?.(`  r.${m.rx}.${m.rz}：${m.区块数} 个区块，${(m.字节 / 1e6).toFixed(1)} MB`);
+              hasData.push([m.rx, m.rz]);
+              log?.(`  r.${m.rx}.${m.rz}：${m.区块数} 个区块，${(m.字节 / 1e6).toFixed(1)} MB`);
             }
-            发();
+            dispatch();
           });
           w.on('error', reject);
-          发();
+          dispatch();
         });
-      await Promise.all(Array.from({ length: Math.max(1, Math.min(线程数, 待.length)) }, 跑一个线程));
-      日志?.(`读存档完，${((performance.now() - t0) / 1000).toFixed(1)} 秒`);
+      await Promise.all(Array.from({ length: Math.max(1, Math.min(threadCount, pending.length)) }, runThread));
+      log?.(`读存档完，${((performance.now() - t0) / 1000).toFixed(1)} 秒`);
     }
-    const 序 = (a: [number, number], b: [number, number]) => 区域文件名(...a).localeCompare(区域文件名(...b));
-    return 有数据.sort(序);
+    const compareRegion = (a: [number, number], b: [number, number]) => regionFileName(...a).localeCompare(regionFileName(...b));
+    return hasData.sort(compareRegion);
   }
 }
 
-export const 写缓存 = (前缀: string, gz: Buffer | null) => {
-  fs.mkdirSync(path.dirname(前缀), { recursive: true });
-  const 目标 = gz ? `${前缀}.列段` : `${前缀}.空`;
-  const tmp = `${目标}.${process.pid}.tmp`;
+export const writeCache = (pathPrefix: string, gz: Buffer | null) => {
+  fs.mkdirSync(path.dirname(pathPrefix), { recursive: true });
+  const targetPath = gz ? `${pathPrefix}.列段` : `${pathPrefix}.空`;
+  const tmp = `${targetPath}.${process.pid}.tmp`;
   fs.writeFileSync(tmp, gz ?? '');
-  fs.renameSync(tmp, 目标);
+  fs.renameSync(tmp, targetPath);
 };

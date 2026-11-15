@@ -3,28 +3,28 @@
 import fs from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-type 解析结果 = { url: string; format?: string | null; shortCircuit?: boolean };
-type 载入结果 = { format: string; source?: string | Buffer; shortCircuit?: boolean };
+type ResolveResult = { url: string; format?: string | null; shortCircuit?: boolean };
+type LoadResult = { format: string; source?: string | Buffer; shortCircuit?: boolean };
 
-const 参数 = 'mc-anim-asset';
-let 表: Record<string, string> = {};
+const paramsKey = 'mc-anim-asset';
+let assetJsonMap: Record<string, string> = {};
 
 export const initialize = (data: { 表: Record<string, string> }) => {
-  表 = data.表;
+  assetJsonMap = data.表;
 };
 
-export const resolve = (说明符: string, 上下文: unknown, next: (s: string, c?: unknown) => 解析结果 | Promise<解析结果>) => {
-  if (!说明符.startsWith('asset:')) return next(说明符, 上下文);
-  const id = 说明符.slice('asset:'.length);
-  const f = 表[id];
+export const resolve = (specifier: string, context: unknown, next: (s: string, c?: unknown) => ResolveResult | Promise<ResolveResult>) => {
+  if (!specifier.startsWith('asset:')) return next(specifier, context);
+  const id = specifier.slice('asset:'.length);
+  const f = assetJsonMap[id];
   if (!f) throw new Error(`Node 里只能 import JSON 资产，且字节要在数据根：asset:${id} 不是（先 anim assets pull 或 anim assets add）`);
   const url = pathToFileURL(f);
-  url.searchParams.set(参数, id);
+  url.searchParams.set(paramsKey, id);
   return { url: url.href, shortCircuit: true };
 };
 
-export const load = (url: string, 上下文: unknown, next: (u: string, c?: unknown) => 载入结果 | Promise<载入结果>) => {
+export const load = (url: string, context: unknown, next: (u: string, c?: unknown) => LoadResult | Promise<LoadResult>) => {
   const u = new URL(url);
-  if (!u.searchParams.has(参数)) return next(url, 上下文);
+  if (!u.searchParams.has(paramsKey)) return next(url, context);
   return { format: 'module', source: `export default ${fs.readFileSync(fileURLToPath(u), 'utf8')};`, shortCircuit: true };
 };

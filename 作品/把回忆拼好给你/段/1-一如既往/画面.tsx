@@ -17,115 +17,115 @@ import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.t
 import { magicalWineFoxBlinkAt } from '@库/角色/魔法酒狐动作.ts';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
-import { 第一人称机位, 眼位 } from '../../地点/机位.tsx';
-import { 一楼, 一楼灯光, 隐世之境一楼 } from '../../地点/隐世之境一楼.tsx';
-import { 拍立得样式, 机位, 歌词样式, 爱心种子, 聊天缩放, 视角, 视线 } from '../../场/1-隐世之境一楼/参数.ts';
-import { 驯服聊天行 } from '../../场/1-隐世之境一楼/聊天.ts';
-import { fps, 旧帧, 第几句 } from '../../分镜/时间.ts';
-import { 段时钟, 段内事件帧, type 事件名 } from '../../分镜/验证片.ts';
-import { 歌词, type 歌词行 } from '../../界面/歌词.tsx';
-import { 拍立得 } from '../../特效/拍立得.tsx';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { FirstPersonRig, eyePos } from '../../地点/机位.tsx';
+import { firstFloor, FirstFloorLighting, HiddenWorldFloor } from '../../地点/隐世之境一楼.tsx';
+import { polaroidStyle, cameraRig, lyricStyle, heartSeed, chatScale, fov, sightAngles } from '../../场/1-隐世之境一楼/参数.ts';
+import { tamedChatLines } from '../../场/1-隐世之境一楼/聊天.ts';
+import { fps, legacyFrameSec, lineAt } from '../../分镜/时间.ts';
+import { segClock, segEventFrames, type EventName } from '../../分镜/验证片.ts';
+import { Lyrics, type LyricLine } from '../../界面/歌词.tsx';
+import { Polaroid } from '../../特效/拍立得.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 键 = '1-一如既往';
-const 起帧 = 段时钟(键).起帧;
-const 事件帧 = 段内事件帧(键);
-const 事件们 = (Object.entries(事件帧) as [事件名, number][]).sort((a, b) => a[1] - b[1]);
+const segKey = '1-一如既往';
+const startFrame = segClock(segKey).起帧;
+const eventFrames = segEventFrames(segKey);
+const eventEntries = (Object.entries(eventFrames) as [EventName, number][]).sort((a, b) => a[1] - b[1]);
 
 /** 打开就在画面上叠帧号、事件表和四个要卡的事件的大字（节点 1 核卡点用的），成片关着 */
-const 核卡点 = false;
+const checkpoint = false;
 
 // 这一段唱第 13–15 句，每句从开口（前导音，没有就是句首）淡入，第 15 句在咔哒定格时淡出
-const 歌词行们: readonly 歌词行[] = [
-  { 词: 第几句(13).词, 入: 事件帧.第13句开口 },
-  { 词: 第几句(14).词, 入: 事件帧.第14句开口 },
-  { 词: 第几句(15).词, 入: 事件帧.第15句开口 },
+const lyricLines: readonly LyricLine[] = [
+  { text: lineAt(13).text, 入: eventFrames.line13VocalIn },
+  { text: lineAt(14).text, 入: eventFrames.line14VocalIn },
+  { text: lineAt(15).text, 入: eventFrames.line15VocalIn },
 ];
 
 /** 段内帧 → 从某个事件那一帧起数的原版刻（可带小数） */
-const 刻 = (f: number, 起: number) => ((f - 起) / fps) * 20;
+const elapsedTick = (f: number, startFrame: number) => ((f - startFrame) / fps) * 20;
 
 // 摆位（网格本地坐标，Z 朝上）：她坐在模板里那只女仆的位置（脚底在地毯顶面）、面朝南（yaw 180），玩家站在她南边
-const 加 = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
-const 她 = 一楼.女仆;
-const 她姿势 = { ...standPose(她), yaw: 180 };
-const 眼 = 眼位(加(她, 机位.玩家));
-const 起看 = 加(她, 机位.看);
-const 终看 = 加(她, 机位.推到底看);
+const addVec = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const liYingLoc = firstFloor.maid;
+const liYingPose = { ...standPose(liYingLoc), yaw: 180 };
+const eye = eyePos(addVec(liYingLoc, cameraRig.playerOffset));
+const startLook = addVec(liYingLoc, cameraRig.看);
+const endLook = addVec(liYingLoc, cameraRig.pushLimitLook);
 
 // 推镜：微笑推镜到咔哒定格缓入缓出，只收世界那一遍的视角（原版拉近时手那一遍固定 70° 不变）。
 // 视角按放大倍数的对数插值，推起来是匀匀地放大；看点跟着从起看挪到她脸上
-const 推镜进度 = (fs: number) => sample([[事件帧.微笑推镜, 0], [事件帧.咔哒定格, 1]], fs);
-const 半张角 = (度: number) => Math.tan(rad(度) / 2);
-const 推镜视角 = (p: number) => (2 * Math.atan(半张角(视角) * (半张角(机位.推到底视角) / 半张角(视角)) ** p) * 180) / Math.PI;
-const 推镜看 = (p: number): V3 => [0, 1, 2].map((i) => 起看[i]! + (终看[i]! - 起看[i]!) * p) as V3;
+const pushProgress = (fs: number) => sample([[eventFrames.smilePushIn, 0], [eventFrames.clickFreeze, 1]], fs);
+const halfFovTan = (angleDeg: number) => Math.tan(rad(angleDeg) / 2);
+const pushFov = (p: number) => (2 * Math.atan(halfFovTan(fov) * (halfFovTan(cameraRig.pushLimitFov) / halfFovTan(fov)) ** p) * 180) / Math.PI;
+const pushLook = (p: number): V3 => [0, 1, 2].map((i) => startLook[i]! + (endLook[i]! - startLook[i]!) * p) as V3;
 
 // 女仆的碰撞箱 0.6 × 1.5（TLM `EntityMaid.TYPE`，坐下不变），爱心照它从脚底往上放
-const 爱心 = tamingHearts(她, 0.6, 1.5, 0, 爱心种子);
-const 聊天 = 驯服聊天行(0);
+const hearts = tamingHearts(liYingLoc, 0.6, 1.5, 0, heartSeed);
+const chatLines = tamedChatLines(0);
 
 // 右键在第 0 刻；第 1 刻手里的蛋糕被吃掉（生存模式，客户端这时收到物品栏更新），空手再按换手升上来
-const 手剧本: HandScript = { start: '蛋糕', swings: [0], changes: [{ tick: 1, to: null }] };
+const handScript: HandScript = { start: '蛋糕', swings: [0], changes: [{ tick: 1, to: null }] };
 
 // 窗外露出来的天，同 核对-隐世之境一楼
-const 天色 = '#9fc4ff';
+const skyColor = '#9fc4ff';
 
 // 视线（演绎）：驯服前看蛋糕 → 驯服起抬头看你 → 第 14 句轻轻别开 → 第 15 句转回来看你，之后一直看你（推镜只收视角，机位不动，看你的角度不变）。
 // 每段转头都是缓入缓出，停着的时候不动
-const 看你 = magicalWineFoxLookAt(她姿势, 眼);
-const 视线键: VKey[] = [
-  [事件帧.驯服, 视线.蛋糕],
-  [事件帧.抬头到位, 看你],
-  [事件帧.视线别开, 看你],
-  [事件帧.别开到位, 视线.别开],
-  [事件帧.视线转回, 视线.别开],
-  [事件帧.转回到位, 看你],
+const lookAtYou = magicalWineFoxLookAt(liYingPose, eye);
+const gazeKeys: VKey[] = [
+  [eventFrames.tame, sightAngles.蛋糕],
+  [eventFrames.lookUpDone, lookAtYou],
+  [eventFrames.gazeAway, lookAtYou],
+  [eventFrames.gazeAwayDone, sightAngles.lookAway],
+  [eventFrames.gazeBack, sightAngles.lookAway],
+  [eventFrames.gazeBackDone, lookAtYou],
 ];
-const 她的视线 = (fs: number) => sampleV(视线键, fs) as [number, number];
+const herGaze = (fs: number) => sampleV(gazeKeys, fs) as [number, number];
 
 /** 段内帧 → 歌上的秒（定格以后跟着 fs 停住） */
-const 歌秒 = (f: number) => (起帧 + f) / fps;
+const songSec = (f: number) => (startFrame + f) / fps;
 // 手放的三次眨眼，每次是游戏眨眼曲线开头那 0.25 秒
-const 眨眼起秒 = [事件帧.眨眼一, 事件帧.眨眼二, 事件帧.眨眼三].map(歌秒);
+const blinkStartSec = [eventFrames.firstBlink, eventFrames.secondBlink, eventFrames.thirdBlink].map(songSec);
 
 /** 魔法酒狐：帽子、背后法杖和三个环、发光照游戏原样（组件默认）；开头无嘴，微笑推镜那一帧硬切成微笑（游戏里换嘴也是硬切） */
-const 酒狐: React.FC<{ fs: number }> = ({ fs }) => {
-  const 秒 = 歌秒(fs);
+const WineFox: React.FC<{ fs: number }> = ({ fs }) => {
+  const sec = songSec(fs);
   return (
     <MagicalWineFox
-      pose={她姿势}
-      看={她的视线(fs)}
-      表情={fs < 事件帧.微笑推镜 ? '无' : '微笑'}
-      眨眼={magicalWineFoxBlinkAt(秒, 眨眼起秒)}
-      秒={秒}
+      pose={liYingPose}
+      看={herGaze(fs)}
+      expression={fs < eventFrames.smilePushIn ? '无' : '微笑'}
+      blink={magicalWineFoxBlinkAt(sec, blinkStartSec)}
+      秒={sec}
     />
   );
 };
 
-const 世界: React.FC<{ fs: number; 看: V3; 视角: number }> = ({ fs, 看, 视角: v }) => {
+const World: React.FC<{ fs: number; 看: V3; fov: number }> = ({ fs, 看: lookAt, fov: v }) => {
   const { width, height } = useVideoConfig();
   return (
     <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
-      <color attach="background" args={[天色]} />
-      <第一人称机位 眼={眼} 看={看} 视角={v} />
+      <color attach="background" args={[skyColor]} />
+      <FirstPersonRig 眼={eye} 看={lookAt} fov={v} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <一楼灯光 />
-        <隐世之境一楼 />
-        <酒狐 fs={fs} />
-        <HeartParticles spawns={爱心} 刻={刻(fs, 事件帧.驯服)} />
+        <FirstFloorLighting />
+        <HiddenWorldFloor />
+        <WineFox fs={fs} />
+        <HeartParticles spawns={hearts} 刻={elapsedTick(fs, eventFrames.tame)} />
       </group>
     </ThreeCanvas>
   );
 };
 
-const 手: React.FC<{ fs: number; 看: V3 }> = ({ fs, 看 }) => {
+const Hand: React.FC<{ fs: number; 看: V3 }> = ({ fs, 看: lookAt }) => {
   const { width, height } = useVideoConfig();
-  const h = handTimeline(刻(fs, 事件帧.右键), 手剧本);
+  const h = handTimeline(elapsedTick(fs, eventFrames.rightClick), handScript);
   return (
-    <FirstPersonCanvas width={width} height={height} view={viewAngles(眼, 看)}>
+    <FirstPersonCanvas width={width} height={height} view={viewAngles(eye, lookAt)}>
       <FirstPersonHand
         held={h.item === '蛋糕' ? <ItemSprite layers={CAKE} emissive={0} shadow={false} /> : null}
         arm={<LiYingFirstPersonArm />}
@@ -137,68 +137,68 @@ const 手: React.FC<{ fs: number; 看: V3 }> = ({ fs, 看 }) => {
 };
 
 // 照片里的画面：f 是定格后的 fs，定格以后每帧都画定格那一刻
-const 照片: React.FC<{ f: number }> = ({ f }) => {
-  const p = 推镜进度(f);
-  const 看 = 推镜看(p);
+const Photo: React.FC<{ f: number }> = ({ f }) => {
+  const p = pushProgress(f);
+  const lookAt = pushLook(p);
   return (
     <AbsoluteFill>
-      <世界 fs={f} 看={看} 视角={推镜视角(p)} />
-      <手 fs={f} 看={看} />
-      <ChatOverlay lines={聊天} 刻={刻(f, 事件帧.驯服)} s={聊天缩放} />
+      <World fs={f} 看={lookAt} fov={pushFov(p)} />
+      <Hand fs={f} 看={lookAt} />
+      <ChatOverlay lines={chatLines} 刻={elapsedTick(f, eventFrames.tame)} s={chatScale} />
     </AbsoluteFill>
   );
 };
 
 // 下面两个是 核卡点 打开时才画的标注
-const 大字事件: readonly { 名: 事件名; 字: string }[] = [
-  { 名: '右键', 字: '右键' },
-  { 名: '驯服', 字: '聊天栏' },
-  { 名: '微笑推镜', 字: '微笑推镜' },
-  { 名: '咔哒定格', 字: '咔哒定格' },
+const bigCaptionEvents: readonly { 名: EventName; 字: string }[] = [
+  { 名: 'rightClick', 字: '右键' },
+  { 名: 'tame', 字: '聊天栏' },
+  { 名: 'smilePushIn', 字: '微笑推镜' },
+  { 名: 'clickFreeze', 字: '咔哒定格' },
 ];
-const 大字名 = new Set<事件名>(大字事件.map((x) => x.名));
+const bigCaptionNames = new Set<EventName>(bigCaptionEvents.map((x) => x.名));
 /** 事件名从事件那一帧起留多久（1 秒）；大字之后再用几秒淡掉（24 fps 时 6 帧） */
-const 标注留帧 = fps;
-const 大字淡出秒 = 旧帧(6);
+const captionHoldFrames = fps;
+const bigFadeOutSec = legacyFrameSec(6);
 
 // 核卡点的标注：按真实帧走，定格以后照常往下数
-const 核卡点标注: React.FC = () => {
-  const f = use当前帧();
+const CheckpointAnnotation: React.FC = () => {
+  const f = useSnappedFrame();
   const { durationInFrames } = useVideoConfig();
-  const 歌帧 = 起帧 + f;
-  const 最近 = 事件们.filter(([, 帧]) => 帧 <= f).at(-1);
+  const songFrame = startFrame + f;
+  const latest = eventEntries.filter(([, frame]) => frame <= f).at(-1);
   // 小字：不是大字的事件里最近的那一帧（同一帧有几个就都列出来）。放在歌词下面，定格以后不挡照片下白边的字
-  const 小字帧 = 事件们.filter(([名, 帧]) => !大字名.has(名) && 帧 <= f).at(-1)?.[1];
-  const 小字们 = 事件们.filter(([名, 帧]) => !大字名.has(名) && 帧 === 小字帧).map(([名]) => 名);
-  const 下一个 = 事件们.find(([, 帧]) => 帧 > f);
+  const smallCaptionFrame = eventEntries.filter(([eventName, frame]) => !bigCaptionNames.has(eventName) && frame <= f).at(-1)?.[1];
+  const smallCaptions = eventEntries.filter(([eventName, frame]) => !bigCaptionNames.has(eventName) && frame === smallCaptionFrame).map(([eventName]) => eventName);
+  const nextEvent = eventEntries.find(([, frame]) => frame > f);
   return (
     <AbsoluteFill style={{ fontFamily: uiFontFamily, color: '#f2f2f2' }}>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 118, textAlign: 'center', textShadow: '0 2px 6px #000' }}>
-        {小字帧 !== undefined && f - 小字帧 < 标注留帧 ? (
+        {smallCaptionFrame !== undefined && f - smallCaptionFrame < captionHoldFrames ? (
           <div style={{ fontSize: 32, color: '#ffd84a' }}>
-            {小字们.join('、')}（f{小字帧}）
+            {smallCaptions.join('、')}（f{smallCaptionFrame}）
           </div>
         ) : (
-          <div style={{ fontSize: 24, color: '#cccccc' }}>{下一个 ? `下一个：${下一个[0]}（f${下一个[1]}）` : '段尾'}</div>
+          <div style={{ fontSize: 24, color: '#cccccc' }}>{nextEvent ? `下一个：${nextEvent[0]}（f${nextEvent[1]}）` : '段尾'}</div>
         )}
       </div>
       <div style={{ position: 'absolute', left: 24, bottom: 52, fontSize: 20, lineHeight: 1.5, textShadow: '0 1px 3px #000' }}>
-        <div>{键} · 核卡点</div>
+        <div>{segKey} · 核卡点</div>
         <div>
-          段内 f{f} / {durationInFrames}　歌曲帧 {歌帧}　{(歌帧 / fps).toFixed(3)} 秒
+          段内 f{f} / {durationInFrames}　歌曲帧 {songFrame}　{(songFrame / fps).toFixed(3)} 秒
         </div>
       </div>
       <div style={{ position: 'absolute', right: 20, top: 20, fontSize: 15, lineHeight: 1.45, textAlign: 'right', textShadow: '0 1px 2px #000' }}>
-        {事件们.map(([名, 帧]) => (
-          <div key={名} style={{ color: 最近?.[0] === 名 ? '#ffd84a' : 帧 <= f ? '#8f8f8f' : '#f2f2f2' }}>
-            f{帧} {名}
+        {eventEntries.map(([eventName, frame]) => (
+          <div key={eventName} style={{ color: latest?.[0] === eventName ? '#ffd84a' : frame <= f ? '#8f8f8f' : '#f2f2f2' }}>
+            f{frame} {eventName}
           </div>
         ))}
       </div>
       <div style={{ position: 'absolute', left: 40, right: 40, bottom: 28, height: 16 }}>
         <div style={{ position: 'absolute', left: 0, right: 0, top: 7, height: 2, background: '#777' }} />
-        {事件们.map(([名, 帧]) => (
-          <div key={名} style={{ position: 'absolute', left: `${(帧 / durationInFrames) * 100}%`, top: 0, width: 2, height: 16, background: '#bbb' }} />
+        {eventEntries.map(([eventName, frame]) => (
+          <div key={eventName} style={{ position: 'absolute', left: `${(frame / durationInFrames) * 100}%`, top: 0, width: 2, height: 16, background: '#bbb' }} />
         ))}
         <div style={{ position: 'absolute', left: `${(f / durationInFrames) * 100}%`, top: -4, width: 4, height: 24, background: '#ffd84a' }} />
       </div>
@@ -207,32 +207,32 @@ const 核卡点标注: React.FC = () => {
 };
 
 // 四个要卡的事件的大字：从事件那一帧起留 1 秒再淡掉；头 2/24 秒反色、头 3/24 秒略放大，看得出正好落在哪一帧
-const 事件大字: React.FC = () => {
-  const f = use当前帧();
-  const 在显示 = 大字事件
-    .map((x) => ({ ...x, 帧: 事件帧[x.名], t: f - 事件帧[x.名] }))
-    .filter((x) => x.t >= 0 && (x.t - 标注留帧) / fps < 大字淡出秒);
+const EventBigCaption: React.FC = () => {
+  const f = useSnappedFrame();
+  const onScreen = bigCaptionEvents
+    .map((x) => ({ ...x, 帧: eventFrames[x.名], t: f - eventFrames[x.名] }))
+    .filter((x) => x.t >= 0 && (x.t - captionHoldFrames) / fps < bigFadeOutSec);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none', justifyContent: 'center', alignItems: 'center', gap: 14, fontFamily: uiFontFamily }}>
-      {在显示.map(({ 名, 字, 帧, t }) => {
-        const 刚到 = t / fps < 旧帧(2);
+      {onScreen.map(({ 名: eventName, 字: bigText, 帧: frame, t }) => {
+        const justArrived = t / fps < legacyFrameSec(2);
         return (
           <div
-            key={名}
+            key={eventName}
             style={{
               display: 'flex',
               alignItems: 'baseline',
               gap: 18,
               padding: '2px 30px',
               borderRadius: 14,
-              background: 刚到 ? '#ffd84a' : 'rgba(20, 22, 26, 0.6)',
-              color: 刚到 ? '#202226' : '#ffd84a',
-              opacity: 1 - clamp01(((t - 标注留帧) / fps + 旧帧(1)) / 大字淡出秒),
-              transform: `scale(${sample([[0, 1.18], [旧帧(3), 1]], t / fps)})`,
+              background: justArrived ? '#ffd84a' : 'rgba(20, 22, 26, 0.6)',
+              color: justArrived ? '#202226' : '#ffd84a',
+              opacity: 1 - clamp01(((t - captionHoldFrames) / fps + legacyFrameSec(1)) / bigFadeOutSec),
+              transform: `scale(${sample([[0, 1.18], [legacyFrameSec(3), 1]], t / fps)})`,
             }}
           >
-            <span style={{ fontSize: 104, fontWeight: 700, lineHeight: 1.2 }}>{字}</span>
-            <span style={{ fontSize: 30 }}>{字 === 名 ? '' : `${名} `}f{帧}</span>
+            <span style={{ fontSize: 104, fontWeight: 700, lineHeight: 1.2 }}>{bigText}</span>
+            <span style={{ fontSize: 30 }}>{bigText === eventName ? '' : `${eventName} `}f{frame}</span>
           </div>
         );
       })}
@@ -241,23 +241,23 @@ const 事件大字: React.FC = () => {
 };
 
 // 原声放在拍立得外面：声音不跟画面定格
-const 画面: React.FC = () => (
+const picture: React.FC = () => (
   <>
-    <拍立得
-      定格帧={事件帧.咔哒定格}
+    <Polaroid
+      freezeFrame={eventFrames.clickFreeze}
       字="新存档的第一张"
-      样式={拍立得样式}
-      浮层={
+      样式={polaroidStyle}
+      overlay={
         <>
-          <歌词 行们={歌词行们} 样式={歌词样式} 收={事件帧.咔哒定格} />
-          {核卡点 && <核卡点标注 />}
+          <Lyrics lines={lyricLines} 样式={lyricStyle} 收={eventFrames.clickFreeze} />
+          {checkpoint && <CheckpointAnnotation />}
         </>
       }
     >
-      {(fs) => <照片 f={fs} />}
-    </拍立得>
-    {核卡点 && <事件大字 />}
+      {(fs) => <Photo f={fs} />}
+    </Polaroid>
+    {checkpoint && <EventBigCaption />}
   </>
 );
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

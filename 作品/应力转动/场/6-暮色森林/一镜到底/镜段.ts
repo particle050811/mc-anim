@@ -14,16 +14,16 @@ import {
 // 一处 boss 一个镜段：起～止（全局帧）里按 `关键`（相对 `锚` 的帧）排 P；位置机位（远景的刹停、停住、追）另给，权 = 1 时位置全按它。
 // 关键帧头尾都是巡航，镜段外就是巡航；相邻两处叠在一起时后一处在开头 `渐` 帧里从前一处渐过来（镜头.ts 的 `合成`）
 type PosCam = (frame: number) => { C: Vec; weight: number } | null;
-type CamSpan = { 名: route.Boss名 | '起飞' | '降落'; 锚: number; Keys: Keys[]; 起: number; 止: number; 核起: number; 核止: number; 位?: PosCam; keepInFrame?: boolean; focus?: () => Vec };
+type CamSpan = { 名: route.BossName | '起飞' | '降落'; 锚: number; Keys: Keys[]; 起: number; 止: number; coreStart: number; coreEnd: number; 位?: PosCam; keepInFrame?: boolean; focus?: () => Vec };
 export const fadeFrames = 12;
-const frameAt = (T: number) => route.帧(T);
-const pierceFrames = route.贯穿帧;
-const pierceTimes = route.贯穿时刻;
+const frameAt = (T: number) => route.frameAt(T);
+const pierceFrames = route.pierceFrames;
+const pierceTimes = route.pierceTimes;
 export const camSpans: CamSpan[] = [];
-const addSpan = (span: Omit<CamSpan, '起' | '止' | '核起' | '核止'> & Partial<Pick<CamSpan, '核起' | '核止'>>) => {
+const addSpan = (span: Omit<CamSpan, '起' | '止' | 'coreStart' | 'coreEnd'> & Partial<Pick<CamSpan, 'coreStart' | 'coreEnd'>>) => {
   const start = span.锚 + span.Keys[0][0];
   const end = span.锚 + span.Keys[span.Keys.length - 1][0];
-  camSpans.push({ ...span, 起: start, 止: end, 核起: span.核起 ?? start, 核止: span.核止 ?? end });
+  camSpans.push({ ...span, 起: start, 止: end, coreStart: span.coreStart ?? start, coreEnd: span.coreEnd ?? end });
 };
 
 // 首帧和 6-1-3 末帧是同一个画面：6-1-3 末帧的镜头偏移、构图换算成 P，开头 24 帧过渡到巡航（12 帧的话骑手一帧放大 10%）
@@ -78,10 +78,10 @@ const queenOrbit: OrbitPt[] = [
   [28, 360, 3.4, 1.0, 8, 0],
 ];
 const addNearSpan = (bossName: '巫妖' | '冰雪女王', orbit: OrbitPt[], slowIdx: number) => {
-  const impactFrame = frameAt(pierceTimes[bossName] + route.撞时刻[bossName]!);
-  const resumeFrame = frameAt(route.放慢表[slowIdx].止);
+  const impactFrame = frameAt(pierceTimes[bossName] + route.impactTime[bossName]!);
+  const resumeFrame = frameAt(route.slowMoTable[slowIdx].止);
   const legacyKeys = nearKeys(impactFrame, pierceFrames[bossName], resumeFrame, orbit);
-  addSpan({ 名: bossName, 锚: pierceFrames[bossName], Keys: convertKeys(legacyKeys), 核起: pierceFrames[bossName] + legacyKeys[0][0] + 30, 核止: resumeFrame + 34 });
+  addSpan({ 名: bossName, 锚: pierceFrames[bossName], Keys: convertKeys(legacyKeys), coreStart: pierceFrames[bossName] + legacyKeys[0][0] + 30, coreEnd: resumeFrame + 34 });
 };
 
 // ---------- 巨人（近景，放慢，屋外侧视） ----------
@@ -89,8 +89,8 @@ const addNearSpan = (bossName: '巫妖' | '冰雪女王', orbit: OrbitPt[], slow
 // 撞墙那一刻已经在穿刺线右手边隔着剖面的东墙侧着看，放慢的几秒里跟着扫帚挪到两个巨人中间，恢复后和扫帚并排飞出去再绕回后方。
 // 不拉近；视线往小屋偏（`偏`）的时候骑手不出画（保画内）
 const addGiantSpan = () => {
-  const impactFrame = frameAt(pierceTimes.巨人 + route.撞时刻.巨人!);
-  const resumeFrame = frameAt(route.放慢表[2].止);
+  const impactFrame = frameAt(pierceTimes.巨人 + route.impactTime.巨人!);
+  const resumeFrame = frameAt(route.slowMoTable[2].止);
   const anchor = pierceFrames.巨人;
   const legacyKeys: LegacyKey[] = [
     [impactFrame - anchor - 80, { ...legacyCruise }],
@@ -106,7 +106,7 @@ const addGiantSpan = () => {
     [resumeFrame - anchor + 36, { back: 16, height: 6, side: 4, lookAhead: 50, low: 15, focalLength: 19 }],
     [resumeFrame - anchor + 56, { ...legacyCruise }],
   ];
-  addSpan({ 名: '巨人', 锚: anchor, Keys: convertKeys(legacyKeys, (i) => i === 0 || i === legacyKeys.length - 1), keepInFrame: true, focus: () => route.穿刺表.巨人.矛尖(0), 核起: impactFrame - 50, 核止: resumeFrame + 36 });
+  addSpan({ 名: '巨人', 锚: anchor, Keys: convertKeys(legacyKeys, (i) => i === 0 || i === legacyKeys.length - 1), keepInFrame: true, focus: () => route.pierceTable.巨人.tip(0), coreStart: impactFrame - 50, coreEnd: resumeFrame + 36 });
 };
 
 // ---------- 远景（九头蛇、暮初恶魂、雪怪首领，原速）：跟着扎下去 → 刹停 → 停住看 boss 炸开 → 追上去 ----------
@@ -121,7 +121,7 @@ const chaseMaxShrink = 0.2;
 type FarParams = {
   名: '九头蛇' | '暮初恶魂' | '雪怪首领';
   stopDist: number;
-  俯冲: number | null; // 压机头那一帧（相对贯穿帧），平着撞进去的给 null
+  dive: number | null; // 压机头那一帧（相对贯穿帧），平着撞进去的给 null
   preDive: Partial<LegacyParams>; // 压机头前 12 帧贴过去的机位
   preBrake: Partial<Framing>; // 刹停前跟拍机位的位置（扎下去时镜头往上抬一点、退一点，停住时在高处）
   holdLook: number;
@@ -160,14 +160,14 @@ const hallHeight = 4;
 const tunnelHeight = 1.2;
 const addFarSpan = (opts: FarParams) => {
   const anchor = pierceFrames[opts.名];
-  const sp = route.标记路程(`${opts.名}.贯穿`);
-  const hold = Math.round(route.远景停留[opts.名]! * 24);
-  const diveFrame = opts.俯冲 ?? -22;
+  const sp = route.markDist(`${opts.名}.贯穿`);
+  const hold = Math.round(route.farHold[opts.名]! * 24);
+  const diveFrame = opts.dive ?? -22;
   const follow: Partial<LegacyParams> = { back: 16, height: 6, lookAhead: 0, low: 0, focalLength: 22, lookBoss: 0.5 };
   const legacyKeys: LegacyKey[] = [
     [-80, { ...legacyCruise }],
     [diveFrame - 12, { back: 14, height: 4.5, lookAhead: 60, low: 6, focalLength: 20, ...opts.preDive }],
-    ...(opts.俯冲 === null ? [] : [[diveFrame, { lookAhead: 40, low: 12 }] as LegacyKey]),
+    ...(opts.dive === null ? [] : [[diveFrame, { lookAhead: 40, low: 12 }] as LegacyKey]),
     [diveFrame + 8, follow],
   ];
   const keys = convertKeys(legacyKeys);
@@ -176,7 +176,7 @@ const addFarSpan = (opts: FarParams) => {
   const preBrake = { ...keys[keys.length - 1][1], 偏: 0.7, ...opts.preBrake };
   // 跟拍镜头离 boss 停距 米的那一刻 τ停（沿路线）；刹停从 τ停 − 刹帧/2 开始
   const followCam = (P: Framing, τ: number) => clampToBore(camPosOf(P, τ), τ, P.方);
-  const distToBoss = (τ: number) => sp - (route.扫帚(τ).s + dot(sub(followCam(preBrake, τ), riderAt(τ)), broomFrame(τ).flatFwd));
+  const distToBoss = (τ: number) => sp - (route.broom(τ).s + dot(sub(followCam(preBrake, τ), riderAt(τ)), broomFrame(τ).flatFwd));
   let lo = anchor - 60;
   let hi = anchor;
   for (let k = 0; k < 40; k++) {
@@ -232,10 +232,10 @@ const addFarSpan = (opts: FarParams) => {
     };
   } else {
     // 雪怪首领：沿路线追（路程差按 ln 收）。停点投到路线上的路程、相对路线的高度和侧移
-    const stopDist = route.扫帚(stopTau).s + dot(sub(stopPos, riderAt(stopTau)), broomFrame(stopTau).flatFwd);
-    const stopRoutePt = route.位置(stopDist);
+    const stopDist = route.broom(stopTau).s + dot(sub(stopPos, riderAt(stopTau)), broomFrame(stopTau).flatFwd);
+    const stopRoutePt = route.positionAt(stopDist);
     const rightAt = (dist: number) => {
-      const t = route.切线(dist);
+      const t = route.tangentAt(dist);
       const horizLen = Math.hypot(t[0], t[1]) || 1;
       return [t[1] / horizLen, -t[0] / horizLen, 0];
     };
@@ -254,10 +254,10 @@ const addFarSpan = (opts: FarParams) => {
       [yetiDist(-5), 0],
     ];
     const tunnelTrack = (dist: number) => {
-      const routePt = route.位置(dist);
+      const routePt = route.positionAt(dist);
       return add(add(routePt, mul(rightAt(dist), sample(sideKeys, dist))), [0, 0, sample(heightKeys, dist)]);
     };
-    const lnGap = (Fg: number) => Math.log(Math.max(1e-3, route.扫帚(Fg).s - stopDist));
+    const lnGap = (Fg: number) => Math.log(Math.max(1e-3, route.broom(Fg).s - stopDist));
     const x1 = Math.log(pullInDist);
     const step = 0.5;
     const x0 = lnGap(releaseFrame) - x1;
@@ -265,7 +265,7 @@ const addFarSpan = (opts: FarParams) => {
     const a0 = (lnGap(releaseFrame + step) - 2 * lnGap(releaseFrame) + lnGap(releaseFrame - step)) / (step * step);
     const dur = chaseDuration(x0, v0, a0);
     const x = quintic(x0, v0, a0, dur);
-    const camDist = (Fg: number) => (Fg <= releaseFrame ? stopDist : route.扫帚(Fg).s - Math.exp(x1 + x(Fg - releaseFrame)));
+    const camDist = (Fg: number) => (Fg <= releaseFrame ? stopDist : route.broom(Fg).s - Math.exp(x1 + x(Fg - releaseFrame)));
     // 出了隧道（镜头过隧道口 5 米）、又追上了，渐 帧换回跟拍
     const exitDist = yetiDist(chainPierceChoreo.yetiTunnels.exitGround) + 5;
     let exitFrame = releaseFrame;
@@ -279,7 +279,7 @@ const addFarSpan = (opts: FarParams) => {
   }
   chaseSpans.push({ name: opts.名, start: releaseFrame, end: chaseEnd });
   // 视线从 boss 转到扫帚：`转看` 帧，但要在镜头追过去、boss 和骑手分开到 45° 以前转完（不然 boss 跑到镜头侧面、身后时视线还偏着它）
-  const boss = route.穿刺表[opts.名].矛尖(0);
+  const boss = route.pierceTable[opts.名].tip(0);
   let lookDone = releaseFrame + opts.lookTurnFrames;
   for (let Fg = releaseFrame; Fg < releaseFrame + opts.lookTurnFrames; Fg += 0.5) {
     const camPos = posCam(Fg)!.C;
@@ -291,7 +291,7 @@ const addFarSpan = (opts: FarParams) => {
   keys.push([Math.min(lookDone, chaseEnd - 6) - anchor, { ...holdFraming, 偏: 0 }]);
   // 追完以后 20 帧把构图（视线、焦距）换回巡航（焦距一帧变 2.4%）
   keys.push([chaseEnd - anchor - 4, { ...cruiseFraming, x: 0, y: 0, 焦: Math.log(22), 偏: 0 }], [chaseEnd - anchor + 20, cruiseFraming]);
-  addSpan({ 名: opts.名, 锚: anchor, Keys: keys, 位: posCam, focus: () => route.穿刺表[opts.名].矛尖(0), 核起: anchor + diveFrame - 12, 核止: chaseEnd });
+  addSpan({ 名: opts.名, 锚: anchor, Keys: keys, 位: posCam, focus: () => route.pierceTable[opts.名].tip(0), coreStart: anchor + diveFrame - 12, coreEnd: chaseEnd });
 };
 
 // 九头蛇：从巡航高度平着接进来、压下机头扎下去，扎的时候镜头往上抬、退一点（`刹前`），停在九头蛇前 48 米的高处；
@@ -301,7 +301,7 @@ const farList: FarParams[] = [
   {
     名: '九头蛇',
     stopDist: 48,
-    俯冲: frameAt(pierceTimes.九头蛇 + hydraChoreo.T_DIVE) - pierceFrames.九头蛇,
+    dive: frameAt(pierceTimes.九头蛇 + hydraChoreo.T_DIVE) - pierceFrames.九头蛇,
     preDive: {},
     preBrake: { 距: Math.log(10), 仰: 35 },
     holdLook: 0.5,
@@ -309,11 +309,11 @@ const farList: FarParams[] = [
     // 不拱的话第 363 帧镜头穿过土丘（石头和洞里的萤石，工具/一镜到底/离块.ts 量的）
     lift: 15,
   },
-  { 名: '暮初恶魂', stopDist: 46, 俯冲: null, preDive: {}, preBrake: { 距: Math.log(8), 仰: 30 }, holdLook: 0.6, lookTurnFrames: 20 },
+  { 名: '暮初恶魂', stopDist: 46, dive: null, preDive: {}, preBrake: { 距: Math.log(8), 仰: 30 }, holdLook: 0.6, lookTurnFrames: 20 },
   {
     名: '雪怪首领',
     stopDist: 25,
-    俯冲: frameAt(pierceTimes.雪怪首领 + chainPierceChoreo.YETI_T_DIVE) - pierceFrames.雪怪首领,
+    dive: frameAt(pierceTimes.雪怪首领 + chainPierceChoreo.YETI_T_DIVE) - pierceFrames.雪怪首领,
     preDive: { back: 12, height: 1.6 },
     preBrake: {},
     holdLook: 1,
@@ -332,7 +332,7 @@ const addLandingSpan = () => {
     [40, { back: -3, height: 2.6, side: 7.5, lookAhead: 0, low: -0.4, focalLength: 26 }],
   ];
   const Keys = convertKeys(legacyKeys);
-  addSpan({ 名: '降落', 锚: route.F_LAND, Keys: [...Keys, [route.总帧数 - route.F_LAND, Keys[Keys.length - 1][1]]], 核起: route.F_LAND - 70, 核止: route.总帧数 - 1 });
+  addSpan({ 名: '降落', 锚: route.F_LAND, Keys: [...Keys, [route.totalFrames - route.F_LAND, Keys[Keys.length - 1][1]]], coreStart: route.F_LAND - 70, coreEnd: route.totalFrames - 1 });
 };
 
 // 按时间顺序排：先后决定谁盖谁（镜头.ts 的合成）
@@ -344,4 +344,4 @@ addNearSpan('冰雪女王', queenOrbit, 1);
 addGiantSpan();
 addLandingSpan();
 // 各处的镜头窗口（全局帧）：起～止 是关键帧头尾（外面是巡航），核起～核止 是不能切的那一截（段表.ts 按它挑段切点）
-export const camWindows = camSpans.filter((s) => s.名 !== '起飞').map((s) => ({ name: s.名, start: s.起, end: s.止, coreStart: s.核起, coreEnd: s.核止 }));
+export const camWindows = camSpans.filter((s) => s.名 !== '起飞').map((s) => ({ name: s.名, start: s.起, end: s.止, coreStart: s.coreStart, coreEnd: s.coreEnd }));

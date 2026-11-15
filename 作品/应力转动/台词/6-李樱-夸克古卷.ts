@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 1cb6c903a2cb），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-夸克古卷（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "6-李樱-夸克古卷",
   "角色": "李樱",
   "念": "对了，夸克模组的古卷能够突破一级附魔上限，若是把保护4突破到保护5，能把免伤从64%提升到80%！",
@@ -134,4 +134,4 @@ const 句: 台词句 = {
     [8.44,"X"],
   ],
 };
-export default 句;
+export default sentence;

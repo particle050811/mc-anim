@@ -4,68 +4,68 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const 假 = vi.hoisted(() => ({ 连出: [] as Record<string, unknown>[], 单帧: [] as number[] }));
-vi.mock('./渲染器.ts', async (原) => ({
-  ...(await 原<typeof import('./渲染器.ts')>()),
+const fake = vi.hoisted(() => ({ multiFrameCalls: [] as Record<string, unknown>[], singleFrames: [] as number[] }));
+vi.mock('./渲染器.ts', async (actual) => ({
+  ...(await actual<typeof import('./渲染器.ts')>()),
   renderFrames: async (o: { frames: number[]; onFrameBuffer: (b: Buffer, f: number) => void }) => {
-    假.连出.push(o);
+    fake.multiFrameCalls.push(o);
     for (const f of [...o.frames].sort((a, b) => a - b)) await o.onFrameBuffer(Buffer.from(String(f)), f);
   },
   renderStill: async (o: { frame: number; output: string; overwrite: boolean }) => {
-    假.单帧.push(o.frame);
+    fake.singleFrames.push(o.frame);
     fs.writeFileSync(o.output, String(o.frame), { flag: o.overwrite ? 'w' : 'wx' });
   },
 }));
-const { 出静帧们, 同页出帧, 静帧文件, 连出提醒 } = await import('./渲.ts');
+const { renderStills, renderFramesSamePage, stillFile, batchHint } = await import('./渲.ts');
 
-const 出到 = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-静帧-'));
+const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-静帧-'));
 const h = { serveUrl: '/包', browser: {}, 参数: { inputProps: {}, gl: 'angle', scale: 2 } } as never;
-const 组合 = { id: '甲' } as never;
-const 跑 = (帧们: number[], 逐帧?: boolean) => {
-  const 进度: number[] = [];
-  return 出静帧们(h, 组合, '甲', 帧们, 出到, { 逐帧, 环境: { 段标记: '甲' }, 完成: (n) => 进度.push(n) }).then(() => 进度);
+const composition = { id: '甲' } as never;
+const renderWithProgress = (frames: number[], frameByFrame?: boolean) => {
+  const progressSteps: number[] = [];
+  return renderStills(h, composition, '甲', frames, outDir, { frameByFrame, 环境: { 段标记: '甲' }, 完成: (n) => progressSteps.push(n) }).then(() => progressSteps);
 };
 
-afterAll(() => fs.rmSync(出到, { recursive: true, force: true }));
+afterAll(() => fs.rmSync(outDir, { recursive: true, force: true }));
 beforeEach(() => {
-  fs.rmSync(出到, { recursive: true, force: true });
-  fs.mkdirSync(出到);
-  假.连出 = [];
-  假.单帧 = [];
+  fs.rmSync(outDir, { recursive: true, force: true });
+  fs.mkdirSync(outDir);
+  fake.multiFrameCalls = [];
+  fake.singleFrames = [];
 });
 
 describe('静帧', () => {
   it('多帧默认同一页面出：并发 1、声音关着（和 renderStill 一样）、文件名和逐帧相同、进度逐帧走', async () => {
-    expect(await 跑([85, 30, 140])).toEqual([1, 2, 3]);
-    expect(假.单帧).toEqual([]);
-    expect(假.连出).toHaveLength(1);
-    expect(假.连出[0]).toMatchObject({ frames: [85, 30, 140], concurrency: 1, muted: true, imageFormat: 'png', scale: 2, outputDir: null, logLevel: 'verbose' });
-    expect(fs.readdirSync(出到).sort()).toEqual(['甲-第0030帧.png', '甲-第0085帧.png', '甲-第0140帧.png']);
-    expect(fs.readFileSync(静帧文件(出到, '甲', 85), 'utf8')).toBe('85');
+    expect(await renderWithProgress([85, 30, 140])).toEqual([1, 2, 3]);
+    expect(fake.singleFrames).toEqual([]);
+    expect(fake.multiFrameCalls).toHaveLength(1);
+    expect(fake.multiFrameCalls[0]).toMatchObject({ frames: [85, 30, 140], concurrency: 1, muted: true, imageFormat: 'png', scale: 2, outputDir: null, logLevel: 'verbose' });
+    expect(fs.readdirSync(outDir).sort()).toEqual(['甲-第0030帧.png', '甲-第0085帧.png', '甲-第0140帧.png']);
+    expect(fs.readFileSync(stillFile(outDir, '甲', 85), 'utf8')).toBe('85');
   });
   it('--逐帧 每帧一次 renderStill，按给的顺序，文件名一样', async () => {
-    expect(await 跑([85, 30], true)).toEqual([1, 2]);
-    expect(假.连出).toEqual([]);
-    expect(假.单帧).toEqual([85, 30]);
-    expect(fs.readdirSync(出到).sort()).toEqual(['甲-第0030帧.png', '甲-第0085帧.png']);
+    expect(await renderWithProgress([85, 30], true)).toEqual([1, 2]);
+    expect(fake.multiFrameCalls).toEqual([]);
+    expect(fake.singleFrames).toEqual([85, 30]);
+    expect(fs.readdirSync(outDir).sort()).toEqual(['甲-第0030帧.png', '甲-第0085帧.png']);
   });
   it('只有一帧不走连出', async () => {
-    await 跑([7]);
-    expect(假.连出).toEqual([]);
-    expect(假.单帧).toEqual([7]);
+    await renderWithProgress([7]);
+    expect(fake.multiFrameCalls).toEqual([]);
+    expect(fake.singleFrames).toEqual([7]);
   });
   it('连出不覆盖已有的文件', async () => {
-    fs.writeFileSync(静帧文件(出到, '甲', 30), '旧');
-    await expect(跑([30, 85])).rejects.toThrow(/EEXIST/);
-    expect(fs.readFileSync(静帧文件(出到, '甲', 30), 'utf8')).toBe('旧');
+    fs.writeFileSync(stillFile(outDir, '甲', 30), '旧');
+    await expect(renderWithProgress([30, 85])).rejects.toThrow(/EEXIST/);
+    expect(fs.readFileSync(stillFile(outDir, '甲', 30), 'utf8')).toBe('旧');
   });
   it('多帧连出才提醒帧随批变，一帧和 --逐帧 不提醒', () => {
-    expect(连出提醒('甲', [0, 85])).toMatch(/甲 这 2 帧在同一页面连出.*--逐帧/);
-    expect(连出提醒('甲', [85])).toBeNull();
-    expect(连出提醒('甲', [0, 85], true)).toBeNull();
+    expect(batchHint('甲', [0, 85])).toMatch(/甲 这 2 帧在同一页面连出.*--逐帧/);
+    expect(batchHint('甲', [85])).toBeNull();
+    expect(batchHint('甲', [0, 85], true)).toBeNull();
   });
   it('逐帧校验走的同页出帧可以开声音（照 renderMedia）', async () => {
-    await 同页出帧(h, 组合, [1], { 打开声音: true, 环境: {}, 每帧: () => {} });
-    expect(假.连出[0]).toMatchObject({ muted: false, frames: [1] });
+    await renderFramesSamePage(h, composition, [1], { withAudio: true, 环境: {}, onFrame: () => {} });
+    expect(fake.multiFrameCalls[0]).toMatchObject({ muted: false, frames: [1] });
   });
 });

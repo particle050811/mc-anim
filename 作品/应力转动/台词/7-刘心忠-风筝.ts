@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 c940a5880d38），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-刘心忠-风筝（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "7-刘心忠-风筝",
   "角色": "刘心忠",
   "念": "我是一名机技境法师，现在有一个五万血的怪物想抓我，但我丝毫不慌，因为它的脚步没我的魔力化马来得快。",
@@ -125,4 +125,4 @@ const 句: 台词句 = {
     [8.16,"X"],
   ],
 };
-export default 句;
+export default sentence;

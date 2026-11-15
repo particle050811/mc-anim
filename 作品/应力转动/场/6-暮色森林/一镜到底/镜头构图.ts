@@ -53,13 +53,13 @@ export const mixFraming = (a: Framing, b: Framing, k: number): Framing => ({
 });
 
 // 骑手中心：扫帚杆中心往上 0.2 米（同 6-2-5、验收.ts）
-export const riderAt = (F: number) => add(route.扫帚(F).位置, [0, 0, 0.2]);
+export const riderAt = (F: number) => add(route.broom(F).位置, [0, 0, 0.2]);
 // 扫帚这一刻的朝向架：前（三维切线）、水平前、右（水平）、法（竖直面里垂直于前、朝上）。
 // 按规划航线（不带真实飞行偏移）的切线：偏移是慢漂移（用户 10-05），镜头跟着骑手平移、方向不跟着晃；
 // 跟着带偏移的切线转的话视线角加速度多出 0.1～0.2°/帧²
 export const broomFrame = (frame: number) => {
-  const dist = Math.min(Math.max(route.扫帚(frame).s, 1), route.路线长 - 1);
-  const t = norm(sub(route.规划位置(dist + 1), route.规划位置(dist - 1)));
+  const dist = Math.min(Math.max(route.broom(frame).s, 1), route.routeLength - 1);
+  const t = norm(sub(route.plannedPos(dist + 1), route.plannedPos(dist - 1)));
   const horizLen = Math.hypot(t[0], t[1]) || 1;
   const flatFwd = [t[0] / horizLen, t[1] / horizLen, 0];
   const right = [flatFwd[1], -flatFwd[0], 0];
@@ -187,15 +187,15 @@ export const sampleKeys = (ks: Keys[], frame: number, anchor = 0): Framing => {
 // ---------- 孔道：钻墙洞、洞道时镜头夹在洞里 ----------
 // 各段 编排.ts 的孔道：相对贯穿点的路程区间和洞里允许的 `侧`（右为正）、`高`（相对扫帚杆）。镜头所在处（投到路线上）落进去时，往右 / 往上的偏移夹在洞口里
 // （两头 2 米渐变；绕圈转到扫帚侧前方时只在真落在洞里的那一段夹，不渐变）
-type Bore = { s0: number; s1: number; 侧: number; 高: [number, number] };
-const bores: Bore[] = (Object.keys(route.穿刺表) as route.Boss名[]).flatMap((bossName) => {
-  const sp = route.标记路程(`${bossName}.贯穿`);
-  return ((boreSources[bossName] ?? []) as { a: [number, number]; 侧: number; 高: [number, number] }[]).map((k) => ({ s0: sp + k.a[0], s1: sp + k.a[1], 侧: k.侧, 高: k.高 }));
+type Bore = { s0: number; s1: number; side: number; 高: [number, number] };
+const bores: Bore[] = (Object.keys(route.pierceTable) as route.BossName[]).flatMap((bossName) => {
+  const sp = route.markDist(`${bossName}.贯穿`);
+  return ((boreSources[bossName] ?? []) as { a: [number, number]; side: number; 高: [number, number] }[]).map((k) => ({ s0: sp + k.a[0], s1: sp + k.a[1], side: k.side, 高: k.高 }));
 });
 export const clampToBore = (camPos: Vec, frame: number, azimuth: number) => {
-  const sr = route.扫帚(frame).s;
+  const sr = route.broom(frame).s;
   const { flatFwd: flatFwd } = broomFrame(frame);
-  const sc = Math.min(route.路线长, Math.max(0, sr + dot(sub(camPos, riderAt(frame)), flatFwd)));
+  const sc = Math.min(route.routeLength, Math.max(0, sr + dot(sub(camPos, riderAt(frame)), flatFwd)));
   const orbiting = clamp01(Math.abs(angleDiff(0, azimuth)) / 20);
   let out = camPos;
   for (const k of bores) {
@@ -203,13 +203,13 @@ export const clampToBore = (camPos: Vec, frame: number, azimuth: number) => {
     const ramp = Math.min(ss((sc - (k.s0 - 2)) / 2), ss((k.s1 + 2 - sc) / 2));
     const weight = lerp(ramp, sc >= k.s0 && sc <= k.s1 ? 1 : 0, orbiting);
     if (weight <= 0) continue;
-    const routePt = route.位置(sc);
-    const t = route.切线(sc);
+    const routePt = route.positionAt(sc);
+    const t = route.tangentAt(sc);
     const horizLen = Math.hypot(t[0], t[1]) || 1;
     const right = [t[1] / horizLen, -t[0] / horizLen, 0];
     const side = dot(sub(out, routePt), right);
     const height = out[2] - routePt[2];
-    const sideClamped = Math.max(-k.侧, Math.min(k.侧, side));
+    const sideClamped = Math.max(-k.side, Math.min(k.side, side));
     const heightClamped = Math.max(k.高[0], Math.min(k.高[1], height));
     out = add(out, add(mul(right, (sideClamped - side) * weight), [0, 0, (heightClamped - height) * weight]));
   }

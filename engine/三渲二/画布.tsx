@@ -5,46 +5,46 @@
 import { ThreeCanvas } from '@remotion/three';
 import React, { createContext, useContext, useMemo } from 'react';
 import { canvasDpr } from '../core/渲染级别.ts';
-import { 机位, 新相机, type 机位参数 } from './机位.tsx';
-import { 描边渲染, type 描边参数 } from './描边.tsx';
-import { 平涂, type 平涂参数 } from './平涂.tsx';
-import { 光影渲染 } from './光影/光影渲染.tsx';
-import { 合光影, type 光影场参数, type 光影选项 } from './光影/预设.ts';
+import { CameraRig, newCamera, type CameraRigParams } from './机位.tsx';
+import { OutlineRender, type OutlineParams } from './描边.tsx';
+import { FlatShade, type FlatPaintParams } from './平涂.tsx';
+import { ShadingRender } from './光影/光影渲染.tsx';
+import { mergeShading, type ShadingSceneParams, type ShadingOptions } from './光影/预设.ts';
 
-export type 三渲二画布参数 = {
+export type ToonCanvasParams = {
   /** 画布的 CSS 尺寸（取偶数）；整页就是 1280×720 */
   宽: number;
   高: number;
-  机位: 机位参数;
+  cameraRig: CameraRigParams;
   /** 背景（天空）色，sRGB */
   天?: string;
   /** 描边：false 或不给 = 不描 */
-  描边?: 描边参数 | false;
+  outline?: OutlineParams | false;
   /** false = 不平涂、照原材质受光画（对比用） */
-  平涂?: boolean;
+  flatShade?: boolean;
   /** 光影的样式（作品默认值里按段列的）：不给或 null = 不开 */
-  光影?: 光影选项 | null;
+  shading?: ShadingOptions | null;
   /** 场景交代给光影的事实（太阳方向、海平面、时段）：不开光影时不管 */
-  光影场?: 光影场参数;
+  shadingScene?: ShadingSceneParams;
   style?: React.CSSProperties;
   children: React.ReactNode;
-} & 平涂参数;
+} & FlatPaintParams;
 
 /** 一块画面里的几张三渲二画布一起开光影（比如门口那半屏：屋子、身后两层林子、屋后远景各是一张画布）：包在外面的组件给，
  *  画布自己没给 光影 时照这里的样式（自己给了，null 也算，就照自己的）；场景事实两边合起来，画布自己给的优先（试看换了样式也照用） */
-export const 光影范围 = createContext<{ 光影?: 光影选项 | null; 光影场?: 光影场参数 }>({});
+export const shadingScope = createContext<{ shading?: ShadingOptions | null; shadingScene?: ShadingSceneParams }>({});
 
-export const 三渲二画布: React.FC<三渲二画布参数> = ({ 宽, 高, 机位: 参数, 天, 描边, 平涂: 开平涂 = true, 光影: 自己的, 光影场: 自己的场, style, children, ...平涂参 }) => {
-  const 相机 = useMemo(() => 新相机(参数.种), [参数.种]);
-  const 范围 = useContext(光影范围);
-  const 光影 = 自己的 === undefined ? 范围.光影 : 自己的;
-  const 光影场 = { ...范围.光影场, ...自己的场 };
+export const ToonCanvas: React.FC<ToonCanvasParams> = ({ 宽: width, 高: height, cameraRig: params, 天: sky, outline, flatShade: flatOn = true, shading: ownShade, shadingScene: ownShadingScene, style, children, ...paintProps }) => {
+  const camera = useMemo(() => newCamera(params.种), [params.种]);
+  const scope = useContext(shadingScope);
+  const shading = ownShade === undefined ? scope.shading : ownShade;
+  const shadingScene = { ...scope.shadingScene, ...ownShadingScene };
   return (
-    <ThreeCanvas key={参数.种} width={宽} height={高} gl={{ antialias: false }} flat dpr={canvasDpr(1)} camera={相机} style={style}>
-      {天 && <color attach="background" args={[天]} />}
-      <机位 参数={参数} />
-      {光影 ? <光影渲染 选项={合光影(光影, 光影场)} 色调={平涂参.色调} /> : <描边渲染 参数={描边} />}
-      <group rotation={[-Math.PI / 2, 0, 0]}>{开平涂 ? <平涂 {...平涂参}>{children}</平涂> : children}</group>
+    <ThreeCanvas key={params.种} width={width} height={height} gl={{ antialias: false }} flat dpr={canvasDpr(1)} camera={camera} style={style}>
+      {sky && <color attach="background" args={[sky]} />}
+      <CameraRig 参数={params} />
+      {shading ? <ShadingRender options={mergeShading(shading, shadingScene)} tint={paintProps.tint} /> : <OutlineRender 参数={outline} />}
+      <group rotation={[-Math.PI / 2, 0, 0]}>{flatOn ? <FlatShade {...paintProps}>{children}</FlatShade> : children}</group>
     </ThreeCanvas>
   );
 };

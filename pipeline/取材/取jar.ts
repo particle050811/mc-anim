@@ -3,33 +3,33 @@
 import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { 数据路径 } from '../环境/配置.ts';
-import { 文件sha256 } from '../资产/资产锁.ts';
-import { jar路径 } from './提取.ts';
-import { 读清单, type 取材清单 } from './清单.ts';
+import { dataPath } from '../环境/配置.ts';
+import { fileSha256 } from '../资产/资产锁.ts';
+import { jarPath } from './提取.ts';
+import { readManifest, type SourcingManifest } from './清单.ts';
 
-export const 取jar = async (id: string, o: { 清单?: 取材清单; 下载?: boolean; 说?: (s: string) => void } = {}): Promise<string> => {
-  const q = o.清单 ?? 读清单();
+export const fetchJar = async (id: string, o: { sourcingManifest?: SourcingManifest; 下载?: boolean; 说?: (s: string) => void } = {}): Promise<string> => {
+  const q = o.sourcingManifest ?? readManifest();
   const j = q.jars.get(id) as (ReturnType<typeof q.jars.get> & { 下载?: string; 文件?: string }) | undefined;
   if (!j) throw new Error(`sourcing/jars.toml 里没有 ${id}`);
-  const 本 = jar路径(q, id);
-  const 对 = (f: string) => !j.sha256 || 文件sha256(f) === j.sha256;
-  if (fs.existsSync(本)) {
-    if (!对(本)) throw new Error(`${本} 的 sha256 和 jars.toml 登记的 ${id} 对不上`);
-    return 本;
+  const localJar = jarPath(q, id);
+  const shaMatches = (f: string) => !j.sha256 || fileSha256(f) === j.sha256;
+  if (fs.existsSync(localJar)) {
+    if (!shaMatches(localJar)) throw new Error(`${localJar} 的 sha256 和 jars.toml 登记的 ${id} 对不上`);
+    return localJar;
   }
-  const 缓存 = 数据路径('cache', 'jars', j.文件 ?? path.basename(j.到));
-  if (fs.existsSync(缓存) && 对(缓存)) return 缓存;
-  if (!j.下载 || o.下载 === false) throw new Error(`没有 ${本}${j.下载 ? '' : '，jars.toml 也没登记下载地址'}`);
+  const cachedPath = dataPath('cache', 'jars', j.文件 ?? path.basename(j.到));
+  if (fs.existsSync(cachedPath) && shaMatches(cachedPath)) return cachedPath;
+  if (!j.下载 || o.下载 === false) throw new Error(`没有 ${localJar}${j.下载 ? '' : '，jars.toml 也没登记下载地址'}`);
   if (!j.sha256) throw new Error(`jars.toml 的 ${id} 没写 sha256，不自动下载`);
-  o.说?.(`没有 ${本}，从 ${j.下载} 下载到 ${缓存}`);
+  o.说?.(`没有 ${localJar}，从 ${j.下载} 下载到 ${cachedPath}`);
   const r = await fetch(j.下载);
   if (!r.ok) throw new Error(`下载 ${j.下载} 失败：HTTP ${r.status}`);
   const buf = Buffer.from(await r.arrayBuffer());
   const sha = createHash('sha256').update(buf).digest('hex');
   if (sha !== j.sha256) throw new Error(`下载的 ${id} sha256 是 ${sha}，jars.toml 登记的是 ${j.sha256}，没用`);
-  fs.mkdirSync(path.dirname(缓存), { recursive: true });
-  fs.writeFileSync(`${缓存}.tmp`, buf);
-  fs.renameSync(`${缓存}.tmp`, 缓存);
-  return 缓存;
+  fs.mkdirSync(path.dirname(cachedPath), { recursive: true });
+  fs.writeFileSync(`${cachedPath}.tmp`, buf);
+  fs.renameSync(`${cachedPath}.tmp`, cachedPath);
+  return cachedPath;
 };

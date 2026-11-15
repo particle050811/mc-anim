@@ -45,18 +45,18 @@ const wardenLaneS = (T: number) => {
   }
   return best;
 };
-type Shot = { 起帧: number; 起T: number; cam: (T: number, k: number) => Cam };
+type Shot = { 起帧: number; startT: number; cam: (T: number, k: number) => Cam };
 const shots: Shot[] = [
   {
     // 西南角正上方（比环道高 21 格，再往外是洞壁）往东北俯看：西环道、岛南头台面、南环道、门顶上的黄叛一个画面
     起帧: 0,
-    起T: lapT(0) - 0.2,
+    startT: lapT(0) - 0.2,
     cam: (T, k) => ({ pos: G4(-747.5 + 0.8 * k, -25.0, 277.5 - 0.5 * k), tgt: G4(-732.0, -44.0, 253.0), lens: 18 }),
   },
   {
     // 台面西头上空（比台面高 15 格，再低就隔着岛上的墙看不到西环道北半截）往西北看西环道：马朝镜头冲来、刘心忠回身放两炮，马一跃从镜头左边落上台面，镜头跟着马转过来
     起帧: 48,
-    起T: lapT(1) - 0.2,
+    startT: lapT(1) - 0.2,
     cam: (T) => {
       const h = add(horseAt(T), [0, 0, 1.6]);
       const lane = G4(-745.0, -44.5, 236.0);
@@ -67,19 +67,19 @@ const shots: Shot[] = [
   {
     // 传送门顶上、黄叛身后头顶上 4 格往西俯看：近处黄叛拉弓、鼓风机，一串风矢扎进西环道上的它，台面在左边
     起帧: 80,
-    起T: lapT(2) - 0.15,
+    startT: lapT(2) - 0.15,
     cam: (T, k) => ({ pos: G4(-720.5, -15.5, 242.5), tgt: G4(-733.0, -35.0, 242.5 + 1.0 * k), lens: 16 }),
   },
   {
     // 西南角上空（比环道高 9 格）往北顺着西环道看：它迎着镜头冲来，马在它前头跑、回身放炮，一跃从右边上台面，它蓄好的音爆往右上打空
     起帧: 111,
-    起T: lapT(3) - 0.1,
+    startT: lapT(3) - 0.1,
     cam: () => ({ pos: G4(-745.5, -37.0, 281.0), tgt: G4(-742.5, -44.0, 250.0), lens: 18 }),
   },
   {
     // 跟拍：在它前头 8 米、高 3 格、贴环道外沿（里沿一排石阶栏）往后退着拍它的脸，最后一箭打穿它倒下滑过来，镜头跟着刹住
     起帧: 141,
-    起T: lapT(4) - 0.02,
+    startT: lapT(4) - 0.02,
     cam: (T) => {
       const s = wardenLaneS(T) + 8;
       const [x, z] = geom.wardenLoop.at(s);
@@ -89,7 +89,7 @@ const shots: Shot[] = [
   {
     // 台面西南上空：右边台面上马勒停、转过来朝着它倒下的地方，左边远处西环道上它倒着、白烟散开，门顶上黄叛放下弓
     起帧: 178,
-    起T: lapT(4) - 0.02 + (178 - 141) / FPS,
+    startT: lapT(4) - 0.02 + (178 - 141) / FPS,
     cam: (T, k) => ({ pos: lerpV(G4(-732.5, -34.0, 269.0), G4(-732.0, -34.3, 268.4), ss(k)), tgt: G4(-727.0, -40.0, 250.0), lens: 16 }),
   },
 ];
@@ -100,10 +100,10 @@ export const shotIndex = (f: number) => shots.filter((s) => f >= s.起帧).lengt
 const shotOf = (f: number) => shots[shotIndex(f) - 1];
 export const shotStartFrame = (k: number) => shots[k - 1].起帧;
 export const shotEndFrame = (k: number) => (k < shots.length ? shots[k].起帧 : END);
-export const shotStartT = (k: number) => shots[k - 1].起T;
+export const shotStartT = (k: number) => shots[k - 1].startT;
 export const storyT = (f: number) => {
   const s = shotOf(f);
-  return s.起T + (f - s.起帧) / FPS;
+  return s.startT + (f - s.起帧) / FPS;
 };
 // 剧情时刻 T 在镜 k 里是哪一帧（不在这个镜头那一截里就是 undefined）
 export const frameInShot = (k: number, T: number) => {

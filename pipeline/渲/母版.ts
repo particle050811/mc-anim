@@ -4,39 +4,39 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { 母版目录 } from '../环境/配置.ts';
-import { 本检出 } from '../环境/路径.ts';
-import type { 段指纹 } from '../指纹/指纹.ts';
+import { masterDir } from '../环境/配置.ts';
+import { currentCheckout } from '../环境/路径.ts';
+import type { SegFingerprint } from '../指纹/指纹.ts';
 
-export const 指纹文件 = (键: string, 指纹: string, 目录 = 母版目录(键)) => path.join(目录, `${指纹.slice(0, 16)}.指纹.json`);
+export const fingerprintFile = (segKey: string, fingerprint: string, dir = masterDir(segKey)) => path.join(dir, `${fingerprint.slice(0, 16)}.指纹.json`);
 
 /** 删旧时，近这么久被用过的不删（film、verify 正在用的） */
-export const 近期用过毫秒 = 2 * 3600 * 1000;
-export const 用过文件 = (目录: string, 指纹: string) => path.join(目录, `${指纹.slice(0, 16)}.用过`);
-export const 检出记号文件 = (目录: string, 指纹: string, 检出 = 本检出()) => path.join(目录, `${指纹.slice(0, 16)}.检出-${crypto.createHash('sha256').update(检出).digest('hex').slice(0, 8)}`);
+export const recentUseMs = 2 * 3600 * 1000;
+export const usedMarkFile = (masterDir: string, fingerprint: string) => path.join(masterDir, `${fingerprint.slice(0, 16)}.用过`);
+export const checkoutMarkFile = (masterDir: string, fingerprint: string, checkout = currentCheckout()) => path.join(masterDir, `${fingerprint.slice(0, 16)}.检出-${crypto.createHash('sha256').update(checkout).digest('hex').slice(0, 8)}`);
 /** 记一笔「刚用过」：改这一个小文件的修改时间，再留一个这个检出用过的记号；写不了（只读数据根）就算了，不影响出片 */
-export const 记用过 = (目录: string, 指纹: string) => {
+export const markUsed = (masterDir: string, fingerprint: string) => {
   try {
-    fs.mkdirSync(目录, { recursive: true });
-    fs.writeFileSync(用过文件(目录, 指纹), `${new Date().toISOString()}\n`, 'utf8');
-    fs.writeFileSync(检出记号文件(目录, 指纹), `${本检出()}\n`, 'utf8');
+    fs.mkdirSync(masterDir, { recursive: true });
+    fs.writeFileSync(usedMarkFile(masterDir, fingerprint), `${new Date().toISOString()}\n`, 'utf8');
+    fs.writeFileSync(checkoutMarkFile(masterDir, fingerprint), `${currentCheckout()}\n`, 'utf8');
   } catch {
     // 记不上只是少一层保护
   }
 };
 
 /** 先写临时名再原子改名，中途失败不留半截文件 */
-export const 原子写 = (file: string, text: string) => {
+export const atomicWrite = (file: string, text: string) => {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   const tmp = `${file}.写入中-${process.pid}`;
   fs.writeFileSync(tmp, text, 'utf8');
   fs.renameSync(tmp, file);
 };
 
-export const 写指纹 = (fp: 段指纹, 目录 = 母版目录(fp.段)) => 原子写(指纹文件(fp.段, fp.指纹, 目录), JSON.stringify({ ...fp, 算于: new Date().toISOString() }, null, 2) + '\n');
+export const writeFingerprint = (fp: SegFingerprint, dir = masterDir(fp.段)) => atomicWrite(fingerprintFile(fp.段, fp.指纹, dir), JSON.stringify({ ...fp, 算于: new Date().toISOString() }, null, 2) + '\n');
 
 /** 这段之前渲过的指纹（新的在前），anim stale 拿最近一份比差异 */
-export const 历史指纹 = (键: string, dir = 母版目录(键)): (段指纹 & { 算于?: string })[] => {
+export const fingerprintHistory = (segKey: string, dir = masterDir(segKey)): (SegFingerprint & { 算于?: string })[] => {
   if (!fs.existsSync(dir)) return [];
   return fs
     .readdirSync(dir)

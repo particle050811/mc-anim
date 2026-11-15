@@ -3,158 +3,158 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
-import { 取函数, type 编选项 } from '../../pipeline/检查/副本识别.ts';
-import { 摆相机, 做相机, 投到画面 } from './three换算.ts';
+import { getFunction, type CompileOptions } from '../../pipeline/检查/副本识别.ts';
+import { placeCamera, makeCamera, projectToPicture } from './three换算.ts';
 import { lerpV, rad } from './数学.ts';
 import * as J from './机位.ts';
 
-const 根 = path.resolve(import.meta.dirname, '../..');
-type 函 = (...a: unknown[]) => unknown;
-const 副本 = (文件: string, 名: string, 选项?: 编选项) => 取函数(文件, fs.readFileSync(path.join(根, 文件), 'utf8'), 名, { 允许循环: true, ...选项 }) as 函;
-const 近 = (a: readonly number[], b: readonly number[], 位 = 10) => {
+const root = path.resolve(import.meta.dirname, '../..');
+type AnyFn = (...a: unknown[]) => unknown;
+const copyFn = (file: string, fnName: string, options?: CompileOptions) => getFunction(file, fs.readFileSync(path.join(root, file), 'utf8'), fnName, { allowLoop: true, ...options }) as AnyFn;
+const expectNear = (a: readonly number[], b: readonly number[], digits = 10) => {
   expect(a.length).toBe(b.length);
-  a.forEach((x, i) => expect(x).toBeCloseTo(b[i]!, 位));
+  a.forEach((x, i) => expect(x).toBeCloseTo(b[i]!, digits));
 };
-const 甲: J.Cam = { pos: [5.5, -7.3, 2.5], tgt: [5.5, -1, 1.7], lens: 26 };
-const 乙: J.Cam = { pos: [-3, 4, 10], tgt: [0, 0, 0], lens: 60 };
+const rigFirst: J.Cam = { pos: [5.5, -7.3, 2.5], tgt: [5.5, -1, 1.7], lens: 26 };
+const secondCam: J.Cam = { pos: [-3, 4, 10], tgt: [0, 0, 0], lens: 60 };
 
 describe('机位正本', () => {
   it('焦距 ↔ 视角：36 mm 横向画幅，16:9 时 lens 18 的竖直视角', () => {
-    expect(J.焦距到视角(18, 1)).toBeCloseTo(90, 12);
-    expect(J.焦距到视角(18, 16 / 9)).toBeCloseTo((2 * Math.atan(9 / 16) * 180) / Math.PI, 12);
-    for (const lens of [12, 26, 50, 135]) expect(J.视角到焦距(J.焦距到视角(lens, 16 / 9), 16 / 9)).toBeCloseTo(lens, 9);
+    expect(J.lensToFov(18, 1)).toBeCloseTo(90, 12);
+    expect(J.lensToFov(18, 16 / 9)).toBeCloseTo((2 * Math.atan(9 / 16) * 180) / Math.PI, 12);
+    for (const lens of [12, 26, 50, 135]) expect(J.fovToLens(J.lensToFov(lens, 16 / 9), 16 / 9)).toBeCloseTo(lens, 9);
   });
   it('插机位：两头、线性、对数焦距、roll 只在给了时带', () => {
-    expect(J.插机位(甲, 乙, 0)).toEqual(甲);
+    expect(J.lerpRig(rigFirst, secondCam, 0)).toEqual(rigFirst);
     // a + (b − a)·1 有末位舍入，k = 1 时只是近似等于 乙
-    const 到 = J.插机位(甲, 乙, 1);
-    近(到.pos, 乙.pos, 12);
-    近(到.tgt, 乙.tgt, 12);
-    const 中 = J.插机位(甲, 乙, 0.5);
-    近(中.pos, lerpV(甲.pos, 乙.pos, 0.5));
-    expect(中.lens).toBe(43);
-    expect('roll' in 中).toBe(false);
-    expect(J.插机位(甲, 乙, 0.5, { 焦距: '对数' }).lens).toBeCloseTo(Math.sqrt(26 * 60), 12);
-    expect(J.插机位({ ...甲, roll: 180 }, 乙, 0.25).roll).toBe(135);
+    const atEnd = J.lerpRig(rigFirst, secondCam, 1);
+    expectNear(atEnd.pos, secondCam.pos, 12);
+    expectNear(atEnd.tgt, secondCam.tgt, 12);
+    const midRig = J.lerpRig(rigFirst, secondCam, 0.5);
+    expectNear(midRig.pos, lerpV(rigFirst.pos, secondCam.pos, 0.5));
+    expect(midRig.lens).toBe(43);
+    expect('roll' in midRig).toBe(false);
+    expect(J.lerpRig(rigFirst, secondCam, 0.5, { lensMode: '对数' }).lens).toBeCloseTo(Math.sqrt(26 * 60), 12);
+    expect(J.lerpRig({ ...rigFirst, roll: 180 }, secondCam, 0.25).roll).toBe(135);
   });
   it('插机位 球面转向：视线方向匀角速转，看点距离线性插', () => {
     const a: J.Cam = { pos: [0, 0, 0], tgt: [10, 0, 0], lens: 30 };
     const b: J.Cam = { pos: [0, 0, 0], tgt: [0, 20, 0], lens: 30 };
-    const c = J.插机位(a, b, 0.5, { 转向: '球面' });
-    近(c.tgt, [15 * Math.SQRT1_2, 15 * Math.SQRT1_2, 0]);
+    const c = J.lerpRig(a, b, 0.5, { rotInterp: '球面' });
+    expectNear(c.tgt, [15 * Math.SQRT1_2, 15 * Math.SQRT1_2, 0]);
   });
   it('机位轨：端点外停住、缓动作用在段内进度上', () => {
-    const 轨: [number, J.Cam][] = [[10, 甲], [20, 乙]];
-    expect(J.机位轨(轨, 0)).toBe(甲);
-    expect(J.机位轨(轨, 30)).toBe(乙);
-    expect(J.机位轨(轨, 15, (t) => t * t).lens).toBeCloseTo(26 + 34 * 0.25, 12);
+    const cameraTrack: [number, J.Cam][] = [[10, rigFirst], [20, secondCam]];
+    expect(J.rigTrack(cameraTrack, 0)).toBe(rigFirst);
+    expect(J.rigTrack(cameraTrack, 30)).toBe(secondCam);
+    expect(J.rigTrack(cameraTrack, 15, (t) => t * t).lens).toBeCloseTo(26 + 34 * 0.25, 12);
   });
   it('摆相机 + 投到画面：看点投在画面正中，相机朝 −Z（three）看向看点', () => {
-    const cam = 做相机(甲, 1920, 1080);
-    const p = 投到画面(cam, 甲.tgt, 1920, 1080);
+    const cam = makeCamera(rigFirst, 1920, 1080);
+    const p = projectToPicture(cam, rigFirst.tgt, 1920, 1080);
     expect(p.x).toBeCloseTo(960, 6);
     expect(p.y).toBeCloseTo(540, 6);
-    expect(p.深).toBeGreaterThan(0);
-    expect(cam.fov).toBeCloseTo(J.焦距到视角(26, 16 / 9), 12);
+    expect(p.depth).toBeGreaterThan(0);
+    expect(cam.fov).toBeCloseTo(J.lensToFov(26, 16 / 9), 12);
     // 场景上方（+z）的点在画面上半
-    expect(投到画面(cam, [甲.tgt[0], 甲.tgt[1], 甲.tgt[2] + 1], 1920, 1080).y).toBeLessThan(540);
+    expect(projectToPicture(cam, [rigFirst.tgt[0], rigFirst.tgt[1], rigFirst.tgt[2] + 1], 1920, 1080).y).toBeLessThan(540);
   });
   it('转透视参数、从透视参数来回不变；roll 非 0 报错', () => {
-    const p = J.转透视参数(甲, 16 / 9);
+    const p = J.toPerspectiveParams(rigFirst, 16 / 9);
     expect(p.种).toBe('透视');
-    const 回 = J.从透视参数(p, 16 / 9);
-    expect(回.lens).toBeCloseTo(26, 9);
-    expect(() => J.转透视参数({ ...甲, roll: 90 }, 1)).toThrow(/roll/);
-    expect(() => J.转透视参数({ ...甲, roll: 360 }, 1)).not.toThrow();
+    const camera = J.fromPerspectiveParams(p, 16 / 9);
+    expect(camera.lens).toBeCloseTo(26, 9);
+    expect(() => J.toPerspectiveParams({ ...rigFirst, roll: 90 }, 1)).toThrow(/roll/);
+    expect(() => J.toPerspectiveParams({ ...rigFirst, roll: 360 }, 1)).not.toThrow();
   });
   it('从游戏机位：眼睛在场景里的位置、看向 yaw 方向', () => {
-    const c = J.从游戏机位({ 眼: [10, 70, -5], yaw: 90, pitch: 0, 视角: 70 }, [0, 64, 0], 16 / 9);
-    近(c.pos, [10, 5, 6]);
-    近(c.tgt, [0, 5, 6]);
-    expect(J.焦距到视角(c.lens, 16 / 9)).toBeCloseTo(70, 9);
+    const c = J.fromGameRig({ 眼: [10, 70, -5], yaw: 90, pitch: 0, fov: 70 }, [0, 64, 0], 16 / 9);
+    expectNear(c.pos, [10, 5, 6]);
+    expectNear(c.tgt, [0, 5, 6]);
+    expect(J.lensToFov(c.lens, 16 / 9)).toBeCloseTo(70, 9);
   });
 });
 
 describe('机位正本和旧副本对得上', () => {
   it('aimCamera（应力转动 古城画面）摆出来的相机和 摆相机 一样（远裁剪面 900）', () => {
-    const aim = 副本('作品/应力转动/地点/古城4x/6-4-1/古城画面.tsx', 'aimCamera', { 全局: { THREE }, 额外: { rad } });
-    for (const c of [甲, 乙, { ...乙, roll: 180 }] as J.Cam[]) {
-      for (const 比 of [16 / 9, 1]) {
-        const 旧 = new THREE.PerspectiveCamera();
-        aim(旧, c, 比, 900);
-        旧.updateMatrixWorld();
-        const 新 = 摆相机(new THREE.PerspectiveCamera(), c, 比);
-        近(旧.projectionMatrix.elements, 新.projectionMatrix.elements, 9);
-        近(旧.matrixWorld.elements, 新.matrixWorld.elements, 9);
+    const aim = copyFn('作品/应力转动/地点/古城4x/6-4-1/古城画面.tsx', 'aimCamera', { globals: { THREE }, extra: { rad } });
+    for (const c of [rigFirst, secondCam, { ...secondCam, roll: 180 }] as J.Cam[]) {
+      for (const aspect of [16 / 9, 1]) {
+        const prevCam = new THREE.PerspectiveCamera();
+        aim(prevCam, c, aspect, 900);
+        prevCam.updateMatrixWorld();
+        const nextCam = placeCamera(new THREE.PerspectiveCamera(), c, aspect);
+        expectNear(prevCam.projectionMatrix.elements, nextCam.projectionMatrix.elements, 9);
+        expectNear(prevCam.matrixWorld.elements, nextCam.matrixWorld.elements, 9);
       }
     }
   });
   it('6-3-8 的 slerpDir（three 四元数）和 camLerp（球面 + 对数，看点放在视线 100 格处）', () => {
-    const 工具 = fs.readFileSync(path.join(根, '作品/应力转动/地点/边城/6-3-8/编排/工具.ts'), 'utf8');
+    const toolSource = fs.readFileSync(path.join(root, '作品/应力转动/地点/边城/6-3-8/编排/工具.ts'), 'utf8');
     // slerpDir 要 new THREE.Quaternion，副本识别 不编；照它的三行在这里用真的 three 写一遍
-    expect(工具).toMatch(/setFromUnitVectors\(va, new THREE\.Vector3\(\.\.\.dirB\)\)[^]*va\.applyQuaternion\(new THREE\.Quaternion\(\)\.slerp\(quat, k\)\)/);
+    expect(toolSource).toMatch(/setFromUnitVectors\(va, new THREE\.Vector3\(\.\.\.dirB\)\)[^]*va\.applyQuaternion\(new THREE\.Quaternion\(\)\.slerp\(quat, k\)\)/);
     const slerpDir = (a: number[], b: number[], k: number) => {
       const va = new THREE.Vector3(...a);
       const quat = new THREE.Quaternion().setFromUnitVectors(va, new THREE.Vector3(...b));
       const r = va.applyQuaternion(new THREE.Quaternion().slerp(quat, k));
       return [r.x, r.y, r.z];
     };
-    const 单位 = (v: number[]) => v.map((x) => x / Math.hypot(...v));
-    const 对们: [number[], number[]][] = [
+    const unitVec = (v: number[]) => v.map((x) => x / Math.hypot(...v));
+    const pairs: [number[], number[]][] = [
       [[1, 0, 0], [0, 1, 0]],
-      [单位([0.3, -0.8, 0.2]), 单位([-0.5, 0.1, -0.7])],
-      [单位([1, 2, 3]), 单位([1, 2, 3.0000001])],
+      [unitVec([0.3, -0.8, 0.2]), unitVec([-0.5, 0.1, -0.7])],
+      [unitVec([1, 2, 3]), unitVec([1, 2, 3.0000001])],
       [[1, 0, 0], [1, 0, 0]],
       // 正好反向：两边都绕和 a 垂直的同一根轴转
-      [单位([0.6, 0.8, 0]), 单位([-0.6, -0.8, 0])],
+      [unitVec([0.6, 0.8, 0]), unitVec([-0.6, -0.8, 0])],
       [[0, 0, 1], [0, 0, -1]],
     ];
-    for (const [a, b] of 对们) for (const k of [0, 0.2, 0.5, 0.9, 1, 1.3]) 近(J.球面插方向(a, b, k), slerpDir(a, b, k), 12);
-    const camLerp = 副本('作品/应力转动/地点/边城/6-3-8/编排/机位.ts', 'camLerp', {
-      额外: { ...Object.fromEntries(['lerp3', 'lerp', 'add', 'sub', 'norm'].map((n) => [n, 取函数('工具.ts', 工具, n)])), slerpDir },
+    for (const [a, b] of pairs) for (const k of [0, 0.2, 0.5, 0.9, 1, 1.3]) expectNear(J.slerpDir(a, b, k), slerpDir(a, b, k), 12);
+    const camLerp = copyFn('作品/应力转动/地点/边城/6-3-8/编排/机位.ts', 'camLerp', {
+      extra: { ...Object.fromEntries(['lerp3', 'lerp', 'add', 'sub', 'norm'].map((n) => [n, getFunction('工具.ts', toolSource, n)])), slerpDir },
     });
     for (const k of [0, 0.3, 0.75, 1]) {
-      const 旧 = camLerp(甲, 乙, k) as J.Cam;
-      const 新 = J.插机位(甲, 乙, k, { 转向: '球面', 焦距: '对数' });
-      近(旧.pos, 新.pos);
-      近(J.视线(旧), J.视线(新));
-      expect(旧.lens).toBeCloseTo(新.lens, 12);
+      const prevCam = camLerp(rigFirst, secondCam, k) as J.Cam;
+      const nextCam = J.lerpRig(rigFirst, secondCam, k, { rotInterp: '球面', lensMode: '对数' });
+      expectNear(prevCam.pos, nextCam.pos);
+      expectNear(J.sightDir(prevCam), J.sightDir(nextCam));
+      expect(prevCam.lens).toBeCloseTo(nextCam.lens, 12);
     }
   });
   it('fovOf（6-3-2 转场，16:9）', () => {
-    const fovOf = 副本('作品/应力转动/地点/边城/6-3-2/转场.ts', 'fovOf', { 额外: { aspect: 16 / 9 } });
-    for (const lens of [12, 26, 50]) expect(fovOf(lens)).toBeCloseTo(J.焦距到视角(lens, 16 / 9), 12);
+    const fovOf = copyFn('作品/应力转动/地点/边城/6-3-2/转场.ts', 'fovOf', { extra: { aspect: 16 / 9 } });
+    for (const lens of [12, 26, 50]) expect(fovOf(lens)).toBeCloseTo(J.lensToFov(lens, 16 / 9), 12);
   });
   it('lerpCam（7-起疑、6-4-3）和 2-新世界 的 插机位 = 线性 插机位', () => {
-    const 起疑 = 副本('作品/应力转动/段/7-起疑/编排.ts', 'lerpCam');
-    const 古城 = 副本('作品/应力转动/场/6-古城/6-4-3/编排/机位.ts', 'lerpCam', { 额外: { lerpV } });
-    const 新世界 = 副本('作品/把回忆拼好给你/场/2-新世界/编排.ts', '插机位');
+    const doubtLerpCam = copyFn('作品/应力转动/段/7-起疑/编排.ts', 'lerpCam');
+    const ancientCityLerp = copyFn('作品/应力转动/场/6-古城/6-4-3/编排/机位.ts', 'lerpCam', { extra: { lerpV } });
+    const newWorldInsertRig = copyFn('作品/把回忆拼好给你/场/2-新世界/编排.ts', 'lerpRig');
     for (const k of [0, 0.3, 0.5, 1, 1.2]) {
-      const 新 = J.插机位(甲, 乙, k);
-      for (const 旧 of [起疑(甲, 乙, k), 古城(甲, 乙, k)] as J.Cam[]) {
-        近(旧.pos, 新.pos);
-        近(旧.tgt, 新.tgt);
-        expect(旧.lens).toBeCloseTo(新.lens, 12);
+      const nextCam = J.lerpRig(rigFirst, secondCam, k);
+      for (const prevCam of [doubtLerpCam(rigFirst, secondCam, k), ancientCityLerp(rigFirst, secondCam, k)] as J.Cam[]) {
+        expectNear(prevCam.pos, nextCam.pos);
+        expectNear(prevCam.tgt, nextCam.tgt);
+        expect(prevCam.lens).toBeCloseTo(nextCam.lens, 12);
       }
-      const 帧 = 新世界({ 眼: 甲.pos, 看: 甲.tgt, 视角: 甲.lens }, { 眼: 乙.pos, 看: 乙.tgt, 视角: 乙.lens }, k) as { 眼: number[]; 看: number[]; 视角: number };
-      近(帧.眼, 新.pos);
-      近(帧.看, 新.tgt);
-      expect(帧.视角).toBeCloseTo(新.lens, 12);
+      const pose = newWorldInsertRig({ 眼: rigFirst.pos, 看: rigFirst.tgt, fov: rigFirst.lens }, { 眼: secondCam.pos, 看: secondCam.tgt, fov: secondCam.lens }, k) as { 眼: number[]; 看: number[]; fov: number };
+      expectNear(pose.眼, nextCam.pos);
+      expectNear(pose.看, nextCam.tgt);
+      expect(pose.fov).toBeCloseTo(nextCam.lens, 12);
     }
   });
   it('机位样条：过每个关键点、关键点两侧速度连续、两头之外停在端点', () => {
-    const 丙: J.Cam = { pos: [2, 9, 4], tgt: [1, 1, 1], lens: 35 };
-    const 关键: J.样条关键[] = [[0, 甲], [1.5, 乙], [4, 丙]];
-    const 量 = (c: J.Cam) => [...c.pos, ...c.tgt, c.lens];
-    近(量(J.机位样条(关键, 0)), 量(甲));
-    近(量(J.机位样条(关键, 1.5)), 量(乙), 9);
-    近(量(J.机位样条(关键, 9)), 量(丙));
+    const camThird: J.Cam = { pos: [2, 9, 4], tgt: [1, 1, 1], lens: 35 };
+    const keyframes: J.SplineKey[] = [[0, rigFirst], [1.5, secondCam], [4, camThird]];
+    const camVector = (c: J.Cam) => [...c.pos, ...c.tgt, c.lens];
+    expectNear(camVector(J.rigSpline(keyframes, 0)), camVector(rigFirst));
+    expectNear(camVector(J.rigSpline(keyframes, 1.5)), camVector(secondCam), 9);
+    expectNear(camVector(J.rigSpline(keyframes, 9)), camVector(camThird));
     const e = 1e-5;
-    const 速 = (t: number) => 量(J.机位样条(关键, t + e)).map((v, i) => (v - 量(J.机位样条(关键, t - e))[i]!) / (2 * e));
-    const [左, 右] = [速(1.5 - 2 * e), 速(1.5 + 2 * e)];
-    左.forEach((v, i) => expect(Math.abs(v - 右[i]!)).toBeLessThan(1e-2));
+    const speedAt = (t: number) => camVector(J.rigSpline(keyframes, t + e)).map((v, i) => (v - camVector(J.rigSpline(keyframes, t - e))[i]!) / (2 * e));
+    const [leftSpeed, right] = [speedAt(1.5 - 2 * e), speedAt(1.5 + 2 * e)];
+    leftSpeed.forEach((v, i) => expect(Math.abs(v - right[i]!)).toBeLessThan(1e-2));
     // 停：头上的速度是 0
-    const 停 = J.机位样条(关键, e, { 头: '停' });
-    expect(Math.hypot(...停.pos.map((v, i) => v - 甲.pos[i]!)) / e).toBeLessThan(1e-3);
+    const stopped = J.rigSpline(keyframes, e, { 头: '停' });
+    expect(Math.hypot(...stopped.pos.map((v, i) => v - rigFirst.pos[i]!)) / e).toBeLessThan(1e-3);
   });
 });

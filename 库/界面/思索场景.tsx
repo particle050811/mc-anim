@@ -11,7 +11,7 @@ import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png, type Png } from '../../engine/model/贴图.ts';
 import giantRaw from 'asset:模型/角色/巨人';
 import steveUri from 'asset:贴图/角色/巨人/史蒂夫';
-import { ponderScreen, drawBackground, drawTitle, drawButtons, drawProgressBar, drawTextWindow, itemFramePos, type 说明框 } from './思索界面.tsx';
+import { ponderScreen, drawBackground, drawTitle, drawButtons, drawProgressBar, drawTextWindow, itemFramePos, type NoteBox } from './思索界面.tsx';
 // 按钮声文件放在 6-3-2 段目录（那一段先做的）
 
 export const PLAYER = (giantRaw as unknown as { models: Record<'宽', EntityModelData> }).models.宽;
@@ -189,8 +189,8 @@ export const destroyParticle = (dx: number, dy: number, dz: number, rand: () => 
   zd = (zd / dirLen) * speedMag * 0.4;
   const v = [xd, yd, zd];
   const lifeTicks = Math.floor(4 / (rand() * 0.9 + 0.1));
-  const 半 = 0.1 * (rand() * 0.5 + 0.5);
-  return { v, lifeTicks, 半 };
+  const halfSize = 0.1 * (rand() * 0.5 + 0.5);
+  return { v, lifeTicks, halfSize };
 };
 // 碎屑在 t 秒的位置（`Particle.tick` 逐刻：yd −= 0.04，带碰撞挪一步，×0.98，着地时水平速度再 ×0.7）。
 // 碰撞按「这一刻哪些方块还在」算（groundY：脚下最近的实心面，isSolid：这一点是不是实心），由各段给。
@@ -297,7 +297,7 @@ export const PonderUiLayer: React.FC<{
   title: string;
   progress: number;
   keyframes: number[];
-  captions: 说明框[];
+  captions: NoteBox[];
   item: React.ReactNode;
   children: React.ReactNode;
   backdrop?: boolean;

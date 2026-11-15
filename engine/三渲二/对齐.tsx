@@ -10,32 +10,32 @@ import React, { useRef } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../model/parts.tsx';
 
-export type 贴图像素对齐参数 = {
+export type TexturePixelAlignParams = {
   /** 缩放中心、吸附点：角色脚底（pose.loc），场景坐标（和包住的东西同一个坐标系） */
   锚: V3;
   /** 模型一个贴图像素多少格（MAGICAL_WINE_FOX.scale 这类）；给了 成片像素 才用 */
-  模型像素?: number;
+  modelPixel?: number;
   /** 缩放到一个贴图像素在成片上几个像素（正整数，取偶数，预览级才不落半像素）；不给 = 不缩放、只吸附 */
-  成片像素?: number;
+  filmPixel?: number;
   /** 正交机位的 N（方块一个贴图像素几个成片像素），用来把 成片像素 换成格 */
   N?: number;
 };
 
 /** 缩放倍数：一个贴图像素从 模型像素 格变成 成片像素 / (16N) 格 */
-export const 对齐倍数 = (p: 贴图像素对齐参数): number => {
-  if (p.成片像素 === undefined) return 1;
-  if (!Number.isInteger(p.成片像素) || p.成片像素 < 1) throw new Error(`贴图像素对齐的 成片像素 要是正整数：${p.成片像素}`);
-  if (!p.模型像素 || !p.N) throw new Error('贴图像素对齐给了 成片像素，还要给 模型像素 和 N');
-  return p.成片像素 / (16 * p.N) / p.模型像素;
+export const alignScale = (p: TexturePixelAlignParams): number => {
+  if (p.filmPixel === undefined) return 1;
+  if (!Number.isInteger(p.filmPixel) || p.filmPixel < 1) throw new Error(`贴图像素对齐的 成片像素 要是正整数：${p.filmPixel}`);
+  if (!p.modelPixel || !p.N) throw new Error('贴图像素对齐给了 成片像素，还要给 模型像素 和 N');
+  return p.filmPixel / (16 * p.N) / p.modelPixel;
 };
 
-const 世界 = new THREE.Vector3();
-const 右 = new THREE.Vector3();
-const 上 = new THREE.Vector3();
+const worldPos = new THREE.Vector3();
+const right = new THREE.Vector3();
+const camUp = new THREE.Vector3();
 
-export const 贴图像素对齐: React.FC<贴图像素对齐参数 & { children: React.ReactNode }> = ({ children, ...p }) => {
+export const TexturePixelAlign: React.FC<TexturePixelAlignParams & { children: React.ReactNode }> = ({ children, ...p }) => {
   const ref = useRef<THREE.Group>(null);
-  const k = 对齐倍数(p);
+  const k = alignScale(p);
   const [x, y, z] = p.锚;
   // 位置每帧在渲染前设（要等机位设好相机）；React 不管它，所以外层 group 不写 position
   useFrame(({ camera, size, viewport }) => {
@@ -46,17 +46,17 @@ export const 贴图像素对齐: React.FC<贴图像素对齐参数 & { children:
     if (!cam.isOrthographicCamera) return;
     g.parent.updateWorldMatrix(true, false);
     cam.updateMatrixWorld();
-    世界.set(x, y, z).applyMatrix4(g.parent.matrixWorld);
-    const ndc = 世界.clone().project(cam);
-    const [宽, 高] = [size.width * viewport.dpr, size.height * viewport.dpr];
-    const px = ((ndc.x + 1) / 2) * 宽;
-    const py = ((1 - ndc.y) / 2) * 高;
+    worldPos.set(x, y, z).applyMatrix4(g.parent.matrixWorld);
+    const ndc = worldPos.clone().project(cam);
+    const [canvasWidth, height] = [size.width * viewport.dpr, size.height * viewport.dpr];
+    const px = ((ndc.x + 1) / 2) * canvasWidth;
+    const py = ((1 - ndc.y) / 2) * height;
     // 画布像素 / 格；斜投影只切进深方向，沿相机的右、上挪不改别的
-    const 每格 = 高 / ((cam.top - cam.bottom) / cam.zoom);
-    右.setFromMatrixColumn(cam.matrixWorld, 0).normalize();
-    上.setFromMatrixColumn(cam.matrixWorld, 1).normalize();
-    世界.addScaledVector(右, (Math.round(px) - px) / 每格).addScaledVector(上, -(Math.round(py) - py) / 每格);
-    g.position.copy(g.parent.worldToLocal(世界));
+    const pxPerCell = height / ((cam.top - cam.bottom) / cam.zoom);
+    right.setFromMatrixColumn(cam.matrixWorld, 0).normalize();
+    camUp.setFromMatrixColumn(cam.matrixWorld, 1).normalize();
+    worldPos.addScaledVector(right, (Math.round(px) - px) / pxPerCell).addScaledVector(camUp, -(Math.round(py) - py) / pxPerCell);
+    g.position.copy(g.parent.worldToLocal(worldPos));
   });
   return (
     <group ref={ref} scale={k}>

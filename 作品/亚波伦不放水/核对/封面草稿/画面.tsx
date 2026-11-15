@@ -9,42 +9,42 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { smoothstep01 } from '@engine/core/数学.ts';
-import { type Cam, 视线 } from '@engine/core/机位.ts';
+import { type Cam, sightDir } from '@engine/core/机位.ts';
 import { hash2 } from '@engine/core/噪声.ts';
-import { 摆相机 } from '@engine/core/three换算.ts';
+import { placeCamera } from '@engine/core/three换算.ts';
 import { png, type Png } from '@engine/model/贴图.ts';
-import { use当前秒, use视图下标 } from '@engine/段/时间.tsx';
+import { useCurrentSec, useViewIndex } from '@engine/段/时间.tsx';
 import { Steve, steveLookAt, stevePose } from '@库/角色/史蒂夫.tsx';
-import 下界岩 from 'asset:贴图/方块/下界岩';
-import 岩浆块 from 'asset:贴图/方块/岩浆块';
-import 熔岩 from 'asset:贴图/方块/熔岩';
-import type { 多圈轮盘参数 } from '../../界面/多圈轮盘.tsx';
-import { 杖尖轮盘 } from '../../界面/杖尖轮盘.tsx';
-import { 娘化亚波伦, 悬停, 持杖位姿, 站立 } from '../../角色/娘化亚波伦.tsx';
-import { 防暗 } from '../../角色/防暗.tsx';
-import { 手持下界魔杖, 杖头芯 } from '../../物品/下界魔杖.tsx';
-import { 炼狱结界辉线 } from '../../特效/炼狱结界辉线.tsx';
+import netherrackPng from 'asset:贴图/方块/下界岩';
+import magmaBlockPng from 'asset:贴图/方块/岩浆块';
+import lavaPng from 'asset:贴图/方块/熔岩';
+import type { MultiRingParams } from '../../界面/多圈轮盘.tsx';
+import { WandTipWheel } from '../../界面/杖尖轮盘.tsx';
+import { GirlYaBoLun, hover, holdWandPose, stand } from '../../角色/娘化亚波伦.tsx';
+import { AntiDark } from '../../角色/防暗.tsx';
+import { HeldNetherWand, staffHeadCore } from '../../物品/下界魔杖.tsx';
+import { RevelationCageGlow } from '../../特效/炼狱结界辉线.tsx';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
-import { 下界提亮, 真下界 } from '../../地点/真下界.tsx';
-import { 指杖机位 } from '../../界面/指杖机位.ts';
-import { 方案们, type 方案 } from './视图.ts';
+import { netherBrighter, RealNether } from '../../地点/真下界.tsx';
+import { staffRig } from '../../界面/指杖机位.ts';
+import { plans, type Plan } from './视图.ts';
 
-const 雾色 = '#3a0a07';
-const 天顶色 = '#050102';
+const fogColor = '#3a0a07';
+const zenithColor = '#050102';
 
 // ── 地：格子坐标 (i, j) 的方块占 x ∈ [i, i+1)、y ∈ [j, j+1) ──
-const 范围 = { x0: -44, x1: 44, y0: -14, y1: 76 };
+const bounds = { x0: -44, x1: 44, y0: -14, y1: 76 };
 /** 值噪声（双线性），格距 尺 */
-const 噪声 = (x: number, y: number, 尺: number, 种: number) => {
-  const [fx, fy] = [x / 尺, y / 尺];
+const noise = (x: number, y: number, period: number, seed: number) => {
+  const [fx, fy] = [x / period, y / period];
   const [i, j] = [Math.floor(fx), Math.floor(fy)];
   const [u, v] = [smoothstep01(fx - i), smoothstep01(fy - j)];
-  const 上 = hash2(i, j, 种) * (1 - u) + hash2(i + 1, j, 种) * u;
-  const 下 = hash2(i, j + 1, 种) * (1 - u) + hash2(i + 1, j + 1, 种) * u;
-  return 上 * (1 - v) + 下 * v;
+  const topRow = hash2(i, j, seed) * (1 - u) + hash2(i + 1, j, seed) * u;
+  const lowSample = hash2(i, j + 1, seed) * (1 - u) + hash2(i + 1, j + 1, seed) * u;
+  return topRow * (1 - v) + lowSample * v;
 };
 // 熔岩池：[中心 x, 中心 y, 半径]。躲开四稿及以前各方案里史蒂夫站的地方
-const 池们: readonly [number, number, number][] = [
+const pools: readonly [number, number, number][] = [
   [-6.5, 2.5, 2.3],
   [7.5, 4.5, 2.8],
   [-1.5, 13.5, 3.2],
@@ -55,21 +55,21 @@ const 池们: readonly [number, number, number][] = [
   [-20, 24, 4.5],
   [20, 30, 5],
 ];
-const 是熔岩 = (i: number, j: number) => 池们.some(([cx, cy, r]) => Math.hypot(i + 0.5 - cx, j + 0.5 - cy) + (hash2(i, j, 7) - 0.5) * 1.2 < r);
+const isLava = (i: number, j: number) => pools.some(([cx, cy, r]) => Math.hypot(i + 0.5 - cx, j + 0.5 - cy) + (hash2(i, j, 7) - 0.5) * 1.2 < r);
 /** 这一格垒几层（0 = 平地）：离场地中心 15 格以内是平的，往外越来越高，加两层噪声 */
-const 高 = (i: number, j: number): number => {
-  if (是熔岩(i, j)) return 0;
-  const 远 = Math.hypot(i + 0.5, (j + 0.5 - 6) * 0.9);
-  const 坡 = Math.max(0, 远 - 15);
-  const 起伏 = 噪声(i, j, 9, 1) * 0.75 + 噪声(i, j, 3.5, 2) * 0.25;
-  const 零碎 = 远 > 12 && hash2(i, j, 3) > 0.93 ? 1 : 0;
-  return Math.max(0, Math.floor(坡 * 0.42 * (0.35 + 起伏 * 1.5) + (坡 > 0 ? 起伏 * 2.2 : 0) + 零碎));
+const heightAt = (i: number, j: number): number => {
+  if (isLava(i, j)) return 0;
+  const dist = Math.hypot(i + 0.5, (j + 0.5 - 6) * 0.9);
+  const farExcess = Math.max(0, dist - 15);
+  const undulation = noise(i, j, 9, 1) * 0.75 + noise(i, j, 3.5, 2) * 0.25;
+  const scatter = dist > 12 && hash2(i, j, 3) > 0.93 ? 1 : 0;
+  return Math.max(0, Math.floor(farExcess * 0.42 * (0.35 + undulation * 1.5) + (farExcess > 0 ? undulation * 2.2 : 0) + scatter));
 };
 
-const 方块贴图 = (图: Png, 帧高?: number) => {
+const blockTexture = (img: Png, frameHeight?: number) => {
   // 动画贴图只取最上面一帧
-  const h = 帧高 ?? 图.h;
-  const t = new THREE.DataTexture(图.px.slice(0, 图.w * h * 4), 图.w, h, THREE.RGBAFormat);
+  const h = frameHeight ?? img.h;
+  const t = new THREE.DataTexture(img.px.slice(0, img.w * h * 4), img.w, h, THREE.RGBAFormat);
   t.colorSpace = THREE.SRGBColorSpace;
   t.wrapS = t.wrapT = THREE.RepeatWrapping;
   t.magFilter = THREE.NearestFilter;
@@ -80,63 +80,63 @@ const 方块贴图 = (图: Png, 帧高?: number) => {
   return t;
 };
 
-type 格 = [number, number, number];
-const 摆格: React.FC<{ 格们: readonly 格[]; children: React.ReactNode; 几何: THREE.BufferGeometry }> = ({ 格们, children, 几何 }) => {
+type CellPos = [number, number, number];
+const CellGrid: React.FC<{ cells: readonly CellPos[]; children: React.ReactNode; geometry: THREE.BufferGeometry }> = ({ cells, children, geometry }) => {
   const ref = useRef<THREE.InstancedMesh>(null);
   useLayoutEffect(() => {
     const m = new THREE.Matrix4();
-    格们.forEach(([x, y, z], k) => ref.current!.setMatrixAt(k, m.makeTranslation(x, y, z)));
+    cells.forEach(([x, y, z], k) => ref.current!.setMatrixAt(k, m.makeTranslation(x, y, z)));
     ref.current!.instanceMatrix.needsUpdate = true;
-  }, [格们]);
+  }, [cells]);
   return (
-    <instancedMesh ref={ref} args={[几何, undefined, 格们.length]} frustumCulled={false}>
+    <instancedMesh ref={ref} args={[geometry, undefined, cells.length]} frustumCulled={false}>
       {children}
     </instancedMesh>
   );
 };
 
-const 地形: React.FC = () => {
-  const { 岩, 平, 浆, 边, 岩图, 浆图, 边图, 方, 片 } = useMemo(() => {
-    const 岩: 格[] = [];
-    const 平: 格[] = [];
-    const 浆: 格[] = [];
-    const 边: 格[] = [];
-    for (let i = 范围.x0; i < 范围.x1; i++)
-      for (let j = 范围.y0; j < 范围.y1; j++) {
-        if (是熔岩(i, j)) {
-          浆.push([i + 0.5, j + 0.5, -0.12]);
+const Terrain: React.FC = () => {
+  const { 岩: rockCells, plainCells, lavaCells, edgeTiles, rockMap, lavaMap, edgeMap, box, 片: plane } = useMemo(() => {
+    const rockCells: CellPos[] = [];
+    const plainCells: CellPos[] = [];
+    const lavaCells: CellPos[] = [];
+    const edgeTiles: CellPos[] = [];
+    for (let i = bounds.x0; i < bounds.x1; i++)
+      for (let j = bounds.y0; j < bounds.y1; j++) {
+        if (isLava(i, j)) {
+          lavaCells.push([i + 0.5, j + 0.5, -0.12]);
           continue;
         }
-        const h = 高(i, j);
-        const 邻 = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
-        if (h === 0) (邻.some(([a, b]) => 是熔岩(i + a, j + b)) ? 边 : 平).push([i + 0.5, j + 0.5, 0]);
+        const h = heightAt(i, j);
+        const neighbors = [[1, 0], [-1, 0], [0, 1], [0, -1]] as const;
+        if (h === 0) (neighbors.some(([a, b]) => isLava(i + a, j + b)) ? edgeTiles : plainCells).push([i + 0.5, j + 0.5, 0]);
         // 只垒露得出来的那几层：从四邻里最矮的那一层起
-        const 底 = Math.min(h, ...邻.map(([a, b]) => 高(i + a, j + b)));
-        for (let k = 底; k < h; k++) 岩.push([i + 0.5, j + 0.5, k + 0.5]);
+        const bottom = Math.min(h, ...neighbors.map(([a, b]) => heightAt(i + a, j + b)));
+        for (let k = bottom; k < h; k++) rockCells.push([i + 0.5, j + 0.5, k + 0.5]);
       }
-    return { 岩, 平, 浆, 边, 岩图: 方块贴图(png(下界岩)), 浆图: 方块贴图(png(熔岩), 16), 边图: 方块贴图(png(岩浆块), 16), 方: new THREE.BoxGeometry(1, 1, 1), 片: new THREE.PlaneGeometry(1, 1) };
+    return { 岩: rockCells, plainCells, lavaCells, edgeTiles, rockMap: blockTexture(png(netherrackPng)), lavaMap: blockTexture(png(lavaPng), 16), edgeMap: blockTexture(png(magmaBlockPng), 16), box: new THREE.BoxGeometry(1, 1, 1), 片: new THREE.PlaneGeometry(1, 1) };
   }, []);
   return (
     <>
-      <摆格 格们={岩} 几何={方}>
-        <meshStandardMaterial map={岩图} roughness={1} />
-      </摆格>
-      <摆格 格们={平} 几何={片}>
-        <meshStandardMaterial map={岩图} roughness={1} />
-      </摆格>
+      <CellGrid cells={rockCells} geometry={box}>
+        <meshStandardMaterial map={rockMap} roughness={1} />
+      </CellGrid>
+      <CellGrid cells={plainCells} geometry={plane}>
+        <meshStandardMaterial map={rockMap} roughness={1} />
+      </CellGrid>
       {/* 岩浆块、熔岩自己发光，不受光 */}
-      <摆格 格们={边} 几何={片}>
-        <meshBasicMaterial map={边图} color="#d8d8d8" />
-      </摆格>
-      <摆格 格们={浆} 几何={片}>
-        <meshBasicMaterial map={浆图} toneMapped={false} />
-      </摆格>
+      <CellGrid cells={edgeTiles} geometry={plane}>
+        <meshBasicMaterial map={edgeMap} color="#d8d8d8" />
+      </CellGrid>
+      <CellGrid cells={lavaCells} geometry={plane}>
+        <meshBasicMaterial map={lavaMap} toneMapped={false} />
+      </CellGrid>
       {/* 熔岩池的坑壁：池面比地面低 0.12 格，露出一圈暗边 */}
       <mesh position={[0, 0, -0.13]}>
         <planeGeometry args={[200, 200]} />
         <meshBasicMaterial color="#1a0503" />
       </mesh>
-      {池们.map(([x, y, r], k) => (
+      {pools.map(([x, y, r], k) => (
         <pointLight key={k} position={[x, y, 1.1]} color="#ff7a22" intensity={r * r * 5} distance={r * 5 + 6} decay={1.6} />
       ))}
     </>
@@ -144,19 +144,19 @@ const 地形: React.FC = () => {
 };
 
 /** 天：一个大球，贴一张从地平线的雾色往上暗到黑的竖向渐变，不吃雾。球心跟着镜头 */
-const 天: React.FC<{ 心: readonly number[] }> = ({ 心 }) => {
-  const 图 = useMemo(() => {
+const SkyDome: React.FC<{ 心: readonly number[] }> = ({ 心: center }) => {
+  const skyTexImg = useMemo(() => {
     const c = document.createElement('canvas');
     c.width = 4;
     c.height = 256;
     const ctx = c.getContext('2d')!;
     const g = ctx.createLinearGradient(0, 0, 0, 256);
     // 上半是天（0 = 天顶，0.5 = 地平线），下半是地平线以下
-    g.addColorStop(0, 天顶色);
+    g.addColorStop(0, zenithColor);
     g.addColorStop(0.3, '#0c0203');
     g.addColorStop(0.42, '#1f0504');
-    g.addColorStop(0.5, 雾色);
-    g.addColorStop(1, 雾色);
+    g.addColorStop(0.5, fogColor);
+    g.addColorStop(1, fogColor);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 4, 256);
     const t = new THREE.CanvasTexture(c);
@@ -165,16 +165,16 @@ const 天: React.FC<{ 心: readonly number[] }> = ({ 心 }) => {
   }, []);
   return (
     // 球的两极在本地 Y 轴：转到场景的 Z 轴上
-    <mesh position={[心[0]!, 心[1]!, 心[2]!]} rotation={[Math.PI / 2, 0, 0]} renderOrder={-10}>
+    <mesh position={[center[0]!, center[1]!, center[2]!]} rotation={[Math.PI / 2, 0, 0]} renderOrder={-10}>
       <sphereGeometry args={[400, 24, 24]} />
-      <meshBasicMaterial map={图} side={THREE.BackSide} fog={false} depthWrite={false} toneMapped={false} />
+      <meshBasicMaterial map={skyTexImg} side={THREE.BackSide} fog={false} depthWrite={false} toneMapped={false} />
     </mesh>
   );
 };
 
 /** 一团加色的光（朝着镜头的片） */
-const 光斑: React.FC<{ 位: readonly number[]; 大: number; 色: string; 强?: number }> = ({ 位, 大, 色, 强 = 1 }) => {
-  const 图 = useMemo(() => {
+const LightSpot: React.FC<{ 位: readonly number[]; 大: number; 色: string; 强?: number }> = ({ 位: pos, 大: size, 色: color, 强: spotStrength = 1 }) => {
+  const spotTexImg = useMemo(() => {
     const c = document.createElement('canvas');
     c.width = c.height = 128;
     const ctx = c.getContext('2d')!;
@@ -187,22 +187,22 @@ const 光斑: React.FC<{ 位: readonly number[]; 大: number; 色: string; 强?:
     return new THREE.CanvasTexture(c);
   }, []);
   return (
-    <sprite position={[位[0]!, 位[1]!, 位[2]!]} scale={[大, 大, 1]}>
-      <spriteMaterial map={图} color={色} opacity={强} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} fog={false} />
+    <sprite position={[pos[0]!, pos[1]!, pos[2]!]} scale={[size, size, 1]}>
+      <spriteMaterial map={spotTexImg} color={color} opacity={spotStrength} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} fog={false} />
     </sprite>
   );
 };
 
-const 摆机位: React.FC<{ 机位: Cam; 远?: number }> = ({ 机位, 远 }) => {
+const PlaceRig: React.FC<{ cameraRig: Cam; far?: number }> = ({ cameraRig, far }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
-  摆相机(camera as THREE.PerspectiveCamera, 机位, size.width / size.height, 远 ? { 远 } : {});
+  placeCamera(camera as THREE.PerspectiveCamera, cameraRig, size.width / size.height, far ? { far } : {});
   return null;
 };
 
-const 结界: React.FC<{ 设: NonNullable<方案['结界']> }> = ({ 设 }) => (
-  <group position={[设.心[0], 设.心[1], 设.心[2]]}>
-    <炼狱结界辉线 秒={设.秒} 半径系数={设.半径系数} 外观={设.外观} />
+const Cage: React.FC<{ settings: NonNullable<Plan['cage']> }> = ({ settings }) => (
+  <group position={[settings.心[0], settings.心[1], settings.心[2]]}>
+    <RevelationCageGlow 秒={settings.秒} radiusFactor={settings.radiusFactor} appearance={settings.appearance} />
   </group>
 );
 
@@ -210,68 +210,68 @@ const 结界: React.FC<{ 设: NonNullable<方案['结界']> }> = ({ 设 }) => (
  * 斜着看盘的机位（视图.ts 的 斜看盘）：杖的方向 d 在镜头坐标里要等于 sinθ·(cosφ·右 − sinφ·上) + cosθ·前（cosθ = 扁，φ = 斜），镜头不滚转。
  * 设镜头朝向的方位角 α（从北往东）、仰角 ε，h = d 的水平分量投到镜头朝向上的长度：(h, d.z) 转 −ε 得 (cosθ, −sinθ·sinφ)，解出 h、ε，再由 h 解 α（取杖指向画面右边的那个解）
  */
-const 斜看机位 = (d: readonly number[], 心: readonly number[], 设: NonNullable<方案['斜看盘']>, lens: number, 宽高比: number): Cam => {
-  const θ = Math.acos(设.扁);
-  const 上分 = -Math.sin(θ) * Math.sin((设.斜 * Math.PI) / 180);
-  const h2 = 设.扁 ** 2 + 上分 ** 2 - d[2]! ** 2;
-  const 水平 = Math.hypot(d[0]!, d[1]!);
-  if (h2 < 0 || Math.sqrt(h2) > 水平) throw new Error('封面草稿：杖这么陡，摆不出要的 扁、斜（镜头不滚转）');
+const diagLookRig = (d: readonly number[], aimCenter: readonly number[], settings: NonNullable<Plan['obliqueWheel']>, lens: number, aspectRatio: number): Cam => {
+  const θ = Math.acos(settings.flatten);
+  const upComp = -Math.sin(θ) * Math.sin((settings.angleDeg * Math.PI) / 180);
+  const h2 = settings.flatten ** 2 + upComp ** 2 - d[2]! ** 2;
+  const horizLen = Math.hypot(d[0]!, d[1]!);
+  if (h2 < 0 || Math.sqrt(h2) > horizLen) throw new Error('封面草稿：杖这么陡，摆不出要的 扁、斜（镜头不滚转）');
   const h = Math.sqrt(h2);
-  const ε = Math.atan2(d[2]!, h) - Math.atan2(上分, 设.扁);
-  const α = Math.atan2(d[0]!, d[1]!) - Math.acos(h / 水平);
-  const 前 = [Math.cos(ε) * Math.sin(α), Math.cos(ε) * Math.cos(α), Math.sin(ε)];
-  const 右 = [Math.cos(α), -Math.sin(α), 0];
-  const 上 = [-Math.sin(ε) * Math.sin(α), -Math.sin(ε) * Math.cos(α), Math.cos(ε)];
+  const ε = Math.atan2(d[2]!, h) - Math.atan2(upComp, settings.flatten);
+  const α = Math.atan2(d[0]!, d[1]!) - Math.acos(h / horizLen);
+  const forward = [Math.cos(ε) * Math.sin(α), Math.cos(ε) * Math.cos(α), Math.sin(ε)];
+  const right = [Math.cos(α), -Math.sin(α), 0];
+  const up = [-Math.sin(ε) * Math.sin(α), -Math.sin(ε) * Math.cos(α), Math.cos(ε)];
   // 圆心那个深度上画面的宽、高（格）：把镜头横着、竖着挪，圆心就落到 盘心 给的位置
-  const 宽 = (2 * 设.距 * 18) / lens;
-  const [移右, 移上] = [-(设.盘心[0] - 0.5) * 宽, (设.盘心[1] - 0.5) * (宽 / 宽高比)];
-  const pos = [0, 1, 2].map((i) => 心[i]! - 前[i]! * 设.距 + 右[i]! * 移右 + 上[i]! * 移上) as [number, number, number];
-  return { pos, tgt: [pos[0] + 前[0]!, pos[1] + 前[1]!, pos[2] + 前[2]!], lens };
+  const width = (2 * settings.距 * 18) / lens;
+  const [shiftRight, shiftUp] = [-(settings.wheelCenter[0] - 0.5) * width, (settings.wheelCenter[1] - 0.5) * (width / aspectRatio)];
+  const pos = [0, 1, 2].map((i) => aimCenter[i]! - forward[i]! * settings.距 + right[i]! * shiftRight + up[i]! * shiftUp) as [number, number, number];
+  return { pos, tgt: [pos[0] + forward[0]!, pos[1] + forward[1]!, pos[2] + forward[2]!], lens };
 };
 
-const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
-  const 宽高比 = useThree((s) => s.size.width / s.size.height);
-  const 参: 多圈轮盘参数 = { 放: v.轮盘.放, 刻: 40, 压暗: v.轮盘.压暗 };
-  const 她 = v.亚波伦;
-  const 她属性 = { pose: { loc: [...她.位], yaw: 她.yaw ?? 180 }, 秒: 1.4, 表演: 她.表演 === '悬停' ? 悬停 : 站立, 姿势: 她.姿势 };
+const Scene: React.FC<{ v: Plan }> = ({ v }) => {
+  const aspectRatio = useThree((s) => s.size.width / s.size.height);
+  const params: MultiRingParams = { 放: v.wheel.放, 刻: 40, dimLevel: v.wheel.dimLevel };
+  const yaBoLun = v.yaBoLun;
+  const yaBoLunProps = { pose: { loc: [...yaBoLun.位], yaw: yaBoLun.yaw ?? 180 }, 秒: 1.4, act: yaBoLun.act === '悬停' ? hover : stand, bonePose: yaBoLun.bonePose };
   // 杖尖在哪、朝哪：和画她用同一份属性算
   // 杖握在手里是六稿起的挂法；五稿及以前的旧案照旧握法画，画面不动
-  const 新握 = !!v.斜看盘 || !!v.指杖;
-  const 握偏 = v.指杖?.握偏;
-  const 杖 = 持杖位姿({ ...她属性, 握偏, 旧握法: !新握 });
+  const newGrip = !!v.obliqueWheel || !!v.pointWand;
+  const gripOffset = v.pointWand?.gripOffset;
+  const staff = holdWandPose({ ...yaBoLunProps, gripOffset, oldGrip: !newGrip });
   // 盘心居中的方案：镜头朝向不变（手臂的角度是照这个朝向搜的），整个平移到光轴穿过圆心（杖尖再沿杖身伸出 离尖）
-  const 机位 = useMemo((): Cam => {
-    const 心 = [0, 1, 2].map((i) => 杖.尖[i]! + 杖.轴[i]! * (v.轮盘.摆法.离尖 ?? 0));
-    if (v.斜看盘) return 斜看机位(杖.轴, 心, v.斜看盘, v.机位.lens, 宽高比);
-    if (v.指杖?.看中) {
+  const cameraRig = useMemo((): Cam => {
+    const aimCenter = [0, 1, 2].map((i) => staff.tip[i]! + staff.axis[i]! * (v.wheel.placement.tipOffset ?? 0));
+    if (v.obliqueWheel) return diagLookRig(staff.axis, aimCenter, v.obliqueWheel, v.cameraRig.lens, aspectRatio);
+    if (v.pointWand?.lookMid) {
       // 扫角度用：镜头位置照 θ 反算，但对准盘心和她胸口的中点，哪个角度她和盘都在画里
-      const 位 = 指杖机位({ 心, d: 杖.轴, θ: v.指杖.θ, 方位: v.指杖.方位, 距: v.指杖.距, lens: v.机位.lens, 盘心画面: [0.5, 0.5], 宽高比 }).pos;
-      const 胸 = [v.亚波伦.位[0], v.亚波伦.位[1], v.亚波伦.位[2] + 1];
-      return { pos: 位, tgt: [0, 1, 2].map((i) => (心[i]! + 胸[i]!) / 2) as [number, number, number], lens: v.机位.lens };
+      const camPos = staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, 距: v.pointWand.距, lens: v.cameraRig.lens, discCenterPicture: [0.5, 0.5], aspectRatio }).pos;
+      const chest = [v.yaBoLun.位[0], v.yaBoLun.位[1], v.yaBoLun.位[2] + 1];
+      return { pos: camPos, tgt: [0, 1, 2].map((i) => (aimCenter[i]! + chest[i]!) / 2) as [number, number, number], lens: v.cameraRig.lens };
     }
-    if (v.指杖) return 指杖机位({ 心, d: 杖.轴, θ: v.指杖.θ, 方位: v.指杖.方位, 距: v.指杖.距, lens: v.机位.lens, 盘心画面: v.指杖.盘心, 宽高比 });
-    if (!v.盘心居中) return v.机位;
-    const 向 = 视线(v.机位);
-    const 深 = [0, 1, 2].reduce((和, i) => 和 + (心[i]! - v.机位.pos[i]!) * 向[i]!, 0);
-    const 移 = [0, 1, 2].map((i) => 心[i]! - v.机位.pos[i]! - 向[i]! * 深);
-    const 挪 = (p: readonly number[]) => [p[0]! + 移[0]!, p[1]! + 移[1]!, p[2]! + 移[2]!] as [number, number, number];
-    return { ...v.机位, pos: 挪(v.机位.pos), tgt: 挪(v.机位.tgt) };
-  }, [v, 杖, 宽高比]);
+    if (v.pointWand) return staffRig({ 心: aimCenter, d: staff.axis, θ: v.pointWand.θ, azimuthDeg: v.pointWand.azimuthDeg, 距: v.pointWand.距, lens: v.cameraRig.lens, discCenterPicture: v.pointWand.wheelCenter, aspectRatio });
+    if (!v.wheelCentered) return v.cameraRig;
+    const viewDir = sightDir(v.cameraRig);
+    const depth = [0, 1, 2].reduce((sum, i) => sum + (aimCenter[i]! - v.cameraRig.pos[i]!) * viewDir[i]!, 0);
+    const moveVec = [0, 1, 2].map((i) => aimCenter[i]! - v.cameraRig.pos[i]! - viewDir[i]! * depth);
+    const shiftPoint = (p: readonly number[]) => [p[0]! + moveVec[0]!, p[1]! + moveVec[1]!, p[2]! + moveVec[2]!] as [number, number, number];
+    return { ...v.cameraRig, pos: shiftPoint(v.cameraRig.pos), tgt: shiftPoint(v.cameraRig.tgt) };
+  }, [v, staff, aspectRatio]);
   // 盘的圆心：默认就是杖尖；要退后的顺着镜头到杖尖的视线挪，画面上位置不变
-  const 眼 = 机位.pos;
-  const 眼到尖 = Math.hypot(杖.尖[0] - 眼[0], 杖.尖[1] - 眼[1], 杖.尖[2] - 眼[2]);
-  const 退 = (v.轮盘.退后 ?? 0) / 眼到尖;
-  const 盘杖 = { 尖: [0, 1, 2].map((i) => 杖.尖[i]! + (杖.尖[i]! - 眼[i]!) * 退) as [number, number, number], 轴: 杖.轴 };
-  const 头 = [她.位[0], 她.位[1], 她.位[2] + 1.4] as const;
-  const 杖光 = useMemo(() => v.杖头光 && <光斑 位={杖头芯} 大={1.1} 色="#ff8a30" 强={0.9} />, [v.杖头光]);
-  const 杖挂 = useMemo(() => ({ RightHandLocator: <手持下界魔杖>{杖光}</手持下界魔杖> }), [杖光]);
-  const { 朝向, ...摆法 } = v.轮盘.摆法;
+  const eye = cameraRig.pos;
+  const eyeToTip = Math.hypot(staff.tip[0] - eye[0], staff.tip[1] - eye[1], staff.tip[2] - eye[2]);
+  const backOffRatio = (v.wheel.backOff ?? 0) / eyeToTip;
+  const wheelWand = { tip: [0, 1, 2].map((i) => staff.tip[i]! + (staff.tip[i]! - eye[i]!) * backOffRatio) as [number, number, number], axis: staff.axis };
+  const headPos = [yaBoLun.位[0], yaBoLun.位[1], yaBoLun.位[2] + 1.4] as const;
+  const wandGlow = useMemo(() => v.wandTipGlow && <LightSpot 位={staffHeadCore} 大={1.1} 色="#ff8a30" 强={0.9} />, [v.wandTipGlow]);
+  const wandMount = useMemo(() => ({ RightHandLocator: <HeldNetherWand>{wandGlow}</HeldNetherWand> }), [wandGlow]);
+  const { facing, ...placement } = v.wheel.placement;
   return (
     <>
-      <摆机位 机位={机位} 远={v.远景 ? 1400 : undefined} />
-      {v.远景 ? <ScreenAo /> : <fog attach="fog" args={[雾色, 16, 70]} />}
+      <PlaceRig cameraRig={cameraRig} far={v.远景 ? 1400 : undefined} />
+      {v.远景 ? <ScreenAo /> : <fog attach="fog" args={[fogColor, 16, 70]} />}
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        {!v.远景 && <天 心={机位.pos} />}
+        {!v.远景 && <SkyDome 心={cameraRig.pos} />}
         {/* 真下界自己带灯（地点/真下界.tsx），再加这几盏会把地形照得比用户看过的亮 */}
         {!v.远景 && (
           <>
@@ -281,50 +281,50 @@ const 场景: React.FC<{ v: 方案 }> = ({ v }) => {
             <directionalLight position={[2, 7, -4]} color="#ff8a5c" intensity={0.35 * Math.PI} />
           </>
         )}
-        {v.远景 ? <真下界 镜头={机位.pos} 光={下界提亮} /> : <地形 />}
-        <防暗 抬={v.人物提亮 ?? 0}>{新握 ? <娘化亚波伦 {...她属性} 持杖 握偏={握偏} 杖上={杖光} /> : <娘化亚波伦 {...她属性} 挂载={杖挂} />}</防暗>
-        {v.史蒂夫 && <Steve pose={steveLookAt(stevePose(v.史蒂夫.位, 0), [...(v.史蒂夫.看 ?? 头)])} mcLight={1} />}
-        {v.结界 && <结界 设={v.结界} />}
-        <杖尖轮盘 杖={盘杖} 朝向={朝向 === '正对镜头' ? { 正对: 机位 } : 朝向} {...摆法} 参={参} 每像素格={v.轮盘.每像素格} renderOrder={v.轮盘.盘在前 ? 5 : -1} />
+        {v.远景 ? <RealNether cameraPos={cameraRig.pos} 光={netherBrighter} /> : <Terrain />}
+        <AntiDark lift={v.figureBrighten ?? 0}>{newGrip ? <GirlYaBoLun {...yaBoLunProps} holdWand gripOffset={gripOffset} wandOverlay={wandGlow} /> : <GirlYaBoLun {...yaBoLunProps} attach={wandMount} />}</AntiDark>
+        {v.steve && <Steve pose={steveLookAt(stevePose(v.steve.位, 0), [...(v.steve.看 ?? headPos)])} mcLight={1} />}
+        {v.cage && <Cage settings={v.cage} />}
+        <WandTipWheel 杖={wheelWand} facing={facing === '正对镜头' ? { faceCamera: cameraRig } : facing} {...placement} params={params} cellsPerPixel={v.wheel.cellsPerPixel} renderOrder={v.wheel.wheelInFront ? 5 : -1} />
       </group>
     </>
   );
 };
 
 /** 裁切参考：4:3（B 站动态、横版缩略）和 3:4（抖音竖版封面）的框，上下顶满、以 裁切中线 为中线 */
-const 裁切框: React.FC<{ 中线: number }> = ({ 中线 }) => {
+const CropFrame: React.FC<{ centerLine: number }> = ({ centerLine }) => {
   const { width, height } = useVideoConfig();
-  const 框 = (比: number, 色: string, 字: string) => {
-    const 宽 = height * 比;
-    const 左 = Math.max(0, Math.min(width - 宽, width * 中线 - 宽 / 2));
+  const cropFrame = (aspect: number, color: string, text: string) => {
+    const cropWidth = height * aspect;
+    const left = Math.max(0, Math.min(width - cropWidth, width * centerLine - cropWidth / 2));
     return (
-      <div style={{ position: 'absolute', left: 左, top: 0, width: 宽, height, boxSizing: 'border-box', border: `2px solid ${色}` }}>
-        <div style={{ position: 'absolute', left: 6, bottom: 4, color: 色, fontFamily: 'sans-serif', fontSize: 13, textShadow: '0 1px 2px #000' }}>{字}</div>
+      <div style={{ position: 'absolute', left: left, top: 0, width: cropWidth, height, boxSizing: 'border-box', border: `2px solid ${color}` }}>
+        <div style={{ position: 'absolute', left: 6, bottom: 4, color: color, fontFamily: 'sans-serif', fontSize: 13, textShadow: '0 1px 2px #000' }}>{text}</div>
       </div>
     );
   };
   return (
     <>
-      {框(4 / 3, '#ffe14d', '4:3')}
-      {框(3 / 4, '#4dd2ff', '3:4')}
+      {cropFrame(4 / 3, '#ffe14d', '4:3')}
+      {cropFrame(3 / 4, '#4dd2ff', '3:4')}
     </>
   );
 };
 
-const 画面: React.FC = () => {
+const picture: React.FC = () => {
   const { width, height } = useVideoConfig();
-  const 秒 = use当前秒();
-  const v = 方案们[Math.min(方案们.length - 1, use视图下标())]!;
+  const sec = useCurrentSec();
+  const v = plans[Math.min(plans.length - 1, useViewIndex())]!;
   // 每个方案那一秒的前半是干净的构图，后半叠裁切参考框和方案名
-  const 标注 = 秒 % 1 >= 0.5;
+  const annotationBlink = sec % 1 >= 0.5;
   return (
-    <AbsoluteFill style={{ background: 天顶色 }}>
+    <AbsoluteFill style={{ background: zenithColor }}>
       <ThreeCanvas width={width} height={height} gl={{ antialias: true }}>
-        <场景 v={v} />
+        <Scene v={v} />
       </ThreeCanvas>
-      {标注 && (
+      {annotationBlink && (
         <>
-          <裁切框 中线={v.裁切中线} />
+          <CropFrame centerLine={v.cropCenterLine} />
           <div style={{ position: 'absolute', left: 14, top: 10, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 18, lineHeight: 1.4, textShadow: '0 1px 3px #000', maxWidth: width * 0.5 }}>
             <div>{v.名}</div>
             <div style={{ fontSize: 13 }}>{v.说明}</div>
@@ -335,4 +335,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

@@ -1,33 +1,33 @@
 // 照片墙的格位（照片方案 10-24）：后墙 j = 2 上哪几格挂荧光框、哪格放哪张照片。纯模块（段.ts、测试也读），画法在 照片墙.tsx。
-import type { 照片源 } from '../特效/照片图.ts';
+import type { PhotoSource } from '../特效/照片图.ts';
 
 /** 一格框：i、k 是后墙上的格（x ∈ [i − 0.5, i + 0.5]、z ∈ [k, k + 1]）；画 = 放着的照片，null = 空框 */
-export type 照片墙格 = { i: number; k: number; 画: 照片源 | null };
+export type PhotoWallCell = { i: number; k: number; photo: PhotoSource | null };
 
 /** 后墙里侧那面（j = 2 的南面） */
-export const 照片墙面y = 2;
+export const photoWallFaceY = 2;
 /** 框里的地图离墙面多远：贴在薄框（一个像素厚）外面，再往外让开一点免得和墙面打架 */
-export const 地图离墙 = 1 / 16 + 1 / 256;
+export const mapWallOffset = 1 / 16 + 1 / 256;
 /** 格 (i, k) 里那张地图的左下角（场景坐标，格）：一格见方、朝南 */
-export const 照片墙格角 = (i: number, k: number): [number, number, number] => [i - 0.5, 照片墙面y - 地图离墙, k];
+export const photoCellCorner = (i: number, k: number): [number, number, number] => [i - 0.5, photoWallFaceY - mapWallOffset, k];
 
 /** 照片墙的格位：夏天四张 2×2 紧挨门右边（盖在后墙补过的新木板上），按第 8 句挂上去的先后（递蛋糕、日落划船、扑龙蛋、光柱破云：先挂里面那一列、上面那张）；
  *  合照格在 2×2 里侧 i = 3、k = 1（照片方案原话）。2×2 放在 k 0～1：方案原定 k 1～2，静帧里屋檐挡掉上排四成多（门口整屏 N = 10 约四成、第 14 句分屏 N = 8 约四成半），
  *  方案说挡多了整块下移；合照格留在 k = 1 没跟着下移（现在和 2×2 上排齐）：第 14 句她站在框外 x 4.2 伸手按框，k = 0 那排低到膝盖，手够不着、头要埋下去看（Agent 按静帧定）。
  *  墙上那支火把 (3, 1, 1) 正占着合照格，开照片墙时挪走 */
-export const 照片墙格位 = {
-  夏天: [
+export const photoWallCellPos = {
+  summer: [
     [2, 1],
     [2, 0],
     [1, 1],
     [1, 0],
   ] as const,
-  合照: [3, 1] as const,
+  groupPhoto: [3, 1] as const,
 };
 
 /** 照片墙的格：夏天的框按 照片墙格位.夏天 的顺序挂，给几张挂几只框，null = 框挂好了还空着（第 8 句她挂最后一张之前）；
  *  合照 不给 = 那一格没有框（第 8 句），null = 空框（第 14 句取下以后），给了就挂着 */
-export const 照片墙格们 = (夏天: readonly (照片源 | null)[], 合照?: 照片源 | null): 照片墙格[] => [
-  ...照片墙格位.夏天.slice(0, 夏天.length).map(([i, k], n) => ({ i, k, 画: 夏天[n] ?? null })),
-  ...(合照 === undefined ? [] : [{ i: 照片墙格位.合照[0], k: 照片墙格位.合照[1], 画: 合照 }]),
+export const photoWallCells = (summerPhotos: readonly (PhotoSource | null)[], groupPhoto?: PhotoSource | null): PhotoWallCell[] => [
+  ...photoWallCellPos.summer.slice(0, summerPhotos.length).map(([i, k], n) => ({ i, k, photo: summerPhotos[n] ?? null })),
+  ...(groupPhoto === undefined ? [] : [{ i: photoWallCellPos.groupPhoto[0], k: photoWallCellPos.groupPhoto[1], photo: groupPhoto }]),
 ];

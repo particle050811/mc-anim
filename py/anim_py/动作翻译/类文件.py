@@ -16,80 +16,80 @@ ACC_ENUM = 0x4000
 
 
 @dataclass
-class 引用:
+class Ref:
     """Fieldref / Methodref / InterfaceMethodref：所属类（内部名，斜杠分隔）、名字、描述符"""
 
     类: str
     名: str
-    描述: str
-    接口: bool = False
+    descriptor: str
+    is_interface: bool = False
 
 
 @dataclass
-class 方法句柄:
-    种类: int
-    目标: 引用
+class MethodHandle:
+    ref_kind: int
+    handle_target: Ref
 
 
 @dataclass
-class 动态调用:
+class InvokeDynamic:
     """InvokeDynamic：引导方法（句柄 + 静态参数）、调用点名字和描述符"""
 
-    引导: 方法句柄
-    引导参数: list[Any]
+    bootstrap: MethodHandle
+    bootstrap_args: list[Any]
     名: str
-    描述: str
+    descriptor: str
 
 
 @dataclass
-class 方法:
+class Method:
     名: str
-    描述: str
-    访问: int
-    代码: bytes | None = None
-    最大局部: int = 0
-    异常表: list[tuple[int, int, int, int]] = field(default_factory=list)
+    descriptor: str
+    access_flags: int
+    bytecode: bytes | None = None
+    max_locals: int = 0
+    exception_table: list[tuple[int, int, int, int]] = field(default_factory=list)
 
     @property
-    def 静态(self) -> bool:
-        return bool(self.访问 & ACC_STATIC)
+    def static_fields(self) -> bool:
+        return bool(self.access_flags & ACC_STATIC)
 
 
 @dataclass
-class 字段:
+class Field:
     名: str
-    描述: str
-    访问: int
-    常量: Any = None
+    descriptor: str
+    access_flags: int
+    constant_value: Any = None
 
 
 @dataclass
-class 类文件:
+class ClassFile:
     名: str
-    父类: str | None
-    接口: list[str]
-    访问: int
-    常量池: list[Any]
-    字段们: list[字段]
-    方法们: list[方法]
+    parent_class: str | None
+    is_interface: list[str]
+    access_flags: int
+    const_pool: list[Any]
+    fields: list[Field]
+    method_list: list[Method]
 
-    def 找方法(self, 名: str, 描述: str) -> 方法 | None:
-        for m in self.方法们:
-            if m.名 == 名 and m.描述 == 描述:
+    def find_method(self, method_name: str, descriptor: str) -> Method | None:
+        for m in self.method_list:
+            if m.名 == method_name and m.descriptor == descriptor:
                 return m
         return None
 
-    def 找字段(self, 名: str) -> 字段 | None:
-        for f in self.字段们:
-            if f.名 == 名:
+    def find_field(self, field_name: str) -> Field | None:
+        for f in self.fields:
+            if f.名 == field_name:
                 return f
         return None
 
-    def 常量(self, i: int) -> Any:
-        return self.常量池[i]
+    def constant_value(self, i: int) -> Any:
+        return self.const_pool[i]
 
 
-class 读者:
+class Reader:
     def __init__(self, b: bytes):
         self.b, self.i = b, 0
 
@@ -108,7 +108,7 @@ class 读者:
         self.i += 4
         return v
 
-    def 取(self, n: int) -> bytes:
+    def take_bytes(self, n: int) -> bytes:
         v = self.b[self.i : self.i + n]
         self.i += n
         return v
@@ -119,168 +119,168 @@ def _utf8(b: bytes) -> str:
     return b.replace(b"\xc0\x80", b"\x00").decode("utf-8", errors="surrogatepass")
 
 
-def 解析(数据: bytes, 改名: Any = None) -> 类文件:
+def parse_class_file(data: bytes, renamer: Any = None) -> ClassFile:
     """改名：映射.py 的 映射 对象；给了就把类名、成员名、描述符都换成 Mojang 官方名（成员名要按类层级找，交给 映射 做）"""
-    r = 读者(数据)
+    r = Reader(data)
     if r.u4() != 0xCAFEBABE:
         raise ValueError("不是 class 文件")
     r.u2()
     r.u2()
     n = r.u2()
-    原: list[Any] = [None] * n
+    raw_pool: list[Any] = [None] * n
     i = 1
     while i < n:
         tag = r.u1()
         if tag == 1:
-            原[i] = ("utf8", _utf8(r.取(r.u2())))
+            raw_pool[i] = ("utf8", _utf8(r.take_bytes(r.u2())))
         elif tag == 3:
-            原[i] = ("int", struct.unpack(">i", r.取(4))[0])
+            raw_pool[i] = ("int", struct.unpack(">i", r.take_bytes(4))[0])
         elif tag == 4:
-            原[i] = ("float", struct.unpack(">f", r.取(4))[0])
+            raw_pool[i] = ("float", struct.unpack(">f", r.take_bytes(4))[0])
         elif tag == 5:
-            原[i] = ("long", struct.unpack(">q", r.取(8))[0])
+            raw_pool[i] = ("long", struct.unpack(">q", r.take_bytes(8))[0])
             i += 1
         elif tag == 6:
-            原[i] = ("double", struct.unpack(">d", r.取(8))[0])
+            raw_pool[i] = ("double", struct.unpack(">d", r.take_bytes(8))[0])
             i += 1
         elif tag in (7, 8, 16, 19, 20):
-            原[i] = ({7: "class", 8: "string", 16: "methodtype", 19: "module", 20: "package"}[tag], r.u2())
+            raw_pool[i] = ({7: "class", 8: "string", 16: "methodtype", 19: "module", 20: "package"}[tag], r.u2())
         elif tag in (9, 10, 11, 12, 17, 18):
-            原[i] = ({9: "field", 10: "method", 11: "imethod", 12: "nat", 17: "dynamic", 18: "indy"}[tag], r.u2(), r.u2())
+            raw_pool[i] = ({9: "field", 10: "method", 11: "imethod", 12: "nat", 17: "dynamic", 18: "indy"}[tag], r.u2(), r.u2())
         elif tag == 15:
-            原[i] = ("handle", r.u1(), r.u2())
+            raw_pool[i] = ("handle", r.u1(), r.u2())
         else:
             raise ValueError(f"不认识的常量池标签 {tag}")
         i += 1
 
     def utf(k: int) -> str:
-        return 原[k][1]
+        return raw_pool[k][1]
 
-    def 类名(k: int) -> str:
-        n = utf(原[k][1])
-        return 改名.类(n) if 改名 else n
+    def class_name_at(k: int) -> str:
+        n = utf(raw_pool[k][1])
+        return renamer.类(n) if renamer else n
 
-    def 描述(d: str) -> str:
-        return 改名.描述(d) if 改名 else d
+    def normalize_descriptor(d: str) -> str:
+        return renamer.map_descriptor(d) if renamer else d
 
-    def 成员(k: int) -> 引用:
-        kind, ci, nti = 原[k]
-        _, ni, di = 原[nti]
-        owner_raw = utf(原[ci][1])
+    def member_ref(k: int) -> Ref:
+        kind, ci, nti = raw_pool[k]
+        _, ni, di = raw_pool[nti]
+        owner_raw = utf(raw_pool[ci][1])
         name, desc = utf(ni), utf(di)
-        if 改名:
+        if renamer:
             if kind == "field":
-                name = 改名.字段(owner_raw, name, desc)
+                name = renamer.field(owner_raw, name, desc)
             else:
-                name = 改名.方法(owner_raw, name, desc)
-        return 引用(类名(ci), name, 描述(desc), kind == "imethod")
+                name = renamer.method_ref(owner_raw, name, desc)
+        return Ref(class_name_at(ci), name, normalize_descriptor(desc), kind == "imethod")
 
-    池: list[Any] = [None] * n
+    pool: list[Any] = [None] * n
     bootstrap_raw: list[tuple[int, list[int]]] = []
 
-    def 常量值(k: int) -> Any:
-        e = 原[k]
+    def pool_constant(k: int) -> Any:
+        e = raw_pool[k]
         t = e[0]
         if t in ("int", "float", "long", "double"):
             return (t, e[1])
         if t == "string":
             return ("string", utf(e[1]))
         if t == "class":
-            return ("class", 类名(k))
+            return ("class", class_name_at(k))
         if t in ("field", "method", "imethod"):
-            return 成员(k)
+            return member_ref(k)
         if t == "handle":
-            return 方法句柄(e[1], 成员(e[2]))
+            return MethodHandle(e[1], member_ref(e[2]))
         if t == "methodtype":
-            return ("methodtype", 描述(utf(e[1])))
+            return ("methodtype", normalize_descriptor(utf(e[1])))
         if t == "utf8":
             return ("utf8", e[1])
         return e
 
-    访问 = r.u2()
+    access_flags = r.u2()
     this_i, super_i = r.u2(), r.u2()
-    接口 = [类名(r.u2()) for _ in range(r.u2())]
-    原名 = utf(原[this_i][1])
+    interfaces = [class_name_at(r.u2()) for _ in range(r.u2())]
+    original_name = utf(raw_pool[this_i][1])
 
-    字段们: list[字段] = []
+    fields: list[Field] = []
     for _ in range(r.u2()):
         acc, ni, di = r.u2(), r.u2(), r.u2()
         name, desc = utf(ni), utf(di)
-        常: Any = None
+        const_value: Any = None
         for _ in range(r.u2()):
             an, alen = utf(r.u2()), r.u4()
-            body = r.取(alen)
+            body = r.take_bytes(alen)
             if an == "ConstantValue":
-                常 = 原[struct.unpack(">H", body)[0]][1]
-        if 改名:
-            name = 改名.字段(原名, name, desc)
-        字段们.append(字段(name, 描述(desc), acc, 常))
+                const_value = raw_pool[struct.unpack(">H", body)[0]][1]
+        if renamer:
+            name = renamer.field(original_name, name, desc)
+        fields.append(Field(name, normalize_descriptor(desc), acc, const_value))
 
-    方法们: list[方法] = []
+    methods: list[Method] = []
     for _ in range(r.u2()):
         acc, ni, di = r.u2(), r.u2(), r.u2()
         name, desc = utf(ni), utf(di)
-        m = 方法(改名.方法(原名, name, desc) if 改名 else name, 描述(desc), acc)
+        m = Method(renamer.method_ref(original_name, name, desc) if renamer else name, normalize_descriptor(desc), acc)
         for _ in range(r.u2()):
             an, alen = utf(r.u2()), r.u4()
-            body = r.取(alen)
+            body = r.take_bytes(alen)
             if an == "Code":
-                cr = 读者(body)
+                cr = Reader(body)
                 cr.u2()
-                m.最大局部 = cr.u2()
-                m.代码 = cr.取(cr.u4())
-                m.异常表 = [(cr.u2(), cr.u2(), cr.u2(), cr.u2()) for _ in range(cr.u2())]
-        方法们.append(m)
+                m.max_locals = cr.u2()
+                m.bytecode = cr.take_bytes(cr.u4())
+                m.exception_table = [(cr.u2(), cr.u2(), cr.u2(), cr.u2()) for _ in range(cr.u2())]
+        methods.append(m)
 
     for _ in range(r.u2()):
         an, alen = utf(r.u2()), r.u4()
-        body = r.取(alen)
+        body = r.take_bytes(alen)
         if an == "BootstrapMethods":
-            br = 读者(body)
+            br = Reader(body)
             for _ in range(br.u2()):
                 h = br.u2()
                 bootstrap_raw.append((h, [br.u2() for _ in range(br.u2())]))
 
     for k in range(1, n):
-        if 原[k] is not None:
-            池[k] = 常量值(k)
+        if raw_pool[k] is not None:
+            pool[k] = pool_constant(k)
     for k in range(1, n):
-        if 原[k] is not None and 原[k][0] == "indy":
-            bi, nti = 原[k][1], 原[k][2]
+        if raw_pool[k] is not None and raw_pool[k][0] == "indy":
+            bi, nti = raw_pool[k][1], raw_pool[k][2]
             h, args = bootstrap_raw[bi]
-            _, ni, di = 原[nti]
-            池[k] = 动态调用(池[h], [池[a] for a in args], utf(ni), 描述(utf(di)))
-    return 类文件(类名(this_i), 类名(super_i) if super_i else None, 接口, 访问, 池, 字段们, 方法们)
+            _, ni, di = raw_pool[nti]
+            pool[k] = InvokeDynamic(pool[h], [pool[a] for a in args], utf(ni), normalize_descriptor(utf(di)))
+    return ClassFile(class_name_at(this_i), class_name_at(super_i) if super_i else None, interfaces, access_flags, pool, fields, methods)
 
 
-class 类路径:
+class ClassPath:
     """几个 jar 按顺序找类（先找到的算）。改名给了时，按 Mojang 官方名找：先反查成 jar 里的名字"""
 
-    def __init__(self, jars: list[str], 改名: Any = None):
+    def __init__(self, jars: list[str], renamer: Any = None):
         self.zips = [zipfile.ZipFile(j) for j in jars]
-        self.改名 = 改名
-        self._缓存: dict[str, 类文件 | None] = {}
-        if 改名 is not None:
-            改名.绑定(self)
+        self.renamer = renamer
+        self._cache: dict[str, ClassFile | None] = {}
+        if renamer is not None:
+            renamer.bind_path(self)
 
-    def 原始字节(self, jar内名: str) -> bytes | None:
+    def raw_bytes(self, jar_internal_name: str) -> bytes | None:
         for z in self.zips:
             try:
-                return z.read(jar内名 + ".class")
+                return z.read(jar_internal_name + ".class")
             except KeyError:
                 continue
         return None
 
-    def 原始类(self, jar内名: str) -> 类文件 | None:
+    def raw_class(self, jar_internal_name: str) -> ClassFile | None:
         """不改名的解析（映射.py 沿类层级找成员时用）"""
-        b = self.原始字节(jar内名)
-        return 解析(b) if b is not None else None
+        b = self.raw_bytes(jar_internal_name)
+        return parse_class_file(b) if b is not None else None
 
-    def 找(self, 名: str) -> 类文件 | None:
-        if 名 in self._缓存:
-            return self._缓存[名]
-        jar名 = self.改名.反查类(名) if self.改名 else 名
-        b = self.原始字节(jar名)
-        c = 解析(b, self.改名) if b is not None else None
-        self._缓存[名] = c
+    def find_class(self, class_name: str) -> ClassFile | None:
+        if class_name in self._cache:
+            return self._cache[class_name]
+        jar_name = self.renamer.reverse_lookup_class(class_name) if self.renamer else class_name
+        b = self.raw_bytes(jar_name)
+        c = parse_class_file(b, self.renamer) if b is not None else None
+        self._cache[class_name] = c
         return c

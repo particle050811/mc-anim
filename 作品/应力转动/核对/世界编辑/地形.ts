@@ -5,93 +5,93 @@ import { useEffect, useRef, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
 import { dataUrl, fetchJson, fetchRange, loadOnce } from '@engine/core/数据源.ts';
 import { sectionKey, type SectionId } from '@engine/voxel/区段.ts';
-import { formatVersion, buildPackTables, coarseHeightAt, decodeCoarseHeight, decodeTileHeader, hasSection, sectionInTile, tileFileName, tileHeaderLen, type 包信息, type SectionData } from '@engine/voxel/区段包.ts';
+import { formatVersion, buildPackTables, coarseHeightAt, decodeCoarseHeight, decodeTileHeader, hasSection, sectionInTile, tileFileName, tileHeaderLen, type PackageInfo, type SectionData } from '@engine/voxel/区段包.ts';
 import { variesByPos } from '@engine/voxel/群系色.ts';
-import { importedSectionVoxels, type 区段上下文 } from '@engine/voxel/导入区段.ts';
+import { importedSectionVoxels, type SectionContext } from '@engine/voxel/导入区段.ts';
 import { fetchSectionsInPool, registerSource, registerModel } from '@engine/voxel/区段工人池.ts';
-import { 读模型, 模型文件名 } from '@engine/voxel/区段模型.ts';
+import { readModel, modelFileName } from '@engine/voxel/区段模型.ts';
 import type { VoxelGrid, VoxelSource } from '@engine/voxel/生成.ts';
 
-export type 按版本的地形 = { 键: string; 来源: VoxelSource; 高度: [number, number]; 原点: [number, number, number] };
+export type VersionedTerrain = { 键: string; 来源: VoxelSource; heightRange: [number, number]; 原点: [number, number, number] };
 
-const 建来源 = async (dir: string): Promise<按版本的地形> => {
-  const info = await fetchJson<包信息>(`${dir}/包.json`, 'anim world bake 测试-修整-编辑示例 烘出来');
+const buildSource = async (dir: string): Promise<VersionedTerrain> => {
+  const info = await fetchJson<PackageInfo>(`${dir}/包.json`, 'anim world bake 测试-修整-编辑示例 烘出来');
   if (info.版本 !== formatVersion) throw new Error(`世界编辑核对地形 ${dir} 是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：运行 anim world 转码，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
-  const url = new URL(dataUrl(`${dir}/${模型文件名}`), location.href).href;
+  const url = new URL(dataUrl(`${dir}/${modelFileName}`), location.href).href;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`取世界编辑核对模型 ${url}：${res.status}；运行 anim world 转码，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
   const bytes = new Uint8Array(await res.arrayBuffer());
-  读模型(bytes);
+  readModel(bytes);
   registerModel(url, bytes);
-  const 粗 = decodeCoarseHeight(info);
-  let 顶 = -Infinity;
-  for (const h of 粗.高) if (h !== -32768) 顶 = Math.max(顶, h);
-  const ctx: 区段上下文 = { info, tables: buildPackTables(info), variesByPos: info.群系.map(variesByPos), cutBoxes: [], flattenAreas: [] };
-  const 工人ctx = registerSource({ 原点: info.原点, 状态: info.状态, 群系: info.群系 }, [], []);
-  const 索引 = new Map<string, Promise<Uint32Array>>();
-  const 数据 = new Map<string, SectionData>();
-  const 现成 = new Map<string, VoxelGrid>();
-  const 在取 = new Map<string, Promise<void>>();
-  const 取 = (q: SectionId) => {
+  const coarse = decodeCoarseHeight(info);
+  let maxTop = -Infinity;
+  for (const h of coarse.高) if (h !== -32768) maxTop = Math.max(maxTop, h);
+  const ctx: SectionContext = { info, tables: buildPackTables(info), variesByPos: info.群系.map(variesByPos), cutBoxes: [], flattenAreas: [] };
+  const workerCtx = registerSource({ 原点: info.原点, 状态: info.状态, 群系: info.群系 }, [], []);
+  const indexCache = new Map<string, Promise<Uint32Array>>();
+  const sectionDataByKey = new Map<string, SectionData>();
+  const readyVoxels = new Map<string, VoxelGrid>();
+  const inFlight = new Map<string, Promise<void>>();
+  const getSection = (q: SectionId) => {
     const { ti, tj, slot } = sectionInTile(q);
-    const 文件 = `${dir}/${tileFileName(ti, tj)}`;
-    let idx = 索引.get(文件);
-    if (!idx) 索引.set(文件, (idx = fetchRange(文件, 0, tileHeaderLen).then((ab) => decodeTileHeader(new Uint8Array(ab)))));
-    const url = new URL(dataUrl(文件), location.href).href;
+    const file = `${dir}/${tileFileName(ti, tj)}`;
+    let idx = indexCache.get(file);
+    if (!idx) indexCache.set(file, (idx = fetchRange(file, 0, tileHeaderLen).then((ab) => decodeTileHeader(new Uint8Array(ab)))));
+    const url = new URL(dataUrl(file), location.href).href;
     return idx
-      .then((ix) => fetchSectionsInPool(url, ix[2 * slot], ix[2 * slot + 1], [{ off: 0, len: ix[2 * slot + 1], ctx: 工人ctx, id: q }]))
+      .then((ix) => fetchSectionsInPool(url, ix[2 * slot], ix[2 * slot + 1], [{ off: 0, len: ix[2 * slot + 1], ctx: workerCtx, id: q }]))
       .then(([r]) => {
-        数据.set(sectionKey(q), r.data);
-        if (r.voxels) 现成.set(sectionKey(q), r.voxels);
+        sectionDataByKey.set(sectionKey(q), r.data);
+        if (r.voxels) readyVoxels.set(sectionKey(q), r.voxels);
       });
   };
-  const 来源: VoxelSource = {
+  const source: VoxelSource = {
     采样: (x, y, out) => {
-      const h = coarseHeightAt(粗, x, y);
+      const h = coarseHeightAt(coarse, x, y);
       out.z = h === -Infinity ? 0 : h;
       out.crown = 0;
     },
     区段: (q) => {
-      if (!hasSection(粗, q)) return null;
+      if (!hasSection(coarse, q)) return null;
       const k = sectionKey(q);
-      const v = 现成.get(k);
+      const v = readyVoxels.get(k);
       if (v) {
-        现成.delete(k);
+        readyVoxels.delete(k);
         return v;
       }
-      return importedSectionVoxels(数据.get(k)!, ctx);
+      return importedSectionVoxels(sectionDataByKey.get(k)!, ctx);
     },
-    转交: true,
+    transferOwnership: true,
     prefetch: (qs) => {
-      const 等 = new Set<Promise<void>>();
+      const pending = new Set<Promise<void>>();
       for (const q of qs) {
         const k = sectionKey(q);
-        if (数据.has(k) || !hasSection(粗, q)) continue;
-        let p = 在取.get(k);
-        if (!p) 在取.set(k, (p = 取(q)));
-        等.add(p);
+        if (sectionDataByKey.has(k) || !hasSection(coarse, q)) continue;
+        let p = inFlight.get(k);
+        if (!p) inFlight.set(k, (p = getSection(q)));
+        pending.add(p);
       }
-      return 等.size ? Promise.all(等).then(() => undefined) : undefined;
+      return pending.size ? Promise.all(pending).then(() => undefined) : undefined;
     },
   };
-  return { 键: `按版本:${dir}`, 来源, 高度: [-64 - info.原点[1], 顶], 原点: info.原点 };
+  return { 键: `按版本:${dir}`, 来源: source, heightRange: [-64 - info.原点[1], maxTop], 原点: info.原点 };
 };
 
 /** 包.json 取到之前返回 null，并用 delayRender 拦住截图（同 useImportedTerrain） */
-export const use按版本的地形 = (包: string, 版本: string): 按版本的地形 | null => {
-  const dir = `terrain/${包}/${版本}`;
-  const [地形, 设] = useState<按版本的地形 | null>(null);
+export const useVersionedTerrain = (pack: string, version: string): VersionedTerrain | null => {
+  const dir = `terrain/${pack}/${version}`;
+  const [terrain, setTerrain] = useState<VersionedTerrain | null>(null);
   const [handle] = useState(() => delayRender(`世界编辑核对：取 ${dir}/包.json`));
-  const 放了 = useRef(false);
+  const released = useRef(false);
   useEffect(() => {
-    loadOnce(dir, () => 建来源(dir))
-      .then(设)
+    loadOnce(dir, () => buildSource(dir))
+      .then(setTerrain)
       .catch((e) => cancelRender(e));
   }, [dir]);
   useEffect(() => {
-    if (!地形 || 放了.current) return;
-    放了.current = true;
+    if (!terrain || released.current) return;
+    released.current = true;
     continueRender(handle);
-  }, [地形, handle]);
-  return 地形;
+  }, [terrain, handle]);
+  return terrain;
 };

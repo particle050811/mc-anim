@@ -5,57 +5,57 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 场景到three } from '@engine/core/three换算.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { use当前秒 } from '@engine/段/时间.tsx';
-import { 教堂, 教堂灯光, 粉色教堂 } from '../../地点/粉色教堂.tsx';
-import { 忘情牛肉面姿势, 忘情牛肉面环境 } from '../../角色/动作/忘情牛肉面.ts';
-import { 娘化亚波伦, 定表演 } from '../../角色/娘化亚波伦.tsx';
-import { 教堂机位, 每半秒, 正面, 画幅 } from './视图.ts';
+import { useCurrentSec } from '@engine/段/时间.tsx';
+import { church, ChurchLighting, PinkChurch } from '../../地点/粉色教堂.tsx';
+import { noodleDancePose, noodleDanceEnv } from '../../角色/动作/忘情牛肉面.ts';
+import { GirlYaBoLun, defineAct } from '../../角色/娘化亚波伦.tsx';
+import { chapelRig, halfSec, front, aspect } from './视图.ts';
 
 // idle 垫底（呼吸、眨眼、浮块自转照旧），舞的姿势盖在上面；头发、胸部的弹簧吃舞里的转身和起落速度
-const 跳舞 = 定表演({ 主: () => [{ 名: 'idle' }], 环境: 忘情牛肉面环境 });
+const dance = defineAct({ 主: () => [{ 名: 'idle' }], 环境: noodleDanceEnv });
 
-const 底色 = '#5a5e66';
-const 天色 = '#b4cfff';
-const 加 = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+const baseColor = '#5a5e66';
+const skyColor = '#b4cfff';
+const addVec = (a: V3, b: V3): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 
-const 机位: React.FC<{ 眼: V3; 看: V3; 视角: number }> = ({ 眼, 看, 视角 }) => {
+const CameraRig: React.FC<{ 眼: V3; 看: V3; fov: number }> = ({ 眼: eye, 看: lookAt, fov }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = 视角;
+  cam.fov = fov;
   cam.near = 0.05;
   cam.far = 512;
-  cam.position.copy(场景到three(眼));
+  cam.position.copy(sceneToThree(eye));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three(看));
+  cam.lookAt(sceneToThree(lookAt));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
-const 画面: React.FC = () => {
-  const 段秒 = use当前秒();
-  const 在教堂 = 段秒 >= 每半秒;
-  const 秒 = 在教堂 ? 段秒 - 每半秒 : 段秒;
-  const 姿势 = 忘情牛肉面姿势(秒);
-  const 色 = 在教堂 ? 天色 : 底色;
+const picture: React.FC = () => {
+  const segSec = useCurrentSec();
+  const inChapel = segSec >= halfSec;
+  const sec = inChapel ? segSec - halfSec : segSec;
+  const bonePose = noodleDancePose(sec);
+  const bgColor = inChapel ? skyColor : baseColor;
   return (
-    <AbsoluteFill style={{ background: 色 }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
-        <color attach="background" args={[色]} />
-        {在教堂 ? (
-          <机位 眼={加(教堂.跳舞位, 教堂机位.眼偏)} 看={加(教堂.跳舞位, 教堂机位.看偏)} 视角={教堂机位.视角} />
+    <AbsoluteFill style={{ background: bgColor }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+        <color attach="background" args={[bgColor]} />
+        {inChapel ? (
+          <CameraRig 眼={addVec(church.dancePos, chapelRig.eyeOffset)} 看={addVec(church.dancePos, chapelRig.lookOffset)} fov={chapelRig.fov} />
         ) : (
-          <机位 {...正面} />
+          <CameraRig {...front} />
         )}
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          {在教堂 ? (
+          {inChapel ? (
             <>
-              <教堂灯光 />
-              <粉色教堂 />
+              <ChurchLighting />
+              <PinkChurch />
             </>
           ) : (
             <>
@@ -67,14 +67,14 @@ const 画面: React.FC = () => {
               </mesh>
             </>
           )}
-          <娘化亚波伦 pose={{ loc: 在教堂 ? 教堂.跳舞位 : [0, 0, 0], yaw: 180 }} 秒={秒} 表演={跳舞} 姿势={姿势} />
+          <GirlYaBoLun pose={{ loc: inChapel ? church.dancePos : [0, 0, 0], yaw: 180 }} 秒={sec} act={dance} bonePose={bonePose} />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 26, textShadow: '0 1px 3px #000' }}>
-        忘情牛肉面 {秒.toFixed(2)} 秒{在教堂 ? '（教堂跳舞位）' : ''}
+        忘情牛肉面 {sec.toFixed(2)} 秒{inChapel ? '（教堂跳舞位）' : ''}
       </div>
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

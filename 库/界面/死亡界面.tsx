@@ -10,125 +10,125 @@ import type { Png } from '../../engine/model/贴图.ts';
 import { UiText } from './基础.tsx';
 
 /** 原版 zh_cn（1.20.1，资源索引 5）：deathScreen.title、deathScreen.score、deathScreen.respawn、deathScreen.titleScreen */
-export const 死亡界面字 = { 标题: '你死了！', 分数: '分数', 重生: '重生', 标题屏幕: '标题屏幕' } as const;
+export const deathScreenText = { 标题: '你死了！', score: '分数', respawn: '重生', titleScreen: '标题屏幕' } as const;
 /** 打开后几刻按钮才能按 */
-export const 死亡界面按钮延迟刻 = 20;
+export const deathButtonDelayTicks = 20;
 
-export type 死亡界面按钮态 = '不能按' | '平常' | '指着';
-const 按钮v: Record<死亡界面按钮态, number> = { 不能按: 46, 平常: 66, 指着: 86 };
+export type DeathButtonState = '不能按' | '平常' | '指着';
+const buttonV: Record<DeathButtonState, number> = { 不能按: 46, 平常: 66, 指着: 86 };
 
 /** 界面尺寸（GUI 像素）：窗口 ÷ 缩放，向上取整（Window.calculateScale 之后的 guiScaledWidth） */
-export const 界面尺寸 = (宽: number, 高: number, s: number) => ({ 宽: Math.ceil(宽 / s), 高: Math.ceil(高 / s) });
+export const uiSize = (width: number, height: number, s: number) => ({ 宽: Math.ceil(width / s), 高: Math.ceil(height / s) });
 
 /** 第 i 个按钮（0 重生、1 标题屏幕）的框，GUI 像素 */
-export const 死亡界面按钮框 = (i: 0 | 1, 界宽: number, 界高: number) => ({ x: Math.trunc(界宽 / 2) - 100, y: Math.trunc(界高 / 4) + 72 + 24 * i, w: 200, h: 20 });
+export const deathButtonRect = (i: 0 | 1, panelWidth: number, uiHeight: number) => ({ x: Math.trunc(panelWidth / 2) - 100, y: Math.trunc(uiHeight / 4) + 72 + 24 * i, w: 200, h: 20 });
 /** 光标（GUI 像素）在不在第 i 个按钮上（AbstractWidget.isMouseOver：[x, x + 宽) × [y, y + 高)） */
-export const 在死亡界面按钮上 = (i: 0 | 1, x: number, y: number, 界宽: number, 界高: number) => {
-  const b = 死亡界面按钮框(i, 界宽, 界高);
+export const deathButtonAt = (i: 0 | 1, x: number, y: number, panelWidth: number, uiHeight: number) => {
+  const b = deathButtonRect(i, panelWidth, uiHeight);
   return x >= b.x && y >= b.y && x < b.x + b.w && y < b.y + b.h;
 };
 
 // Windows 经典箭头：B 黑边、W 白芯（同 3e31b8b4 的死亡画面）
-const 箭头 = ['B', 'BB', 'BWB', 'BWWB', 'BWWWB', 'BWWWWB', 'BWWWWWB', 'BWWWWWWB', 'BWWWWWWWB', 'BWWWWWWWWB', 'BWWWWWWWWWB', 'BWWWWWWBBBBB', 'BWWWBWWB', 'BWWBBWWB', 'BWB  BWWB', 'BB   BWWB', 'B     BWWB', '      BWWB', '       BB'];
+const arrowRows = ['B', 'BB', 'BWB', 'BWWB', 'BWWWB', 'BWWWWB', 'BWWWWWB', 'BWWWWWWB', 'BWWWWWWWB', 'BWWWWWWWWB', 'BWWWWWWWWWB', 'BWWWWWWBBBBB', 'BWWWBWWB', 'BWWBBWWB', 'BWB  BWWB', 'BB   BWWB', 'B     BWWB', '      BWWB', '       BB'];
 
 /** widgets.png 里第 v 行起的 200 × 20 一条，逐像素放大 */
-const 按钮底: React.FC<{ 图: Png; v: number; 左: number; 上: number; s: number }> = ({ 图, v, 左, 上, s }) => {
+const ButtonBase: React.FC<{ 图: Png; v: number; left: number; 上: number; s: number }> = ({ 图: image, v, left, 上: top, s }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
     if (!ctx) return;
     const img = ctx.createImageData(200, 20);
-    for (let y = 0; y < 20; y++) img.data.set(图.px.subarray((v + y) * 图.w * 4, ((v + y) * 图.w + 200) * 4), y * 200 * 4);
+    for (let y = 0; y < 20; y++) img.data.set(image.px.subarray((v + y) * image.w * 4, ((v + y) * image.w + 200) * 4), y * 200 * 4);
     ctx.putImageData(img, 0, 0);
-  }, [图, v]);
-  return <canvas ref={ref} width={200} height={20} style={{ position: 'absolute', left: 左 * s, top: 上 * s, width: 200 * s, height: 20 * s, imageRendering: 'pixelated' }} />;
+  }, [image, v]);
+  return <canvas ref={ref} width={200} height={20} style={{ position: 'absolute', left: left * s, top: top * s, width: 200 * s, height: 20 * s, imageRendering: 'pixelated' }} />;
 };
 
 /** 一行居中的字：x 是中线、y 是字顶（GUI 像素）；倍 = pose 放大（标题 2） */
-const 居中字: React.FC<{ x: number; y: number; s: number; 倍?: number; children: React.ReactNode }> = ({ x, y, s, 倍 = 1, children }) => (
-  <div style={{ position: 'absolute', left: x * s - 2000, width: 4000, top: y * s, height: 8 * s * 倍, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{children}</div>
+const CenteredText: React.FC<{ x: number; y: number; s: number; heightScale?: number; children: React.ReactNode }> = ({ x, y, s, heightScale = 1, children }) => (
+  <div style={{ position: 'absolute', left: x * s - 2000, width: 4000, top: y * s, height: 8 * s * heightScale, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>{children}</div>
 );
 
-const 光标画: React.FC<{ x: number; y: number; 像素: number }> = ({ x, y, 像素 }) => {
+const CursorDraw: React.FC<{ x: number; y: number; pixel: number }> = ({ x, y, pixel }) => {
   const ref = useRef<HTMLCanvasElement>(null);
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, 12, 19);
-    箭头.forEach((行, r) => {
-      for (let q = 0; q < 行.length; q++) {
-        const c = 行[q];
+    arrowRows.forEach((row, r) => {
+      for (let q = 0; q < row.length; q++) {
+        const c = row[q];
         if (c !== 'B' && c !== 'W') continue;
         ctx.fillStyle = c === 'B' ? '#000000' : '#FFFFFF';
         ctx.fillRect(q, r, 1, 1);
       }
     });
   }, []);
-  return <canvas ref={ref} width={12} height={19} style={{ position: 'absolute', left: Math.round(x), top: Math.round(y), width: 12 * 像素, height: 19 * 像素, imageRendering: 'pixelated' }} />;
+  return <canvas ref={ref} width={12} height={19} style={{ position: 'absolute', left: Math.round(x), top: Math.round(y), width: 12 * pixel, height: 19 * pixel, imageRendering: 'pixelated' }} />;
 };
 
-export type 死亡界面属性 = {
+export type DeathScreenProps = {
   /** 画面宽高（像素）和 GUI 缩放 */
   宽: number;
   高: number;
   s: number;
   /** widgets.png（256 × 256） */
-  按钮图: Png;
+  buttonImg: Png;
   /** 死亡消息（同聊天栏那一条）；不给不画 */
-  死因?: string;
-  分数?: number;
-  重生: 死亡界面按钮态;
-  标题屏幕?: 死亡界面按钮态;
+  deathCause?: string;
+  score?: number;
+  respawnButtonState: DeathButtonState;
+  titleButtonState?: DeathButtonState;
   /** 光标尖在哪（GUI 像素）；不给不画 */
-  光标?: readonly [number, number];
+  cursor?: readonly [number, number];
   /** 一个光标像素是几个画面像素 */
-  光标像素?: number;
+  cursorPixel?: number;
 };
 
 /** 放在和画面一样大的容器里，盖在游戏画面和 HUD 上 */
-export const 死亡界面: React.FC<死亡界面属性> = ({ 宽, 高, s, 按钮图, 死因, 分数 = 0, 重生, 标题屏幕 = 重生 === '不能按' ? '不能按' : '平常', 光标, 光标像素 = 1.5 }) => {
-  const 界 = 界面尺寸(宽, 高, s);
-  const 中 = Math.trunc(界.宽 / 2);
+export const DeathScreen: React.FC<DeathScreenProps> = ({ 宽: width, 高: height, s, buttonImg, deathCause, score = 0, respawnButtonState, titleButtonState = respawnButtonState === '不能按' ? '不能按' : '平常', cursor, cursorPixel = 1.5 }) => {
+  const uiDims = uiSize(width, height, s);
+  const centerX = Math.trunc(uiDims.宽 / 2);
   const fs = 8.6 * s;
-  const 按钮们 = [
-    { i: 0 as const, 字: 死亡界面字.重生, 态: 重生 },
-    { i: 1 as const, 字: 死亡界面字.标题屏幕, 态: 标题屏幕 },
+  const buttons = [
+    { i: 0 as const, 字: deathScreenText.respawn, buttonState: respawnButtonState },
+    { i: 1 as const, 字: deathScreenText.titleScreen, buttonState: titleButtonState },
   ];
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, overflow: 'hidden' }}>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, overflow: 'hidden' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(80,0,0,0.376), rgba(128,48,48,0.627))' }} />
-      <居中字 x={Math.trunc(中 / 2) * 2} y={30 * 2} s={s} 倍={2}>
+      <CenteredText x={Math.trunc(centerX / 2) * 2} y={30 * 2} s={s} heightScale={2}>
         <UiText fontSize={fs * 2} style={{ lineHeight: 1 }}>
-          {死亡界面字.标题}
+          {deathScreenText.标题}
         </UiText>
-      </居中字>
-      {死因 !== undefined && (
-        <居中字 x={中} y={85} s={s}>
+      </CenteredText>
+      {deathCause !== undefined && (
+        <CenteredText x={centerX} y={85} s={s}>
           <UiText fontSize={fs} style={{ lineHeight: 1 }}>
-            {死因}
+            {deathCause}
           </UiText>
-        </居中字>
+        </CenteredText>
       )}
-      <居中字 x={中} y={100} s={s}>
-        <UiText fontSize={fs} style={{ lineHeight: 1 }}>{`${死亡界面字.分数}: `}</UiText>
+      <CenteredText x={centerX} y={100} s={s}>
+        <UiText fontSize={fs} style={{ lineHeight: 1 }}>{`${deathScreenText.score}: `}</UiText>
         <UiText fontSize={fs} color="#FFFF55" style={{ lineHeight: 1 }}>
-          {String(分数)}
+          {String(score)}
         </UiText>
-      </居中字>
-      {按钮们.map(({ i, 字, 态 }) => {
-        const b = 死亡界面按钮框(i, 界.宽, 界.高);
+      </CenteredText>
+      {buttons.map(({ i, 字: label, buttonState }) => {
+        const b = deathButtonRect(i, uiDims.宽, uiDims.高);
         return (
           <React.Fragment key={i}>
-            <按钮底 图={按钮图} v={按钮v[态]} 左={b.x} 上={b.y} s={s} />
-            <居中字 x={b.x + b.w / 2} y={b.y + 6} s={s}>
-              <UiText fontSize={fs} color={态 === '不能按' ? '#A0A0A0' : '#FFFFFF'} style={{ lineHeight: 1 }}>
-                {字}
+            <ButtonBase 图={buttonImg} v={buttonV[buttonState]} left={b.x} 上={b.y} s={s} />
+            <CenteredText x={b.x + b.w / 2} y={b.y + 6} s={s}>
+              <UiText fontSize={fs} color={buttonState === '不能按' ? '#A0A0A0' : '#FFFFFF'} style={{ lineHeight: 1 }}>
+                {label}
               </UiText>
-            </居中字>
+            </CenteredText>
           </React.Fragment>
         );
       })}
-      {光标 && <光标画 x={光标[0] * s} y={光标[1] * s} 像素={光标像素} />}
+      {cursor && <CursorDraw x={cursor[0] * s} y={cursor[1] * s} pixel={cursorPixel} />}
     </div>
   );
 };

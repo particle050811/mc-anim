@@ -3,46 +3,46 @@
 // 不画聊天栏：三稿递蛋糕时左下一行「Steve达成了目标[欢迎回家，主人]」，顶上已经有歌词，文字一时只走一路（用户 10-24 看整片粗剪定的规矩 看得懂的速度），爱心已经说了驯服。
 // 祭坛画面 就是干净画面（第 8 句第一张照片「祭坛前递蛋糕」取 照片-祭坛递蛋糕 那一帧，核对/祭坛照片 出它）；歌词、整片后期在段里套。
 import React from 'react';
-import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
+import { ToonCanvas } from '@engine/三渲二/画布.tsx';
 import { HeartParticles, tamingHearts } from '@库/特效/爱心粒子.tsx';
-import { 画幅 } from '../../分镜/时间.ts';
-import { 画布调子 } from '../../画风.ts';
-import { 女仆祭坛, 柱顶物 } from './模型.tsx';
-import { 你, 她 } from './人物.tsx';
-import { 祭坛光 } from './光.tsx';
-import { 祭坛地形, 祭坛天 } from './天地.tsx';
-import * as 参 from './参数.ts';
-import { 事, 浮物态们, 刻, 镜头态, type 机 } from './编排.ts';
+import { aspect } from '../../分镜/时间.ts';
+import { canvasTone } from '../../画风.ts';
+import { MaidAltar, PillarTopItem } from './模型.tsx';
+import { You, LiYing } from './人物.tsx';
+import { AltarLight } from './光.tsx';
+import { AltarTerrain, AltarSky } from './天地.tsx';
+import * as params from './参数.ts';
+import { events, floatStates, frameToTick, shotAt, type CameraRig } from './编排.ts';
 
 /** 天自己画（天地.tsx），画布透明：只取色调、描边 */
-const 调子 = 画布调子('夏日白天');
+const tone = canvasTone('夏日白天');
 
 /** 递蛋糕：驯服成功的 7 颗爱心 */
-const 爱心 = tamingHearts(参.她.脚, 参.爱心.宽, 参.爱心.高, 刻(事.递), 参.爱心.种子);
+const hearts = tamingHearts(params.liYing.feet, params.hearts.宽, params.hearts.高, frameToTick(events.handOffFrame), params.hearts.种子);
 
 /** 画布里的东西（场景坐标，画布已经转好 Z 朝上） */
-export const 祭坛场景: React.FC<{ g: number }> = ({ g }) => (
+export const AltarScene: React.FC<{ g: number }> = ({ g }) => (
   <>
-    <祭坛地形 />
-    <女仆祭坛 />
-    {浮物态们(g).map((s) => (s.样 === '光' ? null : <柱顶物 key={s.名} 态={s} 亮色={参.光.色} />))}
-    <你 g={g} />
-    <她 g={g} />
-    <祭坛光 g={g} />
-    <HeartParticles spawns={爱心} 刻={刻(g)} />
+    <AltarTerrain />
+    <MaidAltar />
+    {floatStates(g).map((s) => (s.kind === '光' ? null : <PillarTopItem key={s.名} floatState={s} brightColor={params.lightParams.色} />))}
+    <You g={g} />
+    <LiYing g={g} />
+    <AltarLight g={g} />
+    <HeartParticles spawns={hearts} 刻={frameToTick(g)} />
   </>
 );
 
 /** 整个画面（整页 1280×720，不含歌词、整片后期），放在 position 不是 static 的容器里；镜头按 编排.ts 的 镜头态。
  *  机：换一个镜头（第 4 句眼睛特写接着往里推，同一个场景、同一片天，接缝上不跳）；g 过了本句也行，她停在 末态.ts 那样 */
-export const 祭坛画面: React.FC<{ g: number; 机?: 机 }> = ({ g, 机: 换机 }) => {
-  const 机 = 换机 ?? 镜头态(g);
+export const AltarPicture: React.FC<{ g: number; 机?: CameraRig }> = ({ g, 机: rigOverride }) => {
+  const rig = rigOverride ?? shotAt(g);
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: 画幅.宽, height: 画幅.高, overflow: 'hidden' }}>
-      <祭坛天 机位={机} 宽={画幅.宽} 高={画幅.高} />
-      <三渲二画布 宽={画幅.宽} 高={画幅.高} 机位={{ 种: '透视', ...机, 远: 640 }} 色调={调子.色调} 描边={调子.描边} style={{ position: 'absolute', left: 0, top: 0 }}>
-        <祭坛场景 g={g} />
-      </三渲二画布>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: aspect.宽, height: aspect.高, overflow: 'hidden' }}>
+      <AltarSky cameraRig={rig} 宽={aspect.宽} 高={aspect.高} />
+      <ToonCanvas 宽={aspect.宽} 高={aspect.高} cameraRig={{ 种: '透视', ...rig, farPlane: 640 }} tint={tone.tint} outline={tone.outline} style={{ position: 'absolute', left: 0, top: 0 }}>
+        <AltarScene g={g} />
+      </ToonCanvas>
     </div>
   );
 };

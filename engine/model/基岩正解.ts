@@ -3,34 +3,34 @@
 import * as THREE from 'three';
 import type { BedrockBone, BonePose } from './基岩模型.tsx';
 
-const 度 = Math.PI / 180;
+const radPerDeg = Math.PI / 180;
 
 /**
  * 骨骼坐标系（挂载用的那个：原点 = 骨骼 pivot，单位像素，Y 朝上，正面 −Z）→ 模型场景坐标（Z 朝上，正面 +Y，原点脚底，单位格）。
  * 姿势 是动画和手摆的合好以后的那张表；缩放 = 一像素多少格。再左乘生物的 pose（平移 loc、绕 Z 转 yaw）就是场景坐标
  */
-export const 骨骼矩阵 = (模型: { bones: readonly BedrockBone[] }, 名: string, 姿势: Readonly<Record<string, BonePose>> = {}, 缩放 = 1 / 16): THREE.Matrix4 => {
-  const 表 = new Map(模型.bones.map((b) => [b.name, b]));
-  const 链: BedrockBone[] = [];
-  for (let b = 表.get(名); b; b = b.parent ? 表.get(b.parent) : undefined) 链.unshift(b);
-  if (!链.length) throw new Error(`骨骼矩阵：模型里没有骨骼 ${名}`);
-  const m = new THREE.Matrix4().makeRotationX(Math.PI / 2).scale(new THREE.Vector3(缩放, 缩放, 缩放));
-  let 父轴心: readonly number[] = [0, 0, 0];
-  for (const 骨 of 链) {
-    const p = 姿势[骨.name];
+export const skeletonMatrix = (model: { bones: readonly BedrockBone[] }, boneName: string, bonePose: Readonly<Record<string, BonePose>> = {}, scale = 1 / 16): THREE.Matrix4 => {
+  const boneMap = new Map(model.bones.map((b) => [b.name, b]));
+  const chain: BedrockBone[] = [];
+  for (let b = boneMap.get(boneName); b; b = b.parent ? boneMap.get(b.parent) : undefined) chain.unshift(b);
+  if (!chain.length) throw new Error(`骨骼矩阵：模型里没有骨骼 ${boneName}`);
+  const m = new THREE.Matrix4().makeRotationX(Math.PI / 2).scale(new THREE.Vector3(scale, scale, scale));
+  let parentPivot: readonly number[] = [0, 0, 0];
+  for (const bone of chain) {
+    const p = bonePose[bone.name];
     const s = p?.scale ?? 1;
     const sv = typeof s === 'number' ? [s, s, s] : s;
-    const 静 = 骨.rotation ?? [0, 0, 0];
+    const rest = bone.rotation ?? [0, 0, 0];
     const ar = p?.rot ?? [0, 0, 0];
     const ap = p?.pos ?? [0, 0, 0];
     m.multiply(
       new THREE.Matrix4().compose(
-        new THREE.Vector3(-(骨.pivot[0] - 父轴心[0]!) - ap[0]!, 骨.pivot[1] - 父轴心[1]! + ap[1]!, 骨.pivot[2] - 父轴心[2]! + ap[2]!),
-        new THREE.Quaternion().setFromEuler(new THREE.Euler(-(静[0] + ar[0]!) * 度, -(静[1] + ar[1]!) * 度, (静[2] + ar[2]!) * 度, 'ZYX')),
+        new THREE.Vector3(-(bone.pivot[0] - parentPivot[0]!) - ap[0]!, bone.pivot[1] - parentPivot[1]! + ap[1]!, bone.pivot[2] - parentPivot[2]! + ap[2]!),
+        new THREE.Quaternion().setFromEuler(new THREE.Euler(-(rest[0] + ar[0]!) * radPerDeg, -(rest[1] + ar[1]!) * radPerDeg, (rest[2] + ar[2]!) * radPerDeg, 'ZYX')),
         new THREE.Vector3(sv[0], sv[1], sv[2]),
       ),
     );
-    父轴心 = 骨.pivot;
+    parentPivot = bone.pivot;
   }
   return m;
 };

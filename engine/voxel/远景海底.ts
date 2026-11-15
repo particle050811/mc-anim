@@ -25,14 +25,14 @@ export const seabedBand = (depthM: number) => {
   return k;
 };
 
-const biomeAnalogs: Record<string, { 用: string; dropPlants?: RegExp }> = {
-  'minecraft:cold_ocean': { 用: 'minecraft:ocean' },
-  'minecraft:deep_cold_ocean': { 用: 'minecraft:deep_ocean' },
-  'minecraft:frozen_ocean': { 用: 'minecraft:ocean', dropPlants: /./ },
-  'minecraft:deep_frozen_ocean': { 用: 'minecraft:deep_ocean', dropPlants: /./ },
-  'minecraft:warm_ocean': { 用: 'minecraft:lukewarm_ocean', dropPlants: /kelp/ },
-  'minecraft:frozen_river': { 用: 'minecraft:river' },
-  'minecraft:snowy_beach': { 用: 'minecraft:beach' },
+const biomeAnalogs: Record<string, { analog: string; dropPlants?: RegExp }> = {
+  'minecraft:cold_ocean': { analog: 'minecraft:ocean' },
+  'minecraft:deep_cold_ocean': { analog: 'minecraft:deep_ocean' },
+  'minecraft:frozen_ocean': { analog: 'minecraft:ocean', dropPlants: /./ },
+  'minecraft:deep_frozen_ocean': { analog: 'minecraft:deep_ocean', dropPlants: /./ },
+  'minecraft:warm_ocean': { analog: 'minecraft:lukewarm_ocean', dropPlants: /kelp/ },
+  'minecraft:frozen_river': { analog: 'minecraft:river' },
+  'minecraft:snowy_beach': { analog: 'minecraft:beach' },
 };
 
 // 挑好的一档：实（海底最上面那块）累计比例；草（第 0 级）[方块, 格数, 比例]，比例加起来不到 1，剩下的是不长
@@ -56,7 +56,7 @@ export const seabedFor = (biome: string, level: number, depthM: number): SeabedS
   let setup = setupCache.get(key);
   if (setup !== undefined) return setup;
   const analog = biomeAnalogs[biome];
-  const biomeChain = [biome, analog?.用, k <= 1 ? 'minecraft:river' : 'minecraft:ocean'].filter(Boolean) as string[];
+  const biomeChain = [biome, analog?.analog, k <= 1 ? 'minecraft:river' : 'minecraft:ocean'].filter(Boolean) as string[];
   setup = null;
   for (const biomeName of biomeChain) {
     const found = findEntry(biomeName, level, k);

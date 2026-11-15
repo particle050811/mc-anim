@@ -21,13 +21,13 @@ import { pngDir, type Png } from '../../engine/model/贴图.ts';
 import { DIRS, debrisMat, face, fullFaces, newBuf, tintsOf, toGeo, atlasTex, type DebrisData, type DebrisFace } from './方块飞溅.tsx';
 import { BreakParticleQuads } from './方块破坏粒子.tsx';
 import { interpPathPos, particleInitVel, particlePath, type Particle } from './粒子面片.tsx';
-import { 资产目录 } from '../../engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/特效/灾变圆环/ring_0';
-import 资_1 from 'asset:贴图/特效/灾变圆环/ring_1';
-import 资_2 from 'asset:贴图/特效/灾变圆环/ring_2';
-import 资_3 from 'asset:贴图/特效/灾变圆环/ring_3';
-import 资_4 from 'asset:贴图/特效/灾变圆环/ring_4';
-import 资_5 from 'asset:贴图/特效/灾变圆环/ring_5';
+import { assetDir } from '../../engine/core/资产目录.ts';
+import ring0Png from 'asset:贴图/特效/灾变圆环/ring_0';
+import ring1Png from 'asset:贴图/特效/灾变圆环/ring_1';
+import ring2Png from 'asset:贴图/特效/灾变圆环/ring_2';
+import ring3Png from 'asset:贴图/特效/灾变圆环/ring_3';
+import ring4Png from 'asset:贴图/特效/灾变圆环/ring_4';
+import ring5Png from 'asset:贴图/特效/灾变圆环/ring_5';
 
 const ticksPerSec = 20;
 // REINFORCED_SMASH：砸地（方块粒子、圆环）在第 3 刻，震波第 5 刻起每 2 刻往外一圈，3～10 格
@@ -46,8 +46,8 @@ type Cell = { p: number[]; faces: Record<string, DebrisFace>; size?: number[] };
 // 裂纹 = 砸地那一刻起，离砸点多少格以内的地面方块盖原版挖掘裂纹（紧挨砸点 destroy_stage_9，每远一格低一级），见 `crackStage`；
 // 环 = 圆环大小倍数；粒子 = 方块粒子个数倍数；粒子速 = 粒子初速度倍数；粒子大 = 粒子大小倍数；
 // 留空 = 真挪时别的格蹦起来的方块不许飞进去的几段线 [x0, y0, x1, y1, 半宽]（格心离线段 半宽 以内的列；后面镜头的机位和视线：只能有坑，不能有落块挡着）
-export type QuakeBoost = { 起跳: number; 圈: number[]; 密度: number; 外飞: number; 真挪: boolean; 裂纹: number; 环: number; 粒子: number; 粒子速: number; 粒子大: number; 留空?: number[][] };
-const gameQuake: QuakeBoost = { 起跳: 1, 圈: [3, 4, 5, 6, 7, 8, 9, 10], 密度: 0, 外飞: 0, 真挪: false, 裂纹: 0, 环: 1, 粒子: 1, 粒子速: 1, 粒子大: 1 };
+export type QuakeBoost = { takeoff: number; rings: number[]; density: number; outward: number; realMove: boolean; crackCount: number; ring: number; 粒子: number; particleSpeed: number; particleSize: number; emptyCells?: number[][] };
+const gameQuake: QuakeBoost = { takeoff: 1, rings: [3, 4, 5, 6, 7, 8, 9, 10], density: 0, outward: 0, realMove: false, crackCount: 0, ring: 1, 粒子: 1, particleSpeed: 1, particleSize: 1 };
 type HopBlock = { cell: Cell; path: V3[]; vanishTick: number; startTick: number };
 type QuakeParticle = { path: V3[]; life: number; half: number; uv: [number, number, number, number]; color: [number, number, number]; startTick: number };
 
@@ -90,18 +90,18 @@ const ringPoints = (center: V3, radius: number, density: number, rand: () => num
 const buildHops = (data: DebrisData, center: V3, rand: () => number, boost: QuakeBoost): HopBlock[] => {
   const lookup = columnLookup(data, center[2]);
   const blocks: HopBlock[] = [];
-  boost.圈.forEach((radius, k) => {
+  boost.rings.forEach((radius, k) => {
     const seen = new Set<string>();
-    for (const { ix, iy, th } of ringPoints(center, radius, boost.密度, rand)) {
+    for (const { ix, iy, th } of ringPoints(center, radius, boost.density, rand)) {
       const key = `${ix},${iy}`;
-      const vy0 = (0.2 + gauss(rand) * 0.15) * boost.起跳;
+      const vy0 = (0.2 + gauss(rand) * 0.15) * boost.takeoff;
       if (seen.has(key)) continue; // 同一圈落在同一格的几个点：游戏里是几块叠在一起，画一块
       seen.add(key);
       const start = lookup(ix, iy);
       if (!start) continue;
       let hit: { cell: Cell; top: number } = start;
       // 逐刻模拟（底面高度，相对场景 z），落到脚下那一列的地面（找到的那块方块的顶）停住
-      const outSpeed = boost.外飞 * (0.5 + 0.5 * rand());
+      const outSpeed = boost.outward * (0.5 + 0.5 * rand());
       let [x, y, z] = [ix + 0.5, iy + 0.5, center[2] + 0.01];
       let [vx, vy] = [Math.cos(th) * outSpeed, Math.sin(th) * outSpeed];
       let vz = vy0;
@@ -177,13 +177,13 @@ const buildDisplaced = (data: DebrisData, center: V3, rand: () => number, boost:
     const u = Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / (dx * dx + dy * dy || 1)));
     return Math.hypot(px - x0 - u * dx, py - y0 - u * dy);
   };
-  const reserved = (ix: number, iy: number) => (boost.留空 ?? []).some((l) => segDist(ix + 0.5, iy + 0.5, l) <= l[4]);
+  const reserved = (ix: number, iy: number) => (boost.emptyCells ?? []).some((l) => segDist(ix + 0.5, iy + 0.5, l) <= l[4]);
   const movers: Mover[] = [];
   const launch: { m: Mover; vz: number; vx: number; vy: number }[] = [];
-  boost.圈.forEach((radius, k) => {
-    for (const { ix, iy, th } of ringPoints(center, radius, boost.密度, rand)) {
-      const vz = (0.2 + gauss(rand) * 0.15) * boost.起跳;
-      const out = boost.外飞 * (0.5 + 0.5 * rand());
+  boost.rings.forEach((radius, k) => {
+    for (const { ix, iy, th } of ringPoints(center, radius, boost.density, rand)) {
+      const vz = (0.2 + gauss(rand) * 0.15) * boost.takeoff;
+      const out = boost.outward * (0.5 + 0.5 * rand());
       const dir = th + (rand() - 0.5) * 1.2; // 往外的方向左右偏 ±35°：窄巷里正对着墙的也能斜着落到旁边的格
       const turnRand = rand();
       const col = cols.get(key(ix, iy));
@@ -255,12 +255,12 @@ const buildDisplaced = (data: DebrisData, center: V3, rand: () => number, boost:
     m.turns = apex < 0.4 ? 0 : Math.max(apex < 1 ? 0 : 1, Math.min(apex < 1 ? 1 : 3, Math.round((m.land - m.start - 1) / 8 + (m.turns - 0.5))));
   }
   const cracks: Crack[] = [];
-  if (boost.裂纹 > 0) {
+  if (boost.crackCount > 0) {
     for (const [k, c] of cols) {
       // 只盖地面那格朝上的面（墙脚那格上面压着墙，没有朝上的面；侧面不盖：台阶、薄墙在数据里也记成整格，盖整格会在空中多出一片裂纹）
       if (!c.ground?.faces['+z'] || c.cells.some((o) => !o.size && o.p[2] > c.ground!.p[2])) continue;
       const [ix, iy] = k.split(',').map(Number);
-      const stage = crackStage(Math.hypot(ix + 0.5 - center[0], iy + 0.5 - center[1]), boost.裂纹);
+      const stage = crackStage(Math.hypot(ix + 0.5 - center[0], iy + 0.5 - center[1]), boost.crackCount);
       if (stage < 0) continue;
       cracks.push({ cell: c.ground, stage, mover: movers.find((m) => m.cell === c.ground && !m.stay) ?? null });
     }
@@ -286,9 +286,9 @@ const buildParticles = (data: DebrisData, center: V3, rand: () => number, boost:
     if (!hit) continue;
     const faceUv = hit.cell.faces['+z'] ?? Object.values(hit.cell.faces)[0];
     const light = (tint.get(faceUv.slice(0, 4).join(',')) ?? [faceUv[4], faceUv[5], faceUv[6]]).map((v) => Math.min(1, v / 255));
-    const [gx, gy, gz] = particleInitVel(rand, mx, my, mz).map((v) => v * boost.粒子速);
+    const [gx, gy, gz] = particleInitVel(rand, mx, my, mz).map((v) => v * boost.particleSpeed);
     const life = Math.floor(4 / (rand() * 0.9 + 0.1));
-    const half = ((0.1 * (rand() * 0.5 + 0.5) * 2) / 2) * boost.粒子大;
+    const half = ((0.1 * (rand() * 0.5 + 0.5) * 2) / 2) * boost.particleSize;
     const uo = rand() * 3;
     const vo = rand() * 3;
     const du = (faceUv[2] - faceUv[0]) / 4;
@@ -313,8 +313,8 @@ const planQuake = (data: DebrisData, center: V3, seed: number, boost: QuakeBoost
   let plan = byData.get(k);
   if (!plan) {
     const rand = rng(seed);
-    const displaced = boost.真挪 ? buildDisplaced(data, center, rand, boost) : null;
-    const hops = boost.真挪 ? [] : buildHops(data, center, rand, boost);
+    const displaced = boost.realMove ? buildDisplaced(data, center, rand, boost) : null;
+    const hops = boost.realMove ? [] : buildHops(data, center, rand, boost);
     plan = { hops, displaced, particles: buildParticles(data, center, rand, boost) };
     byData.set(k, plan);
   }
@@ -324,7 +324,7 @@ const planQuake = (data: DebrisData, center: V3, seed: number, boost: QuakeBoost
 export const quakeHideBlocks = (data: DebrisData, center: V3, boost: QuakeBoost, seed = 8631): number[][] =>
   (planQuake(data, center, seed, boost).displaced?.movers ?? []).map(({ cell: { p } }) => [p[0] - 0.45, p[1] - 0.45, p[2] - 0.45, p[0] + 0.45, p[1] + 0.45, p[2] + 0.45]);
 
-const ringFrames = Object.entries(pngDir(资产目录({ './ring_0.png': 资_0, './ring_1.png': 资_1, './ring_2.png': 资_2, './ring_3.png': 资_3, './ring_4.png': 资_4, './ring_5.png': 资_5 })))
+const ringFrames = Object.entries(pngDir(assetDir({ './ring_0.png': ring0Png, './ring_1.png': ring1Png, './ring_2.png': ring2Png, './ring_3.png': ring3Png, './ring_4.png': ring4Png, './ring_5.png': ring5Png })))
   .sort((a, b) => Number(a[0].replace(/\D/g, '')) - Number(b[0].replace(/\D/g, '')))
   .map(([, png]) => png);
 const ringTexCache = new Map<Png, THREE.DataTexture>();
@@ -501,7 +501,7 @@ export const CataclysmQuake: React.FC<{ data: DebrisData; atlas: Png; center: V3
     const age = 2 * k;
     const lifeFrac = (age + (ticks - k)) / ringLifeTicks;
     const frame = ringFrames[Math.min(ringFrames.length - 1, Math.floor((age * (ringFrames.length - 1)) / ringLifeTicks))];
-    return { half: 2.5 * boost.环 * lifeFrac, m: ringMaterial(frame, 0.95 * (1 - lifeFrac) + 0.05) };
+    return { half: 2.5 * boost.ring * lifeFrac, m: ringMaterial(frame, 0.95 * (1 - lifeFrac) + 0.05) };
   })() : null;
   return (
     <group>

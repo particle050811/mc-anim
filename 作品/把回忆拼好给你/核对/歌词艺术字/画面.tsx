@@ -4,55 +4,55 @@
 // 分屏、归隐：第 13、14 句那两段的场画这一帧，歌词叠在场自己的后期里面（同 2-时差、2-归隐 的画面）。
 // 前四种底是定住的一帧，只有歌词按视图的帧走。
 import type React from 'react';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
-import { 哈气角色, 哈气气泡 } from '../../场/2-门口/哈气.tsx';
-import { 取景 as N6取景, 整屏镜头 } from '../../场/2-门口/参数.ts';
-import { 分屏态 } from '../../场/2-门口/分屏参数.ts';
-import { 时差分屏 } from '../../场/2-门口/时差分屏.tsx';
-import { 左调子, 归隐画面 } from '../../场/2-门口/归隐.tsx';
-import { 门口画布 } from '../../场/2-门口/门口.tsx';
-import { 第8句调子 } from '../../场/2-门口/第8句.ts';
-import { 对视画面 } from '../../场/2-隐世之境/对视.tsx';
-import { 色板 } from '../../色板.ts';
-import { 符文歌词, 符文歌词默认, type 符文歌词样式 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 视图们, type 底 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
+import { PuffCharacter, PuffBubble } from '../../场/2-门口/哈气.tsx';
+import { framing as n6Framing, fullScreenShot } from '../../场/2-门口/参数.ts';
+import { SplitState } from '../../场/2-门口/分屏参数.ts';
+import { TimeLagSplit } from '../../场/2-门口/时差分屏.tsx';
+import { leftToneAt, RetreatPicture } from '../../场/2-门口/归隐.tsx';
+import { DoorCanvas } from '../../场/2-门口/门口.tsx';
+import { line8Tone } from '../../场/2-门口/第8句.ts';
+import { EyeContactPicture } from '../../场/2-隐世之境/对视.tsx';
+import { palette } from '../../色板.ts';
+import { RuneLyric, runeLyricDefault, type RuneLyricStyle } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { views, type BottomBackdrop } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1));
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1));
 
 /** 门口那一帧（核对-门口哈气 的定稿帧） */
-const 门口底: React.FC = () => (
-  <门口画布 门开 箱子开度={1} 调子={第8句调子} {...整屏镜头} 叠层={<哈气气泡 取景={整屏镜头.取景} />}>
-    <哈气角色 />
-  </门口画布>
+const doorBottom: React.FC = () => (
+  <DoorCanvas doorOpen chestOpen={1} tone={line8Tone} {...fullScreenShot} 叠层={<PuffBubble framing={fullScreenShot.framing} />}>
+    <PuffCharacter />
+  </DoorCanvas>
 );
 
-const 定底们: Record<Exclude<底, '分屏' | '归隐'>, { 调: 调子; 画: React.FC }> = {
-  亮天空: { 调: 色板.夏日白天, 画: () => <门口画布 取景={N6取景} 描边宽={N6取景.每格 / 16} 刻={6000} 调子="夏日白天" /> },
-  门口: { 调: 第8句调子, 画: 门口底 },
-  夜: { 调: 色板.夜, 画: () => <门口画布 {...整屏镜头} 刻={18000} 调子="夜" 树进度={1} 告示牌 /> },
-  对视: { 调: 色板.归隐之地, 画: () => <对视画面 版="片" 后期={false} /> },
+const fixedBottoms: Record<Exclude<BottomBackdrop, '分屏' | '归隐'>, { tone: Tone; render: React.FC }> = {
+  亮天空: { tone: palette.夏日白天, render: () => <DoorCanvas framing={n6Framing} outlineWidth={n6Framing.pxPerCell / 16} 刻={6000} tone="夏日白天" /> },
+  门口: { tone: line8Tone, render: doorBottom },
+  夜: { tone: palette.夜, render: () => <DoorCanvas {...fullScreenShot} 刻={18000} tone="夜" treeProgress={1} hasSign /> },
+  对视: { tone: palette.归隐之地, render: () => <EyeContactPicture 版="片" withPost={false} /> },
 };
 
-const 歌词 = (帧: number, 描边色: string) => <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色 } satisfies 符文歌词样式} 帧={帧} />;
+const lyricsLayer = (frame: number, outlineColor: string) => <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor } satisfies RuneLyricStyle} 帧={frame} />;
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  if (v.底 === '分屏') {
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  if (v.bottomBackdrop === '分屏') {
     // 同 2-时差：描边色取服务器那半的调子
-    const 态 = 分屏态(v.帧);
-    return <时差分屏 帧={v.帧} 种子={v.帧} 叠层={歌词(v.帧, 插调子(色板.夏日白天, 色板.褪色, 态.褪色).描边)} />;
+    const splitState = SplitState(v.帧);
+    return <TimeLagSplit 帧={v.帧} 种子={v.帧} 叠层={lyricsLayer(v.帧, lerpTone(palette.夏日白天, palette.褪色, splitState.fade).outlineColor)} />;
   }
-  if (v.底 === '归隐') return <归隐画面 帧={v.帧} 种子={v.帧} 叠层={歌词(v.帧, 左调子(v.帧).描边)} />;
-  const 底 = 定底们[v.底];
+  if (v.bottomBackdrop === '归隐') return <RetreatPicture 帧={v.帧} 种子={v.帧} 叠层={lyricsLayer(v.帧, leftToneAt(v.帧).outlineColor)} />;
+  const bottomBackdrop = fixedBottoms[v.bottomBackdrop];
   return (
-    <整片后期 调色={底.调.调色} 种子={v.帧}>
-      <底.画 />
-      {歌词(v.帧, 底.调.描边)}
-    </整片后期>
+    <FilmPost grade={bottomBackdrop.tone.grade} 种子={v.帧}>
+      <bottomBackdrop.render />
+      {lyricsLayer(v.帧, bottomBackdrop.tone.outlineColor)}
+    </FilmPost>
   );
 };
 
-export default 画面;
+export default picture;

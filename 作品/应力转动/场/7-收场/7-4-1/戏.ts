@@ -22,7 +22,7 @@ import { footOf } from '../../../地点/古城4x/布局.ts';
 import * as X73 from '../../../地点/古城4x/7-3/戏.ts';
 import { wardenHpAt } from '../../../地点/古城4x/7-1/戏/伤害.ts';
 import { fanSize } from '../../../地点/古城4x/7-1/戏/黄叛.ts';
-import type { 弓前风扇 } from '../../../地点/古城4x/7-1/弓前风扇.tsx';
+import type { BowWindFan } from '../../../地点/古城4x/7-1/弓前风扇.tsx';
 import * as geom from './几何.ts';
 import * as chase from './追逐.ts';
 
@@ -81,7 +81,7 @@ const draftLiuEye = (T: number): V3 => {
 export const firstLap = 1;
 // ======================= 音爆：成片第 2、4 圈马跃上台面的半空中放出 =======================
 const boomLaps = [firstLap + 1, firstLap + 3];
-export const boomFireTs = boomLaps.map((n) => (chase.horseLapS(n, '起跳') + 0.6 * (geom.horseMarks.上台 - geom.horseMarks.起跳)) / chase.horseSpeed);
+export const boomFireTs = boomLaps.map((n) => (chase.horseLapS(n, 'takeoff') + 0.6 * (geom.horseMarks.mountPlinth - geom.horseMarks.takeoff)) / chase.horseSpeed);
 export const boomStarts = boomFireTs.map((t) => t - WARDEN.sonicBoomHitSec);
 const aimLagSec = 0.1;
 
@@ -96,14 +96,14 @@ const bodyYaw = (T: number) => {
 };
 const liveFrame = (T: number): WardenFrame => {
   const boomStart = [...boomStarts].reverse().find((t) => T >= t && T < t + WARDEN.sonicBoomSec);
-  return { p: liveWarden(T), entityYaw: bodyYaw(T) + 180, 前倾: 18, props: { 秒: T, 音爆: boomStart === undefined ? undefined : T - boomStart } };
+  return { p: liveWarden(T), entityYaw: bodyYaw(T) + 180, forwardLean: 18, props: { 秒: T, 音爆: boomStart === undefined ? undefined : T - boomStart } };
 };
 
 // ======================= 风矢（同 6-4-3、7-1-5：1000 米/秒，弓前化出鼓风机虚影） =======================
 export const arrowSpeed = 1000;
 const huangHeight = 1.875;
-export type 一箭 = { 放: number; 中: number; 起: V3; 落: V3; dir: V3; 钉: V3; yaw: number; 俯仰: number; 圈: number; 串首: boolean };
-const makeArrow = (releaseT: number, lap: number, first: boolean): 一箭 => {
+export type Arrow = { 放: number; 中: number; 起: V3; landing: V3; dir: V3; stuck: V3; yaw: number; pitch: number; lap: number; isChainHead: boolean };
+const makeArrow = (releaseT: number, lap: number, first: boolean): Arrow => {
   const eye: V3 = [huangFoot[0], huangFoot[1], huangFoot[2] + 1.62];
   const target = wardenBodyPoint(liveFrame(releaseT), 0.3);
   const delta = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]];
@@ -118,7 +118,7 @@ const makeArrow = (releaseT: number, lap: number, first: boolean): 一箭 => {
   const surface = wardenBodyHit(liveFrame(hitT), start, dir) ?? aim;
   const tipIn = ARROW.tipAhead - 0.12; // 箭尖扎进身子 0.12 格
   const stuck: V3 = [surface[0] - dir[0] * tipIn, surface[1] - dir[1] * tipIn, surface[2] - dir[2] * tipIn];
-  return { 放: releaseT, 中: hitT, 起: start, 落: surface, dir, 钉: stuck, yaw, 俯仰: pitch, 圈: lap, 串首: first };
+  return { 放: releaseT, 中: hitT, 起: start, landing: surface, dir, stuck: stuck, yaw, pitch: pitch, lap: lap, isChainHead: first };
 };
 // 每圈它在西环道上往南跑的时候放一串 6 支，命中时它在 z `arrowHitZ`：西环道里沿每隔 7 米一根柱子，从门顶看过去只有几截看得见它整个上身
 //   （方块.py 逐 0.25 格查：z 206～212、215～222、225～228、231～235.5、238～243、245.5～257.5、259.5～262.5、266～268.5），每支都落在这几截里，间隔 0.13～0.22 秒
@@ -160,12 +160,12 @@ const solveMortar = (hitT: number) => {
     }
     if (vlen > mortarShotSpeed + 0.05) continue;
     const trajectory = mortarTrajectory(eye, dir, 1, vlen);
-    return { 出T: fireT, 眼: eye, 视线: dir, trajectory, tickCount: k, 中T: hitT, blastPos: trajectory.posAt(k), speed: vlen };
+    return { fireT: fireT, 眼: eye, sightDir: dir, trajectory, tickCount: k, hitT: hitT, blastPos: trajectory.posAt(k), speed: vlen };
   }
   throw new Error(`迫击炮 ${hitT.toFixed(2)} 秒那一发够不着`);
 };
 const allMortars = laps.map((n) => mortarHitZ.map((z) => solveMortar(wardenTAtZ(n, z)))).flat();
-const allHitTs = [...allArrows.map((a) => a.中), ...allMortars.map((m) => m.中T)].sort((a, b) => a - b);
+const allHitTs = [...allArrows.map((a) => a.中), ...allMortars.map((m) => m.hitT)].sort((a, b) => a - b);
 if (allHitTs.some((t, i) => i > 0 && t - allHitTs[i - 1] < 0.065)) throw new Error('有两下命中隔得太近，数字会叠在一起');
 
 // ======================= 伤害、最后一箭 =======================
@@ -179,7 +179,7 @@ const hitsWith = (seed: number): Hit[] => {
   const md = rollDamages(allMortars.length, 300, seed);
   const ad = rollDamages(allArrows.length, 1500, seed + 1);
   return [
-    ...allMortars.map((m, i) => ({ T: m.中T, damage: md[i], crit: false, kind: '炮' as const, i })),
+    ...allMortars.map((m, i) => ({ T: m.hitT, damage: md[i], crit: false, kind: '炮' as const, i })),
     ...allArrows.map((a, i) => ({ T: a.中, damage: ad[i], crit: true, kind: '箭' as const, i })),
   ].sort((a, b) => a.T - b.T);
 };
@@ -198,8 +198,8 @@ const seed = (() => {
     const k = killIndexOf(hits);
     if (k < 0 || hits[k].kind !== '箭') continue;
     const T = hits[k].T;
-    const lap = Math.floor((chase.horseSpeed * T - geom.horseMarks.上台) / geom.horseLoop.len) + 1;
-    if (T < chase.horseLapS(lap, '上台') / chase.horseSpeed - 0.15) return s;
+    const lap = Math.floor((chase.horseSpeed * T - geom.horseMarks.mountPlinth) / geom.horseLoop.len) + 1;
+    if (T < chase.horseLapS(lap, 'mountPlinth') / chase.horseSpeed - 0.15) return s;
   }
   throw new Error('挑不出最后一下是风矢的伤害种子');
 })();
@@ -208,11 +208,11 @@ const killIndex = killIndexOf(allHits);
 export const deathT = allHits[killIndex].T;
 export const hits = allHits.slice(0, killIndex + 1);
 export const arrows = allArrows.filter((a) => a.中 <= deathT);
-export const mortars = allMortars.filter((m) => m.中T <= deathT);
+export const mortars = allMortars.filter((m) => m.hitT <= deathT);
 export const booms = boomFireTs.filter((t) => t < deathT).map((fireT) => ({ fireT, origin: liveWarden(fireT), target: draftLiuEye(fireT - aimLagSec) }));
 export const hpBefore = (T: number) => hpAtStart - hits.filter((h) => h.T < T).reduce((s, h) => s + h.damage, 0);
 // 最后一下在第几圈（0 起，和马、它的圈号一致）
-export const killLap = allArrows[allHits[killIndex].i].圈;
+export const killLap = allArrows[allHits[killIndex].i].lap;
 
 // ======================= 马 =======================
 export const run = chase.simulate(deathT);
@@ -254,12 +254,12 @@ export const horseState = (T: number) => {
   const p = horseAtS(run.horseS(T));
   const yaw = horseYaw(T);
   const speed = run.horseV(T);
-  const amplitude = Math.max(horseGait(speed, 0).幅度 * (1 + 0.5 * ss((speed - 20) / 60)), horseTurning(T) ? 0.3 : 0);
-  return { p, yaw, entityYaw: yaw + 180, 行走: { 相位: horseLegPhase(T), 幅度: amplitude }, 速度: speed, 人立: steedRear(horseTakeoffs, T) };
+  const amplitude = Math.max(horseGait(speed, 0).amplitude * (1 + 0.5 * ss((speed - 20) / 60)), horseTurning(T) ? 0.3 : 0);
+  return { p, yaw, entityYaw: yaw + 180, walkCycle: { legPhase: horseLegPhase(T), amplitude: amplitude }, 速度: speed, rear: steedRear(horseTakeoffs, T) };
 };
 export const liuEye = (T: number): V3 => {
   const horse = horseState(T);
-  return eyeOf(horse.p, horse.yaw, horse.人立.骑手);
+  return eyeOf(horse.p, horse.yaw, horse.rear.rider);
 };
 
 // ======================= 监守者 =======================
@@ -277,18 +277,18 @@ export const wardenState = (T: number) => {
     p,
     entityYaw: frame.entityYaw - 6 * Math.min(1.5, flinch),
     秒: T,
-    行走: { 相位: wardenLegPhase(T), 幅度: Math.min(1, v / 5.7) },
-    受伤: hitTs.some((t) => T >= t && T < t + 0.5) ? 1 : 0,
-    头仰: 0, // 跑起来平视
+    walkCycle: { legPhase: wardenLegPhase(T), amplitude: Math.min(1, v / 5.7) },
+    hurt: hitTs.some((t) => T >= t && T < t + 0.5) ? 1 : 0,
+    headPitch: 0, // 跑起来平视
     音爆: dead ? undefined : frame.props.音爆,
-    前倾: (frame.前倾 ?? 0) - 9 * Math.min(1.5, flinch),
+    forwardLean: (frame.forwardLean ?? 0) - 9 * Math.min(1.5, flinch),
     速度: v,
     secSinceDeath: dead ? T - deathT : undefined,
   };
 };
 export const wardenFrame = (T: number): WardenFrame => {
   const w = wardenState(T);
-  return { p: w.p, entityYaw: w.entityYaw, 前倾: w.前倾, props: { 秒: w.秒, 行走: w.行走, headPitch: w.头仰, 音爆: w.音爆 } };
+  return { p: w.p, entityYaw: w.entityYaw, forwardLean: w.forwardLean, props: { 秒: w.秒, walkCycle: w.walkCycle, headPitch: w.headPitch, 音爆: w.音爆 } };
 };
 export const wardenChest = (T: number): V3 => wardenBodyPoint(wardenFrame(T), 0);
 // 倒下（原版死亡.tsx 的 VanillaTopple：在朝向、前倾之后再绕实体前后轴转）：身上的点跟着转
@@ -298,16 +298,16 @@ const toppleMatrix = (T: number) => {
   const frame = new THREE.Matrix4()
     .makeTranslation(w.p[0], w.p[1], w.p[2])
     .multiply(new THREE.Matrix4().makeRotationZ((w.entityYaw * Math.PI) / 180))
-    .multiply(new THREE.Matrix4().makeRotationX((w.前倾 * Math.PI) / 180));
+    .multiply(new THREE.Matrix4().makeRotationX((w.forwardLean * Math.PI) / 180));
   return frame.clone().multiply(new THREE.Matrix4().makeRotationY(vanillaToppleAngle(w.secSinceDeath))).multiply(frame.invert());
 };
 
 // ======================= 炮弹 =======================
 export const mortarShells = (T: number) =>
   mortars
-    .filter((m) => T >= m.出T && T < m.中T)
+    .filter((m) => T >= m.fireT && T < m.hitT)
     .map((m) => {
-      const tick = (T - m.出T) * 20;
+      const tick = (T - m.fireT) * 20;
       return { at: m.trajectory.drawPos(tick), vel: m.trajectory.drawVelAt(tick) };
     });
 
@@ -323,7 +323,7 @@ export const liuXinzhongPose = (T: number, extra: Partial<FigurePose> = {}): Fig
   const look = T >= deathT ? 1 - ss((T - deathT - 1.2) / 0.6) : 1;
   const crouch = ss((horse.速度 - 6.5) / 40);
   const castArm = (t: number) => ss((T - t + 0.3) / 0.25) * (1 - ss((T - t - 0.35) / 0.4));
-  const point = Math.max(0, ...mortars.map((m) => castArm(m.出T)));
+  const point = Math.max(0, ...mortars.map((m) => castArm(m.fireT)));
   const twist = yawOffset * 0.45 * Math.max(point, look * 0.8);
   return ridePose(horse, {
     pitch: -10 * ss(horse.速度 / 6.5) - 16 * crouch,
@@ -337,7 +337,7 @@ export const liuXinzhongPose = (T: number, extra: Partial<FigurePose> = {}): Fig
 
 // ======================= 黄叛 =======================
 // 一串里每支拉 0.18 秒就放（串首那支从 0.35 秒前举弓），放完立刻搭下一支；瞄的方向在相邻两支之间转过去。一串打完弓慢慢放低，身子转到下一串第一支的方向。
-const drawLead = (i: number) => (arrows[i].串首 ? 0.35 : arrows[i].放 - arrows[i - 1].放 - 0.02);
+const drawLead = (i: number) => (arrows[i].isChainHead ? 0.35 : arrows[i].放 - arrows[i - 1].放 - 0.02);
 export const huangPanState = (T: number): { pose: FigurePose; bow: BowTexture } => {
   const i = arrows.findIndex((a) => a.放 > T);
   const cur = i < 0 ? arrows[arrows.length - 1] : arrows[i];
@@ -346,11 +346,11 @@ export const huangPanState = (T: number): { pose: FigurePose; bow: BowTexture } 
   if (i >= 0 && T >= drawStart) {
     // 拉弓
     const k = (T - drawStart) / (cur.放 - drawStart);
-    const fromYaw = cur.串首 || !prev ? cur.yaw : nearYaw(cur.yaw, prev.yaw);
-    const fromPitch = cur.串首 || !prev ? cur.俯仰 : prev.俯仰;
+    const fromYaw = cur.isChainHead || !prev ? cur.yaw : nearYaw(cur.yaw, prev.yaw);
+    const fromPitch = cur.isChainHead || !prev ? cur.pitch : prev.pitch;
     const yaw = lerp(fromYaw, cur.yaw, ss(k * 1.6));
-    const pitch = lerp(fromPitch, cur.俯仰, ss(k * 1.6));
-    const draw = cur.串首 ? ss((k - 0.35) / 0.65) : ss(k);
+    const pitch = lerp(fromPitch, cur.pitch, ss(k * 1.6));
+    const draw = cur.isChainHead ? ss((k - 0.35) / 0.65) : ss(k);
     return { pose: drawBowPose(huangFoot, yaw, 0, pitch, Math.max(draw, 0.0001)), bow: bowTextureFor(true, T - drawStart) };
   }
   // 一串打完（或第一串之前）：放完拉弦手一甩、弓慢慢放低，转向下一串
@@ -360,14 +360,14 @@ export const huangPanState = (T: number): { pose: FigurePose; bow: BowTexture } 
   const nextYaw = i >= 0 ? nearYaw(last.yaw, cur.yaw) : last.yaw;
   const turn = i >= 0 && prev ? ss((T - (last.放 + 0.6)) / Math.max(0.3, drawStart - last.放 - 0.6)) : i >= 0 ? 1 : 0;
   const yaw = lerp(last.yaw, nextYaw, turn);
-  let pose: FigurePose = drawBowPose(huangFoot, yaw, 0, lerp(last.俯仰, i >= 0 ? cur.俯仰 : last.俯仰, turn), Math.max(1 - lower, 0.0001));
-  if (lower >= 1) pose = { ...standPose(huangFoot), yaw, headPitch: lerp(last.俯仰, i >= 0 ? cur.俯仰 : last.俯仰, turn), armL: 25, armLRoll: 4, armR: 12, armRRoll: 6, elbowR: 15 };
+  let pose: FigurePose = drawBowPose(huangFoot, yaw, 0, lerp(last.pitch, i >= 0 ? cur.pitch : last.pitch, turn), Math.max(1 - lower, 0.0001));
+  if (lower >= 1) pose = { ...standPose(huangFoot), yaw, headPitch: lerp(last.pitch, i >= 0 ? cur.pitch : last.pitch, turn), armL: 25, armLRoll: 4, armR: 12, armRRoll: 6, elbowR: 15 };
   const rel = prev ? ss(after / 0.12) * (1 - lower) : 0;
   if (rel > 0) pose = { ...pose, armR: pose.armR - 15 * rel, armRYaw: (pose.armRYaw ?? 0) * (1 - rel) - 25 * rel, elbowR: 25 * rel };
   return { pose, bow: bowTextureFor(false, 0) };
 };
 // 鼓风机虚影和风道（同 7-1、7-3，画法见 ../7-1/弓前风扇.tsx）：每一支都开；随拉弓化出、放箭后 0.15 秒散
-export const fansAt = (T: number): 弓前风扇[] =>
+export const fansAt = (T: number): BowWindFan[] =>
   arrows.flatMap((arrow, i) => {
     const lead = drawLead(i);
     const visibility = ss((T - (arrow.放 - lead)) / 0.08) * (1 - ss((T - arrow.放) / 0.15));
@@ -375,14 +375,14 @@ export const fansAt = (T: number): 弓前风扇[] =>
     const off = ARROW.tipAhead + 0.04 + fanSize / 2;
     const center: V3 = [0, 1, 2].map((k) => arrow.起[k] + arrow.dir[k] * off) as V3;
     const mouth: V3 = [0, 1, 2].map((k) => center[k] + (arrow.dir[k] * fanSize) / 2) as V3;
-    return [{ 显: visibility, dir: arrow.dir, 心: center, 口: mouth, 边长: fanSize, 转起: arrow.放 - lead, 风停: arrow.放 + 0.15, 转速: 256, 快放: 880, 种子: 7461 + 2 * i }];
+    return [{ visibility: visibility, dir: arrow.dir, 心: center, mouth: mouth, sideLength: fanSize, spinStart: arrow.放 - lead, windStop: arrow.放 + 0.15, rotSpeedRpm: 256, fastForward: 880, 种子: 7461 + 2 * i }];
   });
 export const flyingArrows = (T: number) =>
   arrows
     .filter((a) => T >= a.放 && T < a.中)
     .map((a) => {
       const k = (T - a.放) / (a.中 - a.放);
-      return { p: [lerp(a.起[0], a.钉[0], k), lerp(a.起[1], a.钉[1], k), lerp(a.起[2], a.钉[2], k)] as V3, dir: a.dir };
+      return { p: [lerp(a.起[0], a.stuck[0], k), lerp(a.起[1], a.stuck[1], k), lerp(a.起[2], a.stuck[2], k)] as V3, dir: a.dir };
     });
 
 // ======================= 身上插着的箭 =======================
@@ -390,7 +390,7 @@ export const flyingArrows = (T: number) =>
 const oldPins = X73.stuckArrows(X73.endT).map((a) => pinToWardenBody(X73.wardenFrame(X73.endT), a.p, a.dir));
 const freshPins = new Map<number, BodyPin>();
 const freshPin = (i: number) => {
-  if (!freshPins.has(i)) freshPins.set(i, pinToWardenBody(liveFrame(arrows[i].中), arrows[i].钉, arrows[i].dir));
+  if (!freshPins.has(i)) freshPins.set(i, pinToWardenBody(liveFrame(arrows[i].中), arrows[i].stuck, arrows[i].dir));
   return freshPins.get(i)!;
 };
 export const stuckArrows = (T: number) => {

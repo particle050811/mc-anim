@@ -9,56 +9,56 @@
 // 没做：目标着火、受伤。
 import React from 'react';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 地火类, 大火寿命, 燃烧类, 默认半径, 火柱类 } from '../零件/丁粒子.ts';
-import { 贴图粒子, type 粒子出生 } from '../零件/粒子.tsx';
-import 元, { 炽燃喷发刻, 炽燃预热刻 } from './炽燃升腾.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { groundFireClass, bigFireLifetime, burningClass, defaultRadius, fieryPillarClass } from '../零件/丁粒子.ts';
+import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
+import meta, { blazeEruptTick, blazeWarmupTick } from './炽燃升腾.元.ts';
 
 /** buildBlockCircle：[−整半径, 整半径)² 里 x² + z² ≤ 半径² 的整数偏移 */
-const 圆格 = (半径: number): [number, number][] => {
-  const n = Math.floor(半径);
-  const 们: [number, number][] = [];
-  for (let x = -n; x < n; x++) for (let z = -n; z < n; z++) if (x * x + z * z <= 半径 * 半径) 们.push([x, z]);
-  return 们;
+const circleCells = (radius: number): [number, number][] => {
+  const n = Math.floor(radius);
+  const cells: [number, number][] = [];
+  for (let x = -n; x < n; x++) for (let z = -n; z < n; z++) if (x * x + z * z <= radius * radius) cells.push([x, z]);
+  return cells;
 };
-const 外圈 = (半径: number): [number, number][] => {
-  const 内 = new Set(圆格(半径 - 1).map(([x, z]) => `${x},${z}`));
-  return 圆格(半径).filter(([x, z]) => !内.has(`${x},${z}`));
+const ringCells = (radius: number): [number, number][] => {
+  const innerCells = new Set(circleCells(radius - 1).map(([x, z]) => `${x},${z}`));
+  return circleCells(radius).filter(([x, z]) => !innerCells.has(`${x},${z}`));
 };
-const 偏移们 = [...外圈(3), ...外圈(6)];
+const offsets = [...ringCells(3), ...ringCells(6)];
 
-const 炽燃升腾: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const r = rng(种子 * 7919 + 31);
-  const 地火: 粒子出生[] = [];
-  const 火柱: 粒子出生[] = [];
-  const 地面火: 粒子出生[] = [];
-  for (const [dx, dz] of 偏移们) {
+const BlazeRise: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const r = rng(seed * 7919 + 31);
+  const pillarEmbers: ParticleBirth[] = [];
+  const flameColumn: ParticleBirth[] = [];
+  const groundFlames: ParticleBirth[] = [];
+  for (const [dx, dz] of offsets) {
     // 游戏 (x, z 南) → 场景 (x, −z)
-    const 柱: 点 = [目标[0] + dx, 目标[1] - dz, 目标[2]];
-    for (let t = 0; t < 炽燃预热刻; t++) {
-      地火.push({ 刻: t, 位: [柱[0] + (r() - 0.5) * 0.5, 柱[1] + (r() - 0.5) * 0.5, 柱[2] + 0.5], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: 大火寿命, 半径: 默认半径(r) * 3, 种子: 1 });
+    const pillarBase: Vec3 = [target[0] + dx, target[1] - dz, target[2]];
+    for (let t = 0; t < blazeWarmupTick; t++) {
+      pillarEmbers.push({ 刻: t, 位: [pillarBase[0] + (r() - 0.5) * 0.5, pillarBase[1] + (r() - 0.5) * 0.5, pillarBase[2] + 0.5], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: bigFireLifetime, radius: defaultRadius(r) * 3, 种子: 1 });
     }
-    for (let t = 0; t < 炽燃预热刻 + 炽燃喷发刻; t++) {
+    for (let t = 0; t < blazeWarmupTick + blazeEruptTick; t++) {
       for (let k = 0; k < 4; k++) {
         const a = r() * Math.PI * 2;
         const d = Math.sqrt(r());
-        const 寿命 = Math.floor(8 / (r() * 0.8 + 0.2)) + 4;
-        地面火.push({ 刻: t, 位: [柱[0] + Math.cos(a) * d, 柱[1] + Math.sin(a) * d, 柱[2]], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命, 半径: 0.1 * (r() * 0.5 + 0.5) * 2, 种子: 1 });
+        const lifetime = Math.floor(8 / (r() * 0.8 + 0.2)) + 4;
+        groundFlames.push({ 刻: t, 位: [pillarBase[0] + Math.cos(a) * d, pillarBase[1] + Math.sin(a) * d, pillarBase[2]], 速: [(r() - 0.5) * 0.01, (r() - 0.5) * 0.01, (r() - 0.5) * 0.01], 寿命: lifetime, radius: 0.1 * (r() * 0.5 + 0.5) * 2, 种子: 1 });
       }
     }
-    for (let t = 炽燃预热刻; t < 炽燃预热刻 + 炽燃喷发刻; t++) {
+    for (let t = blazeWarmupTick; t < blazeWarmupTick + blazeEruptTick; t++) {
       if (t % 5 !== 0) continue;
-      火柱.push({ 刻: t, 位: [柱[0], 柱[1], 柱[2] + 0.5], 速: [0, 0, 0.5], 寿命: 10 + Math.floor(r() * 20), 半径: 1, 种子: 1 });
+      flameColumn.push({ 刻: t, 位: [pillarBase[0], pillarBase[1], pillarBase[2] + 0.5], 速: [0, 0, 0.5], 寿命: 10 + Math.floor(r() * 20), radius: 1, 种子: 1 });
     }
   }
   return (
     <>
-      <贴图粒子 类={地火类} 出生们={地火} 秒={秒} />
-      <贴图粒子 类={燃烧类} 出生们={地面火} 秒={秒} />
-      <贴图粒子 类={火柱类} 出生们={火柱} 秒={秒} />
+      <TexturedParticles 类={groundFireClass} spawns={pillarEmbers} 秒={sec} />
+      <TexturedParticles 类={burningClass} spawns={groundFlames} 秒={sec} />
+      <TexturedParticles 类={fieryPillarClass} spawns={flameColumn} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 炽燃升腾);
+export default defineSpellPerformance(meta, BlazeRise);

@@ -36,7 +36,7 @@ export const JIUHU_LAG = 3; // 两人同一刻离开扫帚，九胡飞得稍慢�
 export const T_JIUHU = T_LIYING + JIUHU_LAG;
 
 // ---------- 场坐标：一镜到底末帧扫帚（两人一起走的坐标系，朝向 0 = 面朝北）的本地坐标，x 东、y 北、z 上，z = 0 是屋顶 ----------
-const B0 = route.扫帚(F0).位置;
+const B0 = route.broom(F0).位置;
 const roofZ = choreo619.castleOrigin[2] + choreo619.ROOF_Z;
 const fromScene = (p: number[]): V3 => [B0[0] + p[0], B0[1] + p[1], roofZ + p[2]];
 // 站位（场坐标）：李樱在前座（骑扫帚.tsx 的 RIDE.front），九胡在后座再挪 6-1-9b 的 `jiuhuStepTo`，即他右后方
@@ -57,11 +57,11 @@ const SKID_FRAMES = 6;
 const skidLength = ((LAND_SPEED * Math.cos((LAND_PITCH * Math.PI) / 180)) / FPS) * (SKID_FRAMES / 2);
 // 速度 v(t) = LAND_SPEED + (扫帚速度 − LAND_SPEED)·e^(−t/TAU)
 const TAU = 0.3;
-const broomRelease = route.扫帚(F_CUT);
+const broomRelease = route.broom(F_CUT);
 // 扫帚的方向：朝向 0 = 北、正 = 往左；俯仰正 = 抬头
 const releaseDir = (): V3 => {
-  const yaw = (broomRelease.朝向 * Math.PI) / 180;
-  const pitch = (broomRelease.俯仰 * Math.PI) / 180;
+  const yaw = (broomRelease.facing * Math.PI) / 180;
+  const pitch = (broomRelease.pitch * Math.PI) / 180;
   return [-Math.sin(yaw) * Math.cos(pitch), Math.cos(yaw) * Math.cos(pitch), Math.sin(pitch)];
 };
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];

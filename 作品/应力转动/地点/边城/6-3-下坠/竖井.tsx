@@ -20,49 +20,49 @@ import shaftBin from 'asset:网格/竖井4x/顶点';
 import shaftAtlas from 'asset:贴图/镜头/6-3-下坠/竖井4x.网格';
 import { useThree } from '@react-three/fiber';
 import { FOG_4X, G4, Gucheng4x, GUCHENG4X, tilesInView } from '../../古城4x.tsx';
-import { shaftLayout as 竖井布局 } from '../../古城4x/布局.ts';
-import { ancientCity as 古城接口, ancientCityFloorZ, groundZ, caveCeilingZ, shaftHalfWidth } from './编排.ts';
-import pitSurfaceRaw资产 from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
+import { shaftLayout as shaftLayout } from '../../古城4x/布局.ts';
+import { ancientCity as ancientCityApi, ancientCityFloorZ, groundZ, caveCeilingZ, shaftHalfWidth } from './编排.ts';
+import pitSurfaceJson from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
 import { SlamGround, slamHideBlocks } from '../6-3-6/震地.tsx';
-import { 资产目录 } from '@engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/镜头/6-3-下坠/方块/凝灰岩';
-import 资_1 from 'asset:贴图/镜头/6-3-下坠/方块/安山岩';
-import 资_2 from 'asset:贴图/镜头/6-3-下坠/方块/平滑石台阶侧';
-import 资_3 from 'asset:贴图/镜头/6-3-下坠/方块/平滑石头';
-import 资_4 from 'asset:贴图/镜头/6-3-下坠/方块/幽匿块';
-import 资_5 from 'asset:贴图/镜头/6-3-下坠/方块/方解石';
-import 资_6 from 'asset:贴图/镜头/6-3-下坠/方块/橙色赤陶';
-import 资_7 from 'asset:贴图/镜头/6-3-下坠/方块/泥土';
-import 资_8 from 'asset:贴图/镜头/6-3-下坠/方块/深层金矿石';
-import 资_9 from 'asset:贴图/镜头/6-3-下坠/方块/深层铜矿石';
-import 资_10 from 'asset:贴图/镜头/6-3-下坠/方块/深板岩';
-import 资_11 from 'asset:贴图/镜头/6-3-下坠/方块/深板岩顶';
-import 资_12 from 'asset:贴图/镜头/6-3-下坠/方块/煤矿石';
-import 资_13 from 'asset:贴图/镜头/6-3-下坠/方块/皓蓝石';
-import 资_14 from 'asset:贴图/镜头/6-3-下坠/方块/石头';
-import 资_15 from 'asset:贴图/镜头/6-3-下坠/方块/砂砾';
-import 资_16 from 'asset:贴图/镜头/6-3-下坠/方块/红石矿石';
-import 资_17 from 'asset:贴图/镜头/6-3-下坠/方块/红色赤陶';
-import 资_18 from 'asset:贴图/镜头/6-3-下坠/方块/花岗岩';
-import 资_19 from 'asset:贴图/镜头/6-3-下坠/方块/赤陶';
-import 资_20 from 'asset:贴图/镜头/6-3-下坠/方块/金矿石';
-import 资_21 from 'asset:贴图/镜头/6-3-下坠/方块/铜矿石';
-import 资_22 from 'asset:贴图/镜头/6-3-下坠/方块/银矿石';
-import 资_23 from 'asset:贴图/镜头/6-3-下坠/方块/锌矿石';
-import 资_24 from 'asset:贴图/镜头/6-3-下坠/方块/闪长岩';
-import 资_25 from 'asset:贴图/镜头/6-3-下坠/方块/黄色赤陶';
-const pitSurfaceRaw = pitSurfaceRaw资产 as unknown as { 半宽: number; 高: (number | null)[][] };
+import { assetDir } from '@engine/core/资产目录.ts';
+import tuffPng from 'asset:贴图/镜头/6-3-下坠/方块/凝灰岩';
+import andesitePng from 'asset:贴图/镜头/6-3-下坠/方块/安山岩';
+import smoothStoneSlabSidePng from 'asset:贴图/镜头/6-3-下坠/方块/平滑石台阶侧';
+import smoothStonePng from 'asset:贴图/镜头/6-3-下坠/方块/平滑石头';
+import sculkBlockPng from 'asset:贴图/镜头/6-3-下坠/方块/幽匿块';
+import calcitePng from 'asset:贴图/镜头/6-3-下坠/方块/方解石';
+import orangeTerracottaPng from 'asset:贴图/镜头/6-3-下坠/方块/橙色赤陶';
+import dirtPng from 'asset:贴图/镜头/6-3-下坠/方块/泥土';
+import deepslateGoldOrePng from 'asset:贴图/镜头/6-3-下坠/方块/深层金矿石';
+import deepslateCopperOrePng from 'asset:贴图/镜头/6-3-下坠/方块/深层铜矿石';
+import deepslatePng from 'asset:贴图/镜头/6-3-下坠/方块/深板岩';
+import deepslateTopPng from 'asset:贴图/镜头/6-3-下坠/方块/深板岩顶';
+import coalOrePng from 'asset:贴图/镜头/6-3-下坠/方块/煤矿石';
+import brightBlueStonePng from 'asset:贴图/镜头/6-3-下坠/方块/皓蓝石';
+import stonePng from 'asset:贴图/镜头/6-3-下坠/方块/石头';
+import gravelPng from 'asset:贴图/镜头/6-3-下坠/方块/砂砾';
+import redstoneOrePng from 'asset:贴图/镜头/6-3-下坠/方块/红石矿石';
+import redTerracottaPng from 'asset:贴图/镜头/6-3-下坠/方块/红色赤陶';
+import granitePng from 'asset:贴图/镜头/6-3-下坠/方块/花岗岩';
+import terracottaPng from 'asset:贴图/镜头/6-3-下坠/方块/赤陶';
+import goldOrePng from 'asset:贴图/镜头/6-3-下坠/方块/金矿石';
+import copperOrePng from 'asset:贴图/镜头/6-3-下坠/方块/铜矿石';
+import silverOrePng from 'asset:贴图/镜头/6-3-下坠/方块/银矿石';
+import zincOrePng from 'asset:贴图/镜头/6-3-下坠/方块/锌矿石';
+import dioritePng from 'asset:贴图/镜头/6-3-下坠/方块/闪长岩';
+import yellowTerracottaPng from 'asset:贴图/镜头/6-3-下坠/方块/黄色赤陶';
+const pitSurfaceRaw = pitSurfaceJson as unknown as { 半宽: number; 高: (number | null)[][] };
 
 export const pitSurfaceTable = pitSurfaceRaw;
 
 // 竖井那一列挖开的格子原来是什么方块（竖井4x.填块.json）用到的贴图都在这里（取材清单 的「6-3方块贴图」）。幽匿块的贴图是 4 帧竖条动画，只取第一帧（同 模型/特效/方块碎屑.tsx）
-export type 方块贴图名 =
+export type BlockTextureName =
   | '平滑石头' | '平滑石台阶侧' | '泥土' | '石头' | '深板岩' | '深板岩顶' | '凝灰岩' | '花岗岩' | '安山岩' | '闪长岩' | '砂砾' | '幽匿块' | '方解石'
   | '煤矿石' | '铜矿石' | '金矿石' | '红石矿石' | '深层铜矿石' | '深层金矿石' | '皓蓝石'
   | '赤陶' | '橙色赤陶' | '黄色赤陶' | '红色赤陶' | '锌矿石' | '银矿石';
 export const blockPngs = Object.fromEntries(
-  Object.entries(pngDir(资产目录({ './凝灰岩.png': 资_0, './安山岩.png': 资_1, './平滑石台阶侧.png': 资_2, './平滑石头.png': 资_3, './幽匿块.png': 资_4, './方解石.png': 资_5, './橙色赤陶.png': 资_6, './泥土.png': 资_7, './深层金矿石.png': 资_8, './深层铜矿石.png': 资_9, './深板岩.png': 资_10, './深板岩顶.png': 资_11, './煤矿石.png': 资_12, './皓蓝石.png': 资_13, './石头.png': 资_14, './砂砾.png': 资_15, './红石矿石.png': 资_16, './红色赤陶.png': 资_17, './花岗岩.png': 资_18, './赤陶.png': 资_19, './金矿石.png': 资_20, './铜矿石.png': 资_21, './银矿石.png': 资_22, './锌矿石.png': 资_23, './闪长岩.png': 资_24, './黄色赤陶.png': 资_25 }))).map(([k, png]) => [k, png.h > png.w ? { ...png, px: png.px.subarray(0, png.w * png.w * 4), h: png.w } : png]),
-) as Record<方块贴图名, Png>;
+  Object.entries(pngDir(assetDir({ './凝灰岩.png': tuffPng, './安山岩.png': andesitePng, './平滑石台阶侧.png': smoothStoneSlabSidePng, './平滑石头.png': smoothStonePng, './幽匿块.png': sculkBlockPng, './方解石.png': calcitePng, './橙色赤陶.png': orangeTerracottaPng, './泥土.png': dirtPng, './深层金矿石.png': deepslateGoldOrePng, './深层铜矿石.png': deepslateCopperOrePng, './深板岩.png': deepslatePng, './深板岩顶.png': deepslateTopPng, './煤矿石.png': coalOrePng, './皓蓝石.png': brightBlueStonePng, './石头.png': stonePng, './砂砾.png': gravelPng, './红石矿石.png': redstoneOrePng, './红色赤陶.png': redTerracottaPng, './花岗岩.png': granitePng, './赤陶.png': terracottaPng, './金矿石.png': goldOrePng, './铜矿石.png': copperOrePng, './银矿石.png': silverOrePng, './锌矿石.png': zincOrePng, './闪长岩.png': dioritePng, './黄色赤陶.png': yellowTerracottaPng }))).map(([k, png]) => [k, png.h > png.w ? { ...png, px: png.px.subarray(0, png.w * png.w * 4), h: png.w } : png]),
+) as Record<BlockTextureName, Png>;
 
 const texCache = new Map<Png, THREE.DataTexture>();
 export const blockTexture = (png: Png, repeat = false) => {
@@ -98,9 +98,9 @@ if (borderTownPos[2] !== 10) throw new Error(`竖井.tsx：坑和竖井网格按
 const SHAFT = shaftRaw as unknown as BlockMeshInfo;
 {
   const [ox, oy, oz] = SHAFT.origin;
-  if (ox !== 古城接口.shaftColumn[0] + 0.5 || oz !== 古城接口.shaftColumn[1] + 0.5) throw new Error(`竖井.tsx：竖井网格的原点 ${SHAFT.origin} 不在 古城.竖井列 的格心`);
+  if (ox !== ancientCityApi.shaftColumn[0] + 0.5 || oz !== ancientCityApi.shaftColumn[1] + 0.5) throw new Error(`竖井.tsx：竖井网格的原点 ${SHAFT.origin} 不在 古城.竖井列 的格心`);
   if (SHAFT.to[1] + 1 - oy < groundZ) throw new Error('竖井.tsx：竖井网格没导到城的地面');
-  if (oy !== 竖井布局.城石半砖y - 10 || caveCeilingZ !== 竖井布局.洞顶最下块y - oy || ancientCityFloorZ !== 竖井布局.古城地面方块y + 1 - oy)
+  if (oy !== shaftLayout.cityStoneSlabY - 10 || caveCeilingZ !== shaftLayout.caveCeilingBottomY - oy || ancientCityFloorZ !== shaftLayout.ancientCityFloorBlockY + 1 - oy)
     throw new Error(`竖井.tsx：竖井网格原点 y ${oy} 和 古城4x布局.ts 的 竖井（石半砖、洞顶、古城地面）对不上`);
   if ((SHAFT.to[0] - SHAFT.from[0] + 1) / 2 !== shaftHalfWidth || (SHAFT.to[2] - SHAFT.from[2] + 1) / 2 !== shaftHalfWidth || pitSurfaceTable.半宽 + 0.5 !== shaftHalfWidth)
     throw new Error('竖井.tsx：竖井网格、坑面表、城的地面挖的洞 三者的范围对不上');

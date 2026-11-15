@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 2b7d1f2d4176），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-黄叛-受死（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "7-黄叛-受死",
   "角色": "黄叛",
   "念": "怪物受死！",
@@ -28,4 +28,4 @@ const 句: 台词句 = {
     [0.8,"X"],
   ],
 };
-export default 句;
+export default sentence;

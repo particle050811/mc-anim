@@ -14,15 +14,15 @@ import * as choreo from './编排.ts';
 // 哪一半按离穿刺线的横向距离分（线斜 15°，不能再按 x 分）
 const DEBRIS: DebrisData = (() => {
   const raw = debrisRaw as unknown as DebrisData;
-  return { ...raw, cells: raw.cells.filter((c) => c.ring || c.box === choreo.碎块组.剖面 || choreo.右偏(c.p) < 0.6) };
+  return { ...raw, cells: raw.cells.filter((c) => c.ring || c.box === choreo.breakGroup.crossSection || choreo.rightOffset(c.p) < 0.6) };
 })();
 const ATLAS = png(CloudCottage_ATLAS);
 
 // 镜头：世界坐标的镜头位置，飞散的碎块离镜头太近就淡出（模型/特效/方块飞溅.tsx 的 近隐；镜头在屋外侧视，一般碰不到）
 export const GiantScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPos: camPos }) => {
-  const show = t > choreo.出场.起 && t < choreo.出场.止;
+  const show = t > choreo.visibleWindow.起 && t < choreo.visibleWindow.止;
   return (
-    <group position={choreo.小屋原点}>
+    <group position={choreo.cottageOrigin}>
       <CloudCottage hide={choreo.hideFor(t)} />
       {show && (
         <>
@@ -30,18 +30,18 @@ export const GiantScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camP
             const state = choreo.giant(i, t);
             return state.alive ? (
               <group key={i} position={state.pos}>
-                <DeathTopple 向={choreo.击退向} u={state.倒} knockbackOffset={state.knockbackOffset}>
+                <DeathTopple fallDir={choreo.knockbackDir} u={state.fall} knockbackOffset={state.knockbackOffset}>
                   <group rotation={[0, 0, choreo.GIANT_YAW]}>
-                    <Giant sec={t + 40 + i * 3} kind={giantDef.种类} hurt={state.受伤} opacity={state.opacity} />
+                    <Giant sec={t + 40 + i * 3} kind={giantDef.种类} hurt={state.hurt} opacity={state.opacity} />
                   </group>
                 </DeathTopple>
               </group>
             ) : null;
           })}
           {choreo.GIANTS.map((_, i) => (
-            <PoofBurst key={i} center={choreo.deathPos(i)} width={GIANT.hitbox[0] / 2} height={GIANT.height} sec={(t - choreo.T_DEATH[i]) * choreo.特效倍速} seed={120 + i} />
+            <PoofBurst key={i} center={choreo.deathPos(i)} width={GIANT.hitbox[0] / 2} height={GIANT.height} sec={(t - choreo.T_DEATH[i]) * choreo.fxSpeed} seed={120 + i} />
           ))}
-          <BlockDebris data={DEBRIS} atlas={ATLAS} bursts={choreo.debrisBursts(t)} nearHide={camPos && { 镜头: camPos.map((x, i) => x - choreo.小屋原点[i]), ...debrisNearHide }} />
+          <BlockDebris data={DEBRIS} atlas={ATLAS} bursts={choreo.debrisBursts(t)} nearHide={camPos && { cameraPos: camPos.map((x, i) => x - choreo.cottageOrigin[i]), ...debrisNearHide }} />
         </>
       )}
     </group>

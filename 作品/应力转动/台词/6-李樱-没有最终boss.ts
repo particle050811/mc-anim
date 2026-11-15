@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 0d0f60e3ffa0），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-没有最终boss（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "6-李樱-没有最终boss",
   "角色": "李樱",
   "念": "都穿越到mc了，没想到暮色森林还是没有最终boss！",
@@ -67,4 +67,4 @@ const 句: 台词句 = {
     [3.52,"X"],
   ],
 };
-export default 句;
+export default sentence;

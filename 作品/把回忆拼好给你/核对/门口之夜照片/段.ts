@@ -2,14 +2,14 @@
 // 第 0 帧是不过整片后期的原样（给 特效/照片.tsx 当图用；要正方形的合照裁正中 crop=1440:1440:560:0），第 1 帧过了夜的整片后期（成片里卡片里看到的样子），
 // 第 2 帧是 64×64 的存档图标（裁正中正方形、褪色蒙灰，同 2-截图下线 落定那一帧）放大 20 倍摆在正中，原尺寸取回：crop=1280:1280:640:80,scale=64:64:flags=neighbor。
 // 导出：./anim --作品 把回忆拼好给你 still 核对-门口之夜照片 0 --到预览 <主题>（2560×1440），要小图再自己缩。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
 
-export default 定义段({
+export default defineSeg({
   场: '核对',
   // 三个视图，一个一帧（60 帧一秒）
   秒: 3 / fps,
-  宽: 画幅.宽,
-  高: 画幅.高,
+  宽: aspect.宽,
+  高: aspect.高,
   地形: [],
 });

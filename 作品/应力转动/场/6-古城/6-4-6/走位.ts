@@ -11,7 +11,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { walkPose } from '../../../角色/追兵.tsx';
 import { flightPose, groundPose, landPose, mixPose, nearYaw, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
-import { elite, eliteLeap, footOf, withHang, type BlockPos, type 跳 } from '../../../地点/古城4x/布局.ts';
+import { elite, eliteLeap, footOf, withHang, type BlockPos, type Jump } from '../../../地点/古城4x/布局.ts';
 
 export const FPS = 24;
 const ss = (x: number) => {
@@ -21,10 +21,10 @@ const ss = (x: number) => {
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // 强者在空中的姿势：古城戏.ts 的 `flightPose`，不垫羊毛；rightArmScale 右臂摆幅
-export const eliteAirPose = (leap: 跳, frame: number, rightArmScale = 1): FigurePose => flightPose(leap, frame, { place: false, armRScale: rightArmScale });
+export const eliteAirPose = (leap: Jump, frame: number, rightArmScale = 1): FigurePose => flightPose(leap, frame, { place: false, armRScale: rightArmScale });
 
 export type EliteRoute = {
-  跳们: 跳[]; // f0、f1 是追兵钟的帧（秒 × FPS）
+  jumps: Jump[]; // f0、f1 是追兵钟的帧（秒 × FPS）
   startSec: number;
   landSec: number; // 最后一跳落地
   standPos: V3;
@@ -32,12 +32,12 @@ export type EliteRoute = {
   // 追兵钟 t 秒的姿势（站着的那几段由 站姿 给：开头起跳前、刹住以后）
   pose: (t: number, standPose?: (loc: V3, yaw: number) => FigurePose) => FigurePose;
   // 落地（hit_ground）、刹步（step）发振动的时刻和位置（场景），给 振动链.ts
-  振动: { 名: string; t: number; p: V3 }[];
+  vibrations: { 名: string; t: number; p: V3 }[];
 };
 
 // 点们：脚底格（第 0 个是起跳处）；离地们：每一跳；起秒：第一跳离地；站定：最后落地后刹住的格（不给 = 落在哪站在哪）
 export const buildEliteRoute = (cells: BlockPos[], jumpHeights: number[], startSec: number, standCell?: BlockPos, label = ''): EliteRoute => {
-  const jumps: 跳[] = [];
+  const jumps: Jump[] = [];
   let t = startSec;
   for (let i = 1; i < cells.length; i++) {
     const leap = withHang(eliteLeap(footOf(cells[i - 1]), footOf(cells[i]), jumpHeights[i - 1], t * FPS, FPS), i - 1 + (label === '刘' ? 3 : 0));
@@ -86,7 +86,7 @@ export const buildEliteRoute = (cells: BlockPos[], jumpHeights: number[], startS
     if (sinceLand < 0.6) return mixPose(landPose(loc, standYaw, sinceLand * FPS, 0.6 * FPS), standPose(loc, standYaw), ss((sinceLand / 0.6 - 0.6) / 0.4));
     return standPose(loc, standYaw);
   };
-  return { 跳们: jumps, startSec, landSec, standPos, standYaw, pose, 振动: vibrations };
+  return { jumps: jumps, startSec, landSec, standPos, standYaw, pose, vibrations: vibrations };
 };
 
 // 看：世界坐标里看着哪一点，身子转一部分（身随），其余靠头；w 0～1 是看过去的程度（同老 6-4-6/编排.ts）

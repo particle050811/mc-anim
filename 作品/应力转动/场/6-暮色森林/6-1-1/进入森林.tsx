@@ -32,7 +32,7 @@ import { VIEW_FOG } from '@engine/voxel/视距.ts';
 import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 
 export const ENTER_FOREST_FRAMES = choreo.END - 1;
 
@@ -64,10 +64,10 @@ const Rig: React.FC<{ f: number }> = ({ f: frame }) => {
 };
 
 // 李樱腰上一直挂着刀（和 6-1-2 一样的刀鞘、一样的挂法）
-const LiYingSheathed: React.FC<{ pose: FigurePose; 嘴?: Mouth }> = ({ pose, 嘴: mouth }) => (
+const LiYingSheathed: React.FC<{ pose: FigurePose; mouth?: Mouth }> = ({ pose, mouth: mouth }) => (
   <LiYing
     pose={pose}
-    嘴={mouth}
+    mouth={mouth}
     hipL={<WornSheath />}
   />
 );
@@ -139,7 +139,7 @@ const IslandScene: React.FC<{ f: number }> = ({ f: frame }) => {
     <>
       <SkyDome sun={SUN_OW} />
       <PortalIsland active={choreo.portalActive(frame)} poolOnly />
-      {ly.visible && <LiYingSheathed pose={ly.pose} 嘴={liYingMouth(frame)} />}
+      {ly.visible && <LiYingSheathed pose={ly.pose} mouth={liYingMouth(frame)} />}
       {jh.visible && <Jiuhu pose={jh.pose} tail={jh.tail} />}
       {/* 钻石正面朝 -Y（镜头在南边），稍微仰一点让上沿的斜面受光；飞的时候绕竖轴打转 */}
       {diamond && diamond.scale > 0 && <Diamond position={diamond.loc} size={0.32 * diamond.scale} rotation={[rad(8), 0, rad(-12 + diamond.spin)]} />}
@@ -165,7 +165,7 @@ const TwilightForest: React.FC<{ f: number; t: number }> = ({ f: frame, t }) => 
       <LandmarkPlacement 名="娜迦庭院">
         {/* 暮色森林没有太阳：深蓝天、星星、地平线一圈薄荷绿，主光、天光、云都和 6-1-2 一样 */}
         <SkyDome twilight sun={courtyardLightDir} />
-        {ly.visible && <LiYingSheathed pose={ly.pose} 嘴={liYingMouth(frame)} />}
+        {ly.visible && <LiYingSheathed pose={ly.pose} mouth={liYingMouth(frame)} />}
         {jh.visible && <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} />}
         <PortalParticles emitters={choreo.tfEmitters()} sec={choreo.particleSec(frame)} size={2.2} />
       </LandmarkPlacement>
@@ -174,7 +174,7 @@ const TwilightForest: React.FC<{ f: number; t: number }> = ({ f: frame, t }) => 
 };
 
 export const EnterForest: React.FC = () => {
-  const sec = use当前秒();
+  const sec = useCurrentSec();
   const frame = sec * choreo.FPS;
   const { width, height } = useVideoConfig();
   const choreoFrame = frame + 1;

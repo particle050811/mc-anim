@@ -4,82 +4,82 @@
 // 飞走的纸（日历.ts 的 飞页们）各画一片：贴图上下压扁（翻着飞），位置吸在整贴图像素上，背面朝外时露纸背。
 import type React from 'react';
 import type * as THREE from 'three';
-import { 像素字 } from '../界面/像素字.ts';
-import { 现实色 } from './色板.ts';
-import { 新像素画, 成贴图, 画布倍, type 像素画 } from './像素图.ts';
-import { 正面, 像素盒 } from './像素块.tsx';
-import { 日历尺寸, 纸厚, 页版式, 飞姿, type 飞页 } from './日历.ts';
+import { pixelFont } from '../界面/像素字.ts';
+import { realColors } from './色板.ts';
+import { newPixelArt, makeTexture, canvasScale, type PixelArt } from './像素图.ts';
+import { FrontFace, PixelBox } from './像素块.tsx';
+import { calendarSize, paperThickness, pageLayout, flyPose, type FlyingPage } from './日历.ts';
 
-const S = 日历尺寸;
-const 字色 = 现实色.页字;
+const S = calendarSize;
+const textColor = realColors.pageText;
 
 // 一页的正面：纸、上面一行小字、大数字和「天」
-const 画页 = (数: number): 像素画 => {
-  const p = 新像素画(S.宽, S.页高);
-  p.噪(0, 0, S.宽, S.页高, 现实色.纸, 101, [5, 3, 2]);
-  const 版 = 页版式(数);
-  const 小 = '距高考还有';
-  const 小宽 = 像素字.字宽(小) - 1;
-  像素字.画(p.ctx, 小, { x: Math.round((S.宽 - 小宽) / 2) * 画布倍, y: 版.小字y * 画布倍 }, 0, 0, 字色, 画布倍);
-  像素字.画(p.ctx, String(数), { x: 版.数.x * 画布倍, y: 版.数.y * 画布倍 }, 0, 0, 现实色.倒计时, 画布倍 * 版.大字倍);
-  像素字.画(p.ctx, '天', { x: 版.天.x * 画布倍, y: 版.天.y * 画布倍 }, 0, 0, 字色, 画布倍);
+const paintPage = (dayNum: number): PixelArt => {
+  const p = newPixelArt(S.宽, S.pageHeight);
+  p.noise(0, 0, S.宽, S.pageHeight, realColors.paperColors, 101, [5, 3, 2]);
+  const layout = pageLayout(dayNum);
+  const smallText = '距高考还有';
+  const smallWidth = pixelFont.textWidth(smallText) - 1;
+  pixelFont.draw(p.ctx, smallText, { x: Math.round((S.宽 - smallWidth) / 2) * canvasScale, y: layout.smallTextY * canvasScale }, 0, 0, textColor, canvasScale);
+  pixelFont.draw(p.ctx, String(dayNum), { x: layout.数.x * canvasScale, y: layout.数.y * canvasScale }, 0, 0, realColors.countdown, canvasScale * layout.bigTextScale);
+  pixelFont.draw(p.ctx, '天', { x: layout.天.x * canvasScale, y: layout.天.y * canvasScale }, 0, 0, textColor, canvasScale);
   return p;
 };
 
 // 纸背：比正面亮一点、没有字，外沿一圈暗边（翻过来时和正面分得开）
-const 画纸背 = (): 像素画 => {
-  const p = 新像素画(S.宽, S.页高);
-  p.噪(0, 0, S.宽, S.页高, [现实色.纸背, 现实色.纸[2]], 104, [3, 1]);
-  p.方(0, 0, S.宽, 1, 现实色.纸层[0]);
-  p.方(0, S.页高 - 1, S.宽, 1, 现实色.纸层[0]);
+const paintPaperBack = (): PixelArt => {
+  const p = newPixelArt(S.宽, S.pageHeight);
+  p.noise(0, 0, S.宽, S.pageHeight, [realColors.paperBack, realColors.paperColors[2]], 104, [3, 1]);
+  p.fillRect(0, 0, S.宽, 1, realColors.paperLayer[0]);
+  p.fillRect(0, S.pageHeight - 1, S.宽, 1, realColors.paperLayer[0]);
   return p;
 };
 
-const 画装订 = (宽: number, 高: number, 种: number, 下沿: boolean): 像素画 => {
-  const p = 新像素画(宽, 高);
-  p.噪(0, 0, 宽, 高, 现实色.装订, 种, [4, 3, 2]);
-  if (下沿) p.方(0, 高 - 1, 宽, 1, 现实色.装订[1]);
+const paintBinding = (width: number, height: number, seed: number, withBottomEdge: boolean): PixelArt => {
+  const p = newPixelArt(width, height);
+  p.noise(0, 0, width, height, realColors.bindingColors, seed, [4, 3, 2]);
+  if (withBottomEdge) p.fillRect(0, height - 1, width, 1, realColors.bindingColors[1]);
   return p;
 };
 
 // 贴图按内容缓存：页上的数只有一百种，不必每帧重画
-const 缓存 = new Map<string, THREE.Texture>();
-const 取 = (键: string, 画: () => 像素画) => {
-  let t = 缓存.get(键);
-  if (!t) 缓存.set(键, (t = 成贴图(画())));
+const calendarTextureCache = new Map<string, THREE.Texture>();
+const getOrPaint = (cacheKey: string, draw: () => PixelArt) => {
+  let t = calendarTextureCache.get(cacheKey);
+  if (!t) calendarTextureCache.set(cacheKey, (t = makeTexture(draw())));
   return t;
 };
-const 页图 = (数: number) => 取(`页${数}`, () => 画页(数));
-const 纸背图 = () => 取('纸背', 画纸背);
-const 装订前 = () => 取('装订前', () => 画装订(S.宽, S.装订高, 102, true));
-const 装订顶 = () => 取('装订顶', () => 画装订(S.宽, S.装订深, 103, false));
+const pageImage = (dayNum: number) => getOrPaint(`页${dayNum}`, () => paintPage(dayNum));
+const paperBackImage = () => getOrPaint('纸背', paintPaperBack);
+const bindingFront = () => getOrPaint('装订前', () => paintBinding(S.宽, S.bindingHeight, 102, true));
+const bindingTop = () => getOrPaint('装订顶', () => paintBinding(S.宽, S.bindingDepth, 103, false));
 
-export type 日历本参数 = {
+export type CalendarBookParams = {
   /** 装订正面的左下前角（贴图像素） */
   x: number;
   y: number;
   z: number;
   /** 最上面那页印的天数（日历.ts 的 日历数） */
-  顶: number;
+  pagesOnTop: number;
   /** 还在空中的纸（日历.ts 的 飞页们） */
-  飞?: readonly 飞页[];
+  flyPages?: readonly FlyingPage[];
   /** 斜投影里往里一个贴图像素画面上升几个（正交顶面 / N）：飞纸各往前挪一点免得贴在一起，画面上的位置按它补回来，还落在整贴图像素上 */
-  斜: number;
+  oblique: number;
 };
 
-export const 日历本: React.FC<日历本参数> = ({ x, y, z, 顶, 飞 = [], 斜 }) => {
-  const 厚 = 纸厚(顶);
-  const 纸y = y + S.装订深 - 厚;
+export const CalendarBook: React.FC<CalendarBookParams> = ({ x, y, z, pagesOnTop, flyPages = [], oblique }) => {
+  const thickness = paperThickness(pagesOnTop);
+  const paperY = y + S.bindingDepth - thickness;
   return (
     <group>
-      <像素盒 x={x} y={y} z={z + S.页高} 宽={S.宽} 深={S.装订深} 高={S.装订高} 前={装订前()} 顶={装订顶()} />
-      <正面 x={x} y={纸y} z={z} 宽={S.宽} 高={S.页高} 图={页图(顶)} />
-      {飞.map((纸, i) => {
-        const 姿 = 飞姿(纸.龄, 纸.种);
+      <PixelBox x={x} y={y} z={z + S.pageHeight} 宽={S.宽} depth={S.bindingDepth} 高={S.bindingHeight} 前={bindingFront()} topTexture={bindingTop()} />
+      <FrontFace x={x} y={paperY} z={z} 宽={S.宽} 高={S.pageHeight} 图={pageImage(pagesOnTop)} />
+      {flyPages.map((sheet, i) => {
+        const pose = flyPose(sheet.age, sheet.种);
         // 绕这张纸的横中线翻：中线跟着飞，压扁后的上下沿落在整贴图像素上。越晚飞的越靠前（往前挪 前 个贴图像素），z 补上 斜 × 前，画面上不动
-        const 底 = z + Math.round(S.页高 / 2 + 姿.dz - 姿.高 / 2);
-        const 前 = 1 + 0.01 * (i + 1);
-        return <正面 key={纸.数} x={x + 姿.dx} y={纸y - 前} z={底 + 斜 * 前} 宽={S.宽} 高={姿.高} 图={姿.背 ? 纸背图() : 页图(纸.数)} />;
+        const bottomZ = z + Math.round(S.pageHeight / 2 + pose.dz - pose.高 / 2);
+        const layerOffset = 1 + 0.01 * (i + 1);
+        return <FrontFace key={sheet.数} x={x + pose.dx} y={paperY - layerOffset} z={bottomZ + oblique * layerOffset} 宽={S.宽} 高={pose.高} 图={pose.isBack ? paperBackImage() : pageImage(sheet.数)} />;
       })}
     </group>
   );

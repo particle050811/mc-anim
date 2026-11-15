@@ -3,7 +3,7 @@
 import { RenderInternals } from './渲染器.ts';
 
 /** 给了 输入 从 stdin 喂，返回 stdout 原始字节；退出码非 0 抛 */
-export const 跑自带ffmpeg = async (args: string[], 输入?: Buffer): Promise<Buffer> => {
+export const runBundledFfmpeg = async (args: string[], stdin?: Buffer): Promise<Buffer> => {
   const r = await RenderInternals.callFf({
     bin: 'ffmpeg',
     args,
@@ -12,7 +12,7 @@ export const 跑自带ffmpeg = async (args: string[], 输入?: Buffer): Promise<
     binariesDirectory: null,
     cancelSignal: undefined,
     // encoding 给 null 才回 Buffer（execa 5 照这个分），它的类型没写 null
-    options: { ...(输入 ? { input: 输入 } : {}), encoding: null as unknown as undefined, maxBuffer: 2 ** 32 },
+    options: { ...(stdin ? { input: stdin } : {}), encoding: null as unknown as undefined, maxBuffer: 2 ** 32 },
   });
   return r.stdout as unknown as Buffer;
 };

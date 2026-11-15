@@ -11,26 +11,26 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { 配置, 段签目录 } from '../环境/配置.ts';
-import { 作品名 } from '../环境/作品.ts';
-import { 低优先级, 跑 } from '../环境/子进程.ts';
-import { 登记临时文件 } from '../闸/收尾.ts';
-import { 原子写 } from '../渲/母版.ts';
-import { 音频流 } from '../验收/帧流.ts';
-import { 比块均值, 读阈值 } from '../验收/比较.ts';
-import { 扫母版 } from '../验收/验收.ts';
-import type { 签名 } from '../验收/认可.ts';
-import { 分段计时, type 阶段记录 } from '../运行记录/阶段.ts';
+import { config, segStampDir } from '../环境/配置.ts';
+import { workName } from '../环境/作品.ts';
+import { lowPriority, runCmd } from '../环境/子进程.ts';
+import { registerTempFile } from '../闸/收尾.ts';
+import { atomicWrite } from '../渲/母版.ts';
+import { audioStream } from '../验收/帧流.ts';
+import { compareBlockMeans, readThresholds } from '../验收/比较.ts';
+import { scanMaster } from '../验收/验收.ts';
+import type { Signature } from '../验收/认可.ts';
+import { stageTiming, type StageRecord } from '../运行记录/阶段.ts';
 
-export const 段签版本 = 3;
-export const 签文件名 = '签.json';
-export const 声音文件名 = '声音.flac';
-export const 历史文件名 = '历史.jsonl';
-export const 历史目录名 = '历史';
-export const 小图宽 = 160;
-export const 小图高 = 90;
+export const segStampVersion = 3;
+export const stampFileName = '签.json';
+export const soundFileName = '声音.flac';
+export const historyFileName = '历史.jsonl';
+export const historyDirName = '历史';
+export const thumbWidth = 160;
+export const thumbHeight = 90;
 
-export type 段签 = {
+export type SegStamp = {
   版本: 3;
   作品: string;
   段: string;
@@ -40,10 +40,10 @@ export type 段签 = {
   声音指纹?: string;
   级别: string | null;
   /** 切片的样子：大小、改于对得上就当字节没变，不重算 sha */
-  母版: 母版样子;
+  母版: MasterSnapshot;
   /** 声音那份 wav 的样子 */
-  声音源?: 母版样子;
-  签名: 签名;
+  声音源?: MasterSnapshot;
+  签名: Signature;
   /** 没有声音是 null */
   声音: { 文件: string; sha: string; 大小: number } | null;
   /** 首尾帧 160×90 灰度（base64），接缝.ts 判首帧重复用 */
@@ -51,181 +51,181 @@ export type 段签 = {
   派生于: string;
   派生: '渲染' | '回填' | '补';
   /** anim 认指纹 登记的：这个指纹没渲过，母版和这份段签沿用 自 那个指纹的（决策/0013）；同一指纹真渲一次就照「重渲」换掉，这套挪进 历史/ */
-  沿用?: 沿用记录;
+  沿用?: ReuseRecord;
 };
 
 /** 自：直接沿用的那个指纹；原渲：真渲出这份母版的指纹（连着认过几次也指到头）；帧：比过的帧；比法：哪种比法、哪套门槛 */
-export type 沿用记录 = { 自: string; 原渲: string; 理由: string; 帧: number[]; 比法: string; 于: string; 提交: string };
+export type ReuseRecord = { 自: string; 原渲: string; 理由: string; 帧: number[]; 比法: string; 于: string; 提交: string };
 
-export type 母版样子 = { 字节sha: string; 大小: number; 改于: number };
+export type MasterSnapshot = { 字节sha: string; 大小: number; 改于: number };
 
-export type 自查 = { 结论: '同画面' | '容差内' | '漂移'; 说明: string };
+export type SelfCheck = { 结论: '同画面' | '容差内' | '漂移'; 说明: string };
 
-export const 签路径 = (段键: string, 指纹: string, 作品 = 作品名()) => path.join(段签目录(段键, 指纹, 作品), 签文件名);
+export const segStampPath = (segKey: string, fingerprint: string, work = workName()) => path.join(segStampDir(segKey, fingerprint, work), stampFileName);
 
 /** 读段签；没有、版本不认识、指纹对不上都是 null */
-export const 读段签 = (段键: string, 指纹: string, 作品 = 作品名()): 段签 | null => {
-  const f = 签路径(段键, 指纹, 作品);
+export const readSegStamp = (segKey: string, fingerprint: string, work = workName()): SegStamp | null => {
+  const f = segStampPath(segKey, fingerprint, work);
   if (!fs.existsSync(f)) return null;
   try {
-    const j = JSON.parse(fs.readFileSync(f, 'utf8')) as 段签;
-    return j.版本 === 段签版本 && j.指纹 === 指纹 ? j : null;
+    const j = JSON.parse(fs.readFileSync(f, 'utf8')) as SegStamp;
+    return j.版本 === segStampVersion && j.指纹 === fingerprint ? j : null;
   } catch {
     return null;
   }
 };
 
-export const 段签文件 = (签: Pick<段签, '作品' | '段' | '指纹'>, 名: string) => path.join(段签目录(签.段, 签.指纹, 签.作品), 名);
-export const 声音路径 = (签: 段签) => (签.声音 ? 段签文件(签, 签.声音.文件) : null);
+export const segStampFile = (segStamp: Pick<SegStamp, '作品' | '段' | '指纹'>, fileName: string) => path.join(segStampDir(segStamp.段, segStamp.指纹, segStamp.作品), fileName);
+export const soundPath = (segStamp: SegStamp) => (segStamp.声音 ? segStampFile(segStamp, segStamp.声音.文件) : null);
 
-export const 文件sha = async (file: string) => {
+export const fileSha = async (file: string) => {
   const h = crypto.createHash('sha256');
   for await (const c of fs.createReadStream(file)) h.update(c as Buffer);
   return h.digest('hex');
 };
 
-const 对得上样子 = async (样: 母版样子, 文件: string) => {
-  if (!fs.existsSync(文件)) return false;
-  const st = fs.statSync(文件);
-  if (st.size !== 样.大小) return false;
-  if (st.mtimeMs === 样.改于) return true;
-  return (await 文件sha(文件)) === 样.字节sha;
+const matchesSnapshot = async (master: MasterSnapshot, file: string) => {
+  if (!fs.existsSync(file)) return false;
+  const st = fs.statSync(file);
+  if (st.size !== master.大小) return false;
+  if (st.mtimeMs === master.改于) return true;
+  return (await fileSha(file)) === master.字节sha;
 };
 
 /** 段签记的切片是不是这个文件：大小、改于一样就是；不一样再算字节 sha */
-export const 对得上母版 = (签: 段签, 母版: string) => 对得上样子(签.母版, 母版);
+export const matchesMaster = (segStamp: SegStamp, master: string) => matchesSnapshot(segStamp.母版, master);
 /** 段签记的声音是不是这份 wav */
-export const 对得上声音源 = (签: 段签, wav: string) => (签.声音源 ? 对得上样子(签.声音源, wav) : Promise.resolve(false));
+export const matchesSoundSource = (segStamp: SegStamp, wav: string) => (segStamp.声音源 ? matchesSnapshot(segStamp.声音源, wav) : Promise.resolve(false));
 /** 段签是这一对切片、wav 派生的（两样都对得上） */
-export const 对得上切片 = async (签: 段签, 画面: string, 声音: string) => (await 对得上母版(签, 画面)) && (await 对得上声音源(签, 声音));
+export const matchesSlice = async (segStamp: SegStamp, pictureMp4: string, soundFile: string) => (await matchesMaster(segStamp, pictureMp4)) && (await matchesSoundSource(segStamp, soundFile));
 
 /** 段签齐不齐：签.json 里登记的声音在 */
-export const 段签齐 = (签: 段签 | null): 签 is 段签 => !!签 && (!签.声音 || fs.existsSync(声音路径(签)!));
+export const segStampComplete = (segStamp: SegStamp | null): segStamp is SegStamp => !!segStamp && (!segStamp.声音 || fs.existsSync(soundPath(segStamp)!));
 
 /** 同一指纹两份签名比：抽样帧 sha 全一样是同画面；不一样比块均值，超容差算漂移 */
-export const 比签名 = (旧: 签名, 新: 签名, 块均值容差 = 读阈值().块均值容差): 自查 => {
-  if (旧.宽 !== 新.宽 || 旧.高 !== 新.高 || 旧.帧数 !== 新.帧数) return { 结论: '漂移', 说明: `上次 ${旧.宽}×${旧.高} ${旧.帧数} 帧，这次 ${新.宽}×${新.高} ${新.帧数} 帧` };
-  const 旧帧 = new Map(旧.帧.map((f) => [f.帧, f]));
-  let 不同 = 0;
-  let 最大 = 0;
-  for (const f of 新.帧) {
-    const o = 旧帧.get(f.帧);
+export const compareSignatures = (oldSig: Signature, newSig: Signature, blockMeanTol = readThresholds().块均值容差): SelfCheck => {
+  if (oldSig.宽 !== newSig.宽 || oldSig.高 !== newSig.高 || oldSig.帧数 !== newSig.帧数) return { 结论: '漂移', 说明: `上次 ${oldSig.宽}×${oldSig.高} ${oldSig.帧数} 帧，这次 ${newSig.宽}×${newSig.高} ${newSig.帧数} 帧` };
+  const oldByFrame = new Map(oldSig.帧.map((f) => [f.帧, f]));
+  let mismatch = 0;
+  let maxDiff = 0;
+  for (const f of newSig.帧) {
+    const o = oldByFrame.get(f.帧);
     if (o && o.哈希 === f.哈希) continue;
-    不同++;
-    最大 = Math.max(最大, o ? 比块均值(f.块均值, o.块均值) : Infinity);
+    mismatch++;
+    maxDiff = Math.max(maxDiff, o ? compareBlockMeans(f.块均值, o.块均值) : Infinity);
   }
-  const 声 = 旧.音频sha === 新.音频sha ? '声音一样' : '声音 sha 不一样';
-  if (!不同) return { 结论: '同画面', 说明: `抽样帧 sha 全一样，${声}` };
-  return 最大 <= 块均值容差
-    ? { 结论: '容差内', 说明: `${不同} 个抽样帧 sha 不一样，块均值最多差 ${最大}（容差 ${块均值容差}），${声}` }
-    : { 结论: '漂移', 说明: `${不同} 个抽样帧 sha 不一样，块均值最多差 ${最大}（容差 ${块均值容差}），${声}` };
+  const soundNote = oldSig.音频sha === newSig.音频sha ? '声音一样' : '声音 sha 不一样';
+  if (!mismatch) return { 结论: '同画面', 说明: `抽样帧 sha 全一样，${soundNote}` };
+  return maxDiff <= blockMeanTol
+    ? { 结论: '容差内', 说明: `${mismatch} 个抽样帧 sha 不一样，块均值最多差 ${maxDiff}（容差 ${blockMeanTol}），${soundNote}` }
+    : { 结论: '漂移', 说明: `${mismatch} 个抽样帧 sha 不一样，块均值最多差 ${maxDiff}（容差 ${blockMeanTol}），${soundNote}` };
 };
 
 /** 重渲前的那一套挪进 历史/<字节 sha 前 16 位>/：先挪声音，签.json 最后（中途断了，留下的签.json 指的文件不齐，下次照样重派生、接着挪） */
-const 存旧 = (旧: 段签, dir: string) => {
-  const 去 = path.join(dir, 历史目录名, 旧.母版.字节sha.slice(0, 16));
-  fs.mkdirSync(去, { recursive: true });
-  for (const 名 of [...(旧.声音 ? [旧.声音.文件] : []), 签文件名]) {
-    const 从 = path.join(dir, 名);
+const archiveOld = (prevStamp: SegStamp, dir: string) => {
+  const historyDir = path.join(dir, historyDirName, prevStamp.母版.字节sha.slice(0, 16));
+  fs.mkdirSync(historyDir, { recursive: true });
+  for (const fileName of [...(prevStamp.声音 ? [prevStamp.声音.文件] : []), stampFileName]) {
+    const fromPath = path.join(dir, fileName);
     // 同一份字节的已经挪过一次（内容相同），留着那份
-    if (fs.existsSync(从) && !fs.existsSync(path.join(去, 名))) fs.renameSync(从, path.join(去, 名));
+    if (fs.existsSync(fromPath) && !fs.existsSync(path.join(historyDir, fileName))) fs.renameSync(fromPath, path.join(historyDir, fileName));
   }
-  return path.relative(dir, 去).split(path.sep).join('/');
+  return path.relative(dir, historyDir).split(path.sep).join('/');
 };
 
 /** 历史/ 里挪过去的各套段签和它们所在的目录（备参考找认可那一版） */
-export const 读历史段签 = (段键: string, 指纹: string, 作品 = 作品名()): { 签: 段签; 目录: string }[] => {
-  const 根 = path.join(段签目录(段键, 指纹, 作品), 历史目录名);
-  if (!fs.existsSync(根)) return [];
-  return fs.readdirSync(根).sort().flatMap((名) => {
+export const readSegStampHistory = (segKey: string, fingerprint: string, work = workName()): { segStamp: SegStamp; 目录: string }[] => {
+  const historyDir = path.join(segStampDir(segKey, fingerprint, work), historyDirName);
+  if (!fs.existsSync(historyDir)) return [];
+  return fs.readdirSync(historyDir).sort().flatMap((dirName) => {
     try {
-      const 签 = JSON.parse(fs.readFileSync(path.join(根, 名, 签文件名), 'utf8')) as 段签;
-      return 签.版本 === 段签版本 && 签.指纹 === 指纹 ? [{ 签, 目录: path.join(根, 名) }] : [];
+      const segStamp = JSON.parse(fs.readFileSync(path.join(historyDir, dirName, stampFileName), 'utf8')) as SegStamp;
+      return segStamp.版本 === segStampVersion && segStamp.指纹 === fingerprint ? [{ segStamp, 目录: path.join(historyDir, dirName) }] : [];
     } catch {
       return [];
     }
   });
 };
 
-const 临时名 = (dir: string, 名: string) => {
-  const ext = path.extname(名);
-  return path.join(dir, `${path.basename(名, ext)}.写入中-${process.pid}${ext}`);
+const tempName = (dir: string, fileName: string) => {
+  const ext = path.extname(fileName);
+  return path.join(dir, `${path.basename(fileName, ext)}.写入中-${process.pid}${ext}`);
 };
 
 /**
  * 从切片和 wav 派生段签（只读这两样、只写段签目录）。签名用 扫母版（和 verify、accept 同一份代码），首尾帧小图在同一次解码里出；声音存 FLAC，解回来核对过才收。
  * 同一指纹已有段签、切片字节 sha 变了（重渲）：旧的记进 历史.jsonl 并自查。不过闸，调用方过
  */
-export const 出段签 = async (画面: string, 声音源: string | null, o: { 段键: string; 指纹: string; 声音指纹?: string; 级别: string | null; 派生: 段签['派生']; 作品?: string; 计时?: { 收: 阶段记录[]; 标签: string } }): Promise<{ 签: 段签; 自查: 自查 | null }> => {
-  const 作品 = o.作品 ?? 作品名();
-  const dir = 段签目录(o.段键, o.指纹, 作品);
+export const makeSegStamp = async (pictureMp4: string, soundSource: string | null, o: { segKey: string; 指纹: string; 声音指纹?: string; 级别: string | null; 派生: SegStamp['派生']; 作品?: string; 计时?: { 收: StageRecord[]; 标签: string } }): Promise<{ segStamp: SegStamp; 自查: SelfCheck | null }> => {
+  const work = o.作品 ?? workName();
+  const dir = segStampDir(o.segKey, o.指纹, work);
   fs.mkdirSync(dir, { recursive: true });
-  const 样子 = async (f: string): Promise<母版样子> => {
+  const fileSnapshot = async (f: string): Promise<MasterSnapshot> => {
     const st = fs.statSync(f);
-    return { 字节sha: await 文件sha(f), 大小: st.size, 改于: st.mtimeMs };
+    return { 字节sha: await fileSha(f), 大小: st.size, 改于: st.mtimeMs };
   };
-  const 点 = o.计时 ? 分段计时(o.计时.收, o.计时.标签) : () => {};
-  const 母版 = await 样子(画面);
-  const 声音样子 = 声音源 ? await 样子(声音源) : undefined;
-  点('段签：算字节');
-  const ffmpeg = 配置('ffmpeg');
-  const 临时: string[] = [];
-  const 撤们: (() => void)[] = [];
-  const 记临时 = (f: string) => {
-    临时.push(f);
-    撤们.push(登记临时文件(f));
+  const timer = o.计时 ? stageTiming(o.计时.收, o.计时.标签) : () => {};
+  const master = await fileSnapshot(pictureMp4);
+  const soundSnapshot = soundSource ? await fileSnapshot(soundSource) : undefined;
+  timer('段签：算字节');
+  const ffmpeg = config('ffmpeg');
+  const tempFiles: string[] = [];
+  const cleanups: (() => void)[] = [];
+  const trackTemp = (f: string) => {
+    tempFiles.push(f);
+    cleanups.push(registerTempFile(f));
   };
   try {
-    const 小图文件 = 临时名(dir, '首尾.gray');
-    记临时(小图文件);
-    const { 签名 } = await 扫母版(画面, { 首尾小图: 小图文件, 声音: 声音源 });
-    const 小图们 = fs.readFileSync(小图文件);
-    const 一张 = 小图宽 * 小图高;
-    if (小图们.length !== (签名.帧数 > 1 ? 2 : 1) * 一张) throw new Error(`${画面} 的首尾帧小图只出了 ${小图们.length} 字节`);
-    const 首尾 = { 宽: 小图宽, 高: 小图高, 首帧: 小图们.subarray(0, 一张).toString('base64'), 末帧: 小图们.subarray(小图们.length - 一张).toString('base64') };
-    点('段签：扫切片');
-    let 声音: 段签['声音'] = null;
-    let 声音tmp: string | null = null;
-    const 声源 = 声音源;
-    if (声源 && 签名.音频sha) {
-      const tmp = (声音tmp = 临时名(dir, 声音文件名));
-      记临时(tmp);
-      await 跑(低优先级([ffmpeg, '-v', 'error', '-nostdin', '-y', '-i', 声源, '-map', '0:a:0', '-c:a', 'flac', tmp]), { 安静: true });
+    const thumbFile = tempName(dir, '首尾.gray');
+    trackTemp(thumbFile);
+    const { 签名: signature } = await scanMaster(pictureMp4, { headTailThumb: thumbFile, 声音: soundSource });
+    const thumbBuf = fs.readFileSync(thumbFile);
+    const thumbArea = thumbWidth * thumbHeight;
+    if (thumbBuf.length !== (signature.帧数 > 1 ? 2 : 1) * thumbArea) throw new Error(`${pictureMp4} 的首尾帧小图只出了 ${thumbBuf.length} 字节`);
+    const headTail = { 宽: thumbWidth, 高: thumbHeight, 首帧: thumbBuf.subarray(0, thumbArea).toString('base64'), 末帧: thumbBuf.subarray(thumbBuf.length - thumbArea).toString('base64') };
+    timer('段签：扫切片');
+    let soundRecord: SegStamp['声音'] = null;
+    let soundTempFile: string | null = null;
+    const audioSource = soundSource;
+    if (audioSource && signature.音频sha) {
+      const tmp = (soundTempFile = tempName(dir, soundFileName));
+      trackTemp(tmp);
+      await runCmd(lowPriority([ffmpeg, '-v', 'error', '-nostdin', '-y', '-i', audioSource, '-map', '0:a:0', '-c:a', 'flac', tmp]), { quiet: true });
       const h = crypto.createHash('sha256');
-      for await (const c of 音频流(tmp)) h.update(c);
+      for await (const c of audioStream(tmp)) h.update(c);
       const pcm = h.digest('hex');
-      if (pcm !== 签名.音频sha) throw new Error(`${声源} 的声音存成 FLAC 再解回来对不上（PCM sha ${pcm.slice(0, 12)}，原来 ${签名.音频sha.slice(0, 12)}）`);
-      声音 = { 文件: 声音文件名, sha: await 文件sha(tmp), 大小: fs.statSync(tmp).size };
+      if (pcm !== signature.音频sha) throw new Error(`${audioSource} 的声音存成 FLAC 再解回来对不上（PCM sha ${pcm.slice(0, 12)}，原来 ${signature.音频sha.slice(0, 12)}）`);
+      soundRecord = { 文件: soundFileName, sha: await fileSha(tmp), 大小: fs.statSync(tmp).size };
     }
-    点('段签：存声音');
+    timer('段签：存声音');
 
-    const 签: 段签 = {
-      版本: 段签版本, 作品, 段: o.段键, 指纹: o.指纹, ...(o.声音指纹 ? { 声音指纹: o.声音指纹 } : {}), 级别: o.级别,
-      母版, ...(声音样子 ? { 声音源: 声音样子 } : {}),
-      签名, 声音,
-      首尾, 派生于: new Date().toISOString(), 派生: o.派生,
+    const segStamp: SegStamp = {
+      版本: segStampVersion, 作品: work, 段: o.segKey, 指纹: o.指纹, ...(o.声音指纹 ? { 声音指纹: o.声音指纹 } : {}), 级别: o.级别,
+      母版: master, ...(soundSnapshot ? { 声音源: soundSnapshot } : {}),
+      签名: signature, 声音: soundRecord,
+      首尾: headTail, 派生于: new Date().toISOString(), 派生: o.派生,
     };
-    const 旧 = 读段签(o.段键, o.指纹, 作品);
-    let 查: 自查 | null = null;
-    if (旧 && 旧.母版.字节sha !== 母版.字节sha) {
-      查 = 比签名(旧.签名, 签名);
-      const 存于 = 存旧(旧, dir);
-      fs.appendFileSync(path.join(dir, 历史文件名), JSON.stringify({ 记于: 签.派生于, 上次字节sha: 旧.母版.字节sha, 上次派生于: 旧.派生于, 这次字节sha: 母版.字节sha, ...查, 存于 }) + '\n', 'utf8');
+    const prevStamp = readSegStamp(o.segKey, o.指纹, work);
+    let check: SelfCheck | null = null;
+    if (prevStamp && prevStamp.母版.字节sha !== master.字节sha) {
+      check = compareSignatures(prevStamp.签名, signature);
+      const storedAt = archiveOld(prevStamp, dir);
+      fs.appendFileSync(path.join(dir, historyFileName), JSON.stringify({ 记于: segStamp.派生于, 上次字节sha: prevStamp.母版.字节sha, 上次派生于: prevStamp.派生于, 这次字节sha: master.字节sha, ...check, 存于: storedAt }) + '\n', 'utf8');
     }
-    if (声音) fs.renameSync(声音tmp!, path.join(dir, 声音文件名));
-    else fs.rmSync(path.join(dir, 声音文件名), { force: true });
-    原子写(path.join(dir, 签文件名), JSON.stringify(签, null, 1) + '\n');
-    点('段签：写入');
-    return { 签, 自查: 查 };
+    if (soundRecord) fs.renameSync(soundTempFile!, path.join(dir, soundFileName));
+    else fs.rmSync(path.join(dir, soundFileName), { force: true });
+    atomicWrite(path.join(dir, stampFileName), JSON.stringify(segStamp, null, 1) + '\n');
+    timer('段签：写入');
+    return { segStamp, 自查: check };
   } finally {
-    for (const f of 临时) fs.rmSync(f, { force: true });
-    for (const 撤 of 撤们) 撤();
+    for (const f of tempFiles) fs.rmSync(f, { force: true });
+    for (const undo of cleanups) undo();
   }
 };
 
 /** 一段切片的段签（渲段.ts 渲完、取段签 补的时候调） */
-export const 派生段签 = (r: { 段: { 键: string }; 画面: string; 声音: string; 画面指纹: { 指纹: string }; 声音指纹: { 指纹: string }; 参数: { inputProps: { 级别: string } } }, o: { 派生: 段签['派生']; 计时?: { 收: 阶段记录[]; 标签: string } }) =>
-  出段签(r.画面, r.声音, { 段键: r.段.键, 指纹: r.画面指纹.指纹, 声音指纹: r.声音指纹.指纹, 级别: r.参数.inputProps.级别, 派生: o.派生, 计时: o.计时 });
+export const deriveSegStamp = (r: { 段: { 键: string }; 画面: string; 声音: string; 画面指纹: { 指纹: string }; 声音指纹: { 指纹: string }; 参数: { inputProps: { 级别: string } } }, o: { 派生: SegStamp['派生']; 计时?: { 收: StageRecord[]; 标签: string } }) =>
+  makeSegStamp(r.画面, r.声音, { segKey: r.段.键, 指纹: r.画面指纹.指纹, 声音指纹: r.声音指纹.指纹, 级别: r.参数.inputProps.级别, 派生: o.派生, 计时: o.计时 });
 
 /** 接缝一头取自段签：首尾帧小图、声音.flac 里那一帧 */
-export const 小图 = (签: 段签, 哪头: '首帧' | '末帧') => Buffer.from(签.首尾[哪头], 'base64');
+export const thumb = (segStamp: SegStamp, whichEnd: '首帧' | '末帧') => Buffer.from(segStamp.首尾[whichEnd], 'base64');

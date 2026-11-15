@@ -2,27 +2,27 @@
 // 你拿御币点祭坛，材料化成光汇到圈心，她站在光里出现；「光」那一拍切到圈里的近景：你递蛋糕驯服她（爱心），她转过来，镜头推进她的右眼，
 // 接第 4 句的眼睛特写。画法见 场/2-祭坛/。
 // 帧数、场窗口、原声和各音效 cue 的帧都从 分镜 推，增益在场参数，段里不写数字。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段时钟, 段内事件帧 as 段内正片事件帧 } from '../../分镜/正片第3句.ts';
-import { 原声增益, 音效 } from '../../场/2-祭坛/参数.ts';
-import { 按帧cue, type 帧上cue } from '../../声音/跨段音效.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segClock, segEventFrames as segMainCutEventFrames } from '../../分镜/正片第3句.ts';
+import { originalGain, soundFx } from '../../场/2-祭坛/参数.ts';
+import { toAssetCue, type FrameCue } from '../../声音/跨段音效.ts';
 
-const 键 = '2-祭坛召唤';
-const 钟 = 段时钟(键);
-const 事 = 段内正片事件帧(键);
-const 到段尾 = (起: number, 秒: number) => Math.min(Math.ceil(秒 * fps), 钟.帧数 - 起);
-const 配峰 = (峰值: number) => Math.round(10 ** ((音效.峰值 - 峰值) / 20) * 1e6) / 1e6;
+const segKey = '2-祭坛召唤';
+const clock = segClock(segKey);
+const events = segMainCutEventFrames(segKey);
+const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
+const gainForPeak = (peakDb: number) => Math.round(10 ** ((soundFx.峰值 - peakDb) / 20) * 1e6) / 1e6;
 
 // 祭坛合成声：文件头对着点祭坛那一帧（一开头就响）
-const 合成: 帧上cue = { 帧: 事.第3句点祭坛, 资产: 音效.祭坛.资产, 名: '祭坛合成', 帧数: 到段尾(事.第3句点祭坛, 音效.祭坛.秒), 增益: 配峰(音效.祭坛.峰值) };
+const altarCue: FrameCue = { 帧: events.activateAltar, 资产: soundFx.祭坛.资产, 名: '祭坛合成', 帧数: clampFramesToSegEnd(events.activateAltar, soundFx.祭坛.秒), 增益: gainForPeak(soundFx.祭坛.峰值) };
 
-export default 定义段({
+export default defineSeg({
   场: '2-祭坛',
-  秒: 钟.秒,
-  宽: 画幅.宽,
-  高: 画幅.高,
+  秒: clock.秒,
+  宽: aspect.宽,
+  高: aspect.高,
   地形: [],
-  场窗口: 钟.场窗口,
-  声音: [{ ...钟.原声, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: 原声增益 }, 按帧cue(合成)],
+  sceneWindow: clock.sceneWindow,
+  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: originalGain }, toAssetCue(altarCue)],
 });

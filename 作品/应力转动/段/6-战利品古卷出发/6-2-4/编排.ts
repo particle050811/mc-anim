@@ -31,13 +31,13 @@ export const segmentId = '6-2-4';
 export const FRAMES = segmentFrames(segmentId);
 const beatFrame = (bar: number, beat: number) => frameInSegment(segmentId, [bar, beat]);
 export const beats = {
-  递: 0, // 29.1 李樱把指南针递给九胡（从 6-2-3 末帧递出的半途接着往她面前送，第 12 帧送到）
+  handOffFrame: 0, // 29.1 李樱把指南针递给九胡（从 6-2-3 末帧递出的半途接着往她面前送，第 12 帧送到）
   receive: 4, // 九胡低头看、伸右手去接
   handoff: 16, // 九胡的手托住指南针（14～18 两只手都在上面，指南针从他手上换到她手上）
   release: 18, // 李樱松手、手放下；九胡把指南针收到身前低处
   lookUp: 40, // 九胡看完抬头
   summon: 50, // 扫帚冒出来
-  跨上: beatFrame(30, 1), // 30.1 跨上扫帚这一拍（李樱正蹲身起跳，4 帧后落座）
+  mount: beatFrame(30, 1), // 30.1 跨上扫帚这一拍（李樱正蹲身起跳，4 帧后落座）
   liYingMount: beatFrame(30, 1) + 4, // 30.1 李樱跳上前座（落座那一帧）
   jiuHuUp: beatFrame(30, 1) + 20,
   seated: beatFrame(30, 1) + 36,
@@ -64,7 +64,7 @@ const SETTLE = 0.25; // 坐稳以后再升一点
 // 31.1～蓄力 慢慢升到这个高度：要从门里飞出去，门洞顶 3 格，人坐在杆上头顶比杆高约 1.4 格，1.25 格时头顶约 2.65 格，离门楣 0.35 格；再低，脚就要擦地（脚比杆低约 0.45 格）
 const LIFT = 1.25;
 const DIP = 0.1; // 冲之前往下一沉
-export type BroomState = { 位置: V3; 朝向: number; pitch: number; roll: number; appear: number };
+export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; appear: number };
 // 不带悬停起伏、不带下沉、不带出门后往上窜的高度（镜头跟它走，免得画面跟着扫帚一颤一颤）
 const baseZ = (frame: number) => {
   let z = HOVER + SETTLE * ss((frame - beats.seated) / 24);
@@ -75,7 +75,7 @@ const baseZ = (frame: number) => {
 export const ROOM = { heading: roomHeading, origin: roomOrigin };
 // 出发的朝向（本地，度，正 = 往左转）：6-2-5 首帧扫帚的朝向换到房间本地，取 -180～180 里转得少的那一边。
 // 西墙的门开在屋子正中沿这个方向出去的地方（约 69°；杆中心过西墙中线 x −6.5 时 y ≈ 2.5，门洞是 y 1～4）
-export const departYaw = wrap(END.朝向 - ROOM.heading);
+export const departYaw = wrap(END.facing - ROOM.heading);
 const DIR = [-Math.sin(departYaw * D2R), Math.cos(departYaw * D2R)]; // 出发方向（水平单位向量，本地）
 // ---------- 冲出门：沿出发方向匀加速，卡.出门 那一帧杆中心正好过西墙的中线（本地 x −6.5） ----------
 const S_DOOR = 6.5 / -DIR[0]; // 从屋子正中到门口的路程
@@ -99,7 +99,7 @@ export const Z_END = zAt(beats.lastFrame);
 const pitchAt = (frame: number) => {
   // 冲之前扫帚头微微翘起蓄力（3°），冲起来压平；出了门抬到 6-2-5 首帧的俯仰
   const pre = 3 * ss((frame - beats.charge) / 6) * (1 - ss((frame - beats.rush) / 8));
-  return lerp(pre, END.俯仰, climbK(dashS(frame)));
+  return lerp(pre, END.pitch, climbK(dashS(frame)));
 };
 // 31.1 离地起，扫帚一边慢慢升、一边原地转到出发朝向（对着门口），蓄力之前转完
 const yawAt = (f: number) => departYaw * ss((f - beats.liftOff) / (beats.charge - beats.liftOff));
@@ -109,8 +109,8 @@ const posAt = (frame: number): V3 => {
 };
 export const broom = (frame: number): BroomState => {
   const appear = frame < beats.summon ? 0 : sample([[beats.summon, 0], [beats.summon + 6, 1.15], [beats.summon + 10, 1]], frame);
-  if (frame >= beats.lastFrame) return { 位置: posAt(beats.lastFrame), 朝向: departYaw, pitch: END.俯仰, roll: 0, appear: 1 };
-  return { 位置: posAt(frame), 朝向: yawAt(frame), pitch: pitchAt(frame), roll: 0, appear };
+  if (frame >= beats.lastFrame) return { 位置: posAt(beats.lastFrame), facing: departYaw, pitch: END.pitch, roll: 0, appear: 1 };
+  return { 位置: posAt(frame), facing: yawAt(frame), pitch: pitchAt(frame), roll: 0, appear };
 };
 export const toWorld = (pt: number[]): number[] => {
   const yawRad = ROOM.heading * D2R;
@@ -133,7 +133,7 @@ export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: Ride
           hugWaist: lerp(ss((frame - beats.jiuHuUp) / 6), jh.hugWaist ?? 1, k),
           // 尾巴的相位到末帧正好是 6-2-5 首帧的 0
           tailPhase: (frame - beats.lastFrame) / 9,
-          风: 0,
+          wind: 0,
           headRaise: lerp(4, jh.headRaise ?? 0, k),
         }
       : false,
@@ -227,7 +227,7 @@ const jiuhuRoot = (pose: FigurePose) =>
 type ArmRot = number[]; // [RightArm x, y, z, RightForeArm x, y]（基岩动画约定，相对模型原样）
 const armBones = (x: ArmRot): Record<string, BonePose> => ({ RightArm: { rot: [x[0], x[1], x[2]] }, RightForeArm: { rot: [x[3], x[4], 0] } });
 // 坐标下降法解右臂，让指南针（握在她手里，`jiuhuCompassMatrix`）的中心落到 target、表盘法线朝 normal、贴图上方朝 top（都在房间本地）
-const solveArm = (frame: number, target: number[], normal: number[], top: number[], guess: ArmRot): { arm: ArmRot; 误差: number } => {
+const solveArm = (frame: number, target: number[], normal: number[], top: number[], guess: ArmRot): { arm: ArmRot; error: number } => {
   const body = jiuhuBody(frame);
   const root = jiuhuRoot(body.pose);
   const base = jiuhuStandBones(body.pose, body.tail, body.bend, 0, 0);
@@ -259,7 +259,7 @@ const solveArm = (frame: number, target: number[], normal: number[], top: number
       }
     if (!better) step /= 2;
   }
-  return { arm: x, 误差: Math.sqrt(error) };
+  return { arm: x, error: Math.sqrt(error) };
 };
 
 // ---------- 结构指南针（本地坐标）：先平托在李樱右手上（表盘朝上、贴图上方朝北），递到九胡手里以后握在她右手上 ----------
@@ -373,7 +373,7 @@ const orbit = (frame: number): Cam => {
 const TAIL = BROOM.tailY;
 // 扫帚本地（杆中心为原点）→ 房间本地：扫帚在第 f 帧的位置、朝向 出发朝向、俯仰（先俯仰、再朝向，同 骑扫帚.tsx）
 const onBroom = (frame: number, offset: number[]) => {
-  const pitch = (frame >= beats.lastFrame ? END.俯仰 : pitchAt(frame)) * D2R;
+  const pitch = (frame >= beats.lastFrame ? END.pitch : pitchAt(frame)) * D2R;
   const rotated = rotZ([offset[0], offset[1] * Math.cos(pitch) - offset[2] * Math.sin(pitch), offset[1] * Math.sin(pitch) + offset[2] * Math.cos(pitch)], departYaw);
   const broomPos = posAt(Math.min(frame, beats.lastFrame));
   return [broomPos[0] + rotated[0], broomPos[1] + rotated[1], broomPos[2] + rotated[2]];
@@ -398,5 +398,5 @@ export const VISIBILITY = overworldWindowView.visibility;
 // 核对用：末帧扫帚和镜头的世界坐标。和 6-2-5 首帧不在同一个地方，要对上的是扫帚的朝向、俯仰和镜头相对扫帚的偏移
 export const endState = () => {
   const broomState = broom(beats.lastFrame);
-  return { broom: { ...broomState, 位置: toWorld(broomState.位置), 朝向: broomState.朝向 + ROOM.heading }, camera: camera(beats.lastFrame) };
+  return { broom: { ...broomState, 位置: toWorld(broomState.位置), facing: broomState.facing + ROOM.heading }, camera: camera(beats.lastFrame) };
 };

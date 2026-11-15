@@ -5,79 +5,79 @@
 import React, { useCallback, useContext, useMemo } from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { sRGB转线性, 拼搭缓冲, 拼搭网格, type 方块 } from '@engine/model/方块拼搭.tsx';
+import { srgbToLinear, assembleBuffers, assemblyMeshes, type PlacedBlock } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 三渲二画布, 光影范围 } from '@engine/三渲二/画布.tsx';
-import { 光影画云 } from '@engine/三渲二/光影/预设.ts';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
+import { ToonCanvas, shadingScope } from '@engine/三渲二/画布.tsx';
+import { shadingDrawsCloud } from '@engine/三渲二/光影/预设.ts';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
 import { blockAtlas } from '@engine/voxel/真实方块图集.ts';
 import { MAGICAL_WINE_FOX } from '@库/角色/魔法酒狐.tsx';
-import { 画幅 } from '../../分镜/时间.ts';
-import { 格原点 } from '../../地点/门口小木屋.tsx';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 光柱件, 地光 } from './光柱.tsx';
-import * as 参 from './参数.ts';
-import { 坑 } from './弹坑.ts';
-import { 四周方块 } from './地形.ts';
-import { 掉落物们 as 掉落物组 } from './掉落物.tsx';
-import type { 云格子 } from './云.ts';
-import { 原版方块云, 做云材质们, type 云材质们 } from '@engine/light/云/原版方块云.tsx';
-import { 雨量 } from './声音.ts';
-import { 算光, 面亮 } from './光照.ts';
-import { 设雾色, 补雾, 透视天 } from './天.tsx';
+import { aspect } from '../../分镜/时间.ts';
+import { gridOrigin } from '../../地点/门口小木屋.tsx';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { LightPillar, GroundGlow } from './光柱.tsx';
+import * as params from './参数.ts';
+import { crater } from './弹坑.ts';
+import { SurroundBlocks } from './地形.ts';
+import { dropItemLayer as DroppedItemGroup } from './掉落物.tsx';
+import type { CloudCell } from './云.ts';
+import { VanillaBlockCloud, makeCloudMaterials, type CloudMaterials } from '@engine/light/云/原版方块云.tsx';
+import { rainAmount } from './声音.ts';
+import { computeLight, faceBrightness } from './光照.ts';
+import { setFogColor, applyFog, PerspectiveSky } from './天.tsx';
 import type { RGB } from './天气.ts';
-import { 她, 你 } from './角色.tsx';
-import { 魔法阵 } from './酒狐件.tsx';
-import { 雨 } from './雨.tsx';
+import { LiYing, You } from './角色.tsx';
+import { MagicCircle } from './酒狐件.tsx';
+import { Rain } from './雨.tsx';
 import {
-  事,
-  云剩,
-  云飘,
-  光柱透,
-  光柱顶,
-  刻,
-  发光区,
-  天晴在,
-  天气色,
-  她态,
-  你态,
-  掉落刻,
-  掉落物们,
-  撞亮,
-  光影场,
-  机位,
-  歌秒,
-  洞心,
-  这帧调子,
-  透视雨片们,
-  闪,
-  阵大小,
-  阵转,
+  eventFrame,
+  cloudRemain,
+  cloudDrift,
+  beamOpacity,
+  beamTop,
+  frameToTick,
+  glowRegionsAt,
+  clearSkyAt,
+  weatherColors,
+  LiYingState,
+  YouState,
+  dropTick,
+  dropItems,
+  impactBrightness,
+  shadingSceneAt,
+  CameraRig,
+  songSec,
+  holeCenter,
+  frameGrade,
+  perspectiveRainPlanes,
+  isFlashing,
+  circleSize,
+  circleSpin,
 } from './编排.ts';
 
-const 宽 = 画幅.宽, 高 = 画幅.高;
-const 拆 = (hex: string): RGB => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as unknown as RGB;
+const width = aspect.宽, height = aspect.高;
+const hexToRgb = (hex: string): RGB => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as unknown as RGB;
 
 // ---------- 四周的地：自己建网格（补原版柱形雾）；屋子和坑离镜头不到五十格、雾够不着，不补 ----------
-type 类 = '实心' | '镂空';
-let 地材质们: Record<类, THREE.Material> | null = null;
-const 地材质 = (c: 类) => {
-  if (!地材质们) {
+type MatKind = '实心' | '镂空';
+let groundMaterials: Record<MatKind, THREE.Material> | null = null;
+const groundMaterial = (c: MatKind) => {
+  if (!groundMaterials) {
     const common = { map: blockAtlas().original, vertexColors: true, roughness: 1, metalness: 0 };
-    地材质们 = {
-      实心: 补雾(new THREE.MeshStandardMaterial(common)),
-      镂空: 补雾(new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide })),
+    groundMaterials = {
+      实心: applyFog(new THREE.MeshStandardMaterial(common)),
+      镂空: applyFog(new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide })),
     };
   }
-  return 地材质们[c];
+  return groundMaterials[c];
 };
-const 建网格 = (方块们: readonly 方块[], 群系: string, 名: string): THREE.Mesh[] => {
-  const 缓冲们 = 拼搭缓冲(方块们, { 原点: 格原点, 群系 });
-  if (缓冲们.半透明.idx.length || 缓冲们.发光.idx.length) throw new Error('四周的地里不该有半透明、发光的方块');
+const buildMeshes = (blocks: readonly PlacedBlock[], biome: string, name: string): THREE.Mesh[] => {
+  const buffers = assembleBuffers(blocks, { 原点: gridOrigin, 群系: biome });
+  if (buffers.半透明.idx.length || buffers.发光.idx.length) throw new Error('四周的地里不该有半透明、发光的方块');
   const out: THREE.Mesh[] = [];
   for (const c of ['实心', '镂空'] as const) {
-    const b = 缓冲们[c];
+    const b = buffers[c];
     if (!b.idx.length) continue;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
@@ -85,24 +85,24 @@ const 建网格 = (方块们: readonly 方块[], 群系: string, 名: string): T
     g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2));
     g.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3));
     g.setIndex(b.idx);
-    const mesh = new THREE.Mesh(g, 地材质(c));
-    mesh.name = `雷雨四周-${名}-${c}`;
+    const mesh = new THREE.Mesh(g, groundMaterial(c));
+    mesh.name = `雷雨四周-${name}-${c}`;
     mesh.frustumCulled = false;
     out.push(mesh);
   }
   return out;
 };
 // 一个渲染页面只建一次
-let 四周网格缓存: THREE.Mesh[] | null = null;
-const 四周网格 = () => {
-  if (!四周网格缓存) {
-    const m = 四周方块();
-    四周网格缓存 = [...建网格(m.平原, 参.群系, '平原'), ...建网格(m.樱花林, 'minecraft:cherry_grove', '樱花林')];
+let surroundMeshCache: THREE.Mesh[] | null = null;
+const surroundMeshes = () => {
+  if (!surroundMeshCache) {
+    const m = SurroundBlocks();
+    surroundMeshCache = [...buildMeshes(m.plains, params.biome, '平原'), ...buildMeshes(m.cherryGrove, 'minecraft:cherry_grove', '樱花林')];
   }
-  return 四周网格缓存;
+  return surroundMeshCache;
 };
-const 四周: React.FC = () => {
-  const meshes = useMemo(四周网格, []);
+const Surroundings: React.FC = () => {
+  const meshes = useMemo(surroundMeshes, []);
   return (
     <group>
       {meshes.map((m) => (
@@ -113,30 +113,30 @@ const 四周: React.FC = () => {
 };
 
 // ---------- 屋子和坑：方块拼搭的网格，每个面再乘原版的光（光照.ts：屋里比屋外暗，缺口看得出是个洞） ----------
-let 屋子网格缓存: THREE.Mesh[] | null = null;
-const 屋子网格 = () => {
-  if (!屋子网格缓存) {
-    const 留下 = 坑().留下;
-    const 表 = 算光(留下);
-    屋子网格缓存 = 拼搭网格(留下, { 原点: 格原点, 群系: 参.群系 });
-    for (const m of 屋子网格缓存) {
+let houseMeshCache: THREE.Mesh[] | null = null;
+const houseMeshes = () => {
+  if (!houseMeshCache) {
+    const remainingBlocks = crater().remainingBlocks;
+    const lightTable = computeLight(remainingBlocks);
+    houseMeshCache = assemblyMeshes(remainingBlocks, { 原点: gridOrigin, 群系: params.biome });
+    for (const m of houseMeshCache) {
       const g = m.geometry;
       const pos = g.getAttribute('position') as THREE.BufferAttribute;
       const nor = g.getAttribute('normal') as THREE.BufferAttribute;
       const col = g.getAttribute('color') as THREE.BufferAttribute;
       // 拼搭网格 每个面四个顶点连着放
       for (let q = 0; q < pos.count; q += 4) {
-        const 心 = [0, 1, 2].map((c) => (pos.getComponent(q, c) + pos.getComponent(q + 1, c) + pos.getComponent(q + 2, c) + pos.getComponent(q + 3, c)) / 4);
-        const 亮 = sRGB转线性(面亮(表, 心, [nor.getX(q), nor.getY(q), nor.getZ(q)]));
-        for (let v = q; v < q + 4; v++) col.setXYZ(v, col.getX(v) * 亮, col.getY(v) * 亮, col.getZ(v) * 亮);
+        const faceCenter = [0, 1, 2].map((c) => (pos.getComponent(q, c) + pos.getComponent(q + 1, c) + pos.getComponent(q + 2, c) + pos.getComponent(q + 3, c)) / 4);
+        const brightness = srgbToLinear(faceBrightness(lightTable, faceCenter, [nor.getX(q), nor.getY(q), nor.getZ(q)]));
+        for (let v = q; v < q + 4; v++) col.setXYZ(v, col.getX(v) * brightness, col.getY(v) * brightness, col.getZ(v) * brightness);
       }
       m.name = `雷雨屋子-${m.name}`;
     }
   }
-  return 屋子网格缓存;
+  return houseMeshCache;
 };
-const 屋子: React.FC = () => {
-  const meshes = useMemo(屋子网格, []);
+const House: React.FC = () => {
+  const meshes = useMemo(houseMeshes, []);
   return (
     <group>
       {meshes.map((m) => (
@@ -148,72 +148,72 @@ const 屋子: React.FC = () => {
 
 // ---------- 场景内容（Z 朝上） ----------
 // 原版云吃地形雾（补雾），两遍材质整段共用一份
-let 云材质们缓存: 云材质们 | undefined;
-const 云材质 = () => (云材质们缓存 ??= 做云材质们(补雾));
-const 撞色 = 拆(参.光柱.色);
+let cloudMaterialsCache: CloudMaterials | undefined;
+const getCloudMaterials = () => (cloudMaterialsCache ??= makeCloudMaterials(applyFog));
+const hitColor = hexToRgb(params.lightPillar.色);
 /** 光柱底：她举着的两只手上面（头顶往上 离头 格） */
-const 光柱底: V3 = [参.站位.她[0], 参.站位.她[1], 参.站位.她[2] + MAGICAL_WINE_FOX.headTop + 参.光柱.离头];
+const beamBottom: V3 = [params.standPos.liYingPos[0], params.standPos.liYingPos[1], params.standPos.liYingPos[2] + MAGICAL_WINE_FOX.headTop + params.lightPillar.headGap];
 
 /** 画云 = 画原版方块云（光影开了云时云在光影层画，这里不画） */
-const 场景: React.FC<{ 帧: number; 眼: V3; 云色: RGB; 画云: boolean }> = ({ 帧, 眼, 云色, 画云 }) => {
-  const 秒 = 歌秒(帧);
-  const 心 = 洞心();
-  const 剩 = useCallback((c: 云格子) => 云剩(c, 帧), [帧]);
-  const 撞 = useMemo(() => ({ 心, 亮: 撞亮(帧), 色: 撞色, 半径: 参.撞云.半径 }), [帧, 心[0], 心[1]]);
-  const 阵 = 阵大小(帧);
-  const 落 = useMemo(掉落物们, []);
-  const 雨片们 = useMemo(() => 透视雨片们(眼), [眼[0], 眼[1], 眼[2]]);
+const Scene: React.FC<{ 帧: number; 眼: V3; cloudColor: RGB; drawClouds: boolean }> = ({ 帧: frame, 眼: eye, cloudColor, drawClouds }) => {
+  const sec = songSec(frame);
+  const center = holeCenter();
+  const remain = useCallback((c: CloudCell) => cloudRemain(c, frame), [frame]);
+  const strike = useMemo(() => ({ 心: center, brightness: impactBrightness(frame), 色: hitColor, radius: params.impactCloud.radius }), [frame, center[0], center[1]]);
+  const circleSizeNow = circleSize(frame);
+  const fallingItems = useMemo(dropItems, []);
+  const rainPlanes = useMemo(() => perspectiveRainPlanes(eye), [eye[0], eye[1], eye[2]]);
   return (
     <>
-      <四周 />
-      <屋子 />
-      <掉落物组 们={落} 刻={掉落刻(帧)} />
-      <她 态={她态(帧)} 秒={秒} />
-      <你 态={你态(帧)} 秒={秒} />
-      <魔法阵 心={[心[0], 心[1], 0]} 转={阵转(帧)} 大小={阵} />
-      <地光 心={[心[0], 心[1], 0.01]} 大小={阵} />
-      <光柱件 底={光柱底} 顶={光柱顶(帧, 光柱底[2])} 透={光柱透(帧)} 帧={帧} />
-      {画云 && <原版方块云 偏={参.云偏} 铺={参.云铺} 底高={参.云底高} 材质们={云材质()} 剩={剩} 飘={云飘(帧)} 色={云色} 撞={撞} />}
-      <雨 片们={雨片们} 刻={刻(帧)} 色={闪(帧) ? 参.雨色.闪 : 参.雨色.平时} 雨量={雨量(帧)} />
+      <Surroundings />
+      <House />
+      <DroppedItemGroup 们={fallingItems} 刻={dropTick(frame)} />
+      <LiYing liYingState={LiYingState(frame)} 秒={sec} />
+      <You youState={YouState(frame)} 秒={sec} />
+      <MagicCircle 心={[center[0], center[1], 0]} 转={circleSpin(frame)} 大小={circleSizeNow} />
+      <GroundGlow 心={[center[0], center[1], 0.01]} 大小={circleSizeNow} />
+      <LightPillar bottom={beamBottom} topY={beamTop(frame, beamBottom[2])} alpha={beamOpacity(frame)} 帧={frame} />
+      {drawClouds && <VanillaBlockCloud offset={params.cloudOffset} extent={params.cloudExtent} bottomHeight={params.cloudBottomHeight} materials={getCloudMaterials()} remain={remain} drift={cloudDrift(frame)} 色={cloudColor} strike={strike} />}
+      <Rain 片们={rainPlanes} 刻={frameToTick(frame)} 色={isFlashing(frame) ? params.rainColor.flash : params.rainColor.normal} rainAmount={rainAmount(frame)} />
     </>
   );
 };
 
 // ---------- 整个镜头 ----------
 /** 全片 15 句的符文歌词行（歌曲帧） */
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 0));
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, 0));
 
-export type 雷雨画面属性 = {
+export type StormPictureProps = {
   /** 歌曲帧 */
   帧: number;
   /** 不画歌词 */
-  干净?: boolean;
+  clean?: boolean;
   /** 整片后期（照片底片关：贴进第 8 句以后跟着那一句的后期走） */
-  后期?: boolean;
+  withPost?: boolean;
 };
 
-export const 雷雨画面: React.FC<雷雨画面属性> = ({ 帧, 干净 = false, 后期 = true }) => {
-  const 机 = 机位(帧);
-  const 色 = 天气色(帧);
-  const 调 = 这帧调子(帧);
+export const StormPicture: React.FC<StormPictureProps> = ({ 帧: frame, clean = false, withPost = true }) => {
+  const rig = CameraRig(frame);
+  const colors = weatherColors(frame);
+  const tone = frameGrade(frame);
   // 光影开了云时天、云都在光影层画（画布不透明），2D 天、原版云不画
-  const photon云 = 光影画云(useContext(光影范围).光影);
+  const photonCloud = shadingDrawsCloud(useContext(shadingScope).shading);
   // 雾色是几个材质共用的统一量，画这一帧之前设
-  设雾色(色.雾);
+  setFogColor(colors.fog);
   return (
     <AbsoluteFill style={{ backgroundColor: '#000' }}>
-      <整片后期 调色={后期 ? 调.后期.调色 : null} 种子={帧}>
-        <div style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, overflow: 'hidden' }}>
-          {!photon云 && <透视天 机位={机} 宽={宽} 高={高} 天={色.天} 雾={色.雾} 晴天={色.晴天} 晴雾={色.晴雾} 晴在={天晴在(帧)} />}
-          <三渲二画布 宽={宽} 高={高} 机位={机} 色调={调.色调} 发光区={发光区(帧)} 光影场={光影场(帧)} style={{ position: 'absolute', left: 0, top: 0 }}>
-            <场景 帧={帧} 眼={机.眼} 云色={色.云} 画云={!photon云} />
-          </三渲二画布>
+      <FilmPost grade={withPost ? tone.postTone.grade : null} 种子={frame}>
+        <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, overflow: 'hidden' }}>
+          {!photonCloud && <PerspectiveSky cameraRig={rig} 宽={width} 高={height} 天={colors.天} fog={colors.fog} clearSky={colors.clearSky} clearFog={colors.clearFog} clearAt={clearSkyAt(frame)} />}
+          <ToonCanvas 宽={width} 高={height} cameraRig={rig} tint={tone.tint} glowRegions={glowRegionsAt(frame)} shadingScene={shadingSceneAt(frame)} style={{ position: 'absolute', left: 0, top: 0 }}>
+            <Scene 帧={frame} 眼={rig.眼} cloudColor={colors.cloudColor} drawClouds={!photonCloud} />
+          </ToonCanvas>
         </div>
-      </整片后期>
-      {!干净 && <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色: 调.后期.描边 }} 帧={帧} />}
+      </FilmPost>
+      {!clean && <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.postTone.outlineColor }} 帧={frame} />}
     </AbsoluteFill>
   );
 };
 
 /** 第 8 句照片墙的第四张照片「光柱破云」的底片：照片-光柱破云 那一帧，不带歌词 */
-export const 光柱破云画面: React.FC<{ 后期?: boolean }> = ({ 后期 = false }) => <雷雨画面 帧={事('照片-光柱破云')} 干净 后期={后期} />;
+export const BeamBreakCloudPicture: React.FC<{ withPost?: boolean }> = ({ withPost = false }) => <StormPicture 帧={eventFrame('photoBeamBreaksCloud')} clean withPost={withPost} />;

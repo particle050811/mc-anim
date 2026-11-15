@@ -30,16 +30,16 @@ export const farAoKeep = (distM: number) => {
 };
 import type { V3 } from '../model/parts.tsx';
 import { selfLight } from '../light/光照配比.ts';
-import { 成组排 } from '../core/稳定排序.ts';
+import { orderInGroup } from '../core/稳定排序.ts';
 import { blockAtlas, blockAtlasGlsl } from './真实方块图集.ts';
 import { posScale, groupCount, skirtGroupStart, type FaceGroup } from './网格.ts';
-import { 传顶点, 顶点属性, 还容器, type 顶点数组 } from './容器池.ts';
-import { 区段位移, 位移声明, 位移顶点, 四边形索引 } from './批绘制.ts';
+import { uploadVertices, vertexAttribute, returnBuffer, type VertexArray } from './容器池.ts';
+import { sectionDisplacement, displacementDecl, displaceVertex, quadIndices } from './批绘制.ts';
 import { patchWaterShader } from './水面.ts';
 import { patchLeafShader, tintedLeafExpr } from '../light/树叶透光.ts';
 
 const VERT_HEAD = `
-${位移声明}
+${displacementDecl}
 attribute vec4 tex;
 attribute vec4 col;
 varying vec2 vBUv; varying vec2 vTex; varying vec4 vCol; varying vec3 vW; varying float vTop;`;
@@ -106,8 +106,8 @@ const fragMap = (cutout: boolean, cell = blockAtlas().cell, top = Math.log2(cell
 export type MaterialClass = '实心' | '镂空' | '实心树叶' | '水' | '花草';
 const mats = new Map<MaterialClass, THREE.Material>();
 // 五类的绘制先后固定（engine/core/稳定排序.ts）：地标网格和导入的地形有深度一样的地方，谁盖谁不能随这一帧挑到的区段变
-const 五类 = ['实心', '镂空', '实心树叶', '水', '花草'];
-const 五类组 = {};
+const materialClasses = ['实心', '镂空', '实心树叶', '水', '花草'];
+const materialClassGroups = {};
 export const voxelMaterial = (materialClass: MaterialClass) => {
   let cached = mats.get(materialClass);
   if (cached) return cached;
@@ -125,11 +125,11 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
     sh.uniforms.blockAtlas = { value: tex };
     sh.uniforms.selfLight = selfLight;
     sh.uniforms.aoPass = aoPassUniform;
-    sh.uniforms.uSec = 区段位移;
+    sh.uniforms.uSec = sectionDisplacement;
     // vW：世界坐标里的格（随机转按格算）：缩放（一格 格 米）逐网格画时在 modelMatrix 里、批绘制时在 uSec.w 里，除回去
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${位移顶点}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6);`);
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\n  ${displaceVertex}\n  vBUv = uv / 16.0; vTex = tex.xy; vTop = tex.z; vCol = col; vW = (modelMatrix * vec4(transformed, 1.0)).xyz / max(length(modelMatrix[0].xyz) * uSec.w * 64.0, 1e-6);`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\n${FRAG_HEAD}`)
       .replace('#include <map_fragment>', fragMap(materialClass === '镂空' || materialClass === '花草'))
@@ -145,12 +145,12 @@ export const voxelMaterial = (materialClass: MaterialClass) => {
   };
   mat.customProgramCacheKey = () => `体素-${materialClass}`;
   // 屏幕空间 AO（lib/体素/屏幕AO.tsx）：方块压暗（同 Voxy 只压 LOD 地形）；花草不挡也不压（游戏平滑光照里花草本来也不挡光）；水半透明，AO 之后再画
-  if (materialClass === '花草') mat.userData.屏幕AO = '不挡';
+  if (materialClass === '花草') mat.userData.screenAo = '不挡';
   else if (materialClass !== '水') {
-    mat.userData.屏幕AO = '压暗';
-    mat.userData.AO按alpha = true;
-  } else mat.userData.水面 = true;
-  成组排(mat, 五类组, 五类.indexOf(materialClass), 五类.length);
+    mat.userData.screenAo = '压暗';
+    mat.userData.aoByAlpha = true;
+  } else mat.userData.waterLevel = true;
+  orderInGroup(mat, materialClassGroups, materialClasses.indexOf(materialClass), materialClasses.length);
   mats.set(materialClass, mat);
   return mat;
 };
@@ -160,26 +160,26 @@ let sharedQuadIndex: THREE.BufferAttribute | null = null;
 const quadIndexFor = (quads: number) => {
   if (!sharedQuadIndex || sharedQuadIndex.count < quads * 6) {
     const quadCount = Math.max(quads, sharedQuadIndex ? (sharedQuadIndex.count / 6) * 2 : 1 << 16);
-    sharedQuadIndex = new THREE.BufferAttribute(四边形索引(new Uint32Array(quadCount * 6)), 1);
+    sharedQuadIndex = new THREE.BufferAttribute(quadIndices(new Uint32Array(quadCount * 6)), 1);
   }
   return sharedQuadIndex;
 };
 
 // 一组面 → 网格（全部朝向都在里面，每帧用 挑朝向 只画朝着镜头的几组）。原点：体素块原点（世界坐标，米）；格：一格几米；盒子：范围（场景坐标）
-export type VoxelMesh = THREE.Mesh & { userData: { 段: number[]; 传: () => void } };
+export type VoxelMesh = THREE.Mesh & { userData: { 段: number[]; upload: () => void } };
 // 第一次被哪个视锥碰到才传顶点：three 对碰到的物体紧接着 objects.update，那时属性要已经有容器
 function uploadWhenHit(this: VoxelMesh, frustum: THREE.Frustum) {
   const hit = frustum.intersectsObject(this);
-  if (hit) this.userData.传();
+  if (hit) this.userData.upload();
   return hit;
 }
 export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, materialClass: MaterialClass, origin: number[], cellM: number, box: number[]): VoxelMesh | null => {
   if (!group.n) return null;
   const geo = new THREE.BufferGeometry<THREE.NormalOrGLBufferAttributes>();
-  const pos = 顶点属性(ctx, group.pos, 3);
-  const uv = 顶点属性(ctx, group.uv, 2);
-  const tex = 顶点属性(ctx, group.tex, 4);
-  const col = 顶点属性(ctx, group.col, 4, true);
+  const pos = vertexAttribute(ctx, group.pos, 3);
+  const uv = vertexAttribute(ctx, group.uv, 2);
+  const tex = vertexAttribute(ctx, group.tex, 4);
+  const col = vertexAttribute(ctx, group.col, 4, true);
   geo.setAttribute('position', pos);
   geo.setAttribute('uv', uv);
   geo.setAttribute('tex', tex);
@@ -194,10 +194,10 @@ export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, mat
   const mesh = new THREE.Mesh(geo as unknown as THREE.BufferGeometry, [voxelMaterial(materialClass)]) as unknown as VoxelMesh;
   mesh.userData.段 = group.段;
   // 传完不留数组的引用：CPU 这边那份归 世界.tsx 的 `kept` 管，被它挤掉就该放
-  let toUpload: [THREE.GLBufferAttribute, 顶点数组][] | null = [[pos, group.pos], [uv, group.uv], [tex, group.tex], [col, group.col]];
-  mesh.userData.传 = () => {
+  let toUpload: [THREE.GLBufferAttribute, VertexArray][] | null = [[pos, group.pos], [uv, group.uv], [tex, group.tex], [col, group.col]];
+  mesh.userData.upload = () => {
     if (!toUpload) return;
-    for (const [attr, array] of toUpload) 传顶点(ctx, attr, array);
+    for (const [attr, array] of toUpload) uploadVertices(ctx, attr, array);
     toUpload = null;
   };
   mesh.intersectsFrustum = uploadWhenHit;
@@ -213,7 +213,7 @@ export const faceGroupMesh = (ctx: WebGL2RenderingContext, group: FaceGroup, mat
 // 共用索引还挂在别的网格上，删了下一帧又要重传 1.57 MB；它按用到的最大面数翻倍长，换下来的旧索引没人引用后由垃圾回收放掉，最多留一串翻倍的
 export const releaseVoxelMeshes = (ctx: WebGL2RenderingContext, meshes: VoxelMesh[]) => {
   for (const mesh of meshes) {
-    for (const attr of Object.values(mesh.geometry.attributes)) 还容器(ctx, (attr as unknown as THREE.GLBufferAttribute).buffer);
+    for (const attr of Object.values(mesh.geometry.attributes)) returnBuffer(ctx, (attr as unknown as THREE.GLBufferAttribute).buffer);
     const geo = mesh.geometry;
     geo.index = null;
     geo.attributes = {};

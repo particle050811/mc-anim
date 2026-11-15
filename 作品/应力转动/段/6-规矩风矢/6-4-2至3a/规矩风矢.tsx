@@ -3,12 +3,12 @@
 // 拾取的箱子界面（6-4-2/编排.ts 的「拾取」）跨过接缝，叠在两截上面，切黄叛（6-4-3a 的 A2）起不画。
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import * as K642 from '../6-4-2/编排.ts';
 import { RulesView } from '../6-4-2/规矩.tsx';
 import { DeflectView } from '../../../场/6-古城/6-4-3/画面.tsx';
 import { camera as camera643 } from '../../../场/6-古城/6-4-3/编排.ts';
-import { 段表, 帧小数, 切 } from '../../../场/6-古城/6-4-3/时间线.ts';
+import { segTable, frameFractional, cuts } from '../../../场/6-古城/6-4-3/时间线.ts';
 import { ChestScreen, chestWindowOverLid } from '@库/界面/箱子界面.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { CHEST } from '@库/物品/箱子.tsx';
@@ -16,18 +16,18 @@ import { chestArchery } from '../../../地点/古城4x/布局.ts';
 import { partStartFrame } from './时间线.ts';
 
 // 箱盖开满竖起来的上沿，窗口下沿贴在这（同 7-2-2至3/画面.tsx）
-const lidTop = G4(chestArchery.block[0] + 0.5, chestArchery.block[1] + CHEST.开满盖沿高, chestArchery.block[2] + 0.5);
+const lidTop = G4(chestArchery.block[0] + 0.5, chestArchery.block[1] + CHEST.lidOpenRimHeight, chestArchery.block[2] + 0.5);
 // 箱盖中点落在窗口宽度的这个比例处：机位在箱子南边，他站在画面正中、翻开的箱盖在他右下，窗口整个放到箱盖右上让开他（出了画面往里收，贴着右边）
 const WIN_ANCHOR_X = -0.25;
 
 const LootUiLayer: React.FC<{ frame: number }> = ({ frame }) => {
   const { width, height } = useVideoConfig();
   const windStart = partStartFrame['6-4-3a'];
-  if (frame >= windStart + 帧小数(切.A2)) return null;
+  if (frame >= windStart + frameFractional(cuts.A2)) return null;
   const storyFrame = frame < windStart ? K642.toStoryFrame(frame) : K642.STORY_END + frame - windStart;
   const ui = K642.lootUi(storyFrame);
   if (ui.visibility <= 0) return null;
-  const cam = frame < windStart ? K642.camera(storyFrame) : camera643(段表['6-4-3a'].起 + frame - windStart);
+  const cam = frame < windStart ? K642.camera(storyFrame) : camera643(segTable['6-4-3a'].起 + frame - windStart);
   const win = chestWindowOverLid(lidTop, cam, WIN_ANCHOR_X, width, height);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
@@ -37,11 +37,11 @@ const LootUiLayer: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 export const RulesWindArrow: React.FC = () => {
-  const frame = use当前秒() * K642.FPS;
+  const frame = useCurrentSec() * K642.FPS;
   const windStart = partStartFrame['6-4-3a'];
   return (
     <>
-      {frame < windStart ? <RulesView f={K642.toStoryFrame(frame)} /> : <DeflectView g={段表['6-4-3a'].起 + frame - windStart} />}
+      {frame < windStart ? <RulesView f={K642.toStoryFrame(frame)} /> : <DeflectView g={segTable['6-4-3a'].起 + frame - windStart} />}
       <LootUiLayer frame={frame} />
     </>
   );

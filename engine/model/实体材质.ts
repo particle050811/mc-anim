@@ -7,29 +7,29 @@
 // 着色器和 实体模型.tsx 的 mcMaterial、魔法酒狐.tsx 的发光材质同一套算法；那两处迁移期不动（改了已有段的指纹会变），以后统一到这里（docs/待办.md）。
 import * as THREE from 'three';
 
-export type 实体光照 = '场景' | number;
-export type 实体材质选项 = {
+export type EntityLighting = '场景' | number;
+export type EntityMaterialOptions = {
   /** 0～1，原版只有满（受伤后 10 刻、死后）和无两档 */
-  受伤?: number;
+  hurt?: number;
   /** '场景'（默认）= 受场景灯光；数 = 原版实体光照，亮度 0～1 */
-  光照?: 实体光照;
+  lighting?: EntityLighting;
   /** 满亮度、不受光；给了就不看 光照 */
-  发光?: boolean;
+  glow?: boolean;
   /** 1（默认）= 镂空不透明；< 1 半透明 */
-  透明度?: number;
+  opacity?: number;
   /** 贴图 alpha 低于它的像素镂空；默认场景光 0.5（同 基岩模型.tsx）、原版光照和发光 0.1（同原版着色器） */
   镂空?: number;
 };
 
-const 受伤比例 = 1 - 0xb2 / 255;
+const hurtRatio = 1 - 0xb2 / 255;
 const MC_LIGHT0 = new THREE.Vector3(0.2, 1, -0.7).normalize();
 const MC_LIGHT1 = new THREE.Vector3(-0.2, 1, 0.7).normalize();
 
 // 片元着色器里：受伤在 sRGB 数值上往纯红拉，原版光照也在 sRGB 数值上乘（线性空间里乘的话深色贴图偏暗）
-const 注入 = (mat: THREE.Material, uniforms: Record<string, { value: unknown }>, 原版光照: boolean, 程序名: string) => {
+const inject = (mat: THREE.Material, uniforms: Record<string, { value: unknown }>, vanillaLighting: boolean, programName: string) => {
   mat.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, uniforms);
-    if (原版光照) {
+    if (vanillaLighting) {
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vMcNormal;')
         .replace('#include <begin_vertex>', 'vMcNormal = normalize( mat3( modelMatrix ) * normal );\n#include <begin_vertex>');
@@ -37,13 +37,13 @@ const 注入 = (mat: THREE.Material, uniforms: Record<string, { value: unknown }
     sh.fragmentShader = sh.fragmentShader
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float mcHurt;\n${原版光照 ? 'varying vec3 vMcNormal;\nuniform vec3 mcLight0;\nuniform vec3 mcLight1;\nuniform float mcBright;' : ''}`,
+        `#include <common>\nuniform float mcHurt;\n${vanillaLighting ? 'varying vec3 vMcNormal;\nuniform vec3 mcLight0;\nuniform vec3 mcLight1;\nuniform float mcBright;' : ''}`,
       )
       .replace(
         '#include <map_fragment>',
         '#include <map_fragment>\n  diffuseColor.rgb = sRGBTransferEOTF( vec4( mix( sRGBTransferOETF( vec4( diffuseColor.rgb, 1.0 ) ).rgb, vec3( 1.0, 0.0, 0.0 ), mcHurt ), 1.0 ) ).rgb;',
       );
-    if (原版光照) {
+    if (vanillaLighting) {
       sh.fragmentShader = sh.fragmentShader.replace(
         '#include <opaque_fragment>',
         [
@@ -56,88 +56,88 @@ const 注入 = (mat: THREE.Material, uniforms: Record<string, { value: unknown }
     }
   };
   // 着色器代码只分这几种，数值都走 uniform：程序共用
-  mat.customProgramCacheKey = () => 程序名;
+  mat.customProgramCacheKey = () => programName;
 };
 
 // 缓存按最近使用排（Map 的插入顺序，取到就挪到最后）。两种释放：
 // - 超过上限从最久没用的丢（受伤渐变这类每帧一个新键的会攒很多）；
 // - 持有实体贴图：组件挂上时持有、卸载时放手，一张贴图没人持有了就把它的材质全丢。
 // 丢的同时 dispose（释放 GPU 上的着色器程序）；还挂在 mesh 上的被丢了也不出错，下次画时 three 会重新编译，组件下一帧取到的是新对象。
-const 缓存 = new Map<string, THREE.Material>();
-let 上限 = 512;
-const 持有数 = new Map<string, number>();
-const 取整 = (x: number) => Math.round(x * 1000) / 1000;
+const materialCache = new Map<string, THREE.Material>();
+let limit = 512;
+const holdCount = new Map<string, number>();
+const roundMilli = (x: number) => Math.round(x * 1000) / 1000;
 
-const 丢 = (键: string) => {
-  缓存.get(键)?.dispose();
-  缓存.delete(键);
+const releaseKey = (cacheKey: string) => {
+  materialCache.get(cacheKey)?.dispose();
+  materialCache.delete(cacheKey);
 };
 
 /** 缓存上限（条），默认 512；改小时立刻丢多出来的 */
-export const 设实体材质缓存上限 = (n: number) => {
-  上限 = Math.max(1, Math.floor(n));
-  for (const 键 of 缓存.keys()) {
-    if (缓存.size <= 上限) break;
-    丢(键);
+export const setEntityMaterialCacheLimit = (n: number) => {
+  limit = Math.max(1, Math.floor(n));
+  for (const cacheKey of materialCache.keys()) {
+    if (materialCache.size <= limit) break;
+    releaseKey(cacheKey);
   }
 };
-export const 实体材质缓存数 = () => 缓存.size;
+export const entityMaterialCacheCount = () => materialCache.size;
 
 /** 丢掉一张贴图的全部材质（不管有没有人持有） */
-export const 释放实体材质 = (贴图: THREE.Texture) => {
-  for (const 键 of [...缓存.keys()]) if (键.startsWith(`${贴图.uuid}|`)) 丢(键);
+export const releaseEntityMaterial = (texture: THREE.Texture) => {
+  for (const cacheKey of [...materialCache.keys()]) if (cacheKey.startsWith(`${texture.uuid}|`)) releaseKey(cacheKey);
 };
 
 /** 持有一张贴图的材质（组件挂上时调），返回放手的函数（卸载时调）；最后一个放手时 释放实体材质 */
-export const 持有实体贴图 = (贴图: THREE.Texture): (() => void) => {
-  持有数.set(贴图.uuid, (持有数.get(贴图.uuid) ?? 0) + 1);
-  let 已放 = false;
+export const holdEntityTexture = (texture: THREE.Texture): (() => void) => {
+  holdCount.set(texture.uuid, (holdCount.get(texture.uuid) ?? 0) + 1);
+  let released = false;
   return () => {
-    if (已放) return;
-    已放 = true;
-    const n = (持有数.get(贴图.uuid) ?? 1) - 1;
-    if (n > 0) 持有数.set(贴图.uuid, n);
+    if (released) return;
+    released = true;
+    const n = (holdCount.get(texture.uuid) ?? 1) - 1;
+    if (n > 0) holdCount.set(texture.uuid, n);
     else {
-      持有数.delete(贴图.uuid);
-      释放实体材质(贴图);
+      holdCount.delete(texture.uuid);
+      releaseEntityMaterial(texture);
     }
   };
 };
 
 /** 按选项取材质（同贴图、同选项返回同一个对象，可以放心每帧调） */
-export const 实体材质 = (贴图: THREE.Texture, 选项: 实体材质选项 = {}): THREE.Material => {
-  const 受伤 = 取整(Math.min(1, Math.max(0, 选项.受伤 ?? 0)) * 受伤比例);
-  const 透明度 = 取整(选项.透明度 ?? 1);
-  const 光照: 实体光照 = 选项.发光 ? 1 : (选项.光照 ?? '场景');
-  const 场景光 = 光照 === '场景' && !选项.发光;
-  const 镂空 = 选项.镂空 ?? (场景光 ? 0.5 : 0.1);
-  const 键 = [贴图.uuid, 受伤, 透明度, 选项.发光 ? '发光' : 光照 === '场景' ? '场景' : 取整(光照), 镂空].join('|');
-  let mat = 缓存.get(键);
+export const entityMaterial = (texture: THREE.Texture, options: EntityMaterialOptions = {}): THREE.Material => {
+  const hurtLevel = roundMilli(Math.min(1, Math.max(0, options.hurt ?? 0)) * hurtRatio);
+  const opacity = roundMilli(options.opacity ?? 1);
+  const lighting: EntityLighting = options.glow ? 1 : (options.lighting ?? '场景');
+  const sceneLight = lighting === '场景' && !options.glow;
+  const cutout = options.镂空 ?? (sceneLight ? 0.5 : 0.1);
+  const cacheKey = [texture.uuid, hurtLevel, opacity, options.glow ? '发光' : lighting === '场景' ? '场景' : roundMilli(lighting), cutout].join('|');
+  let mat = materialCache.get(cacheKey);
   if (mat) {
-    缓存.delete(键);
-    缓存.set(键, mat);
+    materialCache.delete(cacheKey);
+    materialCache.set(cacheKey, mat);
     return mat;
   }
-  const 透 = 透明度 < 1;
-  const 共同 = { map: 贴图, alphaTest: 镂空, side: THREE.DoubleSide, transparent: 透, opacity: 透明度, depthWrite: !透 };
-  const 受伤u = { mcHurt: { value: 受伤 } };
-  if (场景光) {
-    mat = new THREE.MeshStandardMaterial({ ...共同, roughness: 0.9 });
-    if (受伤 > 0) 注入(mat, 受伤u, false, '实体-场景光-受伤');
-  } else if (选项.发光) {
-    mat = new THREE.MeshBasicMaterial({ ...共同, toneMapped: false });
-    if (受伤 > 0) 注入(mat, 受伤u, false, '实体-发光-受伤');
+  const transparent = opacity < 1;
+  const sharedParams = { map: texture, alphaTest: cutout, side: THREE.DoubleSide, transparent: transparent, opacity: opacity, depthWrite: !transparent };
+  const hurtUniform = { mcHurt: { value: hurtLevel } };
+  if (sceneLight) {
+    mat = new THREE.MeshStandardMaterial({ ...sharedParams, roughness: 0.9 });
+    if (hurtLevel > 0) inject(mat, hurtUniform, false, '实体-场景光-受伤');
+  } else if (options.glow) {
+    mat = new THREE.MeshBasicMaterial({ ...sharedParams, toneMapped: false });
+    if (hurtLevel > 0) inject(mat, hurtUniform, false, '实体-发光-受伤');
   } else {
-    mat = new THREE.MeshBasicMaterial(共同);
-    注入(mat, { ...受伤u, mcLight0: { value: MC_LIGHT0 }, mcLight1: { value: MC_LIGHT1 }, mcBright: { value: 取整(光照 as number) } }, true, '实体-原版光照');
+    mat = new THREE.MeshBasicMaterial(sharedParams);
+    inject(mat, { ...hurtUniform, mcLight0: { value: MC_LIGHT0 }, mcLight1: { value: MC_LIGHT1 }, mcBright: { value: roundMilli(lighting as number) } }, true, '实体-原版光照');
   }
-  缓存.set(键, mat);
-  if (缓存.size > 上限) 丢(缓存.keys().next().value!);
+  materialCache.set(cacheKey, mat);
+  if (materialCache.size > limit) releaseKey(materialCache.keys().next().value!);
   return mat;
 };
 
 /** 原版实体光照的明暗系数（不含亮度图），给测试和要在 CPU 上算颜色的地方用：法线 n 已归一化 */
-export const 原版实体明暗 = (n: readonly [number, number, number]): number => {
+export const vanillaEntityShade = (n: readonly [number, number, number]): number => {
   const d = (l: THREE.Vector3) => Math.max(0, l.x * n[0] + l.y * n[1] + l.z * n[2]);
   return Math.min(1, (d(MC_LIGHT0) + d(MC_LIGHT1)) * 0.6 + 0.4);
 };

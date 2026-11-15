@@ -5,93 +5,93 @@
 // 门口这个机位原来按 N = 6 排（整屏取景、半屏取景）：一屏 26.7 × 15 格，史蒂夫 1.875 格 = 180 像素（画面高 12.5%），酒狐戴帽实测 1.79 格（11.9%）。
 // 主会话 10-24 定：整屏的镜头（第 8、9、10 句，第 15 句开头）一律 N = 10，用下面的 整屏镜头。第 13、14 句分屏照美术定稿（主会话 10-24）改成服务器在左半屏、
 //   N = 8，取景在 场/2-门口/分屏参数.ts（服务器取景、分屏N），不用这里的 分屏门在。核对-门口 还按 N = 6 排（N = 8、10 是对比帧）。
-import { 描边, 像素N, 正交顶面 } from '../../画风.ts';
+import { outline, pixelCount, orthoTop } from '../../画风.ts';
 
-export { 像素N, 正交顶面 };
+export { pixelCount, orthoTop };
 
 /** 一格在成片上几个像素 */
-export const 格像素 = (N: number) => 16 * N;
-export const 每格 = 格像素(像素N);
+export const cellPx = (N: number) => 16 * N;
+export const pxPerCell = cellPx(pixelCount);
 
 /** 长成的樱花树（地点/樱花树.ts 第 5 截）：树顶 9 格，树冠前后三排（y 0～3），斜投影里树冠顶面往上多出 3 × 顶面 ÷ N 格。取景要放得下它，上面再留半格 */
-export const 树顶屏 = (N = 像素N, 顶面 = 正交顶面) => 9 + (3 * 顶面) / N;
+export const treeTopHeight = (N = pixelCount, topDepth = orthoTop) => 9 + (3 * topDepth) / N;
 
 /** 地面线（剖面 y = 0 上的草方块顶面）离画面下边几像素：尽量高到让原版聊天栏最底一行（界面底边往上 40～49 界面像素）整个落在地面线下面，
  *  「Steve加入了游戏」压在地下那截上、不挡人（往上多让 1 界面像素）；但树顶上面至少留半格。取偶数。
  *  N = 6：300（3.1 格，露出草方块、两层泥土和一点石头），聊天栏占 y 1146～1200、地面线在 1140，树顶（斜投影里 10 格）上面还剩 1.9 格天给太阳月亮走。
  *  N = 8 只能到 128（树要的），聊天栏会挡在人身上 */
-export const 地面线离底 = (N = 像素N) => {
-  const v = Math.max(0, Math.min(50 * N, 1440 - (树顶屏(N) + 0.5) * 格像素(N)));
+export const groundLineFromBottom = (N = pixelCount) => {
+  const v = Math.max(0, Math.min(50 * N, 1440 - (treeTopHeight(N) + 0.5) * cellPx(N)));
   return Math.floor(v / 2) * 2;
 };
 
 /** 取景：中心 = 画面中心对着的 [x, z]（格），每格 = 一格几个像素（成片） */
-export type 门口取景 = { 中心: readonly [number, number]; 每格: number };
+export type DoorFraming = { 中心: readonly [number, number]; pxPerCell: number };
 
 /** 整屏取景：门那一格的中心在画面正中，地面线离底 地面线离底(N) 像素；N 不给按 像素N（给别的 N 是比密度用的） */
-export const 整屏取景 = (N = 像素N): 门口取景 => {
+export const fullScreenFraming = (N = pixelCount): DoorFraming => {
   if (!Number.isInteger(N) || N <= 0 || N % 2) throw new Error(`像素N 要是正偶数：${N}`);
-  return { 中心: [0, (1440 / 2 - 地面线离底(N)) / 格像素(N)], 每格: 格像素(N) };
+  return { 中心: [0, (1440 / 2 - groundLineFromBottom(N)) / cellPx(N)], pxPerCell: cellPx(N) };
 };
-export const 取景 = 整屏取景();
+export const framing = fullScreenFraming();
 
 /** 门这个机位整屏镜头（第 8、9、10 句，第 15 句开头）的像素密度：一个贴图像素 = 成片 10 像素（主会话 10-24 定）。
  *  N = 6 时她只有 170 像素高，缩到手机竖屏宽（390 像素）认不出动作。第 8 句末尾到第 9 句是同一机位的匹配剪，这几句都用它 */
-export const 整屏镜头N = 10;
+export const fullScreenShotCount = 10;
 
 /** 整屏镜头的地面线离画面下边几格：露出草方块和一层多泥土，屋脊（斜投影里 7.1 格）上面还留小半格天（Agent 暂定）。
  *  坑：长成的樱花树（斜投影里 9.6 格）放不下，第 15 句开头树冠顶会出画 */
-export const 整屏镜头地面离底 = 1.5;
+export const fullScreenShotGroundFromBottom = 1.5;
 
 /** 门这个机位整屏镜头给 门口画布 的取景和描边宽：门那一格在画面正中，地面线离底 整屏镜头地面离底 格；描边一个贴图像素宽。
  *  用法：<门口画布 {...整屏镜头} …>，气泡、聊天栏的缩放给 整屏镜头N */
-export const 整屏镜头 = {
-  取景: { 中心: [0, 1440 / 2 / 格像素(整屏镜头N) - 整屏镜头地面离底], 每格: 格像素(整屏镜头N) } as 门口取景,
-  描边宽: (整屏镜头N * 描边.宽) / 像素N,
+export const fullScreenShot = {
+  framing: { 中心: [0, 1440 / 2 / cellPx(fullScreenShotCount) - fullScreenShotGroundFromBottom], pxPerCell: cellPx(fullScreenShotCount) } as DoorFraming,
+  outlineWidth: (fullScreenShotCount * outline.宽) / pixelCount,
 } as const;
 
 /** 半屏取景（第 13、14 句分屏里门口那半屏）：画布宽 宽像素（成片像素，比如 1280），门中心落在从左数 门在 × 宽像素 的地方。
  *  (门在 − 0.5) × 宽像素 要是偶数，预览级里门边也落在整像素上 */
-export const 半屏取景 = (宽像素: number, 门在: number, N = 像素N): 门口取景 => {
-  const 偏 = (门在 - 0.5) * 宽像素;
-  if (Math.abs(偏 - Math.round(偏)) > 1e-6 || Math.round(偏) % 2) throw new Error(`门在 ${门在}、宽 ${宽像素}：门中心离画布中线 ${偏} 像素，要是偶数`);
-  const 整 = 整屏取景(N);
-  return { 中心: [-偏 / 整.每格, 整.中心[1]], 每格: 整.每格 };
+export const halfScreenFraming = (widthPx: number, doorFrac: number, N = pixelCount): DoorFraming => {
+  const offsetPx = (doorFrac - 0.5) * widthPx;
+  if (Math.abs(offsetPx - Math.round(offsetPx)) > 1e-6 || Math.round(offsetPx) % 2) throw new Error(`门在 ${doorFrac}、宽 ${widthPx}：门中心离画布中线 ${offsetPx} 像素，要是偶数`);
+  const fullFraming = fullScreenFraming(N);
+  return { 中心: [-offsetPx / fullFraming.pxPerCell, fullFraming.中心[1]], pxPerCell: fullFraming.pxPerCell };
 };
 
 /** 旧版式（服务器在右半屏、N = 6）的门位置：门在半屏 0.75 处，N = 6 时左边看得到 10 格，长成的树冠（x −9.5～−0.5）整个在里面；右边 3.3 格，箱子和她站的地方在里面。
  *  现在只有 核对-门口 的分屏视图还用它（核对段的画面不改）；分屏本身改成服务器在左半屏、门在 0.95、N = 8，见 分屏参数.ts 的 服务器门在 */
-export const 分屏门在 = 0.75;
+export const splitDoorFrac = 0.75;
 
 /** 天色（sRGB）：白天照原版平原的天色 #78A7FF、雾色 #C0D8FF（地平线那里）；渐变高 = 从地面线往上多少格到顶色。夜里的颜色是暂定的深蓝 */
-export const 天色 = { 地平: '#c0d8ff', 顶: '#78a7ff', 渐变高: 10, 夜地平: '#141c33', 夜顶: '#04060e' };
+export const skyColors = { horizon: '#c0d8ff', topColor: '#78a7ff', gradientHeight: 10, nightHorizon: '#141c33', nightTop: '#04060e' };
 
 /** 太阳、月亮走的弧（默认）：圆心在取景中线的地面线上，竖半径到画面顶边差 1.25 格（太阳本体 2 格见方），横半径再收到画面半宽减 1.25 格以内。
  *  N = 6 整屏是半径 10.6 的圆：正午太阳在屋脊、树顶上面，早晚落到两边的草地上，下午那段从树冠后面过 */
-export const 默认天弧 = (取: 门口取景, 页宽: number, 页高: number) => {
-  const 半宽 = 页宽 / 取.每格; // 页面像素 × 2 ÷ 每格 ÷ 2
-  const 顶 = 取.中心[1] + 页高 / 取.每格;
-  const 半径 = 顶 - 1.25;
-  return { 心: [取.中心[0], 0] as const, 半径, 横半径: Math.min(半径, 半宽 - 1.25) };
+export const defaultSkyArc = (framing: DoorFraming, pageWidth: number, pageHeight: number) => {
+  const halfWidth = pageWidth / framing.pxPerCell; // 页面像素 × 2 ÷ 每格 ÷ 2
+  const arcTop = framing.中心[1] + pageHeight / framing.pxPerCell;
+  const radius = arcTop - 1.25;
+  return { 心: [framing.中心[0], 0] as const, radius, radiusX: Math.min(radius, halfWidth - 1.25) };
 };
 
 /** 第 8 句雨后的白天：游戏刻 7000（正午过一点，太阳在门左上方） */
-export const 白天刻 = 7000;
+export const dayTick = 7000;
 
 /** 白天开光影时交给光影的事实（三渲二画布的 光影场）：太阳在镜头后面偏左、仰角约 26°（场景坐标，Z 朝上，镜头朝北 +y）。
  *  用户 11-02 定「太阳压低」（预览 1102-1638 第 2 问选右边「换到左边压低」）：默认的高太阳让屋檐的影子盖住门口的她。
  *  只管光影的受光和影子，和天上画的太阳（白天刻，在屋后）不是一回事 */
-export const 白天光影场 = { 太阳: [-0.6, -0.7, 0.45] } as const;
+export const dayShadingScene = { sun: [-0.6, -0.7, 0.45] } as const;
 
 /** 群系：平原（草色 #91BD59）。门口不在樱花林里，樱花树是第 9 句种下的那一棵 */
-export const 群系 = 'minecraft:plains';
+export const biome = 'minecraft:plains';
 
 /** 告示牌上的字，全片只写在这里（第 9 句按词写上去，第 13、14、15 句一直在）：一行一组词，第 9 句一个词一个词写（时刻在 分镜 写字一～写字二续，两行隔两拍）。
  *  用户 10-24 嫌「明年六月见」不贴合情话、要告别同时告白的句子；10-25 定「想我的时候就种棵樱花树吧」（你写给她，第 13 句她那边的樱花林一棵棵长出来接上）。
  *  换字只改这里（新字加进 地点/告示牌字文案.txt 重取字形表）。断成两行放在四行里的中间两行（原版每行居中，一行最宽 90 个字像素，七个汉字 63） */
-export const 告示牌词们: readonly (readonly string[])[] = [
+export const signWords: readonly (readonly string[])[] = [
   ['想我的', '时候'],
   ['就种棵', '樱花树吧'],
 ];
 /** 告示牌四行（原版四行，没字的行空着） */
-export const 告示牌行们: readonly string[] = ['', ...告示牌词们.map((行) => 行.join('')), ''];
+export const signRows: readonly string[] = ['', ...signWords.map((line) => line.join('')), ''];

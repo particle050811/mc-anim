@@ -19,7 +19,7 @@ import { qiaoLeifuHeight } from '../../角色/乔雷夫.tsx';
 import { lordStudy, toTownPoint } from '../../地点/边城室内.tsx';
 import { borderTownPos } from '../../地点/主世界116.ts';
 import { guiPixel, lineY, pageHeight, pageWidth } from '@库/物品/书.tsx';
-export { bookPages as 书页们 } from '../../场/7-收场/7-4-3/编排.ts';
+export { bookPages as bookPages } from '../../场/7-收场/7-4-3/编排.ts';
 
 export const FPS = 24;
 export const shot1End = 48; // 背影 2 秒

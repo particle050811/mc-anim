@@ -4,5 +4,5 @@ import { cues, segmentFrames, segmentTable, cutFrameOf, FPS } from '../../地点
 
 export const frameCount = segmentFrames('6-3-10');
 const toSegFrame = (s: number) => cutFrameOf(Math.round(s * FPS))! - segmentTable['6-3-10'].起;
-export const liuEntersFrame = toSegFrame(cues.刘入井);
-export const huangEntersFrame = toSegFrame(cues.黄入井);
+export const liuEntersFrame = toSegFrame(cues.liuEntersShaft);
+export const huangEntersFrame = toSegFrame(cues.huangEntersShaft);

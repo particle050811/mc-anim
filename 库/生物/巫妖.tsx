@@ -15,13 +15,13 @@ import { png, pngDir } from '../../engine/model/贴图.ts';
 import { ScepterInHand } from '../物品/巫妖权杖.tsx';
 import raw from 'asset:模型/角色/巫妖';
 import skin from 'asset:贴图/角色/巫妖';
-import { 资产目录 } from '../../engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/角色/巫妖护盾/fill';
-import 资_1 from 'asset:贴图/角色/巫妖护盾/frame';
+import { assetDir } from '../../engine/core/资产目录.ts';
+import lichShieldFillPng from 'asset:贴图/角色/巫妖护盾/fill';
+import lichShieldFramePng from 'asset:贴图/角色/巫妖护盾/frame';
 
 const MODEL = (raw as unknown as { models: Record<string, EntityModelData> }).models.巫妖;
 const TEX = png(skin);
-const SHIELD = pngDir(资产目录({ './fill.png': 资_0, './frame.png': 资_1 })) as Record<'frame' | 'fill', ReturnType<typeof png>>;
+const SHIELD = pngDir(assetDir({ './fill.png': lichShieldFillPng, './frame.png': lichShieldFramePng })) as Record<'frame' | 'fill', ReturnType<typeof png>>;
 
 export const LICH = {
   height: 2.0, // 头顶离脚底（模型最高点 y = -8 像素 → 1.501 + 0.5）
@@ -88,17 +88,17 @@ export const lichPose = (sec: number, opts: { headYaw?: number; headPitch?: numb
 
 // 秒：游戏时间（驱动护盾转动、手晃）；护盾：见上；护盾数：按游戏的方式画 n 面（给了就不看 护盾）；权杖：右手拿着暮色权杖；头偏 / 头仰：弧度（头仰正 = 低头）；发光：受击时闪一下白（0～1；不用红色，避免生成血）；
 // 受伤：原版受伤 / 死亡时的变红（0～1，lib/实体模型.tsx 的 `HURT_MIX`；用户 10-02 要先在 6-1-5 巫妖死时试，看成片会不会画出血）
-export const Lich: React.FC<{ 秒: number; 护盾?: number[]; shieldCount?: number; scepter?: boolean; 头偏?: number; headPitch?: number; armRaise?: number; opacity?: number; hitFlash?: number; 受伤?: number }> = ({
+export const Lich: React.FC<{ 秒: number; shields?: number[]; shieldCount?: number; scepter?: boolean; headYaw?: number; headPitch?: number; armRaise?: number; opacity?: number; hitFlash?: number; hurt?: number }> = ({
   秒: sec,
-  护盾: shields = [1, 1, 1, 1, 1, 1],
+  shields: shields = [1, 1, 1, 1, 1, 1],
   shieldCount,
   scepter = true,
-  头偏: headYaw,
+  headYaw: headYaw,
   headPitch,
   armRaise,
   opacity = 1,
   hitFlash = 0,
-  受伤: hurt = 0,
+  hurt: hurt = 0,
 }) => (
   <>
     <EntityModel

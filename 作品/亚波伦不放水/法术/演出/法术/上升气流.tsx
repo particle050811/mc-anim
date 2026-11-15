@@ -5,24 +5,24 @@
 // 没做：目标被顶起（第 20 刻往上 1.0 格的速度）、受伤。
 import React from 'react';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 风粒们, type 风粒生 } from '../零件/丁风.tsx';
-import 元 from './上升气流.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { WindParticles, type WindBirth } from '../零件/丁风.tsx';
+import meta from './上升气流.元.ts';
 
 const f = 1.5 + 1 / 2;
 
-const 上升气流: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const r = rng(种子 * 7919 + 23);
-  const 主人 = (绝对刻: number): 点 => [目标[0], 目标[1], 目标[2] + Math.max(0, 绝对刻 - 20) * 0.25];
-  const 出生们: 风粒生[] = [];
+const Updraft: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const r = rng(seed * 7919 + 23);
+  const originAt = (absTick: number): Vec3 => [target[0], target[1], target[2] + Math.max(0, absTick - 20) * 0.25];
+  const spawns: WindBirth[] = [];
   for (let t = 0; t < 30; t++) {
-    if (t > 刻) break;
-    出生们.push({ 刻: t, 主人, 宽: f - 1 + r() * 0.5, 高: 0, 种子: 种子 * 1009 + t * 2 });
-    出生们.push({ 刻: t, 主人, 宽: f + r() * 0.5, 高: 0, 种子: 种子 * 1009 + t * 2 + 1 });
+    if (t > tick) break;
+    spawns.push({ 刻: t, originAt, 宽: f - 1 + r() * 0.5, 高: 0, 种子: seed * 1009 + t * 2 });
+    spawns.push({ 刻: t, originAt, 宽: f + r() * 0.5, 高: 0, 种子: seed * 1009 + t * 2 + 1 });
   }
-  return <风粒们 出生们={出生们} 刻={刻} 色={[1, 1, 1]} />;
+  return <WindParticles spawns={spawns} 刻={tick} 色={[1, 1, 1]} />;
 };
 
-export default 定义法术演出(元, 上升气流);
+export default defineSpellPerformance(meta, Updraft);

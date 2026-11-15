@@ -2,7 +2,7 @@
 // 戏在 跳搭.ts（剧情时间线），跳切和机位在 编排.ts；声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 6-4-1/声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { bladeInHand } from '@库/角色/骨架.tsx';
 import { MaceInHand } from '@库/物品/重锤.tsx';
 import { AncientCity4xCanvas, LiYingWithBlade } from '../../地点/古城4x/6-4-1/古城画面.tsx';
@@ -17,7 +17,7 @@ export const WoolSearchView: React.FC<{ f: number; g: number }> = ({ f: frame, g
   const wool = jumpBuild.woolStateAt(frame);
   const pose = jumpBuild.poseAt(frame);
   return (
-    <AncientCity4xCanvas 段="6-4-1" cam={choreo.camera(cutFrame)} width={width} height={height} 羊毛={wool.羊毛} growingWool={wool.长羊毛} 开箱={choreo.openChest(frame)}>
+    <AncientCity4xCanvas 段="6-4-1" cam={choreo.camera(cutFrame)} width={width} height={height} wool={wool.wool} growingWool={wool.growingWool} chestOpening={choreo.openChest(frame)}>
       {jumpBuild.hasHammer(frame) ? (
         // 6-3-6 末帧：右手还握着重锤（刀鞘照常挂在腰上）
         <LiYingWithBlade
@@ -36,6 +36,6 @@ export const WoolSearchView: React.FC<{ f: number; g: number }> = ({ f: frame, g
 };
 
 export const WoolSearch: React.FC = () => {
-  const cutFrame = use当前秒() * choreo.FPS;
+  const cutFrame = useCurrentSec() * choreo.FPS;
   return <WoolSearchView f={choreo.storyFrame(cutFrame)} g={cutFrame} />;
 };

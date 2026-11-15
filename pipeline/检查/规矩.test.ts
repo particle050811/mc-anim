@@ -2,10 +2,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { 基础, 跑, 造仓库 } from './测试夹具.ts';
-import { 解析落点, 记忆引用 } from './规则/规矩.ts';
+import { base, runRule, makeRepo } from './测试夹具.ts';
+import { parseLanding, parseMemoryRefs } from './规则/规矩.ts';
 
-const 规矩表 = (落点: string, 例外: string) => ({
+const ruleTable = (placement: string, exceptionsText: string) => ({
   '作品/应力转动/规矩.toml': [
     '[["规矩"]]',
     'id = "打击停顿"',
@@ -14,27 +14,27 @@ const 规矩表 = (落点: string, 例外: string) => ({
     '"原话" = []',
     '"针对" = "打中"',
     '"出处" = ["测试"]',
-    `"落点" = ${落点}`,
-    `"例外" = ${例外}`,
+    `"落点" = ${placement}`,
+    `"例外" = ${exceptionsText}`,
   ].join('\n'),
 });
-const 画面 = (调用: string) => ({
-  '作品/应力转动/段/7-甲/画面.tsx': `import { 例外 } from '@engine/core/例外.ts';\nexport const 停 = ${调用};\nexport default () => null;\n`,
+const pictureSource = (callName: string) => ({
+  '作品/应力转动/段/7-甲/画面.tsx': `import { exception } from '@engine/core/例外.ts';\nexport const 停 = ${callName};\nexport default () => null;\n`,
 });
 
 describe('规矩', () => {
   it('合规样例放行：代码例外和表一一对应、值相同；旧项目里的落点和没搬的段只算待迁移', async () => {
-    const 根 = 造仓库(
-      基础(),
-      规矩表(
-        '["engine/core/例外.ts 例外", "旧:src/lib/anim.ts HIT_STOP_FRAMES", "待迁移:sourcing/worlds/（M10 建）"]',
+    const root = makeRepo(
+      base(),
+      ruleTable(
+        '["engine/core/例外.ts exception", "旧:src/lib/anim.ts HIT_STOP_FRAMES", "待迁移:sourcing/worlds/（M10 建）"]',
         '[{ "段" = "7-甲", "值" = 3, "原因" = "看过的版本", "出处" = "用户 10-21" }, { "段" = "6-斩娜迦", "值" = 2, "原因" = "看过的版本", "出处" = "用户 10-21" }]',
       ),
-      画面("例外('打击停顿', 3, { 段: '7-甲', 原因: '看过的版本' })"),
+      pictureSource("exception('打击停顿', 3, { 段: '7-甲', 原因: '看过的版本' })"),
     );
-    const { 违规, 报 } = await 跑('规矩', 根);
-    expect(违规).toEqual([]);
-    expect(报.待迁移.map((q) => q.文本)).toEqual([
+    const { violations, report } = await runRule('规矩', root);
+    expect(violations).toEqual([]);
+    expect(report.待迁移.map((q) => q.文本)).toEqual([
       '规矩「打击停顿」 的落点 旧:src/lib/anim.ts HIT_STOP_FRAMES',
       '规矩「打击停顿」 的落点 待迁移:sourcing/worlds/（M10 建）',
       '规矩「打击停顿」对 段 6-斩娜迦 的例外（段 6-斩娜迦 还没搬）',
@@ -42,16 +42,16 @@ describe('规矩', () => {
   });
 
   it('代码例外没登记、登记了代码里没有、值不一致、规矩不存在、写错地方、落点不在都拦', async () => {
-    const 根 = 造仓库(
-      基础(),
-      规矩表(
-        '["engine/core/例外.ts 例外、没有的符号", "engine/core/不存在.ts", "engine/core 例外", "src/lib/anim.ts"]',
+    const root = makeRepo(
+      base(),
+      ruleTable(
+        '["engine/core/例外.ts exception、没有的符号", "engine/core/不存在.ts", "engine/core 例外", "src/lib/anim.ts"]',
         '[{ "段" = "7-甲", "值" = 2, "原因" = "看过的版本", "出处" = "用户" }, { "场" = "7-场一", "值" = 1, "原因" = "整场", "出处" = "用户" }]',
       ),
-      画面("[例外('打击停顿', 3, { 段: '7-甲', 原因: 'x' }), 例外('没有这条', 1, { 段: '7-甲', 原因: 'x' }), 例外('打击停顿', 4, { 段: '7-乙', 原因: 'x' })]"),
-      { '库/角色/甲.ts': "import { 例外 } from '../../engine/core/例外.ts';\nexport const 甲 = 例外('打击停顿', 5, { 段: '7-甲', 原因: '共用代码开口子' });\n" },
+      pictureSource("[exception('打击停顿', 3, { 段: '7-甲', 原因: 'x' }), exception('没有这条', 1, { 段: '7-甲', 原因: 'x' }), exception('打击停顿', 4, { 段: '7-乙', 原因: 'x' })]"),
+      { '库/角色/甲.ts': "import { exception } from '../../engine/core/例外.ts';\nexport const 甲 = exception('打击停顿', 5, { 段: '7-甲', 原因: '共用代码开口子' });\n" },
     );
-    const v = (await 跑('规矩', 根)).违规.join('\n');
+    const v = (await runRule('规矩', root)).violations.join('\n');
     expect(v).toMatch(/画面.tsx:2 规矩「打击停顿」对 段 7-甲 的例外：代码里的值是 3，表里登记的是 2/);
     expect(v).toMatch(/例外用的规矩「没有这条」不在 作品\/应力转动\/规矩.toml 里/);
     expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/ 里的例外要写 段: '7-甲'/);
@@ -64,59 +64,59 @@ describe('规矩', () => {
   });
 
   it('搬家 R2-A 暂放在 作品/应力转动/地点/<地点>/<旧目录>/ 的剧情编排里可以写例外，别的共用代码照拦', async () => {
-    const 根 = 造仓库(
-      基础(),
-      规矩表('[]', '[{ "段" = "7-甲", "值" = 2, "原因" = "看过的版本", "出处" = "用户 10-21" }]'),
-      { '作品/应力转动/地点/边城/6-3-6/落地.ts': "import { 例外 } from '@engine/core/例外.ts';\nexport const 停 = 例外('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
-      { '库/边城轮廓.ts': "import { 例外 } from '../../engine/core/例外.ts';\nexport const 停 = 例外('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
+    const root = makeRepo(
+      base(),
+      ruleTable('[]', '[{ "段" = "7-甲", "值" = 2, "原因" = "看过的版本", "出处" = "用户 10-21" }]'),
+      { '作品/应力转动/地点/边城/6-3-6/落地.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
+      { '库/边城轮廓.ts': "import { exception } from '../../engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
     );
-    const v = (await 跑('规矩', 根)).违规;
+    const v = (await runRule('规矩', root)).violations;
     expect(v.join('\n')).toMatch(/库\/边城轮廓.ts:2 例外 只写在 作品\/应力转动\/段\/ 或 作品\/应力转动\/场\//);
     expect(v.filter((x) => x.includes('6-3-6'))).toEqual([]);
   });
 
   it('场里被几段借用的代码，段 写成数组：每段各登记一条，少登记的拦；段目录里不许写数组', async () => {
-    const 根 = 造仓库(
-      基础(),
-      规矩表('[]', '[{ "段" = "7-甲", "值" = 2, "原因" = "x", "出处" = "y" }, { "段" = "7-乙", "值" = 2, "原因" = "x", "出处" = "y" }]'),
-      { '作品/应力转动/场/7-场一/画面.tsx': "import { 例外 } from '@engine/core/例外.ts';\nexport const 停 = 例外('打击停顿', 2, { 段: ['7-甲', '7-乙', '7-丙'], 原因: '借用' });\n" },
-      画面("例外('打击停顿', 2, { 段: ['7-甲'], 原因: 'x' })"),
+    const root = makeRepo(
+      base(),
+      ruleTable('[]', '[{ "段" = "7-甲", "值" = 2, "原因" = "x", "出处" = "y" }, { "段" = "7-乙", "值" = 2, "原因" = "x", "出处" = "y" }]'),
+      { '作品/应力转动/场/7-场一/画面.tsx': "import { exception } from '@engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { 段: ['7-甲', '7-乙', '7-丙'], 原因: '借用' });\n" },
+      pictureSource("exception('打击停顿', 2, { 段: ['7-甲'], 原因: 'x' })"),
     );
-    const v = (await 跑('规矩', 根)).违规.join('\n');
+    const v = (await runRule('规矩', root)).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/场\/7-场一\/画面.tsx:2 规矩「打击停顿」对 段 7-丙 的例外没在 作品\/应力转动\/规矩.toml 登记/);
     expect(v).not.toMatch(/对 段 7-乙 的例外没在/);
     expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/画面.tsx:2 作品\/应力转动\/段\/7-甲\/ 里的例外要写 段: '7-甲'/);
   });
 
   it('代码例外没登记就拦', async () => {
-    const 根 = 造仓库(基础(), 画面("例外('打击停顿', 3, { 段: '7-甲', 原因: '看过的版本' })"));
-    expect((await 跑('规矩', 根)).违规.join('\n')).toMatch(/规矩「打击停顿」对 段 7-甲 的例外没在 作品\/应力转动\/规矩.toml 登记/);
+    const root = makeRepo(base(), pictureSource("exception('打击停顿', 3, { 段: '7-甲', 原因: '看过的版本' })"));
+    expect((await runRule('规矩', root)).violations.join('\n')).toMatch(/规矩「打击停顿」对 段 7-甲 的例外没在 作品\/应力转动\/规矩.toml 登记/);
   });
 
   it('改名导入、命名空间导入、转出、把 例外 当值传都拦，x.例外(...) 也算例外调用', async () => {
-    const 根 = 造仓库(基础(), {
+    const root = makeRepo(base(), {
       '作品/应力转动/段/7-甲/画面.tsx': [
-        "import { 例外 as 豁免 } from '@engine/core/例外.ts';",
+        "import { exception as 豁免 } from '@engine/core/例外.ts';",
         "import * as 核 from '@engine/core/例外';",
         "export const a = 豁免('打击停顿', 6, { 段: '7-甲', 原因: 'x' });",
-        "export const b = 核.例外('打击停顿', 7, { 段: '7-甲', 原因: 'x' });",
+        "export const b = 核.exception('打击停顿', 7, { 段: '7-甲', 原因: 'x' });",
         'export default () => null;',
         '',
       ].join('\n'),
-      '作品/应力转动/段/7-甲/别名.ts': "import { 例外 } from '@engine/core/例外.ts';\nexport const 豁免 = 例外;\nexport { 例外 as 开口 };\n",
+      '作品/应力转动/段/7-甲/别名.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 豁免 = exception;\nexport { exception as 开口 };\n",
       '库/转出.ts': "export * from '../engine/core/例外.ts';\n",
     });
-    const v = (await 跑('规矩', 根)).违规.join('\n');
-    expect(v).toMatch(/画面.tsx:1 不许给 例外 改名导入/);
+    const v = (await runRule('规矩', root)).violations.join('\n');
+    expect(v).toMatch(/画面.tsx:1 不许给 exception 改名导入/);
     expect(v).toMatch(/画面.tsx:2 不许用命名空间导入 engine\/core\/例外.ts/);
     expect(v).toMatch(/画面.tsx:4 规矩「打击停顿」对 段 7-甲 的例外没在 作品\/应力转动\/规矩.toml 登记/);
-    expect(v).toMatch(/别名.ts:2 例外 只能直接调用/);
-    expect(v).toMatch(/别名.ts:3 不许转出 例外/);
+    expect(v).toMatch(/别名.ts:2 exception 只能直接调用/);
+    expect(v).toMatch(/别名.ts:3 不许转出 exception/);
     expect(v).toMatch(/库\/转出.ts:1 不许转出 engine\/core\/例外.ts/);
   });
 
   it('出处里 M/ 引用的记忆要在、行号不超出；记忆目录不在本机就跳过', async () => {
-    const 表 = (出处: string, 例外出处: string) => ({
+    const makeRuleTable = (source: string, exceptionSource: string) => ({
       '作品/应力转动/规矩.toml': [
         '[["规矩"]]',
         'id = "打击停顿"',
@@ -124,46 +124,46 @@ describe('规矩', () => {
         '"级别" = "参考"',
         '"原话" = []',
         '"针对" = "打中"',
-        `"出处" = ${出处}`,
+        `"出处" = ${source}`,
         '"落点" = []',
-        `"例外" = [{ "段" = "6-斩娜迦", "值" = 2, "原因" = "看过的版本", "出处" = "${例外出处}" }]`,
+        `"例外" = [{ "段" = "6-斩娜迦", "值" = 2, "原因" = "看过的版本", "出处" = "${exceptionSource}" }]`,
       ].join('\n'),
     });
-    const 记忆 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-记忆-')));
+    const memoryDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-记忆-')));
     try {
-      fs.mkdirSync(path.join(记忆, '..', path.basename(记忆) + '-旁'), { recursive: true });
-      fs.writeFileSync(path.join(记忆, '..', path.basename(记忆) + '-旁', '合并.md'), '一\n');
-      fs.writeFileSync(path.join(记忆, 'fight.md'), '一\n二\n三\n');
-      const 旁 = `M/../${path.basename(记忆)}-旁/合并.md`;
-      const 好 = await 跑('规矩', 造仓库(基础(), 表(`["用户 10-18", "M/fight.md", "M/fight.md:3", "${旁}"]`, 'M/fight.md；7d077904')), { 记忆根: 记忆 });
-      expect(好.违规).toEqual([]);
-      expect(好.报.跳过).toEqual([]);
+      fs.mkdirSync(path.join(memoryDir, '..', path.basename(memoryDir) + '-旁'), { recursive: true });
+      fs.writeFileSync(path.join(memoryDir, '..', path.basename(memoryDir) + '-旁', '合并.md'), '一\n');
+      fs.writeFileSync(path.join(memoryDir, 'fight.md'), '一\n二\n三\n');
+      const sidePath = `M/../${path.basename(memoryDir)}-旁/合并.md`;
+      const cleanResult = await runRule('规矩', makeRepo(base(), makeRuleTable(`["用户 10-18", "M/fight.md", "M/fight.md:3", "${sidePath}"]`, 'M/fight.md；7d077904')), { memoryRoot: memoryDir });
+      expect(cleanResult.violations).toEqual([]);
+      expect(cleanResult.report.跳过).toEqual([]);
 
-      const 坏 = (await 跑('规矩', 造仓库(基础(), 表('["M/fight.md:9", "M/删了.md"]', 'M/改名了.md')), { 记忆根: 记忆 })).违规.join('\n');
-      expect(坏).toMatch(/规矩「打击停顿」的出处 M\/fight.md:9 超出文件行数/);
-      expect(坏).toMatch(/规矩「打击停顿」的出处 M\/删了.md 在记忆目录里找不到/);
-      expect(坏).toMatch(/规矩「打击停顿」的出处 M\/改名了.md 在记忆目录里找不到/);
+      const violationText = (await runRule('规矩', makeRepo(base(), makeRuleTable('["M/fight.md:9", "M/删了.md"]', 'M/改名了.md')), { memoryRoot: memoryDir })).violations.join('\n');
+      expect(violationText).toMatch(/规矩「打击停顿」的出处 M\/fight.md:9 超出文件行数/);
+      expect(violationText).toMatch(/规矩「打击停顿」的出处 M\/删了.md 在记忆目录里找不到/);
+      expect(violationText).toMatch(/规矩「打击停顿」的出处 M\/改名了.md 在记忆目录里找不到/);
 
-      const 不在 = await 跑('规矩', 造仓库(基础(), 表('["M/删了.md"]', 'M/改名了.md')), { 记忆根: path.join(记忆, '没有这个目录') });
-      expect(不在.违规).toEqual([]);
-      expect(不在.报.跳过.join('\n')).toMatch(/出处的记忆引用（2 处）：记忆目录 .*没有这个目录 不在本机/);
+      const absentMemoryResult = await runRule('规矩', makeRepo(base(), makeRuleTable('["M/删了.md"]', 'M/改名了.md')), { memoryRoot: path.join(memoryDir, '没有这个目录') });
+      expect(absentMemoryResult.violations).toEqual([]);
+      expect(absentMemoryResult.report.跳过.join('\n')).toMatch(/出处的记忆引用（2 处）：记忆目录 .*没有这个目录 不在本机/);
     } finally {
-      fs.rmSync(记忆, { recursive: true, force: true });
-      fs.rmSync(path.join(记忆, '..', path.basename(记忆) + '-旁'), { recursive: true, force: true });
+      fs.rmSync(memoryDir, { recursive: true, force: true });
+      fs.rmSync(path.join(memoryDir, '..', path.basename(memoryDir) + '-旁'), { recursive: true, force: true });
     }
   });
 
   it('记忆引用的写法', () => {
-    expect(记忆引用('M/manju-adaptation.md:18「可写」')).toEqual([{ 路径: 'manju-adaptation.md', 行: 18 }]);
-    expect(记忆引用('M/a.md、M/../image-flow/b-c.md')).toEqual([{ 路径: 'a.md' }, { 路径: '../image-flow/b-c.md' }]);
-    expect(记忆引用('CLAUDE.md 元规则 1；ANIM/x.md；docs/M/x.md')).toEqual([]);
+    expect(parseMemoryRefs('M/manju-adaptation.md:18「可写」')).toEqual([{ 路径: 'manju-adaptation.md', 行: 18 }]);
+    expect(parseMemoryRefs('M/a.md、M/../image-flow/b-c.md')).toEqual([{ 路径: 'a.md' }, { 路径: '../image-flow/b-c.md' }]);
+    expect(parseMemoryRefs('CLAUDE.md 元规则 1；ANIM/x.md；docs/M/x.md')).toEqual([]);
   });
 
   it('落点格式', () => {
-    expect(解析落点('engine/core/例外.ts 例外、例外依据')).toEqual({ 路径: 'engine/core/例外.ts', 符号: ['例外', '例外依据'] });
-    expect(解析落点('库/角色/跑步.ts（照旧 跑步.ts） runPoseAt')).toEqual({ 路径: '库/角色/跑步.ts', 符号: ['runPoseAt'] });
-    expect(解析落点('rules/')).toEqual({ 路径: 'rules', 符号: [] });
-    expect(解析落点('旧:src/lib/anim.ts X')).toEqual({ 待迁移: true });
-    expect('错' in 解析落点('参考模型库/src/x.ts')).toBe(true);
+    expect(parseLanding('engine/core/例外.ts 例外、例外依据')).toEqual({ 路径: 'engine/core/例外.ts', symbols: ['例外', '例外依据'] });
+    expect(parseLanding('库/角色/跑步.ts（照旧 跑步.ts） runPoseAt')).toEqual({ 路径: '库/角色/跑步.ts', symbols: ['runPoseAt'] });
+    expect(parseLanding('rules/')).toEqual({ 路径: 'rules', symbols: [] });
+    expect(parseLanding('旧:src/lib/anim.ts X')).toEqual({ 待迁移: true });
+    expect('错' in parseLanding('参考模型库/src/x.ts')).toBe(true);
   });
 });

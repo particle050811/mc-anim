@@ -286,20 +286,20 @@ def animate(phones, total_cs):
 
 
 # ---------- 入口 ----------
-def 拼音(hanzi: str) -> list[list[str]]:
+def pinyin(hanzi: str) -> list[list[str]]:
     """一串汉字 → [[声母, 韵母]]（strict 拼音，ü 写 v）"""
     from pypinyin import Style, pinyin  # pyright: ignore[reportMissingImports]
 
     return [[i[0], f[0]] for i, f in zip(pinyin(hanzi, style=Style.INITIALS, strict=True), pinyin(hanzi, style=Style.FINALS, strict=True))]
 
 
-def 算嘴(念: str, 时长: float, 字: list) -> list:
+def compute_lip_shapes(text: str, duration: float, unit_timings: list) -> list:
     """念：对齐用的字（台词的「念」，没写同「文本」）；时长：配音成品的秒数（round 到 3 位）；字：[[单位, 起秒, 止秒]]。返回 [[秒, 嘴型]]"""
-    hanzi = ''.join(re.findall(r'[一-鿿]', 念))
-    pys = 拼音(hanzi) if hanzi else []
+    hanzi = ''.join(re.findall(r'[一-鿿]', text))
+    pys = pinyin(hanzi) if hanzi else []
     phones: list[Phone] = []
-    for unit, s, e in 字:
+    for unit, s, e in unit_timings:
         if re.fullmatch(r'\W+', unit):
             continue
         unit_phones(phones, unit, pys, round(s * 100), max(round(e * 100), round(s * 100) + 4))
-    return animate(phones, int(时长 * 100) + TAIL_SILENCE_CS)
+    return animate(phones, int(duration * 100) + TAIL_SILENCE_CS)

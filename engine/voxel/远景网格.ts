@@ -16,17 +16,17 @@ export type DistantGrid = {
   nz: number;
   海平面: number; // 63
   高: Int16Array; // nz 行 × nx 列：最高实心方块 y
-  群: Uint8Array; // 地表群系，下标进 群系名
+  biomeIndex: Uint8Array; // 地表群系，下标进 群系名
   群系名: string[];
-  温度: number[];
+  biomeTemperature: number[];
   // 加密层（工具/选种/远景加密.mjs）：中层、细带，各存和下面各层的差（分米），没有的层不在里面
   层: DetailLayer[];
   // 暮色远景包（pipeline/世界/远景/）才有：点上地表那一块的方块（下标进 地表名，照暮色自己的地表规则算的，不再按群系猜）、
   // 黑森林的硬化树叶顶层（地形那一步就铺上的，ChunkGeneratorTwilight.addDarkForestCanopy）最上、最下一格的 y，没有是 −32768
-  地表?: Uint8Array;
+  surface?: Uint8Array;
   地表名?: string[];
-  冠顶?: Int16Array;
-  冠底?: Int16Array;
+  crownTop?: Int16Array;
+  crownBottom?: Int16Array;
 };
 export type DetailLayer = { 名: string; step: number; 块边: number; n: number; 块: Map<number, number>; 差: Int16Array };
 
@@ -50,8 +50,8 @@ export const loadDistantGrid = (dir: string, packName: string): Promise<DistantG
       const deltas = new Int16Array(await fetchGunzip(`${dir}/远景.${layerName}.bin.gz`, buildHint));
       layers.push(buildDetailLayer(layerName, layerMeta, deltas));
     }
-    const grid: DistantGrid = { packName, x0: meta.x0, z0: meta.z0, step: meta.step, nx: meta.nx, nz: meta.nz, 海平面: meta.海平面, 高: new Int16Array(heightBuf), 群: new Uint8Array(biomeBuf), 群系名: meta.群系名, 温度: meta.群系温度, 层: layers };
-    if (extra) Object.assign(grid, { 地表: new Uint8Array(extra[0]), 地表名: meta.地表名, 冠顶: new Int16Array(extra[1]), 冠底: new Int16Array(extra[2]) });
+    const grid: DistantGrid = { packName, x0: meta.x0, z0: meta.z0, step: meta.step, nx: meta.nx, nz: meta.nz, 海平面: meta.海平面, 高: new Int16Array(heightBuf), biomeIndex: new Uint8Array(biomeBuf), 群系名: meta.群系名, biomeTemperature: meta.群系温度, 层: layers };
+    if (extra) Object.assign(grid, { surface: new Uint8Array(extra[0]), 地表名: meta.地表名, crownTop: new Int16Array(extra[1]), crownBottom: new Int16Array(extra[2]) });
     return grid;
   });
 
@@ -104,7 +104,7 @@ export const distantPoint = (grid: DistantGrid, gx: number, gz: number) => {
 };
 export const distantBiome = (grid: DistantGrid, gx: number, gz: number) => {
   const k = distantPoint(grid, gx, gz);
-  return k < 0 ? 'minecraft:deep_ocean' : grid.群系名[grid.群[k]];
+  return k < 0 ? 'minecraft:deep_ocean' : grid.群系名[grid.biomeIndex[k]];
 };
 // [gx0, gx1) × [gz0, gz1) 这一片方块里最高的地面（最高实心方块 y）：四个角那几块的中心双线性，加上落在里面的网格点
 export const distantAreaTop = (grid: DistantGrid, gx0: number, gz0: number, gx1: number, gz1: number) => {

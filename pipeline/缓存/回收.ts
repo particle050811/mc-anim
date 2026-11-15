@@ -10,60 +10,60 @@
 // 认可有了认可参考（文件名绑定认可记录的抽样哈希）才不再钉认可那版的母版。用户 10-30 定「这个未来用不到的就删」，gc 和渲段自动删旧都开着解钉（钉.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 本检出 } from '../环境/路径.ts';
-import { 持有者, 持有者主机, 进程在吗 } from '../闸/锁.ts';
-import { 近期用过毫秒 } from '../渲/母版.ts';
+import { currentCheckout } from '../环境/路径.ts';
+import { holderPid, holderHost, processAlive } from '../闸/锁.ts';
+import { recentUseMs } from '../渲/母版.ts';
 
-export type 保留类 = '当前' | '认可' | '交付' | '最近一份' | '近期' | '在用' | '算不出';
+export type KeepKind = '当前' | '认可' | '交付' | '最近一份' | '近期' | '在用' | '算不出';
 /** 报告里按这个顺序算「主要因为什么留」 */
-export const 保留类顺序: readonly 保留类[] = ['当前', '认可', '交付', '最近一份', '近期', '在用', '算不出'];
-export type 保留理由 = { 类: 保留类; 说明: string };
+export const keepClassOrder: readonly KeepKind[] = ['当前', '认可', '交付', '最近一份', '近期', '在用', '算不出'];
+export type KeepReason = { 类: KeepKind; 说明: string };
 
-const 天 = 24 * 3600 * 1000;
+const dayMs = 24 * 3600 * 1000;
 
 /** 比较用的路径：绝对、NFC；Windows 不分大小写 */
-export const 规范路径 = (p: string) => {
+export const canonicalPath = (p: string) => {
   const r = path.resolve(p).normalize('NFC');
   return process.platform === 'win32' ? r.toLowerCase() : r;
 };
 
-const 在目录里 = (文件: string, 目录: string) => {
-  const r = path.relative(目录, 文件);
+const inDir = (file: string, dir: string) => {
+  const r = path.relative(dir, file);
   return r !== '' && !r.startsWith('..') && !path.isAbsolute(r);
 };
 
 /** 要留的文件（按路径）和要整个留的目录 */
-export class 保留集 {
-  readonly 文件 = new Map<string, 保留理由[]>();
-  readonly 目录 = new Map<string, 保留理由[]>();
+export class KeepSet {
+  readonly 文件 = new Map<string, KeepReason[]>();
+  readonly 目录 = new Map<string, KeepReason[]>();
 
-  加(文件: string, 理由: 保留理由) {
-    const k = 规范路径(文件);
-    const 已有 = this.文件.get(k) ?? [];
-    if (!已有.some((x) => x.类 === 理由.类 && x.说明 === 理由.说明)) 已有.push(理由);
-    this.文件.set(k, 已有);
+  加(file: string, reason: KeepReason) {
+    const k = canonicalPath(file);
+    const reasons = this.文件.get(k) ?? [];
+    if (!reasons.some((x) => x.类 === reason.类 && x.说明 === reason.说明)) reasons.push(reason);
+    this.文件.set(k, reasons);
   }
 
-  加目录(目录: string, 理由: 保留理由) {
-    const k = 规范路径(目录);
-    this.目录.set(k, [...(this.目录.get(k) ?? []), 理由]);
+  addDir(dir: string, reason: KeepReason) {
+    const k = canonicalPath(dir);
+    this.目录.set(k, [...(this.目录.get(k) ?? []), reason]);
   }
 
-  查(文件: string): 保留理由[] {
-    const k = 规范路径(文件);
+  reasonsFor(file: string): KeepReason[] {
+    const k = canonicalPath(file);
     const r = [...(this.文件.get(k) ?? [])];
-    for (const [d, 理由们] of this.目录) if (在目录里(k, d)) r.push(...理由们);
+    for (const [d, reasons] of this.目录) if (inDir(k, d)) r.push(...reasons);
     return r;
   }
 }
 
 // ---------- 母版 ----------
 
-export type 缓存种 = '母版';
+export type CacheKind = '母版';
 
-export type 媒体文件 = {
+export type MediaFile = {
   路径: string;
-  种: 缓存种;
+  种: CacheKind;
   作品: string;
   /** 段键 */
   键: string;
@@ -75,47 +75,47 @@ export type 媒体文件 = {
    * 旁边 .指纹.json 的修改时间（没有 json 用媒体文件的）。「最近一份」按它排，和 film --允许过期 用的 历史指纹 同序：
    * 迁移时硬链接到新指纹名下的母版，媒体文件还是旧的修改时间，json 是新的
    */
-  记于: number;
+  recordedAt: number;
   /** 旁边 .指纹.json 里 渲染设置.inputProps.级别；没有 json 或读不出是 null */
   级别: string | null;
   /** 设备-inode 和硬链接数：迁移时有过把同一份母版硬链接到新指纹名下，删掉一个名字不腾空间 */
   inode: string;
-  链数: number;
+  linkCount: number;
   /** 切片（mp4 画面）、声音（wav） */
   存法: '切片' | '声音';
   /** 旁边 .用过 的修改时间（film、verify 最后一次用），没有是 null */
-  用过于: number | null;
+  usedAt: number | null;
   /** 同目录里有这个指纹正在写的临时文件（.渲染中、.转码中、.占用，1 天内动过的） */
-  正在写: boolean;
+  beingWritten: boolean;
   /** 用过这个指纹、路径还在的别的检出（旁边的 .检出-*） */
-  别的检出: string[];
+  otherCheckouts: string[];
 };
-export type 带理由<T> = T & { 理由: 保留理由[] };
+export type WithReasons<T> = T & { 理由: KeepReason[] };
 
 /** 渲染中途崩掉留下的临时文件（渲.ts 的 .渲染中-<pid>、母版.ts 原子写 的 .写入中-<pid>）；渲/母版占用.ts 的 .占用 和锁协议的旁文件（.占用.<pid>.主机 等）同样算：活着的挡住这个指纹，崩掉留下的超 1 天 gc 删 */
-export const 是临时名 = (名: string) => /\.(渲染中|写入中|转码中)-\d+|\.占用(\.|$)/.test(名);
-const 媒体名 = /^([0-9a-f]{16})\.(mp4|wav)$/;
-const 用过名 = /^[0-9a-f]{16}\.用过$/;
-const 检出记号名 = /^[0-9a-f]{16}\.检出-[0-9a-f]{8}$/;
+export const isTempName = (fileName: string) => /\.(渲染中|写入中|转码中)-\d+|\.占用(\.|$)/.test(fileName);
+const mediaNamePattern = /^([0-9a-f]{16})\.(mp4|wav)$/;
+const usedMarkPattern = /^[0-9a-f]{16}\.用过$/;
+const checkoutMarkPattern = /^[0-9a-f]{16}\.检出-[0-9a-f]{8}$/;
 
-export type 普通文件 = { 路径: string; 大小: number; 改于: number };
+export type PlainFile = { 路径: string; 大小: number; 改于: number };
 
 /** 列目录和 stat 之间文件没了算没看见：别的进程在闸外清临时文件、删旧；只吞 ENOENT */
-const 没了算空 = <T>(读: () => T): T | null => {
+const readOrNull = <T>(read: () => T): T | null => {
   try {
-    return 读();
+    return read();
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw e;
   }
 };
 
-export type 媒体扫描 = { 媒体: 媒体文件[]; 临时: 普通文件[]; 不认识: 普通文件[] };
+export type MediaScan = { media: MediaFile[]; tempFiles: PlainFile[]; unknownFiles: PlainFile[] };
 
 /** 读 .指纹.json 里的渲染级别；文件可能是旧算法的，只认 项.渲染设置.inputProps.级别 */
-export const 读级别 = (json文件: string): string | null => {
+export const readLevel = (jsonFile: string): string | null => {
   try {
-    const j = JSON.parse(fs.readFileSync(json文件, 'utf8')) as { 项?: { 渲染设置?: { inputProps?: { 级别?: unknown } } } };
+    const j = JSON.parse(fs.readFileSync(jsonFile, 'utf8')) as { 项?: { 渲染设置?: { inputProps?: { 级别?: unknown } } } };
     const v = j.项?.渲染设置?.inputProps?.级别;
     return typeof v === 'string' ? v : null;
   } catch {
@@ -123,137 +123,137 @@ export const 读级别 = (json文件: string): string | null => {
   }
 };
 
-export type 扫描选项 = { 现在?: number };
+export type ScanOptions = { now?: number };
 
 /** 扫一个键目录（cache/<种>/<作品>/<键>/），结果追加进 r */
-export const 扫键目录 = (dir: string, 种: 缓存种, 作品: string, 键: string, r: 媒体扫描, o: 扫描选项 = {}) => {
-  const 现在 = o.现在 ?? Date.now();
-  const 名们 = fs.readdirSync(dir);
-  const 写着 = new Set(名们.filter(是临时名).filter((n) => {
-    const st = 没了算空(() => fs.statSync(path.join(dir, n)));
-    return st !== null && 现在 - st.mtimeMs < 天;
+export const scanKeyDir = (dir: string, cacheKind: CacheKind, work: string, segKey: string, r: MediaScan, o: ScanOptions = {}) => {
+  const now = o.now ?? Date.now();
+  const entries = fs.readdirSync(dir);
+  const writingNames = new Set(entries.filter(isTempName).filter((n) => {
+    const st = readOrNull(() => fs.statSync(path.join(dir, n)));
+    return st !== null && now - st.mtimeMs < dayMs;
   }).map((n) => n.slice(0, 16)));
-  const 这个检出 = 本检出();
-  const 别的检出 = new Map<string, string[]>();
-  for (const 名 of 名们.filter((n) => 检出记号名.test(n))) {
-    const 路径 = fs.readFileSync(path.join(dir, 名), 'utf8').trim();
-    if (路径 && 路径 !== 这个检出 && fs.existsSync(路径)) 别的检出.set(名.slice(0, 16), [...(别的检出.get(名.slice(0, 16)) ?? []), 路径]);
+  const thisCheckout = currentCheckout();
+  const otherCheckouts = new Map<string, string[]>();
+  for (const fileName of entries.filter((n) => checkoutMarkPattern.test(n))) {
+    const checkoutPath = fs.readFileSync(path.join(dir, fileName), 'utf8').trim();
+    if (checkoutPath && checkoutPath !== thisCheckout && fs.existsSync(checkoutPath)) otherCheckouts.set(fileName.slice(0, 16), [...(otherCheckouts.get(fileName.slice(0, 16)) ?? []), checkoutPath]);
   }
-  for (const 名 of 名们) {
-    const f = path.join(dir, 名);
-    const st = 没了算空(() => fs.lstatSync(f));
+  for (const fileName of entries) {
+    const f = path.join(dir, fileName);
+    const st = readOrNull(() => fs.lstatSync(f));
     if (!st) continue;
     if (!st.isFile()) {
-      r.不认识.push({ 路径: f, 大小: 0, 改于: st.mtimeMs });
+      r.unknownFiles.push({ 路径: f, 大小: 0, 改于: st.mtimeMs });
       continue;
     }
-    const m = 媒体名.exec(名);
+    const m = mediaNamePattern.exec(fileName);
     if (m) {
       const json = path.join(dir, `${m[1]}.指纹.json`);
-      const 有json = fs.existsSync(json);
-      let 用过于: number | null = null;
+      const hasJson = fs.existsSync(json);
+      let usedAt: number | null = null;
       try {
-        用过于 = fs.statSync(path.join(dir, `${m[1]}.用过`)).mtimeMs;
+        usedAt = fs.statSync(path.join(dir, `${m[1]}.用过`)).mtimeMs;
       } catch {
         // 没用过
       }
-      r.媒体.push({
-        路径: f, 种, 作品, 键, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, 记于: 有json ? fs.statSync(json).mtimeMs : st.mtimeMs,
-        级别: 有json ? 读级别(json) : null, inode: `${st.dev}-${st.ino}`, 链数: st.nlink,
-        存法: m[2] === 'mp4' ? '切片' : '声音', 用过于, 正在写: 写着.has(m[1]!), 别的检出: 别的检出.get(m[1]!) ?? [],
+      r.media.push({
+        路径: f, 种: cacheKind, 作品: work, 键: segKey, 指纹: m[1]!, 大小: st.size, 改于: st.mtimeMs, recordedAt: hasJson ? fs.statSync(json).mtimeMs : st.mtimeMs,
+        级别: hasJson ? readLevel(json) : null, inode: `${st.dev}-${st.ino}`, linkCount: st.nlink,
+        存法: m[2] === 'mp4' ? '切片' : '声音', usedAt, beingWritten: writingNames.has(m[1]!), otherCheckouts: otherCheckouts.get(m[1]!) ?? [],
       });
-    } else if (是临时名(名)) r.临时.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
-    else if (!名.endsWith('.指纹.json') && !用过名.test(名) && !检出记号名.test(名)) r.不认识.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
+    } else if (isTempName(fileName)) r.tempFiles.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
+    else if (!fileName.endsWith('.指纹.json') && !usedMarkPattern.test(fileName) && !checkoutMarkPattern.test(fileName)) r.unknownFiles.push({ 路径: f, 大小: st.size, 改于: st.mtimeMs });
   }
 };
 
 /** 扫 cache/<种>/<作品>/ 下各键目录 */
-export const 扫媒体 = (作品目录: string, 种: 缓存种, 作品: string, o: 扫描选项 = {}): 媒体扫描 => {
-  const r: 媒体扫描 = { 媒体: [], 临时: [], 不认识: [] };
-  if (!fs.existsSync(作品目录)) return r;
-  for (const 键 of fs.readdirSync(作品目录)) {
-    const dir = path.join(作品目录, 键);
-    const 目录st = fs.statSync(dir);
-    if (!目录st.isDirectory()) {
-      r.不认识.push({ 路径: dir, 大小: 目录st.size, 改于: 目录st.mtimeMs });
+export const scanMedia = (workDir: string, cacheKind: CacheKind, work: string, o: ScanOptions = {}): MediaScan => {
+  const r: MediaScan = { media: [], tempFiles: [], unknownFiles: [] };
+  if (!fs.existsSync(workDir)) return r;
+  for (const segKey of fs.readdirSync(workDir)) {
+    const dir = path.join(workDir, segKey);
+    const dirStat = fs.statSync(dir);
+    if (!dirStat.isDirectory()) {
+      r.unknownFiles.push({ 路径: dir, 大小: dirStat.size, 改于: dirStat.mtimeMs });
       continue;
     }
-    扫键目录(dir, 种, 作品, 键, r, o);
+    scanKeyDir(dir, cacheKind, work, segKey, r, o);
   }
   return r;
 };
 
 /** 一个媒体文件身上的钉（gc、film 渲完自动删旧共用）：保留集里的，再加近 2 小时用过、别的检出用过、正在写 */
-export const 钉理由 = (f: 媒体文件, 保留: 保留集, 现在: number): 保留理由[] => {
-  const 理由 = 保留.查(f.路径);
-  if (f.用过于 !== null && 现在 - f.用过于 < 近期用过毫秒) 理由.push({ 类: '在用', 说明: '2 小时内用过' });
-  for (const 检出 of f.别的检出) 理由.push({ 类: '在用', 说明: `别的检出用过：${检出}` });
-  if (f.正在写) 理由.push({ 类: '在用', 说明: '这个指纹正在写' });
-  return 理由;
+export const pinReasons = (f: MediaFile, keep: KeepSet, now: number): KeepReason[] => {
+  const reasons = keep.reasonsFor(f.路径);
+  if (f.usedAt !== null && now - f.usedAt < recentUseMs) reasons.push({ 类: '在用', 说明: '2 小时内用过' });
+  for (const otherCheckout of f.otherCheckouts) reasons.push({ 类: '在用', 说明: `别的检出用过：${otherCheckout}` });
+  if (f.beingWritten) reasons.push({ 类: '在用', 说明: '这个指纹正在写' });
+  return reasons;
 };
 
 /**
  * 给每个媒体文件定留不留：钉理由 有的留；另外每个（种、作品、键、级别，画面声音分开）记于最新的那个指纹留（理由「最近一份」；
  * 每个级别的都留），近 近期天数 天里改过的留（「近期」）。理由为空的就是要删的。
  */
-export const 规划媒体 = (文件们: readonly 媒体文件[], 保留: 保留集, o: { 现在: number; 近期天数: number }): 带理由<媒体文件>[] => {
-  const 最近 = new Map<string, 媒体文件>();
-  for (const f of 文件们) {
+export const planMedia = (mediaFiles: readonly MediaFile[], keep: KeepSet, o: { now: number; recentDays: number }): WithReasons<MediaFile>[] => {
+  const recentMedia = new Map<string, MediaFile>();
+  for (const f of mediaFiles) {
     const k = [f.种, f.作品, f.键, f.级别 ?? '?', f.存法 === '声音' ? '声音' : '画面'].join('\0');
-    const 已 = 最近.get(k);
-    if (!已 || f.记于 > 已.记于) 最近.set(k, f);
+    const existing = recentMedia.get(k);
+    if (!existing || f.recordedAt > existing.recordedAt) recentMedia.set(k, f);
   }
-  const 最近指纹 = new Set([...最近.values()].map((f) => [f.种, f.作品, f.键, f.指纹].join('\0')));
-  return 文件们.map((f) => {
-    const 理由 = 钉理由(f, 保留, o.现在);
-    if (最近指纹.has([f.种, f.作品, f.键, f.指纹].join('\0'))) 理由.push({ 类: '最近一份', 说明: f.级别 ?? '级别不明' });
-    if (o.现在 - f.改于 < o.近期天数 * 天) 理由.push({ 类: '近期', 说明: `${o.近期天数} 天内` });
-    return { ...f, 理由 };
+  const recentFingerprints = new Set([...recentMedia.values()].map((f) => [f.种, f.作品, f.键, f.指纹].join('\0')));
+  return mediaFiles.map((f) => {
+    const reasons = pinReasons(f, keep, o.now);
+    if (recentFingerprints.has([f.种, f.作品, f.键, f.指纹].join('\0'))) reasons.push({ 类: '最近一份', 说明: f.级别 ?? '级别不明' });
+    if (o.now - f.改于 < o.recentDays * dayMs) reasons.push({ 类: '近期', 说明: `${o.recentDays} 天内` });
+    return { ...f, 理由: reasons };
   });
 };
 
 /** 临时残留：超过 1 天还在的就是崩掉留下的（正在渲的那份改于一直在更新） */
-export const 规划临时 = (文件们: readonly 普通文件[], 现在: number): 带理由<普通文件>[] =>
-  文件们.map((f) => ({ ...f, 理由: 现在 - f.改于 < 天 ? [{ 类: '近期' as const, 说明: '1 天内，可能还在写' }] : [] }));
+export const planTemp = (tempFiles: readonly PlainFile[], now: number): WithReasons<PlainFile>[] =>
+  tempFiles.map((f) => ({ ...f, 理由: now - f.改于 < dayMs ? [{ 类: '近期' as const, 说明: '1 天内，可能还在写' }] : [] }));
 
 // ---------- 认可、交付 ----------
 
 /** 认可记录 <作品根>/认可/<平台>/<段键>.toml 的 段 和 指纹（只取这两项，别的字段坏了也不影响回收） */
-export const 读认可指纹 = (file: string): { 段: string; 指纹: string } | null => {
+export const readApprovedFingerprint = (file: string): { 段: string; 指纹: string } | null => {
   const t = fs.readFileSync(file, 'utf8');
-  const 段 = /^"段"\s*=\s*"([^"]+)"/m.exec(t)?.[1];
-  const 指纹 = /^"指纹"\s*=\s*"([0-9a-f]{16,64})"/m.exec(t)?.[1];
-  return 段 && 指纹 ? { 段, 指纹 } : null;
+  const segKey = /^"段"\s*=\s*"([^"]+)"/m.exec(t)?.[1];
+  const fingerprint = /^"指纹"\s*=\s*"([0-9a-f]{16,64})"/m.exec(t)?.[1];
+  return segKey && fingerprint ? { 段: segKey, 指纹: fingerprint } : null;
 };
 
-export type 解钉选项 = {
+export type UnpinOptions = {
   /** true：自足的交付、有认可参考的认可不再钉母版（gc、film 渲完自动删旧都传 true，钉.ts）。不给是 false，只在说明里标 */
-  解钉?: boolean;
+  unpin?: boolean;
   /** 认可记录文件 → 它在这个平台的认可参考（验收/参考.ts 的 参考文件，按记录的抽样哈希起名）；读不出记录返回 null。不给就当都没有参考 */
-  参考文件?: (认可文件: string, 平台: string) => string | null;
+  referenceFile?: (approvalFile: string, hostPlatform: string) => string | null;
 };
 
 /** 认可记录里各段那版的母版进保留集（各平台的都算；别的平台的指纹本机本来就没有，加了也无妨）。读不出的记录整段目录留下 */
-export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (段键: string) => string, 警告: (s: string) => void = () => {}, o: 解钉选项 = {}) => {
-  const 根 = path.join(作品根, '认可');
-  if (!fs.existsSync(根)) return;
-  for (const 平台 of fs.readdirSync(根)) {
-    const dir = path.join(根, 平台);
+export const addApprovals = (keep: KeepSet, workRoot: string, masterDir: (segKey: string) => string, warn: (s: string) => void = () => {}, o: UnpinOptions = {}) => {
+  const approvDir = path.join(workRoot, '认可');
+  if (!fs.existsSync(approvDir)) return;
+  for (const hostPlatform of fs.readdirSync(approvDir)) {
+    const dir = path.join(approvDir, hostPlatform);
     if (!fs.statSync(dir).isDirectory()) continue;
-    for (const 名 of fs.readdirSync(dir).filter((n) => n.endsWith('.toml'))) {
-      const file = path.join(dir, 名);
-      const r = 读认可指纹(file);
-      const 段键 = 名.slice(0, -'.toml'.length);
+    for (const fileName of fs.readdirSync(dir).filter((n) => n.endsWith('.toml'))) {
+      const file = path.join(dir, fileName);
+      const r = readApprovedFingerprint(file);
+      const segKey = fileName.slice(0, -'.toml'.length);
       if (!r) {
-        警告(`${file} 读不出 段 和 指纹，${段键} 的母版整个留着`);
-        保留.加目录(母版目录(段键), { 类: '算不出', 说明: '认可记录读不出' });
+        warn(`${file} 读不出 段 和 指纹，${segKey} 的母版整个留着`);
+        keep.addDir(masterDir(segKey), { 类: '算不出', 说明: '认可记录读不出' });
         continue;
       }
-      const 参考 = o.参考文件?.(file, 平台);
-      const 有参考 = !!参考 && fs.existsSync(参考);
-      if (有参考 && o.解钉) continue;
-      const 说明 = 有参考 ? `${平台}（有认可参考）` : 平台;
-      保留.加(path.join(母版目录(r.段), `${r.指纹.slice(0, 16)}.mp4`), { 类: '认可', 说明 });
+      const refFile = o.referenceFile?.(file, hostPlatform);
+      const hasReference = !!refFile && fs.existsSync(refFile);
+      if (hasReference && o.unpin) continue;
+      const note = hasReference ? `${hostPlatform}（有认可参考）` : hostPlatform;
+      keep.加(path.join(masterDir(r.段), `${r.指纹.slice(0, 16)}.mp4`), { 类: '认可', 说明: note });
     }
   }
 };
@@ -262,72 +262,72 @@ export const 加认可 = (保留: 保留集, 作品根: string, 母版目录: (�
  * 一份交付 manifest.json（版本 3，anim film 写的）引用的切片：各段 <画面指纹>.mp4、<声音指纹>.wav，相对数据根。
  * 10-30 以前的 v1、v2 不认（用户 11-06「旧的不用兼容」），它们只引用 CRF1 时代的 .mkv。作品 是 manifest 没写作品时的兜底（交付目录的上一级）
  */
-export const 交付引用 = (manifest: unknown, 作品?: string): string[] => {
+export const deliveryRefs = (manifest: unknown, work?: string): string[] => {
   const m = (manifest ?? {}) as { 作品?: unknown; 段?: { 键?: unknown; 画面指纹?: unknown; 声音指纹?: unknown }[] };
-  const 品 = typeof m.作品 === 'string' ? m.作品 : 作品;
+  const effectiveWork = typeof m.作品 === 'string' ? m.作品 : work;
   const r: string[] = [];
   for (const s of Array.isArray(m.段) ? m.段 : []) {
-    if (!品 || typeof s?.键 !== 'string' || typeof s?.画面指纹 !== 'string') continue;
-    r.push(['cache', '母版', 品, s.键, `${s.画面指纹.slice(0, 16)}.mp4`].join('/'));
-    if (typeof s.声音指纹 === 'string') r.push(['cache', '母版', 品, s.键, `${s.声音指纹.slice(0, 16)}.wav`].join('/'));
+    if (!effectiveWork || typeof s?.键 !== 'string' || typeof s?.画面指纹 !== 'string') continue;
+    r.push(['cache', '母版', effectiveWork, s.键, `${s.画面指纹.slice(0, 16)}.mp4`].join('/'));
+    if (typeof s.声音指纹 === 'string') r.push(['cache', '母版', effectiveWork, s.键, `${s.声音指纹.slice(0, 16)}.wav`].join('/'));
   }
   return r;
 };
 
 /** 交付/ 下找 manifest.json（交付/<作品>/<目录>/，也认更早不分作品的 交付/<目录>/） */
-export const 找交付manifest = (交付根: string, 深 = 3): string[] => {
-  if (!fs.existsSync(交付根)) return [];
+export const findDeliveryManifests = (deliveryRoot: string, depth = 3): string[] => {
+  if (!fs.existsSync(deliveryRoot)) return [];
   const r: string[] = [];
-  const 走 = (dir: string, 层: number) => {
+  const walk = (dir: string, layerDepth: number) => {
     const m = path.join(dir, 'manifest.json');
     if (fs.existsSync(m)) {
       r.push(m);
       return;
     }
-    if (层 >= 深) return;
-    for (const e of fs.readdirSync(dir, { withFileTypes: true })) if (e.isDirectory()) 走(path.join(dir, e.name), 层 + 1);
+    if (layerDepth >= depth) return;
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) if (e.isDirectory()) walk(path.join(dir, e.name), layerDepth + 1);
   };
-  走(交付根, 0);
+  walk(deliveryRoot, 0);
   return r.sort();
 };
 
 /** 交付自足：有 全片-未拉响度.flac 就不再读母版（文件名同 合成/交付.ts；剪辑包用户 11-06 定不要了，不再要 剪辑包/画面.mp4） */
-export const 交付自足 = (交付目录: string) => fs.existsSync(path.join(交付目录, '全片-未拉响度.flac'));
+export const deliverySelfContained = (deliveryDir: string) => fs.existsSync(path.join(deliveryDir, '全片-未拉响度.flac'));
 
 /** 交付 manifest 引用的母版进保留集，说明写交付目录（相对交付根） */
-export const 加交付 = (保留: 保留集, 交付根: string, 数据根: string, 警告: (s: string) => void = () => {}, o: 解钉选项 = {}) => {
-  for (const m of 找交付manifest(交付根)) {
-    let 引用: string[];
-    let 作品: string;
+export const addDelivery = (keep: KeepSet, deliveryRoot: string, dataRoot: string, warn: (s: string) => void = () => {}, o: UnpinOptions = {}) => {
+  for (const m of findDeliveryManifests(deliveryRoot)) {
+    let refs: string[];
+    let work: string;
     try {
       const j = JSON.parse(fs.readFileSync(m, 'utf8')) as { 作品?: unknown };
-      作品 = typeof j?.作品 === 'string' ? j.作品 : path.basename(path.dirname(path.dirname(m)));
-      引用 = 交付引用(j, 作品);
+      work = typeof j?.作品 === 'string' ? j.作品 : path.basename(path.dirname(path.dirname(m)));
+      refs = deliveryRefs(j, work);
     } catch (e) {
       // 自足的交付本来就不读母版；别的不知道引用了谁，和认可记录读不出一样整个留着（film 渲完自动删旧也看这里，不能当没引用）
-      if (o.解钉 && 交付自足(path.dirname(m))) {
-        警告(`${m} 读不出（${(e as Error).message}），交付已自足，不钉母版`);
+      if (o.unpin && deliverySelfContained(path.dirname(m))) {
+        warn(`${m} 读不出（${(e as Error).message}），交付已自足，不钉母版`);
         continue;
       }
-      const 层 = path.relative(交付根, path.dirname(m)).split(path.sep);
-      const 哪部 = 层.length >= 2 ? [层[0]!] : [];
-      警告(`${m} 读不出（${(e as Error).message}），它引用的母版不知道，${哪部[0] ?? '各作品'}的母版整个留着`);
-      保留.加目录(path.join(数据根, 'cache', '母版', ...哪部), { 类: '算不出', 说明: `交付 manifest 读不出：${层.join('/')}` });
+      const layerParts = path.relative(deliveryRoot, path.dirname(m)).split(path.sep);
+      const ownerWorks = layerParts.length >= 2 ? [layerParts[0]!] : [];
+      warn(`${m} 读不出（${(e as Error).message}），它引用的母版不知道，${ownerWorks[0] ?? '各作品'}的母版整个留着`);
+      keep.addDir(path.join(dataRoot, 'cache', '母版', ...ownerWorks), { 类: '算不出', 说明: `交付 manifest 读不出：${layerParts.join('/')}` });
       continue;
     }
-    const 自足 = 交付自足(path.dirname(m));
-    if (自足 && o.解钉) continue;
-    const 说明 = path.relative(交付根, path.dirname(m)).split(path.sep).join('/') + (自足 ? '（已自足）' : '');
-    for (const p of 引用) 保留.加(path.isAbsolute(p) ? p : path.join(数据根, ...p.split('/')), { 类: '交付', 说明 });
+    const selfContained = deliverySelfContained(path.dirname(m));
+    if (selfContained && o.unpin) continue;
+    const note = path.relative(deliveryRoot, path.dirname(m)).split(path.sep).join('/') + (selfContained ? '（已自足）' : '');
+    for (const p of refs) keep.加(path.isAbsolute(p) ? p : path.join(dataRoot, ...p.split('/')), { 类: '交付', 说明: note });
   }
 };
 
 // ---------- 目录（草稿、webpack、不认识的） ----------
 
-export type 目录条目 = { 路径: string; 名: string; 大小: number; 改于: number };
+export type DirEntry = { 路径: string; 名: string; 大小: number; 改于: number };
 
 /** 目录总大小（不跟符号链接、junction） */
-export const 目录大小 = (p: string): number => {
+export const dirSize = (p: string): number => {
   let st: fs.Stats;
   try {
     st = fs.lstatSync(p);
@@ -336,12 +336,12 @@ export const 目录大小 = (p: string): number => {
   }
   if (!st.isDirectory()) return st.isFile() ? st.size : 0;
   let n = 0;
-  for (const e of fs.readdirSync(p)) n += 目录大小(path.join(p, e));
+  for (const e of fs.readdirSync(p)) n += dirSize(path.join(p, e));
   return n;
 };
 
 /** 目录里最近改动的时间（递归到 深 层；webpack 写缓存是新建 pack 文件，草稿是往里加文件） */
-export const 最近改于 = (p: string, 深 = 2): number => {
+export const latestModifiedAt = (p: string, depth = 2): number => {
   let st: fs.Stats;
   try {
     st = fs.lstatSync(p);
@@ -349,67 +349,67 @@ export const 最近改于 = (p: string, 深 = 2): number => {
     return 0;
   }
   let t = st.mtimeMs;
-  if (st.isDirectory() && 深 > 0) for (const e of fs.readdirSync(p)) t = Math.max(t, 最近改于(path.join(p, e), 深 - 1));
+  if (st.isDirectory() && depth > 0) for (const e of fs.readdirSync(p)) t = Math.max(t, latestModifiedAt(path.join(p, e), depth - 1));
   return t;
 };
 
 /** 根下各条目的大小和最近改动；给了 要 就只算它挑中的（大小要整棵走一遍，cache/母版 这类大目录不该白走） */
-export const 列目录 = (根: string, 深 = 2, 要: (名: string) => boolean = () => true): 目录条目[] =>
-  fs.existsSync(根)
-    ? fs.readdirSync(根).filter(要).map((名) => ({ 路径: path.join(根, 名), 名, 大小: 目录大小(path.join(根, 名)), 改于: 最近改于(path.join(根, 名), 深) }))
+export const listDir = (root: string, depth = 2, keepName: (entryName: string) => boolean = () => true): DirEntry[] =>
+  fs.existsSync(root)
+    ? fs.readdirSync(root).filter(keepName).map((entryName) => ({ 路径: path.join(root, entryName), 名: entryName, 大小: dirSize(path.join(root, entryName)), 改于: latestModifiedAt(path.join(root, entryName), depth) }))
     : [];
 
 /** 草稿：最近改动超过 天数 天的删 */
-export const 规划草稿 = (条目们: readonly 目录条目[], o: { 现在: number; 天数: number }): 带理由<目录条目>[] =>
-  条目们.map((e) => ({ ...e, 理由: o.现在 - e.改于 < o.天数 * 天 ? [{ 类: '近期' as const, 说明: `${o.天数} 天内` }] : [] }));
+export const planDrafts = (entries: readonly DirEntry[], o: { now: number; days: number }): WithReasons<DirEntry>[] =>
+  entries.map((e) => ({ ...e, 理由: o.now - e.改于 < o.days * dayMs ? [{ 类: '近期' as const, 说明: `${o.days} 天内` }] : [] }));
 
 /** 只报不删：根下不在 认识 里的条目 */
-export const 不认识条目 = (根: string, 认识: readonly string[]): 目录条目[] => 列目录(根, 1, (名) => !认识.includes(名));
+export const unrecognizedEntries = (root: string, knownNames: readonly string[]): DirEntry[] => listDir(root, 1, (entryName) => !knownNames.includes(entryName));
 
 // ---------- 地形暂存 ----------
 
 /** 锁文件有没有活着的持有者（协议见 闸/锁.ts：空文件、别的主机的都当有人拿着） */
-export const 锁有人拿 = (锁: string, 本机: string): boolean => {
-  if (!fs.existsSync(锁)) return false;
-  const pid = 持有者(锁);
+export const isLockHeld = (lockPath: string, localHost: string): boolean => {
+  if (!fs.existsSync(lockPath)) return false;
+  const pid = holderPid(lockPath);
   if (pid === null) return true;
-  const 主机 = 持有者主机(锁, pid);
-  return (主机 !== null && 主机 !== 本机) || 进程在吗(pid);
+  const host = holderHost(lockPath, pid);
+  return (host !== null && host !== localHost) || processAlive(pid);
 };
 
-export type 暂存条目 = 目录条目 & { 锁在用: boolean };
+export type StagingEntry = DirEntry & { lockHeld: boolean };
 
 /** run/暂存/terrain 下各包的暂存目录（世界/版本.ts 的 新暂存：锁是旁边的 <包>.写入.lock） */
-export const 扫暂存 = (根: string, 本机 = ''): 暂存条目[] =>
-  列目录(根, 3, (名) => !名.includes('.lock')).filter((e) => fs.statSync(e.路径).isDirectory()).map((e) => ({ ...e, 锁在用: 锁有人拿(`${e.路径}.写入.lock`, 本机) }));
+export const scanStaging = (root: string, localHost = ''): StagingEntry[] =>
+  listDir(root, 3, (entryName) => !entryName.includes('.lock')).filter((e) => fs.statSync(e.路径).isDirectory()).map((e) => ({ ...e, lockHeld: isLockHeld(`${e.路径}.写入.lock`, localHost) }));
 
 /** 暂存目录：锁有人拿着的留（正在烘焙）；1 天内动过的留；别的是烘焙中断留下的（下次烘焙同一个包也会先删它） */
-export const 规划暂存 = (条目们: readonly 暂存条目[], 现在: number): 带理由<目录条目>[] =>
-  条目们.map(({ 锁在用, ...e }) => ({
+export const planStaging = (entries: readonly StagingEntry[], now: number): WithReasons<DirEntry>[] =>
+  entries.map(({ lockHeld, ...e }) => ({
     ...e,
-    理由: 锁在用 ? [{ 类: '在用' as const, 说明: '写入锁有人拿着' }] : 现在 - e.改于 < 天 ? [{ 类: '近期' as const, 说明: '1 天内，可能还在写' }] : [],
+    理由: lockHeld ? [{ 类: '在用' as const, 说明: '写入锁有人拿着' }] : now - e.改于 < dayMs ? [{ 类: '近期' as const, 说明: '1 天内，可能还在写' }] : [],
   }));
 
 // webpack 缓存：Remotion 按 remotion-<environment>-<VERSION>/<webpack 配置的 md5> 起名（@remotion/bundler 的 webpack-cache.js）
 
-export type webpack条目 = 目录条目 & { 环境: string; 版本: string; 哈希: string | null };
-const 环境目录名 = /^remotion-([a-z]+)-(\d+\.\d+\.\d+(?:[-+][\w.]+)?)$/;
+export type WebpackEntry = DirEntry & { 环境: string; 版本: string; 哈希: string | null };
+const envDirPattern = /^remotion-([a-z]+)-(\d+\.\d+\.\d+(?:[-+][\w.]+)?)$/;
 
 /** 扫一个 node_modules/.cache/webpack：认得的环境目录逐个哈希列出（版本不对的整个一条），认不得的另列 */
-export const 扫webpack = (根: string, 当前版本: string | null): { 条目: webpack条目[]; 不认识: 目录条目[] } => {
-  const r = { 条目: [] as webpack条目[], 不认识: [] as 目录条目[] };
-  for (const e of 列目录(根, 0)) {
-    const m = 环境目录名.exec(e.名);
+export const scanWebpack = (root: string, currentVersion: string | null): { entryList: WebpackEntry[]; unknownEntries: DirEntry[] } => {
+  const r = { entryList: [] as WebpackEntry[], unknownEntries: [] as DirEntry[] };
+  for (const e of listDir(root, 0)) {
+    const m = envDirPattern.exec(e.名);
     if (!m || !fs.statSync(e.路径).isDirectory()) {
-      r.不认识.push(e);
+      r.unknownEntries.push(e);
       continue;
     }
-    const [, 环境, 版本] = m as unknown as [string, string, string];
-    if (当前版本 !== null && 版本 !== 当前版本) {
-      r.条目.push({ ...e, 改于: 最近改于(e.路径, 3), 环境, 版本, 哈希: null });
+    const [, env, cacheVersion] = m as unknown as [string, string, string];
+    if (currentVersion !== null && cacheVersion !== currentVersion) {
+      r.entryList.push({ ...e, 改于: latestModifiedAt(e.路径, 3), 环境: env, 版本: cacheVersion, 哈希: null });
       continue;
     }
-    for (const h of 列目录(e.路径, 2)) r.条目.push({ ...h, 名: `${e.名}/${h.名}`, 环境, 版本, 哈希: h.名 });
+    for (const h of listDir(e.路径, 2)) r.entryList.push({ ...h, 名: `${e.名}/${h.名}`, 环境: env, 版本: cacheVersion, 哈希: h.名 });
   }
   return r;
 };
@@ -418,47 +418,47 @@ export const 扫webpack = (根: string, 当前版本: string | null): { 条目: 
  * 换了 Remotion 版本的整个删；同版本每个环境留最近用的 每环境留 份，其余 天数 天内用过的留。
  * 每部作品的打包入口、资产锁不同，各有各的缓存目录，所以 每环境留 默认取作品数。
  */
-export const 规划webpack = (条目们: readonly webpack条目[], o: { 当前版本: string | null; 现在: number; 天数: number; 每环境留?: number }): 带理由<webpack条目>[] => {
-  const 按环境 = new Map<string, webpack条目[]>();
-  for (const e of 条目们) if (e.哈希 !== null) 按环境.set(`${e.环境}-${e.版本}`, [...(按环境.get(`${e.环境}-${e.版本}`) ?? []), e]);
-  const 最近 = new Set([...按环境.values()].flatMap((es) => [...es].sort((a, b) => b.改于 - a.改于).slice(0, Math.max(1, o.每环境留 ?? 1))));
-  return 条目们.map((e) => {
-    if (e.哈希 === null) return { ...e, 理由: o.当前版本 === null ? [{ 类: '算不出' as const, 说明: '不知道装的 Remotion 版本' }] : [] };
-    const 理由: 保留理由[] = [];
-    if (最近.has(e)) 理由.push({ 类: '最近一份', 说明: e.环境 });
-    if (o.现在 - e.改于 < o.天数 * 天) 理由.push({ 类: '近期', 说明: `${o.天数} 天内用过` });
-    return { ...e, 理由 };
+export const planWebpack = (entries: readonly WebpackEntry[], o: { currentVersion: string | null; now: number; days: number; keepPerEnv?: number }): WithReasons<WebpackEntry>[] => {
+  const byEnv = new Map<string, WebpackEntry[]>();
+  for (const e of entries) if (e.哈希 !== null) byEnv.set(`${e.环境}-${e.版本}`, [...(byEnv.get(`${e.环境}-${e.版本}`) ?? []), e]);
+  const recentFiles = new Set([...byEnv.values()].flatMap((es) => [...es].sort((a, b) => b.改于 - a.改于).slice(0, Math.max(1, o.keepPerEnv ?? 1))));
+  return entries.map((e) => {
+    if (e.哈希 === null) return { ...e, 理由: o.currentVersion === null ? [{ 类: '算不出' as const, 说明: '不知道装的 Remotion 版本' }] : [] };
+    const reasons: KeepReason[] = [];
+    if (recentFiles.has(e)) reasons.push({ 类: '最近一份', 说明: e.环境 });
+    if (o.now - e.改于 < o.days * dayMs) reasons.push({ 类: '近期', 说明: `${o.days} 天内用过` });
+    return { ...e, 理由: reasons };
   });
 };
 
 // ---------- 汇总 ----------
 
-export const 主要理由 = (理由: readonly 保留理由[]): 保留类 | null => 保留类顺序.find((c) => 理由.some((x) => x.类 === c)) ?? null;
+export const mainReason = (reasons: readonly KeepReason[]): KeepKind | null => keepClassOrder.find((c) => reasons.some((x) => x.类 === c)) ?? null;
 
 /** 删大小只算真腾出来的：同一 inode 的名字全删了、而且没有计划外的硬链接；留大小同一 inode 只算一次 */
-export type 小计 = { 删数: number; 删大小: number; 留数: number; 留大小: number; 按理由: Partial<Record<保留类, number>>; 硬链接未腾: number };
-type 计项 = { 大小: number; 理由: readonly 保留理由[]; inode?: string; 链数?: number };
+export type Subtotal = { deletedCount: number; deletedSize: number; keptCount: number; keptSize: number; byReason: Partial<Record<KeepKind, number>>; hardlinkUnfreed: number };
+type TallyItem = { 大小: number; 理由: readonly KeepReason[]; inode?: string; linkCount?: number };
 
-export const 小计 = (项: readonly 计项[]): 小计 => {
-  const r: 小计 = { 删数: 0, 删大小: 0, 留数: 0, 留大小: 0, 按理由: {}, 硬链接未腾: 0 };
-  const 按inode = new Map<string, 计项[]>();
-  项.forEach((x, i) => {
+export const Subtotal = (items: readonly TallyItem[]): Subtotal => {
+  const r: Subtotal = { deletedCount: 0, deletedSize: 0, keptCount: 0, keptSize: 0, byReason: {}, hardlinkUnfreed: 0 };
+  const byInode = new Map<string, TallyItem[]>();
+  items.forEach((x, i) => {
     const k = x.inode ?? `#${i}`;
-    按inode.set(k, [...(按inode.get(k) ?? []), x]);
+    byInode.set(k, [...(byInode.get(k) ?? []), x]);
   });
-  for (const 组 of 按inode.values()) {
-    const 留 = 组.filter((x) => 主要理由(x.理由) !== null);
-    r.删数 += 组.length - 留.length;
-    r.留数 += 留.length;
-    const 大小 = 组[0]!.大小;
-    if (留.length) {
-      const c = 保留类顺序.find((c) => 留.some((x) => x.理由.some((y) => y.类 === c)))!;
-      r.留大小 += 大小;
-      r.按理由[c] = (r.按理由[c] ?? 0) + 大小;
-    } else if (组.length >= (组[0]!.链数 ?? 1)) r.删大小 += 大小;
-    else r.硬链接未腾 += 大小;
+  for (const inodeGroup of byInode.values()) {
+    const kept = inodeGroup.filter((x) => mainReason(x.理由) !== null);
+    r.deletedCount += inodeGroup.length - kept.length;
+    r.keptCount += kept.length;
+    const byteSize = inodeGroup[0]!.大小;
+    if (kept.length) {
+      const c = keepClassOrder.find((c) => kept.some((x) => x.理由.some((y) => y.类 === c)))!;
+      r.keptSize += byteSize;
+      r.byReason[c] = (r.byReason[c] ?? 0) + byteSize;
+    } else if (inodeGroup.length >= (inodeGroup[0]!.linkCount ?? 1)) r.deletedSize += byteSize;
+    else r.hardlinkUnfreed += byteSize;
   }
   return r;
 };
 
-export const 大小文本 = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : n >= 1e3 ? `${(n / 1e3).toFixed(0)} KB` : `${n} B`);
+export const sizeText = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(1)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : n >= 1e3 ? `${(n / 1e3).toFixed(0)} KB` : `${n} B`);

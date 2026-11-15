@@ -6,112 +6,112 @@
 // three 的 render 每次先调 scene.onBeforeRender 才排序，所以挂在 Scene 原型上，不用改每一处 <ThreeCanvas>，也漏不掉单独 new 出来的渲染器。
 import * as THREE from 'three';
 
-type 绘制项 = { groupOrder: number; renderOrder: number; materialVariant: number; z: number; material?: THREE.Material };
+type DrawItem = { groupOrder: number; renderOrder: number; materialVariant: number; z: number; material?: THREE.Material };
 
-const 没见过 = Number.MAX_SAFE_INTEGER;
-let 材质序 = new Map<THREE.Material, number>();
-let 组起点 = new Map<object, number>();
-let 下一个序 = 0;
-const 成组 = new WeakMap<THREE.Material, { 组: object; 位: number; 共: number }>();
+const unseen = Number.MAX_SAFE_INTEGER;
+let materialOrder = new Map<THREE.Material, number>();
+let groupStart = new Map<object, number>();
+let nextOrder = 0;
+const groupInfo = new WeakMap<THREE.Material, { 组: object; 位: number; 共: number }>();
 // 一组材质的相对先后要固定、不看谁先出现时用（体素五类材质：哪类先出现随挑到的区段变）。第一次见到组里任何一个，整组连号占位
-export const 成组排 = (材质: THREE.Material, 组: object, 位: number, 共: number) => {
-  成组.set(材质, { 组, 位, 共 });
+export const orderInGroup = (material: THREE.Material, group: object, groupPos: number, groupSize: number) => {
+  groupInfo.set(material, { 组: group, 位: groupPos, 共: groupSize });
 };
 // 导入的方块网格（engine/voxel/方块网格.tsx）的材质等资源取到才建，材质编号总比同一帧的其他材质大，于是它和手摆的方块共面时是它盖上来（6-举锤砸穿 的井壁和碎块，用户看过）。这个先后要留住
-const 后排 = new WeakSet<THREE.Material>();
-export const 排在后面 = (材质: THREE.Material) => {
-  后排.add(材质);
+const backMaterials = new WeakSet<THREE.Material>();
+export const placeBehind = (material: THREE.Material) => {
+  backMaterials.add(material);
 };
-const 后排起点 = 1e9;
-const 记材质 = (材质: THREE.Material) => {
-  if (材质序.has(材质)) return;
-  if (后排.has(材质)) {
-    材质序.set(材质, 后排起点 + 下一个序++);
+const backStart = 1e9;
+const recordMaterial = (material: THREE.Material) => {
+  if (materialOrder.has(material)) return;
+  if (backMaterials.has(material)) {
+    materialOrder.set(material, backStart + nextOrder++);
     return;
   }
-  const 所在 = 成组.get(材质);
-  if (!所在) {
-    材质序.set(材质, 下一个序++);
+  const group = groupInfo.get(material);
+  if (!group) {
+    materialOrder.set(material, nextOrder++);
     return;
   }
-  let 起 = 组起点.get(所在.组);
-  if (起 === undefined) {
-    起 = 下一个序;
-    下一个序 += 所在.共;
-    组起点.set(所在.组, 起);
+  let startIndex = groupStart.get(group.组);
+  if (startIndex === undefined) {
+    startIndex = nextOrder;
+    nextOrder += group.共;
+    groupStart.set(group.组, startIndex);
   }
-  材质序.set(材质, 起 + 所在.位);
+  materialOrder.set(material, startIndex + group.位);
 };
-export const 排材质 = (场景: THREE.Object3D) => {
-  材质序 = new Map();
-  组起点 = new Map();
-  下一个序 = 0;
-  场景.traverse((物体) => {
-    const 材质 = (物体 as THREE.Mesh).material;
-    if (Array.isArray(材质)) 材质.forEach(记材质);
-    else if (材质) 记材质(材质);
+export const sortMaterials = (scene: THREE.Object3D) => {
+  materialOrder = new Map();
+  groupStart = new Map();
+  nextOrder = 0;
+  scene.traverse((object) => {
+    const material = (object as THREE.Mesh).material;
+    if (Array.isArray(material)) material.forEach(recordMaterial);
+    else if (material) recordMaterial(material);
   });
 };
-const 序 = (项: 绘制项) => (项.material && 材质序.get(项.material)) ?? 没见过;
+const sortIndex = (item: DrawItem) => (item.material && materialOrder.get(item.material)) ?? unseen;
 
-export const 不透明先后 = (a: 绘制项, b: 绘制项) => a.groupOrder - b.groupOrder || a.renderOrder - b.renderOrder || 序(a) - 序(b) || a.materialVariant - b.materialVariant || a.z - b.z;
-export const 透明先后 = (a: 绘制项, b: 绘制项) => a.groupOrder - b.groupOrder || a.renderOrder - b.renderOrder || b.z - a.z;
+export const opaqueOrder = (a: DrawItem, b: DrawItem) => a.groupOrder - b.groupOrder || a.renderOrder - b.renderOrder || sortIndex(a) - sortIndex(b) || a.materialVariant - b.materialVariant || a.z - b.z;
+export const transparentOrder = (a: DrawItem, b: DrawItem) => a.groupOrder - b.groupOrder || a.renderOrder - b.renderOrder || b.z - a.z;
 
 // 场景遍历的先后（上面的材质先后、距离相同时的先后都靠它）也要和路径无关。R3F 重建物体（<primitive object> 换了对象、args 变了）时把新对象挂到父节点末尾（fiber 的 swapReconstructedInstances），
 // 它自己的实例表（__r3f.children，按 JSX 的先后）不动，所以每次渲染前按实例表还原。不归 R3F 管的子节点留在原位，只在 R3F 管的那几个位置上换。
 // 前提，现有 JSX 都满足：同一父节点不把同一对象声明两次（声明表没去重，会丢节点）；不写「条件子节点后面紧跟 attach 节点、再后面还有 Object3D」、createPortal、挂载后手动 add 进有声明子节点的父节点（世界.tsx 的 group 是 <primitive>，实例表为空，走不到这里）。这几种写法下实例表和单帧直挂的先后可能不同，真要用得跟着改。
-type R3F实例 = { object?: THREE.Object3D; children: R3F实例[] };
-export const 还原声明次序 = (物体: THREE.Object3D) => {
-  const 实例们 = (物体 as THREE.Object3D & { __r3f?: R3F实例 }).__r3f?.children;
-  if (!实例们 || 实例们.length < 2) return;
+type R3FInstance = { object?: THREE.Object3D; children: R3FInstance[] };
+export const restoreDeclOrder = (object: THREE.Object3D) => {
+  const instances = (object as THREE.Object3D & { __r3f?: R3FInstance }).__r3f?.children;
+  if (!instances || instances.length < 2) return;
   // 大部分物体没有两个由 R3F 挂上的子节点（网格的 geometry/material 是 attach），不为它们每帧分配数组。
-  let 声明数 = 0;
-  for (const 实例 of 实例们) if (实例.object?.parent === 物体 && ++声明数 === 2) break;
-  if (声明数 < 2) return;
-  const 子们 = 物体.children;
-  let 当前位置 = 0;
-  for (const 实例 of 实例们) {
-    const 子 = 实例.object;
-    if (子?.parent !== 物体) continue;
-    while (当前位置 < 子们.length && 子们[当前位置] !== 子) 当前位置++;
-    if (当前位置 === 子们.length) {
+  let declCount = 0;
+  for (const instance of instances) if (instance.object?.parent === object && ++declCount === 2) break;
+  if (declCount < 2) return;
+  const children = object.children;
+  let currentIndex = 0;
+  for (const instance of instances) {
+    const child = instance.object;
+    if (child?.parent !== object) continue;
+    while (currentIndex < children.length && children[currentIndex] !== child) currentIndex++;
+    if (currentIndex === children.length) {
       // 声明节点只占手动 add 的几千区段中的少数位置时，也不能反复从头 indexOf；游标单向走，乱序才建集合重排。
-      const 声明: THREE.Object3D[] = [];
-      for (const i of 实例们) if (i.object?.parent === 物体) 声明.push(i.object);
-      const 声明集合 = new Set(声明);
-      let 下一位 = 0;
-      for (let i = 0; i < 子们.length; i++) if (声明集合.has(子们[i])) 子们[i] = 声明[下一位++];
+      const declaredObjects: THREE.Object3D[] = [];
+      for (const i of instances) if (i.object?.parent === object) declaredObjects.push(i.object);
+      const declSet = new Set(declaredObjects);
+      let nextPos = 0;
+      for (let i = 0; i < children.length; i++) if (declSet.has(children[i])) children[i] = declaredObjects[nextPos++];
       return;
     }
-    当前位置++;
+    currentIndex++;
   }
 };
 
 // 包围球跟当前这一帧走。three 第一次渲染一个物体时才算它的包围球（InstancedMesh 算在 boundingSphere 上，普通物体算在 geometry 上），之后一直用这个缓存：距离排序、视锥剔除都看它。
 // 每帧改实例或顶点的物体（6-举锤砸穿的填块、碎块），包围球就停在第一次渲染的那一帧，不同的帧开头算出不同的距离，后面每一帧的绘制先后都不同。
 // 所以渲染前查一遍：实例矩阵、实例数、顶点从上次看到后变过，就扔掉缓存，让 three 按当前这一帧重算；手写的包围球（体素分块）内容不变，不会被扔。
-type 带包围球 = THREE.Object3D & { isInstancedMesh?: boolean; instanceMatrix?: THREE.BufferAttribute; count?: number; boundingSphere?: THREE.Sphere | null; geometry?: THREE.BufferGeometry };
-const 上次版本 = new WeakMap<object, number>();
-const 变过 = (键: object, 版本: number) => {
-  const 上次 = 上次版本.get(键);
-  上次版本.set(键, 版本);
-  return 上次 !== undefined && 上次 !== 版本;
+type WithBoundingSphere = THREE.Object3D & { isInstancedMesh?: boolean; instanceMatrix?: THREE.BufferAttribute; count?: number; boundingSphere?: THREE.Sphere | null; geometry?: THREE.BufferGeometry };
+const lastVersion = new WeakMap<object, number>();
+const hasChanged = (ownerKey: object, version: number) => {
+  const prevVersion = lastVersion.get(ownerKey);
+  lastVersion.set(ownerKey, version);
+  return prevVersion !== undefined && prevVersion !== version;
 };
-export const 刷新包围球 = (物体: 带包围球) => {
-  const 几何 = 物体.geometry;
-  const 顶点 = 几何?.getAttribute?.('position') as THREE.BufferAttribute | undefined;
-  if (几何 && 顶点 && 变过(几何, 顶点.version)) 几何.boundingSphere = null;
-  if (物体.isInstancedMesh && 变过(物体, 物体.instanceMatrix!.version * 1e7 + 物体.count!)) 物体.boundingSphere = null;
+export const refreshBoundingSphere = (object: WithBoundingSphere) => {
+  const geometry = object.geometry;
+  const positionAttr = geometry?.getAttribute?.('position') as THREE.BufferAttribute | undefined;
+  if (geometry && positionAttr && hasChanged(geometry, positionAttr.version)) geometry.boundingSphere = null;
+  if (object.isInstancedMesh && hasChanged(object, object.instanceMatrix!.version * 1e7 + object.count!)) object.boundingSphere = null;
 };
 
-const 渲前刷新 = (物体: THREE.Object3D) => {
-  刷新包围球(物体);
-  还原声明次序(物体);
+const refreshBeforeRender = (object: THREE.Object3D) => {
+  refreshBoundingSphere(object);
+  restoreDeclOrder(object);
 };
 
 THREE.Scene.prototype.onBeforeRender = function (renderer: THREE.WebGLRenderer) {
-  renderer.setOpaqueSort(不透明先后 as never);
-  renderer.setTransparentSort(透明先后 as never);
-  this.traverse(渲前刷新);
-  排材质(this);
+  renderer.setOpaqueSort(opaqueOrder as never);
+  renderer.setTransparentSort(transparentOrder as never);
+  this.traverse(refreshBeforeRender);
+  sortMaterials(this);
 };

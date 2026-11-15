@@ -9,10 +9,10 @@ def main():
     import torch
     from qwen_asr import Qwen3ForcedAligner
 
-    批 = json.load(open(sys.argv[1], encoding='utf-8'))
-    m = Qwen3ForcedAligner.from_pretrained(批['模型'], dtype=torch.float32, device_map='cpu')
+    batch = json.load(open(sys.argv[1], encoding='utf-8'))
+    m = Qwen3ForcedAligner.from_pretrained(batch['模型'], dtype=torch.float32, device_map='cpu')
     out = {}
-    for s in 批['句']:
+    for s in batch['句']:
         res = m.align(audio=s['wav'], text=s['念'], language=s['语言'])
         out[s['id']] = [[u.text, round(u.start_time, 3), round(u.end_time, 3)] for u in res[0]]
         print(s['id'], file=sys.stderr, flush=True)

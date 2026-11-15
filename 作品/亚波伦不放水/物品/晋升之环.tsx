@@ -10,22 +10,22 @@ import { type FC, useMemo } from 'react';
 import * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 贴图 from 'asset:贴图/角色/史蒂夫装备/晋升之环';
+import promotionRingTexture from 'asset:贴图/角色/史蒂夫装备/晋升之环';
 
-const 做材质 = () => {
-  const t = png(贴图);
+const buildMaterial = () => {
+  const t = png(promotionRingTexture);
   const px = new Uint8Array(t.w * t.h * 4);
   for (let y = 0; y < t.h; y++)
     for (let x = 0; x < t.w; x++) {
       const o = (y * t.w + x) * 4;
-      let 有 = false;
-      for (const 源x of [x, t.w - 1 - x]) {
-        const s = (y * t.w + 源x) * 4;
+      let found = false;
+      for (const srcX of [x, t.w - 1 - x]) {
+        const s = (y * t.w + srcX) * 4;
         if (t.px[s + 3]! / 255 < 0.1) continue;
-        有 = true;
+        found = true;
         for (let k = 0; k < 3; k++) px[o + k] = Math.min(255, px[o + k]! + t.px[s + k]!);
       }
-      px[o + 3] = 有 ? 255 : 0;
+      px[o + 3] = found ? 255 : 0;
     }
   const tex = new THREE.DataTexture(px, t.w, t.h, THREE.RGBAFormat);
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -44,10 +44,10 @@ const 做材质 = () => {
     blendDst: THREE.OneFactor,
   });
 };
-let 材质缓存: THREE.MeshBasicMaterial | null = null;
+let materialCache: THREE.MeshBasicMaterial | null = null;
 
 // 一片 16×16：u = (x + 8) / 16，v = (y + 8) / 16（模型空间 y 朝下，贴图第一行在上）
-const 做几何 = () => {
+const buildGeometry = () => {
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute([-8, -8, 0, 8, -8, 0, 8, 8, 0, -8, 8, 0], 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
@@ -56,11 +56,11 @@ const 做几何 = () => {
 };
 
 /** 挂在人形模型 head 部件上（EntityModel 的 attach.head，部件坐标：模型像素、y 朝下、正面 −z）。秒：自转的时钟 */
-export const 晋升之环: FC<{ 秒: number }> = ({ 秒 }) => {
-  const 几何 = useMemo(做几何, []);
+export const AscensionHalo: FC<{ 秒: number }> = ({ 秒: sec }) => {
+  const geometry = useMemo(buildGeometry, []);
   return (
     <group position={[0, -12, 5]} rotation={[0.7854, 0, 0]}>
-      <mesh geometry={几何} material={(材质缓存 ??= 做材质())} rotation={[0, 0, (秒 * 18 * Math.PI) / 180]} renderOrder={10} />
+      <mesh geometry={geometry} material={(materialCache ??= buildMaterial())} rotation={[0, 0, (sec * 18 * Math.PI) / 180]} renderOrder={10} />
     </group>
   );
 };

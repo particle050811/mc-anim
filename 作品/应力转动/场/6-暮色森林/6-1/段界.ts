@@ -11,9 +11,9 @@ import { officialFrames, officialFrameOf } from '../6-1-2/动作改进.ts';
 import * as K613 from '../6-1-3/编排.ts';
 import { F_CUT } from '../6-1-9b/落地编排.ts';
 
-export type 源 = '6-1-1' | '6-1-2' | '6-1-3' | '一镜到底';
+export type SegmentSource = '6-1-1' | '6-1-2' | '6-1-3' | '一镜到底';
 // 一截：源组件的 [从, 到) 帧
-export type 截 = { 源: 源; 从: number; 到: number };
+export type Clip = { 源: SegmentSource; 从: number; 到: number };
 
 const enterForestFrames = K611.END - 1;
 const cut611 = K611.D2 - 1; // 6-1-1 编排帧 = 段内帧 + 1
@@ -21,23 +21,23 @@ const cut612 = officialFrameOf(S3);
 const cut613 = K613.beats.sinkStart;
 
 export const segments = [
-  { id: '6-1-1', 名: '进入森林', 截们: [{ 源: '6-1-1', 从: 0, 到: cut611 }] },
-  { id: '6-1-2', 名: '斩娜迦', 截们: [{ 源: '6-1-1', 从: cut611, 到: enterForestFrames }, { 源: '6-1-2', 从: 1, 到: cut612 }] },
-  { id: '6-1-3', 名: '起飞', 截们: [{ 源: '6-1-2', 从: cut612, 到: officialFrames }, { 源: '6-1-3', 从: 1, 到: cut613 }] },
-  { id: '6-1-4至9', 名: '一镜到底', 截们: [{ 源: '6-1-3', 从: cut613, 到: K613.FRAMES }, { 源: '一镜到底', 从: 1, 到: F_CUT }] },
-] as const satisfies readonly { id: string; 名: string; 截们: readonly 截[] }[];
+  { id: '6-1-1', 名: '进入森林', cuts: [{ 源: '6-1-1', 从: 0, 到: cut611 }] },
+  { id: '6-1-2', 名: '斩娜迦', cuts: [{ 源: '6-1-1', 从: cut611, 到: enterForestFrames }, { 源: '6-1-2', 从: 1, 到: cut612 }] },
+  { id: '6-1-3', 名: '起飞', cuts: [{ 源: '6-1-2', 从: cut612, 到: officialFrames }, { 源: '6-1-3', 从: 1, 到: cut613 }] },
+  { id: '6-1-4至9', 名: '一镜到底', cuts: [{ 源: '6-1-3', 从: cut613, 到: K613.FRAMES }, { 源: '一镜到底', 从: 1, 到: F_CUT }] },
+] as const satisfies readonly { id: string; 名: string; cuts: readonly Clip[] }[];
 export type SegmentId = (typeof segments)[number]['id'];
 
 const segmentOf = (id: SegmentId) => segments.find((s) => s.id === id)!;
-export const pieceFrames = (pieces: readonly 截[]) => pieces.reduce((n, p) => n + p.到 - p.从, 0);
-export const frameCountOf = (id: SegmentId) => pieceFrames(segmentOf(id).截们);
+export const pieceFrames = (pieces: readonly Clip[]) => pieces.reduce((n, p) => n + p.到 - p.从, 0);
+export const frameCountOf = (id: SegmentId) => pieceFrames(segmentOf(id).cuts);
 export const compositionId = (id: SegmentId) => `${id}-${segmentOf(id).名}`;
 
 // 源组件第 frame 帧（可带小数）落在哪一段第几帧；不在任何一截里（各源的第 0 帧 = 上一个的末帧、没放的余音）给 null
-export const locate = (source: 源, frame: number): { 段: SegmentId; 帧: number } | null => {
+export const locate = (source: SegmentSource, frame: number): { 段: SegmentId; 帧: number } | null => {
   for (const seg of segments) {
     let acc = 0;
-    for (const p of seg.截们) {
+    for (const p of seg.cuts) {
       if (p.源 === source && frame >= p.从 && frame < p.到) return { 段: seg.id, 帧: acc + frame - p.从 };
       acc += p.到 - p.从;
     }

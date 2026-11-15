@@ -16,7 +16,7 @@ export const EmergeView: React.FC<{ f: number }> = ({ f: frame }) => {
   const pursuerPoses = choreo.pursuers(frame);
   const t = choreo.emergeSec(frame);
   return (
-    <AncientCity4xCanvas 段="6-4-8" cam={choreo.camera(frame)} width={width} height={height} 羊毛={choreo.woolNames}>
+    <AncientCity4xCanvas 段="6-4-8" cam={choreo.camera(frame)} width={width} height={height} wool={choreo.woolNames}>
       <group position={choreo.WARDEN_AT} rotation={[0, 0, rad(choreo.WARDEN_YAW)]}>
         <Warden {...wardenProps} />
       </group>
@@ -25,7 +25,7 @@ export const EmergeView: React.FC<{ f: number }> = ({ f: frame }) => {
       <ShriekRings p={choreo.SHRIEKER} sec={choreo.shriekSec(frame)} />
       <LiuXinzhong pose={pursuerPoses.刘} />
       {/* 拉弓：急退落地以后搭箭拉满，弓的贴图照原版三档换（编排.ts 的 bowAt） */}
-      <HuangPan pose={pursuerPoses.黄} 弓={choreo.bowAt(frame)} />
+      <HuangPan pose={pursuerPoses.黄} bow={choreo.bowAt(frame)} />
     </AncientCity4xCanvas>
   );
 };

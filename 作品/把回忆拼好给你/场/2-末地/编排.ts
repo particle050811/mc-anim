@@ -3,134 +3,134 @@
 // 游戏钟：段首是第 0 刻，每帧 20/fps 刻；粒子、挥手都按刻走，同游戏。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import type { 魔法酒狐全部表情, 魔法酒狐新姿势 } from '@库/角色/魔法酒狐新动作.ts';
+import type { MagicalWineFoxAllExpression, MagicalWineFoxExPose } from '@库/角色/魔法酒狐新动作.ts';
 import type { ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { fps, 旧帧, 段内帧 } from '../../分镜/时间.ts';
-import { 事件 as 正片第4句事件 } from '../../分镜/正片第4句.ts';
-import { 事件 as 正片第5句事件, 段窗口 } from '../../分镜/正片第5句.ts';
-import { 网格 } from '../../配乐/网格.ts';
-import * as 参 from './参数.ts';
-import * as 姿 from './姿势.ts';
+import { fps, legacyFrameSec, segmentFrames } from '../../分镜/时间.ts';
+import { events as mainCutLine4Events } from '../../分镜/正片第4句.ts';
+import { events as mainCutLine5Events, segmentWindow } from '../../分镜/正片第5句.ts';
+import { beatGrid } from '../../配乐/网格.ts';
+import * as params from './参数.ts';
+import * as pose from './姿势.ts';
 
-const 正片事件 = { ...正片第4句事件, ...正片第5句事件 };
-const 段内正片事件帧 = (键: string) => 段内帧(段窗口(键).起帧, 正片事件);
+const mainCutEvents = { ...mainCutLine4Events, ...mainCutLine5Events };
+const segMainCutEventFrames = (segKey: string) => segmentFrames(segmentWindow(segKey).起帧, mainCutEvents);
 
-const 键 = '2-抢龙蛋';
-export const 事 = 段内正片事件帧(键);
-const 窗 = 段窗口(键);
-export const 帧数 = 窗.帧数;
+const segKey = '2-抢龙蛋';
+export const events = segMainCutEventFrames(segKey);
+const segWindow = segmentWindow(segKey);
+export const frameCount = segWindow.帧数;
 /** 段内帧 → 歌曲帧（颗粒的种子取它，核对段的静帧同一颗粒） */
-export const 歌曲帧 = (f: number) => 窗.起帧 + f;
+export const toSongFrame = (f: number) => segWindow.起帧 + f;
 /** 段内帧 → 歌上的秒（她眨眼、尾巴按它走） */
-export const 歌秒 = (f: number) => (窗.起帧 + f) / fps;
+export const songSec = (f: number) => (segWindow.起帧 + f) / fps;
 /** 段内帧 → 游戏刻（段首 0） */
-export const 刻 = (f: number) => (f * 20) / fps;
-const 拍帧 = 网格.拍长 * fps;
+export const frameToTick = (f: number) => (f * 20) / fps;
+const beatFrames = beatGrid.拍长 * fps;
 
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-const 插 = (a: number, b: number, t: number) => a + (b - a) * t;
-const 插3 = (a: readonly number[], b: readonly number[], t: number): V3 => [插(a[0]!, b[0]!, t), 插(a[1]!, b[1]!, t), 插(a[2]!, b[2]!, t)];
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const lerpVec3 = (a: readonly number[], b: readonly number[], t: number): V3 => [lerp(a[0]!, b[0]!, t), lerp(a[1]!, b[1]!, t), lerp(a[2]!, b[2]!, t)];
 /** 两张骨骼表按转角、位置插值（一边没有的当 0） */
-const 插骨 = (a: 姿.骨表, b: 姿.骨表, t: number): 姿.骨表 => {
-  const r: 姿.骨表 = {};
+const lerpBonePose = (a: pose.BoneTable, b: pose.BoneTable, t: number): pose.BoneTable => {
+  const r: pose.BoneTable = {};
   for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
-    const 甲 = a[k] ?? {}, 乙 = b[k] ?? {};
-    r[k] = { ...甲, ...乙, rot: 插3(甲.rot ?? [0, 0, 0], 乙.rot ?? [0, 0, 0], t), ...(甲.pos || 乙.pos ? { pos: 插3(甲.pos ?? [0, 0, 0], 乙.pos ?? [0, 0, 0], t) } : {}) };
+    const fromBone = a[k] ?? {}, second = b[k] ?? {};
+    r[k] = { ...fromBone, ...second, rot: lerpVec3(fromBone.rot ?? [0, 0, 0], second.rot ?? [0, 0, 0], t), ...(fromBone.pos || second.pos ? { pos: lerpVec3(fromBone.pos ?? [0, 0, 0], second.pos ?? [0, 0, 0], t) } : {}) };
   }
   return r;
 };
 /** 格 (i, j, k) 中间、离格底 高 处 */
-const 格心 = (c: readonly number[], 高 = 姿.蛋心高): V3 => [c[0]! + 0.5, c[1]! + 0.5, c[2]! + 高];
+const cellCenter = (c: readonly number[], heightOffset = pose.eggCenterHeight): V3 => [c[0]! + 0.5, c[1]! + 0.5, c[2]! + heightOffset];
 /** yaw（FigurePose：0 朝北、正 = 往左转）→ 水平朝向的单位向量 */
-const 前 = (yaw: number): [number, number] => [-Math.sin((yaw * Math.PI) / 180), Math.cos((yaw * Math.PI) / 180)];
+const forward = (yaw: number): [number, number] => [-Math.sin((yaw * Math.PI) / 180), Math.cos((yaw * Math.PI) / 180)];
 
 // ---------- 你 ----------
-const 挥帧 = (参.挥手刻 / 20) * fps;
-const 挥提前帧 = (参.挥手提前刻 / 20) * fps;
+const waveFrames = (params.waveTicks / 20) * fps;
+const waveLeadFrames = (params.waveLeadTicks / 20) * fps;
 /** 挥手进度（原版 attackTime 0～1，6 刻挥完）：比蛋瞬移早 挥手提前刻 起挥；没在挥 = null */
-export const 你挥 = (f: number): number | null => {
-  const a = (f - 事.点龙蛋 + 挥提前帧) / 挥帧;
+export const youWaveAt = (f: number): number | null => {
+  const a = (f - events.clickEgg + waveLeadFrames) / waveFrames;
   return a >= 0 && a < 1 ? a : null;
 };
-const 提前帧 = 参.看蛋提前秒 * fps;
-export const 你眼 = (): V3 => [参.你.位[0], 参.你.位[1], 姿.你眼高];
+const leadFrames = params.lookEggLeadSec * fps;
+export const youEyePos = (): V3 => [params.you.位[0], params.you.位[1], pose.youEyeHeight];
 
-export type 你态 = { loc: V3; yaw: number; 看: V3; 挥: number | null; 秒: number };
+export type YouState = { loc: V3; yaw: number; 看: V3; wave: number | null; 秒: number };
 /** 你一直站着：看她，点蛋前转头看蛋，蛋没了、她摔下去以后再看回她 */
-export const 你态 = (f: number): 你态 => {
-  const 看 = f >= 事.点龙蛋 - 提前帧 && (f - 事.扑空) / fps < 旧帧(2) ? 格心(参.蛋位们.起) : 她头位(f);
-  return { loc: 参.你.位, yaw: 参.你.朝向, 看, 挥: 你挥(f), 秒: 歌秒(f) };
+export const YouState = (f: number): YouState => {
+  const lookAt = f >= events.clickEgg - leadFrames && (f - events.pounceMiss) / fps < legacyFrameSec(2) ? cellCenter(params.eggSpots.起) : herHeadPos(f);
+  return { loc: params.you.位, yaw: params.you.facing, 看: lookAt, wave: youWaveAt(f), 秒: songSec(f) };
 };
 
 // ---------- 她 ----------
-export type 她态 = {
+export type LiYingState = {
   pose: FigurePose;
-  姿势: 魔法酒狐新姿势;
-  表情: 魔法酒狐全部表情;
+  poseName: MagicalWineFoxExPose;
+  expression: MagicalWineFoxAllExpression;
   /** 头对准场景里这一点（按这个姿势的身体倾斜算）；不给 = 看 或者 骨骼 的 Head */
-  看向?: V3;
+  lookAt?: V3;
   /** 头相对身子的 [俯仰, 左右]（度，正 = 抬头、往左） */
   看?: [number, number];
-  骨骼: 姿.骨表;
-  眨眼: number | 'auto';
+  skeleton: pose.BoneTable;
+  blink: number | 'auto';
   秒?: number;
 };
 
 /** 蹬地压低了没有：扑起前 蹬地秒 起 */
-const 蹬了 = (f: number) => (事.扑起 - f) / fps <= 参.蹬地秒;
-const 站姿 = (loc: V3, pitch = 0, yaw: number = 参.她.朝向): FigurePose => ({ loc, pitch, squash: 1, headPitch: 0, headYaw: 0, legR: 0, legL: 0, armR: 0, armRRoll: 0, armL: 0, armLRoll: 0, yaw });
+const pushedOff = (f: number) => (events.pounceStart - f) / fps <= params.pushOffSec;
+const standPose = (loc: V3, pitch = 0, yaw: number = params.liYing.facing): FigurePose => ({ loc, pitch, squash: 1, headPitch: 0, headYaw: 0, legR: 0, legL: 0, armR: 0, armRRoll: 0, armL: 0, armLRoll: 0, yaw });
 
 /** 扑在半空：0～1（扑起 → 落蛋） */
-const 飞 = (f: number) => clamp01((f - 事.扑起) / (事.落蛋 - 事.扑起));
+const flyProgress = (f: number) => clamp01((f - events.pounceStart) / (events.landOnEgg - events.pounceStart));
 /** 半空的 loc：伏位 → 蛋上位，连线上再拱起一道抛物线 */
-const 飞位 = (t: number): V3 => {
-  const p = 插3(参.她.伏位, 参.她.蛋上位, t);
-  return [p[0], p[1], p[2] + 4 * 参.她.扑高 * t * (1 - t)];
+const flyPos = (t: number): V3 => {
+  const p = lerpVec3(params.liYing.herPronePos, params.liYing.herOnEggPos, t);
+  return [p[0], p[1], p[2] + 4 * params.liYing.pounceHeight * t * (1 - t)];
 };
-const 飞倾 = (t: number) => {
-  const k = clamp01(t / 姿.扑倾.转完);
-  return 插(姿.扑倾.起, 姿.扑倾.平, 1 - (1 - k) ** 2);
+const flyTilt = (t: number) => {
+  const k = clamp01(t / pose.pounceTilt.turnDone);
+  return lerp(pose.pounceTilt.起, pose.pounceTilt.flatAngleDeg, 1 - (1 - k) ** 2);
 };
 
 /** 原版实体下落：每刻先按速度走，再 v = (v − 0.08) × 0.98（LivingEntity.travel），刻与刻之间线性插值（渲染的 partialTick）。返回第 刻 刻掉了多少格 */
-export const 原版下落 = (刻数: number): number => {
-  if (刻数 <= 0) return 0;
+export const vanillaFall = (tickCount: number): number => {
+  if (tickCount <= 0) return 0;
   let y = 0, v = 0;
-  for (let k = 0; k < Math.floor(刻数); k++) {
+  for (let k = 0; k < Math.floor(tickCount); k++) {
     y += v;
     v = (v - 0.08) * 0.98;
   }
-  return -(y + (刻数 - Math.floor(刻数)) * v);
+  return -(y + (tickCount - Math.floor(tickCount)) * v);
 };
-const 摔前高 = 参.她.蛋上位[2];
+const preFallHeight = params.liYing.herOnEggPos[2];
 /** 蛋没了以后她的身子中线离地多高（落到 趴高 停住） */
-const 摔高 = (f: number) => Math.max(参.她.趴高, 摔前高 - 原版下落(刻(f - 事.点龙蛋)));
+const fallHeight = (f: number) => Math.max(params.liYing.flatHeight, preFallHeight - vanillaFall(frameToTick(f - events.clickEgg)));
 /** 掉到地上那一帧（连续的段内帧）；分镜 的 扑空 按同一套写成秒，测试核两边差不到一帧 */
-export const 摔地帧 = (() => {
-  let f = 事.点龙蛋;
-  while (摔高(f) > 参.她.趴高) f += 0.01;
+export const landFrame = (() => {
+  let f = events.clickEgg;
+  while (fallHeight(f) > params.liYing.flatHeight) f += 0.01;
   return f;
 })();
-const 趴位: V3 = [参.她.蛋上位[0], 参.她.蛋上位[1], 参.她.趴高];
+const flatPos: V3 = [params.liYing.herOnEggPos[0], params.liYing.herOnEggPos[1], params.liYing.flatHeight];
 
 /** 她头大概在哪（你看她、她抬头算角度用；不用很准） */
-export const 她头位 = (f: number): V3 => {
-  if (f < 事.扑起) {
-    const [fx, fy] = 前(参.她.朝向);
-    const [往前, 高] = 姿.她头.伏;
-    return [参.她.伏位[0] + fx * 往前, 参.她.伏位[1] + fy * 往前, 高];
+export const herHeadPos = (f: number): V3 => {
+  if (f < events.pounceStart) {
+    const [fx, fy] = forward(params.liYing.facing);
+    const [forwardDist, headHeight] = pose.headPose.prone;
+    return [params.liYing.herPronePos[0] + fx * forwardDist, params.liYing.herPronePos[1] + fy * forwardDist, headHeight];
   }
-  if (f >= 事.坐起) return [参.她.坐位[0], 参.她.坐位[1], 姿.她头.坐];
-  const [fx, fy] = 前(参.她.趴朝向);
-  const [长, 抬] = 姿.她头.平;
-  if (f < 事.落蛋) {
-    const t = 飞(f);
-    const p = 飞位(t);
-    const a = (-飞倾(t) * Math.PI) / 180;
-    return [p[0] + fx * 长 * Math.sin(a), p[1] + fy * 长 * Math.sin(a), p[2] + 长 * Math.cos(a) + 抬];
+  if (f >= events.sitUp) return [params.liYing.herSitPos[0], params.liYing.herSitPos[1], pose.headPose.sit];
+  const [fx, fy] = forward(params.liYing.herProneYaw);
+  const [headLength, lift] = pose.headPose.level;
+  if (f < events.landOnEgg) {
+    const t = flyProgress(f);
+    const p = flyPos(t);
+    const a = (-flyTilt(t) * Math.PI) / 180;
+    return [p[0] + fx * headLength * Math.sin(a), p[1] + fy * headLength * Math.sin(a), p[2] + headLength * Math.cos(a) + lift];
   }
-  const z = f < 事.点龙蛋 ? 摔前高 : 摔高(f);
-  return [趴位[0] + fx * 长, 趴位[1] + fy * 长, z + 抬];
+  const z = f < events.clickEgg ? preFallHeight : fallHeight(f);
+  return [flatPos[0] + fx * headLength, flatPos[1] + fy * headLength, z + lift];
 };
 
 /**
@@ -139,75 +139,75 @@ export const 她头位 = (f: number): V3 => {
  *   Head 绕 y 这时是绕往前伸的脖子转，加了是歪头、帽顶冲镜头，不是左右看，所以不加。
  * 身倾 = FigurePose.pitch（−90 趴平），腰 = UpBody 绕 x（正 = 往前弯）：脸本来朝水平以下 (−身倾 + 腰) 度，要抬到对着 点 的仰角
  */
-const 抬头 = (身倾: number, 腰: number, 头: V3, 点: V3): 姿.骨 => {
-  const 仰 = (Math.atan2(点[2] - 头[2], Math.hypot(点[0] - 头[0], 点[1] - 头[1])) * 180) / Math.PI;
-  return { rot: [-(-身倾 + 腰 + 仰), 0, 0] };
+const raiseHead = (bodyTilt: number, waistAngle: number, headPos: V3, target: V3): pose.Bone => {
+  const pitch = (Math.atan2(target[2] - headPos[2], Math.hypot(target[0] - headPos[0], target[1] - headPos[1])) * 180) / Math.PI;
+  return { rot: [-(-bodyTilt + waistAngle + pitch), 0, 0] };
 };
-const 腰 = (表: 姿.骨表) => 表.UpBody?.rot?.[0] ?? 0;
+const waistAngleOf = (boneTable: pose.BoneTable) => boneTable.UpBody?.rot?.[0] ?? 0;
 
 /** 扭屁股：每拍一个来回，起止各用 1/12 秒（24 fps 时 2 帧）渐入渐出 */
-const 扭 = (f: number) => {
-  const 包 = clamp01((f - 事.扭屁股) / fps / 旧帧(2)) * clamp01(((事.扑起 - f) / fps - 参.蹬地秒) / 旧帧(2));
-  return Math.sin((2 * Math.PI * (f - 事.扭屁股)) / 拍帧) * 包;
+const twistAt = (f: number) => {
+  const envelope = clamp01((f - events.buttWiggle) / fps / legacyFrameSec(2)) * clamp01(((events.pounceStart - f) / fps - params.pushOffSec) / legacyFrameSec(2));
+  return Math.sin((2 * Math.PI * (f - events.buttWiggle)) / beatFrames) * envelope;
 };
 
-export const 她态 = (f: number): 她态 => {
-  const 秒 = 歌秒(f);
-  if (!蹬了(f)) {
-    const w = 扭(f);
+export const LiYingState = (f: number): LiYingState => {
+  const sec = songSec(f);
+  if (!pushedOff(f)) {
+    const w = twistAt(f);
     return {
-      pose: 站姿(参.她.伏位),
-      姿势: 姿.伏底,
-      表情: '认出你',
-      看向: 格心(参.蛋位们.起),
-      骨骼: {
-        ...姿.伏,
-        Root: { pos: [0, 0, 2.3], rot: [0, 参.扭屁股.转 * w, 0] },
-        UpBody: { rot: [姿.伏.UpBody!.rot![0]!, -参.扭屁股.转 * w, 0] },
-        Tail: { rot: [姿.伏.Tail!.rot![0]!, 参.扭屁股.尾甩 * w, 0] },
+      pose: standPose(params.liYing.herPronePos),
+      poseName: pose.crouchState,
+      expression: '认出你',
+      lookAt: cellCenter(params.eggSpots.起),
+      skeleton: {
+        ...pose.prone,
+        Root: { pos: [0, 0, 2.3], rot: [0, params.wiggleButt.转 * w, 0] },
+        UpBody: { rot: [pose.prone.UpBody!.rot![0]!, -params.wiggleButt.转 * w, 0] },
+        Tail: { rot: [pose.prone.Tail!.rot![0]!, params.wiggleButt.tailSwing * w, 0] },
       },
-      眨眼: 'auto',
-      秒,
+      blink: 'auto',
+      秒: sec,
     };
   }
-  if (f < 事.扑起) return { pose: 站姿(参.她.伏位), 姿势: 姿.伏底, 表情: '大笑', 看向: 格心(参.蛋位们.起), 骨骼: 姿.蹬, 眨眼: 0, 秒 };
-  const 头 = 她头位(f);
-  if (f < 事.落蛋) {
-    const t = 飞(f);
-    const 倾 = 飞倾(t);
-    const 骨骼 = { ...姿.扑, Head: 抬头(倾, 腰(姿.扑), 头, 格心(参.蛋位们.起)) };
-    return { pose: 站姿(飞位(t), 倾, 插(参.她.朝向, 参.她.趴朝向, t)), 姿势: '静站', 表情: '大笑', 骨骼, 眨眼: 0 };
+  if (f < events.pounceStart) return { pose: standPose(params.liYing.herPronePos), poseName: pose.crouchState, expression: '大笑', lookAt: cellCenter(params.eggSpots.起), skeleton: pose.kickPose, blink: 0, 秒: sec };
+  const headPos = herHeadPos(f);
+  if (f < events.landOnEgg) {
+    const t = flyProgress(f);
+    const tilt = flyTilt(t);
+    const skeleton = { ...pose.pounce, Head: raiseHead(tilt, waistAngleOf(pose.pounce), headPos, cellCenter(params.eggSpots.起)) };
+    return { pose: standPose(flyPos(t), tilt, lerp(params.liYing.facing, params.liYing.herProneYaw, t)), poseName: '静站', expression: '大笑', skeleton, blink: 0 };
   }
-  if (f < 事.点龙蛋) {
+  if (f < events.clickEgg) {
     // 扑在蛋上抱住：落上去那几帧胸口弹起一点再贴下去；抬头看你（得意）
-    const k = clamp01((f - 事.落蛋) / fps / 参.落地弹秒);
-    const 倾 = -90 + Math.sin(Math.PI * k) * 姿.落地弹;
-    const 骨骼 = { ...姿.蛋上, Head: 抬头(倾, 腰(姿.蛋上), 头, 你眼()) };
-    return { pose: 站姿(参.她.蛋上位, 倾, 参.她.趴朝向), 姿势: '静站', 表情: '大笑', 骨骼, 眨眼: 0, 秒 };
+    const k = clamp01((f - events.landOnEgg) / fps / params.landBounceSec);
+    const tilt = -90 + Math.sin(Math.PI * k) * pose.landBounce;
+    const skeleton = { ...pose.onEggPose, Head: raiseHead(tilt, waistAngleOf(pose.onEggPose), headPos, youEyePos()) };
+    return { pose: standPose(params.liYing.herOnEggPos, tilt, params.liYing.herProneYaw), poseName: '静站', expression: '大笑', skeleton, blink: 0, 秒: sec };
   }
-  if (f < 事.坐起) {
+  if (f < events.sitUp) {
     // 蛋没了：照原版重力掉下去，身子从抱蛋摊成趴着；落地以后脸朝下趴着
-    const z = 摔高(f);
-    const t = clamp01((摔前高 - z) / (摔前高 - 参.她.趴高));
-    const 身 = 插骨(姿.蛋上, 姿.趴, t);
-    const 骨骼 = { ...身, Head: 抬头(-90, 腰(身), 头, 格心(参.蛋位们.起, 0)) };
-    return { pose: 站姿([趴位[0], 趴位[1], z], -90, 参.她.趴朝向), 姿势: '静站', 表情: '惊讶', 骨骼, 眨眼: 0, 秒 };
+    const z = fallHeight(f);
+    const t = clamp01((preFallHeight - z) / (preFallHeight - params.liYing.flatHeight));
+    const bodyPose = lerpBonePose(pose.onEggPose, pose.flatPose, t);
+    const skeleton = { ...bodyPose, Head: raiseHead(-90, waistAngleOf(bodyPose), headPos, cellCenter(params.eggSpots.起, 0)) };
+    return { pose: standPose([flatPos[0], flatPos[1], z], -90, params.liYing.herProneYaw), poseName: '静站', expression: '惊讶', skeleton, blink: 0, 秒: sec };
   }
   // 坐起来（TLM 的待命坐）：一下切过去，身子半朝镜头，抬头冲你噘嘴，一直到段尾
-  return { pose: 站姿(参.她.坐位, 0, 参.她.坐朝向), 姿势: '坐', 表情: '难过', 看: 参.她.噘嘴看, 骨骼: {}, 眨眼: 'auto', 秒 };
+  return { pose: standPose(params.liYing.herSitPos, 0, params.liYing.seatYaw), poseName: '坐', expression: '难过', 看: params.liYing.poutLook, skeleton: {}, blink: 'auto', 秒: sec };
 };
 
 // ---------- 龙蛋 ----------
 /** 龙蛋在哪一格：点一下之前在 起，点完在 一 */
-export const 蛋格 = (f: number): readonly [number, number, number] => (f < 事.点龙蛋 ? 参.蛋位们.起 : 参.蛋位们.一);
+export const eggCell = (f: number): readonly [number, number, number] => (f < events.clickEgg ? params.eggSpots.起 : params.eggSpots.一);
 
 /** Java Random（LegacyRandomSource）的 nextFloat 序列 */
-export const java随机 = (种子: number) => {
-  const 乘 = 0x5deece66dn;
-  const 模 = (1n << 48n) - 1n;
-  let s = (BigInt(种子) ^ 乘) & 模;
+export const javaRandom = (seed: number) => {
+  const multiplier = 0x5deece66dn;
+  const mask = (1n << 48n) - 1n;
+  let s = (BigInt(seed) ^ multiplier) & mask;
   return () => {
-    s = (s * 乘 + 0xbn) & 模;
+    s = (s * multiplier + 0xbn) & mask;
     return Number(s >> 24n) / 16777216;
   };
 };
@@ -217,22 +217,22 @@ export const java随机 = (种子: number) => {
  * 位置 = lerp(随机, 新, 旧) + 水平格内随机、竖直 ±0.5，速度各分量 (随机 − 0.5) × 0.2。原版用世界的随机数，这里定种子（Agent 定）。
  * 原版方块坐标 (X, Y, Z) 换场景：格 i = X、k = Y、j = −Z − 1
  */
-const 瞬移粒子 = (帧: number, 旧: readonly number[], 新: readonly number[], 种子: number): ParticleSpawn[] => {
-  const r = java随机(种子);
-  const 旧Z = -旧[1]! - 1, 新Z = -新[1]! - 1;
+const makeTeleportParticles = (frame: number, oldPos: readonly number[], newPos: readonly number[], seed: number): ParticleSpawn[] => {
+  const r = javaRandom(seed);
+  const oldZ = -oldPos[1]! - 1, newZ = -newPos[1]! - 1;
   return Array.from({ length: 128 }, (_, n) => {
     const d0 = r();
     const fx = (r() - 0.5) * 0.2, fy = (r() - 0.5) * 0.2, fz = (r() - 0.5) * 0.2;
-    const x = 插(新[0]!, 旧[0]!, d0) + (r() - 0.5) + 0.5;
-    const y = 插(新[2]!, 旧[2]!, d0) + r() - 0.5;
-    const z = 插(新Z, 旧Z, d0) + (r() - 0.5) + 0.5;
-    return { 种: 'portal' as const, 刻: 刻(帧), p: [x, -z, y] as V3, v: [fx, -fz, fy] as V3, 种子: 种子 * 1000 + n };
+    const x = lerp(newPos[0]!, oldPos[0]!, d0) + (r() - 0.5) + 0.5;
+    const y = lerp(newPos[2]!, oldPos[2]!, d0) + r() - 0.5;
+    const z = lerp(newZ, oldZ, d0) + (r() - 0.5) + 0.5;
+    return { 种: 'portal' as const, 刻: frameToTick(frame), p: [x, -z, y] as V3, v: [fx, -fz, fy] as V3, 种子: seed * 1000 + n };
   });
 };
-export const 传送粒子们: ParticleSpawn[] = 瞬移粒子(事.点龙蛋, 参.蛋位们.起, 参.蛋位们.一, 5);
+export const teleportParticles: ParticleSpawn[] = makeTeleportParticles(events.clickEgg, params.eggSpots.起, params.eggSpots.一, 5);
 
 /** 出口传送门：传送门方块的格（原点格四周 5×5 去掉四角和中间柱子，EndPodiumFeature 的 closerThan 2.5） */
-export const 门格们: readonly (readonly [number, number])[] = (() => {
+export const portalCells: readonly (readonly [number, number])[] = (() => {
   const r: [number, number][] = [];
   for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) if (i * i + j * j < 6.25 && (i || j)) r.push([i, j]);
   return r;
@@ -240,11 +240,11 @@ export const 门格们: readonly (readonly [number, number])[] = (() => {
 
 // ---------- 机位、开头的浪 ----------
 /** 透视机位：从段首一路推到段尾（缓起缓停） */
-export const 机位 = (f: number) => {
-  const k = clamp01(f / (帧数 - 1));
+export const cameraRig = (f: number) => {
+  const k = clamp01(f / (frameCount - 1));
   const t = k * k * (3 - 2 * k);
-  return { 种: '透视' as const, 眼: 插3(参.机位.眼起, 参.机位.眼止, t), 看: 插3(参.机位.看起, 参.机位.看止, t), 视角: 参.机位.视角 };
+  return { 种: '透视' as const, 眼: lerpVec3(params.cameraRig.eyeStart, params.cameraRig.eyeEnd, t), 看: lerpVec3(params.cameraRig.lookStart, params.cameraRig.lookEnd, t), fov: params.cameraRig.fov };
 };
 /** 第 4 句末盖满画面的那道浪（场/2-海上/浪.tsx 的 进）接着往上退：段首 1（盖满），照第 4 句涌上来的速度（浪起 到第 5 句起那一段走完 0 → 1）退到 2，露出末地 */
-const 浪一程帧 = 窗.起帧 - 正片事件.浪起.帧;
-export const 浪进 = (f: number) => Math.min(2, 1 + f / 浪一程帧);
+const surgeLegFrames = segWindow.起帧 - mainCutEvents.waveRises.帧;
+export const surgeIn = (f: number) => Math.min(2, 1 + f / surgeLegFrames);

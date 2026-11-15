@@ -11,54 +11,54 @@ import { rng, type V3 } from '@engine/model/parts.tsx';
 import { interpPathPos, type Particle, particlePath, ParticlePhysics, ParticleQuads } from '@库/特效/粒子面片.tsx';
 import { vanillaParticleAtlas } from '@库/特效/原版粒子.tsx';
 
-export const 图腾发射刻 = 30;
+export const totemEmitTicks = 30;
 
-type 颗 = { 生刻: number; 路: V3[]; 半: number; 寿: number; 色: [number, number, number] };
+type TotemParticle = { spawnTick: number; 路: V3[]; halfSize: number; lifeTicks: number; 色: [number, number, number] };
 
 /** 一次图腾触发的全部粒子。脚底：人的脚底中心；宽、高：碰撞箱（玩家 0.6、1.8）；地面：粒子落到这个高度停住，不给 = 不停 */
-export const 图腾粒子表 = (脚底: V3, 种子: number, 选项: { 宽?: number; 高?: number; 地面?: number } = {}): 颗[] => {
-  const { 宽 = 0.6, 高 = 1.8, 地面 } = 选项;
-  const rand = rng(种子 * 48271 + 35);
-  const 出: 颗[] = [];
-  for (let 次 = 0; 次 < 图腾发射刻; 次++) {
+export const totemParticleTable = (feet: V3, seed: number, options: { 宽?: number; 高?: number; ground?: number } = {}): TotemParticle[] => {
+  const { 宽: width = 0.6, 高: height = 1.8, ground } = options;
+  const rand = rng(seed * 48271 + 35);
+  const particles: TotemParticle[] = [];
+  for (let emitTick = 0; emitTick < totemEmitTicks; emitTick++) {
     for (let i = 0; i < 16; i++) {
       const d0 = rand() * 2 - 1;
       const d1 = rand() * 2 - 1;
       const d2 = rand() * 2 - 1;
       if (d0 * d0 + d1 * d1 + d2 * d2 > 1) continue;
-      const 寿 = 60 + Math.floor(rand() * 12);
-      const 半 = 0.1 * (rand() * 0.5 + 0.5) * 2 * 0.75;
-      const 色: [number, number, number] = rand() < 0.25 ? [0.6 + rand() * 0.2, 0.6 + rand() * 0.3, rand() * 0.2] : [0.1 + rand() * 0.2, 0.4 + rand() * 0.3, rand() * 0.2];
+      const lifeTicks = 60 + Math.floor(rand() * 12);
+      const halfSize = 0.1 * (rand() * 0.5 + 0.5) * 2 * 0.75;
+      const color: [number, number, number] = rand() < 0.25 ? [0.6 + rand() * 0.2, 0.6 + rand() * 0.3, rand() * 0.2] : [0.1 + rand() * 0.2, 0.4 + rand() * 0.3, rand() * 0.2];
       // 游戏 y 朝上 → 场景 z
-      const p: V3 = [脚底[0] + (宽 * d0) / 4, 脚底[1] + (宽 * d2) / 4, 脚底[2] + 高 * (0.5 + d1 / 4)];
-      const 路 = particlePath(p, [d0, d2, d1 + 0.2], 寿, new ParticlePhysics(1.25, 0.6, 地面));
-      出.push({ 生刻: 次, 路, 半, 寿, 色 });
+      const p: V3 = [feet[0] + (width * d0) / 4, feet[1] + (width * d2) / 4, feet[2] + height * (0.5 + d1 / 4)];
+      const trail = particlePath(p, [d0, d2, d1 + 0.2], lifeTicks, new ParticlePhysics(1.25, 0.6, ground));
+      particles.push({ spawnTick: emitTick, 路: trail, halfSize, lifeTicks, 色: color });
     }
   }
-  return 出;
+  return particles;
 };
 
 /** 距触发 秒 秒时的粒子（秒 < 0 不画）。表 用 图腾粒子表 算一次，别每帧重算 */
-export const 图腾粒子: React.FC<{ 表: readonly 颗[]; 秒: number }> = ({ 表, 秒 }) => {
+export const TotemParticles: React.FC<{ 表: readonly TotemParticle[]; 秒: number }> = ({ 表: particleTable, 秒: sec }) => {
   const items = useMemo(() => {
-    const 刻 = 秒 * 20;
+    const tick = sec * 20;
     const out: Particle[] = [];
-    if (刻 < 0) return out;
-    for (const 粒 of 表) {
-      const τ = 刻 - 粒.生刻;
+    if (tick < 0) return out;
+    for (const particle of particleTable) {
+      const τ = tick - particle.spawnTick;
       if (τ < 0) continue;
       const age = Math.floor(τ);
-      if (age >= 粒.寿) continue;
-      const 帧 = Math.min(7, Math.floor((age * 7) / 粒.寿));
+      if (age >= particle.lifeTicks) continue;
+      const frame = Math.min(7, Math.floor((age * 7) / particle.lifeTicks));
       out.push({
-        p: interpPathPos(粒.路, τ),
-        half: 粒.半,
-        uv: vanillaParticleAtlas.uv[`glitter_${7 - 帧}`]!,
-        color: 粒.色,
-        alpha: age > 粒.寿 / 2 ? 1 - (age - 粒.寿 / 2) / 粒.寿 : 1,
+        p: interpPathPos(particle.路, τ),
+        half: particle.halfSize,
+        uv: vanillaParticleAtlas.uv[`glitter_${7 - frame}`]!,
+        color: particle.色,
+        alpha: age > particle.lifeTicks / 2 ? 1 - (age - particle.lifeTicks / 2) / particle.lifeTicks : 1,
       });
     }
     return out;
-  }, [表, 秒]);
+  }, [particleTable, sec]);
   return <ParticleQuads tex={vanillaParticleAtlas.tex} items={items} translucent depthWrite={false} />;
 };

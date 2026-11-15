@@ -1,21 +1,21 @@
 // anim env：列出每项配置的值和来源；anim doctor：查本机能不能跑（必需项不过就退出码 1，可选项只提示）。
 import fs from 'node:fs';
 import path from 'node:path';
-import type { 命令 } from '../cli/命令.ts';
-import { 解析参数 } from '../cli/参数.ts';
-import { 读资产表 } from '../资产/资产表.ts';
-import { 字节路径, 读资产锁 } from '../资产/资产锁.ts';
-import { 读发布锁, 附件缺 } from '../资产/发布锁.ts';
-import { 全部配置, 配置, 数据路径 } from './配置.ts';
-import { 代码根, 主检出 } from './路径.ts';
-import { 当前作品, 作品们 } from './作品.ts';
-import { 读内存, 读数说明 } from './资源.ts';
-import { 期望版本, 浏览器位置 } from '../渲/浏览器.ts';
-import { 试跑 } from './子进程.ts';
+import type { Command } from '../cli/命令.ts';
+import { parseArgs } from '../cli/参数.ts';
+import { readAssetRegistry } from '../资产/资产表.ts';
+import { bytesPath, readAssetLock } from '../资产/资产锁.ts';
+import { readReleaseLock, missingAttachmentCount } from '../资产/发布锁.ts';
+import { allConfig, config, dataPath } from './配置.ts';
+import { codeRoot, mainCheckout } from './路径.ts';
+import { currentWork, listWorks } from './作品.ts';
+import { readMemory, readingNote } from './资源.ts';
+import { expectedVersion, browserLocation } from '../渲/浏览器.ts';
+import { tryRun } from './子进程.ts';
 
-type 结果 = { 项: string; 过: boolean; 必需: boolean; 说明: string };
+type CheckResult = { 项: string; 过: boolean; required: boolean; 说明: string };
 
-const 可写 = (dir: string) => {
+const isWritable = (dir: string) => {
   try {
     fs.accessSync(dir, fs.constants.W_OK);
     return true;
@@ -24,120 +24,120 @@ const 可写 = (dir: string) => {
   }
 };
 
-const 已装版本 = (包: string): string | null => {
+const installedVersion = (pkg: string): string | null => {
   try {
-    return JSON.parse(fs.readFileSync(path.join(代码根(), 'node_modules', 包, 'package.json'), 'utf8')).version;
+    return JSON.parse(fs.readFileSync(path.join(codeRoot(), 'node_modules', pkg, 'package.json'), 'utf8')).version;
   } catch {
     return null;
   }
 };
 
-export const 体检 = (): 结果[] => {
-  const r: 结果[] = [];
-  const 查 = (项: string, 过: boolean, 说明: string, 必需 = true) => r.push({ 项, 过, 必需, 说明 });
+export const healthCheck = (): CheckResult[] => {
+  const r: CheckResult[] = [];
+  const addCheck = (checkItem: string, ok: boolean, note: string, required = true) => r.push({ 项: checkItem, 过: ok, required, 说明: note });
 
-  const 要的node = fs.readFileSync(path.join(代码根(), '.nvmrc'), 'utf8').trim();
-  查('Node', process.versions.node.split('.')[0] === 要的node, `${process.version}（.nvmrc 要 ${要的node}）`);
+  const wantedNode = fs.readFileSync(path.join(codeRoot(), '.nvmrc'), 'utf8').trim();
+  addCheck('Node', process.versions.node.split('.')[0] === wantedNode, `${process.version}（.nvmrc 要 ${wantedNode}）`);
 
-  const pkg = JSON.parse(fs.readFileSync(path.join(代码根(), 'package.json'), 'utf8'));
-  const 锁定 = Object.entries({ ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>).filter(([, v]) => /^\d/.test(v));
-  const 不符 = 锁定.filter(([k, v]) => 已装版本(k) !== v).map(([k, v]) => `${k} 要 ${v}、装的是 ${已装版本(k) ?? '没装'}`);
-  查('依赖', 不符.length === 0, 不符.length ? `${不符.join('；')}（跑 pnpm install --frozen-lockfile）` : `${锁定.length} 个锁死版本都对`);
+  const pkg = JSON.parse(fs.readFileSync(path.join(codeRoot(), 'package.json'), 'utf8'));
+  const pinned = Object.entries({ ...pkg.dependencies, ...pkg.devDependencies } as Record<string, string>).filter(([, v]) => /^\d/.test(v));
+  const mismatches = pinned.filter(([k, v]) => installedVersion(k) !== v).map(([k, v]) => `${k} 要 ${v}、装的是 ${installedVersion(k) ?? '没装'}`);
+  addCheck('依赖', mismatches.length === 0, mismatches.length ? `${mismatches.join('；')}（跑 pnpm install --frozen-lockfile）` : `${pinned.length} 个锁死版本都对`);
   // pnpm 版本照 package.json 的 packageManager（用户 11-06 定换 pnpm）；corepack enable 后会自动用这一版
-  const 要的pnpm = String(pkg.packageManager ?? '').replace(/^pnpm@/, '');
-  const 有的pnpm = 试跑(['pnpm', '--version']);
-  查('pnpm', 有的pnpm.退出码 === 0 && 有的pnpm.stdout.trim() === 要的pnpm, 有的pnpm.退出码 === 0 ? `${有的pnpm.stdout.trim()}（要 ${要的pnpm}）` : `没装（要 ${要的pnpm}：corepack enable，或 npm i -g pnpm@${要的pnpm}）`);
+  const wantedPnpm = String(pkg.packageManager ?? '').replace(/^pnpm@/, '');
+  const havePnpm = tryRun(['pnpm', '--version']);
+  addCheck('pnpm', havePnpm.退出码 === 0 && havePnpm.stdout.trim() === wantedPnpm, havePnpm.退出码 === 0 ? `${havePnpm.stdout.trim()}（要 ${wantedPnpm}）` : `没装（要 ${wantedPnpm}：corepack enable，或 npm i -g pnpm@${wantedPnpm}）`);
 
-  for (const 名 of ['ffmpeg', 'ffprobe'] as const) {
-    const v = 试跑([配置(名), '-version']);
-    查(名, v.退出码 === 0, v.退出码 === 0 ? v.stdout.split('\n')[0]! : `跑不起来：${配置(名)}（装上或设 ANIM_${名.toUpperCase()}）`);
+  for (const tool of ['ffmpeg', 'ffprobe'] as const) {
+    const v = tryRun([config(tool), '-version']);
+    addCheck(tool, v.退出码 === 0, v.退出码 === 0 ? v.stdout.split('\n')[0]! : `跑不起来：${config(tool)}（装上或设 ANIM_${tool.toUpperCase()}）`);
   }
-  const 编码器表 = 试跑([配置('ffmpeg'), '-hide_banner', '-encoders']).stdout;
-  const 有编码器 = (名: string) => new RegExp(`\\s${名}\\s`).test(编码器表);
+  const encoderTable = tryRun([config('ffmpeg'), '-hide_banner', '-encoders']).stdout;
+  const hasEncoder = (encoderName: string) => new RegExp(`\\s${encoderName}\\s`).test(encoderTable);
   // 切片由 Remotion 自带的 ffmpeg 压，film 只接不重压；本机 ffmpeg 只有分享版要编码器
-  查('libsvtav1', 有编码器('libsvtav1'), 有编码器('libsvtav1') ? 'anim film --分享版 用' : 'libsvtav1 不在 ffmpeg 里（anim film --分享版 要它，换带 libsvtav1 的 ffmpeg）');
+  addCheck('libsvtav1', hasEncoder('libsvtav1'), hasEncoder('libsvtav1') ? 'anim film --分享版 用' : 'libsvtav1 不在 ffmpeg 里（anim film --分享版 要它，换带 libsvtav1 的 ffmpeg）');
 
-  for (const [k, 要] of [['core.quotepath', 'false'], ['core.longpaths', 'true']] as const) {
-    const v = 试跑(['git', '-C', 代码根(), 'config', '--get', k]).stdout.trim();
-    查(`git ${k}`, v === 要, v === 要 ? v : `是「${v || '没设'}」，要 ${要}（git config ${k} ${要}）`);
+  for (const [k, expected] of [['core.quotepath', 'false'], ['core.longpaths', 'true']] as const) {
+    const v = tryRun(['git', '-C', codeRoot(), 'config', '--get', k]).stdout.trim();
+    addCheck(`git ${k}`, v === expected, v === expected ? v : `是「${v || '没设'}」，要 ${expected}（git config ${k} ${expected}）`);
   }
 
-  const uv = 试跑(['uv', '--version']);
-  查('uv', uv.退出码 === 0, uv.退出码 === 0 ? uv.stdout.trim() : '没装（Python 叶子工具要用；见 https://docs.astral.sh/uv/）', false);
+  const uv = tryRun(['uv', '--version']);
+  addCheck('uv', uv.退出码 === 0, uv.退出码 === 0 ? uv.stdout.trim() : '没装（Python 叶子工具要用；见 https://docs.astral.sh/uv/）', false);
 
   // 子目录不在只提示：用到时各处自己建（从 GitHub 拉下来的新机器上，交付、基线、archive 渲之前都不在，用户 11-13 要照文档能一路走通）
-  for (const 子 of ['store', '私有', 'terrain', 'cache', '交付', 'run', '基线', 'archive']) {
-    const d = 数据路径(子);
-    if (fs.existsSync(d)) 查(`数据根/${子}`, 可写(d), 可写(d) ? d : `${d} 不可写`);
-    else 查(`数据根/${子}`, false, `${d} 还不在（用到时自动建；要换位置设 ANIM_DATA）`, false);
+  for (const subdir of ['store', '私有', 'terrain', 'cache', '交付', 'run', '基线', 'archive']) {
+    const d = dataPath(subdir);
+    if (fs.existsSync(d)) addCheck(`数据根/${subdir}`, isWritable(d), isWritable(d) ? d : `${d} 不可写`);
+    else addCheck(`数据根/${subdir}`, false, `${d} 还不在（用到时自动建；要换位置设 ANIM_DATA）`, false);
   }
-  const 锁目录 = 配置('锁目录');
-  查('锁目录', fs.existsSync(锁目录) && 可写(锁目录), fs.existsSync(锁目录) ? 锁目录 : `${锁目录} 不在（第一次拿锁时会建）`, false);
-  查('游戏环境', fs.existsSync(配置('游戏')), 配置('游戏'), false);
+  const lockDir = config('锁目录');
+  addCheck('锁目录', fs.existsSync(lockDir) && isWritable(lockDir), fs.existsSync(lockDir) ? lockDir : `${lockDir} 不在（第一次拿锁时会建）`, false);
+  addCheck('游戏环境', fs.existsSync(config('游戏')), config('游戏'), false);
   try {
-    const 们 = 作品们();
-    const 选 = 当前作品();
-    查('作品', true, `${[...们].map(([名, 根]) => `${名}（${path.relative(代码根(), 根) || '.'}）`).join('、')}；现在选的是 ${选.名}`);
+    const workRoots = listWorks();
+    const work = currentWork();
+    addCheck('作品', true, `${[...workRoots].map(([name, workRoot]) => `${name}（${path.relative(codeRoot(), workRoot) || '.'}）`).join('、')}；现在选的是 ${work.名}`);
   } catch (e) {
-    查('作品', false, (e as Error).message, false);
+    addCheck('作品', false, (e as Error).message, false);
   }
 
   // 能不能渲看各作品的发布锁（段 = 全部，段要的字节、地形包都在里面）；共用资产锁里还有没段用到的参考图、旧版，Release 不发，缺了不算错
-  let 有发布锁 = false;
+  let hasReleaseLock = false;
   try {
-    for (const [名, 根] of 作品们()) {
-      const 发 = 读发布锁(根);
-      if (!发) continue;
-      有发布锁 = true;
-      const 缺 = 发.附件.filter((a) => 附件缺(a, 数据路径()) > 0);
-      查(`素材·${名}`, 缺.length === 0, 缺.length ? `Release ${发.标签} 的 ${发.附件.length} 个附件里有 ${缺.length} 个还没下（anim --作品 ${名} assets pull）` : `Release ${发.标签} 的 ${发.附件.length} 个附件都在数据根`, false);
+    for (const [name, workRoot] of listWorks()) {
+      const releaseLock = readReleaseLock(workRoot);
+      if (!releaseLock) continue;
+      hasReleaseLock = true;
+      const missing = releaseLock.附件.filter((a) => missingAttachmentCount(a, dataPath()) > 0);
+      addCheck(`素材·${name}`, missing.length === 0, missing.length ? `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件里有 ${missing.length} 个还没下（anim --作品 ${name} assets pull）` : `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件都在数据根`, false);
     }
   } catch {
     // 作品目录有问题上面「作品」一项已经报了
   }
-  const 锁 = 读资产锁();
-  const 缺字节 = Object.entries(锁).filter(([, e]) => !fs.existsSync(字节路径(e))).map(([id]) => id);
-  查(
+  const assetLock = readAssetLock();
+  const missingBytes = Object.entries(assetLock).filter(([, e]) => !fs.existsSync(bytesPath(e))).map(([id]) => id);
+  addCheck(
     '资产字节',
-    缺字节.length === 0,
-    缺字节.length ? `共用资产锁有 ${缺字节.length} 件不在数据根：${缺字节.slice(0, 5).join('、')}${缺字节.length > 5 ? '…' : ''}${有发布锁 ? '（没有段用到的参考图、旧版也算在里面；能不能渲看上面的「素材·<作品>」）' : ''}` : `资产锁 ${Object.keys(锁).length} 件都在`,
-    !有发布锁,
+    missingBytes.length === 0,
+    missingBytes.length ? `共用资产锁有 ${missingBytes.length} 件不在数据根：${missingBytes.slice(0, 5).join('、')}${missingBytes.length > 5 ? '…' : ''}${hasReleaseLock ? '（没有段用到的参考图、旧版也算在里面；能不能渲看上面的「素材·<作品>」）' : ''}` : `资产锁 ${Object.keys(assetLock).length} 件都在`,
+    !hasReleaseLock,
   );
-  const 表 = 读资产表();
-  const 没登记 = Object.keys(锁).filter((id) => !表.条目.has(id));
-  查('资产表', 表.问题.length === 0 && 没登记.length === 0, [...表.问题.slice(0, 5), ...(没登记.length ? [`资产锁里有 ${没登记.length} 件资产表没登记：${没登记.slice(0, 5).join('、')}`] : [])].join('；') || `${表.条目.size} 条`);
+  const assetTable = readAssetRegistry();
+  const unregistered = Object.keys(assetLock).filter((id) => !assetTable.entryMap.has(id));
+  addCheck('资产表', assetTable.issues.length === 0 && unregistered.length === 0, [...assetTable.issues.slice(0, 5), ...(unregistered.length ? [`资产锁里有 ${unregistered.length} 件资产表没登记：${unregistered.slice(0, 5).join('、')}`] : [])].join('；') || `${assetTable.entryMap.size} 条`);
 
-  const 浏览器 = 浏览器位置();
-  查('渲染浏览器', fs.existsSync(浏览器.可执行), fs.existsSync(浏览器.可执行) ? 浏览器.目录 : `数据根还没有 ${期望版本()}（第一次渲染时补：从 node_modules/.remotion 克隆，没有就从国内镜像或 Remotion 下载）`, false);
+  const browser = browserLocation();
+  addCheck('渲染浏览器', fs.existsSync(browser.exePath), fs.existsSync(browser.exePath) ? browser.目录 : `数据根还没有 ${expectedVersion()}（第一次渲染时补：从 node_modules/.remotion 克隆，没有就从国内镜像或 Remotion 下载）`, false);
 
-  const m = 读内存();
-  查('内存读数', m !== null, m ? 读数说明(m) : '读不到（资源闸不等内存，直接放行）', false);
+  const m = readMemory();
+  addCheck('内存读数', m !== null, m ? readingNote(m) : '读不到（资源闸不等内存，直接放行）', false);
   return r;
 };
 
-export const 环境命令: Record<string, 命令> = {
+export const envCommands: Record<string, Command> = {
   env: {
     用法: 'env',
     说明: '列出本机配置的值和来源（环境变量 > anim.local.toml > 默认）',
-    不记录: true,
+    noRecord: true,
     跑: async (args) => {
-      解析参数(args, {});
-      const { 值, 本地文件 } = 全部配置();
-      console.log(`代码根：${代码根()}\n主检出：${主检出()}\n本地配置：${本地文件 ?? '（没有 anim.local.toml）'}\n`);
-      for (const [名, v] of Object.entries(值)) console.log(`${名}：${v.值}\n    取自${v.来源}；环境变量 ${v.变量}，anim.local.toml 键 ${v.键}。${v.说明}`);
+      parseArgs(args, {});
+      const { 值: values, localFile } = allConfig();
+      console.log(`代码根：${codeRoot()}\n主检出：${mainCheckout()}\n本地配置：${localFile ?? '（没有 anim.local.toml）'}\n`);
+      for (const [configKey, v] of Object.entries(values)) console.log(`${configKey}：${v.值}\n    取自${v.来源}；环境变量 ${v.变量}，anim.local.toml 键 ${v.键}。${v.说明}`);
     },
   },
   doctor: {
     用法: 'doctor',
     说明: '体检：Node、依赖版本、ffmpeg、编码器、git 设置、数据根、资产字节',
-    跑: async (args, 记录) => {
-      解析参数(args, {});
-      const r = 体检();
-      for (const x of r) console.log(`${x.过 ? '✓' : x.必需 ? '✗' : '!'} ${x.项}：${x.说明}`);
-      const 不过 = r.filter((x) => !x.过 && x.必需);
-      for (const x of r.filter((x) => !x.过)) 记录.记(x.必需 ? '错误' : '警告', `${x.项}：${x.说明}`);
-      console.log(不过.length ? `\n${不过.length} 项必需的没过` : '\n必需项全过');
-      return 不过.length ? 1 : 0;
+    跑: async (args, runRecord) => {
+      parseArgs(args, {});
+      const r = healthCheck();
+      for (const x of r) console.log(`${x.过 ? '✓' : x.required ? '✗' : '!'} ${x.项}：${x.说明}`);
+      const failed = r.filter((x) => !x.过 && x.required);
+      for (const x of r.filter((x) => !x.过)) runRecord.log(x.required ? '错误' : '警告', `${x.项}：${x.说明}`);
+      console.log(failed.length ? `\n${failed.length} 项必需的没过` : '\n必需项全过');
+      return failed.length ? 1 : 0;
     },
   },
 };

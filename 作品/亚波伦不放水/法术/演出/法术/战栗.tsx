@@ -5,20 +5,20 @@
 // 这里把 起点 当成中心（施法者脚底 + 0.5 格）。
 // 没做：半径内生物被推开。
 import React from 'react';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 砸地墙 } from '../零件/冲击波.tsx';
-import { 圆爆 } from '../零件/甲/爆.tsx';
-import 元 from './战栗.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { SlamWall } from '../零件/冲击波.tsx';
+import { CircleBurst } from '../零件/甲/爆.tsx';
+import meta from './战栗.元.ts';
 
-const 战栗: React.FC<法术演出属性> = ({ 秒, 起点 }) => {
-  const 刻 = 秒 * 20;
+const Shudder: React.FC<SpellPerformanceProps> = ({ 秒: sec, from }) => {
+  const tick = sec * 20;
   return (
     <>
-      <圆爆 位={起点} 刻={刻} 色={[1, 1, 1]} 尺寸={6} 速={3} />
-      <砸地墙 位={[起点[0], 起点[1], 起点[2] + 0.5]} 刻={刻} 宽={3} 色={[1, 1, 1]} 寿命={10} />
+      <CircleBurst 位={from} 刻={tick} 色={[1, 1, 1]} 尺寸={6} 速={3} />
+      <SlamWall 位={[from[0], from[1], from[2] + 0.5]} 刻={tick} 宽={3} 色={[1, 1, 1]} 寿命={10} />
     </>
   );
 };
 
-export default 定义法术演出(元, 战栗);
+export default defineSpellPerformance(meta, Shudder);

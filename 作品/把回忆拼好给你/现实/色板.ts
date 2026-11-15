@@ -1,25 +1,25 @@
 // 现实部分（第 13 句分屏的现实那半）自画贴图的颜色：照原版贴图的画法，每样东西三四个色、一层噪点（像素图.ts 的 噪）。纯模块。
 // 这些是贴图本身的颜色；整体往冷里压交给色板.ts 的「现实」（平涂色调、描边、整片后期），这里不预先压冷，和原版方块贴图一样当「游戏里的原色」。
 // 全是 Agent 暂定（用户 10-24 要现实这边改成和游戏同一种像素画法），用户没看过。第 14 句楼下全是原版方块，不用这里的颜色。
-export const 现实色 = {
+export const realColors = {
   /** 倒计时日历的纸：正面三色噪点、纸叠侧边一层层的颜色（纸层）、飞起来翻过去露出的纸背、印的字 */
-  纸: ['#eceeef', '#e4e7e9', '#f3f4f4'],
-  纸层: ['#cfd4d8', '#bcc2c7'],
-  纸背: '#f7f8f9',
-  页字: '#3c3f44',
+  paperColors: ['#eceeef', '#e4e7e9', '#f3f4f4'],
+  paperLayer: ['#cfd4d8', '#bcc2c7'],
+  paperBack: '#f7f8f9',
+  pageText: '#3c3f44',
   /** 倒计时的大数字：原版的深红（§4 #AA0000） */
-  倒计时: '#aa0000',
+  countdown: '#aa0000',
   /** 日历顶上的装订条 */
-  装订: ['#34404d', '#2d3843', '#3c4957'],
+  bindingColors: ['#34404d', '#2d3843', '#3c4957'],
   /** 地图纸（照原版 map_background：米黄的纸、一圈深浅不一的棕边） */
-  图纸: ['#ddd3b3', '#d7cca9', '#e3dabd'],
-  图边: ['#8c744d', '#a68c60', '#b9a273'],
-  图墨: '#2f2a22',
-  表线: '#9b8a66',
-  表头: '#cdc19e',
+  drawingPaper: ['#ddd3b3', '#d7cca9', '#e3dabd'],
+  drawingEdge: ['#8c744d', '#a68c60', '#b9a273'],
+  drawingInk: '#2f2a22',
+  tableLine: '#9b8a66',
+  tableHeaderColor: '#cdc19e',
   /** 课表亮格：亮满时的底色和内框 */
-  亮格: '#9fdcea',
-  亮框: '#e8fbff',
+  litCellColor: '#9fdcea',
+  litFrameColor: '#e8fbff',
   /** 物品展示框的框（原版用白桦木板的贴图） */
   框: ['#c8b77a', '#d6c98c', '#b4a26a', '#a08e5c'],
 } as const;

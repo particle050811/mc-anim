@@ -113,10 +113,10 @@ const toFrame = (t: number) => Math.round(t * FPS);
 export const segments = ids.map((id, i) => {
   const startFrame = toFrame(skipTo[id] ?? cutTs[id]);
   const endFrame = i + 1 < ids.length ? toFrame(cutTs[ids[i + 1]]) : toFrame(sceneEndT0) + 1;
-  return { 号: id, 名: names[id], 帧数: endFrame - startFrame, startFrame };
+  return { segmentId: id, 名: names[id], 帧数: endFrame - startFrame, startFrame };
 });
-export const segmentStartFrame = Object.fromEntries(segments.map((s) => [s.号, s.startFrame])) as Record<SegmentId, number>;
-export const frameCountOf = (segId: SegmentId) => segments.find((s) => s.号 === segId)!.帧数;
+export const segmentStartFrame = Object.fromEntries(segments.map((s) => [s.segmentId, s.startFrame])) as Record<SegmentId, number>;
+export const frameCountOf = (segId: SegmentId) => segments.find((s) => s.segmentId === segId)!.帧数;
 // 段内帧 → 场时刻 t（秒）
 export const tAt = (segId: SegmentId, f: number) => (segmentStartFrame[segId] + f) / FPS;
 export const segmentStartT = (segId: SegmentId) => segmentStartFrame[segId] / FPS;

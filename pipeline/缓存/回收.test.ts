@@ -4,333 +4,333 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { 历史指纹 } from '../渲/母版.ts';
-import { 抽样键, 认可文本, 读认可, type 认可记录 } from '../验收/认可.ts';
-import { 加当前指纹 } from './当前指纹.ts';
-import { 执行回收, cache认识, run认识, 只报目录, type 回收计划 } from './计划.ts';
+import { fingerprintHistory } from '../渲/母版.ts';
+import { sampleKey, approvalText, readApproval, type ApprovalRecord } from '../验收/认可.ts';
+import { addCurrentFingerprints } from './当前指纹.ts';
+import { runReclaim, cacheKnownNames, runKnownNames, reportOnlyDirs, type ReclaimPlan } from './计划.ts';
 import {
-  保留集, 加交付, 加认可, 交付引用, 扫媒体, 扫webpack, 列目录, 是临时名, 规划媒体, 规划临时, 规划草稿, 规划webpack, 读认可指纹, 小计, 主要理由, 不认识条目, 扫暂存, 规划暂存,
+  KeepSet, addDelivery, addApprovals, deliveryRefs, scanMedia, scanWebpack, listDir, isTempName, planMedia, planTemp, planDrafts, planWebpack, readApprovedFingerprint, Subtotal, mainReason, unrecognizedEntries, scanStaging, planStaging,
 } from './回收.ts';
 
-const 天 = 24 * 3600 * 1000;
-const 现在 = Date.parse('2026-10-30T00:00:00Z');
-let 根 = '';
+const dayMs = 24 * 3600 * 1000;
+const now = Date.parse('2026-10-30T00:00:00Z');
+let root = '';
 
 beforeEach(() => {
-  根 = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-回收样例-')));
+  root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-回收样例-')));
 });
-afterEach(() => fs.rmSync(根, { recursive: true, force: true }));
+afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
-const 写 = (rel: string, 内容: string | Buffer, 改于?: number) => {
-  const f = path.join(根, ...rel.split('/'));
+const writeFile = (rel: string, content: string | Buffer, modifiedAt?: number) => {
+  const f = path.join(root, ...rel.split('/'));
   fs.mkdirSync(path.dirname(f), { recursive: true });
-  fs.writeFileSync(f, 内容);
+  fs.writeFileSync(f, content);
   // 目录的修改时间跟着拨（真目录里是最后一次往里加文件的时间）
-  if (改于 !== undefined) for (const x of [f, path.dirname(f)]) fs.utimesSync(x, new Date(改于), new Date(改于));
+  if (modifiedAt !== undefined) for (const x of [f, path.dirname(f)]) fs.utimesSync(x, new Date(modifiedAt), new Date(modifiedAt));
   return f;
 };
 
 /** 造一份母版和它的 .指纹.json：指纹 16 位、级别、几天前渲的 */
-const 母版 = (键: string, 指纹: string, 级别: string, 几天前: number, 大小 = 100) => {
-  const t = 现在 - 几天前 * 天;
-  写(`cache/母版/作品甲/${键}/${指纹}.指纹.json`, JSON.stringify({ 段: 键, 指纹: 指纹.padEnd(64, '0'), 项: { 渲染设置: { inputProps: { 级别 } } } }), t);
-  return 写(`cache/母版/作品甲/${键}/${指纹}.mp4`, Buffer.alloc(大小, 指纹.charCodeAt(0)), t);
+const makeMaster = (segKey: string, fingerprint: string, level: string, daysAgo: number, byteSize = 100) => {
+  const t = now - daysAgo * dayMs;
+  writeFile(`cache/母版/作品甲/${segKey}/${fingerprint}.指纹.json`, JSON.stringify({ 段: segKey, 指纹: fingerprint.padEnd(64, '0'), 项: { 渲染设置: { inputProps: { 级别: level } } } }), t);
+  return writeFile(`cache/母版/作品甲/${segKey}/${fingerprint}.mp4`, Buffer.alloc(byteSize, fingerprint.charCodeAt(0)), t);
 };
-const 母版目录 = (键: string) => path.join(根, 'cache', '母版', '作品甲', 键);
-const 规划 = (保留: 保留集, 近期天数 = 2) => 规划媒体(扫媒体(path.join(根, 'cache', '母版', '作品甲'), '母版', '作品甲').媒体, 保留, { 现在, 近期天数 });
-const 删的 = (r: ReturnType<typeof 规划>) => r.filter((f) => !f.理由.length).map((f) => f.指纹).sort();
+const masterDir = (segKey: string) => path.join(root, 'cache', '母版', '作品甲', segKey);
+const planKeep = (keep: KeepSet, recentDays = 2) => planMedia(scanMedia(path.join(root, 'cache', '母版', '作品甲'), '母版', '作品甲').media, keep, { now, recentDays });
+const deletedFingerprints = (r: ReturnType<typeof planKeep>) => r.filter((f) => !f.理由.length).map((f) => f.指纹).sort();
 
-const 认可记录 = (段: string, 指纹: string): 认可记录 => ({
-  段, 指纹, 平台: 'darwin-arm64', 渲染级别: '视频', 认可于: '2026-10-22T00:00:00Z', 提交: 'abc', 理由: '测试', 上一版指纹: 'b'.repeat(64),
+const ApprovalRecord = (segKey: string, fingerprint: string): ApprovalRecord => ({
+  段: segKey, 指纹: fingerprint, 平台: 'darwin-arm64', 渲染级别: '视频', 认可于: '2026-10-22T00:00:00Z', 提交: 'abc', 理由: '测试', 上一版指纹: 'b'.repeat(64),
   宽: 4, 高: 4, 帧数: 1, 间隔: 24, 帧: [{ 帧: 0, 哈希: 'c'.repeat(64), 块均值: ['00'] }], 音频sha: null, 响度: null, 起音: null,
 });
 
 describe('扫键目录：列完目录文件才没', () => {
-  const 抛 = (码: string) => { throw Object.assign(new Error(码), { code: 码 }); };
-  const 扫 = () => 扫媒体(path.join(根, 'cache', '母版', '作品甲'), '母版', '作品甲');
+  const throwCode = (errCode: string) => { throw Object.assign(new Error(errCode), { code: errCode }); };
+  const scan = () => scanMedia(path.join(root, 'cache', '母版', '作品甲'), '母版', '作品甲');
   afterEach(() => vi.restoreAllMocks());
 
   it('占用标记、临时文件刚被放掉（ENOENT）：算没看见，别的照扫', () => {
-    const 媒体 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
-    const 标记 = 写('cache/母版/作品甲/6-甲/aaaaaaaaaaaaaaaa.占用', '1\n');
-    const 真stat = fs.statSync, 真lstat = fs.lstatSync;
-    vi.spyOn(fs, 'statSync').mockImplementation(((f: string, ...多: []) => (f === 标记 ? 抛('ENOENT') : 真stat(f, ...多))) as never);
-    vi.spyOn(fs, 'lstatSync').mockImplementation(((f: string, ...多: []) => (f === 标记 ? 抛('ENOENT') : 真lstat(f, ...多))) as never);
-    const r = 扫();
-    expect(r.媒体.map((f) => f.路径)).toEqual([媒体]);
-    expect(r.媒体[0]!.正在写).toBe(false);
-    expect(r.临时).toEqual([]);
+    const mediaPath = makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
+    const occupiedPath = writeFile('cache/母版/作品甲/6-甲/aaaaaaaaaaaaaaaa.占用', '1\n');
+    const realStat = fs.statSync, realLstat = fs.lstatSync;
+    vi.spyOn(fs, 'statSync').mockImplementation(((f: string, ...statArgs: []) => (f === occupiedPath ? throwCode('ENOENT') : realStat(f, ...statArgs))) as never);
+    vi.spyOn(fs, 'lstatSync').mockImplementation(((f: string, ...statArgs: []) => (f === occupiedPath ? throwCode('ENOENT') : realLstat(f, ...statArgs))) as never);
+    const r = scan();
+    expect(r.media.map((f) => f.路径)).toEqual([mediaPath]);
+    expect(r.media[0]!.beingWritten).toBe(false);
+    expect(r.tempFiles).toEqual([]);
   });
 
   it('mp4、wav 是母版；CRF1 时代的 .mkv、.x264.mkv 不认，归不认识', () => {
-    const 画 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
-    const 声 = 写('cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.wav', 'x');
-    写('cache/母版/作品甲/6-甲/cccccccccccccccc.mkv', 'x');
-    写('cache/母版/作品甲/6-甲/dddddddddddddddd.x264.mkv', 'x');
-    const r = 扫();
-    expect(r.媒体.map((f) => [f.路径, f.存法])).toEqual([[画, '切片'], [声, '声音']]);
-    expect(r.不认识.map((f) => path.basename(f.路径)).sort()).toEqual(['cccccccccccccccc.mkv', 'dddddddddddddddd.x264.mkv']);
+    const masterPath = makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
+    const soundPath = writeFile('cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.wav', 'x');
+    writeFile('cache/母版/作品甲/6-甲/cccccccccccccccc.mkv', 'x');
+    writeFile('cache/母版/作品甲/6-甲/dddddddddddddddd.x264.mkv', 'x');
+    const r = scan();
+    expect(r.media.map((f) => [f.路径, f.存法])).toEqual([[masterPath, '切片'], [soundPath, '声音']]);
+    expect(r.unknownFiles.map((f) => path.basename(f.路径)).sort()).toEqual(['cccccccccccccccc.mkv', 'dddddddddddddddd.x264.mkv']);
   });
 
   it('别的错照抛：权限问题不能当成文件不在', () => {
-    const 媒体 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
-    const 真lstat = fs.lstatSync;
-    vi.spyOn(fs, 'lstatSync').mockImplementation(((f: string, ...多: []) => (f === 媒体 ? 抛('EACCES') : 真lstat(f, ...多))) as never);
-    expect(扫).toThrow('EACCES');
+    const mediaPath = makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 1);
+    const realLstat = fs.lstatSync;
+    vi.spyOn(fs, 'lstatSync').mockImplementation(((f: string, ...statArgs: []) => (f === mediaPath ? throwCode('EACCES') : realLstat(f, ...statArgs))) as never);
+    expect(scan).toThrow('EACCES');
   });
 });
 
 describe('保留集：母版', () => {
   it('认可那版不删，哪怕它既不是当前、也不是最近一份、也不在近期里', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9); // 认可那版
-    母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8); // 旧的，删
-    母版('6-甲', 'cccccccccccccccc', '视频', 7); // 当前
-    写('作品/作品甲/认可/darwin-arm64/6-甲.toml', 认可文本(认可记录('6-甲', 'a'.repeat(16) + 'f'.repeat(48))));
-    const 保留 = new 保留集();
-    加认可(保留, path.join(根, '作品', '作品甲'), 母版目录);
-    保留.加(path.join(母版目录('6-甲'), 'cccccccccccccccc.mp4'), { 类: '当前', 说明: '视频' });
-    const r = 规划(保留);
-    expect(删的(r)).toEqual(['bbbbbbbbbbbbbbbb']);
-    expect(主要理由(r.find((f) => f.指纹 === 'aaaaaaaaaaaaaaaa')!.理由)).toBe('认可');
+    makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9); // 认可那版
+    makeMaster('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8); // 旧的，删
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 7); // 当前
+    writeFile('作品/作品甲/认可/darwin-arm64/6-甲.toml', approvalText(ApprovalRecord('6-甲', 'a'.repeat(16) + 'f'.repeat(48))));
+    const keep = new KeepSet();
+    addApprovals(keep, path.join(root, '作品', '作品甲'), masterDir);
+    keep.加(path.join(masterDir('6-甲'), 'cccccccccccccccc.mp4'), { 类: '当前', 说明: '视频' });
+    const r = planKeep(keep);
+    expect(deletedFingerprints(r)).toEqual(['bbbbbbbbbbbbbbbb']);
+    expect(mainReason(r.find((f) => f.指纹 === 'aaaaaaaaaaaaaaaa')!.理由)).toBe('认可');
   });
 
   it('没有认可记录时同一份就会被删（对照：上一条留下靠的是认可）', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    const 保留 = new 保留集();
-    加认可(保留, path.join(根, '作品', '作品甲'), 母版目录);
-    保留.加(path.join(母版目录('6-甲'), 'cccccccccccccccc.mp4'), { 类: '当前', 说明: '视频' });
-    expect(删的(规划(保留))).toEqual(['aaaaaaaaaaaaaaaa']);
+    makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 7);
+    const keep = new KeepSet();
+    addApprovals(keep, path.join(root, '作品', '作品甲'), masterDir);
+    keep.加(path.join(masterDir('6-甲'), 'cccccccccccccccc.mp4'), { 类: '当前', 说明: '视频' });
+    expect(deletedFingerprints(planKeep(keep))).toEqual(['aaaaaaaaaaaaaaaa']);
   });
 
   it('认可记录读的是 anim verify accept 写的格式；读不出的整段留着', () => {
-    const f = 写('认可/x.toml', 认可文本(认可记录('核对-冒烟', 'd'.repeat(64))));
-    expect(读认可指纹(f)).toEqual({ 段: '核对-冒烟', 指纹: 'd'.repeat(64) });
-    母版('6-乙', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-乙', 'bbbbbbbbbbbbbbbb', '视频', 8);
-    写('作品/作品甲/认可/darwin-arm64/6-乙.toml', '坏了');
-    const 警告: string[] = [];
-    const 保留 = new 保留集();
-    加认可(保留, path.join(根, '作品', '作品甲'), 母版目录, (s) => 警告.push(s));
-    expect(删的(规划(保留))).toEqual([]);
-    expect(警告).toHaveLength(1);
+    const f = writeFile('认可/x.toml', approvalText(ApprovalRecord('核对-冒烟', 'd'.repeat(64))));
+    expect(readApprovedFingerprint(f)).toEqual({ 段: '核对-冒烟', 指纹: 'd'.repeat(64) });
+    makeMaster('6-乙', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-乙', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    writeFile('作品/作品甲/认可/darwin-arm64/6-乙.toml', '坏了');
+    const warnings: string[] = [];
+    const keep = new KeepSet();
+    addApprovals(keep, path.join(root, '作品', '作品甲'), masterDir, (s) => warnings.push(s));
+    expect(deletedFingerprints(planKeep(keep))).toEqual([]);
+    expect(warnings).toHaveLength(1);
   });
 
   it('交付 manifest（版本 3）引用的切片留着：按作品、段键、画面指纹、声音指纹算；v1、v2 的不认；解钉默认关，自足的只在说明里标出', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
-    母版('6-甲', 'cccccccccccccccc', '视频', 1);
-    const 段们 = [{ 键: '6-甲', 画面指纹: 'a'.repeat(16) + 'f'.repeat(48), 声音指纹: 'e'.repeat(64) }];
-    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 3, 作品: '作品甲', 段: 段们 }));
-    写('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
-    写('交付/作品甲/1021-1755-旧/manifest.json', JSON.stringify({ 段: [{ 键: '6-甲', 母版: 'cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.mkv', 指纹: 'b'.repeat(64) }] }));
-    const 保留 = new 保留集();
-    加交付(保留, path.join(根, '交付'), 根);
-    expect(删的(规划(保留))).toEqual(['bbbbbbbbbbbbbbbb']);
-    expect(保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mp4')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
-    expect(保留.查(path.join(母版目录('6-甲'), 'eeeeeeeeeeeeeeee.wav')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
-    expect(交付引用({ 段: [{ 键: '6-甲', 母版: 'x' }, { 键: '6-甲', 指纹: 'a'.repeat(64) }] }, '作品甲')).toEqual([]);
-    expect(交付引用(null)).toEqual([]);
+    makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 1);
+    const segments = [{ 键: '6-甲', 画面指纹: 'a'.repeat(16) + 'f'.repeat(48), 声音指纹: 'e'.repeat(64) }];
+    writeFile('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 3, 作品: '作品甲', 段: segments }));
+    writeFile('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
+    writeFile('交付/作品甲/1021-1755-旧/manifest.json', JSON.stringify({ 段: [{ 键: '6-甲', 母版: 'cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.mkv', 指纹: 'b'.repeat(64) }] }));
+    const keep = new KeepSet();
+    addDelivery(keep, path.join(root, '交付'), root);
+    expect(deletedFingerprints(planKeep(keep))).toEqual(['bbbbbbbbbbbbbbbb']);
+    expect(keep.reasonsFor(path.join(masterDir('6-甲'), 'aaaaaaaaaaaaaaaa.mp4')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
+    expect(keep.reasonsFor(path.join(masterDir('6-甲'), 'eeeeeeeeeeeeeeee.wav')).map((x) => x.说明)).toEqual(['作品甲/1030-0000-新（已自足）']);
+    expect(deliveryRefs({ 段: [{ 键: '6-甲', 母版: 'x' }, { 键: '6-甲', 指纹: 'a'.repeat(64) }] }, '作品甲')).toEqual([]);
+    expect(deliveryRefs(null)).toEqual([]);
   });
 
   it('解钉打开：有 FLAC 就不再钉母版（剪辑包用户 11-06 定不要了）；没 FLAC 的照钉', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
-    母版('6-甲', 'cccccccccccccccc', '视频', 1);
-    写('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 3, 作品: '作品甲', 段: [{ 键: '6-甲', 画面指纹: 'a'.repeat(64) }] }));
-    const 解 = () => {
-      const 保留 = new 保留集();
-      加交付(保留, path.join(根, '交付'), 根, () => {}, { 解钉: true });
-      return 删的(规划(保留));
+    makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 1);
+    writeFile('交付/作品甲/1030-0000-新/manifest.json', JSON.stringify({ 版本: 3, 作品: '作品甲', 段: [{ 键: '6-甲', 画面指纹: 'a'.repeat(64) }] }));
+    const unpack = () => {
+      const keep = new KeepSet();
+      addDelivery(keep, path.join(root, '交付'), root, () => {}, { unpin: true });
+      return deletedFingerprints(planKeep(keep));
     };
-    expect(解()).toEqual(['bbbbbbbbbbbbbbbb']);
-    写('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
-    expect(解()).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
+    expect(unpack()).toEqual(['bbbbbbbbbbbbbbbb']);
+    writeFile('交付/作品甲/1030-0000-新/全片-未拉响度.flac', '');
+    expect(unpack()).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
   });
 
   it('认可：有这条认可记录的认可参考才可解钉（参考按记录的抽样哈希起名，同一指纹旧记录的参考不算）；解钉默认关，照钉、说明里标出', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-甲', 'cccccccccccccccc', '视频', 1);
-    const 认 = 认可记录('6-甲', 'a'.repeat(16) + 'f'.repeat(48));
-    写('作品/作品甲/认可/darwin-arm64/6-甲.toml', 认可文本(认));
-    const 参考文件 = (file: string, 平台: string) => {
-      const r = 读认可(file);
-      return r && path.join(根, '认可参考', '作品甲', 平台, r.段, `${r.指纹.slice(0, 16)}-${抽样键(r)}.mkv`);
+    makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 1);
+    const approval = ApprovalRecord('6-甲', 'a'.repeat(16) + 'f'.repeat(48));
+    writeFile('作品/作品甲/认可/darwin-arm64/6-甲.toml', approvalText(approval));
+    const referenceFile = (file: string, hostPlatform: string) => {
+      const r = readApproval(file);
+      return r && path.join(root, '认可参考', '作品甲', hostPlatform, r.段, `${r.指纹.slice(0, 16)}-${sampleKey(r)}.mkv`);
     };
-    const 跑 = (解钉: boolean) => {
-      const 保留 = new 保留集();
-      加认可(保留, path.join(根, '作品', '作品甲'), 母版目录, () => {}, { 解钉, 参考文件 });
-      return { 删: 删的(规划(保留)), 说明: 保留.查(path.join(母版目录('6-甲'), 'aaaaaaaaaaaaaaaa.mp4')).map((x) => x.说明) };
+    const runGc = (unpin: boolean) => {
+      const keep = new KeepSet();
+      addApprovals(keep, path.join(root, '作品', '作品甲'), masterDir, () => {}, { unpin, referenceFile });
+      return { removed: deletedFingerprints(planKeep(keep)), 说明: keep.reasonsFor(path.join(masterDir('6-甲'), 'aaaaaaaaaaaaaaaa.mp4')).map((x) => x.说明) };
     };
-    expect(跑(true)).toEqual({ 删: [], 说明: ['darwin-arm64'] }); // 没参考：解钉也照钉
+    expect(runGc(true)).toEqual({ removed: [], 说明: ['darwin-arm64'] }); // 没参考：解钉也照钉
     // 同一指纹上一次认可的参考（哈希不一样）不算这条记录的
-    写(`认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-${抽样键({ ...认, 帧: 认.帧.map((f) => ({ ...f, 哈希: '9'.repeat(64) })) })}.mkv`, '');
-    expect(跑(true)).toEqual({ 删: [], 说明: ['darwin-arm64'] });
-    写(`认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-${抽样键(认)}.mkv`, '');
-    expect(跑(false)).toEqual({ 删: [], 说明: ['darwin-arm64（有认可参考）'] });
-    expect(跑(true)).toEqual({ 删: ['aaaaaaaaaaaaaaaa'], 说明: [] });
+    writeFile(`认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-${sampleKey({ ...approval, 帧: approval.帧.map((f) => ({ ...f, 哈希: '9'.repeat(64) })) })}.mkv`, '');
+    expect(runGc(true)).toEqual({ removed: [], 说明: ['darwin-arm64'] });
+    writeFile(`认可参考/作品甲/darwin-arm64/6-甲/aaaaaaaaaaaaaaaa-${sampleKey(approval)}.mkv`, '');
+    expect(runGc(false)).toEqual({ removed: [], 说明: ['darwin-arm64（有认可参考）'] });
+    expect(runGc(true)).toEqual({ removed: ['aaaaaaaaaaaaaaaa'], 说明: [] });
   });
 
   it('每个级别留最近一份，近期天数里渲的都留', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8); // 视频最近一份
-    母版('6-甲', 'cccccccccccccccc', '预览', 9);
-    母版('6-甲', 'dddddddddddddddd', '预览', 5); // 预览最近一份
-    const r = 规划(new 保留集());
-    expect(删的(r)).toEqual(['aaaaaaaaaaaaaaaa', 'cccccccccccccccc']);
-    expect(删的(规划(new 保留集(), 10))).toEqual([]);
+    makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8); // 视频最近一份
+    makeMaster('6-甲', 'cccccccccccccccc', '预览', 9);
+    makeMaster('6-甲', 'dddddddddddddddd', '预览', 5); // 预览最近一份
+    const r = planKeep(new KeepSet());
+    expect(deletedFingerprints(r)).toEqual(['aaaaaaaaaaaaaaaa', 'cccccccccccccccc']);
+    expect(deletedFingerprints(planKeep(new KeepSet(), 10))).toEqual([]);
   });
 
   it('最近一份按 .指纹.json 的时间排：删完以后 film --允许过期（历史指纹）取的还是原来那份', () => {
     // 迁移时把 aaaa 的母版硬链接到新指纹 bbbb 名下：bbbb.mp4 是旧时间，bbbb.指纹.json 是新的
-    const a = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9, 100);
-    母版('6-甲', 'cccccccccccccccc', '视频', 8, 200);
-    const b = path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mp4');
+    const a = makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9, 100);
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 8, 200);
+    const b = path.join(masterDir('6-甲'), 'bbbbbbbbbbbbbbbb.mp4');
     fs.linkSync(a, b);
-    写('cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.指纹.json', JSON.stringify({ 段: '6-甲', 指纹: 'b'.repeat(64), 项: { 渲染设置: { inputProps: { 级别: '视频' } } } }), 现在 - 3 * 天);
-    const 取 = () => 历史指纹('6-甲', 母版目录('6-甲')).find((h) => fs.existsSync(path.join(母版目录('6-甲'), `${h.指纹.slice(0, 16)}.mp4`)))?.指纹.slice(0, 16);
-    expect(取()).toBe('bbbbbbbbbbbbbbbb');
-    const r = 规划(new 保留集());
-    expect(删的(r)).toEqual(['aaaaaaaaaaaaaaaa', 'cccccccccccccccc']);
+    writeFile('cache/母版/作品甲/6-甲/bbbbbbbbbbbbbbbb.指纹.json', JSON.stringify({ 段: '6-甲', 指纹: 'b'.repeat(64), 项: { 渲染设置: { inputProps: { 级别: '视频' } } } }), now - 3 * dayMs);
+    const latestFingerprint = () => fingerprintHistory('6-甲', masterDir('6-甲')).find((h) => fs.existsSync(path.join(masterDir('6-甲'), `${h.指纹.slice(0, 16)}.mp4`)))?.指纹.slice(0, 16);
+    expect(latestFingerprint()).toBe('bbbbbbbbbbbbbbbb');
+    const r = planKeep(new KeepSet());
+    expect(deletedFingerprints(r)).toEqual(['aaaaaaaaaaaaaaaa', 'cccccccccccccccc']);
     for (const f of r) if (!f.理由.length) fs.rmSync(f.路径);
-    expect(取()).toBe('bbbbbbbbbbbbbbbb');
+    expect(latestFingerprint()).toBe('bbbbbbbbbbbbbbbb');
   });
 
   it('当前指纹算不出的段整个目录留着', () => {
-    母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
-    const 保留 = new 保留集();
-    保留.加目录(母版目录('6-甲'), { 类: '算不出', 说明: '当前指纹算不出' });
-    expect(删的(规划(保留))).toEqual([]);
+    makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    const keep = new KeepSet();
+    keep.addDir(masterDir('6-甲'), { 类: '算不出', 说明: '当前指纹算不出' });
+    expect(deletedFingerprints(planKeep(keep))).toEqual([]);
     // 目录名是前缀的别的段不受影响
-    母版('6-甲乙', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    母版('6-甲乙', 'bbbbbbbbbbbbbbbb', '视频', 8);
-    expect(规划(保留).filter((f) => !f.理由.length).map((f) => f.键)).toEqual(['6-甲乙']);
+    makeMaster('6-甲乙', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    makeMaster('6-甲乙', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    expect(planKeep(keep).filter((f) => !f.理由.length).map((f) => f.键)).toEqual(['6-甲乙']);
   });
 
   it('作品读不出时（不在代码里）母版目录整个留着', async () => {
-    const 保留 = new 保留集();
-    const 警告: string[] = [];
-    await 加当前指纹(保留, '没有这部作品', (s) => 警告.push(s));
-    expect([...保留.目录.keys()].map((k) => path.basename(path.dirname(k)) + '/' + path.basename(k))).toEqual(['母版/没有这部作品']);
-    expect(警告[0]).toMatch(/清单读不出/);
+    const keep = new KeepSet();
+    const warnings: string[] = [];
+    await addCurrentFingerprints(keep, '没有这部作品', (s) => warnings.push(s));
+    expect([...keep.目录.keys()].map((k) => path.basename(path.dirname(k)) + '/' + path.basename(k))).toEqual(['母版/没有这部作品']);
+    expect(warnings[0]).toMatch(/清单读不出/);
   });
 
   it('只删媒体文件，.指纹.json 留着；执行前文件又被改过就跳过', async () => {
-    const 旧 = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    const 刚改 = 母版('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
-    母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    const 计划: 回收计划 = { 媒体: 规划(new 保留集()), 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: [], webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] };
-    expect(删的(计划.媒体)).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
-    fs.utimesSync(刚改, new Date(), new Date());
-    const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 });
-    expect(r).toMatchObject({ 删数: 1, 删大小: 100, 失败: [] });
+    const oldMaster = makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    const justModified = makeMaster('6-甲', 'bbbbbbbbbbbbbbbb', '视频', 8);
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 7);
+    const plan: ReclaimPlan = { media: planKeep(new KeepSet()), tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: [], webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, 警告: [] };
+    expect(deletedFingerprints(plan.media)).toEqual(['aaaaaaaaaaaaaaaa', 'bbbbbbbbbbbbbbbb']);
+    fs.utimesSync(justModified, new Date(), new Date());
+    const r = await runReclaim(plan, { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90 });
+    expect(r).toMatchObject({ deletedCount: 1, deletedSize: 100, failed: [] });
     expect(r.跳过).toHaveLength(1);
-    expect(fs.existsSync(旧)).toBe(false);
-    expect(fs.existsSync(旧.replace(/\.mp4$/, '.指纹.json'))).toBe(true);
-    expect(fs.existsSync(刚改)).toBe(true);
+    expect(fs.existsSync(oldMaster)).toBe(false);
+    expect(fs.existsSync(oldMaster.replace(/\.mp4$/, '.指纹.json'))).toBe(true);
+    expect(fs.existsSync(justModified)).toBe(true);
   });
 
   it('硬链接：名字全删了才算腾出空间，留下的同一 inode 只算一次', () => {
-    const a = 母版('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
-    fs.linkSync(a, path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.mp4'));
-    const bjson = path.join(母版目录('6-甲'), 'bbbbbbbbbbbbbbbb.指纹.json');
+    const a = makeMaster('6-甲', 'aaaaaaaaaaaaaaaa', '视频', 9);
+    fs.linkSync(a, path.join(masterDir('6-甲'), 'bbbbbbbbbbbbbbbb.mp4'));
+    const bjson = path.join(masterDir('6-甲'), 'bbbbbbbbbbbbbbbb.指纹.json');
     fs.copyFileSync(a.replace(/\.mp4$/, '.指纹.json'), bjson);
-    fs.utimesSync(bjson, new Date(现在 - 9 * 天), new Date(现在 - 9 * 天));
-    母版('6-甲', 'cccccccccccccccc', '视频', 7);
-    const 全删 = 小计(规划(new 保留集()).filter((f) => f.指纹 !== 'cccccccccccccccc'));
-    expect(全删).toMatchObject({ 删数: 2, 删大小: 100, 硬链接未腾: 0 });
-    const 保留 = new 保留集();
-    保留.加(a, { 类: '交付', 说明: 'x' });
-    const 留一个 = 小计(规划(保留).filter((f) => f.指纹 !== 'cccccccccccccccc'));
-    expect(留一个).toMatchObject({ 删数: 1, 删大小: 0, 留数: 1, 留大小: 100 });
+    fs.utimesSync(bjson, new Date(now - 9 * dayMs), new Date(now - 9 * dayMs));
+    makeMaster('6-甲', 'cccccccccccccccc', '视频', 7);
+    const deleteAll = Subtotal(planKeep(new KeepSet()).filter((f) => f.指纹 !== 'cccccccccccccccc'));
+    expect(deleteAll).toMatchObject({ deletedCount: 2, deletedSize: 100, hardlinkUnfreed: 0 });
+    const keep = new KeepSet();
+    keep.加(a, { 类: '交付', 说明: 'x' });
+    const keepOne = Subtotal(planKeep(keep).filter((f) => f.指纹 !== 'cccccccccccccccc'));
+    expect(keepOne).toMatchObject({ deletedCount: 1, deletedSize: 0, keptCount: 1, keptSize: 100 });
     // 另一个名字不在这次计划里（比如在别处）：删了也不腾
-    expect(小计(规划(new 保留集()).filter((f) => f.指纹 === 'aaaaaaaaaaaaaaaa'))).toMatchObject({ 删大小: 0, 硬链接未腾: 100 });
+    expect(Subtotal(planKeep(new KeepSet()).filter((f) => f.指纹 === 'aaaaaaaaaaaaaaaa'))).toMatchObject({ deletedSize: 0, hardlinkUnfreed: 100 });
   });
 });
 
 describe('残留、草稿、webpack', () => {
   it('崩掉留下的临时文件超过 1 天才删', () => {
-    expect(是临时名('aaaaaaaaaaaaaaaa.渲染中-123.mkv')).toBe(true);
-    expect(是临时名('x.指纹.json.写入中-9')).toBe(true);
-    expect(是临时名('aaaaaaaaaaaaaaaa.mkv')).toBe(false);
-    const r = 规划临时([{ 路径: 'a', 大小: 1, 改于: 现在 - 2 * 天 }, { 路径: 'b', 大小: 1, 改于: 现在 - 3600_000 }], 现在);
+    expect(isTempName('aaaaaaaaaaaaaaaa.渲染中-123.mkv')).toBe(true);
+    expect(isTempName('x.指纹.json.写入中-9')).toBe(true);
+    expect(isTempName('aaaaaaaaaaaaaaaa.mkv')).toBe(false);
+    const r = planTemp([{ 路径: 'a', 大小: 1, 改于: now - 2 * dayMs }, { 路径: 'b', 大小: 1, 改于: now - 3600_000 }], now);
     expect(r.map((x) => x.理由.length)).toEqual([0, 1]);
   });
 
   it('草稿按目录里最近改动的时间算，超过天数的删', () => {
-    写('run/草稿/1001-0000-工作-旧/01.png', 'x', 现在 - 20 * 天);
-    写('run/草稿/1028-0000-工作-新/01.png', 'x', 现在 - 2 * 天);
-    写('run/草稿/1001-0000-工作-旧但刚加/01.png', 'x', 现在 - 20 * 天);
-    写('run/草稿/1001-0000-工作-旧但刚加/02.png', 'x', 现在 - 1 * 天);
+    writeFile('run/草稿/1001-0000-工作-旧/01.png', 'x', now - 20 * dayMs);
+    writeFile('run/草稿/1028-0000-工作-新/01.png', 'x', now - 2 * dayMs);
+    writeFile('run/草稿/1001-0000-工作-旧但刚加/01.png', 'x', now - 20 * dayMs);
+    writeFile('run/草稿/1001-0000-工作-旧但刚加/02.png', 'x', now - 1 * dayMs);
     // 目录自己的修改时间是刚建的，拨回去，只看里面的文件
-    for (const e of 列目录(path.join(根, 'run', '草稿'))) fs.utimesSync(e.路径, new Date(现在 - 30 * 天), new Date(现在 - 30 * 天));
-    const r = 规划草稿(列目录(path.join(根, 'run', '草稿')), { 现在, 天数: 14 });
+    for (const e of listDir(path.join(root, 'run', '草稿'))) fs.utimesSync(e.路径, new Date(now - 30 * dayMs), new Date(now - 30 * dayMs));
+    const r = planDrafts(listDir(path.join(root, 'run', '草稿')), { now, days: 14 });
     expect(r.filter((x) => !x.理由.length).map((x) => x.名)).toEqual(['1001-0000-工作-旧']);
   });
 
   it('不认识的条目只列出来（带大小），认识的不列', () => {
-    写('run/草稿/a/01.png', 'xx');
-    写('run/会话交接-1024/b.bin', 'xxxx');
-    写('run/零散.txt', 'x');
-    expect(不认识条目(path.join(根, 'run'), ['草稿']).map((e) => [e.名, e.大小]).sort()).toEqual([['会话交接-1024', 4], ['零散.txt', 1]]);
-    expect(不认识条目(path.join(根, '没有'), [])).toEqual([]);
+    writeFile('run/草稿/a/01.png', 'xx');
+    writeFile('run/会话交接-1024/b.bin', 'xxxx');
+    writeFile('run/零散.txt', 'x');
+    expect(unrecognizedEntries(path.join(root, 'run'), ['草稿']).map((e) => [e.名, e.大小]).sort()).toEqual([['会话交接-1024', 4], ['零散.txt', 1]]);
+    expect(unrecognizedEntries(path.join(root, '没有'), [])).toEqual([]);
   });
 
   it('webpack：旧 Remotion 版本整个删；同版本每个环境留最近 N 份，其余超过天数的删；认不得的只报告', () => {
-    const wp = path.join(根, 'webpack');
-    写('webpack/remotion-production-4.0.530/h1/0.pack', 'x', 现在 - 9 * 天);
-    写('webpack/remotion-production-4.0.537/h2/0.pack', 'x', 现在 - 9 * 天);
-    写('webpack/remotion-production-4.0.537/h3/0.pack', 'x', 现在 - 6 * 天);
-    写('webpack/remotion-production-4.0.537/h4/0.pack', 'x', 现在 - 5 * 天);
-    写('webpack/remotion-production-4.0.537/h5/0.pack', 'x', 现在 - 1 * 天);
-    写('webpack/remotion-development-4.0.537/h6/0.pack', 'x', 现在 - 30 * 天);
-    写('webpack/别的东西/x', 'x');
-    const 扫 = 扫webpack(wp, '4.0.537');
-    expect(扫.不认识.map((e) => e.名)).toEqual(['别的东西']);
-    const 删 = (n: number) => 规划webpack(扫.条目, { 当前版本: '4.0.537', 现在, 天数: 3, 每环境留: n }).filter((e) => !e.理由.length).map((e) => e.名).sort();
-    expect(删(1)).toEqual(['remotion-production-4.0.530', 'remotion-production-4.0.537/h2', 'remotion-production-4.0.537/h3', 'remotion-production-4.0.537/h4']);
-    expect(删(2)).toEqual(['remotion-production-4.0.530', 'remotion-production-4.0.537/h2', 'remotion-production-4.0.537/h3']);
+    const wp = path.join(root, 'webpack');
+    writeFile('webpack/remotion-production-4.0.530/h1/0.pack', 'x', now - 9 * dayMs);
+    writeFile('webpack/remotion-production-4.0.537/h2/0.pack', 'x', now - 9 * dayMs);
+    writeFile('webpack/remotion-production-4.0.537/h3/0.pack', 'x', now - 6 * dayMs);
+    writeFile('webpack/remotion-production-4.0.537/h4/0.pack', 'x', now - 5 * dayMs);
+    writeFile('webpack/remotion-production-4.0.537/h5/0.pack', 'x', now - 1 * dayMs);
+    writeFile('webpack/remotion-development-4.0.537/h6/0.pack', 'x', now - 30 * dayMs);
+    writeFile('webpack/别的东西/x', 'x');
+    const scanResult = scanWebpack(wp, '4.0.537');
+    expect(scanResult.unknownEntries.map((e) => e.名)).toEqual(['别的东西']);
+    const planRemove = (n: number) => planWebpack(scanResult.entryList, { currentVersion: '4.0.537', now, days: 3, keepPerEnv: n }).filter((e) => !e.理由.length).map((e) => e.名).sort();
+    expect(planRemove(1)).toEqual(['remotion-production-4.0.530', 'remotion-production-4.0.537/h2', 'remotion-production-4.0.537/h3', 'remotion-production-4.0.537/h4']);
+    expect(planRemove(2)).toEqual(['remotion-production-4.0.530', 'remotion-production-4.0.537/h2', 'remotion-production-4.0.537/h3']);
     // 不知道装的版本：不按版本删，各版本各留最近的
-    const 不知 = 规划webpack(扫webpack(wp, null).条目, { 当前版本: null, 现在, 天数: 3 });
-    expect(不知.filter((e) => !e.理由.length).map((e) => e.名).sort()).toEqual(['remotion-production-4.0.537/h2', 'remotion-production-4.0.537/h3', 'remotion-production-4.0.537/h4']);
+    const undecided = planWebpack(scanWebpack(wp, null).entryList, { currentVersion: null, now, days: 3 });
+    expect(undecided.filter((e) => !e.理由.length).map((e) => e.名).sort()).toEqual(['remotion-production-4.0.537/h2', 'remotion-production-4.0.537/h3', 'remotion-production-4.0.537/h4']);
   });
 });
 
 describe('地形暂存', () => {
   it('锁有活着的持有者的留；1 天内动过的留；别的（烘焙中断留下的）删；.lock 文件不算目录', () => {
-    写('run/暂存/terrain/甲/a.bin', 'x', 现在 - 3 * 天);
-    写('run/暂存/terrain/乙/a.bin', 'x', 现在 - 3 * 天);
-    写('run/暂存/terrain/乙.写入.lock', `${process.pid}\n`);
-    写('run/暂存/terrain/丙/a.bin', 'x', 现在 - 3600 * 1000);
-    写('run/暂存/terrain/丁/a.bin', 'x', 现在 - 3 * 天);
-    写('run/暂存/terrain/丁.写入.lock', '999999999\n');
-    const r = 规划暂存(扫暂存(path.join(根, 'run', '暂存', 'terrain'), '本机'), 现在);
-    const 理由 = Object.fromEntries(r.map((e) => [e.名, e.理由.map((x) => x.类).join(',')]));
-    expect(理由).toEqual({ 甲: '', 乙: '在用', 丙: '近期', 丁: '' });
+    writeFile('run/暂存/terrain/甲/a.bin', 'x', now - 3 * dayMs);
+    writeFile('run/暂存/terrain/乙/a.bin', 'x', now - 3 * dayMs);
+    writeFile('run/暂存/terrain/乙.写入.lock', `${process.pid}\n`);
+    writeFile('run/暂存/terrain/丙/a.bin', 'x', now - 3600 * 1000);
+    writeFile('run/暂存/terrain/丁/a.bin', 'x', now - 3 * dayMs);
+    writeFile('run/暂存/terrain/丁.写入.lock', '999999999\n');
+    const r = planStaging(scanStaging(path.join(root, 'run', '暂存', 'terrain'), '本机'), now);
+    const reasonsByName = Object.fromEntries(r.map((e) => [e.名, e.理由.map((x) => x.类).join(',')]));
+    expect(reasonsByName).toEqual({ 甲: '', 乙: '在用', 丙: '近期', 丁: '' });
   });
 });
 
 describe('列段', () => {
   it('超过天数没读过的才删，新近用过的留着（文件在 <sha 前 2>/ 下一层）', async () => {
-    写('cache/列段/ab/ab旧.列段', 'xx', 现在 - 100 * 天);
-    写('cache/列段/ab/ab新.列段', 'x', 现在 - 10 * 天);
-    const 计划 = { 媒体: [], 临时: [], 暂存: [], 打包: [], 草稿: [], 列段: 规划草稿(列目录(path.join(根, 'cache', '列段')).flatMap((d) => 列目录(d.路径)), { 现在, 天数: 90 }), webpack: [], 只报: [], 不认识: [], 去重: null, 警告: [] } as 回收计划;
-    expect(计划.列段.filter((f) => !f.理由.length).map((f) => f.名)).toEqual(['ab旧.列段']);
-    const r = await 执行回收(计划, { 近期天数: 2, 草稿天数: 14, webpack天数: 3, 列段天数: 90 }, 现在);
-    expect(r.删数).toBe(1);
-    expect(fs.existsSync(path.join(根, 'cache/列段/ab/ab旧.列段'))).toBe(false);
-    expect(fs.existsSync(path.join(根, 'cache/列段/ab/ab新.列段'))).toBe(true);
+    writeFile('cache/列段/ab/ab旧.列段', 'xx', now - 100 * dayMs);
+    writeFile('cache/列段/ab/ab新.列段', 'x', now - 10 * dayMs);
+    const plan = { media: [], tempFiles: [], staging: [], 打包: [], drafts: [], columnSegs: planDrafts(listDir(path.join(root, 'cache', '列段')).flatMap((d) => listDir(d.路径)), { now, days: 90 }), webpack: [], reportOnly: [], unknownGroups: [], dedupePlan: null, 警告: [] } as ReclaimPlan;
+    expect(plan.columnSegs.filter((f) => !f.理由.length).map((f) => f.名)).toEqual(['ab旧.列段']);
+    const r = await runReclaim(plan, { recentDays: 2, draftDays: 14, webpackDays: 3, columnSegDays: 90 }, now);
+    expect(r.deletedCount).toBe(1);
+    expect(fs.existsSync(path.join(root, 'cache/列段/ab/ab旧.列段'))).toBe(false);
+    expect(fs.existsSync(path.join(root, 'cache/列段/ab/ab新.列段'))).toBe(true);
   });
 });
 
 describe('认得的目录', () => {
   it('列段、核对、音频数、映射、temperature、sha缓存.json、run/暂存 不再报不认识；只报目录都在 cache 认得的里', () => {
-    for (const 名 of ['列段', '核对', '音频数', '映射', 'temperature', 'sha缓存.json', '会话交接']) 写(`cache/${名}/x`, 'x');
-    写('run/暂存/terrain/x', 'x');
-    写('run/会话交接-1024/x', 'x');
-    expect(不认识条目(path.join(根, 'cache'), cache认识).map((e) => e.名)).toEqual(['会话交接']);
-    expect(不认识条目(path.join(根, 'run'), run认识).map((e) => e.名)).toEqual(['会话交接-1024']);
-    for (const k of Object.keys(只报目录)) expect(cache认识).toContain(k.replace(/^cache\//, ''));
+    for (const cacheDir of ['列段', '核对', '音频数', '映射', 'temperature', 'sha缓存.json', '会话交接']) writeFile(`cache/${cacheDir}/x`, 'x');
+    writeFile('run/暂存/terrain/x', 'x');
+    writeFile('run/会话交接-1024/x', 'x');
+    expect(unrecognizedEntries(path.join(root, 'cache'), cacheKnownNames).map((e) => e.名)).toEqual(['会话交接']);
+    expect(unrecognizedEntries(path.join(root, 'run'), runKnownNames).map((e) => e.名)).toEqual(['会话交接-1024']);
+    for (const k of Object.keys(reportOnlyDirs)) expect(cacheKnownNames).toContain(k.replace(/^cache\//, ''));
   });
 });

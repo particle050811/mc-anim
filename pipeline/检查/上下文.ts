@@ -9,34 +9,34 @@ import { pathToFileURL } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import { build, type Plugin } from 'esbuild';
 import { parse } from 'smol-toml';
-import { esbuild别名插件, 非代码loader } from '../资产/esbuild插件.ts';
-import { 读资产锁, type 资产锁 } from '../资产/资产锁.ts';
-import { 选作品错误 } from '../环境/作品.ts';
+import { esbuildAliasPlugin, nonCodeLoaders } from '../资产/esbuild插件.ts';
+import { readAssetLock, type AssetLock } from '../资产/资产锁.ts';
+import { WorkSelectError } from '../环境/作品.ts';
 
-export const 规则名 = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本', '时间'] as const;
-export type 规则类 = (typeof 规则名)[number];
+export const ruleNames = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本', '时间'] as const;
+export type RuleKind = (typeof ruleNames)[number];
 
-export type 问题 = { 文件?: string; 行?: number; 文本: string };
+export type Issue = { 文件?: string; 行?: number; 文本: string };
 
-export class 报告 {
-  违规: 问题[] = [];
-  待迁移: 问题[] = [];
+export class CheckReport {
+  violations: Issue[] = [];
+  待迁移: Issue[] = [];
   跳过: string[] = [];
-  信息: string[] = [];
-  错(文本: string, 文件?: string, 行?: number) {
-    this.违规.push({ 文本, 文件, 行 });
+  infoLines: string[] = [];
+  错(messageText: string, file?: string, lineNo?: number) {
+    this.violations.push({ 文本: messageText, 文件: file, 行: lineNo });
   }
-  待(文本: string, 文件?: string) {
-    this.待迁移.push({ 文本, 文件 });
+  待(messageText: string, file?: string) {
+    this.待迁移.push({ 文本: messageText, 文件: file });
   }
 }
 
 /** 代码文件（参与依赖图、语法扫描的） */
-export const 代码后缀 = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
-export const 是测试或声明 = (p: string) => /\.test\.[cm]?[jt]sx?$/.test(p) || /\.d\.[cm]?ts$/.test(p);
+export const codeExtRegex = /\.(ts|tsx|mts|cts|js|jsx|mjs|cjs)$/;
+export const isTestOrDecl = (p: string) => /\.test\.[cm]?[jt]sx?$/.test(p) || /\.d\.[cm]?ts$/.test(p);
 /** 渲染代码所在的层（打进 Remotion 包的） */
-export const 渲染层前缀 = ['engine/', '库/', '作品/'];
-export const 是渲染代码 = (p: string) => 渲染层前缀.some((x) => p.startsWith(x)) && 代码后缀.test(p) && !是测试或声明(p);
+export const renderLayerPrefixes = ['engine/', '库/', '作品/'];
+export const isRenderCode = (p: string) => renderLayerPrefixes.some((x) => p.startsWith(x)) && codeExtRegex.test(p) && !isTestOrDecl(p);
 
 /**
  * 纯模块：pipeline 直接 import、Node 里直接执行的作品文件和 engine/段 的框架，闭包里不许有 react、three、remotion。
@@ -46,45 +46,45 @@ export const 是渲染代码 = (p: string) => 渲染层前缀.some((x) => p.star
  * 地形环境 只有两个环境变量名：页面和 pipeline/渲/地形注入.ts 共用。
  */
 // 区段模型只做 TypedArray 与字节转换，编码、检查和浏览器共用同一份格式定义。
-const engine纯模块 = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '出帧', '按时取值'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
-export const 是纯模块 = (p: string) =>
-  engine纯模块.includes(p) ||
+const enginePureModules = ['段定义', '设置值', '时间线', '歌网格', '声音助手', '窗口段', '场声音', '老段接续', '清单工具', '地形环境', '出帧', '按时取值'].map((x) => `engine/段/${x}.ts`).concat('engine/voxel/区段模型.ts');
+export const isPureModule = (p: string) =>
+  enginePureModules.includes(p) ||
   /^作品\/[^/]+\/清单\.ts$/.test(p) ||
   /^作品\/[^/]+\/(段|核对)\/[^/]+\/段\.ts$/.test(p) ||
   /^作品\/[^/]+\/场\/[^/]+\/(时间线|末态)\.ts$/.test(p) ||
-  是环境声明(p);
+  isEnvDecl(p);
 
 /** 段、场、核对目录下的 环境.ts：<环境> 的描述或环境轨（engine/light/环境.ts），纯数据，anim check 照 环境声明.ts 查 */
-export const 是环境声明 = (p: string) => /^作品\/[^/]+\/(段|核对|场)\/[^/]+\/环境\.ts$/.test(p);
+export const isEnvDecl = (p: string) => /^作品\/[^/]+\/(段|核对|场)\/[^/]+\/环境\.ts$/.test(p);
 
-export type 边 = { 到: string; 外部: boolean };
-export type 依赖图 = {
+export type Edge = { 到: string; external: boolean };
+export type DepGraph = {
   /** 文件 → 它静态 import 的东西（仓库内文件是相对路径，外部是包名或 node: 模块） */
-  边: Map<string, 边[]>;
+  edges: Map<string, Edge[]>;
   /** 文件 → 它 import 的 asset: id */
   资产: Map<string, string[]>;
   错误: string[];
 };
 
 /** 从入口们沿依赖图走到的全部仓库内文件 */
-export const 闭包 = (图: 依赖图, 入口: string[]) => {
-  const 到过 = new Set(入口);
-  const 队 = [...入口];
-  while (队.length) for (const e of 图.边.get(队.shift()!) ?? []) if (!e.外部 && !到过.has(e.到)) 到过.add(e.到), 队.push(e.到);
-  return 到过;
+export const closure = (depGraph: DepGraph, entries: string[]) => {
+  const visited = new Set(entries);
+  const queue = [...entries];
+  while (queue.length) for (const e of depGraph.edges.get(queue.shift()!) ?? []) if (!e.external && !visited.has(e.到)) visited.add(e.到), queue.push(e.到);
+  return visited;
 };
 
-const 包名 = (spec: string) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]!);
+const pkgName = (spec: string) => (spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : spec.split('/')[0]!);
 
 /** asset:<id> 一律解析成字符串模块，记下谁引了哪个 id；锁里有没有交给 资产 规则查，好一次报全 */
-const 宽松资产插件 = (记录?: Map<string, string[]>): Plugin => ({
+const looseAssetPlugin = (importRecord?: Map<string, string[]>): Plugin => ({
   name: 'anim-检查-资产',
   setup(b) {
     b.onResolve({ filter: /^asset:/ }, (args) => {
       const id = args.path.slice('asset:'.length);
-      if (记录 && args.importer) {
+      if (importRecord && args.importer) {
         const k = args.importer;
-        (记录.get(k) ?? 记录.set(k, []).get(k)!).push(id);
+        (importRecord.get(k) ?? importRecord.set(k, []).get(k)!).push(id);
       }
       return { path: id, namespace: 'anim-检查-资产' };
     });
@@ -92,72 +92,72 @@ const 宽松资产插件 = (记录?: Map<string, string[]>): Plugin => ({
   },
 });
 
-export type 加载结果 = { 模块?: Record<string, unknown>; 错误?: string };
+export type LoadResult = { 模块?: Record<string, unknown>; 错误?: string };
 
-export class 检查上下文 {
+export class CheckContext {
   readonly 根: string;
-  readonly 深: boolean;
-  readonly 数据根: string | undefined;
+  readonly deep: boolean;
+  readonly dataRoot: string | undefined;
   /** 规矩表出处 M/ 的根；不给就用配置 记忆（ANIM_MEMORY） */
-  readonly 记忆根: string | undefined;
-  #文件?: string[];
-  #图?: Promise<依赖图>;
-  #加载 = new Map<string, Promise<加载结果>>();
+  readonly memoryRoot: string | undefined;
+  #cachedFiles?: string[];
+  #graphCache?: Promise<DepGraph>;
+  #loadCache = new Map<string, Promise<LoadResult>>();
   #tmp?: string;
-  #作品?: string;
-  #私有?: boolean;
+  #workName?: string;
+  #workPrivateCache?: boolean;
 
-  constructor(根: string, 选项: { 深?: boolean; 数据根?: string; 记忆根?: string; 作品?: string } = {}) {
-    this.根 = fs.realpathSync(根);
-    this.深 = 选项.深 ?? false;
-    this.数据根 = 选项.数据根;
-    this.记忆根 = 选项.记忆根;
-    this.#作品 = 选项.作品;
+  constructor(root: string, options: { depthCheck?: boolean; dataRoot?: string; memoryRoot?: string; 作品?: string } = {}) {
+    this.根 = fs.realpathSync(root);
+    this.deep = options.depthCheck ?? false;
+    this.dataRoot = options.dataRoot;
+    this.memoryRoot = options.memoryRoot;
+    this.#workName = options.作品;
   }
 
   /** 查的是哪部作品：给了就用；没给时 作品/ 下只有一部（有 清单.ts 的目录）就用它，否则报错 */
-  get 作品名(): string {
-    if (this.#作品 === undefined) {
-      const 们 = this.存在('作品')
-        ? fs.readdirSync(this.绝对('作品'), { withFileTypes: true }).filter((e) => e.isDirectory() && this.存在(`作品/${e.name}/清单.ts`)).map((e) => e.name).sort()
+  get workName(): string {
+    if (this.#workName === undefined) {
+      const matches = this.exists('作品')
+        ? fs.readdirSync(this.absPath('作品'), { withFileTypes: true }).filter((e) => e.isDirectory() && this.exists(`作品/${e.name}/清单.ts`)).map((e) => e.name).sort()
         : [];
-      if (们.length !== 1) throw new 选作品错误(们.length ? `有 ${们.length} 部作品（${们.join('、')}），用 --作品 <名> 指定查哪部` : '一部作品都没有（作品/<名>/清单.ts）');
-      this.#作品 = 们[0]!;
+      if (matches.length !== 1) throw new WorkSelectError(matches.length ? `有 ${matches.length} 部作品（${matches.join('、')}），用 --作品 <名> 指定查哪部` : '一部作品都没有（作品/<名>/清单.ts）');
+      this.#workName = matches[0]!;
     }
-    return this.#作品;
+    return this.#workName;
   }
   /** 作品目录（相对 根），如 作品/<名> */
-  get 作品目录() {
-    return `作品/${this.作品名}`;
+  get workDir() {
+    return `作品/${this.workName}`;
   }
-  作品路径 = (p: string) => `${this.作品目录}/${p}`;
+  workPath = (p: string) => `${this.workDir}/${p}`;
   /** 作品/ 下、不是这次查的作品的文件 */
-  是别的作品 = (p: string) => p.startsWith('作品/') && !p.startsWith(`${this.作品目录}/`);
+  isOtherWork = (p: string) => p.startsWith('作品/') && !p.startsWith(`${this.workDir}/`);
   /** 文件() 去掉别的作品的 */
-  本作品文件 = () => this.文件().filter((p) => !this.是别的作品(p));
+  workFiles = () => this.文件().filter((p) => !this.isOtherWork(p));
   /** 本作品私有：作品目录被 .gitignore 挡住（0004：作品默认公开，要私有的逐个挡）；根不在 git 里就当公开 */
-  get 作品私有(): boolean {
-    if (this.#私有 === undefined) {
+  get isWorkPrivate(): boolean {
+    if (this.#workPrivateCache === undefined) {
       try {
         // 末尾带 /，.gitignore 里只对目录生效的规则（/作品/<名>/、!/作品/<名>/）才对得上
-        execFileSync('git', ['-C', this.根, 'check-ignore', '-q', `${this.作品目录}/`], { stdio: 'ignore' });
-        this.#私有 = true;
+        execFileSync('git', ['-C', this.根, 'check-ignore', '-q', `${this.workDir}/`], { stdio: 'ignore' });
+        this.#workPrivateCache = true;
       } catch {
-        this.#私有 = false;
+        this.#workPrivateCache = false;
       }
     }
-    return this.#私有;
+    return this.#workPrivateCache;
   }
 
-  绝对 = (p: string) => path.join(this.根, ...p.split('/'));
-  存在 = (p: string) => fs.existsSync(this.绝对(p));
-  读 = (p: string) => fs.readFileSync(this.绝对(p), 'utf8');
+  absPath = (p: string) => path.join(this.根, ...p.split('/'));
+  exists = (p: string) => fs.existsSync(this.absPath(p));
+  读 = (p: string) => fs.readFileSync(this.absPath(p), 'utf8');
   相对 = (abs: string) => path.relative(this.根, abs).split(path.sep).join('/');
 
   /** dir（相对 根）下 git 跟踪的 + 没被忽略的新文件；dir 不是 git 仓库的根就返回 null */
-  #git文件(dir: string): string[] | null {
+  #listGitFiles(dir: string): string[] | null {
     try {
-      const abs = this.绝对(dir || '.');
+      const abs = this.absPath(dir || '.');
       const top = execFileSync('git', ['-C', abs, 'rev-parse', '--show-toplevel'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
       if (fs.realpathSync(top) !== fs.realpathSync(abs)) return null;
       const out = execFileSync('git', ['-C', abs, '-c', 'core.quotepath=false', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], {
@@ -165,19 +165,19 @@ export class 检查上下文 {
         stdio: ['ignore', 'pipe', 'ignore'],
         maxBuffer: 1 << 28,
       });
-      return [...new Set(out.split('\0').filter(Boolean))].map((p) => (dir ? `${dir}/${p}` : p)).filter((p) => this.存在(p));
+      return [...new Set(out.split('\0').filter(Boolean))].map((p) => (dir ? `${dir}/${p}` : p)).filter((p) => this.exists(p));
     } catch {
       return null;
     }
   }
 
   /** dir 下整个走一遍（跳过 node_modules、.git、.venv） */
-  #走(dir: string, 表: string[]) {
-    for (const e of fs.readdirSync(this.绝对(dir || '.'), { withFileTypes: true })) {
+  #walk(dir: string, fileList: string[]) {
+    for (const e of fs.readdirSync(this.absPath(dir || '.'), { withFileTypes: true })) {
       const p = dir ? `${dir}/${e.name}` : e.name;
       if (e.isDirectory()) {
-        if (!['node_modules', '.git', '.venv', '__pycache__'].includes(e.name)) this.#走(p, 表);
-      } else 表.push(p);
+        if (!['node_modules', '.git', '.venv', '__pycache__'].includes(e.name)) this.#walk(p, fileList);
+      } else fileList.push(p);
     }
   }
 
@@ -186,40 +186,40 @@ export class 检查上下文 {
    * 作品/ 下被 .gitignore 挡住的私有作品（自己是 git 仓库或普通目录）也要查，按各自的根另列（方案批评补充二-1）。
    */
   文件(): string[] {
-    if (this.#文件) return this.#文件;
-    let 表 = this.#git文件('');
-    if (!表) {
-      表 = [];
-      this.#走('', 表);
+    if (this.#cachedFiles) return this.#cachedFiles;
+    let fileList = this.#listGitFiles('');
+    if (!fileList) {
+      fileList = [];
+      this.#walk('', fileList);
     }
-    if (this.存在('作品')) {
-      for (const e of fs.readdirSync(this.绝对('作品'), { withFileTypes: true })) {
+    if (this.exists('作品')) {
+      for (const e of fs.readdirSync(this.absPath('作品'), { withFileTypes: true })) {
         const d = `作品/${e.name}`;
-        if (!e.isDirectory() || 表.some((p) => p.startsWith(`${d}/`))) continue;
-        const 私有 = this.#git文件(d);
-        if (私有) 表.push(...私有);
-        else this.#走(d, 表);
+        if (!e.isDirectory() || fileList.some((p) => p.startsWith(`${d}/`))) continue;
+        const privateFiles = this.#listGitFiles(d);
+        if (privateFiles) fileList.push(...privateFiles);
+        else this.#walk(d, fileList);
       }
     }
-    return (this.#文件 = [...new Set(表)].sort());
+    return (this.#cachedFiles = [...new Set(fileList)].sort());
   }
 
   /** 参与依赖图的代码文件：engine、库、本作品、pipeline 下的源码（不含测试和 .d.ts） */
-  代码文件 = () => this.本作品文件().filter((p) => /^(engine|库|作品|pipeline)\//.test(p) && 代码后缀.test(p) && !是测试或声明(p));
+  codeFiles = () => this.workFiles().filter((p) => /^(engine|库|作品|pipeline)\//.test(p) && codeExtRegex.test(p) && !isTestOrDecl(p));
 
   /**
    * 全仓库一次 esbuild（每个代码文件都当入口），从 metafile 拿真实的 import 边。类型导入被擦掉，不算依赖。
    * 有打包错误时 esbuild 不给 metafile，就逐个入口重打，能打的照样收边，好一次把别的违规报全；错误记进 错误。
    */
-  依赖图(): Promise<依赖图> {
-    return (this.#图 ??= (async () => {
-      const 图: 依赖图 = { 边: new Map(), 资产: new Map(), 错误: [] };
-      const 入口 = this.代码文件();
-      if (!入口.length) return 图;
-      const 资产记录 = new Map<string, string[]>();
-      const 打 = (入: string[]) =>
+  depGraph(): Promise<DepGraph> {
+    return (this.#graphCache ??= (async () => {
+      const depGraph: DepGraph = { edges: new Map(), 资产: new Map(), 错误: [] };
+      const entries = this.codeFiles();
+      if (!entries.length) return depGraph;
+      const assetRecords = new Map<string, string[]>();
+      const runBuild = (entryPoints: string[]) =>
         build({
-          entryPoints: 入,
+          entryPoints: entryPoints,
           absWorkingDir: this.根,
           bundle: true,
           write: false,
@@ -229,60 +229,60 @@ export class 检查上下文 {
           format: 'esm',
           jsx: 'automatic',
           packages: 'external',
-          loader: { ...非代码loader, '.json': 'json' },
-          plugins: [esbuild别名插件(this.根), 宽松资产插件(资产记录)],
+          loader: { ...nonCodeLoaders, '.json': 'json' },
+          plugins: [esbuildAliasPlugin(this.根), looseAssetPlugin(assetRecords)],
           logLevel: 'silent',
         });
-      const 收边 = (inputs: Record<string, { imports: { path: string; external?: boolean }[] }>) => {
+      const collectEdges = (inputs: Record<string, { imports: { path: string; external?: boolean }[] }>) => {
         for (const [p, info] of Object.entries(inputs)) {
           if (p.includes(':')) continue;
-          const 从 = p.split(path.sep).join('/');
-          图.边.set(
-            从,
+          const fromFile = p.split(path.sep).join('/');
+          depGraph.edges.set(
+            fromFile,
             info.imports
               .filter((i) => !i.path.startsWith('anim-检查-资产:'))
-              .map((i) => (i.external ? { 到: i.path.startsWith('node:') ? i.path : 包名(i.path), 外部: true } : { 到: i.path.split(path.sep).join('/'), 外部: false })),
+              .map((i) => (i.external ? { 到: i.path.startsWith('node:') ? i.path : pkgName(i.path), external: true } : { 到: i.path.split(path.sep).join('/'), external: false })),
           );
         }
       };
-      const 记错 = (e: unknown) => {
+      const recordError = (e: unknown) => {
         const errs = (e as { errors?: { text: string; location?: { file: string; line: number } | null }[] }).errors;
-        const 文 = errs?.length ? errs.map((x) => (x.location ? `${x.location.file}:${x.location.line}：${x.text}` : x.text)) : [(e as Error).message];
-        for (const t of 文) if (!图.错误.includes(t)) 图.错误.push(t);
+        const messages = errs?.length ? errs.map((x) => (x.location ? `${x.location.file}:${x.location.line}：${x.text}` : x.text)) : [(e as Error).message];
+        for (const t of messages) if (!depGraph.错误.includes(t)) depGraph.错误.push(t);
       };
       try {
-        收边((await 打(入口)).metafile.inputs);
+        collectEdges((await runBuild(entries)).metafile.inputs);
       } catch (e) {
-        记错(e);
-        for (const 入 of 入口) {
+        recordError(e);
+        for (const entry of entries) {
           try {
-            收边((await 打([入])).metafile.inputs);
+            collectEdges((await runBuild([entry])).metafile.inputs);
           } catch (e2) {
-            记错(e2);
+            recordError(e2);
           }
         }
       }
-      for (const [abs, ids] of 资产记录) 图.资产.set(this.相对(abs), [...new Set(ids)]);
-      return 图;
+      for (const [abs, ids] of assetRecords) depGraph.资产.set(this.相对(abs), [...new Set(ids)]);
+      return depGraph;
     })());
   }
 
   /** 在 Node 里执行一个纯模块（esbuild 连依赖打成一个文件再 import），拿到导出；throw 了就记下错误 */
-  加载(p: string): Promise<加载结果> {
-    let r = this.#加载.get(p);
+  loadModule(p: string): Promise<LoadResult> {
+    let r = this.#loadCache.get(p);
     if (!r) {
-      r = (async (): Promise<加载结果> => {
+      r = (async (): Promise<LoadResult> => {
         try {
           const out = await build({
-            entryPoints: [this.绝对(p)],
+            entryPoints: [this.absPath(p)],
             absWorkingDir: this.根,
             bundle: true,
             write: false,
             platform: 'node',
             format: 'esm',
             jsx: 'automatic',
-            loader: { ...非代码loader, '.json': 'json' },
-            plugins: [esbuild别名插件(this.根), 宽松资产插件()],
+            loader: { ...nonCodeLoaders, '.json': 'json' },
+            plugins: [esbuildAliasPlugin(this.根), looseAssetPlugin()],
             logLevel: 'silent',
           });
           this.#tmp ??= fs.mkdtempSync(path.join(os.tmpdir(), 'anim-检查-'));
@@ -294,22 +294,22 @@ export class 检查上下文 {
           return { 错误: errs?.length ? errs.map((x) => x.text).join('；') : e instanceof Error ? e.message : String(e) };
         }
       })();
-      this.#加载.set(p, r);
+      this.#loadCache.set(p, r);
     }
     return r;
   }
 
-  收尾() {
+  finalize() {
     if (this.#tmp) fs.rmSync(this.#tmp, { recursive: true, force: true });
   }
 
   // ---------- 常用的表 ----------
 
-  读toml = (p: string): Record<string, unknown> | null => (this.存在(p) ? (parse(this.读(p)) as Record<string, unknown>) : null);
-  读json = (p: string): unknown => (this.存在(p) ? JSON.parse(this.读(p)) : null);
+  readToml = (p: string): Record<string, unknown> | null => (this.exists(p) ? (parse(this.读(p)) as Record<string, unknown>) : null);
+  readJson = (p: string): unknown => (this.exists(p) ? JSON.parse(this.读(p)) : null);
   /** 本作品用的两份资产锁：共用的和作品资产表那一侧的（目录不在就是空的） */
-  资产锁 = (): { 共用: 资产锁; 作品: 资产锁 } => ({
-    共用: 读资产锁(this.绝对('assets/资产锁')),
-    作品: 读资产锁(this.绝对(this.作品路径('资产锁'))),
+  assetLocks = (): { 共用: AssetLock; 作品: AssetLock } => ({
+    共用: readAssetLock(this.absPath('assets/资产锁')),
+    作品: readAssetLock(this.absPath(this.workPath('资产锁'))),
   });
 }

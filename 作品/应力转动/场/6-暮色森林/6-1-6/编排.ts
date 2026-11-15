@@ -16,11 +16,11 @@ import { cruiseHeight, twilightLandmark } from '../../../地点/暮色新世界.
 import { integrateProfile, profileLookup, descendTo, pierceProfileLimits } from '@engine/flight/平顺航迹.ts';
 
 export const V = 320;
-export const 框 = twilightLandmark('九头蛇巢穴');
+export const hydraLair = twilightLandmark('九头蛇巢穴');
 // 本地的飞行方位（度，0 = 北、顺时针）和水平单位向量
-export const 方位 = 112.95;
-export const DIR: [number, number] = [Math.sin((方位 * Math.PI) / 180), Math.cos((方位 * Math.PI) / 180)];
-export const YAW = -方位; // 本地朝向：0 = +Y，正 = 往左转
+export const azimuthDeg = 112.95;
+export const DIR: [number, number] = [Math.sin((azimuthDeg * Math.PI) / 180), Math.cos((azimuthDeg * Math.PI) / 180)];
+export const YAW = -azimuthDeg; // 本地朝向：0 = +Y，正 = 往左转
 
 // ---------- 九头蛇 ----------
 export const FLOOR = 7; // 九头蛇脚下的地面（本地 z，洞口外的盆地：草方块顶在游戏 y 1）
@@ -55,8 +55,8 @@ const tailLen = 204;
 const profileLimits = pierceProfileLimits(V);
 // 巡航高度（本地 z）：取穿刺线前端那里的巡航高（模型/场景/暮色新世界.tsx 的 `cruiseHeight`），和前面的巡航接平。前端又随压机头的位置变：先按 -500 估一次、再按算出来的前端取一次
 const cruiseZ = (dist: number) => {
-  const worldPt = 框.到世界([PIERCE[0] + DIR[0] * dist, PIERCE[1] + DIR[1] * dist, 0]);
-  return cruiseHeight(worldPt[0], worldPt[1]) - 框.原点[2];
+  const worldPt = hydraLair.toWorld([PIERCE[0] + DIR[0] * dist, PIERCE[1] + DIR[1] * dist, 0]);
+  return cruiseHeight(worldPt[0], worldPt[1]) - hydraLair.原点[2];
 };
 const pierceState = { a: 0, z: 0, γ: 0 };
 const frontProfileFor = (height: number) => {
@@ -71,18 +71,18 @@ const frontProfile = (() => {
 const diveStart = frontProfile[frontProfile.length - 1];
 const rearProfile = integrateProfile(pierceState, [{ toAngle: (exitSlope * Math.PI) / 180 }, { 直: tailLen + 20 }], profileLimits, 1);
 const tipProfile = profileLookup([...frontProfile, ...rearProfile.slice(1)]);
-export const 剖面信息 = { diveStartA: diveStart.a, diveStartZ: diveStart.z, diveAngle: (Math.min(...frontProfile.map((q) => q.γ)) * 180) / Math.PI };
+export const sectionInfo = { diveStartA: diveStart.a, diveStartZ: diveStart.z, diveAngle: (Math.min(...frontProfile.map((q) => q.γ)) * 180) / Math.PI };
 const hTip = (a: number) => PIERCE[2] + tipProfile.z(a);
 const tipLocal = (a: number): V3 => [PIERCE[0] + DIR[0] * a, PIERCE[1] + DIR[1] * a, hTip(a)];
-export const 穿刺线 = {
+export const pierceLine = {
   名: '九头蛇',
   V,
-  朝向: 框.朝向(YAW),
-  矛尖: (a: number): V3 => 框.到世界(tipLocal(a)),
+  facing: hydraLair.facing(YAW),
+  tip: (a: number): V3 => hydraLair.toWorld(tipLocal(a)),
   // 前端：压机头以前先按 320 米/秒平飞 1 秒（对正）
   前: diveStart.a - alignDist,
   后: tailLen,
-  撞: -1, // 没有墙：贯穿前 1 米
+  impactPos: -1, // 没有墙：贯穿前 1 米
   出: 4,
 };
 export const T_DIVE = -diveStart.s / V;
@@ -97,7 +97,7 @@ export const hydraHeads = (t: number, broom: V3): HydraHead[] => {
   const hit = t >= 0 ? ease(t / 0.17) : 0;
   const cos = Math.cos(-HYDRA_YAW);
   const sin = Math.sin(-HYDRA_YAW);
-  const broomLocal = 框.toLocal(broom);
+  const broomLocal = hydraLair.toLocal(broom);
   const rel = [broomLocal[0] - HYDRA_AT[0], broomLocal[1] - HYDRA_AT[1], broomLocal[2] - HYDRA_AT[2]];
   const look: V3 = [rel[0] * cos - rel[1] * sin, rel[0] * sin + rel[1] * cos, rel[2]];
   return HYDRA.idle.map((h, i) => ({
@@ -112,7 +112,7 @@ export const hydraHeads = (t: number, broom: V3): HydraHead[] => {
 export const DEATH = { body: 5 / 24, heads: [8 / 24, 11 / 24, 14 / 24], gone: 9 / 24 };
 export const hydraHurt = (t: number) => (t >= 0 ? 1 : 0);
 // 钻穿土丘：矛尖管子在 a 31.5 撞进洞的东侧壁、a 52.5 从东坡钻出来（工具/一镜到底/雪怪碰.ts 九头蛇 量的，不算树），撞进去、钻出来的时刻（物理秒）和那两点（本地）
-export const 侧壁 = { 进: 31.5, 出: 52.5 };
-export const 侧壁点 = (a: number): V3 => tipLocal(a);
-export const 侧壁时刻 = (a: number) => a / V;
-export const 出场 = { 起: -40, 止: 8 };
+export const sideWall = { inSec: 31.5, 出: 52.5 };
+export const sideWallPoint = (a: number): V3 => tipLocal(a);
+export const sideWallTime = (a: number) => a / V;
+export const visibleWindow = { 起: -40, 止: 8 };

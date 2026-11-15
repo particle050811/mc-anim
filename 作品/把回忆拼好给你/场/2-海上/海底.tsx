@@ -10,31 +10,31 @@ import { textureNames } from '@engine/voxel/真实方块表.ts';
 import texUri from 'asset:贴图/场景/关键帧/方块表';
 
 /** 半边（格，以原点为中心）、平均水深、起伏（格）、往下填到多深 */
-const 海底 = { 半边: 80, 深: 12, 起伏: 3, 底: 18 } as const;
-const 群系 = 'minecraft:ocean';
+const seabed = { 半边: 80, depth: 12, 起伏: 3, bottom: 18 } as const;
+const biome = 'minecraft:ocean';
 
-let 图: ReturnType<typeof png> | null = null;
-const 贴图cache = new Map<string, THREE.DataTexture>();
-const 贴图 = (名: string) => {
-  let t = 贴图cache.get(名);
+let seabedImg: ReturnType<typeof png> | null = null;
+const textureCache = new Map<string, THREE.DataTexture>();
+const loadTexture = (textureName: string) => {
+  let t = textureCache.get(textureName);
   if (t) return t;
-  图 ??= png(texUri);
-  const i = textureNames.indexOf(`minecraft:block/${名}`);
-  if (i < 0) throw new Error(`方块图集里没有 ${名}`);
-  const c = 图.w;
+  seabedImg ??= png(texUri);
+  const i = textureNames.indexOf(`minecraft:block/${textureName}`);
+  if (i < 0) throw new Error(`方块图集里没有 ${textureName}`);
+  const c = seabedImg.w;
   const d = new Uint8Array(c * c * 4);
   // png 从上往下排，DataTexture 第 0 行在下面
-  for (let y = 0; y < c; y++) d.set(图.px.subarray((i * c + y) * c * 4, (i * c + y + 1) * c * 4), (c - 1 - y) * c * 4);
+  for (let y = 0; y < c; y++) d.set(seabedImg.px.subarray((i * c + y) * c * 4, (i * c + y + 1) * c * 4), (c - 1 - y) * c * 4);
   t = new THREE.DataTexture(d, c, c, THREE.RGBAFormat);
   t.magFilter = t.minFilter = THREE.NearestFilter;
   t.colorSpace = THREE.SRGBColorSpace;
   t.needsUpdate = true;
-  贴图cache.set(名, t);
+  textureCache.set(textureName, t);
   return t;
 };
 
 // 十字面片（花草的模型：两片对角竖着），底边在 z = 0
-const 十字 = (() => {
+const crossGeometry = (() => {
   const g = new THREE.BufferGeometry();
   const p: number[] = [], uv: number[] = [];
   for (const [ax, ay] of [[1, 1], [1, -1]] as const) {
@@ -48,66 +48,66 @@ const 十字 = (() => {
   g.computeVertexNormals();
   return g;
 })();
-const 方块 = new THREE.BoxGeometry(1, 1, 1);
+const blockGeometry = new THREE.BoxGeometry(1, 1, 1);
 
-type 摆 = { 实: Map<string, [number, number, number][]>; 草: Map<string, [number, number, number][]> };
-const 摆海底 = (): 摆 => {
-  const 实 = new Map<string, [number, number, number][]>();
-  const 草 = new Map<string, [number, number, number][]>();
-  const 放 = (m: Map<string, [number, number, number][]>, k: string, v: [number, number, number]) => (m.get(k) ?? m.set(k, []).get(k)!).push(v);
+type SeabedLayout = { 实: Map<string, [number, number, number][]>; grass: Map<string, [number, number, number][]> };
+const makeSeabedSwing = (): SeabedLayout => {
+  const solid = new Map<string, [number, number, number][]>();
+  const grass = new Map<string, [number, number, number][]>();
+  const addTo = (m: Map<string, [number, number, number][]>, k: string, v: [number, number, number]) => (m.get(k) ?? m.set(k, []).get(k)!).push(v);
   const n = simplex2(23);
-  for (let x = -海底.半边; x < 海底.半边; x++)
-    for (let y = -海底.半边; y < 海底.半边; y++) {
-      const 深 = Math.round(海底.深 + 海底.起伏 * n(x / 24, y / 24));
-      const s = seabedFor(群系, 0, 深);
+  for (let x = -seabed.半边; x < seabed.半边; x++)
+    for (let y = -seabed.半边; y < seabed.半边; y++) {
+      const depth = Math.round(seabed.depth + seabed.起伏 * n(x / 24, y / 24));
+      const s = seabedFor(biome, 0, depth);
       if (!s) continue;
       // 游戏坐标 (x, z) = 场景 (x, −y)
-      const 顶 = pickSolid(s.solid, patchRoll(x, -y, 3)).replace('minecraft:', '');
-      const 名 = 顶 === 'grass_block' ? 'dirt' : 顶;
-      for (let z = -深; z > -海底.底; z--) 放(实, z === -深 ? 名 : 'stone', [x + 0.5, y + 0.5, z - 0.5]);
+      const topBlock = pickSolid(s.solid, patchRoll(x, -y, 3)).replace('minecraft:', '');
+      const blockName = topBlock === 'grass_block' ? 'dirt' : topBlock;
+      for (let z = -depth; z > -seabed.bottom; z--) addTo(solid, z === -depth ? blockName : 'stone', [x + 0.5, y + 0.5, z - 0.5]);
       const p = pickPlant(s.plants, hash2(x, -y, 5), kelpDensity(x, -y));
       if (!p) continue;
-      const [种, 格] = p;
-      for (let k = 0; k < 格 && -深 + k < -1; k++) {
-        const 顶格 = k === 格 - 1 || -深 + k + 1 >= -1;
-        const 贴 = 种 === 'minecraft:seagrass' ? 'seagrass' : 种 === 'minecraft:tall_seagrass' ? (k === 0 ? 'tall_seagrass_bottom' : 'tall_seagrass_top') : 顶格 ? 'kelp' : 'kelp_plant';
-        放(草, 贴, [x + 0.5, y + 0.5, -深 + k]);
+      const [blockId, cellCount] = p;
+      for (let k = 0; k < cellCount && -depth + k < -1; k++) {
+        const topCell = k === cellCount - 1 || -depth + k + 1 >= -1;
+        const sprite = blockId === 'minecraft:seagrass' ? 'seagrass' : blockId === 'minecraft:tall_seagrass' ? (k === 0 ? 'tall_seagrass_bottom' : 'tall_seagrass_top') : topCell ? 'kelp' : 'kelp_plant';
+        addTo(grass, sprite, [x + 0.5, y + 0.5, -depth + k]);
       }
     }
-  return { 实, 草 };
+  return { 实: solid, grass };
 };
 
-const 成批 = ({ 几何, 名, 位们, 镂空 }: { 几何: THREE.BufferGeometry; 名: string; 位们: [number, number, number][]; 镂空?: boolean }) => {
+const batchGroup = ({ geometry, 名: textureName, positions, 镂空: cutout }: { geometry: THREE.BufferGeometry; 名: string; positions: [number, number, number][]; 镂空?: boolean }) => {
   const mesh = useMemo(() => {
-    const 材 = new THREE.MeshLambertMaterial({ map: 贴图(名), alphaTest: 镂空 ? 0.5 : 0, side: 镂空 ? THREE.DoubleSide : THREE.FrontSide });
-    const m = new THREE.InstancedMesh(几何, 材, 位们.length);
+    const material = new THREE.MeshLambertMaterial({ map: loadTexture(textureName), alphaTest: cutout ? 0.5 : 0, side: cutout ? THREE.DoubleSide : THREE.FrontSide });
+    const m = new THREE.InstancedMesh(geometry, material, positions.length);
     const o = new THREE.Object3D();
-    位们.forEach((p, i) => {
+    positions.forEach((p, i) => {
       o.position.set(...p);
       o.updateMatrix();
       m.setMatrixAt(i, o.matrix);
     });
     m.computeBoundingSphere();
     return m;
-  }, [几何, 名, 位们, 镂空]);
+  }, [geometry, textureName, positions, cutout]);
   return <primitive object={mesh} />;
 };
-const 批 = 成批 as unknown as React.FC<Parameters<typeof 成批>[0]>;
+const Batch = batchGroup as unknown as React.FC<Parameters<typeof batchGroup>[0]>;
 
-let 摆好: 摆 | null = null;
-export const 海底方块: React.FC = () => {
-  摆好 ??= 摆海底();
-  const { 实, 草 } = 摆好;
+let seabedSwing: SeabedLayout | null = null;
+export const SeaFloorBlocks: React.FC = () => {
+  seabedSwing ??= makeSeabedSwing();
+  const { 实: solid, grass } = seabedSwing;
   return (
     <group>
-      {[...实].map(([名, 位们]) => <批 key={名} 几何={方块} 名={名} 位们={位们} />)}
-      {[...草].map(([名, 位们]) => <批 key={名} 几何={十字} 名={名} 位们={位们} 镂空 />)}
+      {[...solid].map(([blockName, positions]) => <Batch key={blockName} geometry={blockGeometry} 名={blockName} positions={positions} />)}
+      {[...grass].map(([grassName, positions]) => <Batch key={grassName} geometry={crossGeometry} 名={grassName} positions={positions} 镂空 />)}
     </group>
   );
 };
 
 /** 试看开了 水透 才画（pipeline/渲/光影试看.ts 的页面环境变量） */
-export const 要画海底 = () => {
+export const shouldDrawSeabed = () => {
   const v = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.REMOTION_ANIM_LIGHTING;
-  return !!v && !!(JSON.parse(v) as { 水透?: unknown }).水透;
+  return !!v && !!(JSON.parse(v) as { seeThrough?: unknown }).seeThrough;
 };

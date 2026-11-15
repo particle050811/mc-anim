@@ -8,32 +8,32 @@
 // 没做：光束扫到的生物身上的腐化效果粒子；光束实体跟随施法者转头（这里起点、方向固定）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 加, 乘, 减, 单位 } from '../零件/弹道.ts';
-import { 四边面们, 方管面 } from '../零件/方管.tsx';
-import 元, { 腐化束 } from './腐化.元.ts';
-import 辉光图数据 from 'asset:贴图/法术/goety/entity/corrupted/beacon_beam_glow';
-import 主体图数据 from 'asset:贴图/法术/goety/entity/corrupted/beacon_beam_main';
-import 芯图数据 from 'asset:贴图/法术/goety/entity/corrupted/beacon_beam_core';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { addVec, scaleVec, sub, unitVec } from '../零件/弹道.ts';
+import { SquareTubeFaces, squareTubeFace } from '../零件/方管.tsx';
+import meta, { corruptBeam } from './腐化.元.ts';
+import beamGlowPng from 'asset:贴图/法术/goety/entity/corrupted/beacon_beam_glow';
+import beamMainPng from 'asset:贴图/法术/goety/entity/corrupted/beacon_beam_main';
+import beamCorePng from 'asset:贴图/法术/goety/entity/corrupted/beacon_beam_core';
 
-const [辉光图, 主体图, 芯图] = [辉光图数据, 主体图数据, 芯图数据].map(png) as [ReturnType<typeof png>, ReturnType<typeof png>, ReturnType<typeof png>];
-const 束宽 = 0.2;
-const 下偏 = -0.115;
+const [glowPng, bodyPng, coreImg] = [beamGlowPng, beamMainPng, beamCorePng].map(png) as [ReturnType<typeof png>, ReturnType<typeof png>, ReturnType<typeof png>];
+const beamWidth = 0.2;
+const downOffset = -0.115;
 
-const 腐化: React.FC<法术演出属性> = ({ 秒, 起点, 目标 }) => {
-  const t = Math.floor(秒 * 20);
-  const { 起, 终, 长 } = 腐化束(起点, 目标);
-  const 闪 = 0.9 + 0.1 * Math.sin(t * 0.99) * Math.sin(t * 0.3) * Math.sin(t * 0.1);
-  const 滚 = t * -0.02;
-  const 尖 = 加(起, 乘(单位(减(终, 起)), 长 / 10));
+const Corrupt: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => {
+  const t = Math.floor(sec * 20);
+  const { 起: startPos, end, 长: length } = corruptBeam(from, target);
+  const pulse = 0.9 + 0.1 * Math.sin(t * 0.99) * Math.sin(t * 0.3) * Math.sin(t * 0.1);
+  const scrollOffset = t * -0.02;
+  const tip = addVec(startPos, scaleVec(unitVec(sub(end, startPos)), length / 10));
   return (
     <>
-      <四边面们 面们={方管面(起, 尖, 束宽 * 1.75 * 闪, { 沿: 'v', 长起: 0.5, 长终: 1, 偏: 下偏, 收尖: true })} 图={辉光图} 混合="半透明" 透明度={0.9} 无深度测试 序={1} />
-      <四边面们 面们={方管面(起, 终, 束宽, { 沿: 'v', 长起: 滚, 长终: 滚 + 长 * 1.5, 偏: 下偏 })} 图={主体图} 混合="半透明" 透明度={0.7} 重复 无深度测试 序={2} />
-      <四边面们 面们={方管面(起, 终, 束宽 * 0.7, { 沿: 'v', 长起: 滚, 长终: 滚 + 长 * 1.5, 偏: 下偏 })} 图={芯图} 混合="半透明" 重复 无深度测试 序={3} />
+      <SquareTubeFaces quads={squareTubeFace(startPos, tip, beamWidth * 1.75 * pulse, { alongAxis: 'v', lengthStart: 0.5, lengthEnd: 1, offset: downOffset, taper: true })} 图={glowPng} 混合="半透明" opacity={0.9} noDepthTest 序={1} />
+      <SquareTubeFaces quads={squareTubeFace(startPos, end, beamWidth, { alongAxis: 'v', lengthStart: scrollOffset, lengthEnd: scrollOffset + length * 1.5, offset: downOffset })} 图={bodyPng} 混合="半透明" opacity={0.7} repeat noDepthTest 序={2} />
+      <SquareTubeFaces quads={squareTubeFace(startPos, end, beamWidth * 0.7, { alongAxis: 'v', lengthStart: scrollOffset, lengthEnd: scrollOffset + length * 1.5, offset: downOffset })} 图={coreImg} 混合="半透明" repeat noDepthTest 序={3} />
     </>
   );
 };
 
-export default 定义法术演出(元, 腐化);
+export default defineSpellPerformance(meta, Corrupt);

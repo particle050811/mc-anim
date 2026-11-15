@@ -3,21 +3,21 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { entityTexture } from '@engine/model/贴图方盒.tsx';
-import 泥土图 from 'asset:贴图/方块/泥土';
+import dirtPng from 'asset:贴图/方块/泥土';
 
-export const 泥土贴图 = () => png(泥土图);
+export const dirtTexture = () => png(dirtPng);
 
-export const 泥土块: React.FC = () => (
+export const DirtBlock: React.FC = () => (
   <mesh>
     <boxGeometry args={[1, 1, 1]} />
-    <meshLambertMaterial map={entityTexture(泥土贴图())} />
+    <meshLambertMaterial map={entityTexture(dirtTexture())} />
   </mesh>
 );
 
 /** 掉在地上的一块：中心 = 物品实体脚底往上 0.25 + 浮（ItemEntityRenderer 的 sin(刻/10 + 偏)·0.1 + 0.1，再加 ground 显示变换的 3/16 和缩放后的半格），
  *  绕竖轴转 转 弧度，边长 0.25 格（block/block.json 的 ground） */
-export const 地上泥土: React.FC<{ 位: readonly [number, number, number]; 转: number; 大小: number }> = ({ 位, 转, 大小 }) => (
-  <group position={[位[0], 位[1], 位[2]]} rotation={[0, 0, 转]} scale={大小}>
-    <泥土块 />
+export const GroundDirt: React.FC<{ 位: readonly [number, number, number]; 转: number; 大小: number }> = ({ 位: pos, 转: rotationRad, 大小: size }) => (
+  <group position={[pos[0], pos[1], pos[2]]} rotation={[0, 0, rotationRad]} scale={size}>
+    <DirtBlock />
   </group>
 );

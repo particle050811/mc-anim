@@ -20,9 +20,9 @@ import { odometer, cloudPierceG, brakeG, endG } from './时间线.ts';
 // - 种子 11：试了六个种子，大弯只来自侧向漂移，11 的弯最看得出又不晕。
 const SEED = 11;
 const anchors: Anchor[] = [{ 帧: 0, 止帧: cloudPierceG, 后: 72 }, { 帧: brakeG, 止帧: endG, 前: 96 }];
-const noShake = { 幅度: 0 };
-const smoothParams = { 竖直: { 漂移: 0 }, 阵风: { 导纳: 0 }, 颠簸: { 俯仰: noShake, 横滚: noShake, 朝向: noShake, 升沉: noShake } };
-const basePerturb = realFlight({ 种子: SEED, 起帧: 0, 止帧: endG, distAt: (t) => odometer(t * 24), 锚点: anchors, 参数: smoothParams });
+const noShake = { amplitude: 0 };
+const smoothParams = { vertical: { drift: 0 }, gust: { admittance: 0 }, bump: { pitch: noShake, roll: noShake, facing: noShake, heave: noShake } };
+const basePerturb = realFlight({ 种子: SEED, 起帧: 0, 止帧: endG, distAt: (t) => odometer(t * 24), anchors: anchors, 参数: smoothParams });
 // 水平弧长（地形跟随用的那条 z = 0 的水平航线）和 ROUTE 里程互换：整条航线 的第 i 个点就是 ROUTE 的第 i + 2 个航点（前面是 W0、W1）
 const flatTable = fullRoute.horizArcLen;
 const routeTable = flatTable.map((_, i) => ROUTE.waypointArcLen(i + 2));
@@ -62,7 +62,7 @@ export const rightNormal = (dir: number[]) => {
 const offsetWaypoints = flatWaypoints.map(([x, y], j) => {
   const arcLen = flatRoute.waypointArcLen(j);
   const normal = rightNormal(flatRoute.dir(arcLen));
-  const lateral = basePerturb.按里程(flatToRouteS(arcLen)).横;
+  const lateral = basePerturb.byDistance(flatToRouteS(arcLen)).lateral;
   return [x + normal[0] * lateral, y + normal[1] * lateral] as [number, number];
 });
 const offsetLine = new Route(offsetWaypoints.map(([x, y]) => [x, y, 0] as V3));
@@ -91,6 +91,6 @@ export const baselineDir = (dist: number) => {
 export const perturb = basePerturb.withVertFloor((dist) => {
   const pos = baseline(dist);
   const normal = rightNormal(ROUTE.dir(Math.min(Math.max(dist, 0), ROUTE.length - 3)));
-  const lateral = basePerturb.按里程(dist).横;
+  const lateral = basePerturb.byDistance(dist).lateral;
   return minClearance - (pos[2] - featureTop(pos[0] + normal[0] * lateral, pos[1] + normal[1] * lateral));
 });

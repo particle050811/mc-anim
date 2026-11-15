@@ -5,8 +5,8 @@
 //   右边让开他的脸和身子。古卷那格往上拉一根思索引线，说明框在窗口上方（同 6-2-2 古卷的标注）。
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { mouthAt } from '../../配音/口型.ts';
 import { ScenePicture } from '../../场/7-李樱撤离/7-2/画面.tsx';
 import { ChestScreen, chestWindowOverLid } from '@库/界面/箱子界面.tsx';
@@ -17,13 +17,13 @@ import { slotPos } from '@库/界面/箱子格子.ts';
 import { PonderCallout } from '@库/界面/思索.tsx';
 import { tomeCalloutLines } from '@库/界面/古卷.tsx';
 import * as choreo from './编排.ts';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
 
-export const gotItTeleportFrameCount = choreo.帧数;
+export const gotItTeleportFrameCount = choreo.frameCount;
 
 // 箱盖开满竖起来的上沿（模型/物品/箱子.tsx 的 CHEST.开满盖沿高），窗口下沿就贴在这
-const lidTop = G4(chest722.block[0] + 0.5, chest722.block[1] + CHEST.开满盖沿高, chest722.block[2] + 0.5);
+const lidTop = G4(chest722.block[0] + 0.5, chest722.block[1] + CHEST.lidOpenRimHeight, chest722.block[2] + 0.5);
 // 箱盖中点落在窗口宽度的这个比例处（0.5 是正中）：他站在箱子右边，窗口往左让开他的脸
 const WIN_ANCHOR_X = 0.75;
 
@@ -54,12 +54,12 @@ const ChestUiLayer: React.FC<{ frame: number }> = ({ frame }) => {
 };
 
 export const GotItTeleport: React.FC = () => {
-  const frame = use当前秒() * choreo.FPS;
+  const frame = useCurrentSec() * choreo.FPS;
   return (
     <>
-      <ScenePicture sf={choreo.sf(frame)} cam={choreo.camera(frame)} 嘴={mouthAt(choreo.台词, '李樱', frame, choreo.FPS)} />
+      <ScenePicture sf={choreo.sf(frame)} cam={choreo.camera(frame)} mouth={mouthAt(choreo.lines, '李樱', frame, choreo.FPS)} />
       <ChestUiLayer frame={frame} />
     </>
   );
 };
-export default 定义画面(段, 声音地址, GotItTeleport);
+export default definePicture(seg, soundUrl, GotItTeleport);

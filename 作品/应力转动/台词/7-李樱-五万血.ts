@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 757575bf8d16），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-李樱-五万血（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "7-李樱-五万血",
   "角色": "李樱",
   "念": "五万血？！这我打个集贸啊！",
@@ -45,4 +45,4 @@ const 句: 台词句 = {
     [2.18,"X"],
   ],
 };
-export default 句;
+export default sentence;

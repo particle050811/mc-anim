@@ -5,122 +5,122 @@
 // 她身子朝镜头、头往左上转 30° 看烟花（头不取 90° 的整数倍）：烟花在画面左边，身子转过去就看不见脸；头转过 50° 帽檐就把脸盖住（第8句.ts 量过），
 // 收到 30°、仰 20°，脸露在帽檐下面（静帧定稿：看清优先）。
 import { clamp01 } from '@engine/anim/anim.ts';
-import { 加挥手, 挥手进度 } from '@库/角色/挥手.ts';
-import { 火箭位置, 炸点, 炸开秒 } from '@库/特效/烟花.ts';
-import { fps, 一帧秒, 旧帧 } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第9至11句.ts';
-import { 你站, 她站, 换火箭秒, 烟花们, 牌字面, 牌上行们, 种下秒, 树苗x, 站排y } from './门口之夜参数.ts';
+import { addWave, waveProgress } from '@库/角色/挥手.ts';
+import { rocketPos, burstPoint, burstSec } from '@库/特效/烟花.ts';
+import { fps, oneFrameSec, legacyFrameSec } from '../../分镜/时间.ts';
+import { events as mainCutEvents } from '../../分镜/正片第9至11句.ts';
+import { youStand, herStand, swapRocketSec, fireworks, signFace, signLinesAt, plantSec, saplingX, standRowY } from './门口之夜参数.ts';
 
-const 秒 = (帧: number) => 帧 / fps;
-const 插 = (a: number, b: number, t: number) => a + (b - a) * t;
-const 事 = 正片事件;
+const toSec = (frame: number) => frame / fps;
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const events = mainCutEvents;
 
 // ---------- 你 ----------
-export type 手持 = '树苗' | '烟花火箭' | null;
-export type 你态 = { x: number; yaw: number; 头俯仰: number; 拿: 手持; 挥: number };
+export type HeldItem = '树苗' | '烟花火箭' | null;
+export type YouState = { x: number; yaw: number; headPitch: number; held: HeldItem; wave: number };
 
 /** 放出前多久低头对着地面、放出后抬头跟着火箭看（看到炸完再过多久低头准备下一发） */
-const 放前低头秒 = 0.25;
-const 看炸完秒 = 0.4;
+const bowBeforeSec = 0.25;
+const lookBurstDoneSec = 0.4;
 /** 抬头最多 50°、低头最多 40°（原版能到 ±90°；侧身仰、俯太多，头像折断了） */
-const 最仰 = 50;
-const 最俯 = -40;
-const 眼高 = 1.62;
+const maxPitch = 50;
+const maxLookDown = -40;
+const eyeHeight = 1.62;
 
 /** 头对着场景里一点的俯仰（侧身站，只看 x、z；度，负 = 低头） */
-const 俯仰向 = (x: number, z: number) => {
-  const d = Math.abs(x - 你站);
-  return Math.max(最俯, Math.min(最仰, (Math.atan2(z - 眼高, Math.max(0.3, d)) * 180) / Math.PI));
+const pitchDir = (x: number, z: number) => {
+  const d = Math.abs(x - youStand);
+  return Math.max(maxLookDown, Math.min(maxPitch, (Math.atan2(z - eyeHeight, Math.max(0.3, d)) * 180) / Math.PI));
 };
 /** 低头看地上那一格的顶面中心 */
-const 看地 = (x: number) => 俯仰向(x, 0);
+const lookAtGround = (x: number) => pitchDir(x, 0);
 
-export const 你态 = (帧: number): 你态 => {
-  const s = 秒(帧);
+export const YouState = (frame: number): YouState => {
+  const s = toSec(frame);
   // 原版连着右键：前一下挥过一半，后一下重新挥（LivingEntity.swing）
-  const 挥 = (t: number) => 挥手进度(s - t);
-  const 第一发 = 烟花们[0]!;
+  const waveAt = (t: number) => waveProgress(s - t);
+  const firstFirework = fireworks[0]!;
   // 换上火箭以前手里是什么：树苗（种下以前）或空手。火箭拿早了会从牌子特写的右边戳进来（核查 10-24），等镜头拉开、你整个人进画再换
-  const 拿: 手持 = s >= 换火箭秒 ? '烟花火箭' : s < 种下秒 ? '树苗' : null;
-  if (s < 第一发.发射秒 - 放前低头秒) {
+  const held: HeldItem = s >= swapRocketSec ? '烟花火箭' : s < plantSec ? '树苗' : null;
+  if (s < firstFirework.launchSec - bowBeforeSec) {
     // 种树苗（低头看那一格）→ 写字（看着牌面）
-    const 头 = s < 种下秒 ? 看地(树苗x) : 俯仰向(牌字面.x, 牌字面.z);
-    return { x: 你站, yaw: 90, 头俯仰: 头, 拿, 挥: 挥(种下秒) };
+    const headPitch = s < plantSec ? lookAtGround(saplingX) : pitchDir(signFace.x, signFace.z);
+    return { x: youStand, yaw: 90, headPitch: headPitch, held, wave: waveAt(plantSec) };
   }
   // 放烟花：每发放出前低头、放出时挥手、之后抬头看火箭和炸开
-  let 头 = 看地(第一发.位[0]);
-  let 挥手 = 0;
-  for (const 发 of 烟花们) {
-    const 放 = 发.发射秒;
-    const 炸 = 炸开秒(发);
-    if (s >= 放 - 放前低头秒 && s < 放) 头 = 看地(发.位[0]);
-    else if (s >= 放 && s < 炸) {
-      const p = 火箭位置(发, s);
-      if (p) 头 = Math.max(看地(发.位[0]), 俯仰向(p[0], p[2]));
-    } else if (s >= 炸 && s < 炸 + 看炸完秒) {
-      const [x, , z] = 炸点(发);
-      头 = 俯仰向(x, z);
+  let headPitch = lookAtGround(firstFirework.位[0]);
+  let waveEnd = 0;
+  for (const firework of fireworks) {
+    const fireSec = firework.launchSec;
+    const blastSec = burstSec(firework);
+    if (s >= fireSec - bowBeforeSec && s < fireSec) headPitch = lookAtGround(firework.位[0]);
+    else if (s >= fireSec && s < blastSec) {
+      const p = rocketPos(firework, s);
+      if (p) headPitch = Math.max(lookAtGround(firework.位[0]), pitchDir(p[0], p[2]));
+    } else if (s >= blastSec && s < blastSec + lookBurstDoneSec) {
+      const [x, , z] = burstPoint(firework);
+      headPitch = pitchDir(x, z);
     }
-    挥手 = Math.max(挥手, 挥(放));
+    waveEnd = Math.max(waveEnd, waveAt(fireSec));
   }
   // 最后一发炸完一直仰着看（定格成照片）
-  const 末 = 烟花们[烟花们.length - 1]!;
-  if (s >= 炸开秒(末)) {
-    const [x, , z] = 炸点(末);
-    头 = 俯仰向(x, z);
+  const lastFirework = fireworks[fireworks.length - 1]!;
+  if (s >= burstSec(lastFirework)) {
+    const [x, , z] = burstPoint(lastFirework);
+    headPitch = pitchDir(x, z);
   }
-  return { x: 你站, yaw: 90, 头俯仰: 头, 拿, 挥: 挥手 };
+  return { x: youStand, yaw: 90, headPitch: headPitch, held, wave: waveEnd };
 };
 
 /** 你的 stevePose 参数之外再叠的挥手：画布里 加挥手(pose, 你态.挥) */
-export { 加挥手 };
+export { addWave };
 
 // ---------- 她 ----------
-export type 她表情 = '微笑' | '大笑';
+export type LiYingExpression = '微笑' | '大笑';
 /** 头：[俯仰, 左右, 歪]（度，正 = 抬头、往她的左边（画面右）、往她的左肩歪），画的时候换成 骨骼 Head 的 rot [−俯仰, −左右, 歪]（同 段/2-收集快乐/编排.ts 的得意歪头） */
-export type 她态 = { x: number; 头: readonly [number, number, number]; 表情: 她表情; 眨眼: number | 'auto' };
+export type LiYingState = { x: number; 头: readonly [number, number, number]; expression: LiYingExpression; blink: number | 'auto' };
 
 /** 第 8 句末态的头（第8句参数.ts 的 得意看 [12, 30]、得意歪 14），闭着眼 */
-const 末态头 = [12, 30, 14] as const;
+const endHead = [12, 30, 14] as const;
 /** 匹配剪进来先定住多久，再用多久睁眼转头（24 fps 时 4 帧、3 帧）；转头起的那一帧已经转了 1/24 秒 */
-const 定住秒 = 旧帧(4);
-const 转头秒 = 旧帧(3);
+const holdSec = legacyFrameSec(4);
+const turnHeadSec = legacyFrameSec(3);
 /** 看你种树苗、看牌子、抬头看天、看烟花 */
-const 看你 = [-8, -35, 0] as const;
-const 看牌子 = [-6, -28, 0] as const;
-const 看天 = [24, -30, 0] as const;
-const 看烟花 = [20, -30, 0] as const;
+const lookAtYou = [-8, -35, 0] as const;
+const lookAtSign = [-6, -28, 0] as const;
+const lookSky = [24, -30, 0] as const;
+const lookFirework = [20, -30, 0] as const;
 /** 炸开以后笑开多久（嘴张开，原尺寸看得出、手机上看不出，不当卖点） */
-const 大笑秒 = 0.6;
+const bigLaughSec = 0.6;
 
-const 插头 = (a: readonly number[], b: readonly number[], t: number) => [0, 1, 2].map((i) => 插(a[i]!, b[i]!, clamp01(t))) as unknown as readonly [number, number, number];
+const lerpHead = (a: readonly number[], b: readonly number[], t: number) => [0, 1, 2].map((i) => lerp(a[i]!, b[i]!, clamp01(t))) as unknown as readonly [number, number, number];
 
-export const 她态 = (帧: number): 她态 => {
-  const s = 秒(帧);
+export const LiYingState = (frame: number): LiYingState => {
+  const s = toSec(frame);
   /** 离事件那一帧几秒 */
-  const 过 = (e: number) => (帧 - e) / fps;
-  const 起 = 事.第9句入夜.帧;
-  if (过(起) < 定住秒) return { x: 她站, 头: 末态头, 表情: '微笑', 眨眼: 1 };
+  const secSince = (e: number) => (frame - e) / fps;
+  const startFrame = events.nightfall.帧;
+  if (secSince(startFrame) < holdSec) return { x: herStand, 头: endHead, expression: '微笑', blink: 1 };
   // 种树苗那会儿看你，镜头往牌子推起看牌子
-  const 看牌帧 = 事.第9句推近.帧;
-  if (帧 < 看牌帧) {
-    const t = (过(起) - 定住秒 + 一帧秒) / 转头秒;
-    return { x: 她站, 头: 插头(末态头, 看你, t), 表情: '微笑', 眨眼: t < 1 ? 1 - t : 'auto' };
+  const lookSignFrame = events.pushToSign.帧;
+  if (frame < lookSignFrame) {
+    const t = (secSince(startFrame) - holdSec + oneFrameSec) / turnHeadSec;
+    return { x: herStand, 头: lerpHead(endHead, lookAtYou, t), expression: '微笑', blink: t < 1 ? 1 - t : 'auto' };
   }
-  const 抬头帧 = 事.第10句烟花一发射.帧;
-  if (帧 < 抬头帧) return { x: 她站, 头: 插头(看你, 看牌子, (过(看牌帧) + 一帧秒) / 转头秒), 表情: '微笑', 眨眼: 'auto' };
+  const lookUpFrame = events.firework1Launch.帧;
+  if (frame < lookUpFrame) return { x: herStand, 头: lerpHead(lookAtYou, lookAtSign, (secSince(lookSignFrame) + oneFrameSec) / turnHeadSec), expression: '微笑', blink: 'auto' };
   // 「抬头看天」：火箭放出时抬头；第一发炸开起看烟花
-  const 一炸 = 炸开秒(烟花们[0]!);
-  if (s < 一炸) return { x: 她站, 头: 插头(看牌子, 看天, (过(抬头帧) + 一帧秒) / 转头秒), 表情: '微笑', 眨眼: 0 };
-  const 笑 = 烟花们.some((发) => s >= 炸开秒(发) && s < 炸开秒(发) + 大笑秒);
-  return { x: 她站, 头: 插头(看天, 看烟花, (s - 一炸 + 一帧秒) / 转头秒), 表情: 笑 ? '大笑' : '微笑', 眨眼: 0 };
+  const firstBurst = burstSec(fireworks[0]!);
+  if (s < firstBurst) return { x: herStand, 头: lerpHead(lookAtSign, lookSky, (secSince(lookUpFrame) + oneFrameSec) / turnHeadSec), expression: '微笑', blink: 0 };
+  const laughing = fireworks.some((firework) => s >= burstSec(firework) && s < burstSec(firework) + bigLaughSec);
+  return { x: herStand, 头: lerpHead(lookSky, lookFirework, (s - firstBurst + oneFrameSec) / turnHeadSec), expression: laughing ? '大笑' : '微笑', blink: 0 };
 };
 
 // ---------- 摆设 ----------
 /** 树苗种下没有；牌上四行写到哪（一个词一个词写，原版每行居中）。牌子一直立着 */
-export const 摆设态 = (帧: number) => {
-  const s = 秒(帧);
-  return { 树苗: s >= 种下秒, 牌上: 牌上行们(s) };
+export const setupState = (frame: number) => {
+  const s = toSec(frame);
+  return { saplingPlaced: s >= plantSec, signLines: signLinesAt(s) };
 };
 
-export { 站排y };
+export { standRowY };

@@ -14,7 +14,7 @@
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
-import { 炼狱结界原版, 结界线段表 } from './炼狱结界线.ts';
+import { revelationCageVanilla, cageSegmentTable } from './炼狱结界线.ts';
 
 const VERT = `
 #include <common>
@@ -60,36 +60,36 @@ void main() {
 
 const s2l = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 
-export type 炼狱结界属性 = {
+export type RevelationCageProps = {
   /** 时间（秒）：原版是 Blaze3D.getTime()，只管转动；0 = 没转 */
   秒: number;
   /** 整体倍数，默认原版结界的 5.8905764（顶点离中心约 9.70 格）；死亡演出是 11.781153 × 进度 */
-  半径系数?: number;
+  radiusFactor?: number;
   /** 0～1，默认 1；淡入淡出用 炼狱结界透明度 算了传进来 */
-  透明度?: number;
+  opacity?: number;
   /** 每条边画到几成，默认 1（结界）；死亡演出传进度 */
-  边比例?: number;
+  edgeScale?: number;
   /** 线宽（画布实际像素），不给照原版按画布实际宽度算 */
-  线宽?: number;
+  lineWidth?: number;
   /** 颜色（sRGB 0～1），默认原版暗红 */
   颜色?: readonly [number, number, number];
 };
 
-export const 炼狱结界线框: React.FC<炼狱结界属性> = ({ 秒, 半径系数 = 炼狱结界原版.半径系数, 透明度 = 1, 边比例 = 1, 线宽, 颜色 = 炼狱结界原版.颜色 }) => {
+export const RevelationCageWire: React.FC<RevelationCageProps> = ({ 秒: sec, radiusFactor = revelationCageVanilla.radiusFactor, opacity = 1, edgeScale = 1, lineWidth, 颜色: color = revelationCageVanilla.颜色 }) => {
   const gl = useThree((s) => s.gl);
   // 画布尺寸变了要重取实际像素
   useThree((s) => s.size);
   const mesh = useMemo(() => {
-    const 段 = 结界线段表(边比例);
+    const lineSegs = cageSegmentTable(edgeScale);
     const pos: number[] = [];
     const nor: number[] = [];
     const side: number[] = [];
     const idx: number[] = [];
-    段.forEach((s, i) => {
+    lineSegs.forEach((s, i) => {
       // 原版 LINES 模式一段 4 个顶点：起点两个、终点两个，偶数号往 +、奇数号往 −，索引 0,1,2, 3,2,1
       for (const [p, sd] of [[s.起, 1], [s.起, -1], [s.止, 1], [s.止, -1]] as const) {
         pos.push(...p);
-        nor.push(...s.法线);
+        nor.push(...s.normal);
         side.push(sd);
       }
       idx.push(i * 4, i * 4 + 1, i * 4 + 2, i * 4 + 3, i * 4 + 2, i * 4 + 1);
@@ -113,22 +113,22 @@ export const 炼狱结界线框: React.FC<炼狱结界属性> = ({ 秒, 半径�
     const m = new THREE.Mesh(geometry, material);
     m.frustumCulled = false;
     return m;
-  }, [边比例]);
+  }, [edgeScale]);
   useEffect(() => () => {
     mesh.geometry.dispose();
     (mesh.material as THREE.Material).dispose();
   }, [mesh]);
   const u = (mesh.material as THREE.ShaderMaterial).uniforms;
-  const 缓冲 = gl.getDrawingBufferSize(new THREE.Vector2());
-  u.screenSize!.value.copy(缓冲);
-  u.lineWidth!.value = 线宽 ?? Math.max(2.5, (缓冲.x / 1920) * 2.5);
-  u.lineColor!.value.set(s2l(颜色[0]), s2l(颜色[1]), s2l(颜色[2]), Math.max(0, 透明度));
-  if (透明度 <= 0 || 半径系数 <= 0) return null;
-  const 角 = (秒 * 炼狱结界原版.每秒转度 * Math.PI) / 180;
+  const drawSize = gl.getDrawingBufferSize(new THREE.Vector2());
+  u.screenSize!.value.copy(drawSize);
+  u.lineWidth!.value = lineWidth ?? Math.max(2.5, (drawSize.x / 1920) * 2.5);
+  u.lineColor!.value.set(s2l(color[0]), s2l(color[1]), s2l(color[2]), Math.max(0, opacity));
+  if (opacity <= 0 || radiusFactor <= 0) return null;
+  const angle = (sec * revelationCageVanilla.spinDegPerSec * Math.PI) / 180;
   return (
     // 外层把场景坐标（Z 朝上）转回 MC 的轴（Y 朝上）
     <group rotation={[Math.PI / 2, 0, 0]}>
-      <group rotation={[角, 角, 角]} scale={半径系数}>
+      <group rotation={[angle, angle, angle]} scale={radiusFactor}>
         <primitive object={mesh} />
       </group>
     </group>

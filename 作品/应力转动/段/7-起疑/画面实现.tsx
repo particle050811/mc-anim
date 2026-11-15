@@ -53,7 +53,7 @@ export const SuspicionPicture: React.FC<{ f: number }> = ({ f: frame }) => {
           </group>
           <QiaoLeifu pose={{ ...pose, loc: choreo.roomToWorld(pose.loc) }} />
           <group position={choreo.roomToWorld(choreo.bookOnDesk)}>
-            <OpenBook pages={choreo.书页们} crumple={choreo.crumpleAt(frame)} gripPt={choreo.pageGripPt} />
+            <OpenBook pages={choreo.bookPages} crumple={choreo.crumpleAt(frame)} gripPt={choreo.pageGripPt} />
           </group>
         </group>
       </ThreeCanvas>

@@ -1,6 +1,6 @@
 // 6-3-8、6-3-10 的台词、时刻、段表。编排秒 t：0 = 6-3-8 首帧，原速；切坑以后剧情另加 `skipSec`（见 `storySec`）。
 // 段表、台词落点、声音用成片帧（全局，6-3-8 首帧 = 0），跳下城墙那一截跳切，成片帧换 t 用 `frameToSec`。
-import { 撞击时刻, 撞击段内帧, 段帧数 as 段帧数6 } from '../../6-3-下坠/时间线.ts';
+import { impactTime, impactSegFrame, segFrameCount as segFrameCount } from '../../6-3-下坠/时间线.ts';
 import { ticksToSurface } from './落水.ts';
 import { chaseSpeed } from '../../../古城4x/布局/强者.ts';
 import { RAMP_SEC } from '@库/角色/跑步.ts';
@@ -40,25 +40,25 @@ export const cues = (() => {
   const huangEntersShaft = liuEntersShaft + 0.35;
   const guardsArrive = huangEntersShaft + 1.1;
   const seg10End = guardsArrive + 1.85;
-  return { 绕: orbitSpan, 黄开口: huangSpeaks, 快追: chaseCue, 黄完: huangDone, 出发: setOff, 刘起跳: liuTakeoff, 黄起跳: huangTakeoff, 跳切: jumpCut, 落水镜: splashShot, 切坑: cutToPit, 刘入井: liuEntersShaft, 黄入井: huangEntersShaft, 卫兵到: guardsArrive, 段10末: seg10End };
+  return { orbit: orbitSpan, huangSpeaks: huangSpeaks, chaseCue: chaseCue, huangDone: huangDone, setOff: setOff, liuTakeoff: liuTakeoff, huangTakeoff: huangTakeoff, jumpCut: jumpCut, splashShot: splashShot, cutToPit: cutToPit, liuEntersShaft: liuEntersShaft, huangEntersShaft: huangEntersShaft, guardsArrive: guardsArrive, seg10End: seg10End };
 })();
 // 切到坑口时剧情时间往后跳多少秒：切坑那一刻刘心忠刚从池沿跳到环城路上、已跑出 2.9 米，沿路往西到城门大街、再往南到坑沿约 102 米，路上按精英跑速；
 // 镜头切过去时他离起跳点还剩 0.3 秒全速 + `RAMP_SEC` 刹到起跳的 9.6 米/秒（编排/二人.ts 的 `pitApproach`），剩下的路跳过不演
 export const skipSec = (() => {
-  const v = chaseSpeed.精英;
+  const v = chaseSpeed.elite;
   return Math.round(((102 - 2.9 - (0.3 * v + (RAMP_SEC / 2) * (v + 9.6))) / v) * 10) / 10;
 })();
 // 剧情时间（秒）：碎块按它走
-export const storySec = (t: number) => (t < cues.切坑 ? t : t + skipSec);
+export const storySec = (t: number) => (t < cues.cutToPit ? t : t + skipSec);
 // 6-3-8 首帧在 6-3-6 砸地以后多少秒：6-3-6 末帧往后 0.125 秒（硬切），从 时间线.ts 的段表算
-export const afterImpact = (段帧数6('6-3-6') - 1 - 撞击段内帧) / 24 + 0.125;
-export const fallTime = (t: number) => 撞击时刻() + afterImpact + storySec(t);
+export const afterImpact = (segFrameCount('6-3-6') - 1 - impactSegFrame) / 24 + 0.125;
+export const fallTime = (t: number) => impactTime() + afterImpact + storySec(t);
 
 // ---------- 跳切 ----------
 // 成片帧 H（全局）在 `jumpCutFrame` 以前就是编排帧；从它起跳过 `fallSkipFrames` 帧（同一段里硬切，同 6-4-1 的跳切）
 const toFrame = (s: number) => Math.round(s * FPS);
-export const jumpCutFrame = toFrame(cues.跳切);
-export const fallSkipFrames = toFrame(cues.落水镜) - jumpCutFrame;
+export const jumpCutFrame = toFrame(cues.jumpCut);
+export const fallSkipFrames = toFrame(cues.splashShot) - jumpCutFrame;
 export const frameToSec = (H: number) => (H < jumpCutFrame ? H : H + fallSkipFrames) / FPS;
 // 编排帧 → 成片帧；落在跳掉那截里的返回 undefined
 export const cutFrameOf = (F: number) => (F < jumpCutFrame ? F : F >= jumpCutFrame + fallSkipFrames ? F - fallSkipFrames : undefined);
@@ -66,17 +66,17 @@ export const cutFrameOf = (F: number) => (F < jumpCutFrame ? F : F >= jumpCutFra
 // ---------- 段表（成片帧，含两头） ----------
 // 6-3-8 从城墙演到切坑前一帧（中间跳下镜 → 落水镜硬切），6-3-10 从切坑那一帧起是坑口（硬切，两段不共用帧）
 export type SegmentName = '6-3-8' | '6-3-10';
-export const cutToPitFrame = toFrame(cues.切坑) - fallSkipFrames;
+export const cutToPitFrame = toFrame(cues.cutToPit) - fallSkipFrames;
 export const segmentTable: Record<SegmentName, { 起: number; 止: number; 名: string }> = {
   '6-3-8': { 起: 0, 止: cutToPitFrame - 1, 名: '二人登场' },
-  '6-3-10': { 起: cutToPitFrame, 止: toFrame(cues.段10末) - fallSkipFrames, 名: '追进竖井' },
+  '6-3-10': { 起: cutToPitFrame, 止: toFrame(cues.seg10End) - fallSkipFrames, 名: '追进竖井' },
 };
 export const segmentFrames = (segment: SegmentName) => segmentTable[segment].止 - segmentTable[segment].起 + 1;
 export const lastFrame = segmentTable['6-3-10'].止;
 export const lastSec = frameToSec(lastFrame);
 
 // 台词落点（段内帧，开口那一帧；字幕组和 声音.tsx 都从这里取）。台词轨的帧 = 开口（第一个有声的时刻）
-export const lineStartFrame = { huangPanReappears: toFrame(cues.黄开口) - segmentTable['6-3-8'].起 };
+export const lineStartFrame = { huangPanReappears: toFrame(cues.huangSpeaks) - segmentTable['6-3-8'].起 };
 export const lineCuesBySegment: Record<SegmentName, { id: string; 帧: number }[]> = {
   '6-3-8': [{ id: lineIds.huangPanReappears, 帧: lineStartFrame.huangPanReappears }],
   '6-3-10': [],

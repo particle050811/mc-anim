@@ -15,18 +15,18 @@ import { png, pngDir } from '../../engine/model/贴图.ts';
 import { serverSendParticles, type ParticleSpawn } from './原版粒子.tsx';
 import raw from 'asset:模型/特效/苦力怕头';
 import texHead from 'asset:贴图/特效/苦力怕头';
-import { 资产目录 } from '../../engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/特效/杂项粒子/blastwave_1';
-import 资_1 from 'asset:贴图/特效/杂项粒子/blastwave_2';
-import 资_2 from 'asset:贴图/特效/杂项粒子/blastwave_3';
-import 资_3 from 'asset:贴图/特效/杂项粒子/blastwave_4';
-import 资_4 from 'asset:贴图/特效/杂项粒子/blastwave_5';
-import 资_5 from 'asset:贴图/特效/杂项粒子/blastwave_6';
-import 资_6 from 'asset:贴图/特效/杂项粒子/blastwave_7';
-import 资_7 from 'asset:贴图/特效/杂项粒子/blastwave_8';
+import { assetDir } from '../../engine/core/资产目录.ts';
+import blastwave1Png from 'asset:贴图/特效/杂项粒子/blastwave_1';
+import blastwave2Png from 'asset:贴图/特效/杂项粒子/blastwave_2';
+import blastwave3Png from 'asset:贴图/特效/杂项粒子/blastwave_3';
+import blastwave4Png from 'asset:贴图/特效/杂项粒子/blastwave_4';
+import blastwave5Png from 'asset:贴图/特效/杂项粒子/blastwave_5';
+import blastwave6Png from 'asset:贴图/特效/杂项粒子/blastwave_6';
+import blastwave7Png from 'asset:贴图/特效/杂项粒子/blastwave_7';
+import blastwave8Png from 'asset:贴图/特效/杂项粒子/blastwave_8';
 
 const DATA = (raw as unknown as { models: { 苦力怕头: EntityModelData } }).models.苦力怕头;
-const BW = pngDir(资产目录({ './blastwave_1.png': 资_0, './blastwave_2.png': 资_1, './blastwave_3.png': 资_2, './blastwave_4.png': 资_3, './blastwave_5.png': 资_4, './blastwave_6.png': 资_5, './blastwave_7.png': 资_6, './blastwave_8.png': 资_7 }));
+const BW = pngDir(assetDir({ './blastwave_1.png': blastwave1Png, './blastwave_2.png': blastwave2Png, './blastwave_3.png': blastwave3Png, './blastwave_4.png': blastwave4Png, './blastwave_5.png': blastwave5Png, './blastwave_6.png': blastwave6Png, './blastwave_7.png': blastwave7Png, './blastwave_8.png': blastwave8Png }));
 
 export const LOB = { halfWidth: 0.25, gravity: 0.05, blastRadius: 5, shockwaveSize: 5 * 1.2, shockwaveLifeTicks: 8 };
 export const mortarSpeed = (level: number) => (level + 10) * 0.08;

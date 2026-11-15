@@ -28,8 +28,8 @@ import { LandmarkPlacement, twilightLandmark, TwilightTerrain } from '../../../�
 import * as choreo from './编排.ts';
 import * as motion from './动作改进.ts';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
-import { 渲染输入 } from '@engine/core/渲染设置.ts';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { renderInput } from '@engine/core/渲染设置.ts';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 
 // 李樱用哪一版动作：原版（6-1-2-斩娜迦-旧动作）是 编排.ts 的 `liying`；正式的 6-1-2-斩娜迦（动作改进）换成 动作改进.ts 的 `liyingV2`（人、残影、刀光都跟着换）
 type LiyingVersion = (frame: number) => ReturnType<typeof choreo.liying>;
@@ -51,16 +51,16 @@ export const courtyardLightGain = cliGain ? 1 : 0.75;
 // 一镜（默认）：一镜到底的黄昏光（200°/14°、1 倍，同 6-1-3 起飞），也整片在阴影里。
 // 用户 10-13 定：本镜头最后一帧就是 6-1-3 第一帧，光必须和 6-1-3 接上，按改动量最小统一成 6-1-3 的光；代价是迷宫这镜偏暗偏蓝，庭院收刀（70°）切过来光向会变。侧光那档留着备用
 export type MazeLightPreset = '庭院' | '压暗' | '侧光' | '侧逆光' | '一镜';
-const mazeLightPresets: Record<MazeLightPreset, { 向: V3; 倍: number; remap: boolean }> = {
-  庭院: { 向: sunDirFromAngles(70, 28), 倍: 0.75, remap: true },
-  压暗: { 向: sunDirFromAngles(70, 28), 倍: 0.5, remap: true },
-  侧光: { 向: sunDirFromAngles(115, 28), 倍: 0.75, remap: true },
-  侧逆光: { 向: sunDirFromAngles(215, 18), 倍: 0.75, remap: true },
-  一镜: { 向: sunDirFromAngles(200, 14), 倍: 1, remap: false },
+const mazeLightPresets: Record<MazeLightPreset, { dir: V3; intensity: number; remap: boolean }> = {
+  庭院: { dir: sunDirFromAngles(70, 28), intensity: 0.75, remap: true },
+  压暗: { dir: sunDirFromAngles(70, 28), intensity: 0.5, remap: true },
+  侧光: { dir: sunDirFromAngles(115, 28), intensity: 0.75, remap: true },
+  侧逆光: { dir: sunDirFromAngles(215, 18), intensity: 0.75, remap: true },
+  一镜: { dir: sunDirFromAngles(200, 14), intensity: 1, remap: false },
 };
 const defaultMazeLight: MazeLightPreset = '一镜';
 // 屏幕 AO 压不压导出网格（评估用：--props='{"meshAO":true}'）
-const meshAO = Boolean((渲染输入() as { meshAO?: boolean }).meshAO);
+const meshAO = Boolean((renderInput() as { meshAO?: boolean }).meshAO);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
@@ -110,14 +110,14 @@ const groupTransform = (mat?: THREE.Matrix4) => {
 };
 
 // 嘴：说话的口型（残影不给）
-export const LiYingAt: React.FC<{ f: number; ghost?: boolean; 嘴?: Mouth }> = ({ f: frame, 嘴: mouth }) => {
+export const LiYingAt: React.FC<{ f: number; ghost?: boolean; mouth?: Mouth }> = ({ f: frame, mouth: mouth }) => {
   const state = React.useContext(LiyingVersion)(frame);
   const pose = state.pose;
   return (
     <>
       <LiYing
         pose={pose}
-        嘴={mouth}
+        mouth={mouth}
         hipL={
           // 鞘相对挂点的变换（收刀时左手把鞘转过来迎刀，见 收刀.ts）；收刀那几帧刀画在鞘的坐标系里，由鞘带着对准鞘口、顺着鞘滑进去
           <group {...(state.sheath ? groupTransform(state.sheath) : { quaternion: SHEATH_HANG_QUAT })}>
@@ -147,13 +147,13 @@ const Action: React.FC<{ f: number; fn?: number; liYingMouth?: Mouth; jiuhuMouth
   const bladeAt = React.useMemo(() => (liyingVersion === choreo.liying ? liyingBlade : makeLiyingBlade(liyingVersion)), [liyingVersion]);
   return (
     <>
-      <LiYingAt f={frame} 嘴={liYingMouth} />
+      <LiYingAt f={frame} mouth={liYingMouth} />
       {choreo.ghosts(frame).map((g, i) => (
         <Ghost.Provider key={i} value={{ color: '#e6e2f2', opacity: g.opacity }}>
           <LiYingAt f={g.f} ghost />
         </Ghost.Provider>
       ))}
-      <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} 嘴={jiuhuMouth} />
+      <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} gait={jh.gait} run={jh.run} mouth={jiuhuMouth} />
       <GameNaga pose={naga.pose} />
       {naga.bursts.map((b, i) => (
         // 镜头 2b 里李樱站在断口东边 3～4 格：粒子只散在 x 0 以西，免得整团烟把他埋住
@@ -180,7 +180,7 @@ const nagaLandmarks: ['娜迦庭院'] = ['娜迦庭院'];
 // 动作改进：李樱换成错开起止、急停弹簧、呼吸微动的那一版；打击停顿：斩中时整个画面定格几帧（0 = 不停，总长跟着加这么多帧）；
 // 新机位：迅冲、俯拍斩击拉近，收刀换成参考的近景低机位（动作改进.ts 的 `cameraV2`）；
 // 收刀修前：不加收刀约束（修穿模以前的样子，核对用）；跟拍：机位跟着李樱（全身 / 腰间特写），只用来新旧对比、核对穿模
-export type NagaShotProps = { mazeLight?: MazeLightPreset; 动作改进?: boolean; hitStopFrames?: number; newCams?: boolean; preSheathFix?: boolean; 跟拍?: '全身' | '腰' };
+export type NagaShotProps = { mazeLight?: MazeLightPreset; motionImproved?: boolean; hitStopFrames?: number; newCams?: boolean; preSheathFix?: boolean; followMode?: '全身' | '腰' };
 export const nagaShotFrames = (p: NagaShotProps) => choreo.FRAMES + (p.hitStopFrames ?? 0);
 const preFixLiying = (f: number) => choreo.liying(f, { sheathTiming: '关' });
 const followCamPose = (frame: number, mode: '全身' | '腰'): CamPose => {
@@ -191,21 +191,21 @@ const followCamPose = (frame: number, mode: '全身' | '腰'): CamPose => {
 };
 // 段内帧（Remotion 帧）→ 剧情帧和这一帧的机位。伤害数字层也调它，和画面同帧同机位。
 // 编排里的时间轴是剧情帧（助跑中途跳过了一段，见 编排.ts 的 `story`）；打击停顿在剧情帧上再停住几帧
-export const nagaShotCam = ({ hitStopFrames = 0, newCams = false, 跟拍: followMode }: NagaShotProps, frame: number) => {
+export const nagaShotCam = ({ hitStopFrames = 0, newCams = false, followMode: followMode }: NagaShotProps, frame: number) => {
   const storyFrame = motion.hitStopFrames(hitStopFrames)(choreo.story(frame + 1));
   const cam: CamPose = followMode ? followCamPose(storyFrame, followMode) : newCams ? motion.cameraV2(storyFrame) : choreo.camera(storyFrame);
   return { f: storyFrame, cam: cam };
 };
 export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
-  const { 动作改进: motionV2 = false, hitStopFrames = 0, newCams = false, preSheathFix = false, 跟拍: followMode } = props;
-  const sec = use当前秒();
+  const { motionImproved: motionV2 = false, hitStopFrames = 0, newCams = false, preSheathFix = false, followMode: followMode } = props;
+  const sec = useCurrentSec();
   const frame = sec * choreo.FPS;
   const { width, height } = useVideoConfig();
-  const { f: storyFrame, cam: cam } = nagaShotCam({ hitStopFrames, newCams, 跟拍: followMode }, frame);
+  const { f: storyFrame, cam: cam } = nagaShotCam({ hitStopFrames, newCams, followMode: followMode }, frame);
   // 光：庭院几个镜头 70°/28°；迷宫镜头（S3 起）按 迷宫光 换（见上面）
   const mazePreset = storyFrame >= choreo.S3 && !cliSunDir && !cliGain ? mazeLightPresets[props.mazeLight ?? defaultMazeLight] : null;
-  const lightDir = mazePreset ? mazePreset.向 : courtyardLightDir;
-  const lightGain = mazePreset ? mazePreset.倍 : courtyardLightGain;
+  const lightDir = mazePreset ? mazePreset.dir : courtyardLightDir;
+  const lightGain = mazePreset ? mazePreset.intensity : courtyardLightGain;
   const liyingVersion = motionV2 ? motion.liyingV2 : preSheathFix ? preFixLiying : choreo.liying;
   const lineCues = nagaLineCues(hitStopFrames);
   useTwilightFog(lightDir);

@@ -31,7 +31,7 @@ export const shrieker4Pos: V3 = fourthShriek.p;
 // 台词落点（段内帧，A8 字幕读这里）：0.6 秒开口、有声 4.46 秒，5.06 秒说完；他 3.98 秒起跳，「……贵族生活了！」是在半空里喊完的
 export const lineDuration = lineTable['6-4-7-刘心忠-贵族生活'].有声长;
 export const lines = {
-  贵族生活: { id: '6-4-7-刘心忠-贵族生活', 帧: 0.6 * FPS },
+  nobleLife: { id: '6-4-7-刘心忠-贵族生活', 帧: 0.6 * FPS },
 } as const;
 
 // ---------- 二人 ----------
@@ -44,7 +44,7 @@ const huangWallTarget: V3 = G4(-866, -42, 211);
 {
   const pose648 = K648.pursuers(0);
   const off = (['刘', '黄'] as const)
-    .map((who) => [who, Math.hypot(pose648[who].loc[0] - handoffs.六四八首[who][0], pose648[who].loc[1] - handoffs.六四八首[who][1])] as const)
+    .map((who) => [who, Math.hypot(pose648[who].loc[0] - handoffs.handoffTo648[who][0], pose648[who].loc[1] - handoffs.handoffTo648[who][1])] as const)
     .filter(([, dist]) => dist > 0.01);
   if (off.length) throw new Error(`6-4-7 接 6-4-8 对不上：6-4-8 第 0 帧${off.map(([who, dist]) => `${who}离 handoffs.六四八首.${who} ${dist.toFixed(3)} 米`).join('，')}`);
 }

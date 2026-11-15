@@ -5,63 +5,63 @@
 // 白光盖在最上面（纯白，不被调色染蓝）。第 15 句在 片尾歌词收（咔哒那一帧）起退场，退在白里。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 段内帧 } from '../../分镜/时间.ts';
-import { 事件 as 正片15尾事件 } from '../../分镜/正片15尾.ts';
-import { 事件 as 正片片尾事件, 段窗口 } from '../../分镜/正片片尾.ts';
-import { 色板 } from '../../色板.ts';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 碎片层, 选择世界 } from '../../场/2-选择世界/选择世界.tsx';
-import { 框光标亮, 片尾取景, 片尾弹, 片尾白光, 重逢行字 } from '../../场/2-选择世界/编排.ts';
-import { 新图标, 旧图标 } from '../../场/2-选择世界/图标源.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { segmentFrames } from '../../分镜/时间.ts';
+import { events as mainCut15TailEvents } from '../../分镜/正片15尾.ts';
+import { events as mainCutEndingEvents, segmentWindow } from '../../分镜/正片片尾.ts';
+import { palette } from '../../色板.ts';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { ShardLayer, SelectWorld } from '../../场/2-选择世界/选择世界.tsx';
+import { boxCursorOn, endFraming, endBounce, outroWhiteAt, reunionRowTexts } from '../../场/2-选择世界/编排.ts';
+import { newIcon, oldIcon } from '../../场/2-选择世界/图标源.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 正片事件 = { ...正片15尾事件, ...正片片尾事件 };
-const 段内正片事件帧 = (键: string) => 段内帧(段窗口(键).起帧, 正片事件);
+const mainCutEvents = { ...mainCut15TailEvents, ...mainCutEndingEvents };
+const segMainCutEventFrames = (segKey: string) => segmentFrames(segmentWindow(segKey).起帧, mainCutEvents);
 
-const 起帧 = 段窗口('2-拼回').起帧;
-const 事 = 段内正片事件帧('2-拼回');
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
-const 调 = 色板.现实;
+const startFrame = segmentWindow('2-拼回').起帧;
+const events = segMainCutEventFrames('2-拼回');
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
+const tone = palette.现实;
 /** 回色前：现实的调色把饱和拉到 0（白光里的界面是黑白的） */
-const 灰调色 = { ...调.调色, 饱和: 0 };
+const grayGrade = { ...tone.grade, saturation: 0 };
 /** 碎片只过现实的调色（暗角、颗粒在下面那层整片后期里已经叠过一遍） */
-const 碎片调色 = { ...调.调色, 暗角: 0, 颗粒: 0 };
+const fragmentGrade = { ...tone.grade, 暗角: 0, 颗粒: 0 };
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const 回色 = f >= 事.片尾回色;
-  const 白 = 片尾白光(f);
-  const 取景 = 片尾取景(f);
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
+  const isColorBack = f >= events.outroRecolor;
+  const whiteFade = outroWhiteAt(f);
+  const framing = endFraming(f);
   return (
     <>
-      <整片后期 调色={回色 ? 调.调色 : 灰调色} 种子={起帧 + f}>
-        <选择世界
+      <FilmPost grade={isColorBack ? tone.grade : grayGrade} 种子={startFrame + f}>
+        <SelectWorld
           状态={{
-            取景,
-            指着: 0,
-            选中: false,
-            框光标: 框光标亮(起帧 + f, 起帧),
-            光标: null,
-            图标: 回色 ? 新图标 : 旧图标,
-            图标弹: 片尾弹(f, 事.片尾回色),
-            ...(回色 ? { 行字: 重逢行字 } : {}),
+            framing,
+            pointAt: 0,
+            selected: false,
+            frameCursor: boxCursorOn(startFrame + f, startFrame),
+            cursor: null,
+            iconMap: isColorBack ? newIcon : oldIcon,
+            iconBounce: endBounce(f, events.outroRecolor),
+            ...(isColorBack ? { rowTexts: reunionRowTexts } : {}),
           }}
         />
-        <符文歌词 行们={行们} 样式={{ ...符文歌词默认, 描边色: 调.描边 }} 收={事.片尾歌词收} />
-      </整片后期>
-      {!回色 && (
-        <整片后期 调色={碎片调色}>
-          <碎片层 f={f} 新={新图标} 取景={取景} />
-        </整片后期>
+        <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.outlineColor }} 收={events.outroLyricsOut} />
+      </FilmPost>
+      {!isColorBack && (
+        <FilmPost grade={fragmentGrade}>
+          <ShardLayer f={f} 新={newIcon} framing={framing} />
+        </FilmPost>
       )}
-      {白 > 0 && <AbsoluteFill style={{ background: `rgba(255,255,255,${白})` }} />}
+      {whiteFade > 0 && <AbsoluteFill style={{ background: `rgba(255,255,255,${whiteFade})` }} />}
     </>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

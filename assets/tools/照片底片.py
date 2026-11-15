@@ -20,12 +20,12 @@ import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-作品 = '把回忆拼好给你'
-段 = '核对-照片底片'
+work = '把回忆拼好给你'
+segment = '核对-照片底片'
 
 # 名 → (核对-照片底片 第几帧（同 核对/照片底片/视图.ts）, 资产 id, 裁)。
 # 裁：一个数 = 整幅高的正方形，中心在画面宽的几成；(x, y, 边) = 成片像素的正方形。挑法（Agent 按 10-24 的静帧定）写在每行后面
-照片们: dict[str, tuple[int, str, float | tuple[int, int, int]]] = {
+photos: dict[str, tuple[int, str, float | tuple[int, int, int]]] = {
     '递蛋糕': (0, '贴图/照片/第3句递蛋糕-三版', 0.45),  # 她站在魔法阵里、头上冒爱心，左边你手里的蛋糕
     '日落划船': (1, '贴图/照片/第4句日落划船-二版', 0.60),  # 船上两个人，左边留半个落日；两样放不进一个正方形
     '扑龙蛋': (2, '贴图/照片/第5句扑龙蛋-二版', 0.58),  # 她扑在龙蛋上，右边你看着
@@ -33,48 +33,48 @@ REPO = Path(__file__).resolve().parents[2]
     '合照': (4, '贴图/照片/第11句合照-三版', 0.5),  # 正中：同第 11 句下线缩成的图标（门口之夜照片.tsx 的 下线图标图），第 0 镜那一格要和它对上
     '新合照': (5, '贴图/照片/第15句新合照-二版', (810, 340, 920)),  # 两个人的头和她手里的花：片尾图标在手机上只有六十来个像素，正中整幅高的正方形里脸太小
 }
-画宽, 画高, 边长 = 2560, 1440, 256
+canvas_width, CANVAS_HEIGHT_PX, SIDE_LENGTH_PX = 2560, 1440, 256
 
 
-def 跑(参数: list[str]) -> str:
-    r = subprocess.run(参数, cwd=REPO, capture_output=True, text=True, encoding='utf-8')
+def run_command(params: list[str]) -> str:
+    r = subprocess.run(params, cwd=REPO, capture_output=True, text=True, encoding='utf-8')
     if r.returncode:
-        sys.exit(f'✗ {" ".join(参数)}\n{r.stdout}{r.stderr}')
+        sys.exit(f'✗ {" ".join(params)}\n{r.stdout}{r.stderr}')
     return r.stdout
 
 
-def 裁框(裁: float | tuple[int, int, int]) -> tuple[int, int, int]:
-    if isinstance(裁, tuple):
-        x, y, 边 = 裁
+def crop_box(crop: float | tuple[int, int, int]) -> tuple[int, int, int]:
+    if isinstance(crop, tuple):
+        x, y, side = crop
     else:
-        x, y, 边 = max(0, min(画宽 - 画高, round(裁 * 画宽 - 画高 / 2) // 2 * 2)), 0, 画高
-    if x < 0 or y < 0 or x + 边 > 画宽 or y + 边 > 画高:
-        sys.exit(f'✗ 裁框 {(x, y, 边)} 出了画面')
-    return x, y, 边
+        x, y, side = max(0, min(canvas_width - CANVAS_HEIGHT_PX, round(crop * canvas_width - CANVAS_HEIGHT_PX / 2) // 2 * 2)), 0, CANVAS_HEIGHT_PX
+    if x < 0 or y < 0 or x + side > canvas_width or y + side > CANVAS_HEIGHT_PX:
+        sys.exit(f'✗ 裁框 {(x, y, side)} 出了画面')
+    return x, y, side
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=(__doc__ or '').splitlines()[0])
-    ap.add_argument('名', nargs='*', help=f'出哪几张（{"、".join(照片们)}），不给 = 全部')
+    ap.add_argument('名', nargs='*', help=f'出哪几张（{"、".join(photos)}），不给 = 全部')
     a = ap.parse_args()
-    if 不认得 := [n for n in a.名 if n not in 照片们]:
-        ap.error(f'没有这几张：{"、".join(不认得)}')
-    名们 = a.名 or list(照片们)
+    if unknown_names := [n for n in a.名 if n not in photos]:
+        ap.error(f'没有这几张：{"、".join(unknown_names)}')
+    names = a.名 or list(photos)
     anim = str(REPO / ('anim.cmd' if os.name == 'nt' else 'anim'))
     ffmpeg = os.environ.get('ANIM_FFMPEG') or 'ffmpeg'
-    帧们 = sorted({照片们[n][0] for n in 名们})
-    出 = 跑([anim, '--作品', 作品, 'still', 段, *map(str, 帧们), '--级别', '视频', '--到预览', f'工作-照片底片-{time.strftime("%H%M%S")}'])
-    m = re.search(r'静帧在 (.+)', 出)
+    frames = sorted({photos[n][0] for n in names})
+    output = run_command([anim, '--作品', work, 'still', segment, *map(str, frames), '--级别', '视频', '--到预览', f'工作-照片底片-{time.strftime("%H%M%S")}'])
+    m = re.search(r'静帧在 (.+)', output)
     if not m:
-        sys.exit(f'✗ anim still 没说静帧在哪：\n{出}')
-    目录 = Path(m.group(1).strip())
+        sys.exit(f'✗ anim still 没说静帧在哪：\n{output}')
+    dir_path = Path(m.group(1).strip())
     with tempfile.TemporaryDirectory() as d:
-        for 名 in 名们:
-            帧, 资产, 裁 = 照片们[名]
-            x, y, 边 = 裁框(裁)
-            png = Path(d) / f'{名}.png'
-            跑([ffmpeg, '-loglevel', 'error', '-y', '-i', str(目录 / f'{段}-第{帧:04d}帧.png'), '-vf', f'crop={边}:{边}:{x}:{y},scale={边长}:{边长}:flags=area,format=rgba', str(png)])
-            print(跑([anim, '--作品', 作品, 'assets', 'add', 资产, str(png)]).strip())
+        for photo_name in names:
+            frame, asset_id, crop = photos[photo_name]
+            x, y, side = crop_box(crop)
+            png = Path(d) / f'{photo_name}.png'
+            run_command([ffmpeg, '-loglevel', 'error', '-y', '-i', str(dir_path / f'{segment}-第{frame:04d}帧.png'), '-vf', f'crop={side}:{side}:{x}:{y},scale={SIDE_LENGTH_PX}:{SIDE_LENGTH_PX}:flags=area,format=rgba', str(png)])
+            print(run_command([anim, '--作品', work, 'assets', 'add', asset_id, str(png)]).strip())
 
 
 if __name__ == '__main__':

@@ -8,124 +8,124 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { WebpackOverrideFn } from '@remotion/bundler';
-import { 数据根 } from '../环境/配置.ts';
-import { 代码根 } from '../环境/路径.ts';
-import { 作品名 } from '../环境/作品.ts';
-import { 闭包, 检查上下文, type 依赖图 } from '../检查/上下文.ts';
-import { 字节路径, 读作品资产锁, type 资产锁 } from './资产锁.ts';
+import { dataRoot } from '../环境/配置.ts';
+import { codeRoot } from '../环境/路径.ts';
+import { workName } from '../环境/作品.ts';
+import { closure, CheckContext, type DepGraph } from '../检查/上下文.ts';
+import { bytesPath, readWorkAssetLock, type AssetLock } from './资产锁.ts';
 
 /** 这些 id 里登记了、字节又不在数据根的（不管私有还是提取） */
-export const 缺字节 = (ids: Iterable<string>, 锁: 资产锁, 根: string): string[] =>
-  [...new Set(ids)].filter((id) => 锁[id] && !fs.existsSync(字节路径(锁[id]!, 根))).sort();
+export const missingBytes = (ids: Iterable<string>, assetLock: AssetLock, dataRoot: string): string[] =>
+  [...new Set(ids)].filter((id) => assetLock[id] && !fs.existsSync(bytesPath(assetLock[id]!, dataRoot))).sort();
 
-const 说缺 = (ids: string[]) => `${ids.slice(0, 3).map((id) => `「${id}」`).join('')}${ids.length > 3 ? ` 等 ${ids.length} 件` : ''}`;
+const describeMissing = (ids: string[]) => `${ids.slice(0, 3).map((id) => `「${id}」`).join('')}${ids.length > 3 ? ` 等 ${ids.length} 件` : ''}`;
 
 /** asset: 的占位：CommonJS 带 __esModule，webpack 的默认导入在用的地方才取 default，取的时候抛错 */
-export const 占位源码 = (id: string, 应在: string) => {
-  const 话 = `资产「${id}」的字节不在 ${应在}（公开仓库只带 随仓库.toml 列的段要用的、不带私有的），用到它的画面渲不了`;
-  return `// anim 生成：${话}\nmodule.exports = { __esModule: true, get default() { throw new Error(${JSON.stringify(话)}); } };\n`;
+export const placeholderSource = (id: string, expectedPath: string) => {
+  const message = `资产「${id}」的字节不在 ${expectedPath}（公开仓库只带 随仓库.toml 列的段要用的、不带私有的），用到它的画面渲不了`;
+  return `// anim 生成：${message}\nmodule.exports = { __esModule: true, get default() { throw new Error(${JSON.stringify(message)}); } };\n`;
 };
 
 /** 段入口的占位：default 是一渲就抛错的组件，注册照常 */
-export const 入口占位源码 = (入口: string, ids: string[]) => {
-  const 话 = `${入口} 要的字节 ${说缺(ids)} 不在数据根（公开仓库只带 随仓库.toml 列的段要用的、不带私有的），这段渲不了`;
-  return `// anim 生成：${话}\nmodule.exports = { __esModule: true, default: function 缺字节() { throw new Error(${JSON.stringify(话)}); } };\n`;
+export const entryPlaceholderSource = (entryName: string, ids: string[]) => {
+  const message = `${entryName} 要的字节 ${describeMissing(ids)} 不在数据根（公开仓库只带 随仓库.toml 列的段要用的、不带私有的），这段渲不了`;
+  return `// anim 生成：${message}\nmodule.exports = { __esModule: true, default: function 缺字节() { throw new Error(${JSON.stringify(message)}); } };\n`;
 };
 
-const 写占位 = (名: string, 源: string, 根: string) => {
-  const file = path.join(根, 'cache', '缺字节', `${名}.cjs`);
-  if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== 源) {
+const writePlaceholder = (pluginName: string, sourceText: string, dataRoot: string) => {
+  const file = path.join(dataRoot, 'cache', '缺字节', `${pluginName}.cjs`);
+  if (!fs.existsSync(file) || fs.readFileSync(file, 'utf8') !== sourceText) {
     fs.mkdirSync(path.dirname(file), { recursive: true });
     const tmp = `${file}.写入中-${process.pid}`;
-    fs.writeFileSync(tmp, 源);
+    fs.writeFileSync(tmp, sourceText);
     fs.renameSync(tmp, file);
   }
   return file;
 };
 
 /** 比路径用：Windows 上盘符大小写、分隔符可能不同 */
-const 规范 = (p: string) => (process.platform === 'win32' ? path.normalize(p).toLowerCase() : path.normalize(p));
+const canonicalPath = (p: string) => (process.platform === 'win32' ? path.normalize(p).toLowerCase() : path.normalize(p));
 
-export type 缺字节入口 = {
+export type MissingBytesEntry = {
   /** 能换的段入口（相对代码根的正斜杠路径）→ 闭包里缺的 id */
   换: Map<string, string[]>;
   /** 换不了的入口（段.ts、作品 index.ts、设置.ts）→ 闭包里缺的 id */
-  换不了: Map<string, string[]>;
+  cannotReplace: Map<string, string[]>;
 };
 
 /** 按依赖图挑出闭包碰到缺字节资产的入口：注册.tsx 的 webpackContext 收的 段/、核对/ 下每段的 段.ts、画面.tsx、叠层*.tsx，加外壳 */
-export const 挑缺字节入口 = (图: 依赖图, 作品目录: string, 缺: ReadonlySet<string>): 缺字节入口 => {
-  const r: 缺字节入口 = { 换: new Map(), 换不了: new Map() };
-  const 段文件 = /^(段|核对)\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/;
-  const 入口们 = [...图.边.keys()].filter((p) => p.startsWith(`${作品目录}/`) && 段文件.test(p.slice(作品目录.length + 1)));
-  for (const f of [...入口们, `${作品目录}/index.ts`, 'engine/段/设置.ts'].sort()) {
-    if (!图.边.has(f)) continue;
-    const ids = [...new Set([...闭包(图, [f])].flatMap((x) => 图.资产.get(x) ?? []))].filter((id) => 缺.has(id)).sort();
+export const pickMissingBytesEntry = (depGraph: DepGraph, workDir: string, missing: ReadonlySet<string>): MissingBytesEntry => {
+  const r: MissingBytesEntry = { 换: new Map(), cannotReplace: new Map() };
+  const segFilePattern = /^(段|核对)\/[^/]+\/(段\.ts|画面\.tsx|叠层[^/]*\.tsx)$/;
+  const entries = [...depGraph.edges.keys()].filter((p) => p.startsWith(`${workDir}/`) && segFilePattern.test(p.slice(workDir.length + 1)));
+  for (const f of [...entries, `${workDir}/index.ts`, 'engine/段/设置.ts'].sort()) {
+    if (!depGraph.edges.has(f)) continue;
+    const ids = [...new Set([...closure(depGraph, [f])].flatMap((x) => depGraph.资产.get(x) ?? []))].filter((id) => missing.has(id)).sort();
     if (!ids.length) continue;
-    (/\/(画面\.tsx|叠层[^/]*\.tsx)$/.test(f) ? r.换 : r.换不了).set(f, ids);
+    (/\/(画面\.tsx|叠层[^/]*\.tsx)$/.test(f) ? r.换 : r.cannotReplace).set(f, ids);
   }
   return r;
 };
 
-type 解析数据 = { request: string; context?: string };
-type 编译器 = { hooks: { normalModuleFactory: { tap: (name: string, fn: (nmf: { hooks: { beforeResolve: { tap: (o: { name: string; stage: number }, fn: (d: 解析数据) => void) => void } } }) => void) => void } } };
+type ResolveRequest = { request: string; context?: string };
+type Compiler = { hooks: { normalModuleFactory: { tap: (name: string, fn: (nmf: { hooks: { beforeResolve: { tap: (o: { name: string; stage: number }, fn: (d: ResolveRequest) => void) => void } } }) => void) => void } } };
 
 /** 排在 webpack.ts 的 资产解析插件 前面：缺字节的段入口、asset: 改成占位模块的路径，那边见不是 asset: 就不管 */
-export class 缺字节占位插件 {
-  readonly 锁: 资产锁;
+export class MissingBytePlaceholderPlugin {
+  readonly assetLock: AssetLock;
   readonly 根: string;
-  readonly 入口: Map<string, { 名: string; ids: string[] }>;
-  readonly 换了: Set<string> = new Set();
+  readonly entryMap: Map<string, { 名: string; ids: string[] }>;
+  readonly replaced: Set<string> = new Set();
   /** 入口：绝对路径 → 相对路径和缺的 id */
-  constructor(锁: 资产锁, 根: string, 入口: Map<string, { 名: string; ids: string[] }> = new Map()) {
-    this.锁 = 锁;
-    this.根 = 根;
-    this.入口 = new Map([...入口].map(([k, v]) => [规范(k), v]));
+  constructor(assetLock: AssetLock, dataRoot: string, entryMap: Map<string, { 名: string; ids: string[] }> = new Map()) {
+    this.assetLock = assetLock;
+    this.根 = dataRoot;
+    this.entryMap = new Map([...entryMap].map(([k, v]) => [canonicalPath(k), v]));
   }
-  apply(compiler: 编译器) {
+  apply(compiler: Compiler) {
     compiler.hooks.normalModuleFactory.tap('anim-缺字节', (nmf) => {
       nmf.hooks.beforeResolve.tap({ name: 'anim-缺字节', stage: -10 }, (data) => {
         if (data.request.startsWith('asset:')) {
           const id = data.request.slice('asset:'.length);
-          const 条目 = this.锁[id];
-          if (!条目 || fs.existsSync(字节路径(条目, this.根))) return;
-          if (!this.换了.has(id)) console.error(`!! 资产「${id}」的字节不在数据根，打进包的是占位（用到它的画面渲的时候报错）`);
-          this.换了.add(id);
-          data.request = 写占位(条目.sha256, 占位源码(id, 字节路径(条目, this.根)), this.根);
+          const entry = this.assetLock[id];
+          if (!entry || fs.existsSync(bytesPath(entry, this.根))) return;
+          if (!this.replaced.has(id)) console.error(`!! 资产「${id}」的字节不在数据根，打进包的是占位（用到它的画面渲的时候报错）`);
+          this.replaced.add(id);
+          data.request = writePlaceholder(entry.sha256, placeholderSource(id, bytesPath(entry, this.根)), this.根);
           return;
         }
-        if (!this.入口.size || !data.context || !/^\.\.?[/\\]/.test(data.request)) return;
-        const e = this.入口.get(规范(path.resolve(data.context, data.request)));
+        if (!this.entryMap.size || !data.context || !/^\.\.?[/\\]/.test(data.request)) return;
+        const e = this.entryMap.get(canonicalPath(path.resolve(data.context, data.request)));
         if (!e) return;
-        if (!this.换了.has(e.名)) console.error(`!! ${e.名} 要的字节 ${说缺(e.ids)} 不在数据根，这段打进包的是占位（渲它会报错）`);
-        this.换了.add(e.名);
-        data.request = 写占位(`入口-${e.名.replace(/[/\\:]/g, '_')}`, 入口占位源码(e.名, e.ids), this.根);
+        if (!this.replaced.has(e.名)) console.error(`!! ${e.名} 要的字节 ${describeMissing(e.ids)} 不在数据根，这段打进包的是占位（渲它会报错）`);
+        this.replaced.add(e.名);
+        data.request = writePlaceholder(`入口-${e.名.replace(/[/\\:]/g, '_')}`, entryPlaceholderSource(e.名, e.ids), this.根);
       });
     });
   }
 }
 
 /** 数据根里缺了这部作品锁里的字节时，用 anim check 的依赖图挑出要换的段入口；都在就不建图 */
-export const 算缺字节入口 = async (锁: 资产锁, 根: string): Promise<缺字节入口 | undefined> => {
-  const 缺 = new Set(缺字节(Object.keys(锁), 锁, 根));
-  if (!缺.size) return undefined;
-  const c = new 检查上下文(代码根(), { 作品: 作品名() });
+export const computeMissingBytesEntry = async (assetLock: AssetLock, dataRoot: string): Promise<MissingBytesEntry | undefined> => {
+  const missing = new Set(missingBytes(Object.keys(assetLock), assetLock, dataRoot));
+  if (!missing.size) return undefined;
+  const c = new CheckContext(codeRoot(), { 作品: workName() });
   try {
-    return 挑缺字节入口(await c.依赖图(), c.作品目录, 缺);
+    return pickMissingBytesEntry(await c.depGraph(), c.workDir, missing);
   } finally {
-    c.收尾();
+    c.finalize();
   }
 };
 
 /** 给 webpack改写 套一层：插件放在最前面 */
-export const 补缺字节占位 =
-  (改写: WebpackOverrideFn, 作品根: string): WebpackOverrideFn =>
+export const fillMissingBytePlaceholders =
+  (rewrite: WebpackOverrideFn, workRoot: string): WebpackOverrideFn =>
   async (config) => {
-    const c = await 改写(config);
-    const 锁 = 读作品资产锁(作品根);
-    const 根 = 数据根();
-    const 入口 = await 算缺字节入口(锁, 根);
-    for (const [f, ids] of 入口?.换不了 ?? []) console.error(`!! ${f} 的闭包要的字节 ${说缺(ids)} 不在数据根，换不了整段；在模块顶层取的话整个包都读不出 Composition`);
-    const 表 = new Map([...(入口?.换 ?? [])].map(([f, ids]) => [path.join(代码根(), ...f.split('/')), { 名: f, ids }]));
-    return { ...c, plugins: [new 缺字节占位插件(锁, 根, 表), ...(c.plugins ?? [])] };
+    const c = await rewrite(config);
+    const assetLock = readWorkAssetLock(workRoot);
+    const root = dataRoot();
+    const entryReport = await computeMissingBytesEntry(assetLock, root);
+    for (const [f, ids] of entryReport?.cannotReplace ?? []) console.error(`!! ${f} 的闭包要的字节 ${describeMissing(ids)} 不在数据根，换不了整段；在模块顶层取的话整个包都读不出 Composition`);
+    const placeholderMap = new Map([...(entryReport?.换 ?? [])].map(([f, ids]) => [path.join(codeRoot(), ...f.split('/')), { 名: f, ids }]));
+    return { ...c, plugins: [new MissingBytePlaceholderPlugin(assetLock, root, placeholderMap), ...(c.plugins ?? [])] };
   };

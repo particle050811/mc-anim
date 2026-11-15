@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 9ce1e3149131），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-李樱-看我速通暮色（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "6-李樱-看我速通暮色",
   "角色": "李樱",
   "念": "坐好了，看我速通暮色！",
@@ -39,4 +39,4 @@ const 句: 台词句 = {
     [1.76,"X"],
   ],
 };
-export default 句;
+export default sentence;

@@ -7,46 +7,46 @@
 // 和游戏差在：地刺游戏里立 600 刻，片里 100 刻（见 尖刺.元.ts）；潜行绕身两圈、配灾厄法杖的三路不做。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import 元, { 尖刺一排, 尖刺寿命刻 } from './尖刺.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/SpikeModel';
-import 图数据 from 'asset:贴图/法术/goety/entity/projectiles/spike';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import meta, { spikeRow, spikeLifeTicks } from './尖刺.元.ts';
+import spikeModelData from 'asset:模型/法术/goety/SpikeModel';
+import spikePng from 'asset:贴图/法术/goety/entity/projectiles/spike';
 
-const 模型 = 取模型(模型数据, 'SpikeModel');
-const 图 = png(图数据);
+const spikeModel = getModel(spikeModelData, 'SpikeModel');
+const image = png(spikePng);
 
-const 一根: React.FC<{ 位: 点; 朝角: number; warmup: number; 刻: number }> = ({ 位, 朝角, warmup, 刻 }) => {
-  const a = 刻 - (warmup + 1);
-  if (a < 0 || a >= 尖刺寿命刻) return null;
-  const 剩 = 尖刺寿命刻 - a;
-  const 进 = 剩 <= 12 ? (剩 - 2 <= 0 ? 1 : 1 - (剩 - 2) / 20) : 1 - Math.max(9, 22 - a) / 20;
-  const f1 = 2 * (进 > 0.9 ? Math.max(0, (1 - 进) / 0.1) : 1);
+const Spike: React.FC<{ 位: Vec3; facingAngle: number; warmup: number; 刻: number }> = ({ 位: pos, facingAngle, warmup, 刻: tick }) => {
+  const a = tick - (warmup + 1);
+  if (a < 0 || a >= spikeLifeTicks) return null;
+  const remainTick = spikeLifeTicks - a;
+  const progress = remainTick <= 12 ? (remainTick - 2 <= 0 ? 1 : 1 - (remainTick - 2) / 20) : 1 - Math.max(9, 22 - a) / 20;
+  const f1 = 2 * (progress > 0.9 ? Math.max(0, (1 - progress) / 0.1) : 1);
   if (f1 <= 0) return null;
-  const 抬 = (进 + Math.sin(进 * 2.7)) * 0.6 * 12;
-  const 姿态 = { base: { offset: [-5, 24 - 抬, -5] }, upper_jaw: { offset: [0, 18 - 抬, 0], rot: [0, -(a / 20) * 3, 0] } };
+  const lift = (progress + Math.sin(progress * 2.7)) * 0.6 * 12;
+  const partPoses = { base: { offset: [-5, 24 - lift, -5] }, upper_jaw: { offset: [0, 18 - lift, 0], rot: [0, -(a / 20) * 3, 0] } };
   return (
-    <MC空间 位={位}>
-      <group rotation={[0, 度(90 - (朝角 * 180) / Math.PI), 0]}>
+    <MinecraftSpace 位={pos}>
+      <group rotation={[0, degToRad(90 - (facingAngle * 180) / Math.PI), 0]}>
         <group scale={[-f1, -f1, f1]}>
           <group position={[0, -0.626, 0]}>
             <group scale={[0.5, 0.5, 0.5]}>
-              <模型件 模型={模型} 图={图} 姿态={姿态} />
+              <ModelPart 模型={spikeModel} 图={image} partPoses={partPoses} />
             </group>
           </group>
         </group>
       </group>
-    </MC空间>
+    </MinecraftSpace>
   );
 };
 
-const 尖刺: React.FC<法术演出属性> = ({ 秒, 起点, 目标 }) => (
+const Spikes: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target }) => (
   <>
-    {尖刺一排(起点, 目标).map((刺, i) => (
-      <一根 key={i} {...刺} 刻={秒 * 20} />
+    {spikeRow(from, target).map((spike, i) => (
+      <Spike key={i} {...spike} 刻={sec * 20} />
     ))}
   </>
 );
 
-export default 定义法术演出(元, 尖刺);
+export default defineSpellPerformance(meta, Spikes);

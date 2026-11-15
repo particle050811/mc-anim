@@ -70,26 +70,26 @@ export const lichRiderTweak = (t: number, base: RideLiYing): RideLiYing => {
 // 塔和塔里的一切（塔本地坐标里画，整组按 暮色新世界.tsx 的地标表摆到世界里：网格逆时针转了 90°）。t：贯穿后的物理秒数；fx：特效时钟。
 // 镜头：世界坐标的镜头位置，飞散的碎块离镜头太近就淡出（模型/特效/方块飞溅.tsx 的 近隐）
 export const LichScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPos: camPos }) => {
-  const fx = (dt: number) => dt * choreo.特效倍速;
+  const fx = (dt: number) => dt * choreo.fxSpeed;
   const lich = choreo.lichState(t);
   const bursts = choreo.debrisBursts(t);
   return (
     <LandmarkPlacement 名="巫妖怪塔">
       <LichTower hide={choreo.hideFor(t)} />
-      {t > choreo.出场.起 && t < choreo.出场.止 && (
+      {t > choreo.visibleWindow.起 && t < choreo.visibleWindow.止 && (
         <>
           <Wind t={t} opacity={choreo.fan(t).opacity} />
           {/* 巫妖：侧着身子对着来向站，反应不过来、一动不动；矛尖一碰到就变红、变半透明（战利品箱冒在它身上），朝矛的方向倒下，随即化成白烟 */}
           {lich.alive && (
             <group position={lich.pos}>
-              <DeathTopple 向={choreo.前向} u={lich.倒} knockbackOffset={lich.knockbackOffset}>
+              <DeathTopple fallDir={choreo.forwardDir} u={lich.fall} knockbackOffset={lich.knockbackOffset}>
                 <group rotation={[0, 0, (choreo.LICH_YAW * Math.PI) / 180]}>
-                  <Lich 秒={choreo.lichClock(t)} shieldCount={choreo.shieldCount(t)} 受伤={lich.hurt} opacity={lich.opacity} />
+                  <Lich 秒={choreo.lichClock(t)} shieldCount={choreo.shieldCount(t)} hurt={lich.hurt} opacity={lich.opacity} />
                 </group>
               </DeathTopple>
             </group>
           )}
-          <PoofBurst center={choreo.LICH_DEATH_POS} width={0.6} height={2} sec={(t - choreo.T_DEATH) * choreo.药水特效倍速} seed={5} />
+          <PoofBurst center={choreo.LICH_DEATH_POS} width={0.6} height={2} sec={(t - choreo.T_DEATH) * choreo.potionFxSpeed} seed={5} />
           <group position={choreo.LICH_AT} rotation={[0, 0, (choreo.LICH_YAW * Math.PI) / 180]}>
             {choreo.SHIELD_PLAN.map((p, i) => (
               <group key={i} matrix={lichShieldMatrix(p.clock, p.shield, p.n)} matrixAutoUpdate={false}>
@@ -98,7 +98,7 @@ export const LichScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPo
             ))}
           </group>
           {choreo.SHIELD_PLAN.map((p, i) => (
-            <PotionSplash key={i} at={[choreo.砸点(i)[0], choreo.砸点(i)[1], p.center[2] - 0.3]} sec={(t - p.tau) * choreo.药水特效倍速} seed={40 + i} color={HEALING_COLOR} count={8} />
+            <PotionSplash key={i} at={[choreo.smashPoint(i)[0], choreo.smashPoint(i)[1], p.center[2] - 0.3]} sec={(t - p.tau) * choreo.potionFxSpeed} seed={40 + i} color={HEALING_COLOR} count={8} />
           ))}
           {[0, 1, 2, 3, 4, 5].map((i) => {
             const potionState = choreo.potion(i, t);
@@ -111,7 +111,7 @@ export const LichScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, camPo
               </group>
             );
           })}
-          <BlockDebris data={DEBRIS} atlas={ATLAS} bursts={bursts} nearHide={camPos && { 镜头: choreo.塔框.toLocal(camPos), ...debrisNearHide }} />
+          <BlockDebris data={DEBRIS} atlas={ATLAS} bursts={bursts} nearHide={camPos && { cameraPos: choreo.towerFrame.toLocal(camPos), ...debrisNearHide }} />
         </>
       )}
     </LandmarkPlacement>

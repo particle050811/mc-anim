@@ -70,7 +70,7 @@ export const hydraNeckBase = (i: number): V3 => {
 // 朝向：实体坐标里朝 d 方向的转角（绕 Z，0 = 朝 -Y）和仰角（正 = 往上）
 const aim = (d: number[]) => ({ yaw: Math.atan2(d[0], -d[1]), pitch: Math.atan2(d[2], Math.hypot(d[0], d[1])) });
 
-export type HydraPose = { heads: HydraHead[]; 腿?: number };
+export type HydraPose = { heads: HydraHead[]; legPitch?: number };
 
 export const hydraParts = (p: HydraPose, sec: number) =>
   p.heads.map((head, i) => {
@@ -97,7 +97,7 @@ const HIDE_FAKE = Object.fromEntries(
 export const Hydra: React.FC<{ sec: number; pose?: HydraPose; opacity?: number; hitFlash?: number; hurt?: number }> = ({ sec: sec, pose = { heads: HYDRA.idle }, opacity = 1, hitFlash = 0, hurt: hurt = 0 }) => {
   const em = Math.round(hitFlash * 10) / 10;
   const parts = hydraParts(pose, sec);
-  const leg = pose.腿 ?? 0;
+  const leg = pose.legPitch ?? 0;
   return (
     <>
       <EntityModel model={MODELS.身体} tex={TEX} opacity={opacity} emissive={em} hurt={hurt} pose={{ ...HIDE_FAKE, leg_1: { rot: [leg, 0, 0] }, leg_2: { rot: [-leg, 0, 0] } }} />

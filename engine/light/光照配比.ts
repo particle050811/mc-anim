@@ -4,33 +4,33 @@
 // 柔档提亮：柔档四项一起乘 1.1，相当于只给受光的东西加曝光（雾色、天不变），影子深浅比例同柔档，抵掉柔档比改前平均暗的 10%。
 // 暮色森林游戏里没有太阳（维度把时间固定在 13000），主光是艺术选择：方位同 6-1-2（东偏南），仰角压到 32°，影子是树高的 1.6 倍长。
 import type { V3 } from '../model/parts.tsx';
-import { use写入者, 新写入槽 } from '../core/写入者.ts';
-import { 渲染输入 } from '../core/渲染设置.ts';
+import { useWriter, newWriteSlot } from '../core/写入者.ts';
+import { renderInput } from '../core/渲染设置.ts';
 
 export type LightMix = {
-  直射: number; // 主光（暮色是 SunLight，主世界是 DirectionalLight）强度
-  天光: number; // 半球光强度
-  环境光: number;
-  自发光: number; // 方块材质的自发光 = 颜色 × 这个系数（三类方块材质共用，见下面的 自发光）
+  direct: number; // 主光（暮色是 SunLight，主世界是 DirectionalLight）强度
+  skylight: number; // 半球光强度
+  ambient: number;
+  selfLight: number; // 方块材质的自发光 = 颜色 × 这个系数（三类方块材质共用，见下面的 自发光）
 };
 
 // 强档、硬档：用户嫌 4+5 对比度太小像开了夜视，所以影子里暗约 75%（强档）、85%（硬档）：天光、环境光、自发光往下压，直射往上提，受光顶面亮度大致不变
 const presets: Record<'柔档' | '柔档提亮' | '中档' | '强档' | '硬档' | '黄昏', LightMix> = {
-  柔档: { 直射: 4.3, 天光: 1.65, 环境光: 0.32, 自发光: 0.2 },
-  柔档提亮: { 直射: 4.73, 天光: 1.815, 环境光: 0.352, 自发光: 0.22 },
-  中档: { 直射: 5.9, 天光: 1.42, 环境光: 0.235, 自发光: 0.135 },
-  强档: { 直射: 7.0, 天光: 0.9, 环境光: 0.12, 自发光: 0.07 },
-  硬档: { 直射: 7.6, 天光: 0.55, 环境光: 0.07, 自发光: 0.04 },
+  柔档: { direct: 4.3, skylight: 1.65, ambient: 0.32, selfLight: 0.2 },
+  柔档提亮: { direct: 4.73, skylight: 1.815, ambient: 0.352, selfLight: 0.22 },
+  中档: { direct: 5.9, skylight: 1.42, ambient: 0.235, selfLight: 0.135 },
+  强档: { direct: 7.0, skylight: 0.9, ambient: 0.12, selfLight: 0.07 },
+  硬档: { direct: 7.6, skylight: 0.55, ambient: 0.07, selfLight: 0.04 },
   // 黄昏（10-07 试的，用户要黄昏落幕的光色）：主光换落日橙金色、压到地平线上 14°（影子拉长），影子里只剩偏冷的蓝紫天光，太阳那侧地平线加一圈暖色余晖（见 `twilightDusk`）。
   // 太阳只高 14°，林子里地面全在树影里，所以直射、天光、环境光都比原配比高（原配比下几乎像夜里）
-  黄昏: { 直射: 8, 天光: 1.5, 环境光: 0.14, 自发光: 0.06 },
+  黄昏: { direct: 8, skylight: 1.5, ambient: 0.14, selfLight: 0.06 },
 };
 // 用黄昏档、光从南偏西 200° 来、天和雾一起换成黄昏的颜色（用户 10-07 定）。
 // 比档用：命令行 --props='{"lightPreset":"柔档提亮"}' 盖掉
-const presetOverride = (渲染输入() as { lightPreset?: keyof typeof presets }).lightPreset;
+const presetOverride = (renderInput() as { lightPreset?: keyof typeof presets }).lightPreset;
 const presetName = presetOverride && presetOverride in presets ? presetOverride : '黄昏';
 // 光倍：四项一起乘（相当于给受光的东西加曝光，天、雾不变，影子深浅的比例不变）。比亮度用：命令行 --props='{"lightGain":1.3}'
-const gainOverride = (渲染输入() as { lightGain?: number }).lightGain;
+const gainOverride = (renderInput() as { lightGain?: number }).lightGain;
 // 天和灯全部 2.0（用户 10-08 定；天倍跟着取 2，见 `skyGain`）
 const lightGain = typeof gainOverride === 'number' ? gainOverride : 2;
 export const twilightMix: LightMix = Object.fromEntries(Object.entries(presets[presetName]).map(([k, value]) => [k, value * lightGain])) as LightMix;
@@ -39,7 +39,7 @@ export const twilightMix: LightMix = Object.fromEntries(Object.entries(presets[p
 // 云也要染成黄昏色（用户 10-07），所以天边和雾整套换成落日后的天：天边暖桃色、往上灰玫瑰、紫，头顶深靛；背对太阳那边是偏灰的玫瑰色（维纳斯带）
 // `skyGain`：天空渐变、雾色、余晖、云的颜色一起提亮（这些是直接写的颜色，不吃灯光，`lightGain` 乘不到）。
 // 线性空间里乘，某个通道超过 1 就整体按比例压回去（色相、饱和度不变，天边不会冲成白的）。比用：--props='{"lightGain":2,"skyGain":1.5}'
-const skyGainOverride = (渲染输入() as { skyGain?: number }).skyGain;
+const skyGainOverride = (renderInput() as { skyGain?: number }).skyGain;
 export const skyGain = typeof skyGainOverride === 'number' ? skyGainOverride : 2;
 const srgbToLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const linearToSrgb = (c: number) => (c <= 0.0031308 ? c * 12.92 : 1.055 * c ** (1 / 2.4) - 0.055);
@@ -79,7 +79,7 @@ export const twilightDusk = duskBase && {
 // 暮色主光的方向（指向光源，场景坐标 Z 朝上、北 = +Y）。黄昏档：南偏西（方位 200°），仰角 14°；
 // 东偏南（方位 113°）时 4+5 往东飞迎着光、陆地全是背光面（用户 10-07）；200° 时往东飞的几程光从右侧来，起伏、影子最清楚。
 // 比光向用：命令行 --props='{"lightAzimuth":113}'（度，0 = 北、顺时针）、--props='{"lightElevation":32}' 盖掉
-const { lightAzimuth: azimuthOverride, lightElevation: elevationOverride } = 渲染输入() as { lightAzimuth?: number; lightElevation?: number };
+const { lightAzimuth: azimuthOverride, lightElevation: elevationOverride } = renderInput() as { lightAzimuth?: number; lightElevation?: number };
 const sunElevDeg = typeof elevationOverride === 'number' ? elevationOverride : twilightDusk ? 14 : null;
 const sunAzimuthDeg = typeof azimuthOverride === 'number' ? azimuthOverride : twilightDusk ? 200 : null;
 // 方位、仰角（度）→ 指向光源的单位向量（场景坐标）
@@ -95,16 +95,16 @@ export const cliGain = typeof gainOverride === 'number';
 
 // 主世界以直射为主（用户 10-15 定 C 档，同暮色 10-04 照 Photon 的方向）：影子里暗约七成；直射按太阳仰角 20° 补到受光顶面亮度和原来（3.2 / 1.3 / 0.5，太阳 45°）一样。
 // 主世界所有镜头都用这一套（lib/主世界光照.tsx）
-export const overworldMix: LightMix = { 直射: 8.4, 天光: 1.0, 环境光: 0.17, 自发光: 0.4 };
+export const overworldMix: LightMix = { direct: 8.4, skylight: 1.0, ambient: 0.17, selfLight: 0.4 };
 
 // 两类方块材质（lib/体素/材质.ts、lib/方块网格.tsx）共用的自发光系数，着色器里是同一个 uniform（selfLight）。
 // 由灯组件按世界设（use自发光），灯卸下时回到主世界的值：Studio 里从暮色森林的镜头切到主世界、古城的镜头，不会带着暮色的值
-export const selfLight = { value: overworldMix.自发光 };
-const 自发光槽 = 新写入槽();
-const 回主世界自发光 = () => {
-  selfLight.value = overworldMix.自发光;
+export const selfLight = { value: overworldMix.selfLight };
+const selfLightSlot = newWriteSlot();
+const restoreOverworldEmissive = () => {
+  selfLight.value = overworldMix.selfLight;
 };
 export const useSelfLight = (k: number) => {
-  use写入者(自发光槽, 回主世界自发光);
+  useWriter(selfLightSlot, restoreOverworldEmissive);
   selfLight.value = k;
 };

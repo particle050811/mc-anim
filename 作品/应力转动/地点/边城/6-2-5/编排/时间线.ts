@@ -66,7 +66,7 @@ export const beats = {
   dive: 61,
   cloudPierce: cloudPierceG,
   levelOff: levelOffG,
-  转弯: turnG,
+  turn: turnG,
   townWall: brakeG - 72,
   decelStart: Math.round(decelStartG),
   hardBrake: brakeG,

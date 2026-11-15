@@ -3,21 +3,21 @@
 import type { V3 } from '@engine/model/parts.tsx';
 
 /** 控制器：这一帧左右换成两种控制器（控制器示例.ts），不是手抄版对播放器版 */
-export type 视图 = { 名: string; 眼: V3; 看: V3; 视角: number; 秒: number; 说明?: string; 控制器?: true };
+export type View = { 名: string; 眼: V3; 看: V3; fov: number; 秒: number; 说明?: string; useController?: true };
 
-const 全身 = { 眼: [0, -3.4, 1.0] as V3, 看: [0, 0, 0.42] as V3, 视角: 30 };
-const 脸 = { 眼: [0, -2.4, 0.66] as V3, 看: [0, 0, 0.6] as V3, 视角: 20 };
-const 身后 = { 眼: [0, 3.4, 1.3] as V3, 看: [0, 0, 0.35] as V3, 视角: 32 };
+const fullBody = { 眼: [0, -3.4, 1.0] as V3, 看: [0, 0, 0.42] as V3, fov: 30 };
+const face = { 眼: [0, -2.4, 0.66] as V3, 看: [0, 0, 0.6] as V3, fov: 20 };
+const fromBehind = { 眼: [0, 3.4, 1.3] as V3, 看: [0, 0, 0.35] as V3, fov: 32 };
 // 控制器视图有站着的，机位比坐着的 全身 拉远拉高
-const 站全身 = { 眼: [0, -4.8, 1.3] as V3, 看: [0, 0, 0.7] as V3, 视角: 30 };
+const standFullBody = { 眼: [0, -4.8, 1.3] as V3, 看: [0, 0, 0.7] as V3, fov: 30 };
 
-export const 视图们: readonly 视图[] = [
-  { 名: '全身-0秒', ...全身, 秒: 0 },
-  { 名: '全身-2.6秒', ...全身, 秒: 2.6, 说明: '法杖三个环转到一半' },
-  { 名: '脸-0.125秒', ...脸, 秒: 0.125, 说明: '眨眼曲线冲过头：手抄版夹成全闭，原版眼皮 scale 是 −0.125（翻过来）' },
-  { 名: '身后-1秒', ...身后, 秒: 1 },
-  { 名: '身后-2秒', ...身后, 秒: 2 },
-  { 名: '控制器-0.9秒', ...站全身, 秒: 0.9, 控制器: true, 说明: '还在坐（第 1 秒换站）' },
-  { 名: '控制器-1.25秒', ...站全身, 秒: 1.25, 控制器: true, 说明: '过渡一半：左边插向 idle 第 0 刻（idle 不动 Root，Root 直接回原位，所以离地），右边坐和站各一半' },
-  { 名: '控制器-2秒', ...站全身, 秒: 2, 控制器: true, 说明: '过渡完：左边 idle 播到 0.5 秒，右边播到 1 秒' },
+export const views: readonly View[] = [
+  { 名: '全身-0秒', ...fullBody, 秒: 0 },
+  { 名: '全身-2.6秒', ...fullBody, 秒: 2.6, 说明: '法杖三个环转到一半' },
+  { 名: '脸-0.125秒', ...face, 秒: 0.125, 说明: '眨眼曲线冲过头：手抄版夹成全闭，原版眼皮 scale 是 −0.125（翻过来）' },
+  { 名: '身后-1秒', ...fromBehind, 秒: 1 },
+  { 名: '身后-2秒', ...fromBehind, 秒: 2 },
+  { 名: '控制器-0.9秒', ...standFullBody, 秒: 0.9, useController: true, 说明: '还在坐（第 1 秒换站）' },
+  { 名: '控制器-1.25秒', ...standFullBody, 秒: 1.25, useController: true, 说明: '过渡一半：左边插向 idle 第 0 刻（idle 不动 Root，Root 直接回原位，所以离地），右边坐和站各一半' },
+  { 名: '控制器-2秒', ...standFullBody, 秒: 2, useController: true, 说明: '过渡完：左边 idle 播到 0.5 秒，右边播到 1 秒' },
 ];

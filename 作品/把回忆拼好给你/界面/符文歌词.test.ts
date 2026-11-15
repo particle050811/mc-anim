@@ -5,393 +5,393 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { png } from '@engine/model/贴图.ts';
-import type { 字形表 } from '@库/界面/像素字表.ts';
-import { 字节路径, 读作品资产锁 } from '../../../pipeline/资产/资产锁.ts';
-import { 句们 } from '../配乐/网格.ts';
-import { 逐字问题 } from '../配乐/逐字.ts';
-import { fps, 旧帧, 正片事件 } from '../分镜.ts';
-import { 网格 } from '../配乐/网格.ts';
-import { 光明, 光明档数, 刹那, 刹那块, 放下块, 烟花火花 } from './歌词字效.ts';
-import { 分屏版式 } from '../场/2-门口/分屏参数.ts';
-import { 关键词们, 分屏线, 分屏让, 拨开缝, 歌词排版表, 歌词框 } from './歌词排版表.ts';
-import { 拼音, 正片歌词行, 进场 } from './符文歌词数据.ts';
-import { 分块, 块数, 字种, 符文倍, 飞们, 飞位, 飞法 } from './符文拼字.ts';
-import { 做字源, 合样式, 字状态, 字格, 排一句, 符文歌词默认, 解码时段, 错距, type 时间样式 } from './符文排版.ts';
+import type { GlyphTable } from '@库/界面/像素字表.ts';
+import { bytesPath, readWorkAssetLock } from '../../../pipeline/资产/资产锁.ts';
+import { sentences } from '../配乐/网格.ts';
+import { perCharIssues } from '../配乐/逐字.ts';
+import { fps, legacyFrameSec, mainCutEvents } from '../分镜.ts';
+import { beatGrid } from '../配乐/网格.ts';
+import { brightEffect, brightTier, instantEffect, instantBlock, putDownBlock, fireworkSparks } from './歌词字效.ts';
+import { splitLayout } from '../场/2-门口/分屏参数.ts';
+import { keywords, splitLine, splitYield, pushGap, lyricLayoutTable, lyricBox } from './歌词排版表.ts';
+import { pinyin, mainCutLyricLine, entryParams } from './符文歌词数据.ts';
+import { splitBlocks, tileCount, glyphSeed, runeScale, flyBlocks, flyPos, flyParams } from './符文拼字.ts';
+import { makeGlyphSource, mergeStyle, charStates, glyphCell, layoutLine, runeLyricDefault, decodeTimeSpans, staggerDist, type TimeStyle } from './符文排版.ts';
 
-const 作品根 = path.resolve(import.meta.dirname, '..');
-const 锁 = 读作品资产锁(作品根);
-const 字节 = (id: string) => {
-  const 条目 = 锁[id];
-  return 条目 && fs.existsSync(字节路径(条目)) ? fs.readFileSync(字节路径(条目)) : null;
+const workRoot = path.resolve(import.meta.dirname, '..');
+const assetLock = readWorkAssetLock(workRoot);
+const bytesOf = (id: string) => {
+  const entry = assetLock[id];
+  return entry && fs.existsSync(bytesPath(entry)) ? fs.readFileSync(bytesPath(entry)) : null;
 };
-const 表字节 = 字节('字体/把回忆拼好给你/歌词字');
-const sga字节 = 字节('贴图/界面/银河字母');
+const fontBytes = bytesOf('字体/把回忆拼好给你/歌词字');
+const galacticBytes = bytesOf('贴图/界面/银河字母');
 
 describe('歌词艺术字的数据', () => {
   it('逐字时刻：字数和词一样、递增、落在句里', () => {
-    expect(逐字问题()).toEqual([]);
+    expect(perCharIssues()).toEqual([]);
   });
 
   it('拼音：每句字数和词一样，只有 a～z', () => {
-    for (const s of 句们) {
-      expect(拼音[s.序]?.length, `第 ${s.序} 句`).toBe([...s.词].length);
-      for (const 音 of 拼音[s.序]!) expect(音, `第 ${s.序} 句`).toMatch(/^[a-z]+$/);
+    for (const s of sentences) {
+      expect(pinyin[s.序]?.length, `第 ${s.序} 句`).toBe([...s.text].length);
+      for (const syllable of pinyin[s.序]!) expect(syllable, `第 ${s.序} 句`).toMatch(/^[a-z]+$/);
     }
   });
 
   it('歌词文案.txt 和 网格.ts 的词一样（字表照它取）', () => {
-    const 行们 = fs
-      .readFileSync(path.join(作品根, '界面', '歌词文案.txt'), 'utf8')
+    const lines = fs
+      .readFileSync(path.join(workRoot, '界面', '歌词文案.txt'), 'utf8')
       .split('\n')
       .filter((l) => l.trim() && !l.startsWith('#'));
-    expect(行们).toEqual(句们.map((s) => s.词));
+    expect(lines).toEqual(sentences.map((s) => s.text));
   });
 
   it('正片歌词行：解码帧 = 逐字秒 × fps；入在首字前至少 0.3 秒（第 1 句 0.6 秒），在上一句末字后至少 最短留秒', () => {
-    const 行 = 正片歌词行(8);
-    expect(行.解[11]).toBeCloseTo(27.75 * fps);
-    expect(行.序).toBe(8);
-    expect(行.版?.断行).toEqual([7]);
-    expect(正片歌词行(1).入).toBe(Math.round((1.54 - 0.6) * fps));
-    for (const s of 句们) {
-      const 本 = 正片歌词行(s.序);
-      const 上 = s.序 > 1 ? 正片歌词行(s.序 - 1) : null;
-      if (上) expect(本.入, `第 ${s.序} 句`).toBeGreaterThanOrEqual(上.解[上.解.length - 1]! + 进场.最短留秒 * fps);
+    const lyricLine = mainCutLyricLine(8);
+    expect(lyricLine.charTimes[11]).toBeCloseTo(27.75 * fps);
+    expect(lyricLine.序).toBe(8);
+    expect(lyricLine.版?.lineBreaks).toEqual([7]);
+    expect(mainCutLyricLine(1).入).toBe(Math.round((1.54 - 0.6) * fps));
+    for (const s of sentences) {
+      const current = mainCutLyricLine(s.序);
+      const prevLine = s.序 > 1 ? mainCutLyricLine(s.序 - 1) : null;
+      if (prevLine) expect(current.入, `第 ${s.序} 句`).toBeGreaterThanOrEqual(prevLine.charTimes[prevLine.charTimes.length - 1]! + entryParams.minHoldSec * fps);
       // 第 9 句离第 8 句末字只有 0.21 秒，让给上一句的停留
-      if (s.序 !== 9) expect(本.解[0]! - 本.入, `第 ${s.序} 句`).toBeGreaterThanOrEqual(进场.最短提前秒 * fps - 0.5);
+      if (s.序 !== 9) expect(current.charTimes[0]! - current.入, `第 ${s.序} 句`).toBeGreaterThanOrEqual(entryParams.minLeadSec * fps - 0.5);
     }
   });
 
   it('排版表：每句都有一项；15 个字的句都断了行，断行递增、每段不空；各段 的个数和段数一样', () => {
-    for (const s of 句们) {
-      const 版 = 歌词排版表[s.序];
-      expect(版, `第 ${s.序} 句`).toBeDefined();
-      const n = [...s.词].length;
-      if (n > 14) expect(版!.断行?.length, `第 ${s.序} 句「${s.词}」`).toBeGreaterThan(0);
-      (版!.断行 ?? []).forEach((k, i, a) => {
+    for (const s of sentences) {
+      const lineLayout = lyricLayoutTable[s.序];
+      expect(lineLayout, `第 ${s.序} 句`).toBeDefined();
+      const n = [...s.text].length;
+      if (n > 14) expect(lineLayout!.lineBreaks?.length, `第 ${s.序} 句「${s.text}」`).toBeGreaterThan(0);
+      (lineLayout!.lineBreaks ?? []).forEach((k, i, a) => {
         expect(k).toBeGreaterThan(a[i - 1] ?? 0);
         expect(k).toBeLessThan(n);
       });
-      if (版!.各段) expect(版!.各段.length, `第 ${s.序} 句`).toBe((版!.断行 ?? []).length + 1);
+      if (lineLayout!.segments) expect(lineLayout!.segments.length, `第 ${s.序} 句`).toBe((lineLayout!.lineBreaks ?? []).length + 1);
     }
   });
 
   it('关键词：五句各有一个，词在句里，刹那在世界碎掉那一拍裂、时差晚半拍', () => {
-    expect(Object.keys(关键词们).map(Number)).toEqual([3, 10, 11, 13, 14]);
-    for (const 序 of [3, 10, 11, 13, 14]) {
-      const 行 = 正片歌词行(序, 100);
-      const 效 = 行.字效!;
-      expect([...行.词].slice(效.从, 效.到 + 1).join('')).toBe(关键词们[序]!.词);
-      if (效.效 === '刹那') expect(效.裂).toBe(正片事件.第11句碎裂.帧 - 100);
-      if (效.效 === '时差') expect(效.半拍).toBeCloseTo((网格.拍长 / 2) * fps);
+    expect(Object.keys(keywords).map(Number)).toEqual([3, 10, 11, 13, 14]);
+    for (const lineIndex of [3, 10, 11, 13, 14]) {
+      const lyricLine = mainCutLyricLine(lineIndex, 100);
+      const wordEffect = lyricLine.wordEffect!;
+      expect([...lyricLine.text].slice(wordEffect.从, wordEffect.到 + 1).join('')).toBe(keywords[lineIndex]!.word);
+      if (wordEffect.effect === '刹那') expect(wordEffect.shatterFrame).toBe(mainCutEvents.worldShatters.帧 - 100);
+      if (wordEffect.effect === '时差') expect(wordEffect.halfBeat).toBeCloseTo((beatGrid.拍长 / 2) * fps);
     }
-    expect(正片歌词行(1).字效).toBeUndefined();
+    expect(mainCutLyricLine(1).wordEffect).toBeUndefined();
   });
 });
 
-describe.skipIf(!表字节 || !sga字节)('歌词艺术字的排版', () => {
-  const sga = png(`data:image/png;base64,${sga字节!.toString('base64')}`);
-  const 源 = 做字源(sga, JSON.parse(表字节!.toString('utf8')) as 字形表, '字体/把回忆拼好给你/歌词字');
+describe.skipIf(!fontBytes || !galacticBytes)('歌词艺术字的排版', () => {
+  const sga = png(`data:image/png;base64,${galacticBytes!.toString('base64')}`);
+  const glyphSource = makeGlyphSource(sga, JSON.parse(fontBytes!.toString('utf8')) as GlyphTable, '字体/把回忆拼好给你/歌词字');
 
   it('银河字母的字宽照原版（ascii_sga.png 量的）', () => {
-    const 宽 = Object.fromEntries([...'abcdefghijklmnopqrstuvwxyz'].map((c) => [c, 源.符文(c).宽]));
-    expect(宽).toEqual({ a: 5, b: 5, c: 2, d: 5, e: 5, f: 5, g: 3, h: 5, i: 1, j: 1, k: 5, l: 3, m: 5, n: 4, o: 4, p: 3, q: 5, r: 4, s: 2, t: 5, u: 5, v: 5, w: 5, x: 5, y: 3, z: 5 });
-    for (const c of 'abcdefghijklmnopqrstuvwxyz') for (const [, y] of 源.符文(c).点) expect(y).toBeLessThan(7);
+    const glyphWidths = Object.fromEntries([...'abcdefghijklmnopqrstuvwxyz'].map((c) => [c, glyphSource.rune(c).宽]));
+    expect(glyphWidths).toEqual({ a: 5, b: 5, c: 2, d: 5, e: 5, f: 5, g: 3, h: 5, i: 1, j: 1, k: 5, l: 3, m: 5, n: 4, o: 4, p: 3, q: 5, r: 4, s: 2, t: 5, u: 5, v: 5, w: 5, x: 5, y: 3, z: 5 });
+    for (const c of 'abcdefghijklmnopqrstuvwxyz') for (const [, y] of glyphSource.rune(c).点) expect(y).toBeLessThan(7);
   });
 
   it('每句的字都在歌词字表里，步进 18 点', () => {
-    for (const s of 句们) for (const 字 of s.词) expect(源.步进(字), 字).toBe(18);
+    for (const s of sentences) for (const char of s.text) expect(glyphSource.advance(char), char).toBe(18);
   });
 
   it('默认样式加排版表：每行宽不过 1800 像素（左右各留 380）、描边还在画里；底部那句最后一行的字格下沿离底 边距；两行的第二行在第一行下 行距 点', () => {
-    const 样 = 符文歌词默认;
-    for (const s of 句们) {
-      const 版 = 歌词排版表[s.序];
-      const 合 = 合样式(样, 版);
-      const { 格们, 行宽 } = 排一句(源, s.词, 合, 2560, 1440, 版);
-      for (const w of 行宽) expect(w * 合.字点, `第 ${s.序} 句`).toBeLessThanOrEqual(1800);
-      for (const g of 格们) {
+    const style = runeLyricDefault;
+    for (const s of sentences) {
+      const lineLayout = lyricLayoutTable[s.序];
+      const mergedStyle = mergeStyle(style, lineLayout);
+      const { glyphs, lineWidth: lineWidths } = layoutLine(glyphSource, s.text, mergedStyle, 2560, 1440, lineLayout);
+      for (const w of lineWidths) expect(w * mergedStyle.glyphScale, `第 ${s.序} 句`).toBeLessThanOrEqual(1800);
+      for (const g of glyphs) {
         expect(g.x - 1).toBeGreaterThanOrEqual(0);
-        expect((g.x + 字格 + 1) * 合.字点).toBeLessThanOrEqual(2560);
+        expect((g.x + glyphCell + 1) * mergedStyle.glyphScale).toBeLessThanOrEqual(2560);
       }
     }
-    const 下 = 排一句(源, '爱炙热的你却忘了爱自己', { ...样, 位置: '下' }, 2560, 1440);
+    const bottomLine = layoutLine(glyphSource, '爱炙热的你却忘了爱自己', { ...style, 位置: '下' }, 2560, 1440);
     // 点格从左上角数，1440 不是 7 的倍数：底边距按整点取，比 边距 多出零头
-    const 底点 = Math.floor(1440 / 样.字点) - Math.round(样.边距 / 样.字点);
-    expect(下.格们[0]!.y + 字格).toBe(底点);
-    const 两行 = 排一句(源, '将快乐全都收集将不开心全都淘汰', 样, 2560, 1440, { 断行: [7] });
-    expect(两行.格们[0]!.y * 样.字点).toBe(样.边距);
-    expect(两行.格们[7]!.y - 两行.格们[0]!.y).toBe(样.行距);
-    expect(两行.行宽).toEqual([7 * 18 - 2, 8 * 18 - 2]);
-    const 两行下 = 排一句(源, '将快乐全都收集将不开心全都淘汰', { ...样, 位置: '下' }, 2560, 1440, { 断行: [7] });
-    expect(两行下.格们[14]!.y + 字格).toBe(底点);
+    const bottomRow = Math.floor(1440 / style.glyphScale) - Math.round(style.margin / style.glyphScale);
+    expect(bottomLine.glyphs[0]!.y + glyphCell).toBe(bottomRow);
+    const twoLines = layoutLine(glyphSource, '将快乐全都收集将不开心全都淘汰', style, 2560, 1440, { lineBreaks: [7] });
+    expect(twoLines.glyphs[0]!.y * style.glyphScale).toBe(style.margin);
+    expect(twoLines.glyphs[7]!.y - twoLines.glyphs[0]!.y).toBe(style.lineGap);
+    expect(twoLines.lineWidth).toEqual([7 * 18 - 2, 8 * 18 - 2]);
+    const twoLinesBottom = layoutLine(glyphSource, '将快乐全都收集将不开心全都淘汰', { ...style, 位置: '下' }, 2560, 1440, { lineBreaks: [7] });
+    expect(twoLinesBottom.glyphs[14]!.y + glyphCell).toBe(bottomRow);
   });
 
   it('逐句排版（核查 10-24：每句按意思排，不是一律一行顶在上面）：第 3、11 句照旧顶上居中一行；第 2、6、9 句在底部、第 12 句在中段；第 7 句被光柱劈开，两半同一行、缝在画面正中', () => {
-    const 样 = 符文歌词默认;
-    const 排 = (序: number) => {
-      const s = 句们.find((x) => x.序 === 序)!;
-      const 版 = 歌词排版表[序]!;
-      return { ...排一句(源, s.词, 合样式(样, 版), 2560, 1440, 版), n: [...s.词].length };
+    const style = runeLyricDefault;
+    const layout = (lineIndex: number) => {
+      const s = sentences.find((x) => x.序 === lineIndex)!;
+      const lineLayout = lyricLayoutTable[lineIndex]!;
+      return { ...layoutLine(glyphSource, s.text, mergeStyle(style, lineLayout), 2560, 1440, lineLayout), n: [...s.text].length };
     };
-    for (const 序 of [3, 11]) {
-      const { 格们, n } = 排(序);
-      expect(格们[0]!.x, `第 ${序} 句`).toBe(Math.round((2560 / 7 - (n * 18 - 2)) / 2));
-      expect(new Set(格们.map((g) => g.y))).toEqual(new Set([11]));
+    for (const lineIndex of [3, 11]) {
+      const { glyphs, n } = layout(lineIndex);
+      expect(glyphs[0]!.x, `第 ${lineIndex} 句`).toBe(Math.round((2560 / 7 - (n * 18 - 2)) / 2));
+      expect(new Set(glyphs.map((g) => g.y))).toEqual(new Set([11]));
     }
-    const 底点 = Math.floor(1440 / 样.字点) - Math.round(样.边距 / 样.字点);
-    for (const 序 of [2, 6, 9]) expect(Math.max(...排(序).格们.map((g) => g.y)) + 字格, `第 ${序} 句`).toBe(底点);
+    const bottomRow = Math.floor(1440 / style.glyphScale) - Math.round(style.margin / style.glyphScale);
+    for (const lineIndex of [2, 6, 9]) expect(Math.max(...layout(lineIndex).glyphs.map((g) => g.y)) + glyphCell, `第 ${lineIndex} 句`).toBe(bottomRow);
     // 第 12 句：上沿在画面 1/7 以下、下沿在一半以上（她坐在床沿，头在画面上半）
-    const 十二 = 排(12).格们;
-    expect(Math.min(...十二.map((g) => g.y)) * 样.字点).toBeGreaterThan(1440 / 7);
-    expect((Math.max(...十二.map((g) => g.y)) + 字格) * 样.字点).toBeLessThan(720);
+    const twelve = layout(12).glyphs;
+    expect(Math.min(...twelve.map((g) => g.y)) * style.glyphScale).toBeGreaterThan(1440 / 7);
+    expect((Math.max(...twelve.map((g) => g.y)) + glyphCell) * style.glyphScale).toBeLessThan(720);
     // 第 7 句：前 5 个字一段、后 6 个字一段，同一行；两段字格之间 拨开缝 点，缝的中线在画面正中（点格取整差半点）
-    const { 格们: 七, 行宽 } = 排(7);
-    expect(new Set(七.map((g) => g.y))).toEqual(new Set([11]));
-    const 缝左 = 七[0]!.x + 行宽[0]!;
-    const 缝右 = 七[5]!.x;
-    expect(缝右 - 缝左).toBeGreaterThanOrEqual(拨开缝 - 1);
-    expect(Math.abs(((缝左 + 缝右) / 2) * 样.字点 - 1280)).toBeLessThanOrEqual(样.字点);
+    const { glyphs: cells, lineWidth: lineWidths } = layout(7);
+    expect(new Set(cells.map((g) => g.y))).toEqual(new Set([11]));
+    const seamLeft = cells[0]!.x + lineWidths[0]!;
+    const seamRight = cells[5]!.x;
+    expect(seamRight - seamLeft).toBeGreaterThanOrEqual(pushGap - 1);
+    expect(Math.abs(((seamLeft + seamRight) / 2) * style.glyphScale - 1280)).toBeLessThanOrEqual(style.glyphScale);
   });
 
   it('歌词框：和 排一句 排出来的字格（连描边）一样大', () => {
-    for (const s of 句们) {
-      const 版 = 歌词排版表[s.序]!;
-      const 合 = 合样式(符文歌词默认, 版);
-      const { 格们 } = 排一句(源, s.词, 合, 2560, 1440, 版);
-      const 框 = 歌词框(s.词, 版);
-      expect(框.左 * 2560, `第 ${s.序} 句`).toBeCloseTo((Math.min(...格们.map((g) => g.x)) - 1) * 合.字点, 6);
-      expect(框.下 * 1440, `第 ${s.序} 句`).toBeCloseTo((Math.max(...格们.map((g) => g.y)) + 字格 + 1) * 合.字点, 6);
+    for (const s of sentences) {
+      const lineLayout = lyricLayoutTable[s.序]!;
+      const mergedStyle = mergeStyle(runeLyricDefault, lineLayout);
+      const { glyphs } = layoutLine(glyphSource, s.text, mergedStyle, 2560, 1440, lineLayout);
+      const box = lyricBox(s.text, lineLayout);
+      expect(box.left * 2560, `第 ${s.序} 句`).toBeCloseTo((Math.min(...glyphs.map((g) => g.x)) - 1) * mergedStyle.glyphScale, 6);
+      expect(box.下 * 1440, `第 ${s.序} 句`).toBeCloseTo((Math.max(...glyphs.map((g) => g.y)) + glyphCell + 1) * mergedStyle.glyphScale, 6);
     }
   });
 
   it('错落：两行各自居中后上一行往左、下一行往右各让 错距 的一半；左、右对齐对着整块的边', () => {
-    const 词 = '将快乐全都收集将不开心全都淘汰';
-    const 中 = 排一句(源, 词, 符文歌词默认, 2560, 1440, { 断行: [7] }).格们;
-    const 错 = 排一句(源, 词, 符文歌词默认, 2560, 1440, { 断行: [7], 对齐: '错落' }).格们;
-    expect(错[0]!.x - 中[0]!.x).toBe(-错距 / 2);
-    expect(错[7]!.x - 中[7]!.x).toBe(错距 / 2);
-    const 左 = 排一句(源, 词, 符文歌词默认, 2560, 1440, { 断行: [7], 对齐: '左' }).格们;
-    expect(左[0]!.x).toBe(左[7]!.x);
-    const 右 = 排一句(源, 词, 符文歌词默认, 2560, 1440, { 断行: [7], 对齐: '右' }).格们;
-    expect(右[6]!.x).toBe(右[14]!.x);
+    const text = '将快乐全都收集将不开心全都淘汰';
+    const refGlyphs = layoutLine(glyphSource, text, runeLyricDefault, 2560, 1440, { lineBreaks: [7] }).glyphs;
+    const staggeredCells = layoutLine(glyphSource, text, runeLyricDefault, 2560, 1440, { lineBreaks: [7], textAlign: '错落' }).glyphs;
+    expect(staggeredCells[0]!.x - refGlyphs[0]!.x).toBe(-staggerDist / 2);
+    expect(staggeredCells[7]!.x - refGlyphs[7]!.x).toBe(staggerDist / 2);
+    const leftAlignGlyphs = layoutLine(glyphSource, text, runeLyricDefault, 2560, 1440, { lineBreaks: [7], textAlign: '左' }).glyphs;
+    expect(leftAlignGlyphs[0]!.x).toBe(leftAlignGlyphs[7]!.x);
+    const rightAlignedCells = layoutLine(glyphSource, text, runeLyricDefault, 2560, 1440, { lineBreaks: [7], textAlign: '右' }).glyphs;
+    expect(rightAlignedCells[6]!.x).toBe(rightAlignedCells[14]!.x);
   });
 
   it('分屏两句（第 13、14 句）：一段在左屏、一段在右屏，同一行，连描边离分屏线（成片 1280～1288）都还有 分屏让 − 2 点（取整），两段只画在自己那一屏；第 14 句左段在左屏太阳右边（第14句.test：太阳右沿在页面 392 以左）', () => {
-    const 样 = 符文歌词默认;
-    expect(分屏线).toEqual([分屏版式.服务器宽 / 1280, (分屏版式.服务器宽 + 分屏版式.线宽) / 1280]);
-    for (const 序 of [13, 14]) {
-      const s = 句们.find((x) => x.序 === 序)!;
-      const 版 = 歌词排版表[序]!;
-      const { 格们, 行宽 } = 排一句(源, s.词, 合样式(样, 版), 2560, 1440, 版);
-      const k = 版.断行![0]!;
-      const 左段右 = (格们[0]!.x + 行宽[0]! + 1) * 样.字点;
-      const 右段左 = (格们[k]!.x - 1) * 样.字点;
-      expect(1280 - 左段右, `第 ${序} 句`).toBeGreaterThanOrEqual((分屏让 - 2) * 样.字点);
-      expect(右段左 - 1288, `第 ${序} 句`).toBeGreaterThanOrEqual((分屏让 - 2) * 样.字点);
-      expect(new Set(格们.map((g) => g.y)).size).toBe(1);
-      expect(格们[0]!.y).toBe(11);
-      for (const g of 格们.slice(0, k)) expect([g.界![0], g.界![1] * 样.字点]).toEqual([0, expect.closeTo(1280)]);
-      for (const g of 格们.slice(k)) expect([g.界![0] * 样.字点, g.界![1] * 样.字点]).toEqual([expect.closeTo(1288), expect.closeTo(2560)]);
+    const style = runeLyricDefault;
+    expect(splitLine).toEqual([splitLayout.serverWidth / 1280, (splitLayout.serverWidth + splitLayout.lineWidth) / 1280]);
+    for (const lineIndex of [13, 14]) {
+      const s = sentences.find((x) => x.序 === lineIndex)!;
+      const lineLayout = lyricLayoutTable[lineIndex]!;
+      const { glyphs, lineWidth: lineWidths } = layoutLine(glyphSource, s.text, mergeStyle(style, lineLayout), 2560, 1440, lineLayout);
+      const k = lineLayout.lineBreaks![0]!;
+      const leftSegmentRight = (glyphs[0]!.x + lineWidths[0]! + 1) * style.glyphScale;
+      const rightSegmentLeft = (glyphs[k]!.x - 1) * style.glyphScale;
+      expect(1280 - leftSegmentRight, `第 ${lineIndex} 句`).toBeGreaterThanOrEqual((splitYield - 2) * style.glyphScale);
+      expect(rightSegmentLeft - 1288, `第 ${lineIndex} 句`).toBeGreaterThanOrEqual((splitYield - 2) * style.glyphScale);
+      expect(new Set(glyphs.map((g) => g.y)).size).toBe(1);
+      expect(glyphs[0]!.y).toBe(11);
+      for (const g of glyphs.slice(0, k)) expect([g.界![0], g.界![1] * style.glyphScale]).toEqual([0, expect.closeTo(1280)]);
+      for (const g of glyphs.slice(k)) expect([g.界![0] * style.glyphScale, g.界![1] * style.glyphScale]).toEqual([expect.closeTo(1288), expect.closeTo(2560)]);
     }
-    const 十四 = 排一句(源, '也为你骗自己放下', 符文歌词默认, 2560, 1440, 歌词排版表[14]);
-    expect((十四.格们[0]!.x - 1) * 符文歌词默认.字点).toBeGreaterThanOrEqual(392 * 2);
+    const fourteen = layoutLine(glyphSource, '也为你骗自己放下', runeLyricDefault, 2560, 1440, lyricLayoutTable[14]);
+    expect((fourteen.glyphs[0]!.x - 1) * runeLyricDefault.glyphScale).toBeGreaterThanOrEqual(392 * 2);
   });
 
   it('第 1 句断两行、右对齐放在左半：上行「我们都是」、下行「渺小真实存在」，上沿照旧；连描边右沿在页面 665 以左（2-初入 推近的樱花林左沿约 670），上行左沿在页面 340 以右（2-选择世界 搜索框光标右沿约 333）', () => {
-    const 版 = 歌词排版表[1]!;
-    const 点 = 符文歌词默认.字点;
-    const { 格们, 行宽 } = 排一句(源, '我们都是渺小真实存在', 符文歌词默认, 2560, 1440, 版);
-    expect(格们.slice(0, 4).every((g) => g.y === 11)).toBe(true);
-    expect(格们.slice(4).every((g) => g.y === 11 + 符文歌词默认.行距)).toBe(true);
-    expect(格们[0]!.x + 行宽[0]!).toBe(格们[4]!.x + 行宽[1]!);
-    expect((格们[4]!.x + 行宽[1]! + 1) * 点).toBeLessThanOrEqual(665 * 2);
-    expect((格们[0]!.x - 1) * 点).toBeGreaterThanOrEqual(340 * 2);
+    const lineLayout = lyricLayoutTable[1]!;
+    const dotSize = runeLyricDefault.glyphScale;
+    const { glyphs, lineWidth: lineWidths } = layoutLine(glyphSource, '我们都是渺小真实存在', runeLyricDefault, 2560, 1440, lineLayout);
+    expect(glyphs.slice(0, 4).every((g) => g.y === 11)).toBe(true);
+    expect(glyphs.slice(4).every((g) => g.y === 11 + runeLyricDefault.lineGap)).toBe(true);
+    expect(glyphs[0]!.x + lineWidths[0]!).toBe(glyphs[4]!.x + lineWidths[1]!);
+    expect((glyphs[4]!.x + lineWidths[1]! + 1) * dotSize).toBeLessThanOrEqual(665 * 2);
+    expect((glyphs[0]!.x - 1) * dotSize).toBeGreaterThanOrEqual(340 * 2);
   });
 
   it('分块：每个字的点一个不落、不重地分进 2～3 块（点少于 60 的 2 块），块按书写顺序排', () => {
-    for (const s of 句们)
-      for (const 字 of s.词) {
-        const 阵 = 源.汉字(字);
-        const 块们 = 分块(字, 阵);
-        expect(块们.length, 字).toBe(Math.min(块数(阵.点.length), 阵.点.length));
-        expect(块们.length).toBe(阵.点.length < 60 ? 2 : 3);
-        const 全 = 块们.flatMap((b) => b.点.map(([x, y]) => `${x},${y}`));
-        expect(new Set(全).size, 字).toBe(阵.点.length);
-        expect(全.length, 字).toBe(阵.点.length);
-        for (let k = 1; k < 块们.length; k++) expect(块们[k]!.心[1] * 2 + 块们[k]!.心[0]).toBeGreaterThanOrEqual(块们[k - 1]!.心[1] * 2 + 块们[k - 1]!.心[0]);
+    for (const s of sentences)
+      for (const char of s.text) {
+        const glyph = glyphSource.hanChar(char);
+        const chunks = splitBlocks(char, glyph);
+        expect(chunks.length, char).toBe(Math.min(tileCount(glyph.点.length), glyph.点.length));
+        expect(chunks.length).toBe(glyph.点.length < 60 ? 2 : 3);
+        const cellKeys = chunks.flatMap((b) => b.点.map(([x, y]) => `${x},${y}`));
+        expect(new Set(cellKeys).size, char).toBe(glyph.点.length);
+        expect(cellKeys.length, char).toBe(glyph.点.length);
+        for (let k = 1; k < chunks.length; k++) expect(chunks[k]!.心[1] * 2 + chunks[k]!.心[0]).toBeGreaterThanOrEqual(chunks[k - 1]!.心[1] * 2 + chunks[k - 1]!.心[0]);
       }
   });
 
   it('符文飞的路线：顶上那行的符文（按 符文倍 画）不出画面上沿、往下最多伸出字格 下伸 点（不压下面的画面），落定前 1/24 秒离落点不到半个字（原版那条线最后一段才落下去）', () => {
-    for (const s of 句们) {
-      const 行 = 正片歌词行(s.序);
-      const 时段 = 解码时段(行, 符文歌词默认);
-      [...s.词].forEach((字, j) => {
-        const 块们 = 分块(字, 源.汉字(字));
-        const 飞 = 飞们(块们, 行.拼音[j]!, { ...时段[j]!, 入: 行.入 + j * 符文歌词默认.错开秒 * fps }, 符文歌词默认.飞秒, 字种(s.序, j));
-        飞.forEach((一, k) => {
-          for (let f = Math.ceil(一.起); f < 一.落; f++) {
-            const 位 = 飞位(一, f)!;
-            const 顶 = 块们[k]!.心[1] + 位[1] - 3.5 * 符文倍;
-            expect(顶, `第 ${s.序} 句「${字}」第 ${k} 块`).toBeGreaterThanOrEqual(-飞法.顶空 - 0.5);
-            expect(顶 + 7 * 符文倍).toBeLessThanOrEqual(字格 + 飞法.下伸 + 0.5);
+    for (const s of sentences) {
+      const lyricLine = mainCutLyricLine(s.序);
+      const timeSpans = decodeTimeSpans(lyricLine, runeLyricDefault);
+      [...s.text].forEach((char, j) => {
+        const chunks = splitBlocks(char, glyphSource.hanChar(char));
+        const flights = flyBlocks(chunks, lyricLine.pinyin[j]!, { ...timeSpans[j]!, 入: lyricLine.入 + j * runeLyricDefault.staggerSec * fps }, runeLyricDefault.flySec, glyphSeed(s.序, j));
+        flights.forEach((flight, k) => {
+          for (let f = Math.ceil(flight.起); f < flight.landTime; f++) {
+            const pos = flyPos(flight, f)!;
+            const topY = chunks[k]!.心[1] + pos[1] - 3.5 * runeScale;
+            expect(topY, `第 ${s.序} 句「${char}」第 ${k} 块`).toBeGreaterThanOrEqual(-flyParams.topGap - 0.5);
+            expect(topY + 7 * runeScale).toBeLessThanOrEqual(glyphCell + flyParams.extendDown + 0.5);
           }
-          const 末 = 飞位(一, 一.落 - 旧帧(1) * fps);
-          if (末 && (一.落 - 一.起) / fps >= 飞法.最短秒) expect(Math.hypot(末[0], 末[1]), `第 ${s.序} 句「${字}」`).toBeLessThan(8);
+          const endPos = flyPos(flight, flight.landTime - legacyFrameSec(1) * fps);
+          if (endPos && (flight.landTime - flight.起) / fps >= flyParams.minFlySec) expect(Math.hypot(endPos[0], endPos[1]), `第 ${s.序} 句「${char}」`).toBeLessThan(8);
         });
       });
     }
   });
   it('手机上看得出是拼成的（核查 10-24）：全片同时在飞的符文最多 7 枚；除了句首挤着的字，每个字拼了一半的样子至少停 拼字秒 − 1/24 秒', () => {
-    const 行们 = 句们.map((s) => 正片歌词行(s.序));
+    const lyricLines = sentences.map((s) => mainCutLyricLine(s.序));
     // 按 24 fps 那些时刻数（每 1/24 秒一次，同改 60 fps 以前）。60 fps 多出来的中间帧里第 8 句有一帧（歌曲帧 1521）
     // 一枚还差一点落定、一枚刚起飞，叠成 8 枚，只有 1/60 秒
-    const 步 = 旧帧(1) * fps;
-    const 飞着: Map<number, number> = new Map();
-    行们.forEach((行, i) => {
-      const 时段 = 解码时段(行, 符文歌词默认);
-      [...行.词].forEach((字, j) => {
-        const 入 = 行.入 + j * 符文歌词默认.错开秒 * fps;
-        const 飞 = 飞们(分块(字, 源.汉字(字)), 行.拼音[j]!, { ...时段[j]!, 入 }, 符文歌词默认.飞秒, 字种(i + 1, j));
-        for (const 一 of 飞) for (let k = Math.ceil(一.起 / 步); k * 步 < 一.落; k++) 飞着.set(k, (飞着.get(k) ?? 0) + 1);
+    const frameStep = legacyFrameSec(1) * fps;
+    const inFlight: Map<number, number> = new Map();
+    lyricLines.forEach((lyricLine, i) => {
+      const timeSpans = decodeTimeSpans(lyricLine, runeLyricDefault);
+      [...lyricLine.text].forEach((char, j) => {
+        const enterFrame = lyricLine.入 + j * runeLyricDefault.staggerSec * fps;
+        const flights = flyBlocks(splitBlocks(char, glyphSource.hanChar(char)), lyricLine.pinyin[j]!, { ...timeSpans[j]!, 入: enterFrame }, runeLyricDefault.flySec, glyphSeed(i + 1, j));
+        for (const flight of flights) for (let k = Math.ceil(flight.起 / frameStep); k * frameStep < flight.landTime; k++) inFlight.set(k, (inFlight.get(k) ?? 0) + 1);
         // 句首的字进场晚（首飞秒），拼字缩短；其余的字整 拼字秒
-        if (时段[j]!.起 > 入 + 符文歌词默认.首飞秒 * fps) expect(时段[j]!.完 - 时段[j]!.起, `第 ${i + 1} 句「${字}」`).toBeCloseTo(符文歌词默认.拼字秒 * fps, 9);
+        if (timeSpans[j]!.起 > enterFrame + runeLyricDefault.firstFlySec * fps) expect(timeSpans[j]!.end - timeSpans[j]!.起, `第 ${i + 1} 句「${char}」`).toBeCloseTo(runeLyricDefault.assembleSec * fps, 9);
       });
     });
-    expect(Math.max(...飞着.values())).toBeLessThanOrEqual(7);
+    expect(Math.max(...inFlight.values())).toBeLessThanOrEqual(7);
   });
 });
 
 describe('歌词艺术字的时序', () => {
   // 60 fps 帧：入 7.5、出 7.5、错开 1.25、拼字 17.5、首飞 10、落定提前 2.5、飞 22.5
-  const 样: 时间样式 = { 入秒: 旧帧(3), 出秒: 旧帧(3), 错开秒: 旧帧(0.5), 拼字秒: 旧帧(7), 首飞秒: 旧帧(4), 落定提前秒: 旧帧(1), 飞秒: 旧帧(9) };
-  const 一 = { 词: '一二', 拼音: ['yi', 'er'], 入: 25, 解: [62.5, 75] };
-  const 二 = { 词: '三', 拼音: ['san'], 入: 100, 解: [115] };
+  const timeStyle: TimeStyle = { enterSec: legacyFrameSec(3), exitSec: legacyFrameSec(3), staggerSec: legacyFrameSec(0.5), assembleSec: legacyFrameSec(7), firstFlySec: legacyFrameSec(4), settleLeadSec: legacyFrameSec(1), flySec: legacyFrameSec(9) };
+  const firstWord = { text: '一二', pinyin: ['yi', 'er'], 入: 25, charTimes: [62.5, 75] };
+  const second = { text: '三', pinyin: ['san'], 入: 100, charTimes: [115] };
 
   it('入帧前看不见，入帧那一帧已经走了一帧，第二个字晚 错开秒', () => {
-    expect(字状态([一, 二], 0, 22.5, 样).map((s) => s.显)).toEqual([0, 0]);
-    expect(字状态([一, 二], 0, 24, 样).map((s) => s.显)).toEqual([0, 0]);
-    const s = 字状态([一, 二], 0, 25, 样);
-    expect(s[0]!.显).toBeCloseTo(1 / 60 / 样.入秒);
-    expect(s[1]!.显).toBe(0);
+    expect(charStates([firstWord, second], 0, 22.5, timeStyle).map((s) => s.shown)).toEqual([0, 0]);
+    expect(charStates([firstWord, second], 0, 24, timeStyle).map((s) => s.shown)).toEqual([0, 0]);
+    const s = charStates([firstWord, second], 0, 25, timeStyle);
+    expect(s[0]!.shown).toBeCloseTo(1 / 60 / timeStyle.enterSec);
+    expect(s[1]!.shown).toBe(0);
     // 第二个字 入 在 25 + 错开秒 × 60 = 26.25
-    expect(字状态([一, 二], 0, 27, 样)[1]!.显).toBeCloseTo((0.75 / 60 + 1 / 60) / 样.入秒);
+    expect(charStates([firstWord, second], 0, 27, timeStyle)[1]!.shown).toBeCloseTo((0.75 / 60 + 1 / 60) / timeStyle.enterSec);
   });
 
   it('拼字：起唱前 落定提前秒 拼齐，第一块落定在那之前 拼字秒；和前一个字叠着拼（不再按两字间隔缩短）', () => {
-    expect(解码时段(一, 样)).toEqual([
-      { 起: 60 - 17.5, 完: 60 },
-      { 起: 72.5 - 17.5, 完: 72.5 },
+    expect(decodeTimeSpans(firstWord, timeStyle)).toEqual([
+      { 起: 60 - 17.5, end: 60 },
+      { 起: 72.5 - 17.5, end: 72.5 },
     ]);
-    expect(字状态([一, 二], 0, 57.5, 样)[0]!.解后).toBe(-2.5);
-    expect(字状态([一, 二], 0, 60, 样)[0]!.解后).toBe(0);
+    expect(charStates([firstWord, second], 0, 57.5, timeStyle)[0]!.afterSolve).toBe(-2.5);
+    expect(charStates([firstWord, second], 0, 60, timeStyle)[0]!.afterSolve).toBe(0);
   });
 
   it('句首的字进场晚：第一块不早于进场后 首飞秒，挤到拼齐那一帧为止', () => {
-    expect(解码时段({ 入: 25, 解: [42.5, 50, 35] }, 样)).toEqual([
-      { 起: 35, 完: 40 },
-      { 起: 36.25, 完: 47.5 },
-      { 起: 32.5, 完: 32.5 },
+    expect(decodeTimeSpans({ 入: 25, charTimes: [42.5, 50, 35] }, timeStyle)).toEqual([
+      { 起: 35, end: 40 },
+      { 起: 36.25, end: 47.5 },
+      { 起: 32.5, end: 32.5 },
     ]);
   });
 
   it('下一句入帧前 出秒 退完；最后一句没有 收 一直留着', () => {
-    expect(字状态([一, 二], 0, 90, 样).every((s) => s.显 === 1)).toBe(true);
-    expect(字状态([一, 二], 0, 100, 样).every((s) => s.显 === 0)).toBe(true);
-    expect(字状态([一, 二], 1, 1250, 样)[0]!.显).toBe(1);
-    expect(字状态([一, 二], 1, 1250, 样, 250)[0]!.显).toBe(0);
+    expect(charStates([firstWord, second], 0, 90, timeStyle).every((s) => s.shown === 1)).toBe(true);
+    expect(charStates([firstWord, second], 0, 100, timeStyle).every((s) => s.shown === 0)).toBe(true);
+    expect(charStates([firstWord, second], 1, 1250, timeStyle)[0]!.shown).toBe(1);
+    expect(charStates([firstWord, second], 1, 1250, timeStyle, 250)[0]!.shown).toBe(0);
   });
 
   it('最后一个字还没拼完时，等它拼完再退（最晚退到下一句入帧）', () => {
-    const 挤 = { 词: '四', 拼音: ['si'], 入: 70, 解: [82.5] };
+    const squeeze = { text: '四', pinyin: ['si'], 入: 70, charTimes: [82.5] };
     // 一 的「二」75 起唱、72.5 才拼完，下一句 70 进：退场不从 70 − 7.5 = 62.5 起，等到 70（下一句入帧）
-    expect(字状态([一, 挤], 0, 67.5, 样).every((s) => s.显 === 1)).toBe(true);
-    expect(字状态([一, 挤], 0, 70, 样)[0]!.显).toBeLessThan(1);
+    expect(charStates([firstWord, squeeze], 0, 67.5, timeStyle).every((s) => s.shown === 1)).toBe(true);
+    expect(charStates([firstWord, squeeze], 0, 70, timeStyle)[0]!.shown).toBeLessThan(1);
   });
 
   it('正片 15 句、默认样式：上一句到下一句入帧时已经退完；每个字唱到时已经拼齐、拼完前没退场', () => {
-    const 行们 = 句们.map((s) => 正片歌词行(s.序));
-    行们.forEach((行, i) => {
-      const 下 = 行们[i + 1];
-      if (下) expect(字状态(行们, i, 下.入, 符文歌词默认).every((s) => s.显 === 0), `第 ${i + 1} 句「${行.词}」`).toBe(true);
-      行.解.forEach((t, j) => {
-        const s = 字状态(行们, i, Math.ceil(t), 符文歌词默认)[j]!;
-        expect(s.解后, `第 ${i + 1} 句第 ${j + 1} 个字`).toBeGreaterThanOrEqual(0);
+    const lyricLines = sentences.map((s) => mainCutLyricLine(s.序));
+    lyricLines.forEach((lyricLine, i) => {
+      const nextLine = lyricLines[i + 1];
+      if (nextLine) expect(charStates(lyricLines, i, nextLine.入, runeLyricDefault).every((s) => s.shown === 0), `第 ${i + 1} 句「${lyricLine.text}」`).toBe(true);
+      lyricLine.charTimes.forEach((t, j) => {
+        const s = charStates(lyricLines, i, Math.ceil(t), runeLyricDefault)[j]!;
+        expect(s.afterSolve, `第 ${i + 1} 句第 ${j + 1} 个字`).toBeGreaterThanOrEqual(0);
         // 第 9 句首字离第 8 句末字只有 0.21 秒：第 8 句先完整亮 2/24 秒再退，第 9 句的头一个字唱到时还在抖着亮
-        if (i === 8 && j === 0) expect(s.显).toBeGreaterThan(0.5);
-        else expect(s.显, `第 ${i + 1} 句第 ${j + 1} 个字`).toBe(1);
+        if (i === 8 && j === 0) expect(s.shown).toBeGreaterThan(0.5);
+        else expect(s.shown, `第 ${i + 1} 句第 ${j + 1} 个字`).toBe(1);
       });
     });
   });
 
   it('符文：落定按块的顺序排满 起～完（第一块 起、最后一块 完），起飞不早于这个字进场，来不及飞的直接落定', () => {
-    const 块们 = [{ 点: [[0, 0]] as const, 心: [0, 0] as const }, { 点: [[1, 1]] as const, 心: [1, 1] as const }, { 点: [[2, 2]] as const, 心: [2, 2] as const }];
-    const 飞 = 飞们(块们, 'ni', { 起: 50, 完: 60, 入: 25 }, 旧帧(8), 1);
-    expect(飞.map((x) => x.落)).toEqual([50, 55, 60]);
-    expect(飞.map((x) => x.起)).toEqual([30, 35, 40]);
-    expect(飞.map((x) => x.字母)).toEqual(['n', 'i', 'n']);
-    const 晚 = 飞们(块们, 'ni', { 起: 50, 完: 60, 入: 47.5 }, 旧帧(8), 1);
-    expect(晚.map((x) => x.起)).toEqual([50, 47.5, 47.5]);
-    expect(飞位(飞[0]!, 27.5)).toBeNull();
-    expect(飞位(飞[0]!, 50)).toBeNull();
-    expect(飞位(飞[0]!, 30)![0]).toBe(飞[0]!.dx);
+    const chunks = [{ 点: [[0, 0]] as const, 心: [0, 0] as const }, { 点: [[1, 1]] as const, 心: [1, 1] as const }, { 点: [[2, 2]] as const, 心: [2, 2] as const }];
+    const flights = flyBlocks(chunks, 'ni', { 起: 50, end: 60, 入: 25 }, legacyFrameSec(8), 1);
+    expect(flights.map((x) => x.landTime)).toEqual([50, 55, 60]);
+    expect(flights.map((x) => x.起)).toEqual([30, 35, 40]);
+    expect(flights.map((x) => x.letter)).toEqual(['n', 'i', 'n']);
+    const lateItems = flyBlocks(chunks, 'ni', { 起: 50, end: 60, 入: 47.5 }, legacyFrameSec(8), 1);
+    expect(lateItems.map((x) => x.起)).toEqual([50, 47.5, 47.5]);
+    expect(flyPos(flights[0]!, 27.5)).toBeNull();
+    expect(flyPos(flights[0]!, 50)).toBeNull();
+    expect(flyPos(flights[0]!, 30)![0]).toBe(flights[0]!.dx);
   });
 });
 
 describe('五个关键词的效果', () => {
   it('光明：拼齐前不亮，拼齐头 闪秒 两档、之后一档；每档 2 点', () => {
-    expect([22.5, 25, 32.5, 35, 75].map((f) => 光明档数(f, 25))).toEqual([0, 2, 2, 1, 1]);
-    expect(光明.档宽).toBe(2);
-    expect(光明.档色们.length).toBe(2);
+    expect([22.5, 25, 32.5, 35, 75].map((f) => brightTier(f, 25))).toEqual([0, 2, 2, 1, 1]);
+    expect(brightEffect.bandWidth).toBe(2);
+    expect(brightEffect.tierColors.length).toBe(2);
   });
 
   it('烟花：拼齐前没有火花；从词外沿炸开往四面散开，1/4 秒后都离中心远了', () => {
-    expect(烟花火花(22.5, 25, 5)).toEqual([]);
-    const 头 = 烟花火花(25, 25, 5, [18, 9]);
-    expect(头.length).toBe(24);
-    for (const s of 头) expect((s.x / 18) ** 2 + (s.y / 9) ** 2).toBeCloseTo(1, 5);
-    const 后 = 烟花火花(40, 25, 5);
-    expect(后.length).toBeGreaterThan(0);
-    for (const s of 后) expect(Math.hypot(s.x, s.y)).toBeGreaterThan(5);
-    expect(new Set(后.map((s) => Math.sign(Math.round(s.x)))).size).toBeGreaterThan(1);
-    expect(烟花火花(100, 25, 5)).toEqual([]);
+    expect(fireworkSparks(22.5, 25, 5)).toEqual([]);
+    const sparks = fireworkSparks(25, 25, 5, [18, 9]);
+    expect(sparks.length).toBe(24);
+    for (const s of sparks) expect((s.x / 18) ** 2 + (s.y / 9) ** 2).toBeCloseTo(1, 5);
+    const laterSparks = fireworkSparks(40, 25, 5);
+    expect(laterSparks.length).toBeGreaterThan(0);
+    for (const s of laterSparks) expect(Math.hypot(s.x, s.y)).toBeGreaterThan(5);
+    expect(new Set(laterSparks.map((s) => Math.sign(Math.round(s.x)))).size).toBeGreaterThan(1);
+    expect(fireworkSparks(100, 25, 5)).toEqual([]);
   });
 
   it('刹那：这个字拼齐才冻住（先闪、再冰）；裂那一帧各块往外让 裂开 点、闪一下，停 1/24 秒后往下掉', () => {
-    expect(刹那块(22.5, 25, 50, [3, -2], 1).冰).toBe(0);
-    expect(刹那块(25, 25, 50, [3, -2], 1)).toEqual({ dx: 0, dy: 0, 冰: 1 });
-    expect(刹那块(30, 25, 50, [3, -2], 1)).toEqual({ dx: 0, dy: 0, 冰: 2 });
-    expect(刹那块(50, 25, 50, [3, -2], 1)).toEqual({ dx: 刹那.裂开, dy: -刹那.裂开, 冰: 1 });
-    expect(刹那块(52.5, 25, 50, [3, -2], 1).冰).toBe(2);
-    const 掉 = [55, 60, 65].map((f) => 刹那块(f, 25, 50, [3, -2], 1).dy);
-    expect(掉[1]!).toBeGreaterThan(掉[0]!);
-    expect(掉[2]!).toBeGreaterThan(掉[1]! + 3);
+    expect(instantBlock(22.5, 25, 50, [3, -2], 1).ice).toBe(0);
+    expect(instantBlock(25, 25, 50, [3, -2], 1)).toEqual({ dx: 0, dy: 0, ice: 1 });
+    expect(instantBlock(30, 25, 50, [3, -2], 1)).toEqual({ dx: 0, dy: 0, ice: 2 });
+    expect(instantBlock(50, 25, 50, [3, -2], 1)).toEqual({ dx: instantEffect.crackOpen, dy: -instantEffect.crackOpen, ice: 1 });
+    expect(instantBlock(52.5, 25, 50, [3, -2], 1).ice).toBe(2);
+    const dropOffsets = [55, 60, 65].map((f) => instantBlock(f, 25, 50, [3, -2], 1).dy);
+    expect(dropOffsets[1]!).toBeGreaterThan(dropOffsets[0]!);
+    expect(dropOffsets[2]!).toBeGreaterThan(dropOffsets[1]! + 3);
   });
 
   it('刹那在成片里（核查 10-24）：「刹」拼齐到裂开冻着 10/24 秒以上；整句开始退场那一帧，每一块都已经往下掉出一个字高', () => {
-    const 行们 = 句们.map((s) => 正片歌词行(s.序));
-    const 行 = 行们[10]!;
-    const 效 = 行.字效!;
-    expect(效.效).toBe('刹那');
-    const 时段 = 解码时段(行, 符文歌词默认);
-    const 裂 = 正片事件.第11句碎裂.帧;
-    expect((裂 - 时段[效.从]!.完) / fps).toBeGreaterThanOrEqual(旧帧(10));
+    const lyricLines = sentences.map((s) => mainCutLyricLine(s.序));
+    const lyricLine = lyricLines[10]!;
+    const wordEffect = lyricLine.wordEffect!;
+    expect(wordEffect.effect).toBe('刹那');
+    const timeSpans = decodeTimeSpans(lyricLine, runeLyricDefault);
+    const shatterFrame = mainCutEvents.worldShatters.帧;
+    expect((shatterFrame - timeSpans[wordEffect.从]!.end) / fps).toBeGreaterThanOrEqual(legacyFrameSec(10));
     // 第 12 句让聊天、切进卧室才进，第 11 句照原来的时刻（收）退，不跟着拖到接缝
-    const 退起 = 行.收!;
-    expect(退起).toBeLessThan(行们[11]!.入 - 符文歌词默认.出秒 * fps);
+    const fadeOutStart = lyricLine.收!;
+    expect(fadeOutStart).toBeLessThan(lyricLines[11]!.入 - runeLyricDefault.exitSec * fps);
     // 退场的渐变按秒连着算，起头前 1/24 秒那一刻还整句亮着
-    expect(字状态(行们, 10, 退起 - 旧帧(1) * fps, 符文歌词默认).every((s) => s.显 === 1)).toBe(true);
-    expect(字状态(行们, 10, 退起 + 符文歌词默认.出秒 * fps, 符文歌词默认).every((s) => s.显 === 0)).toBe(true);
-    for (let j = 效.从; j <= 效.到; j++)
-      for (let k = 0; k < 8; k++) expect(刹那块(退起, 时段[j]!.完, 裂, [1, 0], 字种(11, j) * 8 + k).dy, `第 ${j} 个字`).toBeGreaterThanOrEqual(字格);
+    expect(charStates(lyricLines, 10, fadeOutStart - legacyFrameSec(1) * fps, runeLyricDefault).every((s) => s.shown === 1)).toBe(true);
+    expect(charStates(lyricLines, 10, fadeOutStart + runeLyricDefault.exitSec * fps, runeLyricDefault).every((s) => s.shown === 0)).toBe(true);
+    for (let j = wordEffect.从; j <= wordEffect.到; j++)
+      for (let k = 0; k < 8; k++) expect(instantBlock(fadeOutStart, timeSpans[j]!.end, shatterFrame, [1, 0], glyphSeed(11, j) * 8 + k).dy, `第 ${j} 个字`).toBeGreaterThanOrEqual(glyphCell);
   });
 
   it('放下：拼齐后停一下，再往下、往左（风从右往左）飘，颜色从白换到樱花粉', () => {
-    expect(放下块(27.5, 25, 1)).toEqual({ dx: 0, dy: 0, 色: 0 });
-    const 后 = 放下块(75, 25, 1);
-    expect(后.dy).toBeGreaterThan(10);
-    expect(后.dx).toBeLessThan(0);
-    expect(后.色).toBe(2);
+    expect(putDownBlock(27.5, 25, 1)).toEqual({ dx: 0, dy: 0, 色: 0 });
+    const fallingBlock = putDownBlock(75, 25, 1);
+    expect(fallingBlock.dy).toBeGreaterThan(10);
+    expect(fallingBlock.dx).toBeLessThan(0);
+    expect(fallingBlock.色).toBe(2);
   });
 });

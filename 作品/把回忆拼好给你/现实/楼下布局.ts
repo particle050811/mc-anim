@@ -1,41 +1,41 @@
 // 第 14 句右屏（45.06～47.83）：教学楼下，你（史蒂夫）站在楼前空地上，46.13 起风，楼上窗里扔出撕碎的纸、先往下落再被风斜着往左下吹，你仰头看（用户 10-24「在楼下看飘下的纸花」，10-25「应该横向飘过去」「至少应该是斜着向左吧」）。纯数据（测试也读）。
 // 机位同门口（侧剖面朝北，顶面 2，N 同左屏）：剖面切在空地上（j = 0），教学楼立面在 楼.j 那一排、往上出画（撒纸的人在楼上，不入画）。
 // 坐标同 地点/门口小木屋.tsx（x 东、y 北、z 上，单位格；人站在 y = 0.5）。纸是 2D 叠层（场/2-门口/纸花.ts），这里只有楼、横幅、地和你。全是 Agent 暂定。
-import { 旧帧 } from '../分镜/时间.ts';
+import { legacyFrameSec } from '../分镜/时间.ts';
 
 /** 像素密度同左屏（场/2-门口/参数.ts 的 整屏镜头N：合屏时两屏同一种像素）；俯角同门口 */
-export const 楼下N = 10;
-export const 楼下顶面 = 2;
+export const downstairsCount = 10;
+export const downstairsTopFace = 2;
 
 /** 教学楼的立面（格）：j 那一排，左右铺 [左, 右)，从地面铺到 顶（画面上沿外面）。每 层高 一层：楼板线一格（浅灰混凝土）、窗两格高（白色混凝土的窗间柱）；
  *  窗每 窗距 格一扇（窗间留一格墙）。窗用深青陶瓦（屋里暗，玻璃看着发深）：白纸落在深窗上读得清（白墙上的纸要靠纸上那几道横线）。
  *  N = 10 半屏只有 8 格宽、9 格高：层高 3，一楼的窗、二楼的窗（两层都往外扔纸）都整扇在画里。j 4：楼前露一条四格深的空地，楼脚不贴着人 */
-export const 楼 = { j: 4, 左: -7, 右: 7, 顶: 12, 层高: 3, 窗距: 3, 墙: 'minecraft:white_concrete', 楼板: 'minecraft:light_gray_concrete', 窗: 'minecraft:cyan_terracotta' } as const;
+export const building = { j: 4, left: -7, right: 7, topLayers: 12, floorHeight: 3, windowSpacing: 3, wallBlock: 'minecraft:white_concrete', floorSlab: 'minecraft:light_gray_concrete', 窗: 'minecraft:cyan_terracotta' } as const;
 
 /** 往外扔纸的窗（格；x 左右、z 上下，都是 [起, 止)，y 是立面那一排的正面）：二楼两扇（层高 3：z 4、5 两格）、一楼两扇（z 1、2），你头顶右上那扇先扔。
  *  一楼的碎纸一出窗就在你头顶飘；更高的楼层在画外，碎纸从上沿外、右沿外刮进来（场/2-门口/纸花.ts 的 撒纸） */
-export const 撒纸窗们 = [
-  { x: [-2, 0], z: [楼.层高 + 1, 楼.层高 + 3], y: 楼.j },
-  { x: [1, 3], z: [楼.层高 + 1, 楼.层高 + 3], y: 楼.j },
-  { x: [-2, 0], z: [1, 3], y: 楼.j },
-  { x: [1, 3], z: [1, 3], y: 楼.j },
+export const paperWindows = [
+  { x: [-2, 0], z: [building.floorHeight + 1, building.floorHeight + 3], y: building.j },
+  { x: [1, 3], z: [building.floorHeight + 1, building.floorHeight + 3], y: building.j },
+  { x: [-2, 0], z: [1, 3], y: building.j },
+  { x: [1, 3], z: [1, 3], y: building.j },
 ] as const;
 
 /** 认得出是学校：一楼、二楼之间的楼板线上挂一条红横幅（格；x [左, 右)、z 那一格），横幅色照原版红色羊毛。
  *  不写字（Agent 暂定）：原来一行字形方块远看是一团点、读不出（主会话 10-25 看成片时提的）；写成读得出的字又多一个要读的东西，这一镜的看点是纸（顶上歌词也在走），
  *  前一句倒计时日历停在 1，已经交代了高考 */
-export const 横幅 = { 左: -2.5, 右: 2.5, z: 楼.层高, 红: '#a12722', 红暗: '#8e1f1b' } as const;
+export const banner = { left: -2.5, right: 2.5, z: building.floorHeight, red: '#a12722', darkRed: '#8e1f1b' } as const;
 
 /** 楼前的空地：平滑石铺面（剖面上露一格厚），底下石头 */
-export const 空地 = { 面: 'minecraft:smooth_stone', 底: 'minecraft:stone', 左: -7, 右: 7 } as const;
+export const emptyLot = { 面: 'minecraft:smooth_stone', bottomBlock: 'minecraft:stone', left: -7, right: 7 } as const;
 
 /** 天色（立面盖满半屏，只有剖面外的角落会露出来） */
-export const 楼下天色 = '#c3ccd3';
+export const downstairsSkyColor = '#c3ccd3';
 
 /** 你：站位（脚底 x）、身子朝向（90 = 朝画面左边，侧脸剪影里看得出仰头）、放大倍数（同她，两屏人一样大） */
-export const 你在楼下 = { x: 1.25, 朝向: 90, 倍: 1 } as const;
+export const youDownstairsPos = { x: 1.25, facing: 90, scale: 1 } as const;
 
 /** 头（[俯仰, 左右]，度；正 = 抬头）：考完出来低着头站着 → 纸飘下来仰头看。仰头从 纸飘下 后 仰头迟秒 起、用 仰头秒（24 fps 时迟 3 帧、仰 4 帧） */
-export const 你的头 = { 低: [-12, 0] as [number, number], 仰: [42, 0] as [number, number] };
-export const 仰头迟秒 = 旧帧(3);
-export const 仰头秒 = 旧帧(4);
+export const youHead = { low: [-12, 0] as [number, number], up: [42, 0] as [number, number] };
+export const headUpDelaySec = legacyFrameSec(3);
+export const headUpSec = legacyFrameSec(4);

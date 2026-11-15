@@ -1,30 +1,30 @@
 // 正片第 2 句（段 2-第一晚）的事件和段窗口。
 // 分镜按串拆开的一份（用户 11-06 定按句拆，改一句只过期那几段）；时刻、排段的写法见 ./时间.ts。纯模块，不许 import react、three、remotion。
-import { 原声时长 } from '../配乐/网格.ts';
-import { 串查法, 段内帧, 解事件, 排段, type 事件定义 } from './时间.ts';
+import { originalDurSec } from '../配乐/网格.ts';
+import { chainLookup, segmentFrames, resolveEvents, arrangeSegs, type EventDef } from './时间.ts';
 
-export const 定义 = {
+export const eventDefs = {
   // 第 2 句「祈愿小世界里不只有挫败」（段 2-第一晚）：只拍挖三填一（用户 10-24「死多次表现不好 只留挖三填一就行」），一拍一格；
   // 挖、填比三稿早一拍，封顶以后留 1.3 秒给夜里僵尸晃过、天慢慢亮，8.20 前留够半秒给阳光照进洞里
-  挖一: { 在: { 拍: 12 }, 依据: '第 2 句：脚下的草方块挖掉（第 2 句首字就开始挖，接着第 1 句尾低头站好）' },
-  挖二: { 在: { 拍: 13 }, 依据: '第 2 句：往下再挖一格泥土' },
-  挖三: { 在: { 拍: 14 }, 依据: '第 2 句：第三格泥土，站在两格深的坑底' },
-  填土: { 在: { 拍: 15 }, 依据: '三稿：头顶填上一格土，缩在两格高的小黑洞里，天正好黑透；之后夜里快进过去，僵尸从洞顶上走过（演绎）' },
-  挖开天窗: { 在: { 拍: 18 }, 依据: '三稿 8.20 前：外面已经亮了，头顶那格土挖开，阳光照进洞里，接第 3 句（提前一拍：段尾留 0.6 秒给阳光照进洞里）' },
-} as const satisfies Record<string, 事件定义>;
+  digFirst: { 在: { beat: 12 }, 依据: '第 2 句：脚下的草方块挖掉（第 2 句首字就开始挖，接着第 1 句尾低头站好）' },
+  digSecond: { 在: { beat: 13 }, 依据: '第 2 句：往下再挖一格泥土' },
+  digThird: { 在: { beat: 14 }, 依据: '第 2 句：第三格泥土，站在两格深的坑底' },
+  fillHole: { 在: { beat: 15 }, 依据: '三稿：头顶填上一格土，缩在两格高的小黑洞里，天正好黑透；之后夜里快进过去，僵尸从洞顶上走过（演绎）' },
+  digSkylight: { 在: { beat: 18 }, 依据: '三稿 8.20 前：外面已经亮了，头顶那格土挖开，阳光照进洞里，接第 3 句（提前一拍：段尾留 0.6 秒给阳光照进洞里）' },
+} as const satisfies Record<string, EventDef>;
 
 /** 接 能查到的事件：本串的，加上引来的那几份的（一路引上去） */
-export const 表: Readonly<Record<string, 事件定义>> = { ...定义 };
+export const eventTable: Readonly<Record<string, EventDef>> = { ...eventDefs };
 /** 本串事件在歌上的秒数和歌曲帧 */
-export const 事件 = 解事件(定义, 表);
+export const events = resolveEvents(eventDefs, eventTable);
 
 /** 正片第 2 句：一段，接着 2-初入 的剖面一镜不切拍边挖边天黑、挖三填一、快进一夜、挖开头顶（用户 10-24「死多次表现不好 只留挖三填一就行」）。
  *  前后的段做出来以后并进同一串（窗口首尾相接） */
-export const 正片第2句 = 排段(
+export const mainCutSentences2 = arrangeSegs(
   {
     名: '正片第2句',
-    时长: 原声时长,
-    段们: [
+    时长: originalDurSec,
+    segments: [
       {
         键: '2-第一晚',
         起: { 句: 2, 点: '起' },
@@ -33,10 +33,10 @@ export const 正片第2句 = 排段(
       },
     ],
   },
-  表,
+  eventTable,
 );
 
 /** 只查本串的段（段.ts、画面用：帧数、场窗口、原声 cue 的入点） */
-export const { 段窗口, 段时钟 } = 串查法(正片第2句);
+export const { segmentWindow, segClock } = chainLookup(mainCutSentences2);
 /** 本串各事件在这一段里的段内帧（不在这段里的也照算，会是负数或不小于帧数） */
-export const 段内事件帧 = (键: string) => 段内帧(段窗口(键).起帧, 事件);
+export const segEventFrames = (segKey: string) => segmentFrames(segmentWindow(segKey).起帧, events);

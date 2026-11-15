@@ -5,7 +5,7 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
@@ -15,13 +15,13 @@ const hitboxHeight = 2.9;
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 // 每一下：在哪个镜头里出
 const shown = play.hits.map((h, n) => {
-  const height = h.kind === '炮' ? hitboxHeight : play.arrows[h.i].钉[2] - play.wardenState(h.T).p[2] + 0.2;
+  const height = h.kind === '炮' ? hitboxHeight : play.arrows[h.i].stuck[2] - play.wardenState(h.T).p[2] + 0.2;
   const shot = Array.from({ length: choreo.shotCount }, (_, i) => i + 1).find((k) => choreo.frameInShot(k, h.T) !== undefined)!;
   return { ...h, height, shot, seed: 7451 + n };
 });
 
 export const DamageLayer741: React.FC = () => {
-  const frame = use当前秒() * choreo.FPS; // 编排的帧是 1/24 秒一格
+  const frame = useCurrentSec() * choreo.FPS; // 编排的帧是 1/24 秒一格
   const { width, height } = useVideoConfig();
   const T = choreo.storyT(frame);
   const k = choreo.shotIndex(frame);

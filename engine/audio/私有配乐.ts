@@ -4,4 +4,4 @@
 // 只给按 段.ts cue 放的配乐用（段画面.tsx 的 段声音，anim cues 生成的声音地址表）：指纹按本段 cue 里的私有配乐记「有字节（sha）/缺了换静音」，不按 cue 放的指纹记不到。
 import { dataUrl } from '../core/数据源.ts';
 
-export const 私有配乐 = (id: string) => dataUrl(`私有配乐/${id}`);
+export const privateMusic = (id: string) => dataUrl(`私有配乐/${id}`);

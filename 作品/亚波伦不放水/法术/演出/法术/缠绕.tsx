@@ -5,34 +5,34 @@
 // 没做：史蒂夫被定住（那是史蒂夫的事）；游戏里这个法术没有粒子。配荒野法杖时范围内每个敌人各一丛不做。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 关键帧姿态, 取动画 } from '../零件/关键帧.ts';
-import 元, { 藤消失刻, 藤破土刻, 藤缩回刻 } from './缠绕.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/EntangleVinesModel';
-import 动画数据 from 'asset:动画/法术/goety/EntangleVinesAnimations';
-import 图数据 from 'asset:贴图/法术/goety/entity/projectiles/entangle_vines';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { keyframePose, getAnim } from '../零件/关键帧.ts';
+import meta, { vineVanishTick, vineEmergeTick, vineRetractTick } from './缠绕.元.ts';
+import entangleVinesModelData from 'asset:模型/法术/goety/EntangleVinesModel';
+import entangleVinesAnims from 'asset:动画/法术/goety/EntangleVinesAnimations';
+import entangleVinesPng from 'asset:贴图/法术/goety/entity/projectiles/entangle_vines';
 
-const 模型 = 取模型(模型数据, 'EntangleVinesModel');
-const [破土, 缠住, 缩回] = [取动画(动画数据, 'BURST'), 取动画(动画数据, 'HOLD'), 取动画(动画数据, 'BURROW')];
+const entangleVinesModel = getModel(entangleVinesModelData, 'EntangleVinesModel');
+const [burstAnim, holdAnim, burrowAnim] = [getAnim(entangleVinesAnims, 'BURST'), getAnim(entangleVinesAnims, 'HOLD'), getAnim(entangleVinesAnims, 'BURROW')];
 
-const 缠绕: React.FC<法术演出属性> = ({ 秒, 目标 }) => {
-  const 刻 = 秒 * 20;
-  if (刻 < 藤破土刻 || 刻 >= 藤消失刻) return null;
-  const 姿态 =
-    刻 >= 藤缩回刻 ? 关键帧姿态(模型, [[缩回, (刻 - 藤缩回刻) / 20]]) : 刻 >= 藤破土刻 + 1 ? 关键帧姿态(模型, [[缠住, (刻 - 藤破土刻 - 1) / 20]]) : 关键帧姿态(模型, [[破土, (刻 - 藤破土刻) / 20]]);
+const entangle: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target }) => {
+  const tick = sec * 20;
+  if (tick < vineEmergeTick || tick >= vineVanishTick) return null;
+  const partPoses =
+    tick >= vineRetractTick ? keyframePose(entangleVinesModel, [[burrowAnim, (tick - vineRetractTick) / 20]]) : tick >= vineEmergeTick + 1 ? keyframePose(entangleVinesModel, [[holdAnim, (tick - vineEmergeTick - 1) / 20]]) : keyframePose(entangleVinesModel, [[burstAnim, (tick - vineEmergeTick) / 20]]);
   return (
-    <MC空间 位={目标}>
-      <group rotation={[0, 度(90), 0]}>
+    <MinecraftSpace 位={target}>
+      <group rotation={[0, degToRad(90), 0]}>
         <group scale={[-1, -1, 1]}>
           <group position={[0, -1.45, 0]}>
-            <模型件 模型={模型} 图={png(图数据)} 姿态={姿态} />
+            <ModelPart 模型={entangleVinesModel} 图={png(entangleVinesPng)} partPoses={partPoses} />
           </group>
         </group>
       </group>
-    </MC空间>
+    </MinecraftSpace>
   );
 };
 
-export default 定义法术演出(元, 缠绕);
+export default defineSpellPerformance(meta, entangle);

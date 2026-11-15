@@ -2,11 +2,11 @@
 // 输入杖的位置和方向（角色/娘化亚波伦.tsx 的 持杖位姿），算盘面的圆心、法向和「上」；盘面怎么朝向有三种，哪种当全片默认还没定（分镜.md 第 10 节）。
 // 盘跟不跟着杖走由调用的人定：每帧给当前的杖位姿就是跟着走，给张开那一刻的就是留在原地。坐标都是场景坐标（Z 朝上，单位格）。
 import type { Cam } from '@engine/core/机位.ts';
-import { 视线 } from '@engine/core/机位.ts';
+import { sightDir } from '@engine/core/机位.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 格范围 } from '@库/界面/径向轮盘数.ts';
-import { 圈态, 默认圈形, 默认开合, type 开合 } from './分圈.ts';
-import { 排盘, type 排盘选项 } from './轮盘法术.ts';
+import { cellRange } from '@库/界面/径向轮盘数.ts';
+import { RingState, defaultRingShape, defaultOpenClose, type OpenClose } from './分圈.ts';
+import { arrangeWheel, type ArrangeOptions } from './轮盘法术.ts';
 
 /**
  * 盘面朝哪：
@@ -14,56 +14,56 @@ import { 排盘, type 排盘选项 } from './轮盘法术.ts';
  * 正对 = 盘面和这个机位的画面平行（圆心还钉在杖尖），在画面里永远是正圆。
  * 法向 = 盘面朝一个定死的方向（如朝上张在头顶），不随杖和镜头转。
  */
-export type 盘朝向 = '垂直杖身' | { 正对: Pick<Cam, 'pos' | 'tgt'> } | { 法向: V3 };
+export type PlateFacing = '垂直杖身' | { faceCamera: Pick<Cam, 'pos' | 'tgt'> } | { normal: V3 };
 
-export type 盘位姿 = {
+export type PlatePose = {
   心: V3;
   /** 盘面正面朝的方向（图标从这一侧看是正的，从背面看左右相反） */
-  法向: V3;
+  normal: V3;
   /** 盘上第 0 格（原版朝正上）指的方向 */
   上: V3;
   /** 从正面看的右手边 */
-  右: V3;
+  right: V3;
 };
 
-const 加 = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const 点乘 = (a: readonly number[], b: readonly number[]) => a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
-const 叉乘 = (a: readonly number[], b: readonly number[]): V3 => [a[1]! * b[2]! - a[2]! * b[1]!, a[2]! * b[0]! - a[0]! * b[2]!, a[0]! * b[1]! - a[1]! * b[0]!];
-const 归一 = (a: readonly number[]): V3 => {
+const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
+const dot = (a: readonly number[], b: readonly number[]) => a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
+const cross = (a: readonly number[], b: readonly number[]): V3 => [a[1]! * b[2]! - a[2]! * b[1]!, a[2]! * b[0]! - a[0]! * b[2]!, a[0]! * b[1]! - a[1]! * b[0]!];
+const normalize = (a: readonly number[]): V3 => {
   const n = Math.hypot(a[0]!, a[1]!, a[2]!);
   return [a[0]! / n, a[1]! / n, a[2]! / n];
 };
 
-export type 盘摆法 = {
-  朝向: 盘朝向;
+export type DiscPlacement = {
+  facing: PlateFacing;
   /** 垂直杖身时盘的正面朝杖尖指的方向（默认）还是朝杖尾（反面） */
-  反面?: boolean;
+  reverseSide?: boolean;
   /** 「上」的参考方向，投到盘面上当第 0 格的方向；默认世界的上 (0, 0, 1)，盘面水平时改用北 (0, 1, 0) */
-  上参考?: V3;
+  upRef?: V3;
   /** 圆心沿杖身再往外伸多少格，默认 0（圆心就在杖尖） */
-  离尖?: number;
+  tipOffset?: number;
   /** 圆心沿盘的法向往正面挪多少格，默认 0。正对镜头时给一点，圆心的聚晶图标就不会被杖头挡住 */
-  浮起?: number;
+  lift?: number;
 };
 
-export const 杖尖盘位姿 = (杖: { 尖: V3; 轴: V3 }, { 朝向, 反面, 上参考, 离尖 = 0, 浮起 = 0 }: 盘摆法): 盘位姿 => {
-  const 法向 = 归一(朝向 === '垂直杖身' ? 加([0, 0, 0], 杖.轴, 反面 ? -1 : 1) : '正对' in 朝向 ? 加([0, 0, 0], 视线(朝向.正对), -1) : 朝向.法向);
-  const 投 = (v: readonly number[]) => 加(v, 法向, -点乘(v, 法向));
-  let 上 = 投(上参考 ?? [0, 0, 1]);
-  if (Math.hypot(...上) < 0.05) 上 = 投([0, 1, 0]);
-  上 = 归一(上);
-  return { 心: 加(加(杖.尖, 杖.轴, 离尖), 法向, 浮起), 法向, 上, 右: 叉乘(上, 法向) };
+export const staffTipPlatePose = (staff: { tip: V3; axis: V3 }, { facing, reverseSide, upRef, tipOffset = 0, lift = 0 }: DiscPlacement): PlatePose => {
+  const normal = normalize(facing === '垂直杖身' ? addVec([0, 0, 0], staff.axis, reverseSide ? -1 : 1) : 'faceCamera' in facing ? addVec([0, 0, 0], sightDir(facing.faceCamera), -1) : facing.normal);
+  const toPlane = (v: readonly number[]) => addVec(v, normal, -dot(v, normal));
+  let up = toPlane(upRef ?? [0, 0, 1]);
+  if (Math.hypot(...up) < 0.05) up = toPlane([0, 1, 0]);
+  up = normalize(up);
+  return { 心: addVec(addVec(staff.tip, staff.axis, tipOffset), normal, lift), normal, 上: up, right: cross(up, normal) };
 };
 
 /** 盘面上的一点：x、y 是轮盘画布的 GUI 像素（圆心为原点，x 朝右、y 朝下，同 库/界面/径向轮盘画.ts） */
-export const 盘上点 = (盘: 盘位姿, 每像素格: number, x: number, y: number): V3 => 加(加(盘.心, 盘.右, x * 每像素格), 盘.上, -y * 每像素格);
+export const discPoint = (disc: PlatePose, cellsPerPixel: number, x: number, y: number): V3 => addVec(addVec(disc.心, disc.right, x * cellsPerPixel), disc.上, -y * cellsPerPixel);
 
 /** 某个聚晶那一格的图标中心在场景里的位置（法术从盘上自己那一格出手用）；盘上没有这个聚晶、或那一圈还没弹开返回 null */
-export const 盘格位置 = (盘: 盘位姿, 每像素格: number, 参: 排盘选项 & { 刻: number; 开合?: Partial<开合> }, 键: string): V3 | null => {
-  const { 每圈格数, 项 } = 排盘(参);
-  const 一项 = 项.find((p) => p.键 === 键);
-  const 态 = 一项 && 圈态(一项.圈, 参.刻, 参.形 ?? 默认圈形, { ...默认开合, ...参.开合 });
-  if (!一项 || !态) return null;
-  const 角 = 格范围(一项.格, 每圈格数[一项.圈]!).中 + 态.转角;
-  return 盘上点(盘, 每像素格, 态.图标半径 * Math.cos(角), 态.图标半径 * Math.sin(角));
+export const discCellPos = (disc: PlatePose, cellsPerPixel: number, plateParams: ArrangeOptions & { 刻: number; openClose?: Partial<OpenClose> }, focusKey: string): V3 | null => {
+  const { cellsPerRing, 项: items } = arrangeWheel(plateParams);
+  const item = items.find((p) => p.键 === focusKey);
+  const ringState = item && RingState(item.ring, plateParams.刻, plateParams.ringShape ?? defaultRingShape, { ...defaultOpenClose, ...plateParams.openClose });
+  if (!item || !ringState) return null;
+  const angle = cellRange(item.格, cellsPerRing[item.ring]!).中 + ringState.angleRad;
+  return discPoint(disc, cellsPerPixel, ringState.iconRadius * Math.cos(angle), ringState.iconRadius * Math.sin(angle));
 };

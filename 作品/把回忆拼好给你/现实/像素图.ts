@@ -4,60 +4,60 @@
 import * as THREE from 'three';
 import { hash2 } from '@engine/core/噪声.ts';
 
-export const 画布倍 = 2;
+export const canvasScale = 2;
 
-export type 像素画 = {
+export type PixelArt = {
   /** 贴图像素的宽高 */
   宽: number;
   高: number;
   c: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
   /** 一个贴图像素 */
-  点: (x: number, y: number, 色: string) => void;
+  点: (x: number, y: number, color: string) => void;
   /** 一块整贴图像素的方块（x、y、宽、高都按贴图像素） */
-  方: (x: number, y: number, 宽: number, 高: number, 色: string) => void;
+  fillRect: (x: number, y: number, width: number, height: number, color: string) => void;
   /** 一块方块里铺噪点：每个贴图像素按位置哈希从 色们 里挑一个（权 = 各色的份量，默认等分）；种 区分不同的东西，同一个种各帧一样 */
-  噪: (x: number, y: number, 宽: number, 高: number, 色们: readonly string[], 种: number, 权?: readonly number[]) => void;
+  noise: (x: number, y: number, width: number, height: number, pixelColors: readonly string[], seed: number, weights?: readonly number[]) => void;
   /** 擦成透明 */
-  擦: (x: number, y: number, 宽: number, 高: number) => void;
+  erase: (x: number, y: number, width: number, height: number) => void;
 };
 
-export const 新像素画 = (宽: number, 高: number, 倍 = 画布倍): 像素画 => {
-  if (!Number.isInteger(宽) || !Number.isInteger(高) || 宽 <= 0 || 高 <= 0) throw new Error(`像素画的宽高要是正整数：${宽}×${高}`);
+export const newPixelArt = (width: number, height: number, scale = canvasScale): PixelArt => {
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) throw new Error(`像素画的宽高要是正整数：${width}×${height}`);
   const c = document.createElement('canvas');
-  c.width = 宽 * 倍;
-  c.height = 高 * 倍;
+  c.width = width * scale;
+  c.height = height * scale;
   const ctx = c.getContext('2d')!;
   ctx.imageSmoothingEnabled = false;
-  const 方 = (x: number, y: number, w: number, h: number, 色: string) => {
-    ctx.fillStyle = 色;
-    ctx.fillRect(x * 倍, y * 倍, w * 倍, h * 倍);
+  const fillRect = (x: number, y: number, w: number, h: number, color: string) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * scale, y * scale, w * scale, h * scale);
   };
-  const 噪 = (x: number, y: number, w: number, h: number, 色们: readonly string[], 种: number, 权?: readonly number[]) => {
-    const 份 = 权 ?? 色们.map(() => 1);
-    const 总 = 份.reduce((a, b) => a + b, 0);
+  const noise = (x: number, y: number, w: number, h: number, pixelColors: readonly string[], seed: number, weights?: readonly number[]) => {
+    const effWeights = weights ?? pixelColors.map(() => 1);
+    const weightSum = effWeights.reduce((a, b) => a + b, 0);
     for (let j = 0; j < h; j++)
       for (let i = 0; i < w; i++) {
-        let r = hash2(x + i, y + j, 种) * 总;
+        let r = hash2(x + i, y + j, seed) * weightSum;
         let k = 0;
-        while (k < 色们.length - 1 && r >= 份[k]!) r -= 份[k++]!;
-        方(x + i, y + j, 1, 1, 色们[k]!);
+        while (k < pixelColors.length - 1 && r >= effWeights[k]!) r -= effWeights[k++]!;
+        fillRect(x + i, y + j, 1, 1, pixelColors[k]!);
       }
   };
   return {
-    宽,
-    高,
+    宽: width,
+    高: height,
     c,
     ctx,
-    点: (x, y, 色) => 方(x, y, 1, 1, 色),
-    方,
-    噪,
-    擦: (x, y, w, h) => ctx.clearRect(x * 倍, y * 倍, w * 倍, h * 倍),
+    点: (x, y, color) => fillRect(x, y, 1, 1, color),
+    fillRect,
+    noise,
+    erase: (x, y, w, h) => ctx.clearRect(x * scale, y * scale, w * scale, h * scale),
   };
 };
 
 /** 像素画 → three 贴图（最近邻、不做多级纹理、sRGB）。画布上透明的像素在材质里按 alphaTest 挖掉 */
-export const 成贴图 = (p: 像素画): THREE.CanvasTexture => {
+export const makeTexture = (p: PixelArt): THREE.CanvasTexture => {
   const t = new THREE.CanvasTexture(p.c);
   t.magFilter = t.minFilter = THREE.NearestFilter;
   t.generateMipmaps = false;
@@ -66,9 +66,9 @@ export const 成贴图 = (p: 像素画): THREE.CanvasTexture => {
 };
 
 /** 两个 #rrggbb 按 k（0～1）在 sRGB 数值上线性混 */
-export const 混色 = (a: string, b: string, k: number): string => {
-  const 拆 = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-  const [x, y] = [拆(a), 拆(b)];
+export const mixColor = (a: string, b: string, k: number): string => {
+  const hexBytes = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [hexBytes(a), hexBytes(b)];
   const t = Math.min(1, Math.max(0, k));
   return `#${x.map((v, i) => Math.round(v + (y[i]! - v) * t).toString(16).padStart(2, '0')).join('')}`;
 };

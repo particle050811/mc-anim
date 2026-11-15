@@ -9,81 +9,81 @@ import { EntityModel, type PartPose } from '@engine/model/实体模型.tsx';
 import { HeldItem } from '@engine/model/物品贴图.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
-import { MagicalWineFoxEx, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
+import { MagicalWineFoxEx, type MagicalWineFoxExProps } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { STEVE_MODEL, STEVE_SKIN, steveLookAt, steveParts, stevePose, steveRootMatrix, type StevePose } from '@库/角色/史蒂夫.tsx';
-import { 方块显示, 蛋糕方块 } from '@库/物品/蛋糕方块.tsx';
-import { 御币, 御币显示 } from './模型.tsx';
-import * as 参 from './参数.ts';
-import { 你朝向, 你看, 你眼, 她编排, 手里, 挥手进度, 秒 } from './编排.ts';
-import { 末她 } from './末态.ts';
+import { blockDisplay, CakeBlock } from '@库/物品/蛋糕方块.tsx';
+import { Gohei, goheiDisplay } from './模型.tsx';
+import * as params from './参数.ts';
+import { youFacing, youLook, youEyePos, CharArrange, HandItem, waveProgress, toSec } from './编排.ts';
+import { liYingFinal } from './末态.ts';
 
-type 部件表 = Record<string, PartPose>;
-const 转 = (p: PartPose | undefined) => (p?.rot ?? [0, 0, 0]) as [number, number, number];
+type PartTable = Record<string, PartPose>;
+const rotationOf = (p: PartPose | undefined) => (p?.rot ?? [0, 0, 0]) as [number, number, number];
 
 /** 原版挥手：attackTime t 时身子、两臂的转角和两肩的位置（右手挥） */
-export const 挥手部件 = (部件: 部件表, t: number | null): 部件表 => {
-  if (t === null) return 部件;
-  const 身转 = Math.sin(Math.sqrt(t) * Math.PI * 2) * 0.2;
-  const [hx] = 转(部件.head);
-  const [bx, , bz] = 转(部件.body);
-  const 右 = 部件.right_arm!, 左 = 部件.left_arm!;
-  const [rx, ry, rz] = 转(右);
-  const [lx, ly, lz] = 转(左);
+export const waveParts = (poses: PartTable, t: number | null): PartTable => {
+  if (t === null) return poses;
+  const bodyTwist = Math.sin(Math.sqrt(t) * Math.PI * 2) * 0.2;
+  const [hx] = rotationOf(poses.head);
+  const [bx, , bz] = rotationOf(poses.body);
+  const origRightArm = poses.right_arm!, origLeftArm = poses.left_arm!;
+  const [rx, ry, rz] = rotationOf(origRightArm);
+  const [lx, ly, lz] = rotationOf(origLeftArm);
   const f = 1 - (1 - t) ** 4;
   const f1 = Math.sin(f * Math.PI);
   const f2 = Math.sin(t * Math.PI) * -(hx - 0.7) * 0.75;
-  const 身: PartPose = { ...部件.body, rot: [bx, 身转, bz] };
-  const 右臂: PartPose = {
-    ...右,
-    offset: [-Math.cos(身转) * 5, 右.offset?.[1] ?? 2, Math.sin(身转) * 5],
-    rot: [rx - (f1 * 1.2 + f2), ry + 身转 + 身转 * 2, rz + Math.sin(t * Math.PI) * -0.4],
+  const body: PartPose = { ...poses.body, rot: [bx, bodyTwist, bz] };
+  const rightArm: PartPose = {
+    ...origRightArm,
+    offset: [-Math.cos(bodyTwist) * 5, origRightArm.offset?.[1] ?? 2, Math.sin(bodyTwist) * 5],
+    rot: [rx - (f1 * 1.2 + f2), ry + bodyTwist + bodyTwist * 2, rz + Math.sin(t * Math.PI) * -0.4],
   };
-  const 左臂: PartPose = { ...左, offset: [Math.cos(身转) * 5, 左.offset?.[1] ?? 2, -Math.sin(身转) * 5], rot: [lx + 身转, ly + 身转, lz] };
-  return { ...部件, body: 身, jacket: 身, right_arm: 右臂, right_sleeve: 右臂, left_arm: 左臂, left_sleeve: 左臂 };
+  const leftArm: PartPose = { ...origLeftArm, offset: [Math.cos(bodyTwist) * 5, origLeftArm.offset?.[1] ?? 2, -Math.sin(bodyTwist) * 5], rot: [lx + bodyTwist, ly + bodyTwist, lz] };
+  return { ...poses, body: body, jacket: body, right_arm: rightArm, right_sleeve: rightArm, left_arm: leftArm, left_sleeve: leftArm };
 };
 
 /** 你这一帧的姿势：站在 参.你.脚、身子对着圈心、头看着 你看；右手拿着东西（ArmPose.ITEM）。不给 sec：两臂的轻晃停在 0 那一刻 */
-export const 你姿势 = (g: number): StevePose => steveLookAt(stevePose([...参.你.脚] as V3, 你朝向, { holdR: 手里(g) !== null }), 你看, false);
+export const youPose = (g: number): StevePose => steveLookAt(stevePose([...params.you.feet] as V3, youFacing, { holdR: HandItem(g) !== null }), youLook, false);
 
-export const 你: React.FC<{ g: number }> = ({ g }) => {
-  const pose = 你姿势(g);
-  const 部件 = 挥手部件(steveParts(pose), 挥手进度(g));
-  const 拿 = 手里(g);
+export const You: React.FC<{ g: number }> = ({ g }) => {
+  const pose = youPose(g);
+  const poses = waveParts(steveParts(pose), waveProgress(g));
+  const held = HandItem(g);
   const attach: Record<string, React.ReactNode> = {};
-  if (拿 === '御币')
+  if (held === '御币')
     attach.right_arm = (
-      <HeldItem t={御币显示}>
-        <御币 />
+      <HeldItem t={goheiDisplay}>
+        <Gohei />
       </HeldItem>
     );
-  if (拿 === '蛋糕')
+  if (held === '蛋糕')
     attach.right_arm = (
-      <HeldItem t={方块显示.thirdperson_righthand}>
-        <蛋糕方块 />
+      <HeldItem t={blockDisplay.thirdperson_righthand}>
+        <CakeBlock />
       </HeldItem>
     );
   return (
     <group matrix={steveRootMatrix(pose)} matrixAutoUpdate={false}>
-      <EntityModel model={STEVE_MODEL} tex={STEVE_SKIN} pose={部件} attach={attach} />
+      <EntityModel model={STEVE_MODEL} tex={STEVE_SKIN} pose={poses} attach={attach} />
     </group>
   );
 };
 
 // ---------- 她 ----------
-export const 她姿势: FigurePose = { ...standPose([...参.她.脚]), yaw: 参.她.朝向 };
+export const liYingPose: FigurePose = { ...standPose([...params.liYing.feet]), yaw: params.liYing.facing };
 /** 看你眼睛的 [俯仰, 左右] */
-export const 她看你 = magicalWineFoxLookAt(她姿势, 你眼, '站');
+export const liYingLooksAtYou = magicalWineFoxLookAt(liYingPose, youEyePos, '站');
 
 /** 她这一帧的属性（还没现身 = null）。看：现身就看着你 → 转过来正对镜头 */
-export const 她属性 = (g: number): 魔法酒狐新动作Props | null => {
-  const 编 = 她编排(g);
-  if (!编) return null;
-  const 看: [number, number] = [她看你[0] + (末她.看[0] - 她看你[0]) * 编.转, 她看你[1] + (末她.看[1] - 她看你[1]) * 编.转];
+export const magicalWineFoxProps = (g: number): MagicalWineFoxExProps | null => {
+  const choreo = CharArrange(g);
+  if (!choreo) return null;
+  const gaze: [number, number] = [liYingLooksAtYou[0] + (liYingFinal.看[0] - liYingLooksAtYou[0]) * choreo.转, liYingLooksAtYou[1] + (liYingFinal.看[1] - liYingLooksAtYou[1]) * choreo.转];
   // 不眨眼：最后一帧要两只眼睛睁着接第 4 句的眼睛特写；背后的法杖不画（同第 8 句门口）
-  return { pose: 她姿势, 姿势: '站', 表情: 编.表情, 看, 眨眼: 0, 秒: 秒(g), 背后法杖: false };
+  return { pose: liYingPose, stancePose: '站', expression: choreo.expression, 看: gaze, blink: 0, 秒: toSec(g), backStaff: false };
 };
 
-export const 她: React.FC<{ g: number }> = ({ g }) => {
-  const p = 她属性(g);
+export const LiYing: React.FC<{ g: number }> = ({ g }) => {
+  const p = magicalWineFoxProps(g);
   return p ? <MagicalWineFoxEx {...p} /> : null;
 };

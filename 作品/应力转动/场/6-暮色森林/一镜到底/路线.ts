@@ -21,31 +21,31 @@
 import * as lichChoreo from '../6-1-5/编排.ts';
 import * as snowQueenChoreo from '../6-1-8/编排.ts';
 import * as giantChoreo from '../6-1-8b/编排.ts';
-import { FPS, ORDER, type Boss名 } from './路线/输入表.ts';
-import { 航向角速度, 标记路程, T_ARRIVE, 路程, 贯穿时刻 } from './路线/航线.ts';
-import { 物理时间, 帧, 时钟 } from './路线/时钟.ts';
+import { FPS, ORDER, type BossName } from './路线/输入表.ts';
+import { headingRate, markDist, T_ARRIVE, routeDist, pierceTimes } from './路线/航线.ts';
+import { physicalTime, frameAt, clockRate } from './路线/时钟.ts';
 
-export { FPS, V_CRUISE, 限值, 程转速, 起飞方位, 穿刺表, ORDER } from './路线/输入表.ts';
-export type { 穿刺, Boss名 } from './路线/输入表.ts';
-export { 有效顶, 镜头地面 } from './路线/粗高度.ts';
-export { 程表, 弯表, 路线长, 规划位置, 速度, 航向角速度, 标记路程, 视角转速于, 时刻, T_ARRIVE, 路程, 贯穿时刻 } from './路线/航线.ts';
-export type { 弯 } from './路线/航线.ts';
-export { 放慢表, 总帧数, 物理时间, 帧, 时钟, 贯穿帧, 放慢帧表 } from './路线/时钟.ts';
-export { 航迹锚, 扰动, 偏移, 位置, 切线, 操纵内倾 } from './路线/真实航迹.ts';
-export type { 锚段 } from './路线/真实航迹.ts';
-export { 扫帚, 落地时长 } from './路线/扫帚.ts';
-export type { 扫帚状态 } from './路线/扫帚.ts';
+export { FPS, V_CRUISE, limits, legTurnRate, takeoffBearing, pierceTable, ORDER } from './路线/输入表.ts';
+export type { Pierce, BossName } from './路线/输入表.ts';
+export { effectiveTop, cameraGround } from './路线/粗高度.ts';
+export { legTable, turnTable, routeLength, plannedPos, speedAt, headingRate, markDist, viewTurnSpeedAt, timeAtDist, T_ARRIVE, routeDist, pierceTimes } from './路线/航线.ts';
+export type { Turn } from './路线/航线.ts';
+export { slowMoTable, totalFrames, physicalTime, frameAt, clockRate, pierceFrames, slowMoFrames } from './路线/时钟.ts';
+export { trackAnchors, disturbance, offset, positionAt, tangentAt, steerBank } from './路线/真实航迹.ts';
+export type { AnchorSeg } from './路线/真实航迹.ts';
+export { broom, landingDuration } from './路线/扫帚.ts';
+export type { BroomState } from './路线/扫帚.ts';
 
 // ---------- 各 boss 的局部时间 ----------
-export const 局部时间 = (bossName: Boss名, F: number) => 物理时间(F) - 贯穿时刻[bossName];
+export const localTime = (bossName: BossName, F: number) => physicalTime(F) - pierceTimes[bossName];
 
 // ---------- 镜头要的时刻 ----------
 // 远景停住多久（秒）：看 boss 炸开（暮初恶魂、雪怪首领 0.25 秒化成白烟；用户 10-08 嫌杀死九头蛇后等太久才跟进）
-export const 远景停留: Partial<Record<Boss名, number>> = { 九头蛇: 0.25, 暮初恶魂: 0.25, 雪怪首领: 0.25 };
+export const farHold: Partial<Record<BossName, number>> = { 九头蛇: 0.25, 暮初恶魂: 0.25, 雪怪首领: 0.25 };
 // 近景撞墙的物理时刻（相对贯穿）
-export const 撞时刻: Partial<Record<Boss名, number>> = { 巫妖: lichChoreo.T_IMPACT, 冰雪女王: snowQueenChoreo.T_SOUTH, 巨人: giantChoreo.T_SOUTH };
-export const F_LAND = 帧(T_ARRIVE);
+export const impactTime: Partial<Record<BossName, number>> = { 巫妖: lichChoreo.T_IMPACT, 冰雪女王: snowQueenChoreo.T_SOUTH, 巨人: giantChoreo.T_SOUTH };
+export const F_LAND = frameAt(T_ARRIVE);
 // 扫帚这一帧每帧转几度（规划航线，段表挑切点用：切在扫帚直飞的帧上）
-export const 转速 = (F: number) => Math.abs(航向角速度(路程(物理时间(F)))) * 时钟(F) / FPS;
+export const rotSpeed = (F: number) => Math.abs(headingRate(routeDist(physicalTime(F)))) * clockRate(F) / FPS;
 // 穿刺线上（前～后）的路程区间
-export const 穿刺区间 = ORDER.map((n) => [标记路程(`${n}.前`), 标记路程(`${n}.后`)] as [number, number]);
+export const pierceRanges = ORDER.map((n) => [markDist(`${n}.前`), markDist(`${n}.后`)] as [number, number]);

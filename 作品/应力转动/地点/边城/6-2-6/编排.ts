@@ -11,7 +11,7 @@ export const segmentId = '6-2-6';
 const G0 = choreo625.segmentTable['6-2-6'].起;
 export const FRAMES = choreo625.segmentFrames('6-2-6');
 const toSegFrame = (G: number) => G - G0;
-export const beats = { 城墙: toSegFrame(choreo625.beats.townWall), 减速: toSegFrame(choreo625.beats.decelStart), hardBrake: toSegFrame(choreo625.beats.hardBrake), 停住: toSegFrame(choreo625.beats.stopFrame), 末帧: FRAMES - 1 };
+export const beats = { townWall: toSegFrame(choreo625.beats.townWall), decelStart: toSegFrame(choreo625.beats.decelStart), hardBrake: toSegFrame(choreo625.beats.hardBrake), stop: toSegFrame(choreo625.beats.stopFrame), 末帧: FRAMES - 1 };
 export const hoverHeight = choreo625.hoverHeight;
 export type BroomState = choreo625.BroomState;
 export type Cam = choreo625.Cam;

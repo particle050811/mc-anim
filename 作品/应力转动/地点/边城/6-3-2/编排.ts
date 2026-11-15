@@ -23,7 +23,7 @@ import { MACE } from '@库/物品/重锤.tsx';
 import * as LY from '../6-3-下坠/编排/李樱.ts';
 import { goldGlow } from '../6-3-下坠/编排/金光.ts';
 import { broomState } from '../6-3-下坠/编排/扫帚.ts';
-import { 刻, 撞击时刻, yawVec } from '../6-3-下坠/时间线.ts';
+import { tick, impactTime, yawVec } from '../6-3-下坠/时间线.ts';
 import { uiClose, uiFade, smashBeats, calloutBeats, matchSec as pushEnd } from './台词.ts';
 
 export const FPS = 24;
@@ -109,8 +109,8 @@ const footStartY = slabTop + dropHeight;
 // 深板岩不停顿：落到底的时刻和原来落进空腔一样，台词里「直达地下」的对位不用重排
 // 碎：这一层在哪个字上碎（台词.ts 的 `smash`）；裂：至少裂几刻（字来得太早时照这个，物理上不会穿层）
 const layers = [
-  { 顶: 5.0, crackTicks: 4, 碎: smashBeats.breaks[0] }, // 泥土
-  { 顶: 4.0, crackTicks: 4, 碎: smashBeats.breaks[1] }, // 石头
+  { topY: 5.0, crackTicks: 4, breakSec: smashBeats.breaks[0] }, // 泥土
+  { topY: 4.0, crackTicks: 4, breakSec: smashBeats.breaks[1] }, // 石头
 ];
 const passThroughTops = [3, 2]; // 深板岩
 type PathPoint = { t: number; y: number };
@@ -126,7 +126,7 @@ const fallPath: { points: PathPoint[]; breaks: LayerBreak[]; impact: number; lan
   points.push({ t, y });
   for (let tick = 0; tick < 400; tick++) {
     const passIdx = layerIdx - layers.length;
-    const floorY = layerIdx < 0 ? slabTop : layerIdx < layers.length ? layers[layerIdx].顶 : (passThroughTops[passIdx] ?? 1);
+    const floorY = layerIdx < 0 ? slabTop : layerIdx < layers.length ? layers[layerIdx].topY : (passThroughTops[passIdx] ?? 1);
     // LivingEntity.travel：先按速度挪，再 −0.08、×0.98
     const ny = y + vel;
     if (ny > floorY) {
@@ -146,7 +146,7 @@ const fallPath: { points: PathPoint[]; breaks: LayerBreak[]; impact: number; lan
       vel *= 0.5;
     } else if (layerIdx < layers.length) {
       // 停在这一层上出裂纹（思索里挖方块的演法），裂到该碎的那个字碎掉，锤头接着往下压
-      const breakAt = Math.max(tc + layers[layerIdx].crackTicks * tickSec, layers[layerIdx].碎);
+      const breakAt = Math.max(tc + layers[layerIdx].crackTicks * tickSec, layers[layerIdx].breakSec);
       points.push({ t: breakAt, y: floorY });
       breakList.push({ y: layerIdx === 0 ? 4 : 3, t: breakAt, crackStart: tc });
       t = breakAt;
@@ -217,10 +217,10 @@ type FigureRef = { psi: THREE.Matrix4; stance: FigurePose; hit: FigurePose; hipX
 let FIGURE: FigureRef | null = null;
 export const figureRef = (): FigureRef => {
   if (FIGURE) return FIGURE;
-  const fwd = yawVec(broomState(刻.leap).yaw).fwd;
+  const fwd = yawVec(broomState(tick.leap).yaw).fwd;
   const psi = new THREE.Matrix4().makeRotationZ(Math.atan2(-1, 0) - Math.atan2(fwd[1], fwd[0]));
-  const stance = { ...LY.liYing(刻.俯冲起).pose, loc: [0, 0, 0] };
-  const hit = { ...LY.liYing(撞击时刻()).pose, loc: [0, 0, 0] };
+  const stance = { ...LY.liYing(tick.diveStart).pose, loc: [0, 0, 0] };
+  const hit = { ...LY.liYing(impactTime()).pose, loc: [0, 0, 0] };
   // 悬着时锤头正对砸穿那一柱的中心
   const head = new THREE.Vector3(...LY.maceHeadPos({ pose: stance, matrix: LY.diveMatrix([0, 0, 0], stance), maceAngle: LY.maceAngleOf(stance), maceHeld: 1, ghost: 0, hip: [0, 0, 0] })).applyMatrix4(psi);
   const center = toScene([breachColumn.x[0] + 1, 0, breachColumn.z[0] + 1]);

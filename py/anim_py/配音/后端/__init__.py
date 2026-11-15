@@ -9,11 +9,11 @@ from dataclasses import asdict, dataclass, field
 from typing import ClassVar
 
 # 台词.toml 写的语言 → 对齐器要的写法
-语言名 = {'中文': 'Chinese', '日语': 'Japanese', '英语': 'English', '粤语': 'Cantonese'}
+language_names = {'中文': 'Chinese', '日语': 'Japanese', '英语': 'English', '粤语': 'Cantonese'}
 
 
 @dataclass
-class 合成请求:
+class SynthRequest:
     """一个候选：一句台词用一个种子念一遍。路径都是 anim 给的绝对路径。"""
 
     id: str
@@ -31,7 +31,7 @@ class 合成请求:
 
 
 @dataclass
-class 合成结果:
+class SynthResult:
     id: str
     种子: int
     输出: str
@@ -39,47 +39,47 @@ class 合成结果:
     说明: str = ''
 
 
-class 后端:
+class Backend:
     名: ClassVar[str] = ''
     说明: ClassVar[str] = ''
-    本机: ClassVar[bool] = True  # 在本机跑模型
-    云端: ClassVar[bool] = False  # 要把参考音频和台词发到外部服务
-    付费: ClassVar[bool] = False  # 按次收费
-    默认参数: ClassVar[dict] = {}
+    runs_local: ClassVar[bool] = True  # 在本机跑模型
+    cloud: ClassVar[bool] = False  # 要把参考音频和台词发到外部服务
+    paid: ClassVar[bool] = False  # 按次收费
+    default_params: ClassVar[dict] = {}
     # 只跟这台机器有关的设置（程序目录、服务地址、密钥位置）：不写进候选说明和资产表的 来源（仓库公开）
-    本机键: ClassVar[frozenset[str]] = frozenset({'目录', '地址', '接口', '令牌文件', '密钥文件'})
+    local_keys: ClassVar[frozenset[str]] = frozenset({'目录', '地址', '接口', '令牌文件', '密钥文件'})
 
-    def __init__(self, 配置: dict | None = None):
+    def __init__(self, config: dict | None = None):
         """配置：后端的全局设置（程序目录、服务地址等，anim 从配置取了传进来），和 默认参数 合并"""
-        self.配置 = {**self.默认参数, **(配置 or {})}
+        self.backend_config = {**self.default_params, **(config or {})}
 
-    def 参数(self, 请求: 合成请求) -> dict:
-        return {**self.配置, **请求.参数}
+    def 参数(self, request: SynthRequest) -> dict:
+        return {**self.backend_config, **request.参数}
 
-    def 记录参数(self, 请求: 合成请求) -> dict:
+    def record_params(self, request: SynthRequest) -> dict:
         """这个候选是用什么参数出的（写进候选旁的 .json，定稿时进资产表的 来源）"""
-        return {k: v for k, v in self.参数(请求).items() if k not in self.本机键}
+        return {k: v for k, v in self.参数(request).items() if k not in self.local_keys}
 
-    def 缺什么(self) -> list[str]:
+    def missing_items(self) -> list[str]:
         """跑不了的原因（程序、模型、密钥不在），空表示能跑；不联网、不加载模型"""
         return []
 
-    def 描述(self, 请求: 合成请求) -> dict:
+    def describe(self, request: SynthRequest) -> dict:
         """dry-run：要发出去或交给模型的东西（不含音频字节）"""
-        return {'后端': self.名, **asdict(请求), '参数': self.参数(请求)}
+        return {'后端': self.名, **asdict(request), '参数': self.参数(request)}
 
-    def 合成(self, 请求们: list[合成请求]) -> list[合成结果]:
+    def synthesize(self, requests: list[SynthRequest]) -> list[SynthResult]:
         raise NotImplementedError
 
 
-def 后端表() -> dict[str, type[后端]]:
+def backend_table() -> dict[str, type[Backend]]:
     from . import image_flow
 
     return {c.名: c for c in (image_flow.ImageFlow,)}
 
 
-def 取后端(名: str, 配置: dict | None = None) -> 后端:
-    表 = 后端表()
-    if 名 not in 表:
-        raise SystemExit(f'没有 TTS 后端「{名}」，有：{"、".join(表)}')
-    return 表[名](配置)
+def get_backend(backend_name: str, config: dict | None = None) -> Backend:
+    backend_map = backend_table()
+    if backend_name not in backend_map:
+        raise SystemExit(f'没有 TTS 后端「{backend_name}」，有：{"、".join(backend_map)}')
+    return backend_map[backend_name](config)

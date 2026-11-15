@@ -8,7 +8,7 @@
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
-import { 炼狱结界原版, 结界棱表 } from '@库/特效/炼狱结界线.ts';
+import { revelationCageVanilla, cageEdgeTable } from '@库/特效/炼狱结界线.ts';
 
 const VERT = `
 #include <common>
@@ -91,71 +91,71 @@ void main() {
 }
 `;
 
-type 色 = readonly [number, number, number];
+type RgbColor = readonly [number, number, number];
 
-export type 结界辉线外观 = {
+export type CageGlowAppearance = {
   /** 亮芯的宽度（格，世界里的粗细） */
-  芯宽: number;
+  coreWidth: number;
   /** 连晕在内的总宽（格） */
-  晕宽: number;
+  haloWidth: number;
   /** 芯在画面上最细几像素，按 720 高的画面说，别的画幅等比放大 */
-  最小芯宽像素: number;
+  minCoreWidthPx: number;
   /** 晕的亮度 */
-  晕强: number;
+  haloStrength: number;
   /** 顶点亮点比线宽几倍、晕亮几倍；亮点倍 0 = 不画 */
-  亮点倍: number;
-  亮点晕倍: number;
+  hotspotScale: number;
+  hotspotHaloScale: number;
   /** 颜色（sRGB 0～1）：芯心、芯边、晕 */
-  芯心色: 色;
-  芯边色: 色;
-  晕色: 色;
+  coreColor: RgbColor;
+  coreEdgeColor: RgbColor;
+  haloColor: RgbColor;
 };
 
 /** 默认外观：数值是对着核对段（灰底、暗红底）的静帧取的，没经用户看过。原版暗红 (0.54, 0, 0.11) 提亮成炽红的芯边和晕，芯心偏橙黄 */
-export const 结界辉线默认: 结界辉线外观 = {
-  芯宽: 0.17,
-  晕宽: 1.2,
-  最小芯宽像素: 3,
-  晕强: 1.0,
-  亮点倍: 1.9,
-  亮点晕倍: 1.2,
-  芯心色: [1, 0.78, 0.42],
-  芯边色: [1, 0.2, 0.06],
-  晕色: [1, 0.09, 0.05],
+export const cageGlowDefaults: CageGlowAppearance = {
+  coreWidth: 0.17,
+  haloWidth: 1.2,
+  minCoreWidthPx: 3,
+  haloStrength: 1.0,
+  hotspotScale: 1.9,
+  hotspotHaloScale: 1.2,
+  coreColor: [1, 0.78, 0.42],
+  coreEdgeColor: [1, 0.2, 0.06],
+  haloColor: [1, 0.09, 0.05],
 };
 
-export type 炼狱结界辉线属性 = {
+export type RevelationCageGlowProps = {
   /** 同 炼狱结界线框：只管转动，0 = 没转 */
   秒: number;
-  半径系数?: number;
-  透明度?: number;
-  外观?: Partial<结界辉线外观>;
+  radiusFactor?: number;
+  opacity?: number;
+  appearance?: Partial<CageGlowAppearance>;
   /** 粗细整体倍数（芯、晕、最小像素一起乘）：演出里结界小的时候线跟着细 */
-  粗细倍?: number;
+  thicknessScale?: number;
 };
 
-export const 炼狱结界辉线: React.FC<炼狱结界辉线属性> = ({ 秒, 半径系数 = 炼狱结界原版.半径系数, 透明度 = 1, 外观, 粗细倍 = 1 }) => {
+export const RevelationCageGlow: React.FC<RevelationCageGlowProps> = ({ 秒: sec, radiusFactor = revelationCageVanilla.radiusFactor, opacity = 1, appearance, thicknessScale = 1 }) => {
   const gl = useThree((s) => s.gl);
   // 画布尺寸变了要重取实际像素
   useThree((s) => s.size);
-  const 观 = { ...结界辉线默认, ...外观 };
-  const { 亮点倍, 亮点晕倍 } = 观;
+  const resolved = { ...cageGlowDefaults, ...appearance };
+  const { hotspotScale, hotspotHaloScale } = resolved;
   const mesh = useMemo(() => {
-    const { 顶点, 棱 } = 结界棱表();
-    const 线: { 起: readonly number[]; 止: readonly number[]; 档: readonly [number, number] }[] = 棱.map(([a, b]) => ({ 起: 顶点[a]!, 止: 顶点[b]!, 档: [1, 1] }));
-    if (亮点倍 > 0) for (const p of 顶点) 线.push({ 起: p, 止: p, 档: [亮点倍, 亮点晕倍] });
+    const { 顶点: vertices, edges } = cageEdgeTable();
+    const segments: { 起: readonly number[]; 止: readonly number[]; 档: readonly [number, number] }[] = edges.map(([a, b]) => ({ 起: vertices[a]!, 止: vertices[b]!, 档: [1, 1] }));
+    if (hotspotScale > 0) for (const p of vertices) segments.push({ 起: p, 止: p, 档: [hotspotScale, hotspotHaloScale] });
     const pos: number[] = [];
     const end: number[] = [];
     const corner: number[] = [];
     const grade: number[] = [];
     const idx: number[] = [];
-    线.forEach((s, i) => {
+    segments.forEach((s, i) => {
       // 沿线 4 排、每排 2 个顶点：起点帽沿、起点、终点、终点帽沿，连成 3 个四边形
-      for (const [端, 帽] of [[0, 1], [0, 0], [1, 0], [1, 1]] as const) {
-        for (const 侧 of [1, -1]) {
+      for (const [endSide, capSide] of [[0, 1], [0, 0], [1, 0], [1, 1]] as const) {
+        for (const sign of [1, -1]) {
           pos.push(...s.起);
           end.push(...s.止);
-          corner.push(端, 帽, 侧);
+          corner.push(endSide, capSide, sign);
           grade.push(...s.档);
         }
       }
@@ -204,31 +204,31 @@ export const 炼狱结界辉线: React.FC<炼狱结界辉线属性> = ({ 秒, �
     const m = new THREE.Mesh(geometry, material);
     m.frustumCulled = false;
     return m;
-  }, [亮点倍, 亮点晕倍]);
+  }, [hotspotScale, hotspotHaloScale]);
   useEffect(() => () => {
     mesh.geometry.dispose();
     (mesh.material as THREE.Material).dispose();
   }, [mesh]);
   const u = (mesh.material as THREE.ShaderMaterial).uniforms;
-  const 缓冲 = gl.getDrawingBufferSize(new THREE.Vector2());
-  const 芯比 = 观.芯宽 / 观.晕宽;
-  u.halfScreen!.value.set(缓冲.x / 2, 缓冲.y / 2);
-  u.haloHalfWidth!.value = (观.晕宽 / 2) * 粗细倍;
-  u.minHaloHalfPx!.value = ((观.最小芯宽像素 / 2) * (缓冲.y / 720) * 粗细倍) / 芯比;
+  const drawSize = gl.getDrawingBufferSize(new THREE.Vector2());
+  const coreRatio = resolved.coreWidth / resolved.haloWidth;
+  u.halfScreen!.value.set(drawSize.x / 2, drawSize.y / 2);
+  u.haloHalfWidth!.value = (resolved.haloWidth / 2) * thicknessScale;
+  u.minHaloHalfPx!.value = ((resolved.minCoreWidthPx / 2) * (drawSize.y / 720) * thicknessScale) / coreRatio;
   // 镜头贴着线时不让一条线的晕糊掉半个画面
-  u.maxHaloHalfPx!.value = 缓冲.y * 0.12;
-  u.coreRatio!.value = 芯比;
-  u.haloStrength!.value = 观.晕强;
-  u.opacity!.value = Math.min(1, Math.max(0, 透明度));
-  (u.coreCenter!.value as THREE.Color).setRGB(...观.芯心色, THREE.SRGBColorSpace);
-  (u.coreEdge!.value as THREE.Color).setRGB(...观.芯边色, THREE.SRGBColorSpace);
-  (u.haloColor!.value as THREE.Color).setRGB(...观.晕色, THREE.SRGBColorSpace);
-  if (透明度 <= 0 || 半径系数 <= 0) return null;
-  const 角 = (秒 * 炼狱结界原版.每秒转度 * Math.PI) / 180;
+  u.maxHaloHalfPx!.value = drawSize.y * 0.12;
+  u.coreRatio!.value = coreRatio;
+  u.haloStrength!.value = resolved.haloStrength;
+  u.opacity!.value = Math.min(1, Math.max(0, opacity));
+  (u.coreCenter!.value as THREE.Color).setRGB(...resolved.coreColor, THREE.SRGBColorSpace);
+  (u.coreEdge!.value as THREE.Color).setRGB(...resolved.coreEdgeColor, THREE.SRGBColorSpace);
+  (u.haloColor!.value as THREE.Color).setRGB(...resolved.haloColor, THREE.SRGBColorSpace);
+  if (opacity <= 0 || radiusFactor <= 0) return null;
+  const angle = (sec * revelationCageVanilla.spinDegPerSec * Math.PI) / 180;
   return (
     // 外层把场景坐标（Z 朝上）转回 MC 的轴（Y 朝上）
     <group rotation={[Math.PI / 2, 0, 0]}>
-      <group rotation={[角, 角, 角]} scale={半径系数}>
+      <group rotation={[angle, angle, angle]} scale={radiusFactor}>
         <primitive object={mesh} />
       </group>
     </group>

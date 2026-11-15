@@ -11,37 +11,37 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'smol-toml';
-import type { 检查上下文 } from '../检查/上下文.ts';
-import { 包清单 } from '../检查/规则/资产.ts';
-import { 配置 } from '../环境/配置.ts';
-import { 代码根 } from '../环境/路径.ts';
-import { 跑, 试跑 } from '../环境/子进程.ts';
-import { 算随仓库 } from './随仓库.ts';
-import { 地形目录, 读发布锁, 附件缺, type 发布锁, type 附件 } from './发布锁.ts';
+import type { CheckContext } from '../检查/上下文.ts';
+import { packManifest } from '../检查/规则/资产.ts';
+import { config } from '../环境/配置.ts';
+import { codeRoot } from '../环境/路径.ts';
+import { runCmd, tryRun } from '../环境/子进程.ts';
+import { computeRepoBundle } from './随仓库.ts';
+import { terrainDir, readReleaseLock, missingAttachmentCount, type ReleaseLock, type Attachment } from './发布锁.ts';
 
-export const 随发布表名 = '随发布.toml';
-export type 随发布表 = { 仓库: string; 标签: string; 段: string[] };
+export const releaseTableName = '随发布.toml';
+export type ReleaseManifest = { 仓库: string; 标签: string; 段: string[] };
 
 /** GitHub 一个 Release 附件要小于 2 GiB */
-export const 附件上限 = 2 * 1024 ** 3;
+export const attachmentLimitBytes = 2 * 1024 ** 3;
 
 /** 随发布.toml：仓库 = "<owner>/<repo>"，标签 = "<tag>"，段 = [段键或章, …]（章写成字符串） */
-export const 读随发布表 = (文本: string): 随发布表 => {
-  const d = parse(文本) as Record<string, unknown>;
-  const 格式 = `${随发布表名} 要写 "仓库" = "<owner>/<repo>"、"标签" = "<tag>"、"段" = ["<段键或章>", …]`;
-  if (typeof d.仓库 !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(d.仓库)) throw new Error(格式);
-  if (typeof d.标签 !== 'string' || !/^[\x21-\x7e]+$/.test(d.标签)) throw new Error(`${格式}（标签只用 ASCII）`);
-  if (!Array.isArray(d.段) || !d.段.length || d.段.some((x) => typeof x !== 'string' || !x)) throw new Error(格式);
+export const readReleaseManifest = (text: string): ReleaseManifest => {
+  const d = parse(text) as Record<string, unknown>;
+  const expectedShape = `${releaseTableName} 要写 "仓库" = "<owner>/<repo>"、"标签" = "<tag>"、"段" = ["<段键或章>", …]`;
+  if (typeof d.仓库 !== 'string' || !/^[\w.-]+\/[\w.-]+$/.test(d.仓库)) throw new Error(expectedShape);
+  if (typeof d.标签 !== 'string' || !/^[\x21-\x7e]+$/.test(d.标签)) throw new Error(`${expectedShape}（标签只用 ASCII）`);
+  if (!Array.isArray(d.段) || !d.段.length || d.段.some((x) => typeof x !== 'string' || !x)) throw new Error(expectedShape);
   return { 仓库: d.仓库, 标签: d.标签, 段: d.段 as string[] };
 };
 
 const sha = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
 /** 没有 私有/ 库字节时和以前同名（旧发布锁照用） */
-export const 字节附件名 = (shas: readonly string[], 私有库: readonly string[] = []) =>
-  `bytes-${sha(shas.join('\n') + (私有库.length ? `\n私有\n${私有库.join('\n')}` : '')).slice(0, 12)}.tar`;
-export const 地形附件名 = (版本: string) => `terrain-${版本}.tar`;
+export const bytesAttachmentName = (shas: readonly string[], privateLibs: readonly string[] = []) =>
+  `bytes-${sha(shas.join('\n') + (privateLibs.length ? `\n私有\n${privateLibs.join('\n')}` : '')).slice(0, 12)}.tar`;
+export const terrainAttachmentName = (version: string) => `terrain-${version}.tar`;
 
-const 流sha = (f: string) =>
+const streamSha256 = (f: string) =>
   new Promise<string>((resolve, reject) => {
     const h = crypto.createHash('sha256');
     fs.createReadStream(f)
@@ -50,215 +50,215 @@ const 流sha = (f: string) =>
       .on('error', reject);
   });
 
-type 地形登记 = { 版本: string; 清单sha256?: string; 文件数?: number; 大小?: number };
-const 读地形表 = (): Record<string, 地形登记> =>
-  (JSON.parse(fs.readFileSync(path.join(代码根(), 'assets', '地形版本.json'), 'utf8')) as { 包?: Record<string, 地形登记> }).包 ?? {};
+type TerrainRecord = { 版本: string; 清单sha256?: string; 文件数?: number; 大小?: number };
+const readTerrainTable = (): Record<string, TerrainRecord> =>
+  (JSON.parse(fs.readFileSync(path.join(codeRoot(), 'assets', '地形版本.json'), 'utf8')) as { 包?: Record<string, TerrainRecord> }).包 ?? {};
 
-export type 应发 = { 字节: string[]; 私有库字节: string[]; 地形: { 包: string; 版本: string }[]; 段数: number; 私有: string[]; 问题: string[] };
+export type ExpectedRelease = { 字节: string[]; 私有库字节: string[]; 地形: { 包: string; 版本: string }[]; 段数: number; privateFiles: string[]; issues: string[] };
 
 /** 按当前代码算这一版该发什么：随仓库同一个集合的 store 字节、私有/ 库里可见性不是私有的字节（可见性私有的不发），加段声明的地形包 */
-export const 算应发 = async (c: 检查上下文, 表: 随发布表): Promise<应发> => {
-  const 集合 = await 算随仓库(c, 表.段);
-  const 地形表 = 读地形表();
-  const 问题 = [...集合.问题];
-  const 地形 = 集合.地形.flatMap((包) => {
-    const v = 地形表[包];
+export const computeExpectedRelease = async (c: CheckContext, releaseTable: ReleaseManifest): Promise<ExpectedRelease> => {
+  const bundleSet = await computeRepoBundle(c, releaseTable.段);
+  const terrainTable = readTerrainTable();
+  const issues = [...bundleSet.issues];
+  const terrainPacks = bundleSet.地形.flatMap((pack) => {
+    const v = terrainTable[pack];
     if (!v) {
-      问题.push(`地形包 ${包} 没在 assets/地形版本.json 登记`);
+      issues.push(`地形包 ${pack} 没在 assets/地形版本.json 登记`);
       return [];
     }
-    return [{ 包, 版本: v.版本 }];
+    return [{ 包: pack, 版本: v.版本 }];
   });
-  return { 字节: [...集合.件.keys()].sort(), 私有库字节: [...集合.私有库件.keys()].sort(), 地形, 段数: 集合.段们.length, 私有: 集合.私有, 问题 };
+  return { 字节: [...bundleSet.files.keys()].sort(), 私有库字节: [...bundleSet.privateLibItems.keys()].sort(), 地形: terrainPacks, 段数: bundleSet.segKeys.length, privateFiles: bundleSet.privateFiles, issues };
 };
 
 /** 发布锁和现算的对不上的地方（anim check 用）；空就是一致 */
-export const 比对发布锁 = (锁: 发布锁 | undefined, 应: 应发, 表: 随发布表): string[] => {
-  if (!锁) return ['没有 发布锁.json'];
+export const compareReleaseLock = (releaseLock: ReleaseLock | undefined, expected: ExpectedRelease, releaseTable: ReleaseManifest): string[] => {
+  if (!releaseLock) return ['没有 发布锁.json'];
   const r: string[] = [];
-  if (锁.仓库 !== 表.仓库 || 锁.标签 !== 表.标签) r.push(`发布锁是 ${锁.仓库}@${锁.标签}，${随发布表名} 写的是 ${表.仓库}@${表.标签}`);
-  for (const [名, 锁里, 应该] of [
-    ['', 锁.附件.flatMap((a) => a.字节 ?? []), 应.字节],
-    ['私有/ 库的', 锁.附件.flatMap((a) => a.私有库字节 ?? []), 应.私有库字节],
+  if (releaseLock.仓库 !== releaseTable.仓库 || releaseLock.标签 !== releaseTable.标签) r.push(`发布锁是 ${releaseLock.仓库}@${releaseLock.标签}，${releaseTableName} 写的是 ${releaseTable.仓库}@${releaseTable.标签}`);
+  for (const [kindLabel, lockedIds, expectedShas] of [
+    ['', releaseLock.附件.flatMap((a) => a.字节 ?? []), expected.字节],
+    ['私有/ 库的', releaseLock.附件.flatMap((a) => a.私有库字节 ?? []), expected.私有库字节],
   ] as const) {
-    const 有 = new Set(锁里);
-    const 缺 = 应该.filter((s) => !有.has(s));
-    const 多 = [...有].filter((s) => !应该.includes(s));
-    if (缺.length) r.push(`发布锁少 ${缺.length} 件${名}字节`);
-    if (多.length) r.push(`发布锁多 ${多.length} 件${名}字节（段现在用不到）`);
+    const locked = new Set(lockedIds);
+    const missing = expectedShas.filter((s) => !locked.has(s));
+    const unneeded = [...locked].filter((s) => !expectedShas.includes(s));
+    if (missing.length) r.push(`发布锁少 ${missing.length} 件${kindLabel}字节`);
+    if (unneeded.length) r.push(`发布锁多 ${unneeded.length} 件${kindLabel}字节（段现在用不到）`);
   }
-  const 要名 = [字节附件名(应.字节, 应.私有库字节), ...应.地形.map((x) => 地形附件名(x.版本))].sort();
-  const 锁名 = 锁.附件.map((a) => a.名).sort();
-  if (要名.join() !== 锁名.join()) r.push(`附件该是 ${要名.join('、')}，发布锁里是 ${锁名.join('、')}`);
+  const expectedNames = [bytesAttachmentName(expected.字节, expected.私有库字节), ...expected.地形.map((x) => terrainAttachmentName(x.版本))].sort();
+  const lockNames = releaseLock.附件.map((a) => a.名).sort();
+  if (expectedNames.join() !== lockNames.join()) r.push(`附件该是 ${expectedNames.join('、')}，发布锁里是 ${lockNames.join('、')}`);
   return r;
 };
 
 /** tar 一批相对 基 的路径（列表文件给 -T）；Mac 上不带 ._ 扩展属性文件 */
-const 打tar = async (出: string, 基: string, 列表: string[]) => {
-  const 表 = `${出}.列表`;
-  fs.writeFileSync(表, 列表.join('\n') + '\n', 'utf8');
-  const tmp = `${出}.写入中-${process.pid}`;
+const packTar = async (tarPath: string, baseDir: string, fileList: string[]) => {
+  const listPath = `${tarPath}.列表`;
+  fs.writeFileSync(listPath, fileList.join('\n') + '\n', 'utf8');
+  const tmp = `${tarPath}.写入中-${process.pid}`;
   try {
     const mac = process.platform === 'darwin' ? ['--no-mac-metadata'] : [];
-    await 跑(['tar', ...mac, '--format', 'pax', '-cf', tmp, '-C', 基, '-T', 表], { env: { ...process.env, COPYFILE_DISABLE: '1' }, 安静: true });
-    fs.renameSync(tmp, 出);
+    await runCmd(['tar', ...mac, '--format', 'pax', '-cf', tmp, '-C', baseDir, '-T', listPath], { env: { ...process.env, COPYFILE_DISABLE: '1' }, quiet: true });
+    fs.renameSync(tmp, tarPath);
   } finally {
-    fs.rmSync(表, { force: true });
+    fs.rmSync(listPath, { force: true });
     fs.rmSync(tmp, { force: true });
   }
-  const 大小 = fs.statSync(出).size;
-  if (大小 >= 附件上限) throw new Error(`${出} 有 ${(大小 / 1e9).toFixed(2)} GB，超过 GitHub 附件上限 2 GiB（要分卷，还没做）`);
-  return { sha256: await 流sha(出), 大小 };
+  const byteSize = fs.statSync(tarPath).size;
+  if (byteSize >= attachmentLimitBytes) throw new Error(`${tarPath} 有 ${(byteSize / 1e9).toFixed(2)} GB，超过 GitHub 附件上限 2 GiB（要分卷，还没做）`);
+  return { sha256: await streamSha256(tarPath), 大小: byteSize };
 };
 
-export const 发布目录 = (根: string) => path.join(根, 'cache', '发布');
+export const releaseDir = (dataRoot: string) => path.join(dataRoot, 'cache', '发布');
 
 /** anim assets pack：现算该发的，锁里没有的打成 tar，写发布锁；返回新锁和这次新打的附件（本机文件路径） */
-export const 打包发布 = async (c: 检查上下文, 表: 随发布表, 作品根: string, 根: string) => {
-  const 应 = await 算应发(c, 表);
-  if (应.问题.length) throw new Error(`算不出该发的：\n  ${应.问题.join('\n  ')}`);
-  const 旧 = 读发布锁(作品根);
-  const 旧附件 = new Map(旧 && 旧.仓库 === 表.仓库 && 旧.标签 === 表.标签 ? 旧.附件.map((a) => [a.名, a]) : []);
-  const dir = 发布目录(根);
+export const packRelease = async (c: CheckContext, releaseTable: ReleaseManifest, workRoot: string, dataRoot: string) => {
+  const expected = await computeExpectedRelease(c, releaseTable);
+  if (expected.issues.length) throw new Error(`算不出该发的：\n  ${expected.issues.join('\n  ')}`);
+  const prevLock = readReleaseLock(workRoot);
+  const oldAttachments = new Map(prevLock && prevLock.仓库 === releaseTable.仓库 && prevLock.标签 === releaseTable.标签 ? prevLock.附件.map((a) => [a.名, a]) : []);
+  const dir = releaseDir(dataRoot);
   fs.mkdirSync(dir, { recursive: true });
-  const 附件们: 附件[] = [];
-  const 新打: string[] = [];
+  const attachments: Attachment[] = [];
+  const newPacks: string[] = [];
 
-  const 字节名 = 字节附件名(应.字节, 应.私有库字节);
-  const 旧字节 = 旧附件.get(字节名);
-  if (旧字节) 附件们.push(旧字节);
+  const bytesAttachment = bytesAttachmentName(expected.字节, expected.私有库字节);
+  const oldAttachment = oldAttachments.get(bytesAttachment);
+  if (oldAttachment) attachments.push(oldAttachment);
   else {
-    const 列表 = [...应.字节.map((s) => `store/${s.slice(0, 2)}/${s}`), ...应.私有库字节.map((s) => `私有/${s.slice(0, 2)}/${s}`)];
-    const 缺 = 列表.filter((p) => !fs.existsSync(path.join(根, p)));
-    if (缺.length) throw new Error(`数据根缺 ${缺.length} 件要发的字节（${缺.slice(0, 3).join('、')}…），这台机器打不了`);
-    const 出 = path.join(dir, 字节名);
-    console.log(`打 ${字节名}：${应.字节.length + 应.私有库字节.length} 件字节`);
-    附件们.push({ 名: 字节名, ...(await 打tar(出, 根, 列表)), 字节: 应.字节, ...(应.私有库字节.length ? { 私有库字节: 应.私有库字节 } : {}) });
-    新打.push(出);
+    const fileList = [...expected.字节.map((s) => `store/${s.slice(0, 2)}/${s}`), ...expected.私有库字节.map((s) => `私有/${s.slice(0, 2)}/${s}`)];
+    const missing = fileList.filter((p) => !fs.existsSync(path.join(dataRoot, p)));
+    if (missing.length) throw new Error(`数据根缺 ${missing.length} 件要发的字节（${missing.slice(0, 3).join('、')}…），这台机器打不了`);
+    const tarPath = path.join(dir, bytesAttachment);
+    console.log(`打 ${bytesAttachment}：${expected.字节.length + expected.私有库字节.length} 件字节`);
+    attachments.push({ 名: bytesAttachment, ...(await packTar(tarPath, dataRoot, fileList)), 字节: expected.字节, ...(expected.私有库字节.length ? { 私有库字节: expected.私有库字节 } : {}) });
+    newPacks.push(tarPath);
   }
 
-  const 地形表 = 读地形表();
-  for (const { 包, 版本 } of 应.地形) {
-    const 名 = 地形附件名(版本);
-    const 旧地形 = 旧附件.get(名);
-    if (旧地形) {
-      附件们.push(旧地形);
+  const terrainTable = readTerrainTable();
+  for (const { 包: pack, 版本: version } of expected.地形) {
+    const terrainAttachName = terrainAttachmentName(version);
+    const oldTerrain = oldAttachments.get(terrainAttachName);
+    if (oldTerrain) {
+      attachments.push(oldTerrain);
       continue;
     }
-    const 源 = 地形目录(根, 包, 版本);
-    if (!fs.existsSync(源)) throw new Error(`数据根没有地形包 ${包}/${版本}，这台机器打不了`);
-    const 实 = await 包清单(源);
-    const v = 地形表[包]!;
-    if (实.清单sha256 !== v.清单sha256) throw new Error(`地形包 ${包}/${版本} 和 assets/地形版本.json 记的清单指纹不一致，先 anim check --深`);
-    const 出 = path.join(dir, 名);
-    console.log(`打 ${名}：地形包 ${包}，${实.文件数} 个文件 ${(实.大小 / 1e9).toFixed(2)} GB`);
-    const 文件 = fs.readdirSync(源).sort();
-    附件们.push({ 名, ...(await 打tar(出, 源, 文件)), 地形: { 包, 版本 } });
-    新打.push(出);
+    const sourceDir = terrainDir(dataRoot, pack, version);
+    if (!fs.existsSync(sourceDir)) throw new Error(`数据根没有地形包 ${pack}/${version}，这台机器打不了`);
+    const actual = await packManifest(sourceDir);
+    const v = terrainTable[pack]!;
+    if (actual.清单sha256 !== v.清单sha256) throw new Error(`地形包 ${pack}/${version} 和 assets/地形版本.json 记的清单指纹不一致，先 anim check --深`);
+    const tarPath = path.join(dir, terrainAttachName);
+    console.log(`打 ${terrainAttachName}：地形包 ${pack}，${actual.文件数} 个文件 ${(actual.大小 / 1e9).toFixed(2)} GB`);
+    const fileNames = fs.readdirSync(sourceDir).sort();
+    attachments.push({ 名: terrainAttachName, ...(await packTar(tarPath, sourceDir, fileNames)), 地形: { 包: pack, 版本: version } });
+    newPacks.push(tarPath);
   }
-  return { 锁: { 仓库: 表.仓库, 标签: 表.标签, 附件: 附件们 } satisfies 发布锁, 新打, 应 };
+  return { releaseLock: { 仓库: releaseTable.仓库, 标签: releaseTable.标签, 附件: attachments } satisfies ReleaseLock, newPacks, expected };
 };
 
 /** --上传：没有这个 Release 就建，再传 Release 上还没有的附件（本机 cache/发布/ 里要有） */
-export const 上传发布 = async (锁: 发布锁, 根: string) => {
-  const 看 = 试跑(['gh', 'release', 'view', 锁.标签, '--repo', 锁.仓库, '--json', 'assets', '--jq', '.assets[].name']);
-  if (看.退出码 !== 0) {
-    if (!/release not found/i.test(看.stderr)) throw new Error(`gh release view 失败（装了 gh、gh auth login 了吗）：${看.stderr.trim()}`);
-    await 跑(['gh', 'release', 'create', 锁.标签, '--repo', 锁.仓库, '--title', 锁.标签, '--notes', '渲片用的字节和地形包，anim assets pull 按 <作品根>/发布锁.json 下载、核 sha、解进数据根。']);
+export const uploadRelease = async (releaseLock: ReleaseLock, dataRoot: string) => {
+  const viewResult = tryRun(['gh', 'release', 'view', releaseLock.标签, '--repo', releaseLock.仓库, '--json', 'assets', '--jq', '.assets[].name']);
+  if (viewResult.退出码 !== 0) {
+    if (!/release not found/i.test(viewResult.stderr)) throw new Error(`gh release view 失败（装了 gh、gh auth login 了吗）：${viewResult.stderr.trim()}`);
+    await runCmd(['gh', 'release', 'create', releaseLock.标签, '--repo', releaseLock.仓库, '--title', releaseLock.标签, '--notes', '渲片用的字节和地形包，anim assets pull 按 <作品根>/发布锁.json 下载、核 sha、解进数据根。']);
   }
-  const 已有 = new Set(看.退出码 === 0 ? 看.stdout.split('\n').filter(Boolean) : []);
-  for (const a of 锁.附件) {
-    if (已有.has(a.名)) continue;
-    const f = path.join(发布目录(根), a.名);
-    if (!fs.existsSync(f) || fs.statSync(f).size !== a.大小) throw new Error(`${a.名} 不在 ${发布目录(根)}（或大小不对），这台机器传不了`);
+  const remoteNames = new Set(viewResult.退出码 === 0 ? viewResult.stdout.split('\n').filter(Boolean) : []);
+  for (const a of releaseLock.附件) {
+    if (remoteNames.has(a.名)) continue;
+    const f = path.join(releaseDir(dataRoot), a.名);
+    if (!fs.existsSync(f) || fs.statSync(f).size !== a.大小) throw new Error(`${a.名} 不在 ${releaseDir(dataRoot)}（或大小不对），这台机器传不了`);
     console.log(`传 ${a.名}（${(a.大小 / 1e6).toFixed(0)} MB）`);
-    await 跑(['gh', 'release', 'upload', 锁.标签, f, '--repo', 锁.仓库]);
+    await runCmd(['gh', 'release', 'upload', releaseLock.标签, f, '--repo', releaseLock.仓库]);
   }
 };
 
 /** 字节搬进 store/（或 私有/）：核 sha、只读、先临时名再改名；已有的不动 */
-const 放进库 = (源: string, 根: string, s: string, 库: 'store' | '私有') => {
-  const 目标 = path.join(根, 库, s.slice(0, 2), s);
-  if (fs.existsSync(目标)) return false;
-  fs.mkdirSync(path.dirname(目标), { recursive: true });
-  fs.chmodSync(源, 0o444);
+const placeInLib = (sourcePath: string, dataRoot: string, s: string, storage: 'store' | '私有') => {
+  const targetPath = path.join(dataRoot, storage, s.slice(0, 2), s);
+  if (fs.existsSync(targetPath)) return false;
+  fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+  fs.chmodSync(sourcePath, 0o444);
   try {
-    fs.renameSync(源, 目标);
+    fs.renameSync(sourcePath, targetPath);
   } catch (e) {
-    if (!fs.existsSync(目标)) throw e;
+    if (!fs.existsSync(targetPath)) throw e;
   }
   return true;
 };
 
 /** 先问一下附件在不在：Release 比发布锁旧（pack 了还没 --上传）时是 404，curl 的重试要耗好几分钟才报，也看不出原因。连不上这类返回 null，交给下载那边重试 */
-const 附件没上传 = (url: string) =>
-  new Promise<boolean>((好) => {
-    execFile('curl', ['-sIL', '-o', os.devNull, '-w', '%{http_code}', '--connect-timeout', '20', '--max-time', '60', url], (_错, 出) => 好(String(出).trim().endsWith('404')));
+const attachmentNotUploaded = (url: string) =>
+  new Promise<boolean>((resolve) => {
+    execFile('curl', ['-sIL', '-o', os.devNull, '-w', '%{http_code}', '--connect-timeout', '20', '--max-time', '60', url], (err, stdout) => resolve(String(stdout).trim().endsWith('404')));
   });
 
 /** anim assets pull：按发布锁把数据根还缺的附件下载、核 sha、解进去；下完的 tar 删掉。下载根 默认取 ANIM_GITHUB_MIRROR（github.com 或加速站前缀），测试换成本地服务 */
-export const 拉发布 = async (锁: 发布锁, 根: string, 下载根 = 配置('github下载根').replace(/\/+$/, '')) => {
-  const 要 = 锁.附件.filter((a) => 附件缺(a, 根) > 0);
-  if (!要.length) {
-    console.log(`${锁.附件.length} 个附件的东西数据根里都有`);
+export const pullRelease = async (releaseLock: ReleaseLock, dataRoot: string, downloadRoot = config('github下载根').replace(/\/+$/, '')) => {
+  const missing = releaseLock.附件.filter((a) => missingAttachmentCount(a, dataRoot) > 0);
+  if (!missing.length) {
+    console.log(`${releaseLock.附件.length} 个附件的东西数据根里都有`);
     return;
   }
-  console.log(`要下 ${要.length} 个附件，共 ${(要.reduce((s, a) => s + a.大小, 0) / 1e9).toFixed(2)} GB（${锁.仓库} 的 Release ${锁.标签}）`);
-  const dir = 发布目录(根);
+  console.log(`要下 ${missing.length} 个附件，共 ${(missing.reduce((s, a) => s + a.大小, 0) / 1e9).toFixed(2)} GB（${releaseLock.仓库} 的 Release ${releaseLock.标签}）`);
+  const dir = releaseDir(dataRoot);
   fs.mkdirSync(dir, { recursive: true });
-  const 地形表 = 读地形表();
-  for (const a of 要) {
+  const terrainTable = readTerrainTable();
+  for (const a of missing) {
     const f = path.join(dir, a.名);
-    if (!(fs.existsSync(f) && fs.statSync(f).size === a.大小 && (await 流sha(f)) === a.sha256)) {
-      const url = `${下载根}/${锁.仓库}/releases/download/${encodeURIComponent(锁.标签)}/${encodeURIComponent(a.名)}`;
-      if (await 附件没上传(url)) throw new Error(`Release ${锁.标签} 上没有 ${a.名}（${锁.仓库}，HTTP 404）：发布锁比 Release 新，这份代码 pack 过但附件还没传。要在打包的那台机器上 anim assets pack --上传，传完才能用`);
+    if (!(fs.existsSync(f) && fs.statSync(f).size === a.大小 && (await streamSha256(f)) === a.sha256)) {
+      const url = `${downloadRoot}/${releaseLock.仓库}/releases/download/${encodeURIComponent(releaseLock.标签)}/${encodeURIComponent(a.名)}`;
+      if (await attachmentNotUploaded(url)) throw new Error(`Release ${releaseLock.标签} 上没有 ${a.名}（${releaseLock.仓库}，HTTP 404）：发布锁比 Release 新，这份代码 pack 过但附件还没传。要在打包的那台机器上 anim assets pack --上传，传完才能用`);
       console.log(`下 ${a.名}（${(a.大小 / 1e6).toFixed(0)} MB）`);
       const tmp = `${f}.下载中`;
       // -C - 断点续传：上回没下完的接着下。走代理时连接会半路断（Windows 上见过 schannel「server closed abruptly」），
       // curl 的 --retry 默认不重试这种，加 --retry-all-errors；整个 curl 失败了再从断点接着跑几次
-      for (let 次 = 1; ; 次++) {
+      for (let attempt = 1; ; attempt++) {
         try {
-          await 跑(['curl', '-fL', '-#', '--retry', '5', '--retry-all-errors', '-C', '-', '-o', tmp, url]);
+          await runCmd(['curl', '-fL', '-#', '--retry', '5', '--retry-all-errors', '-C', '-', '-o', tmp, url]);
           break;
         } catch (e) {
-          if (次 >= 5) throw new Error(`${(e as Error).message}\n${url} 下了 5 次都没下完。GitHub 在国外，最好开代理（设 HTTPS_PROXY）再跑 anim assets pull，或把 ANIM_GITHUB_MIRROR 设成加速站前缀；已下的部分留着，重跑接着下`);
-          console.error(`!! 第 ${次} 次没下完（已有 ${((fs.existsSync(tmp) ? fs.statSync(tmp).size : 0) / 1e6).toFixed(0)} MB），接着下`);
+          if (attempt >= 5) throw new Error(`${(e as Error).message}\n${url} 下了 5 次都没下完。GitHub 在国外，最好开代理（设 HTTPS_PROXY）再跑 anim assets pull，或把 ANIM_GITHUB_MIRROR 设成加速站前缀；已下的部分留着，重跑接着下`);
+          console.error(`!! 第 ${attempt} 次没下完（已有 ${((fs.existsSync(tmp) ? fs.statSync(tmp).size : 0) / 1e6).toFixed(0)} MB），接着下`);
         }
       }
-      const 实 = await 流sha(tmp);
-      if (实 !== a.sha256) {
+      const actualSha = await streamSha256(tmp);
+      if (actualSha !== a.sha256) {
         fs.rmSync(tmp, { force: true });
-        throw new Error(`${a.名} 下下来的 sha256 是 ${实.slice(0, 12)}，发布锁记的是 ${a.sha256.slice(0, 12)}（Release 上的附件被换过？重跑一次）`);
+        throw new Error(`${a.名} 下下来的 sha256 是 ${actualSha.slice(0, 12)}，发布锁记的是 ${a.sha256.slice(0, 12)}（Release 上的附件被换过？重跑一次）`);
       }
       fs.renameSync(tmp, f);
     }
-    const 解 = path.join(dir, `解开-${a.名}-${process.pid}`);
-    fs.rmSync(解, { recursive: true, force: true });
-    fs.mkdirSync(解, { recursive: true });
+    const unpackDir = path.join(dir, `解开-${a.名}-${process.pid}`);
+    fs.rmSync(unpackDir, { recursive: true, force: true });
+    fs.mkdirSync(unpackDir, { recursive: true });
     try {
-      await 跑(['tar', '-xf', f, '-C', 解], { 安静: true });
+      await runCmd(['tar', '-xf', f, '-C', unpackDir], { quiet: true });
       if (a.地形) {
-        const { 包, 版本 } = a.地形;
-        const v = 地形表[包];
-        const 实 = await 包清单(解);
-        if (!v || 实.清单sha256 !== v.清单sha256 || 实.文件数 !== v.文件数 || 实.大小 !== v.大小) throw new Error(`${a.名} 解开的地形包 ${包}/${版本} 和 assets/地形版本.json 记的不一致`);
-        const 目标 = 地形目录(根, 包, 版本);
-        fs.mkdirSync(path.dirname(目标), { recursive: true });
-        if (!fs.existsSync(目标)) fs.renameSync(解, 目标);
-        console.log(`  地形包 ${包}/${版本}：${实.文件数} 个文件`);
+        const { 包: pack, 版本: version } = a.地形;
+        const v = terrainTable[pack];
+        const actual = await packManifest(unpackDir);
+        if (!v || actual.清单sha256 !== v.清单sha256 || actual.文件数 !== v.文件数 || actual.大小 !== v.大小) throw new Error(`${a.名} 解开的地形包 ${pack}/${version} 和 assets/地形版本.json 记的不一致`);
+        const targetTerrainDir = terrainDir(dataRoot, pack, version);
+        fs.mkdirSync(path.dirname(targetTerrainDir), { recursive: true });
+        if (!fs.existsSync(targetTerrainDir)) fs.renameSync(unpackDir, targetTerrainDir);
+        console.log(`  地形包 ${pack}/${version}：${actual.文件数} 个文件`);
       } else {
-        let 放 = 0;
-        const 件们 = [...(a.字节 ?? []).map((s) => ['store', s] as const), ...(a.私有库字节 ?? []).map((s) => ['私有', s] as const)];
-        for (const [库, s] of 件们) {
-          const 源 = path.join(解, 库, s.slice(0, 2), s);
-          if (!fs.existsSync(源)) throw new Error(`${a.名} 里没有 ${库}/${s}`);
-          if ((await 流sha(源)) !== s) throw new Error(`${a.名} 里 ${s.slice(0, 12)} 的内容 sha256 和文件名对不上`);
-          if (放进库(源, 根, s, 库)) 放++;
+        let copied = 0;
+        const parts = [...(a.字节 ?? []).map((s) => ['store', s] as const), ...(a.私有库字节 ?? []).map((s) => ['私有', s] as const)];
+        for (const [storage, s] of parts) {
+          const sourcePath = path.join(unpackDir, storage, s.slice(0, 2), s);
+          if (!fs.existsSync(sourcePath)) throw new Error(`${a.名} 里没有 ${storage}/${s}`);
+          if ((await streamSha256(sourcePath)) !== s) throw new Error(`${a.名} 里 ${s.slice(0, 12)} 的内容 sha256 和文件名对不上`);
+          if (placeInLib(sourcePath, dataRoot, s, storage)) copied++;
         }
-        console.log(`  ${件们.length} 件字节，新放进数据根 ${放} 件`);
+        console.log(`  ${parts.length} 件字节，新放进数据根 ${copied} 件`);
       }
     } finally {
-      fs.rmSync(解, { recursive: true, force: true });
+      fs.rmSync(unpackDir, { recursive: true, force: true });
     }
     fs.rmSync(f, { force: true });
   }

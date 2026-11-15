@@ -1,39 +1,39 @@
 // 把一级的列切成区段、换成区段自己的色板、压缩（区段编码.ts），攒齐一块的各级后写成块文件（格式见 engine/voxel/区段包.ts）。照旧项目 工具/导入/烘焙/写区段.ts。
 import { closeSync, openSync, writeSync } from 'node:fs';
 import path from 'node:path';
-import { 默认模型 } from '../../../engine/voxel/区段模型.ts';
-const 中性模型 = 默认模型();
-import type { 体素库 } from '../体素库.ts';
-import { 无地表, 无顶, type 层级 } from './合并.ts';
-import { 压并核对 } from './区段编码.ts';
-import { 条目上限, type 条目表 } from './条目.ts';
+import { defaultModel } from '../../../engine/voxel/区段模型.ts';
+const neutralModel = defaultModel();
+import type { VoxelLib } from '../体素库.ts';
+import { noSurface, noTop, type Level } from './合并.ts';
+import { encodeVerified } from './区段编码.ts';
+import { entryLimit, type EntryTable } from './条目.ts';
 
-export type 级统计 = { count: number; bytes: number; rawBytes: number; runCount: number; cellCount: number };
+export type LevelStats = { count: number; bytes: number; rawBytes: number; runCount: number; cellCount: number };
 
-export class 区段写手 {
-  levelStats: 级统计[];
+export class SectionWriter {
+  levelStats: LevelStats[];
   tileFileCount = 0;
-  private paletteIdx = new Int32Array(条目上限).fill(-1);
-  private tileSections: { slot: number; 压: Uint8Array }[] = [];
+  private paletteIdx = new Int32Array(entryLimit).fill(-1);
+  private tileSections: { slot: number; packed: Uint8Array }[] = [];
 
-  private 库: 体素库;
-  private 表: 条目表;
+  private 库: VoxelLib;
+  private 表: EntryTable;
   private 输出: string;
   private padCols: number;
   private tileCols: number;
 
-  constructor(库: 体素库, 表: 条目表, 输出: string, padCols: number, tileCols: number) {
-    this.库 = 库;
-    this.表 = 表;
-    this.输出 = 输出;
+  constructor(voxelLib: VoxelLib, entryTable: EntryTable, output: string, padCols: number, tileCols: number) {
+    this.库 = voxelLib;
+    this.表 = entryTable;
+    this.输出 = output;
     this.padCols = padCols;
     this.tileCols = tileCols;
-    this.levelStats = Array.from({ length: 库.区段.coarsestLevel + 1 }, () => ({ count: 0, bytes: 0, rawBytes: 0, runCount: 0, cellCount: 0 }));
+    this.levelStats = Array.from({ length: voxelLib.区段.coarsestLevel + 1 }, () => ({ count: 0, bytes: 0, rawBytes: 0, runCount: 0, cellCount: 0 }));
   }
 
-  写一级(level: 层级, ti: number, tj: number) {
+  writeLevel(level: Level, ti: number, tj: number) {
     const { sectionCells } = this.库.区段;
-    const { paddedSectionCols, sectionInTile } = this.库.区段包;
+    const { paddedSectionCols, sectionInTile } = this.库.sectionPack;
     const { entryState, entryBiome } = this.表;
     const paletteIdx = this.paletteIdx;
     const cellSize = 2 ** level.L;
@@ -47,8 +47,8 @@ export class 区段写手 {
         const gx0 = padAtLevel + si * sectionCells - 1;
         const gy0 = padAtLevel + sj * sectionCells - 1;
         let hasData = false;
-        let minSurface = 无地表;
-        let maxTop = 无顶;
+        let minSurface = noSurface;
+        let maxTop = noTop;
         for (let localY = 0; localY < paddedSectionCols; localY++)
           for (let localX = 0; localX < paddedSectionCols; localX++) {
             const levelCol = (gy0 + localY) * level.W + gx0 + localX;
@@ -60,7 +60,7 @@ export class 区段写手 {
         const kBottom = Math.max(level.kb, Math.floor((minSurface - 4) / cellSize));
         const kTop = Math.max(kBottom, maxTop);
         const nz = kTop - kBottom + 1;
-        const palette: number[] = [0, this.库.区段包.noBiome];
+        const palette: number[] = [0, this.库.sectionPack.noBiome];
         const usedEntries: number[] = [0];
         paletteIdx[0] = 0;
         let runCount = 0;
@@ -104,30 +104,30 @@ export class 区段写手 {
           }
         for (const entry of usedEntries) paletteIdx[entry] = -1;
         const id = { L: level.L, i: ti * sectionsPerSide + si, j: tj * sectionsPerSide + sj };
-        const 压 = 压并核对(this.库, { ...id, kBottom, nz, palette: Uint16Array.from(palette), runCounts, paletteIndex: runPaletteIdx.subarray(0, runCount), runLengths: runLengths.subarray(0, runCount) }, 中性模型);
-        this.tileSections.push({ slot: sectionInTile(id).slot, 压 });
+        const packed = encodeVerified(this.库, { ...id, kBottom, nz, palette: Uint16Array.from(palette), runCounts, paletteIndex: runPaletteIdx.subarray(0, runCount), runLengths: runLengths.subarray(0, runCount) }, neutralModel);
+        this.tileSections.push({ slot: sectionInTile(id).slot, packed });
         const st = this.levelStats[level.L]!;
         st.count++;
-        st.bytes += 压.length;
+        st.bytes += packed.length;
         st.rawBytes += 36 + (palette.length + paddedSectionCols * paddedSectionCols + 2 * runCount) * 2; // 不压缩时的大小
         st.runCount += runCount;
         st.cellCount += paddedSectionCols * paddedSectionCols * nz;
       }
   }
 
-  写块(ti: number, tj: number) {
-    const { tileEntryCount, tileHeaderLen, encodeTileHeader, tileFileName } = this.库.区段包;
+  writeBlock(ti: number, tj: number) {
+    const { tileEntryCount, tileHeaderLen, encodeTileHeader, tileFileName } = this.库.sectionPack;
     const sectionIndex = new Uint32Array(2 * tileEntryCount);
     let offset = tileHeaderLen;
-    for (const { slot, 压 } of this.tileSections) {
+    for (const { slot, packed } of this.tileSections) {
       sectionIndex[2 * slot] = offset;
-      sectionIndex[2 * slot + 1] = 压.length;
-      offset += 压.length;
+      sectionIndex[2 * slot + 1] = packed.length;
+      offset += packed.length;
     }
     const fd = openSync(path.join(this.输出, tileFileName(ti, tj)), 'w');
     try {
       writeSync(fd, encodeTileHeader(ti, tj, sectionIndex));
-      for (const { 压 } of this.tileSections) writeSync(fd, 压);
+      for (const { packed } of this.tileSections) writeSync(fd, packed);
     } finally {
       closeSync(fd);
     }

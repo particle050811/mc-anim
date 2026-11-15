@@ -7,30 +7,30 @@
 // 不改 webpack.ts：它的文本进所有段指纹的「打包规则」，改一个字全片过期。
 import type { WebpackOverrideFn } from '@remotion/bundler';
 import webpack from 'webpack';
-import { 资产解析插件 } from './webpack.ts';
-import { 缺字节占位插件 } from './缺字节.ts';
+import { AssetResolvePlugin } from './webpack.ts';
+import { MissingBytePlaceholderPlugin } from './缺字节.ts';
 
 /** DefinePlugin 里按内容变、webpack 自己会跟踪的定义：缓存名里只记名字 */
-const 运行时定义 = ['__SOLVER_FINGERPRINTS__'];
+const runtimeDefines = ['__SOLVER_FINGERPRINTS__'];
 
-const 挂JSON = (o: object, json: () => unknown) => Object.defineProperty(o, 'toJSON', { value: json, enumerable: false, configurable: true });
+const attachToJson = (o: object, json: () => unknown) => Object.defineProperty(o, 'toJSON', { value: json, enumerable: false, configurable: true });
 
 /** 给一个插件实例挂上算缓存名用的 JSON；不认识的插件不动 */
-export const 缓存名里去掉内容 = (插件: unknown) => {
-  if (插件 instanceof 资产解析插件) 挂JSON(插件, () => ({ 插件: 'anim-资产解析' }));
-  else if (插件 instanceof 缺字节占位插件) 挂JSON(插件, () => ({ 插件: 'anim-缺字节占位', 根: 插件.根 }));
-  else if (插件 instanceof webpack.DefinePlugin) {
-    const 定义 = 插件.definitions as Record<string, unknown>;
-    if (!运行时定义.some((k) => k in 定义)) return;
-    挂JSON(插件, () => ({ definitions: Object.fromEntries(Object.entries(定义).map(([k, v]) => [k, 运行时定义.includes(k) ? '«运行时值»' : v])) }));
+export const stripCacheContent = (plugin: unknown) => {
+  if (plugin instanceof AssetResolvePlugin) attachToJson(plugin, () => ({ plugin: 'anim-资产解析' }));
+  else if (plugin instanceof MissingBytePlaceholderPlugin) attachToJson(plugin, () => ({ plugin: 'anim-缺字节占位', 根: plugin.根 }));
+  else if (plugin instanceof webpack.DefinePlugin) {
+    const definitions = plugin.definitions as Record<string, unknown>;
+    if (!runtimeDefines.some((k) => k in definitions)) return;
+    attachToJson(plugin, () => ({ definitions: Object.fromEntries(Object.entries(definitions).map(([k, v]) => [k, runtimeDefines.includes(k) ? '«运行时值»' : v])) }));
   }
 };
 
 /** 套在最外层（补缺字节占位 外面），让它看得到所有插件 */
-export const 稳定缓存名 =
-  (改写: WebpackOverrideFn): WebpackOverrideFn =>
+export const stableCacheName =
+  (rewrite: WebpackOverrideFn): WebpackOverrideFn =>
   async (config) => {
-    const c = await 改写(config);
-    for (const p of c.plugins ?? []) 缓存名里去掉内容(p);
+    const c = await rewrite(config);
+    for (const p of c.plugins ?? []) stripCacheContent(p);
     return c;
   };

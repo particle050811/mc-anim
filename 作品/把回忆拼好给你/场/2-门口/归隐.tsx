@@ -11,242 +11,242 @@ import type React from 'react';
 import { clamp01, rad } from '@engine/anim/anim.ts';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
-import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 插调子, type 调色 } from '@engine/三渲二/调子.ts';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
+import type { ShadingOptions } from '@engine/三渲二/光影/预设.ts';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { lerpTone, type Grade } from '@engine/三渲二/调子.ts';
 import { standPose } from '@库/角色/骨架.tsx';
-import { MagicalWineFoxEx, type 手持物 } from '@库/角色/魔法酒狐新动作组件.tsx';
+import { MagicalWineFoxEx, type HeldItem } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { PortalParticles } from '@库/特效/传送粒子.tsx';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段窗口, 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
-import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
-import { 照片墙格们, 手持地图画 } from '../../地点/照片墙.tsx';
-import { 门口 } from '../../地点/门口小木屋.tsx';
-import { 合照 } from '../../特效/合照.ts';
-import { 第8句照片们 } from '../../特效/照片画.ts';
-import { 寻风之铃 } from '../../物品/寻风之铃.tsx';
-import { 月铃兰 } from '../../物品/月铃兰.tsx';
-import { 现实画布 } from '../../现实/画布.tsx';
-import { 楼下 } from '../../现实/楼下.tsx';
-import { 仰头秒, 仰头迟秒, 你的头, 楼下天色, 楼下顶面 } from '../../现实/楼下布局.ts';
-import { 描边 as 描边默认 } from '../../画风.ts';
-import { 色板 } from '../../色板.ts';
-import { 告示牌行们, 整屏镜头, 白天刻, 默认天弧 } from './参数.ts';
-import { 林间门口画布 } from './林间门口.tsx';
-import { 花倍 } from './分屏参数.ts';
-import { 她于, type 她态 } from './归隐她.ts';
-import { 回色, 铃 } from './第15句.ts';
-import { 纸花层 } from './纸花层.tsx';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segmentWindow, events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
+import { SignPixelText } from '../../地点/告示牌字.tsx';
+import { photoWallCells, HandHeldMapArt } from '../../地点/照片墙.tsx';
+import { entrance } from '../../地点/门口小木屋.tsx';
+import { groupPhoto } from '../../特效/合照.ts';
+import { line8Photos } from '../../特效/照片画.ts';
+import { WindBell } from '../../物品/寻风之铃.tsx';
+import { MoonBellLily } from '../../物品/月铃兰.tsx';
+import { RealCanvas } from '../../现实/画布.tsx';
+import { Downstairs } from '../../现实/楼下.tsx';
+import { headUpSec, headUpDelaySec, youHead, downstairsSkyColor, downstairsTopFace } from '../../现实/楼下布局.ts';
+import { outline as defaultOutline } from '../../画风.ts';
+import { palette } from '../../色板.ts';
+import { signRows, fullScreenShot, dayTick, defaultSkyArc } from './参数.ts';
+import { ForestDoorCanvas } from './林间门口.tsx';
+import { flowerScale } from './分屏参数.ts';
+import { liYingAt, type LiYingState } from './归隐她.ts';
+import { colorBackRange, bell } from './第15句.ts';
+import { PaperLayer } from './纸花层.tsx';
 import {
-  传送,
-  分屏线x,
-  取照站位,
-  合屏进度,
-  合照手持倍,
-  归隐N,
-  归隐版式,
-  挂铃摆,
-  挂铃朝向,
-  服务器中心x,
-  照片墙边长,
-  褪色起,
-  褪色止,
-  楼下取景,
+  teleport,
+  splitLineX,
+  photoStandPos,
+  mergeProgress,
+  groupPhotoHandheldScale,
+  retreatCount,
+  retreatLayout,
+  hangBellSwing,
+  hangBellFacing,
+  serverCenterX,
+  photoWallEdge,
+  fadeStart,
+  fadeEnd,
+  downstairsFraming,
 } from './归隐参数.ts';
 
-const 事 = 正片事件;
-const 窗 = 段窗口('2-归隐');
+const events = mainCutEvents;
+const segWindow = segmentWindow('2-归隐');
 
 // ---------- 她 ----------
-const 原显示 = DISPLAY.generated.thirdperson_righthand;
-const 放大 = (k: number) => ({ ...原显示, scale: (原显示.scale ?? [1, 1, 1]).map((v) => v * k) as [number, number, number] });
-const 花物 = <月铃兰 />;
+const originalDisplay = DISPLAY.generated.thirdperson_righthand;
+const scaleBy = (k: number) => ({ ...originalDisplay, scale: (originalDisplay.scale ?? [1, 1, 1]).map((v) => v * k) as [number, number, number] });
+const flowerItem = <MoonBellLily />;
 
 /** 她（同 2-摇铃 的你一样大，1 倍；花照第 13 句放大 花倍，接着认得出是那枝月铃兰）。手里的花、合照总是正面朝镜头（偏 = 从她正前方往她左边转几度）：她转身朝东走时物品不侧过去变成一条线 */
-const 她: React.FC<{ 态: 她态; 秒: number }> = ({ 态, 秒 }) => {
-  const 位: V3 = [态.x, 门口.站排y, 0];
-  const 偏 = 挂铃朝向 - 态.yaw;
-  const 拿 = (x: '花' | '合照' | null): 手持物 | undefined =>
+const LiYing: React.FC<{ liYingState: LiYingState; 秒: number }> = ({ liYingState, 秒: sec }) => {
+  const pos: V3 = [liYingState.x, entrance.standRowY, 0];
+  const yawOffset = hangBellFacing - liYingState.yaw;
+  const heldItem = (x: '花' | '合照' | null): HeldItem | undefined =>
     x === '花'
-      ? { 物品: 花物, 朝向: { 偏 }, 显示: 放大(花倍) }
+      ? { item: flowerItem, facing: { yawOffset }, display: scaleBy(flowerScale) }
       : x === '合照'
-        ? { 物品: <手持地图画 画={合照} 边长={照片墙边长} />, 朝向: { 偏 }, 显示: 放大(合照手持倍) }
+        ? { item: <HandHeldMapArt photo={groupPhoto} sideLength={photoWallEdge} />, facing: { yawOffset }, display: scaleBy(groupPhotoHandheldScale) }
         : undefined;
   return (
-    <贴图像素对齐 锚={位}>
+    <TexturePixelAlign 锚={pos}>
       <MagicalWineFoxEx
-        pose={{ ...standPose(位), yaw: 态.yaw }}
-        姿势="站"
-        表情={态.表情}
-        看={态.看}
-        眨眼={0}
-        秒={秒}
-        右手={拿(态.右手)}
-        左手={拿(态.左手)}
-        骨骼={态.骨骼}
+        pose={{ ...standPose(pos), yaw: liYingState.yaw }}
+        stancePose="站"
+        expression={liYingState.expression}
+        看={liYingState.看}
+        blink={0}
+        秒={sec}
+        rightHand={heldItem(liYingState.rightHand)}
+        leftHand={heldItem(liYingState.leftHand)}
+        skeleton={liYingState.skeleton}
       />
-    </贴图像素对齐>
+    </TexturePixelAlign>
   );
 };
 
 // ---------- 铃 ----------
 /** 刚挂上的铃绕挂点摆的角（度）：挂铃那一刻碰一下，衰减着摆，合屏到位那一帧收到 0（2-摇铃 开头铃是静的，摇铃 才再摆） */
-const 挂铃角 = (秒: number) => {
-  const t = 秒 - 事.挂铃.秒;
+const hangBellAngle = (sec: number) => {
+  const t = sec - events.hangBell.秒;
   if (t < 0) return 0;
-  return 挂铃摆.振幅 * Math.sin((t / 挂铃摆.周期) * Math.PI * 2) * 挂铃摆.衰减 ** t * clamp01((事.合屏到位.秒 - 秒) / 0.5);
+  return hangBellSwing.amplitude * Math.sin((t / hangBellSwing.periodSec) * Math.PI * 2) * hangBellSwing.damping ** t * clamp01((events.mergeScreenDone.秒 - sec) / 0.5);
 };
 
 /** 挂着的铃：正对镜头的物品薄片绕挂点（朝镜头的轴）摆，挂绳一个铃像素宽（2-摇铃 同一个，角各自算）。挂铃 以前在她手里（还没挂上，不画） */
-export const 挂着的铃: React.FC<{ 角: number }> = ({ 角 }) => {
-  const s = 铃.大小;
+export const HangingBell: React.FC<{ 角: number }> = ({ 角: angle }) => {
+  const s = bell.大小;
   return (
-    <group position={铃.挂点} rotation={[0, rad(-角), 0]}>
-      <mesh position={[0, 0, -(铃.垂 - s / 2) / 2]}>
-        <boxGeometry args={[s / 16, s / 16, 铃.垂 - s / 2]} />
+    <group position={bell.hangPoint} rotation={[0, rad(-angle), 0]}>
+      <mesh position={[0, 0, -(bell.hangLength - s / 2) / 2]}>
+        <boxGeometry args={[s / 16, s / 16, bell.hangLength - s / 2]} />
         <meshStandardMaterial color="#5a3a22" roughness={1} />
       </mesh>
-      <group position={[0, 0, -铃.垂]} rotation={[Math.PI / 2, 0, 0]} scale={s}>
-        <寻风之铃 />
+      <group position={[0, 0, -bell.hangLength]} rotation={[Math.PI / 2, 0, 0]} scale={s}>
+        <WindBell />
       </group>
     </group>
   );
 };
 
 /** 她挂铃前手里的铃：同一个薄片，铃心放在挂点下 垂（她手伸到钉子那儿，手里的铃就在挂上以后那个位置；挂铃那一帧手松开、铃开始摆） */
-const 手里的铃 = <挂着的铃 角={0} />;
+const handBell = <HangingBell 角={0} />;
 
 // ---------- 她走的粒子 ----------
 /** 她消失 那一拍她站的地方冒的紫色传送粒子（原版末影人瞬移，body 那种）：2-摇铃 开头还在收拢、散掉，两段按同一个秒画 */
-export const 她走的粒子: React.FC<{ 秒: number }> = ({ 秒 }) => (
+export const LiYingWalkParticles: React.FC<{ 秒: number }> = ({ 秒: sec }) => (
   <PortalParticles
     emitters={[
       {
         kind: 'body',
-        at: [取照站位, 门口.站排y, 0],
+        at: [photoStandPos, entrance.standRowY, 0],
         w: 0.6,
         h: 1.8,
-        t0: 事.她消失.秒 - 传送.前刻 / 20,
-        t1: 事.她消失.秒 + (传送.放刻 - 传送.前刻) / 20,
-        rate: 传送.放,
-        seed: 传送.种子,
-        life: 传送.寿命,
+        t0: events.liYingVanishes.秒 - teleport.preTick / 20,
+        t1: events.liYingVanishes.秒 + (teleport.releaseTick - teleport.preTick) / 20,
+        rate: teleport.放,
+        seed: teleport.种子,
+        life: teleport.寿命,
       },
     ]}
-    sec={秒}
-    size={传送.大小}
+    sec={sec}
+    size={teleport.大小}
   />
 );
 
 // ---------- 调子 ----------
-const 中性: 调色 = { 饱和: 1, 对比: 1, 乘: '#ffffff', 抬: '#000000', 暗角: 0, 颗粒: 0 };
-const 只调色 = (t: 调色): 调色 => ({ ...t, 暗角: 0, 颗粒: 0 });
+const neutralGrade: Grade = { 饱和: 1, 对比: 1, multiply: '#ffffff', lift: '#000000', 暗角: 0, 颗粒: 0 };
+const gradeOnly = (t: Grade): Grade => ({ ...t, 暗角: 0, 颗粒: 0 });
 /** 合屏到位（同 2-摇铃 开头）：褪色往夏日白天回 1/3 */
-export const 合屏调子 = 插调子(色板.褪色, 色板.夏日白天, 回色.起);
+export const mergedTone = lerpTone(palette.褪色, palette.夏日白天, colorBackRange.起);
 /** 她那边的调子（歌曲帧）：第 13 句末那样一路褪到合屏到位那样 */
-export const 左调子 = (帧: number) =>
-  帧 >= 事.合屏到位.帧
-    ? 合屏调子
-    : 插调子(色板.夏日白天, 色板.褪色, 褪色起 + (褪色止 - 褪色起) * clamp01((帧 - 窗.起帧) / (事.合屏到位.帧 - 窗.起帧)));
+export const leftToneAt = (frame: number) =>
+  frame >= events.mergeScreenDone.帧
+    ? mergedTone
+    : lerpTone(palette.夏日白天, palette.褪色, fadeStart + (fadeEnd - fadeStart) * clamp01((frame - segWindow.起帧) / (events.mergeScreenDone.帧 - segWindow.起帧)));
 
 /** 你在楼下这一帧的头：纸飘下 后 仰头迟秒 起仰起来 */
-const 你的头于 = (帧: number): [number, number] => {
-  const t = clamp01(((帧 - 事.纸飘下.帧) / fps - 仰头迟秒) / 仰头秒);
+const youHeadAt = (frame: number): [number, number] => {
+  const t = clamp01(((frame - events.paperDrifts.帧) / fps - headUpDelaySec) / headUpSec);
   const k = t * t * (3 - 2 * t);
-  return [你的头.低[0] + (你的头.仰[0] - 你的头.低[0]) * k, 你的头.低[1] + (你的头.仰[1] - 你的头.低[1]) * k];
+  return [youHead.low[0] + (youHead.up[0] - youHead.low[0]) * k, youHead.low[1] + (youHead.up[1] - youHead.low[1]) * k];
 };
 
 /** 太阳走的弧：整屏镜头那条（世界坐标，合屏时太阳跟着画面一起挪，不在天上滑） */
-const 整屏弧 = 默认天弧(整屏镜头.取景, 画幅.宽, 画幅.高);
+const fullScreenArc = defaultSkyArc(fullScreenShot.framing, aspect.宽, aspect.高);
 
-export type 归隐画面属性 = {
+export type RetreatPictureProps = {
   /** 歌曲帧（分镜 的时间轴） */
   帧: number;
-  描边?: boolean;
+  outline?: boolean;
   /** 整片后期开关（默认开） */
-  后期?: boolean;
+  withPost?: boolean;
   /** 整页那层颗粒的种子（整片后期），段里给歌曲帧 */
   种子?: number;
   /** 盖在最上面、整页质感里面的东西（符文歌词），页面坐标 1280×720 */
   叠层?: React.ReactNode;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只管她那边（门口）；不给 = 不开 */
-  光影?: 光影选项 | null;
+  shading?: ShadingOptions | null;
   /** 现实那边的光影；不给 = 不开 */
-  现实光影?: 光影选项 | null;
+  realShading?: ShadingOptions | null;
 };
 
-export const 归隐画面: React.FC<归隐画面属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 种子, 叠层, 光影, 现实光影 }) => {
-  const 秒 = 帧 / fps;
-  const 她态 = 她于(帧);
-  const 线 = 分屏线x(秒);
-  const 左调 = 左调子(帧);
-  const { 右宽, 线宽, 线色 } = 归隐版式;
-  const 宽 = 画幅.宽;
-  const 高 = 画幅.高;
-  const 套 = (t: 调色, 内容: React.ReactNode) => (后期 ? <整片后期 调色={只调色(t)}>{内容}</整片后期> : 内容);
+export const RetreatPicture: React.FC<RetreatPictureProps> = ({ 帧: frame, outline = defaultOutline.开, withPost = true, 种子: seed, 叠层: overlay, shading, realShading }) => {
+  const sec = frame / fps;
+  const liYingState = liYingAt(frame);
+  const splitX = splitLineX(sec);
+  const leftTone = leftToneAt(frame);
+  const { rightWidth, lineWidth, lineColor } = retreatLayout;
+  const width = aspect.宽;
+  const height = aspect.高;
+  const withGrade = (t: Grade, content: React.ReactNode) => (withPost ? <FilmPost grade={gradeOnly(t)}>{content}</FilmPost> : content);
   // 整页质感：分屏时两边的暗角、颗粒取平均，合屏时插到她那边的（合屏到位那一帧同 2-摇铃 的一层整片后期）
-  const k = 合屏进度(秒);
+  const k = mergeProgress(sec);
   const 插 = (a: number, b: number) => a + (b - a) * k;
-  const 质感: 调色 = {
-    ...中性,
-    暗角: 插((色板.现实.调色.暗角 + 左调.调色.暗角) / 2, 左调.调色.暗角),
-    颗粒: 插((色板.现实.调色.颗粒 + 左调.调色.颗粒) / 2, 左调.调色.颗粒),
+  const finishGrade: Grade = {
+    ...neutralGrade,
+    暗角: 插((palette.现实.grade.暗角 + leftTone.grade.暗角) / 2, leftTone.grade.暗角),
+    颗粒: 插((palette.现实.grade.颗粒 + leftTone.grade.颗粒) / 2, leftTone.grade.颗粒),
   };
-  const 页 = (
+  const pageView = (
     <div style={{ position: 'absolute', inset: 0, background: '#000' }}>
       {/* 她那边：一整屏宽的画（取景中心 服务器中心x），只露分屏线左边 */}
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 线, height: 高, overflow: 'hidden' }}>
-        {套(
-          左调.调色,
-          <林间门口画布
-            宽={宽}
-            高={高}
-            取景={{ 中心: [服务器中心x(秒), 整屏镜头.取景.中心[1]], 每格: 整屏镜头.取景.每格 }}
-            描边宽={整屏镜头.描边宽}
-            刻={白天刻}
-            弧={整屏弧}
-            调子={左调}
-            光影={光影}
-            门开
-            树进度={1}
-            告示牌
-            告示牌字={<告示牌像素字 行们={告示牌行们} />}
-            照片墙={照片墙格们(第8句照片们, 帧 >= 事.取照.帧 ? null : 合照)}
-            照片墙边长={照片墙边长}
-            叠层={<纸花层 秒={秒} 宽={线} />}
+      <div style={{ position: 'absolute', left: 0, top: 0, width: splitX, height: height, overflow: 'hidden' }}>
+        {withGrade(
+          leftTone.grade,
+          <ForestDoorCanvas
+            宽={width}
+            高={height}
+            framing={{ 中心: [serverCenterX(sec), fullScreenShot.framing.中心[1]], pxPerCell: fullScreenShot.framing.pxPerCell }}
+            outlineWidth={fullScreenShot.outlineWidth}
+            刻={dayTick}
+            arc={fullScreenArc}
+            tone={leftTone}
+            shading={shading}
+            doorOpen
+            treeProgress={1}
+            hasSign
+            signText={<SignPixelText lines={signRows} />}
+            photoWall={photoWallCells(line8Photos, frame >= events.takePhoto.帧 ? null : groupPhoto)}
+            photoWallEdge={photoWallEdge}
+            叠层={<PaperLayer 秒={sec} 宽={splitX} />}
           >
-            {帧 >= 事.挂铃.帧 ? <挂着的铃 角={挂铃角(秒)} /> : 手里的铃}
-            {她态 && <她 态={她态} 秒={秒} />}
-            <她走的粒子 秒={秒} />
-          </林间门口画布>,
+            {frame >= events.hangBell.帧 ? <HangingBell 角={hangBellAngle(sec)} /> : handBell}
+            {liYingState && <LiYing liYingState={liYingState} 秒={sec} />}
+            <LiYingWalkParticles 秒={sec} />
+          </ForestDoorCanvas>,
         )}
       </div>
       {/* 现实那边：左沿贴着分屏线，合屏时跟着线推出画面 */}
-      {线 < 宽 && (
-        <div style={{ position: 'absolute', left: 线, top: 0, width: 宽 - 线, height: 高, overflow: 'hidden' }}>
-          {套(
-            色板.现实.调色,
+      {splitX < width && (
+        <div style={{ position: 'absolute', left: splitX, top: 0, width: width - splitX, height: height, overflow: 'hidden' }}>
+          {withGrade(
+            palette.现实.grade,
             <>
-              <div style={{ position: 'absolute', left: 0, top: 0, width: 右宽, height: 高 }}>
-                <现实画布 宽={右宽} 高={高} 取景={楼下取景} 顶面={楼下顶面} 天={楼下天色} 描边={描边} 描边宽={归隐N} 光影={现实光影}>
-                  <楼下 头={你的头于(帧)} 秒={秒} />
-                </现实画布>
+              <div style={{ position: 'absolute', left: 0, top: 0, width: rightWidth, height: height }}>
+                <RealCanvas 宽={rightWidth} 高={height} framing={downstairsFraming} topDepth={downstairsTopFace} 天={downstairsSkyColor} outline={outline} outlineWidth={retreatCount} shading={realShading}>
+                  <Downstairs 头={youHeadAt(frame)} 秒={sec} />
+                </RealCanvas>
               </div>
-              <纸花层 秒={秒} 左={线} 宽={宽 - 线} 取={(q) => q.种 === '纸'} />
+              <PaperLayer 秒={sec} left={splitX} 宽={width - splitX} 取={(q) => q.种 === '纸'} />
             </>,
           )}
         </div>
       )}
-      {线 < 宽 && <div style={{ position: 'absolute', left: 线, top: 0, width: 线宽, height: 高, background: 线色 }} />}
-      {叠层}
+      {splitX < width && <div style={{ position: 'absolute', left: splitX, top: 0, width: lineWidth, height: height, background: lineColor }} />}
+      {overlay}
     </div>
   );
-  return 后期 ? (
-    <整片后期 调色={质感} 种子={种子}>
-      {页}
-    </整片后期>
+  return withPost ? (
+    <FilmPost grade={finishGrade} 种子={seed}>
+      {pageView}
+    </FilmPost>
   ) : (
-    页
+    pageView
   );
 };

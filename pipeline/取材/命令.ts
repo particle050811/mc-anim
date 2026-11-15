@@ -6,33 +6,33 @@
 //   anim extract --粒子帧 [<命名空间:名>…|--全部] [--检查]：照粒子定义的 textures 顺序生成帧模块 <作品根>/粒子帧/<命名空间>/<名>.ts（取材/粒子帧.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
-import type { 命令 } from '../cli/命令.ts';
-import { 用法错误, 解析参数 } from '../cli/参数.ts';
-import { 前台跑 } from '../环境/子进程.ts';
-import { 作品名, 作品根 } from '../环境/作品.ts';
-import { 代码根, 相对代码根 } from '../环境/路径.ts';
-import { 读两侧资产表 } from '../资产/资产表.ts';
-import { 作品资产锁路径, 读作品资产锁, 读资产锁 } from '../资产/资产锁.ts';
-import { 登记产物, 算补许可, 写补许可 } from './登记.ts';
-import { 过放行闸, 过渲染闸 } from '../闸/闸.ts';
-import { mcai命令, mcai环境, 要过闸 } from './mcai.ts';
-import { 取材目录, 读清单, 选条目 } from './清单.ts';
-import { 分组, 缺配方网格, 补网格配方文本 } from './网格配方.ts';
-import { 下载, 下载清单 } from './下载.ts';
-import { 已生成文件, 建来源表, 文件的粒子, 是错, 列粒子, 算粒子帧 } from './粒子帧.ts';
-import { jar登记路径, jar路径, 提取一条, 新id归属, 暂存目录, 检查, 跑步骤 } from './提取.ts';
+import type { Command } from '../cli/命令.ts';
+import { UsageError, parseArgs } from '../cli/参数.ts';
+import { runForeground } from '../环境/子进程.ts';
+import { workName, workRoot } from '../环境/作品.ts';
+import { codeRoot, relativeToCodeRoot } from '../环境/路径.ts';
+import { readAssetRegistryBoth } from '../资产/资产表.ts';
+import { workAssetLockPath, readWorkAssetLock, readAssetLock } from '../资产/资产锁.ts';
+import { registerArtifacts, computeLicenseFills, writeLicenseFills } from './登记.ts';
+import { passGate, passRenderGate } from '../闸/闸.ts';
+import { mcaiCommand, mcaiEnv, needsGate } from './mcai.ts';
+import { sourcingDir, readManifest, selectEntries } from './清单.ts';
+import { groupMeshes, missingMeshRecipes, fillMeshRecipeText } from './网格配方.ts';
+import { download, downloadList } from './下载.ts';
+import { generatedFiles, buildSourceTable, particleOfFile, isError, listParticles, computeParticleFrames } from './粒子帧.ts';
+import { jarRecordPath, jarPath, extractEntry, attributeNewIds, stagingDir, check, runSteps } from './提取.ts';
 
-export const 取材命令: Record<string, 命令> = {
+export const sourcingCommands: Record<string, Command> = {
   mcai: {
     用法: 'mcai <动作…>',
-    透传: true,
+    passThrough: true,
     说明: '取材 mod 的命令行（sourcing/mcai/mcai.py，anim mcai --help 看全部）；game start、build 先过资源闸，开游戏还要等渲染让出',
-    跑: async (args, 记录) => {
+    跑: async (args, runRecord) => {
       const argv = args.length ? [...args] : ['--help'];
-      const 跑一下 = () => 前台跑([...mcai命令(), ...argv], { env: mcai环境() });
-      if (!要过闸(argv)) return 跑一下();
-      const code = await (argv[0] === 'game' ? 过渲染闸(跑一下,undefined,{}, {种:'mcai game start',需负载:true}) : 过放行闸(跑一下,undefined,{}, {种:'mcai build'}));
-      记录.记('信息', `mcai ${argv.join(' ')} 退出码 ${code}`);
+      const runMcai = () => runForeground([...mcaiCommand(), ...argv], { env: mcaiEnv() });
+      if (!needsGate(argv)) return runMcai();
+      const code = await (argv[0] === 'game' ? passRenderGate(runMcai,undefined,{}, {种:'mcai game start',需负载:true}) : passGate(runMcai,undefined,{}, {种:'mcai build'}));
+      runRecord.log('信息', `mcai ${argv.join(' ')} 退出码 ${code}`);
       return code;
     },
   },
@@ -40,151 +40,151 @@ export const 取材命令: Record<string, 命令> = {
     用法: 'extract [<名称或组>…] [--全部] [--只打印 | --检查 [--校验] | --列出] [--登记] [--新 <id>…] | extract --许可 [--写] | extract --补网格配方 [--写] | extract --下载 [<id>…] | extract --粒子帧 [<命名空间:名>…|--全部] [--检查]',
     说明:
       '按 sourcing/extract.toml 从 jar 导出资产，产物 sha 和资产锁一样的放进库（PNG 像素一样也算一样），不一样的报出来；--全部 = 有步骤、不用开游戏、不待迁移的条目；--登记 把锁里没有的产物登记进资产表、写锁，许可按 jar 继承（脚本写了产物来源的按件记用到的 jar）；--新 <id> 把锁里还没有的 id 加进产物清单（按锁反推的配方如 音效 照它导新件），可写多次；--许可 列出资产表里能按 jar 补上的待定许可，--写 写回；--补网格配方 给锁里没有配方的场景网格按网格头反填配方（标不重导），--写 追加进 extract.toml；--下载 把 jars.toml 里 根 = 数据 的（官方映射这类不许再分发、本机自取的）按地址下到数据根并核 sha，不给 id 就是全部这一类；--粒子帧 照粒子定义（assets/<命名空间>/particles/<名>.json，已登记成资产）的 textures 顺序生成帧模块 <作品根>/粒子帧/<命名空间>/<名>.ts（定义在共用锁的放 库/粒子帧/），画面 import 它拿到排好序的 Png[]；不给名字是重生成已有的，--全部 是锁里有定义的全部粒子，--检查 只比不写',
-    跑: async (args, 记录) => {
-      const p = 解析参数(args, { 开关: ['--全部', '--只打印', '--检查', '--校验', '--列出', '--登记', '--许可', '--写', '--补网格配方', '--下载', '--粒子帧'], 多值: ['--新'] });
-      const 新ids = p.多值['--新'] ?? [];
-      if (新ids.length && ['--补网格配方', '--许可', '--检查', '--列出', '--只打印'].some((k) => p.开关.has(k))) throw new 用法错误('--新 只配跑条目（可加 --登记）');
-      const q = 读清单();
-      if (p.开关.has('--下载')) {
-        if (p.开关.size > 1 || 新ids.length) throw new 用法错误('--下载 后面只跟 jars.toml 的 id');
-        const 项们 = 下载清单(q, p.位置, jar登记路径);
+    跑: async (args, runRecord) => {
+      const p = parseArgs(args, { toggles: ['--全部', '--只打印', '--检查', '--校验', '--列出', '--登记', '--许可', '--写', '--补网格配方', '--下载', '--粒子帧'], multiValue: ['--新'] });
+      const newIds = p.multiValue['--新'] ?? [];
+      if (newIds.length && ['--补网格配方', '--许可', '--检查', '--列出', '--只打印'].some((k) => p.toggles.has(k))) throw new UsageError('--新 只配跑条目（可加 --登记）');
+      const q = readManifest();
+      if (p.toggles.has('--下载')) {
+        if (p.toggles.size > 1 || newIds.length) throw new UsageError('--下载 后面只跟 jars.toml 的 id');
+        const items = downloadList(q, p.位置, jarRecordPath);
         // 不点名时，「也认」的位置（比如早先放进游戏目录的）已经有了就不下
-        const 别处有 = p.位置.length ? [] : 项们.filter((x) => jar路径(q, x.id) !== x.到 && fs.existsSync(jar路径(q, x.id)));
-        for (const x of 别处有) console.log(`已有（在别处）：${x.id} ${jar路径(q, x.id)}`);
-        const 要 = 项们.filter((x) => !别处有.includes(x));
-        if (!要.length) {
-          if (!项们.length) console.log('jars.toml 里没有能自动下的（根 = "数据"、写了 下载 和 sha256 的）');
+        const existsElsewhere = p.位置.length ? [] : items.filter((x) => jarPath(q, x.id) !== x.到 && fs.existsSync(jarPath(q, x.id)));
+        for (const x of existsElsewhere) console.log(`已有（在别处）：${x.id} ${jarPath(q, x.id)}`);
+        const toExtract = items.filter((x) => !existsElsewhere.includes(x));
+        if (!toExtract.length) {
+          if (!items.length) console.log('jars.toml 里没有能自动下的（根 = "数据"、写了 下载 和 sha256 的）');
           return 0;
         }
-        const r = 下载(要);
+        const r = download(toExtract);
         for (const x of r) console.log(`${x.状态}：${x.id} ${x.到}${x.说明 ? `（${x.说明}）` : ''}`);
-        记录.产物.push(...r.filter((x) => x.状态 === '下好').map((x) => x.到));
+        runRecord.产物.push(...r.filter((x) => x.状态 === '下好').map((x) => x.到));
         return r.some((x) => x.状态 === '失败') ? 1 : 0;
       }
-      if (p.开关.has('--粒子帧')) {
-        if (新ids.length || [...p.开关].some((k) => !['--粒子帧', '--全部', '--检查'].includes(k))) throw new 用法错误('--粒子帧 只配 <命名空间:名>…、--全部、--检查');
-        const 根 = 作品根();
-        const 两侧 = { 共用: 读资产锁(), 作品: 读资产锁(作品资产锁路径(根)) };
-        const 表 = 建来源表(q, { ...两侧.共用, ...两侧.作品 });
-        const 名们 = p.开关.has('--全部') ? 列粒子(表) : p.位置.length ? p.位置 : 已生成文件(代码根(), 根).map(文件的粒子);
-        if (!名们.length) throw new 用法错误('要给粒子名（如 goety:frost）或 --全部；不给就是重生成已有的，现在一个也没有');
-        let 坏 = 0;
-        for (const 名 of 名们) {
-          const r = 算粒子帧(名, 两侧, 表, 代码根(), 根);
-          if (是错(r)) {
-            坏++;
+      if (p.toggles.has('--粒子帧')) {
+        if (newIds.length || [...p.toggles].some((k) => !['--粒子帧', '--全部', '--检查'].includes(k))) throw new UsageError('--粒子帧 只配 <命名空间:名>…、--全部、--检查');
+        const root = workRoot();
+        const sides = { 共用: readAssetLock(), 作品: readAssetLock(workAssetLockPath(root)) };
+        const sourceTable = buildSourceTable(q, { ...sides.共用, ...sides.作品 });
+        const particles = p.toggles.has('--全部') ? listParticles(sourceTable) : p.位置.length ? p.位置 : generatedFiles(codeRoot(), root).map(particleOfFile);
+        if (!particles.length) throw new UsageError('要给粒子名（如 goety:frost）或 --全部；不给就是重生成已有的，现在一个也没有');
+        let bad = 0;
+        for (const particleName of particles) {
+          const r = computeParticleFrames(particleName, sides, sourceTable, codeRoot(), root);
+          if (isError(r)) {
+            bad++;
             console.log(`✗ ${r.粒子}：${r.错}`);
             continue;
           }
-          const 旧 = fs.existsSync(r.文件) ? fs.readFileSync(r.文件, 'utf8') : undefined;
-          const 状态 = 旧 === r.文本 ? '没变' : 旧 === undefined ? '新' : '改';
-          if (!p.开关.has('--检查') && 状态 !== '没变') {
+          const prevText = fs.existsSync(r.文件) ? fs.readFileSync(r.文件, 'utf8') : undefined;
+          const changeState = prevText === r.文本 ? '没变' : prevText === undefined ? '新' : '改';
+          if (!p.toggles.has('--检查') && changeState !== '没变') {
             fs.mkdirSync(path.dirname(r.文件), { recursive: true });
             fs.writeFileSync(r.文件, r.文本, 'utf8');
-            记录.产物.push(r.文件);
+            runRecord.产物.push(r.文件);
           }
-          if (状态 !== '没变' && p.开关.has('--检查')) 坏++;
-          console.log(`${状态 === '没变' ? '✓' : p.开关.has('--检查') ? '✗ 要重生成' : `写（${状态}）`} ${r.粒子} ${r.帧.length} 帧 → ${相对代码根(r.文件)}`);
+          if (changeState !== '没变' && p.toggles.has('--检查')) bad++;
+          console.log(`${changeState === '没变' ? '✓' : p.toggles.has('--检查') ? '✗ 要重生成' : `写（${changeState}）`} ${r.粒子} ${r.帧.length} 帧 → ${relativeToCodeRoot(r.文件)}`);
         }
-        return 坏 ? 1 : 0;
+        return bad ? 1 : 0;
       }
-      if (p.开关.has('--补网格配方')) {
-        if (p.位置.length || [...p.开关].some((k) => k !== '--补网格配方' && k !== '--写')) throw new 用法错误('--补网格配方 只配 --写');
-        const 根 = 作品根();
-        const { 网格, 读不到 } = 缺配方网格(q, [[读资产锁(), undefined], [读资产锁(作品资产锁路径(根)), 作品名()]], 读两侧资产表(根).条目);
-        for (const id of 读不到) console.log(`读不到网格头（字节不在库里？先 anim assets pull）：${id}`);
-        if (!网格.length) {
+      if (p.toggles.has('--补网格配方')) {
+        if (p.位置.length || [...p.toggles].some((k) => k !== '--补网格配方' && k !== '--写')) throw new UsageError('--补网格配方 只配 --写');
+        const root = workRoot();
+        const { 网格: meshes, unreadable } = missingMeshRecipes(q, [[readAssetLock(), undefined], [readAssetLock(workAssetLockPath(root)), workName()]], readAssetRegistryBoth(root).entryMap);
+        for (const id of unreadable) console.log(`读不到网格头（字节不在库里？先 anim assets pull）：${id}`);
+        if (!meshes.length) {
           console.log('锁里的场景网格都有配方');
-          return 读不到.length ? 1 : 0;
+          return unreadable.length ? 1 : 0;
         }
-        const 文本 = 补网格配方文本(分组(网格, new Set(q.条目.keys())));
-        if (!p.开关.has('--写')) {
-          console.log(文本);
-          console.log(`${网格.length} 块网格没有配方；追加进 sourcing/extract.toml：anim extract --补网格配方 --写`);
+        const text = fillMeshRecipeText(groupMeshes(meshes, new Set(q.entryMap.keys())));
+        if (!p.toggles.has('--写')) {
+          console.log(text);
+          console.log(`${meshes.length} 块网格没有配方；追加进 sourcing/extract.toml：anim extract --补网格配方 --写`);
           return 0;
         }
-        const f = path.join(取材目录(), 'extract.toml');
-        fs.appendFileSync(f, 文本, 'utf8');
-        读清单();
-        记录.产物.push(f);
-        console.log(`给 ${网格.length} 块网格补了配方 → ${相对代码根(f)}`);
-        return 读不到.length ? 1 : 0;
+        const f = path.join(sourcingDir(), 'extract.toml');
+        fs.appendFileSync(f, text, 'utf8');
+        readManifest();
+        runRecord.产物.push(f);
+        console.log(`给 ${meshes.length} 块网格补了配方 → ${relativeToCodeRoot(f)}`);
+        return unreadable.length ? 1 : 0;
       }
-      if (p.开关.has('--许可')) {
-        if (p.位置.length || [...p.开关].some((k) => k !== '--许可' && k !== '--写')) throw new 用法错误('--许可 只配 --写');
-        const r = 算补许可(q, 读两侧资产表(作品根()).条目.values(), (i) => jar路径(q, i));
-        const 按许可 = new Map<string, number>();
-        for (const x of r.能补) 按许可.set(x.许可, (按许可.get(x.许可) ?? 0) + 1);
-        console.log(`能按 jar 补上的待定许可 ${r.能补.length} 件：`);
-        for (const [l, n] of [...按许可].sort((a, b) => b[1] - a[1])) console.log(`  ${n} 件 → ${l}`);
-        const 按缺 = new Map<string, string[]>();
-        for (const x of r.仍待定) for (const k of x.缺) 按缺.set(k, [...(按缺.get(k) ?? []), x.e.id]);
-        if (r.仍待定.length) console.log(`仍待定 ${r.仍待定.length} 件（jars.toml 里这些定了就能补）：`);
-        for (const [k, ids] of [...按缺].sort((a, b) => b[1].length - a[1].length)) console.log(`  ${ids.length} 件卡在 ${k}（如 ${ids[0]}）`);
-        if (!p.开关.has('--写')) {
-          if (r.能补.length) console.log('写回资产表：anim extract --许可 --写');
+      if (p.toggles.has('--许可')) {
+        if (p.位置.length || [...p.toggles].some((k) => k !== '--许可' && k !== '--写')) throw new UsageError('--许可 只配 --写');
+        const r = computeLicenseFills(q, readAssetRegistryBoth(workRoot()).entryMap.values(), (i) => jarPath(q, i));
+        const countByLicense = new Map<string, number>();
+        for (const x of r.fillable) countByLicense.set(x.许可, (countByLicense.get(x.许可) ?? 0) + 1);
+        console.log(`能按 jar 补上的待定许可 ${r.fillable.length} 件：`);
+        for (const [l, n] of [...countByLicense].sort((a, b) => b[1] - a[1])) console.log(`  ${n} 件 → ${l}`);
+        const byMissing = new Map<string, string[]>();
+        for (const x of r.stillPending) for (const k of x.missing) byMissing.set(k, [...(byMissing.get(k) ?? []), x.e.id]);
+        if (r.stillPending.length) console.log(`仍待定 ${r.stillPending.length} 件（jars.toml 里这些定了就能补）：`);
+        for (const [k, ids] of [...byMissing].sort((a, b) => b[1].length - a[1].length)) console.log(`  ${ids.length} 件卡在 ${k}（如 ${ids[0]}）`);
+        if (!p.toggles.has('--写')) {
+          if (r.fillable.length) console.log('写回资产表：anim extract --许可 --写');
           return 0;
         }
-        const 改 = 写补许可(r.能补, 作品根());
-        记录.产物.push(...改);
-        console.log(`改了 ${改.map(相对代码根).join('、') || '（没有）'}`);
+        const written = writeLicenseFills(r.fillable, workRoot());
+        runRecord.产物.push(...written);
+        console.log(`改了 ${written.map(relativeToCodeRoot).join('、') || '（没有）'}`);
         return 0;
       }
-      if (p.开关.has('--列出')) {
-        for (const e of q.条目.values()) {
-          const 标 = e.待迁移 ? '（待迁移）' : e.不重导 ? '（不重导）' : e.要开游戏 ? '（要开游戏）' : !e.步骤.length ? '（没有自己的步骤）' : '';
-          console.log(`${e.名称}${标}  需要 ${e.需要.join('、') || '无'}`);
+      if (p.toggles.has('--列出')) {
+        for (const e of q.entryMap.values()) {
+          const statusNote = e.待迁移 ? '（待迁移）' : e.不重导 ? '（不重导）' : e.要开游戏 ? '（要开游戏）' : !e.步骤.length ? '（没有自己的步骤）' : '';
+          console.log(`${e.名称}${statusNote}  需要 ${e.需要.join('、') || '无'}`);
         }
         for (const [g, ms] of Object.entries(q.组)) console.log(`组 ${g}：${ms.join('、')}`);
         return 0;
       }
-      if (p.开关.has('--检查')) {
-        const es = p.位置.length || p.开关.has('--全部') ? 选条目(q, p.位置, p.开关.has('--全部'), 作品名()) : [...q.条目.values()];
-        const { 问题, 待迁移, 不重导, 别的作品 } = 检查(q, es, p.开关.has('--校验'));
-        for (const x of 问题) console.log(x);
-        if (待迁移.length) console.log(`\n待迁移、跑不了的 ${待迁移.length} 条：\n  ${待迁移.join('\n  ')}`);
-        if (不重导.length) console.log(`\n不重导、只查了产物的 ${不重导.length} 条：${不重导.join('、')}`);
-        if (别的作品.length) console.log(`\n属于别的作品、没查的 ${别的作品.length} 条：\n  ${别的作品.join('\n  ')}`);
-        console.log(`查了 ${es.length} 条：${问题.length ? `有 ${问题.length} 处缺` : '都齐'}`);
-        return 问题.length ? 1 : 0;
+      if (p.toggles.has('--检查')) {
+        const es = p.位置.length || p.toggles.has('--全部') ? selectEntries(q, p.位置, p.toggles.has('--全部'), workName()) : [...q.entryMap.values()];
+        const { issues, 待迁移: pendingMigration, 不重导: noReExtract, otherWork } = check(q, es, p.toggles.has('--校验'));
+        for (const x of issues) console.log(x);
+        if (pendingMigration.length) console.log(`\n待迁移、跑不了的 ${pendingMigration.length} 条：\n  ${pendingMigration.join('\n  ')}`);
+        if (noReExtract.length) console.log(`\n不重导、只查了产物的 ${noReExtract.length} 条：${noReExtract.join('、')}`);
+        if (otherWork.length) console.log(`\n属于别的作品、没查的 ${otherWork.length} 条：\n  ${otherWork.join('\n  ')}`);
+        console.log(`查了 ${es.length} 条：${issues.length ? `有 ${issues.length} 处缺` : '都齐'}`);
+        return issues.length ? 1 : 0;
       }
-      if (!p.位置.length && !p.开关.has('--全部')) throw new 用法错误('要给条目名、组名或 --全部（--列出 看有哪些）');
-      const es = 选条目(q, p.位置, p.开关.has('--全部'), 作品名());
-      if (p.开关.has('--只打印')) {
-        for (const e of es) await 跑步骤(q, e, 暂存目录(e.名称), true).catch((err: Error) => console.log(`（${err.message}）`));
+      if (!p.位置.length && !p.toggles.has('--全部')) throw new UsageError('要给条目名、组名或 --全部（--列出 看有哪些）');
+      const es = selectEntries(q, p.位置, p.toggles.has('--全部'), workName());
+      if (p.toggles.has('--只打印')) {
+        for (const e of es) await runSteps(q, e, stagingDir(e.名称), true).catch((err: Error) => console.log(`（${err.message}）`));
         return 0;
       }
       // 不重导的在进资源闸之前就拒：闸可能要排几分钟队
-      const 不跑 = es.filter((e) => e.不重导);
-      if (不跑.length) throw new Error(`${不跑.map((e) => `「${e.名称}」`).join('')}不重导（步骤只是记录）：--只打印 看步骤；真要重导，先删掉配方里的「不重导」`);
+      const notRun = es.filter((e) => e.不重导);
+      if (notRun.length) throw new Error(`${notRun.map((e) => `「${e.名称}」`).join('')}不重导（步骤只是记录）：--只打印 看步骤；真要重导，先删掉配方里的「不重导」`);
       // --新 的 id 分给产物表对得上的条目；哪条都对不上的也在进闸前拒
-      const 新归 = new Map(es.map((e) => [e.名称, 新id归属(e, 新ids).对.map(([id]) => id)]));
-      const 没归 = 新ids.filter((id) => ![...新归.values()].some((xs) => xs.includes(id)));
-      if (没归.length) throw new 用法错误(`--新 的 ${没归.join('、')} 不是所选条目的产物（对不上产物表的哪一项）`);
+      const newOwners = new Map(es.map((e) => [e.名称, attributeNewIds(e, newIds).对.map(([id]) => id)]));
+      const unowned = newIds.filter((id) => ![...newOwners.values()].some((xs) => xs.includes(id)));
+      if (unowned.length) throw new UsageError(`--新 的 ${unowned.join('、')} 不是所选条目的产物（对不上产物表的哪一项）`);
       if (!es.length) return 0;
-      return 过放行闸(async () => {
-        let 坏 = 0;
-        const 登记 = p.开关.has('--登记');
+      return passGate(async () => {
+        let bad = 0;
+        const doRegister = p.toggles.has('--登记');
         for (const e of es) {
-          const { dir, 结果: r, 产物来源 } = await 提取一条(q, e, 新归.get(e.名称));
-          const 行 = `${e.名称}：${r.一致.length + r.像素一致.length} 件和资产锁一样（新入库 ${r.入库.length}${r.像素一致.length ? `，其中 ${r.像素一致.length} 件 PNG 字节不同、像素一样，锁里留原来那份` : ''}）`;
-          console.log(`${行}${r.不一致.length ? `，${r.不一致.length} 件不一样` : ''}${r.缺文件.length ? `，缺 ${r.缺文件.length} 件` : ''}`);
-          if (登记 && r.新产物.length) {
-            const g = 登记产物(q, e, dir, r.新产物, { 作品根: 作品根(), 已登记: 读两侧资产表(作品根()).条目, 锁: 读作品资产锁(作品根(), undefined, false), jar路径: (i) => jar路径(q, i), 产物来源 });
-            console.log(`  登记 ${g.新登记.length} 件进 ${g.表文件.map(相对代码根).join('、') || '（都已登记过）'}，写锁 ${g.入锁.length} 件`);
-            for (const x of g.仍待定) console.log(`  许可待定：${x.id}（${x.缺.join('；')}）`);
-            记录.产物.push(...g.表文件, ...g.入锁.map((id) => `入库 ${id}`));
-          } else if (r.新产物.length) console.log(`  锁里没有的产物 ${r.新产物.length} 件（加 --登记 登记、入库）`);
-          for (const x of r.不一致) console.log(`  不一样：${x.id}（${x.文件}）锁 ${x.锁.slice(0, 12)}，这次 ${x.新.slice(0, 12)}`);
-          for (const x of r.缺文件) console.log(`  缺：${x.id}（${x.文件}）`);
-          for (const x of r.空模式) console.log(`  资产锁里一个也没有：${x}`);
-          if (r.未登记.length) console.log(`  暂存目录里另有 ${r.未登记.length} 个没登记成产物的文件（不入库）：${r.未登记.slice(0, 5).join('、')}${r.未登记.length > 5 ? '…' : ''}`);
+          const { dir, 结果: r, artifactSources } = await extractEntry(q, e, newOwners.get(e.名称));
+          const summary = `${e.名称}：${r.consistent.length + r.pixelMatched.length} 件和资产锁一样（新入库 ${r.imported.length}${r.pixelMatched.length ? `，其中 ${r.pixelMatched.length} 件 PNG 字节不同、像素一样，锁里留原来那份` : ''}）`;
+          console.log(`${summary}${r.mismatched.length ? `，${r.mismatched.length} 件不一样` : ''}${r.missingFiles.length ? `，缺 ${r.missingFiles.length} 件` : ''}`);
+          if (doRegister && r.newArtifacts.length) {
+            const g = registerArtifacts(q, e, dir, r.newArtifacts, { workRoot: workRoot(), registered: readAssetRegistryBoth(workRoot()).entryMap, assetLock: readWorkAssetLock(workRoot(), undefined, false), jarPath: (i) => jarPath(q, i), artifactSources });
+            console.log(`  登记 ${g.newRegistered.length} 件进 ${g.tableFiles.map(relativeToCodeRoot).join('、') || '（都已登记过）'}，写锁 ${g.lockAdded.length} 件`);
+            for (const x of g.stillPending) console.log(`  许可待定：${x.id}（${x.missing.join('；')}）`);
+            runRecord.产物.push(...g.tableFiles, ...g.lockAdded.map((id) => `入库 ${id}`));
+          } else if (r.newArtifacts.length) console.log(`  锁里没有的产物 ${r.newArtifacts.length} 件（加 --登记 登记、入库）`);
+          for (const x of r.mismatched) console.log(`  不一样：${x.id}（${x.文件}）锁 ${x.lockHash.slice(0, 12)}，这次 ${x.新.slice(0, 12)}`);
+          for (const x of r.missingFiles) console.log(`  缺：${x.id}（${x.文件}）`);
+          for (const x of r.emptyPatterns) console.log(`  资产锁里一个也没有：${x}`);
+          if (r.unregistered.length) console.log(`  暂存目录里另有 ${r.unregistered.length} 个没登记成产物的文件（不入库）：${r.unregistered.slice(0, 5).join('、')}${r.unregistered.length > 5 ? '…' : ''}`);
           console.log(`  暂存目录：${dir}`);
-          记录.产物.push(...r.入库.map((id) => `入库 ${id}`));
-          记录.记(r.不一致.length || r.缺文件.length ? '警告' : '信息', 行);
-          if (r.不一致.length || r.缺文件.length || r.空模式.length) 坏++;
+          runRecord.产物.push(...r.imported.map((id) => `入库 ${id}`));
+          runRecord.log(r.mismatched.length || r.missingFiles.length ? '警告' : '信息', summary);
+          if (r.mismatched.length || r.missingFiles.length || r.emptyPatterns.length) bad++;
         }
-        return 坏 ? 1 : 0;
+        return bad ? 1 : 0;
       });
     },
   },

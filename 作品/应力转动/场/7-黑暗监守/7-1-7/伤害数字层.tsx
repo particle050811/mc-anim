@@ -7,7 +7,7 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as choreo from './编排.ts';
@@ -16,15 +16,15 @@ const wardenHitboxHeight = 2.9;
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 const hits = play.huangFollowArrows.map((a, k) => {
-  const hit = play.wardenHits.find((h) => h.箭 === a)!;
+  const hit = play.wardenHits.find((h) => h.arrow === a)!;
   return { T: hit.t, damage: hit.damage, crit: hit.crit, anchor: damageNumberAnchor(toThree(play.wardenState(hit.t).p), wardenHitboxHeight, 7171 + k) };
 });
 export const followArrowHits = hits; // 7-2-1 李樱远望时看到的是同样的数字、同样的位置
 
 export const FollowArrowDamageLayer: React.FC = () => {
-  const frame = use当前秒() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
+  const frame = useCurrentSec() * choreo.FPS; // 段内第几格（1/24 秒一格，带小数）
   const { width, height } = useVideoConfig();
-  const t = choreo.t于(frame);
+  const t = choreo.timeAt(frame);
   const cam = choreo.camera(frame);
   const camera = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
   const numbers: DamageNumberItem[] = hits.map((h) => ({ damage: h.damage, crit: h.crit, anchor: h.anchor, ticks: (t - h.T) * 20 }));

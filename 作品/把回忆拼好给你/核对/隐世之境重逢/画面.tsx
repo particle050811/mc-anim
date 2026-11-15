@@ -7,118 +7,118 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
-import { 像素聊天栏 } from '@库/界面/像素聊天栏.tsx';
-import { 画幅 } from '../../分镜/时间.ts';
-import { 第一人称机位 } from '../../地点/机位.tsx';
-import { 像素字 } from '../../界面/像素字.ts';
-import { 她看你, 门口眼, 隐世之境重逢布景, 天色 } from '../../场/2-隐世之境/布景.tsx';
-import { 她, 机位 } from '../../场/2-隐世之境/参数.ts';
-import { 封面安全区 } from '../../场/2-隐世之境/封面.ts';
-import { 封面聊天行, 重逢气泡 } from '../../场/2-隐世之境/叠层.tsx';
-import { 视图们, type 视图 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { PixelChatBar } from '@库/界面/像素聊天栏.tsx';
+import { aspect } from '../../分镜/时间.ts';
+import { FirstPersonRig } from '../../地点/机位.tsx';
+import { pixelFont } from '../../界面/像素字.ts';
+import { liYingLookAt, doorwayEye, HiddenLandReunionBackdrop, skyColor } from '../../场/2-隐世之境/布景.tsx';
+import { liYing, cameraRig } from '../../场/2-隐世之境/参数.ts';
+import { coverSafeArea } from '../../场/2-隐世之境/封面.ts';
+import { CoverChatLine, ReunionBubble } from '../../场/2-隐世之境/叠层.tsx';
+import { views, type View } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 黄 = '#FFFF55';
+const yellow = '#FFFF55';
 // 成片画幅的封面：48.61 出的「Steve加入了游戏」到 49.96 过了 27 刻，还是满亮；聊天栏缩放照原版 2560×1440 的界面尺寸 6
-const 片里聊天 = { 行们: [{ text: 'Steve加入了游戏', color: 黄, 起刻: 0 }], 刻: 27, 缩放: 6 };
+const filmChat = { lines: [{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }], 刻: 27, 缩放: 6 };
 
 // 平面图的标注：浮在门楣（z 2～3）上面、不做深度测试、最后画，门光、屋顶都盖不住
-const 标注高 = 3.4;
-const 标注料: React.FC<{ 色: string }> = ({ 色 }) => <meshBasicMaterial color={色} toneMapped={false} depthTest={false} depthWrite={false} transparent />;
+const annotationHeight = 3.4;
+const AnnotationMaterial: React.FC<{ 色: string }> = ({ 色: color }) => <meshBasicMaterial color={color} toneMapped={false} depthTest={false} depthWrite={false} transparent />;
 
 /** 地图上一条有宽度的线：从 a 到 b（只取 x、y） */
-const 线: React.FC<{ a: V3; b: V3; 色: string; 宽?: number }> = ({ a, b, 色, 宽 = 0.1 }) => {
+const LineBetween: React.FC<{ a: V3; b: V3; 色: string; 宽?: number }> = ({ a, b, 色: color, 宽: width = 0.1 }) => {
   const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
   return (
-    <mesh position={[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 标注高]} rotation={[0, 0, Math.atan2(dy, dx)]} renderOrder={20}>
-      <planeGeometry args={[Math.hypot(dx, dy), 宽]} />
-      <标注料 色={色} />
+    <mesh position={[(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, annotationHeight]} rotation={[0, 0, Math.atan2(dy, dx)]} renderOrder={20}>
+      <planeGeometry args={[Math.hypot(dx, dy), width]} />
+      <AnnotationMaterial 色={color} />
     </mesh>
   );
 };
 
-const 方片: React.FC<{ 位: V3; 色: string }> = ({ 位, 色 }) => (
-  <mesh position={[位[0], 位[1], 标注高]} renderOrder={20}>
+const SquarePiece: React.FC<{ 位: V3; 色: string }> = ({ 位: pos, 色: color }) => (
+  <mesh position={[pos[0], pos[1], annotationHeight]} renderOrder={20}>
     <planeGeometry args={[0.5, 0.5]} />
-    <标注料 色={色} />
+    <AnnotationMaterial 色={color} />
   </mesh>
 );
 
 /** 门口机位：脚、视线（到看点那么长）、横向视野的两条边（4 格长）；她：脚、身子朝向（1 格长） */
-const 标注: React.FC<{ 身子朝向: number }> = ({ 身子朝向 }) => {
-  const 青 = '#00e0ff';
-  const 品 = '#ff40c0';
-  const [ex, ey] = 门口眼;
-  const 向 = Math.atan2(机位.看[1] - ey, 机位.看[0] - ex);
-  const 半横 = Math.atan(Math.tan(((机位.视角 / 2) * Math.PI) / 180) * (画幅.宽 / 画幅.高));
-  const 边 = (s: number): V3 => [ex + 4 * Math.cos(向 + s * 半横), ey + 4 * Math.sin(向 + s * 半横), 0];
-  const y = (身子朝向 * Math.PI) / 180;
+const Annotation: React.FC<{ bodyFacing: number }> = ({ bodyFacing }) => {
+  const cyan = '#00e0ff';
+  const markColor = '#ff40c0';
+  const [ex, ey] = doorwayEye;
+  const dirAngle = Math.atan2(cameraRig.看[1] - ey, cameraRig.看[0] - ex);
+  const halfFovX = Math.atan(Math.tan(((cameraRig.fov / 2) * Math.PI) / 180) * (aspect.宽 / aspect.高));
+  const edgePoint = (s: number): V3 => [ex + 4 * Math.cos(dirAngle + s * halfFovX), ey + 4 * Math.sin(dirAngle + s * halfFovX), 0];
+  const y = (bodyFacing * Math.PI) / 180;
   return (
     <>
-      <方片 位={门口眼} 色={青} />
-      <线 a={门口眼} b={机位.看} 色={青} 宽={0.12} />
-      <线 a={门口眼} b={边(1)} 色={青} 宽={0.05} />
-      <线 a={门口眼} b={边(-1)} 色={青} 宽={0.05} />
-      <方片 位={她.脚} 色={品} />
-      <线 a={她.脚} b={[她.脚[0] - Math.sin(y), 她.脚[1] + Math.cos(y), 0]} 色={品} 宽={0.12} />
+      <SquarePiece 位={doorwayEye} 色={cyan} />
+      <LineBetween a={doorwayEye} b={cameraRig.看} 色={cyan} 宽={0.12} />
+      <LineBetween a={doorwayEye} b={edgePoint(1)} 色={cyan} 宽={0.05} />
+      <LineBetween a={doorwayEye} b={edgePoint(-1)} 色={cyan} 宽={0.05} />
+      <SquarePiece 位={liYing.feet} 色={markColor} />
+      <LineBetween a={liYing.feet} b={[liYing.feet[0] - Math.sin(y), liYing.feet[1] + Math.cos(y), 0]} 色={markColor} 宽={0.12} />
     </>
   );
 };
 
-const 安全区层: React.FC = () => {
-  const { 宽: W, 高: H } = 画幅;
-  const { 四比三, 底边, 右下角 } = 封面安全区(W, H);
-  const 遮 = 'rgba(0, 0, 0, 0.45)';
-  const 禁 = 'rgba(255, 40, 40, 0.28)';
+const SafeAreaLayer: React.FC = () => {
+  const { 宽: W, 高: H } = aspect;
+  const { fourThreeRect, bottomEdge, bottomRight } = coverSafeArea(W, H);
+  const dimColor = 'rgba(0, 0, 0, 0.45)';
+  const forbidden = 'rgba(255, 40, 40, 0.28)';
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, width: 四比三.x0, height: H, background: 遮 }} />
-      <div style={{ position: 'absolute', left: 四比三.x1, top: 0, width: W - 四比三.x1, height: H, background: 遮 }} />
-      <div style={{ position: 'absolute', left: 0, top: 底边.y0, width: W, height: H - 底边.y0, background: 禁, borderTop: '2px dashed #ff5050' }} />
-      <div style={{ position: 'absolute', left: 右下角.x0, top: 右下角.y0, width: W - 右下角.x0, height: H - 右下角.y0, background: 禁, border: '2px dashed #ff5050' }} />
-      <div style={{ position: 'absolute', left: 四比三.x0, top: 0, width: 四比三.x1 - 四比三.x0, height: H, boxSizing: 'border-box', border: '2px solid #ffe14d' }} />
+      <div style={{ position: 'absolute', left: 0, top: 0, width: fourThreeRect.x0, height: H, background: dimColor }} />
+      <div style={{ position: 'absolute', left: fourThreeRect.x1, top: 0, width: W - fourThreeRect.x1, height: H, background: dimColor }} />
+      <div style={{ position: 'absolute', left: 0, top: bottomEdge.y0, width: W, height: H - bottomEdge.y0, background: forbidden, borderTop: '2px dashed #ff5050' }} />
+      <div style={{ position: 'absolute', left: bottomRight.x0, top: bottomRight.y0, width: W - bottomRight.x0, height: H - bottomRight.y0, background: forbidden, border: '2px dashed #ff5050' }} />
+      <div style={{ position: 'absolute', left: fourThreeRect.x0, top: 0, width: fourThreeRect.x1 - fourThreeRect.x0, height: H, boxSizing: 'border-box', border: '2px solid #ffe14d' }} />
     </AbsoluteFill>
   );
 };
 
-const 机位于 = (v: 视图) => v.机位 ?? { 眼: 门口眼, 看: 机位.看, 视角: 机位.视角 };
+const rigOf = (v: View) => v.cameraRig ?? { 眼: doorwayEye, 看: cameraRig.看, fov: cameraRig.fov };
 
-const 世界: React.FC<{ v: 视图 }> = ({ v }) => {
-  const 机 = 机位于(v);
-  const 姿势 = { ...standPose(她.脚), yaw: v.身子朝向 ?? 她.身子朝向 };
-  const 看 = 她看你(门口眼, 姿势);
+const World: React.FC<{ v: View }> = ({ v }) => {
+  const rig = rigOf(v);
+  const pose = { ...standPose(liYing.feet), yaw: v.bodyFacing ?? liYing.bodyFacing };
+  const gaze = liYingLookAt(doorwayEye, pose);
   return (
-    <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
-      <color attach="background" args={[天色]} />
-      <第一人称机位 眼={机.眼} 看={机.看} 视角={机.视角} near={'近' in 机 ? 机.近 : undefined} />
+    <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+      <color attach="background" args={[skyColor]} />
+      <FirstPersonRig 眼={rig.眼} 看={rig.看} fov={rig.fov} near={'nearClip' in rig ? rig.nearClip : undefined} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <隐世之境重逢布景 眼={机.眼} 门光={v.门光 ?? true}>
-          {v.她 && <MagicalWineFox pose={姿势} 姿势="站" 看={看} 表情="无" />}
-          {v.标注 && <标注 身子朝向={姿势.yaw} />}
-        </隐世之境重逢布景>
+        <HiddenLandReunionBackdrop 眼={rig.眼} doorLight={v.doorLight ?? true}>
+          {v.hasLiYing && <MagicalWineFox pose={pose} stancePose="站" 看={gaze} expression="无" />}
+          {v.showAnnotation && <Annotation bodyFacing={pose.yaw} />}
+        </HiddenLandReunionBackdrop>
       </group>
     </ThreeCanvas>
   );
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 机 = 机位于(v);
-  const 姿势 = { ...standPose(她.脚), yaw: v.身子朝向 ?? 她.身子朝向 };
-  const [俯仰, 左右] = 她看你(门口眼, 姿势);
-  const 正对 = magicalWineFoxLookAt(姿势, 门口眼, '站')[1];
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const rig = rigOf(v);
+  const pose = { ...standPose(liYing.feet), yaw: v.bodyFacing ?? liYing.bodyFacing };
+  const [pitch, yaw] = liYingLookAt(doorwayEye, pose);
+  const faceAngle = magicalWineFoxLookAt(pose, doorwayEye, '站')[1];
   return (
     <AbsoluteFill style={{ background: '#1b1d22' }}>
-      <世界 v={v} />
-      {v.气泡 && <重逢气泡 机位={机} />}
-      {v.聊天 === '片' && <像素聊天栏 lines={片里聊天.行们} 刻={片里聊天.刻} 缩放={片里聊天.缩放} 字体={像素字} 宽={画幅.宽} 高={画幅.高} />}
-      {v.聊天 === '封面' && <封面聊天行 />}
-      {v.安全区 && <安全区层 />}
+      <World v={v} />
+      {v.showBubble && <ReunionBubble cameraRig={rig} />}
+      {v.chatMode === '片' && <PixelChatBar lines={filmChat.lines} 刻={filmChat.刻} 缩放={filmChat.缩放} 字体={pixelFont} 宽={aspect.宽} 高={aspect.高} />}
+      {v.chatMode === '封面' && <CoverChatLine />}
+      {v.safeArea && <SafeAreaLayer />}
       <div style={{ position: 'absolute', right: 12, bottom: 8, textAlign: 'right', fontFamily: uiFontFamily, fontSize: 15, lineHeight: 1.35, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
         <div>核对-隐世之境重逢 · {v.名}</div>
-        {v.她 && (
+        {v.hasLiYing && (
           <div style={{ fontSize: 12 }}>
-            身子朝向 {姿势.yaw}°，头比身子多转 {左右.toFixed(1)}°（正对你要 {正对.toFixed(1)}°）、抬头 {俯仰.toFixed(1)}°
+            身子朝向 {pose.yaw}°，头比身子多转 {yaw.toFixed(1)}°（正对你要 {faceAngle.toFixed(1)}°）、抬头 {pitch.toFixed(1)}°
           </div>
         )}
       </div>
@@ -126,4 +126,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

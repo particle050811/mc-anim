@@ -24,7 +24,7 @@ const LEAD_S = 0.03; // 嘴比声音略早到位，看着才对得上
 
 type Cue = { id: string; 帧: number };
 /** 口型表：句 id → 嘴型关键帧 [文件里的秒, 嘴型]；台词表只用 角色、开口 */
-export type 口型数据 = { 口型: Readonly<Record<string, { 嘴: [number, string][] }>>; 台词: Readonly<Record<string, { 角色: string; 开口: number }>> };
+export type LipData = { 口型: Readonly<Record<string, { 嘴: [number, string][] }>>; 台词: Readonly<Record<string, { 角色: string; 开口: number }>> };
 
 const mix = (a: Mouth, b: Mouth, k: number): Mouth => ({ open: a.open + (b.open - a.open) * k, width: a.width + (b.width - a.width) * k });
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -44,7 +44,7 @@ const sample = (keys: [number, string][], t: number): Mouth => {
   return mix(from, to, progress(t));
 };
 
-export const mouthAt = ({ 口型: cuesById, 台词: lines }: 口型数据, cues: readonly Cue[], role: string, frame: number, fps = 24): Mouth | undefined => {
+export const mouthAt = ({ 口型: cuesById, 台词: lines }: LipData, cues: readonly Cue[], role: string, frame: number, fps = 24): Mouth | undefined => {
   for (const { id, 帧: lineFrame } of cues) {
     const entry = cuesById[id];
     if (!entry || lines[id].角色 !== role) continue;
@@ -61,29 +61,29 @@ export const mouthAt = ({ 口型: cuesById, 台词: lines }: 口型数据, cues:
 const NOD_PITCH = 12; // 度：每个字点一下
 const NOD_DIP = 2; // 度：说话时整体低一点
 const NOD_YAW = 8;
-const smoothedOpen = (数据: 口型数据, cues: readonly Cue[], role: string, frame: number, fps: number, tau: number) => {
+const smoothedOpen = (lipData: LipData, cues: readonly Cue[], role: string, frame: number, fps: number, tau: number) => {
   let sum = 0;
   let weights = 0;
   for (let back = 0; back < 1.5 * fps; back += 0.25) {
     const w = Math.exp(-back / fps / tau);
-    sum += w * (mouthAt(数据, cues, role, frame - back, fps)?.open ?? 0);
+    sum += w * (mouthAt(lipData, cues, role, frame - back, fps)?.open ?? 0);
     weights += w;
   }
   return sum / weights;
 };
-export const withTalkNod = <P extends { headPitch: number; headYaw: number }>(数据: 口型数据, pose: P, cues: readonly Cue[], role: string, frame: number, fps = 24): P => {
-  const slow = smoothedOpen(数据, cues, role, frame, fps, 0.2);
+export const withTalkNod = <P extends { headPitch: number; headYaw: number }>(lipData: LipData, pose: P, cues: readonly Cue[], role: string, frame: number, fps = 24): P => {
+  const slow = smoothedOpen(lipData, cues, role, frame, fps, 0.2);
   if (slow === 0) return pose;
-  const fast = smoothedOpen(数据, cues, role, frame, fps, 0.05);
-  const slower = smoothedOpen(数据, cues, role, frame, fps, 0.5);
+  const fast = smoothedOpen(lipData, cues, role, frame, fps, 0.05);
+  const slower = smoothedOpen(lipData, cues, role, frame, fps, 0.5);
   return { ...pose, headPitch: pose.headPitch - NOD_PITCH * (fast - slow) - NOD_DIP * slow, headYaw: pose.headYaw + NOD_YAW * (slow - slower) };
 };
 
 /** 绑好一部作品的口型表、台词表（资产 数据/配音/口型、数据/配音/台词表 的内容），返回用法同上、不带表参数的 mouthAt、withTalkNod */
-export const 做口型 = (口型表: unknown, 台词表: unknown) => {
-  const 数据 = { 口型: 口型表, 台词: 台词表 } as 口型数据;
+export const buildLipData = (lipTable: unknown, lineTable: unknown) => {
+  const lipData = { 口型: lipTable, 台词: lineTable } as LipData;
   return {
-    mouthAt: (cues: readonly Cue[], role: string, frame: number, fps?: number) => mouthAt(数据, cues, role, frame, fps),
-    withTalkNod: <P extends { headPitch: number; headYaw: number }>(pose: P, cues: readonly Cue[], role: string, frame: number, fps?: number) => withTalkNod(数据, pose, cues, role, frame, fps),
+    mouthAt: (cues: readonly Cue[], role: string, frame: number, fps?: number) => mouthAt(lipData, cues, role, frame, fps),
+    withTalkNod: <P extends { headPitch: number; headYaw: number }>(pose: P, cues: readonly Cue[], role: string, frame: number, fps?: number) => withTalkNod(lipData, pose, cues, role, frame, fps),
   };
 };

@@ -2,22 +2,22 @@
 // 第 2 帧是存档图标放大 20 倍（1280 成片像素见方）。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { use视图下标 } from '@engine/段/时间.tsx';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 色板 } from '../../色板.ts';
-import { 照片帧 } from '../../场/2-门口/门口之夜参数.ts';
-import { 门口之夜画布 } from '../../场/2-门口/门口之夜画布.tsx';
-import { 门口之夜图标 } from '../../场/2-门口/门口之夜照片.tsx';
+import { useViewIndex } from '@engine/段/时间.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { palette } from '../../色板.ts';
+import { photoFrame } from '../../场/2-门口/门口之夜参数.ts';
+import { DoorNightCanvas } from '../../场/2-门口/门口之夜画布.tsx';
+import { DoorwayNightIcon } from '../../场/2-门口/门口之夜照片.tsx';
 import { fps } from '../../分镜/时间.ts';
 
-const 画面: React.FC = () => {
-  const f = use视图下标(fps);
-  const 图 = <门口之夜画布 帧={照片帧} />;
+const picture: React.FC = () => {
+  const f = useViewIndex(fps);
+  const imgEl = <DoorNightCanvas 帧={photoFrame} />;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      {f === 0 ? 图 : f === 1 ? <整片后期 调色={色板.夜.调色} 种子={照片帧}>{图}</整片后期> : <门口之夜图标 边={1280} />}
+      {f === 0 ? imgEl : f === 1 ? <FilmPost grade={palette.夜.grade} 种子={photoFrame}>{imgEl}</FilmPost> : <DoorwayNightIcon side={1280} />}
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

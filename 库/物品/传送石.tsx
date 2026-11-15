@@ -24,7 +24,7 @@ import type { ParticleSpawn } from '../特效/原版粒子.tsx';
 import { GlintItem, HeldItem } from './附魔物品.tsx';
 import warpStonePng from 'asset:贴图/物品/杂项物品/传送石';
 
-export const WARP = { holdTicks: 32, 传送粒子: 128 };
+export const WARP = { holdTicks: 32, warpParticleCount: 128 };
 // UseAnim.BOW 时原版 HumanoidModel 的手臂（BOW_AND_ARROW，右手用）：两臂 xRot = −90° + 头仰，右 yRot = −0.1 + 头偏（弧度）、左 yRot = 0.1 + 头偏 + 0.4
 export const BOW_ARMS = { xRot: -90, rightYRot: (-0.1 * 180) / Math.PI, leftYRot: (0.5 * 180) / Math.PI };
 
@@ -81,7 +81,7 @@ export const warpStoneUseParticles = (feetAt: (tick: number) => V3, lookDir: V3,
 export const teleportParticles = (feet: V3, tick: number, seed: number): ParticleSpawn[] => {
   const rand = rng(seed * 2851 + 3);
   const blockCorner: V3 = [Math.floor(feet[0]), Math.floor(feet[2]), Math.floor(-feet[1])];
-  return Array.from({ length: WARP.传送粒子 }, (_, i) => {
+  return Array.from({ length: WARP.warpParticleCount }, (_, i) => {
     const gp: V3 = [blockCorner[0] + (rand() - 0.5) * 3, blockCorner[1] + rand() * 3, blockCorner[2] + (rand() - 0.5) * 3];
     const gv: V3 = [(rand() - 0.5) * 2, -rand(), (rand() - 0.5) * 2];
     return { 种: 'portal' as const, 刻: tick, p: g2s(gp), v: g2s(gv), 种子: seed * 7001 + i };

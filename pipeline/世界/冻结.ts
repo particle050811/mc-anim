@@ -3,37 +3,37 @@
 // 不一样时默认只报告，加 --写 才写。粗高度变了，航线、巡航高度跟着变，写完要用静帧核对航线、重看配乐卡点。
 import fs from 'node:fs';
 import path from 'node:path';
-import { 代码根 } from '../环境/路径.ts';
-import { 载入体素库 } from './体素库.ts';
-import { 版本目录, 读地形表 } from './版本.ts';
+import { codeRoot } from '../环境/路径.ts';
+import { loadVoxelLib } from './体素库.ts';
+import { versionDir, readTerrainTable } from './版本.ts';
 
-export const 冻结目录 = () => path.join(代码根(), 'assets', '冻结粗高度');
-export const 已冻结的包 = () => (fs.existsSync(冻结目录()) ? fs.readdirSync(冻结目录()).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -'.json'.length)).sort() : []);
+export const freezeDir = () => path.join(codeRoot(), 'assets', '冻结粗高度');
+export const frozenPacks = () => (fs.existsSync(freezeDir()) ? fs.readdirSync(freezeDir()).filter((f) => f.endsWith('.json')).map((f) => f.slice(0, -'.json'.length)).sort() : []);
 
-export type 冻结结果 = { 包: string; 版本: string; 指纹: string; 原: { 版本: string; 指纹: string } | null; 一样: boolean; 写了: boolean; 文件: string };
+export type FreezeResult = { 包: string; 版本: string; 指纹: string; 原: { 版本: string; 指纹: string } | null; same: boolean; written: boolean; 文件: string };
 
-export const 冻结 = async (包们: string[], o: { 写: boolean }): Promise<冻结结果[]> => {
-  const 库 = await 载入体素库();
-  const 表 = 读地形表().包;
-  const out: 冻结结果[] = [];
-  for (const 包 of 包们.length ? 包们 : 已冻结的包()) {
-    const 版本 = 表[包]?.版本;
-    if (!版本) throw new Error(`assets/地形版本.json 没登记包 ${包}`);
-    const 包json = path.join(版本目录(包, 版本), '包.json');
-    if (!fs.existsSync(包json)) throw new Error(`没有 ${包json}：anim assets pull 拉地形包，或 anim world bake 烘`);
-    const info = JSON.parse(fs.readFileSync(包json, 'utf8'));
-    const 指纹 = 库.区段包.coarseHeightFingerprint(库.区段包.decodeCoarseHeight(info));
-    const 文件 = path.join(冻结目录(), `${包}.json`);
-    const 原 = fs.existsSync(文件) ? (JSON.parse(fs.readFileSync(文件, 'utf8')) as { 版本: string; 指纹: string; 原点: number[] }) : null;
-    const 一样 = !!原 && 原.版本 === 版本 && 原.指纹 === 指纹 && JSON.stringify(原.原点) === JSON.stringify(info.原点);
-    let 写了 = false;
-    if (!一样 && o.写) {
-      const 文 = { 说明: 'anim world freeze 从登记的那版区段包的 包.json 拷的原点和粗高度图，别手改', 包, 版本, 指纹, 维度: info.维度, 原点: info.原点, 粗高度: info.粗高度 };
-      fs.mkdirSync(冻结目录(), { recursive: true });
-      fs.writeFileSync(文件, JSON.stringify(文) + '\n');
-      写了 = true;
+export const freeze = async (packs: string[], o: { write: boolean }): Promise<FreezeResult[]> => {
+  const voxelLib = await loadVoxelLib();
+  const terrainTable = readTerrainTable().包;
+  const out: FreezeResult[] = [];
+  for (const pack of packs.length ? packs : frozenPacks()) {
+    const version = terrainTable[pack]?.版本;
+    if (!version) throw new Error(`assets/地形版本.json 没登记包 ${pack}`);
+    const packJsonPath = path.join(versionDir(pack, version), '包.json');
+    if (!fs.existsSync(packJsonPath)) throw new Error(`没有 ${packJsonPath}：anim assets pull 拉地形包，或 anim world bake 烘`);
+    const info = JSON.parse(fs.readFileSync(packJsonPath, 'utf8'));
+    const fingerprint = voxelLib.sectionPack.coarseHeightFingerprint(voxelLib.sectionPack.decodeCoarseHeight(info));
+    const file = path.join(freezeDir(), `${pack}.json`);
+    const previous = fs.existsSync(file) ? (JSON.parse(fs.readFileSync(file, 'utf8')) as { 版本: string; 指纹: string; 原点: number[] }) : null;
+    const same = !!previous && previous.版本 === version && previous.指纹 === fingerprint && JSON.stringify(previous.原点) === JSON.stringify(info.原点);
+    let written = false;
+    if (!same && o.write) {
+      const frozenDoc = { 说明: 'anim world freeze 从登记的那版区段包的 包.json 拷的原点和粗高度图，别手改', 包: pack, 版本: version, 指纹: fingerprint, 维度: info.维度, 原点: info.原点, 粗高度: info.粗高度 };
+      fs.mkdirSync(freezeDir(), { recursive: true });
+      fs.writeFileSync(file, JSON.stringify(frozenDoc) + '\n');
+      written = true;
     }
-    out.push({ 包, 版本, 指纹, 原: 原 && { 版本: 原.版本, 指纹: 原.指纹 }, 一样, 写了, 文件 });
+    out.push({ 包: pack, 版本: version, 指纹: fingerprint, 原: previous && { 版本: previous.版本, 指纹: previous.指纹 }, same, written, 文件: file });
   }
   return out;
 };

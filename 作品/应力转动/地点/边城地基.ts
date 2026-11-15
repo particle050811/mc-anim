@@ -36,7 +36,7 @@ export const borderTownFlatten = (): FlattenArea[] => {
     }
   }
   // 城里的泥土上面盖着城的地面，粗级往下取整（见 导入地形.ts 的 `covered`）；城墙一圈的圆石在城外露着，照常往上取整
-  flattenCache = [{ x0, z0, nx, nz, 罩: mask, 地面y: borderTownGroundY, fillBlocks, covered: [true, false] }];
+  flattenCache = [{ x0, z0, nx, nz, mask: mask, groundY: borderTownGroundY, fillBlocks, covered: [true, false] }];
   return flattenCache;
 };
 

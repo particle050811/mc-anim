@@ -10,28 +10,28 @@ import type { BlockModelData } from '../../engine/model/方块模型.tsx';
 import type { ItemTransform } from '../../engine/model/物品贴图.tsx';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png, type Png } from '../../engine/model/贴图.ts';
-import 模型数据 from 'asset:模型/物品/蛋糕方块';
-import 底图 from 'asset:贴图/物品/蛋糕方块/cake_bottom';
-import 侧图 from 'asset:贴图/物品/蛋糕方块/cake_side';
-import 顶图 from 'asset:贴图/物品/蛋糕方块/cake_top';
+import cakeBlockModelData from 'asset:模型/物品/蛋糕方块';
+import cakeBottomPng from 'asset:贴图/物品/蛋糕方块/cake_bottom';
+import cakeSidePng from 'asset:贴图/物品/蛋糕方块/cake_side';
+import cakeTopPng from 'asset:贴图/物品/蛋糕方块/cake_top';
 
 /** client 1.20.1 block/block.json 的 display（草方块这类方块物品都继承它）。物品贴图.tsx 的 DISPLAY 不加：改那个模块，import 它的段全部过期。
  *  第一人称原样用正好转 45°，侧面在平涂里会出竖条噪点，要偏一点（见 作品/把回忆拼好给你/场/2-隐世之境/重逢.tsx 的 蛋糕拿法） */
-export const 方块显示 = {
+export const blockDisplay = {
   thirdperson_righthand: { rotation: [75, 45, 0], translation: [0, 2.5, 0], scale: [0.375, 0.375, 0.375] },
   firstperson_righthand: { rotation: [0, 45, 0], translation: [0, 0, 0], scale: [0.4, 0.4, 0.4] },
 } satisfies Record<string, ItemTransform>;
 
-const 数据 = 模型数据 as unknown as BlockModelData;
+const cakeModel = cakeBlockModelData as unknown as BlockModelData;
 /** 按贴图名（模型 json 里 textures 的 key 最后一段） */
-const 贴图: Readonly<Record<string, Png>> = { cake_bottom: png(底图), cake_side: png(侧图), cake_top: png(顶图) };
+const textures: Readonly<Record<string, Png>> = { cake_bottom: png(cakeBottomPng), cake_side: png(cakeSidePng), cake_top: png(cakeTopPng) };
 
 /** 面片（方块模型.tsx 的格式：方块占 X 0..1、Y −1..0、Z 0..1，Z 朝上、北 = +Y）换到物品坐标：减去中心，(X, Y, Z) → (X, Z, −Y)。按贴图分组 */
-const 建几何 = () => {
-  const 组 = new Map<number, { pos: number[]; nor: number[]; uv: number[]; idx: number[] }>();
-  for (const q of 数据.parts['蛋糕']!.quads) {
-    if (!组.has(q[0]!)) 组.set(q[0]!, { pos: [], nor: [], uv: [], idx: [] });
-    const b = 组.get(q[0]!)!;
+const buildGeometry = () => {
+  const groupBuckets = new Map<number, { pos: number[]; nor: number[]; uv: number[]; idx: number[] }>();
+  for (const q of cakeModel.parts['蛋糕']!.quads) {
+    if (!groupBuckets.has(q[0]!)) groupBuckets.set(q[0]!, { pos: [], nor: [], uv: [], idx: [] });
+    const b = groupBuckets.get(q[0]!)!;
     const base = b.pos.length / 3;
     for (let k = 0; k < 4; k++) {
       const [x, y, z] = [q[1 + k * 3]! - 0.5, q[2 + k * 3]! + 0.5, q[3 + k * 3]! - 0.5];
@@ -42,10 +42,10 @@ const 建几何 = () => {
     // 四个角从外面看是顺时针（左上、右上、右下、左下），three 的正面要逆时针，同 方块模型.tsx
     b.idx.push(base, base + 2, base + 1, base, base + 3, base + 2);
   }
-  return [...组].map(([ti, b]) => {
-    const 名 = 数据.textures[ti]!.key.split('/').at(-1)!;
-    const tex = 贴图[名];
-    if (!tex) throw new Error(`蛋糕方块的模型用到贴图「${名}」，没有导出：见取材配方 蛋糕方块`);
+  return [...groupBuckets].map(([ti, b]) => {
+    const textureName = cakeModel.textures[ti]!.key.split('/').at(-1)!;
+    const tex = textures[textureName];
+    if (!tex) throw new Error(`蛋糕方块的模型用到贴图「${textureName}」，没有导出：见取材配方 蛋糕方块`);
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
     g.setAttribute('normal', new THREE.Float32BufferAttribute(b.nor, 3));
@@ -56,11 +56,11 @@ const 建几何 = () => {
 };
 
 /** 整块蛋糕，物品坐标 */
-export const 蛋糕方块: React.FC = () => {
-  const 块 = useMemo(建几何, []);
+export const CakeBlock: React.FC = () => {
+  const cakeBlockParts = useMemo(buildGeometry, []);
   return (
     <group>
-      {块.map(({ g, tex }, i) => (
+      {cakeBlockParts.map(({ g, tex }, i) => (
         <mesh key={i} geometry={g}>
           <meshLambertMaterial map={entityTexture(tex)} alphaTest={0.5} />
         </mesh>

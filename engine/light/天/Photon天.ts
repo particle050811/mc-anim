@@ -9,14 +9,14 @@ import { useThree } from '@react-three/fiber';
 import React, { useEffect, useState } from 'react';
 import { cancelRender, continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
-import { use写入者, 新写入槽 } from '../../core/写入者.ts';
+import { useWriter, newWriteSlot } from '../../core/写入者.ts';
 import { ATMO_GAIN, atmoUniforms, atmosphere } from '../大气.ts';
 import scatteringBin from 'asset:数据/大气/散射';
 import noiseBin from 'asset:数据/大气/噪声';
 import worleyBubblyBin from 'asset:数据/大气/沃利-泡';
 import worleySwirleyBin from 'asset:数据/大气/沃利-卷';
 
-export type 天色图算法 = '精确' | 'GPU';
+export type SkyColorAlgorithm = '精确' | 'GPU';
 
 // ---------- 散射表、云的噪声（同 大气.ts 的 loadLut、loadCloudTextures） ----------
 let lut: Float32Array | null = null;
@@ -32,12 +32,12 @@ const loadLut = () =>
       return f;
     }));
 
-export type 云噪声 = { noise: THREE.DataTexture; worleyBubbly: THREE.Data3DTexture; worleySwirley: THREE.Data3DTexture };
-let 噪声: 云噪声 | null = null;
-let 噪声加载: Promise<云噪声> | null = null;
+export type CloudNoise = { noise: THREE.DataTexture; worleyBubbly: THREE.Data3DTexture; worleySwirley: THREE.Data3DTexture };
+let noiseCache: CloudNoise | null = null;
+let noiseLoading: Promise<CloudNoise> | null = null;
 const fetchBytes = (url: string) => fetch(url).then((r) => r.arrayBuffer()).then((b) => new Uint8Array(b));
-export const 取云噪声 = () =>
-  (噪声加载 ??= Promise.all([fetchBytes(noiseBin), fetchBytes(worleyBubblyBin), fetchBytes(worleySwirleyBin)]).then(([n, wb, ws]) => {
+export const getCloudNoise = () =>
+  (noiseLoading ??= Promise.all([fetchBytes(noiseBin), fetchBytes(worleyBubblyBin), fetchBytes(worleySwirleyBin)]).then(([n, wb, ws]) => {
     const noise = new THREE.DataTexture(n, 512, 512, THREE.RGBAFormat, THREE.UnsignedByteType);
     const worley = (d: Uint8Array) => {
       const t = new THREE.Data3DTexture(d, 64, 64, 64);
@@ -54,9 +54,9 @@ export const 取云噪声 = () =>
       t.colorSpace = THREE.NoColorSpace;
       t.needsUpdate = true;
     }
-    return (噪声 = out);
+    return (noiseCache = out);
   }));
-export const 云噪声 = () => 噪声;
+export const CloudNoise = () => noiseCache;
 
 // ---------- 天色（同 大气.ts 的 lutUv、texel、miePhase、skyRadiance：同样的运算、同样的顺序，只把每像素的数组换成模块里的几个数） ----------
 const R = 6371e3;
@@ -200,30 +200,30 @@ const SKY_W = 2048;
 const SKY_H = 1024;
 const HOR_N = 16;
 const WATER_ELEV = [0, 0.05, 0.1, 0.15, 0.2, 0.28, 0.4, 1];
-const 列cos = new Float64Array(SKY_W);
-const 列sin = new Float64Array(SKY_W);
+const columnCos = new Float64Array(SKY_W);
+const columnSin = new Float64Array(SKY_W);
 for (let i = 0; i < SKY_W; i++) {
   const az = ((i + 0.5) / SKY_W - 0.5) * 2 * Math.PI;
-  列cos[i] = Math.cos(az);
-  列sin[i] = Math.sin(az);
+  columnCos[i] = Math.cos(az);
+  columnSin[i] = Math.sin(az);
 }
 /** 精确：同 大气.ts 的 buildSky 逐位相同 */
-const 精确天色图 = (data: Float32Array, sun: number[]) => {
+const exactSkyColorMap = (data: Float32Array, sun: number[]) => {
   const px = new Uint16Array(SKY_W * SKY_H * 4);
   const mus = sun[2]!;
-  const 一 = THREE.DataUtils.toHalfFloat(1);
+  const halfFloatOne = THREE.DataUtils.toHalfFloat(1);
   for (let j = 0; j < SKY_H; j++) {
     const s = (2 * (j + 0.5)) / SKY_H - 1;
     const mu = Math.sign(s) * s * s;
     const ch = Math.sqrt(1 - mu * mu);
     for (let i = 0; i < SKY_W; i++) {
-      const nu = ch * (列cos[i]! * sun[0]! + 列sin[i]! * sun[1]!) + mu * sun[2]!;
+      const nu = ch * (columnCos[i]! * sun[0]! + columnSin[i]! * sun[1]!) + mu * sun[2]!;
       const c = skyRadiance(data, nu, mu, mus);
       const o = (j * SKY_W + i) * 4;
       px[o] = THREE.DataUtils.toHalfFloat(Math.max(0, c[0]!));
       px[o + 1] = THREE.DataUtils.toHalfFloat(Math.max(0, c[1]!));
       px[o + 2] = THREE.DataUtils.toHalfFloat(Math.max(0, c[2]!));
-      px[o + 3] = 一;
+      px[o + 3] = halfFloatOne;
     }
   }
   const tex = new THREE.DataTexture(px, SKY_W, SKY_H, THREE.RGBAFormat, THREE.HalfFloatType);
@@ -237,24 +237,24 @@ const 精确天色图 = (data: Float32Array, sun: number[]) => {
 };
 
 // GPU：同一套式子写成 GLSL。两处相减会丢精度的（地心几千公里，float32 只有 7 位）改成不相减的等价式，常数在 JS 里用双精度先算好
-const 双 = (x: number) => x.toPrecision(17);
-const 天色片元 = /* glsl */ `
+const toDoubleLiteral = (x: number) => x.toPrecision(17);
+const skyFragmentShader = /* glsl */ `
 precision highp float;
 precision highp sampler3D;
 uniform sampler3D tLut;
 uniform vec3 uSun;
 uniform mat3 uM;
 out highp vec4 oCol;
-#define SR ${双(R)}
-#define SRi ${双(Ri)}
-#define SHH ${双(Hh)}
-#define SHH2 ${双(Ro * Ro - Ri * Ri)}
-#define SRHO ${双(rho)}
-#define SRHO2 ${双(R * R - Ri * Ri)}
-#define SSHELL ${双(shellThick)}
-#define SMUSA ${双(musA)}
-#define SCR ${双(cr)}
-#define SSR ${双(sr)}
+#define SR ${toDoubleLiteral(R)}
+#define SRi ${toDoubleLiteral(Ri)}
+#define SHH ${toDoubleLiteral(Hh)}
+#define SHH2 ${toDoubleLiteral(Ro * Ro - Ri * Ri)}
+#define SRHO ${toDoubleLiteral(rho)}
+#define SRHO2 ${toDoubleLiteral(R * R - Ri * Ri)}
+#define SSHELL ${toDoubleLiteral(shellThick)}
+#define SMUSA ${toDoubleLiteral(musA)}
+#define SCR ${toDoubleLiteral(cr)}
+#define SSR ${toDoubleLiteral(sr)}
 float uvr(float v, float n) { return v * (1.0 - 1.0 / n) + 0.5 / n; }
 vec3 lutUv(float nu, float mu, float mus) {
   float h = sqrt(max((1.0 - mu * mu) * (1.0 - mus * mus), 0.0));
@@ -323,9 +323,9 @@ void main() {
   oCol = vec4(max(uM * st * ${ATMO_GAIN}, 0.0), 1.0);
 }`;
 
-type GPU天 = { rt: THREE.WebGLRenderTarget; 场: THREE.Scene; 材质: THREE.ShaderMaterial; 机: THREE.Camera; lut: THREE.Data3DTexture };
-let gpu: GPU天 | null = null;
-const 取GPU = (data: Float32Array) => {
+type GpuSky = { rt: THREE.WebGLRenderTarget; 场: THREE.Scene; material: THREE.ShaderMaterial; 机: THREE.Camera; lut: THREE.Data3DTexture };
+let gpu: GpuSky | null = null;
+const getGpu = (data: Float32Array) => {
   if (gpu) return gpu;
   // 散射表进 3D 贴图（RGBA，x = ν 32、y = μ 64、z = μs 32）；最近邻取、着色器里自己做三线性（同 CPU，硬件的线性插值权重只有 8 位）
   const n = 32 * 64 * 32;
@@ -348,54 +348,54 @@ const 取GPU = (data: Float32Array) => {
   rt.texture.wrapT = THREE.ClampToEdgeWrapping;
   rt.texture.colorSpace = THREE.NoColorSpace;
   const m3 = new THREE.Matrix3().set(M00, M01, M02, M10, M11, M12, M20, M21, M22);
-  const 材质 = new THREE.ShaderMaterial({
+  const material = new THREE.ShaderMaterial({
     uniforms: { tLut: { value: lutTex }, uSun: { value: new THREE.Vector3() }, uM: { value: m3 } },
     vertexShader: 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }',
-    fragmentShader: 天色片元,
+    fragmentShader: skyFragmentShader,
     glslVersion: THREE.GLSL3,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
   });
-  const 片 = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), 材质);
-  片.frustumCulled = false;
-  const 场 = new THREE.Scene();
-  场.add(片);
-  return (gpu = { rt, 场, 材质, 机: new THREE.OrthographicCamera(), lut: lutTex });
+  const quadMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+  quadMesh.frustumCulled = false;
+  const scene = new THREE.Scene();
+  scene.add(quadMesh);
+  return (gpu = { rt, 场: scene, material, 机: new THREE.OrthographicCamera(), lut: lutTex });
 };
 /** GPU 天色图要画的太阳方向（场景坐标、单位长）；画布的 useFrame 里调 备天色图 才真画 */
-let 待画: number[] | null = null;
+let pendingSun: number[] | null = null;
 
 /** 光影层每帧开头调：GPU 天色图要换太阳了就画一遍 */
-export const 备天色图 = (gl: THREE.WebGLRenderer) => {
-  if (!待画 || !gpu) return;
-  (gpu.材质.uniforms.uSun!.value as THREE.Vector3).set(待画[0]!, 待画[1]!, 待画[2]!);
-  const 原 = gl.getRenderTarget();
+export const prepareSkyColorMap = (gl: THREE.WebGLRenderer) => {
+  if (!pendingSun || !gpu) return;
+  (gpu.material.uniforms.uSun!.value as THREE.Vector3).set(pendingSun[0]!, pendingSun[1]!, pendingSun[2]!);
+  const prevRenderTarget = gl.getRenderTarget();
   gl.setRenderTarget(gpu.rt);
   gl.render(gpu.场, gpu.机);
-  gl.setRenderTarget(原);
-  待画 = null;
+  gl.setRenderTarget(prevRenderTarget);
+  pendingSun = null;
 };
 
-const 共用 = atmoUniforms;
-const 应用 = (data: Float32Array, sunIn: readonly number[], far: number, 算法: 天色图算法) => {
+const sharedUniforms = atmoUniforms;
+const applySky = (data: Float32Array, sunIn: readonly number[], far: number, algorithm: SkyColorAlgorithm) => {
   const l = Math.hypot(...sunIn);
   const sun = sunIn.map((x) => x / l);
-  const key = (算法 === 'GPU' ? 'gpu:' : '') + sun.join(',');
+  const key = (algorithm === 'GPU' ? 'gpu:' : '') + sun.join(',');
   if (atmosphere.skyKey !== key) {
-    if (算法 === 'GPU') {
-      const g = 取GPU(data);
+    if (algorithm === 'GPU') {
+      const g = getGpu(data);
       if (atmosphere.sky !== (g.rt.texture as unknown as THREE.DataTexture)) atmosphere.sky?.dispose();
       atmosphere.sky = g.rt.texture as unknown as THREE.DataTexture;
-      待画 = sun;
+      pendingSun = sun;
     } else {
       if (gpu && atmosphere.sky === (gpu.rt.texture as unknown as THREE.DataTexture)) atmosphere.sky = null;
       atmosphere.sky?.dispose();
-      atmosphere.sky = 精确天色图(data, sun);
+      atmosphere.sky = exactSkyColorMap(data, sun);
     }
     atmosphere.skyKey = key;
     atmosphere.sun = sun;
-    const hor = 共用.atmoHor.value;
+    const hor = sharedUniforms.atmoHor.value;
     for (let i = 0; i < HOR_N; i++) {
       const az = (i / HOR_N - 0.5) * 2 * Math.PI;
       const c = skyRadiance(data, Math.cos(az) * sun[0]! + Math.sin(az) * sun[1]!, 0, sun[2]!);
@@ -413,31 +413,31 @@ const 应用 = (data: Float32Array, sunIn: readonly number[], far: number, 算�
     });
     atmosphere.ambient = ambientOf(data, sun);
     const light = sunlightAt(sun, 0);
-    Object.assign(共用.atmoLight.value, { x: light[0], y: light[1], z: light[2] });
-    Object.assign(共用.atmoAmb.value, { x: atmosphere.ambient[0], y: atmosphere.ambient[1], z: atmosphere.ambient[2] });
+    Object.assign(sharedUniforms.atmoLight.value, { x: light[0], y: light[1], z: light[2] });
+    Object.assign(sharedUniforms.atmoAmb.value, { x: atmosphere.ambient[0], y: atmosphere.ambient[1], z: atmosphere.ambient[2] });
     // 场景 (x, y, z) → 世界 (x, z, −y)
-    Object.assign(共用.atmoSun.value, { x: sun[0], y: sun[2], z: -sun[1] });
+    Object.assign(sharedUniforms.atmoSun.value, { x: sun[0], y: sun[2], z: -sun[1] });
   }
-  共用.atmoP.value.y = far;
-  共用.atmoP.value.x = 1;
+  sharedUniforms.atmoP.value.y = far;
+  sharedUniforms.atmoP.value.x = 1;
 };
 
-const 天槽 = 新写入槽();
-const 关天 = () => {
-  共用.atmoP.value.x = 0;
+const skySlot = newWriteSlot();
+const closeSky = () => {
+  sharedUniforms.atmoP.value.x = 0;
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;
 };
 
 /** 放进画布里打开（同 大气.ts 的 <Atmosphere />）：sun = 场景坐标指向太阳；far = 地形远端（米）；算法 = 天色图怎么展开 */
-export const Photon天: React.FC<{ sun: readonly [number, number, number]; far: number; 算法: 天色图算法 }> = ({ sun, far, 算法 }) => {
-  use写入者(天槽, 关天);
+export const PhotonSky: React.FC<{ sun: readonly [number, number, number]; far: number; 算法: SkyColorAlgorithm }> = ({ sun, far, 算法: algorithm }) => {
+  useWriter(skySlot, closeSky);
   atmosphere.cloudsOnly = false;
   atmosphere.cloudLight = null;
   const advance = useThree((s) => s.advance);
-  const [data, setData] = useState(噪声 && lut);
+  const [data, setData] = useState(noiseCache && lut);
   const [release] = useState(() => {
-    if (噪声 && lut) return () => {};
+    if (noiseCache && lut) return () => {};
     const handle = delayRender('Photon 天的散射表和云的噪声');
     let done = false;
     return () => {
@@ -447,7 +447,7 @@ export const Photon天: React.FC<{ sun: readonly [number, number, number]; far: 
   });
   useEffect(() => {
     if (!data)
-      Promise.all([loadLut(), 取云噪声()]).then(
+      Promise.all([loadLut(), getCloudNoise()]).then(
         ([l, c]) => {
           // 光影渲染.tsx 按 atmosphere.clouds 判断云的贴图到了没有（同 大气.ts）
           atmosphere.clouds = c;
@@ -457,8 +457,8 @@ export const Photon天: React.FC<{ sun: readonly [number, number, number]; far: 
       );
   }, [data]);
   if (data) {
-    atmosphere.clouds ??= 噪声;
-    应用(data, sun, far, 算法);
+    atmosphere.clouds ??= noiseCache;
+    applySky(data, sun, far, algorithm);
   }
   useEffect(() => {
     if (!data) return;

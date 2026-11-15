@@ -3,20 +3,20 @@
 // 所以颗粒的种子是段内帧，生长三那一帧和 核对-时差分屏 的定稿只差颗粒。原声由 定义画面 照 段.ts 的 cue 放。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { 时差分屏 } from '../../场/2-门口/时差分屏.tsx';
-import { 窗口 } from './窗口.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { TimeLagSplit } from '../../场/2-门口/时差分屏.tsx';
+import { frameWindow } from './窗口.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <时差分屏 帧={窗口.起帧 + f} 种子={f} />
+      <TimeLagSplit 帧={frameWindow.起帧 + f} 种子={f} />
     </AbsoluteFill>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

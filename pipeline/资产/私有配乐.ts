@@ -7,90 +7,90 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import type { 资产cue, 段定义 } from '../../engine/段/段定义.ts';
-import { 字节路径, type 资产锁, type 锁条目 } from './资产锁.ts';
+import type { AssetCue, SegmentDef } from '../../engine/段/段定义.ts';
+import { bytesPath, type AssetLock, type LockEntry } from './资产锁.ts';
 
-export const 私有配乐模块 = 'engine/audio/私有配乐.ts';
-export const 私有配乐目录 = (根: string) => path.join(根, 'cache', '私有配乐');
-export const 缺字节 = '缺:静音';
+export const privateMusicModule = 'engine/audio/私有配乐.ts';
+export const privateMusicDir = (dataRoot: string) => path.join(dataRoot, 'cache', '私有配乐');
+export const missingMarker = '缺:静音';
 
-const 静音采样率 = 48000;
+const silentSampleRate = 48000;
 
 /** 这条 cue 的资产是不是按 cue 现取的私有配乐 */
-export const 是私有配乐 = (id: string, 锁: 资产锁) => id.startsWith('配乐/') && 锁[id]?.库 === '私有';
+export const isPrivateMusic = (id: string, assetLock: AssetLock) => id.startsWith('配乐/') && assetLock[id]?.库 === '私有';
 
 /** 一段 cue 里的私有配乐 → sha（数据根里有字节）或 缺:静音；没有就是空表 */
-export const 段私有配乐 = (段: Pick<段定义, '声音'>, 锁: 资产锁, 根: string): Record<string, string> => {
+export const segPrivateMusic = (segmentDef: Pick<SegmentDef, '声音'>, assetLock: AssetLock, dataRoot: string): Record<string, string> => {
   const out: Record<string, string> = {};
-  for (const c of 段.声音 ?? []) if (c.资产 !== undefined && 是私有配乐(c.资产, 锁)) out[c.资产] = fs.existsSync(字节路径(锁[c.资产]!, 根)) ? 锁[c.资产]!.sha256 : 缺字节;
+  for (const c of segmentDef.声音 ?? []) if (c.资产 !== undefined && isPrivateMusic(c.资产, assetLock)) out[c.资产] = fs.existsSync(bytesPath(assetLock[c.资产]!, dataRoot)) ? assetLock[c.资产]!.sha256 : missingMarker;
   return out;
 };
 
 /** 一条 cue 放到文件第几秒为止（静音要盖住它） */
-const cue止秒 = (c: 资产cue) => (c.入点秒 ?? 0) + c.长秒 * (c.速率 ?? 1);
+const cueEndSec = (c: AssetCue) => (c.入点秒 ?? 0) + c.长秒 * (c.速率 ?? 1);
 
 /** 单声道 16 位 PCM 的静音 wav（秒取整）：Remotion 混音时它是全零，和不放一样 */
-export const 静音wav = (秒: number): Buffer => {
-  const 样本 = Math.ceil(秒) * 静音采样率;
-  const 数据 = 样本 * 2;
-  const b = Buffer.alloc(44 + 数据);
+export const silentWav = (durSec: number): Buffer => {
+  const sampleCount = Math.ceil(durSec) * silentSampleRate;
+  const dataBytes = sampleCount * 2;
+  const b = Buffer.alloc(44 + dataBytes);
   b.write('RIFF', 0, 'ascii');
-  b.writeUInt32LE(36 + 数据, 4);
+  b.writeUInt32LE(36 + dataBytes, 4);
   b.write('WAVEfmt ', 8, 'ascii');
   b.writeUInt32LE(16, 16);
   b.writeUInt16LE(1, 20); // PCM
   b.writeUInt16LE(1, 22); // 单声道
-  b.writeUInt32LE(静音采样率, 24);
-  b.writeUInt32LE(静音采样率 * 2, 28);
+  b.writeUInt32LE(silentSampleRate, 24);
+  b.writeUInt32LE(silentSampleRate * 2, 28);
   b.writeUInt16LE(2, 32);
   b.writeUInt16LE(16, 34);
   b.write('data', 36, 'ascii');
-  b.writeUInt32LE(数据, 40);
+  b.writeUInt32LE(dataBytes, 40);
   return b;
 };
 
 const sha = (b: Buffer) => crypto.createHash('sha256').update(b).digest('hex');
-const 文件sha = (f: string) => (fs.existsSync(f) ? sha(fs.readFileSync(f)) : null);
+const fileShaOrNull = (f: string) => (fs.existsSync(f) ? sha(fs.readFileSync(f)) : null);
 
-export type 缺了的配乐 = { id: string; 秒: number; 应在: string };
+export type MissingMusic = { id: string; 秒: number; expectedPath: string };
 
 /**
  * 按这些段（一部作品的全部段）的 cue 备好 cache/私有配乐/<id>；返回缺字节、换成静音的。
  * 已经是想要的那份就不动；要换时先写临时文件再改名（别的渲染正在读也只会读到整份旧的或整份新的）。
  */
-export const 备好私有配乐 = (段们: { 段: Pick<段定义, '声音'> }[], 锁: 资产锁, 根: string): 缺了的配乐[] => {
-  const 要: Map<string, { 条目: 锁条目; 秒: number }> = new Map();
-  for (const { 段 } of 段们) {
-    for (const c of 段.声音 ?? []) {
-      if (c.资产 === undefined || !是私有配乐(c.资产, 锁)) continue;
-      const 旧 = 要.get(c.资产);
-      要.set(c.资产, { 条目: 锁[c.资产]!, 秒: Math.max(旧?.秒 ?? 0, cue止秒(c)) });
+export const preparePrivateMusic = (segments: { 段: Pick<SegmentDef, '声音'> }[], assetLock: AssetLock, dataRoot: string): MissingMusic[] => {
+  const needed: Map<string, { entry: LockEntry; 秒: number }> = new Map();
+  for (const { 段: segmentDef } of segments) {
+    for (const c of segmentDef.声音 ?? []) {
+      if (c.资产 === undefined || !isPrivateMusic(c.资产, assetLock)) continue;
+      const prevNeed = needed.get(c.资产);
+      needed.set(c.资产, { entry: assetLock[c.资产]!, 秒: Math.max(prevNeed?.秒 ?? 0, cueEndSec(c)) });
     }
   }
-  const 缺: 缺了的配乐[] = [];
-  for (const [id, { 条目, 秒 }] of 要) {
-    const 目标 = path.join(私有配乐目录(根), ...id.split('/'));
-    const 源 = 字节路径(条目, 根);
-    const 有 = fs.existsSync(源);
+  const missing: MissingMusic[] = [];
+  for (const [id, { entry, 秒: durSec }] of needed) {
+    const targetPath = path.join(privateMusicDir(dataRoot), ...id.split('/'));
+    const sourcePath = bytesPath(entry, dataRoot);
+    const exists = fs.existsSync(sourcePath);
     // 静音多留 1 秒：cue 的长秒有小数，解码器读到文件尾前后可能多要几个样本
-    const 静音 = 有 ? null : 静音wav(秒 + 1);
-    if (!有) 缺.push({ id, 秒: Math.ceil(秒 + 1), 应在: 源 });
-    const 想要 = 有 ? 条目.sha256 : sha(静音!);
-    if (文件sha(目标) === 想要) continue;
-    fs.mkdirSync(path.dirname(目标), { recursive: true });
-    const tmp = `${目标}.写入中-${process.pid}`;
+    const silence = exists ? null : silentWav(durSec + 1);
+    if (!exists) missing.push({ id, 秒: Math.ceil(durSec + 1), expectedPath: sourcePath });
+    const wantedSha = exists ? entry.sha256 : sha(silence!);
+    if (fileShaOrNull(targetPath) === wantedSha) continue;
+    fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+    const tmp = `${targetPath}.写入中-${process.pid}`;
     try {
-      if (有) fs.copyFileSync(源, tmp, fs.constants.COPYFILE_FICLONE);
-      else fs.writeFileSync(tmp, 静音!);
+      if (exists) fs.copyFileSync(sourcePath, tmp, fs.constants.COPYFILE_FICLONE);
+      else fs.writeFileSync(tmp, silence!);
       // 库里的字节是只读的，拷出来的跟着只读；Windows 上改名盖不掉只读文件，这里放开
       fs.chmodSync(tmp, 0o644);
-      fs.renameSync(tmp, 目标);
+      fs.renameSync(tmp, targetPath);
     } finally {
       fs.rmSync(tmp, { force: true });
     }
   }
-  return 缺;
+  return missing;
 };
 
-export const 缺配乐提示 = (x: 缺了的配乐) =>
-  `私有配乐「${x.id}」的字节不在 ${x.应在}，这次换成 ${x.秒} 秒静音渲（补上字节后段指纹会变，再渲就带歌；怎么补见仓库根 README.md）`;
+export const missingMusicHint = (x: MissingMusic) =>
+  `私有配乐「${x.id}」的字节不在 ${x.expectedPath}，这次换成 ${x.秒} 秒静音渲（补上字节后段指纹会变，再渲就带歌；怎么补见仓库根 README.md）`;

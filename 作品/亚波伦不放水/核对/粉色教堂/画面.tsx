@@ -5,41 +5,41 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 场景到three } from '@engine/core/three换算.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
-import { 娘化亚波伦, 站立 } from '../../角色/娘化亚波伦.tsx';
-import { 教堂, 教堂灯光, 粉色教堂 } from '../../地点/粉色教堂.tsx';
-import { 画幅, 视图们, type 视图 } from './视图.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
+import { GirlYaBoLun, stand } from '../../角色/娘化亚波伦.tsx';
+import { church, ChurchLighting, PinkChurch } from '../../地点/粉色教堂.tsx';
+import { aspect, views, type View } from './视图.ts';
 
-const 天色 = '#b4cfff';
+const skyColor = '#b4cfff';
 
-const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
+const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = v.视角;
+  cam.fov = v.fov;
   cam.near = 0.05;
   cam.far = 512;
-  cam.position.copy(场景到three(v.眼));
-  cam.up.copy(v.上 ? 场景到three(v.上) : new THREE.Vector3(0, 1, 0));
-  cam.lookAt(场景到three(v.看));
+  cam.position.copy(sceneToThree(v.眼));
+  cam.up.copy(v.上 ? sceneToThree(v.上) : new THREE.Vector3(0, 1, 0));
+  cam.lookAt(sceneToThree(v.看));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
   return (
-    <AbsoluteFill style={{ background: 天色 }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
-        <color attach="background" args={[天色]} />
-        <机位 v={v} />
+    <AbsoluteFill style={{ background: skyColor }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
+        <color attach="background" args={[skyColor]} />
+        <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <教堂灯光 />
-          <粉色教堂 />
-          {v.亚波伦 && <娘化亚波伦 pose={{ loc: 教堂.跳舞位, yaw: 180 }} 秒={0.5} 表演={站立} />}
+          <ChurchLighting />
+          <PinkChurch />
+          {v.yaBoLun && <GirlYaBoLun pose={{ loc: church.dancePos, yaw: 180 }} 秒={0.5} act={stand} />}
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
@@ -50,4 +50,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

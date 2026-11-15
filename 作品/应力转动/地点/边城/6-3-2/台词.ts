@@ -12,22 +12,22 @@
 // - 拍：每段说明框对应那截话第一个字的起音（不按能量低谷切：会落在字间气口里，早晚不一）。
 // - 砸：思索里砸穿跟着第 ④ 截话的哪几个字演（编排.ts 的 轨迹）：撞 = 锤砸到石半砖，碎 = 泥土、石头两层各在哪个字碎，取字的韵母起来那刻。砸穿要踩在「将方块破坏」上、砸到底在「直达地下」开口时，不能早（用户 10-11「音画不同步」）。
 // - 完：最后一个字说完（响度从字上掉下去十几 dB 那一格，后面的气声不算）。Qwen3-ASR 核对过整句（「实际」常被认成同音的「十级」，听着是对的）。
-import { 渲染输入 } from '@engine/core/渲染设置.ts';
+import { renderInput } from '@engine/core/渲染设置.ts';
 
 export type LineVersion = '改字' | '原文' | '五句';
 // `增益dB`：拉到和 src/配音/ 的台词一样响（-18 LUFS，工具/配音/生成台词.py 的规矩）要加多少。这一句不走台词轨（没有 src/配音/ 的副本），文件原样放、在这里压（src/配音/台词表.json 的 6-3-2-李樱-压路机 也记了）
 export const lineTable: Record<
   LineVersion,
-  { 字: string; 文件: string; 时长: number; 头: number; 拍: [number, number, number, number, number]; smash: { 撞: number; 碎: [number, number] }; 完: number; 增益dB: number }
+  { 字: string; 文件: string; 时长: number; 头: number; wordTimes: [number, number, number, number, number]; smash: { impactSec: number; shatter: [number, number] }; end: number; 增益dB: number }
 > = {
   改字: {
     字: '手持重锤类武器，可以召唤出体内空间的动力压路机，能使重锤的高度伤害倍率增加，并破坏接触到的方块，应力转动之力，实际全能！',
     文件: '李樱-压路机-改字.wav',
     时长: 11.294, // 1.288 秒起先是一小段气声，「手」1.42 秒起
     头: 1.288,
-    拍: [1.43, 2.78, 5.1, 7.21, 8.81], // 手持 / 可以 / 能使 / 并破坏 / 应力
-    smash: { 撞: 7.4, 碎: [7.73, 8.17] }, // 「破」/「接」/「方」
-    完: 10.85,
+    wordTimes: [1.43, 2.78, 5.1, 7.21, 8.81], // 手持 / 可以 / 能使 / 并破坏 / 应力
+    smash: { impactSec: 7.4, shatter: [7.73, 8.17] }, // 「破」/「接」/「方」
+    end: 10.85,
     增益dB: 0, // 原件已拉到 −18 LUFS（src/配音/台词表.json 的 6-3-2-李樱-压路机 记的）
   },
   原文: {
@@ -35,9 +35,9 @@ export const lineTable: Record<
     文件: '李樱-压路机-原文.wav',
     时长: 13.28,
     头: 0.237,
-    拍: [0.39, 3.28, 5.29, 8.07, 10.96], // 高空 / 外加 / 在战斗中 / 落在 / 应力
-    smash: { 撞: 8.54, 碎: [9.2, 9.87] }, // 「方块上」的「块」/「将」/「破坏」的「坏」（「直达地下」的「直」10.17）
-    完: 13.1,
+    wordTimes: [0.39, 3.28, 5.29, 8.07, 10.96], // 高空 / 外加 / 在战斗中 / 落在 / 应力
+    smash: { impactSec: 8.54, shatter: [9.2, 9.87] }, // 「方块上」的「块」/「将」/「破坏」的「坏」（「直达地下」的「直」10.17）
+    end: 13.1,
     增益dB: -4.3,
   },
   五句: {
@@ -45,15 +45,15 @@ export const lineTable: Record<
     文件: '李樱-压路机-五句.wav',
     时长: 9.44,
     头: 0.236,
-    拍: [0.37, 1.55, 3.58, 5.77, 7.28], // 手持 / 从 / 动力 / 砸中 / 应力
-    smash: { 撞: 5.78, 碎: [6.37, 6.93] }, // 「砸」/「方块」的「方」/「破」（松手正好在「下落伤害」的「落」5.2 上下）
-    完: 9.25,
+    wordTimes: [0.37, 1.55, 3.58, 5.77, 7.28], // 手持 / 从 / 动力 / 砸中 / 应力
+    smash: { impactSec: 5.78, shatter: [6.37, 6.93] }, // 「砸」/「方块」的「方」/「破」（松手正好在「下落伤害」的「落」5.2 上下）
+    end: 9.25,
     增益dB: -4.2,
   },
 };
 const requested = (() => {
   try {
-    return (渲染输入() as { 台词?: LineVersion }).台词;
+    return (renderInput() as { 台词?: LineVersion }).台词;
   } catch {
     return undefined; // 诊断脚本在 node 里跑，没有 Remotion 环境
   }
@@ -69,12 +69,12 @@ export const activeLine = lineTable[chosenVersion];
 export const FPS = 24;
 export const uiOpen = 0.75;
 export const voiceStart = 1.25; // 思索场景时间
-export const uiClose = voiceStart + activeLine.完 + 0.6; // 思索场景时间
+export const uiClose = voiceStart + activeLine.end + 0.6; // 思索场景时间
 export const uiFade = 0.5;
 export const pushLead = 1;
 export const segmentFrames = Math.round((uiOpen + uiClose + uiFade + pushLead) * FPS) + 1;
 export const matchSec = (segmentFrames - 1) / FPS - uiOpen; // 本段末帧的思索场景时间
 // 每段说明框出现的思索场景时间 = 开口 + 拍
-export const calloutBeats = activeLine.拍.map((x) => voiceStart + x);
+export const calloutBeats = activeLine.wordTimes.map((x) => voiceStart + x);
 // 砸穿跟着的那几个字（思索场景时间）：锤砸到石半砖、泥土碎、石头碎
-export const smashBeats = { impact: voiceStart + activeLine.smash.撞, breaks: activeLine.smash.碎.map((x) => voiceStart + x) as [number, number] };
+export const smashBeats = { impact: voiceStart + activeLine.smash.impactSec, breaks: activeLine.smash.shatter.map((x) => voiceStart + x) as [number, number] };

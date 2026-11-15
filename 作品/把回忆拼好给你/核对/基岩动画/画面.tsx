@@ -7,21 +7,21 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFox } from '@库/角色/魔法酒狐.tsx';
-import { 画幅 } from '../../分镜/时间.ts';
-import { 第一人称机位 } from '../../地点/机位.tsx';
-import { GeckoLib坐到站, 基岩坐到站, 控制器层们 } from './控制器示例.ts';
-import { 尾巴稳态变量 } from './尾巴稳态.ts';
-import { 视图们, type 视图 } from './视图.ts';
-import { 魔法酒狐播放器版 } from './魔法酒狐播放器版.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { aspect } from '../../分镜/时间.ts';
+import { FirstPersonRig } from '../../地点/机位.tsx';
+import { geckoLibSitToStand, bedrockSitToStand, controllerLayers } from './控制器示例.ts';
+import { tailSteadyVars } from './尾巴稳态.ts';
+import { views, type View } from './视图.ts';
+import { MagicalWineFoxPlayer } from './魔法酒狐播放器版.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
-const 位置 = { ...standPose([0, 0, 0]), yaw: 180 };
+const pose = { ...standPose([0, 0, 0]), yaw: 180 };
 
-const 半边: React.FC<{ v: 视图; 标题: string; children: React.ReactNode }> = ({ v, 标题, children }) => (
-  <div style={{ position: 'relative', width: 画幅.宽 / 2, height: 画幅.高 }}>
-    <ThreeCanvas width={画幅.宽 / 2} height={画幅.高} gl={{ antialias: true }}>
+const HalfPanel: React.FC<{ v: View; 标题: string; children: React.ReactNode }> = ({ v, 标题: title, children }) => (
+  <div style={{ position: 'relative', width: aspect.宽 / 2, height: aspect.高 }}>
+    <ThreeCanvas width={aspect.宽 / 2} height={aspect.高} gl={{ antialias: true }}>
       <color attach="background" args={['#5a5e66']} />
-      <第一人称机位 眼={v.眼} 看={v.看} 视角={v.视角} />
+      <FirstPersonRig 眼={v.眼} 看={v.看} fov={v.fov} />
       <group rotation={[-Math.PI / 2, 0, 0]}>
         <ambientLight intensity={0.55 * Math.PI} />
         <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
@@ -32,32 +32,32 @@ const 半边: React.FC<{ v: 视图; 标题: string; children: React.ReactNode }>
         {children}
       </group>
     </ThreeCanvas>
-    <div style={{ position: 'absolute', left: 16, bottom: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 18, textShadow: '0 1px 3px #000' }}>{标题}</div>
+    <div style={{ position: 'absolute', left: 16, bottom: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 18, textShadow: '0 1px 3px #000' }}>{title}</div>
   </div>
 );
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 变量 = 尾巴稳态变量(魔法酒狐播放器版.动画文件!, v.秒);
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const variables = tailSteadyVars(MagicalWineFoxPlayer.animationFiles!, v.秒);
   return (
     <AbsoluteFill style={{ background: '#5a5e66', flexDirection: 'row' }}>
-      {v.控制器 ? (
+      {v.useController ? (
         <>
-          <半边 v={v} 标题="GeckoLib 控制器：sit → idle，过渡 10 刻">
-            <魔法酒狐播放器版 pose={位置} 秒={v.秒} 环境={{ 变量 }} 层们={控制器层们(GeckoLib坐到站)} />
-          </半边>
-          <半边 v={v} 标题="基岩版控制器：sit → idle，blend_transition 0.5 秒">
-            <魔法酒狐播放器版 pose={位置} 秒={v.秒} 环境={{ 变量 }} 层们={控制器层们(基岩坐到站)} />
-          </半边>
+          <HalfPanel v={v} 标题="GeckoLib 控制器：sit → idle，过渡 10 刻">
+            <MagicalWineFoxPlayer pose={pose} 秒={v.秒} 环境={{ 变量: variables }} layers={controllerLayers(geckoLibSitToStand)} />
+          </HalfPanel>
+          <HalfPanel v={v} 标题="基岩版控制器：sit → idle，blend_transition 0.5 秒">
+            <MagicalWineFoxPlayer pose={pose} 秒={v.秒} 环境={{ 变量: variables }} layers={controllerLayers(bedrockSitToStand)} />
+          </HalfPanel>
         </>
       ) : (
         <>
-          <半边 v={v} 标题="手抄版（库/角色/魔法酒狐.tsx）">
-            <MagicalWineFox pose={位置} 秒={v.秒} />
-          </半边>
-          <半边 v={v} 标题="播放器版（定义生物 + 原版动画文件）">
-            <魔法酒狐播放器版 pose={位置} 秒={v.秒} 环境={{ 变量 }} />
-          </半边>
+          <HalfPanel v={v} 标题="手抄版（库/角色/魔法酒狐.tsx）">
+            <MagicalWineFox pose={pose} 秒={v.秒} />
+          </HalfPanel>
+          <HalfPanel v={v} 标题="播放器版（定义生物 + 原版动画文件）">
+            <MagicalWineFoxPlayer pose={pose} 秒={v.秒} 环境={{ 变量: variables }} />
+          </HalfPanel>
         </>
       )}
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
@@ -68,4 +68,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

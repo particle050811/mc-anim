@@ -6,59 +6,59 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 单位, 弹道位置, 弹道方向 } from '../零件/弹道.ts';
-import { MC空间, 度 } from '../零件/实体.tsx';
-import { 贴图粒子, type 粒子出生 } from '../零件/粒子.tsx';
-import { 各刻, 箭角 } from '../零件/甲/共用.ts';
-import { 平片, type 角 } from '../零件/甲/平片.tsx';
-import { 云, 云类 } from '../零件/甲/原版粒子.ts';
-import 元, { 剃刀风终刻, 剃刀风道 } from './razor_wind.元.ts';
-import 斩1 from 'asset:贴图/法术/goety/entity/projectiles/slash/1';
-import 斩2 from 'asset:贴图/法术/goety/entity/projectiles/slash/2';
-import 斩3 from 'asset:贴图/法术/goety/entity/projectiles/slash/3';
-import 斩4 from 'asset:贴图/法术/goety/entity/projectiles/slash/4';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { unitVec, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
+import { MinecraftSpace, degToRad } from '../零件/实体.tsx';
+import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
+import { eachTick, arrowYawPitch } from '../零件/甲/共用.ts';
+import { FlatQuad, type CornerVertex } from '../零件/甲/平片.tsx';
+import { cloudParticle, cloudClass } from '../零件/甲/原版粒子.ts';
+import meta, { razorWindEndTick, razorWindPath } from './razor_wind.元.ts';
+import slash1Png from 'asset:贴图/法术/goety/entity/projectiles/slash/1';
+import slash2Png from 'asset:贴图/法术/goety/entity/projectiles/slash/2';
+import slash3Png from 'asset:贴图/法术/goety/entity/projectiles/slash/3';
+import slash4Png from 'asset:贴图/法术/goety/entity/projectiles/slash/4';
 
-const 斩图 = [斩1, 斩2, 斩3, 斩4].map(png);
-const 半径 = (刻: number) => 0.3 + 0.12 * 刻;
+const slashFrames = [slash1Png, slash2Png, slash3Png, slash4Png].map(png);
+const radiusAt = (tick: number) => 0.3 + 0.12 * tick;
 
-const 剃刀风: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 道 = 剃刀风道(起点, 目标);
-  const 终 = 剃刀风终刻(起点, 目标);
-  const 向 = 弹道方向(道, 0);
+const RazorWind: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const trajectory = razorWindPath(from, target);
+  const endTick = razorWindEndTick(from, target);
+  const dir = trajectoryDir(trajectory, 0);
   // 宽度方向：水平、和飞行方向垂直
-  const 横 = 单位([-向[1], 向[0], 0]);
-  const r = rng(种子 * 11 + 3);
-  const 云们: 粒子出生[] = 各刻(1, Math.min(刻, 终)).flatMap((n) => {
-    const [p, 半] = [道(n), 半径(n)];
-    return Array.from({ length: Math.floor((半 * 2) / 0.25) + 1 }, (_, k) => 云(r, n, [p[0] + 横[0] * (k * 0.25 - 半), p[1] + 横[1] * (k * 0.25 - 半), p[2]]));
+  const perpDir = unitVec([-dir[1], dir[0], 0]);
+  const r = rng(seed * 11 + 3);
+  const clouds: ParticleBirth[] = eachTick(1, Math.min(tick, endTick)).flatMap((n) => {
+    const [p, radius] = [trajectory(n), radiusAt(n)];
+    return Array.from({ length: Math.floor((radius * 2) / 0.25) + 1 }, (_, k) => cloudParticle(r, n, [p[0] + perpDir[0] * (k * 0.25 - radius), p[1] + perpDir[1] * (k * 0.25 - radius), p[2]]));
   });
-  const { yaw, pitch } = 箭角(向);
-  const h = 半径(刻);
-  const 角们: [角, 角, 角, 角] = [
+  const { yaw, pitch } = arrowYawPitch(dir);
+  const h = radiusAt(tick);
+  const corners: [CornerVertex, CornerVertex, CornerVertex, CornerVertex] = [
     [-h, -0.1, -h, 0, 1],
     [h, -0.1, -h, 1, 1],
     [h, -0.1, h, 1, 0],
     [-h, -0.1, h, 0, 0],
   ];
-  const 图 = 斩图[Math.floor(秒 * 10) % 4]!;
+  const image = slashFrames[Math.floor(sec * 10) % 4]!;
   return (
     <>
-      <贴图粒子 类={云类} 出生们={云们} 秒={秒} />
-      {刻 < 终 && (
-        <MC空间 位={弹道位置(道, 刻)}>
-          <group rotation={[0, 度(yaw), 0]}>
-            <group rotation={[度(-pitch), 0, 0]}>
-              <平片 角们={角们} 图={图} 混合="半透明" 透明度={0.5} />
-              <平片 角们={角们} 图={图} 混合="加色" 透明度={0.5} />
+      <TexturedParticles 类={cloudClass} spawns={clouds} 秒={sec} />
+      {tick < endTick && (
+        <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
+          <group rotation={[0, degToRad(yaw), 0]}>
+            <group rotation={[degToRad(-pitch), 0, 0]}>
+              <FlatQuad corners={corners} 图={image} 混合="半透明" opacity={0.5} />
+              <FlatQuad corners={corners} 图={image} 混合="加色" opacity={0.5} />
             </group>
           </group>
-        </MC空间>
+        </MinecraftSpace>
       )}
     </>
   );
 };
 
-export default 定义法术演出(元, 剃刀风);
+export default defineSpellPerformance(meta, RazorWind);

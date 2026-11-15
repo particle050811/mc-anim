@@ -7,43 +7,43 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 弹道位置 } from '../零件/弹道.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 贴图粒子, type 粒子出生 } from '../零件/粒子.tsx';
-import { 各刻, 高斯 } from '../零件/甲/共用.ts';
-import { 云, 云类 } from '../零件/甲/原版粒子.ts';
-import 元, { 气旋到刻, 气旋卷刻, 气旋道 } from './cyclone.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/CycloneModel';
-import 旋图 from 'asset:贴图/法术/goety/entity/projectiles/cyclone';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { trajectoryPos } from '../零件/弹道.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
+import { eachTick, gaussian } from '../零件/甲/共用.ts';
+import { cloudParticle, cloudClass } from '../零件/甲/原版粒子.ts';
+import meta, { cycloneArriveTick, cycloneCurlTicks, cyclonePath } from './cyclone.元.ts';
+import cycloneModelData from 'asset:模型/法术/goety/CycloneModel';
+import cyclonePng from 'asset:贴图/法术/goety/entity/projectiles/cyclone';
 
-const 模型 = 取模型(模型数据, 'CycloneModel');
+const cycloneModel = getModel(cycloneModelData, 'CycloneModel');
 
-const 气旋: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
-  const 刻 = 秒 * 20;
-  const 道 = 气旋道(起点, 目标, 选项?.高速);
-  const 到 = 气旋到刻(起点, 目标, 选项?.高速);
-  const 散 = 到 + 气旋卷刻;
-  const r = rng(种子 * 37 + 3);
-  const 云们: 粒子出生[] = 各刻(1, Math.min(刻, 到)).map((n) => 云(r, n, 道(n)));
-  if (刻 >= 散) {
-    const p = 道(到);
-    for (let i = 0; i < 50; i++) 云们.push(云(r, 散, [p[0] + 高斯(r) * 0.5, p[1] + 高斯(r) * 0.5, p[2] + 0.75 + 高斯(r) * 0.75], [高斯(r) * 0.05, 高斯(r) * 0.05, 高斯(r) * 0.05]));
+const Cyclone: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+  const tick = sec * 20;
+  const trajectory = cyclonePath(from, target, options?.highSpeed);
+  const arriveTick = cycloneArriveTick(from, target, options?.highSpeed);
+  const scatterTick = arriveTick + cycloneCurlTicks;
+  const r = rng(seed * 37 + 3);
+  const clouds: ParticleBirth[] = eachTick(1, Math.min(tick, arriveTick)).map((n) => cloudParticle(r, n, trajectory(n)));
+  if (tick >= scatterTick) {
+    const p = trajectory(arriveTick);
+    for (let i = 0; i < 50; i++) clouds.push(cloudParticle(r, scatterTick, [p[0] + gaussian(r) * 0.5, p[1] + gaussian(r) * 0.5, p[2] + 0.75 + gaussian(r) * 0.75], [gaussian(r) * 0.05, gaussian(r) * 0.05, gaussian(r) * 0.05]));
   }
-  const 转 = (k: number) => ({ rot: [0, 刻 * k, 0] });
+  const spinPose = (k: number) => ({ rot: [0, tick * k, 0] });
   return (
     <>
-      {刻 < 散 && (
-        <MC空间 位={弹道位置(道, Math.min(刻, 到))}>
-          <group position={[0, 1.5, 0]} rotation={[0, 0, 度(180)]}>
-            <模型件 模型={模型} 图={png(旋图)} 画法="半透明" 透明度={0.45} 姿态={{ base: 转(1), bottom: 转(-0.5), mid: 转(-0.2), top: 转(0.3), wind: 转(0.25) }} />
+      {tick < scatterTick && (
+        <MinecraftSpace 位={trajectoryPos(trajectory, Math.min(tick, arriveTick))}>
+          <group position={[0, 1.5, 0]} rotation={[0, 0, degToRad(180)]}>
+            <ModelPart 模型={cycloneModel} 图={png(cyclonePng)} 画法="半透明" opacity={0.45} partPoses={{ base: spinPose(1), bottom: spinPose(-0.5), mid: spinPose(-0.2), top: spinPose(0.3), wind: spinPose(0.25) }} />
           </group>
-        </MC空间>
+        </MinecraftSpace>
       )}
-      <贴图粒子 类={云类} 出生们={云们} 秒={秒} />
+      <TexturedParticles 类={cloudClass} spawns={clouds} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 气旋);
+export default defineSpellPerformance(meta, Cyclone);

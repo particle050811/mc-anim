@@ -13,7 +13,7 @@ import type { V3 } from '../../engine/model/parts.tsx';
 import { type BedrockBone, type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import type { FigurePose } from './骨架.tsx';
 import { png } from '../../engine/model/贴图.ts';
-import { magicalWineFoxMotion, type 魔法酒狐表情 } from './魔法酒狐动作.ts';
+import { magicalWineFoxMotion, type MagicalWineFoxExpression } from './魔法酒狐动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
 
@@ -48,14 +48,14 @@ const glowMaterial = (map: THREE.Texture) => {
 
 // 套住发光那份：每次提交后把里面的 mesh 换成满亮度材质，关掉发光就换回原来受光的材质。
 // 不写依赖、每次都跑：显隐一变会挂上新的 mesh，它们拿到的还是 基岩模型.tsx 建的受光材质。重复跑结果一样。
-const GlowLayer: React.FC<{ 亮: boolean; children: React.ReactNode }> = ({ 亮, children }) => {
+const GlowLayer: React.FC<{ isBright: boolean; children: React.ReactNode }> = ({ isBright, children }) => {
   const ref = useRef<THREE.Group>(null);
   useLayoutEffect(() => {
     ref.current?.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
-      const lit = (mesh.userData.受光材质 ??= mesh.material) as THREE.MeshStandardMaterial;
-      mesh.material = 亮 && lit.map ? glowMaterial(lit.map) : lit;
+      const lit = (mesh.userData.litMaterial ??= mesh.material) as THREE.MeshStandardMaterial;
+      mesh.material = isBright && lit.map ? glowMaterial(lit.map) : lit;
     });
   });
   return <group ref={ref}>{children}</group>;
@@ -135,15 +135,15 @@ export const magicalWineFoxSitBones: Record<string, BonePose> = {
 };
 
 // 看向：TLM 把实体的视线俯仰、偏头直接加在 Head 骨骼上（GeckoMaidEntity.updateHead）。坐着时上身前倾 20° 又被 UpperBody 转回来，头本来就是平视
-const lookBones = ([俯仰, 左右]: [number, number]): Record<string, BonePose> => ({ Head: { rot: [-俯仰, -左右, 0] } });
+const lookBones = ([pitch, yaw]: [number, number]): Record<string, BonePose> => ({ Head: { rot: [-pitch, -yaw, 0] } });
 
 /** 让她的头对准 目标（场景坐标）要的 看 角度 [俯仰, 左右]（度，正 = 抬头、往左） */
-export const magicalWineFoxLookAt = (pose: Pick<FigurePose, 'loc' | 'yaw'>, 目标: V3, 姿势: '坐' | '站' = '坐'): [number, number] => {
+export const magicalWineFoxLookAt = (pose: Pick<FigurePose, 'loc' | 'yaw'>, target: V3, stancePose: '坐' | '站' = '坐'): [number, number] => {
   const yaw = rad(pose.yaw ?? 0);
-  const [hx, hy, hz] = MAGICAL_WINE_FOX.head[姿势];
+  const [hx, hy, hz] = MAGICAL_WINE_FOX.head[stancePose];
   const [c, s] = [Math.cos(yaw), Math.sin(yaw)];
   const head = [pose.loc[0] + c * hx - s * hy, pose.loc[1] + s * hx + c * hy, pose.loc[2] + hz];
-  const [dx, dy, dz] = [目标[0] - head[0], 目标[1] - head[1], 目标[2] - head[2]];
+  const [dx, dy, dz] = [target[0] - head[0], target[1] - head[1], target[2] - head[2]];
   const [lx, ly] = [c * dx + s * dy, -s * dx + c * dy]; // 换进她自己的坐标系：+Y 是正前方，−X 是她的左边
   const deg = 180 / Math.PI;
   return [Math.atan2(dz, Math.hypot(lx, ly)) * deg, Math.atan2(-lx, ly) * deg];
@@ -151,7 +151,7 @@ export const magicalWineFoxLookAt = (pose: Pick<FigurePose, 'loc' | 'yaw'>, 目�
 
 // 关键帧照抄动画文件，都是线性插值（没写 lerp_mode 的 GeckoLib 默认线性），时间按动画长度循环
 const linear = (keys: [number, number[]][]): VKey[] => keys.map(([t, v]) => [t, v, 'linear']);
-const loop = (秒: number, 长: number) => ((秒 % 长) + 长) % 长;
+const loop = (sec: number, loopLength: number) => ((sec % loopLength) + loopLength) % loopLength;
 
 // 背后法杖上下浮动：pre_parallel1，2 秒一循环，单位像素。坐着时 sit 的 pos 把它盖掉（见上面的覆盖规则），只有站着才浮。
 const STAFF_FLOAT = linear([[0, [0, 2, 0]], [0.8, [0, 0.25, 0]], [1, [0, 0, 0]], [1.8, [0, 1.5, 0]], [2, [0, 2, 0]]]);
@@ -163,10 +163,10 @@ const RINGS: Record<string, VKey[]> = {
   ysmGlowquan14: linear([[0, [0, 0, 0]], [1, [0, 0, 170]], [2, [-0.34219, 0.31225, 347.49237]]]),
 };
 /** 背后法杖在第 秒 秒的浮动和三个环的转角（姿势 '坐' 时只有环转） */
-export const magicalWineFoxStaffBones = (秒: number, 姿势: '坐' | '站' = '坐'): Record<string, BonePose> => {
-  const t = loop(秒, 2);
+export const magicalWineFoxStaffBones = (sec: number, stancePose: '坐' | '站' = '坐'): Record<string, BonePose> => {
+  const t = loop(sec, 2);
   const out: Record<string, BonePose> = Object.fromEntries(Object.entries(RINGS).map(([name, keys]) => [name, { rot: sampleV(keys, t) }]));
-  if (姿势 === '站') out.mofazhang2 = { pos: sampleV(STAFF_FLOAT, t) };
+  if (stancePose === '站') out.mofazhang2 = { pos: sampleV(STAFF_FLOAT, t) };
   return out;
 };
 
@@ -176,8 +176,8 @@ const EAR_TWITCH = {
   Right_ear: linear([[0, [0, 0, 0]], [0.0417, [0, 23.75, 0]], [0.0833, [0, 0, 0]]]),
 };
 /** 不戴帽子时要改的骨骼：帽子藏、耳朵显，耳朵按 秒 抖 */
-export const magicalWineFoxHatOffBones = (秒: number): Record<string, BonePose> => {
-  const t = loop(秒, 4);
+export const magicalWineFoxHatOffBones = (sec: number): Record<string, BonePose> => {
+  const t = loop(sec, 4);
   return {
     witchcap: HIDE,
     Ear: {},
@@ -186,23 +186,23 @@ export const magicalWineFoxHatOffBones = (秒: number): Record<string, BonePose>
   };
 };
 
-type 开关 = { 帽子: boolean; 背后法杖: boolean; 秒: number };
+type Toggle = { hat: boolean; backStaff: boolean; 秒: number };
 
 // 组装顺序：隐藏表 → 坐姿表 → 看向 → 法杖和环 → 帽子、背后法杖的开关 → 骨骼。
 // 表情、眨眼、尾巴（魔法酒狐动作.ts）该在坐姿表和看向之间；它们和后面几层不碰同一根骨骼，组件里跟 骨骼 一起传进来，效果一样。
 const bonePose = (
-  姿势: '坐' | '站',
-  看: [number, number] | undefined,
-  骨骼: Record<string, BonePose> | undefined,
-  { 帽子, 背后法杖, 秒 }: 开关,
+  stancePose: '坐' | '站',
+  gaze: [number, number] | undefined,
+  skeleton: Record<string, BonePose> | undefined,
+  { hat, backStaff, 秒: sec }: Toggle,
 ): Record<string, BonePose> => ({
   ...magicalWineFoxHidden,
-  ...(姿势 === '坐' ? magicalWineFoxSitBones : {}),
-  ...(看 ? lookBones(看) : {}),
-  ...magicalWineFoxStaffBones(秒, 姿势),
-  ...(帽子 ? {} : magicalWineFoxHatOffBones(秒)),
-  ...(背后法杖 ? {} : { mofazhang2: HIDE }),
-  ...(骨骼 ?? {}),
+  ...(stancePose === '坐' ? magicalWineFoxSitBones : {}),
+  ...(gaze ? lookBones(gaze) : {}),
+  ...magicalWineFoxStaffBones(sec, stancePose),
+  ...(hat ? {} : magicalWineFoxHatOffBones(sec)),
+  ...(backStaff ? {} : { mofazhang2: HIDE }),
+  ...(skeleton ?? {}),
 });
 
 // pose：只用 loc、yaw、pitch、squash，头往哪看用 看。姿势：默认坐；'站' 现在只是模型的静止姿势（四肢没接 FigurePose）。
@@ -212,18 +212,18 @@ const bonePose = (
 // 表情、眨眼、秒：见 魔法酒狐动作.ts 的 magicalWineFoxMotion（不给 秒 就是静止姿势，表情不给就照坐姿表微笑）
 export const MagicalWineFox: React.FC<{
   pose: FigurePose;
-  姿势?: '坐' | '站';
+  stancePose?: '坐' | '站';
   看?: [number, number];
-  骨骼?: Record<string, BonePose>;
-  右手?: React.ReactNode;
-  表情?: 魔法酒狐表情;
-  眨眼?: number | 'auto';
+  skeleton?: Record<string, BonePose>;
+  rightHand?: React.ReactNode;
+  expression?: MagicalWineFoxExpression;
+  blink?: number | 'auto';
   秒?: number;
-  帽子?: boolean;
-  背后法杖?: boolean;
-  发光?: boolean;
-}> = ({ pose, 姿势 = '坐', 看, 骨骼, 右手, 表情, 眨眼 = 'auto', 秒, 帽子 = true, 背后法杖 = true, 发光 = true }) => {
-  const bones = bonePose(姿势, 看, { ...magicalWineFoxMotion({ 姿势, 表情, 眨眼, 秒 }), ...骨骼 }, { 帽子, 背后法杖, 秒: 秒 ?? 0 });
+  hat?: boolean;
+  backStaff?: boolean;
+  glow?: boolean;
+}> = ({ pose, stancePose = '坐', 看: gaze, skeleton, rightHand, expression, blink = 'auto', 秒: sec, hat = true, backStaff = true, glow = true }) => {
+  const bones = bonePose(stancePose, gaze, { ...magicalWineFoxMotion({ stancePose, expression, blink, 秒: sec }), ...skeleton }, { hat, backStaff, 秒: sec ?? 0 });
   return (
     <group position={pose.loc as V3} rotation={[0, 0, rad(pose.yaw ?? 0)]}>
       <group rotation={[rad(pose.pitch), 0, 0]} scale={[1, 1, pose.squash]}>
@@ -231,9 +231,9 @@ export const MagicalWineFox: React.FC<{
           model={BODY}
           scale={MAGICAL_WINE_FOX.scale}
           pose={bones}
-          attach={右手 ? { RightHandLocator: 右手 } : undefined}
+          attach={rightHand ? { RightHandLocator: rightHand } : undefined}
         />
-        <GlowLayer 亮={发光}>
+        <GlowLayer isBright={glow}>
           <BedrockModelView model={GLOW} scale={MAGICAL_WINE_FOX.scale} pose={bones} />
         </GlowLayer>
       </group>

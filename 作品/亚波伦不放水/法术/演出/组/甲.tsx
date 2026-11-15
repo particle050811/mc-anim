@@ -1,6 +1,6 @@
 // 甲组（弹道、飞行物）的演出表。每做完一个法术在这里加一行，甲.元.ts 同一位置也加一行。
 // 写法：import 某法术 from '../法术/某法术.tsx'; 再放进数组。
-import type { 法术演出条 } from '../定义.tsx';
+import type { SpellPerformanceEntry } from '../定义.tsx';
 import magic_bolt from '../法术/magic_bolt.tsx';
 import sword from '../法术/sword.tsx';
 import ice_spike from '../法术/ice_spike.tsx';
@@ -25,4 +25,4 @@ import meteor_shower from '../法术/meteor_shower.tsx';
 import arrow_rain from '../法术/arrow_rain.tsx';
 import blizzard from '../法术/blizzard.tsx';
 
-export const 甲演出: readonly 法术演出条[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, stellar, void_flash, electrocute, ice_storm, cyclone, tidal, blossoming, meteor_shower, arrow_rain, blizzard];
+export const groupAPerformance: readonly SpellPerformanceEntry[] = [magic_bolt, sword, ice_spike, poison_dart, razor_wind, bouncy_bubble, smack_stone, fireball, lavaball, bombardment, wither_skull, steaming, surging, stellar, void_flash, electrocute, ice_storm, cyclone, tidal, blossoming, meteor_shower, arrow_rain, blizzard];

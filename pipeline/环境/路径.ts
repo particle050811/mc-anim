@@ -4,68 +4,68 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-const 包名 = 'mc-anim';
+const packageName = 'mc-anim';
 
-let 代码根缓存: string | undefined;
-let 主检出缓存: string | undefined;
+let codeRootCache: string | undefined;
+let mainCheckoutCache: string | undefined;
 
-const 是代码根 = (dir: string) => {
+const isCodeRoot = (dir: string) => {
   try {
-    return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).name === 包名;
+    return JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).name === packageName;
   } catch {
     return false;
   }
 };
 
-export const 代码根 = (): string => {
-  if (代码根缓存) return 代码根缓存;
-  const 起点 = (import.meta as { dirname?: string }).dirname ?? process.cwd();
-  for (let dir = path.resolve(起点); ; dir = path.dirname(dir)) {
-    if (是代码根(dir)) return (代码根缓存 = dir);
+export const codeRoot = (): string => {
+  if (codeRootCache) return codeRootCache;
+  const startDir = (import.meta as { dirname?: string }).dirname ?? process.cwd();
+  for (let dir = path.resolve(startDir); ; dir = path.dirname(dir)) {
+    if (isCodeRoot(dir)) return (codeRootCache = dir);
     // 别的仓库把 mc-anim 当依赖、配置被打成 CJS 时，从它的根往上找 node_modules/mc-anim（见 docs/外部复用.md）
-    const 依赖 = path.join(dir, 'node_modules', 包名);
-    if (是代码根(依赖)) return (代码根缓存 = fs.realpathSync(依赖));
-    if (path.dirname(dir) === dir) throw new Error(`从 ${起点} 往上找不到 package.json 名为 ${包名} 的目录，要在仓库里跑`);
+    const depPath = path.join(dir, 'node_modules', packageName);
+    if (isCodeRoot(depPath)) return (codeRootCache = fs.realpathSync(depPath));
+    if (path.dirname(dir) === dir) throw new Error(`从 ${startDir} 往上找不到 package.json 名为 ${packageName} 的目录，要在仓库里跑`);
   }
 };
 
 /** git 公共目录的上一级；不在 git 里（公开版解压包）就是代码根 */
-export const 主检出 = (): string => {
-  if (主检出缓存) return 主检出缓存;
-  const root = 代码根();
+export const mainCheckout = (): string => {
+  if (mainCheckoutCache) return mainCheckoutCache;
+  const root = codeRoot();
   try {
     const [top, common] = execFileSync('git', ['-C', root, 'rev-parse', '--path-format=absolute', '--show-toplevel', '--git-common-dir'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
     }).split('\n');
     // 代码根要正好是那个仓库的根：解压在别的仓库里面时，不能把那个仓库当成主检出
-    if (common && top && fs.realpathSync(top) === fs.realpathSync(root)) return (主检出缓存 = path.dirname(fs.realpathSync(common)));
+    if (common && top && fs.realpathSync(top) === fs.realpathSync(root)) return (mainCheckoutCache = path.dirname(fs.realpathSync(common)));
   } catch {
     // 没装 git、不在仓库里
   }
-  return (主检出缓存 = root);
+  return (mainCheckoutCache = root);
 };
 
-const 规范检出 = (p: string) => {
+const canonicalCheckout = (p: string) => {
   const r = path.resolve(fs.realpathSync(p)).normalize('NFC');
   return process.platform === 'win32' ? r.toLowerCase() : r;
 };
 /** 这份代码所在检出的规范路径（比较用：和 .检出-* 记号里写的同一个写法） */
-export const 本检出 = () => 规范检出(代码根());
+export const currentCheckout = () => canonicalCheckout(codeRoot());
 /** 这份代码是不是主检出（worktree 里是 false；公开版解压包没有 git，算主检出） */
-export const 在主检出 = () => 本检出() === 规范检出(主检出());
+export const inMainCheckout = () => currentCheckout() === canonicalCheckout(mainCheckout());
 
 /** 当前提交和工作区是否有未提交的改动；不在 git 里返回 null */
-export const 提交状态 = (): { 提交: string; 有改动: boolean } | null => {
+export const commitStatus = (): { 提交: string; 有改动: boolean } | null => {
   try {
-    const root = 代码根();
-    const 提交 = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
-    const 改动 = execFileSync('git', ['-C', root, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
-    return { 提交, 有改动: 改动.trim() !== '' };
+    const root = codeRoot();
+    const commit = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+    const changes = execFileSync('git', ['-C', root, 'status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    return { 提交: commit, 有改动: changes.trim() !== '' };
   } catch {
     return null;
   }
 };
 
 /** 相对代码根的正斜杠路径（指纹、manifest 里用，跨平台一致） */
-export const 相对代码根 = (p: string) => path.relative(代码根(), p).split(path.sep).join('/');
+export const relativeToCodeRoot = (p: string) => path.relative(codeRoot(), p).split(path.sep).join('/');

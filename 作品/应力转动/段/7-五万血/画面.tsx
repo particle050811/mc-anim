@@ -4,8 +4,8 @@
 import React from 'react';
 import * as THREE from 'three';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, makePerspectiveCamera } from '@库/界面/伤害数字.tsx';
 import { windArrowHit } from '../../场/7-黑暗监守/7-1-5/伤害数字层.tsx';
 import { followArrowHits } from '../../场/7-黑暗监守/7-1-7/伤害数字层.tsx';
@@ -13,10 +13,10 @@ import { JadeLeaderLine, JadeTooltip, jadeBoxHeight, jadeLineScalePerWidth, jade
 import { mouthAt } from '../../配音/口型.ts';
 import { ScenePicture } from '../../场/7-李樱撤离/7-2/画面.tsx';
 import * as choreo from './编排.ts';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
 
-export const fiftyKHpFrameCount = choreo.帧数;
+export const fiftyKHpFrameCount = choreo.frameCount;
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
 const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
@@ -25,8 +25,8 @@ const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 const hitsSeen = [{ T: windArrowHit.t, damage: windArrowHit.damage, crit: windArrowHit.crit, anchor: windArrowHit.anchor }, ...followArrowHits];
 const DamageLayer: React.FC<{ frame: number }> = ({ frame }) => {
   const { width, height } = useVideoConfig();
-  if (frame >= choreo.镜Jade止) return null;
-  const t = choreo.远景t(frame);
+  if (frame >= choreo.jadeShotEndFrame) return null;
+  const t = choreo.wideTime(frame);
   const cam = choreo.camera(frame);
   const camera = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={hitsSeen.map((h) => ({ damage: h.damage, crit: h.crit, anchor: h.anchor, ticks: (t - h.T) * 20 }))} />;
@@ -42,20 +42,20 @@ const JadeLayer: React.FC<{ frame: number }> = ({ frame }) => {
   const s = jadeScalePerWidth * width;
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
-      <JadeLeaderLine from={from} toY={jadeBoxHeight * s} s={jadeLineScalePerWidth * width} progress={ui.线} />
-      <JadeTooltip entity={{ name: '监守者', health: choreo.监守者血(frame).now, maxHealth: choreo.监守者血(frame).max, mod: 'Minecraft' }} s={s} cx={width / 2} visibility={ui.框} />
+      <JadeLeaderLine from={from} toY={jadeBoxHeight * s} s={jadeLineScalePerWidth * width} progress={ui.lineScale} />
+      <JadeTooltip entity={{ name: '监守者', health: choreo.wardenHealthAt(frame).now, maxHealth: choreo.wardenHealthAt(frame).max, mod: 'Minecraft' }} s={s} cx={width / 2} visibility={ui.框} />
     </AbsoluteFill>
   );
 };
 
 export const FiftyKHp: React.FC = () => {
-  const frame = use当前秒() * choreo.FPS;
+  const frame = useCurrentSec() * choreo.FPS;
   return (
     <>
-      <ScenePicture sf={choreo.sf(frame)} cam={choreo.camera(frame)} wideShot={frame < choreo.镜Jade止} pov={frame < choreo.镜Jade止} 嘴={mouthAt(choreo.台词, '李樱', frame, choreo.FPS)} />
+      <ScenePicture sf={choreo.sf(frame)} cam={choreo.camera(frame)} wideShot={frame < choreo.jadeShotEndFrame} pov={frame < choreo.jadeShotEndFrame} mouth={mouthAt(choreo.lines, '李樱', frame, choreo.FPS)} />
       <DamageLayer frame={frame} />
       <JadeLayer frame={frame} />
     </>
   );
 };
-export default 定义画面(段, 声音地址, FiftyKHp);
+export default definePicture(seg, soundUrl, FiftyKHp);

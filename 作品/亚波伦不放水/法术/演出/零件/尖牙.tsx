@@ -9,85 +9,85 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import type { 点 } from '../接口.ts';
-import { MC空间, 度, 模型件, type EntityModelData } from './实体.tsx';
-import { 原版粒子初速, 贴图粒子, type 粒子出生, type 粒子类 } from './粒子.tsx';
-import 尖牙图 from 'asset:贴图/法术/minecraft/entity/illager/evoker_fangs';
-import 暴击图 from 'asset:贴图/特效/粒子/critical_hit';
+import type { Vec3 } from '../接口.ts';
+import { MinecraftSpace, degToRad, ModelPart, type EntityModelData } from './实体.tsx';
+import { vanillaParticleInitSpeed, TexturedParticles, type ParticleBirth, type ParticleClass } from './粒子.tsx';
+import evokerFangsPng from 'asset:贴图/法术/minecraft/entity/illager/evoker_fangs';
+import criticalHitPng from 'asset:贴图/特效/粒子/critical_hit';
 
-const 盒 = (uv: [number, number], size: [number, number, number]) => ({ uv, from: [0, 0, 0], size, grow: [0, 0, 0], mirror: false });
-const 尖牙模型 = {
+const cube = (uv: [number, number], size: [number, number, number]) => ({ uv, from: [0, 0, 0], size, grow: [0, 0, 0], mirror: false });
+const fangModel = {
   texSize: [64, 32],
   root: {
     name: 'root',
     pose: { offset: [0, 0, 0], rot: [0, 0, 0] },
     cubes: [],
     children: [
-      { name: 'base', pose: { offset: [-5, 24, -5], rot: [0, 0, 0] }, cubes: [盒([0, 0], [10, 12, 10])], children: [] },
-      { name: 'upper_jaw', pose: { offset: [1.5, 24, -4], rot: [0, 0, 2.042035] }, cubes: [盒([40, 0], [4, 14, 8])], children: [] },
-      { name: 'lower_jaw', pose: { offset: [-1.5, 24, 4], rot: [0, Math.PI, 4.2411504] }, cubes: [盒([40, 0], [4, 14, 8])], children: [] },
+      { name: 'base', pose: { offset: [-5, 24, -5], rot: [0, 0, 0] }, cubes: [cube([0, 0], [10, 12, 10])], children: [] },
+      { name: 'upper_jaw', pose: { offset: [1.5, 24, -4], rot: [0, 0, 2.042035] }, cubes: [cube([40, 0], [4, 14, 8])], children: [] },
+      { name: 'lower_jaw', pose: { offset: [-1.5, 24, 4], rot: [0, Math.PI, 4.2411504] }, cubes: [cube([40, 0], [4, 14, 8])], children: [] },
     ],
   },
 } as unknown as EntityModelData;
-const 图 = png(尖牙图);
+const image = png(evokerFangsPng);
 
-export const 尖牙开咬刻 = (warmup: number) => warmup + 1;
-export const 尖牙寿命刻 = 22;
-export const 尖牙伤害刻 = 8;
+export const fangBiteTick = (warmup: number) => warmup + 1;
+export const fangLifeTicks = 22;
+export const fangDamageTicks = 8;
 
 /** 一颗尖牙。刻 = 这颗牙出生后的刻；朝角 = 构造函数收的 pYRot（弧度，游戏水平角） */
-export const 尖牙: React.FC<{ 位: 点; 朝角: number; warmup: number; 刻: number }> = ({ 位, 朝角, warmup, 刻 }) => {
-  const a = 刻 - 尖牙开咬刻(warmup);
-  if (a <= 0 || a >= 尖牙寿命刻) return null;
-  const 进 = Math.min(1, a / 20);
-  const f1 = 2 * (进 > 0.9 ? (1 - 进) / 0.1 : 1);
+export const Fang: React.FC<{ 位: Vec3; facingAngle: number; warmup: number; 刻: number }> = ({ 位: pos, facingAngle, warmup, 刻: tick }) => {
+  const a = tick - fangBiteTick(warmup);
+  if (a <= 0 || a >= fangLifeTicks) return null;
+  const progress = Math.min(1, a / 20);
+  const f1 = 2 * (progress > 0.9 ? (1 - progress) / 0.1 : 1);
   if (f1 <= 0) return null;
-  const 张 = 1 - Math.min(1, 进 * 2) ** 3;
-  const y = 24 - (进 + Math.sin(进 * 2.7)) * 0.6 * 12;
-  const 姿态 = {
+  const jawOpen = 1 - Math.min(1, progress * 2) ** 3;
+  const y = 24 - (progress + Math.sin(progress * 2.7)) * 0.6 * 12;
+  const partPoses = {
     base: { offset: [-5, y, -5] },
-    upper_jaw: { offset: [1.5, y, -4], rot: [0, 0, Math.PI - 张 * 0.35 * Math.PI] },
-    lower_jaw: { offset: [-1.5, y, 4], rot: [0, Math.PI, Math.PI + 张 * 0.35 * Math.PI] },
+    upper_jaw: { offset: [1.5, y, -4], rot: [0, 0, Math.PI - jawOpen * 0.35 * Math.PI] },
+    lower_jaw: { offset: [-1.5, y, 4], rot: [0, Math.PI, Math.PI + jawOpen * 0.35 * Math.PI] },
   };
   return (
-    <MC空间 位={位}>
-      <group rotation={[0, 度(90 - (朝角 * 180) / Math.PI), 0]}>
+    <MinecraftSpace 位={pos}>
+      <group rotation={[0, degToRad(90 - (facingAngle * 180) / Math.PI), 0]}>
         <group scale={[-f1, -f1, f1]}>
           <group position={[0, -0.626, 0]}>
             <group scale={[0.5, 0.5, 0.5]}>
-              <模型件 模型={尖牙模型} 图={图} 姿态={姿态} />
+              <ModelPart 模型={fangModel} 图={image} partPoses={partPoses} />
             </group>
           </group>
         </group>
       </group>
-    </MC空间>
+    </MinecraftSpace>
   );
 };
 
-const 暴击类: 粒子类 = { 帧: [png(暴击图)], 选帧: '随机', 重力: 0.5, 摩擦: 0.7, 混合: '镂空', 大小: (年龄, 寿命) => Math.min(1, Math.max(0, (年龄 / 寿命) * 32)) };
+const critClass: ParticleClass = { 帧: [png(criticalHitPng)], 选帧: '随机', 重力: 0.5, 摩擦: 0.7, 混合: '镂空', 大小: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
 
 /** 一颗牙咬合时冒的 12 颗暴击星的出生表。刻 = 这颗牙出生后的刻（定颜色用） */
-export const 尖牙暴击 = (位: 点, warmup: number, 刻: number, 种子: number): 粒子出生[] => {
-  const 生刻 = 尖牙开咬刻(warmup) + 尖牙伤害刻;
-  if (刻 < 生刻) return [];
-  const 年龄 = Math.floor(刻 - 生刻);
+export const fangCritSpawns = (pos: Vec3, warmup: number, tick: number, seed: number): ParticleBirth[] => {
+  const spawnTick = fangBiteTick(warmup) + fangDamageTicks;
+  if (tick < spawnTick) return [];
+  const age = Math.floor(tick - spawnTick);
   return Array.from({ length: 12 }, (_, i) => {
-    const r = rng(种子 * 977 + i);
-    const 位置: 点 = [位[0] + (r() * 2 - 1) * 0.25, 位[1] + (r() * 2 - 1) * 0.25, 位[2] + 1.05 + r()];
-    const 给 = [(r() * 2 - 1) * 0.3, 0.3 + r() * 0.3, (r() * 2 - 1) * 0.3] as const;
-    const 随 = 原版粒子初速(r, 0, 0, 0);
-    const v = [随[0] * 0.1 + 给[0] * 0.4, 随[1] * 0.1 + 给[1] * 0.4, 随[2] * 0.1 + 给[2] * 0.4];
-    const 灰 = r() * 0.3 + 0.6;
+    const r = rng(seed * 977 + i);
+    const position: Vec3 = [pos[0] + (r() * 2 - 1) * 0.25, pos[1] + (r() * 2 - 1) * 0.25, pos[2] + 1.05 + r()];
+    const baseOffset = [(r() * 2 - 1) * 0.3, 0.3 + r() * 0.3, (r() * 2 - 1) * 0.3] as const;
+    const randVel = vanillaParticleInitSpeed(r, 0, 0, 0);
+    const v = [randVel[0] * 0.1 + baseOffset[0] * 0.4, randVel[1] * 0.1 + baseOffset[1] * 0.4, randVel[2] * 0.1 + baseOffset[2] * 0.4];
+    const grayShade = r() * 0.3 + 0.6;
     return {
-      刻: 生刻,
-      位: 位置,
+      刻: spawnTick,
+      位: position,
       速: [v[0]!, -v[2]!, v[1]!] as const,
       寿命: Math.max(1, Math.floor(6 / (r() * 0.8 + 0.6))),
-      半径: 0.1 * (r() * 0.5 + 0.5) * 0.75,
+      radius: 0.1 * (r() * 0.5 + 0.5) * 0.75,
       种子: i,
-      色: [灰, 灰 * 0.96 ** 年龄, 灰 * 0.9 ** 年龄] as const,
+      色: [grayShade, grayShade * 0.96 ** age, grayShade * 0.9 ** age] as const,
     };
   });
 };
 
-export const 暴击星: React.FC<{ 出生们: readonly 粒子出生[]; 秒: number }> = ({ 出生们, 秒 }) => <贴图粒子 类={暴击类} 出生们={出生们} 秒={秒} />;
+export const CritStar: React.FC<{ spawns: readonly ParticleBirth[]; 秒: number }> = ({ spawns, 秒: sec }) => <TexturedParticles 类={critClass} spawns={spawns} 秒={sec} />;

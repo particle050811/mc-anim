@@ -3,96 +3,96 @@
 // 下面的默认时长是照第二稿分镜取的，没经用户看过。正片在 场/1-台地/编排-齐放.ts 的 结界设定 里覆盖：第 4 幕和第一轮一起扔，0.75 秒罩严，
 // 罩到他死就没了，不收缩焚烧（用户 11-11「而不是法术烧完后死掉」）。
 import { easeOutQuad, lerp, smoothstep01 } from '@engine/core/数学.ts';
-import { 炼狱结界原版, 炼狱结界透明度, 结界外接球半径 } from '@库/特效/炼狱结界线.ts';
+import { revelationCageVanilla, revelationCageOpacity, cageSphereRadius } from '@库/特效/炼狱结界线.ts';
 
 type V3 = [number, number, number];
 
-export type 结界演出设定 = {
+export type CagePerformanceSetting = {
   /** 结界中心的起点（场景坐标，施法者身前）、终点（史蒂夫半身高处；原版结界中心也在半身高） */
-  起点: V3;
+  from: V3;
   目标: V3;
   /** 飞出：默认 1.5 秒 = 原版淡入的 30 刻，落到位时正好淡入完 */
-  飞出秒: number;
+  flyOutSec: number;
   /** 罩住：默认 67.5 秒（第二稿分镜从罩严到收缩的长度；正片按他几时死算） */
-  罩住秒: number;
+  coverSec: number;
   /** 收缩焚烧：默认 2.5 秒（第二稿分镜收缩焚烧那一镜；正片是 0）；前 收缩占比 这一截在缩，缩完停在最小烧到完 */
-  收缩焚烧秒: number;
-  收缩占比: number;
+  shrinkBurnSec: number;
+  shrinkShare: number;
   /** 半径系数（原版结界 5.8905764，顶点离中心 = 系数 × 1.6472 格） */
-  起始半径系数: number;
-  满半径系数: number;
+  startRadiusFactor: number;
+  fullRadiusFactor: number;
   /** 第二稿分镜「缩到一人大小」：默认 0.75，顶点离中心约 1.24 格 */
-  收缩到半径系数: number;
+  shrinkToRadiusFactor: number;
   /** 转动的钟比演出的钟早几秒（原版的相位取决于游戏开了多久，随便取） */
-  转动相位秒: number;
+  spinPhaseSec: number;
 };
 
-export const 结界演出默认: Omit<结界演出设定, '起点' | '目标'> = {
-  飞出秒: 1.5,
-  罩住秒: 67.5,
-  收缩焚烧秒: 2.5,
-  收缩占比: 0.6,
-  起始半径系数: 炼狱结界原版.半径系数 * 0.03,
-  满半径系数: 炼狱结界原版.半径系数,
-  收缩到半径系数: 0.75,
-  转动相位秒: 0,
+export const cagePerformanceDefaults: Omit<CagePerformanceSetting, 'from' | '目标'> = {
+  flyOutSec: 1.5,
+  coverSec: 67.5,
+  shrinkBurnSec: 2.5,
+  shrinkShare: 0.6,
+  startRadiusFactor: revelationCageVanilla.radiusFactor * 0.03,
+  fullRadiusFactor: revelationCageVanilla.radiusFactor,
+  shrinkToRadiusFactor: 0.75,
+  spinPhaseSec: 0,
 };
 
-export type 结界阶段 = '未出' | '飞出' | '罩住' | '收缩焚烧' | '结束';
-export type 结界演出状态 = {
-  阶段: 结界阶段;
+export type CagePhase = '未出' | '飞出' | '罩住' | '收缩焚烧' | '结束';
+export type CagePerformanceState = {
+  阶段: CagePhase;
   /** 本阶段走了几成 */
   进度: number;
   中心: V3;
-  半径系数: number;
+  radiusFactor: number;
   /** 顶点离中心几格 */
-  外接球半径: number;
-  透明度: number;
+  circumRadius: number;
+  opacity: number;
   /** 给线框转动用的秒 */
-  转动秒: number;
+  spinSec: number;
   /** 史蒂夫是不是被钉住（罩住起）。原版是结界所在方块外扩 8.5 格内的活物每刻被拉回上一刻的位置、速度清零 */
-  钉住: boolean;
+  pinned: boolean;
   /** 0～1，收缩焚烧里从 0 涨到 1 */
-  火势: number;
+  fireIntensity: number;
 };
 
 /** 秒：从扔出那一刻算。飞出时中心和半径用同一个缓出进度：离手快、到位慢；半径和中心离起点的距离一起线性涨，所以只要起点离目标比满结界的外接球远，结界往起点后面伸出去的不超过起始半径，不会把施法者吞进去 */
-export const 结界演出状态在 = (秒: number, 设: 结界演出设定): 结界演出状态 => {
-  const 罩住起 = 设.飞出秒;
-  const 收缩起 = 罩住起 + 设.罩住秒;
-  const 结束 = 收缩起 + 设.收缩焚烧秒;
-  const 出 = (阶段: 结界阶段, 进度: number, 中心: V3, 半径系数: number, 火势 = 0): 结界演出状态 => ({
-    阶段,
-    进度,
-    中心,
-    半径系数,
-    外接球半径: 半径系数 * 结界外接球半径,
+export const cagePerformanceStateAt = (sec: number, settings: CagePerformanceSetting): CagePerformanceState => {
+  const coverStartSec = settings.flyOutSec;
+  const shrinkStartSec = coverStartSec + settings.coverSec;
+  const end = shrinkStartSec + settings.shrinkBurnSec;
+  const makeState = (stage: CagePhase, progress: number, center: V3, radiusFactor: number, fireIntensity = 0): CagePerformanceState => ({
+    阶段: stage,
+    进度: progress,
+    中心: center,
+    radiusFactor,
+    circumRadius: radiusFactor * cageSphereRadius,
     // 淡入照原版：出手起 30 刻
-    透明度: 阶段 === '未出' || 阶段 === '结束' ? 0 : 炼狱结界透明度(秒 * 20),
-    转动秒: 秒 + 设.转动相位秒,
-    钉住: 阶段 === '罩住' || 阶段 === '收缩焚烧',
-    火势,
+    opacity: stage === '未出' || stage === '结束' ? 0 : revelationCageOpacity(sec * 20),
+    spinSec: sec + settings.spinPhaseSec,
+    pinned: stage === '罩住' || stage === '收缩焚烧',
+    fireIntensity,
   });
-  if (秒 < 0) return 出('未出', 0, 设.起点, 设.起始半径系数);
-  if (秒 < 罩住起) {
-    const x = 秒 / 设.飞出秒;
+  if (sec < 0) return makeState('未出', 0, settings.from, settings.startRadiusFactor);
+  if (sec < coverStartSec) {
+    const x = sec / settings.flyOutSec;
     const u = easeOutQuad(x);
-    const 中心: V3 = [lerp(设.起点[0], 设.目标[0], u), lerp(设.起点[1], 设.目标[1], u), lerp(设.起点[2], 设.目标[2], u)];
-    return 出('飞出', x, 中心, lerp(设.起始半径系数, 设.满半径系数, u));
+    const center: V3 = [lerp(settings.from[0], settings.目标[0], u), lerp(settings.from[1], settings.目标[1], u), lerp(settings.from[2], settings.目标[2], u)];
+    return makeState('飞出', x, center, lerp(settings.startRadiusFactor, settings.fullRadiusFactor, u));
   }
-  if (秒 < 收缩起) return 出('罩住', (秒 - 罩住起) / 设.罩住秒, 设.目标, 设.满半径系数);
-  if (秒 < 结束) {
-    const x = (秒 - 收缩起) / 设.收缩焚烧秒;
-    const 缩 = smoothstep01(Math.min(1, x / 设.收缩占比));
-    return 出('收缩焚烧', x, 设.目标, lerp(设.满半径系数, 设.收缩到半径系数, 缩), x);
+  if (sec < shrinkStartSec) return makeState('罩住', (sec - coverStartSec) / settings.coverSec, settings.目标, settings.fullRadiusFactor);
+  if (sec < end) {
+    const x = (sec - shrinkStartSec) / settings.shrinkBurnSec;
+    const collapse = smoothstep01(Math.min(1, x / settings.shrinkShare));
+    return makeState('收缩焚烧', x, settings.目标, lerp(settings.fullRadiusFactor, settings.shrinkToRadiusFactor, collapse), x);
   }
   // 烧完直接没有，不走原版的 30 刻淡出（第二稿烧完硬切第 5 幕、开头「结界没了」；正片他一死就没了）
-  return 出('结束', 1, 设.目标, 设.收缩到半径系数, 0);
+  return makeState('结束', 1, settings.目标, settings.shrinkToRadiusFactor, 0);
 };
 
 /** 各阶段从第几秒起（演出的钟） */
-export const 结界演出时刻 = (设: 结界演出设定) => ({
-  罩住: 设.飞出秒,
-  收缩焚烧: 设.飞出秒 + 设.罩住秒,
-  结束: 设.飞出秒 + 设.罩住秒 + 设.收缩焚烧秒,
+export const cagePerformanceTimes = (settings: CagePerformanceSetting) => ({
+  engulf: settings.flyOutSec,
+  shrinkBurnSec: settings.flyOutSec + settings.coverSec,
+  结束: settings.flyOutSec + settings.coverSec + settings.shrinkBurnSec,
 });

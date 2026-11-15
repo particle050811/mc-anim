@@ -15,12 +15,12 @@ import tempfile
 import wave
 from pathlib import Path
 
-静音门槛dB = -45
-静音最短秒 = 0.12
-开头留秒 = 0.03
-结尾留秒 = 0.15
-目标响度 = -18.0
-峰值上限 = -1.5
+SILENCE_THRESHOLD_DB = -45
+silence_min_sec = 0.12
+head_pad_sec = 0.03
+tail_pad_sec = 0.15
+target_loudness_db = -18.0
+peak_limit_db = -1.5
 
 
 def _ffmpeg() -> str:
@@ -31,22 +31,22 @@ def _ffprobe() -> str:
     return os.environ.get('ANIM_FFPROBE') or 'ffprobe'
 
 
-def 时长(p: Path) -> float:
+def get_duration(p: Path) -> float:
     r = subprocess.run([_ffprobe(), '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(p)], capture_output=True, text=True, check=True, encoding='utf-8')
     return float(r.stdout.strip())
 
 
-def wav秒数(p: Path) -> float:
+def wav_seconds(p: Path) -> float:
     """wav 头里的帧数 ÷ 采样率（口型的 时长 用它，和 ffprobe 的可能差最后一位）"""
     with wave.open(str(p)) as w:
         return w.getnframes() / w.getframerate()
 
 
-def 有声段(p: Path) -> tuple[float, float]:
+def voiced_segment(p: Path) -> tuple[float, float]:
     """第一个和最后一个有声的时刻（-45 dBFS，静音至少 0.12 秒才算）"""
-    s = subprocess.run([_ffmpeg(), '-hide_banner', '-i', str(p), '-af', f'silencedetect=n={静音门槛dB}dB:d={静音最短秒}', '-f', 'null', '-'],
+    s = subprocess.run([_ffmpeg(), '-hide_banner', '-i', str(p), '-af', f'silencedetect=n={SILENCE_THRESHOLD_DB}dB:d={silence_min_sec}', '-f', 'null', '-'],
                        capture_output=True, text=True, encoding='utf-8').stderr
-    total = 时长(p)
+    total = get_duration(p)
     starts = [float(x) for x in re.findall(r'silence_start: ([\d.]+)', s)]
     ends = [float(x) for x in re.findall(r'silence_end: ([\d.]+)', s)]
     head = ends[0] if starts and starts[0] < 0.01 and ends else 0.0
@@ -56,7 +56,7 @@ def 有声段(p: Path) -> tuple[float, float]:
     return head, tail
 
 
-def 量响度(p: Path) -> tuple[float, float]:
+def measure_loudness(p: Path) -> tuple[float, float]:
     """积分响度（LUFS）、采样峰值（dBFS）"""
     s = subprocess.run([_ffmpeg(), '-hide_banner', '-nostats', '-i', str(p), '-af', 'ebur128=peak=sample', '-f', 'null', '-'],
                        capture_output=True, text=True, encoding='utf-8').stderr
@@ -65,30 +65,30 @@ def 量响度(p: Path) -> tuple[float, float]:
     return i, pk
 
 
-def 首个有声秒(p: Path) -> float:
+def first_voiced_sec(p: Path) -> float:
     """文件里第一个响过 −45 dBFS 的样本（不裁的句子记它当 头）"""
     with wave.open(str(p)) as w:
         n, ch, sw, sr = w.getnframes(), w.getnchannels(), w.getsampwidth(), w.getframerate()
         a = array.array('h' if sw == 2 else 'i', w.readframes(n))
-    门 = (32768 if sw == 2 else 2 ** 31) * 10 ** (静音门槛dB / 20)
+    gate = (32768 if sw == 2 else 2 ** 31) * 10 ** (SILENCE_THRESHOLD_DB / 20)
     for i, x in enumerate(a):
-        if abs(x) > 门:
+        if abs(x) > gate:
             return i // ch / sr
     return 0.0
 
 
-def 出成品(原件: Path, 成品: Path | None, 不裁: bool = False, 目标: float = 目标响度, 峰值: float = 峰值上限) -> dict:
+def export_finished(source_file: Path, finished_path: Path | None, no_trim: bool = False, target_loudness: float = target_loudness_db, peak_limit: float = peak_limit_db) -> dict:
     """原件裁静音、拉响度写成品（成品 None 时只量不写）；返回 开口、有声长、时长、增益dB、原响度、原峰值"""
-    head, tail = (0.0, 时长(原件)) if 不裁 else 有声段(原件)
-    trim_start = max(0.0, head - 开头留秒)
-    trim_end = min(时长(原件), tail + 结尾留秒)
+    head, tail = (0.0, get_duration(source_file)) if no_trim else voiced_segment(source_file)
+    trim_start = max(0.0, head - head_pad_sec)
+    trim_end = min(get_duration(source_file), tail + tail_pad_sec)
     with tempfile.TemporaryDirectory() as d:
         t = Path(d) / '裁.wav'
-        subprocess.run([_ffmpeg(), '-v', 'error', '-y', '-i', str(原件), '-af', f'atrim=start={trim_start:.3f}:end={trim_end:.3f},asetpts=PTS-STARTPTS',
+        subprocess.run([_ffmpeg(), '-v', 'error', '-y', '-i', str(source_file), '-af', f'atrim=start={trim_start:.3f}:end={trim_end:.3f},asetpts=PTS-STARTPTS',
                         '-ac', '1', '-ar', '48000', '-c:a', 'pcm_s16le', str(t)], check=True)
-        i, pk = 量响度(t)
-        gain_db = min(目标 - i, 峰值 - pk)
-        if 成品 is not None:
-            成品.parent.mkdir(parents=True, exist_ok=True)
-            subprocess.run([_ffmpeg(), '-v', 'error', '-y', '-i', str(t), '-af', f'volume={gain_db:.2f}dB', '-ac', '1', '-ar', '48000', '-c:a', 'pcm_s16le', str(成品)], check=True)
+        i, pk = measure_loudness(t)
+        gain_db = min(target_loudness - i, peak_limit - pk)
+        if finished_path is not None:
+            finished_path.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run([_ffmpeg(), '-v', 'error', '-y', '-i', str(t), '-af', f'volume={gain_db:.2f}dB', '-ac', '1', '-ar', '48000', '-c:a', 'pcm_s16le', str(finished_path)], check=True)
     return {'开口': round(head - trim_start, 3), '有声长': round(tail - head, 3), '时长': round(trim_end - trim_start, 3), '增益dB': round(gain_db, 2), '原响度': i, '原峰值': pk}

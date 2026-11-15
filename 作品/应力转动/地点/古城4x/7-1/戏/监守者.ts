@@ -88,13 +88,13 @@ export const wardenState = (t: number) => {
     p: track.p,
     entityYaw: yaw + 180,
     秒: gameTime,
-    行走: { 相位: track.legPhase, 幅度: Math.min(1, track.v / 5.7) }, // 摆幅同 7-3（原版 5.7 米/秒是 1）；站着 0（7-3 接着这条相位走）
-    前倾: wardenLean(t),
+    walkCycle: { legPhase: track.legPhase, amplitude: Math.min(1, track.v / 5.7) }, // 摆幅同 7-3（原版 5.7 米/秒是 1）；站着 0（7-3 接着这条相位走）
+    forwardLean: wardenLean(t),
     攻击: attackSec,
     吼叫: roarAnimSec(t), // 6-4-9 吼到一半切过来，接着吼完
-    受伤: hurt,
+    hurt: hurt,
     // 实体约定：头偏 正 = 往实体自己的右手边转；FigurePose 的 yaw 正 = 往左。
-    头偏: -headYawRel * turnIn,
+    headYaw: -headYawRel * turnIn,
     headPitch: t < timeline.wardenTurnHeadT ? 8 : headPitchRel * turnIn + 8 * (1 - turnIn),
   };
 };

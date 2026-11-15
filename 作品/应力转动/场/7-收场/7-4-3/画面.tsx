@@ -103,7 +103,7 @@ const RoomPicture: React.FC<{ f: number }> = ({ f: frame }) => {
           <ambientLight intensity={0.15} />
           <RoomLights
             lights={[
-              { p: choreo.roomToWorld(guardRoom.灯笼), 强: 2.2 },
+              { p: choreo.roomToWorld(guardRoom.lantern), 强: 2.2 },
               { p: choreo.roomToWorld(guardRoom.candle), 强: 0.9 },
             ]}
           />
@@ -119,7 +119,7 @@ const RoomPicture: React.FC<{ f: number }> = ({ f: frame }) => {
           {/* 刘心忠：书页镜里右手拿羽毛笔；递书镜里羽毛已经随署名没了（编排.ts 的 holdingQuill），右手空着 */}
           <LiuXinzhong
             pose={liuWorldPose}
-            右手={liu.holdingQuill ? <HeldItemSprite tex={featherTex} /> : <group />}
+            rightHand={liu.holdingQuill ? <HeldItemSprite tex={featherTex} /> : <group />}
           />
           {/* 匠师之杖靠在东北墙角：杖尖点地，往东北斜着靠在墙上 */}
           <group

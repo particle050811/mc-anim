@@ -5,23 +5,23 @@
 import { useEffect, useState } from 'react';
 
 /** 一组一起写、一起复位的模块全局共用一个槽 */
-export type 写入槽 = { 写入者: object | null };
-export const 新写入槽 = (): 写入槽 => ({ 写入者: null });
+export type WriteSlot = { writer: object | null };
+export const newWriteSlot = (): WriteSlot => ({ writer: null });
 
 /** 占槽（渲染时调）：之后的写入算这个组件的 */
-export const 占槽 = (槽: 写入槽, 我: object) => {
-  槽.写入者 = 我;
+export const claimSlot = (writeSlot: WriteSlot, owner: object) => {
+  writeSlot.writer = owner;
 };
 /** 放槽（卸载时调）：最后写入的还是我才复位，别人已经接手就不碰 */
-export const 放槽 = (槽: 写入槽, 我: object, 复位: () => void) => {
-  if (槽.写入者 !== 我) return;
-  槽.写入者 = null;
-  复位();
+export const releaseSlot = (writeSlot: WriteSlot, owner: object, reset: () => void) => {
+  if (writeSlot.writer !== owner) return;
+  writeSlot.writer = null;
+  reset();
 };
 
 /** 在写模块全局的钩子、组件开头调用（每次渲染都占）。复位：同一个槽要始终给同样的复位 */
-export const use写入者 = (槽: 写入槽, 复位: () => void) => {
-  const [我] = useState(() => ({}));
-  占槽(槽, 我);
-  useEffect(() => () => 放槽(槽, 我, 复位), [槽, 我]);
+export const useWriter = (writeSlot: WriteSlot, reset: () => void) => {
+  const [owner] = useState(() => ({}));
+  claimSlot(writeSlot, owner);
+  useEffect(() => () => releaseSlot(writeSlot, owner, reset), [writeSlot, owner]);
 };

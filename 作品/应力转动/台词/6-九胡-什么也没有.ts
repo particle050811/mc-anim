@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 0eb47005d9df），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-什么也没有（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "6-九胡-什么也没有",
   "角色": "九胡",
   "念": "呐呐，狗修金Sama，为什么这里什么也没有啊？",
@@ -61,4 +61,4 @@ const 句: 台词句 = {
     [3.74,"X"],
   ],
 };
-export default 句;
+export default sentence;

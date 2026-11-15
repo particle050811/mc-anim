@@ -13,138 +13,138 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 序列帧 } from '../零件/面片.tsx';
-import { 十六进制色, type 色 } from '../零件/材质.ts';
-import { 贴图粒子, type 粒子出生, type 粒子类 } from '../零件/粒子.tsx';
-import 元, { 幽灵火寿命刻 } from './幽灵火.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/IceBouquetModel';
-import 烟图 from 'asset:贴图/特效/粒子/generic_0';
-import 预1 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre1';
-import 预2 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre2';
-import 预3 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre3';
-import 预4 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre4';
-import 预5 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre5';
-import 预6 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre6';
-import 预7 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre7';
-import 预8 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre8';
-import 预9 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre9';
-import 预10 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre10';
-import 预11 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre11';
-import 预12 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre12';
-import 预13 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre13';
-import 火1 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire1';
-import 火2 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire2';
-import 火3 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire3';
-import 火4 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire4';
-import 火5 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire5';
-import 火6 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire6';
-import 火7 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire7';
-import 火8 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire8';
-import 火9 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire9';
-import 火10 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire10';
-import 火11 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire11';
-import 火12 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire12';
-import 火13 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire13';
-import 火14 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire14';
-import 火15 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire15';
-import 火16 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire16';
-import 火17 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire17';
-import 火18 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire18';
-import 火19 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire19';
-import 火20 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire20';
-import 火21 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire21';
-import 火22 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire22';
-import 火23 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire23';
-import 火24 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire24';
-import 火25 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire25';
-import 火26 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire26';
-import 火27 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire27';
-import 火28 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire28';
-import 火29 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire29';
-import 火30 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire30';
-import 火31 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire31';
-import 火32 from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire32';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { sequenceFrame } from '../零件/面片.tsx';
+import { hexColor, type RgbColor } from '../零件/材质.ts';
+import { TexturedParticles, type ParticleBirth, type ParticleClass } from '../零件/粒子.tsx';
+import meta, { ghostFireLifeTicks } from './幽灵火.元.ts';
+import iceBouquetModelData from 'asset:模型/法术/goety/IceBouquetModel';
+import smokePng from 'asset:贴图/特效/粒子/generic_0';
+import ghostFirePre1Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre1';
+import ghostFirePre2Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre2';
+import ghostFirePre3Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre3';
+import ghostFirePre4Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre4';
+import ghostFirePre5Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre5';
+import ghostFirePre6Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre6';
+import ghostFirePre7Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre7';
+import ghostFirePre8Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre8';
+import ghostFirePre9Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre9';
+import ghostFirePre10Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre10';
+import ghostFirePre11Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre11';
+import ghostFirePre12Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre12';
+import ghostFirePre13Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/pre/pre13';
+import ghostFire1Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire1';
+import ghostFire2Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire2';
+import ghostFire3Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire3';
+import ghostFire4Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire4';
+import ghostFire5Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire5';
+import ghostFire6Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire6';
+import ghostFire7Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire7';
+import ghostFire8Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire8';
+import ghostFire9Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire9';
+import ghostFire10Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire10';
+import ghostFire11Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire11';
+import ghostFire12Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire12';
+import ghostFire13Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire13';
+import ghostFire14Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire14';
+import ghostFire15Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire15';
+import ghostFire16Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire16';
+import ghostFire17Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire17';
+import ghostFire18Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire18';
+import ghostFire19Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire19';
+import ghostFire20Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire20';
+import ghostFire21Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire21';
+import ghostFire22Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire22';
+import ghostFire23Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire23';
+import ghostFire24Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire24';
+import ghostFire25Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire25';
+import ghostFire26Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire26';
+import ghostFire27Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire27';
+import ghostFire28Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire28';
+import ghostFire29Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire29';
+import ghostFire30Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire30';
+import ghostFire31Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire31';
+import ghostFire32Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire32';
 
-const 模型 = 取模型(模型数据, 'IceBouquetModel');
-const 帧们 = [预1, 预2, 预3, 预4, 预5, 预6, 预7, 预8, 预9, 预10, 预11, 预12, 预13, 火1, 火2, 火3, 火4, 火5, 火6, 火7, 火8, 火9, 火10, 火11, 火12, 火13, 火14, 火15, 火16, 火17, 火18, 火19, 火20, 火21, 火22, 火23, 火24, 火25, 火26, 火27, 火28, 火29, 火30, 火31, 火32].map(png);
-const 预帧数 = 13;
-const 姿态 = { middle: { scale: [0.9, 1.5, 0.9] } };
+const iceBouquetModel = getModel(iceBouquetModelData, 'IceBouquetModel');
+const frameImages = [ghostFirePre1Png, ghostFirePre2Png, ghostFirePre3Png, ghostFirePre4Png, ghostFirePre5Png, ghostFirePre6Png, ghostFirePre7Png, ghostFirePre8Png, ghostFirePre9Png, ghostFirePre10Png, ghostFirePre11Png, ghostFirePre12Png, ghostFirePre13Png, ghostFire1Png, ghostFire2Png, ghostFire3Png, ghostFire4Png, ghostFire5Png, ghostFire6Png, ghostFire7Png, ghostFire8Png, ghostFire9Png, ghostFire10Png, ghostFire11Png, ghostFire12Png, ghostFire13Png, ghostFire14Png, ghostFire15Png, ghostFire16Png, ghostFire17Png, ghostFire18Png, ghostFire19Png, ghostFire20Png, ghostFire21Png, ghostFire22Png, ghostFire23Png, ghostFire24Png, ghostFire25Png, ghostFire26Png, ghostFire27Png, ghostFire28Png, ghostFire29Png, ghostFire30Png, ghostFire31Png, ghostFire32Png].map(png);
+const preFrameCount = 13;
+const partPoses = { middle: { scale: [0.9, 1.5, 0.9] } };
 /** 看得见的最后一刻：客户端 lifeTicks 减到 2 时进度到 1、f 缩到 0 */
-const 幽灵火收尾刻 = 幽灵火寿命刻 - 2;
+const ghostFireFinishTick = ghostFireLifeTicks - 2;
 /** animationTicks 22 → 20 的那一刻进度 = 0，不画 */
-const 闪刻 = 2;
-const 离地 = 0.0625;
+const flashTicks = 2;
+const zOffset = 0.0625;
 
 /** 四丛的位置：目标脚下一丛，加一个随机象限的三丛（间隔 1.5 格） */
-const 四丛 = (目标: 点, 种子: number): 点[] => {
-  const 象限 = Math.floor(rng(种子)() * 4);
-  const [sx, sy] = [象限 >= 2 ? -1.5 : 1.5, 象限 % 2 === 1 ? -1.5 : 1.5];
-  return [目标, [目标[0], 目标[1] + sy, 目标[2]], [目标[0] + sx, 目标[1], 目标[2]], [目标[0] + sx, 目标[1] + sy, 目标[2]]];
+const tuftPoints = (target: Vec3, seed: number): Vec3[] => {
+  const quadrant = Math.floor(rng(seed)() * 4);
+  const [sx, sy] = [quadrant >= 2 ? -1.5 : 1.5, quadrant % 2 === 1 ? -1.5 : 1.5];
+  return [target, [target[0], target[1] + sy, target[2]], [target[0] + sx, target[1], target[2]], [target[0] + sx, target[1] + sy, target[2]]];
 };
 
-const 烟色从 = 十六进制色(0xb8e5ff);
-const 烟色到 = 十六进制色(0x015687);
-const 混色 = (t: number): 色 => [0, 1, 2].map((i) => 烟色从[i]! + (烟色到[i]! - 烟色从[i]!) * t) as unknown as 色;
+const smokeColorFrom = hexColor(0xb8e5ff);
+const smokeColorTo = hexColor(0x015687);
+const mixColor = (t: number): RgbColor => [0, 1, 2].map((i) => smokeColorFrom[i]! + (smokeColorTo[i]! - smokeColorFrom[i]!) * t) as unknown as RgbColor;
 // getQuadSize：大小 × clamp(年龄 ÷ 寿命 × 32, 0, 1)，出生后很快长到满
-const 烟类: 粒子类 = { 帧: [png(烟图)], 选帧: '随机', 摩擦: 0.96, 重力: -0.1, 混合: '镂空', 大小: (年龄, 寿命) => Math.min(1, Math.max(0, (年龄 / 寿命) * 32)) };
+const smokeParticleClass: ParticleClass = { 帧: [png(smokePng)], 选帧: '随机', 摩擦: 0.96, 重力: -0.1, 混合: '镂空', 大小: (age, lifetime) => Math.min(1, Math.max(0, (age / lifetime) * 32)) };
 
-const 烟 = (位: 点, 到刻: number, 种子: number): 粒子出生[] => {
-  const 出: 粒子出生[] = [];
-  for (let t = 10; t <= Math.min(到刻, 幽灵火寿命刻 - 1); t++) {
-    const r = rng(种子 * 131 + t);
-    const 寿命 = 10 + Math.floor(r() * 10);
-    出.push({
+const smokeAt = (pos: Vec3, lastTick: number, seed: number): ParticleBirth[] => {
+  const smokeSpawns: ParticleBirth[] = [];
+  for (let t = 10; t <= Math.min(lastTick, ghostFireLifeTicks - 1); t++) {
+    const r = rng(seed * 131 + t);
+    const lifetime = 10 + Math.floor(r() * 10);
+    smokeSpawns.push({
       刻: t,
-      位: [位[0] + (r() - 0.5) * 0.8, 位[1] + (r() - 0.5) * 0.8, 位[2] + 离地 + r()],
+      位: [pos[0] + (r() - 0.5) * 0.8, pos[1] + (r() - 0.5) * 0.8, pos[2] + zOffset + r()],
       速: [((r() * 2 - 1) / 10) * 0.5, ((r() * 2 - 1) / 10) * 0.5, 0.1 + r() / 10],
-      寿命,
-      半径: 0.2,
+      寿命: lifetime,
+      radius: 0.2,
       种子: t,
       // 颜色随年龄渐变：出生表每帧重排，直接按当前年龄给
-      色: 混色(Math.min(1, Math.max(0, (到刻 - t) / 寿命))),
+      色: mixColor(Math.min(1, Math.max(0, (lastTick - t) / lifetime))),
     });
   }
-  return 出;
+  return smokeSpawns;
 };
 
-const 一丛: React.FC<{ 位: 点; 刻: number }> = ({ 位, 刻 }) => {
+const SingleTuft: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick }) => {
   // 贴图序号每刻 +1：0～12 是 pre，13～44 是 fire，到 44 回 13
-  const n = Math.floor(刻);
-  const 图 = n < 预帧数 ? 帧们[n]! : 序列帧(帧们.slice(预帧数), n - 预帧数, true);
-  const 剩 = 幽灵火收尾刻 - 刻;
-  const f = (n < 预帧数 ? 0.5 : 1) * 0.8 * Math.min(1, Math.max(0, 剩 / 2));
-  if (f <= 0 || n === 闪刻) return null;
+  const n = Math.floor(tick);
+  const image = n < preFrameCount ? frameImages[n]! : sequenceFrame(frameImages.slice(preFrameCount), n - preFrameCount, true);
+  const remainTick = ghostFireFinishTick - tick;
+  const f = (n < preFrameCount ? 0.5 : 1) * 0.8 * Math.min(1, Math.max(0, remainTick / 2));
+  if (f <= 0 || n === flashTicks) return null;
   return (
-    <MC空间 位={[位[0], 位[1], 位[2] + 离地]}>
+    <MinecraftSpace 位={[pos[0], pos[1], pos[2] + zOffset]}>
       {/* 实体 yaw 恒 0：mulPose(YP 90°) */}
-      <group rotation={[0, 度(90), 0]}>
+      <group rotation={[0, degToRad(90), 0]}>
         <group scale={[-f, -1.25, f]}>
           <group position={[0, -1.45, 0]}>
-            <模型件 模型={模型} 图={图} 画法="镂空" 透明度={0.15} 姿态={姿态} />
-            <模型件 模型={模型} 图={图} 画法="加色" 姿态={姿态} />
+            <ModelPart 模型={iceBouquetModel} 图={image} 画法="镂空" opacity={0.15} partPoses={partPoses} />
+            <ModelPart 模型={iceBouquetModel} 图={image} 画法="加色" partPoses={partPoses} />
           </group>
         </group>
       </group>
-    </MC空间>
+    </MinecraftSpace>
   );
 };
 
-const 幽灵火: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 丛们 = 四丛(目标, 种子);
+const GhostFire: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const tufts = tuftPoints(target, seed);
   return (
     <>
-      {丛们.map((位, i) => (
+      {tufts.map((pos, i) => (
         <React.Fragment key={i}>
-          <一丛 位={位} 刻={刻} />
-          <贴图粒子 类={烟类} 出生们={烟(位, 刻, 种子 + i)} 秒={秒} />
+          <SingleTuft 位={pos} 刻={tick} />
+          <TexturedParticles 类={smokeParticleClass} spawns={smokeAt(pos, tick, seed + i)} 秒={sec} />
         </React.Fragment>
       ))}
     </>
   );
 };
 
-export default 定义法术演出(元, 幽灵火);
+export default defineSpellPerformance(meta, GhostFire);

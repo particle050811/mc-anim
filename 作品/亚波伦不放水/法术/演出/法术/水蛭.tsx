@@ -7,46 +7,46 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 混 } from '../零件/弹道.ts';
-import { 片, 面片们, type 面片项 } from '../零件/面片.tsx';
-import { 十六进制色, type 色 } from '../零件/材质.ts';
-import { 聚流, 聚流寿命 } from '../零件/游带.tsx';
-import 元, { 水蛭持续刻 } from './水蛭.元.ts';
-import 方片图数据 from 'asset:贴图/特效/粒子/generic_0';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { mix } from '../零件/弹道.ts';
+import { facePatch, QuadGroup, type QuadItem } from '../零件/面片.tsx';
+import { hexColor, type RgbColor } from '../零件/材质.ts';
+import { GatherStream, gatherLifetime } from '../零件/游带.tsx';
+import meta, { leechDurTicks } from './水蛭.元.ts';
+import diamondPng from 'asset:贴图/特效/粒子/generic_0';
 
-const 方片图 = png(方片图数据);
-const 暗红 = 十六进制色(0xaa0000);
-const 终色 = 十六进制色(0x00000a);
-const 吸收寿命 = 10;
+const diamondImg = png(diamondPng);
+const darkRed = hexColor(0xaa0000);
+const endColor = hexColor(0x00000a);
+const absorbLifeTicks = 10;
 
-const 水蛭: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 流们: React.ReactNode[] = [];
-  const 片们: 面片项[] = [];
-  for (let n = Math.max(0, Math.floor(刻) - 吸收寿命); n <= Math.min(Math.floor(刻), 水蛭持续刻 - 1); n++) {
-    const r = rng(种子 * 7919 + n);
-    const 年龄 = 刻 - n;
-    const 到: 点 = [起点[0] + (r() * 2 - 1) * 0.6, 起点[1] + (r() * 2 - 1) * 0.6, 起点[2]];
-    流们.push(<聚流 key={n} 从={[目标[0], 目标[1], 目标[2] + 0.9]} 到={到} 年龄={年龄} 寿命={聚流寿命(r())} 色={暗红} />);
+const leech: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const streams: React.ReactNode[] = [];
+  const pieces: QuadItem[] = [];
+  for (let n = Math.max(0, Math.floor(tick) - absorbLifeTicks); n <= Math.min(Math.floor(tick), leechDurTicks - 1); n++) {
+    const r = rng(seed * 7919 + n);
+    const age = tick - n;
+    const scatterPoint: Vec3 = [from[0] + (r() * 2 - 1) * 0.6, from[1] + (r() * 2 - 1) * 0.6, from[2]];
+    streams.push(<GatherStream key={n} 从={[target[0], target[1], target[2] + 0.9]} 到={scatterPoint} age={age} 寿命={gatherLifetime(r())} 色={darkRed} />);
     for (let i = 0; i < 8; i++) {
-      const 生: 点 = [目标[0] + (r() * 2 - 1) * 0.6, 目标[1] + (r() * 2 - 1) * 0.6, 目标[2] + r() * 1.8];
-      const 偏 = [0.875 + r() * 0.25, 0.875 + r() * 0.25, 0.875 + r() * 0.25];
-      if (年龄 >= 吸收寿命) continue;
+      const spawnPoint: Vec3 = [target[0] + (r() * 2 - 1) * 0.6, target[1] + (r() * 2 - 1) * 0.6, target[2] + r() * 1.8];
+      const channelOffset = [0.875 + r() * 0.25, 0.875 + r() * 0.25, 0.875 + r() * 0.25];
+      if (age >= absorbLifeTicks) continue;
       // 第 k 刻末走完全程的 k ÷ 寿命；画的是上一刻到这一刻之间
-      const 比 = Math.max(0, 年龄 - 1) / 吸收寿命;
-      const 色比 = Math.min(1, 年龄 / 吸收寿命);
-      const 色: 色 = [0, 1, 2].map((c) => Math.min(1, 暗红[c]! * 偏[c]!) * (1 - 色比) + 终色[c]! * 色比) as unknown as 色;
-      片们.push(片(混(生, 到, 比), 0.26, 色));
+      const progress = Math.max(0, age - 1) / absorbLifeTicks;
+      const colorRatio = Math.min(1, age / absorbLifeTicks);
+      const color: RgbColor = [0, 1, 2].map((c) => Math.min(1, darkRed[c]! * channelOffset[c]!) * (1 - colorRatio) + endColor[c]! * colorRatio) as unknown as RgbColor;
+      pieces.push(facePatch(mix(spawnPoint, scatterPoint, progress), 0.26, color));
     }
   }
   return (
     <>
-      {流们}
-      <面片们 图={方片图} 项={片们} 混合="镂空" />
+      {streams}
+      <QuadGroup 图={diamondImg} 项={pieces} 混合="镂空" />
     </>
   );
 };
 
-export default 定义法术演出(元, 水蛭);
+export default defineSpellPerformance(meta, leech);

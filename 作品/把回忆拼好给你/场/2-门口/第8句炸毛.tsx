@@ -12,57 +12,57 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { type BedrockBone, type BedrockCube, type BedrockModel, BedrockModelView, type BonePose } from '@engine/model/基岩模型.tsx';
 import { png } from '@engine/model/贴图.ts';
 import { MAGICAL_WINE_FOX } from '@库/角色/魔法酒狐.tsx';
-import { MagicalWineFoxEx, magicalWineFoxExBones, type 魔法酒狐新动作Props } from '@库/角色/魔法酒狐新动作组件.tsx';
-import { 魔法酒狐一格 } from '@库/角色/魔法酒狐新动作.ts';
+import { MagicalWineFoxEx, magicalWineFoxExBones, type MagicalWineFoxExProps } from '@库/角色/魔法酒狐新动作组件.tsx';
+import { magicalWineFoxCellSize } from '@库/角色/魔法酒狐新动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
 
 const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel;
-const 骨 = new Map(MODEL.bones.map((b) => [b.name, b]));
-const 链 = (name: string) => {
+const boneByName = new Map(MODEL.bones.map((b) => [b.name, b]));
+const chain = (name: string) => {
   const out: string[] = [];
-  for (let n: string | undefined = name; n; n = 骨.get(n)?.parent) out.unshift(n);
+  for (let n: string | undefined = name; n; n = boneByName.get(n)?.parent) out.unshift(n);
   return out;
 };
 /** 只为变换对得上的祖先骨骼（不带方块） */
-const 空骨 = (names: Iterable<string>): BedrockBone[] => [...new Set(names)].map((n) => ({ ...骨.get(n)!, cubes: undefined }));
+const emptyBones = (names: Iterable<string>): BedrockBone[] => [...new Set(names)].map((n) => ({ ...boneByName.get(n)!, cubes: undefined }));
 
 // ---------- 炸毛的尾巴 ----------
-const 尾巴骨 = ['Tail', 'Tail2', 'Tail3', 'Tail4', 'Tail5', 'Tail6', 'Tail7'];
+const tailBones = ['Tail', 'Tail2', 'Tail3', 'Tail4', 'Tail5', 'Tail6', 'Tail7'];
 /** 叠的两份绕自己中心转几度；尺寸各轴乘几（x 是尾巴的宽、朝镜头，y、z 在侧面里：压扁一边、拉长一边，转过去以后两头的尖伸出剪影）。
  *  照原尺寸只转不拉长时尖角都藏在尾巴里面，剪影还是光滑的月牙（Agent 暂定，出静帧看过） */
-const 炸开角 = 35;
-const 炸开尺 = [0.9, 0.55, 1.35] as const;
+const burstAngle = 35;
+const burstScale = [0.9, 0.55, 1.35] as const;
 /** 尾巴材质亮度（乘在贴图上）：定稿说尾巴和裙子一个颜色（Fable），提亮一档（Agent 暂定） */
-export const 尾巴提亮 = 1.18;
+export const tailBrighten = 1.18;
 
 /** 只绕 x 转的方块：再叠两份，中心放在原方块转完以后的中心、绕它自己转 ±炸开角（换算照 基岩模型.tsx 的 cube 变换：渲染坐标绕 x 转 −θ） */
-const 炸开 = (c: BedrockCube): BedrockCube[] => {
+const burstCube = (c: BedrockCube): BedrockCube[] => {
   const r = c.rotation ?? [0, 0, 0];
   if (r[1] || r[2]) return [c];
   const p = c.pivot ?? [0, 0, 0];
-  const 中 = c.origin.map((o, i) => o + c.size[i]! / 2);
+  const center = c.origin.map((o, i) => o + c.size[i]! / 2);
   const φ = -rad(r[0]);
-  const dy = 中[1]! - p[1]!, dz = 中[2]! - p[2]!;
-  const 转中: V3 = [中[0]!, p[1]! + dy * Math.cos(φ) - dz * Math.sin(φ), p[2]! + dy * Math.sin(φ) + dz * Math.cos(φ)];
-  const 尺 = c.size.map((s, i) => s * 炸开尺[i]!) as V3;
-  const 份 = (s: number): BedrockCube => ({
+  const dy = center[1]! - p[1]!, dz = center[2]! - p[2]!;
+  const turnCenter: V3 = [center[0]!, p[1]! + dy * Math.cos(φ) - dz * Math.sin(φ), p[2]! + dy * Math.sin(φ) + dz * Math.cos(φ)];
+  const size = c.size.map((s, i) => s * burstScale[i]!) as V3;
+  const shard = (s: number): BedrockCube => ({
     ...c,
-    origin: 转中.map((x, i) => x - 尺[i]! / 2) as V3,
-    size: 尺,
-    pivot: 转中,
-    rotation: [r[0] + s * 炸开角, 0, 0],
+    origin: turnCenter.map((x, i) => x - size[i]! / 2) as V3,
+    size: size,
+    pivot: turnCenter,
+    rotation: [r[0] + s * burstAngle, 0, 0],
   });
-  return [c, 份(-1), 份(1)];
+  return [c, shard(-1), shard(1)];
 };
 
-const 尾巴模型: BedrockModel = {
+const tailModel: BedrockModel = {
   ...MODEL,
   bones: [
-    ...空骨(链('Tail').slice(0, -1)),
-    ...尾巴骨.map((n) => {
-      const b = 骨.get(n)!;
-      return { ...b, cubes: b.cubes?.flatMap(炸开) };
+    ...emptyBones(chain('Tail').slice(0, -1)),
+    ...tailBones.map((n) => {
+      const b = boneByName.get(n)!;
+      return { ...b, cubes: b.cubes?.flatMap(burstCube) };
     }),
   ],
 };
@@ -74,88 +74,88 @@ const 尾巴模型: BedrockModel = {
 // 所以哈气时眼睛眯成「> <」（和头顶气泡「˃ʍ˂」一个样），眼睛那块的下半让给嘴：近黑的嘴里 15 行四分之一格（3.75 格 = 2.2 个贴图像素）高，
 // 从下巴往下张开 9 行（像下巴掉下来），上沿挂两颗小白牙，外面一圈粉边（Agent 暂定）。第 8 句镜头（N = 16）里量过：头抬 18°、转 45° 以后
 // 近黑那块成片 33 像素高（2.06 个贴图像素），缩到手机竖屏宽是 5 像素的一个黑点。
-const 中 = 0.70064;
-const 脸底 = 28.36648;
-const 四分 = 魔法酒狐一格 / 4;
-const 正面 = (u: number, v: number, w = 1, h = 1): BedrockCube['uv'] => ({ north: { uv: [u, v], uv_size: [w, h] } });
+const centerX = 0.70064;
+const faceBottom = 28.36648;
+const quarterCell = magicalWineFoxCellSize / 4;
+const frontFaceUv = (u: number, v: number, w = 1, h = 1): BedrockCube['uv'] => ({ north: { uv: [u, v], uv_size: [w, h] } });
 // 纯色块只取这一格的中间（边上外插不到旁边的格子）
-const 纯色 = (u: number, v: number) => 正面(u + 0.25, v + 0.25, 0.5, 0.5);
-const 粉 = 纯色(14, 124);
-const 近黑 = 纯色(194, 3);
-const 白 = 纯色(67, 0);
-const 片 = (x0: number, y0: number, x1: number, y1: number, z: number, uv: BedrockCube['uv']): BedrockCube => ({ origin: [x0, y0, z], size: [x1 - x0, y1 - y0, 0.05], uv });
-const 横条 = (k: number, 半宽: number, z: number, uv: BedrockCube['uv']) => 片(中 - 半宽 * 四分, 脸底 + k * 四分, 中 + 半宽 * 四分, 脸底 + (k + 1) * 四分, z, uv);
-const 方格 = (k0: number, k1: number, i0: number, i1: number, z: number, uv: BedrockCube['uv']) =>
-  片(中 + i0 * 四分, 脸底 + k0 * 四分, 中 + i1 * 四分, 脸底 + k1 * 四分, z, uv);
+const solidUv = (u: number, v: number) => frontFaceUv(u + 0.25, v + 0.25, 0.5, 0.5);
+const pink = solidUv(14, 124);
+const nearBlack = solidUv(194, 3);
+const white = solidUv(67, 0);
+const plate = (x0: number, y0: number, x1: number, y1: number, z: number, uv: BedrockCube['uv']): BedrockCube => ({ origin: [x0, y0, z], size: [x1 - x0, y1 - y0, 0.05], uv });
+const horizontalStrip = (k: number, halfWidth: number, z: number, uv: BedrockCube['uv']) => plate(centerX - halfWidth * quarterCell, faceBottom + k * quarterCell, centerX + halfWidth * quarterCell, faceBottom + (k + 1) * quarterCell, z, uv);
+const pixelRect = (k0: number, k1: number, i0: number, i1: number, z: number, uv: BedrockCube['uv']) =>
+  plate(centerX + i0 * quarterCell, faceBottom + k0 * quarterCell, centerX + i1 * quarterCell, faceBottom + k1 * quarterCell, z, uv);
 
 /** 嘴：自下往上每行（k 从 嘴下 起）的半宽（四分之一格）。粉的外形；暗的里面收一圈、上下各少一行。
  *  上沿到 k 7（眼睛那块的下半），下沿在下巴往下 嘴下 行 */
-const 嘴下 = -9;
-const 嘴外形 = [3, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 5];
-const 嘴里面 = [0, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 4, 0];
+const mouthBottom = -9;
+const mouthShape = [3, 5, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 6, 5];
+const mouthInside = [0, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 5, 4, 0];
 /** 眯起的眼睛：两个三行的「>」「<」，每行半格高、四分之三格宽，上下两行在外、中间一行往里错两格（四分之一格），斜笔连着；尖朝鼻梁。
  *  眼睛（i ±5.6～±13.6，k 4～12）里偏下放，眉毛（k 11 起）压不住。笔画再细，四分之三侧脸里缩成几个点（Agent 暂定，出静帧看过） */
-const 眯眼行 = [5, 7, 9] as const;
-const 眯眼: BedrockCube[] = [-1, 1].flatMap((边) =>
-  眯眼行.map((k0, r) => {
+const squintRows = [5, 7, 9] as const;
+const squint: BedrockCube[] = [-1, 1].flatMap((sign) =>
+  squintRows.map((k0, r) => {
     const [i0, i1] = r === 1 ? [7, 10] : [9, 12];
-    return 边 < 0 ? 方格(k0, k0 + 2, -i1, -i0, -1.69, 近黑) : 方格(k0, k0 + 2, i0, i1, -1.69, 近黑);
+    return sign < 0 ? pixelRect(k0, k0 + 2, -i1, -i0, -1.69, nearBlack) : pixelRect(k0, k0 + 2, i0, i1, -1.69, nearBlack);
   }),
 );
-const 大嘴骨: BedrockBone = {
+const bigMouthBone: BedrockBone = {
   name: 'mcanim第8句大嘴',
   parent: 'Mouth',
-  pivot: 骨.get('Mouth')!.pivot,
+  pivot: boneByName.get('Mouth')!.pivot,
   cubes: [
-    ...嘴外形.map((w, i) => 横条(嘴下 + i, w, -1.68, 粉)),
-    ...嘴里面.flatMap((w, i) => (w ? [横条(嘴下 + i, w, -1.69, 近黑)] : [])),
-    方格(4, 7, -4, -3, -1.7, 白),
-    方格(4, 7, 3, 4, -1.7, 白),
-    ...眯眼,
+    ...mouthShape.map((w, i) => horizontalStrip(mouthBottom + i, w, -1.68, pink)),
+    ...mouthInside.flatMap((w, i) => (w ? [horizontalStrip(mouthBottom + i, w, -1.69, nearBlack)] : [])),
+    pixelRect(4, 7, -4, -3, -1.7, white),
+    pixelRect(4, 7, 3, 4, -1.7, white),
+    ...squint,
   ],
 };
-const 嘴模型: BedrockModel = { ...MODEL, bones: [...空骨(链('Mouth')), 大嘴骨] };
+const mouthModel: BedrockModel = { ...MODEL, bones: [...emptyBones(chain('Mouth')), bigMouthBone] };
 
-const 藏: BonePose = { scale: 0 };
+const hiddenPose: BonePose = { scale: 0 };
 
 /** 提亮：这条尾巴自己的模型自己一份材质（基岩模型.tsx 按模型缓存），乘上 尾巴提亮；平涂在 useFrame 里派生材质时连颜色一起复制 */
-const 提亮: React.FC<{ 倍: number; children: React.ReactNode }> = ({ 倍, children }) => {
+const Brighten: React.FC<{ brightness: number; children: React.ReactNode }> = ({ brightness, children }) => {
   const ref = useRef<THREE.Group>(null);
   useLayoutEffect(() => {
     ref.current?.traverse((o) => {
       const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
-      if ((o as THREE.Mesh).isMesh && m?.color) m.color.setScalar(倍);
+      if ((o as THREE.Mesh).isMesh && m?.color) m.color.setScalar(brightness);
     });
   });
   return <group ref={ref}>{children}</group>;
 };
 
-export type 哈气酒狐属性 = 魔法酒狐新动作Props & {
+export type HissingWineFoxProps = MagicalWineFoxExProps & {
   /** 换上哈气的脸（大张的嘴、眯成 > < 的眼睛；只在表情是 哈气 时）；默认开 */
-  大嘴?: boolean;
+  bigMouth?: boolean;
   /** 换上炸毛提亮的尾巴（只在姿势是 哈气 时）；默认开 */
-  炸毛尾?: boolean;
+  bristleTail?: boolean;
 };
 
 /** 用法同 MagicalWineFoxEx；姿势 哈气、表情 哈气 时换嘴、换尾巴 */
-export const 哈气酒狐: React.FC<哈气酒狐属性> = ({ 大嘴 = true, 炸毛尾 = true, ...p }) => {
-  const 嘴 = 大嘴 && p.表情 === '哈气';
-  const 尾 = 炸毛尾 && p.姿势 === '哈气';
-  if (!嘴 && !尾) return <MagicalWineFoxEx {...p} />;
-  const 表 = magicalWineFoxExBones(p);
+export const HissingWineFox: React.FC<HissingWineFoxProps> = ({ bigMouth = true, bristleTail = true, ...p }) => {
+  const hissMouth = bigMouth && p.expression === '哈气';
+  const puffTail = bristleTail && p.stancePose === '哈气';
+  if (!hissMouth && !puffTail) return <MagicalWineFoxEx {...p} />;
+  const boneTable = magicalWineFoxExBones(p);
   // 哈气的脸：原来的哈气嘴、两只眼睛（眼皮连同下面挂的虹膜、高光）都藏掉，换成 嘴模型 里的大嘴和眯眼
-  const 改 = { ...p.骨骼, ...(嘴 ? { mcanim哈气嘴: 藏, RightEyelid: 藏, LeftEyelid: 藏 } : {}), ...(尾 ? { Tail: 藏 } : {}) };
+  const skeletonOverride = { ...p.skeleton, ...(hissMouth ? { mcanim哈气嘴: hiddenPose, RightEyelid: hiddenPose, LeftEyelid: hiddenPose } : {}), ...(puffTail ? { Tail: hiddenPose } : {}) };
   return (
     <>
-      <MagicalWineFoxEx {...p} 骨骼={改} />
+      <MagicalWineFoxEx {...p} skeleton={skeletonOverride} />
       <group position={p.pose.loc as V3} rotation={[0, 0, rad(p.pose.yaw ?? 0)]}>
         <group rotation={[rad(p.pose.pitch), 0, 0]} scale={[1, 1, p.pose.squash]}>
-          {尾 && (
-            <提亮 倍={尾巴提亮}>
-              <BedrockModelView model={尾巴模型} scale={MAGICAL_WINE_FOX.scale} pose={表} />
-            </提亮>
+          {puffTail && (
+            <Brighten brightness={tailBrighten}>
+              <BedrockModelView model={tailModel} scale={MAGICAL_WINE_FOX.scale} pose={boneTable} />
+            </Brighten>
           )}
-          {嘴 && <BedrockModelView model={嘴模型} scale={MAGICAL_WINE_FOX.scale} pose={表} />}
+          {hissMouth && <BedrockModelView model={mouthModel} scale={MAGICAL_WINE_FOX.scale} pose={boneTable} />}
         </group>
       </group>
     </>

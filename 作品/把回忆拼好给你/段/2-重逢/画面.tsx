@@ -6,59 +6,59 @@
 // 文字一时只走一路（用户 10-24 点名这一帧气泡、聊天行、歌词三路字一起出），接缝那一帧又不能一下没了。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 光影范围 } from '@engine/三渲二/画布.tsx';
+import { shadingScope } from '@engine/三渲二/画布.tsx';
 import { fps } from '../../分镜/时间.ts';
-import { 段时钟 } from '../../分镜/正片第15句.ts';
-import { 光影段 } from '../../默认.ts';
-import { 色板 } from '../../色板.ts';
-import { 符文歌词 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 樱花风 } from '../../特效/樱花风.tsx';
-import { 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
-import { 加入游戏聊天, 第15句风, 铃在画面 } from '../../场/2-门口/摇铃.tsx';
-import { 重逢画面, 风散心 } from '../../场/2-隐世之境/重逢.tsx';
-import { 聊天行不透明, 重逢机位 } from '../../场/2-隐世之境/重逢动作.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { segClock } from '../../分镜/正片第15句.ts';
+import { shadingBySeg } from '../../默认.ts';
+import { palette } from '../../色板.ts';
+import { RuneLyric } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { SakuraWind } from '../../特效/樱花风.tsx';
+import { line15RuneStyle } from '../../场/2-门口/归隐歌词.ts';
+import { JoinGameChat, bellWind, bellInPicture } from '../../场/2-门口/摇铃.tsx';
+import { ReunionPicture, windScatterCenter } from '../../场/2-隐世之境/重逢.tsx';
+import { chatLineOpacity, reunionRig } from '../../场/2-隐世之境/重逢动作.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 键 = '2-重逢';
-const 起帧 = 段时钟(键).起帧;
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
-const 歌词样式 = { ...第15句符文样式, 描边色: 色板['归隐之地'].描边 };
+const segKey = '2-重逢';
+const startFrame = segClock(segKey).起帧;
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
+const lyricStyle = { ...line15RuneStyle, outlineColor: palette['归隐之地'].outlineColor };
 /** 太阳整段按第 57 帧的镜头朝向摆（用户 11-03 核脸补光看的那一帧，那一帧和原来一样）。原来跟着每帧的镜头转，推镜一路往右转，
  *  地毯上的影子边跟着一格一格地爬（用户 11-03「这边边缘像素为什么光影会乱动？」） */
-const 参照机 = 重逢机位((起帧 + 57) / fps);
-const 光影场 = { 太阳参照朝向: [参照机.看[0] - 参照机.眼[0], 参照机.看[1] - 参照机.眼[1], 参照机.看[2] - 参照机.眼[2]] as const };
+const referenceRig = reunionRig((startFrame + 57) / fps);
+const shadingScene = { sunRefDir: [referenceRig.看[0] - referenceRig.眼[0], referenceRig.看[1] - referenceRig.眼[1], referenceRig.看[2] - referenceRig.眼[2]] as const };
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const 帧 = 起帧 + f;
-  const 聊天透 = 聊天行不透明(帧 / fps);
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
+  const frame = startFrame + f;
+  const chatAlpha = chatLineOpacity(frame / fps);
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
-      <光影范围.Provider value={{ 光影: 光影段[键] }}>
-        <重逢画面
-          帧={帧}
+      <shadingScope.Provider value={{ shading: shadingBySeg[segKey] }}>
+        <ReunionPicture
+          帧={frame}
           种子={f}
-          光影场={光影场}
+          shadingScene={shadingScene}
           叠层={
             <>
-              <樱花风 秒={帧 / fps} 时刻={第15句风} 源={铃在画面} 散心={风散心} />
-              <符文歌词 行们={行们} 样式={歌词样式} />
-              {聊天透 > 0 && (
-                <div style={{ position: 'absolute', inset: 0, opacity: 聊天透 }}>
-                  <加入游戏聊天 帧={帧} />
+              <SakuraWind 秒={frame / fps} windTime={bellWind} 源={bellInPicture} scatterCenter={windScatterCenter} />
+              <RuneLyric lines={lyricLines} 样式={lyricStyle} />
+              {chatAlpha > 0 && (
+                <div style={{ position: 'absolute', inset: 0, opacity: chatAlpha }}>
+                  <JoinGameChat 帧={frame} />
                 </div>
               )}
             </>
           }
         />
-      </光影范围.Provider>
+      </shadingScope.Provider>
     </AbsoluteFill>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

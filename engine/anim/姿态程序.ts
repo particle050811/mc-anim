@@ -7,22 +7,22 @@ import type { EntityPart, PartPose } from '../model/实体模型.tsx';
 import { clamp } from '../core/数学.ts';
 import { restPose, toPartPoses, type MutablePose } from './关键帧动画.ts';
 
-export type 姿态节点 = [string, string, ...unknown[]];
+export type PoseNode = [string, string, ...unknown[]];
 // 默认：枚举给常量名；long 超出 2^53 的写成十进制串（AnimationState.lastTime 的 Long.MAX_VALUE）
-export type 输入说明 = { 类型: 'i' | 'j' | 'f' | 'd'; 来源: string; 枚举?: string[]; 枚举类?: string; 默认?: number | string };
-export type 姿态程序 = {
+export type InputSpec = { 类型: 'i' | 'j' | 'f' | 'd'; 来源: string; 枚举?: string[]; 枚举类?: string; 默认?: number | string };
+export type PoseProgram = {
   格式: '姿态程序/1';
   模型类: string;
   方法: string[];
   复位: boolean;
-  输入: Record<string, 输入说明>;
+  输入: Record<string, InputSpec>;
   固定: Record<string, unknown>;
-  节点: 姿态节点[];
+  节点: PoseNode[];
   输出: Record<string, Record<string, number>>;
   警告: string[];
 };
-export type 姿态输入 = Record<string, number | bigint | boolean | string | undefined>;
-type 值 = number | boolean | bigint;
+export type PoseInput = Record<string, number | bigint | boolean | string | undefined>;
+type ConstValue = number | boolean | bigint;
 
 const f32 = Math.fround;
 const f2i = (x: number) => (Number.isNaN(x) ? 0 : x >= 2147483647 ? 2147483647 : x <= -2147483648 ? -2147483648 : Math.trunc(x));
@@ -35,7 +35,7 @@ const jmin = (a: number, b: number) => (Number.isNaN(a) || Number.isNaN(b) ? NaN
 const jmax = (a: number, b: number) => (Number.isNaN(a) || Number.isNaN(b) ? NaN : a === 0 && b === 0 ? (Object.is(a, 0) ? a : b) : Math.max(a, b));
 
 /** 和 py/anim_py/动作翻译/图.py 的「内建」一一对应；名字带 JVM 描述符，版本间语义变了会换名字 */
-export const 内建函数: Record<string, (...a: number[]) => number> = {
+export const builtins: Record<string, (...a: number[]) => number> = {
   'net/minecraft/util/Mth.sin(F)F': (x) => SIN[f2i(f32(x * SIN_SCALE)) & 65535],
   'net/minecraft/util/Mth.cos(F)F': (x) => SIN[f2i(f32(f32(x * SIN_SCALE) + 16384)) & 65535],
   // 1.21.x：参数是 double，乘 double 常量、(long) 强转再 & 65535
@@ -82,7 +82,7 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
     return f32(a + f32(t * d));
   },
   // 1.21.x 挪进 Mth、参数次序改成 (t, 从, 到)，算法一样
-  'net/minecraft/util/Mth.rotLerpRad(FFF)F': (t, a, b) => 内建函数['net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F'](a, b, t),
+  'net/minecraft/util/Mth.rotLerpRad(FFF)F': (t, a, b) => builtins['net/minecraft/client/model/ModelUtils.rotlerpRad(FFF)F'](a, b, t),
   'java/lang/Math.sin(D)D': Math.sin,
   'java/lang/Math.cos(D)D': Math.cos,
   'java/lang/Math.sqrt(D)D': Math.sqrt,
@@ -101,14 +101,14 @@ export const 内建函数: Record<string, (...a: number[]) => number> = {
   'java/lang/Math.signum(F)F': (x) => (x === 0 || Number.isNaN(x) ? x : Math.sign(x)),
 };
 
-const 读常量 = (v: unknown, t: string): 值 => {
+const readConst = (v: unknown, t: string): ConstValue => {
   const n = v === 'NaN' ? NaN : v === 'Infinity' ? Infinity : v === '-Infinity' ? -Infinity : v;
   if (t === 'z') return Boolean(n);
   if (t === 'j') return BigInt(n as number | string); // 超出 2^53 的 long 常量写成串
   return t === 'f' ? f32(n as number) : (n as number);
 };
 
-const 算 = (op: string, t: string, a: 值, b: 值): 值 => {
+const applyOp = (op: string, t: string, a: ConstValue, b: ConstValue): ConstValue => {
   if (t === 'f' || t === 'd') {
     const x = a as number;
     const y = b as number;
@@ -162,16 +162,16 @@ const 算 = (op: string, t: string, a: 值, b: 值): 值 => {
   throw new Error(`不认识的运算 ${op}:${t}`);
 };
 
-const 转换 = (v: 值, 从: string, 到: string): 值 => {
-  if (从 === 到) return v;
-  if (到 === 'f') return f32(Number(v));
-  if (到 === 'd') return Number(v);
-  if (到 === 'i') return 从 === 'j' ? Number(BigInt.asIntN(32, v as bigint)) : 从 === 'i' ? (v as number) : f2i(v as number);
-  if (到 === 'j') return 从 === 'i' ? BigInt(v as number) : f2l(v as number);
-  throw new Error(`不支持的转换 ${从}→${到}`);
+const convert = (v: ConstValue, fromName: string, toConvention: string): ConstValue => {
+  if (fromName === toConvention) return v;
+  if (toConvention === 'f') return f32(Number(v));
+  if (toConvention === 'd') return Number(v);
+  if (toConvention === 'i') return fromName === 'j' ? Number(BigInt.asIntN(32, v as bigint)) : fromName === 'i' ? (v as number) : f2i(v as number);
+  if (toConvention === 'j') return fromName === 'i' ? BigInt(v as number) : f2l(v as number);
+  throw new Error(`不支持的转换 ${fromName}→${toConvention}`);
 };
 
-const 比较 = (op: string, a: 值, b: 值): boolean => {
+const compare = (op: string, a: ConstValue, b: ConstValue): boolean => {
   switch (op) {
     case '<': return a < b;
     case '<=': return a <= b;
@@ -183,31 +183,31 @@ const 比较 = (op: string, a: 值, b: 值): boolean => {
   throw new Error(op);
 };
 
-const 部件初始 = (根: EntityPart) => {
+const partInitialPose = (root: EntityPart) => {
   const out: Record<string, { offset: number[]; rot: number[] }> = {};
   const walk = (p: EntityPart) => {
     out[p.name] = p.pose;
     p.children.forEach(walk);
   };
-  walk(根);
+  walk(root);
   return out;
 };
-const 初始字段: Record<string, ['offset' | 'rot', number]> = { x: ['offset', 0], y: ['offset', 1], z: ['offset', 2], xRot: ['rot', 0], yRot: ['rot', 1], zRot: ['rot', 2] };
+const initialFields: Record<string, ['offset' | 'rot', number]> = { x: ['offset', 0], y: ['offset', 1], z: ['offset', 2], xRot: ['rot', 0], yRot: ['rot', 1], zRot: ['rot', 2] };
 
-const 输入值 = (名: string, 说明: 输入说明, 给: 姿态输入): 值 => {
-  let v: number | bigint | boolean | string | undefined = 给[名];
-  if (v === undefined) v = 说明.默认 ?? 0;
-  if (说明.类型 === 'j' && !说明.枚举) return BigInt.asIntN(64, typeof v === 'bigint' || typeof v === 'string' ? BigInt(v) : BigInt(Math.trunc(Number(v))));
+const inputValue = (inputName: string, inputSpec: InputSpec, inputs: PoseInput): ConstValue => {
+  let v: number | bigint | boolean | string | undefined = inputs[inputName];
+  if (v === undefined) v = inputSpec.默认 ?? 0;
+  if (inputSpec.类型 === 'j' && !inputSpec.枚举) return BigInt.asIntN(64, typeof v === 'bigint' || typeof v === 'string' ? BigInt(v) : BigInt(Math.trunc(Number(v))));
   if (typeof v === 'bigint') v = Number(v);
   if (typeof v === 'string') {
-    const i = 说明.枚举?.indexOf(v) ?? -1;
-    if (i < 0) throw new Error(`输入 ${名} 的值 ${v} 不在枚举 ${说明.枚举?.join('/') ?? '（不是枚举）'} 里`);
+    const i = inputSpec.枚举?.indexOf(v) ?? -1;
+    if (i < 0) throw new Error(`输入 ${inputName} 的值 ${v} 不在枚举 ${inputSpec.枚举?.join('/') ?? '（不是枚举）'} 里`);
     v = i;
   }
   if (typeof v === 'boolean') v = v ? 1 : 0;
-  if (说明.类型 === 'f') return f32(v);
-  if (说明.类型 === 'j') return BigInt(Math.trunc(v));
-  if (说明.类型 === 'i') return v | 0;
+  if (inputSpec.类型 === 'f') return f32(v);
+  if (inputSpec.类型 === 'j') return BigInt(Math.trunc(v));
+  if (inputSpec.类型 === 'i') return v | 0;
   return v;
 };
 
@@ -217,37 +217,37 @@ const 输入值 = (名: string, 说明: 输入说明, 给: 姿态输入): 值 =>
  * （每帧差值在 2^24 毫秒内 float 不丢位）。速度不是 1 的动画逐帧取整跟历史有关，对不上。不给开始刻 = 没开始（游戏里 stop() 的状态）。
  * 名 照程序的输入名写，如 'entity.roarAnimationState'。
  */
-export const 动画状态 = (名: string, 开始刻?: number): 姿态输入 =>
-  开始刻 === undefined
-    ? { [`${名}.lastTime`]: 9223372036854775807n, [`${名}.accumulatedTime`]: 0n }
-    : { [`${名}.lastTime`]: (BigInt(Math.trunc(开始刻)) * 1000n) / 20n, [`${名}.accumulatedTime`]: 0n };
+export const animState = (animName: string, startTick?: number): PoseInput =>
+  startTick === undefined
+    ? { [`${animName}.lastTime`]: 9223372036854775807n, [`${animName}.accumulatedTime`]: 0n }
+    : { [`${animName}.lastTime`]: (BigInt(Math.trunc(startTick)) * 1000n) / 20n, [`${animName}.accumulatedTime`]: 0n };
 
 /** 编译一次、按帧求：返回 (输入) → 每个节点的值（测试和调试用；画面用 姿态求值器） */
-export const 节点求值器 = (程序: 姿态程序, 根: EntityPart) => {
-  if (程序.格式 !== '姿态程序/1') throw new Error(`不认识的姿态程序格式 ${String(程序.格式)}`);
-  const 初始 = 部件初始(根);
-  const 节点 = 程序.节点;
-  for (const e of 节点) {
-    if (e[0] === 'call' && !内建函数[e[2] as string]) throw new Error(`姿态程序用了没实现的内建函数 ${String(e[2])}`);
-    if (e[0] === 'rest' && !初始[e[2] as string]) throw new Error(`姿态程序要部件 ${String(e[2])}，模型里没有`);
+export const nodeEvaluator = (poseProgram: PoseProgram, root: EntityPart) => {
+  if (poseProgram.格式 !== '姿态程序/1') throw new Error(`不认识的姿态程序格式 ${String(poseProgram.格式)}`);
+  const initialPose = partInitialPose(root);
+  const nodes = poseProgram.节点;
+  for (const e of nodes) {
+    if (e[0] === 'call' && !builtins[e[2] as string]) throw new Error(`姿态程序用了没实现的内建函数 ${String(e[2])}`);
+    if (e[0] === 'rest' && !initialPose[e[2] as string]) throw new Error(`姿态程序要部件 ${String(e[2])}，模型里没有`);
   }
-  return (给: 姿态输入): 值[] => {
-    const v: 值[] = new Array(节点.length);
-    for (let i = 0; i < 节点.length; i++) {
-      const e = 节点[i];
+  return (inputs: PoseInput): ConstValue[] => {
+    const v: ConstValue[] = new Array(nodes.length);
+    for (let i = 0; i < nodes.length; i++) {
+      const e = nodes[i];
       const op = e[0];
       const t = e[1];
-      let r: 值;
+      let r: ConstValue;
       switch (op) {
-        case 'c': r = 读常量(e[2], t); break;
+        case 'c': r = readConst(e[2], t); break;
         case 'in': {
-          const 名 = e[2] as string;
-          r = 输入值(名, 程序.输入[名] ?? { 类型: t as 输入说明['类型'], 来源: '' }, 给);
+          const inputName = e[2] as string;
+          r = inputValue(inputName, poseProgram.输入[inputName] ?? { 类型: t as InputSpec['类型'], 来源: '' }, inputs);
           break;
         }
         case 'rest': {
-          const [k, j] = 初始字段[e[3] as string];
-          r = f32(初始[e[2] as string][k][j]);
+          const [k, j] = initialFields[e[3] as string];
+          r = f32(initialPose[e[2] as string][k][j]);
           break;
         }
         case 'neg': {
@@ -255,27 +255,27 @@ export const 节点求值器 = (程序: 姿态程序, 根: EntityPart) => {
           r = t === 'j' ? BigInt.asIntN(64, -(a as bigint)) : t === 'i' ? -(a as number) | 0 : -(a as number);
           break;
         }
-        case 'conv': r = 转换(v[e[2] as number], 节点[e[2] as number][1], t); break;
+        case 'conv': r = convert(v[e[2] as number], nodes[e[2] as number][1], t); break;
         case '<': case '<=': case '>': case '>=': case '==': case '!=':
-          r = 比较(op, v[e[2] as number], v[e[3] as number]);
+          r = compare(op, v[e[2] as number], v[e[3] as number]);
           break;
         case 'not': r = !v[e[2] as number]; break;
         // 类型 z 的 and / or 是逻辑的；i、j 的是按位的，走 算
-        case 'and': r = t === 'z' ? Boolean(v[e[2] as number]) && Boolean(v[e[3] as number]) : 算(op, t, v[e[2] as number], v[e[3] as number]); break;
-        case 'or': r = t === 'z' ? Boolean(v[e[2] as number]) || Boolean(v[e[3] as number]) : 算(op, t, v[e[2] as number], v[e[3] as number]); break;
+        case 'and': r = t === 'z' ? Boolean(v[e[2] as number]) && Boolean(v[e[3] as number]) : applyOp(op, t, v[e[2] as number], v[e[3] as number]); break;
+        case 'or': r = t === 'z' ? Boolean(v[e[2] as number]) || Boolean(v[e[3] as number]) : applyOp(op, t, v[e[2] as number], v[e[3] as number]); break;
         case 'sel': r = v[e[2] as number] ? v[e[3] as number] : v[e[4] as number]; break;
         case 'call': {
           const args = (e.slice(3) as number[]).map((a) => v[a] as number);
-          r = 内建函数[e[2] as string](...args);
+          r = builtins[e[2] as string](...args);
           break;
         }
         case 'tab': {
-          const 表 = e[2] as unknown[];
+          const constTable = e[2] as unknown[];
           const k = v[e[3] as number] as number;
-          r = k >= 0 && k < 表.length ? 读常量(表[k], t) : t === 'j' ? 0n : 0;
+          r = k >= 0 && k < constTable.length ? readConst(constTable[k], t) : t === 'j' ? 0n : 0;
           break;
         }
-        default: r = 算(op, t, v[e[2] as number], v[e[3] as number]);
+        default: r = applyOp(op, t, v[e[2] as number], v[e[3] as number]);
       }
       v[i] = r;
     }
@@ -284,32 +284,32 @@ export const 节点求值器 = (程序: 姿态程序, 根: EntityPart) => {
 };
 
 /** 编译一次、按帧求：返回 (输入) → 部件姿态（从模型的初始姿态出发，程序写到的字段换成算出来的值）和不画的部件 */
-export const 姿态求值器 = (程序: 姿态程序, 根: EntityPart) => {
-  const 求 = 节点求值器(程序, 根);
-  return (给: 姿态输入): { 姿态: MutablePose; 隐藏: string[] } => {
-    const v = 求(给);
-    const 姿态 = restPose(根);
-    const 隐藏: string[] = [];
-    for (const [部件, 字段们] of Object.entries(程序.输出)) {
-      const p = 姿态[部件];
-      if (!p) throw new Error(`模型里没有部件 ${部件}`);
-      for (const [字段, i] of Object.entries(字段们)) {
+export const poseEvaluator = (poseProgram: PoseProgram, root: EntityPart) => {
+  const solve = nodeEvaluator(poseProgram, root);
+  return (inputs: PoseInput): { partPoses: MutablePose; hidden: string[] } => {
+    const v = solve(inputs);
+    const partPoses = restPose(root);
+    const hidden: string[] = [];
+    for (const [part, fields] of Object.entries(poseProgram.输出)) {
+      const p = partPoses[part];
+      if (!p) throw new Error(`模型里没有部件 ${part}`);
+      for (const [field, i] of Object.entries(fields)) {
         const x = Number(v[i]);
-        if (字段 in 初始字段) {
-          const [k, j] = 初始字段[字段];
+        if (field in initialFields) {
+          const [k, j] = initialFields[field];
           p[k][j] = x;
-        } else if (字段 === 'xScale' || 字段 === 'yScale' || 字段 === 'zScale') p.scale['xyz'.indexOf(字段[0])] = x;
-        else if (字段 === 'visible' && !x) 隐藏.push(部件);
+        } else if (field === 'xScale' || field === 'yScale' || field === 'zScale') p.scale['xyz'.indexOf(field[0])] = x;
+        else if (field === 'visible' && !x) hidden.push(part);
       }
     }
-    return { 姿态, 隐藏 };
+    return { partPoses, hidden };
   };
 };
 
 /** EntityModel 的 pose 参数（每次都重新编译，画面里一帧一个模型时够用；多帧、多只用 姿态求值器 编译一次） */
-export const 求部件姿态 = (程序: 姿态程序, 根: EntityPart, 给: 姿态输入): Record<string, PartPose> => {
-  const { 姿态, 隐藏 } = 姿态求值器(程序, 根)(给);
-  const out = toPartPoses(姿态);
-  for (const k of 隐藏) out[k] = { ...out[k], hide: true };
+export const computePartPose = (poseProgram: PoseProgram, root: EntityPart, inputs: PoseInput): Record<string, PartPose> => {
+  const { partPoses, hidden } = poseEvaluator(poseProgram, root)(inputs);
+  const out = toPartPoses(partPoses);
+  for (const k of hidden) out[k] = { ...out[k], hide: true };
   return out;
 };

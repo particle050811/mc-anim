@@ -9,92 +9,92 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { 抛物线, 弹道位置, 弹道方向, type 弹道 } from '../零件/弹道.ts';
-import { MC空间, 取模型, 模型件 } from '../零件/实体.tsx';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { parabola, trajectoryPos, trajectoryDir, type Trajectory } from '../零件/弹道.ts';
+import { MinecraftSpace, getModel, ModelPart } from '../零件/实体.tsx';
 import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
-import { 大爆炸 } from '../零件/乙爆炸.tsx';
-import 元, { 喷发刻, 火山升刻, 火山寿命刻, 火山弹最长刻, 火山龄 } from './喷发.元.ts';
-import 火山模型数据 from 'asset:模型/法术/goety/VolcanoModel';
-import 弹模型数据 from 'asset:模型/法术/goety/BlastFungusModel';
-import 火山图 from 'asset:贴图/法术/goety/entity/monolith/volcano';
-import 火山亮图 from 'asset:贴图/法术/goety/entity/monolith/volcano_active';
-import 弹图 from 'asset:贴图/法术/goety/entity/projectiles/pyroclast';
+import { bigExplosion } from '../零件/乙爆炸.tsx';
+import meta, { eruptTicks, volcanoRiseTicks, volcanoLifeTicks, volcanoBombMaxTicks, volcanoAge } from './喷发.元.ts';
+import volcanoModelData from 'asset:模型/法术/goety/VolcanoModel';
+import blastFungusModelData from 'asset:模型/法术/goety/BlastFungusModel';
+import volcanoPng from 'asset:贴图/法术/goety/entity/monolith/volcano';
+import volcanoActivePng from 'asset:贴图/法术/goety/entity/monolith/volcano_active';
+import pyroclastPng from 'asset:贴图/法术/goety/entity/projectiles/pyroclast';
 
-const 火山模型 = 取模型(火山模型数据, 'VolcanoModel');
-const 弹模型 = 取模型(弹模型数据, 'BlastFungusModel');
+const volcanoModel = getModel(volcanoModelData, 'VolcanoModel');
+const blastFungusModel = getModel(blastFungusModelData, 'BlastFungusModel');
 
-type 弹 = { 出刻: number; 道: 弹道; 落刻: number };
-const 排弹 = (目标: 点, 种子: number): 弹[] =>
-  喷发刻.map((出刻, i) => {
-    const r = rng(种子 * 761 + i);
-    const 三角 = () => (r() - r()) * 0.0172275 * 12;
-    const 向: 点 = [三角(), 三角(), 1 + 三角()];
-    const 长 = Math.hypot(向[0], 向[1], 向[2]);
-    const 道 = 抛物线([目标[0], 目标[1], 目标[2] + 0.6], [(向[0] / 长) * 1.5, (向[1] / 长) * 1.5, (向[2] / 长) * 1.5]);
-    let 落刻 = 0;
+type Projectile = { launchTick: number; trajectory: Trajectory; landTick: number };
+const shotRow = (target: Vec3, seed: number): Projectile[] =>
+  eruptTicks.map((launchTick, i) => {
+    const r = rng(seed * 761 + i);
+    const jitter = () => (r() - r()) * 0.0172275 * 12;
+    const spread: Vec3 = [jitter(), jitter(), 1 + jitter()];
+    const vecLength = Math.hypot(spread[0], spread[1], spread[2]);
+    const trajectory = parabola([target[0], target[1], target[2] + 0.6], [(spread[0] / vecLength) * 1.5, (spread[1] / vecLength) * 1.5, (spread[2] / vecLength) * 1.5]);
+    let landTick = 0;
     if (i > 0) {
-      落刻 = 1;
-      while (落刻 < 火山弹最长刻 && 道(落刻)[2] > 目标[2]) 落刻++;
+      landTick = 1;
+      while (landTick < volcanoBombMaxTicks && trajectory(landTick)[2] > target[2]) landTick++;
     }
-    return { 出刻, 道, 落刻 };
+    return { launchTick, trajectory, landTick };
   });
 
-const 喷发: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 龄 = 火山龄(刻);
-  const 立稳 = 刻 >= 火山升刻 && 刻 < 火山寿命刻;
-  const 弹们 = 排弹(目标, 种子);
-  const 烟: ParticleSpawn[] = [];
-  const 火: ParticleSpawn[] = [];
-  const 炸: ParticleSpawn[] = [];
-  for (let t = 火山升刻; t < Math.min(火山寿命刻, 刻); t++) if (!喷发刻.includes(t)) 烟.push({ 种: 'smoke', 刻: t, p: [目标[0], 目标[1], 目标[2]], 种子: 种子 * 9000 + t });
-  弹们.forEach((弹, i) => {
-    const r = rng(种子 * 131 + i);
-    for (let n = 1; n <= 弹.落刻 && 弹.出刻 + n <= 刻; n++) {
-      const 下 = 弹.道(n + 1);
-      烟.push({ 种: 'smoke', 刻: 弹.出刻 + n, p: [下[0] + r() / 2, 下[1] - r() / 2, 下[2] + 0.5], 种子: 种子 * 70000 + i * 200 + n });
-      火.push({ 种: 'flame', 刻: 弹.出刻 + n, p: [下[0] + r() / 2, 下[1] - r() / 2, 下[2] + 0.5], 种子: 种子 * 90000 + i * 200 + n });
+const Eruption: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const age = volcanoAge(tick);
+  const steady = tick >= volcanoRiseTicks && tick < volcanoLifeTicks;
+  const projectiles = shotRow(target, seed);
+  const smokeSpawns: ParticleSpawn[] = [];
+  const flames: ParticleSpawn[] = [];
+  const blastParticles: ParticleSpawn[] = [];
+  for (let t = volcanoRiseTicks; t < Math.min(volcanoLifeTicks, tick); t++) if (!eruptTicks.includes(t)) smokeSpawns.push({ 种: 'smoke', 刻: t, p: [target[0], target[1], target[2]], 种子: seed * 9000 + t });
+  projectiles.forEach((projectile, i) => {
+    const r = rng(seed * 131 + i);
+    for (let n = 1; n <= projectile.landTick && projectile.launchTick + n <= tick; n++) {
+      const nextPos = projectile.trajectory(n + 1);
+      smokeSpawns.push({ 种: 'smoke', 刻: projectile.launchTick + n, p: [nextPos[0] + r() / 2, nextPos[1] - r() / 2, nextPos[2] + 0.5], 种子: seed * 70000 + i * 200 + n });
+      flames.push({ 种: 'flame', 刻: projectile.launchTick + n, p: [nextPos[0] + r() / 2, nextPos[1] - r() / 2, nextPos[2] + 0.5], 种子: seed * 90000 + i * 200 + n });
     }
-    const 落 = 弹.道(弹.落刻);
-    炸.push(...大爆炸([落[0], 落[1], Math.max(落[2], 目标[2])], 弹.出刻 + 弹.落刻, 种子 * 17 + i));
+    const landing = projectile.trajectory(projectile.landTick);
+    blastParticles.push(...bigExplosion([landing[0], landing[1], Math.max(landing[2], target[2])], projectile.launchTick + projectile.landTick, seed * 17 + i));
   });
   return (
     <>
-      {龄 > 0 && (
-        <MC空间 位={目标}>
+      {age > 0 && (
+        <MinecraftSpace 位={target}>
           <group scale={[-1, -1, 1]}>
-            <模型件 模型={火山模型} 图={png(火山图)} 姿态={{ volcano: { offset: [0, 60 - 龄, 0] } }} />
-            {立稳 && <模型件 模型={火山模型} 图={png(火山亮图)} 画法="发光" 姿态={{ volcano: { offset: [0, 0, 0] } }} />}
+            <ModelPart 模型={volcanoModel} 图={png(volcanoPng)} partPoses={{ volcano: { offset: [0, 60 - age, 0] } }} />
+            {steady && <ModelPart 模型={volcanoModel} 图={png(volcanoActivePng)} 画法="发光" partPoses={{ volcano: { offset: [0, 0, 0] } }} />}
           </group>
-        </MC空间>
+        </MinecraftSpace>
       )}
-      {弹们.map((弹, i) => {
-        const n = 刻 - 弹.出刻;
-        if (n < 0 || n >= 弹.落刻) return null;
-        const 位 = 弹道位置(弹.道, n);
-        const v = 弹道方向(弹.道, n);
+      {projectiles.map((projectile, i) => {
+        const n = tick - projectile.launchTick;
+        if (n < 0 || n >= projectile.landTick) return null;
+        const pos = trajectoryPos(projectile.trajectory, n);
+        const v = trajectoryDir(projectile.trajectory, n);
         // 换成游戏坐标：vx = v[0]，vy = v[2]，vz = −v[1]
         const yRot = -(Math.atan2(-v[1], v[0]) + Math.PI / 2);
         const xRot = -(Math.atan2(Math.hypot(v[0], v[1]), v[2]) - Math.PI / 2);
         return (
-          <MC空间 key={i} 位={位}>
+          <MinecraftSpace key={i} 位={pos}>
             <group position={[0, 0.25, 0]}>
               <group rotation={[0, yRot, 0]}>
                 <group rotation={[xRot, 0, 0]}>
-                  <模型件 模型={弹模型} 图={png(弹图)} />
+                  <ModelPart 模型={blastFungusModel} 图={png(pyroclastPng)} />
                 </group>
               </group>
             </group>
-          </MC空间>
+          </MinecraftSpace>
         );
       })}
-      <VanillaParticles spawns={烟} 秒={秒} size={2.5} />
-      <VanillaParticles spawns={火} 秒={秒} />
-      <VanillaParticles spawns={炸} 秒={秒} />
+      <VanillaParticles spawns={smokeSpawns} 秒={sec} size={2.5} />
+      <VanillaParticles spawns={flames} 秒={sec} />
+      <VanillaParticles spawns={blastParticles} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 喷发);
+export default defineSpellPerformance(meta, Eruption);

@@ -75,7 +75,7 @@ export const darkness = (secSinceStart: number, durationSec = darknessParams.dur
   const t = secSinceStart * 20;
   const durTicks = durationSec * 20;
   const normal = lightmapValue(0, 0, gammaOpt, nv);
-  if (t < 0 || t >= durTicks) return { factor: 0, fogNear: near0, fogFar: far0, 亮度系数: 1, lightFactor: 1, fogColorFactor: 1, active: false };
+  if (t < 0 || t >= durTicks) return { factor: 0, fogNear: near0, fogFar: far0, brightnessFactor: 1, lightFactor: 1, fogColorFactor: 1, active: false };
   const factor = factorAt(t, durTicks);
   const fogDist = far0 + ((opt.minFogDist ?? darknessParams.minFogDist) - far0) * factor;
   const darkGamma = factor * scale;
@@ -86,7 +86,7 @@ export const darkness = (secSinceStart: number, durationSec = darknessParams.dur
     factor,
     fogNear: fogDist * darknessParams.fogStartRatio,
     fogFar: fogDist,
-    亮度系数: brightnessFactor,
+    brightnessFactor: brightnessFactor,
     lightFactor: brightnessFactor ** 2.2,
     fogColorFactor: (1 - factor) ** 2,
     active: true,
@@ -142,6 +142,6 @@ export const DarknessEffect: React.FC<{ sec: number; durationSec?: number; fogCo
     overlayMesh.renderOrder = 1e9;
     return overlayMesh;
   }, []);
-  (overlay.material as THREE.ShaderMaterial).uniforms.dim.value = 1 - Math.min(1, d.亮度系数);
-  return d.亮度系数 < 0.999 ? <primitive object={overlay} /> : null;
+  (overlay.material as THREE.ShaderMaterial).uniforms.dim.value = 1 - Math.min(1, d.brightnessFactor);
+  return d.brightnessFactor < 0.999 ? <primitive object={overlay} /> : null;
 };

@@ -1,26 +1,26 @@
 // 2-拨开阴霾 的画面：场/2-雷雨/画面.tsx 的 雷雨画面 按歌曲帧画（接着 2-雷雨 那个镜头），配原声、信标声、雨声（接上一段放到雨停）。
 import type React from 'react';
-import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { 段窗口 } from '../../分镜/正片第6到7句.ts';
-import { 光影段 } from '../../默认.ts';
-import { 雷雨画面 } from '../../场/2-雷雨/画面.tsx';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { shadingScope } from '@engine/三渲二/画布.tsx';
+import { segmentWindow } from '../../分镜/正片第6到7句.ts';
+import { shadingBySeg } from '../../默认.ts';
+import { StormPicture } from '../../场/2-雷雨/画面.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 起帧 = 段窗口('2-拨开阴霾').起帧;
+const startFrame = segmentWindow('2-拨开阴霾').起帧;
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
   return (
     <>
       {/* 光影照 默认.ts 的 光影段 */}
-      <光影范围.Provider value={{ 光影: 光影段['2-拨开阴霾'] }}>
-        <雷雨画面 帧={起帧 + f} />
-      </光影范围.Provider>
+      <shadingScope.Provider value={{ shading: shadingBySeg['2-拨开阴霾'] }}>
+        <StormPicture 帧={startFrame + f} />
+      </shadingScope.Provider>
     </>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

@@ -14,19 +14,19 @@ import * as geom from '../../场/7-李樱撤离/7-2/几何.ts';
 import type { Stack } from '@库/界面/箱子界面.tsx';
 
 export { FPS };
-export const 号 = '7-2-2至3' as const;
-export const 段起 = timeline.segmentStartFrame[号];
-export const 帧数 = timeline.frameCountOf(号);
-export const sf = (f: number) => 段起 + f;
+export const segmentId = '7-2-2至3' as const;
+export const segmentStartFrame = timeline.segmentStartFrame[segmentId];
+export const frameCount = timeline.frameCountOf(segmentId);
+export const sf = (f: number) => segmentStartFrame + f;
 
 // ---------- 台词 ----------
 // id 沿用配音时的「7-2-2-李樱-开到了」（配音文件、口型按 id 存）
-export const 开到了开口帧 = Math.round(timeline.gotItLineT * FPS) - 段起;
-export const 台词: { id: string; 帧: number; text: string; estDuration: number }[] = [
-  { id: '7-2-2-李樱-开到了', 帧: 开到了开口帧, text: '开到了！', estDuration: timeline.gotItLineDur },
+export const gotItLineFrame = Math.round(timeline.gotItLineT * FPS) - segmentStartFrame;
+export const lines: { id: string; 帧: number; text: string; estDuration: number }[] = [
+  { id: '7-2-2-李樱-开到了', 帧: gotItLineFrame, text: '开到了！', estDuration: timeline.gotItLineDur },
 ];
 // 传走那一帧（段内，带小数）
-export const 传送帧 = timeline.teleportSec * FPS - 段起;
+export const teleportFrame = timeline.teleportSec * FPS - segmentStartFrame;
 
 // ---------- 机位 ----------
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;

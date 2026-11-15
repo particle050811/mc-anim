@@ -11,46 +11,46 @@
 //    大气/云.ts 合成后还按云的前沿写深度，光影层用不着（合成只取颜色），不写。
 import * as THREE from 'three';
 import { atmoLightAt, atmoUniforms, atmosphere } from '../大气.ts';
-import { 云空间倍 } from './配置.ts';
-import { 云片元 } from './着色器.ts';
-import { 展开, 层值, 白天系数, type 展开配置 } from './展开.ts';
-import { 积云高度图 } from './高度图.ts';
-import { 蓝噪声, 蓝噪声边 } from './蓝噪声.ts';
-import type { 云场, 云配置 } from './配置.ts';
+import { cloudSpaceMult } from './配置.ts';
+import { cloudFragment } from './着色器.ts';
+import { expandCloud, layerValues, dayFactor, type ExpandedConfig } from './展开.ts';
+import { cumulusHeightMap } from './高度图.ts';
+import { blueNoise, blueNoiseEdge } from './蓝噪声.ts';
+import type { CloudScene, CloudConfig } from './配置.ts';
 
-export type 画云输入 = {
+export type CloudInput = {
   gl: THREE.WebGLRenderer;
   camera: THREE.PerspectiveCamera;
   /** 主画面的对数深度（全分辨率，log2(1 + 视深) / log2(远 + 1)，天 = 1） */
-  深度: THREE.Texture;
+  depthTexture: THREE.Texture;
   /** 主画面（取不透明度） */
-  主画面: THREE.Texture;
+  mainPicture: THREE.Texture;
   宽: number;
   高: number;
   /** 云合成到这里（全分辨率，画面值、预乘） */
   目标: THREE.WebGLRenderTarget;
-  配置: 云配置;
-  场: 云场;
+  config: CloudConfig;
+  场: CloudScene;
   海平面: number;
   秒: number;
   /** 太阳本体在画布上的方块（像素，左下角 x、y，宽，高）；没有给 null */
-  太阳框: readonly [number, number, number, number] | null;
+  sunBox: readonly [number, number, number, number] | null;
   /** 离屏图和复用状态各用各的（水面反射的云另画一张小图，和主画面那张不来回挤掉） */
   槽?: string;
 };
 
 // 去云默认镜头 20 米内删掉、再 30 米渐变回来（同 大气/云.ts 的 defaultNear）
-const 镜头周围 = [20, 30] as const;
+const aroundCamera = [20, 30] as const;
 // 一次画多少行：整屏一次画完的话单次绘制太长，浏览器的 GPU 看门狗会把上下文杀掉（同 大气/云.ts）
-const 横条数 = 8;
+const stripCount = 8;
 
-const 全屏顶点 = 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }';
-const 横条顶点 = /* glsl */ `
+const fullscreenVertex = 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }';
+const stripVertex = /* glsl */ `
 uniform vec2 uStrip;
 void main() { gl_Position = vec4(position.x, mix(uStrip.x, uStrip.y, position.y * 0.5 + 0.5), 0.0, 1.0); }`;
 
 // 准备：r = 对数深度，g = 这一帧过后离屏图里这个像素对不对，b = 这一帧要不要重算
-const 准备片元 = (半: boolean) => /* glsl */ `
+const prepFragment = (halfRes: boolean) => /* glsl */ `
 precision highp float;
 uniform sampler2D tDepth;
 uniform sampler2D tMain;
@@ -61,10 +61,10 @@ out highp vec4 oPrep;
 void main() {
   ivec2 c = ivec2(gl_FragCoord.xy);
   ivec2 hi = textureSize(tDepth, 0) - 1;
-  ivec2 at = ${半 ? 'c * 2' : 'c'};
+  ivec2 at = ${halfRes ? 'c * 2' : 'c'};
   float d = texelFetch(tDepth, at, 0).r;
   // 合成要取到的那一圈：全分辨率时第 q 个像素取 q − 2 … q + 1，反过来这一点被 c − 1 … c + 2 取到；半分辨率时被全分辨率的 2c − 3 … 2c + 4 取到
-  ${半 ? 'ivec2 lo = at - 3, up = at + 4;' : 'ivec2 lo = at - 1, up = at + 2;'}
+  ${halfRes ? 'ivec2 lo = at - 3, up = at + 4;' : 'ivec2 lo = at - 1, up = at + 2;'}
   bool need = false;
   for (int y = lo.y; y <= up.y && !need; y++)
     for (int x = lo.x; x <= up.x; x++)
@@ -78,7 +78,7 @@ void main() {
 }`;
 
 // 合成（全分辨率）：同 大气/云.ts 的 COMPOSITE_FS 的颜色那一半
-const 合成片元 = /* glsl */ `
+const compositeFragment = /* glsl */ `
 precision highp float;
 uniform sampler2D tCloud;
 uniform sampler2D tDepth;
@@ -100,7 +100,7 @@ void main() {
 }`;
 
 // 放大（半分辨率）：全分辨率像素 q 在低分辨率上的位置 u = (q + 0.5) / 2 − 0.5，取 floor(u) − 1 起 4×4 个，帐篷权 max(0, 2 − |u − p|) × 深度权
-const 放大片元 = /* glsl */ `
+const upscaleFragment = /* glsl */ `
 precision highp float;
 uniform sampler2D tCloud;
 uniform sampler2D tPrep;
@@ -125,57 +125,57 @@ void main() {
   gl_FragColor = sum / max(wsum, 1e-12);
 }`;
 
-const 新片 = (材质: THREE.Material) => {
-  const 片 = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), 材质);
-  片.frustumCulled = false;
-  const 场 = new THREE.Scene();
-  场.add(片);
-  return 场;
+const newPass = (material: THREE.Material) => {
+  const quadMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+  quadMesh.frustumCulled = false;
+  const scene = new THREE.Scene();
+  scene.add(quadMesh);
+  return scene;
 };
 
-type 资源 = {
+type Resource = {
   宽: number;
   高: number;
-  半: boolean;
-  云: THREE.WebGLRenderTarget;
-  准备: [THREE.WebGLRenderTarget, THREE.WebGLRenderTarget];
+  halfRes: boolean;
+  cloudTarget: THREE.WebGLRenderTarget;
+  spareTargets: [THREE.WebGLRenderTarget, THREE.WebGLRenderTarget];
   轮: number;
   键: string;
 };
 
-const 机 = new THREE.OrthographicCamera();
-const 程序们 = new Map<string, { 材质: THREE.ShaderMaterial; 场: THREE.Scene }>();
-const 准备们 = new Map<boolean, { 材质: THREE.ShaderMaterial; 场: THREE.Scene }>();
-let 合成: { 材质: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
-let 放大: { 材质: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
-const 资们 = new Map<string, 资源>();
+const camera = new THREE.OrthographicCamera();
+const programs = new Map<string, { material: THREE.ShaderMaterial; 场: THREE.Scene }>();
+const prepared = new Map<boolean, { material: THREE.ShaderMaterial; 场: THREE.Scene }>();
+let compositePass: { material: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
+let upscalePass: { material: THREE.ShaderMaterial; 场: THREE.Scene } | null = null;
+const resources = new Map<string, Resource>();
 
-const 取准备 = (半: boolean) => {
-  let p = 准备们.get(半);
+const getPrepared = (halfRes: boolean) => {
+  let p = prepared.get(halfRes);
   if (!p) {
-    const 材质 = new THREE.ShaderMaterial({
+    const material = new THREE.ShaderMaterial({
       uniforms: { tDepth: { value: null }, tMain: { value: null }, tPrev: { value: null }, uSame: { value: 0 }, uSun: { value: new THREE.Vector4() } },
-      vertexShader: 全屏顶点,
-      fragmentShader: 准备片元(半),
+      vertexShader: fullscreenVertex,
+      fragmentShader: prepFragment(halfRes),
       glslVersion: THREE.GLSL3,
       blending: THREE.NoBlending,
       depthTest: false,
       depthWrite: false,
       toneMapped: false,
     });
-    p = { 材质, 场: 新片(材质) };
-    准备们.set(半, p);
+    p = { material, 场: newPass(material) };
+    prepared.set(halfRes, p);
   }
   return p;
 };
 
-const 取合成 = () => {
-  if (合成) return 合成;
+const getComposite = () => {
+  if (compositePass) return compositePass;
   // 叠法同 大气/云.ts（预乘叠在清空的离屏图上：原样写进去）
-  const 材质 = new THREE.ShaderMaterial({
+  const material = new THREE.ShaderMaterial({
     uniforms: { tCloud: { value: null }, tDepth: { value: null } },
-    vertexShader: 全屏顶点,
-    fragmentShader: 合成片元,
+    vertexShader: fullscreenVertex,
+    fragmentShader: compositeFragment,
     blending: THREE.CustomBlending,
     blendSrc: THREE.OneFactor,
     blendDst: THREE.OneMinusSrcAlphaFactor,
@@ -185,29 +185,29 @@ const 取合成 = () => {
     depthWrite: false,
     toneMapped: false,
   });
-  return (合成 = { 材质, 场: 新片(材质) });
+  return (compositePass = { material, 场: newPass(material) });
 };
-const 取放大 = () => {
-  if (放大) return 放大;
-  const 材质 = new THREE.ShaderMaterial({
+const getUpscale = () => {
+  if (upscalePass) return upscalePass;
+  const material = new THREE.ShaderMaterial({
     uniforms: { tCloud: { value: null }, tPrep: { value: null }, tDepth: { value: null } },
-    vertexShader: 全屏顶点,
-    fragmentShader: 放大片元,
+    vertexShader: fullscreenVertex,
+    fragmentShader: upscaleFragment,
     blending: THREE.NoBlending,
     depthTest: false,
     depthWrite: false,
     toneMapped: false,
   });
-  return (放大 = { 材质, 场: 新片(材质) });
+  return (upscalePass = { material, 场: newPass(material) });
 };
 
-const 取程序 = (e: 展开配置) => {
-  const 半 = e.质量.分辨率 === 0.5;
-  const 源 = 云片元(e.层们, 云空间倍, e.质量.抖动, 半);
-  let p = 程序们.get(源);
+const getProgram = (e: ExpandedConfig) => {
+  const halfRes = e.quality.分辨率 === 0.5;
+  const shaderSource = cloudFragment(e.layers, cloudSpaceMult, e.quality.dither, halfRes);
+  let p = programs.get(shaderSource);
   if (!p) {
-    const 层uni: Record<string, THREE.IUniform> = {};
-    const 材质 = new THREE.ShaderMaterial({
+    const layerUniforms: Record<string, THREE.IUniform> = {};
+    const material = new THREE.ShaderMaterial({
       uniforms: {
         ...atmoUniforms,
         pcNoise: { value: null },
@@ -233,196 +233,196 @@ const 取程序 = (e: 展开配置) => {
         uCamWorld: { value: new THREE.Matrix4() },
         uLogFar: { value: 1 },
         uExposure: { value: 1 },
-        ...层uni,
+        ...layerUniforms,
       },
-      vertexShader: 横条顶点,
-      fragmentShader: 源,
+      vertexShader: stripVertex,
+      fragmentShader: shaderSource,
       glslVersion: THREE.GLSL3,
       blending: THREE.NoBlending,
       depthTest: false,
       depthWrite: false,
       toneMapped: false,
     });
-    p = { 材质, 场: 新片(材质) };
-    程序们.set(源, p);
+    p = { material, 场: newPass(material) };
+    programs.set(shaderSource, p);
   }
   return p;
 };
 
-const 设值 = (u: Record<string, THREE.IUniform>, 名: string, v: number | readonly number[]) => {
+const setValue = (u: Record<string, THREE.IUniform>, uniformName: string, v: number | readonly number[]) => {
   if (typeof v === 'number') {
-    if (u[名]) u[名].value = v;
-    else u[名] = { value: v };
+    if (u[uniformName]) u[uniformName].value = v;
+    else u[uniformName] = { value: v };
     return;
   }
-  const 新 = v.length === 2 ? new THREE.Vector2() : v.length === 3 ? new THREE.Vector3() : new THREE.Vector4();
-  if (!u[名]) u[名] = { value: 新 };
-  (u[名].value as THREE.Vector2 | THREE.Vector3 | THREE.Vector4).fromArray(v as number[]);
+  const vector = v.length === 2 ? new THREE.Vector2() : v.length === 3 ? new THREE.Vector3() : new THREE.Vector4();
+  if (!u[uniformName]) u[uniformName] = { value: vector };
+  (u[uniformName].value as THREE.Vector2 | THREE.Vector3 | THREE.Vector4).fromArray(v as number[]);
 };
 
-const 新离屏 = (w: number, h: number) =>
+const newOffscreen = (w: number, h: number) =>
   new THREE.WebGLRenderTarget(w, h, { type: THREE.FloatType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
 
-const 摆资源 = (宽: number, 高: number, 半: boolean, 槽: string) => {
-  const w = 半 ? Math.ceil(宽 / 2) : 宽, h = 半 ? Math.ceil(高 / 2) : 高;
-  const 资 = 资们.get(槽);
-  if (资 && 资.宽 === 宽 && 资.高 === 高 && 资.半 === 半) return 资;
-  if (资) {
-    资.云.dispose();
-    资.准备[0].dispose();
-    资.准备[1].dispose();
+const placeResources = (width: number, height: number, halfRes: boolean, slotName: string) => {
+  const w = halfRes ? Math.ceil(width / 2) : width, h = halfRes ? Math.ceil(height / 2) : height;
+  const resource = resources.get(slotName);
+  if (resource && resource.宽 === width && resource.高 === height && resource.halfRes === halfRes) return resource;
+  if (resource) {
+    resource.cloudTarget.dispose();
+    resource.spareTargets[0].dispose();
+    resource.spareTargets[1].dispose();
   }
-  const 新: 资源 = { 宽, 高, 半, 云: 新离屏(w, h), 准备: [新离屏(w, h), 新离屏(w, h)], 轮: 0, 键: '' };
-  资们.set(槽, 新);
-  return 新;
+  const freshResource: Resource = { 宽: width, 高: height, halfRes, cloudTarget: newOffscreen(w, h), spareTargets: [newOffscreen(w, h), newOffscreen(w, h)], 轮: 0, 键: '' };
+  resources.set(slotName, freshResource);
+  return freshResource;
 };
 
-const 镜头位 = new THREE.Vector3();
+const cameraPos = new THREE.Vector3();
 // 积云最低那层朝太阳的光学厚度先烘成表（用户 11-14 看过 日落划船 对照定采用，划船 4K 热帧快 13%～16%）：
 // 镜头周围 48 公里见方 128×128、层厚分 32 片，取的时候横向双线性、纵向线性插值，代替每个采样点各自抖动走光步。
 // 表外（云最远到 75 公里）取边上那格。输入一变（键同云复用的键）就重烘；烘的片元程序是云片元的前半截（各层函数）接一个 main。
-const 体表 = new WeakMap<THREE.ShaderMaterial, { rt: THREE.WebGLRenderTarget; scene: THREE.Scene; key: string }>();
-const 烘太阳 = (gl: THREE.WebGLRenderer, 材质: THREE.ShaderMaterial, 键: string) => {
-  let bake = 体表.get(材质);
+const bakeCache = new WeakMap<THREE.ShaderMaterial, { rt: THREE.WebGLRenderTarget; scene: THREE.Scene; key: string }>();
+const bakeSun = (gl: THREE.WebGLRenderer, material: THREE.ShaderMaterial, cacheKey: string) => {
+  let bake = bakeCache.get(material);
   if (!bake) {
     const rt = new THREE.WebGLRenderTarget(128, 4096, { type: THREE.FloatType, format: THREE.RedFormat, depthBuffer: false, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter });
-    const 源 = 材质.fragmentShader.split('uniform sampler2D tPrep;')[0] + `layout(location=0) out vec4 skyOD;
+    const shaderSource = material.fragmentShader.split('uniform sampler2D tPrep;')[0] + `layout(location=0) out vec4 skyOD;
     void main(){ vec2 coord=vec2(gl_FragCoord.x,mod(gl_FragCoord.y,128.0))/128.0; float slice=floor(gl_FragCoord.y/128.0);vec2 xz=(coord-0.5)*48000.0;
     vec3 pos=vec3(xz.x,PC_CU0_R+(slice+0.5)/32.0*(PC_CU0_BH+PC_CU0_T),xz.y); skyOD=vec4(pcCu0OD(pos,atmoSun,0.5,PC_CU0_LIGHT)); }`;
-    const bakeMat = new THREE.ShaderMaterial({ uniforms: 材质.uniforms, vertexShader: 全屏顶点, fragmentShader: 源, glslVersion: THREE.GLSL3, blending: THREE.NoBlending, depthTest: false, depthWrite: false });
-    bake = { rt, scene: 新片(bakeMat), key: '' };
-    体表.set(材质, bake);
+    const bakeMat = new THREE.ShaderMaterial({ uniforms: material.uniforms, vertexShader: fullscreenVertex, fragmentShader: shaderSource, glslVersion: THREE.GLSL3, blending: THREE.NoBlending, depthTest: false, depthWrite: false });
+    bake = { rt, scene: newPass(bakeMat), key: '' };
+    bakeCache.set(material, bake);
   }
-  if (bake.key !== 键) {
+  if (bake.key !== cacheKey) {
     const old = gl.getRenderTarget();
     gl.setRenderTarget(bake.rt);
-    gl.render(bake.scene, 机);
+    gl.render(bake.scene, camera);
     gl.setRenderTarget(old);
-    bake.key = 键;
+    bake.key = cacheKey;
   }
-  材质.uniforms.tSunBake = { value: bake.rt.texture };
+  material.uniforms.tSunBake = { value: bake.rt.texture };
 };
 
-let 蓝噪声纹理: THREE.DataTexture | null = null;
-const 取蓝噪声纹理 = () => {
-  if (蓝噪声纹理) return 蓝噪声纹理;
-  const t = new THREE.DataTexture(蓝噪声(), 蓝噪声边, 蓝噪声边, THREE.RedFormat, THREE.FloatType);
+let blueNoiseTexture: THREE.DataTexture | null = null;
+const getBlueNoiseTexture = () => {
+  if (blueNoiseTexture) return blueNoiseTexture;
+  const t = new THREE.DataTexture(blueNoise(), blueNoiseEdge, blueNoiseEdge, THREE.RedFormat, THREE.FloatType);
   t.minFilter = t.magFilter = THREE.NearestFilter;
   t.generateMipmaps = false;
   t.needsUpdate = true;
-  return (蓝噪声纹理 = t);
+  return (blueNoiseTexture = t);
 };
 
 /** 光影层第 4 步：画这一帧的云。配置里没有光影层的云（都关了、只有原版方块）就不画，返回 false */
-export const 画云 = (x: 画云输入): boolean => {
+export const shouldDrawClouds = (x: CloudInput): boolean => {
   const tex = atmosphere.clouds;
-  if (!tex || !atmosphere.sky || x.配置.开 === false) return false;
-  const e = 展开(x.配置, x.海平面);
-  if (!e.层们.length) return false;
+  if (!tex || !atmosphere.sky || x.config.开 === false) return false;
+  const e = expandCloud(x.config, x.海平面);
+  if (!e.layers.length) return false;
   const { gl, camera: cam } = x;
-  const 半 = e.质量.分辨率 === 0.5;
-  const r = 摆资源(x.宽, x.高, 半, x.槽 ?? '主');
-  const w = r.云.width, h = r.云.height;
-  const p = 取程序(e);
-  const u = p.材质.uniforms;
+  const halfRes = e.quality.分辨率 === 0.5;
+  const r = placeResources(x.宽, x.高, halfRes, x.槽 ?? '主');
+  const w = r.cloudTarget.width, h = r.cloudTarget.height;
+  const p = getProgram(e);
+  const u = p.material.uniforms;
 
   // uniform（同 大气/云.ts 的 updateCloudUniforms）
-  const S = 云空间倍;
-  const hm = 积云高度图(tex.noise.image.data as Uint8Array);
+  const S = cloudSpaceMult;
+  const hm = cumulusHeightMap(tex.noise.image.data as Uint8Array);
   u.pcNoise!.value = tex.noise;
   u.pcCuHeight!.value = hm.nearest;
   u.pcCuHeightS!.value = hm.smooth;
   u.pcWorleyB!.value = tex.worleyBubbly;
   u.pcWorleyS!.value = tex.worleySwirley;
-  镜头位.setFromMatrixPosition(cam.matrixWorld);
-  (u.pcCamXZ!.value as THREE.Vector2).set(S * 镜头位.x, S * 镜头位.z);
-  u.pcCamR!.value = 6371e3 + S * (镜头位.y - e.海平面);
+  cameraPos.setFromMatrixPosition(cam.matrixWorld);
+  (u.pcCamXZ!.value as THREE.Vector2).set(S * cameraPos.x, S * cameraPos.z);
+  u.pcCamR!.value = 6371e3 + S * (cameraPos.y - e.海平面);
   const sunY = atmosphere.sun[2]!;
-  u.pcDay!.value = 白天系数(sunY);
-  for (const [名, v] of Object.entries(层值(e, sunY, x.秒, (hh) => atmoLightAt(hh)))) 设值(u, 名, v);
-  (u.pcNear!.value as THREE.Vector2).set(S * 镜头周围[0], S * 镜头周围[1]);
-  const c = x.场.洞;
+  u.pcDay!.value = dayFactor(sunY);
+  for (const [uniformName, v] of Object.entries(layerValues(e, sunY, x.秒, (hh) => atmoLightAt(hh)))) setValue(u, uniformName, v);
+  (u.pcNear!.value as THREE.Vector2).set(S * aroundCamera[0], S * aroundCamera[1]);
+  const c = x.场.hole;
   (u.pcClear!.value as THREE.Vector4).set(c ? S * c[0] : 0, c ? -S * c[1] : 0, c ? S * c[2] : 0, c ? S * c[3] : 0);
-  const g = x.场.亮;
-  (u.pcGlow!.value as THREE.Vector4).set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.半径 : 1, g ? g.强 : 0);
+  const g = x.场.brightness;
+  (u.pcGlow!.value as THREE.Vector4).set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.radius : 1, g ? g.强 : 0);
   if (g) (u.pcGlowCol!.value as THREE.Color).setStyle(g.色, THREE.LinearSRGBColorSpace);
   u.pcAddN!.value = 0;
   u.atmoSky!.value = atmosphere.sky;
-  if (e.质量.抖动 === '蓝噪声') u.tBlue!.value = 取蓝噪声纹理();
+  if (e.quality.dither === '蓝噪声') u.tBlue!.value = getBlueNoiseTexture();
   (u.uSize!.value as THREE.Vector2).set(x.宽, x.高);
   (u.uInvProj!.value as THREE.Matrix4).copy(cam.projectionMatrixInverse);
   (u.uCamWorld!.value as THREE.Matrix4).copy(cam.matrixWorld);
   u.uLogFar!.value = Math.log2(cam.far + 1);
-  u.uExposure!.value = e.曝光 * (x.场.曝光倍 ?? 1);
+  u.uExposure!.value = e.exposure * (x.场.exposureMult ?? 1);
 
   // 复用的键：着色器、所有 uniform 的值、天色图、尺寸（镜头矩阵在 uniform 里）。横条位置、准备图是这一遍自己摆的，不算输入（算进去就每帧都对不上）
-  const 值们: unknown[] = [p.材质.fragmentShader.length, atmosphere.skyKey, w, h, x.太阳框];
+  const values: unknown[] = [p.material.fragmentShader.length, atmosphere.skyKey, w, h, x.sunBox];
   for (const [k, v] of Object.entries(u)) {
     if (k === 'uStrip' || k === 'tPrep' || k === 'tSunBake') continue;
     const val = v.value as unknown;
-    if (val && typeof val === 'object' && 'isTexture' in val) 值们.push(k, (val as THREE.Texture).uuid);
-    else if (val && typeof val === 'object' && 'toArray' in val) 值们.push(k, (val as { toArray(): number[] }).toArray());
-    else if (Array.isArray(val)) 值们.push(k, val.map((a) => (a && typeof a === 'object' && 'toArray' in a ? (a as { toArray(): number[] }).toArray() : a)));
-    else if (val && typeof val === 'object') 值们.push(k, Object.values(val as object));
-    else 值们.push(k, val);
+    if (val && typeof val === 'object' && 'isTexture' in val) values.push(k, (val as THREE.Texture).uuid);
+    else if (val && typeof val === 'object' && 'toArray' in val) values.push(k, (val as { toArray(): number[] }).toArray());
+    else if (Array.isArray(val)) values.push(k, val.map((a) => (a && typeof a === 'object' && 'toArray' in a ? (a as { toArray(): number[] }).toArray() : a)));
+    else if (val && typeof val === 'object') values.push(k, Object.values(val as object));
+    else values.push(k, val);
   }
-  const 键 = JSON.stringify(值们) + 源键(p);
-  const 同 = e.质量.复用 && 键 === r.键;
-  if (e.层们[0]?.算法 === 'Photon积云') 烘太阳(gl, p.材质, 键);
+  const cacheKey = JSON.stringify(values) + sourceKey(p);
+  const reusable = e.quality.reuse && cacheKey === r.键;
+  if (e.layers[0]?.算法 === 'Photon积云') bakeSun(gl, p.material, cacheKey);
 
-  const 自动清 = gl.autoClear;
+  const autoClear = gl.autoClear;
   gl.autoClear = false;
   // 1. 准备
-  const 前 = r.准备[r.轮]!, 今 = r.准备[1 - r.轮]!;
+  const prev = r.spareTargets[r.轮]!, nowTarget = r.spareTargets[1 - r.轮]!;
   r.轮 = 1 - r.轮;
-  const pr = 取准备(半);
-  const pu = pr.材质.uniforms;
-  pu.tDepth!.value = x.深度;
-  pu.tMain!.value = x.主画面;
-  pu.tPrev!.value = 前.texture;
-  pu.uSame!.value = 同 ? 1 : 0;
-  const sb = x.太阳框;
+  const pr = getPrepared(halfRes);
+  const pu = pr.material.uniforms;
+  pu.tDepth!.value = x.depthTexture;
+  pu.tMain!.value = x.mainPicture;
+  pu.tPrev!.value = prev.texture;
+  pu.uSame!.value = reusable ? 1 : 0;
+  const sb = x.sunBox;
   (pu.uSun!.value as THREE.Vector4).set(sb ? sb[0] : 0, sb ? sb[1] : 0, sb ? sb[2] : 0, sb ? sb[3] : 0);
-  gl.setRenderTarget(今);
-  gl.render(pr.场, 机);
-  r.键 = 键;
+  gl.setRenderTarget(nowTarget);
+  gl.render(pr.场, camera);
+  r.键 = cacheKey;
 
   // 2. 步进
-  u.tPrep!.value = 今.texture;
-  gl.setRenderTarget(r.云);
+  u.tPrep!.value = nowTarget.texture;
+  gl.setRenderTarget(r.cloudTarget);
   const glc = gl.getContext();
-  for (let i = 0; i < 横条数; i++) {
-    (u.uStrip!.value as THREE.Vector2).set(-1 + (2 * i) / 横条数, -1 + (2 * (i + 1)) / 横条数);
-    gl.render(p.场, 机);
+  for (let i = 0; i < stripCount; i++) {
+    (u.uStrip!.value as THREE.Vector2).set(-1 + (2 * i) / stripCount, -1 + (2 * (i + 1)) / stripCount);
+    gl.render(p.场, camera);
     glc.flush();
   }
 
   // 3. 合成到目标
   gl.setRenderTarget(x.目标);
-  if (半) {
-    const m = 取放大();
-    m.材质.uniforms.tCloud!.value = r.云.texture;
-    m.材质.uniforms.tPrep!.value = 今.texture;
-    m.材质.uniforms.tDepth!.value = x.深度;
-    gl.render(m.场, 机);
+  if (halfRes) {
+    const m = getUpscale();
+    m.material.uniforms.tCloud!.value = r.cloudTarget.texture;
+    m.material.uniforms.tPrep!.value = nowTarget.texture;
+    m.material.uniforms.tDepth!.value = x.depthTexture;
+    gl.render(m.场, camera);
   } else {
-    const m = 取合成();
-    m.材质.uniforms.tCloud!.value = r.云.texture;
-    m.材质.uniforms.tDepth!.value = x.深度;
-    gl.render(m.场, 机);
+    const m = getComposite();
+    m.material.uniforms.tCloud!.value = r.cloudTarget.texture;
+    m.material.uniforms.tDepth!.value = x.depthTexture;
+    gl.render(m.场, camera);
   }
-  gl.autoClear = 自动清;
+  gl.autoClear = autoClear;
   return true;
 };
 
-const 源键 = (p: { 材质: THREE.ShaderMaterial }) => String(程序号.get(p.材质) ?? 程序号.set(p.材质, 程序号.size).get(p.材质));
-const 程序号 = new Map<THREE.ShaderMaterial, number>();
+const sourceKey = (p: { material: THREE.ShaderMaterial }) => String(programId.get(p.material) ?? programId.set(p.material, programId.size).get(p.material));
+const programId = new Map<THREE.ShaderMaterial, number>();
 
 /** 让着色器先编起来（画布挂上时调，和取素材同时进行；用户 11-04 定 A4） */
-export const 预编云 = (gl: THREE.WebGLRenderer, 配置: 云配置, 海平面: number) => {
-  if (配置.开 === false) return Promise.resolve();
-  const e = 展开(配置, 海平面);
-  if (!e.层们.length) return Promise.resolve();
-  const 场们 = [取程序(e).场, 取准备(e.质量.分辨率 === 0.5).场, e.质量.分辨率 === 0.5 ? 取放大().场 : 取合成().场];
-  return Promise.all(场们.map((s) => gl.compileAsync(s, 机))).then(() => undefined);
+export const precompileClouds = (gl: THREE.WebGLRenderer, config: CloudConfig, seaLevel: number) => {
+  if (config.开 === false) return Promise.resolve();
+  const e = expandCloud(config, seaLevel);
+  if (!e.layers.length) return Promise.resolve();
+  const scenes = [getProgram(e).场, getPrepared(e.quality.分辨率 === 0.5).场, e.quality.分辨率 === 0.5 ? getUpscale().场 : getComposite().场];
+  return Promise.all(scenes.map((s) => gl.compileAsync(s, camera))).then(() => undefined);
 };

@@ -4,269 +4,269 @@
 // ✓ 里 anim 认指纹 登记的另标「沿用 <旧指纹>」：切片是旧指纹那份的克隆，没真渲过。
 // anim 认指纹 <选择器…> --理由 … [--抽 <n>] [--级别 …] [--只看]：过期的段抽帧和旧切片比，都在压缩噪声内就登记成沿用旧切片（认指纹.ts，决策/0013）。
 import fs from 'node:fs';
-import type { 命令 } from '../cli/命令.ts';
-import { 用法错误, 解析参数 } from '../cli/参数.ts';
-import { 全部段, 选段 } from '../清单/清单.ts';
-import { 历史指纹, 指纹文件 } from '../渲/母版.ts';
-import { 读段签, 段签齐 } from '../段签/段签.ts';
-import { 段产物们, 同档, 是画面记录, type 段产物 } from '../渲/段产物.ts';
-import { 渲染标签 } from '../渲/渲.ts';
-import { 预计耗时 } from '../运行记录/记录.ts';
-import { 渲染级别取值, type 渲染级别 } from '../../engine/段/设置值.ts';
-import { 指纹差异, 稳定JSON, type 段指纹 } from './指纹.ts';
-import type { 段信息 } from '../清单/清单.ts';
-import type { 运行记录 } from '../运行记录/记录.ts';
-import { 作品名, 作品根 } from '../环境/作品.ts';
-import { 提交状态 } from '../环境/路径.ts';
-import { 段签目录, 配置 } from '../环境/配置.ts';
-import { 新建预览目录 } from '../预览/预览.ts';
-import { 读基点, 交对照, 核对口径, 存样本图, 存取样表, type 取样证据 } from './基点对照.ts';
-import { 开会话, 找组合, 同页出帧, 缺的本机地形 } from '../渲/渲.ts';
-import { 段渲染环境 } from '../渲/地形注入.ts';
-import { 记已量帧 } from '../渲/地形用量.ts';
-import { 等求解缓存写完 } from '../渲/求解缓存收集.ts';
-import { 逐组照材质包 } from '../资产/资产锁.ts';
-import { 懒放行闸, 过渲染闸 } from '../闸/闸.ts';
-import { 记阶段 } from '../运行记录/阶段.ts';
-import { 明细收集 } from '../运行记录/渲染明细.ts';
-import { 读阈值 } from '../验收/比较.ts';
-import { 帧号文本 } from '../验收/逐帧校验.ts';
-import { 查所选段cues, 渲前跑cues } from '../段框架/自动.ts';
-import { 默认抽帧数, 抽帧, 找旧版, 新指纹已有, 旧帧们, 比一帧, 登记沿用, 静帧证明不了, 帧转yuv, type 帧比, type 旧版 } from './认指纹.ts';
+import type { Command } from '../cli/命令.ts';
+import { UsageError, parseArgs } from '../cli/参数.ts';
+import { loadAllSegments, selectSegs } from '../清单/清单.ts';
+import { fingerprintHistory, fingerprintFile } from '../渲/母版.ts';
+import { readSegStamp, segStampComplete } from '../段签/段签.ts';
+import { segmentProducts, sameTier, isPictureRecord, type SegArtifact } from '../渲/段产物.ts';
+import { renderLabel } from '../渲/渲.ts';
+import { estimateTiming } from '../运行记录/记录.ts';
+import { renderLevels, type RenderLevel } from '../../engine/段/设置值.ts';
+import { fingerprintDiff, stableJson, type SegFingerprint } from './指纹.ts';
+import type { SegInfo } from '../清单/清单.ts';
+import type { RunRecord } from '../运行记录/记录.ts';
+import { workName, workRoot } from '../环境/作品.ts';
+import { commitStatus } from '../环境/路径.ts';
+import { segStampDir, config } from '../环境/配置.ts';
+import { newPreviewDir } from '../预览/预览.ts';
+import { readBaseline, compareWithBaseline, checkBasis, saveSampleImage, saveSampleTable, type SampleEvidence } from './基点对照.ts';
+import { openSession, findComposition, renderFramesSamePage, missingLocalTerrain } from '../渲/渲.ts';
+import { segRenderEnv } from '../渲/地形注入.ts';
+import { recordMeasuredFrames } from '../渲/地形用量.ts';
+import { waitSolveCacheWrites } from '../渲/求解缓存收集.ts';
+import { perGroupWithResourcePacks } from '../资产/资产锁.ts';
+import { lazyPassGate, passRenderGate } from '../闸/闸.ts';
+import { recordPhase } from '../运行记录/阶段.ts';
+import { DetailCollector } from '../运行记录/渲染明细.ts';
+import { readThresholds } from '../验收/比较.ts';
+import { frameNumText } from '../验收/逐帧校验.ts';
+import { checkSelectedSegCues, runCuesBeforeRender } from '../段框架/自动.ts';
+import { DEFAULT_SAMPLE_COUNT, pickFrames, findOldVersion, hasNewFingerprint, readOldFrames, compareFrame, registerReuse, stillCannotProve, frameToYuv, type FrameCompare, type OldVersion } from './认指纹.ts';
 
-const 取级别 = (v: string | undefined): 渲染级别 => {
-  const 级别 = (v ?? '视频') as 渲染级别;
-  if (!渲染级别取值.includes(级别)) throw new 用法错误(`--级别 只能是 ${渲染级别取值.join('、')}`);
-  return 级别;
+const parseLevel = (v: string | undefined): RenderLevel => {
+  const level = (v ?? '视频') as RenderLevel;
+  if (!renderLevels.includes(level)) throw new UsageError(`--级别 只能是 ${renderLevels.join('、')}`);
+  return level;
 };
 
 // 只渲一截时第一帧的读地形摊不到，单独加上（和 逐帧校验 的估法一样）
-const 第一帧约秒 = 15;
-const 列出的不同帧最多 = 8;
+const FIRST_FRAME_SEC = 15;
+const maxListedDiffFrames = 8;
 
-type 一段 = { 段: 段信息; 产物: 段产物; 新: 段指纹; 旧: 旧版; 帧: number[] };
+type SegPlan = { 段: SegInfo; 产物: SegArtifact; 新: SegFingerprint; oldVersion: OldVersion; 帧: number[] };
 
 /** anim 认指纹：见 认指纹.ts 文件头。返回退出码：选中的过期段有没认下来的（不同、没有旧切片、静帧证明不了）是 1 */
-export const 跑认指纹 = async (段们: readonly 段信息[], o: { 理由: string; 抽: number; 级别: 渲染级别; 只看: boolean; 记录: 运行记录; 存基点?: boolean; 对基点?: string }): Promise<number> => {
-  const { 记录, 级别 } = o;
-  const 诊断 = !!(o.存基点 || o.对基点);
-  if (诊断 && (段们.length !== 1 || o.只看 || (o.存基点 && o.对基点))) throw new 用法错误('基点诊断一次只选一段；--存基点、--对基点、--只看不能并用');
-  const 基 = o.对基点 ? 读基点(o.对基点) : undefined;
-  if (基 && (基.口径.作品 !== 作品名() || 基.口径.段 !== 段们[0]!.键)) throw new 用法错误('基点的作品或段不匹配');
-  let 没认 = 0;
-  const 不认 = (文本: string) => {
-    没认++;
-    记录.记('错误', 文本);
+export const runFingerprintAccept = async (segments: readonly SegInfo[], o: { 理由: string; sampleCount: number; 级别: RenderLevel; viewOnly: boolean; runRecord: RunRecord; saveBaseline?: boolean; compareBaseline?: string }): Promise<number> => {
+  const { runRecord, 级别: level } = o;
+  const diagnose = !!(o.saveBaseline || o.compareBaseline);
+  if (diagnose && (segments.length !== 1 || o.viewOnly || (o.saveBaseline && o.compareBaseline))) throw new UsageError('基点诊断一次只选一段；--存基点、--对基点、--只看不能并用');
+  const baseline = o.compareBaseline ? readBaseline(o.compareBaseline) : undefined;
+  if (baseline && (baseline.口径.作品 !== workName() || baseline.口径.段 !== segments[0]!.键)) throw new UsageError('基点的作品或段不匹配');
+  let notAcceptedCount = 0;
+  const reject = (messageText: string) => {
+    notAcceptedCount++;
+    runRecord.log('错误', messageText);
   };
-  const 全部 = await 全部段();
-  const 产物们 = await 段产物们(全部, 段们, 级别);
-  const 计划: 一段[] = [];
-  let 本来最新 = 0;
-  let 认了 = 0;
+  const allSegments = await loadAllSegments();
+  const outputs = await segmentProducts(allSegments, segments, level);
+  const plans: SegPlan[] = [];
+  let alreadyFreshCount = 0;
+  let acceptedCount = 0;
   // 旧切片缺段签时 找旧版 要当场派生（解码），和后面解旧切片共用一次放行闸
-  const 等放行 = 懒放行闸();
-  for (const [i, s] of 段们.entries()) {
-    const 产物 = 产物们[i]!;
-    const 新 = 产物.画面指纹;
-    const 已有 = 新指纹已有(s.键, 产物);
-    if (已有 && !诊断) {
-      本来最新++;
-      console.log(`· ${s.键}：不过期（${已有}），不用认`);
+  const waitGate = lazyPassGate();
+  for (const [i, s] of segments.entries()) {
+    const artifact = outputs[i]!;
+    const newFingerprint = artifact.画面指纹;
+    const fingerprintExists = hasNewFingerprint(s.键, artifact);
+    if (fingerprintExists && !diagnose) {
+      alreadyFreshCount++;
+      console.log(`· ${s.键}：不过期（${fingerprintExists}），不用认`);
       continue;
     }
-    const 包 = 缺的本机地形(s);
-    if (包) {
-      不认(`${s.键}：本机没有区段包 ${包}，出不了静帧（anim world bake 烘出来才能认）`);
+    const pack = missingLocalTerrain(s);
+    if (pack) {
+      reject(`${s.键}：本机没有区段包 ${pack}，出不了静帧（anim world bake 烘出来才能认）`);
       continue;
     }
-    const { 旧, 没用的 } = await 找旧版(s.键, 新, { 帧数: 产物.输出帧数, 等放行, 指定: 基?.口径.旧指纹, 含本版: 诊断 });
-    if (!旧) {
-      不认(`${s.键}：没有能比的旧切片（同一档渲过、切片和配的 wav 还在的）${没用的.length ? `\n    ${没用的.slice(0, 5).join('\n    ')}` : ''}`);
+    const { oldVersion, unused } = await findOldVersion(s.键, newFingerprint, { 帧数: artifact.outputFrames, waitGate, pickFingerprint: baseline?.口径.旧指纹, includeCurrent: diagnose });
+    if (!oldVersion) {
+      reject(`${s.键}：没有能比的旧切片（同一档渲过、切片和配的 wav 还在的）${unused.length ? `\n    ${unused.slice(0, 5).join('\n    ')}` : ''}`);
       continue;
     }
-    const 拦 = 静帧证明不了(旧.项, 新.项);
-    if (拦.length) {
-      不认(`${s.键}：和 ${旧.指纹.slice(0, 16)} 比，${拦.join('；')}；要重渲（anim film ${s.键}）`);
+    const blockers = stillCannotProve(oldVersion.项, newFingerprint.项);
+    if (blockers.length) {
+      reject(`${s.键}：和 ${oldVersion.指纹.slice(0, 16)} 比，${blockers.join('；')}；要重渲（anim film ${s.键}）`);
       continue;
     }
-    const 帧 = 基?.口径.帧号 ?? 抽帧(产物.输出帧数, o.抽);
-    console.log(`== ${s.键}：${新.指纹.slice(0, 16)} 和 ${旧.指纹.slice(0, 16)}（${旧.母版.split(/[\\/]/).pop()}）比 ${帧.length} 帧：${帧号文本(帧)}`);
-    for (const d of 指纹差异(旧.记录, 新).slice(0, 12)) console.log(`    ${d}`);
-    计划.push({ 段: s, 产物, 新, 旧, 帧 });
+    const frames = baseline?.口径.帧号 ?? pickFrames(artifact.outputFrames, o.sampleCount);
+    console.log(`== ${s.键}：${newFingerprint.指纹.slice(0, 16)} 和 ${oldVersion.指纹.slice(0, 16)}（${oldVersion.母版.split(/[\\/]/).pop()}）比 ${frames.length} 帧：${frameNumText(frames)}`);
+    for (const d of fingerprintDiff(oldVersion.segFingerprintRecord, newFingerprint).slice(0, 12)) console.log(`    ${d}`);
+    plans.push({ 段: s, 产物: artifact, 新: newFingerprint, oldVersion, 帧: frames });
   }
-  if (计划.length && !o.只看) {
-    const 估 = 计划.map((x) => {
-      const 整段 = 预计耗时(渲染标签(x.段.键, 级别));
-      return 整段 === null ? null : (整段 * x.帧.length) / x.产物.输出帧数 + 第一帧约秒;
+  if (plans.length && !o.viewOnly) {
+    const estimates = plans.map((x) => {
+      const wholeSegSec = estimateTiming(renderLabel(x.段.键, level));
+      return wholeSegSec === null ? null : (wholeSegSec * x.帧.length) / x.产物.outputFrames + FIRST_FRAME_SEC;
     });
-    const 已知 = 估.filter((x): x is number => x !== null);
-    console.log(`== 认指纹 ${计划.length} 段、${计划.reduce((a, x) => a + x.帧.length, 0)} 帧${已知.length ? `；按耗时表预计出帧约 ${Math.round(已知.reduce((a, b) => a + b, 0))} 秒${已知.length < 计划.length ? `（另 ${计划.length - 已知.length} 段没有记录）` : ''}` : ''}`);
-    const 阈 = 读阈值();
-    const 提交 = (() => {
-      const x = 提交状态();
+    const knownEstimates = estimates.filter((x): x is number => x !== null);
+    console.log(`== 认指纹 ${plans.length} 段、${plans.reduce((a, x) => a + x.帧.length, 0)} 帧${knownEstimates.length ? `；按耗时表预计出帧约 ${Math.round(knownEstimates.reduce((a, b) => a + b, 0))} 秒${knownEstimates.length < plans.length ? `（另 ${plans.length - knownEstimates.length} 段没有记录）` : ''}` : ''}`);
+    const threshold = readThresholds();
+    const commit = (() => {
+      const x = commitStatus();
       return x ? `${x.提交}${x.有改动 ? '+未提交改动' : ''}` : '不在 git 里';
     })();
-    await 逐组照材质包(作品根(), 计划, (x) => x.段.键, (组) =>
-      开会话(级别, async (h) => {
-        for (const x of 组) {
-          const 键 = x.段.键;
-          const composition = 找组合(h, x.段, 全部);
-          const { 宽, 高 } = x.旧.签.签名;
-          const 口径 = { 作品: 作品名(), 段: 键, 旧指纹: x.旧.指纹, 旧片sha: x.旧.签.母版.字节sha, 宽, 高, 总帧数: composition.durationInFrames, 帧号: x.帧, 级别, 主机: 配置('主机'), 平台: `${process.platform}-${process.arch}`, 后端: h.参数.gl, 输出fps: composition.fps, 缩放: h.参数.scale, 阈值: 稳定JSON(阈) };
-          if (基) 核对口径(基.口径, 口径);
-          const 样本目录 = 诊断 ? 新建预览目录(`工作-认指纹-${键}`) : null;
-          const 哈希 = new Map<number, string>();
+    await perGroupWithResourcePacks(workRoot(), plans, (x) => x.段.键, (group) =>
+      openSession(level, async (h) => {
+        for (const x of group) {
+          const segKey = x.段.键;
+          const composition = findComposition(h, x.段, allSegments);
+          const { 宽: width, 高: height } = x.oldVersion.segStamp.签名;
+          const basis = { 作品: workName(), 段: segKey, 旧指纹: x.oldVersion.指纹, 旧片sha: x.oldVersion.segStamp.母版.字节sha, 宽: width, 高: height, 总帧数: composition.durationInFrames, 帧号: x.帧, 级别: level, 主机: config('主机'), 平台: `${process.platform}-${process.arch}`, 后端: h.参数.gl, 输出fps: composition.fps, 缩放: h.参数.scale, 阈值: stableJson(threshold) };
+          if (baseline) checkBasis(baseline.口径, basis);
+          const sampleDir = diagnose ? newPreviewDir(`工作-认指纹-${segKey}`) : null;
+          const hashes = new Map<number, string>();
           // 先解旧切片（过放行闸，一条命令只过一次），再拿渲染闸出新帧：解码不占渲染闸
-          await 等放行();
-          const 旧帧 = await 旧帧们(x.旧, x.帧);
-          await 等求解缓存写完();
-          const 标签 = `认指纹:${作品名()}/${键}:${级别}`;
-          const 排队起 = Date.now();
-          const 比们: 帧比[] = [];
-          await 过渲染闸(
+          await waitGate();
+          const oldFrames = await readOldFrames(x.oldVersion, x.帧);
+          await waitSolveCacheWrites();
+          const label = `认指纹:${workName()}/${segKey}:${level}`;
+          const queueStartMs = Date.now();
+          const frameCompares: FrameCompare[] = [];
+          await passRenderGate(
             async () => {
               const t0 = Date.now();
-              记阶段(记录.阶段, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
-              const 明细 = new 明细收集(标签);
+              recordPhase(runRecord.阶段, label, '等闸', queueStartMs, (t0 - queueStartMs) / 1000);
+              const detail = new DetailCollector(label);
               // 同页按帧号升序连着出、声音开着，参数和切片那遍一样（带字幕），走法和 renderMedia 出切片一样（逐帧校验 同款）
-              const 转: Promise<void>[] = [];
-              await 明细.包(async () => {
-                await 同页出帧({ ...h, 参数: x.产物.参数 }, composition, x.帧, {
-                  打开声音: true,
-                  环境: 段渲染环境(键, x.新.项.地形),
-                  每帧: (图, f) => {
-                    if (样本目录) 哈希.set(f, 存样本图(样本目录, f, 图));
-                    转.push(帧转yuv(图, 宽, 高).then((y) => {
-                      比们.push(比一帧(f, y, 旧帧.get(f)!, 宽, 高, 阈));
-                      明细.帧完成(比们.length);
+              const conversions: Promise<void>[] = [];
+              await detail.包(async () => {
+                await renderFramesSamePage({ ...h, 参数: x.产物.参数 }, composition, x.帧, {
+                  withAudio: true,
+                  环境: segRenderEnv(segKey, x.新.项.地形),
+                  onFrame: (frameBytes, f) => {
+                    if (sampleDir) hashes.set(f, saveSampleImage(sampleDir, f, frameBytes));
+                    conversions.push(frameToYuv(frameBytes, width, height).then((y) => {
+                      frameCompares.push(compareFrame(f, y, oldFrames.get(f)!, width, height, threshold));
+                      detail.frameDone(frameCompares.length);
                     }));
                   },
                 });
-                await Promise.all(转);
+                await Promise.all(conversions);
               });
-              await 记已量帧(键, x.帧);
-              记阶段(记录.阶段, 标签, '出帧', t0, (Date.now() - t0) / 1000);
-              await 明细.写出(记录.阶段, { 指纹: x.新.指纹.slice(0, 16) });
+              await recordMeasuredFrames(segKey, x.帧);
+              recordPhase(runRecord.阶段, label, '出帧', t0, (Date.now() - t0) / 1000);
+              await detail.writeOut(runRecord.阶段, { 指纹: x.新.指纹.slice(0, 16) });
             },
             undefined,
             {},
-            { 种: 'still', 作品: 作品名(), 段: 键, 级别, 帧数: x.帧.length, 帧: x.帧.join(',').slice(0, 60), 用途: '认指纹' },
+            { 种: 'still', 作品: workName(), 段: segKey, 级别: level, 帧数: x.帧.length, 帧: x.帧.join(',').slice(0, 60), 用途: '认指纹' },
           );
-          const 不同 = 比们.filter((b) => b.结论 === '不同').sort((a, b) => a.帧 - b.帧);
-          const 一样 = 比们.filter((b) => b.结论 === '一样').length;
-          const 看 = 比们.filter((b) => b.看一眼);
-          if (比们.length !== x.帧.length) {
-            不认(`${键}：只出了 ${比们.length}/${x.帧.length} 帧，不认`);
+          const mismatches = frameCompares.filter((b) => b.结论 === '不同').sort((a, b) => a.帧 - b.帧);
+          const sameCount = frameCompares.filter((b) => b.结论 === '一样').length;
+          const glanceDiffs = frameCompares.filter((b) => b.看一眼);
+          if (frameCompares.length !== x.帧.length) {
+            reject(`${segKey}：只出了 ${frameCompares.length}/${x.帧.length} 帧，不认`);
             continue;
           }
-          if (样本目录) {
-            const 帧 = 比们.sort((甲, 乙) => 甲.帧 - 乙.帧).map(样 => ({ ...样, sha: 哈希.get(样.帧)! }));
-            if (帧.some((样, 序) => !样.sha || 样.帧 !== x.帧[序])) throw new Error('留样缺帧，不作归因');
-            const 表: 取样证据 = { 版本: 1, 口径, 指纹: x.新.指纹, 提交, 理由: o.理由, 帧 };
-            存取样表(样本目录, 表);
-            记录.产物.push(样本目录);
-            console.log(`样本在 ${样本目录}`);
-            if (基 && o.对基点) {
-              const 报 = 交对照(o.对基点, 基, 样本目录, 表);
-              console.log(`${报.判词}\n对照在 ${报.目录}`);
-              记录.产物.push(报.目录);
-              if (报.候选有差 && !不同.length) 不认('候选抽样与基点不同；交给用户看，不登记');
+          if (sampleDir) {
+            const frameSamples = frameCompares.sort((left, second) => left.帧 - second.帧).map(sample => ({ ...sample, sha: hashes.get(sample.帧)! }));
+            if (frameSamples.some((sample, index) => !sample.sha || sample.帧 !== x.帧[index])) throw new Error('留样缺帧，不作归因');
+            const sampleEvidence: SampleEvidence = { 版本: 1, 口径: basis, 指纹: x.新.指纹, 提交: commit, 理由: o.理由, 帧: frameSamples };
+            saveSampleTable(sampleDir, sampleEvidence);
+            runRecord.产物.push(sampleDir);
+            console.log(`样本在 ${sampleDir}`);
+            if (baseline && o.compareBaseline) {
+              const report = compareWithBaseline(o.compareBaseline, baseline, sampleDir, sampleEvidence);
+              console.log(`${report.verdictText}\n对照在 ${report.目录}`);
+              runRecord.产物.push(report.目录);
+              if (report.candidateDiffers && !mismatches.length) reject('候选抽样与基点不同；交给用户看，不登记');
             }
-            if (不同.length) 不认(`${键}：${不同.length}/${帧.length} 帧不认旧片（${帧号文本(不同.map(样 => 样.帧))}），不登记`);
+            if (mismatches.length) reject(`${segKey}：${mismatches.length}/${frameSamples.length} 帧不认旧片（${frameNumText(mismatches.map(sample => sample.帧))}），不登记`);
             continue;
           }
-          if (不同.length) {
-            不认(
-              [`${键}：${x.帧.length} 帧里 ${不同.length} 帧和 ${x.旧.指纹.slice(0, 16)} 的切片不同（${帧号文本(不同.map((b) => b.帧))}），不认，照常过期`, ...不同.slice(0, 列出的不同帧最多).map((b) => `第 ${b.帧} 帧：${b.说明}`)].join('\n    '),
+          if (mismatches.length) {
+            reject(
+              [`${segKey}：${x.帧.length} 帧里 ${mismatches.length} 帧和 ${x.oldVersion.指纹.slice(0, 16)} 的切片不同（${frameNumText(mismatches.map((b) => b.帧))}），不认，照常过期`, ...mismatches.slice(0, maxListedDiffFrames).map((b) => `第 ${b.帧} 帧：${b.说明}`)].join('\n    '),
             );
             continue;
           }
-          const r = 登记沿用(键, x.旧, x.产物, { 理由: o.理由, 帧: x.帧, 提交, 级别 });
-          认了++;
-          记录.产物.push(段签目录(键, x.新.指纹), r.母版, r.声音);
-          console.log(`✓ ${键}：${x.帧.length} 帧都在压缩噪声内（逐字节一样 ${一样} 帧），${x.新.指纹.slice(0, 16)} 沿用 ${x.旧.指纹.slice(0, 16)} 的切片（${r.怎么复制}）`);
-          for (const b of 看) console.log(`    第 ${b.帧} 帧在看一眼档里（不算不同）：${b.说明}`);
+          const r = registerReuse(segKey, x.oldVersion, x.产物, { 理由: o.理由, 帧: x.帧, 提交: commit, 级别: level });
+          acceptedCount++;
+          runRecord.产物.push(segStampDir(segKey, x.新.指纹), r.母版, r.声音);
+          console.log(`✓ ${segKey}：${x.帧.length} 帧都在压缩噪声内（逐字节一样 ${sameCount} 帧），${x.新.指纹.slice(0, 16)} 沿用 ${x.oldVersion.指纹.slice(0, 16)} 的切片（${r.copyHow}）`);
+          for (const b of glanceDiffs) console.log(`    第 ${b.帧} 帧在看一眼档里（不算不同）：${b.说明}`);
         }
-      }, 记录),
+      }, runRecord),
     );
   }
-  if (o.只看) console.log(`\n--只看：${计划.length} 段能比，没出帧、没登记${没认 ? `；${没认} 段认不了` : ''}`);
-  else if (诊断) console.log('\n基点诊断没有登记沿用或认可；只比抽样画面，没比整段和声音。');
-  else console.log(`\n${段们.length} 段：认了 ${认了} 段${没认 ? `，${没认} 段没认（照常过期，要重渲）` : ''}${本来最新 ? `，${本来最新} 段本来不过期` : ''}`);
-  if (!o.只看 && 认了) console.log('认了的段没真渲过：没抽到的帧和声音没比。要补整段比对：anim --低优先 film <段> --重渲（同指纹重渲，段签自查会比签名和声音）');
-  return 没认 ? 1 : 0;
+  if (o.viewOnly) console.log(`\n--只看：${plans.length} 段能比，没出帧、没登记${notAcceptedCount ? `；${notAcceptedCount} 段认不了` : ''}`);
+  else if (diagnose) console.log('\n基点诊断没有登记沿用或认可；只比抽样画面，没比整段和声音。');
+  else console.log(`\n${segments.length} 段：认了 ${acceptedCount} 段${notAcceptedCount ? `，${notAcceptedCount} 段没认（照常过期，要重渲）` : ''}${alreadyFreshCount ? `，${alreadyFreshCount} 段本来不过期` : ''}`);
+  if (!o.viewOnly && acceptedCount) console.log('认了的段没真渲过：没抽到的帧和声音没比。要补整段比对：anim --低优先 film <段> --重渲（同指纹重渲，段签自查会比签名和声音）');
+  return notAcceptedCount ? 1 : 0;
 };
 
-export const 指纹命令: Record<string, 命令> = {
+export const fingerprintCommands: Record<string, Command> = {
   认指纹: {
     用法: '认指纹 <选择器…> --理由 <…> [--抽 <n>] [--级别 视频|预览] [--只看 | --存基点 | --对基点 <草稿目录>]',
-    说明: `过期的段抽 n 帧（默认 ${默认抽帧数}，含首尾；按输出帧）静帧和同一档最近一份旧切片比，都在压缩噪声内就把新指纹登记成沿用旧切片、不重渲；有一帧不同就不认、报是哪几帧。--只看 只列要比什么`,
-    跑: async (args, 记录) => {
-      const p = 解析参数(args, { 值: ['--理由', '--抽', '--级别', '--对基点'], 开关: ['--只看', '--存基点'] });
-      if (!p.位置.length) throw new 用法错误('要给选择器（段键、段名、编号、场键、章）');
-      const 理由 = p.值['--理由']?.trim();
-      if (!理由) throw new 用法错误('要写 --理由（为什么认为画面没变，比如「three 0.186.1 → 0.186.2」「搬函数」），记进段签');
-      const 抽 = p.值['--抽'] === undefined ? 默认抽帧数 : Number(p.值['--抽']);
-      if (!Number.isInteger(抽) || 抽 < 2) throw new 用法错误('--抽 要是不小于 2 的整数（含首、尾帧）');
-      if (p.值['--对基点'] !== undefined && (!p.值['--对基点'] || p.值['--抽'] !== undefined)) throw new 用法错误('--对基点 需要草稿目录，沿用基点的帧号，不再指定 --抽');
-      const 级别 = 取级别(p.值['--级别']);
-      const cues = await 渲前跑cues();
-      const 段们 = await 选段(p.位置);
-      查所选段cues(cues, 段们);
-      return 跑认指纹(段们, { 理由, 抽, 级别, 只看: p.开关.has('--只看'), 存基点: p.开关.has('--存基点'), 对基点: p.值['--对基点'], 记录 });
+    说明: `过期的段抽 n 帧（默认 ${DEFAULT_SAMPLE_COUNT}，含首尾；按输出帧）静帧和同一档最近一份旧切片比，都在压缩噪声内就把新指纹登记成沿用旧切片、不重渲；有一帧不同就不认、报是哪几帧。--只看 只列要比什么`,
+    跑: async (args, runRecord) => {
+      const p = parseArgs(args, { 值: ['--理由', '--抽', '--级别', '--对基点'], toggles: ['--只看', '--存基点'] });
+      if (!p.位置.length) throw new UsageError('要给选择器（段键、段名、编号、场键、章）');
+      const reason = p.值['--理由']?.trim();
+      if (!reason) throw new UsageError('要写 --理由（为什么认为画面没变，比如「three 0.186.1 → 0.186.2」「搬函数」），记进段签');
+      const sampleCount = p.值['--抽'] === undefined ? DEFAULT_SAMPLE_COUNT : Number(p.值['--抽']);
+      if (!Number.isInteger(sampleCount) || sampleCount < 2) throw new UsageError('--抽 要是不小于 2 的整数（含首、尾帧）');
+      if (p.值['--对基点'] !== undefined && (!p.值['--对基点'] || p.值['--抽'] !== undefined)) throw new UsageError('--对基点 需要草稿目录，沿用基点的帧号，不再指定 --抽');
+      const level = parseLevel(p.值['--级别']);
+      const cues = await runCuesBeforeRender();
+      const segments = await selectSegs(p.位置);
+      checkSelectedSegCues(cues, segments);
+      return runFingerprintAccept(segments, { 理由: reason, sampleCount, 级别: level, viewOnly: p.toggles.has('--只看'), saveBaseline: p.toggles.has('--存基点'), compareBaseline: p.值['--对基点'], runRecord });
     },
   },
   stale: {
     用法: 'stale [<选择器…>] [--级别 视频|预览] [--详细] [--严格]',
     说明: '列出各段指纹和切片是否最新（和 anim film 同一套指纹），过期的说明哪项输入变了、预计重渲多久；--严格 有过期段时退出码 1',
     跑: async (args) => {
-      const p = 解析参数(args, { 值: ['--级别'], 开关: ['--详细', '--严格'] });
-      const 级别 = 取级别(p.值['--级别']);
-      const 段们 = p.位置.length ? await 选段(p.位置) : await 全部段();
-      let 过期数 = 0;
-      let 母版不在 = 0;
-      let 预计 = 0;
-      let 没记录 = 0;
-      const 加预计 = (键: string) => {
-        const 估 = 预计耗时(渲染标签(键, 级别));
-        if (估 === null) 没记录++;
-        else 预计 += 估;
-        return 估;
+      const p = parseArgs(args, { 值: ['--级别'], toggles: ['--详细', '--严格'] });
+      const level = parseLevel(p.值['--级别']);
+      const segments = p.位置.length ? await selectSegs(p.位置) : await loadAllSegments();
+      let staleCount = 0;
+      let masterMissingCount = 0;
+      let estimatedSec = 0;
+      let noRecordCount = 0;
+      const addEstimate = (segKey: string) => {
+        const rawEstimate = estimateTiming(renderLabel(segKey, level));
+        if (rawEstimate === null) noRecordCount++;
+        else estimatedSec += rawEstimate;
+        return rawEstimate;
       };
-      const 产物们 = await 段产物们(await 全部段(), 段们, 级别);
-      for (const r of 产物们) {
+      const outputs = await segmentProducts(await loadAllSegments(), segments, level);
+      for (const r of outputs) {
         const s = r.段;
         const fp = r.画面指纹;
-        const 有 = fs.existsSync(r.画面) && fs.existsSync(r.声音);
-        const 签 = 读段签(s.键, fp.指纹);
-        const 渲过 = 有 || !!签 || fs.existsSync(指纹文件(s.键, fp.指纹));
-        const 头 = `${(s.编号 ?? '').padEnd(5)} ${s.键}  ${fp.指纹.slice(0, 16)}`;
-        if (有) console.log(`✓ ${头}${签?.沿用 ? `  沿用 ${签.沿用.自.slice(0, 16)}（认指纹，没真渲过）` : ''}${段签齐(签) ? '' : '  缺段签（verify、认指纹 用到时自动补）'}`);
-        else if (渲过) {
-          母版不在++;
-          const 估 = 加预计(s.键);
-          console.log(`◐ ${头}  渲过，切片不在${估 === null ? '' : `（要用时重渲约 ${Math.round(估)} 秒）`}`);
-        } else console.log(`✗ ${头}  过期`);
-        if (p.开关.has('--详细')) console.log(JSON.stringify(fp.项, null, 2).replace(/^/gm, '    '));
-        if (渲过) continue;
-        过期数++;
-        加预计(s.键);
+        const hasOutput = fs.existsSync(r.画面) && fs.existsSync(r.声音);
+        const segStamp = readSegStamp(s.键, fp.指纹);
+        const wasRendered = hasOutput || !!segStamp || fs.existsSync(fingerprintFile(s.键, fp.指纹));
+        const rowLabel = `${(s.编号 ?? '').padEnd(5)} ${s.键}  ${fp.指纹.slice(0, 16)}`;
+        if (hasOutput) console.log(`✓ ${rowLabel}${segStamp?.沿用 ? `  沿用 ${segStamp.沿用.自.slice(0, 16)}（认指纹，没真渲过）` : ''}${segStampComplete(segStamp) ? '' : '  缺段签（verify、认指纹 用到时自动补）'}`);
+        else if (wasRendered) {
+          masterMissingCount++;
+          const estimatedSec = addEstimate(s.键);
+          console.log(`◐ ${rowLabel}  渲过，切片不在${estimatedSec === null ? '' : `（要用时重渲约 ${Math.round(estimatedSec)} 秒）`}`);
+        } else console.log(`✗ ${rowLabel}  过期`);
+        if (p.toggles.has('--详细')) console.log(JSON.stringify(fp.项, null, 2).replace(/^/gm, '    '));
+        if (wasRendered) continue;
+        staleCount++;
+        addEstimate(s.键);
         // 和同一档最近渲过的那份比；没有同档的（CRF1 时代的、别的输出帧率的）退到同一级别最近的画面记录
-        const 历史 = 历史指纹(s.键);
-        const 同档的 = 历史.find((h) => 同档(h, fp));
-        const 上次 = 同档的 ?? 历史.find((h) => 是画面记录(h) && 稳定JSON((h.项?.渲染设置?.inputProps as { 级别?: unknown } | undefined)?.级别) === 稳定JSON(级别));
-        if (!上次) console.log('    没渲过');
+        const history = fingerprintHistory(s.键);
+        const sameTierEntry = history.find((h) => sameTier(h, fp));
+        const prevRecord = sameTierEntry ?? history.find((h) => isPictureRecord(h) && stableJson((h.项?.渲染设置?.inputProps as { 级别?: unknown } | undefined)?.级别) === stableJson(level));
+        if (!prevRecord) console.log('    没渲过');
         else {
-          if (!同档的) console.log(`    同一档没渲过，和别的档的 ${上次.指纹.slice(0, 16)} 比`);
-          for (const d of 指纹差异(上次, fp).slice(0, 20)) console.log(`    ${d}`);
+          if (!sameTierEntry) console.log(`    同一档没渲过，和别的档的 ${prevRecord.指纹.slice(0, 16)} 比`);
+          for (const d of fingerprintDiff(prevRecord, fp).slice(0, 20)) console.log(`    ${d}`);
         }
       }
-      const 要渲 = 过期数 + 母版不在;
+      const toRender = staleCount + masterMissingCount;
       console.log(
-        `\n${段们.length} 段，过期 ${过期数} 段${母版不在 ? `，渲过但切片不在 ${母版不在} 段` : ''}` +
-          `${要渲 > 没记录 ? `；按耗时表预计重渲约 ${Math.round(预计)} 秒` : ''}${没记录 ? `；${没记录} 段耗时表里没有记录` : ''}`,
+        `\n${segments.length} 段，过期 ${staleCount} 段${masterMissingCount ? `，渲过但切片不在 ${masterMissingCount} 段` : ''}` +
+          `${toRender > noRecordCount ? `；按耗时表预计重渲约 ${Math.round(estimatedSec)} 秒` : ''}${noRecordCount ? `；${noRecordCount} 段耗时表里没有记录` : ''}`,
       );
-      return p.开关.has('--严格') && 过期数 ? 1 : 0;
+      return p.toggles.has('--严格') && staleCount ? 1 : 0;
     },
   },
 };

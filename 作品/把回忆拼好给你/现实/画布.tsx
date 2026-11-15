@@ -1,41 +1,41 @@
 // 现实部分的画布：三渲二画布（平涂、正交侧剖面机位朝北、描边），像素 N、俯角、描边宽和分屏另一半的门口同一套（默认照 画风.ts，分屏给 分屏N），调子默认色板「现实」。
 // 场景内容放 children（第 13 句的现实课桌，第 14 句的楼下）；整片后期在外面包。
 import type React from 'react';
-import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
-import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
-import type { 调子 } from '@engine/三渲二/调子.ts';
-import { 侧机位, type 侧取景 } from '../地点/侧剖面.tsx';
-import { 描边 as 描边默认, 正交顶面 } from '../画风.ts';
-import { 色板, type 调子名 } from '../色板.ts';
+import { ToonCanvas } from '@engine/三渲二/画布.tsx';
+import type { ShadingOptions } from '@engine/三渲二/光影/预设.ts';
+import type { Tone } from '@engine/三渲二/调子.ts';
+import { sideRig, type SideFraming } from '../地点/侧剖面.tsx';
+import { outline as defaultOutline, orthoTop } from '../画风.ts';
+import { palette, type ToneName } from '../色板.ts';
 
 /** 场景没盖住的地方（不该露出来，露了也是暗的） */
-const 底色 = '#1b2027';
+const baseColor = '#1b2027';
 
-export type 现实画布属性 = {
+export type RealCanvasProps = {
   /** 画布的页面尺寸（成片 scale 2），要偶数 */
   宽: number;
   高: number;
   /** 取景：中心 = 画面中心对着剖面 y = 0 上的 [x, z]（格），每格 = 16N 成片像素 */
-  取景: 侧取景;
-  调子?: 调子名 | 调子;
+  framing: SideFraming;
+  tone?: ToneName | Tone;
   /** 描边开关（默认照 画风.ts） */
-  描边?: boolean;
+  outline?: boolean;
   /** 描边宽（成片像素）：默认 画风.ts 的 6（N = 6 时一个贴图像素）；取景换了 N 的给 N，线还是一个贴图像素宽 */
-  描边宽?: number;
+  outlineWidth?: number;
   /** 斜投影俯角（成片像素，0～N 的偶数）：默认 画风.ts 的 正交顶面 */
-  顶面?: number;
+  topDepth?: number;
   /** 场景后面的底色：默认是不该露出来的暗底；第 14 句楼下给天色 */
   天?: string;
   /** 光影（段里传 默认.ts 的 光影段）；不给 = 不开 */
-  光影?: 光影选项 | null;
+  shading?: ShadingOptions | null;
   children: React.ReactNode;
 };
 
-export const 现实画布: React.FC<现实画布属性> = ({ 宽, 高, 取景, 调子: 调 = '现实', 描边 = 描边默认.开, 描边宽 = 描边默认.宽, 顶面 = 正交顶面, 天 = 底色, 光影, children }) => {
-  const t = typeof 调 === 'string' ? 色板[调] : 调;
+export const RealCanvas: React.FC<RealCanvasProps> = ({ 宽: width, 高: height, framing, tone: tone = '现实', outline = defaultOutline.开, outlineWidth = defaultOutline.宽, topDepth = orthoTop, 天: sky = baseColor, shading, children }) => {
+  const t = typeof tone === 'string' ? palette[tone] : tone;
   return (
-    <三渲二画布 宽={宽} 高={高} 机位={侧机位(取景, 顶面)} 天={天} 色调={t.色调} 描边={描边 ? { 宽: 描边宽, 色: t.描边 } : false} 光影={光影}>
+    <ToonCanvas 宽={width} 高={height} cameraRig={sideRig(framing, topDepth)} 天={sky} tint={t.tint} outline={outline ? { 宽: outlineWidth, 色: t.outlineColor } : false} shading={shading}>
       {children}
-    </三渲二画布>
+    </ToonCanvas>
   );
 };

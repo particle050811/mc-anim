@@ -6,20 +6,20 @@
 // 光标是系统画的，游戏里没有，不画；鼠标停在哪只体现在悬停高亮上。
 import React from 'react';
 import { AbsoluteFill, Img } from 'remotion';
-import frameTable资产 from 'asset:数据/界面/结构罗盘帧表';
-import { 资产目录 } from '../../engine/core/资产目录.ts';
+import frameTableAsset from 'asset:数据/界面/结构罗盘帧表';
+import { assetDir } from '../../engine/core/资产目录.ts';
 // 待迁移（私有资产）：结构罗盘界面是游戏截图、私有，公开构建缺了怎么降级还没定
-import 资_0 from 'asset:贴图/界面/结构罗盘/帧-00';
-import 资_1 from 'asset:贴图/界面/结构罗盘/帧-01';
-import 资_2 from 'asset:贴图/界面/结构罗盘/帧-02';
-import 资_3 from 'asset:贴图/界面/结构罗盘/帧-03';
-import 资_4 from 'asset:贴图/界面/结构罗盘/帧-04';
-import 资_5 from 'asset:贴图/界面/结构罗盘/帧-05';
-import 资_6 from 'asset:贴图/界面/结构罗盘/帧-06';
-import 资_7 from 'asset:贴图/界面/结构罗盘/帧-07';
-const frameTable = frameTable资产 as unknown as { 帧数: number; 帧: string[] };
+import compassFrame00Png from 'asset:贴图/界面/结构罗盘/帧-00';
+import compassFrame01Png from 'asset:贴图/界面/结构罗盘/帧-01';
+import compassFrame02Png from 'asset:贴图/界面/结构罗盘/帧-02';
+import compassFrame03Png from 'asset:贴图/界面/结构罗盘/帧-03';
+import compassFrame04Png from 'asset:贴图/界面/结构罗盘/帧-04';
+import compassFrame05Png from 'asset:贴图/界面/结构罗盘/帧-05';
+import compassFrame06Png from 'asset:贴图/界面/结构罗盘/帧-06';
+import compassFrame07Png from 'asset:贴图/界面/结构罗盘/帧-07';
+const frameTable = frameTableAsset as unknown as { 帧数: number; 帧: string[] };
 
-const ctx = 资产目录({ './帧-00.png': 资_0, './帧-01.png': 资_1, './帧-02.png': 资_2, './帧-03.png': 资_3, './帧-04.png': 资_4, './帧-05.png': 资_5, './帧-06.png': 资_6, './帧-07.png': 资_7 }) as unknown as { keys(): string[]; (k: string): string | { default: string } };
+const ctx = assetDir({ './帧-00.png': compassFrame00Png, './帧-01.png': compassFrame01Png, './帧-02.png': compassFrame02Png, './帧-03.png': compassFrame03Png, './帧-04.png': compassFrame04Png, './帧-05.png': compassFrame05Png, './帧-06.png': compassFrame06Png, './帧-07.png': compassFrame07Png }) as unknown as { keys(): string[]; (k: string): string | { default: string } };
 const pngUrls: Record<string, string> = {};
 for (const k of ctx.keys()) {
   const pngModule = ctx(k);

@@ -9,8 +9,8 @@
 import React, { useLayoutEffect, useRef } from 'react';
 import { rng } from '@engine/model/parts.tsx';
 import { png, type Png } from '@engine/model/贴图.ts';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
-import { type 樱花风参数, type 樱花风时刻, type 墙瓣, 樱花风默认, 造风墙, 墙瓣在, 风墙底 } from './樱花风参数.ts';
+import { filmScale } from '@engine/三渲二/像素.ts';
+import { type SakuraWindParams, type SakuraWindMoment, type WallPetal, sakuraWindDefaults, makeWindWall, wallPetalAt, windWallBottom } from './樱花风参数.ts';
 import c0 from 'asset:贴图/粒子/樱花/cherry_0';
 import c1 from 'asset:贴图/粒子/樱花/cherry_1';
 import c2 from 'asset:贴图/粒子/樱花/cherry_2';
@@ -24,60 +24,60 @@ import c9 from 'asset:贴图/粒子/樱花/cherry_9';
 import c10 from 'asset:贴图/粒子/樱花/cherry_10';
 import c11 from 'asset:贴图/粒子/樱花/cherry_11';
 
-const 贴图们: readonly Png[] = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11].map((u) => png(u));
+const petalTextures: readonly Png[] = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11].map((u) => png(u));
 
-type 瓣 = { 生: number; 角: number; 半径0: number; 档: number; 图: number; 转: number; 翻: boolean; 偏: number; 速: number };
+type Petal = { 生: number; 角: number; baseRadius: number; 档: number; 图: number; 转: number; flip: boolean; sideOffset: number; 速: number };
 
-const 造风流 = (p: 樱花风参数, t: 樱花风时刻): 瓣[] => {
+const makeWindFlow = (p: SakuraWindParams, t: SakuraWindMoment): Petal[] => {
   const r = rng(p.种子);
-  const { 数, 档们 } = p.风流;
-  return Array.from({ length: 数 }, () => {
+  const { 数: count, tiers } = p.windFlow;
+  return Array.from({ length: count }, () => {
     // 越往后生得越密（u^0.6），后生的花瓣大（离镜头近）
     const u = r() ** 0.6;
-    const 生 = t.起 + (t.满 - t.起) * u;
-    const 档 = 档们[Math.min(档们.length - 1, Math.floor((u * 0.7 + r() * 0.3) * 档们.length))]!;
-    return { 生, 角: r() * Math.PI * 2, 半径0: r() * 24, 档, 图: Math.floor(r() * 12), 转: Math.floor(r() * 4), 翻: r() < 0.5, 偏: r() * 2 - 1, 速: 0.7 + r() * 0.6 };
+    const birthSec = t.起 + (t.full - t.起) * u;
+    const tier = tiers[Math.min(tiers.length - 1, Math.floor((u * 0.7 + r() * 0.3) * tiers.length))]!;
+    return { 生: birthSec, 角: r() * Math.PI * 2, baseRadius: r() * 24, 档: tier, 图: Math.floor(r() * 12), 转: Math.floor(r() * 4), flip: r() < 0.5, sideOffset: r() * 2 - 1, 速: 0.7 + r() * 0.6 };
   });
 };
 
-const 缓存 = new Map<string, { 流: 瓣[]; 墙: 墙瓣[] }>();
+const sakuraCache = new Map<string, { petals: Petal[]; wallPetals: WallPetal[] }>();
 
 /** n×n 贴图（原版 3×3；材质包 32x 是 6×6）转 转×90°、翻了再左右翻以后，第 (i, j) 格取原图哪一格 */
-const 取格 = (i: number, j: number, 转: number, 翻: boolean, n = 3): [number, number] => {
-  let [a, b] = [翻 ? n - 1 - i : i, j];
-  for (let k = 0; k < 转; k++) [a, b] = [n - 1 - b, a];
+const pickCell = (i: number, j: number, quarterTurns: number, flip: boolean, n = 3): [number, number] => {
+  let [a, b] = [flip ? n - 1 - i : i, j];
+  for (let k = 0; k < quarterTurns; k++) [a, b] = [n - 1 - b, a];
   return [a, b];
 };
 
-const 画瓣 = (ctx: CanvasRenderingContext2D, 图: Png, x: number, y: number, 档: number, 转: number, 翻: boolean) => {
+const drawPetal = (ctx: CanvasRenderingContext2D, petalImg: Png, x: number, y: number, tier: number, quarterTurns: number, flip: boolean) => {
   // 左上角吸到偶数成片像素（预览级一个画布像素是两个成片像素）
   const x0 = Math.round(x / 2) * 2;
   const y0 = Math.round(y / 2) * 2;
   // 档 是原版一个贴图像素的大小；材质包的高清贴图（n > 3）一格是它的 3/n，整片花瓣一样大
-  const n = 图.w;
-  const 格 = (档 * 3) / n;
+  const n = petalImg.w;
+  const cellSize = (tier * 3) / n;
   for (let j = 0; j < n; j++)
     for (let i = 0; i < n; i++) {
-      const [a, b] = 取格(i, j, 转, 翻, n);
-      const k = (b * 图.w + a) * 4;
-      if (图.px[k + 3]! < 128) continue;
-      ctx.fillStyle = `rgb(${图.px[k]},${图.px[k + 1]},${图.px[k + 2]})`;
-      ctx.fillRect(x0 + i * 格, y0 + j * 格, 格, 格);
+      const [a, b] = pickCell(i, j, quarterTurns, flip, n);
+      const k = (b * petalImg.w + a) * 4;
+      if (petalImg.px[k + 3]! < 128) continue;
+      ctx.fillStyle = `rgb(${petalImg.px[k]},${petalImg.px[k + 1]},${petalImg.px[k + 2]})`;
+      ctx.fillRect(x0 + i * cellSize, y0 + j * cellSize, cellSize, cellSize);
     }
 };
 
 /** 风墙：满 之前整块从左往右扫进来（底跟着补缝），满 之后停住、底撤掉，花瓣从 心（成片像素）往外吹走 */
-const 画墙 = (ctx: CanvasRenderingContext2D, 墙: readonly 墙瓣[], 秒: number, 时刻: 樱花风时刻, p: 樱花风参数, W: number, H: number, 心: readonly [number, number]) => {
-  const 底 = 风墙底(秒, 时刻, p, W);
-  if (底) {
-    ctx.fillStyle = p.风墙.底色;
-    ctx.fillRect(Math.round(底[0] / 2) * 2, 0, Math.round((底[1] - 底[0]) / 2) * 2, H);
+const paintWall = (ctx: CanvasRenderingContext2D, wallPetals: readonly WallPetal[], sec: number, windTime: SakuraWindMoment, p: SakuraWindParams, W: number, H: number, center: readonly [number, number]) => {
+  const wallBottom = windWallBottom(sec, windTime, p, W);
+  if (wallBottom) {
+    ctx.fillStyle = p.windWall.底色;
+    ctx.fillRect(Math.round(wallBottom[0] / 2) * 2, 0, Math.round((wallBottom[1] - wallBottom[0]) / 2) * 2, H);
   }
-  for (const q of 墙) {
-    const { x, y } = 墙瓣在(q, 秒, 时刻, p, W, H, 心);
-    const 边 = q.档 * 3;
-    if (x < -边 || x > W || y < -边 || y > H) continue;
-    画瓣(ctx, 贴图们[q.图]!, x, y, q.档, q.转, q.翻);
+  for (const q of wallPetals) {
+    const { x, y } = wallPetalAt(q, sec, windTime, p, W, H, center);
+    const side = q.档 * 3;
+    if (x < -side || x > W || y < -side || y > H) continue;
+    drawPetal(ctx, petalTextures[q.图]!, x, y, q.档, q.转, q.flip);
   }
 };
 
@@ -86,50 +86,50 @@ const 画墙 = (ctx: CanvasRenderingContext2D, 墙: readonly 墙瓣[], 秒: numb
  * 只影响风流；转场后的镜头里 源 照传摇铃那一镜的，花瓣接着上一镜的位置飞。
  * 散心：满 以后花瓣从这里往外吹散（页面坐标，默认画面中心），转场后那一镜要先看清的地方（第 15 句：推开的门里她的背影）
  */
-export const 樱花风: React.FC<{
+export const SakuraWind: React.FC<{
   秒: number;
-  时刻: 樱花风时刻;
+  windTime: SakuraWindMoment;
   源: { x: number; y: number };
-  散心?: { x: number; y: number };
-  参数?: 樱花风参数;
+  scatterCenter?: { x: number; y: number };
+  参数?: SakuraWindParams;
   宽?: number;
   高?: number;
-}> = ({ 秒, 时刻, 源, 散心, 参数: p = 樱花风默认, 宽 = 1280, 高 = 720 }) => {
+}> = ({ 秒: sec, windTime, 源: sourcePos, scatterCenter, 参数: p = sakuraWindDefaults, 宽: width = 1280, 高: height = 720 }) => {
   const ref = useRef<HTMLCanvasElement>(null);
-  const W = 宽 * 成片倍数;
-  const H = 高 * 成片倍数;
+  const W = width * filmScale;
+  const H = height * filmScale;
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, W, H);
-    if (秒 < 时刻.起) return;
-    const 键 = `${p.种子}|${时刻.起}|${时刻.满}|${宽}x${高}`;
-    let 物 = 缓存.get(键);
-    if (!物) 缓存.set(键, (物 = { 流: 造风流(p, 时刻), 墙: 造风墙(p, W, H) }));
-    const f = p.风流;
-    const 满后 = Math.max(0, 秒 - 时刻.满);
-    const 心: [number, number] = 散心 ? [散心.x * 成片倍数, 散心.y * 成片倍数] : [W / 2, H / 2];
+    if (sec < windTime.起) return;
+    const cacheKey = `${p.种子}|${windTime.起}|${windTime.full}|${width}x${height}`;
+    let cacheEntry = sakuraCache.get(cacheKey);
+    if (!cacheEntry) sakuraCache.set(cacheKey, (cacheEntry = { petals: makeWindFlow(p, windTime), wallPetals: makeWindWall(p, W, H) }));
+    const f = p.windFlow;
+    const afterFull = Math.max(0, sec - windTime.full);
+    const center: [number, number] = scatterCenter ? [scatterCenter.x * filmScale, scatterCenter.y * filmScale] : [W / 2, H / 2];
     // 风流：从源往外打着旋卷，越老越往外、越往右上飘；满了以后从散心往四边加速吹散，散完秒 以后一片不留
-    if (满后 >= f.散完秒) return 画墙(ctx, 物.墙, 秒, 时刻, p, W, H, 心);
-    for (const b of 物.流) {
-      if (秒 < b.生) continue;
-      const 龄 = 秒 - b.生;
-      const 半径 = (b.半径0 + f.外卷 * b.速 * 龄 ** 0.8) * 成片倍数;
-      const 角 = b.角 + Math.PI * 2 * f.转速 * 龄 * (b.偏 < 0 ? -1 : 1) * (0.6 + 0.4 * Math.abs(b.偏));
-      let x = 源.x * 成片倍数 + Math.cos(角) * 半径 + f.右飘 * 龄 * b.速 * 成片倍数;
-      let y = 源.y * 成片倍数 + Math.sin(角) * 半径 * f.散开 * 2 - f.上飘 * 龄 * 成片倍数;
-      if (满后 > 0) {
-        const [dx, dy] = [x - 心[0], y - 心[1]];
+    if (afterFull >= f.scatterDoneSec) return paintWall(ctx, cacheEntry.wallPetals, sec, windTime, p, W, H, center);
+    for (const b of cacheEntry.petals) {
+      if (sec < b.生) continue;
+      const age = sec - b.生;
+      const radius = (b.baseRadius + f.outwardCurl * b.速 * age ** 0.8) * filmScale;
+      const angle = b.角 + Math.PI * 2 * f.rotSpeed * age * (b.sideOffset < 0 ? -1 : 1) * (0.6 + 0.4 * Math.abs(b.sideOffset));
+      let x = sourcePos.x * filmScale + Math.cos(angle) * radius + f.driftRight * age * b.速 * filmScale;
+      let y = sourcePos.y * filmScale + Math.sin(angle) * radius * f.spreadAmount * 2 - f.floatUp * age * filmScale;
+      if (afterFull > 0) {
+        const [dx, dy] = [x - center[0], y - center[1]];
         const d = Math.hypot(dx, dy) || 1;
-        const 推 = f.散加速 * b.速 * 满后 * 满后 * 成片倍数;
-        x += (dx / d) * 推;
-        y += (dy / d) * 推;
+        const pushForce = f.scatterAccel * b.速 * afterFull * afterFull * filmScale;
+        x += (dx / d) * pushForce;
+        y += (dy / d) * pushForce;
       }
-      const 边 = b.档 * 3;
-      if (x < -边 || x > W || y < -边 || y > H) continue;
-      画瓣(ctx, 贴图们[b.图]!, x, y, b.档, b.转, b.翻);
+      const side = b.档 * 3;
+      if (x < -side || x > W || y < -side || y > H) continue;
+      drawPetal(ctx, petalTextures[b.图]!, x, y, b.档, b.转, b.flip);
     }
-    画墙(ctx, 物.墙, 秒, 时刻, p, W, H, 心);
+    paintWall(ctx, cacheEntry.wallPetals, sec, windTime, p, W, H, center);
   });
-  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, imageRendering: 'pixelated' }} />;
+  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, imageRendering: 'pixelated' }} />;
 };

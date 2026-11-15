@@ -9,7 +9,7 @@ import { useThree } from '@react-three/fiber';
 import React, { useEffect, useState } from 'react';
 import { continueRender, delayRender } from 'remotion';
 import * as THREE from 'three';
-import { use写入者, 新写入槽 } from '../../core/写入者.ts';
+import { useWriter, newWriteSlot } from '../../core/写入者.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoLightAt, atmoUniforms, atmosphere, photonCloudsOn } from '../大气.ts';
 import { registerMidPass, type MidPassContext } from '../../voxel/中间步骤.ts';
 
@@ -645,7 +645,7 @@ void main() {
 // 加的云：场景坐标 [x, y, 半径]（方块米），在高积云层里
 type Circle = [number, number, number];
 /** 云底被照亮的一块（场景坐标，方块米）：心、半径、强（乘在 色 上，线性；1 = 和积云那层的日光一样亮）、色（sRGB） */
-export type CloudGlow = { 心: readonly [number, number]; 半径: number; 强: number; 色: string };
+export type CloudGlow = { 心: readonly [number, number]; radius: number; 强: number; 色: string };
 type Settings = {
   weather: CloudWeather;
   add: Circle[];
@@ -661,8 +661,8 @@ export const defaultWeather: CloudWeather = { temperature: 0.5, humidity: 0.55, 
 // 去云默认镜头 20 米内删掉、再 30 米渐变回来：下坠穿云时四周还看得到云团擦过
 const defaultNear: [number, number] = [20, 30];
 const settings: Settings = { weather: defaultWeather, add: [], near: defaultNear, clear: null, seaY: 0, exposure: 1, spread: 1, glow: null };
-const 云设置槽 = 新写入槽();
-const 云设置复位 = () => {
+const cloudSettingsSlot = newWriteSlot();
+const resetCloudSettings = () => {
   settings.add = [];
   settings.near = defaultNear;
   settings.clear = null;
@@ -834,7 +834,7 @@ export const updateCloudUniforms = (cam: THREE.Camera) => {
   const c = settings.clear;
   u.pcClear.value.set(c ? S * c[0] : 0, c ? -S * c[1] : 0, c ? S * c[2] : 0, c ? S * c[3] : 0);
   const g = settings.glow;
-  u.pcGlow.value.set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.半径 : 1, g ? g.强 : 0);
+  u.pcGlow.value.set(g ? S * g.心[0] : 0, g ? -S * g.心[1] : 0, g ? S * g.radius : 1, g ? g.强 : 0);
   if (g) u.pcGlowCol.value.setStyle(g.色, THREE.LinearSRGBColorSpace);
   // 三层所在的云空间高度上的日光（light_color.glsl：日光色 × 透过率 × 7）
   [1200, 3200, 6000].forEach((h, i) => u.pcLight.value[i].fromArray(atmoLightAt(h)));
@@ -908,7 +908,7 @@ export const PhotonClouds: React.FC<{
   glow,
   draw = true,
 }) => {
-  use写入者(云设置槽, 云设置复位);
+  useWriter(cloudSettingsSlot, resetCloudSettings);
   settings.weather = weather;
   settings.add = add;
   settings.near = near;

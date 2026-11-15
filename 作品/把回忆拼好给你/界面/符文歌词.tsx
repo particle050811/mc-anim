@@ -11,49 +11,49 @@ import { useLayoutEffect, useRef } from 'react';
 import { useVideoConfig } from 'remotion';
 import sgaPng from 'asset:贴图/界面/银河字母';
 import glintPng from 'asset:贴图/特效/附魔光泽';
-import 火花0 from 'asset:贴图/粒子/火花/0';
-import 火花1 from 'asset:贴图/粒子/火花/1';
-import 火花2 from 'asset:贴图/粒子/火花/2';
-import 火花3 from 'asset:贴图/粒子/火花/3';
-import 火花4 from 'asset:贴图/粒子/火花/4';
-import 火花5 from 'asset:贴图/粒子/火花/5';
-import 火花6 from 'asset:贴图/粒子/火花/6';
-import 火花7 from 'asset:贴图/粒子/火花/7';
+import spark0Png from 'asset:贴图/粒子/火花/0';
+import spark1Png from 'asset:贴图/粒子/火花/1';
+import spark2Png from 'asset:贴图/粒子/火花/2';
+import spark3Png from 'asset:贴图/粒子/火花/3';
+import spark4Png from 'asset:贴图/粒子/火花/4';
+import spark5Png from 'asset:贴图/粒子/火花/5';
+import spark6Png from 'asset:贴图/粒子/火花/6';
+import spark7Png from 'asset:贴图/粒子/火花/7';
 import raw from 'asset:字体/把回忆拼好给你/歌词字';
 import { png, type Png } from '@engine/model/贴图.ts';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
-import type { 字形表 } from '@库/界面/像素字表.ts';
-import { fps, 旧帧 } from '../分镜/时间.ts';
-import { 光明, 光明档数, 刹那, 刹那块, 放下, 放下块, 时差, 烟花, 烟花火花, 在词里 } from './歌词字效.ts';
-import { 分块, 字种, 收拢, 符文倍, 飞们, 飞位, type 块 } from './符文拼字.ts';
-import { 做字源, 合样式, 字状态, 排一句, 解码时段, type 一字状态, type 摆字, type 符文歌词样式, type 符文歌词行 } from './符文排版.ts';
-import { use当前帧 } from '../当前帧.ts';
+import { filmScale } from '@engine/三渲二/像素.ts';
+import type { GlyphTable } from '@库/界面/像素字表.ts';
+import { fps, legacyFrameSec } from '../分镜/时间.ts';
+import { brightEffect, brightTier, instantEffect, instantBlock, putDown, putDownBlock, timeLag, firework, fireworkSparks, inWord } from './歌词字效.ts';
+import { splitBlocks, glyphSeed, gatherFactor, runeScale, flyBlocks, flyPos, type RuneBlock } from './符文拼字.ts';
+import { makeGlyphSource, mergeStyle, charStates, layoutLine, decodeTimeSpans, type CharState, type PlacedChar, type RuneLyricStyle, type RuneLyricLine } from './符文排版.ts';
+import { useSnappedFrame } from '../当前帧.ts';
 
-export { 符文歌词默认 } from './符文排版.ts';
-export type { 符文歌词样式, 符文歌词行 };
+export { runeLyricDefault } from './符文排版.ts';
+export type { RuneLyricStyle, RuneLyricLine };
 
-const 源 = 做字源(png(sgaPng), raw as unknown as 字形表, '字体/把回忆拼好给你/歌词字');
-const 火花贴图 = [火花0, 火花1, 火花2, 火花3, 火花4, 火花5, 火花6, 火花7];
+const glyphSource = makeGlyphSource(png(sgaPng), raw as unknown as GlyphTable, '字体/把回忆拼好给你/歌词字');
+const sparkTextures = [spark0Png, spark1Png, spark2Png, spark3Png, spark4Png, spark5Png, spark6Png, spark7Png];
 
-const 拜耳 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 /** 4×4 Bayer 阈值（0～1 之间，不到 1）：显现度大于它的点才画 */
-const 阈 = (X: number, Y: number) => (拜耳[(Y & 3) * 4 + (X & 3)]! + 0.5) / 16;
+const threshold = (X: number, Y: number) => (bayer[(Y & 3) * 4 + (X & 3)]! + 0.5) / 16;
 
-const 色缓存 = new Map<string, readonly [number, number, number]>();
-const 色 = (s: string) => {
-  let c = 色缓存.get(s);
+const colorCache = new Map<string, readonly [number, number, number]>();
+const parseColor = (s: string) => {
+  let c = colorCache.get(s);
   if (!c) {
     const m = /^#([0-9a-fA-F]{6})$/.exec(s);
     if (!m) throw new Error(`符文歌词的颜色要写成 #RRGGBB，给的是 ${s}`);
     const n = parseInt(m[1]!, 16);
     c = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-    色缓存.set(s, c);
+    colorCache.set(s, c);
   }
   return c;
 };
-const 数色 = (n: number) => [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
+const intToRgb = (n: number) => [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
 
-type 点层 = {
+type DotLayer = {
   宽: number;
   高: number;
   /** RGBA */
@@ -64,279 +64,279 @@ type 点层 = {
   光: Float32Array;
 };
 
-const 新层 = (宽: number, 高: number): 点层 => ({ 宽, 高, px: new Uint8ClampedArray(宽 * 高 * 4), 实: new Uint8Array(宽 * 高), 光: new Float32Array(宽 * 高) });
+const newLayer = (width: number, height: number): DotLayer => ({ 宽: width, 高: height, px: new Uint8ClampedArray(width * height * 4), 实: new Uint8Array(width * height), 光: new Float32Array(width * height) });
 
-const 点 = (层: 点层, X: number, Y: number, c: readonly number[], 光 = 0) => {
-  if (X < 0 || Y < 0 || X >= 层.宽 || Y >= 层.高) return;
-  const k = Y * 层.宽 + X;
-  层.px[k * 4] = c[0]!;
-  层.px[k * 4 + 1] = c[1]!;
-  层.px[k * 4 + 2] = c[2]!;
-  层.px[k * 4 + 3] = 255;
-  层.实[k] = 1;
-  层.光[k] = 光;
+const drawDot = (pixelLayer: DotLayer, X: number, Y: number, c: readonly number[], light = 0) => {
+  if (X < 0 || Y < 0 || X >= pixelLayer.宽 || Y >= pixelLayer.高) return;
+  const k = Y * pixelLayer.宽 + X;
+  pixelLayer.px[k * 4] = c[0]!;
+  pixelLayer.px[k * 4 + 1] = c[1]!;
+  pixelLayer.px[k * 4 + 2] = c[2]!;
+  pixelLayer.px[k * 4 + 3] = 255;
+  pixelLayer.实[k] = 1;
+  pixelLayer.光[k] = light;
 };
 
 /** 只画在空着的地方（不盖字、符文和描边），a = 不透明度：光圈、火花用 */
-const 空点 = (层: 点层, X: number, Y: number, c: readonly number[], a = 1) => {
-  if (X < 0 || Y < 0 || X >= 层.宽 || Y >= 层.高) return;
-  const k = Y * 层.宽 + X;
-  if (层.px[k * 4 + 3]) return;
-  层.px[k * 4] = c[0]!;
-  层.px[k * 4 + 1] = c[1]!;
-  层.px[k * 4 + 2] = c[2]!;
-  层.px[k * 4 + 3] = Math.round(255 * a);
+const paintDot = (pixelLayer: DotLayer, X: number, Y: number, c: readonly number[], a = 1) => {
+  if (X < 0 || Y < 0 || X >= pixelLayer.宽 || Y >= pixelLayer.高) return;
+  const k = Y * pixelLayer.宽 + X;
+  if (pixelLayer.px[k * 4 + 3]) return;
+  pixelLayer.px[k * 4] = c[0]!;
+  pixelLayer.px[k * 4 + 1] = c[1]!;
+  pixelLayer.px[k * 4 + 2] = c[2]!;
+  pixelLayer.px[k * 4 + 3] = Math.round(255 * a);
 };
 
 // 附魔光泽（叠在符文上）：原版 RenderStateShard.setupGlintTexturing(8)：i = 毫秒 × 光泽速度(默认 0.5) × 8，贴图矩阵 = 平移(−(i%110000)/110000, (i%30000)/30000) · 绕 z 转 10° · 放大 8；
 // 贴图双线性、重复铺；叠法 (SRC_COLOR, ONE)：底色 += (贴图 × 光泽强度(默认 0.75))²。物品图集里一格 16 像素约对上光泽贴图 16 像素，这里一个光泽像素 = 光泽像素点 个点
-const 光泽速度 = 0.5;
-const 光泽强度 = 0.75;
-const 光泽像素点 = 2;
-const 转 = (10 * Math.PI) / 180;
-const 光泽 = (X: number, Y: number, 毫秒: number, out: number[]) => {
+const glossSpeed = 0.5;
+const glossStrength = 0.75;
+const glossPixelSize = 2;
+const angleRad = (10 * Math.PI) / 180;
+const glossAt = (X: number, Y: number, timeMs: number, out: number[]) => {
   const tex = png(glintPng);
-  const i = 毫秒 * 光泽速度 * 8;
-  const a = X / 光泽像素点 / 128;
-  const b = Y / 光泽像素点 / 128;
-  const u = (Math.cos(转) * a - Math.sin(转) * b - (i % 110000) / 110000) * tex.w - 0.5;
-  const v = (Math.sin(转) * a + Math.cos(转) * b + (i % 30000) / 30000) * tex.h - 0.5;
+  const i = timeMs * glossSpeed * 8;
+  const a = X / glossPixelSize / 128;
+  const b = Y / glossPixelSize / 128;
+  const u = (Math.cos(angleRad) * a - Math.sin(angleRad) * b - (i % 110000) / 110000) * tex.w - 0.5;
+  const v = (Math.sin(angleRad) * a + Math.cos(angleRad) * b + (i % 30000) / 30000) * tex.h - 0.5;
   const x0 = Math.floor(u);
   const y0 = Math.floor(v);
   const fx = u - x0;
   const fy = v - y0;
-  const 取 = (x: number, y: number, ch: number) => tex.px[((((y % tex.h) + tex.h) % tex.h) * tex.w + (((x % tex.w) + tex.w) % tex.w)) * 4 + ch]!;
+  const sampleTexel = (x: number, y: number, ch: number) => tex.px[((((y % tex.h) + tex.h) % tex.h) * tex.w + (((x % tex.w) + tex.w) % tex.w)) * 4 + ch]!;
   for (let ch = 0; ch < 3; ch++) {
-    const s = (取(x0, y0, ch) * (1 - fx) + 取(x0 + 1, y0, ch) * fx) * (1 - fy) + (取(x0, y0 + 1, ch) * (1 - fx) + 取(x0 + 1, y0 + 1, ch) * fx) * fy;
-    out[ch] = ((光泽强度 * s) / 255) ** 2 * 255;
+    const s = (sampleTexel(x0, y0, ch) * (1 - fx) + sampleTexel(x0 + 1, y0, ch) * fx) * (1 - fy) + (sampleTexel(x0, y0 + 1, ch) * (1 - fx) + sampleTexel(x0 + 1, y0 + 1, ch) * fx) * fy;
+    out[ch] = ((glossStrength * s) / 255) ** 2 * 255;
   }
 };
 
 /** 一个字拼齐那一下，字形外框四个角外 2 点各闪一个亮点：头 1/24 秒十字（5 点），之后只剩中心一点（24 fps 时第 1 帧十字、第 2 帧一点）。解后 是帧数 */
-const 亮点 = (层: 点层, 格: 摆字, 解后: number, 可见: (X: number, Y: number) => boolean, rgb: readonly number[]) => {
-  const 点们 = 源.汉字(格.字).点;
-  const xs = 点们.map(([x]) => x);
-  const ys = 点们.map(([, y]) => y);
-  const 左 = Math.min(...xs) - 2;
-  const 右 = Math.max(...xs) + 2;
-  const 上 = Math.min(...ys) - 2;
-  const 下 = Math.max(...ys) + 2;
-  const 形 = 解后 / fps < 旧帧(1) ? [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] : [[0, 0]];
-  for (const [cx, cy] of [[左, 上], [右, 上], [左, 下], [右, 下]] as const)
-    for (const [dx, dy] of 形) {
-      const X = 格.x + cx + dx!;
-      const Y = 格.y + cy + dy!;
-      if (可见(X, Y)) 点(层, X, Y, rgb);
+const drawHighlight = (pixelLayer: DotLayer, glyphCell: PlacedChar, afterSolve: number, visible: (X: number, Y: number) => boolean, rgb: readonly number[]) => {
+  const points = glyphSource.hanChar(glyphCell.字).点;
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
+  const left = Math.min(...xs) - 2;
+  const right = Math.max(...xs) + 2;
+  const top = Math.min(...ys) - 2;
+  const bottom = Math.max(...ys) + 2;
+  const offsets = afterSolve / fps < legacyFrameSec(1) ? [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]] : [[0, 0]];
+  for (const [cx, cy] of [[left, top], [right, top], [left, bottom], [right, bottom]] as const)
+    for (const [dx, dy] of offsets) {
+      const X = glyphCell.x + cx + dx!;
+      const Y = glyphCell.y + cy + dy!;
+      if (visible(X, Y)) drawDot(pixelLayer, X, Y, rgb);
     }
 };
 
 /** 一块落定后这一帧怎么画：挪几点、什么颜色（关键词效果改它）；冰 = 刹那：1 闪（整块冰亮色、外一圈冰色），2 冰（冰色、朝上的点亮一档） */
-type 块样 = { dx: number; dy: number; 色: readonly number[]; 冰?: 0 | 1 | 2 };
+type BlockStyle = { dx: number; dy: number; 色: readonly number[]; ice?: 0 | 1 | 2 };
 
-type 一字 = { 格: 摆字; 音: string; 状: 一字状态; 时: { 起: number; 完: number }; 种: number; 块们: readonly 块[] };
+type CharEntry = { 格: PlacedChar; pinyin: string; state: CharState; 时: { 起: number; end: number }; 种: number; chunks: readonly RuneBlock[] };
 
 /** 贴片里的一点：相对左上角的整数位置、颜色、吃多少光泽、显现度（抖动阈值比它小才画） */
-type 贴点 = readonly [number, number, readonly number[], number, number];
+type StampDot = readonly [number, number, readonly number[], number, number];
 /** 一张按成片像素贴的小图（飞着的符文、挪着的块、火花）：左上角在点格上的位置（带小数）、宽高（点）、点们、横向裁到哪（点）；空 = 火花（只画在空处） */
-type 贴片 = { x: number; y: number; 宽: number; 高: number; 点们: 贴点[]; 界?: readonly [number, number]; 空?: true };
+type Stamp = { x: number; y: number; 宽: number; 高: number; patchPoints: StampDot[]; 界?: readonly [number, number]; 空?: true };
 
 /** 画一个字的符文和已经落定的块：停着的块画进 层，飞着的符文放进 飞符们，挪着的块放进 动块们。块样 给关键词改落定以后的样子；调 = 时差的残影那一遍把所有颜色换成冷色 */
-const 画字 = (
-  层: 点层,
-  飞符们: 贴片[],
-  动块们: 贴片[],
-  字: 一字,
+const drawText = (
+  pixelLayer: DotLayer,
+  flyGlyphs: Stamp[],
+  movingBlocks: Stamp[],
+  glyph: CharEntry,
   f: number,
-  样式: 符文歌词样式,
-  块样: (k: number) => 块样,
-  调?: (c: readonly number[]) => readonly number[],
+  lyricStyle: RuneLyricStyle,
+  blockStyle: (k: number) => BlockStyle,
+  toneFn?: (c: readonly number[]) => readonly number[],
 ) => {
-  const { 格, 音, 状, 时, 种, 块们 } = 字;
-  const 符色 = 色(样式.符文色);
-  const 飞 = 飞们(块们, 音, { ...时, 入: 状.入 }, 样式.飞秒, 种);
-  const 界 = 格.界;
-  const 画 = (X: number, Y: number, c: readonly number[], 光 = 0) => {
-    if (界 && !(X >= 界[0] && X + 1 <= 界[1])) return;
-    点(层, X, Y, 调 ? 调(c) : c, 光);
+  const { 格: glyphCell, pinyin, state, 时: timeSpan, 种: seed, chunks } = glyph;
+  const runeRgb = parseColor(lyricStyle.runeColor);
+  const flights = flyBlocks(chunks, pinyin, { ...timeSpan, 入: state.入 }, lyricStyle.flySec, seed);
+  const clipRange = glyphCell.界;
+  const drawPoint = (X: number, Y: number, c: readonly number[], light = 0) => {
+    if (clipRange && !(X >= clipRange[0] && X + 1 <= clipRange[1])) return;
+    drawDot(pixelLayer, X, Y, toneFn ? toneFn(c) : c, light);
   };
   // 飞着的符文（落定的块盖在它上面：飞过还没拼好的邻字时不挡住字）。一个字母像素画成 倍 × 倍 个点，最后一截缩回 1 倍；起飞头 1/24 秒半透明
-  飞.forEach((一, k) => {
-    const 位 = 飞位(一, f);
-    if (!位) return;
-    const 倍 = (f - 一.起) / (一.落 - 一.起) < 收拢 ? 符文倍 : 1;
-    const 阵 = 源.符文(一.字母);
-    const 心 = 块们[k]!.心;
-    const c = 符色.map((v) => v * 一.亮);
-    const 符c = 调 ? 调(c) : c;
-    const 显 = (1 - 状.出) * ((f - 一.起) / fps < 旧帧(1) ? 0.5 : 1);
-    const 点们: 贴点[] = [];
-    for (const [x, y] of 阵.点) for (let sy = 0; sy < 倍; sy++) for (let sx = 0; sx < 倍; sx++) 点们.push([x * 倍 + sx, y * 倍 + sy, 符c, 1, 显]);
-    飞符们.push({
-      x: 格.x + 心[0] + 位[0] - (阵.宽 * 倍) / 2,
-      y: 格.y + 心[1] + 位[1] - 3.5 * 倍,
-      宽: 阵.宽 * 倍,
-      高: 阵.高 * 倍,
-      点们,
-      ...(界 ? { 界 } : {}),
+  flights.forEach((flight, k) => {
+    const pos = flyPos(flight, f);
+    if (!pos) return;
+    const pixelSize = (f - flight.起) / (flight.landTime - flight.起) < gatherFactor ? runeScale : 1;
+    const glyph = glyphSource.rune(flight.letter);
+    const center = chunks[k]!.心;
+    const c = runeRgb.map((v) => v * flight.brightness);
+    const glyphColor = toneFn ? toneFn(c) : c;
+    const shown = (1 - state.出) * ((f - flight.起) / fps < legacyFrameSec(1) ? 0.5 : 1);
+    const patchPoints: StampDot[] = [];
+    for (const [x, y] of glyph.点) for (let sy = 0; sy < pixelSize; sy++) for (let sx = 0; sx < pixelSize; sx++) patchPoints.push([x * pixelSize + sx, y * pixelSize + sy, glyphColor, 1, shown]);
+    flyGlyphs.push({
+      x: glyphCell.x + center[0] + pos[0] - (glyph.宽 * pixelSize) / 2,
+      y: glyphCell.y + center[1] + pos[1] - 3.5 * pixelSize,
+      宽: glyph.宽 * pixelSize,
+      高: glyph.高 * pixelSize,
+      patchPoints,
+      ...(clipRange ? { 界: clipRange } : {}),
     });
   });
   // 刚落定的块：头 1/24 秒外面一圈闪圈色，闪秒 内笔画是闪色；刹那冻住、裂开那一下外面一圈冰色、笔画冰亮色
-  const 闪圈 = 色(样式.闪圈色);
-  const 闪 = 色(样式.闪色);
-  const 落着 = 飞.map((一) => f >= 一.落);
-  const 样们 = 飞.map((_, k) => (落着[k] ? 块样(k) : null));
+  const flashRing = parseColor(lyricStyle.flashRingColor);
+  const flashColor = parseColor(lyricStyle.flashColor);
+  const landed = flights.map((flight) => f >= flight.landTime);
+  const styles = flights.map((_, k) => (landed[k] ? blockStyle(k) : null));
   // 挪着的块（离原位不是整点）不吸到点上，一块一张贴片（外面留一点给闪圈）；停着的画进 层
-  const 片们 = 样们.map((s, k) => {
+  const pieces = styles.map((s, k) => {
     if (!s || (Number.isInteger(s.dx) && Number.isInteger(s.dy))) return null;
-    const 点们 = 块们[k]!.点;
-    const x0 = Math.min(...点们.map(([x]) => x)) - 1;
-    const y0 = Math.min(...点们.map(([, y]) => y)) - 1;
-    const 片: 贴片 = {
-      x: 格.x + x0 + s.dx,
-      y: 格.y + y0 + s.dy,
-      宽: Math.max(...点们.map(([x]) => x)) + 2 - x0,
-      高: Math.max(...点们.map(([, y]) => y)) + 2 - y0,
-      点们: [],
-      ...(界 ? { 界 } : {}),
+    const points = chunks[k]!.点;
+    const x0 = Math.min(...points.map(([x]) => x)) - 1;
+    const y0 = Math.min(...points.map(([, y]) => y)) - 1;
+    const patch: Stamp = {
+      x: glyphCell.x + x0 + s.dx,
+      y: glyphCell.y + y0 + s.dy,
+      宽: Math.max(...points.map(([x]) => x)) + 2 - x0,
+      高: Math.max(...points.map(([, y]) => y)) + 2 - y0,
+      patchPoints: [],
+      ...(clipRange ? { 界: clipRange } : {}),
     };
-    动块们.push(片);
-    return { 片, x0, y0 };
+    movingBlocks.push(patch);
+    return { 片: patch, x0, y0 };
   });
   /** 第 k 块的一点（字里的位置 x、y） */
-  const 放 = (k: number, s: 块样, x: number, y: number, c: readonly number[]) => {
-    const 动 = 片们[k];
-    if (动) {
-      动.片.点们.push([x - 动.x0, y - 动.y0, 调 ? 调(c) : c, 0, 状.显]);
+  const stamp = (k: number, s: BlockStyle, x: number, y: number, c: readonly number[]) => {
+    const runePiece = pieces[k];
+    if (runePiece) {
+      runePiece.片.patchPoints.push([x - runePiece.x0, y - runePiece.y0, toneFn ? toneFn(c) : c, 0, state.shown]);
       return;
     }
-    const X = Math.round(格.x + x + s.dx);
-    const Y = Math.round(格.y + y + s.dy);
-    if (状.显 > 阈(X, Y)) 画(X, Y, c);
+    const X = Math.round(glyphCell.x + x + s.dx);
+    const Y = Math.round(glyphCell.y + y + s.dy);
+    if (state.shown > threshold(X, Y)) drawPoint(X, Y, c);
   };
-  飞.forEach((一, k) => {
-    const s = 样们[k];
+  flights.forEach((flight, k) => {
+    const s = styles[k];
     if (!s) return;
-    const 圈 = s.冰 === 1 ? 色(刹那.冰色) : (f - 一.落) / fps < 旧帧(1) ? 闪圈 : null;
-    if (!圈) return;
-    const 有 = new Set(块们[k]!.点.map(([x, y]) => `${x},${y}`));
-    for (const [x, y] of 块们[k]!.点)
+    const ringFx = s.ice === 1 ? parseColor(instantEffect.iceColor) : (f - flight.landTime) / fps < legacyFrameSec(1) ? flashRing : null;
+    if (!ringFx) return;
+    const occupied = new Set(chunks[k]!.点.map(([x, y]) => `${x},${y}`));
+    for (const [x, y] of chunks[k]!.点)
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-        if (有.has(`${x + dx},${y + dy}`)) continue;
-        放(k, s, x + dx, y + dy, 圈);
+        if (occupied.has(`${x + dx},${y + dy}`)) continue;
+        stamp(k, s, x + dx, y + dy, ringFx);
       }
   });
-  飞.forEach((一, k) => {
-    const s = 样们[k];
+  flights.forEach((flight, k) => {
+    const s = styles[k];
     if (!s) return;
-    const 刚落 = (f - 一.落) / fps < 样式.闪秒;
+    const justLanded = (f - flight.landTime) / fps < lyricStyle.flashSec;
     // 冰：笔画朝上露着的点亮一档（上面一点不是这个字的笔画）
-    const 字点集 = s.冰 === 2 ? new Set(源.汉字(格.字).点.map(([x, y]) => `${x},${y}`)) : null;
-    for (const [x, y] of 块们[k]!.点) {
-      const c = s.冰 === 1 ? 色(刹那.冰亮色) : 刚落 ? 闪 : 字点集 ? (字点集.has(`${x},${y - 1}`) ? 色(刹那.冰色) : 色(刹那.冰亮色)) : s.色;
-      放(k, s, x, y, c);
+    const glyphDotSet = s.ice === 2 ? new Set(glyphSource.hanChar(glyphCell.字).点.map(([x, y]) => `${x},${y}`)) : null;
+    for (const [x, y] of chunks[k]!.点) {
+      const c = s.ice === 1 ? parseColor(instantEffect.iceLightColor) : justLanded ? flashColor : glyphDotSet ? (glyphDotSet.has(`${x},${y - 1}`) ? parseColor(instantEffect.iceColor) : parseColor(instantEffect.iceLightColor)) : s.色;
+      stamp(k, s, x, y, c);
     }
   });
-  if (状.解后 >= 0 && 状.解后 / fps < 样式.亮点秒) 亮点(层, 格, 状.解后, (X, Y) => 状.显 > 阈(X, Y), 调 ? 调(色(样式.字色)) : 色(样式.字色));
+  if (state.afterSolve >= 0 && state.afterSolve / fps < lyricStyle.highlightSec) drawHighlight(pixelLayer, glyphCell, state.afterSolve, (X, Y) => state.shown > threshold(X, Y), toneFn ? toneFn(parseColor(lyricStyle.textColor)) : parseColor(lyricStyle.textColor));
 };
 
-const 描边 = (层: 点层, 描边色: string | null) => {
-  if (!描边色) return;
-  const c = 色(描边色);
-  const { 宽, 高, 实 } = 层;
-  for (let Y = 0; Y < 高; Y++)
-    for (let X = 0; X < 宽; X++) {
-      if (实[Y * 宽 + X]) continue;
-      let 挨 = false;
-      for (let dy = -1; dy <= 1 && !挨; dy++)
-        for (let dx = -1; dx <= 1 && !挨; dx++) {
+const drawOutline = (pixelLayer: DotLayer, outlineColor: string | null) => {
+  if (!outlineColor) return;
+  const c = parseColor(outlineColor);
+  const { 宽: width, 高: height, 实: filled } = pixelLayer;
+  for (let Y = 0; Y < height; Y++)
+    for (let X = 0; X < width; X++) {
+      if (filled[Y * width + X]) continue;
+      let touching = false;
+      for (let dy = -1; dy <= 1 && !touching; dy++)
+        for (let dx = -1; dx <= 1 && !touching; dx++) {
           const x = X + dx;
           const y = Y + dy;
-          挨 = x >= 0 && y >= 0 && x < 宽 && y < 高 && 实[y * 宽 + x] === 1;
+          touching = x >= 0 && y >= 0 && x < width && y < height && filled[y * width + x] === 1;
         }
-      if (!挨) continue;
-      const k = Y * 宽 + X;
-      层.px[k * 4] = c[0];
-      层.px[k * 4 + 1] = c[1];
-      层.px[k * 4 + 2] = c[2];
-      层.px[k * 4 + 3] = 255;
+      if (!touching) continue;
+      const k = Y * width + X;
+      pixelLayer.px[k * 4] = c[0];
+      pixelLayer.px[k * 4 + 1] = c[1];
+      pixelLayer.px[k * 4 + 2] = c[2];
+      pixelLayer.px[k * 4 + 3] = 255;
     }
 };
 
-const 上光泽 = (层: 点层, f: number, 原点: readonly [number, number] = [0, 0]) => {
-  const 毫秒 = (f / fps) * 1000;
+const applyGloss = (pixelLayer: DotLayer, f: number, origin: readonly [number, number] = [0, 0]) => {
+  const timeMs = (f / fps) * 1000;
   const g = [0, 0, 0];
-  for (let k = 0; k < 层.宽 * 层.高; k++) {
-    const s = 层.光[k]!;
-    if (!s || !层.实[k]) continue;
-    光泽(原点[0] + (k % 层.宽), 原点[1] + Math.floor(k / 层.宽), 毫秒, g);
-    for (let ch = 0; ch < 3; ch++) 层.px[k * 4 + ch] = 层.px[k * 4 + ch]! + s * g[ch]!;
+  for (let k = 0; k < pixelLayer.宽 * pixelLayer.高; k++) {
+    const s = pixelLayer.光[k]!;
+    if (!s || !pixelLayer.实[k]) continue;
+    glossAt(origin[0] + (k % pixelLayer.宽), origin[1] + Math.floor(k / pixelLayer.宽), timeMs, g);
+    for (let ch = 0; ch < 3; ch++) pixelLayer.px[k * 4 + ch] = pixelLayer.px[k * 4 + ch]! + s * g[ch]!;
   }
 };
 
 /** 点层里挑出实的点（字、符文、闪圈）或不实的点（描边、光圈、火花、残影）放进一块画布 */
-const 挑点 = (层: 点层, 实: boolean) => {
-  const px = new Uint8ClampedArray(层.px.length);
-  for (let k = 0; k < 层.宽 * 层.高; k++) if (!!层.实[k] === 实) for (let ch = 0; ch < 4; ch++) px[k * 4 + ch] = 层.px[k * 4 + ch]!;
+const pickDots = (pixelLayer: DotLayer, filled: boolean) => {
+  const px = new Uint8ClampedArray(pixelLayer.px.length);
+  for (let k = 0; k < pixelLayer.宽 * pixelLayer.高; k++) if (!!pixelLayer.实[k] === filled) for (let ch = 0; ch < 4; ch++) px[k * 4 + ch] = pixelLayer.px[k * 4 + ch]!;
   const c = document.createElement('canvas');
-  c.width = 层.宽;
-  c.height = 层.高;
-  c.getContext('2d')!.putImageData(new ImageData(px, 层.宽, 层.高), 0, 0);
+  c.width = pixelLayer.宽;
+  c.height = pixelLayer.高;
+  c.getContext('2d')!.putImageData(new ImageData(px, pixelLayer.宽, pixelLayer.高), 0, 0);
   return c;
 };
 
 /** 一张贴片在自己的小点层里画（抖动阈值、光泽按它在点格上的整数位置取，同画在大点层里一样）、描边、上光泽，
  *  按位置的小数部分挪整数个成片像素；描边（火花也在这张）和填的分两张返回，好让几张叠着时描边都垫在填的底下。
  *  描边色 null、光泽 false：时差的残影、火花 */
-const 贴片图 = (片: 贴片, 字点: number, f: number, 描边色: string | null, 光泽: boolean) => {
-  const X0 = Math.floor(片.x);
-  const Y0 = Math.floor(片.y);
+const patchImage = (patch: Stamp, glyphScale: number, f: number, outlineColor: string | null, withGloss: boolean) => {
+  const X0 = Math.floor(patch.x);
+  const Y0 = Math.floor(patch.y);
   // 外面留一点给描边；小层原点在点格的 (X0 − 1, Y0 − 1)
-  const 小层 = 新层(片.宽 + 2, 片.高 + 2);
-  for (const [x, y, c, 光, 显] of 片.点们) {
+  const smallLayer = newLayer(patch.宽 + 2, patch.高 + 2);
+  for (const [x, y, c, light, shown] of patch.patchPoints) {
     const X = X0 + x;
     const Y = Y0 + y;
-    if (片.界 && !(X >= 片.界[0] && X + 1 <= 片.界[1])) continue;
-    if (!(显 > 阈(X, Y))) continue;
-    if (片.空) 空点(小层, x + 1, y + 1, c);
-    else 点(小层, x + 1, y + 1, c, 光);
+    if (patch.界 && !(X >= patch.界[0] && X + 1 <= patch.界[1])) continue;
+    if (!(shown > threshold(X, Y))) continue;
+    if (patch.空) paintDot(smallLayer, x + 1, y + 1, c);
+    else drawDot(smallLayer, x + 1, y + 1, c, light);
   }
-  描边(小层, 描边色);
-  if (光泽) 上光泽(小层, f, [X0 - 1, Y0 - 1]);
-  const 偏 = (v: number, v0: number) => (v0 - 1) * 字点 + Math.round((v - v0) * 字点);
-  return { x: 偏(片.x, X0), y: 偏(片.y, Y0), 宽: 小层.宽 * 字点, 高: 小层.高 * 字点, 描: 挑点(小层, false), 填: 挑点(小层, true) };
+  drawOutline(smallLayer, outlineColor);
+  if (withGloss) applyGloss(smallLayer, f, [X0 - 1, Y0 - 1]);
+  const pixelOffset = (v: number, v0: number) => (v0 - 1) * glyphScale + Math.round((v - v0) * glyphScale);
+  return { x: pixelOffset(patch.x, X0), y: pixelOffset(patch.y, Y0), 宽: smallLayer.宽 * glyphScale, 高: smallLayer.高 * glyphScale, outline: pickDots(smallLayer, false), fillPoints: pickDots(smallLayer, true) };
 };
 
 /** 把 影 垫在 层 底下：层 空着的点取 影 的点（时差的残影） */
-const 垫底 = (层: 点层, 影: 点层) => {
-  for (let k = 0; k < 层.宽 * 层.高; k++) {
-    if (层.px[k * 4 + 3] || !影.px[k * 4 + 3]) continue;
-    for (let ch = 0; ch < 4; ch++) 层.px[k * 4 + ch] = 影.px[k * 4 + ch]!;
+const drawUnderlay = (pixelLayer: DotLayer, shadowLayer: DotLayer) => {
+  for (let k = 0; k < pixelLayer.宽 * pixelLayer.高; k++) {
+    if (pixelLayer.px[k * 4 + 3] || !shadowLayer.px[k * 4 + 3]) continue;
+    for (let ch = 0; ch < 4; ch++) pixelLayer.px[k * 4 + ch] = shadowLayer.px[k * 4 + ch]!;
   }
 };
 
 /** 光明的光：到这个词笔画的曼哈顿距离分档，每档 光明.档宽 点、一档一个实色（描边在时从描边外面起），只画在空处 */
-const 光圈 = (层: 点层, 点们: readonly (readonly [number, number])[], 档数: number, 有描边: boolean, 显: number) => {
-  if (!档数 || !点们.length) return;
-  const 起 = 有描边 ? 2 : 1;
-  const R = 起 + 档数 * 光明.档宽 - 1;
-  const xs = 点们.map(([x]) => x);
-  const ys = 点们.map(([, y]) => y);
+const drawHalo = (pixelLayer: DotLayer, points: readonly (readonly [number, number])[], tierCount: number, hasOutline: boolean, shown: number) => {
+  if (!tierCount || !points.length) return;
+  const startRing = hasOutline ? 2 : 1;
+  const R = startRing + tierCount * brightEffect.bandWidth - 1;
+  const xs = points.map(([x]) => x);
+  const ys = points.map(([, y]) => y);
   const x0 = Math.min(...xs) - R;
   const y0 = Math.min(...ys) - R;
   const w = Math.max(...xs) + R - x0 + 1;
   const h = Math.max(...ys) + R - y0 + 1;
-  const 距 = new Int16Array(w * h).fill(9999);
-  const 队: number[] = [];
-  for (const [x, y] of 点们) {
+  const distance = new Int16Array(w * h).fill(9999);
+  const queue: number[] = [];
+  for (const [x, y] of points) {
     const k = (y - y0) * w + (x - x0);
-    if (距[k] !== 0) {
-      距[k] = 0;
-      队.push(k);
+    if (distance[k] !== 0) {
+      distance[k] = 0;
+      queue.push(k);
     }
   }
-  for (let q = 0; q < 队.length; q++) {
-    const k = 队[q]!;
-    const d = 距[k]!;
+  for (let q = 0; q < queue.length; q++) {
+    const k = queue[q]!;
+    const d = distance[k]!;
     if (d >= R) continue;
     const x = k % w;
     const y = Math.floor(k / w);
@@ -345,34 +345,34 @@ const 光圈 = (层: 点层, 点们: readonly (readonly [number, number])[], 档
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
       const nk = ny * w + nx;
-      if (距[nk]! <= d + 1) continue;
-      距[nk] = d + 1;
-      队.push(nk);
+      if (distance[nk]! <= d + 1) continue;
+      distance[nk] = d + 1;
+      queue.push(nk);
     }
   }
   for (let k = 0; k < w * h; k++) {
-    const d = 距[k]!;
-    if (d < 起 || d > R) continue;
+    const d = distance[k]!;
+    if (d < startRing || d > R) continue;
     const X = x0 + (k % w);
     const Y = y0 + Math.floor(k / w);
-    if (显 > 阈(X, Y)) 空点(层, X, Y, 色(光明.档色们[Math.floor((d - 起) / 光明.档宽)]!));
+    if (shown > threshold(X, Y)) paintDot(pixelLayer, X, Y, parseColor(brightEffect.tierColors[Math.floor((d - startRing) / brightEffect.bandWidth)]!));
   }
 };
 
 /** 烟花的火花：原版 spark 贴图（8×8，一个贴图像素 = 一个点）乘火花色，只画在空处、按 透 抖动；一颗一张贴片，按成片像素贴。
  *  歌词是自己的点阵，点不随材质包变细：材质包的高清火花（16×16）隔 k 个取一个，还是 8×8 个点 */
-const 画火花 = (层: 点层, 字点: number, 火花们: 贴片[], 心: readonly [number, number], 起圈: readonly [number, number], f: number, 齐: number, 种: number, 留: number) => {
-  const 空 = (X: number, Y: number) => X < 0 || Y < 0 || X >= 层.宽 || Y >= 层.高 || !层.px[(Y * 层.宽 + X) * 4 + 3];
-  for (const s of 烟花火花(f, 齐, 种, 起圈)) {
-    const tex: Png = png(火花贴图[s.档]!);
+const drawSparks = (pixelLayer: DotLayer, glyphScale: number, sparks: Stamp[], center: readonly [number, number], startRing: readonly [number, number], f: number, allDoneFrame: number, seed: number, remain: number) => {
+  const isEmpty = (X: number, Y: number) => X < 0 || Y < 0 || X >= pixelLayer.宽 || Y >= pixelLayer.高 || !pixelLayer.px[(Y * pixelLayer.宽 + X) * 4 + 3];
+  for (const s of fireworkSparks(f, allDoneFrame, seed, startRing)) {
+    const tex: Png = png(sparkTextures[s.档]!);
     const k = tex.w / 8;
-    const c = 数色(s.色);
-    const x0 = 心[0] + s.x - 4;
-    const y0 = 心[1] + s.y - 4;
+    const c = intToRgb(s.色);
+    const x0 = center[0] + s.x - 4;
+    const y0 = center[1] + s.y - 4;
     // 挪了小数的一点盖住点格上相邻的两点：都空着才画，不然擦着字和描边会露出一条一条的碎边
-    const 跨x = Math.round((x0 - Math.floor(x0)) * 字点) ? 1 : 0;
-    const 跨y = Math.round((y0 - Math.floor(y0)) * 字点) ? 1 : 0;
-    const 点们: 贴点[] = [];
+    const spanX = Math.round((x0 - Math.floor(x0)) * glyphScale) ? 1 : 0;
+    const spanY = Math.round((y0 - Math.floor(y0)) * glyphScale) ? 1 : 0;
+    const patchPoints: StampDot[] = [];
     for (let y = 0; y < 8; y++)
       for (let x = 0; x < 8; x++) {
         const i = (y * k * tex.w + x * k) * 4;
@@ -380,132 +380,132 @@ const 画火花 = (层: 点层, 字点: number, 火花们: 贴片[], 心: readon
         if (!a) continue;
         const X = Math.floor(x0) + x;
         const Y = Math.floor(y0) + y;
-        if (!(空(X, Y) && 空(X + 跨x, Y) && 空(X, Y + 跨y) && 空(X + 跨x, Y + 跨y))) continue;
-        点们.push([x, y, [(tex.px[i]! * c[0]) / 255, (tex.px[i + 1]! * c[1]) / 255, (tex.px[i + 2]! * c[2]) / 255], 0, s.透 * 留 * a]);
+        if (!(isEmpty(X, Y) && isEmpty(X + spanX, Y) && isEmpty(X, Y + spanY) && isEmpty(X + spanX, Y + spanY))) continue;
+        patchPoints.push([x, y, [(tex.px[i]! * c[0]) / 255, (tex.px[i + 1]! * c[1]) / 255, (tex.px[i + 2]! * c[2]) / 255], 0, s.alpha * remain * a]);
       }
-    火花们.push({ x: x0, y: y0, 宽: 8, 高: 8, 点们, 空: true });
+    sparks.push({ x: x0, y: y0, 宽: 8, 高: 8, patchPoints, 空: true });
   }
 };
 
 /** 画一句到它自己的点层（字点按这句的样式），返回这一层、飞着的符文（残影的、本体的）、挪着的块、火花和描边色；这一帧整句都看不见给 null */
-const 画一句 = (
-  行们: readonly 符文歌词行[],
+const drawLine = (
+  lines: readonly RuneLyricLine[],
   i: number,
   f: number,
-  底样式: 符文歌词样式,
-  宽: number,
-  高: number,
-  收?: number,
-): { 层: 点层; 字点: number; 飞符们: 贴片[]; 影飞符们: 贴片[]; 动块们: 贴片[]; 火花们: 贴片[]; 描边色: string | null } | null => {
-  const 行 = 行们[i]!;
-  const 样式 = 合样式(底样式, 行.版);
-  if (!Number.isInteger(样式.字点) || 样式.字点 <= 0) throw new Error(`符文歌词的字点要是正整数：${样式.字点}`);
+  baseStyle: RuneLyricStyle,
+  width: number,
+  height: number,
+  fadeOutFrame?: number,
+): { 层: DotLayer; glyphScale: number; flyGlyphs: Stamp[]; shadowFlyGlyphs: Stamp[]; movingBlocks: Stamp[]; sparks: Stamp[]; outlineColor: string | null } | null => {
+  const lyricLine = lines[i]!;
+  const mergedStyle = mergeStyle(baseStyle, lyricLine.版);
+  if (!Number.isInteger(mergedStyle.glyphScale) || mergedStyle.glyphScale <= 0) throw new Error(`符文歌词的字点要是正整数：${mergedStyle.glyphScale}`);
   // 进场前（符文最早在进场那一帧起飞）、退场完（时差的残影晚半拍退）都不画
-  if (f < 行.入) return null;
-  const 效 = 行.字效;
-  const 状们 = 字状态(行们, i, f, 样式, 收);
-  const 迟 = 效?.效 === '时差' ? f - 效.半拍 : null;
-  const 迟状们 = 迟 === null ? null : 字状态(行们, i, 迟, 样式, 收);
-  if (状们.every((s) => s.出 >= 1) && (!迟状们 || 迟状们.every((s) => s.出 >= 1))) return null;
-  const 时段 = 解码时段(行, 样式);
-  const 格们 = 排一句(源, 行.词, 样式, 宽, 高, 行.版).格们;
-  const 字们: 一字[] = 格们.map((格, j) => ({ 格, 音: 行.拼音[j]!, 状: 状们[j]!, 时: 时段[j]!, 种: 字种(行.序 ?? 0, j), 块们: 分块(格.字, 源.汉字(格.字)) }));
-  const 层 = 新层(Math.ceil(宽 / 样式.字点), Math.ceil(高 / 样式.字点));
-  const 齐 = 效 ? Math.max(...时段.slice(效.从, 效.到 + 1).map((d) => d.完)) : Infinity;
-  const 字色 = 色(样式.字色);
-  const 块样法 = (j: number) => (k: number): 块样 => {
-    if (!效 || !在词里(效, j)) return { dx: 0, dy: 0, 色: 字色 };
-    const 种 = 字们[j]!.种 * 8 + k;
-    switch (效.效) {
+  if (f < lyricLine.入) return null;
+  const wordEffect = lyricLine.wordEffect;
+  const states = charStates(lines, i, f, mergedStyle, fadeOutFrame);
+  const lag = wordEffect?.effect === '时差' ? f - wordEffect.halfBeat : null;
+  const lateStates = lag === null ? null : charStates(lines, i, lag, mergedStyle, fadeOutFrame);
+  if (states.every((s) => s.出 >= 1) && (!lateStates || lateStates.every((s) => s.出 >= 1))) return null;
+  const timeSpans = decodeTimeSpans(lyricLine, mergedStyle);
+  const glyphs = layoutLine(glyphSource, lyricLine.text, mergedStyle, width, height, lyricLine.版).glyphs;
+  const chars: CharEntry[] = glyphs.map((glyphCell, j) => ({ 格: glyphCell, pinyin: lyricLine.pinyin[j]!, state: states[j]!, 时: timeSpans[j]!, 种: glyphSeed(lyricLine.序 ?? 0, j), chunks: splitBlocks(glyphCell.字, glyphSource.hanChar(glyphCell.字)) }));
+  const pixelLayer = newLayer(Math.ceil(width / mergedStyle.glyphScale), Math.ceil(height / mergedStyle.glyphScale));
+  const allDoneFrame = wordEffect ? Math.max(...timeSpans.slice(wordEffect.从, wordEffect.到 + 1).map((d) => d.end)) : Infinity;
+  const textColor = parseColor(mergedStyle.textColor);
+  const blockStyleFor = (j: number) => (k: number): BlockStyle => {
+    if (!wordEffect || !inWord(wordEffect, j)) return { dx: 0, dy: 0, 色: textColor };
+    const seed = chars[j]!.种 * 8 + k;
+    switch (wordEffect.effect) {
       case '光明':
-        return { dx: 0, dy: 0, 色: f >= 齐 ? 色(光明.字色) : 字色 };
+        return { dx: 0, dy: 0, 色: f >= allDoneFrame ? parseColor(brightEffect.textColor) : textColor };
       case '烟花':
-        return { dx: 0, dy: 0, 色: f >= 齐 && (f - 齐) / fps < 烟花.染秒 ? 色(烟花.字色) : 字色 };
+        return { dx: 0, dy: 0, 色: f >= allDoneFrame && (f - allDoneFrame) / fps < firework.tintSec ? parseColor(firework.textColor) : textColor };
       case '刹那': {
         // 块的中心离整个词的中心多远（往哪边裂）
-        const 词格 = 字们.slice(效.从, 效.到 + 1).map((z) => z.格);
-        const 中x = (词格[0]!.x + 词格[词格.length - 1]!.x + 16) / 2;
-        const 中y = 词格[0]!.y + 8;
-        const 块 = 字们[j]!.块们[k]!;
-        const r = 刹那块(f, 字们[j]!.时.完, 效.裂, [字们[j]!.格.x + 块.心[0] - 中x, 字们[j]!.格.y + 块.心[1] - 中y], 种);
-        return { dx: r.dx, dy: r.dy, 色: 字色, 冰: r.冰 };
+        const wordCells = chars.slice(wordEffect.从, wordEffect.到 + 1).map((z) => z.格);
+        const centerX = (wordCells[0]!.x + wordCells[wordCells.length - 1]!.x + 16) / 2;
+        const centerY = wordCells[0]!.y + 8;
+        const runeBlock = chars[j]!.chunks[k]!;
+        const r = instantBlock(f, chars[j]!.时.end, wordEffect.shatterFrame, [chars[j]!.格.x + runeBlock.心[0] - centerX, chars[j]!.格.y + runeBlock.心[1] - centerY], seed);
+        return { dx: r.dx, dy: r.dy, 色: textColor, ice: r.ice };
       }
       case '放下': {
-        const r = 放下块(f, 齐, 种);
-        return { dx: r.dx, dy: r.dy, 色: r.色 ? 色(放下.色们[r.色 - 1]!) : 字色 };
+        const r = putDownBlock(f, allDoneFrame, seed);
+        return { dx: r.dx, dy: r.dy, 色: r.色 ? parseColor(putDown.releaseColors[r.色 - 1]!) : textColor };
       }
       default:
-        return { dx: 0, dy: 0, 色: 字色 };
+        return { dx: 0, dy: 0, 色: textColor };
     }
   };
-  const 飞符们: 贴片[] = [];
-  const 影飞符们: 贴片[] = [];
-  const 动块们: 贴片[] = [];
-  const 火花们: 贴片[] = [];
-  字们.forEach((z, j) => 画字(层, 飞符们, 动块们, z, f, 样式, 块样法(j)));
-  描边(层, 样式.描边色);
-  上光泽(层, f);
-  if (效) {
-    const 词们 = 字们.slice(效.从, 效.到 + 1);
-    const 留 = 1 - 状们[效.从]!.出;
-    if (效.效 === '光明') {
-      const 点们 = 词们.flatMap((z) => 源.汉字(z.格.字).点.map(([x, y]) => [z.格.x + x, z.格.y + y] as const));
-      光圈(层, 点们, 光明档数(f, 齐), !!样式.描边色, 状们[效.从]!.显);
+  const flyGlyphs: Stamp[] = [];
+  const shadowFlyGlyphs: Stamp[] = [];
+  const movingBlocks: Stamp[] = [];
+  const sparks: Stamp[] = [];
+  chars.forEach((z, j) => drawText(pixelLayer, flyGlyphs, movingBlocks, z, f, mergedStyle, blockStyleFor(j)));
+  drawOutline(pixelLayer, mergedStyle.outlineColor);
+  applyGloss(pixelLayer, f);
+  if (wordEffect) {
+    const words = chars.slice(wordEffect.从, wordEffect.到 + 1);
+    const remain = 1 - states[wordEffect.从]!.出;
+    if (wordEffect.effect === '光明') {
+      const points = words.flatMap((z) => glyphSource.hanChar(z.格.字).点.map(([x, y]) => [z.格.x + x, z.格.y + y] as const));
+      drawHalo(pixelLayer, points, brightTier(f, allDoneFrame), !!mergedStyle.outlineColor, states[wordEffect.从]!.shown);
     }
-    if (效.效 === '烟花') {
-      const 心: [number, number] = [(词们[0]!.格.x + 词们[词们.length - 1]!.格.x + 16) / 2, 词们[0]!.格.y + 8];
-      画火花(层, 样式.字点, 火花们, 心, [(词们[词们.length - 1]!.格.x + 16 - 词们[0]!.格.x) / 2 + 1, 9], f, 齐, 字们[效.从]!.种, 留);
+    if (wordEffect.effect === '烟花') {
+      const center: [number, number] = [(words[0]!.格.x + words[words.length - 1]!.格.x + 16) / 2, words[0]!.格.y + 8];
+      drawSparks(pixelLayer, mergedStyle.glyphScale, sparks, center, [(words[words.length - 1]!.格.x + 16 - words[0]!.格.x) / 2 + 1, 9], f, allDoneFrame, chars[wordEffect.从]!.种, remain);
     }
-    if (迟 !== null && 迟状们) {
+    if (lag !== null && lateStates) {
       // 残影另画一层：晚半拍的拼字（进场、符文、落定、退场都晚半拍），错开、一档实色冷蓝、不描边，再垫到本体底下
-      const 影 = 新层(层.宽, 层.高);
-      const 冷 = 色(时差.色);
-      词们.forEach((z, n) => {
-        const j = 效.从 + n;
-        const 格 = { ...z.格, x: z.格.x + 时差.偏[0], y: z.格.y + 时差.偏[1] };
-        画字(影, 影飞符们, 动块们, { ...z, 格, 状: 迟状们[j]! }, 迟, 样式, () => ({ dx: 0, dy: 0, 色: 字色 }), () => 冷);
+      const shadowLayer = newLayer(pixelLayer.宽, pixelLayer.高);
+      const coldColor = parseColor(timeLag.色);
+      words.forEach((z, n) => {
+        const j = wordEffect.从 + n;
+        const glyphCell = { ...z.格, x: z.格.x + timeLag.shadowOffset[0], y: z.格.y + timeLag.shadowOffset[1] };
+        drawText(shadowLayer, shadowFlyGlyphs, movingBlocks, { ...z, 格: glyphCell, state: lateStates[j]! }, lag, mergedStyle, () => ({ dx: 0, dy: 0, 色: textColor }), () => coldColor);
       });
-      垫底(层, 影);
+      drawUnderlay(pixelLayer, shadowLayer);
     }
   }
-  return { 层, 字点: 样式.字点, 飞符们, 影飞符们, 动块们, 火花们, 描边色: 样式.描边色 };
+  return { 层: pixelLayer, glyphScale: mergedStyle.glyphScale, flyGlyphs, shadowFlyGlyphs, movingBlocks, sparks, outlineColor: mergedStyle.outlineColor };
 };
 
 /** 铺满画面，放在 position 不是 static 的容器里（如 AbsoluteFill）。行们按 入 从早到晚排 */
-export const 符文歌词: React.FC<{ 行们: readonly 符文歌词行[]; 样式: 符文歌词样式; 收?: number; 帧?: number }> = ({ 行们, 样式, 收, 帧 }) => {
-  const 当前 = use当前帧();
-  const f = 帧 ?? 当前;
+export const RuneLyric: React.FC<{ lines: readonly RuneLyricLine[]; 样式: RuneLyricStyle; 收?: number; 帧?: number }> = ({ lines, 样式: lyricStyle, 收: fadeOutFrame, 帧: frame }) => {
+  const current = useSnappedFrame();
+  const f = frame ?? current;
   const { width, height } = useVideoConfig();
   const ref = useRef<HTMLCanvasElement>(null);
-  const 宽 = width * 成片倍数;
-  const 高 = height * 成片倍数;
-  for (let i = 1; i < 行们.length; i++) if (行们[i]!.入 < 行们[i - 1]!.入) throw new Error(`歌词「${行们[i]!.词}」的入帧比上一句早`);
+  const renderWidth = width * filmScale;
+  const renderHeight = height * filmScale;
+  for (let i = 1; i < lines.length; i++) if (lines[i]!.入 < lines[i - 1]!.入) throw new Error(`歌词「${lines[i]!.text}」的入帧比上一句早`);
   useLayoutEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d')!;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.imageSmoothingEnabled = false;
-    行们.forEach((_, i) => {
-      const r = 画一句(行们, i, f, 样式, 宽, 高, 收);
+    lines.forEach((_, i) => {
+      const r = drawLine(lines, i, f, lyricStyle, renderWidth, renderHeight, fadeOutFrame);
       if (!r) return;
-      const 影符 = r.影飞符们.map((片) => 贴片图(片, r.字点, f, null, false));
-      const 火花 = r.火花们.map((片) => 贴片图(片, r.字点, f, null, false));
-      const 符 = r.飞符们.map((片) => 贴片图(片, r.字点, f, r.描边色, true));
-      const 块 = r.动块们.map((片) => 贴片图(片, r.字点, f, r.描边色, false));
-      type 图 = ReturnType<typeof 贴片图>;
-      const 贴 = (g: 图, c: HTMLCanvasElement) => ctx.drawImage(c, g.x, g.y, g.宽, g.高);
-      const 整层 = (c: HTMLCanvasElement) => ctx.drawImage(c, 0, 0, r.层.宽 * r.字点, r.层.高 * r.字点);
+      const shadowRunes = r.shadowFlyGlyphs.map((patch) => patchImage(patch, r.glyphScale, f, null, false));
+      const sparks = r.sparks.map((patch) => patchImage(patch, r.glyphScale, f, null, false));
+      const runes = r.flyGlyphs.map((patch) => patchImage(patch, r.glyphScale, f, r.outlineColor, true));
+      const movingSprites = r.movingBlocks.map((patch) => patchImage(patch, r.glyphScale, f, r.outlineColor, false));
+      type PatchImg = ReturnType<typeof patchImage>;
+      const drawPatch = (g: PatchImg, c: HTMLCanvasElement) => ctx.drawImage(c, g.x, g.y, g.宽, g.高);
+      const drawWholeLayer = (c: HTMLCanvasElement) => ctx.drawImage(c, 0, 0, r.层.宽 * r.glyphScale, r.层.高 * r.glyphScale);
       // 叠法同都画在一层里：残影的符文 < 火花（只露在空处，先画的那颗在上）< 描边、光圈、残影的字 < 符文和挪着的块的描边 < 符文 < 字和闪圈 < 挪着的块
-      for (const g of 影符) 贴(g, g.填);
-      for (const g of [...火花].reverse()) 贴(g, g.描);
-      整层(挑点(r.层, false));
-      for (const g of [...符, ...块]) 贴(g, g.描);
-      for (const g of 符) 贴(g, g.填);
-      整层(挑点(r.层, true));
-      for (const g of 块) 贴(g, g.填);
+      for (const g of shadowRunes) drawPatch(g, g.fillPoints);
+      for (const g of [...sparks].reverse()) drawPatch(g, g.outline);
+      drawWholeLayer(pickDots(r.层, false));
+      for (const g of [...runes, ...movingSprites]) drawPatch(g, g.outline);
+      for (const g of runes) drawPatch(g, g.fillPoints);
+      drawWholeLayer(pickDots(r.层, true));
+      for (const g of movingSprites) drawPatch(g, g.fillPoints);
     });
   });
   // 预览级（不放大）时画布按一半显示：最近邻缩，字点是奇数时点一格宽一格窄，但边是硬的
-  return <canvas ref={ref} width={宽} height={高} style={{ position: 'absolute', left: 0, top: 0, width, height, pointerEvents: 'none', imageRendering: 'pixelated' }} />;
+  return <canvas ref={ref} width={renderWidth} height={renderHeight} style={{ position: 'absolute', left: 0, top: 0, width, height, pointerEvents: 'none', imageRendering: 'pixelated' }} />;
 };

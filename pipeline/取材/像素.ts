@@ -5,56 +5,56 @@ import crypto from 'node:crypto';
 import { convertIndexedToRgb, decode, hasPngSignature } from 'fast-png';
 
 /** 不是 PNG 或解不开返回 null */
-export const 像素sha = (字节: Uint8Array): string | null => {
-  if (!hasPngSignature(字节)) return null;
+export const pixelSha = (bytes: Uint8Array): string | null => {
+  if (!hasPngSignature(bytes)) return null;
   let png: ReturnType<typeof decode>;
   try {
-    png = decode(字节);
+    png = decode(bytes);
   } catch {
     return null;
   }
-  const { width: 宽, height: 高 } = png;
-  const n = 宽 * 高;
-  let 深 = png.depth;
-  let 源: ArrayLike<number> = png.data;
-  let 通道 = png.channels;
+  const { width: width, height: height } = png;
+  const n = width * height;
+  let bitDepth = png.depth;
+  let pixelSource: ArrayLike<number> = png.data;
+  let channels = png.channels;
   if (png.palette) {
-    源 = convertIndexedToRgb(png);
-    通道 = png.palette[0]?.length ?? 3;
-    深 = 8;
+    pixelSource = convertIndexedToRgb(png);
+    channels = png.palette[0]?.length ?? 3;
+    bitDepth = 8;
   }
   // 1、2、4 位灰度 fast-png 给的是没拆开的字节，不比（当作比不了，退回按文件 sha）
-  if (深 < 8) return null;
-  const 最大 = 深 === 16 ? 65535 : 255;
-  const 出 = 深 === 16 ? new Uint16Array(n * 4) : new Uint8Array(n * 4);
+  if (bitDepth < 8) return null;
+  const maxChannel = bitDepth === 16 ? 65535 : 255;
+  const pixels = bitDepth === 16 ? new Uint16Array(n * 4) : new Uint8Array(n * 4);
   // tRNS：灰度、RGB 图里等于这个颜色的像素算全透明（fast-png 把它放在 transparency）
-  const 透明色 = !png.palette && png.transparency && (通道 === 1 || 通道 === 3) ? [...png.transparency] : null;
+  const transparentColor = !png.palette && png.transparency && (channels === 1 || channels === 3) ? [...png.transparency] : null;
   for (let i = 0; i < n; i++) {
-    const 取 = (c: number) => 源[i * 通道 + c]!;
+    const channelAt = (c: number) => pixelSource[i * channels + c]!;
     let r: number, g: number, b: number, a: number;
-    if (通道 === 1 || 通道 === 2) {
-      r = g = b = 取(0);
-      a = 通道 === 2 ? 取(1) : 透明色 && 取(0) === 透明色[0] ? 0 : 最大;
+    if (channels === 1 || channels === 2) {
+      r = g = b = channelAt(0);
+      a = channels === 2 ? channelAt(1) : transparentColor && channelAt(0) === transparentColor[0] ? 0 : maxChannel;
     } else {
-      r = 取(0);
-      g = 取(1);
-      b = 取(2);
-      a = 通道 === 4 ? 取(3) : 透明色 && r === 透明色[0] && g === 透明色[1] && b === 透明色[2] ? 0 : 最大;
+      r = channelAt(0);
+      g = channelAt(1);
+      b = channelAt(2);
+      a = channels === 4 ? channelAt(3) : transparentColor && r === transparentColor[0] && g === transparentColor[1] && b === transparentColor[2] ? 0 : maxChannel;
     }
-    出[i * 4] = r;
-    出[i * 4 + 1] = g;
-    出[i * 4 + 2] = b;
-    出[i * 4 + 3] = a;
+    pixels[i * 4] = r;
+    pixels[i * 4 + 1] = g;
+    pixels[i * 4 + 2] = b;
+    pixels[i * 4 + 3] = a;
   }
   return crypto
     .createHash('sha256')
-    .update(`${宽}x${高}:${深 === 16 ? 16 : 8}\n`)
-    .update(new Uint8Array(出.buffer, 出.byteOffset, 出.byteLength))
+    .update(`${width}x${height}:${bitDepth === 16 ? 16 : 8}\n`)
+    .update(new Uint8Array(pixels.buffer, pixels.byteOffset, pixels.byteLength))
     .digest('hex');
 };
 
 /** 两份字节画出来一样：都是 PNG、像素 sha 相等 */
-export const 像素一致 = (甲: Uint8Array, 乙: Uint8Array) => {
-  const a = 像素sha(甲);
-  return a !== null && a === 像素sha(乙);
+export const pixelsMatch = (firstPixels: Uint8Array, secondPixels: Uint8Array) => {
+  const a = pixelSha(firstPixels);
+  return a !== null && a === pixelSha(secondPixels);
 };

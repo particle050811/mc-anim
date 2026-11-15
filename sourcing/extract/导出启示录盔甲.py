@@ -18,21 +18,21 @@ import tempfile
 import zipfile
 from pathlib import Path
 
-类 = "com/mega/revelationfix/client/model/armor/ApocalyptiumArmorGeometry"
+type_name = "com/mega/revelationfix/client/model/armor/ApocalyptiumArmorGeometry"
 JAVAP = os.path.join(os.environ["ANIM_JAVA_HOME"], "bin", "javap") if os.environ.get("ANIM_JAVA_HOME") else "javap"
-骨 = ["head", "body", "right_arm", "left_arm", "right_leg", "left_leg"]
+BONES = ["head", "body", "right_arm", "left_arm", "right_leg", "left_leg"]
 
 
-def 反汇编(jar: str) -> str:
+def disassemble(jar: str) -> str:
     with zipfile.ZipFile(jar) as z:
-        字节 = z.read(类 + ".class")
+        file_bytes = z.read(type_name + ".class")
     with tempfile.TemporaryDirectory() as d:
         p = os.path.join(d, "C.class")
-        Path(p).write_bytes(字节)
+        Path(p).write_bytes(file_bytes)
         return subprocess.run([JAVAP, "-c", "-p", "-constants", p], capture_output=True, text=True, check=True, encoding="utf-8").stdout
 
 
-def 拆方法(text: str) -> dict[str, list[str]]:
+def split_methods(text: str) -> dict[str, list[str]]:
     """{方法名: [指令行]}；<clinit> 记成 static"""
     out, cur = {}, None
     for line in text.splitlines():
@@ -47,47 +47,47 @@ def 拆方法(text: str) -> dict[str, list[str]]:
     return out
 
 
-def 跑(指令: list[str], 网格们: dict[str, dict], 字段: dict[str, object]):
-    栈: list[object] = []
-    for ins in 指令:
+def run_commands(instructions: list[str], meshes: dict[str, dict], field_values: dict[str, object]):
+    stack: list[object] = []
+    for ins in instructions:
         op, _, rest = ins.partition(" ")
         rest = rest.strip()
         if m := re.fullmatch(r"iconst_(\d)", op):
-            栈.append(int(m.group(1)))
+            stack.append(int(m.group(1)))
         elif op in ("bipush", "sipush"):
-            栈.append(int(rest))
+            stack.append(int(rest))
         elif m := re.fullmatch(r"fconst_(\d)", op):
-            栈.append(float(m.group(1)))
+            stack.append(float(m.group(1)))
         elif op == "ldc" or op == "ldc_w":
             m = re.search(r"// float (\S+?)f$", rest)
             if not m:
                 raise SystemExit(f"不认识的常量：{ins}")
-            栈.append(float(m.group(1)))
+            stack.append(float(m.group(1)))
         elif op == "newarray":
             if rest != "float":
                 raise SystemExit(f"不认识的数组：{ins}")
-            栈.append([0.0] * 栈.pop())
+            stack.append([0.0] * stack.pop())
         elif op == "anewarray":
-            栈.append([None] * 栈.pop())
+            stack.append([None] * stack.pop())
         elif op == "dup":
-            栈.append(栈[-1])
+            stack.append(stack[-1])
         elif op in ("fastore", "aastore"):
-            值, 位, 数组 = 栈.pop(), 栈.pop(), 栈.pop()
-            数组[位] = 值
+            value, array_index, array_ref = stack.pop(), stack.pop(), stack.pop()
+            array_ref[array_index] = value
         elif op == "new":
-            栈.append("新")
+            stack.append("新")
         elif op == "invokespecial" and 'ArmorMesh."<init>":(I[F)V' in rest:
-            顶点, bone = 栈.pop(), 栈.pop()
-            栈.pop()
-            栈.pop()
-            栈.append({"骨": bone, "顶点": 顶点})
+            vertices, bone = stack.pop(), stack.pop()
+            stack.pop()
+            stack.pop()
+            stack.append({"骨": bone, "顶点": vertices})
         elif op == "invokestatic":
-            名 = re.search(r"Method (\w+):\(\)", rest).group(1)
-            栈.append(网格们[名])
+            method_name = re.search(r"Method (\w+):\(\)", rest).group(1)
+            stack.append(meshes[method_name])
         elif op == "putstatic":
-            字段[re.search(r"Field (\w+):", rest).group(1)] = 栈.pop()
+            field_values[re.search(r"Field (\w+):", rest).group(1)] = stack.pop()
         elif op == "areturn":
-            return 栈.pop()
+            return stack.pop()
         elif op == "return":
             return None
         else:
@@ -99,39 +99,39 @@ def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print(__doc__, file=sys.stderr)
         return 2
-    jar, 输出 = argv
-    text = 反汇编(jar)
-    方法 = 拆方法(text)
-    网格们 = {名: 跑(指令, {}, {}) for 名, 指令 in 方法.items() if 名.endswith(tuple("0123456789")) and "Mesh" in 名}
-    字段: dict[str, object] = {}
-    跑(方法["static"], 网格们, 字段)
-    for 名, 网格 in 网格们.items():
-        if len(网格["顶点"]) % 32 or not 0 <= 网格["骨"] < len(骨):
-            raise SystemExit(f"{名}：顶点数 {len(网格['顶点'])} 不是 32 的倍数，或 bone {网格['骨']} 越界")
-    常量 = dict(re.findall(r"static final (?:int|java\.lang\.String) (\w+) = \"?([^\";]+)\"?;", text))
-    列, 行 = int(常量["CAPE_COLUMNS"]), int(常量["CAPE_ROWS"])
-    if len(字段["CAPE_REST"]) != 列 * 行 * 3 or len(字段["CAPE_COLLISION"]) % 9:
+    jar, out_path = argv
+    text = disassemble(jar)
+    methods = split_methods(text)
+    meshes = {method_name: run_commands(instructions, {}, {}) for method_name, instructions in methods.items() if method_name.endswith(tuple("0123456789")) and "Mesh" in method_name}
+    field_values: dict[str, object] = {}
+    run_commands(methods["static"], meshes, field_values)
+    for mesh_name, mesh in meshes.items():
+        if len(mesh["顶点"]) % 32 or not 0 <= mesh["骨"] < len(BONES):
+            raise SystemExit(f"{mesh_name}：顶点数 {len(mesh['顶点'])} 不是 32 的倍数，或 bone {mesh['骨']} 越界")
+    constants = dict(re.findall(r"static final (?:int|java\.lang\.String) (\w+) = \"?([^\";]+)\"?;", text))
+    cols, rows = int(constants["CAPE_COLUMNS"]), int(constants["CAPE_ROWS"])
+    if len(field_values["CAPE_REST"]) != cols * rows * 3 or len(field_values["CAPE_COLLISION"]) % 9:
         raise SystemExit("披风网格或碰撞三角形的长度不对")
-    结果 = {
-        "来源": {"类": 类.replace("/", "."), "SOURCE_SHA256": 常量["SOURCE_SHA256"]},
+    result = {
+        "来源": {"类": type_name.replace("/", "."), "SOURCE_SHA256": constants["SOURCE_SHA256"]},
         "贴图": [128, 64],
-        "骨": 骨,
-        "槽": {槽: 字段[槽.upper()] for 槽 in ("head", "chest", "legs", "feet")},
+        "骨": BONES,
+        "槽": {slot: field_values[slot.upper()] for slot in ("head", "chest", "legs", "feet")},
         "披风": {
-            "列": 列,
-            "行": 行,
-            "接缝行": int(常量["CAPE_SEAM_ROW"]),
-            "静止": 字段["CAPE_REST"],
-            "正面UV": 字段["CAPE_FRONT_UV"],
-            "背面UV": 字段["CAPE_BACK_UV"],
-            "碰撞": 字段["CAPE_COLLISION"],
+            "列": cols,
+            "行": rows,
+            "接缝行": int(constants["CAPE_SEAM_ROW"]),
+            "静止": field_values["CAPE_REST"],
+            "正面UV": field_values["CAPE_FRONT_UV"],
+            "背面UV": field_values["CAPE_BACK_UV"],
+            "碰撞": field_values["CAPE_COLLISION"],
         },
     }
-    out = Path(输出)
+    out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(结果, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
-    面 = {槽: sum(len(m["顶点"]) // 32 for m in ms) for 槽, ms in 结果["槽"].items()}
-    print(f"{类} → {out}：{面}（面数），披风 {列}×{行}，碰撞三角形 {len(字段['CAPE_COLLISION']) // 9} 个")
+    out.write_text(json.dumps(result, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    face_counts = {slot: sum(len(m["顶点"]) // 32 for m in ms) for slot, ms in result["槽"].items()}
+    print(f"{type_name} → {out}：{face_counts}（面数），披风 {cols}×{rows}，碰撞三角形 {len(field_values['CAPE_COLLISION']) // 9} 个")
     return 0
 
 

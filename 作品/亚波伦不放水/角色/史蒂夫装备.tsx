@@ -11,128 +11,128 @@ import { EntityModel, type EntityModelData, type EntityPart, entityMaterial, fin
 import { HeldItem } from '@engine/model/物品贴图.tsx';
 import type { PartPose } from '@engine/model/实体模型.tsx';
 import { STEVE_MODEL, STEVE_SKIN, type StevePose, steveParts } from '@库/角色/史蒂夫.tsx';
-import { 断曜流光, 断曜流光显示 } from '../物品/断曜流光.tsx';
-import { 晋升之环 } from '../物品/晋升之环.tsx';
-import { type 盔甲网格, type 神灵金件, 神灵金全套, use神灵金盔甲料 } from '../物品/神灵金盔甲.tsx';
-import { 默认外观, type 装备外观 } from '../物品/装备外观.ts';
-import { 弯肢, type 弯层, 方盒三角 } from './弯肢.tsx';
-import { type 三角, 顶点表转三角 } from './弯折.ts';
-import { type 关节姿, 关节, 关节根矩阵, 网格分节 } from './史蒂夫关节.ts';
+import { Valettein, valetteinDisplay } from '../物品/断曜流光.tsx';
+import { AscensionHalo } from '../物品/晋升之环.tsx';
+import { type ArmorMesh, type ApocalyptiumPiece, apocalyptiumFullSet, useApocalyptiumArmorMaterials } from '../物品/神灵金盔甲.tsx';
+import { defaultAppearance, type EquipAppearance } from '../物品/装备外观.ts';
+import { BendLimb, type BendLayer, boxTriangles } from './弯肢.tsx';
+import { type Triangle, vertexTableToTriangles } from './弯折.ts';
+import { type JointPose, joints, jointRootMatrix, meshSection } from './史蒂夫关节.ts';
 
 /** 腕的转轴过手里拿东西的那一点（部件坐标，像素）：ItemInHandLayer 的 (1/16, 2/16, −10/16) 格换到手臂部件里 */
-const 握点 = [-1, 10, -2] as const;
+const gripPoint = [-1, 10, -2] as const;
 /** 剑绕握点转 腕 度（角色/剑招.ts；正 = 剑尖往前臂延长线那边压） */
-const 腕: React.FC<{ 度: number; children: React.ReactNode }> = ({ 度, children }) =>
-  度 === 0 ? (
+const Wrist: React.FC<{ angleDeg: number; children: React.ReactNode }> = ({ angleDeg, children }) =>
+  angleDeg === 0 ? (
     <>{children}</>
   ) : (
-    <group position={[...握点]}>
-      <group rotation={[(度 * Math.PI) / 180, 0, 0]}>
-        <group position={[-握点[0], -握点[1], -握点[2]]}>{children}</group>
+    <group position={[...gripPoint]}>
+      <group rotation={[(angleDeg * Math.PI) / 180, 0, 0]}>
+        <group position={[-gripPoint[0], -gripPoint[1], -gripPoint[2]]}>{children}</group>
       </group>
     </group>
   );
 
 // 四肢：本体部件、外层部件、关节、角度取 pose 的哪个字段。弯折的角绕部件的 +x：膝往后折是正，肘往前折是负
-const 肢们 = [
-  { 部件: 'right_arm', 外层: 'right_sleeve', 关节: 关节.肘, 号: -1, 角: 'elbowR' },
-  { 部件: 'left_arm', 外层: 'left_sleeve', 关节: 关节.肘, 号: -1, 角: 'elbowL' },
-  { 部件: 'right_leg', 外层: 'right_pants', 关节: 关节.膝, 号: 1, 角: 'kneeR' },
-  { 部件: 'left_leg', 外层: 'left_pants', 关节: 关节.膝, 号: 1, 角: 'kneeL' },
+const limbs = [
+  { partName: 'right_arm', outerLayer: 'right_sleeve', joint: joints.elbow, sign: -1, 角: 'elbowR' },
+  { partName: 'left_arm', outerLayer: 'left_sleeve', joint: joints.elbow, sign: -1, 角: 'elbowL' },
+  { partName: 'right_leg', outerLayer: 'right_pants', joint: joints.knee, sign: 1, 角: 'kneeR' },
+  { partName: 'left_leg', outerLayer: 'left_pants', joint: joints.knee, sign: 1, 角: 'kneeL' },
 ] as const;
-const 肢部件名 = new Set<string>(肢们.flatMap((肢) => [肢.部件, 肢.外层]));
+const limbPartNames = new Set<string>(limbs.flatMap((limb) => [limb.partName, limb.outerLayer]));
 // 四肢的方盒拿掉的模型（部件还在，装备照旧挂）
-const 去肢 = (p: EntityPart): EntityPart => ({ ...p, cubes: 肢部件名.has(p.name) ? [] : p.cubes, children: p.children.map(去肢) });
-const 无肢模型: EntityModelData = { ...STEVE_MODEL, root: 去肢(STEVE_MODEL.root) };
+const stripLimbs = (p: EntityPart): EntityPart => ({ ...p, cubes: limbPartNames.has(p.name) ? [] : p.cubes, children: p.children.map(stripLimbs) });
+const noLimbModel: EntityModelData = { ...STEVE_MODEL, root: stripLimbs(STEVE_MODEL.root) };
 // 每根肢体的皮肤面：本体和外层的方盒合在一起（steveParts 里外层和本体是同一份姿态）
-const 皮肤三角 = Object.fromEntries(
-  肢们.map((肢) => [肢.部件, 方盒三角([...(findPart(STEVE_MODEL.root, 肢.部件)?.cubes ?? []), ...(findPart(STEVE_MODEL.root, 肢.外层)?.cubes ?? [])], STEVE_MODEL.texSize[0]!, STEVE_MODEL.texSize[1]!)]),
-) as Record<(typeof 肢们)[number]['部件'], 三角[]>;
-const 甲三角表 = new WeakMap<readonly number[], 三角[]>();
-const 甲三角 = (顶点: readonly number[]) => {
-  let 三 = 甲三角表.get(顶点);
-  if (!三) 甲三角表.set(顶点, (三 = 顶点表转三角(顶点)));
-  return 三;
+const skinTriangles = Object.fromEntries(
+  limbs.map((limb) => [limb.partName, boxTriangles([...(findPart(STEVE_MODEL.root, limb.partName)?.cubes ?? []), ...(findPart(STEVE_MODEL.root, limb.outerLayer)?.cubes ?? [])], STEVE_MODEL.texSize[0]!, STEVE_MODEL.texSize[1]!)]),
+) as Record<(typeof limbs)[number]['partName'], Triangle[]>;
+const armorTriCache = new WeakMap<readonly number[], Triangle[]>();
+const armorTriangles = (vertices: readonly number[]) => {
+  let triangles = armorTriCache.get(vertices);
+  if (!triangles) armorTriCache.set(vertices, (triangles = vertexTableToTriangles(vertices)));
+  return triangles;
 };
 
-export type 史蒂夫装备 = {
+export type SteveEquip = {
   /** 穿哪几件神灵金甲，不给 = 全套，[] = 不穿 */
-  盔甲?: readonly 神灵金件[];
+  armor?: readonly ApocalyptiumPiece[];
   /** 盔甲和剑带不带附魔光泽，不给 = 带 */
-  附魔?: boolean;
+  enchanted?: boolean;
   /** 右手拿不拿断曜流光，不给 = 拿 */
   剑?: boolean;
   /** 戴不戴晋升之环，不给 = 戴 */
-  环?: boolean;
+  hasRing?: boolean;
   /** 神灵金套和剑用哪套外观，不给 = 旧版 */
-  外观?: 装备外观;
+  appearance?: EquipAppearance;
   /** 右手换成别的东西（已经包好 HeldItem 的节点，比如弓）；给了就不画剑 */
-  右手?: React.ReactNode;
+  rightHand?: React.ReactNode;
   /** 左手拿的东西（已经包好 HeldItem left 的节点，比如盾、图腾） */
-  左手?: React.ReactNode;
+  leftHand?: React.ReactNode;
 };
 
 /** 秒：附魔光泽滚动、光环自转的时钟（段里传段内秒；游戏里这两样都按系统时间走，和人的动作无关）。
  *  pose 里的 elbowR / elbowL / kneeR / kneeL 是肘、膝的角（度），腕R 是剑的腕（度）。
  *  改部件：steveParts 出来的原版部件表再改一道（举盾、拉弓、挥剑这类直接按原版部件转角写的姿势，见 角色/史蒂夫反应.ts）。
  *  受伤：原版受伤、死亡的变红 0～1，只红皮肤（原版盔甲层、手里的东西都不套受伤色） */
-export const 装备史蒂夫: React.FC<{
-  pose: 关节姿;
+export const EquippedSteve: React.FC<{
+  pose: JointPose;
   秒: number;
-  装备?: 史蒂夫装备;
-  改部件?: (部件: Record<string, PartPose>) => Record<string, PartPose>;
-  受伤?: number;
-}> = ({ pose, 秒, 装备 = {}, 改部件, 受伤 }) => {
-  const { 盔甲 = 神灵金全套, 附魔 = true, 剑 = true, 环 = true, 外观 = 默认外观, 右手, 左手 } = 装备;
-  const { 材质: 甲材质, 网格 } = use神灵金盔甲料(盔甲, 附魔 ? 秒 : undefined, 外观);
+  equipment?: SteveEquip;
+  editParts?: (poses: Record<string, PartPose>) => Record<string, PartPose>;
+  hurt?: number;
+}> = ({ pose, 秒: sec, equipment = {}, editParts, hurt }) => {
+  const { armor = apocalyptiumFullSet, enchanted = true, 剑: sword = true, hasRing = true, appearance = defaultAppearance, rightHand, leftHand } = equipment;
+  const { material: armorMaterial, 网格: meshes } = useApocalyptiumArmorMaterials(armor, enchanted ? sec : undefined, appearance);
   // 和 EntityModel 给头、身用的是同一份材质（参数一样）
-  const 皮材质 = entityMaterial(STEVE_SKIN, { emissive: 0, opacity: 1, alphaTest: 0.1, hurt: 受伤 ?? 0 });
-  const 甲 = (m: 盔甲网格) => <mesh key={m.键} geometry={m.几何} material={甲材质} castShadow receiveShadow />;
-  const 挂甲 = (骨: string) => 网格.filter((m) => m.骨 === 骨).map(甲);
-  const 手里: Record<string, React.ReactNode> = {
+  const skinMaterial = entityMaterial(STEVE_SKIN, { emissive: 0, opacity: 1, alphaTest: 0.1, hurt: hurt ?? 0 });
+  const armorMesh = (m: ArmorMesh) => <mesh key={m.键} geometry={m.geometry} material={armorMaterial} castShadow receiveShadow />;
+  const hangArmor = (boneName: string) => meshes.filter((m) => m.骨 === boneName).map(armorMesh);
+  const handItems: Record<string, React.ReactNode> = {
     right_arm:
-      右手 ??
-      (剑 ? (
-        <腕 度={pose.腕R ?? 0}>
-          <HeldItem t={断曜流光显示[外观].thirdperson_righthand}>
-            <断曜流光 外观={外观} 光泽秒={附魔 ? 秒 : undefined} />
+      rightHand ??
+      (sword ? (
+        <Wrist angleDeg={pose.wristR ?? 0}>
+          <HeldItem t={valetteinDisplay[appearance].thirdperson_righthand}>
+            <Valettein appearance={appearance} glintSec={enchanted ? sec : undefined} />
           </HeldItem>
-        </腕>
+        </Wrist>
       ) : null),
-    left_arm: 左手,
+    left_arm: leftHand,
   };
   const attach: Record<string, React.ReactNode> = {
     head: (
       <>
-        {挂甲('head')}
-        {环 && <晋升之环 秒={秒} />}
+        {hangArmor('head')}
+        {hasRing && <AscensionHalo 秒={sec} />}
       </>
     ),
-    body: 挂甲('body'),
+    body: hangArmor('body'),
   };
-  for (const 肢 of 肢们) {
-    const 块 = 网格.filter((m) => m.骨 === 肢.部件).map((m) => ({ m, 节: 网格分节(m.顶点, 肢.关节.切) }));
-    const 层: 弯层[] = [{ 键: '皮', 三角: 皮肤三角[肢.部件], 材质: 皮材质 }, ...块.filter((b) => b.节 === '弯').map((b) => ({ 键: b.m.键, 三角: 甲三角(b.m.顶点), 材质: 甲材质 }))];
-    attach[肢.部件] = (
-      <弯肢
-        切={肢.关节.切}
-        铰z={肢.关节.铰z}
-        角={(肢.号 * (pose[肢.角] ?? 0) * Math.PI) / 180}
-        层={层}
-        上节={块.filter((b) => b.节 === '上').map((b) => 甲(b.m))}
-        下节={
+  for (const limb of limbs) {
+    const limbMeshes = meshes.filter((m) => m.骨 === limb.partName).map((m) => ({ m, 节: meshSection(m.顶点, limb.joint.cut) }));
+    const armorLayers: BendLayer[] = [{ 键: '皮', triangles: skinTriangles[limb.partName], material: skinMaterial }, ...limbMeshes.filter((b) => b.节 === '弯').map((b) => ({ 键: b.m.键, triangles: armorTriangles(b.m.顶点), material: armorMaterial }))];
+    attach[limb.partName] = (
+      <BendLimb
+        cut={limb.joint.cut}
+        hingeZ={limb.joint.hingeZ}
+        角={(limb.sign * (pose[limb.角] ?? 0) * Math.PI) / 180}
+        层={armorLayers}
+        upperPart={limbMeshes.filter((b) => b.节 === '上').map((b) => armorMesh(b.m))}
+        lowerPart={
           <>
-            {块.filter((b) => b.节 === '下').map((b) => 甲(b.m))}
-            {手里[肢.部件]}
+            {limbMeshes.filter((b) => b.节 === '下').map((b) => armorMesh(b.m))}
+            {handItems[limb.partName]}
           </>
         }
       />
     );
   }
-  const 部件 = 改部件 ? 改部件(steveParts(pose)) : steveParts(pose);
+  const poses = editParts ? editParts(steveParts(pose)) : steveParts(pose);
   return (
-    <group matrix={关节根矩阵(pose)} matrixAutoUpdate={false}>
-      <EntityModel model={无肢模型} tex={STEVE_SKIN} pose={部件} attach={attach} hurt={受伤} />
+    <group matrix={jointRootMatrix(pose)} matrixAutoUpdate={false}>
+      <EntityModel model={noLimbModel} tex={STEVE_SKIN} pose={poses} attach={attach} hurt={hurt} />
     </group>
   );
 };

@@ -19,7 +19,7 @@ import { fineGroundPlant, coarseGroundPlant } from './远景地面草.ts';
 import { sectionCells, type SectionId } from './区段.ts';
 import type { VoxelGrid, PaletteEntry } from './生成.ts';
 import { distantAreaTop, distantBiome, distantPoint, distantTop, type DistantGrid } from './远景网格.ts';
-import { biomeSetups, biomeTemperature, defaultBiome, grassBlock, gravel, oceanBiomes, sand, snowyGrass, steepSlope, stone, twilightBiomeSetups, twilightDarkCanopy, waterFreezes, 积雪, type BiomeSetup, type TreeKind } from './远景群系.ts';
+import { biomeSetups, biomeTemperature, defaultBiome, grassBlock, gravel, oceanBiomes, sand, snowyGrass, steepSlope, stone, twilightBiomeSetups, twilightDarkCanopy, waterFreezes, snowCoverAt, type BiomeSetup, type TreeKind } from './远景群系.ts';
 
 export { buildDetailLayer, distantAreaTop, distantBiome, distantTop, loadDistantGrid, type DetailLayer, type DistantGrid } from './远景网格.ts';
 export { biomeTemperature, waterFreezes } from './远景群系.ts';
@@ -40,13 +40,13 @@ const pickTreeKind = (setup: BiomeSetup, roll: number): TreeKind | null => {
 };
 const crownArea = (setup: BiomeSetup) => {
   let area = 0;
-  for (const [kind, weight] of setup.树) area += weight * Math.PI * kind.半径 * kind.半径;
+  for (const [kind, weight] of setup.树) area += weight * Math.PI * kind.radius * kind.radius;
   return area || 1;
 };
 // 点 (px, py) 离树 t 多远时树冠顶、冠底（离地米数）；不在冠里返回 null
 const crownHeights = (t: Tree, px: number, py: number): [number, number] | null => {
   const dist = Math.hypot(px - t.x, py - t.y);
-  const { 半径: radius, crownTop, crownBottom, conical } = t.kind;
+  const { radius: radius, crownTop, crownBottom, conical } = t.kind;
   if (dist > radius) return null;
   const k = dist / radius;
   // 锥冠：外圈矮；圆冠：顶上略圆
@@ -125,8 +125,8 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
         const gx = Math.floor(x) + ox, gz = oz - 1 - Math.floor(y);
         const biome = distantBiome(grid, gx, gz);
         const setup = setupOf(biome);
-        if (!setup.郁闭) continue;
-        const treeProb = (-Math.log(1 - setup.郁闭) * treeCellM * treeCellM) / crownArea(setup);
+        if (!setup.canopy) continue;
+        const treeProb = (-Math.log(1 - setup.canopy) * treeCellM * treeCellM) / crownArea(setup);
         if (hash2(gi, gj, seeds.hasTree) >= treeProb) continue;
         const ground = Math.round(distantTop(grid, gx + 0.5, gz + 0.5) + (correction ? correction(gx + 0.5, gz + 0.5) : 0));
         if (ground < seaLevel - 1) continue; // 水下不长（红树林的浅水另说，远处看不出）
@@ -157,23 +157,23 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       const cx = gx0 + cellM / 2, cz = gz0 + cellM / 2;
       const slope = Math.max(Math.abs(distantTop(grid, cx + slopeStep, cz) - distantTop(grid, cx - slopeStep, cz)), Math.abs(distantTop(grid, cx, cz + slopeStep) - distantTop(grid, cx, cz - slopeStep))) / (2 * slopeStep);
       // 暮色远景包里每个点有地表方块（暮色自己的地表规则算的），按群系同样的扭法取最近的点；主世界包没有，按群系定
-      const point = grid.地表 ? distantPoint(grid, cx, cz) : -1;
-      let surfaceName = point >= 0 ? grid.地表名![grid.地表![point]] : setup.地表;
+      const point = grid.surface ? distantPoint(grid, cx, cz) : -1;
+      let surfaceName = point >= 0 ? grid.地表名![grid.surface![point]] : setup.surfaceBlock;
       // 岸边：海、河群系里露出水面的列和水深不到 5 米的水底是沙（远景网格 32 米一格，海岸上的列常落在海群系里；照群系给砾石的话
       // 海岸是一道灰边，导入的同一段是沙滩、浅水沙底，交界俯看对出来的）
       if (surfaceName === gravel && oceanBiomes.has(biome) && groundY >= seaLevel - 5) surfaceName = sand;
-      if (!underwater && setup.混 && hash2(gx0 >> section.L, gz0 >> section.L, seeds.blend + section.L) < setup.混[1]) surfaceName = setup.混[0];
-      if (!underwater && setup.陡 && slope > steepSlope) surfaceName = setup.陡;
-      else if (!underwater && surfaceName === grassBlock && 积雪(temperature, groundY)) surfaceName = snowyGrass;
+      if (!underwater && setup.mixBlock && hash2(gx0 >> section.L, gz0 >> section.L, seeds.blend + section.L) < setup.mixBlock[1]) surfaceName = setup.mixBlock[0];
+      if (!underwater && setup.steep && slope > steepSlope) surfaceName = setup.steep;
+      else if (!underwater && surfaceName === grassBlock && snowCoverAt(temperature, groundY)) surfaceName = snowyGrass;
       col.surface = paletteId(surfaceName, biome, gx0, gz0);
-      col.subsoil = paletteId(surfaceName === setup.地表 || surfaceName === snowyGrass ? setup.subsoil : surfaceName, biome, gx0, gz0);
+      col.subsoil = paletteId(surfaceName === setup.surfaceBlock || surfaceName === snowyGrass ? setup.subsoil : surfaceName, biome, gx0, gz0);
       if (underwater) {
         col.waterTop = waterZ;
         col.water = paletteId('minecraft:water', biome, gx0, gz0);
         col.waterSurface = waterFreezes(grid, biome, gx0 + cellM - 1, gz0 + cellM - 1) ? paletteId('minecraft:ice', biome, gx0, gz0) : col.water;
         // 海底和水草照导入量出来的分布挑（远景海底.ts）；量表里没有的照上面按群系定的
         // 海底量表（远景海底.ts）是照主世界导入量的，暮色的湖底用包里的地表方块、不长水草
-        const bed = grid.地表 ? null : seabedFor(biome, section.L, seaLevel - 1 - groundY);
+        const bed = grid.surface ? null : seabedFor(biome, section.L, seaLevel - 1 - groundY);
         if (bed) {
           const roll = cellM <= 4 ? patchRoll(gx0 + cellM / 2, gz0 + cellM / 2, seeds.seabed) : hash2(gx0 >> section.L, gz0 >> section.L, seeds.seabed + section.L);
           col.surface = paletteId(pickSolid(bed.solid, roll), biome, gx0, gz0);
@@ -187,7 +187,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
           }
         }
         // 粗级：照第 0 级的水草比例在海底上面那一格放一株（远景海底.ts 的 粗级水草），水面那一格不放
-        if (section.L >= 1 && !grid.地表) {
+        if (section.L >= 1 && !grid.surface) {
           const plantName = coarseSeaPlant(biome, seaLevel - 1 - groundY, gx0, gz0, section.L);
           const kg = Math.floor((col.groundTop - 1) / cellM);
           if (plantName && kg + 1 < Math.floor((waterZ - 1) / cellM)) {
@@ -195,10 +195,10 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
             col.plant = col.plantTip = paletteId(plantName, biome, gx0, gz0);
           }
         }
-      } else if (point >= 0 && grid.冠顶![point] > groundY) {
+      } else if (point >= 0 && grid.crownTop![point] > groundY) {
         // 暮色黑森林：地形那一步铺的硬化树叶顶层，照包里最近那个点的上下两格（下面的树看不见，不撒）
-        col.crownTop = grid.冠顶![point] + 1 - oy;
-        col.crownBottom = Math.max(groundY + 1, grid.冠底![point]) - oy;
+        col.crownTop = grid.crownTop![point] + 1 - oy;
+        col.crownBottom = Math.max(groundY + 1, grid.crownBottom![point]) - oy;
         col.leaf = paletteId(twilightDarkCanopy, biome, gx0, gz0);
       } else if (treeCells) {
         // 细级：取样点落在哪棵树的冠里，冠顶取最高的
@@ -224,22 +224,22 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
         if (kind && crownTopY > groundY) {
           col.crownTop = crownTopY + 1 - oy;
           col.crownBottom = Math.max(groundY + 1, crownBottomY) - oy;
-          col.leaf = paletteId(kind.叶, biome, gx0, gz0);
+          col.leaf = paletteId(kind.leaf, biome, gx0, gz0);
           if (hasTrunk) {
             col.trunkTop = col.crownBottom;
-            col.trunk = paletteId(kind.干, biome, gx0, gz0);
+            col.trunk = paletteId(kind.trunk, biome, gx0, gz0);
           }
         }
-      } else if (setup.郁闭) {
+      } else if (setup.canopy) {
         // 粗级：这一格露出来的是不是树叶。Mipper 按位序挑（东 > 上 > 南，一级级往下比），地面铺满整格，所以挑到的差不多是格子东南角那一列最上面的方块，
         // 只有在某一级上地面够不着上半格、树冠够得着时树叶才赢。按「东南角那列有树冠」再放大一点算：P = 1 − (1 − 郁闭)^k，第 3、4 级 k = 4，第 5、6 级 k = 8。
         // k 对着导入的粗级树叶比例校准（工具/导入/远景校准.ts）：第 5、6 级合并的层数多，树叶赢的机会多，k = 4 时远处的平原偏浅；
         // 按「格子里有树就算」估的 1 − e^(−λ/2) 会让远处的平原全成树林。
-        if (hash2(gx0 >> section.L, gz0 >> section.L, seeds.coarse + section.L) < 1 - (1 - setup.郁闭) ** (section.L >= 5 ? 8 : 4)) {
+        if (hash2(gx0 >> section.L, gz0 >> section.L, seeds.coarse + section.L) < 1 - (1 - setup.canopy) ** (section.L >= 5 ? 8 : 4)) {
           const kind = pickTreeKind(setup, hash2(gx0 >> section.L, gz0 >> section.L, seeds.treeKind + section.L))!;
           col.crownTop = groundY + 1 + kind.crownTop - oy;
           col.crownBottom = groundY + Math.max(1, kind.crownBottom) - oy;
-          col.leaf = paletteId(kind.叶, biome, gx0, gz0);
+          col.leaf = paletteId(kind.leaf, biome, gx0, gz0);
         }
       }
       // 地面上的草、花（远景地面草.ts）：露天的地面上长，第 0 级按量到的高度，粗级在地面上面那一格放一株；积雪的不长、有树干的列不长
@@ -263,7 +263,7 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       zmin = Math.min(zmin, col.groundTop - 4);
       zmax = Math.max(zmax, col.groundTop, col.waterTop, col.crownTop, col.plantTop);
     }
-  if (zmin === Infinity) return { nx: paddedCols, ny: paddedCols, nz: 1, 格: cellM, 原点: [XA + cellM, YA + cellM, 0], vox: new Uint16Array(paddedCols * paddedCols), 色板: palette, 水面: waterZ };
+  if (zmin === Infinity) return { nx: paddedCols, ny: paddedCols, nz: 1, 格: cellM, 原点: [XA + cellM, YA + cellM, 0], vox: new Uint16Array(paddedCols * paddedCols), palette: palette, waterLevel: waterZ };
   // ---- 开格子：第 k 格是场景 z ∈ [k·s, (k + 1)·s) ----
   const kmin = Math.floor(zmin / cellM);
   const kmax = Math.floor((zmax - 1) / cellM);
@@ -288,5 +288,5 @@ export const distantSection = (grid: DistantGrid, origin: DistantOrigin, section
       vox[(k - kmin) * paddedCols * paddedCols + colIdx] = paletteIdx;
     }
   }
-  return { nx: paddedCols, ny: paddedCols, nz, 格: cellM, 原点: [XA + cellM, YA + cellM, kmin * cellM], vox, 色板: palette, 水面: waterZ };
+  return { nx: paddedCols, ny: paddedCols, nz, 格: cellM, 原点: [XA + cellM, YA + cellM, kmin * cellM], vox, palette: palette, waterLevel: waterZ };
 };

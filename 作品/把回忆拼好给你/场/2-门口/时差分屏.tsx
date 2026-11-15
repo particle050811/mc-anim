@@ -9,191 +9,191 @@
 import type React from 'react';
 import { useMemo } from 'react';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
-import { 方块拼搭, type 方块 } from '@engine/model/方块拼搭.tsx';
+import { BlockAssembly, type PlacedBlock } from '@engine/model/方块拼搭.tsx';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { 描边 as 描边组 } from '@engine/三渲二/描边.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
-import type { 调色 } from '@engine/三渲二/调子.ts';
+import { Outline as OutlineGroup } from '@engine/三渲二/描边.tsx';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import type { ShadingOptions } from '@engine/三渲二/光影/预设.ts';
+import type { Grade } from '@engine/三渲二/调子.ts';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MagicalWineFoxEx } from '@库/角色/魔法酒狐新动作组件.tsx';
-import type { 魔法酒狐新姿势 } from '@库/角色/魔法酒狐新动作.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 格原点, 门口 } from '../../地点/门口小木屋.tsx';
-import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
-import { 樱花树方块 } from '../../地点/樱花树.ts';
-import { 月铃兰 } from '../../物品/月铃兰.tsx';
-import { 现实画布 } from '../../现实/画布.tsx';
-import { 现实课桌 } from '../../现实/课桌.tsx';
-import { 描边 as 描边默认, 正交顶面 } from '../../画风.ts';
-import { 色板 } from '../../色板.ts';
-import { 告示牌行们, 群系 } from './参数.ts';
-import { 分屏N, 分屏态, 分屏版式, 她倍, 成形, 成形偏于, 服务器取景, 服务器调子于, 现实取景, 花倍 } from './分屏参数.ts';
-import { 林间门口画布 } from './林间门口.tsx';
+import type { MagicalWineFoxExPose } from '@库/角色/魔法酒狐新动作.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { gridOrigin, entrance } from '../../地点/门口小木屋.tsx';
+import { SignPixelText } from '../../地点/告示牌字.tsx';
+import { cherryTreeBlocks } from '../../地点/樱花树.ts';
+import { MoonBellLily } from '../../物品/月铃兰.tsx';
+import { RealCanvas } from '../../现实/画布.tsx';
+import { RealDesk } from '../../现实/课桌.tsx';
+import { outline as defaultOutline, orthoTop } from '../../画风.ts';
+import { palette } from '../../色板.ts';
+import { signRows, biome } from './参数.ts';
+import { splitScreenCount, SplitState, splitLayout, liYingScale, formShift, shapeOffsetAt, serverFraming, serverToneAt, realFraming, flowerScale } from './分屏参数.ts';
+import { ForestDoorCanvas } from './林间门口.tsx';
 
 /** 她这一页的样子：x 是脚底（人那排 y = 门口.站排y）；yaw 是身子朝哪（度，同 FigurePose：90 朝西、180 朝镜头、−90 朝东）；看 同 MagicalWineFoxEx；
  *  骨骼 盖在姿势表上（按骨骼整条替换），给拿花的胳膊另摆 */
-export type 她这一页 = {
-  姿势: 魔法酒狐新姿势;
+export type HerPage = {
+  stancePose: MagicalWineFoxExPose;
   x: number;
   yaw: number;
   看?: [number, number];
-  骨骼?: Record<string, BonePose>;
+  skeleton?: Record<string, BonePose>;
   /** 手里的花在「正面朝镜头、立着」上再转（度）：偏 180 = 翻到背面（贴图左右镜像），倾 = 从镜头看逆时针歪 */
-  花?: { 偏?: number; 倾?: number };
+  花?: { yawOffset?: number; tilt?: number };
 };
 
 /** 花的正面朝镜头（镜头在南边）：手持物 朝向 的 偏 = 从她正前方往她左边转几度 */
-const 朝镜头偏 = (yaw: number) => ((((180 - yaw) % 360) + 540) % 360) - 180;
+const facingCameraOffset = (yaw: number) => ((((180 - yaw) % 360) + 540) % 360) - 180;
 
 /** 蹲着把花往前下伸（右手，侧身朝东时是离镜头近的那只）：上臂往前抬 82°、往外撇 25°，前臂再抬 10°。手在胸口前下方、帽檐底下，
  *  花伸出她的轮廓、衬在树苗和草上（日历到一 那一拍树苗长成，以后衬在暗的树干上）（主会话 10-24 美术定稿「花举到剪影外」，手机上要认得出月铃兰）。
  *  试过往上举（上臂 100°～130°）：她蹲着时手就在脸边，花挡住脸、和帽檐粘成一团。Agent 暂定 */
-export const 蹲举花: Record<string, BonePose> = { RightArm: { rot: [-82, -25, 0] }, RightForeArm: { rot: [-10, 0, 0] } };
+export const crouchFlowerPose: Record<string, BonePose> = { RightArm: { rot: [-82, -25, 0] }, RightForeArm: { rot: [-10, 0, 0] } };
 
 /** 两个姿势（分屏参数.ts 的 换姿帧们）：坐在门口望着路 → 蹲在树苗旁举着花（三稿原是五个，用户 10-24「画面转太快就删」后只留两个）。Agent 暂定。
  *  蹲：身子正侧面朝门（yaw −90，美术定稿「侧身朝门」，身上的贴图像素是正的），脚底在树干左边一格（身子不压在暗树干上）；
  *  头往镜头转 40°、抬 5°（正侧面时脸被头发挡住，五家看图评审都读成背对镜头的一团粉）；花翻到背面，贴图里在左边的那串白铃铛朝门（朝树苗），再歪 10°。
  *  望路朝西再往镜头转 30°（yaw 120），脸露出来：试过正侧面（yaw 90）加转头，脸露得少，头转到 45° 帽檐里面会翻出来。
  *  这两处不取 90° 整数倍是照主会话 10-24「角色朝向尽量取 90° 的整数倍，和手机上看清表情、动作冲突时看清优先」，Agent 提议、等主会话定 */
-export const 她的姿势们: readonly 她这一页[] = [
-  { 姿势: '坐', x: 门口.站位.门外一步, yaw: 120 },
-  { 姿势: '蹲', x: 门口.树苗[0] - 1, yaw: -90, 看: [5, -40], 骨骼: 蹲举花, 花: { 偏: 180, 倾: 10 } },
+export const liYingPoses: readonly HerPage[] = [
+  { stancePose: '坐', x: entrance.standPos.oneStepOutside, yaw: 120 },
+  { stancePose: '蹲', x: entrance.saplingPos[0] - 1, yaw: -90, 看: [5, -40], skeleton: crouchFlowerPose, 花: { yawOffset: 180, tilt: 10 } },
 ];
 
 /** 斜投影里往里一个贴图像素画面上升几个贴图像素（日历本排飞纸用） */
-const 斜 = 正交顶面 / 分屏N;
+const oblique = orthoTop / splitScreenCount;
 /** 一格几个页面像素 */
-const 每格页面 = (16 * 分屏N) / 2;
+const cellsPerPage = (16 * splitScreenCount) / 2;
 
 /** 接入那几帧服务器那块画布往左宽出 成形.横，门口的地（地点/门口小木屋.tsx 铺到 x −16）不够宽，第一帧左沿露出地的断面（核查 10-24）。
  *  往左照同样的铺法补几列：草 4 排，最前一排往下两层泥土、两层石头 */
-const 补地: readonly 方块[] = Array.from({ length: 4 }, (_, n) => -20 + n).flatMap((i) => [
-  ...[0, 1, 2, 3].map((j): 方块 => ({ 状态: 'minecraft:grass_block', 位: [i, j, -1] })),
-  ...[-2, -3].map((k): 方块 => ({ 状态: 'minecraft:dirt', 位: [i, 0, k] })),
-  ...[-4, -5].map((k): 方块 => ({ 状态: 'minecraft:stone', 位: [i, 0, k] })),
+const patchGround: readonly PlacedBlock[] = Array.from({ length: 4 }, (_, n) => -20 + n).flatMap((i) => [
+  ...[0, 1, 2, 3].map((j): PlacedBlock => ({ 状态: 'minecraft:grass_block', 位: [i, j, -1] })),
+  ...[-2, -3].map((k): PlacedBlock => ({ 状态: 'minecraft:dirt', 位: [i, 0, k] })),
+  ...[-4, -5].map((k): PlacedBlock => ({ 状态: 'minecraft:stone', 位: [i, 0, k] })),
 ]);
 
 /** 树苗那一格（树干那排，j = 1） */
-const 树根 = [门口.树苗[0], 1, 0] as const;
+const treeRoot = [entrance.saplingPos[0], 1, 0] as const;
 
-const 中性: 调色 = { 饱和: 1, 对比: 1, 乘: '#ffffff', 抬: '#000000', 暗角: 0, 颗粒: 0 };
-const 只调色 = (t: 调色): 调色 => ({ ...t, 暗角: 0, 颗粒: 0 });
+const neutralGrade: Grade = { 饱和: 1, 对比: 1, multiply: '#ffffff', lift: '#000000', 暗角: 0, 颗粒: 0 };
+const gradeOnly = (t: Grade): Grade => ({ ...t, 暗角: 0, 颗粒: 0 });
 
-export type 时差分屏属性 = {
+export type TimeLagSplitProps = {
   /** 歌曲帧（分镜 的时间轴） */
   帧: number;
   /** 描边开关（默认照 画风.ts），两屏一起管 */
-  描边?: boolean;
+  outline?: boolean;
   /** 整片后期开关（默认开） */
-  后期?: boolean;
+  withPost?: boolean;
   /** 核对的对照帧用：盖在她这一页的样子上（只给的字段换掉） */
-  她?: Partial<她这一页>;
+  liYing?: Partial<HerPage>;
   /** 段 2-时差 用：开头两屏从右边滑进来（接第 12 句末的横移）。核对段不给，画面照旧 */
-  接入?: boolean;
+  joining?: boolean;
   /** 整页那层颗粒的种子（整片后期），段里给歌曲帧；不给 = 当前帧 */
   种子?: number;
   /** 盖在两屏和分屏线上面、整页质感里面的东西（符文歌词），页面坐标 1280×720 */
   叠层?: React.ReactNode;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]），只管服务器那半（门口，太阳照 参数.ts 的 白天光影场）；不给 = 不开 */
-  光影?: 光影选项 | null;
+  shading?: ShadingOptions | null;
   /** 现实那半的光影；不给 = 不开 */
-  现实光影?: 光影选项 | null;
+  realShading?: ShadingOptions | null;
 };
 
-export const 时差分屏: React.FC<时差分屏属性> = ({ 帧, 描边 = 描边默认.开, 后期 = true, 她: 盖, 接入 = false, 种子, 叠层, 光影, 现实光影 }) => {
-  const 态 = 分屏态(帧);
-  const 偏 = 接入 ? 成形偏于(帧) : 0;
-  const { 服务器宽, 现实宽, 线宽, 线色 } = 分屏版式;
-  const 高 = 画幅.高;
-  const 她 = { ...她的姿势们[态.姿势]!, ...盖 };
-  const 位: V3 = [她.x, 门口.站排y, 0];
-  const 原显示 = DISPLAY.generated.thirdperson_righthand;
-  const 花 = {
-    物品: <月铃兰 />,
-    朝向: { 偏: 朝镜头偏(她.yaw) + (她.花?.偏 ?? 0), 倾: 她.花?.倾 ?? 0 },
-    显示: { ...原显示, scale: (原显示.scale ?? [1, 1, 1]).map((v) => v * 花倍) },
+export const TimeLagSplit: React.FC<TimeLagSplitProps> = ({ 帧: frame, outline = defaultOutline.开, withPost = true, liYing: overrides, joining = false, 种子: seed, 叠层: overlay, shading, realShading }) => {
+  const splitState = SplitState(frame);
+  const offset = joining ? shapeOffsetAt(frame) : 0;
+  const { serverWidth, realWidth, lineWidth, lineColor } = splitLayout;
+  const height = aspect.高;
+  const liYing = { ...liYingPoses[splitState.poseChangeCount]!, ...overrides };
+  const pos: V3 = [liYing.x, entrance.standRowY, 0];
+  const originalDisplay = DISPLAY.generated.thirdperson_righthand;
+  const flowerInHand = {
+    item: <MoonBellLily />,
+    facing: { yawOffset: facingCameraOffset(liYing.yaw) + (liYing.花?.yawOffset ?? 0), tilt: liYing.花?.tilt ?? 0 },
+    display: { ...originalDisplay, scale: (originalDisplay.scale ?? [1, 1, 1]).map((v) => v * flowerScale) },
   };
-  const 树 = useMemo(() => 樱花树方块(态.门口长成, 树根), [态.门口长成]);
+  const treeBlocks = useMemo(() => cherryTreeBlocks(splitState.doorGrown, treeRoot), [splitState.doorGrown]);
   // 放大 她倍 倍（绕脚底）；贴图像素对齐 只吸附脚底
-  const 酒狐 = (
-    <贴图像素对齐 锚={位}>
-      <group position={位} scale={她倍}>
-        <group position={[-位[0], -位[1], -位[2]]}>
+  const wineFox = (
+    <TexturePixelAlign 锚={pos}>
+      <group position={pos} scale={liYingScale}>
+        <group position={[-pos[0], -pos[1], -pos[2]]}>
           <MagicalWineFoxEx
-            pose={{ ...standPose(位), yaw: 她.yaw }}
-            姿势={她.姿势}
-            看={她.看}
-            眨眼={0}
-            秒={帧 / fps}
-            右手={花}
-            骨骼={她.骨骼}
+            pose={{ ...standPose(pos), yaw: liYing.yaw }}
+            stancePose={liYing.stancePose}
+            看={liYing.看}
+            blink={0}
+            秒={frame / fps}
+            rightHand={flowerInHand}
+            skeleton={liYing.skeleton}
           />
         </group>
       </group>
-    </贴图像素对齐>
+    </TexturePixelAlign>
   );
-  const 服务器调子 = 服务器调子于(帧);
+  const serverTone = serverToneAt(frame);
   // 整页那层质感：两屏的暗角、颗粒取平均
-  const 质感: 调色 = {
-    ...中性,
-    暗角: (色板.现实.调色.暗角 + 服务器调子.调色.暗角) / 2,
-    颗粒: (色板.现实.调色.颗粒 + 服务器调子.调色.颗粒) / 2,
+  const finishGrade: Grade = {
+    ...neutralGrade,
+    暗角: (palette.现实.grade.暗角 + serverTone.grade.暗角) / 2,
+    颗粒: (palette.现实.grade.颗粒 + serverTone.grade.颗粒) / 2,
   };
-  const 套 = (t: 调色, 内容: React.ReactNode) => (后期 ? <整片后期 调色={只调色(t)}>{内容}</整片后期> : 内容);
-  const 服务器画布 = (宽: number, 取景: typeof 服务器取景) =>
-    套(
-      服务器调子.调色,
-      <林间门口画布
-        宽={宽}
-        高={高}
-        取景={取景}
-        描边宽={分屏N}
-        告示牌
-        告示牌字={<告示牌像素字 行们={告示牌行们} />}
-        弧={null}
-        调子={服务器调子}
-        生长={态.生长}
-        光影={光影}
+  const withGrade = (t: Grade, content: React.ReactNode) => (withPost ? <FilmPost grade={gradeOnly(t)}>{content}</FilmPost> : content);
+  const serverCanvas = (width: number, framing: typeof serverFraming) =>
+    withGrade(
+      serverTone.grade,
+      <ForestDoorCanvas
+        宽={width}
+        高={height}
+        framing={framing}
+        outlineWidth={splitScreenCount}
+        hasSign
+        signText={<SignPixelText lines={signRows} />}
+        arc={null}
+        tone={serverTone}
+        growth={splitState.growth}
+        shading={shading}
       >
-        <方块拼搭 方块们={树} 原点={格原点} 群系={群系} 正面花草 />
-        {偏 ? <方块拼搭 方块们={补地} 原点={格原点} 群系={群系} /> : null}
-        {描边 ? <描边组>{酒狐}</描边组> : 酒狐}
-      </林间门口画布>,
+        <BlockAssembly blocks={treeBlocks} 原点={gridOrigin} 群系={biome} frontPlants />
+        {offset ? <BlockAssembly blocks={patchGround} 原点={gridOrigin} 群系={biome} /> : null}
+        {outline ? <OutlineGroup>{wineFox}</OutlineGroup> : wineFox}
+      </ForestDoorCanvas>,
     );
-  const 页 = (
+  const pageView = (
     <div style={{ position: 'absolute', inset: 0, background: '#000' }}>
-      {偏 ? (
+      {offset ? (
         // 接入中：服务器那半画宽一截（多出来的在左边），整块跟着分屏线往右挪 偏；门的右边一直贴着分屏线
-        <div style={{ position: 'absolute', left: 0, top: 0, width: 服务器宽 + 偏, height: 高, overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', left: 偏 - 成形.横, top: 0, width: 服务器宽 + 成形.横, height: 高 }}>
-            {服务器画布(服务器宽 + 成形.横, { ...服务器取景, 中心: [服务器取景.中心[0] - 成形.横 / 每格页面 / 2, 服务器取景.中心[1]] })}
+        <div style={{ position: 'absolute', left: 0, top: 0, width: serverWidth + offset, height: height, overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', left: offset - formShift.horizontalPx, top: 0, width: serverWidth + formShift.horizontalPx, height: height }}>
+            {serverCanvas(serverWidth + formShift.horizontalPx, { ...serverFraming, 中心: [serverFraming.中心[0] - formShift.horizontalPx / cellsPerPage / 2, serverFraming.中心[1]] })}
           </div>
         </div>
       ) : (
-        <div style={{ position: 'absolute', left: 0, top: 0, width: 服务器宽, height: 高, overflow: 'hidden' }}>
-          {服务器画布(服务器宽, 服务器取景)}
+        <div style={{ position: 'absolute', left: 0, top: 0, width: serverWidth, height: height, overflow: 'hidden' }}>
+          {serverCanvas(serverWidth, serverFraming)}
         </div>
       )}
-      <div style={{ position: 'absolute', left: 服务器宽 + 偏, top: 0, width: 现实宽, height: 高, overflow: 'hidden' }}>
-        {套(
-          色板.现实.调色,
-          <现实画布 宽={现实宽} 高={高} 取景={现实取景} 描边={描边} 描边宽={分屏N} 光影={现实光影}>
-            <现实课桌 日历={态.日历} 飞={态.飞} 斜={斜} />
-          </现实画布>,
+      <div style={{ position: 'absolute', left: serverWidth + offset, top: 0, width: realWidth, height: height, overflow: 'hidden' }}>
+        {withGrade(
+          palette.现实.grade,
+          <RealCanvas 宽={realWidth} 高={height} framing={realFraming} outline={outline} outlineWidth={splitScreenCount} shading={realShading}>
+            <RealDesk calendar={splitState.calendar} flyPages={splitState.flyPages} oblique={oblique} />
+          </RealCanvas>,
         )}
       </div>
-      <div style={{ position: 'absolute', left: 服务器宽 + 偏, top: 0, width: 线宽, height: 高, background: 线色 }} />
-      {叠层}
+      <div style={{ position: 'absolute', left: serverWidth + offset, top: 0, width: lineWidth, height: height, background: lineColor }} />
+      {overlay}
     </div>
   );
-  return 后期 ? (
-    <整片后期 调色={质感} 种子={种子}>
-      {页}
-    </整片后期>
+  return withPost ? (
+    <FilmPost grade={finishGrade} 种子={seed}>
+      {pageView}
+    </FilmPost>
   ) : (
-    页
+    pageView
   );
 };

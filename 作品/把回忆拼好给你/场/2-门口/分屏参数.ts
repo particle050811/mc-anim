@@ -5,96 +5,96 @@
 // 用户 10-25 看成片：「怎么是同步生长？ 应该是樱花树越来越多才对 背景从什么都没有到长成一片樱花林」：身后的坡一开始光秃秃，樱花树跟着日历一棵棵冒出来、越冒越快，
 //   停在 1 时长满（地点/樱花林.ts 的 冒出）；门口那棵不再一截截长，见 门口长成帧。
 // 纯模块（段.ts 也能读）：版式、两屏取景、树、两边跟着歌走的状态。时刻都从 分镜 的 正片事件 来，这里不写秒数。改了只改这里。
-import { 插调子, type 调子 } from '@engine/三渲二/调子.ts';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
+import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
+import { filmScale } from '@engine/三渲二/像素.ts';
 import { fps } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第13至14句.ts';
-import { 日历数, 满页, 飞页们, type 吹窗, type 飞页 } from '../../现实/日历.ts';
-import { 色板 } from '../../色板.ts';
-import { 半屏取景 } from './参数.ts';
+import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
+import { calendarPageCount, fullPages, flyingPages, type BlowWindow, type FlyingPage } from '../../现实/日历.ts';
+import { palette } from '../../色板.ts';
+import { halfScreenFraming } from './参数.ts';
 
 /** 两屏的像素密度（一个贴图像素 = 成片几个像素）：服务器那半从 6 推到 8（主会话 10-24 美术定稿：N = 6 时她在手机上只是一小团粉）。
  *  现实那半也取 8：两屏像素一样大、网格连成一张（分屏.test.ts）。10 放不下长成的樱花树（树冠 8 格宽、斜投影里 9.75 格高，半屏只有 8 格宽） */
-export const 分屏N = 8;
+export const splitScreenCount = 8;
 /** 一格在成片上几个像素 */
-const 每格 = 16 * 分屏N;
+const pxPerCell = 16 * splitScreenCount;
 
 /** 版式（页面像素）：左服务器、右现实，各半屏（两边同时发生、一样分量，时差是比出来的）。
  *  分屏线一个贴图像素宽（N = 8 是 4 页面像素 = 8 成片像素），压在现实那半最左边那一列上：服务器那边门框整个露着，现实那边左沿只是墙和桌面 */
-export const 分屏版式 = { 服务器宽: 640, 现实宽: 640, 线宽: 分屏N / 2, 线色: '#16181d' } as const;
+export const splitLayout = { serverWidth: 640, realWidth: 640, lineWidth: splitScreenCount / 2, lineColor: '#16181d' } as const;
 
 /** 门中心在服务器那半从左数几成（门在半屏靠右、贴着分屏线）：0.95 时门（x −0.5～0.5）右边正好挨着分屏线，往左看得到 10 格（x −9.5～0.5），
  *  长成的樱花树冠（x −9.5～−1.5）整个在画里，但左沿正好贴着画框、没有余量；门要整个在画里、两半又等宽，就只能这样。
  *  屋子只露门那一列和屋檐，屋里（后墙的照片墙）不在画里（第 13 句用不着，照片方案 10-24 也定了这一句不露；第 14 句左屏重新取景）。再往左挪，长成的树冠左边就出画 */
-export const 服务器门在 = 0.95;
+export const serverDoorFrac = 0.95;
 
 /** 服务器那半的取景：N = 8 时地面线离底 128 像素（一格，长成的树顶上还留半格），一屏 10 × 11.25 格 */
-export const 服务器取景 = 半屏取景(分屏版式.服务器宽 * 2, 服务器门在, 分屏N);
+export const serverFraming = halfScreenFraming(splitLayout.serverWidth * 2, serverDoorFrac, splitScreenCount);
 
 /** 现实那半的镜头（不动）：横着正中对 x = 0（x −80～80 个贴图像素）；竖着桌子前沿（y = 0、z = 0）对到服务器那半的地面线（两屏共用一条横线，像一个画面切成两半）。
  *  课表（左三分之二）、日历（右三分之一）的位置在 现实/课桌布局.ts 的 摆放 */
-export const 现实取景 = { 中心: [0, 服务器取景.中心[1]] as const, 每格 };
+export const realFraming = { 中心: [0, serverFraming.中心[1]] as const, pxPerCell };
 
 /** 风吹日历的窗：第 100 拍起风（100 那页飞走），第 104 拍最后一页飞走、停在 1（现实/日历.ts）。按那一拍的帧取秒：头一页和头一棵樱花树同一帧 */
-export const 日历窗: 吹窗 = { 起: 正片事件.风吹日历.帧 / fps, 止: 正片事件.日历到一.帧 / fps };
+export const calendarWindow: BlowWindow = { 起: mainCutEvents.windBlowsCalendar.帧 / fps, 止: mainCutEvents.calendarAtOne.帧 / fps };
 
 /** 身后樱花林冒到哪（0～1，地点/樱花林.ts 的 冒出）：吹走的页数 ÷ 99，和日历一个节奏越走越快，最后一页飞走（日历到一）是 1、长满。用户 10-25 定「和日历越掉越快一个节奏」 */
-export const 林生长 = (日历: number) => (满页 - 日历) / (满页 - 1);
+export const forestGrowth = (calendar: number) => (fullPages - calendar) / (fullPages - 1);
 
 /** 门口那棵树苗（第 9 句她种下的）长成整棵的那一帧：日历停在 1、身后林子长满的同一拍。原版树苗长成树是一刻之内的事，前一帧树苗、这一帧整棵。
  *  主会话 10-25 原想让它第一个长：长成的整棵树冠 9 格宽、5 格高，压在左屏（10 格宽）上半截，身后的坡只剩树冠底下一窄条，
  *  后面一棵棵冒出来的树几乎全被挡住、手机上看不出「树在变多」；所以林子先在它身后冒满，它最后一个长成（她蹲在树苗旁等到这一拍）。Agent 暂定，交主会话定 */
-export const 门口长成帧 = 正片事件.日历到一.帧;
+export const doorGrowFrame = mainCutEvents.calendarAtOne.帧;
 
 // ---------- 她 ----------
 /** 她画大几倍（绕脚底）：N = 8 时她蹲着只有 1.2 格高，缩到手机竖屏宽（390 像素）约 23 像素，蹲姿、朝向、花都认不出（主会话 10-24 美术定稿要认得出）。
  *  1.25 倍：蹲着 1.5 格、手机上约 29 像素；代价是站着帽子比门高约 0.3 格。Agent 暂定，比门高这一点交主会话定 */
-export const 她倍 = 1.25;
+export const liYingScale = 1.25;
 /** 她手里的月铃兰画大几倍（物品显示变换的缩放再乘这个）：2.5 倍时一串白铃铛衬在树苗和草上（日历到一 以后是长成的暗树干）、手机 390 宽上认得出是一枝带白花的草。放大了真实比例，Agent 暂定 */
-export const 花倍 = 2.5;
+export const flowerScale = 2.5;
 
 /** 她换姿势的几拍（她的姿势们 的下标从 0 起）：坐在门口望着路 → 生长二 蹲到树旁举着花，蹲到这一句完。
  *  原来每长一截换一个（0.43 秒一个），用户 10-24 看粗剪说「画面转太快就删」「一个动作至少 1 秒」：
  *  只换一次，坐 1.5 秒、蹲 1.9 秒（原来日历到一 还站到告示牌旁，只留 0.6 秒，删了；第 14 句左屏从照片墙前起，用不着她先站到牌子旁）。Agent 暂定 */
-export const 换姿帧们: readonly number[] = [正片事件.生长二.帧];
+export const poseSwapFrames: readonly number[] = [mainCutEvents.growthStep2.帧];
 
 /** 服务器那半往褪色插的四拍：第 101～104 拍（三稿的拍点，生长二 到 日历到一） */
-const 褪色帧们 = [正片事件.生长二, 正片事件.生长三, 正片事件.生长四, 正片事件.日历到一].map((e) => e.帧);
+const fadeFrames = [mainCutEvents.growthStep2, mainCutEvents.growthStep3, mainCutEvents.growthStep4, mainCutEvents.calendarAtOne].map((e) => e.帧);
 /** 服务器那半的调子从 夏日白天 往 褪色 插多少（色板.ts）。主会话 10-24 美术定稿：现实冷，服务器保持夏天的暖。
  *  三稿「你下线后她那边褪色」只留一点：起风时 0，往后每拍多 0.05，停在 1 时 0.2 */
-export const 褪色程度 = (帧: number) => 0.05 * 褪色帧们.filter((f) => f <= 帧).length;
+export const fadeLevel = (frame: number) => 0.05 * fadeFrames.filter((f) => f <= frame).length;
 
-export type 分屏态 = {
+export type SplitState = {
   /** 身后樱花林冒到哪 0～1（地点/樱花林.ts 的 中景方块、远景方块 按它） */
-  生长: number;
+  growth: number;
   /** 门口那棵树苗长成整棵了没有（门口长成帧） */
-  门口长成: boolean;
+  doorGrown: boolean;
   /** 她这一帧是第几个姿势（时差分屏.tsx 的 她的姿势们） */
-  姿势: number;
+  poseChangeCount: number;
   /** 服务器那半从 夏日白天 往 褪色 插多少 */
-  褪色: number;
+  fade: number;
   /** 日历最上面那页的天数 */
-  日历: number;
+  calendar: number;
   /** 还在空中的日历纸 */
-  飞: 飞页[];
+  flyPages: FlyingPage[];
 };
 
 /** 第 13 句分屏在歌曲帧 帧 的状态 */
-export const 分屏态 = (帧: number): 分屏态 => {
-  const 秒 = 帧 / fps;
-  const 日历 = 日历数(秒, 日历窗);
+export const SplitState = (frame: number): SplitState => {
+  const sec = frame / fps;
+  const calendar = calendarPageCount(sec, calendarWindow);
   return {
-    生长: 林生长(日历),
-    门口长成: 帧 >= 门口长成帧,
-    姿势: 换姿帧们.filter((f) => f <= 帧).length,
-    褪色: 褪色程度(帧),
-    日历,
-    飞: 飞页们(秒, 日历窗),
+    growth: forestGrowth(calendar),
+    doorGrown: frame >= doorGrowFrame,
+    poseChangeCount: poseSwapFrames.filter((f) => f <= frame).length,
+    fade: fadeLevel(frame),
+    calendar,
+    flyPages: flyingPages(sec, calendarWindow),
   };
 };
 
 /** 服务器那半这一帧的调子（夏日白天往褪色插 分屏态.褪色）。第 12 句末横移出屋时，屋外和整片后期也往 分屏起 这一帧的调子走（段/2-空床/编排.ts） */
-export const 服务器调子于 = (帧: number): 调子 => 插调子(色板.夏日白天, 色板.褪色, 分屏态(帧).褪色);
+export const serverToneAt = (frame: number): Tone => lerpTone(palette.夏日白天, palette.褪色, SplitState(frame).fade);
 
 // ---------- 接进来（段 2-时差 开头） ----------
 /** 第 12 句末（段 2-空床）镜头往右横移出屋、越走越快，最后一帧还在最快的时候切过来（三稿「横移进分屏」）。
@@ -106,10 +106,10 @@ export const 服务器调子于 = (帧: number): 调子 => 插调子(色板.夏�
  *  现在那边末帧是屋外天亮的草地和天，这边一开头是服务器那半的草地和天，地面线差不到 30 页面像素。
  *  滑的时候每帧落在成片像素上（半个页面像素）。原来吸到 4 页面像素（N = 8 的一个贴图像素），60 fps 下慢下来那截一帧挪 4、一帧不挪，一顿一顿（用户 11-03「统统改成 60 帧」）；
  *  不吸时两屏的网格差几个成片像素，动着看不出来，停稳那一帧是 0、照旧对齐。Agent 暂定 */
-export const 成形 = { 横: 588 } as const;
+export const formShift = { horizontalPx: 588 } as const;
 
 /** 歌曲帧 帧 时两屏还差多少到位（页面像素，往右为正，取到半个页面像素）；分屏成形到位 以后是 0 */
-export const 成形偏于 = (帧: number): number => {
-  const t = Math.min(1, Math.max(0, (帧 - 正片事件.分屏起.帧) / (正片事件.分屏成形到位.帧 - 正片事件.分屏起.帧)));
-  return Math.round(成形.横 * (1 - t) ** 2 * 成片倍数) / 成片倍数;
+export const shapeOffsetAt = (frame: number): number => {
+  const t = Math.min(1, Math.max(0, (frame - mainCutEvents.splitScreenStart.帧) / (mainCutEvents.splitScreenSettled.帧 - mainCutEvents.splitScreenStart.帧)));
+  return Math.round(formShift.horizontalPx * (1 - t) ** 2 * filmScale) / filmScale;
 };

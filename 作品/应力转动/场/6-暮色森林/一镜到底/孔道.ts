@@ -6,7 +6,7 @@ import * as lichChoreo from '../6-1-5/编排.ts';
 import * as chainPierceChoreo from '../6-1-7/编排.ts';
 import * as snowQueenChoreo from '../6-1-8/编排.ts';
 
-type BoreSpan = { a: [number, number]; 侧: number; 高: [number, number] };
+type BoreSpan = { a: [number, number]; side: number; 高: [number, number] };
 const yetiPathDist = (a: number) => chainPierceChoreo.yetiTimeAt(a) * chainPierceChoreo.speed;
 // 扫帚杆中心 y 落在 `boxes` 的 y 范围里的 `a` 区间（按 0.05 米扫）
 const scan = (center: (along: number) => V3, boxes: number[][], side: number, heightRange: [number, number]): BoreSpan[] => {
@@ -18,11 +18,11 @@ const scan = (center: (along: number) => V3, boxes: number[][], side: number, he
     if (inside && !cur) cur = [along, along];
     if (inside && cur) cur[1] = along;
     if (!inside && cur) {
-      out.push({ a: cur, 侧: side, 高: heightRange });
+      out.push({ a: cur, side: side, 高: heightRange });
       cur = null;
     }
   }
-  if (cur) out.push({ a: cur, 侧: side, 高: heightRange });
+  if (cur) out.push({ a: cur, side: side, 高: heightRange });
   return out;
 };
 
@@ -35,8 +35,8 @@ export const boreSources: Partial<Record<'巫妖' | '九头蛇' | '暮初恶魂'
   // `a` 是沿航线的路程（穿刺线的水平 `a` 按弧长换算）。进地那头往前多 8 米：扫帚钻进雪地那几帧镜头还在洞口外、
   // 视线擦着洞口上沿的雪（工具/一镜到底/收表.ts 量出来要收到 0.3 倍），先压低再跟进去
   雪怪首领: [
-    { a: [yetiPathDist(chainPierceChoreo.yetiTunnels.enterGround) - 8, yetiPathDist(chainPierceChoreo.yetiTunnels.enterCave)], 侧: 1.2, 高: [0.3, 1.6] },
-    { a: [yetiPathDist(chainPierceChoreo.yetiTunnels.exitCave), yetiPathDist(chainPierceChoreo.yetiTunnels.exitGround) + 1], 侧: 1.2, 高: [0.3, 1.6] },
+    { a: [yetiPathDist(chainPierceChoreo.yetiTunnels.enterGround) - 8, yetiPathDist(chainPierceChoreo.yetiTunnels.enterCave)], side: 1.2, 高: [0.3, 1.6] },
+    { a: [yetiPathDist(chainPierceChoreo.yetiTunnels.exitCave), yetiPathDist(chainPierceChoreo.yetiTunnels.exitGround) + 1], side: 1.2, 高: [0.3, 1.6] },
   ],
   // 极光宫殿顶层：南墙、北墙。夹在侧 1.1、高 1.0，四周至少留 0.6 米（再大冰墙和洞顶会糊掉大半个画面）。
   冰雪女王: scan((a) => snowQueenChoreo.broomLocal(a / snowQueenChoreo.V), snowQueenChoreo.HOLE_BOXES, 1.1, [0.3, 1.0]),

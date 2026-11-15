@@ -11,116 +11,116 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性, 点 } from '../接口.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 片, 面片们, type 面片项 } from '../零件/面片.tsx';
-import { 屑撒, 方块屑 } from '../零件/方块屑.tsx';
-import 元, { 大牙命中刻, 大牙悬停刻, 大牙高, 尖桩寿命刻 } from './牙之.元.ts';
-import 牙模型数据 from 'asset:模型/法术/goety/ViciousToothModel';
-import 桩模型数据 from 'asset:模型/法术/goety/ViciousPikeModel';
-import 牙图 from 'asset:贴图/法术/goety/entity/projectiles/vicious_tooth';
-import 桩图 from 'asset:贴图/法术/goety/entity/projectiles/vicious_pike';
-import 凝灰岩图 from 'asset:贴图/法术/minecraft/block/tuff';
-import 尘0 from 'asset:贴图/特效/粒子/generic_0';
-import 尘1 from 'asset:贴图/特效/粒子/generic_1';
-import 尘2 from 'asset:贴图/特效/粒子/generic_2';
-import 尘3 from 'asset:贴图/特效/粒子/generic_3';
-import 尘4 from 'asset:贴图/特效/粒子/generic_4';
-import 尘5 from 'asset:贴图/特效/粒子/generic_5';
-import 尘6 from 'asset:贴图/特效/粒子/generic_6';
-import 尘7 from 'asset:贴图/特效/粒子/generic_7';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { facePatch, QuadGroup, type QuadItem } from '../零件/面片.tsx';
+import { scatterDebris, BlockDebris } from '../零件/方块屑.tsx';
+import meta, { bigFangHitTick, bigFangHoverTick, greatFangHeight, stakeLifeTicks } from './牙之.元.ts';
+import viciousToothModelData from 'asset:模型/法术/goety/ViciousToothModel';
+import viciousPikeModelData from 'asset:模型/法术/goety/ViciousPikeModel';
+import viciousToothPng from 'asset:贴图/法术/goety/entity/projectiles/vicious_tooth';
+import viciousPikePng from 'asset:贴图/法术/goety/entity/projectiles/vicious_pike';
+import tuffPng from 'asset:贴图/法术/minecraft/block/tuff';
+import generic0Png from 'asset:贴图/特效/粒子/generic_0';
+import generic1Png from 'asset:贴图/特效/粒子/generic_1';
+import generic2Png from 'asset:贴图/特效/粒子/generic_2';
+import generic3Png from 'asset:贴图/特效/粒子/generic_3';
+import generic4Png from 'asset:贴图/特效/粒子/generic_4';
+import generic5Png from 'asset:贴图/特效/粒子/generic_5';
+import generic6Png from 'asset:贴图/特效/粒子/generic_6';
+import generic7Png from 'asset:贴图/特效/粒子/generic_7';
 
-const 牙模型 = 取模型(牙模型数据, 'ViciousToothModel');
-const 桩模型 = 取模型(桩模型数据, 'ViciousPikeModel');
-const 尘帧 = [尘7, 尘6, 尘5, 尘4, 尘3, 尘2, 尘1, 尘0].map(png);
-const 凝灰岩 = png(凝灰岩图);
+const viciousToothModel = getModel(viciousToothModelData, 'ViciousToothModel');
+const viciousPikeModel = getModel(viciousPikeModelData, 'ViciousPikeModel');
+const dustFrames = [generic7Png, generic6Png, generic5Png, generic4Png, generic3Png, generic2Png, generic1Png, generic0Png].map(png);
+const tuffImg = png(tuffPng);
 
-const 大牙: React.FC<{ 位: 点; 刻: number }> = ({ 位, 刻 }) => {
-  const f = Math.min(1, Math.floor(刻) / 20);
+const GreatFang: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick }) => {
+  const f = Math.min(1, Math.floor(tick) / 20);
   if (f <= 0) return null;
-  const 姿态 = 刻 < 20 ? { base: { rot: [0, 刻 * 0.75, 0] } } : undefined;
+  const partPoses = tick < 20 ? { base: { rot: [0, tick * 0.75, 0] } } : undefined;
   return (
-    <MC空间 位={位}>
-      <group rotation={[0, 度(90), 0]}>
+    <MinecraftSpace 位={pos}>
+      <group rotation={[0, degToRad(90), 0]}>
         <group scale={[-f, -f, f]}>
           <group position={[0, -2.1, 0]}>
-            <模型件 模型={牙模型} 图={png(牙图)} 姿态={姿态} />
+            <ModelPart 模型={viciousToothModel} 图={png(viciousToothPng)} partPoses={partPoses} />
           </group>
         </group>
       </group>
-    </MC空间>
+    </MinecraftSpace>
   );
 };
 
 // SPIKE 的四个通道都是同一条时间线，只差缩进多少像素
-const 桩缩 = (秒: number) => (秒 <= 0.125 ? 1 - 秒 / 0.125 : 秒 <= 0.4167667 ? 0 : Math.min(1, (秒 - 0.4167667) / (0.625 - 0.4167667)));
-const 尖桩: React.FC<{ 位: 点; 刻: number }> = ({ 位, 刻 }) => {
-  if (刻 < 0 || 刻 >= 尖桩寿命刻) return null;
-  const 进 = 1 - (尖桩寿命刻 - 刻) / 20;
-  const f1 = 2.25 * (进 > 0.9 ? Math.max(0, (1 - 进) / 0.1) : 1);
+const stakeShrink = (sec: number) => (sec <= 0.125 ? 1 - sec / 0.125 : sec <= 0.4167667 ? 0 : Math.min(1, (sec - 0.4167667) / (0.625 - 0.4167667)));
+const Stake: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick }) => {
+  if (tick < 0 || tick >= stakeLifeTicks) return null;
+  const progress = 1 - (stakeLifeTicks - tick) / 20;
+  const f1 = 2.25 * (progress > 0.9 ? Math.max(0, (1 - progress) / 0.1) : 1);
   if (f1 <= 0) return null;
-  const 缩 = 桩缩(刻 / 20);
+  const shrink = stakeShrink(tick / 20);
   // posVec(0, −n, 0) 加到部件上是 y + n（模型 y 朝下：缩回地里）
-  const 姿态 = { base: { offset: [0, 12 * 缩, 0] }, bone: { offset: [0, -12 + 10 * 缩, 0] }, bone2: { offset: [0, -10 + 10 * 缩, 0] }, bone3: { offset: [0, -10 + 8 * 缩, 0] } };
+  const partPoses = { base: { offset: [0, 12 * shrink, 0] }, bone: { offset: [0, -12 + 10 * shrink, 0] }, bone2: { offset: [0, -10 + 10 * shrink, 0] }, bone3: { offset: [0, -10 + 8 * shrink, 0] } };
   return (
-    <MC空间 位={位}>
-      <group rotation={[0, 度(90), 0]}>
+    <MinecraftSpace 位={pos}>
+      <group rotation={[0, degToRad(90), 0]}>
         <group scale={[-f1, -f1, f1]}>
           <group position={[0, -0.73, 0]}>
             <group scale={[0.5, 0.5, 0.5]}>
-              <模型件 模型={桩模型} 图={png(桩图)} 姿态={姿态} />
+              <ModelPart 模型={viciousPikeModel} 图={png(viciousPikePng)} partPoses={partPoses} />
             </group>
           </group>
         </group>
       </group>
-    </MC空间>
+    </MinecraftSpace>
   );
 };
 
 /** 悬停时往下掉的灰尘：每刻一颗 */
-const 落尘 = (牙位: 点, 地: number, 刻: number, 种子: number): Map<number, 面片项[]> => {
-  const 按帧 = new Map<number, 面片项[]>();
-  for (let t = 0; t <= Math.min(Math.floor(刻), 大牙悬停刻); t++) {
-    const r = rng(种子 * 613 + t);
-    const [角, 距] = [r() * Math.PI * 2, Math.sqrt(r()) * 0.25];
-    const 寿命 = Math.max(1, Math.floor(Math.floor(32 / (r() * 0.8 + 0.2)) * 0.9));
-    const 年龄 = 刻 - t;
-    if (年龄 >= 寿命) continue;
-    const 半 = 0.1 * (r() * 0.5 + 0.5) * 0.675;
-    const [转速, 转0] = [(r() - 0.5) * 0.1, r() * Math.PI * 2];
+const dustFall = (fangPos: Vec3, groundZ: number, tick: number, seed: number): Map<number, QuadItem[]> => {
+  const byFrame = new Map<number, QuadItem[]>();
+  for (let t = 0; t <= Math.min(Math.floor(tick), bigFangHoverTick); t++) {
+    const r = rng(seed * 613 + t);
+    const [angle, randDistance] = [r() * Math.PI * 2, Math.sqrt(r()) * 0.25];
+    const lifetime = Math.max(1, Math.floor(Math.floor(32 / (r() * 0.8 + 0.2)) * 0.9));
+    const age = tick - t;
+    if (age >= lifetime) continue;
+    const halfSize = 0.1 * (r() * 0.5 + 0.5) * 0.675;
+    const [rotSpeed, spinInit] = [(r() - 0.5) * 0.1, r() * Math.PI * 2];
     // 第 j 刻移动用的速度是 −min(0.14, 0.01 × j)
-    let 落 = 0;
-    for (let j = 0; j < Math.floor(年龄); j++) 落 += Math.min(0.14, 0.01 * j);
-    落 += Math.min(0.14, 0.01 * Math.floor(年龄)) * (年龄 % 1);
-    const z = Math.max(地, 牙位[2] - 落);
-    const 帧 = Math.min(7, Math.floor((年龄 * 8) / 寿命));
-    if (!按帧.has(帧)) 按帧.set(帧, []);
-    按帧.get(帧)!.push(片([牙位[0] + Math.cos(角) * 距, 牙位[1] + Math.sin(角) * 距, z], 半 * Math.min(1, (年龄 / 寿命) * 32), undefined, undefined, undefined, z > 地 ? 转0 + Math.PI * 转速 * 2 * 年龄 : 0));
+    let fallDist = 0;
+    for (let j = 0; j < Math.floor(age); j++) fallDist += Math.min(0.14, 0.01 * j);
+    fallDist += Math.min(0.14, 0.01 * Math.floor(age)) * (age % 1);
+    const z = Math.max(groundZ, fangPos[2] - fallDist);
+    const frame = Math.min(7, Math.floor((age * 8) / lifetime));
+    if (!byFrame.has(frame)) byFrame.set(frame, []);
+    byFrame.get(frame)!.push(facePatch([fangPos[0] + Math.cos(angle) * randDistance, fangPos[1] + Math.sin(angle) * randDistance, z], halfSize * Math.min(1, (age / lifetime) * 32), undefined, undefined, undefined, z > groundZ ? spinInit + Math.PI * rotSpeed * 2 * age : 0));
   }
-  return 按帧;
+  return byFrame;
 };
 
-const 牙之: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 牙位: 点 = [目标[0], 目标[1], 目标[2] + 大牙高(Math.min(刻, 大牙命中刻))];
-  const 尘 = 落尘([目标[0], 目标[1], 目标[2] + 大牙高(0)], 目标[2], 刻, 种子);
+const FangAttack: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const fangPos: Vec3 = [target[0], target[1], target[2] + greatFangHeight(Math.min(tick, bigFangHitTick))];
+  const dust = dustFall([target[0], target[1], target[2] + greatFangHeight(0)], target[2], tick, seed);
   // 命中时牙还在史蒂夫头顶；碎屑从牙身中间（碰撞箱按 1 × 1.5 估）炸开
-  const 砸位: 点 = [目标[0], 目标[1], 目标[2] + 大牙高(大牙命中刻) + 0.75];
+  const slamPos: Vec3 = [target[0], target[1], target[2] + greatFangHeight(bigFangHitTick) + 0.75];
   // 尖桩在邻格的整数角上：格子中心往西北退半格（游戏的 −x、−z）再加方向
-  const 桩位 = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).map(([dx, dy]): 点 => [目标[0] - 0.5 + dx, 目标[1] + 0.5 + dy, 目标[2] + 0.0625]);
+  const stakePositions = ([[1, 0], [-1, 0], [0, 1], [0, -1]] as const).map(([dx, dy]): Vec3 => [target[0] - 0.5 + dx, target[1] + 0.5 + dy, target[2] + 0.0625]);
   return (
     <>
-      {刻 < 大牙命中刻 && <大牙 位={牙位} 刻={刻} />}
-      {尘帧.map((图, i) => (
-        <面片们 key={i} 图={图} 项={尘.get(i) ?? []} 混合="镂空" />
+      {tick < bigFangHitTick && <GreatFang 位={fangPos} 刻={tick} />}
+      {dustFrames.map((image, i) => (
+        <QuadGroup key={i} 图={image} 项={dust.get(i) ?? []} 混合="镂空" />
       ))}
-      <方块屑 出生们={屑撒(砸位, 256, [0.5, 0.5, 0.75], 1, 大牙命中刻, 种子 * 17)} 秒={秒} 图={凝灰岩} 地面={目标[2]} />
-      {桩位.map((位, i) => (
-        <尖桩 key={i} 位={位} 刻={刻 - 大牙命中刻 - 1} />
+      <BlockDebris spawns={scatterDebris(slamPos, 256, [0.5, 0.5, 0.75], 1, bigFangHitTick, seed * 17)} 秒={sec} 图={tuffImg} ground={target[2]} />
+      {stakePositions.map((pos, i) => (
+        <Stake key={i} 位={pos} 刻={tick - bigFangHitTick - 1} />
       ))}
     </>
   );
 };
 
-export default 定义法术演出(元, 牙之);
+export default defineSpellPerformance(meta, FangAttack);

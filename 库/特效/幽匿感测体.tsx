@@ -16,22 +16,22 @@ import { png, pngDir } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/特效/幽匿感测体';
 import atlasPng from 'asset:贴图/特效/幽匿感测体';
 import { interpPathPos, type Particle, particleInitVel, particlePath, particleTexture, ParticleQuads } from './粒子面片.tsx';
-import { 资产目录 } from '../../engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_active';
-import 资_1 from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_inactive';
-import 资_2 from 'asset:贴图/特效/粒子/generic_0';
-import 资_3 from 'asset:贴图/特效/粒子/generic_1';
-import 资_4 from 'asset:贴图/特效/粒子/generic_2';
-import 资_5 from 'asset:贴图/特效/粒子/generic_3';
-import 资_6 from 'asset:贴图/特效/粒子/generic_4';
-import 资_7 from 'asset:贴图/特效/粒子/generic_5';
-import 资_8 from 'asset:贴图/特效/粒子/generic_6';
-import 资_9 from 'asset:贴图/特效/粒子/generic_7';
+import { assetDir } from '../../engine/core/资产目录.ts';
+import sculkSensorTendrilActivePng from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_active';
+import sculkSensorTendrilInactivePng from 'asset:贴图/特效/幽匿感测体/sculk_sensor_tendril_inactive';
+import generic0Png from 'asset:贴图/特效/粒子/generic_0';
+import generic1Png from 'asset:贴图/特效/粒子/generic_1';
+import generic2Png from 'asset:贴图/特效/粒子/generic_2';
+import generic3Png from 'asset:贴图/特效/粒子/generic_3';
+import generic4Png from 'asset:贴图/特效/粒子/generic_4';
+import generic5Png from 'asset:贴图/特效/粒子/generic_5';
+import generic6Png from 'asset:贴图/特效/粒子/generic_6';
+import generic7Png from 'asset:贴图/特效/粒子/generic_7';
 
 const modelData = data as unknown as BlockModelData;
 const ATLAS = png(atlasPng);
-const STRIPS = pngDir(资产目录({ './sculk_sensor_tendril_active.png': 资_0, './sculk_sensor_tendril_inactive.png': 资_1 }));
-const GENERIC = pngDir(资产目录({ './generic_0.png': 资_2, './generic_1.png': 资_3, './generic_2.png': 资_4, './generic_3.png': 资_5, './generic_4.png': 资_6, './generic_5.png': 资_7, './generic_6.png': 资_8, './generic_7.png': 资_9 }));
+const STRIPS = pngDir(assetDir({ './sculk_sensor_tendril_active.png': sculkSensorTendrilActivePng, './sculk_sensor_tendril_inactive.png': sculkSensorTendrilInactivePng }));
+const GENERIC = pngDir(assetDir({ './generic_0.png': generic0Png, './generic_1.png': generic1Png, './generic_2.png': generic2Png, './generic_3.png': generic3Png, './generic_4.png': generic4Png, './generic_5.png': generic5Png, './generic_6.png': generic6Png, './generic_7.png': generic7Png }));
 
 export const sensorParams = {
   activeTicks: 30, // ACTIVE
@@ -169,11 +169,11 @@ const DustParticles: React.FC<{ p: V3; secSinceActive: number; chance: number; s
 // p：方块底面中心；秒：全局时间（触须动画帧）；激活：用 active 模型（触须快抖）；
 // 激活秒：从激活起算的秒数。给了它就按游戏时序自动定相位（2 秒内 active 模型，前 1.5 秒冒粉尘），不用再给 激活；
 // 粉尘概率：每刻这个方块被 animateTick 抽中的概率（离玩家越近越大，默认 0.15）；seed：粉尘随机种子
-export const SculkSensor: React.FC<{ p: V3; 秒: number; 激活?: boolean; 激活秒?: number; dustChance?: number; seed?: number }> = ({
+export const SculkSensor: React.FC<{ p: V3; 秒: number; active?: boolean; secSinceActive?: number; dustChance?: number; seed?: number }> = ({
   p: blockPos,
   秒: sec,
-  激活: active = false,
-  激活秒: secSinceActive,
+  active: active = false,
+  secSinceActive: secSinceActive,
   dustChance = 0.15,
   seed = 1,
 }) => {

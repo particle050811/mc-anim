@@ -6,12 +6,12 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { png } from '@engine/model/贴图.ts';
-import 天图 from 'asset:贴图/环境/末地天空';
+import endSkyPng from 'asset:贴图/环境/末地天空';
 
-const 贴图们 = new Map<string, THREE.DataTexture>();
+const textureCache = new Map<string, THREE.DataTexture>();
 /** PNG → 贴图：像素原样（不当 sRGB 解码）、最近邻、平铺 */
-export const 原样贴图 = (uri: string) => {
-  let t = 贴图们.get(uri);
+export const rawTexture = (uri: string) => {
+  let t = textureCache.get(uri);
   if (!t) {
     const p = png(uri);
     t = new THREE.DataTexture(p.px, p.w, p.h, THREE.RGBAFormat);
@@ -20,21 +20,21 @@ export const 原样贴图 = (uri: string) => {
     t.minFilter = THREE.NearestFilter;
     t.wrapS = t.wrapT = THREE.RepeatWrapping;
     t.needsUpdate = true;
-    贴图们.set(uri, t);
+    textureCache.set(uri, t);
   }
   return t;
 };
-export const 末地天空贴图 = () => 原样贴图(天图);
+export const endSkyTexture = () => rawTexture(endSkyPng);
 
 /** 原版的六个面（原版坐标：y 朝上、z 朝南）：先画底面 y = −100，再按 X 转 90、−90、180，按 Z 转 90、−90 */
-const 天几何 = (() => {
-  const 面 = [
+const skyGeometry = (() => {
+  const faces = [
     [-100, -100, -100, 0, 0],
     [-100, -100, 100, 0, 16],
     [100, -100, 100, 16, 16],
     [100, -100, -100, 16, 0],
   ];
-  const 转: THREE.Matrix4[] = [
+  const rotations: THREE.Matrix4[] = [
     new THREE.Matrix4(),
     new THREE.Matrix4().makeRotationX(Math.PI / 2),
     new THREE.Matrix4().makeRotationX(-Math.PI / 2),
@@ -43,8 +43,8 @@ const 天几何 = (() => {
     new THREE.Matrix4().makeRotationZ(-Math.PI / 2),
   ];
   const pos: number[] = [], uv: number[] = [], idx: number[] = [];
-  转.forEach((m, n) => {
-    for (const [x, y, z, u, v] of 面) {
+  rotations.forEach((m, n) => {
+    for (const [x, y, z, u, v] of faces) {
       const p = new THREE.Vector3(x, y, z).applyMatrix4(m);
       pos.push(p.x, -p.z, p.y); // 原版 (x, y, z) → 场景 (x, −z, y)
       uv.push(u!, v!);
@@ -59,13 +59,13 @@ const 天几何 = (() => {
   return g;
 })();
 
-const 顶点 = /* glsl */ `
+const vertexShaderSource = /* glsl */ `
 varying vec2 vUv;
 void main() {
   vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
-const 片元 = /* glsl */ `
+const fragmentSource = /* glsl */ `
 uniform sampler2D map;
 varying vec2 vUv;
 void main() {
@@ -73,13 +73,13 @@ void main() {
 }`;
 
 /** 天：跟着镜头（眼，场景坐标）走 */
-export const 末地天空: React.FC<{ 眼: V3 }> = ({ 眼 }) => {
-  const 材质 = useMemo(
+export const EndSky: React.FC<{ 眼: V3 }> = ({ 眼: eye }) => {
+  const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
-        uniforms: { map: { value: 末地天空贴图() } },
-        vertexShader: 顶点,
-        fragmentShader: 片元,
+        uniforms: { map: { value: endSkyTexture() } },
+        vertexShader: vertexShaderSource,
+        fragmentShader: fragmentSource,
         depthWrite: false,
         depthTest: false,
         side: THREE.DoubleSide,
@@ -87,5 +87,5 @@ export const 末地天空: React.FC<{ 眼: V3 }> = ({ 眼 }) => {
       }),
     [],
   );
-  return <mesh geometry={天几何} material={材质} position={眼} renderOrder={-1000} frustumCulled={false} />;
+  return <mesh geometry={skyGeometry} material={material} position={eye} renderOrder={-1000} frustumCulled={false} />;
 };

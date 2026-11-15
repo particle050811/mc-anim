@@ -5,49 +5,49 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
-import { 场景到three } from '@engine/core/three换算.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
-import { 下界原版, 下界提亮, 真下界 } from '../../地点/真下界.tsx';
-import { 画幅, 视图们, type 视图 } from './视图.ts';
+import { netherVanilla, netherBrighter, RealNether } from '../../地点/真下界.tsx';
+import { aspect, views, type View } from './视图.ts';
 
-const 光表 = { 原版: 下界原版, 提亮: 下界提亮 };
+const lightTables = { 原版: netherVanilla, 提亮: netherBrighter };
 
-const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
+const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
   cam.fov = 70;
-  cam.aspect = 画幅.宽 / 画幅.高;
+  cam.aspect = aspect.宽 / aspect.高;
   cam.near = 0.05;
   cam.far = 4096;
-  cam.position.copy(场景到three(v.眼));
+  cam.position.copy(sceneToThree(v.眼));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three(v.看));
+  cam.lookAt(sceneToThree(v.看));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 光 = 光表[v.光];
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const lightSetup = lightTables[v.光];
   return (
-    <AbsoluteFill style={{ background: 光.雾.色 }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
-        <机位 v={v} />
+    <AbsoluteFill style={{ background: lightSetup.fog.色 }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true, logarithmicDepthBuffer: true }} dpr={canvasDpr(1)}>
+        <CameraRig v={v} />
         <ScreenAo />
         <group rotation={[-Math.PI / 2, 0, 0]}>
-          <真下界 镜头={v.眼} 光={光} />
+          <RealNether cameraPos={v.眼} 光={lightSetup} />
         </group>
       </ThreeCanvas>
       <div style={{ position: 'absolute', left: 16, top: 12, color: '#ffffff', fontFamily: 'sans-serif', fontSize: 22, lineHeight: 1.4, textShadow: '0 1px 3px #000' }}>
         <div>{v.名}</div>
-        <div style={{ fontSize: 16 }}>{`眼 场景 ${v.眼.map((n) => n.toFixed(1)).join(', ')}；雾 ${光.雾.近}～${光.雾.远} 格`}</div>
+        <div style={{ fontSize: 16 }}>{`眼 场景 ${v.眼.map((n) => n.toFixed(1)).join(', ')}；雾 ${lightSetup.fog.near}～${lightSetup.fog.far} 格`}</div>
       </div>
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

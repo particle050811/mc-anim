@@ -21,69 +21,69 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
 import { useImportedTerrain, type LandmarkCutout } from '@engine/voxel/导入地形.ts';
 import { voxelMaterial } from '@engine/voxel/材质.ts';
-import { 真下界包, 真下界原点 } from './真下界位置.ts';
+import { realNetherPack, realNetherOrigin } from './真下界位置.ts';
 
-export { 真下界包, 真下界原点, 真下界场景, 真下界选点, 真下界场地 } from './真下界位置.ts';
+export { realNetherPack, realNetherOrigin, realNetherScene, realNetherPick, realNetherVenue } from './真下界位置.ts';
 
-export type 下界光 = {
+export type NetherLight = {
   /** 光照图在方块光 0 级的颜色（sRGB 数值上的倍数，原版 [0.393, 0.323, 0.267]）；乘面明暗后折到线性 */
-  底光: readonly [number, number, number];
+  baseLight: readonly [number, number, number];
   /** 熔岩自发光 = 贴图原色 × 这个数 */
-  熔岩亮: number;
+  lavaBright: number;
   /** 线性雾：色（#rrggbb，也是底色）、从几格起、到几格全满 */
-  雾: { 色: string; 近: number; 远: number };
+  fog: { 色: string; near: number; far: number };
   /** 地形最远画到多远（格）；不给 = 雾.远 */
-  画远?: number;
+  renderFar?: number;
 };
 
 /** 照原版：亮度滑块 50%、视距 32 区块时的下界荒地 */
-export const 下界原版: 下界光 = { 底光: [0.393, 0.323, 0.267], 熔岩亮: 1, 雾: { 色: '#330808', 近: 25.6, 远: 96 } };
+export const netherVanilla: NetherLight = { baseLight: [0.393, 0.323, 0.267], lavaBright: 1, fog: { 色: '#330808', near: 25.6, far: 96 } };
 /** 整体提亮、雾放远（用户 11-10 嫌黑、要看清背景）：底光提到原版方块光约 12 级的亮度，雾推到 32 区块外才满，雾色提亮 */
-export const 下界提亮: 下界光 = { 底光: [0.86, 0.74, 0.64], 熔岩亮: 1.1, 雾: { 色: '#5a1a12', 近: 96, 远: 640 } };
+export const netherBrighter: NetherLight = { baseLight: [0.86, 0.74, 0.64], lavaBright: 1.1, fog: { 色: '#5a1a12', near: 96, far: 640 } };
 
 // 面明暗（下界 constantAmbientLight）：东西 0.6、南北 0.8、上下 0.9
-const 面明暗 = { 东西: 0.6, 南北: 0.8, 上下: 0.9 };
-const 线性 = (v: number) => v ** 2.2;
-const 无挖: LandmarkCutout[] = [];
+const faceShade = { eastWest: 0.6, northSouth: 0.8, upDown: 0.9 };
+const toLinear = (v: number) => v ** 2.2;
+const noCuts: LandmarkCutout[] = [];
 
-const 熔岩光 = { value: 1 };
-let 熔岩材质: THREE.Material | null = null;
-const 取熔岩材质 = (水: THREE.Material) => {
-  if (熔岩材质) return 熔岩材质;
-  const m = 水.clone() as THREE.MeshStandardMaterial;
+const lavaGlow = { value: 1 };
+let lavaMaterial: THREE.Material | null = null;
+const getLavaMaterial = (waterMaterial: THREE.Material) => {
+  if (lavaMaterial) return lavaMaterial;
+  const m = waterMaterial.clone() as THREE.MeshStandardMaterial;
   m.roughness = 0.95;
   m.transparent = false;
   m.depthWrite = true;
   m.onBeforeCompile = (sh, r) => {
-    水.onBeforeCompile(sh, r);
-    sh.uniforms.lavaGlow = 熔岩光;
-    const 前 = sh.fragmentShader;
+    waterMaterial.onBeforeCompile(sh, r);
+    sh.uniforms.lavaGlow = lavaGlow;
+    const fragmentSource = sh.fragmentShader;
     sh.fragmentShader =
       'uniform float lavaGlow;\n' +
-      前.replace('totalEmissiveRadiance = diffuseColor.rgb * selfLight;', 'totalEmissiveRadiance = diffuseColor.rgb * lavaGlow;').replace('pow(1.0 - cosT, 5.0), waterReflMax)', 'pow(1.0 - cosT, 5.0), 0.0)');
+      fragmentSource.replace('totalEmissiveRadiance = diffuseColor.rgb * selfLight;', 'totalEmissiveRadiance = diffuseColor.rgb * lavaGlow;').replace('pow(1.0 - cosT, 5.0), waterReflMax)', 'pow(1.0 - cosT, 5.0), 0.0)');
     // engine 的水材质改了写法这里就对不上：宁可报错，不要悄悄画成反射天色的水
     if (!sh.fragmentShader.includes('diffuseColor.rgb * lavaGlow') || sh.fragmentShader.includes('waterReflMax)')) throw new Error('真下界：熔岩材质接不上 engine/voxel/材质.ts、水面.ts 的着色器（那边改了写法）');
   };
   m.customProgramCacheKey = () => '体素-熔岩';
-  熔岩材质 = m;
+  lavaMaterial = m;
   return m;
 };
 
 /** 挖：场地上自己摆了方块的地方，把导入地形的那几格挖掉，不然两层共面互相闪（要模块顶层的同一个数组）；键后缀 让挖法不同的不共用网格缓存 */
-export type 下界挖 = { 框: LandmarkCutout[]; 键后缀: string };
-export const 真下界: React.FC<{ 镜头: readonly number[]; 光: 下界光; 挖?: 下界挖 }> = ({ 镜头, 光, 挖 }) => {
-  const t = useImportedTerrain(真下界包, 挖?.框 ?? 无挖);
+export type NetherCut = { 框: LandmarkCutout[]; keySuffix: string };
+export const RealNether: React.FC<{ cameraPos: readonly number[]; 光: NetherLight; carve?: NetherCut }> = ({ cameraPos, 光: netherLight, carve }) => {
+  const t = useImportedTerrain(realNetherPack, carve?.框 ?? noCuts);
   const scene = useThree((s) => s.scene);
-  const 组 = useRef<THREE.Group>(null);
+  const groupRef = useRef<THREE.Group>(null);
   useSelfLight(0);
-  熔岩光.value = 光.熔岩亮;
+  lavaGlow.value = netherLight.lavaBright;
   // 雾、底色挂在场景上（<fog attach> 在场景组里挂不到 scene）
-  const 雾 = scene.fog instanceof THREE.Fog ? scene.fog : (scene.fog = new THREE.Fog(光.雾.色, 光.雾.近, 光.雾.远));
-  雾.color.set(光.雾.色);
-  雾.near = 光.雾.近;
-  雾.far = 光.雾.远;
+  const fog = scene.fog instanceof THREE.Fog ? scene.fog : (scene.fog = new THREE.Fog(netherLight.fog.色, netherLight.fog.near, netherLight.fog.far));
+  fog.color.set(netherLight.fog.色);
+  fog.near = netherLight.fog.near;
+  fog.far = netherLight.fog.far;
   if (!(scene.background instanceof THREE.Color)) scene.background = new THREE.Color();
-  (scene.background as THREE.Color).set(光.雾.色);
+  (scene.background as THREE.Color).set(netherLight.fog.色);
   useEffect(
     () => () => {
       scene.fog = null;
@@ -93,27 +93,27 @@ export const 真下界: React.FC<{ 镜头: readonly number[]; 光: 下界光; �
   );
   // 这个世界的水类网格（全是熔岩）换材质：体素世界每次渲染把这一帧要画的网格挂进组里，画之前换
   useFrame(() => {
-    const 水 = voxelMaterial('水');
-    const 岩 = 取熔岩材质(水);
-    组.current?.traverse((o) => {
+    const waterMaterial = voxelMaterial('水');
+    const rockMat = getLavaMaterial(waterMaterial);
+    groupRef.current?.traverse((o) => {
       const mesh = o as THREE.Mesh;
-      if (Array.isArray(mesh.material) && mesh.material[0] === 水) mesh.material = [岩];
+      if (Array.isArray(mesh.material) && mesh.material[0] === waterMaterial) mesh.material = [rockMat];
     });
   });
-  if (t && t.原点.some((v, i) => v !== 真下界原点[i])) throw new Error(`区段包 ${真下界包} 的原点是 ${t.原点}，地点/真下界.tsx 按 ${真下界原点} 算的`);
-  const 色 = (面: number) => new THREE.Color(线性(光.底光[0] * 面), 线性(光.底光[1] * 面), 线性(光.底光[2] * 面));
-  const 底 = 色(面明暗.东西);
-  const 补 = (面: number) => 色(面).sub(底);
+  if (t && t.原点.some((v, i) => v !== realNetherOrigin[i])) throw new Error(`区段包 ${realNetherPack} 的原点是 ${t.原点}，地点/真下界.tsx 按 ${realNetherOrigin} 算的`);
+  const faceColor = (face: number) => new THREE.Color(toLinear(netherLight.baseLight[0] * face), toLinear(netherLight.baseLight[1] * face), toLinear(netherLight.baseLight[2] * face));
+  const bottomColor = faceColor(faceShade.eastWest);
+  const fillColor = (face: number) => faceColor(face).sub(bottomColor);
   return (
-    <group ref={组}>
+    <group ref={groupRef}>
       {/* 环境光的辐照度过朗伯项要除 π，乘回来：强度 π 时面的亮度 = 颜色 × 贴图 */}
-      <ambientLight color={底} intensity={Math.PI} />
-      <directionalLight color={补(面明暗.上下)} position={[0, 0, 1]} intensity={Math.PI} />
-      <directionalLight color={补(面明暗.上下)} position={[0, 0, -1]} intensity={Math.PI} />
-      <directionalLight color={补(面明暗.南北)} position={[0, 1, 0]} intensity={Math.PI} />
-      <directionalLight color={补(面明暗.南北)} position={[0, -1, 0]} intensity={Math.PI} />
+      <ambientLight color={bottomColor} intensity={Math.PI} />
+      <directionalLight color={fillColor(faceShade.upDown)} position={[0, 0, 1]} intensity={Math.PI} />
+      <directionalLight color={fillColor(faceShade.upDown)} position={[0, 0, -1]} intensity={Math.PI} />
+      <directionalLight color={fillColor(faceShade.northSouth)} position={[0, 1, 0]} intensity={Math.PI} />
+      <directionalLight color={fillColor(faceShade.northSouth)} position={[0, -1, 0]} intensity={Math.PI} />
       {/* 高度不用 t.高度：engine/voxel/导入地形.ts 的维度下界表里没有下界（给出 NaN），这里直接写 y 0～128 */}
-      {t && <VoxelWorld 键={t.键 + (挖?.键后缀 ?? '')} 来源={t.来源} 中心={镜头 as number[]} 像素={LevelParams.视频.像素} 远={光.画远 ?? 光.雾.远} 高度={[0 - 真下界原点[1], 128 - 真下界原点[1]]} />}
+      {t && <VoxelWorld 键={t.键 + (carve?.keySuffix ?? '')} 来源={t.来源} 中心={cameraPos as number[]} pixel={LevelParams.视频.pixel} far={netherLight.renderFar ?? netherLight.fog.far} heightRange={[0 - realNetherOrigin[1], 128 - realNetherOrigin[1]]} />}
     </group>
   );
 };

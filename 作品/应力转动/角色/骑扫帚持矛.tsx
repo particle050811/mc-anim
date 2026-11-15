@@ -19,7 +19,7 @@ export const spearLiYing = (extra?: Partial<ReturnType<typeof liYingFinalPose>>,
   lean: SPEAR_RIDER.lean,
   headRaise,
   poseOverride: (base) => ({ ...base, ...SPEAR_RIDER.poseOverride, ...(extra ?? {}) }),
-  右手: (pose) => (
+  rightHand: (pose) => (
     <group quaternion={handAim(pose, [0, 1, 0])}>
       <SpearInHand />
     </group>

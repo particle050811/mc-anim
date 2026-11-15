@@ -18,9 +18,9 @@ import { guardRestArm, guardRightArmMatrix } from '../../../角色/卫兵.tsx';
 import { guardRoom, toTownPoint } from '../../../地点/边城室内.tsx';
 import { borderTownPos } from '../../../地点/主世界116.ts';
 import { charPos, closedBookBox, guiPixel, pageCharCount, pageHeight, pageWidth, type BookPage } from '@库/物品/书.tsx';
-import bookPageData资产 from 'asset:数据/镜头/7-4-3/书页.字';
+import bookPageJson from 'asset:数据/镜头/7-4-3/书页.字';
 import { pitCam } from './坑口.ts';
-const bookPageData = bookPageData资产 as unknown as { 页: string[][]; 页码: string; 数字: string };
+const bookPageData = bookPageJson as unknown as { 页: string[][]; 页码: string; 数字: string };
 
 export const FPS = 24;
 export const shot1End = 78; // 坑口 3.25 秒

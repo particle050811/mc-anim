@@ -5,24 +5,24 @@
 // 自己定的：只下 60 刻（游戏里 100 刻）；SPELL_CLOUD 的颜色按「参数 × 0.5」算，FALLING_DUST 的灰白按原版随机范围取，都没在游戏里对过。
 // 没做：目标被冻结（FREEZING）、受伤。
 import React from 'react';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 云片类, 落尘类 } from '../零件/丁粒子.ts';
-import { 云面们, 落尘们 } from '../零件/丁云.ts';
-import { 贴图粒子 } from '../零件/粒子.tsx';
-import 元, { 冰雹下雪刻, 冰雹激活刻 } from './冰雹.元.ts';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { cloudPieceClass, fallingDustClass } from '../零件/丁粒子.ts';
+import { cloudFaceSpawns, fallingDustSpawns } from '../零件/丁云.ts';
+import { TexturedParticles } from '../零件/粒子.tsx';
+import meta, { hailSnowTicks, hailActiveTick } from './冰雹.元.ts';
 
-const 半径 = 2;
+const radius = 2;
 
-const 冰雹: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => {
-  const 云心: [number, number, number] = [目标[0], 目标[1], 目标[2] + 4];
-  const 止 = 冰雹激活刻 + 冰雹下雪刻;
+const Hail: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
+  const cloudCenter: [number, number, number] = [target[0], target[1], target[2] + 4];
+  const endTick = hailActiveTick + hailSnowTicks;
   return (
     <>
-      <贴图粒子 类={云片类} 出生们={云面们(种子 * 17 + 1, 云心, 半径, 止, [0.5, 0.5, 0.5])} 秒={秒} />
-      <贴图粒子 类={落尘类(目标[2])} 出生们={落尘们(种子 * 17 + 2, 云心, 半径, 冰雹激活刻, 止)} 秒={秒} />
+      <TexturedParticles 类={cloudPieceClass} spawns={cloudFaceSpawns(seed * 17 + 1, cloudCenter, radius, endTick, [0.5, 0.5, 0.5])} 秒={sec} />
+      <TexturedParticles 类={fallingDustClass(target[2])} spawns={fallingDustSpawns(seed * 17 + 2, cloudCenter, radius, hailActiveTick, endTick)} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 冰雹);
+export default defineSpellPerformance(meta, Hail);

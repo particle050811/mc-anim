@@ -16,10 +16,10 @@ import sys
 import zipfile
 from pathlib import Path
 
-定长 = {1: 1, 2: 2, 3: 4, 4: 8, 5: 4, 6: 8}
+FIXED_LENGTHS = {1: 1, 2: 2, 3: 4, 4: 8, 5: 4, 6: 8}
 
 
-def 读(b: bytes):
+def read_nbt(b: bytes):
     p = [0]
 
     def u(f: str, n: int):
@@ -27,123 +27,123 @@ def 读(b: bytes):
         p[0] += n
         return v[0]
 
-    def 取(n: int) -> bytes:
+    def read_bytes(n: int) -> bytes:
         v = b[p[0]:p[0] + n]
         p[0] += n
         return v
 
-    def 串() -> bytes:
-        return 取(u('>H', 2))
+    def read_string() -> bytes:
+        return read_bytes(u('>H', 2))
 
-    def 值(t: int):
-        if t in 定长:
-            return (t, 取(定长[t]))
+    def tag_value(t: int):
+        if t in FIXED_LENGTHS:
+            return (t, read_bytes(FIXED_LENGTHS[t]))
         if t == 7:
-            return (t, 取(u('>i', 4)))
+            return (t, read_bytes(u('>i', 4)))
         if t == 8:
-            return (t, 串())
+            return (t, read_string())
         if t == 9:
             tt = u('>b', 1)
             n = u('>i', 4)
-            return (t, tt, [值(tt) for _ in range(n)])
+            return (t, tt, [tag_value(tt) for _ in range(n)])
         if t == 10:
             d = []
             while True:
                 tt = u('>b', 1)
                 if tt == 0:
                     return (t, d)
-                k = 串()
-                d.append((k, 值(tt)))
+                k = read_string()
+                d.append((k, tag_value(tt)))
         if t in (11, 12):
             n = u('>i', 4)
-            return (t, n, 取((4 if t == 11 else 8) * n))
+            return (t, n, read_bytes((4 if t == 11 else 8) * n))
         raise ValueError(f'不认识的 NBT 标签 {t}')
 
     t = u('>b', 1)
-    名 = 串()
-    return t, 名, 值(t)
+    tag_name = read_string()
+    return t, tag_name, tag_value(t)
 
 
-def 写(t: int, 名: bytes, v) -> bytes:
+def encode_tag(t: int, name: bytes, v) -> bytes:
     o = bytearray()
 
-    def 串(x: bytes):
+    def write_string(x: bytes):
         o.extend(struct.pack('>H', len(x)))
         o.extend(x)
 
-    def 值(v):
+    def tag_value(v):
         t = v[0]
-        if t in 定长:
+        if t in FIXED_LENGTHS:
             o.extend(v[1])
         elif t == 7:
             o.extend(struct.pack('>i', len(v[1])))
             o.extend(v[1])
         elif t == 8:
-            串(v[1])
+            write_string(v[1])
         elif t == 9:
             o.extend(struct.pack('>bi', v[1], len(v[2])))
             for x in v[2]:
-                值(x)
+                tag_value(x)
         elif t == 10:
             for k, x in v[1]:
                 o.extend(struct.pack('>b', x[0]))
-                串(k)
-                值(x)
+                write_string(k)
+                tag_value(x)
             o.append(0)
         else:
             o.extend(struct.pack('>i', v[1]))
             o.extend(v[2])
 
     o.extend(struct.pack('>b', t))
-    串(名)
-    值(v)
+    write_string(name)
+    tag_value(v)
     return bytes(o)
 
 
-def 裁(原: bytes, 切: int) -> bytes:
-    t, 名, 根 = 读(原)
-    if 写(t, 名, 根) != 原:
+def cut_structure(raw_bytes: bytes, cut: int) -> bytes:
+    t, tag_name, root = read_nbt(raw_bytes)
+    if encode_tag(t, tag_name, root) != raw_bytes:
         raise SystemExit('读写往返不一致，不裁')
-    整 = lambda x: struct.unpack('>i', x[1])[0]
-    造 = lambda n: (3, struct.pack('>i', n))
-    出 = []
-    for k, v in 根[1]:
+    to_int = lambda x: struct.unpack('>i', x[1])[0]
+    make_int = lambda n: (3, struct.pack('>i', n))
+    out_items = []
+    for k, v in root[1]:
         if k == b'blocks':
-            留 = []
-            for 块 in v[2]:
-                位 = next(x for kk, x in 块[1] if kk == b'pos')
-                y = 整(位[2][1])
-                if y < 切:
+            kept = []
+            for block_entry in v[2]:
+                pos = next(x for kk, x in block_entry[1] if kk == b'pos')
+                y = to_int(pos[2][1])
+                if y < cut:
                     continue
-                留.append((10, [(kk, (9, 3, [x[2][0], 造(y - 切), x[2][2]]) if kk == b'pos' else x) for kk, x in 块[1]]))
-            print(f'方块 {len(v[2])} → {len(留)}')
-            v = (9, 10, 留)
+                kept.append((10, [(kk, (9, 3, [x[2][0], make_int(y - cut), x[2][2]]) if kk == b'pos' else x) for kk, x in block_entry[1]]))
+            print(f'方块 {len(v[2])} → {len(kept)}')
+            v = (9, 10, kept)
         elif k == b'entities':
             print(f'实体 {len(v[2])} → 0')
             v = (9, 10 if v[2] else v[1], [])
         elif k == b'size':
-            尺 = [整(x) for x in v[2]]
-            v = (9, 3, [造(尺[0]), 造(尺[1] - 切), 造(尺[2])])
-            print(f'size {尺} → {[尺[0], 尺[1] - 切, 尺[2]]}')
-        出.append((k, v))
-    return 写(t, 名, (10, 出))
+            dims = [to_int(x) for x in v[2]]
+            v = (9, 3, [make_int(dims[0]), make_int(dims[1] - cut), make_int(dims[2])])
+            print(f'size {dims} → {[dims[0], dims[1] - cut, dims[2]]}')
+        out_items.append((k, v))
+    return encode_tag(t, tag_name, (10, out_items))
 
 
 def main(argv: list[str]) -> int:
     if len(argv) != 5:
         print(__doc__, file=sys.stderr)
         return 2
-    包, 里层jar, 条目, 切, 输出 = argv
-    with zipfile.ZipFile(包) as z:
-        with zipfile.ZipFile(io.BytesIO(z.read(里层jar))) as j:
-            原 = j.read(条目)
-    print(f'{条目}：sha256 {hashlib.sha256(原).hexdigest()}')
-    数据 = 裁(gzip.decompress(原), int(切))
-    out = Path(输出)
+    pack_path, inner_jar, entry_name, cut, out_path = argv
+    with zipfile.ZipFile(pack_path) as z:
+        with zipfile.ZipFile(io.BytesIO(z.read(inner_jar))) as j:
+            entry_bytes = j.read(entry_name)
+    print(f'{entry_name}：sha256 {hashlib.sha256(entry_bytes).hexdigest()}')
+    data = cut_structure(gzip.decompress(entry_bytes), int(cut))
+    out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, 'wb') as f:
         with gzip.GzipFile(fileobj=f, mode='wb', mtime=0, filename='') as g:
-            g.write(数据)
+            g.write(data)
     print(f'写出 {out}：sha256 {hashlib.sha256(out.read_bytes()).hexdigest()}')
     return 0
 

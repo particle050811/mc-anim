@@ -4,53 +4,53 @@ import React from 'react';
 import { twilightDusk } from '../光照配比.ts';
 import { SkyDome, TWILIGHT, twilightCloudColor, twilightFogColor } from '../天空.tsx';
 import { TwilightClouds, shadowFarFor } from '../暮色光照.tsx';
-import { 档位配比 } from '../灯光档位.ts';
+import { tierMix } from '../灯光档位.ts';
 import type { V3 } from '../环境.ts';
-import { 定义画法, 方向雾层, 平行主光, 投影主光, 原版云, 自发光层, 雾元素, 雾远端, 高度雾层, type 画法属性 } from '../环境部件.tsx';
+import { defineDraw, DirFogLayer, ParallelMainLight, ShadowMainLight, vanillaCloud, SelfLightLayer, fogElement, fogFarEnd, HeightFogLayer, type DrawProps } from '../环境部件.tsx';
 
 // 按时刻算到月光时主光的颜色：暂定用暮色的偏蓝灰（原版光照贴图天暗时往蓝里偏，见 天空.tsx 的 TWILIGHT.light）
-const 月光色 = TWILIGHT.light;
+const moonLightColor = TWILIGHT.light;
 
-const 暮色: React.FC<画法属性> = ({ e, 灯, 镜头, 离地, 穹顶中心 }) => {
-  const mix = 档位配比(e.灯光);
-  const 雾色 = (e.雾.种类 !== '无' && e.雾.色) || twilightFogColor;
-  const 投影 = e.投影 !== false;
-  const 云 = e.云;
+const twilightPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight, domeCenter }) => {
+  const mix = tierMix(e.lightSpec);
+  const fogColor = (e.fog.种类 !== '无' && e.fog.色) || twilightFogColor;
+  const castShadow = e.shadow !== false;
+  const cloud = e.cloud;
   // TwilightClouds 的云天色、日光、天光是 暮色光照.tsx 里没导出的函数现算的，只能整个用它：海平面 0、默认天气，不加云、不让开
-  if (云.种类 === 'photon' && (云.海平面 !== 0 || 云.天气 || 云.加?.length || 云.让开 || 云.镜头周围 || 云.曝光 !== undefined)) {
+  if (cloud.种类 === 'photon' && (cloud.海平面 !== 0 || cloud.weather || cloud.加?.length || cloud.clearRect || cloud.aroundCamera || cloud.exposure !== undefined)) {
     throw new Error('暮色画法的 Photon 云只能是 TwilightClouds 那套（海平面 0、默认天气、不加不让）；要调参数得先让 暮色光照.tsx 导出云的天色函数');
   }
-  const 光色 = 灯.月光 ? 月光色 : (twilightDusk?.keyLight ?? TWILIGHT.light);
+  const lightColor = lighting.isMoonLight ? moonLightColor : (twilightDusk?.keyLight ?? TWILIGHT.light);
   return (
     <>
-      {e.高度雾 && <高度雾层 参数={e.高度雾} />}
-      <方向雾层 opts={twilightDusk && { sunDir: 灯.太阳, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength }} />
-      <自发光层 k={mix.自发光} />
-      <color attach="background" args={[雾色]} />
-      {雾元素(e.雾, 雾色)}
+      {e.heightFog && <HeightFogLayer 参数={e.heightFog} />}
+      <DirFogLayer opts={twilightDusk && { sunDir: lighting.sun, color: twilightDusk.afterglow, strength: twilightDusk.afterglowStrength }} />
+      <SelfLightLayer k={mix.selfLight} />
+      <color attach="background" args={[fogColor]} />
+      {fogElement(e.fog, fogColor)}
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        <group position={(穹顶中心 ?? 镜头) as V3} scale={穹顶中心 ? 1 : 250}>
-          <SkyDome twilight sun={灯.太阳} />
+        <group position={(domeCenter ?? cameraPos) as V3} scale={domeCenter ? 1 : 250}>
+          <SkyDome twilight sun={lighting.sun} />
         </group>
-        {投影 ? (
-          <投影主光
-            方向={灯.光向}
-            归一={false}
-            色={光色}
-            强={mix.直射 * 灯.直射倍}
-            远={(e.投影 && e.投影.远) || shadowFarFor(雾远端(e.雾))}
-            切分={Math.max(300, 2 * 离地)}
+        {castShadow ? (
+          <ShadowMainLight
+            lightDir={lighting.lightDir}
+            normalize={false}
+            色={lightColor}
+            强={mix.direct * lighting.directMult}
+            shadowFar={(e.shadow && e.shadow.far) || shadowFarFor(fogFarEnd(e.fog))}
+            splitDist={Math.max(300, 2 * eyeHeight)}
           />
         ) : (
-          <平行主光 方向={灯.光向} 色={光色} 强={mix.直射 * 灯.直射倍} 镜头={镜头} />
+          <ParallelMainLight lightDir={lighting.lightDir} 色={lightColor} 强={mix.direct * lighting.directMult} cameraPos={cameraPos} />
         )}
-        <hemisphereLight args={[twilightDusk?.skyLight ?? TWILIGHT.skyLight, twilightDusk?.groundLight ?? TWILIGHT.groundLight, mix.天光 * 灯.天光倍]} position={[0, 0, 1]} />
-        <ambientLight intensity={mix.环境光 * 灯.天光倍} />
-        {云.种类 === '原版' && 原版云(云, twilightCloudColor)}
+        <hemisphereLight args={[twilightDusk?.skyLight ?? TWILIGHT.skyLight, twilightDusk?.groundLight ?? TWILIGHT.groundLight, mix.skylight * lighting.skyLightMult]} position={[0, 0, 1]} />
+        <ambientLight intensity={mix.ambient * lighting.skyLightMult} />
+        {cloud.种类 === '原版' && vanillaCloud(cloud, twilightCloudColor)}
       </group>
-      {云.种类 === 'photon' && <TwilightClouds sun={灯.太阳} />}
+      {cloud.种类 === 'photon' && <TwilightClouds sun={lighting.sun} />}
     </>
   );
 };
 
-export default 定义画法('暮色', 暮色);
+export default defineDraw('暮色', twilightPaint);

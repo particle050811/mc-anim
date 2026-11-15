@@ -34,11 +34,11 @@
 // 接入范例：主世界 见 src/镜头/6-2-5/编排.ts（两遍调用：先 扰0 取横向重做地形跟随，再 扰0.带竖直下限；镜头视线换成「路线朝向 + 扰.镜头.航向」），
 //   暮色一镜到底 见 src/镜头/一镜到底/路线.ts（切线由偏移后位置差分，已含扰动，不要再加 扰.航向；R.扫帚(f) 供镜头.ts 用，要不含颠簸）。诊断 见 工具/一镜到底/诊断.ts。
 import { bankAngle, maxBankDeg } from './飞行路径.ts';
-import { defaultParams, deepMerge, type BumpMode, type 真实飞行参数, type 部分 } from './真实飞行/参数.ts';
+import { defaultParams, deepMerge, type BumpMode, type RealFlightParams, type DeepPartial } from './真实飞行/参数.ts';
 import { drydenField, lowAltTurbulence, modeVariance } from './真实飞行/湍流.ts';
 import { hermite, integStepSec, springTable } from './真实飞行/弹簧.ts';
 
-export { defaultParams, type BumpMode, type ChannelParams, type 真实飞行参数 } from './真实飞行/参数.ts';
+export { defaultParams, type BumpMode, type ChannelParams, type RealFlightParams } from './真实飞行/参数.ts';
 export { lowAltTurbulence } from './真实飞行/湍流.ts';
 export { integStepSec, springTable } from './真实飞行/弹簧.ts';
 
@@ -68,17 +68,17 @@ export type RealFlightOptions = {
   distAt: (t: number) => number; // 物理时间（秒）→ 沿航线的里程（米），单调不减
   frameToTime?: (frame: number) => number; // 全局帧 → 物理时间（秒），默认 F/fps
   fps?: number; // 默认 24：锚点的渐变帧数按它换成物理秒
-  锚点?: Anchor[];
+  anchors?: Anchor[];
   vertFloor?: (dist: number) => number; // 里程 → 竖直偏移的下限（米，一般为负）
   inputGain?: (dist: number) => number; // 里程 → 0～1，乘到漂移和阵风上（急弯里压掉）
-  参数?: 部分<真实飞行参数>;
+  参数?: DeepPartial<RealFlightParams>;
 };
 export type DisturbFrame = {
-  横: number; 竖: number; latVel: number; vertVel: number; latAccel: number; vertAccel: number;
-  航向: number; 俯仰: number; 角速度: number; 内倾: number;
-  颠簸: { 俯仰: number; 横滚: number; 朝向: number; 竖: number };
-  镜头: { 航向: number; 俯仰: number; 相对航向: number; 相对俯仰: number };
-  权重: number; 速度: number; s: number;
+  lateral: number; 竖: number; latVel: number; vertVel: number; latAccel: number; vertAccel: number;
+  heading: number; pitch: number; angularSpeed: number; bank: number;
+  bump: { pitch: number; roll: number; facing: number; 竖: number };
+  cameraAim: { lookHeading: number; pitch: number; relHeading: number; relPitch: number };
+  weight: number; 速度: number; s: number;
 };
 
 export const realFlight = (opts: RealFlightOptions) => {
@@ -102,7 +102,7 @@ export const realFlight = (opts: RealFlightOptions) => {
   }
 
   // 锚点窗口（物理时间）：输出窗口 w、输入窗口 wIn（提前 输入提前 倍开始渐弱）
-  const anchorWins = (opts.锚点 ?? []).map((a) => ({
+  const anchorWins = (opts.anchors ?? []).map((a) => ({
     Ta: F2T(a.帧),
     Tb: F2T(a.止帧 ?? a.帧),
     r1: (a.前 ?? 48) / fps,
@@ -120,41 +120,41 @@ export const realFlight = (opts: RealFlightOptions) => {
   const inAnchor = (T: number) => anchorWins.some((a) => T >= a.Ta && T <= a.Tb);
 
   // 输入场：漂移按 s，阵风按 s + 风速·t（冻结湍流随平均风平移）
-  const tb = lowAltTurbulence(params.阵风.离地, params.阵风.W20);
+  const tb = lowAltTurbulence(params.gust.altitudeM, params.gust.W20);
   const sMin = Sg[0];
   const sMax = Sg[halfSteps];
-  const gMin = sMin + params.阵风.风速 * T0;
-  const gMax = sMax + params.阵风.风速 * T1;
+  const gMin = sMin + params.gust.windSpeed * T0;
+  const gMax = sMax + params.gust.windSpeed * T1;
   const seed = opts.种子 * 7919;
-  const latDrift = drydenField(seed + 1, (params.侧向.漂移 * Math.PI) / 180, params.侧向.漂移尺度, sMin, sMax, true, params.侧向.漂移高通);
-  const vertDrift = drydenField(seed + 2, (params.竖直.漂移 * Math.PI) / 180, params.竖直.漂移尺度, sMin, sMax, true, params.竖直.漂移高通);
+  const latDrift = drydenField(seed + 1, (params.lateral.drift * Math.PI) / 180, params.lateral.driftScale, sMin, sMax, true, params.lateral.driftHighPass);
+  const vertDrift = drydenField(seed + 2, (params.vertical.drift * Math.PI) / 180, params.vertical.driftScale, sMin, sMax, true, params.vertical.driftHighPass);
   const latGust = drydenField(seed + 3, tb.σv, tb.Lv, gMin, gMax);
   const vertGust = drydenField(seed + 4, tb.σw, tb.Lw, gMin, gMax);
   const rollGust = drydenField(seed + 5, tb.σw, tb.Lw, gMin, gMax); // 横滚：左右两边的竖直阵风之差，取一个独立的竖直谱场
 
   // 颠簸幅度标定：参考速度下均方根 = 给定度数
-  const Vr = params.颠簸.参考速度;
-  const calibrate = (m: BumpMode, L: number) => m.幅度 / Math.sqrt(modeVariance(L, Vr, m.频率, m.阻尼));
-  const cP = calibrate(params.颠簸.俯仰, tb.Lw);
-  const cR = calibrate(params.颠簸.横滚, tb.Lw);
-  const cY = calibrate(params.颠簸.朝向, tb.Lv);
-  const cH = calibrate(params.颠簸.升沉, tb.Lw);
+  const Vr = params.bump.refSpeed;
+  const calibrate = (m: BumpMode, L: number) => m.amplitude / Math.sqrt(modeVariance(L, Vr, m.frequency, m.damping));
+  const cP = calibrate(params.bump.pitch, tb.Lw);
+  const cR = calibrate(params.bump.roll, tb.Lw);
+  const cY = calibrate(params.bump.facing, tb.Lv);
+  const cH = calibrate(params.bump.heave, tb.Lw);
 
   // 半步网格上的输入
   const gainFn = opts.inputGain;
   const inputs = Array.from({ length: 6 }, () => new Float64Array(halfSteps + 1)); // 横驱动、竖驱动（加速度）、俯仰、横滚、朝向（单位方差阵风 × 速度系数）、输入窗
-  const ωy = params.侧向.频率, ζy = params.侧向.阻尼, ωz = params.竖直.频率, ζz = params.竖直.阻尼, k = params.阵风.导纳;
+  const ωy = params.lateral.frequency, ζy = params.lateral.damping, ωz = params.vertical.frequency, ζz = params.vertical.damping, k = params.gust.admittance;
   for (let j = 0; j <= halfSteps; j++) {
     const time = T0 + (j * step) / 2;
     const dist = Sg[j];
     const speed = Vg[j];
-    const gain = windowAt(time, params.输入提前) * (gainFn ? Math.min(1, Math.max(0, gainFn(dist))) : 1);
-    const sg = dist + params.阵风.风速 * time;
+    const gain = windowAt(time, params.inputLead) * (gainFn ? Math.min(1, Math.max(0, gainFn(dist))) : 1);
+    const sg = dist + params.gust.windSpeed * time;
     const gv = latGust(sg);
     const gw = vertGust(sg);
     inputs[0][j] = gain * (2 * ζy * ωy * speed * latDrift(dist) + k * speed * gv);
     inputs[1][j] = gain * (2 * ζz * ωz * speed * vertDrift(dist) + k * speed * gw);
-    const speedFactor = gain * (Math.hypot(speed, params.阵风.风速) / Vr) ** params.颠簸.速度指数;
+    const speedFactor = gain * (Math.hypot(speed, params.gust.windSpeed) / Vr) ** params.bump.speedExponent;
     inputs[2][j] = speedFactor * (gw / tb.σw);
     inputs[3][j] = speedFactor * (rollGust(sg) / tb.σw);
     inputs[4][j] = speedFactor * (gv / tb.σv);
@@ -162,10 +162,10 @@ export const realFlight = (opts: RealFlightOptions) => {
   }
 
   // 状态：横 y、y'，竖 z、z'，颠簸俯仰、横滚、朝向、升沉（各两个）
-  const ωP = 2 * Math.PI * params.颠簸.俯仰.频率, ζP = params.颠簸.俯仰.阻尼;
-  const ωR = 2 * Math.PI * params.颠簸.横滚.频率, ζR = params.颠簸.横滚.阻尼;
-  const ωY = 2 * Math.PI * params.颠簸.朝向.频率, ζY = params.颠簸.朝向.阻尼;
-  const ωH = 2 * Math.PI * params.颠簸.升沉.频率, ζH = params.颠簸.升沉.阻尼;
+  const ωP = 2 * Math.PI * params.bump.pitch.frequency, ζP = params.bump.pitch.damping;
+  const ωR = 2 * Math.PI * params.bump.roll.frequency, ζR = params.bump.roll.damping;
+  const ωY = 2 * Math.PI * params.bump.facing.frequency, ζY = params.bump.facing.damping;
+  const ωH = 2 * Math.PI * params.bump.heave.frequency, ζH = params.bump.heave.damping;
   const deriv = (state: Float64Array, j: number, dState: Float64Array) => {
     dState[0] = state[1];
     dState[1] = -2 * ζy * ωy * state[1] - ωy * ωy * state[0] + inputs[0][j];
@@ -221,7 +221,7 @@ export const realFlight = (opts: RealFlightOptions) => {
     const floorFn = opts.vertFloor;
     if (!floorFn) return undefined;
     const ds = 5;
-    const halfWin = Math.max(1, Math.round(params.下限平滑 / ds));
+    const halfWin = Math.max(1, Math.round(params.floorSmooth / ds));
     const s0 = sMin - 2 * halfWin * ds;
     const count = Math.ceil((sMax - s0) / ds) + 2 * halfWin + 2;
     const raw = Float64Array.from({ length: count }, (_, i) => floorFn(s0 + i * ds));
@@ -244,7 +244,7 @@ export const realFlight = (opts: RealFlightOptions) => {
       return sm[i] + (sm[i + 1] - sm[i]) * (x - i);
     };
   })();
-  const soft = params.软度;
+  const soft = params.softWidth;
   const δ = 1e-3;
   for (let i = 0; i <= steps; i++) {
     const time = T0 + i * step;
@@ -306,8 +306,8 @@ export const realFlight = (opts: RealFlightOptions) => {
     const i = Math.min(Math.floor(gridPos), steps - 1);
     return arr[i] + (arr[i + 1] - arr[i]) * (gridPos - i);
   };
-  const camHeadingSpring = springTable(lerpTable(tPsi), T0, T0 + steps * step, params.镜头.频率, params.镜头.阻尼);
-  const camPitchSpring = springTable(lerpTable(tTh), T0, T0 + steps * step, params.镜头.频率, params.镜头.阻尼);
+  const camHeadingSpring = springTable(lerpTable(tPsi), T0, T0 + steps * step, params.cameraSpring.frequency, params.cameraSpring.damping);
+  const camPitchSpring = springTable(lerpTable(tTh), T0, T0 + steps * step, params.cameraSpring.frequency, params.cameraSpring.damping);
   const tCP = new Float64Array(steps + 1), tCPv = new Float64Array(steps + 1), tCT = new Float64Array(steps + 1), tCTv = new Float64Array(steps + 1);
   for (let i = 0; i <= steps; i++) {
     const time = T0 + i * step;
@@ -330,27 +330,27 @@ export const realFlight = (opts: RealFlightOptions) => {
     // 锚点区间精确返回 0：物理时刻不落在格点上时边缘那格插值会漏出 1e-4 残差，首帧要和上一段末帧逐像素一样
     if (inAnchor(time)) {
       return {
-        横: 0, 竖: 0, latVel: 0, vertVel: 0, latAccel: 0, vertAccel: 0, 航向: 0, 俯仰: 0, 角速度: 0, 内倾: bankAngle(0),
-        颠簸: { 俯仰: 0, 横滚: 0, 朝向: 0, 竖: 0 }, 镜头: { 航向: 0, 俯仰: 0, 相对航向: 0, 相对俯仰: 0 },
-        权重: 0, 速度: Li(tV), s: Li(tS),
+        lateral: 0, 竖: 0, latVel: 0, vertVel: 0, latAccel: 0, vertAccel: 0, heading: 0, pitch: 0, angularSpeed: 0, bank: bankAngle(0),
+        bump: { pitch: 0, roll: 0, facing: 0, 竖: 0 }, cameraAim: { lookHeading: 0, pitch: 0, relHeading: 0, relPitch: 0 },
+        weight: 0, 速度: Li(tV), s: Li(tS),
       };
     }
     const yawRate = Li(tPsiR);
     const heading = hermiteAt(tPsi, tPsiR), pitch = hermiteAt(tTh, tThR);
     const camHeading = hermiteAt(tCP, tCPv), camPitch = hermiteAt(tCT, tCTv);
     return {
-      横: hermiteAt(tY, tYv), 竖: hermiteAt(tZ, tZv), latVel: hermiteAt(tYv, tYa), vertVel: hermiteAt(tZv, tZa), latAccel: Li(tYa), vertAccel: Li(tZa),
-      航向: heading, 俯仰: pitch, 角速度: yawRate, 内倾: bankAngle(yawRate),
-      颠簸: { 俯仰: hermiteAt(tB[0], tB[1]), 横滚: hermiteAt(tB[2], tB[3]), 朝向: hermiteAt(tB[4], tB[5]), 竖: hermiteAt(tB[6], tB[7]) },
-      镜头: { 航向: camHeading, 俯仰: camPitch, 相对航向: camHeading - heading, 相对俯仰: camPitch - pitch },
-      权重: Li(tW), 速度: Li(tV), s: Li(tS),
+      lateral: hermiteAt(tY, tYv), 竖: hermiteAt(tZ, tZv), latVel: hermiteAt(tYv, tYa), vertVel: hermiteAt(tZv, tZa), latAccel: Li(tYa), vertAccel: Li(tZa),
+      heading: heading, pitch: pitch, angularSpeed: yawRate, bank: bankAngle(yawRate),
+      bump: { pitch: hermiteAt(tB[0], tB[1]), roll: hermiteAt(tB[2], tB[3]), facing: hermiteAt(tB[4], tB[5]), 竖: hermiteAt(tB[6], tB[7]) },
+      cameraAim: { lookHeading: camHeading, pitch: camPitch, relHeading: camHeading - heading, relPitch: camPitch - pitch },
+      weight: Li(tW), 速度: Li(tV), s: Li(tS),
     };
   };
 
   // 按里程查偏移：里程表单调不减，二分找第一处 ≥ s 的步
   const offsetAtDist = (dist: number) => {
-    if (dist <= tS[0]) return { 横: tY[0], 竖: tZ[0] };
-    if (dist >= tS[steps]) return { 横: tY[steps], 竖: tZ[steps] };
+    if (dist <= tS[0]) return { lateral: tY[0], 竖: tZ[0] };
+    if (dist >= tS[steps]) return { lateral: tY[steps], 竖: tZ[steps] };
     let lo = 0, hi = steps;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
@@ -358,17 +358,17 @@ export const realFlight = (opts: RealFlightOptions) => {
       else hi = mid;
     }
     const frac = (dist - tS[lo]) / Math.max(1e-9, tS[hi] - tS[lo]);
-    return { 横: tY[lo] + (tY[hi] - tY[lo]) * frac, 竖: tZ[lo] + (tZ[hi] - tZ[lo]) * frac };
+    return { lateral: tY[lo] + (tY[hi] - tY[lo]) * frac, 竖: tZ[lo] + (tZ[hi] - tZ[lo]) * frac };
   };
 
   return {
     at: sampleAt,
-    按里程: offsetAtDist,
-    combineBank: (F: number, routeYawRate: number) => bankAngle(routeYawRate + sampleAt(F).角速度),
+    byDistance: offsetAtDist,
+    combineBank: (F: number, routeYawRate: number) => bankAngle(routeYawRate + sampleAt(F).angularSpeed),
     // 同一组选项换上竖直下限重算（为什么分两遍见文件头）；横向通道和下限无关
     withVertFloor: (f: (dist: number) => number) => realFlight({ ...opts, vertFloor: f }),
     参数: params,
-    湍流: tb,
+    turbulence: tb,
     startSec: T0,
     stepCount: steps,
   };

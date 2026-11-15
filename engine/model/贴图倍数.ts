@@ -5,22 +5,22 @@ import type { Png } from './贴图.ts';
 import { entityTexture } from './贴图方盒.tsx';
 
 /** 贴图是原版（原宽 × 原高）的几倍；不是整数倍、宽高倍数不一样就报错 */
-export const 贴图倍数 = (贴图: { w: number; h: number }, [原宽, 原高]: readonly [number, number]): number => {
-  const k = 贴图.w / 原宽;
-  if (!Number.isInteger(k) || k < 1 || 贴图.h !== 原高 * k) throw new Error(`贴图 ${贴图.w}×${贴图.h} 不是原版 ${原宽}×${原高} 的整数倍`);
+export const textureScale = (texture: { w: number; h: number }, [origWidth, origHeight]: readonly [number, number]): number => {
+  const k = texture.w / origWidth;
+  if (!Number.isInteger(k) || k < 1 || texture.h !== origHeight * k) throw new Error(`贴图 ${texture.w}×${texture.h} 不是原版 ${origWidth}×${origHeight} 的整数倍`);
   return k;
 };
 
-const 已缩放 = new WeakMap<Png, Png>();
+const scaledCache = new WeakMap<Png, Png>();
 /** 给按原版像素写坐标、交给 TexBox 的模型用（<Chest 贴图={按原版坐标(VANILLA_CHEST_TEX, [64, 64])} />）。原版尺寸的图原样返回，画面和指纹都不动 */
-export const 按原版坐标 = (贴图: Png, 原尺寸: readonly [number, number]): Png => {
-  const k = 贴图倍数(贴图, 原尺寸);
-  if (k === 1) return 贴图;
-  let 新 = 已缩放.get(贴图);
-  if (!新) {
-    新 = { ...贴图 };
-    entityTexture(新).repeat.set(k, k);
-    已缩放.set(贴图, 新);
+export const toVanillaCoords = (texture: Png, origSize: readonly [number, number]): Png => {
+  const k = textureScale(texture, origSize);
+  if (k === 1) return texture;
+  let scaled = scaledCache.get(texture);
+  if (!scaled) {
+    scaled = { ...texture };
+    entityTexture(scaled).repeat.set(k, k);
+    scaledCache.set(texture, scaled);
   }
-  return 新;
+  return scaled;
 };

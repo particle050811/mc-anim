@@ -5,47 +5,47 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 场景到three } from '@engine/core/three换算.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
-import { 右手心, 娘化亚波伦, 定表演, 悬停, 斜举, 站立, type 亚波伦表演 } from '../../角色/娘化亚波伦.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
+import { rightHandCenter, GirlYaBoLun, defineAct, hover, raisedPose, stand, type YaBoLunAct } from '../../角色/娘化亚波伦.tsx';
 import { ItemDisplay } from '@engine/model/物品贴图.tsx';
-import { 下界魔杖, 下界魔杖显示 } from '../../物品/下界魔杖.tsx';
-import { 画幅, 视图们, type 视图 } from './视图.ts';
+import { NetherWand, netherWandDisplay } from '../../物品/下界魔杖.tsx';
+import { aspect, views, type View } from './视图.ts';
 
 // 受击：attacked 是整身的动作，顶掉 idle 播一遍（YSM 里受伤时主动画怎么让位没核实，这里当成整段换）
-const 受击 = 定表演({ 主: (秒) => [{ 名: 'attacked', 秒 }] });
+const hurt = defineAct({ 主: (sec) => [{ 名: 'attacked', 秒: sec }] });
 // 前飞：悬停 1 秒后水平速度跳到 20（YSM wiki：飞行时 ground_speed 是 20），看头发的弹簧
-const 前飞 = 定表演({ 主: () => [{ 名: 'fly' }], 环境: (秒) => ({ 查询: { ground_speed: 秒 >= 1 ? 20 : 0 } }), 持杖姿势: 斜举.飞 });
-const 表演们: Record<视图['表演'], 亚波伦表演> = { 站立, 悬停, 受击, 前飞 };
+const flyForward = defineAct({ 主: () => [{ 名: 'fly' }], 环境: (sec) => ({ query: { ground_speed: sec >= 1 ? 20 : 0 } }), wandHoldPose: raisedPose.飞 });
+const performances: Record<View['act'], YaBoLunAct> = { 站立: stand, 悬停: hover, 受击: hurt, 前飞: flyForward };
 
-const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
+const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = v.视角;
+  cam.fov = v.fov;
   cam.near = 0.05;
   cam.far = 256;
-  const 抬 = v.离地 ?? 0;
+  const lift = v.lift ?? 0;
   // 手部特写：手心和画角色用同一份 pose、表演、秒 算（已经带离地）
-  const 手 = v.看右手 && 右手心({ pose: { loc: [0, 0, 抬], yaw: 180 }, 秒: v.秒, 表演: 表演们[v.表演] });
-  const 眼 = 手 ? [手[0] + v.看右手![0], 手[1] + v.看右手![1], 手[2] + v.看右手![2]] : [v.眼[0], v.眼[1], v.眼[2] + 抬];
-  const 看 = 手 ?? [v.看[0], v.看[1], v.看[2] + 抬];
-  cam.position.copy(场景到three([眼[0]!, 眼[1]!, 眼[2]!]));
+  const rightPalm = v.lookRightHand && rightHandCenter({ pose: { loc: [0, 0, lift], yaw: 180 }, 秒: v.秒, act: performances[v.act] });
+  const eye = rightPalm ? [rightPalm[0] + v.lookRightHand![0], rightPalm[1] + v.lookRightHand![1], rightPalm[2] + v.lookRightHand![2]] : [v.眼[0], v.眼[1], v.眼[2] + lift];
+  const lookAt = rightPalm ?? [v.看[0], v.看[1], v.看[2] + lift];
+  cam.position.copy(sceneToThree([eye[0]!, eye[1]!, eye[2]!]));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three([看[0]!, 看[1]!, 看[2]!]));
+  cam.lookAt(sceneToThree([lookAt[0]!, lookAt[1]!, lookAt[2]!]));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
   return (
     <AbsoluteFill style={{ background: '#5a5e66' }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: true }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }}>
         <color attach="background" args={['#5a5e66']} />
-        <机位 v={v} />
+        <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
@@ -53,15 +53,15 @@ const 画面: React.FC = () => {
             <boxGeometry args={[12, 12, 0.1]} />
             <meshStandardMaterial color="#8a8f98" />
           </mesh>
-          {v.只杖 ? (
+          {v.onlyWand ? (
             // 物品空间 Y 朝上，场景 Z 朝上：绕 X 转 +90 度立起来
             <group position={[0, 0, 1.5]} rotation={[Math.PI / 2, 0, 0]} scale={2}>
-              <ItemDisplay t={下界魔杖显示.gui}>
-                <下界魔杖 />
+              <ItemDisplay t={netherWandDisplay.gui}>
+                <NetherWand />
               </ItemDisplay>
             </group>
           ) : (
-            <娘化亚波伦 pose={{ loc: [0, 0, v.离地 ?? 0], yaw: 180 }} 秒={v.秒} 表演={表演们[v.表演]} 变体={v.变体} 持杖={v.持杖} />
+            <GirlYaBoLun pose={{ loc: [0, 0, v.lift ?? 0], yaw: 180 }} 秒={v.秒} act={performances[v.act]} variant={v.variant} holdWand={v.holdWand} />
           )}
         </group>
       </ThreeCanvas>
@@ -73,4 +73,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

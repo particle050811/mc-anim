@@ -2,47 +2,47 @@
 // 其余是硬切前后、靠好那一帧、套成第 11 句那样的拍立得，和几张对照（靠肩带不带气泡、背景褪不褪色、窗外画多深、窗里补樱花林的小样），都不带歌词；
 // 最后一帧是 B 站多封面 PK 第三张（03-封面 的 C「同机位她笑」）：2-重逢 她笑了以后那一帧的她，换成封面帧（片那一版）的机位，头顶挂「(✿◠‿◠)」（片里不挂气泡）。
 // 片里这时挂的是台词气泡（12 倍），这张要封面那样 16 倍的颜文字气泡、和封面同构图，所以换机位。
-import type { 正交机位参数 } from '@engine/三渲二/机位.tsx';
-import { 事件 as 正片15尾事件 } from '../../分镜/正片15尾.ts';
-import { 事件 as 正片第15句事件 } from '../../分镜/正片第15句.ts';
-import { 靠肩机位 } from '../../场/2-隐世之境/合照动作.ts';
-import { 笑 } from '../../场/2-隐世之境/重逢参数.ts';
+import type { OrthoRigParams } from '@engine/三渲二/机位.tsx';
+import { events as mainCut15TailEvents } from '../../分镜/正片15尾.ts';
+import { events as mainCutLine15Events } from '../../分镜/正片第15句.ts';
+import { shoulderRig } from '../../场/2-隐世之境/合照动作.ts';
+import { laugh } from '../../场/2-隐世之境/重逢参数.ts';
 
-const 正片事件 = { ...正片15尾事件, ...正片第15句事件 };
+const mainCutEvents = { ...mainCut15TailEvents, ...mainCutLine15Events };
 
-export type 视图 = {
+export type View = {
   名: string;
   /** 照片 = 合照照片；拍立得 = 合照拍立得；重逢 = 2-重逢 那一镜（硬切前）；靠肩 = 15 尾那一镜 */
   种: '照片' | '拍立得' | '重逢' | '靠肩';
   /** 歌曲帧（照片、拍立得 不用） */
   帧?: number;
   /** 整片后期，不给 = 开 */
-  后期?: boolean;
+  withPost?: boolean;
   /** 靠肩她头顶的气泡，不给 = 合照参数 的 靠肩气泡 */
-  气泡?: boolean;
+  showBubble?: boolean;
   /** 重逢她头顶换挂的气泡字（16 倍），不给 = 同片里（驯服起挂台词气泡） */
-  气泡字?: string;
-  褪色?: boolean;
+  bubbleText?: string;
+  fade?: boolean;
   /** 靠肩换一个机位（看大环境） */
-  机位?: 正交机位参数;
+  cameraRig?: OrthoRigParams;
   /** 重逢换成封面帧（片那一版）的机位 */
-  封面机位?: boolean;
+  coverRig?: boolean;
   /** 靠肩窗里补樱花林（合照参数 的 窗景，小样） */
-  窗景?: boolean;
+  windowView?: boolean;
 };
 
-const 事 = 正片事件;
-export const 视图们: readonly 视图[] = [
+const events = mainCutEvents;
+export const views: readonly View[] = [
   { 名: '照片-合照（干净）', 种: '照片' },
-  { 名: '照片-合照（后期关）', 种: '照片', 后期: false },
-  { 名: '硬切前：2-重逢 末帧', 种: '重逢', 帧: 事.第15句段尾.帧 - 1 },
-  { 名: '硬切后：靠肩头一帧', 种: '靠肩', 帧: 事.靠肩起.帧 },
-  { 名: '靠好', 种: '靠肩', 帧: 事.靠肩.帧 },
-  { 名: '对比-靠肩带气泡', 种: '靠肩', 帧: 事.靠肩.帧, 气泡: true },
-  { 名: '对比-靠肩背景褪色', 种: '靠肩', 帧: 事.靠肩.帧, 褪色: true },
+  { 名: '照片-合照（后期关）', 种: '照片', withPost: false },
+  { 名: '硬切前：2-重逢 末帧', 种: '重逢', 帧: events.cutToTail.帧 - 1 },
+  { 名: '硬切后：靠肩头一帧', 种: '靠肩', 帧: events.leanStart.帧 },
+  { 名: '靠好', 种: '靠肩', 帧: events.leanOnShoulder.帧 },
+  { 名: '对比-靠肩带气泡', 种: '靠肩', 帧: events.leanOnShoulder.帧, showBubble: true },
+  { 名: '对比-靠肩背景褪色', 种: '靠肩', 帧: events.leanOnShoulder.帧, fade: true },
   { 名: '新合照套成第 11 句那样的拍立得（片里没露）', 种: '拍立得' },
-  { 名: '对比-窗外画到 x 26（窗外的深色木头、樱花树冠）', 种: '靠肩', 帧: 事.靠肩.帧, 机位: { ...靠肩机位, 深: 12 } },
-  { 名: '大环境-东墙全深（N 10，看两个人站在主厅哪里）', 种: '靠肩', 帧: 事.靠肩.帧, 机位: { 种: '正交', 朝: '东', N: 10, 顶面: 2, 看: [靠肩机位.看[0], 靠肩机位.看[1], 2.5], 剖: 1.3 } },
-  { 名: '对比-窗里补樱花林（小样，片里不开：窗景）', 种: '靠肩', 帧: 事.合照咔哒.帧 - 1, 窗景: true },
-  { 名: 'B 站多封面第三张：2-重逢 她笑了以后（段尾前一帧），封面帧的机位，挂「(✿◠‿◠)」，不带歌词', 种: '重逢', 帧: 事.第15句段尾.帧 - 1, 气泡字: 笑.气泡字, 封面机位: true },
+  { 名: '对比-窗外画到 x 26（窗外的深色木头、樱花树冠）', 种: '靠肩', 帧: events.leanOnShoulder.帧, cameraRig: { ...shoulderRig, depth: 12 } },
+  { 名: '大环境-东墙全深（N 10，看两个人站在主厅哪里）', 种: '靠肩', 帧: events.leanOnShoulder.帧, cameraRig: { 种: '正交', facing: '东', N: 10, topDepth: 2, 看: [shoulderRig.看[0], shoulderRig.看[1], 2.5], section: 1.3 } },
+  { 名: '对比-窗里补樱花林（小样，片里不开：窗景）', 种: '靠肩', 帧: events.groupPhotoClick.帧 - 1, windowView: true },
+  { 名: 'B 站多封面第三张：2-重逢 她笑了以后（段尾前一帧），封面帧的机位，挂「(✿◠‿◠)」，不带歌词', 种: '重逢', 帧: events.cutToTail.帧 - 1, bubbleText: laugh.bubbleText, coverRig: true },
 ];

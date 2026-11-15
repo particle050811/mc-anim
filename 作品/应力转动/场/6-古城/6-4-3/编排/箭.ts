@@ -3,7 +3,7 @@ import { rng, type V3 } from '@engine/model/parts.tsx';
 import { interpPathPos, particleInitVel, particlePath, type Particle } from '@库/特效/粒子面片.tsx';
 import * as geom from '../几何.ts';
 import { add, storySecAt } from './公用.ts';
-export const arrowAt = (g: number) => geom.箭(storySecAt(g));
+export const arrowAt = (g: number) => geom.arrowState(storySecAt(g));
 // 暴击粒子（原版 CritParticle）：满弓射出的和被拔刀剑挡开的箭都是暴击箭（AbstractArrow.tick 每刻沿上一刻路线放 4 个，
 // 速度 (−dx, −dy + 0.2, −dz)）。这里沿路每 0.3 米放一个以便看清；粒子本身照游戏：
 // 速度 ×0.1 加 0.4 × 给的速度、摩擦 0.7、重力 0.5、寿命 6/(random×0.8+0.6) 刻、大小 ×0.75、颜色灰白 0.6～0.9、每刻绿 ×0.96 蓝 ×0.9，出生时已 tick 过一次
@@ -14,15 +14,15 @@ const backCap = (dist: number) => 15 * dist;
 type CritSource = { t: number; p: V3; v: V3; r: number };
 const critSources: CritSource[] = (() => {
   const out: CritSource[] = [];
-  for (let dist = critSpacing; dist < geom.弹开程; dist += critSpacing) {
-    const t = geom.放箭 + geom.来箭到(dist);
-    const u = Math.min(geom.箭速(dist), backCap(dist));
-    out.push({ t, p: add(geom.搭箭点, geom.来向, dist), v: [geom.来向[0] * u, geom.来向[1] * u, geom.来向[2] * u], r: out.length });
+  for (let dist = critSpacing; dist < geom.deflectDist; dist += critSpacing) {
+    const t = geom.shootTime + geom.arrowArriveTime(dist);
+    const u = Math.min(geom.arrowSpeed(dist), backCap(dist));
+    out.push({ t, p: add(geom.nockPoint, geom.incomingDir, dist), v: [geom.incomingDir[0] * u, geom.incomingDir[1] * u, geom.incomingDir[2] * u], r: out.length });
   }
-  for (let dist = critSpacing; dist < geom.洞顶程; dist += critSpacing) {
-    const t = geom.弹开 + dist / geom.箭速上限;
-    const u = Math.min(geom.箭速上限, backCap(dist));
-    out.push({ t, p: add(geom.弹开点, geom.挑飞方向, dist), v: [geom.挑飞方向[0] * u, geom.挑飞方向[1] * u, geom.挑飞方向[2] * u], r: out.length });
+  for (let dist = critSpacing; dist < geom.caveCeilingDist; dist += critSpacing) {
+    const t = geom.deflect + dist / geom.arrowMaxSpeed;
+    const u = Math.min(geom.arrowMaxSpeed, backCap(dist));
+    out.push({ t, p: add(geom.deflectPoint, geom.flingDir, dist), v: [geom.flingDir[0] * u, geom.flingDir[1] * u, geom.flingDir[2] * u], r: out.length });
   }
   return out;
 })();

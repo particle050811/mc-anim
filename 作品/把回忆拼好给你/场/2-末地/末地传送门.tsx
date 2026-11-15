@@ -5,14 +5,14 @@
 // 坑：three 对 glslVersion = GLSL3 的 ShaderMaterial 不 #define gl_FragColor，输出要自己声明（原版也是 out vec4 fragColor）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import 星图 from 'asset:贴图/特效/末地传送门';
-import { 门格们 } from './编排.ts';
-import { 原样贴图, 末地天空贴图 } from './末地天空.tsx';
+import endPortalPng from 'asset:贴图/特效/末地传送门';
+import { portalCells } from './编排.ts';
+import { rawTexture, endSkyTexture } from './末地天空.tsx';
 
 /** 传送门方块顶面离方块底多高（TheEndPortalRenderer.getOffsetUp） */
-const 顶面 = 0.75;
+const topOffset = 0.75;
 
-const 顶点 = /* glsl */ `
+const vertexShaderSource = /* glsl */ `
 out vec4 texProj0;
 vec4 projection_from_position(vec4 position) {
   vec4 projection = position * 0.5;
@@ -25,7 +25,7 @@ void main() {
   texProj0 = projection_from_position(gl_Position);
 }`;
 
-const 片元 = /* glsl */ `
+const fragmentSource = /* glsl */ `
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
 uniform float GameTime;
@@ -86,10 +86,10 @@ void main() {
   fragColor = vec4(color, 1.0);
 }`;
 
-const 门几何 = (() => {
+const portalGeometry = (() => {
   const pos: number[] = [], idx: number[] = [];
-  const z = -1 + 顶面;
-  门格们.forEach(([i, j], n) => {
+  const z = -1 + topOffset;
+  portalCells.forEach(([i, j], n) => {
     pos.push(i, j, z, i + 1, j, z, i + 1, j + 1, z, i, j + 1, z);
     const b = n * 4;
     idx.push(b, b + 1, b + 2, b + 2, b + 3, b);
@@ -101,23 +101,23 @@ const 门几何 = (() => {
 })();
 
 /** 传送门星空。刻：游戏刻（连续，带刻内小数） */
-export const 末地传送门: React.FC<{ 刻: number }> = ({ 刻 }) => {
-  const 材质 = useMemo(
+export const EndPortal: React.FC<{ 刻: number }> = ({ 刻: tick }) => {
+  const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
         glslVersion: THREE.GLSL3,
         uniforms: {
-          Sampler0: { value: 末地天空贴图() },
-          Sampler1: { value: 原样贴图(星图) },
+          Sampler0: { value: endSkyTexture() },
+          Sampler1: { value: rawTexture(endPortalPng) },
           GameTime: { value: 0 },
           EndPortalLayers: { value: 15 },
         },
-        vertexShader: 顶点,
-        fragmentShader: 片元,
+        vertexShader: vertexShaderSource,
+        fragmentShader: fragmentSource,
         toneMapped: false,
       }),
     [],
   );
-  材质.uniforms.GameTime!.value = (((刻 % 24000) + 24000) % 24000) / 24000;
-  return <mesh geometry={门几何} material={材质} />;
+  material.uniforms.GameTime!.value = (((tick % 24000) + 24000) % 24000) / 24000;
+  return <mesh geometry={portalGeometry} material={material} />;
 };

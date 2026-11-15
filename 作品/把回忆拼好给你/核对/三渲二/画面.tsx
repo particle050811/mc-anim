@@ -5,138 +5,138 @@ import { AbsoluteFill, Img } from 'remotion';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
-import { 画布像素 } from '@engine/三渲二/像素.ts';
-import { 描边 } from '@engine/三渲二/描边.tsx';
-import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
-import type { 机位参数 } from '@engine/三渲二/机位.tsx';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
+import { canvasPixel } from '@engine/三渲二/像素.ts';
+import { Outline } from '@engine/三渲二/描边.tsx';
+import { ToonCanvas } from '@engine/三渲二/画布.tsx';
+import type { CameraRigParams } from '@engine/三渲二/机位.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
 import { BlockMesh, type BlockMeshInfo } from '@engine/voxel/方块网格.tsx';
 import { drawText, shadowOffset, textWidth } from '@库/界面/像素字.ts';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { MAGICAL_WINE_FOX, MagicalWineFox, magicalWineFoxLookAt } from '@库/角色/魔法酒狐.tsx';
-import { 按原版坐标 } from '@engine/model/贴图倍数.ts';
+import { toVanillaCoords } from '@engine/model/贴图倍数.ts';
 import { Chest, VANILLA_CHEST_TEX } from '@库/物品/箱子.tsx';
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import houseRaw from 'asset:网格/隐世之境一楼/头';
 import houseBin from 'asset:网格/隐世之境一楼/顶点';
 import houseAtlas from 'asset:网格/隐世之境一楼/图集';
 import shot from 'asset:截图/隐世之境/一楼机位';
-import { 一楼, 一楼灯光, 主厅灯 } from '../../地点/隐世之境一楼.tsx';
-import { 像素N, 正交机位, 正交顶面 } from '../../画风.ts';
-import { 色板 } from '../../色板.ts';
-import { 一楼机, 侧面看, 视图们, 透视机, type 视图 } from './视图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { firstFloor, FirstFloorLighting, hallLamps } from '../../地点/隐世之境一楼.tsx';
+import { pixelCount, orthoRig, orthoTop } from '../../画风.ts';
+import { palette } from '../../色板.ts';
+import { firstFloorRig, sideLookAt, views, perspectiveRig, type View } from './视图.ts';
+import { useViewIndex } from '@engine/段/时间.tsx';
 
 const houseInfo = houseRaw as unknown as BlockMeshInfo;
-const 宽 = 1280;
-const 高 = 720;
+const widthPx = 1280;
+const height = 720;
 
 // 侧剖面：主厅南头（y < −16）的方块藏掉，切口和导出边补面，裙边只往下补 1 格（屋子悬在 y 200 的空中）。
 // 切口不能穿过地毯（地毯 y −15～−9）：补面把切开的地毯当整格补，立起一整格高的地毯面
-const 剖盒 = [[-2, -27, -3, 23, -16, 12]];
+const cutBoxes = [[-2, -27, -3, 23, -16, 12]];
 // 发光区收紧到灯笼、蜡烛的模型（灯笼 6 像素宽、挂着的高 9 像素）：盒子要是整格，贴着的墙面也在盒子边上，会跟着亮成一块
-const 灯盒 = 主厅灯.filter((l) => l.点着).map((l) => [l.位[0] - 0.25, l.位[1] - 0.25, l.位[2], l.位[0] + 0.25, l.位[1] + 0.25, l.位[2] + 0.8]);
+const lampBox = hallLamps.filter((l) => l.lit).map((l) => [l.位[0] - 0.25, l.位[1] - 0.25, l.位[2], l.位[0] + 0.25, l.位[1] + 0.25, l.位[2] + 0.8]);
 
-const 她 = { ...standPose(一楼.女仆), yaw: 180 };
+const liYing = { ...standPose(firstFloor.maid), yaw: 180 };
 // 九胡：侧面（正交）里正对镜头，朝向是 90° 的整数倍、方块面不斜；透视里侧过来看她
-const 九胡 = (v: 视图) => ({ ...standPose([13.4, -10.8, 一楼.地毯顶面]), yaw: v.机位 === '侧面' ? 180 : 200 });
-const 箱子位: V3 = [9.5, -10.5, 一楼.地毯顶面];
-const 蛋糕位: V3 = [10.4, -11.4, 一楼.地毯顶面 + 0.25];
+const jiuHu = (v: View) => ({ ...standPose([13.4, -10.8, firstFloor.carpetTop]), yaw: v.cameraRig === '侧面' ? 180 : 200 });
+const chestPos: V3 = [9.5, -10.5, firstFloor.carpetTop];
+const cakePos: V3 = [10.4, -11.4, firstFloor.carpetTop + 0.25];
 
-const 机位参 = (v: 视图): 机位参数 =>
-  v.机位 === '侧面'
-    ? { ...正交机位({ 看: 侧面看, 朝: '北' }), 顶面: v.顶面 ?? 正交顶面 }
-    : { 种: '透视', ...(v.机位 === '透视' ? 透视机 : 一楼机) };
+const rigParams = (v: View): CameraRigParams =>
+  v.cameraRig === '侧面'
+    ? { ...orthoRig({ 看: sideLookAt, facing: '北' }), topDepth: v.topDepth ?? orthoTop }
+    : { 种: '透视', ...(v.cameraRig === '透视' ? perspectiveRig : firstFloorRig) };
 
 // 她模型（YSM）不在统一的贴图像素网格上：多数方块 0.9 个模型单位一个贴图像素（头 6.3 单位 7 个），也有 0.92、1.09、0.54 的，原点也不在网格上。
 // 原大小一个贴图像素 0.9 × 0.65 / 16 格 = 3.5 成片像素。默认不缩放、只把脚底吸到像素网格；她贴图像素 的视图按 0.9 那种缩放，对比用
-const 她模型像素 = 0.9 * MAGICAL_WINE_FOX.scale;
+const herModelPixel = 0.9 * MAGICAL_WINE_FOX.scale;
 
-const 场景: React.FC<{ v: 视图; 眼?: V3 }> = ({ v, 眼 }) => (
+const Scene: React.FC<{ v: View; 眼?: V3 }> = ({ v, 眼: eye }) => (
   <>
-    {v.原样 && <一楼灯光 />}
-    <BlockMesh info={houseInfo} bin={houseBin} atlas={houseAtlas} hideBlocks={v.机位 === '侧面' ? 剖盒 : undefined} patchEdges={v.机位 === '侧面' ? 1 : undefined} />
-    <描边>
-      <贴图像素对齐 锚={她.loc as V3} {...(v.她贴图像素 ? { 模型像素: 她模型像素, 成片像素: v.她贴图像素, N: 像素N } : {})}>
-        <MagicalWineFox pose={她} 看={眼 ? magicalWineFoxLookAt(她, 眼) : undefined} />
-      </贴图像素对齐>
-      <贴图像素对齐 锚={九胡(v).loc as V3}>
-        <Jiuhu pose={九胡(v)} tail={0} />
-      </贴图像素对齐>
+    {v.原样 && <FirstFloorLighting />}
+    <BlockMesh info={houseInfo} bin={houseBin} atlas={houseAtlas} hideBlocks={v.cameraRig === '侧面' ? cutBoxes : undefined} patchEdges={v.cameraRig === '侧面' ? 1 : undefined} />
+    <Outline>
+      <TexturePixelAlign 锚={liYing.loc as V3} {...(v.herTexturePixel ? { modelPixel: herModelPixel, filmPixel: v.herTexturePixel, N: pixelCount } : {})}>
+        <MagicalWineFox pose={liYing} 看={eye ? magicalWineFoxLookAt(liYing, eye) : undefined} />
+      </TexturePixelAlign>
+      <TexturePixelAlign 锚={jiuHu(v).loc as V3}>
+        <Jiuhu pose={jiuHu(v)} tail={0} />
+      </TexturePixelAlign>
       {/* 蛋糕 0.5 缩放，一个贴图像素正好 3 像素，只吸附 */}
-      <贴图像素对齐 锚={蛋糕位}>
-        <group position={蛋糕位} rotation={[Math.PI / 2, 0, 0]} scale={0.5}>
+      <TexturePixelAlign 锚={cakePos}>
+        <group position={cakePos} rotation={[Math.PI / 2, 0, 0]} scale={0.5}>
           <ItemSprite layers={CAKE} />
         </group>
-      </贴图像素对齐>
-    </描边>
+      </TexturePixelAlign>
+    </Outline>
     {/* 箱子跟方块一样不描 */}
-    <Chest 贴图={按原版坐标(VANILLA_CHEST_TEX, [64, 64])} p={箱子位} />
+    <Chest 贴图={toVanillaCoords(VANILLA_CHEST_TEX, [64, 64])} p={chestPos} />
   </>
 );
 
-const 尺子格 = 16;
-const 字 = '像素字：加入了游戏 0123456789';
+const rulerCells = 16;
+const sampleText = '像素字：加入了游戏 0123456789';
 
 /** 原版像素字一行（黄字带阴影，同聊天栏系统消息的「加入了游戏」）和一把贴图像素尺子（黑白相间 16 格 = 一格方块宽） */
-const 像素字行: React.FC = () => {
+const PixelTextLine: React.FC = () => {
   const ref = useRef<HTMLCanvasElement>(null);
   const dpr = canvasDpr(1);
   useLayoutEffect(() => {
     const ctx = ref.current!.getContext('2d')!;
-    ctx.clearRect(0, 0, 宽 * dpr, 高 * dpr);
-    const s = 画布像素(像素N, dpr);
-    for (let i = 0; i < 尺子格; i++) {
+    ctx.clearRect(0, 0, widthPx * dpr, height * dpr);
+    const s = canvasPixel(pixelCount, dpr);
+    for (let i = 0; i < rulerCells; i++) {
       ctx.fillStyle = i % 2 ? '#ffffff' : '#000000';
       ctx.fillRect(Math.round((4 + i) * s), Math.round(4 * s), Math.round(s), Math.round(2 * s));
     }
     let x = 4;
-    for (const ch of 字) {
+    for (const ch of sampleText) {
       const o = shadowOffset(ch);
       drawText(ctx, ch, x + o, 8 + o, '#3f3f15', s);
       drawText(ctx, ch, x, 8, '#ffff55', s);
       x += textWidth(ch);
     }
   });
-  return <canvas ref={ref} width={宽 * dpr} height={高 * dpr} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
+  return <canvas ref={ref} width={widthPx * dpr} height={height * dpr} style={{ position: 'absolute', left: 0, top: 0, width: widthPx, height: height }} />;
 };
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 调子 = 色板[v.调子 ?? '夏日白天'];
-  const 机位 = 机位参(v);
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const tone = palette[v.tone ?? '夏日白天'];
+  const cameraRig = rigParams(v);
   return (
     <AbsoluteFill style={{ background: '#000000' }}>
-      <整片后期 调色={v.后期 ? 调子.调色 : null}>
-        <三渲二画布
-          宽={宽}
-          高={高}
-          机位={机位}
-          天={调子.天}
-          色调={调子.色调}
-          发光区={v.灯发光 ? 灯盒 : undefined}
+      <FilmPost grade={v.withPost ? tone.grade : null}>
+        <ToonCanvas
+          宽={widthPx}
+          高={height}
+          cameraRig={cameraRig}
+          天={tone.天}
+          tint={tone.tint}
+          glowRegions={v.lampGlow ? lampBox : undefined}
           AO={v.AO}
-          描边={v.描边 ? { 宽: v.描边, 色: 调子.描边 } : false}
-          平涂={!v.原样}
+          outline={v.outlineWidth ? { 宽: v.outlineWidth, 色: tone.outlineColor } : false}
+          flatShade={!v.原样}
         >
-          <场景 v={v} 眼={机位.种 === '透视' ? 机位.眼 : undefined} />
-        </三渲二画布>
-        {v.机位 === '一楼机位' && (
+          <Scene v={v} 眼={cameraRig.种 === '透视' ? cameraRig.眼 : undefined} />
+        </ToonCanvas>
+        {v.cameraRig === '一楼机位' && (
           <>
-            <Img src={shot} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, clipPath: 'inset(0 0 0 50%)' }} />
-            <div style={{ position: 'absolute', left: 宽 / 2 - 1, top: 0, width: 2, height: 高, background: '#ffffff' }} />
+            <Img src={shot} style={{ position: 'absolute', left: 0, top: 0, width: widthPx, height: height, clipPath: 'inset(0 0 0 50%)' }} />
+            <div style={{ position: 'absolute', left: widthPx / 2 - 1, top: 0, width: 2, height: height, background: '#ffffff' }} />
           </>
         )}
-        <像素字行 />
-      </整片后期>
+        <PixelTextLine />
+      </FilmPost>
       <div style={{ position: 'absolute', left: 12, bottom: 8, fontFamily: 'sans-serif', fontSize: 18, color: '#ffffff', textShadow: '0 1px 3px #000' }}>
         核对-三渲二 · {v.名}
-        {v.后期 || v.调子 ? ` · ${v.调子 ?? '夏日白天'}` : ''}
+        {v.withPost || v.tone ? ` · ${v.tone ?? '夏日白天'}` : ''}
       </div>
     </AbsoluteFill>
   );
 };
 
-export default 画面;
+export default picture;

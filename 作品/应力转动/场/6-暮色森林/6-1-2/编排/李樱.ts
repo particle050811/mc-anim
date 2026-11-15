@@ -2,7 +2,7 @@
 import { type Key, type VKey, rad, sample, sampleLag, sampleV, track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { originalTiming, sheathConstraint as 收刀约束, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
+import { originalTiming, sheathConstraint as sheathConstraint, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
 import { FPS, S2, END, HOLD, warp, real, segFrame, lerp3, LANE_E, HX, HY, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
 
 // 收刀（uchigatana_scrap，`BLADE` 关键帧 127～135）在剧情帧上的起止：起 = 刀从前上方落下，入鞘 = 刀完全收进鞘里
@@ -247,7 +247,7 @@ export const liying = (frame: number, tweak?: LiyingTweak) => {
   const raw = liyingRaw(frame, tweak);
   if (tweak?.sheathTiming === '关') return { ...raw, sheath: undefined, sheathBlade: undefined };
   const timing = tweak?.sheathTiming ?? originalTiming;
-  const constraint = 收刀约束(raw.pose, frame, timing, (t) => {
+  const constraint = sheathConstraint(raw.pose, frame, timing, (t) => {
     const rawAt = liyingRaw(t, tweak);
     return [rawAt.pose, rawAt.blade, rawAt.bladeSide];
   });

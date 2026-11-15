@@ -7,15 +7,15 @@ import type { EntityModelData, PartPose } from '@engine/model/实体模型.tsx';
 export type { AnimDef };
 
 /** 取 import raw from 'asset:动画/法术/goety/<类名>' 里的一段 */
-export const 取动画 = (raw: unknown, 名: string): AnimDef => {
-  const 动画 = (raw as { animations?: Record<string, AnimDef> }).animations?.[名];
-  if (!动画) throw new Error(`动画 json 里没有 ${名}`);
-  return 动画;
+export const getAnim = (raw: unknown, animName: string): AnimDef => {
+  const animation = (raw as { animations?: Record<string, AnimDef> }).animations?.[animName];
+  if (!animation) throw new Error(`动画 json 里没有 ${animName}`);
+  return animation;
 };
 
 /** 播们：[动画, 已经播了几秒]；秒 < 0 的（AnimationState 还没 start）跳过 */
-export const 关键帧姿态 = (模型: EntityModelData, 播们: readonly (readonly [AnimDef, number])[]): Record<string, PartPose> => {
-  const 姿 = restPose(模型.root);
-  for (const [动画, 秒] of 播们) if (秒 >= 0) applyAnimation(姿, 动画, 秒);
-  return toPartPoses(姿);
+export const keyframePose = (model: EntityModelData, playList: readonly (readonly [AnimDef, number])[]): Record<string, PartPose> => {
+  const pose = restPose(model.root);
+  for (const [animation, sec] of playList) if (sec >= 0) applyAnimation(pose, animation, sec);
+  return toPartPoses(pose);
 };

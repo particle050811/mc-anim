@@ -4,96 +4,96 @@
 import React from 'react';
 import type { Png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import type { 点 } from '../接口.ts';
-import { 加, 乘, 单位, 混 } from './弹道.ts';
-import { 片, 面片们, type 面片项 } from './面片.tsx';
-import type { 混合 } from './材质.ts';
+import type { Vec3 } from '../接口.ts';
+import { addVec, scaleVec, unitVec, mix } from './弹道.ts';
+import { facePatch, QuadGroup, type QuadItem } from './面片.tsx';
+import type { Blend } from './材质.ts';
 
-export interface 吐息粒子类 {
+export interface BreathParticleClass {
   readonly 帧: readonly Png[];
   /** 整数年龄 → 第几帧 */
-  readonly 帧号: (年龄: number) => number;
+  readonly 帧号: (age: number) => number;
   /** lifetime（刻） */
   readonly 寿命: number;
   /** gravity（每刻竖直速度 −= 0.04 × 重力；−0.1 = 慢慢往上飘） */
   readonly 重力: number;
   /** 头一刻不算重力（苍蝇：重力是在第一次 tick 的末尾才设上的） */
-  readonly 首刻无重力?: boolean;
+  readonly firstTickNoGravity?: boolean;
   /** friction */
   readonly 摩擦: number;
   /** 每刻末给速度加的随机量：水平两个分量各 ±随机 × 横，竖直 +随机 × 竖 */
-  readonly 抖横: number;
-  readonly 抖竖: number;
+  readonly jitterHoriz: number;
+  readonly jitterVert: number;
   /** 碰到这个高度就没（hasPhysics 且落地即 remove 的给） */
-  readonly 地面?: number;
-  readonly 混合?: 混合;
+  readonly ground?: number;
+  readonly 混合?: Blend;
 }
 
-export interface 吐息出生 {
+export interface BreathBirth {
   readonly 刻: number;
-  readonly 位: 点;
+  readonly 位: Vec3;
   /** 格/刻，场景坐标 */
-  readonly 速: 点;
+  readonly 速: Vec3;
   /** quadSize（半边长） */
-  readonly 半径: number;
+  readonly radius: number;
   readonly 种子: number;
 }
 
 /** 这一颗画在第几帧、它的面片 */
-const 一颗 = (类: 吐息粒子类, 生: 吐息出生, 刻: number): readonly [number, 面片项] | null => {
-  const 年龄 = 刻 - 生.刻;
-  if (年龄 < 0 || 年龄 >= 类.寿命) return null;
-  const r = rng(生.种子);
-  let p = 生.位;
-  let 上 = p;
-  let v = 生.速;
-  const n = Math.floor(年龄);
+const breathQuad = (breathKind: BreathParticleClass, spawn: BreathBirth, tick: number): readonly [number, QuadItem] | null => {
+  const age = tick - spawn.刻;
+  if (age < 0 || age >= breathKind.寿命) return null;
+  const r = rng(spawn.种子);
+  let p = spawn.位;
+  let prevPos = p;
+  let v = spawn.速;
+  const n = Math.floor(age);
   for (let k = 0; k < n; k++) {
-    上 = p;
-    if (!(类.首刻无重力 && k === 0)) v = [v[0], v[1], v[2] - 0.04 * 类.重力];
-    p = 加(p, v);
-    if (类.地面 !== undefined && p[2] < 类.地面) return null;
-    v = 乘(v, 类.摩擦);
-    const 号 = () => (r() < 0.5 ? 1 : -1);
-    v = [v[0] + r() * 类.抖横 * 号(), v[1] + r() * 类.抖横 * 号(), v[2] + r() * 类.抖竖];
+    prevPos = p;
+    if (!(breathKind.firstTickNoGravity && k === 0)) v = [v[0], v[1], v[2] - 0.04 * breathKind.重力];
+    p = addVec(p, v);
+    if (breathKind.ground !== undefined && p[2] < breathKind.ground) return null;
+    v = scaleVec(v, breathKind.摩擦);
+    const randomSign = () => (r() < 0.5 ? 1 : -1);
+    v = [v[0] + r() * breathKind.jitterHoriz * randomSign(), v[1] + r() * breathKind.jitterHoriz * randomSign(), v[2] + r() * breathKind.jitterVert];
   }
   // 游戏画的是上一刻到这一刻之间
-  return [Math.min(类.帧.length - 1, Math.max(0, 类.帧号(n))), 片(混(上, p, 年龄 - n), 生.半径)];
+  return [Math.min(breathKind.帧.length - 1, Math.max(0, breathKind.帧号(n))), facePatch(mix(prevPos, p, age - n), spawn.radius)];
 };
 
-export const 吐息粒子: React.FC<{ 类: 吐息粒子类; 出生们: readonly 吐息出生[]; 秒: number }> = ({ 类, 出生们, 秒 }) => {
-  const 按帧: 面片项[][] = 类.帧.map(() => []);
-  for (const 生 of 出生们) {
-    const 这颗 = 一颗(类, 生, 秒 * 20);
-    if (这颗) 按帧[这颗[0]]!.push(这颗[1]);
+export const BreathParticles: React.FC<{ 类: BreathParticleClass; spawns: readonly BreathBirth[]; 秒: number }> = ({ 类: breathKind, spawns, 秒: sec }) => {
+  const byFrame: QuadItem[][] = breathKind.帧.map(() => []);
+  for (const spawn of spawns) {
+    const frameQuad = breathQuad(breathKind, spawn, sec * 20);
+    if (frameQuad) byFrame[frameQuad[0]]!.push(frameQuad[1]);
   }
   // 同一张图在序列里出现几次的（如 frost 的 1～6 再倒回 1）也各占一批，批数固定
   return (
     <>
-      {类.帧.map((图, i) => (
-        <面片们 key={i} 图={图} 项={按帧[i]!} 混合={类.混合 ?? '镂空'} />
+      {breathKind.帧.map((image, i) => (
+        <QuadGroup key={i} 图={image} 项={byFrame[i]!} 混合={breathKind.混合 ?? '镂空'} />
       ))}
     </>
   );
 };
 
 /** SingleQuadParticle 的初始 quadSize：0.1 × (随机 × 0.5 + 0.5) × 2 */
-export const 原始半径 = (随机: number) => 0.1 * (随机 * 0.5 + 0.5) * 2;
+export const initialRadius = (rand: number) => 0.1 * (rand * 0.5 + 0.5) * 2;
 
-const 高斯 = (r: () => number) => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
+const gaussian = (r: () => number) => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
 
 /**
  * dragonBreathAttack：一刻撒 个数 颗。位置 = 口 ± 0.15（每个分量）；方向 = normalize(朝向 × 3 + 随机单位向量)，
  * 速率 = 基速 × (1 + 随机)，同一刻的几颗共用一个速率。（参数 angle 只进了随机向量归一化之前，不影响结果）
  */
-export const 龙息撒 = (口: 点, 朝: 点, 个数: number, 基速: number, 刻: number, 种子: number): { 位: 点; 速: 点; 种子: number }[] => {
-  const r = rng(种子 * 7919 + 刻 * 31 + 1);
-  const 速率 = 基速 + r() * 基速;
-  const 向 = 单位(朝);
-  return Array.from({ length: 个数 }, (_, i) => {
-    const 位: 点 = [口[0] + r() * 0.3 - 0.15, 口[1] + r() * 0.3 - 0.15, 口[2] + r() * 0.3 - 0.15];
-    const 乱 = 单位([r() * 2 - 1, r() * 2 - 1, r() * 2 - 1]);
-    return { 位, 速: 乘(单位(加(乘(向, 3), 乱)), 速率), 种子: 种子 * 104729 + 刻 * 64 + i };
+export const scatterDragonBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; 种子: number }[] => {
+  const r = rng(seed * 7919 + tick * 31 + 1);
+  const rate = baseSpeed + r() * baseSpeed;
+  const unitDir = unitVec(dir);
+  return Array.from({ length: sprayCount }, (_, i) => {
+    const pos: Vec3 = [mouth[0] + r() * 0.3 - 0.15, mouth[1] + r() * 0.3 - 0.15, mouth[2] + r() * 0.3 - 0.15];
+    const jitter = unitVec([r() * 2 - 1, r() * 2 - 1, r() * 2 - 1]);
+    return { 位: pos, 速: scaleVec(unitVec(addVec(scaleVec(unitDir, 3), jitter)), rate), 种子: seed * 104729 + tick * 64 + i };
   });
 };
 
@@ -101,14 +101,14 @@ export const 龙息撒 = (口: 点, 朝: 点, 个数: number, 基速: number, �
  * breathAttack（spreadOut = true）：一刻撒 个数 颗。位置 = 口 + 高斯 ÷ 2（每个分量）；
  * 速度 = (朝向 + 高斯 × 0.0075 × 散) × 速率，散 = 散布 × (1 + 随机 ÷ 2)，速率 = 基速 × (1 + 随机)，每颗各抽。
  */
-export const 吐息撒 = (口: 点, 朝: 点, 个数: number, 基速: number, 散布: number, 刻: number, 种子: number): { 位: 点; 速: 点; 种子: number }[] => {
-  const r = rng(种子 * 7919 + 刻 * 31 + 2);
-  const 向 = 单位(朝);
-  return Array.from({ length: 个数 }, (_, i) => {
-    const 散 = 散布 + r() * (散布 / 2);
-    const 速率 = 基速 + r() * 基速;
-    const 速 = 乘([向[0] + 高斯(r) * 0.0075 * 散, 向[1] + 高斯(r) * 0.0075 * 散, 向[2] + 高斯(r) * 0.0075 * 散], 速率);
-    const 位: 点 = [口[0] + 高斯(r) / 2, 口[1] + 高斯(r) / 2, 口[2] + 高斯(r) / 2];
-    return { 位, 速, 种子: 种子 * 104729 + 刻 * 64 + i };
+export const scatterBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, spread: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; 种子: number }[] => {
+  const r = rng(seed * 7919 + tick * 31 + 2);
+  const unitDir = unitVec(dir);
+  return Array.from({ length: sprayCount }, (_, i) => {
+    const jitteredSpread = spread + r() * (spread / 2);
+    const rate = baseSpeed + r() * baseSpeed;
+    const speedVec = scaleVec([unitDir[0] + gaussian(r) * 0.0075 * jitteredSpread, unitDir[1] + gaussian(r) * 0.0075 * jitteredSpread, unitDir[2] + gaussian(r) * 0.0075 * jitteredSpread], rate);
+    const pos: Vec3 = [mouth[0] + gaussian(r) / 2, mouth[1] + gaussian(r) / 2, mouth[2] + gaussian(r) / 2];
+    return { 位: pos, 速: speedVec, 种子: seed * 104729 + tick * 64 + i };
   });
 };

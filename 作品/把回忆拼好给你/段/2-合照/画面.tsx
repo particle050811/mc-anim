@@ -3,30 +3,30 @@
 // 歌词：15 句都交给符文歌词（这一段里只剩第 15 句「爱炙热的你却忘了爱自己」），样式同 2-重逢（底部），硬切那一下歌词不跳；咔哒那一帧起退场（退在片尾的闪白里）。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 段时钟, 段内事件帧 as 段内正片事件帧 } from '../../分镜/正片15尾.ts';
-import { 色板 } from '../../色板.ts';
-import { 符文歌词 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
-import { 合照画面 } from '../../场/2-隐世之境/合照.tsx';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { segClock, segEventFrames as segMainCutEventFrames } from '../../分镜/正片15尾.ts';
+import { palette } from '../../色板.ts';
+import { RuneLyric } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { line15RuneStyle } from '../../场/2-门口/归隐歌词.ts';
+import { GroupPhotoPicture } from '../../场/2-隐世之境/合照.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 键 = '2-合照';
-const 起帧 = 段时钟(键).起帧;
-const 事件帧 = 段内正片事件帧(键);
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
-const 歌词样式 = { ...第15句符文样式, 描边色: 色板['归隐之地'].描边 };
+const segKey = '2-合照';
+const startFrame = segClock(segKey).起帧;
+const eventFrames = segMainCutEventFrames(segKey);
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
+const lyricStyle = { ...line15RuneStyle, outlineColor: palette['归隐之地'].outlineColor };
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <合照画面 帧={起帧 + f} 叠层={<符文歌词 行们={行们} 样式={歌词样式} 收={事件帧.合照咔哒} />} />
+      <GroupPhotoPicture 帧={startFrame + f} 叠层={<RuneLyric lines={lyricLines} 样式={lyricStyle} 收={eventFrames.groupPhotoClick} />} />
     </AbsoluteFill>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

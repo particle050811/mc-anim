@@ -10,98 +10,98 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 地面贴花 } from '../零件/地面贴花.tsx';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 贴图粒子, type 粒子出生, type 粒子类 } from '../零件/粒子.tsx';
-import 元, { 地雷位, 地雷引爆刻, 地雷胀刻 } from './散射.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/ScatterMineModel';
-import 雷图 from 'asset:贴图/法术/goety/entity/projectiles/scatter_mine';
-import 雷亮图 from 'asset:贴图/法术/goety/entity/projectiles/scatter_mine_glow_spell';
-import 脉1 from 'asset:贴图/法术/goety/particle/mine_pulse';
-import 脉2 from 'asset:贴图/法术/goety/particle/mine_pulse2';
-import 脉3 from 'asset:贴图/法术/goety/particle/mine_pulse3';
-import 脉4 from 'asset:贴图/法术/goety/particle/mine_pulse4';
-import 电1 from 'asset:贴图/法术/goety/particle/big_electric_1';
-import 电2 from 'asset:贴图/法术/goety/particle/big_electric_2';
-import 电3 from 'asset:贴图/法术/goety/particle/big_electric_3';
-import 尘0 from 'asset:贴图/特效/粒子/generic_0';
-import 尘1 from 'asset:贴图/特效/粒子/generic_1';
-import 尘2 from 'asset:贴图/特效/粒子/generic_2';
-import 尘3 from 'asset:贴图/特效/粒子/generic_3';
-import 尘4 from 'asset:贴图/特效/粒子/generic_4';
-import 尘5 from 'asset:贴图/特效/粒子/generic_5';
-import 尘6 from 'asset:贴图/特效/粒子/generic_6';
-import 尘7 from 'asset:贴图/特效/粒子/generic_7';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { GroundDecal } from '../零件/地面贴花.tsx';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { TexturedParticles, type ParticleBirth, type ParticleClass } from '../零件/粒子.tsx';
+import meta, { minePositions, mineDetonateTick, mineSwellTicks } from './散射.元.ts';
+import scatterMineModelData from 'asset:模型/法术/goety/ScatterMineModel';
+import scatterMinePng from 'asset:贴图/法术/goety/entity/projectiles/scatter_mine';
+import scatterMineGlowPng from 'asset:贴图/法术/goety/entity/projectiles/scatter_mine_glow_spell';
+import minePulse1Png from 'asset:贴图/法术/goety/particle/mine_pulse';
+import minePulse2Png from 'asset:贴图/法术/goety/particle/mine_pulse2';
+import minePulse3Png from 'asset:贴图/法术/goety/particle/mine_pulse3';
+import minePulse4Png from 'asset:贴图/法术/goety/particle/mine_pulse4';
+import bigElectric1Png from 'asset:贴图/法术/goety/particle/big_electric_1';
+import bigElectric2Png from 'asset:贴图/法术/goety/particle/big_electric_2';
+import bigElectric3Png from 'asset:贴图/法术/goety/particle/big_electric_3';
+import generic0Png from 'asset:贴图/特效/粒子/generic_0';
+import generic1Png from 'asset:贴图/特效/粒子/generic_1';
+import generic2Png from 'asset:贴图/特效/粒子/generic_2';
+import generic3Png from 'asset:贴图/特效/粒子/generic_3';
+import generic4Png from 'asset:贴图/特效/粒子/generic_4';
+import generic5Png from 'asset:贴图/特效/粒子/generic_5';
+import generic6Png from 'asset:贴图/特效/粒子/generic_6';
+import generic7Png from 'asset:贴图/特效/粒子/generic_7';
 
-const 模型 = 取模型(模型数据, 'ScatterMineModel');
-const 脉帧 = [脉1, 脉2, 脉3, 脉4].map(png);
-const 电类: 粒子类 = { 帧: [电1, 电2, 电3].map(png), 选帧: '按年龄', 混合: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
-const 红爆类: 粒子类 = { 帧: [尘7, 尘6, 尘5, 尘4, 尘3, 尘2, 尘1, 尘0].map(png), 选帧: '随机', 摩擦: 0.96, 色: [0.44, 0.05, 0.02], 大小: (年龄, 寿命) => 1 - (年龄 / 寿命) ** 2 * 0.5 };
+const scatterMineModel = getModel(scatterMineModelData, 'ScatterMineModel');
+const pulseFrames = [minePulse1Png, minePulse2Png, minePulse3Png, minePulse4Png].map(png);
+const sparkParticleClass: ParticleClass = { 帧: [bigElectric1Png, bigElectric2Png, bigElectric3Png].map(png), 选帧: '按年龄', 混合: '半透明', 摩擦: 0.96, 色: [1, 0.9, 1] };
+const redBurstParticleClass: ParticleClass = { 帧: [generic7Png, generic6Png, generic5Png, generic4Png, generic3Png, generic2Png, generic1Png, generic0Png].map(png), 选帧: '随机', 摩擦: 0.96, 色: [0.44, 0.05, 0.02], 大小: (age, lifetime) => 1 - (age / lifetime) ** 2 * 0.5 };
 
-const 散射: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
-  const 刻 = 秒 * 20;
-  const 整 = Math.floor(刻);
-  const 位们 = 地雷位(起点, 目标);
-  const 电: 粒子出生[] = [];
-  const 红: 粒子出生[] = [];
-  位们.forEach((位, i) => {
-    const r = rng(种子 * 311 + i);
-    for (let t = 0; t < Math.min(地雷引爆刻, 刻); t++)
-      电.push({
+const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
+  const tick = sec * 20;
+  const wholeTick = Math.floor(tick);
+  const positions = minePositions(from, target);
+  const sparks: ParticleBirth[] = [];
+  const redBurst: ParticleBirth[] = [];
+  positions.forEach((pos, i) => {
+    const r = rng(seed * 311 + i);
+    for (let t = 0; t < Math.min(mineDetonateTick, tick); t++)
+      sparks.push({
         刻: t,
-        位: [位[0] + (r() - 0.5) * 0.5, 位[1] + (r() - 0.5) * 0.5, 位[2] + r() * 0.5],
+        位: [pos[0] + (r() - 0.5) * 0.5, pos[1] + (r() - 0.5) * 0.5, pos[2] + r() * 0.5],
         速: [(-0.05 + r() * 0.05) * 0.25, (-0.05 + r() * 0.05) * 0.25, (-0.05 + r() * 0.05) * 0.25],
         寿命: 2 + Math.floor(r() * 2),
-        半径: 0.1 * (r() * 0.5 + 0.5) * 2 * 2,
+        radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 2,
         种子: t,
       });
-    电.push({ 刻: 地雷引爆刻, 位, 速: [0.25, 0, 0], 寿命: 2 + Math.floor(r() * 2), 半径: 0.1 * (r() * 0.5 + 0.5) * 4, 种子: 999 });
+    sparks.push({ 刻: mineDetonateTick, 位: pos, 速: [0.25, 0, 0], 寿命: 2 + Math.floor(r() * 2), radius: 0.1 * (r() * 0.5 + 0.5) * 4, 种子: 999 });
     let n = 0;
     for (let a = -2; a <= 2; a++)
       for (let b = -2; b <= 2; b++)
         for (let c = -2; c <= 2; c++) {
           if (Math.max(Math.abs(a), Math.abs(b), Math.abs(c)) < 2) continue;
           const d = [b + (r() - r()) * 0.5, c + (r() - r()) * 0.5, a + (r() - r()) * 0.5] as const;
-          const 长 = Math.hypot(d[0], d[1], d[2]) / 0.5;
-          红.push({ 刻: 地雷引爆刻, 位, 速: [d[0] / 长, d[1] / 长, d[2] / 长], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)) + 4, 半径: 0.1 * (r() * 0.5 + 0.5) * 2, 种子: i * 200 + n++ });
+          const scaledLength = Math.hypot(d[0], d[1], d[2]) / 0.5;
+          redBurst.push({ 刻: mineDetonateTick, 位: pos, 速: [d[0] / scaledLength, d[1] / scaledLength, d[2] / scaledLength], 寿命: Math.floor(8 / (r() * 0.8 + 0.2)) + 4, radius: 0.1 * (r() * 0.5 + 0.5) * 2, 种子: i * 200 + n++ });
         }
   });
   return (
     <>
-      {位们.map((位, i) => {
-        if (刻 >= 地雷引爆刻 + 地雷胀刻) return null;
-        const 炸 = 刻 >= 地雷引爆刻;
-        const 小 = 整 < 3 ? 1 : Math.max(1.25, 3 - 0.5 * (整 - 2));
-        const s = 炸 ? 小 + 3 * (整 - 地雷引爆刻 + 1) : 小;
-        const 亮 = Math.max(0, 1 - 0.0045 * Math.max(0, Math.min(整, 地雷引爆刻) - 5) - (炸 ? 0.1 * (整 - 地雷引爆刻 + 1) : 0));
+      {positions.map((pos, i) => {
+        if (tick >= mineDetonateTick + mineSwellTicks) return null;
+        const detonated = tick >= mineDetonateTick;
+        const baseSize = wholeTick < 3 ? 1 : Math.max(1.25, 3 - 0.5 * (wholeTick - 2));
+        const s = detonated ? baseSize + 3 * (wholeTick - mineDetonateTick + 1) : baseSize;
+        const brightnessFade = Math.max(0, 1 - 0.0045 * Math.max(0, Math.min(wholeTick, mineDetonateTick) - 5) - (detonated ? 0.1 * (wholeTick - mineDetonateTick + 1) : 0));
         return (
-          <MC空间 key={i} 位={位}>
-            <group rotation={[0, 度(90), 0]}>
+          <MinecraftSpace key={i} 位={pos}>
+            <group rotation={[0, degToRad(90), 0]}>
               <group scale={[-s, -s, s]}>
                 <group position={[0, -1.45, 0]}>
-                  {!炸 && <模型件 模型={模型} 图={png(整 < 5 ? 雷亮图 : 雷图)} 画法="半透明" 透明度={0.15} />}
-                  <模型件 模型={模型} 图={png(雷亮图)} 画法="半透明" 透明度={亮} />
+                  {!detonated && <ModelPart 模型={scatterMineModel} 图={png(wholeTick < 5 ? scatterMineGlowPng : scatterMinePng)} 画法="半透明" opacity={0.15} />}
+                  <ModelPart 模型={scatterMineModel} 图={png(scatterMineGlowPng)} 画法="半透明" opacity={brightnessFade} />
                 </group>
               </group>
             </group>
-          </MC空间>
+          </MinecraftSpace>
         );
       })}
-      {位们.flatMap((位, i) =>
-        Array.from({ length: Math.max(0, Math.floor((Math.min(刻, 地雷引爆刻) - 20) / 10) + 1) }, (_, k) => {
-          const 年龄 = 整 - (20 + k * 10);
-          if (年龄 < 1 || 年龄 >= 30 || 刻 >= 地雷引爆刻) return null;
-          const 半 = 1 + 0.1 * Math.abs(((年龄 - 1) % 10) - 5);
-          const 张 = Math.floor(rng(种子 * 7 + i * 100 + k * 10 + Math.floor((年龄 - 1) / 5))() * 4);
-          return <地面贴花 key={`${i}-${k}`} 位={位} 图={脉帧[张]!} 半径={半} 抬高={0.05 + k * 0.001} />;
+      {positions.flatMap((pos, i) =>
+        Array.from({ length: Math.max(0, Math.floor((Math.min(tick, mineDetonateTick) - 20) / 10) + 1) }, (_, k) => {
+          const age = wholeTick - (20 + k * 10);
+          if (age < 1 || age >= 30 || tick >= mineDetonateTick) return null;
+          const radius = 1 + 0.1 * Math.abs(((age - 1) % 10) - 5);
+          const frameIndex = Math.floor(rng(seed * 7 + i * 100 + k * 10 + Math.floor((age - 1) / 5))() * 4);
+          return <GroundDecal key={`${i}-${k}`} 位={pos} 图={pulseFrames[frameIndex]!} radius={radius} lift={0.05 + k * 0.001} />;
         }),
       )}
-      <贴图粒子 类={电类} 出生们={电} 秒={秒} />
-      <贴图粒子 类={红爆类} 出生们={红} 秒={秒} />
+      <TexturedParticles 类={sparkParticleClass} spawns={sparks} 秒={sec} />
+      <TexturedParticles 类={redBurstParticleClass} spawns={redBurst} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 散射);
+export default defineSpellPerformance(meta, scatter);

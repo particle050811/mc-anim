@@ -18,7 +18,7 @@ import { interpPathPos, type Particle, particleInitVel, particlePath } from './�
 // 一镜到底近景慢放里的粒子时钟倍速（粒子速度按比例放大，撞击比日常挖方块猛得多）：
 // - 战利品箱：同 6-1-5 的药水炸开（倍速 55），慢放下一秒上下散干净，把画面让给飞出来的物品；
 // - 墙上被矛管扫到的方块：20。镜头比矛尖晚 0.018 秒才到墙上，这时粒子还有一半没散，镜头从粒子中间钻过去，看得出那一管是崩成粒子的
-export const closeupBreakClockScale = { chest: 55, 墙: 20 };
+export const closeupBreakClockScale = { chest: 55, wall: 20 };
 
 export type BreakParticle = { path: V3[]; life: number; half: number; uv: [number, number, number, number]; color: [number, number, number] };
 

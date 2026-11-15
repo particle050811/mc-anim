@@ -35,7 +35,7 @@ export const UrGhastScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) =
   // 视线：朝扫帚（模型约定头仰正 = 往下看；在恶魂自己转过去以后的坐标里算）
   const broomLocal = choreo.towerFrame.toLocal(broom);
   const [dx, dy, dz] = rotByHeading(-choreo.GHAST_HEADING, [broomLocal[0] - ghastCenter[0], broomLocal[1] - ghastCenter[1], broomLocal[2] - ghastCenter[2]]);
-  const look = t < 0 ? { 偏: Math.atan2(dx, -dy), 仰: -Math.atan2(dz, Math.hypot(dx, dy)) } : { 偏: 0, 仰: 0 };
+  const look = t < 0 ? { yawOffset: Math.atan2(dx, -dy), pitch: -Math.atan2(dz, Math.hypot(dx, dy)) } : { yawOffset: 0, pitch: 0 };
   // 被贯穿就变红、一直红到炸开（同巫妖，用户 10-07 定）
   const hurt = t >= 0 ? 1 : 0;
   return (
@@ -45,7 +45,7 @@ export const UrGhastScene: React.FC<{ t: number; broom: V3 }> = ({ t, broom }) =
         <>
           {t < choreo.GHAST_DEATH.gone && (
             <group position={foot} rotation={[0, 0, (choreo.GHAST_HEADING * Math.PI) / 180]}>
-              <UrGhast 秒={t + 40} 头偏={Math.max(-0.6, Math.min(0.6, look.偏))} headPitch={Math.max(-0.5, Math.min(0.5, look.仰))} face={t >= 0 ? '喷火' : '睁眼'} 受伤={hurt} />
+              <UrGhast 秒={t + 40} headYaw={Math.max(-0.6, Math.min(0.6, look.yawOffset))} headPitch={Math.max(-0.5, Math.min(0.5, look.pitch))} face={t >= 0 ? '喷火' : '睁眼'} hurt={hurt} />
             </group>
           )}
           {[0, 1, 2].map((i) => (
@@ -75,9 +75,9 @@ export const AlphaYetiScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, 
   const at = (a: number) => t - choreo.yetiTimeAt(a);
   const [h0, h1, h2] = choreo.yetiImpacts;
   const bursts = [
-    { sec: at(h0.a), dir: dir(h0.a), origin: choreo.yetiTipLocal(h0.心), speed: 0.5 * choreo.speed, spread: 30, seed: 101, gravity: 16, stagger: 0.0004, chips: 14, spin: 60, hidden: tube, 管: choreo.yetiTubes[0] },
-    { sec: at(h1.a), dir: dir(h1.a), origin: choreo.yetiTipLocal(h1.心), speed: 0.5 * choreo.speed, spread: 30, seed: 102, gravity: 16, stagger: 0.0004, chips: 14, spin: 60, hidden: tube, 管: choreo.yetiTubes[1] },
-    { sec: at(h2.a), dir: dir(h2.a), origin: choreo.yetiTipLocal(h2.心), speed: 0.5 * choreo.speed, spread: 30, seed: 103, gravity: 16, stagger: 0.0004, chips: 14, spin: 60, hidden: tube, 管: choreo.yetiTubes[2] },
+    { sec: at(h0.a), dir: dir(h0.a), origin: choreo.yetiTipLocal(h0.心), speed: 0.5 * choreo.speed, spread: 30, seed: 101, gravity: 16, stagger: 0.0004, chips: 14, spin: 60, hidden: tube, tube: choreo.yetiTubes[0] },
+    { sec: at(h1.a), dir: dir(h1.a), origin: choreo.yetiTipLocal(h1.心), speed: 0.5 * choreo.speed, spread: 30, seed: 102, gravity: 16, stagger: 0.0004, chips: 14, spin: 60, hidden: tube, tube: choreo.yetiTubes[1] },
+    { sec: at(h2.a), dir: dir(h2.a), origin: choreo.yetiTipLocal(h2.心), speed: 0.5 * choreo.speed, spread: 30, seed: 103, gravity: 16, stagger: 0.0004, chips: 14, spin: 60, hidden: tube, tube: choreo.yetiTubes[2] },
   ];
   // 两条隧道（编排.ts 的 `yetiTunnels`）的四个口各喷一把土（同九头蛇钻穿土丘，6-1-6/戏.tsx）
   const snowDirt = ['#f0f4f8', '#d8e0e8', '#6b4a2e', '#7a7a7a'];
@@ -103,7 +103,7 @@ export const AlphaYetiScene: React.FC<{ t: number; camPos?: number[] }> = ({ t, 
           {tunnelMouths.map((k) => (
             <Debris key={k.seed} sec={at(k.a)} origin={choreo.yetiTipLocal(k.a)} seed={k.seed} colors={k.colors} count={k.count} speed={k.speed} />
           ))}
-          <BlockDebris data={YETI_DEBRIS} atlas={YETI_ATLAS} bursts={bursts} nearHide={camPos && { 镜头: choreo.caveFrame.toLocal(camPos), ...debrisNearHide }} />
+          <BlockDebris data={YETI_DEBRIS} atlas={YETI_ATLAS} bursts={bursts} nearHide={camPos && { cameraPos: choreo.caveFrame.toLocal(camPos), ...debrisNearHide }} />
         </>
       )}
     </LandmarkPlacement>

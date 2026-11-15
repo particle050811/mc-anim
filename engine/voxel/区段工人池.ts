@@ -3,22 +3,22 @@
 // 来源（挖法、平整不同的同一个包）先 `登记来源` 广播给每个工人，之后的活带上它的号，工人顺手把区段换成体素块。
 import type { SectionId } from './区段.ts';
 import type { SectionData } from './区段包.ts';
-import type { CutBox, FlattenArea, 区段包信息 } from './导入区段.ts';
+import type { CutBox, FlattenArea, SectionPackInfo } from './导入区段.ts';
 import type { VoxelGrid } from './生成.ts';
 
-export type 工人消息 =
+export type WorkerMessage =
   | { type: '模型'; url: string; bytes: Uint8Array }
-  | { type: '来源'; ctx: number; info: 区段包信息; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
-  | { type: '取'; id: number; url: string; start: number; len: number; parts: 区段活[] };
+  | { type: '来源'; ctx: number; info: SectionPackInfo; cutBoxes: CutBox[]; flattenAreas: FlattenArea[] }
+  | { type: '取'; id: number; url: string; start: number; len: number; parts: SectionTask[] };
 /** 块文件里的一段：off 相对这次活的 start，id 是它在索引里的位置定的（文件里不存） */
-export type 区段活 = { off: number; len: number; ctx?: number; id: SectionId };
-export type 区段结果 = { data: SectionData; voxels: VoxelGrid | null };
-export type 工人回信 = { id: number; out: 区段结果[]; transfers: ArrayBuffer[] };
+export type SectionTask = { off: number; len: number; ctx?: number; id: SectionId };
+export type SectionResult = { data: SectionData; voxels: VoxelGrid | null };
+export type WorkerReply = { id: number; out: SectionResult[]; transfers: ArrayBuffer[] };
 
 // 工人数：取、解一个区段都很快，三个够；网格池另有自己的工人
 const workerCount = Math.max(1, Math.min(3, (navigator.hardwareConcurrency || 4) - 2));
 
-type PendingJob = { resolve: (out: 区段结果[]) => void; reject: (err: unknown) => void };
+type PendingJob = { resolve: (out: SectionResult[]) => void; reject: (err: unknown) => void };
 let workers: Worker[] | null = null;
 const pendingJobs = new Map<number, PendingJob>();
 let nextId = 0;
@@ -29,7 +29,7 @@ const openPool = () => {
   if (workers) return workers;
   workers = Array.from({ length: workerCount }, () => {
     const worker = new Worker(new URL('./区段工人.ts', import.meta.url));
-    worker.onmessage = (event: MessageEvent<{ id: number; out?: 区段结果[]; err?: string }>) => {
+    worker.onmessage = (event: MessageEvent<{ id: number; out?: SectionResult[]; err?: string }>) => {
       const job = pendingJobs.get(event.data.id);
       pendingJobs.delete(event.data.id);
       if (event.data.err !== undefined) job?.reject(new Error(`区段工人：${event.data.err}`));
@@ -45,24 +45,24 @@ const openPool = () => {
 };
 
 /** 登记一个来源，返回它的号；每个工人都收到（消息按发送先后到，之后带这个号的活一定在它后面） */
-export const registerSource = (info: 区段包信息, cutBoxes: CutBox[], flattenAreas: FlattenArea[]): number => {
+export const registerSource = (info: SectionPackInfo, cutBoxes: CutBox[], flattenAreas: FlattenArea[]): number => {
   const ctx = nextCtx++;
-  for (const w of openPool()) w.postMessage({ type: '来源', ctx, info, cutBoxes, flattenAreas } satisfies 工人消息);
+  for (const w of openPool()) w.postMessage({ type: '来源', ctx, info, cutBoxes, flattenAreas } satisfies WorkerMessage);
   return ctx;
 };
 
 /** 按 Range 取 [start, start + len) 这一段，parts 是段里各区段（off 相对 start）；回来的和 parts 一一对应 */
-export const fetchSectionsInPool = (url: string, start: number, len: number, parts: 区段活[]): Promise<区段结果[]> => {
+export const fetchSectionsInPool = (url: string, start: number, len: number, parts: SectionTask[]): Promise<SectionResult[]> => {
   const ws = openPool();
   const id = nextId++;
   const worker = ws[nextWorker++ % ws.length];
   return new Promise((resolve, reject) => {
     pendingJobs.set(id, { resolve, reject });
-    worker.postMessage({ type: '取', id, url, start, len, parts } satisfies 工人消息);
+    worker.postMessage({ type: '取', id, url, start, len, parts } satisfies WorkerMessage);
   });
 };
 
 /** 同一包的表只在主线程下载一次；每个 Worker 收一份，不放进逐次 Range 活的消息里。 */
 export const registerModel = (url: string, bytes: Uint8Array) => {
-  for (const w of openPool()) w.postMessage({ type: '模型', url, bytes } satisfies 工人消息);
+  for (const w of openPool()) w.postMessage({ type: '模型', url, bytes } satisfies WorkerMessage);
 };

@@ -25,7 +25,7 @@ export type TerrainFollowResult = {
   points: V3[]; // 每 步长 一个的三维点（第一个是水平航线的起点）
   horizArcLen: number[]; // 每个点的水平弧长
   groundTops: number[]; // 每个点（含左右）的最高地面
-  高度: (arcLen: number) => number; // 水平弧长 → 飞行高度（线性插值）
+  heightAt: (arcLen: number) => number; // 水平弧长 → 飞行高度（线性插值）
   posAt: (arcLen: number) => [number, number]; // 水平弧长 → 水平位置
   length: number; // 水平总长
 };
@@ -87,7 +87,7 @@ export const terrainFollow = (waypoints: [number, number][], groundHeightAt: (x:
     points: points,
     horizArcLen,
     groundTops: groundTops,
-    高度: (s) => lerpAt(z, s),
+    heightAt: (s) => lerpAt(z, s),
     posAt: (s) => [lerpAt(xs, s), lerpAt(ys, s)],
     length: flat.length,
   };

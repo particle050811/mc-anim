@@ -1,60 +1,60 @@
-// 求解缓存（engine/core/求解缓存.ts）的写盘：页面写不了文件，新算出来的结果挂在 window.__求解缓存待写，这里在页面关掉前收走，
+// 求解缓存（engine/core/求解缓存.ts）的写盘：页面写不了文件，新算出来的结果挂在 window.__solveCachePending，这里在页面关掉前收走，
 // 写进 <数据根>/cache/求解/（页面经 public 目录的 求解 链接从这里读）。照旧项目 工具/求解缓存收集.mjs。
 // 用法：开浏览器后调一次 收求解缓存(browser)；Remotion 的 getCompositions、renderMedia 都经 browser.newPage 开页面、用完 page.close()，
 // 包住这两个就收得到每个页面的结果。同一个键内容一样，已有的文件不重写。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { HeadlessBrowser } from '@remotion/renderer';
-import { 求解缓存目录 } from '../环境/配置.ts';
+import { solveCacheDir } from '../环境/配置.ts';
 
-type 页面 = { _client: () => { send: (方法: string, 参数: object) => Promise<unknown> }; close: (...a: unknown[]) => Promise<unknown> };
+type PageLike = { _client: () => { send: (method: string, params: object) => Promise<unknown> }; close: (...a: unknown[]) => Promise<unknown> };
 
 /** 接到浏览器上：之后每个页面关掉前跑一次 收（拿 求值 在页面里取字符串）。页面崩了、已经跳走了就收不到，算了；在收的任务放进 在收，给调用方等 */
-export const 关页前 = (browser: HeadlessBrowser, 在收: Set<Promise<void>>, 收: (求值: (表达式: string) => Promise<string>) => Promise<void>) => {
-  const b = browser as unknown as { newPage: (...a: unknown[]) => Promise<页面> };
-  const 原newPage = b.newPage.bind(b);
+export const beforeClose = (browser: HeadlessBrowser, inFlight: Set<Promise<void>>, collect: (evaluate: (expression: string) => Promise<string>) => Promise<void>) => {
+  const b = browser as unknown as { newPage: (...a: unknown[]) => Promise<PageLike> };
+  const origNewPage = b.newPage.bind(b);
   b.newPage = async (...a) => {
-    const page = await 原newPage(...a);
-    const 原close = page.close.bind(page);
-    const 求值 = async (表达式: string) => {
-      const r = (await page._client().send('Runtime.evaluate', { expression: 表达式, returnByValue: true })) as { value?: { result: { value: string } }; result?: { value: string } };
+    const page = await origNewPage(...a);
+    const origClose = page.close.bind(page);
+    const evaluate = async (expression: string) => {
+      const r = (await page._client().send('Runtime.evaluate', { expression: expression, returnByValue: true })) as { value?: { result: { value: string } }; result?: { value: string } };
       return (r.value ?? r).result!.value;
     };
     page.close = async (...c) => {
-      const task = 收(求值).catch(() => {});
-      在收.add(task);
+      const task = collect(evaluate).catch(() => {});
+      inFlight.add(task);
       await task;
-      在收.delete(task);
-      return 原close(...c);
+      inFlight.delete(task);
+      return origClose(...c);
     };
     return page;
   };
 };
 
-const 收一页 = async (求值: (表达式: string) => Promise<string>, dir: string) => {
-  const 待写 = JSON.parse(await 求值('JSON.stringify(window.__求解缓存待写 || {})')) as Record<string, string>;
-  let 新写 = 0;
-  for (const [文件名, 内容] of Object.entries(待写)) {
-    if (!/^[0-9a-f]{16}\.json$/.test(文件名)) continue;
-    const file = path.join(dir, 文件名);
+const collectPage = async (evaluate: (expression: string) => Promise<string>, dir: string) => {
+  const pendingWrites = JSON.parse(await evaluate('JSON.stringify(window.__solveCachePending || {})')) as Record<string, string>;
+  let newWrites = 0;
+  for (const [fileName, content] of Object.entries(pendingWrites)) {
+    if (!/^[0-9a-f]{16}\.json$/.test(fileName)) continue;
+    const file = path.join(dir, fileName);
     if (fs.existsSync(file)) continue;
     fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(`${file}.tmp`, 内容);
+    fs.writeFileSync(`${file}.tmp`, content);
     fs.renameSync(`${file}.tmp`, file);
-    新写++;
+    newWrites++;
   }
-  if (新写) console.log(`求解缓存：新写 ${新写} 份`);
-  return 新写;
+  if (newWrites) console.log(`求解缓存：新写 ${newWrites} 份`);
+  return newWrites;
 };
 
 // Remotion 关页面时不等 close 完（get-browser-instance.js 的 cleanupPage），收缓存是异步写完的：
 // 开下一个页面前先 等求解缓存写完()，不然后面的页面加载时文件可能还没写好，又现算一遍
-const 在收 = new Set<Promise<void>>();
-export const 等求解缓存写完 = () => Promise.all([...在收]);
+const inFlight = new Set<Promise<void>>();
+export const waitSolveCacheWrites = () => Promise.all([...inFlight]);
 
-export const 收求解缓存 = (browser: HeadlessBrowser) => {
-  const dir = 求解缓存目录();
-  const 统计 = { 新写: 0 };
-  关页前(browser, 在收, async (求值) => { 统计.新写 += await 收一页(求值, dir); });
-  return 统计;
+export const collectSolveCache = (browser: HeadlessBrowser) => {
+  const dir = solveCacheDir();
+  const stats = { 新写: 0 };
+  beforeClose(browser, inFlight, async (evaluate) => { stats.新写 += await collectPage(evaluate, dir); });
+  return stats;
 };

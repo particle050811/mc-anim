@@ -3,23 +3,23 @@
 // 算不出来（esbuild 报错）就不注入那一项，那个求解照常现算。
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { 相对代码根 } from '../环境/路径.ts';
-import { 算默克尔 } from './默克尔.ts';
+import { relativeToCodeRoot } from '../环境/路径.ts';
+import { computeMerkle } from './默克尔.ts';
 
-export const 读求解入口 = async (作品根: string): Promise<Record<string, string>> => {
-  const m = (await import(pathToFileURL(path.join(作品根, '清单.ts')).href)) as { 求解入口?: Record<string, string> };
-  return m.求解入口 ?? {};
+export const readSolveEntries = async (workRoot: string): Promise<Record<string, string>> => {
+  const m = (await import(pathToFileURL(path.join(workRoot, '清单.ts')).href)) as { solveEntries?: Record<string, string> };
+  return m.solveEntries ?? {};
 };
 
-export const 求解指纹 = async (作品根: string): Promise<Record<string, string>> => {
-  const 项 = await Promise.all(
-    Object.entries(await 读求解入口(作品根)).map(async ([名, 入口]) => {
+export const solveFingerprints = async (workRoot: string): Promise<Record<string, string>> => {
+  const items = await Promise.all(
+    Object.entries(await readSolveEntries(workRoot)).map(async ([solverName, entry]) => {
       try {
-        return [[名, (await 算默克尔([相对代码根(path.join(作品根, 入口))])).根[0]!.slice(0, 16)] as const];
+        return [[solverName, (await computeMerkle([relativeToCodeRoot(path.join(workRoot, entry))])).根[0]!.slice(0, 16)] as const];
       } catch {
         return [];
       }
     }),
   );
-  return Object.fromEntries(项.flat());
+  return Object.fromEntries(items.flat());
 };

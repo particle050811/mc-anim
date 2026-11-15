@@ -12,21 +12,21 @@
 // - 不加特效：金光原来就有（随锤头轨迹）。
 import { sampleLag, type Interp, type Key } from '@engine/anim/anim.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { 刻 } from '../6-3-下坠/时间线.ts';
+import { tick } from '../6-3-下坠/时间线.ts';
 
 type PoseField = 'pitch' | 'headPitch' | 'legR' | 'legL' | 'kneeR' | 'kneeL' | 'legRRoll' | 'legLRoll' | 'armR' | 'armL' | 'armRRoll' | 'armLRoll' | 'elbowR' | 'elbowL';
 // 关键值：数 = 绝对值；'起' = 原姿势在 刻.抡出（接得上前面）；'跃' = 原姿势在 刻.跃出（髋高不变）；'终' = 原来的末姿势（接得上 6-3-4）
 type KeyValue = number | '起' | '跃' | '终';
 type Track = { delay: number; 键: [w: number, v: KeyValue, interp?: Interp][] };
 
-const startSec = 刻.swingOut; // 1.2：锤刚抡到身前、双手握住
+const startSec = tick.swingOut; // 1.2：锤刚抡到身前、双手握住
 const crouch = 1.42; // 收身蹲到底
 const settle = 1.5; // 蹲住（攒劲）到这里
-const leap = 刻.leap; // 1.55：脚离开杆
+const leap = tick.leap; // 1.55：脚离开杆
 const straighten = 1.61; // 腿蹬直（只停一下就收腿）
 const behind = 1.72; // 锤甩到脑后
 const spread = 1.76; // 空中拉开
-const release = 刻.flipDone; // 1.97：翻成头朝下，出手
+const release = tick.flipDone; // 1.97：翻成头朝下，出手
 const recover = 2.24; // 回到下锤击架势（+ 最大延迟 0.035 = 2.275 秒，之后开抡）
 
 // 双臂：胸前 → 抡过头顶 → 脑后（冲过一点）→ 慢慢再往后拉 → 出手甩到头顶前方（冲过一点）停在 168

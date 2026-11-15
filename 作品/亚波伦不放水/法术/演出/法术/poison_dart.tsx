@@ -5,44 +5,44 @@
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 减, 弹道位置, 弹道方向 } from '../零件/弹道.ts';
-import { MC空间, 取模型, 度, 模型件 } from '../零件/实体.tsx';
-import { 贴图粒子, type 粒子出生, type 粒子类 } from '../零件/粒子.tsx';
-import { 各刻, 十六色, 箭角, 高斯 } from '../零件/甲/共用.ts';
-import 元, { 毒镖道 } from './poison_dart.元.ts';
-import 模型数据 from 'asset:模型/法术/goety/PoisonQuillModel';
-import 镖图 from 'asset:贴图/法术/goety/entity/projectiles/poison_quill';
-import 尾粒图 from 'asset:贴图/法术/goety/particle/trail';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { sub, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
+import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
+import { TexturedParticles, type ParticleBirth, type ParticleClass } from '../零件/粒子.tsx';
+import { eachTick, hexColor, arrowYawPitch, gaussian } from '../零件/甲/共用.ts';
+import meta, { poisonDartPath } from './poison_dart.元.ts';
+import poisonQuillModelData from 'asset:模型/法术/goety/PoisonQuillModel';
+import quillPng from 'asset:贴图/法术/goety/entity/projectiles/poison_quill';
+import trailParticlePng from 'asset:贴图/法术/goety/particle/trail';
 
-const 模型 = 取模型(模型数据, 'PoisonQuillModel');
-export const 尾粒类: 粒子类 = { 帧: [png(尾粒图)], 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', 透明度: (年龄, 寿命) => 1 - Math.floor(年龄) / 寿命 };
+const poisonQuillModel = getModel(poisonQuillModelData, 'PoisonQuillModel');
+export const trailParticleClass: ParticleClass = { 帧: [png(trailParticlePng)], 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', opacity: (age, lifetime) => 1 - Math.floor(age) / lifetime };
 
-const 毒镖: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子, 选项 }) => {
-  const 刻 = 秒 * 20;
-  const { 道, 到刻 } = 毒镖道(起点, 目标, 选项?.高速);
-  const r = rng(种子 * 5 + 2);
-  const 色 = 十六色(0xefec8b);
-  const 尾: 粒子出生[] = 各刻(1, Math.min(刻, 到刻)).flatMap((n) => {
-    const [位, 速] = [道(n), 减(道(n + 1), 道(n))];
-    return Array.from({ length: 4 }, () => ({ 刻: n, 位: [位[0] + 速[0] + 高斯(r) / 2, 位[1] + 速[1] + 高斯(r) / 2, 位[2] + 速[2] + 0.5 + 高斯(r) / 2] as const, 寿命: 10, 半径: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75, 色 }));
+const PoisonDart: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
+  const tick = sec * 20;
+  const { trajectory, arriveTick } = poisonDartPath(from, target, options?.highSpeed);
+  const r = rng(seed * 5 + 2);
+  const color = hexColor(0xefec8b);
+  const tail: ParticleBirth[] = eachTick(1, Math.min(tick, arriveTick)).flatMap((n) => {
+    const [pos, speedVec] = [trajectory(n), sub(trajectory(n + 1), trajectory(n))];
+    return Array.from({ length: 4 }, () => ({ 刻: n, 位: [pos[0] + speedVec[0] + gaussian(r) / 2, pos[1] + speedVec[1] + gaussian(r) / 2, pos[2] + speedVec[2] + 0.5 + gaussian(r) / 2] as const, 寿命: 10, radius: 0.1 * (r() * 0.5 + 0.5) * 2 * 0.75, 色: color }));
   });
-  const { yaw, pitch } = 箭角(弹道方向(道, 刻));
+  const { yaw, pitch } = arrowYawPitch(trajectoryDir(trajectory, tick));
   return (
     <>
-      {刻 < 到刻 && (
-        <MC空间 位={弹道位置(道, 刻)}>
-          <group rotation={[0, 度(yaw - 90), 0]}>
-            <group rotation={[0, 0, 度(pitch + 90)]}>
-              <模型件 模型={模型} 图={png(镖图)} 画法="半透明" />
+      {tick < arriveTick && (
+        <MinecraftSpace 位={trajectoryPos(trajectory, tick)}>
+          <group rotation={[0, degToRad(yaw - 90), 0]}>
+            <group rotation={[0, 0, degToRad(pitch + 90)]}>
+              <ModelPart 模型={poisonQuillModel} 图={png(quillPng)} 画法="半透明" />
             </group>
           </group>
-        </MC空间>
+        </MinecraftSpace>
       )}
-      <贴图粒子 类={尾粒类} 出生们={尾} 秒={秒} />
+      <TexturedParticles 类={trailParticleClass} spawns={tail} 秒={sec} />
     </>
   );
 };
 
-export default 定义法术演出(元, 毒镖);
+export default defineSpellPerformance(meta, PoisonDart);

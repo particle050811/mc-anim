@@ -5,8 +5,8 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { rad } from '@engine/anim/anim.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { definePicture } from '@engine/段/段画面.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { HuangPan, LiuXinzhong } from '../../角色/追兵.tsx';
 import { SpectralSteed, steedParticles } from '@库/生物/幽灵马.tsx';
 import { Warden } from '@库/生物/监守者.tsx';
@@ -19,8 +19,8 @@ import { AncientCity4xCanvas, placedWoolThrough, type Cam } from '../../地点/�
 import { toScene } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import * as X741 from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from './编排.ts';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
 
 // 7-4-1 的白烟、马身上的附魔字母（同一份出生表：同样的位置、死刻、种子）
 const islandParticles = [...deathPoof(X741.deathPos(), 0.9, 2.9, X741.deathT * 20, 742), ...steedParticles((k) => X741.horseState(k / 20).p, 0, choreo.T12(choreo.shot1End), 741)];
@@ -43,9 +43,9 @@ export const AnotherOnePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame
   const horse = choreo.horseState(frame);
   const t = frame / choreo.FPS;
   return (
-    <AncientCity4xCanvas 段="7-4-2" cam={cam ?? choreo.camera(frame)} width={width} height={height} hide={HIDE} 开箱={choreo.chestOpenAt(frame)} 羊毛={woolBlocks}>
+    <AncientCity4xCanvas 段="7-4-2" cam={cam ?? choreo.camera(frame)} width={width} height={height} hide={HIDE} chestOpening={choreo.chestOpenAt(frame)} wool={woolBlocks}>
       <group position={horse.p} rotation={[0, 0, rad(horse.entityYaw)]}>
-        <SpectralSteed 秒={shot === 1 ? choreo.T12(frame) : t} 行走={horse.行走} 头偏={horse.头偏} headPitch={horse.headPitch} 人立={horse.人立?.马} 有人骑 />
+        <SpectralSteed 秒={shot === 1 ? choreo.T12(frame) : t} walkCycle={horse.walkCycle} headYaw={horse.headYaw} headPitch={horse.headPitch} rearAmount={horse.rear?.horse} hasRider />
       </group>
       <LiuXinzhong pose={choreo.liuXinzhongPose(frame)} />
       <HuangPan pose={choreo.huangPanPose(frame)} />
@@ -55,7 +55,7 @@ export const AnotherOnePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame
         <>
           <VanillaParticles spawns={horseParticles} 秒={t} />
           {choreo.sensors.map((b, i) => (
-            <SculkSensor key={i} p={choreo.blockBottomCenter(b)} 秒={choreo.sensorClock(frame)} 激活秒={t - choreo.activateSecs[i]} seed={i + 1} />
+            <SculkSensor key={i} p={choreo.blockBottomCenter(b)} 秒={choreo.sensorClock(frame)} secSinceActive={t - choreo.activateSecs[i]} seed={i + 1} />
           ))}
           {choreo.vibrations.map((v, i) => (
             <VibrationSignal key={i} from={v.from} to={v.to} sec={t - v.t} 帧={i * 3} />
@@ -83,5 +83,5 @@ export const AnotherOnePicture: React.FC<{ f: number; cam?: Cam }> = ({ f: frame
 };
 
 export const anotherOneFrameCount = choreo.END;
-export const AnotherOne: React.FC = () => <AnotherOnePicture f={use当前秒() * choreo.FPS} />;
-export default 定义画面(段, 声音地址, AnotherOne);
+export const AnotherOne: React.FC = () => <AnotherOnePicture f={useCurrentSec() * choreo.FPS} />;
+export default definePicture(seg, soundUrl, AnotherOne);

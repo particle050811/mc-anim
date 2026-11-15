@@ -6,54 +6,54 @@
 // 杖在画面里小的时候抬粗糙度下限，细条上的高光不闪（同拔刀剑的 KA_ROUGH）。
 import * as THREE from 'three';
 
-export type 料名 = '黑曜' | '铁' | '金' | '暗金';
-type 料 = {
-  金属: number;
-  粗糙: number;
+export type MaterialName = '黑曜' | '铁' | '金' | '暗金';
+type MaterialSpec = {
+  metalness: number;
+  roughness: number;
   /** 反射天、地、柔光箱、轮廓光各乘几 */
   天: number;
-  地: number;
-  箱: number;
-  轮廓: number;
+  ground: number;
+  softbox: number;
+  rim: number;
   /** 锻痕：法线掰多少（0 = 不掰）、噪声每像素几格 */
-  锻?: readonly [number, number];
+  forging?: readonly [number, number];
   /** 颜色、粗糙度按噪声抖多少 */
-  斑?: number;
+  speckle?: number;
 };
-const 料表: Record<料名, 料> = {
+const materialTable: Record<MaterialName, MaterialSpec> = {
   // 黑曜：抛光的黑石。不算金属，但给一点金属度，反射才够亮
-  黑曜: { 金属: 0.45, 粗糙: 0.14, 天: 1.1, 地: 0.5, 箱: 1.6, 轮廓: 1.7, 斑: 0.08 },
+  黑曜: { metalness: 0.45, roughness: 0.14, 天: 1.1, ground: 0.5, softbox: 1.6, rim: 1.7, speckle: 0.08 },
   // 铁：锻出来的黑铁，半哑
-  铁: { 金属: 0.95, 粗糙: 0.36, 天: 1, 地: 0.6, 箱: 1.2, 轮廓: 0.75, 锻: [0.07, 1.7], 斑: 0.12 },
-  金: { 金属: 1, 粗糙: 0.2, 天: 1.35, 地: 0.28, 箱: 1.5, 轮廓: 1.0, 斑: 0.05 },
+  铁: { metalness: 0.95, roughness: 0.36, 天: 1, ground: 0.6, softbox: 1.2, rim: 0.75, forging: [0.07, 1.7], speckle: 0.12 },
+  金: { metalness: 1, roughness: 0.2, 天: 1.35, ground: 0.28, softbox: 1.5, rim: 1.0, speckle: 0.05 },
   // 暗金：做旧的金，凹处、底托用
-  暗金: { 金属: 1, 粗糙: 0.34, 天: 1.0, 地: 0.3, 箱: 0.8, 轮廓: 0.8, 锻: [0.05, 2.2], 斑: 0.1 },
+  暗金: { metalness: 1, roughness: 0.34, 天: 1.0, ground: 0.3, softbox: 0.8, rim: 0.8, forging: [0.05, 2.2], speckle: 0.1 },
 };
 
-const 环境 = {
+const env = {
   天: '#c9c4c2',
-  地: '#4a4444',
-  箱: 2.6, // 柔光箱亮度（线性）
-  箱色: '#fff4e6',
-  箱向: [-0.36, 0.42, 0.83] as const, // 视空间：机位身后偏左上
-  箱宽: 0.035, // 1 − cos 半角
-  轮廓: 1.5,
-  轮廓色: '#ffe2d0',
+  ground: '#4a4444',
+  softbox: 2.6, // 柔光箱亮度（线性）
+  boxColor: '#fff4e6',
+  boxDir: [-0.36, 0.42, 0.83] as const, // 视空间：机位身后偏左上
+  boxWidth: 0.035, // 1 − cos 半角
+  rim: 1.5,
+  rimColor: '#ffe2d0',
 };
 
-const 三 = (c: string) => {
+const glslVec3 = (c: string) => {
   const t = new THREE.Color(c);
   return `vec3(${t.r.toFixed(4)}, ${t.g.toFixed(4)}, ${t.b.toFixed(4)})`;
 };
-const 数 = (v: readonly number[]) => `vec${v.length}(${v.map((x) => x.toFixed(4)).join(', ')})`;
+const glslVec = (v: readonly number[]) => `vec${v.length}(${v.map((x) => x.toFixed(4)).join(', ')})`;
 
-const 公共 = /* glsl */ `
-#define ZH_SKY ${三(环境.天)}
-#define ZH_GROUND ${三(环境.地)}
-#define ZH_KEY (${三(环境.箱色)} * ${环境.箱.toFixed(3)})
-#define ZH_BOX_DIR normalize(${数(环境.箱向)})
-#define ZH_BOX_W ${环境.箱宽.toFixed(4)}
-#define ZH_RIM (${三(环境.轮廓色)} * ${环境.轮廓.toFixed(3)})
+const glslCommon = /* glsl */ `
+#define ZH_SKY ${glslVec3(env.天)}
+#define ZH_GROUND ${glslVec3(env.ground)}
+#define ZH_KEY (${glslVec3(env.boxColor)} * ${env.softbox.toFixed(3)})
+#define ZH_BOX_DIR normalize(${glslVec(env.boxDir)})
+#define ZH_BOX_W ${env.boxWidth.toFixed(4)}
+#define ZH_RIM (${glslVec3(env.rimColor)} * ${env.rim.toFixed(3)})
 uniform vec4 zhCls;
 uniform vec4 zhGlow;
 uniform vec3 zhFx;
@@ -89,14 +89,14 @@ vec3 zhEnv(vec3 rv, float rough) {
 }`;
 
 // 斑：颜色按噪声抖
-const 斑色 = /* glsl */ `
+const speckleGlsl = /* glsl */ `
 {
   float zhK = 1.0 - smoothstep(0.08, 0.5, zhFoot());
   float zhN = zhFbm(vZhPos * 5.0);
   diffuseColor.rgb *= 1.0 + zhFx.z * zhK * (zhN - 0.5) * 1.2;
 }`;
 // 锻痕：噪声当高度，按屏幕导数掰法线（同 three 的 bump 做法）
-const 锻痕 = /* glsl */ `
+const forgeMarkGlsl = /* glsl */ `
 if (zhFx.x > 0.0) {
   float zhK = 1.0 - smoothstep(0.05, 0.3, zhFoot());
   float zhH = zhFbm(vZhPos * zhFx.y) * vZhUnit;
@@ -108,10 +108,10 @@ if (zhFx.x > 0.0) {
   vec3 zhG = sign(zhDet) * (dFdx(zhH) * zhR1 + dFdy(zhH) * zhR2);
   normal = normalize(abs(zhDet) * normal - zhFx.x * zhK * zhG);
 }`;
-const 粗糙 = /* glsl */ `
+const roughnessGlsl = /* glsl */ `
 material.roughness = clamp(material.roughness * (1.0 + zhFx.z * (1.0 - smoothstep(0.08, 0.5, zhFoot())) * (zhFbm(vZhPos * 3.1 + 11.0) - 0.5) * 1.6), 0.04, 1.0);
 material.roughness = max(material.roughness, clamp((zhFoot() - 0.03) * 2.5, 0.0, 0.5));`;
-const 加环境 = /* glsl */ `
+const addEnvGlsl = /* glsl */ `
 #if defined( RE_IndirectSpecular )
 radiance += zhEnv(normalize(mix(reflect(-geometryViewDir, geometryNormal), geometryNormal, pow4(material.roughness))), material.roughness);
 #endif
@@ -131,20 +131,20 @@ iblIrradiance += PI * zhEnv(geometryNormal, 1.0);
   reflectedLight.directSpecular += zhGlow.rgb * zhAtt * zhNl * material.specularColorBlended * pow(saturate(dot(geometryNormal, zhHv)), zhSh) * (zhSh + 8.0) / 60.0;
 }`;
 
-export type 芯光 = { 位: readonly [number, number, number]; 色: string; 强: number };
+export type CoreGlow = { 位: readonly [number, number, number]; 色: string; 强: number };
 
 /** 一款杖的四种料的材质。芯光：芯在杖空间（像素）哪里、什么颜色、多亮 */
-export const 建杖材质 = (光: 芯光): Record<料名, THREE.MeshStandardMaterial> => {
-  const 色 = new THREE.Color(光.色);
-  const 光值 = { value: new THREE.Vector4(色.r, 色.g, 色.b, 光.强) };
-  const 位值 = { value: new THREE.Vector3(...光.位) };
-  const 建 = (名: 料名) => {
-    const m = 料表[名];
-    const 材 = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: m.金属, roughness: m.粗糙, side: THREE.DoubleSide });
-    const cls = { value: new THREE.Vector4(m.天, m.地, m.箱, m.轮廓) };
-    const fx = { value: new THREE.Vector3(m.锻?.[0] ?? 0, m.锻?.[1] ?? 1, m.斑 ?? 0) };
-    材.onBeforeCompile = (sh) => {
-      Object.assign(sh.uniforms, { zhCls: cls, zhGlow: 光值, zhGlowAt: 位值, zhFx: fx });
+export const buildStaffMaterials = (coreLight: CoreGlow): Record<MaterialName, THREE.MeshStandardMaterial> => {
+  const color = new THREE.Color(coreLight.色);
+  const glowUniform = { value: new THREE.Vector4(color.r, color.g, color.b, coreLight.强) };
+  const positionUniform = { value: new THREE.Vector3(...coreLight.位) };
+  const buildMaterial = (materialName: MaterialName) => {
+    const m = materialTable[materialName];
+    const material = new THREE.MeshStandardMaterial({ vertexColors: true, metalness: m.metalness, roughness: m.roughness, side: THREE.DoubleSide });
+    const cls = { value: new THREE.Vector4(m.天, m.ground, m.softbox, m.rim) };
+    const fx = { value: new THREE.Vector3(m.forging?.[0] ?? 0, m.forging?.[1] ?? 1, m.speckle ?? 0) };
+    material.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, { zhCls: cls, zhGlow: glowUniform, zhGlowAt: positionUniform, zhFx: fx });
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nuniform vec3 zhGlowAt;\nvarying float vZhUnit;\nvarying vec3 vZhPos;\nvarying vec3 vZhGlowPos;')
         .replace(
@@ -152,20 +152,20 @@ export const 建杖材质 = (光: 芯光): Record<料名, THREE.MeshStandardMate
           '#include <begin_vertex>\nvZhUnit = max(length(modelMatrix[0].xyz), max(length(modelMatrix[1].xyz), length(modelMatrix[2].xyz)));\nvZhPos = position;\nvZhGlowPos = (modelViewMatrix * vec4(zhGlowAt, 1.0)).xyz;',
         );
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', `#include <common>\n${公共}`)
-        .replace('#include <color_fragment>', `#include <color_fragment>\n${斑色}`)
-        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${锻痕}`)
-        .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${粗糙}`)
-        .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${加环境}`);
+        .replace('#include <common>', `#include <common>\n${glslCommon}`)
+        .replace('#include <color_fragment>', `#include <color_fragment>\n${speckleGlsl}`)
+        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${forgeMarkGlsl}`)
+        .replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${roughnessGlsl}`)
+        .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${addEnvGlsl}`);
     };
-    材.customProgramCacheKey = () => '下界魔杖细做';
-    return 材;
+    material.customProgramCacheKey = () => '下界魔杖细做';
+    return material;
   };
-  return { 黑曜: 建('黑曜'), 铁: 建('铁'), 金: 建('金'), 暗金: 建('暗金') };
+  return { 黑曜: buildMaterial('黑曜'), 铁: buildMaterial('铁'), 金: buildMaterial('金'), 暗金: buildMaterial('暗金') };
 };
 
 // ── 发光的料：不受光、不过色调映射，颜色直接是画面上的数 ──
-const 发光顶点 = /* glsl */ `
+const glowVertexGlsl = /* glsl */ `
 varying vec3 vN;
 varying vec3 vV;
 varying vec3 vP;
@@ -176,7 +176,7 @@ void main() {
   vP = position;
   gl_Position = projectionMatrix * mv;
 }`;
-const 噪声 = /* glsl */ `
+const noiseGlsl = /* glsl */ `
 float zhHash(vec3 p) {
   p = fract(p * vec3(0.1031, 0.1030, 0.0973));
   p += dot(p, p.yxz + 33.33);
@@ -188,14 +188,14 @@ vec3 zhHash3(vec3 p) { return vec3(zhHash(p), zhHash(p + 17.3), zhHash(p + 41.7)
  * 熔融的晶体：像从里面烧着。亮度按「球面法线和刻面法线掺起来」对着镜头的程度连着变（正中是亮黄白的心，往边上橙、再到红），
  * 各刻面只差一点亮度，棱上一道细的亮线（重心坐标 bary 给）
  */
-export const 晶体材质 = () =>
+export const crystalMaterial = () =>
   new THREE.ShaderMaterial({
     toneMapped: false,
     vertexShader: /* glsl */ `
 attribute vec3 bary;
 varying vec3 vB;
 varying vec3 vS;
-${发光顶点.replace('void main() {', 'void main() {\n  vB = bary;\n  vS = normalize(normalMatrix * normalize(position * vec3(1.0, 0.45, 1.0)));')}`,
+${glowVertexGlsl.replace('void main() {', 'void main() {\n  vB = bary;\n  vS = normalize(normalMatrix * normalize(position * vec3(1.0, 0.45, 1.0)));')}`,
     fragmentShader: /* glsl */ `
 varying vec3 vN;
 varying vec3 vV;
@@ -219,15 +219,15 @@ void main() {
   });
 
 /** 熔核：一颗熔岩球。亮黄的裂纹把橙红的壳分成一块块（三维的泡孔噪声），边缘更红 */
-export const 熔核材质 = () =>
+export const moltenCoreMaterial = () =>
   new THREE.ShaderMaterial({
     toneMapped: false,
-    vertexShader: 发光顶点,
+    vertexShader: glowVertexGlsl,
     fragmentShader: /* glsl */ `
 varying vec3 vN;
 varying vec3 vV;
 varying vec3 vP;
-${噪声}
+${noiseGlsl}
 // 到最近两个泡孔中心的距离之差：0 在裂纹上
 float crack(vec3 p) {
   vec3 i = floor(p);
@@ -258,13 +258,13 @@ void main() {
   });
 
 /** 发光的细件（熔岩纹、烈焰柱）：顶点色定底色，正对镜头处往亮黄提 */
-export const 熔光材质 = () =>
+export const moltenGlowMaterial = () =>
   new THREE.ShaderMaterial({
     toneMapped: false,
     vertexColors: true,
     vertexShader: /* glsl */ `
 varying vec3 vC;
-${发光顶点.replace('void main() {', 'void main() {\n  vC = color;')}`,
+${glowVertexGlsl.replace('void main() {', 'void main() {\n  vC = color;')}`,
     fragmentShader: /* glsl */ `
 varying vec3 vN;
 varying vec3 vV;
@@ -276,14 +276,14 @@ void main() {
   });
 
 /** 光晕：总朝镜头的一片，加色，中间亮往外柔和地淡到 0；几何是 [-1, 1] 的方片，uSize 是半径（杖像素） */
-export const 光晕材质 = (色: string, 强: number, 半径: number) => {
-  const c = new THREE.Color(色);
+export const haloMaterial = (color: string, haloStrength: number, radius: number) => {
+  const c = new THREE.Color(color);
   return new THREE.ShaderMaterial({
     toneMapped: false,
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
-    uniforms: { uCol: { value: new THREE.Vector3(c.r, c.g, c.b).multiplyScalar(强) }, uSize: { value: 半径 } },
+    uniforms: { uCol: { value: new THREE.Vector3(c.r, c.g, c.b).multiplyScalar(haloStrength) }, uSize: { value: radius } },
     vertexShader: /* glsl */ `
 uniform float uSize;
 varying vec2 vQ;

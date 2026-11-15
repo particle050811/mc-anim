@@ -10,11 +10,11 @@ import { BROOM } from '@库/物品/扫帚.tsx';
 import { MACE } from '@库/物品/重锤.tsx';
 import { ROLLER } from '@库/物品/动力压路机.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
-import { FPS, 刻, 撞击时刻, 撞击段内帧, 段表, 李樱下落, 设置撞击, 设置瞄准, 设置起跳, 起点, 鼓风机 } from '../时间线.ts';
+import { FPS, tick, impactTime, impactSegFrame, segTable, liYingFall, setImpact, setAim, setTakeoff, start, blower } from '../时间线.ts';
 import { sample, type Key } from '@engine/anim/anim.ts';
 import { lineFrameCount } from '../../../../配音/台词轨.tsx';
 import lipTable from 'asset:数据/配音/口型';
-import { landingPose, flipAngle as 落地翻角, flipHipHeight, touchdownFrame } from '../../6-3-6/落地.ts';
+import { landingPose, flipAngle as landingFlipAngle, flipHipHeight, touchdownFrame } from '../../6-3-6/落地.ts';
 import { releasePose } from '../../6-3-3/下落攻击.ts';
 import { ss, lerp, lerp3, add, D2R } from './工具.ts';
 import { groundZ, caveCeilingZ, ancientCityFloorZ } from './地面.ts';
@@ -29,9 +29,9 @@ const hipPx = (pose: FigurePose) => {
   const grounded = Math.max(3, reach(pose.legR, pose.kneeR ?? 0), reach(pose.legL, pose.kneeL ?? 0));
   return (12 + (pose.ground ?? 1) * (grounded - 12)) * pose.squash;
 };
-type PosePart = Partial<FigurePose> & { 锤?: number };
+type PosePart = Partial<FigurePose> & { hammer?: number };
 const RIDE0 = (() => {
-  const rider = 起点.riders.李樱 as { lean?: number; headRaise?: number };
+  const rider = start.riders.李樱 as { lean?: number; headRaise?: number };
   const pose = liYingRidePose(rider.lean ?? 18);
   pose.headPitch += rider.headRaise ?? 0;
   return pose;
@@ -44,23 +44,23 @@ const STAND: FigurePose = {
   armR: 28, armL: 28, armRRoll: -24, armLRoll: -24, elbowR: 25, elbowL: 25, ground: 1,
 };
 // 关键姿势（物理时间 → 姿势的一部分）；锤 = 锤是否在手上（0～1，按物品切换：够到肩后那一刻出现）
-const STAND_T = 刻.standUp + 0.48; // 站直的时刻
+const STAND_T = tick.standUp + 0.48; // 站直的时刻
 const KEYS: [number, PosePart][] = [
   [0, {}],
-  [刻.standUp, {}],
+  [tick.standUp, {}],
   [STAND_T, { ...STAND }],
   // 右手往右肩后面够（上臂往上往后、前臂往下折）
-  [刻.reachForMace, { armR: 28, elbowR: 25, armRRoll: -24 }],
-  [刻.maceAppears, { armR: 205, elbowR: 125, armRRoll: -8, headYaw: -18, 锤: 1 }],
+  [tick.reachForMace, { armR: 28, elbowR: 25, armRRoll: -24 }],
+  [tick.maceAppears, { armR: 205, elbowR: 125, armRRoll: -8, headYaw: -18, hammer: 1 }],
   // 抡到身前：两手在胸前握住锤柄，锤头朝前上方
-  [刻.maceAppears + 0.18, { armR: 115, elbowR: 30, armRRoll: 18, armL: 95, elbowL: 40, armLRoll: 28, headYaw: 0 }],
-  [刻.swingOut, { armR: 120, elbowR: 35, armRRoll: 22, armL: 120, elbowL: 35, armLRoll: 22 }],
+  [tick.maceAppears + 0.18, { armR: 115, elbowR: 30, armRRoll: 18, armL: 95, elbowL: 40, armLRoll: 28, headYaw: 0 }],
+  [tick.swingOut, { armR: 120, elbowR: 35, armRRoll: 22, armL: 120, elbowL: 35, armLRoll: 22 }],
   // 下蹲蓄力：锤举过头顶
-  [刻.下蹲 + 0.26, { ground: 1, pitch: -26, legR: 72, legL: 72, kneeR: 118, kneeL: 118, armR: 172, elbowR: 45, armL: 172, elbowL: 45, armRRoll: 22, armLRoll: 22, headPitch: -30 }],
+  [tick.crouch + 0.26, { ground: 1, pitch: -26, legR: 72, legL: 72, kneeR: 118, kneeL: 118, armR: 172, elbowR: 45, armL: 172, elbowL: 45, armRRoll: 22, armLRoll: 22, headPitch: -30 }],
   // 一蹬：腿蹬直、离开杆（ground 1 → 0），身子往前翻
-  [刻.leap + 0.1, { pitch: -10, legR: 8, legL: 8, kneeR: 6, kneeL: 6, ground: 0, armR: 175, elbowR: 15, armL: 175, elbowL: 15, headPitch: 0 }],
+  [tick.leap + 0.1, { pitch: -10, legR: 8, legL: 8, kneeR: 6, kneeL: 6, ground: 0, armR: 175, elbowR: 15, armL: 175, elbowL: 15, headPitch: 0 }],
   // 俯冲：双臂伸过头顶（顺着身子往地面方向），锤头领在最前面；腿并拢伸直，抬头（对倒过来的人是往地面看）
-  [刻.leap + 0.6, { pitch: 0, legR: 2, legL: 2, kneeR: 12, kneeL: 12, legRRoll: 2, legLRoll: 2, armR: 168, elbowR: 6, armL: 168, elbowL: 6, armRRoll: 18, armLRoll: 18, headPitch: 32, ground: 0 }],
+  [tick.leap + 0.6, { pitch: 0, legR: 2, legL: 2, kneeR: 12, kneeL: 12, legRRoll: 2, legLRoll: 2, armR: 168, elbowR: 6, armL: 168, elbowL: 6, armRRoll: 18, armLRoll: 18, headPitch: 32, ground: 0 }],
 ];
 const legacyPose = (t: number) => blend(KEYS, t, STAND); // 原来的姿势（6-3-3/下落攻击.ts 拿它接前后）
 const FIELDS = ['pitch', 'headPitch', 'headYaw', 'legR', 'legL', 'kneeR', 'kneeL', 'legRRoll', 'legLRoll', 'armR', 'armL', 'armRRoll', 'armLRoll', 'elbowR', 'elbowL', 'ground', 'twist'] as const;
@@ -69,8 +69,8 @@ const FIELDS = ['pitch', 'headPitch', 'headYaw', 'legR', 'legL', 'kneeR', 'kneeL
 // 关键时刻照这句台词的字（../../../配音/口型.json；台词文件末尾落在 6-3-5 末帧，见 `shoutLine`）：蓄力的气声里拉到脑后，「ロー」起慢慢再往后拉，「ッ」出手；
 // 每个字起音时锤和身子往后顿一下（`syllablePulse`），一直在动、不定住。打击那一刻（tr = 0）的姿势是 `STRIKE_HIT`，撞击深度和落点都按它算，别改
 const ROAD_ROLLER = '6-3-5-李樱-RoadRoller';
-export const shoutLine = { id: ROAD_ROLLER, 帧: 段表['6-3-5'].止 - lineFrameCount(ROAD_ROLLER) };
-const shoutStartTr = -(撞击段内帧 + lineFrameCount(ROAD_ROLLER)) / FPS; // 6-3-5 末帧 = 6-3-6 首帧，原速
+export const shoutLine = { id: ROAD_ROLLER, 帧: segTable['6-3-5'].止 - lineFrameCount(ROAD_ROLLER) };
+const shoutStartTr = -(impactSegFrame + lineFrameCount(ROAD_ROLLER)) / FPS; // 6-3-5 末帧 = 6-3-6 首帧，原速
 const syllables = (lipTable as unknown as Record<string, { 字: [string, number, number][] }>)[ROAD_ROLLER].字;
 const syllableOnsets = syllables.filter(([ch]) => ch !== 'ッ').map(([, start]) => shoutStartTr + start);
 const releaseTr = shoutStartTr + syllables[syllables.length - 1][1]; // 「ッ」：出手
@@ -80,8 +80,8 @@ type StrikeField = 'arm' | 'elbow' | 'knee' | 'pitch' | 'headPitch';
 let STRIKE_TRACKS: { start: number; keys: Record<StrikeField, Key[]> } | null = null;
 const strikeTracks = () => {
   if (STRIKE_TRACKS) return STRIKE_TRACKS;
-  if (!Number.isFinite(撞击时刻())) throw new Error('编排/李樱.ts：撞击时刻还没算出来');
-  const start = 刻.开抡 - 撞击时刻();
+  if (!Number.isFinite(impactTime())) throw new Error('编排/李樱.ts：撞击时刻还没算出来');
+  const start = tick.swingBackStart - impactTime();
   const haul = start + 0.33;
   const overHead = start + 0.65;
   const daTr = syllableOnsets[syllableOnsets.length - 1];
@@ -131,13 +131,13 @@ const blend = (keys: [number, PosePart][], t: number, base: FigurePose): FigureP
 };
 // 前翻角 φ（度）：跃出时 0，到 刻.翻完（0.42 秒）翻到 155（头朝下、往前斜 25°）；砸穿古城地面以后翻身落地（翻到 360 = 站直）
 const PHI_DIVE = 155;
-const landSec = () => liYingShaft().落地;
+const landSec = () => liYingShaft().landSec;
 const phi = (physSec: number) => {
-  if (physSec < 刻.leap) return 0;
-  const imp = 撞击时刻();
-  if (!(physSec > imp) || !Number.isFinite(landSec()) || physSec <= landSec()) return PHI_DIVE * ss((physSec - 刻.leap) / (刻.flipDone - 刻.leap));
+  if (physSec < tick.leap) return 0;
+  const imp = impactTime();
+  if (!(physSec > imp) || !Number.isFinite(landSec()) || physSec <= landSec()) return PHI_DIVE * ss((physSec - tick.leap) / (tick.flipDone - tick.leap));
   // 落地重做见 ../6-3-6/落地.ts：打击停顿，再借锤往前翻
-  return 落地翻角(physSec - landSec());
+  return landingFlipAngle(physSec - landSec());
 };
 
 export type LiYingState = {
@@ -151,7 +151,7 @@ export type LiYingState = {
 };
 // 骑乘姿势（跨坐 → 站起）在扫帚本地坐标里
 const onBroomPose = (physSec: number): FigurePose => {
-  const k = ss((physSec - 刻.standUp) / (STAND_T - 刻.standUp));
+  const k = ss((physSec - tick.standUp) / (STAND_T - tick.standUp));
   const base: FigurePose = {
     ...RIDE0,
     loc: lerp3(RIDE0.loc, STAND.loc, k),
@@ -166,7 +166,7 @@ const onBroomPose = (physSec: number): FigurePose => {
   return physSec < STAND_T ? base : releasePose(physSec, blend(KEYS, physSec, STAND), legacyPose);
 };
 // 跃出那一刻扫帚的转动（之后李樱的身子以它为基准往前翻）
-const Q_LEAP = new THREE.Quaternion().setFromRotationMatrix(broomMatrix([0, 0, 0], broomState(刻.leap).yaw, broomState(刻.leap).pitch, broomState(刻.leap).roll));
+const Q_LEAP = new THREE.Quaternion().setFromRotationMatrix(broomMatrix([0, 0, 0], broomState(tick.leap).yaw, broomState(tick.leap).pitch, broomState(tick.leap).roll));
 // 髋在扫帚本地坐标里的位置
 const hipLocal = (p: FigurePose): V3 => [p.loc[0], p.loc[1], p.loc[2] + hipPx(p) * PX];
 const freeMatrix = (hipW: V3, φ: number, pose: FigurePose) => {
@@ -192,31 +192,31 @@ export const rollerRadius = ROLLER.radius * rollerGhostScale * 16 * PX;
 
 // 起跳点（髋），填给 时间线.ts 积分
 export const LY_LEAP_HIP = (() => {
-  const pose = onBroomPose(刻.leap);
-  const hip = new THREE.Vector3(...hipLocal(pose)).applyMatrix4(broomMatrixAt(刻.leap));
+  const pose = onBroomPose(tick.leap);
+  const hip = new THREE.Vector3(...hipLocal(pose)).applyMatrix4(broomMatrixAt(tick.leap));
   return [hip.x, hip.y, hip.z] as V3;
 })();
-设置起跳(LY_LEAP_HIP);
+setTakeoff(LY_LEAP_HIP);
 // 头朝下俯冲（翻到 155°）时的变换、滚筒最低点比髋低多少：6-3-2 思索场景板上摆同一个李樱也用（6-3-2/编排.ts）
 export const diveMatrix = (hip: V3, pose: FigurePose) => freeMatrix(hip, PHI_DIVE, pose);
 export const ghostDepth = (pose: FigurePose) => -maceHeadAt(pose, diveMatrix([0, 0, 0], pose), maceAngleOf(pose))[2] + rollerRadius;
 // 打击深：打击姿势下滚筒最低点比髋低多少
 export const strikeDepth = ghostDepth(strikePose());
-设置撞击(groundZ, strikeDepth);
+setImpact(groundZ, strikeDepth);
 // 落点：砸在城门进来的南北大街（x ±12）和 y 97～103 横街的路口正中（用户 10-05 定竖井相对城的位置不变；边城/布局.ts 也照这个路口搭，路口四角街区限高 15 米，6-3-5、6-3-6 镜头从高处斜看）。
 // 推力目标速度要带一点水平分量（4.6 米/秒，偏离竖直 0.7°）才对得准，竖直朝下的话水平初速很快被拉回 0，落点偏到路口北 18 米。
 // 对准路口正中那格的格心 (-0.5, 100.5)：坑和竖井网格摆在撞击点那格的格心（井心），锤正好落在井轴上
 const impactMaceHead = (): V3 => {
-  const fallState = 李樱下落(撞击时刻());
+  const fallState = liYingFall(impactTime());
   const pose = strikePose();
   return maceHeadAt(pose, freeMatrix(fallState.p, PHI_DIVE, pose), maceAngleOf(pose));
 };
 export const landingSpot = add(borderTownPos, [-0.5, 100.5, 0]);
 for (let k = 0; k < 2; k++) {
   const head = impactMaceHead();
-  const pushDuration = 撞击时刻() - 鼓风机.开 - 鼓风机.timeConst; // 水平速度按时间常数贴近目标，起头少走 时间常数 那么长
-  设置瞄准([鼓风机.横向[0] + (landingSpot[0] - head[0]) / pushDuration, 鼓风机.横向[1] + (landingSpot[1] - head[1]) / pushDuration]);
-  设置撞击(groundZ, strikeDepth);
+  const pushDuration = impactTime() - blower.开 - blower.timeConst; // 水平速度按时间常数贴近目标，起头少走 时间常数 那么长
+  setAim([blower.lateralVel[0] + (landingSpot[0] - head[0]) / pushDuration, blower.lateralVel[1] + (landingSpot[1] - head[1]) / pushDuration]);
+  setImpact(groundZ, strikeDepth);
 }
 
 // ---------- 竖井：砸穿以后的路线 ----------
@@ -224,11 +224,11 @@ for (let k = 0; k < 2; k++) {
 // 入井速度不用撞地时的 360 米/秒（竖井一闪而过）：撞击那一下把多余动能砸进坑里炸出金光。
 // 岩层 141 米，照 88 碾要 1.97 秒看久了拖，取 140（1.45 秒）还看得清一路碾碎；洞顶出来的 55 米/秒不变。6-3-6 撞击以前一帧不动（时间线.ts 的 `段表`）
 const shaftEntrySpeed = 140;
-let SHAFT: { center: V3; hipXY: [number, number]; impactZ: number; entrySpeed: number; impactSpeed: number; breachZ: number; breachDelay: number; a: number; 落地: number; landZ: number } | null = null;
+let SHAFT: { center: V3; hipXY: [number, number]; impactZ: number; entrySpeed: number; impactSpeed: number; breachZ: number; breachDelay: number; a: number; landSec: number; landZ: number } | null = null;
 export const liYingShaft = () => {
   if (SHAFT) return SHAFT;
-  const imp = 撞击时刻();
-  const fallState = 李樱下落(imp);
+  const imp = impactTime();
+  const fallState = liYingFall(imp);
   const pose = strikePose();
   const matrix = freeMatrix(fallState.p, PHI_DIVE, pose);
   const head = maceHeadAt(pose, matrix, maceAngleOf(pose));
@@ -242,24 +242,24 @@ export const liYingShaft = () => {
   // 古城里自由落体：滚筒最低点碰到古城地面
   const drop = caveCeilingZ - ancientCityFloorZ;
   const dropSec = (-breachSpeed + Math.sqrt(breachSpeed * breachSpeed + 2 * 9.81 * drop)) / 9.81;
-  SHAFT = { center: [head[0], head[1], groundZ], hipXY: [fallState.p[0], fallState.p[1]], impactZ, entrySpeed, impactSpeed: -fallState.v[2], breachZ, breachDelay, a: decel, 落地: imp + breachDelay + dropSec, landZ: ancientCityFloorZ + strikeDepth };
+  SHAFT = { center: [head[0], head[1], groundZ], hipXY: [fallState.p[0], fallState.p[1]], impactZ, entrySpeed, impactSpeed: -fallState.v[2], breachZ, breachDelay, a: decel, landSec: imp + breachDelay + dropSec, landZ: ancientCityFloorZ + strikeDepth };
   return SHAFT;
 };
 // 落地那一刻的打击姿势（落地动作从它接出去）
 const strikePoseAt = (physSec: number): FigurePose => {
-  const tr = physSec - 撞击时刻();
+  const tr = physSec - impactTime();
   return { ...strikeAt(tr, releasePose(physSec, blend(KEYS, physSec, STAND), legacyPose)), loc: [0, 0, 0] };
 };
 export const digHipZ = (physSec: number) => {
   const shaft = liYingShaft();
-  const t = physSec - 撞击时刻();
+  const t = physSec - impactTime();
   if (t <= shaft.breachDelay) return shaft.impactZ - shaft.entrySpeed * t + 0.5 * shaft.a * t * t;
-  const sinceBreach = Math.min(t, shaft.落地 - 撞击时刻()) - shaft.breachDelay;
+  const sinceBreach = Math.min(t, shaft.landSec - impactTime()) - shaft.breachDelay;
   const z = shaft.breachZ - 55 * sinceBreach - 0.5 * 9.81 * sinceBreach * sinceBreach;
-  if (physSec < shaft.落地) return z;
+  if (physSec < shaft.landSec) return z;
   // 落地以后（落地.ts）：翻身几帧从打击姿势的髋高落到着地，之后髋高按骨架贴地算，脚不穿地也不悬空
-  const sinceLand = physSec - shaft.落地;
-  const groundedHipZ = (q: number) => ancientCityFloorZ + hipPx(landingPose(q, strikePoseAt(shaft.落地))) * PX;
+  const sinceLand = physSec - shaft.landSec;
+  const groundedHipZ = (q: number) => ancientCityFloorZ + hipPx(landingPose(q, strikePoseAt(shaft.landSec))) * PX;
   if (sinceLand * 24 < touchdownFrame) return flipHipHeight(sinceLand, shaft.landZ, groundedHipZ(touchdownFrame / 24));
   return groundedHipZ(sinceLand);
 };
@@ -267,12 +267,12 @@ export const digHipZ = (physSec: number) => {
 // 压路机虚影浮现（开抡以后的物理秒）：锤抡过头顶时浮现，喊出声以前全显（用户 10-19：开抡就亮起来）
 const ghostFadeIn = [0.15, 0.85] as const;
 export const liYing = (physSec: number): LiYingState => {
-  const imp = 撞击时刻();
-  if (physSec < 刻.leap) {
+  const imp = impactTime();
+  if (physSec < tick.leap) {
     const pose = onBroomPose(physSec);
     const matrix = broomMatrixAt(physSec);
     const hip = new THREE.Vector3(...hipLocal(pose)).applyMatrix4(matrix);
-    const maceHeld = physSec >= 刻.maceAppears ? 1 : 0;
+    const maceHeld = physSec >= tick.maceAppears ? 1 : 0;
     return { pose, matrix, maceHeld: maceHeld, maceAngle: maceAngleOf(pose), ghost: 0, hip: [hip.x, hip.y, hip.z] };
   }
   // 空中：髋按物理轨迹走；6-3-5 起换成举锤、打击的姿势
@@ -281,13 +281,13 @@ export const liYing = (physSec: number): LiYingState => {
   if (tr > strikeTracks().start) pose = strikeAt(tr, pose);
   pose = { ...pose, loc: [0, 0, 0] };
   let hip: V3;
-  if (!(physSec > imp)) hip = 李樱下落(physSec).p;
+  if (!(physSec > imp)) hip = liYingFall(physSec).p;
   else {
     const shaft = liYingShaft();
     hip = [shaft.hipXY[0], shaft.hipXY[1], digHipZ(physSec)];
-    if (physSec > shaft.落地) {
+    if (physSec > shaft.landSec) {
       // 落地：打击停顿 → 翻身收腿 → 半蹲缓冲 → 起身冲过一点 → 站定扫一眼，见 ../6-3-6/落地.ts
-      pose = { ...landingPose(physSec - shaft.落地, strikePoseAt(shaft.落地)), loc: [0, 0, 0] };
+      pose = { ...landingPose(physSec - shaft.landSec, strikePoseAt(shaft.landSec)), loc: [0, 0, 0] };
     }
   }
   const matrix = freeMatrix(hip, phi(physSec), pose);

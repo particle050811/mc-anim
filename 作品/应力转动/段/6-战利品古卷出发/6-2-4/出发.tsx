@@ -10,7 +10,7 @@ import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { use当前秒 } from '@engine/段/时间.tsx';
+import { useCurrentSec } from '@engine/段/时间.tsx';
 import { rad } from '@engine/anim/anim.ts';
 import { FlightFog, FlightRig, FlightSky } from '../../../地点/飞行镜头.tsx';
 import { mouthAt } from '../../../配音/口型.ts';
@@ -27,13 +27,13 @@ import * as choreo from './编排.ts';
 
 export const SET_OFF_FRAMES = choreo.FRAMES;
 // 编排.ts 的帧号是 1/24 秒一格
-const 每秒 = 24;
+const perSec = 24;
 
 // 九胡坐稳、搂住李樱的腰就开口（用户 10-17：出发时给九胡一句，场与场之间不冷场）
 export const lineCues = [{ id: '6-2-4-九胡-导航', 帧: choreo.beats.seated + 4 }];
 
 export const SetOff: React.FC = () => {
-  const frame = use当前秒() * 每秒;
+  const frame = useCurrentSec() * perSec;
   const { width, height } = useVideoConfig();
   const cam = choreo.camera(frame);
   const broomState = choreo.broom(frame);
@@ -56,16 +56,16 @@ export const SetOff: React.FC = () => {
             {broomState.appear > 0 && (
               <RideBroom
                 pos={broomState.位置}
-                yaw={broomState.朝向}
+                yaw={broomState.facing}
                 pitch={broomState.pitch}
                 roll={broomState.roll}
                 broom={{ appear: broomState.appear }}
                 liYing={riders.liYing ? { ...riders.liYing, hipItem: sheath } : false}
-                jiuhu={riders.jiuhu ? { ...riders.jiuhu, 嘴: jiuhuMouth, 右手: <JiuhuHandCompass ride /> } : riders.jiuhu}
+                jiuhu={riders.jiuhu ? { ...riders.jiuhu, mouth: jiuhuMouth, rightHand: <JiuhuHandCompass ride /> } : riders.jiuhu}
               />
             )}
             {ly && <LiYing pose={ly} hipL={sheath} />}
-            {jh && <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} 嘴={jiuhuMouth} 骨骼={jh.bones} />}
+            {jh && <Jiuhu pose={jh.pose} tail={jh.tail} bend={jh.bend} mouth={jiuhuMouth} skeleton={jh.bones} />}
             {cp && (
               // 先平托在李樱手上（表盘朝上、贴图上方朝北），递过去以后握在九胡手上；指针停在 0。上了扫帚以后挂在 RideBroom 九胡的右手上
               <group position={cp.pos as [number, number, number]} quaternion={cp.quat} scale={cp.scale}>

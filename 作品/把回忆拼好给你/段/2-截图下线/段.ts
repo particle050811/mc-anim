@@ -1,19 +1,19 @@
 // 正片第 11 句「只停在绽放一刹那」（34.80–38.43）：最后一发升空、最大的一发炸开，「绽」咔哒定格成拍立得，世界碎掉，你下线、照片缩成褪色的方形图标。
 // 帧数、场窗口、原声 cue 从 分镜 推；音效从 场/2-门口/门口之夜声音.ts 切出落在本段的那几截（第三发的闪烁噼啪声从上一段接过来）。段里不写数字。
-import { 定义段 } from '@engine/段/段定义.ts';
-import { fps, 画幅 } from '../../分镜/时间.ts';
-import { 段时钟 } from '../../分镜/正片第9至11句.ts';
-import { 正片原声增益 } from '../../配乐/正片.ts';
-import { 本段音效 } from '../../场/2-门口/门口之夜声音.ts';
+import { defineSeg } from '@engine/段/段定义.ts';
+import { fps, aspect } from '../../分镜/时间.ts';
+import { segClock } from '../../分镜/正片第9至11句.ts';
+import { mainCutOriginalGain } from '../../配乐/正片.ts';
+import { segSounds } from '../../场/2-门口/门口之夜声音.ts';
 
-const 钟 = 段时钟('2-截图下线');
+const clock = segClock('2-截图下线');
 
-export default 定义段({
+export default defineSeg({
   场: '2-门口',
-  秒: 钟.秒,
-  宽: 画幅.宽,
-  高: 画幅.高,
+  秒: clock.秒,
+  宽: aspect.宽,
+  高: aspect.高,
   地形: [],
-  场窗口: 钟.场窗口,
-  声音: [{ ...钟.原声, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: 正片原声增益 }, ...本段音效(钟.场窗口)],
+  sceneWindow: clock.sceneWindow,
+  声音: [{ ...clock.origTrack, 资产: '配乐/把回忆拼好给你-无男声DJ', 名: '原声', 增益: mainCutOriginalGain }, ...segSounds(clock.sceneWindow)],
 });

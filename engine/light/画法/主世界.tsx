@@ -6,51 +6,51 @@ import { Atmosphere } from '../大气.ts';
 import { PhotonClouds } from '../大气/云.ts';
 import { shadowFarFor } from '../暮色光照.tsx';
 import { SKY, SkyDome, TWILIGHT } from '../天空.tsx';
-import { 档位配比 } from '../灯光档位.ts';
-import { 有效时刻, type V3 } from '../环境.ts';
-import { 原版星月 } from '../星月.tsx';
-import { 定义画法, 平行主光, 投影主光, 原版云, 自发光层, 雾元素, 雾远端, type 画法属性 } from '../环境部件.tsx';
+import { tierMix } from '../灯光档位.ts';
+import { effectiveGameTime, type V3 } from '../环境.ts';
+import { VanillaStarMoon } from '../星月.tsx';
+import { defineDraw, ParallelMainLight, ShadowMainLight, vanillaCloud, SelfLightLayer, fogElement, fogFarEnd, type DrawProps } from '../环境部件.tsx';
 
 // 按时刻算到月光时主光的颜色：暂定借暮色的偏蓝灰（同是原版光照贴图天暗时往蓝里偏，见 天空.tsx 的 TWILIGHT.light）
-const 月光色 = TWILIGHT.light;
+const moonLightColor = TWILIGHT.light;
 
-const 主世界: React.FC<画法属性> = ({ e, 灯, 镜头, 离地, 穹顶中心 }) => {
-  const mix = 档位配比(e.灯光);
-  const 大气远 = e.大气远 === undefined ? 40000 : e.大气远;
-  const 光色 = 灯.月光 ? 月光色 : SKY.sunLight;
-  const 云 = e.云;
-  const 时刻 = e.太阳 === undefined ? 有效时刻(e) : null;
+const overworldPaint: React.FC<DrawProps> = ({ e, lighting, cameraPos, eyeHeight, domeCenter }) => {
+  const mix = tierMix(e.lightSpec);
+  const atmosphereFar = e.atmosphereFar === undefined ? 40000 : e.atmosphereFar;
+  const lightColor = lighting.isMoonLight ? moonLightColor : SKY.sunLight;
+  const cloud = e.cloud;
+  const gameTime = e.sun === undefined ? effectiveGameTime(e) : null;
   return (
     <>
-      <自发光层 k={mix.自发光} />
-      {雾元素(e.雾, SKY.fog)}
+      <SelfLightLayer k={mix.selfLight} />
+      {fogElement(e.fog, SKY.fog)}
       <group rotation={[-Math.PI / 2, 0, 0]}>
-        {大气远 !== null && <Atmosphere sun={灯.太阳} far={大气远} />}
-        {云.种类 === 'photon' && (
+        {atmosphereFar !== null && <Atmosphere sun={lighting.sun} far={atmosphereFar} />}
+        {cloud.种类 === 'photon' && (
           <PhotonClouds
-            weather={云.天气 && { temperature: 云.天气.温度, humidity: 云.天气.湿度, wind: 云.天气.风 }}
-            add={云.加?.map((a) => [a[0], a[1], a[2]] as [number, number, number])}
-            near={云.镜头周围 && [云.镜头周围[0], 云.镜头周围[1]]}
-            clear={云.让开 && [云.让开[0], 云.让开[1], 云.让开[2], 云.让开[3]]}
-            seaY={云.海平面}
-            exposure={云.曝光}
+            weather={cloud.weather && { temperature: cloud.weather.temperature, humidity: cloud.weather.humidity, wind: cloud.weather.wind }}
+            add={cloud.加?.map((a) => [a[0], a[1], a[2]] as [number, number, number])}
+            near={cloud.aroundCamera && [cloud.aroundCamera[0], cloud.aroundCamera[1]]}
+            clear={cloud.clearRect && [cloud.clearRect[0], cloud.clearRect[1], cloud.clearRect[2], cloud.clearRect[3]]}
+            seaY={cloud.海平面}
+            exposure={cloud.exposure}
           />
         )}
-        <group position={(穹顶中心 ?? 镜头) as V3}>
-          <SkyDome sun={灯.太阳} />
-          {时刻 !== null && <原版星月 时刻={时刻} 倾角={e.轨道倾角} 天气={e.天气} />}
+        <group position={(domeCenter ?? cameraPos) as V3}>
+          <SkyDome sun={lighting.sun} />
+          {gameTime !== null && <VanillaStarMoon gameTime={gameTime} tiltDeg={e.orbitTilt} weather={e.weather} />}
         </group>
-        {e.投影 ? (
-          <投影主光 方向={灯.光向} 归一 色={光色} 强={mix.直射 * 灯.直射倍} 远={e.投影.远 ?? shadowFarFor(雾远端(e.雾))} 切分={Math.max(300, 2 * 离地)} />
+        {e.shadow ? (
+          <ShadowMainLight lightDir={lighting.lightDir} normalize 色={lightColor} 强={mix.direct * lighting.directMult} shadowFar={e.shadow.far ?? shadowFarFor(fogFarEnd(e.fog))} splitDist={Math.max(300, 2 * eyeHeight)} />
         ) : (
-          <平行主光 方向={灯.光向} 色={光色} 强={mix.直射 * 灯.直射倍} 镜头={镜头} />
+          <ParallelMainLight lightDir={lighting.lightDir} 色={lightColor} 强={mix.direct * lighting.directMult} cameraPos={cameraPos} />
         )}
-        <hemisphereLight args={[SKY.skyLight, SKY.groundLight, mix.天光 * 灯.天光倍]} position={[0, 0, 1]} />
-        <ambientLight intensity={mix.环境光 * 灯.天光倍} />
-        {云.种类 === '原版' && 原版云(云, '#ffffff')}
+        <hemisphereLight args={[SKY.skyLight, SKY.groundLight, mix.skylight * lighting.skyLightMult]} position={[0, 0, 1]} />
+        <ambientLight intensity={mix.ambient * lighting.skyLightMult} />
+        {cloud.种类 === '原版' && vanillaCloud(cloud, '#ffffff')}
       </group>
     </>
   );
 };
 
-export default 定义画法('主世界', 主世界);
+export default defineDraw('主世界', overworldPaint);

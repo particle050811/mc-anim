@@ -6,119 +6,119 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
-import { 场景到three } from '@engine/core/three换算.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
 import { ItemDisplay, ItemSprite } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
-import { use视图下标 } from '@engine/段/时间.tsx';
+import { useViewIndex } from '@engine/段/时间.tsx';
 import { GlintItem } from '@库/物品/附魔物品.tsx';
 import { stevePose } from '@库/角色/史蒂夫.tsx';
-import { 装备史蒂夫 } from '../../角色/史蒂夫装备.tsx';
-import { 断曜流光, 断曜流光图标, 断曜流光显示 } from '../../物品/断曜流光.tsx';
-import { 默认外观 } from '../../物品/装备外观.ts';
-import { 画幅, 视图们, type 视图 } from './视图.ts';
+import { EquippedSteve } from '../../角色/史蒂夫装备.tsx';
+import { Valettein, ValetteinIcon, valetteinDisplay } from '../../物品/断曜流光.tsx';
+import { defaultAppearance } from '../../物品/装备外观.ts';
+import { aspect, views, type View } from './视图.ts';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 头盔图标 from 'asset:贴图/物品/神灵金头盔';
+import divineHelmetPng from 'asset:贴图/物品/神灵金头盔';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 胸甲图标 from 'asset:贴图/物品/神灵金胸甲';
+import divineChestplatePng from 'asset:贴图/物品/神灵金胸甲';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 护腿图标 from 'asset:贴图/物品/神灵金护腿';
+import divineLeggingsPng from 'asset:贴图/物品/神灵金护腿';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 靴子图标 from 'asset:贴图/物品/神灵金靴子';
+import divineBootsPng from 'asset:贴图/物品/神灵金靴子';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 环图标 from 'asset:贴图/物品/晋升之环';
+import ascensionRingPng from 'asset:贴图/物品/晋升之环';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 旧头盔图标 from 'asset:贴图/物品/神灵金头盔.旧版';
+import oldDivineHelmetPng from 'asset:贴图/物品/神灵金头盔.旧版';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 旧胸甲图标 from 'asset:贴图/物品/神灵金胸甲.旧版';
+import oldDivineChestplatePng from 'asset:贴图/物品/神灵金胸甲.旧版';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 旧护腿图标 from 'asset:贴图/物品/神灵金护腿.旧版';
+import oldDivineLeggingsPng from 'asset:贴图/物品/神灵金护腿.旧版';
 // 待迁移（私有资产）：启示录保留所有权益，只能私有；公开版怎么办（缺了报错还是换占位）等用户定
-import 旧靴子图标 from 'asset:贴图/物品/神灵金靴子.旧版';
+import oldDivineBootsPng from 'asset:贴图/物品/神灵金靴子.旧版';
 
-const 机位: React.FC<{ v: 视图 }> = ({ v }) => {
+const CameraRig: React.FC<{ v: View }> = ({ v }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = v.视角;
+  cam.fov = v.fov;
   cam.near = 0.05;
   cam.far = 256;
-  cam.position.copy(场景到three(v.眼));
+  cam.position.copy(sceneToThree(v.眼));
   cam.up.set(0, 1, 0);
-  cam.lookAt(场景到three(v.看));
+  cam.lookAt(sceneToThree(v.看));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;
 };
 
 // 物品空间 Y 朝上、正面 +Z，场景 Z 朝上：绕 X 转 +90 度立起来，正面朝南对着镜头
-const 立着: React.FC<{ x: number; z?: number; 倍?: number; children: React.ReactNode }> = ({ x, z = 1.5, 倍 = 1, children }) => (
-  <group position={[x, 0, z]} rotation={[Math.PI / 2, 0, 0]} scale={倍}>
+const Upright: React.FC<{ x: number; z?: number; scale?: number; children: React.ReactNode }> = ({ x, z = 1.5, scale = 1, children }) => (
+  <group position={[x, 0, z]} rotation={[Math.PI / 2, 0, 0]} scale={scale}>
     {children}
   </group>
 );
 
-const 新版盔甲图标 = [头盔图标, 胸甲图标, 护腿图标, 靴子图标];
-const 旧版盔甲图标 = [旧头盔图标, 旧胸甲图标, 旧护腿图标, 旧靴子图标];
+const newArmorIcons = [divineHelmetPng, divineChestplatePng, divineLeggingsPng, divineBootsPng];
+const oldArmorIcons = [oldDivineHelmetPng, oldDivineChestplatePng, oldDivineLeggingsPng, oldDivineBootsPng];
 
 // 上排旧版带附魔光效，中排旧版原图，下排新版原图
-const 图标排: React.FC<{ 秒: number }> = ({ 秒 }) => (
+const IconRow: React.FC<{ 秒: number }> = ({ 秒: sec }) => (
   <>
-    {旧版盔甲图标.map((图, i) => (
+    {oldArmorIcons.map((iconImgUri, i) => (
       <React.Fragment key={i}>
-        <立着 x={(i - 2.5) * 1.25} z={3.0}>
-          <GlintItem layers={[{ tex: png(图) }]} sec={秒} />
-        </立着>
-        <立着 x={(i - 2.5) * 1.25} z={1.8}>
-          <ItemSprite layers={[{ tex: png(图) }]} />
-        </立着>
-        <立着 x={(i - 2.5) * 1.25} z={0.6}>
-          <ItemSprite layers={[{ tex: png(新版盔甲图标[i]!) }]} />
-        </立着>
+        <Upright x={(i - 2.5) * 1.25} z={3.0}>
+          <GlintItem layers={[{ tex: png(iconImgUri) }]} sec={sec} />
+        </Upright>
+        <Upright x={(i - 2.5) * 1.25} z={1.8}>
+          <ItemSprite layers={[{ tex: png(iconImgUri) }]} />
+        </Upright>
+        <Upright x={(i - 2.5) * 1.25} z={0.6}>
+          <ItemSprite layers={[{ tex: png(newArmorIcons[i]!) }]} />
+        </Upright>
       </React.Fragment>
     ))}
-    <立着 x={1.5 * 1.25} z={3.0}>
-      <断曜流光图标 外观="旧版" 光泽秒={秒} />
-    </立着>
-    <立着 x={1.5 * 1.25} z={1.8}>
-      <断曜流光图标 外观="旧版" />
-    </立着>
-    <立着 x={1.5 * 1.25} z={0.6}>
-      <断曜流光图标 外观="新版" />
-    </立着>
-    <立着 x={2.5 * 1.25} z={1.8}>
-      <ItemSprite layers={[{ tex: png(环图标) }]} />
-    </立着>
+    <Upright x={1.5 * 1.25} z={3.0}>
+      <ValetteinIcon appearance="旧版" glintSec={sec} />
+    </Upright>
+    <Upright x={1.5 * 1.25} z={1.8}>
+      <ValetteinIcon appearance="旧版" />
+    </Upright>
+    <Upright x={1.5 * 1.25} z={0.6}>
+      <ValetteinIcon appearance="新版" />
+    </Upright>
+    <Upright x={2.5 * 1.25} z={1.8}>
+      <ItemSprite layers={[{ tex: png(ascensionRingPng) }]} />
+    </Upright>
   </>
 );
 
-const 画面: React.FC = () => {
-  const v = 视图们[use视图下标()]!;
-  const 拿剑 = v.装备?.剑 !== false;
-  const 外观 = v.装备?.外观 ?? 默认外观;
-  const 底 = v.暗底 ? '#0c0c10' : '#5a5e66';
+const picture: React.FC = () => {
+  const v = views[useViewIndex()]!;
+  const holdSword = v.equipment?.剑 !== false;
+  const appearance = v.equipment?.appearance ?? defaultAppearance;
+  const bottomBackground = v.darkBg ? '#0c0c10' : '#5a5e66';
   return (
-    <AbsoluteFill style={{ background: 底 }}>
-      <ThreeCanvas width={画幅.宽} height={画幅.高} gl={{ antialias: false }}>
-        <color attach="background" args={[底]} />
-        <机位 v={v} />
+    <AbsoluteFill style={{ background: bottomBackground }}>
+      <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: false }}>
+        <color attach="background" args={[bottomBackground]} />
+        <CameraRig v={v} />
         <group rotation={[-Math.PI / 2, 0, 0]}>
           <ambientLight intensity={0.55 * Math.PI} />
           <directionalLight position={[1.5, -4, 4]} intensity={0.6 * Math.PI} />
           <mesh position={[0, 0, -0.05]}>
             <boxGeometry args={[12, 12, 0.1]} />
-            <meshStandardMaterial color={v.暗底 ? '#15151a' : '#8a8f98'} />
+            <meshStandardMaterial color={v.darkBg ? '#15151a' : '#8a8f98'} />
           </mesh>
-          {v.只物品 === '图标' ? (
-            <图标排 秒={v.秒} />
-          ) : v.只物品 === '剑模型' ? (
-            <立着 x={0} 倍={2}>
-              <ItemDisplay t={断曜流光显示[外观].gui}>
-                <断曜流光 外观={外观} 光泽秒={v.秒} />
+          {v.onlyItem === '图标' ? (
+            <IconRow 秒={v.秒} />
+          ) : v.onlyItem === '剑模型' ? (
+            <Upright x={0} scale={2}>
+              <ItemDisplay t={valetteinDisplay[appearance].gui}>
+                <Valettein appearance={appearance} glintSec={v.秒} />
               </ItemDisplay>
-            </立着>
+            </Upright>
           ) : (
-            <装备史蒂夫 pose={stevePose([0, 0, 0], 180, { sec: v.秒, holdR: 拿剑 })} 秒={v.秒} 装备={v.装备} />
+            <EquippedSteve pose={stevePose([0, 0, 0], 180, { sec: v.秒, holdR: holdSword })} 秒={v.秒} equipment={v.equipment} />
           )}
         </group>
       </ThreeCanvas>
@@ -130,4 +130,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 画面;
+export default picture;

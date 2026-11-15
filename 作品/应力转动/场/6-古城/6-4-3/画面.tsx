@@ -21,26 +21,26 @@ import { AncientCity4xCanvas, LiYingWithBlade, type Cam } from '../../../地点/
 import { LiuXinzhong } from '../../../角色/追兵.tsx';
 import * as choreo from './编排.ts';
 import * as geom from './几何.ts';
-import { 剧情时间, 帧小数, 挥刀开始帧, 弹开帧, 斩击生成帧, shoutLine } from './时间线.ts';
+import { storyTime, frameFractional, swingStartFrame, deflectFrame, slashSpawnFrame, shoutLine } from './时间线.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import debrisRaw from 'asset:碎块/镜头/6-4-3/碎块';
 import atlasWest3 from 'asset:网格/古城4x/西3/图集';
-import { 资产目录 } from '@engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/特效/粒子/critical_hit';
+import { assetDir } from '@engine/core/资产目录.ts';
+import criticalHitPng from 'asset:贴图/特效/粒子/critical_hit';
 
 // 只要击穿的那几格本身，外圈和取贴图用的那一格不画；崩掉以后露出来的洞壁另补（见 编排.ts 的 DEBRIS_HIDE、洞壁）
-const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < geom.击穿方块.length), lining: choreo.holeWalls };
+const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < geom.breachBlocks.length), lining: choreo.holeWalls };
 // 碎块的贴图取自击穿那几格所在的网格块（古城4x-西3，npm run 取材 -- 6-4-3碎块）
 const ATLAS_C = png(atlasWest3);
-const PT = pngDir(资产目录({ './critical_hit.png': 资_0 }));
+const PT = pngDir(assetDir({ './critical_hit.png': criticalHitPng }));
 const critTexture = particleTexture(PT.critical_hit.px, PT.critical_hit.w, PT.critical_hit.h);
 // 挡箭的刀光（用户 10-10：不要雷霆碰撞箱，换成史诗战斗夜幕特效）：用 6-1-2 同一套夜幕阎魔刀刀光（模型/特效/夜幕刀光.tsx），拖尾跟着挥刀，弹开那刻放夜幕招架成功的闪光和火星（`EFNParryingSkill`）。
 // 三个时刻接 时间线.ts 导出的帧常量：挥刀开始帧（6-1-2 关键帧 98，几何.ts 的 `拔刀起`）、斩击生成帧（刀挥到正前方，关键帧 104，`挥刀`）、弹开帧（刀刃扫过箭路，关键帧 104.576，`弹开`，比挥刀晚 0.0043 秒）。
 // 拖尾照 6-1-2 从刀甩出（关键帧 102.8）画到刀送到正上方（108），这两刻按 98 → 104 的比例推出，弹开落在拖尾里，挥完刀光还留 0.15 秒淡掉。挥刀动作照 编排.ts。
 // 招架闪光位置：游戏里在玩家胸口往攻击者方向最多 1 格；这里放在弹开点（几何.ts，离胸口 1.5 米），闪光和刀、箭同处。
-const drawBladeSec = 剧情时间(挥刀开始帧);
-const swingFrontSec = 剧情时间(斩击生成帧);
-const deflectSec = 剧情时间(弹开帧);
+const drawBladeSec = storyTime(swingStartFrame);
+const swingFrontSec = storyTime(slashSpawnFrame);
+const deflectSec = storyTime(deflectFrame);
 const iaiKeyframeSec = (k: number) => drawBladeSec + ((k - 98) / (104 - 98)) * (swingFrontSec - drawBladeSec);
 const trailStartSec = iaiKeyframeSec(102.8);
 const trailEndSec = iaiKeyframeSec(108);
@@ -55,7 +55,7 @@ const bladeAtFor = (liying: LiyingFn) => {
   return fn;
 };
 const liYingBladeAt = (liying: LiyingFn, t: number): BladePos => {
-  const liYingState = liying(帧小数(t));
+  const liYingState = liying(frameFractional(t));
   const bladeMatrix = handMatrix(liYingState.pose, 1.875, 'R').multiply(new THREE.Matrix4().makeRotationFromQuaternion(bladeInHand(liYingState.pose, liYingState.blade, liYingState.bladeSide)));
   const at = (z: number): V3 => {
     const point = new THREE.Vector3(0, bladeCenterY(z), z).applyMatrix4(bladeMatrix);
@@ -64,18 +64,18 @@ const liYingBladeAt = (liying: LiyingFn, t: number): BladePos => {
   return { root: at(liYingTrailPts.root), tip: at(liYingTrailPts.tip) };
 };
 // 特效时间换算（打斗编排.ts）：parrySec 招架闪光的年龄（秒），trailVisibleSec、trailFadeSec 刀光拖尾留多长、淡多快（剧情秒）；exactParry 闪光不抖
-export type 特效时间 = { parrySec: number; trailVisibleSec: number; trailFadeSec: number; exactParry: boolean };
-export const DeflectBladeTrail: React.FC<{ sec: number; liying?: LiyingFn; fx?: 特效时间 }> = ({ sec: sec, liying = choreo.liying, fx }) => (
+export type FxTiming = { parrySec: number; trailVisibleSec: number; trailFadeSec: number; exactParry: boolean };
+export const DeflectBladeTrail: React.FC<{ sec: number; liying?: LiyingFn; fx?: FxTiming }> = ({ sec: sec, liying = choreo.liying, fx }) => (
   <>
     <BladeTrail bladeAt={bladeAtFor(liying)} startSec={trailStartSec} endSec={trailEndSec} sec={sec} visibleSec={fx?.trailVisibleSec} fadeOutSec={fx?.trailFadeSec} />
-    <NightfallParry center={geom.弹开点} sec={fx ? fx.parrySec : sec - deflectSec} seed={643} exact={fx?.exactParry} />
+    <NightfallParry center={geom.deflectPoint} sec={fx ? fx.parrySec : sec - deflectSec} seed={643} exact={fx?.exactParry} />
   </>
 );
 // 风扇的出风口（本地 +Y）转到来箭方向
-const fanQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...geom.来向));
+const fanQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...geom.incomingDir));
 
 // cam：换机位（核对用的近景、打斗编排.ts），不给就是这一帧镜头的机位；liying、fx：换李樱的演法和特效时间（打斗编排.ts）；嘴：李樱说话的口型（6-4-4「烦死了！」）
-export const DeflectView: React.FC<{ g: number; cam?: Cam; liying?: LiyingFn; fx?: 特效时间; 嘴?: Mouth }> = ({ g: globalFrame, cam, liying = choreo.liying, fx, 嘴: mouth }) => {
+export const DeflectView: React.FC<{ g: number; cam?: Cam; liying?: LiyingFn; fx?: FxTiming; mouth?: Mouth }> = ({ g: globalFrame, cam, liying = choreo.liying, fx, mouth: mouth }) => {
   const { width, height } = useVideoConfig();
   const ly = liying(globalFrame);
   const hp = choreo.huangpan(globalFrame);
@@ -84,9 +84,9 @@ export const DeflectView: React.FC<{ g: number; cam?: Cam; liying?: LiyingFn; fx
   const flow = useMemo(() => choreo.airflow(globalFrame), [globalFrame]);
   const crit = choreo.critParticles(globalFrame);
   return (
-    <AncientCity4xCanvas 段="6-4-3" cam={cam ?? choreo.camera(globalFrame)} width={width} height={height} hide={choreo.HIDE} 开箱={choreo.openChest(globalFrame)} 羊毛={choreo.WOOL_NAMES}>
-      <LiYingWithBlade pose={ly.pose} bladeOn={ly.bladeOn} blade={ly.blade} bladeSide={ly.bladeSide} 嘴={mouth} />
-      <HuangPan pose={withTalkNod(hp.pose, [shoutLine], '黄叛', globalFrame)} 弓={hp.bow} />
+    <AncientCity4xCanvas 段="6-4-3" cam={cam ?? choreo.camera(globalFrame)} width={width} height={height} hide={choreo.HIDE} chestOpening={choreo.openChest(globalFrame)} wool={choreo.WOOL_NAMES}>
+      <LiYingWithBlade pose={ly.pose} bladeOn={ly.bladeOn} blade={ly.blade} bladeSide={ly.bladeSide} mouth={mouth} />
+      <HuangPan pose={withTalkNod(hp.pose, [shoutLine], '黄叛', globalFrame)} bow={hp.bow} />
       <LiuXinzhong pose={choreo.liuxinzhong(globalFrame)} />
       {(arrow.阶段 === '来' || arrow.阶段 === '挑飞') && <Arrow p={arrow.p} dir={arrow.dir} spin={arrow.spin} />}
       {fan.opacity > 0 && (
@@ -98,7 +98,7 @@ export const DeflectView: React.FC<{ g: number; cam?: Cam; liying?: LiyingFn; fx
       {crit.length > 0 && <ParticleQuads tex={critTexture} items={crit} />}
       <BlockDebris data={DEBRIS} atlas={ATLAS_C} bursts={choreo.debrisBursts(globalFrame)} fixWinding />
       {choreo.sensorStates(globalFrame).map((q, i) => (
-        <SculkSensor key={i} p={q.p} 秒={q.sec} 激活秒={q.secSinceActive} seed={i + 1} />
+        <SculkSensor key={i} p={q.p} 秒={q.sec} secSinceActive={q.secSinceActive} seed={i + 1} />
       ))}
       {choreo.vibrations.map((v, i) => (
         <VibrationSignal key={i} from={v.from} to={v.to} sec={choreo.storySecAt(globalFrame) - v.t} 帧={i * 3} />

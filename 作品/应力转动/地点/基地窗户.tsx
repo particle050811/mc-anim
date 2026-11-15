@@ -21,7 +21,7 @@ import framedGlassPng from 'asset:网格/基地窗户/镶框玻璃/图集';
 import spruceWindowJson from 'asset:网格/基地窗户/云杉窗户/头';
 import spruceWindowBin from 'asset:网格/基地窗户/云杉窗户/顶点';
 import spruceWindowPng from 'asset:网格/基地窗户/云杉窗户/图集';
-import { 渲染输入 } from '@engine/core/渲染设置.ts';
+import { renderInput } from '@engine/core/渲染设置.ts';
 
 const glassMeshes = {
   原版玻璃: { info: vanillaGlassJson as unknown as BlockMeshInfo, bin: vanillaGlassBin, atlas: vanillaGlassPng },
@@ -31,7 +31,7 @@ const glassMeshes = {
 };
 export type WindowGlass = keyof typeof glassMeshes;
 export const defaultWindowGlass: WindowGlass = '镶框玻璃';
-const glassOverride = (渲染输入() as { baseGlass?: string }).baseGlass;
+const glassOverride = (renderInput() as { baseGlass?: string }).baseGlass;
 if (glassOverride && !(glassOverride in glassMeshes)) throw new Error(`没有叫「${glassOverride}」的窗户玻璃，可选：${Object.keys(glassMeshes).join('、')}`);
 export const currentWindowGlass: WindowGlass = (glassOverride as WindowGlass | undefined) ?? defaultWindowGlass;
 

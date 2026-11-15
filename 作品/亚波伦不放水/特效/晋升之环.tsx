@@ -10,79 +10,79 @@ import * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
 import { entityTexture } from '@engine/model/贴图方盒.tsx';
 import { KATANA_BLOOM_LAYER, useKatanaBloom } from '@库/物品/拔刀剑泛光.tsx';
-import 贴片图 from 'asset:贴图/特效/晋升之环/halo';
-import { 环体 } from './晋升之环几何.ts';
-import { 亚波伦头轴, 原版环, 原版转角, 戴法, type 候选名, type 环款 } from './晋升之环形.ts';
-import { 晕材质, 溢光类, 精工材质 } from './精工材质.ts';
+import haloPng from 'asset:贴图/特效/晋升之环/halo';
+import { RingBody } from './晋升之环几何.ts';
+import { yaBoLunHeadAxis, vanillaRing, vanillaSpinAngle, wearSpec, type CandidateName, type RingVariant } from './晋升之环形.ts';
+import { haloMaterial, bloomClasses, fineMaterials } from './精工材质.ts';
 
-const 度 = Math.PI / 180;
+const radPerDeg = Math.PI / 180;
 
 // ── 原版贴片 ──
-const 贴片材质 = () =>
-  new THREE.MeshBasicMaterial({ map: entityTexture(png(贴片图)), blending: THREE.AdditiveBlending, alphaTest: 0.1, transparent: true, side: THREE.FrontSide, toneMapped: false });
-let 贴片材质缓存: THREE.MeshBasicMaterial | undefined;
-const 贴片几何 = new THREE.PlaneGeometry(原版环.边长, 原版环.边长);
+const patchMaterial = () =>
+  new THREE.MeshBasicMaterial({ map: entityTexture(png(haloPng)), blending: THREE.AdditiveBlending, alphaTest: 0.1, transparent: true, side: THREE.FrontSide, toneMapped: false });
+let patchMaterialCache: THREE.MeshBasicMaterial | undefined;
+const patchGeometry = new THREE.PlaneGeometry(vanillaRing.sideLength, vanillaRing.sideLength);
 
 /** 原版那张片（环坐标，环心在原点），按秒自转 */
-export const 晋升之环贴片: React.FC<{ 秒: number }> = ({ 秒 }) => {
-  const 材质 = (贴片材质缓存 ??= 贴片材质());
+export const AscensionHaloPatch: React.FC<{ 秒: number }> = ({ 秒: sec }) => {
+  const material = (patchMaterialCache ??= patchMaterial());
   return (
-    <group rotation={[0, 0, 原版转角(秒) * 度]}>
-      <mesh geometry={贴片几何} material={材质} />
-      <mesh geometry={贴片几何} material={材质} rotation={[0, Math.PI, 0]} />
+    <group rotation={[0, 0, vanillaSpinAngle(sec) * radPerDeg]}>
+      <mesh geometry={patchGeometry} material={material} />
+      <mesh geometry={patchGeometry} material={material} rotation={[0, Math.PI, 0]} />
     </group>
   );
 };
 
 // ── 候选 ──
-const 晕缓存 = new Map<候选名, { 几何: THREE.PlaneGeometry; 材质: THREE.ShaderMaterial }>();
-const 取晕 = (款: 候选名) => {
-  let 出 = 晕缓存.get(款);
-  if (!出) {
-    const 体 = 环体(款);
-    晕缓存.set(款, (出 = { 几何: new THREE.PlaneGeometry(体.晕半 * 2, 体.晕半 * 2), 材质: 晕材质(体.晕们) }));
+const haloCache = new Map<CandidateName, { geometry: THREE.PlaneGeometry; material: THREE.ShaderMaterial }>();
+const getHalo = (variant: CandidateName) => {
+  let cached = haloCache.get(variant);
+  if (!cached) {
+    const ringBody = RingBody(variant);
+    haloCache.set(variant, (cached = { geometry: new THREE.PlaneGeometry(ringBody.haloHalfSize * 2, ringBody.haloHalfSize * 2), material: haloMaterial(ringBody.haloBands) }));
   }
-  return 出;
+  return cached;
 };
-const 打层 = (溢: boolean) => (m: THREE.Mesh | null) => m?.layers[溢 ? 'enable' : 'disable'](KATANA_BLOOM_LAYER);
+const setBloomLayer = (bloom: boolean) => (m: THREE.Mesh | null) => m?.layers[bloom ? 'enable' : 'disable'](KATANA_BLOOM_LAYER);
 
 /** 一个候选（环坐标，环心在原点），各层按秒转；晕 默认画 */
-export const 晋升之环候选: React.FC<{ 款: 候选名; 秒: number; 晕?: boolean }> = ({ 款, 秒, 晕 = true }) => {
+export const AscensionHaloCandidate: React.FC<{ variant: CandidateName; 秒: number; withHalo?: boolean }> = ({ variant, 秒: sec, withHalo: showHalo = true }) => {
   useKatanaBloom();
-  const 体 = 环体(款);
-  const 材质 = 精工材质();
-  const 垫 = useMemo(() => 取晕(款), [款]);
+  const ringBody = RingBody(variant);
+  const materials = fineMaterials();
+  const haloPad = useMemo(() => getHalo(variant), [variant]);
   return (
     <>
-      {体.层们.map((层, i) => (
-        <group key={i} matrix={层.位姿(秒, new THREE.Matrix4())} matrixAutoUpdate={false}>
-          {层.件们.map(({ 类, geo }) => (
-            <mesh key={类} ref={打层(溢光类.has(类))} geometry={geo} material={材质[类]} renderOrder={类 === '芒' ? 2 : 0} />
+      {ringBody.layers.map((ringLayer, i) => (
+        <group key={i} matrix={ringLayer.poseAt(sec, new THREE.Matrix4())} matrixAutoUpdate={false}>
+          {ringLayer.parts.map(({ 类: matKind, geo }) => (
+            <mesh key={matKind} ref={setBloomLayer(bloomClasses.has(matKind))} geometry={geo} material={materials[matKind]} renderOrder={matKind === '芒' ? 2 : 0} />
           ))}
         </group>
       ))}
       {/* 柔光垫在环面上（加色、不写深度）；先画环再画它 */}
-      {晕 && <mesh geometry={垫.几何} material={垫.材质} renderOrder={1} />}
+      {showHalo && <mesh geometry={haloPad.geometry} material={haloPad.material} renderOrder={1} />}
     </>
   );
 };
 
 /** 原版贴片或一个候选（环坐标，环心在原点） */
-export const 晋升之环: React.FC<{ 款: 环款; 秒: number; 晕?: boolean }> = ({ 款, 秒, 晕 }) => (款 === '原版' ? <晋升之环贴片 秒={秒} /> : <晋升之环候选 款={款} 秒={秒} 晕={晕} />);
+export const AscensionHalo: React.FC<{ variant: RingVariant; 秒: number; withHalo?: boolean }> = ({ variant, 秒: sec, withHalo }) => (variant === '原版' ? <AscensionHaloPatch 秒={sec} /> : <AscensionHaloCandidate variant={variant} 秒={sec} withHalo={withHalo} />);
 
 /** 戴在头后（头坐标：原点 = 头的转轴，+Y 朝上，+Z 朝脸的前方，单位是那个人的模型像素）：位置、前倾、大小照 晋升之环形.ts 的 戴法 */
-export const 头后环: React.FC<{ 款: 环款; 秒: number; 戴: '史蒂夫' | '亚波伦' }> = ({ 款, 秒, 戴 }) => {
-  const 法 = 戴法[戴][款];
+export const HeadRing: React.FC<{ variant: RingVariant; 秒: number; wearer: '史蒂夫' | '亚波伦' }> = ({ variant, 秒: sec, wearer }) => {
+  const placement = wearSpec[wearer][variant];
   return (
-    <group position={[法.位[0], 法.位[1], 法.位[2]]} rotation={[法.前倾度 * 度, 0, 0]} scale={法.倍}>
-      <晋升之环 款={款} 秒={秒} />
+    <group position={[placement.位[0], placement.位[1], placement.位[2]]} rotation={[placement.tiltDeg * radPerDeg, 0, 0]} scale={placement.scale}>
+      <AscensionHalo variant={variant} 秒={sec} />
     </group>
   );
 };
 
 /** 挂到娘化亚波伦的 aaabody 骨骼上（不跟头转，原因见 戴法 的注释）：先挪到站姿时 Head 的转轴，骨骼坐标正面朝 −Z，绕 Y 转半圈换成头坐标 */
-export const 亚波伦头后环 = (款: 环款, 秒: number): React.ReactNode => (
-  <group position={[亚波伦头轴[0], 亚波伦头轴[1], 亚波伦头轴[2]]} rotation={[0, Math.PI, 0]}>
-    <头后环 款={款} 秒={秒} 戴="亚波伦" />
+export const yaBoLunHeadRing = (variant: RingVariant, sec: number): React.ReactNode => (
+  <group position={[yaBoLunHeadAxis[0], yaBoLunHeadAxis[1], yaBoLunHeadAxis[2]]} rotation={[0, Math.PI, 0]}>
+    <HeadRing variant={variant} 秒={sec} wearer="亚波伦" />
   </group>
 );

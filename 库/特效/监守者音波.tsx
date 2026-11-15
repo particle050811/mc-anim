@@ -9,7 +9,7 @@
 import type { V3 } from '../../engine/model/parts.tsx';
 import type { ParticleSpawn } from './原版粒子.tsx';
 
-export const sonicBoomParams = { fireTick: 34, totalTicks: 60, cooldownTicks: 40, startHeight: 1.6, extraBlocks: 6, damage: 10, knockback: { 水平: 2.5, vertical: 0.5 } };
+export const sonicBoomParams = { fireTick: 34, totalTicks: 60, cooldownTicks: 40, startHeight: 1.6, extraBlocks: 6, damage: 10, knockback: { horizontal: 2.5, vertical: 0.5 } };
 
 // 监守者脚底、目标眼睛（场景坐标）；刻 = 出手那一刻（一般是 音爆开始刻 + 34）
 export const sonicBoomParticles = (wardenFeet: V3, targetEye: V3, tick: number, seed: number): ParticleSpawn[] => {

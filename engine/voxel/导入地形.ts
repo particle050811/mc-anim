@@ -16,14 +16,14 @@ import { dataUrl, fetchJson, fetchRange, loadOnce } from '../core/数据源.ts';
 import type { V3 } from '../model/parts.tsx';
 import type { TerrainSampler } from './地表.ts';
 import { sectionKey, type SectionId } from './区段.ts';
-import { 读模型, 模型文件名 } from './区段模型.ts';
-import { formatVersion, sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, type 包信息, type 包表, type SectionData, type 粗高度图 } from './区段包.ts';
+import { readModel, modelFileName } from './区段模型.ts';
+import { formatVersion, sectionInTile, tileFileName, tileHeaderLen, buildPackTables, hasSection, coarseHeightAt, decodeTileHeader, decodeCoarseHeight, type PackageInfo, type PackTable, type SectionData, type CoarseHeightMap } from './区段包.ts';
 import { checkFrozenCoarse } from './冻结粗高度.ts';
 import { packDir } from './区段包位置.ts';
-import { 记读区段 } from './地形用量.ts';
+import { recordSectionRead } from './地形用量.ts';
 import { variesByPos } from './群系色.ts';
-import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type 区段上下文 } from './导入区段.ts';
-import { fetchSectionsInPool, registerSource, registerModel, type 区段结果 } from './区段工人池.ts';
+import { globRegex, importedSectionVoxels, type CutBox, type FlattenArea, type LandmarkCutout, type SectionContext } from './导入区段.ts';
+import { fetchSectionsInPool, registerSource, registerModel, type SectionResult } from './区段工人池.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
 
 export type { LandmarkCutout, FlattenArea } from './导入区段.ts';
@@ -35,12 +35,12 @@ const dimensionMinY: Record<string, number> = { 暮色: -32, 主世界: -64 };
 // 区段建成网格后数据就用不到了，只有网格被体素世界缓存挤掉、镜头又回来时要重建。超了在下一次 `prefetch` 时丢最久没用到的，这一次要的不丢（一帧要的比上限多也不会来回丢了重取）
 const maxCachedBytes = 256 * 1024 * 1024;
 type CachedSection = { d: SectionData; bytes: number; lastRound: number }; // 次：最后一次被 预取 要到是第几次
-type 包 = {
+type TerrainPack = {
   name: string;
   dir: string; // 取的是哪一版：packDir 的结果，块文件都从这里取
-  info: 包信息;
-  tables: 包表;
-  coarseHeights: 粗高度图;
+  info: PackageInfo;
+  tables: PackTable;
+  coarseHeights: CoarseHeightMap;
   maxTop: number; // 粗高度图里最高的顶（场景 z）
   variesByPos: boolean[]; // 按包里的群系号
   index: Map<string, Promise<Uint32Array>>; // 块文件名 → 索引
@@ -49,14 +49,14 @@ type 包 = {
   round: number; // 预取 调了几次
   inflight: Map<string, Promise<void>>;
 };
-const loadPack = (dir: string, packName: string): Promise<包> =>
+const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
   loadOnce(dir, async () => {
-    const info = await fetchJson<包信息>(`${dir}/包.json`, '先烘焙：见 工具/导入/烘焙.ts');
+    const info = await fetchJson<PackageInfo>(`${dir}/包.json`, '先烘焙：见 工具/导入/烘焙.ts');
     if (info.版本 !== formatVersion) throw new Error(`地形包是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：anim assets pull，或 anim world 转码`);
-    const url = absoluteUrl(`${dir}/${模型文件名}`), res = await fetch(url);
+    const url = absoluteUrl(`${dir}/${modelFileName}`), res = await fetch(url);
     if (!res.ok) throw new Error(`取地形模型 ${url}：${res.status}，anim assets pull`);
     const bytes = new Uint8Array(await res.arrayBuffer());
-    读模型(bytes);
+    readModel(bytes);
     registerModel(url, bytes);
     const coarseHeights = decodeCoarseHeight(info);
     checkFrozenCoarse(packName, coarseHeights);
@@ -65,7 +65,7 @@ const loadPack = (dir: string, packName: string): Promise<包> =>
     return { name: packName, dir: dir, info: info, tables: buildPackTables(info), coarseHeights: coarseHeights, maxTop: maxTop, variesByPos: info.群系.map(variesByPos), index: new Map(), data: new Map(), bytes: 0, round: 0, inflight: new Map() };
   });
 
-const loadTileIndex = (pack: 包, fileName: string) => {
+const loadTileIndex = (pack: TerrainPack, fileName: string) => {
   let promise = pack.index.get(fileName);
   if (!promise) {
     promise = fetchRange(`${pack.dir}/${fileName}`, 0, tileHeaderLen).then((ab) => decodeTileHeader(new Uint8Array(ab)));
@@ -80,14 +80,14 @@ const maxJobBytes = 512 * 1024;
 const mergeGapBytes = 16 * 1024;
 const absoluteUrl = (rel: string) => new URL(dataUrl(rel), location.href).href;
 
-const storeSection = (pack: 包, section: SectionId, data: SectionData, requestRound: number) => {
+const storeSection = (pack: TerrainPack, section: SectionId, data: SectionData, requestRound: number) => {
   const bytes = data.palette.byteLength + data.runCounts.byteLength + data.paletteIndex.byteLength + data.runLengths.byteLength;
   pack.data.set(sectionKey(section), { d: data, bytes: bytes, lastRound: requestRound });
   pack.bytes += bytes;
   pack.inflight.delete(sectionKey(section));
 };
 // 取这几个区段：按块文件分组，块里按偏移排好、挨着的并成一次活交给工人；工人顺手按来源 `ctx` 换好体素块，放进 `ready`。返回每个区段取齐的 Promise
-const loadSections = (pack: 包, sections: SectionId[], requestRound: number, ctx: number, ready: Map<string, ReadyVoxels>): Map<string, Promise<void>> => {
+const loadSections = (pack: TerrainPack, sections: SectionId[], requestRound: number, ctx: number, ready: Map<string, ReadyVoxels>): Map<string, Promise<void>> => {
   const byFile = new Map<string, { section: SectionId; slot: number }[]>();
   for (const section of sections) {
     const { ti, tj, slot } = sectionInTile(section);
@@ -112,7 +112,7 @@ const loadSections = (pack: 包, sections: SectionId[], requestRound: number, ct
       const url = absoluteUrl(`${pack.dir}/${fileName}`);
       return Promise.all(
         jobs.map((job) =>
-          fetchSectionsInPool(url, job.start, job.len, job.parts.map((part) => ({ off: part.off - job.start, len: part.len, ctx, id: part.section }))).then((out: 区段结果[]) =>
+          fetchSectionsInPool(url, job.start, job.len, job.parts.map((part) => ({ off: part.off - job.start, len: part.len, ctx, id: part.section }))).then((out: SectionResult[]) =>
             job.parts.forEach((part, i) => {
               storeSection(pack, part.section, out[i].data, requestRound);
               if (out[i].voxels) ready.set(sectionKey(part.section), { voxels: out[i].voxels!, lastRound: requestRound });
@@ -132,13 +132,13 @@ type ReadyVoxels = { voxels: VoxelGrid; lastRound: number };
 export type ImportedTerrain = {
   键: string; // 体素世界的缓存键（带版本，换了版本不会接着用旧版建的网格）；同一个包要分开缓存的（挖法、补水不同）在后面接后缀
   来源: VoxelSource;
-  高度: [number, number]; // 场景 z 的范围（维度下界 ～ 最高的方块顶），给 体素世界 的 高度
+  heightRange: [number, number]; // 场景 z 的范围（维度下界 ～ 最高的方块顶），给 体素世界 的 高度
   位置: (gamePos: number[]) => V3; // 游戏坐标（连续）→ 场景坐标（摆地标网格：网格放在 位置(origin)）
   原点: [number, number, number]; // 包.json 的原点 [ox, oy, oz]（游戏坐标），换算见 区段包.ts 文件头
-  粗: 粗高度图; // 粗高度图（16 米一格，−32768 = 这一格没数据，即导入范围外），engine/voxel/主世界地形.ts 拿它认导入范围
+  粗: CoarseHeightMap; // 粗高度图（16 米一格，−32768 = 这一格没数据，即导入范围外），engine/voxel/主世界地形.ts 拿它认导入范围
 };
 
-const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[]): ImportedTerrain => {
+const buildTerrain = (pack: TerrainPack, cutouts: LandmarkCutout[], flattenAreas: FlattenArea[]): ImportedTerrain => {
   const [ox, oy, oz] = pack.info.原点;
   // 游戏方块范围（from、to 都含）→ 场景盒子 [x0, y0, z0, x1, y1, z1]
   const toSceneBox = (m: { from: number[]; to: number[] }) => [m.from[0] - ox, oz - 1 - m.to[2], m.from[1] - oy, m.to[0] + 1 - ox, oz - m.from[2], m.to[1] + 1 - oy];
@@ -149,12 +149,12 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
     out.z = height === -Infinity ? 0 : height;
     out.crown = 0;
   };
-  const ctx: 区段上下文 = { info: pack.info, tables: pack.tables, variesByPos: pack.variesByPos, cutBoxes, flattenAreas };
+  const ctx: SectionContext = { info: pack.info, tables: pack.tables, variesByPos: pack.variesByPos, cutBoxes, flattenAreas };
   // 工人那边只要换体素块用的几项，粗高度图不发
   const workerCtx = registerSource({ 原点: pack.info.原点, 状态: pack.info.状态, 群系: pack.info.群系 }, cutBoxes, flattenAreas);
   const ready = new Map<string, ReadyVoxels>();
   // 替下一帧先取、还没记进地形用量的区段：哪一帧真要到了才记，没用上的不记（用量只记画面真用到的）
-  const 没记用量 = new Set<string>();
+  const unrecorded = new Set<string>();
   const source: VoxelSource = {
     采样: sample,
     区段: (section) => {
@@ -167,15 +167,15 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
       }
       return importedSectionVoxels(pack.data.get(k)!.d, ctx);
     },
-    转交: true,
-    prefetch: (qs, 猜的) => {
+    transferOwnership: true,
+    prefetch: (qs, guessed) => {
       const round = ++pack.round;
       const waits = new Set<Promise<void>>();
       const toLoad: SectionId[] = [];
-      const 补记: string[] = [];
+      const lateRecords: string[] = [];
       for (const section of qs) {
         const k = sectionKey(section);
-        if (!猜的 && 没记用量.delete(k)) 补记.push(k);
+        if (!guessed && unrecorded.delete(k)) lateRecords.push(k);
         const done = ready.get(k);
         if (done) done.lastRound = round;
         const cached = pack.data.get(k);
@@ -190,10 +190,10 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
         if (promise) waits.add(promise);
         else toLoad.push(section);
       }
-      if (补记.length) 记读区段(pack.name, 补记);
+      if (lateRecords.length) recordSectionRead(pack.name, lateRecords);
       if (toLoad.length) {
-        if (猜的) for (const section of toLoad) 没记用量.add(sectionKey(section));
-        else 记读区段(pack.name, toLoad.map(sectionKey));
+        if (guessed) for (const section of toLoad) unrecorded.add(sectionKey(section));
+        else recordSectionRead(pack.name, toLoad.map(sectionKey));
         const loading = loadSections(pack, toLoad, round, workerCtx, ready);
         for (const [k, promise] of loading) pack.inflight.set(k, promise);
         for (const promise of new Set(loading.values())) {
@@ -214,7 +214,7 @@ const buildTerrain = (pack: 包, cutouts: LandmarkCutout[], flattenAreas: Flatte
   return {
     键: `导入:${pack.dir}`,
     来源: source,
-    高度: [dimensionMinY[pack.info.维度] - oy, pack.maxTop],
+    heightRange: [dimensionMinY[pack.info.维度] - oy, pack.maxTop],
     位置: (g) => [g[0] - ox, oz - g[2], g[1] - oy],
     原点: pack.info.原点,
     粗: pack.coarseHeights,

@@ -11,17 +11,17 @@ import ancientCity4xMidAtlas from 'asset:网格/古城4x/中/图集';
 import type { DebrisData } from '@库/特效/方块飞溅.tsx';
 import { CataclysmQuake, quakeHideBlocks, type QuakeBoost } from '@库/特效/灾变震地.tsx';
 import groundSlamRaw from 'asset:碎块/镜头/6-3-6/震地方块';
-import { 资产目录 } from '@engine/core/资产目录.ts';
-import 资_0 from 'asset:贴图/镜头/6-3-2/方块/裂纹0';
-import 资_1 from 'asset:贴图/镜头/6-3-2/方块/裂纹1';
-import 资_2 from 'asset:贴图/镜头/6-3-2/方块/裂纹2';
-import 资_3 from 'asset:贴图/镜头/6-3-2/方块/裂纹3';
-import 资_4 from 'asset:贴图/镜头/6-3-2/方块/裂纹4';
-import 资_5 from 'asset:贴图/镜头/6-3-2/方块/裂纹5';
-import 资_6 from 'asset:贴图/镜头/6-3-2/方块/裂纹6';
-import 资_7 from 'asset:贴图/镜头/6-3-2/方块/裂纹7';
-import 资_8 from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
-import 资_9 from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
+import { assetDir } from '@engine/core/资产目录.ts';
+import crack0Png from 'asset:贴图/镜头/6-3-2/方块/裂纹0';
+import crack1Png from 'asset:贴图/镜头/6-3-2/方块/裂纹1';
+import crack2Png from 'asset:贴图/镜头/6-3-2/方块/裂纹2';
+import crack3Png from 'asset:贴图/镜头/6-3-2/方块/裂纹3';
+import crack4Png from 'asset:贴图/镜头/6-3-2/方块/裂纹4';
+import crack5Png from 'asset:贴图/镜头/6-3-2/方块/裂纹5';
+import crack6Png from 'asset:贴图/镜头/6-3-2/方块/裂纹6';
+import crack7Png from 'asset:贴图/镜头/6-3-2/方块/裂纹7';
+import crack8Png from 'asset:贴图/镜头/6-3-2/方块/裂纹8';
+import crack9Png from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
 
 // 加强一档（用户 10-18：「震起来的方块有点小了 特效也有点小了」）：方块是整格、大小不变；用户 10-18 定：不加高，加密度——起跳照游戏，
 // 从 2 格到 11 格十圈、每圈环带里能蹦的格子七成都蹦（游戏只蹦圆上那几个点，稀稀拉拉；全蹦就没有留下来带裂纹的地面了）、往外飞一点好落到别的格；
@@ -29,12 +29,12 @@ import 资_9 from 'asset:贴图/镜头/6-3-2/方块/裂纹9';
 // 留空：6-4-1 镜头 1a 在落点北边 8 格、离地 2 米低机位看他（6-4-1/编排.ts 的 `cam1a`），他再迎着镜头跳起来：机位周围和这条视线上可以有坑、不落方块，不然落块挡在镜头前
 const cam641a = G4(-708.6, -47.8, 232.0);
 const slamBoost: QuakeBoost = {
-  起跳: 1, 圈: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 密度: 0.7, 外飞: 0.15, 真挪: true, 裂纹: 10, 环: 2.4, 粒子: 2, 粒子速: 2.5, 粒子大: 1.3,
-  留空: [[GUCHENG4X.landingPos[0], GUCHENG4X.landingPos[1], cam641a[0], cam641a[1], 1.5], [cam641a[0], cam641a[1], cam641a[0], cam641a[1], 2.5]],
+  takeoff: 1, rings: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11], density: 0.7, outward: 0.15, realMove: true, crackCount: 10, ring: 2.4, 粒子: 2, particleSpeed: 2.5, particleSize: 1.3,
+  emptyCells: [[GUCHENG4X.landingPos[0], GUCHENG4X.landingPos[1], cam641a[0], cam641a[1], 1.5], [cam641a[0], cam641a[1], cam641a[0], cam641a[1], 2.5]],
 };
 const slamData = groundSlamRaw as unknown as DebrisData;
 const atlas = png(ancientCity4xMidAtlas);
-const crackTex = pngDir(资产目录({ './裂纹0.png': 资_0, './裂纹1.png': 资_1, './裂纹2.png': 资_2, './裂纹3.png': 资_3, './裂纹4.png': 资_4, './裂纹5.png': 资_5, './裂纹6.png': 资_6, './裂纹7.png': 资_7, './裂纹8.png': 资_8, './裂纹9.png': 资_9 }));
+const crackTex = pngDir(assetDir({ './裂纹0.png': crack0Png, './裂纹1.png': crack1Png, './裂纹2.png': crack2Png, './裂纹3.png': crack3Png, './裂纹4.png': crack4Png, './裂纹5.png': crack5Png, './裂纹6.png': crack6Png, './裂纹7.png': crack7Png, './裂纹8.png': crack8Png, './裂纹9.png': crack9Png }));
 const crackPngs = Array.from({ length: 10 }, (_, i) => crackTex[`裂纹${i}`]);
 const slamCenter: V3 = [GUCHENG4X.landingPos[0], GUCHENG4X.landingPos[1], 0]; // 落点那一格、地面的顶面
 

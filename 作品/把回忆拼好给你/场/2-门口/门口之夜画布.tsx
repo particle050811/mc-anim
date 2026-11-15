@@ -10,58 +10,58 @@ import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
 import { png } from '@engine/model/贴图.ts';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
-import { 方块拼搭 } from '@engine/model/方块拼搭.tsx';
-import { 三渲二画布, 光影范围 } from '@engine/三渲二/画布.tsx';
-import type { 光影选项 } from '@engine/三渲二/光影/预设.ts';
-import { 描边 } from '@engine/三渲二/描边.tsx';
-import { 贴图像素对齐 } from '@engine/三渲二/对齐.tsx';
-import { 平涂 } from '@engine/三渲二/平涂.tsx';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
+import { BlockAssembly } from '@engine/model/方块拼搭.tsx';
+import { ToonCanvas, shadingScope } from '@engine/三渲二/画布.tsx';
+import type { ShadingOptions } from '@engine/三渲二/光影/预设.ts';
+import { Outline } from '@engine/三渲二/描边.tsx';
+import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
+import { FlatShade } from '@engine/三渲二/平涂.tsx';
+import { filmScale } from '@engine/三渲二/像素.ts';
 import { standPose } from '@库/角色/骨架.tsx';
 import { Steve, stevePose } from '@库/角色/史蒂夫.tsx';
 import { MagicalWineFoxEx } from '@库/角色/魔法酒狐新动作组件.tsx';
 import { ParticleQuads, particleTexture, type Particle } from '@库/特效/粒子面片.tsx';
-import { 火箭位置, 烟花染料色, 烟花火花们, 闪光 } from '@库/特效/烟花.ts';
+import { rocketPos, fireworkDyeColors, fireworkSparks, fireworkFlash } from '@库/特效/烟花.ts';
 import { fps } from '../../分镜/时间.ts';
-import { 事件 as 正片事件 } from '../../分镜/正片第9至11句.ts';
-import { 侧机位, 侧投影 } from '../../地点/侧剖面.tsx';
-import { 侧剖面天空 } from '../../地点/天空.tsx';
-import { 告示牌 } from '../../地点/告示牌.tsx';
-import { 告示牌像素字 } from '../../地点/告示牌字.tsx';
-import { 樱花树方块 } from '../../地点/樱花树.ts';
-import { 照片墙格们 } from '../../地点/照片墙格.ts';
-import { 屋后远景 } from '../../地点/屋后远景.tsx';
-import { 格原点, 门口, 门口小木屋 } from '../../地点/门口小木屋.tsx';
-import { 第8句照片们 } from '../../特效/照片画.ts';
-import { 描边 as 描边默认, 像素N } from '../../画风.ts';
-import { 色板 } from '../../色板.ts';
-import { 天色, 群系 } from './参数.ts';
-import { 亮档, 亮档比, 夜光影场, 夜刻, 夜天弧, 天取景, 星星, 烟花们, 烟花光掺白, 牌字样式, 镜头, 镜头取景, type 门口之夜镜头 } from './门口之夜参数.ts';
-import { 你态, 加挥手, 她态, 摆设态, 站排y } from './门口之夜编排.ts';
-import 火箭图 from 'asset:贴图/物品/烟花火箭';
-import 树苗图 from 'asset:贴图/物品/樱花树苗';
-import 闪光图 from 'asset:贴图/粒子/闪光';
-import 火花0 from 'asset:贴图/粒子/火花/0';
-import 火花1 from 'asset:贴图/粒子/火花/1';
-import 火花2 from 'asset:贴图/粒子/火花/2';
-import 火花3 from 'asset:贴图/粒子/火花/3';
-import 火花4 from 'asset:贴图/粒子/火花/4';
-import 火花5 from 'asset:贴图/粒子/火花/5';
-import 火花6 from 'asset:贴图/粒子/火花/6';
-import 火花7 from 'asset:贴图/粒子/火花/7';
+import { events as mainCutEvents } from '../../分镜/正片第9至11句.ts';
+import { sideRig, sideProjection } from '../../地点/侧剖面.tsx';
+import { SideSectionSky } from '../../地点/天空.tsx';
+import { Signboard } from '../../地点/告示牌.tsx';
+import { SignPixelText } from '../../地点/告示牌字.tsx';
+import { cherryTreeBlocks } from '../../地点/樱花树.ts';
+import { photoWallCells } from '../../地点/照片墙格.ts';
+import { BehindHouseVista } from '../../地点/屋后远景.tsx';
+import { gridOrigin, entrance, EntranceCabin } from '../../地点/门口小木屋.tsx';
+import { line8Photos } from '../../特效/照片画.ts';
+import { outline as defaultOutline, pixelCount } from '../../画风.ts';
+import { palette } from '../../色板.ts';
+import { skyColors, biome } from './参数.ts';
+import { brightTier, brightTierRatio, nightShadingScene, nightTick, nightSkyArc, skyFraming, stars, fireworks, fireworkLightWhiteMix, signTextStyle, shotAt, shotFraming, type DoorNightShot } from './门口之夜参数.ts';
+import { YouState, addWave, LiYingState, setupState, standRowY } from './门口之夜编排.ts';
+import fireworkRocketPng from 'asset:贴图/物品/烟花火箭';
+import cherrySaplingPng from 'asset:贴图/物品/樱花树苗';
+import sparklePng from 'asset:贴图/粒子/闪光';
+import spark0Png from 'asset:贴图/粒子/火花/0';
+import spark1Png from 'asset:贴图/粒子/火花/1';
+import spark2Png from 'asset:贴图/粒子/火花/2';
+import spark3Png from 'asset:贴图/粒子/火花/3';
+import spark4Png from 'asset:贴图/粒子/火花/4';
+import spark5Png from 'asset:贴图/粒子/火花/5';
+import spark6Png from 'asset:贴图/粒子/火花/6';
+import spark7Png from 'asset:贴图/粒子/火花/7';
 
-const 夜 = 色板.夜;
-const 手持图 = { 树苗: png(树苗图), 烟花火箭: png(火箭图) } as const;
-const 火箭 = png(火箭图);
-const 闪光片 = png(闪光图);
+const night = palette.夜;
+const heldImg = { 树苗: png(cherrySaplingPng), 烟花火箭: png(fireworkRocketPng) } as const;
+const rocketImg = png(fireworkRocketPng);
+const flashImg = png(sparklePng);
 
 // 火花八张 8×8 拼成一条 64×8 的图集，第 n 张在 u ∈ [n/8, (n+1)/8)。材质包的高清火花（16×16）照样拼，图集 128×16；方片大小照原版 8 个像素算，不变
-const 火花边 = png(火花0).w;
-const 火花图集 = (() => {
-  const 张们 = [火花0, 火花1, 火花2, 火花3, 火花4, 火花5, 火花6, 火花7].map(png);
-  const e = 火花边;
+const sparkEdge = png(spark0Png).w;
+const sparkAtlas = (() => {
+  const sparkPngs = [spark0Png, spark1Png, spark2Png, spark3Png, spark4Png, spark5Png, spark6Png, spark7Png].map(png);
+  const e = sparkEdge;
   const px = new Uint8Array(8 * e * e * 4);
-  张们.forEach((p, n) => {
+  sparkPngs.forEach((p, n) => {
     if (p.w !== e || p.h !== e) throw new Error(`火花贴图 ${n} 不是 ${e}×${e}：${p.w}×${p.h}`);
     for (let y = 0; y < e; y++) px.set(p.px.subarray(y * e * 4, (y + 1) * e * 4), (y * 8 * e + n * e) * 4);
   });
@@ -69,251 +69,251 @@ const 火花图集 = (() => {
 })();
 
 // ---------- 颜色 ----------
-const 拆 = (hex: string): V3 => {
+const hexToRgb = (hex: string): V3 => {
   const n = parseInt(hex.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 };
-const 合 = (c: readonly number[]) => '#' + c.map((v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, '0')).join('');
+const toHex = (c: readonly number[]) => '#' + c.map((v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, '0')).join('');
 /** 这一组在这一档的平涂色调：夜色调往烟花色（掺白）走 比[档] */
-const 组色调 = (档: 0 | 1 | 2, 色: V3 | null, 比: readonly number[]) => {
-  const t0 = 拆(夜.色调);
-  if (!色 || 档 === 0) return 夜.色调;
-  const k = 比[档]!;
-  return 合(t0.map((v, i) => {
-    const c = 色[i]! + (1 - 色[i]!) * 烟花光掺白;
+const groupTone = (tier: 0 | 1 | 2, color: V3 | null, ratios: readonly number[]) => {
+  const t0 = hexToRgb(night.tint);
+  if (!color || tier === 0) return night.tint;
+  const k = ratios[tier]!;
+  return toHex(t0.map((v, i) => {
+    const c = color[i]! + (1 - color[i]!) * fireworkLightWhiteMix;
     return v + (c - v) * k;
   }));
 };
 
 // ---------- 像素吸附 ----------
 /** 场景点吸到镜头的偶数像素上：横 (x − 中心x)·16N、竖 (z + 斜·y − 中心z)·16N 都取偶数 */
-const 吸点 = (j: 门口之夜镜头, p: V3): V3 => {
+const attractPoint = (j: DoorNightShot, p: V3): V3 => {
   const k = 16 * j.N;
-  const 斜 = j.顶面 / j.N;
-  const 偶 = (v: number) => 2 * Math.round(v / 2);
-  const x = j.中心[0] + 偶((p[0] - j.中心[0]) * k) / k;
-  const 竖 = 偶((p[2] + 斜 * p[1] - j.中心[1]) * k) / k;
-  return [x, p[1], 竖 - 斜 * p[1] + j.中心[1]];
+  const oblique = j.topDepth / j.N;
+  const roundToEven = (v: number) => 2 * Math.round(v / 2);
+  const x = j.中心[0] + roundToEven((p[0] - j.中心[0]) * k) / k;
+  const snappedZ = roundToEven((p[2] + oblique * p[1] - j.中心[1]) * k) / k;
+  return [x, p[1], snappedZ - oblique * p[1] + j.中心[1]];
 };
 /** 方片一个贴图像素几个成片像素（偶数）→ 半边长（格）：贴图 边 个像素宽 */
-const 方片半 = (j: 门口之夜镜头, 原半: number, 边: number) => {
-  const 像 = 2 * Math.max(1, Math.round(((2 * 原半 * 16 * j.N) / 边) / 2));
-  return (像 * 边) / (2 * 16 * j.N);
+const squareHalf = (j: DoorNightShot, origHalf: number, side: number) => {
+  const pixelSize = 2 * Math.max(1, Math.round(((2 * origHalf * 16 * j.N) / side) / 2));
+  return (pixelSize * side) / (2 * 16 * j.N);
 };
 
 // ---------- 烟花：火花、火箭 ----------
-const 烟花方片: React.FC<{ 秒: number; 镜: 门口之夜镜头; 火箭色: V3 }> = ({ 秒, 镜, 火箭色 }) => {
-  const 图集 = particleTexture(火花图集, 8 * 火花边, 火花边, 火花图集);
-  const 火箭贴图 = particleTexture(火箭.px, 火箭.w, 火箭.h, 火箭);
-  const 火花们: Particle[] = [];
-  const 火箭们: Particle[] = [];
-  for (const 发 of 烟花们) {
-    for (const h of 烟花火花们(发, 秒))
-      火花们.push({ p: 吸点(镜, h.p), half: 方片半(镜, h.半, 8), uv: [h.贴图 / 8, 0, (h.贴图 + 1) / 8, 1], color: h.色, alpha: h.alpha });
-    const p = 火箭位置(发, 秒);
+const FireworkSquare: React.FC<{ 秒: number; shot: DoorNightShot; rocketColor: V3 }> = ({ 秒: sec, shot, rocketColor }) => {
+  const atlas = particleTexture(sparkAtlas, 8 * sparkEdge, sparkEdge, sparkAtlas);
+  const rocketTexture = particleTexture(rocketImg.px, rocketImg.w, rocketImg.h, rocketImg);
+  const sparks: Particle[] = [];
+  const rockets: Particle[] = [];
+  for (const firework of fireworks) {
+    for (const h of fireworkSparks(firework, sec))
+      sparks.push({ p: attractPoint(shot, h.p), half: squareHalf(shot, h.halfSize, 8), uv: [h.贴图 / 8, 0, (h.贴图 + 1) / 8, 1], color: h.色, alpha: h.alpha });
+    const p = rocketPos(firework, sec);
     // 原版 GROUND 显示：半格见方的物品贴图，中心比实体高 0.125 格
-    if (p) 火箭们.push({ p: 吸点(镜, [p[0], p[1], p[2] + 0.125]), half: 方片半(镜, 0.25, 16), uv: [0, 0, 1, 1], color: 火箭色 });
+    if (p) rockets.push({ p: attractPoint(shot, [p[0], p[1], p[2] + 0.125]), half: squareHalf(shot, 0.25, 16), uv: [0, 0, 1, 1], color: rocketColor });
   }
   return (
     <>
-      <ParticleQuads tex={火箭贴图} items={火箭们} />
-      <ParticleQuads tex={图集} items={火花们} translucent depthWrite={false} />
+      <ParticleQuads tex={rocketTexture} items={rockets} />
+      <ParticleQuads tex={atlas} items={sparks} translucent depthWrite={false} />
     </>
   );
 };
 
 // ---------- 2D 层：星星、闪光 ----------
-const 成宽 = (宽: number) => 宽 * 成片倍数;
+const toFinalWidth = (width: number) => width * filmScale;
 
 /** 星星：一张 W×H 的循环图（确定性随机），跟着天挪（偏 = 天取景 的中心比开场那一镜挪了多少成片像素），躲开月亮那一块（开场那一镜里月亮的位置；月亮跟着天走，
  *  到第 12 句只往西挪不到 80 像素） */
-const 星星层: React.FC<{ 宽: number; 高: number; 偏: { x: number; y: number }; 月: { x: number; y: number } }> = ({ 宽, 高, 偏, 月 }) => {
+const StarLayer: React.FC<{ 宽: number; 高: number; offset: { x: number; y: number }; 月: { x: number; y: number } }> = ({ 宽: width, 高: height, offset, 月: moonPos }) => {
   const ref = useRef<HTMLCanvasElement>(null);
-  const W = 成宽(宽), H = 成宽(高);
-  const 图 = useMemo(() => {
+  const W = toFinalWidth(width), H = toFinalWidth(height);
+  const starImg = useMemo(() => {
     const c = document.createElement('canvas');
     c.width = W;
     c.height = H;
     const ctx = c.getContext('2d')!;
-    let s = 星星.种子 >>> 0;
+    let s = stars.种子 >>> 0;
     const r = () => ((s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296);
-    let 放了 = 0;
-    for (let 试 = 0; 放了 < 星星.个数 && 试 < 星星.个数 * 20; 试++) {
+    let placed = 0;
+    for (let attempt = 0; placed < stars.starCount && attempt < stars.starCount * 20; attempt++) {
       const x = 2 * Math.floor((r() * W) / 2);
       const y = 2 * Math.floor((r() * H) / 2);
-      const 边 = r() < 0.5 ? 星星.边[0] : 星星.边[1];
-      const a = 星星.亮[0] + r() * (星星.亮[1] - 星星.亮[0]);
-      if (Math.abs(x - 月.x) < 260 && Math.abs(y - 月.y) < 260) continue;
+      const starSize = r() < 0.5 ? stars.starSize[0] : stars.starSize[1];
+      const a = stars.brightRange[0] + r() * (stars.brightRange[1] - stars.brightRange[0]);
+      if (Math.abs(x - moonPos.x) < 260 && Math.abs(y - moonPos.y) < 260) continue;
       ctx.fillStyle = `rgba(255, 255, 255, ${a.toFixed(3)})`;
-      ctx.fillRect(x, y, 边, 边);
-      放了++;
+      ctx.fillRect(x, y, starSize, starSize);
+      placed++;
     }
     return c;
-  }, [W, H, 月.x, 月.y]);
+  }, [W, H, moonPos.x, moonPos.y]);
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, W, H);
     // 偏移吸到偶数像素、按图的宽高取模，四张拼满
-    const 模 = (v: number, m: number) => ((2 * Math.round(v / 2)) % m + m) % m;
-    const ox = 模(-偏.x, W), oy = 模(偏.y, H);
-    for (const dx of [ox - W, ox]) for (const dy of [oy - H, oy]) ctx.drawImage(图, dx, dy);
+    const wrap = (v: number, m: number) => ((2 * Math.round(v / 2)) % m + m) % m;
+    const ox = wrap(-offset.x, W), oy = wrap(offset.y, H);
+    for (const dx of [ox - W, ox]) for (const dy of [oy - H, oy]) ctx.drawImage(starImg, dx, dy);
   });
-  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
+  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: width, height: height }} />;
 };
 
 /** 闪光透明度只留两档硬边：原版透明度（光片 alpha × 0.6～0.725）过 门[i] 就画 值[i]，低于 0.3 的外圈整片不画。
  *  原来按 0.18 一档切，三圈加一个亮心，手机上一眼是一团圆形光晕（核查 10-24）。值 Agent 暂定 */
-const 闪光档 = { 门: [0.5, 0.3], 值: [0.34, 0.17] } as const;
-const 闪光层: React.FC<{ 宽: number; 高: number; 秒: number; 镜: 门口之夜镜头 }> = ({ 宽, 高, 秒, 镜 }) => {
+const flashTier = { 门: [0.5, 0.3], 值: [0.34, 0.17] } as const;
+const SparkleLayer: React.FC<{ 宽: number; 高: number; 秒: number; shot: DoorNightShot }> = ({ 宽: width, 高: height, 秒: sec, shot }) => {
   const ref = useRef<HTMLCanvasElement>(null);
-  const W = 成宽(宽), H = 成宽(高);
+  const W = toFinalWidth(width), H = toFinalWidth(height);
   useLayoutEffect(() => {
     const ctx = ref.current?.getContext('2d');
     if (!ctx) return;
     ctx.clearRect(0, 0, W, H);
-    for (const 发 of 烟花们) {
-      const g = 闪光(发, 秒);
+    for (const firework of fireworks) {
+      const g = fireworkFlash(firework, sec);
       if (!g) continue;
       // 原版 OverlayParticle：边长 7.1·sin((age + pt − 1)·π/4)、alpha 0.6 − (age + pt − 1)·0.125
       const q = g.刻 - 1;
-      const 半 = Math.abs(7.1 * Math.sin((q * Math.PI) / 4));
+      const halfWidth = Math.abs(7.1 * Math.sin((q * Math.PI) / 4));
       const alpha = 0.6 - q * 0.125;
       // 一个光片像素几个成片像素：N 的整数倍（原版 32×32 的光片；材质包的高清光片是它的 倍 倍，一个像素 格 ÷ 倍）
-      const 倍 = 闪光片.w / 32;
-      const 格 = (Math.max(1, Math.round(半)) * 镜.N) / 倍;
-      const 心 = 吸点(镜, g.心);
-      const k = 16 * 镜.N;
-      const cx = W / 2 + (心[0] - 镜.中心[0]) * k;
-      const cy = H / 2 - (心[2] + (镜.顶面 / 镜.N) * 心[1] - 镜.中心[1]) * k;
+      const pixelScale = flashImg.w / 32;
+      const cellSize = (Math.max(1, Math.round(halfWidth)) * shot.N) / pixelScale;
+      const screenCenter = attractPoint(shot, g.心);
+      const k = 16 * shot.N;
+      const cx = W / 2 + (screenCenter[0] - shot.中心[0]) * k;
+      const cy = H / 2 - (screenCenter[2] + (shot.topDepth / shot.N) * screenCenter[1] - shot.中心[1]) * k;
       const [r, gg, b] = g.色.map((v) => Math.round(v * 255));
-      for (let y = 0; y < 闪光片.h; y++)
-        for (let x = 0; x < 闪光片.w; x++) {
-          const a = (闪光片.px[(y * 闪光片.w + x) * 4 + 3]! / 255) * alpha;
-          const 档 = a >= 闪光档.门[0] ? 闪光档.值[0] : a >= 闪光档.门[1] ? 闪光档.值[1] : 0;
-          if (档 <= 0) continue;
-          ctx.fillStyle = `rgba(${r}, ${gg}, ${b}, ${档.toFixed(3)})`;
-          ctx.fillRect(Math.round(cx + (x - 闪光片.w / 2) * 格), Math.round(cy + (y - 闪光片.h / 2) * 格), 格, 格);
+      for (let y = 0; y < flashImg.h; y++)
+        for (let x = 0; x < flashImg.w; x++) {
+          const a = (flashImg.px[(y * flashImg.w + x) * 4 + 3]! / 255) * alpha;
+          const tier = a >= flashTier.门[0] ? flashTier.值[0] : a >= flashTier.门[1] ? flashTier.值[1] : 0;
+          if (tier <= 0) continue;
+          ctx.fillStyle = `rgba(${r}, ${gg}, ${b}, ${tier.toFixed(3)})`;
+          ctx.fillRect(Math.round(cx + (x - flashImg.w / 2) * cellSize), Math.round(cy + (y - flashImg.h / 2) * cellSize), cellSize, cellSize);
         }
     }
   });
-  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
+  return <canvas ref={ref} width={W} height={H} style={{ position: 'absolute', left: 0, top: 0, width: width, height: height }} />;
 };
 
 // ---------- 捕获 ----------
 /** 交出去的一层：画布和它在画面上的位置（占整个画面宽高的比例，左上角起） */
-export type 捕获层 = { 图: HTMLCanvasElement; 左: number; 上: number; 宽: number; 高: number };
-const 捕获器: React.FC<{ 层: React.RefObject<HTMLDivElement | null>; 交: (层们: readonly 捕获层[]) => void }> = ({ 层, 交 }) => {
+export type CaptureLayer = { 图: HTMLCanvasElement; left: number; 上: number; 宽: number; 高: number };
+const LayerCapturer: React.FC<{ 层: React.RefObject<HTMLDivElement | null>; onCapture: (layers: readonly CaptureLayer[]) => void }> = ({ 层: layerRef, onCapture }) => {
   // 优先级 2：在 描边渲染（优先级 1，接管画布的渲染，描边关着也是它画）之后，这一帧的三维已经在画布上。
   // 位置用 getBoundingClientRect 量、除以外框：渲染时整页有缩放，比例不受影响
   useFrame(({ gl }) => {
-    const 框 = 层.current;
-    if (!框) return;
-    const R = 框.getBoundingClientRect();
-    const 底们 = [...框.querySelectorAll('canvas')].filter((c) => c !== gl.domElement);
-    交([...底们, gl.domElement].map((图) => {
-      const r = 图.getBoundingClientRect();
-      return { 图, 左: (r.left - R.left) / R.width, 上: (r.top - R.top) / R.height, 宽: r.width / R.width, 高: r.height / R.height };
+    const snapshot = layerRef.current;
+    if (!snapshot) return;
+    const R = snapshot.getBoundingClientRect();
+    const baseCanvases = [...snapshot.querySelectorAll('canvas')].filter((c) => c !== gl.domElement);
+    onCapture([...baseCanvases, gl.domElement].map((canvasImg) => {
+      const r = canvasImg.getBoundingClientRect();
+      return { 图: canvasImg, left: (r.left - R.left) / R.width, 上: (r.top - R.top) / R.height, 宽: r.width / R.width, 高: r.height / R.height };
     }));
   }, 2);
   return null;
 };
 
 // ---------- 画布 ----------
-export type 门口之夜画布属性 = {
+export type DoorNightCanvasProps = {
   /** 歌曲帧 */
   帧: number;
   /** 同一段时间线上的上一帧（歌曲帧；段首那一帧不给），给屋后远景算画布高（见 地点/屋后远景.tsx 的 前取景）。原来是 1/24 秒以前（24 fps 时的上一帧），用户 11-03「统统改成 60 帧」 */
-  前帧?: number;
+  prevFrame?: number;
   宽?: number;
   高?: number;
   /** 每帧画完把各层（天、星星、远景、闪光、三维）连同位置交出来 */
-  捕获?: (层们: readonly 捕获层[]) => void;
+  capture?: (layers: readonly CaptureLayer[]) => void;
   style?: React.CSSProperties;
   /** 光影的样式（段里传 默认.ts 的 光影段[段键]）：屋后远景和前面的三维一起开；不给 = 不开。夜里的时段按平涂色调认，月光方向见 夜光影场 */
-  光影?: 光影选项 | null;
+  shading?: ShadingOptions | null;
 };
 
-export const 门口之夜画布: React.FC<门口之夜画布属性> = ({ 帧, 前帧, 宽 = 1280, 高 = 720, 捕获, style, 光影 }) => {
-  const 秒 = 帧 / fps;
-  const 镜 = 镜头(帧);
-  const 取景 = 镜头取景(镜);
-  const 层 = useRef<HTMLDivElement>(null);
-  const { 档, 发 } = 亮档(秒);
+export const DoorNightCanvas: React.FC<DoorNightCanvasProps> = ({ 帧: frame, prevFrame, 宽: width = 1280, 高: height = 720, capture, style, shading }) => {
+  const sec = frame / fps;
+  const shot = shotAt(frame);
+  const framing = shotFraming(shot);
+  const layerRef = useRef<HTMLDivElement>(null);
+  const { 档: tier, 发: firework } = brightTier(sec);
   // 照亮的颜色取这一发的第一种颜色（同原版闪光）
-  const 光色 = 发 ? 拆(`#${烟花染料色[发.色们[0]!].toString(16).padStart(6, '0')}`) : null;
-  const 近 = 组色调(档, 光色, 亮档比.近);
-  const 她色调 = 组色调(档, 光色, 亮档比.她);
-  const 远 = 组色调(档, 光色, 亮档比.远);
-  const 你 = 你态(帧);
-  const 她 = 她态(帧);
-  const 摆 = 摆设态(帧);
-  const 天 = 天取景(镜);
-  const 开天 = 天取景(镜头(正片事件.第9句入夜.帧));
-  const 月 = 侧投影(开天, 宽, 高)(夜天弧.心[0], 夜天弧.心[1] + 夜天弧.半径);
-  const 树苗 = useMemo(() => 樱花树方块(false, [门口.树苗[0], 1, 0]), []);
-  const 照片墙 = useMemo(() => 照片墙格们(第8句照片们), []);
-  const 你姿 = 加挥手({ ...stevePose([你.x, 站排y, 0], 你.yaw, { headPitch: 你.头俯仰, holdR: !!你.拿 }), armRRoll: 0, armLRoll: 0 }, 你.挥);
-  const 她loc: V3 = [她.x, 站排y, 0];
+  const lightColor = firework ? hexToRgb(`#${fireworkDyeColors[firework.fireworkColors[0]!].toString(16).padStart(6, '0')}`) : null;
+  const near = groupTone(tier, lightColor, brightTierRatio.near);
+  const herTone = groupTone(tier, lightColor, brightTierRatio.liYingBright);
+  const far = groupTone(tier, lightColor, brightTierRatio.far);
+  const you = YouState(frame);
+  const liYing = LiYingState(frame);
+  const placement = setupState(frame);
+  const sky = skyFraming(shot);
+  const openingSky = skyFraming(shotAt(mainCutEvents.nightfall.帧));
+  const moonPos = sideProjection(openingSky, width, height)(nightSkyArc.心[0], nightSkyArc.心[1] + nightSkyArc.radius);
+  const saplingBlocks = useMemo(() => cherryTreeBlocks(false, [entrance.saplingPos[0], 1, 0]), []);
+  const photoWall = useMemo(() => photoWallCells(line8Photos), []);
+  const youPose = addWave({ ...stevePose([you.x, standRowY, 0], you.yaw, { headPitch: you.headPitch, holdR: !!you.held }), armRRoll: 0, armLRoll: 0 }, you.wave);
+  const liYingLoc: V3 = [liYing.x, standRowY, 0];
   return (
-    <光影范围.Provider value={{ 光影, 光影场: 夜光影场 }}>
-      <div style={{ position: 'relative', width: 宽, height: 高, overflow: 'hidden', ...style }}>
-        <div ref={层} style={{ position: 'absolute', inset: 0 }}>
-          <侧剖面天空 取景={天} 宽={宽} 高={高} 色={天色} 刻={夜刻(秒)} 弧={夜天弧} />
-          <星星层
-            宽={宽}
-            高={高}
-            偏={{ x: (天.中心[0] - 开天.中心[0]) * 天.每格, y: (天.中心[1] - 开天.中心[1]) * 天.每格 }}
-            月={{ x: 月.x * 成片倍数, y: 月.y * 成片倍数 }}
+    <shadingScope.Provider value={{ shading, shadingScene: nightShadingScene }}>
+      <div style={{ position: 'relative', width: width, height: height, overflow: 'hidden', ...style }}>
+        <div ref={layerRef} style={{ position: 'absolute', inset: 0 }}>
+          <SideSectionSky framing={sky} 宽={width} 高={height} 色={skyColors} 刻={nightTick(sec)} arc={nightSkyArc} />
+          <StarLayer
+            宽={width}
+            高={height}
+            offset={{ x: (sky.中心[0] - openingSky.中心[0]) * sky.pxPerCell, y: (sky.中心[1] - openingSky.中心[1]) * sky.pxPerCell }}
+            月={{ x: moonPos.x * filmScale, y: moonPos.y * filmScale }}
           />
           {/* 远景的色调同房子、地面那一组（烟花亮的时候一起亮一点）；明暗幅度同 侧剖面天空 的默认。
               远景按这一帧的取景跟着正交那一层走（推到牌子上时林子跟着放大，近处的地才接得上屋前的草地；给 天取景 试过，特写里林子底下露出天）。
               雾按这一帧的取景找背后那一行天色，天却按 天取景 画，两边差一截：雾淡完的远处（172 格外）在这三句里不是在画外就是被近处的林子、房子挡着，看不出 */}
-          <屋后远景 取景={取景} 前取景={镜头取景(镜头(前帧 ?? 帧))} 宽={宽} 高={高} 顶面={镜.顶面} 色调={远} 天色={天色} 刻={夜刻(秒)} 明暗幅度={1} />
+          <BehindHouseVista framing={framing} frontFraming={shotFraming(shotAt(prevFrame ?? frame))} 宽={width} 高={height} topDepth={shot.topDepth} tint={far} skyColors={skyColors} 刻={nightTick(sec)} lightDarkAmp={1} />
           {/* 闪光在远景前面：原版 FLASH 是炸点上的粒子，比屋后的地近 */}
-          <闪光层 宽={宽} 高={高} 秒={秒} 镜={镜} />
-          <三渲二画布
-            宽={宽}
-            高={高}
-            机位={侧机位(取景, 镜.顶面)}
-            色调={远}
-            描边={描边默认.开 ? { 宽: (镜.N * 描边默认.宽) / 像素N, 色: 夜.描边 } : false}
+          <SparkleLayer 宽={width} 高={height} 秒={sec} shot={shot} />
+          <ToonCanvas
+            宽={width}
+            高={height}
+            cameraRig={sideRig(framing, shot.topDepth)}
+            tint={far}
+            outline={defaultOutline.开 ? { 宽: (shot.N * defaultOutline.宽) / pixelCount, 色: night.outlineColor } : false}
             style={{ position: 'absolute', left: 0, top: 0 }}
           >
             {/* 照片墙一格 64 个地图像素：镜头停下来的 N（16、84、12）都是 4 的倍数，一个地图像素是整数个成片像素 */}
-            <门口小木屋 门开 群系={群系} 照片墙={照片墙} 照片墙边长={64} />
-            <平涂 色调={近}>
-              {摆.树苗 && <方块拼搭 方块们={树苗} 原点={格原点} 群系={群系} 正面花草 />}
-              <告示牌 位={门口.告示牌}>
-                <告示牌像素字 行们={摆.牌上} {...牌字样式} />
-              </告示牌>
+            <EntranceCabin doorOpen 群系={biome} photoWall={photoWall} photoWallEdge={64} />
+            <FlatShade tint={near}>
+              {placement.saplingPlaced && <BlockAssembly blocks={saplingBlocks} 原点={gridOrigin} 群系={biome} frontPlants />}
+              <Signboard 位={entrance.signboardPos}>
+                <SignPixelText lines={placement.signLines} {...signTextStyle} />
+              </Signboard>
               {/* 描边组跟着 画风.ts 的 描边.开 走（全片不描边，用户 10-24 定），留着组是为了开关只改一处 */}
-              <描边>
-                <贴图像素对齐 锚={你姿.loc as V3}>
-                  <Steve pose={你姿} handR={你.拿 ? <ItemSprite layers={[{ tex: 手持图[你.拿] }]} emissive={0} shadow={false} /> : undefined} />
-                </贴图像素对齐>
-              </描边>
-            </平涂>
-            <平涂 色调={她色调}>
-              <描边>
-                <贴图像素对齐 锚={她loc}>
+              <Outline>
+                <TexturePixelAlign 锚={youPose.loc as V3}>
+                  <Steve pose={youPose} handR={you.held ? <ItemSprite layers={[{ tex: heldImg[you.held] }]} emissive={0} shadow={false} /> : undefined} />
+                </TexturePixelAlign>
+              </Outline>
+            </FlatShade>
+            <FlatShade tint={herTone}>
+              <Outline>
+                <TexturePixelAlign 锚={liYingLoc}>
                   <MagicalWineFoxEx
-                    pose={{ ...standPose(她loc), yaw: 180 }}
-                    姿势="站"
-                    表情={她.表情}
-                    骨骼={{ Head: { rot: [-她.头[0], -她.头[1], 她.头[2]] } }}
-                    眨眼={她.眨眼}
-                    秒={秒}
-                    背后法杖={false}
+                    pose={{ ...standPose(liYingLoc), yaw: 180 }}
+                    stancePose="站"
+                    expression={liYing.expression}
+                    skeleton={{ Head: { rot: [-liYing.头[0], -liYing.头[1], liYing.头[2]] } }}
+                    blink={liYing.blink}
+                    秒={sec}
+                    backStaff={false}
                   />
-                </贴图像素对齐>
-              </描边>
-            </平涂>
-            <烟花方片 秒={秒} 镜={镜} 火箭色={拆(远)} />
-            {捕获 && <捕获器 层={层} 交={捕获} />}
-          </三渲二画布>
+                </TexturePixelAlign>
+              </Outline>
+            </FlatShade>
+            <FireworkSquare 秒={sec} shot={shot} rocketColor={hexToRgb(far)} />
+            {capture && <LayerCapturer 层={layerRef} onCapture={capture} />}
+          </ToonCanvas>
         </div>
       </div>
-    </光影范围.Provider>
+    </shadingScope.Provider>
   );
 };

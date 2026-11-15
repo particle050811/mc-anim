@@ -13,12 +13,12 @@
 // 口型（src/lib/口型.ts）：九胡说话按配音张嘴（落地后.tsx）；李樱的脸没有表情骨骼，「表情垮掉」靠低头、塌身。
 import { track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { posToSec as 歌秒 } from '@engine/audio/曲目.ts';
+import { posToSec as songSec } from '@engine/audio/曲目.ts';
 import { ch6FlightMusic } from '../../../配乐/第六章飞行.ts';
 import { lineTable } from '../../../配音/台词轨.tsx';
 import * as P613 from '../6-1-3/编排.ts';
 import * as choreo619 from '../6-1-9/编排.ts';
-import { cameraAt as 一镜镜头, type Cam } from '../一镜到底/镜头.ts';
+import { cameraAt as oneShotCamera, type Cam } from '../一镜到底/镜头.ts';
 import * as route from '../一镜到底/路线.ts';
 
 export const FPS = 24;
@@ -29,12 +29,12 @@ const ss = (x: number) => {
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 
 // ---------- 接一镜到底 ----------
-export const F0 = route.总帧数 - 1;
+export const F0 = route.totalFrames - 1;
 export const toGlobalFrame = (f: number) => F0 + f;
 // 两人站的地方：脱手以后两人一起走的那个坐标系（路线.ts 的 `扫帚`，落地以后停住）落在屋顶上的那一点。朝向 0 = 两人面朝正北（+Y），
 // 所以下面的「场」坐标就是世界坐标平移过来：x 东、y 北、z 上，原点在两人中间的屋顶面上（李樱在 y +0.35、九胡在 −0.35，骑扫帚.tsx 的座次）。
 // 屋顶平台（6-1-9/编排.ts）在场坐标里约 x −23～+24、y −7～+40，紫色力场方块 x −10～+11、y +6～+27、高 11 格：机位都放在力场外面（进了力场整个画面蒙一层紫）
-const B0 = route.扫帚(F0).位置;
+const B0 = route.broom(F0).位置;
 const roofZ = choreo619.castleOrigin[2] + choreo619.ROOF_Z;
 export const sceneOrigin: V3 = [B0[0], B0[1], roofZ];
 export const fromScene = (p: number[]): V3 => [sceneOrigin[0] + p[0], sceneOrigin[1] + p[1], sceneOrigin[2] + p[2]];
@@ -44,13 +44,13 @@ const toScene = (p: number[]): V3 => [p[0] - sceneOrigin[0], p[1] - sceneOrigin[
 const song = ch6FlightMusic.song;
 // 6-1-9 和本段之间剪掉的画面：F0 前一小节（用户 10-18 嫌落地后空镜头太多），再早 `ONER_TRIM` 帧（用户 10-20：「这边画面可以再减掉一点」，剪掉俯冲扎向城垛的那截）。
 // 落地编排.ts 的 `F_CUT` = F0 − 这两截
-export const BAR_CUT_FRAMES = Math.round(song.分析.网格.每小节拍数 * song.分析.网格.拍长 * FPS);
+export const BAR_CUT_FRAMES = Math.round(song.analysis.网格.每小节拍数 * song.analysis.网格.拍长 * FPS);
 export const ONER_TRIM = 16;
 // 只剪画面不剪配乐，配乐接着 6-1-9 一路放（用户 10-20：「这个音乐不要截一部分拼起来 你直接一次性放完不行吗？ 你不要硬凑时长一致好吧」）：
 // 本段第 f 帧 = 一镜到底在 `F_CUT` + f 那一刻的配乐（同 一镜到底/画面.tsx：6-1-3 编排的 `songSec`(6-1-3 帧数 − 1 + 全局帧)）
 export const musicStartSec = P613.songSec(P613.FRAMES - 1 + F0 - BAR_CUT_FRAMES - ONER_TRIM);
 // 镜头升到顶、硬切到九胡的那一拍（段内秒数）：[28, 1] 重拍；[29, 1] 的 breakdown 在九胡说话时进来
-export const cutBeatSec = 歌秒(song, [28, 1]) - musicStartSec;
+export const cutBeatSec = songSec(song, [28, 1]) - musicStartSec;
 // 台词落点（段内秒数；开口 = 第一个有声的时刻，同 台词轨）。九胡在切到她那一拍后 0.5 秒开口，李樱在她说完 0.4 秒后开口。字幕从这里取每句话的时间。
 const jiuhuLineId = '6-1-9-九胡-什么也没有';
 const liyingLineId = '6-1-9-李樱-没有最终boss';
@@ -82,7 +82,7 @@ export const frameCount = Math.round(segSec * FPS) + 1;
 
 // ---------- 机位 ----------
 // 场坐标里写，见 场。A0 = 一镜到底时间轴末帧（F0）的机位（原样取 镜头.ts）
-const C0: Cam = 一镜镜头(F0);
+const C0: Cam = oneShotCamera(F0);
 type SceneCam = { pos: number[]; tgt: number[]; lens: number };
 const camToScene = (c: Cam): SceneCam => ({ pos: toScene(c.pos), tgt: toScene(c.tgt), lens: c.lens });
 const camFromScene = (c: SceneCam): Cam => ({ pos: fromScene(c.pos), tgt: fromScene(c.tgt), lens: c.lens });

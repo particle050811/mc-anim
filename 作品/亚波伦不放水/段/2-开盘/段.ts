@@ -3,54 +3,54 @@
 // 声音的时刻按世界秒排（场/1-台地/开盘拍.ts、开盘时刻.ts），放的时候换成片秒（慢放里的声音落在慢下来的画面上，本身不放慢，只有拉升那阵风压低了放）。
 // 响度三档（同 声音表.md 6.1 节）：主要（冲刺、瞬移、张盘）峰值 −10 dBFS，次要（脚步、风、瞬移前兆）−18 dBFS。
 // 一个事件有几个文件的挑哪个、多响、拉升那阵风放慢多少都是 Agent 取的，用户没听过。
-import { 窗口段 } from '@engine/段/窗口段.ts';
-import { 真下界包 } from '../../地点/真下界位置.ts';
-import { 断曜流光冲刺, type 冲刺轨迹 } from '../../物品/断曜流光冲刺.ts';
-import { 一冲, 二冲, 拍, 片秒 } from '../../场/1-台地/开盘时刻.ts';
-import 线 from '../../场/1-台地/时间线.ts';
-import 声音表 from './声音表.生成.ts';
+import { windowSeg } from '@engine/段/窗口段.ts';
+import { realNetherPack } from '../../地点/真下界位置.ts';
+import { valetteinDash, type DashTrail } from '../../物品/断曜流光冲刺.ts';
+import { firstDash, secondDash, beats, toClipSec } from '../../场/1-台地/开盘时刻.ts';
+import timeline from '../../场/1-台地/时间线.ts';
+import soundTable from './声音表.生成.ts';
 
-const 主 = -10;
-const 次 = -18;
+const mainPeakDb = -10;
+const peakDb = -18;
 
 /** 冲出去以后在地上滑的脚步：照原版 Entity.move，在地上的每一刻 moveDist 加 位移 × 0.6，过了 nextStep（取整 + 1）就响一声（一刻最多一声） */
-const 滑步 = (起: number, 轨: 冲刺轨迹): number[] => {
-  const 出: number[] = [];
-  let [走, 下一步] = [0, 1];
-  for (let k = 1; k < 轨.点.length; k++) {
-    if (!轨.在地[k]) continue;
-    const [a, b] = [轨.点[k - 1]!, 轨.点[k]!];
-    走 += Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) * 0.6;
-    if (走 > 下一步) {
-      出.push(起 + k / 20);
-      下一步 = Math.floor(走) + 1;
+const slideSteps = (startSec: number, track: DashTrail): number[] => {
+  const stepTimes: number[] = [];
+  let [walked, nextStep] = [0, 1];
+  for (let k = 1; k < track.点.length; k++) {
+    if (!track.onGround[k]) continue;
+    const [a, b] = [track.点[k - 1]!, track.点[k]!];
+    walked += Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) * 0.6;
+    if (walked > nextStep) {
+      stepTimes.push(startSec + k / 20);
+      nextStep = Math.floor(walked) + 1;
     }
   }
-  return 出;
+  return stepTimes;
 };
 
-export default 窗口段(线, {
-  起: '召唤完',
-  止: '开盘完',
-  地形: [真下界包],
-  声音表,
-  声音: ({ 放 }) => {
-    const 出: ReturnType<typeof 放>[] = [];
+export default windowSeg(timeline, {
+  起: 'summonDone',
+  止: 'wheelOpenDone',
+  地形: [realNetherPack],
+  soundTable,
+  声音: ({ 放: play }) => {
+    const sounds: ReturnType<typeof play>[] = [];
     /** 世界秒放一个声音 */
-    const 在 = (资产: string, 世界: number, 选项: Parameters<typeof 放>[2]) => 出.push(放(资产, 片秒(世界), 选项));
+    const playAt = (asset: string, beatTime: number, options: Parameters<typeof play>[2]) => sounds.push(play(asset, toClipSec(beatTime), options));
     // 断曜流光冲刺：挥那一下放 TRIDENT_RIPTIDE_1，音高 1.3（游戏里就这一个声音，物品不放别的）
-    for (const [i, 秒] of [拍.冲一, 拍.冲二].entries()) 在(断曜流光冲刺.音, 秒, { 峰值: 主, 速率: 断曜流光冲刺.音高, 名: `冲刺${i + 1}` });
-    for (const [i, [起, 轨]] of ([[拍.冲一, 一冲], [拍.冲二, 二冲]] as const).entries())
-      for (const [j, 秒] of 滑步(起, 轨).entries()) 在(`音效/block.stone.step.${((i * 3 + j) % 6) + 1}`, 秒, { 峰值: 次, 名: `滑步${i + 1}-${j + 1}` });
+    for (const [i, sec] of [beats.dashFirstSec, beats.dashSecondSec].entries()) playAt(valetteinDash.sound, sec, { 峰值: mainPeakDb, 速率: valetteinDash.音高, 名: `冲刺${i + 1}` });
+    for (const [i, [startSec, track]] of ([[beats.dashFirstSec, firstDash], [beats.dashSecondSec, secondDash]] as const).entries())
+      for (const [j, sec] of slideSteps(startSec, track).entries()) playAt(`音效/block.stone.step.${((i * 3 + j) % 6) + 1}`, sec, { 峰值: peakDb, 名: `滑步${i + 1}-${j + 1}` });
     // 她：从祭坛一蹬飞出来、瞬移出来那一冲带一阵风；往上一拉那阵风落在慢放里，压低放（Agent 取的）
-    在('音效/诡厄巫法/goety.wind.1', 拍.起飞, { 峰值: 次, 名: '飞出来' });
-    在('音效/诡厄巫法/goety.wind.3', 拍.移, { 峰值: 次, 名: '瞬移出来' });
-    在('音效/诡厄巫法/goety.wind.2', 拍.冲二, { 峰值: 次, 速率: 0.7, 名: '拉升' });
+    playAt('音效/诡厄巫法/goety.wind.1', beats.takeoff, { 峰值: peakDb, 名: '飞出来' });
+    playAt('音效/诡厄巫法/goety.wind.3', beats.移, { 峰值: peakDb, 名: '瞬移出来' });
+    playAt('音效/诡厄巫法/goety.wind.2', beats.dashSecondSec, { 峰值: peakDb, 速率: 0.7, 名: '拉升' });
     // 瞬移：开始冒烟时前兆，挪过去那一下传送声
-    在('音效/诡厄巫法/goety.apostle_pre_teleport', 拍.烟起, { 峰值: 次, 名: '瞬移前兆' });
-    在('音效/诡厄巫法/goety.apostle_teleport.1', 拍.移, { 峰值: 主, 名: '瞬移' });
+    playAt('音效/诡厄巫法/goety.apostle_pre_teleport', beats.smokeStart, { 峰值: peakDb, 名: '瞬移前兆' });
+    playAt('音效/诡厄巫法/goety.apostle_teleport.1', beats.移, { 峰值: mainPeakDb, 名: '瞬移' });
     // 张盘（11-11 起又回到第 2 幕：她拉升里张开，用户「飞行的时候伸出法杖 圆环缓缓张开」）
-    在('音效/诡厄巫法/goety.apostle_prepare_spell.1', 拍.张盘, { 峰值: 主, 名: '张盘' });
-    return 出;
+    playAt('音效/诡厄巫法/goety.apostle_prepare_spell.1', beats.openWheelSec, { 峰值: mainPeakDb, 名: '张盘' });
+    return sounds;
   },
 });

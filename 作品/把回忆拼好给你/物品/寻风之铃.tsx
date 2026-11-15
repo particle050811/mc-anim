@@ -5,7 +5,7 @@ import { ItemSprite, type ItemLayer } from '@engine/model/物品贴图.tsx';
 import { png } from '@engine/model/贴图.ts';
 import img from 'asset:贴图/物品/寻风之铃';
 
-export const 寻风之铃层: ItemLayer[] = [{ tex: png(img) }];
+export const windBellLayers: ItemLayer[] = [{ tex: png(img) }];
 
 /** 物品坐标（中心在原点，一格见方的 16×16 贴图，正面朝 +Z），不加自发光打底，和挂它的告示牌同一套受光 */
-export const 寻风之铃: React.FC = () => <ItemSprite layers={寻风之铃层} emissive={0} shadow={false} />;
+export const WindBell: React.FC = () => <ItemSprite layers={windBellLayers} emissive={0} shadow={false} />;

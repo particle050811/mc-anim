@@ -8,29 +8,29 @@
 // 生位大多离镜头很远，画面里只有靠近施法者的几支矛。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 落雨们 } from '../零件/甲/落雨画.tsx';
-import { 霜花类 } from '../零件/丁粒子.ts';
-import { 霜环粒子们, 霜墙 } from '../零件/丁霜.tsx';
-import { 贴图粒子 } from '../零件/粒子.tsx';
-import 元, { 冰矛们 } from './绝对零度.元.ts';
-import 冰刺图 from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { ArrowRainGroup } from '../零件/甲/落雨画.tsx';
+import { frostFlowerClass } from '../零件/丁粒子.ts';
+import { frostRingSpawns, FrostWall } from '../零件/丁霜.tsx';
+import { TexturedParticles } from '../零件/粒子.tsx';
+import meta, { iceSpears } from './绝对零度.元.ts';
+import iceSpikePng from 'asset:贴图/法术/goety/entity/projectiles/ice_spike';
 
-const 领域半径 = 24;
-const 环刻们 = [0, 40];
+const domainRadius = 24;
+const ringTicks = [0, 40];
 
-const 绝对零度: React.FC<法术演出属性> = ({ 秒, 起点, 目标, 种子 }) => {
+const AbsoluteZero: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
   // 法阵、边界环围着施法者水平位置，高度取目标脚底的地面（起点在演出里悬在空中）
-  const 脚: [number, number, number] = [起点[0], 起点[1], 目标[2]];
-  const 霜花 = 环刻们.flatMap((t, i) => 霜环粒子们(种子 * 41 + i, 脚, 领域半径, t));
+  const feet: [number, number, number] = [from[0], from[1], target[2]];
+  const frostSpawns = ringTicks.flatMap((t, i) => frostRingSpawns(seed * 41 + i, feet, domainRadius, t));
   return (
     <>
-      <霜墙 位={脚} 半径={领域半径} 刻={秒 * 20} />
-      <贴图粒子 类={霜花类} 出生们={霜花} 秒={秒} />
-      <落雨们 弹们={冰矛们(起点, 种子)} 秒={秒} 图={png(冰刺图)} 雾色={[1, 1, 1]} 种子={种子} />
+      <FrostWall 位={feet} radius={domainRadius} 刻={sec * 20} />
+      <TexturedParticles 类={frostFlowerClass} spawns={frostSpawns} 秒={sec} />
+      <ArrowRainGroup projectiles={iceSpears(from, seed)} 秒={sec} 图={png(iceSpikePng)} fogColor={[1, 1, 1]} 种子={seed} />
     </>
   );
 };
 
-export default 定义法术演出(元, 绝对零度);
+export default defineSpellPerformance(meta, AbsoluteZero);

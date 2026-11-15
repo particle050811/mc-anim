@@ -4,13 +4,13 @@
 // 没做：25% 的箭不带散布而且着火；落地消失时的 cult_spell 粒子（色 0x16FEFF）；箭在游戏里吃环境光，这里满亮度。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { 定义法术演出 } from '../定义.tsx';
-import type { 法术演出属性 } from '../接口.ts';
-import { 十六色 } from '../零件/甲/共用.ts';
-import { 落雨们 } from '../零件/甲/落雨画.tsx';
-import 元, { 箭雨弹 } from './arrow_rain.元.ts';
-import 箭图 from 'asset:贴图/法术/goety/entity/projectiles/rain_arrow';
+import { defineSpellPerformance } from '../定义.tsx';
+import type { SpellPerformanceProps } from '../接口.ts';
+import { hexColor } from '../零件/甲/共用.ts';
+import { ArrowRainGroup } from '../零件/甲/落雨画.tsx';
+import meta, { arrowRainShots } from './arrow_rain.元.ts';
+import rainArrowPng from 'asset:贴图/法术/goety/entity/projectiles/rain_arrow';
 
-const 箭雨: React.FC<法术演出属性> = ({ 秒, 目标, 种子 }) => <落雨们 弹们={箭雨弹(目标, 种子)} 秒={秒} 图={png(箭图)} 雾色={十六色(0x4b4b4b)} 种子={种子} />;
+const ArrowRain: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => <ArrowRainGroup projectiles={arrowRainShots(target, seed)} 秒={sec} 图={png(rainArrowPng)} fogColor={hexColor(0x4b4b4b)} 种子={seed} />;
 
-export default 定义法术演出(元, 箭雨);
+export default defineSpellPerformance(meta, ArrowRain);

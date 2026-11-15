@@ -3,15 +3,15 @@
 // vitest 不走这个钩子（它自己转 import，不认 asset:），所以没有单测直接载入体素库；烘焙的逐字节核对见 docs/世界.md。
 // 别的后缀（贴图、音频）在 Node 里没有意义，碰到就报错，不悄悄给占位。
 import fs from 'node:fs';
-import { 读资产锁, 字节路径 } from './资产锁.ts';
+import { readAssetLock, bytesPath } from './资产锁.ts';
 
 /** asset id → 字节的绝对路径（只收 .json、字节在数据根的） */
-export const 资产json表 = (根?: string): Record<string, string> => {
-  const 表: Record<string, string> = {};
-  for (const [id, l] of Object.entries(读资产锁())) {
+export const assetJsonTable = (dataRoot?: string): Record<string, string> => {
+  const assetJsonMap: Record<string, string> = {};
+  for (const [id, l] of Object.entries(readAssetLock())) {
     if (l.后缀 !== '.json') continue;
-    const f = 字节路径(l, 根);
-    if (fs.existsSync(f)) 表[id] = f;
+    const f = bytesPath(l, dataRoot);
+    if (fs.existsSync(f)) assetJsonMap[id] = f;
   }
-  return 表;
+  return assetJsonMap;
 };

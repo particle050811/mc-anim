@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 60708a5d2122），别手改：改 作品的 台词.toml 后跑 anim voice lip 7-李樱-开到了（换配音跑 anim voice use）。
-import type { 台词句 } from '@engine/audio/台词句.ts';
+import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const 句: 台词句 = {
+const sentence: LineSentence = {
   "id": "7-李樱-开到了",
   "角色": "李樱",
   "念": "开到了！",
@@ -27,4 +27,4 @@ const 句: 台词句 = {
     [0.8,"X"],
   ],
 };
-export default 句;
+export default sentence;

@@ -8,13 +8,13 @@ import { handoffs, scene71, scene73, footOf } from '../布局.ts';
 export const FPS = 24;
 
 // ---------- 接 7-1-7 末帧（契约：古城4x布局.ts 的 衔接.七三首；第 1 场改了数，这里跟着变） ----------
-export const handoff = handoffs.七三首;
-export const horseStart: V3 = handoff.马; // 北墙头、朝北站着
+export const handoff = handoffs.handoffTo73;
+export const horseStart: V3 = handoff.horse; // 北墙头、朝北站着
 export const wardenStart: V3 = handoff.监守者; // 墙脚下
 export const huangPanStart: V3 = handoff.黄叛; // 黄叛高台（中央台北沿）
 
-export const wallTopEast: V3 = scene73.墙头东;
-export const towerTop: V3 = scene73.塔顶;
-export const avenue: V3 = scene73.大道;
+export const wallTopEast: V3 = scene73.wallTopEast;
+export const towerTop: V3 = scene73.towerTop;
+export const avenue: V3 = scene73.avenue;
 // 黄叛射完那一箭就往东跳走（去 7-4-1 的传送门顶），第一跳落在场子东墙脊（7-1 刘心忠站过的那条）
-export const huangPanExit: V3 = footOf(scene71.东墙脊);
+export const huangPanExit: V3 = footOf(scene71.eastWallRidge);

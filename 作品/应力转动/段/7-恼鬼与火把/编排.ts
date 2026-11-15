@@ -7,30 +7,30 @@ import { lerpV } from '../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import { camPoses, frameAt, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
-export const 号 = '7-1-2' as const;
+export const segmentId = '7-1-2' as const;
 export const FPS = timeline.FPS;
-export const END = timeline.frameCountOf(号);
-export const t于 = (f: number) => timeline.tAt(号, f);
-export const 镜1止 = frameAt(号, 3.6);
-export const 镜2止 = frameAt(号, 4.5);
+export const END = timeline.frameCountOf(segmentId);
+export const timeAt = (f: number) => timeline.tAt(segmentId, f);
+export const shot1EndFrame = frameAt(segmentId, 3.6);
+export const shot2EndFrame = frameAt(segmentId, 4.5);
 const huangAndWarden = (k: number) => (frame: number): V3 => {
-  const t = t于(frame);
+  const t = timeAt(frame);
   const huang = play.huangPanPos(t);
   return lerpV([huang[0], huang[1], huang[2] + 1.3], play.wardenChest(t), k);
 };
 const shots: ShotCam[] = [
   {
     start: 0,
-    pos: [[0, G4(-851.5, -41.5, 215.2)], [镜1止, G4(-851.8, -41.7, 215.3)]],
-    tgt: [[0, G4(-864.5, -48.0, 226.5)], [镜1止, G4(-864.0, -47.5, 227.6)]],
-    lens: [[0, 18], [镜1止, 18]],
+    pos: [[0, G4(-851.5, -41.5, 215.2)], [shot1EndFrame, G4(-851.8, -41.7, 215.3)]],
+    tgt: [[0, G4(-864.5, -48.0, 226.5)], [shot1EndFrame, G4(-864.0, -47.5, 227.6)]],
+    lens: [[0, 18], [shot1EndFrame, 18]],
   },
-  { start: 镜1止, pos: [[镜1止, [-147.0, 9.2, 7.0]], [镜2止, [-147.6, 9.6, 7.2]]], tgt: huangAndWarden(0.35), lens: [[镜1止, 18], [镜2止, 18]] },
+  { start: shot1EndFrame, pos: [[shot1EndFrame, [-147.0, 9.2, 7.0]], [shot2EndFrame, [-147.6, 9.6, 7.2]]], tgt: huangAndWarden(0.35), lens: [[shot1EndFrame, 18], [shot2EndFrame, 18]] },
   {
-    start: 镜2止,
-    pos: [[镜2止, G4(-865.6, -39.6, 228.4)], [END - 1, G4(-865.9, -39.7, 228.2)]],
-    tgt: [[镜2止, G4(-871.8, -46.0, 220.2)], [END - 1, G4(-871.8, -46.2, 220.2)]],
-    lens: [[镜2止, 18], [END - 1, 18]],
+    start: shot2EndFrame,
+    pos: [[shot2EndFrame, G4(-865.6, -39.6, 228.4)], [END - 1, G4(-865.9, -39.7, 228.2)]],
+    tgt: [[shot2EndFrame, G4(-871.8, -46.0, 220.2)], [END - 1, G4(-871.8, -46.2, 220.2)]],
+    lens: [[shot2EndFrame, 18], [END - 1, 18]],
   },
 ];
-export const { 镜号, camera } = camPoses(shots);
+export const { shotIndex, camera } = camPoses(shots);

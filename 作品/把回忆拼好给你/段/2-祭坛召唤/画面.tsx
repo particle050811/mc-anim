@@ -2,37 +2,37 @@
 // 顶上第 1～15 句的符文歌词（在这段里出现的只有第 3 句和第 4 句提前进场的那一截），描边色跟调子。
 // 歌词浮在最上面、不过后期：同 2-日落划船（第 4 句开头还是这一镜，歌词两边一样，接缝上字不变色）
 import type React from 'react';
-import { 光影范围 } from '@engine/三渲二/画布.tsx';
-import { 整片后期 } from '@engine/三渲二/整片后期.tsx';
-import { 段窗口 } from '../../分镜/正片第3句.ts';
-import { 光影段 } from '../../默认.ts';
-import { 色板 } from '../../色板.ts';
-import { 祭坛画面 } from '../../场/2-祭坛/祭坛.tsx';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 正片歌词行 } from '../../界面/符文歌词数据.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { shadingScope } from '@engine/三渲二/画布.tsx';
+import { FilmPost } from '@engine/三渲二/整片后期.tsx';
+import { segmentWindow } from '../../分镜/正片第3句.ts';
+import { shadingBySeg } from '../../默认.ts';
+import { palette } from '../../色板.ts';
+import { AltarPicture } from '../../场/2-祭坛/祭坛.tsx';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 起帧 = 段窗口('2-祭坛召唤').起帧;
-const 行们 = Array.from({ length: 15 }, (_, i) => 正片歌词行(i + 1, 起帧));
-const 歌词样式 = { ...符文歌词默认, 描边色: 色板.夏日白天.描边 };
+const startFrame = segmentWindow('2-祭坛召唤').起帧;
+const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, startFrame));
+const lyricStyle = { ...runeLyricDefault, outlineColor: palette.夏日白天.outlineColor };
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const g = 起帧 + f;
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
+  const g = startFrame + f;
   return (
     <>
-      <整片后期 调色={色板.夏日白天.调色} 种子={g}>
+      <FilmPost grade={palette.夏日白天.grade} 种子={g}>
         {/* 光影照 默认.ts 的 光影段（甲版不开，乙版开 Agent 建议的） */}
-        <光影范围.Provider value={{ 光影: 光影段['2-祭坛召唤'] }}>
-          <祭坛画面 g={g} />
-        </光影范围.Provider>
-      </整片后期>
-      <符文歌词 行们={行们} 样式={歌词样式} />
+        <shadingScope.Provider value={{ shading: shadingBySeg['2-祭坛召唤'] }}>
+          <AltarPicture g={g} />
+        </shadingScope.Provider>
+      </FilmPost>
+      <RuneLyric lines={lyricLines} 样式={lyricStyle} />
     </>
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);

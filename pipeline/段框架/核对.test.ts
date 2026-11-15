@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { 核老段起秒 } from './核对.ts';
+import { checkLegacySegStartSec } from './核对.ts';
 
 describe('核老段起秒', () => {
-  const 清单 = ['7-甲', '7-乙', '7-丙'];
+  const segKeys = ['7-甲', '7-乙', '7-丙'];
   it('首尾相接、中间跳过一截都放行', () => {
-    expect(核老段起秒([{ 键: '7-甲', 起秒: 0, 秒: 10 }, { 键: '7-乙', 起秒: 10, 秒: 5 }, { 键: '7-丙', 起秒: 30, 秒: 5 }], 清单)).toEqual([]);
+    expect(checkLegacySegStartSec([{ 键: '7-甲', startSec: 0, 秒: 10 }, { 键: '7-乙', startSec: 10, 秒: 5 }, { 键: '7-丙', startSec: 30, 秒: 5 }], segKeys)).toEqual([]);
   });
   it('重叠要报', () => {
-    expect(核老段起秒([{ 键: '7-甲', 起秒: 0, 秒: 10 }, { 键: '7-乙', 起秒: 9, 秒: 5 }], 清单)).toEqual(['老段 7-乙 起在第 9 秒，和 7-甲（止于第 10 秒）重叠']);
+    expect(checkLegacySegStartSec([{ 键: '7-甲', startSec: 0, 秒: 10 }, { 键: '7-乙', startSec: 9, 秒: 5 }], segKeys)).toEqual(['老段 7-乙 起在第 9 秒，和 7-甲（止于第 10 秒）重叠']);
   });
   it('顺序和清单不一样要报', () => {
-    expect(核老段起秒([{ 键: '7-乙', 起秒: 0, 秒: 10 }, { 键: '7-甲', 起秒: 10, 秒: 5 }], 清单)[0]).toMatch(/顺序和清单不一样/);
+    expect(checkLegacySegStartSec([{ 键: '7-乙', startSec: 0, 秒: 10 }, { 键: '7-甲', startSec: 10, 秒: 5 }], segKeys)[0]).toMatch(/顺序和清单不一样/);
   });
 });

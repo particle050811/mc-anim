@@ -6,36 +6,36 @@
 // 剖面附近的列（地形.ts 的 剖面列）不进大网格，按坑态、撤了几排另建网格（每个状态建一次）。
 import React, { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
-import { 拼搭缓冲, type 方块 } from '@engine/model/方块拼搭.tsx';
-import { 做机位相机 } from '@engine/三渲二/机位.tsx';
-import { 三渲二画布 } from '@engine/三渲二/画布.tsx';
-import { 成片倍数 } from '@engine/三渲二/像素.ts';
+import { assembleBuffers, type PlacedBlock } from '@engine/model/方块拼搭.tsx';
+import { makeRigCamera } from '@engine/三渲二/机位.tsx';
+import { ToonCanvas } from '@engine/三渲二/画布.tsx';
+import { filmScale } from '@engine/三渲二/像素.ts';
 import { blockAtlas } from '@engine/voxel/真实方块图集.ts';
 import { Steve, type StevePose } from '@库/角色/史蒂夫.tsx';
-import { 天亮 } from '../../地点/天体.ts';
-import { 剖面列, 剖面方块, 剥排方块, 新世界方块, type 坑态 } from './地形.ts';
-import { 剖面原点, 地形雾, 天幕高, 天色, 夜天, 星, 渲染距离, 雾色, type 机位帧 } from './参数.ts';
-import { 星亮, 星们, 星向在 } from './星.ts';
+import { skyBrightness } from '../../地点/天体.ts';
+import { sectionColumn, crossSectionBlocks, stripBlocks, NewWorldBlocks, type PitState } from './地形.ts';
+import { sectionOrigin, terrainFog, skyDomeHeight, skyColor, nightSky, starField, renderDistance, fogColor, type CameraRigFrame } from './参数.ts';
+import { starBrightness, starList, starDirAt } from './星.ts';
 
-type 色 = [number, number, number];
-const 拆 = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as 色;
-const 混 = (a: 色, b: 色, k: number) => a.map((v, i) => v + (b[i]! - v) * k) as 色;
+type RgbColor = [number, number, number];
+const hexToRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as RgbColor;
+const mix = (a: RgbColor, b: RgbColor, k: number) => a.map((v, i) => v + (b[i]! - v) * k) as RgbColor;
 
 /** 第 刻 刻的地形雾色、地平线上的天色：夜里的地平色往白天的雾色插 */
-const 雾色在 = (刻: number) => 混(拆(夜天.地平), 拆(雾色), 天亮(刻));
+const fogColorAt = (tick: number) => mix(hexToRgb(nightSky.horizon), hexToRgb(fogColor), skyBrightness(tick));
 
 // ---------- 地形的雾 ----------
 
-const 雾统一量 = {
-  mcFogStart: { value: 地形雾.起 },
-  mcFogEnd: { value: 地形雾.止 },
-  mcFogColor: { value: new THREE.Vector3(...拆(雾色)) },
+const fogUniforms = {
+  mcFogStart: { value: terrainFog.起 },
+  mcFogEnd: { value: terrainFog.止 },
+  mcFogColor: { value: new THREE.Vector3(...hexToRgb(fogColor)) },
 };
 
 /** 给材质补原版的柱形雾：颜色编码（sRGB）之后按到相机的水平距离混雾色 */
-const 补雾 = (m: THREE.Material) => {
+const applyFog = (m: THREE.Material) => {
   m.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, 雾统一量);
+    Object.assign(shader.uniforms, fogUniforms);
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vMcFogW;')
       .replace('#include <project_vertex>', '#include <project_vertex>\nvMcFogW = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
@@ -55,26 +55,26 @@ const 补雾 = (m: THREE.Material) => {
   return m;
 };
 
-type 类 = '实心' | '镂空';
-let 材质们: Record<类, THREE.Material> | null = null;
-const 材质 = (c: 类) => {
-  if (!材质们) {
+type MatKind = '实心' | '镂空';
+let materials: Record<MatKind, THREE.Material> | null = null;
+const makeMaterial = (c: MatKind) => {
+  if (!materials) {
     const map = blockAtlas().original;
     const common = { map, vertexColors: true, roughness: 1, metalness: 0 };
-    材质们 = {
-      实心: 补雾(new THREE.MeshStandardMaterial(common)),
-      镂空: 补雾(new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide })),
+    materials = {
+      实心: applyFog(new THREE.MeshStandardMaterial(common)),
+      镂空: applyFog(new THREE.MeshStandardMaterial({ ...common, alphaTest: 0.5, side: THREE.DoubleSide })),
     };
   }
-  return 材质们[c];
+  return materials[c];
 };
 
-const 建网格 = (方块们: readonly 方块[], 群系: string, 名: string): THREE.Mesh[] => {
-  if (!方块们.length) return [];
-  const 缓冲们 = 拼搭缓冲(方块们, { 群系 });
+const buildMeshes = (blocks: readonly PlacedBlock[], biome: string, name: string): THREE.Mesh[] => {
+  if (!blocks.length) return [];
+  const buffers = assembleBuffers(blocks, { 群系: biome });
   const out: THREE.Mesh[] = [];
   for (const c of ['实心', '镂空'] as const) {
-    const b = 缓冲们[c];
+    const b = buffers[c];
     if (!b.idx.length) continue;
     const g = new THREE.BufferGeometry();
     g.setAttribute('position', new THREE.Float32BufferAttribute(b.pos, 3));
@@ -82,38 +82,38 @@ const 建网格 = (方块们: readonly 方块[], 群系: string, 名: string): T
     g.setAttribute('uv', new THREE.Float32BufferAttribute(b.uv, 2));
     g.setAttribute('color', new THREE.Float32BufferAttribute(b.col, 3));
     g.setIndex(b.idx);
-    const mesh = new THREE.Mesh(g, 材质(c));
-    mesh.name = `新世界-${名}-${群系}-${c}`;
+    const mesh = new THREE.Mesh(g, makeMaterial(c));
+    mesh.name = `新世界-${name}-${biome}-${c}`;
     mesh.frustumCulled = false;
     out.push(mesh);
   }
-  if (缓冲们.半透明.idx.length || 缓冲们.发光.idx.length) throw new Error('新世界里不该有半透明、发光的方块');
+  if (buffers.半透明.idx.length || buffers.发光.idx.length) throw new Error('新世界里不该有半透明、发光的方块');
   return out;
 };
 
 // 一个渲染页面只建一次（几十万个面，建一次一两秒）；剖面那两截按状态各建一次
-let 大网格: THREE.Mesh[] | null = null;
-const 大地形网格 = () => {
-  if (!大网格) {
-    const 方块们 = 新世界方块();
-    const 留 = (b: 方块) => 剖面列(b.位[0], b.位[1]) === null;
-    大网格 = [...建网格(方块们.平原.filter(留), 'minecraft:plains', '大'), ...建网格(方块们.樱花林.filter(留), 'minecraft:cherry_grove', '大')];
+let bigMeshCache: THREE.Mesh[] | null = null;
+const buildBigTerrainMesh = () => {
+  if (!bigMeshCache) {
+    const biomeBlocks = NewWorldBlocks();
+    const keep = (b: PlacedBlock) => sectionColumn(b.位[0], b.位[1]) === null;
+    bigMeshCache = [...buildMeshes(biomeBlocks.plains.filter(keep), 'minecraft:plains', '大'), ...buildMeshes(biomeBlocks.cherryGrove.filter(keep), 'minecraft:cherry_grove', '大')];
   }
-  return 大网格;
+  return bigMeshCache;
 };
-const 剖面网格们 = new Map<string, THREE.Mesh[]>();
-const 按状态 = (名: string, 铺: () => 方块[]) => {
-  let m = 剖面网格们.get(名);
+const sectionMeshes = new Map<string, THREE.Mesh[]>();
+const cachedByState = (stateName: string, tiles: () => PlacedBlock[]) => {
+  let m = sectionMeshes.get(stateName);
   if (!m) {
-    m = 建网格(铺(), 'minecraft:plains', 名);
-    剖面网格们.set(名, m);
+    m = buildMeshes(tiles(), 'minecraft:plains', stateName);
+    sectionMeshes.set(stateName, m);
   }
   return m;
 };
 
-const 地形: React.FC<{ 坑: 坑态; 剥: number }> = ({ 坑, 剥 }) => {
-  const 大 = useMemo(大地形网格, []);
-  const meshes = [...大, ...按状态(`剖${坑.挖掉}${坑.顶土 ? '顶' : ''}`, () => 剖面方块(坑)), ...按状态(`剥${剥}`, () => 剥排方块(剥))];
+const Terrain: React.FC<{ pit: PitState; peeled: number }> = ({ pit, peeled }) => {
+  const bigTerrainMeshes = useMemo(buildBigTerrainMesh, []);
+  const meshes = [...bigTerrainMeshes, ...cachedByState(`剖${pit.dugCount}${pit.dirtCovered ? '顶' : ''}`, () => crossSectionBlocks(pit)), ...cachedByState(`剥${peeled}`, () => stripBlocks(peeled))];
   return (
     <group>
       {meshes.map((m) => (
@@ -126,85 +126,85 @@ const 地形: React.FC<{ 坑: 坑态; 剥: number }> = ({ 坑, 剥 }) => {
 // ---------- 天 ----------
 
 /** 天的一格多大（成片像素）：和全片 像素N 一样 6，天的渐变一格一格地变，不是平滑的；一颗星至少 星.画格 格见方（参数.ts） */
-const 天格 = 6;
+const skyCellPx = 6;
 
 /** 仰角 θ（弧度）处的天色：原版天幕在眼睛上方 天幕高 格，那一点离眼睛 天幕高 / sin θ，球形雾 smoothstep(0, 渲染距离)；地平线以下是雾色。
  *  亮 = 天亮程度（地点/天体.ts），天、雾的颜色从夜里的往白天的插 */
-export const 天色在 = (θ: number, 亮 = 1): 色 => {
-  const 天 = 混(拆(夜天.顶), 拆(天色), 亮), 雾 = 混(拆(夜天.地平), 拆(雾色), 亮);
-  if (θ <= 0) return 雾;
-  const d = 天幕高 / Math.sin(θ);
-  const t = Math.min(1, d / 渲染距离);
-  return 混(天, 雾, t * t * (3 - 2 * t));
+export const skyColorAt = (θ: number, bright = 1): RgbColor => {
+  const sky = mix(hexToRgb(nightSky.topColor), hexToRgb(skyColor), bright), fog = mix(hexToRgb(nightSky.horizon), hexToRgb(fogColor), bright);
+  if (θ <= 0) return fog;
+  const d = skyDomeHeight / Math.sin(θ);
+  const t = Math.min(1, d / renderDistance);
+  return mix(sky, fog, t * t * (3 - 2 * t));
 };
 
 /** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线仰角取色；再把地平线以上的星星加上去（原版 SRC_ALPHA、ONE：加 星亮²，这里乘 星.亮倍；不吃雾） */
-const 透视天: React.FC<{ 机位: 机位帧; 刻: number; 宽: number; 高: number }> = ({ 机位, 刻, 宽, 高 }) => {
+const PerspectiveSky: React.FC<{ cameraRig: CameraRigFrame; 刻: number; 宽: number; 高: number }> = ({ cameraRig, 刻: tick, 宽: width, 高: height }) => {
   const ref = useRef<HTMLCanvasElement>(null);
-  const 画宽 = 宽 * 成片倍数, 画高 = 高 * 成片倍数;
+  const drawWidth = width * filmScale, drawHeight = height * filmScale;
   useLayoutEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
-    const cam = 做机位相机({ 种: '透视', ...机位 }, 宽, 高, 1);
-    const nx = Math.ceil(画宽 / 天格), ny = Math.ceil(画高 / 天格);
-    const 小 = document.createElement('canvas');
-    小.width = nx;
-    小.height = ny;
-    const sctx = 小.getContext('2d')!;
+    const cam = makeRigCamera({ 种: '透视', ...cameraRig }, width, height, 1);
+    const nx = Math.ceil(drawWidth / skyCellPx), ny = Math.ceil(drawHeight / skyCellPx);
+    const small = document.createElement('canvas');
+    small.width = nx;
+    small.height = ny;
+    const sctx = small.getContext('2d')!;
     const img = sctx.createImageData(nx, ny);
     const v = new THREE.Vector3();
-    const 亮 = 天亮(刻);
+    const bright = skyBrightness(tick);
     for (let y = 0; y < ny; y++)
       for (let x = 0; x < nx; x++) {
-        v.set((((x + 0.5) * 天格) / 画宽) * 2 - 1, 1 - (((y + 0.5) * 天格) / 画高) * 2, 0.5).unproject(cam).sub(cam.position).normalize();
-        const c = 天色在(Math.asin(v.y), 亮);
+        v.set((((x + 0.5) * skyCellPx) / drawWidth) * 2 - 1, 1 - (((y + 0.5) * skyCellPx) / drawHeight) * 2, 0.5).unproject(cam).sub(cam.position).normalize();
+        const c = skyColorAt(Math.asin(v.y), bright);
         const o = (y * nx + x) * 4;
         img.data[o] = Math.round(c[0] * 255);
         img.data[o + 1] = Math.round(c[1] * 255);
         img.data[o + 2] = Math.round(c[2] * 255);
         img.data[o + 3] = 255;
       }
-    const 加 = Math.min(255, Math.round(星亮(刻) ** 2 * 星.亮倍 * 255));
-    if (加 > 0) {
-      const 前 = cam.getWorldDirection(new THREE.Vector3());
-      const 每弧度 = 画高 / 2 / Math.tan((机位.视角 * Math.PI) / 360);
-      for (const s of 星们) {
-        const [x, y, z] = 星向在(s, 刻);
+    const addLight = Math.min(255, Math.round(starBrightness(tick) ** 2 * starField.brightnessMult * 255));
+    if (addLight > 0) {
+      const forward = cam.getWorldDirection(new THREE.Vector3());
+      const pixelsPerRad = drawHeight / 2 / Math.tan((cameraRig.fov * Math.PI) / 360);
+      for (const s of starList) {
+        const [x, y, z] = starDirAt(s, tick);
         if (z <= 0) continue;
         v.set(x, z, -y);
-        if (v.dot(前) <= 0) continue;
+        if (v.dot(forward) <= 0) continue;
         v.add(cam.position).project(cam);
-        const n = Math.max(星.画格, Math.round(((2 * s.半边) / 星.距离) * 每弧度 / 天格));
-        const cx = Math.round((((v.x + 1) / 2) * 画宽) / 天格 - n / 2), cy = Math.round((((1 - v.y) / 2) * 画高) / 天格 - n / 2);
+        const n = Math.max(starField.starCellPx, Math.round(((2 * s.半边) / starField.距离) * pixelsPerRad / skyCellPx));
+        const cx = Math.round((((v.x + 1) / 2) * drawWidth) / skyCellPx - n / 2), cy = Math.round((((1 - v.y) / 2) * drawHeight) / skyCellPx - n / 2);
         for (let dy = 0; dy < n; dy++)
           for (let dx = 0; dx < n; dx++) {
             const gx = cx + dx, gy = cy + dy;
             if (gx < 0 || gy < 0 || gx >= nx || gy >= ny) continue;
             const o = (gy * nx + gx) * 4;
-            for (let c = 0; c < 3; c++) img.data[o + c] = Math.min(255, img.data[o + c]! + 加);
+            for (let c = 0; c < 3; c++) img.data[o + c] = Math.min(255, img.data[o + c]! + addLight);
           }
       }
     }
     sctx.putImageData(img, 0, 0);
     const ctx = canvas.getContext('2d')!;
     ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(小, 0, 0, nx * 天格, ny * 天格);
+    ctx.drawImage(small, 0, 0, nx * skyCellPx, ny * skyCellPx);
   });
-  return <canvas ref={ref} width={画宽} height={画高} style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高 }} />;
+  return <canvas ref={ref} width={drawWidth} height={drawHeight} style={{ position: 'absolute', left: 0, top: 0, width: width, height: height }} />;
 };
 
 // ---------- 整个世界 ----------
 
-export type 新世界参数 = {
-  机位: 机位帧;
+export type NewWorldParams = {
+  cameraRig: CameraRigFrame;
   /** 你（史蒂夫）的姿势；null = 不画（2-第一晚 自己在 children 里画） */
   你: StevePose | null;
   /** 平涂色调（照调子） */
-  色调: string;
+  tint: string;
   /** 游戏刻（地点/天体.ts）：天色、雾色、星星 */
   刻: number;
   /** 剖面：坑挖到哪一步、坑和镜头之间撤了几排（地形.ts） */
-  剖: { 坑: 坑态; 剥: number };
+  section: { pit: PitState; peeled: number };
   宽: number;
   高: number;
   /** 剖面里的东西（裂纹、掉落物、粒子……）：原点在 剖面原点（坑那一格南面的中点），x 东、y 北、z 上 */
@@ -212,16 +212,16 @@ export type 新世界参数 = {
 };
 
 /** 铺满画面的新世界（天 + 地形 + 你），放在 position 不是 static 的容器里，自己贴左上角；整片后期、聊天栏、歌词由段套 */
-export const 新世界: React.FC<新世界参数> = ({ 机位, 你, 色调, 刻, 剖, 宽, 高, children }) => {
-  雾统一量.mcFogColor.value.set(...雾色在(刻));
+export const NewWorld: React.FC<NewWorldParams> = ({ cameraRig, 你: you, tint, 刻: tick, section, 宽: width, 高: height, children }) => {
+  fogUniforms.mcFogColor.value.set(...fogColorAt(tick));
   return (
-    <div style={{ position: 'absolute', left: 0, top: 0, width: 宽, height: 高, overflow: 'hidden' }}>
-      <透视天 机位={机位} 刻={刻} 宽={宽} 高={高} />
-      <三渲二画布 宽={宽} 高={高} 机位={{ 种: '透视', ...机位, 远: 640 }} 色调={色调} style={{ position: 'absolute', left: 0, top: 0 }}>
-        <地形 坑={剖.坑} 剥={剖.剥} />
-        {你 && <Steve pose={你} />}
-        {children && <group position={[...剖面原点]}>{children}</group>}
-      </三渲二画布>
+    <div style={{ position: 'absolute', left: 0, top: 0, width: width, height: height, overflow: 'hidden' }}>
+      <PerspectiveSky cameraRig={cameraRig} 刻={tick} 宽={width} 高={height} />
+      <ToonCanvas 宽={width} 高={height} cameraRig={{ 种: '透视', ...cameraRig, farPlane: 640 }} tint={tint} style={{ position: 'absolute', left: 0, top: 0 }}>
+        <Terrain pit={section.pit} peeled={section.peeled} />
+        {you && <Steve pose={you} />}
+        {children && <group position={[...sectionOrigin]}>{children}</group>}
+      </ToonCanvas>
     </div>
   );
 };

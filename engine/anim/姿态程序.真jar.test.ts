@@ -5,36 +5,36 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { EntityPart } from '../model/实体模型.tsx';
-import { 姿态求值器, type 姿态输入, type 姿态程序 } from './姿态程序.ts';
+import { poseEvaluator, type PoseInput, type PoseProgram } from './姿态程序.ts';
 
-const 目录 = process.env.ANIM_REAL_POSE_DUMP;
-const 文件们 = 目录 && fs.existsSync(目录) ? fs.readdirSync(目录).filter((f) => f.endsWith('.json')) : [];
+const dir = process.env.ANIM_REAL_POSE_DUMP;
+const jsonFiles = dir && fs.existsSync(dir) ? fs.readdirSync(dir).filter((f) => f.endsWith('.json')) : [];
 
-const 位转浮 = (h: string) => {
+const bitsToFloat = (h: string) => {
   const dv = new DataView(new ArrayBuffer(4));
   dv.setUint32(0, parseInt(h, 16));
   return dv.getFloat32(0);
 };
-const 浮转位 = (x: number) => {
+const floatToBits = (x: number) => {
   const dv = new DataView(new ArrayBuffer(4));
   dv.setFloat32(0, x);
   return dv.getUint32(0).toString(16);
 };
 
-type 真jar样例 = { 程序: 姿态程序; 根: EntityPart; 样例: { 输入: Record<string, [string, string]>; 真值: Record<string, string> }[] };
+type RealJarSample = { 程序: PoseProgram; 根: EntityPart; 样例: { 输入: Record<string, [string, string]>; 真值: Record<string, string> }[] };
 
-describe.skipIf(文件们.length === 0)('姿态程序求值器：真 jar 翻出的程序', () => {
-  for (const f of 文件们) {
+describe.skipIf(jsonFiles.length === 0)('姿态程序求值器：真 jar 翻出的程序', () => {
+  for (const f of jsonFiles) {
     it(`${f} 和 JVM 逐位相同`, () => {
-      const 夹具 = JSON.parse(fs.readFileSync(path.join(目录!, f), 'utf8')) as 真jar样例;
-      const 求 = 姿态求值器(夹具.程序, 夹具.根);
-      for (const { 输入, 真值 } of 夹具.样例) {
-        const 给: 姿态输入 = Object.fromEntries(Object.entries(输入).map(([k, [t, v]]) => [k, t === 'f' ? 位转浮(v) : t === 'j' ? BigInt(v) : Number(v)]));
-        const { 姿态, 隐藏 } = 求(给);
-        for (const [部件, 串] of Object.entries(真值)) {
-          const p = 姿态[部件];
-          const 算 = [...p.offset, ...p.rot, ...p.scale].map(浮转位).join(' ') + ` ${隐藏.includes(部件) ? 0 : 1}`;
-          expect(算, `${部件}，输入 ${JSON.stringify(输入)}`).toBe(串);
+      const fixture = JSON.parse(fs.readFileSync(path.join(dir!, f), 'utf8')) as RealJarSample;
+      const solve = poseEvaluator(fixture.程序, fixture.根);
+      for (const { 输入: input, 真值: truth } of fixture.样例) {
+        const inputs: PoseInput = Object.fromEntries(Object.entries(input).map(([k, [t, v]]) => [k, t === 'f' ? bitsToFloat(v) : t === 'j' ? BigInt(v) : Number(v)]));
+        const { partPoses, hidden } = solve(inputs);
+        for (const [part, expected] of Object.entries(truth)) {
+          const p = partPoses[part];
+          const calc = [...p.offset, ...p.rot, ...p.scale].map(floatToBits).join(' ') + ` ${hidden.includes(part) ? 0 : 1}`;
+          expect(calc, `${part}，输入 ${JSON.stringify(input)}`).toBe(expected);
         }
       }
     });

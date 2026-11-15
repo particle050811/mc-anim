@@ -1,26 +1,26 @@
 // 门口哈气核对的视图表（纯数据，段.ts 也读）：一帧一个视图，每帧都是成片里第 8 句 27.80 那一帧（摆法见 场/2-门口/第8句.ts），只差下面给了的那一项。
 // 不给的都照成片：第 8 句的镜头（场/2-门口/第8句.ts 的 第8句镜头，N = 16）、屋后远景开、整片后期开、照片墙四张挂满。全片不描边。
 // 颗粒的种子各帧都取片子里那一帧（同成片），帧和帧逐像素比只差那一项。第 2 帧起是对照。
-export type 视图 = {
+export type View = {
   名: string;
   /** 整片后期（调色、暗角、颗粒） */
-  后期: boolean;
+  withPost: boolean;
   /** 屋后远景和头顶的云（地点/屋后远景.tsx）；关掉就是原来的平地、平天 */
   远景: boolean;
   /** 用 N = 6 的整屏取景（参数.ts 的 取景，核对-门口 那个）；不给 = 第8句镜头（N = 16） */
   N6?: boolean;
   /** 盖在你的朝向、头转角、倍数上 */
-  你?: { yaw?: number; headYaw?: number; 倍数?: number };
+  你?: { yaw?: number; headYaw?: number; scale?: number };
 };
 
-const 定 = { 后期: true, 远景: true } as const;
+const finalFlags = { withPost: true, 远景: true } as const;
 
-export const 视图们: readonly 视图[] = [
-  { 名: '定稿', ...定 },
-  { 名: '后期关', ...定, 后期: false },
+export const views: readonly View[] = [
+  { 名: '定稿', ...finalFlags },
+  { 名: '后期关', ...finalFlags, withPost: false },
   // 对照：屋后没有远景（用户 10-24「而且怎么超平坦背景 合理吗？」之前的样子）；N = 6（门口机位原来的取景）；史蒂夫原版 0.9375 倍；你转头看她（−90°）
-  { 名: '远景关对照', ...定, 远景: false },
-  { 名: 'N6对照', ...定, N6: true },
-  { 名: '史蒂夫0.9375倍对照', ...定, 你: { 倍数: 0.9375 } },
-  { 名: '你转头看她对照', ...定, 你: { headYaw: -90 } },
+  { 名: '远景关对照', ...finalFlags, 远景: false },
+  { 名: 'N6对照', ...finalFlags, N6: true },
+  { 名: '史蒂夫0.9375倍对照', ...finalFlags, 你: { scale: 0.9375 } },
+  { 名: '你转头看她对照', ...finalFlags, 你: { headYaw: -90 } },
 ];

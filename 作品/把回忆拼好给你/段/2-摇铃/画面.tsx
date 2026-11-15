@@ -4,32 +4,32 @@
 //   第 15 句「爱炙热的你却忘了爱自己」在底部，等聊天行淡掉才进（下一段 2-重逢 里）；描边色取这一帧的调子。用户 10-24「还在用素字歌词的段换成符文歌词」。叠在整片后期里面。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { 段时钟 } from '../../分镜/正片第15句.ts';
-import { 符文歌词, 符文歌词默认 } from '../../界面/符文歌词.tsx';
-import { 归隐歌词, 第15句符文样式 } from '../../场/2-门口/归隐歌词.ts';
-import { 摇铃画面, 摇铃调子 } from '../../场/2-门口/摇铃.tsx';
-import { 光影段 } from '../../默认.ts';
-import { 定义画面 } from '@engine/段/段画面.tsx';
-import 段 from './段.ts';
-import 声音地址 from './声音地址.生成.ts';
-import { use当前帧 } from '../../当前帧.ts';
+import { segClock } from '../../分镜/正片第15句.ts';
+import { RuneLyric, runeLyricDefault } from '../../界面/符文歌词.tsx';
+import { retreatLyrics, line15RuneStyle } from '../../场/2-门口/归隐歌词.ts';
+import { ShakeBellPicture, bellShakeTone } from '../../场/2-门口/摇铃.tsx';
+import { shadingBySeg } from '../../默认.ts';
+import { definePicture } from '@engine/段/段画面.tsx';
+import seg from './段.ts';
+import soundUrl from './声音地址.生成.ts';
+import { useSnappedFrame } from '../../当前帧.ts';
 
-const 起帧 = 段时钟('2-摇铃').起帧;
-const 歌词 = 归隐歌词(起帧);
+const startFrame = segClock('2-摇铃').起帧;
+const lyrics = retreatLyrics(startFrame);
 
-const 画面: React.FC = () => {
-  const f = use当前帧();
-  const 帧 = 起帧 + f;
+const picture: React.FC = () => {
+  const f = useSnappedFrame();
+  const frame = startFrame + f;
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <摇铃画面
-        帧={帧}
+      <ShakeBellPicture
+        帧={frame}
         种子={f}
-        光影={光影段['2-摇铃']}
+        shading={shadingBySeg['2-摇铃']}
         叠层={
           <>
-            <符文歌词 行们={歌词.上行们} 样式={{ ...符文歌词默认, 描边色: 摇铃调子(帧).描边 }} />
-            <符文歌词 行们={歌词.下行们} 样式={{ ...第15句符文样式, 描边色: 摇铃调子(帧).描边 }} />
+            <RuneLyric lines={lyrics.upperLines} 样式={{ ...runeLyricDefault, outlineColor: bellShakeTone(frame).outlineColor }} />
+            <RuneLyric lines={lyrics.lowerLines} 样式={{ ...line15RuneStyle, outlineColor: bellShakeTone(frame).outlineColor }} />
           </>
         }
       />
@@ -37,4 +37,4 @@ const 画面: React.FC = () => {
   );
 };
 
-export default 定义画面(段, 声音地址, 画面);
+export default definePicture(seg, soundUrl, picture);
