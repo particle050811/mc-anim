@@ -25,6 +25,18 @@ export const 换成反向投影 = (投影: THREE.Matrix4, 近: number, 远: numb
   return 投影;
 };
 
+/** 日月星这类在无穷远的面片：深度钉在最远，写了深度的东西（地形、云）都挡住它。
+ * 对数深度下片元写 0.99999（天空是 1.0）；带 `RASTER_DEPTH` 宏的那一遍不在片元写，裁剪 z 钉成 0（反向深度的最远，和清屏值相等，默认的「不比现有的远」过得去）。
+ * 只给内置材质用（换的是 three 的片段）；之前挂的 onBeforeCompile 会被换掉 */
+export const 深度钉在最远 = (m: THREE.Material) => {
+  m.onBeforeCompile = (sh) => {
+    sh.fragmentShader = sh.fragmentShader.replace('#include <logdepthbuf_fragment>', `#if defined( USE_LOGARITHMIC_DEPTH_BUFFER ) && ! defined( ${光栅深度宏} )\n\tgl_FragDepth = 0.99999;\n#endif`);
+    sh.vertexShader = sh.vertexShader.replace('#include <logdepthbuf_vertex>', `#include <logdepthbuf_vertex>\n#ifdef ${光栅深度宏}\n\tgl_Position.z = 0.0;\n#endif`);
+  };
+  m.customProgramCacheKey = () => '深度钉在最远';
+  m.userData.光栅深度 = true;
+};
+
 /** 深度比较反过来（深度大的近） */
 export const 反向比较: Record<number, THREE.DepthModes> = {
   [THREE.NeverDepth]: THREE.NeverDepth,
