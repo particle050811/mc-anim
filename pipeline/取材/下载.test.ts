@@ -1,4 +1,4 @@
-// jars.toml 的「根 = 数据」「也认」和 anim extract --下载：数据根、游戏目录都是临时目录，下载换成假的（不连网）。
+// jars.toml 的「根 = 数据」「也认」和 anim extract --download：数据根、游戏目录都是临时目录，下载换成假的（不连网）。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -60,7 +60,7 @@ describe('jars.toml 的根和也认', () => {
   });
 });
 
-describe('anim extract --下载', () => {
+describe('anim extract --download', () => {
   it('不点名只选 根 = 数据、写了下载和 sha256 的；点名能下的以外报错', () => {
     const q = parseManifest('', jars());
     expect([...q.jars.values()].filter(canDownload).map((j) => j.id)).toEqual(['映射甲']);

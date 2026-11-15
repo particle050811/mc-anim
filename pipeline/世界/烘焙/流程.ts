@@ -68,7 +68,7 @@ export const bakeWorld = async (w: WorldDecl, o: BakeOptions): Promise<PackResul
     if (shouldRegister) registerTerrain(b.名, entry);
     o.log(
       `地形包 ${b.名}：版本 ${version}（${dir}）` +
-        (same ? '，和 assets/地形版本.json 登记的一样' : shouldRegister ? `，已登记进 assets/地形版本.json（原来是 ${existing?.版本 ?? '没有'}），要随代码提交；用这个包的段都会过期` : `，没登记（${b.登记 ? '--不登记' : '声明里 登记 = false'}；登记的是 ${existing?.版本 ?? '没有'}）`),
+        (same ? '，和 assets/地形版本.json 登记的一样' : shouldRegister ? `，已登记进 assets/地形版本.json（原来是 ${existing?.版本 ?? '没有'}），要随代码提交；用这个包的段都会过期` : `，没登记（${b.登记 ? '--no-register' : '声明里 登记 = false'}；登记的是 ${existing?.版本 ?? '没有'}）`),
     );
     for (const x of editApplier?.警告 ?? []) o.log(`  编辑：${x}`);
     warnFrozenCoarseHeight(b.名, r.包, voxelLib, o.log);
@@ -83,5 +83,5 @@ const warnFrozenCoarseHeight = (pack: string, info: Parameters<Awaited<ReturnTyp
   if (!fs.existsSync(f)) return;
   const frozenFingerprint = JSON.parse(fs.readFileSync(f, 'utf8')).指纹 as string;
   const currentFingerprint = voxelLib.sectionPack.coarseHeightFingerprint(voxelLib.sectionPack.decodeCoarseHeight(info));
-  if (frozenFingerprint !== currentFingerprint) log(`  粗高度变了（冻结的 ${frozenFingerprint} → ${currentFingerprint}），编排还按冻结的那份排；要跟上新地形得重新冻结（anim world freeze --写）并核对航线`);
+  if (frozenFingerprint !== currentFingerprint) log(`  粗高度变了（冻结的 ${frozenFingerprint} → ${currentFingerprint}），编排还按冻结的那份排；要跟上新地形得重新冻结（anim world freeze --write）并核对航线`);
 };

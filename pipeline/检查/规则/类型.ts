@@ -19,7 +19,7 @@ const collectErrors = (c: CheckContext, output: string, report: CheckReport, lab
 
 /**
  * tsc 增量缓存，每个检出一份，不进 Git（node_modules 被忽略）、删 worktree 时一起没。tsc 按文件内容哈希和编译选项判断，TS 版本不同整份作废；
- * 错误也记在里面，没改文件再跑照样报。anim check --深 不读不写缓存，从头查一遍。
+ * 错误也记在里面，没改文件再跑照样报。anim check --deep 不读不写缓存，从头查一遍。
  * ruff 不开缓存：Python 文件少，省不出时间。
  */
 export const tscCacheFile = (c: CheckContext) => c.absPath('node_modules/.cache/anim-check/tsc.tsbuildinfo');

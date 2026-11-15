@@ -1,4 +1,4 @@
-// 丁组用的几种模组粒子类（贴图序列是 anim extract --粒子帧 照粒子定义 textures 顺序生成的 粒子帧/ 模块）和出生时的初速。
+// 丁组用的几种模组粒子类（贴图序列是 anim extract --particle-frames 照粒子定义 textures 顺序生成的 粒子帧/ 模块）和出生时的初速。
 // 都是 TextureSheetParticle 的子类，物理走 粒子.tsx 的 贴图粒子；这里只填构造函数里的常数。
 import { png } from '@engine/model/贴图.ts';
 import { rng } from '@engine/model/parts.tsx';

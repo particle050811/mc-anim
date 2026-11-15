@@ -22,7 +22,7 @@ describe('清单', () => {
       makeSeg('7-乙', "{ 场: '7-场一', 秒: 5, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 10, endSec: 15 }, continuous: true }"),
       { '作品/应力转动/核对/看看/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '核对', 秒: 1, 宽: 4, 高: 4, 地形: [] });\n", '作品/应力转动/核对/看看/画面.tsx': 'export default () => null;\n' },
     );
-    expect((await runRule('清单', root)).violations).toEqual([]);
+    expect((await runRule('manifest', root)).violations).toEqual([]);
   });
 
   it('目录不在清单、段键不合规、段名重复、撞旧名、连续段没接上都拦', async () => {
@@ -35,7 +35,7 @@ describe('清单', () => {
       makeSeg('7-老名', "{ 场: '7-场一', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
       makeSeg('7-多余', "{ 场: '7-场一', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
     );
-    const v = (await runRule('清单', root)).violations.join('\n');
+    const v = (await runRule('manifest', root)).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/段\/7-多余\/ 不在清单里/);
     expect(v).toMatch(/段键要是 7-<段名>.*7-丙_x/);
     expect(v).toMatch(/段名「甲」重复：7-甲 和 8-甲/);
@@ -47,10 +47,10 @@ describe('清单', () => {
     const registrationFiles = {
       '作品/应力转动/注册.tsx': "export const 模块 = { 段: import.meta.webpackContext('./段', { regExp: /x/ }), 核对: import.meta.webpackContext('./核对', { regExp: /x/ }) };\n",
     };
-    const v = (await runRule('清单', makeRepo(base(), registrationFiles))).violations.join('\n');
+    const v = (await runRule('manifest', makeRepo(base(), registrationFiles))).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/核对\/ 没有文件/);
     expect(v).not.toMatch(/作品\/应力转动\/段\/ 没有文件/);
-    expect((await runRule('清单', makeRepo(base(), registrationFiles, { '作品/应力转动/核对/说明.md': '占位\n' }))).violations).toEqual([]);
+    expect((await runRule('manifest', makeRepo(base(), registrationFiles, { '作品/应力转动/核对/说明.md': '占位\n' }))).violations).toEqual([]);
   });
 
   it('段键规则', () => {
@@ -65,7 +65,7 @@ describe('清单', () => {
 
 describe('加载', () => {
   it('纯模块执行得了就放行', async () => {
-    const { violations, report } = await runRule('加载', makeRepo(base()));
+    const { violations, report } = await runRule('load', makeRepo(base()));
     expect(violations).toEqual([]);
     expect(report.infoLines[0]).toMatch(/执行了 4 个纯模块/);
   });
@@ -74,7 +74,7 @@ describe('加载', () => {
     const root = makeRepo(base(), makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 0, endSec: 9 } }"), {
       '作品/应力转动/场/7-场一/时间线.ts': "const 事件 = { 起: 30, 止: 20 };\nif (事件.止 < 事件.起) throw new Error('时间线：止 在 起 前面');\nexport default 事件;\n",
     });
-    const v = (await runRule('加载', root)).violations.join('\n');
+    const v = (await runRule('load', root)).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/段.ts 执行出错：场窗口 \[0, 9\) 有 9 秒，段长是 10 秒/);
     expect(v).toMatch(/作品\/应力转动\/场\/7-场一\/时间线.ts 执行出错：时间线：止 在 起 前面/);
   });

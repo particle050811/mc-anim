@@ -28,7 +28,7 @@ describe('遮密', () => {
     ['Cookie: sid="fake-1"; o=fake-2'], ["Set-Cookie: sid='fake-1'; Path=/"], ['x-api-key: fake-1 fake-2'], ['X-Auth-Token: "fake-1" fake-2'], ['Bearer "fake-1 fake-2"'], ['GH_TOKEN="fake-1 fake-2'], ['https://u:fake 1@h/x'],
   ])('%s', s => { expect(maskSecret(s)).not.toContain('fake'); });
   it('长得像密钥的值，没有名字也遮', () => { expect(maskSecret('用 sk-fake0000 和 ghp_fake0000 登录')).toBe('用 [已遮蔽] 和 [已遮蔽] 登录'); });
-  it.each([['token 满了'], ['pass 3 通过'], ['bypass=1'], ['author=张三'], ['keyframe=3'], ['monkey=3'], ['--keyframe 3'], ['task-1234567'], ['key-art/图.png'], ['负载1.0/10 闸40% 压力1 持锁#1 排队0'], ['--为什么 auth 失败']])('不误遮 %s', s => { expect(maskSecret(s)).toBe(s); });
+  it.each([['token 满了'], ['pass 3 通过'], ['bypass=1'], ['author=张三'], ['keyframe=3'], ['monkey=3'], ['--keyframe 3'], ['task-1234567'], ['key-art/图.png'], ['负载1.0/10 闸40% 压力1 持锁#1 排队0'], ['--why auth 失败']])('不误遮 %s', s => { expect(maskSecret(s)).toBe(s); });
   it('argv 逐项遮：值带空格也整项遮掉', () => {
     expect(maskCommand(['anim', '--password', 'fake two words', '--to', '3'])).toBe('anim --password [已遮蔽] --to 3');
     expect(maskCommand(['--password=fake two words', 'PASSWD=fake two'])).toBe('--password=[已遮蔽] PASSWD=[已遮蔽]');
@@ -36,7 +36,7 @@ describe('遮密', () => {
     expect(maskCommand(['-H', 'Authorization: Bearer "fake abc"', '--to', '3'])).toBe('-H Authorization: [已遮蔽] --to 3');
     expect(maskCommand(['-H', 'Authorization: Bearer fake=abc'])).toBe('-H Authorization: [已遮蔽]');
     expect(maskCommand(['-H', 'Cookie: sid="fake"; o=fake', '--header', 'x-api-key: fake two'])).toBe('-H Cookie: [已遮蔽] --header x-api-key: [已遮蔽]');
-    expect(maskCommand(['--为什么', 'pass 3: 通过', 'https://a.b/c:d', 'author: 张三'])).toBe('--为什么 pass 3: 通过 https://a.b/c:d author: 张三');
+    expect(maskCommand(['--why', 'pass 3: 通过', 'https://a.b/c:d', 'author: 张三'])).toBe('--why pass 3: 通过 https://a.b/c:d author: 张三');
   });
   it('进日志的字段和键都遮；发起者的命令走逐项遮', () => {
     recordSchedulerEvent(dir, '决定', { 为什么: 'DB_PASS=fake-1 https://u:fake-2@h/x', 发起: readCaller({ ANIM_ROUTE: 'token=fake-3' }, ['node', '--cookie', 'sid fake-4'], dir, false), cookie: 'fake-5', db_pwd: 'fake-6' });
@@ -101,9 +101,9 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
     ['sshpass', '-f', '本地文件', 'ssh', '-p22', 'host'],
     ['curl', '--', '-u', 'user:x'], ['mysql', '--', '-pX'],
     ['curl', '--data', '-u', '--url', 'https://example.invalid'], ['mysql', '-e', '-pX'],
-    ['anim', '调度', '记', '--为什么', '验证 -u user:x、-pX 和 ssh -p 22，不改中文参数', '--用途', '排错'],
-    ['anim', '调度', '记', '--为什么', 'x-api-key-path 文档、mask_live_fake1234、myxoxb-fake1234'],
-    ['anim', '调度', '记', '--为什么', 'mysql', '-u', 'root', '-pX'],
+    ['anim', 'sched', 'note', '--why', '验证 -u user:x、-pX 和 ssh -p 22，不改中文参数', '--用途', '排错'],
+    ['anim', 'sched', 'note', '--why', 'x-api-key-path 文档、mask_live_fake1234、myxoxb-fake1234'],
+    ['anim', 'sched', 'note', '--why', 'mysql', '-u', 'root', '-pX'],
     ['printf', '%s', 'curl -u user:x'],
   ])('不误遮 argv：%j', (...argv) => {
     const raw = argv.join(' ');
@@ -119,7 +119,7 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
     'mysql -p 数据库 -P 3306', 'curl -u', 'mysql -u', 'sshpass -p',
     'sshpass -e ssh -p 22 host', 'sshpass -f 本地文件 ssh -p22 host',
     'curl -- -u user:x', 'mysql -- -pX', 'curl --data "-u" --url https://example.invalid', 'mysql -e "-pX"',
-    'anim 调度 记 --为什么 mysql -u root -pX', 'printf "%s" "curl -u user:x"',
+    'anim sched note --why mysql -u root -pX', 'printf "%s" "curl -u user:x"',
   ])('不误遮文本：%s', raw => {
     expect(maskSecret(raw)).toBe(raw);
     recordSchedulerEvent(dir, '决定', { 命令: raw });
@@ -128,7 +128,7 @@ describe('遮密补漏：文本、argv 和日志回读', () => {
 });
 
 describe('行超长', () => {
-  const makeInitiator = () => ({ ...readCaller({}, ['node', 'anim', '调度', '记', '字'.repeat(180)], '/数据/'.repeat(30), false) });
+  const makeInitiator = () => ({ ...readCaller({}, ['node', 'anim', 'sched', 'note', '字'.repeat(180)], '/数据/'.repeat(30), false) });
   it('决定、为什么 各 400 字加完整 谁、发起：全文保留，只丢快照', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     recordSchedulerEvent(dir, '决定', { 谁: makeInitiator(), 发起: makeInitiator(), 看到: { 人工: '看'.repeat(50), 摘要: '负载1', 队: Array(3).fill({ 票: '票'.repeat(100) }) }, 决定: '决'.repeat(400), 为什么: '因'.repeat(400), 机: { 负载: 1 } });
@@ -201,7 +201,7 @@ describe('生产路径与文本命令边界返修', () => {
     ['mysql -u 写错了，重试', 'mysql -u 写错了，重试'],
     ['sshpass -p 的值要遮', 'sshpass -p 的值要遮'],
   ])('node argv → 读发起者 → 遮密 → 日志回读：%s', (raw, expected) => {
-    const argv = ['/usr/local/bin/node', '/x/pipeline/cli/main.ts', '调度', '记', '--为什么', raw, '--决定', '排错'];
+    const argv = ['/usr/local/bin/node', '/x/pipeline/cli/main.ts', 'sched', 'note', '--why', raw, '--decision', '排错'];
     const initiator = readCaller({}, argv, dir, false);
     const command = [...argv.slice(0, 5), expected, ...argv.slice(6)].join(' ');
     expect(initiator.命令).toBe(command);
@@ -211,16 +211,16 @@ describe('生产路径与文本命令边界返修', () => {
     expect((record.发起 as { 命令: string }).命令).toBe(command);
     expect(record.为什么).toBe(expected);
     expect(JSON.stringify(record)).not.toContain('fake');
-    expect(maskCommand(['anim', '--为什么', raw])).toBe(`anim --为什么 ${expected}`);
-    expect(maskSecret(`anim --为什么 "${raw}"`)).toBe(`anim --为什么 "${expected}"`);
+    expect(maskCommand(['anim', '--why', raw])).toBe(`anim --why ${expected}`);
+    expect(maskSecret(`anim --why "${raw}"`)).toBe(`anim --why "${expected}"`);
   });
   it.each([
     '6-斩娜迦', 'curl -u 张三', 'mysql -p中文', 'mysql -u root -pfake',
     '验证 -u user:fake、-pfake 和 ssh -p 22，不改中文参数',
     '/data/curl/-u/user:fake.png', '/data/mysql -pfake', 'C:\\data\\mysql\\-pfake.png',
   ])('不扩大 anim 参数的识别范围：%s', params => {
-    const raw = `anim --为什么 ${params}`;
-    expect(maskCommand(['anim', '--为什么', params])).toBe(raw);
+    const raw = `anim --why ${params}`;
+    expect(maskCommand(['anim', '--why', params])).toBe(raw);
     expect(maskSecret(raw)).toBe(raw);
   });
   it.each([
@@ -248,7 +248,7 @@ describe('生产路径与文本命令边界返修', () => {
   });
   it.each(['sshpass: 没装', 'sshpass: command not found', 'sshpass 没装', 'sshpass=fake'])('工具说明不是敏感词：%s', s => {
     expect(maskSecret(s)).toBe(s);
-    expect(maskCommand(['anim', '--为什么', s])).toBe(`anim --为什么 ${s}`);
+    expect(maskCommand(['anim', '--why', s])).toBe(`anim --why ${s}`);
   });
 });
 
@@ -261,12 +261,12 @@ describe('截断与空格头返修', () => {
     const raw = valuePrefix + 'a'.repeat(4000 - valuePrefix.length - suffix.length - 'https://u:fake'.length) + suffix + url;
     expect(raw.slice(0, 4000)).toMatch(/fake$/);
     expect(maskSecret(raw)).toBe(secretKind === 'token' ? 'token=[已遮蔽] ' : 'Cookie: [已遮蔽]\n');
-    expect(maskCommand(['anim', '--为什么', raw])).not.toContain('fake');
+    expect(maskCommand(['anim', '--why', raw])).not.toContain('fake');
   });
   it('普通 URL 仍遮，argv 长项丢掉被切开的 URL，不做超大输入实验', () => {
     expect(maskSecret('https://u:fake@h')).toBe('https://[已遮蔽]@h');
     const raw = 'a'.repeat(3986) + ' https://u:fakeTAIL@h';
-    expect(maskCommand(['anim', '--为什么', raw])).toBe('anim --为什么 ' + 'a'.repeat(3986) + ' ');
+    expect(maskCommand(['anim', '--why', raw])).toBe('anim --why ' + 'a'.repeat(3986) + ' ');
   });
   it.each([
     'x-api-key 缺失，换头', '缺 x-api-key 头', 'x-api-key; 下一条',
@@ -274,14 +274,14 @@ describe('截断与空格头返修', () => {
     'echo x-api-key | grep foo', 'echo x-api-key ; true', 'x-api-key | grep foo',
   ])('中文说明和分隔符不遮：%s', s => {
     expect(maskSecret(s)).toBe(s);
-    expect(maskCommand(['anim', '--为什么', s])).toBe(`anim --为什么 ${s}`);
-    recordSchedulerEvent(dir, '决定', { 发起: readCaller({}, ['node', '/x/main.ts', '--为什么', s], dir, false), 为什么: s });
+    expect(maskCommand(['anim', '--why', s])).toBe(`anim --why ${s}`);
+    recordSchedulerEvent(dir, '决定', { 发起: readCaller({}, ['node', '/x/main.ts', '--why', s], dir, false), 为什么: s });
     const record = readSchedulerEvents(dir)[0]!;
     expect(record.为什么).toBe(s);
-    expect((record.发起 as { 命令: string }).命令).toBe(`node /x/main.ts --为什么 ${s}`);
+    expect((record.发起 as { 命令: string }).命令).toBe(`node /x/main.ts --why ${s}`);
   });
   it.each(['x-api-key fakeA 是测试值', '缺 x-api-key fakeA 是测试值', 'x-api-key "fakeA 是测试值"'])('只看第一个值词：%s', s => {
     expect(maskSecret(s)).not.toContain('fakeA');
-    expect(maskCommand(['anim', '--为什么', s])).not.toContain('fakeA');
+    expect(maskCommand(['anim', '--why', s])).not.toContain('fakeA');
   });
 });

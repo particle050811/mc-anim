@@ -167,10 +167,10 @@ describe('告警对象', () => {
     const t = claimTicket(q, e.localHost, { 任务: 'T1', 起: 0, 心跳: 0, 发起: e.caller, 声明: { 种: 'still' }, 主机: e.localHost }, Date.now() - waitMs);
     const fakeMachine = () => baseState().机, readFakeState = () => readState(e, fakeMachine, false), makeParams = (value: Record<string, string>) => ({ 位置: [], 值: value, toggles: new Set<string>(), multiValue: {} });
     expect(judgeAlerts(readFakeState(), Date.now()).map(x => `${x.类}:${x.对象}`)).toEqual(['小任务等待:T1']);
-    changeScheduler('后', t.名, makeParams({ '--为什么': '让产出先' }), e, { 状态: readFakeState, 输出: () => {} });
+    changeScheduler('last', t.名, makeParams({ '--why': '让产出先' }), e, { 状态: readFakeState, 输出: () => {} });
     expect(judgeAlerts(readFakeState(), Date.now())).toEqual([]);
     const deferredName = listTickets(q)[0]!.名;
-    changeScheduler('恢复', deferredName, makeParams({ '--为什么': '产出完了' }), e, { 状态: readFakeState, 输出: () => {} });
+    changeScheduler('resume', deferredName, makeParams({ '--why': '产出完了' }), e, { 状态: readFakeState, 输出: () => {} });
     expect(listTickets(q)[0]!.内容!.暂缓至).toBeUndefined();
     expect(judgeAlerts(readFakeState(), Date.now())).toEqual([]);
   });
@@ -338,31 +338,31 @@ describe('盯', () => {
     expect(r.out[0]).toContain(new Date(now - 60_000).toISOString().slice(5, 19) + 'Z');
     expect(r.out[0]).not.toContain('持锁者死');
   });
-  it('--任务：#pid、任务 id、任意历史票名都认；任务已结束立刻报', async () => {
+  it('--task：#pid、任务 id、任意历史票名都认；任务已结束立刻报', async () => {
     const e = makeSchedEnv(), logEvent = (eventName: string, x: Record<string, unknown>) => recordSchedulerEvent(e.logDir, eventName, { 任务: 'T7', 发起: { pid: 777 }, ...x });
     logEvent('任务起', {}); logEvent('领票', { 票: '0001-h-777' }); logEvent('改序', { 票: '0000-h-777', 原序: '0001-h-777', 新序: '0000-h-777' }); logEvent('领票', { 票: '0002-h-777' });
     for (const taskName of ['#777', '777', 'T7', '0001-h-777', '0000-h-777', '0002-h-777']) expect((await runWatch(e, { 任务: taskName })).code, taskName).toBe(124);
     logEvent('任务止', { 票: '0002-h-777', 退出码: 0 });
     for (const taskName of ['#777', 'T7', '0001-h-777']) { const r = await runWatch(e, { 任务: taskName }); expect(r.code, taskName).toBe(0); expect(r.out[0]).toContain('任务止 #777'); expect(r.out[0]).toContain('退出码0'); }
   });
-  it('--任务 目标被 SIGKILL 时按崩溃醒，只醒一次', async () => {
+  it('--task 目标被 SIGKILL 时按崩溃醒，只醒一次', async () => {
     const e = makeSchedEnv(); recordSchedulerEvent(e.logDir, '任务起', { 任务: 'K', 发起: { pid: 55 } }); await pinCursor(e);
     recordSchedulerEvent(e.logDir, '崩溃', { 任务: 'K', 发起: { pid: 55 } });
     const r = await runWatch(e, { 任务: 'K' }); expect(r.code).toBe(0); expect(r.out[0]!.match(/崩溃/g)).toHaveLength(1);
   });
-  it('--任务 只等自己的任务：无关告警不退出、不消费，全局 盯 照样醒；它也不算挂了看守', async () => {
+  it('--task 只等自己的任务：无关告警不退出、不消费，全局 盯 照样醒；它也不算挂了看守', async () => {
     const e = makeSchedEnv(); await pinCursor(e);
     recordSchedulerEvent(e.logDir, '任务起', { 任务: 'X', 发起: { pid: 111 } }); recordAlert(e, '持锁者死');
     const r = await runWatch(e, { 任务: 'X', sleep: async () => { expect(fs.readdirSync(path.join(e.schedulerDir, '盯'))).toEqual([]); await new Promise(r => setTimeout(r, 10)); } });
     expect(r).toEqual({ code: 124, out: [] });
     const g = await runWatch(e); expect(g.code).toBe(0); expect(g.out[0]).toContain('持锁者死');
   });
-  it('--任务 匹配不到报用法错误，不默默等到点', async () => {
+  it('--task 匹配不到报用法错误，不默默等到点', async () => {
     const e = makeSchedEnv(); recordSchedulerEvent(e.logDir, '任务起', { 任务: 'K', 发起: { pid: 55 } });
     await expect(runWatch(e, { 任务: '#56' })).rejects.toBeInstanceOf(UsageError);
     await expect(runWatch(e, { 任务: '没有这张票' })).rejects.toBeInstanceOf(UsageError);
   });
-  it('全局那只先读过任务止，--任务 那只照样醒', async () => {
+  it('全局那只先读过任务止，--task 那只照样醒', async () => {
     const e = makeSchedEnv(); recordSchedulerEvent(e.logDir, '任务起', { 任务: 'K', 发起: { pid: 55 } });
     const wakeRun = runWatch(e, { 任务: 'K', maxSec: 2 }); await pinCursor(e);
     recordSchedulerEvent(e.logDir, '任务止', { 任务: 'K', 发起: { pid: 55 } }); await pinCursor(e);

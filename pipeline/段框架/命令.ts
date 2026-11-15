@@ -1,5 +1,5 @@
-// anim cues：给段框架做的段（段.ts 用 窗口段）生成 声音表.生成.ts、声音地址.生成.ts（生成.ts）；--检查 只核对不写。
-// anim new work <名> / new seg <段键> --场 <场键>：照模板起一部新作品、一个新段（新作品.ts）。
+// anim cues：给段框架做的段（段.ts 用 窗口段）生成 声音表.生成.ts、声音地址.生成.ts（生成.ts）；--check 只核对不写。
+// anim new work <名> / new seg <段键> --scene <场键>：照模板起一部新作品、一个新段（新作品.ts）。
 // 找段不经 清单/清单.ts 的 全部段：那会先执行全部 段.ts，表过期时 放() 直接抛错，正是要靠这条命令修的。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -29,10 +29,10 @@ export const isFrameworkSegDir = (segDir: string) => {
 
 export const segFrameCommands: Record<string, Command> = {
   cues: {
-    用法: 'cues [<段键、段名、编号或章…>] [--检查]',
-    说明: '给段框架的段（段.ts 用 窗口段）照 cue 生成 声音表.生成.ts（时长、峰值，锁里没有的现量）和 声音地址.生成.ts（资产 id → 地址）；--检查 只核对不写，对不上退出码 1',
+    用法: 'cues [<段键、段名、编号或章…>] [--check]',
+    说明: '给段框架的段（段.ts 用 窗口段）照 cue 生成 声音表.生成.ts（时长、峰值，锁里没有的现量）和 声音地址.生成.ts（资产 id → 地址）；--check 只核对不写，对不上退出码 1',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { toggles: ['--检查'] });
+      const p = parseArgs(args, { toggles: ['--check'] });
       const root = codeRoot();
       const workDir = workRoot();
       const m = (await import(pathToFileURL(path.join(workDir, '清单.ts')).href)) as WorkManifest;
@@ -62,7 +62,7 @@ export const segFrameCommands: Record<string, Command> = {
         const prevSeg = async (): Promise<SegmentDef | undefined> => (i > 0 ? ((await freshExec(path.join(segDirOf(filmSegments[i - 1]!.键), '段.ts'), root)).default as SegmentDef) : undefined);
         const env: GenerateEnv = { assetLock, lineTable, getMeasure: (id) => getAudioMeasure(id, assetLock[id], dataRoot()), prevSeg };
         try {
-          if (p.toggles.has('--检查')) {
+          if (p.toggles.has('--check')) {
             const seg = (await freshExec(segFile, root)).default as SegmentDef;
             const issues = await checkSeg(seg, path.dirname(segFile), root, { ...env, getMeasure: (id) => knownAudioMeasure(assetLock[id], dataRoot()) });
             issueCount += issues.length;
@@ -83,13 +83,13 @@ export const segFrameCommands: Record<string, Command> = {
     },
   },
   new: {
-    用法: 'new work <作品名> | new seg <段键> [--场 <场键>] [--起 <事件>] [--止 <事件>]',
+    用法: 'new work <作品名> | new seg <段键> [--scene <场键>] [--start <事件>] [--end <事件>]',
     说明: 'work：照模板起一部作品（清单.ts、注册.tsx、index.ts，带一个能渲的 核对-起步 段）；seg：在所选作品里加一个窗口段（段.ts、画面.tsx、空的声音表和地址表，场时间线没有就建一条），排进清单末尾',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { 值: ['--场', '--起', '--止'] });
+      const p = parseArgs(args, { 值: ['--scene', '--start', '--end'] });
       const [targetKind, name] = p.位置;
-      if (p.位置.length !== 2 || (targetKind !== 'work' && targetKind !== 'seg')) throw new UsageError('要 anim new work <作品名> 或 anim new seg <段键> [--场 <场键>]');
-      const scene = p.值['--场'];
+      if (p.位置.length !== 2 || (targetKind !== 'work' && targetKind !== 'seg')) throw new UsageError('要 anim new work <作品名> 或 anim new seg <段键> [--scene <场键>]');
+      const scene = p.值['--scene'];
       // 场时间线还没有、本场有老段（定义段 写的）的：照清单找出来，新时间线用 接老段 把它们摆上去，新段接在后面
       let legacySegs: SceneLegacySeg[] | undefined;
       if (targetKind === 'seg' && scene && !fs.existsSync(path.join(workRoot(), '场', scene, '时间线.ts'))) {
@@ -98,12 +98,12 @@ export const segFrameCommands: Record<string, Command> = {
           .map((s) => ({ 键: s.键, 秒: s.段.秒, ...(s.段.sceneWindow ? { startSec: s.段.sceneWindow.startSec } : {}), 宽: s.段.宽, 高: s.段.高 }));
         if (legacySegs.length) console.log(`场 ${scene} 有 ${legacySegs.length} 个老段（${legacySegs.map((x) => x.键).join('、')}），场时间线用 接老段 摆上去，新段接在后面`);
       }
-      const written = targetKind === 'work' ? newWork(codeRoot(), name!) : newSegment(workRoot(), name!, { 场: scene, 起: p.值['--起'], 止: p.值['--止'], legacySegs });
+      const written = targetKind === 'work' ? newWork(codeRoot(), name!) : newSegment(workRoot(), name!, { 场: scene, 起: p.值['--start'], 止: p.值['--end'], legacySegs });
       for (const f of written) {
         runRecord.产物.push(relativeToCodeRoot(f));
         console.log(`+ ${relativeToCodeRoot(f)}`);
       }
-      if (targetKind === 'work') console.log(`\n下一步：anim --作品 ${name} cues，再 anim --作品 ${name} still 核对-起步 0 --到预览 工作-${name}起步`);
+      if (targetKind === 'work') console.log(`\n下一步：anim --work ${name} cues，再 anim --work ${name} still 核对-起步 0 --to-preview 工作-${name}起步`);
       else console.log(`\n下一步：改 段.ts 的窗口和 cue、画面.tsx，跑 anim cues ${name}`);
     },
   },

@@ -1,5 +1,5 @@
-// anim gamedata 导出 [--到 <目录>] [--只 群系|方块] [--方块 <通配>]：游戏开着时，用取材 mod 的 biomes、blocks 两个动作导群系色表、方块表，导完接着核对。
-// anim gamedata 核对 <目录>：拿目录里的 群系色.json、方块表.json 和资产锁里的手写表比，写 核对.md、核对.json。
+// anim gamedata export [--to <目录>] [--only 群系|方块] [--blocks <通配>]：游戏开着时，用取材 mod 的 biomes、blocks 两个动作导群系色表、方块表，导完接着核对。
+// anim gamedata verify <目录>：拿目录里的 群系色.json、方块表.json 和资产锁里的手写表比，写 核对.md、核对.json。
 // 导出表不入库、不替换手写表（迁移期不改画面）；新章节要用，按 docs/游戏导表.md 登记成新资产。
 import fs from 'node:fs';
 import os from 'node:os';
@@ -72,29 +72,29 @@ const mcai = (argv: string[]) => runForeground([...mcaiCommand(), ...argv], { en
 
 export const gameExportCommands: Record<string, Command> = {
   gamedata: {
-    用法: 'gamedata 导出 [--到 <目录>] [--只 群系|方块] [--方块 <通配,…>]  |  gamedata 核对 <目录>',
+    用法: 'gamedata export [--to <目录>] [--only 群系|方块] [--blocks <通配,…>]  |  gamedata verify <目录>',
     说明: '游戏开着时导出群系色表、方块表（取材 mod 的 biomes、blocks），并和手写的 群系色.json、方块表.json 逐项核对；默认写到 run/草稿/<UTC>-工作-游戏导表/',
     跑: async (args, runRecord) => {
       const [subcommand, ...rest] = args;
-      if (subcommand === '核对') {
+      if (subcommand === 'verify') {
         const p = parseArgs(rest, {});
-        if (p.位置.length !== 1) throw new UsageError('核对要给一个目录');
+        if (p.位置.length !== 1) throw new UsageError('verify 要给一个目录');
         await checkDir(path.resolve(p.位置[0]!));
         console.log(`写了 ${path.join(path.resolve(p.位置[0]!), '核对.md')}`);
         return 0;
       }
-      if (subcommand !== '导出') throw new UsageError('子命令是 导出 或 核对');
-      const p = parseArgs(rest, { 值: ['--到', '--只', '--方块'] });
-      const onlyKind = p.值['--只'];
-      if (onlyKind && onlyKind !== '群系' && onlyKind !== '方块') throw new UsageError('--只 是 群系 或 方块');
-      const dir = p.值['--到'] ? path.resolve(p.值['--到']) : newPreviewDir('工作-游戏导表');
+      if (subcommand !== 'export') throw new UsageError('子命令是 export 或 verify');
+      const p = parseArgs(rest, { 值: ['--to', '--only', '--blocks'] });
+      const onlyKind = p.值['--only'];
+      if (onlyKind && onlyKind !== '群系' && onlyKind !== '方块') throw new UsageError('--only 是 群系 或 方块');
+      const dir = p.值['--to'] ? path.resolve(p.值['--to']) : newPreviewDir('工作-游戏导表');
       fs.mkdirSync(dir, { recursive: true });
       if (onlyKind !== '方块') {
         const code = await mcai(['biomes', `out=${path.join(dir, '群系色')}`]);
         if (code) return code;
       }
       if (onlyKind !== '群系') {
-        const code = await mcai(['blocks', `out=${path.join(dir, '方块表')}`, ...(p.值['--方块'] ? [`only=${p.值['--方块']}`] : [])]);
+        const code = await mcai(['blocks', `out=${path.join(dir, '方块表')}`, ...(p.值['--blocks'] ? [`only=${p.值['--blocks']}`] : [])]);
         if (code) return code;
       }
       await checkDir(dir);

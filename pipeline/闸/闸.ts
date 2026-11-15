@@ -1,5 +1,5 @@
 // GPU 位容量 1。用户 11-01 定的是总纲：程序守底线、主 Agent 决定、日志不翻会话就能复盘。
-// 等内存不持锁、单票放行、压力 4 加 --强 是主 Agent 11-01 的裁决；30%、负载核×0.8、60 秒是 Agent 选的阈值。这些都不是用户定值，可以改。
+// 等内存不持锁、单票放行、压力 4 加 --force 是主 Agent 11-01 的裁决；30%、负载核×0.8、60 秒是 Agent 选的阈值。这些都不是用户定值，可以改。
 import fs from 'node:fs';
 import path from 'node:path';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -288,7 +288,7 @@ export const queueAcquire = async (lockName: string, opts: QueueOptions = {}): P
                     console.error(`!! 告警 静帧重复失败 ${a.对象}：同一批帧连着 ${a.值} 次没出来，别再原样重跑`); });
             if (!interrupted)
                 task.update(taskDecl, t.名, '');
-            // 持锁期间 anim 调度 的改名可能和删票撞上，留下的票会挡住后来者，放锁前再扫一次。
+            // 持锁期间 anim sched 的改名可能和删票撞上，留下的票会挡住后来者，放锁前再扫一次。
             clearTicket();
             dropLock();
             handOver();

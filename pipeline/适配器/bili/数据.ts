@@ -118,6 +118,6 @@ export const importData = (file: string, root = biliRoot()) => importPackage<Raw
 
 export const latestData = (root = biliRoot()) => {
   const latestPacket = latestPackage<RawBundle>(root);
-  if (!latestPacket) throw new Error(`${root} 下还没有数据：先在浏览器里跑 取数.js，再 anim 平台 导入 <json>`);
+  if (!latestPacket) throw new Error(`${root} 下还没有数据：先在浏览器里跑 取数.js，再 anim platform import <json>`);
   return latestPacket;
 };

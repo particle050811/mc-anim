@@ -52,7 +52,7 @@ type TerrainPack = {
 const loadPack = (dir: string, packName: string): Promise<TerrainPack> =>
   loadOnce(dir, async () => {
     const info = await fetchJson<PackageInfo>(`${dir}/包.json`, '先烘焙：见 工具/导入/烘焙.ts');
-    if (info.版本 !== formatVersion) throw new Error(`地形包是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：anim assets pull，或 anim world 转码`);
+    if (info.版本 !== formatVersion) throw new Error(`地形包是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：anim assets pull，或 anim world transcode`);
     const url = absoluteUrl(`${dir}/${modelFileName}`), res = await fetch(url);
     if (!res.ok) throw new Error(`取地形模型 ${url}：${res.status}，anim assets pull`);
     const bytes = new Uint8Array(await res.arrayBuffer());

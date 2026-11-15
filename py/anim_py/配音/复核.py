@@ -3,7 +3,7 @@
 本机、免费（默认跑）：
   起伏  音高（Praat 自相关基频）和响度（50 ms 帧 RMS）起伏有多大：棒读的句子跨度小
   音色  Resemblyzer 说话人向量和角色参考音频的余弦相似度
-外部、付费（只留接口和 dry-run，要用户定启用；anim 那边要 --允许付费）：
+外部、付费（只留接口和 dry-run，要用户定启用；anim 那边要 --allow-paid）：
   听写  Qwen3-ASR + Gemini 听写，去标点比字，带声调拼音一样也算对（比字的规则是本机的纯函数，见 比字）
   语气  几个候选放一起让 Gemini 按台词的「语气」打分，正反两个顺序取平均
 
@@ -112,7 +112,7 @@ class ExternalReviewItem(ReviewItem):
         return missing + ['还没接（付费，要用户定启用）']
 
     def review(self, requests: list[ReviewRequest]) -> list[dict]:
-        raise SystemExit(f'{self.名} 还没接：付费复核要用户定启用（先 anim voice review --项 {self.名} --dry-run 看要发什么）')
+        raise SystemExit(f'{self.名} 还没接：付费复核要用户定启用（先 anim voice review --items {self.名} --dry-run 看要发什么）')
 
 
 class Dictation(ExternalReviewItem):

@@ -219,7 +219,7 @@ export const generateSeg = async (segFile: string, root: string, env: GenerateEn
 };
 
 /**
- * 核对（anim check、anim cues --检查 用，不写文件、不量音频）：照段现在的 cue 算出两份文件该是什么样，和盘上的比。
+ * 核对（anim check、anim cues --check 用，不写文件、不量音频）：照段现在的 cue 算出两份文件该是什么样，和盘上的比。
  * 数先取锁里的，再取盘上声音表里 sha 对得上的，最后 取数（缓存）；都没有（新加的声音、字节换了）就报。返回问题列表，空 = 对得上。
  */
 export const checkSeg = async (seg: SegmentDef, segDir: string, root: string, env: Omit<GenerateEnv, 'getMeasure'> & { getMeasure: (id: string) => AudioInfo | undefined }): Promise<string[]> => {

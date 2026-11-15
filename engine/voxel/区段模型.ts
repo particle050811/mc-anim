@@ -8,7 +8,7 @@ const magic = 0x4d51434d;
 export const defaultModel = (): SectionModel => ({ classes: 1, stride: 0, map: new Uint8Array(65536), init: new Uint16Array(1371).fill(1024), weights: new Uint16Array(0) });
 
 export const readModel = (b: Uint8Array): SectionModel => {
-  const corruptError = () => new Error('地形模型表损坏或格式不对：anim assets pull，或 anim check --深 核对地形包');
+  const corruptError = () => new Error('地形模型表损坏或格式不对：anim assets pull，或 anim check --deep 核对地形包');
   if (b.length < 16) throw corruptError();
   const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
   const classes = v.getUint32(8, true), stride = v.getUint32(12, true);

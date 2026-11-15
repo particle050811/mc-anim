@@ -13,7 +13,7 @@ import { esbuildAliasPlugin, nonCodeLoaders } from '../资产/esbuild插件.ts';
 import { readAssetLock, type AssetLock } from '../资产/资产锁.ts';
 import { WorkSelectError } from '../环境/作品.ts';
 
-export const ruleNames = ['类型', '结构', '清单', '加载', '台词', '资产', '规矩', '平台', '副本', '时间'] as const;
+export const ruleNames = ['types', 'structure', 'manifest', 'load', 'lines', 'assets', 'rules', 'platform', 'dupes', 'time', 'idents'] as const;
 export type RuleKind = (typeof ruleNames)[number];
 
 export type Issue = { 文件?: string; 行?: number; 文本: string };
@@ -121,7 +121,7 @@ export class CheckContext {
       const matches = this.exists('作品')
         ? fs.readdirSync(this.absPath('作品'), { withFileTypes: true }).filter((e) => e.isDirectory() && this.exists(`作品/${e.name}/清单.ts`)).map((e) => e.name).sort()
         : [];
-      if (matches.length !== 1) throw new WorkSelectError(matches.length ? `有 ${matches.length} 部作品（${matches.join('、')}），用 --作品 <名> 指定查哪部` : '一部作品都没有（作品/<名>/清单.ts）');
+      if (matches.length !== 1) throw new WorkSelectError(matches.length ? `有 ${matches.length} 部作品（${matches.join('、')}），用 --work <名> 指定查哪部` : '一部作品都没有（作品/<名>/清单.ts）');
       this.#workName = matches[0]!;
     }
     return this.#workName;

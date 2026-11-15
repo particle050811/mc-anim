@@ -1,4 +1,4 @@
-// anim extract --补网格配方 [--写]：资产锁里有、却没有哪条配方产出的场景网格（网格/<名>/头），按网格头里的 dim、from、to、origin、markers
+// anim extract --backfill-mesh [--write]：资产锁里有、却没有哪条配方产出的场景网格（网格/<名>/头），按网格头里的 dim、from、to、origin、markers
 // 反填一条 mcai 配方，标「不重导」：只记下是从哪个维度、哪块范围导的，下回要重导、或照着导一块相邻的，有据可查。
 // 锁里那一版是旧项目当时导的，存档、mcai 都变过，按这条重导字节对不上（docs/迁移.md「旧网格不重导」），所以这类配方 anim extract 不跑。
 // 头里有「取材」（新 mcai 导的，记了原样参数）就照抄参数，不再按 from/to 反推。
@@ -115,4 +115,4 @@ export const meshRecipeText = (groupName: string, meshes: readonly PendingMesh[]
 
 /** 整段追加文本：一个小标题加各条配方 */
 export const fillMeshRecipeText = (groups: Map<string, PendingMesh[]>) =>
-  `\n# 地标网格（anim extract --补网格配方 按网格头反填，不重导：只记范围，不跑）\n` + [...groups].map(([groupName, gs]) => `\n${meshRecipeText(groupName, gs)}`).join('');
+  `\n# 地标网格（anim extract --backfill-mesh 按网格头反填，不重导：只记范围，不跑）\n` + [...groups].map(([groupName, gs]) => `\n${meshRecipeText(groupName, gs)}`).join('');

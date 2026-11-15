@@ -78,7 +78,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
     fs.mkdirSync(workRoot, { recursive: true });
     current.指纹 = F1;
     makeFixture(F1);
-    await runVerify(['accept', '甲', '--理由', '测试']);
+    await runVerify(['accept', '甲', '--reason', '测试']);
     expect(readApproval(approvalFile('甲'))?.指纹).toBe(F1);
     // 新指纹：同一画面亮一级（噪声种子固定）
     current.指纹 = F2;
@@ -103,7 +103,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
     }
   });
 
-  it('段签记的切片没了：要看像素就报要重渲才能验收；accept 也拒；--渲 就把它交给渲段', async () => {
+  it('段签记的切片没了：要看像素就报要重渲才能验收；accept 也拒；--render 就把它交给渲段', async () => {
     const picturePath = segPicturePath('甲', F2);
     const backupPath = `${picturePath}.留`;
     fs.renameSync(picturePath, backupPath);
@@ -112,11 +112,11 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
       renderCalls.length = 0;
       const r = makeRunRecord();
       expect(await runVerify(['甲'], r)).toBe(1);
-      expect(r.事件.join('\n')).toContain('要重渲才能验收（anim film 甲 --重渲）');
+      expect(r.事件.join('\n')).toContain('要重渲才能验收（anim film 甲 --rerender）');
       expect(readPixelCalls).toEqual([]);
-      await expect(runVerify(['accept', '甲', '--理由', '测试'])).rejects.toThrow(/先 anim film 甲/);
+      await expect(runVerify(['accept', '甲', '--reason', '测试'])).rejects.toThrow(/先 anim film 甲/);
       expect(renderCalls).toEqual([]);
-      await runVerify(['--渲', '甲']);
+      await runVerify(['--render', '甲']);
       expect(renderCalls).toEqual([['甲']]);
     } finally {
       fs.renameSync(backupPath, picturePath);
@@ -154,7 +154,7 @@ describe.skipIf(!hasFfmpeg)('verify 和切片', () => {
   });
 
   it('这版 accept：认可参考从这版的切片抽', async () => {
-    await runVerify(['accept', '甲', '--理由', '测试']);
+    await runVerify(['accept', '甲', '--reason', '测试']);
     const approval = readApproval(approvalFile('甲'))!;
     expect(approval.指纹).toBe(F2);
     expect(readSidecar(referenceFile(approval, platformId()))).toMatchObject({ 来源: '切片' });

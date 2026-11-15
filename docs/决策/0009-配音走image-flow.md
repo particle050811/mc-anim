@@ -12,7 +12,7 @@
 
 ## 怎么落的
 
-- `py/anim_py/配音/后端/` 只剩一个 `image-flow` 后端：一个候选一条 `imgflow speak`，把产物转成 wav。`anim voice` 的其余步骤不变，`--允许付费` 照旧要给。
+- `py/anim_py/配音/后端/` 只剩一个 `image-flow` 后端：一个候选一条 `imgflow speak`，把产物转成 wav。`anim voice` 的其余步骤不变，`--allow-paid` 照旧要给。
 - 删了 `indextts2-runninghub`、`indextts2-本机`、`firered-本机`、`firered-魔搭`、`gpt-sovits`、`openai-speech` 和配置 `firered`、`indextts`、`gpt_sovits`。对齐器 `aligner` 不动：它不是合成，`anim voice lip` 要用。资产表 `来源` 里的旧后端名是历史记录，不改。
 - 壳的位置是配置 `image_flow`（`ANIM_IMAGE_FLOW`），默认 image-flow 仓库里的 `skills/image-flow/imgflow.mjs`，不用 `.claude/skills/` 那份副本：worktree 里没有副本。image-flow 不用开窗口，也能在 worktree 里跑。
 - 模型默认 `custom:indextts2`，配在 `~/.image-flow/settings.json`。要别的模型写 `[配音.后端参数.image-flow]` 的 `模型`。本机模型（打包在外置硬盘）要再用，在 image-flow 里配成渠道，不回到这里。

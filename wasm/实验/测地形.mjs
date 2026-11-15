@@ -15,7 +15,7 @@ import {解区段 as unpackColumnRef} from '../../out/三轮地形/整列引用.
 const names=['主世界-116/5c8a6378419e','暮色放大-1752-扩展/c42d60d01992'];
 const modes=['上下半境','共用色板','迟建字面树','整列引用','按世界重训'];
 const count=5461,header=16+count*8;
-const temp=()=>execFileSync('./anim',['调度','--一行'],{encoding:'utf8'}).trim();
+const temp=()=>execFileSync('./anim',['sched','--oneline'],{encoding:'utf8'}).trim();
 const tag=process.argv[2];assert(modes.includes(tag));
 const output=[];
 for(const name of names){

@@ -184,7 +184,7 @@ export const writeRepoBundle = (bundleSet: BundleSet, workRoot: string, dataRoot
       continue;
     }
     const actualSha = fileSha(sourcePath);
-    if (actualSha !== sha) throw new Error(`数据根里 ${ids.join('、')} 的字节 ${sourcePath} sha256 是 ${actualSha.slice(0, 12)}，资产锁记的是 ${sha.slice(0, 12)}（anim check --深 查一遍数据根）`);
+    if (actualSha !== sha) throw new Error(`数据根里 ${ids.join('、')} 的字节 ${sourcePath} sha256 是 ${actualSha.slice(0, 12)}，资产锁记的是 ${sha.slice(0, 12)}（anim check --deep 查一遍数据根）`);
     toCopy.push({ 源: sourcePath, 目标: path.join(dir, ...rel.split('/')) });
   }
   if (missingSources.length) throw new Error(`数据根里缺这些资产的字节，拷不进 字节/：\n  ${missingSources.join('\n  ')}`);
@@ -210,7 +210,7 @@ export type FillBytesResult = { copied: number; 共: number };
 
 /**
  * 把 <作品根>/字节/ 里数据根 store/ 还没有的补进去：先核文件内容的 sha256 和文件名一致，不一致就报错（字节/ 被改坏或换行被改了）。
- * store 只增不改：已有的不动、不重核（anim check --深 核数据根）。先写临时名再改名，几个命令同时补也不会留下半个文件。
+ * store 只增不改：已有的不动、不重核（anim check --deep 核数据根）。先写临时名再改名，几个命令同时补也不会留下半个文件。
  */
 export const fillBytes = (workRoot: string, dataRoot: string): FillBytesResult => {
   const dir = bytesDir(workRoot);

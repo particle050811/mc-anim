@@ -102,7 +102,7 @@ export type FillLight = {
   fillShadowOnly?: boolean;
 };
 
-/** 光影的样式（作品默认值里按段列的、试看时 --光影 给的）。时段、太阳一般不写，由场景经 光影场 给；写了盖掉场景的（试看用） */
+/** 光影的样式（作品默认值里按段列的、试看时 --shading 给的）。时段、太阳一般不写，由场景经 光影场 给；写了盖掉场景的（试看用） */
 export type ShadingOptions = {
   preset: ShadingPresetName | ShadingParams;
   timeOfDay?: TimeOfDay;

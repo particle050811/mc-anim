@@ -128,7 +128,7 @@ const runReview = async (workLineTable: WorkLines, lines: VoiceLineRow[], o: { i
   for (const itemName of o.itemNames) {
     const reviewItem = infoList.find((x) => x.名 === itemName);
     if (!reviewItem) throw new UsageError(`没有复核项「${itemName}」，有：${infoList.map((x) => x.名).join('、')}`);
-    if (reviewItem.付费 && !o.describeOnly && !o.allowPaid) throw new UsageError(`复核项 ${itemName} 按次收费、要把候选音频发到外部服务，确实要用加 --允许付费（先 --dry-run 看要发什么）`);
+    if (reviewItem.付费 && !o.describeOnly && !o.allowPaid) throw new UsageError(`复核项 ${itemName} 按次收费、要把候选音频发到外部服务，确实要用加 --allow-paid（先 --dry-run 看要发什么）`);
   }
   const assetLock = readBothLocks();
   const reviewRequests: ReviewRequest[] = [];
@@ -187,13 +187,13 @@ const generate = async (workLineTable: WorkLines, lines: VoiceLineRow[], p: Retu
     if (!v.trim() || !Number.isFinite(n)) throw new UsageError(`${valueKey} 要写数：${v}`);
     return n;
   };
-  const seedList = p.值['--种子']?.split(',').map((s) => s.trim());
-  if (seedList?.some((s) => !/^\d+$/.test(s))) throw new UsageError(`--种子 要写非负整数，逗号分开：${p.值['--种子']}`);
-  const strength = flagNum('--强度');
+  const seedList = p.值['--seeds']?.split(',').map((s) => s.trim());
+  if (seedList?.some((s) => !/^\d+$/.test(s))) throw new UsageError(`--seeds 要写非负整数，逗号分开：${p.值['--seeds']}`);
+  const strength = flagNum('--strength');
   const batches = buildSynthBatches(workLineTable, lines, {
-    ...(p.值['--后端'] ? { 后端: p.值['--后端'] } : {}),
+    ...(p.值['--backend'] ? { 后端: p.值['--backend'] } : {}),
     ...(seedList ? { 种子: seedList.map(Number) } : {}),
-    ...(p.值['--语气参考'] ? { 语气参考: path.resolve(p.值['--语气参考']) } : {}),
+    ...(p.值['--tone-ref'] ? { 语气参考: path.resolve(p.值['--tone-ref']) } : {}),
     ...(strength !== undefined ? { 强度: strength } : {}),
   }, assetLock, { dataRoot: dataRoot(), 作品: workName() });
   if (p.toggles.has('--dry-run')) {
@@ -210,8 +210,8 @@ const generate = async (workLineTable: WorkLines, lines: VoiceLineRow[], p: Retu
     const backendCfg = backendConfig(workLineTable, backendName);
     const backendInfo = (await runVoicePy<BackendInfo[]>('后端', { 配置: { [backendName]: backendCfg } })).find((b) => b.名 === backendName);
     if (!backendInfo) throw new UsageError(`没有 TTS 后端「${backendName}」（anim voice backends 看有哪些）`);
-    if (backendInfo.付费 && !p.toggles.has('--允许付费')) throw new UsageError(`${backendName} 按次收费，确实要用加 --允许付费（先 --dry-run 看请求）`);
-    if (backendInfo.云端 && !p.toggles.has('--允许云端') && !p.toggles.has('--允许付费')) throw new UsageError(`${backendName} 要把参考音频和台词发到外部服务，确实要用加 --允许云端`);
+    if (backendInfo.付费 && !p.toggles.has('--allow-paid')) throw new UsageError(`${backendName} 按次收费，确实要用加 --allow-paid（先 --dry-run 看请求）`);
+    if (backendInfo.云端 && !p.toggles.has('--allow-cloud') && !p.toggles.has('--allow-paid')) throw new UsageError(`${backendName} 要把参考音频和台词发到外部服务，确实要用加 --allow-cloud`);
     if (backendInfo.缺.length) throw new Error(`${backendName} 在这台机器上跑不了：${backendInfo.缺.join('；')}`);
     toRun.push({ backendName, config: backendCfg, isLocal: backendInfo.本机 });
   }
@@ -229,7 +229,7 @@ const generate = async (workLineTable: WorkLines, lines: VoiceLineRow[], p: Retu
       console.log(`${r.id} 种子 ${r.种子}（${backendName}）：${r.成功 ? r.输出 : '失败'}${r.说明 ? `（${r.说明}）` : ''}`);
     }
   }
-  if (runRecord.产物.length && !p.toggles.has('--不复核')) {
+  if (runRecord.产物.length && !p.toggles.has('--no-review')) {
     // 复核只是辅助：没跑成（比如装不上 torch）不让 gen 算失败，候选照样能试听、use
     try {
       await runReview(workLineTable, lines, { itemNames: [], describeOnly: false, allowPaid: false });
@@ -257,22 +257,22 @@ const ensureRegistered = (id: string, source: string, license: string, visibilit
 const finalize = async (workLineTable: WorkLines, line: VoiceLineRow, candidatePath: string, p: ReturnType<typeof parseArgs>, runRecord: Parameters<Command['跑']>[1]) => {
   if (!fs.existsSync(candidatePath)) throw new UsageError(`没有 ${candidatePath}`);
   // 第 6、7 章的旧段还从两份整表（数据/配音/台词表、口型）取开口、时长、嘴，换了成品它们不跟着变：声音和嘴会对不上
-  if (!p.toggles.has('--不管旧表') && [...oldLineRenames(workRoot()).values()].includes(line.id)) {
-    throw new UsageError(`${line.id} 还被旧段的 台词轨.tsx、配音/口型.ts 经旧表（${oldTableAssets.lineTable}、${oldTableAssets.口型}）用着，换了成品旧段的开口、时长、嘴不跟着变；用到它的段改用句模块后再换，确实要换加 --不管旧表`);
+  if (!p.toggles.has('--ignore-old') && [...oldLineRenames(workRoot()).values()].includes(line.id)) {
+    throw new UsageError(`${line.id} 还被旧段的 台词轨.tsx、配音/口型.ts 经旧表（${oldTableAssets.lineTable}、${oldTableAssets.口型}）用着，换了成品旧段的开口、时长、嘴不跟着变；用到它的段改用句模块后再换，确实要换加 --ignore-old`);
   }
   const note = readCandidateNote(candidatePath);
   const sourceNote = note
     ? `手工:${note.后端} 克隆 ${line.角色}（参考 ${note.参考}），种子 ${note.种子}${Object.keys(note.参数).length ? `，${JSON.stringify(note.参数)}` : ''}，anim voice gen 的候选里挑的`
-    : `手工:${p.值['--来源'] ?? '现成的配音（anim voice use 拿进来的）'}`;
+    : `手工:${p.值['--source'] ?? '现成的配音（anim voice use 拿进来的）'}`;
   const finishedPath = path.join(candidateDir(dataRoot(), workName(), line.id), `成品-${path.basename(candidatePath)}`);
-  const noTrim = p.toggles.has('--不裁') || Boolean(line.合成?.不裁);
+  const noTrim = p.toggles.has('--no-trim') || Boolean(line.合成?.不裁);
   const m = await runVoicePy<Measure & { 增益dB: number }>('成品', { 原件: candidatePath, finished: noTrim ? null : finishedPath, 不裁: noTrim, 目标响度: workLineTable.配音.目标响度, 峰值上限: workLineTable.配音.峰值上限 });
   const originalId = `配音/原件/${line.id}`;
   const finishedId = line.配音 ?? `配音/${line.id}`;
   for (const [id, sourceDesc] of [[originalId, sourceNote], [finishedId, `派生:${originalId}+anim voice use（裁静音、拉到 ${workLineTable.配音.目标响度} LUFS）`]] as const) {
     if (ensureRegistered(id, sourceDesc, workLineTable.配音.许可, workLineTable.配音.可见性)) console.log(`资产表补了 ${id}（${relativeToCodeRoot(path.join(workAssetRegistryDir(workRoot()), '配音.toml'))}，${workLineTable.配音.可见性}）`);
   }
-  const replace = p.toggles.has('--替换');
+  const replace = p.toggles.has('--replace');
   registerAsset(originalId, candidatePath, { workRoot: workRoot(), replace });
   const { entry } = registerAsset(finishedId, noTrim ? candidatePath : finishedPath, { workRoot: workRoot(), replace });
   let toml = fs.readFileSync(linesFile(), 'utf8');
@@ -286,13 +286,13 @@ const finalize = async (workLineTable: WorkLines, line: VoiceLineRow, candidateP
 
 export const voiceCommands: Record<string, Command> = {
   voice: {
-    用法: 'voice list [前缀…] | check [前缀…] | gen <id…> [--后端 名] [--种子 a,b] [--语气参考 wav] [--强度 x] [--dry-run] [--允许云端] [--允许付费] [--不复核] | review <id…> [--项 起伏,音色,听写,语气] [--dry-run] [--允许付费] | use <id> <候选.wav> [--不裁] [--替换] [--不管旧表] [--来源 说明] | lip [前缀…] [--重对齐] | backends',
+    用法: 'voice list [前缀…] | check [前缀…] | gen <id…> [--backend 名] [--seeds a,b] [--tone-ref wav] [--strength x] [--dry-run] [--allow-cloud] [--allow-paid] [--no-review] | review <id…> [--items 起伏,音色,听写,语气] [--dry-run] [--allow-paid] | use <id> <候选.wav> [--no-trim] [--replace] [--ignore-old] [--source 说明] | lip [前缀…] [--realign] | backends',
     说明: '配音链：台词.toml 一句 → gen 出候选（run/草稿/配音/，顺带本机复核音色、起伏，见 复核.md；review 单独重跑）→ use 定稿（裁静音拉响度、登记私有资产、写回 台词.toml、出句模块 台词/<id>.ts）；lip 重出口型；check 核对配音、句模块、口型可复现',
     跑: async (args, runRecord) => {
       const [action, ...restArgs] = args;
       const p = parseArgs(restArgs, {
-        toggles: ['--dry-run', '--允许云端', '--允许付费', '--不裁', '--替换', '--不管旧表', '--重对齐', '--不复核'],
-        值: ['--后端', '--种子', '--语气参考', '--强度', '--来源', '--项'],
+        toggles: ['--dry-run', '--allow-cloud', '--allow-paid', '--no-trim', '--replace', '--ignore-old', '--realign', '--no-review'],
+        值: ['--backend', '--seeds', '--tone-ref', '--strength', '--source', '--items'],
       });
       if (action === 'backends') {
         const workLineTable = readWorkLines(linesFile());
@@ -325,7 +325,7 @@ export const voiceCommands: Record<string, Command> = {
         return issues.length ? 1 : 0;
       }
       if (action === 'lip') {
-        const written = await exportSentences(selectLines(workLineTable, p.位置, true), { realign: p.toggles.has('--重对齐') });
+        const written = await exportSentences(selectLines(workLineTable, p.位置, true), { realign: p.toggles.has('--realign') });
         runRecord.产物.push(...written);
         console.log(`写了 ${written.length} 个句模块（${relativeToCodeRoot(sentenceDir(workRoot()))}）`);
         return 0;
@@ -336,8 +336,8 @@ export const voiceCommands: Record<string, Command> = {
       }
       if (action === 'review') {
         if (!p.位置.length) throw new UsageError('要给台词 id（或前缀）');
-        const items = p.值['--项']?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
-        return runReview(workLineTable, selectLines(workLineTable, p.位置), { itemNames: items, describeOnly: p.toggles.has('--dry-run'), allowPaid: p.toggles.has('--允许付费') });
+        const items = p.值['--items']?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+        return runReview(workLineTable, selectLines(workLineTable, p.位置), { itemNames: items, describeOnly: p.toggles.has('--dry-run'), allowPaid: p.toggles.has('--allow-paid') });
       }
       if (action === 'use') {
         const [id, candidatePath] = p.位置;

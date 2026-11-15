@@ -5,8 +5,8 @@ import { readModel, modelFileName, sectionFormatVersion } from '../../../engine/
 // 写了 随仓库.toml 的作品：字节/ 和按当前代码算的集合一一对上、逐件核 sha，私有的不在里面（资产/随仓库.ts）。
 // 写了 随发布.toml 的作品：发布锁.json 和按当前代码算的该发的（字节、地形包）对上（资产/发布.ts）。
 // 写了 材质包.toml 的作品：[段] 里的段键在清单里，每一种选用的覆盖层锁都建了、和现在登记的包对得上（资产/资产锁.ts 套材质包）。
-// 粒子帧/ 下 anim extract --粒子帧 生成的模块和定义、配方、锁对得上（取材/粒子帧.ts）。
-// --深：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
+// 粒子帧/ 下 anim extract --particle-frames 生成的模块和定义、配方、锁对得上（取材/粒子帧.ts）。
+// --deep：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import { decoderSourceStale } from '../../世界/区段解码器.ts';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -206,7 +206,7 @@ const checkReleaseBundle = async (c: CheckContext, report: CheckReport) => {
   if (expected.issues.length) return;
   const releaseLock = c.exists(lockFile) ? (JSON.parse(c.读(lockFile)) as Parameters<typeof compareReleaseLock>[0]) : undefined;
   const diffItems = compareReleaseLock(releaseLock, expected, releaseTable);
-  for (const q of diffItems) report.错(`随发布：${q}（anim assets pack --上传 照当前代码重打、传上去）`, lockFile);
+  for (const q of diffItems) report.错(`随发布：${q}（anim assets pack --upload 照当前代码重打、传上去）`, lockFile);
   if (!diffItems.length) report.infoLines.push(`随发布：${expected.段数} 段要的 ${expected.字节.length} 件字节、${expected.地形.length} 个地形包和 ${lockFile} 对得上${expected.私有库字节.length ? `（其中 私有/ 库 ${expected.私有库字节.length} 件）` : ''}${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件` : ''}`);
 };
 
@@ -273,9 +273,9 @@ export const checkAssets = async (c: CheckContext, report: CheckReport) => {
   }
 
   // 区段解码器：改了 wasm/ 的源码没重编，解码的还是旧字节（不要求这台机器装 asc）
-  if (c.exists('wasm/区段解码.ts') && decoderSourceStale(c.exists('engine/voxel/区段解码器.生成.ts') ? c.读('engine/voxel/区段解码器.生成.ts') : '', c.读('wasm/区段解码.ts'))) report.错('wasm/区段解码.ts 和 engine/voxel/区段解码器.生成.ts 记的源码 sha256 对不上：anim world 解码器 重编', 'wasm/区段解码.ts');
+  if (c.exists('wasm/区段解码.ts') && decoderSourceStale(c.exists('engine/voxel/区段解码器.生成.ts') ? c.读('engine/voxel/区段解码器.生成.ts') : '', c.读('wasm/区段解码.ts'))) report.错('wasm/区段解码.ts 和 engine/voxel/区段解码器.生成.ts 记的源码 sha256 对不上：anim world decoder 重编', 'wasm/区段解码.ts');
 
-  // 粒子帧：anim extract --粒子帧 生成的模块和粒子定义、配方、资产锁对得上（定义字节不在本机的只核头里记的 sha）
+  // 粒子帧：anim extract --particle-frames 生成的模块和粒子定义、配方、资产锁对得上（定义字节不在本机的只核头里记的 sha）
   if (generatedFiles(c.根, c.absPath(c.workDir)).length) {
     const sides = c.assetLocks();
     const q = parseManifest(c.读('sourcing/extract.toml'), c.读('sourcing/jars.toml'));
@@ -366,7 +366,7 @@ export const checkAssets = async (c: CheckContext, report: CheckReport) => {
     if (chunkFiles.length) {
       try {
         const info = JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as { 版本: number };
-        if (info.版本 !== sectionFormatVersion) throw new Error(`格式 ${info.版本} 不是现行格式 ${sectionFormatVersion}：anim world 转码`);
+        if (info.版本 !== sectionFormatVersion) throw new Error(`格式 ${info.版本} 不是现行格式 ${sectionFormatVersion}：anim world transcode`);
         readModel(fs.readFileSync(path.join(dir, modelFileName)));
         for (const f of chunkFiles) {
           const fd = fs.openSync(path.join(dir, f), 'r'), h = Buffer.alloc(8);

@@ -1,4 +1,4 @@
-// anim world 转码：把现有地形包（格式 1、2，或还没做可见变换的格式 3）转成现行格式、过可见变换（可见.ts）。只写新版本目录（版本是内容指纹），旧目录一个字节不动；
+// anim world transcode：把现有地形包（格式 1、2，或还没做可见变换的格式 3）转成现行格式、过可见变换（可见.ts）。只写新版本目录（版本是内容指纹），旧目录一个字节不动；
 // 转完逐格比过（做了变换的另核格和网格，可见核对.ts）才登记。转的结果和拿同一个存档重新 anim world bake 字节相同（区段先后、包.json 的写法都一样），所以不用回去烘存档。
 import fs from 'node:fs';
 import { modelBytes, modelFileName } from '../../../engine/voxel/区段模型.ts';
@@ -90,7 +90,7 @@ export type TranscodeOptions = { 从?: string; noRegister?: boolean; threads: nu
 export const transcodePack = async (pack: string, o: TranscodeOptions) => {
   const terrainTable = readTerrainTable().包;
   const oldVersion = o.从 ?? terrainTable[pack]?.版本;
-  if (!oldVersion) throw new Error(`地形包 ${pack} 没登记，用 --从 <版本> 指定转哪一版`);
+  if (!oldVersion) throw new Error(`地形包 ${pack} 没登记，用 --from <版本> 指定转哪一版`);
   const oldDir = versionDir(pack, oldVersion);
   if (!fs.existsSync(oldDir)) throw new Error(`没有 ${oldDir}`);
   const libFormat = (await loadVoxelLib()).sectionPack.formatVersion;
@@ -140,10 +140,10 @@ export const transcodePack = async (pack: string, o: TranscodeOptions) => {
   const existing = terrainTable[pack];
   const shouldRegister = !o.noRegister && existing !== undefined;
   if (shouldRegister && existing.版本 !== version) {
-    const source = `${existing.来源}；anim world 转码 从 ${oldVersion} ${formatVersion === libFormat ? '过可见变换（只保真看得见的格子' : `转成格式 3（每包状态条件模型${visible ? '，过可见变换' : ''}`}；docs/决策/0011-地形压缩.md）`;
+    const source = `${existing.来源}；anim world transcode 从 ${oldVersion} ${formatVersion === libFormat ? '过可见变换（只保真看得见的格子' : `转成格式 3（每包状态条件模型${visible ? '，过可见变换' : ''}`}；docs/决策/0011-地形压缩.md）`;
     const entry = await registerTerrainEntry(pack, version, { 来源: source, 许可: existing.许可, 可见性: existing.可见性, ...(existing.说明 ? { 说明: existing.说明 } : {}) });
     registerTerrain(pack, entry);
     o.log('  已登记进 assets/地形版本.json，要随代码提交');
-  } else if (!shouldRegister) o.log(`  没登记（${o.noRegister ? '--不登记' : '这个包不在 assets/地形版本.json 里'}）`);
+  } else if (!shouldRegister) o.log(`  没登记（${o.noRegister ? '--no-register' : '这个包不在 assets/地形版本.json 里'}）`);
   return { 包: pack, oldVersion, 版本: version, 目录: dir, 块文件: blockFileNames.length, ...training, ...result, verifySec };
 };

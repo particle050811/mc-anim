@@ -8,9 +8,9 @@ import type { Command } from './命令.ts';
 import { takeDebugArgs, isExpectedError, wantsHelp, firstFrameFile, runCommandLine } from './路由.ts';
 
 describe('全局参数', () => {
-  it('--调试 在哪都取走，-- 之后的原样留给命令', () => {
-    expect(takeDebugArgs(['stale', '--调试', '6'])).toEqual({ debug: true, rest: ['stale', '6'] });
-    expect(takeDebugArgs(['mcai', '--', '--调试'])).toEqual({ debug: false, rest: ['mcai', '--', '--调试'] });
+  it('--debug 在哪都取走，-- 之后的原样留给命令', () => {
+    expect(takeDebugArgs(['stale', '--debug', '6'])).toEqual({ debug: true, rest: ['stale', '6'] });
+    expect(takeDebugArgs(['mcai', '--', '--debug'])).toEqual({ debug: false, rest: ['mcai', '--', '--debug'] });
     expect(takeDebugArgs([])).toEqual({ debug: false, rest: [] });
   });
 });
@@ -98,8 +98,8 @@ describe('跑命令行', () => {
     expect(wantsHelp(['server', '--', 'say', '--help'])).toBe(false);
   });
 
-  it('按命令分发，返回值就是退出码（没返回算 0）；--调试 不传给命令；写运行记录', async () => {
-    const r = await run(['好', '--调试', 'a'], commandTable);
+  it('按命令分发，返回值就是退出码（没返回算 0）；--debug 不传给命令；写运行记录', async () => {
+    const r = await run(['好', '--debug', 'a'], commandTable);
     expect(r.code).toBe(0);
     expect(collectedArgs.at(-1)).toEqual(['a']);
     expect(r.records[0]).toMatchObject({ 命令: '好', 参数: ['a'], 退出码: 0 });
@@ -107,8 +107,8 @@ describe('跑命令行', () => {
     expect((await run(['只读'], commandTable)).records[0]!.退出码).toBeUndefined();
   });
 
-  it('--作品 选不出来退出 2，不跑命令', async () => {
-    const r = await run(['--作品', '没有这部作品', '好'], commandTable);
+  it('--work 选不出来退出 2，不跑命令', async () => {
+    const r = await run(['--work', '没有这部作品', '好'], commandTable);
     expect(r.code).toBe(2);
     expect(r.records).toHaveLength(0);
   });
@@ -124,8 +124,8 @@ describe('跑命令行', () => {
     expect(crashRun.error).toMatch(/^TypeError: 读不了 undefined 的属性\n\s+at /);
   });
 
-  it('--调试 或 ANIM_DEBUG=1 时业务错也打调用栈', async () => {
-    expect((await run(['--调试', '业务'], commandTable)).error).toMatch(/^Error: 母版不在\n\s+at /);
+  it('--debug 或 ANIM_DEBUG=1 时业务错也打调用栈', async () => {
+    expect((await run(['--debug', '业务'], commandTable)).error).toMatch(/^Error: 母版不在\n\s+at /);
     expect((await run(['业务'], commandTable, { ANIM_DEBUG: '1' })).error).toMatch(/^Error: 母版不在\n\s+at /);
   });
 });

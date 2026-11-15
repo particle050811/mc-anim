@@ -73,7 +73,7 @@ describe('取材清单', () => {
     expect(() => parseManifest(manifestText, jarText, { 'extract.x.toml': `["程序"]\n"a" = []\n` })).toThrow(/只认/);
   });
 
-  it('--全部 只选有步骤、不用开游戏、不待迁移的，写了别的作品的不选；组按组里的先后', () => {
+  it('--all 只选有步骤、不用开游戏、不待迁移的，写了别的作品的不选；组按组里的先后', () => {
     expect(selectEntries(q, [], true).map((e) => e.名称)).toEqual(['甲', '丁']);
     expect(selectEntries(q, [], true, '甲作').map((e) => e.名称)).toEqual(['甲']);
     expect(selectEntries(q, [], true, '乙作').map((e) => e.名称)).toEqual(['甲', '丁']);

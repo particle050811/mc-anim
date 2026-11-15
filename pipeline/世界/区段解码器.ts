@@ -1,7 +1,7 @@
-// anim world 解码器：逐格预测压缩的两份生成物（都进 Git，都进用地形的段的指纹，都不手改），来源见 docs/决策/0011-地形压缩.md。
+// anim world decoder：逐格预测压缩的两份生成物（都进 Git，都进用地形的段的指纹，都不手改），来源见 docs/决策/0011-地形压缩.md。
 //   engine/voxel/区段解码器.生成.ts：wasm/区段解码.ts 用 AssemblyScript（版本钉在 package.json）编出的 WASM，base64。
 //   engine/voxel/区段模型表.生成.ts：模型初值，从真实地形按上下文数频率学的。它是格式的一部分，换表要升格式版本、全部地形包重转，所以平时只有 --训练 才动。
-// asc 只在这里用，渲染、烘焙都不要它；没装（pnpm install 装开发依赖才有）时 --检查 报错，anim check 只比源码 sha，不要 asc。
+// asc 只在这里用，渲染、烘焙都不要它；没装（pnpm install 装开发依赖才有）时 --check 报错，anim check 只比源码 sha，不要 asc。
 import { execFileSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -31,7 +31,7 @@ const compileWasm = () => {
 };
 
 const decoderFileText = (wasm: Uint8Array, sourceSha: string) =>
-  `// anim world 解码器 生成，别手改：wasm/区段解码.ts 用 assemblyscript 编出的 WASM（docs/决策/0011-地形压缩.md）。\n` +
+  `// anim world decoder 生成，别手改：wasm/区段解码.ts 用 assemblyscript 编出的 WASM（docs/决策/0011-地形压缩.md）。\n` +
   `export const sourceSha256 = '${sourceSha}';\n` +
   `export const wasmBase64 =\n  '${Buffer.from(wasm).toString('base64')}';\n`;
 

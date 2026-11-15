@@ -38,16 +38,16 @@ describe('资产', () => {
         '贴图/图': { ...lockEntry('c'.repeat(64)), 后缀: '.png' },
       }),
     });
-    const { violations } = await runRule('资产', root);
+    const { violations } = await runRule('assets', root);
     expect(violations.join('\n')).toMatch(/1 件音频的锁里没有时长、峰值、响度（如 音效\/没量）/);
   });
 
   it('wasm/区段解码.ts 改了没重编要报（生成文件记的源码 sha 对不上），对得上放行', async () => {
     const genSource = (sourceText: string) => `export const sourceSha256 = '${sha(sourceText)}';\nexport const wasmBase64 = '';\n`;
-    const cleanResult = await runRule('资产', makeRepo(base(), { 'wasm/区段解码.ts': 'a\n', 'engine/voxel/区段解码器.生成.ts': genSource('a\n') }));
-    expect(cleanResult.violations.filter((e) => e.includes('anim world 解码器'))).toEqual([]);
-    const badRun = await runRule('资产', makeRepo(base(), { 'wasm/区段解码.ts': 'b\n', 'engine/voxel/区段解码器.生成.ts': genSource('a\n') }));
-    expect(badRun.violations.join('\n')).toMatch(/anim world 解码器 重编/);
+    const cleanResult = await runRule('assets', makeRepo(base(), { 'wasm/区段解码.ts': 'a\n', 'engine/voxel/区段解码器.生成.ts': genSource('a\n') }));
+    expect(cleanResult.violations.filter((e) => e.includes('anim world decoder'))).toEqual([]);
+    const badRun = await runRule('assets', makeRepo(base(), { 'wasm/区段解码.ts': 'b\n', 'engine/voxel/区段解码器.生成.ts': genSource('a\n') }));
+    expect(badRun.violations.join('\n')).toMatch(/anim world decoder 重编/);
   });
   it('合规样例放行：代码 asset: 引公开资产、私有配音只走 cue、角色包引用都对上、许可待定只记数', async () => {
     const root = makeRepo(base(), {
@@ -69,7 +69,7 @@ describe('资产', () => {
         '"新位置" = "库/角色/李樱.tsx"',
       ].join('\n'),
     });
-    const { violations, report } = await runRule('资产', root);
+    const { violations, report } = await runRule('assets', root);
     expect(violations).toEqual([]);
     expect(report.infoLines).toContain('1 件许可待定（见 assets/待确认.md）');
     expect(report.待迁移.map((q) => q.文本)).toEqual(['角色包 李樱 的代码 库/角色/李樱.tsx 还没搬']);
@@ -89,7 +89,7 @@ describe('资产', () => {
         '',
       ].join('\n'),
     });
-    const { violations, report } = await runRule('资产', root);
+    const { violations, report } = await runRule('assets', root);
     expect(report.待迁移.map((q) => q.文本)).toContain('作品/应力转动/段/7-甲/画面.tsx 还把私有资产 asset:贴图/私 打进包里（M5 改走 cue）');
     expect(violations.join('\n')).toMatch(/公开构建的闭包里不能有私有资产：作品\/应力转动\/段\/7-甲\/画面.tsx import 了 asset:贴图\/私二/);
     expect(violations.join('\n')).not.toMatch(/import 了 asset:贴图\/私（/);
@@ -103,7 +103,7 @@ describe('资产', () => {
       '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: ['没登记的包'] });\n",
       'assets/kits/九胡.toml': ['"角色" = "九胡"', '[["资产组"]]', '"用途" = "模型"', '"匹配" = ["模型/九胡-*"]', '"文字源" = ["docs/没有.md"]'].join('\n'),
     });
-    const v = (await runRule('资产', root)).violations.join('\n');
+    const v = (await runRule('assets', root)).violations.join('\n');
     expect(v).toMatch(/「贴图\/乙」的许可「MIT 或 GPL」不是 SPDX 表达式/);
     expect(v).toMatch(/「贴图\/乙」登记了但不在资产锁里/);
     expect(v).toMatch(/「贴图\/私」可见性是私有，资产锁里却在 store 库/);
@@ -115,7 +115,7 @@ describe('资产', () => {
     expect(v).toMatch(/角色包 九胡「模型」的文字源 docs\/没有.md 不在仓库里/);
   });
 
-  it('--深：库里字节和地形包按 sha 核对，对得上放行、改过就拦', async () => {
+  it('--deep：库里字节和地形包按 sha 核对，对得上放行、改过就拦', async () => {
     const dataRoot = makeDataRoot({ store: 'abc' }, { '古城/v1/a.bin': '1', '古城/v1/子/b.bin': '22' });
     try {
       const manifest = await packManifest(path.join(dataRoot, 'terrain', '古城', 'v1'));
@@ -125,7 +125,7 @@ describe('资产', () => {
           'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry(sha('abc')) }),
           'assets/地形版本.json': JSON.stringify({ 包: { 古城: { 版本: 'v1', ...manifest, 许可: 'LicenseRef-用户保留', 可见性: '私有' } } }),
         });
-      const checkResult = await runRule('资产', repoRoot(), { depthCheck: true, dataRoot });
+      const checkResult = await runRule('assets', repoRoot(), { depthCheck: true, dataRoot });
       expect(checkResult.violations).toEqual([]);
       expect(checkResult.report.infoLines.at(-1)).toMatch(/深查：1 个库对象、1 个地形包/);
 
@@ -133,7 +133,7 @@ describe('资产', () => {
       const f = path.join(dataRoot, 'store', h.slice(0, 2), h);
       fs.writeFileSync(f, 'abd');
       fs.writeFileSync(path.join(dataRoot, 'terrain', '古城', 'v1', 'a.bin'), '9');
-      const v = (await runRule('资产', repoRoot(), { depthCheck: true, dataRoot })).violations.join('\n');
+      const v = (await runRule('assets', repoRoot(), { depthCheck: true, dataRoot })).violations.join('\n');
       expect(v).toMatch(/「贴图\/甲」库里的字节 sha256 是 .{12}，资产锁记的是 ba7816bf8f01/);
       expect(v).toMatch(/地形包 古城\/v1 和 assets\/地形版本.json 记的不一致/);
     } finally {
@@ -151,15 +151,15 @@ describe('资产', () => {
       '作品/应力转动/段/7-甲/画面.tsx':
         "import 图 from 'asset:贴图/甲';\nimport { packDir } from '@engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
     });
-    const narrow = await runRule('资产', makeRepo(base(), filesFor('["主世界"]')));
+    const narrow = await runRule('assets', makeRepo(base(), filesFor('["主世界"]')));
     expect(narrow.violations).toEqual([]);
     expect(narrow.report.infoLines.join('\n')).toMatch(/7-甲 的闭包写到了 暮色/);
-    const report = await runRule('资产', makeRepo(base(), filesFor('["主世界", "暮色"]')));
+    const report = await runRule('assets', makeRepo(base(), filesFor('["主世界", "暮色"]')));
     expect(report.violations).toEqual([]);
     expect(report.report.infoLines.join('\n')).not.toMatch(/闭包写到了/);
     const notTaken = filesFor('[]');
     notTaken['作品/应力转动/段/7-甲/画面.tsx'] = "import 图 from 'asset:贴图/甲';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + 主世界名} />;\n";
-    expect((await runRule('资产', makeRepo(base(), notTaken))).violations).toEqual([]);
+    expect((await runRule('assets', makeRepo(base(), notTaken))).violations).toEqual([]);
   });
 
   it('SPDX 表达式和角色包通配', () => {
@@ -185,10 +185,10 @@ describe('作品资产表', () => {
       '作品/示例/资产表/配乐.toml': makeAssetTable(assetRow('配乐/曲')),
       '作品/示例/资产锁.json': JSON.stringify({ '配乐/曲': lockEntry('f'.repeat(64)) }),
     };
-    expect((await runRule('资产', makeRepo(base(), files), { 作品: '示例' })).violations).toEqual([]);
+    expect((await runRule('assets', makeRepo(base(), files), { 作品: '示例' })).violations).toEqual([]);
     // 查 应力转动 时不读 示例 的表和锁：示例 引的 配乐/曲 不归它管，示例 表里的毛病也不报
     const badTable = { ...files, '作品/示例/资产表/配乐.toml': '[["资产"]]\nid = "配乐/曲"\n' };
-    expect((await runRule('资产', makeRepo(base(), badTable), { 作品: '应力转动' })).violations).toEqual([]);
+    expect((await runRule('assets', makeRepo(base(), badTable), { 作品: '应力转动' })).violations).toEqual([]);
   });
 
   it('两侧都登记、两份锁都有、锁写错一侧、作品锁里没登记的、作品表缺字段都拦，报在作品那份文件上', async () => {
@@ -197,7 +197,7 @@ describe('作品资产表', () => {
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '配乐/错侧': lockEntry('b'.repeat(64)) }),
       '作品/示例/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '配乐/孤': lockEntry('c'.repeat(64)) }),
     });
-    const v = (await runRule('资产', root, { 作品: '示例' })).violations;
+    const v = (await runRule('assets', root, { 作品: '示例' })).violations;
     expect(v).toEqual(
       expect.arrayContaining([
         '作品/示例/资产表 配乐.toml 的「配乐/缺字段」：缺 类别',
@@ -226,11 +226,11 @@ describe('作品资产表', () => {
       execFileSync('git', ['-C', root, 'init', '-q'], { stdio: 'ignore' });
       return root;
     };
-    const blocked = await runRule('资产', withGit('/作品/示例/\n'), { 作品: '示例' });
+    const blocked = await runRule('assets', withGit('/作品/示例/\n'), { 作品: '示例' });
     expect(blocked.violations).toEqual(['库/界面/某.tsx 公开构建的闭包里不能有私有资产：库/界面/某.tsx import 了 asset:配音/甲（私有的走 cue，缺了按规矩降级或报错，不打进包）']);
     expect(blocked.report.跳过.join()).toMatch(/作品\/示例 被 .gitignore 挡住、是私有作品/);
 
-    const notBlocked = (await runRule('资产', withGit('/作品/别的/\n'), { 作品: '示例' })).violations.join('\n');
+    const notBlocked = (await runRule('assets', withGit('/作品/别的/\n'), { 作品: '示例' })).violations.join('\n');
     expect(notBlocked).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配乐\/私曲/);
     expect(notBlocked).toMatch(/作品\/示例\/段\/1-标题\/画面.tsx import 了 asset:配音\/甲/);
   });
@@ -256,18 +256,18 @@ describe('随仓库发的字节', () => {
     );
 
   it('字节/ 和集合一致放行，报件数；私有的不算', async () => {
-    const r = await runRule('资产', makeAssetRepo());
+    const r = await runRule('assets', makeAssetRepo());
     expect(r.violations).toEqual([]);
     expect(r.report.infoLines.join('\n')).toMatch(/随仓库：1 段要的 1 件字节（0.0 MB）都在 作品\/应力转动\/字节\/、sha 对；私有不带 1 件/);
   });
 
   it('缺的、改坏的、多余的、私有的、没有 随仓库.toml 的 字节/、表里写了不存在的段都拦', async () => {
-    expect((await runRule('资产', makeAssetRepo({ [bytesPosPath(contentA)]: null }))).violations).toEqual(['作品/应力转动/字节 作品/应力转动/字节/ 缺 1 件：贴图/甲（anim assets vendor 照当前代码重写）']);
-    expect((await runRule('资产', makeAssetRepo({ [bytesPosPath(contentA)]: '改过' }))).violations.join()).toMatch(/的内容 sha256 和文件名对不上/);
-    const violationText = (await runRule('资产', makeAssetRepo({ [bytesPosPath(privateBytes)]: privateBytes, [bytesPosPath('别的')]: '别的' }))).violations.join('\n');
+    expect((await runRule('assets', makeAssetRepo({ [bytesPosPath(contentA)]: null }))).violations).toEqual(['作品/应力转动/字节 作品/应力转动/字节/ 缺 1 件：贴图/甲（anim assets vendor 照当前代码重写）']);
+    expect((await runRule('assets', makeAssetRepo({ [bytesPosPath(contentA)]: '改过' }))).violations.join()).toMatch(/的内容 sha256 和文件名对不上/);
+    const violationText = (await runRule('assets', makeAssetRepo({ [bytesPosPath(privateBytes)]: privateBytes, [bytesPosPath('别的')]: '别的' }))).violations.join('\n');
     expect(violationText).toMatch(/是私有资产「配乐\/私曲」的字节，不能随仓库发/);
     expect(violationText).toMatch(/多余：随仓库.toml 的段现在用不到/);
-    expect((await runRule('资产', makeAssetRepo({ '作品/应力转动/随仓库.toml': null }))).violations.join()).toMatch(/有 作品\/应力转动\/字节\/ 却没有 随仓库.toml/);
-    expect((await runRule('资产', makeAssetRepo({ '作品/应力转动/随仓库.toml': '"段" = ["8"]' }))).violations.join()).toMatch(/「8」没对上清单里的段/);
+    expect((await runRule('assets', makeAssetRepo({ '作品/应力转动/随仓库.toml': null }))).violations.join()).toMatch(/有 作品\/应力转动\/字节\/ 却没有 随仓库.toml/);
+    expect((await runRule('assets', makeAssetRepo({ '作品/应力转动/随仓库.toml': '"段" = ["8"]' }))).violations.join()).toMatch(/「8」没对上清单里的段/);
   });
 });

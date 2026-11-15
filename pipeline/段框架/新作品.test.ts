@@ -85,7 +85,7 @@ describe('新段', () => {
     newWork(tempDir, '试作');
     const workRoot = path.join(tempDir, '作品', '试作');
     expect(() => newSegment(workRoot, '开门', {})).toThrow(/段键/);
-    expect(() => newSegment(workRoot, '1-开门', {})).toThrow(/--场/);
+    expect(() => newSegment(workRoot, '1-开门', {})).toThrow(/--scene/);
     fs.mkdirSync(path.join(workRoot, '场/1-老'), { recursive: true });
     fs.writeFileSync(path.join(workRoot, '场/1-老/时间线.ts'), 'export const 事件 = {};\n');
     expect(() => newSegment(workRoot, '1-开门', { 场: '1-老' })).toThrow(/定义场时间线/);

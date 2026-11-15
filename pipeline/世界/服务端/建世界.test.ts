@@ -161,7 +161,7 @@ describe('建新世界', () => {
 });
 
 describe('装 Forge 服务端', () => {
-  it.skipIf(process.platform === 'win32')('空目录：跑安装器、写 server.properties、不替人同意 EULA；装过的不重装；加 --同意EULA 才写', async () => {
+  it.skipIf(process.platform === 'win32')('空目录：跑安装器、写 server.properties、不替人同意 EULA；装过的不重装；加 --accept-eula 才写', async () => {
     const root = makeTempDir(), serverDir = path.join(root, '新服务端');
     const installerPath = path.join(root, 'installer.jar');
     fs.writeFileSync(installerPath, '');

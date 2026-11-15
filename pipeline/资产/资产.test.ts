@@ -135,14 +135,14 @@ describe('作品资产表', () => {
     expect(Object.keys(readAssetLock(r.lockFile))).toEqual(['配乐/曲']);
   });
 
-  it('assets add：没登记、两侧都登记报错；sha 变了要 --替换；登记换了一侧，锁跟着挪', () => {
+  it('assets add：没登记、两侧都登记报错；sha 变了要 --replace；登记换了一侧，锁跟着挪', () => {
     const t = makeSides([assetToml('贴图/共用甲'), assetToml('配乐/撞名')], [assetToml('配乐/撞名'), assetToml('贴图/共用甲')]);
     expect(() => registerAsset('配乐/没有', t.源, t)).toThrow(/资产表里没有「配乐\/没有」.*<作品根>\/资产表/);
     expect(() => registerAsset('配乐/撞名', t.源, t)).toThrow(/在共用表和作品资产表里都登记了/);
 
     // 贴图/共用甲 原来在共用锁；现在只登记在作品资产表
     fs.writeFileSync(path.join(t.sharedTableDir, '贴图.toml'), '');
-    expect(() => registerAsset('贴图/共用甲', t.源, t)).toThrow(/已有另一份.*--替换/);
+    expect(() => registerAsset('贴图/共用甲', t.源, t)).toThrow(/已有另一份.*--replace/);
     const r = registerAsset('贴图/共用甲', t.源, { ...t, replace: true });
     expect(r.movedFrom).toBe(t.sharedLockPath);
     expect(readAssetLock(t.sharedLockPath)).toEqual({});

@@ -34,7 +34,7 @@ export const makeGlyphSource = (sga: Png, glyphTable: GlyphTable, tableName: str
   const hanziBitmaps = new Map<string, DotMatrix>();
   const glyphOf = (char: string) => {
     const g = glyphTable[char];
-    if (!g) throw new Error(`字形表 ${tableName} 里没有「${char}」：加进作品的 界面/歌词文案.txt，重跑 anim --作品 把回忆拼好给你 extract 把回忆拼好给你歌词字`);
+    if (!g) throw new Error(`字形表 ${tableName} 里没有「${char}」：加进作品的 界面/歌词文案.txt，重跑 anim --work 把回忆拼好给你 extract 把回忆拼好给你歌词字`);
     return g;
   };
   return {

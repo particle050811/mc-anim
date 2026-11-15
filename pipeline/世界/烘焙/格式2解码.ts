@@ -39,7 +39,7 @@ export const decodeSectionFormat2 = (raw: Uint8Array, id: { L: number; i: number
   bytes.set(raw.subarray(streamStart), inPtr);
   bytes.fill(0, inPtr + streamLength, inPtr + streamLength + 16); // 坏数据读过头时读到的是确定的 0，解完由读到的位置判错
   const R = decode(inPtr, streamLength, tableBase, workBase, treeBase, cm, runOffset, countsOffset, idsOffset, runLengthsPtr, nz, paletteSize, id.L);
-  if (R < 0) throw new Error(`区段 ${id.L}/${id.i}/${id.j} 的编码流坏了（${streamLength} 字节没有正好读完）：文件损坏或格式不对，anim check --深 核对地形包`);
+  if (R < 0) throw new Error(`区段 ${id.L}/${id.i}/${id.j} 的编码流坏了（${streamLength} 字节没有正好读完）：文件损坏或格式不对，anim check --deep 核对地形包`);
   const ab = new ArrayBuffer((2 * paletteSize + columnCount + 2 * R) * 2);
   const palette = new Uint16Array(ab, 0, 2 * paletteSize);
   const runCounts = new Uint16Array(ab, palette.byteLength, columnCount);

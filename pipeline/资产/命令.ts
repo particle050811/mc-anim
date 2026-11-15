@@ -1,9 +1,9 @@
 // anim assets add <id> <文件>：把一件已在资产表登记的资产按 sha 放进 store/（私有的进 私有/），写进登记它那一侧的资产锁：
-// 共用表 assets/registry/ 登记的写 assets/资产锁/，作品资产表 <作品根>/资产表/ 登记的写 <作品根>/资产锁/（作品按 --作品 选）。
+// 共用表 assets/registry/ 登记的写 assets/资产锁/，作品资产表 <作品根>/资产表/ 登记的写 <作品根>/资产锁/（作品按 --work 选）。
 // 从旧项目批量导入走 M2 的导入工具；这里只管单件（自制的、新生成的）。
-// anim assets vendor [--检查]：照 <作品根>/随仓库.toml 重写 <作品根>/字节/（随仓库发的字节，资产/随仓库.ts）；anim assets seed：把 字节/ 补进数据根 store/。
-// anim assets measure [--检查]：早先入库的音频条目补 时长/峰值/响度（资产/补量.ts）。
-// anim assets pack [--上传]：照 <作品根>/随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json；anim assets pull：按发布锁下载进数据根（资产/发布.ts）。
+// anim assets vendor [--check]：照 <作品根>/随仓库.toml 重写 <作品根>/字节/（随仓库发的字节，资产/随仓库.ts）；anim assets seed：把 字节/ 补进数据根 store/。
+// anim assets measure [--check]：早先入库的音频条目补 时长/峰值/响度（资产/补量.ts）。
+// anim assets pack [--upload]：照 <作品根>/随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json；anim assets pull：按发布锁下载进数据根（资产/发布.ts）。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Command } from '../cli/命令.ts';
@@ -40,7 +40,7 @@ export const registerAsset = (id: string, file: string, o: IngestOptions): { ent
   const nextEntry = o.measureAudio === false ? storedBytes : withAudioMetadata(storedBytes, file);
   const prevEntry = assetLock[id] ?? otherLock[id];
   if (prevEntry && prevEntry.sha256 !== nextEntry.sha256 && !o.replace) {
-    throw new Error(`「${id}」资产锁里已有另一份（sha ${prevEntry.sha256.slice(0, 12)}），确实要换成新的加 --替换（旧字节留在库里）`);
+    throw new Error(`「${id}」资产锁里已有另一份（sha ${prevEntry.sha256.slice(0, 12)}），确实要换成新的加 --replace（旧字节留在库里）`);
   }
   assetLock[id] = nextEntry;
   writeAssetLock(assetLock, lockFile);
@@ -51,7 +51,7 @@ export const registerAsset = (id: string, file: string, o: IngestOptions): { ent
   return { entry: nextEntry, lockFile, movedFrom: otherLockFile };
 };
 
-/** anim assets vendor：照 随仓库.toml 重算集合、重写 字节/；--检查 只报要改什么，有改动返回 1 */
+/** anim assets vendor：照 随仓库.toml 重算集合、重写 字节/；--check 只报要改什么，有改动返回 1 */
 const writeBytes = async (checkOnly: boolean, runRecord: Parameters<Command['跑']>[1]) => {
   const workDir = workRoot();
   const repoListPath = path.join(workDir, repoTableName);
@@ -74,7 +74,7 @@ const writeBytes = async (checkOnly: boolean, runRecord: Parameters<Command['跑
   }
 };
 
-/** anim assets pack：照 随发布.toml 打附件、写发布锁；--上传 建 Release、传附件 */
+/** anim assets pack：照 随发布.toml 打附件、写发布锁；--upload 建 Release、传附件 */
 const runPackRelease = async (upload: boolean, runRecord: Parameters<Command['跑']>[1]) => {
   const workDir = workRoot();
   const tableFile = path.join(workDir, releaseTableName);
@@ -89,13 +89,13 @@ const runPackRelease = async (upload: boolean, runRecord: Parameters<Command['�
     console.log(`${expected.段数} 段：${expected.字节.length + expected.私有库字节.length} 件字节${expected.私有库字节.length ? `（私有/ 库 ${expected.私有库字节.length} 件）` : ''}、${expected.地形.length} 个地形包，${releaseLock.附件.length} 个附件共 ${(totalBytes / 1e9).toFixed(2)} GB；新打 ${newPacks.length} 个${expected.privateFiles.length ? `；私有不发 ${expected.privateFiles.length} 件：${expected.privateFiles.join('、')}` : ''}`);
     console.log(`写了 ${relativeToCodeRoot(path.join(workDir, releaseLockName))}`);
     if (upload) await uploadRelease(releaseLock, dataRoot());
-    else if (newPacks.length) console.log(`传上去：anim assets pack --上传（要 gh 登录），或手动 gh release upload ${releaseLock.标签} <cache/发布/ 里的附件> --repo ${releaseLock.仓库}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
+    else if (newPacks.length) console.log(`传上去：anim assets pack --upload（要 gh 登录），或手动 gh release upload ${releaseLock.标签} <cache/发布/ 里的附件> --repo ${releaseLock.仓库}。传之前别 push：发布锁写的附件 Release 上还没有，别的机器 anim assets pull 拿不到`);
   } finally {
     c.finalize();
   }
 };
 
-/** anim assets measure：共用锁和每部作品的锁里，没量过的音频条目量了补上；--检查 只报，有能补的返回 1；有量不出的也返回 1 */
+/** anim assets measure：共用锁和每部作品的锁里，没量过的音频条目量了补上；--check 只报，有能补的返回 1；有量不出的也返回 1 */
 const fillMeasure = async (checkOnly: boolean, runRecord: Parameters<Command['跑']>[1]) => {
   const lockFiles = [assetLockPath(), ...[...listWorks().values()].map(workAssetLockPath).filter((f) => fs.existsSync(f))];
   const run = async () => {
@@ -130,21 +130,21 @@ const fillMeasure = async (checkOnly: boolean, runRecord: Parameters<Command['�
 
 export const assetCommands: Record<string, Command> = {
   assets: {
-    用法: 'assets add <id> <文件> [--替换] | assets measure [--检查] | assets vendor [--检查] | assets seed | assets pack [--上传] | assets pull | assets 材质包',
-    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--检查 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（film、still、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--上传 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "包"、"封顶"，[段] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
+    用法: 'assets add <id> <文件> [--replace] | assets measure [--check] | assets vendor [--check] | assets seed | assets pack [--upload] | assets pull | assets packs',
+    说明: 'add：一件资产入库（按 sha 放进 store/ 或 私有/），写进登记它那一侧的资产锁；measure：共用锁和各作品锁里早先入库的音频条目补 时长、峰值、响度（只加缺的字段，sha 不动；字节不在本机的跳过），--check 只报；vendor：照作品的 随仓库.toml 重写随仓库发的 字节/；seed：把 字节/ 补进数据根 store/（film、still、studio 开头会自动做）；pack：照作品的 随发布.toml 打挂 GitHub Release 发的附件、写 发布锁.json，--upload 传上去；pull：按 发布锁.json 下载、核 sha、解进数据根；材质包：按作品选用的材质包（<作品根>/材质包.toml 的 "包"、"封顶"，[段] 小节里按段另选的各建一份；试样用环境变量 ANIM_PACKS=<名,名…>、ANIM_PACKS_RES=16 顶掉）建覆盖层锁，包本身先登记成资产 材质包/<名>',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { toggles: ['--替换', '--检查', '--上传'] });
+      const p = parseArgs(args, { toggles: ['--replace', '--check', '--upload'] });
       const [subcommand, id, file] = p.位置;
-      if (subcommand === 'measure' && p.位置.length === 1 && [...p.toggles].every((k) => k === '--检查')) return fillMeasure(p.toggles.has('--检查'), runRecord);
-      if (subcommand === 'vendor' && p.位置.length === 1 && !p.toggles.has('--替换')) return writeBytes(p.toggles.has('--检查'), runRecord);
-      if (subcommand === 'pack' && p.位置.length === 1 && [...p.toggles].every((k) => k === '--上传')) return runPackRelease(p.toggles.has('--上传'), runRecord);
+      if (subcommand === 'measure' && p.位置.length === 1 && [...p.toggles].every((k) => k === '--check')) return fillMeasure(p.toggles.has('--check'), runRecord);
+      if (subcommand === 'vendor' && p.位置.length === 1 && !p.toggles.has('--replace')) return writeBytes(p.toggles.has('--check'), runRecord);
+      if (subcommand === 'pack' && p.位置.length === 1 && [...p.toggles].every((k) => k === '--upload')) return runPackRelease(p.toggles.has('--upload'), runRecord);
       if (subcommand === 'pull' && p.位置.length === 1 && !p.toggles.size) {
         const releaseLock = readReleaseLock(workRoot());
         if (!releaseLock) throw new Error(`${workName()} 没有 ${releaseLockName}：这部作品没有挂 Release 发的字节`);
         await pullRelease(releaseLock, dataRoot());
         return;
       }
-      if (subcommand === '材质包' && p.位置.length === 1 && !p.toggles.size) {
+      if (subcommand === 'packs' && p.位置.length === 1 && !p.toggles.size) {
         // 试样（环境变量）只建那一份；不然 材质包.toml 里的每一种选用（"包" 和 [段] 另选的）各建一份
         const selections = readResourcePackSelection(workRoot()).source === '环境' ? [readResourcePackSelection(workRoot())] : workResourcePackSelections(workRoot());
         if (!selections.length) throw new Error(`这部作品没选用材质包：在 ${relativeToCodeRoot(workResourcePackTablePath(workRoot()))} 写 "包" = ["材质包/<名>"]（或 [段] 里给某段选），或试样时前面带 ANIM_PACKS=<名>`);
@@ -168,8 +168,8 @@ export const assetCommands: Record<string, Command> = {
         console.log(`${relativeToCodeRoot(bytesDir(workRoot()))}：${r.共} 件，补进 ${path.join(dataRoot(), 'store')} ${r.copied} 件（其余已有）`);
         return;
       }
-      if (subcommand !== 'add' || !id || !file || p.位置.length !== 3 || p.toggles.has('--检查')) throw new UsageError('要 anim assets add <id> <文件> [--替换]、anim assets measure [--检查]、anim assets vendor [--检查]、anim assets seed、anim assets pack [--上传] 或 anim assets pull');
-      const { entry: entry, lockFile, movedFrom } = registerAsset(id, file, { workRoot: workRoot(), replace: p.toggles.has('--替换') });
+      if (subcommand !== 'add' || !id || !file || p.位置.length !== 3 || p.toggles.has('--check')) throw new UsageError('要 anim assets add <id> <文件> [--replace]、anim assets measure [--check]、anim assets vendor [--check]、anim assets seed、anim assets pack [--upload] 或 anim assets pull');
+      const { entry: entry, lockFile, movedFrom } = registerAsset(id, file, { workRoot: workRoot(), replace: p.toggles.has('--replace') });
       runRecord.产物.push(`${id} → ${entry.库}/${entry.sha256}`);
       const meterText = entry.时长 !== undefined ? `，${entry.时长} 秒、峰值 ${entry.峰值 ?? '-inf'} dBFS、响度 ${entry.响度 ?? '?'} LUFS` : '';
       console.log(`${id}：${entry.库}/${entry.sha256.slice(0, 2)}/${entry.sha256}（${entry.大小} 字节，${entry.后缀}${meterText}）→ ${relativeToCodeRoot(lockFile)}`);

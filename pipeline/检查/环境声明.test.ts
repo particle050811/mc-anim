@@ -17,35 +17,35 @@ const baseEnv = "{ 维度: overworld, 画法: '主世界', gameTime: 6000, light
 
 describe('环境声明（加载）', () => {
   it('合法的描述、环境轨放行，环境.ts 算纯模块', async () => {
-    const { violations, report } = await runRule('加载', makeRepo(base(), engineFiles(), envDeclFile(`export default defineEnvTrack({ base: ${baseEnv}, keyframes: [{ 帧: 0, 时刻: 0 }, { 帧: 9, 时刻: 18000 }] });`)));
+    const { violations, report } = await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default defineEnvTrack({ base: ${baseEnv}, keyframes: [{ 帧: 0, 时刻: 0 }, { 帧: 9, 时刻: 18000 }] });`)));
     expect(violations).toEqual([]);
     expect(report.infoLines.join('\n')).toMatch(/查了 1 份环境声明，1 份合法/);
   });
 
   it('时刻、天气写错：没套 定义环境 的字面量也查到', async () => {
-    const v = (await runRule('加载', makeRepo(base(), engineFiles(), envDeclFile(`export default { ...${baseEnv}, weather: { 雨: 2, 雷: 0 } };`)))).violations.join('\n');
+    const v = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { ...${baseEnv}, weather: { 雨: 2, 雷: 0 } };`)))).violations.join('\n');
     expect(v).toMatch(/段\/7-甲\/环境.ts .*天气.雨 = 2/);
   });
 
   it('档位名、画法名不存在', async () => {
-    const lightTierMessage = (await runRule('加载', makeRepo(base(), engineFiles(), envDeclFile(`export default { ...${baseEnv}, lightSpec: { tier: '傍晚' } };`)))).violations.join('\n');
+    const lightTierMessage = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { ...${baseEnv}, lightSpec: { tier: '傍晚' } };`)))).violations.join('\n');
     expect(lightTierMessage).toMatch(/没有灯光档位「傍晚」/);
-    const message = (await runRule('加载', makeRepo(base(), engineFiles(), envDeclFile(`export default defineEnvironment({ ...${baseEnv}, 画法: '下界' });`)))).violations.join('\n');
+    const message = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default defineEnvironment({ ...${baseEnv}, 画法: '下界' });`)))).violations.join('\n');
     expect(message).toMatch(/没有画法「下界」/);
-    const nameMismatch = (await runRule('加载', makeRepo(base(), engineFiles(), { 'engine/light/画法/下界.tsx': "export default defineDraw('主世界', () => null);\n" }, envDeclFile(`export default { ...${baseEnv}, 画法: '下界' };`))))
+    const nameMismatch = (await runRule('load', makeRepo(base(), engineFiles(), { 'engine/light/画法/下界.tsx': "export default defineDraw('主世界', () => null);\n" }, envDeclFile(`export default { ...${baseEnv}, 画法: '下界' };`))))
       .violations.join('\n');
     expect(nameMismatch).toMatch(/下界.tsx 里没有 defineDraw\('下界'/);
   });
 
   it('关键帧超出段的帧数、顺序反了', async () => {
-    const outOfRange = (await runRule('加载', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 3, 雨: 1 }, { 帧: 240, 雨: 0 }] };`)))).violations.join('\n');
+    const outOfRange = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 3, 雨: 1 }, { 帧: 240, 雨: 0 }] };`)))).violations.join('\n');
     expect(outOfRange).toMatch(/关键帧 240 不在段里（段长 10 秒，一秒 24 帧共 240 帧）/);
-    const failureMessage = (await runRule('加载', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 5, 雨: 1 }, { 帧: 2, 雨: 0 }] };`)))).violations.join('\n');
+    const failureMessage = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export default { base: ${baseEnv}, keyframes: [{ 帧: 5, 雨: 1 }, { 帧: 2, 雨: 0 }] };`)))).violations.join('\n');
     expect(failureMessage).toMatch(/从小到大/);
   });
 
   it('没有 export default', async () => {
-    const v = (await runRule('加载', makeRepo(base(), engineFiles(), envDeclFile(`export const 环境 = ${baseEnv};`)))).violations.join('\n');
+    const v = (await runRule('load', makeRepo(base(), engineFiles(), envDeclFile(`export const 环境 = ${baseEnv};`)))).violations.join('\n');
     expect(v).toMatch(/要 export default/);
   });
 });

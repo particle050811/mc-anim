@@ -1,4 +1,4 @@
-// Claude Code 钩子：替主 Agent 一直挂着 `anim 调度 盯`（用户 11-10 定：「你自己写一个 hook，自动挂上……不要靠模型自己去约束」）。
+// Claude Code 钩子：替主 Agent 一直挂着 `anim sched watch`（用户 11-10 定：「你自己写一个 hook，自动挂上……不要靠模型自己去约束」）。
 // settings.json 里以 asyncRewake 挂在 UserPromptSubmit、PostToolUse 上（SessionStart 不认 asyncRewake，会同步等它退出，新会话卡在「Running start-up hooks」，不能挂）：后台跑，退出码 2 时 Claude Code 把 stderr 交给模型并叫醒它。
 // 一个会话只留一只（临时目录里一个 pid 文件）；已经有就立刻退 0。盯 到点（124）自己重挂，报了事就退 2，下一次工具调用或用户发话再起一只。
 // 子 Agent 的工具调用不起：告警归主 Agent 管。
@@ -68,10 +68,10 @@ const rootPid = Number(process.env.CLAUDE_PID) || process.ppid;
 const entryFile = path.join(projectRoot, 'pipeline', 'cli', 'main.ts');
 while (isAlive(rootPid)) {
   // 短挂：Claude Code 退了最多多留这么久（盯 只认自己的父进程，也就是本脚本）
-  const r = spawnSync(process.execPath, [entryFile, '调度', '盯', '--最长', '300'], { cwd: projectRoot, encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: sessionId } });
+  const r = spawnSync(process.execPath, [entryFile, 'sched', 'watch', '--max-sec', '300'], { cwd: projectRoot, encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_SESSION_ID: sessionId } });
   const output = (r.stdout ?? '').trim();
   if (r.status === 0 && output) {
-    process.stderr.write(`调度告警（钩子自动盯，不用自己挂 Monitor）：${output}\n看全貌：./anim 调度 --一行；处理完接着干，下一次工具调用钩子会自动再挂。\n`);
+    process.stderr.write(`调度告警（钩子自动盯，不用自己挂 Monitor）：${output}\n看全貌：./anim sched --oneline；处理完接着干，下一次工具调用钩子会自动再挂。\n`);
     process.exitCode = 2;
     break;
   }

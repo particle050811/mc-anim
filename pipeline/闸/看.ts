@@ -71,7 +71,7 @@ export const readState = (e: SchedulerEnv, readMachine = readMachineSnapshot, re
     promptOnly('旧协议记录', () => recordOldProtocol(e, occupancy));
     return { 时: e.nowMs(), 机: readMachine(), ...occupancy,
         在跑: listFiles(path.join(e.lockDir, '在跑')).flatMap(n => { const x = readJson<TaskInfo>(path.join(e.lockDir, '在跑', n)); return x ? [x] : []; }),
-        // 一次 anim 调度 就写一行汇报，尾部开小了告警和决定很快被挤掉，看 就显示成没有。
+        // 一次 anim sched 就写一行汇报，尾部开小了告警和决定很快被挤掉，看 就显示成没有。
         最近: readSchedulerEvents(e.logDir, 256 * 1024).filter(x => x.事 === '告警' || x.事 === '决定').slice(-8) };
 };
 const formatMinutes = (elapsedSec: number) => `${Math.max(0, elapsedSec / 60).toFixed(1)}分`;

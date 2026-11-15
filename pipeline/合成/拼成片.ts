@@ -3,7 +3,7 @@
 //   画面：ffmpeg concat 直接拷流（各段同一套编码参数、都从关键帧起）；
 //   声音：各段的 wav（和画面同一遍出，长度就是段长）按样本截、接，整片一个固定增益拉到 −16 LUFS + 限幅，压 AAC 量真峰值，超了压低限幅重做（照旧 成片.ts）；
 //   出到 <数据根>/交付/<UTC 月日-时分>-<名>/：成片、拼接表、字幕表、SRT、全片-未拉响度.flac、manifest.json；
-//   --分享版 另从成片压一份 B 站 1080P60 AV1 档的（参数、文件名照旧 成片.ts，用户 11-05 定），只在要时加。
+//   --share 另从成片压一份 B 站 1080P60 AV1 档的（参数、文件名照旧 成片.ts，用户 11-05 定），只在要时加。
 import fs from 'node:fs';
 import path from 'node:path';
 import { deliveryRoot, config } from '../环境/配置.ts';
@@ -42,7 +42,7 @@ export const assembleFilm = async (segments: SegInfo[], opts: { 级别: RenderLe
   }
   const filmTier = filmProfile();
   const dir = path.join(deliveryRoot(), `${utcMonthDayTime(startMs)}-${opts.名}`);
-  if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --名）`);
+  if (fs.existsSync(dir)) throw new Error(`${dir} 已经有了，不覆盖（过一分钟再出或换 --name）`);
   const workDir = path.join(dir, '_工作');
   fs.mkdirSync(workDir, { recursive: true });
   const ffmpeg = config('ffmpeg');

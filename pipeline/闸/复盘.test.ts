@@ -17,7 +17,7 @@ beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-复盘-'));
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
 const sequence = () => { const rows: SchedulerEvent[] = []; return { rows, add: (sec: number, eventName: string, x: Record<string, unknown> = {}) => { rows.push({ v: 1, 主机: 'h', 时: new Date(sec * 1000).toISOString(), 事: eventName, 锁: '渲染', ...x }); } }; };
 const fakeMachine = () => ({ 负载: 2, 核: 10, 闸: 40, 压力: 1, free: 1, 压缩: 1, swap: 0, 换出: 0, GPU: 0, 热: 0, 盘: 1e10, 孤儿: 0, 进程: '' });
-const parseParams = (xs: string[]) => parseArgs(xs, { 值: ['--为什么', '--看到', '--决定'], toggles: ['--杀持锁'] });
+const parseParams = (xs: string[]) => parseArgs(xs, { 值: ['--why', '--saw', '--decision'], toggles: ['--kill-holder'] });
 
 describe('等谁', () => {
   it('领票和拿锁按任务关联：改序不丢', () => {
@@ -103,7 +103,7 @@ describe('告警到决定', () => {
     const t = claimTicket(q, e.localHost, { 任务: '任务甲', 起: 0, 心跳: 0, 主机: e.localHost, 发起: e.caller, 声明: { 种: 'still' } }, Date.now());
     recordSchedulerEvent(e.logDir, '告警', { 类: '排队长', 对象: '任务甲', 票: t.名, pid: process.pid });
     const o = { 状态: () => readState(e, fakeMachine, false), 输出: () => {} };
-    changeScheduler('先', `#${process.pid}`, parseParams(['--为什么', '插队']), e, o);
+    changeScheduler('first', `#${process.pid}`, parseParams(['--why', '插队']), e, o);
     const decision = readSchedulerEvents(e.logDir).find(x => x.事 === '决定')!;
     expect(decision).toMatchObject({ 任务: '任务甲', 票: t.名, 目标: `#${process.pid}` });
     expect(review(readSchedulerEvents(e.logDir)).告警到决定秒).toHaveLength(1);
@@ -120,45 +120,45 @@ describe('日志过滤', () => {
   const makeSchedEnv = () => resolveSchedulerEnv({ lockDir: dir, caller: readCaller({}, [], dir, false), nowMs: () => Date.parse('2026-11-01T12:00:00Z') });
   const runCmd = async (e: ReturnType<typeof makeSchedEnv>, ...args: string[]) => { const out: string[] = []; await runScheduler(args, e, s => out.push(s)); return out.join('\n'); };
   const countLines = (s: string) => s ? s.split('\n').length : 0;
-  it('--段 先看事件顶层的段：告警的声明是任务手上那段，不能归错', async () => {
+  it('--seg 先看事件顶层的段：告警的声明是任务手上那段，不能归错', async () => {
     const e = resolveSchedulerEnv({ lockDir: dir });
     recordSchedulerEvent(e.logDir, '告警', { 任务: 'R', 段: '甲', 声明: { 段: '乙' } }, Date.now());
     recordSchedulerEvent(e.logDir, '拿锁', { 任务: 'R', 声明: { 段: '乙' } }, Date.now());
-    const readLog = async (segmentKey: string) => { const lines: string[] = []; expect(await runScheduler(['日志', '--段', segmentKey, '--json'], e, (s) => lines.push(s))).toBe(0); return lines.join('\n'); };
+    const readLog = async (segmentKey: string) => { const lines: string[] = []; expect(await runScheduler(['log', '--seg', segmentKey, '--json'], e, (s) => lines.push(s))).toBe(0); return lines.join('\n'); };
     const outputA = await readLog('甲'), secondLog = await readLog('乙');
     expect(outputA).toContain('告警');expect(outputA).not.toContain('拿锁');
     expect(secondLog).toContain('拿锁');expect(secondLog).not.toContain('告警');
   });
-  it('--路 同时查事件顶层的 路 和 发起.路', async () => {
+  it('--route 同时查事件顶层的 路 和 发起.路', async () => {
     const e = makeSchedEnv();
-    await runCmd(e, '路', '开', '纹理核对'); await runCmd(e, '令', '纹理核对', '--让路', '产出优先');
+    await runCmd(e, 'route', 'open', '纹理核对'); await runCmd(e, 'order', '纹理核对', '--yield', '产出优先');
     recordSchedulerEvent(e.logDir, '拿锁', { 任务: 'T', 发起: { 路: '纹理核对' } });
     recordSchedulerEvent(e.logDir, '拿锁', { 任务: 'U', 发起: { 路: '别的' } });
-    expect(countLines(await runCmd(e, '日志', '--路', '纹理核对'))).toBe(3);
+    expect(countLines(await runCmd(e, 'log', '--route', '纹理核对'))).toBe(3);
   });
-  it('--从 --到 按时刻比：只给日期的 --到 含当天；月-日和 --日 同格式；写错报用法错误', async () => {
+  it('--from --to 按时刻比：只给日期的 --to 含当天；月-日和 --day 同格式；写错报用法错误', async () => {
     const e = makeSchedEnv();
     for (const t of ['2026-10-31T23:59:00Z', '2026-11-01T08:00:00Z', '2026-11-02T00:00:00Z']) recordSchedulerEvent(e.logDir, '测试', {}, Date.parse(t));
-    expect(countLines(await runCmd(e, '日志', '--到', '2026-11-01'))).toBe(2);
-    expect(countLines(await runCmd(e, '日志', '--从', '2026-11-01'))).toBe(2);
-    expect(countLines(await runCmd(e, '日志', '--从', '11-01', '--到', '11-01'))).toBe(1);
-    expect(countLines(await runCmd(e, '日志', '--从', '2026-11-01T08:00:00Z', '--到', '2026-11-01T08:00:00Z'))).toBe(1);
-    expect(countLines(await runCmd(e, '日志', '--到', '2026-11-01T16:00:00+08:00'))).toBe(2);
-    expect(countLines(await runCmd(e, '日志', '--日', '11-01'))).toBe(1);
-    for (const [k, v] of [['--到', '乱写'], ['--从', '乱写'], ['--从', '2026-13-45'], ['--日', '11-1']] as const)
-      await expect(runCmd(e, '日志', k, v)).rejects.toThrow(k);
+    expect(countLines(await runCmd(e, 'log', '--to', '2026-11-01'))).toBe(2);
+    expect(countLines(await runCmd(e, 'log', '--from', '2026-11-01'))).toBe(2);
+    expect(countLines(await runCmd(e, 'log', '--from', '11-01', '--to', '11-01'))).toBe(1);
+    expect(countLines(await runCmd(e, 'log', '--from', '2026-11-01T08:00:00Z', '--to', '2026-11-01T08:00:00Z'))).toBe(1);
+    expect(countLines(await runCmd(e, 'log', '--to', '2026-11-01T16:00:00+08:00'))).toBe(2);
+    expect(countLines(await runCmd(e, 'log', '--day', '11-01'))).toBe(1);
+    for (const [k, v] of [['--to', '乱写'], ['--from', '乱写'], ['--from', '2026-13-45'], ['--day', '11-1']] as const)
+      await expect(runCmd(e, 'log', k, v)).rejects.toThrow(k);
   });
-  it('复盘 --日：前一天的领票也配得上；不在窗口里就没有当前持锁；持锁者已死不算', async () => {
+  it('review --day：前一天的领票也配得上；不在窗口里就没有当前持锁；持锁者已死不算', async () => {
     const e = makeSchedEnv();
     const logEvent = (t: string, eventName: string, x: Record<string, unknown>) => recordSchedulerEvent(e.logDir, eventName, { 锁: '渲染', ...x }, Date.parse(t));
     logEvent('2026-10-31T23:59:00Z', '拿锁', { 票: 'a', 任务: 'A' }); logEvent('2026-10-31T23:59:30Z', '领票', { 票: 'b', 任务: 'B' }); logEvent('2026-11-01T00:01:00Z', '放锁', { 票: 'a', 任务: 'A', 持锁秒: 120 }); logEvent('2026-11-01T00:01:00Z', '拿锁', { 票: 'b', 任务: 'B' });
-    const r = JSON.parse(await runCmd(e, '复盘', '--日', '11-01'));
+    const r = JSON.parse(await runCmd(e, 'review', '--day', '11-01'));
     expect(r.等谁).toEqual({ 'B→A': 90 });
     fs.writeFileSync(path.join(dir, '渲染.lock'), `${process.pid}\n`);
     fs.writeFileSync(path.join(dir, '渲染.lock.信息.json'), JSON.stringify({ pid: process.pid, 票: 'b', 任务: 'B', 发起: e.caller, 声明: {}, 拿锁时: Date.now(), 心跳: Date.now(), 帧时: Date.now(), 已出帧: 0 }));
-    expect(JSON.parse(await runCmd(e, '复盘')).当前持锁.map((x: { 任务: string }) => x.任务)).toEqual(['B']);
-    expect(JSON.parse(await runCmd(e, '复盘', '--日', '10-31')).当前持锁).toEqual([]);
+    expect(JSON.parse(await runCmd(e, 'review')).当前持锁.map((x: { 任务: string }) => x.任务)).toEqual(['B']);
+    expect(JSON.parse(await runCmd(e, 'review', '--day', '10-31')).当前持锁).toEqual([]);
     fs.writeFileSync(path.join(dir, '渲染.lock'), '99999998\n');
-    expect(JSON.parse(await runCmd(e, '复盘')).当前持锁).toEqual([]);
+    expect(JSON.parse(await runCmd(e, 'review')).当前持锁).toEqual([]);
   });
 });

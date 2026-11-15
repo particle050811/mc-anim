@@ -12,9 +12,9 @@ const command = String(payload.tool_input?.command ?? '');
 const emit = (o) => process.stdout.write(JSON.stringify(o));
 
 const alternatives = [
-  '等进程结束：`./anim 调度 等 --pid <pid>`（前台，默认最长 540 秒）或 `kill -0 <pid>` 判活；',
-  '等 anim 任务：`./anim 调度 盯 --任务 \'#<pid>\'`；',
-  '等文件、闸空、内存：`./anim 调度 等 --文件 <路径> | --闸空 | --内存 <n>`；',
+  '等进程结束：`./anim sched wait --pid <pid>`（前台，默认最长 540 秒）或 `kill -0 <pid>` 判活；',
+  '等 anim 任务：`./anim sched watch --task \'#<pid>\'`；',
+  '等文件、闸空、内存：`./anim sched wait --file <路径> | --gate-empty | --memory <n>`；',
   '盯日志里的某行：用 Monitor 工具（tail -f | grep --line-buffered，过滤要连失败、告警一起盖住）。',
 ].join('\n');
 
@@ -35,18 +35,18 @@ if (segmentKey === '前') {
   if (reasons.length)
     emit({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `${reasons.join('\n')}\n改用：\n${alternatives}` } });
 } else if (segmentKey === '后') {
-  const heavyJob = /(?:^|[\s;&|(])(?:\S*\/)?anim(?:\.cmd)?\s+(?:render|film|still|bench|verify|world\s+(?:bake|pregen|转码)|extract|mcai)\b/;
+  const heavyJob = /(?:^|[\s;&|(])(?:\S*\/)?anim(?:\.cmd)?\s+(?:render|film|still|bench|verify|world\s+(?:bake|pregen|transcode)|extract|mcai)\b/;
   if (payload.tool_input?.run_in_background && heavyJob.test(command)) {
     let alreadyWatching = false;
     try {
-      alreadyWatching = /cli\/main\.ts 调度 盯/.test(execFileSync('ps', ['-axo', 'command='], { encoding: 'utf8' }));
+      alreadyWatching = /cli\/main\.ts sched watch/.test(execFileSync('ps', ['-axo', 'command='], { encoding: 'utf8' }));
     } catch {}
     if (!alreadyWatching)
       emit({
         hookSpecificOutput: {
           hookEventName: 'PostToolUse',
           additionalContext:
-            '后台开了 anim 重活，现在还没有 盯 挂着。马上用 Monitor 挂 `./anim 调度 盯 --最长 1740`（timeout_ms 1800000），每次收到通知、处理完再挂。' +
+            '后台开了 anim 重活，现在还没有 盯 挂着。马上用 Monitor 挂 `./anim sched watch --max-sec 1740`（timeout_ms 1800000），每次收到通知、处理完再挂。' +
             '资源闸等内存、排队长、「请主 Agent 决定」这类告警只写进渲染日志的 stderr，不挂 盯 就没人知道，任务会一直卡在闸前（docs/调度.md「盯与等」）。',
         },
       });

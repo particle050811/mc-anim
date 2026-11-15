@@ -10,7 +10,7 @@ describe('平台', () => {
       'pipeline/指纹/说明.ts': "import spawn from 'cross-spawn';\nimport { execFileSync } from 'node:child_process';\nexport const x = (a: string[]) => [spawn('git', a), execFileSync('git', ['status']), /x/.exec('x')];\n",
       '作品/应力转动/认可/darwin-arm64/核对-冒烟.toml': '',
     });
-    expect((await runRule('平台', root)).violations).toEqual([]);
+    expect((await runRule('platform', root)).violations).toEqual([]);
   });
 
   it('Windows 不许的名字、结构层中文、开 shell、fcntl 都拦', async () => {
@@ -41,7 +41,7 @@ describe('平台', () => {
       ].join('\n'),
       'pipeline/坏.cjs': "const { execSync } = require('node:child_process');\nexecSync('ls');\n",
     });
-    const v = (await runRule('平台', root)).violations.join('\n');
+    const v = (await runRule('platform', root)).violations.join('\n');
     expect(v).toMatch(/a:b.ts 路径里的「a:b.ts」有 Windows 不许的字符/);
     expect(v).toMatch(/con.ts 路径里的「con.ts」是 Windows 的保留设备名/);
     expect(v).toMatch(/尾点. 路径里的「尾点.」以点或空格结尾/);

@@ -2,9 +2,9 @@
 """《把回忆拼好给你》全片六张照片的底片：渲干净帧、裁正方形、登记成资产。
 
 用法：python3 assets/tools/照片底片.py [名…]      （名见下表，不给就六张都出）
-  1. anim --作品 把回忆拼好给你 still 核对-照片底片 <帧…> --级别 视频 --到预览 工作-照片底片-<时分秒>（过资源闸，2560×1440，一次渲齐）
+  1. anim --work 把回忆拼好给你 still 核对-照片底片 <帧…> --level 视频 --to-preview 工作-照片底片-<时分秒>（过资源闸，2560×1440，一次渲齐）
   2. 每张 ffmpeg crop=<边>:<边>:<x>:<y>、scale=256:256:flags=area、format=rgba
-  3. anim --作品 把回忆拼好给你 assets add <资产 id> <png>
+  3. anim --work 把回忆拼好给你 assets add <资产 id> <png>
 资产 id 先在 作品/把回忆拼好给你/资产表/贴图.toml 登记好。store 只增不改：哪句改了画面、底片字节变了，assets add 会拒绝，
 这时给那张登一个新 id（后缀往下排：-二版、-三版…），改下表和引它的代码（特效/照片画.ts、特效/合照.ts、场/2-选择世界/图标源.ts）再跑。
 合照（第 11 句）的画面里挂着夏天那四张，要等那四张换好、照片画.ts 引上新 id 以后再出。
@@ -63,7 +63,7 @@ def main() -> None:
     anim = str(REPO / ('anim.cmd' if os.name == 'nt' else 'anim'))
     ffmpeg = os.environ.get('ANIM_FFMPEG') or 'ffmpeg'
     frames = sorted({photos[n][0] for n in names})
-    output = run_command([anim, '--作品', work, 'still', segment, *map(str, frames), '--级别', '视频', '--到预览', f'工作-照片底片-{time.strftime("%H%M%S")}'])
+    output = run_command([anim, '--work', work, 'still', segment, *map(str, frames), '--level', '视频', '--to-preview', f'工作-照片底片-{time.strftime("%H%M%S")}'])
     m = re.search(r'静帧在 (.+)', output)
     if not m:
         sys.exit(f'✗ anim still 没说静帧在哪：\n{output}')
@@ -74,7 +74,7 @@ def main() -> None:
             x, y, side = crop_box(crop)
             png = Path(d) / f'{photo_name}.png'
             run_command([ffmpeg, '-loglevel', 'error', '-y', '-i', str(dir_path / f'{segment}-第{frame:04d}帧.png'), '-vf', f'crop={side}:{side}:{x}:{y},scale={SIDE_LENGTH_PX}:{SIDE_LENGTH_PX}:flags=area,format=rgba', str(png)])
-            print(run_command([anim, '--作品', work, 'assets', 'add', asset_id, str(png)]).strip())
+            print(run_command([anim, '--work', work, 'assets', 'add', asset_id, str(png)]).strip())
 
 
 if __name__ == '__main__':

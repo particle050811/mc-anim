@@ -1,4 +1,4 @@
-// anim verify 逐帧：纯函数、存了再比的整条流程（Remotion 换成假的，png 内容由帧号和「这一轮的改动」定）。数据根、作品都是临时的。
+// anim verify frames：纯函数、存了再比的整条流程（Remotion 换成假的，png 内容由帧号和「这一轮的改动」定）。数据根、作品都是临时的。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,7 +57,7 @@ beforeEach(() => {
 });
 
 describe('纯函数', () => {
-  it('--帧 认 a-b 和逗号列表，逗号的去重排序；写错了报用法错误', () => {
+  it('--frames 认 a-b 和逗号列表，逗号的去重排序；写错了报用法错误', () => {
     expect(parseFrames('3-5')).toEqual([3, 4, 5]);
     expect(parseFrames('85,30,85')).toEqual([30, 85]);
     expect(() => parseFrames('5-3')).toThrow(UsageError);
@@ -134,7 +134,7 @@ describe('存了再比', () => {
     await runFrameCheck([firstSegment], { checkMode: '比', 名: '改前' }, recorder);
     expect(recorder.事件[0]).toMatch(/段指纹变了（基准 aaaaaaaaaaaaaaaa，现在 ffffffffffffffff）/);
   });
-  it('不给 --帧 就渲基准存的帧；给了只渲到基准有的最后一帧', async () => {
+  it('不给 --frames 就渲基准存的帧；给了只渲到基准有的最后一帧', async () => {
     await runFrameCheck([firstSegment], { checkMode: '存', 名: '抽', 帧: [1, 3] });
     fake.renderCalls = [];
     expect(await runFrameCheck([firstSegment], { checkMode: '比', 名: '抽' })).toBe(0);
@@ -146,7 +146,7 @@ describe('存了再比', () => {
     expect(await runFrameCheck([firstSegment], { checkMode: '比', 名: '抽', 帧: [1] })).toBe(0);
     expect(fake.renderCalls[0]!.帧).toEqual([1]);
   });
-  it('整段存基准后 --比 --帧 只要一帧：不因批次不同误报，说明连前面的帧一起渲', async () => {
+  it('整段存基准后 --compare --frames 只要一帧：不因批次不同误报，说明连前面的帧一起渲', async () => {
     fake.lookPrevFrame = true;
     await runFrameCheck([firstSegment], { checkMode: '存', 名: '全' });
     fake.renderCalls = [];
@@ -161,7 +161,7 @@ describe('存了再比', () => {
     expect(await runFrameCheck([firstSegment], { checkMode: '比', 名: '全', 帧: [3] }, r)).toBe(1);
     expect(r.事件[0]).toMatch(/4 帧里 1 帧不同（2）/);
   });
-  it('--比 这段没存过：报出来、别的段照比，退出码 1', async () => {
+  it('--compare 这段没存过：报出来、别的段照比，退出码 1', async () => {
     await runFrameCheck([firstSegment], { checkMode: '存', 名: '改前' });
     fake.renderCalls = [];
     const r = makeRunRecord();
@@ -178,14 +178,14 @@ describe('存了再比', () => {
     expect(await runFrameCheck([makeSegmentInfo('甲', 6)], { checkMode: '比', 名: '改前' }, lengthRecords)).toBe(1);
     expect(lengthRecords.事件.join()).toMatch(/存基准时段有 5 帧，现在 6 帧/);
   });
-  it('--存 超出段长的帧不渲，一帧都不剩才算不过', async () => {
+  it('--save 超出段长的帧不渲，一帧都不剩才算不过', async () => {
     expect(await runFrameCheck([secondSeg], { checkMode: '存', 名: '超', 帧: [1, 9] })).toBe(0);
     expect(fake.renderCalls[0]!.帧).toEqual([1]);
     const r = makeRunRecord();
     expect(await runFrameCheck([secondSeg], { checkMode: '存', 名: '全超', 帧: [9] }, r)).toBe(1);
     expect(r.事件.join()).toMatch(/没有能渲的帧/);
   });
-  it('--留图：存留全部，比只留不同的帧', async () => {
+  it('--keep-images：存留全部，比只留不同的帧', async () => {
     const saveDir = path.join(dataRoot, '存图');
     const compareDir = path.join(dataRoot, '比图');
     await runFrameCheck([firstSegment], { checkMode: '存', 名: '改前', keepDir: saveDir });
@@ -196,7 +196,7 @@ describe('存了再比', () => {
     fs.rmSync(saveDir, { recursive: true });
     fs.rmSync(compareDir, { recursive: true });
   });
-  it('--留图 目录里已有这次可能写的 PNG：开跑前就拒，一帧都不渲', async () => {
+  it('--keep-images 目录里已有这次可能写的 PNG：开跑前就拒，一帧都不渲', async () => {
     const imageDir = path.join(dataRoot, '同一个');
     await runFrameCheck([firstSegment], { checkMode: '存', 名: '改前', keepDir: imageDir });
     fake.renderCalls = [];
@@ -214,20 +214,20 @@ describe('存了再比', () => {
   });
   describe('本机缺地形包', () => {
     const verdictText = () => String(vi.mocked(console.log).mock.calls.at(-1)![0]);
-    it('--存 跳过，别的段照存，退出码 0，结论说清跳过了谁', async () => {
+    it('--save 跳过，别的段照存，退出码 0，结论说清跳过了谁', async () => {
       fake.missingTerrain = new Set(['乙']);
       expect(await runFrameCheck([firstSegment, secondSeg], { checkMode: '存', 名: '改前' })).toBe(0);
       expect(fs.existsSync(checkFile('改前', '乙'))).toBe(false);
       expect(verdictText()).toMatch(/1 段存好了.*跳过 乙，没存/);
     });
-    it('--存 全部跳过：不算存好了，退出码 1', async () => {
+    it('--save 全部跳过：不算存好了，退出码 1', async () => {
       fake.missingTerrain = new Set(['甲']);
       const r = makeRunRecord();
       expect(await runFrameCheck([firstSegment], { checkMode: '存', 名: '改前' }, r)).toBe(1);
       expect(r.事件.join()).toMatch(/一段都没存/);
       expect(verdictText()).not.toMatch(/存好了/);
     });
-    it('--比 存过基准的段没渲到：算不过，不说都相同', async () => {
+    it('--compare 存过基准的段没渲到：算不过，不说都相同', async () => {
       await runFrameCheck([firstSegment, secondSeg], { checkMode: '存', 名: '改前' });
       fake.renderCalls = [];
       fake.missingTerrain = new Set(['甲']);
@@ -241,7 +241,7 @@ describe('存了再比', () => {
       expect(fake.renderCalls[0]!.帧).toEqual([0, 1, 2]);
       expect(verdictText()).toMatch(/1 处没过；跳过 甲，没比/);
     });
-    it('--比 没存过基准的段也缺包（存的时候就跳过了）：只跳过；一段都没比才算不过', async () => {
+    it('--compare 没存过基准的段也缺包（存的时候就跳过了）：只跳过；一段都没比才算不过', async () => {
       fake.missingTerrain = new Set(['乙']);
       await runFrameCheck([firstSegment, secondSeg], { checkMode: '存', 名: '改前' });
       expect(await runFrameCheck([firstSegment, secondSeg], { checkMode: '比', 名: '改前' })).toBe(0);

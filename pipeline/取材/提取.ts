@@ -1,6 +1,6 @@
 // anim extract 的跑和查。每个条目在 <数据根>/run/extract/<名称>/ 里从空目录跑（前置条目先在同一个目录里跑），
 // 跑完按产物表逐个比资产锁：sha 一样就放进库（已有不动），不一样只报告、不入库、不改资产锁（锁里是用过的那一版，换版本要人定）。
-// 资产锁是共用锁并上所选作品（--作品）的锁，同 id 两边都有就报错；作品资产表登记的产物要带上那部作品跑。
+// 资产锁是共用锁并上所选作品（--work）的锁，同 id 两边都有就报错；作品资产表登记的产物要带上那部作品跑。
 import fs from 'node:fs';
 import path from 'node:path';
 import { config, dataRoot, dataPath, isWindows } from '../环境/配置.ts';
@@ -74,7 +74,7 @@ const placeInputs = (e: SourcingEntry, assetLock: AssetLock, dir: string) => {
   }
 };
 
-/** 在 dir 里跑一个条目的步骤（前置先跑）；只打印 时只列命令。加产物：--新 要的 [id, 文件]，只加进这一条（不给前置）的产物清单 */
+/** 在 dir 里跑一个条目的步骤（前置先跑）；只打印 时只列命令。加产物：--new 要的 [id, 文件]，只加进这一条（不给前置）的产物清单 */
 export const runSteps = async (q: SourcingManifest, e: SourcingEntry, dir: string, printOnly: boolean, ran = new Set<string>(), addArtifacts: readonly [string, string][] = []) => {
   if (ran.has(e.名称)) return;
   ran.add(e.名称);
@@ -85,8 +85,8 @@ export const runSteps = async (q: SourcingManifest, e: SourcingEntry, dir: strin
   }
   console.log(`== ${e.名称}`);
   if (e.待迁移) throw new Error(`「${e.名称}」待迁移：${e.待迁移}`);
-  if (e.不重导 && !printOnly) throw new Error(`「${e.名称}」不重导：${e.不重导}（--只打印 看步骤；真要重导，先删掉这条的「不重导」）`);
-  if (!belongsToWork(e, workName())) throw new Error(`「${e.名称}」的产物登记在作品「${e.作品}」，带 --作品 ${e.作品} 跑`);
+  if (e.不重导 && !printOnly) throw new Error(`「${e.名称}」不重导：${e.不重导}（--print-only 看步骤；真要重导，先删掉这条的「不重导」）`);
+  if (!belongsToWork(e, workName())) throw new Error(`「${e.名称}」的产物登记在作品「${e.作品}」，带 --work ${e.作品} 跑`);
   if (!e.步骤.length) {
     console.log(`（没有自己的步骤：${e.说明 ?? ''}）`);
     return;
@@ -103,7 +103,7 @@ export const runSteps = async (q: SourcingManifest, e: SourcingEntry, dir: strin
     for (const [, f] of pairs) fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true });
     fs.mkdirSync(path.dirname(v.产物清单!), { recursive: true });
     fs.writeFileSync(v.产物清单!, JSON.stringify(pairs.map(([id, file]) => ({ id, 文件: file })), null, 1) + '\n');
-    // 上回跑剩的产物来源不能留：这回的脚本不写，--登记 就该退回按「需要」记
+    // 上回跑剩的产物来源不能留：这回的脚本不写，--register 就该退回按「需要」记
     fs.rmSync(v.产物来源!, { force: true });
   }
   const env = stepEnv();
@@ -141,7 +141,7 @@ export type CheckResult = {
   missingFiles: { id: string; 文件: string }[];
   unregistered: string[];
   emptyPatterns: string[];
-  /** 按暂存目录里的文件展开、锁里还没有的产物（--登记 时交给 登记产物） */
+  /** 按暂存目录里的文件展开、锁里还没有的产物（--register 时交给 登记产物） */
   newArtifacts: { id: string; 文件: string }[];
 };
 
@@ -169,7 +169,7 @@ export const checkArtifacts = (q: SourcingManifest, es: SourcingEntry[], dir: st
     for (const p of e.前置) collect(q.entryMap.get(p)!, seen);
     for (const f of Object.values(e.输入)) usedFiles.add(f);
     const { 对: pairs, 空: unmatched } = expandArtifacts(e.产物, assetLock);
-    // 锁里还没有的按暂存目录里的文件展开，记成新产物（--登记 时登记、入库；通配只展开出新产物的不算空）
+    // 锁里还没有的按暂存目录里的文件展开，记成新产物（--register 时登记、入库；通配只展开出新产物的不算空）
     const unlocked = expandArtifactsByFile(e.产物, dirFiles).filter(([id]) => !assetLock[id]);
     const newPatterns = new Set(unlocked.map(([id]) => Object.keys(e.产物).find((k) => (k.endsWith('/*') ? id.startsWith(k.slice(0, -1)) : k === id))));
     r.emptyPatterns.push(...unmatched.filter((k) => !newPatterns.has(k)).map((k) => `${e.名称}：${k}`));
@@ -216,15 +216,15 @@ export const readArtifactSources = (q: SourcingManifest, e: SourcingEntry, seen 
   return Object.assign({}, ...e.前置.map((p) => readArtifactSources(q, q.entryMap.get(p)!, seen)), ownSources);
 };
 
-/** --新 的 id 是不是这条配方的产物（按产物表的项对得上） */
+/** --new 的 id 是不是这条配方的产物（按产物表的项对得上） */
 export const attributeNewIds = (e: SourcingEntry, ids: readonly string[]) => expandArtifactsById(e.产物, ids);
 
 /**
- * 跑一个条目：清空暂存目录、跑步骤、核对入库。新ids：锁里还没有、要这回一起导的 id（--新），进产物清单（按锁反推的脚本照它导），
+ * 跑一个条目：清空暂存目录、跑步骤、核对入库。新ids：锁里还没有、要这回一起导的 id（--new），进产物清单（按锁反推的脚本照它导），
  * 导不出来的记成缺文件
  */
 export const extractEntry = async (q: SourcingManifest, e: SourcingEntry, newIds: readonly string[] = []) => {
-  if (e.不重导) throw new Error(`「${e.名称}」不重导：${e.不重导}（--只打印 看步骤；真要重导，先删掉这条的「不重导」）`);
+  if (e.不重导) throw new Error(`「${e.名称}」不重导：${e.不重导}（--print-only 看步骤；真要重导，先删掉这条的「不重导」）`);
   const { 对: addArtifacts, unrecognized } = expandArtifactsById(e.产物, newIds);
   if (unrecognized.length) throw new Error(`「${e.名称}」的产物表对不上：${unrecognized.join('、')}`);
   const dir = stagingDir(e.名称);
@@ -242,7 +242,7 @@ const hasProgram = (exeName: string): boolean => {
   return (process.env.PATH ?? '').split(path.delimiter).some((d) => d && suffixes.some((s) => fs.existsSync(path.join(d, exeName + s))));
 };
 
-/** --检查：jar、程序、脚本、产物和输入的字节；返回问题列表、待迁移的条目、不重导的条目和属于别的作品、跳过的条目 */
+/** --check：jar、程序、脚本、产物和输入的字节；返回问题列表、待迁移的条目、不重导的条目和属于别的作品、跳过的条目 */
 export const check = (q: SourcingManifest, es: SourcingEntry[], verifyHash: boolean, assetLock: AssetLock = sourcingLock(), work = workName()) => {
   const issues: string[] = [];
   const pendingMigration: string[] = [];
@@ -254,7 +254,7 @@ export const check = (q: SourcingManifest, es: SourcingEntry[], verifyHash: bool
     const n = e.名称;
     const v = localExpand(q, n);
     if (!belongsToWork(e, work)) {
-      otherWork.push(`${n}：属于作品「${e.作品}」，带 --作品 ${e.作品} 查`);
+      otherWork.push(`${n}：属于作品「${e.作品}」，带 --work ${e.作品} 查`);
       continue;
     }
     if (e.公开版 !== '提取' && e.公开版 !== '不提取') issues.push(`${n}：公开版 要写 "提取" 或 "不提取"`);

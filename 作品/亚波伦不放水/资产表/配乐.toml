@@ -1,4 +1,4 @@
-# 资产表：配乐。人写；anim extract --登记 自动追加取材产物。
+# 资产表：配乐。人写；anim extract --register 自动追加取材产物。
 # 字段和取值见 assets/README.md。
 
 [["资产"]]
@@ -7,7 +7,7 @@ id = "配乐/亚波伦/下界旧曲"
 "来源" = "提取:亚波伦启示录素材@d7e53575be83"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "发布"
-"说明" = "anim extract --登记 自动登记（src/配乐/亚波伦/下界旧曲.ogg）"
+"说明" = "anim extract --register 自动登记（src/配乐/亚波伦/下界旧曲.ogg）"
 
 [["资产"]]
 id = "配乐/亚波伦/尾奏"
@@ -15,7 +15,7 @@ id = "配乐/亚波伦/尾奏"
 "来源" = "提取:亚波伦启示录素材@d7e53575be83"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "发布"
-"说明" = "anim extract --登记 自动登记（src/配乐/亚波伦/尾奏.ogg）"
+"说明" = "anim extract --register 自动登记（src/配乐/亚波伦/尾奏.ogg）"
 
 [["资产"]]
 id = "配乐/亚波伦/決戦の刻"
@@ -23,7 +23,7 @@ id = "配乐/亚波伦/決戦の刻"
 "来源" = "提取:亚波伦启示录素材@d7e53575be83"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "发布"
-"说明" = "anim extract --登记 自动登记（src/配乐/亚波伦/決戦の刻.ogg）"
+"说明" = "anim extract --register 自动登记（src/配乐/亚波伦/決戦の刻.ogg）"
 
 [["资产"]]
 id = "配乐/结算舞/DreamFunk忘情牛肉面"

@@ -38,7 +38,7 @@ describe('台词', () => {
         '"未用" = true',
       ].join('\n'),
     });
-    expect((await runRule('台词', root)).violations).toEqual([]);
+    expect((await runRule('lines', root)).violations).toEqual([]);
   });
 
   it('文本改了、配音换了、口型过期、没登记、没段用、撞旧名都拦', async () => {
@@ -65,7 +65,7 @@ describe('台词', () => {
         '"文本" = "受死"',
       ]),
     );
-    const v = (await runRule('台词', root)).violations.join('\n');
+    const v = (await runRule('lines', root)).violations.join('\n');
     expect(v).toMatch(/文本哈希 .* 和现在念的字.*对不上：念的字改过，配音过期/);
     expect(v).toMatch(/成品sha cccccccccccc 和资产锁里 配音\/7-李樱-五万血 的 bbbbbbbbbbbb 对不上/);
     expect(v).toMatch(/口型 是对着成品 cccccccccccc 做的.*口型 过期/);
@@ -96,7 +96,7 @@ describe('台词', () => {
         ...makeSentence('7-刘心忠-没开口', '刘心忠', ['"开口" = -1']),
       ].join('\n'),
     });
-    const v = (await runRule('台词', root)).violations.join('\n');
+    const v = (await runRule('lines', root)).violations.join('\n');
     expect(v).not.toMatch(/7-乙 第 0 秒/);
     expect(v).toMatch(/7-丙 第 0 秒的台词「7-李樱-五万血」标了 接上段，本段前面和清单里上一段都没有它开口/);
     expect(v).toMatch(/7-丙 第 1 秒的台词「7-刘心忠-没开口」标了 接上段/);
@@ -113,9 +113,9 @@ describe('台词', () => {
         'id = "7-李樱-五万血"', '"角色" = "李樱"', `"文本" = "${text}"`, ...(spokenText ? [`"念" = "${spokenText}"`] : []), '"配音" = "配音/7-李樱-五万血"', '"开口" = 0.03',
         `"文本哈希" = "${textHash('五万血？')}"`, `"成品sha" = "${voiceSha.slice(0, 12)}"`,
       ]);
-    const onlySubtitleChange = await runRule('台词', makeRepo(base(), withVoice, makeLine('五万血？！', '五万血？')));
+    const onlySubtitleChange = await runRule('lines', makeRepo(base(), withVoice, makeLine('五万血？！', '五万血？')));
     expect(onlySubtitleChange.violations).toEqual([]);
-    const readingChangeMsg = (await runRule('台词', makeRepo(base(), withVoice, makeLine('五万血？', '五万点血？')))).violations.join('\n');
+    const readingChangeMsg = (await runRule('lines', makeRepo(base(), withVoice, makeLine('五万血？', '五万点血？')))).violations.join('\n');
     expect(readingChangeMsg).toMatch(/文本哈希 .* 和现在念的字.*对不上：念的字改过，配音过期/);
   });
 
@@ -129,18 +129,18 @@ describe('台词', () => {
       `"文本哈希" = "${textHash('五万血？')}"`, `"成品sha" = "${voiceSha.slice(0, 12)}"`, `"口型" = { "成品sha" = "${lipSha}" }`,
     ]);
     const cleanRepo = makeRepo(base(), withVoice, makeLineTableFile(voiceSha.slice(0, 12)), { '作品/应力转动/台词/7-李樱-五万血.ts': writeSentenceText(sentence) });
-    expect((await runRule('台词', cleanRepo)).violations).toEqual([]);
+    expect((await runRule('lines', cleanRepo)).violations).toEqual([]);
 
     const badRepo = makeRepo(base(), withVoice, makeLineTableFile('cccccccccccc'), {
       '作品/应力转动/台词/7-李樱-五万血.ts': writeSentenceText({ ...sentence, 开口: 0.05 }).replace('"有声长": 0.5,', '"有声长": 0.6,'),
       '作品/应力转动/台词/7-李樱-删了.ts': writeSentenceText({ ...sentence, id: '7-李樱-删了' }),
     });
-    const v = (await runRule('台词', badRepo)).violations.join('\n');
+    const v = (await runRule('lines', badRepo)).violations.join('\n');
     expect(v).toMatch(/句模块被手改过/);
     expect(v).toMatch(/句模块的 开口 0.05 和 台词.toml 的 0.03 不同/);
     expect(v).toMatch(/台词\/7-李樱-删了.ts：作品\/应力转动\/台词.toml 里没有这一句/);
 
     const missingRepo = makeRepo(base(), withVoice, makeLineTableFile(voiceSha.slice(0, 12)), { '作品/应力转动/台词/7-李樱-删了.ts': writeSentenceText({ ...sentence, id: '7-李樱-删了' }) });
-    expect((await runRule('台词', missingRepo)).violations.join('\n')).toMatch(/台词「7-李樱-五万血」：没有句模块（anim voice lip）/);
+    expect((await runRule('lines', missingRepo)).violations.join('\n')).toMatch(/台词「7-李樱-五万血」：没有句模块（anim voice lip）/);
   });
 });

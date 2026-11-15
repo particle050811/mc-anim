@@ -87,7 +87,7 @@ export const decodeTileHeader = (raw: Uint8Array): Uint32Array => {
   const dv = new DataView(raw.buffer, raw.byteOffset, tileHeaderLen);
   if (dv.getUint32(0, true) !== tileMagic) throw new Error('不是块文件');
   const version = dv.getUint32(4, true);
-  if (version !== formatVersion) throw new Error(`块文件是格式 ${version}，这版代码只读格式 ${formatVersion}：地形包版本和 assets/地形版本.json 对不上，anim assets pull，或 anim world 转码 转过来`);
+  if (version !== formatVersion) throw new Error(`块文件是格式 ${version}，这版代码只读格式 ${formatVersion}：地形包版本和 assets/地形版本.json 对不上，anim assets pull，或 anim world transcode 转过来`);
   return Uint32Array.from({ length: 2 * tileEntryCount }, (_, k) => dv.getUint32(16 + 4 * k, true));
 };
 

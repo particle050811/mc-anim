@@ -125,7 +125,7 @@ describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字�
     expect(o.glassSample).toMatchObject({ y: 70, 状态: 'minecraft:glass' });
     expect(o.plankSample).toMatchObject({ y: 63, 状态: 'minecraft:oak_planks' });
     expect(o.空).toBeNull(); // 区块 (2, 0) 没生成
-    expect(o.convertedVersion).toBe(o.versions[0]); // anim world 转码 和直接烘的字节相同
+    expect(o.convertedVersion).toBe(o.versions[0]); // anim world transcode 和直接烘的字节相同
     expect(o.reconvertedVersion).toBe(o.convertedVersion);
     expect(o.modelSize).toBe(16); // 极小包比较了含表的总成本，中性表更小
     expect(o.perCellResult.区段).toBeGreaterThan(0);

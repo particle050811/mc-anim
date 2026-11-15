@@ -1,11 +1,11 @@
 # 全项目唯一的 jar 登记表（照旧项目 参考模型库/工具/取材/模组清单.json 搬来，字段照旧）：
-# sourcing/extract.toml 的「需要」和步骤里的 {jar:id} 按 id 在这里找；anim extract --检查 --校验 核 sha256。
+# sourcing/extract.toml 的「需要」和步骤里的 {jar:id} 按 id 在这里找；anim extract --check --verify 核 sha256。
 # 「到」是本机放的位置，相对游戏环境目录（anim 配置 ANIM_GAME，默认数据根的 game/）；旧表里相对工作区根、多一层 game/。
 # 「根」改「到」相对的目录：mc资源 = ANIM_MC_ASSETS，数据 = 数据根（ANIM_DATA）。不许再分发、本机按「下载」自取的（官方映射）放数据根 cache/映射/，
-#   anim extract --下载 按「下载」取、核 sha256（和 sha1）；「也认」是「到」没有时再找的位置（「<根>:<路径>」，早先放进游戏目录 缓存/ 的照样认）。
+#   anim extract --download 按「下载」取、核 sha256（和 sha1）；「也认」是「到」没有时再找的位置（「<根>:<路径>」，早先放进游戏目录 缓存/ 的照样认）。
 # 「下载」「sha256」给公开版下载校验用；Mojang 客户端的下载地址从官方版本清单取。
 # 「许可」是结构化的 SPDX：代码、资源两项必写，声音、结构、模型和资源不一样时另写；原文是旧模组清单的一句话，依据是从哪核的（mods.toml、jar 里的 LICENSE）。
-#   版本或条款核不了的写 LicenseRef-待核-<大意>，按 jar 继承的产物仍算待定。anim extract --许可 按这里补资产表里待定的许可（pipeline/取材/许可.ts）。
+#   版本或条款核不了的写 LicenseRef-待核-<大意>，按 jar 继承的产物仍算待定。anim extract --licenses 按这里补资产表里待定的许可（pipeline/取材/许可.ts）。
 
 # 原版资源（声音、字体）不在 jar 里，在资源索引：「根」= mc资源 表示「到」相对 anim 配置 ANIM_MC_ASSETS。没写 sha256：Mojang 会改同一个索引文件，
 # 资产表里记过的旧版本 sha 前缀写在「旧sha256前缀」，按 jar 继承许可时也认。
@@ -33,7 +33,7 @@
 "许可" = { "代码" = "LicenseRef-Minecraft-EULA", "资源" = "LicenseRef-Minecraft-EULA" }
 
 # 官方映射（client.txt，官方名 → 混淆名）：动作翻译（py/anim_py/动作翻译）读混淆的客户端 jar 时把类名、成员名换回官方名。
-# 版本清单 downloads.client_mappings 给的地址；文件头写明可以拿来开发用、不许原样再分发，所以不进仓库、不进资产库，本机 anim extract --下载 自取
+# 版本清单 downloads.client_mappings 给的地址；文件头写明可以拿来开发用、不许原样再分发，所以不进仓库、不进资产库，本机 anim extract --download 自取
 [["Mojang"."映射"]]
 "id" = "client-1.20.1-mappings"
 "版本" = "1.20.1"
@@ -389,7 +389,7 @@
 "许可" = { "代码" = "LicenseRef-All-Rights-Reserved", "资源" = "LicenseRef-All-Rights-Reserved", "原文" = "CC-NC-ND（实际按 ARR）", "依据" = "旧模组清单 CC-NC-ND（实际按 ARR）；mods.toml 的 license 是没填的占位符" }
 "来源页" = "https://modrinth.com/mod/l_enders-cataclysm"
 
-# 预生成用：anim world pregen --执行 开服前临时拷进服务端 mods/、停服后删掉（pipeline/世界/服务端/服务端.ts），平时不装：
+# 预生成用：anim world pregen --apply 开服前临时拷进服务端 mods/、停服后删掉（pipeline/世界/服务端/服务端.ts），平时不装：
 # Distant Horizons 3.3.3 会绑 Chunky 的事件而 Chunky 还没初始化，两个一起装启动必崩
 [["模组"]]
 "id" = "chunky"
@@ -402,7 +402,7 @@
 "sha1" = "0b782d12b4ac3b03a94c28f32e9b2d5587d1dd50"
 "许可" = { "代码" = "GPL-3.0-only", "资源" = "GPL-3.0-only", "原文" = "GNU GPLv3", "依据" = "jar 里 META-INF/mods.toml license = GNU GPLv3（没写 or later）；Modrinth 按 sha1 查到的同一个文件" }
 "来源页" = "https://modrinth.com/plugin/chunky"
-"用途" = "anim world pregen --执行"
+"用途" = "anim world pregen --apply"
 
 # 作品 亚波伦不放水 的取材来源（用户 11-09 定用这两个模组和娘化 YSM 版）：不装进取材游戏，只放在 缓存/ 里给 anim extract 读
 [["模组"]]

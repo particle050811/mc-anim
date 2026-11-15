@@ -72,7 +72,7 @@ anim mcai game stop                                 # 忘了也行，空闲 30 �
 **只想渲染的话直接下载就行**：`anim assets pull`（核过 sha 放进数据根的 `terrain/<包>/<版本>/`，见 `docs/决策/0006-挂Release发字节.md`）。
 
 想从头自己生成：照世界声明（`sourcing/worlds/<世界>.toml`：种子、模组、数据包、预生成范围、烘焙范围）依次
-`anim world install-server <世界>` → `anim world new <世界>` → `anim world pregen <世界> --执行` → `anim world bake <世界>`，`anim mcai build` 把 mcai 装进服务端。
+`anim world install-server <世界>` → `anim world new <世界>` → `anim world pregen <世界> --apply` → `anim world bake <世界>`，`anim mcai build` 把 mcai 装进服务端。
 用法见 `docs/世界.md`，各世界为什么这么建、踩过的坑见 [MANUAL.md](MANUAL.md)。预生成要几个小时、十几 GB 硬盘。
 同一个种子、同一版模组和数据包生成的地形是一样的，所以生成出来的和成片里的是同一片地；不过现有世界声明还没在全新环境里从头生成核对过。
 

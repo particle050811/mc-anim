@@ -1,4 +1,4 @@
-// anim still 的两条路：多帧默认同页连出、--逐帧 每帧新页面。Remotion 换成假的，只看调了谁、写了哪些文件。
+// anim still 的两条路：多帧默认同页连出、--per-frame 每帧新页面。Remotion 换成假的，只看调了谁、写了哪些文件。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -43,7 +43,7 @@ describe('静帧', () => {
     expect(fs.readdirSync(outDir).sort()).toEqual(['甲-第0030帧.png', '甲-第0085帧.png', '甲-第0140帧.png']);
     expect(fs.readFileSync(stillFile(outDir, '甲', 85), 'utf8')).toBe('85');
   });
-  it('--逐帧 每帧一次 renderStill，按给的顺序，文件名一样', async () => {
+  it('--per-frame 每帧一次 renderStill，按给的顺序，文件名一样', async () => {
     expect(await renderWithProgress([85, 30], true)).toEqual([1, 2]);
     expect(fake.multiFrameCalls).toEqual([]);
     expect(fake.singleFrames).toEqual([85, 30]);
@@ -59,8 +59,8 @@ describe('静帧', () => {
     await expect(renderWithProgress([30, 85])).rejects.toThrow(/EEXIST/);
     expect(fs.readFileSync(stillFile(outDir, '甲', 30), 'utf8')).toBe('旧');
   });
-  it('多帧连出才提醒帧随批变，一帧和 --逐帧 不提醒', () => {
-    expect(batchHint('甲', [0, 85])).toMatch(/甲 这 2 帧在同一页面连出.*--逐帧/);
+  it('多帧连出才提醒帧随批变，一帧和 --per-frame 不提醒', () => {
+    expect(batchHint('甲', [0, 85])).toMatch(/甲 这 2 帧在同一页面连出.*--per-frame/);
     expect(batchHint('甲', [85])).toBeNull();
     expect(batchHint('甲', [0, 85], true)).toBeNull();
   });

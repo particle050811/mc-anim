@@ -73,7 +73,7 @@ export const recordOvertaken = (tickets: Ticket[], localHost: string) => { for (
         q.内容.已被越 = (q.内容.已被越 ?? 0) + 1;
         writeTicket(q);
     } };
-/** anim 调度 随时可能改票名，记下的文件名靠不住，按任务和 pid 扫。 */
+/** anim sched 随时可能改票名，记下的文件名靠不住，按任务和 pid 扫。 */
 export const clearTaskTickets = (dir: string, task: string) => { for (const x of listTickets(dir))
     if (x.pid === process.pid && x.内容?.任务 === task)
         retry(() => fs.rmSync(x.文件, { force: true })); };

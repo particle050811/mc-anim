@@ -149,7 +149,7 @@ export const newSegment = (workRoot: string, segKey: string, o: { 场?: string; 
     timelineImport = `import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';\nimport soundTable from './声音表.生成.ts';\n\nconst timeline = defineSceneTimeline({ 场: '核对', 事件: { ${startEvent}: { 在: { 秒: 0 } }, ${endMark}: { 在: { 秒: 3 } } } });\n`;
   } else {
     const scene = o.场;
-    if (!scene) throw new Error('正片的段要给 --场 <场键>（同一场的段共用 场/<场键>/时间线.ts）');
+    if (!scene) throw new Error('正片的段要给 --scene <场键>（同一场的段共用 场/<场键>/时间线.ts）');
     if (!new RegExp(`^\\d+-${nameChar}+$`).test(scene)) throw new Error(`场键要是 <章>-<场名>：${scene}`);
     const timelineFile = path.join(workRoot, '场', scene, '时间线.ts');
     if (!fs.existsSync(timelineFile) && o.legacySegs?.length) writeNewFile(timelineFile, legacySceneTimelineTemplate(scene, o.legacySegs, startEvent, endMark), written);

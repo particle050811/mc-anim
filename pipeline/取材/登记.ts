@@ -1,4 +1,4 @@
-// anim extract --登记 / --许可：取材产物自动写资产表、资产锁，许可按 jar 继承（许可.ts）。
+// anim extract --register / --licenses：取材产物自动写资产表、资产锁，许可按 jar 继承（许可.ts）。
 // 资产表是人写的 TOML，这里只做两种文本改动，别的行（注释、旧路径、说明）一字不动：
 //   追加：新 id 在表尾加一条 [["资产"]]（表文件 = id 第一段，<类>.toml；配方写了「作品」的进 <作品根>/资产表/）；
 //   改许可：已登记、许可是 LicenseRef-待定 的，只换那一条的「许可」行。
@@ -113,11 +113,11 @@ export const reverseLookupJar = (e: SourcingEntry, jarPath: (id: string) => stri
     return id;
   });
 
-/** --登记 时写进资产表的可见性：配方写了就用；公开版 = 提取 的默认「提取」 */
+/** --register 时写进资产表的可见性：配方写了就用；公开版 = 提取 的默认「提取」 */
 export const recipeVisibility = (e: SourcingEntry): Visibility => {
   if (e.可见性) return e.可见性;
   if (e.公开版 === '提取') return '提取';
-  throw new Error(`「${e.名称}」公开版不是「提取」，--登记 不知道新产物的可见性：在配方里写 "可见性" = "发布" / "私有" / "公开"`);
+  throw new Error(`「${e.名称}」公开版不是「提取」，--register 不知道新产物的可见性：在配方里写 "可见性" = "发布" / "私有" / "公开"`);
 };
 
 export type PendingRegister = { id: string; 文件: string };
@@ -163,11 +163,11 @@ export const registerArtifacts = (
     if (!x.许可) r.stillPending.push({ id: p.id, missing: x.missing });
     const f = path.join(tableDir, `${category}.toml`);
     if (!byFile.has(f)) byFile.set(f, []);
-    byFile.get(f)!.push({ id: p.id, 类别: category, 来源: source, 许可: x.许可 ?? pendingLicense, 可见性: visibility, 说明: `anim extract --登记 自动登记（${p.文件}）` });
+    byFile.get(f)!.push({ id: p.id, 类别: category, 来源: source, 许可: x.许可 ?? pendingLicense, 可见性: visibility, 说明: `anim extract --register 自动登记（${p.文件}）` });
     r.newRegistered.push(p.id);
   }
   for (const [f, entries] of byFile) {
-    const tomlText = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : `# 资产表：${path.basename(f, '.toml')}。人写；anim extract --登记 自动追加取材产物。\n# 字段和取值见 assets/README.md。\n`;
+    const tomlText = fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : `# 资产表：${path.basename(f, '.toml')}。人写；anim extract --register 自动追加取材产物。\n# 字段和取值见 assets/README.md。\n`;
     fs.mkdirSync(path.dirname(f), { recursive: true });
     fs.writeFileSync(f, appendEntries(tomlText, entries), 'utf8');
     r.tableFiles.push(f);
