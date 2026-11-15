@@ -19,7 +19,7 @@ import { getAudioMeasure, knownAudioMeasure } from './音频数.ts';
 import { newWork, newSegment, type SceneLegacySeg } from './新作品.ts';
 import { loadAllSegments } from '../清单/清单.ts';
 
-type WorkManifest = { manifest: readonly ManifestEntry[]; segDir: (segKey: string) => string; segmentName: (t: ManifestEntry) => string; 编号: (segKey: string) => string | null };
+type WorkManifest = { manifest: readonly ManifestEntry[]; segDir: (segKey: string) => string; segmentName: (t: ManifestEntry) => string; segmentCode: (segKey: string) => string | null };
 
 /** 一眼看得出的段框架的段：段.ts 直接引了 窗口段，或目录里已经有生成的声音表。看不出的（经场里的工厂间接用 窗口段）要执行一遍才知道 */
 export const isFrameworkSegDir = (segDir: string) => {
@@ -40,7 +40,7 @@ export const segFrameCommands: Record<string, Command> = {
       const lineTable = readLineTable(path.join(workDir, '台词.toml'));
       const filmSegments = m.manifest.filter((t) => t.章 !== '核对');
       const segDirOf = (segKey: string) => path.join(workDir, ...m.segDir(segKey).split('/'));
-      const matchesEntry = (t: ManifestEntry) => !p.位置.length || p.位置.some((x) => [t.键, m.segmentName(t), m.编号(t.键), String(t.章), `${workName()}/${t.键}`].includes(x));
+      const matchesEntry = (t: ManifestEntry) => !p.位置.length || p.位置.some((x) => [t.键, m.segmentName(t), m.segmentCode(t.键), String(t.章), `${workName()}/${t.键}`].includes(x));
       // 看不出的在收集模式下执行一遍判断（表过期时 放() 也不抛），老段执行完不是框架段就跳过
       const candidates: ManifestEntry[] = [];
       for (const t of m.manifest.filter(matchesEntry)) {

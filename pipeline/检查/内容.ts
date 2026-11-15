@@ -16,9 +16,9 @@ export const readContent = (c: CheckContext): Promise<ParsedContent> => {
       if (!c.exists(manifestPath)) return { 错误: `没有 ${manifestPath}` };
       const m = await c.loadModule(manifestPath);
       if (!m.模块) return { 错误: `${manifestPath} 执行出错：${m.错误}` };
-      const manifestRows = m.模块.清单 as ManifestLine[] | undefined;
+      const manifestRows = m.模块.manifest as ManifestLine[] | undefined;
       const segDir = m.模块.segDir as ((segKey: string) => string) | undefined;
-      if (!Array.isArray(manifestRows) || typeof segDir !== 'function') return { 错误: `${manifestPath} 要导出 清单 数组和 段目录 函数` };
+      if (!Array.isArray(manifestRows) || typeof segDir !== 'function') return { 错误: `${manifestPath} 要导出 manifest 数组和 segDir 函数` };
       const segments: SegItem[] = [];
       for (const t of manifestRows) {
         const absSegDir = c.workPath(segDir(t.键));

@@ -64,7 +64,7 @@ describe('新段', () => {
   it('老场（只有定义段写的老段、没有场时间线）：用 接老段 摆上老段，新段接在最后一个老段后面，老段文件不动', async () => {
     newWork(tempDir, '试作');
     const workRoot = path.join(tempDir, '作品', '试作');
-    const legacySegText = (durSec: number) => `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-老场', 秒: ${durSec}, 宽: 1280, 高: 720, 地形: [] });\n`;
+    const legacySegText = (durSec: number) => `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '1-老场', 秒: ${durSec}, 宽: 1280, 高: 720, 地形: [] });\n`;
     for (const [k, n] of [['1-老一', 1.25], ['1-老二', 0.75]] as const) {
       fs.mkdirSync(path.join(workRoot, '段', k), { recursive: true });
       fs.writeFileSync(path.join(workRoot, '段', k, '段.ts'), legacySegText(n));
@@ -72,7 +72,7 @@ describe('新段', () => {
     const frameSize = { 宽: 1280, 高: 720 };
     const written = newSegment(workRoot, '1-新', { 场: '1-老场', legacySegs: [{ 键: '1-老一', 秒: 1.25, ...frameSize }, { 键: '1-老二', 秒: 0.75, ...frameSize }] });
     expect(written.map((f) => path.relative(workRoot, f))).toContain('场/1-老场/时间线.ts');
-    expect(readText(workRoot, '场/1-老场/时间线.ts')).toMatch(/export default 接老段\(/);
+    expect(readText(workRoot, '场/1-老场/时间线.ts')).toMatch(/export default continueOldSeg\(/);
     expect(readText(workRoot, '场/1-老场/时间线.ts')).not.toMatch(/import .*段\.ts/);
     const seg = (await freshExec(path.join(workRoot, '段/1-新/段.ts'), codeRoot())).default as SegmentDef & { sceneWindow: unknown };
     expect([seg.场, seg.秒, seg.sceneWindow]).toEqual(['1-老场', 3, { startSec: 2, endSec: 5 }]);
@@ -96,6 +96,6 @@ describe('新段', () => {
 
   it('清单加一段：找不到数组、重复键报错', () => {
     expect(() => addSegToManifest('const x = 1;', '1-a', 1)).toThrow(/找不到/);
-    expect(() => addSegToManifest("export const 清单 = [\n  { 键: '1-a', 章: 1 },\n];", '1-a', 1)).toThrow(/已经有/);
+    expect(() => addSegToManifest("export const manifest = [\n  { 键: '1-a', 章: 1 },\n];", '1-a', 1)).toThrow(/已经有/);
   });
 });

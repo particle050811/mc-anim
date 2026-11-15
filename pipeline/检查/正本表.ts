@@ -66,7 +66,7 @@ export const canonicalTable: readonly CanonicalItem[] = [
     id: 'lerpV',
     位置: mathFile,
     exportName: 'lerpV',
-    names: ['lerpV', 'lerp3', '插3'],
+    names: ['lerpV', 'lerp3', 'lerpVec3'],
     behaviors: [{ probes: [[[0, 1, 2], [10, -1, 4], 0.25], [[1, 2, 3], [3, 2, 1], 0.5], [[-2, 0.5, 9], [4, 4, -1], 1.25]] }],
   },
   { id: 'invLerp', 位置: mathFile, exportName: 'invLerp', names: ['invLerp'], behaviors: [{ probes: [[0, 10, 2.5], [2, -4, 0.5], [-3, 5, 9], [5, 7, 4]] }] },
@@ -91,7 +91,7 @@ export const canonicalTable: readonly CanonicalItem[] = [
     id: 'hermite',
     位置: mathFile,
     exportName: 'hermite',
-    names: ['hermite', '埃尔米特'],
+    names: ['hermite'],
     behaviors: [
       { probes: [[0, 1, 2, 0, 0.3], [1, -2, 4, 3, 0.75], [5, 0, -1, 0, 0.5]] },
       // 把回忆：(p0, p1, m0, m1, 段长 h, s)，切线按每帧给
@@ -123,20 +123,20 @@ export const canonicalTable: readonly CanonicalItem[] = [
   { id: 'pick', 位置: mathFile, exportName: 'pick', names: ['pick'], behaviors: [{ probes: [[fakeRandom(0.37), ['a', 'b', 'c', 'd']], [fakeRandom(0.99), [1, 2, 3]], [fakeRandom(0), [9, 8]]] }] },
 
   // ---------- engine/core/坐标.ts、three换算.ts ----------
-  { id: '场景到three', 位置: threeConvertPath, exportName: '场景到three', names: ['toThree', '场景到three'], behaviors: [{ probes: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
-  { id: 'three到场景', 位置: coordModule, exportName: 'three到场景', names: ['fromThree', 'three到场景'], behaviors: [{ probes: [[{ x: 1, y: 2, z: 3 }], [{ x: -4.5, y: 0.25, z: 7 }]] }] },
+  { id: '场景到three', 位置: threeConvertPath, exportName: 'sceneToThree', names: ['toThree', 'sceneToThree'], behaviors: [{ probes: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
+  { id: 'three到场景', 位置: coordModule, exportName: 'threeToScene', names: ['fromThree', 'threeToScene'], behaviors: [{ probes: [[{ x: 1, y: 2, z: 3 }], [{ x: -4.5, y: 0.25, z: 7 }]] }] },
   // 不带原点的 游戏 → 场景 也就是 three 数组 → 场景
-  { id: '游戏到场景', 位置: coordModule, exportName: '游戏到场景', names: ['fromGame', 'gameToScene', '游戏到场景'], behaviors: [{ probes: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
+  { id: '游戏到场景', 位置: coordModule, exportName: 'gameToScene', names: ['fromGame', 'gameToScene'], behaviors: [{ probes: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
   // 不带原点的 场景 → 游戏 也就是 场景 → three 的数组形式（库/界面/投影.ts 的 Z朝上转three）
-  { id: '场景到游戏', 位置: coordModule, exportName: '场景到游戏', names: ['toGame', 'sceneToGame', '场景到游戏'], behaviors: [{ probes: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
+  { id: '场景到游戏', 位置: coordModule, exportName: 'sceneToGame', names: ['toGame', 'sceneToGame'], behaviors: [{ probes: [[[1, 2, 3]], [[-4.5, 0.25, 7]]] }] },
 
   // ---------- engine/core/机位.ts ----------
   { id: 'Cam', 位置: cameraRigFile, exportName: 'Cam', token: (n) => hasMembers(n, ['pos', 'tgt', 'lens']) },
   {
     id: '焦距到视角',
     位置: cameraRigFile,
-    exportName: '焦距到视角',
-    names: ['fovOf', 'lensToFov', '焦距到视角'],
+    exportName: 'lensToFov',
+    names: ['fovOf', 'lensToFov'],
     // Math.atan(18 / 焦距 …)：36 mm 画幅换视角
     token: (n, sf) => {
       if (!isCallTo(n, sf, 'Math.atan') || n.arguments.length !== 1) return false;
@@ -148,18 +148,18 @@ export const canonicalTable: readonly CanonicalItem[] = [
   {
     id: '插机位',
     位置: cameraRigFile,
-    exportName: '插机位',
-    names: ['lerpCam', 'camLerp', 'mixCam', '插机位'],
+    exportName: 'lerpRig',
+    names: ['lerpCam', 'camLerp', 'mixCam', 'lerpRig'],
     token: (n) => hasBothKeys(n, ['pos', 'tgt']) || hasBothKeys(n, ['眼', '看']),
   },
 
   // ---------- 库/角色/骨骼表.ts ----------
-  { id: '插骨', 位置: '库/角色/骨骼表.ts', exportName: '插骨', names: ['插骨', 'mixBones', 'lerpBones', 'blendBones'] },
+  { id: '插骨', 位置: '库/角色/骨骼表.ts', exportName: 'lerpBonePose', names: ['lerpBonePose', 'mixBones', 'lerpBones', 'blendBones'] },
   {
     id: '合并骨骼表',
     位置: '库/角色/骨骼表.ts',
-    exportName: '合并骨骼表',
-    names: ['合并骨骼表'],
+    exportName: 'mergeSkeleton',
+    names: ['mergeSkeleton'],
     // 结果[k] = { ...结果[k], ...v }：逐骨骼按字段盖
     token: (n, sf) => {
       if (!ts.isBinaryExpression(n) || n.operatorToken.kind !== ts.SyntaxKind.EqualsToken || !ts.isElementAccessExpression(n.left)) return false;
@@ -173,8 +173,8 @@ export const canonicalTable: readonly CanonicalItem[] = [
   {
     id: '原版挥手',
     位置: '库/角色/史蒂夫挥手.ts',
-    exportName: '挥手量',
-    names: ['加挥手', '挥手部件', '叠挥手', '挥手量'],
+    exportName: 'waveAmount',
+    names: ['addWave', 'waveParts', 'waveAmount'],
     // sin(√t·2π)·0.2：HumanoidModel.setupAttackAnimation 的 body.yRot
     token: (n, sf) => {
       if (!isCallTo(n, sf, 'Math.sin') || n.arguments.length !== 1) return false;
@@ -187,8 +187,8 @@ export const canonicalTable: readonly CanonicalItem[] = [
   {
     id: '原版下落',
     位置: '库/原版物理.ts',
-    exportName: '下落一刻',
-    names: ['原版下落', '下落一刻', '下落表', '落地刻', '下落高度'],
+    exportName: 'fallOneTick',
+    names: ['vanillaFall', 'fallOneTick', 'fallTable', 'landTick', 'fallHeightAtTick'],
     // (v − 0.08) × 0.98：LivingEntity.travel 的竖直速度
     token: (n) => {
       if (!ts.isBinaryExpression(n) || n.operatorToken.kind !== ts.SyntaxKind.AsteriskToken || !isNumberLiteral(n.right, 0.98)) return false;

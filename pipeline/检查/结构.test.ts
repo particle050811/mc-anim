@@ -4,10 +4,10 @@ import { hardcodedProblem, layerOf, checkRendererEntry } from './规则/结构.t
 
 const twoScenes = {
   '作品/应力转动/清单.ts': [
-    "export const 清单 = [{ 键: '7-甲', 章: 7 }, { 键: '7-乙', 章: 7 }];",
-    "export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
+    "export const manifest = [{ 键: '7-甲', 章: 7 }, { 键: '7-乙', 章: 7 }];",
+    "export const segDir = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
-  '作品/应力转动/段/7-乙/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场二', 秒: 5, 宽: 4, 高: 4, 地形: [] });\n",
+  '作品/应力转动/段/7-乙/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场二', 秒: 5, 宽: 4, 高: 4, 地形: [] });\n",
   '作品/应力转动/段/7-乙/画面.tsx': 'export default () => null;\n',
   '作品/应力转动/场/7-场一/末态.ts': 'export const 末态 = { x: 1 };\n',
   '作品/应力转动/场/7-场一/布局.ts': 'export const 布局 = 1;\n',
@@ -19,8 +19,8 @@ const twoWorks = (): FileTable => {
   const fileMap: FileTable = { 'engine/段/段定义.ts': segmentDefModule!, 'engine/段/按时取值.ts': valueAtTime!, 'engine/core/例外.ts': exception! };
   for (const workName of ['夹具甲', '夹具乙']) {
     Object.assign(fileMap, {
-      [`作品/${workName}/清单.ts`]: "export const 清单 = [{ 键: '1-开场', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",
-      [`作品/${workName}/段/1-开场/段.ts`]: "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-场一', 秒: 24, 宽: 4, 高: 4, 地形: [] });\n",
+      [`作品/${workName}/清单.ts`]: "export const manifest = [{ 键: '1-开场', 章: 1 }];\nexport const segDir = (键: string) => `段/${键}`;\n",
+      [`作品/${workName}/段/1-开场/段.ts`]: "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '1-场一', 秒: 24, 宽: 4, 高: 4, 地形: [] });\n",
       [`作品/${workName}/段/1-开场/画面.tsx`]: 'export default () => null;\n',
       [`作品/${workName}/场/1-场一/末态.ts`]: 'export const 末态 = { x: 1 };\n',
       [`作品/${workName}/角色.ts`]: 'export const 角色 = 1;\n',
@@ -33,9 +33,9 @@ describe('结构', () => {
   it('合规样例放行：段引自己场、场接上一场的 末态.ts、pipeline 引纯模块', async () => {
     const root = makeRepo(base(), twoScenes, {
       '作品/应力转动/场/7-场二/时间线.ts': "import { 末态 } from '../7-场一/末态.ts';\nexport const 起 = 末态.x;\n",
-      '作品/应力转动/段/7-乙/画面.tsx': "import { 起 } from '../../场/7-场二/时间线.ts';\nimport { 例外 } from '@engine/core/例外.ts';\nexport default () => <div>{起}{例外('x', 1, { 段: '7-乙', 原因: 'y' })}</div>;\n",
-      'pipeline/读.ts': "import { 清单 } from '../作品/应力转动/清单.ts';\nimport 乙 from '../作品/应力转动/段/7-乙/段.ts';\nexport const n = [清单, 乙];\n",
-      '库/角色/甲.ts': "import { 例外 } from '../../engine/core/例外.ts';\nexport const 甲 = 例外;\nexport const ns = 'http://www.w3.org/2000/svg';\n",
+      '作品/应力转动/段/7-乙/画面.tsx': "import { 起 } from '../../场/7-场二/时间线.ts';\nimport { exception } from '@engine/core/例外.ts';\nexport default () => <div>{起}{exception('x', 1, { 段: '7-乙', 原因: 'y' })}</div>;\n",
+      'pipeline/读.ts': "import { manifest } from '../作品/应力转动/清单.ts';\nimport 乙 from '../作品/应力转动/段/7-乙/段.ts';\nexport const n = [manifest, 乙];\n",
+      '库/角色/甲.ts': "import { exception } from '../../engine/core/例外.ts';\nexport const 甲 = exception;\nexport const ns = 'http://www.w3.org/2000/svg';\n",
     });
     expect((await runRule('结构', root)).violations).toEqual([]);
   });
@@ -79,7 +79,7 @@ describe('结构', () => {
 
   it('纯模块闭包里有 react/remotion、asset: 都拦', async () => {
     const root = makeRepo(base(), {
-      '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nimport { 帧 } from './帮.ts';\nexport default 定义段({ 场: '7-场一', 秒: 帧, 宽: 4, 高: 4, 地形: [] });\n",
+      '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nimport { 帧 } from './帮.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 帧, 宽: 4, 高: 4, 地形: [] });\n",
       '作品/应力转动/段/7-甲/帮.ts': "import { interpolate } from 'remotion';\nimport 图 from 'asset:贴图/甲';\nexport const 帧 = 10;\nexport const x = [interpolate, 图];\n",
     });
     const v = (await runRule('结构', root)).violations.join('\n');
@@ -91,7 +91,7 @@ describe('结构', () => {
     const r = await runRule(
       '结构',
       makeRepo(base(), {
-        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
+        '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
         '作品/应力转动/段/7-甲/画面.tsx': [
           "const 表 = { 甲: { 在: { 秒: 1 }, 依据: '说明' } };",
           "const 传 = { 依据: 表.甲.依据 ?? '', 又: 1 };",
@@ -113,7 +113,7 @@ describe('结构', () => {
       '结构',
       makeRepo(base(), {
         'assets/地形版本.json': JSON.stringify({ 包: {} }),
-        '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
+        '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
         '作品/应力转动/段/7-甲/画面.tsx': "import 表 from '../../../../assets/地形版本.json';\nexport default () => <div>{Object.keys(表).length}</div>;\n",
       }),
     );
@@ -129,7 +129,7 @@ describe('结构', () => {
         'export const 乱 = Math.random() + Date.now();',
         "export const 路 = '/Users/particle/x.bin';",
         "export const 网 = 'http://192.168.1.5:8080/a';",
-        "export const 目录 = 资产目录({ './键.png': 0 });",
+        "export const 目录 = assetDir({ './键.png': 0 });",
         "export const 藏 = { './混进来.png': 0 };",
         'export default () => <img src={图} title={String(getInputProps())} />;',
       ].join('\n'),
@@ -148,14 +148,14 @@ describe('结构', () => {
 
   it('作品引 engine/、库/ 和自己的东西放行，两部作品各查各的', async () => {
     const sharedRefs = {
-      '库/角色/路人.ts': "import { 例外 } from '@engine/core/例外.ts';\nexport const 路人 = 例外;\n",
+      '库/角色/路人.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 路人 = exception;\n",
       '作品/夹具甲/段/1-开场/画面.tsx': [
-        "import { 例外 } from '@engine/core/例外.ts';",
+        "import { exception } from '@engine/core/例外.ts';",
         "import { 路人 } from '@库/角色/路人.ts';",
         "import { 路人 as 同一个 } from '../../../../库/角色/路人.ts';",
         "import { 角色 } from '../../角色.ts';",
         "import { 末态 } from '../../场/1-场一/末态.ts';",
-        'export default () => <div>{String([例外, 路人, 同一个, 角色, 末态])}</div>;',
+        'export default () => <div>{String([exception, 路人, 同一个, 角色, 末态])}</div>;',
       ].join('\n'),
     };
     for (const work of ['夹具甲', '夹具乙']) {

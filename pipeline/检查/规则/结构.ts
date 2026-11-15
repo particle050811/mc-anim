@@ -138,7 +138,7 @@ export const hardcodedProblem = (s: string, localHostname = os.hostname()): stri
   return null;
 };
 
-// 资产目录({ './a.png': 资_0 }) 的键只是查表用的名字（和 webpackContext 的键同形，见 engine/core/资产目录.ts），不是要加载的路径
+// assetDir({ './a.png': 资_0 }) 的键只是查表用的名字（和 webpackContext 的键同形，见 engine/core/资产目录.ts），不是要加载的路径
 const assetDirName: keyof typeof assetDirModule = 'assetDir';
 const isAssetDirKey = (n: ts.Node) => {
   const propertyAssignment = n.parent;
@@ -169,7 +169,7 @@ export const checkCode = (c: CheckContext, report: CheckReport, localHostname = 
     const sf = parseSource(p, sourceText);
     walk(sf, (n) => {
       if (ts.isIdentifier(n) && n.text === 'getInputProps' && p !== 'engine/段/设置.ts') {
-        report.错('getInputProps 只能在 engine/段/设置.ts 里用（别处从 use设置() 取渲染设置）', p, lineNo(sf, n));
+        report.错('getInputProps 只能在 engine/段/设置.ts 里用（别处从 useSettings() 取渲染设置）', p, lineNo(sf, n));
       }
       if (!isRender || isTestOrDecl(p)) return;
       if (readBasis(n) && !basisReadable.has(p)) report.错('渲染代码不许读时刻的 依据：它是写给人看的说明，不进指纹（pipeline/指纹/去依据.ts）。要画出来的字另写一个字段', p, lineNo(sf, n));

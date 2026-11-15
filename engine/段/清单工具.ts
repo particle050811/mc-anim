@@ -1,5 +1,5 @@
 // 作品 清单.ts 尾部的通用部分（段目录、段名、编号）：两部作品各抄了一份、逐字相同，新作品改用这里（旧的两份不动，改了让外壳指纹变）。纯模块。
-// 用法：export const { 段目录, 段名, 编号 } = 清单工具(清单);  pipeline（清单/清单.ts、检查/内容.ts）照这三个导出读作品。
+// 用法：export const { segDir, segmentName, 编号: segmentCode } = manifestTools(manifest);  pipeline（清单/清单.ts、检查/内容.ts）照这三个导出读作品。
 import type { ManifestEntry } from './清单条目.ts';
 
 export const manifestTools = (manifest: readonly ManifestEntry[]) => {

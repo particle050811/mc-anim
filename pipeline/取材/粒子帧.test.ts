@@ -85,8 +85,8 @@ describe('粒子帧', () => {
     const r = computeParticleFrames('goety:frost', assetLock, sourceTable, '/代码', '/作品/甲', readText);
     if (isError(r)) throw new Error(r.错);
     expect(r.帧).toEqual(['贴图/法术/goety/particle/frost_1', '贴图/法术/goety/particle/frost_2', '贴图/法术/goety/particle/frost_1']);
-    expect(r.文本).toContain('[图0, 图1, 图0].map(png)');
-    expect(r.文本.match(/^import 图/gm)).toHaveLength(2);
+    expect(r.文本).toContain('[frame0, frame1, frame0].map(png)');
+    expect(r.文本.match(/^import frame/gm)).toHaveLength(2);
     expect(r.文件).toBe(path.join('/作品/甲', '粒子帧', 'goety', 'frost.ts'));
     expect(readGeneratedHeader(r.文本)?.definition).toBe('数据/法术/goety/particles/frost');
     const b = computeParticleFrames('goety:burning', assetLock, sourceTable, '/代码', '/作品/甲', readText);
@@ -116,7 +116,7 @@ describe('粒子帧', () => {
     fs.writeFileSync(r.文件, r.文本);
     expect(checkParticleFrames(root, workRoot, assetLock, sourceTable, readText)).toEqual([]);
     expect(checkParticleFrames(root, workRoot, assetLock, sourceTable, () => { throw new Error('不在'); })).toEqual([]);
-    fs.writeFileSync(r.文件, r.文本.replace('[图0, 图1, 图0]', '[图0, 图1]'));
+    fs.writeFileSync(r.文件, r.文本.replace('[frame0, frame1, frame0]', '[frame0, frame1]'));
     expect(checkParticleFrames(root, workRoot, assetLock, sourceTable, readText)[0]?.[1]).toContain('不一样');
     fs.writeFileSync(r.文件, r.文本);
     const changedLock = { ...assetLock, 作品: { ...assetLock.作品, '数据/法术/goety/particles/frost': lockEntry('c', '.json') } };

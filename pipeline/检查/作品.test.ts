@@ -6,9 +6,9 @@ import { CheckContext } from './上下文.ts';
 import { base, runRule, makeRepo } from './测试夹具.ts';
 import { runChecks } from './检查.ts';
 
-const segSource = "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-片头', 秒: 24, 宽: 640, 高: 360, 地形: [] });\n";
+const segSource = "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '1-片头', 秒: 24, 宽: 640, 高: 360, 地形: [] });\n";
 const example = {
-  '作品/示例/清单.ts': "export const 清单 = [{ 键: '1-标题', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",
+  '作品/示例/清单.ts': "export const manifest = [{ 键: '1-标题', 章: 1 }];\nexport const segDir = (键: string) => `段/${键}`;\n",
   '作品/示例/段/1-标题/段.ts': segSource,
   '作品/示例/段/1-标题/画面.tsx': "export default () => <div style={{ fontSize: 40 }}>标题</div>;\n",
 };
@@ -41,12 +41,12 @@ describe('按作品查', () => {
   it('用了台词 cue 或 例外 却没有对应的表：报错', async () => {
     const usesLineFiles = { '作品/示例/段/1-标题/段.ts': segSource.replace('地形: []', "地形: [], 声音: [{ 秒: 0, 台词: '1-甲-你好' }]") };
     expect((await runRule('台词', makeRepo(base(), example, usesLineFiles), { 作品: '示例' })).violations.join()).toMatch(/没有 作品\/示例\/台词.toml，1-标题 却有台词 cue/);
-    const usingExceptionFiles = { '作品/示例/段/1-标题/停.ts': "import { 例外 } from '@engine/core/例外.ts';\nexport const 停 = 例外('打击停顿', 2, { 段: '1-标题', 原因: '试' });\n" };
+    const usingExceptionFiles = { '作品/示例/段/1-标题/停.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { 段: '1-标题', 原因: '试' });\n" };
     expect((await runRule('规矩', makeRepo(base(), example, usingExceptionFiles), { 作品: '示例' })).violations.join()).toMatch(/例外用的规矩「打击停顿」，这部作品却没有 作品\/示例\/规矩.toml/);
   });
 
   it('别的作品里的 例外 和渲染代码不归这部作品查', async () => {
-    const stressRotationExceptionFiles = { '作品/应力转动/段/7-甲/停.ts': "import { 例外 } from '@engine/core/例外.ts';\nexport const 停 = 例外('没有这条', 2, { 段: '7-甲', 原因: '试' });\nexport const 随 = Math.random();\n" };
+    const stressRotationExceptionFiles = { '作品/应力转动/段/7-甲/停.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 停 = exception('没有这条', 2, { 段: '7-甲', 原因: '试' });\nexport const 随 = Math.random();\n" };
     expect((await runRule('规矩', makeRepo(base(), example, stressRotationExceptionFiles), { 作品: '示例' })).violations).toEqual([]);
     expect((await runRule('结构', makeRepo(base(), example, stressRotationExceptionFiles), { 作品: '示例' })).violations).toEqual([]);
     expect((await runRule('结构', makeRepo(base(), example, stressRotationExceptionFiles), { 作品: '应力转动' })).violations.join()).toMatch(/Math\.random/);

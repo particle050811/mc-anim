@@ -15,16 +15,16 @@ const readSegFile = async (file: string): Promise<SegmentDef> => {
   return m.default;
 };
 
-type WorkManifest = { manifest: readonly ManifestEntry[]; segDir: (segKey: string) => string; segmentName: (t: ManifestEntry) => string; 编号: (segKey: string) => string | null };
+type WorkManifest = { manifest: readonly ManifestEntry[]; segDir: (segKey: string) => string; segmentName: (t: ManifestEntry) => string; segmentCode: (segKey: string) => string | null };
 
 export const loadAllSegments = async (): Promise<SegInfo[]> => {
   const workDir = workRoot();
-  const { manifest, segDir, segmentName, 编号: serial } = (await import(pathToFileURL(path.join(workDir, '清单.ts')).href)) as WorkManifest;
+  const { manifest, segDir, segmentName, segmentCode } = (await import(pathToFileURL(path.join(workDir, '清单.ts')).href)) as WorkManifest;
   return Promise.all(
     manifest.map(async (t) => {
       const absSegDir = path.join(workDir, ...segDir(t.键).split('/'));
       const segFile = path.join(absSegDir, '段.ts');
-      return { ...t, 编号: serial(t.键), segmentName: segmentName(t), 目录: absSegDir, 段文件: segFile, 画面: path.join(absSegDir, '画面.tsx'), 段: await readSegFile(segFile) };
+      return { ...t, 编号: segmentCode(t.键), segmentName: segmentName(t), 目录: absSegDir, 段文件: segFile, 画面: path.join(absSegDir, '画面.tsx'), 段: await readSegFile(segFile) };
     }),
   );
 };

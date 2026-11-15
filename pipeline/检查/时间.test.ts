@@ -5,8 +5,8 @@ import { findFrameCallLines } from './规则/时间.ts';
 describe('时间', () => {
   it('合规：按秒写的、时间工具自己、注释和字符串里的不算', async () => {
     const root = makeRepo(base(), {
-      '作品/应力转动/段/7-甲/新.tsx': "import { use当前秒 } from '@engine/段/时间.tsx';\n// 以前是 useCurrentFrame()\nexport const 新 = () => <div>{use当前秒() + 'useCurrentFrame()'}</div>;\n",
-      'engine/段/时间.tsx': "import { useCurrentFrame } from 'remotion';\nexport const use当前秒 = () => useCurrentFrame() / 24;\n",
+      '作品/应力转动/段/7-甲/新.tsx': "import { useCurrentSec } from '@engine/段/时间.tsx';\n// 以前是 useCurrentFrame()\nexport const 新 = () => <div>{useCurrentSec() + 'useCurrentFrame()'}</div>;\n",
+      'engine/段/时间.tsx': "import { useCurrentFrame } from 'remotion';\nexport const useCurrentSec = () => useCurrentFrame() / 24;\n",
     });
     const { violations } = await runRule('时间', root);
     expect(violations, violations.join('\n')).toEqual([]);

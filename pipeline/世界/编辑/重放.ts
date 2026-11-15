@@ -34,20 +34,20 @@ export const splitBox = (b: Box, limit = commandCellLimit): Box[] => {
 };
 
 /** 盒的外壳拆成几块实心盒（不重叠）和内部 */
-export const shellAndInner = (b: Box): { shell: Box[]; 内: Box | null } => {
-  const shell: Box[] = [{ ...b, y2: b.y1 }];
-  if (b.y2 > b.y1) shell.push({ ...b, y1: b.y2 });
+export const shellAndInner = (b: Box): { shellBoxes: Box[]; 内: Box | null } => {
+  const shellBoxes: Box[] = [{ ...b, y2: b.y1 }];
+  if (b.y2 > b.y1) shellBoxes.push({ ...b, y1: b.y2 });
   if (b.y2 - b.y1 >= 2) {
     const y1 = b.y1 + 1, y2 = b.y2 - 1;
-    shell.push({ ...b, y1, y2, z2: b.z1 });
-    if (b.z2 > b.z1) shell.push({ ...b, y1, y2, z1: b.z2 });
+    shellBoxes.push({ ...b, y1, y2, z2: b.z1 });
+    if (b.z2 > b.z1) shellBoxes.push({ ...b, y1, y2, z1: b.z2 });
     if (b.z2 - b.z1 >= 2) {
-      shell.push({ ...b, y1, y2, z1: b.z1 + 1, z2: b.z2 - 1, x2: b.x1 });
-      if (b.x2 > b.x1) shell.push({ ...b, y1, y2, z1: b.z1 + 1, z2: b.z2 - 1, x1: b.x2 });
+      shellBoxes.push({ ...b, y1, y2, z1: b.z1 + 1, z2: b.z2 - 1, x2: b.x1 });
+      if (b.x2 > b.x1) shellBoxes.push({ ...b, y1, y2, z1: b.z1 + 1, z2: b.z2 - 1, x1: b.x2 });
     }
   }
   const innerBox = b.x2 - b.x1 >= 2 && b.y2 - b.y1 >= 2 && b.z2 - b.z1 >= 2 ? { x1: b.x1 + 1, y1: b.y1 + 1, z1: b.z1 + 1, x2: b.x2 - 1, y2: b.y2 - 1, z2: b.z2 - 1 } : null;
-  return { shell, 内: innerBox };
+  return { shellBoxes, 内: innerBox };
 };
 
 /** 一步翻成游戏命令（不带 execute in） */
@@ -58,8 +58,8 @@ const expandStep = (s: EditStep, warnings: string[]): string[] => {
     case 'fill': {
       if (volume(s.盒) <= commandCellLimit) return [s.原文.replace(/^\s*\//, '')];
       if (s.fillMode === 'hollow' || s.fillMode === 'outline') {
-        const { shell, 内: innerBox } = shellAndInner(s.盒);
-        const out = shell.flatMap((b) => splitBox(b)).map((b) => `fill ${boxCoords(b)} ${s.stateText}`);
+        const { shellBoxes, 内: innerBox } = shellAndInner(s.盒);
+        const out = shellBoxes.flatMap((b) => splitBox(b)).map((b) => `fill ${boxCoords(b)} ${s.stateText}`);
         if (innerBox && s.fillMode === 'hollow') out.unshift(...splitBox(innerBox).map((b) => `fill ${boxCoords(b)} minecraft:air`));
         return out;
       }

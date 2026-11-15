@@ -4,12 +4,12 @@ import { isSegKeyValid } from './规则/清单.ts';
 
 const segList = (...segKeys: string[]) => ({
   '作品/应力转动/清单.ts': [
-    `export const 清单 = [${segKeys.map((k) => `{ 键: '${k}', 章: ${k.startsWith('核对-') ? "'核对'" : k.split('-')[0]} }`).join(', ')}];`,
-    "export const 段目录 = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
+    `export const manifest = [${segKeys.map((k) => `{ 键: '${k}', 章: ${k.startsWith('核对-') ? "'核对'" : k.split('-')[0]} }`).join(', ')}];`,
+    "export const segDir = (键: string) => (键.startsWith('核对-') ? `核对/${键.slice(3)}` : `段/${键}`);",
   ].join('\n'),
 });
 const makeSeg = (segKey: string, defSource: string) => ({
-  [`作品/应力转动/段/${segKey}/段.ts`]: `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段(${defSource});\n`,
+  [`作品/应力转动/段/${segKey}/段.ts`]: `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg(${defSource});\n`,
   [`作品/应力转动/段/${segKey}/画面.tsx`]: 'export default () => null;\n',
 });
 
@@ -18,9 +18,9 @@ describe('清单', () => {
     const root = makeRepo(
       base(),
       segList('7-甲', '7-乙', '核对-看看'),
-      makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 场窗口: { 起秒: 0, 止秒: 10 } }"),
-      makeSeg('7-乙', "{ 场: '7-场一', 秒: 5, 宽: 4, 高: 4, 地形: [], 场窗口: { 起秒: 10, 止秒: 15 }, 连续: true }"),
-      { '作品/应力转动/核对/看看/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '核对', 秒: 1, 宽: 4, 高: 4, 地形: [] });\n", '作品/应力转动/核对/看看/画面.tsx': 'export default () => null;\n' },
+      makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 0, endSec: 10 } }"),
+      makeSeg('7-乙', "{ 场: '7-场一', 秒: 5, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 10, endSec: 15 }, continuous: true }"),
+      { '作品/应力转动/核对/看看/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '核对', 秒: 1, 宽: 4, 高: 4, 地形: [] });\n", '作品/应力转动/核对/看看/画面.tsx': 'export default () => null;\n' },
     );
     expect((await runRule('清单', root)).violations).toEqual([]);
   });
@@ -29,8 +29,8 @@ describe('清单', () => {
     const root = makeRepo(
       base(),
       segList('7-甲', '7-乙', '8-甲', '7-老名', '7-丙_x'),
-      makeSeg('7-乙', "{ 场: '7-场一', 秒: 5, 宽: 4, 高: 4, 地形: [], 场窗口: { 起秒: 11, 止秒: 16 }, 连续: true }"),
-      makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 场窗口: { 起秒: 0, 止秒: 10 } }"),
+      makeSeg('7-乙', "{ 场: '7-场一', 秒: 5, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 11, endSec: 16 }, continuous: true }"),
+      makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 0, endSec: 10 } }"),
       makeSeg('8-甲', "{ 场: '8-场', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
       makeSeg('7-老名', "{ 场: '7-场一', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
       makeSeg('7-多余', "{ 场: '7-场一', 秒: 1, 宽: 4, 高: 4, 地形: [] }"),
@@ -71,7 +71,7 @@ describe('加载', () => {
   });
 
   it('段.ts、时间线.ts 里的断言 throw 了就拦', async () => {
-    const root = makeRepo(base(), makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 场窗口: { 起秒: 0, 止秒: 9 } }"), {
+    const root = makeRepo(base(), makeSeg('7-甲', "{ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], sceneWindow: { startSec: 0, endSec: 9 } }"), {
       '作品/应力转动/场/7-场一/时间线.ts': "const 事件 = { 起: 30, 止: 20 };\nif (事件.止 < 事件.起) throw new Error('时间线：止 在 起 前面');\nexport default 事件;\n",
     });
     const v = (await runRule('加载', root)).violations.join('\n');

@@ -51,7 +51,7 @@ describe('副本', () => {
     expect(v).toMatch(/新.ts:3 场景到three 的副本有 1 处（第 3 行 转（行为））/);
     expect(v).toMatch(/新.ts:4 Cam 的副本/);
     expect(v).toMatch(/新.ts:5 焦距到视角 的副本有 1 处（第 5 行 视角（记号））/);
-    expect(v).toMatch(/新.ts:6 原版下落 的副本有 1 处（第 6 行 掉（记号））.*import \{ 下落一刻 \} from '@库\/原版物理.ts'/);
+    expect(v).toMatch(/新.ts:6 原版下落 的副本有 1 处（第 6 行 掉（记号））.*import \{ fallOneTick \} from '@库\/原版物理.ts'/);
     expect(v).toMatch(/新.ts:7 mulberry32 的副本/);
     expect(v).toMatch(/新.ts:8 插机位 的副本有 1 处（第 8 行 lerpCam（名字））/);
     // 同一个文件里比登记的多一处

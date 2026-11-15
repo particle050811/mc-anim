@@ -39,7 +39,7 @@ describe('时间线 + 歌网格 和 分镜.ts 的 解时刻、排段一样', () 
     }
   });
   it('排段：同一串定义得出同样的窗口', () => {
-    const defTable = { tame: { 在: { measure: 25 }, 依据: '' }, rightClick: { 在: { after: '驯服', addSec: -1 / 20 }, 依据: '' } };
+    const defTable = { 驯服: { 在: { measure: 25 }, 依据: '' }, 右键: { 在: { after: '驯服', addSec: -1 / 20 }, 依据: '' } };
     const sequence = {
       名: '试',
       时长: originalDurSec,

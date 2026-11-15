@@ -29,10 +29,10 @@ const makeEnv = (o: Partial<GenerateEnv> = {}): GenerateEnv => ({
 const writeSeg = (soundsCode: string) =>
   fs.writeFileSync(
     path.join(segDir, '段.ts'),
-    `import { 定义场时间线, 窗口段 } from '@engine/段/窗口段.ts';
-import 声音表 from './声音表.生成.ts';
-const 线 = 定义场时间线({ 场: '核对', 事件: { 起: { 在: { 秒: 0 } }, 响: { 在: { 秒: 0.5 } }, 止: { 在: { 秒: 2 } } } });
-export default 窗口段(线, { 起: '起', 止: '止', 声音表, 声音: ({ 放, 说, 接着说, 事件 }) => [${soundsCode}] });
+    `import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';
+import soundTable from './声音表.生成.ts';
+const 线 = defineSceneTimeline({ 场: '核对', 事件: { 起: { 在: { 秒: 0 } }, 响: { 在: { 秒: 0.5 } }, 止: { 在: { 秒: 2 } } } });
+export default windowSeg(线, { 起: '起', 止: '止', soundTable, 声音: ({ 放, 说, continueLine, 事件 }) => [${soundsCode}] });
 `,
   );
 const root = codeRoot();
@@ -53,10 +53,10 @@ describe('生成一段', () => {
       { 秒: 0.5, 台词: '甲' },
       { 秒: 0, 资产: '配乐/私', 名: '歌', 长秒: 2, 增益: 0.501187 },
     ]);
-    expect(r.表.台词).toEqual({ lineA: { 配音: '配音/甲', 开口: 0.5, 时长: 2 } });
+    expect(r.表.台词).toEqual({ 甲: { 配音: '配音/甲', 开口: 0.5, 时长: 2 } });
     const source = fs.readFileSync(path.join(segDir, soundUrlFile), 'utf8');
-    expect(source).toContain(`import 声0 from "asset:配音/甲";`);
-    expect(source).toContain(`"配乐/私": 私有配乐("配乐/私")`);
+    expect(source).toContain(`import sound0 from "asset:配音/甲";`);
+    expect(source).toContain(`"配乐/私": privateMusic("配乐/私")`);
     expect(source).not.toContain('asset:配乐/私');
     const soundTable = (await freshExec(path.join(segDir, soundTableFile), root)).default;
     expect(soundTable).toEqual(r.表);
@@ -98,14 +98,14 @@ describe('生成一段', () => {
     const writeSceneSeg = (doorSec: number) =>
       fs.writeFileSync(
         path.join(segDir, '段.ts'),
-        `import { 定义场时间线, 窗口段 } from '@engine/段/窗口段.ts';
-import 声音表 from './声音表.生成.ts';
-const 线 = 定义场时间线({
+        `import { defineSceneTimeline, windowSeg } from '@engine/段/窗口段.ts';
+import soundTable from './声音表.生成.ts';
+const 线 = defineSceneTimeline({
   场: '核对',
   事件: { 起: { 在: { 秒: 0 } }, 切: { 在: { 秒: 2 } }, 止: { 在: { 秒: 4 } } },
   声音: [{ 资产: '音效/门', 在: { 秒: ${doorSec} }, 峰值: -12 }, { 资产: '配乐/私', 在: { 秒: 3 }, 增益: 0.5 }],
 });
-export default 窗口段(线, { 起: '切', 止: { 长秒: 1 }, 声音表 });
+export default windowSeg(线, { 起: '切', 止: { 长秒: 1 }, soundTable });
 `,
       );
     // 窗口 [2, 3) 秒：门 从 1.5 秒起放 1 秒，剩 0.5 秒落进来；私 从 3 秒起，一定不沾边
@@ -138,10 +138,10 @@ export default 窗口段(线, { 起: '切', 止: { 长秒: 1 }, 声音表 });
   });
 
   it('跨段的接上段：从上一段算 上段开口秒；没有上一段就报错', async () => {
-    writeSeg(`接着说('甲', 0)`);
+    writeSeg(`continueLine('甲', 0)`);
     const prevSeg: SegmentDef = { 秒: 2, 声音: [{ 秒: 1.75, 台词: '甲' }] } as unknown as SegmentDef;
     const r = await generateSeg(path.join(segDir, '段.ts'), root, makeEnv({ prevSeg: async () => prevSeg }));
-    expect(r.表.台词.甲).toEqual({ 配音: '配音/甲', 开口: 0.5, 时长: 2, prevSegOpenSec: -0.25 });
+    expect(r.表.台词.甲).toEqual({ 配音: '配音/甲', 开口: 0.5, 时长: 2, 上段开口秒: -0.25 });
     fs.rmSync(path.join(segDir, soundTableFile));
     await expect(generateSeg(path.join(segDir, '段.ts'), root, makeEnv())).rejects.toThrow(/接上段/);
   });

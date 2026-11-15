@@ -1,4 +1,4 @@
-// 句模块：<作品根>/台词/<台词 id>.ts，一句一个，由 anim voice 生成（进 Git，别手改），默认导出 engine/audio/台词句.ts 的 台词句。
+// 句模块：<作品根>/台词/<台词 id>.ts，一句一个，由 anim voice 生成（进 Git，别手改），默认导出 engine/audio/台词句.ts 的 LineSentence。
 // 段只 import 自己用的几句，加一句、改一句不让别的段过期。文本是确定的：同样的数据写出同样的字节（anim voice check 比这个）。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -8,8 +8,8 @@ import type { LineSentence } from '../../engine/audio/台词句.ts';
 export const sentenceDir = (workRoot: string) => path.join(workRoot, '台词');
 export const sentencePath = (workRoot: string, id: string) => path.join(sentenceDir(workRoot), `${id}.ts`);
 
-const moduleHead = 'const 句: 台词句 = ';
-const moduleTail = ';\nexport default 句;\n';
+const moduleHead = 'const sentence: LineSentence = ';
+const moduleTail = ';\nexport default sentence;\n';
 
 // 键的顺序固定；字、嘴一项一行，好看 diff
 const keyOrder: readonly (keyof LineSentence)[] = ['id', '角色', '念', '配音', '成品sha', '开口', '有声长', '时长', '文件秒数', '手修', '字', '嘴'];
@@ -28,7 +28,7 @@ export const writeSentenceText = (sentence: LineSentence): string => {
   const checksum = crypto.createHash('sha256').update(lines.join('\n'), 'utf8').digest('hex').slice(0, 12);
   return [
     `// 由 anim voice 生成（校验 ${checksum}），别手改：改 作品的 台词.toml 后跑 anim voice lip ${sentence.id}（换配音跑 anim voice use）。`,
-    "import type { 台词句 } from '@engine/audio/台词句.ts';",
+    "import type { LineSentence } from '@engine/audio/台词句.ts';",
     '',
     `${moduleHead}{`,
     ...lines,

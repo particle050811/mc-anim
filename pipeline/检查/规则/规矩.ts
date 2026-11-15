@@ -46,15 +46,16 @@ export const findCodeExceptions = (c: CheckContext, report: CheckReport): CodeEx
   for (const p of c.workFiles()) {
     if (!isRenderCode(p) || !codeExtRegex.test(p) || p === `${exceptionModule}.ts`) continue;
     const sourceText = c.读(p);
-    if (!sourceText.includes(exceptionName)) continue;
+    // 只 import/转出模块、不写导出名的（export * from '…/例外.ts'）也要查：文本里有名字或模块文件名就解析
+    if (!sourceText.includes(exceptionName) && !sourceText.includes(path.posix.basename(exceptionModule))) continue;
     const sf = parseSource(p, sourceText);
     for (const s of sf.statements) {
       if (ts.isImportDeclaration(s) && pointsToExceptionModule(p, s.moduleSpecifier)) {
         const b = s.importClause?.namedBindings;
-        if (b && ts.isNamespaceImport(b)) report.错(`不许用命名空间导入 ${exceptionModule}.ts：写 import { 例外 } from '…/例外.ts'`, p, lineNo(sf, s));
-        if (b && ts.isNamedImports(b)) for (const e of b.elements) if (e.propertyName && e.name.text !== propertyName(e.propertyName)) report.错(`不许给 ${propertyName(e.propertyName)} 改名导入（anim check 只认叫 例外 的调用）`, p, lineNo(sf, e));
+        if (b && ts.isNamespaceImport(b)) report.错(`不许用命名空间导入 ${exceptionModule}.ts：写 import { ${exceptionName} } from '…/例外.ts'`, p, lineNo(sf, s));
+        if (b && ts.isNamedImports(b)) for (const e of b.elements) if (e.propertyName && e.name.text !== propertyName(e.propertyName)) report.错(`不许给 ${propertyName(e.propertyName)} 改名导入（anim check 只认叫 ${exceptionName} 的调用）`, p, lineNo(sf, e));
       }
-      if (ts.isExportDeclaration(s) && pointsToExceptionModule(p, s.moduleSpecifier)) report.错(`不许转出 ${exceptionModule}.ts：用到的文件直接 import { 例外 }`, p, lineNo(sf, s));
+      if (ts.isExportDeclaration(s) && pointsToExceptionModule(p, s.moduleSpecifier)) report.错(`不许转出 ${exceptionModule}.ts：用到的文件直接 import { ${exceptionName} }`, p, lineNo(sf, s));
     }
     walk(sf, (n) => {
       if (ts.isIdentifier(n) && n.text === exceptionName) {
@@ -66,8 +67,8 @@ export const findCodeExceptions = (c: CheckContext, report: CheckReport): CodeEx
           ts.isImportSpecifier(parentNode) ||
           ts.isTypeReferenceNode(parentNode) ||
           ts.isQualifiedName(parentNode);
-        if (ts.isExportSpecifier(parentNode)) report.错('不许转出 例外：用到的文件直接从 engine/core/例外.ts import', p, lineNo(sf, n));
-        else if (!isCall && !onlyName) report.错('例外 只能直接调用：不许赋给别的名字、当参数传、解构改名（anim check 只认叫 例外 的调用）', p, lineNo(sf, n));
+        if (ts.isExportSpecifier(parentNode)) report.错(`不许转出 ${exceptionName}：用到的文件直接从 engine/core/例外.ts import`, p, lineNo(sf, n));
+        else if (!isCall && !onlyName) report.错(`${exceptionName} 只能直接调用：不许赋给别的名字、当参数传、解构改名（anim check 只认叫 ${exceptionName} 的调用）`, p, lineNo(sf, n));
       }
       if (!ts.isCallExpression(n)) return;
       const calleeName = ts.isIdentifier(n.expression) ? n.expression.text : ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : undefined;
@@ -91,7 +92,7 @@ export const findCodeExceptions = (c: CheckContext, report: CheckReport): CodeEx
       }
       const segments = typeof basis.段 === 'string' ? [basis.段] : Array.isArray(basis.段) ? (basis.段 as string[]) : null;
       if (typeof rule !== 'string' || !d || !ts.isObjectLiteralExpression(d) || (segments === null) === (typeof basis.场 !== 'string') || typeof basis.原因 !== 'string') {
-        report.错("例外 要写成 例外('规矩id', 值, { 段: '<段键>'（或段键数组）或 场: '<场键>', 原因: '…' })，规矩 id、段/场、原因都用字面量", p, line);
+        report.错(`例外 要写成 ${exceptionName}('规矩id', 值, { 段: '<段键>'（或段键数组）或 场: '<场键>', 原因: '…' })，规矩 id、段/场、原因都用字面量`, p, line);
         return;
       }
       const match = /^作品\/[^/]+\/(段|场)\/([^/]+)\//.exec(p);

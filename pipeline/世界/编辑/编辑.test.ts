@@ -191,8 +191,8 @@ describe('重放', () => {
     const splitBoxes = splitBox(b);
     expect(splitBoxes.every((x) => volume(x) <= 32768)).toBe(true);
     expect(splitBoxes.reduce((a, x) => a + volume(x), 0)).toBe(volume(b));
-    const { shell, 内: innerBox } = shellAndInner(b);
-    expect(shell.reduce((a, x) => a + volume(x), 0) + volume(innerBox!)).toBe(volume(b));
+    const { shellBoxes, 内: innerBox } = shellAndInner(b);
+    expect(shellBoxes.reduce((a, x) => a + volume(x), 0) + volume(innerBox!)).toBe(volume(b));
     expect(volume(innerBox!)).toBe(98 * 8 * 98);
   });
 

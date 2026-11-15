@@ -148,7 +148,7 @@ const fileHeader = '// anim cues 生成，不要手改（段.ts 的声音改了�
 
 export const soundTableText = (soundTable: SoundTable) =>
   `${fileHeader}\n// 本段 cue 用到的声音的数：资产 = 时长秒、采样峰值 dBFS、积分响度 LUFS、量的是哪份字节（sha256 前 12 位）；台词 = 配音资产、开口秒、时长秒。段.ts 交给 窗口段 的 声音表。\n` +
-  `import type { 声音表 } from '@engine/段/声音助手.ts';\n\nconst 表: 声音表 = ${JSON.stringify(soundTable, null, 2)};\nexport default 表;\n`;
+  `import type { SoundTable } from '@engine/段/声音助手.ts';\n\nconst soundTable: SoundTable = ${JSON.stringify(soundTable, null, 2)};\nexport default soundTable;\n`;
 
 /** 本段要放的文件：资产 cue 的资产、台词的配音 */
 export const requiredFiles = (seg: SegmentDef, soundTable: SoundTable): string[] => {
@@ -168,18 +168,18 @@ export const soundUrlText = (assetIds: readonly string[], assetLock: AssetLock) 
   const lines: string[] = [
     fileHeader,
     '// 本段 cue 要放的声音文件（资产 id → 打包后的地址；私有配乐不打进包，按 id 现取）和声音表。画面.tsx 交给 定义画面。',
-    "import type { 声音地址 } from '@engine/段/段画面.tsx';",
-    ...(privateIds.length ? ["import { 私有配乐 } from '@engine/audio/私有配乐.ts';"] : []),
-    "import 表 from './声音表.生成.ts';",
-    ...publicFiles.map((id, i) => `import 声${i} from ${JSON.stringify(`asset:${id}`)};`),
+    "import type { SoundUrl } from '@engine/段/段画面.tsx';",
+    ...(privateIds.length ? ["import { privateMusic } from '@engine/audio/私有配乐.ts';"] : []),
+    "import soundTable from './声音表.生成.ts';",
+    ...publicFiles.map((id, i) => `import sound${i} from ${JSON.stringify(`asset:${id}`)};`),
     '',
-    'const 声音: 声音地址 = {',
-    '  地址: {',
-    ...assetIds.map((id) => `    ${JSON.stringify(id)}: ${privateIds.includes(id) ? `私有配乐(${JSON.stringify(id)})` : `声${publicFiles.indexOf(id)}`},`),
+    'const soundUrl: SoundUrl = {',
+    '  urls: {',
+    ...assetIds.map((id) => `    ${JSON.stringify(id)}: ${privateIds.includes(id) ? `privateMusic(${JSON.stringify(id)})` : `sound${publicFiles.indexOf(id)}`},`),
     '  },',
-    '  表,',
+    '  表: soundTable,',
     '};',
-    'export default 声音;',
+    'export default soundUrl;',
     '',
   ];
   return lines.join('\n');

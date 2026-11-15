@@ -1,4 +1,4 @@
-// <环境> 各画法共用的部件：画法的接口（定义画法、画法属性）、级联投影主光、平行主光、雾、原版方块云、挂共用 uniform 的钩子层。
+// <环境> 各画法共用的部件：画法的接口（defineDraw、画法属性）、级联投影主光、平行主光、雾、原版方块云、挂共用 uniform 的钩子层。
 // 画法各放一个模块（engine/light/画法/<名>.tsx），段只引自己用的那个：加一种画法不碰已有段的依赖。改这个文件会让所有用到 <环境> 的段过期。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';

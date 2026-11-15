@@ -1,5 +1,5 @@
 // anim extract --粒子帧：照粒子定义（jar 里 assets/<命名空间>/particles/<名>.json）的 textures 顺序生成帧模块 <作品根>/粒子帧/<命名空间>/<名>.ts
-// （定义登记在共用锁的放 库/粒子帧/），画面一行 `import 帧 from '…/粒子帧/goety/frost.ts'` 拿到排好序的 Png[]。
+// （定义登记在共用锁的放 库/粒子帧/），画面一行 `import animFrames from '…/粒子帧/goety/frost.ts'` 拿到排好序的 Png[]。
 // 为什么生成进 Git 的模块、不做 asset:粒子/… 虚拟模块：打包（webpack.ts，文本进全部段指纹）、指纹、检查、随仓库、缺字节都按「asset: = 锁里一件」认，
 // 虚拟模块要每处特判；生成的模块里只有普通的 asset:<贴图 id>，这些地方都不用动。anim check 核对生成的和定义、锁对得上（规则 资产）。
 // jar 里的文件对应哪件资产，照 sourcing/extract.toml 的配方反查（导出模型 只导贴图的步骤、拷jar文件.py 的步骤，加上「产物」表），不按 id 的写法猜：
@@ -104,15 +104,15 @@ export const generatedHeader = '// anim extract --粒子帧 生成，别手改';
 
 export const particleFrameText = (particleName: string, definitionId: string, definitionSha: string, frames: string[]): string => {
   const unique = [...new Set(frames)];
-  const importNames = new Map(unique.map((id, i) => [id, `图${i}`]));
+  const importNames = new Map(unique.map((id, i) => [id, `frame${i}`]));
   return [
     `${generatedHeader}：粒子 ${particleName} 的贴图帧，照粒子定义 textures 的顺序（同一张贴图出现几次就排几次）。`,
     `// 定义 ${definitionId} sha256 ${definitionSha}`,
     `import { png, type Png } from '@engine/model/贴图.ts';`,
     ...unique.map((id) => `import ${importNames.get(id)} from 'asset:${id}';`),
     '',
-    `const 帧: readonly Png[] = [${frames.map((id) => importNames.get(id)).join(', ')}].map(png);`,
-    'export default 帧;',
+    `const animFrames: readonly Png[] = [${frames.map((id) => importNames.get(id)).join(', ')}].map(png);`,
+    'export default animFrames;',
     '',
   ].join('\n');
 };

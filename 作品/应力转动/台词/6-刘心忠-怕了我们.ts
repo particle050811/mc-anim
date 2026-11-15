@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 dce31b3f01a9），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-刘心忠-怕了我们（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const line: LineSentence = {
+const sentence: LineSentence = {
   "id": "6-刘心忠-怕了我们",
   "角色": "刘心忠",
   "念": "那家伙果然是怕了我们，居然逃了！",
@@ -53,4 +53,4 @@ const line: LineSentence = {
     [2.8,"X"],
   ],
 };
-export default line;
+export default sentence;

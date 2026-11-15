@@ -43,7 +43,7 @@ describe('资产', () => {
   });
 
   it('wasm/区段解码.ts 改了没重编要报（生成文件记的源码 sha 对不上），对得上放行', async () => {
-    const genSource = (sourceText: string) => `export const 源码sha256 = '${sha(sourceText)}';\nexport const wasmBase64 = '';\n`;
+    const genSource = (sourceText: string) => `export const sourceSha256 = '${sha(sourceText)}';\nexport const wasmBase64 = '';\n`;
     const cleanResult = await runRule('资产', makeRepo(base(), { 'wasm/区段解码.ts': 'a\n', 'engine/voxel/区段解码器.生成.ts': genSource('a\n') }));
     expect(cleanResult.violations.filter((e) => e.includes('anim world 解码器'))).toEqual([]);
     const badRun = await runRule('资产', makeRepo(base(), { 'wasm/区段解码.ts': 'b\n', 'engine/voxel/区段解码器.生成.ts': genSource('a\n') }));
@@ -55,7 +55,7 @@ describe('资产', () => {
       'assets/registry/配音.toml': makeAssetTable(assetRow('配音/甲', '私有', 'LicenseRef-用户保留')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '贴图/李樱-脸': lockEntry('b'.repeat(64)), '配音/甲': lockEntry('c'.repeat(64), '私有') }),
       '作品/应力转动/段/7-甲/段.ts':
-        "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 0, 资产: '配音/甲' }] });\n",
+        "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 0, 资产: '配音/甲' }] });\n",
       'assets/kits/李樱.toml': [
         '"角色" = "李樱"',
         '[["基准"]]',
@@ -100,7 +100,7 @@ describe('资产', () => {
       'assets/registry/贴图.toml': makeAssetTable(assetRow('贴图/甲'), assetRow('贴图/乙', '公开', 'MIT 或 GPL'), assetRow('贴图/私', '私有')),
       'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry('a'.repeat(64)), '贴图/私': lockEntry('d'.repeat(64)), '贴图/孤': lockEntry('e'.repeat(64)) }),
       '作品/应力转动/段/7-甲/画面.tsx': "import 图 from 'asset:贴图/甲';\nimport 私 from 'asset:贴图/私';\nimport 无 from 'asset:贴图/没登记';\nexport default () => <img src={图 + 私 + 无} />;\n",
-      '作品/应力转动/段/7-甲/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: ['没登记的包'] });\n",
+      '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: ['没登记的包'] });\n",
       'assets/kits/九胡.toml': ['"角色" = "九胡"', '[["资产组"]]', '"用途" = "模型"', '"匹配" = ["模型/九胡-*"]', '"文字源" = ["docs/没有.md"]'].join('\n'),
     });
     const v = (await runRule('资产', root)).violations.join('\n');
@@ -123,7 +123,7 @@ describe('资产', () => {
       const repoRoot = () =>
         makeRepo(base(), {
           'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry(sha('abc')) }),
-          'assets/地形版本.json': JSON.stringify({ 包: { ancientCity: { 版本: 'v1', ...manifest, 许可: 'LicenseRef-用户保留', 可见性: '私有' } } }),
+          'assets/地形版本.json': JSON.stringify({ 包: { 古城: { 版本: 'v1', ...manifest, 许可: 'LicenseRef-用户保留', 可见性: '私有' } } }),
         });
       const checkResult = await runRule('资产', repoRoot(), { depthCheck: true, dataRoot });
       expect(checkResult.violations).toEqual([]);
@@ -142,12 +142,12 @@ describe('资产', () => {
   });
 
   it('取地形包的段（闭包里有 区段包位置.ts）写到的登记包名没声明，只提示不拦（真读到时页面报错）；不取地形的段写到了也不管', async () => {
-    const terrainJsonText = JSON.stringify({ 包: { overworld: { 版本: 'v1', 许可: 'MIT', 可见性: '发布' }, twilight: { 版本: 'v2', 许可: 'MIT', 可见性: '发布' } } });
+    const terrainJsonText = JSON.stringify({ 包: { 主世界: { 版本: 'v1', 许可: 'MIT', 可见性: '发布' }, 暮色: { 版本: 'v2', 许可: 'MIT', 可见性: '发布' } } });
     const filesFor = (terrains: string) => ({
       'assets/地形版本.json': terrainJsonText,
       'engine/voxel/区段包位置.ts': "export const packDir = (名: string) => `terrain/${名}`;\n",
       '作品/应力转动/地点/名.ts': "export const 主世界名 = '主世界';\nexport const 暮色名 = '暮色';\n",
-      '作品/应力转动/段/7-甲/段.ts': `import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: ${terrains} });\n`,
+      '作品/应力转动/段/7-甲/段.ts': `import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: ${terrains} });\n`,
       '作品/应力转动/段/7-甲/画面.tsx':
         "import 图 from 'asset:贴图/甲';\nimport { packDir } from '@engine/voxel/区段包位置.ts';\nimport { 主世界名 } from '../../地点/名.ts';\nexport default () => <img src={图 + packDir(主世界名)} />;\n",
     });
@@ -173,8 +173,8 @@ describe('资产', () => {
 
 /** 第二部作品 示例：一段 1-标题，画面 import 什么由参数定 */
 const makeExample = (...imports: string[]) => ({
-  '作品/示例/清单.ts': "export const 清单 = [{ 键: '1-标题', 章: 1 }];\nexport const 段目录 = (键: string) => `段/${键}`;\n",
-  '作品/示例/段/1-标题/段.ts': "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '1-片头', 秒: 24, 宽: 640, 高: 360, 地形: [] });\n",
+  '作品/示例/清单.ts': "export const manifest = [{ 键: '1-标题', 章: 1 }];\nexport const segDir = (键: string) => `段/${键}`;\n",
+  '作品/示例/段/1-标题/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '1-片头', 秒: 24, 宽: 640, 高: 360, 地形: [] });\n",
   '作品/示例/段/1-标题/画面.tsx': `${imports.map((id, i) => `import a${i} from 'asset:${id}';`).join('\n')}\nexport default () => <div>{${imports.map((_, i) => `a${i}`).join(' + ') || "''"}}</div>;\n`,
 });
 
@@ -248,7 +248,7 @@ describe('随仓库发的字节', () => {
         'assets/registry/配乐.toml': makeAssetTable(assetRow('配乐/私曲', '私有', 'LicenseRef-All-Rights-Reserved')),
         'assets/资产锁.json': JSON.stringify({ '贴图/甲': lockEntry(sha(contentA)), '配乐/私曲': lockEntry(sha(privateBytes), '私有') }),
         '作品/应力转动/段/7-甲/段.ts':
-          "import { 定义段 } from '@engine/段/段定义.ts';\nexport default 定义段({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 0, 资产: '配乐/私曲', 名: '歌', 长秒: 10 }] });\n",
+          "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [], 声音: [{ 秒: 0, 资产: '配乐/私曲', 名: '歌', 长秒: 10 }] });\n",
         '作品/应力转动/随仓库.toml': '"段" = ["7"]',
         [bytesPosPath(contentA)]: contentA,
       },

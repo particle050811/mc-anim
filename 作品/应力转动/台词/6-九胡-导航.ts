@@ -1,7 +1,7 @@
 // 由 anim voice 生成（校验 49b92448d569），别手改：改 作品的 台词.toml 后跑 anim voice lip 6-九胡-导航（换配音跑 anim voice use）。
 import type { LineSentence } from '@engine/audio/台词句.ts';
 
-const line: LineSentence = {
+const sentence: LineSentence = {
   "id": "6-九胡-导航",
   "角色": "九胡",
   "念": "哔↗哔↘，九胡导航持续为您服务。",
@@ -50,4 +50,4 @@ const line: LineSentence = {
     [2.85,"X"],
   ],
 };
-export default line;
+export default sentence;
