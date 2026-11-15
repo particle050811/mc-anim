@@ -241,10 +241,15 @@ const build = (info: BlockMeshInfo, data: Uint8Array, { base: baseTex, plant: pl
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <logdepthbuf_fragment>',
           [
-            '#if defined( USE_LOGARITHMIC_DEPTH_BUFFER )',
+            '#if defined( USE_LOGARITHMIC_DEPTH_BUFFER ) && ! defined( RASTER_DEPTH )',
             '\tgl_FragDepth = vIsPerspective == 0.0 ? gl_FragCoord.z : log2( vFragDepth * 0.9999 ) * logDepthBufFC * 0.5;',
             '#endif',
           ].join('\n'),
+        );
+        // 屏幕 AO 第 1 遍用光栅深度时（engine/core/光栅深度.ts）片元不写深度，同样的「距离乘 0.9999」挪到顶点：裁剪 z 的常数项除以 0.9999
+        shader.vertexShader = shader.vertexShader.replace(
+          '#include <logdepthbuf_vertex>',
+          ['#include <logdepthbuf_vertex>', '#ifdef RASTER_DEPTH', '\tgl_Position.z += projectionMatrix[3][2] * ( 1.0 / 0.9999 - 1.0 );', '#endif'].join('\n'),
         );
       };
       // three 按 onBeforeCompile 的源码区分着色器程序，这里和实心层的写法不同，单独给一个键，免得共用了实心层的程序
