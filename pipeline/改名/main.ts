@@ -2,6 +2,7 @@
 //   node pipeline/改名/main.ts disk-keys --out <文件.tsv> [--data <数据根>]
 //   node pipeline/改名/main.ts scan --out <目录> [--only <路径前缀>…] [--disk-keys <文件.tsv>]
 //   node pipeline/改名/main.ts apply --scan <目录> --table <表.tsv> [--write] [--allow-json] [--tsc]
+//   node pipeline/改名/main.ts check --groups <groups.jsonl>… [--batch-dir <目录>] [--out <tsv>] <批NN-页N.tsv>…
 // 重的进程照 CLAUDE.md 加 nice（主检出可能在渲染）。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -9,6 +10,7 @@ import { Workspace } from './工程.ts';
 import { scan, type ScanResult } from './扫.ts';
 import { diskKeys } from './盘上键.ts';
 import { apply, readTable } from './改.ts';
+import { checkTables, issuesTsv, loadInputs, summary } from './核表.ts';
 
 const HELP = `用法：
   disk-keys --out <tsv> [--data <数据根>]      收盘上数据（进 Git 的 toml/json、数据根抽样）里含汉字的键
@@ -18,7 +20,11 @@ const HELP = `用法：
   apply --scan <目录> --table <tsv> [--write] [--allow-json] [--tsc] [--report <json>]
        按表改名：表每行「组 id<TAB>新名[<TAB>strings]」，# 开头是注释；组 id 写组里任何一个声明的 id 都行（groups.jsonl 的 id、aliases）；
        strings = all（组的字符串引用全改）或逗号分隔的 文件:偏移（只改这几处，偏移取 scan.json 的 strings）；
-       先在内存里改、改前改后逐个标识符核对指向的声明，过了才写盘（--write）；--tsc 写完跑 tsc --noEmit`;
+       先在内存里改、改前改后逐个标识符核对指向的声明，过了才写盘（--write）；--tsc 写完跑 tsc --noEmit
+  check --groups <groups.jsonl>… [--batch-dir <目录>] [--glossary <tsv>] [--rules <tsv>] [--out <tsv>] <批NN-页N.tsv>…
+       核拼名模型交回的表（行号<TAB>新名<TAB>拿不准原因）：缺行、格式、非法名、关键字、全局名、撞名、黑名单形状、对照表、一词多译；
+       --groups 可给多个（TS、Python 各一份）；--batch-dir 默认是输出表上一层（放 批NN.ids.tsv、对照表.tsv、规则.tsv 的目录）；
+       问题写 --out（默认 <batch-dir>/核表问题.tsv），打一行汇总；有「错」退出码 1`;
 
 const args = process.argv.slice(2);
 const cmd = args[0];
@@ -80,6 +86,18 @@ if (cmd === 'disk-keys') {
   fs.writeFileSync(rp, JSON.stringify(report, null, 2) + '\n');
   log(`报告 → ${rp}`);
   process.exitCode = report.ok ? 0 : 1;
+} else if (cmd === 'check') {
+  const valued = new Set(['--groups', '--batch-dir', '--glossary', '--rules', '--out']);
+  const outputs = args.slice(1).filter((a, i) => !a.startsWith('--') && !valued.has(args[i]!));
+  const groups = opts('--groups');
+  if (!outputs.length || !groups.length) throw new Error('要 --groups 和至少一个输出表');
+  const batchDir = opt('--batch-dir') ?? path.dirname(path.dirname(path.resolve(outputs[0]!)));
+  const inp = loadInputs({ outputs, groups, batchDir, glossary: opt('--glossary'), rules: opt('--rules') });
+  const { rows, issues } = checkTables(inp);
+  const out = opt('--out') ?? path.join(batchDir, '核表问题.tsv');
+  fs.writeFileSync(out, issuesTsv(issues));
+  console.log(`${summary(rows, issues)} → ${out}`);
+  process.exitCode = issues.some((i) => i.level === '错') ? 1 : 0;
 } else {
   console.error(`没有命令 ${cmd}\n${HELP}`);
   process.exitCode = 2;
