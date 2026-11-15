@@ -20,7 +20,6 @@
 
 ```text
 请在这台电脑上，把 GitHub 仓库 particle050811/mc-anim 里的「把回忆拼好给你」和「应力转动」两部作品渲成成片。
-文档里写到的别的作品是还在做的，那几步跳过。
 
 完整步骤在仓库的 docs/从零渲染.md。先读这份文档：
   curl.exe -L -o 从零渲染.md https://raw.githubusercontent.com/particle050811/mc-anim/main/docs/%E4%BB%8E%E9%9B%B6%E6%B8%B2%E6%9F%93.md
