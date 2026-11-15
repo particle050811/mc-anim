@@ -1,0 +1,16 @@
+// 本作品渲染时对导入地形的改动（挖框、整平，游戏坐标），按包列。烘焙、转码的可见变换（docs/世界.md「可见变换」）把埋住的格换成石头、
+// 封死的腔填实，挖开以后会露出来，所以这些改动碰到的区段要原样保留：anim check 核这里每一处都落在世界声明的 [[烘焙.保真]] 盒里。
+// 这里只汇总，不让渲染代码引它（免得每段都打包进全部地点）：各处数组还在原处定义，新加一处挖框、整平要来这里补一行。
+// 边城的竖井、古城挖框要算 6-3 的物理轨迹（打包要拖进角色、贴图），这里只登记整平罩，6-3-下坠/地形.ts 加载时核挖框落在整平罩的外框里。
+import type { LandmarkCutout, FlattenArea } from '@engine/voxel/导入地形.ts';
+import { baseIslandDigBoxes } from './基地小岛挖框.ts';
+import { borderTownFlatten } from './边城地基.ts';
+import { overworldPackName } from './主世界116.ts';
+import { allCutouts, allFlattens } from './暮色新世界/摆放.ts';
+import { twilightPackName } from './暮色新世界/地标表.ts';
+
+export const 地形改动: { 名: string; 包: string; 挖: LandmarkCutout[]; 平: FlattenArea[] }[] = [
+  { 名: '基地小岛', 包: overworldPackName, 挖: baseIslandDigBoxes, 平: [] },
+  { 名: '边城（竖井、古城挖框在整平罩里，见上）', 包: overworldPackName, 挖: [], 平: borderTownFlatten() },
+  { 名: '暮色地标', 包: twilightPackName, 挖: allCutouts, 平: allFlattens },
+];
