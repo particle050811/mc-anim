@@ -8,6 +8,7 @@ import { codeRoot } from '../环境/路径.ts';
 import { soundUrlText, soundTableText, freshExec } from './生成.ts';
 import { registryTemplate, addSegToManifest, newWork, newSegment } from './新作品.ts';
 import { missingRegistryDirs, registeredDirs } from './注册目录.ts';
+import { usesContinueOldSeg } from './核对.ts';
 
 let tempDir: string;
 beforeEach(() => {
@@ -73,6 +74,7 @@ describe('新段', () => {
     const written = newSegment(workRoot, '1-新', { 场: '1-老场', legacySegs: [{ 键: '1-老一', 秒: 1.25, ...frameSize }, { 键: '1-老二', 秒: 0.75, ...frameSize }] });
     expect(written.map((f) => path.relative(workRoot, f))).toContain('场/1-老场/时间线.ts');
     expect(readText(workRoot, '场/1-老场/时间线.ts')).toMatch(/export default continueOldSeg\(/);
+    expect(usesContinueOldSeg(readText(workRoot, '场/1-老场/时间线.ts'))).toBe(true); // anim check 认得出这条线，才会核抄的段长
     expect(readText(workRoot, '场/1-老场/时间线.ts')).not.toMatch(/import .*段\.ts/);
     const seg = (await freshExec(path.join(workRoot, '段/1-新/段.ts'), codeRoot())).default as SegmentDef & { sceneWindow: unknown };
     expect([seg.场, seg.秒, seg.sceneWindow]).toEqual(['1-老场', 3, { startSec: 2, endSec: 5 }]);

@@ -1,5 +1,5 @@
 // anim check 的 加载 规则调这里：段框架的段，生成的声音表、声音地址要和 段.ts 现在的 cue 对得上（不量音频，数取锁里的、缓存的或盘上表里的）；
-// 接老段 做的场时间线抄的老段段长要和老段对得上。
+// continueOldSeg 做的场时间线抄的老段段长要和老段对得上。
 import type { CheckReport, CheckContext } from '../检查/上下文.ts';
 import type { SegItem } from '../检查/内容.ts';
 import { isFrameworkSeg } from '../../engine/段/窗口段.ts';
@@ -7,7 +7,7 @@ import { checkOldSeg } from '../../engine/段/老段接续.ts';
 import { checkSeg, type LineRow } from './生成.ts';
 import { knownAudioMeasure } from './音频数.ts';
 
-/** 接老段 手给的起秒：老段按清单顺序摆，后一段不能起在前一段的止秒之前（跳过一截可以，重叠是抄错了），顺序要和清单一样。放这里不放 engine 的 核老段：engine 进指纹 */
+/** continueOldSeg 手给的起秒：老段按清单顺序摆，后一段不能起在前一段的止秒之前（跳过一截可以，重叠是抄错了），顺序要和清单一样。放这里不放 engine 的 checkOldSeg：engine 进指纹 */
 export const checkLegacySegStartSec = (legacySegs: readonly { 键: string; startSec: number; 秒: number }[], manifestOrder: readonly string[]): string[] => {
   const issues: string[] = [];
   const listIndexes = legacySegs.map((x) => manifestOrder.indexOf(x.键)).filter((i) => i >= 0);
@@ -19,9 +19,12 @@ export const checkLegacySegStartSec = (legacySegs: readonly { 键: string; start
   return issues;
 };
 
-/** 接老段 做的场时间线（场/<场键>/时间线.ts）：抄的老段段长、场、画幅要和老段的 段.ts 对得上（老段不改，对不上多半是手改了时间线），起秒不重叠 */
+/** 场时间线文件是不是 continueOldSeg 做的（按源码认，命名改英文时这里漏改过一次，单测守着） */
+export const usesContinueOldSeg = (source: string) => /\bcontinueOldSeg\(/.test(source);
+
+/** continueOldSeg 做的场时间线（场/<场键>/时间线.ts）：抄的老段段长、场、画幅要和老段的 段.ts 对得上（老段不改，对不上多半是手改了时间线），起秒不重叠 */
 export const checkLegacySegContinuity = async (c: CheckContext, report: CheckReport, segments: readonly SegItem[]) => {
-  const timelineFiles = c.workFiles().filter((p) => p.startsWith(c.workPath('场/')) && /\/场\/[^/]+\/时间线\.ts$/.test(p) && /接老段\(/.test(c.读(p)));
+  const timelineFiles = c.workFiles().filter((p) => p.startsWith(c.workPath('场/')) && /\/场\/[^/]+\/时间线\.ts$/.test(p) && usesContinueOldSeg(c.读(p)));
   for (const p of timelineFiles) {
     const r = await c.loadModule(p);
     const segModule = r.模块?.default as Parameters<typeof checkOldSeg>[0] | undefined;
