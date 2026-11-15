@@ -9,7 +9,8 @@
 // 远处不缩到看不见（6-3-4 卫兵抬头看到天上的金点、望远镜里）：宽度、光团直径有按离镜头距离给的下限，长焦时除以 `zoom`。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export const GOLD = { core: '#fff6d6', hot: '#ffe08a', glow: '#ffc232', deep: '#ff8f1a' };
 // 光团、光尾是不写深度的半透明物，在 屏幕AO 第 3 遍画。云（lib/大气/云.ts）在第 3 遍里先画（水面之后、别的半透明之前）并写了前沿深度：
@@ -278,12 +279,12 @@ export const LiYingGoldGlow: React.FC<{
       const birth = sparkIdx / ratePerSec;
       const age = physSec - birth;
       if (age < 0) continue;
-      const r0 = rng(9001 + sparkIdx * 7);
+      const r0 = mulberry32(9001 + sparkIdx * 7);
       const life = Math.max(0.08, trailSec * (0.25 + 0.45 * r0()));
       if (age > life) continue;
       const seed = 9001 + sparkIdx * 7;
-      const nowPos = sparkPos(birth, age, rng(seed + 1));
-      const prevPos = sparkPos(birth, Math.max(0, age - 0.012), rng(seed + 1));
+      const nowPos = sparkPos(birth, age, mulberry32(seed + 1));
+      const prevPos = sparkPos(birth, Math.max(0, age - 0.012), mulberry32(seed + 1));
       if (nowPos.distanceTo(prevPos) < 1e-3) prevPos.add(new THREE.Vector3(0, 0, 0.05));
       const t = age / life;
       const width = Math.max(0.11 * (1 - 0.5 * t), (Math.hypot(nowPos.x - cam[0], nowPos.y - cam[1], nowPos.z - cam[2]) * 0.0025) / zoom);
@@ -378,7 +379,7 @@ const ringGeometry = new THREE.CircleGeometry(1, 96);
 export const GoldGlowBurst: React.FC<{ t: number; at: V3; cam: number[]; afterglow?: { trajectory: (secBeforeImpact: number) => V3; trailSec: number }; scale?: number }> = ({ t, at, cam, afterglow, scale = 1 }) => {
   const materials = mats();
   const sparks = useMemo(() => {
-    const rand = rng(6361);
+    const rand = mulberry32(6361);
     return Array.from({ length: 64 }, () => {
       const angle = rand() * Math.PI * 2;
       const up = 0.15 + rand() * 0.85;

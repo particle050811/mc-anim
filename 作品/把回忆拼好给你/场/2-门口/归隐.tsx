@@ -8,7 +8,6 @@
 // 分寸都在 归隐参数.ts、现实/楼下布局.ts、纸花.ts；她每一帧的样子在 归隐她.ts。调色、质感的分层同 时差分屏.tsx。
 // 用法：段里 <归隐画面 帧={歌曲帧} 种子={歌曲帧} 叠层={歌词} />。
 import type React from 'react';
-import { clamp01, rad } from '@engine/anim/anim.ts';
 import { DISPLAY } from '@engine/model/物品贴图.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
@@ -54,6 +53,7 @@ import {
   fadeEnd,
   downstairsFraming,
 } from './归隐参数.ts';
+import { rad, clamp01, lerp } from '@engine/core/数学.ts';
 
 const events = mainCutEvents;
 const segWindow = segmentWindow('2-归隐');
@@ -187,11 +187,10 @@ export const RetreatPicture: React.FC<RetreatPictureProps> = ({ 帧: frame, outl
   const withGrade = (t: Grade, content: React.ReactNode) => (withPost ? <FilmPost grade={gradeOnly(t)}>{content}</FilmPost> : content);
   // 整页质感：分屏时两边的暗角、颗粒取平均，合屏时插到她那边的（合屏到位那一帧同 2-摇铃 的一层整片后期）
   const k = mergeProgress(sec);
-  const 插 = (a: number, b: number) => a + (b - a) * k;
   const finishGrade: Grade = {
     ...neutralGrade,
-    暗角: 插((palette.现实.grade.暗角 + leftTone.grade.暗角) / 2, leftTone.grade.暗角),
-    颗粒: 插((palette.现实.grade.颗粒 + leftTone.grade.颗粒) / 2, leftTone.grade.颗粒),
+    暗角: lerp((palette.现实.grade.暗角 + leftTone.grade.暗角) / 2, leftTone.grade.暗角, k),
+    颗粒: lerp((palette.现实.grade.颗粒 + leftTone.grade.颗粒) / 2, leftTone.grade.颗粒, k),
   };
   const pageView = (
     <div style={{ position: 'absolute', inset: 0, background: '#000' }}>

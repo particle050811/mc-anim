@@ -3,11 +3,13 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { nearYaw } from '../../6-4-1/古城戏.ts';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
-import { elevationDeg, gameSec, groundZ, lerp, roarAnimSec, ss, yawFromTo } from './公用.ts';
+import { elevationDeg, gameSec, groundZ, roarAnimSec, yawFromTo } from './公用.ts';
 import { huangLeaps, landT } from './跳.ts';
 import { lastTick, leanedPoint, shieldBreakT, shieldState, shieldSwingTs, tickSec, wardenAt, wardenLean } from './监守者路.ts';
 import { horseSpawnPos, horseState, huangPanPos, liuXinzhongPos } from './位置.ts';
 import { chargeDelays, swingTs, vexCount, vexDeathTs, vexTrackAt } from './恼鬼.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+
 // 看谁：拍恼鬼时看最近那只冲过来的；其余时候按戏看人
 const nearestVex = (t: number): V3 | undefined => {
   const wardenPos = wardenAt(t).p;
@@ -83,7 +85,7 @@ export const wardenState = (t: number) => {
   const lookPt = wardenLookAt(t);
   const headYawRel = Math.max(-40, Math.min(40, nearYaw(0, yawFromTo(track.p, lookPt) - yaw)));
   const headPitchRel = Math.max(-40, Math.min(20, -(elevationDeg([track.p[0], track.p[1], track.p[2] + 2.6], lookPt)) * 0.8));
-  const turnIn = t < timeline.wardenTurnHeadT ? 0 : ss((t - timeline.wardenTurnHeadT) / 0.25);
+  const turnIn = t < timeline.wardenTurnHeadT ? 0 : smoothstep01((t - timeline.wardenTurnHeadT) / 0.25);
   return {
     p: track.p,
     entityYaw: yaw + 180,

@@ -98,58 +98,21 @@ describe('数学正本自身', () => {
 });
 
 describe('数学正本和旧副本对得上', () => {
-  const triples = [[0, 10, 0.25], [2, -4, 0.5], [1, 1, 0.3], [-3, 5, 1.5], [5, 7, -0.5]];
-  it('lerp', () => {
-    sameOutputs(M.lerp, copyFn('作品/应力转动/场/6-古城/6-4-1/编排.ts', 'lerp'), triples);
-    sameOutputs(M.lerp, copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', 'lerp'), triples);
-    sameOutputs(M.lerp, copyFn('engine/三渲二/调子.ts', 'lerpNumber'), triples);
-  });
-  it('lerpV（三维副本）', () => {
-    const argsList = [[[0, 1, 2], [10, -1, 4], 0.25], [[1, 2, 3], [3, 2, 1], 1.5]];
-    sameOutputs(M.lerpV, copyFn('作品/应力转动/地点/边城/6-3-8/编排/工具.ts', 'lerp3'), argsList);
-    sameOutputs(M.lerpV, copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', 'lerpVec3'), argsList);
-  });
-  it('clamp01', () => {
-    const argsList = gridPoints(-1, 2, 12).map((x) => [x]);
-    sameOutputs(M.clamp01, copyFn('engine/anim/anim.ts', 'clamp01'), argsList);
-    sameOutputs(M.clamp01, copyFn('库/角色/魔法酒狐动作.ts', 'clamp01'), argsList);
-  });
-  it('smoothstep01：0～1 里和 ss、缓、smooth01 一样（有的副本不夹 t）', () => {
-    sameOutputs(M.smoothstep01, copyFn('作品/应力转动/场/6-古城/6-4-1/编排.ts', 'ss'), unitGrid);
+  // 逐字等价的副本已换成 import 正本（11-15 清理），这里只留还在的、和正本有差别的副本
+  it('smoothstep01：0～1 里和不夹 t 的副本一样', () => {
     sameOutputs(M.smoothstep01, copyFn('作品/把回忆拼好给你/场/2-门口/归隐她.ts', 'smoothstep'), unitGrid);
-    sameOutputs(M.smoothstep01, copyFn('库/特效/气流.tsx', 'smooth01'), unitGrid);
     sameOutputs(M.smoothstep01, copyFn('engine/light/大气/云.ts', 'cubicSmooth'), unitGrid);
   });
-  it('smoothstep、smootherstep01、linearstep', () => {
-    const argsList = gridPoints(-0.5, 1.5, 16).map((x) => [0.2, 0.9, x]);
-    sameOutputs(M.smoothstep, copyFn('engine/light/暮色光照.tsx', 'smoothstep'), argsList);
-    sameOutputs(M.linearstep, copyFn('engine/light/大气/云.ts', 'linearStep'), argsList);
-    sameOutputs(M.smootherstep01, copyFn('engine/flight/真实飞行.ts', 'smootherstep'), unitGrid);
-  });
-  it('hermite：同参数顺序的、把回忆的 埃尔米特（切线按帧给、另传段长）', () => {
-    const argsList = [[0, 1, 2, 0, 0.3], [1, -2, 4, 3, 0.75], [5, 0, -1, 0, 0.5]];
-    sameOutputs(M.hermite, copyFn('engine/flight/真实飞行/弹簧.ts', 'hermite'), argsList);
+  it('hermite：把回忆的 埃尔米特（切线按帧给、另传段长）', () => {
     const hermiteFn = copyFn('作品/把回忆拼好给你/场/2-海上/编排.ts', 'hermite') as (...a: number[]) => number;
     for (const [p0, p1, m0, m1, h, s] of [[0, 2, 1, 0, 3, 0.3], [1, 4, -2, 3, 1.5, 0.75]] as const)
       expect(hermiteFn(p0, p1, m0, m1, h, s)).toBeCloseTo(M.hermite(p0, m0 * h, p1, m1 * h, s), 12);
   });
-  it('rad、deg、mod', () => {
-    sameOutputs(M.rad, copyFn('engine/anim/anim.ts', 'rad'), [[0], [90], [-45], [33.3]]);
-    sameOutputs(M.deg, copyFn('作品/应力转动/场/6-暮色森林/一镜到底/航线求解.ts', 'deg'), [[0], [Math.PI], [-1]]);
-    sameOutputs(M.mod, copyFn('作品/应力转动/地点/边城/布局/共用.ts', 'mod'), [[-1, 4], [5, 4], [-9, 4], [3.5, 2]]);
-  });
-  it('mulberry32：engine/model/parts.tsx 的 rng、边城的 mulberry（| 0 存状态）出的序列一样', () => {
+  it('mulberry32：边城的 mulberry（| 0 存状态）出的序列一样', () => {
     for (const seed of [0, 1, 42, 123456789, -5, 2 ** 32 - 1]) {
-      for (const legacyFn of [copyFn('engine/model/parts.tsx', 'rng'), copyFn('作品/应力转动/地点/边城/布局/共用.ts', 'mulberry')]) {
-        const a = M.mulberry32(seed);
-        const b = (legacyFn as (s: number) => () => number)(seed);
-        for (let i = 0; i < 50; i++) expect(b()).toBe(a());
-      }
+      const a = M.mulberry32(seed);
+      const b = (copyFn('作品/应力转动/地点/边城/布局/共用.ts', 'mulberry') as (s: number) => () => number)(seed);
+      for (let i = 0; i < 50; i++) expect(b()).toBe(a());
     }
-  });
-  it('randInt、pick', () => {
-    const argsList = [0, 0.37, 0.5, 0.999].map((u) => [() => u, -3, 3]);
-    sameOutputs(M.randInt, copyFn('作品/应力转动/地点/边城/布局/共用.ts', 'ri'), argsList);
-    sameOutputs(M.pick, copyFn('engine/model/parts.tsx', 'pick'), [0, 0.37, 0.999].map((u) => [() => u, ['a', 'b', 'c', 'd']]));
   });
 });

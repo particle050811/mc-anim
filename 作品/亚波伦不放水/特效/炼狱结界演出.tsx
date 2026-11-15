@@ -5,8 +5,7 @@
 // 这里借原版 flame、smoke 粒子（@库/特效/原版粒子.tsx）在史蒂夫身上往上冒，数量、范围、放大倍数都是随手取的，等正式做焚烧时换掉。
 // 放在场景坐标（Z 朝上）的 group 里；不画史蒂夫、不画糊屏（4-18 的火光糊屏是后期的事）。
 import React, { useMemo } from 'react';
-import { rng } from '@engine/model/parts.tsx';
-import { clamp } from '@engine/core/数学.ts';
+import { clamp, mulberry32 } from '@engine/core/数学.ts';
 import { RevelationCageWire } from '@库/特效/炼狱结界.tsx';
 import { type ParticleSpawn, VanillaParticles } from '@库/特效/原版粒子.tsx';
 import { RevelationCageGlow, type CageGlowAppearance } from './炼狱结界辉线.tsx';
@@ -14,7 +13,7 @@ import { cagePerformanceTimes, cagePerformanceStateAt, type CagePerformanceSetti
 
 /** 占位火的出生表：收缩焚烧这一段里越往后出得越密，出生在目标周围一个人大小的柱子里，往上飘。刻和演出的钟一致（秒 × 20） */
 const placeholderFlames = (settings: CagePerformanceSetting, particleCount: number): ParticleSpawn[] => {
-  const rand = rng(20261109);
+  const rand = mulberry32(20261109);
   const startTick = cagePerformanceTimes(settings).shrinkBurnSec * 20;
   const durTicks = settings.shrinkBurnSec * 20;
   return Array.from({ length: particleCount }, (_, i) => {

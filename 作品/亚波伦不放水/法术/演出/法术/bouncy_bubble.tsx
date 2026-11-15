@@ -5,7 +5,6 @@
 // 没做：爆的时候另有 8 颗 water_trail（程序画的带子）；爆的两声（BUBBLE_COLUMN_BUBBLE_POP、GENERIC_SPLASH）没进元数据（时刻随弹道变，元数据的 从命中 只能挂第一次碰到人）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
@@ -16,13 +15,14 @@ import { drip, dripClass } from '../零件/甲/原版粒子.ts';
 import meta, { bubblePath } from './bouncy_bubble.元.ts';
 import soulBoltModelData from 'asset:模型/法术/goety/SoulBoltModel';
 import bouncyBubblePng from 'asset:贴图/法术/goety/entity/projectiles/bouncy_bubble';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const soulBoltModel = getModel(soulBoltModelData, 'SoulBoltModel');
 
 const BouncyBubble: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
   const tick = sec * 20;
   const { trajectory, burstTick } = bubblePath(from, target);
-  const r = rng(seed * 13 + 1);
+  const r = mulberry32(seed * 13 + 1);
   const drops: ParticleBirth[] = eachTick(1, Math.min(tick, burstTick)).flatMap((n) => {
     const p = trajectory(n);
     return Array.from({ length: 3 + (n % 2) }, () => drip(r, n, [p[0] + (r() - 0.5) * 0.4, p[1] + (r() - 0.5) * 0.4, p[2] + r() * 0.4]));

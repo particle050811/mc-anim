@@ -4,7 +4,7 @@
 // 风系法术和每刻挨打的击退照样推得动他，所以原版站在里面不会被拽得一颤一颤（用户 11-11 问「他的位置应该也不停颤抖吧」，查了不抖，没加）。时钟接第 2 幕（现身后几秒）。
 // 时刻、她怎么飞、连放的出手表在 齐放拍.ts（纯计算，段.ts 排声音也引）；这里是要模型的：她的姿势和杖尖、盘、结界从杖尖扔出去、法术从真杖尖出、他每一刻的样子。
 // 都是 Agent 取的，用户没看过。
-import { clamp01, lerp as mix, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { clamp01, lerp, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { definePerformance, type TiltSettings, type PerformanceBar } from '../../角色/动作/亚波伦演出.ts';
 import { leanBackEnvelope, type SteveState } from '../../角色/史蒂夫反应.ts';
@@ -118,19 +118,19 @@ export const steveStateAt = (t: number): SteveState => {
   const prevSwing = swingTimes.filter((c) => c <= s).pop();
   const nextSwing = swingTimes.find((c) => c > s);
   const swingSec = prevSwing !== undefined && s - prevSwing < 0.5 ? s - prevSwing : undefined;
-  const raiseAmount = nextSwing !== undefined && nextSwing - s < raiseSwordSec ? unitSmoothStep(1 - (nextSwing - s) / raiseSwordSec) : 0;
-  const release = swingSec !== undefined ? 1 - unitSmoothStep(swingSec / 0.1) : 0;
+  const raiseAmount = nextSwing !== undefined && nextSwing - s < raiseSwordSec ? smoothstep01(1 - (nextSwing - s) / raiseSwordSec) : 0;
+  const release = swingSec !== undefined ? 1 - smoothstep01(swingSec / 0.1) : 0;
   // 每一剑身子往左右轮着拧一下，劈不同方向飞来的弹
-  const twist = swingTimes.reduce((sum, c, i) => sum + (i % 2 ? -18 : 18) * unitSmoothStep(clamp01((s - c + raiseSwordSec) / raiseSwordSec)) * (1 - unitSmoothStep(clamp01((s - c - 0.15) / 0.35))), 0);
+  const twist = swingTimes.reduce((sum, c, i) => sum + (i % 2 ? -18 : 18) * smoothstep01(clamp01((s - c + raiseSwordSec) / raiseSwordSec)) * (1 - smoothstep01(clamp01((s - c - 0.15) / 0.35))), 0);
   const nearestHit = takenHits.filter((h) => h.秒 <= s).pop();
   const hitReactSec = nearestHit && s - nearestHit.秒 < leanTiming.restoreSec ? s - nearestHit.秒 : undefined;
   const sinceHeavy = nearestHit && nearestHit.重 ? s - nearestHit.秒 : Infinity;
   const tilt = sinceHeavy < 0.6 ? 20 * Math.sin(Math.PI * clamp01(sinceHeavy / 0.6)) : 0;
   // 挣：罩严那一下想跑（脚抬不起来）、挨了重的腿软；钉住以后一直扎着马步晃，越到后面越使劲
   const cover = coverFull - actStart;
-  const coverStruggle = unitSmoothStep(clamp01((w - (cover - 0.05)) / 0.2)) * (1 - unitSmoothStep(clamp01((w - (cover + 0.7)) / 0.35)));
+  const coverStruggle = smoothstep01(clamp01((w - (cover - 0.05)) / 0.2)) * (1 - smoothstep01(clamp01((w - (cover + 0.7)) / 0.35)));
   const heavyStruggle = sinceHeavy < 0.6 ? 0.7 * (1 - sinceHeavy / 0.6) : 0;
-  const pinned = w >= cover ? mix(0.15, 0.45, clamp01((w - cover) / (deathTime - cover))) : 0;
+  const pinned = w >= cover ? lerp(0.15, 0.45, clamp01((w - cover) / (deathTime - cover))) : 0;
   const struggle = Math.min(1, Math.max(coverStruggle * 0.9, heavyStruggle, pinned));
   // 看：看着她（弹从她那边来）
   const lookAt: V3 = yaBoLunHead;

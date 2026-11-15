@@ -7,7 +7,7 @@
 // 录制是一次随机结果：每次放都是同一份，不认 种子。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { lerp as lerp } from '@engine/core/数学.ts';
+import { lerp } from '@engine/core/数学.ts';
 import type { Png } from '@engine/model/贴图.ts';
 import { interpPathPos, particlePath } from '@库/特效/粒子面片.tsx';
 import type { Vec3 } from '../接口.ts';

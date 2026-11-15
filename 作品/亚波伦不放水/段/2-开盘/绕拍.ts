@@ -5,7 +5,7 @@
 // 世界里 180 度，相对她也是 180 度（从右后到左前），缓起缓停。终点在她左手那一侧，接 2-04（他右前方，同在两人连线她左手这边）不跳轴。
 // 方位、半径、高低、焦距都是 Agent 取的，用户没看过。
 import type { Cam } from '@engine/core/机位.ts';
-import { lerp as mix, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { lerp, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { beats } from '../../场/1-台地/开盘时刻.ts';
 import { toWorldSec } from '../../场/1-台地/开盘拍.ts';
@@ -37,7 +37,7 @@ export const orbitBeat = {
 /** 绕完时（她刹在祭坛上空、朝着他）机位的世界方位（度，x 东为 0、逆时针）；绕之前的方位 = 它 − 方位 */
 const endAzimuth = orbitBeat.endRelDeg + yaBoLunFacing(actEnd) + 90;
 /** 这一刻机位的世界方位（度） */
-export const orbitAzimuth = (s: number) => endAzimuth - orbitBeat.azimuthDeg + orbitBeat.azimuthDeg * unitSmoothStep((s - orbitBeat.orbit[0]) / (orbitBeat.orbit[1] - orbitBeat.orbit[0]));
+export const orbitAzimuth = (s: number) => endAzimuth - orbitBeat.azimuthDeg + orbitBeat.azimuthDeg * smoothstep01((s - orbitBeat.orbit[0]) / (orbitBeat.orbit[1] - orbitBeat.orbit[0]));
 /** 这一刻机位在她面朝方向往她左手边偏几度（−180～180）：给测试看相对她转了多少 */
 export const orbitRel = (s: number) => ((((orbitAzimuth(s) - yaBoLunFacing(clock(s)) - 90 + 180) % 360) + 360) % 360) - 180;
 
@@ -46,14 +46,14 @@ export const orbitRig = (s: number): Cam => {
   const orbitCenter = yaBoLunChest(t);
   const angle = (orbitAzimuth(s) * Math.PI) / 180;
   // 开头齐胸、拍得到他从她脚底下冲过去；她往上蹿起来以后机位落到她下方
-  const dropT = unitSmoothStep((s - orbitBeat.起) / 0.45);
-  const easedT = unitSmoothStep((s - orbitBeat.orbit[0]) / (orbitBeat.orbit[1] - orbitBeat.orbit[0]));
-  const height = mix(mix(orbitBeat.高[0], orbitBeat.高[1], dropT), orbitBeat.高[2], easedT);
-  const radius = mix(orbitBeat.radiusList[0], orbitBeat.radiusList[1], unitSmoothStep((s - orbitBeat.起) / 0.8));
+  const dropT = smoothstep01((s - orbitBeat.起) / 0.45);
+  const easedT = smoothstep01((s - orbitBeat.orbit[0]) / (orbitBeat.orbit[1] - orbitBeat.orbit[0]));
+  const height = lerp(lerp(orbitBeat.高[0], orbitBeat.高[1], dropT), orbitBeat.高[2], easedT);
+  const radius = lerp(orbitBeat.radiusList[0], orbitBeat.radiusList[1], smoothstep01((s - orbitBeat.起) / 0.8));
   const pos: V3 = [orbitCenter[0] + Math.cos(angle) * radius, orbitCenter[1] + Math.sin(angle) * radius, orbitCenter[2] + height];
   // 机位不低于脚下的地 + 0.8 格
   const groundZ = altarPoint[2] + localGroundHeight(pos[0] - altarPoint[0], pos[1] - altarPoint[1]) + 0.8;
   if (pos[2] < groundZ) pos[2] = groundZ;
   // 取景一直对着她胸口上面一点（头顶的晋升之环不碰血条）：她往上蹿得快（0.2 片秒升 4 格），取景往他那边压一点她就顶到血条底下（八版 10.6～10.9 秒）
-  return { pos, tgt: [orbitCenter[0], orbitCenter[1], orbitCenter[2] + 0.35], lens: mix(orbitBeat.lensMm[0], orbitBeat.lensMm[1], easedT) };
+  return { pos, tgt: [orbitCenter[0], orbitCenter[1], orbitCenter[2] + 0.35], lens: lerp(orbitBeat.lensMm[0], orbitBeat.lensMm[1], easedT) };
 };

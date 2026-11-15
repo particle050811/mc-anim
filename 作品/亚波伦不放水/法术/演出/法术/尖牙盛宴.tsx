@@ -3,7 +3,6 @@
 // - 每 20 刻（SpellResult）：每个敌人脚下一颗尖牙（warmup 1，朝向 = 施法者指向敌人）；施法者眼睛处 10～44 颗 POOF。
 // - 片里按住 3 轮（游戏里按多久咬多久）。配灾厄法杖才有的外圈 5 颗牙、半径 3 的碎屑不做。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { gameHorizAngleRad } from '../零件/地面.ts';
@@ -11,6 +10,7 @@ import { Fang, fangCritSpawns, CritStar } from '../零件/尖牙.tsx';
 import { scatterInCircle, BlockDebris, type DebrisBirth } from '../零件/方块屑.tsx';
 import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
 import meta, { feastRounds, feastGapTicks } from './尖牙盛宴.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const holdTick = (feastRounds - 1) * feastGapTicks + 1;
 
@@ -22,7 +22,7 @@ const FangFeast: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
   for (let t = Math.max(0, Math.floor(tick) - 40); t <= Math.min(tick, holdTick); t++) for (let k = 0; k < 4; k++) debris.push(...scatterInCircle([target[0], target[1], target[2] + 0.25], 1, t, seed * 7919 + t * 4 + k));
   const smokeSpawns: ParticleSpawn[] = [];
   for (let round = 0; round < feastRounds; round++) {
-    const r = rng(seed * 53 + round);
+    const r = mulberry32(seed * 53 + round);
     const n = 10 + Math.floor(r() * 35);
     for (let i = 0; i < n; i++) smokeSpawns.push({ 种: 'poof', 刻: round * feastGapTicks, p: [from[0], from[1], from[2]], 种子: seed * 1000 + round * 50 + i });
   }

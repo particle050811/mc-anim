@@ -10,7 +10,6 @@
 // 没做：半径内的生物受击、雷雨天引下来的闪电、连锁电弧。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { ElectricArc } from '../零件/电弧.tsx';
@@ -19,6 +18,7 @@ import { GroundDecal } from '../零件/地面贴花.tsx';
 import { hexColor, faceMaterial } from '../零件/材质.ts';
 import meta, { releaseRingLifeTicks } from './释放.元.ts';
 import shockwavePng from 'asset:贴图/法术/goety/particle/shockwave';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const ringImg = png(shockwavePng);
 const electricYellow = hexColor(0xfef597);
@@ -33,7 +33,7 @@ const releaseSpell: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子:
   const fadeSeg = orbLifeTicks / 5;
   const orbAlpha = orbAge >= orbLifeTicks ? 0 : orbAge < fadeSeg ? 1 - (1 - orbAge / fadeSeg) ** 4 : (1 - Math.min(1, (orbAge - fadeSeg) / fadeSeg)) ** 3;
   const orbScale = orbSize * (0.5 + 0.5 * Math.sin(((orbAge / orbLifeTicks) * Math.PI) / 2));
-  const r = rng(seed * 7919 + 13);
+  const r = mulberry32(seed * 7919 + 13);
   const jitter = () => Math.floor(r() * 9) - 4;
   const arcs = Array.from({ length: 16 }, (): Vec3 => {
     // 游戏坐标的 (x, y, z) 偏移 → 场景 (x, −z, y)

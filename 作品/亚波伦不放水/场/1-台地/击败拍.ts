@@ -3,7 +3,7 @@
 // 所以本幕只剩一镜：七版 5-03（她收盘、一下俯冲落地滑停、低头看），机位、她的走位和姿势一帧不改，照七版的钟取；
 // 死亡界面盖在上面，他一死（第 4 幕最后一刻 = 本幕第 0 秒）东西照原版死亡掉落从他身上撒出去。
 // 七版的钟：本幕第 s 秒 = 七版第 5 幕第 七版五三 + s 秒。她的位置、浮动、待机动画都照七版的钟走，第 2 幕改长改短这里也不变（第 4 幕末她停在 第五幕起位，下面核对）。
-import { clamp01, lerp as mix, lerpV, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { clamp01, lerp, lerpV, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { steveDropCount, deathDropTrack } from '../../角色/史蒂夫掉落轨迹.ts';
 import { terracePoint } from './布局.ts';
@@ -79,7 +79,7 @@ const mixVec3 = (a: V3, b: V3, u: number) => lerpV(a, b, u) as V3;
 /** 她的脚底（七版的编排钟） */
 export const v7Pos = (τ: number): V3 => {
   const s = v7ActElapsed(τ);
-  if (s < rev7DescendStart) return mixVec3(dashTo, driftTo, unitSmoothStep((s - v7DashStopSec) / (rev7DescendStart - v7DashStopSec)));
+  if (s < rev7DescendStart) return mixVec3(dashTo, driftTo, smoothstep01((s - v7DashStopSec) / (rev7DescendStart - v7DashStopSec)));
   const landTime = rev7DescendStart + yaBoLunBeats.descendSec;
   if (s < landTime) {
     const u = (s - rev7DescendStart) / yaBoLunBeats.descendSec;
@@ -108,6 +108,6 @@ const itemClear = 1.2;
 // ── 死亡界面的光标（GUI 像素，界面 640 × 360，幕内秒）：打开时原版把鼠标放在窗口正中；20 刻后按钮能按，移到「重生」上，幕末前点下去 ──
 export const cursorMove = { 起: [320, 180] as const, 到: [326, 170] as const, moveStart: 1.1, moveSec: 0.35, 点: 1.9 };
 export const cursorAt = (actSec: number): readonly [number, number] => {
-  const u = unitSmoothStep(clamp01((actSec - cursorMove.moveStart) / cursorMove.moveSec));
-  return [mix(cursorMove.起[0], cursorMove.到[0], u), mix(cursorMove.起[1], cursorMove.到[1], u)];
+  const u = smoothstep01(clamp01((actSec - cursorMove.moveStart) / cursorMove.moveSec));
+  return [lerp(cursorMove.起[0], cursorMove.到[0], u), lerp(cursorMove.起[1], cursorMove.到[1], u)];
 };

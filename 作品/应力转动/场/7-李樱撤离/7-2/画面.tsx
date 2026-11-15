@@ -12,11 +12,12 @@ import { SculkSensor } from '@库/特效/幽匿感测体.tsx';
 import { VibrationSignal } from '@库/特效/振动粒子.tsx';
 import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import { VanillaParticles } from '@库/特效/原版粒子.tsx';
-import { AncientCity4xCanvas, type Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { SceneActors } from '../../../地点/古城4x/7-1/画面.tsx';
 import * as geom from './几何.ts';
 import * as play from './戏.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 网格里画死的感测体藏掉、换成会抖的（同 6-4-2/规矩.tsx 的 HIDE）
 export const HIDE: number[][] = geom.sensors.flatMap(([x, y, z]) => {

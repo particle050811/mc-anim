@@ -6,7 +6,6 @@
 // 没做：每颗每刻 25% 掉一粒 DRAGON_FLAME_DROP 火星；落地的 BIG_SOUL_FIRE_GROUND 地火粒子；「周围随机点火」（在方块上放火）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { sub } from '../零件/弹道.ts';
@@ -20,6 +19,7 @@ import bigSoulFire5Png from 'asset:贴图/法术/goety/particle/big_soul_fire_5'
 import bigSoulFire6Png from 'asset:贴图/法术/goety/particle/big_soul_fire_6';
 import bigSoulFire7Png from 'asset:贴图/法术/goety/particle/big_soul_fire_7';
 import bigSoulFire8Png from 'asset:贴图/法术/goety/particle/big_soul_fire_8';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const animFrames = [bigSoulFire1Png, bigSoulFire2Png, bigSoulFire3Png, bigSoulFire4Png, bigSoulFire5Png, bigSoulFire6Png, bigSoulFire7Png, bigSoulFire8Png].map(png);
 const FlameBreath: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
@@ -28,7 +28,7 @@ const FlameBreath: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: 
   const dir = sub([target[0], target[1], target[2] + 0.9], from);
   const spawns: BreathBirth[] = [];
   for (let n = Math.max(0, Math.floor(tick) - fireBreathParticleLifeTicks); n <= Math.min(Math.floor(tick), fireBreathDurTicks - 1); n++)
-    for (const spawn of scatterDragonBreath(from, dir, 10, 0.28, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(rng(spawn.种子 + 9)()) * 3 });
+    for (const spawn of scatterDragonBreath(from, dir, 10, 0.28, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(mulberry32(spawn.种子 + 9)()) * 3 });
   return <BreathParticles 类={breathKind} spawns={spawns} 秒={sec} />;
 };
 

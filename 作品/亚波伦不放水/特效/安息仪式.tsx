@@ -12,10 +12,10 @@
 import { useThree } from '@react-three/fiber';
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { clamp01, lerp as mix, rad as toRad } from '@engine/core/数学.ts';
+import { clamp01, lerp, rad, mulberry32 } from '@engine/core/数学.ts';
 import { BlockModel, type BlockModelData } from '@engine/model/方块模型.tsx';
 import { BlockAssembly } from '@engine/model/方块拼搭.tsx';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
 import { ItemSprite, type ItemLayer } from '@engine/model/物品贴图.tsx';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { GlintItem } from '@库/物品/附魔物品.tsx';
@@ -95,7 +95,7 @@ const offeringImage = (name: OfferingName): Png => (name === '炼狱魔典' ? pn
 
 /** 平面物品摆成掉落物的样子（item/generated 的 ground：缩到 0.5；往上 2/16 已经算在位置里），物品空间 Y 朝上 → 场景 Z 朝上 */
 const GroundItem: React.FC<{ spinDeg: number; 缩放?: number; children: React.ReactNode }> = ({ spinDeg, 缩放: scale = 1, children }) => (
-  <group rotation={[0, 0, toRad(spinDeg)]} scale={0.5 * scale}>
+  <group rotation={[0, 0, rad(spinDeg)]} scale={0.5 * scale}>
     <group rotation={[Math.PI / 2, 0, 0]}>{children}</group>
   </group>
 );
@@ -109,7 +109,7 @@ export const Offering: React.FC<{ 名: OfferingName; 秒: number; 缩放?: numbe
   if (name === '炼狱魔典') {
     // BlockModel 已经是 Z 朝上；模型的 ground 变换和 item/generated 一样（往上 2、缩 0.5）
     return (
-      <group rotation={[0, 0, toRad(spinDeg)]} scale={0.5 * scale}>
+      <group rotation={[0, 0, rad(spinDeg)]} scale={0.5 * scale}>
         <BlockModel data={grimoireModelData as unknown as BlockModelData} atlas={png(grimoirePng)} part="书" />
       </group>
     );
@@ -153,10 +153,10 @@ const fireGeometry = (() => {
     // 一片：四个角的方块像素坐标（游戏轴 x、y 上、z 南）+ uv（v = 0 是贴图顶）
     type Quad = { 角: [number, number, number][]; flipped: boolean; 图: 0 | 1 };
     const pieces: Quad[] = [];
-    const scale = 1 / Math.cos(toRad(22.5));
+    const scale = 1 / Math.cos(rad(22.5));
     const rotatePoint = (p: [number, number, number], axis: 'x' | 'z', angleDeg: number): [number, number, number] => {
       const [x, y, z] = [p[0] - 8, p[1] - 8, p[2] - 8];
-      const [c, s] = [Math.cos(toRad(angleDeg)), Math.sin(toRad(angleDeg))];
+      const [c, s] = [Math.cos(rad(angleDeg)), Math.sin(rad(angleDeg))];
       // rescale：垂直转轴的两个方向放大 1/cos
       const r: [number, number, number] = axis === 'x' ? [x, (y * c - z * s) * scale, (y * s + z * c) * scale] : [(x * c - y * s) * scale, (x * s + y * c) * scale, z];
       return [r[0] + 8, r[1] + 8, r[2] + 8];
@@ -271,7 +271,7 @@ type Debris = { sacrificeIndex: number; 刻: number; 种子: number };
 const debrisState = (c: Debris, currentTick: number): Particle | null => {
   const τ = currentTick - c.刻;
   if (τ < 0) return null;
-  const rand = rng(c.种子 * 2654435761 + 31);
+  const rand = mulberry32(c.种子 * 2654435761 + 31);
   const lifetime = Math.floor(4 / (rand() * 0.9 + 0.1));
   const ageTicks = Math.floor(τ);
   if (ageTicks >= lifetime) return null;
@@ -302,7 +302,7 @@ const debrisState = (c: Debris, currentTick: number): Particle | null => {
     v = [v[0] * 0.98, v[1] * 0.98, v[2] * 0.98];
   }
   const f = stopped ? 1 : τ - ageTicks;
-  return { p: [mix(prev[0], p[0], f), mix(prev[1], p[1], f), mix(prev[2], p[2], f)], half: halfSize, uv: [u / 4, w / 4, (u + 1) / 4, (w + 1) / 4], color: [1, 1, 1] };
+  return { p: [lerp(prev[0], p[0], f), lerp(prev[1], p[1], f), lerp(prev[2], p[2], f)], half: halfSize, uv: [u / 4, w / 4, (u + 1) / 4, (w + 1) / 4], color: [1, 1, 1] };
 };
 
 /** 起、止：喷碎屑的时间段（秒）。每件祭品一批（各用自己的图标当贴图） */
@@ -342,9 +342,9 @@ const LightPillar: React.FC<{ ageTick: number }> = ({ ageTick }) => {
   if (ageTick < 0 || ageTick >= game.pillarTicks) return null;
   const halfLifeTicks = game.pillarTicks / 2;
   const progress = -(Math.cos(Math.PI * (1 - Math.abs(ageTick - halfLifeTicks) / halfLifeTicks)) - 1) / 2;
-  const d = mix((ageTick < halfLifeTicks ? 0.75 : 0.9) * 0.5, 0.325, progress);
+  const d = lerp((ageTick < halfLifeTicks ? 0.75 : 0.9) * 0.5, 0.325, progress);
   const h = 5 * progress;
-  const bottomAlpha = mix(0.5, 1, progress);
+  const bottomAlpha = lerp(0.5, 1, progress);
   const red = new THREE.Color(0xaa0000);
   const pos = geo.getAttribute('position') as THREE.BufferAttribute;
   const col = geo.getAttribute('color') as THREE.BufferAttribute;
@@ -392,9 +392,9 @@ export const SummonCircle: React.FC<{ ageTick: number; 半边: number; ringHeigh
   const g = squareGeometry();
   return (
     <group>
-      <mesh geometry={g} material={circleMaterial} position={[0, 0, 0.001]} rotation={[0, 0, toRad(90 + ageTick)]} scale={halfSide} />
-      <mesh geometry={g} material={ringMaterial} position={[0, 0, ringHeight[0]]} rotation={[0, 0, toRad(90 - ageTick / 2)]} scale={halfSide} />
-      <mesh geometry={g} material={ringMaterial} position={[0, 0, ringHeight[1]]} rotation={[0, 0, toRad(90 + ageTick / 2)]} scale={halfSide} />
+      <mesh geometry={g} material={circleMaterial} position={[0, 0, 0.001]} rotation={[0, 0, rad(90 + ageTick)]} scale={halfSide} />
+      <mesh geometry={g} material={ringMaterial} position={[0, 0, ringHeight[0]]} rotation={[0, 0, rad(90 - ageTick / 2)]} scale={halfSide} />
+      <mesh geometry={g} material={ringMaterial} position={[0, 0, ringHeight[1]]} rotation={[0, 0, rad(90 + ageTick / 2)]} scale={halfSide} />
     </group>
   );
 };
@@ -416,7 +416,7 @@ const gatherWindPos = (c: GatherWind, ageTicks: number): V3 => {
   return [radius * Math.cos(yaw), -radius * Math.sin(yaw), (Math.sin((clampedAge - 1) * 0.2) + 1) * 0.5 * game.entityHeight];
 };
 const layoutGatherWind = (progressTickAt: (realTick: number) => number, endTick: number, seed: number): GatherWind[] => {
-  const rand = rng(seed * 48271 + 7);
+  const rand = mulberry32(seed * 48271 + 7);
   const windTable: GatherWind[] = [];
   for (let tick = 1; tick <= endTick; tick++) {
     const progress = clamp01(progressTickAt(tick) / game.transitionTicks);
@@ -425,7 +425,7 @@ const layoutGatherWind = (progressTickAt: (realTick: number) => number, endTick:
     windTable.push({
       spawnTick: tick,
       采样: 8 + Math.floor(progress * 7),
-      宽: mix(0.3, 0.9, progress),
+      宽: lerp(0.3, 0.9, progress),
       dx: (rand() * 3 + 2) * (rand() < 0.5 ? 1 : -1),
       dz: (rand() * 3 + 2) * (rand() < 0.5 ? 1 : -1),
       isRed: Math.floor(rand() * 3) === 0,
@@ -460,7 +460,7 @@ const GatherWindBands: React.FC<{ 表: GatherWind[]; realTick: number }> = ({ �
       // 第 k 个采样点 = k 刻前的位置（刻间插值）
       const pointAt = (k: number): V3 => {
         const [a, b] = [gatherWindPos(c, ageTicks - k), gatherWindPos(c, ageTicks - k + 1)];
-        return [mix(a[0], b[0], f), mix(a[1], b[1], f), mix(a[2], b[2], f)];
+        return [lerp(a[0], b[0], f), lerp(a[1], b[1], f), lerp(a[2], b[2], f)];
       };
       const [r, g, b] = c.isRed ? [red.r, red.g, red.b] : [0, 0, 0];
       let cursor = pointAt(0);
@@ -494,7 +494,7 @@ type SmokePuff = { 刻: number; p: V3; 种子: number };
 const smokeState = (c: SmokePuff, currentTick: number): Particle | null => {
   const τ = currentTick - c.刻;
   if (τ < 0) return null;
-  const rand = rng(c.种子 * 2654435761 + 53);
+  const rand = mulberry32(c.种子 * 2654435761 + 53);
   let x = (rand() * 2 - 1) * 0.4;
   let y = (rand() * 2 - 1) * 0.4;
   let z = (rand() * 2 - 1) * 0.4;
@@ -516,7 +516,7 @@ const smokeState = (c: SmokePuff, currentTick: number): Particle | null => {
   }
   const f = τ - ageTicks;
   const frame = 7 - Math.min(7, Math.floor((ageTicks * 7) / lifetime));
-  return { p: [mix(prev[0], p[0], f), mix(prev[1], p[1], f), mix(prev[2], p[2], f)], half: halfSize, uv: vanillaParticleAtlas.uv[`generic_${frame}`]!, color: [grayShade, grayShade, grayShade] };
+  return { p: [lerp(prev[0], p[0], f), lerp(prev[1], p[1], f), lerp(prev[2], p[2], f)], half: halfSize, uv: vanillaParticleAtlas.uv[`generic_${frame}`]!, color: [grayShade, grayShade, grayShade] };
 };
 
 // 灵魂火自己的烟：原版 BaseFireBlock.animateTick（客户端每刻在玩家四周随机抽方块调用，抽法 = 三个轴各「两个 0～14 的随机整数之差」，每刻 667 次），
@@ -533,7 +533,7 @@ const soulFireSmokeTable = (startTick: number, endTick: number, seed: number): S
   for (const [fi, flameCell] of soulFireCells.entries()) {
     const chance = flameSmokeRate(flameCell);
     for (let tick = startTick; tick <= endTick; tick++) {
-      const rand = rng(seed * 1000003 + (tick + 1000) * 31 + fi * 7 + 5);
+      const rand = mulberry32(seed * 1000003 + (tick + 1000) * 31 + fi * 7 + 5);
       if (rand() >= chance) continue; // 率 < 1：一刻最多被抽中一次
       for (let n = 0; n < 3; n++) smokeTable.push({ 刻: tick, p: [flameCell[0] + rand() - 0.5, flameCell[1] + rand() - 0.5, flameCell[2] + 0.5 + rand() * 0.5], 种子: seed * 4001 + tick * 17 + fi * 3 + n });
     }
@@ -566,7 +566,7 @@ export const RestRitualPerformance: React.FC<RestRitualPerformanceProps> = ({ �
   const appearTick = plan.appear * 20;
   const transitionTotalTicks = appearTick - finishTick;
   const { gatherWindTable, smokeTable, flameSpawns } = useMemo(() => {
-    const rand = rng(seed * 69621 + 3);
+    const rand = mulberry32(seed * 69621 + 3);
     const progressTickAt = (realTick: number) => {
       const progressSec = plan.完成 + realTick / 20;
       // 和 过渡进度刻 同一个映射（这里不引函数是为了让表只跟方案的四个时刻走）
@@ -600,7 +600,7 @@ export const RestRitualPerformance: React.FC<RestRitualPerformanceProps> = ({ �
       {s.offeringAlpha > 0 &&
         offerings.map((offering, i) => {
           const p = offeringPos(i);
-          const pos: V3 = [mix(p[0], activatorPos[0], unsacrificed), mix(p[1], activatorPos[1], unsacrificed), mix(p[2], activatorPos[2], unsacrificed) + Math.sin(unsacrificed * Math.PI) * 0.8];
+          const pos: V3 = [lerp(p[0], activatorPos[0], unsacrificed), lerp(p[1], activatorPos[1], unsacrificed), lerp(p[2], activatorPos[2], unsacrificed) + Math.sin(unsacrificed * Math.PI) * 0.8];
           return (
             <group key={offering.名} position={pos}>
               <Offering 名={offering.名} 秒={sec} 缩放={s.offeringAlpha} />

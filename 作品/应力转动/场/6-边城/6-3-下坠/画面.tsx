@@ -9,7 +9,6 @@ import React, { useMemo } from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { type BedrockModel, BedrockModelView } from '@engine/model/基岩模型.tsx';
 import { png } from '@engine/model/贴图.ts';
@@ -46,6 +45,8 @@ import { HeldCompass } from '../6-3-1/指南针.tsx';
 import { JiuhuHandCompass } from '../../../角色/九胡持指南针.tsx';
 import scopeUri from 'asset:贴图/镜头/6-3-下坠/望远镜视野';
 import { mouthAt } from '../../../配音/口型.ts';
+import { rad } from '@engine/core/数学.ts';
+
 const jiuhuRaw = jiuHuModelData as unknown as object;
 
 const JIUHU_MODEL = { ...jiuhuRaw, texture: png(jiuhuSkin) } as unknown as BedrockModel;

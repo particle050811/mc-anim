@@ -1,13 +1,13 @@
 // 第 9–11 句的声音（原版音效，作品资产表里的）：种树苗、三发烟花的发射、炸开、噼啪，「绽」那一下的相机咔哒。
 // 都按歌曲帧排，跨段的由 声音/跨段音效.ts 切成每段一截；三段的 段.ts 用 本段音效 取自己那几截。纯数据。
 // 文件长度是 ffprobe 量的；火箭、炸开的文件开头就起音。咔哒照 场/1-隐世之境一楼/参数.ts 的 咔哒声（起音 0.13 秒，同一个文件）。
-import { clamp01 } from '@engine/anim/anim.ts';
 import type { AssetCue } from '@engine/段/段定义.ts';
 import { fireworkSounds } from '@库/特效/烟花.ts';
 import { fps, toSongFrame } from '../../分镜/时间.ts';
 import { events as mainCutEvents } from '../../分镜/正片第9至11句.ts';
 import { clipToSegment, type SongSound } from '../../声音/跨段音效.ts';
 import { fireworks, soundGain, plantSec } from './门口之夜参数.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 export const doorNightSfxAssets = {
   种树苗: '音效/把回忆拼好给你/block.cherry_sapling.place.1',

@@ -9,12 +9,12 @@
 // - 每个部件实体的模型原点在脚底上方 1.501 格（`TFPartRenderer`），所以头、脖子方块中心比算出的位置高 1.5 格。
 // 坐标：原点在九头蛇脚底中心，Z 朝上，正面朝 -Y（实体坐标，同 贴图方盒.tsx），单位格。
 import React from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/九头蛇';
 import skin from 'asset:贴图/角色/九头蛇';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODELS = (raw as unknown as { models: Record<'身体' | '头' | '颈', EntityModelData> }).models;
 const TEX = png(skin);

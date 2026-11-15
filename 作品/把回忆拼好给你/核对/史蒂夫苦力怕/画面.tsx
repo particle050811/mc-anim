@@ -17,6 +17,7 @@ import { CREEPER, Creeper, type CreeperPose, creeperLookAt } from '@库/生物/�
 import { CAKE } from '@库/物品/蛋糕.tsx';
 import { views, type StevePosePreset, type CreeperPosePreset } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 const originPos: V3 = [0, 0, 0];
 const stepWide = 0; // cos(limbSwing × 0.6662) = 1：腿迈到最开
@@ -56,13 +57,11 @@ const cameraRigs: { 名: string; viewDir: V3 }[] = [
 const pixelsPerCell = 128;
 const lookAt: V3 = [0, 0, 1];
 const panel = { 宽: 416, 高: 600, top: 80, 间: 8 };
-
-const toThree = ([x, y, z]: V3) => new THREE.Vector3(x, z, -y);
 const OrthoRig: React.FC<{ viewDir: V3; pxPerCell?: number }> = ({ viewDir, pxPerCell = pixelsPerCell }) => {
   const { camera } = useThree();
   const cam = camera as THREE.OrthographicCamera;
-  const target = toThree(lookAt);
-  cam.position.copy(target.clone().add(toThree(viewDir).normalize().multiplyScalar(30)));
+  const target = sceneToThree(lookAt);
+  cam.position.copy(target.clone().add(sceneToThree(viewDir).normalize().multiplyScalar(30)));
   cam.up.set(0, 1, 0);
   cam.lookAt(target);
   cam.zoom = pxPerCell;

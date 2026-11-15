@@ -22,6 +22,7 @@ import generic4Png from 'asset:贴图/特效/粒子/generic_4';
 import generic5Png from 'asset:贴图/特效/粒子/generic_5';
 import generic6Png from 'asset:贴图/特效/粒子/generic_6';
 import generic7Png from 'asset:贴图/特效/粒子/generic_7';
+import { clamp, smoothstep01 } from '../../engine/core/数学.ts';
 
 const GENERIC = pngDir(assetDir({ './generic_0.png': generic0Png, './generic_1.png': generic1Png, './generic_2.png': generic2Png, './generic_3.png': generic3Png, './generic_4.png': generic4Png, './generic_5.png': generic5Png, './generic_6.png': generic6Png, './generic_7.png': generic7Png }));
 
@@ -55,11 +56,6 @@ const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const len = (a: V3) => Math.hypot(a[0], a[1], a[2]);
 const norm = (a: V3): V3 => mul(a, 1 / (len(a) || 1));
-const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
-const smooth01 = (x: number) => {
-  const c = clamp(x, 0, 1);
-  return c * c * (3 - 2 * c);
-};
 const perp = (axis: V3, ref: V3 = [0, 0, 1]): V3 => {
   let normal = sub(ref, mul(axis, dot(ref, axis)));
   if (len(normal) < 1e-4) normal = sub([1, 0, 0], mul(axis, axis[0]));
@@ -150,7 +146,7 @@ export const directBlowDuct = (opts: DirectBlowParams): AirFlowParticle[] => {
     const dd = dist + (dNext - dist) * (age - wholeTicks);
     let alpha = airFlowConsts.opacity * opacity;
     if (fadeFrom !== undefined) {
-      const fade = 1 - smooth01((dd - fadeFrom * Mn) / (Mn + 0.25 - fadeFrom * Mn));
+      const fade = 1 - smoothstep01((dd - fadeFrom * Mn) / (Mn + 0.25 - fadeFrom * Mn));
       if (slotRand(seed, k, 5) >= clamp((Mn + 1 - dd) / (Mn + 1), 0, 1) * fade) continue;
       alpha *= 0.5 + 0.5 * fade;
     }

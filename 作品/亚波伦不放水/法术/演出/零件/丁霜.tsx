@@ -5,10 +5,10 @@
 //   第一颗速度 (高斯(0, 0.02), 高斯(1.0, 0.04), 高斯(0, 0.02))，第二颗位置再偏 高斯(0, 0.1)、速度 (高斯(0, 0.02) + 高斯(0, 0.1), 高斯(0.4, 0.04), 高斯(0, 0.02))；粒子再各加 ±0.05 随机速度。
 import React from 'react';
 import * as THREE from 'three';
-import { rng } from '@engine/model/parts.tsx';
 import type { Vec3 } from '../接口.ts';
 import { gaussian } from './甲/共用.ts';
 import type { ParticleBirth } from './粒子.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const topColor = [0.5568628, 0.77254903, 0.9882353] as const;
 const bottomColor = [0.721, 0.741, 0.725] as const;
@@ -65,7 +65,7 @@ export const FrostWall: React.FC<{ 位: Vec3; radius: number; 刻: number }> = (
 
 /** 一次边界粒子环的出生表（场景坐标）。位 = 施法者脚底 */
 export const frostRingSpawns = (seed: number, pos: Vec3, radius: number, launchTick: number): ParticleBirth[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const frostSpawns: ParticleBirth[] = [];
   const jitter = () => (r() * 2 - 1) * 0.05;
   const gaussAround = (mean: number, diffScale: number) => mean + gaussian(r) * diffScale;

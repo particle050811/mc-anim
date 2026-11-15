@@ -5,11 +5,11 @@
 import React from 'react';
 import type { Png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { rng } from '@engine/model/parts.tsx';
 import { interpPathPos, particleInitVel, particlePath, ParticlePhysics } from '@库/特效/粒子面片.tsx';
 import type { Vec3 } from '../接口.ts';
 import { facePatch, QuadGroup, sequenceFrame, type QuadItem } from './面片.tsx';
 import type { Blend, RgbColor } from './材质.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export { deathPoof, serverSendParticles, VanillaParticles, type ParticleKind, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
 export { particleInitVel as vanillaParticleInitSpeed };
@@ -49,7 +49,7 @@ export interface ParticleBirth {
 
 /** ServerLevel.sendParticles(类型, x,y,z, 数量, dx,dy,dz, 速度)：数量 > 0 时每颗 位置 = 中心 + 高斯 × 散布，速度 = 高斯 × 速度（场景坐标：散布第三个分量是竖直） */
 export const scatterServer = (center: Vec3, count: number, spread: Vec3, speed: number, seed: number): { 位: Vec3; 速: Vec3 }[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
   return Array.from({ length: count }, () => ({
     位: [center[0] + gaussian() * spread[0], center[1] + gaussian() * spread[1], center[2] + gaussian() * spread[2]] as const,
@@ -64,7 +64,7 @@ export const particleQuad = (particleType: ParticleClass, spawn: ParticleBirth, 
   const trail = particlePath([...spawn.位] as V3, [...(spawn.速 ?? [0, 0, 0])] as V3, Math.ceil(age) + 1, new ParticlePhysics(particleType.重力 ?? 0, particleType.摩擦 ?? 0.98, particleType.ground));
   // 游戏画的是上一刻到这一刻之间（interpPathPos 的 tau 从 1 起才开始动），年龄 0～1 之间粒子还在出生位置
   const pos = interpPathPos(trail, age);
-  const image = particleType.选帧 === '随机' ? particleType.帧[Math.floor(rng((spawn.种子 ?? 0) ^ 0x5bd1e995)() * particleType.帧.length)]! : sequenceFrame(particleType.帧, (Math.floor(age) * particleType.帧.length) / spawn.寿命);
+  const image = particleType.选帧 === '随机' ? particleType.帧[Math.floor(mulberry32((spawn.种子 ?? 0) ^ 0x5bd1e995)() * particleType.帧.length)]! : sequenceFrame(particleType.帧, (Math.floor(age) * particleType.帧.length) / spawn.寿命);
   return [image, facePatch(pos, spawn.radius * (particleType.大小?.(age, spawn.寿命) ?? 1), spawn.色 ?? particleType.色, undefined, particleType.opacity?.(age, spawn.寿命) ?? 1, spawn.angleRad)];
 };
 

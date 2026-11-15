@@ -2,9 +2,10 @@
 import { maxBankDeg } from '@engine/flight/飞行路径.ts';
 import { realFlight, type Anchor } from '@engine/flight/真实飞行.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { sub, len, ss, rad, D0, ORDER, placeName } from './输入表.ts';
+import { sub, len, D0, ORDER, placeName } from './输入表.ts';
 import { samples, NP, TAB_S, bisect, routeLength, plannedPos, speedAt, headingRate, markDist, routeDist } from './航线.ts';
 import { totalFrames, physicalTime, frameAtDist } from './时钟.ts';
+import { smoothstep01, rad } from '@engine/core/数学.ts';
 
 // ---------- 规划航线的方位、内倾 ----------
 // 方位按表里的 ψ（解析的，展开成连续）
@@ -34,7 +35,7 @@ export const plannedBank = (dist: number) => {
     weightSum += weight;
   }
   // 起点（接 6-1-3 末帧，那里不横滚）前 0.5 秒从 0 渐上来：窗口往前看，起飞马上就拐的话第 0 帧已经压了 0.6°
-  return maxBankDeg * Math.tanh((0.3 * (sum / weightSum)) / 50) * ss(dist / (3 * windowM));
+  return maxBankDeg * Math.tanh((0.3 * (sum / weightSum)) / 50) * smoothstep01(dist / (3 * windowM));
 };
 
 // ---------- 真实飞行 ----------

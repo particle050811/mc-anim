@@ -8,7 +8,6 @@
 // 施法者自己的旋转冲刺姿势没做（那是施法者身上的东西）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { addVec, sub, scaleVec, unitVec, vecLength } from '../零件/弹道.ts';
@@ -44,6 +43,7 @@ import circleExplode8Png from 'asset:贴图/法术/goety/particle/circle_explode
 import bigElectric1Png from 'asset:贴图/法术/goety/particle/big_electric_1';
 import bigElectric2Png from 'asset:贴图/法术/goety/particle/big_electric_2';
 import bigElectric3Png from 'asset:贴图/法术/goety/particle/big_electric_3';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const yellow = hexColor(0xffff55);
 const sparkParticleClass: ParticleClass = { 帧: [electric1Png,electric2Png,electric3Png,electric4Png,electric5Png,electric6Png,electric7Png,electric8Png,electric9Png,electric10Png,electric11Png,electric12Png,electric13Png,electric14Png,electric15Png,electric16Png].map(png), 选帧: '按年龄', 混合: '半透明', 摩擦: 0.96 };
@@ -56,7 +56,7 @@ const dash: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target,
   const dir = unitVec(sub(end, from));
   const chargeTicks = Math.min(20, Math.max(1, Math.ceil((vecLength(sub(end, from)) - 1.5) / 2.5)));
   const dashPos = (k: number): Vec3 => addVec(from, scaleVec(dir, 2.5 * Math.min(k, chargeTicks)));
-  const r = rng(seed * 7919 + 29);
+  const r = mulberry32(seed * 7919 + 29);
   const winds: WindBirth[] = Array.from({ length: 4 }, (_, i) => ({ 刻: 0, originAt: (k) => addVec(dashPos(k), [0, 0, -0.5]), 宽: 2, 高: (2 * r() - 1) * 0.5, 种子: seed * 1009 + i }));
   const bigSparks: ParticleBirth[] = [];
   const sparks: ParticleBirth[] = [];

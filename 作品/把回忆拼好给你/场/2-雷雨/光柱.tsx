@@ -8,8 +8,8 @@
 // 不用 iCenter 这个属性名：光影层按它认粒子（是粒子材质），会被拿去当泛光源。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { easeOutQuad as easeOutQuad } from '@engine/core/数学.ts';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { easeOutQuad, mulberry32 } from '@engine/core/数学.ts';
+import { type V3 } from '@engine/model/parts.tsx';
 import { type Particle, ParticleQuads } from '@库/特效/粒子面片.tsx';
 import { vanillaParticleAtlas } from '@库/特效/原版粒子.tsx';
 import * as params from './参数.ts';
@@ -307,7 +307,7 @@ const particleColor = (k: number, whiteAmt: number): RGB3 => {
 };
 type FloatPoint = { 角: number; radius: number; 速: number; 转: number; lifetime: number; gap: number; offset: number; 高: number; 大: number; 种: number };
 const floatPoints: FloatPoint[] = (() => {
-  const r = rng(7301);
+  const r = mulberry32(7301);
   return Array.from({ length: pillarLight.lightDot.数 }, () => ({
     角: r() * Math.PI * 2,
     radius: 0.2 + r() * 0.95,
@@ -323,7 +323,7 @@ const floatPoints: FloatPoint[] = (() => {
 })();
 type Spark = { dir: V3; 速: number; lifetime: number; 大: number; 高: number; delay: number; 种: number };
 const buildBursts = (seed: number, count: number, vertRange: number): Spark[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   return Array.from({ length: count }, () => {
     const angle = r() * Math.PI * 2;
     const elevation = (r() - 0.25) * vertRange;
@@ -342,7 +342,7 @@ const startSparks = buildBursts(911, 22, 1.2);
 const breakSparks = buildBursts(912, 28, 1.4);
 const scatterSparks = buildBursts(913, 70, 0.9);
 const runeStates = (() => {
-  const r = rng(5507);
+  const r = mulberry32(5507);
   return Array.from({ length: pillarLight.rune.数 }, () => ({ 角: r() * Math.PI * 2, lifetime: 0.8 + r() * 0.5, gap: r() * 0.3, timeOffset: r() * 0.9, 字: Math.floor(r() * 26), brightness: 0.6 + r() * 0.4, 弯: (r() - 0.5) * 1.6 }));
 })();
 /** 带阻力飞出去走了多远：速度按 e^(−k t) 减 */

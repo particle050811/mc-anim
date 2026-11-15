@@ -6,7 +6,6 @@
 // 没做：落地时原版 SNOWFLAKE 粒子、目标身上的冰冻效果。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { sub } from '../零件/弹道.ts';
@@ -18,6 +17,7 @@ import frost3Png from 'asset:贴图/法术/goety/particle/frost_3';
 import frost4Png from 'asset:贴图/法术/goety/particle/frost_4';
 import frost5Png from 'asset:贴图/法术/goety/particle/frost_5';
 import frost6Png from 'asset:贴图/法术/goety/particle/frost_6';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const [frostFrame1, frostFrame2, frostFrame3, frostFrame4, frostFrame5, frostFrame6] = [frost1Png, frost2Png, frost3Png, frost4Png, frost5Png, frost6Png].map(png);
 const FrostBreath: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
@@ -35,7 +35,7 @@ const FrostBreath: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: 
   const dir = sub([target[0], target[1], target[2] + 0.9], from);
   const spawns: BreathBirth[] = [];
   for (let n = Math.max(0, Math.floor(tick) - frostBreathParticleLifeTicks); n <= Math.min(Math.floor(tick), frostBreathDurTicks - 1); n++)
-    for (const spawn of scatterDragonBreath(from, dir, 10, 0.44, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(rng(spawn.种子 + 9)()) * 3 * 0.5 });
+    for (const spawn of scatterDragonBreath(from, dir, 10, 0.44, n, seed)) spawns.push({ 刻: n, ...spawn, radius: initialRadius(mulberry32(spawn.种子 + 9)()) * 3 * 0.5 });
   return <BreathParticles 类={breathKind} spawns={spawns} 秒={sec} />;
 };
 

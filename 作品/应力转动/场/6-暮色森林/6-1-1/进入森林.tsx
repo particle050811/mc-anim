@@ -9,8 +9,7 @@ import { useThree } from '@react-three/fiber';
 import React, { useMemo } from 'react';
 import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
-import { Box, rng, type V3 } from '@engine/model/parts.tsx';
+import { Box, type V3 } from '@engine/model/parts.tsx';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { LiYing } from '@库/角色/李樱.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
@@ -33,6 +32,9 @@ import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
+import { rad, mulberry32 } from '@engine/core/数学.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { lensToFov } from '@engine/core/机位.ts';
 
 export const ENTER_FOREST_FRAMES = choreo.END - 1;
 
@@ -42,8 +44,6 @@ const lineCues = [{ id: '6-1-1-李樱-出征暮色', 帧: 4 }];
 const liYingMouth = (choreoFrame: number) => mouthAt(lineCues, '李樱', choreoFrame - 1);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
-
 const Rig: React.FC<{ f: number }> = ({ f: frame }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
@@ -53,12 +53,12 @@ const Rig: React.FC<{ f: number }> = ({ f: frame }) => {
   const worldCam = tf ? { ...c0, pos: courtyardToWorld(c0.pos), tgt: courtyardToWorld(c0.tgt) } : { ...c0, pos: islandToWorld(c0.pos), tgt: islandToWorld(c0.tgt) };
   const cam = camera as THREE.PerspectiveCamera;
   // 焦距按 36mm 横向画幅换算，three.js 用竖向视角
-  cam.fov = (2 * Math.atan(18 / worldCam.lens / (size.width / size.height)) * 180) / Math.PI;
+  cam.fov = lensToFov(worldCam.lens, size.width / size.height);
   cam.near = 0.05;
   cam.far = tf ? 2000 : 60000;
-  cam.position.copy(toThree(worldCam.pos));
+  cam.position.copy(sceneToThree(worldCam.pos));
   cam.up.set(0, 1, 0);
-  cam.lookAt(toThree(worldCam.tgt));
+  cam.lookAt(sceneToThree(worldCam.tgt));
   cam.updateProjectionMatrix();
   return null;
 };
@@ -101,7 +101,7 @@ const WaterGlow: React.FC<{ alpha: number }> = ({ alpha }) => {
 
 const Splash: React.FC<{ sec: number; at: V3 }> = ({ sec, at }) => {
   if (sec < 0 || sec > 0.6) return null;
-  const rand = rng(17);
+  const rand = mulberry32(17);
   return (
     <>
       {Array.from({ length: 12 }, (_, k) => {

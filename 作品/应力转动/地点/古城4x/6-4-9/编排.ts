@@ -9,10 +9,11 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { WARDEN } from '@库/生物/监守者.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { bowTextureFor } from '@库/物品/弓.tsx';
-import type { Cam } from '../6-4-1/古城画面.tsx';
 import { nearYaw } from '../6-4-1/古城戏.ts';
 import * as K648 from '../6-4-8/编排.ts';
-import { bump, crouchBy, elevationTo, endSpots, hopTo, huangAimPose, lerp, liuGuardPose, rampIn, ss, stepLeg, yawToWarden } from '../6-4-8/二人.ts';
+import { bump, crouchBy, elevationTo, endSpots, hopTo, huangAimPose, liuGuardPose, rampIn, stepLeg, yawToWarden } from '../6-4-8/二人.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export const FPS = K648.FPS;
 
@@ -125,7 +126,7 @@ const feetAt = (who: '刘' | '黄', f: number): V3 => {
   for (const s of list) {
     if (f >= s.b) feet = s.to;
     else if (f > s.a) {
-      const k = ss((f - s.a) / (s.b - s.a));
+      const k = smoothstep01((f - s.a) / (s.b - s.a));
       feet = [lerp(s.from[0], s.to[0], k), lerp(s.from[1], s.to[1], k), s.to[2]];
     }
   }
@@ -138,13 +139,13 @@ const stepOverlay = (pose: FigurePose, who: '刘' | '黄', f: number) => {
 // 第 0 帧脚底在 `hopTo`，姿势零件、秒都和 6-4-8 一样，所以第 0 帧 = 6-4-8 末帧
 const yawAt = (feet: number[]) => nearYaw(K648.pursuers(frame648).刘.yaw ?? 0, yawToWarden(feet));
 // 顶着吼声：吼声出来那刻（全景第 0 帧）一缩、压低，撑到吼声弱下去（吼叫第 3 秒，已在 7-1-1 里）再慢慢起来。本段以后的帧 7-1-1 开头也拿来用
-const braceAt = (f: number) => ss(rampIn(f, wideStart, wideStart + 4)) * (1 - ss(rampIn(f, roarStart + 2.9 * FPS, roarStart + 3.9 * FPS)));
+const braceAt = (f: number) => smoothstep01(rampIn(f, wideStart, wideStart + 4)) * (1 - smoothstep01(rampIn(f, roarStart + 2.9 * FPS, roarStart + 3.9 * FPS)));
 // 吼声刚到那一下往后一晃（0.3 秒）
 const blastAt = (f: number) => bump(f, wideStart, wideStart + 0.3 * FPS);
 // 接 7-1-1：全景里头摆正（7-1/戏/刘心忠.ts 开头头偏按 0 起）
-const handoffAt = (f: number) => ss(rampIn(f, wideStart + 4, END - 3));
+const handoffAt = (f: number) => smoothstep01(rampIn(f, wideStart + 4, END - 3));
 // 刘心忠摆架势：挪到一半把杖往前上方再送一截、身子拧过来一点（压上去），之后一直这么举着
-const liuPressAt = (f: number) => ss(rampIn(f, 40, 62));
+const liuPressAt = (f: number) => smoothstep01(rampIn(f, 40, 62));
 export const liuPoseAt = (f: number): FigurePose => {
   const s = sec648(f);
   const feet = feetAt('刘', f);
@@ -161,7 +162,7 @@ export const liuPoseAt = (f: number): FigurePose => {
   return pose;
 };
 // 拉弓 0～1：6-4-8 落地以后拉满，吼声里撑不住松回（贴图回到没拉，箭还搭着、弓还举着），全景里松完，接 7-1-1 开头
-export const bowDrawAt = (f: number) => 1 - ss(rampIn(f, wideStart + 0.2 * FPS, wideStart + 0.8 * FPS));
+export const bowDrawAt = (f: number) => 1 - smoothstep01(rampIn(f, wideStart + 0.2 * FPS, wideStart + 0.8 * FPS));
 export const bowAt = (f: number) => bowTextureFor(bowDrawAt(f) > 0.05, bowDrawAt(f));
 // 7-1-1 开头黄叛的 headPitch（照 7-1/戏/黄叛.ts 站着那段：−(看监守者离地 1.5 那一点的仰角) × 0.7），末帧对上
 const huangHandoffHeadPitch = (feet: number[]) => -Math.max(-35, Math.min(20, elevationTo(feet, 1.5))) * 0.7;

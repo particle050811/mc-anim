@@ -5,6 +5,7 @@ import { useThree } from '@react-three/fiber';
 import type React from 'react';
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 /** 原版默认视角（选项里的 FOV 70，竖直方向；16:9 下横向约 102°） */
 export const vanillaFov = 70;
@@ -12,9 +13,6 @@ export const vanillaFov = 70;
 export const vanillaEyeHeight = 1.62;
 /** 原版的近裁剪面（格） */
 export const vanillaNearClip = 0.05;
-
-const toThree = ([x, y, z]: V3) => new THREE.Vector3(x, z, -y);
-
 /** 脚踩在 脚 这一点的玩家，眼睛在哪 */
 export const eyePos = (feet: V3, eyeHeight = vanillaEyeHeight): V3 => [feet[0], feet[1], feet[2] + eyeHeight];
 
@@ -26,9 +24,9 @@ export const FirstPersonRig: React.FC<{ 眼: V3; 看: V3; fov?: number; near?: n
   cam.fov = fov;
   cam.near = near;
   cam.far = far;
-  cam.position.copy(toThree(eye));
+  cam.position.copy(sceneToThree(eye));
   cam.up.set(0, 1, 0);
-  cam.lookAt(toThree(lookAt));
+  cam.lookAt(sceneToThree(lookAt));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
   return null;

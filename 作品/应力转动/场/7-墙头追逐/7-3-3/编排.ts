@@ -5,14 +5,15 @@
 //   镜 2 塔顶东南、顺着击退的方向（音爆线在马后面）：马被冲得横滑到镜头跟前，他稳住、拨马朝东北一跃。
 //   镜 3 墙外大道南沿、落点西南（切在跃到半空）：马落到大道，从镜头跟前往东冲走，切。
 import type { V3 } from '@engine/model/parts.tsx';
-import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { addOffset } from '../../../地点/古城4x/7-1/机位.ts';
-import { lerpV, ss } from '../../../地点/古城4x/7-1/戏/公用.ts';
 import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';
 import { buildCameraRig } from '../../../地点/古城4x/7-1/变速段.tsx';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
 import { G4 } from '../../../地点/古城4x.tsx';
+import { smoothstep01, lerpV } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
+
 export const segmentId = '7-3-3' as const;
 export const FPS = timeline.FPS;
 
@@ -51,7 +52,7 @@ const between = (from: V3, a: V3, b: V3, w: number): V3 => {
   const db = unit([b[0] - from[0], b[1] - from[1], b[2] - from[2]]);
   return addOffset(from, lerpV(da, db, w));
 };
-const shot1Pos = (t: number) => lerpV(addOffset(horseAtFire, [-2.6, 14.0, -1.2]), addOffset(horseAtFire, [-2.6, 12.6, -1.5]), ss((t - cuts[0]) / (cuts[1] - cuts[0])));
+const shot1Pos = (t: number) => lerpV(addOffset(horseAtFire, [-2.6, 14.0, -1.2]), addOffset(horseAtFire, [-2.6, 12.6, -1.5]), smoothstep01((t - cuts[0]) / (cuts[1] - cuts[0])));
 const shots: { 起: number; cam: (t: number) => Cam }[] = [
   {
     起: cuts[0],

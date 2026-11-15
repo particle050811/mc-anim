@@ -5,6 +5,8 @@
 // 眨眼取 pre_parallel3，尾巴取 pre_parallel2。TLM 的控制器顺序是 pre_parallel 在前、main（sit 在里面）在后，
 // 后来的控制器把同一根骨骼的转角、位置、缩放整个盖掉（只有名字以 parallel_ 开头的控制器转角是叠加的，见 AnimationProcessor 反汇编），
 // 所以坐着时 Tail2 被 sit 盖成 −15°、不摆；眼皮、眉毛 sit 没碰，照常眨。pre_parallel2 的 blend_weight 这个版本的 geckolib 不读，不管。
+import { clamp01 } from '../../engine/core/数学.ts';
+import { mergeSkeleton } from './骨骼表.ts';
 
 /** 和 engine/model/基岩模型.tsx 的 BonePose 同形（数值约定同基岩动画文件）；这里不 import 它，免得本文件带上 three */
 export type SkeletonPose = { rot?: number[]; pos?: number[]; scale?: number | number[] };
@@ -48,8 +50,6 @@ const sample = (K: readonly (readonly [number, number])[], t: number): number =>
   const [t2, p2] = K[i]!;
   return catmullRom((t - t1) / (t2 - t1), K[Math.max(0, i - 2)]![1], p1, p2, K[Math.min(K.length - 1, i + 1)]![1]);
 };
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-
 /**
  * 游戏里自动眨眼在第 秒 秒闭了多少：0 睁 ～ 1 闭，按 6.8333 秒循环。
  * 坑：catmullrom 在「闭、闭」两个关键帧之间会冲过头（眼皮 scale 到 −0.125，眼皮翻过来），所以夹在 [0, 1]
@@ -104,14 +104,6 @@ export const magicalWineFoxTail = (sec: number, stancePose: '坐' | '站' = '坐
   }
   return Object.fromEntries(Object.entries(boneTable).map(([k, rot]) => [k, { rot }]));
 };
-
-/** 几层骨骼表按字段合并：同一根骨骼，后面的层只盖它给了的 rot、pos、scale（难过的眉毛转角和眨眼的眉毛位置要同时生效） */
-const merge = (...boneTables: SkeletonTable[]): SkeletonTable => {
-  const merged: SkeletonTable = {};
-  for (const layer of boneTables) for (const [k, v] of Object.entries(layer)) merged[k] = { ...merged[k], ...v };
-  return merged;
-};
-
 /**
  * 表情、眨眼、尾巴合成一层，叠在坐姿表后面。三样都不给时是空表，和没有这一层一样。
  * 表情：不给就照姿势表（坐姿表里是微笑）。秒：驱动尾巴和自动眨眼，不给就是静止姿势（尾巴不摆、不自动眨眼）。
@@ -119,7 +111,7 @@ const merge = (...boneTables: SkeletonTable[]): SkeletonTable => {
  */
 export const magicalWineFoxMotion = (o: { stancePose: '坐' | '站'; expression?: MagicalWineFoxExpression; blink: number | 'auto'; 秒?: number }): SkeletonTable => {
   const eyeClose = o.blink !== 'auto' ? o.blink : o.秒 === undefined ? undefined : magicalWineFoxBlink(o.秒);
-  return merge(
+  return mergeSkeleton(
     o.秒 === undefined ? {} : magicalWineFoxTail(o.秒, o.stancePose),
     o.expression === undefined ? {} : magicalWineFoxFace(o.expression),
     eyeClose === undefined ? {} : magicalWineFoxBlinkBones(eyeClose),

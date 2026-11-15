@@ -1,6 +1,6 @@
 // 坐标.ts、机位.ts 里要用到 three 对象的部分（10-30 整体优化方案 0.6）：toThree 的正本 场景到three、aimCamera 的正本 摆相机、投到画面。
 // 那两个文件是纯模块（段.ts、时间线.ts 也能引），这里 import three，只给画面、渲染层用。坐标约定见 坐标.ts，机位约定见 机位.ts。
-// 副本差别：toThree 的 16 份都是 (x, z, −y)，参数有 V3 和 number[] 两种；aimCamera 的 roll 是 rotateZ(+roll)，作品/应力转动/地点/飞行镜头.tsx 是 rotateZ(−roll)（见 机位.ts）。
+// 副本差别：aimCamera 的 roll 是 rotateZ(+roll)，作品/应力转动/地点/飞行镜头.tsx 是 rotateZ(−roll)（见 机位.ts）。
 import * as THREE from 'three';
 import { lensToFov, type Cam, type PlaceCameraOptions } from './机位.ts';
 import { rad } from './数学.ts';

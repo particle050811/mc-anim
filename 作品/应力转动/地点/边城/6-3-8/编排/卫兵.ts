@@ -6,10 +6,11 @@ import pitSurfaceTable from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面'; //
 import { guardPositions, groundZ } from '../../6-3-下坠/编排.ts';
 import { LIMB_SWING_PER_CYCLE, RAMP_SEC, runLean, speedProfile } from '@库/角色/跑步.ts';
 import { chaseSpeed } from '../../../古城4x/布局/强者.ts';
-import { D2R, ss, lerp, lerp3, add, sub } from './工具.ts';
+import { D2R, add, sub } from './工具.ts';
 import { cues } from './时间线.ts';
 import { shaftMouth, yawFromTo, pitchTo } from './站位.ts';
 import { poolJump, vhForDrop, type PoolJump } from './落水.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 // ---------- 卫兵 ----------
 // 接 6-3-4：卫兵们举着望远镜追着天上的李樱（6-3-下坠/编排/卫兵.ts 的 `guardPoseAt`）。6-3-8 开头还举着望远镜对着坑上方的天——李樱一闪就砸进地里，人还没反应过来。
@@ -55,20 +56,20 @@ const guardStanding = (t: number, i: number): GuardPose => {
     walked = Math.min(1, Math.max(0, (t - walkStart) / walkSec)) * leanWalkDist;
     step = (walked / 0.2158) * 0.86; // 走路 limbSwingAmount 约 0.86（0.2158 × 4），步每刻加这么多
     stride = t > walkStart && t < walkStart + walkSec ? 0.86 * Math.min(1, (t - walkStart) / 0.15, (walkStart + walkSec - t) / 0.15) : 0;
-    crouch = ss((t - walkStart - walkSec - 0.05) / 0.12);
+    crouch = smoothstep01((t - walkStart - walkSec - 0.05) / 0.12);
   }
   const pos = sub(guardPositions[i], [0, walked, 0]);
   const feet = add(borderTownPos, pos);
   const bodyYaw = yawFromTo(feet, shaftMouth()) + 7 * jitter(i, 5);
   const pitPitch = -pitchTo(add(feet, [0, 0, 1.62 - 0.35 * crouch]), shaftMouth()) + 5 * jitter(i, 1) + 6 * crouch; // 正 = 低头；蹲着探身再多低一点
-  const scopeK = ss((t - reaction.lowerScope) / reaction.lowerScopeDur);
-  const headK = ss((t - reaction.lookDown) / reaction.lookDownDur);
+  const scopeK = smoothstep01((t - reaction.lowerScope) / reaction.lowerScopeDur);
+  const headK = smoothstep01((t - reaction.lookDown) / reaction.lookDownDur);
   let headYaw = (7 * jitter(i, 2) + 3 * Math.sin(t * (0.6 + 0.5 * jitter01(i, 3)) + i)) * headK;
   let headPitch = lerp(-skyPitch, pitPitch, headK);
   const lookTarget = headTurners[i];
   if (lookTarget !== undefined) {
     const glanceStart = reaction.lookDown + reaction.lookDownDur + 0.35 + 0.3 * jitter01(i, 10);
-    const k = ss((t - glanceStart) / 0.3) * (1 - ss((t - glanceStart - 1.1) / 0.4));
+    const k = smoothstep01((t - glanceStart) / 0.3) * (1 - smoothstep01((t - glanceStart - 1.1) / 0.4));
     const neighborYaw = yawFromTo(feet, guardFeet(lookTarget)) - bodyYaw; // 看邻居要转多少（相对身子）
     headYaw = lerp(headYaw, Math.max(-70, Math.min(70, neighborYaw)), k);
     headPitch = lerp(headPitch, 2, k);
@@ -105,14 +106,14 @@ const guardRunning = (t: number, i: number): GuardPose => {
   const elapsed = t - guardStartSec(i);
   const len = Math.hypot(to[0] - from[0], to[1] - from[1]);
   const dist = Math.min(runDistAt(elapsed), len);
-  const pos = lerp3(from, to, len > 0 ? dist / len : 1);
+  const pos = lerpV(from, to, len > 0 ? dist / len : 1);
   const heading = yawFromTo(from, to);
   const standing = guardStanding(t, i);
-  const k = ss(elapsed / 0.25);
+  const k = smoothstep01(elapsed / 0.25);
   const turnDelta = ((((heading - standing.bodyYaw) % 360) + 540) % 360) - 180;
   return {
     raiseSpyglass: 0, headPitch: lerp(standing.headPitch, 14, k), headYaw: standing.headYaw * (1 - k), bodyYaw: standing.bodyYaw + turnDelta * k, pos,
-    crouch: standing.crouch * (1 - ss(elapsed / 0.1)), limbSwing: standing.limbSwing + dist / 0.28, stride: k, capeLift: 40 * k, present: true,
+    crouch: standing.crouch * (1 - smoothstep01(elapsed / 0.1)), limbSwing: standing.limbSwing + dist / 0.28, stride: k, capeLift: 40 * k, present: true,
   };
 };
 // 离开内沿以后：空中往下看着水池，步子收住、披风被风掀起；水里蹚着走，披风湿着垂下；上岸、路上照跑
@@ -125,7 +126,7 @@ const guardInPool = (t: number, i: number): GuardPose => {
   const pace = Math.min(1, s.speed / sprintSpeed);
   const base = { raiseSpyglass: 0, headYaw: 0, bodyYaw: s.heading, pos: s.pos, crouch: 0, limbSwing, present: true };
   if (s.phase === '空中') {
-    const k = ss(sinceTakeoff / 0.4);
+    const k = smoothstep01(sinceTakeoff / 0.4);
     return { ...base, headPitch: lerp(14, 38, k), stride: lerp(1, 0.25, k), capeLift: lerp(40, 28, k) };
   }
   if (s.phase === '水里') return { ...base, headPitch: 12, stride: 0.25 + 0.6 * pace, capeLift: 0 };
@@ -155,7 +156,7 @@ const pointBack = (path: V3[], d: number): V3 => {
     const a = path[k - 1];
     const b = path[k];
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (left <= len || k === path.length - 1) return lerp3(a, b, len > 0 ? Math.min(1, left / len) : 0);
+    if (left <= len || k === path.length - 1) return lerpV(a, b, len > 0 ? Math.min(1, left / len) : 0);
     left -= len;
   }
   return path[0];
@@ -191,10 +192,10 @@ const guardAtPit = (t: number, i: number): GuardPose => {
   // 跑的方向：前后各看 0.8 米（拐弯不一下子拧过去）
   const runYaw = yawFromTo(pointBack(spot.path, run.dist + 0.8), pointBack(spot.path, run.dist - 0.8));
   const shaftYaw = yawFromTo([x, y, 0], center);
-  const stopK = ss((t - spot.arriveSec + 0.1) / 0.35);
+  const stopK = smoothstep01((t - spot.arriveSec + 0.1) / 0.35);
   const yawDelta = ((((shaftYaw - runYaw) % 360) + 540) % 360) - 180;
   const isNear = spot.r < 6.7; // 离井口近的蹲下探身
-  const crouch = isNear ? ss((t - spot.arriveSec - 0.35) / 0.12) : 0;
+  const crouch = isNear ? smoothstep01((t - spot.arriveSec - 0.35) / 0.12) : 0;
   const lookDown = Math.atan2(1.62, Math.max(spot.r - 2, 1)) / D2R + 10;
   return {
     raiseSpyglass: 0, headPitch: lerp(6, lookDown + 6 * jitter(i, 15), stopK) - lean, headYaw: 6 * jitter(i, 16) * stopK, bodyYaw: runYaw + yawDelta * stopK,

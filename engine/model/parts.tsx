@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { pick } from '../core/数学.ts';
 
 export type V3 = [number, number, number];
 
@@ -123,14 +124,3 @@ export const Instanced: React.FC<{ items: Inst[]; shadow?: boolean; mat?: THREE.
 };
 
 // 确定性随机数：每帧重算的场景必须每次得到同样的布局
-export const rng = (seed: number) => {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-export const pick = <Item,>(r: () => number, arr: readonly Item[]) => arr[Math.floor(r() * arr.length)];

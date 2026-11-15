@@ -2,10 +2,10 @@
 import { combineRoll } from '@engine/flight/真实飞行.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import * as castleChoreo from '../../6-1-9/编排.ts';
-import { ss, deg } from './输入表.ts';
 import { routeLength, speedAt, routeDist, T_ARRIVE } from './航线.ts';
 import { physicalTime } from './时钟.ts';
 import { plannedBank, positionAt, tangentAt, steerBank } from './真实航迹.ts';
+import { smoothstep01, deg } from '@engine/core/数学.ts';
 
 // ---------- 扫帚 ----------
 // 朝向（度，0 = 北，正 = 往左转）、俯仰（度，正 = 抬头），由偏移后的切线算；朝向连续（不跳 360）
@@ -53,7 +53,7 @@ const afterRelease = (τ: number, frame: number): BroomState => {
   return {
     位置: [endPos[0] + v0 * t[0] * fallT, endPos[1] + v0 * t[1] * fallT, z],
     facing: yawAt(routeLength),
-    pitch: castleChoreo.endPitch * (1 - ss(fallT / fallDur)),
+    pitch: castleChoreo.endPitch * (1 - smoothstep01(fallT / fallDur)),
     roll: 0,
     速度: τ < fallDur ? v0 : 0,
     s: routeLength,

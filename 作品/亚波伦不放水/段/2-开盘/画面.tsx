@@ -5,7 +5,7 @@
 // 拍他都从前方、侧前方（他脑后斜挂着晋升之环，从背后拍挡脸，11-11 看片意见），广角跟着动作，不震屏。镜头都是 Agent 摆的，用户没看过。
 import React from 'react';
 import type { Cam } from '@engine/core/机位.ts';
-import { lerp as mix, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { lerp, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { blendLayers } from '@engine/anim/基岩动画.ts';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
@@ -29,7 +29,7 @@ import soundUrl from './声音地址.生成.ts';
 
 const yaBoLunGeometry = GirlYaBoLunCreature.definition.模型 as Parameters<typeof hemYieldLeg>[0];
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [mix(a[0]!, b[0]!, k), mix(a[1]!, b[1]!, k), mix(a[2]!, b[2]!, k)];
+const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [lerp(a[0]!, b[0]!, k), lerp(a[1]!, b[1]!, k), lerp(a[2]!, b[2]!, k)];
 /** 段内片秒 → 编排的钟（世界秒） */
 const clock = (s: number) => actStart + toWorldSec(s);
 const steveChest = (t: number) => addVec(stevePos(t), [0, 0, 1.0]);
@@ -56,7 +56,7 @@ const shotTable: Shot[] = [
     const pathMid = lerpVec(steveChest(actStart), addVec(hoverFirst, [altar[0], altar[1], altar[2] + 1.1]), 0.55);
     const right: V3 = [firstDir[1], -firstDir[0], 0];
     const pos = addVec(addVec(pathMid, right, 6.2), [0, 0, 0.7]);
-    return { pos, tgt: lerpVec(pathMid, addVec(hoverFirst, [altar[0], altar[1], altar[2] + 1.1]), 0.3 * unitSmoothStep(k)), lens: 16 };
+    return { pos, tgt: lerpVec(pathMid, addVec(hoverFirst, [altar[0], altar[1], altar[2] + 1.1]), 0.3 * smoothstep01(k)), lens: 16 };
   }),
   // 2-02 两人西边、略高：她从烟里冒出来带着冲势往东南一飘、刹住转向他；他滑停在她北边几格、原地横着打转，转完蹲着一扭身回头、蓄剑，她往下一沉。他在画面左、她在右
   follow('2-02', cuts[1], cuts[2], (s) => {
@@ -73,7 +73,7 @@ const shotTable: Shot[] = [
     const t = clock(s);
     const [chest, eye] = [yaBoLunChest(t), steveEye(t)];
     const forward = dirTo(eye, chest);
-    const distFactor = mix(1, 0.85, k);
+    const distFactor = lerp(1, 0.85, k);
     const pos = addVec(addVec(addVec(eye, forward, 2.4 * distFactor), perpLeft(forward), -0.5 * distFactor), [0, 0, 0.9]);
     return { pos, tgt: addVec(eye, [0, 0, 0.1]), lens: 24 };
   }),

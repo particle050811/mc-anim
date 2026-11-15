@@ -10,7 +10,7 @@
 // 坐标：场景坐标（Z 朝上），单位格；时间：刻。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { DISPLAY, ItemDisplay, ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
@@ -18,6 +18,7 @@ import type { ParticleSpawn } from '../特效/原版粒子.tsx';
 import itemPng from 'asset:贴图/物品/杂项物品/火把箭';
 import torchRaw from 'asset:模型/物品/火把';
 import torchAtlas from 'asset:贴图/物品/火把';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const TORCH = torchRaw as unknown as BlockModelData;
 
@@ -39,7 +40,7 @@ export const TorchArrow: React.FC<{ p: V3; dir: V3 }> = ({ p: position, dir }) =
 
 // 飞行中冒的火：路径(刻) 给第 k 刻末的箭位置（场景），t0、t1 刻（t0 = 射出那一刻；出生 2 刻以后才冒）
 export const torchArrowFlames = (pathAt: (tick: number) => V3, t0: number, t1: number, seed: number): ParticleSpawn[] => {
-  const rand = rng(seed * 4099 + 7);
+  const rand = mulberry32(seed * 4099 + 7);
   const out: ParticleSpawn[] = [];
   for (let k = Math.ceil(t0) + 3; k <= t1; k++) {
     const prevPos = pathAt(k - 1);
@@ -86,7 +87,7 @@ export const torchTickChance = (offset: V3) => {
 
 // 火把冒的烟和火：t0～t1 刻，每刻按 概率 抽一次
 export const torchParticles = (flamePos: V3, chance: number, t0: number, t1: number, seed: number): ParticleSpawn[] => {
-  const rand = rng(seed * 5153 + 9);
+  const rand = mulberry32(seed * 5153 + 9);
   const out: ParticleSpawn[] = [];
   for (let k = Math.ceil(t0); k <= t1; k++) {
     if (rand() >= chance) continue;

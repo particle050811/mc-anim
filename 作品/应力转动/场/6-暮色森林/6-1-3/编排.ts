@@ -18,6 +18,7 @@ import * as choreo612 from '../6-1-2/编排.ts';
 import { officialLiying, officialLineStart, officialJiuhuLineStart, officialFrames } from '../6-1-2/动作改进.ts';
 import { frameInSegment } from '../../../配乐/配乐音轨.tsx';
 import lineTable from 'asset:数据/配音/台词表';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 export const segmentId = '6-1-3';
 // 6-1-2 末帧的状态：九胡跑到路线上的哪儿（t = 传送后的帧数）、李樱收刀站定的姿势、宝箱
@@ -108,11 +109,6 @@ export const beats = {
 export const musicDelay = beats.takeoff - frameInSegment(segmentId, [5, 1]);
 export const songSec = (f: number) => (f - musicDelay) / 24;
 export const FRAMES = beats.末帧 + 1;
-
-const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerp3 = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t);
-
 // 6-1-2 末帧的李樱（正式版）：站定后的呼吸、头左右看、重心挪动接着用 6-1-2/动作改进.ts 的 `微动`；回身、唤出、跳上扫帚都叠在它上面
 const LY_END: FigurePose = officialLiying(choreo612.END - 1).pose;
 const standingPose = (f: number): FigurePose => officialLiying(choreo612.END - 1 + Math.max(0, f)).pose;
@@ -154,14 +150,14 @@ export const broom = (frame: number): BroomState => {
   const appear = frame < beats.summon ? 0 : sample([[beats.summon, 0], [beats.summon + 6, 1.15], [beats.summon + 10, 1]], frame);
   if (frame >= beats.takeoff) {
     // 扫帚头：4 帧内翘起来、跟上航迹角（笔直往上冲时也竖起来，最多 88°，封顶太低会像斜着往上滑），之后跟着航迹角压下来，末帧和速度方向一致；人往前压着贴住扫帚（见 `riders` 的前倾）
-    const pitch = frame < beats.takeoff + 4 ? lerp(6, Math.min(88, gammaAt(frame)), ss((frame - beats.takeoff) / 4)) : Math.min(88, gammaAt(frame));
+    const pitch = frame < beats.takeoff + 4 ? lerp(6, Math.min(88, gammaAt(frame)), smoothstep01((frame - beats.takeoff) / 4)) : Math.min(88, gammaAt(frame));
     return { pos: flightAt(frame), yaw: takeoffYaw, pitch: pitch, roll: 0, appear, speed: speedAt(frame) };
   }
   const bob = 0.05 * Math.sin((2 * Math.PI * frame) / 40);
-  let z = HOVER + bob + 0.25 * ss((frame - beats.seated) / 30);
+  let z = HOVER + bob + 0.25 * smoothstep01((frame - beats.seated) / 30);
   let pitch = 0;
   if (frame >= beats.sinkStart) {
-    const k = ss((frame - beats.sinkStart) / 6);
+    const k = smoothstep01((frame - beats.sinkStart) / 6);
     z = lerp(z, Z_SINK, k) + 0.035 * Math.sin(frame * 2.7) * k;
     pitch = 6 * k;
   }
@@ -179,11 +175,11 @@ export const jiuhuOnFoot = (frame: number): JiuhuOnFoot => {
   if (frame >= beats.jiuHuUp) return null;
   const maze = choreo612.jiuhuMaze(T0 + frame);
   const mazePose = maze.pose;
-  const stopped = ss((frame - JH_ARRIVE + 4) / 8);
+  const stopped = smoothstep01((frame - JH_ARRIVE + 4) / 8);
   const pant = Math.sin((2 * Math.PI * 2.2 * frame) / 24);
-  const look = ss((frame - JH_ARRIVE - 14) / 10);
+  const look = smoothstep01((frame - JH_ARRIVE - 14) / 10);
   const flinch = Math.sin(Math.PI * Math.min(1, Math.max(0, (frame - beats.summon) / 10)));
-  const hopK = ss((frame - (beats.jiuHuUp - 8)) / 8);
+  const hopK = smoothstep01((frame - (beats.jiuHuUp - 8)) / 8);
   const crouch = frame > beats.jiuHuUp - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.jiuHuUp - 12)) / 6)) : 0;
   const hopZ = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (frame > beats.jiuHuUp - 8 ? 1 : 0);
   const [x, y] = mazePose.loc;
@@ -218,9 +214,9 @@ const YAW_RIDE = (() => {
 })();
 export const liyingOnFoot = (frame: number): FigurePose | null => {
   if (frame >= beats.liYingMount) return null;
-  const turn = ss((frame - beats.liyingTurn + 2) / 12);
-  const summon = ss((frame - (beats.summon - 7)) / 7) * (1 - ss((frame - (beats.summon + 12)) / 10));
-  const hopK = ss((frame - (beats.liYingMount - 8)) / 8);
+  const turn = smoothstep01((frame - beats.liyingTurn + 2) / 12);
+  const summon = smoothstep01((frame - (beats.summon - 7)) / 7) * (1 - smoothstep01((frame - (beats.summon + 12)) / 10));
+  const hopK = smoothstep01((frame - (beats.liYingMount - 8)) / 8);
   const crouch = frame > beats.liYingMount - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.liYingMount - 12)) / 6)) : 0;
   const base = standingPose(frame);
   const [x0, y0] = base.loc;
@@ -246,14 +242,14 @@ export const liyingOnFoot = (frame: number): FigurePose | null => {
 
 // ---------- 骑在扫帚上 ----------
 export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: { lean: number; hugWaist: number; tailPhase: number; wind: number; headRaise: number } | false } => {
-  const sink = frame >= beats.sinkStart ? ss((frame - beats.sinkStart) / 6) : 0;
-  const launched = ss((frame - beats.takeoff) / 4);
+  const sink = frame >= beats.sinkStart ? smoothstep01((frame - beats.sinkStart) / 6) : 0;
+  const launched = smoothstep01((frame - beats.takeoff) / 4);
   // 竖直往上冲时（航迹角大过 25°）再往前压一点，贴住竖起来的扫帚
   const vertical = frame >= beats.takeoff ? Math.max(0, (gammaAt(frame) - 25) / (90 - 25)) : 0;
-  const lean = 22 + 26 * sink + 10 * launched * (1 - ss((frame - beats.flip) / 10)) + 8 * vertical * launched;
+  const lean = 22 + 26 * sink + 10 * launched * (1 - smoothstep01((frame - beats.flip) / 10)) + 8 * vertical * launched;
   return {
     liYing: frame >= beats.liYingMount ? { lean, headRaise: 10 * (1 - sink) + 20 * launched } : false,
-    jiuhu: frame >= beats.jiuHuUp ? { lean: 18 + 20 * sink, hugWaist: ss((frame - beats.jiuHuUp) / 6), tailPhase: frame / 9, wind: launched, headRaise: 10 * launched } : false,
+    jiuhu: frame >= beats.jiuHuUp ? { lean: 18 + 20 * sink, hugWaist: smoothstep01((frame - beats.jiuHuUp) / 6), tailPhase: frame / 9, wind: launched, headRaise: 10 * launched } : false,
   };
 };
 export const liyingRidePose = (frame: number) => {
@@ -283,22 +279,22 @@ export const camera = (frame: number): Cam => {
   if (frame < beats.cutToMedium) return chase(frame);
   if (frame < beats.sinkStart) {
     const t = Math.min(1, (frame - C2.pos[0][0]) / (C2.pos[1][0] - C2.pos[0][0]));
-    const eased = ss(t) * 0.6 + t * 0.4;
-    return { pos: lerp3(C2.pos[0][1], C2.pos[1][1], eased), tgt: lerp3(C2.tgt0, C2.tgt1, ss((frame - beats.cutToMedium - 10) / 40)), lens: lerp(24, 30, eased) };
+    const eased = smoothstep01(t) * 0.6 + t * 0.4;
+    return { pos: lerpV(C2.pos[0][1], C2.pos[1][1], eased), tgt: lerpV(C2.tgt0, C2.tgt1, smoothstep01((frame - beats.cutToMedium - 10) / 40)), lens: lerp(24, 30, eased) };
   }
   const bp = broom(frame).pos;
-  if (frame < beats.takeoff) return { pos: lerp3(C3_START, C3_PRE, (frame - beats.sinkStart) / (beats.takeoff - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
+  if (frame < beats.takeoff) return { pos: lerpV(C3_START, C3_PRE, (frame - beats.sinkStart) / (beats.takeoff - beats.sinkStart)), tgt: [bp[0], bp[1], bp[2] + 0.6], lens: 24 };
   // 起飞那一帧起镜头跟着扫帚一起往上冲（相对位置从低机位慢慢挪到后上方），不原地仰头追（那样背景几乎全是天）：镜头和扫帚一样高平视，10 帧内挪到后上方往下看
   const pre = broom(beats.takeoff - 1).pos;
   const off0 = [C3_PRE[0] - pre[0], C3_PRE[1] - pre[1], C3_PRE[2] - pre[2]];
-  const k = ss((frame - beats.takeoff) / 10);
-  const off = lerp3(off0, C3_OFF, k);
+  const k = smoothstep01((frame - beats.takeoff) / 10);
+  const off = lerpV(off0, C3_OFF, k);
   const pos = [bp[0] + off[0], bp[1] + off[1], bp[2] + off[2]];
-  const kl = ss((frame - (beats.flip - 12)) / (beats.末帧 - beats.flip + 12));
+  const kl = smoothstep01((frame - (beats.flip - 12)) / (beats.末帧 - beats.flip + 12));
   const nearLook = broomToCourtyard([0, 1, 0.8]);
   const farLook = broomToCourtyard([0, 40, -24]);
-  const look = lerp3([bp[0] + nearLook[0], bp[1] + nearLook[1], bp[2] + nearLook[2]], [bp[0] + farLook[0], bp[1] + farLook[1], bp[2] + farLook[2]], kl);
-  return { pos, tgt: look, lens: lerp(24, 18, ss((frame - beats.takeoff) / 30)) };
+  const look = lerpV([bp[0] + nearLook[0], bp[1] + nearLook[1], bp[2] + nearLook[2]], [bp[0] + farLook[0], bp[1] + farLook[1], bp[2] + farLook[2]], kl);
+  return { pos, tgt: look, lens: lerp(24, 18, smoothstep01((frame - beats.takeoff) / 30)) };
 };
 // 清草：中心空地（一格高的草会挡住人的脚和悬在离地 0.65 格的扫帚）。迷宫通道里的草和 6-1-2 一样留着
 export const CLEAR_PLANTS = [[-5.5, -9.5, 9.5, 5.5]];
@@ -316,7 +312,7 @@ export const aboveGround = (frame: number) => {
 // 才和 6-1-4 首帧接得上；往导入范围边上看时压到边以内（`clampFogToEdge`）。
 // 超远景（用户 11-07 定 10 公里，暮色新世界/超远景.ts）：起飞后跟着这条放远的曲线一起放进（`farViewRamp`），起飞前林子里的雾、高度雾不变，首帧接得上 6-1-2
 export const farView = () => farViewOf(TWILIGHT_FAR_VIEW);
-export const farViewRamp = (frame: number) => (frame < beats.takeoff ? 0 : ss((frame - beats.takeoff) / flipDelay));
+export const farViewRamp = (frame: number) => (frame < beats.takeoff ? 0 : smoothstep01((frame - beats.takeoff) / flipDelay));
 export const fogFar = (frame: number) => {
   const nearFog = twilightFogFar(aboveGround(frame));
   if (frame < beats.takeoff) return nearFog;

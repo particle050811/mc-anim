@@ -20,6 +20,9 @@ import { borderTownPos } from '../../../地点/主世界116.ts';
 import { charPos, closedBookBox, guiPixel, pageCharCount, pageHeight, pageWidth, type BookPage } from '@库/物品/书.tsx';
 import bookPageJson from 'asset:数据/镜头/7-4-3/书页.字';
 import { pitCam } from './坑口.ts';
+import { smoothstep01, lerpV } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
+
 const bookPageData = bookPageJson as unknown as { 页: string[][]; 页码: string; 数字: string };
 
 export const FPS = 24;
@@ -88,12 +91,7 @@ export const writingRuns = (): [number, number][] => {
 
 // 递书镜（镜头 3）里的时刻：段内帧 = shot2End + s
 const at = (s: number) => shot2End + s;
-const ss = (x: number) => {
-  const c = Math.min(1, Math.max(0, x));
-  return c * c * (3 - 2 * c);
-};
-const ramp = (f: number, f0: number, f1: number) => ss((f - f0) / (f1 - f0));
-const lerp3 = (a: number[], b: number[], k: number): V3 => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
+const ramp = (f: number, f0: number, f1: number) => smoothstep01((f - f0) / (f1 - f0));
 // 合书（0～1，书.tsx 的 合）：右手按住左页靠书脊的近角往上一掀（贴着掀到 0.2），手接着往上一挑，左页跟在手后面立起来，过了竖直自己倒下去（越倒越快）
 const pinchStart = at(8);
 export const pinchEnd = at(11);
@@ -251,23 +249,23 @@ const rightHandTarget = (f: number): V3 => {
   if (f < pinchStart) {
     // 从写字的地方挪过去，中间抬高一点，不擦着书页
     const k = ramp(f, at(2), pinchStart);
-    const p = lerp3(writingHand(shot2End), pinch0, k);
+    const p = lerpV(writingHand(shot2End), pinch0, k);
     return [p[0], p[1], p[2] + 0.06 * Math.sin(Math.PI * k)];
   }
   if (f < pinchEnd) return leftPagePoint(pinchOnLeftPage, closeBook(f));
-  if (f < flickEnd) return lerp3(leftPagePoint(pinchOnLeftPage, 0.2), flickPoint, ramp(f, pinchEnd, flickEnd));
-  if (f < bookLandFrame) return lerp3(flickPoint, withdrawPoint, ramp(f, flickEnd, bookLandFrame));
+  if (f < flickEnd) return lerpV(leftPagePoint(pinchOnLeftPage, 0.2), flickPoint, ramp(f, pinchEnd, flickEnd));
+  if (f < bookLandFrame) return lerpV(flickPoint, withdrawPoint, ramp(f, flickEnd, bookLandFrame));
   const grip = applyTo(deskBookMatrix, pinchOnClosedBook);
   if (f < pickFrame) {
     const k = ramp(f, bookLandFrame, pickFrame);
-    const p = lerp3(withdrawPoint, grip, k);
+    const p = lerpV(withdrawPoint, grip, k);
     return [p[0], p[1], p[2] + 0.08 * Math.sin(Math.PI * k)];
   }
   const lifted: V3 = [grip[0] + 0.02, grip[1], grip[2] + 0.2];
-  if (f < at(32)) return lerp3(grip, lifted, ramp(f, pickFrame, at(32)));
-  if (f < handoffFrame + 4) return lerp3(lifted, handoffPoint, ramp(f, at(31), handoffHeld));
-  if (f < handoffFrame + 12) return lerp3(handoffPoint, raisedBack, ramp(f, handoffFrame + 4, handoffFrame + 12));
-  return lerp3(raisedBack, restOnDesk, ramp(f, handoffFrame + 12, handoffFrame + 20));
+  if (f < at(32)) return lerpV(grip, lifted, ramp(f, pickFrame, at(32)));
+  if (f < handoffFrame + 4) return lerpV(lifted, handoffPoint, ramp(f, at(31), handoffHeld));
+  if (f < handoffFrame + 12) return lerpV(handoffPoint, raisedBack, ramp(f, handoffFrame + 4, handoffFrame + 12));
+  return lerpV(raisedBack, restOnDesk, ramp(f, handoffFrame + 12, handoffFrame + 20));
 };
 const shot3Pose = (f: number): FigurePose => {
   const base: FigurePose = {
@@ -360,10 +358,9 @@ export const bookMatrix = (f: number): THREE.Matrix4 => (f < handoffFrame ? liuB
 export const bookOnHand = (f: number) => f >= pickFrame;
 
 // ---------- 镜头 ----------
-export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
 const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({
-  pos: lerp3(a.pos, b.pos, k),
-  tgt: lerp3(a.tgt, b.tgt, k),
+  pos: lerpV(a.pos, b.pos, k),
+  tgt: lerpV(a.tgt, b.tgt, k),
   lens: a.lens + (b.lens - a.lens) * k,
   roll: a.roll,
 });

@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import { useWriter, newWriteSlot } from '../../core/写入者.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoLightAt, atmoUniforms, atmosphere, photonCloudsOn } from '../大气.ts';
 import { registerMidPass, type MidPassContext } from '../../voxel/中间步骤.ts';
+import { clamp01, linearstep, smoothstep, lerp } from '../../core/数学.ts';
 
 // 云高（用户 10-14：世界放大了，云高改合理）：Photon 默认 10 是按原版地形定的，云底离海只有 120 格。我们的史诗地形最高峰 y 435～444，
 // 取 3：积云一团团云底在 y 363～1163（见 cumulusHeightMap），下坠和 6-2-5 俯冲都穿过；高积云 y 1130～1290；
@@ -22,40 +23,33 @@ const CU_BH = 2400;
 
 // ---------- 天气 → 云的参数（include/weather/clouds.glsl 的 get_clouds_parameters；不下雨） ----------
 export type CloudWeather = { temperature: number; humidity: number; wind: number };
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-const linearStep = (a: number, b: number, x: number) => clamp01((x - a) / (b - a));
-const smooth = (a: number, b: number, x: number) => {
-  const t = clamp01((x - a) / (b - a));
-  return t * t * (3 - 2 * t);
-};
 const dampen = (x: number) => {
   const c = clamp01(x);
   return c * (2 - c);
 };
 const lift = (x: number, a: number) => (x + x * a) / (1 + x * a);
 const cubicSmooth = (x: number) => x * x * (3 - 2 * x);
-const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 export const cloudParams = (w: CloudWeather, sunY: number) => {
   const { temperature: T, humidity: H, wind: W } = w;
-  const dayFactor = smooth(0, 1, Math.abs(sunY) / 0.3);
-  const l0Blend = clamp01(dampen(linearStep(0.5, 1, 1 - T)) * dampen(1 - W));
-  const tw = 1 - 0.15 * linearStep(0.6, 1, T);
+  const dayFactor = smoothstep(0, 1, Math.abs(sunY) / 0.3);
+  const l0Blend = clamp01(dampen(linearstep(0.5, 1, 1 - T)) * dampen(1 - W));
+  const tw = 1 - 0.15 * linearstep(0.6, 1, T);
   const hw = 0.4 * H + 0.5 * H * H;
   const local = 0.1 + 0.1 * W;
   const l0Cov = [clamp01(tw * hw - 0.1 * local + 0.3 * l0Blend * l0Blend), clamp01(tw * hw + local + 0.3 * l0Blend * l0Blend)];
-  const torn = linearStep(0.66, 0.9, W) * (1 - l0Blend);
-  const l0Detail = [mix(0.33 * (1 + 0.5 * torn), 0.07, l0Blend * l0Blend), mix(0.4 * (1 + 0.5 * torn), 0.1, l0Blend)];
-  const l0Edge = [mix(3, 2, l0Blend * l0Blend), mix(12, 7, l0Blend * l0Blend)];
-  const l0AltScale = 0.8 / (mix(0.5, 1, smooth(0.4, 0.6, 0.25 * l0Cov[0] + 0.75 * l0Cov[1])) * 1200);
-  const l1Blend = cubicSmooth(linearStep(0.5, 0.66, 1 - T));
-  const ac = (linearStep(0.4, 1, H) * 0.5 + 0.5) * linearStep(0.4, 0.66, W) * linearStep(1, 0.8, T);
-  const as = linearStep(0.25, 0.45, W * H);
-  const l1Cov = [clamp01(mix(ac * 0.5, as, l1Blend)), clamp01(mix(ac * 1.5, as, l1Blend))];
-  const cirrus = clamp01(0.5 * (0.6 - 0.4 * linearStep(0.5, 0.9, T) ** 2 + 0.4 * (1 - linearStep(0, 0.2, T))) * (1 - 0.5 * linearStep(0.5, 0.75, H)));
-  const cirrocumulus = 0.8 * dampen((1 - 0.3 * linearStep(0.5, 1, T)) * (0.5 + 0.5 * linearStep(0.4, 1, H)) * W ** 1.5);
-  const l0Shadow = linearStep(0.7, 1, (0.25 * l1Cov[0] + 0.75 * l1Cov[1]) * (1 + l1Blend)) * dampen(dayFactor);
-  let ext = mix(0.05, 0.1, smooth(0, 0.3, Math.abs(sunY))) * (1 - 0.6 * l0Shadow);
-  ext *= 1 - 0.4 * linearStep(0.8, 1, l0Cov[1] - l0Cov[1] * l0Blend);
+  const torn = linearstep(0.66, 0.9, W) * (1 - l0Blend);
+  const l0Detail = [lerp(0.33 * (1 + 0.5 * torn), 0.07, l0Blend * l0Blend), lerp(0.4 * (1 + 0.5 * torn), 0.1, l0Blend)];
+  const l0Edge = [lerp(3, 2, l0Blend * l0Blend), lerp(12, 7, l0Blend * l0Blend)];
+  const l0AltScale = 0.8 / (lerp(0.5, 1, smoothstep(0.4, 0.6, 0.25 * l0Cov[0] + 0.75 * l0Cov[1])) * 1200);
+  const l1Blend = cubicSmooth(linearstep(0.5, 0.66, 1 - T));
+  const ac = (linearstep(0.4, 1, H) * 0.5 + 0.5) * linearstep(0.4, 0.66, W) * linearstep(1, 0.8, T);
+  const as = linearstep(0.25, 0.45, W * H);
+  const l1Cov = [clamp01(lerp(ac * 0.5, as, l1Blend)), clamp01(lerp(ac * 1.5, as, l1Blend))];
+  const cirrus = clamp01(0.5 * (0.6 - 0.4 * linearstep(0.5, 0.9, T) ** 2 + 0.4 * (1 - linearstep(0, 0.2, T))) * (1 - 0.5 * linearstep(0.5, 0.75, H)));
+  const cirrocumulus = 0.8 * dampen((1 - 0.3 * linearstep(0.5, 1, T)) * (0.5 + 0.5 * linearstep(0.4, 1, H)) * W ** 1.5);
+  const l0Shadow = linearstep(0.7, 1, (0.25 * l1Cov[0] + 0.75 * l1Cov[1]) * (1 + l1Blend)) * dampen(dayFactor);
+  let ext = lerp(0.05, 0.1, smoothstep(0, 0.3, Math.abs(sunY))) * (1 - 0.6 * l0Shadow);
+  ext *= 1 - 0.4 * linearstep(0.8, 1, l0Cov[1] - l0Cov[1] * l0Blend);
   ext *= 1 - 0.5 * l0Blend;
   return { l0Cov, l0Detail, l0Edge, l0AltScale, l0Blend, l0Ext: ext, l0Shadow, l1Cov, l1Blend, cirrus, cirrocumulus, dayFactor, lift };
 };
@@ -824,7 +818,7 @@ export const updateCloudUniforms = (cam: THREE.Camera) => {
   u.pcL0C.value.set(p.l0Ext, p.l0Shadow, 1, p.dayFactor);
   // 正午系数（Photon 的 time_noon，太阳在地平线以上且不在早晚过渡里时为 1），高积云在高覆盖时亮一些用
   // 高积云的量减半（用户 10-14：云太密、都在一层）：原样从地面看是盖满天的一整张，只留零散几片
-  u.pcL1.value.set(0.5 * p.l1Cov[0], 0.5 * p.l1Cov[1], p.l1Blend, dampen(smooth(0.05, 0.3, sunY)));
+  u.pcL1.value.set(0.5 * p.l1Cov[0], 0.5 * p.l1Cov[1], p.l1Blend, dampen(smoothstep(0.05, 0.3, sunY)));
   u.pcCi.value.set(p.cirrus, p.cirrocumulus);
   const add = settings.add.slice(0, 4);
   u.pcAddN.value = add.length;

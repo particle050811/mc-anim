@@ -2,7 +2,8 @@
 // 两排窗洞、苔藓；石板地砖；灌木树篱；泥土花坛；带火盆的水池；独立石柱。单位：格，迷宫中心在原点，地面 z=0。
 // 布局用 MazeLayout 传入，默认是 6-1 章娜迦迷宫的布局；换一座迷宫只需要换布局。
 import React, { useMemo } from 'react';
-import { Box, Cyl, type Inst, Instanced, rng, pick, type V3 } from '@engine/model/parts.tsx';
+import { Box, Cyl, type Inst, Instanced, type V3 } from '@engine/model/parts.tsx';
+import { pick, mulberry32 } from '@engine/core/数学.ts';
 
 export const MAZE = {
   wall: '#8c806a',
@@ -62,7 +63,7 @@ const Walls: React.FC<{ L: MazeLayout }> = ({ L: layout }) => {
   const halfSize = layout.size / 2;
   const wallHeight = layout.wallH;
   const items = useMemo(() => {
-    const rand = rng(11);
+    const rand = mulberry32(11);
     const out: Inst[] = [];
     const sides = [
       { along: 'x', at: -halfSize, inward: 1 }, { along: 'x', at: halfSize, inward: -1 },
@@ -125,7 +126,7 @@ const Walls: React.FC<{ L: MazeLayout }> = ({ L: layout }) => {
 // 石板地砖：每格一块略有高差和色差的石板，缝隙露出深色灰浆
 const Floor: React.FC<{ L: MazeLayout }> = ({ L: layout }) => {
   const items = useMemo(() => {
-    const rand = rng(7);
+    const rand = mulberry32(7);
     const out: Inst[] = [];
     const halfSize = layout.size / 2 - 0.5;
     for (let x = -halfSize + 0.5; x < halfSize; x++)
@@ -146,7 +147,7 @@ const Floor: React.FC<{ L: MazeLayout }> = ({ L: layout }) => {
 // 灌木树篱：每格两层叶块，顶上随机加半块和侧面凸起，轮廓参差
 const Hedges: React.FC<{ L: MazeLayout }> = ({ L: layout }) => {
   const items = useMemo(() => {
-    const rand = rng(23);
+    const rand = mulberry32(23);
     const out: Inst[] = [];
     for (const rect of layout.hedges)
       for (const [x, y] of cells(rect)) {
@@ -196,7 +197,7 @@ const Pool: React.FC<{ rect: Rect; t: number; seed: number }> = ({ rect: [cx, cy
 
 const Planter: React.FC<{ rect: Rect; seed: number }> = ({ rect: [cx, cy, sx, sy], seed }) => {
   const plants = useMemo(() => {
-    const rand = rng(seed);
+    const rand = mulberry32(seed);
     return cells([0, 0, sx - 0.6, sy - 0.6]).filter(() => rand() < 0.35).map(([x, y]) => ({ p: [x, y, 0.55] as V3, s: 0.3 + rand() * 0.3, c: pick(rand, palette.hedge) }));
   }, [sx, sy, seed]);
   return (

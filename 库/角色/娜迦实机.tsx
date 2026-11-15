@@ -6,7 +6,6 @@
 // 受伤变红：头走 `MobRenderer`，身体节走 `TFPartRenderer.getPackedOverlay`，取头（本体）的 hurtTime / deathTime，所以哪节挨刀都是整条一起红（pose.hurt，红的样子见 lib/贴图方盒.tsx 的 `HURT_OVERLAY`）。
 // 坐标：原点在脚底中心，脸朝 -Y，单位格。
 import React from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { type EntityTexture, TexBox } from '../../engine/model/贴图方盒.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
@@ -15,6 +14,7 @@ import nagaChargingPng from 'asset:贴图/角色/娜迦实机/charging';
 import nagaDazedPng from 'asset:贴图/角色/娜迦实机/dazed';
 import nagaHeadPng from 'asset:贴图/角色/娜迦实机/head';
 import nagaSegmentPng from 'asset:贴图/角色/娜迦实机/segment';
+import { rad } from '../../engine/core/数学.ts';
 
 const TEX = pngDir(assetDir({ './charging.png': nagaChargingPng, './dazed.png': nagaDazedPng, './head.png': nagaHeadPng, './segment.png': nagaSegmentPng })) as Record<'head' | 'charging' | 'dazed' | 'segment', EntityTexture>;
 

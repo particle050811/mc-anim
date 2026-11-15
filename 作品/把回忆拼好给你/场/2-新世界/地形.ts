@@ -5,8 +5,9 @@
 // 第 1 句尾到 2-第一晚 镜头落到你挖坑那一格的地面剖面：剖面附近的列（剖面列）另铺到地下（剖面方块、剥排方块），新世界方块 本身不变（别的段拿它当远景）。
 // 坐标照场景约定：x 东、y 北、z 上，格 (i, j, k) 占 [i, i+1]×[j, j+1]×[k, k+1]；出生点那格地面顶在 z = 0（草方块是 k = −1 那格）。
 import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
-import { fbm, hash2, simplex2, smoothstep } from '@engine/core/噪声.ts';
+import { fbm, hash2, simplex2 } from '@engine/core/噪声.ts';
 import { terrainRange, crossSection, pit, cherryGrove, plainsParams, farGroves, farHills } from './参数.ts';
+import { smoothstep, randInt, mulberry32 } from '@engine/core/数学.ts';
 
 const noise = simplex2(plainsParams.种子);
 const fineNoise = simplex2(plainsParams.种子 + 7);
@@ -113,21 +114,6 @@ const oakTree = (t: Tree, z0: number, place: (b: PlacedBlock) => void) => {
       }
   }
 };
-
-/** 定死的随机数（mulberry32），一棵树一个种子 */
-const rng = (seed: number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-/** [lo, hi] 里的整数 */
-const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
-
 type Dir2D = readonly [number, number];
 /** 水平四向，按顺时针（北、东、南、西；场景 y 朝北） */
 const fourDirs: readonly Dir2D[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
@@ -144,7 +130,7 @@ const cherryLeaves = 'minecraft:cherry_leaves';
  *   中间、往下一层半径 3（边角随机缺），往下两层半径 2；下面两层的外圈底下随机垂一两格叶子。
  */
 const cherryTree = (t: Tree, z0: number, place: (b: PlacedBlock) => void) => {
-  const r = rng(t.种子 * 2654435761 + 97);
+  const r = mulberry32(t.种子 * 2654435761 + 97);
   const treeHeight = 7 + randInt(r, 0, 1);
   const branchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -3));
   let secondBranchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -4));

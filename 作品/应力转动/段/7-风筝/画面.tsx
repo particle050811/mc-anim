@@ -4,7 +4,6 @@
 // 编排的帧是 1/24 秒一格，按秒换算；声音、台词照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { rad } from '@engine/anim/anim.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { HuangPan, LiuXinzhong } from '../../角色/追兵.tsx';
@@ -14,13 +13,15 @@ import { Arrow } from '@库/物品/箭.tsx';
 import { Blastwave, CreeperHead, mortarTrailSmoke, mortarBlastParticles } from '@库/特效/苦力怕迫击炮.tsx';
 import { sonicBoomParticles } from '@库/特效/监守者音波.tsx';
 import { VanillaParticles, deathPoof, serverSendParticles, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { AncientCity4xCanvas, placedWoolThrough, type Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas, placedWoolThrough } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { BowFans } from '../../地点/古城4x/7-1/弓前风扇.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
 import { withTalkNod } from '../../配音/口型.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
+import { rad } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 const woolBlocks = placedWoolThrough('V');
 const blastwaveSize = 12; // 同 7-3（用户 10-18：威力特效大一点）

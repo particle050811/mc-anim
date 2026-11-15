@@ -15,12 +15,11 @@ import { ScenePicture } from '../../场/7-李樱撤离/7-2/画面.tsx';
 import * as choreo from './编排.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 export const fiftyKHpFrameCount = choreo.frameCount;
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
-
 // 风矢打中它冒出的伤害数字（汇流来世，定在世界里），和 7-1-5、7-1-7 同样的数、同样的位置；只在看得到场子的镜头里画
 const hitsSeen = [{ T: windArrowHit.t, damage: windArrowHit.damage, crit: windArrowHit.crit, anchor: windArrowHit.anchor }, ...followArrowHits];
 const DamageLayer: React.FC<{ frame: number }> = ({ frame }) => {
@@ -28,7 +27,7 @@ const DamageLayer: React.FC<{ frame: number }> = ({ frame }) => {
   if (frame >= choreo.jadeShotEndFrame) return null;
   const t = choreo.wideTime(frame);
   const cam = choreo.camera(frame);
-  const camera = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
+  const camera = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={hitsSeen.map((h) => ({ damage: h.damage, crit: h.crit, anchor: h.anchor, ticks: (t - h.T) * 20 }))} />;
 };
 
@@ -37,7 +36,7 @@ const JadeLayer: React.FC<{ frame: number }> = ({ frame }) => {
   const ui = choreo.jade(frame);
   if (!ui) return null;
   const cam = choreo.camera(frame);
-  const ndc = toThree(ui.点).project(makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height));
+  const ndc = sceneToThree(ui.点).project(makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height));
   const from: [number, number] = [((ndc.x + 1) / 2) * width, ((1 - ndc.y) / 2) * height];
   const s = jadeScalePerWidth * width;
   return (

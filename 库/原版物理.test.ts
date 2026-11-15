@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { getFunction } from '../pipeline/检查/副本识别.ts';
+import { lerp } from '../engine/core/数学.ts';
 import { vanillaMotion, fallOneTick, fallTable, fallHeightAtTick, sampleByTick, itemFallOptions, landTick } from './原版物理.ts';
 
 const root = path.resolve(import.meta.dirname, '..');
@@ -71,7 +72,7 @@ describe('原版下落正本和旧副本对得上', () => {
       expect(legacyFn(h)).toEqual(fallTable(h, { initSpeed: vanillaMotion.standingVertSpeed }));
       expect(legacyFn(h, 0)).toEqual(fallTable(h));
     }
-    const legacyLookup = copyFn('作品/把回忆拼好给你/段/2-第一晚/编排.ts', 'sampleByTick') as (curveTable: number[], k: number) => number;
+    const legacyLookup = copyFn('作品/把回忆拼好给你/段/2-第一晚/编排.ts', 'sampleByTick', { lerp }) as (curveTable: number[], k: number) => number;
     const curveTable = fallTable(5);
     for (const k of [-1, 0, 0.5, 3.3, 7, 100]) expect(legacyLookup(curveTable, k)).toBeCloseTo(sampleByTick(curveTable, k), 12);
   });

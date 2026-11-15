@@ -10,7 +10,7 @@
 import React from 'react';
 import * as THREE from 'three';
 import { AbsoluteFill } from 'remotion';
-import { deg, lerp as mix, rad, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { deg, lerp, rad, smoothstep01 } from '@engine/core/数学.ts';
 import { rigSpline, type Cam, type SplineKey } from '@engine/core/机位.ts';
 import { png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
@@ -41,7 +41,7 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const mixVec = (a: readonly number[], b: readonly number[], u: number): V3 => [mix(a[0]!, b[0]!, u), mix(a[1]!, b[1]!, u), mix(a[2]!, b[2]!, u)];
+const mixVec = (a: readonly number[], b: readonly number[], u: number): V3 => [lerp(a[0]!, b[0]!, u), lerp(a[1]!, b[1]!, u), lerp(a[2]!, b[2]!, u)];
 const atHeight = (z: number): V3 => [0, 0, z];
 const S = steveFoot;
 const uiScale = 2;
@@ -99,10 +99,10 @@ const shotTable: readonly Shot[] = [
   // 侧：机位在两人连线的右侧（她在画面左上、他在右下）、离连线中点 22 → 20 格（她高 12 格、离他水平 10 格，20 毫米下两人连血条都框得下），
   // 镜头跟着两人中点慢慢往他那边推
   makeShot('侧', cameraStart.side, follow(cameraStart.side, cameraStart.firstPerson, (s) => {
-    const u = unitSmoothStep(s / cameraStart.firstPerson);
-    const centerPos = mixVec(yaBoLunAt(s), S, mix(0.5, 0.56, u));
+    const u = smoothstep01(s / cameraStart.firstPerson);
+    const centerPos = mixVec(yaBoLunAt(s), S, lerp(0.5, 0.56, u));
     const right = dirBetween(yaBoLunAt(0), S);
-    return [addVec(addVec(addVec(centerPos, perpendicular(right), mix(22, 20, u)), right, mix(-1, 1, u)), atHeight(mix(-1.5, -0.8, u))), addVec(centerPos, atHeight(mix(0.8, 0.4, u))), 20];
+    return [addVec(addVec(addVec(centerPos, perpendicular(right), lerp(22, 20, u)), right, lerp(-1, 1, u)), atHeight(lerp(-1.5, -0.8, u))), addVec(centerPos, atHeight(lerp(0.8, 0.4, u))), 20];
   }, 0.25)),
   { 名: '第一人称', 起: cameraStart.firstPerson, cameraRig: (_u, shotSec) => firstPersonRig(cameraStart.firstPerson + shotSec) },
 ];

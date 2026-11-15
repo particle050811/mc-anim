@@ -12,7 +12,6 @@
 // 没做：烧着时每刻 1/24 概率响一声原版火的噼啪（block.fire.ambient，随机的，没排进声音表）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
@@ -67,6 +66,7 @@ import ghostFire29Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_f
 import ghostFire30Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire30';
 import ghostFire31Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire31';
 import ghostFire32Png from 'asset:贴图/法术/goety/entity/projectiles/ghost_fire/fire32';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const iceBouquetModel = getModel(iceBouquetModelData, 'IceBouquetModel');
 const frameImages = [ghostFirePre1Png, ghostFirePre2Png, ghostFirePre3Png, ghostFirePre4Png, ghostFirePre5Png, ghostFirePre6Png, ghostFirePre7Png, ghostFirePre8Png, ghostFirePre9Png, ghostFirePre10Png, ghostFirePre11Png, ghostFirePre12Png, ghostFirePre13Png, ghostFire1Png, ghostFire2Png, ghostFire3Png, ghostFire4Png, ghostFire5Png, ghostFire6Png, ghostFire7Png, ghostFire8Png, ghostFire9Png, ghostFire10Png, ghostFire11Png, ghostFire12Png, ghostFire13Png, ghostFire14Png, ghostFire15Png, ghostFire16Png, ghostFire17Png, ghostFire18Png, ghostFire19Png, ghostFire20Png, ghostFire21Png, ghostFire22Png, ghostFire23Png, ghostFire24Png, ghostFire25Png, ghostFire26Png, ghostFire27Png, ghostFire28Png, ghostFire29Png, ghostFire30Png, ghostFire31Png, ghostFire32Png].map(png);
@@ -80,7 +80,7 @@ const zOffset = 0.0625;
 
 /** 四丛的位置：目标脚下一丛，加一个随机象限的三丛（间隔 1.5 格） */
 const tuftPoints = (target: Vec3, seed: number): Vec3[] => {
-  const quadrant = Math.floor(rng(seed)() * 4);
+  const quadrant = Math.floor(mulberry32(seed)() * 4);
   const [sx, sy] = [quadrant >= 2 ? -1.5 : 1.5, quadrant % 2 === 1 ? -1.5 : 1.5];
   return [target, [target[0], target[1] + sy, target[2]], [target[0] + sx, target[1], target[2]], [target[0] + sx, target[1] + sy, target[2]]];
 };
@@ -94,7 +94,7 @@ const smokeParticleClass: ParticleClass = { 帧: [png(smokePng)], 选帧: '随�
 const smokeAt = (pos: Vec3, lastTick: number, seed: number): ParticleBirth[] => {
   const smokeSpawns: ParticleBirth[] = [];
   for (let t = 10; t <= Math.min(lastTick, ghostFireLifeTicks - 1); t++) {
-    const r = rng(seed * 131 + t);
+    const r = mulberry32(seed * 131 + t);
     const lifetime = 10 + Math.floor(r() * 10);
     smokeSpawns.push({
       刻: t,

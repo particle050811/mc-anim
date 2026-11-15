@@ -1,13 +1,13 @@
 // 通用数学函数的正本（10-30 整体优化方案 0.6）：新代码一律从这里 import，不在段、场、地点里另写一份。
-// 旧代码里的副本原样不动（改了会让用到它的段过期），登记在 docs/副本表.tsv；anim check 的「副本」规则拦新增的副本。
+// 和正本逐字等价的旧副本 11-15 已换成 import 正本；剩下的和正本有差别（不夹 t、运算顺序不同），原样不动，登记在 docs/副本表.tsv；anim check 的「副本」规则拦新增的副本。
 // 只放和 Minecraft、three 无关的纯数学：坐标换算在 坐标.ts，机位在 机位.ts，关键帧插值在 engine/anim/。纯模块，不 import 任何东西。
 // 各函数取的是副本里最通用的写法，和副本不一样的地方写在各自的注释里；正本和副本逐个对过的结果见 数学.test.ts。
 
 /** 线性插值：t = 0 给 a、t = 1 给 b，不夹 t（出了 0～1 就外推）。副本都是这个写法，`a·(1−t) + b·t` 的写法只差末位舍入 */
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-/** 逐分量线性插值，长度照 a。副本有只算三个分量的（`插3`、`lerp3`），三维时一样 */
-export const lerpV = (a: readonly number[], b: readonly number[], t: number): number[] => a.map((v, i) => v + (b[i]! - v) * t);
+/** 逐分量线性插值，长度照 a，a 是定长元组时结果也是同长的元组 */
+export const lerpV = <const T extends readonly number[]>(a: T, b: readonly number[], t: number) => a.map((v, i) => v + (b[i]! - v) * t) as unknown as { -readonly [K in keyof T]: number };
 
 /** lerp 反过来：x 在 a→b 上走到哪（不夹） */
 export const invLerp = (a: number, b: number, x: number) => (x - a) / (b - a);
@@ -18,7 +18,7 @@ export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 /** x 在 e0→e1 上走到哪，夹到 0～1（e0 > e1 时反着走） */
 export const linearstep = (e0: number, e1: number, x: number) => clamp01((x - e0) / (e1 - e0));
 
-/** 三次缓动 3t² − 2t³，t 先夹到 0～1：两头速度为 0。副本叫 ss、smooth01、缓、平滑；有几份不夹（`t * t * (3 - 2 * t)`），只在 0～1 外不同 */
+/** 三次缓动 3t² − 2t³，t 先夹到 0～1：两头速度为 0。还留着的副本不夹 t（`t * t * (3 - 2 * t)`），只在 0～1 外不同 */
 export const smoothstep01 = (t: number) => {
   const k = clamp01(t);
   return k * k * (3 - 2 * k);
@@ -52,8 +52,8 @@ export const easeInOutSine = (t: number) => -(Math.cos(Math.PI * clamp01(t)) - 1
 
 /**
  * 三次埃尔米特：p0 → p1，m0、m1 是两头的切线（已乘上这一段的长度，即「每单位 t」的变化量），t 0～1。
- * 副本：engine/flight/真实飞行/弹簧.ts 同参数顺序；把回忆的 `埃尔米特(p0, p1, m0, m1, h, s)` 切线按「每帧」给、另传段长 h，
- * 等于 hermite(p0, m0·h, p1, m1·h, s)；6-1-9b 落地编排的向量版逐分量调这个。
+ * 副本：把回忆的 `hermite(p0, p1, m0, m1, h, s)` 切线按「每帧」给、另传段长 h，
+ * 数值上等于 hermite(p0, m0·h, p1, m1·h, s)（乘法顺序不同，末位舍入会差）；6-1-9b 落地编排的向量版用 t ** 3 算基函数，也只差末位舍入。
  */
 export const hermite = (p0: number, m0: number, p1: number, m1: number, t: number) => {
   const t2 = t * t;

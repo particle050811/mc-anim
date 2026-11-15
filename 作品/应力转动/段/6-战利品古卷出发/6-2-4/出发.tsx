@@ -11,7 +11,6 @@ import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import { FlightFog, FlightRig, FlightSky } from '../../../地点/飞行镜头.tsx';
 import { mouthAt } from '../../../配音/口型.ts';
 import { Jiuhu } from '@库/角色/九胡.tsx';
@@ -24,6 +23,7 @@ import { BaseWorkshop } from '../../../地点/基地工坊.tsx';
 import { BaseIslandTerrain } from '../../../地点/基地小岛.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import * as choreo from './编排.ts';
+import { rad } from '@engine/core/数学.ts';
 
 export const SET_OFF_FRAMES = choreo.FRAMES;
 // 编排.ts 的帧号是 1/24 秒一格

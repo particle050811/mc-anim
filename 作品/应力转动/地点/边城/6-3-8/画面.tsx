@@ -6,7 +6,6 @@ import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec, useViewIndex } from '@engine/段/时间.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { VoxelWorld } from '@engine/voxel/世界.tsx';
@@ -25,7 +24,7 @@ import { useFallTerrain } from '../6-3-下坠/地形.ts';
 import { BlockDebris, type FxParams } from '../6-3-下坠/碎块.tsx';
 import * as choreo from './编排.ts';
 import { withTalkNod } from '../../../配音/口型.ts';
-
+import { rad } from '@engine/core/数学.ts';
 
 // 特效参数：和 6-3-下坠/画面.tsx 的 `fx()` 同一份数（碎块按它生成）
 let FX: FxParams | null = null;

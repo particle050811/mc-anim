@@ -11,14 +11,11 @@ import { shaftCellCenter } from '../../../地点/边城/6-3-下坠/编排.ts';
 import pitSurfaceTable from 'asset:数据/镜头/6-3-下坠/竖井4x.坑面';
 import { guardPoseAt, lastSec as lastSec6, guardPositions, type GuardPose } from '../../../地点/边城/6-3-8/编排.ts';
 import { borderTownPos } from '../../../地点/主世界116.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 const FPS = 24;
 const D2R = Math.PI / 180;
-const ss = (x: number) => {
-  const c = Math.min(1, Math.max(0, x));
-  return c * c * (3 - 2 * c);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const add = (a: number[], b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 const yawTo = (p: number[], q: number[]) => Math.atan2(-(q[0] - p[0]), q[1] - p[1]) / D2R;
 const pitchTo = (p: number[], q: number[]) => Math.atan2(q[2] - p[2], Math.hypot(q[0] - p[0], q[1] - p[1])) / D2R;
@@ -52,14 +49,14 @@ export const firstEmergeFrame = emergeFrame(liuLeap);
 
 // 落地站直以后：黄叛先扭头看刘心忠、身子跟着侧过来；刘心忠扫一眼东边围着的卫兵，身子也带过去一点
 const huangLook = (f: number) => {
-  const k = ss((f - huangLeap.f1 - LAND_LEN - 2) / 7);
+  const k = smoothstep01((f - huangLeap.f1 - LAND_LEN - 2) / 7);
   const toLiu = wrap(yawTo(huangLeap.p1, liuLeap.p1) - huangLeap.yaw);
-  const body = ss((f - huangLeap.f1 - LAND_LEN - 5) / 9) * toLiu * 0.45;
+  const body = smoothstep01((f - huangLeap.f1 - LAND_LEN - 5) / 9) * toLiu * 0.45;
   return { yaw: huangLeap.yaw + body, headYaw: k * toLiu - body, headPitch: -4 * k };
 };
 const liuLook = (f: number) => {
-  const k = ss((f - liuLeap.f1 - LAND_LEN - 6) / 8);
-  const body = ss((f - liuLeap.f1 - LAND_LEN - 9) / 10) * -14;
+  const k = smoothstep01((f - liuLeap.f1 - LAND_LEN - 6) / 8);
+  const body = smoothstep01((f - liuLeap.f1 - LAND_LEN - 9) / 10) * -14;
   return { yaw: liuLeap.yaw + body, headYaw: -30 * k - body, headPitch: -6 * k };
 };
 const LEAPERS: Record<'刘' | '黄', Leaper> = {
@@ -74,7 +71,7 @@ export const leaperPose = (who: '刘' | '黄', f: number): FigurePose | null => 
   const lk = look(f);
   if (s < LAND_LEN) return landPose(leap.p1, leap.yaw, s, LAND_LEN);
   const stand = standAt(leap.p1, nearYaw(leap.yaw, lk.yaw), lk.headYaw, lk.headPitch);
-  return mixPose(landPose(leap.p1, leap.yaw, LAND_LEN, LAND_LEN), { ...stand, loc: leap.p1 }, ss((s - LAND_LEN) / RISE_LEN));
+  return mixPose(landPose(leap.p1, leap.yaw, LAND_LEN, LAND_LEN), { ...stand, loc: leap.p1 }, smoothstep01((s - LAND_LEN) / RISE_LEN));
 };
 const chestOf = (who: '刘' | '黄', f: number): V3 | null => {
   const p = leaperPose(who, f);
@@ -105,7 +102,7 @@ export const guardPose = (f: number, i: number): GuardPose => {
   const base = guardPoseAt(guardBaseSec, i);
   const { who, react, feet } = guardReaction(i);
   const t = f / FPS;
-  const k = (t0: number, dur: number) => ss((t - t0) / dur);
+  const k = (t0: number, dur: number) => smoothstep01((t - t0) / dur);
   const stand = k(react, 0.2);
   // 往后让半步：背离那个人的落点
   const away = [feet[0] - LEAPERS[who].leap.p1[0], feet[1] - LEAPERS[who].leap.p1[1]];
@@ -131,7 +128,6 @@ export const guardPose = (f: number, i: number): GuardPose => {
 
 // ---------- 机位 ----------
 // 坑北边、两个北侧卫兵身后高处（离地 4.8 米）往南俯看井口；两人冲上来、落到镜头前面，镜头只跟着俯仰、左右摇（不推）
-export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
 const rawTarget = (f: number): V3 => {
   const c = shaftCellCenter();
   const pts = (['刘', '黄'] as const).map((w) => chestOf(w, f)).filter((p): p is V3 => !!p && p[2] > c[2] - 7);

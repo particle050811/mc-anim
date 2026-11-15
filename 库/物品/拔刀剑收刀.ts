@@ -8,11 +8,9 @@
 // 找鞘口、入鞘两段刀由鞘带着画（位置精确），两手用两骨解析 IK 去追刀柄、鞘口。
 // 全部在髋坐标系（骨架 hip 插槽：脚底为原点、腰在 z=12、单位像素，跟着转身和前倾、不跟胸扭转）里算；纯函数，只看剧情帧和当帧姿态。
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { bladeInHand, type FigurePose, handMatrix, hipMatrix } from '../角色/骨架.tsx';
 import { bladeCenterY, KATANA_DIMS as katanaDims, SHEATH_HANG_QUAT, SHEATHED_BLADE, sheathCenterY } from './拔刀剑.tsx';
-
-const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
+import { rad, smoothstep01 } from '../../engine/core/数学.ts';
 const vec3 = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const figureHeight = 1.875;
 
@@ -112,7 +110,7 @@ export type SheathResult = {
 
 // 某一时刻的约束目标：鞘的变换、刀（髋坐标系，不在手上时没有）、右手握点和左手扶点（髋坐标系）、胸多拧的角度
 const targetsAt = (frame: number, timing: SheathTiming, startBlade: THREE.Matrix4, pitch: number) => {
-  const k = frame < timing.release[0] ? ss((frame - timing.start) / (timing.tipIn - timing.start)) : 1 - ss((frame - timing.release[0]) / (timing.release[1] - timing.release[0]));
+  const k = frame < timing.release[0] ? smoothstep01((frame - timing.start) / (timing.tipIn - timing.start)) : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0]));
   const sheath = sheathXform(k);
   const sheathInHip = new THREE.Matrix4().makeTranslation(sheathMount.x, sheathMount.y, sheathMount.z).multiply(sheath);
   let bladeInHip: THREE.Matrix4 | undefined;
@@ -123,26 +121,26 @@ const targetsAt = (frame: number, timing: SheathTiming, startBlade: THREE.Matrix
     if (timing.side) {
       // 侧向按世界水平给（弓步前倾时髋坐标系是斜的，按髋坐标系给刀尖会扎地）
       const sideBlade = new THREE.Matrix4().compose(sideGrip, new THREE.Quaternion().setFromAxisAngle(vec3(1, 0, 0), -rad(pitch)).multiply(facingQuat(sideDir)), vec3(1, 1, 1));
-      if (frame < timing.side[0]) bladeInHip = lerpBlade(startBlade, sideBlade, ss((frame - timing.start) / (timing.side[0] - timing.start)), vec3(3, 3, 0));
+      if (frame < timing.side[0]) bladeInHip = lerpBlade(startBlade, sideBlade, smoothstep01((frame - timing.start) / (timing.side[0] - timing.start)), vec3(3, 3, 0));
       else if (frame < timing.side[1]) bladeInHip = sideBlade;
       // 从右侧经身前翻过来：刀尖先朝前（按世界略朝上，不扫到弓步前伸的右腿、不戳地），再转到鞘口
-      else bladeInHip = lerpBlade(sideBlade, tipInBlade, ss((frame - timing.side[1]) / (timing.tipIn - timing.side[1])), vec3(0, 4, 3), vec3(0, 1, 0.35).normalize().applyAxisAngle(vec3(1, 0, 0), -rad(pitch)));
+      else bladeInHip = lerpBlade(sideBlade, tipInBlade, smoothstep01((frame - timing.side[1]) / (timing.tipIn - timing.side[1])), vec3(0, 4, 3), vec3(0, 1, 0.35).normalize().applyAxisAngle(vec3(1, 0, 0), -rad(pitch)));
     } else {
       // 原版：从甩刀收势（刀尖朝右上）经身前翻下来，握持点往右前方鼓出去，刀尖不从头上、身后绕
-      bladeInHip = lerpBlade(startBlade, tipInBlade, ss((frame - timing.start) / (timing.tipIn - timing.start)), vec3(3, 6, 0), vec3(0, 1, 0));
+      bladeInHip = lerpBlade(startBlade, tipInBlade, smoothstep01((frame - timing.start) / (timing.tipIn - timing.start)), vec3(3, 6, 0), vec3(0, 1, 0));
     }
   } else if (frame < timing.sheathed) {
-    const depth = tipInDepth + (bladeLen - tipInDepth) * ss((frame - timing.tipIn) / (timing.sheathed - timing.tipIn));
+    const depth = tipInDepth + (bladeLen - tipInDepth) * smoothstep01((frame - timing.tipIn) / (timing.sheathed - timing.tipIn));
     bladeInHip = sheathInHip.clone().multiply(bladeInSheath(bladeLen - depth));
   }
   // 握持点离鞘口沿刀不到 6.4 像素时右手够不着，顺着刀柄往柄头滑（最多 3.3）；入鞘后按在柄头上
-  const insertDepth = frame < timing.tipIn ? 0 : frame < timing.sheathed ? tipInDepth + (bladeLen - tipInDepth) * ss((frame - timing.tipIn) / (timing.sheathed - timing.tipIn)) : bladeLen;
+  const insertDepth = frame < timing.tipIn ? 0 : frame < timing.sheathed ? tipInDepth + (bladeLen - tipInDepth) * smoothstep01((frame - timing.tipIn) / (timing.sheathed - timing.tipIn)) : bladeLen;
   const gripSlide = Math.min(3.3, Math.max(0, 6.4 - (bladeLen + katanaDims.tsubaZ - insertDepth)));
   const gripPt = vec3(0, 0, -gripSlide).applyMatrix4(bladeInHip ?? sheathInHip.clone().multiply(bladeInSheath(0)));
   // 左手扶鞘：握在鞘口往里 3.3 像素、偏刀背一侧的鞘身上（握鞘口上刀尖进口会穿过手）
   const holdPt = vec3(0, 0.8, 3.3).applyMatrix4(sheathInHip);
   // 入鞘时胸往左多拧 25°（右肩送到前面）：不拧的话右臂伸直过去贴着肚子，小臂会插进身体
-  const extraTwist = 25 * ss((frame - (timing.tipIn - 3)) / 3) * (1 - ss((frame - timing.release[0]) / (timing.release[1] - timing.release[0])));
+  const extraTwist = 25 * smoothstep01((frame - (timing.tipIn - 3)) / 3) * (1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0])));
   return { sheath: sheath, sheathInHip: sheathInHip, bladeInHip: bladeInHip, grip: gripPt, holdPt: holdPt, twist: extraTwist };
 };
 
@@ -167,12 +165,12 @@ export const sheathConstraint = (pose: FigurePose, frame: number, timing: Sheath
   const { g: targets, R: rightSol, L: leftSol } = solveAt(pose, frame);
   pose.twist = (pose.twist ?? 0) + targets.twist;
   pose.headYaw -= targets.twist;
-  const wR = frame < timing.release[0] ? 1 : 1 - ss((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - 1));
+  const wR = frame < timing.release[0] ? 1 : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - 1));
   pose.armR += (rightSol[0] - pose.armR) * wR;
   pose.armRRoll += (rightSol[1] - pose.armRRoll) * wR;
   pose.elbowR = (pose.elbowR ?? 0) + (rightSol[2] - (pose.elbowR ?? 0)) * wR;
   // 左手扶鞘（左臂的 roll 在骨架里取反：Figure 的 joint 里是 -armLRoll）
-  const wL = frame < timing.release[0] ? ss((frame - timing.start) / (timing.tipIn - timing.start)) : 1 - ss((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - 1));
+  const wL = frame < timing.release[0] ? smoothstep01((frame - timing.start) / (timing.tipIn - timing.start)) : 1 - smoothstep01((frame - timing.release[0]) / (timing.release[1] - timing.release[0] - 1));
   pose.armL += (leftSol[0] - pose.armL) * wL;
   pose.armLRoll += (-leftSol[1] - pose.armLRoll) * wL;
   pose.elbowL = (pose.elbowL ?? 0) + (leftSol[2] - (pose.elbowL ?? 0)) * wL;

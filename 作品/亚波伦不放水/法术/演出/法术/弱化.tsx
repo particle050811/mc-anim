@@ -6,7 +6,6 @@
 // 这里把 起点 当成中心（施法者脚底 + 0.5 格）。
 // 没做：半径内生物的 SAPPED / 虚弱效果。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { hexColor } from '../零件/材质.ts';
@@ -14,13 +13,14 @@ import { ShockwaveRing } from '../零件/冲击波.tsx';
 import { blockClass, defaultRadius } from '../零件/丁粒子.ts';
 import { vanillaParticleInitSpeed, TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
 import meta from './弱化.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const pink = hexColor(0xff55ff);
 const radiusCells = 7;
 
 const weaken: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
   const footZ = from[2] - 0.5;
-  const r = rng(seed * 7919 + 3);
+  const r = mulberry32(seed * 7919 + 3);
   const blockParticles: ParticleBirth[] = [];
   const bx = Math.floor(from[0]);
   const by = Math.floor(from[1]);
@@ -29,7 +29,7 @@ const weaken: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed 
       if (r() > 0.25) continue;
       const color = [pink[0] * 0.5, pink[1] * 0.5, pink[2] * 0.5] as const;
       // SpellSquareParticle：super 收到 (0.5 − rand, 绿色参数, 0.5 − rand) 过一遍 Particle 的随机速度，竖直再 × 0.2；绿色参数非 0，水平不缩
-      const rr = rng(Math.floor(r() * 1e9));
+      const rr = mulberry32(Math.floor(r() * 1e9));
       const [gx, gy, gz] = vanillaParticleInitSpeed(rr, 0.5 - rr(), color[1], 0.5 - rr());
       const speedVec: [number, number, number] = [gx, -gz, gy * 0.2];
       const radius = defaultRadius(rr);

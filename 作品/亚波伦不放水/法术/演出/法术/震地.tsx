@@ -7,12 +7,12 @@
 // - 方块用下界岩（片子的场地；游戏里是脚下那格是什么就是什么）。
 // 没做：方块各面的明暗（游戏里方块受光照，这里满亮度）；目标被顶飞；潜行时的环形震（surroundTremor）、配法杖时的弧形震（arcTremor）。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { faceMaterial } from '../零件/材质.ts';
 import { defaultGroundBlockPng } from '../零件/方块屑.tsx';
 import meta, { sideOffsets, quakeRange } from './震地.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 /** 第 n 刻末的 animY（n 可带小数，刻间线性插值）；消失了给 null */
 const bounceHeight = (initSpeed: number, age: number): number | null => {
@@ -40,7 +40,7 @@ const GroundQuake: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: 
     sideOffsets.forEach((sideOffset, colIndex) => {
       const age = tick - i;
       if (age < 0) return;
-      const r = rng(seed * 977 + i * 3 + colIndex);
+      const r = mulberry32(seed * 977 + i * 3 + colIndex);
       const gaussian = Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
       const height = bounceHeight(0.2 + gaussian * 0.15, age);
       if (height === null) return;

@@ -7,11 +7,12 @@
 //   镜头停在空羊毛上 0.6 秒，在尖啸体回应（尖啸后 4.5 秒：黑暗、再召唤监守者）之前收住。尖啸体为什么叫：见 ../7-2/时间线.ts 文件头。
 // 开箱到传走是一个镜头，所以是一段（用户 10-18 定：一个镜头不拆进两段）：小屋里南边上空 28mm 正对北俯看，慢推到传走，尖啸体在画面外。
 import type { V3 } from '@engine/model/parts.tsx';
-import type { Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { FPS } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import * as timeline from '../../场/7-李樱撤离/7-2/时间线.ts';
 import * as geom from '../../场/7-李樱撤离/7-2/几何.ts';
 import type { Stack } from '@库/界面/箱子界面.tsx';
+import { lerp, smoothstep01, lerpV } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export { FPS };
 export const segmentId = '7-2-2至3' as const;
@@ -29,13 +30,6 @@ export const lines: { id: string; 帧: number; text: string; estDuration: number
 export const teleportFrame = timeline.teleportSec * FPS - segmentStartFrame;
 
 // ---------- 机位 ----------
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerpV = (a: number[], b: number[], k: number): V3 => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
-
 // 段首 → 传走那一刻慢慢推近，之后停住、目标往下落到空羊毛上。
 // #240 在一间没顶的小石屋里（x −955～−951、z 228～235，墙高 3～4 格），X 在北墙根。机位在小屋里南墙根上空、比他脚底高 3.5 格（游戏坐标），正对北俯看：
 // 镜头只俯不偏，箱子的东西向棱在画面里是水平的，和上面弹出的箱子界面对齐（用户 10-20：原来斜着看，界面和箱子边框对不齐「怪怪的」）。推近、落目标都只动 y、z，机位和目标的 x 一直相同。
@@ -46,8 +40,8 @@ const B1: Cam = { pos: [camX, feet[1] - 4.2, feet[2] + 3.3], tgt: [camX, feet[1]
 const pushStartSec = timeline.cutToChestSec;
 export const camera = (f: number): Cam => {
   const sec = sf(f) / FPS;
-  const k = ss((sec - pushStartSec) / (timeline.teleportSec - pushStartSec));
-  const settle = ss((sec - timeline.teleportSec - 0.1) / 0.6);
+  const k = smoothstep01((sec - pushStartSec) / (timeline.teleportSec - pushStartSec));
+  const settle = smoothstep01((sec - timeline.teleportSec - 0.1) / 0.6);
   return { pos: lerpV(B0.pos, B1.pos, k), tgt: [camX, B1.tgt[1], lerp(lerp(B0.tgt[2], B1.tgt[2], k), feet[2] + 0.2, settle)], lens: lerp(B0.lens, B1.lens, k) };
 };
 
@@ -73,7 +67,7 @@ export const tomeSlot = tomeFrom;
 export type ChestUiState = { visibility: number; chest: (Stack | null)[]; hovered?: number; callout: number; calloutOpacity: number };
 export const chestUi = (f: number): ChestUiState => {
   const sec = sf(f) / FPS;
-  const visibility = ss((sec - timeline.uiOpenSec) / 0.12) * (1 - ss((sec - timeline.lidCloseSec) / 0.08));
+  const visibility = smoothstep01((sec - timeline.uiOpenSec) / 0.12) * (1 - smoothstep01((sec - timeline.lidCloseSec) / 0.08));
   const chest: (Stack | null)[] = Array.from({ length: 27 }, (_, i) => lootSlots[i] ?? null);
   if (sec >= timeline.tomeClickSec) chest[tomeFrom] = null;
   if (sec >= timeline.leggingsClickSec) chest[leggingsFrom] = null;
@@ -84,6 +78,6 @@ export const chestUi = (f: number): ChestUiState => {
     chest,
     hovered,
     callout: Math.min(1, Math.max(0, (sec - timeline.tomeCalloutSec) / timeline.tomeCalloutDur)),
-    calloutOpacity: 1 - ss((sec - timeline.tomeClickSec) / 0.12),
+    calloutOpacity: 1 - smoothstep01((sec - timeline.tomeClickSec) / 0.12),
   };
 };

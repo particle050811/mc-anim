@@ -7,7 +7,6 @@
 // 坐标照模型文件（x 往她右手边是负，正面 −Z，Y 朝上），换算同 库/角色/魔法酒狐新动作组件.tsx 的叠加模型。
 import React, { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { type BedrockBone, type BedrockCube, type BedrockModel, BedrockModelView, type BonePose } from '@engine/model/基岩模型.tsx';
 import { png } from '@engine/model/贴图.ts';
@@ -16,6 +15,7 @@ import { MagicalWineFoxEx, magicalWineFoxExBones, type MagicalWineFoxExProps } f
 import { magicalWineFoxCellSize } from '@库/角色/魔法酒狐新动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
+import { rad } from '@engine/core/数学.ts';
 
 const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel;
 const boneByName = new Map(MODEL.bones.map((b) => [b.name, b]));

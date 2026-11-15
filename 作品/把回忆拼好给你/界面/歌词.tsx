@@ -3,10 +3,10 @@
 // 入帧、收帧由段画面从 分镜 取段内帧传进来（每句的开口、咔哒定格），样式从场的 参数.ts 传进来，这里不写帧号。
 import type React from 'react';
 import { AbsoluteFill } from 'remotion';
-import { clamp01 } from '@engine/anim/anim.ts';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { fps, oneFrameSec } from '../分镜/时间.ts';
 import { useSnappedFrame } from '../当前帧.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 /** 一句：入 = 从这一段内帧起淡入 */
 export type LyricLine = { text: string; 入: number };

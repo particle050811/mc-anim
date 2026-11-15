@@ -5,7 +5,8 @@ import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
 import { camPoses, addOffset, type ShotCam } from '../../../地点/古城4x/7-1/机位.ts';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import { G4 } from '../../../地点/古城4x.tsx';
-import { lerpV } from '../../../地点/古城4x/7-1/戏/公用.ts';
+import { lerpV } from '@engine/core/数学.ts';
+
 export const segmentId = '7-3-1' as const;
 export const FPS = timeline.FPS;
 export const END = timeline.frameCountOf(segmentId);

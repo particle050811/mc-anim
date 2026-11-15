@@ -1,8 +1,10 @@
 // 6-4-3 箭：位置（几何.ts）和沿路的暴击粒子。
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
 import { interpPathPos, particleInitVel, particlePath, type Particle } from '@库/特效/粒子面片.tsx';
 import * as geom from '../几何.ts';
 import { add, storySecAt } from './公用.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
+
 export const arrowAt = (g: number) => geom.arrowState(storySecAt(g));
 // 暴击粒子（原版 CritParticle）：满弓射出的和被拔刀剑挡开的箭都是暴击箭（AbstractArrow.tick 每刻沿上一刻路线放 4 个，
 // 速度 (−dx, −dy + 0.2, −dz)）。这里沿路每 0.3 米放一个以便看清；粒子本身照游戏：
@@ -34,7 +36,7 @@ export const critParticles = (globalFrame: number): Particle[] => {
     if (t < src.t) continue;
     let cached = critTrackCache.get(src.r);
     if (!cached) {
-      const rand = rng(src.r * 7919 + 3);
+      const rand = mulberry32(src.r * 7919 + 3);
       const life = Math.max(1, Math.floor(6 / (rand() * 0.8 + 0.6)));
       // 给的速度（格/刻，游戏 y 朝上）：场景 → 游戏 (x, z, −y)
       const vt = [-src.v[0] / 20, -src.v[2] / 20 + 0.2, src.v[1] / 20];

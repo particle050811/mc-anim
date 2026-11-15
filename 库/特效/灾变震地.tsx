@@ -16,7 +16,7 @@
 // 许可：Cataclysm 是 CC BY-NC-ND 4.0，这里只拷了圆环的 6 张贴图（`灾变圆环.贴图`，npm run 取材 -- 灾变圆环），开源时要排除或署名。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { pngDir, type Png } from '../../engine/model/贴图.ts';
 import { DIRS, debrisMat, face, fullFaces, newBuf, tintsOf, toGeo, atlasTex, type DebrisData, type DebrisFace } from './方块飞溅.tsx';
 import { BreakParticleQuads } from './方块破坏粒子.tsx';
@@ -28,6 +28,7 @@ import ring2Png from 'asset:贴图/特效/灾变圆环/ring_2';
 import ring3Png from 'asset:贴图/特效/灾变圆环/ring_3';
 import ring4Png from 'asset:贴图/特效/灾变圆环/ring_4';
 import ring5Png from 'asset:贴图/特效/灾变圆环/ring_5';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const ticksPerSec = 20;
 // REINFORCED_SMASH：砸地（方块粒子、圆环）在第 3 刻，震波第 5 刻起每 2 刻往外一圈，3～10 格
@@ -312,7 +313,7 @@ const planQuake = (data: DebrisData, center: V3, seed: number, boost: QuakeBoost
   const k = JSON.stringify([center, seed, boost]);
   let plan = byData.get(k);
   if (!plan) {
-    const rand = rng(seed);
+    const rand = mulberry32(seed);
     const displaced = boost.realMove ? buildDisplaced(data, center, rand, boost) : null;
     const hops = boost.realMove ? [] : buildHops(data, center, rand, boost);
     plan = { hops, displaced, particles: buildParticles(data, center, rand, boost) };

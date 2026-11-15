@@ -18,13 +18,9 @@ import { exception } from '@engine/core/例外.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import * as K626 from '../6-2-6/编排.ts';
 import { segmentFrames as thinkFrameCount } from '../6-3-2/台词.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 export const FPS = 24;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-
 // ---------- 起点：6-2-6 末帧 ----------
 const F626 = K626.FRAMES - 1;
 export const start = {
@@ -147,7 +143,7 @@ const clockAt = (globalFrame: number) => {
   for (let i = 1; i < CLOCK.length; i++) {
     const [g0, r0] = CLOCK[i - 1];
     const [g1, r1] = CLOCK[i];
-    if (globalFrame <= g1) return r0 + (r1 - r0) * ss((globalFrame - g0) / (g1 - g0));
+    if (globalFrame <= g1) return r0 + (r1 - r0) * smoothstep01((globalFrame - g0) / (g1 - g0));
   }
   return CLOCK[CLOCK.length - 1][1];
 };

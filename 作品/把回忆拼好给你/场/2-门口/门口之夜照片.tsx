@@ -21,6 +21,7 @@ import { polaroidShadow } from '../../特效/拍立得.tsx';
 import { logoutIcon, photoCard, shatter, freezeFrame, photoFrame, photoLayout, chatScale } from './门口之夜参数.ts';
 import { shadingBySeg } from '../../默认.ts';
 import { DoorNightCanvas, type CaptureLayer } from './门口之夜画布.tsx';
+import { lerp } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...lyricEvents, ...mainCutLines9To11Events };
 
@@ -30,8 +31,6 @@ const shading = shadingBySeg['2-截图下线'];
 const holdFrame = freezeFrame;
 const shatterFrame = mainCutEvents.worldShatters.帧;
 const logOffFrame = mainCutEvents.logOff.帧;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 /** 把 门口之夜画布 交出来的各层按位置拼进 W×H 的离屏画布（远景那块比画面高、不从顶边起） */
 const composeLayers = (offscreen: HTMLCanvasElement, layers: readonly CaptureLayer[], W: number, H: number) => {
   if (offscreen.width !== W || offscreen.height !== H) Object.assign(offscreen, { width: W, height: H });

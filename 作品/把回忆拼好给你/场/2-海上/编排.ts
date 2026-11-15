@@ -8,17 +8,15 @@ import { segmentWindow, events as mainCutEvents } from '../../分镜/正片第4�
 import { skySphereAngle } from '../../地点/天体.ts';
 import { endRig, finalDist, finalSpeed, eyeBall } from '../2-祭坛/末态.ts';
 import { herLook, herFacesLeft, rowStartLeadTicks, seaCamera, boatYaw, sunHeight } from './参数.ts';
+import { clamp, clamp01, lerp } from '@engine/core/数学.ts';
 
 export const segKey = '2-日落划船';
 export const segWindow = segmentWindow(segKey);
 export const events = mainCutEvents;
 /** 页面尺寸（成片的一半） */
 export const pageSize: { readonly 宽: number; readonly 高: number } = aspect;
-
-const clamp01 = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 /** 两头速度为 0 的平滑（smoothstep，最快处是平均速度的 1.5 倍） */
 const smoothStep = (t: number) => t * t * (3 - 2 * t);
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const radPerDeg = Math.PI / 180;
 
 /** 段内帧 → 歌曲帧 */
@@ -151,7 +149,7 @@ export const sightDir = (rig: Perspective, x: number, y: number, width = pageSiz
 
 /** 视线的仰角和离太阳的方位差（度）：太阳在正西（天球的转轴是南北，太阳的方位永远是正东或正西） */
 export const elevationAzimuthDiff = (d: V3): { elevation: number; 差: number } => {
-  const elevation = Math.asin(clamp01(d[2], -1, 1)) / radPerDeg;
+  const elevation = Math.asin(clamp(d[2], -1, 1)) / radPerDeg;
   const azimuthDiff = Math.atan2(d[1], d[0]) / radPerDeg - 180;
   return { elevation, 差: ((((azimuthDiff + 180) % 360) + 360) % 360) - 180 };
 };

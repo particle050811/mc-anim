@@ -5,7 +5,7 @@
 import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
-import { clamp01, rad, sample, sampleV, type VKey } from '@engine/anim/anim.ts';
+import { sample, sampleV, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { ItemSprite } from '@engine/model/物品贴图.tsx';
 import { uiFontFamily } from '@库/界面/基础.tsx';
@@ -29,6 +29,7 @@ import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 import { useSnappedFrame } from '../../当前帧.ts';
+import { rad, clamp01 } from '@engine/core/数学.ts';
 
 const segKey = '1-一如既往';
 const startFrame = segClock(segKey).起帧;

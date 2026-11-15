@@ -1,16 +1,17 @@
 // 6-3-8、6-3-10 的机位：卫兵身后看坑 → 绕到两人正面 → 往后退一点看两人跳出去（跳下镜）；硬切到池子西头低处看落水（落水镜）；切到坑口。
 import type { V3 } from '@engine/model/parts.tsx';
-import { ss, lerp, lerp3, add, sub, norm, slerpDir, town } from './工具.ts';
+import { add, sub, norm, slerpDir, town } from './工具.ts';
 import { cues } from './时间线.ts';
 import { WALK, innerEdgeY, liuStand, huangStand, shaftMouth } from './站位.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 // ---------- 机位 ----------
 export type Cam = { pos: V3; tgt: V3; lens: number };
 const withDir = (pos: V3, d: V3, lens: number): Cam => ({ pos, tgt: add(pos, [d[0] * 100, d[1] * 100, d[2] * 100]), lens });
 const lookDir = (c: Cam) => norm(sub(c.tgt, c.pos));
-const camLerp = (a: Cam, b: Cam, k: number): Cam => withDir(lerp3(a.pos, b.pos, k), slerpDir(lookDir(a), lookDir(b), k), Math.exp(lerp(Math.log(a.lens), Math.log(b.lens), k)));
+const camLerp = (a: Cam, b: Cam, k: number): Cam => withDir(lerpV(a.pos, b.pos, k), slerpDir(lookDir(a), lookDir(b), k), Math.exp(lerp(Math.log(a.lens), Math.log(b.lens), k)));
 const chest = (standPos: V3, h = 1.25): V3 => add(standPos, [0, 0, h]);
-const pairCenter = lerp3(chest(liuStand, 1.2), chest(huangStand, 1.2), 0.5);
+const pairCenter = lerpV(chest(liuStand, 1.2), chest(huangStand, 1.2), 0.5);
 
 // ① 卫兵身后：城墙外、比走道高 7 米多，越过 2～5 号卫兵的肩看路口的坑，卫兵在画面下半、坑在正中；慢慢往前飘
 const C1a: Cam = { pos: town(44.5, 216.5, WALK + 7.6), tgt: add(shaftMouth(), [0, 0, 2]), lens: 36 };
@@ -38,7 +39,7 @@ const orbit = (k: number): Cam => {
   const dir = slerpDir(norm(o0), norm(o1), k);
   const radius = Math.exp(lerp(Math.log(Math.hypot(...o0)), Math.log(Math.hypot(...o1)), k));
   const pos = add(pairCenter, [dir[0] * radius, dir[1] * radius, dir[2] * radius + 2.5 * Math.sin(Math.PI * k)]);
-  const look = slerpDir(lookDir(C1b), norm(sub(pairCenter, pos)), ss(k / 0.55));
+  const look = slerpDir(lookDir(C1b), norm(sub(pairCenter, pos)), smoothstep01(k / 0.55));
   return withDir(pos, look, Math.exp(lerp(Math.log(C1b.lens), Math.log(C2.lens), k)));
 };
 // 关键机位（编排秒 → 机位），相邻两个之间缓进缓出；绕 那一段单独算（见上）；落水镜、切坑 那一刻硬切
@@ -56,13 +57,13 @@ const buildCamKeys = (): [number, Cam][] => {
 const camKeys = buildCamKeys();
 export const camPose = (t: number): Cam => {
   const cue = cues;
-  if (t >= cue.cutToPit) return camLerp(C10a, C10b, ss((t - cue.cutToPit - 0.3) / (cue.huangEntersShaft - cue.cutToPit)));
-  if (t >= cue.splashShot) return camLerp(C5a, C5b, ss((t - cue.splashShot) / (cue.cutToPit - cue.splashShot)));
-  if (t >= cue.orbit[0] && t < cue.orbit[1]) return orbit(ss((t - cue.orbit[0]) / (cue.orbit[1] - cue.orbit[0])));
+  if (t >= cue.cutToPit) return camLerp(C10a, C10b, smoothstep01((t - cue.cutToPit - 0.3) / (cue.huangEntersShaft - cue.cutToPit)));
+  if (t >= cue.splashShot) return camLerp(C5a, C5b, smoothstep01((t - cue.splashShot) / (cue.cutToPit - cue.splashShot)));
+  if (t >= cue.orbit[0] && t < cue.orbit[1]) return orbit(smoothstep01((t - cue.orbit[0]) / (cue.orbit[1] - cue.orbit[0])));
   for (let i = 1; i < camKeys.length; i++) {
     const [t0, camA] = camKeys[i - 1];
     const [t1, camB] = camKeys[i];
-    if (t < t1) return camLerp(camA, camB, ss((t - t0) / (t1 - t0)));
+    if (t < t1) return camLerp(camA, camB, smoothstep01((t - t0) / (t1 - t0)));
   }
   return camKeys[camKeys.length - 1][1];
 };

@@ -1,8 +1,8 @@
 // 第 7 章第 1 场各段机位的小工具：一段 = 几个硬切的镜头，每个镜头的 pos、tgt 是关键帧（段内帧）或者按帧算的函数（跟拍）。
 import { sample, sampleV, type Key, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import type { Cam } from '../6-4-1/古城画面.tsx';
 import * as timeline from './时间线.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export type ShotCam = { start: number; pos: VKey[] | ((frame: number) => V3); tgt: VKey[] | ((frame: number) => V3); lens: Key[] };
 const resolveKey = (v: VKey[] | ((frame: number) => V3), f: number): V3 => (typeof v === 'function' ? v(f) : (sampleV(v, f) as V3));

@@ -7,7 +7,6 @@
 // 没做：追踪转向（tickCount > 2 起方向往目标转，turnRate 0.2 ÷ 惯性）——目标不动，直线就是它。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { addVec, scaleVec, unitVec, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
@@ -20,6 +19,7 @@ import { Trail } from '../零件/甲/尾迹.tsx';
 import meta, { surgeShots } from './surging.元.ts';
 import scatterBoltPng from 'asset:贴图/法术/goety/entity/projectiles/scatter_bolt_orange';
 import pointedTrailPng from 'asset:贴图/法术/goety/entity/projectiles/pointed_trail';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const gold = hexColor(0xffaa00);
 const halfHeight = 0.15;
@@ -33,7 +33,7 @@ const Surge: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target
         if (t < 0) return null;
         if (t >= projectile.flightTick) {
           const pos = addVec(trajectoryAt(projectile.trajectory, projectile.flightTick), [0, 0, halfHeight]);
-          const r = rng(seed * 19 + i);
+          const r = mulberry32(seed * 19 + i);
           return (
             <React.Fragment key={i}>
               <SphereBurst 位={pos} 刻={t - projectile.flightTick} 色={gold} 尺寸={0.5} 速={1} />

@@ -4,8 +4,9 @@
 // 输出是祭坛的局部格：世界格 (i, j, k) = 局部 (x + 祭坛.世界[0], y + 祭坛.世界[1], z + 祭坛.地面)，祭坛圈心在局部原点、地面顶 z = 0（草方块在 k = −1）。
 // 不转方向：方块和祭坛都对着世界的格子，鸟居朝北。
 import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
-import { fbm, hash2, simplex2, smoothstep } from '@engine/core/噪声.ts';
+import { fbm, hash2, simplex2 } from '@engine/core/噪声.ts';
 import { you, pillarTopMaterials, altarPos, newWorldTerrain } from './参数.ts';
+import { smoothstep, randInt, mulberry32 } from '@engine/core/数学.ts';
 
 const { plainsParams, cherryGrove } = newWorldTerrain;
 const noise = simplex2(plainsParams.种子);
@@ -103,20 +104,6 @@ const oakTree = (t: Tree, z0: number, place: (b: PlacedBlock) => void) => {
       }
   }
 };
-
-/** 定死的随机数（mulberry32），一棵树一个种子 */
-const rng = (seed: number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
-
 type Dir2D = readonly [number, number];
 const fourDirs: readonly Dir2D[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
 const horizontalLog = (d: Dir2D) => `minecraft:cherry_log[axis=${d[0] !== 0 ? 'x' : 'z'}]`;
@@ -125,7 +112,7 @@ const cherryLeaves = 'minecraft:cherry_leaves';
 
 /** 樱花树：原版 1.20.1 CherryTrunkPlacer、CherryFoliagePlacer 的长法（同 场/2-新世界/地形.ts 的 樱花树，那边注释写了各数的出处） */
 const cherryTree = (t: Tree, z0: number, place: (b: PlacedBlock) => void) => {
-  const r = rng(t.种子 * 2654435761 + 97);
+  const r = mulberry32(t.种子 * 2654435761 + 97);
   const treeHeight = 7 + randInt(r, 0, 1);
   const branchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -3));
   let secondBranchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -4));

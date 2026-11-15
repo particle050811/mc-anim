@@ -9,12 +9,10 @@ import { events as mainCutSecondLineEvents } from '../../分镜/正片第2句.ts
 import { groundHeight } from './地形.ts';
 import { skyBrightness } from '../../地点/天体.ts';
 import { you, arrived, crossSection, stripSec, pit, cameraRigs, chatOverlay, walkSpeed, type CameraRigFrame } from './参数.ts';
+import { clamp01, lerp } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...mainCutOpeningSceneEvents, ...mainCutSecondLineEvents };
-
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const smoothStep = (q: number) => q * q * (3 - 2 * q);
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const lerpRig = (a: CameraRigFrame, b: CameraRigFrame, k: number): CameraRigFrame => ({
   眼: a.眼.map((v, i) => lerp(v, b.眼[i]!, k)) as unknown as V3,
   看: a.看.map((v, i) => lerp(v, b.看[i]!, k)) as unknown as V3,

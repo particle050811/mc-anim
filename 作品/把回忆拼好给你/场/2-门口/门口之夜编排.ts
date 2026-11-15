@@ -4,15 +4,14 @@
 // 她：第 8 句末态（闭眼歪头笑）匹配剪进来，睁眼转头看你种树、看牌子，镜头跟火箭走起抬头看天，一直仰头看烟花，炸开那一下笑开。
 // 她身子朝镜头、头往左上转 30° 看烟花（头不取 90° 的整数倍）：烟花在画面左边，身子转过去就看不见脸；头转过 50° 帽檐就把脸盖住（第8句.ts 量过），
 // 收到 30°、仰 20°，脸露在帽檐下面（静帧定稿：看清优先）。
-import { clamp01 } from '@engine/anim/anim.ts';
 import { addWave, waveProgress } from '@库/角色/挥手.ts';
 import { rocketPos, burstPoint, burstSec } from '@库/特效/烟花.ts';
 import { fps, oneFrameSec, legacyFrameSec } from '../../分镜/时间.ts';
 import { events as mainCutEvents } from '../../分镜/正片第9至11句.ts';
 import { youStand, herStand, swapRocketSec, fireworks, signFace, signLinesAt, plantSec, saplingX, standRowY } from './门口之夜参数.ts';
+import { clamp01, lerp } from '@engine/core/数学.ts';
 
 const toSec = (frame: number) => frame / fps;
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const events = mainCutEvents;
 
 // ---------- 你 ----------

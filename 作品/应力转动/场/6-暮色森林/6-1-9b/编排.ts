@@ -20,14 +20,9 @@ import * as P613 from '../6-1-3/编排.ts';
 import * as choreo619 from '../6-1-9/编排.ts';
 import { cameraAt as oneShotCamera, type Cam } from '../一镜到底/镜头.ts';
 import * as route from '../一镜到底/路线.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 export const FPS = 24;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-
 // ---------- 接一镜到底 ----------
 export const F0 = route.totalFrames - 1;
 export const toGlobalFrame = (f: number) => F0 + f;
@@ -128,12 +123,12 @@ export const camPose = (frame: number): Cam => {
   if (t < cues.cutB) {
     // 升：方位走得快一些（前四分之三就绕到二人身后），距离、仰角整段慢慢升上去：免得升到高处往下看时还在转方位，整个画面跟着打转（6-3-1/编排.ts 机位那一节的教训）
     const progress = (t - cues.rise[0]) / (cues.rise[1] - cues.rise[0]);
-    return camFromScene(orbitLerp(poses.A0, poses.A1, pairCenter, ss(progress), ss(progress / 0.75)));
+    return camFromScene(orbitLerp(poses.A0, poses.A1, pairCenter, smoothstep01(progress), smoothstep01(progress / 0.75)));
   }
-  if (t < cues.cutC) return camFromScene(orbitLerp(poses.B0, poses.B1, [0.55, 0.15, 1.3], ss((t - cues.cutB) / (cues.cutC - cues.cutB))));
-  if (t < cues.pullBack[0]) return camFromScene(orbitLerp(poses.C0, poses.C1, [0, 0.35, 1.5], ss((t - cues.cutC) / (cues.pullBack[0] - cues.cutC))));
+  if (t < cues.cutC) return camFromScene(orbitLerp(poses.B0, poses.B1, [0.55, 0.15, 1.3], smoothstep01((t - cues.cutB) / (cues.cutC - cues.cutB))));
+  if (t < cues.pullBack[0]) return camFromScene(orbitLerp(poses.C0, poses.C1, [0, 0.35, 1.5], smoothstep01((t - cues.cutC) / (cues.pullBack[0] - cues.cutC))));
   const progress = (t - cues.pullBack[0]) / (cues.pullBack[1] - cues.pullBack[0]);
-  return camFromScene(orbitLerp(poses.C1, poses.C2, pairCenter, ss(progress), ss(progress)));
+  return camFromScene(orbitLerp(poses.C1, poses.C2, pairCenter, smoothstep01(progress), smoothstep01(progress)));
 };
 
 const LY_YAW: [number, number][] = [
@@ -152,7 +147,7 @@ const headShake = (t: number) => {
   return 9 * Math.sin(progress * 4 * Math.PI) * Math.sin(progress * Math.PI);
 };
 // 塌：身子往前一塌、两臂往前垂、往里收，后半句里慢慢塌下去（骨架没有脊柱，只能整个人往前倾一点）
-const slump = (t: number) => ss((t - cues.secondHalf) / 1.6);
+const slump = (t: number) => smoothstep01((t - cues.secondHalf) / 1.6);
 export const liyingTweak = (t: number) => ({
   headYaw: track(LY_YAW, t) + headShake(t),
   headPitch: track(LY_PITCH, t),
@@ -190,6 +185,6 @@ export const jiuhuTweak = (t: number) => {
     lean: track(JH_LEAN, t),
     earFlick: 12 * flick,
     // 东张西望时尾巴困惑地甩得快一点（相位速度的倍数，1 = 一镜到底原来的摆法）
-    tailSpeed: 1 + 0.8 * ss((t - 1.5) / 0.6) * (1 - ss((t - cues.cutC) / 1.5)),
+    tailSpeed: 1 + 0.8 * smoothstep01((t - 1.5) / 0.6) * (1 - smoothstep01((t - cues.cutC) / 1.5)),
   };
 };

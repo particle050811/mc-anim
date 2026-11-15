@@ -1,8 +1,9 @@
 // 李樱：关键姿态（模块加载时按手要到的位置反解一次），按时刻表在姿态间过渡，进门和走到屋子中间的走路。
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
-import { lerp, mixPose, near, reach, ss, walkSwing, withPose } from '../动作.ts';
+import { mixPose, near, reach, walkSwing, withPose } from '../动作.ts';
 import { FPS, lastFrame, cues } from './时间线.ts';
 import { LY_H, tableSpot, COMPASS_ON_TABLE, LY_END, LOOT_GRIP, lootTable, sub, enter, exitPath, walkPlans, trip } from './站位.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 // ---------- 李樱的关键姿态（模块加载时按手要到的位置反解一次） ----------
 const stand = (d: Partial<FigurePose> = {}) => withPose(standPose(tableSpot), { elbowR: 6, elbowL: 6, armRRoll: 2, armLRoll: 2, ...d });
@@ -62,7 +63,7 @@ const chain = (t: number, first: FigurePose, steps: [number, number, FigurePose]
   let pose = first;
   for (const [start, end, target] of steps) {
     if (t <= start) break;
-    pose = mixPose(pose, target, ss((t - start) / (end - start)));
+    pose = mixPose(pose, target, smoothstep01((t - start) / (end - start)));
   }
   return pose;
 };
@@ -75,7 +76,7 @@ export const liying = (globalFrame: number): FigurePose => {
   if (t < cues.atTable + 0.01) {
     const progress = trip(t, walkPlans.enter[0], walkPlans.enter[1], enter.length, walkPlans.enter[2], walkPlans.enter[3]);
     const loc = enter.at(progress.s);
-    const yaw = lerp(enter.heading(progress.s), 0, ss((t - 1.3) / (cues.atTable - 1.3)));
+    const yaw = lerp(enter.heading(progress.s), 0, smoothstep01((t - 1.3) / (cues.atTable - 1.3)));
     return walkSwing(withPose(poses.stand, { loc, yaw }), progress.s / 1.5, 30 * Math.min(1, progress.speed / 1.5));
   }
   if (t < cues.lookDown) {
@@ -100,7 +101,7 @@ export const liying = (globalFrame: number): FigurePose => {
     // 右手手指敲桌面：没有手指，用右手一下一下地抬起落下代替（每秒 2.5 下）
     const [tapStart, tapEnd] = cues.tapTable;
     if (t > tapStart && t < tapEnd) {
-      const amp = ss((t - tapStart) / 0.3) * (1 - ss((t - (tapEnd - 0.3)) / 0.3));
+      const amp = smoothstep01((t - tapStart) / 0.3) * (1 - smoothstep01((t - (tapEnd - 0.3)) / 0.3));
       const tap = Math.max(0, Math.sin(2 * Math.PI * 2.5 * (t - tapStart))) ** 2;
       pose = { ...pose, elbowR: (pose.elbowR ?? 0) + 9 * amp * tap, armR: pose.armR + 2 * amp * tap };
     }
@@ -124,10 +125,10 @@ export const liying = (globalFrame: number): FigurePose => {
   const progress = trip(t, w0, w1, exitPath.length, walkPlans.exit[2]);
   const loc = exitPath.at(progress.s);
   const hd = exitPath.heading(progress.s);
-  let yaw = lerp(0, hd, ss((t - w0) / 0.6));
-  yaw = lerp(yaw, near(LY_END.yaw ?? 0, yaw), ss((t - (w1 - 0.7)) / 0.9));
+  let yaw = lerp(0, hd, smoothstep01((t - w0) / 0.6));
+  yaw = lerp(yaw, near(LY_END.yaw ?? 0, yaw), smoothstep01((t - (w1 - 0.7)) / 0.9));
   // 起步时左手放下来，跟着步子摆；右手一直平端着指南针
-  const base = mixPose(poses.lookUp, withPose(poses.lookUp, { armL: 0, armLRoll: 2, elbowL: 6 }), ss((t - w0) / 0.5));
-  const walk = walkSwing(withPose(base, { loc, yaw, headYaw: lerp(22, 0, ss((t - w0) / 0.6)), headPitch: lerp(0, -4, ss((t - w0) / 0.6)) }), progress.s / 1.5, 26 * Math.min(1, progress.speed / 1.5), { L: true });
-  return mixPose(walk, LY_END, ss((t - cues.handOver[0]) / (cues.handOver[1] - cues.handOver[0])));
+  const base = mixPose(poses.lookUp, withPose(poses.lookUp, { armL: 0, armLRoll: 2, elbowL: 6 }), smoothstep01((t - w0) / 0.5));
+  const walk = walkSwing(withPose(base, { loc, yaw, headYaw: lerp(22, 0, smoothstep01((t - w0) / 0.6)), headPitch: lerp(0, -4, smoothstep01((t - w0) / 0.6)) }), progress.s / 1.5, 26 * Math.min(1, progress.speed / 1.5), { L: true });
+  return mixPose(walk, LY_END, smoothstep01((t - cues.handOver[0]) / (cues.handOver[1] - cues.handOver[0])));
 };

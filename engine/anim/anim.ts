@@ -1,6 +1,8 @@
 // 关键帧插值。段的插值方式挂在段起点的关键帧上：smooth（默认）= 三次 Hermite，端点和极值点切线为 0，不冲过关键帧；linear 用于匀速冲刺；const 用于刀刃这类出现/消失的开关；
 // back = 段尾冲过终值再退回（冲过量约这段变化量的 12%，起点速度接前一段、终点停稳）：甩刀、转身这类带惯性的动作收尾用。
 // smooth 永远不冲过头会停得像被钉住（动作调研结论），要惯性的段落显式写 back，默认行为不变。
+import { rad, clamp01 } from '../core/数学.ts';
+
 export type Interp = 'smooth' | 'linear' | 'const' | 'back';
 export type Key = [frame: number, value: number, interp?: Interp];
 export type VKey = [frame: number, value: number[], interp?: Interp];
@@ -70,6 +72,3 @@ export const track = (pts: [number, number][], frame: number): number => {
   }
   return pts[pts.length - 1][1];
 };
-
-export const rad = (deg: number) => (deg * Math.PI) / 180;
-export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));

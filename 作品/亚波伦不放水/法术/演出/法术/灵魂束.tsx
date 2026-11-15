@@ -11,7 +11,6 @@
 // 没做：配下界魔杖加下界套装时换 WitherBolt（片里默认只算法杖，不换）；弹在水里的气泡。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { addVec, sub, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
@@ -36,6 +35,7 @@ import summonTrail0Png from 'asset:贴图/法术/goety/particle/summon_0';
 import summonTrail1Png from 'asset:贴图/法术/goety/particle/summon_1';
 import summonTrail2Png from 'asset:贴图/法术/goety/particle/summon_2';
 import summonTrail3Png from 'asset:贴图/法术/goety/particle/summon_3';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const soulBoltModel = getModel(soulBoltModelData, 'SoulBoltModel');
 const projectileFrames = [soulBolt1Png, soulBolt2Png, soulBolt3Png].map(png);
@@ -46,7 +46,7 @@ const entityHeight = 0.3125;
 const hitParticleClass: ParticleClass = { 帧: [bulletEffect7Png, bulletEffect6Png, bulletEffect5Png, bulletEffect4Png, bulletEffect3Png, bulletEffect2Png, bulletEffect1Png].map(png), 选帧: '按年龄', 摩擦: 0.96, 重力: -0.1, 混合: '加色' };
 
 const hitParticles = (pos: Vec3, tick: number, seed: number): ParticleBirth[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   return Array.from({ length: 32 }, (_, i) => {
     const spawnPos: Vec3 = [pos[0] + r(), pos[1] + r(), pos[2] + r()];
     // 构造函数：super(…, 0.5 − 随机, yd, 0.5 − 随机) 过父类的随机化，再 yd × 0.2（给的 xd、zd 不是 0，水平不缩）。原版粒子初速 进出都是游戏坐标（y 竖直）
@@ -62,7 +62,7 @@ const flightParticleClass: ParticleClass = { 帧: [summonTrail0Png, summonTrail1
 const flightParticles = (trajectory: (n: number) => Vec3, hitTick: number, seed: number): ParticleBirth[] =>
   Array.from({ length: Math.max(0, Math.ceil(hitTick) - 1) }, (_, i) => {
     const n = i + 1;
-    const r = rng(seed * 977 + n);
+    const r = mulberry32(seed * 977 + n);
     const randomOffset = () => (r() / 4) * (Math.floor(r() * 3) - 1);
     // 位置 − 速度：tick 里 travel 已经把速度更新成下一刻要走的那段
     const prevPoint = sub(trajectoryPos(trajectory, n), sub(trajectoryPos(trajectory, n + 1), trajectoryPos(trajectory, n)));

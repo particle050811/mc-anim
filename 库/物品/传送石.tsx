@@ -17,12 +17,13 @@
 //   人是瞬间移走的，没有渐隐。
 // 坐标：场景坐标（Z 朝上），单位格；时间：刻（1 秒 20 刻）。
 import React from 'react';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { DISPLAY } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import type { ParticleSpawn } from '../特效/原版粒子.tsx';
 import { GlintItem, HeldItem } from './附魔物品.tsx';
 import warpStonePng from 'asset:贴图/物品/杂项物品/传送石';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 export const WARP = { holdTicks: 32, warpParticleCount: 128 };
 // UseAnim.BOW 时原版 HumanoidModel 的手臂（BOW_AND_ARROW，右手用）：两臂 xRot = −90° + 头仰，右 yRot = −0.1 + 头偏（弧度）、左 yRot = 0.1 + 头偏 + 0.4
@@ -45,7 +46,7 @@ const g2s = (g: V3): V3 => [g[0], -g[2], g[1]];
 
 // 按住使用时的粒子：脚底(刻) 给人的脚底（场景），视线 = 看的方向；t0 = 开始使用的那一刻；主手右手（默认）
 export const warpStoneUseParticles = (feetAt: (tick: number) => V3, lookDir: V3, t0: number, seed: number, durationTicks = WARP.holdTicks): ParticleSpawn[] => {
-  const rand = rng(seed * 3571 + 13);
+  const rand = mulberry32(seed * 3571 + 13);
   const out: ParticleSpawn[] = [];
   const { yaw, pitch } = facingAngles(lookDir);
   const DEG = Math.PI / 180;
@@ -79,7 +80,7 @@ export const warpStoneUseParticles = (feetAt: (tick: number) => V3, lookDir: V3,
 
 // 传送那一刻的 128 个 portal：脚底（场景）→ 所在方块的最小角（游戏的 BlockPos）
 export const teleportParticles = (feet: V3, tick: number, seed: number): ParticleSpawn[] => {
-  const rand = rng(seed * 2851 + 3);
+  const rand = mulberry32(seed * 2851 + 3);
   const blockCorner: V3 = [Math.floor(feet[0]), Math.floor(feet[2]), Math.floor(-feet[1])];
   return Array.from({ length: WARP.warpParticleCount }, (_, i) => {
     const gp: V3 = [blockCorner[0] + (rand() - 0.5) * 3, blockCorner[1] + rand() * 3, blockCorner[2] + (rand() - 0.5) * 3];

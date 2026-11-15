@@ -1,11 +1,11 @@
 // 第 14 句（段 2-归隐）的音效：楼上撒下来的纸声、荧光框取出声、挂铃的铃声。全在本段里放完（铃声段尾前淡掉，2-摇铃 从安静起）。
 // 纯数据（段.ts 读）。增益是 Agent 暂定（三稿「克制」：压在歌下面，听得出来就行），文件本身的数是 ffmpeg 量的（每 20 毫秒一窗的 RMS）。
-import { clamp01 } from '@engine/anim/anim.ts';
 import { fps } from '../../分镜/时间.ts';
 import { segmentWindow, events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
 import type { SongSound } from '../../声音/跨段音效.ts';
 import { paperSounds, paperSoundPeakDb } from './第8句参数.ts';
 import { bellFile } from './第15句声音.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 const events = mainCutEvents;
 /** 段 2-归隐 的止帧（第 15 句起，2-摇铃 的第一帧） */

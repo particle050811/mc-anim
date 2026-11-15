@@ -14,7 +14,6 @@
 // 坐标：原点在脚底中心，Z 朝上，正面朝 -Y（同 贴图方盒.tsx、巫妖.tsx），单位格。
 import React from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { EntityModel, type EntityModelData, type PartPose } from '../../engine/model/实体模型.tsx';
 import { ItemDisplay, ItemSprite, type ItemTransform } from '../../engine/model/物品贴图.tsx';
 import { type Png, pngDir } from '../../engine/model/贴图.ts';
@@ -27,6 +26,7 @@ import stoneSwordPng from 'asset:贴图/角色/巨人/石剑';
 import stonePickaxePng from 'asset:贴图/角色/巨人/石镐';
 import giantIronArmor1Png from 'asset:贴图/角色/巨人/铁甲1';
 import giantIronArmor2Png from 'asset:贴图/角色/巨人/铁甲2';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODELS = (raw as unknown as { models: Record<'宽' | '细' | '内甲' | '外甲', EntityModelData> }).models;
 const TEX = pngDir(assetDir({ './取材账号.png': sourcingAccountPng, './史蒂夫.png': stevePng, './石剑.png': stoneSwordPng, './石镐.png': stonePickaxePng, './铁甲1.png': giantIronArmor1Png, './铁甲2.png': giantIronArmor2Png })) as Record<'史蒂夫' | '取材账号' | '铁甲1' | '铁甲2' | '石剑' | '石镐', Png>;

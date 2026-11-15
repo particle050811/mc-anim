@@ -9,16 +9,13 @@
 import { sample, sampleV, type Key, type VKey } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
-import type { Cam, ChestOpening } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
+import type { ChestOpening } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { chestB } from '../../../地点/古城4x/布局.ts';
 import * as jumpBuild from './跳搭.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export const FPS = jumpBuild.FPS;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const up = (p: V3, h: number): V3 => [p[0], p[1], p[2] + h];
 
 // ---------- 跳切 ----------
@@ -52,7 +49,7 @@ const halfFollow = (frame: number, refZ: number, k = 0.5): V3 => {
 //   1b 北墙外（大院北边空地，z 196，比城地面高 13 米，头顶岩顶 y −33）往南侧拍：他冲上墙头（P1），顺墙头往西一蹬（往 P2）。机位顺他往西横移，焦距 30～36。
 const J1 = jumpBuild.jumpOnto('P1');
 export const cut1b = Math.round(J1.f0 + 9);
-const cam1a = (f: number): Cam => ({ pos: G4(-708.6, -47.8, 232.0), tgt: torsoAt(f), lens: f < J1.f0 ? 26 : 26 - 6 * ss((f - J1.f0) / 9) });
+const cam1a = (f: number): Cam => ({ pos: G4(-708.6, -47.8, 232.0), tgt: torsoAt(f), lens: f < J1.f0 ? 26 : 26 - 6 * smoothstep01((f - J1.f0) / 9) });
 const C1_POS: VKey[] = [
   [cut1b, G4(-714.0, -37.5, 196.5)],
   [jumpBuild.landFrame('P1'), G4(-717.0, -37.5, 196.5)],

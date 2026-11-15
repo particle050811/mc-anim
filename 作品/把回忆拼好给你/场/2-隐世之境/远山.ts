@@ -1,10 +1,9 @@
 // 窗外远山（参数 远山）：樱花林那一圈平地外面起伏成山、坡上的樱花树和花簇、原版的雾和天色。纯函数，不 import react、three（窗外.tsx 搭网格，测试核）。
 // 坐标同 参数.ts（网格本地，Z 朝上）；一列 (x, y) 指 x～x+1、y～y+1，高 h = 那一列草方块顶面的 z（平地 0）。
 // 地形整个压低 0.01（同樱花林的草地：藏在结构方块顶面底下），树、花簇照整格放。
-import { clamp01 } from '@engine/anim/anim.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { cameraRig, cherryGrove, farHills } from './参数.ts';
 import { cherryTree, type CellPos } from './樱花树.ts';
+import { clamp01, mulberry32 } from '@engine/core/数学.ts';
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
@@ -143,7 +142,7 @@ export const buildSlopeTrees = () => {
       const y = gy * treeCell + 1 + Math.floor(scatter(gx, gy, seed + 4) * (treeCell - 2));
       if (!inFan(x + 0.5, y + 0.5, treeReach) || flatAreaDist(x + 0.5, y + 0.5) <= 4) continue;
       const h = heightAt(x, y);
-      const t = cherryTree(x, y, rng(seed * 1009 + x * 131 + y * 7));
+      const t = cherryTree(x, y, mulberry32(seed * 1009 + x * 131 + y * 7));
       logs.push(...t.logs.map(([a, b, c]): CellPos => [a, b, c + h]));
       for (const [a, b, c] of t.leaves) if (c + h >= heightAt(a, b)) leaves.push([a, b, c + h]);
       treeCount++;

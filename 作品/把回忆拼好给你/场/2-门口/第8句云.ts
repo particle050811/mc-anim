@@ -1,6 +1,5 @@
 // 第 8 句门口头顶那层云（地点/原版云.ts 的 小木屋上空云，屋后远景.tsx 画）每一帧的样子：往西飘、云洞已经开到头（第8句参数.ts 的 云洞半径）、每格散了多少。
 // 按歌曲帧算（和第 7 句同一套飘法，接得上）；段 2-收集快乐 和 核对-门口哈气 都用。纯模块（测试直接引）。
-import { clamp01 } from '@engine/anim/anim.ts';
 import type { ShadingSceneParams } from '@engine/三渲二/光影/预设.ts';
 import { fps, oneFrameSec } from '../../分镜/时间.ts';
 import { segmentWindow } from '../../分镜/正片第8句.ts';
@@ -8,6 +7,7 @@ import { cabinSkyCloud, scatterRadius, type CloudCell } from '../../地点/原�
 import type { DistantCloud } from '../../地点/屋后远景.tsx';
 import { endRainCloud } from '../2-雷雨/末态.ts';
 import { cloudHoleRadius, cloudColor } from './第8句参数.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 /** 段首前一帧（第 7 句最后一帧）：那一刻洞里的云算已经散完 */
 const joinFrame = segmentWindow('2-收集快乐').起帧 - 1;

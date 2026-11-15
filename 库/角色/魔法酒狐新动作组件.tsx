@@ -6,7 +6,6 @@
 // 交给 ItemInHandRenderer 按 THIRD_PERSON_RIGHT/LEFT_HAND 套物品的显示变换。整个实体缩 0.65 时手里的东西一起缩。
 import React, { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { type BedrockBone, type BedrockCube, type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import { DISPLAY, ItemDisplay, type ItemTransform } from '../../engine/model/物品贴图.tsx';
@@ -16,6 +15,7 @@ import { MAGICAL_WINE_FOX, MagicalWineFox, magicalWineFoxHatOffBones, magicalWin
 import { magicalWineFoxExMotion, clampHead, basePose, magicalWineFoxCellSize, type MagicalWineFoxAllExpression, type MagicalWineFoxExPose } from './魔法酒狐新动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel;
 const boneByName = new Map(MODEL.bones.map((b) => [b.name, b]));

@@ -16,6 +16,7 @@
 // 体素世界的地形要投影，见 lib/体素/材质.ts 的 投影网格（只画背光面、只进阴影图），投影视锥 用来认出阴影遍。
 import * as THREE from 'three';
 import { SunLightShadow } from 'three/examples/jsm/lights/SunLightShadow.js';
+import { smoothstep } from '../core/数学.ts';
 
 const cascadeCount = 3; // 级数：three 的 SunLightShadow 建了两级、着色器写死 SUN_LIGHT_CASCADES 2，这里补第三级、改着色器的定义（见构造和文件末）
 const overlapFrac = 0.1; // 每级末尾和下一级重叠混合的比例（同原版）
@@ -141,11 +142,7 @@ export class CascadedShadow extends SunLightShadow {
     // 这圈至少留 `minMarginPx` 个像素：按半径之比算的话，远一级跨档时别的级的像素格也跟着挪，地上的影子边会跳；一镜到底里只要七八个像素，留 32 个（少 1.5% 的分辨率），比值再大才按算出来的留
     const minMarginPx = 32;
     const farPenumbra = Math.max(nearPenumbra, (0.6 * 2 * _radii[cascadeCount - 1]) / this.mapSize.x);
-    const smooth = (a: number, b: number, x: number) => {
-      const k = Math.min(1, Math.max(0, (x - a) / (b - a)));
-      return k * k * (3 - 2 * k);
-    };
-    const nearMax = nearPenumbra + (farPenumbra - nearPenumbra) * smooth(0.5 * fadeEndDepth, fadeEndDepth, splits[1]);
+    const nearMax = nearPenumbra + (farPenumbra - nearPenumbra) * smoothstep(0.5 * fadeEndDepth, fadeEndDepth, splits[1]);
     let rMax = 0;
     for (let i = 0; i < cascadeCount; i++) rMax = Math.max(rMax, (i === 0 ? nearMax : farPenumbra) / ((2 * _radii[i]) / this.mapSize.x));
     const marginPx = Math.max(minMarginPx, Math.ceil(rMax) + 1);

@@ -3,12 +3,12 @@
 // 全景不叠「WARDEN 监守者」登场大字（用户 10-12 说不必介绍）。成片段是 ../6-4-7至9/。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { rad } from '@engine/anim/anim.ts';
 import { Warden } from '@库/生物/监守者.tsx';
 import { HuangPan, LiuXinzhong } from '../../../角色/追兵.tsx';
 import { AncientCity4xCanvas } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as K648 from '../../../地点/古城4x/6-4-8/编排.ts';
 import * as choreo from '../../../地点/古城4x/6-4-9/编排.ts';
+import { rad } from '@engine/core/数学.ts';
 
 // f：本段帧（6-4-7至9 的后一截，见 ../6-4-7至9/）
 export const RevealView: React.FC<{ f: number }> = ({ f: frame }) => {

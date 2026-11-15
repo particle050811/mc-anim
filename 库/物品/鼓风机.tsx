@@ -19,11 +19,11 @@
 //   例：6-4-3 慢放：spin={叶片视觉转角(F, (f) => ({ rpm: 转速(T(f)), 剧情秒: T(f + 1) - T(f) }))}
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { crop, png, type Png } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/物品/鼓风机';
 import atlasPng from 'asset:贴图/物品/鼓风机';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODEL = data as unknown as BlockModelData;
 const ATLAS = png(atlasPng);

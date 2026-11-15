@@ -3,10 +3,11 @@
 // 镜 1 北墙内侧高处大全景（二人分开、监守者扑空）；镜 2 黄叛南边跟他半空放箭，后面是监守者和冲过来的恼鬼；镜 3 黄叛身后越肩，落台再射、恼鬼扑到监守者跟前。
 import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../地点/古城4x.tsx';
-import { lerpV } from '../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import { camPoses, frameAt, type ShotCam } from '../../地点/古城4x/7-1/机位.ts';
+import { lerpV } from '@engine/core/数学.ts';
+
 export const segmentId = '7-1-2' as const;
 export const FPS = timeline.FPS;
 export const END = timeline.frameCountOf(segmentId);

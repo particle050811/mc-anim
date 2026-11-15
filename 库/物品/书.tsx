@@ -10,7 +10,6 @@
 // `合`（0～1）：左半本绕书脊翻过来盖到右半本上（写完合上）：转轴在右半本纸面的高度，合上以后两层纸叠在一起，和 `ClosedBook` 严丝合缝。`crumple`（0～1）：右页被手攥起来揉皱（7-4-4 捏皱报告，见下面 `皱页`）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { DISPLAY, ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { png, type Png } from '../../engine/model/贴图.ts';
 import { drawText, textWidth, lineHeight } from '../界面/像素字.ts';
@@ -18,6 +17,7 @@ import bookGuiPng from 'asset:贴图/物品/书/书界面';
 import featherPng from 'asset:贴图/物品/书/羽毛';
 import writableBookPng from 'asset:贴图/物品/书/书与笔';
 import writtenBookPng from 'asset:贴图/物品/书/成书';
+import { rad } from '../../engine/core/数学.ts';
 
 const bookGuiTex = png(bookGuiPng);
 export const featherTex = png(featherPng);

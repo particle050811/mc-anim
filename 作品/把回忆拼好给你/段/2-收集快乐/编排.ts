@@ -2,7 +2,6 @@
 // 分寸取 场/2-门口/第8句参数.ts。纯模块（不 import react、three），测试直接引。
 // 苦力怕按原版走路摆腿（库/角色/史蒂夫.tsx 的 vanillaWalk）：走进来的速度由冒头、哈气两个时刻倒推，逃的速度是原版躲猫的两倍（演绎）；
 // 转身、转头都在 0.1 秒上下转完（24 fps 时一两帧；原版一刻转 90°）。分寸按秒，起转那一帧已经走了 1/24 秒（24 fps 时的一帧）。
-import { clamp01 } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
@@ -16,6 +15,7 @@ import type { DoorFraming } from '../../场/2-门口/参数.ts';
 import * as params from '../../场/2-门口/第8句参数.ts';
 import * as sentence8 from '../../场/2-门口/第8句.ts';
 import { palette } from '../../色板.ts';
+import { clamp01, lerp, lerpV } from '@engine/core/数学.ts';
 
 const segKey = '2-收集快乐';
 export const events = segMainCutEventFrames(segKey);
@@ -25,14 +25,11 @@ export const toSongFrame = (f: number) => startFrame + f;
 /** 段内帧 → 歌上的秒（她的呼吸、尾巴按它走） */
 export const songSec = (f: number) => (startFrame + f) / fps;
 const standY = entrance.standRowY;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerpVec3 = (a: readonly number[], b: readonly number[], t: number): V3 => [lerp(a[0]!, b[0]!, t), lerp(a[1]!, b[1]!, t), lerp(a[2]!, b[2]!, t)];
 type BoneTable = Record<string, BonePose>;
 /** 两张骨骼表按转角插值（一边没有的骨骼当 0°） */
 const lerpBonePose = (a: BoneTable, b: BoneTable, t: number): BoneTable => {
   const r: BoneTable = {};
-  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) r[k] = { rot: lerpVec3(a[k]?.rot ?? [0, 0, 0], b[k]?.rot ?? [0, 0, 0], t) };
+  for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) r[k] = { rot: lerpV(a[k]?.rot ?? [0, 0, 0], b[k]?.rot ?? [0, 0, 0], t) };
   return r;
 };
 const lookLerp = (a: [number, number], b: [number, number], t: number): [number, number] => [lerp(a[0], b[0], clamp01(t)), lerp(a[1], b[1], clamp01(t))];
@@ -110,7 +107,7 @@ export const photoState = (f: number): { 角: V3; side: number } | null => {
   if (f >= events.hangPhoto) return null;
   const t = pushProgress(f);
   const snap = (v: number) => Math.round(v * framing.pxPerCell) / framing.pxPerCell;
-  const corner = lerpVec3(params.photoHoldAngle, params.photoFrameAngle, t);
+  const corner = lerpV(params.photoHoldAngle, params.photoFrameAngle, t);
   return { 角: [snap(corner[0]), corner[1], snap(corner[2])], side: lerp(params.photoHoldEdge, 1, t) };
 };
 

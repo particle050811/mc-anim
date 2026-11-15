@@ -7,7 +7,8 @@ import { makeRigCamera } from '@engine/三渲二/机位.tsx';
 import { filmScale } from '@engine/三渲二/像素.ts';
 import type { CameraRig } from './编排.ts';
 import * as params from './参数.ts';
-import { terrainFog, skyAt, mix, type RGB } from './天气.ts';
+import { terrainFog, skyAt, type RGB } from './天气.ts';
+import { lerpV } from '@engine/core/数学.ts';
 
 // ---------- 雾 ----------
 const fogUniforms = {
@@ -83,7 +84,7 @@ export const PerspectiveSky: React.FC<SkyParams> = ({ cameraRig, 宽: width, 高
           clearAmount = clearAt(cameraRig.眼[0] + t * v.x, cameraRig.眼[1] - t * v.z);
         }
         const elevation = Math.asin(v.y);
-        const c = clearAmount >= 1 ? skyAt(elevation, clearSky, clearFog) : clearAmount <= 0 ? skyAt(elevation, skyRgb, fog) : mix(skyAt(elevation, skyRgb, fog), skyAt(elevation, clearSky, clearFog), clearAmount);
+        const c = clearAmount >= 1 ? skyAt(elevation, clearSky, clearFog) : clearAmount <= 0 ? skyAt(elevation, skyRgb, fog) : lerpV(skyAt(elevation, skyRgb, fog), skyAt(elevation, clearSky, clearFog), clearAmount);
         const o = (y * nx + x) * 4;
         img.data[o] = Math.round(c[0] * 255);
         img.data[o + 1] = Math.round(c[1] * 255);

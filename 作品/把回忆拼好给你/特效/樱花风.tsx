@@ -7,7 +7,6 @@
 //   然后底撤掉，花瓣从 散心（转场后那一镜要先露出来的地方）往外一圈圈吹走（风散开）。
 // 时间都按歌上的秒（两段各自传自己的秒，转场前后接得上：同一个 秒 两边画的一模一样）。参数全是 Agent 暂定，见 樱花风参数.ts。
 import React, { useLayoutEffect, useRef } from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { png, type Png } from '@engine/model/贴图.ts';
 import { filmScale } from '@engine/三渲二/像素.ts';
 import { type SakuraWindParams, type SakuraWindMoment, type WallPetal, sakuraWindDefaults, makeWindWall, wallPetalAt, windWallBottom } from './樱花风参数.ts';
@@ -23,13 +22,14 @@ import c8 from 'asset:贴图/粒子/樱花/cherry_8';
 import c9 from 'asset:贴图/粒子/樱花/cherry_9';
 import c10 from 'asset:贴图/粒子/樱花/cherry_10';
 import c11 from 'asset:贴图/粒子/樱花/cherry_11';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const petalTextures: readonly Png[] = [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11].map((u) => png(u));
 
 type Petal = { 生: number; 角: number; baseRadius: number; 档: number; 图: number; 转: number; flip: boolean; sideOffset: number; 速: number };
 
 const makeWindFlow = (p: SakuraWindParams, t: SakuraWindMoment): Petal[] => {
-  const r = rng(p.种子);
+  const r = mulberry32(p.种子);
   const { 数: count, tiers } = p.windFlow;
   return Array.from({ length: count }, () => {
     // 越往后生得越密（u^0.6），后生的花瓣大（离镜头近）

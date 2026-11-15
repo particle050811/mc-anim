@@ -8,7 +8,7 @@
 // 歌词由段画面从 叠层 传进来，叠在整片后期里面（同 2-归隐）。
 import type React from 'react';
 import type { V3 } from '@engine/model/parts.tsx';
-import { clamp01, sample } from '@engine/anim/anim.ts';
+import { sample } from '@engine/anim/anim.ts';
 import { Outline as OutlineGroup } from '@engine/三渲二/描边.tsx';
 import { TexturePixelAlign } from '@engine/三渲二/对齐.tsx';
 import type { ShadingOptions } from '@engine/三渲二/光影/预设.ts';
@@ -36,6 +36,7 @@ import { LiYingWalkParticles, HangingBell } from './归隐.tsx';
 import { photoWallEdge } from './归隐参数.ts';
 import { PaperLayer } from './纸花层.tsx';
 import { colorBackRange, youX, youFacing, youHead, yourRightArm, bell, bellSwing } from './第15句.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 

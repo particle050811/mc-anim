@@ -5,6 +5,7 @@
 // 符文是这个字拼音的银河字母（块比字母多就从头再轮），沿用 10-22 的「读音落成字」。
 import { fps, legacyFrameSec } from '../分镜/时间.ts';
 import { scatter, type DotMatrix } from './符文排版.ts';
+import { lerp } from '@engine/core/数学.ts';
 
 export type Vec2 = readonly [number, number];
 
@@ -81,8 +82,6 @@ export const flyParams = { lateral: [20, 34], 竖: [-3, 3], lift: [4, 7], topGap
 /** 飞着的符文半高（点） */
 const halfHeight = 3.5 * runeScale;
 
-const 取 = (r: number, [a, b]: readonly [number, number]) => a + (b - a) * r;
-
 /**
  * 一个字每块的符文：第 k 块在 起～完 之间按顺序落定（第一块 起、最后一块 完），起飞 = 落定 − 飞秒，但不早于这个字进场（入）；
  * 起晚了的飞得近（路程按飞的时长缩，速度不变），不到 飞法.最短秒 的不飞（直接落定、照样闪）。种 = 这个字在全片里的定死编号
@@ -95,13 +94,13 @@ export const flyBlocks = (chunks: readonly RuneBlock[], pinyin: string, timeSpan
     const flies = (landTime - startFrame) / fps >= flyParams.minFlySec;
     const flyRatio = flies ? (landTime - startFrame) / (flySec * fps) : 0;
     // 竖直偏移 = dy·(1−p) − 抬·(1−p⁴)，在 min(dy, 0) − 抬 和 max(dy, 0) 之间：两头夹在 顶空、下伸 里
-    const dy = Math.min(Math.round(取(scatter(seed, k, 12), flyParams.竖) * flyRatio), Math.floor(16 + flyParams.extendDown - halfHeight - runeBlock.心[1]));
-    const lift = Math.round(取(scatter(seed, k, 13), flyParams.lift) * flyRatio);
+    const dy = Math.min(Math.round(lerp(flyParams.竖[0], flyParams.竖[1], scatter(seed, k, 12)) * flyRatio), Math.floor(16 + flyParams.extendDown - halfHeight - runeBlock.心[1]));
+    const lift = Math.round(lerp(flyParams.lift[0], flyParams.lift[1], scatter(seed, k, 13)) * flyRatio);
     return {
       letter: pinyin[k % pinyin.length]!,
       起: flies ? startFrame : landTime,
       landTime,
-      dx: Math.round(取(scatter(seed, k, 11), flyParams.lateral) * flyRatio),
+      dx: Math.round(lerp(flyParams.lateral[0], flyParams.lateral[1], scatter(seed, k, 11)) * flyRatio),
       dy,
       lift: Math.max(0, Math.min(lift, Math.floor(runeBlock.心[1] + Math.min(dy, 0) - halfHeight + flyParams.topGap))),
       brightness: 0.8 + 0.2 * scatter(seed, k, 14),

@@ -8,12 +8,13 @@
 // 被方块挡住往骑手身上收（`收表`），首帧接 6-1-3 末帧。
 import { camSpans, fadeFrames } from './镜段.ts';
 import {
-  type Vec, add, sub, mul, dot, len, norm, lerp, ss, s5, rad, slerp,
+  type Vec, add, sub, mul, dot, len, norm, slerp,
   mixFraming, riderAt, camPosOf, posToFraming, solveView, cruiseFraming, sampleKeys, clampToBore,
 } from './镜头构图.ts';
 import * as route from './路线.ts';
 import pullInJson from 'asset:数据/镜头/一镜到底/收表';
 import { interpTable } from '@engine/段/按时取值.ts';
+import { lerp, smoothstep01, smootherstep01, rad } from '@engine/core/数学.ts';
 const pullInData = pullInJson as unknown as { 收: number[][] };
 
 export { chaseSpans, camWindows } from './镜段.ts';
@@ -33,7 +34,7 @@ const composite = (Fg: number) => {
     // 叠在一起的时候两边的关键帧都在动，12 帧换过去焦距一帧变 4%
     const fadeIn = Math.max(fadeFrames, span.Keys[1][0] - span.Keys[0][0]);
     const fadeOut = Math.max(fadeFrames, span.Keys[span.Keys.length - 1][0] - span.Keys[span.Keys.length - 2][0]);
-    const segWeight = Math.min(span.名 === '起飞' ? 1 : s5((Fg - span.起) / fadeIn), span.名 === '降落' ? 1 : s5((span.止 - Fg) / fadeOut));
+    const segWeight = Math.min(span.名 === '起飞' ? 1 : smootherstep01((Fg - span.起) / fadeIn), span.名 === '降落' ? 1 : smootherstep01((span.止 - Fg) / fadeOut));
     let spanFraming = sampleKeys(span.Keys, Fg, span.锚);
     const posCamRes = span.位?.(Fg);
     const posWeight = posCamRes ? posCamRes.weight : 0;
@@ -69,7 +70,7 @@ const placeCam = (Fg: number) => {
     // boss 跑到骑手的另一边（镜头追的时候从 boss 身边冲过去）就不往它偏：从镜头看 boss 和骑手夹角过 90° 起减、过 120° 为 0，不然视线一帧甩回身后
     const toBoss = norm(sub(focus, camPos));
     const cosAngle = dot(toBoss, norm(sub(rider, camPos)));
-    fw = slerp(fw, toBoss, Math.min(1, framing.偏) * s5((cosAngle + 0.5) / 0.5));
+    fw = slerp(fw, toBoss, Math.min(1, framing.偏) * smootherstep01((cosAngle + 0.5) / 0.5));
     fw = limitToFrame(fw, norm(sub(rider, camPos)), lens, keepInFrame);
   }
   return { pos: camPos, fw, lens, B: rider };
@@ -111,7 +112,7 @@ export const cameraAt = (Fg: number): Cam => {
   // `收表` 只量了离骑手 20 米以内的帧，抹平的窗口会把收带到旁边的帧上：远景刹停那几帧镜头退到几十米外，再收就把停着的镜头往骑手拽。20～30 米之间渐到不收
   const dist = len(sub(pos, placed.B));
   // 收表一格一个，格之间插值（以前取最近的整格，60 帧输出时按 24 帧跳）
-  const k = lerp(1, interpTable(pullInTable, Fg), 1 - ss((dist - 20) / 10));
+  const k = lerp(1, interpTable(pullInTable, Fg), 1 - smoothstep01((dist - 20) / 10));
   if (k < 1) pos = add(placed.B, mul(sub(pos, placed.B), k));
   return { pos, tgt: add(pos, mul(placed.fw, 10)), lens: placed.lens };
 };

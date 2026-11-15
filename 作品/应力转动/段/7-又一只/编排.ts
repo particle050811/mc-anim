@@ -12,7 +12,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { WARDEN } from '@库/生物/监守者.tsx';
 import { ridePose } from '../../角色/追兵.tsx';
 import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
-import type { Cam, ChestOpening } from '../../地点/古城4x/6-4-1/古城画面.tsx';
+import type { ChestOpening } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { toScene, yawTo } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import { RAMP_SEC, runCadence, runPoseAt } from '@库/角色/跑步.ts';
 import * as K8 from '../../地点/古城4x/6-4-8/编排.ts';
@@ -20,14 +20,12 @@ import * as geom from '../../场/7-收场/7-4-1/几何.ts';
 import * as X741 from '../../场/7-收场/7-4-1/戏.ts';
 import * as K741 from '../../场/7-收场/7-4-1/编排.ts';
 import { baseSpeed } from '../../地点/古城4x/布局.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export const FPS = geom.FPS;
 const secOf = (f: number) => f / FPS;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const rampIn = (f: number, a: number, b: number) => ss((f - a) / (b - a));
+const rampIn = (f: number, a: number, b: number) => smoothstep01((f - a) / (b - a));
 // 0 → 1 → 0 的一下（a 起、b 落回）
 const bump = (f: number, a: number, b: number) => (f <= a || f >= b ? 0 : Math.sin((Math.PI * (f - a)) / (b - a)));
 const nearestYaw = (a: number, b: number) => a + ((((b - a + 540) % 360) + 360) % 360) - 180;

@@ -4,7 +4,6 @@
 // 编排的帧是 1/24 秒一格，按秒换算；声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { rad } from '@engine/anim/anim.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { HuangPan, LiuXinzhong } from '../../角色/追兵.tsx';
@@ -15,12 +14,14 @@ import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import { SculkSensor } from '@库/特效/幽匿感测体.tsx';
 import { VibrationSignal } from '@库/特效/振动粒子.tsx';
 import { VanillaParticles, deathPoof } from '@库/特效/原版粒子.tsx';
-import { AncientCity4xCanvas, placedWoolThrough, type Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas, placedWoolThrough } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { toScene } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import * as X741 from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from './编排.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
+import { rad } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 7-4-1 的白烟、马身上的附魔字母（同一份出生表：同样的位置、死刻、种子）
 const islandParticles = [...deathPoof(X741.deathPos(), 0.9, 2.9, X741.deathT * 20, 742), ...steedParticles((k) => X741.horseState(k / 20).p, 0, choreo.T12(choreo.shot1End), 741)];

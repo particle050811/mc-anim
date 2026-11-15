@@ -11,6 +11,7 @@ import { events as mainCutLine5Events, segmentWindow } from '../../分镜/正片
 import { beatGrid } from '../../配乐/网格.ts';
 import * as params from './参数.ts';
 import * as pose from './姿势.ts';
+import { clamp01, lerp, lerpV } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...mainCutLine4Events, ...mainCutLine5Events };
 const segMainCutEventFrames = (segKey: string) => segmentFrames(segmentWindow(segKey).起帧, mainCutEvents);
@@ -26,16 +27,12 @@ export const songSec = (f: number) => (segWindow.起帧 + f) / fps;
 /** 段内帧 → 游戏刻（段首 0） */
 export const frameToTick = (f: number) => (f * 20) / fps;
 const beatFrames = beatGrid.拍长 * fps;
-
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerpVec3 = (a: readonly number[], b: readonly number[], t: number): V3 => [lerp(a[0]!, b[0]!, t), lerp(a[1]!, b[1]!, t), lerp(a[2]!, b[2]!, t)];
 /** 两张骨骼表按转角、位置插值（一边没有的当 0） */
 const lerpBonePose = (a: pose.BoneTable, b: pose.BoneTable, t: number): pose.BoneTable => {
   const r: pose.BoneTable = {};
   for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) {
     const fromBone = a[k] ?? {}, second = b[k] ?? {};
-    r[k] = { ...fromBone, ...second, rot: lerpVec3(fromBone.rot ?? [0, 0, 0], second.rot ?? [0, 0, 0], t), ...(fromBone.pos || second.pos ? { pos: lerpVec3(fromBone.pos ?? [0, 0, 0], second.pos ?? [0, 0, 0], t) } : {}) };
+    r[k] = { ...fromBone, ...second, rot: lerpV(fromBone.rot ?? [0, 0, 0], second.rot ?? [0, 0, 0], t), ...(fromBone.pos || second.pos ? { pos: lerpV(fromBone.pos ?? [0, 0, 0], second.pos ?? [0, 0, 0], t) } : {}) };
   }
   return r;
 };
@@ -84,7 +81,7 @@ const standPose = (loc: V3, pitch = 0, yaw: number = params.liYing.facing): Figu
 const flyProgress = (f: number) => clamp01((f - events.pounceStart) / (events.landOnEgg - events.pounceStart));
 /** 半空的 loc：伏位 → 蛋上位，连线上再拱起一道抛物线 */
 const flyPos = (t: number): V3 => {
-  const p = lerpVec3(params.liYing.herPronePos, params.liYing.herOnEggPos, t);
+  const p = lerpV(params.liYing.herPronePos, params.liYing.herOnEggPos, t);
   return [p[0], p[1], p[2] + 4 * params.liYing.pounceHeight * t * (1 - t)];
 };
 const flyTilt = (t: number) => {
@@ -243,7 +240,7 @@ export const portalCells: readonly (readonly [number, number])[] = (() => {
 export const cameraRig = (f: number) => {
   const k = clamp01(f / (frameCount - 1));
   const t = k * k * (3 - 2 * k);
-  return { 种: '透视' as const, 眼: lerpVec3(params.cameraRig.eyeStart, params.cameraRig.eyeEnd, t), 看: lerpVec3(params.cameraRig.lookStart, params.cameraRig.lookEnd, t), fov: params.cameraRig.fov };
+  return { 种: '透视' as const, 眼: lerpV(params.cameraRig.eyeStart, params.cameraRig.eyeEnd, t), 看: lerpV(params.cameraRig.lookStart, params.cameraRig.lookEnd, t), fov: params.cameraRig.fov };
 };
 /** 第 4 句末盖满画面的那道浪（场/2-海上/浪.tsx 的 进）接着往上退：段首 1（盖满），照第 4 句涌上来的速度（浪起 到第 5 句起那一段走完 0 → 1）退到 2，露出末地 */
 const surgeLegFrames = segWindow.起帧 - mainCutEvents.waveRises.帧;

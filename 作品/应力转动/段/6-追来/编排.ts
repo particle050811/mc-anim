@@ -13,12 +13,12 @@ import { type Key, type VKey, sample, sampleV, track } from '@engine/anim/anim.t
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { G4 } from '../../地点/古城4x.tsx';
-import type { Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { shrieks } from '../../地点/古城4x/布局.ts';
 import * as K645 from '../../场/6-古城/6-4-5/编排.ts';
 import { FPS, τ646, frameCount646, headTrim646, huangPanPose, liuXinzhongPose, huangRoute, liuRoute, thirdShriekSec, chain } from '../../场/6-古城/6-4-6/追兵.ts';
 import { lookToward } from '../../场/6-古城/6-4-6/走位.ts';
 import { lineTable } from '../../配音/台词轨.tsx';
+import type { Cam } from '@engine/core/机位.ts';
 
 export { FPS };
 export const frameCount = frameCount646;

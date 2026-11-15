@@ -6,7 +6,6 @@
 // 没做：setupAnim 里的 chainFlap（四节左右摆动，没读）；卷到人之后把人往上带。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { trajectoryPos } from '../零件/弹道.ts';
@@ -17,6 +16,7 @@ import { cloudParticle, cloudClass } from '../零件/甲/原版粒子.ts';
 import meta, { cycloneArriveTick, cycloneCurlTicks, cyclonePath } from './cyclone.元.ts';
 import cycloneModelData from 'asset:模型/法术/goety/CycloneModel';
 import cyclonePng from 'asset:贴图/法术/goety/entity/projectiles/cyclone';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const cycloneModel = getModel(cycloneModelData, 'CycloneModel');
 
@@ -25,7 +25,7 @@ const Cyclone: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
   const trajectory = cyclonePath(from, target, options?.highSpeed);
   const arriveTick = cycloneArriveTick(from, target, options?.highSpeed);
   const scatterTick = arriveTick + cycloneCurlTicks;
-  const r = rng(seed * 37 + 3);
+  const r = mulberry32(seed * 37 + 3);
   const clouds: ParticleBirth[] = eachTick(1, Math.min(tick, arriveTick)).map((n) => cloudParticle(r, n, trajectory(n)));
   if (tick >= scatterTick) {
     const p = trajectory(arriveTick);

@@ -9,8 +9,8 @@ import { ThreeCanvas } from '@remotion/three';
 import { useThree } from '@react-three/fiber';
 import React from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { ItemDisplay, ItemSprite, type ItemLayer, type ItemTransform } from '../../engine/model/物品贴图.tsx';
+import { rad } from '../../engine/core/数学.ts';
 
 /** 动画多少刻（itemActivationTicks 的初值） */
 export const itemActivateTicks = 40;

@@ -5,10 +5,11 @@ import * as hydraChoreo from '../6-1-6/编排.ts';
 import * as chainPierceChoreo from '../6-1-7/编排.ts';
 import * as route from './路线.ts';
 import {
-  type Vec, add, sub, mul, dot, len, norm, clamp01, s5, rad, slerp,
+  type Vec, add, sub, mul, dot, len, norm, slerp,
   type Framing, riderAt, broomFrame, camPosOf, posToFraming, project,
   type LegacyParams, legacyCruise, pullInDist, type LegacyKey, type Keys, convertKeys, cruiseFraming, clampToBore,
 } from './镜头构图.ts';
+import { clamp01, smootherstep01, rad } from '@engine/core/数学.ts';
 
 // ---------- 镜段 ----------
 // 一处 boss 一个镜段：起～止（全局帧）里按 `关键`（相对 `锚` 的帧）排 P；位置机位（远景的刹停、停住、追）另给，权 = 1 时位置全按它。
@@ -220,7 +221,7 @@ const addFarSpan = (opts: FarParams) => {
       const rider = riderAt(Fg);
       const dirStop = norm(sub(stopPos, rider));
       const dirFollow = norm(sub(camPosOf(cruiseFraming, Fg), rider));
-      let dir = slerp(dirStop, dirFollow, s5((Fg - releaseFrame) / dur));
+      let dir = slerp(dirStop, dirFollow, smootherstep01((Fg - releaseFrame) / dur));
       if (opts.lift) {
         // 往上拱：方向往竖直方向转 抬·64u³(1 − u)³（两头的速度、加速度都是 0，接得上停住和跟拍）
         const progress = clamp01((Fg - releaseFrame) / dur);
@@ -274,7 +275,7 @@ const addFarSpan = (opts: FarParams) => {
     posCam = (Fg) => {
       if (Fg < brakeStart || Fg > chaseEnd) return null;
       if (Fg <= releaseFrame) return { C: Fg < brakeStart + brakeFrames ? followCam(preBrake, τ(Fg)) : stopPos, weight: 1 };
-      return { C: tunnelTrack(camDist(Fg)), weight: 1 - s5((Fg - exitFrame) / fadeFrames) };
+      return { C: tunnelTrack(camDist(Fg)), weight: 1 - smootherstep01((Fg - exitFrame) / fadeFrames) };
     };
   }
   chaseSpans.push({ name: opts.名, start: releaseFrame, end: chaseEnd });

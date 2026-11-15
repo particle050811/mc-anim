@@ -14,12 +14,8 @@ import { liYing } from '../6-3-下坠/编排/李樱.ts';
 import { FPS, segTable, tick, physicalTime } from '../6-3-下坠/时间线.ts';
 import { cues, figureAt, figureRef, sceneCenter, pixelsPerBlock, viewRotation, toGame, toScene } from './编排.ts';
 import { uiOpen } from './台词.ts';
-
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+import { lensToFov } from '@engine/core/机位.ts';
 const logLerp = (a: number, b: number, k: number) => Math.exp(lerp(Math.log(a), Math.log(b), k));
 
 export const fadeOutFrameCount = 10;
@@ -27,16 +23,15 @@ export const fadeOutFrameCount = 10;
 export const sceneTime = (G: number) => (G - segTable['6-3-2'].起) / FPS - uiOpen;
 export const tMatch = sceneTime(0);
 // 思索层的不透明度：全局帧 0 起淡掉
-export const ponderLayerOpacity = (G: number) => 1 - ss(G / fadeOutFrameCount);
+export const ponderLayerOpacity = (G: number) => 1 - smoothstep01(G / fadeOutFrameCount);
 // 下坠的风声从推近开始（全局帧，负的）起，随推近渐强，淡到天空时到足（6-3-下坠/声音.tsx；用户 10-19：转场里不要一段没声音）
 export const windStartFrame = Math.round((cues.close[1] - tMatch) * FPS);
-export const windFadeIn = (G: number) => ss((G - windStartFrame) / (fadeOutFrameCount - windStartFrame));
+export const windFadeIn = (G: number) => smoothstep01((G - windStartFrame) / (fadeOutFrameCount - windStartFrame));
 // 全局帧 0 以后思索里的李樱按下坠的物理时间摆（之前停在 `刻`.俯冲起 的架势上）
 export const transitionW = (t: number) => (t >= tMatch ? tick.diveStart + (t - tMatch) : undefined);
 
 // 焦距 → 竖直视角（度），同 lib/飞行镜头.tsx 的 FlightRig（36 毫米宽的底片、16:9）
 const aspect = ponderScreen.W / ponderScreen.H;
-const fovOf = (lens: number) => (2 * Math.atan(18 / lens / aspect) * 180) / Math.PI;
 const lensOf = (fov: number) => 18 / Math.tan((fov * Math.PI) / 360) / aspect;
 const restDistance = 3000;
 const restHeight = ponderScreen.H / (pixelsPerBlock / ponderScreen.s); // 正交时画面高看见几格
@@ -58,14 +53,14 @@ const hipRef = () => {
 export type PonderCam = PonderPerspective & { target: V3 };
 // 思索的镜头（游戏坐标）：界面淡完以前停在远处（等于正交），之后推近
 export const ponderCamAt = (t: number): PonderCam => {
-  const k = ss((t - cues.close[1]) / (tMatch - cues.close[1]));
+  const k = smoothstep01((t - cues.close[1]) / (tMatch - cues.close[1]));
   const hip = hipRef();
   const height = logLerp(restHeight, endHeight, k);
   // 看点放在过髋、垂直于视线的平面上，髋就正好落在 ndc 处；k = 0 时和场景中心只差沿视线的一段（远处的窄视角看不出）
   const ndcX = lerp(hip.restNdc[0], endHipNdc[0], k);
   const ndcY = lerp(hip.restNdc[1], endHipNdc[1], k);
   const target = hip.pos.clone().addScaledVector(right, (-ndcX * height * aspect) / 2).addScaledVector(up, (-ndcY * height) / 2);
-  const fov = logLerp((2 * Math.atan(restHeight / 2 / restDistance) * 180) / Math.PI, fovOf(endLens), k);
+  const fov = logLerp((2 * Math.atan(restHeight / 2 / restDistance) * 180) / Math.PI, lensToFov(endLens, aspect), k);
   const dist = height / 2 / Math.tan((fov * Math.PI) / 360);
   const pos = target.clone().addScaledVector(back, dist);
   return { pos: [pos.x, pos.y, pos.z], target: [target.x, target.y, target.z], fov, near: Math.max(0.05, dist - 40), far: dist + 40 };

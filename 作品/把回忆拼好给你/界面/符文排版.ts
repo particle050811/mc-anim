@@ -6,6 +6,7 @@
 import type { Png } from '@engine/model/贴图.ts';
 import type { GlyphTable } from '@库/界面/像素字表.ts';
 import { fps, oneFrameSec, legacyFrameSec } from '../分镜/时间.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 /** 定死的散列（不用 Math.random：同一帧每次渲都一样），返回 [0, 1) */
 export const scatter = (a: number, b: number, c = 0) => {
@@ -206,8 +207,6 @@ export type WordEffect =
   | { effect: '光明' | '烟花' | '放下'; 从: number; 到: number }
   | { effect: '刹那'; 从: number; 到: number; shatterFrame: number }
   | { effect: '时差'; 从: number; 到: number; halfBeat: number };
-
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 /** 从 起 那一帧开始、n秒 走完的渐变（同 歌词.tsx：起那一帧已经走了一帧） */
 const fadeRamp = (f: number, startFrame: number, rampSec: number) => clamp01(((f - startFrame) / fps + oneFrameSec) / Math.max(oneFrameSec, rampSec));
 

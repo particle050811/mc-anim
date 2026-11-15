@@ -2,8 +2,8 @@
 // 时钟 = 画面 1 秒对应多少场秒，时钟点之间按 smoothstep 过渡（标「对数」的按对数，同 6-4-3/时间线.ts）；`stops`（打中的场时刻）在那一刻把世界定住（打击停顿，帧数用 lib/anim.ts 的默认 `HIT_STOP_FRAMES`）。
 // 返回的接口同 音效/慢放.ts 的 时间线，声音用 scheduleToScreen 排。
 import { HIT_STOP_FRAMES } from '../../../默认.ts';
-import { ss } from './戏/公用.ts';
 import * as timeline from './时间线.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 export type ClockPoint = [t: number, clock: number, 对数?: boolean];
 export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[], stops: number[] = []) => {
@@ -14,7 +14,7 @@ export const buildSpeedRamp = (startT: number, endT: number, points: ClockPoint[
       const [t0, c0] = points[i - 1];
       const [t1, c1, logBlend] = points[i];
       if (t <= t1) {
-        const k = ss((t - t0) / (t1 - t0));
+        const k = smoothstep01((t - t0) / (t1 - t0));
         return logBlend ? c0 * Math.pow(c1 / c0, k) : c0 + (c1 - c0) * k;
       }
     }

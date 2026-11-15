@@ -4,10 +4,11 @@ import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { RAMP_SEC, runPoseAt as runPose, runStride, speedProfile } from '@库/角色/跑步.ts';
 import { chaseSpeed } from '../../../古城4x/布局/强者.ts';
 import { groundZ } from '../../6-3-下坠/编排.ts';
-import { D2R, ss, lerp, sub, town } from './工具.ts';
+import { D2R, sub, town } from './工具.ts';
 import { poolJump, type PoolJump } from './落水.ts';
 import { cues } from './时间线.ts';
 import { huangStand, liuStand, shaftMouth, faceShaft } from './站位.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 // ---------- 姿势 ----------
 type PosePart = Partial<FigurePose>;
@@ -23,7 +24,7 @@ const blend = (keys: [number, PosePart][], t: number, base: FigurePose): FigureP
     else
       for (let i = 1; i < pts.length; i++)
         if (t <= pts[i][0]) {
-          value = lerp(pts[i - 1][1], pts[i][1], ss((t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0])));
+          value = lerp(pts[i - 1][1], pts[i][1], smoothstep01((t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0])));
           break;
         }
     (out as Record<string, unknown>)[field] = value;
@@ -91,11 +92,11 @@ export const leaderPoolJump = (who: '刘' | '黄') => (who === '刘' ? LIU_JUMP 
 const leapPose = (pose: FigurePose, sec: number): FigurePose => {
   if (sec < -0.12) return pose;
   if (sec < 0) {
-    const k = ss((sec + 0.12) / 0.12);
+    const k = smoothstep01((sec + 0.12) / 0.12);
     return { ...pose, squash: 1 - 0.08 * k, pitch: pose.pitch - 8 * k };
   }
-  const k = ss(sec / 0.25);
-  return { ...pose, squash: 1, ground: 0, pitch: lerp(-8, -14, k), legR: 30 * k, legL: -24 * k, armR: lerp(pose.armR, 150, ss((sec - 0.25) / 0.4)), armL: lerp(pose.armL, 150, ss((sec - 0.25) / 0.4)) };
+  const k = smoothstep01(sec / 0.25);
+  return { ...pose, squash: 1, ground: 0, pitch: lerp(-8, -14, k), legR: 30 * k, legL: -24 * k, armR: lerp(pose.armR, 150, smoothstep01((sec - 0.25) / 0.4)), armL: lerp(pose.armL, 150, smoothstep01((sec - 0.25) / 0.4)) };
 };
 
 // ---------- 坑口：两人从城门大街跑过来，先后跳进竖井 ----------
@@ -147,8 +148,8 @@ const atPit = (who: '刘' | '黄', t: number): { pose: FigurePose; present: bool
   const j = sprintLeap(sinceTakeoff);
   const loc: V3 = [start[0], start[1] - j.x, start[2] + j.z];
   const basePose = runPose(loc, yaw, j.x / runStride(takeoffSpeed), takeoffSpeed);
-  const k = ss(sinceTakeoff / 0.3);
-  const pose: FigurePose = { ...basePose, ground: 0, pitch: lerp(-10, -4, k), legR: lerp(basePose.legR, 34, k), legL: lerp(basePose.legL, -20, k), armR: lerp(basePose.armR, 160, ss((sinceTakeoff - 0.3) / 0.35)), armL: lerp(basePose.armL, 160, ss((sinceTakeoff - 0.3) / 0.35)) };
+  const k = smoothstep01(sinceTakeoff / 0.3);
+  const pose: FigurePose = { ...basePose, ground: 0, pitch: lerp(-10, -4, k), legR: lerp(basePose.legR, 34, k), legL: lerp(basePose.legL, -20, k), armR: lerp(basePose.armR, 160, smoothstep01((sinceTakeoff - 0.3) / 0.35)), armL: lerp(basePose.armL, 160, smoothstep01((sinceTakeoff - 0.3) / 0.35)) };
   // 掉到井口下面 4 米就不画了（镜头看不到，也省得穿出古城）
   return { pose, present: loc[2] > groundZ - 30 };
 };

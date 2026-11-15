@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Ghost } from '../../engine/model/parts.tsx';
 import { KATANA_BLOOM_LAYER, useKatanaBloom } from './拔刀剑泛光.tsx';
+import { lerp } from '../../engine/core/数学.ts';
 
 type P2 = [number, number];
 
@@ -510,8 +511,6 @@ const HI = { top: 0.085, bot: 0.37, lip: 0.035, start: PART_Z.habaki - PART_Z.ts
 const KISSAKI_RIDGE = 0.42;
 const YOKOTE_SLANT = 0.21;
 const FUKURA: P2[] = [[0, 1], [0.2, 0.92], [0.36, 0.856], [0.52, 0.73], [0.67, 0.554], [0.82, 0.353], [0.9, 0.215], [1, 0]];
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const lookup = (table: P2[], x: number) => {
   let i = 0;
   while (i < table.length - 2 && x > table[i + 1][0]) i++;

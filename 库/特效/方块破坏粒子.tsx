@@ -12,8 +12,8 @@
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
-import { rng } from '../../engine/model/parts.tsx';
 import { interpPathPos, type Particle, particleInitVel, particlePath } from './粒子面片.tsx';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 // 一镜到底近景慢放里的粒子时钟倍速（粒子速度按比例放大，撞击比日常挖方块猛得多）：
 // - 战利品箱：同 6-1-5 的药水炸开（倍速 55），慢放下一秒上下散干净，把画面让给飞出来的物品；
@@ -33,7 +33,7 @@ export const spawnBlockBreak = (
   density = 4,
   outwardVel?: (p0: V3, rand: () => number) => V3,
 ): BreakParticle[] => {
-  const rand = rng(seed * 4099 + 17);
+  const rand = mulberry32(seed * 4099 + 17);
   const out: BreakParticle[] = [];
   // 每轴份数：原版是 max(2, ceil(边长 / 0.25))；按 `density`/4 缩
   const divisions = size.map((s) => Math.max(2, Math.ceil((Math.min(1, s) / 0.25) * (density / 4))));

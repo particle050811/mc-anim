@@ -8,12 +8,12 @@
 //   所以柱子底下一直有火，火柱是从地面连着往上的。
 // 没做：目标着火、受伤。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { groundFireClass, bigFireLifetime, burningClass, defaultRadius, fieryPillarClass } from '../零件/丁粒子.ts';
 import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
 import meta, { blazeEruptTick, blazeWarmupTick } from './炽燃升腾.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 /** buildBlockCircle：[−整半径, 整半径)² 里 x² + z² ≤ 半径² 的整数偏移 */
 const circleCells = (radius: number): [number, number][] => {
@@ -29,7 +29,7 @@ const ringCells = (radius: number): [number, number][] => {
 const offsets = [...ringCells(3), ...ringCells(6)];
 
 const BlazeRise: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种子: seed }) => {
-  const r = rng(seed * 7919 + 31);
+  const r = mulberry32(seed * 7919 + 31);
   const pillarEmbers: ParticleBirth[] = [];
   const flameColumn: ParticleBirth[] = [];
   const groundFlames: ParticleBirth[] = [];

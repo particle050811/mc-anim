@@ -17,11 +17,12 @@ import { WARDEN } from '@库/生物/监守者.tsx';
 import { walkPose } from '../../../角色/追兵.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { bowTextureFor } from '@库/物品/弓.tsx';
-import type { Cam } from '../6-4-1/古城画面.tsx';
 import { FPS, blockCenter, nearYaw, yawTo } from '../6-4-1/古城戏.ts';
 import { G4 } from '../../古城4x.tsx';
 import { allWool, liuXinzhongSpot, shrieks, wardenEmerge, handoffs, huangPanSpot, woolBlockAt, woolOrder, eliteLeap, leapFeetAt, type Jump } from '../布局.ts';
-import { bump, crouchBy, elevationTo, glanceAt, hopAir, hopTo, huangAimPose, landingCushion, lerp, liuGuardPose, pulse, rampIn, ss, startle, stepLeg, yawToWarden } from './二人.ts';
+import { bump, crouchBy, elevationTo, glanceAt, hopAir, hopTo, huangAimPose, landingCushion, liuGuardPose, pulse, rampIn, startle, stepLeg, yawToWarden } from './二人.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export { FPS };
 export const EMERGE0 = 12; // 第 12 帧开始钻出（开头半秒地面先静着，声波环还在飘）
@@ -53,7 +54,7 @@ export const warden = (frame: number) => {
   const t = emergeSec(frame);
   const animSec = emergeAnimSec(frame);
   const tendril = t > tendrilSec ? Math.max(0, 1 - (t - tendrilSec) / 0.5) : 0;
-  const turn = ss(rampIn(t, tendrilSec + 0.05, tendrilSec + 0.3));
+  const turn = smoothstep01(rampIn(t, tendrilSec + 0.05, tendrilSec + 0.3));
   // 钻出前：整个埋在地下（钻出动画第 0 秒的姿势）
   return {
     秒: gameSecAt(frame),
@@ -105,14 +106,14 @@ const feetAt = (who: '刘' | '黄', frame: number): V3 => {
 };
 const walkAmp: Key[] = [[0, 1], [EMERGE0 + 6, 0], [END, 0]];
 // 头看监守者：先低头看翻涌的地面，跟着它往上爬抬起头（看点从地面升到头的高度）
-const lookWeight = (f: number) => ss(rampIn(emergeSec(f), 0.08, 0.45));
-const lookPitchAt = (feet: number[], f: number) => elevationTo(feet, 2.6 * ss(rampIn(emergeSec(f), 0.1, 1.5))) * lookWeight(f);
+const lookWeight = (f: number) => smoothstep01(rampIn(emergeSec(f), 0.08, 0.45));
+const lookPitchAt = (feet: number[], f: number) => elevationTo(feet, 2.6 * smoothstep01(rampIn(emergeSec(f), 0.1, 1.5))) * lookWeight(f);
 const bodyYaw = (feet: number[], f: number) => lerp(FACE_W, nearYaw(FACE_W, yawToWarden(feet)), lookWeight(f));
 // 站着的那些喘气、晃动在走路停下以后才加进来
-const settle = (f: number) => ss(rampIn(f, handoff.holdFrames, handoff.holdFrames + 8));
+const settle = (f: number) => smoothstep01(rampIn(f, handoff.holdFrames, handoff.holdFrames + 8));
 const airAndLand = (pose: FigurePose, s: number, b: { jolt: number; crouch: number; takeoff: number }, hop: Jump, rightTuck = 1) => {
   let p = startle(pose, bump(s, b.jolt, b.crouch + 0.02));
-  p = crouchBy(p, ss(rampIn(s, b.crouch, b.takeoff)) * (s < b.takeoff ? 1 : 0));
+  p = crouchBy(p, smoothstep01(rampIn(s, b.crouch, b.takeoff)) * (s < b.takeoff ? 1 : 0));
   const landSec = hop.f1 / FPS;
   if (s >= b.takeoff && s < landSec) p = hopAir(p, (s - b.takeoff) / hop.T, rightTuck);
   return crouchBy(p, landingCushion(s - landSec));
@@ -122,7 +123,7 @@ export const liuPoseAt = (frame: number): FigurePose => {
   const b = beats.刘;
   const feet = feetAt('刘', frame);
   const yaw = bodyYaw(feet, frame);
-  const g = ss(rampIn(s, b.guard[0], b.guard[1]));
+  const g = smoothstep01(rampIn(s, b.guard[0], b.guard[1]));
   let pose = liuGuardPose(feet, yaw, s, g, lookPitchAt(feet, frame), settle(frame));
   const amp = sample(walkAmp, frame);
   if (amp > 0) {
@@ -140,7 +141,7 @@ export const huangPoseAt = (frame: number): FigurePose => {
   const b = beats.黄;
   const feet = feetAt('黄', frame);
   const yaw = bodyYaw(feet, frame);
-  const r = ss(rampIn(s, b.raise[0], b.raise[1]));
+  const r = smoothstep01(rampIn(s, b.raise[0], b.raise[1]));
   let pose = huangAimPose(feet, yaw, s, r, bowDrawAt(frame), lookPitchAt(feet, frame), settle(frame));
   const amp = sample(walkAmp, frame);
   if (amp > 0) {
@@ -153,7 +154,7 @@ export const huangPoseAt = (frame: number): FigurePose => {
 export const pursuers = (frame: number): { 刘: FigurePose; 黄: FigurePose } => ({ 刘: liuPoseAt(frame), 黄: huangPoseAt(frame) });
 // 拉弓 0～1（落地以后搭箭拉满）；弓的贴图照原版三档
 export function bowDrawAt(frame: number) {
-  return ss(rampIn(frame / FPS, beats.黄.draw[0], beats.黄.draw[1]));
+  return smoothstep01(rampIn(frame / FPS, beats.黄.draw[0], beats.黄.draw[1]));
 }
 export const bowAt = (frame: number) => bowTextureFor(bowDrawAt(frame) > 0.05, bowDrawAt(frame));
 

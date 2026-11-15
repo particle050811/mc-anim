@@ -4,7 +4,6 @@
 // 动画：动画文件在定义时解析一次（Molang 能算的当场烘成数）；组件按 秒 取样各层、混合（engine/model/基岩实体.tsx 的 动画姿势）。
 // 坐标同 骨架.tsx：原点在脚底，Z 朝上，朝向 +Y；pose.yaw 绕 Z 转（度）。新加一只的步骤见 docs/新生物.md。
 import { createElement, type FC, type ReactNode } from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import type { MolangEnv } from '../../engine/anim/Molang.ts';
 import { parseAnimationFile, type Convention, type BedrockAnimation } from '../../engine/anim/基岩动画.ts';
 import { BedrockEntity, type AnimationLayerSetting } from '../../engine/model/基岩实体.tsx';
@@ -12,6 +11,7 @@ import type { BedrockModel, BonePose } from '../../engine/model/基岩模型.tsx
 import type { EntityLighting } from '../../engine/model/实体材质.ts';
 import { png, type Png } from '../../engine/model/贴图.ts';
 import { overlayTextures } from '../../engine/model/贴图合成.ts';
+import { rad } from '../../engine/core/数学.ts';
 
 /** import 'asset:贴图/…' 得到的 data URI，或已经读好的 Png */
 export type TextureSource = string | Png;

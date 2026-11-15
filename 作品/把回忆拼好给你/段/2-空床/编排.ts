@@ -24,6 +24,7 @@ import * as params from '../../场/2-卧室/参数.ts';
 import { sitBedEdgeSkeleton, smoothSkeleton } from '../../场/2-卧室/姿势.ts';
 import { bedSurfaceHeight } from '../../物品/床尺寸.ts';
 import { mixColor } from '../../现实/像素图.ts';
+import { lerp, clamp01 } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...lyricEvents, ...mainCutLine12Events, ...mainCutLines13To14Events };
 const segMainCutEventFrames = (segKey: string) => segmentFrames(segmentWindow(segKey).起帧, mainCutEvents);
@@ -34,9 +35,6 @@ const thisWindow = segmentWindow(segKey);
 export const frameCount = thisWindow.帧数;
 /** 段内帧 → 歌曲帧（颗粒的种子、歌词用它） */
 export const toSongFrame = (f: number) => thisWindow.起帧 + f;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 const beatFrames = beatGrid.拍长 * fps;
 

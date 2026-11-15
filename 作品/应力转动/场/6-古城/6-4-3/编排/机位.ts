@@ -1,10 +1,12 @@
 // 6-4-3 机位：A1～A3、6-4-3b 跟拍刹住、C1～C3，以及核对弓用的近景。
 import type { V3 } from '@engine/model/parts.tsx';
-import type { Cam } from '../../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
 import { lastFrame642 } from '../../../../地点/古城4x/布局.ts';
-import { ss, add, lerpV, norm, cross, storySecAt, fromHuangPanLocal } from './公用.ts';
+import { add, norm, cross, storySecAt, fromHuangPanLocal } from './公用.ts';
+import { lerpV, smoothstep01 } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
+
 // 古城4x 机位对着方块数据逐帧核过（工具/挡箭/机位.ts 导出、机位核对.py 核）。
 const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({ pos: lerpV(a.pos, b.pos, k), tgt: lerpV(a.tgt, b.tgt, k), lens: a.lens + (b.lens - a.lens) * k });
 const segmentProgress = (g: number, g0: number, g1: number) => Math.min(1, Math.max(0, (g - g0) / Math.max(1, g1 - g0)));
@@ -25,7 +27,7 @@ const A3: Cam = { pos: besideHuangPan(-6.27, 2.07, 1.61), tgt: add(geom.nockPoin
 // 跟拍偏移（箭的右、上、后，米）。用户 10-13 要拍出放大后的尺度，所以镜头离箭 5.2 米（左 2.4、上 1.0、后 4.5）、18mm，房子和羊毛墙一帧掠过一大截。
 // 镜头在箭的南边略高（兵营东墙南北两头都挡，只有南边看得见李樱和弹开点；再高就撞洞顶），
 // 箭飞到 100 米左右南边有根岩柱垂下来，镜头在 85～98 米绕到北边让开、110～125 米绕回（整条箭路每 0.5 米核过机位不撞方块：工具/挡箭/机位核对.py --跟拍）
-const followRight = (s: number) => -2.4 + 4.0 * ss((s - 85) / 13) * (1 - ss((s - 110) / 15));
+const followRight = (s: number) => -2.4 + 4.0 * smoothstep01((s - 85) / 13) * (1 - smoothstep01((s - 110) / 15));
 const followUp = 1.0;
 const followBack = 4.5;
 const arrowRight: V3 = norm(cross(geom.incomingDir, [0, 0, 1]));
@@ -49,7 +51,7 @@ const brakeEndFrame = timeline.frameFractional(geom.shootTime + geom.arrowArrive
 const followCam = (storyTime: number): Cam => {
   const arrowState = geom.arrowState(storyTime);
   const dist = arrowState.阶段 === '来' ? Math.max(0, geom.incomingArrowDist(storyTime - geom.shootTime)) : geom.deflectDist;
-  const brakeWeight = ss((timeline.frameFractional(storyTime) - brakeStartFrame) / (brakeEndFrame - brakeStartFrame));
+  const brakeWeight = smoothstep01((timeline.frameFractional(storyTime) - brakeStartFrame) / (brakeEndFrame - brakeStartFrame));
   const followPose = followCamPose(Math.min(dist, brakeEndDist));
   const camPos = lerpV(followPose.pos, sideCamPos, brakeWeight);
   return { pos: camPos, tgt: lerpV(followPose.tgt, sideTarget, brakeWeight), lens: 18 + 12 * brakeWeight };
@@ -89,5 +91,5 @@ export const camera = (globalFrame: number): Cam => {
   if (t < timeline.cuts.C1) return followCam(t);
   if (globalFrame < cutFrames.C2) return lerpCam(C1a, C1b, segmentProgress(globalFrame, cutFrames.C1, cutFrames.C2));
   if (globalFrame < cutFrames.C3) return lerpCam(C2a, C2b, segmentProgress(globalFrame, cutFrames.C2, cutFrames.C3));
-  return lerpCam(C3a, C3b, ss(segmentProgress(globalFrame, cutFrames.C3, timeline.totalFrames)));
+  return lerpCam(C3a, C3b, smoothstep01(segmentProgress(globalFrame, cutFrames.C3, timeline.totalFrames)));
 };

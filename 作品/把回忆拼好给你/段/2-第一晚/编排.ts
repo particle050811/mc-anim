@@ -1,7 +1,6 @@
 // 2-第一晚 每一帧的状态：镜头、天上几刻、调子、你在哪什么姿势、坑挖到哪、裂纹、掉落物、洞顶上走过的僵尸、洞里多暗。
 // 纯模块（画面和测试都引）：时刻取 分镜 的正片事件，分寸取 场/2-第一晚/参数.ts。原版的东西按刻走（20 刻一秒），段内帧 × 20/fps。
 // 镜头、快进前的天（边挖边天黑）、撤排照 场/2-新世界/编排.ts（和 2-初入 同一套函数，接缝那一帧对得上）；你、掉落物、裂纹、僵尸的坐标是剖面里的（见 场/2-第一晚/参数.ts）。
-import { clamp01 } from '@engine/anim/anim.ts';
 import { lerpTone, type Tone as Tone } from '@engine/三渲二/调子.ts';
 import { fps, oneFrameSec } from '../../分镜/时间.ts';
 import { segmentWindow, segClock, segEventFrames as segMainCutEventFrames } from '../../分镜/正片第2句.ts';
@@ -10,6 +9,7 @@ import { headAngles, zombie, groundLayers, skylightDigSec, fastForward, lookUpSe
 import type { PitState as PitState } from '../../场/2-新世界/地形.ts';
 import { fullLightTick, peeledRows, skyLightTo, skyTickAt, cameraRigAt, dawnTick } from '../../场/2-新世界/编排.ts';
 import { palette } from '../../色板.ts';
+import { clamp01, lerp, mulberry32 } from '@engine/core/数学.ts';
 
 const segKey = '2-第一晚';
 export const events = segMainCutEventFrames(segKey);
@@ -21,8 +21,6 @@ export const toSongFrame = (f: number) => startFrame + f;
 export const songSec = (f: number) => (startFrame + f) / fps;
 /** 段内帧 → 段首起的游戏刻（不快进的真时间）。先乘后除：整帧数换整刻数时没有浮点零头（半秒的帧数正好 10 刻） */
 export const frameToTick = (f: number) => (f * 20) / fps;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const smoothStep = (t: number) => {
   const q = clamp01(t);
   return q * q * (3 - 2 * q);
@@ -146,23 +144,11 @@ export const SteveState = (f: number): SteveState => {
 };
 
 // ---------- 掉落物 ----------
-/** 定死的伪随机（mulberry32），同一个种子每次一样 */
-const rng = (seed: number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-
 type ItemPath = { 路: (readonly [number, number, number])[]; phaseOffset: number };
 const halfSize = drop.大小 / 2;
 /** 第 i 块碎掉时掉的那块泥土：原版 popResource 生成、ItemEntity.tick 的物理；坑是一格宽的竖井，四面贴墙，底随挖的进度往下 */
 const itemPaths: ItemPath[] = shards.map(({ 帧: startFrame, 格: cellPos }, i) => {
-  const r = rng(2024 + i * 7919);
+  const r = mulberry32(2024 + i * 7919);
   const jitter = (a: number) => a - 0.25 + r() * 0.5;
   let [x, y, z] = [jitter(cellPos[0]), jitter(cellPos[1]), jitter(cellPos[2]) - halfSize];
   let [vx, vy, vz] = [r() * 0.2 - 0.1, r() * 0.2 - 0.1, 0.2];

@@ -4,24 +4,10 @@
 // 坐标照场景约定：x 东、y 北、z 上，格 (i, j, k) 占 [i, i+1]×[j, j+1]×[k, k+1]；z0 = 树根那格（地面顶上那一格）的 k。
 import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
 import { hash2 } from '@engine/core/噪声.ts';
+import { randInt, mulberry32 } from '@engine/core/数学.ts';
 
 /** 一棵树：根在 (i, j)；高 = 橡树的树干高（樱花树的高按原版自己抽）；种子定这棵树的随机 */
 export type VanillaTree = { i: number; j: number; 高: number; 种子: number };
-
-/** 定死的随机数（mulberry32） */
-export const rng = (seed: number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-/** [lo, hi] 里的整数 */
-const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
-
 /** 橡树（原版 TreeFeatures.OAK：树干 4～6、两层 5×5 叶子去角随机、上两层 3×3 十字） */
 export const oakTree = (t: VanillaTree, z0: number, place: (b: PlacedBlock) => void) => {
   const top = z0 + t.高;
@@ -54,7 +40,7 @@ const cherryLeaves = 'minecraft:cherry_leaves';
  *   中间、往下一层半径 3（边角随机缺），往下两层半径 2；下面两层的外圈底下随机垂一两格叶子。
  */
 export const cherryTree = (t: VanillaTree, z0: number, place: (b: PlacedBlock) => void) => {
-  const r = rng(t.种子 * 2654435761 + 97);
+  const r = mulberry32(t.种子 * 2654435761 + 97);
   const treeHeight = 7 + randInt(r, 0, 1);
   const branchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -3));
   let secondBranchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -4));

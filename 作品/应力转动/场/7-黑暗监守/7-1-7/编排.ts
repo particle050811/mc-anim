@@ -8,11 +8,12 @@
 // - 第三拍拍碎：监守者身后越肩，刘心忠上马，第二箭钉上，碎的那一下马正好起跳；马一跃上墙：墙头落点旁边往下看，它追到墙脚。
 import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
-import { lerpV, ss } from '../../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-1/时间线.ts';
 import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';
 import { buildCameraRig, type SpeedRampShot } from '../../../地点/古城4x/7-1/变速段.tsx';
+import { smoothstep01, lerpV } from '@engine/core/数学.ts';
+
 export const segmentId = '7-1-7' as const;
 export const FPS = timeline.FPS;
 
@@ -30,7 +31,7 @@ export const END = speedRamp.总帧数;
 export const timeAt = speedRamp.storyTime;
 
 const horsePos = (t: number): V3 => play.horseState(t)?.p ?? play.liuXinzhongPos(t);
-const steady = (t0: number, t1: number, p0: V3, p1: V3, tgt: V3, lens: number) => (t: number) => ({ pos: lerpV(p0, p1, ss((t - t0) / (t1 - t0))), tgt, lens });
+const steady = (t0: number, t1: number, p0: V3, p1: V3, tgt: V3, lens: number) => (t: number) => ({ pos: lerpV(p0, p1, smoothstep01((t - t0) / (t1 - t0))), tgt, lens });
 const cuts = [startT, timeline.shieldT + 0.08, shieldHits[0] + 0.6, timeline.mountT - 0.03, shieldHits[2] + 0.32];
 const shots: SpeedRampShot[] = [
   // 扑空：监守者扑来的路南边 5 米低处（两人中间那一片地面高低不平，放不下机位），先瞄它要扫的地方，扫空以后看点跟着刘心忠往西甩，他半空里甩出护盾就切
@@ -38,7 +39,7 @@ const shots: SpeedRampShot[] = [
   {
     起: cuts[0],
     cam: (t) => {
-      const follow = ss((t - (swingT + 0.15)) / 0.45);
+      const follow = smoothstep01((t - (swingT + 0.15)) / 0.45);
       const liu = play.liuXinzhongPos(t);
       return { pos: [-150.5, 15.0, 1.5], tgt: lerpV([-154.6, 19.5, 0.9], [liu[0], liu[1], liu[2] + 1.0], follow), lens: 16 };
     },

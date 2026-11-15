@@ -5,7 +5,6 @@
 // - 雾云：见 雾云出生。平躺的方片，朝上朝下各一张（GroundCircleParticle），这里两面画一张。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import type { Vec3 } from '../../接口.ts';
 import { GroundDecal } from '../地面贴花.tsx';
 import { faceMaterial, type RgbColor } from '../材质.ts';
@@ -20,6 +19,7 @@ import circleExplode6Png from 'asset:贴图/法术/goety/particle/circle_explode
 import circleExplode7Png from 'asset:贴图/法术/goety/particle/circle_explode7';
 import circleExplode8Png from 'asset:贴图/法术/goety/particle/circle_explode8';
 import fogCloudPng from 'asset:贴图/法术/goety/particle/fog_cloud';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const ringFrames = [circleExplode1Png, circleExplode2Png, circleExplode3Png, circleExplode4Png, circleExplode5Png, circleExplode6Png, circleExplode7Png, circleExplode8Png].map(png);
 
@@ -59,7 +59,7 @@ export interface FogCloudBirth {
 export const FogCloud: React.FC<{ spawns: readonly FogCloudBirth[]; 刻: number }> = ({ spawns, 刻: tick }) => (
   <>
     {spawns.map((spawn, i) => {
-      const r = rng(spawn.种子 * 7 + 3);
+      const r = mulberry32(spawn.种子 * 7 + 3);
       const lifetime = 40 + Math.floor(r() * 21);
       const ageTick = tick - spawn.刻;
       const age = ageTick * (1 + spawn.速);

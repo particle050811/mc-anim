@@ -10,10 +10,12 @@ import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { useContext } from 'react';
 import { type BedrockModel, BedrockModelView } from '../../engine/model/基岩模型.tsx';
-import { Ghost, rng } from '../../engine/model/parts.tsx';
+import { Ghost } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import broomRawAsset from 'asset:模型/物品/扫帚';
 import tex from 'asset:贴图/物品/扫帚';
+import { mulberry32 } from '../../engine/core/数学.ts';
+
 const raw = broomRawAsset as unknown as object;
 
 export const BROOM_MODEL = { ...raw, texture: png(tex) } as unknown as BedrockModel;
@@ -38,7 +40,7 @@ const STRAW = ['#7c4840', '#906547', '#a97d5e', '#87533c', '#b48d63'];
 // 一捆草丝：n 根细长方条，每根两段：根部到绑带末端（y -1.12）收在绑带里，之后往尾巴散开。
 // 截面是扁椭圆（半宽、半高，格）：绑带里 (0.3, 0.11)，末端 (0.5, 0.3)
 const strawGeometry = () => {
-  const rand = rng(4242);
+  const rand = mulberry32(4242);
   const strandCount = 460;
   const { y0, y1, z } = BROOM.bristle;
   const yb = -1.12;

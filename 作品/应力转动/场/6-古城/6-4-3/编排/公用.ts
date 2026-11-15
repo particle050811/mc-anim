@@ -3,11 +3,11 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../../../地点/古城4x.tsx';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
+import { lerpV } from '@engine/core/数学.ts';
+
 export const gameToScene = G4;
-export const ss = geom.ss;
 export const add = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 export const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-export const lerpV = (a: V3, b: V3, k: number): V3 => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
 export const norm = (vec: V3): V3 => {
   const mag = Math.hypot(vec[0], vec[1], vec[2]) || 1;
   return [vec[0] / mag, vec[1] / mag, vec[2] / mag];

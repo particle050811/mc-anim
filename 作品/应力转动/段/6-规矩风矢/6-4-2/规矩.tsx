@@ -8,8 +8,9 @@ import { SculkSensor } from '@库/特效/幽匿感测体.tsx';
 import { VibrationSignal } from '@库/特效/振动粒子.tsx';
 import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import { DarknessEffect } from '@库/特效/黑暗效果.tsx';
-import { AncientCity4xCanvas, LiYingWithBlade, type Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas, LiYingWithBlade } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as choreo from './编排.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 网格里画死的感测体藏掉、换成会抖的（同老 6-4-2：底座侧面和顶面、触须分两个盒子藏）
 export const HIDE: number[][] = choreo.sensors.flatMap(([x, y, z]) => {

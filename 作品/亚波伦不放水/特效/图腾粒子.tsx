@@ -7,9 +7,10 @@
 // 第一人称屏幕上翻转的图腾（GameRenderer.displayItemActivation）不在这里；触发后的药水效果粒子也没做。
 // 坐标：场景（Z 朝上，格）。
 import React, { useMemo } from 'react';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
 import { interpPathPos, type Particle, particlePath, ParticlePhysics, ParticleQuads } from '@库/特效/粒子面片.tsx';
 import { vanillaParticleAtlas } from '@库/特效/原版粒子.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export const totemEmitTicks = 30;
 
@@ -18,7 +19,7 @@ type TotemParticle = { spawnTick: number; 路: V3[]; halfSize: number; lifeTicks
 /** 一次图腾触发的全部粒子。脚底：人的脚底中心；宽、高：碰撞箱（玩家 0.6、1.8）；地面：粒子落到这个高度停住，不给 = 不停 */
 export const totemParticleTable = (feet: V3, seed: number, options: { 宽?: number; 高?: number; ground?: number } = {}): TotemParticle[] => {
   const { 宽: width = 0.6, 高: height = 1.8, ground } = options;
-  const rand = rng(seed * 48271 + 35);
+  const rand = mulberry32(seed * 48271 + 35);
   const particles: TotemParticle[] = [];
   for (let emitTick = 0; emitTick < totemEmitTicks; emitTick++) {
     for (let i = 0; i < 16; i++) {

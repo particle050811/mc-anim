@@ -1,11 +1,11 @@
-// 机位正本：焦距 ↔ 视角、插值、摆相机，和旧副本（aimCamera、lerpCam、fovOf、2-新世界 的 插机位）在同一批输入上对。
+// 机位正本：焦距 ↔ 视角、插值、摆相机，和旧副本（aimCamera、lerpCam、camLerp、2-新世界 的 插机位）在同一批输入上对。
 import fs from 'node:fs';
 import path from 'node:path';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { getFunction, type CompileOptions } from '../../pipeline/检查/副本识别.ts';
-import { placeCamera, makeCamera, projectToPicture } from './three换算.ts';
-import { lerpV, rad } from './数学.ts';
+import { placeCamera, makeCamera, projectToPicture, sceneToThree } from './three换算.ts';
+import { lerp, lerpV, rad } from './数学.ts';
 import * as J from './机位.ts';
 
 const root = path.resolve(import.meta.dirname, '../..');
@@ -77,7 +77,7 @@ describe('机位正本', () => {
 
 describe('机位正本和旧副本对得上', () => {
   it('aimCamera（应力转动 古城画面）摆出来的相机和 摆相机 一样（远裁剪面 900）', () => {
-    const aim = copyFn('作品/应力转动/地点/古城4x/6-4-1/古城画面.tsx', 'aimCamera', { globals: { THREE }, extra: { rad } });
+    const aim = copyFn('作品/应力转动/地点/古城4x/6-4-1/古城画面.tsx', 'aimCamera', { globals: { THREE }, extra: { rad, lensToFov: J.lensToFov, sceneToThree } });
     for (const c of [rigFirst, secondCam, { ...secondCam, roll: 180 }] as J.Cam[]) {
       for (const aspect of [16 / 9, 1]) {
         const prevCam = new THREE.PerspectiveCamera();
@@ -111,7 +111,7 @@ describe('机位正本和旧副本对得上', () => {
     ];
     for (const [a, b] of pairs) for (const k of [0, 0.2, 0.5, 0.9, 1, 1.3]) expectNear(J.slerpDir(a, b, k), slerpDir(a, b, k), 12);
     const camLerp = copyFn('作品/应力转动/地点/边城/6-3-8/编排/机位.ts', 'camLerp', {
-      extra: { ...Object.fromEntries(['lerp3', 'lerp', 'add', 'sub', 'norm'].map((n) => [n, getFunction('工具.ts', toolSource, n)])), slerpDir },
+      extra: { ...Object.fromEntries(['add', 'sub', 'norm'].map((n) => [n, getFunction('工具.ts', toolSource, n)])), lerp, lerpV, slerpDir },
     });
     for (const k of [0, 0.3, 0.75, 1]) {
       const prevCam = camLerp(rigFirst, secondCam, k) as J.Cam;
@@ -121,14 +121,10 @@ describe('机位正本和旧副本对得上', () => {
       expect(prevCam.lens).toBeCloseTo(nextCam.lens, 12);
     }
   });
-  it('fovOf（6-3-2 转场，16:9）', () => {
-    const fovOf = copyFn('作品/应力转动/地点/边城/6-3-2/转场.ts', 'fovOf', { extra: { aspect: 16 / 9 } });
-    for (const lens of [12, 26, 50]) expect(fovOf(lens)).toBeCloseTo(J.lensToFov(lens, 16 / 9), 12);
-  });
   it('lerpCam（7-起疑、6-4-3）和 2-新世界 的 插机位 = 线性 插机位', () => {
     const doubtLerpCam = copyFn('作品/应力转动/段/7-起疑/编排.ts', 'lerpCam');
     const ancientCityLerp = copyFn('作品/应力转动/场/6-古城/6-4-3/编排/机位.ts', 'lerpCam', { extra: { lerpV } });
-    const newWorldInsertRig = copyFn('作品/把回忆拼好给你/场/2-新世界/编排.ts', 'lerpRig');
+    const newWorldInsertRig = copyFn('作品/把回忆拼好给你/场/2-新世界/编排.ts', 'lerpRig', { extra: { lerp } });
     for (const k of [0, 0.3, 0.5, 1, 1.2]) {
       const nextCam = J.lerpRig(rigFirst, secondCam, k);
       for (const prevCam of [doubtLerpCam(rigFirst, secondCam, k), ancientCityLerp(rigFirst, secondCam, k)] as J.Cam[]) {

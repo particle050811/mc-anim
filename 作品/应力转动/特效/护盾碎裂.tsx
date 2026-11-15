@@ -6,11 +6,11 @@
 // sec = 碎了以后经过的秒数（< 0 不显示）；hit = 砸中点在护盾平面上的位置（-0.5～0.5）；push = 沿法线往哪边飞（+1 / -1）
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng } from '@engine/model/parts.tsx';
 import { pngDir } from '@engine/model/贴图.ts';
 import { assetDir } from '@engine/core/资产目录.ts';
 import lichShieldFillPng from 'asset:贴图/角色/巫妖护盾/fill';
 import lichShieldFramePng from 'asset:贴图/角色/巫妖护盾/frame';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const SHIELD = pngDir(assetDir({ './fill.png': lichShieldFillPng, './frame.png': lichShieldFramePng }));
 
@@ -36,7 +36,7 @@ const tex = () => {
 
 type Shard = { geo: THREE.BufferGeometry; c: THREE.Vector3 };
 const shardsFor = (seed: number): Shard[] => {
-  const rand = rng(seed * 977 + 5);
+  const rand = mulberry32(seed * 977 + 5);
   const gridCells = 4;
   // 抖动网格的顶点（边上的点只沿边抖）
   const gridPts: THREE.Vector2[][] = [];
@@ -91,7 +91,7 @@ const shardMat = (opacity: number) => {
 export const ShieldShatter: React.FC<{ sec: number; seed: number; hit?: [number, number]; push?: number; speed?: number }> = ({ sec, seed, hit = [0, 0], push = -1, speed = 3 }) => {
   const shards = useMemo(() => shardsFor(seed), [seed]);
   if (sec < 0 || sec > 1.6) return null;
-  const rand = rng(seed * 131 + 9);
+  const rand = mulberry32(seed * 131 + 9);
   const fade = sec < 0.9 ? 1 : Math.max(0, 1 - (sec - 0.9) / 0.7);
   const flash = Math.max(0, 1 - sec / 0.06);
   return (

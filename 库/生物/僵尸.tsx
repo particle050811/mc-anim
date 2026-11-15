@@ -9,12 +9,12 @@
 // - 眼高 1.74；头偏离身子最多 75°（Mob.getMaxHeadYRot）。移动速度属性 0.23，平地每刻位移同 苦力怕.tsx 的式子：闲逛、追人的倍率都是 1.0。
 // 坐标同 骨架.tsx：原点在脚底中心，Z 朝上，朝向 +Y，单位格（EntityModel 本身朝 −Y，这里转过来）。
 import React from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { EntityModel, type EntityModelData, type PartPose } from '../../engine/model/实体模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/僵尸';
 import texImg from 'asset:贴图/角色/僵尸';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODEL = (raw as unknown as { models: { 僵尸: EntityModelData } }).models.僵尸;
 const TEX = png(texImg);

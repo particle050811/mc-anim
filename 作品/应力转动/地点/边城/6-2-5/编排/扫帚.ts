@@ -2,10 +2,10 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { triangleSmooth, bankAngle, headingPitch } from '@engine/flight/飞行路径.ts';
 import type { RideLiYing } from '@库/角色/骑扫帚.tsx';
-import { ss, lerp } from './工具.ts';
 import { ROUTE } from './航线.ts';
 import { odometer, cloudPierceG, decelStartG, stopG } from './时间线.ts';
 import { baseline, baselineDir, rightNormal, perturb } from './真实飞行.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 // ---------- 扫帚 ----------
 export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; 速度: number };
@@ -27,14 +27,14 @@ const bank = (G: number) => bankAngle(routeYawRate(G));
 const perturbBank = (G: number) => perturb.combineBank(G, routeYawRate(G)) - bank(G);
 // 收势：扫帚的俯仰就是航线的俯仰，顺着收势那段曲线从爬升的 27° 抬到 35° 上下（减速时扫帚头微微上扬）再慢慢放平；
 // 最后两秒速度太小、航线切线的俯仰会在 5° 上下晃，停住前 2 秒到停住后 6 帧乘一个从 1 降到 0 的权，一路收到 0，悬停时轻轻起伏。
-const flattenWeight = (G: number) => 1 - ss((G - (stopG - 48)) / 54);
+const flattenWeight = (G: number) => 1 - smoothstep01((G - (stopG - 48)) / 54);
 const firstPitch = 55; // 见 编排.ts 文件头：草束朝镜头的一面背着太阳
 // 不带扰动的朝向：航线切线的朝向；最后转到朝南（城门在北，悬停时面朝城里）。原来急刹后一秒里、还在 400 米/秒时就转过来，
 // 扫帚横着往前滑；现在放在快停住的时候转（转向前 1.5 秒起、到停住后 8 帧转完，开始转时已经慢到一百米每秒上下，急刹以后扰动是 0）
 const turnSouth = [stopG - 36, stopG + 8] as const;
 export const routeYaw = (globalFrame: number) => {
   let yaw = headingPitch(raw(globalFrame).d).yaw;
-  const ys = ss((globalFrame - turnSouth[0]) / (turnSouth[1] - turnSouth[0]));
+  const ys = smoothstep01((globalFrame - turnSouth[0]) / (turnSouth[1] - turnSouth[0]));
   let delta = 180 - yaw;
   delta -= 360 * Math.round(delta / 360);
   return yaw + delta * ys;
@@ -65,16 +65,16 @@ export const broom = (globalFrame: number): BroomState => {
   const normal = rightNormal(track.d);
   const roll = triangleSmooth(bank, globalFrame, 12) + perturbBank(globalFrame);
   // 33.1 往前一压：首帧扫帚头抬着 55°（6-2-4 末尾往上窜），14 帧里压到航线的俯仰
-  let pitch = lerp(firstPitch, Math.abs(globalFrame - cloudPierceG) < pullUpHalfWidth ? pullUpPitch(globalFrame) : routePitch(globalFrame), ss(globalFrame / 14));
+  let pitch = lerp(firstPitch, Math.abs(globalFrame - cloudPierceG) < pullUpHalfWidth ? pullUpPitch(globalFrame) : routePitch(globalFrame), smoothstep01(globalFrame / 14));
   if (globalFrame > stopG - 48) pitch *= flattenWeight(globalFrame);
-  const ys = ss((globalFrame - turnSouth[0]) / (turnSouth[1] - turnSouth[0]));
+  const ys = smoothstep01((globalFrame - turnSouth[0]) / (turnSouth[1] - turnSouth[0]));
   const yaw = routeYaw(globalFrame) + pert.heading;
   const hover = globalFrame > stopG ? 0.6 * Math.sin(((globalFrame - stopG) * 2 * Math.PI) / 48) : 0;
   return {
     位置: [track.p[0] + normal[0] * pert.lateral, track.p[1] + normal[1] * pert.lateral, track.p[2] + pert.竖 + hover],
     facing: yaw,
     pitch: pitch,
-    roll: roll * ss((globalFrame - 6) / 10) * (1 - ys),
+    roll: roll * smoothstep01((globalFrame - 6) / 10) * (1 - ys),
     速度: track.v,
   };
 };
@@ -83,12 +83,12 @@ export const broom = (globalFrame: number): BroomState => {
 export type Riders = { 李樱: RideLiYing; 九胡: { lean: number; hugWaist: number; tailPhase: number; wind: number; headRaise: number; headTurn?: number } };
 export const riders = (globalFrame: number): Riders => {
   // 收势：减速开始后一秒半里慢慢直起身子
-  const brake = ss((globalFrame - decelStartG) / 36) * (1 - ss((globalFrame - stopG) / 12));
-  const stop = ss((globalFrame - stopG) / 12);
-  const go = ss(globalFrame / 20);
+  const brake = smoothstep01((globalFrame - decelStartG) / 36) * (1 - smoothstep01((globalFrame - stopG) / 12));
+  const stop = smoothstep01((globalFrame - stopG) / 12);
+  const go = smoothstep01(globalFrame / 20);
   return {
     // 起飞时身子压低；减速时慢慢直起身子，停住以后坐直往下看
     李樱: { lean: lerp(lerp(lerp(30, 46, go), 12, brake), 18, stop), headRaise: lerp(25, -20, stop) },
-    九胡: { lean: lerp(lerp(lerp(25, 34, go), 10, brake), 20, stop), hugWaist: 1, tailPhase: globalFrame / 9, wind: ss(globalFrame / 10) * (1 - stop), headRaise: lerp(10, -25, stop), headTurn: 20 * stop },
+    九胡: { lean: lerp(lerp(lerp(25, 34, go), 10, brake), 20, stop), hugWaist: 1, tailPhase: globalFrame / 9, wind: smoothstep01(globalFrame / 10) * (1 - stop), headRaise: lerp(10, -25, stop), headTurn: 20 * stop },
   };
 };

@@ -10,7 +10,6 @@
 // 没做 / 粗做：大牙碰撞箱的高度没查，按牙尖到史蒂夫头顶算命中；尖桩把人顶起一格（那是史蒂夫的事）。配灾厄法杖的 16 颗乱落不做。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
@@ -30,6 +29,7 @@ import generic4Png from 'asset:贴图/特效/粒子/generic_4';
 import generic5Png from 'asset:贴图/特效/粒子/generic_5';
 import generic6Png from 'asset:贴图/特效/粒子/generic_6';
 import generic7Png from 'asset:贴图/特效/粒子/generic_7';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const viciousToothModel = getModel(viciousToothModelData, 'ViciousToothModel');
 const viciousPikeModel = getModel(viciousPikeModelData, 'ViciousPikeModel');
@@ -82,7 +82,7 @@ const Stake: React.FC<{ 位: Vec3; 刻: number }> = ({ 位: pos, 刻: tick }) =>
 const dustFall = (fangPos: Vec3, groundZ: number, tick: number, seed: number): Map<number, QuadItem[]> => {
   const byFrame = new Map<number, QuadItem[]>();
   for (let t = 0; t <= Math.min(Math.floor(tick), bigFangHoverTick); t++) {
-    const r = rng(seed * 613 + t);
+    const r = mulberry32(seed * 613 + t);
     const [angle, randDistance] = [r() * Math.PI * 2, Math.sqrt(r()) * 0.25];
     const lifetime = Math.max(1, Math.floor(Math.floor(32 / (r() * 0.8 + 0.2)) * 0.9));
     const age = tick - t;

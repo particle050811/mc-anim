@@ -23,6 +23,7 @@ import { FirstPersonRig } from '../../地点/机位.tsx';
 import { MoonBellLily } from '../../物品/月铃兰.tsx';
 import { views, type View } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 const originPos: V3 = [0, 0, 0];
 // 封面：你站在她南边 2.6 格的门口，眼高 1.62
@@ -48,14 +49,13 @@ const rigDir = (cameraRig: View['cameraRig']): V3 => {
 
 // 正交：她站着连帽子约 1.8 格高，每格 300 页面像素让她占画面八成高（核对看得清；成片的像素密度另定）
 const orthoPerCell = 300;
-const toThree = ([x, y, z]: V3) => new THREE.Vector3(x, z, -y);
 const OrthoRig: React.FC<{ 眼: V3; 看: V3 }> = ({ 眼: eye, 看: lookAt }) => {
   const { camera, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   const cam = camera as THREE.OrthographicCamera;
-  cam.position.copy(toThree(eye));
+  cam.position.copy(sceneToThree(eye));
   cam.up.set(0, 1, 0);
-  cam.lookAt(toThree(lookAt));
+  cam.lookAt(sceneToThree(lookAt));
   cam.zoom = orthoPerCell;
   cam.near = 0.1;
   cam.far = 100;

@@ -12,9 +12,9 @@
 //   6-4-1：缺口南口 → A1 → B（开箱）→ A3 → A4（半空出画）。6-4-2：A4 → 翻回廊落 D → 小跳上 C（A4→C 直线会撞 C 南墙，见 6-4-2/编排.ts）；6-4-3 他站在 C 开箱。
 //   6-4-6～6-4-8：二人回田里，A1 在二人脚边；刘心忠踩响田西尖啸体 (-695,-51,259)，监守者在其北 4.5 格钻出（尖啸体召唤监守者，落点在周围水平 ±5 格内）。
 import type { V3 } from '@engine/model/parts.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import { type FigurePose, standPose } from '@库/角色/骨架.tsx';
 import { flightWarp } from '../布局/强者.ts';
+import { rad, smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
 
 export const FPS = 24;
 
@@ -60,12 +60,6 @@ export const footOnWool = (k: keyof typeof woolSpots): V3 => onWool(woolAt(...wo
 
 // ---------- 大跳 ----------
 const gravity = 32; // 格/秒²：游戏里玩家下落的重力（0.08 格/刻²）
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const bump = (x: number, a: number, b: number) => Math.sin(Math.PI * clamp01((x - a) / (b - a)));
 
 // 一跳：从脚底 p0 离地（第 f0 帧）跳到 p1，最高点脚底高 top（场景 z）。水平匀速，竖直按重力 G 的抛物线；有 hang 时沿弧的快慢按 `flightWarp`。
@@ -122,8 +116,8 @@ const ABSORB = 3; // 落地压到最深的帧数
 
 // 蹲下蓄力再蹬起：v 0～1（0.65 蹲到最深、手甩到最后，之后蹬到 `launchShape`；1 那一刻离地）
 export const takeoffPose = (foot: V3, yaw: number, progress: number, from = 0): FigurePose => {
-  if (progress < 0.65) return crouchPose(foot, yaw, lerp(from, 1, ss(progress / 0.65)), -55 * ss(progress / 0.65));
-  return mixPose(crouchPose(foot, yaw, 1, -55), launchShape(foot, yaw), ss((progress - 0.65) / 0.35));
+  if (progress < 0.65) return crouchPose(foot, yaw, lerp(from, 1, smoothstep01(progress / 0.65)), -55 * smoothstep01(progress / 0.65));
+  return mixPose(crouchPose(foot, yaw, 1, -55), launchShape(foot, yaw), smoothstep01((progress - 0.65) / 0.35));
 };
 
 // 空中（u 0～1 = 画面上这一跳过了几成；位置走 `leapAt`，有 hang 时顶点前后慢）：蹬直的腿和甩起的手 → 收腿抱膝上到顶点 → 顶点前后两臂张开、身子舒展 →
@@ -132,11 +126,11 @@ export const takeoffPose = (foot: V3, yaw: number, progress: number, from = 0): 
 export const flightPose = (jump: Leap, frame: number, { place = true, armRScale = 1 } = {}): FigurePose => {
   const u = clamp01((frame - jump.f0) / FPS / jump.T);
   const ua = jump.tUp / jump.T;
-  const ext = 1 - ss(u / 0.2);
-  const tuck = ss((u - 0.12) / Math.max(0.1, ua - 0.12)) * (1 - ss((u - ua - 0.08) / 0.22));
+  const ext = 1 - smoothstep01(u / 0.2);
+  const tuck = smoothstep01((u - 0.12) / Math.max(0.1, ua - 0.12)) * (1 - smoothstep01((u - ua - 0.08) / 0.22));
   const reachStart = Math.max(ua + 0.12, 0.62);
-  const reach = ss((u - reachStart) / 0.25);
-  const reachHead = ss((u - 0.06 - reachStart) / 0.25);
+  const reach = smoothstep01((u - reachStart) / 0.25);
+  const reachHead = smoothstep01((u - 0.06 - reachStart) / 0.25);
   const float = bump(u, ua - 0.18, ua + 0.2);
   const wave = place ? bump(u, 1 - (PLACE_BEFORE + 0.12) / jump.T, 1 - (PLACE_BEFORE - 0.1) / jump.T) : 0;
   return {
@@ -156,7 +150,7 @@ export const flightPose = (jump: Leap, frame: number, { place = true, armRScale 
     armLRoll: 8 - 22 * tuck + 40 * float + 25 * reach,
     elbowL: 20 + 35 * tuck,
     twist: 10 * ext - 6 * reach,
-    ground: 1 - ss(u / 0.1) * (1 - ss((u - 0.86) / 0.14)),
+    ground: 1 - smoothstep01(u / 0.1) * (1 - smoothstep01((u - 0.86) / 0.14)),
     yaw: jump.yaw,
   };
 };
@@ -176,7 +170,7 @@ export const landPose = (foot: V3, yaw: number, framesSinceLand: number, len: nu
   const absorbLen = Math.min(ABSORB, len * 0.5);
   if (framesSinceLand < absorbLen) return absorbPose(foot, yaw, Math.max(0, framesSinceLand) / absorbLen);
   const k = clamp01((framesSinceLand - absorbLen) / Math.max(1e-6, len - absorbLen));
-  return absorbTail(crouchPose(foot, yaw, lerp(1.12, rest, ss(k)), lerp(25, 5, k)), k);
+  return absorbTail(crouchPose(foot, yaw, lerp(1.12, rest, smoothstep01(k)), lerp(25, 5, k)), k);
 };
 
 // 两跳之间在地上（s 落地后第几帧，len 待几帧）：卸力 → 蹲着蓄力（手往后甩、抬头看下一跳）→ 最后 `PUSH` 帧蹬直，同时转向下一跳。
@@ -184,17 +178,17 @@ export const landPose = (foot: V3, yaw: number, framesSinceLand: number, len: nu
 export const groundPose = (foot: V3, yawIn: number, yawOut: number, s: number, len: number): FigurePose => {
   const windEnd = len - PUSH;
   const absorbLen = Math.min(ABSORB, windEnd);
-  const yaw = lerp(yawIn, nearYaw(yawIn, yawOut), ss(s / Math.max(1, windEnd)));
+  const yaw = lerp(yawIn, nearYaw(yawIn, yawOut), smoothstep01(s / Math.max(1, windEnd)));
   if (s < absorbLen) return absorbPose(foot, yaw, Math.max(0, s) / absorbLen);
   const windFrames = windEnd - absorbLen;
   const armsBack = -60 * Math.min(1, windFrames / 3);
   const wind = (x: number) => {
     const k = clamp01((x - absorbLen) / Math.max(1, windFrames));
-    const p = crouchPose(foot, yaw, lerp(1.12, 1, ss(k)), lerp(25, armsBack, ss(k)));
-    return absorbTail({ ...p, headPitch: p.headPitch + 10 * ss(k) }, k);
+    const p = crouchPose(foot, yaw, lerp(1.12, 1, smoothstep01(k)), lerp(25, armsBack, smoothstep01(k)));
+    return absorbTail({ ...p, headPitch: p.headPitch + 10 * smoothstep01(k) }, k);
   };
   if (s < windEnd) return wind(s);
-  return mixPose(wind(windEnd), launchShape(foot, yaw), ss((s - windEnd) / PUSH));
+  return mixPose(wind(windEnd), launchShape(foot, yaw), smoothstep01((s - windEnd) / PUSH));
 };
 
 // 两个姿势按 w 混合（角度线性插值，loc 用 a 的）
@@ -224,8 +218,8 @@ export const mixPose = (from: FigurePose, to: FigurePose, weight: number): Figur
 
 // 弯腰开箱、伸手拿东西：u 0～1，0～0.3 弯腰伸手掀盖，0.3～0.75 手伸进箱里抓，0.75～1 收手直腰
 export const lootPose = (foot: V3, yaw: number, progress: number, below = 1): FigurePose => {
-  const bend = ss(progress / 0.25) * (1 - ss((progress - 0.8) / 0.2));
-  const reach = ss((progress - 0.1) / 0.25) * (1 - ss((progress - 0.72) / 0.2));
+  const bend = smoothstep01(progress / 0.25) * (1 - smoothstep01((progress - 0.8) / 0.2));
+  const reach = smoothstep01((progress - 0.1) / 0.25) * (1 - smoothstep01((progress - 0.72) / 0.2));
   const grab = Math.sin(Math.PI * Math.min(1, Math.max(0, (progress - 0.35) / 0.35)));
   return {
     ...standPose(foot),

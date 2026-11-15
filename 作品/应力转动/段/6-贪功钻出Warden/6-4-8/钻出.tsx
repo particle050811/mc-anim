@@ -1,13 +1,13 @@
 // 6-4-8 钻出的画面：场子（古城4x）里，监守者照原版钻出动画（快放到 1.75 秒）从二人面前的地里爬出来。编排见 编排.ts；成片段是 ../6-4-7至9/。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { rad } from '@engine/anim/anim.ts';
 import { Warden } from '@库/生物/监守者.tsx';
 import { HuangPan, LiuXinzhong } from '../../../角色/追兵.tsx';
 import { BlockCrumbs } from '@库/特效/方块碎屑.tsx';
 import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import { AncientCity4xCanvas } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as choreo from '../../../地点/古城4x/6-4-8/编排.ts';
+import { rad } from '@engine/core/数学.ts';
 
 // f：本段帧（6-4-7至9 的中间一截，见 ../6-4-7至9/）
 export const EmergeView: React.FC<{ f: number }> = ({ f: frame }) => {

@@ -22,7 +22,6 @@ import * as THREE from 'three';
 import type { MolangEnv } from '@engine/anim/Molang.ts';
 import { SecondOrderStepper, secondOrderSteady, type SecondOrderFn } from '@engine/anim/二阶系统.ts';
 import { blendLayers } from '@engine/anim/基岩动画.ts';
-import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { animationPose, type AnimationLayerSetting } from '@engine/model/基岩实体.tsx';
 import { skeletonMatrix } from '@engine/model/基岩正解.ts';
@@ -41,6 +40,7 @@ import skin3Texture from 'asset:贴图/角色/娘化亚波伦/3default';
 import skin4Texture from 'asset:贴图/角色/娘化亚波伦/4default';
 import skin5Texture from 'asset:贴图/角色/娘化亚波伦/5default';
 import defaultSkinTexture from 'asset:贴图/角色/娘化亚波伦/default';
+import { rad } from '@engine/core/数学.ts';
 
 const skinTextures = { default: defaultSkinTexture, '2default': skin2Texture, '3default': skin3Texture, '4default': skin4Texture, '5default': skin5Texture } as const;
 export type YaBoLunTexture = keyof typeof skinTextures;

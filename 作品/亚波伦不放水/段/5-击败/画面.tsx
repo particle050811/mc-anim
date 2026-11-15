@@ -6,7 +6,7 @@
 // 台地上留着仪式结构（祭坛、四角灵魂火），同第 2 幕。没做：经验球、地上留的火冰酸、猩红雨，只留 boss 血条。
 // 点「重生」以后不演重生，幕末硬切第 6 幕教堂（分镜 5-02 下的说明）。
 import React, { useMemo } from 'react';
-import { lerp as mix } from '@engine/core/数学.ts';
+import { lerp } from '@engine/core/数学.ts';
 import { png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
@@ -61,11 +61,11 @@ const shotTable: Shot[] = [
         const landTime = landSec - actStart;
         const nearProgress = Math.min(1, s / landTime);
         const mixT = Math.max(0, Math.min(1, (s - landTime) / 0.8));
-        const eyeHeight = mix(mix(0.3, 0.9, nearProgress), 1.6, mixT);
+        const eyeHeight = lerp(lerp(0.3, 0.9, nearProgress), 1.6, mixT);
         return {
-          pos: addVec(addVec(addVec([yaBoLun[0], yaBoLun[1], lagPos[2]], forward, mix(mix(3.4, 3.0, nearProgress), 3.8, mixT)), leftDir, mix(mix(4.2, 2.6, nearProgress), 2.9, mixT)), atHeight(eyeHeight)),
-          tgt: addVec(addVec(yaBoLun, forward, mix(0, 0.4, mixT)), atHeight(mix(1.7, 1.25, mixT))),
-          lens: mix(20, 22, k),
+          pos: addVec(addVec(addVec([yaBoLun[0], yaBoLun[1], lagPos[2]], forward, lerp(lerp(3.4, 3.0, nearProgress), 3.8, mixT)), leftDir, lerp(lerp(4.2, 2.6, nearProgress), 2.9, mixT)), atHeight(eyeHeight)),
+          tgt: addVec(addVec(yaBoLun, forward, lerp(0, 0.4, mixT)), atHeight(lerp(1.7, 1.25, mixT))),
+          lens: lerp(20, 22, k),
         };
       },
       0.1,

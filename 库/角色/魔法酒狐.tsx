@@ -8,7 +8,7 @@
 // 坑：厚度为 0 的片，基岩模型.tsx 留 up、north 面，游戏里后画的 down、south 盖在上面；这个模型里两面贴图不同的只在平时藏着的魔法阵和手持法杖上。
 import React, { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { rad, sampleV, type VKey } from '../../engine/anim/anim.ts';
+import { sampleV, type VKey } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { type BedrockBone, type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import type { FigurePose } from './骨架.tsx';
@@ -16,6 +16,7 @@ import { png } from '../../engine/model/贴图.ts';
 import { magicalWineFoxMotion, type MagicalWineFoxExpression } from './魔法酒狐动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
+import { rad, mod } from '../../engine/core/数学.ts';
 
 const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel; // json 资产 import 进来是解析好的对象
 
@@ -151,8 +152,6 @@ export const magicalWineFoxLookAt = (pose: Pick<FigurePose, 'loc' | 'yaw'>, targ
 
 // 关键帧照抄动画文件，都是线性插值（没写 lerp_mode 的 GeckoLib 默认线性），时间按动画长度循环
 const linear = (keys: [number, number[]][]): VKey[] => keys.map(([t, v]) => [t, v, 'linear']);
-const loop = (sec: number, loopLength: number) => ((sec % loopLength) + loopLength) % loopLength;
-
 // 背后法杖上下浮动：pre_parallel1，2 秒一循环，单位像素。坐着时 sit 的 pos 把它盖掉（见上面的覆盖规则），只有站着才浮。
 const STAFF_FLOAT = linear([[0, [0, 2, 0]], [0.8, [0, 0.25, 0]], [1, [0, 0, 0]], [1.8, [0, 1.5, 0]], [2, [0, 2, 0]]]);
 // 法杖上的三个环：parallel5，2 秒一循环。parallel_ 控制器的转角是叠加的，没有别的控制器动这三根，所以直接加在骨骼自带的 rotation 上。
@@ -164,7 +163,7 @@ const RINGS: Record<string, VKey[]> = {
 };
 /** 背后法杖在第 秒 秒的浮动和三个环的转角（姿势 '坐' 时只有环转） */
 export const magicalWineFoxStaffBones = (sec: number, stancePose: '坐' | '站' = '坐'): Record<string, BonePose> => {
-  const t = loop(sec, 2);
+  const t = mod(sec, 2);
   const out: Record<string, BonePose> = Object.fromEntries(Object.entries(RINGS).map(([name, keys]) => [name, { rot: sampleV(keys, t) }]));
   if (stancePose === '站') out.mofazhang2 = { pos: sampleV(STAFF_FLOAT, t) };
   return out;
@@ -177,7 +176,7 @@ const EAR_TWITCH = {
 };
 /** 不戴帽子时要改的骨骼：帽子藏、耳朵显，耳朵按 秒 抖 */
 export const magicalWineFoxHatOffBones = (sec: number): Record<string, BonePose> => {
-  const t = loop(sec, 4);
+  const t = mod(sec, 4);
   return {
     witchcap: HIDE,
     Ear: {},

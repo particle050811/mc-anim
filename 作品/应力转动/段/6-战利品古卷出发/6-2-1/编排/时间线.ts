@@ -1,7 +1,7 @@
 // 段表、台词开口、各动作的时刻和界面的开关。三段是一条连续的戏、共用一条时间轴（全局帧 G，6-2-1 首帧 = 0），
 // 段起点由段长累加；各时刻相对所在段的起点写（`seg22`、`seg23` 是 6-2-2、6-2-3 的起点，秒），改哪段的长度，后面的段跟着顺延。
 // 这里的段是旧段号的窗口（编排、声音按它分），成片的段界（拼成哪几个 Composition）见 ../6-2至6-3段界/段表.ts。
-import { ss } from '../动作.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 export const FPS = 24;
 
@@ -80,7 +80,7 @@ export const cues = {
 };
 
 // ---------- 界面（模型/界面/）：出现、消失、提示框、思索标注，各 0～1 ----------
-const fadeIn = (t: number, a: number, b: number) => ss((t - a) / (b - a));
+const fadeIn = (t: number, a: number, b: number) => smoothstep01((t - a) / (b - a));
 export const uiState = (globalFrame: number) => {
   const t = globalFrame / FPS;
   return {

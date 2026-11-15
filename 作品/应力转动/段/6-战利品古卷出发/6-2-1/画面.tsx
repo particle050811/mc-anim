@@ -8,7 +8,6 @@ import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import { FlightFog, FlightRig, FlightSky } from '../../../地点/飞行镜头.tsx';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { LiYing } from '@库/角色/李樱.tsx';
@@ -23,6 +22,7 @@ import { FuelWindow, MailleWindow } from '@库/界面/匠魂.tsx';
 import { CompassUi } from '@库/界面/结构罗盘.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
+import { rad } from '@engine/core/数学.ts';
 
 // 开口（全局帧）：夸克古卷跨 6-2-2、6-2-3 两窗
 const mouthCues = [

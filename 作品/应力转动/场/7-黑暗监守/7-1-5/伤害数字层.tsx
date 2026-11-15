@@ -13,13 +13,13 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera } from '@库/界面/伤害数字.tsx';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as choreo from './编排.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 const hit = play.wardenHits.find((h) => h.arrow === play.windArrowShot)!;
 const anchorAboveHit = 0.6;
 const hitHeight = play.windArrowShot.landing[2] - play.wardenState(play.windArrowShot.中).p[2];
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
-const anchor = damageNumberAnchor(toThree(play.wardenState(play.windArrowShot.中).p), hitHeight + anchorAboveHit, 715);
+const anchor = damageNumberAnchor(sceneToThree(play.wardenState(play.windArrowShot.中).p), hitHeight + anchorAboveHit, 715);
 export const windArrowHit = { ...hit, anchor }; // 7-2-1 李樱远望时看到的是同一个数字、同一个位置
 
 export const WindArrowDamageLayer: React.FC = () => {
@@ -27,7 +27,7 @@ export const WindArrowDamageLayer: React.FC = () => {
   const { width, height } = useVideoConfig();
   const t = choreo.timeAt(frame);
   const cam = choreo.camera(frame);
-  const camera = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
+  const camera = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   const ticks = (t - play.windArrowShot.中) * 20;
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={[{ damage: hit.damage, crit: hit.crit, anchor, ticks }]} />;
 };

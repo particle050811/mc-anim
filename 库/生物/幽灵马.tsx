@@ -20,7 +20,7 @@
 //   马的叫声、脚步、死亡用原版马的（entity.horse.*）。
 // 坐标：原点在脚底中心，Z 朝上，正面朝 −Y（lib/实体模型.tsx）。
 import React from 'react';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import { mthCos, restPose, toPartPoses } from '../../engine/anim/关键帧动画.ts';
 import { png } from '../../engine/model/贴图.ts';
@@ -28,6 +28,7 @@ import { VanillaTopple } from '../特效/原版死亡.tsx';
 import type { ParticleSpawn } from '../特效/原版粒子.tsx';
 import raw from 'asset:模型/角色/幽灵马';
 import tex from 'asset:贴图/角色/幽灵马';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const MODEL = (raw as unknown as { models: { 幽灵马: EntityModelData } }).models.幽灵马;
 const TEX = png(tex);
@@ -141,7 +142,7 @@ export const SpectralSteed: React.FC<SteedProps> = (props) => {
 
 // 马身上冒的附魔字母：位置(刻) 给马脚底的场景位置；t0、t1 秒之间每刻 25% 放一个
 export const steedParticles = (posAtTick: (tick: number) => V3, t0: number, t1: number, seed: number): ParticleSpawn[] => {
-  const rand = rng(seed * 6007 + 1);
+  const rand = mulberry32(seed * 6007 + 1);
   const out: ParticleSpawn[] = [];
   for (let k = Math.ceil(t0 * 20); k <= t1 * 20; k++) {
     if (rand() >= 0.25) continue;

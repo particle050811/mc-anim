@@ -5,7 +5,6 @@
 // 这里把 起点 当成中心（施法者脚底 + 0.5 格）。
 // 没做：半径内生物受击着火；BIG_FIRE 随机左右翻转。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { hexColor } from '../零件/材质.ts';
@@ -14,13 +13,14 @@ import { defaultRadius, risingInitial, bigFireClass, bigFireLifetime } from '../
 import { SphereBurst } from '../零件/甲/爆.tsx';
 import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
 import meta from './炎爆.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const orangeGold = hexColor(0xdd9c16);
 const radius = 3.5;
 
 const FlameBurst: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
   const tick = sec * 20;
-  const r = rng(seed * 7919 + 17);
+  const r = mulberry32(seed * 7919 + 17);
   const particleCount = 4 + Math.floor(r() * 13);
   const flames: ParticleBirth[] = Array.from({ length: particleCount }, (_, i) => {
     const pos: [number, number, number] = [from[0] + (r() - 0.5) * radius, from[1] + (r() - 0.5) * radius, from[2] + (r() - 0.5) * radius];

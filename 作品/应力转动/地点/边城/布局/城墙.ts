@@ -1,7 +1,8 @@
 // 边城的城墙、塔楼、城门（一格一格搭进体素网格）。
 import type { Shape } from '../方块.ts';
 import { VoxelGrid } from '../体素.ts';
-import { BORDER_TOWN, W2, D2, T2, wallHeight, innerBounds, mod, blockOf, fallPool, type Facing } from './共用.ts';
+import { BORDER_TOWN, W2, D2, T2, wallHeight, innerBounds, blockOf, fallPool, type Facing } from './共用.ts';
+import { mod } from '@engine/core/数学.ts';
 
 // ---------- 城墙、塔楼、城门 ----------
 // 样式照殖民地「要塞」（fortress）自己搭（它的 walls 蓝图只有十来米高，放不进 28 米的墙）：圆石勒脚 + 两道磨制安山岩腰线（z 14、26）+ 墙垛下托座；

@@ -7,7 +7,6 @@
 // 天是一个包住全场的大球（ShaderMaterial，平涂、褪色都不碰它）。坐标同网格本地（Z 朝上）；结构占 x 0～21、y −26～0，地面顶在 z 0。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { rng } from '@engine/model/parts.tsx';
 import { png } from '@engine/model/贴图.ts';
 import { hiddenLandPalette, cherryGrove, farHills } from './参数.ts';
 import { cherryTree, type CellPos } from './樱花树.ts';
@@ -20,6 +19,7 @@ import petalsUri from 'asset:贴图/场景/樱花林/pink_petals';
 import grassSideUri from 'asset:贴图/场景/樱花林远山/grass_block_side';
 import grassSideOverlayUri from 'asset:贴图/场景/樱花林远山/grass_block_side_overlay';
 import dirtUri from 'asset:贴图/方块/泥土';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 /** 结构地面层真有的缺口（hidden_retreat_1.nbt 的 y 0 层，换成场景坐标 [x0, y0, x1, y1]）：南头楼梯口（模板 (11, 0, 16) 的橡木楼梯和 (12..15, 0, 16) 的空气，
  *  就是 主厅.地洞 加楼梯那一格）、两块下半砖（(2, 0, 15)、(0, 0, 24)，顶面在 z −0.5）、西南角 (0, 0, 25) 一格空气 */
@@ -83,7 +83,7 @@ const grassSideTexture = () => {
 /** 樱花林：在结构四周的环里按种子撒树（离结构至少 留空 格、彼此至少 间距 格），树下撒花簇 */
 const buildGrove = () => {
   const { 种子: seed, fixedPoints, treeCount, innerBox, outerRadius, spacing, flowerClusterCount } = cherryGrove;
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const roots: [number, number, number?][] = fixedPoints.map(([x, y, rootHeight]) => [x, y, rootHeight]);
   const [x0, y0, x1, y1] = innerBox;
   const [cx, cy] = [(x0 + x1) / 2, (y0 + y1) / 2];
@@ -96,7 +96,7 @@ const buildGrove = () => {
   const logs: CellPos[] = [];
   const leaves: CellPos[] = [];
   for (const [x, y, rootHeight] of roots) {
-    const t = cherryTree(x, y, rng(seed * 1009 + x * 131 + y * 7), rootHeight);
+    const t = cherryTree(x, y, mulberry32(seed * 1009 + x * 131 + y * 7), rootHeight);
     logs.push(...t.logs);
     leaves.push(...t.leaves);
   }

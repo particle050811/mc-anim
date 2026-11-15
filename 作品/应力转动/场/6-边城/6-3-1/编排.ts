@@ -19,12 +19,7 @@ import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import jiuhuRaw from 'asset:模型/角色/九胡';
 import * as fallChoreo from '../../../地点/边城/6-3-下坠/编排.ts';
 import { FPS, segTable, physicalTime, start } from '../../../地点/边城/6-3-下坠/时间线.ts';
-
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 const D2R = Math.PI / 180;
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 
@@ -128,7 +123,7 @@ const TAIL_FIX = (() => {
   const phaseDiff = JH0.tailPhase - tailBase(G0);
   return phaseDiff - 2 * Math.PI * Math.round(phaseDiff / (2 * Math.PI));
 })();
-const tail = (G: number) => tailBase(G) + TAIL_FIX * (1 - ss(toSegSec(G) / segmentSec));
+const tail = (G: number) => tailBase(G) + TAIL_FIX * (1 - smoothstep01(toSegSec(G) / segmentSec));
 
 // 头（相对 6-2-6 末帧的 抬头 / 转头；转头为负 = 往右转）：
 // 听李樱说话时抬头看他；拿出指南针后低头、往右偏一点看自己手里；抬起头从他右肩后面说话、轻轻点头；问他时歪着头往上看他
@@ -188,7 +183,7 @@ const ARM_HOLD = (() => {
   }
   return { RightArm: [x[0], x[1], x[2]], RightForeArm: [x[3], 0, 0], error: Math.sqrt(error) };
 })();
-const holdK = (t: number) => ss((t - cues631.grab[0]) / (cues631.grab[1] - cues631.grab[0])) * (1 - ss((t - cues631.handBack[0]) / (cues631.handBack[1] - cues631.handBack[0])));
+const holdK = (t: number) => smoothstep01((t - cues631.grab[0]) / (cues631.grab[1] - cues631.grab[0])) * (1 - smoothstep01((t - cues631.handBack[0]) / (cues631.handBack[1] - cues631.handBack[0])));
 const jiuhuBones = (t: number, globalFrame: number) => {
   const bones = jhBody(t, globalFrame);
   const holdWeight = holdK(t);
@@ -264,14 +259,14 @@ const camBetween = (camA: fallChoreo.Cam, camB: fallChoreo.Cam, k: number, ka: n
   return { pos: v3(pos), tgt: v3(pos.clone().addScaledVector(dir, 100)), lens: lerp(camA.lens, camB.lens, k) };
 };
 const camera = (t: number): fallChoreo.Cam => {
-  const midFrac = ss((t - cues631.pushIn[1]) / (cues631.pullBack[0] - cues631.pushIn[1]));
+  const midFrac = smoothstep01((t - cues631.pushIn[1]) / (cues631.pullBack[0] - cues631.pushIn[1]));
   const mid = camBetween(MID[0], MID[1], midFrac, midFrac);
   if (t < cues631.pullBack[0]) {
     const pushFrac = t / cues631.pushIn[1];
-    return camBetween(C0, mid, ss(pushFrac / 0.75), ss((pushFrac - 0.2) / 0.8));
+    return camBetween(C0, mid, smoothstep01(pushFrac / 0.75), smoothstep01((pushFrac - 0.2) / 0.8));
   }
   const pullFrac = (t - cues631.pullBack[0]) / (cues631.pullBack[1] - cues631.pullBack[0]);
-  return camBetween(mid, C0, ss((pullFrac - 0.25) / 0.75), ss(pullFrac / 0.8));
+  return camBetween(mid, C0, smoothstep01((pullFrac - 0.25) / 0.75), smoothstep01(pullFrac / 0.8));
 };
 
 // ---------- 一帧的全部覆盖量（只在 G < 0 时用） ----------

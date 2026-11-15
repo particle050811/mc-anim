@@ -11,6 +11,7 @@ import moonPng from 'asset:贴图/环境/月相';
 import { filmScale } from '@engine/三渲二/像素.ts';
 import type { SideFraming } from './侧剖面.tsx';
 import { skyBrightness, celestialPosition, type SkyArc } from './天体.ts';
+import { lerpV } from '@engine/core/数学.ts';
 
 /** 天色：地平 = 地面线那里的颜色，顶 = 往上 渐变高 格以上的颜色（sRGB）；夜里两个都换成 夜 的颜色（按 天亮 混） */
 export type SkyColors = { horizon: string; topColor: string; gradientHeight: number; nightHorizon: string; nightTop: string };
@@ -20,8 +21,6 @@ const parseColor = (s: string) => {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as const;
 };
 // 按 sRGB 数值插（像素画的渐变）
-const mix = (a: readonly number[], b: readonly number[], t: number) => a.map((v, i) => v + (b[i]! - v) * t);
-
 /** 太阳、月亮贴图一格 32×32 像素，画出来一个贴图像素 = 方块的一个贴图像素。本体是正中 8×8（第 12～19 个贴图像素，半格见方），外面是光晕 */
 const celestialTile = 32;
 const sunBodyStart = 12;
@@ -95,12 +94,12 @@ export const SideSectionSky: React.FC<SideSkyProps> = ({ framing, 宽: width, �
     const groundY = H / 2 + center[1] * pxPerCell;
     const cellX0 = W / 2 + (-0.5 - center[0]) * pxPerCell;
     const bright = 1 - lightDarkAmp * (1 - skyBrightness(tick));
-    const horizonColor = mix(parseColor(color.nightHorizon), parseColor(color.horizon), bright);
-    const topColor = mix(parseColor(color.nightTop), parseColor(color.topColor), bright);
+    const horizonColor = lerpV(parseColor(color.nightHorizon), parseColor(color.horizon), bright);
+    const topColor = lerpV(parseColor(color.nightTop), parseColor(color.topColor), bright);
     ctx.globalCompositeOperation = 'source-over';
     for (let r = -Math.ceil((H - groundY) / n); r * n < groundY; r++) {
       const z = (r + 0.5) / 16;
-      const c = mix(horizonColor, topColor, Math.sqrt(Math.min(1, Math.max(0, z / color.gradientHeight))));
+      const c = lerpV(horizonColor, topColor, Math.sqrt(Math.min(1, Math.max(0, z / color.gradientHeight))));
       ctx.fillStyle = `rgb(${c.map(Math.round).join(',')})`;
       ctx.fillRect(0, groundY - (r + 1) * n, W, n);
     }

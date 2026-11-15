@@ -3,8 +3,9 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { BORDER_TOWN } from '../../../边城轮廓.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
 import { cityDefense, physicalTime } from '../时间线.ts';
-import { ss, lerp, lerp3, add, sub, D2R } from './工具.ts';
+import { add, sub, D2R } from './工具.ts';
 import { liYing, maceHeadPos } from './李樱.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 // ---------- 卫兵：北城墙东段一排 9 个，站在城垛的缺口里值守，望远镜收着 ----------
 // 原文第 6 章：城墙上的卫兵配了望远镜。用户 10-02 要求卫兵用望远镜看他砸下来；10-13 嫌他们一出场就举镜对天，改成按因果分三步（按物理时间走，慢放只缩时钟）：
@@ -26,7 +27,7 @@ const jitter = (i: number, k: number) => {
 // 望远镜对准的点：李樱的髋往锤头那边挪一点（脚到锤头这一整条的中间，望远镜里他在正中）
 export const aimPoint = (physSec: number): V3 => {
   const ly = liYing(physSec);
-  return lerp3(ly.hip, maceHeadPos(ly), 0.2);
+  return lerpV(ly.hip, maceHeadPos(ly), 0.2);
 };
 // 从 from 看向 p 要转身多少度（0 = 朝北，正 = 往左转，同 画面.tsx 的 转身）、抬头多少度（正 = 往上）
 const facingAngles = (from: V3, target: V3) => {
@@ -63,7 +64,7 @@ const patrolState = (physSec: number) => {
     const decelFrac = (physSec - decelStart) / patrol.decelTime;
     remaining = patrol.speed * patrol.decelTime * (0.5 - decelFrac + decelFrac * decelFrac * decelFrac - (decelFrac * decelFrac * decelFrac * decelFrac) / 2);
   }
-  const speed = physSec <= decelStart ? patrol.speed : physSec >= stopSec ? 0 : patrol.speed * (1 - ss((physSec - decelStart) / patrol.decelTime));
+  const speed = physSec <= decelStart ? patrol.speed : physSec >= stopSec ? 0 : patrol.speed * (1 - smoothstep01((physSec - decelStart) / patrol.decelTime));
   return { remaining: remaining, stride: Math.min(1, (speed / 20) * 4), 步: -4 * remaining };
 };
 // 第 i 个卫兵脚底相对 卫兵位置 的偏移（城的局部坐标）：只有巡逻的 5 号在动
@@ -84,7 +85,7 @@ const glanceShift = (i: number, physSec: number, amplitude: number, k0: number) 
   const period = 1.2 + (jitter(i, 5) + 0.5); // 隔多久换一处看
   const phase = period * (jitter(i, 7) + 0.5);
   const glanceIdx = Math.floor((physSec + phase) / period);
-  const turnFrac = ss(((physSec + phase) - glanceIdx * period) / 0.45);
+  const turnFrac = smoothstep01(((physSec + phase) - glanceIdx * period) / 0.45);
   return lerp(amplitude * 2 * jitter(i, k0 + glanceIdx - 1), amplitude * 2 * jitter(i, k0 + glanceIdx), turnFrac);
 };
 const lookoutPose = (i: number, physSec: number) => {
@@ -105,12 +106,12 @@ export const guardPoseAt = (globalFrame: number, i: number): GuardPose => {
   if (tt <= 0) return { raiseSpyglass: 0, headPitch: lookout.pitch, pictureHeadPitch: lookout.pitch, headYaw: lookout.头, bodyTurn: lookout.bodyYaw, offset: offset, 步: walk.步, stride: walk.stride };
   const aim = facingAngles(guardNeck(i, physSec), aimPoint(physSec));
   // 头先扭过去，身子稍晚起转（略冲过再回稳），头相对身子的角度不超过原版的 75°；时长都乘 `REACT`
-  const headTotalYaw = lerp(lookout.bodyYaw + lookout.头, aim.转, ss(tt / (0.42 * REACT)));
+  const headTotalYaw = lerp(lookout.bodyYaw + lookout.头, aim.转, smoothstep01(tt / (0.42 * REACT)));
   const bodyYaw = lerp(lookout.bodyYaw, aim.转, overshoot((tt - 0.12 * REACT) / (0.5 * REACT)));
   const headYaw = Math.max(-75, Math.min(75, headTotalYaw - bodyYaw));
   // 先抬头往身后的天上看（抬到 20°），再找到金光、对准
-  const headPitch = lerp(lerp(lookout.pitch, -20, ss(tt / (0.35 * REACT))), -aim.pitch, ss((tt - 0.3 * REACT) / (0.45 * REACT)));
-  const scopeRaise = ss((physSec - guardRaiseSec(i)) / raiseDuration);
+  const headPitch = lerp(lerp(lookout.pitch, -20, smoothstep01(tt / (0.35 * REACT))), -aim.pitch, smoothstep01((tt - 0.3 * REACT) / (0.45 * REACT)));
+  const scopeRaise = smoothstep01((physSec - guardRaiseSec(i)) / raiseDuration);
   return { raiseSpyglass: scopeRaise, headPitch, pictureHeadPitch: headPitch + SCOPE_SHOWN_LOWER * scopeRaise, headYaw: headYaw, bodyTurn: bodyYaw, offset: offset, 步: walk.步, stride: walk.stride };
 };
 // 第 i 个卫兵的右眼（场景坐标）和视线方向（望远镜视野用）：头绕脖子转，右眼在头的转轴上方 3.375 像素、往前 4.5 像素、往右 1.5625 像素（同 卫兵.tsx 望远镜目镜端面的中心）

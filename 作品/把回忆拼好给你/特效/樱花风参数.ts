@@ -1,5 +1,6 @@
 // 樱花风（特效/樱花风.tsx）的参数、时间轴、风墙的花瓣和它们走到哪：纯模块，测试核转场前后整屏盖住、对视前散完用。参数全是 Agent 暂定。
 import { filmScale } from '@engine/三渲二/像素.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export type SakuraWindParams = {
   种子: number;
@@ -41,26 +42,13 @@ export const sakuraWindDefaults: SakuraWindParams = {
 
 /** 时间轴（歌上的秒）：起 = 摇铃（风从铃那里起），满 = 风墙整屏盖住（转场那一下） */
 export type SakuraWindMoment = { 起: number; full: number };
-
-/** 同 engine/model/parts.tsx 的 rng（mulberry32；那边是 tsx，纯模块不引） */
-const rng = (seed: number) => {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-
 /** 风墙的一片花瓣：在整块里的位置（成片像素，左上角）、贴图像素多大、用哪张、转几个 90°、翻不翻；散的时候随机多晚起步（0～1，乘 抖秒）、速度乘多少 */
 export type WallPetal = { x: number; y: number; 档: number; 图: number; 转: number; flip: boolean; jitter: number; 速: number };
 
 /** 风墙的花瓣：按 格距 排满一块比画面宽一倍的长方形（抖动半格）。宽高是成片像素 */
 export const makeWindWall = (p: SakuraWindParams, width: number, height: number): WallPetal[] => {
-  const r = rng(p.种子 * 31 + 7);
-  const scatterRand = rng(p.种子 * 31 + 11);
+  const r = mulberry32(p.种子 * 31 + 7);
+  const scatterRand = mulberry32(p.种子 * 31 + 11);
   const { cellSpacing, tiers, scatter } = p.windWall;
   const out: WallPetal[] = [];
   for (let y = -cellSpacing; y < height + cellSpacing; y += cellSpacing)

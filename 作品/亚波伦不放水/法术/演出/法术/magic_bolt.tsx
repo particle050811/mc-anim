@@ -5,7 +5,6 @@
 // 没做：MagicGround 有 5% 的刻会多撒一片 witch；MagicGround 自己不画东西。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { sub } from '../零件/弹道.ts';
@@ -13,6 +12,7 @@ import { VanillaParticles, TexturedParticles, type ParticleSpawn, type ParticleB
 import { eachTick, trajectoryAt } from '../零件/甲/共用.ts';
 import meta, { magicBoltHitTick, magicBoltGroundTick, magicBoltPath } from './magic_bolt.元.ts';
 import magicBoltParticlePng from 'asset:贴图/法术/goety/particle/magic_bolt';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const magicBoltParticleClass: ParticleClass = { 帧: [png(magicBoltParticlePng)], 选帧: '按年龄', 摩擦: 1, 混合: '半透明', 大小: (age, lifetime) => Math.max(0, 1 - age / lifetime) };
 
@@ -21,7 +21,7 @@ const MagicBolt: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
   const trajectory = magicBoltPath(from, target);
   const hitTick = magicBoltHitTick(from, target);
   const hitPos = trajectoryAt(trajectory, hitTick);
-  const r = rng(seed * 7 + 5);
+  const r = mulberry32(seed * 7 + 5);
   const boltSpawns: ParticleBirth[] = [];
   const witchSpawns: ParticleSpawn[] = [];
   for (const n of eachTick(1, Math.min(tick, hitTick))) {

@@ -1,10 +1,10 @@
 // 第 15 句摇铃起的两个声音：寻风之铃的铃声、樱花风的风声。都从门口那段放起、拖过转场进隐世之境那段（声音/跨段音效.ts 切成每段一截）。
 // 纯数据（段.ts 读）。增益是 Agent 暂定（三稿「克制」：压在歌下面，听得出来就行），文件本身的数是 ffmpeg 解码量的。
-import { clamp01 } from '@engine/anim/anim.ts';
 import { fps, toSongFrame } from '../../分镜/时间.ts';
 import { events as lyricEvents } from '../../分镜/歌词.ts';
 import { events as mainCutLine15Events } from '../../分镜/正片第15句.ts';
 import type { SongSound } from '../../声音/跨段音效.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 

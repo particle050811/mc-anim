@@ -7,7 +7,7 @@
 // 他被晋升之环救一次以后几秒就死，死在幕末。用户 11-11 看八版又说「法术的速度以及事发频率是不是有点慢」「聚晶是默认满附魔聚晶 高速附魔 增加法术飞行，
 // 并且晋升之环有 4 倍施法速度」：连放的间隔、弹速照游戏里戴晋升之环、拿满附魔聚晶的玩家按住右键连放算（见下面 连放表）。
 // 连放挑哪些、两镜多长、她怎么飞是 Agent 取的，用户没看过。
-import { clamp01, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { clamp01, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { appearPos } from '../../特效/安息仪式时序.ts';
 import { spellSoundAt, spellDuration, type SpellOptions } from '../../法术/演出/接口.ts';
@@ -187,7 +187,7 @@ export const yaBoLunLocalPos = (τ: number): V3 => {
     const [p, q] = [keyPoint(a), keyPoint(b)];
     return addVec(p, [q[0] - p[0], q[1] - p[1], q[2] - p[2]], dashProgress(u, dashStartSec / (b.秒 - a.秒), dashBrakeRatio));
   }
-  const k = b.reachMode === '冲' ? dashProgress(u, dashStartSec / (b.秒 - a.秒), dashBrakeRatio) : unitSmoothStep(u);
+  const k = b.reachMode === '冲' ? dashProgress(u, dashStartSec / (b.秒 - a.秒), dashBrakeRatio) : smoothstep01(u);
   return keyPoint({ 角: a.角 + (b.角 - a.角) * k, radial: a.radial + (b.radial - a.radial) * k, 高: a.高 + (b.高 - a.高) * k });
 };
 export const yaBoLunPos = (t: number): V3 => yaBoLunLocalPos(yaBoLunClock(t - actStart));

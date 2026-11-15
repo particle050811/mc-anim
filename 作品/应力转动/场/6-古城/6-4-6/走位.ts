@@ -12,14 +12,9 @@ import type { FigurePose } from '@库/角色/骨架.tsx';
 import { walkPose } from '../../../角色/追兵.tsx';
 import { flightPose, groundPose, landPose, mixPose, nearYaw, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { elite, eliteLeap, footOf, withHang, type BlockPos, type Jump } from '../../../地点/古城4x/布局.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 export const FPS = 24;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
 // 强者在空中的姿势：古城戏.ts 的 `flightPose`，不垫羊毛；rightArmScale 右臂摆幅
 export const eliteAirPose = (leap: Jump, frame: number, rightArmScale = 1): FigurePose => flightPose(leap, frame, { place: false, armRScale: rightArmScale });
 
@@ -83,7 +78,7 @@ export const buildEliteRoute = (cells: BlockPos[], jumpHeights: number[], startS
     // 最后一跳落地：一蹲到底卸力，同时往前滑着刹住，0.6 秒站直
     const sinceLand = tt - landSec;
     const loc = brakePosAt(sinceLand);
-    if (sinceLand < 0.6) return mixPose(landPose(loc, standYaw, sinceLand * FPS, 0.6 * FPS), standPose(loc, standYaw), ss((sinceLand / 0.6 - 0.6) / 0.4));
+    if (sinceLand < 0.6) return mixPose(landPose(loc, standYaw, sinceLand * FPS, 0.6 * FPS), standPose(loc, standYaw), smoothstep01((sinceLand / 0.6 - 0.6) / 0.4));
     return standPose(loc, standYaw);
   };
   return { jumps: jumps, startSec, landSec, standPos, standYaw, pose, vibrations: vibrations };

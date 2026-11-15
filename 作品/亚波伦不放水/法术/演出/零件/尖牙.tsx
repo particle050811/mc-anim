@@ -8,12 +8,12 @@
 //   半边长 0.1 × (0.5～1) × 0.75，出生后 1/32 寿命内长满；寿命 max(1, 6 ÷ (随机 × 0.8 + 0.6))。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import type { Vec3 } from '../接口.ts';
 import { MinecraftSpace, degToRad, ModelPart, type EntityModelData } from './实体.tsx';
 import { vanillaParticleInitSpeed, TexturedParticles, type ParticleBirth, type ParticleClass } from './粒子.tsx';
 import evokerFangsPng from 'asset:贴图/法术/minecraft/entity/illager/evoker_fangs';
 import criticalHitPng from 'asset:贴图/特效/粒子/critical_hit';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const cube = (uv: [number, number], size: [number, number, number]) => ({ uv, from: [0, 0, 0], size, grow: [0, 0, 0], mirror: false });
 const fangModel = {
@@ -72,7 +72,7 @@ export const fangCritSpawns = (pos: Vec3, warmup: number, tick: number, seed: nu
   if (tick < spawnTick) return [];
   const age = Math.floor(tick - spawnTick);
   return Array.from({ length: 12 }, (_, i) => {
-    const r = rng(seed * 977 + i);
+    const r = mulberry32(seed * 977 + i);
     const position: Vec3 = [pos[0] + (r() * 2 - 1) * 0.25, pos[1] + (r() * 2 - 1) * 0.25, pos[2] + 1.05 + r()];
     const baseOffset = [(r() * 2 - 1) * 0.3, 0.3 + r() * 0.3, (r() * 2 - 1) * 0.3] as const;
     const randVel = vanillaParticleInitSpeed(r, 0, 0, 0);

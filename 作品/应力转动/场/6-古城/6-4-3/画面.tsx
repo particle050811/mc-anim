@@ -17,7 +17,7 @@ import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import { AirFlowQuads } from '@库/特效/气流.tsx';
 import { particleTexture, ParticleQuads } from '@库/特效/粒子面片.tsx';
 import { withTalkNod, type Mouth } from '../../../配音/口型.ts';
-import { AncientCity4xCanvas, LiYingWithBlade, type Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas, LiYingWithBlade } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { LiuXinzhong } from '../../../角色/追兵.tsx';
 import * as choreo from './编排.ts';
 import * as geom from './几何.ts';
@@ -27,6 +27,7 @@ import debrisRaw from 'asset:碎块/镜头/6-4-3/碎块';
 import atlasWest3 from 'asset:网格/古城4x/西3/图集';
 import { assetDir } from '@engine/core/资产目录.ts';
 import criticalHitPng from 'asset:贴图/特效/粒子/critical_hit';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 只要击穿的那几格本身，外圈和取贴图用的那一格不画；崩掉以后露出来的洞壁另补（见 编排.ts 的 DEBRIS_HIDE、洞壁）
 const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < geom.breachBlocks.length), lining: choreo.holeWalls };

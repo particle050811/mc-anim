@@ -8,9 +8,9 @@ import { useThree } from '@react-three/fiber';
 import { ThreeCanvas } from '@remotion/three';
 import React, { createContext } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { ItemDisplay, type ItemTransform } from '../../engine/model/物品贴图.tsx';
+import { rad } from '../../engine/core/数学.ts';
 
 /** client 1.20.1 item/generated.json 的 firstperson_righthand。
  *  不加进 物品贴图.tsx 的 DISPLAY：改那个模块，import 它的段全部过期 */

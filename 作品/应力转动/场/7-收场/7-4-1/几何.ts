@@ -9,6 +9,8 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { toScene } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { chest742, huangPanPortal741 } from '../../../地点/古城4x/布局.ts';
 import heightsJson from 'asset:数据/镜头/7-4-1/高度';
+import { mod } from '@engine/core/数学.ts';
+
 const heights = heightsJson as unknown as { 步: number; 马: number[]; 监守者: number[] };
 
 export const FPS = 24;
@@ -134,10 +136,9 @@ const smoothTable = (table: number[], step: number, reach: number, radius: numbe
 };
 const horseRelTable = smoothTable(heights.马, heights.步, 0.75, 0.75, horseLoop.len);
 export const wardenRelAt = smoothTable(heights.监守者, heights.步, 1.5, 0.8, wardenLoop.len);
-const wrap = (s: number, len: number) => ((s % len) + len) % len;
 // 马脚底 rel：跳的那两截按抛物线（最高点在两头之间按高低差摆），其余查表
 export const horseRelAt = (s: number) => {
-  const u = wrap(s, horseLoop.len);
+  const u = mod(s, horseLoop.len);
   for (const l of leaps) {
     if (u >= l.s0 && u <= l.s1) {
       const top = Math.max(l.rel0, l.rel1) + l.apex;
@@ -151,7 +152,7 @@ export const horseRelAt = (s: number) => {
   return horseRelTable(u);
 };
 export const inLeap = (s: number) => {
-  const u = wrap(s, horseLoop.len);
+  const u = mod(s, horseLoop.len);
   return leaps.findIndex((l) => u >= l.s0 && u <= l.s1);
 };
 export const horseGame = (s: number): V3 => {
@@ -160,7 +161,7 @@ export const horseGame = (s: number): V3 => {
 };
 export const wardenGame = (s: number): V3 => {
   const [x, z] = wardenLoop.at(s);
-  return [x, relY(wardenRelAt(wrap(s, wardenLoop.len))), z];
+  return [x, relY(wardenRelAt(mod(s, wardenLoop.len))), z];
 };
 
 // ---------- 黄叛：传送门顶上西沿（比环道高 25 格，西环道整条都看得见、箭路不挡，见 古城4x布局/第7章.ts） ----------

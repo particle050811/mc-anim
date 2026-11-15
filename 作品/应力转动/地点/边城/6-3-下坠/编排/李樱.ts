@@ -16,9 +16,10 @@ import { lineFrameCount } from '../../../../配音/台词轨.tsx';
 import lipTable from 'asset:数据/配音/口型';
 import { landingPose, flipAngle as landingFlipAngle, flipHipHeight, touchdownFrame } from '../../6-3-6/落地.ts';
 import { releasePose } from '../../6-3-3/下落攻击.ts';
-import { ss, lerp, lerp3, add, D2R } from './工具.ts';
+import { add, D2R } from './工具.ts';
 import { groundZ, caveCeilingZ, ancientCityFloorZ } from './地面.ts';
 import { broomState, broomMatrixAt } from './扫帚.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 const PX = 1.875 / 32; // 李樱：一像素多少格
 
@@ -99,7 +100,7 @@ const strikeTracks = () => {
 // 每个字起音往后顿一下：0.07 秒到顶、之后指数回落；「ッ」出手前收掉，打击那一刻不带它
 const syllablePulse = (tr: number) => {
   const bump = (x: number) => (x <= 0 ? 0 : (x / 0.07) * Math.exp(1 - x / 0.07));
-  return syllableOnsets.reduce((sum, onset) => sum + bump(tr - onset), 0) * (1 - ss((tr - (releaseTr - 0.1)) / 0.1));
+  return syllableOnsets.reduce((sum, onset) => sum + bump(tr - onset), 0) * (1 - smoothstep01((tr - (releaseTr - 0.1)) / 0.1));
 };
 const strikeAt = (tr: number, base: FigurePose): FigurePose => {
   const { keys } = strikeTracks();
@@ -122,7 +123,7 @@ const blend = (keys: [number, PosePart][], t: number, base: FigurePose): FigureP
     let value = pts[pts.length - 1][1];
     for (let i = 1; i < pts.length; i++)
       if (t <= pts[i][0]) {
-        value = lerp(pts[i - 1][1], pts[i][1], ss((t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0])));
+        value = lerp(pts[i - 1][1], pts[i][1], smoothstep01((t - pts[i - 1][0]) / (pts[i][0] - pts[i - 1][0])));
         break;
       }
     (out as Record<string, unknown>)[field] = value;
@@ -135,7 +136,7 @@ const landSec = () => liYingShaft().landSec;
 const phi = (physSec: number) => {
   if (physSec < tick.leap) return 0;
   const imp = impactTime();
-  if (!(physSec > imp) || !Number.isFinite(landSec()) || physSec <= landSec()) return PHI_DIVE * ss((physSec - tick.leap) / (tick.flipDone - tick.leap));
+  if (!(physSec > imp) || !Number.isFinite(landSec()) || physSec <= landSec()) return PHI_DIVE * smoothstep01((physSec - tick.leap) / (tick.flipDone - tick.leap));
   // 落地重做见 ../6-3-6/落地.ts：打击停顿，再借锤往前翻
   return landingFlipAngle(physSec - landSec());
 };
@@ -151,10 +152,10 @@ export type LiYingState = {
 };
 // 骑乘姿势（跨坐 → 站起）在扫帚本地坐标里
 const onBroomPose = (physSec: number): FigurePose => {
-  const k = ss((physSec - tick.standUp) / (STAND_T - tick.standUp));
+  const k = smoothstep01((physSec - tick.standUp) / (STAND_T - tick.standUp));
   const base: FigurePose = {
     ...RIDE0,
-    loc: lerp3(RIDE0.loc, STAND.loc, k),
+    loc: lerpV(RIDE0.loc, STAND.loc, k),
     ground: k,
   };
   for (const field of FIELDS) {
@@ -294,8 +295,8 @@ export const liYing = (physSec: number): LiYingState => {
   // 虚影：开抡后浮现（见 `ghostFadeIn`），一路砸穿，进了古城以后散掉
   const shaft = Number.isFinite(imp) ? liYingShaft() : null;
   const sinceSwing = tr - strikeTracks().start;
-  const fadeIn = ss((sinceSwing - ghostFadeIn[0]) / (ghostFadeIn[1] - ghostFadeIn[0]));
-  const fadeOut = shaft ? 1 - ss((physSec - (imp + shaft.breachDelay)) / 0.25) : 1;
+  const fadeIn = smoothstep01((sinceSwing - ghostFadeIn[0]) / (ghostFadeIn[1] - ghostFadeIn[0]));
+  const fadeOut = shaft ? 1 - smoothstep01((physSec - (imp + shaft.breachDelay)) / 0.25) : 1;
   return { pose, matrix, maceHeld: 1, maceAngle: maceAngleOf(pose), ghost: 0.62 * fadeIn * fadeOut, hip: hip };
 };
 export const maceHeadPos = (s: LiYingState) => maceHeadAt(s.pose, s.matrix, s.maceAngle);
