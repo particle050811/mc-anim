@@ -604,13 +604,19 @@ void main() {
 
 // 合成：云（预乘）按 4×4 平均叠到画布，正好把 Bayer 的 16 档错开平均掉（视频级画布不超采样，不平均满屏网点）。
 // 按场景深度加权，山脊、城墙边上的云不往前景里糊。画两次：先只叠色；再只写深度，平均后不透明度过半的写云的深度（各点按不透明度加权的平均），
-// 别处深度不动（水面已经画了，见 屏幕AO.tsx 的 MidPass.afterWater）。后画的半透明（光柱、粒子）靠这个深度被云挡住
+// 别处深度不动（水面已经画了，见 屏幕AO.tsx 的 MidPass.afterWater）。后画的半透明（光柱、粒子）靠这个深度被云挡住。
+// DEPTH_ONLY：0 叠色；1 写对数深度（画布）；2 目标的深度缓冲是反向深度（屏幕AO 三遍离屏，中间步骤.ts 的 `reversed`）：换算成反向深度写，
+// 逐采样点和已有的比、比它近才写（多重采样的各采样点深度不一样，前景边上的采样点不能被云的深度盖掉）
 const COMPOSITE_FS = /* glsl */ `
 precision highp float;
 uniform sampler2D tCloud;
 uniform sampler2D tCloudDepth;
 uniform sampler2D tDepth;
 const bool uDepthOnly = DEPTH_ONLY != 0;
+#if DEPTH_ONLY == 2
+uniform vec2 uAB;
+uniform float uLogFar;
+#endif
 void main() {
   ivec2 c = ivec2(gl_FragCoord.xy);
   ivec2 hi = textureSize(tDepth, 0) - 1;
@@ -629,7 +635,11 @@ void main() {
     }
   gl_FragColor = sum / wsum;
   if (uDepthOnly && gl_FragColor.a < 0.5) discard;
+#if DEPTH_ONLY == 2
+  gl_FragDepth = uAB.x / (exp2(min(dsum / asum, dc) * uLogFar) - 1.0) - uAB.y;
+#else
   gl_FragDepth = uDepthOnly ? min(dsum / asum, dc) : gl_FragCoord.z;
+#endif
 }`;
 
 // 加的云：场景坐标 [x, y, 半径]（方块米），在高积云层里
@@ -666,6 +676,7 @@ let pass: {
   scene: THREE.Scene;
   compMat: THREE.ShaderMaterial;
   depthMat: THREE.ShaderMaterial;
+  revDepthMat: THREE.ShaderMaterial;
   compQuad: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
   compScene: THREE.Scene;
   camera: THREE.Camera;
@@ -699,7 +710,7 @@ const getPass = () => {
   const scene = new THREE.Scene();
   scene.add(quad);
   const compMat = new THREE.ShaderMaterial({
-    uniforms: { tCloud: { value: null }, tCloudDepth: { value: null }, tDepth: { value: null } },
+    uniforms: { tCloud: { value: null }, tCloudDepth: { value: null }, tDepth: { value: null }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 } },
     vertexShader: /* glsl */ `void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }`,
     fragmentShader: COMPOSITE_FS,
     defines: { DEPTH_ONLY: 0 },
@@ -717,11 +728,15 @@ const getPass = () => {
   depthMat.uniforms = compMat.uniforms;
   depthMat.defines = { DEPTH_ONLY: 1 };
   Object.assign(depthMat, { colorWrite: false, depthTest: true, depthFunc: THREE.AlwaysDepth, depthWrite: true });
+  const revDepthMat = compMat.clone();
+  revDepthMat.uniforms = compMat.uniforms;
+  revDepthMat.defines = { DEPTH_ONLY: 2 };
+  Object.assign(revDepthMat, { colorWrite: false, depthTest: true, depthFunc: THREE.GreaterDepth, depthWrite: true });
   const compQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), compMat);
   compQuad.frustumCulled = false;
   const compScene = new THREE.Scene();
   compScene.add(compQuad);
-  pass = { mat, scene, compMat, compScene, compQuad, depthMat, camera: new THREE.OrthographicCamera(), rt: null };
+  pass = { mat, scene, compMat, compScene, compQuad, depthMat, revDepthMat, camera: new THREE.OrthographicCamera(), rt: null };
   return pass;
 };
 
@@ -864,7 +879,11 @@ export const drawPhotonClouds = (ctx: MidPassContext) => {
   gl.setRenderTarget(ctx.target);
   p.compQuad.material = p.compMat;
   gl.render(p.compScene, camera);
-  p.compQuad.material = p.depthMat;
+  if (ctx.reversed) {
+    (cu.uAB.value as THREE.Vector2).set(ctx.reversed.a, ctx.reversed.b);
+    cu.uLogFar.value = Math.log2(cam.far + 1);
+  }
+  p.compQuad.material = ctx.reversed ? p.revDepthMat : p.depthMat;
   gl.render(p.compScene, camera);
   gl.autoClear = ac;
 };

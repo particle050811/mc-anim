@@ -15,6 +15,7 @@ import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms, atmosphere } from '
 import cloudsPng from 'asset:贴图/场景/天空/clouds';
 import sunPng from 'asset:贴图/场景/天空/sun';
 import { use当前秒 } from '../段/时间.tsx';
+import { 深度钉在最远 } from '../core/光栅深度.ts';
 
 export const SKY = {
   top: '#7ea2cc',
@@ -144,12 +145,7 @@ const Sun: React.FC<{ sun: [number, number, number] }> = ({ sun }) => {
     const dist = R_SKY - 20;
     const mat = new THREE.MeshBasicMaterial({ map: tex, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, toneMapped: false });
     // 太阳在无穷远：方片只放在 460 米外，按方片的深度做深度测试的话，云（lib/大气/云.ts）写回的深度（一公里以外）挡不住它。对数深度下把它的深度定在最远处（天空是 1.0），任何写了深度的东西都挡住它
-    mat.onBeforeCompile = (sh) => {
-      sh.fragmentShader = sh.fragmentShader.replace(
-        '#include <logdepthbuf_fragment>',
-        '#if defined( USE_LOGARITHMIC_DEPTH_BUFFER )\n\tgl_FragDepth = 0.99999;\n#endif',
-      );
-    };
+    深度钉在最远(mat);
     const sunQuad = new THREE.Mesh(new THREE.PlaneGeometry(0.6 * dist, 0.6 * dist), mat);
     const dir = new THREE.Vector3(...sun).normalize();
     sunQuad.position.copy(dir.clone().multiplyScalar(dist));
