@@ -9,20 +9,15 @@ import * as THREE from 'three';
 import moonPng from 'asset:贴图/场景/月相';
 import { 天球半径, 天球矩阵, 月亮顶点, 原版星星 } from './天球.ts';
 import { 星星亮度, 月相, 天角, type 天气, 晴 } from './环境.ts';
+import { 深度钉在最远 } from '../core/光栅深度.ts';
 
 /** 同 天空.tsx 的 Sun（R_SKY − 20）：日月星同一个半径，角大小和原版一样 */
 const 半径 = 460;
 const 缩放 = 半径 / 天球半径;
 
-const 钉在最远 = (mat: THREE.Material) => {
-  mat.onBeforeCompile = (sh) => {
-    sh.fragmentShader = sh.fragmentShader.replace('#include <logdepthbuf_fragment>', '#if defined( USE_LOGARITHMIC_DEPTH_BUFFER )\n\tgl_FragDepth = 0.99999;\n#endif');
-  };
-};
-
 const 加色材质 = (o: THREE.MeshBasicMaterialParameters) => {
   const mat = new THREE.MeshBasicMaterial({ blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, toneMapped: false, side: THREE.DoubleSide, ...o });
-  钉在最远(mat);
+  深度钉在最远(mat);
   return mat;
 };
 

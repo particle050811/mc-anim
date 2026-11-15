@@ -9,6 +9,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useEffect, useLayoutEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { needSceneDepth } from '../../engine/voxel/中间步骤.ts';
 
 // 刀上要泛光的网格多开这一层（主画面只看第 0 层；第 7 层是夜幕刀光的泛光）
 export const KATANA_BLOOM_LAYER = 8;
@@ -347,8 +348,11 @@ export const useKatanaBloom = () => {
   useLayoutEffect(() => {
     const c = canvasOf(gl);
     c.ids.push(id);
+    // 第 1 步拿当前目标里的场景深度比：屏幕 AO 三遍都在离屏图里画时要它把深度写回来（engine/voxel/中间步骤.ts）
+    const noDepth = needSceneDepth(gl);
     return () => {
       c.ids.splice(c.ids.indexOf(id), 1);
+      noDepth();
     };
   }, [gl, id]);
   useEffect(
