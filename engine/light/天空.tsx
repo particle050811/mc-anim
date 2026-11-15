@@ -81,6 +81,17 @@ const skyShader = (twilight: boolean) => `
 
 const R_SKY = 480;
 
+// 穹顶不写深度、不走对数深度片段：普通透视深度在对数深度图里几乎贴着最远处，只画在还没东西的地方，后画的地形盖掉它。
+// 屏幕 AO 第 1 遍用光栅深度时（engine/core/光栅深度.ts，带 RASTER_DEPTH 宏）深度是真纵深，480 米的穹顶会挡住更远的山，所以直接钉在最远（反向深度 0）
+const SKY_VERT = `varying vec3 vDir;
+void main() {
+  vDir = normalize(position);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  #ifdef RASTER_DEPTH
+  gl_Position.z = 0.0;
+  #endif
+}`;
+
 // 大气打开时（lib/大气.ts）主世界穹顶换成物理天色：天色图 × 空气雾到地形远端的透过率 + 内散射，自己出色（线性 → 画面值）
 const atmoSkyMaterial = () =>
   new THREE.ShaderMaterial({
@@ -89,7 +100,8 @@ const atmoSkyMaterial = () =>
     fog: false,
     toneMapped: false,
     uniforms: { ...atmoUniforms, atmoSky: { value: null } },
-    vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+    vertexShader: SKY_VERT,
+    userData: { 光栅深度: true },
     fragmentShader: `uniform sampler2D atmoSky;
     ${ATMO_PARS_GLSL}
     ${ATMO_FN_GLSL}
@@ -208,7 +220,8 @@ export const SkyDome: React.FC<{ sun?: [number, number, number]; twilight?: bool
           band: { value: (afterglow?.skyColors ?? TWILIGHT.sky).map(([, color]) => new THREE.Color(color)) },
           at: { value: (afterglow?.skyColors ?? TWILIGHT.sky).map(([elev]) => elev) },
         },
-        vertexShader: `varying vec3 vDir; void main(){ vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+        vertexShader: SKY_VERT,
+        userData: { 光栅深度: true },
         fragmentShader: skyShader(twilight),
       }),
     [sun[0], sun[1], sun[2], twilight, afterglow?.色, afterglow?.强],
