@@ -111,46 +111,6 @@ export const soundFx = {
 
 // ---------- 地：和第 1 句同一片地（用户 10-24「而且怎么超平坦背景 合理吗？」） ----------
 
-/** 第 1 句新世界那片地的生成参数，照抄 场/2-新世界/参数.ts 的 平原、樱花林（场之间不能互引；那边改了这里要一起改，两边一样才是同一片地）。
- *  地形.ts 照同一套生成法铺：原版平原起伏一两格，樱花林长在一座 9 格高的缓坡小山上 */
-export const newWorldTerrain = {
-  plainsParams: {
-    种子: 20230607,
-    起伏: 2.4,
-    undulationScale: 64,
-    fineUndulation: 0.5,
-    fineUndulationScale: 16,
-    spawnFlatRadius: 4,
-    grassRate: 0.3,
-    tallGrassShare: 0.16,
-    flowerRate: 0.02,
-    tulipScale: 160,
-    tulipThreshold: -0.22,
-    oaks: [
-      [-22, 30, 5],
-      [-37, 71, 6],
-      [31, 46, 5],
-      [64, 92, 5],
-      [-58, 118, 4],
-      [7, 96, 5],
-    ] as const,
-  },
-  cherryGrove: {
-    心: [40, 160] as const,
-    mountainHeight: 9,
-    mountainRadius: 42,
-    topRadius: 15,
-    mountainJitter: 0.32,
-    mountainJitterScale: 34,
-    slopeUndulation: 1.6,
-    slopeUndulationScale: 11,
-    forestRadius: 24,
-    treeSpacing: 7,
-    treeRate: 0.85,
-    petalClusterRate: 0.35,
-  },
-} as const;
-
 /** 祭坛摆在哪（Agent 暂定）：樱花林那座山的西南坡脚下（第 1 句世界格 (18, 128)，出生点往北 128 格），鸟居朝北。
  *  往北看：右边（东北）是山坡上的樱花林，正前方、左边是平原一路起伏到雾里，鸟居衬在天上；林子最近的树在祭坛北边 15 格上下，看得出是林子边上。
  *  地面 = 祭坛脚下那格地面顶在世界里的高（原来的地在这里是 2）。
