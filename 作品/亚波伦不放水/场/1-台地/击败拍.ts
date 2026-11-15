@@ -13,8 +13,8 @@ import { dashProgress, steveFoot, eyeHeight, act5StartPos } from './齐放拍.ts
 
 const events = timeline.事件;
 /** 本幕开头（编排的钟，现身后几秒的世界秒，比片上慢第 2 幕的 慢放多出）：他死的那一刻 */
-export const actStart = events.齐放完.秒 - events.现身.秒 - slowExtraSec;
-export const actDur = events.击败完.秒 - events.齐放完.秒;
+export const actStart = events.volleyDone.秒 - events.yaBoLunAppears.秒 - slowExtraSec;
+export const actDur = events.defeatDone.秒 - events.volleyDone.秒;
 export const secAt = (s: number) => actStart + s;
 
 /** 七版：第 5 幕开头在现身后 19.45 秒，5-03 从第 5 幕第 5.3 秒起、长 2.3 秒 */

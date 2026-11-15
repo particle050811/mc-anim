@@ -14,7 +14,7 @@ export type View = {
   liYing?: Partial<HerPage>;
 };
 
-const stillFrame = mainCutEvents.生长三.帧;
+const stillFrame = mainCutEvents.growthStep3.帧;
 /** 事件那一帧往后 n 个 24 fps 的帧（按秒取到最近的一帧） */
 const frameAfter = (frame: number, n: number) => frame + Math.round(legacyFrameSec(n) * fps);
 
@@ -24,11 +24,11 @@ export const views: readonly View[] = [
   { 名: '描边关', 帧: stillFrame, outline: false },
   { 名: '后期关', 帧: stillFrame, withPost: false },
   // 自检：起风前（分屏停稳、日历还没动）、头一页刚飞起来（头一棵樱花树一起冒）、远景冒满中景冒头一棵、门口树苗长成前一帧、停在 1 以后
-  { 名: '自检-起风前', 帧: frameAfter(mainCutEvents.课表亮二.帧, 1) },
-  { 名: '自检-头一页飞', 帧: frameAfter(mainCutEvents.风吹日历.帧, 3) },
-  { 名: '自检-中景头一棵', 帧: frameAfter(mainCutEvents.生长四.帧, 1) },
-  { 名: '自检-树苗长成前', 帧: mainCutEvents.日历到一.帧 - 1 },
-  { 名: '自检-停在1', 帧: frameAfter(mainCutEvents.日历到一.帧, 6) },
+  { 名: '自检-起风前', 帧: frameAfter(mainCutEvents.timetableLit2.帧, 1) },
+  { 名: '自检-头一页飞', 帧: frameAfter(mainCutEvents.windBlowsCalendar.帧, 3) },
+  { 名: '自检-中景头一棵', 帧: frameAfter(mainCutEvents.growthStep4.帧, 1) },
+  { 名: '自检-树苗长成前', 帧: mainCutEvents.calendarAtOne.帧 - 1 },
+  { 名: '自检-停在1', 帧: frameAfter(mainCutEvents.calendarAtOne.帧, 6) },
   // 对照：蹲着她身子往镜头斜转 30°（yaw −120）、头转 20°，胳膊和花同定稿，只差朝向（定稿是正侧面 yaw −90、头转 40°）
   { 名: '对照-蹲身子斜转30', 帧: stillFrame, liYing: { yaw: -120, 看: [5, -20] } },
 ];

@@ -30,8 +30,8 @@ const slideSteps = (startSec: number, track: DashTrail): number[] => {
 };
 
 export default windowSeg(timeline, {
-  起: '召唤完',
-  止: '开盘完',
+  起: 'summonDone',
+  止: 'wheelOpenDone',
   地形: [realNetherPack],
   soundTable,
   声音: ({ 放: play }) => {

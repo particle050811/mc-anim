@@ -72,7 +72,7 @@ const Scene: React.FC<{ 帧: number; 秒: number; 眼: V3 }> = ({ 帧: frame, �
     <HiddenLandReunionBackdrop 眼={eye} 秒={sec} lighting={false} doorLightParams={eyeContactDoorLight}>
       <NoFade>
         <LiYingReunion 秒={sec} 眼={eye} />
-        <HeartParticles spawns={hearts} 刻={elapsedTick(frame, events.第15句驯服.帧)} />
+        <HeartParticles spawns={hearts} 刻={elapsedTick(frame, events.tameAgain.帧)} />
       </NoFade>
     </HiddenLandReunionBackdrop>
   </BackgroundFade>
@@ -83,7 +83,7 @@ const Scene: React.FC<{ 帧: number; 秒: number; 眼: V3 }> = ({ 帧: frame, �
 // 原版拿法里半格高的蛋糕贴在方块格子底下，几乎全在画面下沿外（预览/1102-1722-立体蛋糕 02～04 的「中原版拿法」）；
 // 抬半格露出顶面和侧面，像拿着草方块的上半截。成片候选先用这版，等用户在预览里选；选原版拿法就把 蛋糕拿法 换回 方块显示.firstperson_righthand。
 // 只画拿着蛋糕的那一截：对视那一帧不画手（对视.tsx 文件头：空手的右臂会压在她身上），蛋糕吃掉以后空手的右臂也不升上来（不压她的笑脸，前后一致）
-const cakeSwapTick = Math.round((events.换上蛋糕.秒 - events.递蛋糕右键.秒) * 20);
+const cakeSwapTick = Math.round((events.switchToCake.秒 - events.cakeRightClick.秒) * 20);
 /** 显示变换的 translation 按 1/16 格、在缩放前：模型里抬 8 像素 × 缩放 0.4 = 3.2。
  *  转 46° 不是原版的 45°：正好 45° 时两个侧面的法线和世界轴夹角相等，平涂按法线最大分量挑面明暗（engine/三渲二/平涂.tsx）挑不定，
  *  片元里现算的法线有一点误差，一个面上逐像素在 0.8、0.6 两档间乱跳，成了满面竖条噪点；偏 1° 朝镜头的左面稳定取 0.8、右面 0.6 */
@@ -91,7 +91,7 @@ const cakeHoldDisplay = { ...blockDisplay.firstperson_righthand, rotation: [0, 4
 const handScript: HandScript = { start: null, swings: [0], changes: [{ tick: cakeSwapTick, to: '蛋糕' }, { tick: 1, to: null }] };
 
 const Hand: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
-  const h = handTimeline(elapsedTick(frame, events.递蛋糕右键.帧), handScript);
+  const h = handTimeline(elapsedTick(frame, events.cakeRightClick.帧), handScript);
   if (h.item !== '蛋糕') return null;
   // 手那一遍的视图坐标（Y 朝上、−Z 朝前）放进三渲二画布 Z 朝上的场景里：画布的看点朝 +y（北）就是视图的 −Z，再把画布里那层 −90° 转回来
   return (
@@ -126,7 +126,7 @@ const ReunionBubble: React.FC<{ 机: PerspectiveRig; 字: string; 缩放: number
 
 /** 樱花风从这里散开（页面坐标）：风散开那一帧的机位下，她脚底以上 风散心高 那一点在画面上的位置。花瓣先从她的背影那块吹开 */
 export const windScatterCenter = (() => {
-  const rig = reunionRig(events.风散开.帧 / fps);
+  const rig = reunionRig(events.windClears.帧 / fps);
   const cam = makePerspectiveCamera({ 眼: zUpToThree(rig.眼), 看: zUpToThree(rig.看), fov: rig.fov, 宽: aspect.宽, 高: aspect.高 });
   const p = projectToPage(cam, zUpToThree([liYing.feet[0], liYing.feet[1], liYing.feet[2] + windScatterHeight]), aspect.宽, aspect.高);
   return { x: p.x, y: p.y };

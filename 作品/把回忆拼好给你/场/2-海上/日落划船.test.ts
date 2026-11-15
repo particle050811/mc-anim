@@ -33,33 +33,33 @@ import { endRig, finalDist, finalSpeed, eyeBall } from '../2-祭坛/末态.ts';
 
 // 第 4 句 2 行歌词在 2560×1440 上占 y 77～329（界面/符文排版.ts，字点 7），换成页面像素
 const lyricBottomPx = 329 / 2;
-const seaFrames = Array.from({ length: segWindow.止帧 - events.海平线.帧 }, (_, i) => events.海平线.帧 + i);
+const seaFrames = Array.from({ length: segWindow.止帧 - events.horizon.帧 }, (_, i) => events.horizon.帧 + i);
 
 describe('第 4 句的窗口和事件', () => {
   it('窗口是第 4 句起到第 5 句起，事件都在窗口里、按顺序', () => {
     expect(segWindow.起帧).toBe(Math.round(lineAt(4).起 * fps));
     expect(segWindow.止帧).toBe(Math.round(lineAt(5).起 * fps));
     expect(segClock('2-日落划船').帧数).toBe(segWindow.止帧 - segWindow.起帧);
-    const order = [events.第4句开口, events.眼化日, events.海平线, events.桨入水, events.拉远到位, events['照片-日落划船'], events.浪起].map((e) => e.帧);
+    const order = [events.line4VocalIn, events.eyeToSun, events.horizon, events.oarDips, events.pullBackDone, events.photoSunsetRowing, events.waveRises].map((e) => e.帧);
     for (let i = 1; i < order.length; i++) expect(order[i]!).toBeGreaterThan(order[i - 1]!);
     expect(order[0]).toBeGreaterThanOrEqual(segWindow.起帧);
     expect(order.at(-1)!).toBeLessThan(segWindow.止帧);
-    expect(photoFrame).toBe(mainCutEvents['照片-日落划船'].帧);
+    expect(photoFrame).toBe(mainCutEvents.photoSunsetRowing.帧);
   });
   it('干净的镜头都不短于 0.5 秒：眼睛特写、海；浪从起到盖满至少 0.5 秒；拉远 0.8 秒以上，拉完停稳 0.8 秒以上才起浪（核查 10-24：原来只停 11 帧）', () => {
-    expect((events.眼化日.帧 - segWindow.起帧) / fps).toBeGreaterThan(0.5);
-    expect((events.浪起.帧 - events.海平线.帧) / fps).toBeGreaterThan(0.5);
-    expect((segWindow.止帧 - events.浪起.帧) / fps).toBeGreaterThan(0.5);
-    expect((events.拉远到位.帧 - events.海平线.帧) / fps).toBeGreaterThanOrEqual(0.8);
-    expect((events.浪起.帧 - events.拉远到位.帧) / fps).toBeGreaterThanOrEqual(0.8);
+    expect((events.eyeToSun.帧 - segWindow.起帧) / fps).toBeGreaterThan(0.5);
+    expect((events.waveRises.帧 - events.horizon.帧) / fps).toBeGreaterThan(0.5);
+    expect((segWindow.止帧 - events.waveRises.帧) / fps).toBeGreaterThan(0.5);
+    expect((events.pullBackDone.帧 - events.horizon.帧) / fps).toBeGreaterThanOrEqual(0.8);
+    expect((events.waveRises.帧 - events.pullBackDone.帧) / fps).toBeGreaterThanOrEqual(0.8);
   });
   it('叠化、浪：起止对', () => {
-    expect(crossfade(events.眼化日.帧)).toBe(0);
-    expect(crossfade(events.海平线.帧)).toBe(1);
-    expect(surgeIn(events.浪起.帧)).toBe(0);
+    expect(crossfade(events.eyeToSun.帧)).toBe(0);
+    expect(crossfade(events.horizon.帧)).toBe(1);
+    expect(surgeIn(events.waveRises.帧)).toBe(0);
     expect(surgeIn(segWindow.止帧 - 1)).toBeLessThan(1);
     expect(surgeIn(segWindow.止帧)).toBe(1);
-    expect(pullBack(events.拉远到位.帧)).toBe(1);
+    expect(pullBack(events.pullBackDone.帧)).toBe(1);
     expect(pullBack(photoFrame)).toBe(1);
   });
 });
@@ -88,14 +88,14 @@ describe('原版木船', () => {
   it('第二桨的水声落在「桨入水」，海上镜头里的桨声都在海平线和浪起之间、隔 0.8 秒', () => {
     const oarSecs = oarSoundSecs();
     expect(oarSecs.length).toBeGreaterThanOrEqual(2);
-    expect(oarSecs[0]).toBeCloseTo(mainCutEvents.桨入水.秒, 6);
+    expect(oarSecs[0]).toBeCloseTo(mainCutEvents.oarDips.秒, 6);
     for (let i = 1; i < oarSecs.length; i++) expect(oarSecs[i]! - oarSecs[i - 1]!).toBeCloseTo(0.8, 6);
-    expect(rowStartSec + 2 / 20 + 0.8).toBeCloseTo(mainCutEvents.桨入水.秒, 6);
+    expect(rowStartSec + 2 / 20 + 0.8).toBeCloseTo(mainCutEvents.oarDips.秒, 6);
   });
   it('海平线那一刻船在原点、往南偏西走；你在前、她在后，她侧坐朝东偏南', () => {
-    expect(BoatState(events.海平线.帧).loc[0]).toBeCloseTo(0, 9);
-    expect(BoatState(events.海平线.帧).loc[1]).toBeCloseTo(0, 9);
-    const arrivalPos = BoatState(events.拉远到位.帧).loc;
+    expect(BoatState(events.horizon.帧).loc[0]).toBeCloseTo(0, 9);
+    expect(BoatState(events.horizon.帧).loc[1]).toBeCloseTo(0, 9);
+    const arrivalPos = BoatState(events.pullBackDone.帧).loc;
     expect(arrivalPos[1]).toBeLessThan(0);
     expect(arrivalPos[0]).toBeLessThan(0);
     expect(Math.abs(arrivalPos[0])).toBeLessThan(Math.abs(arrivalPos[1]));
@@ -108,7 +108,7 @@ describe('原版木船', () => {
 
 describe('海上的镜头', () => {
   it('海平线那一刻太阳中心高 太阳高 度，往下落（原版速度）', () => {
-    expect(sunElevation(gameTick(events.海平线.帧))).toBeCloseTo(sunHeight, 6);
+    expect(sunElevation(gameTick(events.horizon.帧))).toBeCloseTo(sunHeight, 6);
     expect(sunElevation(gameTick(segWindow.止帧))).toBeLessThan(sunHeight);
     expect(sunElevation(gameTick(segWindow.止帧))).toBeGreaterThan(sunHeight - 1);
   });
@@ -151,7 +151,7 @@ describe('海上的镜头', () => {
       const toCamera = [eye[0]! - person.loc[0]!, eye[1]! - person.loc[1]!];
       return (Math.acos((dir[0]! * toCamera[0]! + dir[1]! * toCamera[1]!) / Math.hypot(toCamera[0]!, toCamera[1]!)) * 180) / Math.PI;
     };
-    for (const g of [events.拉远到位.帧, photoFrame, events.浪起.帧]) {
+    for (const g of [events.pullBackDone.帧, photoFrame, events.waveRises.帧]) {
       const eye = seaCameraRig(g).眼;
       expect(angleBetween(youPos(g), eye), `歌曲帧 ${g}`).toBeLessThan(80);
       expect(angleBetween(herPos(g), eye), `歌曲帧 ${g}`).toBeLessThan(30);
@@ -183,7 +183,7 @@ describe('匹配剪辑', () => {
     expect(L(segWindow.起帧)).toBeLessThan(L(joinFrame));
   });
   it('叠化的时候（眼化日到海平线）画里只有太阳、光路和海：船身和你们俩的头都在画框右边、下边外头（一次一个看点）', () => {
-    for (let g = events.眼化日.帧; g <= events.海平线.帧; g++) {
+    for (let g = events.eyeToSun.帧; g <= events.horizon.帧; g++) {
       const rig = seaCameraRig(g);
       const b = BoatState(g);
       // 船身：船本地 长 ±0.9、宽 ±0.65，高到船帮；头：你（玩家模型 15/16）实体脚底往上 1.4～1.9 格、她 0.6～1.4 格，±0.25 格见方。
@@ -200,7 +200,7 @@ describe('匹配剪辑', () => {
     }
   });
   it('眼化日那一刻右眼眼珠落在太阳上、一样高', () => {
-    const g = events.眼化日.帧;
+    const g = events.eyeToSun.帧;
     const rig = eyeCameraRig(g);
     const sun = sunScreen(seaCameraRig(g), gameTick(g))!;
     const eyeballPoint = projectPoint(rig, eyeBall.rightEye)!;
@@ -212,7 +212,7 @@ describe('匹配剪辑', () => {
   });
   it('眼睛特写一路往里推（眼珠越来越大）', () => {
     let prev = 0;
-    for (let g = segWindow.起帧; g <= events.眼化日.帧; g++) {
+    for (let g = segWindow.起帧; g <= events.eyeToSun.帧; g++) {
       const rig = eyeCameraRig(g);
       const eyeTop = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] + eyeBall.高 / 2])!;
       const bottomProj = projectPoint(rig, [eyeBall.rightEye[0], eyeBall.rightEye[1], eyeBall.rightEye[2] - eyeBall.高 / 2])!;

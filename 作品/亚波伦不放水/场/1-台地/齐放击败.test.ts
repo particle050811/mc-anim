@@ -170,15 +170,15 @@ describe('第 4 幕 轰炸', () => {
 
   it('战斗曲 27.0 秒那一下砸在第一轮出手那一刻：两条在 齐放出手 首尾接上，前一条的入点跟着第 2 幕长短走', () => {
     const events = timeline.事件;
-    expect(events.齐放出手.秒 - events.开盘完.秒).toBeCloseTo(qiFangShot.castStart, 9);
+    expect(events.volleyCast.秒 - events.wheelOpenDone.秒).toBeCloseTo(qiFangShot.castStart, 9);
     const battleSound = timeline.声音!.find((x) => x.名 === '战斗曲')!;
     const battleCue = timeline.声音!.find((x) => x.名 === '战斗曲-齐放')!;
-    expect(battleSound.startSec).toBe(events.现身.秒);
-    expect(battleSound.endSec).toBe(events.齐放出手.秒);
+    expect(battleSound.startSec).toBe(events.yaBoLunAppears.秒);
+    expect(battleSound.endSec).toBe(events.volleyCast.秒);
     expect(battleSound.入点秒! + battleSound.endSec! - battleSound.startSec).toBeCloseTo(27, 9);
-    expect(battleCue.startSec).toBe(events.齐放出手.秒);
+    expect(battleCue.startSec).toBe(events.volleyCast.秒);
     expect(battleCue.入点秒).toBe(27);
-    console.log(`战斗曲：现身 ${events.现身.秒.toFixed(3)} 秒起从 ${battleSound.入点秒!.toFixed(3)} 秒放，${events.齐放出手.秒.toFixed(3)} 秒（齐放出手）接后一条`);
+    console.log(`战斗曲：现身 ${events.yaBoLunAppears.秒.toFixed(3)} 秒起从 ${battleSound.入点秒!.toFixed(3)} 秒放，${events.volleyCast.秒.toFixed(3)} 秒（齐放出手）接后一条`);
   });
 });
 

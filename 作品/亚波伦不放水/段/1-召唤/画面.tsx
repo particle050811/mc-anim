@@ -27,7 +27,7 @@ const fromAltar = (x: number, y: number, z: number): V3 => addVec(altar, [x, y, 
 const clock = (segSec: number) => choreoClock(timeline.事件.开始.秒 + segSec);
 const segSecAt = (choreoSec: number) => choreoSec - clock(0);
 /** 场时间线的事件 → 段内秒（段从 开始 起） */
-const eventSec = { 放环: timeline.事件.放环.秒 - timeline.事件.开始.秒 };
+const eventSec = { placeRing: timeline.事件.placeRing.秒 - timeline.事件.开始.秒 };
 const chestAt = (t: number) => addVec(stevePos(t), [0, 0, 1.2]);
 /**
  * 黑暗效果有多暗（0～0.45）。照原版 LightTexture.calculateDarknessScale（1.20.1，javap 读的）：0.45 × max(0, cos(刻 × π × 0.025))，
@@ -54,7 +54,7 @@ const altarTop = fromAltar(0, 0, 2.4);
 // 用户 11-11 看七版：「1-2s 走过去的镜头是多余的」——删了他走上来那一镜（1-01），开头就是越过祭坛看他放环；
 // 「5-8 召唤出亚伯伦 为什么要给史蒂夫特写？」——召唤那几秒（原 1-03 他正面跟拍）换成拍祭坛上的仪式和她出现，他不在画面里。其余照七版
 const shotTable: Shot[] = (() => {
-  const cuts = { 三: eventSec.放环 + 3.3, 四: segSecAt(0.35), 五: segSecAt(0.95), 止: segSecAt(choreoClock(timeline.事件.召唤完.秒)) };
+  const cuts = { 三: eventSec.placeRing + 3.3, 四: segSecAt(0.35), 五: segSecAt(0.95), 止: segSecAt(choreoClock(timeline.事件.summonDone.秒)) };
   return [
     // 1-01 祭坛东北边、越过祭坛往南看他（七版的 1-02，往前接到开头）：他右键把环放上祭坛，祭品消失、光柱起来都在前景，他在后面正对着镜头往后退，光柱起来一缩、拔剑；镜头慢慢往前压
     { 名: '1-01', 起: 0, cameraRig: followShot(cuts.三, (s, k) => {
@@ -79,7 +79,7 @@ const shotTable: Shot[] = (() => {
 
 export default definePicture(seg, soundUrl, () => {
   const { 秒: sec, 事件: events, 段: thisSegment } = useSeg(seg);
-  const ritualSec = sec - events.放环;
+  const ritualSec = sec - events.placeRing;
   const t = clock(sec);
   const { cameraRig } = pickShot(shotTable, sec, thisSegment.秒);
   const hint = ritualSec >= plan.提示 && t < 0;

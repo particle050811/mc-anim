@@ -4,7 +4,7 @@ import { iconEdge } from '../../界面/实例图标.ts';
 import { cursor, framingCenter, unit, ui, shardParams, drillIn, endWhite, endPullBack } from './参数.ts';
 import { lastPlayedText, cursorAt, iconFrame, pointingAt, boxCursorOn, rowTexts, isSelectedAt, drillInFraming, drillInProgress, drillInAlpha, shards, shardAt, outroWhiteAt, endFraming, normalFraming, reunionRowTexts } from './编排.ts';
 
-const drumFrame = mainCutEvents.开场鼓点.帧;
+const drumFrame = mainCutEvents.drumBeatClick.帧;
 
 describe('存档那一项的字（原版 WorldListEntry、SimpleDateFormat zh_CN 短格式）', () => {
   it('第二行是文件夹名 + 上次游玩时间：月日不补零、十二小时制、上午下午在前', () => {
@@ -36,15 +36,15 @@ describe('第 0 镜：光标、指着、选中', () => {
     expect(boxCursorOn(Math.ceil((6 * fps) / 20))).toBe(false);
   });
   it('光标到了停在图标上（蓝的播放箭头），鼓点那一帧点下去：选中、光标还在、不再蒙灰；下一帧光标没了', () => {
-    expect(cursorAt(mainCutEvents.开场光标到.帧)).toEqual(cursor.停);
-    expect(pointingAt(mainCutEvents.开场光标到.帧)).toBe(2);
+    expect(cursorAt(mainCutEvents.cursorArrives.帧)).toEqual(cursor.停);
+    expect(pointingAt(mainCutEvents.cursorArrives.帧)).toBe(2);
     expect(cursorAt(drumFrame)).toEqual(cursor.停);
     expect(isSelectedAt(drumFrame)).toBe(true);
     expect(pointingAt(drumFrame)).toBe(0);
     expect(cursorAt(drumFrame + 1)).toBeNull();
   });
   it('光标一路先擦过那一项的字（灰箭头）再到图标', () => {
-    const trail = Array.from({ length: mainCutEvents.开场光标到.帧 - mainCutEvents.开场光标入.帧 + 1 }, (_, k) => pointingAt(mainCutEvents.开场光标入.帧 + k));
+    const trail = Array.from({ length: mainCutEvents.cursorArrives.帧 - mainCutEvents.cursorEnters.帧 + 1 }, (_, k) => pointingAt(mainCutEvents.cursorEnters.帧 + k));
     expect(trail.includes(1)).toBe(true);
     expect(trail.indexOf(1)).toBeLessThan(trail.indexOf(2));
   });
@@ -53,7 +53,7 @@ describe('第 0 镜：光标、指着、选中', () => {
     expect(cursor.停.x).toBeLessThan(iconFrame.x + iconFrame.side);
     expect(cursor.停.y).toBeGreaterThanOrEqual(iconFrame.y);
     expect(cursor.停.y).toBeLessThan(iconFrame.y + iconFrame.side);
-    for (let f = mainCutEvents.开场光标入.帧; f <= drumFrame; f++) {
+    for (let f = mainCutEvents.cursorEnters.帧; f <= drumFrame; f++) {
       const c = cursorAt(f)!;
       expect(Number.isInteger(c.x * 2) && Number.isInteger(c.y * 2)).toBe(true);
     }
@@ -97,10 +97,10 @@ describe('钻进图标', () => {
 });
 
 describe('片尾：闪白、拉回、碎片（核查 10-24）', () => {
-  const colorBackGap = mainCutEvents.片尾回色.帧 - mainCutEvents.片尾白光.帧;
+  const colorBackGap = mainCutEvents.outroRecolor.帧 - mainCutEvents.outroFlash.帧;
   it('片尾从咔哒那一帧起（片尾白光 = 合照咔哒 = 2-合照 的止）', () => {
-    expect(SegmentWindow('2-拼回').起帧).toBe(mainCutEvents.片尾白光.帧);
-    expect(mainCutEvents.片尾白光.帧).toBe(mainCutEvents.合照咔哒.帧);
+    expect(SegmentWindow('2-拼回').起帧).toBe(mainCutEvents.outroFlash.帧);
+    expect(mainCutEvents.outroFlash.帧).toBe(mainCutEvents.groupPhotoClick.帧);
   });
   it('第一帧整屏纯白，同第 11 句截图那一闪几帧就退：白过三成的不超过 1/8 秒（24 fps 时 3 帧），闪白秒 起没有白', () => {
     expect(outroWhiteAt(0)).toBe(1);

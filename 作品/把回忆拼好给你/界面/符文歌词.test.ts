@@ -82,7 +82,7 @@ describe('歌词艺术字的数据', () => {
       const lyricLine = mainCutLyricLine(lineIndex, 100);
       const wordEffect = lyricLine.wordEffect!;
       expect([...lyricLine.text].slice(wordEffect.从, wordEffect.到 + 1).join('')).toBe(keywords[lineIndex]!.word);
-      if (wordEffect.effect === '刹那') expect(wordEffect.shatterFrame).toBe(mainCutEvents.第11句碎裂.帧 - 100);
+      if (wordEffect.effect === '刹那') expect(wordEffect.shatterFrame).toBe(mainCutEvents.worldShatters.帧 - 100);
       if (wordEffect.effect === '时差') expect(wordEffect.halfBeat).toBeCloseTo((beatGrid.拍长 / 2) * fps);
     }
     expect(mainCutLyricLine(1).wordEffect).toBeUndefined();
@@ -375,7 +375,7 @@ describe('五个关键词的效果', () => {
     const wordEffect = lyricLine.wordEffect!;
     expect(wordEffect.effect).toBe('刹那');
     const timeSpans = decodeTimeSpans(lyricLine, runeLyricDefault);
-    const shatterFrame = mainCutEvents.第11句碎裂.帧;
+    const shatterFrame = mainCutEvents.worldShatters.帧;
     expect((shatterFrame - timeSpans[wordEffect.从]!.end) / fps).toBeGreaterThanOrEqual(legacyFrameSec(10));
     // 第 12 句让聊天、切进卧室才进，第 11 句照原来的时刻（收）退，不跟着拖到接缝
     const fadeOutStart = lyricLine.收!;

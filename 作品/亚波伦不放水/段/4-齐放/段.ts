@@ -17,8 +17,8 @@ const peakDb = -18;
 const roundRobin = (prefix: string, n: number, i: number) => `${prefix}.${(i % n) + 1}`;
 
 export default windowSeg(timeline, {
-  起: '开盘完',
-  止: '齐放完',
+  起: 'wheelOpenDone',
+  止: 'volleyDone',
   地形: [realNetherPack],
   soundTable,
   声音: ({ 放: play, 秒: durSec }) => {

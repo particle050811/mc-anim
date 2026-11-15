@@ -6,7 +6,7 @@ import { you, crossSection, terrainRange, terrainFog, pit, cameraRigs, cherryGro
 import { youAt, settleFrame, skyTickAt, peeledRows, cameraRigAt, chatTickAt, walk } from './编排.ts';
 import { starBrightness, starList, starDirAt } from './星.ts';
 
-const pushDoneFrame = mainCutEvents.第1句推完.帧;
+const pushDoneFrame = mainCutEvents.openingPushDone.帧;
 
 /** 透视机位下一个点在成片（2560×1440）上的 y：针孔投影，z 朝上 */
 const filmY = (rig: CameraRigFrame, p: readonly number[]) => {
@@ -123,8 +123,8 @@ describe('剖面', () => {
     expect(backWall.find((b) => b.位[2] === -2)?.brightness).toBe(crossSection.backWallLight);
   });
   it('撤排：剖开那一帧撤第一排，第 2 句首字前全撤完', () => {
-    expect(peeledRows(mainCutEvents.第1句剖开.帧 - 1)).toBe(0);
-    expect(peeledRows(mainCutEvents.第1句剖开.帧)).toBe(1);
+    expect(peeledRows(mainCutEvents.groundCutaway.帧 - 1)).toBe(0);
+    expect(peeledRows(mainCutEvents.groundCutaway.帧)).toBe(1);
     expect(peeledRows(pushDoneFrame - 1)).toBe(crossSection.stripRows);
     expect(stripBlocks(crossSection.stripRows)).toEqual([]);
   });
@@ -141,43 +141,43 @@ describe('剖面', () => {
 
 describe('镜头、时间', () => {
   it('钻完落定，起步前不动；起步后往剖面落，剖开那一帧落到，之后不动', () => {
-    expect(cameraRigAt(1, mainCutEvents.第1句起步.帧)).toEqual({ ...cameraRigs.落定, 眼: [...cameraRigs.落定.眼], 看: [...cameraRigs.落定.看] });
-    const camMid = cameraRigAt(1, mainCutEvents.第1句起步.帧 + 1);
+    expect(cameraRigAt(1, mainCutEvents.startWalking.帧)).toEqual({ ...cameraRigs.落定, 眼: [...cameraRigs.落定.眼], 看: [...cameraRigs.落定.看] });
+    const camMid = cameraRigAt(1, mainCutEvents.startWalking.帧 + 1);
     expect(Math.abs(camMid.眼[2] - cameraRigs.落定.眼[2])).toBeLessThan(0.1);
-    for (const f of [mainCutEvents.第1句剖开.帧, pushDoneFrame - 1, pushDoneFrame + 1.25 * fps]) {
+    for (const f of [mainCutEvents.groundCutaway.帧, pushDoneFrame - 1, pushDoneFrame + 1.25 * fps]) {
       const rig = cameraRigAt(1, f);
       rig.眼.forEach((v, i) => expect(v).toBeCloseTo(cameraRigs.剖面.眼[i]!, 9));
       expect(rig.fov).toBeCloseTo(cameraRigs.剖面.fov, 9);
     }
   });
   it('天：第 1 句整句天亮 1（看不见星星）；第 2 句首字起天亮缓起缓停地掉，填土那一拍黑透（星星满亮），之后照真时间走，不往回走', () => {
-    const fillDirt = mainCutEvents.填土.帧;
-    for (let f = mainCutEvents.第1句加入游戏.帧; f <= pushDoneFrame; f++) expect(skyBrightness(skyTickAt(f))).toBe(1);
+    const fillDirt = mainCutEvents.fillHole.帧;
+    for (let f = mainCutEvents.joinGame.帧; f <= pushDoneFrame; f++) expect(skyBrightness(skyTickAt(f))).toBe(1);
     expect(skyBrightness(skyTickAt(pushDoneFrame + 1))).toBeLessThan(1);
     // 天黑铺满第 2 句首字到填土：中间那一帧天亮一半左右，挖第一格时还亮
     expect(skyBrightness(skyTickAt(Math.round((pushDoneFrame + fillDirt) / 2)))).toBeCloseTo(0.5, 1);
-    expect(skyBrightness(skyTickAt(mainCutEvents.挖一.帧))).toBeGreaterThan(0.8);
+    expect(skyBrightness(skyTickAt(mainCutEvents.digFirst.帧))).toBeGreaterThan(0.8);
     expect(skyBrightness(skyTickAt(fillDirt - 1))).toBeGreaterThan(0);
     expect(skyBrightness(skyTickAt(fillDirt))).toBe(0);
     expect(starBrightness(skyTickAt(fillDirt))).toBeCloseTo(0.5, 6);
     // 第 1 句看不见星星：加到天上的 星亮² × 255 四舍五入是 0
     expect(Math.round(starBrightness(skyTickAt(pushDoneFrame)) ** 2 * 255)).toBe(0);
-    for (let f = mainCutEvents.第1句加入游戏.帧 + 1; f < fillDirt + (40 * fps) / 24; f++) expect(skyTickAt(f)).toBeGreaterThan(skyTickAt(f - 1));
+    for (let f = mainCutEvents.joinGame.帧 + 1; f < fillDirt + (40 * fps) / 24; f++) expect(skyTickAt(f)).toBeGreaterThan(skyTickAt(f - 1));
   });
   it('聊天栏的钟：「Steve加入了游戏」剖开那一帧正好 200 刻（原版那一行消失），淡掉的 20 刻铺在剖开前 聊天.淡秒 里；之前一直在走', () => {
-    const cutOpenFrame = mainCutEvents.第1句剖开.帧;
-    expect(chatTickAt(mainCutEvents.第1句加入游戏.帧)).toBe(0);
+    const cutOpenFrame = mainCutEvents.groundCutaway.帧;
+    expect(chatTickAt(mainCutEvents.joinGame.帧)).toBe(0);
     expect(chatTickAt(cutOpenFrame)).toBeCloseTo(200, 9);
     expect(chatTickAt(cutOpenFrame - chatOverlay.fadeSec * fps)).toBeCloseTo(180, 9);
-    for (let f = mainCutEvents.第1句加入游戏.帧 + 1; f < pushDoneFrame; f++) expect(chatTickAt(f)).toBeGreaterThan(chatTickAt(f - 1));
+    for (let f = mainCutEvents.joinGame.帧 + 1; f < pushDoneFrame; f++) expect(chatTickAt(f)).toBeGreaterThan(chatTickAt(f - 1));
   });
 });
 
 describe('你', () => {
   it('起步前站在出生点；起步后朝坑那一格走，停在格子正中、不越过；第 2 句首字前转身朝东、低头', () => {
-    expect(youAt(mainCutEvents.第1句起步.帧 - 1).feet).toEqual(you.feet);
+    expect(youAt(mainCutEvents.startWalking.帧 - 1).feet).toEqual(you.feet);
     let prevDistance = 0;
-    for (let f = mainCutEvents.第1句起步.帧; f <= pushDoneFrame; f++) {
+    for (let f = mainCutEvents.startWalking.帧; f <= pushDoneFrame; f++) {
       const p = youAt(f).feet;
       const d = Math.hypot(p[0] - you.feet[0], p[1] - you.feet[1]);
       expect(d).toBeGreaterThanOrEqual(prevDistance - 1e-9);

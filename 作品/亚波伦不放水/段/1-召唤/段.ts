@@ -22,7 +22,7 @@ const ritualLoudness: Record<string, { 峰值: number } | { 响度: number }> = 
 
 export default windowSeg(timeline, {
   起: '开始',
-  止: '召唤完',
+  止: 'summonDone',
   地形: [realNetherPack],
   soundTable,
   声音: ({ 放: play, 事件: events }) => {
@@ -30,7 +30,7 @@ export default windowSeg(timeline, {
     // 仪式：多选一的取第一个；扣灵魂（幽匿催发体绽放声，13 个文件）一秒一声，轮着用
     let cycleIndex = 0;
     for (const summonSound of summonSounds(summonPlans.短)) {
-      const sec = events.放环 + summonSound.秒;
+      const sec = events.placeRing + summonSound.秒;
       if (summonSound.名.startsWith('扣灵魂')) {
         sounds.push(play(summonSound.资产[cycleIndex++ % summonSound.资产.length]!, sec, { 峰值: -18, 名: summonSound.名 }));
         continue;
@@ -39,7 +39,7 @@ export default windowSeg(timeline, {
       if (loudLevel) sounds.push(play(summonSound.资产[0]!, sec, { ...loudLevel, 名: summonSound.名 }));
     }
     // 编排的钟（现身后几秒）→ 段内秒
-    const segSec = (t: number) => events.现身 + t;
+    const segSec = (t: number) => events.yaBoLunAppears + t;
     for (const [i, t] of act1Steps.entries()) sounds.push(play(`音效/block.stone.step.${(i % 6) + 1}`, segSec(t), { 峰值: -18, 名: `脚步${i + 1}` }));
     // 拔剑：原版没有拔剑声，借穿装备的声音
     sounds.push(play('音效/item.armor.equip_generic.1', segSec(act1.drawSwordSec), { 峰值: -18, 名: '拔剑' }));

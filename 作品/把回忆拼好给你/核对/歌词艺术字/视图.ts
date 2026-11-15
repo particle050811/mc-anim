@@ -43,7 +43,7 @@ const alignedFrame = (sentenceIndex: number) => {
 };
 
 const phases: readonly LyricStage[] = ['飞来中', '落定闪', '拼齐'];
-const shatterFrame = mainCutEvents.第11句碎裂.帧;
+const shatterFrame = mainCutEvents.worldShatters.帧;
 
 export const views: readonly View[] = [
   ...(['亮天空', '门口', '夜'] as const).flatMap((bottomBackdrop) => phases.map((stage): View => ({ 名: `${bottomBackdrop}-${stage}`, bottomBackdrop, 帧: stageFrame(bottomLine[bottomBackdrop], stage) }))),
@@ -67,5 +67,5 @@ export const views: readonly View[] = [
   { 名: '放下-飘落', bottomBackdrop: '归隐', 帧: alignedFrame(14) + frameOffset(3) },
   { 名: '放下-落远', bottomBackdrop: '归隐', 帧: alignedFrame(14) + frameOffset(8) },
   // 第 15 句放底部（对视这一帧上面是她的脸和气泡），49.96 那一帧
-  { 名: '对视-第15句底部', bottomBackdrop: '对视', 帧: mainCutEvents.第15句对视.帧 },
+  { 名: '对视-第15句底部', bottomBackdrop: '对视', 帧: mainCutEvents.reunionGaze.帧 },
 ];

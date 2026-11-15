@@ -28,9 +28,9 @@ export const toSec = (g: number) => g / fps;
 
 // ---------- 镜头切换 ----------
 /** 匹配剪辑的叠化进度：「眼化日」前 0（只有眼睛），「海平线」起 1（只有海），中间按帧匀着走（海上.tsx 按 Bayer 阵一格一格换） */
-export const crossfade = (g: number) => clamp01((g - events.眼化日.帧) / (events.海平线.帧 - events.眼化日.帧));
+export const crossfade = (g: number) => clamp01((g - events.eyeToSun.帧) / (events.horizon.帧 - events.eyeToSun.帧));
 /** 浪的进度：「浪起」0，到段尾（第 5 句起那一帧）1 = 盖满；段的最后一帧差一点盖满，第 5 句接着从 1 往 2 走（浪退出画面） */
-export const surgeIn = (g: number) => clamp01((g - events.浪起.帧) / (segWindow.止帧 - events.浪起.帧));
+export const surgeIn = (g: number) => clamp01((g - events.waveRises.帧) / (segWindow.止帧 - events.waveRises.帧));
 
 // ---------- 太阳 ----------
 /** 太阳中心的仰角（度）：原版天球角 0 在头顶、0.25 在西边地平线 */
@@ -46,7 +46,7 @@ export const sunsetTick = (() => {
   return (a + b) / 2;
 })();
 /** 歌曲帧 → 游戏刻（20 刻一秒，太阳照原版速度往下落） */
-export const gameTick = (g: number) => sunsetTick + ((g - events.海平线.帧) / fps) * 20;
+export const gameTick = (g: number) => sunsetTick + ((g - events.horizon.帧) / fps) * 20;
 /** 太阳方向（单位向量）：东升西落，转轴南北 */
 export const sunDirection = (tick: number): V3 => {
   const a = skySphereAngle(tick) * 2 * Math.PI;
@@ -57,12 +57,12 @@ export const sunBody = { 距: 100, 半边: 7.5 } as const;
 
 // ---------- 船 ----------
 /** 你们开始划（按着前进）的秒数：第二桨的水声落在「桨入水」 */
-export const rowStartSec = events.桨入水.秒 - rowStartLeadTicks / 20;
+export const rowStartSec = events.oarDips.秒 - rowStartLeadTicks / 20;
 const ticksSinceRowStart = (g: number) => (toSec(g) - rowStartSec) * 20;
 /** 船头方向（单位向量，场景 x 东、y 北）：yaw 同 FigurePose，0 朝北、90 朝西 */
 const boatDir: [number, number] = [-Math.sin(boatYaw * radPerDeg), Math.cos(boatYaw * radPerDeg)];
 /** 「海平线」那一刻船在原点 */
-const boatStartPath = rowingStroke(ticksSinceRowStart(events.海平线.帧)).路;
+const boatStartPath = rowingStroke(ticksSinceRowStart(events.horizon.帧)).路;
 
 export type BoatState = { loc: V3; yaw: number; oar: number | null; 速度: number };
 export const BoatState = (g: number): BoatState => {
@@ -75,7 +75,7 @@ export const BoatState = (g: number): BoatState => {
 /** 一桨的水声：原版桨位跨过 π/4 的那一刻（开划后第 2、18、34… 刻），两支桨同一刻各一声。只要海上镜头里的（「海平线」到「浪起」） */
 export const oarSoundSecs = (): number[] => {
   const r: number[] = [];
-  for (let k = 2; rowStartSec + k / 20 <= events.浪起.秒; k += 16) if (rowStartSec + k / 20 >= events.海平线.秒) r.push(rowStartSec + k / 20);
+  for (let k = 2; rowStartSec + k / 20 <= events.waveRises.秒; k += 16) if (rowStartSec + k / 20 >= events.horizon.秒) r.push(rowStartSec + k / 20);
   return r;
 };
 
@@ -96,7 +96,7 @@ export const herPos = (g: number) => {
 export type Perspective = { 眼: V3; 看: V3; fov: number };
 
 /** 拉远的进度：「海平线」起、「拉远到位」止，两头慢 */
-export const pullBack = (g: number) => smoothStep(clamp01((g - events.海平线.帧) / (events.拉远到位.帧 - events.海平线.帧)));
+export const pullBack = (g: number) => smoothStep(clamp01((g - events.horizon.帧) / (events.pullBackDone.帧 - events.horizon.帧)));
 
 /** 海上的镜头：跟着船走，从 海镜.匹配 拉到 海镜.到位 */
 export const seaCameraRig = (g: number): Perspective => {
@@ -198,12 +198,12 @@ const hermite = (p0: number, p1: number, m0: number, m1: number, h: number, s: n
  *  右眼眼珠落在 海镜.匹配 里太阳的位置、和太阳本体一样高。离眼珠的距离取对数用三次插值，起点的速度是 末速（接缝上推镜不停、不跳）；
  *  视角不变，镜头一直朝北（正对她），左右上下平移把眼珠从画面正中慢慢送到太阳的位置 */
 export const eyeCameraRig = (g: number): Perspective => {
-  const sun = sunScreen(seaCameraRig(events.眼化日.帧), gameTick(events.眼化日.帧))!;
+  const sun = sunScreen(seaCameraRig(events.eyeToSun.帧), gameTick(events.eyeToSun.帧))!;
   const t = Math.tan((endRig.fov * radPerDeg) / 2);
   const aspectRatio = pageSize.宽 / pageSize.高;
   const endDist = (eyeBall.高 * pageSize.高) / (2 * t * sun.side);
-  const s = clamp01((g - joinFrame) / (events.眼化日.帧 - joinFrame));
-  const distance = Math.exp(hermite(Math.log(finalDist), Math.log(endDist), finalSpeed, 0, toSec(events.眼化日.帧) - toSec(joinFrame), s));
+  const s = clamp01((g - joinFrame) / (events.eyeToSun.帧 - joinFrame));
+  const distance = Math.exp(hermite(Math.log(finalDist), Math.log(endDist), finalSpeed, 0, toSec(events.eyeToSun.帧) - toSec(joinFrame), s));
   const k = smoothStep(s);
   const nx = (sun.x / pageSize.宽) * 2 - 1;
   const ny = 1 - (sun.y / pageSize.高) * 2;
@@ -212,4 +212,4 @@ export const eyeCameraRig = (g: number): Perspective => {
 };
 
 /** 照片帧（第 8 句第二张照片取这一帧）：歌曲帧 */
-export const photoFrame = events['照片-日落划船'].帧;
+export const photoFrame = events.photoSunsetRowing.帧;

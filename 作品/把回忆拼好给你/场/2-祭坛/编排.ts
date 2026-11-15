@@ -13,13 +13,13 @@ export const segKey = '2-祭坛召唤';
 export const segWindow = segmentWindow(segKey);
 /** 各事件的歌曲帧 */
 export const events = {
-  tapAltar: mainCutEvents.第3句点祭坛.帧,
-  appear: mainCutEvents.第3句现身.帧,
-  handOffFrame: mainCutEvents.第3句递蛋糕.帧,
-  photo: mainCutEvents['照片-祭坛递蛋糕'].帧,
-  pushInEye: mainCutEvents.第3句推眼睛.帧,
+  tapAltar: mainCutEvents.activateAltar.帧,
+  appear: mainCutEvents.liYingAppears.帧,
+  handOffFrame: mainCutEvents.offerCake.帧,
+  photo: mainCutEvents.photoAltarCake.帧,
+  pushInEye: mainCutEvents.pushToEye.帧,
   /** 切近景：「光」那一拍（光柱跨过这一刀接着亮） */
-  cutFrame: mainCutEvents.第3句光.帧,
+  cutFrame: mainCutEvents.altarCloseUp.帧,
 } as const;
 /** 最后一帧（接第 4 句眼睛特写的那一帧） */
 export const lastFrame = segWindow.止帧 - 1;

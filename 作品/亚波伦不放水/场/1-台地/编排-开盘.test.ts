@@ -46,7 +46,7 @@ describe('第 1、2 幕编排', () => {
     expect(yaBoLun[2]).toBeCloseTo(altarPoint[2] + hoverHeight, 9);
     // 第 2 幕的钟走世界秒，比片秒短；第 4 幕的钟减掉慢放多出来的，开头正好是 幕末
     expect(act4Start).toBeCloseTo(actEnd, 9);
-    expect(afterAppear(events.开盘完.秒)).toBeGreaterThan(actEnd);
+    expect(afterAppear(events.wheelOpenDone.秒)).toBeGreaterThan(actEnd);
     for (const t of [actEnd, actEnd + 0.3]) expect(Math.hypot(...yaBoLunPos(t).map((x, i) => x - yaBoLun[i]!))).toBeLessThan(1e-9);
     const steve = stevePos(act4Start);
     for (const t of [actEnd, actEnd - 0.1]) expect(Math.hypot(...stevePos(t).map((x, i) => x - steve[i]!))).toBeLessThan(1e-9);
@@ -138,7 +138,7 @@ describe('第 1、2 幕编排', () => {
   });
 
   it('慢放：世界秒、片秒互逆，世界钟一阶连续、单调', () => {
-    for (let s = 0; s < events.开盘完.秒 - events.召唤完.秒; s += 0.01) {
+    for (let s = 0; s < events.wheelOpenDone.秒 - events.summonDone.秒; s += 0.01) {
       expect(toClipSec(toWorldSec(s))).toBeCloseTo(s, 6);
       expect(toWorldSec(s + 0.001) - toWorldSec(s)).toBeGreaterThan(0);
       expect(Math.abs((toWorldSec(s + 0.002) - toWorldSec(s + 0.001)) - (toWorldSec(s + 0.001) - toWorldSec(s)))).toBeLessThan(1e-5);

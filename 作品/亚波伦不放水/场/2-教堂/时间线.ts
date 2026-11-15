@@ -7,8 +7,8 @@ export default defineSceneTimeline({
   场: '2-教堂',
   事件: {
     开始: { 在: { 秒: 0 }, 依据: '第 6 幕开头：切进中殿' },
-    起舞: { 在: { after: '开始', addSec: 0 }, 依据: '一进来就起跳（用户 11-11「直接跳」）' },
-    舞完: { 在: { after: '起舞', addSec: onePassSec }, 依据: '忘情牛肉面一遍（角色/动作/忘情牛肉面.ts 的 一遍秒）' },
-    结束: { 在: { after: '舞完', addSec: 2 }, 依据: '分镜 6-03 收在最后站姿上停 2 秒' },
+    danceStart: { 在: { after: '开始', addSec: 0 }, 依据: '一进来就起跳（用户 11-11「直接跳」）' },
+    danceDone: { 在: { after: 'danceStart', addSec: onePassSec }, 依据: '忘情牛肉面一遍（角色/动作/忘情牛肉面.ts 的 一遍秒）' },
+    结束: { 在: { after: 'danceDone', addSec: 2 }, 依据: '分镜 6-03 收在最后站姿上停 2 秒' },
   },
 });

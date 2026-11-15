@@ -39,7 +39,7 @@ import {
 const segWindows = ['2-明年六月见', '2-烟花', '2-截图下线'].map(SegmentWindow);
 const startFrame = segWindows[0]!.起帧;
 /** 牌上写字的四个事件，按写的顺序（一行两个词） */
-const writeEventNames = ['写字一', '写字一续', '写字二', '写字二续'] as const;
+const writeEventNames = ['writeLine1Word1', 'writeLine1Word2', 'writeLine2Word1', 'writeLine2Word2'] as const;
 const endFrame = segWindows[2]!.止帧;
 const frameNums = Array.from({ length: endFrame - startFrame }, (_, i) => startFrame + i);
 const plantFrame = Math.round(plantSec * fps);
@@ -87,7 +87,7 @@ describe('门口之夜的段（第 9–11 句）', () => {
     expect(endFrame).toBe(toSongFrame(lineAt(12).起));
     expect(segWindows[0]!.止帧).toBe(segWindows[1]!.起帧);
     expect(segWindows[1]!.止帧).toBe(segWindows[2]!.起帧);
-    expect(mainCutEvents.第9句入夜.帧).toBe(startFrame);
+    expect(mainCutEvents.nightfall.帧).toBe(startFrame);
   });
 
   it('按词写：四个词落在第 9 句那段里、按顺序，两行隔两拍；照片、碎裂、下线落在最后一段里', () => {
@@ -95,11 +95,11 @@ describe('门口之夜的段（第 9–11 句）', () => {
     for (const f of writeFrames) expect(f >= segWindows[0]!.起帧 && f < segWindows[0]!.止帧).toBe(true);
     expect([...writeFrames].sort((a, b) => a - b)).toEqual(writeFrames);
     expect(writeFrames[2]! - writeFrames[0]!).toBe(Math.round(beatAt(72.5) * fps) - Math.round(beatAt(70.5) * fps));
-    for (const k of ['第11句照片', '第11句碎裂', '第11句下线'] as const) {
+    for (const k of ['screenshotFreeze', 'worldShatters', 'logOff'] as const) {
       const f = mainCutEvents[k].帧;
       expect(f >= segWindows[2]!.起帧 && f < segWindows[2]!.止帧).toBe(true);
     }
-    expect(freezeFrame).toBe(mainCutEvents.第11句照片.帧);
+    expect(freezeFrame).toBe(mainCutEvents.screenshotFreeze.帧);
     expect(photoFrame).toBe(freezeFrame + photoLateSec * fps);
   });
 
@@ -112,19 +112,19 @@ describe('门口之夜的段（第 9–11 句）', () => {
   });
 
   it('牌上的字只有 参数.ts 告示牌行们 一处：写字一之前空着，之后一个词一个词写上（核查 10-24：原来一行整行冒出来），写字二续写全', () => {
-    const firstWritingFrame = mainCutEvents.写字一.帧;
+    const firstWritingFrame = mainCutEvents.writeLine1Word1.帧;
     expect(signLinesAt((firstWritingFrame - 1) / fps)).toEqual(['', '', '', '']);
     expect(setupState(firstWritingFrame).signLines).toEqual(['', signWords[0]![0], '', '']);
-    expect(setupState(mainCutEvents.写字一续.帧).signLines).toEqual([signRows[0], signRows[1], '', signRows[3]]);
-    expect(setupState(mainCutEvents.写字二.帧).signLines).toEqual(['', signRows[1], signWords[1]![0], '']);
-    expect(setupState(mainCutEvents.写字二续.帧).signLines).toEqual(signRows);
+    expect(setupState(mainCutEvents.writeLine1Word2.帧).signLines).toEqual([signRows[0], signRows[1], '', signRows[3]]);
+    expect(setupState(mainCutEvents.writeLine2Word1.帧).signLines).toEqual(['', signRows[1], signWords[1]![0], '']);
+    expect(setupState(mainCutEvents.writeLine2Word2.帧).signLines).toEqual(signRows);
     expect(setupState(endFrame - 1).signLines).toEqual(signRows);
   });
 });
 
 describe('烟花（原版 1.20.1 的走法）', () => {
   it('三发：炸开正好落在分镜的炸开事件上，飞的刻数在原版 Flight 0 的 11～22 刻里；最大那发炸在「绽」上，和咔哒同一帧', () => {
-    const burstEvents = ['第10句烟花一', '第10句烟花三', '第11句大烟花'] as const;
+    const burstEvents = ['firework1Burst', 'firework3Burst', 'bigFireworkBurst'] as const;
     expect(fireworks.length).toBe(burstEvents.length);
     fireworks.forEach((firework, i) => {
       expect(burstSec(firework)).toBeCloseTo(mainCutEvents[burstEvents[i]!].秒, 9);
@@ -142,7 +142,7 @@ describe('烟花（原版 1.20.1 的走法）', () => {
 
   it('最后一发升空：离地一格以后，火箭周围一格内前两发的火花都已经烧过一半、缩成小火花（spark_0～3，刚炸开的是 spark_7）', () => {
     const lastFirework = fireworks[fireworks.length - 1]!;
-    for (let f = mainCutEvents.第11句最后一发.帧 + 1; f < freezeFrame; f++) {
+    for (let f = mainCutEvents.finalFireworkLaunch.帧 + 1; f < freezeFrame; f++) {
       const p = rocketPos(lastFirework, f / fps)!;
       expect(p, `第 ${f} 帧`).not.toBeNull();
       if (p[2] < 1) continue;
@@ -230,11 +230,11 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
   });
 
   it('种下树苗那一帧到往牌子推之前，树苗那一格整个在画里（离左边 64 像素以上）', () => {
-    for (let f = plantFrame; f <= mainCutEvents.第9句推近.帧; f++) expect(project(f, saplingX - 0.5, 0).x, `第 ${f} 帧`).toBeGreaterThanOrEqual(64);
+    for (let f = plantFrame; f <= mainCutEvents.pushToSign.帧; f++) expect(project(f, saplingX - 0.5, 0).x, `第 ${f} 帧`).toBeGreaterThanOrEqual(64);
   });
 
   it('两行字都在牌子特写里写上（N 84）：牌字在画面正中、你在画外；写完的两行在特写里留 0.35 秒以上（按词写只留得出这么多），拉开头 1/8 秒（24 fps 时 3 帧）N 还在 60 以上', () => {
-    for (let f = mainCutEvents.写字一.帧; f < shotSegment.followStart * fps; f++) {
+    for (let f = mainCutEvents.writeLine1Word1.帧; f < shotSegment.followStart * fps; f++) {
       expect(shotAt(f).N, `第 ${f} 帧`).toBe(signNearCount);
       const sign = project(f, signFace.x, signFace.z, signFace.y);
       expect(Math.abs(sign.x - 1280)).toBeLessThan(2);
@@ -242,12 +242,12 @@ describe('镜头：一个镜头不切（第 8 句同机位 → 停住种树苗 �
       // 你朝西侧身：胳膊往前伸到 x − 0.375
       expect(project(f, YouState(f).x - 0.375, 1).x, `第 ${f} 帧`).toBeGreaterThan(2560);
     }
-    expect(shotSegment.followStart - mainCutEvents.写字二续.帧 / fps).toBeGreaterThanOrEqual(0.35);
+    expect(shotSegment.followStart - mainCutEvents.writeLine2Word2.帧 / fps).toBeGreaterThanOrEqual(0.35);
     for (let f = Math.ceil(shotSegment.followStart * fps); f / fps < shotSegment.followStart + legacyFrameSec(3); f++) expect(shotAt(f).N, `第 ${f} 帧`).toBeGreaterThanOrEqual(60);
   });
 
   it('火箭到手时镜头已经拉开（N 36 以内），你整个人和伸出去的手都在画里，不从画框边戳进来', () => {
-    for (let f = swapRocketFrame; f <= mainCutEvents.第10句烟花一发射.帧; f++) {
+    for (let f = swapRocketFrame; f <= mainCutEvents.firework1Launch.帧; f++) {
       expect(shotAt(f).N, `第 ${f} 帧`).toBeLessThanOrEqual(36);
       expect(project(f, youStand - 0.8, 1).x, `第 ${f} 帧`).toBeGreaterThan(0);
       expect(project(f, youStand + 0.3, 1).x, `第 ${f} 帧`).toBeLessThan(2560);
@@ -358,7 +358,7 @@ describe('人', () => {
 describe('下线：存档图标', () => {
   it('照原版：裁正中正方形，落定时 64×64 个点、一个点 8 个成片像素，斜度、相纸边收没', () => {
     // 缩好那一帧：下线那一帧已经走了一帧，缩秒 走完
-    const c = photoCard(mainCutEvents.第11句下线.帧 + Math.ceil(logoutIcon.shrinkSec * fps) - 1, 2560, 1440);
+    const c = photoCard(mainCutEvents.logOff.帧 + Math.ceil(logoutIcon.shrinkSec * fps) - 1, 2560, 1440);
     expect(c.下).toBe(1);
     expect(c.点).toBe(64);
     expect(c.w).toBe(512);
@@ -372,7 +372,7 @@ describe('下线：存档图标', () => {
   });
 
   it('最后半秒是落定的图标和下线那行聊天', () => {
-    expect((endFrame - mainCutEvents.第11句下线.帧) / fps - (logoutIcon.shrinkSec - 1 / fps)).toBeGreaterThanOrEqual(0.5);
+    expect((endFrame - mainCutEvents.logOff.帧) / fps - (logoutIcon.shrinkSec - 1 / fps)).toBeGreaterThanOrEqual(0.5);
   });
 
   it('手机 390 宽：聊天字（原版字高 8 个界面像素）至少 11 像素高；图标下沿让开聊天栏暗底（y 950 起）', () => {

@@ -35,9 +35,9 @@ export const shotAt = (f: number) => cameraRigAt(1, toSongFrame(f));
 export const stripAt = (f: number) => peeledRows(toSongFrame(f));
 
 // ---------- 快进 ----------
-export const fastForwardStart = events.填土 + fastForward.startSec * fps;
+export const fastForwardStart = events.fillHole + fastForward.startSec * fps;
 /** 天亮满的那一帧（挖开天窗前 亮满前秒）、开始破晓的那一帧（亮满前 黎明秒） */
-export const brightFullFrame = events.挖开天窗 - fastForward.fullBrightBeforeSec * fps;
+export const brightFullFrame = events.digSkylight - fastForward.fullBrightBeforeSec * fps;
 export const dawnStart = brightFullFrame - fastForward.dawnSec * fps;
 const realSkyTick = (f: number) => skyTickAt(toSongFrame(f));
 
@@ -55,28 +55,28 @@ export const toneAt = (f: number): Tone => lerpTone(palette.夜, palette.夏日�
 
 // ---------- 坑、裂纹 ----------
 /** 挖掉的三格（草方块、两格泥土），各在哪一帧挖掉 */
-export const digTimes = [events.挖一, events.挖二, events.挖三] as const;
-export const pitStateAt = (f: number): PitState => ({ dugCount: digTimes.filter((b) => f >= b).length, dirtCovered: f >= events.填土 && f < events.挖开天窗 });
+export const digTimes = [events.digFirst, events.digSecond, events.digThird] as const;
+export const pitStateAt = (f: number): PitState => ({ dugCount: digTimes.filter((b) => f >= b).length, dirtCovered: f >= events.fillHole && f < events.digSkylight });
 
 /** 四次方块碎掉（崩粒子、掉东西）：帧、哪一格（格中心，剖面坐标） */
 export const shards: readonly { 帧: number; 格: readonly [number, number, number] }[] = [
   ...digTimes.map((startFrame, i) => ({ 帧: startFrame, 格: [0, 0.5, groundLayers.grassLayer - i + 0.5] as const })),
-  { 帧: events.挖开天窗, 格: [0, 0.5, groundLayers.grassLayer + 0.5] as const },
+  { 帧: events.digSkylight, 格: [0, 0.5, groundLayers.grassLayer + 0.5] as const },
 ];
 
 /** 按住左键挖的几段：[起, 碎, 第几格]（段内帧，可以带小数），裂纹在这段里从 0 长到满。第一格段首就开始挖（接着 2-初入 低头站定），
  *  后两格从上一格碎掉的下一帧接着挖（原来是 1/24 秒后，24 fps 时的下一帧；用户 11-03「统统改成 60 帧」） */
 const digSegs: readonly (readonly [number, number, number])[] = [
-  [0, events.挖一, 0],
-  [events.挖一 + 1, events.挖二, 1],
-  [events.挖二 + 1, events.挖三, 2],
+  [0, events.digFirst, 0],
+  [events.digFirst + 1, events.digSecond, 1],
+  [events.digSecond + 1, events.digThird, 2],
 ];
-const skylightDigStart = events.挖开天窗 - skylightDigSec * fps;
+const skylightDigStart = events.digSkylight - skylightDigSec * fps;
 
 /** 裂纹：原版 destroyBlockProgress = (int)(进度 × 10) − 1，−1 不画。进度多算一帧（按帧末算：起的那一帧已经挖了一帧），
  *  碎前最后一帧是满的第 9 级（多算的那截让进度过 1，封顶 9） */
 export const crackState = (f: number): { 格: readonly [number, number, number]; 级: number } | null => {
-  const crackSeg = [...digSegs, [skylightDigStart, events.挖开天窗, 3] as const].find(([startFrame, breakFrame]) => f >= startFrame && f < breakFrame);
+  const crackSeg = [...digSegs, [skylightDigStart, events.digSkylight, 3] as const].find(([startFrame, breakFrame]) => f >= startFrame && f < breakFrame);
   if (!crackSeg) return null;
   const [startFrame, breakFrame, i] = crackSeg;
   const level = Math.min(9, Math.floor(((f - startFrame + 1) / (breakFrame - startFrame)) * 10) - 1);
@@ -134,14 +134,14 @@ export const SteveState = (f: number): SteveState => {
     if (f >= b) z = -i + sampleByTick(oneCellPath, frameToTick(f - b));
   });
   const liftLength = lookUpSec * fps;
-  const placeLiftStart = events.填土 - liftLength;
-  const retractFrame = events.填土 + shrinkSec * fps;
+  const placeLiftStart = events.fillHole - liftLength;
+  const retractFrame = events.fillHole + shrinkSec * fps;
   const headAngle =
-    f < placeLiftStart ? headAngles.digAngleDeg : f < events.填土 ? lerp(headAngles.digAngleDeg, headAngles.放, (f - placeLiftStart) / liftLength) : f < retractFrame ? headAngles.放 : f < skylightDigStart ? headAngles.retract : headAngles.lookSky;
+    f < placeLiftStart ? headAngles.digAngleDeg : f < events.fillHole ? lerp(headAngles.digAngleDeg, headAngles.放, (f - placeLiftStart) / liftLength) : f < retractFrame ? headAngles.放 : f < skylightDigStart ? headAngles.retract : headAngles.lookSky;
   let swing = 0;
-  if (f < events.挖三) swing = digHand(frameToTick(f));
-  else if (f >= skylightDigStart && f < events.挖开天窗) swing = digHand(frameToTick(f - skylightDigStart));
-  else if (f >= events.填土) swing = placeHand(frameToTick(f - events.填土));
+  if (f < events.digThird) swing = digHand(frameToTick(f));
+  else if (f >= skylightDigStart && f < events.digSkylight) swing = digHand(frameToTick(f - skylightDigStart));
+  else if (f >= events.fillHole) swing = placeHand(frameToTick(f - events.fillHole));
   return { x: 0, z, yaw: digFacing, 头: headAngle, swing, crouching: f >= retractFrame && f < skylightDigStart, holdingDirt: f >= pickupFrame(0) };
 };
 
@@ -225,7 +225,7 @@ export const dropItems = (f: number): { 位: readonly [number, number, number]; 
 };
 
 // ---------- 僵尸 ----------
-const zombieStopFrame = events.挖开天窗 - zombie.stopBeforeSec * fps;
+const zombieStopFrame = events.digSkylight - zombie.stopBeforeSec * fps;
 /** 僵尸走到洞顶正上方（x 0）的那一帧（段.ts 的低吼按它放） */
 export const zombiePassHoleFrame = Math.round(lerp(fastForwardStart, zombieStopFrame, -zombie.startX / (zombie.endX - zombie.startX)));
 /** 洞顶上走过的僵尸：快进里从左往右匀速走过坑这一排（剖面坐标 x，y 0.5，脚踩地面 z 0）；走路摆腿的秒数（按原版闲逛的 摆倍 倍走）。不在画里时 null */
@@ -243,15 +243,15 @@ const luminance = (hex: string) => {
 const darkenAt = (f: number, darkAmount: number) => clamp01(1 - (luminance(palette.夜.tint) * (1 - darkAmount)) / luminance(toneAt(f).tint));
 /** 洞里那两格（第 0 格在上：z −2～−1；第 1 格在下：z −3～−2）各还剩几成暗：封顶那段全暗；挖开天窗后天光从上往下一格一格照下去，一格 光下秒 */
 const remainingDark = (f: number, cellIndex: number) => {
-  if (f < events.填土) return 0;
-  if (f < events.挖开天窗) return 1;
+  if (f < events.fillHole) return 0;
+  if (f < events.digSkylight) return 1;
   const stepFrames = holeDarkParams.lightDownSec * fps;
-  return 1 - clamp01((f - events.挖开天窗 - cellIndex * stepFrames) / stepFrames);
+  return 1 - clamp01((f - events.digSkylight - cellIndex * stepFrames) / stepFrames);
 };
 /** 洞里两格各两层黑：前 = 盖在洞口剖面上（你也在它后面），后 = 只盖后墙（在你后面）；叠起来后墙是 洞里暗.墙、你是 洞里暗.人。
  *  天光照下来时按挖开前一帧的暗往 0 退（挖开以后外面已经亮满，暗不再跟着调子变） */
 export const holeDark = (f: number): { 前: number; 后: number }[] => {
-  const baseFrame = Math.min(f, events.挖开天窗 - 1);
+  const baseFrame = Math.min(f, events.digSkylight - 1);
   const front = darkenAt(baseFrame, holeDarkParams.人);
   const dimmed = darkenAt(baseFrame, holeDarkParams.wallDark);
   const after = front >= 1 ? 0 : clamp01(1 - (1 - dimmed) / (1 - front));
@@ -261,4 +261,4 @@ export const holeDark = (f: number): { 前: number; 后: number }[] => {
   });
 };
 /** 洞顶开着的时候（挖掉草方块以后、填土以前；挖开天窗以后）后墙顶上那格朝洞里那面压的黑（见 参数.ts 洞里暗.顶墙） */
-export const topWallDark = (f: number) => ((f >= events.挖一 && f < events.填土) || f >= events.挖开天窗 ? holeDarkParams.topWall : 0);
+export const topWallDark = (f: number) => ((f >= events.digFirst && f < events.fillHole) || f >= events.digSkylight ? holeDarkParams.topWall : 0);

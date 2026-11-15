@@ -216,4 +216,4 @@ export const StormPicture: React.FC<StormPictureProps> = ({ 帧: frame, clean = 
 };
 
 /** 第 8 句照片墙的第四张照片「光柱破云」的底片：照片-光柱破云 那一帧，不带歌词 */
-export const BeamBreakCloudPicture: React.FC<{ withPost?: boolean }> = ({ withPost = false }) => <StormPicture 帧={eventFrame('照片-光柱破云')} clean withPost={withPost} />;
+export const BeamBreakCloudPicture: React.FC<{ withPost?: boolean }> = ({ withPost = false }) => <StormPicture 帧={eventFrame('photoBeamBreaksCloud')} clean withPost={withPost} />;

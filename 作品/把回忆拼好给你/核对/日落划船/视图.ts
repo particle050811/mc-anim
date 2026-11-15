@@ -14,11 +14,11 @@ export type View = {
 
 const events = mainCutEvents;
 export const views: readonly View[] = [
-  { 名: '照片-日落划船（干净）', 帧: events['照片-日落划船'].帧, waveOn: false },
-  { 名: '照片-日落划船（后期关）', 帧: events['照片-日落划船'].帧, waveOn: false, withPost: false },
-  { 名: '眼化日前一帧（推到底）', 帧: events.眼化日.帧 - 1 },
-  { 名: '叠化一半', 帧: Math.round((events.眼化日.帧 + events.海平线.帧) / 2) },
-  { 名: '海平线（叠化完）', 帧: events.海平线.帧 },
-  { 名: '拉远到位', 帧: events.拉远到位.帧 },
-  { 名: '浪盖到一半', 帧: Math.round((events.浪起.帧 + segmentWindow('2-日落划船').止帧) / 2) },
+  { 名: '照片-日落划船（干净）', 帧: events.photoSunsetRowing.帧, waveOn: false },
+  { 名: '照片-日落划船（后期关）', 帧: events.photoSunsetRowing.帧, waveOn: false, withPost: false },
+  { 名: '眼化日前一帧（推到底）', 帧: events.eyeToSun.帧 - 1 },
+  { 名: '叠化一半', 帧: Math.round((events.eyeToSun.帧 + events.horizon.帧) / 2) },
+  { 名: '海平线（叠化完）', 帧: events.horizon.帧 },
+  { 名: '拉远到位', 帧: events.pullBackDone.帧 },
+  { 名: '浪盖到一半', 帧: Math.round((events.waveRises.帧 + segmentWindow('2-日落划船').止帧) / 2) },
 ];

@@ -3,4 +3,4 @@ import { windowSeg } from '@engine/段/窗口段.ts';
 import timeline from '../段框架示范/时间线.ts';
 import soundTable from './声音表.生成.ts';
 
-export default windowSeg(timeline, { 起: '收尾', 止: '续尾', soundTable });
+export default windowSeg(timeline, { 起: 'wrapUp', 止: 'tailExtend', soundTable });

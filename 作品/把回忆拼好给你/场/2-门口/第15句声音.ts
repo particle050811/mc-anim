@@ -20,13 +20,13 @@ export const windSoundParams = { 增益: 0.6, fadeInSec: 0.25, fadeOutSec: 0.35 
 export const bellSound: SongSound = {
   资产: '音效/万法皆通/wind_seeking_bell',
   名: '寻风之铃',
-  起帧: mainCutEvents.摇铃.帧 - Math.round(bellFile.onsetSec * fps),
+  起帧: mainCutEvents.ringBell.帧 - Math.round(bellFile.onsetSec * fps),
   时长秒: bellFile.时长秒,
   增益: () => bellSoundGain,
 };
 
-const windStart = mainCutEvents.摇铃.帧;
-const windEnd = toSongFrame(mainCutEvents.风散开.秒 + windSoundParams.fadeOutSec);
+const windStart = mainCutEvents.ringBell.帧;
+const windEnd = toSongFrame(mainCutEvents.windClears.秒 + windSoundParams.fadeOutSec);
 
 /** 风声：摇铃那一帧起，转场后淡完 */
 export const windSound: SongSound = {

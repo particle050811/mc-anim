@@ -32,27 +32,27 @@ describe('15 尾（2-合照）：窗口和事件', () => {
   });
 
   it('和前后两段交接的时刻是同一刻：靠肩起 = 2-重逢 止；咔哒 = 片尾歌词收；段尾 = 片尾白光 = 2-拼回 起', () => {
-    expect(events.靠肩起.帧).toBe(events.第15句段尾.帧);
-    expect(events.靠肩起.帧).toBe(SegmentWindow('2-重逢').止帧);
-    expect(events.合照咔哒.帧).toBe(events.片尾歌词收.帧);
-    expect(SegmentWindow('2-合照').止帧).toBe(events.片尾白光.帧);
+    expect(events.leanStart.帧).toBe(events.cutToTail.帧);
+    expect(events.leanStart.帧).toBe(SegmentWindow('2-重逢').止帧);
+    expect(events.groupPhotoClick.帧).toBe(events.outroLyricsOut.帧);
+    expect(SegmentWindow('2-合照').止帧).toBe(events.outroFlash.帧);
     expect(SegmentWindow('2-合照').止帧).toBe(SegmentWindow('2-拼回').起帧);
   });
 
   it('段内帧：靠肩起 0、靠好 51、咔哒 102；照片就是咔哒那一帧', () => {
     const mainEvents = segMainCutEventFrames('2-合照');
-    expect([mainEvents.靠肩起, mainEvents.靠肩, mainEvents.合照咔哒, mainEvents['照片-合照']]).toEqual([0, 51, 102, 102]);
+    expect([mainEvents.leanStart, mainEvents.leanOnShoulder, mainEvents.groupPhotoClick, mainEvents.photoGroupShot]).toEqual([0, 51, 102, 102]);
   });
 
   it('15 尾只一个镜头：靠肩从段头到咔哒（不短于 1.5 秒），咔哒那一帧就是片尾第一帧（闪白在片尾里）', () => {
-    expect(toSec(events.合照咔哒.帧 - events.靠肩起.帧)).toBeGreaterThanOrEqual(1.5);
-    expect(SegmentWindow('2-合照').止帧).toBe(events.合照咔哒.帧);
+    expect(toSec(events.groupPhotoClick.帧 - events.leanStart.帧)).toBeGreaterThanOrEqual(1.5);
+    expect(SegmentWindow('2-合照').止帧).toBe(events.groupPhotoClick.帧);
   });
 
   it('她从段头那个笑缓缓靠过去：靠肩起 0、一路往上、靠肩 那一帧起到位', () => {
-    expect(leanProgress(events.靠肩起.帧)).toBe(0);
-    for (let frame = events.靠肩起.帧 + 1; frame <= events.靠肩.帧; frame++) expect(leanProgress(frame), `帧 ${frame}`).toBeGreaterThan(leanProgress(frame - 1));
-    for (let frame = events.靠肩.帧; frame < events.合照咔哒.帧; frame++) expect(leanProgress(frame), `帧 ${frame}`).toBe(1);
+    expect(leanProgress(events.leanStart.帧)).toBe(0);
+    for (let frame = events.leanStart.帧 + 1; frame <= events.leanOnShoulder.帧; frame++) expect(leanProgress(frame), `帧 ${frame}`).toBeGreaterThan(leanProgress(frame - 1));
+    for (let frame = events.leanOnShoulder.帧; frame < events.groupPhotoClick.帧; frame++) expect(leanProgress(frame), `帧 ${frame}`).toBe(1);
   });
 });
 
@@ -86,7 +86,7 @@ describe('15 尾：声音、歌词', () => {
   });
 
   it('咔哒主音离闪白那一帧不到半帧；段里放到段尾，剩下的一截从片尾那段段头接着放', () => {
-    expect(Math.abs(toSec(groupPhotoClickSound.起帧) + clickSoundFile.onsetSec - toSec(events.合照咔哒.帧))).toBeLessThan(0.5 / fps);
+    expect(Math.abs(toSec(groupPhotoClickSound.起帧) + clickSoundFile.onsetSec - toSec(events.groupPhotoClick.帧))).toBeLessThan(0.5 / fps);
     const a = findCue('咔哒')!;
     expect(a.帧).toBe(groupPhotoClickSound.起帧 - SegmentWindow('2-合照').起帧);
     expect(a.帧 + a.帧数).toBe(102);
@@ -109,15 +109,15 @@ describe('15 尾：声音、歌词', () => {
   it('「爱炙热的你却忘了爱自己」段头已经在场，咔哒前最后一个字已经唱出', () => {
     const lyricLine = mainCutLyricLine(15, SegmentWindow('2-合照').起帧);
     expect(lyricLine.入).toBeLessThan(0);
-    expect(Math.max(...lyricLine.charTimes)).toBeLessThan(segMainCutEventFrames('2-合照').合照咔哒);
+    expect(Math.max(...lyricLine.charTimes)).toBeLessThan(segMainCutEventFrames('2-合照').groupPhotoClick);
   });
 });
 
 describe('15 尾：接过来的台词气泡（用户 10-25 要「您的手艺，一如既往呢」多留一会儿）', () => {
   it('段头起挂着，她靠好那一帧（段内 51）收，咔哒那张新合照里没有；和 2-重逢 里一样大（12）', () => {
-    expect(segMainCutEventFrames('2-合照').第15句台词收).toBe(51);
-    expect(events.第15句台词收.帧).toBe(events.靠肩.帧);
-    expect(events.第15句台词收.帧).toBeLessThan(events.合照咔哒.帧);
+    expect(segMainCutEventFrames('2-合照').speechBubbleOut).toBe(51);
+    expect(events.speechBubbleOut.帧).toBe(events.leanOnShoulder.帧);
+    expect(events.speechBubbleOut.帧).toBeLessThan(events.groupPhotoClick.帧);
     expect([lineBubbleHandedOver.缩放, lineBubble.缩放]).toEqual([12, 12]);
   });
 });

@@ -106,7 +106,7 @@ export default definePicture(seg, soundUrl, () => {
     >
       {/* 仪式做完后留在台地上的结构和四角灵魂火，同第 2 幕；仪式的钟走编排的钟，同第 4 幕 */}
       <group position={altar}>
-        <RestRitualPerformance 秒={t + timeline.事件.现身.秒 - timeline.事件.放环.秒} plan={summonPlans.短} />
+        <RestRitualPerformance 秒={t + timeline.事件.yaBoLunAppears.秒 - timeline.事件.placeRing.秒} plan={summonPlans.短} />
       </group>
       <GirlYaBoLun {...yaBoLun.props} holdWand />
       {params && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={params} cellsPerPixel={cellsPerPixel} />}

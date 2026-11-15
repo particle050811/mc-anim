@@ -28,7 +28,7 @@ const oarSounds: FrameCue[] = oarSoundSecs().flatMap((sec, i) => {
   }));
 });
 
-const waveSound: FrameCue = { 帧: events.浪起, 资产: '音效/entity.player.splash.high_speed', 名: '浪', 帧数: clampFramesToSegEnd(events.浪起, waveSoundDurSec), 增益: waveSoundGain, fadeOutFrames: Math.round(waveSoundFadeSec * fps) };
+const waveSound: FrameCue = { 帧: events.waveRises, 资产: '音效/entity.player.splash.high_speed', 名: '浪', 帧数: clampFramesToSegEnd(events.waveRises, waveSoundDurSec), 增益: waveSoundGain, fadeOutFrames: Math.round(waveSoundFadeSec * fps) };
 
 export default defineSeg({
   场: '2-海上',

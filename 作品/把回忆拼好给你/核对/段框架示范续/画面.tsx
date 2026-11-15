@@ -6,7 +6,7 @@ import soundUrl from './声音地址.生成.ts';
 
 export default definePicture(seg, soundUrl, () => {
   const { 秒: sec, 事件: events, 段: thisSegment } = useSeg(seg);
-  const afterglow = interpolate(sec, [events.远处炸, events.远处炸 + 1.25], [0.6, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const afterglow = interpolate(sec, [events.distantBurst, events.distantBurst + 1.25], [0.6, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   return (
     <AbsoluteFill style={{ background: 'linear-gradient(#0b1030, #1d2450)' }}>
       <svg width={thisSegment.宽} height={thisSegment.高}>

@@ -19,10 +19,10 @@ import timeline from './时间线.ts';
 
 const events = timeline.事件;
 /** 编排的钟是「现身后几秒」的世界秒（编排-开盘.ts 的 现身后；那个模块引了模型，这里不能引）：第 2 幕慢放过，从第 2 幕末起比片上慢 慢放多出 秒 */
-const afterAppear = (sceneSec: number) => sceneSec - events.现身.秒 - slowExtraSec;
+const afterAppear = (sceneSec: number) => sceneSec - events.yaBoLunAppears.秒 - slowExtraSec;
 /** 本幕开头（编排的钟）= 第 2 幕末（编排-开盘.ts 的 幕末，编排-齐放.ts 载入时核对） */
-export const actStart = afterAppear(events.开盘完.秒);
-export const actDur = events.齐放完.秒 - events.开盘完.秒;
+export const actStart = afterAppear(events.wheelOpenDone.秒);
+export const actDur = events.volleyDone.秒 - events.wheelOpenDone.秒;
 export const secAt = (s: number) => actStart + s;
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
 
@@ -47,7 +47,7 @@ export const castStart = 5 / 60;
 export const deathTime = actDur;
 /** 两镜的切点（幕内秒）：侧面看她放、他第一人称一直到死。第一人称切进来 0.4 秒索命劈中、晋升之环炸开（图腾的屏幕动画 2 秒，全在这一镜里）。Agent 取的 */
 export const cameraStart = { side: 0, firstPerson: 1.8 } as const;
-if (Math.abs(events.齐放出手.秒 - events.开盘完.秒 - castStart) > 1e-6) throw new Error(`场/1-台地/时间线.ts 的 齐放出手 要在 开盘完 后 出手起 = ${castStart} 秒`);
+if (Math.abs(events.volleyCast.秒 - events.wheelOpenDone.秒 - castStart) > 1e-6) throw new Error(`场/1-台地/时间线.ts 的 齐放出手 要在 开盘完 后 出手起 = ${castStart} 秒`);
 
 /** 一下冲走过的比例（0～1）：速度是梯形，前 起比 加到全速、后 刹比 刹到 0，中间全速。峰值速度 = 平均速度 ÷ (1 − 起比/2 − 刹比/2)。第 5 幕也用 */
 export const dashProgress = (u: number, startRatio: number, brakeRatio: number): number => {

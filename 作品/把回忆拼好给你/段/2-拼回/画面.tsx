@@ -34,7 +34,7 @@ const fragmentGrade = { ...tone.grade, 暗角: 0, 颗粒: 0 };
 
 const picture: React.FC = () => {
   const f = use当前帧();
-  const isColorBack = f >= events.片尾回色;
+  const isColorBack = f >= events.outroRecolor;
   const whiteFade = outroWhiteAt(f);
   const framing = endFraming(f);
   return (
@@ -48,11 +48,11 @@ const picture: React.FC = () => {
             frameCursor: boxCursorOn(startFrame + f, startFrame),
             cursor: null,
             iconMap: isColorBack ? newIcon : oldIcon,
-            iconBounce: endBounce(f, events.片尾回色),
+            iconBounce: endBounce(f, events.outroRecolor),
             ...(isColorBack ? { rowTexts: reunionRowTexts } : {}),
           }}
         />
-        <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.outlineColor }} 收={events.片尾歌词收} />
+        <RuneLyric lines={lyricLines} 样式={{ ...runeLyricDefault, outlineColor: tone.outlineColor }} 收={events.outroLyricsOut} />
       </FilmPost>
       {!isColorBack && (
         <FilmPost grade={fragmentGrade}>

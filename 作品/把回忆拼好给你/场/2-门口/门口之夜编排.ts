@@ -99,15 +99,15 @@ export const LiYingState = (frame: number): LiYingState => {
   const s = toSec(frame);
   /** 离事件那一帧几秒 */
   const secSince = (e: number) => (frame - e) / fps;
-  const startFrame = events.第9句入夜.帧;
+  const startFrame = events.nightfall.帧;
   if (secSince(startFrame) < holdSec) return { x: herStand, 头: endHead, expression: '微笑', blink: 1 };
   // 种树苗那会儿看你，镜头往牌子推起看牌子
-  const lookSignFrame = events.第9句推近.帧;
+  const lookSignFrame = events.pushToSign.帧;
   if (frame < lookSignFrame) {
     const t = (secSince(startFrame) - holdSec + oneFrameSec) / turnHeadSec;
     return { x: herStand, 头: lerpHead(endHead, lookAtYou, t), expression: '微笑', blink: t < 1 ? 1 - t : 'auto' };
   }
-  const lookUpFrame = events.第10句烟花一发射.帧;
+  const lookUpFrame = events.firework1Launch.帧;
   if (frame < lookUpFrame) return { x: herStand, 头: lerpHead(lookAtYou, lookAtSign, (secSince(lookSignFrame) + oneFrameSec) / turnHeadSec), expression: '微笑', blink: 'auto' };
   // 「抬头看天」：火箭放出时抬头；第一发炸开起看烟花
   const firstBurst = burstSec(fireworks[0]!);

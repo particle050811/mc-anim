@@ -48,7 +48,7 @@ const follow = (name: string, startSec: number, endSec: number, cameraPath: (s: 
 
 // 切点（片秒）：2-01 一直到他冲到半路、她已经瞬移走；2-02 她从烟里出来、他滑停在原地打转、回头蹲下蓄剑；2-03 切在她往上一拉那一下，他冲过来从她底下过去、她拉升，整段慢放在这一镜；2-04 他站起来抬头看她
 const cuts = [0, beats.移 + 0.1, orbitBeat.起, orbitBeat.止] as const;
-const segLengthSec = timeline.事件.开盘完.秒 - timeline.事件.召唤完.秒;
+const segLengthSec = timeline.事件.wheelOpenDone.秒 - timeline.事件.summonDone.秒;
 const shotTable: Shot[] = [
   // 2-01 他冲的那条线东边、和人差不多高（16 mm）：她从祭坛一蹬飞出来、刹在他东北边，他蹲下、挥剑冲出去，她冒烟一缩没了，他冲进烟里。
   // 机位不动、只摇：72 格/秒冲过去跟着摇是甩镜头；取景点从两人中间慢慢移到她刹住的地方
@@ -95,7 +95,7 @@ export default definePicture(seg, soundUrl, () => {
     <TerraceCanvas ritualStructure cameraRig={cameraRig} ui={<YaBoLunHealthBar 宽={aspect.宽} s={2} healthRatio={1} />}>
       {/* 仪式做完后留在台地上的结构：方案的 总秒 之后就是静态的结构和火 */}
       <group position={altar}>
-        <RestRitualPerformance 秒={timeline.事件.召唤完.秒 - timeline.事件.放环.秒 + w} plan={summonPlans.短} />
+        <RestRitualPerformance 秒={timeline.事件.summonDone.秒 - timeline.事件.placeRing.秒 + w} plan={summonPlans.短} />
       </group>
       <GirlYaBoLun {...yaBoLun.props} bonePose={yaBoLunPose} holdWand />
       {disc && <WandTipWheel 杖={perform.杖(t)} {...wheelPlace} params={disc} cellsPerPixel={cellsPerPixel} />}

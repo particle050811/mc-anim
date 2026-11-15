@@ -43,10 +43,10 @@ const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 const events = mainCutEvents;
 
 /** 樱花风的时间轴：摇铃起风，风散开（转场）那一拍整屏盖住。隐世之境那一镜接着用同一个 */
-export const bellWind: SakuraWindMoment = { 起: events.摇铃.秒, full: events.风散开.秒 };
+export const bellWind: SakuraWindMoment = { 起: events.ringBell.秒, full: events.windClears.秒 };
 
 /** 「Steve加入了游戏」那一行进聊天栏以后过了多少刻（原版聊天按刻走）：歌曲帧 → 刻 */
-export const joinGameTick = (frame: number) => ((frame - events.第15句加入游戏.帧) / fps) * 20;
+export const joinGameTick = (frame: number) => ((frame - events.rejoinGame.帧) / fps) * 20;
 
 /** 原版聊天栏的缩放：2560×1440 下原版自动选的界面尺寸 6（同 场/2-隐世之境 对视那一帧，同一行字跨镜头一样大）；聊天宽也同那一帧（界面/聊天栏宽.ts） */
 export const chatScale = 6;
@@ -73,8 +73,8 @@ const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /** 你这一刻的姿势（秒：歌上的秒） */
 const youPose = (sec: number) => {
-  const turnToBellSec = events.转向铃.秒;
-  const shakeStart = events.摇铃.秒;
+  const turnToBellSec = events.turnToBell.秒;
+  const shakeStart = events.ringBell.秒;
   // 头：看树 → 转向铃时转去看铃（0.15 秒转过去）→ 摇铃后 0.1 秒起抬头看风（0.2 秒）
   const lerpGaze = (a: [number, number], b: [number, number], k: number) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k];
   let headPose = youHead.lookTree as number[];
@@ -91,7 +91,7 @@ const youPose = (sec: number) => {
 
 /** 铃绕挂点摆的角（度，正 = 铃往画面右边甩）：摇铃时被手往左一拨，之后衰减着摆 */
 const bellAngle = (sec: number) => {
-  const t = sec - events.摇铃.秒;
+  const t = sec - events.ringBell.秒;
   if (t < 0) return 0;
   return -bellSwing.amplitude * Math.sin((t / bellSwing.periodSec) * Math.PI * 2) * bellSwing.damping ** t;
 };
@@ -145,7 +145,7 @@ export const ShakeBellPicture: React.FC<BellShakePictureProps> = ({ 帧: frame, 
       >
         <HangingBell 角={bellAngle(sec)} />
         <LiYingWalkParticles 秒={sec} />
-        {frame >= events.第15句加入游戏.帧 && (
+        {frame >= events.rejoinGame.帧 && (
           <OutlineGroup 开={outline}>
             <TexturePixelAlign 锚={you.loc as V3}>
               <Steve pose={you} />

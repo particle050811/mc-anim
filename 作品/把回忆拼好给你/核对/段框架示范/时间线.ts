@@ -5,13 +5,13 @@ import { defineSceneTimeline } from '@engine/段/窗口段.ts';
 export default defineSceneTimeline({
   场: '核对',
   事件: {
-    开场: { 在: { 秒: 0 } },
-    发射: { 在: { 秒: 0.4 }, 依据: '示范：开场停一下再发射' },
-    炸开: { 在: { after: '发射', addSec: 1.1 }, 依据: '示范：火箭飞 1.1 秒炸开' },
-    噼啪: { 在: { after: '炸开', addSec: 0.3 }, 依据: '示范：炸开以后火星噼啪' },
-    远处炸: { 在: { 秒: 2.6 }, 依据: '示范：切镜前 0.4 秒远处又炸一发，响到下一段' },
-    收尾: { 在: { 秒: 3 } },
-    续尾: { 在: { after: '收尾', addSec: 1.5 } },
+    opening: { 在: { 秒: 0 } },
+    launch: { 在: { 秒: 0.4 }, 依据: '示范：开场停一下再发射' },
+    burst: { 在: { after: 'launch', addSec: 1.1 }, 依据: '示范：火箭飞 1.1 秒炸开' },
+    crackle: { 在: { after: 'burst', addSec: 0.3 }, 依据: '示范：炸开以后火星噼啪' },
+    distantBurst: { 在: { 秒: 2.6 }, 依据: '示范：切镜前 0.4 秒远处又炸一发，响到下一段' },
+    wrapUp: { 在: { 秒: 3 } },
+    tailExtend: { 在: { after: 'wrapUp', addSec: 1.5 } },
   },
-  声音: [{ 资产: '音效/把回忆拼好给你/entity.firework_rocket.blast', 名: '远处一发', 在: '远处炸', 峰值: -16 }],
+  声音: [{ 资产: '音效/把回忆拼好给你/entity.firework_rocket.blast', 名: '远处一发', 在: 'distantBurst', 峰值: -16 }],
 });

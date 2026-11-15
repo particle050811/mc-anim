@@ -147,13 +147,13 @@ export const scatterPaper = {
 export const paperVariation = { startX: [600, 760] as const, paperAge: [0.45, 0.8] as const, tierSec: [0.15, 0.21] as const, paperSec: 0.3, endJitter: 0.25 } as const;
 
 /** 碎纸得在哪一刻以前全变成樱花瓣：合屏起（主会话转述用户 10-25 的意思：合成一整屏的时候飘着的已经都是樱花瓣），留 1/48 秒（24 fps 时半帧） */
-export const changeDoneSec = events.合屏起.秒 - 1 / 48;
+export const changeDoneSec = events.mergeScreenStart.秒 - 1 / 48;
 
 /** 分屏的中线（页面 x）：合屏前，花瓣只在左边 */
 export const centerLine = retreatLayout.leftWidth;
 
 /** 合屏起：分屏线开始往右推，现实那半后面的花瓣跟着露出来 */
-export const mixStart = events.合屏起.秒;
+export const mixStart = events.mergeScreenStart.秒;
 
 /** 让开框：她按框、打框、取下合照、传送走那几拍（手按合照 前 0.1 秒到 合屏起），她和照片墙那一块（页面像素，合屏前的左屏）不让碎纸、花瓣挡着。
  *  框 = 照片墙（夏天四格加合照格）和取照时的她（站位左右各 0.6 格、2.2 格高，帽子、传送粒子都在里面），再往外放 留 页面像素 */
@@ -171,14 +171,14 @@ export const stepAside = (() => {
     right: Math.max(...points.map((p) => p.x)) + margin,
     上: Math.min(...points.map((p) => p.y)) - margin,
     下: Math.max(...points.map((p) => p.y)) + margin,
-    起: events.手按合照.秒 - 0.1,
-    止: events.合屏起.秒,
+    起: events.handOnPhoto.秒 - 0.1,
+    止: events.mergeScreenStart.秒,
   };
 })();
 
 /** 花瓣从哪一刻起生（2-归隐 第一帧画面里已经飘满）到哪一刻（2-摇铃 转场）；生在画面上沿外 出发高 页面像素，右边多生一截（往左飘着进画） */
-const bornStart = events.第14句分屏.秒 - 6;
-const bornEnd = events.风散开.秒;
+const bornStart = events.splitSceneChange.秒 - 6;
+const bornEnd = events.windClears.秒;
 const startHeight = 48;
 const leftMargin = 40;
 const rightMargin = 400;
@@ -200,14 +200,14 @@ const smoothstep = (u: number) => u * u * (3 - 2 * u);
 const clamp01 = (u: number) => Math.min(1, Math.max(0, u));
 
 // ---------- 风 ----------
-const windRange = [events.纸飘下.秒 + windParams.起[0], events.纸飘下.秒 + windParams.起[1]] as const;
-const windFallRange = [events.转向铃.秒, events.摇铃.秒] as const;
+const windRange = [events.paperDrifts.秒 + windParams.起[0], events.paperDrifts.秒 + windParams.起[1]] as const;
+const windFallRange = [events.turnToBell.秒, events.ringBell.秒] as const;
 
 /** 这一刻风刮得多大（0～1） */
 export const windForce = (t: number) => smoothstep(clamp01((t - windRange[0]) / (windRange[1] - windRange[0]))) * (1 - smoothstep(clamp01((t - windFallRange[0]) / (windFallRange[1] - windFallRange[0]))));
 
 /** 这一片从哪一刻起被风带（出发、起风哪个晚从哪个算，再落 迟 秒） */
-const gatherStart = (q: PaperPiece) => Math.max(q.生, events.纸飘下.秒) + q.delay;
+const gatherStart = (q: PaperPiece) => Math.max(q.生, events.paperDrifts.秒) + q.delay;
 
 /** 这一刻这一片被风带得多紧（0～1）：揽起 以前 0，升 秒里缓到 1 */
 const gatherProgress = (q: PaperPiece, t: number) => smoothstep(clamp01((t - gatherStart(q)) / q.rise));
@@ -415,7 +415,7 @@ const thrownFromWindow = (r: () => number): PaperPiece[] =>
         const halfSize = (4.5 * tier) / filmScale / 2;
         const cx = a.x + r() * (b.x - a.x);
         const cy = a.y + r() * (b.y - a.y);
-        const q = makePiece('纸', events.纸飘下.秒 + handful.delay + i * scatterPaper.batchGap, cx - halfSize, cy - halfSize, tier, r, [sampleRange(paperParams.throwU, r), sampleRange(paperParams.throwW, r)]);
+        const q = makePiece('纸', events.paperDrifts.秒 + handful.delay + i * scatterPaper.batchGap, cx - halfSize, cy - halfSize, tier, r, [sampleRange(paperParams.throwU, r), sampleRange(paperParams.throwW, r)]);
         return { ...q, delay: q.delay + scatterPaper.throwLag };
       }),
     ).filter((q) => q !== null);
@@ -437,9 +437,9 @@ const inboundPieces = (r: () => number): PaperPiece[] => {
         const tier = r() < s.farShare ? paperParams.farTiers : paperParams.nearTier;
         if (r() < s.topChance) {
           const height = (5 * tier) / filmScale;
-          return makePiece('纸', events.纸飘下.秒 + τ, sampleRange(s.topX, r), -height - 4, tier, r, [sampleRange(paperParams.vx, r), sampleRange(s.fallW, r)]);
+          return makePiece('纸', events.paperDrifts.秒 + τ, sampleRange(s.topX, r), -height - 4, tier, r, [sampleRange(paperParams.vx, r), sampleRange(s.fallW, r)]);
         }
-        return makePiece('纸', events.纸飘下.秒 + τ, 1280 + 4, sampleRange([s.上, s.下], r), tier, r);
+        return makePiece('纸', events.paperDrifts.秒 + τ, 1280 + 4, sampleRange([s.上, s.下], r), tier, r);
       });
       if (q) out.push(q);
     }

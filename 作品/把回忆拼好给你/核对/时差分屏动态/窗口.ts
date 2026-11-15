@@ -2,7 +2,7 @@
 import { toSongFrame, lineAt } from '../../分镜/时间.ts';
 import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
 
-const startFrame = mainCutEvents.分屏起.帧;
+const startFrame = mainCutEvents.splitScreenStart.帧;
 const endFrame = toSongFrame(lineAt(13).止);
 
 export const frameWindow = { 起帧: startFrame, 止帧: endFrame, 帧数: endFrame - startFrame } as const;

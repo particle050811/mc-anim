@@ -24,7 +24,7 @@ const picture: React.FC = () => {
   const f = use当前帧();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
-      <GroupPhotoPicture 帧={startFrame + f} 叠层={<RuneLyric lines={lyricLines} 样式={lyricStyle} 收={eventFrames.合照咔哒} />} />
+      <GroupPhotoPicture 帧={startFrame + f} 叠层={<RuneLyric lines={lyricLines} 样式={lyricStyle} 收={eventFrames.groupPhotoClick} />} />
     </AbsoluteFill>
   );
 };

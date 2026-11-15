@@ -14,7 +14,7 @@ export const clickGain = 0.7;
 export const groupPhotoClickSound: SongSound = {
   资产: clickSoundFile.资产,
   名: '咔哒',
-  起帧: mainCutEvents.合照咔哒.帧 - Math.round(clickSoundFile.onsetSec * fps),
+  起帧: mainCutEvents.groupPhotoClick.帧 - Math.round(clickSoundFile.onsetSec * fps),
   时长秒: clickSoundFile.时长秒,
   增益: () => clickGain,
 };

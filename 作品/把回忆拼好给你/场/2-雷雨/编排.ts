@@ -43,14 +43,14 @@ export type CameraRig = { 种: '透视'; 眼: V3; 看: V3; fov: number; farPlane
 /** 第 6 句从 全 推到 近（缓起缓停，雷照缺口 那一帧推到，停到这句完），第 7 句从 近 退到 仰（退镜秒 里缓起缓停），之后停住 */
 export const CameraRig = (frame: number): CameraRig => {
   const { 全: wide, 近: near, 仰: lowAngle } = params.cameraRigs;
-  const standUp = eventFrame('她站起');
-  const [a, b, t] = frame < standUp ? [wide, near, ease((frame - shotStartFrame) / (eventFrame('雷照缺口') - shotStartFrame))] : [near, lowAngle, ease((frame - standUp) / (params.pullBackSec * fps))];
+  const standUp = eventFrame('liYingStandsUp');
+  const [a, b, t] = frame < standUp ? [wide, near, ease((frame - shotStartFrame) / (eventFrame('lightningRevealsBreach') - shotStartFrame))] : [near, lowAngle, ease((frame - standUp) / (params.pullBackSec * fps))];
   return { 种: '透视', 眼: lerpVec3(a.眼, b.眼, t), 看: lerpVec3(a.看, b.看, t), fov: lerp(a.fov, b.fov, t), farPlane: 1200 };
 };
 
 // ---------- 闪电 ----------
 /** 第 6 句的两道闪电：切点那一道、推到缺口那一道 */
-export const lightningEvents = ['第6句闷雷', '雷照缺口'] as const;
+export const lightningEvents = ['distantThunder', 'lightningRevealsBreach'] as const;
 /** 这一帧在不在闪（每道闪电起的那两下）：按秒比，歌上同一时刻和 24 fps 时一样亮不亮 */
 export const isFlashing = (frame: number) =>
   lightningEvents.some((lightningName) => {
@@ -78,14 +78,14 @@ export const LiYingState = (frame: number): LiYingState => {
   const loc = params.standPos.liYingPos;
   // 看你：你在她东边（右手边），头往右转（看 的左右正 = 往左）
   const youBearing = (Math.atan2(params.standPos.你[1] - loc[1], params.standPos.你[0] - loc[0]) * 180) / Math.PI - 90 - params.facing.liYingYaw;
-  if (frame >= eventFrame('她站起')) {
-    const k = ease(progress(frame, eventFrame('她站起'), params.standUpSec));
+  if (frame >= eventFrame('liYingStandsUp')) {
+    const k = ease(progress(frame, eventFrame('liYingStandsUp'), params.standUpSec));
     if (k >= 1) return { loc, yaw: params.facing.liYingYaw, stancePose: '站', 看: [params.castLookUp, 0], expression: '微笑', casting: true };
     // 站起来：腿、上身、两只胳膊从抱膝坐一起插到站着举手，头从看你转到仰头
     const gaze: [number, number] = [lerp(-6 - sitHeadCompDeg, params.castLookUp, k), lerp(youBearing, 0, k)];
     return { loc, yaw: params.facing.liYingYaw, stancePose: '站', 看: gaze, expression: '微笑', casting: true, skeleton: lerpBonePose(standUpPoses.sit, standUpPoses.standPose, k) };
   }
-  return { loc, yaw: params.facing.liYingYaw, stancePose: '抱膝坐', 看: [-6, lerp(0, youBearing, turnHead(frame, eventFrame('她看你')))], expression: '难过', casting: false };
+  return { loc, yaw: params.facing.liYingYaw, stancePose: '抱膝坐', 看: [-6, lerp(0, youBearing, turnHead(frame, eventFrame('liYingLooksAtYou')))], expression: '难过', casting: false };
 };
 
 export type YouState = { loc: V3; yaw: number; headYaw: number; headPitch: number };
@@ -93,29 +93,29 @@ export const YouState = (frame: number): YouState => {
   const [x, y, z] = params.standPos.你;
   const loc: V3 = [x, y, z - params.youSit.sitDrop];
   const liYingBearing = (Math.atan2(params.standPos.liYingPos[1] - y, params.standPos.liYingPos[0] - x) * 180) / Math.PI - 90 - params.facing.你;
-  if (frame >= eventFrame('她站起')) {
+  if (frame >= eventFrame('liYingStandsUp')) {
     // 仰头看光柱（光柱在她头顶，偏左）
-    const t = turnHead(frame, eventFrame('她站起'));
+    const t = turnHead(frame, eventFrame('liYingStandsUp'));
     return { loc, yaw: params.facing.你, headYaw: lerp(liYingBearing, liYingBearing * 0.5, t), headPitch: lerp(0, params.youLookUp, t) };
   }
-  const t = turnHead(frame, eventFrame('你看她'));
+  const t = turnHead(frame, eventFrame('youLookAtLiYing'));
   return { loc, yaw: params.facing.你, headYaw: lerp(0, liYingBearing, t), headPitch: lerp(params.youHeadDownDeg, 0, t) };
 };
 
 // ---------- 魔法阵、光柱 ----------
 /** 魔法阵展开到多大（0～1） */
-export const circleSize = (frame: number) => (frame < eventFrame('阵起') ? 0 : 缓出(progress(frame, eventFrame('阵起'), params.magicCircle.expandSec)));
+export const circleSize = (frame: number) => (frame < eventFrame('magicCircleUp') ? 0 : 缓出(progress(frame, eventFrame('magicCircleUp'), params.magicCircle.expandSec)));
 /** 魔法阵转了几度 */
 export const circleSpin = (frame: number) => songSec(frame) * params.magicCircle.turnsPerSec;
 /** 光柱顶（z，格）：光柱起 起从底往上冲，越冲越快，零点几秒冲出画面顶，拨 那一帧冲到 顶高（60 fps 下 拨 前一两帧已经到），之后停在那里 */
 export const beamTop = (frame: number, bottom: number) => {
-  if (frame < eventFrame('光柱起')) return bottom;
-  return lerp(bottom, params.lightPillar.topHeight, progress(frame, eventFrame('光柱起'), (eventFrame('拨') - eventFrame('光柱起')) / fps) ** params.lightPillar.surgeExp);
+  if (frame < eventFrame('beamRises')) return bottom;
+  return lerp(bottom, params.lightPillar.topHeight, progress(frame, eventFrame('beamRises'), (eventFrame('beamHitsCloud') - eventFrame('beamRises')) / fps) ** params.lightPillar.surgeExp);
 };
 /** 光柱的不透明度：光柱退 起 退秒 里淡掉 */
-export const beamOpacity = (frame: number) => 1 - ease(progress(frame, eventFrame('光柱退'), params.lightPillar.fadeSec));
+export const beamOpacity = (frame: number) => 1 - ease(progress(frame, eventFrame('beamFades'), params.lightPillar.fadeSec));
 /** 光柱撞云：撞的那一片云底往光柱色亮多少（0～1）：拨 起亮，破云 起 退秒 里退掉 */
-export const impactBrightness = (frame: number) => (frame < eventFrame('拨') ? 0 : params.impactCloud.brightness * (1 - ease(progress(frame, eventFrame('破云'), params.impactCloud.fadeSec))));
+export const impactBrightness = (frame: number) => (frame < eventFrame('beamHitsCloud') ? 0 : params.impactCloud.brightness * (1 - ease(progress(frame, eventFrame('cloudBreaks'), params.impactCloud.fadeSec))));
 
 // ---------- 云 ----------
 /** 云往东挪了多少（格）：原版每刻往西 0.03 格 */
@@ -123,19 +123,19 @@ export const cloudDrift = (frame: number) => -frameToTick(frame) * params.cloudD
 /** 云洞半径（格）：破云 起开，云洞开大 时到 r1（缓出），之后按比例长到 r2，越开越快。按秒算（破云 那一帧已经开了一帧）：
  *  镜头止前一帧（段的最后一帧）开到 r2 */
 export const holeRadius = (frame: number) => {
-  if (frame < eventFrame('破云')) return 0;
+  if (frame < eventFrame('cloudBreaks')) return 0;
   const { r1, r2 } = params.cloudHole;
-  if (frame < eventFrame('云洞开大')) return r1 * 缓出(((frame - eventFrame('破云')) / fps + oneFrameSec) / ((eventFrame('云洞开大') - eventFrame('破云')) / fps + oneFrameSec));
-  return r1 * (r2 / r1) ** clamp01((frame - eventFrame('云洞开大')) / fps / ((shotEndFrame - eventFrame('云洞开大')) / fps - oneFrameSec));
+  if (frame < eventFrame('cloudHoleWidens')) return r1 * 缓出(((frame - eventFrame('cloudBreaks')) / fps + oneFrameSec) / ((eventFrame('cloudHoleWidens') - eventFrame('cloudBreaks')) / fps + oneFrameSec));
+  return r1 * (r2 / r1) ** clamp01((frame - eventFrame('cloudHoleWidens')) / fps / ((shotEndFrame - eventFrame('cloudHoleWidens')) / fps - oneFrameSec));
 };
 /** 洞心：光柱（她站的地方） */
 export const holeCenter = (): [number, number] => [params.standPos.liYingPos[0], params.standPos.liYingPos[1]];
 /** 这一格云还剩多少（0～1）：洞半径走过它的 散起半径 那一刻起，散秒 里淡掉。
  *  那一刻从 破云 起一帧一帧往后找（原来按 1/24 秒一步，用户 11-03「统统改成 60 帧」），淡掉的进度按秒连续走 */
 export const cloudRemain = (c: CloudCell, frame: number) => {
-  if (frame < eventFrame('破云')) return 1;
+  if (frame < eventFrame('cloudBreaks')) return 1;
   const r0 = scatterRadius(c, holeCenter(), cloudDrift(frame));
-  let cursorFrame = eventFrame('破云');
+  let cursorFrame = eventFrame('cloudBreaks');
   while (cursorFrame <= frame && holeRadius(cursorFrame) < r0) cursorFrame++;
   if (cursorFrame > frame) return 1;
   return 1 - progress(frame, cursorFrame, params.cloudHole.scatterSec);
@@ -143,7 +143,7 @@ export const cloudRemain = (c: CloudCell, frame: number) => {
 /** 天从哪里透出晴天：视线在云底那一层落到的那一格（同云的格子，跟着云飘）散了多少，0 = 雷雨天、1 = 晴天；破云 前没有（null）。
  *  跟着云格一格一格变（核查 10-24：按正圆判断的话，云还没散、0.8 透明的云后面先透出一块正圆的蓝天）；clouds.png 上空着的格照同一个 散起半径 算 */
 export const clearSkyAt = (frame: number): ((x: number, y: number) => number) | null => {
-  if (frame < eventFrame('破云')) return null;
+  if (frame < eventFrame('cloudBreaks')) return null;
   const drift = cloudDrift(frame);
   const valueMap = new Map<string, number>();
   return (x, y) => {
@@ -180,8 +180,8 @@ export const shadingSceneAt = (frame: number): ShadingSceneParams => {
   const rainCloud = params.rainCloud;
   const center = holeCenter();
   const r = holeRadius(frame) * rainCloud.holeRatio;
-  const cloudCharge = clamp01((frame - eventFrame('拨')) / (eventFrame('破云') - eventFrame('拨'))) ** rainCloud.cloudCharge.exponent;
-  const flicker = frame < eventFrame('破云') ? 1 + rainCloud.cloudCharge.pulseAmp * Math.sin((2 * Math.PI * rainCloud.cloudCharge.跳 * (frame - eventFrame('拨'))) / fps) : 1;
+  const cloudCharge = clamp01((frame - eventFrame('beamHitsCloud')) / (eventFrame('cloudBreaks') - eventFrame('beamHitsCloud'))) ** rainCloud.cloudCharge.exponent;
+  const flicker = frame < eventFrame('cloudBreaks') ? 1 + rainCloud.cloudCharge.pulseAmp * Math.sin((2 * Math.PI * rainCloud.cloudCharge.跳 * (frame - eventFrame('beamHitsCloud'))) / fps) : 1;
   const flashBrightness = impactBrightness(frame) * lerp(rainCloud.cloudCharge.起, rainCloud.cloudCharge.到, cloudCharge) * flicker;
   return {
     sun: rainCloud.sun,
@@ -202,7 +202,7 @@ export const sunRadius = (frame: number) => holeRadius(frame) * params.sunRays.�
 export const glowRegionsAt = (frame: number): number[][] => {
   const out: number[][] = [];
   const [x, y, z] = params.standPos.liYingPos;
-  if (frame >= eventFrame('阵起')) {
+  if (frame >= eventFrame('magicCircleUp')) {
     const { 半宽: halfWidth, 高: height } = params.herBrightZone;
     out.push([x - halfWidth, y - halfWidth, z - 0.05, x + halfWidth, y + halfWidth, z + height]);
   }

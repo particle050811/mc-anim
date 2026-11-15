@@ -47,7 +47,7 @@ export { standRowY };
 
 // ---------- 夜 ----------
 /** 游戏刻：匹配剪进来那一刻是午夜（18000，第 0 天满月在正上方），之后跟着歌走（到第 12 句满月往西挪不到 0.3 格） */
-export const nightTick = (s: number) => 18000 + (s - eventSec('第9句入夜')) * 20;
+export const nightTick = (s: number) => 18000 + (s - eventSec('nightfall')) * 20;
 /** 匹配剪进来那一刻满月在画面上的位置（离画面中心 [横, 竖] 格，按开场的天取景，N 16）：左上、屋檐左边、第 10、11 句顶上那一行左下（第 9 句在底部），
  *  定格那一刻整个在存档图标裁的正方形左边（Agent 暂定；第 8 句已经不画太阳，原来照它的太阳位置取的数留着没动） */
 export const moonInPicture = [-3.25, 2.25] as const;
@@ -67,16 +67,16 @@ export const stars = { starCount: 150, starSize: [4, 6] as const, brightRange: [
 
 // ---------- 时刻（从分镜推） ----------
 /** 树苗落地那一帧（原版右键放方块：挥手的同一刻方块就在了）。匹配剪进来以后你一直拿着树苗、低头看着那一格 */
-export const plantSec = eventFrameSec('第9句种树苗');
+export const plantSec = eventFrameSec('plantSapling');
 /** 按词写：第 r 行第 k 个词写上的秒（词在 参数.ts 的 告示牌词们，一行两个词；分镜里写字事件和它一一对上） */
 export const writeSecs: readonly (readonly number[])[] = [
-  [eventFrameSec('写字一'), eventFrameSec('写字一续')],
-  [eventFrameSec('写字二'), eventFrameSec('写字二续')],
+  [eventFrameSec('writeLine1Word1'), eventFrameSec('writeLine1Word2')],
+  [eventFrameSec('writeLine2Word1'), eventFrameSec('writeLine2Word2')],
 ];
 /** 这一刻牌上四行写到哪（告示牌词们 写在四行里的中间两行，同 参数.ts 的 告示牌行们；原版每行居中，词写上去整行重新居中）。牌子从匹配剪进来就立着，没写字之前空白 */
 export const signLinesAt = (s: number): string[] => ['', ...signWords.map((line, r) => line.filter((_, k) => s >= writeSecs[r]![k]!).join('')), ''];
 /** 你手里换上烟花火箭的那一刻（镜头已经拉开，你整个人在画里） */
-export const swapRocketSec = eventFrameSec('第10句换火箭');
+export const swapRocketSec = eventFrameSec('switchToRockets');
 /** 牌上的字：白色染料 + 发光墨囊（原版 DyeColor.WHITE 的字色 #F9FFFE，满亮度画）。夜里压暗的橡木牌上黑字认不清；
  *  原来用黑字发光（描边 #F0EBCC），汉字笔画细，描边把笔画缝填满，用户 10-24 嫌脏。白字发光、镜头在 16 格外不画描边（原版 isOutlineVisible），字干净 */
 export const signTextStyle = { 色: '#f9fffe', glow: true, outline: false } as const;
@@ -90,9 +90,9 @@ const makeFirework = (name: string, launchEvent: MainCutEventName, blastEvent: M
  *  第 11 句最后一发是最大的大型球状（粉白带拖尾），镜头落回门口以后放在你跟前、炸在「绽」上。
  *  第 10 句原来有三发，用户 10-24 定画面转太快就删，拿掉中间那发。颜色、种子 Agent 暂定（种子挑的是炸开那几帧球形匀、不缺角的） */
 export const fireworks: readonly Firework[] = [
-  makeFirework('一', '第10句烟花一发射', '第10句烟花一', fireworkX, '小球', ['粉'], 11),
-  makeFirework('三', '第10句烟花三发射', '第10句烟花三', fireworkX - 0.5, '小球', ['黄', '橙'], 37, { twinkle: true }),
-  makeFirework('末', '第11句最后一发', '第11句大烟花', finalLaunchX, '大球', ['粉', '白'], 53, { trail: true }),
+  makeFirework('一', 'firework1Launch', 'firework1Burst', fireworkX, '小球', ['粉'], 11),
+  makeFirework('三', 'firework3Launch', 'firework3Burst', fireworkX - 0.5, '小球', ['黄', '橙'], 37, { twinkle: true }),
+  makeFirework('末', 'finalFireworkLaunch', 'bigFireworkBurst', finalLaunchX, '大球', ['粉', '白'], 53, { trail: true }),
 ];
 
 // ---------- 闪光亮档 ----------
@@ -148,19 +148,19 @@ const freezeCenter = [-0.55, 3] as const;
 /** 各段起止（秒） */
 export const shotSegment = {
   /** 匹配剪进来原样停 0.17 秒（24 fps 时四帧），再往左让 */
-  yieldStart: eventSec('第9句入夜') + 0.17,
+  yieldStart: eventSec('nightfall') + 0.17,
   /** 让完、开始往牌子推；N 16 一直停到这里（0.67 秒） */
-  pushStart: eventSec('第9句推近'),
+  pushStart: eventSec('pushToSign'),
   /** 推到牌子上的那一刻：第一行写上之前 0.06 秒停稳 */
-  pushEndSec: eventSec('写字一') - 0.06,
+  pushEndSec: eventSec('writeLine1Word1') - 0.06,
   /** 两行字留够，镜头从牌子上拉开 */
-  followStart: eventSec('第10句拉开'),
+  followStart: eventSec('pullBackFromSign'),
   /** 第一发炸开时正好停在炸点上 */
-  followUntilSec: eventSec('第10句烟花一'),
+  followUntilSec: eventSec('firework1Burst'),
   /** 第二发炸开以后 0.35 秒停在它的炸点上，接着落回门口（往下落时这一朵从画面上边出去，还看得到一会儿） */
-  dropStart: eventSec('第10句烟花三') + 0.35,
+  dropStart: eventSec('firework3Burst') + 0.35,
   /** 最后一发放出前 0.1 秒落稳 */
-  fallEnd: eventSec('第11句最后一发') - 0.1,
+  fallEnd: eventSec('finalFireworkLaunch') - 0.1,
 } as const;
 /** 推近牌子时，牌子在推的前多少就挪到画面正中（之后只往里推，Agent 暂定） */
 const signCenterFirst = 0.55;
@@ -282,7 +282,7 @@ export const photoLayout = { photoPaper: '#fbfaf6', borderWidth: 2 / 64, bottomE
  *  重力 17280 像素/秒²（24 fps 时 30 像素/帧²）：最上一排 0.42 秒（24 fps 时 10 帧）掉出画面，同一拍缩起的图标缩好（下线图标.缩秒）时底差不多黑了 */
 export const shatter = { 块: 40, latestSec: legacyFrameSec(4), 重力: 30 * 24 * 24 } as const;
 /** 咔哒、闪白、大炸声的那一帧（歌曲帧）：36.33「绽」 */
-export const freezeFrame = mainCutEvents.第11句照片.帧;
+export const freezeFrame = mainCutEvents.screenshotFreeze.帧;
 /** 照片里定住的世界比定格帧晚多久：最大那发刚炸那一刻火花全挤在炸点上，拍下来只是个亮点；晚 5/24 秒（24 fps 时 5 帧，约 4 刻）开到半径 1.8 格，
  *  原版 FLASH（4 刻）也刚好没了。定格帧那一下整屏闪白（照片版式 的闪白第一帧不透明度 1），这一截看不出来（演绎） */
 export const photoLateSec = legacyFrameSec(5);
@@ -300,7 +300,7 @@ export const logoutIcon = { pointCount: 64, side: 512, centerHeight: 0.47, shrin
 export const photoCard = (frame: number, W: number, H: number) => {
   const layout = photoLayout;
   const enterProgress = 1 - (1 - clamp01((frame - freezeFrame) / fps / layout.shrinkInSec)) ** 3;
-  const logOffFrame = mainCutEvents.第11句下线.帧;
+  const logOffFrame = mainCutEvents.logOff.帧;
   const dropT = frame >= logOffFrame ? ease(((frame - logOffFrame) / fps + oneFrameSec) / logoutIcon.shrinkSec) : 0;
   const s = lerp(1, layout.缩放, enterProgress);
   const u = W / 2560;

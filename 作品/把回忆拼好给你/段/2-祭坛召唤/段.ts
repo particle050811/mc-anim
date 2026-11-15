@@ -15,7 +15,7 @@ const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Mat
 const gainForPeak = (peakDb: number) => Math.round(10 ** ((soundFx.峰值 - peakDb) / 20) * 1e6) / 1e6;
 
 // 祭坛合成声：文件头对着点祭坛那一帧（一开头就响）
-const altarCue: FrameCue = { 帧: events.第3句点祭坛, 资产: soundFx.祭坛.资产, 名: '祭坛合成', 帧数: clampFramesToSegEnd(events.第3句点祭坛, soundFx.祭坛.秒), 增益: gainForPeak(soundFx.祭坛.峰值) };
+const altarCue: FrameCue = { 帧: events.activateAltar, 资产: soundFx.祭坛.资产, 名: '祭坛合成', 帧数: clampFramesToSegEnd(events.activateAltar, soundFx.祭坛.秒), 增益: gainForPeak(soundFx.祭坛.峰值) };
 
 export default defineSeg({
   场: '2-祭坛',

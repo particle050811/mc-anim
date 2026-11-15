@@ -22,12 +22,12 @@ const playCue = (soundName: SfxName, startFrame: number): FrameCue => {
 
 // 挖、放土在方块碎、方块出现的那一帧；僵尸低吼最响那一下落在它走到洞顶正上方的时候
 const sfxCues: readonly FrameCue[] = [
-  playCue('挖一', events.挖一),
-  playCue('挖二', events.挖二),
-  playCue('挖三', events.挖三),
-  playCue('填土', events.填土),
+  playCue('挖一', events.digFirst),
+  playCue('挖二', events.digSecond),
+  playCue('挖三', events.digThird),
+  playCue('填土', events.fillHole),
   playCue('僵尸', zombiePassHoleFrame - Math.round(roarLeadSec * fps)),
-  playCue('挖开天窗', events.挖开天窗),
+  playCue('挖开天窗', events.digSkylight),
 ];
 
 export default defineSeg({

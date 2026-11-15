@@ -15,7 +15,7 @@ import { line8Photos } from '../../特效/照片画.ts';
 import { views } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
 
-const frame = mainCutEvents.哈气.帧;
+const frame = mainCutEvents.hiss.帧;
 const photoWall = photoWallCells(line8Photos);
 
 const picture: React.FC = () => {

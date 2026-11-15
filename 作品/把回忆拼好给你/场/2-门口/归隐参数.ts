@@ -38,7 +38,7 @@ export const downstairsFraming = { 中心: [0, fullScreenShot.framing.中心[1]]
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /** 合屏到哪了（0～1，两头慢）：合屏起 那一帧 0 到 合屏到位 那一帧 1（按两头的帧算，不按拍上的秒：两头那一帧正好是分屏、整屏） */
-export const mergeProgress = (sec: number) => smoothstep(clamp01((sec * fps - events.合屏起.帧) / (events.合屏到位.帧 - events.合屏起.帧)));
+export const mergeProgress = (sec: number) => smoothstep(clamp01((sec * fps - events.mergeScreenStart.帧) / (events.mergeScreenDone.帧 - events.mergeScreenStart.帧)));
 
 /** 服务器那张整屏宽的画这一刻的取景中心 x（格）：合屏前 合屏前偏，合屏到位 0，两头都在整格上。
  *  挪的时候不吸：原来吸到一个贴图像素（1/16 格，10 成片像素），60 fps 下两头一帧挪 10 像素、一帧不挪，一顿一顿（用户 11-03「统统改成 60 帧」）；
@@ -79,8 +79,8 @@ export const gait = { periodCells: 2.67, legAmp: 38, armSwing: 24 } as const;
 
 /** 她这一刻走到哪（脚底 x）、走了几个步周期：走向照片墙 前在挂铃站位，到站以后停在取照站位 */
 export const walkTo = (frame: number): { x: number; cycles: number } => {
-  const startFrame = events.走向照片墙.帧;
-  const endFrame = events.手按合照.帧 - pressReachSec * fps;
+  const startFrame = events.walkToPhotoWall.帧;
+  const endFrame = events.handOnPhoto.帧 - pressReachSec * fps;
   const span = photoStandPos - hangBellStandPos;
   const T = (endFrame - startFrame) / fps;
   const a = walkEaseSec;

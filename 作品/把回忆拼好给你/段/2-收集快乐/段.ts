@@ -13,17 +13,17 @@ const events = segMainCutEventFrames(segKey);
 const clampFramesToSegEnd = (startFrame: number, durSec: number) => Math.min(Math.ceil(durSec * fps), clock.帧数 - startFrame);
 
 // 照片挂进框：原版荧光框放东西的声音，起音（文件一开头就最响）落在 挂照片 那一帧（照片进框同一帧）
-const hangPhoto: FrameCue = { 帧: events.挂照片, 资产: hangPhotoSound.资产, 名: '挂照片', 帧数: clampFramesToSegEnd(events.挂照片, hangPhotoSound.秒), 增益: hangPhotoSound.增益 };
+const hangPhoto: FrameCue = { 帧: events.hangPhoto, 资产: hangPhotoSound.资产, 名: '挂照片', 帧数: clampFramesToSegEnd(events.hangPhoto, hangPhotoSound.秒), 增益: hangPhotoSound.增益 };
 
 // 猫的哈气声（entity.cat.hiss.1，1.17 秒，前 0.1 秒渐起、0.35 秒最响、0.6 秒后只剩尾音）：比哈气那一帧早 1/12 秒（24 fps 时 2 帧）起放，劲头落在她摆好架势之后；
 // 段尾截掉的是尾音，最后 1/6 秒（24 fps 时 4 帧）淡掉
-const hissStart = events.哈气 - Math.round(legacyFrameSec(2) * fps);
+const hissStart = events.hiss - Math.round(legacyFrameSec(2) * fps);
 const hissCue: FrameCue = { 帧: hissStart, 资产: '音效/把回忆拼好给你/entity.cat.hiss.1', 名: '哈气', 帧数: clampFramesToSegEnd(hissStart, 1.169), 增益: puffSoundGain, fadeOutFrames: Math.round(legacyFrameSec(4) * fps) };
 
 // 原声：固定增益，哈气最响那一截让一让（按秒线性渐变进出）。段在一串歌中间，不淡入
 const { preSec, afterSec, rampSec } = originalSoundDuck;
 const sighMix = (f: number) => {
-  const s = (f - events.哈气) / fps;
+  const s = (f - events.hiss) / fps;
   return Math.min(1, Math.max(0, (s + preSec + rampSec) / rampSec), Math.max(0, (afterSec + rampSec - s) / rampSec));
 };
 const originalGainFrames = Array.from({ length: clock.帧数 }, (_, f) => Math.round((originalGain + (originalSoundDuck.增益 - originalGain) * sighMix(f)) * 1e6) / 1e6);

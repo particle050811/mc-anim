@@ -60,7 +60,7 @@ describe('第 8 句哈气那一拍', () => {
   });
 
   it('时刻取自分镜：哈气在三稿 27.80，片子里是歌曲帧 1668（60 fps）', () => {
-    expect(mainCutEvents.哈气.秒).toBeCloseTo(27.8, 1);
-    expect(mainCutEvents.哈气.帧).toBe(1668);
+    expect(mainCutEvents.hiss.秒).toBeCloseTo(27.8, 1);
+    expect(mainCutEvents.hiss.帧).toBe(1668);
   });
 });

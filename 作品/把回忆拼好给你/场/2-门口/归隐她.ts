@@ -49,34 +49,34 @@ export type LiYingState = {
 
 /** 主手这一帧怎么摆（没加走路的摆臂） */
 const mainHandAt = (frame: number): BoneTable => {
-  const putDownStart = events.挂铃.帧 + hangBellPauseSec * fps;
-  const pressStart = events.手按合照.帧 - pressReachSec * fps;
-  const retractStart = events.打框.帧 - boxFoldSec * fps;
-  if (frame >= events.取照.帧) return mainHand.垂;
-  if (frame > events.打框.帧) return lerpBonePose(mainHand.打, mainHand.垂, (frame - events.打框.帧) / (events.取照.帧 - events.打框.帧));
-  if (frame === events.打框.帧) return mainHand.打;
+  const putDownStart = events.hangBell.帧 + hangBellPauseSec * fps;
+  const pressStart = events.handOnPhoto.帧 - pressReachSec * fps;
+  const retractStart = events.punchFrame.帧 - boxFoldSec * fps;
+  if (frame >= events.takePhoto.帧) return mainHand.垂;
+  if (frame > events.punchFrame.帧) return lerpBonePose(mainHand.打, mainHand.垂, (frame - events.punchFrame.帧) / (events.takePhoto.帧 - events.punchFrame.帧));
+  if (frame === events.punchFrame.帧) return mainHand.打;
   if (frame > retractStart) return lerpBonePose(mainHand.按, mainHand.收, (frame - retractStart) / (boxFoldSec * fps));
-  if (frame >= events.手按合照.帧) return mainHand.按;
+  if (frame >= events.handOnPhoto.帧) return mainHand.按;
   if (frame > pressStart) return lerpBonePose(mainHand.静, mainHand.按, progressAt(frame, pressStart, pressReachSec));
   return lerpBonePose(mainHand.挂铃, mainHand.静, progressAt(frame, putDownStart, hangBellPutDownSec));
 };
 
 /** 她在 帧（歌曲帧）的样子；她消失 以后不在了 */
 export const liYingAt = (frame: number): LiYingState | null => {
-  if (frame >= events.她消失.帧) return null;
+  if (frame >= events.liYingVanishes.帧) return null;
   const walkState = walkTo(frame);
-  const walking = frame > events.走向照片墙.帧 && walkState.x < photoStandPos;
+  const walking = frame > events.walkToPhotoWall.帧 && walkState.x < photoStandPos;
 
   // 身子：挂铃朝镜头 → 走向照片墙 起转朝东 → 取照 那一帧起转回来朝镜头（拿着合照看）
-  const turnEast = progressAt(frame, events.走向照片墙.帧, turnSec);
-  const turnBack = progressAt(frame, events.取照.帧, turnSec);
+  const turnEast = progressAt(frame, events.walkToPhotoWall.帧, turnSec);
+  const turnBack = progressAt(frame, events.takePhoto.帧, turnSec);
   const yaw = hangBellFacing + (walkFacing - hangBellFacing) * turnEast * (1 - turnBack);
 
   // 头：看铃 → 走路平视 → 到站前 旧帧(1) 秒起抬头看合照 → 取照起低头看手里的
-  let gaze = lerpVec(liYingHead.lookBell, liYingHead.levelLook, progressAt(frame, events.走向照片墙.帧, turnHeadSec)) as [number, number];
-  const arriveFrame = events.手按合照.帧 - pressReachSec * fps;
+  let gaze = lerpVec(liYingHead.lookBell, liYingHead.levelLook, progressAt(frame, events.walkToPhotoWall.帧, turnHeadSec)) as [number, number];
+  const arriveFrame = events.handOnPhoto.帧 - pressReachSec * fps;
   if (frame >= arriveFrame - oldFrameStep) gaze = lerpVec(liYingHead.levelLook, liYingHead.lookGroupPhoto, progressAt(frame, arriveFrame - oldFrameStep, turnHeadSec)) as [number, number];
-  if (frame >= events.取照.帧) gaze = lerpVec(liYingHead.lookGroupPhoto, liYingHead.lookInHand, progressAt(frame, events.取照.帧, turnHeadSec)) as [number, number];
+  if (frame >= events.takePhoto.帧) gaze = lerpVec(liYingHead.lookGroupPhoto, liYingHead.lookInHand, progressAt(frame, events.takePhoto.帧, turnHeadSec)) as [number, number];
 
   // 走路：原版那样腿、空着的右胳膊前后摆（相位按走过的路），副手一直捧着花；起步、停下时摆幅跟着速度收（前后各 旧帧(1) 秒走的路）
   let skeleton: BoneTable = { ...mainHandAt(frame), ...offHandFlower };
@@ -96,9 +96,9 @@ export const liYingAt = (frame: number): LiYingState | null => {
     x: walkState.x,
     yaw,
     看: gaze,
-    expression: frame >= events.取照.帧 ? '难过' : '无',
+    expression: frame >= events.takePhoto.帧 ? '难过' : '无',
     skeleton,
-    rightHand: frame >= events.取照.帧 ? '合照' : null,
+    rightHand: frame >= events.takePhoto.帧 ? '合照' : null,
     leftHand: '花',
   };
 };

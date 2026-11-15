@@ -45,7 +45,7 @@ import timeline from './时间线.ts';
 
 const events = timeline.事件;
 /** 场时间线的秒 → 现身后几秒 */
-export const afterAppear = (sceneSec: number) => sceneSec - events.现身.秒;
+export const afterAppear = (sceneSec: number) => sceneSec - events.yaBoLunAppears.秒;
 export { actStart, actEnd };
 export { localGroundHeight, trappedLocal, hoverHeight } from './开盘时刻.ts';
 

@@ -53,13 +53,13 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
 
   it('拍：晴定 25.99，挂照片 26.53「收」，看见苦力怕 27.38，哈气 27.80，淘 28.23（差不到半帧）；一时一个焦点：调子定了才往框里推照片，挂上了苦力怕才冒头', () => {
     const expected = [
-      [mainCutEvents.第8句晴定, 25.99], [mainCutEvents.挂照片, 26.53], [mainCutEvents.她看见苦力怕, 27.38], [mainCutEvents.哈气, 27.8], [mainCutEvents.苦力怕逃, 28.23],
+      [mainCutEvents.clearSkySettles, 25.99], [mainCutEvents.hangPhoto, 26.53], [mainCutEvents.liYingSpotsCreeper, 27.38], [mainCutEvents.hiss, 27.8], [mainCutEvents.creeperFlees, 28.23],
     ] as const;
     for (const [e, sec] of expected) expect(Math.abs(e.秒 - sec)).toBeLessThan(0.5 / fps + 0.01);
-    expect(mainCutEvents.哈气.帧).toBe(1668);
-    expect((events.挂照片 - events.第8句晴定) / fps).toBeGreaterThanOrEqual(hangReachSec);
-    expect(events.挂照片).toBeLessThan(events.苦力怕冒头);
-    expect(events.苦力怕冒头).toBeLessThan(events.她看见苦力怕);
+    expect(mainCutEvents.hiss.帧).toBe(1668);
+    expect((events.hangPhoto - events.clearSkySettles) / fps).toBeGreaterThanOrEqual(hangReachSec);
+    expect(events.hangPhoto).toBeLessThan(events.creeperAppears);
+    expect(events.creeperAppears).toBeLessThan(events.liYingSpotsCreeper);
   });
 
   it('cue：原声铺满整段（哈气那一截让一让）；挂照片声在挂照片那一帧起放；哈气声在哈气前 1/12 秒（24 fps 时 2 帧）起放；没有纸声；都不过段尾', () => {
@@ -67,12 +67,12 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     const originalTrack = soundCues.find((c) => c.名 === '原声')!;
     expect(originalTrack).toMatchObject({ 帧: 0, 帧数: 189, 入点秒: 1528 / fps });
     const gain = originalTrack.增益 as number[];
-    expect(gain[events.哈气]).toBeCloseTo(originalSoundDuck.增益, 6);
+    expect(gain[events.hiss]).toBeCloseTo(originalSoundDuck.增益, 6);
     expect(gain[0]).toBeGreaterThan(originalSoundDuck.增益);
     const hangPhotoCue = soundCues.find((c) => c.名 === '挂照片')!;
-    expect(hangPhotoCue).toMatchObject({ 帧: events.挂照片, 资产: hangPhotoSound.资产, 增益: hangPhotoSound.增益 });
+    expect(hangPhotoCue).toMatchObject({ 帧: events.hangPhoto, 资产: hangPhotoSound.资产, 增益: hangPhotoSound.增益 });
     expect(hangPhotoCue.帧数).toBe(Math.ceil(hangPhotoSound.秒 * fps));
-    expect(soundCues.find((c) => c.名 === '哈气')!.帧).toBe(events.哈气 - legacyFrameSec(2) * fps);
+    expect(soundCues.find((c) => c.名 === '哈气')!.帧).toBe(events.hiss - legacyFrameSec(2) * fps);
     expect(soundCues.some((c) => c.资产.startsWith('音效/item.book.page_turn'))).toBe(false);
     for (const c of soundCues) expect(c.帧 + c.帧数).toBeLessThanOrEqual(frameCountOf(seg));
   });
@@ -84,8 +84,8 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
 
   it('调子：段首是第 7 句末的雨后暖阳，一路缓到 第8句晴定 起是 第8句调子', () => {
     expect(gradeAt(0)).toEqual(palette.雨后暖阳);
-    expect(clearingProgress(events.第8句晴定)).toBe(1);
-    expect(gradeAt(events.第8句晴定)).toEqual(line8Tone);
+    expect(clearingProgress(events.clearSkySettles)).toBe(1);
+    expect(gradeAt(events.clearSkySettles)).toEqual(line8Tone);
     expect(gradeAt(frameCountOf(seg) - 1)).toEqual(line8Tone);
   });
 
@@ -109,13 +109,13 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
   it('照片墙：墙上已经挂着前三张、第四只框空着；她举着光柱破云挡在空框前，挂伸秒 里推进框、缩到一格，挂照片那一帧换成墙上那张（不跳）', () => {
     expect(line8Photos.map((p) => p.名)).toEqual(['递蛋糕', '日落划船', '扑龙蛋', '光柱破云']);
     for (let f = 0; f < frameCountOf(seg); f++) {
-      expect(wallPhotoCount(f)).toBe(f < events.挂照片 ? 3 : 4);
-      expect(photoState(f) === null).toBe(f >= events.挂照片);
+      expect(wallPhotoCount(f)).toBe(f < events.hangPhoto ? 3 : 4);
+      expect(photoState(f) === null).toBe(f >= events.hangPhoto);
     }
     expect(photoState(0)).toEqual({ 角: [...photoHoldAngle], side: photoHoldEdge });
-    expect(photoState(events.挂照片 - hangReachSec * fps)).toEqual(photoState(0));
+    expect(photoState(events.hangPhoto - hangReachSec * fps)).toEqual(photoState(0));
     // 挂上前一帧已经和框里那张一样（挂上那一帧不跳）
-    expect(photoState(events.挂照片 - 1)).toEqual({ 角: [...photoFrameAngle], side: 1 });
+    expect(photoState(events.hangPhoto - 1)).toEqual({ 角: [...photoFrameAngle], side: 1 });
     // 举着的时候在画面上挡住整只空框（框里那一格），不让空框露出来：斜投影里往后一格往上升 正交顶面 ÷ N 格
     const corner = photoCellCorner(...photoWallCellPos.summer[3]!);
     const screenHeight = (p: readonly number[]) => p[2]! + (p[1]! * orthoTop) / line8ShotCount;
@@ -129,25 +129,25 @@ describe('2-收集快乐：第 8 句整句一个镜头', () => {
     for (let f = 0; f < frameCountOf(seg); f++) {
       const liYing = LiYingState(f);
       expect(liYing.loc[0]).toBe(hissStandPos.liYingX);
-      const hissing = f >= events.哈气 && f < events.苦力怕逃;
+      const hissing = f >= events.hiss && f < events.creeperFlees;
       expect(liYing.stancePose).toBe(hissing ? '哈气' : '站');
       expect(liYing.yaw).toBe(hissing ? 90 : 180);
     }
-    expect(LiYingState(events.她看见苦力怕).expression).toBe('惊讶');
+    expect(LiYingState(events.liYingSpotsCreeper).expression).toBe('惊讶');
   });
 
   it('苦力怕：冒头那一帧前脚刚进画框左边，哈气那一拍停在 哈气站位.苦力怕；冒头前不在画里；逃出画框在段尾之前', () => {
     const leftEdge = -halfWidthCells;
     const frontFoot = (f: number) => creeperPose(f).loc[0] + creeperFront;
-    expect(frontFoot(events.苦力怕冒头)).toBeGreaterThanOrEqual(leftEdge);
-    expect(frontFoot(events.苦力怕冒头 - 1)).toBeLessThan(leftEdge);
-    expect(creeperPose(events.哈气).loc[0]).toBe(hissStandPos.苦力怕);
+    expect(frontFoot(events.creeperAppears)).toBeGreaterThanOrEqual(leftEdge);
+    expect(frontFoot(events.creeperAppears - 1)).toBeLessThan(leftEdge);
+    expect(creeperPose(events.hiss).loc[0]).toBe(hissStandPos.苦力怕);
     // 走速比原版追人（2.70 米/秒）快，但不到一倍半
     const chaseSpeed = (((1 * 0.25) ** 2 * 0.98) / (1 - 0.6 * 0.91)) * 20;
     expect(creeperWalkSpeed / chaseSpeed).toBeGreaterThan(1);
     expect(creeperWalkSpeed / chaseSpeed).toBeLessThan(1.5);
     const fleeSpeed = vanillaFleeSpeed * creeperFleeMult;
-    const exitFrame = events.苦力怕掉头 + (creeperTurnSec + (hissStandPos.苦力怕 - (leftEdge - creeperFront)) / fleeSpeed) * fps;
+    const exitFrame = events.creeperTurnsAway + (creeperTurnSec + (hissStandPos.苦力怕 - (leftEdge - creeperFront)) / fleeSpeed) * fps;
     expect(exitFrame).toBeLessThan(frameCountOf(seg) - 1);
     expect(creeperPose(frameCountOf(seg) - 1).loc[0] + creeperFront).toBeLessThan(leftEdge);
   });

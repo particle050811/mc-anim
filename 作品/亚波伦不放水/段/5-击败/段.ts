@@ -12,8 +12,8 @@ const mainPeakDb = -10;
 const peakDb = -18;
 
 export default windowSeg(timeline, {
-  起: '齐放完',
-  止: '击败完',
+  起: 'volleyDone',
+  止: 'defeatDone',
   地形: [realNetherPack],
   soundTable,
   声音: ({ 放: play, 秒: durSec }) => {

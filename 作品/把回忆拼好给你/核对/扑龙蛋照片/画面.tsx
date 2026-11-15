@@ -7,7 +7,7 @@ import { useViewIndex } from '@engine/段/时间.tsx';
 
 const picture: React.FC = () => {
   const v = views[useViewIndex()]!;
-  return <EndShot f={events['照片-扑龙蛋']} clean={v.clean} />;
+  return <EndShot f={events.photoEggPounce} clean={v.clean} />;
 };
 
 export default picture;

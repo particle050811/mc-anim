@@ -101,7 +101,7 @@ const PlaceRig: React.FC<{ cameraRig: Cam }> = ({ cameraRig }) => {
 
 export default definePicture(seg, soundUrl, () => {
   const { 秒: sec, 事件: events } = useSeg(seg);
-  const danceSec = sec - events.起舞;
+  const danceSec = sec - events.danceStart;
   return (
     <AbsoluteFill style={{ background: skyColor }}>
       <ThreeCanvas width={aspect.宽} height={aspect.高} gl={{ antialias: true }} dpr={canvasDpr(1)}>

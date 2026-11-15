@@ -93,9 +93,9 @@ const LiYing: React.FC<{ liYingState: LiYingState; 秒: number }> = ({ liYingSta
 // ---------- 铃 ----------
 /** 刚挂上的铃绕挂点摆的角（度）：挂铃那一刻碰一下，衰减着摆，合屏到位那一帧收到 0（2-摇铃 开头铃是静的，摇铃 才再摆） */
 const hangBellAngle = (sec: number) => {
-  const t = sec - events.挂铃.秒;
+  const t = sec - events.hangBell.秒;
   if (t < 0) return 0;
-  return hangBellSwing.amplitude * Math.sin((t / hangBellSwing.periodSec) * Math.PI * 2) * hangBellSwing.damping ** t * clamp01((events.合屏到位.秒 - sec) / 0.5);
+  return hangBellSwing.amplitude * Math.sin((t / hangBellSwing.periodSec) * Math.PI * 2) * hangBellSwing.damping ** t * clamp01((events.mergeScreenDone.秒 - sec) / 0.5);
 };
 
 /** 挂着的铃：正对镜头的物品薄片绕挂点（朝镜头的轴）摆，挂绳一个铃像素宽（2-摇铃 同一个，角各自算）。挂铃 以前在她手里（还没挂上，不画） */
@@ -127,8 +127,8 @@ export const LiYingWalkParticles: React.FC<{ 秒: number }> = ({ 秒: sec }) => 
         at: [photoStandPos, entrance.standRowY, 0],
         w: 0.6,
         h: 1.8,
-        t0: events.她消失.秒 - teleport.preTick / 20,
-        t1: events.她消失.秒 + (teleport.releaseTick - teleport.preTick) / 20,
+        t0: events.liYingVanishes.秒 - teleport.preTick / 20,
+        t1: events.liYingVanishes.秒 + (teleport.releaseTick - teleport.preTick) / 20,
         rate: teleport.放,
         seed: teleport.种子,
         life: teleport.寿命,
@@ -146,13 +146,13 @@ const gradeOnly = (t: Grade): Grade => ({ ...t, 暗角: 0, 颗粒: 0 });
 export const mergedTone = lerpTone(palette.褪色, palette.夏日白天, colorBackRange.起);
 /** 她那边的调子（歌曲帧）：第 13 句末那样一路褪到合屏到位那样 */
 export const leftToneAt = (frame: number) =>
-  frame >= events.合屏到位.帧
+  frame >= events.mergeScreenDone.帧
     ? mergedTone
-    : lerpTone(palette.夏日白天, palette.褪色, fadeStart + (fadeEnd - fadeStart) * clamp01((frame - segWindow.起帧) / (events.合屏到位.帧 - segWindow.起帧)));
+    : lerpTone(palette.夏日白天, palette.褪色, fadeStart + (fadeEnd - fadeStart) * clamp01((frame - segWindow.起帧) / (events.mergeScreenDone.帧 - segWindow.起帧)));
 
 /** 你在楼下这一帧的头：纸飘下 后 仰头迟秒 起仰起来 */
 const youHeadAt = (frame: number): [number, number] => {
-  const t = clamp01(((frame - events.纸飘下.帧) / fps - headUpDelaySec) / headUpSec);
+  const t = clamp01(((frame - events.paperDrifts.帧) / fps - headUpDelaySec) / headUpSec);
   const k = t * t * (3 - 2 * t);
   return [youHead.low[0] + (youHead.up[0] - youHead.low[0]) * k, youHead.low[1] + (youHead.up[1] - youHead.low[1]) * k];
 };
@@ -212,11 +212,11 @@ export const RetreatPicture: React.FC<RetreatPictureProps> = ({ 帧: frame, outl
             treeProgress={1}
             hasSign
             signText={<SignPixelText lines={signRows} />}
-            photoWall={photoWallCells(line8Photos, frame >= events.取照.帧 ? null : groupPhoto)}
+            photoWall={photoWallCells(line8Photos, frame >= events.takePhoto.帧 ? null : groupPhoto)}
             photoWallEdge={photoWallEdge}
             叠层={<PaperLayer 秒={sec} 宽={splitX} />}
           >
-            {frame >= events.挂铃.帧 ? <HangingBell 角={hangBellAngle(sec)} /> : handBell}
+            {frame >= events.hangBell.帧 ? <HangingBell 角={hangBellAngle(sec)} /> : handBell}
             {liYingState && <LiYing liYingState={liYingState} 秒={sec} />}
             <LiYingWalkParticles 秒={sec} />
           </ForestDoorCanvas>,

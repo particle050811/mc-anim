@@ -8,22 +8,22 @@ const sparkCount = 16;
 
 export default definePicture(seg, soundUrl, () => {
   const { 秒: sec, 事件: events, 段: thisSegment } = useSeg(seg);
-  const riseProgress = interpolate(sec, [events.发射, events.炸开], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const scatter = interpolate(sec, [events.炸开, events.炸开 + 0.75], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-  const dim = interpolate(sec, [events.炸开 + 0.25, thisSegment.秒], [1, 0.25], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const riseProgress = interpolate(sec, [events.launch, events.burst], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const scatter = interpolate(sec, [events.burst, events.burst + 0.75], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
+  const dim = interpolate(sec, [events.burst + 0.25, thisSegment.秒], [1, 0.25], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
   const centerX = thisSegment.宽 / 2;
   const blastPointY = thisSegment.高 * 0.32;
   const rocketY = interpolate(riseProgress, [0, 1], [thisSegment.高 * 0.95, blastPointY]);
   return (
     <AbsoluteFill style={{ background: 'linear-gradient(#0b1030, #1d2450)' }}>
       <svg width={thisSegment.宽} height={thisSegment.高}>
-        {sec >= events.发射 && sec < events.炸开 && <rect x={centerX - 3} y={rocketY} width={6} height={18} fill="#f4d58d" />}
-        {sec >= events.炸开 &&
+        {sec >= events.launch && sec < events.burst && <rect x={centerX - 3} y={rocketY} width={6} height={18} fill="#f4d58d" />}
+        {sec >= events.burst &&
           Array.from({ length: sparkCount }, (_, i) => {
             const angle = (i / sparkCount) * Math.PI * 2;
             const r = scatter * 160;
             // 火星 1/6 秒闪一回，相邻的错开 1/24 秒
-            const flicker = sec >= events.噼啪 && (sec * 24 + i) % 4 < 2 ? 1 : 0.55;
+            const flicker = sec >= events.crackle && (sec * 24 + i) % 4 < 2 ? 1 : 0.55;
             return <rect key={i} x={centerX + Math.cos(angle) * r - 4} y={blastPointY + Math.sin(angle) * r + scatter * scatter * 40 - 4} width={8} height={8} fill={i % 2 ? '#ff7eb6' : '#ffd166'} opacity={dim * flicker} />;
           })}
       </svg>

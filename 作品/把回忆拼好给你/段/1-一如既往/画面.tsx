@@ -40,9 +40,9 @@ const checkpoint = false;
 
 // 这一段唱第 13–15 句，每句从开口（前导音，没有就是句首）淡入，第 15 句在咔哒定格时淡出
 const lyricLines: readonly LyricLine[] = [
-  { text: lineAt(13).text, 入: eventFrames.第13句开口 },
-  { text: lineAt(14).text, 入: eventFrames.第14句开口 },
-  { text: lineAt(15).text, 入: eventFrames.第15句开口 },
+  { text: lineAt(13).text, 入: eventFrames.line13VocalIn },
+  { text: lineAt(14).text, 入: eventFrames.line14VocalIn },
+  { text: lineAt(15).text, 入: eventFrames.line15VocalIn },
 ];
 
 /** 段内帧 → 从某个事件那一帧起数的原版刻（可带小数） */
@@ -58,7 +58,7 @@ const endLook = addVec(liYingLoc, cameraRig.pushLimitLook);
 
 // 推镜：微笑推镜到咔哒定格缓入缓出，只收世界那一遍的视角（原版拉近时手那一遍固定 70° 不变）。
 // 视角按放大倍数的对数插值，推起来是匀匀地放大；看点跟着从起看挪到她脸上
-const pushProgress = (fs: number) => sample([[eventFrames.微笑推镜, 0], [eventFrames.咔哒定格, 1]], fs);
+const pushProgress = (fs: number) => sample([[eventFrames.smilePushIn, 0], [eventFrames.clickFreeze, 1]], fs);
 const halfFovTan = (angleDeg: number) => Math.tan(rad(angleDeg) / 2);
 const pushFov = (p: number) => (2 * Math.atan(halfFovTan(fov) * (halfFovTan(cameraRig.pushLimitFov) / halfFovTan(fov)) ** p) * 180) / Math.PI;
 const pushLook = (p: number): V3 => [0, 1, 2].map((i) => startLook[i]! + (endLook[i]! - startLook[i]!) * p) as V3;
@@ -77,19 +77,19 @@ const skyColor = '#9fc4ff';
 // 每段转头都是缓入缓出，停着的时候不动
 const lookAtYou = magicalWineFoxLookAt(liYingPose, eye);
 const gazeKeys: VKey[] = [
-  [eventFrames.驯服, sightAngles.蛋糕],
-  [eventFrames.抬头到位, lookAtYou],
-  [eventFrames.视线别开, lookAtYou],
-  [eventFrames.别开到位, sightAngles.lookAway],
-  [eventFrames.视线转回, sightAngles.lookAway],
-  [eventFrames.转回到位, lookAtYou],
+  [eventFrames.tame, sightAngles.蛋糕],
+  [eventFrames.lookUpDone, lookAtYou],
+  [eventFrames.gazeAway, lookAtYou],
+  [eventFrames.gazeAwayDone, sightAngles.lookAway],
+  [eventFrames.gazeBack, sightAngles.lookAway],
+  [eventFrames.gazeBackDone, lookAtYou],
 ];
 const herGaze = (fs: number) => sampleV(gazeKeys, fs) as [number, number];
 
 /** 段内帧 → 歌上的秒（定格以后跟着 fs 停住） */
 const songSec = (f: number) => (startFrame + f) / fps;
 // 手放的三次眨眼，每次是游戏眨眼曲线开头那 0.25 秒
-const blinkStartSec = [eventFrames.眨眼一, eventFrames.眨眼二, eventFrames.眨眼三].map(songSec);
+const blinkStartSec = [eventFrames.firstBlink, eventFrames.secondBlink, eventFrames.thirdBlink].map(songSec);
 
 /** 魔法酒狐：帽子、背后法杖和三个环、发光照游戏原样（组件默认）；开头无嘴，微笑推镜那一帧硬切成微笑（游戏里换嘴也是硬切） */
 const WineFox: React.FC<{ fs: number }> = ({ fs }) => {
@@ -98,7 +98,7 @@ const WineFox: React.FC<{ fs: number }> = ({ fs }) => {
     <MagicalWineFox
       pose={liYingPose}
       看={herGaze(fs)}
-      expression={fs < eventFrames.微笑推镜 ? '无' : '微笑'}
+      expression={fs < eventFrames.smilePushIn ? '无' : '微笑'}
       blink={magicalWineFoxBlinkAt(sec, blinkStartSec)}
       秒={sec}
     />
@@ -115,7 +115,7 @@ const World: React.FC<{ fs: number; 看: V3; fov: number }> = ({ fs, 看: lookAt
         <FirstFloorLighting />
         <HiddenWorldFloor />
         <WineFox fs={fs} />
-        <HeartParticles spawns={hearts} 刻={elapsedTick(fs, eventFrames.驯服)} />
+        <HeartParticles spawns={hearts} 刻={elapsedTick(fs, eventFrames.tame)} />
       </group>
     </ThreeCanvas>
   );
@@ -123,7 +123,7 @@ const World: React.FC<{ fs: number; 看: V3; fov: number }> = ({ fs, 看: lookAt
 
 const Hand: React.FC<{ fs: number; 看: V3 }> = ({ fs, 看: lookAt }) => {
   const { width, height } = useVideoConfig();
-  const h = handTimeline(elapsedTick(fs, eventFrames.右键), handScript);
+  const h = handTimeline(elapsedTick(fs, eventFrames.rightClick), handScript);
   return (
     <FirstPersonCanvas width={width} height={height} view={viewAngles(eye, lookAt)}>
       <FirstPersonHand
@@ -144,17 +144,17 @@ const Photo: React.FC<{ f: number }> = ({ f }) => {
     <AbsoluteFill>
       <World fs={f} 看={lookAt} fov={pushFov(p)} />
       <Hand fs={f} 看={lookAt} />
-      <ChatOverlay lines={chatLines} 刻={elapsedTick(f, eventFrames.驯服)} s={chatScale} />
+      <ChatOverlay lines={chatLines} 刻={elapsedTick(f, eventFrames.tame)} s={chatScale} />
     </AbsoluteFill>
   );
 };
 
 // 下面两个是 核卡点 打开时才画的标注
 const bigCaptionEvents: readonly { 名: EventName; 字: string }[] = [
-  { 名: '右键', 字: '右键' },
-  { 名: '驯服', 字: '聊天栏' },
-  { 名: '微笑推镜', 字: '微笑推镜' },
-  { 名: '咔哒定格', 字: '咔哒定格' },
+  { 名: 'rightClick', 字: '右键' },
+  { 名: 'tame', 字: '聊天栏' },
+  { 名: 'smilePushIn', 字: '微笑推镜' },
+  { 名: 'clickFreeze', 字: '咔哒定格' },
 ];
 const bigCaptionNames = new Set<EventName>(bigCaptionEvents.map((x) => x.名));
 /** 事件名从事件那一帧起留多久（1 秒）；大字之后再用几秒淡掉（24 fps 时 6 帧） */
@@ -244,12 +244,12 @@ const EventBigCaption: React.FC = () => {
 const picture: React.FC = () => (
   <>
     <Polaroid
-      freezeFrame={eventFrames.咔哒定格}
+      freezeFrame={eventFrames.clickFreeze}
       字="新存档的第一张"
       样式={polaroidStyle}
       overlay={
         <>
-          <Lyrics lines={lyricLines} 样式={lyricStyle} 收={eventFrames.咔哒定格} />
+          <Lyrics lines={lyricLines} 样式={lyricStyle} 收={eventFrames.clickFreeze} />
           {checkpoint && <CheckpointAnnotation />}
         </>
       }

@@ -16,7 +16,7 @@ const paperSound = paperSounds[1]!;
 export const paperFloatSound: SongSound = {
   资产: paperSound.资产,
   名: '纸飘下',
-  起帧: events.纸飘下.帧 - Math.round(paperSound.peakSec * fps),
+  起帧: events.paperDrifts.帧 - Math.round(paperSound.peakSec * fps),
   时长秒: paperSound.秒,
   增益: () => Math.round(10 ** ((paperSoundPeakDb - 4 - paperSound.峰值) / 20) * 1e6) / 1e6,
 };
@@ -25,14 +25,14 @@ export const paperFloatSound: SongSound = {
 export const takeOutSound: SongSound = {
   资产: '音效/把回忆拼好给你/entity.glow_item_frame.remove_item.1',
   名: '荧光框取出',
-  起帧: events.取照.帧,
+  起帧: events.takePhoto.帧,
   时长秒: 0.1,
   增益: () => 0.35,
 };
 
 /** 挂铃的铃声（同第 15 句的寻风之铃）：起音落在挂铃那一帧，轻一点（挂上去碰了一下）；段尾前 淡出秒 淡掉 */
 export const hangBellSoundParams = { 增益: 0.25, fadeOutSec: 0.3 } as const;
-const bellStart = events.挂铃.帧 - Math.round(bellFile.onsetSec * fps);
+const bellStart = events.hangBell.帧 - Math.round(bellFile.onsetSec * fps);
 export const hangBellSound: SongSound = {
   资产: '音效/万法皆通/wind_seeking_bell',
   名: '挂铃',

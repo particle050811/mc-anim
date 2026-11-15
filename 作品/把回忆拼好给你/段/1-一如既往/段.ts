@@ -12,7 +12,7 @@ const clock = segClock(segKey);
 const originalGainFrames = Array.from({ length: clock.帧数 }, (_, f) => Math.round(originalGain * Math.min(1, (f / fps + legacyFrameSec(1)) / originalFadeInSec) * 1e6) / 1e6);
 
 // 咔哒：女仆相机的快门声，比定格那一帧早 起音秒 起放，主音落在定格（闪白）那一帧；放满整个文件。定义画面 照这条 cue 出声
-const clickStartFrame = segEventFrames(segKey).咔哒定格 - Math.round(clickSound.onsetSec * fps);
+const clickStartFrame = segEventFrames(segKey).clickFreeze - Math.round(clickSound.onsetSec * fps);
 const clickFrameCount = Math.min(Math.ceil(clickSound.时长秒 * fps), clock.帧数 - clickStartFrame);
 
 export default defineSeg({

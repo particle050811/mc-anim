@@ -26,16 +26,16 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
   });
 
   it('只拍挖三填一：挖一、挖二、挖三、填土一拍一下（第 12～15 拍），挖开天窗在第 18 拍，段尾留够半秒阳光照进洞里（第 3 句从这里接）', () => {
-    const expected = [[mainCutEvents.挖一, 12], [mainCutEvents.挖二, 13], [mainCutEvents.挖三, 14], [mainCutEvents.填土, 15], [mainCutEvents.挖开天窗, 18]] as const;
+    const expected = [[mainCutEvents.digFirst, 12], [mainCutEvents.digSecond, 13], [mainCutEvents.digThird, 14], [mainCutEvents.fillHole, 15], [mainCutEvents.digSkylight, 18]] as const;
     for (const [e, n] of expected) expect(e.秒).toBeCloseTo(beatAt(n), 6);
-    expect(frameCount - events.挖开天窗).toBeGreaterThanOrEqual(Math.round(0.5 * fps));
-    for (let f = events.挖开天窗; f < frameCount; f++) {
+    expect(frameCount - events.digSkylight).toBeGreaterThanOrEqual(Math.round(0.5 * fps));
+    for (let f = events.digSkylight; f < frameCount; f++) {
       expect(pitStateAt(f)).toEqual({ dugCount: 3, dirtCovered: false });
       expect(skyBrightness(skyTick(f))).toBe(1);
       expect(topWallDark(f)).toBe(holeDarkParams.topWall);
     }
     // 天光两格照到底以后到段尾洞里全亮，至少留三分之一秒
-    const lightEndFrame = events.挖开天窗 + 2 * holeDarkParams.lightDownSec * fps;
+    const lightEndFrame = events.digSkylight + 2 * holeDarkParams.lightDownSec * fps;
     expect(frameCount - lightEndFrame).toBeGreaterThanOrEqual(Math.round(fps / 3));
     for (let f = lightEndFrame; f < frameCount; f++) expect(holeDark(f)).toEqual([{ 前: 0, 后: 0 }, { 前: 0, 后: 0 }]);
   });
@@ -52,7 +52,7 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
       expect(20 * Math.log10(c.增益 as number) + expectedLevels.峰值).toBeCloseTo(expectedLevels.到, 3);
       expect(expectedLevels.到).toBeLessThanOrEqual(-15);
     }
-    expect(assets.map((c) => c.帧)).toEqual([events.挖一, events.挖二, events.挖三, events.填土, zombiePassHoleFrame - Math.round(roarLeadSec * fps), events.挖开天窗]);
+    expect(assets.map((c) => c.帧)).toEqual([events.digFirst, events.digSecond, events.digThird, events.fillHole, zombiePassHoleFrame - Math.round(roarLeadSec * fps), events.digSkylight]);
   });
 
   it('接 2-初入 一镜不切：同一个剖面机位、撤完了排；你站在坑那一格、朝东低头，段首就开始挥手挖', () => {
@@ -75,17 +75,17 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     expect(skyTick(0)).toBe(skyTickAt(startFrame));
     expect(skyTick(0)).toBeGreaterThan(skyTickAt(startFrame - 1));
     expect(skyBrightness(skyTick(0))).toBe(1);
-    expect(skyBrightness(skyTick(events.挖一))).toBeGreaterThan(0.8);
-    expect(skyBrightness(skyTick(events.填土))).toBe(0);
-    for (let f = events.填土; f <= dawnStart; f++) expect(skyBrightness(skyTick(f))).toBe(0);
+    expect(skyBrightness(skyTick(events.digFirst))).toBeGreaterThan(0.8);
+    expect(skyBrightness(skyTick(events.fillHole))).toBe(0);
+    for (let f = events.fillHole; f <= dawnStart; f++) expect(skyBrightness(skyTick(f))).toBe(0);
     // 快进里星星满亮
     expect(starBrightness(skyTick(Math.round((fastForwardStart + dawnStart) / 2)))).toBeCloseTo(0.5, 2);
     // 黎明：每帧天亮最多涨两成，中间那帧一半左右
     for (let f = dawnStart + 1; f <= brightFullFrame; f++) expect(skyBrightness(skyTick(f)) - skyBrightness(skyTick(f - 1))).toBeLessThan(0.2);
     expect(skyBrightness(skyTick(dawnStart + (fastForward.dawnSec * fps) / 2))).toBeCloseTo(0.5, 1);
     expect(skyBrightness(skyTick(brightFullFrame))).toBe(1);
-    expect(brightFullFrame).toBeLessThan(events.挖开天窗);
-    expect(starBrightness(skyTick(events.挖开天窗)) ** 2).toBeLessThan(1 / 255);
+    expect(brightFullFrame).toBeLessThan(events.digSkylight);
+    expect(starBrightness(skyTick(events.digSkylight)) ** 2).toBeLessThan(1 / 255);
     for (let f = 1; f < frameCount; f++) expect(skyTick(f)).toBeGreaterThanOrEqual(skyTick(f - 1));
   });
 
@@ -94,28 +94,28 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
     expect(zombieState(fastForwardStart)?.x).toBe(zombie.startX);
     expect(pitStateAt(zombiePassHoleFrame).dirtCovered).toBe(true);
     expect(Math.abs(zombieState(zombiePassHoleFrame)!.x)).toBeLessThan(1);
-    const walkDone = events.挖开天窗 - zombie.stopBeforeSec * fps;
+    const walkDone = events.digSkylight - zombie.stopBeforeSec * fps;
     expect(zombieState(walkDone)?.x).toBe(zombie.endX);
     expect(zombieState(Math.floor(walkDone) + 1)).toBeNull();
     expect(walkDone).toBeLessThanOrEqual(brightFullFrame);
   });
 
   it('挖三填一：三拍各挖掉一格、掉一格，填土以后头顶有土、两格高的洞装得下你，挖开天窗那一帧土没了', () => {
-    expect(pitStateAt(events.挖一 - 1)).toEqual({ dugCount: 0, dirtCovered: false });
-    expect(pitStateAt(events.挖三)).toEqual({ dugCount: 3, dirtCovered: false });
-    expect(pitStateAt(events.填土)).toEqual({ dugCount: 3, dirtCovered: true });
-    expect(pitStateAt(events.挖开天窗)).toEqual({ dugCount: 3, dirtCovered: false });
-    expect(SteveState(events.填土 - 1).z).toBe(-3);
+    expect(pitStateAt(events.digFirst - 1)).toEqual({ dugCount: 0, dirtCovered: false });
+    expect(pitStateAt(events.digThird)).toEqual({ dugCount: 3, dirtCovered: false });
+    expect(pitStateAt(events.fillHole)).toEqual({ dugCount: 3, dirtCovered: true });
+    expect(pitStateAt(events.digSkylight)).toEqual({ dugCount: 3, dirtCovered: false });
+    expect(SteveState(events.fillHole - 1).z).toBe(-3);
     // 站在坑底那格泥土上
-    const pitColumn = crossSectionBlocks(pitStateAt(events.填土 - 1)).filter((b) => b.位[0] === sectionOrigin[0] - 0.5 && b.位[1] === sectionOrigin[1]);
+    const pitColumn = crossSectionBlocks(pitStateAt(events.fillHole - 1)).filter((b) => b.位[0] === sectionOrigin[0] - 0.5 && b.位[1] === sectionOrigin[1]);
     expect(Math.max(...pitColumn.map((b) => b.位[2]))).toBe(groundLayers.pitBottom);
     expect(pitColumn.find((b) => b.位[2] === groundLayers.pitBottom)?.状态).toBe('minecraft:dirt');
     // 头顶 z −3 + 1.8 低于填上的土的底面（z −1）
-    expect(SteveState(events.填土).z + 1.8).toBeLessThan(groundLayers.grassLayer);
+    expect(SteveState(events.fillHole).z + 1.8).toBeLessThan(groundLayers.grassLayer);
     // 裂纹：碎之前长满，碎的那一帧没有
-    expect(crackState(events.挖二 - 1)?.级).toBe(9);
-    expect(crackState(events.挖二)).toBeNull();
-    expect(crackState(events.挖开天窗 - 1)?.格).toEqual(shards[3]!.格);
+    expect(crackState(events.digSecond - 1)?.级).toBe(9);
+    expect(crackState(events.digSecond)).toBeNull();
+    expect(crackState(events.digSkylight - 1)?.格).toEqual(shards[3]!.格);
     // 挖的出手：0 → ½ 三刻、½ → 1 一刻
     expect([0, 1, 2, 3, 3.5, 4].map(digHand)).toEqual([0, 1 / 6, 2 / 6, 0.5, 0.75, 0]);
     // 原版下落一格约 4.6 刻
@@ -123,13 +123,13 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
   });
 
   it('掉落物：碎了就掉，10 刻后捡起、3 刻飞完；你从捡起第一块起手里拿着土', () => {
-    expect(pickupFrame(0)).toBe(events.挖一 + 0.5 * fps);
-    expect(dropItems(events.挖一).length).toBe(1);
+    expect(pickupFrame(0)).toBe(events.digFirst + 0.5 * fps);
+    expect(dropItems(events.digFirst).length).toBe(1);
     expect(dropItems(pickupFrame(0) + (4 * fps) / 24).length).toBe(1); // 捡起后 1/6 秒（约 3.3 刻）：第一块飞完了，第二块还在
     expect(SteveState(pickupFrame(0) - 1).holdingDirt).toBe(false);
     expect(SteveState(pickupFrame(0)).holdingDirt).toBe(true);
     // 都在坑里那一列（x −0.5～0.5）、剖面以里（y ≥ 0）
-    for (let f = events.挖一; f < frameCount; f++)
+    for (let f = events.digFirst; f < frameCount; f++)
       for (const p of dropItems(f)) {
         expect(Math.abs(p.位[0])).toBeLessThanOrEqual(0.5);
         expect(p.位[1]).toBeGreaterThanOrEqual(0);
@@ -139,11 +139,11 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
   it('洞里的暗：封顶那段两格都暗、后墙比你暗；挖开天窗后天光从上往下一格一格照下去；后墙顶上那格洞顶开着时压暗', () => {
     for (let f = 0; f < frameCount; f++) {
       const darkness = holeDark(f);
-      if (f < events.填土) {
+      if (f < events.fillHole) {
         expect(darkness).toEqual([{ 前: 0, 后: 0 }, { 前: 0, 后: 0 }]);
         continue;
       }
-      if (f < events.挖开天窗) {
+      if (f < events.digSkylight) {
         for (const { 前: front, 后: after } of darkness) {
           expect(front).toBeGreaterThan(0.2);
           expect(after).toBeGreaterThan(0.4);
@@ -154,11 +154,11 @@ describe('2-第一晚：第 2 句「祈愿小世界里不只有挫败」', () =>
       // 上面那格先亮
       expect(darkness[0]!.前).toBeLessThanOrEqual(darkness[1]!.前);
     }
-    const litPastFrame = Math.ceil(events.挖开天窗 + holeDarkParams.lightDownSec * fps);
+    const litPastFrame = Math.ceil(events.digSkylight + holeDarkParams.lightDownSec * fps);
     expect(holeDark(litPastFrame)[0]).toEqual({ 前: 0, 后: 0 });
     expect(holeDark(litPastFrame)[1]!.前).toBeGreaterThan(0);
-    expect(topWallDark(events.挖一 - 1)).toBe(0);
-    expect(topWallDark(events.挖一)).toBe(holeDarkParams.topWall);
-    expect(topWallDark(events.填土)).toBe(0);
+    expect(topWallDark(events.digFirst - 1)).toBe(0);
+    expect(topWallDark(events.digFirst)).toBe(holeDarkParams.topWall);
+    expect(topWallDark(events.fillHole)).toBe(0);
   });
 });

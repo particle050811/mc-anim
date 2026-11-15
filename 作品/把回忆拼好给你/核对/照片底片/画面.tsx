@@ -19,9 +19,9 @@ import { useViewIndex } from '@engine/段/时间.tsx';
 const mainCutEvents = { ...mainCutLine3Events, ...mainCutLine5Events };
 
 const negativeRenders: Record<PhotoName, () => React.ReactNode> = {
-  递蛋糕: () => <AltarPicture g={mainCutEvents['照片-祭坛递蛋糕'].帧} />,
+  递蛋糕: () => <AltarPicture g={mainCutEvents.photoAltarCake.帧} />,
   日落划船: () => <SunsetRowingPhoto withPost={false} />,
-  扑龙蛋: () => <EndShot f={endEvents['照片-扑龙蛋']} clean withPost={false} />,
+  扑龙蛋: () => <EndShot f={endEvents.photoEggPounce} clean withPost={false} />,
   // 照段 2-拨开阴霾 开光影：天和云是那一段的 Photon 雨云（用户 11-03「后面一个镜头的云怎么还是原版？」，照片墙上这张跟着换）
   光柱破云: () => (
     <shadingScope.Provider value={{ shading: shadingBySeg['2-拨开阴霾'] }}>

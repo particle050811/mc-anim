@@ -37,7 +37,7 @@ export const reunionRowTexts = threeLines(save.reunionPlayed);
 
 /** 光标箭头尖（界面像素，取到半个界面像素：光标一个光标像素一个光标像素地走）；开场鼓点那一帧（点下去）还在，之后钻进图标就不画了 */
 export const cursorAt = (songFrame: number): { x: number; y: number } | null => {
-  const inFrame = mainCutEvents.开场光标入.帧, arriveFrame = mainCutEvents.开场光标到.帧, pressFrame = mainCutEvents.开场鼓点.帧;
+  const inFrame = mainCutEvents.cursorEnters.帧, arriveFrame = mainCutEvents.cursorArrives.帧, pressFrame = mainCutEvents.drumBeatClick.帧;
   if (songFrame < inFrame || songFrame > pressFrame) return null;
   const q = smoothStep(clamp01((songFrame - inFrame) / (arriveFrame - inFrame)));
   const roundHalf = (v: number) => Math.round(v * 2) / 2;
@@ -47,7 +47,7 @@ export const cursorAt = (songFrame: number): { x: number; y: number } | null => 
 /** 指着那一项时图标上蒙灰、画播放箭头：0 没指着；1 指着字那边（灰箭头，world_selection v 0）；2 指着图标（蓝箭头，v 32）。
  *  点下去那一帧起不画（钻进去的是照片，不是蒙着灰的播放键） */
 export const pointingAt = (songFrame: number): 0 | 1 | 2 => {
-  if (songFrame >= mainCutEvents.开场鼓点.帧) return 0;
+  if (songFrame >= mainCutEvents.drumBeatClick.帧) return 0;
   const c = cursorAt(songFrame);
   const r = ui.pointAt;
   if (!c || c.x < r.left || c.x >= r.right || c.y < r.上 || c.y >= r.下) return 0;
@@ -55,7 +55,7 @@ export const pointingAt = (songFrame: number): 0 | 1 | 2 => {
 };
 
 /** 点下去以后选中了那一项（原版 setSelected：选中框；列表拿走焦点，搜索框白边变灰、光标不闪了） */
-export const isSelectedAt = (songFrame: number) => songFrame >= mainCutEvents.开场鼓点.帧;
+export const isSelectedAt = (songFrame: number) => songFrame >= mainCutEvents.drumBeatClick.帧;
 
 /** 搜索框里的「_」亮不亮：拿着焦点时按原版 EditBox 的刻数闪（界面一打开 frame 从 0 数，第 0 帧亮）；段内帧给 起帧 = 这一段界面打开的歌曲帧 */
 export const boxCursorOn = (songFrame: number, startFrame = 0) => Math.floor(Math.floor(((songFrame - startFrame) * 20) / fps) / flashTicks) % 2 === 0;
@@ -64,7 +64,7 @@ export const boxCursorOn = (songFrame: number, startFrame = 0) => Math.floor(Mat
 
 /** 钻入进度 0～1（开场鼓点那一帧是 0，钻入.秒 前一帧是 1：有界面的最后一帧图标已经铺满、照片全透，之后去掉界面不跳）和缓入后的 q */
 export const drillInProgress = (songFrame: number) => {
-  const p = clamp01((songFrame - mainCutEvents.开场鼓点.帧) / (drillIn.秒 * fps - 1));
+  const p = clamp01((songFrame - mainCutEvents.drumBeatClick.帧) / (drillIn.秒 * fps - 1));
   return { p, q: p ** drillIn.easeIn };
 };
 

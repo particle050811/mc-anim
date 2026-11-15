@@ -66,13 +66,13 @@ export type LiYingState = {
 /** 转身起、坐下起（段内帧，可以带小数）：倒推到 坐床沿 那一帧正好坐稳。
  *  这两段都是「起那一帧已经走了一帧」：插值从起前一帧（转身、坐下的 k = 0，和上一段末了一样）开始算，到这一刻换段，连着不跳。
  *  原来走了 1/24 秒，60 fps 下起那一帧先跳 2.5 帧的量（用户 11-03「统统改成 60 帧」） */
-export const sitDownStart = events.坐床沿 - params.sitDownSec * fps;
+export const sitDownStart = events.sitBedEdge - params.sitDownSec * fps;
 export const turnStart = sitDownStart - params.turnSec * fps;
 
 /** 抚平：每拍抹一下，七成拍长往床沿抹回来（缓进缓出）、三成拍长伸回床里侧 */
 export const wipe = (f: number) => {
-  if (f < events.抚平被子) return 0;
-  const p = (((f - events.抚平被子) / beatFrames) % 1 + 1) % 1;
+  if (f < events.smoothBlanket) return 0;
+  const p = (((f - events.smoothBlanket) / beatFrames) % 1 + 1) % 1;
   if (p < 0.7) return smoothstep(p / 0.7);
   return 1 - (p - 0.7) / 0.3;
 };
@@ -100,15 +100,15 @@ export const LiYingState = (f: number): LiYingState => {
     const k = smoothstep(((f - turnStart) / fps + oneFrameSec) / params.turnSec);
     return { loc: standPos, yaw: lerp(params.smoothYaw, sitYaw, k), expression: '无', 看: [lerp(smoothHead[0], -10, k), 0], skeleton: lerpBonePose(smoothPose(turnStart - 1), {}, k) };
   }
-  if (f < events.坐床沿) {
+  if (f < events.sitBedEdge) {
     // 退半步、坐下：位置和骨骼一起从站着插到坐床沿
     const k = smoothstep(((f - sitDownStart) / fps + oneFrameSec) / (params.sitDownSec + oneFrameSec));
     const loc: V3 = [lerp(standPos[0], sitPos[0], k), lerp(standPos[1], sitPos[1], k), lerp(standPos[2], sitPos[2], k)];
     return { loc, yaw: sitYaw, expression: '无', 看: [lerp(-10, params.nightWatchLook[0], k), lerp(0, params.nightWatchLook[1], k)], skeleton: lerpBonePose({}, sitBedEdgeSkeleton, k) };
   }
-  if (f < events.天亮转头) return { loc: sitPos, yaw: sitYaw, expression: '无', 看: params.nightWatchLook, skeleton: sitBedEdgeSkeleton };
+  if (f < events.dawnTurnHead) return { loc: sitPos, yaw: sitYaw, expression: '无', 看: params.nightWatchLook, skeleton: sitBedEdgeSkeleton };
   // 天亮：转头秒 的前一半转到过头（起那一帧已经走了一帧），后一半停在过头，到 转头秒 回到正对门口
-  const i = (f - events.天亮转头) / fps;
+  const i = (f - events.dawnTurnHead) / fps;
   if (i < params.turnHeadSec - 1e-9) {
     const k = Math.min(1, (i + oneFrameSec) / (params.turnHeadSec / 2));
     const gaze: [number, number] = [lerp(params.nightWatchLook[0], params.lookDoorOver[0], k), lerp(params.nightWatchLook[1], params.lookDoorOver[1], k)];
@@ -127,7 +127,7 @@ export const herTone = (hexColor: string) => {
 
 // ---------- 窗光、调子 ----------
 /** 这一帧窗光在第几档（参数.ts 的 窗光档们）：坐床沿 之前也是第一档 */
-export const lightTier = (f: number) => [events.窗光二, events.窗光三, events.月落, events.天亮转头].filter((e) => f >= e).length;
+export const lightTier = (f: number) => [events.windowLightStep2, events.windowLightStep3, events.moonset, events.dawnTurnHead].filter((e) => f >= e).length;
 
 /**
  * 屋里的调子、后窗的天、窗光、门外亮不亮。月落那一档（半拍）里天一点点亮起来：调子（晓）和后窗的天从月落那档往天亮那档线性走，
@@ -136,7 +136,7 @@ export const lightTier = (f: number) => [events.窗光二, events.窗光三, eve
  */
 export const lightState = (f: number) => {
   const i = lightTier(f);
-  const k = i === 3 ? (f - events.月落) / (events.天亮转头 - events.月落) : 0;
+  const k = i === 3 ? (f - events.moonset) / (events.dawnTurnHead - events.moonset) : 0;
   const t: Tone = lerpTone(palette.夜, palette.日落, lerp(params.dawnLevels[i]!, params.dawnLevels[4]!, k));
   return { 光: params.windowLightLevels[i]!, tone: t, 天: mixColor(params.skyColors[i]!, params.skyColors[4]!, k), outsideLit: i >= params.outsideLitLevel };
 };
@@ -154,23 +154,23 @@ const catmullRom = (p0: readonly number[], p1: readonly number[], p2: readonly n
  * 时段：月落 起换 日落（日出的暖光）；那一刻光是 0，两套灯的影子一样（默认.ts 的 屋里月光），换了看不出来
  */
 export const shadingSceneAt = (f: number): ShadingSceneParams => {
-  if (f >= events.月落) {
-    const k = smoothstep(clamp01((f - events.月落) / (events.天亮转头 - events.月落)));
+  if (f >= events.moonset) {
+    const k = smoothstep(clamp01((f - events.moonset) / (events.dawnTurnHead - events.moonset)));
     const sun = params.sunrise.起.map((v, i) => lerp(v, params.sunrise.止[i]!, k)) as [number, number, number];
     return { timeOfDay: '日落', sun, lightIntensity: k };
   }
   const moons = params.moonPositions;
-  const s = (moons.length - 1) * clamp01((f - events.坐床沿) / (events.月落 - events.坐床沿)) ** params.moonPathPow;
+  const s = (moons.length - 1) * clamp01((f - events.sitBedEdge) / (events.moonset - events.sitBedEdge)) ** params.moonPathPow;
   const i = Math.min(moons.length - 2, Math.floor(s));
   const pointAt = (j: number) => moons[Math.max(0, Math.min(moons.length - 1, j))]!;
   const sun = catmullRom(pointAt(i - 1), pointAt(i), pointAt(i + 1), pointAt(i + 2), s - i) as [number, number, number];
-  const fadeStartFrame = (events.窗光三 + events.月落) / 2;
-  return { timeOfDay: '夜', sun, lightIntensity: 1 - smoothstep(clamp01((f - fadeStartFrame) / (events.月落 - fadeStartFrame))) };
+  const fadeStartFrame = (events.windowLightStep3 + events.moonset) / 2;
+  return { timeOfDay: '夜', sun, lightIntensity: 1 - smoothstep(clamp01((f - fadeStartFrame) / (events.moonset - fadeStartFrame))) };
 };
 
 // ---------- 镜头 ----------
 /** 横移走了几成（按秒）：横移起 那一帧已经走了一帧，段的最后一帧是 1（原来按 24 fps 走了 1/24 秒、段尾前 1/24 秒走完，用户 11-03「统统改成 60 帧」） */
-const slideLinear = (f: number) => Math.max(0, ((f - events.横移起) / fps + oneFrameSec) / ((frameCount - events.横移起) / fps));
+const slideLinear = (f: number) => Math.max(0, ((f - events.sidePanStart) / fps + oneFrameSec) / ((frameCount - events.sidePanStart) / fps));
 
 /** 横移进度：0 起，段的最后一帧走完 1（t^幂 加速），最后一帧还在最快 */
 export const slideProgress = (f: number) => slideLinear(f) ** params.sideMove.exponent;
@@ -187,11 +187,11 @@ export const shotAt = (f: number): SideFraming => {
 };
 
 /** 横移走完那一刻（横移进度 = 1）镜头的速度（格/秒、成片像素/格）：交给分屏那一路接（t^幂 的导数 幂·t^(幂−1)/横移秒数，t = 1） */
-export const endVelocity = () => ({ rightSpeed: (params.sideMove.right * params.sideMove.exponent) / ((frameCount - events.横移起) / fps), pxPerCell: params.bedroomFraming.pxPerCell });
+export const endVelocity = () => ({ rightSpeed: (params.sideMove.right * params.sideMove.exponent) / ((frameCount - events.sidePanStart) / fps), pxPerCell: params.bedroomFraming.pxPerCell });
 
 // ---------- 屋外、接缝 ----------
 /** 2-时差 第一帧（分屏起）服务器那半的调子：横移时屋外的林子照它的色调画，整片后期往它走 */
-const seamTone = serverToneAt(mainCutEvents.分屏起.帧);
+const seamTone = serverToneAt(mainCutEvents.splitScreenStart.帧);
 
 /** 屋外林子的 林偏（场/2-门口/林间门口.tsx）：横移走完那一刻（段的最后一帧）再按 末速度 走一帧，中景正好落在 2-时差 第一帧服务器那半的中景上，
  *  切过去林子接着同一个速度滑（远景 N 是中景的一半，同一个林偏两层一起对上）。
@@ -201,7 +201,7 @@ export const outdoorForestOffset = (() => {
   const pagePerCell = (pxPerCell: number) => pxPerCell / filmScale;
   const layerPerCell = 16 * midGrove.N;
   const parallaxWidth = splitLayout.serverWidth + formShift.horizontalPx;
-  const parallaxLeft = shapeOffsetAt(mainCutEvents.分屏起.帧) - formShift.horizontalPx;
+  const parallaxLeft = shapeOffsetAt(mainCutEvents.splitScreenStart.帧) - formShift.horizontalPx;
   const parallaxNearX = serverFraming.中心[0] - formShift.horizontalPx / pagePerCell(serverFraming.pxPerCell) / 2;
   const parallaxMid = (parallaxNearX * splitScreenCount) / midGrove.N;
   const speed = endVelocity();
@@ -215,7 +215,7 @@ export const outdoorForestOffset = (() => {
 export const outdoorState = (f: number): BedroomOutside | undefined =>
   slideProgress(f) <= 0
     ? undefined
-    : { bright: clamp01(slideProgress(f)), tint: seamTone.tint, skyColors, 刻: dayTick, 群系: biome, growth: SplitState(mainCutEvents.分屏起.帧).growth, forestOffset: outdoorForestOffset, skyPerCell: 16 * splitScreenCount };
+    : { bright: clamp01(slideProgress(f)), tint: seamTone.tint, skyColors, 刻: dayTick, 群系: biome, growth: SplitState(mainCutEvents.splitScreenStart.帧).growth, forestOffset: outdoorForestOffset, skyPerCell: 16 * splitScreenCount };
 
 /** 整片后期的调色：横移以前是这一档窗光的调子；横移时按 横移进度 往 接缝调子 插，走完以后和 2-时差 第一帧服务器那半一样 */
 export const postGrade = (f: number) => {

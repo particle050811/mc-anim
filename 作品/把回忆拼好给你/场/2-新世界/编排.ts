@@ -24,7 +24,7 @@ const lerpRig = (a: CameraRigFrame, b: CameraRigFrame, k: number): CameraRigFram
 // ---------- 镜头 ----------
 
 /** 落镜进度（0～1，缓起缓停）：你起步那一帧起，到剖开那一帧落到剖面 */
-export const shotLanding = (songFrame: number) => smoothStep(clamp01((songFrame - mainCutEvents.第1句起步.帧) / (mainCutEvents.第1句剖开.帧 - mainCutEvents.第1句起步.帧)));
+export const shotLanding = (songFrame: number) => smoothStep(clamp01((songFrame - mainCutEvents.startWalking.帧) / (mainCutEvents.groundCutaway.帧 - mainCutEvents.startWalking.帧)));
 
 /**
  * 镜头：钻 = 钻进图标的进度（0～1，线性，段算好传进来；钻完以后给 1）。
@@ -47,7 +47,7 @@ export const cameraRigAt = (dive: number, songFrame: number): CameraRigFrame => 
 // ---------- 游戏时间 ----------
 
 /** 真时间的刻（第 1 句加入游戏那一帧起算） */
-const realTick = (songFrame: number) => ((songFrame - mainCutEvents.第1句加入游戏.帧) * 20) / fps;
+const realTick = (songFrame: number) => ((songFrame - mainCutEvents.joinGame.帧) * 20) / fps;
 
 /** 在 [低, 高] 里二分：仍是 对 的最后一刻、不再 对 的第一刻（对 在 低 那头成立、高 那头不成立） */
 const bisect = (predicate: (tick: number) => boolean, low: number, high: number) => {
@@ -70,7 +70,7 @@ export const skyLightTo = (bright: number, low: number, high: number) => {
   return bisect((t) => (ascending ? skyBrightness(t) < bright : skyBrightness(t) > bright), low, high)[1];
 };
 
-const nightStartFrame = mainCutEvents.第1句推完.帧, nightEndFrame = mainCutEvents.填土.帧;
+const nightStartFrame = mainCutEvents.openingPushDone.帧, nightEndFrame = mainCutEvents.fillHole.帧;
 
 /** 第 1 句、第 2 句的游戏刻：第 1 句整句是下午（天亮 1，太阳在背后偏西不进画），第 2 句首字那一帧正好走到 亮尽刻；
  *  从第 2 句首字到填土那一拍，天亮程度缓起缓停地从 1 掉到 0（边挖边天黑：挖第一格时还亮、填土那一拍黑透，星星跟着出来），之后照真时间接着走。
@@ -85,19 +85,19 @@ export const skyTickAt = (songFrame: number) => {
 /** 聊天栏的钟（刻，加入游戏那一帧 0）：起步前照真时间；起步后加快，「Steve加入了游戏」在剖开那一帧正好走完原版的 200 刻（最后 20 刻淡掉，铺在 聊天.淡秒 里），
  *  剖开、第 2 句里没有聊天字（文字一时只走一路，用户 10-24 规矩 看得懂的速度；撤排从左下角扫上去，聊天行先淡掉） */
 const fadeFrames = chatOverlay.fadeSec * fps;
-const fadeStartFrame = mainCutEvents.第1句剖开.帧 - fadeFrames;
+const fadeStartFrame = mainCutEvents.groundCutaway.帧 - fadeFrames;
 export const chatTickAt = (songFrame: number) => {
-  const startFrame = mainCutEvents.第1句起步.帧;
+  const startFrame = mainCutEvents.startWalking.帧;
   if (songFrame <= startFrame) return realTick(songFrame);
   if (songFrame <= fadeStartFrame) return realTick(startFrame) + (180 - realTick(startFrame)) * smoothStep((songFrame - startFrame) / (fadeStartFrame - startFrame));
-  if (songFrame <= mainCutEvents.第1句剖开.帧) return 180 + (20 * (songFrame - fadeStartFrame)) / fadeFrames;
-  return 200 + realTick(songFrame) - realTick(mainCutEvents.第1句剖开.帧);
+  if (songFrame <= mainCutEvents.groundCutaway.帧) return 180 + (20 * (songFrame - fadeStartFrame)) / fadeFrames;
+  return 200 + realTick(songFrame) - realTick(mainCutEvents.groundCutaway.帧);
 };
 
 // ---------- 剖面 ----------
 
 /** 撤掉了几排（0～剖面.剥排）：剖开那一帧起，每 剥秒 从镜头脚下往坑那边撤一排 */
-export const peeledRows = (songFrame: number) => Math.min(crossSection.stripRows, Math.max(0, Math.floor((songFrame - mainCutEvents.第1句剖开.帧) / (stripSec * fps)) + 1));
+export const peeledRows = (songFrame: number) => Math.min(crossSection.stripRows, Math.max(0, Math.floor((songFrame - mainCutEvents.groundCutaway.帧) / (stripSec * fps)) + 1));
 
 // ---------- 你 ----------
 
@@ -136,7 +136,7 @@ export const walk = (tick: number): { 出: number; swing: number; stride: number
 };
 
 /** 停稳的那一帧（歌曲帧）：松开后滑 8 刻（剩不到 0.01 格），之后转身、低头 */
-export const settleFrame = mainCutEvents.第1句起步.帧 + Math.ceil(((releaseTick + 8) * fps) / 20);
+export const settleFrame = mainCutEvents.startWalking.帧 + Math.ceil(((releaseTick + 8) * fps) / 20);
 
 export type YouPose = {
   feet: V3;
@@ -153,7 +153,7 @@ export type YouPose = {
 
 /** 第 歌帧 帧你的样子：站在出生点朝着樱花林，起步走到坑那一格停下，转身朝东、低头看脚下（2-第一晚 从这个样子接着挖） */
 export const youAt = (songFrame: number): YouPose => {
-  const tick = ((songFrame - mainCutEvents.第1句起步.帧) * 20) / fps;
+  const tick = ((songFrame - mainCutEvents.startWalking.帧) * 20) / fps;
   const w = walk(tick);
   const a = (heading * Math.PI) / 180;
   const d = Math.min(pathLength, w.出);

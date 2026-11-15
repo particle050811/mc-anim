@@ -73,21 +73,21 @@ describe('第 14 句：窗口和事件', () => {
     expect(SegmentWindow('2-时差')).toMatchObject({ 起帧: 2495, 止帧: 2704 });
     expect(SegmentWindow('2-归隐')).toMatchObject({ 起帧: 2704, 止帧: 2895, 帧数: 191 });
     expect(SegmentWindow('2-摇铃').起帧).toBe(2895);
-    expect(events.合屏到位.帧).toBe(2895);
+    expect(events.mergeScreenDone.帧).toBe(2895);
     expect(frameCountOf(retreatSegment)).toBe(191);
   });
 
   it('事件一拍一个动作：分屏、挂铃、走向照片墙、纸飘下、按框、打框、取照、她消失、合屏到位', () => {
-    const order = [events.第14句分屏, events.挂铃, events.走向照片墙, events.纸飘下, events.手按合照, events.打框, events.取照, events.她消失, events.合屏到位].map((e) => e.帧);
+    const order = [events.splitSceneChange, events.hangBell, events.walkToPhotoWall, events.paperDrifts, events.handOnPhoto, events.punchFrame, events.takePhoto, events.liYingVanishes, events.mergeScreenDone].map((e) => e.帧);
     expect(order[0]).toBe(2704);
     for (let i = 1; i < order.length; i++) expect(order[i]!).toBeGreaterThan(order[i - 1]!);
     // 照片方案「拍前 2～3 帧她打一下框」（24 fps 的帧）
-    expect((events.取照.帧 - events.打框.帧) / fps).toBeGreaterThanOrEqual(legacyFrameSec(2) - 1e-9);
-    expect((events.取照.帧 - events.打框.帧) / fps).toBeLessThanOrEqual(legacyFrameSec(3) + 1e-9);
+    expect((events.takePhoto.帧 - events.punchFrame.帧) / fps).toBeGreaterThanOrEqual(legacyFrameSec(2) - 1e-9);
+    expect((events.takePhoto.帧 - events.punchFrame.帧) / fps).toBeLessThanOrEqual(legacyFrameSec(3) + 1e-9);
     // 她走以后门口空着停 0.3 秒上下再拉开，拉开用 10 帧以上（24 fps 的帧；核查 10-24：同一台机位连续拉开，不是一刀；她走、合屏、你上线一件一件来）
-    expect((events.合屏起.帧 - events.她消失.帧) / fps).toBeGreaterThanOrEqual(0.25);
-    expect((events.合屏到位.帧 - events.合屏起.帧) / fps).toBeGreaterThanOrEqual(legacyFrameSec(8) - 1e-9);
-    expect((events.第15句加入游戏.帧 - events.合屏到位.帧) / fps).toBeGreaterThanOrEqual(legacyFrameSec(4) - 1e-9);
+    expect((events.mergeScreenStart.帧 - events.liYingVanishes.帧) / fps).toBeGreaterThanOrEqual(0.25);
+    expect((events.mergeScreenDone.帧 - events.mergeScreenStart.帧) / fps).toBeGreaterThanOrEqual(legacyFrameSec(8) - 1e-9);
+    expect((events.rejoinGame.帧 - events.mergeScreenDone.帧) / fps).toBeGreaterThanOrEqual(legacyFrameSec(4) - 1e-9);
   });
 
   it('两屏、2-摇铃 像素一样大：门口、教学楼下都是整屏镜头的 N（合屏只挪不缩）', () => {
@@ -96,16 +96,16 @@ describe('第 14 句：窗口和事件', () => {
 });
 
 describe('合屏：同一台机位连续拉开', () => {
-  const mergeFrames = Array.from({ length: events.合屏到位.帧 - events.合屏起.帧 + 1 }, (_, i) => events.合屏起.帧 + i);
+  const mergeFrames = Array.from({ length: events.mergeScreenDone.帧 - events.mergeScreenStart.帧 + 1 }, (_, i) => events.mergeScreenStart.帧 + i);
 
   it('合屏前：左屏就是整屏镜头往左挪 合屏前偏 格的左半边，分屏线在中线；合屏到位：整屏镜头、分屏线出画', () => {
     expect(mergedScreenOffset).toBe(4);
-    for (const f of [events.第14句分屏.帧, events.合屏起.帧]) {
+    for (const f of [events.splitSceneChange.帧, events.mergeScreenStart.帧]) {
       expect(serverCenterX(toSec(f))).toBe(mergedScreenOffset);
       expect(splitLineX(toSec(f))).toBe(centerLine);
     }
-    expect(serverCenterX(toSec(events.合屏到位.帧))).toBe(fullScreenShot.framing.中心[0]);
-    expect(splitLineX(toSec(events.合屏到位.帧))).toBe(1280);
+    expect(serverCenterX(toSec(events.mergeScreenDone.帧))).toBe(fullScreenShot.framing.中心[0]);
+    expect(splitLineX(toSec(events.mergeScreenDone.帧))).toBe(1280);
   });
 
   it('每帧都往一个方向挪（不一帧挪、一帧不挪），没有一帧跳得特别远（两头慢）', () => {
@@ -128,16 +128,16 @@ describe('合屏：同一台机位连续拉开', () => {
 
 describe('她：挂铃 → 走进屋 → 取照 → 传送走', () => {
   it('第一帧在告示牌旁举着铃，帽檐不压牌子（牌子右沿 x −2.5）；挂铃 以后才起步', () => {
-    const startPose = liYingAt(events.第14句分屏.帧)!;
+    const startPose = liYingAt(events.splitSceneChange.帧)!;
     expect([startPose.x, startPose.yaw, startPose.rightHand]).toEqual([hangBellStandPos, 180, null]);
     expect(hangBellStandPos - 0.5).toBeGreaterThanOrEqual(bell.hangPoint[0]);
-    expect(liYingAt(events.走向照片墙.帧)!.x).toBe(hangBellStandPos);
+    expect(liYingAt(events.walkToPhotoWall.帧)!.x).toBe(hangBellStandPos);
   });
 
   it('走路：一路往东、原版走路到疾跑之间的速度（4.3～5.6 格/秒），手按合照 前 按伸秒 停在取照站位', () => {
-    const endFrame = events.手按合照.帧 - pressReachSec * fps;
+    const endFrame = events.handOnPhoto.帧 - pressReachSec * fps;
     let maxSpeed = 0;
-    for (let f = events.走向照片墙.帧 + 1; f <= endFrame; f++) {
+    for (let f = events.walkToPhotoWall.帧 + 1; f <= endFrame; f++) {
       const d = walkTo(f).x - walkTo(f - 1).x;
       expect(d, `第 ${f} 帧`).toBeGreaterThanOrEqual(0);
       maxSpeed = Math.max(maxSpeed, d * fps);
@@ -152,10 +152,10 @@ describe('她：挂铃 → 走进屋 → 取照 → 传送走', () => {
   });
 
   it('取照那一帧合照落进主手，之前手里没有；她消失 那一帧起不在了', () => {
-    expect(liYingAt(events.取照.帧 - 1)!.rightHand).toBeNull();
-    expect(liYingAt(events.取照.帧)!.rightHand).toBe('合照');
-    expect(liYingAt(events.她消失.帧 - 1)).not.toBeNull();
-    for (let f = events.她消失.帧; f < SegmentWindow('2-归隐').止帧; f++) expect(liYingAt(f), `第 ${f} 帧`).toBeNull();
+    expect(liYingAt(events.takePhoto.帧 - 1)!.rightHand).toBeNull();
+    expect(liYingAt(events.takePhoto.帧)!.rightHand).toBe('合照');
+    expect(liYingAt(events.liYingVanishes.帧 - 1)).not.toBeNull();
+    for (let f = events.liYingVanishes.帧; f < SegmentWindow('2-归隐').止帧; f++) expect(liYingAt(f), `第 ${f} 帧`).toBeNull();
   });
 });
 
@@ -193,7 +193,7 @@ describe('照片墙', () => {
 
 describe('调子', () => {
   it('左屏从第 13 句末的褪色起，合屏到位那一拍到 2-摇铃 开头的调子', () => {
-    expect(SplitState(events.第14句分屏.帧 - 1).褪色).toBeCloseTo(fadeStart, 9);
+    expect(SplitState(events.splitSceneChange.帧 - 1).褪色).toBeCloseTo(fadeStart, 9);
     expect(fadeEnd).toBeCloseTo(1 - colorBackRange.起, 12);
   });
 });
@@ -219,7 +219,7 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
   const flowers = paperFlowers();
   const papers = flowers.filter((q) => q.种 === '纸');
   const petals = flowers.filter((q) => q.种 === '瓣');
-  const segmentFrames = Array.from({ length: SegmentWindow('2-摇铃').止帧 - events.第14句分屏.帧 }, (_, i) => events.第14句分屏.帧 + i);
+  const segmentFrames = Array.from({ length: SegmentWindow('2-摇铃').止帧 - events.splitSceneChange.帧 }, (_, i) => events.splitSceneChange.帧 + i);
   /** 这一刻露在 [左, 1280) × [0, 720) 里的 */
   const inPicture = (qs: readonly PaperPiece[], t: number, left = 0) =>
     qs.filter((q) => {
@@ -237,7 +237,7 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
     return (Math.atan2(b.y - a.y, a.x - b.x) * 180) / Math.PI;
   };
   /** 这一片从哪一刻起被风带满（纸花.ts 的 揽起 + 升） */
-  const fullyAt = (q: PaperPiece) => Math.max(q.生, events.纸飘下.秒) + q.delay + q.rise;
+  const fullyAt = (q: PaperPiece) => Math.max(q.生, events.paperDrifts.秒) + q.delay + q.rise;
   /** 窗里扔出来的（出发时有抛的初速）；其余的（楼上落下来、右沿外刮进来的碎纸，花瓣）出发时就在往下飘 */
   const tossed = (q: PaperPiece) => q.种 === '纸' && q.y0 >= 0 && q.x0 < 1280;
 
@@ -266,14 +266,14 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
   });
 
   it('风：纸飘下 那一拍前后刮起来，一直刮到转向铃，摇铃那一拍停住（樱花风从铃那里接手）', () => {
-    expect(windForce(events.纸飘下.秒 - 0.2)).toBe(0);
-    for (let t = events.纸飘下.秒 + 0.3; t <= events.转向铃.秒; t += 0.05) expect(windForce(t)).toBeCloseTo(1, 9);
-    expect(windForce(events.摇铃.秒)).toBe(0);
+    expect(windForce(events.paperDrifts.秒 - 0.2)).toBe(0);
+    for (let t = events.paperDrifts.秒 + 0.3; t <= events.turnToBell.秒; t += 0.05) expect(windForce(t)).toBeCloseTo(1, 9);
+    expect(windForce(events.ringBell.秒)).toBe(0);
   });
 
   it('起风以后两边一个方向：被风带满以后，碎纸、花瓣都斜着往左下飘（大势往下斜 10°～28°；带上晃，每四分之一秒也都是往左、往下）', () => {
     let checkedCount = 0;
-    for (let f = events.纸飘下.帧; f < events.转向铃.帧; f += 2) {
+    for (let f = events.paperDrifts.帧; f < events.turnToBell.帧; f += 2) {
       const t = toSec(f);
       for (const q of flowers) {
         if (t < fullyAt(q) || t < q.生 + paperParams.tugSec * 3) continue;
@@ -291,8 +291,8 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
 
   it('每片走一道弧（用户 10-25「至少应该是斜着向左吧」画的那道）：先往下落，越往下越被吹向左，往下斜的角度一路变小；窗里扔出来的抛一下以后也是先落后吹', () => {
     for (const q of flowers) {
-      const startSec = Math.max(q.生, events.纸飘下.秒);
-      if (fullyAt(q) > events.转向铃.秒) continue;
+      const startSec = Math.max(q.生, events.paperDrifts.秒);
+      if (fullyAt(q) > events.turnToBell.秒) continue;
       const tiltDeg = paperTilt(noSway(q), fullyAt(q));
       expect(tiltDeg, `${q.种} ${q.生.toFixed(2)}`).toBeLessThan(28);
       if (tossed(q)) {
@@ -327,7 +327,7 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
 
   it('碎、多：分屏里有一刻右屏里飘着六十片以上碎纸，上、中两截都有十几片', () => {
     const ok = segmentFrames
-      .filter((f) => f < events.合屏起.帧)
+      .filter((f) => f < events.mergeScreenStart.帧)
       .some((f) => {
         const visible = inPicture(papers, toSec(f), centerLine);
         const halfCounts = [0, 1].map((i) => visible.filter((q) => Math.floor(Math.max(0, paperAt(q, toSec(f)).y) / 240) === i).length);
@@ -366,7 +366,7 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
 
   it('越往左越像樱花：分屏里过了线的碎纸，平均档位比还在右屏的高', () => {
     let passCount = 0;
-    for (let f = events.纸飘下.帧 + legacyFrameSec(12) * fps; f < events.合屏起.帧; f++) {
+    for (let f = events.paperDrifts.帧 + legacyFrameSec(12) * fps; f < events.mergeScreenStart.帧; f++) {
       const t = toSec(f);
       const visible = inPicture(papers, t);
       const [leftHalf, rightSide] = [visible.filter((q) => centerX(q, t) < centerLine), visible.filter((q) => centerX(q, t) >= centerLine)];
@@ -399,8 +399,8 @@ describe('碎纸和花瓣（用户 10-24：两边方向、速度一样；用户 
   });
 
   it('她按框、取下合照、传送走那几拍（手按合照 前 0.1 秒到 合屏起），她和照片墙那块没有碎纸、花瓣挡着', () => {
-    expect(stepAside.起).toBeLessThan(events.手按合照.秒);
-    expect(stepAside.止).toBeGreaterThanOrEqual(events.她消失.秒 + 0.3);
+    expect(stepAside.起).toBeLessThan(events.handOnPhoto.秒);
+    expect(stepAside.止).toBeGreaterThanOrEqual(events.liYingVanishes.秒 + 0.3);
     // 让开框盖住取照时的她：取照站位在左屏 x = 320 + 80 × 站位 页面像素
     const liYingX = 640 / 2 + photoStandPos * (fullScreenShot.framing.pxPerCell / filmScale);
     expect(stepAside.left).toBeLessThan(liYingX - 40);
@@ -444,7 +444,7 @@ describe('歌词：第 15 句在底部', () => {
   });
 
   it('文字一时只走一路（核查 10-24）：你上线、聊天行弹出那一帧，顶上已经退完；底部第 15 句冒头那一帧，接过来的聊天行已经淡完', () => {
-    const joinFrame = events.第15句加入游戏.帧 - startFrame;
+    const joinFrame = events.rejoinGame.帧 - startFrame;
     for (let i = 0; i < 14; i++) for (const z of charStates(song.upperLines, i, joinFrame, runeLyricDefault)) expect(z.shown, `第 ${i + 1} 句`).toBe(0);
     let f = 0;
     while (charStates(song.lowerLines, 0, f, runeLyricDefault).every((z) => z.shown === 0)) f++;
@@ -467,8 +467,8 @@ describe('声音', () => {
 
   it('纸声最响那一下在纸飘下、取出声在取照、铃声起音不晚于挂铃', () => {
     const startFrames = Object.fromEntries(line14Sounds.map((s) => [s.名, s.起帧]));
-    expect(startFrames.纸飘下! + Math.round(paperSounds[1]!.peakSec * fps)).toBe(events.纸飘下.帧);
-    expect(startFrames.荧光框取出).toBe(events.取照.帧);
-    expect(startFrames.挂铃).toBeLessThanOrEqual(events.挂铃.帧);
+    expect(startFrames.纸飘下! + Math.round(paperSounds[1]!.peakSec * fps)).toBe(events.paperDrifts.帧);
+    expect(startFrames.荧光框取出).toBe(events.takePhoto.帧);
+    expect(startFrames.挂铃).toBeLessThanOrEqual(events.hangBell.帧);
   });
 });

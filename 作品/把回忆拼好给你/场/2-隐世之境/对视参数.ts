@@ -14,9 +14,9 @@ const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 type Vec3 = [number, number, number];
 
 /** 歌上的秒（她的呼吸、尾巴、法杖浮动都按它取样） */
-export const eyeContactSec = mainCutEvents.第15句对视.秒;
+export const eyeContactSec = mainCutEvents.reunionGaze.秒;
 /** 48.61 进聊天栏的「Steve加入了游戏」到这一帧多少刻（按两边取整后的帧算，约 27 刻，还满亮） */
-export const chatAgeTick = ((mainCutEvents.第15句对视.帧 - mainCutEvents.第15句加入游戏.帧) / fps) * 20;
+export const chatAgeTick = ((mainCutEvents.reunionGaze.帧 - mainCutEvents.rejoinGame.帧) / fps) * 20;
 
 /** 你站在哪（脚底）：参数.ts 门口机位的 y（−10.5），往屋里（东）挪 0.1 格，还在西门门洞那一格里。
  *  玩家碰撞箱 0.6 宽，北沿到 −10.2，碰不到开着的西门门扇（y −10.1875 以北，地点/隐世之境主厅门数据.ts），原版站得到这里 */

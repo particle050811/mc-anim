@@ -14,11 +14,11 @@ describe('分镜：从网格常数推帧号', () => {
     expect(w.起帧).toBe(2485);
     expect(w.止帧).toBe(3360);
     expect(w.帧数).toBe(875);
-    expect(events.驯服.帧).toBe(2563);
-    expect(events.微笑推镜.帧).toBe(3177);
-    expect(events.咔哒定格.帧).toBe(3279);
+    expect(events.tame.帧).toBe(2563);
+    expect(events.smilePushIn.帧).toBe(3177);
+    expect(events.clickFreeze.帧).toBe(3279);
     const segEvents = segEventFrames('1-一如既往');
-    expect([segEvents.驯服, segEvents.微笑推镜, segEvents.咔哒定格]).toEqual([78, 692, 794]);
+    expect([segEvents.tame, segEvents.smilePushIn, segEvents.clickFreeze]).toEqual([78, 692, 794]);
   });
 
   it('段.ts 的帧数、场窗口和原声入点都取自分镜', () => {
@@ -43,7 +43,7 @@ describe('分镜：从网格常数推帧号', () => {
 
   it('段.ts 的咔哒 cue：从分镜的咔哒定格往前提起音秒，主音离定格那一帧不到半帧；放满文件、不过段尾，增益取场参数', () => {
     const cue = toFrameCues(seg).find((c) => c.资产 === '音效/车万女仆/item.camera_use');
-    const freezeFrame = segEventFrames('1-一如既往').咔哒定格;
+    const freezeFrame = segEventFrames('1-一如既往').clickFreeze;
     // 起音 0.13 秒 = 7.8 帧取整 8 帧，文件 0.88 秒 = 52.8 帧放满 53 帧（24 fps 时 3 帧、22 帧）
     expect(cue).toMatchObject({ 帧: freezeFrame - 8, 帧数: 53, 增益: clickGain, 名: '咔哒' });
     // 起放帧按起音秒四舍五入到帧（同 2-合照 的咔哒）：主音离定格那一帧不到半帧，60 fps 早 0.2 帧（24 fps 时晚 0.12 帧）
@@ -73,9 +73,9 @@ describe('分镜：从网格常数推帧号', () => {
   });
 
   it('正片第 15 句：加入游戏 2908（合屏到位后半拍）、对视（封面帧）3010，对视时那行聊天约 34 刻，还满亮（原版 180 刻后才淡）', () => {
-    expect(mainCutEvents.第15句加入游戏.帧).toBe(2908);
-    expect(mainCutEvents.第15句对视.帧).toBe(3010);
-    const tick = ((mainCutEvents.第15句对视.帧 - mainCutEvents.第15句加入游戏.帧) / fps) * 20;
+    expect(mainCutEvents.rejoinGame.帧).toBe(2908);
+    expect(mainCutEvents.reunionGaze.帧).toBe(3010);
+    const tick = ((mainCutEvents.reunionGaze.帧 - mainCutEvents.rejoinGame.帧) / fps) * 20;
     expect(Math.round(tick)).toBe(34);
   });
 
@@ -106,16 +106,16 @@ describe('分镜：从网格常数推帧号', () => {
   });
 
   it('第 8 句的几拍和依据里写的秒数差不到 0.01 秒（晴定提早、苦力怕冒头挪后，见依据；后面几拍同三稿）', () => {
-    const draftTimes = { 第8句晴定: 25.99, 挂照片: 26.53, 苦力怕冒头: 26.85, 她看见苦力怕: 27.38, 哈气: 27.8, 苦力怕逃: 28.23 } as const;
+    const draftTimes = { clearSkySettles: 25.99, hangPhoto: 26.53, creeperAppears: 26.85, liYingSpotsCreeper: 27.38, hiss: 27.8, creeperFlees: 28.23 } as const;
     for (const [eventName, sec] of Object.entries(draftTimes)) expect(Math.abs(mainCutEvents[eventName as keyof typeof draftTimes].秒 - sec)).toBeLessThan(0.01);
-    expect(mainCutEvents.哈气.帧).toBe(1668);
+    expect(mainCutEvents.hiss.帧).toBe(1668);
   });
 
   it('第 13 句五拍（风吹日历、生长二～四、日历到一）落在三稿的秒数上（差不到半帧）', () => {
-    const beats = [mainCutEvents.风吹日历, mainCutEvents.生长二, mainCutEvents.生长三, mainCutEvents.生长四, mainCutEvents.日历到一];
+    const beats = [mainCutEvents.windBlowsCalendar, mainCutEvents.growthStep2, mainCutEvents.growthStep3, mainCutEvents.growthStep4, mainCutEvents.calendarAtOne];
     [42.72, 43.14, 43.57, 44.0, 44.42].forEach((sec, i) => expect(Math.abs(beats[i]!.秒 - sec)).toBeLessThan(0.5 / fps));
     expect(beats.map((e) => e.帧)).toEqual([2563, 2589, 2614, 2640, 2665]);
-    expect(mainCutEvents.分屏起.秒).toBe(lineAt(13).leadIn);
+    expect(mainCutEvents.splitScreenStart.秒).toBe(lineAt(13).leadIn);
   });
 
   it('网格的 15 句按序、起止不反', () => {

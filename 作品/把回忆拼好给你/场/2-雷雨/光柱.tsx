@@ -289,7 +289,7 @@ const newQuadMaterial = (vertexShader: string, fragmentShader: string) =>
   });
 
 // ---------- 时刻 ----------
-const cueSecs = () => ({ circleStartSec: songSec(eventFrame('阵起')), 起: songSec(eventFrame('光柱起')), 拨: songSec(eventFrame('拨')), cloudBreakSec: songSec(eventFrame('破云')), 退: songSec(eventFrame('光柱退')) });
+const cueSecs = () => ({ circleStartSec: songSec(eventFrame('magicCircleUp')), 起: songSec(eventFrame('beamRises')), 拨: songSec(eventFrame('beamHitsCloud')), cloudBreakSec: songSec(eventFrame('cloudBreaks')), 退: songSec(eventFrame('beamFades')) });
 /** t0 起按 τ 秒衰减的一下（t0 之前 0） */
 const decay = (t: number, t0: number, τ: number) => (t < t0 ? 0 : Math.exp(-(t - t0) / τ));
 /** 拨 到 破云 顶着云越憋越粗越亮（进度平方），破云 那一下交给 涌.破云 */

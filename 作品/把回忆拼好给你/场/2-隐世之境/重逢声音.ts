@@ -10,7 +10,7 @@ export const doorOpenGain = 0.3;
 export const doorOpenSound: SongSound = {
   资产: doorSoundFile.资产,
   名: '推门',
-  起帧: mainCutEvents.推门.帧,
+  起帧: mainCutEvents.doorPush.帧,
   时长秒: doorSoundFile.时长秒,
   增益: () => doorOpenGain,
 };

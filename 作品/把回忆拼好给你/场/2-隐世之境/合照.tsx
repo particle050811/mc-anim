@@ -163,7 +163,7 @@ export const LeanPicture: React.FC<LeanPictureProps> = ({ 帧: frame, 叠层: ov
 /** 截下来的新合照（干净帧）：咔哒那一帧（分镜 照片-合照）的靠肩，不带聊天、歌词，不闪白；气泡照片里的样子同片里。
  *  片尾原版「选择世界」界面里的新世界图标（64×64）取这一帧画面正中的正方形，两个人都在正方形里 */
 export const GroupPhotoPrint: React.FC<{ withPost?: boolean; showBubble?: boolean }> = ({ withPost = true, showBubble }) => (
-  <LeanPicture 帧={events['照片-合照'].帧} withPost={withPost} showBubble={showBubble} />
+  <LeanPicture 帧={events.photoGroupShot.帧} withPost={withPost} showBubble={showBubble} />
 );
 
 /** 拍立得缩小、转斜、字淡入都走完的那一帧（相对定格帧，按秒算完取整到帧） */
@@ -186,5 +186,5 @@ export const GroupPhotoPolaroid: React.FC<{ withPost?: boolean; 字?: string }> 
 
 /** 15 尾一整帧：靠肩，第15句台词收 以前挂着接过来的台词气泡（叠层 放在整片后期里面） */
 export const GroupPhotoPicture: React.FC<{ 帧: number; 叠层?: React.ReactNode }> = ({ 帧: frame, 叠层: overlay }) => (
-  <LeanPicture 帧={frame} 叠层={overlay} 台词={frame < events.第15句台词收.帧} />
+  <LeanPicture 帧={frame} 叠层={overlay} 台词={frame < events.speechBubbleOut.帧} />
 );

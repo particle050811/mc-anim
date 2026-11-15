@@ -28,8 +28,8 @@ const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 /** 照片是第 11 句（段 2-截图下线）截下的，2-空床 开头接着缩的也是这一张：光影跟着 2-截图下线 开不开走 */
 const shading = shadingBySeg['2-截图下线'];
 const holdFrame = freezeFrame;
-const shatterFrame = mainCutEvents.第11句碎裂.帧;
-const logOffFrame = mainCutEvents.第11句下线.帧;
+const shatterFrame = mainCutEvents.worldShatters.帧;
+const logOffFrame = mainCutEvents.logOff.帧;
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 /** 把 门口之夜画布 交出来的各层按位置拼进 W×H 的离屏画布（远景那块比画面高、不从顶边起） */

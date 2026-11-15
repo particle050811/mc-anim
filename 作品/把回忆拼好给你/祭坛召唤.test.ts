@@ -89,10 +89,10 @@ describe('2-祭坛召唤：第 3 句（祭坛的远景贴地升起，「光」�
 
   it('拍：点祭坛 9.48，现身 9.91，光 10.33（切），递蛋糕 10.76，推眼睛 11.19（差不到半帧）；远景先立住地方一秒多，每个动作至少隔 0.4 秒；只切一刀，两边各 1.4 秒以上', () => {
     const expected = [
-      [mainCutEvents.第3句点祭坛, 9.48], [mainCutEvents.第3句现身, 9.91], [mainCutEvents.第3句光, 10.33], [mainCutEvents.第3句递蛋糕, 10.76], [mainCutEvents.第3句推眼睛, 11.19],
+      [mainCutEvents.activateAltar, 9.48], [mainCutEvents.liYingAppears, 9.91], [mainCutEvents.altarCloseUp, 10.33], [mainCutEvents.offerCake, 10.76], [mainCutEvents.pushToEye, 11.19],
     ] as const;
     for (const [e, sec] of expected) expect(Math.abs(e.秒 - sec)).toBeLessThan(0.5 / fps + 0.01);
-    expect(events.cutFrame).toBe(mainCutEvents.第3句光.帧);
+    expect(events.cutFrame).toBe(mainCutEvents.altarCloseUp.帧);
     const order = [segWindow.起帧, events.tapAltar, events.appear, events.cutFrame, events.handOffFrame, events.photo, events.pushInEye, lastFrame];
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect((events.tapAltar - segWindow.起帧) / fps).toBeGreaterThan(1);

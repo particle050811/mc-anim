@@ -249,7 +249,7 @@ export const DoorNightCanvas: React.FC<DoorNightCanvasProps> = ({ 帧: frame, pr
   const liYing = LiYingState(frame);
   const placement = setupState(frame);
   const sky = skyFraming(shot);
-  const openingSky = skyFraming(shotAt(mainCutEvents.第9句入夜.帧));
+  const openingSky = skyFraming(shotAt(mainCutEvents.nightfall.帧));
   const moonPos = sideProjection(openingSky, width, height)(nightSkyArc.心[0], nightSkyArc.心[1] + nightSkyArc.radius);
   const saplingBlocks = useMemo(() => cherryTreeBlocks(false, [entrance.saplingPos[0], 1, 0]), []);
   const photoWall = useMemo(() => photoWallCells(line8Photos), []);

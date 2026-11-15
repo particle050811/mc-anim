@@ -19,7 +19,7 @@ import { toFrameCues, frameCountOf, sceneWindowFrames } from './声音/回帧.ts
 /** 24 fps 的一帧（旧帧(1) 秒）是几帧 */
 const oldFrameStep = legacyFrameSec(1) * fps;
 /** 横移开始动以前的最后一帧（横移起 那一帧已经走了一帧） */
-const beforeSlide = Math.floor(events.横移起 - 1);
+const beforeSlide = Math.floor(events.sidePanStart - 1);
 
 describe('2-空床：第 12 句卧室整句一个镜头', () => {
   it('窗口从第 12 句首字到第 13 句前导（歌曲帧 2306～2495），段尾就是分屏起', () => {
@@ -29,13 +29,13 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     expect(frameCountOf(seg)).toBe(189);
     expect(frameCount).toBe(189);
     expect(sceneWindowFrames(seg)).toEqual({ 起帧: 2306, 止帧: 2495 });
-    expect(mainCutEvents.分屏起.帧).toBe(2495);
+    expect(mainCutEvents.splitScreenStart.帧).toBe(2495);
   });
 
   it('三稿的时刻：抚平 38.46、坐床沿 39.31（差不到半帧），天亮转头 提前一拍到 40.59（核查 10-24：横移起 前多停一会）；事件按顺序、都在段里', () => {
-    for (const [e, sec] of [[mainCutEvents.抚平被子, 38.46], [mainCutEvents.坐床沿, 39.31], [mainCutEvents.天亮转头, 40.59]] as const)
+    for (const [e, sec] of [[mainCutEvents.smoothBlanket, 38.46], [mainCutEvents.sitBedEdge, 39.31], [mainCutEvents.dawnTurnHead, 40.59]] as const)
       expect(Math.abs(e.秒 - sec)).toBeLessThan(0.5 / fps + 0.01);
-    const order = [events.抚平被子, events.坐床沿, events.窗光二, events.窗光三, events.月落, events.天亮转头, events.横移起];
+    const order = [events.smoothBlanket, events.sitBedEdge, events.windowLightStep2, events.windowLightStep3, events.moonset, events.dawnTurnHead, events.sidePanStart];
     expect([...order].sort((a, b) => a - b)).toEqual(order);
     expect(order[0]).toBeGreaterThanOrEqual(0);
     expect(order.at(-1)).toBeLessThan(frameCount);
@@ -54,7 +54,7 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     }
     expect(exposed).toBeGreaterThan(fps * 2);
     expect(lyricLines[11]!.入).toBe(0);
-    expect(lyricLines[11]!.收! + runeLyricDefault.exitSec * fps).toBeCloseTo(mainCutEvents.横移起.帧 - toSongFrame(0), 6);
+    expect(lyricLines[11]!.收! + runeLyricDefault.exitSec * fps).toBeCloseTo(mainCutEvents.sidePanStart.帧 - toSongFrame(0), 6);
   });
 
   it('cue：只有原声，铺满整段、固定增益、不淡', () => {
@@ -84,7 +84,7 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
 
   it('转身、坐下：骨骼一点一点插过去，不在一下里弹直（每 旧帧(1) 秒腰、胸变不到 20°，尾巴、胳膊、腿不到 50°，朝向不到 45°）', () => {
     const rx = (f: number, b: string) => ((LiYingState(f).skeleton[b]?.rot as number[] | undefined)?.[0] ?? 0);
-    for (let f = Math.floor(turnStart - oldFrameStep); f <= events.坐床沿; f++) {
+    for (let f = Math.floor(turnStart - oldFrameStep); f <= events.sitBedEdge; f++) {
       const g = f - oldFrameStep;
       for (const b of ['UpBody', 'UpperBody']) expect(Math.abs(rx(f, b) - rx(g, b))).toBeLessThan(20);
       for (const b of ['Tail', 'RightArm', 'RightForeArm', 'RightLeg', 'LeftLeg', 'RightLowerLeg']) expect(Math.abs(rx(f, b) - rx(g, b))).toBeLessThan(50);
@@ -95,18 +95,18 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
   });
 
   it('坐床沿到天亮转头之前一动不动；天亮那一拍 转头秒 里转去看门口（过头一下再回来），上身一挺，表情惊讶', () => {
-    const expectedState = JSON.stringify(LiYingState(events.坐床沿));
-    for (let f = events.坐床沿; f < events.天亮转头; f++) expect(JSON.stringify(LiYingState(f))).toBe(expectedState);
-    const sitState = LiYingState(events.坐床沿);
+    const expectedState = JSON.stringify(LiYingState(events.sitBedEdge));
+    for (let f = events.sitBedEdge; f < events.dawnTurnHead; f++) expect(JSON.stringify(LiYingState(f))).toBe(expectedState);
+    const sitState = LiYingState(events.sitBedEdge);
     expect(sitState.skeleton).toBe(sitBedEdgeSkeleton);
     expect(((sitState.yaw % 360) + 360) % 360).toBe(params.seatYaw);
     expect(sitState.看).toEqual(params.nightWatchLook);
     expect(sitState.expression).toBe('无');
-    const turnDone = events.天亮转头 + params.turnHeadSec * fps;
+    const turnDone = events.dawnTurnHead + params.turnHeadSec * fps;
     expect(LiYingState(turnDone - 1).看).toEqual(params.lookDoorOver);
     expect(LiYingState(turnDone).看).toEqual(params.lookAtDoor);
     expect(LiYingState(frameCount - 1).看).toEqual(params.lookAtDoor);
-    for (let f = events.天亮转头; f < frameCount; f++) expect(LiYingState(f).expression).toBe('惊讶');
+    for (let f = events.dawnTurnHead; f < frameCount; f++) expect(LiYingState(f).expression).toBe('惊讶');
     const straighten = (f: number) => (LiYingState(f).skeleton.UpperBody!.rot as number[])[0];
     expect(straighten(turnDone - 1)).toBe(params.turnTorsoOver);
     expect(straighten(frameCount - 1)).toBe(params.turnTorsoUpright);
@@ -124,21 +124,21 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
   });
 
   it('窗光：月光三档、月落一档没有、天亮一档，档在拍上跳；月光一档地板、二档被面、三档后墙，一档比一档往右、往里；天亮门口那束落在她脚前的地板上', () => {
-    expect([0, events.窗光二 - 1, events.窗光二, events.窗光三, events.月落, events.天亮转头 - 1, events.天亮转头, frameCount - 1].map(lightTier)).toEqual([0, 0, 1, 2, 3, 3, 4, 4]);
-    expect(lightState(events.月落).光).toEqual([]);
+    expect([0, events.windowLightStep2 - 1, events.windowLightStep2, events.windowLightStep3, events.moonset, events.dawnTurnHead - 1, events.dawnTurnHead, frameCount - 1].map(lightTier)).toEqual([0, 0, 1, 2, 3, 3, 4, 4]);
+    expect(lightState(events.moonset).光).toEqual([]);
     expect([0, 1, 2, 3, 4].map((i) => params.windowLightLevels[i]!.length)).toEqual([1, 1, 1, 0, 2]);
-    expect([0, events.月落, events.天亮转头 - 1, events.天亮转头, frameCount - 1].map((f) => lightState(f).outsideLit)).toEqual([false, false, false, true, true]);
+    expect([0, events.moonset, events.dawnTurnHead - 1, events.dawnTurnHead, frameCount - 1].map((f) => lightState(f).outsideLit)).toEqual([false, false, false, true, true]);
     // 天亮不一帧跳（核查 10-24）：月落那一档里屋里的调子、后窗的天一帧一帧往天亮走，每 旧帧(1) 秒走的不到总差的三成
     const brightnessAt = (f: number) => lightState(f).tone.grade.multiply;
     const hexBrightness = (c: string) => [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)).reduce((a, b) => a + b, 0);
-    const totalDiff = hexBrightness(brightnessAt(events.天亮转头)) - hexBrightness(brightnessAt(events.月落 - 1));
+    const totalDiff = hexBrightness(brightnessAt(events.dawnTurnHead)) - hexBrightness(brightnessAt(events.moonset - 1));
     expect(totalDiff).toBeGreaterThan(0);
-    for (let f = events.月落; f <= events.天亮转头; f++) {
+    for (let f = events.moonset; f <= events.dawnTurnHead; f++) {
       expect(hexBrightness(brightnessAt(f)) - hexBrightness(brightnessAt(f - 1)), `段内第 ${f} 帧`).toBeGreaterThanOrEqual(0);
       expect(hexBrightness(brightnessAt(f)) - hexBrightness(brightnessAt(f - oldFrameStep)), `段内第 ${f} 帧`).toBeLessThan(0.3 * totalDiff);
     }
-    expect(lightState(events.天亮转头).天).toBe(params.skyColors[4]);
-    expect(lightState(events.月落).天).toBe(params.skyColors[3]);
+    expect(lightState(events.dawnTurnHead).天).toBe(params.skyColors[4]);
+    expect(lightState(events.moonset).天).toBe(params.skyColors[3]);
     /** 一束光在各受光面上的面积（格²）和场景里的重心 [x, y] */
     const measure = (b: params.LightBeam) => {
       const areaByFace: Record<string, number> = {};
@@ -184,7 +184,7 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
   it('镜头：横移起 前一帧以前不动（横移起 那一帧已经走了一帧），之后只往右（东）挪、越挪越快，段的最后一帧走完、还在最快；停着的时候取景中心落在成片偶数像素上；走完那一刻屋里全出画，只剩东墙一格', () => {
     for (let f = 0; f <= beforeSlide; f++) expect(shotAt(f)).toEqual(shotAt(0));
     expect(slideProgress(beforeSlide)).toBe(0);
-    expect(slideProgress(events.横移起)).toBeGreaterThan(0);
+    expect(slideProgress(events.sidePanStart)).toBeGreaterThan(0);
     expect(slideProgress(frameCount - 1)).toBeCloseTo(1, 9);
     const delta = (f: number) => slideProgress(f) - slideProgress(f - 1);
     for (let f = beforeSlide + 1; f < frameCount; f++) expect(delta(f)).toBeGreaterThan(delta(f - 1));
@@ -210,10 +210,10 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
 
   it('屋外（用户 10-24「怎么超平坦背景 合理吗？」）：横移开始动以前不画；横移时后窗那块天色跟着淡掉，末帧淡完；整片后期末帧到 2-时差 第一帧服务器那半的调子（接缝不跳亮度）', () => {
     expect(outdoorState(beforeSlide)).toBeUndefined();
-    expect(outdoorState(events.横移起)!.bright).toBeGreaterThan(0);
+    expect(outdoorState(events.sidePanStart)!.bright).toBeGreaterThan(0);
     expect(outdoorState(frameCount - 1)!.bright).toBe(1);
     expect(postGrade(beforeSlide)).toEqual(lightState(beforeSlide).tone.grade);
-    const grade = serverToneAt(mainCutEvents.分屏起.帧).grade;
+    const grade = serverToneAt(mainCutEvents.splitScreenStart.帧).grade;
     const lastGrade = postGrade(frameCount - 1);
     for (const k of ['饱和', '对比', '暗角', '颗粒'] as const) expect(lastGrade[k], k).toBeCloseTo(grade[k], 6);
     expect([lastGrade.multiply, lastGrade.lift]).toEqual([grade.multiply, grade.lift]);

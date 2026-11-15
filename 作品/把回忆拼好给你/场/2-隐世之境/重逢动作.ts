@@ -13,11 +13,11 @@ const events = mainCutEvents;
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 /** 对视那一帧画的是哪一秒（帧号取整以后）：回头在这一刻到位，这一帧的机位、她和封面帧一样 */
-export const eyeContactFrameSec = events.第15句对视.帧 / fps;
-const segTailSec = events.第15句段尾.帧 / fps;
+export const eyeContactFrameSec = events.reunionGaze.帧 / fps;
+const segTailSec = events.cutToTail.帧 / fps;
 // 回头、风散开都取帧号取整以后的秒：这一拍落在段头那一帧上，段头那一帧要正好是 0（同 2-摇铃 末帧接得上）
-const turnBackSec = events.回头.帧 / fps;
-const windDisperseSec = events.风散开.帧 / fps;
+const turnBackSec = events.turnBack.帧 / fps;
+const windDisperseSec = events.windClears.帧 / fps;
 
 /** 她回头转到哪（0～1，缓过的）：身子从回头（风散开那一拍）到对视那一帧转完，头先转、头转秒 里转完 */
 export const turnBackProgress = (sec: number) => ({
@@ -26,9 +26,9 @@ export const turnBackProgress = (sec: number) => ({
 });
 
 /** 她的头歪到哪（0～1，缓过的）：第15句笑 起 渐秒 里歪到位 */
-export const smileProgress = (sec: number) => smoothstep(clamp01((sec - events.第15句笑.秒) / laugh.rampSec));
+export const smileProgress = (sec: number) => smoothstep(clamp01((sec - events.reunionSmile.秒) / laugh.rampSec));
 /** 这一刻她笑着没有（表情、闭眼一下换上）：硬切落在 第15句笑 取整后那一帧上，同台词气泡、爱心（60 fps 时那一帧比 第15句笑.秒 早 7 毫秒） */
-export const hasLaughed = (sec: number) => sec >= events.第15句笑.帧 / fps;
+export const hasLaughed = (sec: number) => sec >= events.reunionSmile.帧 / fps;
 
 const halfTan = (angleDeg: number) => Math.tan(rad(angleDeg) / 2);
 const angleFromHalfTan = (halfTan: number) => (2 * Math.atan(halfTan) * 180) / Math.PI;
@@ -59,4 +59,4 @@ export const chatLineOpacity = (sec: number) => (chatLine.handedOver ? 1 - smoot
 
 /** 台词气泡这一帧弹到哪（库/界面/女仆气泡.tsx 的 弹出：0 = 不画，1 = 原大）：第15句台词 那一帧起 啵秒 里一级级弹到原大，之后一直是 1（2-重逢 里不收，收在 2-合照）。
  *  起那一帧已经走了一帧 */
-export const linePop = (frame: number) => (frame < events.第15句台词.帧 ? 0 : clamp01(((frame - events.第15句台词.帧) / fps + oneFrameSec) / lineBubble.popSec));
+export const linePop = (frame: number) => (frame < events.speechBubbleIn.帧 ? 0 : clamp01(((frame - events.speechBubbleIn.帧) / fps + oneFrameSec) / lineBubble.popSec));

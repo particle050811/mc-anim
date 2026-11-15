@@ -12,15 +12,15 @@ import timeline from './时间线.ts';
 export { beats, slowMo, toClipSec, actDur };
 const events = timeline.事件;
 /** 第 2 幕开头（编排的钟 = 现身后几秒） */
-export const actStart = events.召唤完.秒 - events.现身.秒;
+export const actStart = events.summonDone.秒 - events.yaBoLunAppears.秒;
 /** 第 2 幕幕内世界秒 → 编排的钟 */
 export const act = (w: number) => actStart + w;
 /** 第 2 幕末（编排的钟，世界秒）：这之后两人都停在末态，第 4 幕从这里接 */
 export const actEnd = act(beats.endSec);
 
 // 和场时间线的事件对上（时间线.ts 从 开盘拍.ts 算的，这里防两边各改各的）
-for (const [eventName, beatTime] of [['偷袭一', beats.dashFirstSec], ['瞬移', beats.移], ['偷袭二', beats.dashSecondSec], ['张盘', beats.openWheelSec], ['开盘完', beats.endSec]] as const) {
-  const timeDiffSec = events[eventName].秒 - events.召唤完.秒 - toClipSec(beatTime);
+for (const [eventName, beatTime] of [['firstDash', beats.dashFirstSec], ['teleport', beats.移], ['secondDash', beats.dashSecondSec], ['wheelOpens', beats.openWheelSec], ['wheelOpenDone', beats.endSec]] as const) {
+  const timeDiffSec = events[eventName].秒 - events.summonDone.秒 - toClipSec(beatTime);
   if (Math.abs(timeDiffSec) > 1e-9) throw new Error(`开盘时刻：时间线的 ${eventName} 和 开盘拍.ts 差 ${timeDiffSec} 秒`);
 }
 
@@ -75,7 +75,7 @@ export const steveFirstPath: readonly TrackPoint[] = [
   [2.3, [0.4, -8.75], [0, 0.4]],
   [actStart - 0.04, [0.4, -8.6], [0, 0]],
 ];
-if (steveFirstPath[0]![0] !== events.开始.秒 - events.现身.秒) throw new Error('开盘时刻：史一 要从第 1 幕开头起');
+if (steveFirstPath[0]![0] !== events.开始.秒 - events.yaBoLunAppears.秒) throw new Error('开盘时刻：史一 要从第 1 幕开头起');
 const steveTrack = pointTrack(steveFirstPath);
 /** 第 1 幕他的脚步声（编排的钟）：照原版 Entity.move，走过的路程每 1/0.6 格响一步 */
 export const act1Steps: readonly number[] = (() => {

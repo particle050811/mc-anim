@@ -60,7 +60,7 @@ export const turnHeadSec = legacyFrameSec(3);
 export const creeperFront = 7 / 16;
 /** 走速（米/秒）：画框左沿往左 苦力怕前沿 处走到 哈气站位.苦力怕，用冒头到哈气那几帧 */
 export const creeperWalkSpeed =
-  ((hissStandPos.苦力怕 - (-1280 / line8Shot.framing.pxPerCell - creeperFront)) * fps) / (mainCutEvents.哈气.帧 - mainCutEvents.苦力怕冒头.帧);
+  ((hissStandPos.苦力怕 - (-1280 / line8Shot.framing.pxPerCell - creeperFront)) * fps) / (mainCutEvents.hiss.帧 - mainCutEvents.creeperAppears.帧);
 /** 逃：原版躲猫近处的速度（CREEPER.speed.flee，3.89 米/秒）再快一倍（演绎）：三稿要 28.23 逃出画框，原版速度从停的地方跑出画框要 0.9 秒；
  *  快一倍以后 28.5 秒出画框，段尾（第 9 句匹配剪之前）已经不在画里。28.23「淘」那一拍它还在画框左边跑。
  *  原版 limbSwingAmount 封顶 1（库/角色/史蒂夫.tsx 的 vanillaWalk），腿摆得跟不上这个速度，有点滑步（原版跑快了也是这样） */

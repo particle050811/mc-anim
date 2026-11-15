@@ -5,6 +5,6 @@ import type React from 'react';
 import { events as mainCutEvents } from '../../分镜/正片第3句.ts';
 import { AltarPicture } from '../../场/2-祭坛/祭坛.tsx';
 
-const picture: React.FC = () => <AltarPicture g={mainCutEvents['照片-祭坛递蛋糕'].帧} />;
+const picture: React.FC = () => <AltarPicture g={mainCutEvents.photoAltarCake.帧} />;
 
 export default picture;
