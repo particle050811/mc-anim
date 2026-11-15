@@ -1,7 +1,7 @@
-// 资源闸的锁，协议和旧项目 参考模型库/工具/公共/锁.py、锁.mjs 一样（迁移期两个项目共用一个锁目录，一起排队）：
+// 资源闸的锁。格式沿用旧项目 参考模型库/工具/公共/锁.py、锁.mjs（迁移期两个项目共用一个锁目录）；旧项目退役后格式没改：在跑的 anim 进程不会跟着换新代码，改格式要另做迁移。
 // 锁是 <锁目录>/<名>.lock，O_EXCL 建出来就是拿到，内容是持有者的 pid，放锁就是删掉；刚建出来还没写进 pid 的空文件，10 秒内当有人拿着。
 // 持有者进程不在了（或 pid 已被别的进程复用）就当过期：先过回收门，再改名成只有自己知道的临时名（原子），看改走的是不是刚判死的那把，是才删，不是就改回原名（旧项目 bd3a6a0d 的做法）。
-// 主机名不写进锁文件（旧 锁.py 只认纯数字，写了别的它 10 秒后就当空文件删掉），另写在旁边的 <名>.lock.<pid>.主机：
+// 主机名不写进锁文件（当初是因为旧 锁.py 只认纯数字），另写在旁边的 <名>.lock.<pid>.主机：
 // 持有者在别的机器上（共享盘上的锁目录）时本机查不了它的 pid，就当它活着。
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -83,7 +83,7 @@ const readLock = (file: string): [number | null, number] | null => {
 
 export const holderPid = (file: string): number | null => readLock(file)?.[0] ?? null;
 
-/** 持有者所在主机；旁边没有 .主机 文件（旧项目的工具拿的）就当本机 */
+/** 持有者所在主机；旁边没有 .主机 文件就当本机 */
 export const holderHost = (file: string, pid: number): string | null => {
   try {
     return fs.readFileSync(hostFile(file, pid), 'utf8').trim() || null;
@@ -133,7 +133,7 @@ const clearExpired = (file: string, deadPid: number | null, localHost: string, o
       reclaimed = deadPid !== null;
       if (reclaimed) removeFile(hostFile(file, deadPid!));
     } else {
-      // 旧项目的工具不认门，可能抢先回收又拿了新锁：用硬链接改回原名，原名上又有了新锁就不覆盖它
+      // 门作废过（上一个回收者在门里卡了 10 秒以上）时，别的回收者可能抢先回收又拿了新锁：用硬链接改回原名，原名上又有了新锁就不覆盖它
       try {
         fs.linkSync(tmp, file);
       } catch (err) {
@@ -147,17 +147,6 @@ const clearExpired = (file: string, deadPid: number | null, localHost: string, o
   // 回收回调要清孤儿、写日志，不占着门。
   if (reclaimed) onReclaim?.(deadPid);
   return true;
-};
-
-/** 旧项目的工具回收过期锁时不知道旁边的 .主机 文件，拿到锁时顺手删掉本机已死进程留下的 */
-const sweepDeadHostFiles = (file: string, localHost: string) => {
-  const filePrefix = path.basename(file) + '.';
-  for (const fileName of fs.readdirSync(path.dirname(file))) {
-    const pid = Number(/^(\d+)\.主机$/.exec(fileName.startsWith(filePrefix) ? fileName.slice(filePrefix.length) : '')?.[1]);
-    if (!pid || pid === process.pid) continue;
-    const p = path.join(path.dirname(file), fileName);
-    if (holderHost(file, pid) === localHost && !processAlive(pid)) removeFile(p);
-  }
 };
 
 /** 持有者已死就回收，拿不拿锁另说：等内存的等待者也要先回收，否则孤儿 Chrome 占着内存，内存永远回不来 */
@@ -188,7 +177,6 @@ export const tryAcquire = (file: string, localHost: string, onReclaim?: (pid:num
       const fd = fs.openSync(file, 'wx');
       fs.writeSync(fd, `${process.pid}\n`);
       fs.closeSync(fd);
-      sweepDeadHostFiles(file, localHost);
       return true;
     } catch (err) {
       if (code(err) !== 'EEXIST') throw err;
