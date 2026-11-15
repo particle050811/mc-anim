@@ -16,10 +16,11 @@ let instance: { decode: DecodeFn; memory: WebAssembly.Memory } | null = null;
 
 const createInstance = () => {
   const wasmModule = new WebAssembly.Module(Uint8Array.from(atob(wasmBase64), (c) => c.charCodeAt(0)));
-  const e = new WebAssembly.Instance(wasmModule).exports as { decode: DecodeFn; memory: WebAssembly.Memory };
+  // 格式 2 的 WASM 是冻结的旧字节，导出名是改英文名之前的「解」
+  const e = new WebAssembly.Instance(wasmModule).exports as { 解: DecodeFn; memory: WebAssembly.Memory };
   if (e.memory.buffer.byteLength < dynamicBase) e.memory.grow(Math.ceil((dynamicBase - e.memory.buffer.byteLength) / 65536));
   new Uint16Array(e.memory.buffer, tableBase, initialTable.length).set(initialTable);
-  return (instance = { decode: e.decode, memory: e.memory });
+  return (instance = { decode: e.解, memory: e.memory });
 };
 
 /** raw：一个区段的字节（可以是大缓冲里的一段）；L、i、j 由它在块文件索引里的位置定，文件里不存。返回的四个数组同一块缓冲，可以转交 */

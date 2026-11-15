@@ -11,7 +11,7 @@ const decoderCache = new WeakMap<SectionModel, SectionDecoder>();
 
 const createDecoder = (m: SectionModel): SectionDecoder => {
   wasmModule ??= new WebAssembly.Module(Uint8Array.from(atob(wasmBase64), (c) => c.charCodeAt(0)));
-  const { decode, memory } = new WebAssembly.Instance(wasmModule).exports as { decode: DecodeFn; memory: WebAssembly.Memory };
+  const { decodeSection: decode, memory } = new WebAssembly.Instance(wasmModule).exports as { decodeSection: DecodeFn; memory: WebAssembly.Memory };
   const align = (x: number) => (x + 7) & ~7;
   const T = 65536, W = align(T + m.init.byteLength), M = align(W + m.init.byteLength), F = align(M + 65536), D = align(F + m.weights.byteLength);
   const grow = (end: number) => { if (memory.buffer.byteLength < end) memory.grow(Math.ceil((end - memory.buffer.byteLength) / 65536)); };

@@ -32,12 +32,12 @@ const compileWasm = () => {
 
 const decoderFileText = (wasm: Uint8Array, sourceSha: string) =>
   `// anim world 解码器 生成，别手改：wasm/区段解码.ts 用 assemblyscript 编出的 WASM（docs/决策/0011-地形压缩.md）。\n` +
-  `export const 源码sha256 = '${sourceSha}';\n` +
+  `export const sourceSha256 = '${sourceSha}';\n` +
   `export const wasmBase64 =\n  '${Buffer.from(wasm).toString('base64')}';\n`;
 
 /** 现在的生成文件记的源码 sha，和 wasm/区段解码.ts 对不上就是改了源码没重编（anim check 用，不要 asc） */
 export const decoderSourceStale = (text: string, source: string) => {
-  const m = /源码sha256 = '([0-9a-f]{64})'/.exec(text);
+  const m = /sourceSha256 = '([0-9a-f]{64})'/.exec(text);
   return !m || m[1] !== sourceFingerprint(source);
 };
 
