@@ -5,9 +5,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { 数据根 } from '../../../pipeline/环境/配置.ts';
-import { 载入, 开包, 成格子, 抄, 键, terrain根, 包目录, type 区段项 } from './公共.ts';
-import { 填封闭腔 } from './变换.ts';
-import { 建网格 } from './核对.ts';
+import { 载入, 开包, 成格子, 抄, 键, terrain根, 包目录, 建网格, type 区段项 } from './公共.ts';
+import { 填封闭腔 } from '../../../pipeline/世界/烘焙/可见.ts';
 import type { SectionMesh } from '../../../engine/voxel/网格.ts';
 
 const 参 = process.argv.slice(2), 包名 = 参[0]!;

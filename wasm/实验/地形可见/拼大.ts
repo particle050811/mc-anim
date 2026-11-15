@@ -8,7 +8,7 @@
 import fs from 'node:fs';
 import { 压区段 } from '../../../pipeline/世界/烘焙/区段编码.ts';
 import { 载入, 开包, 留出集, 成格子, 抄, 成区段, 键, terrain根, 边, type 区段项 } from './公共.ts';
-import { 埋格换石, 填封闭腔 } from './变换.ts';
+import { 埋格换石, 填封闭腔 } from '../../../pipeline/世界/烘焙/可见.ts';
 import { 压宽, 排色板, 拼 } from './宽编码.ts';
 
 const 参 = process.argv.slice(2), 包名 = 参[0]!;
