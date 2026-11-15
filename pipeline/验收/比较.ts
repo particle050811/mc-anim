@@ -7,8 +7,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'smol-toml';
-import { config } from '../环境/配置.ts';
-import { tryRun, lowPriority } from '../环境/子进程.ts';
+import { measureEbur128 } from '../资产/音频量.ts';
 import { codeRoot } from '../环境/路径.ts';
 
 export type Threshold = { 块8门槛: number; 块16门槛: number; 块64门槛: number; 看一眼门槛: number; 块均值容差: number; 响度容差LU: number; 起音容差帧: number };
@@ -208,13 +207,9 @@ export const compareBlockMeans = (newMeans: readonly string[], oldBlocks: readon
 
 /** 整段积分响度（EBU R128，LUFS）；ffmpeg 的 ebur128 滤镜，静音是 -70 */
 export const measureLoudness = (file: string): number => {
-  const cmd = lowPriority([config('ffmpeg'), '-hide_banner', '-nostats', '-nostdin', '-i', file, '-map', '0:a:0', '-af', 'ebur128=framelog=quiet', '-f', 'null', '-']);
-  const r = tryRun(cmd); // ebur128 的汇总写在 stderr
-  if (r.退出码 !== 0) throw new Error(`读 ${file} 的响度失败（退出码 ${r.退出码}）：\n${r.stderr.slice(-500)}`);
-  const out = r.stderr;
-  const m = [...out.matchAll(/^\s*I:\s+(-?[\d.]+|-inf) LUFS/gm)].at(-1);
-  if (!m) throw new Error(`读不出 ${file} 的响度：\n${out.slice(-500)}`);
-  return m[1] === '-inf' ? -70 : Number(m[1]);
+  const { lufs, stderr } = measureEbur128(file, { lowPriority: true });
+  if (lufs === undefined) throw new Error(`读不出 ${file} 的响度：\n${stderr.slice(-500)}`);
+  return lufs === -Infinity ? -70 : lufs;
 };
 
 // ---------- 起音 ----------

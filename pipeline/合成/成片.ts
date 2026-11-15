@@ -3,16 +3,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../环境/配置.ts';
-import { lowPriority, runCmd, runCapture, tryRun } from '../环境/子进程.ts';
+import { lowPriority, runCmd, runCapture } from '../环境/子进程.ts';
+import { measureEbur128 } from '../资产/音频量.ts';
 
 const truePeakLimit = -1;
 
+/** 积分响度（LUFS）和真峰值（dBTP） */
 export const measureLoudness = (file: string) => {
-  const r = tryRun([config('ffmpeg'), '-hide_banner', '-nostats', '-i', file, '-af', 'ebur128=peak=true', '-f', 'null', '-']);
-  const tail = r.stderr.slice(r.stderr.lastIndexOf('Summary:'));
-  const lufs = Number(/I:\s+(-?[\d.]+|-inf) LUFS/.exec(tail)?.[1]?.replace('-inf', '-Infinity'));
-  const peak = Number(/Peak:\s+(-?[\d.]+|-inf) dBFS/.exec(tail)?.[1]?.replace('-inf', '-Infinity'));
-  if (r.退出码 !== 0 || Number.isNaN(lufs) || Number.isNaN(peak)) throw new Error(`量不出 ${file} 的响度：${r.stderr.slice(-300)}`);
+  const { lufs, peak, stderr } = measureEbur128(file, { peak: 'true' });
+  if (lufs === undefined || peak === undefined) throw new Error(`量不出 ${file} 的响度：${stderr.slice(-300)}`);
   return { lufs, truePeak: peak };
 };
 
