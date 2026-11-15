@@ -51,7 +51,7 @@ class ImageFlow(Backend):
                 command += ['--param', f'{k}={v}']
         return command
 
-    def map_descriptor(self, request: SynthRequest) -> dict:
+    def describe(self, request: SynthRequest) -> dict:
         return {'后端': self.名, '命令': self._build_command(request)[1:], '输出': request.输出}
 
     def _speak_sentence(self, q: SynthRequest) -> str:

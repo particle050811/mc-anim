@@ -44,15 +44,15 @@ class ParticleTranslator(Translator):
         return self.input_node(f"随机{self.random_counter}:{random_label}", t, "随机")
 
     def dispatch_call(self, state: HeapState, kind: str, ref: Any, recv: Any, args: list) -> tuple[Any, HeapState]:
-        _, ret = split_descriptor(ref.map_descriptor)
+        _, ret = split_descriptor(ref.descriptor)
         if kind == "static" and ref.类 == "java/lang/Math" and ref.名 == "random":
             return self.new_random("Math.random", "d"), state
         if kind == "static" and ref.类 == random_class and ref.名 == "create":
             return Opaque("random", random_class), state
         if isinstance(recv, Opaque) and recv.类 and self.is_subclass(recv.类, random_class) and ret in "FDIZJ":
-            return self.new_random(f"{ref.名}{ref.map_descriptor}", ret.lower()), state
+            return self.new_random(f"{ref.名}{ref.descriptor}", ret.lower()), state
         if isinstance(recv, (Opaque, CondRef)) and ref.类 == texture_group_class:
-            self.frame_records.append((self.phase, ref.map_descriptor))
+            self.frame_records.append((self.phase, ref.descriptor))
         return super().dispatch_call(state, kind, ref, recv, args)
 
     # ---------- 入口 ----------
@@ -66,9 +66,9 @@ class ParticleTranslator(Translator):
         particle_object = JavaObject(self.model_class, self.new_object_id())
         state = HeapState()
         for f in prov.fields:
-            if f.map_descriptor == f"L{texture_group_class};":
+            if f.descriptor == f"L{texture_group_class};":
                 state.heap[(("对象", particle_object.serial), f.名)] = Opaque("sprites", texture_group_class)
-        ps, _ = split_descriptor(m.map_descriptor)
+        ps, _ = split_descriptor(m.descriptor)
         args: list[Any] = [particle_object]
         for i, p in enumerate(ps):
             param_name = create_particle_params[i] if i < len(create_particle_params) else f"参{i}"

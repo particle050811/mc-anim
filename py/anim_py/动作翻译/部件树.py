@@ -21,7 +21,7 @@ def methods_from_layer_def(t: Translator, method_name: str | None = None) -> lis
     c = t.类(t.model_class)
     if c is None:
         return []
-    return [m.名 for m in c.method_list if m.access_flags & ACC_STATIC and m.map_descriptor == f"()L{layer_def_class};" and (method_name is None or m.名 == method_name)]
+    return [m.名 for m in c.method_list if m.access_flags & ACC_STATIC and m.descriptor == f"()L{layer_def_class};" and (method_name is None or m.名 == method_name)]
 
 
 def tree_from_layer_def(t: Translator, method_name: str | None = None) -> dict[str, list[str]]:

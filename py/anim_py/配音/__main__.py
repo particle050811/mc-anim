@@ -43,7 +43,7 @@ def run_action(action: str, request: dict):
         b = get_backend(request['后端'], request.get('配置'))
         qs = [SynthRequest(**q) for q in request['请求']]
         if request.get('只描述'):
-            return {'缺': b.missing_items(), '描述': [b.map_descriptor(q) for q in qs]}
+            return {'缺': b.missing_items(), '描述': [b.describe(q) for q in qs]}
         missing = b.missing_items()
         if missing:
             raise SystemExit(f'{b.名} 跑不了：' + '；'.join(missing))

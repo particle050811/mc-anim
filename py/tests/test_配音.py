@@ -44,7 +44,7 @@ def test_backend_only_image_flow_dry_run_no_network_or_model(tmp_path):
     q.语气强度 = 0.65
     q.参数 = {'top_k': 20}
     backend = get_backend('image-flow', {'imgflow': str(tmp_path / '没有.mjs')})
-    command = backend.map_descriptor(q)['命令']
+    command = backend.describe(q)['命令']
     assert command[1:3] == ['speak', '--text'] and command[command.index('--voice_ref') + 1] == q.参考音频
     assert command[command.index('--emotion_ref') + 1] == '/语气.wav'
     assert 'emo_alpha=0.65' in command and 'top_k=20' in command
@@ -60,7 +60,7 @@ def test_backend_only_image_flow_dry_run_no_network_or_model(tmp_path):
 def test_image_flow_without_tone_ref_omits_tone_and_strength(tmp_path):
     q = _make_request(tmp_path)
     q.语气强度 = 0.8
-    command = get_backend('image-flow', {}).map_descriptor(q)['命令']
+    command = get_backend('image-flow', {}).describe(q)['命令']
     assert '--emotion_ref' not in command and not any('emo_alpha' in x for x in command)
 
 

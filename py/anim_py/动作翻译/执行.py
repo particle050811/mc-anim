@@ -430,10 +430,10 @@ class Translator(LibrarySim):
         return False
 
     def get_method_code(self, c: ClassFile, m: Method) -> MethodCode:
-        k = (c.名, m.名, m.map_descriptor)
+        k = (c.名, m.名, m.descriptor)
         if k not in self._method_codes:
             if m.bytecode is None:
-                raise Unsupported(f"{c.名}.{m.名}{m.map_descriptor} 没有字节码（抽象或 native）")
+                raise Unsupported(f"{c.名}.{m.名}{m.descriptor} 没有字节码（抽象或 native）")
             ins = decode_code(m.bytecode)
             self._method_codes[k] = MethodCode(c, m, ins)
         return self._method_codes[k]
@@ -508,7 +508,7 @@ class Translator(LibrarySim):
         while c is not None:
             f = c.find_field(field)
             if f is not None:
-                return f.map_descriptor
+                return f.descriptor
             c = self.类(c.parent_class) if c.parent_class else None
         return None
 
@@ -667,7 +667,7 @@ class Translator(LibrarySim):
         while c is not None:
             f = c.find_field(field)
             if f is not None:
-                return f.map_descriptor
+                return f.descriptor
             c = self.类(c.parent_class) if c.parent_class else None
         return "F"
 
@@ -724,7 +724,7 @@ class Translator(LibrarySim):
                 r: Any = self.exec_insn(mc, fr, pc, op, arg, nxt)
             except Unsupported as e:
                 if "@" not in str(e):
-                    raise Unsupported(f"{e} @ {mc.类.名}.{mc.method_ref.名}{mc.method_ref.map_descriptor} pc={pc} op={op}；调用链 {' → '.join(self._chain)}") from None
+                    raise Unsupported(f"{e} @ {mc.类.名}.{mc.method_ref.名}{mc.method_ref.descriptor} pc={pc} op={op}；调用链 {' → '.join(self._chain)}") from None
                 raise
             if r is None:
                 pc = nxt
@@ -743,7 +743,7 @@ class Translator(LibrarySim):
             elif kind == "分":
                 # r[1]：[(条件或 None=其余, 目标 pc)]，条件互斥；全是符号的
                 j = mc.join_points[pc]
-                key = (mc.类.名 + "." + mc.method_ref.名 + mc.method_ref.map_descriptor, pc)
+                key = (mc.类.名 + "." + mc.method_ref.名 + mc.method_ref.descriptor, pc)
                 if key in self._forking_keys:
                     raise Unsupported(f"条件是符号的循环（{mc.类.名}.{mc.method_ref.名} pc={pc}）")
                 self._forking_keys.add(key)
@@ -992,7 +992,7 @@ class Translator(LibrarySim):
             v, obj = st.pop(), st.pop()
             if isinstance(obj, N) and self.is_enum(ref.类):
                 raise Unsupported("给枚举字段赋值")
-            self.write_field(fr.heap_state, obj, ref.名, v, ref.map_descriptor)
+            self.write_field(fr.heap_state, obj, ref.名, v, ref.descriptor)
         elif 182 <= op <= 185:
             ref = cp[arg[0]]
             return self.invoke(mc, fr, {182: "virtual", 183: "special", 184: "static", 185: "interface"}[op], ref)
@@ -1140,14 +1140,14 @@ class Translator(LibrarySim):
             if not self.is_enum(ref.类):
                 raise Unsupported(f"在数上读字段 {ref.类}.{ref.名}")
             objs = self.enumerate_objects(ref.类)
-            vals = [self.read_field(state, o, ref.名, ref.map_descriptor) for o in objs]
+            vals = [self.read_field(state, o, ref.名, ref.descriptor) for o in objs]
             if g.is_constant(obj.id):
                 return vals[g.constant_of(obj.id)]
             if all(isinstance(v, N) and g.is_constant(v.id) for v in vals):
                 t = vals[0].t
                 return N(g.table_lookup(t, [g.constant_of(v.id) for v in vals], obj.id), t)
             raise Unsupported(f"符号枚举的引用字段 {ref.类}.{ref.名}")
-        return self.read_field(state, obj, ref.名, ref.map_descriptor)
+        return self.read_field(state, obj, ref.名, ref.descriptor)
 
     def read_static(self, ref: Ref) -> Any:
         k = (ref.类, ref.名)
@@ -1157,7 +1157,7 @@ class Translator(LibrarySim):
             if f is not None and f.access_flags & ACC_ENUM:
                 return self.const_node("i", self.enum_constants(ref.类).index(ref.名))
             if f is not None and f.constant_value is not None and f.access_flags & ACC_STATIC:
-                t = primitive_type(f.map_descriptor)
+                t = primitive_type(f.descriptor)
                 return self.const_node(t, f.constant_value) if t else f.constant_value
         if k in self.static_fields:
             return self.static_fields[k]
@@ -1165,14 +1165,14 @@ class Translator(LibrarySim):
             self.init_class(ref.类)
             if k in self.static_fields:
                 return self.static_fields[k]
-        return Opaque(f"{ref.类.split('/')[-1]}.{ref.名}", ref.map_descriptor[1:-1] if ref.map_descriptor.startswith("L") else None)
+        return Opaque(f"{ref.类.split('/')[-1]}.{ref.名}", ref.descriptor[1:-1] if ref.descriptor.startswith("L") else None)
 
     def _run_static_init(self, c: ClassFile, ref: Ref) -> bool:
         """只为枚举、数值和数组（SwitchMap 这类表）、模型自己类层级的静态字段跑 <clinit>；
         Items.BOW、Blocks.X 这类注册表对象当不透明，不然要具体跑整个注册表（SkeletonModel 卡几分钟）"""
-        if self.is_enum(c.名) or primitive_type(ref.map_descriptor) or ref.map_descriptor.startswith("["):
+        if self.is_enum(c.名) or primitive_type(ref.descriptor) or ref.descriptor.startswith("["):
             return True
-        if ref.map_descriptor.startswith("L") and ref.map_descriptor[1:-1] in self.concrete_init_types:
+        if ref.descriptor.startswith("L") and ref.descriptor[1:-1] in self.concrete_init_types:
             return True
         return self.is_subclass(self.model_class, c.名)
 
@@ -1228,13 +1228,13 @@ class Translator(LibrarySim):
 
     def invoke(self, mc: MethodCode, fr: Frame, kind: str, ref: Ref):
         st = fr.operand_stack
-        args = self.pop_args(st, ref.map_descriptor)
+        args = self.pop_args(st, ref.descriptor)
         recv = None if kind == "static" else st.pop()
         rv, state = self.dispatch_call(fr.heap_state, kind, ref, recv, args)
         fr.heap_state = state
         if state.dead:
             return ("死",)
-        _, ret = split_descriptor(ref.map_descriptor)
+        _, ret = split_descriptor(ref.descriptor)
         if ret != "V":
             if rv is None and primitive_type(ret):
                 raise Unsupported(f"{ref.类}.{ref.名} 没给返回值")
@@ -1243,24 +1243,24 @@ class Translator(LibrarySim):
 
     def dispatch_call(self, state: HeapState, kind: str, ref: Ref, recv: Any, args: list) -> tuple[Any, HeapState]:
         g = self.g
-        sig = f"{ref.类}.{ref.名}{ref.map_descriptor}"
-        _, ret = split_descriptor(ref.map_descriptor)
+        sig = f"{ref.类}.{ref.名}{ref.descriptor}"
+        _, ret = split_descriptor(ref.descriptor)
         if kind == "static":
             if sig in builtin_funcs:
                 ids = [self.to_number(a).id for a in args]
                 t = builtin_funcs[sig][0]
                 return N(g.call_node(sig, ids), t), state
-            ok, rv, state = self.lib_static(state, ref.类, ref.名, ref.map_descriptor, args)
+            ok, rv, state = self.lib_static(state, ref.类, ref.名, ref.descriptor, args)
             if ok:
                 return rv, state
             if sig == "net/minecraft/util/Mth.binarySearch(IILjava/util/function/IntPredicate;)I":
                 return self.binary_search(state, args), state
-            if ref.名 == "values" and self.is_enum(ref.类) and ref.map_descriptor == f"()[L{ref.类};":
+            if ref.名 == "values" and self.is_enum(ref.类) and ref.descriptor == f"()[L{ref.类};":
                 return Array([self.const_node("i", i) for i in range(len(self.enum_constants(ref.类)))], "i"), state
             if ret != "V" and any(isinstance(a, Opaque) for a in args) and not any(isinstance(a, (Part, CondRef, ModelInstance)) for a in args):
                 # 拿实体（或从实体取的东西）算个值的静态方法（CrossbowItem.getChargeDuration(entity.getUseItem()) 这类）：结果当输入
                 return self.input_by_desc(f"{ref.类.split('/')[-1]}.{ref.名}({', '.join(self.arg_name(a) for a in args)})", ret, "实体"), state
-            found = self.find_method(ref.类, ref.名, ref.map_descriptor)
+            found = self.find_method(ref.类, ref.名, ref.descriptor)
             if found is None:
                 raise Unsupported(f"不认识的静态方法 {sig}")
             return self.run_method(found[0], found[1], args, state)
@@ -1283,25 +1283,25 @@ class Translator(LibrarySim):
         if ref.名 == "<init>":
             if ref.类 in ("java/lang/Object", "java/lang/Enum", "java/lang/Record"):
                 return None, state
-            if self.library_construct(state, ref.类, ref.map_descriptor, recv, args):
+            if self.library_construct(state, ref.类, ref.descriptor, recv, args):
                 return None, state
-            found = self.find_method(ref.类, "<init>", ref.map_descriptor)
+            found = self.find_method(ref.类, "<init>", ref.descriptor)
             if found is None:
                 if isinstance(recv, ModelInstance):
                     return None, state  # 父类构造在 jar 外（不影响部件字段）
                 raise Unsupported(f"不认识的构造 {sig}")
             return self.run_method(found[0], found[1], [recv, *args], state)
         if isinstance(recv, Closure):
-            found = self.find_method(ref.类, ref.名, ref.map_descriptor)  # 函数式接口的默认方法（andThen 这类）照字节码跑
+            found = self.find_method(ref.类, ref.名, ref.descriptor)  # 函数式接口的默认方法（andThen 这类）照字节码跑
             if found is not None:
                 return self.run_method(found[0], found[1], [recv, *args], state)
             return self.call_closure(state, recv, args)
         if self.is_library_object(recv):
-            return self.lib_method(state, ref.名, ref.map_descriptor, recv, args)
+            return self.lib_method(state, ref.名, ref.descriptor, recv, args)
         if isinstance(recv, str):
-            if ref.名 == "equals" and ref.map_descriptor == "(Ljava/lang/Object;)Z":
+            if ref.名 == "equals" and ref.descriptor == "(Ljava/lang/Object;)Z":
                 return self.const_node("i", int(isinstance(args[0], str) and args[0] == recv)), state
-            if ref.名 == "hashCode" and ref.map_descriptor == "()I":
+            if ref.名 == "hashCode" and ref.descriptor == "()I":
                 from .库类 import java_hash
 
                 h = java_hash(recv)
@@ -1309,9 +1309,9 @@ class Translator(LibrarySim):
             raise Unsupported(f"字符串方法 {sig}")
         # 枚举（按序号）上的方法：对每个常量具体跑，查表
         if isinstance(recv, N):
-            if ref.名 == "ordinal" and ref.map_descriptor == "()I":
+            if ref.名 == "ordinal" and ref.descriptor == "()I":
                 return recv, state
-            if ref.名 == "hashCode" and ref.map_descriptor == "()I":
+            if ref.名 == "hashCode" and ref.descriptor == "()I":
                 return recv, state
             if not self.is_enum(ref.类) and not self.is_enum(self._enum_owner(ref.类)):
                 raise Unsupported(f"在数上调用 {sig}")
@@ -1319,7 +1319,7 @@ class Translator(LibrarySim):
             n = len(self.enum_constants(enum_cls))
             if g.is_constant(recv.id):
                 k = g.constant_of(recv.id)
-                found = self.find_method(enum_cls, ref.名, ref.map_descriptor)
+                found = self.find_method(enum_cls, ref.名, ref.descriptor)
                 if found is None:
                     raise Unsupported(f"枚举方法 {sig} 找不到")
                 return self.run_method(found[0], found[1], [self.const_node("i", k), *args], state)
@@ -1339,7 +1339,7 @@ class Translator(LibrarySim):
                 return r, state
             raise Unsupported(f"符号枚举上 {sig} 返回引用")
         if self.is_native(recv):
-            found = self.find_method(ref.类 if kind == "special" else recv.类 or ref.类, ref.名, ref.map_descriptor)
+            found = self.find_method(ref.类 if kind == "special" else recv.类 or ref.类, ref.名, ref.descriptor)
             if found is None:
                 raise Unsupported(f"照跑类上找不到方法 {sig}")
             return self.run_method(found[0], found[1], [recv, *args], state)
@@ -1359,19 +1359,19 @@ class Translator(LibrarySim):
                 if h.类 == part_class and h.名 == "resetPose":
                     return None, self.reset_all(state, recv.root_key)
             raise Unsupported(f"部件流上的 {sig}")
-        if isinstance(recv, ModelInstance) and ref.名 == "resetPose" and ref.map_descriptor == "()V":
+        if isinstance(recv, ModelInstance) and ref.名 == "resetPose" and ref.descriptor == "()V":
             # 1.21.2 起 EntityModel.setupAnim 先 Model.resetPose()：对造模型时 root.getAllParts() 存下的表逐个 resetPose，等于整棵复位
-            found = self.find_method(self.model_class, ref.名, ref.map_descriptor)
+            found = self.find_method(self.model_class, ref.名, ref.descriptor)
             if found is not None and found[0].名 == "net/minecraft/client/model/Model":
                 return None, self.reset_all(state, self.root_part)
-        if isinstance(recv, ModelInstance) and ref.名 == "getAnyDescendantWithName" and ref.map_descriptor == "(Ljava/lang/String;)Ljava/util/Optional;":
-            found = self.find_method(self.model_class, ref.名, ref.map_descriptor)
+        if isinstance(recv, ModelInstance) and ref.名 == "getAnyDescendantWithName" and ref.descriptor == "(Ljava/lang/String;)Ljava/util/Optional;":
+            found = self.find_method(self.model_class, ref.名, ref.descriptor)
             if found is not None and found[0].名 == "net/minecraft/client/model/HierarchicalModel":
                 return self.find_part_by_name(state, args[0])
         if isinstance(recv, (ModelInstance, JavaObject)):
             cls = self.model_class if isinstance(recv, ModelInstance) else recv.类
             start = ref.类 if kind == "special" else cls
-            found = self.find_method(start, ref.名, ref.map_descriptor)
+            found = self.find_method(start, ref.名, ref.descriptor)
             if found is None:
                 raise Unsupported(f"找不到方法 {sig}（{cls}）")
             return self.run_method(found[0], found[1], [recv, *args], state)
@@ -1445,7 +1445,7 @@ class Translator(LibrarySim):
     def vector_method(self, state: HeapState, ref: Ref, v: Any, args: list) -> tuple[Any, HeapState]:
         """org.joml.Vector3f 照 JOML 1.10.5（1.20.1 带的）的语义算，不跑它的字节码（不在游戏 jar 里）。
         lerp 里的 Math.fma 在没开 joml.useMathFma（默认）时是 a * b + c，两次舍入"""
-        name, d = ref.名, ref.map_descriptor
+        name, d = ref.名, ref.descriptor
         read_field = lambda o, f: self.to_number(self.read_field(state, o, f, "F"))  # noqa: E731
         write_field = lambda o, f, x: self.write_field(state, o, f, x, "F")  # noqa: E731
         if name == "<init>":
@@ -1503,7 +1503,7 @@ class Translator(LibrarySim):
         return c.parent_class if c is not None and c.parent_class else class_name
 
     def part_method(self, state: HeapState, p: Part, kind: str, ref: Ref, args: list) -> tuple[Any, HeapState]:
-        if ref.名 == "getChild" and ref.map_descriptor == "(Ljava/lang/String;)L" + part_class + ";":
+        if ref.名 == "getChild" and ref.descriptor == "(Ljava/lang/String;)L" + part_class + ";":
             name = args[0]
             if not isinstance(name, str):
                 raise Unsupported("getChild 的名字不是常量")
@@ -1521,9 +1521,9 @@ class Translator(LibrarySim):
             return PartStream(p.名), state
         if ref.名 in ("render", "visit", "translateAndRotate", "compile", "getRandomCube"):
             raise Unsupported(f"setupAnim 里调用 ModelPart.{ref.名}")
-        found = self.find_method(part_class, ref.名, ref.map_descriptor)
+        found = self.find_method(part_class, ref.名, ref.descriptor)
         if found is None:
-            raise Unsupported(f"ModelPart.{ref.名}{ref.map_descriptor} 找不到")
+            raise Unsupported(f"ModelPart.{ref.名}{ref.descriptor} 找不到")
         return self.run_method(found[0], found[1], [p, *args], state)
 
     def reset_all(self, state: HeapState, root: str) -> HeapState:
@@ -1547,7 +1547,7 @@ class Translator(LibrarySim):
 
     def dynamic_call(self, fr: Frame, d: InvokeDynamic):
         st = fr.operand_stack
-        args = self.pop_args(st, d.map_descriptor)
+        args = self.pop_args(st, d.descriptor)
         boot = d.bootstrap.handle_target
         if boot.类 == "java/lang/invoke/StringConcatFactory" and boot.名 == "makeConcatWithConstants":
             recipe = d.bootstrap_args[0][1]
@@ -1580,12 +1580,12 @@ class Translator(LibrarySim):
             raise Unsupported(f"jar 里没有 {self.model_class}")
         ctor = None
         for m in c.method_list:
-            if m.名 == "<init>" and (descriptor is None and m.map_descriptor.startswith(f"(L{part_class};") or m.map_descriptor == descriptor):
+            if m.名 == "<init>" and (descriptor is None and m.descriptor.startswith(f"(L{part_class};") or m.descriptor == descriptor):
                 ctor = m
                 break
         if ctor is None:
             raise Unsupported(f"{self.model_class} 没有以 ModelPart 开头的构造函数")
-        ps, _ = split_descriptor(ctor.map_descriptor)
+        ps, _ = split_descriptor(ctor.descriptor)
         args: list[Any] = [self.模型, Part(self.root_part)]
         for p in ps[1:]:
             t = primitive_type(p)
@@ -1631,7 +1631,7 @@ class Translator(LibrarySim):
             found = self.find_render_entry()
             if found is None:
                 raise Unsupported(f"{self.model_class} 找不到 setupAnim（老签名 实体 + 5 个 float，或 1.21.2 起收 EntityRenderState 子类的）")
-            state_class = split_descriptor(found[1].map_descriptor)[0][0][1:-1]
+            state_class = split_descriptor(found[1].descriptor)[0][0][1:-1]
             args = [self.模型, Opaque("state", state_class)]
         _, state = self.run_method(found[0], found[1], args, state)
         methods.append(f"{found[0].名}.setupAnim")
@@ -1648,7 +1648,7 @@ class Translator(LibrarySim):
             for m in c.method_list:
                 if m.名 != "setupAnim" or m.access_flags & (ACC_ABSTRACT | ACC_BRIDGE):
                     continue
-                ps, r = split_descriptor(m.map_descriptor)
+                ps, r = split_descriptor(m.descriptor)
                 if r == "V" and len(ps) == 1 and ps[0].startswith("L") and self.is_subclass(ps[0][1:-1], render_state_class):
                     return c, m
             class_name = c.parent_class or ""

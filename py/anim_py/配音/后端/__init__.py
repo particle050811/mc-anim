@@ -64,7 +64,7 @@ class Backend:
         """跑不了的原因（程序、模型、密钥不在），空表示能跑；不联网、不加载模型"""
         return []
 
-    def map_descriptor(self, request: SynthRequest) -> dict:
+    def describe(self, request: SynthRequest) -> dict:
         """dry-run：要发出去或交给模型的东西（不含音频字节）"""
         return {'后端': self.名, **asdict(request), '参数': self.参数(request)}
 

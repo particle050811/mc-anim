@@ -21,7 +21,7 @@ class Ref:
 
     类: str
     名: str
-    map_descriptor: str
+    descriptor: str
     is_interface: bool = False
 
 
@@ -38,13 +38,13 @@ class InvokeDynamic:
     bootstrap: MethodHandle
     bootstrap_args: list[Any]
     名: str
-    map_descriptor: str
+    descriptor: str
 
 
 @dataclass
 class Method:
     名: str
-    map_descriptor: str
+    descriptor: str
     access_flags: int
     bytecode: bytes | None = None
     max_locals: int = 0
@@ -58,7 +58,7 @@ class Method:
 @dataclass
 class Field:
     名: str
-    map_descriptor: str
+    descriptor: str
     access_flags: int
     constant_value: Any = None
 
@@ -75,7 +75,7 @@ class ClassFile:
 
     def find_method(self, method_name: str, descriptor: str) -> Method | None:
         for m in self.method_list:
-            if m.名 == method_name and m.map_descriptor == descriptor:
+            if m.名 == method_name and m.descriptor == descriptor:
                 return m
         return None
 

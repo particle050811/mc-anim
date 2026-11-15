@@ -107,8 +107,8 @@ class ReverseLookup:
             if raw is None:
                 break
             for f in raw.fields:
-                if self.映射.field(c, f.名, f.map_descriptor) == field_name:
-                    return c, f.名, f.map_descriptor
+                if self.映射.field(c, f.名, f.descriptor) == field_name:
+                    return c, f.名, f.descriptor
             c = raw.parent_class
         raise KeyError(f"{official_class}.{field_name}")
 
@@ -121,7 +121,7 @@ class ReverseLookup:
             if raw is None:
                 break
             for m in raw.method_list:
-                if m.map_descriptor == d and self.映射.method_ref(c, m.名, m.map_descriptor) == method_name:
+                if m.descriptor == d and self.映射.method_ref(c, m.名, m.descriptor) == method_name:
                     return c, m.名, d
             c = raw.parent_class
         raise KeyError(f"{official_class}.{method_name}{official_descriptor}")
@@ -134,7 +134,7 @@ class ReverseLookup:
             if raw is None:
                 break
             for m in raw.method_list:
-                if m.map_descriptor == d and self.映射.method_ref(c, m.名, m.map_descriptor) == method_name:
+                if m.descriptor == d and self.映射.method_ref(c, m.名, m.descriptor) == method_name:
                     return m.名, d
             c = raw.parent_class
         raise KeyError(f"{official_class}.{method_name}{official_descriptor}")
@@ -474,7 +474,7 @@ def compare_to_real(env: RealRunEnv, creature_name: str, creature: Creature) -> 
     if creature.render_state:
         render_entry = t.find_render_entry()
         assert render_entry is not None
-        state_class = split_descriptor(render_entry[1].map_descriptor)[0][0][1:-1]
+        state_class = split_descriptor(render_entry[1].descriptor)[0][0][1:-1]
         sname, sd = lookup.method_ref(creature.model_class, "setupAnim", f"(L{state_class};)V")
         command.append(f"state {dotted(lookup.类(state_class))}")
         for _ in range(150):

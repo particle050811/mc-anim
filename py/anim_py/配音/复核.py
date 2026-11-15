@@ -45,7 +45,7 @@ class ReviewItem:
         """跑不了的原因（包、密钥），空表示能跑；不联网、不加载模型"""
         return []
 
-    def map_descriptor(self, requests: list[ReviewRequest]) -> dict:
+    def describe(self, requests: list[ReviewRequest]) -> dict:
         """dry-run：要做的事（外部项写要发出去的东西，不含音频字节）"""
         return {'项': self.名, '请求': [asdict(q) for q in requests]}
 
@@ -120,7 +120,7 @@ class Dictation(ExternalReviewItem):
     说明 = 'Qwen3-ASR（百炼 qwen3-asr-flash）听写，对不上再让 Gemini 听，去标点比字（同音也算对）'
     key_files = ('~/.config/dashscope/api_key', '~/.config/grsai/api_key')
 
-    def map_descriptor(self, requests: list[ReviewRequest]) -> dict:
+    def describe(self, requests: list[ReviewRequest]) -> dict:
         return {'项': self.名, '发': [{'qwen3-asr-flash': f'<{q.wav}>', '然后 gemini-3.8-flash（对不上时）': f'<{q.wav}>', '比字': q.念} for q in requests]}
 
 
@@ -129,7 +129,7 @@ class Tone(ExternalReviewItem):
     说明 = '同一句的几个候选一起交给 Gemini，按台词的「语气」打 1～10 分，正反两个顺序各听一轮取平均'
     key_files = ('~/.config/grsai/api_key',)
 
-    def map_descriptor(self, requests: list[ReviewRequest]) -> dict:
+    def describe(self, requests: list[ReviewRequest]) -> dict:
         by_sentence: dict[str, list[ReviewRequest]] = {}
         for q in requests:
             by_sentence.setdefault(q.id, []).append(q)
@@ -216,7 +216,7 @@ def run_review(item_names: list[str], requests: list[ReviewRequest], describe_on
         item = get_item(item_name)
         missing = item.missing_items()
         if describe_only:
-            out[item_name] = {'缺': missing, '描述': item.map_descriptor(requests)}
+            out[item_name] = {'缺': missing, '描述': item.describe(requests)}
         elif missing:
             out[item_name] = {'缺': missing}
         else:

@@ -346,9 +346,9 @@ def test_render_entry_skips_bridge_method_with_ctor_set(compiled: tuple[Path, Pa
     t = Translator(ClassPath([str(jar)], IdentityMapping()), "sample.StateModel", model_tree=model_tree)
     prog = t.translate()
     render_entry = t.find_render_entry()
-    assert render_entry is not None and render_entry[1].map_descriptor == "(Lsample/SubState;)V" and not render_entry[1].access_flags & ACC_BRIDGE
+    assert render_entry is not None and render_entry[1].descriptor == "(Lsample/SubState;)V" and not render_entry[1].access_flags & ACC_BRIDGE
     c = t.类("sample/StateModel")
-    assert c is not None and any(m.名 == "setupAnim" and m.map_descriptor == "(Lsample/HumanState;)V" and m.access_flags & ACC_BRIDGE for m in c.method_list)
+    assert c is not None and any(m.名 == "setupAnim" and m.descriptor == "(Lsample/HumanState;)V" and m.access_flags & ACC_BRIDGE for m in c.method_list)
     assert prog["方法"] == ["sample/StateModel.setupAnim"]
     assert set(prog["输入"]) == {"state.walk", "state.headPitch", "state.ageInTicks", "state.flag"}
     assert {"head", "leg0", "leg1", "leg2", "left_arm", "right_arm"} == set(prog["输出"])
