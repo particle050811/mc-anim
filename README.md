@@ -20,7 +20,6 @@
 
 ```text
 请在这台电脑上，把 GitHub 仓库 particle050811/mc-anim 里的「把回忆拼好给你」和「应力转动」两部作品渲成成片。
-文档里写到的别的作品是还在做的，那几步跳过。
 
 完整步骤在仓库的 docs/从零渲染.md。先读这份文档：
   curl.exe -L -o 从零渲染.md https://raw.githubusercontent.com/particle050811/mc-anim/main/docs/%E4%BB%8E%E9%9B%B6%E6%B8%B2%E6%9F%93.md
@@ -99,7 +98,7 @@ clone 下来以后，以仓库里的 docs/从零渲染.md 为准。
 
 `anim help` 列出全部命令，单条命令看 `anim <命令> --help`（Windows 用 `.\anim.cmd`）。
 
-## 素材来源和版权
+## 素材来源
 
 - Minecraft 的贴图、模型、音效、字体和从游戏世界导出的场景版权归 Mojang。本项目是非官方作品，与 Mojang 无关。NOT AN OFFICIAL MINECRAFT PRODUCT. NOT APPROVED BY OR ASSOCIATED WITH MOJANG OR MICROSOFT.
 - 车万女仆（Touhou Little Maid）的模型、贴图、音效，和魔法酒狐模型：模型作者星海ELIYA、伊蕾娜教代行教皇，贴图作者百花，CC BY-NC-SA 4.0。九胡的音色参考取自车万女仆自定义模型包里的语音。
@@ -107,8 +106,7 @@ clone 下来以后，以仓库里的 docs/从零渲染.md 为准。
 - 铁魔法（Iron's Spells 'n Spellbooks）、Lootr、暮色森林（The Twilight Forest）、机械动力（Create）和其他模组、整合包的模型、贴图、音效、结构归各自作者。
 - 大气光照代码改写自 Photon 光影，许可见 `engine/light/大气/Photon-LICENSE.txt`。
 - 「把回忆拼好给你」的原版贴图换成了 Faithful 64x 材质包（Faithful Resource Pack，https://faithfulpack.net ），按 Faithful License v4（https://faithfulpack.net/license ）使用和再分发；换了哪些见 `作品/把回忆拼好给你/材质包.锁.json`。本项目和 Faithful 团队无关。
-- 配乐里有第三方的歌和曲子（如「把回忆拼好给你」用的抖音原声），版权归原作者，这里只为能复现作品而附带，不授予任何使用许可。
 - 每件素材的来源、许可登记在 `assets/registry/*.toml` 和 `作品/<名>/资产表/*.toml`。
-- 作品不商用。**权利人如果不希望自己的东西出现在这里，请开 issue**，作者会把它撤下、重打附件。
+- 作品不商用。
 
 本仓库自己的代码用什么开源协议还没定，暂时不写。
