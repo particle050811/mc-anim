@@ -1,4 +1,5 @@
-// 地形包「只保真看得见的格子」原型的公共部分：读包、抽样、区段 ↔ 列优先格子。用户 11-14 定做实测，结论在 docs/决策/0011-地形压缩.md。
+// 地形包「只保真看得见的格子」原型留下的公共部分：读包、抽样、建网格。四项安全项已做进管线（pipeline/世界/烘焙/可见.ts），这里留的是下一步（拼大区段）的实验和找画面用的工具，
+// 结论在 docs/决策/0011-地形压缩.md。包目录 是做变换以前的版本（实验都在原样的包上量）。
 // 只读现行格式 3 的包，不写数据根。engine/voxel 带 asset: 的模块要先注册资产钩子，所以动态 import。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,8 +12,11 @@ import { 压区段, 到列优先 } from '../../../pipeline/世界/烘焙/区段�
 import type { SectionData, 包信息, 包表 } from '../../../engine/voxel/区段包.ts';
 import type * as 网格模块 from '../../../engine/voxel/网格.ts';
 import type * as 导入区段模块 from '../../../engine/voxel/导入区段.ts';
+import type { SectionMesh } from '../../../engine/voxel/网格.ts';
+import { 成格子 as 管线成格子, 成区段, type 格子 } from '../../../pipeline/世界/烘焙/可见.ts';
+export { 抄, 成区段, type 格子 } from '../../../pipeline/世界/烘焙/可见.ts';
 
-export const 边 = 34, 列数 = 边 * 边;
+export const 边 = 34;
 export const 包目录: Record<string, string> = { '主世界-116': '主世界-116/5c8a6378419e', '暮色放大-1752-扩展': '暮色放大-1752-扩展/c42d60d01992' };
 export type 区段号 = { L: number; i: number; j: number };
 export type 区段项 = { file: string; off: number; len: number; id: 区段号 };
@@ -90,37 +94,10 @@ export const 留出集 = (包: 包) => {
   return { 测, 训 };
 };
 
-/** 可改的区段格子：cm[c·nz + k]（c = y·34 + x，k 从下往上），色板可以加项 */
-export type 格子 = { id: 区段号; kBottom: number; nz: number; cm: Uint16Array; 色板: number[]; 满: Uint8Array; 石: number; /** 窗口每边几列，不写是 34；拼大.ts 拼出来的是 66 */ 宽?: number };
-export const 成格子 = (包: 包, d: SectionData): 格子 => {
-  const 色板 = Array.from(d.palette);
-  let 石 = -1;
-  for (let p = 1; p < 色板.length / 2; p++) if (色板[2 * p] === 包.石状态 && 色板[2 * p + 1] === 65535) { 石 = p; break; }
-  if (石 < 0) { 石 = 色板.length / 2; 色板.push(包.石状态, 65535); }
-  const 满 = new Uint8Array(色板.length / 2);
-  for (let p = 1; p < 满.length; p++) 满[p] = 包.状态满[色板[2 * p]!]!;
-  return { id: { L: d.L, i: d.i, j: d.j }, kBottom: d.kBottom, nz: d.nz, cm: 到列优先(d), 色板, 满, 石 };
-};
-export const 抄 = (g: 格子): 格子 => ({ ...g, cm: g.cm.slice() });
-
-/** 格子 → SectionData：色板照 写区段.ts 按出现先后重排（列从小到大、列内从上往下），没用到的丢掉，空气固定第 0 项 */
-export const 成区段 = (g: 格子): SectionData => {
-  const { nz, cm } = g, 新号 = new Int32Array(g.色板.length / 2).fill(-1), 色板 = [g.色板[0]!, g.色板[1]!];
-  新号[0] = 0;
-  const runCounts = new Uint16Array(列数), 号: number[] = [], 长: number[] = [];
-  for (let c = 0; c < 列数; c++) {
-    const r0 = 号.length;
-    for (let k = nz - 1; k >= 0; k--) {
-      const p = cm[c * nz + k]!;
-      let q = 新号[p]!;
-      if (q < 0) { q = 新号[p] = 色板.length / 2; 色板.push(g.色板[2 * p]!, g.色板[2 * p + 1]!); }
-      if (号.length > r0 && 号[号.length - 1] === q) 长[长.length - 1]!++;
-      else { 号.push(q); 长.push(1); }
-    }
-    runCounts[c] = 号.length - r0;
-  }
-  return { ...g.id, kBottom: g.kBottom, nz, palette: Uint16Array.from(色板), runCounts, paletteIndex: Uint16Array.from(号), runLengths: Uint16Array.from(长) };
-};
+// 格子和四项变换用管线的正本（pipeline/世界/烘焙/可见.ts）；这里的 成格子 按原型的包结构取状态表、石头
+export const 成格子 = (包: 包, d: SectionData): 格子 => 管线成格子(d, 包.状态满, 包.石状态);
+/** 渲染那条路建网格（树叶第 0 级镂空、粗级实心） */
+export const 建网格 = (环: 环境, 包: 包, g: 格子, 实心树叶 = g.id.L >= 1): SectionMesh => 环.网格.buildSectionMesh(环.导入区段.importedSectionVoxels(成区段(g), 包.体素上下文), 实心树叶);
 
 const 同 = (a: Uint16Array, b: Uint16Array) => a.length === b.length && Buffer.compare(Buffer.from(a.buffer, a.byteOffset, a.byteLength), Buffer.from(b.buffer, b.byteOffset, b.byteLength)) === 0;
 /** 用现行编码器压，再用正式 WASM 解回逐格比（同 区段编码.ts 的 压并核对） */

@@ -7,7 +7,7 @@
 //   侧连     头顶有整格方块、本段里漫不到、只经段边连出去的非整格格数（只从侧面连通的洞，跨段判断出错伤的就是它）
 import fs from 'node:fs';
 import { 载入, 开包, 成格子, 键, terrain根, 边, type 区段项 } from './公共.ts';
-import { 露天连通 } from './变换.ts';
+import { 露天连通 } from '../../../pipeline/世界/烘焙/可见.ts';
 
 const [包名, 出] = process.argv.slice(2) as [string, string];
 const 环 = await 载入(), 包 = 开包(环, terrain根(), 包名);

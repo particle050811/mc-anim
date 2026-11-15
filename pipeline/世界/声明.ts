@@ -57,6 +57,8 @@ export type 世界声明 = {
   包: 包声明[];
   /** 远景包（pipeline/世界/远景/）：导入范围（预生成的矩形块）外扩多远、中层（16 米）和细带（8 米）在交界外多宽，米 */
   远景?: { 包: string; 外扩: number; 中宽: number; 细宽: number };
+  /** 烘焙、转码时的可见变换（烘焙/可见.ts）：埋住的格换成 填充；保真 盒碰到的区段原样保留（作品的挖框、整平要落在里面，anim check 核） */
+  可见: { 填充: string; 保真: { 名: string; 盒: [number, number, number, number]; 出处?: string }[] };
 };
 
 export const 世界目录 = () => path.join(代码根(), 'sourcing', 'worlds');
@@ -118,6 +120,14 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
       return [v[0], v[1], v[2]];
     };
     const 默认原点 = 原点于(烘.原点, '烘焙.原点');
+    if (烘.填充 !== undefined && (typeof 烘.填充 !== 'string' || !烘.填充.includes(':'))) throw 错('烘焙.填充 要写方块状态（命名空间:名字）');
+    const 保真 = ((烘.保真 ?? []) as Record<string, unknown>[]).map((k, i) => {
+      const 何 = `烘焙.保真 第 ${i + 1} 个`;
+      if (typeof k.名 !== 'string' || !k.名) throw 错(`${何} 要写 名`);
+      const 盒 = k.盒 as number[];
+      if (!Array.isArray(盒) || 盒.length !== 4 || !盒.every(Number.isInteger) || 盒[0]! > 盒[2]! || 盒[1]! > 盒[3]!) throw 错(`${何}（${k.名}）的 盒 要写游戏坐标 [x0, z0, x1, z1]，两端都含、小的在前`);
+      return { 名: k.名, 盒: 盒 as [number, number, number, number], 出处: typeof k.出处 === 'string' ? k.出处 : undefined };
+    });
     const 包们 = ((烘.包 ?? []) as Record<string, unknown>[]).map((b, i): 包声明 => {
       if (typeof b.名 !== 'string' || !b.名) throw 错(`烘焙.包 第 ${i + 1} 个要写 名`);
       const 原点 = 原点于(b.原点, `包 ${b.名} 的 原点`) ?? 默认原点;
@@ -183,6 +193,7 @@ export const 解析声明 = (文本: string, 名: string, 文件 = `${名}.toml`
       预生成: { 区域文件范围: 范围(预.区域文件范围, '预生成.区域文件范围'), 区块数: typeof 预.区块数 === 'number' ? 预.区块数 : undefined, 块: 块们 },
       包: 包们,
       远景,
+      可见: { 填充: typeof 烘.填充 === 'string' ? 烘.填充 : 'minecraft:stone', 保真 },
     };
   } catch (e) {
     if ((e as Error).message.startsWith(文件)) throw e;
@@ -199,6 +210,15 @@ export const 读声明 = (名: string): 世界声明 => {
 /** 存档的世界目录：--存档 给了就用它，否则 <ANIM_GAME>/<服务端>/<存档> */
 export const 存档目录 = (w: 世界声明, 覆盖?: string) => (覆盖 ? path.resolve(覆盖) : path.isAbsolute(w.存档) ? w.存档 : path.join(配置('游戏'), w.服务端, w.存档));
 export const 区域目录 = (w: 世界声明, 覆盖?: string) => path.join(存档目录(w, 覆盖), 维度区域目录(w.维度));
+
+/** 哪个世界声明烘这个包（转码按它取可见变换的设置）；没有返回 null */
+export const 包的世界 = (包: string): 世界声明 | null => {
+  for (const 名 of 列出世界()) {
+    const w = 读声明(名);
+    if (w.包.some((b) => b.名 === 包)) return w;
+  }
+  return null;
+};
 
 /** 包在世界声明里吗；不给名字且只有一个包就是它 */
 export const 选包 = (w: 世界声明, 名?: string) => {

@@ -203,7 +203,7 @@ public final class Recorder {
         return active;
     }
 
-    /** 客户端线程上调：停下，整理成一份 JSON（格式见 docs/决策/0016-法术录制.md「原始录制」） */
+    /** 客户端线程上调：停下，整理成一份 JSON（格式 mcai-录制-原始/1，读它、整理成 mcai-录制/1 的是 sourcing/extract/录法术.py） */
     public static JsonObject stop() {
         active = false;
         Minecraft mc = Minecraft.getInstance();

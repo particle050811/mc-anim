@@ -10,7 +10,7 @@ import { 代码根 } from '../../../pipeline/环境/路径.ts';
 import { 压区段 } from '../../../pipeline/世界/烘焙/区段编码.ts';
 import type { 区段模型 } from '../../../engine/voxel/区段模型.ts';
 import { 载入, 开包, 留出集, 成格子, 抄, 成区段, 键, terrain根, type 格子, type 区段项, type 区段号 } from './公共.ts';
-import { 埋格换石, 填封闭腔, 邻圈归一, 核心边换石 } from './变换.ts';
+import { 埋格换石, 填封闭腔, 邻圈归一, 核心边换石 } from '../../../pipeline/世界/烘焙/可见.ts';
 import { 压宽, 排色板, 拼, 大 } from './宽编码.ts';
 
 /** 同 pipeline/世界/区段解码器.ts 的 asc参数（那边没导出；优化选项进 WASM 字节，两边不一样就不是同一种解码器） */
@@ -68,7 +68,7 @@ const 统 = Array.from({ length: 7 }, () => ({ 组: 0, ...(Object.fromEntries(�
 /** 最终的做法（定底裙边.ts 量出来的）：3 封腔、1 埋格、邻圈只换被埋的并归空，第 0 级再加核心边。窗口 34 列、66 列都能用 */
 const 全做 = (g: 格子, 有邻: boolean[]) => {
   填封闭腔(g); 埋格换石(g);
-  邻圈归一(g, true, Uint8Array.from({ length: g.色板.length / 2 }, (_, p) => (p && 包.状态罩[g.色板[2 * p]!] === 0 ? 1 : 0)));
+  邻圈归一(g, Uint8Array.from({ length: g.色板.length / 2 }, (_, p) => (p && 包.状态罩[g.色板[2 * p]!] === 0 ? 1 : 0)));
   if (g.id.L === 0) 核心边换石(g, 有邻);
   return g;
 };

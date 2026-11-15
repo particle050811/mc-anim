@@ -34,7 +34,7 @@
 - 正版 Minecraft Java 版 1.20.1、Forge 1.20.1-47.4.10；
 - [Prism Launcher](https://prismlauncher.org/)：`mcai` 用它的实例启停游戏，实例放在游戏环境目录（anim 配置 `ANIM_GAME`）的 `实例/<实例名>/`（默认实例叫 `取材客户端`）；
 - JDK 17（编译 mod），Python 3.10 以上；
-- 和取材世界一致的模组：版本、下载地址、sha256 见 `sourcing/jars.toml`（旧项目的 `取材/下载.py` 能下载其中大部分，还没搬过来）。
+- 和取材世界一致的模组：版本、下载地址、sha256 见 `sourcing/jars.toml`（`anim world install-server` 按它装服务端）。
 
 > 目前只在 macOS（Apple Silicon）上用过。`mcai` 只读环境变量：`MCAI_GAME`（游戏环境目录）、`MCAI_PRISM`（Prism 启动器，不给就在 PATH 上找）、
 > `MCAI_JAVA_HOME`（JDK 17，不给就用 PATH 上的 java）；用 `anim mcai` 时这些由 anim 配置（`ANIM_GAME`、`ANIM_PRISM`、`ANIM_JAVA_HOME`）传。Windows 的分支写了但还没跑过。
@@ -59,7 +59,7 @@ anim mcai game stop                                 # 忘了也行，空闲 30 �
 
 ## 数据包（服务端用）
 
-`sourcing/datapacks/` 下 `主世界修整`、`古城放大4倍`、`暮色放大4倍` 三个数据包，要和 mod 一起装才生效，建新世界时放进世界的 `datapacks/`（`参考模型库/工具/游戏取材/取材服务端.py --new` 会自动放）：
+`sourcing/datapacks/` 下 `主世界修整`、`古城放大4倍`、`暮色放大4倍` 三个数据包，要和 mod 一起装才生效，建新世界时放进世界的 `datapacks/`（`anim world new` 按世界声明放）：
 
 - `暮色放大4倍`：暮色森林的群系放大 4 倍，mod 把首领地标的网格跟着放大，地标不会挤在一起；
 - `古城放大4倍`：远古城市铺大到约 4 倍宽，mod 放开原版拼图 8 区块的上限；
@@ -68,38 +68,13 @@ anim mcai game stop                                 # 忘了也行，空闲 30 �
 
 ## 生成地形包
 
-> 这一节照旧项目写的：`参考模型库/…`、`取材/…` 开头的工具和 `npm run 导入:*` 还在旧项目里，`anim world` 做好后再搬。暮色森林世界的声明见 `sourcing/worlds/暮色放大-1752.toml`。
+漫剧的地形（暮色森林、主世界）是用取材服务端生成世界、再烘焙成「区段包」读进渲染的。地形包不进 Git，挂在仓库的 GitHub Release 上，
+**只想渲染的话直接下载就行**：`anim assets pull`（核过 sha 放进数据根的 `terrain/<包>/<版本>/`，见 `docs/决策/0006-挂Release发字节.md`）。
 
-漫剧的远景地形（暮色森林、主世界）是用取材服务端生成世界、再烘焙成「区段包」读进渲染的。地形包约 2.1 GB，不进 Git，挂在仓库的 GitHub Release 上，
-**只想渲染的话直接下载就行**：`python3 取材/下载发布附件.py`（校验后解压到数据根的 `渲染/区段包/<名>/<版本>/`，数据根默认是仓库根下 `数据/`，见仓库根下 README「场景网格和地形包」）。
-
-想从头自己生成（进阶），大致步骤如下（命令都在仓库根下执行，细节和踩过的坑见 [MANUAL.md](MANUAL.md)），烘焙出的包自动写成数据根下的新版本，并登记进 `参考模型库/src/lib/体素/区段包版本.json`：
-
-1. **服务端**：`python3 取材/下载.py` 下载 Forge 安装器和模组，用安装器在 `game/取材服务端/` 装好 Forge 1.20.1-47.4.10 服务端，
-   再复制一份 `game/取材服务端-主世界/` 给主世界用（史诗地形只装在这一份里）。预生成用的 [Chunky](https://modrinth.com/plugin/chunky) 放进服务端的 `预生成模组/`。
-   `anim mcai build` 把 mcai 装进两个服务端。
-2. **暮色森林**（种子 1752，第 1 场用）：
-   ```sh
-   python3 参考模型库/工具/游戏取材/取材服务端.py --world 暮色放大-1752 --new --seed 1752 --twilight-x4
-   python3 参考模型库/工具/游戏取材/取材服务端.py --world 暮色放大-1752 --pregen chunky \
-     'chunky world twilightforest:twilight_forest' 'chunky corners -13191 -2887 -935 7192' 'chunky start' \
-     'wait:Task finished for twilightforest:twilight_forest'
-   cd 参考模型库 && npm run 导入:暮色放大1752扩展
-   ```
-3. **主世界**（种子 116，第 2、3 场用）：
-   ```sh
-   python3 参考模型库/工具/游戏取材/取材服务端.py --server 取材服务端-主世界 --world 主世界-116 --new --seed 116 --no-structures
-   ```
-   按 `参考模型库/工具/游戏取材/主世界范围.py` 的三批（岛、边城、航线）用 `预生成看守.py` 预生成，然后：
-   ```sh
-   cd 参考模型库
-   npm run 导入:主世界116
-   npm run 远景:主世界-116 && npm run 远景:中层 && npm run 远景:细带
-   ```
-
-预生成要几个小时、十几 GB 硬盘。同一个种子、同一版模组和数据包生成的地形是一样的，所以生成出来的和成片里的是同一片地。
-
-> 这一步还没有一键脚本，上面的范围也还没在全新环境里从头核对过；暮色森林第 1 场用的预生成范围比上面的矩形更大，见 `参考模型库/工具/游戏取材/暮色范围.py`。
+想从头自己生成：照世界声明（`sourcing/worlds/<世界>.toml`：种子、模组、数据包、预生成范围、烘焙范围）依次
+`anim world install-server <世界>` → `anim world new <世界>` → `anim world pregen <世界> --执行` → `anim world bake <世界>`，`anim mcai build` 把 mcai 装进服务端。
+用法见 `docs/世界.md`，各世界为什么这么建、踩过的坑见 [MANUAL.md](MANUAL.md)。预生成要几个小时、十几 GB 硬盘。
+同一个种子、同一版模组和数据包生成的地形是一样的，所以生成出来的和成片里的是同一片地；不过现有世界声明还没在全新环境里从头生成核对过。
 
 ## 许可
 

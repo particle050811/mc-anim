@@ -107,7 +107,9 @@ export const 算回收计划 = async (o: 回收选项, 进度: (s: string) => vo
 
   if (要('母版') || 要('残留') || 要('去重')) {
     const 已知 = 作品们();
-    const 缓存里的 = new Set(fs.existsSync(数据路径('cache', '母版')) ? fs.readdirSync(数据路径('cache', '母版')) : []);
+    // 只认目录：Finder 会在这里留 .DS_Store
+    const 母版根 = 数据路径('cache', '母版');
+    const 缓存里的 = new Set(fs.existsSync(母版根) ? fs.readdirSync(母版根, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name) : []);
     const 这次 = o.作品.length ? o.作品 : [...new Set([...已知.keys(), ...缓存里的])].sort();
     const 保留 = new 保留集();
     // 自足的交付、有认可参考的认可不再钉（用户 10-30 定「这个未来用不到的就删」）

@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 为什么地形、洞穴、结构一格不变（1.20.1 反编译核对过）：噪声地形、含水层、矿脉、洞穴噪声是 NoiseRouter 的密度函数，和群系无关；雕刻洞穴（carver）的 `applyCarvers` 直接问 biomeSource；
  * 结构起点按 biomeSource 判群系，拼图件不看群系；地表规则 `buildSurface` 读区块里的群系，但按群系分的那些全在 abovePreliminarySurface 里（地表往下 8 格内），depth ≥ 0.2 约在地表 25 格以下碰不到。
  * 只有地物（placed feature 的 biome 过滤、`applyBiomeDecoration` 收集的地物表）读区块里的群系：多出深暗之域的幽匿地物，少掉原来群系的地下地物（滴水石、苔藓、微光林地的……）。
- * 离线新旧逐格对比见 取材mod/手册.md「古城放大 4 倍」的「幽匿地形」。
+ * 离线新旧逐格对比见 sourcing/mod/MANUAL.md「古城放大 4 倍」的「幽匿地形」。
  *
  * 只在世界的数据包里有结构标签 mcai:fill_biome 时起作用（取材mod/数据包/古城放大4倍 带；更早建的 古城放大-20260930 里的副本没有，照旧）。别的世界不受影响。
  */
