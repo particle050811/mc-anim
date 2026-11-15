@@ -96,7 +96,7 @@ const 子命令们: Record<string, 子命令> = {
         for (const 包 of p.位置) {
           const r = await 转码包(包, { 从: p.值['--从'], 不登记: p.开关.has('--不登记'), 线程, 日志: (s) => console.log(s) });
           记录.产物.push(r.目录);
-          记录.记('信息', `${包} ${r.旧版本} → ${r.版本}，${r.区段} 个区段、${r.格} 格逐格相同`);
+          记录.记('信息', `${包} ${r.旧版本} → ${r.版本}，${r.区段} 个区段、${r.格} 格逐格核对过`);
         }
       });
     },
@@ -362,7 +362,7 @@ export const 世界命令: Record<string, 命令> = {
     用法: `world ${Object.values(子命令们)
       .map((c) => c.用法.split(' ')[0])
       .join('|')} …`,
-    说明: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；转码 把旧格式的包转成逐格预测压缩（只写新版本目录，逐格核对）；解码器 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度。anim world help 看各子命令',
+    说明: '世界：list 列声明；bake 从存档烘区段包（套编辑层，过资源闸）；转码 把旧格式的包转成逐格预测压缩、没做可见变换的做上（只写新版本目录，逐格、逐网格核对）；解码器 重编 WASM、核对；edit check|replay 校验编辑、生成游戏里重放的命令；block、heightmap、map、slice 查方块、出图；install-server 装 Forge 服务端、模组、数据包；new 按声明建新存档；pregen 打印或执行预生成（起专用服务端跑 Chunky）；server 起服务端发命令；freeze 冻结粗高度。anim world help 看各子命令',
     跑: async (args, 记录) => {
       const [子, ...rest] = args;
       if (!子 || 子 === 'help' || 子 === '--help') {

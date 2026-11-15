@@ -38,7 +38,8 @@ export const 学模型 = (样本: () => Iterable<SectionData>): 区段模型 => 
   return { classes, stride, map, init, weights };
 };
 
-export const 训练包模型 = (库: 体素库, dir: string) => {
+/** 变换：区段写进包之前要过的变换（可见.ts），训练就拿变换后的格子学 */
+export const 训练包模型 = (库: 体素库, dir: string, 变换: (d: SectionData) => SectionData = (d) => d) => {
   let 区段 = 0, 样本数 = 0;
   const 样本 = function* () {
     const 次数 = new Map<number, number>();
@@ -49,7 +50,7 @@ export const 训练包模型 = (库: 体素库, dir: string) => {
       次数.set(s.id.L, n + 1);
       if (n % 40) continue;
       样本数++;
-      yield s.取();
+      yield 变换(s.取());
     }
   };
   let 模型 = 学模型(样本);
@@ -59,7 +60,7 @@ export const 训练包模型 = (库: 体素库, dir: string) => {
     const 中性 = 默认模型();
     候选字节 = 模型字节(模型).length; 中性字节 = 模型字节(中性).length;
     for (const s of 遍历区段(库, dir)) {
-      const d = s.取();
+      const d = 变换(s.取());
       候选字节 += 压区段(d, 模型).length;
       中性字节 += 压区段(d, 中性).length;
     }
