@@ -4,7 +4,7 @@
 // Procedural Animations using Math」的 SecondOrderDynamics）：f 固有频率（赫兹）、ζ 阻尼比、r 初始响应，
 //   k1 = ζ/(πf)，k2 = 1/(2πf)²，k3 = rζ/(2πf)；每步 y += T·y′；y′ += T·(x + k3·x′ − y − k1·y′)/k2，k2 取不小于 T²/2 + T·k1/2、T·k1（步长大了也不发散）。
 // 游戏里每渲染一帧推一步，结果跟帧率走。这里要「结果只看时间」（docs/新生物.md 控制器一节）：从第 0 秒起按固定步长推到要的时刻，
-// 中途每隔一段存一份状态，倒着取、跳着取都从最近的存档接着推，推出来的数和一口气从 0 推到底逐位相同。
+// 中途每隔一段存一份状态，最近推过的各步也留着，倒着取、跳着取都从留着的最近一步接着推，推出来的数和一口气从 0 推到底逐位相同。
 import type { Molang值 } from './Molang.ts';
 
 export type 二阶常数 = { k1: number; k2: number; k3: number };
@@ -48,12 +48,18 @@ export type 二阶推进器 = {
  * 它得是时间的纯函数：同一个 秒 每次给出同样的输入。同一步里同一个名字调几次只推一次，后几次拿同一个输出。
  * 步长默认 1/60 秒（60 帧成片的每一帧正好落在格上）；不在格上的时刻，从前一格再推不满一步，不写回存档。
  */
-export const 二阶推进器 = (跑: (秒: number, second_order: 二阶函数) => void, 选项: { 步长?: number; 存档每几步?: number } = {}): 二阶推进器 => {
+export const 二阶推进器 = (跑: (秒: number, second_order: 二阶函数) => void, 选项: { 步长?: number; 存档每几步?: number; 留最近几步?: number } = {}): 二阶推进器 => {
   const h = 选项.步长 ?? 1 / 60;
   const 隔 = 选项.存档每几步 ?? 60;
   type 表 = ReadonlyMap<string, 二阶状态>;
   const 存档 = new Map<number, 表>();
-  let 最近: { 步: number; 表: 表 } | undefined;
+  // 最近推过的各步的状态（超了丢最早推的）：一帧里会按几个时刻来回取（当前、法术出手那一刻、往前几帧），只留一份的话每换一个时刻都要从存档重推几十步，每步把动画求一遍
+  const 近 = new Map<number, 表>();
+  const 近上限 = 选项.留最近几步 ?? 600;
+  const 留 = (步: number, 表: 表) => {
+    近.set(步, 表);
+    if (近.size > 近上限) 近.delete(近.keys().next().value!);
+  };
 
   const 走 = (前: 表, 秒: number, T: number): 表 => {
     const 后 = new Map(前);
@@ -76,22 +82,20 @@ export const 二阶推进器 = (跑: (秒: number, second_order: 二阶函数) =
   const 状态在 = (秒: number): 表 => {
     const t = Math.max(0, 秒);
     const n = Math.floor(t / h + 1e-9);
-    let 步: number;
-    let 现: 表;
-    const 档 = Math.floor(n / 隔) * 隔;
-    if (最近 && 最近.步 <= n && 最近.步 >= 档) ({ 步, 表: 现 } = 最近);
-    else {
-      let k = 档;
-      while (k > 0 && !存档.has(k)) k -= 隔;
-      if (k > 0) [步, 现] = [k, 存档.get(k)!];
-      else [步, 现] = [0, 走(new Map(), 0, 0)];
+    // 从第 n 步往回找留着的最近一步（哪一份都是从第 0 步一步步推出来的）
+    let 步 = n;
+    let 现 = 近.get(步) ?? 存档.get(步);
+    while (!现 && 步 > 0) {
+      步--;
+      现 = 近.get(步) ?? 存档.get(步);
     }
+    if (!现) 留(0, (现 = 走(new Map(), 0, 0)));
     while (步 < n) {
       步++;
       现 = 走(现, 步 * h, h);
       if (步 % 隔 === 0) 存档.set(步, 现);
+      留(步, 现);
     }
-    最近 = { 步, 表: 现 };
     const 余 = t - n * h;
     return 余 > 1e-9 ? 走(现, t, 余) : 现;
   };
