@@ -35,9 +35,9 @@ anim world list|bake|转码|解码器|edit|pregen|server|install-server|new|free
 anim mcai <动作…>  |  anim gamedata 导出|核对    取材 mod 的命令行、从游戏导群系色和方块表
 anim 平台 导入 <json>  |  anim 平台 分析     B 站、抖音创作中心数据（旧名 anim bili）
 ```
-用户 11-06 定删掉：剪映剪辑包（`anim edit-package`、`anim jianying`，成片、分享版统一在 image-flow 插件里看）、`anim render`（连 `--到预览`、`--留CRF1`、`--只派生`）、`verify --对基线`、`cache 转存|改后缀`，出片只走 `anim film`。还没实现：`anim music`、`anim assets import|verify`（字节核对用 `anim check --深`，旧项目导入用 `assets/tools/导入旧项目.py`）。取材 mod 的录制（`mcai record`）用户 11-10 定要做（10-30 说过用不到），见 `docs/决策/0016-法术录制.md`。
+还没实现：`anim music`、`anim assets import|verify`（字节核对用 `anim check --深`）。取材 mod 的录制（`mcai record`）见 `docs/决策/0016-法术录制.md`。
 
-Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git；`anim wt new` 会复制进新 worktree，缺了用 `npx skills experimental_install` 装回）只当 API 参考：它说的 `npx remotion studio|render|still` 一律换成 `anim studio|film|still`（要按作品取根、算指纹、过资源闸）；不照它的 `remotion-upgrade` 自行升级，升 Remotion 要用户点名，升完全片 `anim verify --渲`；它说先开 Studio，我们先出静帧进预览。
+Remotion 官方 skill `remotion-best-practices` 只当 API 参考：它说的 `npx remotion …` 一律换成 `anim studio|film|still`，不照它自行升级 Remotion；装法和其余差别见 `docs/新段.md`「Remotion skill」。
 
 ## 两条元规则（用户 10-21）
 1. **看过的实现为准**：用户看过的已实现画面，优先于旧规矩、原设计和 Agent 写的规矩。冲突时留现状，列给用户，写清规矩出处和「现状是用户看过的」；用户这次点名才改。
@@ -50,7 +50,7 @@ Remotion 官方 skill `remotion-best-practices`（`.claude/skills/`，不进 Git
 - 合并前 `anim check` 必须过。说「改好了」之前在 main 上核对：用户这次定的每一条都要在代码里查到，或者出静帧确认。
 - 预期不改画面的改动（重构、搬代码、提速）用 `anim 认指纹` 验收，不要求逐字节不变（用户 11-11 定）；认不下的出改前改后并排静帧给用户定。`anim verify 逐帧` 只用来查同一份代码走不同路径出的图是否一致。
 - 给用户看的东西放 `预览/<月日-时分>-<主题>/`，时间用 UTC（`date -u +%m%d-%H%M`，代码里用 `time.gmtime()`）。一层平铺，文件名带编号，附 `00-说明.md`，末尾留「你的回复：」。数据根里已有的大文件（成片、整段视频）不复制进来，在 `00-说明.md` 里写 `![名](绝对路径)`，用户在 image-flow 侧栏「本页引用」里看（用户 11-05 定）。不覆盖旧的；换了变量就另开一个文件夹。
-- **迁移不改画面**：搬迁期间不改任何画面、规矩数值、镜头、台词，不借机「顺手统一」。版本锁死 Remotion 4.0.537（用户 10-22 定）、three 0.186.1、react 19.3.0、esbuild 0.28.1、Node 24，升级要用户点名。和旧版对不上时，只能按 `docs/迁移.md` 的两种情况接受，并逐条登记。
+- **版本锁死**：Remotion 4.0.537（用户 10-22 定）、three 0.186.1、react 19.3.0、esbuild 0.28.1、Node 24，升级要用户点名。
 - 全片默认值改在共用的地方（`作品/应力转动/默认.ts` 或对应的共用模块），段里不覆盖。确实要例外的，写成 `例外('规矩id', 值, {段, 原因})`，同时登记进规矩表。
 - 渲染、烘焙地形、开游戏这类重任务，先过资源闸。两个 MC 客户端不同时开。长任务开跑前，按 `run/logs/耗时.tsv` 报预计耗时。
 - 作品不商用（用户 11-05 说没商用过）：取材、材质包、模组资产只记许可是什么，不问用户会不会商用、会不会踩线；非商用许可（如 CC BY-NC）照用。
