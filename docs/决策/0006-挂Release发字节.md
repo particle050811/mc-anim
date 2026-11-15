@@ -22,14 +22,12 @@
 | 打包、上传 | `anim assets pack [--上传]`：tar 打在 `<数据根>/cache/发布/`；锁里已有的同名附件不重打（tar 带时间戳，重打字节会变）；`--上传` 用 `gh` 建 Release、只传 Release 上还没有的 |
 | 下载 | `anim assets pull`：先问附件在不在，404（发布锁比 Release 新）直接报清楚；系统 curl 下载（断点续传，认 `HTTPS_PROXY`）、核附件 sha、系统 tar 解开（Windows 10 起自带 curl.exe、bsdtar，UTF-8 文件名两边都对）；字节逐件核 sha 放进 `store/`，地形包核清单 sha、文件数、大小再放进 `terrain/`；已有的跳过 |
 | 核对 | `anim check` 的 资产：发布锁和照当前代码现算的一致（少了字节、换了地形版本、换了标签都报），不一致提示 `anim assets pack --上传` |
-| 缺了提示 | `anim render`、`still`、`film`、`studio` 开头：数据根缺发布锁里的东西时打一行「先 anim assets pull」。不自动下：地形包上 GB |
+| 缺了提示 | `anim still`、`film`、`studio` 开头：数据根缺发布锁里的东西时打一行「先 anim assets pull」。不自动下：地形包上 GB |
 
 - 内容变了附件名跟着变，旧附件留在 Release 上，和 `store/` 一样只增不改。
 - 求解缓存 `cache/求解/` 不发：空数据根渲的时候自己算出来。
-- 10-25：37 段、1156 件字节（224 MB），地形 `主世界-116`、`主世界-116-远景`、`暮色放大-1752-扩展`，4 个附件共 2.39 GB。
-- 10-31 地形换逐格预测压缩（`0011-地形压缩.md`）：40 段、1157 件字节，地形还是这三个包，发布锁 4 个附件共 1.15 GB。主世界、暮色的旧附件留在 Release 上，旧提交还要用。
-- 验证（10-25）：Mac 上数据根指向空目录、只 `pull`，`still 6-飞越主世界俯冲边城 60` 和主数据根渲的逐字节相同；再跑 `pull` 报都有了。
-- Windows（10-25，render-laptop）：从 GitHub 新 clone、空数据根，`pull` 下字节核过 sha；GitHub 下载只有 0.4～0.9 MB/s，地形 tar 用户让走内网 scp 放进 `cache/发布/`，`pull` 认出 sha 对就不下、直接解；`still 6-飞越主世界俯冲边城 60` 和 Mac 内容一样，SSIM 0.97（贴图过滤差异，同 把回忆拼好给你，用户已接受）。下载半路断过一次，`pull` 加了断点重试。
+- 10-31 地形换逐格预测压缩（`0011-地形压缩.md`）后重打，旧附件留在 Release 上，旧提交还要用。
+- 验证（10-25）：Mac 空数据根只 `pull`，静帧和主数据根渲的逐字节相同。Windows 新 clone 空数据根 `pull` 后静帧和 Mac 内容一样，SSIM 0.97（贴图过滤差异，用户已接受）。GitHub 下载慢（0.4～0.9 MB/s）时，地形 tar 可以另行放进 `cache/发布/`，`pull` 认出 sha 对就不下、直接解。
 
 ## 没做的
 
