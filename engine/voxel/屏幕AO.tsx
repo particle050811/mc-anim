@@ -31,7 +31,7 @@ import { postFxRenderers } from '../post/后期.tsx';
 import { midPassesOf, type MidPassContext } from './中间步骤.ts';
 import { 渲染输入 } from '../core/渲染设置.ts';
 import { 切换着色宏 } from '../core/着色宏.ts';
-import { 光栅兼容, 切光栅宏, 反向比较, 反向系数, 换成反向投影 } from '../core/光栅深度.ts';
+import { 光栅兼容, 切光栅宏, 反向比较, 反向系数, 换成反向投影, 解析偏移 } from '../core/光栅深度.ts';
 
 export type ScreenAoProps = {
   // 每个像素的采样数：Voxy BEST = 24、BETTER = 12；离线渲染用 24
@@ -186,19 +186,43 @@ void main() {
   gl_FragDepth = d;
 }`;
 
-// 第 1 遍的反向深度 → 对数深度（three 的写法：log2(1 + w) / log2(far + 1)）；没画到的地方（清成 0）是天空，写 1
+// 第 1 遍的反向深度 → 对数深度（three 的写法：log2(1 + w) / log2(far + 1)）；没画到的地方（清成 0）是天空，写 1。
+// 解析出来的深度是像素里偏离中心的一点的（uOff，见 engine/core/光栅深度.ts 的 `解析偏移`），先推回像素中心：片元写对数深度时存的就是像素中心的，
+// 第 3 遍贴着地面的东西（积雪层）按像素中心的深度比。反向深度在同一个面上沿屏幕是线性的，按左右、上下相邻像素的差推：
+// 两边各一个差，取小的那边（不跨物体边缘，同第 2 遍还原法线）；一边是天空或出了画面只看另一边；两边一正一负（只占一个像素的东西、棱）不推。
 const 换算FS = /* glsl */ `
 uniform sampler2D tRev;
 uniform vec2 uAB;
 uniform float uLogFar;
+uniform vec2 uOff;
+float at(ivec2 p) { return texelFetch(tRev, p, 0).r; }
+float slope(float c, ivec2 p, ivec2 e, ivec2 hi) {
+  ivec2 pa = p - e, pb = p + e;
+  float a = pa.x < 0 || pa.y < 0 ? 0.0 : at(pa);
+  float b = pb.x > hi.x || pb.y > hi.y ? 0.0 : at(pb);
+  float da = c - a, db = b - c;
+  if (a <= 0.0) return b <= 0.0 ? 0.0 : db;
+  if (b <= 0.0) return da;
+  if (da * db < 0.0) return 0.0;
+  return abs(da) < abs(db) ? da : db;
+}
 void main() {
-  float d = texelFetch(tRev, ivec2(gl_FragCoord.xy), 0).r;
-  gl_FragColor = vec4(d <= 0.0 ? 1.0 : log2(1.0 + uAB.x / (d + uAB.y)) / uLogFar, 0.0, 0.0, 1.0);
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  float c = at(p);
+  float logD = 1.0;
+  if (c > 0.0) {
+    ivec2 hi = textureSize(tRev, 0) - 1;
+    float d = c - uOff.x * slope(c, p, ivec2(1, 0), hi) - uOff.y * slope(c, p, ivec2(0, 1), hi);
+    // 贴着地平线的像素斜率和深度本身一样大，别推过头
+    d = clamp(d, 0.25 * c, 1.0);
+    logD = log2(1.0 + uAB.x / (d + uAB.y)) / uLogFar;
+  }
+  gl_FragColor = vec4(logD, 0.0, 0.0, 1.0);
 }`;
 
 // 比改前改后用：渲染输入给 `光栅深度: false`，第 1 遍退回片元写对数深度
 const rasterDepthOff = (渲染输入() as { 光栅深度?: boolean }).光栅深度 === false;
-const warned = new WeakSet<THREE.Material>();
+const warned = new WeakSet<object>();
 type ClipControl = { clipControlEXT: (origin: number, depth: number) => void; LOWER_LEFT_EXT: number; ZERO_TO_ONE_EXT: number; NEGATIVE_ONE_TO_ONE_EXT: number };
 
 // 第 1 遍藏起来、留到第 3 遍画的：三维画布本来就按半透明另排一队的（transparent）、不是普通混合的（加色的特效之类）、标了不挡的
@@ -250,7 +274,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     // 对数深度图：单通道 32 位浮点，最近点采样（和深度纹理一样）
     const logRt = new THREE.WebGLRenderTarget(1, 1, { format: THREE.RedFormat, type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false, generateMipmaps: false });
     const logMat = new THREE.ShaderMaterial({
-      uniforms: { tRev: { value: depth }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 } },
+      uniforms: { tRev: { value: depth }, uAB: { value: new THREE.Vector2() }, uLogFar: { value: 1 }, uOff: { value: new THREE.Vector2() } },
       vertexShader: VS,
       fragmentShader: 换算FS,
       depthTest: false,
@@ -316,6 +340,14 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
     const cam = camera as THREE.PerspectiveCamera;
     const clip = gl.extensions.has('EXT_clip_control') ? (gl.extensions.get('EXT_clip_control') as ClipControl) : null;
     let raster = !rasterDepthOff && clip !== null && gl.capabilities.logarithmicDepthBuffer && cam.isPerspectiveCamera === true;
+    const resolveOff = raster ? 解析偏移(gl, samples) : null;
+    if (raster && !resolveOff) {
+      raster = false;
+      if (!warned.has(gl)) {
+        warned.add(gl);
+        console.warn('[屏幕AO] 不透明一遍退回片元写对数深度：量不出多重采样深度解析取的是哪一点（engine/core/光栅深度.ts 的 解析偏移）');
+      }
+    }
     for (const entry of saved) {
       const material = entry.m;
       if (drawLater(material)) material.visible = false;
@@ -406,6 +438,7 @@ export const ScreenAo: React.FC<ScreenAoProps> = ({ sampleCount: sampleCount = 2
       const { a, b } = 反向系数(cam.near, cam.far);
       logMat.uniforms.tRev.value = rt.depthTexture;
       (logMat.uniforms.uAB.value as THREE.Vector2).set(a, b);
+      (logMat.uniforms.uOff.value as THREE.Vector2).copy(resolveOff!);
       logMat.uniforms.uLogFar.value = Math.log2(cam.far + 1);
       gl.setRenderTarget(logRt);
       gl.render(resources.logScene, resources.camera);

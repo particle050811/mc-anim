@@ -70,3 +70,80 @@ export const 切光栅宏 = (m: THREE.Material, 开: boolean) => {
   else delete m.defines![光栅深度宏];
   m.needsUpdate = true;
 };
+
+// ---------- 多重采样的深度解析取的是像素里的哪一点 ----------
+// 片元写对数深度时，一个像素的各采样点共用像素中心的深度；光栅深度每个采样点各算各的，解析出来的是其中一点的（Apple 显卡是第 0 个采样点，偏离像素中心 0.4 像素）。
+// 地面掠着看时，这不到半个像素纵深差得出几米：留到后面画、贴着地面的东西（体素世界的积雪层）拿像素中心的深度去比会输，雪地露出底下的方块。
+// 所以量出这一点相对像素中心的偏移，换算成对数深度时沿深度的斜率推回像素中心（engine/voxel/屏幕AO.tsx 的换算）。
+// 量法：一张斜着的全屏面（深度沿 x 或沿 y 线性变）画进同样采样数的小图，解析后读一个像素反推。正着斜、反着斜量出来不一样
+// （解析取的是最近或最远的采样点，不是固定的一点）就返回 null，调用方退回片元写对数深度。
+const 边 = 8;
+const 斜 = 0.25;
+const 读 = [3, 5] as const;
+const 量 = (gl: THREE.WebGLRenderer, samples: number) => {
+  const depth = new THREE.DepthTexture(边, 边, THREE.FloatType);
+  const 多采样 = new THREE.WebGLRenderTarget(边, 边, { samples, depthTexture: depth, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, generateMipmaps: false });
+  const 读回 = new THREE.WebGLRenderTarget(边, 边, { type: THREE.FloatType, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter, depthBuffer: false, generateMipmaps: false });
+  // 一个盖住全屏的大三角形（两个三角形拼的面在对角线上各管几个采样点，不必要）
+  const 三角 = new THREE.BufferGeometry();
+  三角.setAttribute('position', new THREE.BufferAttribute(new Float32Array([-1, -1, 0, 3, -1, 0, -1, 3, 0]), 3));
+  const 斜面 = new THREE.ShaderMaterial({
+    uniforms: { uK: { value: new THREE.Vector2() } },
+    vertexShader: 'uniform vec2 uK;\nvoid main() { gl_Position = vec4(position.xy, dot(uK, position.xy), 1.0); }',
+    fragmentShader: 'void main() { gl_FragColor = vec4(1.0); }',
+    depthFunc: THREE.AlwaysDepth,
+    toneMapped: false,
+  });
+  const 抄 = new THREE.ShaderMaterial({
+    uniforms: { t: { value: depth } },
+    vertexShader: 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: 'uniform sampler2D t;\nvoid main() { gl_FragColor = vec4(texelFetch(t, ivec2(gl_FragCoord.xy), 0).r); }',
+    depthTest: false,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const mesh = new THREE.Mesh(三角, 斜面);
+  mesh.frustumCulled = false;
+  const scene = new THREE.Scene();
+  scene.add(mesh);
+  const camera = new THREE.OrthographicCamera();
+  const 原目标 = gl.getRenderTarget();
+  const 值 = new Float32Array(4);
+  // 深度 = 0.5 + 0.5 × k × 那一点的 x（或 y，−1～1）；反推那一点在像素 读 里偏离中心多少
+  const 测 = (kx: number, ky: number) => {
+    (斜面.uniforms.uK!.value as THREE.Vector2).set(kx, ky);
+    mesh.material = 斜面;
+    gl.setRenderTarget(多采样);
+    gl.clear();
+    gl.render(scene, camera);
+    mesh.material = 抄;
+    gl.setRenderTarget(读回);
+    gl.render(scene, camera);
+    gl.readRenderTargetPixels(读回, 读[0], 读[1], 1, 1, 值);
+    return (((值[0]! - 0.5) / (0.5 * (kx || ky)) + 1) * 边) / 2 - (kx ? 读[0] : 读[1]) - 0.5;
+  };
+  try {
+    const x = [测(斜, 0), 测(-斜, 0)] as const;
+    const y = [测(0, 斜), 测(0, -斜)] as const;
+    const 定 = Math.abs(x[0] - x[1]) < 1e-3 && Math.abs(y[0] - y[1]) < 1e-3 && Math.abs(x[0]) <= 0.5 && Math.abs(y[0]) <= 0.5;
+    return 定 ? new THREE.Vector2((x[0] + x[1]) / 2, (y[0] + y[1]) / 2) : null;
+  } finally {
+    gl.setRenderTarget(原目标);
+    depth.dispose();
+    多采样.dispose();
+    读回.dispose();
+    三角.dispose();
+    斜面.dispose();
+    抄.dispose();
+  }
+};
+const 量过 = new WeakMap<THREE.WebGLRenderer, Map<number, THREE.Vector2 | null>>();
+
+/** 深度解析取的那一点相对像素中心的偏移（像素，x 向右、y 向上），每个渲染器、每种采样数量一次；没开多重采样是 0；量不出固定的一点返回 null */
+export const 解析偏移 = (gl: THREE.WebGLRenderer, samples: number) => {
+  let 表 = 量过.get(gl);
+  if (!表) 量过.set(gl, (表 = new Map()));
+  let 偏 = 表.get(samples);
+  if (偏 === undefined) 表.set(samples, (偏 = samples > 0 ? 量(gl, samples) : new THREE.Vector2()));
+  return 偏;
+};
