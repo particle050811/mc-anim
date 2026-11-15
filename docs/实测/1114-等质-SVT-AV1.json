@@ -1,0 +1,189 @@
+[
+  {
+    "场": "飞行",
+    "档": 34,
+    "参考": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/飞行.mkv",
+    "软件": "ffmpeg 9.0.2",
+    "度量": "4K VMAF v0.6.1 全96帧",
+    "A参数": [
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "18",
+      "-maxrate",
+      "40M",
+      "-bufsize",
+      "80M"
+    ],
+    "B参数": [
+      "-c:v",
+      "libsvtav1",
+      "-preset",
+      "6",
+      "-crf",
+      "34",
+      "-svtav1-params",
+      "lp=4"
+    ],
+    "两组均用": [
+      "-pix_fmt",
+      "yuv420p",
+      "-colorspace",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-color_primaries",
+      "bt709"
+    ],
+    "试档VMAF": {
+      "30": 73.929433,
+      "31": 73.697112,
+      "36": 71.983077,
+      "34": 72.787963
+    },
+    "轮": [
+      {
+        "秒": 13.894,
+        "字节": 11874856,
+        "前后温度": [
+          65.7,
+          66.9
+        ],
+        "起UTC": "2026-11-15T02:33:30.895192+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-飞行-A1.mp4",
+        "轮": "A1"
+      },
+      {
+        "秒": 13.523,
+        "字节": 14335056,
+        "前后温度": [
+          67.2,
+          65.3
+        ],
+        "起UTC": "2026-11-15T02:33:45.183437+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-飞行-B1.mp4",
+        "轮": "B1"
+      },
+      {
+        "秒": 12.759,
+        "字节": 14335056,
+        "前后温度": [
+          66.1,
+          65.4
+        ],
+        "起UTC": "2026-11-15T02:33:59.122755+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-飞行-B2.mp4",
+        "轮": "B2"
+      },
+      {
+        "秒": 12.949,
+        "字节": 11876060,
+        "前后温度": [
+          65.5,
+          66.7
+        ],
+        "起UTC": "2026-11-15T02:34:12.281216+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-飞行-A2.mp4",
+        "轮": "A2"
+      }
+    ],
+    "VMAF": [
+      72.532954,
+      72.787963
+    ]
+  },
+  {
+    "场": "法术",
+    "档": 34,
+    "参考": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/法术.mkv",
+    "软件": "ffmpeg 9.0.2",
+    "度量": "4K VMAF v0.6.1 全96帧",
+    "A参数": [
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "18",
+      "-maxrate",
+      "40M",
+      "-bufsize",
+      "80M"
+    ],
+    "B参数": [
+      "-c:v",
+      "libsvtav1",
+      "-preset",
+      "6",
+      "-crf",
+      "34",
+      "-svtav1-params",
+      "lp=4"
+    ],
+    "两组均用": [
+      "-pix_fmt",
+      "yuv420p",
+      "-colorspace",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-color_primaries",
+      "bt709"
+    ],
+    "试档VMAF": {
+      "34": 70.92928
+    },
+    "轮": [
+      {
+        "秒": 13.813,
+        "字节": 11995293,
+        "前后温度": [
+          65.3,
+          66.8
+        ],
+        "起UTC": "2026-11-15T02:35:02.233941+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-法术-A1.mp4",
+        "轮": "A1"
+      },
+      {
+        "秒": 12.249,
+        "字节": 13353164,
+        "前后温度": [
+          68.4,
+          64.7
+        ],
+        "起UTC": "2026-11-15T02:35:16.394304+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-法术-B1.mp4",
+        "轮": "B1"
+      },
+      {
+        "秒": 12.104,
+        "字节": 13353164,
+        "前后温度": [
+          65.6,
+          64.8
+        ],
+        "起UTC": "2026-11-15T02:35:29.061515+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-法术-B2.mp4",
+        "轮": "B2"
+      },
+      {
+        "秒": 13.742,
+        "字节": 11994465,
+        "前后温度": [
+          65.4,
+          66.8
+        ],
+        "起UTC": "2026-11-15T02:35:41.572286+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/SVT-AV1-法术-A2.mp4",
+        "轮": "A2"
+      }
+    ],
+    "VMAF": [
+      70.624273,
+      70.92928
+    ]
+  }
+]
