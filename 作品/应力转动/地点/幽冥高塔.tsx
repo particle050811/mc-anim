@@ -24,5 +24,3 @@ export const DarkTower: React.FC<{ hide?: number[][]; clearPlants?: number[][]; 
   hideBlocks,
   patchEdges = true,
 }) => <BlockMesh info={INFO} bin={bin} atlas={atlas} hide={hide} clearPlants={clearPlants} hideBlocks={hideBlocks} patchEdges={patchEdges} />;
-// 图集：碎块特效用同一张贴图
-export const DarkTower_ATLAS = atlas;

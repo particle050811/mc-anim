@@ -9,7 +9,6 @@
 // 没做：吸人、拉方块、伤害、SpellExplosion 的击退和虚空侵蚀；爆炸点在地面上 0.5 格；PORTAL 的聚集中心取脚上 1.6 格（眼高没查）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { ShockwaveRing } from '../零件/冲击波.tsx';
@@ -26,6 +25,7 @@ import voidRift2Png from 'asset:贴图/法术/goety/entity/projectiles/void_rift
 import voidRift3Png from 'asset:贴图/法术/goety/entity/projectiles/void_rift/rift_3';
 import voidRift4Png from 'asset:贴图/法术/goety/entity/projectiles/void_rift/rift_4';
 import voidRift5Png from 'asset:贴图/法术/goety/entity/projectiles/void_rift/rift_5';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const textures = [voidRiftOpen1Png, voidRiftOpen2Png, voidRiftOpen3Png, voidRift1Png, voidRift2Png, voidRift3Png, voidRift4Png, voidRift5Png].map(png);
 const burstColor = hexColor(7542738);
@@ -60,7 +60,7 @@ const Tear: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种�
   const particles: ParticleSpawn[] = [];
   const endTick = Math.min(tick, tearBurstTick);
   for (let t = 0; t < endTick; t++) {
-    const r = rng(seed * 7919 + t);
+    const r = mulberry32(seed * 7919 + t);
     if (t < tearWarmupTick) {
       particles.push({ 种: 'portal', 刻: t, p: [target[0] + (r() - 0.5), target[1] + (r() - 0.5), target[2] + 0.5], v: [0, 0, 0], 种子: seed * 31 + t });
     } else if (t < tearWarmupTick + tearOpenTicks) {
@@ -76,7 +76,7 @@ const Tear: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, 种�
 
   // 爆：createParticleBall(龙息, 半径 8)：只有外壳（i 到头才扫满 j、k）
   const breaths = React.useMemo(() => {
-    const r = rng(seed * 104729);
+    const r = mulberry32(seed * 104729);
     const breaths: ReturnType<typeof dragonBreath>[] = [];
     const halfExtent = 8;
     const aimPoint: Vec3 = [target[0], target[1], target[2] + 0.5];

@@ -32,4 +32,3 @@ export const scene1Shot = (id: SegmentId) => shots[segments.findIndex((s) => s.i
 
 const damagePieces = piecesOf('6-1-2', { '6-1-2': NagaDamage });
 export const NagaDamageSegment: React.FC = () => <SegmentStitch cuts={damagePieces} 每秒={FPS} />;
-export const NAGA_SEGMENT_FRAMES = frameCountOf('6-1-2');

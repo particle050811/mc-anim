@@ -3,8 +3,8 @@
 //   <指纹>.检出-<哈希> 哪个检出用过这个指纹，内容是检出路径（各 worktree 共用数据根，这边算不出别的检出的当前指纹，缓存/钉.ts 靠它不删人家的）
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import { masterDir } from '../环境/作品数据.ts';
 import path from 'node:path';
-import { masterDir } from '../环境/配置.ts';
 import { currentCheckout } from '../环境/路径.ts';
 import type { SegFingerprint } from '../指纹/指纹.ts';
 

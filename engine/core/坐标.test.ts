@@ -1,4 +1,4 @@
-// 坐标正本：三套坐标来回换的自洽，和旧副本（toThree、fromMc、Z朝上转three）在同一批点上对。
+// 坐标正本：三套坐标来回换的自洽，和旧副本（fromMc、Z朝上转three）在同一批点上对。
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -48,12 +48,6 @@ describe('坐标正本', () => {
 });
 
 describe('坐标正本和旧副本对得上', () => {
-  it('toThree（engine/三渲二/机位.tsx、库/界面/箱子界面.tsx、应力转动 飞行镜头）', () => {
-    for (const [file, fnName] of [['engine/三渲二/机位.tsx', 'toThree'], ['库/界面/箱子界面.tsx', 'toThree'], ['作品/应力转动/地点/飞行镜头.tsx', 'toThree']] as const) {
-      const f = copyFn(file, fnName);
-      for (const p of points) expect(canonicalValue(f(p))).toEqual(canonicalValue(sceneToThree(p)));
-    }
-  });
   it('fromMc（库/生物/九头蛇.tsx）= 不带原点的 游戏到场景；Z朝上转three（库/界面/投影.ts）= 不带原点的 场景到游戏', () => {
     const fromMc = copyFn('库/生物/九头蛇.tsx', 'fromMc');
     const convert = copyFn('库/界面/投影.ts', 'zUpToThree');

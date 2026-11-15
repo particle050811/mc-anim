@@ -6,7 +6,6 @@
 // 交给 ItemInHandRenderer 按 THIRD_PERSON_RIGHT/LEFT_HAND 套物品的显示变换。整个实体缩 0.65 时手里的东西一起缩。
 import React, { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { type BedrockBone, type BedrockCube, type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import { DISPLAY, ItemDisplay, type ItemTransform } from '../../engine/model/物品贴图.tsx';
@@ -16,12 +15,13 @@ import { MAGICAL_WINE_FOX, MagicalWineFox, magicalWineFoxHatOffBones, magicalWin
 import { magicalWineFoxExMotion, clampHead, basePose, magicalWineFoxCellSize, type MagicalWineFoxAllExpression, type MagicalWineFoxExPose } from './魔法酒狐新动作.ts';
 import raw from 'asset:模型/角色/魔法酒狐';
 import skin from 'asset:贴图/角色/魔法酒狐/百花';
+import { rad } from '../../engine/core/数学.ts';
 
-const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel;
-const boneByName = new Map(MODEL.bones.map((b) => [b.name, b]));
-const chain = (name: string) => {
+export const wineFoxModel = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel;
+export const wineFoxBoneByName = new Map(wineFoxModel.bones.map((b) => [b.name, b]));
+export const wineFoxBoneChain = (name: string) => {
   const out: string[] = [];
-  for (let n: string | undefined = name; n; n = boneByName.get(n)?.parent) out.unshift(n);
+  for (let n: string | undefined = name; n; n = wineFoxBoneByName.get(n)?.parent) out.unshift(n);
   return out;
 };
 
@@ -32,8 +32,8 @@ const euler = (r: number[]) => new THREE.Euler(-r[0]! * radPerDeg, -r[1]! * radP
 const skeletonMatrix = (boneTable: Record<string, BonePose>, name: string, includeSelf = true) => {
   const m = new THREE.Matrix4();
   let parentOffset = [0, 0, 0];
-  for (const n of chain(name)) {
-    const b = boneByName.get(n)!;
+  for (const n of wineFoxBoneChain(name)) {
+    const b = wineFoxBoneByName.get(n)!;
     const p = boneTable[n];
     const ap = p?.pos ?? [0, 0, 0];
     const ar = n === name && !includeSelf ? [0, 0, 0] : (p?.rot ?? [0, 0, 0]);
@@ -122,18 +122,18 @@ export const TlmHeld: React.FC<{ 物: HeldItem; isLeft?: boolean }> = ({ 物: he
 // 以前挨着皮肤看不出，补了一排以后成了横穿眼睛的一条细线。所以补的这排往上多盖 补盖（和被盖住的那行同色），放在原方块前面一点，
 // UV 上下各往格子里收 1/4 格：补块自己的上下沿再怎么外插也取不出这一格。
 const cellSize = magicalWineFoxCellSize;
-const frontFaceUv = (u: number, v: number, w = 1, h = 1): BedrockCube['uv'] => ({ north: { uv: [u, v], uv_size: [w, h] } });
-const plate = (x0: number, y0: number, x1: number, y1: number, z: number, uv: BedrockCube['uv']): BedrockCube => ({ origin: [x0, y0, z], size: [x1 - x0, y1 - y0, 0.05], uv });
+const faceFrontUv = (u: number, v: number, w = 1, h = 1): BedrockCube['uv'] => ({ north: { uv: [u, v], uv_size: [w, h] } });
+export const facePlate = (x0: number, y0: number, x1: number, y1: number, z: number, uv: BedrockCube['uv']): BedrockCube => ({ origin: [x0, y0, z], size: [x1 - x0, y1 - y0, 0.05], uv });
 const eyeBottom = 29.26648; // 眼皮方块的下沿
 const patchCover = 0.1;
 const patchFront = 0.002;
 const patchCube = (x0: number, width: number, z: number, u: number, v: number, w: number): BedrockCube =>
-  ({ origin: [x0, eyeBottom - cellSize, z - patchFront], size: [width, cellSize + patchCover, 0.9], uv: frontFaceUv(u, v + 0.25, w, 0.5) });
+  ({ origin: [x0, eyeBottom - cellSize, z - patchFront], size: [width, cellSize + patchCover, 0.9], uv: faceFrontUv(u, v + 0.25, w, 0.5) });
 const eyePatches: BedrockBone[] = [
-  { name: 'mcanim右眼补', parent: 'RightEyelid', pivot: boneByName.get('RightEyelid')!.pivot, cubes: [patchCube(-2.35936, 1.8, -1.67858, 79, 87, 2)] },
-  { name: 'mcanim左眼补', parent: 'LeftEyelid', pivot: boneByName.get('LeftEyelid')!.pivot, cubes: [patchCube(1.96064, 1.8, -1.67858, 123, 2, 2)] },
-  { name: 'ysmGlowmcanim右虹膜补', parent: 'ysmGlowRightEyelidBase', pivot: boneByName.get('ysmGlowRightEyelidBase')!.pivot, cubes: [patchCube(-1.93186, 1.26, -1.71458, 127, 73, 1)] },
-  { name: 'ysmGlowmcanim左虹膜补', parent: 'ysmGlowLeftEyelidBase', pivot: boneByName.get('ysmGlowLeftEyelidBase')!.pivot, cubes: [patchCube(2.07314, 1.26, -1.71458, 127, 73, 1)] },
+  { name: 'mcanim右眼补', parent: 'RightEyelid', pivot: wineFoxBoneByName.get('RightEyelid')!.pivot, cubes: [patchCube(-2.35936, 1.8, -1.67858, 79, 87, 2)] },
+  { name: 'mcanim左眼补', parent: 'LeftEyelid', pivot: wineFoxBoneByName.get('LeftEyelid')!.pivot, cubes: [patchCube(1.96064, 1.8, -1.67858, 123, 2, 2)] },
+  { name: 'ysmGlowmcanim右虹膜补', parent: 'ysmGlowRightEyelidBase', pivot: wineFoxBoneByName.get('ysmGlowRightEyelidBase')!.pivot, cubes: [patchCube(-1.93186, 1.26, -1.71458, 127, 73, 1)] },
+  { name: 'ysmGlowmcanim左虹膜补', parent: 'ysmGlowLeftEyelidBase', pivot: wineFoxBoneByName.get('ysmGlowLeftEyelidBase')!.pivot, cubes: [patchCube(2.07314, 1.26, -1.71458, 127, 73, 1)] },
 ];
 
 // 新画的嘴：照模型自己画嘴的办法（脸上没画嘴，嘴是贴在脸前面的几块平片，嘴里取嘴用的粉 f1b4b3），坐标是模型文件里的（x 往她右手边是负），
@@ -143,25 +143,25 @@ const eyePatches: BedrockBone[] = [
 // 认出你：抿着的一小道（一格宽、1/4 格高，正好是脸正中那一格的宽），不哭也不笑（Agent 暂定：不画嘴脸太空，画了哪种现成的嘴都带情绪）。
 // 哈气：比惊讶（jingya，约 2.3 格宽、1.3 格高）更大：下窄、中间最宽的大张嘴，1/4 格的粉边，里面填她衣服上的玫红 ab468a（贴图里现成的颜色），
 // 上沿挂两颗小白牙（Agent 暂定）。下沿就是下巴（嘴张到底）；最宽那两行在眼睛下面，上两行收窄夹在两眼之间（两眼内侧相距 ±1.26）。
-const centerX = 0.70064;
-const faceBottom = 28.36648;
-const quarterCell = magicalWineFoxCellSize / 4;
+export const faceCenterX = 0.70064;
+export const faceBottom = 28.36648;
+export const faceQuarterCell = magicalWineFoxCellSize / 4;
 // 纯色块只取这一格的中间（同眼补的坑：边上外插不到旁边的格子）
-const solidUv = (u: number, v: number) => frontFaceUv(u + 0.25, v + 0.25, 0.5, 0.5);
-const pink = solidUv(14, 124);
-const roseColor = solidUv(123, 3);
-const white = solidUv(67, 0);
+export const faceSolidUv = (u: number, v: number) => faceFrontUv(u + 0.25, v + 0.25, 0.5, 0.5);
+export const facePink = faceSolidUv(14, 124);
+const roseColor = faceSolidUv(123, 3);
+export const faceWhite = faceSolidUv(67, 0);
 /** 第 k0～k1 条横线之间、中线两边各 半宽 个四分之一格 */
 const horizontalStrip = (k0: number, k1: number, halfWidth: number, z: number, uv: BedrockCube['uv']) =>
-  plate(centerX - halfWidth * quarterCell, faceBottom + k0 * quarterCell, centerX + halfWidth * quarterCell, faceBottom + k1 * quarterCell, z, uv);
+  facePlate(faceCenterX - halfWidth * faceQuarterCell, faceBottom + k0 * faceQuarterCell, faceCenterX + halfWidth * faceQuarterCell, faceBottom + k1 * faceQuarterCell, z, uv);
 /** 第 k0～k1 条横线之间、中线右边第 i0～i1 条竖线（负的在她右手边） */
-const pixelRect = (k0: number, k1: number, i0: number, i1: number, z: number, uv: BedrockCube['uv']) =>
-  plate(centerX + i0 * quarterCell, faceBottom + k0 * quarterCell, centerX + i1 * quarterCell, faceBottom + k1 * quarterCell, z, uv);
+export const facePixelRect = (k0: number, k1: number, i0: number, i1: number, z: number, uv: BedrockCube['uv']) =>
+  facePlate(faceCenterX + i0 * faceQuarterCell, faceBottom + k0 * faceQuarterCell, faceCenterX + i1 * faceQuarterCell, faceBottom + k1 * faceQuarterCell, z, uv);
 const recognizeMouth: BedrockBone = {
   name: 'mcanim认出你嘴',
   parent: 'Mouth',
-  pivot: boneByName.get('Mouth')!.pivot,
-  cubes: [horizontalStrip(2, 3, 2, -1.68, pink)],
+  pivot: wineFoxBoneByName.get('Mouth')!.pivot,
+  cubes: [horizontalStrip(2, 3, 2, -1.68, facePink)],
 };
 // 哈气嘴自下往上每行的半宽（四分之一格）：粉的外形 3、4、6、6、5、5；玫红是外形往里收一圈 → 2、3、4、4（第 1～4 行）
 const hissShape = [3, 4, 6, 6, 5, 5];
@@ -169,12 +169,12 @@ const hissInner = [0, 2, 3, 4, 4, 0];
 const hissMouth: BedrockBone = {
   name: 'mcanim哈气嘴',
   parent: 'Mouth',
-  pivot: boneByName.get('Mouth')!.pivot,
+  pivot: wineFoxBoneByName.get('Mouth')!.pivot,
   cubes: [
-    ...hissShape.map((w, k) => horizontalStrip(k, k + 1, w, -1.68, pink)),
+    ...hissShape.map((w, k) => horizontalStrip(k, k + 1, w, -1.68, facePink)),
     ...hissInner.flatMap((w, k) => (w ? [horizontalStrip(k, k + 1, w, -1.69, roseColor)] : [])),
-    pixelRect(3, 5, -3, -2, -1.7, white),
-    pixelRect(3, 5, 2, 3, -1.7, white),
+    facePixelRect(3, 5, -3, -2, -1.7, faceWhite),
+    facePixelRect(3, 5, 2, 3, -1.7, faceWhite),
   ],
 };
 const newSkeletonBones = [...eyePatches, recognizeMouth, hissMouth];
@@ -182,13 +182,13 @@ const newSkeletonBoneNames = new Set(newSkeletonBones.map((b) => b.name));
 
 // 叠加模型 = 新骨骼 + 它们和左手握持点的祖先链（链上不带方块，只为变换对得上）。和 魔法酒狐.tsx 一样拆成受光、发光两份。
 const makeOverlay = (glow: boolean): BedrockModel => {
-  const keepNames = new Set<string>(glow ? [] : chain('LeftHandLocator')); // 左手的东西挂在受光那份上
-  for (const b of newSkeletonBones) if (b.name.startsWith('ysmGlow') === glow) for (const n of chain(b.parent!)) keepNames.add(n);
+  const keepNames = new Set<string>(glow ? [] : wineFoxBoneChain('LeftHandLocator')); // 左手的东西挂在受光那份上
+  for (const b of newSkeletonBones) if (b.name.startsWith('ysmGlow') === glow) for (const n of wineFoxBoneChain(b.parent!)) keepNames.add(n);
   const bones: BedrockBone[] = [
-    ...MODEL.bones.filter((b) => keepNames.has(b.name)).map((b) => ({ ...b, cubes: undefined })),
+    ...wineFoxModel.bones.filter((b) => keepNames.has(b.name)).map((b) => ({ ...b, cubes: undefined })),
     ...newSkeletonBones.filter((b) => b.name.startsWith('ysmGlow') === glow),
   ];
-  return { ...MODEL, bones };
+  return { ...wineFoxModel, bones };
 };
 const overlayLit = makeOverlay(false);
 const overlayGlow = makeOverlay(true);

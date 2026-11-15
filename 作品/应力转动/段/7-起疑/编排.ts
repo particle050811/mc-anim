@@ -19,6 +19,8 @@ import { qiaoLeifuHeight } from '../../角色/乔雷夫.tsx';
 import { lordStudy, toTownPoint } from '../../地点/边城室内.tsx';
 import { borderTownPos } from '../../地点/主世界116.ts';
 import { guiPixel, lineY, pageHeight, pageWidth } from '@库/物品/书.tsx';
+import type { Cam } from '@engine/core/机位.ts';
+
 export { bookPages as bookPages } from '../../场/7-收场/7-4-3/编排.ts';
 
 export const FPS = 24;
@@ -106,7 +108,6 @@ export const pageGripPt: [number, number] = [textRight + 6, lineY(thiefLine) + 4
 export const crumpleAt = (f: number) => sample([[112, 0], [156, 1]] as Key[], f);
 
 // ---------- 镜头 ----------
-export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
 const lerpCam = (a: Cam, b: Cam, k: number): Cam => ({
   pos: a.pos.map((v, i) => v + (b.pos[i] - v) * k) as V3,
   tgt: a.tgt.map((v, i) => v + (b.tgt[i] - v) * k) as V3,

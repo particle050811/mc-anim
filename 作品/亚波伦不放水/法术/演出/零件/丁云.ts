@@ -1,10 +1,10 @@
 // 冰雹云、季风云（AbstractSpellCloud）每刻放的粒子：云面上的 SPELL_CLOUD，和激活后从云底落下的雨/尘。出处 goety 2.5.60.6：AbstractSpellCloud.cloudParticles、rainParticles。
 // 中心 = 云所在的点；半径 = 云半径。每刻 π × 半径² 颗（k < π r²，所以多一颗取整），圆盘上均匀撒点（sqrt 取半径）。
-import { rng } from '@engine/model/parts.tsx';
 import type { Vec3 } from '../接口.ts';
 import type { RgbColor } from './材质.ts';
 import { defaultRadius, cloudPieceLifetime } from './丁粒子.ts';
 import type { ParticleBirth } from './粒子.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const diskPoint = (r: () => number, center: Vec3, radius: number): Vec3 => {
   const angle = r() * Math.PI * 2;
@@ -15,7 +15,7 @@ const particleCount = (radius: number) => Math.ceil(Math.PI * radius * radius);
 
 /** 云面 SPELL_CLOUD：从刻 0 到 止刻（不含）每刻放；色 = 颜色参数 × 速度 0.5 */
 export const cloudFaceSpawns = (seed: number, center: Vec3, radius: number, endTick: number, color: RgbColor): ParticleBirth[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const spawns: ParticleBirth[] = [];
   for (let t = 0; t < endTick; t++) {
     for (let k = 0; k < particleCount(radius); k++) {
@@ -27,7 +27,7 @@ export const cloudFaceSpawns = (seed: number, center: Vec3, radius: number, endT
 
 /** 落尘（雪块的 FALLING_DUST）：寿命 (int)(32 ÷ (随机 × 0.8 + 0.2)) × 0.9，颜色 0.6～1.0 × 0.8～1.0 的灰白 */
 export const fallingDustSpawns = (seed: number, center: Vec3, radius: number, startTick: number, endTick: number): ParticleBirth[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const spawns: ParticleBirth[] = [];
   for (let t = startTick; t < endTick; t++) {
     for (let k = 0; k < particleCount(radius); k++) {
@@ -40,7 +40,7 @@ export const fallingDustSpawns = (seed: number, center: Vec3, radius: number, st
 
 /** 雨滴（RAIN）：寿命 (int)(8 ÷ (随机 × 0.8 + 0.2))；水平速度几乎 0，竖直先往上 0.1～0.3（WaterDropParticle 的构造） */
 export const raindropSpawns = (seed: number, center: Vec3, radius: number, startTick: number, endTick: number): ParticleBirth[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const spawns: ParticleBirth[] = [];
   for (let t = startTick; t < endTick; t++) {
     for (let k = 0; k < particleCount(radius); k++) {

@@ -30,6 +30,8 @@ import * as motion from './动作改进.ts';
 import { mouthAt, type Mouth } from '../../../配音/口型.ts';
 import { renderInput } from '@engine/core/渲染设置.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { lensToFov } from '@engine/core/机位.ts';
 
 // 李樱用哪一版动作：原版（6-1-2-斩娜迦-旧动作）是 编排.ts 的 `liying`；正式的 6-1-2-斩娜迦（动作改进）换成 动作改进.ts 的 `liyingV2`（人、残影、刀光都跟着换）
 type LiyingVersion = (frame: number) => ReturnType<typeof choreo.liying>;
@@ -63,14 +65,11 @@ const defaultMazeLight: MazeLightPreset = '一镜';
 const meshAO = Boolean((renderInput() as { meshAO?: boolean }).meshAO);
 
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
-
 // 口型用的台词开口帧（段内帧，cue 在 段/6-斩娜迦/段.ts）：打击停顿以后的台词跟着往后挪
 const nagaLineCues = (hitStop: number) => [
   { id: '6-1-2-李樱-不值一提', 帧: choreo.lineStartFrame + hitStop },
   { id: '6-1-3-九胡-等等我', 帧: choreo.segFrame(choreo.S3 + choreo.MAZE_SHOUT) + hitStop },
 ];
-
 type CamPose = { lens: number; pos: number[]; tgt: number[] };
 const Rig: React.FC<{ k: CamPose }> = ({ k }) => {
   const { camera, size, gl } = useThree();
@@ -79,12 +78,12 @@ const Rig: React.FC<{ k: CamPose }> = ({ k }) => {
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
   // 焦距按 36mm 横向画幅换算，three.js 用竖向视角
-  cam.fov = (2 * Math.atan(18 / k.lens / (size.width / size.height)) * 180) / Math.PI;
+  cam.fov = lensToFov(k.lens, size.width / size.height);
   cam.near = 0.1;
   cam.far = 1200;
-  cam.position.copy(toThree(courtyardToWorld(k.pos)));
+  cam.position.copy(sceneToThree(courtyardToWorld(k.pos)));
   cam.up.set(0, 1, 0);
-  cam.lookAt(toThree(courtyardToWorld(k.tgt)));
+  cam.lookAt(sceneToThree(courtyardToWorld(k.tgt)));
   cam.updateProjectionMatrix();
   return null;
 };
@@ -181,7 +180,6 @@ const nagaLandmarks: ['娜迦庭院'] = ['娜迦庭院'];
 // 新机位：迅冲、俯拍斩击拉近，收刀换成参考的近景低机位（动作改进.ts 的 `cameraV2`）；
 // 收刀修前：不加收刀约束（修穿模以前的样子，核对用）；跟拍：机位跟着李樱（全身 / 腰间特写），只用来新旧对比、核对穿模
 export type NagaShotProps = { mazeLight?: MazeLightPreset; motionImproved?: boolean; hitStopFrames?: number; newCams?: boolean; preSheathFix?: boolean; followMode?: '全身' | '腰' };
-export const nagaShotFrames = (p: NagaShotProps) => choreo.FRAMES + (p.hitStopFrames ?? 0);
 const preFixLiying = (f: number) => choreo.liying(f, { sheathTiming: '关' });
 const followCamPose = (frame: number, mode: '全身' | '腰'): CamPose => {
   const [x, y, z] = choreo.liyingLoc(frame);
@@ -212,7 +210,7 @@ export const NagaBlockout: React.FC<NagaShotProps> = (props) => {
   // 不超采样（用户 10-07 定，见 lib/渲染级别.ts）：720p 时 dpr=2 远处方块、树叶、海带出摩尔纹，超采样只减半，3 倍反而更差（非整数倍缩放）
   return (
     <>
-      {/* 声音照 段.ts 的 cue 放（定义画面 自动挂，决策 0015），不在这里挂 */}
+      {/* 声音照 段.ts 的 cue 放（definePicture 自动挂，决策 0015），不在这里挂 */}
       <ThreeCanvas width={width} height={height} shadows="percentage" gl={{ antialias: true }} dpr={canvasDpr(1)}>
         <color attach="background" args={[twilightFogColor]} />
         {/* 暮色森林的雾是很亮的薄荷绿；按全片规矩开满视距，只在视距边上淡出（lib/视距.ts） */}

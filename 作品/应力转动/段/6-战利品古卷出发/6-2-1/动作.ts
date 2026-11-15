@@ -1,15 +1,8 @@
 // 第 2 场基地谋划（6-2-1～6-2-3）站着演戏用的小工具：骨架正向运动学（手在哪）、按目标点反解手臂、姿态插值、沿路走、走路摆腿。
 // 坐标都是房间本地坐标（模型/场景/基地工坊.tsx：Z 朝上，1 = 一格，+Y 叫「北」）。
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-
-export const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-export const lerp3 = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t);
+import { rad, smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 export const D2R = Math.PI / 180;
 // 从 from 看向 to 的 yaw（骨架约定：0 = 朝 +Y，正 = 往左转）
 export const yawToward = (from: number[], to: number[]) => Math.atan2(-(to[0] - from[0]), to[1] - from[1]) / D2R;
@@ -23,7 +16,7 @@ const DEF: Partial<Record<keyof FigurePose, number>> = { squash: 1, ground: 1 };
 export const mixPose = (fromPose: FigurePose, toPose: FigurePose, k: number): FigurePose => {
   if (k <= 0) return fromPose;
   if (k >= 1) return toPose;
-  const out = { ...fromPose, loc: lerp3(fromPose.loc, toPose.loc, k) } as FigurePose;
+  const out = { ...fromPose, loc: lerpV(fromPose.loc, toPose.loc, k) } as FigurePose;
   for (const key of KEYS) {
     const va = (fromPose[key] as number | undefined) ?? DEF[key] ?? 0;
     const vb = (toPose[key] as number | undefined) ?? DEF[key] ?? 0;
@@ -117,7 +110,7 @@ export class WalkPath {
     let i = 0;
     while (i < this.pts.length - 2 && clamped > this.acc[i + 1]) i++;
     const k = (clamped - this.acc[i]) / (this.acc[i + 1] - this.acc[i] || 1);
-    return lerp3(this.pts[i], this.pts[i + 1], k);
+    return lerpV(this.pts[i], this.pts[i + 1], k);
   }
   // 位置（拐角倒圆，半径约 圆角 格；两头不动）
   at(dist: number, cornerRadius = 0.35): number[] {

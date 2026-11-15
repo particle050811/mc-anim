@@ -5,7 +5,7 @@
 // 没有发光层；附魔光泽走原版 HumanoidArmorLayer.renderGlint，拿同一个模型再画一遍，披风也带。
 // 两套外观（物品/装备外观.ts）只差贴图：getArmorTexture 在 transformed 时返回 transform/apocalyptium_custom.png，模型类不看这个 NBT，网格、披风、uv 都是同一份。
 // 用法：const 挂 = use神灵金盔甲(件, 光泽秒, 外观)，把 挂.head、挂.body… 放进 EntityModel 的 attach（人形模型的同名部件）；要自己画的用 use神灵金盔甲料。
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import type * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
 import { quadGeometry, armorMaterial } from '@库/角色/网格盔甲.tsx';
@@ -55,12 +55,4 @@ export const useApocalyptiumArmorMaterials = (pieces: readonly ApocalyptiumPiece
     if (pieceName === '胸甲') meshes.push({ 键: '披风', 骨: 'body', 顶点: capeVertices(), geometry: capeGeometry() });
   }
   return { material, 网格: meshes };
-};
-
-/** 同 use神灵金盔甲料，包成节点：返回 { 部件名: 节点 }，没东西的部件不在里面 */
-export const useApocalyptiumArmor = (pieces: readonly ApocalyptiumPiece[] = apocalyptiumFullSet, glintSec?: number, appearance: EquipAppearance = defaultAppearance): Record<string, React.ReactNode> => {
-  const { material, 网格: meshes } = useApocalyptiumArmorMaterials(pieces, glintSec, appearance);
-  const attachments: Record<string, React.ReactNode[]> = {};
-  for (const m of meshes) (attachments[m.骨] ??= []).push(<mesh key={m.键} geometry={m.geometry} material={material} castShadow receiveShadow />);
-  return attachments;
 };

@@ -4,7 +4,7 @@
 // 镜头是 Agent 摆的（1-02 是 11-11 新摆的，用户没看过）。和分镜第二稿不一样：没有「手落在祭坛上」的特写，放环是越过祭坛那一镜里的右键。
 import React from 'react';
 import type { Cam } from '@engine/core/机位.ts';
-import { clamp01, lerp as mix, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { clamp01, lerp, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { definePicture, useSeg } from '@engine/段/段画面.tsx';
 import { GirlYaBoLun } from '../../角色/娘化亚波伦.tsx';
@@ -21,7 +21,7 @@ import soundUrl from './声音地址.生成.ts';
 
 const plan = summonPlans.短;
 const addVec = (a: readonly number[], b: readonly number[], k = 1): V3 => [a[0]! + b[0]! * k, a[1]! + b[1]! * k, a[2]! + b[2]! * k];
-const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [mix(a[0]!, b[0]!, k), mix(a[1]!, b[1]!, k), mix(a[2]!, b[2]!, k)];
+const lerpVec = (a: readonly number[], b: readonly number[], k: number): V3 => [lerp(a[0]!, b[0]!, k), lerp(a[1]!, b[1]!, k), lerp(a[2]!, b[2]!, k)];
 const fromAltar = (x: number, y: number, z: number): V3 => addVec(altar, [x, y, z]);
 /** 段内秒 → 编排的钟（现身后几秒） */
 const clock = (segSec: number) => choreoClock(timeline.事件.开始.秒 + segSec);
@@ -59,20 +59,20 @@ const shotTable: Shot[] = (() => {
     // 1-01 祭坛东北边、越过祭坛往南看他（七版的 1-02，往前接到开头）：他右键把环放上祭坛，祭品消失、光柱起来都在前景，他在后面正对着镜头往后退，光柱起来一缩、拔剑；镜头慢慢往前压
     { 名: '1-01', 起: 0, cameraRig: followShot(cuts.三, (s, k) => {
       const t = clock(s);
-      const pos = fromAltar(mix(2.2, 1.9, k), mix(4.8, 4.4, k), mix(3.6, 3.3, k));
+      const pos = fromAltar(lerp(2.2, 1.9, k), lerp(4.8, 4.4, k), lerp(3.6, 3.3, k));
       return { pos, tgt: lookBetween(pos, altarTop, chestAt(t), 0.3), lens: 30 };
     }) },
     // 1-02 祭坛正东、两团灵魂火中间，略高过祭坛往里推：黑暗、低语、大烟里仪式收尾，火焰炸开、她在祭坛上出现（他在镜头右后方，不进画面）
     { 名: '1-02', 起: cuts.三, cameraRig: followShot(cuts.四 - cuts.三, (_s, k): Cam => {
-      const u = unitSmoothStep(k);
-      return { pos: fromAltar(mix(6.2, 4.4, u), mix(-1.2, -0.8, u), mix(2.9, 3.2, u)), tgt: fromAltar(0, 0, mix(3.0, 3.5, u)), lens: mix(28, 32, u) };
+      const u = smoothstep01(k);
+      return { pos: fromAltar(lerp(6.2, 4.4, u), lerp(-1.2, -0.8, u), lerp(2.9, 3.2, u)), tgt: fromAltar(0, 0, lerp(3.0, 3.5, u)), lens: lerp(28, 32, u) };
     }) },
     // 1-03 她的脸：低着头闭着眼，睁眼、开始抬头；镜头从她面前往脸上推（11-11 提速：0.95 秒就切走，抬头、转身、甩杖都在 1-04 里）
-    { 名: '1-03', 起: cuts.四, cameraRig: followShot(cuts.五 - cuts.四, (_s, k): Cam => ({ pos: fromAltar(mix(2.5, 1.85, unitSmoothStep(k)), mix(-0.65, -0.45, k), mix(3.85, 4.0, k)), tgt: fromAltar(0, 0, mix(3.85, 4.0, unitSmoothStep(k))), lens: mix(30, 38, unitSmoothStep(k)) })) },
+    { 名: '1-03', 起: cuts.四, cameraRig: followShot(cuts.五 - cuts.四, (_s, k): Cam => ({ pos: fromAltar(lerp(2.5, 1.85, smoothstep01(k)), lerp(-0.65, -0.45, k), lerp(3.85, 4.0, k)), tgt: fromAltar(0, 0, lerp(3.85, 4.0, smoothstep01(k))), lens: lerp(30, 38, smoothstep01(k)) })) },
     // 1-04 越过她右肩看他：她抬头、转过身来对着他、杖一甩；他在远处压低身子，第 2 幕接她飞出来
     { 名: '1-04', 起: cuts.五, cameraRig: followShot(cuts.止 - cuts.五, (s, k): Cam => {
       const t = clock(cuts.五 + s);
-      return { pos: fromAltar(mix(-1.7, -2.0, k), mix(2.7, 2.3, k), mix(5.0, 4.8, k)), tgt: lerpVec(yaBoLunHead(t), chestAt(t), mix(0.55, 0.65, k)), lens: mix(26, 28, k) };
+      return { pos: fromAltar(lerp(-1.7, -2.0, k), lerp(2.7, 2.3, k), lerp(5.0, 4.8, k)), tgt: lerpVec(yaBoLunHead(t), chestAt(t), lerp(0.55, 0.65, k)), lens: lerp(26, 28, k) };
     }) },
   ];
 })();

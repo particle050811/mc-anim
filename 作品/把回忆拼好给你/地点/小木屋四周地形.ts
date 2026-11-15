@@ -7,8 +7,9 @@
 //   在那之前这片坡上只有草、花和零星橡树，不然林子先有后没。第 6、7 句（场/2-雷雨/地形.ts 自己那份）主会话 10-25 定不动。
 // 坐标同 门口小木屋.tsx：格 (i, j, k) 占 x ∈ [i − 0.5, i + 0.5]、y ∈ [j, j + 1]、z ∈ [k, k + 1]，屋前地面顶 z = 0（草方块是 k = −1）。
 import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
-import { fbm, hash2, simplex2, smoothstep } from '@engine/core/噪声.ts';
+import { fbm, hash2, simplex2 } from '@engine/core/噪声.ts';
 import { cherryTree, oakTree, type VanillaTree } from './原版树.ts';
+import { smoothstep } from '@engine/core/数学.ts';
 
 /** 屋子四周那块平地（地面顶 z 0）：i、j 的范围（同 场/2-雷雨/弹坑.ts 的 平地）。外面从 0 起坡 */
 export const flatArea = { west: -16, east: 16, south: -12, north: 12 } as const;

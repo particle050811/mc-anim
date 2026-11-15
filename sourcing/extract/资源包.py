@@ -178,6 +178,7 @@ class ResourcePack:
                 ti = self.texture(t) if t else None
                 if ti is None: continue
                 n, ua, va = VEC[d], UAX[d], VAX[d]
+                # 只在本轮循环里当场调完、不留到循环外，引的循环变量就是本轮的值（ruff B023 误报）
                 def corner(su, sv):
                     pt = [0, 0, 0]
                     for ax in range(3):

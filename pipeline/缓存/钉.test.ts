@@ -13,7 +13,7 @@ const { deleteOld, hasOldToDelete } = await import('./钉.ts');
 const { checkoutMarkFile } = await import('../渲/母版.ts');
 const { currentCheckout } = await import('../环境/路径.ts');
 const { planMedia, scanMedia, KeepSet: keepSet, addDelivery, addApprovals } = await import('./回收.ts');
-const { approvRefFile, masterDir } = await import('../环境/配置.ts');
+const { approvRefFile, masterDir } = await import('../环境/作品数据.ts');
 const { sampleKey, writeApproval, approvalFile } = await import('../验收/认可.ts');
 
 const newSha = 'a'.repeat(64);

@@ -6,12 +6,13 @@
 //   离得近框不进两人，所以站远到丘顶。
 import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
-import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
-import { lerpV, ss } from '../../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-1/时间线.ts';
 import { buildSpeedRamp } from '../../../地点/古城4x/7-1/变速.ts';
 import { buildCameraRig, type SpeedRampShot } from '../../../地点/古城4x/7-1/变速段.tsx';
+import { smoothstep01, lerpV } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
+
 export const segmentId = '7-1-5' as const;
 export const FPS = timeline.FPS;
 const startT = timeline.segmentStartT(segmentId);
@@ -35,7 +36,7 @@ const liuHead = (t: number): V3 => {
 const shot1From = G4(-875.5, -35.0, 233.6);
 const shot1To = G4(-875.3, -35.0, 233.8);
 const shots: SpeedRampShot[] = [
-  { 起: startT, cam: (t): Cam => ({ pos: lerpV(shot1From, shot1To, ss((t - startT) / (shot1End - startT))), tgt: lerpV(huangHead(t), play.wardenChest(t), 0.5), lens: 22 }) },
+  { 起: startT, cam: (t): Cam => ({ pos: lerpV(shot1From, shot1To, smoothstep01((t - startT) / (shot1End - startT))), tgt: lerpV(huangHead(t), play.wardenChest(t), 0.5), lens: 22 }) },
   { 起: shot1End, cam: (t): Cam => ({ pos: shot2Pos, tgt: lerpV(play.wardenChest(t), liuHead(t), 0.5), lens: 16 }) },
 ];
 export const camera = buildCameraRig(speedRamp, shots);

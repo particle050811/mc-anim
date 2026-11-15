@@ -559,6 +559,7 @@ def main():
         print(f"动画 {nm}：{a['length']} 秒{'（循环）' if a['looping'] else ''}，部件 {', '.join(a['bones'])}，{nch} 条通道、{nkf} 个关键帧")
     for nm, m in models.items():
         cnt = [0, 0]
+        # 只在本轮循环里当场调完、不留到循环外，引的循环变量就是本轮的值（ruff B023 误报）
         def walk(p):
             cnt[0] += 1; cnt[1] += len(p["cubes"])
             for c in p["children"]:

@@ -9,9 +9,6 @@
 import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-
-export const antiDarkCurve = (Y: number, lift: number): number => (Y >= 1 ? Y : Y + lift * (1 - Math.max(0, Y)) ** 2);
-
 // 原材质 → 提亮后的克隆，按 抬 分；原材质被释放后跟着回收
 const antiDarkCache = new Map<number, WeakMap<THREE.Material, THREE.Material>>();
 

@@ -11,7 +11,8 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { config, segStampDir } from '../环境/配置.ts';
+import { segStampDir } from '../环境/作品数据.ts';
+import { config } from '../环境/配置.ts';
 import { workName } from '../环境/作品.ts';
 import { lowPriority, runCmd } from '../环境/子进程.ts';
 import { registerTempFile } from '../闸/收尾.ts';

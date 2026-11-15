@@ -10,12 +10,7 @@ import { backToTown, type BackToTownState } from '../6-3-1/编排.ts';
 import * as choreo from '../../../地点/边城/6-3-下坠/编排.ts';
 import { segTable, physicalTime, start } from '../../../地点/边城/6-3-下坠/时间线.ts';
 import { FPS } from '../../../地点/边城/6-3-2/台词.ts';
-
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 const D2R = Math.PI / 180;
 
@@ -84,7 +79,7 @@ let startCam: choreo.Cam | null = null;
 const camera = (t: number): choreo.Cam => {
   startCam ??= backToTown(segTable['6-3-1'].止).cam;
   const pushFrac = Math.min(1, t / cues632.pushIn[1]);
-  return camBetween(startCam, MID, ss(pushFrac / 0.75), ss((pushFrac - 0.2) / 0.8));
+  return camBetween(startCam, MID, smoothstep01(pushFrac / 0.75), smoothstep01((pushFrac - 0.2) / 0.8));
 };
 
 // ---------- 一帧的全部覆盖量（只在 6-3-2 的帧上用，类型同 6-3-1） ----------

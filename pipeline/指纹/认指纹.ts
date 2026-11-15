@@ -7,7 +7,7 @@
 //   之后 stale、film、verify、cache gc 都把它当这个指纹渲出来的切片，不用改它们。
 import fs from 'node:fs';
 import path from 'node:path';
-import { masterDir, segStampDir } from '../环境/配置.ts';
+import { masterDir, segStampDir } from '../环境/作品数据.ts';
 import { workName } from '../环境/作品.ts';
 import { runCapture } from '../环境/子进程.ts';
 import { canClone } from '../缓存/去重.ts';

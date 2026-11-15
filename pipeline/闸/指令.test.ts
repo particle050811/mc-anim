@@ -287,14 +287,3 @@ it('领票打印前面几张和约几分；没人挡不打印；暂缓提示带�
   await passRenderGate(async()=>{},s=>deferred.push(s),{...schedEnv,sleep:async()=>{if(++loopCount===1){changeScheduler('last',listTickets(queue).find(x=>x.pid===process.pid)!.名,parseParams(['--why','让产出先走','--minutes','0.001']),e,{状态:()=>readState(e,fakeMachine,false),输出:()=>{}});fs.rmSync(path.join(queue,newTicketName));}await new Promise(r=>setTimeout(r,20));}});
   expect(deferred.some(x=>/暂缓至 \S+：让产出先走/.test(x))).toBe(true);
 });
-it('见到旧票旧锁写事件，一小时一条；刚建还没信息文件的锁可能是新闸，不算',()=>{
-  let now=Date.now();const e=resolveSchedulerEnv({lockDir:dir,nowMs:()=>now}),seenOldProtocol=()=>readSchedulerEvents(e.logDir).filter(x=>x.事==='见到旧协议');
-  fs.writeFileSync(path.join(dir,'渲染.lock'),`${process.ppid}\n`);
-  readState(e,fakeMachine,false);expect(seenOldProtocol()).toHaveLength(0);
-  now+=11_000;readState(e,fakeMachine,false);expect(seenOldProtocol()).toHaveLength(1);expect(seenOldProtocol()[0]!.旧锁).toEqual([process.ppid]);
-  now+=60_000;readState(e,fakeMachine,false);expect(seenOldProtocol()).toHaveLength(1);
-  fs.rmSync(path.join(dir,'渲染.lock'));fs.mkdirSync(path.join(dir,'渲染.排队'));const oldTicket=`000000000000100-${hostSlug(e.localHost)}-${process.ppid}`;fs.writeFileSync(path.join(dir,'渲染.排队',oldTicket),String(process.ppid));
-  now+=3_600_000;readState(e,fakeMachine,false);expect(seenOldProtocol()).toHaveLength(2);expect(seenOldProtocol()[1]!.旧票).toEqual([oldTicket]);
-  fs.rmSync(path.join(dir,'渲染.排队',oldTicket));
-  setup();now+=7_200_000;readState(e,fakeMachine,false);expect(seenOldProtocol()).toHaveLength(2);
-});

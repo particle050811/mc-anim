@@ -4,7 +4,7 @@
 // 纯计算，时钟是「现身后几秒」（现身前是负的），第 4、5 幕接着用；第 2 幕里这个钟走世界秒（开盘时刻.ts 的 幕），慢放只换画面的钟。
 // 导出名（史蒂夫位、亚波伦位、开盘轴、盘半径……）第 4、5 幕在用，别改名。第 2 幕末以后两人都停在末态；第 4、5 幕的钟按片秒减去慢放多出来的（开盘拍.ts 的 慢放多出），第 4 幕开头正好是 幕末，一帧接上（编排-齐放.test.ts 查）。
 // 时刻、站位、她的姿势、他转身和看哪都是 Agent 取的，用户没看过。
-import { lerp, lerpV, smoothstep01 as unitSmoothStep } from '@engine/core/数学.ts';
+import { lerp, lerpV, smoothstep01 } from '@engine/core/数学.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { STEVE, steveSize } from '@库/角色/史蒂夫.tsx';
 import { definePerformance, transitionAt, type TiltSettings, type DragSettings, type PerformanceBar } from '../../角色/动作/亚波伦演出.ts';
@@ -62,7 +62,7 @@ const wrap180 = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
 const facingAngle = (dx: number, dy: number) => Math.atan2(-dx, dy) * degPerRad;
 /** 从 a 转到 b（度）走短的那边 */
 const turnTo = (a: number, b: number, k: number) => lerp(a, a + wrap180(b - a), k);
-const easeBetween = (t: number, a: number, b: number) => unitSmoothStep((t - a) / (b - a));
+const easeBetween = (t: number, a: number, b: number) => smoothstep01((t - a) / (b - a));
 
 // ── 史蒂夫的位置 ──
 const steveTrack = pointTrack(steveFirstPath);
@@ -196,8 +196,8 @@ const raiseStance = 0.3;
 export const steveCharge = (t: number): number => {
   const upcoming = nextClick(t);
   if (!upcoming) return 0;
-  const windUp = unitSmoothStep((t - (upcoming.秒 - upcoming.windUpSec!)) / upcoming.windUpSec!);
-  const bottomCharge = upcoming === clicks[1] ? raiseStance * unitSmoothStep((t - act1.drawSwordSec - 0.1) / 0.3) : 0;
+  const windUp = smoothstep01((t - (upcoming.秒 - upcoming.windUpSec!)) / upcoming.windUpSec!);
+  const bottomCharge = upcoming === clicks[1] ? raiseStance * smoothstep01((t - act1.drawSwordSec - 0.1) / 0.3) : 0;
   return Math.max(windUp, bottomCharge);
 };
 
@@ -240,13 +240,13 @@ const turnWindow = [beats.dashSecondSec + 0.06, beats.dashSecondSec + 0.21] as c
 /** 她身子朝向（度）：现身时朝东、头垂着，1.0～1.35 秒转向他；之后一直朝着他，只有他从她脚底下穿过去那一下另算（不然一帧转 180 度） */
 export const yaBoLunFacing = (t: number): number => {
   if (t < 1.0) return -95;
-  if (t < 1.35) return turnTo(-95, faceSteve(t), unitSmoothStep((t - 1.0) / 0.35));
+  if (t < 1.35) return turnTo(-95, faceSteve(t), smoothstep01((t - 1.0) / 0.35));
   const w = t - actStart;
   if (w < beats.dashSecondSec || w >= turnWindow[1]) return faceSteve(t);
   return turnTo(secondDashPreFacing, faceSteve(t), easeBetween(w, turnWindow[0], turnWindow[1]));
 };
 /** 现身后闭着眼，0.5～0.8 秒睁开 */
-const eyeClose = (t: number) => (t < 0 ? 0 : 1 - unitSmoothStep((t - 0.5) / 0.3));
+const eyeClose = (t: number) => (t < 0 ? 0 : 1 - smoothstep01((t - 0.5) / 0.3));
 /** 身子跟着动作倾。六版 {2.2, 0.45, 30} 飞出来那一下前倾到 30 度，像趴着飞（用户 11-11「这样飞行姿势非常诡异」）；她「站着飞」（用户 11-10），这里只倾一点。Agent 取的 */
 const lean: TiltSettings = { perSpeed: 0.35, perAccel: 0.012, limit: 12, 窗: 0.1 };
 

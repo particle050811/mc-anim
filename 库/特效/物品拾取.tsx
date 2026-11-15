@@ -6,8 +6,9 @@
 // 坐标：世界（场景）坐标，Z 朝上。目标点（玩家身上）由调用的地方按这一帧的扫帚位置给。
 import React from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { DropItem, type DropName } from '../物品/掉落物.tsx';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 export type PickupItem = { 名: DropName; p0: V3; v0: V3; spinAxis: V3; spinSpeed: number; suckStart: number; suckEnd: number };
 export type BurstParams = {
@@ -22,7 +23,7 @@ const gravity = 16; // 原版物品 0.04 格/刻²
 
 // 一箱物品迸出去的初始状态：中心 = 箱子中心（世界），前 = 冲击方向（世界，单位向量）
 export const burstItems = (names: DropName[], center: V3, forward: V3, params: BurstParams, seed: number): PickupItem[] => {
-  const rand = rng(seed * 613 + 11);
+  const rand = mulberry32(seed * 613 + 11);
   // 和 前 垂直的两根轴
   const up: V3 = Math.abs(forward[2]) > 0.9 ? [1, 0, 0] : [0, 0, 1];
   const perpA = new THREE.Vector3(...forward).cross(new THREE.Vector3(...up)).normalize();

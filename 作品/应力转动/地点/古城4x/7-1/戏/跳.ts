@@ -5,7 +5,9 @@ import { PUSH, flightPose, launchShape, nearYaw } from '../../6-4-1/古城戏.ts
 import { elite, eliteLeap, leapFeetAt, withHang, type Jump } from '../../布局.ts';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
-import { FPS, lerp, ss } from './公用.ts';
+import { FPS } from './公用.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+
 // 顶点前后慢多少（`withHang`，用户 10-18 定每跳不一样）按起跳时刻和起点取，加跳、挪时刻都不用另配；只改沿弧的快慢，起落时刻、弧不变
 export const leapAtSec = (p0: V3, p1: V3, apexHeight: number, t0: number): Jump => withHang(eliteLeap(p0, p1, apexHeight, t0 * FPS), Math.round((t0 * FPS) / 5) + Math.round(p0[0]));
 export const landT = (J: Jump) => J.f1 / FPS;
@@ -35,7 +37,7 @@ export const windArrowReleaseT = takeoffT(huangLeaps.H3) + huangLeaps.H3.tUp;
 export const airPose = (leap: Jump, t: number, yaw: number): FigurePose => {
   const pose = flightPose(leap, t * FPS, { place: false });
   const u = (t * FPS - leap.f0) / (leap.f1 - leap.f0);
-  const backward = Math.max(0, -Math.cos(((yaw - leap.yaw) * Math.PI) / 180)) * ss(u / 0.25);
+  const backward = Math.max(0, -Math.cos(((yaw - leap.yaw) * Math.PI) / 180)) * smoothstep01(u / 0.25);
   return { ...pose, pitch: pose.pitch * (1 - 1.6 * backward), yaw };
 };
 // 地上那几帧怎么蹲（`crouchAmount` 算、`crouch` 叠到站姿上）：深 蹲的深浅（负 = 落地起身冲过头那一点），蹬 起跳最后 `PUSH` 帧往 `launchShape` 蹬直的程度，
@@ -90,9 +92,9 @@ const landingCushion = (sinceLand: number): Crouch => {
   let depth: number;
   if (k < 1) depth = lerp(0.75, 1.12, 1 - (1 - k) ** 2);
   else if (sinceLand < 0.2) depth = 1.12 - 0.08 * ((sinceLand - ABSORB_SEC) / (0.2 - ABSORB_SEC));
-  else if (sinceLand < 0.4) depth = 1.04 - 1.12 * ss((sinceLand - 0.2) / 0.2); // 起身，冲到 −0.08
-  else depth = -0.08 * (1 - ss((sinceLand - 0.4) / 0.1));
-  return { depth: depth, push: 0, plant: bump(k, 0, 1.4), 头: bump(k, 0.2, 1.2), 手: 40 * (1 - ss(sinceLand / 0.35)) };
+  else if (sinceLand < 0.4) depth = 1.04 - 1.12 * smoothstep01((sinceLand - 0.2) / 0.2); // 起身，冲到 −0.08
+  else depth = -0.08 * (1 - smoothstep01((sinceLand - 0.4) / 0.1));
+  return { depth: depth, push: 0, plant: bump(k, 0, 1.4), 头: bump(k, 0.2, 1.2), 手: 40 * (1 - smoothstep01(sinceLand / 0.35)) };
 };
 // 喘气、重心晃（用户 10-13 嫌「站着别定格」）：站着时身子一起一伏、头和手慢一点跟着
 export const breathe = (pose: FigurePose, t: number, amount: number, phase: number): FigurePose => {
@@ -114,8 +116,8 @@ export const leapTurnYaw = (leaps: Jump[], t: number, standYaw: number, landYaw:
   for (const leap of leaps) {
     const takeoffAt = takeoffT(leap);
     const landAt = landT(leap);
-    if (t >= takeoffAt - 0.45 && t < takeoffAt) y = lerp(y, nearYaw(y, leap.yaw), ss((t - (takeoffAt - 0.45)) / 0.35));
-    if (t >= landAt && t < landAt + 0.5) y = lerp(nearYaw(y, landYaw(leap)), y, ss((t - landAt) / 0.5));
+    if (t >= takeoffAt - 0.45 && t < takeoffAt) y = lerp(y, nearYaw(y, leap.yaw), smoothstep01((t - (takeoffAt - 0.45)) / 0.35));
+    if (t >= landAt && t < landAt + 0.5) y = lerp(nearYaw(y, landYaw(leap)), y, smoothstep01((t - landAt) / 0.5));
   }
   return y;
 };
@@ -142,11 +144,11 @@ export const crouchAmount = (leaps: Jump[], t: number): Crouch => {
     if (t >= windAt && t < pushAt) {
       const x = (t - windAt) / elite.takeoffCrouchSec;
       k = Math.max(k, Math.sin((Math.PI / 2) * x));
-      arms -= 50 * ss(x);
+      arms -= 50 * smoothstep01(x);
     }
     if (t >= pushAt && t < takeoffAt) {
       k = Math.max(k, 1);
-      push = ss((t - pushAt) / (PUSH / FPS));
+      push = smoothstep01((t - pushAt) / (PUSH / FPS));
       arms -= 50;
     }
   }

@@ -1,5 +1,6 @@
 // 边城布局各部分共用的：城墙和街道的尺寸坐标（哪些不能改见 布局.ts 文件头）、固定种子的随机数、方块简写。
 import { idOf, type BlockName, type Shape } from '../方块.ts';
+import { randInt, pick, mod } from '@engine/core/数学.ts';
 
 export const BORDER_TOWN = { w: 480, d: 400, h: 28, thick: 6, tower: 36 };
 export const W2 = BORDER_TOWN.w / 2; // 240
@@ -28,9 +29,5 @@ export const mulberry = (seed: number) => () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 export type Rng = () => number;
-export const ri = (r: Rng, a: number, b: number) => a + Math.floor(r() * (b - a + 1)); // [a, b] 里的整数
-export const pick = <Item,>(r: Rng, a: readonly Item[]) => a[Math.floor(r() * a.length)];
-export const mod = (a: number, n: number) => ((a % n) + n) % n;
-
 export const blockOf = (n: BlockName, s: Shape = '全') => idOf(n, s);
 export type Facing = '北' | '南' | '东' | '西';

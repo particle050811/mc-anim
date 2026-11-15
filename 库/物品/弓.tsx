@@ -7,7 +7,6 @@
 // 插槽里只剩平移：回肩关节 (0, 0, 9)，再平移 (∓1, 2, −10) 像素，套 display，×16 放大。骨架按身高缩放（玩家 0.9375），弓跟着缩。
 import React from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { ItemSprite, type ItemTransform } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
@@ -16,6 +15,7 @@ import bowPng from 'asset:贴图/物品/弓/弓';
 import pull0Png from 'asset:贴图/物品/弓/弓拉0';
 import pull1Png from 'asset:贴图/物品/弓/弓拉1';
 import pull2Png from 'asset:贴图/物品/弓/弓拉2';
+import { rad } from '../../engine/core/数学.ts';
 
 export type BowTexture = '弓' | '弓拉0' | '弓拉1' | '弓拉2';
 const TEX: Record<BowTexture, string> = { 弓: bowPng, 弓拉0: pull0Png, 弓拉1: pull1Png, 弓拉2: pull2Png };

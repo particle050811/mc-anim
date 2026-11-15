@@ -7,14 +7,12 @@
 // 4. 微动：迅冲时身体随气流起伏，站定后呼吸、头左右看、重心左右挪。
 // 全部是剧情帧的纯函数（弹簧从固定起点积分打表），Remotion 每帧单独算也一样。
 import { exception } from '@engine/core/例外.ts';
-import { type Key, rad, holdTime } from '@engine/anim/anim.ts';
+import { type Key, holdTime } from '@engine/anim/anim.ts';
 import { springTable } from '@engine/flight/真实飞行.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import * as choreo from './编排.ts';
 import type { SheathTiming } from '@库/物品/拔刀剑收刀.ts';
-
-const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
-
+import { rad, smoothstep01 } from '@engine/core/数学.ts';
 // ---------- 1. 打击停顿 ----------
 // 停 3 帧：刀穿过脖子那一帧连放 4 次（1/6 秒）
 export const nagaHitStop = exception('打击停顿', 3, { 段: '6-斩娜迦', 原因: '刀穿过脖子那帧连放 4 次；用户 10-21 定按看过的版本' });
@@ -71,11 +69,11 @@ const keyOverrides: Partial<Record<choreo.LiyingChannel, Key[]>> = {
 // ---------- 3. 急停收势：欠阻尼弹簧 ----------
 // 120 米/秒落地滑停（剧情帧 118～124，见 编排.ts 的 `SLIDE`），上身、腰腿、举刀右臂被惯性往前甩再弹回。
 // 弹簧 x'' = ω²(u − x) − 2ζω·x'，ζ 0.45、ω 14 rad/s，u 是减速几帧的「惯性推力」（平滑鼓包），x 是叠在关键帧上的偏移。从剧情帧 110 起积分，按帧查表，和前一帧状态无关。
-const decelPush = (f: number) => ss((f - 117.5) / 2) * (1 - ss((f - 121) / 3));
+const decelPush = (f: number) => smoothstep01((f - 117.5) / 2) * (1 - smoothstep01((f - 121) / 3));
 const makeSpring = (amp: number) => {
   const table = springTable((t) => amp * decelPush(t * choreo.FPS), 110 / choreo.FPS, 160 / choreo.FPS, 14, 0.45);
   // 剧情帧 137～141 收到 0，接收刀（之后的残余不到 0.1°，收掉免得叠进收刀）
-  return (f: number) => (f < 110 ? 0 : table(f / choreo.FPS).value * (1 - ss((f - 137) / 4)));
+  return (f: number) => (f < 110 ? 0 : table(f / choreo.FPS).value * (1 - smoothstep01((f - 137) / 4)));
 };
 const pitchSpring = makeSpring(-16); // 上身往前扑（负 = 前倾）
 const sinkSpring = makeSpring(16); // 屈髋屈膝往下坐（大腿前摆、膝折两倍，骨架按腿算髋高，脚不离地）
@@ -83,9 +81,9 @@ const armRSpring = makeSpring(20); // 举刀的右臂往前上甩
 
 // ---------- 4. 微动 ----------
 // 迅冲（剧情帧 95～112，原来停住时人一动不动平移 86 格）：身子随气流起伏，腿、左臂跟着飘
-const dashWeight = (f: number) => ss((f - 94) / 3) * (1 - ss((f - 110) / 3));
+const dashWeight = (f: number) => smoothstep01((f - 94) / 3) * (1 - smoothstep01((f - 110) / 3));
 // 站定（剧情帧 123 起渐入）：呼吸 1.6 秒一次，头 2.6 秒左右看一个来回（±2°），重心 3.4 秒左右挪（两腿一起侧摆 ±1.2°，脚底反方向补回去，脚不滑）。周期互不整除，不会重复一模一样
-const standWeight = (f: number) => ss((f - 123) / 14);
+const standWeight = (f: number) => smoothstep01((f - 123) / 14);
 const cycle = (f: number, periodSec: number, phase = 0) => Math.sin((2 * Math.PI * f) / (periodSec * choreo.FPS) + phase);
 
 const overlay = (pose: FigurePose, frame: number) => {

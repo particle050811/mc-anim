@@ -13,7 +13,7 @@ const timeline = defineSceneTimeline({
 });
 
 describe('场时间线', () => {
-  it('画幅不给就用默认段格式；事件解成场时间线的秒（帧 按 60 帧一秒）', () => {
+  it('画幅不给就用 defaultSegFormat；事件解成场时间线的秒（帧 按 60 帧一秒）', () => {
     expect([timeline.宽, timeline.高]).toEqual([defaultSegFormat.宽, defaultSegFormat.高]);
     expect(timeline.事件.进门.秒).toBe(1.5);
     expect(timeline.事件.关门.秒).toBe(3);

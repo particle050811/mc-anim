@@ -28,10 +28,6 @@ import { archery, liYingDeflectFeet, huangPanArcheryFeet, liuXinzhongArcheryFeet
 import flingPierceJson from 'asset:碎块/镜头/6-4-3/挑飞击穿';
 const gameToScene = G4;
 
-export const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
 const add = (a: V3, b: V3, k = 1): V3 => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const len = (a: V3) => Math.hypot(a[0], a[1], a[2]);

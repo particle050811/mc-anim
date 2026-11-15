@@ -9,6 +9,7 @@ import type React from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../model/parts.tsx';
 import { filmScale } from './像素.ts';
+import { sceneToThree } from '../core/three换算.ts';
 
 export type Facing = '北' | '南' | '东' | '西';
 
@@ -43,9 +44,6 @@ export type PerspectiveRigParams = {
 };
 
 export type CameraRigParams = OrthoRigParams | PerspectiveRigParams;
-
-const toThree = ([x, y, z]: V3) => new THREE.Vector3(x, z, -y);
-
 // 镜头朝向（three 世界坐标）：北 = 场景 +y = three −z
 const facingVecs: Record<Facing, THREE.Vector3> = {
   北: new THREE.Vector3(0, 0, -1),
@@ -86,7 +84,7 @@ export const computeOrthoFraming = (p: OrthoRigParams, pageWidth: number, pageHe
   const R = new THREE.Vector3().crossVectors(F, worldUp);
   const B = F.clone().negate();
   // 画面坐标只取决于看点：横 = t·R，竖 = t·上 − 斜·(t·B)；两个都吸附到画布像素网格上
-  const t = toThree(p.看);
+  const t = sceneToThree(p.看);
   const a = t.dot(R);
   const b = t.y - oblique * t.dot(B);
   const snap = (v: number) => Math.round(v / cellsPerPx) * cellsPerPx;
@@ -126,9 +124,9 @@ export const setPerspCamera = (cam: THREE.PerspectiveCamera, p: PerspectiveRigPa
   cam.aspect = aspectRatio;
   cam.near = p.near ?? 0.05;
   cam.far = p.farPlane ?? 512;
-  cam.position.copy(toThree(p.眼));
+  cam.position.copy(sceneToThree(p.眼));
   cam.up.copy(worldUp);
-  cam.lookAt(toThree(p.看));
+  cam.lookAt(sceneToThree(p.看));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();
 };
@@ -147,10 +145,6 @@ export const CameraRig: React.FC<{ 参数: CameraRigParams }> = ({ 参数: param
   }
   return null;
 };
-
-export const OrthoPixelRig: React.FC<Omit<OrthoRigParams, '种'>> = (p) => <CameraRig 参数={{ 种: '正交', ...p }} />;
-export const PerspectiveRig: React.FC<Omit<PerspectiveRigParams, '种'>> = (p) => <CameraRig 参数={{ 种: '透视', ...p }} />;
-
 /** 在画布外面另建一台和画布里一样的相机，给 2D 叠层用 库/界面/投影.ts 的 投影到页面 算头顶气泡这类的位置（场景坐标先过 Z朝上转three）。
  *  宽高、dpr 要和画布一样（三渲二画布 的 dpr 是 canvasDpr(1)），正交的吸附才对得上 */
 export const makeRigCamera = (p: CameraRigParams, width: number, height: number, dpr: number): THREE.OrthographicCamera | THREE.PerspectiveCamera => {

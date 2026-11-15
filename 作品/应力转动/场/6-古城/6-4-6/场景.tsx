@@ -9,10 +9,11 @@ import type { FigurePose } from '@库/角色/骨架.tsx';
 import { SculkSensor } from '@库/特效/幽匿感测体.tsx';
 import { VibrationSignal } from '@库/特效/振动粒子.tsx';
 import { ShriekRings } from '@库/特效/尖啸声波.tsx';
-import { AncientCity4xCanvas, LiYingWithBlade, type Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas, LiYingWithBlade } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as K645 from '../6-4-5/编排.ts';
 import { chain } from './追兵.ts';
 import { sensorBaseCenter, sensorCells, sensorHideBoxes, cellKey } from './振动链.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 收到过振动的感测体：网格里画死的藏掉，换成会抖的（一次建好，BlockMesh 按数组引用判断要不要重建）
 const shakingSensors = sensorCells.filter((b) => chain.activatedAt.has(cellKey(b)));

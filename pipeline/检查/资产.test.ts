@@ -5,7 +5,8 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it } from 'vitest';
 import { base, runRule, makeRepo } from './测试夹具.ts';
-import { isSpdxValid, packManifest, globToRegex } from './规则/资产.ts';
+import { isSpdxValid, globToRegex } from './规则/资产.ts';
+import { packManifest } from '../世界/版本.ts';
 
 const makeAssetTable = (...rows: Record<string, string>[]) =>
   rows.map((e) => ['[["资产"]]', ...Object.entries(e).map(([k, v]) => `${k === 'id' ? k : `"${k}"`} = "${v}"`)].join('\n')).join('\n\n');

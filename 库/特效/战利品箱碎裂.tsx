@@ -4,20 +4,15 @@
 // 小方片的贴图取箱子贴图四个侧面那一圈里随机的 4×4 像素（暮色 boss 的箱子是各自那种暮色木箱的木板，见 物品/箱子.tsx）。
 // 坐标：箱子本地，单位格，原点在底面中心，正面（锁扣）朝 -Y（朝着冲过来的扫帚）。
 import React, { useMemo } from 'react';
-import { rng } from '../../engine/model/parts.tsx';
 import type { Png } from '../../engine/model/贴图.ts';
 import { Chest, LOOTR_TEX } from '../物品/箱子.tsx';
 import { spawnBlockBreak, collectBreakParticles, BreakParticleQuads } from './方块破坏粒子.tsx';
 import { type Particle, particleTexture } from './粒子面片.tsx';
+import { smoothstep01, mulberry32 } from '../../engine/core/数学.ts';
 
 const halfSize = 7 / 16; // 箱子半边长、中心高度
 // boss 被矛尖碰到、死的那一刻起画成多透明（用户 10-02 定巫妖死的一瞬间虚化 50%）：箱子就冒在它身上（一镜到底/战利品.tsx），身子不透明会把箱子埋住；近景的几处（巫妖、冰雪女王、巨人）的 编排.ts 都用它
 export const bossDeathOpacity = 0.5;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-
 // 碎：打掉以后的物理秒数（< 0 还是整的）；冒出：箱子在打掉前多久冒出来（秒）；粒子倍速：粒子时钟比物理时钟快多少（慢放的近景按特效倍速，原速的远景 1）；
 // 放大：整体缩放（以箱子中心为准，远景放大用）；贴图：哪种箱子（不给 = Lootr）
 export const LootChestBurst: React.FC<{ secSinceBreak: number; popLeadSec: number; particleClockScale?: number; scale?: number; seed?: number; texture?: Png }> = ({
@@ -29,7 +24,7 @@ export const LootChestBurst: React.FC<{ secSinceBreak: number; popLeadSec: numbe
   texture: TEX = LOOTR_TEX,
 }) => {
   const ps = useMemo(() => {
-    const rand = rng(seed * 7919 + 13);
+    const rand = mulberry32(seed * 7919 + 13);
     // 原版：整格方块 4×4×4 个；每个粒子的贴图小块在箱体侧面那一圈（展开图 v 33～43、u 0～56）里随机取一块 4×4 像素
     return spawnBlockBreak([0, 0, halfSize], [2 * halfSize, 2 * halfSize, 2 * halfSize], [0, 0, 1, 1], [0.6, 0.6, 0.6], seed).map((particle) => {
       const x = Math.floor(rand() * 52);
@@ -40,7 +35,7 @@ export const LootChestBurst: React.FC<{ secSinceBreak: number; popLeadSec: numbe
   if (secSinceBreak + popLeadSec < 0) return null;
   if (secSinceBreak < 0) {
     // 整个箱子：冒出来的那一下从六成大弹到原大（0.4 毫秒）
-    const chestScale = scale * (0.6 + 0.4 * ss((secSinceBreak + popLeadSec) / 0.0004));
+    const chestScale = scale * (0.6 + 0.4 * smoothstep01((secSinceBreak + popLeadSec) / 0.0004));
     return (
       <group position={[0, 0, halfSize]} scale={chestScale}>
         <group position={[0, 0, -halfSize]}>

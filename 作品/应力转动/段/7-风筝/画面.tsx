@@ -1,10 +1,9 @@
 // 7-4-1 风筝的画面：戏.ts 里剧情时刻 T 的状态按 编排.ts 的机位画出来（T = 编排.ts 的 剧情T(f)）。场景是放大 4 倍的新城（6-4-1/古城画面.tsx 的 古城4x画布），李樱一路垫的羊毛（到 V）。
 // 特效全用现成的，画法同 ../7-3/画面.tsx：苦力怕迫击炮（头、尾烟、爆炸粒子、放大的冲击波环）、监守者音波粒子、幽灵马的附魔字母；
 //   风矢同 6-4-3（每一支都有弓前鼓风机虚影和风道，../7-1/弓前风扇.tsx；1000 米/秒的箭），身上插的箭跟着身子走、倒下时跟着倒；死后 1 秒白烟。
-// 编排的帧是 1/24 秒一格，按秒换算；声音、台词照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
+// 编排的帧是 1/24 秒一格，按秒换算；声音、台词照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import { rad } from '@engine/anim/anim.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { HuangPan, LiuXinzhong } from '../../角色/追兵.tsx';
@@ -14,13 +13,15 @@ import { Arrow } from '@库/物品/箭.tsx';
 import { Blastwave, CreeperHead, mortarTrailSmoke, mortarBlastParticles } from '@库/特效/苦力怕迫击炮.tsx';
 import { sonicBoomParticles } from '@库/特效/监守者音波.tsx';
 import { VanillaParticles, deathPoof, serverSendParticles, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { AncientCity4xCanvas, placedWoolThrough, type Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas, placedWoolThrough } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { BowFans } from '../../地点/古城4x/7-1/弓前风扇.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
 import { withTalkNod } from '../../配音/口型.ts';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
+import { rad } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 const woolBlocks = placedWoolThrough('V');
 const blastwaveSize = 12; // 同 7-3（用户 10-18：威力特效大一点）

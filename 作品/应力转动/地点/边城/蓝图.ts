@@ -79,9 +79,6 @@ export const Variant = (kind: number, turns: number, mirrored: boolean): number 
   variantIdByKey.set(key, id);
   return id;
 };
-// 这个变体是不是不透光的整块（格子里存的是变体号 + 1）
-export const isOpaque = (cell: number) => cell > 0 && DATA.种类[variantSource[cell - 1]].挡;
-
 // ---------- 摆一张蓝图 ----------
 // 格子：Uint16（变体号 + 1）。x0, y0：转过向以后的占地西南角（城的坐标）；z0：地面层放在哪一层（城里街面那一层是 0）
 export class HouseGrid {

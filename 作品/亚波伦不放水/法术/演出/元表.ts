@@ -16,4 +16,3 @@ export const getSpellMeta = (id: string): SpellMeta => {
   if (!meta) throw new Error(`法术 ${id} 还没注册演出（已注册：${[...byId.keys()].join('、')}）`);
   return meta;
 };
-export const hasSpellPerformance = (id: string): boolean => byId.has(id);

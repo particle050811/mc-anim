@@ -2,7 +2,6 @@
 // 李樱一路垫的羊毛照旧画（6-4-8 的 羊毛名们，F1 在北墙根），开过的 #212、#210 画已开贴图。黑暗用 特效/黑暗效果.tsx（照原版：雾压到十几格、画面一明一暗地脉动），只画在 7-1-1（见下）。
 // 黄叛每一箭弓前都有鼓风机虚影和风道（./弓前风扇.tsx）。
 import React from 'react';
-import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { HuangPan, LiuXinzhong } from '../../../角色/追兵.tsx';
 import { Warden } from '@库/生物/监守者.tsx';
@@ -14,12 +13,14 @@ import { MagicShield } from '@库/特效/护盾术.tsx';
 import { DarknessEffect } from '@库/特效/黑暗效果.tsx';
 import { FOG_4X } from '../../古城4x.tsx';
 import { VanillaParticles, deathPoof, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { AncientCity4xCanvas, type Cam } from '../6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas } from '../6-4-1/古城画面.tsx';
 import { BowFans } from './弓前风扇.tsx';
 import * as K648 from '../6-4-8/编排.ts';
 import * as play from './戏.ts';
 import * as timeline from './时间线.ts';
 import { withTalkNod } from '../../../配音/口型.ts';
+import { rad } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 粒子（整场预先算好，刻 = t × 20）
 const particles: ParticleSpawn[] = (() => {

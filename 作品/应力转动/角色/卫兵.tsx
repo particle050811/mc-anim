@@ -14,7 +14,6 @@
 // 坐标：原点在脚底中心，Z 朝上，正面朝 -Y（和 巨人.tsx、贴图方盒.tsx 一样），单位格。朝向用外面的 group 转。
 import React from 'react';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import { EntityModel, type EntityModelData, MODEL_TO_ENTITY, type PartPose } from '@engine/model/实体模型.tsx';
 import { type Png, pngDir } from '@engine/model/贴图.ts';
 import { Spyglass } from '@库/物品/望远镜.tsx';
@@ -34,6 +33,7 @@ import guardSkin8StevePng from 'asset:贴图/角色/卫兵/皮肤8-steve';
 import guardDiamondArmor1Png from 'asset:贴图/角色/卫兵/钻石甲1';
 import diamondArmor2Png from 'asset:贴图/角色/卫兵/钻石甲2';
 import enchantGlintPng from 'asset:贴图/角色/卫兵/附魔光泽';
+import { rad } from '@engine/core/数学.ts';
 
 const MODELS = (raw as unknown as { models: Record<'宽' | '细' | '内甲' | '外甲', EntityModelData> }).models;
 const TEX = pngDir(assetDir({ './披风.png': guardCapePng, './皮肤0-kai.png': guardSkin0KaiPng, './皮肤1-noor.png': guardSkin1NoorPng, './皮肤2-efe.png': guardSkin2EfePng, './皮肤3-makena.png': guardSkin3MakenaPng, './皮肤4-sunny.png': guardSkin4SunnyPng, './皮肤5-ari.png': guardSkin5AriPng, './皮肤6-zuri.png': guardSkin6ZuriPng, './皮肤7-alex.png': guardSkin7AlexPng, './皮肤8-steve.png': guardSkin8StevePng, './钻石甲1.png': guardDiamondArmor1Png, './钻石甲2.png': diamondArmor2Png, './附魔光泽.png': enchantGlintPng })) as Record<string, Png>;

@@ -1,5 +1,6 @@
 // 调子：一套色板项的形状，3D 平涂、描边和整片后期都从它取数（05-画风 原则 1：一张色板管全片）。纯模块，作品的 色板.ts 照这个形状写。
 // 颜色都是 sRGB 十六进制；调色在 sRGB 数值上做（SVG 滤镜 color-interpolation-filters="sRGB"），和设计软件里拖曲线的感觉一致。
+import { lerp } from '../core/数学.ts';
 
 export type Grade = {
   /** 饱和度倍数，1 = 不变（按 Rec.709 亮度权重） */
@@ -52,11 +53,9 @@ export const gradeMatrix = (t: Grade): number[] => {
   out.push(0, 0, 0, 1, 0);
   return out;
 };
-
-const lerpNumber = (a: number, b: number, k: number) => a + (b - a) * k;
 const lerpColor = (a: string, b: string, k: number) => {
   const [x, y] = [hexToRgb(a), hexToRgb(b)];
-  return blendColor(x.map((v, i) => lerpNumber(v, y[i]!, k)));
+  return blendColor(x.map((v, i) => lerp(v, y[i]!, k)));
 };
 
 /** 两套调子之间插值（k = 0 是 a、1 是 b），给转场、慢慢褪色用；颜色在 sRGB 数值上线性插 */
@@ -65,11 +64,11 @@ export const lerpTone = (a: Tone, b: Tone, k: number): Tone => ({
   天: lerpColor(a.天, b.天, k),
   outlineColor: lerpColor(a.outlineColor, b.outlineColor, k),
   grade: {
-    饱和: lerpNumber(a.grade.饱和, b.grade.饱和, k),
-    对比: lerpNumber(a.grade.对比, b.grade.对比, k),
+    饱和: lerp(a.grade.饱和, b.grade.饱和, k),
+    对比: lerp(a.grade.对比, b.grade.对比, k),
     multiply: lerpColor(a.grade.multiply, b.grade.multiply, k),
     lift: lerpColor(a.grade.lift, b.grade.lift, k),
-    暗角: lerpNumber(a.grade.暗角, b.grade.暗角, k),
-    颗粒: lerpNumber(a.grade.颗粒, b.grade.颗粒, k),
+    暗角: lerp(a.grade.暗角, b.grade.暗角, k),
+    颗粒: lerp(a.grade.颗粒, b.grade.颗粒, k),
   },
 });

@@ -21,7 +21,6 @@
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import { GAME_NAGA } from '@库/角色/娜迦实机.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera } from '@库/界面/伤害数字.tsx';
 import { JadeTooltip, jadeScalePerWidth } from '@库/界面/Jade.tsx';
@@ -29,6 +28,8 @@ import { courtyardToWorld, nagaShotCam, type NagaShotProps } from './娜迦参�
 import { nagaWarp } from './动作改进.ts';
 import * as choreo from './编排.ts';
 import { useCurrentSec } from '@engine/段/时间.tsx';
+import { rad } from '@engine/core/数学.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 // ---------- 伤害 ----------
 export const nagaHealth = (120 + 130) * 10; // 困难（极限模式）× 原文的十倍
@@ -40,7 +41,6 @@ if (nagaSlashDamage < nagaHealth) throw new Error(`斩娜迦伤害 ${nagaSlashDa
 export const nagaSlashCrit = true;
 
 // ---------- 位置和时机 ----------
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 // 刀穿过脖子那一帧（CUT_FRAME，和受击变红同一刻）生成，在留在原地那半截的切口正上方（用户 10-19 定：「移动到切口处」）。
 // 切口是第 2 节（断口后第一节，编排/娜迦.ts 的 CUT_I + 1）朝前那一面，取它停稳后的位置。
 // 从切面中间（半节高）起飘：切到 2b 时已飘了 8 帧，正好浮在切口上方一点；照原版从碰撞箱顶起飘会顶到画面上沿。
@@ -48,7 +48,7 @@ const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 const cutSeg = choreo.naga(choreo.S2B).pose.segs[2];
 const cutDir = rad(cutSeg.yaw - 90); // 身体节 yaw = 前进方向数学角 + 90
 const cutFace = [cutSeg.loc[0] + Math.cos(cutDir) * GAME_NAGA.segmentSize / 2, cutSeg.loc[1] + Math.sin(cutDir) * GAME_NAGA.segmentSize / 2, cutSeg.loc[2]];
-const anchor = damageNumberAnchor(toThree(courtyardToWorld(cutFace)), GAME_NAGA.segmentSize / 2, 117);
+const anchor = damageNumberAnchor(sceneToThree(courtyardToWorld(cutFace)), GAME_NAGA.segmentSize / 2, 117);
 // 段内帧（Remotion 帧）：斩中在打击停顿之前，原版、正式版是同一帧
 export const damageSpawnFrame = choreo.segFrame(choreo.CUT_FRAME);
 
@@ -94,7 +94,7 @@ export const NagaDamageLayer: React.FC<NagaShotProps> = (props) => {
   const frame = useCurrentSec() * choreo.FPS;
   const { width, height } = useVideoConfig();
   const { f: storyFrame, cam: cam } = nagaShotCam(props, frame);
-  const toWorld = (p: number[]) => toThree(courtyardToWorld(p));
+  const toWorld = (p: number[]) => sceneToThree(courtyardToWorld(p));
   const camera = makePerspectiveCamera(cam.lens, toWorld(cam.pos), toWorld(cam.tgt), width, height);
   const ticks = ((frame - damageSpawnFrame) / choreo.FPS) * 20;
   const jade = nagaJade(storyFrame, props.motionImproved ?? false);

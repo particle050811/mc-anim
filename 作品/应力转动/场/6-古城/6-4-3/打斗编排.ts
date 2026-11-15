@@ -10,12 +10,13 @@
 import { exception } from '@engine/core/例外.ts';
 import { HIT_STOP_FRAMES } from '../../../默认.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as choreo from './编排.ts';
 import { sideCamPos, sideTarget } from './编排/机位.ts';
-import { add, cross, lerpV, norm, ss } from './编排/公用.ts';
+import { add, cross, norm } from './编排/公用.ts';
 import * as geom from './几何.ts';
 import { buildTimeline, frameFractional as mainFrameFractional, cuts, cutFrames as mainCutFrames } from './时间线.ts';
+import { lerpV, smoothstep01 } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 6-1-2 居合关键帧 → 剧情秒（同 编排/李樱.ts 的 OLD）
 const iaiSec = (k: number) => (k <= 104 ? geom.drawStart + ((k - 98) / 6) * (geom.swingTime - geom.drawStart) : geom.swingTime + ((k - 104) / 4) * 0.03);
@@ -49,8 +50,6 @@ export const deflectArrowFrames = tl.帧(bEnd) - startFrame;
 export const flickArrowFrames = tl.帧(cuts.C3) - cutStartFrame;
 // 给 工具/机位核对/导出.ts：段内第 0 帧在这条时间线上的全局帧；全局帧 → 主方案时间线上（带小数）的帧
 export const segStartFrame = { '6-4-3b': startFrame, '6-4-3c': cutStartFrame };
-export const mainPlanFrame = (f: number) => mainFrameFractional(tl.storyTime(f));
-
 export const liying = choreo.makeLiying({ windup: true });
 // 镜头（用户 10-18：一直在箭右侧往左看、贴近，箭越快视角拉得越广，同一镜到底飞行巡航换广角）：
 // 跟拍在箭右 1.5 米、上 0.6 米（2 米以外在箭路 192～196 米处撞墙，工具/挡箭/机位核对.py --跟拍 每 0.5 米核过），看点在箭前 1 米，箭在画面偏左、往右飞；
@@ -66,7 +65,7 @@ const arrowUp: V3 = norm(cross(arrowRight, geom.incomingDir));
 const speedWeight = (f: number) => {
   const t = tl.storyTime(f);
   const screenSpeed = geom.arrowSpeed(Math.max(0, geom.incomingArrowDist(t - geom.shootTime))) * tl.clock(t);
-  return ss(Math.log(Math.max(1, screenSpeed) / 8) / Math.log(167 / 8));
+  return smoothstep01(Math.log(Math.max(1, screenSpeed) / 8) / Math.log(167 / 8));
 };
 const followPose = (dist: number, speed: number): Cam => {
   const arrowPos = add(geom.nockPoint, geom.incomingDir, dist);
@@ -79,7 +78,7 @@ export const cameraAt = (f: number): Cam => {
   // 主方案按整帧切机位（主切帧），这条时间线切在剧情时间上：剧情时间过了切点、换到主方案还差不到一帧的，算到切点那一帧，不然 6-4-3c 第 0 帧还是上一个机位
   if (t >= cuts.C2) return choreo.camera(Math.max(mainFrameFractional(t), mainCutFrames.C2, t >= cuts.C3 ? mainCutFrames.C3 : 0));
   if (t < cutToLiYing) return followPose(arrowDistAt(f), speedWeight(f));
-  const push = ss((f - cutFrame) / (push1 - cutFrame));
+  const push = smoothstep01((f - cutFrame) / (push1 - cutFrame));
   return { pos: lerpV(sideCamPos, sideTarget, 0.55 + 0.12 * push), tgt: sideTarget, lens: 16 + push };
 };
 

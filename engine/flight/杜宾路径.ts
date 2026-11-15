@@ -60,28 +60,3 @@ export const solveDubins = (start: DubinsPose, end: DubinsPose, turnRadius: numb
   return { moves: best.moves, lengths: segLens, totalLen: segLens[0] + segLens[1] + segLens[2], turnDeg: ((arcRad(0) + arcRad(1) + arcRad(2)) * 180) / Math.PI };
 };
 
-// 沿路径走 l 米以后的位姿
-export const dubinsPoseAt = (start: DubinsPose, path: DubinsPath, turnRadius: number, dist: number): DubinsPose => {
-  let x = start[0], y = start[1], th = headingToMathRad(start[2]);
-  let left = Math.max(0, Math.min(dist, path.totalLen));
-  for (let k = 0; k < 3 && left > 0; k++) {
-    const len = Math.min(left, path.lengths[k]);
-    const move = path.moves[k];
-    if (move === 'S') {
-      x += len * Math.cos(th);
-      y += len * Math.sin(th);
-    } else if (move === 'L') {
-      const cx = x - turnRadius * Math.sin(th), cy = y + turnRadius * Math.cos(th);
-      th += len / turnRadius;
-      x = cx + turnRadius * Math.sin(th);
-      y = cy - turnRadius * Math.cos(th);
-    } else {
-      const cx = x + turnRadius * Math.sin(th), cy = y - turnRadius * Math.cos(th);
-      th -= len / turnRadius;
-      x = cx - turnRadius * Math.sin(th);
-      y = cy + turnRadius * Math.cos(th);
-    }
-    left -= len;
-  }
-  return [x, y, 90 - (th * 180) / Math.PI];
-};

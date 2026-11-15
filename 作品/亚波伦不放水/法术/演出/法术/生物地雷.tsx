@@ -6,7 +6,6 @@
 // 没做：放下时的 summonedParticles、炸开的 SphereExplode 球壳、酸池出现时的 ROLLING_SPIRAL；被打也会炸。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { MinecraftSpace, getModel, ModelPart } from '../零件/实体.tsx';
@@ -36,6 +35,7 @@ import biomine15Png from 'asset:贴图/法术/goety/entity/projectiles/biomine/1
 import biomine16Png from 'asset:贴图/法术/goety/entity/projectiles/biomine/16';
 import biomine17Png from 'asset:贴图/法术/goety/entity/projectiles/biomine/17';
 import biomine18Png from 'asset:贴图/法术/goety/entity/projectiles/biomine/18';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const bioMineModel = getModel(bioMineModelData, 'BioMineModel');
 const animFrames = [biomine0Png, biomine1Png, biomine2Png, biomine3Png, biomine4Png, biomine5Png, biomine6Png, biomine7Png, biomine8Png, biomine9Png, biomine10Png, biomine11Png, biomine12Png, biomine13Png, biomine14Png, biomine15Png, biomine16Png, biomine17Png, biomine18Png].map(png);
@@ -45,7 +45,7 @@ const acidColor = hexColor(0x20b33e);
 type Mine = { 位: Vec3; blastTick: number };
 const mineRow = (target: Vec3, seed: number): Mine[] =>
   Array.from({ length: bioMineCount }, (_, i) => {
-    const r = rng(seed * 449 + i);
+    const r = mulberry32(seed * 449 + i);
     let [x, y] = [4, 0];
     for (let attempt = 0; attempt < 16; attempt++) {
       [x, y] = [Math.floor(r() * 17) - 8, Math.floor(r() * 17) - 8];
@@ -61,7 +61,7 @@ const bioMine: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
   const bolts = mineRow(target, seed);
   const acidSpawns: ParticleBirth[] = [];
   bolts.forEach((mine, i) => {
-    const r = rng(seed * 677 + i);
+    const r = mulberry32(seed * 677 + i);
     for (let t = mine.blastTick; t < Math.min(mine.blastTick + acidPoolTicks, tick); t++)
       for (let k = 0; k < 2; k++) {
         const [angle, randDistance] = [r() * Math.PI * 2, Math.sqrt(r()) * 2];

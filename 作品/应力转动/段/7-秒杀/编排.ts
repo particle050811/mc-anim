@@ -5,12 +5,13 @@
 //   拍 4 监守者东北贴地，它边走边拍，南台顶上的黄叛在后面放箭；拍 5 刘心忠身后，最后一只在远处被拍飞；收在刘心忠侧面，他喊、监守者朝他扑过来。
 // 打中定住 1 帧（用户 10-18「一帧差不多了吧」），不慢放（用户 10-18「我没有要求就别放慢」）。
 import type { V3 } from '@engine/model/parts.tsx';
-import type { Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
-import { lerpV, ss } from '../../地点/古城4x/7-1/戏/公用.ts';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as timeline from '../../地点/古城4x/7-1/时间线.ts';
 import { buildSpeedRamp } from '../../地点/古城4x/7-1/变速.ts';
 import { buildCameraRig, type SpeedRampShot } from '../../地点/古城4x/7-1/变速段.tsx';
+import { smoothstep01, lerpV } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
+
 export const segmentId = '7-1-3' as const;
 export const FPS = timeline.FPS;
 
@@ -30,7 +31,7 @@ export const timeAt = speedRamp.storyTime;
 
 const head = (p: V3, h: number): V3 => [p[0], p[1], p[2] + h];
 // 机位在 t0～t1 之间从 p0 慢慢挪到 p1；看点是几个主体按权重的中点（主体随场时刻动）
-const drift = (t0: number, t1: number, p0: V3, p1: V3, look: (t: number) => V3, lens: number) => (t: number): Cam => ({ pos: lerpV(p0, p1, ss((t - t0) / (t1 - t0))), tgt: look(t), lens });
+const drift = (t0: number, t1: number, p0: V3, p1: V3, look: (t: number) => V3, lens: number) => (t: number): Cam => ({ pos: lerpV(p0, p1, smoothstep01((t - t0) / (t1 - t0))), tgt: look(t), lens });
 const between = (a: (t: number) => V3, b: (t: number) => V3, k: number) => (t: number) => lerpV(a(t), b(t), k);
 const huangHead = (t: number) => head(play.huangPanPos(t), 1.4);
 const liuHead = (t: number) => head(play.liuXinzhongPos(t), 1.5);

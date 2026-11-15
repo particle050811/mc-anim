@@ -4,9 +4,10 @@
 // 不是存档导出的，手搓；随机都用定死的噪声和散列，同一组参数每次出一样的方块。只铺镜头看得到的北边一扇（镜头一直朝北），背后的不铺。
 // 坐标同 弹坑.ts：格 (i, j, k) 占 x ∈ [i − 0.5, i + 0.5]、y ∈ [j, j + 1]、z ∈ [k, k + 1]，屋前地面顶 z = 0（草方块是 k = −1）。
 import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
-import { fbm, hash2, simplex2, smoothstep } from '@engine/core/噪声.ts';
+import { fbm, hash2, simplex2 } from '@engine/core/噪声.ts';
 import { cherryTree, oakTree, type VanillaTree } from '../../地点/原版树.ts';
 import { flatArea } from './弹坑.ts';
+import { smoothstep } from '@engine/core/数学.ts';
 
 /** 平原：起伏几格、多大一片（格）；出了平地 坡宽 格才起伏满（屋子那块平地是平的） */
 export const plainsParams = { 种子: 61906, 起伏: 2.6, undulationScale: 52, fineUndulation: 0.6, fineUndulationScale: 14, slopeWidth: 14, grassRate: 0.22, tallGrassShare: 0.18, flowerRate: 0.02 } as const;

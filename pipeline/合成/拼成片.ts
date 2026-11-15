@@ -6,7 +6,8 @@
 //   --share 另从成片压一份 B 站 1080P60 AV1 档的（参数、文件名照旧 成片.ts，用户 11-05 定），只在要时加。
 import fs from 'node:fs';
 import path from 'node:path';
-import { deliveryRoot, config } from '../环境/配置.ts';
+import { deliveryRoot } from '../环境/作品数据.ts';
+import { config } from '../环境/配置.ts';
 import { commitStatus, relativeToCodeRoot } from '../环境/路径.ts';
 import { workName } from '../环境/作品.ts';
 import { lowPriority, runCmd, runCapture } from '../环境/子进程.ts';

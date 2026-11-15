@@ -1,5 +1,6 @@
 // 6-1-2 的时间轴（切镜帧、停住 12 帧、跳过助跑的剧情帧换算）和助跑道几何，其余各模块都从这里取。
-import { rad, holdTime } from '@engine/anim/anim.ts';
+import { holdTime } from '@engine/anim/anim.ts';
+import { rad, smoothstep01, lerpV } from '@engine/core/数学.ts';
 
 export const FPS = 24;
 export const S2 = 92; // 切到庭院西墙外：滞空 → 迅冲斩擦着镜头掠过、斩向庭院中心
@@ -23,10 +24,6 @@ export const real = (f: number) => (f < SKIP_AT ? f : f < SKIP_AT + SKIP ? SKIP_
 export const FRAMES = END - 1 - SKIP;
 // 剧情帧 → 段内帧（Remotion 帧 = 实际帧 − 1）：声音.tsx 的配音、音效按它落帧
 export const segFrame = (s: number) => real(s) - 1;
-
-export const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
-export const lerp3 = (a: number[], b: number[], k: number) => a.map((v, i) => v + (b[i] - v) * k);
-
 // ---------- 跑道 ----------
 export const LANE_E = [-89, -0.4]; // L = 0 的点（水沟里）；L 往西增大
 const LANE_DEG = 90;
@@ -49,7 +46,7 @@ export const laneZ = (laneDist: number) => {
     const lo = cellZ(i - 1);
     const d = edge - laneDist;
     if (hi > lo && d >= 0) z = Math.max(z, hi - 16 * (d / RUN_V) ** 2);
-    if (lo > hi && d < 0 && d > -STEP_UP) z = Math.max(z, hi + (lo - hi) * ss(1 + d / STEP_UP));
+    if (lo > hi && d < 0 && d > -STEP_UP) z = Math.max(z, hi + (lo - hi) * smoothstep01(1 + d / STEP_UP));
   }
   return z;
 };

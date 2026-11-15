@@ -1,9 +1,10 @@
 // 6-1-2 各镜头的机位：1 身后跟拍助跑起跳、2 侧拍迅冲、2c 横穿俯拍、2b 庭院中心、3 迷宫里的九胡（6-1-3 镜头 1 接着用 mazeCam）。
-import { type Key, type VKey, rad, sample, sampleV } from '@engine/anim/anim.ts';
+import { type Key, type VKey, sample, sampleV } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { S2, S2C, S2B, S3, ss, lerp3, lanePt, laneZ, GO } from './时间轴.ts';
+import { S2, S2C, S2B, S3, lanePt, laneZ, GO } from './时间轴.ts';
 import { TAKEOFF, DASH0, CUT_X, DASH_Y, lyL, lyLoc } from './李樱.ts';
 import { mazeAt, mazeDist } from './九胡.ts';
+import { rad, smoothstep01, lerpV } from '@engine/core/数学.ts';
 
 // ---------- 镜头 ----------
 type Cam = { lens: number; pos: number[]; tgt: number[] };
@@ -28,14 +29,14 @@ const cam1 = (frame: number): Cam => {
   if (frame < TAKEOFF) return { lens, ...follow };
   // 起跳：机位在起跳点身后（树冠已清空）跟他升到他高度八成，在下方仰拍；视线压到他下方 14°，水沟对岸树梢留在画面下沿当参照。
   // 视线 2 帧内转到他身上：转慢人会出画面上沿。
-  const k = ss((frame - (TAKEOFF - 1)) / 2);
+  const k = smoothstep01((frame - (TAKEOFF - 1)) / 2);
   const ly = lyLoc(frame);
   const pos = [follow.pos[0], follow.pos[1], follow.pos[2] + Math.max(0, ly[2] - laneZ(8)) * 0.78];
   const onHim = [ly[0], ly[1], ly[2] + 0.9];
   const horiz = Math.hypot(onHim[0] - pos[0], onHim[1] - pos[1]);
   const elev = Math.atan2(onHim[2] - pos[2], horiz);
   const aim = [onHim[0], onHim[1], pos[2] + horiz * Math.tan(elev - rad(14) * k)];
-  return { lens, pos, tgt: lerp3(follow.tgt, aim, k) };
+  return { lens, pos, tgt: lerpV(follow.tgt, aim, k) };
 };
 // 镜头 2（f92–112）：侧面跟拍，机位在他南边、比他高，俯看（仰拍只有天和一个人，看不出空间；用户 10-01）。已有结论：墙外顺冲刺方向拍看不出横向距离 → 从南边侧拍；
 // 机位跑到他前面或几帧急升急转会让他先退后冲 → 机位只超前 1 格，横穿那下用硬切另一镜头。
@@ -49,7 +50,7 @@ const cam2 = (frame: number): Cam => {
   const onHim = [ly[0], ly[1], ly[2] + 0.9];
   if (frame <= DASH0) return { lens, pos: CAM2_HOVER, tgt: onHim };
   const follow = [ly[0] + 1, -14, ly[2] + CAM2_ABOVE];
-  return { lens, pos: lerp3(CAM2_HOVER, follow, ss((frame - DASH0) / 3)), tgt: onHim };
+  return { lens, pos: lerpV(CAM2_HOVER, follow, smoothstep01((frame - DASH0) / 3)), tgt: onHim };
 };
 // 镜头 2c（f113–121）：横穿点西南上方 21 格固定俯拍（平视会被娜迦头脖挡住横穿那下）；他 f113–116 从左上冲进来，f117 穿脖子，f118–121 从右滑出，再切 2b
 const CAM2C_POS = [-7, -12, 21];
@@ -83,16 +84,16 @@ export const mazeCam = (t: number): Cam => {
   const [px, py] = at(t);
   const follow = [x - hx * 7.5, y - hy * 7.5, 8.5];
   const ahead = [px + hx * 8, py + hy * 8, 0.6];
-  const near = ss((9 - Math.hypot(px - LY_SPOT[0], py - LY_SPOT[1])) / 6);
+  const near = smoothstep01((9 - Math.hypot(px - LY_SPOT[0], py - LY_SPOT[1])) / 6);
   const mid = [(px + LY_SPOT[0]) / 2, (py + LY_SPOT[1]) / 2, 1.0];
   // 迎面 → 后上方：她跑近（t 12 起）后 18 帧转过去，从她左手边（北，水池一侧）绕过，不翻过头顶；视线晚几帧才挪到前方（一起挪她有几帧只剩半个头）
-  const k = ss((t - 12) / 18);
+  const k = smoothstep01((t - 12) / 18);
   const swing = Math.sin(Math.PI * k);
-  const pos = lerp3(CAM3_FRONT, follow, k);
+  const pos = lerpV(CAM3_FRONT, follow, k);
   pos[1] += 3.5 * swing;
   pos[2] += 1 * swing;
-  const kt = ss((t - 18) / 16);
-  return { lens: 24, pos, tgt: lerp3([px, py, 1.0], lerp3(ahead, mid, near), kt) };
+  const kt = smoothstep01((t - 18) / 16);
+  return { lens: 24, pos, tgt: lerpV([px, py, 1.0], lerpV(ahead, mid, near), kt) };
 };
 
 export const camera = (f: number): Cam =>

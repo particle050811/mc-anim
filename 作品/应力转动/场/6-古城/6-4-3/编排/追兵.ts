@@ -5,7 +5,9 @@ import { drawBowPose } from '../../../../角色/追兵.tsx';
 import { bowTextureFor, type BowTexture } from '@库/物品/弓.tsx';
 import { yawTo } from '../../../../地点/古城4x/6-4-1/古城戏.ts';
 import * as geom from '../几何.ts';
-import { ss, add, sub, storySecAt } from './公用.ts';
+import { add, sub, storySecAt } from './公用.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
+
 // ---------- 黄叛 ----------
 // 0～1.2 垂手站着；1.2～1.6 拉弓（原版 BOW_AND_ARROW，左手持弓）；放箭时大喝「贼子，拿命来！」，放箭后右手甩开；
 // 箭被挑飞时他在 370 米外，碎裂声 1.1 秒才到，靠看见招架闪光愣住，看向李樱，弓慢慢放下
@@ -19,18 +21,18 @@ const freezeSec = geom.deflect + 0.25; // 看见闪光（光一下就到）+ 反
 const drawStartSec = 1.2;
 export const huangpan = (globalFrame: number): { pose: FigurePose; bow: BowTexture } => {
   const t = storySecAt(globalFrame);
-  const draw = ss((t - drawStartSec) / 0.4);
+  const draw = smoothstep01((t - drawStartSec) / 0.4);
   let pose = drawBowPose(geom.huangPanFeet, geom.huangPanFacing, 0, geom.huangPanPitch, draw);
   if (draw <= 0) pose = { ...standPose(geom.huangPanFeet), yaw: geom.huangPanFacing, headPitch: geom.huangPanPitch, armL: 8, armLRoll: 4, armR: 12, armRRoll: 6, elbowR: 15 };
   // 喊（放箭前后）：头往上一扬。配音按画面时间原速放（1.5 秒），此时正慢放 1/120，所以头扬起来就停在那里
-  const shout = ss((t - (geom.shootTime - 0.1)) / 0.08) * (1 - ss((t - (geom.shootTime + 0.15)) / 0.3));
+  const shout = smoothstep01((t - (geom.shootTime - 0.1)) / 0.08) * (1 - smoothstep01((t - (geom.shootTime + 0.15)) / 0.3));
   if (shout > 0) pose = { ...pose, headPitch: pose.headPitch + 7 * shout };
   // 放箭：拉弦手松开、往后一甩
-  const rel = ss((t - geom.shootTime) / 0.12);
+  const rel = smoothstep01((t - geom.shootTime) / 0.12);
   if (rel > 0) pose = { ...pose, armR: pose.armR - 15 * rel, armRYaw: (pose.armRYaw ?? 0) * (1 - rel) - 25 * rel, elbowR: 25 * rel };
   // 愣住、抬头看：头 0.3 秒转过去，弓 0.8 秒放下一半，拉弦手垂下
-  const look = ss((t - freezeSec) / 0.3);
-  const lower = ss((t - freezeSec - 0.2) / 0.8);
+  const look = smoothstep01((t - freezeSec) / 0.3);
+  const lower = smoothstep01((t - freezeSec - 0.2) / 0.8);
   if (look > 0)
     pose = {
       ...pose,
@@ -53,6 +55,6 @@ const liuLookAtLiYing = (() => {
 })();
 export const liuxinzhong = (globalFrame: number): FigurePose => {
   const t = storySecAt(globalFrame);
-  const leanIn = ss((t - geom.deflect - 0.3) / 0.4);
+  const leanIn = smoothstep01((t - geom.deflect - 0.3) / 0.4);
   return { ...standPose(geom.liuXinzhongFoot), yaw: liuLookAtLiYing.yaw, headPitch: liuLookAtLiYing.pitch + 12 * leanIn, pitch: 4 * leanIn, armR: 18, armRRoll: 4, armL: 6, armLRoll: 4, elbowL: 10 };
 };

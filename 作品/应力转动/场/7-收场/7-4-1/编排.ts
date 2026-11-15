@@ -7,17 +7,13 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { G4, toGame4 } from '../../../地点/古城4x.tsx';
-import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as play from './戏.ts';
 import * as chase from './追逐.ts';
 import * as geom from './几何.ts';
+import { smoothstep01, lerpV } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export const FPS = play.FPS;
-const ss = (x: number) => {
-  const c = Math.min(1, Math.max(0, x));
-  return c * c * (3 - 2 * c);
-};
-const lerpV = (a: V3, b: V3, k: number): V3 => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
 const add = (a: V3, b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 
 // ---------- 台词 ----------
@@ -60,7 +56,7 @@ const shots: Shot[] = [
     cam: (T) => {
       const h = add(horseAt(T), [0, 0, 1.6]);
       const lane = G4(-745.0, -44.5, 236.0);
-      const k = ss((T - chase.takeoffT(play.firstLap + 1) + 0.05) / 0.45);
+      const k = smoothstep01((T - chase.takeoffT(play.firstLap + 1) + 0.05) / 0.45);
       return { pos: G4(-727.0, -27.5, 265.5), tgt: lerpV(lerpV(lane, h, 0.45), h, 0.8 * k), lens: 20 };
     },
   },
@@ -90,7 +86,7 @@ const shots: Shot[] = [
     // 台面西南上空：右边台面上马勒停、转过来朝着它倒下的地方，左边远处西环道上它倒着、白烟散开，门顶上黄叛放下弓
     起帧: 178,
     startT: lapT(4) - 0.02 + (178 - 141) / FPS,
-    cam: (T, k) => ({ pos: lerpV(G4(-732.5, -34.0, 269.0), G4(-732.0, -34.3, 268.4), ss(k)), tgt: G4(-727.0, -40.0, 250.0), lens: 16 }),
+    cam: (T, k) => ({ pos: lerpV(G4(-732.5, -34.0, 269.0), G4(-732.0, -34.3, 268.4), smoothstep01(k)), tgt: G4(-727.0, -40.0, 250.0), lens: 16 }),
   },
 ];
 export const END = 210;

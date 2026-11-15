@@ -7,9 +7,10 @@
 // 砸到古城地面的震波在 ../6-3-6/震地.tsx（方块真挪走，跟着古城画，竖井.tsx 的 `AncientCity`）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
 import { pitSurfaceZAt, blockMaterial, blockPngs } from './竖井.tsx';
 import { SLAB_Y, fillCells, maceBottomSpeed, type FillCell } from './填块.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 type TexName = keyof typeof blockPngs;
 // 轴、壁：井里的碎块碰到井壁就停在井壁上（离井轴 壁 米），水平方向不再往外走，竖直方向照常（贴着井壁往下滑）
@@ -69,7 +70,7 @@ const build = (fx: FxParams): DebrisPiece[] => {
   // 1. 地面炸开：50 块，从坑里（井口以外、坑面以上）碎掉的格子里挑，在那一格碎掉的那一刻，从格子里往上、往外迸（撞击坑的抛射物），
   //    方向是从井心（锤碰到地面的地方）往这一格的方位
   {
-    const rand = rng(631);
+    const rand = mulberry32(631);
     const pool = cells.filter((c) => c.y >= SLAB_Y - 9 && !isShaftColumn(c) && Math.hypot(c.dx, c.dy) <= 7); // 坑口以内（坑口离井心 3.7～7.2 格），不含坑外的裂纹
     for (let k = 0; k < 50; k++) {
       const cell = pool[Math.floor(rand() * pool.length)];
@@ -96,7 +97,7 @@ const build = (fx: FxParams): DebrisPiece[] => {
   //    - 翻滚 8～24 弧度/秒：每帧转过一弧度以上在 24 帧/秒下看着是乱跳，所以封顶 24。
   //    - 贴图：这一格原来的方块。
   {
-    const rand = rng(632);
+    const rand = mulberry32(632);
     const layers = new Map<number, FillCell[]>();
     for (const cell of cells) if ((cell.y < SLAB_Y - 9 || isShaftColumn(cell)) && Math.hypot(cell.dx, cell.dy) >= 1.2) (layers.get(cell.y) ?? layers.set(cell.y, []).get(cell.y)!).push(cell);
     for (const [, list] of [...layers.entries()].sort((x, y) => y[0] - x[0])) {
@@ -121,7 +122,7 @@ const build = (fx: FxParams): DebrisPiece[] => {
   // 3. 洞顶：28 块，从洞顶最下面那层（底下就是古城的空洞）碎掉的格子里挑，跟着他掉进古城，落在古城地面上。
   //    下面没有东西挡，被滚筒顶着往下走：往下是锤底速度的八到十二成（四五十到六十几米/秒，和原来一样），往四周 3～9 米/秒散开
   {
-    const rand = rng(633);
+    const rand = mulberry32(633);
     const filled = new Set(cells.map((c) => `${c.dx},${c.dy},${c.y}`));
     const pool = cells.filter((c) => c.y <= 0 && !filled.has(`${c.dx},${c.dy},${c.y - 1}`) && Number.isFinite(c.breakSec));
     for (let k = 0; k < 28 && pool.length; k++) {

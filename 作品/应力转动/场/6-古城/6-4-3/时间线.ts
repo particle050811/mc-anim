@@ -8,9 +8,9 @@
 // `跟拍时钟` 是演法参数：主方案 1/12，另有备选（段.tsx），换的只是时钟，各段剧情起止不变。
 import { HIT_STOP_FRAMES } from '../../../默认.ts';
 import * as geom from './几何.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 export const FPS = 24;
-const ss = geom.ss;
 const arrivalSec = (s: number) => geom.shootTime + geom.arrowArriveTime(s); // 箭（实体位置）走到离搭箭点 s 米的剧情时刻
 
 // 镜头切换的剧情时刻（也是段的分界）
@@ -63,7 +63,7 @@ export const buildTimeline = (followClock: number, variant?: Staging) => {
       const [t0, c0] = CLOCK[i - 1];
       const [t1, c1, logBlend] = CLOCK[i];
       if (storySec <= t1) {
-        const k = ss((storySec - t0) / (t1 - t0));
+        const k = smoothstep01((storySec - t0) / (t1 - t0));
         return logBlend ? c0 * Math.pow(c1 / c0, k) : c0 + (c1 - c0) * k;
       }
     }

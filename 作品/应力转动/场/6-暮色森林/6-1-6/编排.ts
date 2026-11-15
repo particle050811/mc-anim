@@ -14,6 +14,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { HYDRA, type HydraHead } from '@库/生物/九头蛇.tsx';
 import { cruiseHeight, twilightLandmark } from '../../../地点/暮色新世界.tsx';
 import { integrateProfile, profileLookup, descendTo, pierceProfileLimits } from '@engine/flight/平顺航迹.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 export const V = 320;
 export const hydraLair = twilightLandmark('九头蛇巢穴');
@@ -88,13 +89,9 @@ export const pierceLine = {
 export const T_DIVE = -diveStart.s / V;
 
 // ---------- 九头蛇的动作（t：贯穿后的物理秒数） ----------
-const ease = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
 export const hydraHeads = (t: number, broom: V3): HydraHead[] => {
-  const up = ease((t - T_DIVE + 0.25) / 0.55);
-  const hit = t >= 0 ? ease(t / 0.17) : 0;
+  const up = smoothstep01((t - T_DIVE + 0.25) / 0.55);
+  const hit = t >= 0 ? smoothstep01(t / 0.17) : 0;
   const cos = Math.cos(-HYDRA_YAW);
   const sin = Math.sin(-HYDRA_YAW);
   const broomLocal = hydraLair.toLocal(broom);

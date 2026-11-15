@@ -9,7 +9,6 @@
 // 没做：GatherTrailParticle 八条汇聚拖尾；落点不贴地（取目标脚底高度，没有 moveDownToGround）；伤害、痉挛。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { ElectricArc } from '../零件/电弧.tsx';
@@ -19,6 +18,7 @@ import { hexColor } from '../零件/材质.ts';
 import { CircleBurst, SphereBurst } from '../零件/甲/爆.tsx';
 import meta, { strikePoints, stormWarnTicks } from './雷暴.元.ts';
 import aoeIndicatorPng from 'asset:贴图/法术/goety/particle/aoe_indicator';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const warningImg = png(aoeIndicatorPng);
 const thunderColor = hexColor(11660252);
@@ -35,7 +35,7 @@ const Thunderstorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标:
         const pos: Vec3 = [baseCenter[0] + p.offsetX, baseCenter[1] - p.offsetZ, target[2]];
         const age = tick - p.生;
         const strikeAge = age - stormWarnTicks;
-        const r = rng(seed * 733 + i);
+        const r = mulberry32(seed * 733 + i);
         return (
           <React.Fragment key={i}>
             {!options?.noWarningRing && age >= 1 && age < stormWarnTicks && <GroundDecal 位={pos} 图={warningImg} radius={3 * (1 - (age - 1) / stormWarnTicks)} 色={white} opacity={0.25} lift={0.1} />}

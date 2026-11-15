@@ -5,7 +5,6 @@
 // 没核：起始半径 = 0.3 + 法术的 radius 属性，默认 radius 没翻到，这里当 0；第二遍加色层换帧带的偏移量。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { unitVec, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
@@ -19,6 +18,7 @@ import slash1Png from 'asset:贴图/法术/goety/entity/projectiles/slash/1';
 import slash2Png from 'asset:贴图/法术/goety/entity/projectiles/slash/2';
 import slash3Png from 'asset:贴图/法术/goety/entity/projectiles/slash/3';
 import slash4Png from 'asset:贴图/法术/goety/entity/projectiles/slash/4';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const slashFrames = [slash1Png, slash2Png, slash3Png, slash4Png].map(png);
 const radiusAt = (tick: number) => 0.3 + 0.12 * tick;
@@ -30,7 +30,7 @@ const RazorWind: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: ta
   const dir = trajectoryDir(trajectory, 0);
   // 宽度方向：水平、和飞行方向垂直
   const perpDir = unitVec([-dir[1], dir[0], 0]);
-  const r = rng(seed * 11 + 3);
+  const r = mulberry32(seed * 11 + 3);
   const clouds: ParticleBirth[] = eachTick(1, Math.min(tick, endTick)).flatMap((n) => {
     const [p, radius] = [trajectory(n), radiusAt(n)];
     return Array.from({ length: Math.floor((radius * 2) / 0.25) + 1 }, (_, k) => cloudParticle(r, n, [p[0] + perpDir[0] * (k * 0.25 - radius), p[1] + perpDir[1] * (k * 0.25 - radius), p[2]]));

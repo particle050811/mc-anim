@@ -3,8 +3,4 @@
 export const chestScreenSize = { width: 176, height: 17 + 3 * 18 + 7 };
 // 箱子格编号 0～26（逐行），返回物品图标左上角
 export const slotPos = (i: number): [number, number] => [8 + 18 * (i % 9), 18 + 18 * Math.floor(i / 9)];
-export const slotCenter = (i: number): [number, number] => {
-  const [x, y] = slotPos(i);
-  return [x + 8, y + 8];
-};
 export const allSlots = Array.from({ length: 27 }, (_, i) => i);

@@ -8,7 +8,6 @@
 // 没做：SpellExplosion 的伤害和击退（没有画面）；头顶正上方有敌人时改劈那个敌人。配风暴法杖的四种大阵型不做。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { ElectricArc } from '../零件/电弧.tsx';
@@ -20,6 +19,7 @@ import { RingBurst } from '../零件/乙圆环.tsx';
 import meta, { prongOffsets, prongBlastGapTicks, prongStayTicks, prongWarnTicks } from './三叉戟风暴.元.ts';
 import tridentStormModelData from 'asset:模型/法术/goety/TridentStormModel';
 import tridentStormPng from 'asset:贴图/法术/goety/entity/projectiles/trident_storm';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const tridentStormModel = getModel(tridentStormModelData, 'TridentStormModel');
 const fallAnim: AnimDef = {
@@ -36,7 +36,7 @@ const TridentStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标:
   return (
     <>
       {prongOffsets.map(([x, z], i) => {
-        const r = rng(seed * 883 + i);
+        const r = mulberry32(seed * 883 + i);
         const pos: Vec3 = [from[0] + x, from[1] - z, target[2]];
         const landTick = prongWarnTicks + Math.floor(r() * 61);
         const blastTick = landTick + prongBlastGapTicks;

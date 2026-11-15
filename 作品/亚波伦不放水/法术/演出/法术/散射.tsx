@@ -9,7 +9,6 @@
 // 没做：有人踩才炸的触发；配风暴法杖的另一种放法（那一支不走这段代码）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { GroundDecal } from '../零件/地面贴花.tsx';
@@ -34,6 +33,7 @@ import generic4Png from 'asset:贴图/特效/粒子/generic_4';
 import generic5Png from 'asset:贴图/特效/粒子/generic_5';
 import generic6Png from 'asset:贴图/特效/粒子/generic_6';
 import generic7Png from 'asset:贴图/特效/粒子/generic_7';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const scatterMineModel = getModel(scatterMineModelData, 'ScatterMineModel');
 const pulseFrames = [minePulse1Png, minePulse2Png, minePulse3Png, minePulse4Png].map(png);
@@ -47,7 +47,7 @@ const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
   const sparks: ParticleBirth[] = [];
   const redBurst: ParticleBirth[] = [];
   positions.forEach((pos, i) => {
-    const r = rng(seed * 311 + i);
+    const r = mulberry32(seed * 311 + i);
     for (let t = 0; t < Math.min(mineDetonateTick, tick); t++)
       sparks.push({
         刻: t,
@@ -94,7 +94,7 @@ const scatter: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
           const age = wholeTick - (20 + k * 10);
           if (age < 1 || age >= 30 || tick >= mineDetonateTick) return null;
           const radius = 1 + 0.1 * Math.abs(((age - 1) % 10) - 5);
-          const frameIndex = Math.floor(rng(seed * 7 + i * 100 + k * 10 + Math.floor((age - 1) / 5))() * 4);
+          const frameIndex = Math.floor(mulberry32(seed * 7 + i * 100 + k * 10 + Math.floor((age - 1) / 5))() * 4);
           return <GroundDecal key={`${i}-${k}`} 位={pos} 图={pulseFrames[frameIndex]!} radius={radius} lift={0.05 + k * 0.001} />;
         }),
       )}

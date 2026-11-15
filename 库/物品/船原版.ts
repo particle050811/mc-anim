@@ -1,8 +1,8 @@
 // 原版木船（1.20.1）的数：划桨转角、速度、乘客座位、骑乘姿势。纯模块（编排、测试能直接引）；画法在 船.tsx，出处见那边文件头。
 import type { V3 } from '../../engine/model/parts.tsx';
 import type { PartPose } from '../../engine/model/实体模型.tsx';
+import { rad } from '../../engine/core/数学.ts';
 
-const rad = (d: number) => (d * Math.PI) / 180;
 const clampedLerp = (a: number, b: number, t: number) => (t < 0 ? a : t > 1 ? b : a + (b - a) * t);
 
 export const boatParams = {

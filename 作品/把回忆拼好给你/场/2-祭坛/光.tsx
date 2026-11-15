@@ -6,11 +6,12 @@
 // 半透明网格（MeshBasicMaterial、不写深度）平涂当不受光的；光点是 粒子面片 的 ShaderMaterial，平涂不碰。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
 import { type Particle, ParticleQuads } from '@库/特效/粒子面片.tsx';
 import { vanillaParticleAtlas } from '@库/特效/原版粒子.tsx';
 import * as params from './参数.ts';
 import { events, floatStates, lightPillar, altarLight, toSec } from './编排.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const translucentMaterial = (color: string, opacityStrength: number, side: THREE.Side = THREE.FrontSide, map: THREE.Texture | null = null) =>
   new THREE.MeshBasicMaterial({ color: color, map, transparent: true, opacity: opacityStrength, depthWrite: false, side });
@@ -96,7 +97,7 @@ export const lightDots = (g: number): Particle[] => {
   const pillars = lightPillar(g);
   if (pillars.length) {
     const { 数: count, halfSize, 种子: seed } = params.lightParams.lightDot;
-    const r = rng(seed);
+    const r = mulberry32(seed);
     const elapsedSec = toSec(g) - toSec(events.appear) + params.lightParams.lightPillar.startBeforeSec;
     const beamWidth = params.lightParams.lightPillar.宽[0]!;
     for (let i = 0; i < count; i++) {

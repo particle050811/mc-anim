@@ -8,12 +8,12 @@
 //   所以平地上每刻位移 = (0.25 × 速度倍率)² × 0.98 ÷ (1 − 0.6 × 0.91)。各 AI 目标的倍率：闲逛 0.8、追人 1.0、躲猫和豹猫远处 1.0 近处 1.2。
 // 坐标同 骨架.tsx：原点在脚底中心，Z 朝上，朝向 +Y，单位格（EntityModel 本身朝 −Y，这里转过来）。
 import React from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { EntityModel, type EntityModelData, type PartPose } from '../../engine/model/实体模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/苦力怕';
 import texImg from 'asset:贴图/角色/苦力怕';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODEL = (raw as unknown as { models: { 苦力怕: EntityModelData } }).models.苦力怕;
 const TEX = png(texImg);

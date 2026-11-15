@@ -21,7 +21,6 @@
 // - 弯腰（`bend`）：上身往前弯，后片就往后上方翘。整圈裙子往回转一半：全转回来垂直的话，腰带跟着上身往前挪，后片会压进屁股里、白色反而从后面露出来。
 // 骑扫帚的坐姿在 骑扫帚.tsx 的 `jiuhuRideBones` 里，同一个做法。
 import React from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import type { Mouth } from './口型.ts';
 import { type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
@@ -30,6 +29,7 @@ import { png } from '../../engine/model/贴图.ts';
 import raw from 'asset:模型/角色/九胡';
 import { type MouthSpec, TalkingMouth } from './嘴.tsx';
 import skin from 'asset:贴图/角色/九胡';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODEL = { ...(raw as unknown as object), texture: png(skin) } as unknown as BedrockModel; // json 资产 import 进来是解析好的对象
 

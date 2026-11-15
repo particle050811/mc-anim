@@ -419,4 +419,3 @@ export const definePerformance = (settings: PerformanceSettings) => {
   };
   return { 在: stateAt, 杖: staffAt, act, settings };
 };
-export type YaBoLunPerformance = ReturnType<typeof definePerformance>;

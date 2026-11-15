@@ -17,19 +17,15 @@ import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { shriekToDarknessSec, darknessParams } from '@库/特效/黑暗效果.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
-import type { Cam, ChestOpening } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
+import type { ChestOpening } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as jumpBuild from '../../../场/6-古城/6-4-1/跳搭.ts';
 import { lootPose, mixPose, nearYaw, pivotStep, standAt, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { lastFrame642, archery, chestArchery, cellCenter, footOf } from '../../../地点/古城4x/布局.ts';
 import type { Stack } from '@库/界面/箱子界面.tsx';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export const FPS = jumpBuild.FPS;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerpV = (a: number[], b: number[], k: number): V3 => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
 const tickSec = 1 / 20;
 
 // ---------- 接 6-4-1（跳切） ----------
@@ -127,7 +123,7 @@ export const lootUi = (storyFrame: number): LootUiState => {
     if (sec >= lootTakeSecs[i] - hoverLeadSec) hovered = slot;
     if (sec >= lootTakeSecs[i]) chest[slot] = null;
   });
-  return { visibility: ss((sec - lootUiOpenSec) / 0.12), chest, hovered };
+  return { visibility: smoothstep01((sec - lootUiOpenSec) / 0.12), chest, hovered };
 };
 
 // ---------- 跳切 ----------
@@ -185,10 +181,10 @@ const faceChestYaw = nearYaw(JC.yaw, FACE_CHEST);
 const guardCrouch = (yaw: number): FigurePose => ({ ...standAt(woolCFoot, yaw), pitch: -6, legR: 16, legL: 10, kneeR: 28, kneeL: 22 });
 // sec：尖啸后反应过来以后过了几秒
 const freezeTurn = (sec: number): FigurePose => {
-  const kHead = ss(sec / 0.2);
-  const kTwist = ss((sec - 0.05) / 0.3);
-  const kBody = ss((sec - 0.12) / (freezeDuration - 0.12));
-  const kHands = ss((sec - 0.05) / 0.35);
+  const kHead = smoothstep01(sec / 0.2);
+  const kTwist = smoothstep01((sec - 0.05) / 0.3);
+  const kBody = smoothstep01((sec - 0.12) / (freezeDuration - 0.12));
+  const kHands = smoothstep01((sec - 0.05) / 0.35);
   const body = freezeBodyTurn * kBody;
   const twist = freezeTwist * kTwist;
   const pose = mixPose(lootPose(woolCFoot, faceChestYaw, freezeLootProgress, 1.4), guardCrouch(faceChestYaw), kHands);
@@ -212,7 +208,7 @@ export const liying = (storyFrame: number): FigurePose => {
   const yawFix = (p: FigurePose): FigurePose => ({ ...p, yaw: faceChest });
   if (t < freezeSec) {
     const loot = yawFix(lootPose(woolCFoot, FACE_CHEST, lootProgress(storyFrame), 1.4));
-    return storyFrame < LOOT0 + 5 ? mixPose(landed(LAND_C), loot, ss((storyFrame - LOOT0) / 5)) : loot;
+    return storyFrame < LOOT0 + 5 ? mixPose(landed(LAND_C), loot, smoothstep01((storyFrame - LOOT0) / 5)) : loot;
   }
   // 定住不是冻帧——屏着气，上身随呼吸极轻地起伏（0.6°、3 秒一次），头还在一点点往尖啸体那边拧（几秒里多 5°）。
   // 按剪辑上的秒算（剪辑帧）：黑暗中间那一截是在同一个镜头里跳的，按剧情秒算呼吸、拧头会在跳点上闪一下
@@ -225,7 +221,7 @@ export const liying = (storyFrame: number): FigurePose => {
   if (t < recoverSec) return addMicroMotion(freezeTurn(t - freezeSec));
   // 黑雾退开：身子转回箱子（同样挪一步），低头接着翻
   const back = Math.min(1, (t - recoverSec) / recoverDuration);
-  return pivotStep(mixPose(frozenPose, yawFix(rummageAt(storyFrame)), ss(back)), back, freezeBodyTurn < 0);
+  return pivotStep(mixPose(frozenPose, yawFix(rummageAt(storyFrame)), smoothstep01(back)), back, freezeBodyTurn < 0);
 };
 export const where = (f: number): V3 => (f < landCFrame ? jumpBuild.footAt(toJumpFrame(f)) : woolCFoot);
 
@@ -235,7 +231,7 @@ export const where = (f: number): V3 => (f < landCFrame ? jumpBuild.footAt(toJum
 // 镜头 2（低吼前 0.1 秒起）：从他东南高处（兵营南墙里面）越过他的背看向尖啸体，慢慢推近一点；低吼、黑雾压下来。
 // 镜头 3（渐出还剩 0.6 秒起）：箱子南边略高处，慢慢落到 六四二末帧.cam（6-4-3a 首帧机位，起点速度 0，6-4-3a 接着推）；黑雾退开，他转回箱子低头接着翻
 const cam1 = (storyFrame: number): Cam => {
-  const progress = ss((storyFrame - cutStart) / (cutA - cutStart));
+  const progress = smoothstep01((storyFrame - cutStart) / (cutA - cutStart));
   return {
     pos: lerpV(G4(-1094.6, -44.2, 188.2), G4(-1094.2, -44.4, 188.6), progress),
     tgt: lerpV(G4(-1088.4, -45.9, 193.9), G4(-1087.9, -45.6, 194.1), progress),
@@ -245,12 +241,12 @@ const cam1 = (storyFrame: number): Cam => {
 const C2_0: Cam = { pos: G4(-1084.6, -42.4, 197.9), tgt: G4(-1087.2, -45.6, 194.6), lens: 22 };
 const C2_1: Cam = { pos: G4(-1085.0, -42.7, 197.5), tgt: G4(-1087.4, -45.6, 194.4), lens: 24 };
 const cam2 = (storyFrame: number): Cam => {
-  const progress = ss((storyFrame - cutB) / (jumpCutFrame - 1 - cutB));
+  const progress = smoothstep01((storyFrame - cutB) / (jumpCutFrame - 1 - cutB));
   return { pos: lerpV(C2_0.pos, C2_1.pos, progress), tgt: lerpV(C2_0.tgt, C2_1.tgt, progress), lens: lerp(C2_0.lens, C2_1.lens, progress) };
 };
 const C3_0: Cam = { pos: [lastFrame642.cam.pos[0], lastFrame642.cam.pos[1], lastFrame642.cam.pos[2] + 0.8], tgt: lastFrame642.cam.tgt, lens: 21 };
 const cam3 = (storyFrame: number): Cam => {
-  const progress = ss(Math.min(1, Math.max(0, (storyFrame - resumeFrame) / (STORY_END - 1 - resumeFrame))));
+  const progress = smoothstep01(Math.min(1, Math.max(0, (storyFrame - resumeFrame) / (STORY_END - 1 - resumeFrame))));
   const endCam = lastFrame642.cam;
   return { pos: lerpV(C3_0.pos, endCam.pos, progress), tgt: lerpV(C3_0.tgt, endCam.tgt, progress), lens: lerp(C3_0.lens, endCam.lens, progress) };
 };

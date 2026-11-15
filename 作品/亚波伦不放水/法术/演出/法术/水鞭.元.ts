@@ -3,7 +3,6 @@ import { defineSpellMeta } from '../接口.ts';
 
 /** GulfTentacle：life ≥ 20 消失；第 8～11 刻沿视线查伤害 */
 export const whipLifeTicks = 20;
-export const whipDamageTick = 8;
 /** 实体的 RANGE 默认 4 格（模型长 3 格 × range ÷ 4） */
 export const whipRange = 4;
 

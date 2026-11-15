@@ -5,7 +5,7 @@ import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { broomMatrix, jiuhuRideBones, RIDE } from '@库/角色/骑扫帚.tsx';
 import { JIUHU } from '@库/角色/九胡.tsx';
 import { tick, start, thinkPullUp, yawVec } from '../时间线.ts';
-import { ss, lerp } from './工具.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 const JH_PX = JIUHU.scale; // 九胡：一像素多少格（YSM 0.7/16）
 const JH_HIP = 18.95; // 九胡腿的关节（RightLeg pivot）离脚底的像素，同 骑扫帚.tsx
@@ -17,7 +17,7 @@ const kickSettle = (u: number, T: number) => (u <= 0 ? 0 : (u / T) * Math.exp(1 
 export type BroomState = { pos: V3; yaw: number; pitch: number; roll: number };
 export const broomState = (physSec: number): BroomState => {
   const startBroom = start.broom;
-  const liftZ = startBroom.位置[2] + thinkPullUp * ss(physSec / tick.standUp);
+  const liftZ = startBroom.位置[2] + thinkPullUp * smoothstep01(physSec / tick.standUp);
   const sinceLeap = physSec - tick.leap;
   if (sinceLeap <= 0) return { pos: [startBroom.位置[0], startBroom.位置[1], liftZ], yaw: startBroom.facing, pitch: startBroom.pitch, roll: startBroom.roll };
   const { fwd } = yawVec(startBroom.facing);
@@ -38,11 +38,11 @@ export const broomMatrixAt = (physSec: number) => {
 // 一直跨坐在后座驾驶扫帚：起先抱着李樱的腰（6-2-6 末帧的姿势），他站起时松开、改扶扫帚杆；他跃出后她低头看着他扎下去
 const JH0 = start.riders.九胡;
 const rideBones = (physSec: number) => {
-  const k = ss((physSec - tick.releaseWaist) / 0.5);
-  const watchHim = ss((physSec - tick.leap - 0.1) / 0.5); // 跃出以后低头往下看
+  const k = smoothstep01((physSec - tick.releaseWaist) / 0.5);
+  const watchHim = smoothstep01((physSec - tick.leap - 0.1) / 0.5); // 跃出以后低头往下看
   return jiuhuRideBones({
     lean: lerp(JH0.lean, 8, k) + 10 * watchHim,
-    hugWaist: lerp(JH0.hugWaist, 0, ss((physSec - tick.releaseWaist) / 0.45)),
+    hugWaist: lerp(JH0.hugWaist, 0, smoothstep01((physSec - tick.releaseWaist) / 0.45)),
     headRaise: lerp(JH0.headRaise, -10, k) - 30 * watchHim,
     headTurn: lerp(JH0.headTurn ?? 0, 0, k),
     tailPhase: physSec * 2,

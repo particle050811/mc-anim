@@ -23,8 +23,6 @@ export const partStartFrame: Record<PartId, number> = (() => {
   return out;
 })();
 export const frameCount = parts.reduce((n, p) => n + p.frameCount, 0);
-// 某一截的段内帧 → 合成段的帧（可带小数、可越出这一截）
-export const toMergedFrame = (id: PartId, partFrame: number) => partStartFrame[id] + partFrame - parts.find((p) => p.id === id)!.firstFrame;
 // 合成段的帧 → 落在哪一截、那一截的段内帧
 export const partAt = (frame: number): { id: PartId; f: number } => {
   for (let i = parts.length - 1; i >= 0; i--) {

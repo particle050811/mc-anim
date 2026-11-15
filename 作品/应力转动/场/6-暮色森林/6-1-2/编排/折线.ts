@@ -1,5 +1,5 @@
 // 拐角倒圆的折线路线和按弧长取点：娜迦爬的路、九胡在迷宫里跑的路共用。
-import { rad } from '@engine/anim/anim.ts';
+import { rad } from '@engine/core/数学.ts';
 
 export type Trail = { pts: [number, number][]; s: number[]; len: number };
 export const makeTrail = (corners: [number, number, number][]): Trail => {

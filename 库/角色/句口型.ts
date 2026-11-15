@@ -19,5 +19,3 @@ export const sentenceLip = (lineCues: readonly LineCue[], speaker: string, frame
 /** 脸上没嘴的人说话时头随字轻点，用法同 口型.ts 的 withTalkNod */
 export const sentenceNod = <P extends { headPitch: number; headYaw: number }>(pose: P, lineCues: readonly LineCue[], speaker: string, frame: number, fps = 24): P =>
   withTalkNod(buildLipData(lineCues), pose, cueFrames(lineCues), speaker, frame, fps);
-
-export { CLOSED, MOUTH_SHAPES, type Mouth } from './口型.ts';

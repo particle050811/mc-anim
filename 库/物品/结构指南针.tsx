@@ -21,9 +21,9 @@
 // 指针：度，绕表盘法线转，0 = 指向贴图上方，正 = 正对表盘看逆时针（6-2-1/编排.ts 的 `needle`、6-3-1/编排.ts 的 `指针` 都按这个给）；轴在表盘正中。游戏里指针只有 32 档，这里连续转，编排里给的角度原样用。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { png } from '../../engine/model/贴图.ts';
 import tex from 'asset:贴图/物品/结构指南针';
+import { rad } from '../../engine/core/数学.ts';
 
 type RGB = [number, number, number];
 type Vec3 = [number, number, number];

@@ -13,14 +13,9 @@ import type { FigurePose } from '@库/角色/骨架.tsx';
 import { GUCHENG4X } from '../../../地点/古城4x.tsx';
 import { allWool, elite, eliteLeap, leapFeetAt, feetOnWool, wool641, wool642, woolLeapApex, chestB, type Jump, type WoolName } from '../../../地点/古城4x/布局.ts';
 import { FPS, PLACE_BEFORE, crouchPose, lootPose, mixPose, nearYaw, placeFrame, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
+import { smoothstep01, lerp, clamp01 } from '@engine/core/数学.ts';
 
 export { FPS };
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const bump = (x: number, a: number, b: number) => Math.sin(Math.PI * clamp01((x - a) / (b - a)));
 
 // ---------- 起点（6-3-6 末帧） ----------
@@ -67,13 +62,13 @@ const launchShape = (foot: V3, yaw: number): FigurePose => ({
 const flightPose = (jump: Jump, i: number, frame: number): FigurePose => {
   const u = flightU(jump, frame);
   const ua = jump.tUp / jump.T;
-  const ext = 1 - ss(u / 0.2);
-  const tuck = ss((u - 0.12) / Math.max(0.1, ua - 0.12)) * (1 - ss((u - ua - 0.08) / 0.22));
-  const reach = ss((u - Math.max(ua + 0.12, 0.62)) / 0.25);
+  const ext = 1 - smoothstep01(u / 0.2);
+  const tuck = smoothstep01((u - 0.12) / Math.max(0.1, ua - 0.12)) * (1 - smoothstep01((u - ua - 0.08) / 0.22));
+  const reach = smoothstep01((u - Math.max(ua + 0.12, 0.62)) / 0.25);
   const float = bump(u, ua - 0.18, ua + 0.2);
   const place = bump(u, 1 - (PLACE_BEFORE + 0.12) / jump.T, 1 - (PLACE_BEFORE - 0.1) / jump.T);
   // 头比身子晚一拍：按 0.06 以前的进度算低头
-  const reachHead = ss((u - 0.06 - Math.max(ua + 0.12, 0.62)) / 0.25);
+  const reachHead = smoothstep01((u - 0.06 - Math.max(ua + 0.12, 0.62)) / 0.25);
   return {
     loc: flightFeetAt(jump, i, frame),
     pitch: -26 * ext - 14 * tuck + 4 * float + 8 * reach,
@@ -91,7 +86,7 @@ const flightPose = (jump: Jump, i: number, frame: number): FigurePose => {
     armLRoll: 8 - 22 * tuck + 40 * float + 25 * reach,
     elbowL: 20 + 35 * tuck,
     twist: 10 * ext - 6 * reach,
-    ground: 1 - ss(u / 0.1) * (1 - ss((u - 0.86) / 0.14)),
+    ground: 1 - smoothstep01(u / 0.1) * (1 - smoothstep01((u - 0.86) / 0.14)),
     yaw: jump.yaw,
   };
 };
@@ -104,15 +99,15 @@ const ABSORB = 3;
 // 两跳之间在地上（s 落地后第几帧，len 待几帧）：卸力 → 蹲着蓄力（手往后甩、抬头看下一跳；停得久的先站起一点再蹲下去）→ 两帧蹬直
 const groundPose = (foot: V3, yawIn: number, yawOut: number, s: number, len: number): FigurePose => {
   const windEnd = len - PUSH;
-  const yaw = lerp(yawIn, nearYaw(yawIn, yawOut), ss(s / Math.max(1, windEnd)));
+  const yaw = lerp(yawIn, nearYaw(yawIn, yawOut), smoothstep01(s / Math.max(1, windEnd)));
   if (s < ABSORB) return absorbPose(foot, yaw, s / ABSORB);
   if (s < windEnd) {
     const k = (s - ABSORB) / Math.max(1, windEnd - ABSORB);
     const settle = len >= 10 ? 0.5 * bump(k, 0, 0.75) : 0;
-    const p = crouchPose(foot, yaw, lerp(1.12, 1, ss(k)) - settle, lerp(25, -60, ss(k)));
-    return { ...p, headPitch: p.headPitch + 10 * ss(k) };
+    const p = crouchPose(foot, yaw, lerp(1.12, 1, smoothstep01(k)) - settle, lerp(25, -60, smoothstep01(k)));
+    return { ...p, headPitch: p.headPitch + 10 * smoothstep01(k) };
   }
-  return mixPose(crouchPose(foot, yaw, 1, -60), launchShape(foot, yaw), ss((s - windEnd) / PUSH));
+  return mixPose(crouchPose(foot, yaw, 1, -60), launchShape(foot, yaw), smoothstep01((s - windEnd) / PUSH));
 };
 
 // ---------- 13 跳 ----------
@@ -165,10 +160,10 @@ export const woolStateAt = (frame: number) => {
 // ---------- 李樱 ----------
 // 落在箱子跟前：卸力（同两跳之间），再起身到半蹲、转向箱子（6-4-2 落在 C 上也用）
 export const landBeforeChest = (foot: V3, y0: number, chestYaw: number, sinceLand: number, len = 6): FigurePose => {
-  const yaw = lerp(y0, chestYaw, ss(sinceLand / len));
+  const yaw = lerp(y0, chestYaw, smoothstep01(sinceLand / len));
   if (sinceLand < ABSORB) return absorbPose(foot, yaw, sinceLand / ABSORB);
   const k = clamp01((sinceLand - ABSORB) / Math.max(1, len - ABSORB));
-  return crouchPose(foot, yaw, lerp(1.12, 0.35, ss(k)), lerp(25, 15, k));
+  return crouchPose(foot, yaw, lerp(1.12, 0.35, smoothstep01(k)), lerp(25, 15, k));
 };
 const inAir = (J: Jump, f: number) => f >= J.f0 && f < J.f1;
 // 剧情帧 f 的姿势（f 到 C 落地为止；C 之后归 6-4-2/编排.ts）；手里有没有锤看 有锤(f)
@@ -179,10 +174,10 @@ export const poseAt = (frame: number): FigurePose => {
   if (frame < J0.f0) {
     // 往北转身（转过来的同时蹲下蓄力）
     const turnProgress = (frame - turnStart) / turnLen;
-    const yaw = lerp(startYaw, nearYaw(startYaw, J0.yaw), ss(turnProgress));
-    if (frame >= J0.f0 - PUSH) return mixPose(crouchPose(startFoot, yaw, 1, -60), launchShape(startFoot, yaw), ss((frame - (J0.f0 - PUSH)) / PUSH));
-    const tk = takeoffPose(startFoot, yaw, Math.min(0.65, Math.max(0, (frame - (J0.f0 - PUSH - windupFrames)) / windupFrames) * 0.65), 0.25 * ss(turnProgress));
-    return mixPose(startStance(yaw), tk, ss(turnProgress / 0.5));
+    const yaw = lerp(startYaw, nearYaw(startYaw, J0.yaw), smoothstep01(turnProgress));
+    if (frame >= J0.f0 - PUSH) return mixPose(crouchPose(startFoot, yaw, 1, -60), launchShape(startFoot, yaw), smoothstep01((frame - (J0.f0 - PUSH)) / PUSH));
+    const tk = takeoffPose(startFoot, yaw, Math.min(0.65, Math.max(0, (frame - (J0.f0 - PUSH - windupFrames)) / windupFrames) * 0.65), 0.25 * smoothstep01(turnProgress));
+    return mixPose(startStance(yaw), tk, smoothstep01(turnProgress / 0.5));
   }
   for (let i = 0; i < jumps.length; i++) {
     const jump = jumps[i];
@@ -194,12 +189,12 @@ export const poseAt = (frame: number): FigurePose => {
         const faceChest = nearYaw(jump.yaw, chestYawB);
         if (frame < LOOT0) return landBeforeChest(jump.p1, jump.yaw, faceChest, frame - jump.f1, LAND_B);
         const loot = lootPose(jump.p1, faceChest, Math.min(1, (frame - LOOT0) / LOOT_LEN), 1.4);
-        if (frame < LOOT0 + 5) return mixPose(landBeforeChest(jump.p1, jump.yaw, faceChest, LAND_B, LAND_B), loot, ss((frame - LOOT0) / 5));
+        if (frame < LOOT0 + 5) return mixPose(landBeforeChest(jump.p1, jump.yaw, faceChest, LAND_B, LAND_B), loot, smoothstep01((frame - LOOT0) / 5));
         if (frame < TURN0) return loot;
         const turnProgress = (frame - TURN0) / TURN_LEN;
-        const yaw = lerp(faceChest, nearYaw(faceChest, nextJump.yaw), ss(turnProgress / 0.6));
-        if (frame >= nextJump.f0 - PUSH) return mixPose(crouchPose(jump.p1, yaw, 1, -60), launchShape(jump.p1, yaw), ss((frame - (nextJump.f0 - PUSH)) / PUSH));
-        return mixPose(loot, takeoffPose(jump.p1, yaw, Math.min(0.65, turnProgress), 0.2), ss(turnProgress / 0.3));
+        const yaw = lerp(faceChest, nearYaw(faceChest, nextJump.yaw), smoothstep01(turnProgress / 0.6));
+        if (frame >= nextJump.f0 - PUSH) return mixPose(crouchPose(jump.p1, yaw, 1, -60), launchShape(jump.p1, yaw), smoothstep01((frame - (nextJump.f0 - PUSH)) / PUSH));
+        return mixPose(loot, takeoffPose(jump.p1, yaw, Math.min(0.65, turnProgress), 0.2), smoothstep01(turnProgress / 0.3));
       }
       if (!nextJump) return landBeforeChest(jump.p1, jump.yaw, jump.yaw, frame - jump.f1); // C：6-4-2 接着演
       return groundPose(jump.p1, jump.yaw, nextJump.yaw, frame - jump.f1, nextJump.f0 - jump.f1);

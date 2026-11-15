@@ -2,7 +2,8 @@
 import type { BlockName } from '../方块.ts';
 import { VoxelGrid } from '../体素.ts';
 import { footprint, HouseGrid, placeBlueprint, blueprintTable, turnsToFace, type BlueprintName } from '../蓝图.ts';
-import { mainStreetX, mainStreetY, streetsX, streetsY, plazaHalf, ri, pick, blockOf, type Rng } from './共用.ts';
+import { mainStreetX, mainStreetY, streetsX, streetsY, plazaHalf, blockOf, type Rng } from './共用.ts';
+import { randInt, pick } from '@engine/core/数学.ts';
 
 // ---------- 房子：殖民地的建筑蓝图（蓝图.ts） ----------
 // 用户 10-05 定：房子参考殖民地 mod 建好看些。整栋用殖民地自带蓝图（工具/游戏取材/殖民地蓝图.py 导出），沿街排、正门朝街，镜像一半，同种换朝向用。
@@ -59,7 +60,7 @@ export const cityBlock = (grid: VoxelGrid, houseGrid: HouseGrid, x0: number, y0:
         if (!free(ax, ay, fx, fy)) continue;
         placeBlueprint(houseGrid, name, ax, ay, 0, rot, mirrored);
         mark(ax, ay, fx, fy);
-        offset += along + ri(rand, 1, 3);
+        offset += along + randInt(rand, 1, 3);
         placed = true;
         break;
       }
@@ -96,8 +97,8 @@ export const cityBlock = (grid: VoxelGrid, houseGrid: HouseGrid, x0: number, y0:
   }
   const trees = Math.min(5, Math.floor(((fx1 - fx0) * (fy1 - fy0)) / 120 + rand()));
   for (let t = 0; t < trees; t++) {
-    const x = ri(rand, fx0 + 2, fx1 - 3);
-    const y = ri(rand, fy0 + 2, fy1 - 3);
+    const x = randInt(rand, fx0 + 2, fx1 - 3);
+    const y = randInt(rand, fy0 + 2, fy1 - 3);
     let ok = true;
     for (let dy = -3; dy <= 3 && ok; dy++) for (let dx = -3; dx <= 3; dx++) if (x + dx < x0 || x + dx >= x1 || y + dy < y0 || y + dy >= y1 || occ[(y + dy - y0) * width + (x + dx - x0)]) { ok = false; break; }
     if (ok && grid.get(x, y, 0)) oakTree(grid, x, y, 1, rand);
@@ -106,7 +107,7 @@ export const cityBlock = (grid: VoxelGrid, houseGrid: HouseGrid, x0: number, y0:
 
 // ---------- 树、院子 ----------
 const oakTree = (grid: VoxelGrid, x: number, y: number, z0: number, rand: Rng) => {
-  const height = ri(rand, 4, 6);
+  const height = randInt(rand, 4, 6);
   const leaf = blockOf('橡树叶');
   for (let dz = height - 3; dz <= height; dz++) {
     const rad = dz >= height - 1 ? 1 : 2;
@@ -131,8 +132,8 @@ export const buildPark = (grid: VoxelGrid, x0: number, y0: number, x1: number, y
   grid.fill(cx - 1, y0, 0, cx + 1, y1, 1, blockOf('砂砾'));
   grid.fill(x0, cy - 1, 0, x1, cy + 1, 1, blockOf('砂砾'));
   for (let t = 0; t < ((x1 - x0) * (y1 - y0)) / 70; t++) {
-    const x = ri(rand, x0 + 3, x1 - 4);
-    const y = ri(rand, y0 + 3, y1 - 4);
+    const x = randInt(rand, x0 + 3, x1 - 4);
+    const y = randInt(rand, y0 + 3, y1 - 4);
     if (Math.abs(x - cx) < 4 || Math.abs(y - cy) < 4) continue;
     if (grid.get(x, y, 1) || grid.get(x + 1, y, 2) || grid.get(x - 1, y, 2)) continue;
     oakTree(grid, x, y, 1, rand);

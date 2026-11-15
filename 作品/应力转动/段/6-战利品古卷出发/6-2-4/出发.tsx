@@ -1,4 +1,4 @@
-// 6-2-4 出发：基地工坊 + 李樱、九胡、扫帚，按 编排.ts 组装。声音照 6-战利品古卷出发 段.ts 的 cue 放（定义画面 自动挂；11-06 迁成原生段以前这里挂配乐、音效、台词轨，
+// 6-2-4 出发：基地工坊 + 李樱、九胡、扫帚，按 编排.ts 组装。声音照 6-战利品古卷出发 段.ts 的 cue 放（definePicture 自动挂；11-06 迁成原生段以前这里挂配乐、音效、台词轨，
 // cue 照基线声音清单转写；配乐帧 0 = 29.1，后一半从切点淡入一拍）。台词和音效怎么来的：
 // - 台词：九胡「哔↗哔↘，九胡导航持续为您服务。」，开口在下面 `lineCues`；说话时嘴按配音张合（src/lib/口型.ts）。
 // - 唤出扫帚（`beats.唤出`）：车万女仆 `ItemBroom.useOn` 放扫帚实体时 level.playSound(null, 扫帚位置, SoundEvents.WOOL_PLACE, BLOCKS, 0.75, 0.8)。
@@ -11,7 +11,6 @@ import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import { FlightFog, FlightRig, FlightSky } from '../../../地点/飞行镜头.tsx';
 import { mouthAt } from '../../../配音/口型.ts';
 import { Jiuhu } from '@库/角色/九胡.tsx';
@@ -24,8 +23,7 @@ import { BaseWorkshop } from '../../../地点/基地工坊.tsx';
 import { BaseIslandTerrain } from '../../../地点/基地小岛.tsx';
 import { sheath } from '../../../地点/边城/6-2-5/飞越主世界.tsx';
 import * as choreo from './编排.ts';
-
-export const SET_OFF_FRAMES = choreo.FRAMES;
+import { rad } from '@engine/core/数学.ts';
 // 编排.ts 的帧号是 1/24 秒一格
 const perSec = 24;
 

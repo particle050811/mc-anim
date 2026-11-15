@@ -6,6 +6,7 @@
 //   拖尾：age < 寿命/2 且 (age + 寿命) 为偶数时在原地放一颗 age = 寿命/2 的；闪烁：age ≥ 寿命/3 后 ((age + 寿命)/3) 为奇数的刻不画）；
 //   FLASH（OverlayParticle，寿命 4 刻，颜色取第一种颜色）。数都是 client jar 反汇编核过的。
 // 坐标照场景约定（Z 朝上：x 东、y 北、z 上，单位格），时间是歌上的秒，原版一刻 = 1/20 秒；位置在两刻之间按原版渲染插值。
+import { lerpV } from '../../engine/core/数学.ts';
 
 /** 原版 DyeColor 的烟花色（getFireworkColor） */
 export const fireworkDyeColors = {
@@ -70,8 +71,6 @@ const rng = (seed: number) => {
 };
 
 type V3 = [number, number, number];
-const lerpVec = (a: V3, b: V3, t: number): V3 => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
-
 /** 火箭每刻末的位置（第 0 项是放出的位置），共 飞刻 + 1 项；和每刻移动后的竖速 */
 export const rocketPath = (firework: Firework): { 位: V3[]; vertSpeed: number[] } => {
   const g = rng(firework.种子 * 977 + 1);
@@ -101,7 +100,7 @@ export const rocketPos = (firework: Firework, sec: number): V3 | null => {
   if (τ < 0 || τ >= firework.flightTick) return null;
   const { 位: positions } = rocketPath(firework);
   const k = Math.floor(τ);
-  return lerpVec(positions[k]!, positions[Math.min(k + 1, firework.flightTick)]!, τ - k);
+  return lerpV(positions[k]!, positions[Math.min(k + 1, firework.flightTick)]!, τ - k);
 };
 
 export type Spark = {
@@ -181,7 +180,7 @@ const drawSpark = (q: Particle, τ: number, positions: V3[]): Spark | null => {
   const age = q.startAge + walked;
   if (age >= q.寿命) return null;
   const pt = ageTick - walked;
-  const p = lerpVec(positions[walked]!, positions[Math.min(walked + 1, positions.length - 1)]!, pt);
+  const p = lerpV(positions[walked]!, positions[Math.min(walked + 1, positions.length - 1)]!, pt);
   if (q.twinkle && !(age < Math.floor(q.寿命 / 3) || Math.floor((age + q.寿命) / 3) % 2 === 0)) return null;
   const halfLife = Math.floor(q.寿命 / 2);
   const alpha = age > halfLife ? 1 - (age - halfLife) / q.寿命 : 0.99;

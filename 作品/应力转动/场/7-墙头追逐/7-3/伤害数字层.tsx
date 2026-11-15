@@ -14,12 +14,13 @@ import { useVideoConfig } from 'remotion';
 import * as THREE from 'three';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
-import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
 import * as K731 from '../7-3-1/编排.ts';
 import * as K732 from '../7-3-2/编排.ts';
 import * as K733 from '../7-3-3/编排.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 const { mortarDamages, arrowDamage, sonicBoomDamage } = play;
 const hitboxHeight = 2.9;
@@ -28,17 +29,16 @@ const hits = [
   ...play.huangArrows.map((a, i) => ({ T: a.中, damage: arrowDamage, crit: true, height: a.stuck[2] - play.wardenState(a.中).p[2] + 0.2, seed: 7341 + i })),
 ];
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 const liuEyeAtHit = play.liuEye(timeline.hitT);
-const liuHit = { T: timeline.hitT, damage: sonicBoomDamage, anchor: damageNumberAnchor(toThree([liuEyeAtHit[0], liuEyeAtHit[1], liuEyeAtHit[2] - 1.62]), 1.8, 7351) };
+const liuHit = { T: timeline.hitT, damage: sonicBoomDamage, anchor: damageNumberAnchor(sceneToThree([liuEyeAtHit[0], liuEyeAtHit[1], liuEyeAtHit[2] - 1.62]), 1.8, 7351) };
 
 const makeLayer = (timeAt: (frame: number) => number, camera: (frame: number) => Cam): React.FC => () => {
   const frame = useCurrentSec() * timeline.FPS; // 编排的帧是 1/24 秒一格
   const { width, height } = useVideoConfig();
   const T = timeAt(frame);
   const cam = camera(frame);
-  const cam3 = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
-  const feet = toThree(play.wardenState(T).p);
+  const cam3 = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
+  const feet = sceneToThree(play.wardenState(T).p);
   const numbers: DamageNumberItem[] = [
     ...hits.map((h) => ({ damage: h.damage, crit: h.crit, anchor: damageNumberAnchor(feet, h.height, h.seed), ticks: (T - h.T) * 20 })),
     { damage: liuHit.damage, crit: false, anchor: liuHit.anchor, ticks: (T - liuHit.T) * 20 },

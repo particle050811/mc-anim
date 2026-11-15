@@ -6,27 +6,25 @@ import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { SunLight } from 'three/examples/jsm/lights/SunLight.js';
 import { CascadedShadow, quarterOctaveCeil } from '@engine/light/级联阴影.ts';
-import { rad } from '@engine/anim/anim.ts';
 import { SKY, SkyDome } from '@engine/light/天空.tsx';
 import { overworldMix } from '@engine/light/光照配比.ts';
 import { OverworldSky, SUN_OW } from './主世界光照.tsx';
 import { renderInput } from '@engine/core/渲染设置.ts';
-
+import { rad } from '@engine/core/数学.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { lensToFov } from '@engine/core/机位.ts';
 export type CamPose = { pos: number[]; tgt: number[]; lens: number; roll?: number };
-
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
-
 export const FlightRig: React.FC<{ c: CamPose; near?: number; far?: number }> = ({ c: camPose, near = 0.05, far = 150000 }) => {
   const { camera, size, gl } = useThree();
   gl.toneMapping = THREE.NeutralToneMapping;
   gl.toneMappingExposure = 1.0;
   const cam = camera as THREE.PerspectiveCamera;
-  cam.fov = (2 * Math.atan(18 / camPose.lens / (size.width / size.height)) * 180) / Math.PI;
+  cam.fov = lensToFov(camPose.lens, size.width / size.height);
   cam.near = near;
   cam.far = far;
-  cam.position.copy(toThree(camPose.pos));
+  cam.position.copy(sceneToThree(camPose.pos));
   cam.up.set(0, 1, 0);
-  cam.lookAt(toThree(camPose.tgt));
+  cam.lookAt(sceneToThree(camPose.tgt));
   if (camPose.roll) cam.rotateZ(-rad(camPose.roll));
   cam.updateProjectionMatrix();
   cam.updateMatrixWorld();

@@ -18,7 +18,7 @@
 // （走跑收小腿、起跳蓄力、空中收腿、落地缓冲、剑招、挣扎、挨打腿软）；原版的拍子（摆腿相位、空手挥手 6 刻、受伤 10 刻、死亡 20 刻）不动。
 import type { PartPose } from '@engine/model/实体模型.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
-import { type StevePose, steveLookAt, stevePose, steveSize, STEVE } from '@库/角色/史蒂夫.tsx';
+import { steveLookAt, stevePose, steveSize, STEVE } from '@库/角色/史蒂夫.tsx';
 import { waveProgress, waveParts } from '@库/角色/史蒂夫挥手.ts';
 import { vanillaToppleAngle } from '@库/特效/原版死亡.tsx';
 import type { MoveName } from './剑招.ts';
@@ -93,13 +93,6 @@ export const bowTextureByPull = (drawSec: number | undefined): BowTexture => {
   const pull = Math.min(1, drawSec);
   return pull >= 0.9 ? '弓拉2' : pull >= 0.65 ? '弓拉1' : '弓拉0';
 };
-
-/** BowItem.getPowerForTime：拉了几秒 → 力 0～1（1 秒拉满） */
-export const bowForce = (drawSec: number) => {
-  const p = Math.max(0, drawSec);
-  return Math.min(1, (p * p + 2 * p) / 3);
-};
-
 /** 箭出手的位置：眼高下 0.1 格（AbstractArrow 的构造） */
 export const arrowLaunchPoint = (position: V3): V3 => [position[0], position[1], position[2] + steveSize(STEVE.scale).eye - 0.1];
 

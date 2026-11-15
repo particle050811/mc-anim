@@ -4,56 +4,6 @@
 import type { V3 } from '@engine/model/parts.tsx';
 import { fps, legacyFrameSec } from '../../分镜/时间.ts';
 
-/** 平原（群系 plains）：起伏一两格；短草成片、高草夹在草丛里、花零星；橡树零星。
- *  花照原版 1.20.1 的 flower_plain（NoiseThresholdProvider）：一大片一大片地分区，噪声低于 郁金香阈 的地方出四种郁金香（橙、红、粉、白），
- *  别处三分之一出虞美人、蓝花美耳草、滨菊、矢车菊，其余是蒲公英。原版噪声尺度 0.005（一片两百来格），这里 郁金香尺度 取同一个量级、阈是 Agent 挑的，
- *  让出生点到樱花林这一路上有一片郁金香 */
-export const plainsParams = {
-  种子: 20230607,
-  起伏: 2.4,
-  undulationScale: 64,
-  fineUndulation: 0.5,
-  fineUndulationScale: 16,
-  /** 出生点附近多大一块压平（你站的那块地是平的） */
-  spawnFlatRadius: 4,
-  grassRate: 0.3,
-  tallGrassShare: 0.16,
-  flowerRate: 0.02,
-  tulipScale: 160,
-  tulipThreshold: -0.22,
-  /** 零星几棵橡树 [x, y, 树干高]：摆在镜头往樱花林那条视线两边，不挡粉色 */
-  oaks: [
-    [-22, 30, 5],
-    [-37, 71, 6],
-    [31, 46, 5],
-    [64, 92, 5],
-    [-58, 118, 4],
-    [7, 96, 5],
-  ] as const,
-};
-
-/** 樱花林（群系 cherry_grove，原版 1.20 樱花林长在山坡上）：一座缓坡小山，山顶一片樱花树、地上铺粉红花簇。
- *  离出生点约 165 格，是地平线上一点粉。渲染距离 12 区块（192 格）的雾从 172.8 格起：落定的镜头在你身后 23 格，林子朝镜头这一边在雾前面、
- *  后半片照原版淡进雾里；镜头往前推，整片林子从雾里清出来。
- *  山的轮廓按噪声扭：山脚、山顶的半径各处乘 1 ± 山扰（核查 10-24：原来是同心圆，一圈圈台阶一看就是人造的），坡上、顶上再加一点起伏。
- *  树长法照原版 CherryTrunkPlacer、CherryFoliagePlacer（地形.ts），这里只管种多密 */
-export const cherryGrove = {
-  心: [40, 160] as const,
-  mountainHeight: 9,
-  /** 山脚、山顶平台的半径（格）：山从 山半径 处开始起坡，到 顶半径 以内不再升 */
-  mountainRadius: 42,
-  topRadius: 15,
-  mountainJitter: 0.32,
-  mountainJitterScale: 34,
-  /** 坡上、顶上的起伏（格） */
-  slopeUndulation: 1.6,
-  slopeUndulationScale: 11,
-  forestRadius: 24,
-  treeSpacing: 7,
-  treeRate: 0.85,
-  petalClusterRate: 0.35,
-};
-
 /** 远山：出生点 起 格以外地面慢慢抬起一道道缓坡（低频噪声，坡顶高到 高 格），远处的地平线有起伏，不是一条直线（用户 10-24「超平坦背景 合理吗？」；
  *  核查 10-24：原来平原起伏 ±2.4 格，从镜头那么高往远处看还是一条平线）。原版平原挨着别的群系，远处常有山坡；这几道坡按原版 12 区块的雾淡出。
  *  樱花林方向（从出生点看偏东 让林角 以内）不抬，坡在林子两边，不挡那一点粉。演绎，Agent 暂定 */

@@ -1,9 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { readHolder } from './锁.ts';
-import { readJson, writeJson, listFiles, promptOnly } from './文件.ts';
+import { readJson, listFiles } from './文件.ts';
 import { listTickets, ticketAlive, type Ticket } from './票.ts';
-import { readSchedulerEvents, recordSchedulerEvent, type SchedulerEvent } from './调度日志.ts';
+import { readSchedulerEvents, type SchedulerEvent } from './调度日志.ts';
 import { cleanCrashed, type SchedulerEnv, type TaskInfo, type TaskDecl } from './任务.ts';
 import { readMachineSnapshot, type MachineSnapshot } from './机器.ts';
 import type { Caller } from './发起者.ts';
@@ -56,19 +56,10 @@ export const whoHolds = ({ 持锁: lockHolders, 票: tickets }: Pick<SchedulerSt
     ...lockHolders.filter(x => !x.死).map(x => `持锁 #${x.pid} ${x.声明.种 ?? '脚本'} ${x.声明.段 ?? ''} ${x.发起.路 || x.发起.工作区}`),
     ...tickets.filter(t => !t.死).map(t => `排队 #${t.pid} ${t.内容?.声明.种 ?? '旧票'} ${t.内容?.声明.段 ?? ''} ${t.内容?.发起.路 ?? ''}`),
 ].map(x => x.replace(/\s+/g, ' ').trim());
-/** 退役条件是「连续 7 天没见到旧票、旧锁」，不记这个条件恒真。一小时一条够判断，不逐张记。刚拿锁的新闸还没写信息文件，看着像旧锁，所以占够 10 秒才算。 */
-const recordOldProtocol = (e: SchedulerEnv, { 持锁: lockHolders, 票: tickets }: Pick<SchedulerState, '持锁' | '票'>) => {
-    const now = e.nowMs(), oldLocks = lockHolders.filter(x => x.旧 && !x.死 && now - x.拿锁时 > 10_000).map(x => x.pid), oldTickets = tickets.filter(t => !t.内容 && !t.死).map(t => t.名), file = path.join(e.schedulerDir, '旧协议.json');
-    if ((!oldLocks.length && !oldTickets.length) || now - (readJson<{ 时: number }>(file)?.时 ?? 0) < 3_600_000)
-        return;
-    writeJson(file, { 时: now });
-    recordSchedulerEvent(e.logDir, '见到旧协议', { 旧锁: oldLocks, 旧票: oldTickets }, now);
-};
 export const readState = (e: SchedulerEnv, readMachine = readMachineSnapshot, reclaim = true): SchedulerState => {
     if (reclaim)
         cleanCrashed(e);
     const occupancy = readOccupancy(e);
-    promptOnly('旧协议记录', () => recordOldProtocol(e, occupancy));
     return { 时: e.nowMs(), 机: readMachine(), ...occupancy,
         在跑: listFiles(path.join(e.lockDir, '在跑')).flatMap(n => { const x = readJson<TaskInfo>(path.join(e.lockDir, '在跑', n)); return x ? [x] : []; }),
         // 一次 anim sched 就写一行汇报，尾部开小了告警和决定很快被挤掉，看 就显示成没有。

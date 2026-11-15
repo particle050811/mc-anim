@@ -23,6 +23,9 @@ import enchantedBookPng from 'asset:贴图/界面/附魔书';
 import candlePng from 'asset:贴图/界面/蜡烛';
 import xpBottlePng from 'asset:贴图/界面/附魔之瓶';
 import leggingsPng from 'asset:贴图/物品/杂项物品/钻石护腿';
+import { sceneToThree } from '../../engine/core/three换算.ts';
+import { clamp } from '../../engine/core/数学.ts';
+import type { Cam } from '../../engine/core/机位.ts';
 
 const labelColor = '#404040';
 
@@ -110,17 +113,14 @@ export const ChestScreen: React.FC<ChestScreenProps> = ({ s, x, y, title, visibi
 // ---------- 贴在箱盖上方 ----------
 // 1280 宽时界面 2.4 倍（用户 10-20：放大让观众看清）
 export const CHEST_UI_SCALE = 2.4 / 1280;
-type Cam = { pos: number[]; tgt: number[]; lens: number };
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 // 窗口下沿贴着翻开的箱盖上沿（`lidTop`：场景坐标，取 模型/物品/箱子.tsx 的 CHEST.开满盖沿高），像从箱子里弹出来（用户 10-19 定），跟着箱子投到画面上的位置走；
 // 箱盖中点落在窗口宽度的 `anchorX` 处（0.5 是正中），按镜头里人在哪边让开他。出了画面就往里收。返回窗口左上角（画面像素）
 export const chestWindowOverLid = (lidTop: number[], cam: Cam, anchorX: number, width: number, height: number) => {
   const s = CHEST_UI_SCALE * width;
-  const ndc = toThree(lidTop).project(makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height));
+  const ndc = sceneToThree(lidTop).project(makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height));
   const [ax, ay] = [((ndc.x + 1) / 2) * width, ((1 - ndc.y) / 2) * height];
   const margin = 8 * s;
-  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
   return {
     s,
     x: clamp(ax - chestScreenSize.width * anchorX * s, margin, width - chestScreenSize.width * s - margin),

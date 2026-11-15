@@ -17,7 +17,7 @@ import { UsageError, parseArgs } from '../cli/参数.ts';
 import { commitStatus } from '../环境/路径.ts';
 import { loadAllSegments, matchSelector, selectSegs, type SegInfo } from '../清单/清单.ts';
 import { markUsed } from '../渲/母版.ts';
-import { masterDir } from '../环境/配置.ts';
+import { masterDir } from '../环境/作品数据.ts';
 import { masterSize } from '../渲/设置.ts';
 import { segmentProducts, type SegArtifact } from '../渲/段产物.ts';
 import { renderSegments } from '../渲/渲段.ts';

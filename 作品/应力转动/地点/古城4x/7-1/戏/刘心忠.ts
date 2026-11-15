@@ -5,17 +5,19 @@ import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { nearYaw } from '../../6-4-1/古城戏.ts';
 import { leapFeetAt, type Jump } from '../../布局.ts';
 import * as timeline from '../时间线.ts';
-import { elevationDeg, FPS, lerp, pulseWindow, pursuersAfter649, ss, yawFromTo } from './公用.ts';
+import { elevationDeg, FPS, pulseWindow, pursuersAfter649, yawFromTo } from './公用.ts';
 import { airPose, breathe, crouch, crouchAmount, isAirborne, landT, leapTurnYaw, liuLeaps, liuStart, takeoffT } from './跳.ts';
 import { wardenAt } from './监守者路.ts';
 import { horseSpawnPos, horseState, huangPanPos, liuLeapList, liuXinzhongPos, wallLandT } from './位置.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+
 const liuFacingYaw = (t: number, feet: V3): number => {
   const wardenPos = wardenAt(t).p;
   return yawFromTo(feet, wardenPos);
 };
 // 召恼鬼：举杖（地上蹲着蹬地、半空里都举着），恼鬼冲出去那一下往前一指，再放下。返回 [举, 指]
 const summonVexArm = (t: number): [number, number] => {
-  const raise = ss((t - timeline.raiseStaffT) / 0.3) * (1 - ss((t - timeline.vexChargeT) / 0.2));
+  const raise = smoothstep01((t - timeline.raiseStaffT) / 0.3) * (1 - smoothstep01((t - timeline.vexChargeT) / 0.2));
   const point = pulseWindow(t, timeline.vexChargeT, timeline.vexChargeT + 0.8, 0.15, 0.4);
   return [raise, point];
 };
@@ -37,7 +39,7 @@ export const liuXinzhongPose = (t: number): FigurePose => {
     const progress = (t - takeoffT(leap)) / leap.T;
     if (leapName === 'J1') {
       // 背身蹬地，半空回身朝监守者，举杖施法
-      const turnBack = ss((progress - 0.15) / 0.4);
+      const turnBack = smoothstep01((progress - 0.15) / 0.4);
       const yaw = lerp(leap.yaw, nearYaw(leap.yaw, liuFacingYaw(t, leapFeetAt(leap, t * FPS))), turnBack);
       return withSummonArm(airPose(leap, t, yaw), t);
     }
@@ -51,8 +53,8 @@ export const liuXinzhongPose = (t: number): FigurePose => {
   let pose: FigurePose;
   if (t < timeline.liuCrouchT) {
     // 7-1-1：接着 6-4-9 的姿势（顶着吼声压低、吼完起来），黑暗压下来，一缩、左右看；起跳前 0.45 秒开始转身（背身蹬地）
-    const flinch = ss((t - timeline.darknessT) / 0.3) * (1 - ss((t - timeline.darknessT - 1.2) / 0.8));
-    const glance = Math.sin(Math.max(0, t - timeline.darknessT) * 2.2) * 25 * ss((t - timeline.darknessT) / 0.5);
+    const flinch = smoothstep01((t - timeline.darknessT) / 0.3) * (1 - smoothstep01((t - timeline.darknessT - 1.2) / 0.8));
+    const glance = Math.sin(Math.max(0, t - timeline.darknessT) * 2.2) * 25 * smoothstep01((t - timeline.darknessT) / 0.5);
     const yaw = leapTurnYaw([liuLeaps.J1], t, liuStart.yaw ?? 0);
     const base = pursuersAfter649(t).刘;
     pose = withSummonArm({ ...base, yaw, squash: (base.squash ?? 1) * (1 - 0.04 * flinch), headYaw: glance, headPitch: base.headPitch * (1 - 0.6 * flinch) }, t);
@@ -60,7 +62,7 @@ export const liuXinzhongPose = (t: number): FigurePose => {
     // 站着：朝监守者（召马时朝北）；起跳前先转向跳的方向、落地后慢慢转回来（J1、闪避跳在空中已经回身朝着监守者）
     const landYawFor = (J: Jump) => (J === liuLeaps.J1 || J === liuLeaps.dodge ? liuFacingYaw(landT(J), J.p1) : J.yaw);
     let yaw = leapTurnYaw(liuLeapList, t, t < takeoffT(liuLeaps.J1) ? liuStart.yaw ?? 0 : liuFacingYaw(t, feet), landYawFor);
-    if (t >= timeline.summonHorseT - 0.1 && t < timeline.mountT) yaw = lerp(nearYaw(0, yaw), 0, ss((t - timeline.summonHorseT + 0.1) / 0.25));
+    if (t >= timeline.summonHorseT - 0.1 && t < timeline.mountT) yaw = lerp(nearYaw(0, yaw), 0, smoothstep01((t - timeline.summonHorseT + 0.1) / 0.25));
     pose = { ...standPose(feet), yaw, armR: 30, armRRoll: 4, armL: 10, armLRoll: 4 };
     pose = withSummonArm(pose, t);
     // 看着恼鬼一只只没了：「一百级的恼鬼……」往后一仰、杖垂下，到蹬地逃走为止（后半句落上墙脊才喊）
@@ -91,7 +93,7 @@ export const liuXinzhongPose = (t: number): FigurePose => {
     pose.armR = lerp(lerp(pose.armR, 92, push), 150, summon);
     // 翻身上马：往马那边一蹿（0.3 秒）
     if (t >= timeline.horseSpawnT) {
-      const k = ss((t - timeline.horseSpawnT) / (timeline.mountT - timeline.horseSpawnT));
+      const k = smoothstep01((t - timeline.horseSpawnT) / (timeline.mountT - timeline.horseSpawnT));
       const mounted = ridePose({ p: horseSpawnPos, yaw: 0 });
       pose = { ...pose, loc: [lerp(feet[0], mounted.loc[0], k), lerp(feet[1], mounted.loc[1], k), lerp(feet[2], mounted.loc[2], k) + 0.6 * Math.sin(Math.PI * k)], legR: 40 * Math.sin(Math.PI * k), legL: -20 * k };
     }

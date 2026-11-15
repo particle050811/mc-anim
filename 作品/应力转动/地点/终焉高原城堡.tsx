@@ -12,11 +12,8 @@ import atlas from 'asset:网格/终焉高原城堡/图集';
 const INFO = raw as unknown as BlockMeshInfo;
 
 // 导出时 skip 掉的方块（mcai mesh 的 skip 写法：方块 id 冒号后面的部分，* 通配）。游戏里这些方块都在，网格范围里由导入的地形照样画（模型/场景/地貌导入预览.tsx 的 `留`），重导时改这里，两边跟着变
+// 代码里没人读，留着当导出配方的记录（文件头的导出命令按它拼 skip=）
 export const castleExportSkip = ['*thorns', '*leaves*', '*_log', '*_wood', 'grass', 'tall_grass', 'fern', 'large_fern', '*mushroom*', 'moss*', '*root*'];
-
-export const FINAL_CASTLE = {
-  size: [INFO.to[0] - INFO.from[0] + 1, INFO.to[2] - INFO.from[2] + 1, INFO.to[1] - INFO.from[1] + 1],
-};
 
 // 城堡里的暮色力场（顶上的紫色、内院的蓝绿粉几种，本地坐标 [x0, y0, z0, x1, y1, z1]）：游戏里自发光，不受光照（见 lib/方块网格.tsx 的 fullbright）。盒子里单面的半透明面只有力场
 const forceFieldBoxes = [

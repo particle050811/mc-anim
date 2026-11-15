@@ -4,16 +4,11 @@
 // 段里一般这么用：<三渲二画布 宽 高 机位={正交机位({ 看, 朝 })} {...画布调子('夏日白天')}>，外面包 <整片后期 调色={色板.夏日白天.调色}>。
 import type { V3 } from '@engine/model/parts.tsx';
 import type { OrthoRigParams } from '@engine/三渲二/机位.tsx';
-import { pagePixel } from '@engine/三渲二/像素.ts';
 import { palette, type ToneName } from './色板.ts';
 
 /** 一个贴图像素 = 成片上 6 个像素。和原版在 2560×1440 下自动选的界面尺寸 6 一样，聊天栏、像素字在这个尺寸下正好是游戏里的样子；
  *  正交机位一屏 15 格高、26.7 格宽，门这个机位放得下屋子、门前空地和长高的樱花树 */
 export const pixelCount = 6;
-
-/** 2D 界面的缩放（CSS 像素 / 界面像素），给 ChatOverlay 这类按 CSS 像素排版的组件 */
-export const uiScale = pagePixel(pixelCount);
-
 /** 正交机位的俯角：顶面一个贴图像素 2 个像素高（往里每格画面上升 1/3 格）。纯侧面看不出地面和屋顶是平的，再大正面就被顶面压住 */
 export const orthoTop = 2;
 

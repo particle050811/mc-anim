@@ -3,13 +3,13 @@
 // 纯模块（不 import react、three），组件 魔法酒狐新动作组件.tsx 把这一层叠到 魔法酒狐.tsx 的姿势表上，再补新画的几块（眼睛多的一排、哈气的嘴）。
 // 「一格」= 贴图一个像素在模型里的长度 0.9（头 6.3 宽画 7 格），眼皮、眉毛都按整格挪。
 import { magicalWineFoxBlink, magicalWineFoxMotion, type SkeletonPose, type MagicalWineFoxExpression } from './魔法酒狐动作.ts';
+import { mergeSkeleton } from './骨骼表.ts';
 
 type SkeletonTable = Record<string, SkeletonPose>;
 
 export const magicalWineFoxCellSize = 0.9;
 
 export type MagicalWineFoxExExpression = '认出你' | '哈气';
-export const magicalWineFoxExExpressions: readonly MagicalWineFoxExExpression[] = ['认出你', '哈气'];
 export type MagicalWineFoxAllExpression = MagicalWineFoxExpression | MagicalWineFoxExExpression;
 
 /**
@@ -17,20 +17,11 @@ export type MagicalWineFoxAllExpression = MagicalWineFoxExpression | MagicalWine
  * 坐：TLM 的待命坐（sit，跪坐）；其余是新做的
  */
 export type MagicalWineFoxExPose = '站' | '静站' | '坐' | '蹲' | '抱膝坐' | '张望' | '哈气';
-export const magicalWineFoxExPoses: readonly MagicalWineFoxExPose[] = ['站', '静站', '坐', '蹲', '抱膝坐', '张望', '哈气'];
-
 /** 原版生物的头最多比身子多转 75°（LivingEntity.tickHeadTurn 把身子拽过来），左右超了就夹 */
 export const magicalWineFoxHeadTurnLimitDeg = 75;
 
 /** 新画的几块要不要显示（组件按它挂叠加模型里的方块） */
 export type MagicalWineFoxExOverlay = { extraEyeRow: boolean; recognizeMouth: boolean; hissMouth: boolean };
-
-/** 同一根骨骼按字段合并：后面的层只盖它给了的 rot、pos、scale */
-const merge = (...boneTables: SkeletonTable[]): SkeletonTable => {
-  const merged: SkeletonTable = {};
-  for (const layer of boneTables) for (const [k, v] of Object.entries(layer)) merged[k] = { ...merged[k], ...v };
-  return merged;
-};
 const addRot = (a: number[] | undefined, b: number[]) => b.map((x, i) => x + (a?.[i] ?? 0));
 
 // ---------- 站：idle ----------
@@ -172,7 +163,7 @@ export const magicalWineFoxBristle: SkeletonTable = {
   Tail6: { rot: [0, 0, 0] },
 };
 
-const poseTable: Record<MagicalWineFoxExPose, SkeletonTable> = { 站: standLegs, 静站: {}, 坐: {}, 蹲: crouchBones, 抱膝坐: hugKneesBones, 张望: merge(standLegs, lookAroundBones, leftHandOnChest), 哈气: hissBones };
+const poseTable: Record<MagicalWineFoxExPose, SkeletonTable> = { 站: standLegs, 静站: {}, 坐: {}, 蹲: crouchBones, 抱膝坐: hugKneesBones, 张望: mergeSkeleton(standLegs, lookAroundBones, leftHandOnChest), 哈气: hissBones };
 /** 拿着东西时右手的默认摆法（坐、哈气照它们自己的；哈气两手都是爪子，不拿东西） */
 const holdingHand: Record<MagicalWineFoxExPose, SkeletonTable> = { 站: rightHandChest, 静站: rightHandChest, 坐: {}, 蹲: {}, 抱膝坐: {}, 张望: rightArmDown, 哈气: {} };
 /** 姿势里头已经转了多少（身子前倾要把头抬回来看前面），看 叠在它上面 */
@@ -239,7 +230,7 @@ export const magicalWineFoxExMotion = (o: MagicalWineFoxExMotionParams): { skele
   const tailBones = o.stancePose === '哈气' ? magicalWineFoxBristle : {};
   const headRot = addRot(headCompensation[o.stancePose], o.看 ? [-clampHead(o.看)[0], -clampHead(o.看)[1], 0] : [0, 0, 0]);
   return {
-    skeleton: merge(bonePose, breath, upperBody, heldPose, base, expressionLayer, tailBones, { Head: { rot: headRot } }),
+    skeleton: mergeSkeleton(bonePose, breath, upperBody, heldPose, base, expressionLayer, tailBones, { Head: { rot: headRot } }),
     overlay: { extraEyeRow: o.expression === '认出你', recognizeMouth: o.expression === '认出你', hissMouth: o.expression === '哈气' },
   };
 };

@@ -28,7 +28,7 @@ export const readContent = (c: CheckContext): Promise<ParsedContent> => {
         else {
           const d = await c.loadModule(segFile);
           if (!d.模块) item.错误 = `${segFile} 执行出错：${d.错误}`;
-          else if (!d.模块.default) item.错误 = `${segFile} 没有 export default 定义段(...)`;
+          else if (!d.模块.default) item.错误 = `${segFile} 没有 export default defineSeg(...)`;
           else item.definition = d.模块.default as SegmentDef;
         }
         segments.push(item);

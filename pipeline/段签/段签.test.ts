@@ -10,7 +10,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 const dataRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-段签测试-'));
 process.env.ANIM_DATA = dataRoot;
 
-const { config, masterDir } = await import('../环境/配置.ts');
+const { config } = await import('../环境/配置.ts');
+const { masterDir } = await import('../环境/作品数据.ts');
 const { runCapture } = await import('../环境/子进程.ts');
 const { grayFrame } = await import('../合成/接缝.ts');
 const { makeSegStamp, readSegStamp, readSegStampHistory, segStampComplete, matchesSlice, soundPath, thumb, segStampFile, historyFileName, fileSha } = await import('./段签.ts');

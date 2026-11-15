@@ -6,20 +6,20 @@
 // 气浪很快（一两格每刻），一秒就飞出 20～40 格，会从目标身边穿过去，游戏里也是。
 // 没做：目标被推开、着火。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { addVec, sub, scaleVec, unitVec } from '../零件/弹道.ts';
 import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
 import { WindBand } from '../零件/游带.tsx';
 import meta from './风爆.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const white: readonly [number, number, number] = [1, 1, 1];
 
 const WindBlast: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
   const tick = sec * 20;
   const dir = unitVec(sub([target[0], target[1], target[2] + 0.9], from));
-  const r = rng(seed * 7919 + 5);
+  const r = mulberry32(seed * 7919 + 5);
   const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
   const waves = Array.from({ length: 16 }, () => {
     const speedVec = scaleVec(dir, 1.1 + r() * 1.1);

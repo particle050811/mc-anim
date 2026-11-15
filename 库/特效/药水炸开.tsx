@@ -5,7 +5,7 @@
 // 粒子是始终朝向镜头的贴片，不受光。sec = 砸中以后经过的秒数（< 0 不显示），1 秒 20 刻。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { POTION_TEX } from '../物品/喷溅药水.tsx';
 import { assetDir } from '../../engine/core/资产目录.ts';
@@ -25,6 +25,7 @@ import spell4Png from 'asset:贴图/特效/药水粒子/spell_4';
 import spell5Png from 'asset:贴图/特效/药水粒子/spell_5';
 import spell6Png from 'asset:贴图/特效/药水粒子/spell_6';
 import spell7Png from 'asset:贴图/特效/药水粒子/spell_7';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const spellPngs = pngDir(assetDir({ './effect_0.png': effect0Png, './effect_1.png': effect1Png, './effect_2.png': effect2Png, './effect_3.png': effect3Png, './effect_4.png': effect4Png, './effect_5.png': effect5Png, './effect_6.png': effect6Png, './effect_7.png': effect7Png, './spell_0.png': spell0Png, './spell_1.png': spell1Png, './spell_2.png': spell2Png, './spell_3.png': spell3Png, './spell_4.png': spell4Png, './spell_5.png': spell5Png, './spell_6.png': spell6Png, './spell_7.png': spell7Png }));
 const VISUAL_SCALE = 1.4;
@@ -102,7 +103,7 @@ type Chip = { p: V3; v: V3; life: number; half: number; uo: number; vo: number }
 // count：效果粒子的个数（游戏里 100；几瓶砸在同一处时可以减少，免得糊住目标）
 export const PotionSplash: React.FC<{ at: V3; sec: number; seed: number; color: string; lighten?: number; count?: number }> = ({ at, sec, seed, color, lighten = 0.5, count = 100 }) => {
   const { spells, chips } = useMemo(() => {
-    const rand = rng(seed * 4099 + 11);
+    const rand = mulberry32(seed * 4099 + 11);
     const base = new THREE.Color(color).lerp(new THREE.Color('#ffffff'), lighten);
     const chips: Chip[] = Array.from({ length: 8 }, () => {
       // Particle 构造函数里的随机速度 ×0.1 再加上给定的速度

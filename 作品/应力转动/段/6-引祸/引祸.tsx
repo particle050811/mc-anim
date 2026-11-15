@@ -2,7 +2,7 @@
 // 6-4-3 留下的东西照 6-4-3 的编排在这一刻的样子画（../6-4-3/画面.tsx 的 挡箭画面 里的那几样：藏掉击穿的方块和网格里的感测体、
 // 换成会抖的感测体、掉下来的石块、钉在洞顶的箭、尖啸体的声波环、开过的战利品箱），只有李樱和羊毛按这一段编。
 // 黄叛在东边 370 米外的传送门上，第一镜往东看也只是远处一个小点，雾里看不见，不画。刀光、招架、风扇、气流在 6-4-3c 末帧之前都已经没了，不画。
-// 声音照本段 段.ts 的 cue 放（定义画面 自动挂），不再挂 声音.tsx。
+// 声音照本段 段.ts 的 cue 放（definePicture 自动挂），不再挂 声音.tsx。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
@@ -14,23 +14,21 @@ import { SculkSensor } from '@库/特效/幽匿感测体.tsx';
 import { VibrationSignal } from '@库/特效/振动粒子.tsx';
 import { ShriekRings } from '@库/特效/尖啸声波.tsx';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import { LiYing } from '@库/角色/李樱.tsx';
 import { bladeInHand } from '@库/角色/骨架.tsx';
 import { DrawnKatana, Sheath, SHEATH_HANG_QUAT } from '@库/物品/拔刀剑.tsx';
-import { AncientCity4xCanvas, type Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as K3 from '../../场/6-古城/6-4-3/编排.ts';
 import * as G3 from '../../场/6-古城/6-4-3/几何.ts';
 import debrisRaw from 'asset:碎块/镜头/6-4-3/碎块';
 import * as choreo from '../../场/6-古城/6-4-5/编排.ts';
 import { mouthAt, type Mouth } from '../../配音/口型.ts';
+import { rad } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 // 同 6-4-3/画面.tsx：只要击穿的那几格（外圈和取贴图用的那一格不画），洞壁另补；碎块贴图取自击穿那几格所在的网格块 古城4x-西3（同 6-4-3/画面.tsx 的 ATLAS_C）
 const DEBRIS = { ...(debrisRaw as unknown as DebrisData), cells: (debrisRaw as unknown as DebrisData).cells.filter((c) => !c.ring && c.box < G3.breachBlocks.length), lining: K3.holeWalls };
 const debrisAtlas = png(atlasWest3);
-
-export const lureFrames = choreo.frameCount;
-
 // 4×4 变换拆成 group 的位置、朝向（同 6-1-2/娜迦参考模型.tsx）
 const matrixToProps = (matrix?: THREE.Matrix4) => {
   if (!matrix) return {};

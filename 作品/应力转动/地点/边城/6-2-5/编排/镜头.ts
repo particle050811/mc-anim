@@ -3,11 +3,12 @@ import { type Key, sample } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { WIDE_LENS, triangleSmooth } from '@engine/flight/飞行路径.ts';
 import { BROOM } from '@库/物品/扫帚.tsx';
-import { ss, lerp, lerp3, norm } from './工具.ts';
+import { norm } from './工具.ts';
 import { townCenter } from './航线.ts';
 import { beats } from './时间线.ts';
 import { perturb } from './真实飞行.ts';
 import { broom, routeYaw, type BroomState } from './扫帚.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 // ---------- 镜头 ----------
 export type Cam = { pos: number[]; tgt: number[]; lens: number; roll?: number };
@@ -55,7 +56,7 @@ const TOWN_AIM: V3 = [townCenter[0], townCenter[1] - 40, townCenter[2]]; // 城�
 const pullInRatio = 0.34;
 const pullIn: Key[] = [[0, pullInRatio], [cruiseEnd, pullInRatio], [beats.hardBrake, 1]];
 // 高速广角（见 lib/飞行路径.ts 的 WIDE_LENS）：按扫帚速度，每秒 200 米以下不变、800 米以上全用（起飞加速、俯冲、巡航是广角，急刹到悬停退回原焦距）
-const wideWeight = (speed: number) => ss((speed - 200) / 600);
+const wideWeight = (speed: number) => smoothstep01((speed - 200) / 600);
 // 骑手中心：扫帚杆中心往上 0.2 格（扫帚本地坐标）。推近时离镜头近的扫帚尾、腿放大得多，外接框会往下长；
 // 支点取 0.2，外接框中心才和原来一样在画高 56% 上下（取 0.45 往下移 2%，取 0 往上移 2%）
 const riderCenter = (b: BroomState) => local(b, [0, 0, 0.2]);
@@ -67,7 +68,7 @@ const diveMargin = 10; // 度：镜头离骑手的仰角约 28°，扫帚扎得�
 const diveOrbitUp = (globalFrame: number) => {
   if (globalFrame >= beats.levelOff || globalFrame <= 14) return 0;
   const soft = (x: number) => 3 * Math.log1p(Math.exp(x / 3));
-  return triangleSmooth((g) => soft(-broom(g).pitch - diveMargin), globalFrame, 24) * (1 - ss((globalFrame - (beats.levelOff - 20)) / 20));
+  return triangleSmooth((g) => soft(-broom(g).pitch - diveMargin), globalFrame, 24) * (1 - smoothstep01((globalFrame - (beats.levelOff - 20)) / 20));
 };
 const cross3 = (a: number[], b: number[]) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 // 绕水平轴 a（单位向量）转 θ 弧度（Rodrigues）
@@ -100,8 +101,8 @@ const chase = (globalFrame: number): Cam => {
   const uRun = norm([run[0] - pos[0], run[1] - pos[1], run[2] - pos[2]]);
   const uB = norm([state.位置[0] - pos[0], state.位置[1] - pos[1], state.位置[2] - pos[2]]);
   const uT = norm([TOWN_AIM[0] - pos[0], TOWN_AIM[1] - pos[1], TOWN_AIM[2] - pos[2]]);
-  const aimWeight = ss((globalFrame - (beats.townWall - 10)) / (beats.decelStart - beats.townWall + 10));
-  const dir0 = norm(lerp3(uRun, norm(lerp3(uB, uT, sample(AIM, globalFrame))), aimWeight));
+  const aimWeight = smoothstep01((globalFrame - (beats.townWall - 10)) / (beats.decelStart - beats.townWall + 10));
+  const dir0 = norm(lerpV(uRun, norm(lerpV(uB, uT, sample(AIM, globalFrame))), aimWeight));
   const elevation = Math.asin(Math.max(-1, Math.min(1, dir0[2]))) + (pert.cameraAim.pitch * Math.PI) / 180;
   const horizLen = Math.hypot(dir0[0], dir0[1]) || 1;
   const dir = pert.cameraAim.pitch === 0 ? dir0 : [(dir0[0] / horizLen) * Math.cos(elevation), (dir0[1] / horizLen) * Math.cos(elevation), Math.sin(elevation)];
@@ -131,7 +132,7 @@ export const camera = (globalFrame: number): Cam => {
   // 按世界坐标插值的话，镜头起点钉在原地，扫帚 14 帧里冲出去 90 米，第 11 帧离人 17 米再追回 6 米（用户 10-06 嫌 0～30 帧镜头远了再拉回来）。
   // 视线按方向插值、不按目标点插值：首帧目标点在镜头前 6 米向上 55° 看，追拍目标点在 100 米外往下看，直接插值第 3～6 帧视线会从仰望天空甩到俯视地面，
   // 两人从画面下沿出去、有六七帧只有天。所以第 2～6 帧先把视线转到两人身上，再随镜头转成追拍的视线
-  const k = ss((globalFrame - 3) / 14);
+  const k = smoothstep01((globalFrame - 3) / 14);
   if (k >= 1) return chase(globalFrame);
   const chaseCam = chase(globalFrame);
   const state = broom(globalFrame);
@@ -154,6 +155,6 @@ export const camera = (globalFrame: number): Cam => {
   const d0 = norm(first.tgt.map((v, i) => v - first.pos[i]));
   const dB = norm([state.位置[0] - pos[0], state.位置[1] - pos[1], state.位置[2] + 0.8 - pos[2]]);
   const d1 = norm(chaseCam.tgt.map((v, i) => v - chaseCam.pos[i]));
-  const viewDir = globalFrame < 6 ? norm(lerp3(d0, dB, ss((globalFrame - 2) / 4))) : norm(lerp3(dB, d1, ss((globalFrame - 6) / 11)));
+  const viewDir = globalFrame < 6 ? norm(lerpV(d0, dB, smoothstep01((globalFrame - 2) / 4))) : norm(lerpV(dB, d1, smoothstep01((globalFrame - 6) / 11)));
   return { pos, tgt: pos.map((v, i) => v + viewDir[i] * 100), lens: lerp(first.lens, chaseCam.lens, k) };
 };

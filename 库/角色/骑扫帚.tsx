@@ -21,7 +21,6 @@
 //   `liYingHand`(姿态, 'R' | 'L')（手的握持点在扫帚本地坐标的位置，算矛尖到哪用）；`handAim`；`RIDE`（座位、杆高等常数）。
 import React from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { type BedrockModel, BedrockModelView, type BonePose } from '../../engine/model/基岩模型.tsx';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { png } from '../../engine/model/贴图.ts';
@@ -32,6 +31,8 @@ import type { Mouth } from './口型.ts';
 import type { FigurePose } from './骨架.tsx';
 import jiuHuModelData from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
+import { rad } from '../../engine/core/数学.ts';
+
 const jiuhuRaw = jiuHuModelData as unknown as object;
 
 // 九胡的模型：和 九胡.tsx 同一份数据（那边的组件只做站立和跑步的骨骼映射，坐姿在这里另写，不改原文件）

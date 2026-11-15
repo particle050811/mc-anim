@@ -11,7 +11,7 @@ import { aspect } from '../../分镜/时间.ts';
 import { pixelFont } from '../../界面/像素字.ts';
 import { liYing, bubbleText, coverChatLayout } from './参数.ts';
 import { doorwayRig } from './布景.tsx';
-import { coverChatBox, type Rect } from './封面.ts';
+import { coverChatBox } from './封面.ts';
 
 type PerspectiveRigSpec = { 眼: V3; 看: V3; fov: number };
 
@@ -31,10 +31,6 @@ export const ReunionBubble: React.FC<{ 文字?: string; cameraRig?: PerspectiveR
 
 const yellow = '#FFFF55'; // ChatFormatting.YELLOW：加入、退出游戏
 const systemBarColor = [208, 208, 208]; // #D0D0D0，GuiMessageTag.system()
-
-/** 封面版聊天行的黑条（页面像素），按 像素字 量字宽 */
-export const coverChatLineBox = (text = 'Steve加入了游戏', layout = coverChatLayout): Rect => coverChatBox(pixelFont.textWidth(text), layout);
-
 /** 封面版聊天行：一行原版聊天（黑条半透明、左边系统竖条、字带原版阴影），刚出来那一刻的不透明度。
  *  竖条 = false 不画左边那根灰竖条（第 15 句封面，主会话 10-24 美术定稿：去掉 B 站封面左边那根灰竖条），黑条照旧从 0 起 */
 export const CoverChatLine: React.FC<{ 文字?: string; 色?: string; layout?: typeof coverChatLayout; verticalBar?: boolean }> = ({

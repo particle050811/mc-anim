@@ -11,7 +11,7 @@ export type SegInfo = ManifestEntry & { 编号: string | null; segmentName: stri
 
 const readSegFile = async (file: string): Promise<SegmentDef> => {
   const m = (await import(pathToFileURL(file).href)) as { default?: SegmentDef };
-  if (!m.default) throw new Error(`${file} 没有 export default 定义段(...)`);
+  if (!m.default) throw new Error(`${file} 没有 export default defineSeg(...)`);
   return m.default;
 };
 

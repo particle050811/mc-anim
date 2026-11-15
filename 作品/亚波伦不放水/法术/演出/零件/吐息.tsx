@@ -3,11 +3,11 @@
 // 出处 goety 2.5.60.6：FrostParticle、DragonFlameParticle、FireParticle、IBreathingSpell。
 import React from 'react';
 import type { Png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import type { Vec3 } from '../接口.ts';
 import { addVec, scaleVec, unitVec, mix } from './弹道.ts';
 import { facePatch, QuadGroup, type QuadItem } from './面片.tsx';
 import type { Blend } from './材质.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export interface BreathParticleClass {
   readonly 帧: readonly Png[];
@@ -43,7 +43,7 @@ export interface BreathBirth {
 const breathQuad = (breathKind: BreathParticleClass, spawn: BreathBirth, tick: number): readonly [number, QuadItem] | null => {
   const age = tick - spawn.刻;
   if (age < 0 || age >= breathKind.寿命) return null;
-  const r = rng(spawn.种子);
+  const r = mulberry32(spawn.种子);
   let p = spawn.位;
   let prevPos = p;
   let v = spawn.速;
@@ -87,7 +87,7 @@ const gaussian = (r: () => number) => Math.sqrt(-2 * Math.log(1 - r())) * Math.c
  * 速率 = 基速 × (1 + 随机)，同一刻的几颗共用一个速率。（参数 angle 只进了随机向量归一化之前，不影响结果）
  */
 export const scatterDragonBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; 种子: number }[] => {
-  const r = rng(seed * 7919 + tick * 31 + 1);
+  const r = mulberry32(seed * 7919 + tick * 31 + 1);
   const rate = baseSpeed + r() * baseSpeed;
   const unitDir = unitVec(dir);
   return Array.from({ length: sprayCount }, (_, i) => {
@@ -102,7 +102,7 @@ export const scatterDragonBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, 
  * 速度 = (朝向 + 高斯 × 0.0075 × 散) × 速率，散 = 散布 × (1 + 随机 ÷ 2)，速率 = 基速 × (1 + 随机)，每颗各抽。
  */
 export const scatterBreath = (mouth: Vec3, dir: Vec3, sprayCount: number, baseSpeed: number, spread: number, tick: number, seed: number): { 位: Vec3; 速: Vec3; 种子: number }[] => {
-  const r = rng(seed * 7919 + tick * 31 + 2);
+  const r = mulberry32(seed * 7919 + tick * 31 + 2);
   const unitDir = unitVec(dir);
   return Array.from({ length: sprayCount }, (_, i) => {
     const jitteredSpread = spread + r() * (spread / 2);

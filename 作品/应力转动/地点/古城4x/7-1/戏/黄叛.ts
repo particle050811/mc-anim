@@ -10,11 +10,13 @@ import { nearYaw, yawTo } from '../../6-4-1/古城戏.ts';
 import type { BowWindFan } from '../弓前风扇.tsx';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
-import { elevationDeg, lerp, lerpV, pulseWindow, pursuersAfter649, ss, yawFromTo } from './公用.ts';
+import { elevationDeg, pulseWindow, pursuersAfter649, yawFromTo } from './公用.ts';
 import { airPose, breathe, crouch, crouchAmount, huangLeaps, huangStart, isAirborne, landT, leapTurnYaw, windArrowReleaseT } from './跳.ts';
 import { wardenAt, wardenChestPos } from './监守者路.ts';
 import { huangLeapList, huangPanPos, liuXinzhongPos } from './位置.ts';
 import { hurtTs, wardenState } from './监守者.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
+
 const huangHeight = 1.875;
 // 风开多大（照 6-4-3 风矢的机制：箭穿过风扇被风道推，出风道的速度跟着风速走；风速 = 原版 AirFlowParticle 逐刻推 × 快放，见 ../../6-4-3/几何.ts）：
 // - 满风（风矢）：同 6-4-3，满转 256、快放 880，箭出风道 1000 米/秒。
@@ -100,7 +102,7 @@ export const fanSize = 0.3;
 export const fansAt = (t: number): BowWindFan[] =>
   allArrows.flatMap((arrow, i) => {
     const lead = Math.min(0.6, arrow.drawSec);
-    const visibility = ss((t - (arrow.放 - lead)) / 0.15) * (1 - ss((t - arrow.放) / 0.3));
+    const visibility = smoothstep01((t - (arrow.放 - lead)) / 0.15) * (1 - smoothstep01((t - arrow.放) / 0.3));
     if (visibility <= 0) return [];
     const shaftVec = [arrow.landing[0] - arrow.起[0], arrow.landing[1] - arrow.起[1], arrow.landing[2] - arrow.起[2]];
     const shaftLen = Math.hypot(shaftVec[0], shaftVec[1], shaftVec[2]);
@@ -117,17 +119,17 @@ export const fansAt = (t: number): BowWindFan[] =>
 export const huangPanState = (t: number): { pose: FigurePose; bow: BowTexture } => {
   const nearestArrow = allArrows.reduce((b, c) => (Math.abs(c.放 - t) < Math.abs(b.放 - t) ? c : b));
   const drawSec = nearestArrow.drawSec;
-  const draw = t < nearestArrow.放 ? ss((t - (nearestArrow.放 - drawSec)) / Math.min(0.45, drawSec * 0.7)) : 1 - ss((t - nearestArrow.放 - 0.3) / 0.4);
+  const draw = t < nearestArrow.放 ? smoothstep01((t - (nearestArrow.放 - drawSec)) / Math.min(0.45, drawSec * 0.7)) : 1 - smoothstep01((t - nearestArrow.放 - 0.3) / 0.4);
   const feet = huangPanPos(t);
   const wardenPos = wardenAt(t).p;
   let lookYaw = t < timeline.huangCrouchT ? huangStart.yaw ?? 0 : yawFromTo(feet, wardenPos);
   // 伸手拦刘心忠：朝着他
   if (t >= timeline.dontPanicT - 0.2 && t < timeline.dontPanicT + 1.1) lookYaw = yawFromTo(feet, liuXinzhongPos(t));
-  const yaw = lerp(nearYaw(nearestArrow.yaw, lookYaw), nearestArrow.yaw, ss(draw * 3));
+  const yaw = lerp(nearYaw(nearestArrow.yaw, lookYaw), nearestArrow.yaw, smoothstep01(draw * 3));
   let pose: FigurePose;
   const leap = huangLeapList.find((j) => isAirborne(j, t));
   if (draw > 0) {
-    pose = drawBowPose(feet, yaw, 0, nearestArrow.pitch * ss(draw * 2), draw);
+    pose = drawBowPose(feet, yaw, 0, nearestArrow.pitch * smoothstep01(draw * 2), draw);
     if (leap) {
       const air = airPose(leap, t, yaw);
       pose = { ...pose, loc: air.loc, legR: air.legR, legL: air.legL, kneeR: air.kneeR, kneeL: air.kneeL, ground: 0, pitch: air.pitch * 0.4 };
@@ -137,7 +139,7 @@ export const huangPanState = (t: number): { pose: FigurePose; bow: BowTexture } 
   } else {
     // 起跳前先转向跳的方向、落地后慢慢转回来看监守者（同刘心忠）
     pose = { ...standPose(feet), yaw: nearYaw(0, leapTurnYaw(huangLeapList, t, lookYaw)), armL: 40, armLRoll: 4, armR: 22, armRRoll: 2 };
-    if (t < timeline.huangCrouchT) pose = { ...pursuersAfter649(t).黄, yaw: leapTurnYaw([huangLeaps.H1], t, huangStart.yaw ?? 0), headYaw: Math.sin(Math.max(0, t - timeline.darknessT) * 2) * 20 * ss((t - timeline.darknessT) / 0.4) };
+    if (t < timeline.huangCrouchT) pose = { ...pursuersAfter649(t).黄, yaw: leapTurnYaw([huangLeaps.H1], t, huangStart.yaw ?? 0), headYaw: Math.sin(Math.max(0, t - timeline.darknessT) * 2) * 20 * smoothstep01((t - timeline.darknessT) / 0.4) };
     pose.headPitch = -Math.max(-35, Math.min(20, elevationDeg([feet[0], feet[1], feet[2] + 1.6], [wardenPos[0], wardenPos[1], wardenPos[2] + 1.5]))) * 0.7;
     // 伸手拦刘心忠：右手往他那边一伸
     const reach = pulseWindow(t, timeline.dontPanicT, timeline.dontPanicT + 0.8, 0.2, 0.3);
@@ -147,7 +149,7 @@ export const huangPanState = (t: number): { pose: FigurePose; bow: BowTexture } 
     pose.headYaw = 55 * Math.sin((t - landT(huangLeaps.H3)) * 4) * lookAround;
     if (t >= timeline.huangCrouchT) pose = breathe(pose, t, 0.45, 2.1); // 7-1-1 接 6-4-9 末帧那几秒不加
   }
-  const rel = t >= nearestArrow.放 && draw > 0 ? ss((t - nearestArrow.放) / 0.12) : 0;
+  const rel = t >= nearestArrow.放 && draw > 0 ? smoothstep01((t - nearestArrow.放) / 0.12) : 0;
   if (rel > 0) pose = { ...pose, armR: pose.armR - 15 * rel, elbowR: 25 * rel };
   pose = crouch(pose, crouchAmount(huangLeapList, t));
   const drawing = t >= nearestArrow.放 - drawSec && t < nearestArrow.放;

@@ -237,10 +237,6 @@ export const landHeight = (remainingBlocks: readonly PlacedBlock[], i: number, j
   }
   return maxTop;
 };
-
-/** 某一列的地表高（从屋檐下往下找第一个实心方块顶面）；雨落到哪用 */
-export const surfaceHeight = (remainingBlocks: readonly PlacedBlock[], i: number, j: number, fromZ = 2.5) => landHeight(remainingBlocks, i, j, fromZ);
-
 // ---------- 这一场用的坑 ----------
 /** 爆炸：普通苦力怕（威力 3）溜进开着的门，在门里那格（箱子南边）炸。种子挑的样子：箱子炸没、掉出箱子本身；
  *  南墙西半截（i 0～3）连西南角那根原木炸穿，门炸没；后墙炸开的两格（2,2,0）、（1,2,2）都在第 8 句补过的那块（i 1～2、k 0～2）里；

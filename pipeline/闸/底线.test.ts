@@ -6,9 +6,6 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { queueAcquire, passGate, passRenderGate, gateHeartbeat, ancestorLockEnv, type GateEnv } from './闸.ts';
 import { readSchedulerEvents } from './调度日志.ts';
 import { setOrder } from './票.ts';
-import { isMyTurn as legacyIsMyTurn } from './fixtures/旧轮到我.ts';
-import { tryAcquire as legacyTryAcquire } from './fixtures/旧锁.ts';
-import { tryAcquire, releaseLock } from './锁.ts';
 let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-底线-')); });
 afterEach(() => { fs.rmSync(dir, {recursive:true, force:true}); delete process.env[ancestorLockEnv]; });
@@ -46,18 +43,6 @@ it('同进程嵌套和祖先持锁都立即拒绝', async()=>{
 });
 it('只动文件不判内存和压力', async()=>{
   await passRenderGate(async()=>{},()=>{}, {lockDir:dir,localHost:os.hostname(),readMemory:()=>makeMemory(0),readPressure:()=>4}, {不开渲染:true});
-});
-it('冻结旧轮到我和试拿认新票 JSON、纯 pid 锁及尾部暂缓票',()=>{
-  const q=path.join(dir,'渲染.排队');fs.mkdirSync(q);
-  const host=os.hostname().replace(/[^A-Za-z0-9._-]/g,'_');
-  const newName=`001000000000000-${host}-${process.pid}`, oldName=`002000000000000-${host}-${process.pid}`;
-  fs.writeFileSync(path.join(q,newName),JSON.stringify({v:1,声明:{种:'still'}}));
-  fs.writeFileSync(path.join(q,oldName),String(process.pid));
-  expect(legacyIsMyTurn(q,{文件:path.join(q,oldName),名:oldName},os.hostname())).toBe(false);
-  fs.renameSync(path.join(q,newName),path.join(q,newName.replace(/^0/,'9')));
-  expect(legacyIsMyTurn(q,{文件:path.join(q,oldName),名:oldName},os.hostname())).toBe(true);
-  const file=path.join(dir,'渲染.lock'); expect(tryAcquire(file,os.hostname())).toBe(true);
-  expect(legacyTryAcquire(file,os.hostname())).toBe(false); releaseLock(file);
 });
 
 const ticketFiles = () => fs.readdirSync(path.join(dir, '渲染.排队'));

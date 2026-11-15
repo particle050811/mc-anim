@@ -2,7 +2,6 @@
 // 场子北墙、墙上的塔、墙外大道，李樱一路垫的羊毛（到 V，场景里本来就有），第 1 场黄叛射下的火把。二人身上的黑暗不画（镜头是旁观者，用户 10-18：不然看都看不清），雾是古城4x画布平时的。
 // 特效全用现成的：苦力怕迫击炮（头、尾烟、爆炸粒子、冲击波环；爆炸照原版 TNT 放大）、护盾术、监守者音波粒子、幽灵马的附魔字母；7-3-3 黄叛射来的风矢和他弓前的鼓风机（../7-1/弓前风扇.tsx）。
 import React from 'react';
-import { rad } from '@engine/anim/anim.ts';
 import { HuangPan, LiuXinzhong } from '../../../角色/追兵.tsx';
 import { Warden } from '@库/生物/监守者.tsx';
 import { SpectralSteed, steedParticles } from '@库/生物/幽灵马.tsx';
@@ -12,10 +11,12 @@ import { MagicShield } from '@库/特效/护盾术.tsx';
 import { Blastwave, CreeperHead, mortarTrailSmoke, mortarBlastParticles } from '@库/特效/苦力怕迫击炮.tsx';
 import { sonicBoomParticles } from '@库/特效/监守者音波.tsx';
 import { VanillaParticles, serverSendParticles, type ParticleSpawn } from '@库/特效/原版粒子.tsx';
-import { AncientCity4xCanvas, placedWoolThrough, type Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
+import { AncientCity4xCanvas, placedWoolThrough } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { BowFans } from '../../../地点/古城4x/7-1/弓前风扇.tsx';
 import * as play from '../../../地点/古城4x/7-3/戏.ts';
 import * as timeline from '../../../地点/古城4x/7-3/时间线.ts';
+import { rad } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 const woolBlocks = placedWoolThrough('V');
 const blastwaveSize = 12; // 冲击波环放大一倍（用户 10-18：威力特效大一点）

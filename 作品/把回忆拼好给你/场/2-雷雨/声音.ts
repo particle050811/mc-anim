@@ -1,11 +1,11 @@
 // 第 6、7 句的声音：雨声（第 6 句首字前一点从 2-抢龙蛋 末尾淡进来，两段一直下，破云起收掉）、第 6 句两声雷、第 7 句光柱撞云时的信标声。按歌曲帧排，段.ts 用 声音/跨段音效.ts 切出落在自己窗口里的那一截。
 // 纯数据。增益、文件长度在 参数.ts。
-import { clamp01 } from '@engine/anim/anim.ts';
 import { fps, oneFrameSec } from '../../分镜/时间.ts';
 import { events as mainCut6to7Events } from '../../分镜/正片第6到7句.ts';
 import { events as mainCut8Events } from '../../分镜/正片第8句.ts';
 import type { SongSound } from '../../声音/跨段音效.ts';
 import * as params from './参数.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...mainCut6to7Events, ...mainCut8Events };
 

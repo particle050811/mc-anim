@@ -4,7 +4,6 @@
 // - 御币拿在手里：models/item/hakurei_gohei_in_hand.json，第三人称显示变换只有平移 [0, 2.75, 1.25]。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import type { BedrockModel } from '@engine/model/基岩模型.tsx';
 import { BedrockModelView } from '@engine/model/基岩模型.tsx';
 import { BlockModel, type BlockModelData } from '@engine/model/方块模型.tsx';
@@ -21,6 +20,7 @@ import redstonePng from 'asset:贴图/物品/祭坛材料/红石';
 import lapisPng from 'asset:贴图/物品/祭坛材料/青金石';
 import ironIngotPng from 'asset:贴图/物品/祭坛材料/铁锭';
 import coalPng from 'asset:贴图/物品/祭坛材料/煤炭';
+import { rad } from '@engine/core/数学.ts';
 
 const altarModel = { ...(altarData as unknown as object), texture: png(altarTexture) } as unknown as BedrockModel;
 const goheiModel = goheiData as unknown as BlockModelData;

@@ -17,6 +17,7 @@ import { riderFeet, VANILLA_RIDE } from '@库/生物/幽灵马.tsx';
 import huangPanPng from 'asset:贴图/角色/追兵/黄叛';
 import quiverPng from 'asset:贴图/角色/追兵/黄叛箭袋';
 import liuXinzhongPng from 'asset:贴图/角色/追兵/刘心忠';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 const HP_TEX = png(huangPanPng);
 const QUIVER_TEX = png(quiverPng);
@@ -141,12 +142,8 @@ const lx = (k: keyof typeof LX_UV, px: [number, number, number], p: V3, grow = 0
 // 杖往前倾多少度（身体坐标系里杖头往前为正）：手臂在腰以下（armR ≤ 40）时 30°；往上举慢慢收到竖直（armR 90）；举过头顶（armR 140 以上）后仰 5°。
 //   30° 是量出来的：杖和胳膊夹角要到 40° 左右才离开胳膊（半宽 2、杖半粗 0.5），`liuHoldStaff` 把右臂最往后压在 10°～20°，30 + 10 = 40。
 //   举过头顶时再前倾杖尾会戳回胳膊和头（6-3-10），仰多了杖身又从头顶横过（6-3-8）；工具/追兵/持杖核对.ts 扫过 0～30° 和杖侧 −12～8°，后仰 5°、杖侧 0 最好。
-const smoothstep = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
 // 身子前倾（跑步 pitch −15～−18°）时，腰以下那 30° 按世界竖直算（扣掉身子前倾，不然杖斜到 45°，俯拍像端长枪）；举起来后跟着身子走
-export const liuStaffLean = (armR: number, pitch = 0) => (30 + pitch) * (1 - smoothstep((armR - 40) / 50)) - 5 * smoothstep((armR - 90) / 50);
+export const liuStaffLean = (armR: number, pitch = 0) => (30 + pitch) * (1 - smoothstep01((armR - 40) / 50)) - 5 * smoothstep01((armR - 90) / 50);
 // 拿着杖的右臂（`LiuXinzhong` 每帧先过这一道，别的骨骼不动，各段编排不用改）：
 // - 不往后甩：走跑的摆臂（`walkPose`、`runPose`）右臂会后摆到 −36°、−50°，杖再怎么前倾也贴着胳膊。拄杖走路的人拿杖手基本不摆，所以 armR 低于 `armFloor` 的部分只留 15%，往前摆、举杖照旧。
 //   `armFloor` = 20° 减身子前倾（站着 20°，跑步前倾 15° 时 35°），身子前倾时杖在身体坐标系倾得少（见 `liuStaffLean`），胳膊得更往前才拉得开那 40°。
@@ -155,7 +152,7 @@ export const liuStaffLean = (armR: number, pitch = 0) => (30 + pitch) * (1 - smo
 export const liuHoldStaff = (pose: FigurePose): FigurePose => {
   const armFloor = 20 - Math.min(0, pose.pitch);
   const armR = pose.armR < armFloor ? armFloor - (armFloor - pose.armR) * 0.15 : pose.armR;
-  const belowWaist = 1 - smoothstep((armR - 40) / 40);
+  const belowWaist = 1 - smoothstep01((armR - 40) / 40);
   const armRRoll = pose.armRRoll > 6 ? pose.armRRoll - (pose.armRRoll - 6) * belowWaist : pose.armRRoll;
   return { ...pose, armR, armRRoll, elbowR: 0 };
 };

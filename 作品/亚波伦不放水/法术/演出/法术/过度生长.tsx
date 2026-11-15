@@ -7,7 +7,6 @@
 // 没做：破土时一圈往上飘的尘云（颜色取脚下方块的地图色）；藤打人（近战 AI）；另外四种阵型；潜行放的毒刺藤。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
@@ -18,6 +17,7 @@ import quickGrowingVineModelData from 'asset:模型/法术/goety/QuickGrowingVin
 import quickGrowingVineAnims from 'asset:动画/法术/goety/QuickGrowingVineAnimations';
 import quickGrowingVinePng from 'asset:贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine';
 import quickGrowingVineGlowPng from 'asset:贴图/法术/goety/entity/monolith/quick_growing_vine/quick_growing_vine_glow';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const quickGrowingVineModel = getModel(quickGrowingVineModelData, 'QuickGrowingVineModel');
 const [burstAnim, idleAnim, burrowAnim] = [getAnim(quickGrowingVineAnims, 'BURST'), getAnim(quickGrowingVineAnims, 'IDLE'), getAnim(quickGrowingVineAnims, 'BURROW')];
@@ -35,7 +35,7 @@ const overgrowth: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target,
         const ageTicks = tick - vineEmergeTick(i);
         if (ageTicks < 0 || ageTicks >= vineLifeTicks + vineRetractSpanTicks) return null;
         const partPoses = keyframePose(quickGrowingVineModel, [ageTicks >= vineLifeTicks ? [burrowAnim, (ageTicks - vineLifeTicks) / 20] : ageTicks >= vineIdleTicks ? [idleAnim, (ageTicks - vineIdleTicks) / 20] : [burstAnim, ageTicks / 20]]);
-        const angleDeg = Math.floor(rng(seed * 97 + i)() * 4) * 90;
+        const angleDeg = Math.floor(mulberry32(seed * 97 + i)() * 4) * 90;
         return (
           <MinecraftSpace key={i} 位={pos}>
             <group rotation={[0, degToRad(180 - angleDeg), 0]}>

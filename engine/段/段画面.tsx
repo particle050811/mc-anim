@@ -1,5 +1,5 @@
-// 新段的画面外壳：定义画面(段, 声音地址, 组件) 把本段的 段.ts 和 anim cues 生成的声音地址放进 context，自动挂上 <段声音>；
-// 组件里用 use段() 取段、当前秒、事件的段内秒。段.ts 里每条 cue 只写一次，画面里不再 import 音效字节、不再手挂音轨。
+// 新段的画面外壳：definePicture(段, 声音地址, 组件) 把本段的 段.ts 和 anim cues 生成的声音地址放进 context，自动挂上 <SegSound>；
+// 组件里用 useSeg() 取段、当前秒、事件的段内秒。段.ts 里每条 cue 只写一次，画面里不再 import 音效字节、不再手挂音轨。
 // 声音的放法在 放法.ts；用 @remotion/media 的 Audio（不用 remotion 自带的：变速时那个只变速不变调）。
 import { Audio } from '@remotion/media';
 import React, { createContext, useContext } from 'react';
@@ -49,7 +49,7 @@ const PlaySound: React.FC<{ 声: SoundItem; src: string }> = ({ 声: sound, src 
   );
 };
 
-/** 照 段.ts 的 cue 表放出全部声音（台词、音效、配乐）。定义画面 已经自动挂了，只在关掉自动声音、要挂进别的 Sequence 时手放 */
+/** 照 段.ts 的 cue 表放出全部声音（台词、音效、配乐）。definePicture 已经自动挂了，只在关掉自动声音、要挂进别的 Sequence 时手放 */
 export const SegSound: React.FC = () => {
   const c = useContext(segContext);
   if (!c) throw new Error('<段声音> 要放在 定义画面(…) 包着的画面里');
@@ -66,8 +66,8 @@ export const SegSound: React.FC = () => {
 };
 
 /**
- * 段的画面：export default 定义画面(段, 声音地址, () => …)。
- * 段：本段 段.ts 的默认导出；声音地址：本段 声音地址.生成.ts 的默认导出（anim cues 生成）。声音：false 时不自动挂 <段声音>。
+ * 段的画面：export default definePicture(段, 声音地址, () => …)。
+ * 段：本段 段.ts 的默认导出；声音地址：本段 声音地址.生成.ts 的默认导出（anim cues 生成）。声音：false 时不自动挂 <SegSound>。
  */
 export const definePicture = (seg: SegmentDef, soundUrl: SoundUrl, Picture: React.FC, options: { 声音?: boolean } = {}): React.FC => {
   const value: SegContext = { 段: seg, 声音: soundUrl };
@@ -81,7 +81,7 @@ export const definePicture = (seg: SegmentDef, soundUrl: SoundUrl, Picture: Reac
 };
 
 /**
- * 画面里取本段：段、当前秒（use当前秒，在嵌套的 秒Sequence 里是相对那一层的）、场时间线上的秒、各事件的段内秒（窗口段.ts 的 事件秒）。
+ * 画面里取本段：段、当前秒（useCurrentSec，在嵌套的 SecondSequence 里是相对那一层的）、场时间线上的秒、各事件的段内秒（窗口段.ts 的 eventSec）。
  * 传本段的 段.ts 进来就按它推出事件名的类型，并核对挂的是不是同一段。
  */
 export const useSeg = <S extends SegmentDef = SegmentDef>(segment?: S) => {

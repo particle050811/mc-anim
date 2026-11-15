@@ -11,7 +11,6 @@
 // 着地照原版 `LivingEntity.checkFallDamage`：摔落距离 > 3 格时脚下崩出方块粒子；声音同 6-3 落进古城（entity.player.big_fall + 方块 fall 声）。
 import { type Key, sampleLag } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { rng } from '@engine/model/parts.tsx';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import type { RideJiuhu, RideLiYing } from '@库/角色/骑扫帚.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
@@ -21,13 +20,9 @@ import * as choreo619 from '../6-1-9/编排.ts';
 import type { Riders } from '../一镜到底/画面.tsx';
 import * as route from '../一镜到底/路线.ts';
 import * as choreo619b from './编排.ts';
+import { smoothstep01, mulberry32 } from '@engine/core/数学.ts';
 
 const FPS = 24;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-
 const F0 = choreo619b.F0;
 // ① → ②：F0 往前一小节（`BAR_CUT_FRAMES`）再早 `ONER_TRIM` 帧：扫帚刚压下机头往屋顶平台扎，离城垛还远
 export const F_CUT = F0 - choreo619b.BAR_CUT_FRAMES - choreo619b.ONER_TRIM;
@@ -156,7 +151,7 @@ const liyingKeys: Record<string, Key[]> = {
 const LY_DONE = 30;
 const lagFrames: Record<string, number> = { headPitch: 1, armR: 1, armL: 1, armRRoll: 1, armLRoll: 1, elbowR: 1, elbowL: 1 };
 // 风里两臂微微抖（着地前收掉）
-const flutter = (c: number) => (1 - ss((c + 8) / 6)) * Math.sin(c * 0.9);
+const flutter = (c: number) => (1 - smoothstep01((c + 8) / 6)) * Math.sin(c * 0.9);
 
 const tweakLiying = (ly: RideLiYing, c: number): RideLiYing => {
   if (c - 1 >= LY_DONE) return ly;
@@ -233,7 +228,7 @@ export const tweakRiders = (F: number) => (riders: Riders): Riders => ({
 export const particleCount = Math.floor(150 * Math.min(0.2 + Math.ceil(fallHeight - 3) / 15, 2.5));
 const gaussian = (rand: () => number) => Math.sqrt(-2 * Math.log(1 - rand())) * Math.cos(2 * Math.PI * rand());
 const burst = (feet: V3, seed: number): BreakParticle[] => {
-  const rand = rng(seed);
+  const rand = mulberry32(seed);
   const out: BreakParticle[] = [];
   for (let i = 0; i < particleCount; i++) {
     // 游戏坐标（y 朝上）：x = 场景 x、y = 场景 z、z = -场景 y

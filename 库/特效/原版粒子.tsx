@@ -8,7 +8,7 @@
 // 不受光（夜视下满亮度），暗处由 黑暗效果.tsx 整体压暗。坐标是场景坐标（Z 朝上，格），速度 格/刻。参考视频机位远时原版大小会小到看不见，组件给整体放大 `size`（默认 1 = 原版）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { type Png, pngDir } from '../../engine/model/贴图.ts';
 import { type Particle, ParticleQuads } from './粒子面片.tsx';
 import { assetDir } from '../../engine/core/资产目录.ts';
@@ -118,6 +118,7 @@ import sonicBoom6Png from 'asset:贴图/特效/杂项粒子/sonic_boom_6';
 import sonicBoom7Png from 'asset:贴图/特效/杂项粒子/sonic_boom_7';
 import sonicBoom8Png from 'asset:贴图/特效/杂项粒子/sonic_boom_8';
 import sonicBoom9Png from 'asset:贴图/特效/杂项粒子/sonic_boom_9';
+import { lerpV, mulberry32 } from '../../engine/core/数学.ts';
 
 const vanillaPngs = pngDir(assetDir({ './critical_hit.png': criticalHitPng, './drip_hang.png': dripHangPng, './explosion_0.png': explosion0Png, './explosion_1.png': explosion1Png, './explosion_10.png': explosion10Png, './explosion_11.png': explosion11Png, './explosion_12.png': explosion12Png, './explosion_13.png': explosion13Png, './explosion_14.png': explosion14Png, './explosion_15.png': explosion15Png, './explosion_2.png': explosion2Png, './explosion_3.png': explosion3Png, './explosion_4.png': explosion4Png, './explosion_5.png': explosion5Png, './explosion_6.png': explosion6Png, './explosion_7.png': explosion7Png, './explosion_8.png': explosion8Png, './explosion_9.png': explosion9Png, './generic_0.png': generic0Png, './generic_1.png': generic1Png, './generic_2.png': generic2Png, './generic_3.png': generic3Png, './generic_4.png': generic4Png, './generic_5.png': generic5Png, './generic_6.png': generic6Png, './generic_7.png': generic7Png, './glitter_0.png': glitter0Png, './glitter_1.png': glitter1Png, './glitter_2.png': glitter2Png, './glitter_3.png': glitter3Png, './glitter_4.png': glitter4Png, './glitter_5.png': glitter5Png, './glitter_6.png': glitter6Png, './glitter_7.png': glitter7Png, './splash_0.png': splash0Png, './splash_1.png': splash1Png, './splash_2.png': splash2Png, './splash_3.png': splash3Png }));
 const potionPngs = pngDir(assetDir({ './effect_0.png': potionEffect0Png, './effect_1.png': potionEffect1Png, './effect_2.png': potionEffect2Png, './effect_3.png': potionEffect3Png, './effect_4.png': potionEffect4Png, './effect_5.png': potionEffect5Png, './effect_6.png': potionEffect6Png, './effect_7.png': potionEffect7Png, './spell_0.png': potionSpell0Png, './spell_1.png': potionSpell1Png, './spell_2.png': potionSpell2Png, './spell_3.png': potionSpell3Png, './spell_4.png': potionSpell4Png, './spell_5.png': potionSpell5Png, './spell_6.png': potionSpell6Png, './spell_7.png': potionSpell7Png }));
@@ -188,7 +189,6 @@ const simulateTicks = (p0: V3, v0: V3, ticks: number, gravity: number, friction:
   }
   return [prev, [x, y, z]];
 };
-const lerp3 = (a: V3, b: V3, f: number): V3 => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
 const animFrame = (age: number, life: number, n: number) => Math.min(n - 1, Math.floor((age * (n - 1)) / life));
 const SGA = 'abcdefghijklmnopqrstuvwxyz'.split('').map((c) => `sga_${c}`);
 
@@ -196,7 +196,7 @@ const SGA = 'abcdefghijklmnopqrstuvwxyz'.split('').map((c) => `sga_${c}`);
 export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleState | null => {
   const τ = tick - spawn.刻;
   if (τ < 0) return null;
-  const rand = rng(spawn.种子 * 2654435761 + 97);
+  const rand = mulberry32(spawn.种子 * 2654435761 + 97);
   const vel = spawn.v ?? [0, 0, 0];
   const age = Math.floor(τ);
   const pt = τ - age;
@@ -223,7 +223,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
         for (let k = 1; k <= ticks; k++) travelFrac += k / life;
         return [spawn.p[0] + vel[0] * travelFrac, spawn.p[1] + vel[1] * travelFrac, spawn.p[2] + vel[2] * travelFrac];
       };
-      const position = lerp3(pos(Math.max(0, age - 1)), pos(age), pt);
+      const position = lerpV(pos(Math.max(0, age - 1)), pos(age), pt);
       const half = half0 * (1 - (age + pt) / (life * 1.5));
       return { p: position, half, tex, color: [0.9 * shade, 0.3 * shade, shade], alpha: 1, translucent: true };
     }
@@ -233,7 +233,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
       const life = Math.floor(16 / (rand() * 0.8 + 0.2));
       if (age >= life) return null;
       const [prevPos, curPos] = simulateTicks([spawn.p[0], spawn.p[1], spawn.p[2] - 0.125], v0, age, 0, 1);
-      return { p: lerp3(prevPos, curPos, pt), half, tex: 'generic_0', color: [0.9, 0.4, 0.5], alpha: 1, translucent: false };
+      return { p: lerpV(prevPos, curPos, pt), half, tex: 'generic_0', color: [0.9, 0.4, 0.5], alpha: 1, translucent: false };
     }
     case 'witch': {
       const base = randomVelocity(rand, [0.5 - rand(), 0.5 - rand(), vel[2]]);
@@ -249,7 +249,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
       if (age >= life) return null;
       const [prevPos, curPos] = simulateTicks(spawn.p, [vx, vy, vz], age, -0.1, 0.96);
       const frameCount = 8;
-      return { p: lerp3(prevPos, curPos, pt), half, tex: `spell_${7 - animFrame(age, life, frameCount)}`, color: [shade, 0, shade], alpha: 1, translucent: true };
+      return { p: lerpV(prevPos, curPos, pt), half, tex: `spell_${7 - animFrame(age, life, frameCount)}`, color: [shade, 0, shade], alpha: 1, translucent: true };
     }
     case 'enchant': {
       const half = 0.1 * (rand() * 0.5 + 0.2);
@@ -262,7 +262,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
         const f1 = (1 - remain) ** 4;
         return [spawn.p[0] + vel[0] * remain, spawn.p[1] + vel[1] * remain, spawn.p[2] + vel[2] * remain - f1 * 1.2];
       };
-      return { p: lerp3(at(Math.max(0, age - 1)), at(age), pt), half, tex, color: [0.9 * f0, 0.9 * f0, f0], alpha: 1, translucent: false };
+      return { p: lerpV(at(Math.max(0, age - 1)), at(age), pt), half, tex, color: [0.9 * f0, 0.9 * f0, f0], alpha: 1, translucent: false };
     }
     case 'flame': {
       const rv = randomVelocity(rand, vel);
@@ -273,7 +273,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
       if (age >= life) return null;
       const [prevPos, curPos] = simulateTicks(p0, v0, age, 0, 0.96);
       const lifeFrac = (age + pt) / life;
-      return { p: lerp3(prevPos, curPos, pt), half: half0 * (1 - lifeFrac * lifeFrac * 0.5), tex: 'flame', color: [1, 1, 1], alpha: 1, translucent: false };
+      return { p: lerpV(prevPos, curPos, pt), half: half0 * (1 - lifeFrac * lifeFrac * 0.5), tex: 'flame', color: [1, 1, 1], alpha: 1, translucent: false };
     }
     case 'smoke': {
       const rv = randomVelocity(rand, vel);
@@ -283,7 +283,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
       const life = Math.max(1, Math.floor(8 / (rand() * 0.8 + 0.2)));
       if (age >= life) return null;
       const [prevPos, curPos] = simulateTicks(spawn.p, v0, age, -0.1, 0.96);
-      return { p: lerp3(prevPos, curPos, pt), half, tex: `generic_${7 - animFrame(age, life, 8)}`, color: [gray, gray, gray], alpha: 1, translucent: false };
+      return { p: lerpV(prevPos, curPos, pt), half, tex: `generic_${7 - animFrame(age, life, 8)}`, color: [gray, gray, gray], alpha: 1, translucent: false };
     }
     case 'poof': {
       const v0: V3 = [vel[0] + (rand() * 2 - 1) * 0.05, vel[1] + (rand() * 2 - 1) * 0.05, vel[2] + (rand() * 2 - 1) * 0.05];
@@ -292,7 +292,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
       const life = Math.floor(16 / (rand() * 0.8 + 0.2)) + 2;
       if (age >= life) return null;
       const [prevPos, curPos] = simulateTicks(spawn.p, v0, age, -0.1, 0.9);
-      return { p: lerp3(prevPos, curPos, pt), half, tex: `generic_${7 - animFrame(age, life, 8)}`, color: [gray, gray, gray], alpha: 1, translucent: false };
+      return { p: lerpV(prevPos, curPos, pt), half, tex: `generic_${7 - animFrame(age, life, 8)}`, color: [gray, gray, gray], alpha: 1, translucent: false };
     }
     case 'splash': {
       // WaterDropParticle 构造：父类随机速度后 xd、zd × 0.3，yd = 随机 × 0.2 + 0.1；寿命 8 / (随机 × 0.8 + 0.2)。SplashParticle：重力 0.04；给的 yd 为 0、水平不为 0 时改用给的速度（实体落水给的是实体速度，竖直不为 0，不走这条）。
@@ -313,7 +313,7 @@ export const particleStateAt = (spawn: ParticleSpawn, tick: number): ParticleSta
         v = [v[0] * 0.98, v[1] * 0.98, v[2] * 0.98];
         if (spawn.waterLevel !== undefined && p[2] < spawn.waterLevel) return null;
       }
-      return { p: lerp3(prev, p, pt), half, tex, color: [1, 1, 1], alpha: 1, translucent: false };
+      return { p: lerpV(prev, p, pt), half, tex, color: [1, 1, 1], alpha: 1, translucent: false };
     }
     case 'explosion':
     case 'sonic_boom': {
@@ -355,7 +355,7 @@ export const VanillaParticles: React.FC<{ spawns: ParticleSpawn[]; 秒: number; 
 // 原版生物死亡（LivingEntity.tickDeath → 实体事件 60 → makePoofParticles）：死后第 20 刻在碰撞箱里放 20 个 poof，速度各分量 高斯×0.02。
 // at：脚底中心；宽、高：碰撞箱；死刻：死亡那一刻（刻）。返回出生表
 export const deathPoof = (at: V3, width: number, height: number, deathTick: number, seed: number): ParticleSpawn[] => {
-  const rand = rng(seed * 7919 + 11);
+  const rand = mulberry32(seed * 7919 + 11);
   const gauss = () => Math.sqrt(-2 * Math.log(Math.max(1e-9, rand()))) * Math.cos(2 * Math.PI * rand());
   return Array.from({ length: 20 }, (_, i) => ({
     种: 'poof' as const,
@@ -369,7 +369,7 @@ export const deathPoof = (at: V3, width: number, height: number, deathTick: numb
 // 实体落水（Entity.doWaterSplashEffect）：落水那一刻在 (x ± 宽, floor(脚底) + 1, y ± 宽) 放 splash，个数是 float 下 i < 1 + 宽 × 20 的 i 数（宽 0.6 是 14 个），速度 = 实体速度（格/刻）。
 // 同一刻还放同样多的 bubble，出生在水面以上那格就不在水里、下一刻就没了，这里不画。at：脚底中心；水面：落水那格的水面高度
 export const waterSplash = (at: V3, vel: V3, tick: number, width: number, waterLevel: number, seed: number): ParticleSpawn[] => {
-  const rand = rng(seed * 6271 + 3);
+  const rand = mulberry32(seed * 6271 + 3);
   const z = Math.floor(at[2]) + 1;
   return Array.from({ length: Math.ceil(1 + Math.fround(width) * 20) }, (_, i) => ({
     种: 'splash' as const,
@@ -384,7 +384,7 @@ export const waterSplash = (at: V3, vel: V3, tick: number, width: number, waterL
 // ServerLevel.sendParticles(类型, x,y,z, 数量, dx,dy,dz, 速度)：数量 > 0 时客户端每颗 位置 = 中心 + 高斯×(dx,dy,dz)，速度 = 高斯×速度
 // （ClientPacketListener.handleParticleEvent）。场景坐标：dx、dy 是水平两个方向，dz 是竖直
 export const serverSendParticles = (kind: ParticleKind, tick: number, at: V3, count: number, spread: V3, speed: number, seed: number): ParticleSpawn[] => {
-  const rand = rng(seed * 104729 + 5);
+  const rand = mulberry32(seed * 104729 + 5);
   const gauss = () => Math.sqrt(-2 * Math.log(Math.max(1e-9, rand()))) * Math.cos(2 * Math.PI * rand());
   return Array.from({ length: count }, (_, i) => ({
     种: kind,

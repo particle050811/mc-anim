@@ -1,6 +1,5 @@
 // 确定性噪声：远景地形等共用。纯函数，同样的种子和坐标永远得到同样的值，每帧重算也不会抖。
 // simplex2：二维 simplex 噪声（Stefan Gustavson 的公开实现），值域约 -1～1。fbm：叠几层。cell*：按格子取的随机数（Voronoi 分区、撒树用）。
-
 const grad = [
   [1, 1], [-1, 1], [1, -1], [-1, -1], [1, 0], [-1, 0], [0, 1], [0, -1],
 ];
@@ -87,20 +86,4 @@ export const hash2 = (ix: number, iy: number, k = 0) => {
   hash = Math.imul(hash ^ (hash >>> 15), 0x85ebca6b);
   hash = Math.imul(hash ^ (hash >>> 13), 0xc2b2ae35);
   return ((hash ^ (hash >>> 16)) >>> 0) / 4294967296;
-};
-
-export const smoothstep = (edgeLo: number, edgeHi: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - edgeLo) / (edgeHi - edgeLo)));
-  return t * t * (3 - 2 * t);
-};
-export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-
-// sRGB 十六进制 → 线性 RGB（顶点色要线性值）
-export const linHex = (hex: string): [number, number, number] => {
-  const rgb = parseInt(hex.replace('#', ''), 16);
-  const srgbToLinear = (channel: number) => {
-    const unit = channel / 255;
-    return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
-  };
-  return [srgbToLinear((rgb >> 16) & 255), srgbToLinear((rgb >> 8) & 255), srgbToLinear(rgb & 255)];
 };

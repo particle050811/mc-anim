@@ -2,7 +2,7 @@
 // 和脚本 正篇/06-古城寻卷/脚本规划.md 第 2 场末尾「飞行配乐拆成两半」那张表一一对应，改一边要同步另一边。
 // 位置都写成 [小节, 拍]（Wasted 的网格，第 1 小节第 1 拍在 0.29 秒），秒数由 曲目.ts 的 秒() 算。
 import { Wasted } from './Wasted.ts';
-import { posToSec, type MusicPos, type Song } from '@engine/audio/曲目.ts';
+import { type MusicPos, type Song } from '@engine/audio/曲目.ts';
 
 export type HalfName = '前一半' | '后一半';
 
@@ -241,23 +241,6 @@ export const ch6FlightMusic: MusicTable = {
       ],
     },
   ],
-};
-
-// 某一半在歌曲时间 t 的音量（0~1）。淡入用正弦曲线，淡出按振幅 (1-x)² 下降（一半处约 -12 dB）
-export const halfGain = (table: MusicTable, halfName: HalfName, t: number): number => {
-  const half = table.halves[halfName];
-  let gain = 1;
-  if (half.fadeIn) {
-    const [fadeStart, fadeEnd] = [posToSec(table.song, half.fadeIn[0]), posToSec(table.song, half.fadeIn[1])];
-    if (t < fadeStart) return 0;
-    if (t < fadeEnd) gain *= Math.sin(((t - fadeStart) / (fadeEnd - fadeStart)) * (Math.PI / 2));
-  }
-  if (half.fadeOut) {
-    const [fadeStart, fadeEnd] = [posToSec(table.song, half.fadeOut[0]), posToSec(table.song, half.fadeOut[1])];
-    if (t >= fadeEnd) return 0;
-    if (t > fadeStart) gain *= (1 - (t - fadeStart) / (fadeEnd - fadeStart)) ** 2;
-  }
-  return gain;
 };
 
 export const allMusicTables: readonly MusicTable[] = [ch6FlightMusic];

@@ -13,26 +13,23 @@ import { DrawnKatana, WornSheath } from '@库/物品/拔刀剑.tsx';
 import { Chest, chestState, lootrTex, type Toggle, type ChestFacing } from '@库/物品/箱子.tsx';
 import { WoolBlocks } from '@库/物品/羊毛.tsx';
 import { GuchengLight } from '../../古城.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import { FOG_4X, Gucheng4x, partAt, tilesInView, VIEW_DISTANCE_4X } from '../../古城4x.tsx';
 import { SlamGround, slamHideBlocks } from '../../边城/6-3-6/震地.tsx';
 import chestTable4x from 'asset:数据/场景/古城4x箱子';
 import { allWool, woolBlockAt, woolOrder, openedBefore, checkChestEvent, type BlockPos, type WoolName, type AncientCitySegment } from '../布局.ts';
-
-export type Cam = { pos: V3; tgt: V3; lens: number; roll?: number };
-
+import { rad } from '@engine/core/数学.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
+import { lensToFov, type Cam } from '@engine/core/机位.ts';
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y) Y 朝上
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
-
 // 把 three 相机摆到机位：焦距按 36mm 横向画幅换算，three.js 用竖向视角
 const aimCamera = (cam: THREE.PerspectiveCamera, camSpec: Cam, aspect: number, far: number) => {
-  cam.fov = (2 * Math.atan(18 / camSpec.lens / aspect) * 180) / Math.PI;
+  cam.fov = lensToFov(camSpec.lens, aspect);
   cam.aspect = aspect;
   cam.near = 0.05;
   cam.far = far;
-  cam.position.copy(toThree(camSpec.pos));
+  cam.position.copy(sceneToThree(camSpec.pos));
   cam.up.set(0, 1, 0);
-  cam.lookAt(toThree(camSpec.tgt));
+  cam.lookAt(sceneToThree(camSpec.tgt));
   if (camSpec.roll) cam.rotateZ(rad(camSpec.roll));
   cam.updateProjectionMatrix();
 };

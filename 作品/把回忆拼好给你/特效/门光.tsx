@@ -10,7 +10,8 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
+import { rad, mulberry32 } from '@engine/core/数学.ts';
 
 export type DoorOpening = { a: [number, number]; b: [number, number]; bottom: number; topEdge: number };
 export type Ledge = { 框: [number, number, number, number]; 高: number };
@@ -44,9 +45,6 @@ export type DoorLightParams = {
 
 /** 站在门口挡光的人（史蒂夫那样的方块人）：脚底在地上哪一点、多高；影子按原版玩家模型的剪影（正面看：两腿、身子、两臂、头） */
 export type PersonShadow = { feet: [number, number]; 高: number };
-
-const rad = (d: number) => (d * Math.PI) / 180;
-
 /** 光走的方向（单位向量，从门外往屋里、往下） */
 export const lightDir = (azimuthDeg: number, elevationDeg: number): V3 => {
   const [a, e] = [rad(azimuthDeg), rad(elevationDeg)];
@@ -255,7 +253,7 @@ export const DoorLightDust: React.FC<{ 参数: DoorLightParams; opening: DoorOpe
   const d = lightDir(params.azimuthDeg, params.elevationDeg);
   const pageHeight = useThree((s) => s.size.height);
   const particles = useMemo(() => {
-    const r = rng(seed);
+    const r = mulberry32(seed);
     return Array.from({ length: count }, () => [r(), r(), r()] as const);
   }, [count, seed]);
   const geometry = useMemo(() => {

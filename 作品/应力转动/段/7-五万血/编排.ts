@@ -6,12 +6,13 @@
 //   3 跳（正前偏右 2.3 米，35mm 稍俯；他转回身就往后上退开、跟着他蹲、跳，到落地后 0.1 秒段尾，下一段切开箱）。
 // 他背对镜头站着远望的镜 1 用户 10-20 删了（「意义不明」），段首就是镜 Jade。
 import type { V3 } from '@engine/model/parts.tsx';
-import type { Cam } from '../../地点/古城4x/6-4-1/古城画面.tsx';
 import { FPS } from '../../地点/古城4x/6-4-1/古城戏.ts';
 import * as geom from '../../场/7-李樱撤离/7-2/几何.ts';
 import * as timeline from '../../场/7-李樱撤离/7-2/时间线.ts';
 import * as play from '../../场/7-李樱撤离/7-2/戏.ts';
 import * as K71 from '../../地点/古城4x/7-1/戏.ts';
+import { lerp, smoothstep01 } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export { FPS };
 export const segmentStartFrame = timeline.segmentStartFrame['7-2-1'];
@@ -45,12 +46,6 @@ const addOffset = (point: number[], ...vs: [number[], number][]): V3 => {
 };
 
 export const jadeShotEndFrame = Math.round(timeline.jadeShotEndSec * FPS);
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-
 const shot3Start: Cam = { pos: addOffset(head, [dW, 2.2], [rW, 0.7], [[0, 0, 1], 1.0]), tgt: [head[0], head[1], head[2] - 0.35], lens: 35 };
 
 // ---------- 镜 Jade ----------
@@ -74,7 +69,7 @@ const jadeLens = [100, 115];
 const jadeCamera = (frame: number): Cam => {
   const samples = [0, 2, 4, 6].map((d) => wardenChestAt(wideTime(Math.max(0, frame - d))));
   const tgt = [0, 1, 2].map((i) => samples.reduce((acc, p) => acc + p[i], 0) / samples.length) as V3;
-  const k = ss(frame / (jadeShotEndFrame - 1));
+  const k = smoothstep01(frame / (jadeShotEndFrame - 1));
   return { pos: addOffset(head, [dJade, lerp(jadeForward[0], jadeForward[1], k)], [[0, 0, 1], jadeRise]), tgt, lens: lerp(jadeLens[0], jadeLens[1], k) };
 };
 // 监守者的血：第 1 场命中表（../7-1/戏/伤害.ts）按这一刻算，镜 Jade 里风矢打中它，框里的数跟着掉
@@ -99,13 +94,13 @@ const bodyAt = (scf: number): V3 => {
 const shot3Camera = (frame: number): Cam => {
   const scf = sf(frame);
   const sec = scf / FPS;
-  const blend = ss((sec - timeline.turnBackStart) / 0.5);
+  const blend = smoothstep01((sec - timeline.turnBackStart) / 0.5);
   const samples = [0, 2, 4].map((d) => bodyAt(Math.max(sf(jadeShotEndFrame), scf - d)));
   const followTarget = [0, 1, 2].map((i) => (samples[0][i] + samples[1][i] + samples[2][i]) / 3);
-  const retreat = ss((sec - timeline.turnBackStart) / 0.8);
+  const retreat = smoothstep01((sec - timeline.turnBackStart) / 0.8);
   const pos = addOffset(shot3Start.pos, [dW, 1.5 * retreat], [[0, 0, 1], 0.3 * retreat]);
   const tgt = shot3Start.tgt.map((v, i) => lerp(v, followTarget[i], blend)) as V3;
-  return { pos, tgt, lens: lerp(shot3Start.lens, 32, ss((sec - timeline.takeoffSec) / 0.8)) };
+  return { pos, tgt, lens: lerp(shot3Start.lens, 32, smoothstep01((sec - timeline.takeoffSec) / 0.8)) };
 };
 
 export const camera = (frame: number): Cam => {

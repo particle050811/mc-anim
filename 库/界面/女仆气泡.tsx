@@ -13,10 +13,6 @@ import { png, type Png } from '../../engine/model/贴图.ts';
 import type1Png from 'asset:贴图/界面/女仆气泡/type1';
 import type2Png from 'asset:贴图/界面/女仆气泡/type2';
 import { filmScale, type PixelFont, type TextRun } from './像素字表.ts';
-
-/** TextChatBubbleData 的默认寿命（刻）；ChatBubbleManager 每 5 刻查一次过期 */
-export const bubbleLifeTicks = 300;
-export const bubbleCheckIntervalTicks = 5;
 /** 1 气泡像素多少格 */
 export const bubblePixelSize = 0.025;
 /** 锚点离女仆脚底多高（格）：碰撞箱高 1.5（EntityMaid，坐下不变）+ 名牌偏移 0.5，坐着（isMaidInSittingPose）再低 0.25 */

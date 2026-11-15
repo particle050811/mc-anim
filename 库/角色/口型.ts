@@ -4,6 +4,7 @@
 // 只看这个角色的句子。说出口的台词才动嘴，旁白、内心独白不动嘴、别传进来（见作品规矩「台词说出口」）。角色怎么画张嘴见 李樱.tsx、九胡.tsx 的 `嘴`；脸上没嘴的用 `withTalkNod`。
 // 不在几个嘴型之间硬切（用户 10-15 嫌切来切去），换形时张开、宽窄都连续过渡：张嘴快、合嘴慢。
 // 不引 台词轨.tsx（它带 Remotion 的音频组件），编排.ts 这种纯函数文件也能用。
+import { smoothstep01 } from '../../engine/core/数学.ts';
 
 // open：张开多少（0 闭，1 张到最大）；width：嘴宽是平常的几倍（嘟嘴窄、大张略宽）
 export type Mouth = { open: number; width: number };
@@ -27,14 +28,12 @@ type Cue = { id: string; 帧: number };
 export type LipData = { 口型: Readonly<Record<string, { 嘴: [number, string][] }>>; 台词: Readonly<Record<string, { 角色: string; 开口: number }>> };
 
 const mix = (a: Mouth, b: Mouth, k: number): Mouth => ({ open: a.open + (b.open - a.open) * k, width: a.width + (b.width - a.width) * k });
-const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
-
 // 某一时刻（音频文件里的秒数）的嘴：从上一个嘴型过渡到当前这个；上一次过渡没走完就从当时的样子接着走
 const sample = (keys: [number, string][], t: number): Mouth => {
   let from = CLOSED;
   let to = CLOSED;
   let start = 0;
-  const progress = (at: number) => ease((at - start) / (to.open > from.open ? OPEN_S : CLOSE_S));
+  const progress = (at: number) => smoothstep01((at - start) / (to.open > from.open ? OPEN_S : CLOSE_S));
   for (const [keyStart, shape] of keys) {
     if (keyStart > t) break;
     from = mix(from, to, progress(keyStart));

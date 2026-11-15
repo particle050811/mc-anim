@@ -1,5 +1,5 @@
 // anim new work / new seg 的模板：两部作品逐字相同的 清单.ts 尾部、注册.tsx、index.ts 不再手抄，新作品照这里生成（旧的两份不动）。
-// 新段一律是段框架的窗口段：段.ts 不写段键（段键只在目录名和清单里），画面.tsx 用 定义画面 / use段，声音照 cue 自动放。
+// 新段一律是段框架的窗口段：段.ts 不写段键（段键只在目录名和清单里），画面.tsx 用 definePicture / useSeg，声音照 cue 自动放。
 // 生成的两份声音文件先写成「没有 cue」的样子（和 anim cues 对空 cue 段生成的一字不差），新段立刻能加载、能渲。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -105,15 +105,15 @@ export const addSegToManifest = (text: string, segKey: string, chapter: number |
   return `${text.slice(0, endIndex)}\n  { 键: '${segKey}', 章: ${typeof chapter === 'number' ? chapter : `'核对'`} },${text.slice(endIndex)}`;
 };
 
-/** 本场已有的老段（定义段 写的，不是窗口段），清单顺序：段键、段长秒，有 场窗口 的带起秒；画幅不是默认的也带上 */
+/** 本场已有的老段（defineSeg 写的，不是窗口段），清单顺序：段键、段长秒，有 场窗口 的带起秒；画幅不是默认的也带上 */
 export type SceneLegacySeg = { 键: string; 秒: number; startSec?: number; 宽: number; 高: number };
 
 /** 老场的场时间线：老段的段长抄成数摆上来（engine/段/老段接续.ts；场不许 import 段），新段的起止事件接在最后一个老段后面 */
 const legacySceneTimelineTemplate = (scene: string, legacySegs: readonly SceneLegacySeg[], startEvent: string, endMark: string) => {
   const firstOldSeg = legacySegs[0]!;
   const frameSizeLines = firstOldSeg.宽 !== 1280 || firstOldSeg.高 !== 720 ? [`  aspect: { 宽: ${firstOldSeg.宽}, 高: ${firstOldSeg.高} },`] : [];
-  return `// ${scene} 的场时间线：本场的老段（定义段 写的）一个不改，段长抄过来按清单顺序首尾相接摆上，事件 <段键>.起、<段键>.止（engine/段/老段接续.ts）；
-// 新段（窗口段）从这条线取窗口，跨段的声音写在 声音 里（只放进新段，老段照旧）。抄的段长 anim check 和老段的 段.ts 对；老段中间有跳过的，给那一段写 起秒。纯模块。
+  return `// ${scene} 的场时间线：本场的老段（defineSeg 写的）一个不改，段长抄过来按清单顺序首尾相接摆上，事件 <段键>.起、<段键>.止（engine/段/老段接续.ts）；
+// 新段（窗口段）从这条线取窗口，跨段的声音写在 声音 里（只放进新段，老段照旧）。抄的段长 anim check 和老段的 段.ts 对；老段中间有跳过的，给那一段写 startSec。纯模块。
 import { continueOldSeg } from '@engine/段/老段接续.ts';
 
 export default continueOldSeg({
@@ -131,7 +131,7 @@ ${legacySegs.map((x) => `    { 键: '${x.键}', 秒: ${x.秒}${x.startSec !== un
 
 /**
  * 在作品里加一个窗口段：段目录、段.ts、画面.tsx、空声音文件，排进清单末尾。场时间线没有就建一条：
- * 本场没有老段时两个事件、先给 3 秒；有老段（老段，命令里照清单找出来）时用 接老段 把它们摆上去，新段接在后面。
+ * 本场没有老段时两个事件、先给 3 秒；有老段（老段，命令里照清单找出来）时用 continueOldSeg 把它们摆上去，新段接在后面。
  */
 export const newSegment = (workRoot: string, segKey: string, o: { 场?: string; 起?: string; 止?: string; legacySegs?: readonly SceneLegacySeg[] }): string[] => {
   const verifyMatch = /^核对-(.+)$/.exec(segKey);
@@ -170,7 +170,7 @@ export default defineSceneTimeline({
         written,
       );
     } else if (!/export default (defineSceneTimeline|continueOldSeg)\(/.test(fs.readFileSync(timelineFile, 'utf8'))) {
-      throw new Error(`${timelineFile} 不是 定义场时间线 或 接老段 做的（老写法的时间线），新段接不上；先给这场写一条 export default defineSceneTimeline(…)（老段要接上的用 continueOldSeg，见 docs/新段.md）`);
+      throw new Error(`${timelineFile} 不是 defineSceneTimeline 或 continueOldSeg 做的（老写法的时间线），新段接不上；先给这场写一条 export default defineSceneTimeline(…)（老段要接上的用 continueOldSeg，见 docs/新段.md）`);
     }
     timelineImport = `import { windowSeg } from '@engine/段/窗口段.ts';\nimport timeline from '../../场/${scene}/时间线.ts';\nimport soundTable from './声音表.生成.ts';\n`;
   }
@@ -187,7 +187,7 @@ export default windowSeg(timeline, {
 `,
     written,
   );
-  writeNewFile(path.join(segDir, '画面.tsx'), pictureTemplate('段的画面：use段() 取当前秒和事件的段内秒；声音由 定义画面 照 段.ts 的 cue 自动放'), written);
+  writeNewFile(path.join(segDir, '画面.tsx'), pictureTemplate('段的画面：useSeg() 取当前秒和事件的段内秒；声音由 definePicture 照 段.ts 的 cue 自动放'), written);
   writeEmptySoundTable(segDir, written);
   const manifestPath = path.join(workRoot, '清单.ts');
   fs.writeFileSync(manifestPath, addSegToManifest(fs.readFileSync(manifestPath, 'utf8'), segKey, verifyMatch ? '核对' : Number(mainCut![1])), 'utf8');

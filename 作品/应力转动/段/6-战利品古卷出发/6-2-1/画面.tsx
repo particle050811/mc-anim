@@ -1,14 +1,13 @@
 // 第 2 场基地谋划 6-2-1～6-2-3 的画面：基地工坊 + 李樱、九胡、桌上的战利品和结构指南针，按 编排.ts 组装，房间摆在基地小岛的真实地形上；
 // 上面叠一层游戏界面（模型/界面/：6-2-1 的两页匠魂 JEI——链甲基底、冶炼炉燃料，6-2-2/6-2-3 的古卷铁砧页和思索标注，
 // 6-2-3 的结构罗盘搜索界面——这个是游戏里录的整屏界面，连压暗底一起盖满画面），出现的时间在 编排.ts 的 界面()。
-// 房间在世界里的摆法、灯、雾、天空、刀鞘全用 6-2-4 那一套（只读 import），6-2-3 末帧和 6-2-4 首帧逐像素一样（那一帧没有界面）。声音照 6-战利品古卷出发 段.ts 的 cue 放（定义画面 自动挂）。
+// 房间在世界里的摆法、灯、雾、天空、刀鞘全用 6-2-4 那一套（只读 import），6-2-3 末帧和 6-2-4 首帧逐像素一样（那一帧没有界面）。声音照 6-战利品古卷出发 段.ts 的 cue 放（definePicture 自动挂）。
 // 李樱的台词按配音动嘴（配音/口型.ts，开口取下面的 `mouthCues`，全局帧；和 段.ts 台词 cue 的开口是同一批时刻，照用户在剪映里放字幕的位置）。
 import { ThreeCanvas } from '@remotion/three';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import { FlightFog, FlightRig, FlightSky } from '../../../地点/飞行镜头.tsx';
 import { Jiuhu } from '@库/角色/九胡.tsx';
 import { LiYing } from '@库/角色/李樱.tsx';
@@ -23,6 +22,7 @@ import { FuelWindow, MailleWindow } from '@库/界面/匠魂.tsx';
 import { CompassUi } from '@库/界面/结构罗盘.tsx';
 import * as choreo from './编排.ts';
 import { mouthAt } from '../../../配音/口型.ts';
+import { rad } from '@engine/core/数学.ts';
 
 // 开口（全局帧）：夸克古卷跨 6-2-2、6-2-3 两窗
 const mouthCues = [

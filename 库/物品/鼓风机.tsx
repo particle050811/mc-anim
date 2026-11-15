@@ -4,7 +4,7 @@
 // - 外壳：models/block/encased_fan/block.json（blockstates 的 facing=north 是 x 90，出风口朝北）；
 // - 叶片：AllPartialModels.ENCASED_FAN_INNER = encased_fan/propeller.json，partialFacing(…, facing.getOpposite())，按 clamp(转速 × 5, 80, 1280) × 0.3 度/刻转；
 // - 传动轴：AllPartialModels.SHAFT_HALF = shaft_half.json（半根轴，从中心伸到背面），按 转速 × 0.3 度/刻转，满速是叶片的 1/5。背面漏斗框里看得到轴头，漏了就是一个黑洞（见 预览/第6章收尾修改/09-*）。
-// 物品栏、思索标题框画的是另一个模型：models/item/encased_fan.json → encased_fan/item.json（`EncasedFanItem`）：四边框 + 正面格栅 + 22.5° 斜放扇叶 + 背后齿轮箱板。
+// 物品栏、思索标题框画的是另一个模型（models/item/encased_fan.json → encased_fan/item.json：四边框 + 正面格栅 + 22.5° 斜放扇叶 + 背后齿轮箱板），这里不画。
 // `thickBlades`（给 6-1-5 李樱手前端虚化成鼓风机用）：薄片的视频模型看不出在转，所以按 fan_blades 贴图每个不透明像素拉出有厚度的小方块，四片叶子各绕自己的中线扭 28°，中间轮毂不扭。
 // `ghost` 虚影（给 6-3 下坠脚底、6-4-3 黄叛弓前用）：整台照 动力压路机.tsx 的虚影画——贴图去色后染淡青白、自发光、半透明、不写深度、不投影（体内空间的应力转动之力化出来的）。
 // 叶片转角由调用方传（`spin`，度），组件里不读时钟；按画面帧率换算用 `bladeDegPerFrame`、`bladeVisualAngle`。
@@ -12,18 +12,17 @@
 //   <EncasedFan spin={度} 轴转角?={度} 厚叶片? opacity?={0~1} ghost? tint?="#cfeeff" 叶片?={{ 不透明度?, 亮度? }} />
 //     单位格、原点在方块中心，出风口朝本地 +Y，叶片绕 Y 转。摆放时 rotation 把 +Y 转到风向上。
 //     轴转角：背面那半根传动轴的转角，不给就是 spin / 5（游戏里轴转速是叶片的 1/5，见上）。
-//   <EncasedFanItem />  物品模型（物品栏图标、思索标题框），坐标同上（北 = +Y、上 = +Z）；调用方自己套物品的 display 变换。
 //   叶片角速度(rpm) → 度/剧情秒（游戏原速）
 //   叶片每帧转角(rpm, 剧情秒每帧, 上限?) → 这一帧的画面转角（度，封顶）
 //   叶片视觉转角(帧, 每帧, {起帧?, 上限?}) → 从 起帧 累加到 帧 的画面转角（度），每帧 = (f) => ({ rpm, 剧情秒 })
 //   例：6-4-3 慢放：spin={叶片视觉转角(F, (f) => ({ rpm: 转速(T(f)), 剧情秒: T(f + 1) - T(f) }))}
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { crop, png, type Png } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/物品/鼓风机';
 import atlasPng from 'asset:贴图/物品/鼓风机';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODEL = data as unknown as BlockModelData;
 const ATLAS = png(atlasPng);
@@ -218,10 +217,6 @@ export const EncasedFan: React.FC<{
     </>
   );
 };
-
-// 物品模型（思索标题框用，用户 10-10 嫌画的是方块模型、朝向反了，正对镜头的是背面）：
-// 游戏物品栏画物品模型 models/block/encased_fan/item.json（display.gui 是 rotation [30, 225, 0]、scale 0.625）：正面（北）是框 + fan_casing 格栅，后面隔 3 像素是绕 Z 转 22.5° 的扇叶，再往后是齿轮箱板。已用 item_display 在游戏里摆出截图核对（预览/第6章收尾修改/09-*）
-export const EncasedFanItem: React.FC = () => <BlockModel data={MODEL} atlas={ATLAS} part="物品" />;
 
 // 叶片转速（EncasedFanRenderer.renderSafe，FanVisual 同）：每刻转 clamp(|rpm|×5, 80, 1280) × 0.3 度，方向随 rpm 正负，0 不转。返回 度/剧情秒（一秒 20 刻）。
 export const bladeDegPerSec = (rpm: number) => (rpm === 0 ? 0 : Math.sign(rpm) * Math.min(1280, Math.max(80, Math.abs(rpm) * 5)) * 0.3 * 20);

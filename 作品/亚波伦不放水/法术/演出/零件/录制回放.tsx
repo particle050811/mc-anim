@@ -7,7 +7,7 @@
 // 录制是一次随机结果：每次放都是同一份，不认 种子。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { lerp as lerp } from '@engine/core/数学.ts';
+import { lerp } from '@engine/core/数学.ts';
 import type { Png } from '@engine/model/贴图.ts';
 import { interpPathPos, particlePath } from '@库/特效/粒子面片.tsx';
 import type { Vec3 } from '../接口.ts';
@@ -78,20 +78,6 @@ const placement = (feet: Vec3, target: Vec3) => {
   else [fx, fy] = [fx / n, fy / n];
   return (forward: number, right: number, up: number): [number, number, number] => [feet[0] + forward * fx + right * fy, feet[1] + forward * fy - right * fx, feet[2] + up];
 };
-
-/** 这份录制用到、贴图表里没有的贴图名（核对用） */
-export const missingTextures = (recording: SpellRecording, textureMap: Readonly<Record<string, Png>>) => {
-  const used = new Set<number>();
-  for (const p of recording.粒子) if (!p.自画网格 || p.网格轨) for (const r of p.轨) if (r[9]! >= 0) used.add(r[9]!);
-  return [...used].map((i) => recording.贴图名[i]!).filter((n) => !textureMap[n]);
-};
-
-/** 这份录制回放跳过的（自画网格又没录到网格的）和只画占位的，给 00-说明 列 */
-export const replaySkips = (recording: SpellRecording) => ({
-  跳过: [...new Set(recording.粒子.filter((p) => p.自画网格 && !p.网格轨).map((p) => `${p.类型}（${p.类}）`))],
-  placeholderTypes: [...new Set(recording.实体.filter((e) => !e.目标).map((e) => e.类型))],
-});
-
 export const RecordingReplay: React.FC<RecordingReplayProps> = ({ 录制: recording, 秒: sec, feet, 目标: target, 贴图: textureMap, animMode = '轨', withPlaceholders = true }) => {
   const place = placement(feet, target);
   const tick = sec * 20;

@@ -7,7 +7,6 @@
 import React from 'react';
 import * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { trajectoryPos } from '../零件/弹道.ts';
@@ -17,6 +16,7 @@ import { eachTick } from '../零件/甲/共用.ts';
 import { snowflake, snowflakeClass } from '../零件/甲/原版粒子.ts';
 import meta, { iceStormEndTick, iceStormPath } from './ice_storm.元.ts';
 import iceStormPng from 'asset:贴图/法术/goety/entity/projectiles/ice_storm';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const boxModel = (name: string, u: number): EntityModelData => ({
   texSize: [64, 32],
@@ -30,7 +30,7 @@ const IceStorm: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: tar
   const tick = sec * 20;
   const trajectory = iceStormPath(from, target, options?.highSpeed);
   const endTick = iceStormEndTick(from, target, options?.highSpeed);
-  const r = rng(seed * 29 + 7);
+  const r = mulberry32(seed * 29 + 7);
   const snow: ParticleBirth[] = eachTick(1, Math.min(tick, endTick)).flatMap((n) => {
     const [p, size] = [trajectory(n), n * 0.05];
     const ringAt = (height: number, radius: number) =>

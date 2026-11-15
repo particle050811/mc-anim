@@ -42,7 +42,6 @@ const normalize = (a: GameVec3): GameVec3 => {
   return l < 1e-4 ? [0, 0, 0] : scaleVec(a, 1 / l);
 };
 // 游戏坐标（y 朝上、z 朝南）↔ 场景坐标（z 朝上、y 朝北）：截面朝哪边是按游戏坐标叉出来的，在游戏坐标里算完再换回来
-const 进游戏 = (p: Vec3): GameVec3 => sceneToGame(p);
 const toScene = (p: GameVec3): Vec3 => gameToScene(p);
 
 const rng = (seed: number) => {
@@ -60,8 +59,8 @@ export const defaultSegCount = (startPos: Vec3, end: Vec3) => Math.floor(Math.sq
 
 export const generateArc = (from: Vec3, endPoint: Vec3, settings: ArcSettings, seed: number): ArcSeg[] => {
   const rand = rng(seed);
-  const startPos = 进游戏(from);
-  const end = 进游戏(endPoint);
+  const startPos = sceneToGame(from);
+  const end = sceneToGame(endPoint);
   const startToEndDiff = sub(end, startPos);
   const totalLength = vecLength(startToEndDiff);
   const segCount = settings.段数 ?? defaultSegCount(from, endPoint);

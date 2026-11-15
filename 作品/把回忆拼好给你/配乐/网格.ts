@@ -44,6 +44,3 @@ export const sentences: readonly Sentence[] = [
   // 止是人声落到 −20 dB 以下；回声一直拖到 长音.回声止
   { 序: 15, text: '爱炙热的你却忘了爱自己', 起: 48.61, 止: 55.2 },
 ];
-
-/** 第 15 句后半的长音：约 52.95 起，后面是 DJ 回声，拖到 55.25 */
-export const longNote = { 起: 52.95, echoEnd: 55.25 } as const;

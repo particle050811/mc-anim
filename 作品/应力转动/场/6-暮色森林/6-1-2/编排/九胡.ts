@@ -1,9 +1,10 @@
 // 九胡：林道上被甩开的跑法，S3 起被传送进迷宫后顺通道跑向中心（6-1-3 接着用同一路线）。
 import { track } from '@engine/anim/anim.ts';
 import type { FigurePose } from '@库/角色/骨架.tsx';
-import { FPS, S3, END, real, ss, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
+import { FPS, S3, END, real, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
 import { makeTrail, trailOn } from './折线.ts';
 import { START_L } from './李樱.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 // ---------- 九胡：晚 1 秒起跑，10 米/秒，被远远甩开；S3 她已被传送进迷宫 ----------
 // 用户 10-01：酒狐有跟随主人的设定，主人走远会被瞬移过去，所以最后直接出现在迷宫里；下一段 6-1-3 她跑到中心，二人从中心起飞。
@@ -22,7 +23,7 @@ export const jiuhu = (frame: number) => {
   const laneDist = START_L - dist;
   const ph = (2 * Math.PI * dist) / JH_STRIDE;
   const run = track([[JH_GO, 0], [JH_GO + 4, 1]], frame);
-  const land = 1 - ss((frame - 1) / 6);
+  const land = 1 - smoothstep01((frame - 1) / 6);
   const swing = 52 * Math.sin(ph) * run;
   const hop = Math.abs(Math.sin(ph));
   const pose: FigurePose = {
@@ -77,12 +78,12 @@ export const jiuhuMaze = (t: number) => {
   const [x, y, dir] = mazeAt(dist);
   const ph = (2 * Math.PI * dist) / JH_STRIDE;
   const elapsed = t - MZ_LOOK;
-  const run = ss(elapsed / 3) * (1 - ss((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.4) / (MZ_DEC * 0.6)));
-  const brake = ss((elapsed - MZ_ACC - MZ_CRUISE) / 4) * (1 - ss((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC) / 6));
-  const stopped = ss((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.6) / 8);
+  const run = smoothstep01(elapsed / 3) * (1 - smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.4) / (MZ_DEC * 0.6)));
+  const brake = smoothstep01((elapsed - MZ_ACC - MZ_CRUISE) / 4) * (1 - smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC) / 6));
+  const stopped = smoothstep01((elapsed - MZ_ACC - MZ_CRUISE - MZ_DEC * 0.6) / 8);
   const swing = 52 * Math.sin(ph) * run;
   const hop = Math.abs(Math.sin(ph));
-  const look = 1 - ss(elapsed / 4);
+  const look = 1 - smoothstep01(elapsed / 4);
   const pose: FigurePose = {
     loc: [x, y, 0.18 * hop * run],
     pitch: -14 * run + 10 * brake,

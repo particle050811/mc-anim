@@ -36,9 +36,10 @@
 import { bankAngle, maxBankDeg } from './飞行路径.ts';
 import { defaultParams, deepMerge, type BumpMode, type RealFlightParams, type DeepPartial } from './真实飞行/参数.ts';
 import { drydenField, lowAltTurbulence, modeVariance } from './真实飞行/湍流.ts';
-import { hermite, integStepSec, springTable } from './真实飞行/弹簧.ts';
+import { integStepSec, springTable } from './真实飞行/弹簧.ts';
+import { smootherstep01, hermite } from '../core/数学.ts';
 
-export { defaultParams, type BumpMode, type ChannelParams, type RealFlightParams } from './真实飞行/参数.ts';
+export { defaultParams, type BumpMode, type RealFlightParams } from './真实飞行/参数.ts';
 export { lowAltTurbulence } from './真实飞行/湍流.ts';
 export { integStepSec, springTable } from './真实飞行/弹簧.ts';
 
@@ -48,12 +49,6 @@ export const combineRoll = (bankDeg: number, bumpRoll: number) => {
   const clampedBank = Math.max(-maxBankDeg, Math.min(maxBankDeg, bankDeg));
   return clampedBank + bumpRoll * (1 - Math.abs(clampedBank) / maxBankDeg);
 };
-
-const smootherstep = (x: number) => {
-  const t = Math.min(1, Math.max(0, x));
-  return t * t * t * (t * (6 * t - 15) + 10);
-};
-
 // ---------- 主体 ----------
 export type Anchor = {
   帧: number; // 全局帧：从这一帧起扰动为 0
@@ -111,8 +106,8 @@ export const realFlight = (opts: RealFlightOptions) => {
   const windowAt = (time: number, k: number) => {
     let weight = 1;
     for (const anchor of anchorWins) {
-      if (time < anchor.Ta) weight *= anchor.r1 > 0 ? smootherstep((anchor.Ta - time) / (anchor.r1 * k)) : 1;
-      else if (time > anchor.Tb) weight *= anchor.r2 > 0 ? smootherstep((time - anchor.Tb) / (anchor.r2 * k)) : 1;
+      if (time < anchor.Ta) weight *= anchor.r1 > 0 ? smootherstep01((anchor.Ta - time) / (anchor.r1 * k)) : 1;
+      else if (time > anchor.Tb) weight *= anchor.r2 > 0 ? smootherstep01((time - anchor.Tb) / (anchor.r2 * k)) : 1;
       else return 0;
     }
     return weight;
@@ -373,4 +368,3 @@ export const realFlight = (opts: RealFlightOptions) => {
     stepCount: steps,
   };
 };
-export type RealFlightResult = ReturnType<typeof realFlight>;

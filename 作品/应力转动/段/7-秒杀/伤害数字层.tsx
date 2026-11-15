@@ -12,16 +12,16 @@ import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../地点/古城4x/7-1/戏.ts';
 import * as choreo from './编排.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 const swipeDamages = [437.1, 478.1, 427.3, 461.3, 445.2];
 const vexHitboxHeight = 0.8;
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 // 按拍的先后排：第 k 拍打死的是哪一只、死在哪
 const hits = play.swingTs.map((s, k) => {
   const deathT = s + 0.1;
   const i = play.vexDeathTs.findIndex((d) => Math.abs(d - deathT) < 1e-6);
-  return { T: deathT, damage: swipeDamages[k], anchor: damageNumberAnchor(toThree(play.vexState(i, deathT).p), vexHitboxHeight, 7131 + k) };
+  return { T: deathT, damage: swipeDamages[k], anchor: damageNumberAnchor(sceneToThree(play.vexState(i, deathT).p), vexHitboxHeight, 7131 + k) };
 });
 
 export const VexSwipeDamageLayer: React.FC = () => {
@@ -29,7 +29,7 @@ export const VexSwipeDamageLayer: React.FC = () => {
   const { width, height } = useVideoConfig();
   const t = choreo.timeAt(frame);
   const cam = choreo.camera(frame);
-  const camera = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
+  const camera = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
   const numbers: DamageNumberItem[] = hits.map((h) => ({ damage: h.damage, crit: false, anchor: h.anchor, ticks: (t - h.T) * 20 }));
   return <DamageNumberLayer camera={camera} width={width} height={height} numbers={numbers} />;
 };

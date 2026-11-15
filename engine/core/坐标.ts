@@ -7,11 +7,11 @@
 // - three：three.js 的世界坐标，Y 朝上右手系：three = (场景x, 场景z, −场景y)。不带原点时 three 坐标和游戏坐标是同一套轴。
 //   场景内容也可以整组放进 rotation [−π/2, 0, 0] 的 group，组里直接写场景坐标（engine/三渲二/机位.tsx 文件头）。
 //
-// 副本差别：toThree 的 16 份都是 (x, z, −y)，参数有 V3 和 number[] 两种；engine/voxel/方块网格.tsx 的 fromGame、6-3-2 的 toScene/toGame 不带原点，
+// 副本差别：engine/voxel/方块网格.tsx 的 fromGame、6-3-2 的 toScene/toGame 不带原点（写的是 −z，正本是 0 − z，z 为 0 时差一个负零），
 // 带原点的（gameToScene、cityFromGame、toGame…）把原点写死在各自文件里。
 //
 // 纯模块（只有类型 import）：段.ts、时间线.ts、末态.ts 和它们引的编排也能用（那些文件的闭包里不许有 three）。
-// 要 three 对象的（toThree 的正本 场景到three，给 Vector3）在 three换算.ts；要 three 轴的数组用不带原点的 场景到游戏（库/界面/投影.ts 的 Z朝上转three）。
+// 要 three 对象的（toThree 的正本 sceneToThree，给 Vector3）在 three换算.ts；要 three 轴的数组用不带原点的 sceneToGame（库/界面/投影.ts 的 zUpToThree）。
 import type { V3 } from '../model/parts.tsx';
 
 /** 游戏或场景的原点：游戏坐标 (ox, oy, oz) 落在场景 (0, 0, 0) */

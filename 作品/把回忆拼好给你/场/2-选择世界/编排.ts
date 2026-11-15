@@ -5,8 +5,8 @@ import { fps, oneFrameSec } from '../../分镜/时间.ts';
 import { events as mainCutEvents } from '../../分镜/正片开场.ts';
 import { scatter, iconEdge } from '../../界面/实例图标.ts';
 import { cursor, framingCenter, unit, save, ui, shardParams, drillIn, endWhite, endPullBack, colorBackBounce, flashTicks } from './参数.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const smoothStep = (q: number) => q * q * (3 - 2 * q);
 
 /** 存档那一格图标的界面像素框 */

@@ -17,6 +17,7 @@ import { SkyDome, TWILIGHT, twilightFogColor } from './天空.tsx';
 import { useSelfLight, twilightSunDir, twilightMix, twilightDusk } from './光照配比.ts';
 import { CascadedShadow, quarterOctaveCeil } from './级联阴影.ts';
 import { useDirFog, useHeightFog, useSkyFog, type HeightFogParams } from './高度雾.ts';
+import { smoothstep } from '../core/数学.ts';
 
 // 雾的远端（米）：按镜头离地高度放远，220 米以上 22 公里（冲出林海要看得到天边）；地面不近于全片的满视距（lib/视距.ts，用户 10-21「按照规矩来」）。
 // 往上放远的那条曲线是一镜到底按它调好的，只把底抬到视距，所以式子里还是从 240 起
@@ -129,10 +130,6 @@ const linColor = (hex: string) => {
 };
 const skyBands = (twilightDusk?.skyColors ?? TWILIGHT.sky).map(([at, hex]) => [at, linColor(hex)] as const);
 const glowColor = twilightDusk ? linColor(twilightDusk.afterglow) : null;
-const smoothstep = (a: number, b: number, x: number) => {
-  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-  return t * t * (3 - 2 * t);
-};
 // 暮色穹顶在方向 d 的颜色（线性），sun：余晖朝哪边
 const twilightSkyAt = (sun: V3) => (d: number[]) => {
   const h = d[2];

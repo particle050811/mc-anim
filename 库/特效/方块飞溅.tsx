@@ -4,10 +4,11 @@
 // 穿墙分两部分（用户 10-02）：被动力钻头矛直接碰到的方块（矛尖连钻头虚影扫过的那一管，各段 编排.ts 给的 `管`）当场崩掉，原地画原版破坏粒子（方块破坏粒子.tsx；钻头再顺着离开矛轴的方向甩一把），矛尖扫到那刻崩；周围没被碰到的才整块飞出。
 import React, { useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import type { Png } from '../../engine/model/贴图.ts';
 import { spawnBlockBreak, type BreakParticle, collectBreakParticles, BreakParticleQuads } from './方块破坏粒子.tsx';
 import { type Particle, particleTexture } from './粒子面片.tsx';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 export type DebrisFace = number[]; // [u0, v0, u1, v1, r, g, b]
 // cells：盒子里的格子是碎块；ring 的是盒子外扩一圈、留在原地的完整方块（洞壁）。hide：场景网格里要藏掉的范围（每个盒子一个，外扩以后的）。
@@ -319,7 +320,7 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
   const chipGeos = useMemo(() => {
     const out: { geo: THREE.BufferGeometry; size: number; from: number }[] = [];
     bursts.forEach((burst, bi) => {
-      const rand = rng(burst.seed * 31 + 7);
+      const rand = mulberry32(burst.seed * 31 + 7);
       const mine = pieces.filter((p, i) => p.cell.box === bi && !tubes[bi]?.has(i));
       if (!mine.length) return;
       for (let k = 0; k < (burst.chips ?? 0); k++) {
@@ -354,7 +355,7 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
       } else collectBreakParticles(tc.ps, sec * burst.tube!.particleClockScale, particles);
       return;
     }
-    const rand = rng(burst.seed * 1000 + i * 17 + 3);
+    const rand = mulberry32(burst.seed * 1000 + i * 17 + 3);
     const offset = pc.cell.off ?? [0, 0, 0];
     const p0 = [pc.cell.p[0] + offset[0], pc.cell.p[1] + offset[1], pc.cell.p[2] + offset[2]];
     const rel = [p0[0] - burst.origin[0], p0[1] - burst.origin[1], p0[2] - burst.origin[2]];
@@ -384,7 +385,7 @@ export const BlockDebris: React.FC<{ data: DebrisData; atlas: Png; bursts: Debri
     const pc = pieces[ch.from];
     const burst = bursts[pc.cell.box];
     if (!burst || burst.skip || burst.sec < 0) return;
-    const rand = rng(burst.seed * 7000 + k * 13 + 1);
+    const rand = mulberry32(burst.seed * 7000 + k * 13 + 1);
     const t = burst.sec;
     const sp = burst.speed * (0.6 + 0.8 * rand());
     const vel = [0, 1, 2].map((kk) => burst.dir[kk] * sp + (rand() - 0.5) * burst.spread * 2.2);

@@ -1,10 +1,10 @@
 // 第 3 句祭坛召唤每一帧的状态：柱顶材料、化成的光、她、你、光、两个镜头（远景贴地升起俯看祭坛，「光」那一拍切近景）。纯模块（测试也引），画法在 祭坛.tsx。
 // 钟是歌曲帧 g（段内帧 + 段起帧，核对段直接给歌曲帧），时刻取 分镜 的正片事件，分寸取 参数.ts，最后一帧取 末态.ts。游戏里的刻 = 歌上的秒 × 20。
-import { clamp01 } from '@engine/anim/anim.ts';
 import { fps, oneFrameSec } from '../../分镜/时间.ts';
 import { segmentWindow, events as mainCutEvents } from '../../分镜/正片第3句.ts';
 import * as params from './参数.ts';
 import { liYingFinal, endRig, finalSpeed, eyeBall } from './末态.ts';
+import { clamp01, lerp, lerpV } from '@engine/core/数学.ts';
 
 type Vec3 = [number, number, number];
 
@@ -27,9 +27,6 @@ export const lastFrame = segWindow.止帧 - 1;
 /** 歌曲帧 → 歌上的秒、游戏刻 */
 export const toSec = (g: number) => g / fps;
 export const frameToTick = (g: number) => (g / fps) * 20;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerpVec3 = (a: readonly number[], b: readonly number[], t: number): Vec3 => [lerp(a[0]!, b[0]!, t), lerp(a[1]!, b[1]!, t), lerp(a[2]!, b[2]!, t)];
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 
 // ---------- 柱顶材料 ----------
@@ -52,7 +49,7 @@ export const flySec = (events.appear - events.tapAltar) / fps - params.lightMelt
 /** 化光以后光点的位置：t 0～1，从柱顶飞到 汇点，先慢后快（缓起），中间往上拱一点 */
 const lightDotPos = (startPos: Vec3, t: number): Vec3 => {
   const k = smoothstep(clamp01(t));
-  const p = lerpVec3(startPos, params.lightMelt.convergePoint, k);
+  const p = lerpV(startPos, params.lightMelt.convergePoint, k);
   p[2] += 0.4 * Math.sin(Math.PI * clamp01(t));
   return p;
 };

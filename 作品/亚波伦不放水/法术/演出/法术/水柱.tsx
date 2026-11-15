@@ -9,7 +9,6 @@
 // 没做：目标被水柱往后推、灭火；循环声只登记了一次。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { sub, scaleVec, vecLength, mix } from '../零件/弹道.ts';
@@ -20,6 +19,7 @@ import meta, { waterPillarDurTicks, waterLandPoint } from './水柱.元.ts';
 import jetInnerPng from 'asset:贴图/法术/goety/entity/water_jet/jet_inner';
 import jetOuterPng from 'asset:贴图/法术/goety/entity/water_jet/jet_outer';
 import waterTrailPng from 'asset:贴图/法术/goety/particle/water_trail';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const innerImg = png(jetInnerPng);
 const outerPng = png(jetOuterPng);
@@ -27,7 +27,7 @@ const waterTrailImg = png(waterTrailPng);
 
 /** 一颗水拖各刻末的位置（第 0 项 = 出生处），到落地为止 */
 const waterDragPath = (startPoint: Vec3, seed: number, ground: number): Vec3[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
   let v: Vec3 = [gaussian() * 0.15, gaussian() * 0.15, gaussian() * 0.15];
   let p = startPoint;

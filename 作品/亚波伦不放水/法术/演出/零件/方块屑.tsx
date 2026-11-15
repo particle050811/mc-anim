@@ -5,11 +5,11 @@
 import React from 'react';
 import { png, type Png } from '@engine/model/贴图.ts';
 import type { V3 } from '@engine/model/parts.tsx';
-import { rng } from '@engine/model/parts.tsx';
 import { interpPathPos, particleInitVel, particlePath, ParticlePhysics } from '@库/特效/粒子面片.tsx';
 import type { Vec3 } from '../接口.ts';
 import { facePatch, QuadGroup, type QuadItem } from './面片.tsx';
 import netherrackPng from 'asset:贴图/方块/下界岩';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export const defaultGroundBlockPng: Png = png(netherrackPng);
 
@@ -23,7 +23,7 @@ export interface DebrisBirth {
 
 /** ServerParticleUtil.circularParticles：圆面积 π r² 颗（向上取整），均匀撒在半径 r 的圆里 */
 export const scatterInCircle = (center: Vec3, radius: number, tick: number, seed: number): DebrisBirth[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const n = Math.ceil(Math.PI * radius * radius);
   return Array.from({ length: n }, (_, i) => {
     const angle = r() * Math.PI * 2;
@@ -34,7 +34,7 @@ export const scatterInCircle = (center: Vec3, radius: number, tick: number, seed
 
 /** sendParticles(BLOCK, 中心, 数量, dx, dy, dz, speed)：位置 = 中心 + 高斯 × 散布，速度 = 高斯 × speed（散布第三个分量是竖直） */
 export const scatterDebris = (center: Vec3, count: number, spread: Vec3, speed: number, tick: number, seed: number): DebrisBirth[] => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
   return Array.from({ length: count }, (_, i) => ({
     刻: tick,
@@ -52,7 +52,7 @@ export const BlockDebris: React.FC<{ spawns: readonly DebrisBirth[]; 秒: number
   for (const spawn of spawns) {
     const age = tick - spawn.刻;
     if (age < 0) continue;
-    const r = rng(spawn.种子 * 2654435761 + 11);
+    const r = mulberry32(spawn.种子 * 2654435761 + 11);
     const lifetime = Math.floor(4 / (r() * 0.9 + 0.1));
     if (age >= lifetime) continue;
     const speedVec = spawn.速 ?? [0, 0, 0];

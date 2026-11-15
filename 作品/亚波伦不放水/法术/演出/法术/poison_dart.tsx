@@ -4,7 +4,6 @@
 // 没做：命中后中毒的药水粒子。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { sub, trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
@@ -15,6 +14,7 @@ import meta, { poisonDartPath } from './poison_dart.元.ts';
 import poisonQuillModelData from 'asset:模型/法术/goety/PoisonQuillModel';
 import quillPng from 'asset:贴图/法术/goety/entity/projectiles/poison_quill';
 import trailParticlePng from 'asset:贴图/法术/goety/particle/trail';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const poisonQuillModel = getModel(poisonQuillModelData, 'PoisonQuillModel');
 export const trailParticleClass: ParticleClass = { 帧: [png(trailParticlePng)], 选帧: '按年龄', 摩擦: 0.96, 混合: '半透明', opacity: (age, lifetime) => 1 - Math.floor(age) / lifetime };
@@ -22,7 +22,7 @@ export const trailParticleClass: ParticleClass = { 帧: [png(trailParticlePng)],
 const PoisonDart: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = poisonDartPath(from, target, options?.highSpeed);
-  const r = rng(seed * 5 + 2);
+  const r = mulberry32(seed * 5 + 2);
   const color = hexColor(0xefec8b);
   const tail: ParticleBirth[] = eachTick(1, Math.min(tick, arriveTick)).flatMap((n) => {
     const [pos, speedVec] = [trajectory(n), sub(trajectory(n + 1), trajectory(n))];

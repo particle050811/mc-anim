@@ -2,10 +2,10 @@
 // 位置 = 主人位置 + (0, 高, 宽) 绕竖直轴转 (初角 + 转速 × 年龄) 度；初角随机 0～360，转速 = (10～20) × (−1、0、1 随机)（度/刻）；
 // 寿命没给就是 20～39 刻；透明度 1 − 年龄 ÷ 寿命；带子取最近 4 段、高 0.5（WindTrailParticle 的 sampleSize 4），贴图 trail，亮度 240。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import type { Vec3 } from '../接口.ts';
 import type { RgbColor } from './材质.ts';
 import { WindBand } from './游带.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export interface WindBirth {
   /** 出生的刻 */
@@ -28,7 +28,7 @@ export const WindParticles: React.FC<{ spawns: readonly WindBirth[]; 刻: number
   <>
     {spawns.map((spawn, i) => {
       const age = tick - spawn.刻;
-      const r = rng(spawn.种子 * 2654435761 + 97);
+      const r = mulberry32(spawn.种子 * 2654435761 + 97);
       const lifetime = spawn.寿命 ?? 20 + Math.floor(r() * 20);
       const initAngleDeg = r() * 360;
       const rotSpeed = (10 + r() * 10) * (Math.floor(r() * 3) - 1);

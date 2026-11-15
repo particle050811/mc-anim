@@ -64,7 +64,6 @@ export const timetableCells: readonly TimetableCell[] = [
 ];
 
 export const timetableTitle = '高三（　　）班　课程表';
-export const timetableHeader = { 时间: '时　间', content: '内　容' } as const;
 export const timetableNote = '注：1. 上午第一节 7:40 开始；2. 下午第一节 13:30 开始；3. 周日 9:00 前返校，上午数学培优；4. 选考走班按选考科目分班上课。';
 
 /** 某一格亮多少（0 不亮、1 亮满）；同一个合并格里有几节都亮时取最亮的 */

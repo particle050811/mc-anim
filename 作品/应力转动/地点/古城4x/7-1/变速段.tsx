@@ -5,9 +5,9 @@
 import React from 'react';
 import { useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
-import type { Cam } from '../6-4-1/古城画面.tsx';
 import type { SpeedRamp } from './变速.ts';
 import { ScenePicture } from './画面.tsx';
+import type { Cam } from '@engine/core/机位.ts';
 
 export type SpeedRampShot = { 起: number; cam: (t: number) => Cam };
 export const buildCameraRig = (v: SpeedRamp, shots: SpeedRampShot[]) => {

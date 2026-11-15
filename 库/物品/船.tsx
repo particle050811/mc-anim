@@ -10,13 +10,13 @@
 //   满员时动物身子、头都转 90° 或 270°（按实体 id 单双），侧着坐；玩家身子朝船头。
 // 坐标同 骨架.tsx：原点在船实体的位置（船底），Z 朝上，朝向 +Y，单位格。
 import React from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { EntityModel, type EntityModelData } from '../../engine/model/实体模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import { oarPose } from './船原版.ts';
 import raw from 'asset:模型/物品/船';
 import cherryWoodPng from 'asset:贴图/物品/船/樱花木';
+import { rad } from '../../engine/core/数学.ts';
 
 const MODEL = (raw as unknown as { models: { 船: EntityModelData } }).models.船;
 const boatTextures = { 樱花木: png(cherryWoodPng) };

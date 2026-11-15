@@ -5,7 +5,9 @@ import { lootPose, yawTo } from '../../../../地点/古城4x/6-4-1/古城戏.ts'
 import { chestArchery } from '../../../../地点/古城4x/布局.ts';
 import type { ChestOpening } from '../../../../地点/古城4x/6-4-1/古城画面.tsx';
 import * as geom from '../几何.ts';
-import { ss, storySecAt } from './公用.ts';
+import { storySecAt } from './公用.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
+
 // #210（Lootr 战利品箱，6-4-2 开的）：开头开着，听到「哄」松手、盖子落下
 export const openChest = (g: number): ChestOpening => ({ chestId: chestArchery.chestId, 开: -1, closeSec: geom.turnStart, 秒: storySecAt(g) });
 // 面朝南翻箱子，同 6-4-2 末帧
@@ -50,14 +52,14 @@ const HEADING = sightYaw - (sample(YAW, 104) + sample(TWIST, 104) + sample(HEAD_
 // 只挪弹开点不够，所以整个人绕脚底多拧 `挥刀转身` 度（帧 98 拧起、103 拧满），竖面斜过来横穿箭路；
 // 头照旧锁着黄叛（`sightLock` 反扭回来），挥完跟 `AFTER` 一起拧回戒备朝向。拧多少见 几何.ts 的 `弹开关键帧`
 export const swingTurnDeg = geom.swingTurnDeg;
-const swingTwistAt = (o: number, after: number) => swingTurnDeg * ss((o - 98) / 5) * (1 - after);
+const swingTwistAt = (o: number, after: number) => swingTurnDeg * smoothstep01((o - 98) / 5) * (1 - after);
 // 抬头的时刻跟着弹开走
-const lookUpAt = (t: number) => ss((t - geom.deflect - 0.104) / 0.25) * (1 - ss((t - geom.deflect - 1.074) / 0.5));
+const lookUpAt = (t: number) => smoothstep01((t - geom.deflect - 0.104) / 0.25) * (1 - smoothstep01((t - geom.deflect - 1.074) / 0.5));
 const lookUpPitch = 60;
 // 正式演法（打斗编排.ts）：听到「哄」起压低重心、胸和身子往后拧着蓄力，刀甩出时收回（刀挥到正前时姿态回到主方案，刀刃照样扫过箭路）；
 // 挥完在最高处多停一拍，再缓缓收成戒备
 export type LiYingStaging = { windup: boolean };
-const windupAt = (o: number) => ss((o - 93) / 3) * (1 - ss((o - 102.8) / 1.2));
+const windupAt = (o: number) => smoothstep01((o - 93) / 3) * (1 - smoothstep01((o - 102.8) / 1.2));
 const WINDUP = { kneeR: 35, kneeL: 30, legR: 12, legL: -8, pitch: -8, twist: 12, yaw: 8 };
 const holdAfterSwing = 0.12;
 
@@ -67,14 +69,14 @@ export const makeLiying = (variant?: LiYingStaging) => (globalFrame: number) => 
   const rummage = 0.3 + 0.2 * (0.5 + 0.5 * Math.sin(t * 7));
   const loot = lootPose(geom.FOOT, FACE_CHEST, rummage, 1.4);
   // 听到「哄」：下意识直起身、转向黄叛、手搭上刀柄，0.04 秒后拔刀
-  const turnWeight = ss((t - geom.turnStart) / (geom.drawStart - geom.turnStart + 0.01));
+  const turnWeight = smoothstep01((t - geom.turnStart) / (geom.drawStart - geom.turnStart + 0.01));
   if (turnWeight <= 0) return { pose: loot, bladeOn: false, blade: 0, bladeSide: 0 };
   const iaiFrame = oldFrame(t);
   const after = track(AFTER, variant ? t - holdAfterSwing : t);
   const w = variant?.windup ? windupAt(iaiFrame) : 0;
   const turn = turnWeight;
   const heading = FACE_CHEST + (HEADING - FACE_CHEST) * turn;
-  const pitch = -10 - 8 * ss((iaiFrame - 98) / 6) + 8 * after + WINDUP.pitch * w;
+  const pitch = -10 - 8 * smoothstep01((iaiFrame - 98) / 6) + 8 * after + WINDUP.pitch * w;
   const iai: FigurePose = {
     loc: geom.FOOT,
     pitch,
@@ -83,7 +85,7 @@ export const makeLiying = (variant?: LiYingStaging) => (globalFrame: number) => 
     headPitch: sightPitch * turn - pitch,
     // 蓄势时胸和身子多拧的，头反着扭回来，眼睛还盯着黄叛
     headYaw: sample(HEAD_YAW, iaiFrame) * (1 - after) + 20 * after - (WINDUP.twist + WINDUP.yaw) * w,
-    legR: 28 + 10 * ss((iaiFrame - 98) / 6) + WINDUP.legR * w,
+    legR: 28 + 10 * smoothstep01((iaiFrame - 98) / 6) + WINDUP.legR * w,
     kneeR: 30 + WINDUP.kneeR * w,
     legL: -18 + WINDUP.legL * w,
     kneeL: 22 + WINDUP.kneeL * w,
@@ -97,7 +99,7 @@ export const makeLiying = (variant?: LiYingStaging) => (globalFrame: number) => 
     twist: sample(TWIST, iaiFrame) * (1 - after) + -15 * after + WINDUP.twist * w,
   };
   // 刀挥到正前后头一直看着黄叛：不跟 6-1-2 关键帧里头随身子回扭，头相对胸转多少由身子扭了多少定
-  const sightLock = ss((iaiFrame - 103) / 1);
+  const sightLock = smoothstep01((iaiFrame - 103) / 1);
   iai.headYaw += (sightYaw - (iai.yaw ?? 0) - (iai.twist ?? 0) - iai.headYaw) * sightLock;
   iai.headPitch += (lookUpPitch - sightPitch) * lookUpAt(t);
   const mix = (a = 0, b = 0) => a + (b - a) * turnWeight;

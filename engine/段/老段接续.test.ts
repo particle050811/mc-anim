@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { checkOldSeg, continueOldSeg } from './老段接续.ts';
 import { windowSeg } from './窗口段.ts';
 
-describe('接老段：老场（定义段 写的）摆上场时间线，新段接得上', () => {
+describe('continueOldSeg：老场（defineSeg 写的）摆上场时间线，新段接得上', () => {
   const timeline = continueOldSeg({
     场: '7-墙头追逐',
     legacySegs: [

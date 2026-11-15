@@ -4,15 +4,15 @@
 //   实体活着的时候闪电一直画着，每轮换一次形状。
 // 和游戏的差别：库里的 LightningBolt 自带一盏照亮四周的灯，这里跟着闪电一直亮；游戏里只有 life ≥ 0 的那几刻天空发白。没做天空发白、点火。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { LightningBolt } from '@库/特效/闪电.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import meta, { lightningMaxTicks } from './闪电.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 /** 照 tick 走一遍：每一轮从第几刻起、用哪个形状种子；末 = 实体消失的刻 */
 const makeBolts = (seed: number): { bolts: { startTick: number; shapeSeed: number }[]; endTick: number } => {
-  const r = rng(seed * 31337 + 11);
+  const r = mulberry32(seed * 31337 + 11);
   const randBelow = (n: number) => Math.floor(r() * n);
   let life = 2;
   let flashes = randBelow(3) + 1;

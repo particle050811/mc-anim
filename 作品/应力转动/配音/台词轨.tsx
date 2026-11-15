@@ -44,5 +44,4 @@ for (const k of ctx.keys()) {
   wavUrls[k.replace(/^\.\//, '')] = typeof wavModule === 'string' ? wavModule : wavModule.default;
 }
 
-export const { LineTrack, lineFrameCount, lineTable } = makeLineTrack(lineTableJson, wavUrls);
-export type { LineCue, LineEntry } from '@engine/audio/台词轨.tsx';
+export const { lineFrameCount, lineTable } = makeLineTrack(lineTableJson, wavUrls);

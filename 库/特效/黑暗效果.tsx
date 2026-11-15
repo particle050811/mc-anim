@@ -15,6 +15,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { useThree } from '@react-three/fiber';
+import { clamp01 } from '../../engine/core/数学.ts';
 
 export const darknessParams = {
   durationTicks: 260,
@@ -51,8 +52,6 @@ const factorAt = (t: number, durTicks: number) => {
 
 // 1 − (1 − x)⁴
 const notGamma = (x: number) => 1 - (1 - x) ** 4;
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-
 // 一个满亮度格子（夜视下，或者光照本来就是满的）在亮度图里的值
 const lightmapValue = (darkScale: number, darkGamma: number, gammaOpt: number, nightVision: boolean, base = 1) => {
   let lightLevel = nightVision ? 1 : base;

@@ -8,21 +8,8 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import type { V3 } from '../../engine/model/parts.tsx';
-import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import shriekPng from 'asset:贴图/特效/尖啸声波';
-import shriekerData from 'asset:模型/特效/幽匿尖啸体';
-import shriekerAtlas from 'asset:贴图/特效/幽匿尖啸体';
-
-// 幽匿尖啸体方块本身（minecraft:sculk_shrieker[can_summon=true]，npm run 取材 -- 幽匿尖啸体；内顶贴图是动画，只取第一帧）。
-// 古城网格里本来就有尖啸体，这个给核对和特写用。p：方块底面中心
-const SHRIEKER = shriekerData as unknown as BlockModelData;
-const SHRIEKER_ATLAS = png(shriekerAtlas);
-export const SculkShriekerBlock: React.FC<{ p: V3 }> = ({ p: blockPos }) => (
-  <group position={[blockPos[0], blockPos[1], blockPos[2] + 0.5]}>
-    <BlockModel data={SHRIEKER} atlas={SHRIEKER_ATLAS} part="尖啸体" />
-  </group>
-);
 
 const ringPng = png(shriekPng);
 let tex: THREE.DataTexture | null = null;
@@ -108,5 +95,3 @@ export const ShriekRings: React.FC<{ p: V3; sec: number }> = ({ p: blockPos, sec
   return <>{out}</>;
 };
 
-// 一次尖啸的总时长（秒）：最后一个环 45 刻后出、活 30 刻
-export const shriekTotalSec = ((shriekParams.count - 1) * shriekParams.intervalTicks + shriekParams.lifeTicks) / 20;

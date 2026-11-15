@@ -12,7 +12,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { parse } from 'smol-toml';
 import type { CheckContext } from '../检查/上下文.ts';
-import { packManifest } from '../检查/规则/资产.ts';
+import { packManifest } from '../世界/版本.ts';
 import { config } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
 import { runCmd, tryRun } from '../环境/子进程.ts';

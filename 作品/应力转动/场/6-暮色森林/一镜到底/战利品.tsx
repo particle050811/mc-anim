@@ -19,11 +19,7 @@ import { LootChestBurst } from '@库/特效/战利品箱碎裂.tsx';
 import { closeupBreakClockScale } from '@库/特效/方块破坏粒子.tsx';
 import { ItemPickup, burstItems, type BurstParams } from '@库/特效/物品拾取.tsx';
 import * as route from './路线.ts';
-
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 // ---------- 掉什么 ----------
 // 按暮色森林 4.3.2508 jar 的 loot_tables/entities/*.json，每处挑几件有代表性的（物品图见 模型/物品/掉落物.tsx）。箱子打碎时原版按格子一堆一堆掉，所以同种东西可以有好几件。
@@ -118,9 +114,6 @@ export const lootChests: ChestState[] = ORDER.flatMap((bossName) => {
     };
   });
 });
-// 一镜到底的各段核对用：每个箱子打碎（没有箱子的：掉东西）那一刻的全局帧
-export const chestBreakFrames = lootChests.map((c) => ({ 名: c.名, 帧: route.frameAt(route.pierceTimes[c.名] + c.breakT) }));
-
 // 战利品层：这一帧所有在场的箱子和物品（世界坐标）。T：物理时间；扫帚：这一帧扫帚本地 → 场景的矩阵；镜头：镜头位置
 export const LootLayer: React.FC<{ T: number; broom: THREE.Matrix4; camPos: number[] }> = ({ T: physT, broom: broom, camPos: camPos }) => {
   const target = toScene(broom, liYingChest);
@@ -163,7 +156,7 @@ const drillWindows = ORDER.map((bossName) => {
   const T0 = route.pierceTimes[bossName];
   return { on: route.frameAt(T0 + (pierce.impactPos - 8) / pierce.V), off: route.frameAt(T0 + (pierce.出 + 10) / pierce.V) };
 });
-export const drillGhost = (F: number) => Math.max(0, ...drillWindows.map((w) => 0.6 * ss((F - (w.on - 6)) / 6) * (1 - ss((F - w.off) / 8))));
+export const drillGhost = (F: number) => Math.max(0, ...drillWindows.map((w) => 0.6 * smoothstep01((F - (w.on - 6)) / 6) * (1 - smoothstep01((F - w.off) / 8))));
 export const drillSpin = (T: number) => T * 2 * Math.PI * 50;
 // 包在矛头外面：钻尖比矛尖前 0.06 格，放大 1.1 倍（刃半径 0.34 格，整个包住 0.3 格宽、0.7 格长的矛头）
 const drillSleeveScale = SPEAR_FIT.scale;

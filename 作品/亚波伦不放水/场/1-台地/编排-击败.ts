@@ -4,13 +4,11 @@
 import { definePerformance, type TiltSettings, type PerformanceBar } from '../../角色/动作/亚波伦演出.ts';
 import { openDoneTick, defaultOpenClose } from '../../界面/分圈.ts';
 import type { MultiRingParams } from '../../界面/多圈轮盘.tsx';
-import { staffTipPlatePose } from '../../界面/杖尖盘位姿.ts';
 import { arrangeWheel } from '../../界面/轮盘法术.ts';
 import { v7Pos, rev7Clock, yaBoLunBeats, actStart, retractStart, secAt, landSec, standStillSec } from './击败拍.ts';
-import { wheelPlace } from './编排-开盘.ts';
 import { steveEye, steveFoot } from './编排-齐放.ts';
 
-export { actStart, actDur, secAt, yaBoLunPos, landSec, landFoot, dropSeed, cursorMove, cursorAt } from './击败拍.ts';
+export { actStart, actDur, secAt, yaBoLunPos, landSec, dropSeed, cursorMove, cursorAt } from './击败拍.ts';
 
 /** 游戏界面开关：死亡界面、聊天栏里的死亡消息。都是游戏自带的界面，用户没看过；不要就改成 false */
 export const inGameUi = true;
@@ -43,8 +41,6 @@ const lean: TiltSettings = { perSpeed: 1.0, perAccel: 0.03, limit: 25, 窗: 0.08
 const performBase = definePerformance({ timeline, 位: v7Pos, 目标: () => steveEye, lean });
 /** 她的演出（编排的钟）：换到七版的钟取，浮动、待机动画的相位和七版一样 */
 export const perform = { ...performBase, 在: (t: number) => performBase.在(clockAt(t)), 杖: (t: number) => performBase.杖(clockAt(t)) };
-export const wheelPos = (t: number) => staffTipPlatePose(perform.杖(t), wheelPlace);
-
 const ringCount = arrangeWheel({ 放: '有画面' }).cellsPerRing.length;
 /** 七版 5-03 开头盘转到第 328 刻（盘的转角照它，和七版一样） */
 const v7StartTick = 328;

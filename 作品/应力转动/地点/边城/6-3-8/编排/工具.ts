@@ -2,14 +2,9 @@
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
 import { borderTownPos } from '../../../主世界116.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 export const D2R = Math.PI / 180;
-export const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-export const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-export const lerp3 = (a: number[], b: number[], k: number): V3 => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
 export const add = (a: number[], b: number[]): V3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 export const sub = (a: number[], b: number[]): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 export const norm = (vec: number[]): V3 => {

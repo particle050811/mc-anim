@@ -21,8 +21,6 @@ const ATLAS = png(atlasPng);
 
 // 握持点在模型里的高度（模型像素，y 朝上）：见文件头
 export const ARTIFICER_CANE_GRIP_Y = -2;
-export const ARTIFICER_CANE_LENGTH = 39; // 像素，y −15～24
-
 export const ArtificerCaneModel: React.FC = () => <BlockModel data={MODEL} atlas={ATLAS} part="杖" />;
 
 // 手插槽里：模型方块中心在 (8, 8, 8)，握持点 (8, 握点, 8) 挪到原点；1 格 = 16 像素

@@ -5,19 +5,19 @@
 // 这里把 起点 当成中心（施法者脚底 + 0.5 格）。
 // 没做：半径内生物的冻伤。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { ShockwaveRing } from '../零件/冲击波.tsx';
 import { defaultRadius, risingInitial, frostNovaClass } from '../零件/丁粒子.ts';
 import { TexturedParticles, type ParticleBirth } from '../零件/粒子.tsx';
 import meta from './霜冻新星.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const radiusCells = 3;
 
 const FrostNova: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: seed }) => {
   const feet: Vec3 = [from[0], from[1], from[2] - 0.5];
-  const r = rng(seed * 7919 + 11);
+  const r = mulberry32(seed * 7919 + 11);
   const gaussian = () => Math.sqrt(-2 * Math.log(1 - r())) * Math.cos(2 * Math.PI * r());
   const frosts: ParticleBirth[] = [];
   for (let i = -radiusCells; i <= radiusCells; i++) {
@@ -32,7 +32,7 @@ const FrostNova: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 种子: se
         const d6 = Math.hypot(d3, d4, d5) / 0.5 + gaussian() * 0.05;
         // 游戏 (d3, d4 竖直, d5 南) → 场景 (x, −z, y)；速度参数 × 0.5
         const givenPoint: Vec3 = [(d3 / d6) * 0.5, (-d5 / d6) * 0.5, (d4 / d6) * 0.5];
-        const rr = rng(Math.floor(r() * 1e9));
+        const rr = mulberry32(Math.floor(r() * 1e9));
         const initial = risingInitial(Math.floor(r() * 1e9), feet, givenPoint);
         frosts.push({ 刻: 0, 位: initial.位, 速: initial.速, 寿命: Math.floor(8 / (rr() * 0.8 + 0.2)) + 4, radius: defaultRadius(rr), 种子: initial.种子 });
       }

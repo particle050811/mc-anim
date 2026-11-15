@@ -2,6 +2,7 @@
 // 段键是永久身份（<章>-<段名>，全片唯一，只用汉字、字母、数字和连字符），Composition id、目录名、母版缓存都用它；
 // 编号（<章>-<两位序号>）按这里的顺序现算，只出现在产物里。核对段（键以 核对- 开头）放 作品/应力转动/核对/，不进章节编号。
 import type { ManifestEntry } from '@engine/段/清单条目.ts';
+import { manifestTools } from '@engine/段/清单工具.ts';
 export type { ManifestEntry };
 
 export const manifest: readonly ManifestEntry[] = [
@@ -50,16 +51,4 @@ export const manifest: readonly ManifestEntry[] = [
 /** 求解缓存的入口（名 → 相对本目录的模块）：打包时按它们的依赖闭包算代码层指纹（pipeline/指纹/求解指纹.ts、engine/core/求解缓存.ts） */
 export const solveEntries: Readonly<Record<string, string>> = { 航线求解: '场/6-暮色森林/一镜到底/航线求解.ts' };
 
-/** 段目录（相对作品根） */
-export const segDir = (segKey: string) => (segKey.startsWith('核对-') ? `核对/${segKey.slice('核对-'.length)}` : `段/${segKey}`);
-
-/** 段名 = 段键去掉「<章>-」 */
-export const segmentName = (entry: ManifestEntry) => entry.键.slice(String(entry.章).length + 1);
-
-/** 编号：章内按清单顺序的两位序号；核对段没有 */
-export const segmentCode = (segKey: string): string | null => {
-  const entry = manifest.find((t) => t.键 === segKey);
-  if (!entry || entry.章 === '核对') return null;
-  const chapterIndex = manifest.filter((t) => t.章 === entry.章).findIndex((t) => t.键 === segKey) + 1;
-  return `${entry.章}-${String(chapterIndex).padStart(2, '0')}`;
-};
+export const { segDir, segmentName, segmentCode } = manifestTools(manifest);

@@ -7,10 +7,10 @@
 // 图集宽取 2048（一张 16 像素的物品贴图只占光效贴图的 1/16，看起来是一整片缓慢移动的紫光）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import { type ItemLayer, type ItemTransform, itemMesh } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import glintPng from 'asset:贴图/物品/杂项物品/附魔光效';
+import { rad } from '../../engine/core/数学.ts';
 
 const GLINT = { speed: 0.5, strength: 0.75, scale: 8, rotZ: 0.17453292, atlasWidth: 2048 };
 let glintTex: THREE.DataTexture | null = null;

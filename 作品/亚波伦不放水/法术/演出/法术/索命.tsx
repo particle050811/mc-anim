@@ -6,7 +6,6 @@
 //   起始角随机，每刻转 (10～20)° × {−1, 0, 1}（抽到 0 的不转，带子零长看不见），寿命 20～39 刻，透明度 1 − 年龄 ÷ 寿命。
 // 没做：蓄力 60 刻期间每刻一条的风带（出手前的事）；施法者自己吃的反噬没有画面。
 import React from 'react';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { ElectricArc } from '../零件/电弧.tsx';
@@ -14,13 +13,14 @@ import { arcPresets } from '../零件/电弧形.ts';
 import { hexColor } from '../零件/材质.ts';
 import { GatherStream, gatherLifetime, WindBand } from '../零件/游带.tsx';
 import meta, { killingArcTicks } from './索命.元.ts';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const bloodColor = hexColor(0xd91516);
 
 const Killing: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed }) => {
   const tick = sec * 20;
   const eye: Vec3 = [target[0], target[1], target[2] + 1.62];
-  const r = rng(seed * 7919 + 3);
+  const r = mulberry32(seed * 7919 + 3);
   const chains = Array.from({ length: 8 }, () => {
     const scatterPoint: Vec3 = [eye[0] + (r() - 0.5) * 8, eye[1] + (r() - 0.5) * 8, eye[2] + (r() - 0.5) * 8];
     const gatherLife = gatherLifetime(r());

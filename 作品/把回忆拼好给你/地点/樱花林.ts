@@ -5,28 +5,14 @@
 // 樱花林是她种的（告示牌「想我的时候就种棵樱花树吧」）：用户 10-25 看第 13 句「怎么是同步生长？ 应该是樱花树越来越多才对 背景从什么都没有到长成一片樱花林」。
 //   生长 0（第 13 句起风以前、第 12 句末横移出屋）两层坡上只有草、花和零星橡树；第 13 句跟着日历，樱花树从门口那棵树苗身后起往两边、往远处一棵棵冒出来，
 //   每棵一冒出来就是长成的原版整棵（原版树苗长成树是一刻之内的事），越冒越快；生长 1（第 13 句末、第 14、15 句）两层长满，和原来开满的林子一样。
-// 樱花树照原版 1.20.1 CherryTrunkPlacer、CherryFoliagePlacer 的长法（同 场/2-新世界/地形.ts，那边没导出，这里照同一套规则另写），
+// 樱花树照原版 1.20.1 CherryTrunkPlacer、CherryFoliagePlacer 的长法（同 地点/原版树.ts 的规则，这里按种子另写一份长在原点），
 //   橡树照原版 oak（StraightTrunkPlacer 4～6、BlobFoliagePlacer 半径 2）；随机用定死的散列，同一组参数每次出一样的方块。
 // 坐标：每层自己的格（x 东、y 往里、z 上），这一层最前一排地面顶在 z = 0；树位、起伏、种下的先后都是 Agent 暂定。
 import { fbm, hash2, simplex2 } from '@engine/core/噪声.ts';
 import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
+import { randInt, mulberry32 } from '@engine/core/数学.ts';
 
 type Position = [number, number, number];
-
-/** 定死的随机数（mulberry32），一棵树一个种子 */
-const rng = (seed: number) => {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-/** [lo, hi] 里的整数 */
-const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
-
 type Dir2D = readonly [number, number];
 /** 水平四向（北、东、南、西；y 往里 = 北） */
 const fourDirs: readonly Dir2D[] = [[0, 1], [1, 0], [0, -1], [-1, 0]];
@@ -55,7 +41,7 @@ const newBlockGroup = () => {
 export const vanillaCherryTree = (seed: number): PlacedBlock[] => {
   const blockGroup = newBlockGroup();
   const placeBlock = (blockState: string, x: number, y: number, z: number) => blockGroup.放({ 状态: blockState, 位: [x, y, z] });
-  const r = rng(seed * 2654435761 + 97);
+  const r = mulberry32(seed * 2654435761 + 97);
   const treeHeight = 7 + randInt(r, 0, 1);
   const branchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -3));
   let secondBranchStart = Math.max(0, treeHeight - 1 + randInt(r, -4, -4));
@@ -135,7 +121,7 @@ export const vanillaCherryTree = (seed: number): PlacedBlock[] => {
 /** 一棵原版橡树（TreeFeatures.OAK：树干 4～6、BlobFoliagePlacer 半径 2 高 3），相对树根那格 */
 export const vanillaOak = (seed: number): PlacedBlock[] => {
   const blockGroup = newBlockGroup();
-  const r = rng(seed * 40503 + 11);
+  const r = mulberry32(seed * 40503 + 11);
   const treeHeight = 4 + randInt(r, 0, 2);
   for (let k = 0; k < treeHeight; k++) blockGroup.放({ 状态: 'minecraft:oak_log[axis=y]', 位: [0, 0, k] });
   for (let dz = -3; dz <= 0; dz++) {

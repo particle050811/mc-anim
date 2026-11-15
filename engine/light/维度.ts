@@ -41,18 +41,6 @@ export const nether: DimensionInfo = {
   cloudHeight: NaN,
   出处: '1.20.1 DimensionTypes.bootstrap；云高 DimensionSpecialEffects$NetherEffects',
 };
-
-export const endDim: DimensionInfo = {
-  id: 'minecraft:the_end',
-  fixedGameTime: 6000,
-  hasSkyLight: false,
-  hasCeiling: false,
-  ambient: 0,
-  effect: 'minecraft:the_end',
-  cloudHeight: NaN,
-  出处: '1.20.1 DimensionTypes.bootstrap；云高 DimensionSpecialEffects$EndEffects',
-};
-
 // 云高在模组注册 TwilightForestRenderInfo 时传入，没核对，记 null
 export const twilightForest: DimensionInfo = {
   id: 'twilightforest:twilight_forest',

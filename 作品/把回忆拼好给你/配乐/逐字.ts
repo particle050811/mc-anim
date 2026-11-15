@@ -29,14 +29,6 @@ export const perChar: Readonly<Record<number, readonly number[]>> = {
   // 「己」是长音（网格.ts 的 长音 52.95 起）；「爱」51.66 和「自」52.49 之间 52.09 那个起音是「爱」里的转音，不算字（Agent 认的）
   15: [48.65, 49.1, 49.49, 49.95, 50.2, 50.38, 50.78, 51.23, 51.66, 52.49, 52.94],
 };
-
-/** 第 序 句第 i 个字的起唱秒 */
-export const charStart = (lineIndex: number, i: number): number => {
-  const t = perChar[lineIndex]?.[i];
-  if (t === undefined) throw new Error(`配乐/逐字.ts 里没有第 ${lineIndex} 句第 ${i} 个字`);
-  return t;
-};
-
 /** 核对用：每句字数和 网格.ts 的词一样、时刻递增、落在 [开口 − 0.05, 止] 里；返回不对的地方 */
 export const perCharIssues = (): string[] => {
   const out: string[] = [];

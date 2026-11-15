@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { Ghost } from '../../engine/model/parts.tsx';
 import { KATANA_BLOOM_LAYER, useKatanaBloom } from './拔刀剑泛光.tsx';
+import { lerp } from '../../engine/core/数学.ts';
 
 type P2 = [number, number];
 
@@ -510,8 +511,6 @@ const HI = { top: 0.085, bot: 0.37, lip: 0.035, start: PART_Z.habaki - PART_Z.ts
 const KISSAKI_RIDGE = 0.42;
 const YOKOTE_SLANT = 0.21;
 const FUKURA: P2[] = [[0, 1], [0.2, 0.92], [0.36, 0.856], [0.52, 0.73], [0.67, 0.554], [0.82, 0.353], [0.9, 0.215], [1, 0]];
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const lookup = (table: P2[], x: number) => {
   let i = 0;
   while (i < table.length - 2 && x > table[i + 1][0]) i++;
@@ -1101,10 +1100,6 @@ const sheathKit = () => {
 const HILT_PARTS = hiltKit();
 const BLADE_PARTS = bladeKit();
 const SHEATH_PARTS = sheathKit();
-
-const triCount = (parts: { geo: THREE.BufferGeometry }[]) => parts.reduce((n, p) => n + p.geo.getAttribute('position').count / 3, 0);
-export const KATANA_TRIS = { hilt: triCount(HILT_PARTS), blade: triCount(BLADE_PARTS), sheath: triCount(SHEATH_PARTS) };
-
 // 高光会溢出泛光的只有刀身（拔刀剑泛光.tsx）：网格多开一层，画布由 useKatanaBloom 挂上泛光。
 // 金具不算：参考图里溢光的是刀身中段那片高光，金的鞘尾、鯉口在暗处会成一圈发光的帽子
 const BLOOM_CLS: Cls = 'steel';

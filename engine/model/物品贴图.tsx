@@ -5,8 +5,8 @@
 // 游戏里物品的显示变换（模型 json 的 display：拿在手上、掉在地上）用 ItemDisplay 套在外面，数值照抄模型 json。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rad } from '../anim/anim.ts';
 import type { Png } from './贴图.ts';
+import { rad } from '../core/数学.ts';
 
 export type ItemLayer = { tex: Png; tint?: string }; // tint：染色（游戏里 tintindex 对应的颜色，药水颜色）
 

@@ -26,12 +26,7 @@ import type { BowWindFan } from '../7-1/弓前风扇.tsx';
 import * as geom from './几何.ts';
 import * as chase from './追逐.ts';
 import * as timeline from './时间线.ts';
-
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 const decay = (u: number, timeConst: number) => (u < 0 ? 0 : Math.exp(-u / timeConst));
 const yawFromTo = (a: V3, b: V3) => yawTo(b[0] - a[0], b[1] - a[1]);
 
@@ -114,16 +109,16 @@ const turning = (T: number) =>
   (T >= timeline.leap2LandT && T < timeline.leap2LandT + towerFaceSec) ||
   (T >= timeline.steadyT && T < timeline.steadyT + timeline.turnDownSec);
 const horseYaw = (T: number) => {
-  if (T < timeline.leap1T) return lerp(north, nearYaw(north, leap1.yaw), ss((T - timeline.turnEastT) / timeline.turnEastSec));
+  if (T < timeline.leap1T) return lerp(north, nearYaw(north, leap1.yaw), smoothstep01((T - timeline.turnEastT) / timeline.turnEastSec));
   if (T < timeline.leap1LandT) return nearYaw(east, leap1.yaw);
-  if (T < timeline.leap2T) return lerp(nearYaw(east, leap1.yaw), nearYaw(east, leap2.yaw), ss((T - timeline.leap1LandT) / (timeline.leap2T - timeline.leap1LandT)));
+  if (T < timeline.leap2T) return lerp(nearYaw(east, leap1.yaw), nearYaw(east, leap2.yaw), smoothstep01((T - timeline.leap1LandT) / (timeline.leap2T - timeline.leap1LandT)));
   if (T < timeline.leap2LandT) return nearYaw(east, leap2.yaw);
   if (T < timeline.leap3T) {
-    const face = lerp(nearYaw(east, leap2.yaw), nearYaw(east, faceWardenYaw), ss((T - timeline.leap2LandT) / towerFaceSec));
-    return lerp(face, nearYaw(face, leap3.yaw), ss((T - timeline.steadyT) / timeline.turnDownSec));
+    const face = lerp(nearYaw(east, leap2.yaw), nearYaw(east, faceWardenYaw), smoothstep01((T - timeline.leap2LandT) / towerFaceSec));
+    return lerp(face, nearYaw(face, leap3.yaw), smoothstep01((T - timeline.steadyT) / timeline.turnDownSec));
   }
   if (T < timeline.leap3LandT) return nearYaw(east, leap3.yaw);
-  return lerp(nearYaw(east, leap3.yaw), east, ss((T - timeline.leap3LandT) / 0.25));
+  return lerp(nearYaw(east, leap3.yaw), east, smoothstep01((T - timeline.leap3LandT) / 0.25));
 };
 const horseLegPhase = phaseTable((t) => {
   const m = horseMotion(t);
@@ -139,7 +134,7 @@ export const horseState = (T: number) => {
   const m = horseMotion(T);
   const yaw = horseYaw(T) + 6 * sway(T);
   // 摆幅：原版跑起来是 1，越快越夸张（80 米/秒以上 1.5）；腾空 1.2；原地拨头迈小碎步
-  const amplitude = m.airborne ? 1.2 : Math.max(horseGait(m.v, 0).amplitude * (1 + 0.5 * ss((m.v - 20) / 60)), turning(T) ? 0.3 : 0);
+  const amplitude = m.airborne ? 1.2 : Math.max(horseGait(m.v, 0).amplitude * (1 + 0.5 * smoothstep01((m.v - 20) / 60)), turning(T) ? 0.3 : 0);
   return { p: m.p, yaw, entityYaw: yaw + 180, walkCycle: { legPhase: horsePhase0 + horseLegPhase(T), amplitude: amplitude }, 速度: m.v, airborne: m.airborne, rear: steedRear(horseTakeoffs, T) };
 };
 export const liuEye = (T: number): V3 => {
@@ -172,24 +167,24 @@ export const wardenState = (T: number) => {
   const eye = roughEye(T);
   const toLiu = (near: number) => nearYaw(near, yawTo(eye[0] - pos[0], eye[1] - pos[1]));
   // 朝向：开场从 7-1-7 末帧转过去对着马上的人（0.3 秒，身子跟着转）；跑起来 0.15 秒拧到前进方向；站定、到了塔脚 0.3 秒转回来对着他、一直跟着他转
-  const startYaw = lerp(end71.entityYaw - 180, toLiu(end71.entityYaw - 180), ss(T / 0.3));
-  let yaw = lerp(startYaw, nearYaw(startYaw, heading), ss((T - timeline.wardenRunT) / 0.15));
-  yaw = lerp(yaw, toLiu(yaw), ss((T - timeline.wardenHoldT + 0.15) / 0.3));
-  yaw = lerp(yaw, nearYaw(yaw, heading), ss((T - timeline.wardenRun2T) / 0.15));
-  yaw = lerp(yaw, toLiu(yaw), ss((T - timeline.wardenArriveT + 0.15) / 0.3));
+  const startYaw = lerp(end71.entityYaw - 180, toLiu(end71.entityYaw - 180), smoothstep01(T / 0.3));
+  let yaw = lerp(startYaw, nearYaw(startYaw, heading), smoothstep01((T - timeline.wardenRunT) / 0.15));
+  yaw = lerp(yaw, toLiu(yaw), smoothstep01((T - timeline.wardenHoldT + 0.15) / 0.3));
+  yaw = lerp(yaw, nearYaw(yaw, heading), smoothstep01((T - timeline.wardenRun2T) / 0.15));
+  yaw = lerp(yaw, toLiu(yaw), smoothstep01((T - timeline.wardenArriveT + 0.15) / 0.3));
   // 放音爆前 0.35 秒身子拧正对着他（跑的时候也是）
-  yaw = lerp(yaw, toLiu(yaw), ss((T - timeline.sonicBoomFireT + 0.35) / 0.25) * (1 - ss((T - timeline.sonicBoomFireT - 0.1) / 0.3)));
+  yaw = lerp(yaw, toLiu(yaw), smoothstep01((T - timeline.sonicBoomFireT + 0.35) / 0.25) * (1 - smoothstep01((T - timeline.sonicBoomFireT - 0.1) / 0.3)));
   // 抬头看刘心忠（原版生物抬头最多 40°）：跑起来平视
   const head = [pos[0], pos[1], pos[2] + 2.6];
   const elevationDeg = (Math.atan2(eye[2] - head[2], Math.hypot(eye[0] - head[0], eye[1] - head[1])) * 180) / Math.PI;
-  const headPitch = lerp(end71.headPitch, -Math.min(40, Math.max(0, elevationDeg)), ss(T / 0.3)) * (1 - ss(v / 20));
+  const headPitch = lerp(end71.headPitch, -Math.min(40, Math.max(0, elevationDeg)), smoothstep01(T / 0.3)) * (1 - smoothstep01(v / 20));
   const hurt = [...mortarHitTs, ...arrowHitTs].some((t) => T >= t && T < t + 0.5) ? 1 : 0;
   // 挨箭一抖：往后一仰又回来（不打断蓄力）
   const flinch = arrowHitTs.reduce((sum, t) => sum + (T >= t ? ((T - t) / 0.05) * Math.exp(1 - (T - t) / 0.05) : 0), 0);
   const boom = T >= timeline.sonicBoomStartT && T < timeline.sonicBoomStartT + WARDEN.sonicBoomSec ? T - timeline.sonicBoomStartT : undefined;
   // 冲刺时往前扑（度，绕脚底；画面.tsx 和插着的箭照这个转）
-  const lean = 18 * ss(v / 60) - 9 * flinch;
-  return { p: pos, entityYaw: yaw + 180 - 6 * flinch, 秒: sec, walkCycle: { legPhase: wardenLegPhase(T) + (end71.walkCycle?.legPhase ?? 0), amplitude: Math.min(1, v / 5.7) }, hurt: hurt, headYaw: lerp(end71.headYaw, 0, ss(T / 0.3)), headPitch: headPitch, 音爆: boom, forwardLean: lean, 速度: v };
+  const lean = 18 * smoothstep01(v / 60) - 9 * flinch;
+  return { p: pos, entityYaw: yaw + 180 - 6 * flinch, 秒: sec, walkCycle: { legPhase: wardenLegPhase(T) + (end71.walkCycle?.legPhase ?? 0), amplitude: Math.min(1, v / 5.7) }, hurt: hurt, headYaw: lerp(end71.headYaw, 0, smoothstep01(T / 0.3)), headPitch: headPitch, 音爆: boom, forwardLean: lean, 速度: v };
 };
 // 前倾：绕脚底把身上的点往前进方向转 前倾 度（插着的箭、胸口跟着身子走）
 const leanOffset = (warden: { entityYaw: number; forwardLean: number }, off: number[]): V3 => {
@@ -255,16 +250,16 @@ export const liuXinzhongPose = (T: number): { pose: FigurePose; hurt: boolean } 
   // 头、身子对着监守者（它在身后就扭身、回头）；稳住以后转回前面准备跳
   const yawToWarden = nearYaw(horse.yaw, yawTo(chest[0] - eye[0], chest[1] - eye[1]));
   const yawOffset = Math.max(-110, Math.min(110, yawToWarden - horse.yaw));
-  const look = ss(T / 0.3) * (1 - ss((T - timeline.steadyT) / 0.25));
+  const look = smoothstep01(T / 0.3) * (1 - smoothstep01((T - timeline.steadyT) / 0.25));
   // 跑着、跃着身子前倾（越快伏得越低），停住坐直
-  const crouch = ss(horse.速度 / 40);
-  const ridingPitch = -6 * ss(horse.速度 / 6.5) - 16 * crouch;
+  const crouch = smoothstep01(horse.速度 / 40);
+  const ridingPitch = -6 * smoothstep01(horse.速度 / 6.5) - 16 * crouch;
   // 出炮：右手连杖往目标一指，打完放下
-  const castArm = (t: number) => ss((T - t + 0.3) / 0.25) * (1 - ss((T - t - 0.35) / 0.4));
+  const castArm = (t: number) => smoothstep01((T - t + 0.3) / 0.25) * (1 - smoothstep01((T - t - 0.35) / 0.4));
   const point = Math.max(...timeline.mortarFireTs.map(castArm));
   // 护盾：杖往前一推就出 → 挨了音爆稳住、杖收回来
-  const lower = 1 - ss((T - timeline.hitT - 0.25) / 0.25);
-  const push = ss((T - timeline.shieldT + 0.1) / 0.15) * lower;
+  const lower = 1 - smoothstep01((T - timeline.hitT - 0.25) / 0.25);
+  const push = smoothstep01((T - timeline.shieldT + 0.1) / 0.15) * lower;
   // 打中：往后一仰
   const recoil = T >= timeline.hitT ? decay(T - timeline.hitT, 0.5) * (0.7 + 0.3 * Math.cos((T - timeline.hitT) * 18)) : 0;
   const armR = lerp(lerp(36, 85 - depressionDeg * 0.6, point), 95 - depressionDeg * 0.5, push);
@@ -348,10 +343,10 @@ export const huangPanState = (T: number) => {
   if (T < crouchT) {
     // 拉弓（转向箭的方向）→ 放 → 拉弦手一甩、弓放低
     const k = (T - drawStart) / timeline.huangDrawSec;
-    const yaw = lerp(nearYaw(theArrow.yaw, lookYaw), theArrow.yaw, ss(k * 2));
-    const draw = T < theArrow.放 ? ss(k) : 1 - ss((T - theArrow.放 - 0.15) / 0.3);
-    let pose = drawBowPose(huangFeet, yaw, 0, theArrow.pitch * ss(draw * 2), Math.max(draw, 0.0001));
-    const rel = T >= theArrow.放 ? ss((T - theArrow.放) / 0.12) * draw : 0;
+    const yaw = lerp(nearYaw(theArrow.yaw, lookYaw), theArrow.yaw, smoothstep01(k * 2));
+    const draw = T < theArrow.放 ? smoothstep01(k) : 1 - smoothstep01((T - theArrow.放 - 0.15) / 0.3);
+    let pose = drawBowPose(huangFeet, yaw, 0, theArrow.pitch * smoothstep01(draw * 2), Math.max(draw, 0.0001));
+    const rel = T >= theArrow.放 ? smoothstep01((T - theArrow.放) / 0.12) * draw : 0;
     if (rel > 0) pose = { ...pose, armR: pose.armR - 15 * rel, elbowR: 25 * rel };
     return { pose, bow: bowTextureFor(T < theArrow.放, k) };
   }
@@ -364,7 +359,7 @@ export const huangPanFeetAt = (T: number): V3 => (T < timeline.huangLeapT ? huan
 export const fansAt = (T: number): BowWindFan[] =>
   huangArrows.flatMap((arrow, i) => {
     const lead = 0.35;
-    const visibility = ss((T - (arrow.放 - lead)) / 0.12) * (1 - ss((T - arrow.放) / 0.3));
+    const visibility = smoothstep01((T - (arrow.放 - lead)) / 0.12) * (1 - smoothstep01((T - arrow.放) / 0.3));
     if (visibility <= 0) return [];
     const off = ARROW_TIP + 0.04 + X71.fanSize / 2;
     const center: V3 = [0, 1, 2].map((k) => arrow.起[k] + arrow.dir[k] * off) as V3;
@@ -373,9 +368,7 @@ export const fansAt = (T: number): BowWindFan[] =>
   });
 // 飞到 中 那一刻正好到 钉
 export const flyingHuangArrows = (T: number) =>
-  huangArrows.filter((a) => T >= a.放 && T < a.中).map((a) => ({ p: lerpV3(a.起, a.stuck, (T - a.放) / (a.中 - a.放)), dir: a.dir }));
-const lerpV3 = (a: V3, b: V3, k: number): V3 => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
-
+  huangArrows.filter((a) => T >= a.放 && T < a.中).map((a) => ({ p: lerpV(a.起, a.stuck, (T - a.放) / (a.中 - a.放)), dir: a.dir }));
 // ======================= 第 1 场留下的东西 =======================
 // 钉在监守者身上的箭：第 1 场的按第 1 场末帧钉在身子上的位置接着，7-3-3 那一箭按钉中那一刻；都跟着身子走（走路摆、音爆后仰、前倾）
 const oldPins = X71.stuckArrows(X71.sceneEndT).map((a) => pinToWardenBody(X71.wardenFrame(X71.sceneEndT), a.p, a.dir));

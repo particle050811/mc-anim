@@ -1,5 +1,5 @@
 // 6-4-3b、6-4-3c 的正式段：时间线、机位、人和特效的演法见 打斗编排.ts，这里排画面。
-// 声音照 段/6-挡箭、段/6-挑飞 的 段.ts 的 cue 放（定义画面 自动挂），不再在这里排声音.tsx 的剧情事件、箭飞风声、台词。
+// 声音照 段/6-挡箭、段/6-挑飞 的 段.ts 的 cue 放（definePicture 自动挂），不再在这里排声音.tsx 的剧情事件、箭飞风声、台词。
 import React from 'react';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DeflectView } from './画面.tsx';

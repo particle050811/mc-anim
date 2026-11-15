@@ -3,6 +3,7 @@ import { sample, type Key } from '@engine/anim/anim.ts';
 import { WIDE_LENS } from '@engine/flight/飞行路径.ts';
 import * as route from './路线.ts';
 import { boreSources } from './孔道.ts';
+import { lerp, clamp01, smoothstep01, smootherstep01, rad, deg } from '@engine/core/数学.ts';
 
 // ---------- 小工具 ----------
 export type Vec = number[];
@@ -13,19 +14,7 @@ export const dot = (a: Vec, b: Vec) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: Vec, b: Vec) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 export const len = (a: Vec) => Math.hypot(a[0], a[1], a[2]);
 export const norm = (a: Vec) => mul(a, 1 / (len(a) || 1));
-export const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-export const ss = (x: number) => {
-  const clamped = clamp01(x);
-  return clamped * clamped * (3 - 2 * clamped);
-};
 // 五次缓动（头尾速度、加速度都是 0）：机位之间的渐变用它，接缝处二阶连续
-export const s5 = (x: number) => {
-  const clamped = clamp01(x);
-  return clamped * clamped * clamped * (clamped * (clamped * 6 - 15) + 10);
-};
-export const rad = (d: number) => (d * Math.PI) / 180;
-const deg = (r: number) => (r * 180) / Math.PI;
 export const slerp = (from: Vec, to: Vec, k: number) => {
   const θ = Math.acos(Math.min(1, Math.max(-1, dot(from, to))));
   if (θ < 1e-6) return to;
@@ -200,7 +189,7 @@ export const clampToBore = (camPos: Vec, frame: number, azimuth: number) => {
   let out = camPos;
   for (const k of bores) {
     if (sc < k.s0 - 2 || sc > k.s1 + 2) continue;
-    const ramp = Math.min(ss((sc - (k.s0 - 2)) / 2), ss((k.s1 + 2 - sc) / 2));
+    const ramp = Math.min(smoothstep01((sc - (k.s0 - 2)) / 2), smoothstep01((k.s1 + 2 - sc) / 2));
     const weight = lerp(ramp, sc >= k.s0 && sc <= k.s1 ? 1 : 0, orbiting);
     if (weight <= 0) continue;
     const routePt = route.positionAt(sc);

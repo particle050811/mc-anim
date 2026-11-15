@@ -7,15 +7,10 @@ import { standPose, type FigurePose } from '@库/角色/骨架.tsx';
 import { nearYaw, yawTo } from '../6-4-1/古城戏.ts';
 import { G4 } from '../../古城4x.tsx';
 import { huangPanSpot, liuXinzhongSpot, wardenEmerge } from '../布局.ts';
-
-export const ss = (x: number) => {
-  const c = Math.min(1, Math.max(0, x));
-  return c * c * (3 - 2 * c);
-};
-export const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 export const rampIn = (x: number, a: number, b: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
 // a～b 之间为 1，前后各用 rampIn / rampOut 秒淡入淡出
-export const pulse = (t: number, a: number, b: number, rampInSec = 0.1, rampOutSec = 0.1) => ss((t - a) / rampInSec) * (1 - ss((t - b) / rampOutSec));
+export const pulse = (t: number, a: number, b: number, rampInSec = 0.1, rampOutSec = 0.1) => smoothstep01((t - a) / rampInSec) * (1 - smoothstep01((t - b) / rampOutSec));
 export const bump = (t: number, a: number, b: number) => (t <= a || t >= b ? 0 : Math.sin((Math.PI * (t - a)) / (b - a)));
 
 // ---------- 站位（场景坐标） ----------
@@ -88,9 +83,6 @@ export const huangAimPose = (feet: number[], yaw: number, s: number, r: number, 
   pose.headPitch = aimPitch - 1.2 * b * (1 - d);
   return pose;
 };
-// 拉弓贴图：照原版三档（拉到 0.65、0.9 换），d 不到 0.05 算没拉
-export const bowPull = (d: number) => ({ pulling: d > 0.05, pull: d });
-
 // ---------- 动作叠加 ----------
 // 一激灵（j 0～1 的一下，用 bump）：身子往后一挺、头一抬、两手一缩
 export const startle = (pose: FigurePose, j: number): FigurePose => ({
@@ -132,9 +124,9 @@ export const hopAir = (pose: FigurePose, u: number, rightTuck = 1): FigurePose =
 // 落地卸力（sinceLand 秒）：2 帧压到底、蹲住，0.35 秒起来（同 7-1 的落地缓冲，短一点：急退以后立刻要摆架势）
 export const landingCushion = (sinceLand: number) => {
   if (sinceLand < 0 || sinceLand >= 0.42) return 0;
-  if (sinceLand < 0.08) return 0.6 + 0.4 * ss(sinceLand / 0.08);
+  if (sinceLand < 0.08) return 0.6 + 0.4 * smoothstep01(sinceLand / 0.08);
   if (sinceLand < 0.14) return 1;
-  return 1 - ss((sinceLand - 0.14) / 0.28);
+  return 1 - smoothstep01((sinceLand - 0.14) / 0.28);
 };
 // 挪一步（k 0～1）：前脚抬起往前迈、落下，身子跟着一沉一起（leg 'R' / 'L' 迈哪只脚；amp 抬多高，刘心忠右脚抬低点免得顶到杖）
 export const stepLeg = (pose: FigurePose, k: number, leg: 'R' | 'L', amp = 1): FigurePose => {

@@ -11,13 +11,9 @@ import * as geom from './几何.ts';
 import * as timeline from './时间线.ts';
 import * as K71 from '../../../地点/古城4x/7-1/戏.ts';
 import * as T71 from '../../../地点/古城4x/7-1/时间线.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const ramp = (s: number, a: number, b: number) => ss((s - a) / (b - a));
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+const ramp = (s: number, a: number, b: number) => smoothstep01((s - a) / (b - a));
 const tickSec = 1 / 20;
 export const toSec = (sf: number) => sf / FPS;
 

@@ -7,7 +7,6 @@
 // 没做：长大时外圈往里聚的 GatherFrost 粒子、第 20 刻的 SUMMON 粒子、悬停时的 CLOUD 光环和落雪（FALLING_DUST）——原版 cloud、falling_dust 粒子库里还没有。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { MinecraftSpace, getModel, degToRad, ModelPart } from '../零件/实体.tsx';
@@ -20,6 +19,7 @@ import iceChunkModelData from 'asset:模型/法术/goety/IceChunkModel';
 import iceChunkPng from 'asset:贴图/法术/goety/entity/projectiles/ice_chunk';
 import iceChunkSpawnPng from 'asset:贴图/法术/goety/entity/projectiles/ice_chunk_spawn';
 import packedIcePng from 'asset:贴图/法术/minecraft/block/packed_ice';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const iceChunkModel = getModel(iceChunkModelData, 'IceChunkModel');
 const ringColor = hexColor(0xfffeff);
@@ -31,7 +31,7 @@ const Glacier: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
   const pos: Vec3 = [target[0], target[1], target[2] + iceBlockHeight(Math.min(tick, iceBlockHitTick))];
   // 砸中时冰块中心（碰撞箱 2 × 2 估）
   const slamPos: Vec3 = [target[0], target[1], target[2] + iceBlockHeight(iceBlockHitTick) + 1];
-  const r = rng(seed * 409 + 1);
+  const r = mulberry32(seed * 409 + 1);
   const smokeSpawns: ParticleSpawn[] = Array.from({ length: 60 }, (_, i): ParticleSpawn => {
     const angle = r() * Math.PI * 2;
     const speed = 0.2 + r() * 0.3;

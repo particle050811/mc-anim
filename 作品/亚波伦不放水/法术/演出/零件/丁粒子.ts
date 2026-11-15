@@ -1,7 +1,6 @@
 // 丁组用的几种模组粒子类（贴图序列是 anim extract --particle-frames 照粒子定义 textures 顺序生成的 粒子帧/ 模块）和出生时的初速。
 // 都是 TextureSheetParticle 的子类，物理走 粒子.tsx 的 贴图粒子；这里只填构造函数里的常数。
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import type { Vec3 } from '../接口.ts';
 import { vanillaParticleInitSpeed, type ParticleBirth, type ParticleClass } from './粒子.tsx';
 import frostNovaFrames from '../../../粒子帧/goety/frost_nova.ts';
@@ -22,10 +21,11 @@ import sand4Png from 'asset:贴图/特效/粒子/generic_4';
 import sand5Png from 'asset:贴图/特效/粒子/generic_5';
 import sand6Png from 'asset:贴图/特效/粒子/generic_6';
 import sand7Png from 'asset:贴图/特效/粒子/generic_7';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 /** RisingParticle / FireParticle 的构造：先过 Particle 的随机速度，再 × 0.01 + 给定速度；位置抖 ±0.05（RisingParticle 才抖）。位、速都是场景坐标 */
 export const risingInitial = (seed: number, pos: Vec3, givenVelocity: Vec3, jitterPos = true): { 位: Vec3; 速: Vec3; 种子: number } => {
-  const r = rng(seed);
+  const r = mulberry32(seed);
   // 游戏坐标 [x, y 竖直, z 南] = 场景 [x, z, −y]
   const [gx, gy, gz] = vanillaParticleInitSpeed(r, givenVelocity[0], givenVelocity[2], -givenVelocity[1]);
   const d = (): number => (jitterPos ? (r() - r()) * 0.05 : 0);

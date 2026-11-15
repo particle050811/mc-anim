@@ -2,8 +2,6 @@
 // 编排的帧是 1/24 秒一格（编排.ts 的 FPS），按秒换算。
 import React from 'react';
 import { useCurrentSec } from '@engine/段/时间.tsx';
-import { END, FPS } from './编排.ts';
+import { FPS } from './编排.ts';
 import { SuspicionPicture } from './画面实现.tsx';
-
-export const suspicionFrameCount = END;
 export const Suspicion: React.FC = () => <SuspicionPicture f={useCurrentSec() * FPS} />;

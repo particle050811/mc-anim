@@ -9,13 +9,13 @@ import { cancelRender, continueRender, delayRender } from 'remotion';
 import { useWriter, newWriteSlot } from '../core/写入者.ts';
 import { skyBandCount, waterSky, skyReflMax, resetWaterSky } from '../voxel/水面.ts';
 import * as THREE from 'three';
-import { rng } from '../model/parts.tsx';
 import { overworldMix, brighten, twilightSunDir, twilightDusk } from './光照配比.ts';
 import { ATMO_FN_GLSL, ATMO_PARS_GLSL, atmoOn, atmoUniforms, atmosphere } from './大气.ts';
 import cloudsPng from 'asset:贴图/场景/天空/clouds';
 import sunPng from 'asset:贴图/场景/天空/sun';
 import { useCurrentSec } from '../段/时间.tsx';
 import { pinDepthFar } from '../core/光栅深度.ts';
+import { mulberry32 } from '../core/数学.ts';
 
 export const SKY = {
   top: '#7ea2cc',
@@ -118,7 +118,7 @@ const atmoSkyMaterial = () =>
 // 原版的星星：1500 颗，方向均匀分布，每颗是边长 0.3～0.5 格、放在 100 格外的小方块（这里换成同样角大小的方点）
 const Stars: React.FC = () => {
   const points = useMemo(() => {
-    const rand = rng(10842);
+    const rand = mulberry32(10842);
     const pos: number[] = [];
     while (pos.length < 1500 * 3) {
       const dir = [rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1];

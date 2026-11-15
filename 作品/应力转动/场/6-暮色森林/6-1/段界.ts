@@ -33,14 +33,3 @@ export const pieceFrames = (pieces: readonly Clip[]) => pieces.reduce((n, p) => 
 export const frameCountOf = (id: SegmentId) => pieceFrames(segmentOf(id).cuts);
 export const compositionId = (id: SegmentId) => `${id}-${segmentOf(id).名}`;
 
-// 源组件第 frame 帧（可带小数）落在哪一段第几帧；不在任何一截里（各源的第 0 帧 = 上一个的末帧、没放的余音）给 null
-export const locate = (source: SegmentSource, frame: number): { 段: SegmentId; 帧: number } | null => {
-  for (const seg of segments) {
-    let acc = 0;
-    for (const p of seg.cuts) {
-      if (p.源 === source && frame >= p.从 && frame < p.到) return { 段: seg.id, 帧: acc + frame - p.从 };
-      acc += p.到 - p.从;
-    }
-  }
-  return null;
-};

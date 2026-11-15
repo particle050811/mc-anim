@@ -18,11 +18,11 @@
 // 镜头不横滚，地平线保持水平（用户 10-01 嫌跟着坡度歪画面看着晕）。
 // 真实飞行（用户 10-05 嫌航线太直，10-06 嫌颠簸）：扫帚不死贴理想航线，带驾驶员慢慢偏开、修回的大弯（横向几十米），不颠、竖直不另加起伏，镜头只弹簧跟随；首帧到穿云、悬停到末帧扰动为 0，见 编排/真实飞行.ts。
 // 代码分在 编排/ 下：地面、航线、时间线（里程、段表、卡点）、真实飞行、扫帚（含骑手）、镜头、工具；这里留雾。
-import { ss, lerp } from './编排/工具.ts';
 import { routeGround } from './编排/地面.ts';
 import { segmentFrames } from './编排/时间线.ts';
 import { broom } from './编排/扫帚.ts';
 import { camera } from './编排/镜头.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
 
 export { routeGround, featureTop, featureSurface } from './编排/地面.ts';
 export { cruiseSpeed, clearance, hoverHeight, hoverXY, leg2Dir, brakeXY, flatWaypoints, brakeHeight, fullRoute, ROUTE } from './编排/航线.ts';
@@ -32,7 +32,7 @@ export { type BroomState, broom, type Riders, riders } from './编排/扫帚.ts'
 export { type Cam, FIRST_CAM, camera } from './编排/镜头.ts';
 
 // 雾：离地越高看得越远（导入加远景画到 40 公里，lib/体素/主世界地形.ts 的 主世界远）
-export const visibility = (G: number) => lerp(38000, 45000, ss((camera(G).pos[2] - 600) / 1500));
+export const visibility = (G: number) => lerp(38000, 45000, smoothstep01((camera(G).pos[2] - 600) / 1500));
 // 离地高度（核对用）
 export const aboveGround = (G: number) => broom(G).位置[2] - routeGround(broom(G).位置[0], broom(G).位置[1]);
 

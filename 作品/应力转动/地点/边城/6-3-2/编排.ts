@@ -25,13 +25,10 @@ import { goldGlow } from '../6-3-下坠/编排/金光.ts';
 import { broomState } from '../6-3-下坠/编排/扫帚.ts';
 import { tick, impactTime, yawVec } from '../6-3-下坠/时间线.ts';
 import { uiClose, uiFade, smashBeats, calloutBeats, matchSec as pushEnd } from './台词.ts';
+import { smoothstep01, lerp } from '@engine/core/数学.ts';
+import { ticksPerSec } from '@库/原版物理.ts';
 
 export const FPS = 24;
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const D2R = Math.PI / 180;
 
 // ---------- 时刻（思索场景时间，秒） ----------
@@ -39,7 +36,7 @@ const D2R = Math.PI / 180;
 // （台词.ts 的 `calloutBeats`：每截话第一个字起音的时刻），砸穿挂在 `smashBeats`，所以换台词整页跟着重排。
 const [beat1, beat2, beat3, beat4, beat5] = calloutBeats;
 // 原版实体下落（LivingEntity.travel：每刻先挪，再 −0.08、×0.98）
-export const tickSec = 1 / 20;
+export const tickSec = 1 / ticksPerSec;
 // 虚影最低点开始时离石半砖几格（为什么是 4 见 `footStartY`）
 const dropHeight = 4;
 // 从静止落下 h 格要多久（秒）：和 `fallPath` 一样逐刻算、碰到那刻按比例插
@@ -202,7 +199,7 @@ export const crackProgress = (block: Block, t: number) => {
 // 每段（底板、地面）落下的动画：思索的 showSection(…, Direction.DOWN)，从上方 1 格处边落边淡入
 export const dropIn = (part: '底板' | '地面', t: number) => {
   const [start, end] = part === '底板' ? cues.basePlate : cues.ground;
-  const k = ss((t - start) / (end - start));
+  const k = smoothstep01((t - start) / (end - start));
   return { opacity: k, offset: 1 - k };
 };
 
@@ -241,7 +238,7 @@ export type PonderFigure = { visible: boolean; pose: FigurePose; matrix: THREE.M
 const maceTipBelowHead = (MACE.tip - MACE.head) * (1.875 / 32) * 16; // 锤头中心到顶钮（李樱手里的锤，单位同 编排/李樱.ts 的 PX）
 export const hipAt = (t: number, pose: FigurePose): V3 => {
   const { hipXY } = figureRef();
-  const settle = ss((t - bottomBreakSec) / 0.25) * (LY.rollerRadius - maceTipBelowHead);
+  const settle = smoothstep01((t - bottomBreakSec) / 0.25) * (LY.rollerRadius - maceTipBelowHead);
   return [hipXY[0], hipXY[1], footY(t) + LY.ghostDepth(pose) - settle];
 };
 export const figureAt = (t: number, transitionW?: number): PonderFigure => {
@@ -258,12 +255,12 @@ export const figureAt = (t: number, transitionW?: number): PonderFigure => {
     glow = goldGlow(transitionW);
     hip = hipAt(pushEnd, ref.stance);
   } else if (t < cues.close[1]) {
-    pose = blendPose(ref.stance, ref.hit, ss((t - (impactSec - 0.15)) / 0.15));
-    ghost = ghostOpacity * ss((t - cues.ghost[0]) / (cues.ghost[1] - cues.ghost[0])) * (1 - ss((t - bottomBreakSec) / 0.25));
-    glow = lerp(hoverGlow, 1, ss((t - cues.fall) / (impactSec - cues.fall))) * (1 - ss((t - landingSec) / 0.5));
+    pose = blendPose(ref.stance, ref.hit, smoothstep01((t - (impactSec - 0.15)) / 0.15));
+    ghost = ghostOpacity * smoothstep01((t - cues.ghost[0]) / (cues.ghost[1] - cues.ghost[0])) * (1 - smoothstep01((t - bottomBreakSec) / 0.25));
+    glow = lerp(hoverGlow, 1, smoothstep01((t - cues.fall) / (impactSec - cues.fall))) * (1 - smoothstep01((t - landingSec) / 0.5));
     hip = hipAt(t, pose);
   } else {
-    const k = ss((t - cues.close[1]) / (pushEnd - cues.close[1]));
+    const k = smoothstep01((t - cues.close[1]) / (pushEnd - cues.close[1]));
     pose = blendPose(ref.hit, ref.stance, k);
     glow = hoverGlow * k;
     hip = hipAt(t, pose);
@@ -317,16 +314,16 @@ export const pointerTarget = (target: PointTarget, t: number): number[] | null =
 // 绿框：砸穿的那一柱，从底板顶面到石半砖顶面
 export const redBoxAt = (t: number) => {
   const boxHeight = Math.floor(footY(t) - slabTop + 1e-6);
-  const k = boxHeight < 1 ? 0 : ss((t - boxCues.redBox[0]) / 0.3) * (1 - ss((t - boxCues.redBox[1]) / 0.3));
+  const k = boxHeight < 1 ? 0 : smoothstep01((t - boxCues.redBox[0]) / 0.3) * (1 - smoothstep01((t - boxCues.redBox[1]) / 0.3));
   return { k, min: [breachColumn.x[0], slabTop, breachColumn.z[0]], max: [breachColumn.x[1] + 1, slabTop + Math.max(boxHeight, 0), breachColumn.z[1] + 1] };
 };
 export const greenBox = (t: number) => {
-  const k = ss((t - boxCues.greenBox[0]) / 0.3) * (1 - ss((t - boxCues.greenBox[1]) / 0.3));
+  const k = smoothstep01((t - boxCues.greenBox[0]) / 0.3) * (1 - smoothstep01((t - boxCues.greenBox[1]) / 0.3));
   return { k, min: [breachColumn.x[0], 1, breachColumn.z[0]], max: [breachColumn.x[1] + 1, slabTop, breachColumn.z[1] + 1] };
 };
 
 // ---------- 界面 ----------
-export const uiOpacityAt = (t: number) => ss((t - cues.open[0]) / (cues.open[1] - cues.open[0])) * (1 - ss((t - cues.close[0]) / (cues.close[1] - cues.close[0])));
+export const uiOpacityAt = (t: number) => smoothstep01((t - cues.open[0]) / (cues.open[1] - cues.open[0])) * (1 - smoothstep01((t - cues.close[0]) / (cues.close[1] - cues.close[0])));
 export const captionOpacity = (i: number, t: number) => {
   const caption = captionTable[i];
   return Math.min(1, Math.max(0, (t - caption.start) / captionFadeSec), Math.max(0, (caption.end - t) / captionFadeSec));

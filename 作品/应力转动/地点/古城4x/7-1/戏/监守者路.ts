@@ -4,8 +4,11 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { shieldPos } from '@库/特效/护盾术.tsx';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
-import { groundZ, lerp, lerpV, ss } from './公用.ts';
+import { groundZ } from './公用.ts';
 import { huangLeaps, landT, liuLeaps, takeoffT } from './跳.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
+import { ticksPerSec } from '@库/原版物理.ts';
+
 type WalkOrder = { t: number; path: V3[] };
 const walkOrders: WalkOrder[] = [
   { t: timeline.wardenStepT, path: [geom.firstLungeStep] }, // 扑刘心忠（扑空）
@@ -21,7 +24,7 @@ const walkOrders: WalkOrder[] = [
 export const shieldSwingTs = timeline.shieldSwingTs;
 export const shieldBreakT = () => timeline.shieldBreakT;
 
-export const tickSec = 1 / 20;
+export const tickSec = 1 / ticksPerSec;
 export const lastTick = Math.ceil((timeline.sceneEndT0 + 2) * 20);
 // 逐步推（每刻 12 步，命令的时刻按步对齐），存每一步；腿的相位照 7-3（每秒 4 × 速度，原版跑步动画最快那一档封顶）
 const SUB = 12;
@@ -78,7 +81,7 @@ export const wardenAt = (t: number) => {
   return { p: lerpV(a.p, b.p, k), v: lerp(a.v, b.v, k), distWalked: lerp(a.distWalked, b.distWalked, k), legPhase: lerp(a.legPhase, b.legPhase, k), walking: a.v > 0.05 || b.v > 0.05, heading: a.heading };
 };
 // 跑起来往前扑（度，同 7-3：越快伏得越低，60 米/秒 18°），胸口、头跟着往前移
-export const wardenLean = (t: number) => 18 * ss(wardenAt(t).v / geom.wardenSpeed);
+export const wardenLean = (t: number) => 18 * smoothstep01(wardenAt(t).v / geom.wardenSpeed);
 export const leanedPoint = (t: number, height: number, entityYaw?: number): V3 => {
   const w = wardenAt(t);
   const lean = (wardenLean(t) * Math.PI) / 180;

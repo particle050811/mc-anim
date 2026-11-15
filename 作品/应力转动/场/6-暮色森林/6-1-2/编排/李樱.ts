@@ -1,9 +1,10 @@
 // 李樱：助跑、起跳、迅冲斩的位移，冲刺步态，全部姿态关键帧和收刀约束，刀光、残影、扬尘。
-import { type Key, type VKey, rad, sample, sampleLag, sampleV, track } from '@engine/anim/anim.ts';
+import { type Key, type VKey, sample, sampleLag, sampleV, track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { originalTiming, sheathConstraint as sheathConstraint, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
-import { FPS, S2, END, HOLD, warp, real, segFrame, lerp3, LANE_E, HX, HY, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
+import { FPS, S2, END, HOLD, warp, real, segFrame, LANE_E, HX, HY, lanePt, laneZ, LANE_YAW, GO } from './时间轴.ts';
+import { rad, lerpV } from '@engine/core/数学.ts';
 
 // 收刀（uchigatana_scrap，`BLADE` 关键帧 127～135）在剧情帧上的起止：起 = 刀从前上方落下，入鞘 = 刀完全收进鞘里
 export const sheathFrames = { start: 127 + HOLD, sheathed: 135 + HOLD };
@@ -57,7 +58,7 @@ export const lyLoc = (frame: number): number[] => {
     const eased = 1 - (1 - t) ** 2;
     return [...lanePt(8 - 7 * eased, LY_OFF), laneZ(8) + (APEX[2] - laneZ(8)) * eased];
   }
-  if (frame <= DASH0) return lerp3(APEX, APEX_TOP, track([[S2, 0], [DASH0, 1]], frame));
+  if (frame <= DASH0) return lerpV(APEX, APEX_TOP, track([[S2, 0], [DASH0, 1]], frame));
   if (frame <= DASH1) return bez((frame - DASH0) / (DASH1 - DASH0));
   return sampleV(SLIDE, frame);
 };

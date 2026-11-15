@@ -3,7 +3,9 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { closeupBreakClockScale } from '@库/特效/方块破坏粒子.tsx';
 import type { DebrisBurst, DebrisFace, SpearTube } from '@库/特效/方块飞溅.tsx';
 import * as geom from '../几何.ts';
-import { gameToScene, add, sub, lerpV, storySecAt } from './公用.ts';
+import { gameToScene, add, sub, storySecAt } from './公用.ts';
+import { lerpV } from '@engine/core/数学.ts';
+
 // 碎块.json：npm run 取材 -- 6-4-3碎块，从 古城4x-西3 网格取 `击穿方块` 那 7 格（一格一个盒子，不推实心里层），
 // 第 8 个盒子是旁边一格，不当碎块（画面.tsx 只取前 7 个）。古城4x 网格重导后要跟着重导这份，不然 UV 对不上新图集。只藏、只画这几格本身，不用工具给的外扩一圈（外圈六面都补画，缝里会多出整块）。
 // 箭尖扫到哪格，那格当场崩成原版破坏粒子，粒子时钟按近景特效倍速；

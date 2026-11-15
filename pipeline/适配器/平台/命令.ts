@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Command } from '../../cli/命令.ts';
 import { UsageError, parseArgs } from '../../cli/参数.ts';
-import { deliveryRoot } from '../../环境/配置.ts';
+import { deliveryRoot } from '../../环境/作品数据.ts';
 import { newPreviewDir } from '../../预览/预览.ts';
 import { importData, latestData, parsePackage, type Submission } from '../bili/数据.ts';
 import { bilibiliAdvice, bilibiliSection } from '../bili/报告.ts';

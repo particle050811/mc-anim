@@ -1,6 +1,6 @@
 // 新段的工厂：场时间线 + 窗口段。纯模块（段.ts、场的 时间线.ts 用）。
 // 段 = 场时间线上 [起, 止) 这一截（docs/架构.md「新章节一律用场窗口」）。段.ts 里不写段键、段长、画幅：段键只在目录名（和清单里），
-// 段长由窗口推，画幅取时间线的（不给就是 默认段格式）。声音 cue 用 声音助手.ts 的 放、说 写一次，画面那头 <段声音> 照表放（段画面.tsx）。
+// 段长由窗口推，画幅取时间线的（不给就是 defaultSegFormat）。声音 cue 用 声音助手.ts 的 放、说 写一次，画面那头 <SegSound> 照表放（段画面.tsx）。
 // 跨段的音效、配乐写在场时间线的 声音 里（场声音.ts），每个窗口段自动带上落在自己窗口里的那一截。
 // 时间一律是秒（决策 0015）。窗口的起止对齐到 1/段格 秒，段首尾相接、段长落在格上；事件、cue 的秒不对齐。
 import { defineSeg, segFps, type SegmentDef, type SoundCue, type OverlayDef } from './段定义.ts';
@@ -36,7 +36,7 @@ export type SceneSoundDef<K extends string, Ext> = SceneSoundOptions & { 在: En
 
 const isDurSec = (x: unknown): x is { 长秒: number } => typeof x === 'object' && x !== null && '长秒' in x;
 
-/** 一条场时间线：场键、事件表；画幅不给就用 默认段格式。扩展时刻（如 歌网格.ts 的拍、句）给 解析 */
+/** 一条场时间线：场键、事件表；画幅不给就用 defaultSegFormat。扩展时刻（如 歌网格.ts 的拍、句）给 resolveTime */
 export const defineSceneTimeline = <const K extends string, Ext = never>(d: {
   场: string;
   事件: Readonly<Record<K, EventDef<Ext>>>;
@@ -84,7 +84,7 @@ export type WindowSegDef<K extends string = string> = SegmentDef & {
   sceneWindow: { startSec: number; endSec: number };
   /** 各事件在本段里的段内秒（不在本段的也照算，会是负数或不小于段长） */
   eventSec: Readonly<Record<K, number>>;
-  /** 标记段框架做的段：画面用 段画面.tsx 的 定义画面，anim cues 给它生成声音表、地址表 */
+  /** 标记段框架做的段：画面用 段画面.tsx 的 definePicture，anim cues 给它生成声音表、地址表 */
   framework: '窗口段';
 };
 
@@ -150,5 +150,5 @@ const eventSecAt = <K extends string>(timeline: { 场: string; 事件: Readonly<
   return e.秒;
 };
 
-/** 是不是段框架做的段（pipeline 按这个决定要不要给它生成声音表、地址表）：窗口段这类工厂做的（写 框架 字段），或 定义段 手写了声音 cue 的 */
+/** 是不是段框架做的段（pipeline 按这个决定要不要给它生成声音表、地址表）：窗口段这类工厂做的（写 框架 字段），或 defineSeg 手写了声音 cue 的 */
 export const isFrameworkSeg = (seg: SegmentDef): boolean => typeof (seg as { framework?: unknown }).framework === 'string' || Boolean(seg.声音?.length);

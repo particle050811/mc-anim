@@ -2,28 +2,28 @@
 // 镜头 1 坑口：6-3-8/画面.tsx 的 PursuerScene（地形、边城、坑、竖井、碎块、灯都是 6-3-10 那一套），人换成 坑口.ts 的两人和卫兵。
 // 屋里：卫兵室网格 + 6-3 同一套边城、石半砖地面挖坑（窗外）。灯：太阳同主世界（SUN_OW，正西 20°），屋子一带开软阴影（天空.tsx 的 SunLight）。
 // 卫兵室的窗朝东，下午的太阳照不进屋（用户 10-15：不为窗光改太阳），屋里是天光和灯笼、蜡烛两盏暖色点光（游戏里亮度 15、14 的光源）。窗外的城照常是大太阳。
-import { ThreeCanvas } from "@remotion/three";
-import React from "react";
-import { AbsoluteFill, useVideoConfig } from "remotion";
-import { rad } from "@engine/anim/anim.ts";
-import { LevelParams, canvasDpr } from "@engine/core/渲染级别.ts";
-import { FlightFog, FlightRig } from "../../../地点/飞行镜头.tsx";
-import { ScreenAo } from "@engine/voxel/屏幕AO.tsx";
-import { Guard } from "../../../角色/卫兵.tsx";
-import { HuangPan, LiuXinzhong } from "../../../角色/追兵.tsx";
-import { ArtificerCane } from "@库/物品/匠师之杖.tsx";
-import { OpenBook, ClosedBook, HeldItemSprite, featherTex } from "@库/物品/书.tsx";
-import { BorderTown } from "../../../地点/边城轮廓.tsx";
-import { guardRoom, GuardRoomMesh } from "../../../地点/边城室内.tsx";
-import { borderTownPos } from "../../../地点/主世界116.ts";
-import { SkyDome, SunLight, SKY } from "@engine/light/天空.tsx";
-import { OverworldSky, SUN_OW } from "../../../地点/主世界光照.tsx";
-import * as fallChoreo from "../../../地点/边城/6-3-下坠/编排.ts";
-import { SlabFloor } from "../../../地点/边城/6-3-下坠/竖井.tsx";
-import { PursuerScene } from "../../../地点/边城/6-3-8/画面.tsx";
-import { lastSec as lastSec6 } from "../../../地点/边城/6-3-8/编排.ts";
-import * as choreo from "./编排.ts";
-import * as pit from "./坑口.ts";
+import { ThreeCanvas } from '@remotion/three';
+import React from 'react';
+import { AbsoluteFill, useVideoConfig } from 'remotion';
+import { LevelParams, canvasDpr } from '@engine/core/渲染级别.ts';
+import { FlightFog, FlightRig } from '../../../地点/飞行镜头.tsx';
+import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
+import { Guard } from '../../../角色/卫兵.tsx';
+import { HuangPan, LiuXinzhong } from '../../../角色/追兵.tsx';
+import { ArtificerCane } from '@库/物品/匠师之杖.tsx';
+import { OpenBook, ClosedBook, HeldItemSprite, featherTex } from '@库/物品/书.tsx';
+import { BorderTown } from '../../../地点/边城轮廓.tsx';
+import { guardRoom, GuardRoomMesh } from '../../../地点/边城室内.tsx';
+import { borderTownPos } from '../../../地点/主世界116.ts';
+import { SkyDome, SunLight, SKY } from '@engine/light/天空.tsx';
+import { OverworldSky, SUN_OW } from '../../../地点/主世界光照.tsx';
+import * as fallChoreo from '../../../地点/边城/6-3-下坠/编排.ts';
+import { SlabFloor } from '../../../地点/边城/6-3-下坠/竖井.tsx';
+import { PursuerScene } from '../../../地点/边城/6-3-8/画面.tsx';
+import { lastSec as lastSec6 } from '../../../地点/边城/6-3-8/编排.ts';
+import * as choreo from './编排.ts';
+import * as pit from './坑口.ts';
+import { rad } from '@engine/core/数学.ts';
 
 // 7-4 的灯照主世界的配比（用户 10-15 定，lib/飞行镜头.tsx 的 FlightSky：直射 8.4、天光 1.0、环境光 0.17），屋里自己补的光按同样的比例压（天光 ×0.77、环境光 ×0.34）
 export const RoomLights: React.FC<{ lights: { p: number[]; 强: number }[] }> = ({

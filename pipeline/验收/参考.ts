@@ -1,11 +1,12 @@
 // 认可参考：认可那一版的抽样帧（全分辨率 FFV1，存解出来的 yuv420p 原样），存 认可参考/<作品>/<平台>/<段键>/<指纹前 16 位>-<抽样键>.mkv（数据根，不进 Git），
-// 旁边同名 .json 是旁记（各帧 yuv sha，verify 逐帧核，见 参考像素.ts）。认可那版的母版删了，verify 照样能比像素（设计见 预览/1030-1755-母版管线重设计/01-推荐方案.md 第四节 C）。
+// 旁边同名 .json 是旁记（各帧 yuv sha，verify frames 核，见 参考像素.ts）。认可那版的母版删了，verify 照样能比像素（设计见 预览/1030-1755-母版管线重设计/01-推荐方案.md 第四节 C）。
 // accept 时从认可那版的切片抽帧做（决策/0014）。CRF1 时代的认可（1440p）verify 直接报要重新认可，不再给它们找母版、补旁记（11-06 删了）。
 // 文件名带认可记录的抽样键：同一指纹重渲后再 accept，新记录对应新文件名，旧参考不会冒充新认可（只写新文件，不删旧参考）。
 // 抽之前核对切片就是认可那一版：认可那版指纹的段签（现在的，或重渲前挪进 历史/ 的）签名和认可记录是同一版，切片又正是那份段签记的。
 import fs from 'node:fs';
 import path from 'node:path';
-import { config, approvRefFile } from '../环境/配置.ts';
+import { approvRefFile } from '../环境/作品数据.ts';
+import { config } from '../环境/配置.ts';
 import { lowPriority, runCmd } from '../环境/子进程.ts';
 import { videoInfo } from '../渲/探测.ts';
 import { segPicturePath } from '../渲/段产物.ts';

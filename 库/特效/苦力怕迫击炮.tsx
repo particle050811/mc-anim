@@ -8,7 +8,7 @@
 // 坐标：场景坐标（Z 朝上），单位格；时间：刻（1 秒 20 刻）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { type EntityModelData, ownPartGeometry } from '../../engine/model/实体模型.tsx';
 import { entityTexture } from '../../engine/model/贴图方盒.tsx';
 import { png, pngDir } from '../../engine/model/贴图.ts';
@@ -24,6 +24,7 @@ import blastwave5Png from 'asset:贴图/特效/杂项粒子/blastwave_5';
 import blastwave6Png from 'asset:贴图/特效/杂项粒子/blastwave_6';
 import blastwave7Png from 'asset:贴图/特效/杂项粒子/blastwave_7';
 import blastwave8Png from 'asset:贴图/特效/杂项粒子/blastwave_8';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const DATA = (raw as unknown as { models: { 苦力怕头: EntityModelData } }).models.苦力怕头;
 const BW = pngDir(assetDir({ './blastwave_1.png': blastwave1Png, './blastwave_2.png': blastwave2Png, './blastwave_3.png': blastwave3Png, './blastwave_4.png': blastwave4Png, './blastwave_5.png': blastwave5Png, './blastwave_6.png': blastwave6Png, './blastwave_7.png': blastwave7Png, './blastwave_8.png': blastwave8Png }));
@@ -117,7 +118,7 @@ const bwTexture = (name: string) => {
   return t;
 };
 export const Blastwave: React.FC<{ at: V3; tick: number; seed?: number; size?: number }> = ({ at, tick: tick, seed = 1, size = LOB.shockwaveSize }) => {
-  const gray = useMemo(() => rng(seed * 811 + 3)() * 0.14 + 0.85, [seed]);
+  const gray = useMemo(() => mulberry32(seed * 811 + 3)() * 0.14 + 0.85, [seed]);
   if (tick < 0 || tick >= LOB.shockwaveLifeTicks) return null;
   const age = Math.floor(tick);
   const frac = tick / LOB.shockwaveLifeTicks;

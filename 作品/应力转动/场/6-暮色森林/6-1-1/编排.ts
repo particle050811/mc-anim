@@ -11,6 +11,7 @@ import { PORTAL_ISLAND } from '../../../地点/传送门海岛.tsx';
 import { NAGA_COURTYARD } from '../../../地点/娜迦庭院.tsx';
 import * as choreo612 from '../6-1-2/编排.ts';
 import { pickTier } from '@engine/段/按时取值.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 export const FPS = 24;
 // 时间轴（帧）
@@ -31,11 +32,6 @@ export const D2 = JH_POP + 9; // 九胡飞到最高点，切到 6-1-2 的机位�
 const LAST = JH_POP + POP_N; // 九胡落地 = 最后一帧 = 6-1-2 第 1 帧
 export const END = LAST + 1;
 const F612 = 1; // 6-1-2 的第 1 帧
-
-const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-const lerp3 = (a: number[], b: number[], k: number) => a.map((v, i) => lerp(v, b[i], k));
-
 export const world = (f: number): 'island' | 'tf' => (f < CUT ? 'island' : 'tf');
 export const portalActive = (f: number) => f >= STRIKE;
 
@@ -173,7 +169,7 @@ export const diamond = (frame: number): { loc: V3; spin: number; scale: number }
   const start = handR(lyIsland(REL));
   if (frame <= LAND) return { loc: hop([start[0], start[1], start[2] - 0.05], DROP, LAND - REL, frame - REL, ITEM_G), spin, scale: 1 };
   const t = frame - LAND;
-  return { loc: [DROP[0], DROP[1], PZ - 0.04 * t - 0.15], spin: spin * 0.3, scale: 1 - ss(t / 12) };
+  return { loc: [DROP[0], DROP[1], PZ - 0.04 * t - 0.15], spin: spin * 0.3, scale: 1 - smoothstep01(t / 12) };
 };
 
 export const splashSec = (f: number) => (f - LAND) / FPS;
@@ -220,13 +216,13 @@ const blend = (fromPose: FigurePose, toPose: FigurePose, k: number): FigurePose 
     const va = fromPose[key];
     const vb = toPose[key];
     if (typeof vb === 'number') out[key] = lerp(typeof va === 'number' ? va : 0, vb, k);
-    else if (Array.isArray(vb)) out[key] = lerp3((va as number[]) ?? vb, vb, k);
+    else if (Array.isArray(vb)) out[key] = lerpV((va as number[]) ?? vb, vb, k);
   }
   return out as FigurePose;
 };
 const chain = (poses: FigurePose[], us: number[], progress: number): FigurePose => {
   if (progress <= us[0]) return { ...poses[0] };
-  for (let i = 0; i < us.length - 1; i++) if (progress <= us[i + 1]) return blend(poses[i], poses[i + 1], ss((progress - us[i]) / (us[i + 1] - us[i])));
+  for (let i = 0; i < us.length - 1; i++) if (progress <= us[i + 1]) return blend(poses[i], poses[i + 1], smoothstep01((progress - us[i]) / (us[i + 1] - us[i])));
   return { ...poses[poses.length - 1] };
 };
 
@@ -283,9 +279,8 @@ export const jiuhu = (frame: number) => {
   const progress = (frame - JH_POP) / POP_N;
   const pose = { ...chain(jhFlight(end.pose), FLIGHT_U, progress), loc: popLoc(end.pose.loc, JH_POP, frame) };
   const bend = track([[0, 0], [0.45, 8], [0.8, 18], [1, end.bend]], progress);
-  return { pose, tail: lerp(jhTail(frame), end.tail, ss(progress)), bend, gait: end.gait, run: end.run, visible: frame >= JH_POP };
+  return { pose, tail: lerp(jhTail(frame), end.tail, smoothstep01(progress)), bend, gait: end.gait, run: end.run, visible: frame >= JH_POP };
 };
-
 type Cam = { lens: number; pos: number[]; tgt: number[] };
 export const camera = (frame: number): Cam => {
   if (frame < CUT) return { lens: sample(CAM_A_LENS, frame), pos: sampleV(CAM_A.pos, frame), tgt: sampleV(CAM_A.tgt, frame) };

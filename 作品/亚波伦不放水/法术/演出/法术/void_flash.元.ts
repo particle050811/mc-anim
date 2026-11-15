@@ -1,5 +1,5 @@
 // 虚空闪（goety:void_flash_focus）的元数据和弹道。出处见 void_flash.tsx。
-import { mulberry32 } from '@engine/core/数学.ts';
+import { mulberry32, randInt } from '@engine/core/数学.ts';
 import { defineSpellMeta, type SpellOptions, type Vec3 } from '../接口.ts';
 import { launchTrajectory } from '../零件/甲/共用.ts';
 import { voidShockHitTick, type VoidShock } from '../零件/甲/虚空震.ts';
@@ -11,8 +11,7 @@ export const voidFlashShocks = (from: Vec3, target: Vec3, seed: number, highSpee
   const { trajectory, arriveTick } = voidFlashBombPath(from, target, highSpeed);
   const landing = trajectory(arriveTick);
   const r = mulberry32(seed * 43 + 5);
-  const 整 = (a: number, b: number) => a + Math.floor(r() * (b - a + 1));
-  return Array.from({ length: 8 }, (_, i) => ({ launchTick: arriveTick, spawnPos: landing, hoverPos: [landing[0] + 整(-3, 3), landing[1] + 整(-3, 3), landing[2] + 整(3, 6)] as const, lockTick: 40 + i * 5 }));
+  return Array.from({ length: 8 }, (_, i) => ({ launchTick: arriveTick, spawnPos: landing, hoverPos: [landing[0] + randInt(r, -3, 3), landing[1] + randInt(r, -3, 3), landing[2] + randInt(r, 3, 6)] as const, lockTick: 40 + i * 5 }));
 };
 
 const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {

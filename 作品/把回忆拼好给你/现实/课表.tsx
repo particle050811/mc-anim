@@ -10,6 +10,7 @@ import { newPixelArt, makeTexture, canvasScale, mixColor, type PixelArt } from '
 import { FrontFace, TopFace } from './像素块.tsx';
 import { findCell, periods, weekdays, timetableTitle, timetableCells, timetableNote, type LitCell, type TimetableCell } from './课表数据.ts';
 import { timetableFrame } from './课桌布局.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 export type { LitCell };
 
@@ -136,7 +137,7 @@ const timetableTextureCache = new Map<string, THREE.Texture>();
 let frameTop: THREE.Texture | null = null;
 
 /** 格子亮度取 4 档（一格一格亮，像游戏里的状态切换，不做连续渐变） */
-const quantizeLevel = (v: number) => Math.round(Math.min(1, Math.max(0, v)) * 4) / 4;
+const quantizeLevel = (v: number) => Math.round(clamp01(v) * 4) / 4;
 
 export const Timetable: React.FC<{
   /** 框正面的左下角（贴图像素），y 是正面所在的深（墙面往外 深） */

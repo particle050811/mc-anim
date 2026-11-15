@@ -7,7 +7,6 @@
 // 血量：进本段时的血从 7-1 的血账（../7-1/戏/伤害.ts）减去 7-3 那几下算出来；本段每一下都按 T 排好、各有伤害（`hits`），累计够了的那一支就是最后一箭（`deathT`）。
 import * as THREE from 'three';
 import type { V3 } from '@engine/model/parts.tsx';
-import { rng } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { standPose } from '@库/角色/骨架.tsx';
 import { drawBowPose, ridePose } from '../../../角色/追兵.tsx';
@@ -25,13 +24,9 @@ import { fanSize } from '../../../地点/古城4x/7-1/戏/黄叛.ts';
 import type { BowWindFan } from '../../../地点/古城4x/7-1/弓前风扇.tsx';
 import * as geom from './几何.ts';
 import * as chase from './追逐.ts';
+import { smoothstep01, lerp, mulberry32 } from '@engine/core/数学.ts';
 
 export const FPS = geom.FPS;
-const ss = (x: number) => {
-  const c = Math.min(1, Math.max(0, x));
-  return c * c * (3 - 2 * c);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const g2s = (p: number[]): V3 => toScene(p[0], p[1], p[2]);
 const yawOfHeading = ([dx, dz]: [number, number]) => yawTo(dx, -dz);
 
@@ -91,7 +86,7 @@ const bodyYaw = (T: number) => {
   const w = liveWarden(T);
   const eye = draftLiuEye(T);
   const toLiu = nearYaw(run, yawTo(eye[0] - w[0], eye[1] - w[1]));
-  const aim = Math.max(0, ...boomFireTs.map((t) => ss((T - t + 0.35) / 0.25) * (1 - ss((T - t - 0.1) / 0.3))));
+  const aim = Math.max(0, ...boomFireTs.map((t) => smoothstep01((T - t + 0.35) / 0.25) * (1 - smoothstep01((T - t - 0.1) / 0.3))));
   return lerp(run, toLiu, aim);
 };
 const liveFrame = (T: number): WardenFrame => {
@@ -171,7 +166,7 @@ if (allHitTs.some((t, i) => i > 0 && t - allHitTs[i - 1] < 0.065)) throw new Err
 // ======================= 伤害、最后一箭 =======================
 // 每一发炮 300、每一支风矢 1500，上下 10%（同 7-3/伤害数字层.tsx）
 const rollDamages = (n: number, base: number, seed: number) => {
-  const rand = rng(seed);
+  const rand = mulberry32(seed);
   return Array.from({ length: n }, () => Math.round(base * (0.9 + 0.2 * rand()) * 10) / 10);
 };
 type Hit = { T: number; damage: number; crit: boolean; kind: '炮' | '箭'; i: number };
@@ -246,7 +241,7 @@ const horseYaw = (T: number) => {
   if (T < faceBackT) return run0;
   const h = horseAtS(run.stopS);
   const dead = deadPos(deathT + 1);
-  return lerp(run0, nearYaw(run0, yawTo(dead[0] - h[0], dead[1] - h[1])), ss((T - faceBackT) / turnSec));
+  return lerp(run0, nearYaw(run0, yawTo(dead[0] - h[0], dead[1] - h[1])), smoothstep01((T - faceBackT) / turnSec));
 };
 const horseTurning = (T: number) => T > faceBackT && T < faceBackT + turnSec;
 const horseLegPhase = phaseTable((t) => Math.max(Math.min(1.8 * run.horseV(t), horseLegMaxRate), horseTurning(t) ? 6 : 0), endStoryT);
@@ -254,7 +249,7 @@ export const horseState = (T: number) => {
   const p = horseAtS(run.horseS(T));
   const yaw = horseYaw(T);
   const speed = run.horseV(T);
-  const amplitude = Math.max(horseGait(speed, 0).amplitude * (1 + 0.5 * ss((speed - 20) / 60)), horseTurning(T) ? 0.3 : 0);
+  const amplitude = Math.max(horseGait(speed, 0).amplitude * (1 + 0.5 * smoothstep01((speed - 20) / 60)), horseTurning(T) ? 0.3 : 0);
   return { p, yaw, entityYaw: yaw + 180, walkCycle: { legPhase: horseLegPhase(T), amplitude: amplitude }, 速度: speed, rear: steedRear(horseTakeoffs, T) };
 };
 export const liuEye = (T: number): V3 => {
@@ -320,13 +315,13 @@ export const liuXinzhongPose = (T: number, extra: Partial<FigurePose> = {}): Fig
   const depression = (Math.atan2(eye[2] - chest[2] - 1.6, Math.hypot(chest[0] - eye[0], chest[1] - eye[1])) * 180) / Math.PI;
   const yawToWarden = nearYaw(horse.yaw, yawTo(chest[0] - eye[0], chest[1] - eye[1]));
   const yawOffset = Math.max(-100, Math.min(100, yawToWarden - horse.yaw));
-  const look = T >= deathT ? 1 - ss((T - deathT - 1.2) / 0.6) : 1;
-  const crouch = ss((horse.速度 - 6.5) / 40);
-  const castArm = (t: number) => ss((T - t + 0.3) / 0.25) * (1 - ss((T - t - 0.35) / 0.4));
+  const look = T >= deathT ? 1 - smoothstep01((T - deathT - 1.2) / 0.6) : 1;
+  const crouch = smoothstep01((horse.速度 - 6.5) / 40);
+  const castArm = (t: number) => smoothstep01((T - t + 0.3) / 0.25) * (1 - smoothstep01((T - t - 0.35) / 0.4));
   const point = Math.max(0, ...mortars.map((m) => castArm(m.fireT)));
   const twist = yawOffset * 0.45 * Math.max(point, look * 0.8);
   return ridePose(horse, {
-    pitch: -10 * ss(horse.速度 / 6.5) - 16 * crouch,
+    pitch: -10 * smoothstep01(horse.速度 / 6.5) - 16 * crouch,
     headPitch: lerp(4, -Math.min(50, depression), look),
     headYaw: Math.max(-70, Math.min(70, (yawOffset - twist) * look)),
     twist,
@@ -348,21 +343,21 @@ export const huangPanState = (T: number): { pose: FigurePose; bow: BowTexture } 
     const k = (T - drawStart) / (cur.放 - drawStart);
     const fromYaw = cur.isChainHead || !prev ? cur.yaw : nearYaw(cur.yaw, prev.yaw);
     const fromPitch = cur.isChainHead || !prev ? cur.pitch : prev.pitch;
-    const yaw = lerp(fromYaw, cur.yaw, ss(k * 1.6));
-    const pitch = lerp(fromPitch, cur.pitch, ss(k * 1.6));
-    const draw = cur.isChainHead ? ss((k - 0.35) / 0.65) : ss(k);
+    const yaw = lerp(fromYaw, cur.yaw, smoothstep01(k * 1.6));
+    const pitch = lerp(fromPitch, cur.pitch, smoothstep01(k * 1.6));
+    const draw = cur.isChainHead ? smoothstep01((k - 0.35) / 0.65) : smoothstep01(k);
     return { pose: drawBowPose(huangFoot, yaw, 0, pitch, Math.max(draw, 0.0001)), bow: bowTextureFor(true, T - drawStart) };
   }
   // 一串打完（或第一串之前）：放完拉弦手一甩、弓慢慢放低，转向下一串
   const last = prev ?? cur;
   const after = T - last.放;
-  const lower = prev ? ss((after - 0.15) / 0.5) : 1;
+  const lower = prev ? smoothstep01((after - 0.15) / 0.5) : 1;
   const nextYaw = i >= 0 ? nearYaw(last.yaw, cur.yaw) : last.yaw;
-  const turn = i >= 0 && prev ? ss((T - (last.放 + 0.6)) / Math.max(0.3, drawStart - last.放 - 0.6)) : i >= 0 ? 1 : 0;
+  const turn = i >= 0 && prev ? smoothstep01((T - (last.放 + 0.6)) / Math.max(0.3, drawStart - last.放 - 0.6)) : i >= 0 ? 1 : 0;
   const yaw = lerp(last.yaw, nextYaw, turn);
   let pose: FigurePose = drawBowPose(huangFoot, yaw, 0, lerp(last.pitch, i >= 0 ? cur.pitch : last.pitch, turn), Math.max(1 - lower, 0.0001));
   if (lower >= 1) pose = { ...standPose(huangFoot), yaw, headPitch: lerp(last.pitch, i >= 0 ? cur.pitch : last.pitch, turn), armL: 25, armLRoll: 4, armR: 12, armRRoll: 6, elbowR: 15 };
-  const rel = prev ? ss(after / 0.12) * (1 - lower) : 0;
+  const rel = prev ? smoothstep01(after / 0.12) * (1 - lower) : 0;
   if (rel > 0) pose = { ...pose, armR: pose.armR - 15 * rel, armRYaw: (pose.armRYaw ?? 0) * (1 - rel) - 25 * rel, elbowR: 25 * rel };
   return { pose, bow: bowTextureFor(false, 0) };
 };
@@ -370,7 +365,7 @@ export const huangPanState = (T: number): { pose: FigurePose; bow: BowTexture } 
 export const fansAt = (T: number): BowWindFan[] =>
   arrows.flatMap((arrow, i) => {
     const lead = drawLead(i);
-    const visibility = ss((T - (arrow.放 - lead)) / 0.08) * (1 - ss((T - arrow.放) / 0.15));
+    const visibility = smoothstep01((T - (arrow.放 - lead)) / 0.08) * (1 - smoothstep01((T - arrow.放) / 0.15));
     if (visibility <= 0) return [];
     const off = ARROW.tipAhead + 0.04 + fanSize / 2;
     const center: V3 = [0, 1, 2].map((k) => arrow.起[k] + arrow.dir[k] * off) as V3;

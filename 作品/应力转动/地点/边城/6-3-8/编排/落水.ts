@@ -12,7 +12,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { fallPool } from '../../布局/共用.ts';
 import { poolSurfaceZ } from '../../水池.tsx';
 import { RAMP_SEC, runCadence, speedProfile } from '@库/角色/跑步.ts';
-import { lerp } from './工具.ts';
+import { lerp } from '@engine/core/数学.ts';
 
 const WALK_Z = 28.5; // 走道顶面
 const ROAD_Z = 0.5; // 城里地面（石半砖顶面）

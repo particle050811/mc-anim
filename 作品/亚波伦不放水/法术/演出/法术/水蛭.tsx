@@ -6,7 +6,6 @@
 // 这里施法者那头用起点。没做：施法者回血没有画面；配对的吸血声只按无敌帧估了时刻。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { mix } from '../零件/弹道.ts';
@@ -15,6 +14,7 @@ import { hexColor, type RgbColor } from '../零件/材质.ts';
 import { GatherStream, gatherLifetime } from '../零件/游带.tsx';
 import meta, { leechDurTicks } from './水蛭.元.ts';
 import diamondPng from 'asset:贴图/特效/粒子/generic_0';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const diamondImg = png(diamondPng);
 const darkRed = hexColor(0xaa0000);
@@ -26,7 +26,7 @@ const leech: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target
   const streams: React.ReactNode[] = [];
   const pieces: QuadItem[] = [];
   for (let n = Math.max(0, Math.floor(tick) - absorbLifeTicks); n <= Math.min(Math.floor(tick), leechDurTicks - 1); n++) {
-    const r = rng(seed * 7919 + n);
+    const r = mulberry32(seed * 7919 + n);
     const age = tick - n;
     const scatterPoint: Vec3 = [from[0] + (r() * 2 - 1) * 0.6, from[1] + (r() * 2 - 1) * 0.6, from[2]];
     streams.push(<GatherStream key={n} 从={[target[0], target[1], target[2] + 0.9]} 到={scatterPoint} age={age} 寿命={gatherLifetime(r())} 色={darkRed} />);

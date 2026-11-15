@@ -3,8 +3,9 @@ import * as lichChoreo from '../../6-1-5/编排.ts';
 import * as snowQueenChoreo from '../../6-1-8/编排.ts';
 import * as giantChoreo from '../../6-1-8b/编排.ts';
 import * as castleChoreo from '../../6-1-9/编排.ts';
-import { FPS, ss, type BossName, ORDER } from './输入表.ts';
+import { FPS, type BossName, ORDER } from './输入表.ts';
 import { bisect, timeAtDist, T_ARRIVE, pierceTimes } from './航线.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 // ---------- 时钟：全局帧 F ↔ 物理时间 T ----------
 // 放慢：物理时刻 起～止 之间时钟是 1/倍数；之前 进 帧内（画面时间）按对数平滑降下来、之后 出 帧内升回去
@@ -22,7 +23,7 @@ const HOLD_END = Math.round(castleChoreo.dismount.holdSec * FPS); // 脱手以�
 const CLOCK_SUB = 8;
 const F_T: number[] = [0]; // 每 1/CLOCK_SUB 帧的物理时间
 {
-  const rIn = (S: number, u: number) => Math.exp(-Math.log(S) * ss(u));
+  const rIn = (S: number, u: number) => Math.exp(-Math.log(S) * smoothstep01(u));
   const inSpan = (span: SlowSpan) => {
     let avgRate = 0;
     for (let k = 0; k < 200; k++) avgRate += rIn(span.factor, (k + 0.5) / 200) / 200;
@@ -59,7 +60,7 @@ const F_T: number[] = [0]; // 每 1/CLOCK_SUB 帧的物理时间
         state = 'normal';
         ev++;
         rate = 1;
-      } else rate = Math.exp(-Math.log(span.factor) * (1 - ss(progress)));
+      } else rate = Math.exp(-Math.log(span.factor) * (1 - smoothstep01(progress)));
     }
     physT += (rate * dF) / FPS;
     frame += dF;

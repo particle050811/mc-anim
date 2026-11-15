@@ -16,6 +16,7 @@ import { photoWallCellPos, photoWallFaceY } from '../../地点/照片墙格.ts';
 import { paperWindows, downstairsTopFace } from '../../现实/楼下布局.ts';
 import { fullScreenShot, orthoTop } from './参数.ts';
 import { splitLineX, photoStandPos, mergedScreenOffset, retreatLayout, downstairsFraming } from './归隐参数.ts';
+import { clamp01, mulberry32 } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...lyricEvents, ...mainCutLines13To14Events, ...mainCutLine15Events };
 
@@ -182,23 +183,8 @@ const bornEnd = events.windClears.秒;
 const startHeight = 48;
 const leftMargin = 40;
 const rightMargin = 400;
-
-/** 同 engine/model/parts.tsx 的 rng（mulberry32；纯模块不引 tsx） */
-const rng = (seed: number) => {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) >>> 0;
-    let t = state;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-};
-
 const sampleRange = (a: readonly [number, number], r: () => number) => a[0] + r() * (a[1] - a[0]);
 const smoothstep = (u: number) => u * u * (3 - 2 * u);
-const clamp01 = (u: number) => Math.min(1, Math.max(0, u));
-
 // ---------- 风 ----------
 const windRange = [events.paperDrifts.秒 + windParams.起[0], events.paperDrifts.秒 + windParams.起[1]] as const;
 const windFallRange = [events.turnToBell.秒, events.ringBell.秒] as const;
@@ -449,8 +435,8 @@ const inboundPieces = (r: () => number): PaperPiece[] => {
 
 /** 花瓣一路生：每 1/240 秒累计一次，攒满一片生一片（每片的门槛随机，不排成一排）；挡她、从分屏线后面钻出来的不要 */
 const petalsFromSeed = (seed: number): PaperPiece[] => {
-  const r = rng(seed);
-  const gatherRng = rng(seed + 100);
+  const r = mulberry32(seed);
+  const gatherRng = mulberry32(seed + 100);
   const out: PaperPiece[] = [];
   const dt = 1 / 240;
   let spawnAccum = 0;
@@ -471,7 +457,7 @@ let paperFlowerCache: PaperPiece[] | null = null;
 /** 全部的碎纸和花瓣（定死的种子，算一次）。碎纸先画远的、再画近的（近的压在远的上面），花瓣最后 */
 export const paperFlowers = (): readonly PaperPiece[] =>
   (paperFlowerCache ??= (() => {
-    const r = rng(paperParams.种子 + 2);
+    const r = mulberry32(paperParams.种子 + 2);
     const papers = [...thrownFromWindow(r), ...inboundPieces(r)].map((q) => varyPaper(q, r)).sort((a, b) => a.档 - b.档);
     return [...papers, ...petalsFromSeed(paperParams.种子 + 1)];
   })());

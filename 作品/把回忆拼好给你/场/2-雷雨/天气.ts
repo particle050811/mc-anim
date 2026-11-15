@@ -1,11 +1,10 @@
 // 原版 1.20.1 下雨、打雷时的天色、云色、雾色（ClientLevel.getSkyColor、getCloudColor，FogRenderer.setupColor；javap 核过的算法）。纯计算。
 // 颜色都是 sRGB 数值（0～1），原版就在这上面算（不过线性空间）。白天的亮度系数按 参.白天刻 算（7000 刻时是 1）。
 import * as params from './参数.ts';
+import { lerpV } from '@engine/core/数学.ts';
 
 export type RGB = readonly [number, number, number];
 const hexToRgb = (hex: string): RGB => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as unknown as RGB;
-export const colorToHex = (c: RGB) => '#' + c.map((x) => Math.round(Math.min(1, Math.max(0, x)) * 255).toString(16).padStart(2, '0')).join('');
-export const mix = (a: RGB, b: RGB, k: number): RGB => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
 const luminance = (c: RGB) => c[0] * 0.3 + c[1] * 0.59 + c[2] * 0.11;
 
 /** 平原的天色（sky_color 7907327）、雾色（fog_color 12638463） */
@@ -33,7 +32,7 @@ export const weatherSky = (rain: number, thunder: number, flash = false): RGB =>
   let c: RGB = plainsSky.map((x) => x * dayBrightness) as unknown as RGB;
   if (rain > 0) c = desaturate(c, 0.6, rain * 0.75);
   if (thunder > 0) c = desaturate(c, 0.2, thunder * 0.75);
-  if (flash) c = mix(c, hexToRgb(params.lightning.skyTint), params.lightning.skyMix);
+  if (flash) c = lerpV(c, hexToRgb(params.lightning.skyTint), params.lightning.skyMix);
   return c;
 };
 
@@ -49,7 +48,7 @@ export const cloudColor = (rain: number, thunder: number): RGB => {
 /** 雾色：平原雾色往天色拉 1 − (0.25 + 0.75·区块数/32)^0.25（12 区块 0.146），再乘 (1 − 0.5·雨)(1 − 0.5·雷) */
 export const weatherFog = (rain: number, thunder: number, flash = false): RGB => {
   const skyPull = 1 - (0.25 + (0.75 * params.renderDistance) / 16 / 32) ** 0.25;
-  const c = mix(plainsFog.map((x) => x * dayBrightness) as unknown as RGB, weatherSky(rain, thunder, flash), skyPull);
+  const c = lerpV(plainsFog.map((x) => x * dayBrightness) as unknown as RGB, weatherSky(rain, thunder, flash), skyPull);
   const k = (1 - 0.5 * rain) * (1 - 0.5 * thunder);
   return c.map((x) => x * k) as unknown as RGB;
 };
@@ -58,7 +57,7 @@ export const weatherFog = (rain: number, thunder: number, flash = false): RGB =>
 export const skyAt = (θ: number, skyRgb: RGB, fog: RGB): RGB => {
   if (θ <= 0) return fog;
   const t = Math.min(1, params.skyDomeHeight / Math.sin(θ) / params.renderDistance);
-  return mix(skyRgb, fog, t * t * (3 - 2 * t));
+  return lerpV(skyRgb, fog, t * t * (3 - 2 * t));
 };
 
 /** 地形的雾（FOG_TERRAIN，柱形）：起 = 距离 − clamp(距离 / 10, 4, 64)，止 = 距离 */

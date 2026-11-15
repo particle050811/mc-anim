@@ -4,12 +4,12 @@
 // 游戏里一道闪电形状不变、亮度闪几下；这里 flash（0～1）控制亮度，seed 换形状。原点是落点，Z 朝上。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng } from '../../engine/model/parts.tsx';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const SEG = 16;
 
 const boltGeometry = (seed: number) => {
-  const rand = rng(seed);
+  const rand = mulberry32(seed);
   const ri = (n: number) => Math.floor(rand() * n); // 同 Java 的 nextInt(n)
   // 主干各段节点的水平偏移（从最上面一段往下累加，最后整体平移让落点在原点）
   const xs: number[] = [];
@@ -43,7 +43,7 @@ const boltGeometry = (seed: number) => {
   };
   for (let layer = 0; layer < 4; layer++) {
     // 每一层都用同一个种子从头重放（原版就是这样），主干那一路的随机数和上面算节点偏移的完全一样，所以最下面一段正好落回落点
-    const lr = rng(seed);
+    const lr = mulberry32(seed);
     const lri = (n: number) => Math.floor(lr() * n);
     for (let branch = 0; branch < 3; branch++) {
       const top = branch > 0 ? 7 - branch : 7;

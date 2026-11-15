@@ -4,15 +4,14 @@
 //   每一下都落在某个镜头那一截里（编排.ts 载入时查）。位置同 7-3：锚点跟着它走；炮从碰撞箱顶（2.9）起飘，箭从箭钉处往上 0.2 起飘。
 import React from 'react';
 import { useVideoConfig } from 'remotion';
-import * as THREE from 'three';
 import { useCurrentSec } from '@engine/段/时间.tsx';
 import { DamageNumberLayer, damageNumberAnchor, makePerspectiveCamera, type DamageNumberItem } from '@库/界面/伤害数字.tsx';
 import * as play from '../../场/7-收场/7-4-1/戏.ts';
 import * as choreo from '../../场/7-收场/7-4-1/编排.ts';
+import { sceneToThree } from '@engine/core/three换算.ts';
 
 const hitboxHeight = 2.9;
 // 场景坐标 (x, y, z) Z 朝上 → three.js (x, z, -y)，同 6-4-1/古城画面.tsx
-const toThree = ([x, y, z]: number[]) => new THREE.Vector3(x, z, -y);
 // 每一下：在哪个镜头里出
 const shown = play.hits.map((h, n) => {
   const height = h.kind === '炮' ? hitboxHeight : play.arrows[h.i].stuck[2] - play.wardenState(h.T).p[2] + 0.2;
@@ -26,11 +25,10 @@ export const DamageLayer741: React.FC = () => {
   const T = choreo.storyT(frame);
   const k = choreo.shotIndex(frame);
   const cam = choreo.camera(frame);
-  const cam3 = makePerspectiveCamera(cam.lens, toThree(cam.pos), toThree(cam.tgt), width, height);
-  const feet = toThree(play.wardenState(T).p);
+  const cam3 = makePerspectiveCamera(cam.lens, sceneToThree(cam.pos), sceneToThree(cam.tgt), width, height);
+  const feet = sceneToThree(play.wardenState(T).p);
   const numbers: DamageNumberItem[] = shown
     .filter((h) => h.shot === k)
     .map((h) => ({ damage: h.damage, crit: h.crit, anchor: damageNumberAnchor(feet, h.height, h.seed), ticks: (T - h.T) * 20 }));
   return <DamageNumberLayer camera={cam3} width={width} height={height} numbers={numbers} />;
 };
-export const shownHits = shown;

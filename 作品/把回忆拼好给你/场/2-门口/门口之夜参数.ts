@@ -7,6 +7,7 @@ import { fps, oneFrameSec, legacyFrameSec } from '../../分镜/时间.ts';
 import { events as mainCutEvents } from '../../分镜/正片第9至11句.ts';
 import { signWords, cellPx, orthoTop } from './参数.ts';
 import { line8Shot, line8ShotCount } from './第8句.ts';
+import { lerp, clamp01, smootherstep01 } from '@engine/core/数学.ts';
 
 type MainCutEventName = keyof typeof mainCutEvents;
 
@@ -23,14 +24,6 @@ const standRowY = entrance.standRowY;
 const eventSec = (k: MainCutEventName) => mainCutEvents[k].秒;
 /** 事件落在的那一帧的秒（画面上的事按帧发生：歌上 29.509 秒的事件落在第 1771 帧，第 1771 帧 = 29.517 秒就要看得到） */
 const eventFrameSec = (k: MainCutEventName) => mainCutEvents[k].帧 / fps;
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
-/** 两头都停稳的缓动（smootherstep：起止的速度、加速度都是 0） */
-const ease = (t: number) => {
-  const u = clamp01(t);
-  return u * u * u * (u * (u * 6 - 15) + 10);
-};
-
 // ---------- 站位 ----------
 /** 你：三句一直站在牌子和门中间、开着的门板前面（x −1.5，比 门口小木屋.tsx 的 站位.牌门之间 往门挪半格），面朝西：种树苗（离你 3.5 格）、
  *  写字、放烟花都不用走。挪半格是为了推到牌子上那一镜（一屏 1.9 格宽）你的肩膀不露在画面右边 */
@@ -193,15 +186,15 @@ const continuousShot = (s: number): ContinuousShot => {
   if (s <= seg.yieldStart) return openingSceneShot;
   const shiftedShot: ContinuousShot = { N: openingSceneShot.N, 中心: [openingSceneShot.中心[0] - yieldCells, openingSceneShot.中心[1]] };
   if (s < seg.pushStart) {
-    const e = ease((s - seg.yieldStart) / (seg.pushStart - seg.yieldStart));
+    const e = smootherstep01((s - seg.yieldStart) / (seg.pushStart - seg.yieldStart));
     return { N: openingSceneShot.N, 中心: [lerp(openingSceneShot.中心[0], shiftedShot.中心[0], e), openingSceneShot.中心[1]] };
   }
   if (s < seg.pushEndSec) {
     // 推：N 按对数插；牌字面在画面上离中心的偏移（成片像素）先缩到 0（推到 牌先居中 时牌子已经在画面中心），再只往里推，
     // 你站在牌子右边两格，牌子先居中你就早早从右边出画、不在放大到半屏高时从画面上扫过去（核查 10-24）
     const v = (s - seg.pushStart) / (seg.pushEndSec - seg.pushStart);
-    const u = ease(v);
-    const centerProgress = ease(Math.min(1, v / signCenterFirst));
+    const u = smootherstep01(v);
+    const centerProgress = smootherstep01(Math.min(1, v / signCenterFirst));
     const N = logLerp(shiftedShot.N, signNearCount, u);
     const [x0, z0] = upSection(shiftedShot.N, signFace);
     const offset = [(x0 - shiftedShot.中心[0]) * shiftedShot.N * (1 - centerProgress), (z0 - shiftedShot.中心[1]) * shiftedShot.N * (1 - centerProgress)];
@@ -214,23 +207,23 @@ const continuousShot = (s: number): ContinuousShot => {
     // 竖着：拉开时跟拉开同一个进度从牌子抬到 地线中心z（拉到 N 12 时地面停在画面底边上面 0.75 格，不露出一大片地底下的剖面），
     // 拉开以后从那里平平地升到炸点：火箭从画面下半升上来、炸在画面中间（不死跟火箭，它越飞越快，死跟最后几帧镜头一下蹿上去）
     const t = (s - seg.followStart) / (seg.followUntilSec - seg.followStart);
-    const dolly = ease(t / pullOpenFrac);
+    const dolly = smootherstep01(t / pullOpenFrac);
     const N = logLerp(signNearCount, farCount, dolly);
     const sign = upSection(N, signFace);
-    const x = lerp(sign[0], rocketPoint(firstFirework, s, N)[0], ease(t));
+    const x = lerp(sign[0], rocketPoint(firstFirework, s, N)[0], smootherstep01(t));
     const lowAt = (sec: number, n: number) => softMax(rocketPoint(firstFirework, sec, n)[1], groundLineCenterZ(n));
     const pullEnd = seg.followStart + pullOpenFrac * (seg.followUntilSec - seg.followStart);
-    const z = t < pullOpenFrac ? lerp(sign[1], lowAt(s, N), dolly) : lerp(lowAt(pullEnd, farCount), rocketPoint(firstFirework, seg.followUntilSec, farCount)[1], ease((t - pullOpenFrac) / (1 - pullOpenFrac)));
+    const z = t < pullOpenFrac ? lerp(sign[1], lowAt(s, N), dolly) : lerp(lowAt(pullEnd, farCount), rocketPoint(firstFirework, seg.followUntilSec, farCount)[1], smootherstep01((t - pullOpenFrac) / (1 - pullOpenFrac)));
     return { N, 中心: [x, z] };
   }
   const firstBurst = rocketPoint(firstFirework, seg.followUntilSec, farCount);
   const thirdBurst = rocketPoint(thirdFirework, burstSec(thirdFirework), farCount);
   if (s < seg.dropStart) {
     // 在天上：从第一发的炸点慢慢挪到第二发的炸点
-    const e = ease((s - seg.followUntilSec) / (seg.dropStart - seg.followUntilSec));
+    const e = smootherstep01((s - seg.followUntilSec) / (seg.dropStart - seg.followUntilSec));
     return { N: farCount, 中心: [lerp(firstBurst[0], thirdBurst[0], e), lerp(firstBurst[1], thirdBurst[1], e)] };
   }
-  const e = ease((s - seg.dropStart) / (seg.fallEnd - seg.dropStart));
+  const e = smootherstep01((s - seg.dropStart) / (seg.fallEnd - seg.dropStart));
   return { N: farCount, 中心: [lerp(thirdBurst[0], freezeCenter[0], e), lerp(thirdBurst[1], freezeCenter[1], e)] };
 };
 
@@ -301,7 +294,7 @@ export const photoCard = (frame: number, W: number, H: number) => {
   const layout = photoLayout;
   const enterProgress = 1 - (1 - clamp01((frame - freezeFrame) / fps / layout.shrinkInSec)) ** 3;
   const logOffFrame = mainCutEvents.logOff.帧;
-  const dropT = frame >= logOffFrame ? ease(((frame - logOffFrame) / fps + oneFrameSec) / logoutIcon.shrinkSec) : 0;
+  const dropT = frame >= logOffFrame ? smootherstep01(((frame - logOffFrame) / fps + oneFrameSec) / logoutIcon.shrinkSec) : 0;
   const s = lerp(1, layout.缩放, enterProgress);
   const u = W / 2560;
   const iconSize = logoutIcon.side * u;

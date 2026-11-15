@@ -3,10 +3,10 @@
 // 坐标：矛尖朝 +Z，握持点在原点，矛面朝 ±X，单位格。
 // 挂到 骑扫帚.tsx 的 `liYing.右手` 用 `SpearInHand`（握持点坐标系是玩家模型像素，要乘 16；玩家 0.9375 倍，矛跟着缩）。
 import React from 'react';
-import { rad } from '../../engine/anim/anim.ts';
 import { ItemSprite } from '../../engine/model/物品贴图.tsx';
 import { png } from '../../engine/model/贴图.ts';
 import tex from 'asset:贴图/物品/下界合金长矛';
+import { rad } from '../../engine/core/数学.ts';
 
 const LAYERS = [{ tex: png(tex) }];
 export const SPEAR = {

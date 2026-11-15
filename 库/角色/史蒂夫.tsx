@@ -12,7 +12,6 @@
 // 坐标同 骨架.tsx：原点在脚底中心，Z 朝上，朝向 +Y，右手在 +X，单位格。
 import React from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
 import { EntityModel, type EntityModelData, MODEL_TO_ENTITY, type PartPose } from '../../engine/model/实体模型.tsx';
 import { DISPLAY, HeldItem, type ItemTransform } from '../../engine/model/物品贴图.tsx';
@@ -20,6 +19,7 @@ import { type Png, png } from '../../engine/model/贴图.ts';
 import { type FigurePose, standPose } from './骨架.tsx';
 import raw from 'asset:模型/角色/巨人';
 import skinImg from 'asset:贴图/角色/巨人/史蒂夫';
+import { rad, clamp } from '../../engine/core/数学.ts';
 
 export const STEVE_MODEL = (raw as unknown as { models: { 宽: EntityModelData } }).models.宽;
 export const STEVE_SKIN: Png = png(skinImg);
@@ -54,8 +54,6 @@ export type StevePose = FigurePose & { crouch?: number; scale?: number };
 
 const DEG = 180 / Math.PI;
 const wrap180 = (a: number) => ((((a + 180) % 360) + 360) % 360) - 180;
-const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
-
 /** 原版走路时的 limbSwing、limbSwingAmount（WalkAnimationState：目标 = min(1, 每刻水平位移 × 4)，每刻往目标靠 0.4，位置每刻加当前值）。
  *  speed 米/秒，sec 走了多久；fromRest 从站着起步（不给就是一直以这个速度在走） */
 export const vanillaWalk = (speed: number, sec: number, fromRest = false) => {

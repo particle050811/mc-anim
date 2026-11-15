@@ -7,7 +7,6 @@
 // 没做：另外两种阵型；潜行放的图腾炸弹；配霜冻法杖的冰墙。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps } from '../接口.ts';
 import { MinecraftSpace, getModel, ModelPart } from '../零件/实体.tsx';
@@ -15,6 +14,7 @@ import { VanillaParticles, type ParticleSpawn } from '../零件/粒子.tsx';
 import meta, { wallAge, wallPositions } from './障碍.元.ts';
 import monolithModelData from 'asset:模型/法术/goety/MonolithModel';
 import totemicWallPng from 'asset:贴图/法术/goety/entity/monolith/totemic_wall';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const monolithModel = getModel(monolithModelData, 'MonolithModel');
 const image = png(totemicWallPng);
@@ -24,7 +24,7 @@ const obstacle: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
   const age = wallAge(tick);
   const positions = wallPositions(target);
   const smokeSpawns: ParticleSpawn[] = positions.flatMap((pos, i) => {
-    const n = 10 + Math.floor(rng(seed * 37 + i)() * 35);
+    const n = 10 + Math.floor(mulberry32(seed * 37 + i)() * 35);
     return Array.from({ length: n }, (_, k): ParticleSpawn => ({ 种: 'poof', 刻: 0, p: [pos[0], pos[1], pos[2]], 种子: seed * 5000 + i * 60 + k }));
   });
   return (

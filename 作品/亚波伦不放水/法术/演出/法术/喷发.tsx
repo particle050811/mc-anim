@@ -8,7 +8,6 @@
 // 没做：喷口的 LAVA 粒子（原版 lava 粒子库里还没有）；配下界法杖时多出的两座火山。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { parabola, trajectoryPos, trajectoryDir, type Trajectory } from '../零件/弹道.ts';
@@ -21,6 +20,7 @@ import blastFungusModelData from 'asset:模型/法术/goety/BlastFungusModel';
 import volcanoPng from 'asset:贴图/法术/goety/entity/monolith/volcano';
 import volcanoActivePng from 'asset:贴图/法术/goety/entity/monolith/volcano_active';
 import pyroclastPng from 'asset:贴图/法术/goety/entity/projectiles/pyroclast';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const volcanoModel = getModel(volcanoModelData, 'VolcanoModel');
 const blastFungusModel = getModel(blastFungusModelData, 'BlastFungusModel');
@@ -28,7 +28,7 @@ const blastFungusModel = getModel(blastFungusModelData, 'BlastFungusModel');
 type Projectile = { launchTick: number; trajectory: Trajectory; landTick: number };
 const shotRow = (target: Vec3, seed: number): Projectile[] =>
   eruptTicks.map((launchTick, i) => {
-    const r = rng(seed * 761 + i);
+    const r = mulberry32(seed * 761 + i);
     const jitter = () => (r() - r()) * 0.0172275 * 12;
     const spread: Vec3 = [jitter(), jitter(), 1 + jitter()];
     const vecLength = Math.hypot(spread[0], spread[1], spread[2]);
@@ -51,7 +51,7 @@ const Eruption: React.FC<SpellPerformanceProps> = ({ 秒: sec, 目标: target, �
   const blastParticles: ParticleSpawn[] = [];
   for (let t = volcanoRiseTicks; t < Math.min(volcanoLifeTicks, tick); t++) if (!eruptTicks.includes(t)) smokeSpawns.push({ 种: 'smoke', 刻: t, p: [target[0], target[1], target[2]], 种子: seed * 9000 + t });
   projectiles.forEach((projectile, i) => {
-    const r = rng(seed * 131 + i);
+    const r = mulberry32(seed * 131 + i);
     for (let n = 1; n <= projectile.landTick && projectile.launchTick + n <= tick; n++) {
       const nextPos = projectile.trajectory(n + 1);
       smokeSpawns.push({ 种: 'smoke', 刻: projectile.launchTick + n, p: [nextPos[0] + r() / 2, nextPos[1] - r() / 2, nextPos[2] + 0.5], 种子: seed * 70000 + i * 200 + n });

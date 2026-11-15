@@ -11,7 +11,6 @@
 // 宫殿顶层：冰雪女王的房间在一座高塔顶上（刷怪方块 (-28.5, 5, 174)，地板 z=171、天花板 z=180），四面墙各一格厚、外面都是空的（南墙 y -2.5～-1.5，北墙 y 11.5～12.5）。
 // 冰雪女王会飞，平时悬在半空，这里让她悬在刷怪方块的高度（脚离地板 3 格）。
 import type { V3 } from '@engine/model/parts.tsx';
-import { rng } from '@engine/model/parts.tsx';
 import { iceShieldCenters, SNOW_QUEEN } from '@库/生物/冰雪女王.tsx';
 import { broomFromTip, TIP_LOCAL } from '../../../角色/骑扫帚持矛.tsx';
 import { twilightLandmark } from '../../../地点/暮色新世界.tsx';
@@ -21,6 +20,7 @@ import { bossDeathOpacity } from '@库/特效/战利品箱碎裂.tsx';
 import type { SpearTube } from '@库/特效/方块飞溅.tsx';
 import debrisRaw from 'asset:碎块/镜头/6-1-8/碎块';
 import { toppleDuration, deathToFlatRatio, knockbackOffsetAt } from '@库/特效/生物死亡.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 export const palaceFrame = twilightLandmark('极光宫殿');
 export const V = 320;
@@ -132,7 +132,7 @@ const shieldMotions = (() => {
   const clampInHole = (x: number, a: number, b: number) => Math.min(b - shieldHalf - 0.1, Math.max(a + shieldHalf + 0.1, x));
   return c0.map((center, i) => {
     const p0: V3 = [QUEEN_AT[0] + center[0], QUEEN_AT[1] + center[1], QUEEN_AT[2] + center[2]];
-    const rand = rng(41 + i * 7);
+    const rand = mulberry32(41 + i * 7);
     const out = 40 + 40 * rand();
     const horizDist = Math.hypot(center[0], center[1]) || 1;
     const v0 = [(center[0] / horizDist) * out + (rand() - 0.5) * 20, (center[1] / horizDist) * out + 0.4 * V + 0.3 * V * rand(), 20 + 30 * rand()];

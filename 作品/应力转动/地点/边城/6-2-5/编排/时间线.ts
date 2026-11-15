@@ -1,8 +1,8 @@
 // 帧 → 里程（起步、巡航、收势减速、悬停），段表和卡点。
 // 这里的段是旧段号的窗口（编排、声音按它分），成片的段界（拼成哪几个 Composition）见 ../../6-2至6-3段界/段表.ts。
 import { headingPitch, anchoredOdometer } from '@engine/flight/飞行路径.ts';
-import { ss } from './工具.ts';
 import { cruiseSpeed, turnPoint, ROUTE, brakeS } from './航线.ts';
+import { smoothstep01 } from '@engine/core/数学.ts';
 
 // ---------- 时间线 ----------
 // 里程：前 58 帧（33.1 从几乎停着往前冲出去，前 16 帧草束离开镜头，34 帧前后到巡航速度），之后每秒一公里，从 `decelStartG` 起一路减速，`stopG` 那一帧正好停在悬停点，再悬停 14 帧（6-2-6 末帧 = 悬停 14 帧）。
@@ -30,7 +30,7 @@ const settleOdometer = (globalFrame: number) => {
   const exponent = settleExponent;
   return settleStartS + speedPerFrame * settleFrames * ((2 - (1 - progress) ** (exponent + 1) * (2 + exponent * progress)) / (exponent + 2));
 };
-export const odometer = (G: number) => (G <= 58 ? launchOdometer(G) : G <= decelStartG ? launchOdometer(58) + (G - 58) * speedPerFrame : G <= stopG ? settleOdometer(G) : hoverS + 0.01 * ss((G - stopG) / (endG - stopG)));
+export const odometer = (G: number) => (G <= 58 ? launchOdometer(G) : G <= decelStartG ? launchOdometer(58) + (G - 58) * speedPerFrame : G <= stopG ? settleOdometer(G) : hoverS + 0.01 * smoothstep01((G - stopG) / (endG - stopG)));
 
 // 段表（全局帧，含两头；下一段首帧 = 上一段末帧）：6-2-6 取最后 15 秒（360 帧），前面都是 6-2-5
 export const segmentTable = {

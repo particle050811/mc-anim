@@ -7,7 +7,6 @@
 //   两片绕轴的起始角没逐顶点对。没做：预警时每根脚下的 blossom_thorn_indicator 粒子（GeometricParticle，没读）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { trajectoryPos, trajectoryDir } from '../零件/弹道.ts';
@@ -20,13 +19,14 @@ import meta, { blossomPath, thornLifeTicks, thornWarnTicks } from './blossoming.
 import blastFungusModelData from 'asset:模型/法术/goety/BlastFungusModel';
 import blossomBallPng from 'asset:贴图/法术/goety/entity/projectiles/blossom_ball';
 import blossomThornPng from 'asset:贴图/法术/goety/entity/projectiles/blossom_thorn';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const blastFungusModel = getModel(blastFungusModelData, 'BlastFungusModel');
 
 const Blossom: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: target, 种子: seed, options }) => {
   const tick = sec * 20;
   const { trajectory, arriveTick } = blossomPath(from, target, options?.highSpeed);
-  const r = rng(seed * 47 + 1);
+  const r = mulberry32(seed * 47 + 1);
   const breath = eachTick(1, Math.min(tick, arriveTick)).map((n) => dragonBreath(r, n, trajectory(n)));
   const dir = trajectoryDir(trajectory, Math.min(tick, arriveTick - 0.01));
   const [vx, vy, vz] = [dir[0], dir[2], -dir[1]];
@@ -51,7 +51,7 @@ const Blossom: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: targ
       {thornAge >= 0 &&
         frame < 8 &&
         thornPositions.map((p, i) => {
-          const height = 4 + (rng(seed * 59 + i)() - 0.5);
+          const height = 4 + (mulberry32(seed * 59 + i)() - 0.5);
           const riseOffset = (Math.sin(Math.min(thornAge / (thornLifeTicks * 0.4), 1) * Math.PI * 0.5) - 1) * height;
           const beamProps = { 起: [p[0], p[1], p[2] + riseOffset] as Vec3, end: [p[0], p[1], p[2] + riseOffset + height] as Vec3, 图: png(blossomThornPng), 半宽: 0.34375 * height * 0.5, planeCount: 1, vStart: 1, vEnd: 0, 混合: '镂空' as const };
           return (

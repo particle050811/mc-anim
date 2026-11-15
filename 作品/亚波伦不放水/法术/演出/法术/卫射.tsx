@@ -8,7 +8,6 @@
 // 没做：照满时的伤害没有另外的画面（游戏里也没有）。
 import React from 'react';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { addVec, sub, scaleVec, vecLength, unitVec } from '../零件/弹道.ts';
@@ -19,6 +18,7 @@ import type { RgbColor } from '../零件/材质.ts';
 import meta, { guardLightTick, guardLandPoint } from './卫射.元.ts';
 import guardianBeamPng from 'asset:贴图/法术/minecraft/entity/guardian_beam';
 import bubblePng from 'asset:贴图/法术/minecraft/particle/bubble';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const laserPng = png(guardianBeamPng);
 const bubbleImg = png(bubblePng);
@@ -43,7 +43,7 @@ const GuardianRay: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目标: 
   const q = Math.PI / 4;
   // 气泡：这一刻撒的（只活到下一刻）
   const n = Math.floor(tick);
-  const r = rng(seed * 7919 + n);
+  const r = mulberry32(seed * 7919 + n);
   const d5 = n / chargeUpTick;
   const bubbles: QuadItem[] = [];
   for (let d4 = r(); d4 < distance; ) {

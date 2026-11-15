@@ -9,6 +9,7 @@ import * as chainPierceChoreo from '../../6-1-7/编排.ts';
 import * as snowQueenChoreo from '../../6-1-8/编排.ts';
 import * as giantChoreo from '../../6-1-8b/编排.ts';
 import * as castleChoreo from '../../6-1-9/编排.ts';
+import { smoothstep01, rad, deg } from '@engine/core/数学.ts';
 
 export const FPS = 24;
 export const V_CRUISE = 1000;
@@ -49,12 +50,6 @@ export const skeletonRadii = [260, 500, 1000, 1500];
 // ---------- 小工具 ----------
 export const sub = (a: number[], b: number[]) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 export const len = (a: number[]) => Math.hypot(a[0], a[1], a[2]);
-export const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-export const rad = (d: number) => (d * Math.PI) / 180;
-export const deg = (r: number) => (r * 180) / Math.PI;
 // 方位：度，0 = 北、顺时针为正；编排的朝向是往左为正，= −方位
 const bearingOf = (dx: number, dy: number) => ((((Math.atan2(dx, dy) * 180) / Math.PI) % 360) + 360) % 360;
 const angleDiff = (a: number, b: number) => ((((b - a) % 360) + 540) % 360) - 180; // a → b 转多少（正 = 右转）

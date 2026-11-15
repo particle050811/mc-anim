@@ -8,6 +8,7 @@ import { readModel, modelFileName, sectionFormatVersion } from '../../../engine/
 // 粒子帧/ 下 anim extract --particle-frames 生成的模块和定义、配方、锁对得上（取材/粒子帧.ts）。
 // --deep：逐个核对库里字节的 sha256 和大小，地形包按整包清单指纹核对。
 import { decoderSourceStale } from '../../世界/区段解码器.ts';
+import { packManifest } from '../../世界/版本.ts';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -82,36 +83,6 @@ const fileSha = (file: string) =>
       .on('end', () => resolve(h.digest('hex')))
       .on('error', reject);
   });
-
-/** 地形包整包清单指纹（同 assets/tools/导入旧项目.py 的 包清单：路径按段逐级比较排序，「相对路径\tsha256\n」逐行拼起来再取 sha256） */
-export const packManifest = async (dir: string) => {
-  const files: string[][] = [];
-  const walk = (rel: string[]) => {
-    for (const e of fs.readdirSync(path.join(dir, ...rel), { withFileTypes: true })) {
-      if (e.isDirectory()) walk([...rel, e.name]);
-      else if (e.isFile()) files.push([...rel, e.name]);
-    }
-  };
-  walk([]);
-  const compareStrings = (a: string, b: string) => {
-    const x = [...a];
-    const y = [...b];
-    for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] !== y[i]) return x[i]!.codePointAt(0)! - y[i]!.codePointAt(0)!;
-    return x.length - y.length;
-  };
-  files.sort((a, b) => {
-    for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return compareStrings(a[i]!, b[i]!);
-    return a.length - b.length;
-  });
-  const h = crypto.createHash('sha256');
-  let byteSize = 0;
-  for (const f of files) {
-    const abs = path.join(dir, ...f);
-    h.update(`${f.join('/')}\t${await fileSha(abs)}\n`, 'utf8');
-    byteSize += fs.statSync(abs).size;
-  }
-  return { 清单sha256: h.digest('hex'), 文件数: files.length, 大小: byteSize };
-};
 
 /** 取区段包的模块（packDir 拼包的版本目录）：闭包里有它的段才会在渲染时取地形包 */
 const sectionPackModule = 'engine/voxel/区段包位置.ts';

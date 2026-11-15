@@ -6,7 +6,6 @@ import { useThree } from '@react-three/fiber';
 import React from 'react';
 import { AbsoluteFill, useCurrentFrame } from 'remotion';
 import * as THREE from 'three';
-import { rad } from '@engine/anim/anim.ts';
 import { type BedrockModel, BedrockModelView, type BonePose } from '@engine/model/基岩模型.tsx';
 import { png } from '@engine/model/贴图.ts';
 import { Jiuhu, JIUHU, JIUHU_MOUTHS, JIUHU_TALK_BONES, jiuhuMouthAttach } from '@库/角色/九胡.tsx';
@@ -18,6 +17,7 @@ import jiuhuRaw from 'asset:模型/角色/九胡';
 import jiuhuSkin from 'asset:贴图/角色/九胡';
 import { views } from './视图.ts';
 import { useViewIndex } from '@engine/段/时间.tsx';
+import { rad } from '@engine/core/数学.ts';
 
 // ---------- 照李樱对照（旧 李樱对照.tsx 的 VIEWS 第 3、6 个，第 3～5 帧是平行投影） ----------
 type CompareView = { az: number; el: number; pose: FigurePose; span?: number; centerZ?: number; centerX?: number };

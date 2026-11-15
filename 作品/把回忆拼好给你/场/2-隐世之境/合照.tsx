@@ -34,6 +34,7 @@ import { groupPhotoShadingScene, groupPhotoStand, groupPhotoAngleDeg, groupPhoto
 import { lineBubble, laugh } from './重逢参数.ts';
 import { NoFade, BackgroundFade } from './褪色.tsx';
 import { useSnappedFrame } from '../../当前帧.ts';
+import { lerp } from '@engine/core/数学.ts';
 
 const tone = '归隐之地' as const;
 const events = mainCutEvents;
@@ -42,9 +43,6 @@ const events = mainCutEvents;
 
 /** 镜头那一边很远的一点：正交镜头朝东，花的正面朝西 */
 const cameraDir: V3 = [groupPhotoShot.看[0] - 100, groupPhotoShot.看[1], groupPhotoShot.看[2]];
-
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
-
 /** 她：面朝镜头站在你左边，从 靠肩起势（2-重逢 末尾那个笑、举着花）按 靠肩进度 靠到 靠肩（头、上身往你那边歪，花放下） */
 const LiYingLeaning: React.FC<{ 帧: number }> = ({ 帧: frame }) => {
   const k = leanProgress(frame);

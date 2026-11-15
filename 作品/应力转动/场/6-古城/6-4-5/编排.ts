@@ -16,7 +16,6 @@ import { type Key, sample, sampleV, track } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import type { FigurePose } from '@库/角色/骨架.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
-import type { Cam } from '../../../地点/古城4x/6-4-1/古城画面.tsx';
 import { FPS, PLACE_BEFORE, airPose, groundPose, landPose, mixPose, nearYaw, pivotStep, standAt, takeoffPose, yawTo } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import * as choreo643 from '../6-4-3/编排.ts';
 import * as timeline643 from '../6-4-3/时间线.ts';
@@ -24,9 +23,10 @@ import { allWool, elite, eliteLeap, feetOnWool, withHang, woolBlockAt, wool645, 
 import { lineTable } from '../../../配音/台词轨.tsx';
 import type * as THREE from 'three';
 import { sheathConstraint as sheathConstraint, type SheathTiming } from '@库/物品/拔刀剑收刀.ts';
+import { lerp } from '@engine/core/数学.ts';
+import type { Cam } from '@engine/core/机位.ts';
 
 export { FPS };
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 // 6-4-3c 末帧（主时间线的全局帧）
 export const startGlobalFrame = timeline643.totalFrames - 1;
 export const globalFrameAt = (f: number) => startGlobalFrame + f;

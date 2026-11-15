@@ -27,14 +27,13 @@ import React, { useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { png } from '../../engine/model/贴图.ts';
 import fontPng from 'asset:字体/伤害数字';
+import { lensToFov } from '../../engine/core/机位.ts';
 
 // ---------- 规则 ----------
 // ChatFormatting 的颜色
 export const damageNumberColors = { normal: 0xffaa00, crit: 0xaa0000, heal: 0x55ff55 };
 const glyphScale = { normal: 0.04, crit: 0.06 }; // 一个字体像素多少格（PoseStack.scale 的 s 的终值）
 const lifetimeTicks = 30; // lifetime（刻）
-const ticksPerSec = 20;
-
 // 数值的写法（sendDamageParticle）：先四舍五入到 0.1；整数写成整数，否则写一位小数。
 // Java 里是 float 运算、String.valueOf(float)（一千万以上会变成科学计数法，这里用不到）
 export const damageText = (damage: number): string => {
@@ -84,9 +83,6 @@ export const damageNumberAnim = (ticks: number, crit: boolean) => {
     rise: state.prevRise + (state.rise - state.prevRise) * tickFrac,
   };
 };
-// 一共显示多少秒（给编排、合成算帧范围用）
-export const damageNumberDurationSec = lifetimeTicks / ticksPerSec;
-
 // ---------- 原版默认字体（ascii.png） ----------
 type Glyph = { width: number; dots: boolean[][] };
 const glyphCache = new Map<string, Glyph>();
@@ -147,7 +143,7 @@ export const damageNumberAnchor = (feetPos: THREE.Vector3, hitboxHeight: number,
 
 // 和各镜头 Rig 一样的透视镜头：焦距按 36mm 横向画幅换算成竖向视角，up 朝 +Y、不滚转
 export const makePerspectiveCamera = (focalMm: number, position: THREE.Vector3, target: THREE.Vector3, width: number, height: number) => {
-  const cam = new THREE.PerspectiveCamera((2 * Math.atan(18 / focalMm / (width / height)) * 180) / Math.PI, width / height, 0.1, 1200);
+  const cam = new THREE.PerspectiveCamera(lensToFov(focalMm, width / height), width / height, 0.1, 1200);
   cam.position.copy(position);
   cam.up.set(0, 1, 0);
   cam.lookAt(target);

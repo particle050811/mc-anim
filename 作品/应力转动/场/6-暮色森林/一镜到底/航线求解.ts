@@ -4,6 +4,7 @@
 import { solveDubins, type DubinsPose } from '@engine/flight/杜宾路径.ts';
 import { trapezoidTurn, legSpeed, type Rotation } from '@engine/flight/平顺航迹.ts';
 import type { V3 } from '@engine/model/parts.tsx';
+import { rad, deg } from '@engine/core/数学.ts';
 
 // ====================== 一程 ======================
 // 端态：位置、航向（方位，度）、俯仰（度）、速度、加速度（沿速度方向）
@@ -22,8 +23,6 @@ export type LegSolution = {
 type VerticalPlan = { γ: (t: number) => number; kind: '两截' | '一截' | '平'; climb: number; descent: number; levelFlightSec: number; error?: string };
 const integStep = 1 / 960;
 const sampleStep = 1 / 480;
-const rad = (d: number) => (d * Math.PI) / 180;
-const deg = (r: number) => (r * 180) / Math.PI;
 const angleDiff = (a: number, b: number) => ((((b - a) % 360) + 540) % 360) - 180; // a → b 转多少（正 = 右转）
 
 // 限值：见 路线.ts 的输入表

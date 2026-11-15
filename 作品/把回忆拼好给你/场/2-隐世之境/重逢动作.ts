@@ -1,10 +1,10 @@
 // 第 15 句隐世之境这一镜随时间走的几样（纯函数，重逢.tsx 画、测试核）：她回头转到哪、她笑到哪、机位、接过来的聊天行淡到哪、台词气泡弹到哪。
 // 秒都是歌上的秒；时刻取 分镜 的 正片事件，数取 重逢参数.ts。
-import { clamp01, rad } from '@engine/anim/anim.ts';
 import { fps, oneFrameSec } from '../../分镜/时间.ts';
 import { events as lyricEvents } from '../../分镜/歌词.ts';
 import { events as mainCutLine15Events } from '../../分镜/正片第15句.ts';
 import { lineBubble, lookBack, eyeContactShot, pushShot, laugh, chatLine } from './重逢参数.ts';
+import { rad, clamp01 } from '@engine/core/数学.ts';
 
 const mainCutEvents = { ...lyricEvents, ...mainCutLine15Events };
 

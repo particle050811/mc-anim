@@ -4,7 +4,6 @@ import { ThreeCanvas } from '@remotion/three';
 import React from 'react';
 import { AbsoluteFill, useVideoConfig } from 'remotion';
 import { useCurrentSec } from '@engine/段/时间.tsx';
-import { rad } from '@engine/anim/anim.ts';
 import type { V3 } from '@engine/model/parts.tsx';
 import { FlightRig } from '../../../地点/飞行镜头.tsx';
 import { TwilightLighting, twilightFogFar, clampFogToEdge, TWILIGHT_CRUISE_FOG_FAR } from '@engine/light/暮色光照.tsx';
@@ -30,12 +29,7 @@ import { GiantScene } from '../6-1-8b/戏.tsx';
 import { cameraAt, type Cam } from './镜头.ts';
 import * as route from './路线.ts';
 import { SpearDrill, LootLayer, drillGhost, drillSpin } from './战利品.tsx';
-
-const ss = (x: number) => {
-  const clamped = Math.min(1, Math.max(0, x));
-  return clamped * clamped * (3 - 2 * clamped);
-};
-const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+import { rad, smoothstep01, lerp } from '@engine/core/数学.ts';
 
 const sheath = <WornSheath />;
 
@@ -48,9 +42,9 @@ const END613 = P613.riders(P613.beats.末帧);
 const ly613 = END613.liYing as { lean: number; headRaise: number };
 const jh613 = END613.jiuhu as { lean: number; headRaise: number };
 export const ridersAt = (frame: number, physT: number) => {
-  const k0 = ss(frame / 30);
-  const ks = ss((frame - F_SPEAR) / 12);
-  const grow = ss((frame - F_SPEAR - 3) / 8);
+  const k0 = smoothstep01(frame / 30);
+  const ks = smoothstep01((frame - F_SPEAR) / 12);
+  const grow = smoothstep01((frame - F_SPEAR - 3) / 8);
   const lean = lerp(lerp(ly613.lean, 46, k0), SPEAR_RIDER.lean, ks);
   const headRaise = lerp(lerp(ly613.headRaise, 30, k0), 8, ks);
   const drill = drillGhost(frame);
@@ -114,9 +108,9 @@ const releasedRiders = (td: number, liYing: RideLiYing, jiuHu: RideJiuhu) => {
   const fallDur = route.landingDuration();
   // 在空中把腿放下来、身子直起来，着地那一刻正好站直；两手微微张开保持平衡。着地后 `站正` 秒内回到正常站姿
   // （一直保持着地姿势会显得人是歪的，用户 10-09 指出）
-  const k = ss(td / fallDur);
+  const k = smoothstep01(td / fallDur);
   const landed = td >= fallDur;
-  const standUp = ss((td - fallDur) / dismount.standUp);
+  const standUp = smoothstep01((td - fallDur) / dismount.standUp);
   const landOrStand = (landVal: number, standVal: number) => lerp(landVal, standVal, standUp);
   const origPose = liYing.poseOverride;
   const ly: RideLiYing = {

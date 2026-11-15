@@ -5,7 +5,7 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import * as THREE from 'three';
 import { rigSpline, type Cam } from '@engine/core/机位.ts';
-import { sceneToThree, placeCamera } from '@engine/core/three换算.ts';
+import { placeCamera } from '@engine/core/three换算.ts';
 import { canvasDpr } from '@engine/core/渲染级别.ts';
 import { ScreenAo } from '@engine/voxel/屏幕AO.tsx';
 import { netherBrighter, RealNether } from '../../地点/真下界.tsx';
@@ -55,14 +55,4 @@ export const pickShot = (shotTable: readonly Shot[], sec: number, segLengthSec: 
   const end = shotTable[i + 1]?.起 ?? segLengthSec;
   const shotSec = sec - shot.起;
   return { shot, cameraRig: shot.cameraRig(Math.min(1, Math.max(0, shotSec / (end - shot.起))), shotSec), shotSec };
-};
-
-const projCamera = new THREE.PerspectiveCamera();
-/** 场景里的一点落在画面上哪（像素，页面坐标）；前 = 在镜头前面 */
-export const projectToPicture = (cameraRig: Cam, point: readonly number[]): { x: number; y: number; 前: boolean } => {
-  placeCamera(projCamera, cameraRig, aspect.宽 / aspect.高, { near: 0.05, far: 1400 });
-  projCamera.updateMatrixWorld();
-  projCamera.matrixWorldInverse.copy(projCamera.matrixWorld).invert();
-  const v = sceneToThree(point).project(projCamera);
-  return { x: ((v.x + 1) / 2) * aspect.宽, y: ((1 - v.y) / 2) * aspect.高, 前: v.z < 1 };
 };

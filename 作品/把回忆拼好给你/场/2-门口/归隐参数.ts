@@ -5,7 +5,6 @@
 // 核查 10-24（分屏那一路）：合屏原是一刀硬切、挂铃在刀后面，改成先在左屏里挂铃、走进屋取照、带着合照传送走；合屏是同一台机位连续拉开：
 //   左屏和 2-摇铃 的整屏镜头同一个 N、同一条地面线，左屏就是整屏画面往左挪了 合屏前偏 格的左半边，合屏时画面往右挪回来、分屏线往右推到画外。
 // 坐标照 地点/门口小木屋.tsx（Z 朝上：x 东 = 画面右、y 北、z 上，单位格；人站在 y = 0.5）。yaw 同 FigurePose：180 朝镜头、−90 朝东；骨骼角同 MagicalWineFoxEx 的 骨骼。
-import { clamp01 } from '@engine/anim/anim.ts';
 import type { BonePose } from '@engine/model/基岩模型.tsx';
 import { fps, legacyFrameSec } from '../../分镜/时间.ts';
 import { events as mainCutEvents } from '../../分镜/正片第13至14句.ts';
@@ -14,6 +13,7 @@ import { downstairsCount } from '../../现实/楼下布局.ts';
 import { splitLayout } from './分屏参数.ts';
 import { fullScreenShot, fullScreenShotCount } from './参数.ts';
 import { colorBackRange } from './第15句.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 const events = mainCutEvents;
 

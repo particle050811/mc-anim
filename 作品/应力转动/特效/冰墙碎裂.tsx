@@ -3,7 +3,8 @@
 // 按时间参数算，没有模拟状态。sec = 撞开以后经过的秒数（< 0 不显示）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '@engine/model/parts.tsx';
+import { type V3 } from '@engine/model/parts.tsx';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const triGeo = (rand: () => number) => {
   const geometry = new THREE.BufferGeometry();
@@ -38,7 +39,7 @@ export const IceShards: React.FC<{ sec: number; origin: V3; dir: V3; seed: numbe
   speed = 18,
 }) => {
   const shards = useMemo(() => {
-    const rand = rng(seed * 313 + 1);
+    const rand = mulberry32(seed * 313 + 1);
     return Array.from({ length: count }, () => ({
       geo: triGeo(rand),
       p0: [origin[0] + (rand() - 0.5) * size, origin[1] + (rand() - 0.5) * 0.6, origin[2] + (rand() - 0.5) * size] as V3,

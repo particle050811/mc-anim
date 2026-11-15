@@ -26,6 +26,7 @@ import { segmentFrames, frameInSegment } from '../../../配乐/配乐音轨.tsx'
 import { roomOrigin, roomHeading } from '../../../地点/基地小岛.tsx';
 import { overworldWindowView } from '@engine/voxel/主世界地形.ts';
 import * as choreo625 from '../../../地点/边城/6-2-5/编排.ts';
+import { smoothstep01, lerp, lerpV } from '@engine/core/数学.ts';
 
 export const segmentId = '6-2-4';
 export const FRAMES = segmentFrames(segmentId);
@@ -47,10 +48,6 @@ export const beats = {
   throughDoor: beatFrame(32, 4), // 32.4 扫帚正好穿过门口（杆中心过西墙中线）
   lastFrame: FRAMES - 1,
 };
-
-const ss = (x: number) => { const clamped = Math.min(1, Math.max(0, x)); return clamped * clamped * (3 - 2 * clamped); };
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerp3 = (a: number[], b: number[], t: number) => a.map((v, i) => v + (b[i] - v) * t);
 const D2R = Math.PI / 180;
 
 // ---------- 6-2-5 首帧（世界坐标），末帧要和它一模一样 ----------
@@ -67,8 +64,8 @@ const DIP = 0.1; // 冲之前往下一沉
 export type BroomState = { 位置: V3; facing: number; pitch: number; roll: number; appear: number };
 // 不带悬停起伏、不带下沉、不带出门后往上窜的高度（镜头跟它走，免得画面跟着扫帚一颤一颤）
 const baseZ = (frame: number) => {
-  let z = HOVER + SETTLE * ss((frame - beats.seated) / 24);
-  z += (LIFT - HOVER - SETTLE) * ss((frame - beats.liftOff) / (beats.charge - beats.liftOff));
+  let z = HOVER + SETTLE * smoothstep01((frame - beats.seated) / 24);
+  z += (LIFT - HOVER - SETTLE) * smoothstep01((frame - beats.liftOff) / (beats.charge - beats.liftOff));
   return z;
 };
 // ---------- 房间在世界里的摆法：本地 → 世界 = 绕竖轴转 ROOM.朝向，再平移 ROOM.位置（基地小岛.tsx 定的，不转） ----------
@@ -89,20 +86,20 @@ const S_END = dashS(beats.lastFrame);
 // 墙外地比屋里地板高一格（存档里西北半边是 y 69 的草地），升得快一点，脚不擦地
 const S_CLIMB = 7.0 / -DIR[0];
 const CLIMB = 2.5;
-const climbK = (s: number) => ss((s - S_CLIMB) / (S_END - S_CLIMB));
+const climbK = (s: number) => smoothstep01((s - S_CLIMB) / (S_END - S_CLIMB));
 const zAt = (frame: number) => {
-  const bob = 0.05 * Math.sin((2 * Math.PI * frame) / 40) * (1 - ss((frame - beats.charge + 12) / 12));
-  const dip = -DIP * ss((frame - beats.charge) / 6) * (1 - ss((frame - beats.rush) / 10));
+  const bob = 0.05 * Math.sin((2 * Math.PI * frame) / 40) * (1 - smoothstep01((frame - beats.charge + 12) / 12));
+  const dip = -DIP * smoothstep01((frame - beats.charge) / 6) * (1 - smoothstep01((frame - beats.rush) / 10));
   return baseZ(frame) + bob + dip + CLIMB * climbK(dashS(frame));
 };
 export const Z_END = zAt(beats.lastFrame);
 const pitchAt = (frame: number) => {
   // 冲之前扫帚头微微翘起蓄力（3°），冲起来压平；出了门抬到 6-2-5 首帧的俯仰
-  const pre = 3 * ss((frame - beats.charge) / 6) * (1 - ss((frame - beats.rush) / 8));
+  const pre = 3 * smoothstep01((frame - beats.charge) / 6) * (1 - smoothstep01((frame - beats.rush) / 8));
   return lerp(pre, END.pitch, climbK(dashS(frame)));
 };
 // 31.1 离地起，扫帚一边慢慢升、一边原地转到出发朝向（对着门口），蓄力之前转完
-const yawAt = (f: number) => departYaw * ss((f - beats.liftOff) / (beats.charge - beats.liftOff));
+const yawAt = (f: number) => departYaw * smoothstep01((f - beats.liftOff) / (beats.charge - beats.liftOff));
 const posAt = (frame: number): V3 => {
   const dist = dashS(frame);
   return [DIR[0] * dist, DIR[1] * dist, zAt(frame)];
@@ -121,8 +118,8 @@ export const toWorld = (pt: number[]): number[] => {
 export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: RideJiuhu | false } => {
   if (frame >= beats.lastFrame) return { liYing: { ...END_RIDERS.李樱 }, jiuhu: { ...END_RIDERS.九胡 } };
   // 冲出去的一路慢慢压成 6-2-5 首帧的骑姿
-  const k = ss((frame - beats.rush) / (beats.lastFrame - beats.rush));
-  const sink = ss((frame - beats.charge) / 6) * (1 - k);
+  const k = smoothstep01((frame - beats.rush) / (beats.lastFrame - beats.rush));
+  const sink = smoothstep01((frame - beats.charge) / 6) * (1 - k);
   const ly = END_RIDERS.李樱;
   const jh = END_RIDERS.九胡;
   return {
@@ -130,7 +127,7 @@ export const riders = (frame: number): { liYing: RideLiYing | false; jiuhu: Ride
     jiuhu: frame >= beats.jiuHuUp
       ? {
           lean: lerp(16 + 8 * sink, jh.lean ?? 20, k),
-          hugWaist: lerp(ss((frame - beats.jiuHuUp) / 6), jh.hugWaist ?? 1, k),
+          hugWaist: lerp(smoothstep01((frame - beats.jiuHuUp) / 6), jh.hugWaist ?? 1, k),
           // 尾巴的相位到末帧正好是 6-2-5 首帧的 0
           tailPhase: (frame - beats.lastFrame) / 9,
           wind: 0,
@@ -151,7 +148,7 @@ const SEAT_FRONT = BROOM.seatFront;
 const SEAT_BACK = BROOM.seatBack;
 
 // 李樱：右手平托着结构指南针，往九胡面前再送一点 → 她接住后松手、手放下 → 唤出扫帚（右手往前上方一伸）→ 跳上前座，落座时转成朝北（扫帚头的方向）
-const giveK = (f: number) => lerp(0.3, 1, ss(f / 12)) * (1 - ss((f - beats.release) / 10));
+const giveK = (f: number) => lerp(0.3, 1, smoothstep01(f / 12)) * (1 - smoothstep01((f - beats.release) / 10));
 // 平托的右臂 [armR, armRRoll, elbowR]：首帧（6-2-3 末帧）→ 第 12 帧往她面前送。肘弯成直角、前臂端平，往里收向她那边；
 // 再把手伸出去递给她（`GIVE_REACH` 这几帧），肩和身子跟着朝她转过去一点（GIVE_TURN 度）
 const HOLD_NEAR = [5, 15, 85];
@@ -159,14 +156,14 @@ const HOLD_FAR = [18, 20, 72];
 const HOLD_GIVE = [42, 16, 46];
 const GIVE_REACH = [5, 15];
 const GIVE_TURN = 14;
-const giveReach = (f: number) => ss((f - GIVE_REACH[0]) / (GIVE_REACH[1] - GIVE_REACH[0]));
+const giveReach = (f: number) => smoothstep01((f - GIVE_REACH[0]) / (GIVE_REACH[1] - GIVE_REACH[0]));
 export const liyingOnFoot = (frame: number): FigurePose | null => {
   if (frame >= beats.liYingMount) return null;
   const give = giveK(frame);
-  const hold = 1 - ss((frame - beats.release) / 10);
-  const arm = HOLD_NEAR.map((v, i) => lerp(lerp(v, HOLD_FAR[i], ss(frame / 12)), HOLD_GIVE[i], giveReach(frame)) * hold);
-  const summon = ss((frame - (beats.summon - 7)) / 7) * (1 - ss((frame - (beats.summon + 8)) / 8));
-  const hopK = ss((frame - (beats.liYingMount - 8)) / 8);
+  const hold = 1 - smoothstep01((frame - beats.release) / 10);
+  const arm = HOLD_NEAR.map((v, i) => lerp(lerp(v, HOLD_FAR[i], smoothstep01(frame / 12)), HOLD_GIVE[i], giveReach(frame)) * hold);
+  const summon = smoothstep01((frame - (beats.summon - 7)) / 7) * (1 - smoothstep01((frame - (beats.summon + 8)) / 8));
+  const hopK = smoothstep01((frame - (beats.liYingMount - 8)) / 8);
   const crouch = frame > beats.liYingMount - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.liYingMount - 12)) / 6)) : 0;
   const z = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (frame > beats.liYingMount - 8 ? 1 : 0);
   const basePose = standPose([lerp(LY_AT[0], 0, hopK), lerp(LY_AT[1], SEAT_FRONT, hopK), z]);
@@ -190,14 +187,14 @@ export const liyingOnFoot = (frame: number): FigurePose | null => {
 export type JiuhuOnFoot = { pose: FigurePose; tail: number; bend: number; bones: Record<string, BonePose> } | null;
 const JH_STEP = { dist: 0.25, frames: [4, 13] };
 const jiuhuBody = (frame: number) => {
-  const look = ss((frame - beats.receive) / 8) * (1 - ss((frame - beats.lookUp) / 8));
+  const look = smoothstep01((frame - beats.receive) / 8) * (1 - smoothstep01((frame - beats.lookUp) / 8));
   const flinch = Math.sin(Math.PI * Math.min(1, Math.max(0, (frame - beats.summon) / 12)));
-  const hopK = ss((frame - (beats.jiuHuUp - 8)) / 8);
+  const hopK = smoothstep01((frame - (beats.jiuHuUp - 8)) / 8);
   const crouch = frame > beats.jiuHuUp - 12 ? Math.sin(Math.PI * Math.min(1, (frame - (beats.jiuHuUp - 12)) / 6)) : 0;
   const hopZ = 0.9 * Math.sin(Math.PI * Math.min(1, hopK * 1.6)) * (frame > beats.jiuHuUp - 8 ? 1 : 0);
   // 伸手去接时往他那边迈一小步（`JH_STEP`），之后就站在那里
   const stepT = Math.min(1, Math.max(0, (frame - JH_STEP.frames[0]) / (JH_STEP.frames[1] - JH_STEP.frames[0])));
-  const back = 0.35 * flinch * (1 - hopK) - JH_STEP.dist * ss(stepT);
+  const back = 0.35 * flinch * (1 - hopK) - JH_STEP.dist * smoothstep01(stepT);
   const stepSwing = Math.sin(Math.PI * stepT);
   const fx = -Math.sin(JH_YAW * D2R);
   const fy = Math.cos(JH_YAW * D2R);
@@ -289,8 +286,8 @@ const HOLD_AT = (() => {
 const ARM_HOLD = solveArm(beats.release + 14, HOLD_AT.pos, HOLD_AT.normal, HOLD_AT.top, [-30, 0, -10, -60, 0]);
 export const jiuhuArmSolve = { take: ARM_TAKE, hold: ARM_HOLD }; // 核对用
 const armAt = (frame: number): ArmRot => {
-  const reachK = ss((frame - beats.receive) / (beats.handoff - beats.receive));
-  const holdK = ss((frame - beats.release) / 14);
+  const reachK = smoothstep01((frame - beats.receive) / (beats.handoff - beats.receive));
+  const holdK = smoothstep01((frame - beats.release) / 14);
   return ARM_REST.map((v, i) => lerp(lerp(v, ARM_TAKE.arm[i], reachK), ARM_HOLD.arm[i], holdK));
 };
 export const jiuhuOnFoot = (frame: number): JiuhuOnFoot => {
@@ -314,11 +311,11 @@ export const compass = (frame: number): CompassPose | null => {
   const ly = liyingOnFoot(frame);
   const fromLiYing = { pos: ly ? gripAt(ly, COMPASS_GRIP) : GIVEN_AT, quat: new THREE.Quaternion(), scale: COMPASS_SCALE };
   // 14～18 两只手都托着，从他手上的位置、朝向换到她手上的
-  const k = ss((frame - (beats.handoff - 2)) / 4);
+  const k = smoothstep01((frame - (beats.handoff - 2)) / 4);
   if (k <= 0) return fromLiYing;
   const toJiuhu = inJiuhuHand(frame);
   if (k >= 1) return toJiuhu;
-  return { pos: lerp3(fromLiYing.pos, toJiuhu.pos, k), quat: fromLiYing.quat.clone().slerp(toJiuhu.quat, k), scale: COMPASS_SCALE };
+  return { pos: lerpV(fromLiYing.pos, toJiuhu.pos, k), quat: fromLiYing.quat.clone().slerp(toJiuhu.quat, k), scale: COMPASS_SCALE };
 };
 
 // ---------- 镜头（先在本地坐标里算，再换到世界） ----------
@@ -329,9 +326,9 @@ const anchor = (f: number) => [0, 0, baseZ(f)]; // 镜头跟着的扫帚位置�
 const C1 = { from: [-0.4, 5.6, 1.75], to: [2.2, 4.3, 1.7], tgt: [0, -0.3, 1.1] };
 const shot1 = (frame: number): Cam => {
   const t = Math.min(1, Math.max(0, frame / beats.liftOff));
-  const eased = ss(t) * 0.6 + t * 0.4;
-  const riding = ss((frame - beats.liYingMount) / 30);
-  return { pos: lerp3(C1.from, C1.to, eased), tgt: lerp3(C1.tgt, [0, 0, baseZ(frame) + 0.85], riding), lens: 28 };
+  const eased = smoothstep01(t) * 0.6 + t * 0.4;
+  const riding = smoothstep01((frame - beats.liYingMount) / 30);
+  return { pos: lerpV(C1.from, C1.to, eased), tgt: lerpV(C1.tgt, [0, 0, baseZ(frame) + 0.85], riding), lens: 28 };
 };
 // 镜头 2（31.1～冲）：扫帚慢慢离地、原地转到出发朝向（对着西墙的门），镜头绕到扫帚正后方、高 1.1 格，看着二人的背影和前面的门口。
 // 绕哪一边：镜头实际转的角度 = 绕人转的角度 + 扫帚转的角度，经左手边转出来超过 240°（画面甩一大圈，看着晕）就改从右手边绕，转得少
@@ -354,7 +351,7 @@ const rotZ = (pt: number[], deg: number) => {
   return [pt[0] * Math.cos(rad) - pt[1] * Math.sin(rad), pt[0] * Math.sin(rad) + pt[1] * Math.cos(rad), pt[2]];
 };
 const orbit = (frame: number): Cam => {
-  const eased = ss((frame - beats.liftOff) / (beats.rush - beats.liftOff));
+  const eased = smoothstep01((frame - beats.liftOff) / (beats.rush - beats.liftOff));
   const anchorPos = anchor(frame);
   const phi = (O0.phi + ORBIT_SWEEP * eased) * D2R;
   const radius = lerp(O0.r, ORBIT_END.r, eased);
@@ -363,7 +360,7 @@ const orbit = (frame: number): Cam => {
   const ahead = rotZ([0, 3, 0], yawAt(frame));
   return {
     pos: [anchorPos[0] + radius * Math.cos(phi), anchorPos[1] + radius * Math.sin(phi), anchorPos[2] + height],
-    tgt: lerp3([anchorPos[0], anchorPos[1], anchorPos[2] + 0.85], [anchorPos[0] + ahead[0], anchorPos[1] + ahead[1], anchorPos[2] + 0.6], eased),
+    tgt: lerpV([anchorPos[0], anchorPos[1], anchorPos[2] + 0.85], [anchorPos[0] + ahead[0], anchorPos[1] + ahead[1], anchorPos[2] + 0.6], eased),
     lens: lerp(28, 24, eased),
   };
 };
@@ -382,11 +379,11 @@ const CHASE_Z = LIFT + ORBIT_END.h; // 冲出去时镜头的高度（不跟着�
 const rush = (frame: number): Cam => {
   const progress = Math.min(1, Math.max(0, (frame - beats.rush) / (beats.lastFrame - beats.rush)));
   const dist = dashS(frame);
-  const chaseDist = lerp(ORBIT_END.r, 2.2, ss(progress));
+  const chaseDist = lerp(ORBIT_END.r, 2.2, smoothstep01(progress));
   const chase = { pos: [DIR[0] * (dist - chaseDist), DIR[1] * (dist - chaseDist), CHASE_Z], tgt: [DIR[0] * (dist + 3), DIR[1] * (dist + 3), LIFT + 0.6] };
   const tail = { pos: onBroom(frame, [0, TAIL - 0.14, 0.04]), tgt: onBroom(frame, [0, TAIL + 6, 0.1]) };
-  const eased = ss((frame - (beats.lastFrame - 12)) / 12);
-  return { pos: lerp3(chase.pos, tail.pos, eased), tgt: lerp3(chase.tgt, tail.tgt, eased), lens: 24 };
+  const eased = smoothstep01((frame - (beats.lastFrame - 12)) / 12);
+  return { pos: lerpV(chase.pos, tail.pos, eased), tgt: lerpV(chase.tgt, tail.tgt, eased), lens: 24 };
 };
 const cameraLocal = (f: number): Cam => (f < beats.liftOff ? shot1(f) : f < beats.rush ? orbit(f) : rush(f));
 export const camera = (frame: number): Cam => {

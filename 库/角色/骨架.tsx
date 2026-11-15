@@ -6,8 +6,8 @@
 // 转身分两层：`yaw` 整个人绕竖轴转（正 = 往左）；`twist` 胸相对髋绕脊柱再拧，带着头和双臂，髋和腿不动（侧身按刀、出刀甩肩靠它）；有了 `twist`，`headYaw` 相对胸。
 import React from 'react';
 import * as THREE from 'three';
-import { rad } from '../../engine/anim/anim.ts';
 import type { V3 } from '../../engine/model/parts.tsx';
+import { rad } from '../../engine/core/数学.ts';
 
 export type FigurePose = {
   loc: number[];

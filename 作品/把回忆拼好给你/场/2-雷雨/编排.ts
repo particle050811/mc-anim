@@ -1,6 +1,5 @@
 // 第 6、7 句这一个镜头（段 2-雷雨、2-拨开阴霾，照片「光柱破云」也取这里）每一帧的样子：镜头、她和你、闪电、魔法阵、光柱、云洞、天气颜色、阳光、雨、掉落物。
 // 按歌曲帧算（两段是同一个镜头，照片按歌上的时刻取帧），时刻取 分镜/正片第6到7句.ts 的事件，分寸取 参数.ts。纯模块（测试也引）。
-import { clamp01 } from '@engine/anim/anim.ts';
 import type { PlacedBlock } from '@engine/model/方块拼搭.tsx';
 import type { V3 } from '@engine/model/parts.tsx';
 import { lerpTone, type Tone } from '@engine/三渲二/调子.ts';
@@ -17,6 +16,7 @@ import { SurroundBlocks } from './地形.ts';
 import { rainAmount } from './声音.ts';
 import { cloudColor, weatherSky, weatherFog, type RGB } from './天气.ts';
 import type { RainStreak } from './雨.tsx';
+import { clamp01, easeOutQuad, lerp, lerpV } from '@engine/core/数学.ts';
 
 type EventName = keyof typeof mainCutEvents;
 export const eventFrame = (eventName: EventName) => mainCutEvents[eventName].帧;
@@ -26,14 +26,10 @@ export const shotEndFrame = segmentWindow('2-拨开阴霾').止帧;
 /** 歌上的秒、游戏刻（雨、光柱、掉落物、云飘都按它走） */
 export const songSec = (frame: number) => frame / fps;
 export const frameToTick = (frame: number) => songSec(frame) * 20;
-
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-const lerpVec3 = (a: readonly number[], b: readonly number[], t: number): V3 => [lerp(a[0]!, b[0]!, t), lerp(a[1]!, b[1]!, t), lerp(a[2]!, b[2]!, t)];
 export const ease = (t: number) => {
   const x = clamp01(t);
   return x * x * (3 - 2 * x);
 };
-const 缓出 = (t: number) => 1 - (1 - clamp01(t)) ** 2;
 /** 从 起 那一帧开始、秒 秒走完的进度：起那一帧已经走了一帧（原来走了 1/24 秒，用户 11-03「统统改成 60 帧」）；
  *  起 之前是 0（不提前动）。起 可以带小数（帧） */
 const progress = (frame: number, startFrame: number, durSec: number) => (frame < startFrame ? 0 : clamp01(((frame - startFrame) / fps + oneFrameSec) / durSec));
@@ -45,7 +41,7 @@ export const CameraRig = (frame: number): CameraRig => {
   const { 全: wide, 近: near, 仰: lowAngle } = params.cameraRigs;
   const standUp = eventFrame('liYingStandsUp');
   const [a, b, t] = frame < standUp ? [wide, near, ease((frame - shotStartFrame) / (eventFrame('lightningRevealsBreach') - shotStartFrame))] : [near, lowAngle, ease((frame - standUp) / (params.pullBackSec * fps))];
-  return { 种: '透视', 眼: lerpVec3(a.眼, b.眼, t), 看: lerpVec3(a.看, b.看, t), fov: lerp(a.fov, b.fov, t), farPlane: 1200 };
+  return { 种: '透视', 眼: lerpV(a.眼, b.眼, t), 看: lerpV(a.看, b.看, t), fov: lerp(a.fov, b.fov, t), farPlane: 1200 };
 };
 
 // ---------- 闪电 ----------
@@ -104,7 +100,7 @@ export const YouState = (frame: number): YouState => {
 
 // ---------- 魔法阵、光柱 ----------
 /** 魔法阵展开到多大（0～1） */
-export const circleSize = (frame: number) => (frame < eventFrame('magicCircleUp') ? 0 : 缓出(progress(frame, eventFrame('magicCircleUp'), params.magicCircle.expandSec)));
+export const circleSize = (frame: number) => (frame < eventFrame('magicCircleUp') ? 0 : easeOutQuad(progress(frame, eventFrame('magicCircleUp'), params.magicCircle.expandSec)));
 /** 魔法阵转了几度 */
 export const circleSpin = (frame: number) => songSec(frame) * params.magicCircle.turnsPerSec;
 /** 光柱顶（z，格）：光柱起 起从底往上冲，越冲越快，零点几秒冲出画面顶，拨 那一帧冲到 顶高（60 fps 下 拨 前一两帧已经到），之后停在那里 */
@@ -125,7 +121,7 @@ export const cloudDrift = (frame: number) => -frameToTick(frame) * params.cloudD
 export const holeRadius = (frame: number) => {
   if (frame < eventFrame('cloudBreaks')) return 0;
   const { r1, r2 } = params.cloudHole;
-  if (frame < eventFrame('cloudHoleWidens')) return r1 * 缓出(((frame - eventFrame('cloudBreaks')) / fps + oneFrameSec) / ((eventFrame('cloudHoleWidens') - eventFrame('cloudBreaks')) / fps + oneFrameSec));
+  if (frame < eventFrame('cloudHoleWidens')) return r1 * easeOutQuad(((frame - eventFrame('cloudBreaks')) / fps + oneFrameSec) / ((eventFrame('cloudHoleWidens') - eventFrame('cloudBreaks')) / fps + oneFrameSec));
   return r1 * (r2 / r1) ** clamp01((frame - eventFrame('cloudHoleWidens')) / fps / ((shotEndFrame - eventFrame('cloudHoleWidens')) / fps - oneFrameSec));
 };
 /** 洞心：光柱（她站的地方） */

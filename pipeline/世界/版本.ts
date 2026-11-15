@@ -6,8 +6,38 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { terrainRoot, dataPath, config } from '../环境/配置.ts';
 import { codeRoot } from '../环境/路径.ts';
-import { packManifest } from '../检查/规则/资产.ts';
+import { fileSha } from '../缓存/去重.ts';
 import { holderPid, releaseLock, tryAcquire } from '../闸/锁.ts';
+
+/** 地形包整包清单指纹（同 assets/tools/导入旧项目.py 的 包清单：路径按段逐级比较排序，「相对路径\tsha256\n」逐行拼起来再取 sha256） */
+export const packManifest = async (dir: string) => {
+  const files: string[][] = [];
+  const walk = (rel: string[]) => {
+    for (const e of fs.readdirSync(path.join(dir, ...rel), { withFileTypes: true })) {
+      if (e.isDirectory()) walk([...rel, e.name]);
+      else if (e.isFile()) files.push([...rel, e.name]);
+    }
+  };
+  walk([]);
+  const compareStrings = (a: string, b: string) => {
+    const x = [...a];
+    const y = [...b];
+    for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] !== y[i]) return x[i]!.codePointAt(0)! - y[i]!.codePointAt(0)!;
+    return x.length - y.length;
+  };
+  files.sort((a, b) => {
+    for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return compareStrings(a[i]!, b[i]!);
+    return a.length - b.length;
+  });
+  const h = createHash('sha256');
+  let byteSize = 0;
+  for (const f of files) {
+    const abs = path.join(dir, ...f);
+    h.update(`${f.join('/')}\t${await fileSha(abs)}\n`, 'utf8');
+    byteSize += fs.statSync(abs).size;
+  }
+  return { 清单sha256: h.digest('hex'), 文件数: files.length, 大小: byteSize };
+};
 
 /** 目录的内容指纹：目录里每个文件（不进子目录，跳过 . 开头的）按文件名 UTF-8 字节排序，逐个把「名 \0 sha256 \n」喂进 sha256，取前 12 位 */
 export const dirFingerprint = (dir: string) => {

@@ -1,8 +1,8 @@
 // 15 尾随歌曲帧走的几样（纯函数，合照.tsx 画、测试核）：她靠到哪、靠肩那一镜的正交机位。时刻取 分镜 的 正片事件，数取 合照参数.ts。
 import type { OrthoRigParams } from '@engine/三渲二/机位.tsx';
-import { clamp01 } from '@engine/anim/anim.ts';
 import { events as mainCutEvents } from '../../分镜/正片15尾.ts';
 import { groupPhotoShot } from './合照参数.ts';
+import { clamp01 } from '@engine/core/数学.ts';
 
 const events = mainCutEvents;
 const smoothstep = (t: number) => t * t * (3 - 2 * t);

@@ -16,13 +16,12 @@ import { skyBrightness } from '../../地点/天体.ts';
 import { sectionColumn, crossSectionBlocks, stripBlocks, NewWorldBlocks, type PitState } from './地形.ts';
 import { sectionOrigin, terrainFog, skyDomeHeight, skyColor, nightSky, starField, renderDistance, fogColor, type CameraRigFrame } from './参数.ts';
 import { starBrightness, starList, starDirAt } from './星.ts';
+import { lerpV } from '@engine/core/数学.ts';
 
 type RgbColor = [number, number, number];
 const hexToRgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255) as RgbColor;
-const mix = (a: RgbColor, b: RgbColor, k: number) => a.map((v, i) => v + (b[i]! - v) * k) as RgbColor;
-
 /** 第 刻 刻的地形雾色、地平线上的天色：夜里的地平色往白天的雾色插 */
-const fogColorAt = (tick: number) => mix(hexToRgb(nightSky.horizon), hexToRgb(fogColor), skyBrightness(tick));
+const fogColorAt = (tick: number) => lerpV(hexToRgb(nightSky.horizon), hexToRgb(fogColor), skyBrightness(tick));
 
 // ---------- 地形的雾 ----------
 
@@ -131,11 +130,11 @@ const skyCellPx = 6;
 /** 仰角 θ（弧度）处的天色：原版天幕在眼睛上方 天幕高 格，那一点离眼睛 天幕高 / sin θ，球形雾 smoothstep(0, 渲染距离)；地平线以下是雾色。
  *  亮 = 天亮程度（地点/天体.ts），天、雾的颜色从夜里的往白天的插 */
 export const skyColorAt = (θ: number, bright = 1): RgbColor => {
-  const sky = mix(hexToRgb(nightSky.topColor), hexToRgb(skyColor), bright), fog = mix(hexToRgb(nightSky.horizon), hexToRgb(fogColor), bright);
+  const sky = lerpV(hexToRgb(nightSky.topColor), hexToRgb(skyColor), bright), fog = lerpV(hexToRgb(nightSky.horizon), hexToRgb(fogColor), bright);
   if (θ <= 0) return fog;
   const d = skyDomeHeight / Math.sin(θ);
   const t = Math.min(1, d / renderDistance);
-  return mix(sky, fog, t * t * (3 - 2 * t));
+  return lerpV(sky, fog, t * t * (3 - 2 * t));
 };
 
 /** 透视镜头后面的天：一张成片分辨率的 2D 画布，每 天格 见方一格，按这一格中心的视线仰角取色；再把地平线以上的星星加上去（原版 SRC_ALPHA、ONE：加 星亮²，这里乘 星.亮倍；不吃雾） */

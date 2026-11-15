@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { fps, mainCutEvents } from '../../分镜.ts';
 import { skyBrightness } from '../../地点/天体.ts';
-import { sectionColumn, crossSectionBlocks, stripBlocks, groundHeight, plainsFlower, trees, NewWorldBlocks } from './地形.ts';
-import { you, crossSection, terrainRange, terrainFog, pit, cameraRigs, cherryGrove, chatOverlay, farHills, farGroves, fogColor, type CameraRigFrame } from './参数.ts';
+import { sectionColumn, crossSectionBlocks, stripBlocks, groundHeight, trees, NewWorldBlocks } from './地形.ts';
+import { cherryGrove, plainsFlower } from '../../地点/新世界地形.ts';
+import { you, crossSection, terrainRange, terrainFog, pit, cameraRigs, chatOverlay, farHills, farGroves, fogColor, type CameraRigFrame } from './参数.ts';
 import { youAt, settleFrame, skyTickAt, peeledRows, cameraRigAt, chatTickAt, walk } from './编排.ts';
 import { starBrightness, starList, starDirAt } from './星.ts';
 

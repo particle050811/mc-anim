@@ -1,14 +1,15 @@
 // 7-1 恼鬼：照原版逐刻推飞行，监守者拍哪只、哪一刻也在这里推出来（`swingTs`、`vexDeathTs`）。
 import type { V3 } from '@engine/model/parts.tsx';
-import { rng } from '@engine/model/parts.tsx';
 import { yawTo } from '../../6-4-1/古城戏.ts';
 import * as geom from '../几何.ts';
 import * as timeline from '../时间线.ts';
-import { groundZ, lerpV } from './公用.ts';
+import { groundZ } from './公用.ts';
 import { lastTick, leanedPoint, tickSec, wardenAt, wardenChestPos } from './监守者路.ts';
 import { liuXinzhongPos } from './位置.ts';
+import { lerpV, mulberry32 } from '@engine/core/数学.ts';
+
 export const vexCount = 5;
-const vr = rng(7101);
+const vr = mulberry32(7101);
 // 出生：刘心忠眼睛 + (±2, +1, ±2)（铁魔法 SummonVexSpell）
 const vexSpawnOffsets: V3[] = Array.from({ length: vexCount }, () => [(vr() * 2 - 1) * 2, (vr() * 2 - 1) * 2, vr()]);
 // 散开的方向（场景角度，0 = 东，逆时针）、半径、离地，和冲出去的先后：挑成监守者每次冷却一好（0.9 秒）就正好有一只冲到胸口（用户 10-18 嫌缠斗像回合制，拍击不留空档），

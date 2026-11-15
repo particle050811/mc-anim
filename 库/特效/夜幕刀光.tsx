@@ -6,8 +6,7 @@
 // 用法（镜头里）：ThreeCanvas 里挂 <夜幕泛光 />（画布上已有 <屏幕AO /> 接管渲染时传 自己画场景={false}，它在 AO 之后接着画）；
 //   <刀光拖尾 刃={秒 => ({ 根, 尖 })} 起={秒} 止={秒} 秒={当前秒} />，刃 给出任意剧情秒时刀上两点的场景坐标；
 //   <夜幕命中 脚底={V3} 宽 高 秒={命中后的秒} 种子 />；<夜幕招架 位置={V3} 秒={招架后的秒} 种子 />。6-1-2（斩娜迦）、6-4-3（挡箭）在用。
-export { bloomLayer } from './夜幕刀光/共用.tsx';
-export { BladeTrail, liYingTrailPts, trailEdges, yamato, type BladePos } from './夜幕刀光/刀光拖尾.tsx';
+export { BladeTrail, liYingTrailPts, type BladePos } from './夜幕刀光/刀光拖尾.tsx';
 export { NightfallHit } from './夜幕刀光/命中.tsx';
 export { NightfallParry } from './夜幕刀光/招架.tsx';
 export { NightfallBloom } from './夜幕刀光/泛光.tsx';

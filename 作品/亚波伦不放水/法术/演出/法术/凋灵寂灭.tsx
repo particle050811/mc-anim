@@ -13,7 +13,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
 import { png } from '@engine/model/贴图.ts';
-import { rng } from '@engine/model/parts.tsx';
 import { defineSpellPerformance } from '../定义.tsx';
 import type { SpellPerformanceProps, Vec3 } from '../接口.ts';
 import { addVec, sub, scaleVec, vecLength, unitVec } from '../零件/弹道.ts';
@@ -30,6 +29,7 @@ import soul7Png from 'asset:贴图/法术/minecraft/particle/soul_7';
 import soul8Png from 'asset:贴图/法术/minecraft/particle/soul_8';
 import soul9Png from 'asset:贴图/法术/minecraft/particle/soul_9';
 import soul10Png from 'asset:贴图/法术/minecraft/particle/soul_10';
+import { mulberry32 } from '@engine/core/数学.ts';
 
 const soulParticleClass: ParticleClass = { 帧: [soul0Png, soul1Png, soul2Png, soul3Png, soul4Png, soul5Png, soul6Png, soul7Png, soul8Png, soul9Png, soul10Png].map(png), 选帧: '按年龄', 重力: 0, 摩擦: 0.96, 混合: '半透明' };
 
@@ -150,10 +150,10 @@ const WitherAnnihilate: React.FC<SpellPerformanceProps> = ({ 秒: sec, from, 目
     const p = addVec(from, scaleVec(dir, i));
     smokeSpawns.push({ 种: 'smoke', 刻: 1, p: [p[0], p[1], p[2]], v: [0, 0, 0], 种子: seed * 211 + k });
   }
-  const r = rng(seed * 7919 + 17);
+  const r = mulberry32(seed * 7919 + 17);
   const soulCount = 18 + Math.floor(r() * 7) + 10;
   const souls: ParticleBirth[] = scatterServer(landing, soulCount, [0, 0, 0.02], 0.12, seed + 3).map((spawn, i) => {
-    const rand = rng(seed * 131 + i);
+    const rand = mulberry32(seed * 131 + i);
     return { 刻: 0, 位: spawn.位, 速: spawn.速, 寿命: Math.floor(4 / (rand() * 0.9 + 0.1)), radius: 0.1 * (rand() * 0.5 + 0.5) * 2 * 1.5, 种子: i };
   });
   return (

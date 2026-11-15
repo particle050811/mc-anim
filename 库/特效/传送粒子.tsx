@@ -11,7 +11,7 @@
 // 带上那一刻人的速度（vel），按每刻 0.8 的阻力很快慢下来——跟着人冲出去一小段，落在后面收拢、散掉。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { pngDir } from '../../engine/model/贴图.ts';
 import { assetDir } from '../../engine/core/资产目录.ts';
 import criticalHitPng from 'asset:贴图/特效/粒子/critical_hit';
@@ -52,6 +52,7 @@ import splash0Png from 'asset:贴图/特效/粒子/splash_0';
 import splash1Png from 'asset:贴图/特效/粒子/splash_1';
 import splash2Png from 'asset:贴图/特效/粒子/splash_2';
 import splash3Png from 'asset:贴图/特效/粒子/splash_3';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const particlePngs = pngDir(assetDir({ './critical_hit.png': criticalHitPng, './drip_hang.png': dripHangPng, './explosion_0.png': explosion0Png, './explosion_1.png': explosion1Png, './explosion_10.png': explosion10Png, './explosion_11.png': explosion11Png, './explosion_12.png': explosion12Png, './explosion_13.png': explosion13Png, './explosion_14.png': explosion14Png, './explosion_15.png': explosion15Png, './explosion_2.png': explosion2Png, './explosion_3.png': explosion3Png, './explosion_4.png': explosion4Png, './explosion_5.png': explosion5Png, './explosion_6.png': explosion6Png, './explosion_7.png': explosion7Png, './explosion_8.png': explosion8Png, './explosion_9.png': explosion9Png, './generic_0.png': generic0Png, './generic_1.png': generic1Png, './generic_2.png': generic2Png, './generic_3.png': generic3Png, './generic_4.png': generic4Png, './generic_5.png': generic5Png, './generic_6.png': generic6Png, './generic_7.png': generic7Png, './glitter_0.png': glitter0Png, './glitter_1.png': glitter1Png, './glitter_2.png': glitter2Png, './glitter_3.png': glitter3Png, './glitter_4.png': glitter4Png, './glitter_5.png': glitter5Png, './glitter_6.png': glitter6Png, './glitter_7.png': glitter7Png, './splash_0.png': splash0Png, './splash_1.png': splash1Png, './splash_2.png': splash2Png, './splash_3.png': splash3Png }));
 const matCache = new Map<string, THREE.SpriteMaterial>();
@@ -88,7 +89,7 @@ export type PortalEmitter = {
 };
 
 const spawn = (emitter: PortalEmitter): SpawnedParticle[] => {
-  const rand = rng(emitter.seed * 7907 + 3);
+  const rand = mulberry32(emitter.seed * 7907 + 3);
   const out: SpawnedParticle[] = [];
   const ticks = Math.max(0, Math.round((emitter.t1 - emitter.t0) * 20));
   let acc = 0;

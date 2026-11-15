@@ -10,7 +10,7 @@
 // 坐标：p 是方块底面中心，场景坐标 Z 朝上；秒 是全局时间（决定触须动画帧）。
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { rng, type V3 } from '../../engine/model/parts.tsx';
+import { type V3 } from '../../engine/model/parts.tsx';
 import { BlockModel, type BlockModelData } from '../../engine/model/方块模型.tsx';
 import { png, pngDir } from '../../engine/model/贴图.ts';
 import data from 'asset:模型/特效/幽匿感测体';
@@ -27,6 +27,7 @@ import generic4Png from 'asset:贴图/特效/粒子/generic_4';
 import generic5Png from 'asset:贴图/特效/粒子/generic_5';
 import generic6Png from 'asset:贴图/特效/粒子/generic_6';
 import generic7Png from 'asset:贴图/特效/粒子/generic_7';
+import { mulberry32 } from '../../engine/core/数学.ts';
 
 const modelData = data as unknown as BlockModelData;
 const ATLAS = png(atlasPng);
@@ -118,7 +119,7 @@ type Dust = { born: number; life: number; half: number; path: V3[]; from: number
 
 const DustParticles: React.FC<{ p: V3; secSinceActive: number; chance: number; seed: number }> = ({ p: blockPos, secSinceActive: secSinceActive, chance, seed }) => {
   const dusts = useMemo(() => {
-    const rand = rng(seed * 4513 + 29);
+    const rand = mulberry32(seed * 4513 + 29);
     const out: Dust[] = [];
     const bx = blockPos[0] - 0.5;
     const by = blockPos[1] + 0.5; // 游戏坐标的方块北边（z 小）在场景里是 +Y 一侧
