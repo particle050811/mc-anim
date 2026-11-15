@@ -122,9 +122,9 @@ export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchSta
     fs.renameSync(`${STATE}.tmp`, STATE);
   };
   let st: WatchState = !o.fromScratch && fs.existsSync(STATE) ? JSON.parse(fs.readFileSync(STATE, 'utf8')) : { 块: chunkName, 世界: o.世界, 存档: o.存档, 阶段: '主', 起服: [], 完成: {} };
-  if (st.存档 !== o.存档) throw new Error(`${STATE} 记的是存档 ${st.存档}，这次是 ${o.存档}；要从头来加 --重来`);
+  if (st.存档 !== o.存档) throw new Error(`${STATE} 记的是存档 ${st.存档}，这次是 ${o.存档}；要从头来加 --from-scratch`);
   if (st.阶段 === '完') {
-    log(`${chunkName} 已经跑完（${STATE}）；要再跑一遍加 --重来`);
+    log(`${chunkName} 已经跑完（${STATE}）；要再跑一遍加 --from-scratch`);
     return st;
   }
   const taskPath = taskFile(o.serverDir, o.维度);
@@ -247,7 +247,7 @@ export const runBlock = async (p: PregenPlan, o: WatchOptions): Promise<WatchSta
         const stoppedAt = Math.max(0, ...st.起服.filter((r) => (r.阶段 ?? '主') === st.阶段).map((r) => r.最后进度?.区块 ?? 0));
         throw new Error(
           `${chunkName} 的「${st.阶段}」阶段连着 ${stallCount} 次重启都没有新进度（Chunky 停在 ${stoppedAt} 个区块，最近原因：${st.起服.slice(-stallCount).map((r) => r.停服原因 ?? '?').join('；')}），放弃，不再重启。` +
-            `看 ${OUT}、${JSTAT} 和 jstack 文件找原因；排查完重跑同一条命令接着来（只再试一次，再没进度又会停），--最多无进度重启 <n> 可调`,
+            `看 ${OUT}、${JSTAT} 和 jstack 文件找原因；排查完重跑同一条命令接着来（只再试一次，再没进度又会停），--max-stalled-restarts <n> 可调`,
         );
       }
     }

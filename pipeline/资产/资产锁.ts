@@ -52,7 +52,7 @@ export const readAssetLock = (lockDir = assetLockPath()): AssetLock => {
 /** 打包一部作品用的锁：共用的 assets/资产锁/ 并上 <作品根>/资产锁/（没有就只用共用的）；同一个 id 两边都有就报错。
  *  这部作品选用了材质包就再盖上材质包覆盖层（套材质包）：在 照材质包选用 里按那一组的选用，不在就按作品的 "包"（当前材质包选用）；
  *  作品写了 换用.toml 的先照它把共用 id 换成作品自己那件的字节（套换用），材质包覆盖层盖在换过的上面；换用 = false 是没换的（取材配方的输入要原件）。
- *  写锁的地方（assets add、extract --登记）读的是 读资产锁(单份)，不经这里 */
+ *  写锁的地方（assets add、extract --register）读的是 读资产锁(单份)，不经这里 */
 export const readWorkAssetLock = (workRoot: string, packSelection = currentResourcePackSelection(workRoot), useSwap = true): AssetLock => {
   const sharedLock = readAssetLock();
   const workAssetLock = readAssetLock(workAssetLockPath(workRoot));
@@ -89,7 +89,7 @@ export const applySwap = (assetLock: AssetLock, workRoot: string): AssetLock => 
   const swapped = { ...assetLock };
   for (const [originalId, newId] of swapTable) {
     if (!assetLock[originalId]) throw new Error(`${swapTablePath(workRoot)}：${originalId} 不在资产锁里（只能换已登记的资产）`);
-    if (!assetLock[newId]) throw new Error(`${swapTablePath(workRoot)}：${newId} 不在资产锁里：先登记、入库（anim assets add，或对应的 anim extract … --登记）`);
+    if (!assetLock[newId]) throw new Error(`${swapTablePath(workRoot)}：${newId} 不在资产锁里：先登记、入库（anim assets add，或对应的 anim extract … --register）`);
     if (assetLock[originalId].后缀 !== assetLock[newId].后缀) throw new Error(`${swapTablePath(workRoot)}：${originalId}（${assetLock[originalId].后缀}）和 ${newId}（${assetLock[newId].后缀}）后缀不一样`);
     swapped[originalId] = assetLock[newId];
   }
@@ -97,7 +97,7 @@ export const applySwap = (assetLock: AssetLock, workRoot: string): AssetLock => 
 };
 
 // 材质包兼容层（用户 11-02「找一个更好的材质包」「写个统一的兼容层…也兼容现有的光影和材质包」）：标准 Java 版资源包 zip 按资产 id 登记（类 材质包/），
-// 作品在 <作品根>/材质包.toml 写 "包" = [...] 选用（顺序同 MC 资源包界面，上面的盖下面的），anim assets 材质包 生成覆盖层锁：
+// 作品在 <作品根>/材质包.toml 写 "包" = [...] 选用（顺序同 MC 资源包界面，上面的盖下面的），anim assets packs 生成覆盖层锁：
 // 被包换掉的 id → 换后的字节，盖在作品锁上，打包、指纹都看盖过的（换了的贴图 sha 不同，段指纹跟着变）。没写或空 = 原版，锁、指纹都不变。
 // 试样不改作品：环境变量 ANIM_PACKS=<名,名…> 顶掉作品的选用（=原版 关掉），覆盖层锁放数据根 cache/材质包/<作品>/。变量名用 ASCII：本机 zsh 会把中文变量名搅乱。
 // 封顶：一格最多几个贴图像素（16 = 缩回原版尺寸；不写按作品画风放到最大，见 材质包.ts 放大上限），环境变量 ANIM_PACKS_RES 或 材质包.toml 的 "封顶" = 16（全作品一个）。
@@ -180,7 +180,7 @@ export const readResourcePackSelection = (workRoot: string, env = process.env[re
   return withResolution(withResCap({ 包: resourcePackTable.包, source: resourcePackTable.包.length ? '作品' : '无' }, resCap));
 };
 
-/** 材质包.toml 里用得上的每一种选用（作品的 "包" 和 [段] 另选的，去重、不含原版），anim assets 材质包 逐个建覆盖层锁 */
+/** 材质包.toml 里用得上的每一种选用（作品的 "包" 和 [段] 另选的，去重、不含原版），anim assets packs 逐个建覆盖层锁 */
 export const workResourcePackSelections = (workRoot: string): ResourcePackSelection[] => {
   const resourcePackTable = readResourcePackTable(workRoot);
   if (!resourcePackTable) return [];
@@ -244,7 +244,7 @@ export const resourcePackLockPath = (workRoot: string, packSelection: ResourcePa
 export const applyResourcePack = (assetLock: AssetLock, workRoot: string, packSelection: ResourcePackSelection): AssetLock => {
   if (!packSelection.包.length) return assetLock;
   const file = resourcePackLockPath(workRoot, packSelection);
-  const rebuildCmd = `anim${packSelection.source === '环境' ? ` 前面带 ${resourcePackEnvVar}=${packSelection.包.join(',')}${packSelection.封顶 !== undefined ? ` ${resourcePackCapEnvVar}=${packSelection.封顶}` : ''}${packSelection.试验 !== undefined ? ` ${resourcePackTrialEnvVar}=${packSelection.试验}` : ''}` : ''} assets 材质包`;
+  const rebuildCmd = `anim${packSelection.source === '环境' ? ` 前面带 ${resourcePackEnvVar}=${packSelection.包.join(',')}${packSelection.封顶 !== undefined ? ` ${resourcePackCapEnvVar}=${packSelection.封顶}` : ''}${packSelection.试验 !== undefined ? ` ${resourcePackTrialEnvVar}=${packSelection.试验}` : ''}` : ''} assets packs`;
   if (!fs.existsSync(file)) throw new Error(`选用了材质包 ${packSelection.包.join('、')}，但覆盖层锁 ${file} 不存在：先跑 ${rebuildCmd}`);
   const resourcePackLock = JSON.parse(fs.readFileSync(file, 'utf8')) as ResourcePackLock;
   const chosenPacks = packSelection.包.map((id) => `${id}@${assetLock[id]?.sha256 ?? '没登记'}`).join(',');

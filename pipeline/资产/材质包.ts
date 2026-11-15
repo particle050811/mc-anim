@@ -1,4 +1,4 @@
-// anim assets 材质包：按这部作品选用的材质包（资产锁.ts 读材质包选用：ANIM_PACKS > <作品根>/材质包.toml）建覆盖层锁。
+// anim assets packs：按这部作品选用的材质包（资产锁.ts 读材质包选用：ANIM_PACKS > <作品根>/材质包.toml）建覆盖层锁。
 // 材质包是标准 Java 版资源包 zip，登记成资产 材质包/<名>（assets/registry/材质包.toml，许可不许分发的 可见性 私有，字节只在数据根 私有/）。
 // 换哪些：方块图集（贴图/场景/关键帧/方块表，按 数据/场景/关键帧/方块表 的 贴图名 一格一格换）；sourcing/extract.toml 里照搬 jar 里原版贴图的产物
 // （照搬贴图：方块、物品、粒子、天空、实体和角色皮肤、选择世界界面；模组的、自己画的、2D 歌词点阵用的银河字母不换）；包里有 colormap 的，群系色表（数据/场景/关键帧/群系色）。
@@ -195,7 +195,7 @@ export const buildResourcePackOverride = (workRoot: string, packSelection = read
   const artStylePath = path.join(workRoot, '画风.ts');
   const limit = maxUpscale(fs.existsSync(artStylePath) ? fs.readFileSync(artStylePath, 'utf8') : null, packSelection.封顶, packSelection.试验 ?? packSelection.分辨率);
   const jar = jarPath(readManifest(), vanillaJar);
-  if (!fs.existsSync(jar)) throw new Error(`原版 jar 不在 ${jar}（群系色要它的色图和群系温度湿度）：anim extract --下载`);
+  if (!fs.existsSync(jar)) throw new Error(`原版 jar 不在 ${jar}（群系色要它的色图和群系温度湿度）：anim extract --download`);
   const outDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-材质包-'));
   try {
     const rendered = runImageRender(

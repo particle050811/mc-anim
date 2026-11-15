@@ -1,5 +1,5 @@
-// anim 的命令行路由（main.ts 只接线）：取全局参数（--作品、--调试）、按子命令分发、出错时怎么报、写运行记录。
-// 报错：预期内的（用法错、选不出作品、我们自己 throw new Error 的业务错、esbuild 构建失败）只打信息不打调用栈，加 --调试 才打；
+// anim 的命令行路由（main.ts 只接线）：取全局参数（--work、--debug）、按子命令分发、出错时怎么报、写运行记录。
+// 报错：预期内的（用法错、选不出作品、我们自己 throw new Error 的业务错、esbuild 构建失败）只打信息不打调用栈，加 --debug 才打；
 // 别的（TypeError 这类、库里抛的）照旧打调用栈。调用栈总记进运行记录，事后能查。
 import path from 'node:path';
 import {SchedYieldError} from '../闸/指令.ts';
@@ -17,24 +17,24 @@ export type RouteOptions = {
   /** 测试换成不写盘的 */
   newRecord?: (commandName: string, args: string[]) => RunRecord;
   输出?: Output;
-  /** ANIM_DEBUG=1 和 --调试 一样 */
+  /** ANIM_DEBUG=1 和 --debug 一样 */
   env?: NodeJS.ProcessEnv;
 };
 
-/** 从参数里取出 --调试（-- 之后的不管），返回剩下的 */
+/** 从参数里取出 --debug（-- 之后的不管），返回剩下的 */
 export const takeDebugArgs = (args: readonly string[]): { debug: boolean; rest: string[] } => {
   const sepIndex = args.indexOf('--');
   const head = sepIndex < 0 ? args : args.slice(0, sepIndex);
-  return { debug: head.includes('--调试'), rest: [...head.filter((a) => a !== '--调试'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
+  return { debug: head.includes('--debug'), rest: [...head.filter((a) => a !== '--debug'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
 };
 
-/** 低优先（用户 11-06 定：子 Agent 只出静帧，整段渲染由主 Agent 合并后用 --低优先 排，给静帧让路）：
- *  取走 --低优先，设 ANIM_PRIORITY=low，这条命令和它起的子进程过闸都排在普通票后面（闸/票.ts 领票） */
+/** 低优先（用户 11-06 定：子 Agent 只出静帧，整段渲染由主 Agent 合并后用 --low-priority 排，给静帧让路）：
+ *  取走 --low-priority，设 ANIM_PRIORITY=low，这条命令和它起的子进程过闸都排在普通票后面（闸/票.ts 领票） */
 export const lowPriorityEnv = 'ANIM_PRIORITY';
 export const takeLowPriorityArgs = (args: readonly string[]): { 低优先: boolean; rest: string[] } => {
   const sepIndex = args.indexOf('--');
   const head = sepIndex < 0 ? args : args.slice(0, sepIndex);
-  return { 低优先: head.includes('--低优先'), rest: [...head.filter((a) => a !== '--低优先'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
+  return { 低优先: head.includes('--low-priority'), rest: [...head.filter((a) => a !== '--low-priority'), ...(sepIndex < 0 ? [] : args.slice(sepIndex))] };
 };
 
 const builtinErrors = [TypeError, RangeError, ReferenceError, SyntaxError, EvalError, URIError];
@@ -65,7 +65,7 @@ export const isExpectedError = (e: unknown, root = codeRoot()): boolean => {
 };
 
 export const helpText = (commandTable: Record<string, Command>) =>
-  ['用法：anim [--作品 <名>] [--调试] [--低优先] <命令> [参数]\n', ...Object.values(commandTable).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
+  ['用法：anim [--work <名>] [--debug] [--low-priority] <命令> [参数]\n', ...Object.values(commandTable).map((c) => `  anim ${c.用法}\n      ${c.说明}`)].join('\n');
 
 /** 一条命令的帮助：自带的详细帮助，没有就是 用法 和 说明 */
 export const commandHelp = (c: Command) => c.help?.() ?? `用法：anim ${c.用法}\n      ${c.说明}`;
@@ -83,7 +83,7 @@ export const runCommandLine = async (argv: readonly string[], o: RouteOptions): 
   if (lowPriority) process.env[lowPriorityEnv] = 'low';
   const { debug: addedDebug, rest: withoutDebug } = takeDebugArgs(withoutLowPriority);
   const debug = addedDebug || o.env?.ANIM_DEBUG === '1';
-  // --作品 对所有命令都有效，这里统一取走（选作品的顺序见 环境/作品.ts）
+  // --work 对所有命令都有效，这里统一取走（选作品的顺序见 环境/作品.ts）
   let parsed: ReturnType<typeof parseWorkArg>;
   try {
     parsed = parseWorkArg(withoutDebug);
@@ -110,7 +110,7 @@ export const runCommandLine = async (argv: readonly string[], o: RouteOptions): 
     return 0;
   }
   const runRecord = (o.newRecord ?? ((n, a) => new RunRecord(n, a)))(commandName, args);
-  const task = !c.noRecord && !o.newRecord && /^(still|bench|verify|film|extract|world|mcai|voice|cache|批)$/.test(commandName) ? openTask(resolveSchedulerEnv(), {种:commandName,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>runRecord.结束(code)) : null;
+  const task = !c.noRecord && !o.newRecord && /^(still|bench|verify|film|extract|world|mcai|voice|cache|batch)$/.test(commandName) ? openTask(resolveSchedulerEnv(), {种:commandName,用途:process.env.ANIM_PURPOSE??'未声明'}, code=>runRecord.结束(code)) : null;
   if(task)runRecord.任务=task.info.任务;
   let code = 1, errorText: string | undefined;
   try {

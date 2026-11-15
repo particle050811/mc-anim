@@ -1,4 +1,4 @@
-// 照抄用的命令行文本：Windows 实机 extract --只打印 原来按 POSIX 打单引号，cmd 里照抄会把单引号原样传进去。
+// 照抄用的命令行文本：Windows 实机 extract --print-only 原来按 POSIX 打单引号，cmd 里照抄会把单引号原样传进去。
 import { describe, expect, it } from 'vitest';
 import { commandLineText, quoteArg } from './命令文本.ts';
 import { displayCommand } from '../取材/提取.ts';

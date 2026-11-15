@@ -2,8 +2,8 @@ import {recordPhase} from '../运行记录/阶段.ts';
 // 测速：同一段取一段帧，照切片的渲染参数（带这段的字幕、按输出帧）渲一遍，按阶段计时（打包 / 开浏览器 / 读 Composition / 首帧 / 出帧 / 编码收尾），不写切片缓存、不按段记耗时（不影响 anim film 报的预计耗时）。
 // 用途：比 Remotion 版本、比引擎改动前后（docs/渲染性能.md）。走渲染闸；输出 mp4 放临时目录，跑完删掉。帧号是输出帧。
 // 命令行是 anim bench（渲/命令.ts）。详细：Remotion 开 verbose，日志写到 `日志`，看它自己报的各步耗时。
-// --关共享内存、--浏览器：拆 Remotion 版本差异用（共享内存截图 4.0.534 起有；换自带 Chromium 的版本），出片不用。
-// 每轮都写渲染明细（运行记录/渲染明细.ts）；--不收日志 退回 logLevel error（量 verbose 的开销）；--留输出 <目录> 留下 mp4（比两版浏览器的像素）。
+// --no-shm、--browser：拆 Remotion 版本差异用（共享内存截图 4.0.534 起有；换自带 Chromium 的版本），出片不用。
+// 每轮都写渲染明细（运行记录/渲染明细.ts）；--no-logs 退回 logLevel error（量 verbose 的开销）；--keep-out <目录> 留下 mp4（比两版浏览器的像素）。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -57,7 +57,7 @@ export const bench = async (opts: { 段: string; 帧?: [number, number]; 级别?
   const allSegments = await loadAllSegments();
   const frameRange: [number, number] = opts.帧 ?? [0, Math.min(99, segOutputWindow(allSegments, s).帧数 - 1)];
   const params = segPictureParams(allSegments, [s], level)[0]!;
-  // 打包、开浏览器这几步只有 --详细 才开 verbose；renderMedia 默认 verbose，日志进明细
+  // 打包、开浏览器这几步只有 --verbose 才开 verbose；renderMedia 默认 verbose，日志进明细
   const earlyLogLevel: LogLevel = opts.verbose ? 'verbose' : 'error';
   const renderLogLevel: LogLevel = opts.noLogCollect ? 'error' : 'verbose';
   const logStream = opts.verbose && opts.logPath ? fs.createWriteStream(opts.logPath) : null;

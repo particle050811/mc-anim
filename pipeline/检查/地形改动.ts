@@ -103,7 +103,7 @@ export const checkTerrainChanges = async (c: CheckContext, report: CheckReport) 
     if (!fs.existsSync(f)) { report.跳过.push(`地形改动：${packName} 版本 ${version} 不在数据根，没核包记的可见变换`); continue; }
     const record = (JSON.parse(fs.readFileSync(f, 'utf8')) as { 可见?: VisibleRecord }).可见;
     if (!record) { report.infoLines.push(`${packName}（${version}）没做可见变换`); continue; }
-    if (!recordCovers(record, toRecord({ fillBlock: w.visible.fillBlock, 保真: w.visible.保真.map((x) => x.盒) }))) report.错(`${packName} 登记的版本 ${version} 做可见变换时的设置没盖住 sourcing/worlds/${w.名称}.toml 现在的（填充 ${record.填充}、保真 ${record.保真.length} 个盒）：声明改过，要回存档重烘或 anim world 转码`, 'assets/地形版本.json');
+    if (!recordCovers(record, toRecord({ fillBlock: w.visible.fillBlock, 保真: w.visible.保真.map((x) => x.盒) }))) report.错(`${packName} 登记的版本 ${version} 做可见变换时的设置没盖住 sourcing/worlds/${w.名称}.toml 现在的（填充 ${record.填充}、保真 ${record.保真.length} 个盒）：声明改过，要回存档重烘或 anim world transcode`, 'assets/地形版本.json');
   }
   report.infoLines.push(`地形改动 ${count} 处都核了保真范围`);
 };

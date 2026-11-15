@@ -12,21 +12,21 @@ export const waitUntil = async (p: ParsedArgs, e: SchedulerEnv, o: {
     isAlive?: (pid: number) => boolean;
     提示?: (s: string) => void;
 } = {}) => {
-    const conditions = [p.值['--pid'], p.值['--文件'], p.toggles.has('--闸空'), p.值['--内存']].filter(Boolean);
+    const conditions = [p.值['--pid'], p.值['--file'], p.toggles.has('--gate-empty'), p.值['--memory']].filter(Boolean);
     if (conditions.length !== 1)
-        throw new UsageError('等 要且只要 --pid、--文件、--闸空、--内存 之一');
+        throw new UsageError('等 要且只要 --pid、--file、--gate-empty、--memory 之一');
     if(p.值['--pid']&&(!Number.isSafeInteger(Number(p.值['--pid']))||Number(p.值['--pid'])<=0))throw new UsageError('--pid 要正整数');
-    if(p.值['--内存']&&(!Number.isFinite(Number(p.值['--内存']))||Number(p.值['--内存'])<0||Number(p.值['--内存'])>100))throw new UsageError('--内存 要 0–100 的百分比');
-    const maxSec = Number(p.值['--最长'] ?? 540);
+    if(p.值['--memory']&&(!Number.isFinite(Number(p.值['--memory']))||Number(p.值['--memory'])<0||Number(p.值['--memory'])>100))throw new UsageError('--memory 要 0–100 的百分比');
+    const maxSec = Number(p.值['--max-sec'] ?? 540);
     if (!Number.isFinite(maxSec) || maxSec <= 0)
-        throw new UsageError('--最长 要正秒数');
+        throw new UsageError('--max-sec 要正秒数');
     const startMs = e.nowMs();
     let idleStart: number | undefined;
     const holders = () => whoHolds(readOccupancy(e));
     const gateEmpty = o.gateEmpty ?? (() => holders().length === 0);
     for (;;) {
         if (e.nowMs() - startMs >= maxSec * 1000) {
-            if (p.toggles.has('--闸空')) {
+            if (p.toggles.has('--gate-empty')) {
                 const blockers = holders();
                 (o.提示 ?? console.error)(blockers.length ? `到点，闸还不空：卡在 ${blockers.slice(0, 5).join('；')}${blockers.length > 5 ? `；另${blockers.length - 5}处` : ''}` : '到点：闸是空的，但没连续空满 30 秒');
             }
@@ -34,14 +34,14 @@ export const waitUntil = async (p: ParsedArgs, e: SchedulerEnv, o: {
         }
         if (p.值['--pid'] && !(o.isAlive ?? processAlive)(Number(p.值['--pid'])))
             return 0;
-        if (p.值['--文件'] && fs.existsSync(p.值['--文件']))
+        if (p.值['--file'] && fs.existsSync(p.值['--file']))
             return 0;
-        if (p.值['--内存']) {
+        if (p.值['--memory']) {
             const n = (o.freeMemory ?? (() => readMemory()?.空闲百分比 ?? null))();
-            if (n !== null && n >= Number(p.值['--内存']))
+            if (n !== null && n >= Number(p.值['--memory']))
                 return 0;
         }
-        if (p.toggles.has('--闸空')) {
+        if (p.toggles.has('--gate-empty')) {
             if (gateEmpty())
                 idleStart ??= e.nowMs();
             else

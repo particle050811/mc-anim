@@ -24,24 +24,24 @@ const remotionEntry = () => {
 
 export const previewCommands: Record<string, Command> = {
   preview: {
-    用法: `preview new <主题> | preview 清理 [--执行] [--天 ${previewKeepDays}]`,
+    用法: `preview new <主题> | preview clean [--apply] [--days ${previewKeepDays}]`,
     说明:
       'new：在主检出的 预览/ 下建 <UTC 月日-时分>-<主题>/，打印路径；主题以「工作-」开头的是中间稿，建在数据根 run/草稿/ 下。每次 new 先顺手清理一遍。' +
-      '清理：预览里超过天数的夹只留文字（说明、表格）挪进数据根 archive/预览/，图、视频、声音删掉，Git 管的文件按路径引用的照留；archive/预览/ 里的只留文字；草稿删按日期起名、超过 cache gc 草稿天数的。默认只打印',
+      'clean：预览里超过天数的夹只留文字（说明、表格）挪进数据根 archive/预览/，图、视频、声音删掉，Git 管的文件按路径引用的照留；archive/预览/ 里的只留文字；草稿删按日期起名、超过 cache gc 草稿天数的。默认只打印',
     跑: async (args, runRecord) => {
-      const p = parseArgs(args, { toggles: ['--执行'], 值: ['--天'] });
-      if (p.位置[0] === '清理' && p.位置.length === 1) {
-        const days = p.值['--天'] === undefined ? previewKeepDays : Number(p.值['--天']);
-        if (!Number.isFinite(days) || days < 0) throw new UsageError('--天 要非负的数');
+      const p = parseArgs(args, { toggles: ['--apply'], 值: ['--days'] });
+      if (p.位置[0] === 'clean' && p.位置.length === 1) {
+        const days = p.值['--days'] === undefined ? previewKeepDays : Number(p.值['--days']);
+        if (!Number.isFinite(days) || days < 0) throw new UsageError('--days 要非负的数');
         const { plan, drafts } = planDefaultCleanup(Date.now(), days);
         for (const x of plan) console.log(`${x.archiveTo ? '归档' : '瘦身'}  ${x.名}：留 ${x.留.length} 个文字，删 ${x.removed.length} 个（${(x.removed.reduce((n, f) => n + f.大小, 0) / 1024 / 1024).toFixed(0)} MB）`);
         for (const d of drafts) console.log(`删草稿  ${d.名}（${(d.大小 / 1024 / 1024).toFixed(0)} MB）`);
         if (!plan.length && !drafts.length) return console.log('没有要清理的');
-        if (!p.toggles.has('--执行')) return console.log('只打印了；加 --执行 才动手');
+        if (!p.toggles.has('--apply')) return console.log('只打印了；加 --apply 才动手');
         console.log(cleanupSummary(executeCleanup(plan, drafts)));
         return;
       }
-      if (p.位置[0] !== 'new' || p.位置.length !== 2 || p.toggles.size || Object.keys(p.值).length) throw new UsageError('要 anim preview new <主题> 或 anim preview 清理 [--执行] [--天 N]');
+      if (p.位置[0] !== 'new' || p.位置.length !== 2 || p.toggles.size || Object.keys(p.值).length) throw new UsageError('要 anim preview new <主题> 或 anim preview clean [--apply] [--days N]');
       // 清理出错不挡建预览
       try {
         const { plan, drafts } = planDefaultCleanup();

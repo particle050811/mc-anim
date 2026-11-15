@@ -21,7 +21,7 @@ describe('类型', () => {
       'pipeline/a.ts': 'export const 加 = (a: number, b: number): number => a + b;\n',
       'py/srpy/a.py': 'def 加(a: int, b: int) -> int:\n    return a + b\n',
     });
-    expect((await runRule('类型', root)).violations).toEqual([]);
+    expect((await runRule('types', root)).violations).toEqual([]);
   });
 
   it('tsc、ruff、pyright 的错都拦', async () => {
@@ -29,7 +29,7 @@ describe('类型', () => {
       'pipeline/a.ts': "export const 加 = (a: number, b: number): number => a + b;\nexport const 坏: number = 加(1, '2');\n",
       'py/srpy/a.py': 'import os\n\n\ndef 加(a: int, b: int) -> int:\n    return a + b\n\n\n坏: str = 加(1, 2)\n',
     });
-    const v = (await runRule('类型', root)).violations.join('\n');
+    const v = (await runRule('types', root)).violations.join('\n');
     expect(v).toMatch(/tsc：pipeline\/a.ts\(2,.*error TS2345/);
     expect(v).toMatch(/ruff：py\/srpy\/a.py:1:8: F401/);
     expect(v).toMatch(/pyright：.*py\/srpy\/a.py:8:.* - error: /);
@@ -37,7 +37,7 @@ describe('类型', () => {
 
   describe('tsc 增量缓存：结果和从头查的一样', () => {
     const validSource = 'export const 加 = (a: number, b: number): number => a + b;\n';
-    /** 查两遍：带缓存的（先于它的查询留下的缓存还在）和从头查的（--深 不读缓存），必须一样才返回 */
+    /** 查两遍：带缓存的（先于它的查询留下的缓存还在）和从头查的（--deep 不读缓存），必须一样才返回 */
     const checkTypes = (root: string) => {
       const runOnce = (depthCheck: boolean) => {
         const c = new CheckContext(root, { depthCheck });
@@ -105,7 +105,7 @@ describe('类型', () => {
       }
     }, 120_000);
 
-    it('--深 不读不写缓存；缓存不进仓库', () => {
+    it('--deep 不读不写缓存；缓存不进仓库', () => {
       const root = makeRepo(config, { 'pipeline/a.ts': validSource });
       const c = new CheckContext(root, { depthCheck: true });
       runTsc(c, new CheckReport());

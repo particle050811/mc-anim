@@ -1,5 +1,5 @@
 // 作品：有哪几部、这次用哪部。作品是 <代码根>/作品/<名>/ 下有 清单.ts 的目录，外加 anim.local.toml [works] 登记的外部目录（见 docs/决策/0004-多作品.md）。
-// 选哪部：--作品（cli/路由.ts 解析后调 指定作品）> 当前目录在哪部作品里 > anim.local.toml 的 work（ANIM_WORK）> 只有一部就用它；都定不了就报错列出作品名。
+// 选哪部：--work（cli/路由.ts 解析后调 指定作品）> 当前目录在哪部作品里 > anim.local.toml 的 work（ANIM_WORK）> 只有一部就用它；都定不了就报错列出作品名。
 import fs from 'node:fs';
 import path from 'node:path';
 import { codeRoot } from './路径.ts';
@@ -61,7 +61,7 @@ export type WorkSelectOptions = {
   们?: Map<string, string>;
 };
 
-/** 按 --作品 > 当前目录 > 默认作品 > 只有一部 选；名字不分大小写 */
+/** 按 --work > 当前目录 > 默认作品 > 只有一部 选；名字不分大小写 */
 export const pickWork = ({ 参数: params, cwd = process.cwd(), 默认: defaultWork = '', 们: workRoots = listWorks() }: WorkSelectOptions = {}): Work => {
   const names = [...workRoots.keys()];
   const findWork = (name: string, source: string): Work => {
@@ -69,7 +69,7 @@ export const pickWork = ({ 参数: params, cwd = process.cwd(), 默认: defaultW
     if (!matchedName) throw new WorkSelectError(`没有作品「${name}」（${source}）；有：${names.join('、') || '（一部都没有）'}`);
     return { 名: matchedName, 根: workRoots.get(matchedName)! };
   };
-  if (params) return findWork(params, '--作品');
+  if (params) return findWork(params, '--work');
   // 最深的那个（外部作品可能在另一部作品目录里面）
   const matched = names.filter((k) => isInside(cwd, workRoots.get(k)!)).sort((a, b) => workRoots.get(b)!.length - workRoots.get(a)!.length)[0];
   if (matched) return { 名: matched, 根: workRoots.get(matched)! };
@@ -77,7 +77,7 @@ export const pickWork = ({ 参数: params, cwd = process.cwd(), 默认: defaultW
   if (names.length === 1) return { 名: names[0]!, 根: workRoots.get(names[0]!)! };
   throw new WorkSelectError(
     names.length
-      ? `有 ${names.length} 部作品（${names.join('、')}），用 --作品 <名> 指定，或在作品目录里跑，或在 anim.local.toml 写 work = "<名>"`
+      ? `有 ${names.length} 部作品（${names.join('、')}），用 --work <名> 指定，或在作品目录里跑，或在 anim.local.toml 写 work = "<名>"`
       : '一部作品都没有（作品/<名>/清单.ts）',
   );
 };
@@ -85,13 +85,13 @@ export const pickWork = ({ 参数: params, cwd = process.cwd(), 默认: defaultW
 let explicitWork: string | undefined;
 let current: Work | undefined;
 
-/** cli/路由.ts 解析出 --作品 后调；测试也用它切换 */
+/** cli/路由.ts 解析出 --work 后调；测试也用它切换 */
 export const setSpecifiedWork = (name: string | undefined) => {
   explicitWork = name;
   current = undefined;
 };
 
-/** --作品 给的名字（没给是 undefined）：anim cache gc 没给就处理全部作品 */
+/** --work 给的名字（没给是 undefined）：anim cache gc 没给就处理全部作品 */
 export const getSpecifiedWork = () => explicitWork;
 
 export const currentWork = (): Work => (current ??= pickWork({ 参数: explicitWork, 默认: config('默认作品') }));
@@ -99,7 +99,7 @@ export const currentWork = (): Work => (current ??= pickWork({ 参数: explicitW
 export const workRoot = () => currentWork().根;
 export const workName = () => currentWork().名;
 
-/** 从参数里取出 --作品 <名> / --作品=<名>，返回剩下的参数 */
+/** 从参数里取出 --work <名> / --work=<名>，返回剩下的参数 */
 export const parseWorkArg = (args: readonly string[]): { 作品?: string; rest: string[] } => {
   const rest: string[] = [];
   let work: string | undefined;
@@ -109,10 +109,10 @@ export const parseWorkArg = (args: readonly string[]): { 作品?: string; rest: 
       rest.push(...args.slice(i));
       break;
     }
-    if (a === '--作品') {
+    if (a === '--work') {
       work = args[++i];
-      if (!work) throw new WorkSelectError('--作品 后面要跟作品名');
-    } else if (a.startsWith('--作品=')) work = a.slice('--作品='.length);
+      if (!work) throw new WorkSelectError('--work 后面要跟作品名');
+    } else if (a.startsWith('--work=')) work = a.slice('--work='.length);
     else rest.push(a);
   }
   return { 作品: work, rest };

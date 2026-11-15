@@ -1,7 +1,7 @@
 // 装 Forge 服务端：Forge 安装器（sourcing/jars.toml 的 forge-installer，核 sha256）装进空目录，再按世界声明放模组、第三方数据包、server.properties。
-// 旧项目是手工装的（install.log），这里脚本化。装完的目录 anim world pregen --执行、new、server 就能用。
+// 旧项目是手工装的（install.log），这里脚本化。装完的目录 anim world pregen --apply、new、server 就能用。
 // - 安装器要联网：从 Mojang、Forge 的 maven 取原版服务端 jar 和依赖库（免费，几百 MB），装完 libraries/ 下有 unix_args.txt、win_args.txt。
-// - eula.txt 不替人同意：默认不写，要人读过 Minecraft EULA（https://aka.ms/MinecraftEULA）后自己改，或加 --同意EULA 由人在命令行表态。
+// - eula.txt 不替人同意：默认不写，要人读过 Minecraft EULA（https://aka.ms/MinecraftEULA）后自己改，或加 --accept-eula 由人在命令行表态。
 // - mcai 是自己编的，不在 jars.toml：anim mcai build 装；其余模组按声明的 id 从 jars.toml 取（游戏环境里有就拷，没有按「下载」下，核 sha256）。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -122,7 +122,7 @@ export const installServer = async (o: InstallServerOptions): Promise<InstallSer
   const eulaAccepted = fs.existsSync(eula) && /^\s*eula\s*=\s*true\s*$/m.test(fs.readFileSync(eula, 'utf8'));
   let eulaStatus: InstallServerResult['eula'] = eulaAccepted ? '已同意' : '没写';
   if (!eulaAccepted && o.acceptEula) {
-    fs.writeFileSync(eula, '# 用户在命令行加了 --同意EULA，表示读过 https://aka.ms/MinecraftEULA 并同意\neula=true\n');
+    fs.writeFileSync(eula, '# 用户在命令行加了 --accept-eula，表示读过 https://aka.ms/MinecraftEULA 并同意\neula=true\n');
     eulaStatus = '已写';
   }
   return { loaderInstalled: !alreadyInstalled, newMods, missingMods, newDatapacks, eula: eulaStatus };

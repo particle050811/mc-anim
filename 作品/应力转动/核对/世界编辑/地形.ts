@@ -16,10 +16,10 @@ export type VersionedTerrain = { 键: string; 来源: VoxelSource; heightRange: 
 
 const buildSource = async (dir: string): Promise<VersionedTerrain> => {
   const info = await fetchJson<PackageInfo>(`${dir}/包.json`, 'anim world bake 测试-修整-编辑示例 烘出来');
-  if (info.版本 !== formatVersion) throw new Error(`世界编辑核对地形 ${dir} 是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：运行 anim world 转码，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
+  if (info.版本 !== formatVersion) throw new Error(`世界编辑核对地形 ${dir} 是格式 ${info.版本}，这版代码只读格式 ${formatVersion}：运行 anim world transcode，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
   const url = new URL(dataUrl(`${dir}/${modelFileName}`), location.href).href;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`取世界编辑核对模型 ${url}：${res.status}；运行 anim world 转码，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
+  if (!res.ok) throw new Error(`取世界编辑核对模型 ${url}：${res.status}；运行 anim world transcode，或 anim world bake 测试-修整-编辑示例 后更新画面.tsx 的版本`);
   const bytes = new Uint8Array(await res.arrayBuffer());
   readModel(bytes);
   registerModel(url, bytes);

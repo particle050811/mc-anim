@@ -1,7 +1,7 @@
 // 远景取样的任务（给 mcai 的 `/mcai far`、`/mcai landmarks`，格式见 sourcing/mod/src/main/java/mcai/FarTerrain.java、FarLandmarks.java）：
 // 范围 = 预生成的矩形块（导入的范围）外包框外扩 远景.外扩 米，对齐到 2048（用户 11-06 定暮色超远景「现导入范围外扩 10 km」）；
 // 粗层 32 米一点铺满范围；中层 16 米、细带 8 米只铺交界外 远景.中宽、远景.细宽 米以内的块（整块落在一个导入矩形里的不铺，那里用导入的地形）。
-// 按 z 切成几份（--分），一份一个服务端命令，中途停了只重跑没完的那份。
+// 按 z 切成几份（--parts），一份一个服务端命令，中途停了只重跑没完的那份。
 import type { WorldDecl } from '../声明.ts';
 
 type Rect = [number, number, number, number]; // 方块 [x0, z0, x1, z1]

@@ -1,5 +1,5 @@
 // 渲染会话和静帧：整个工程只打包一次、开一个浏览器（开会话），段（渲段.ts）、静帧、bench、逐帧校验、认指纹都在会话里出帧。
-// 分阶段计时和每帧明细见 运行记录/阶段.ts、渲染明细.ts（anim 耗时 看）。
+// 分阶段计时和每帧明细见 运行记录/阶段.ts、渲染明细.ts（anim timing 看）。
 // 打包前把作品随仓库发的字节补进数据根（资产/随仓库.ts）、备好按 cue 现取的私有配乐（资产/私有配乐.ts，缺了换静音并记进运行记录）；
 // 包里别的段 import、数据根又没有的字节（公开仓库）打进占位，渲到才报错（资产/缺字节.ts）；webpack 缓存名不随资产锁变（资产/缓存名.ts）。
 import fs from 'node:fs';
@@ -250,7 +250,7 @@ export const renderStills = async (h: Pick<RenderSession, 'serveUrl' | 'browser'
 /** 连出才有的提醒 */
 export const batchHint = (segKey: string, frames: readonly number[], frameByFrame?: boolean) =>
   frames.length > 1 && !frameByFrame
-    ? `${segKey} 这 ${frames.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：核对-门口哈气，没进成片）。要和单帧或母版逐像素比，加 --逐帧；连出崩页（Page crashed）也改用 --逐帧`
+    ? `${segKey} 这 ${frames.length} 帧在同一页面连出，和单帧的差别已修到极少（已知例外：核对-门口哈气，没进成片）。要和单帧或母版逐像素比，加 --per-frame；连出崩页（Page crashed）也改用 --per-frame`
     : null;
 
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
@@ -259,7 +259,7 @@ export const renderStillFrames = async (s: SegInfo, frames: number[], level: Ren
   const toEmit = [...new Set(frames)];
   const hint = batchHint(s.键, toEmit, o.frameByFrame);
   if (hint) runRecord?.log('警告', hint);
-  if (o.shading && o.telescope) throw new Error('--光影 和 --望远 不能同时给');
+  if (o.shading && o.telescope) throw new Error('--shading 和 --tele 不能同时给');
   // 各出一遍的变体：页面环境变量和文件名后缀
   const variants: { 环境: Record<string, string>; 后缀: string }[] | undefined =
     o.shading?.map((c) => ({ 环境: { [shadingEnvName]: c.值 }, 后缀: `-光影-${c.名}` })) ?? o.telescope?.map((c) => ({ 环境: { [telescopeEnvName]: c.值 }, 后缀: `-望远-${c.名}` }));

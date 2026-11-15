@@ -32,7 +32,7 @@ describe('规矩', () => {
       ),
       pictureSource("exception('打击停顿', 3, { 段: '7-甲', 原因: '看过的版本' })"),
     );
-    const { violations, report } = await runRule('规矩', root);
+    const { violations, report } = await runRule('rules', root);
     expect(violations).toEqual([]);
     expect(report.待迁移.map((q) => q.文本)).toEqual([
       '规矩「打击停顿」 的落点 旧:src/lib/anim.ts HIT_STOP_FRAMES',
@@ -51,7 +51,7 @@ describe('规矩', () => {
       pictureSource("[exception('打击停顿', 3, { 段: '7-甲', 原因: 'x' }), exception('没有这条', 1, { 段: '7-甲', 原因: 'x' }), exception('打击停顿', 4, { 段: '7-乙', 原因: 'x' })]"),
       { '库/角色/甲.ts': "import { exception } from '../../engine/core/例外.ts';\nexport const 甲 = exception('打击停顿', 5, { 段: '7-甲', 原因: '共用代码开口子' });\n" },
     );
-    const v = (await runRule('规矩', root)).violations.join('\n');
+    const v = (await runRule('rules', root)).violations.join('\n');
     expect(v).toMatch(/画面.tsx:2 规矩「打击停顿」对 段 7-甲 的例外：代码里的值是 3，表里登记的是 2/);
     expect(v).toMatch(/例外用的规矩「没有这条」不在 作品\/应力转动\/规矩.toml 里/);
     expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/ 里的例外要写 段: '7-甲'/);
@@ -70,7 +70,7 @@ describe('规矩', () => {
       { '作品/应力转动/地点/边城/6-3-6/落地.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
       { '库/边城轮廓.ts': "import { exception } from '../../engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { 段: '7-甲', 原因: '看过的版本' });\n" },
     );
-    const v = (await runRule('规矩', root)).violations;
+    const v = (await runRule('rules', root)).violations;
     expect(v.join('\n')).toMatch(/库\/边城轮廓.ts:2 例外 只写在 作品\/应力转动\/段\/ 或 作品\/应力转动\/场\//);
     expect(v.filter((x) => x.includes('6-3-6'))).toEqual([]);
   });
@@ -82,7 +82,7 @@ describe('规矩', () => {
       { '作品/应力转动/场/7-场一/画面.tsx': "import { exception } from '@engine/core/例外.ts';\nexport const 停 = exception('打击停顿', 2, { 段: ['7-甲', '7-乙', '7-丙'], 原因: '借用' });\n" },
       pictureSource("exception('打击停顿', 2, { 段: ['7-甲'], 原因: 'x' })"),
     );
-    const v = (await runRule('规矩', root)).violations.join('\n');
+    const v = (await runRule('rules', root)).violations.join('\n');
     expect(v).toMatch(/作品\/应力转动\/场\/7-场一\/画面.tsx:2 规矩「打击停顿」对 段 7-丙 的例外没在 作品\/应力转动\/规矩.toml 登记/);
     expect(v).not.toMatch(/对 段 7-乙 的例外没在/);
     expect(v).toMatch(/作品\/应力转动\/段\/7-甲\/画面.tsx:2 作品\/应力转动\/段\/7-甲\/ 里的例外要写 段: '7-甲'/);
@@ -90,7 +90,7 @@ describe('规矩', () => {
 
   it('代码例外没登记就拦', async () => {
     const root = makeRepo(base(), pictureSource("exception('打击停顿', 3, { 段: '7-甲', 原因: '看过的版本' })"));
-    expect((await runRule('规矩', root)).violations.join('\n')).toMatch(/规矩「打击停顿」对 段 7-甲 的例外没在 作品\/应力转动\/规矩.toml 登记/);
+    expect((await runRule('rules', root)).violations.join('\n')).toMatch(/规矩「打击停顿」对 段 7-甲 的例外没在 作品\/应力转动\/规矩.toml 登记/);
   });
 
   it('改名导入、命名空间导入、转出、把 例外 当值传都拦，x.例外(...) 也算例外调用', async () => {
@@ -106,7 +106,7 @@ describe('规矩', () => {
       '作品/应力转动/段/7-甲/别名.ts': "import { exception } from '@engine/core/例外.ts';\nexport const 豁免 = exception;\nexport { exception as 开口 };\n",
       '库/转出.ts': "export * from '../engine/core/例外.ts';\n",
     });
-    const v = (await runRule('规矩', root)).violations.join('\n');
+    const v = (await runRule('rules', root)).violations.join('\n');
     expect(v).toMatch(/画面.tsx:1 不许给 exception 改名导入/);
     expect(v).toMatch(/画面.tsx:2 不许用命名空间导入 engine\/core\/例外.ts/);
     expect(v).toMatch(/画面.tsx:4 规矩「打击停顿」对 段 7-甲 的例外没在 作品\/应力转动\/规矩.toml 登记/);
@@ -135,16 +135,16 @@ describe('规矩', () => {
       fs.writeFileSync(path.join(memoryDir, '..', path.basename(memoryDir) + '-旁', '合并.md'), '一\n');
       fs.writeFileSync(path.join(memoryDir, 'fight.md'), '一\n二\n三\n');
       const sidePath = `M/../${path.basename(memoryDir)}-旁/合并.md`;
-      const cleanResult = await runRule('规矩', makeRepo(base(), makeRuleTable(`["用户 10-18", "M/fight.md", "M/fight.md:3", "${sidePath}"]`, 'M/fight.md；7d077904')), { memoryRoot: memoryDir });
+      const cleanResult = await runRule('rules', makeRepo(base(), makeRuleTable(`["用户 10-18", "M/fight.md", "M/fight.md:3", "${sidePath}"]`, 'M/fight.md；7d077904')), { memoryRoot: memoryDir });
       expect(cleanResult.violations).toEqual([]);
       expect(cleanResult.report.跳过).toEqual([]);
 
-      const violationText = (await runRule('规矩', makeRepo(base(), makeRuleTable('["M/fight.md:9", "M/删了.md"]', 'M/改名了.md')), { memoryRoot: memoryDir })).violations.join('\n');
+      const violationText = (await runRule('rules', makeRepo(base(), makeRuleTable('["M/fight.md:9", "M/删了.md"]', 'M/改名了.md')), { memoryRoot: memoryDir })).violations.join('\n');
       expect(violationText).toMatch(/规矩「打击停顿」的出处 M\/fight.md:9 超出文件行数/);
       expect(violationText).toMatch(/规矩「打击停顿」的出处 M\/删了.md 在记忆目录里找不到/);
       expect(violationText).toMatch(/规矩「打击停顿」的出处 M\/改名了.md 在记忆目录里找不到/);
 
-      const absentMemoryResult = await runRule('规矩', makeRepo(base(), makeRuleTable('["M/删了.md"]', 'M/改名了.md')), { memoryRoot: path.join(memoryDir, '没有这个目录') });
+      const absentMemoryResult = await runRule('rules', makeRepo(base(), makeRuleTable('["M/删了.md"]', 'M/改名了.md')), { memoryRoot: path.join(memoryDir, '没有这个目录') });
       expect(absentMemoryResult.violations).toEqual([]);
       expect(absentMemoryResult.report.跳过.join('\n')).toMatch(/出处的记忆引用（2 处）：记忆目录 .*没有这个目录 不在本机/);
     } finally {

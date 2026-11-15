@@ -25,7 +25,7 @@ export type TaskDecl = {
     };
     不开渲染?: boolean;
     可让路?: boolean;
-    /** anim --低优先（ANIM_PRIORITY=low）：票排在所有普通票后面，多段批有普通票在等就在项间让开 */
+    /** anim --low-priority（ANIM_PRIORITY=low）：票排在所有普通票后面，多段批有普通票在等就在项间让开 */
     低优先?: boolean;
     需负载?: boolean;
 };
@@ -122,7 +122,7 @@ export const checkWatch = (e: SchedulerEnv, taskInfo: TaskInfo) => {
     if (prevCheck && e.nowMs() - prevCheck.时 < 600000)
         return;
     writeJson(f, { 时: e.nowMs() });
-    console.error('!! 盯未挂：请主 Agent 挂 anim 调度 盯；任务照常排队');
+    console.error('!! 盯未挂：请主 Agent 挂 anim sched watch；任务照常排队');
     recordSchedulerEvent(e.logDir, '盯未挂', { 任务: taskInfo.任务, 发起: e.caller }, e.nowMs());
 };
 /** unlink 的胜者才记崩溃，多个等待者不会重复归因；跨主机不按本机 pid 猜死。 */

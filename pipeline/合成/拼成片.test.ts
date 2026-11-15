@@ -1,5 +1,5 @@
 // anim film 的拼接（拼成片.ts）：两段现造的成片切片（60 帧输出）直接拷流接成一条，查总帧数、拼接表、manifest、
-// 声音按段长按样本截、拉到 −16 LUFS，--分享版 另出 1080p60 AV1。渲染那步（渲/渲段.ts）mock 掉，切片和声音用 ffmpeg 现造。
+// 声音按段长按样本截、拉到 −16 LUFS，--share 另出 1080p60 AV1。渲染那步（渲/渲段.ts）mock 掉，切片和声音用 ffmpeg 现造。
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -82,7 +82,7 @@ describe.skipIf(!hasFfmpeg)('拼成片', () => {
     expect(manifest.分享版).toBeNull();
   });
 
-  it.skipIf(!hasAv1)('--分享版：另出 1080p60 AV1、2750 kbps，文件名带 -分享版1080p60，真峰值不超 −1 dBTP', async () => {
+  it.skipIf(!hasAv1)('--share：另出 1080p60 AV1、2750 kbps，文件名带 -分享版1080p60，真峰值不超 −1 dBTP', async () => {
     const { dir, manifest } = await assembleFilm(fake.segments as SegInfo[], { 级别: '预览', 名: '分享', 范围: [], 分享版: true, runRecord: makeRunRecord() });
     expect(manifest.文件.分享版).toBe('分享-分享版1080p60.mp4');
     const f = path.join(dir, manifest.文件.分享版!);

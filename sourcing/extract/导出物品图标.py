@@ -9,7 +9,7 @@
   --jar     可写多次，照资源包叠放的先后：后面的盖前面的（启示录盖 Goety 的 7 个聚晶模型）
   --谓词    不取模型自己的 layer0，改取 overrides 里 predicate 带这个名字的那一条指向的模型
             （启示录给戴光环的人换的图标：owner_halo_state、owner_halo_odamane）；物品没有这条就报错
-  --来源    写一个 JSON {输出文件: [字节取自的 jar 路径]}（文件已有就并进去），anim extract --登记 照它按件记来源（配方步骤里传 {产物来源}）
+  --来源    写一个 JSON {输出文件: [字节取自的 jar 路径]}（文件已有就并进去），anim extract --register 照它按件记来源（配方步骤里传 {产物来源}）
 只认 item/generated、builtin 之外没有父模型链的单层图标；带 .mcmeta 的动画贴图不处理，碰到就报错。
 贴图照 导出模型.py 的规矩存成 8 位 RGBA，像素和 jar 里一样。
 """

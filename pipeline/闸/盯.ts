@@ -66,7 +66,7 @@ const parseTask = (schedDir: string, target: string) => {
     const matchesEvent = (x: SchedulerEvent) => [x.任务, x.票, x.原序, x.新序, x.原名, x.新名].includes(target) || (pid > 0 && ((x.发起 as { pid?: number } | undefined)?.pid === pid || parseTicket(String(x.票))?.pid === pid));
     const task = rows.findLast(r => r.事件.任务 && matchesEvent(r.事件))?.事件.任务;
     if (!task)
-        throw new UsageError(`--任务 ${target} 在调度日志里找不到；要 #pid、任务 id 或票名。旧闸的任务不写日志，用 anim 调度 等 --pid`);
+        throw new UsageError(`--task ${target} 在调度日志里找不到；要 #pid、任务 id 或票名。旧闸的任务不写日志，用 anim sched wait --pid`);
     return { 任务: task, stoppedEvent: rows.findLast(r => taskEnded(r.事件, task))?.事件, 位: endCursor };
 };
 const describeEvent = (x: SchedulerEvent) => {
@@ -87,7 +87,7 @@ export const watchSched = async (e: SchedulerEnv, o: {
     const targetTask = o.任务 ? parseTask(e.logDir, o.任务) : undefined;
     const pause = () => (o.sleep ?? (ms => new Promise(r => setTimeout(r, ms))))(5000);
     const startMs = e.nowMs(), parentPid = process.ppid, live = path.join(e.schedulerDir, '盯', process.pid + '.json');
-    // --任务 只等自己的任务，不算挂了看守：它不报告警。
+    // --task 只等自己的任务，不算挂了看守：它不报告警。
     if (!targetTask)
         writeJson(live, { pid: process.pid, 会话: e.caller.会话, 起: startMs });
     // 按会话一份；同会话两只 盯 共用，一件事只醒一只。
@@ -98,7 +98,7 @@ export const watchSched = async (e: SchedulerEnv, o: {
                 return timeoutExitCode;
             const s = (o.读 ?? (() => readState(e)))();
             promptOnly('监测', () => { monitorRound(e, s); });
-            // --任务 不碰共用游标：主子 Agent 可能共用会话，子代理读走告警主 Agent 就不醒了；`盯 --任务 X && 下一步` 也不能因为别的告警提前走。
+            // --task 不碰共用游标：主子 Agent 可能共用会话，子代理读走告警主 Agent 就不醒了；`sched watch --task X && 下一步` 也不能因为别的告警提前走。
             if (targetTask) {
                 const { 行: rows, endCursor } = readNewEvents(e.logDir, targetTask.位), endEvent = targetTask.stoppedEvent ?? rows.find(r => taskEnded(r.事件, targetTask.任务))?.事件;
                 targetTask.位 = endCursor;

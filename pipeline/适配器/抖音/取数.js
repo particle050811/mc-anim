@@ -1,7 +1,7 @@
 // 抖音创作者中心取数：在用户已登录的浏览器里跑（Playwright MCP 扩展模式 browser_run_code_unsafe 的 filename），
 // 页面要先打开 creator.douyin.com。cookie 只由浏览器带（credentials:'include'），脚本不读、不存、不返回它；
 // 只用作品详情页本来就发、不带签名的 janus 接口和 item/mget，只发 GET；请求间隔 ≥1.1 秒，HTTP 4xx 或 status_code 非 0 的风控码立刻停。
-// 结果打包成 抖音-数据-<UTC 月日-时分>.json 经 a.download 存进浏览器的下载目录，再用 anim 平台 导入 收进数据根。
+// 结果打包成 抖音-数据-<UTC 月日-时分>.json 经 a.download 存进浏览器的下载目录，再用 anim platform import 收进数据根。
 // 接口和字段含义见同目录 数据.ts 的类型注释（留存 data_center analysis_type=1 是 3 秒一档的留存比例，7 是各档跳出）。
 async (page) => {
   const pageVisibility = await page.evaluate(() => document.visibilityState);

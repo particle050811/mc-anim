@@ -1,4 +1,4 @@
-// 渲染明细：每次 renderMedia、renderStill 留一份 JSON，看一段的时间花在哪一帧、等哪个 delayRender，渲的时候机器忙不忙。用 anim 耗时 看。
+// 渲染明细：每次 renderMedia、renderStill 留一份 JSON，看一段的时间花在哪一帧、等哪个 delayRender，渲的时候机器忙不忙。用 anim timing 看。
 // 不改 engine：engine 进指纹，往里加计时全片过期。数据取自 Remotion 的 verbose 日志（页面的 delayRender 清除时报标签和毫秒）和 onProgress，日志级别不进指纹、不改像素（docs/渲染性能.md 有核对）。
 // 帧的毫秒是相邻两次 onProgress 的差（并发 1，每帧回调一次），含截图、交给编码器；delayRender 可能重叠，各标签加起来不等于帧的毫秒。
 // 占地：每帧约 100 字节，一份最多几百 KB，只留最近 保留份数 份。
@@ -188,7 +188,7 @@ export class DetailCollector {
     this.lastFrameCount = framesDone;
   }
 
-  /** fn 期间 console.log 全归 Remotion（只包 renderMedia、renderStill，它们不打别的）：verbose 日志不刷屏；系统采样同时跑。原样留一份给 转发（bench --详细 的日志文件） */
+  /** fn 期间 console.log 全归 Remotion（只包 renderMedia、renderStill，它们不打别的）：verbose 日志不刷屏；系统采样同时跑。原样留一份给 转发（bench --verbose 的日志文件） */
   async 包<T>(fn: () => Promise<T>, forward?: (logText: string) => void): Promise<T> {
     const originalLog = console.log;
     console.log = (...a: unknown[]) => {
@@ -280,7 +280,7 @@ const tempReport = (d: RenderDetail) => {
   return [t?.芯片最高温 == null ? '' : `最高芯温 ${t.芯片最高温.toFixed(1)}°C`, t?.发热等级 == null ? '' : `最高发热等级 ${t.发热等级}`].filter(Boolean).join('，');
 };
 
-/** anim 耗时 <段>：一份明细给人看的报告 */
+/** anim timing <段>：一份明细给人看的报告 */
 export const detailReport = (d: RenderDetail, file?: string) => {
   const frameTotalMs = d.帧.reduce((a, f) => a + f.毫秒, 0);
   const lines = [
@@ -309,6 +309,6 @@ export const detailReport = (d: RenderDetail, file?: string) => {
   return lines.join('\n');
 };
 
-/** anim 耗时：最近几次一行一条 */
+/** anim timing：最近几次一行一条 */
 export const detailOverview = (details: readonly { 明细: RenderDetail }[]) =>
   details.map(({ 明细: d }) => `${d.开始}  ${d.总秒.toFixed(0).padStart(5)} 秒  ${String(d.小结.帧数).padStart(5)} 帧  中位 ${String(d.小结.中位毫秒).padStart(5)} 毫秒  P90 ${String(d.小结.P90毫秒).padStart(5)}  首帧 ${fmtSec(d.小结.首帧毫秒).padStart(8)}  ${d.等待[0]?.标签 ?? ''}  ${d.标签}${tempReport(d) ? '  ' + tempReport(d) : ''}`).join('\n');

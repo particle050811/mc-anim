@@ -1,5 +1,5 @@
-// anim 平台 导入 <json> | anim 平台 分析：B 站、抖音创作者中心数据（浏览器里跑各自 取数.js 下载的包）收进数据根，
-// 对本地交付出一份报告：每个平台一节（各看各的关键指标），最后两平台对照。anim bili 是旧名，同一条命令。
+// anim platform import <json> | anim platform analyze：B 站、抖音创作者中心数据（浏览器里跑各自 取数.js 下载的包）收进数据根，
+// 对本地交付出一份报告：每个平台一节（各看各的关键指标），最后两平台对照。
 import fs from 'node:fs';
 import path from 'node:path';
 import type { Command } from '../../cli/命令.ts';
@@ -22,9 +22,9 @@ const parseSec = (v: string | undefined, optionName: string) => {
 };
 
 const run: Command['跑'] = async (args, runRecord) => {
-  const p = parseArgs(args, { 值: ['--开头窗', '--结尾窗'] });
+  const p = parseArgs(args, { 值: ['--head', '--tail'] });
   const [action, file] = p.位置;
-  if (action === '导入') {
+  if (action === 'import') {
     if (p.位置.length !== 2) throw new UsageError('要给浏览器下载的 bili-数据-*.json 或 抖音-数据-*.json');
     const f = path.resolve(file!);
     const isDouyin = (JSON.parse(fs.readFileSync(f, 'utf8')) as { 平台?: string }).平台 === '抖音';
@@ -34,9 +34,9 @@ const run: Command['跑'] = async (args, runRecord) => {
     console.log(`${targetPath}（${countText}，${rawPack.请求数} 次请求${rawPack.停于风控 ? `，取数中途遇风控停了：${rawPack.停于风控}` : ''}）`);
     return;
   }
-  if (action !== '分析' || p.位置.length !== 1) throw new UsageError('平台 导入 <json> 或 平台 分析 [--开头窗 <秒>] [--结尾窗 <秒>]');
-  const headSec = parseSec(p.值['--开头窗'], '--开头窗') ?? defaultOpeningWindow;
-  const tailSec = parseSec(p.值['--结尾窗'], '--结尾窗');
+  if (action !== 'analyze' || p.位置.length !== 1) throw new UsageError('platform import <json> 或 platform analyze [--head <秒>] [--tail <秒>]');
+  const headSec = parseSec(p.值['--head'], '--head') ?? defaultOpeningWindow;
+  const tailSec = parseSec(p.值['--tail'], '--tail');
   const deliveryList = readDeliveryList(deliveryRoot());
   const alignCurves = <T extends CurveDraft>(curves: T[]) =>
     curves.flatMap((item): MatchedRow<T>[] => {
@@ -73,7 +73,7 @@ const run: Command['跑'] = async (args, runRecord) => {
     fs.writeFileSync(path.join(dir, pageName), comparisonPage(x, y, platformNames), 'utf8');
     return comparisonSection(x, y, platformNames, pageName);
   });
-  const douyinText = d ? douyinSection(douyinWorks, douyinAligned, { 取于: d.包.取于, 请求数: d.包.请求数, 文件: d.f, 说明: d.包.说明 }, douyinChart) : '## 抖音\n\n数据根里还没有抖音数据：在浏览器里跑 pipeline/适配器/抖音/取数.js，再 anim 平台 导入 <json>。';
+  const douyinText = d ? douyinSection(douyinWorks, douyinAligned, { 取于: d.包.取于, 请求数: d.包.请求数, 文件: d.f, 说明: d.包.说明 }, douyinChart) : '## 抖音\n\n数据根里还没有抖音数据：在浏览器里跑 pipeline/适配器/抖音/取数.js，再 anim platform import <json>。';
   const note = `# 平台数据分析
 
 两个平台分发机制不同，分开解读：抖音刷到即播，先看前 5 秒；B 站点进来才播，先看封面标题点击率。各段的判断都用本平台自己的「开头窗、结尾窗之外在场观众每 10 秒流失」，最后一节才对照。
@@ -99,8 +99,8 @@ ${bilibiliAdvice(submissions, biliAligned).map((s, i) => `${i + 1}. ${s}`).join(
 ## 口径
 
 - 「在场每 10 秒流失」= 1 −（出留存 / 进留存）^(10 / 时长)，按当时还在看的人算，不同位置的段可比；越往后在场的越是铁粉，后段天然偏低。
-- 开头窗（默认 ${defaultOpeningWindow} 秒，\`--开头窗\`）：推荐流「刷到就走」集中在开头，窗内的流失不记到段上，跨窗的段只算窗后；窗长是假设，B 站一节用同账号其他稿件同一时段检验。
-- 结尾窗（默认最后一个段和最后 30 秒取较长的，\`--结尾窗\`）：看出要结束就走是正常的，窗内不记到段上。
+- 开头窗（默认 ${defaultOpeningWindow} 秒，\`--head\`）：推荐流「刷到就走」集中在开头，窗内的流失不记到段上，跨窗的段只算窗后；窗长是假设，B 站一节用同账号其他稿件同一时段检验。
+- 结尾窗（默认最后一个段和最后 30 秒取较长的，\`--tail\`）：看出要结束就走是正常的，窗内不记到段上。
 - 拖沓段 / 留得住的段：窗后、高于 / 低于本平台同一范围平均的段；短于半档的段数值只是所在档的平均，和相邻短段合成一组。
 - 平台给的同类参考线（B 站同类稿件是拟合的平滑线，会外推出负数；抖音是同类作者）只画在图上，不参与计算。
 - 段边界取交付 manifest 的全片起帧和帧率；作品发布早于交付完成时，上传的是更早的剪辑，段位置可能有偏差。
@@ -112,9 +112,9 @@ ${bilibiliAdvice(submissions, biliAligned).map((s, i) => `${i + 1}. ${s}`).join(
 };
 
 const platform: Command = {
-  用法: '平台 导入 <json> | 平台 分析 [--开头窗 <秒>] [--结尾窗 <秒>]',
-  说明: '导入：把浏览器里 pipeline/适配器/bili/取数.js 或 抖音/取数.js 下载的包挪进数据根 平台/<bilibili|抖音>/<UTC>/；分析：读各平台最新一份，对到本作品的交付，出 预览/<UTC>-平台数据分析/（抖音前 5 秒、B 站封标、各平台窗后按段的在场流失、两平台对照、分平台建议）',
+  用法: 'platform import <json> | platform analyze [--head <秒>] [--tail <秒>]',
+  说明: 'import：把浏览器里 pipeline/适配器/bili/取数.js 或 抖音/取数.js 下载的包挪进数据根 平台/<bilibili|抖音>/<UTC>/；analyze：读各平台最新一份，对到本作品的交付，出 预览/<UTC>-平台数据分析/（抖音前 5 秒、B 站封标、各平台窗后按段的在场流失、两平台对照、分平台建议）',
   跑: run,
 };
 
-export const platformCommands: Record<string, Command> = { 平台: platform, bili: { ...platform, 用法: 'bili …（同 平台，旧名）', 说明: '同 anim 平台' } };
+export const platformCommands: Record<string, Command> = { platform };

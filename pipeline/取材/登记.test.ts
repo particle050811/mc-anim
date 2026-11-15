@@ -115,7 +115,7 @@ describe('资产表文本改动', () => {
   });
 });
 
-describe('--登记', () => {
+describe('--register', () => {
   it('锁里没有的产物登记进 <类>.toml、入库、写锁；已登记的不重复登记', () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), '登记-'));
     const staging = path.join(root, '暂存');
@@ -160,7 +160,7 @@ describe('--登记', () => {
   });
 });
 
-describe('--新、产物来源', () => {
+describe('--new、产物来源', () => {
   const soundManifest = parseManifest(
     `
 [["取材"]]

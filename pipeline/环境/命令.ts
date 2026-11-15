@@ -55,7 +55,7 @@ export const healthCheck = (): CheckResult[] => {
   const encoderTable = tryRun([config('ffmpeg'), '-hide_banner', '-encoders']).stdout;
   const hasEncoder = (encoderName: string) => new RegExp(`\\s${encoderName}\\s`).test(encoderTable);
   // 切片由 Remotion 自带的 ffmpeg 压，film 只接不重压；本机 ffmpeg 只有分享版要编码器
-  addCheck('libsvtav1', hasEncoder('libsvtav1'), hasEncoder('libsvtav1') ? 'anim film --分享版 用' : 'libsvtav1 不在 ffmpeg 里（anim film --分享版 要它，换带 libsvtav1 的 ffmpeg）');
+  addCheck('libsvtav1', hasEncoder('libsvtav1'), hasEncoder('libsvtav1') ? 'anim film --share 用' : 'libsvtav1 不在 ffmpeg 里（anim film --share 要它，换带 libsvtav1 的 ffmpeg）');
 
   for (const [k, expected] of [['core.quotepath', 'false'], ['core.longpaths', 'true']] as const) {
     const v = tryRun(['git', '-C', codeRoot(), 'config', '--get', k]).stdout.trim();
@@ -90,7 +90,7 @@ export const healthCheck = (): CheckResult[] => {
       if (!releaseLock) continue;
       hasReleaseLock = true;
       const missing = releaseLock.附件.filter((a) => missingAttachmentCount(a, dataPath()) > 0);
-      addCheck(`素材·${name}`, missing.length === 0, missing.length ? `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件里有 ${missing.length} 个还没下（anim --作品 ${name} assets pull）` : `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件都在数据根`, false);
+      addCheck(`素材·${name}`, missing.length === 0, missing.length ? `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件里有 ${missing.length} 个还没下（anim --work ${name} assets pull）` : `Release ${releaseLock.标签} 的 ${releaseLock.附件.length} 个附件都在数据根`, false);
     }
   } catch {
     // 作品目录有问题上面「作品」一项已经报了

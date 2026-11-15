@@ -57,7 +57,7 @@ describe('地标网格配方反填', () => {
     expect(meshSteps({ ...g, 头: meshHeaders.c! })[1]).toEqual(['mcai', 'mesh', 'structure=minecraft:village_plains', 'entities=all', 'out=src/x.网格']);
   });
 
-  it('按第一段分组成配方，文本能解析回来：不重导、要开游戏，--全部 不选，--检查 只查产物', () => {
+  it('按第一段分组成配方，文本能解析回来：不重导、要开游戏，--all 不选，--check 只查产物', () => {
     const { 网格: meshes } = missingMeshRecipes(q, [[assetLock, undefined]], new Map(), readHead);
     const groups = groupMeshes(meshes, new Set(q.entryMap.keys()));
     expect([...groups.keys()]).toEqual(['城网格', '塔网格']);

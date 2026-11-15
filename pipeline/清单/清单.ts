@@ -55,7 +55,7 @@ export const matchSelector = (segments: readonly SegInfo[], selector: string): S
 export const selectSegs = async (selectors: readonly string[]): Promise<SegInfo[]> => {
   const allSegments = await loadAllSegments();
   const otherWorks = selectors.filter(isOtherWork);
-  if (otherWorks.length) throw new Error(`${otherWorks.join('、')} 不是现在选的作品「${workName()}」的段（一次只处理一部作品，换作品用 --作品）`);
+  if (otherWorks.length) throw new Error(`${otherWorks.join('、')} 不是现在选的作品「${workName()}」的段（一次只处理一部作品，换作品用 --work）`);
   const perSelector = selectors.map((x) => matchSelector(allSegments, x));
   const unmatched = selectors.filter((_, i) => !perSelector[i]!.length);
   if (unmatched.length) throw new Error(`选择器没对上任何段：${unmatched.join('、')}（能用段键、段名、编号、场键、章或 6-7 这样的章范围；清单里有：${allSegments.map((s) => s.键).join('、')}）`);

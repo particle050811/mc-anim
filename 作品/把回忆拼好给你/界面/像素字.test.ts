@@ -17,7 +17,7 @@ describe.skipIf(!hasTable)('本作品像素字', () => {
     const copyText = fs.readFileSync(path.join(workRoot, '界面', '像素字文案.txt'), 'utf8');
     const missing = new Set<string>();
     for (const line of copyText.split('\n')) if (line.trim() && !line.startsWith('#')) for (const ch of line) if (!pixelFont.hasGlyph(ch)) missing.add(ch);
-    expect([...missing], '文案改了要重取：anim --作品 把回忆拼好给你 extract 把回忆拼好给你像素字').toEqual([]);
+    expect([...missing], '文案改了要重取：anim --work 把回忆拼好给你 extract 把回忆拼好给你像素字').toEqual([]);
   });
 
   it('宽：组合附加符号单占步进（unihex 宽 4 → 3），空格 4，汉字和全角逗号 9，[ ] 4', () => {

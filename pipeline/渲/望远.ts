@@ -1,5 +1,5 @@
-// anim still 的 --望远：照原镜头只把原帧里的一个矩形用整张画布原生渲出来（docs/望远.md，用户 11-15 定做）。
-// 同 --光影 的做法：只在 still 的包里把 engine/core/望远.ts 加进入口，矩形经页面环境变量传；段的闭包、inputProps、打包规则都不动，不进指纹，
+// anim still 的 --tele：照原镜头只把原帧里的一个矩形用整张画布原生渲出来（docs/望远.md，用户 11-15 定做）。
+// 同 --shading 的做法：只在 still 的包里把 engine/core/望远.ts 加进入口，矩形经页面环境变量传；段的闭包、inputProps、打包规则都不动，不进指纹，
 // film 不认，切片不会混进望远的画面。入口多一项，webpack 缓存目录另起一个（Remotion 按整份配置算缓存名），不和平时的包互相冲。
 import path from 'node:path';
 import type { WebpackOverrideFn } from '@remotion/bundler';
@@ -28,12 +28,12 @@ export type TelescopeToggle = { fineLevel?: boolean; 真值?: boolean };
 
 const parseNum = (s: string, displayName: string) => {
   const v = Number(s);
-  if (!Number.isFinite(v)) throw new Error(`--望远 的${displayName}要是数：${s}`);
+  if (!Number.isFinite(v)) throw new Error(`--tele 的${displayName}要是数：${s}`);
   return v;
 };
 
 /**
- * --望远 的值，分号隔开的几块，每块是：
+ * --tele 的值，分号隔开的几块，每块是：
  *   x,y,宽        矩形左上角和宽（原帧像素，高按原帧宽高比）
  *   心x,心y,<n>x  矩形中心和放大倍数（如 1920,760,8x）
  * 后面还能跟「,细一级」「,真值」只给这一块开（同一次里同一块出两份对着看）；开 里的对每一块都开。
@@ -47,14 +47,14 @@ export const parseTelescope = (v: string, [fullWidth, fullHeight]: readonly [num
     .map((s) => {
       const [...items] = s.split(',').map((t) => t.trim());
       const singleFlags = items.splice(3);
-      if (items.length !== 3 || singleFlags.some((t) => t !== '细一级' && t !== '真值')) throw new Error(`--望远 要写成 x,y,宽 或 心x,心y,<倍>x（后面可跟 ,细一级 ,真值）：${s}`);
+      if (items.length !== 3 || singleFlags.some((t) => t !== '细一级' && t !== '真值')) throw new Error(`--tele 要写成 x,y,宽 或 心x,心y,<倍>x（后面可跟 ,细一级 ,真值）：${s}`);
       const fineLevel = !!flags.fineLevel || singleFlags.includes('细一级');
       const exactValue = !!flags.真值 || singleFlags.includes('真值');
       const scaleMatch = /^([0-9.]+)[x倍]$/i.exec(items[2]!);
       let x: number, y: number, width: number;
       if (scaleMatch) {
         const zoom = parseNum(scaleMatch[1]!, '倍数');
-        if (!(zoom >= 1)) throw new Error(`--望远 的倍数不能小于 1：${s}`);
+        if (!(zoom >= 1)) throw new Error(`--tele 的倍数不能小于 1：${s}`);
         width = fullWidth / zoom;
         x = parseNum(items[0]!, '中心 x') - width / 2;
         y = parseNum(items[1]!, '中心 y') - (width * fullHeight) / fullWidth / 2;
@@ -64,9 +64,9 @@ export const parseTelescope = (v: string, [fullWidth, fullHeight]: readonly [num
         width = parseNum(items[2]!, '宽');
       }
       const height = (width * fullHeight) / fullWidth;
-      if (!(width >= 1)) throw new Error(`--望远 的宽至少 1 个像素：${s}`);
+      if (!(width >= 1)) throw new Error(`--tele 的宽至少 1 个像素：${s}`);
       if (x < -1e-6 || y < -1e-6 || x + width > fullWidth + 1e-6 || y + height > fullHeight + 1e-6) {
-        throw new Error(`--望远 的矩形（左上 ${x},${y}，${width}×${height}）超出原帧 ${fullWidth}×${fullHeight}：${s}`);
+        throw new Error(`--tele 的矩形（左上 ${x},${y}，${width}×${height}）超出原帧 ${fullWidth}×${fullHeight}：${s}`);
       }
       const fmtNum = (n: number) => String(Math.round(n * 100) / 100);
       return {

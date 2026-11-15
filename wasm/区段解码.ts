@@ -1,5 +1,5 @@
 // 区段解码（AssemblyScript，编成 WASM）：逐格预测压缩的解码半边。格式和编码半边见 pipeline/世界/烘焙/区段编码.ts，两边逐条对应，改一边必须改另一边，并升 engine/voxel/区段包.ts 的格式版本。
-// 不在 tsconfig 的 include 里（AssemblyScript 的类型 tsc 不认）。编译和写回：anim world 解码器（docs/决策/0011-地形压缩.md）。
+// 不在 tsconfig 的 include 里（AssemblyScript 的类型 tsc 不认）。编译和写回：anim world decoder（docs/决策/0011-地形压缩.md）。
 // 内存由 engine/voxel/区段解码.ts 排，这里只收指针；这个模块没有静态数据、不分配。
 // 算法：自适应二进制区间编码（LZMA 那一种，算法公开），这里是自己写的，没有拷第三方代码。
 const sectionSide: i32 = 34, columnCount: i32 = sectionSide * sectionSide;

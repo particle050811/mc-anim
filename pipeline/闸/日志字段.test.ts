@@ -17,7 +17,7 @@ let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-日志字段-')); });
 afterEach(() => { fs.rmSync(dir, { recursive: true, force: true }); });
 const fakeMachine = () => ({ 负载: 2, 核: 10, 闸: 40, 压力: 1, free: 1, 压缩: 1, swap: 0, 换出: 0, GPU: 0, 热: 0, 盘: 1e10, 孤儿: 0, 进程: '不该进日志的进程表' });
-const parseParams = (xs: string[]) => parseArgs(xs, { 值: ['--为什么', '--看到', '--决定'], toggles: ['--杀持锁'] });
+const parseParams = (xs: string[]) => parseArgs(xs, { 值: ['--why', '--saw', '--decision'], toggles: ['--kill-holder'] });
 const makeMemory = (n: number) => ({ 总: 100, 空闲: n, 空闲百分比: n, 交换区总: 0, 交换区已用: 0 });
 const gateEnv = (x: Partial<GateEnv> = {}): Partial<GateEnv> => ({ lockDir: dir, localHost: os.hostname(), memFloor: 30, readMemory: () => makeMemory(80), readPressure: () => 1, load1Min: () => 0, coreCount: () => 10, readMachine: fakeMachine, clearOrphans: () => [], queueIntervalMs: 1, ...x });
 const readLogs = () => readSchedulerEvents(path.join(dir, 'logs'));
@@ -59,7 +59,7 @@ describe('日志字段', () => {
     const c = makeTicket('丙');
     makeTicket('丁');
     const findByTask = (task: string) => listTickets(q).find(x => x.内容?.任务 === task)!.内容!;
-    changeScheduler('先', c.名, parseParams(['--为什么', '插队']), e, { 状态: () => readState(e, fakeMachine, false), 输出: () => {} });
+    changeScheduler('first', c.名, parseParams(['--why', '插队']), e, { 状态: () => readState(e, fakeMachine, false), 输出: () => {} });
     expect([findByTask('甲').已被越, findByTask('乙').已被越, findByTask('丙').已被越, findByTask('丁').已被越]).toEqual([1, 1, undefined, undefined]);
     for (const x of listTickets(q)) fs.rmSync(x.文件);
     fs.writeFileSync(path.join(dir, '渲染.lock'), `${process.ppid}\n`);
@@ -77,7 +77,7 @@ describe('日志字段', () => {
       expect(JSON.parse(fs.readFileSync(path.join(q, first), 'utf8')).已被越).toBe(1);
     }, () => {}, gateEnv({ sleep: async () => {
       const ticket = listTickets(q).find(x => x.名 !== first)!;
-      changeScheduler('放行', ticket.名, parseParams(['--为什么', '急']), e, { 状态: () => readState(e, fakeMachine, false), 输出: () => {} });
+      changeScheduler('release', ticket.名, parseParams(['--why', '急']), e, { 状态: () => readState(e, fakeMachine, false), 输出: () => {} });
     } }), { 种: 'still' });
   });
   it('被杀说清当时持锁还是排队、已跑几秒、取消几秒内退出；限时杀说已跑', async () => {

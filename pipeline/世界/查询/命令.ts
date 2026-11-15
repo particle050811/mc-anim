@@ -1,4 +1,4 @@
-// anim world block | heightmap | map | slice：查方块、出图。来源默认是存档（套编辑层），--原样 不套编辑，--包 <名> 读地形包（数据根 terrain/）。
+// anim world block | heightmap | map | slice：查方块、出图。来源默认是存档（套编辑层），--raw 不套编辑，--pack <名> 读地形包（数据根 terrain/）。
 // 范围里要从存档解的区域超过 2 个就过资源闸，并行读进列段缓存再画。出图默认写到 <数据根>/run/草稿/<UTC>-工作-世界/。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -18,8 +18,8 @@ import { drawTopView, drawCrossSection, drawHeight } from './出图.ts';
 import { segmentAt, PackBlockSource, SaveBlockSource, normalizeRange, type BlockSource, type QueryRect } from './源.ts';
 import { BlockPalette } from './颜色.ts';
 
-const sourceOptions = { 值: ['--包', '--版本', '--存档', '--到', '--像素', '--y', '--表'], toggles: ['--原样', '--列'] } as const;
-const sourceUsage = '[--原样 | --包 <名> [--版本 <v>]] [--存档 <世界目录>]';
+const sourceOptions = { 值: ['--pack', '--version', '--save-dir', '--to', '--pixels', '--y', '--table'], toggles: ['--raw', '--column'] } as const;
+const sourceUsage = '[--raw | --pack <名> [--version <v>]] [--save-dir <世界目录>]';
 
 const toInt = (s: string | undefined, fieldName: string) => {
   if (s === undefined || !/^-?\d+$/.test(s)) throw new UsageError(`${fieldName} 要是整数${s === undefined ? '' : `，写的是 ${s}`}`);
@@ -33,27 +33,27 @@ export const worldDraftDir = () => {
   return d;
 };
 const outputPath = (p: ParsedArgs, fileName: string) => {
-  const f = p.值['--到'] ? path.resolve(p.值['--到']) : path.join(worldDraftDir(), fileName);
+  const f = p.值['--to'] ? path.resolve(p.值['--to']) : path.join(worldDraftDir(), fileName);
   fs.mkdirSync(path.dirname(f), { recursive: true });
   return f;
 };
 
 /** 按选项建方块源；存档源另返回区域源（批量预读用） */
 export const buildSource = async (w: WorldDecl, p: ParsedArgs): Promise<{ 源: BlockSource; 存档?: SaveBlockSource; 区域?: RegionSource; 标: string }> => {
-  if (p.值['--包']) {
-    const packName = p.值['--包'];
-    const version = p.值['--版本'] ?? readTerrainTable().包[packName]?.版本;
-    if (!version) throw new UsageError(`assets/地形版本.json 没登记包 ${packName}，要写 --版本`);
+  if (p.值['--pack']) {
+    const packName = p.值['--pack'];
+    const version = p.值['--version'] ?? readTerrainTable().包[packName]?.版本;
+    if (!version) throw new UsageError(`assets/地形版本.json 没登记包 ${packName}，要写 --version`);
     const dir = versionDir(packName, version);
     if (!fs.existsSync(path.join(dir, '包.json'))) throw new Error(`没有 ${dir}：anim assets pull 拉地形包，或 anim world bake 烘`);
     return { 源: new PackBlockSource(dir, await loadVoxelLib(), `地形包 ${packName} 版本 ${version}`), 标: `包${packName}` };
   }
-  const dir = regionDir(w, p.值['--存档']);
-  const seed = worldSeed(saveDir(w, p.值['--存档']));
-  const editSet = p.toggles.has('--原样') ? null : await loadEdits(w);
+  const dir = regionDir(w, p.值['--save-dir']);
+  const seed = worldSeed(saveDir(w, p.值['--save-dir']));
+  const editSet = p.toggles.has('--raw') ? null : await loadEdits(w);
   const editApplier = editSet ? new EditApplier(editSet, new RegionSource(dir, seed, columnSegmentCacheDir())) : null;
   const regionSource = new RegionSource(dir, seed, columnSegmentCacheDir(), editApplier ? (r) => editApplier.applyEdits(r) : null);
-  const saveSource = new SaveBlockSource(regionSource, `存档 ${dir}${editSet ? `，套编辑 ${editSet.步.length} 条命令` : p.toggles.has('--原样') ? '，不套编辑' : ''}`);
+  const saveSource = new SaveBlockSource(regionSource, `存档 ${dir}${editSet ? `，套编辑 ${editSet.步.length} 条命令` : p.toggles.has('--raw') ? '，不套编辑' : ''}`);
   return { 源: saveSource, 存档: saveSource, 区域: regionSource, 标: editSet ? '编辑后' : '原样' };
 };
 
@@ -84,13 +84,13 @@ const worldArgs = (args: string[], argCount: number, usage: string) => {
   return { p, w: readDecl(p.位置[0]!) };
 };
 
-const pixelOption = (p: ParsedArgs) => (p.值['--像素'] ? toInt(p.值['--像素'], '--像素') : undefined);
+const pixelOption = (p: ParsedArgs) => (p.值['--pixels'] ? toInt(p.值['--pixels'], '--pixels') : undefined);
 
 type SubCommand = { 用法: string; 跑: (args: string[], runRecord: Parameters<Command['跑']>[1]) => Promise<number | void> };
 
 export const QUERY_COMMANDS: Record<string, SubCommand> = {
   block: {
-    用法: `block <世界> <x> <y> <z> [--列] ${sourceUsage}`,
+    用法: `block <世界> <x> <y> <z> [--column] ${sourceUsage}`,
     跑: async (args) => {
       const usage = QUERY_COMMANDS.block!.用法;
       const { p, w } = worldArgs(args, 4, usage);
@@ -107,13 +107,13 @@ export const QUERY_COMMANDS: Record<string, SubCommand> = {
         const t = s.源.topBlockAt(x!, z!);
         console.log(`(${x}, ${y}, ${z})：${b ? `${b.状态 ?? '没数据'}，群系 ${b.群系 ?? '（不记）'}` : y! < c.yBottom ? `低于存的范围（${c.yBottom} 以下${s.存档 ? '' : '，包里没存、渲染当实心'}）` : 'minecraft:air（高于这一列）'}`);
         console.log(`这一列最高的方块：${t ? `y ${t.y} ${t.状态}` : '没有（全是空气）'}`);
-        if (p.toggles.has('--列')) for (const g of c.段) console.log(`  y ${g.bottom}～${g.topY}：${g.状态 ?? '没数据'}${g.群系 ? `  ${g.群系}` : ''}`);
+        if (p.toggles.has('--column')) for (const g of c.段) console.log(`  y ${g.bottom}～${g.topY}：${g.状态 ?? '没数据'}${g.群系 ? `  ${g.群系}` : ''}`);
         return 0;
       });
     },
   },
   heightmap: {
-    用法: `heightmap <世界> <x1> <z1> <x2> <z2> [--到 <png>] [--表 <tsv>] [--像素 <n>] ${sourceUsage}`,
+    用法: `heightmap <世界> <x1> <z1> <x2> <z2> [--to <png>] [--table <tsv>] [--pixels <n>] ${sourceUsage}`,
     跑: async (args, runRecord) => {
       const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.heightmap!.用法);
       const r = normalizeRange(...([1, 2, 3, 4].map((i) => toInt(p.位置[i], '范围')) as [number, number, number, number]));
@@ -121,13 +121,13 @@ export const QUERY_COMMANDS: Record<string, SubCommand> = {
       const g = await prepare(s, r, () => drawHeight(s.源, r, pixelOption(p)));
       const f = outputPath(p, `${w.名称}-高度-${r.x1}_${r.z1}_${r.x2}_${r.z2}-${s.标}.png`);
       fs.writeFileSync(f, g.png);
-      if (p.值['--表']) fs.writeFileSync(path.resolve(p.值['--表']), g.表.map((row) => row.map((h) => h ?? '').join('\t')).join('\n') + '\n');
+      if (p.值['--table']) fs.writeFileSync(path.resolve(p.值['--table']), g.表.map((row) => row.map((h) => h ?? '').join('\t')).join('\n') + '\n');
       console.log(`来源：${s.源.description}\n${f}（${g.宽}×${g.高}，${g.步 > 1 ? `每 ${g.步} 格取一格` : `一格 ${g.pixel} 像素`}）；最高的非空气方块 y ${g.minY ?? '-'}～${g.maxY ?? '-'}，有数据 ${g.withData}/${g.total}`);
       runRecord.产物.push(f);
     },
   },
   map: {
-    用法: `map <世界> <x1> <z1> <x2> <z2> [--到 <png>] [--像素 <n>] ${sourceUsage}`,
+    用法: `map <世界> <x1> <z1> <x2> <z2> [--to <png>] [--pixels <n>] ${sourceUsage}`,
     跑: async (args, runRecord) => {
       const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.map!.用法);
       const r = normalizeRange(...([1, 2, 3, 4].map((i) => toInt(p.位置[i], '范围')) as [number, number, number, number]));
@@ -141,7 +141,7 @@ export const QUERY_COMMANDS: Record<string, SubCommand> = {
     },
   },
   slice: {
-    用法: `slice <世界> x|z <位置> <起> <止> [--y <y1>..<y2>] [--到 <png>] [--像素 <n>] ${sourceUsage}`,
+    用法: `slice <世界> x|z <位置> <起> <止> [--y <y1>..<y2>] [--to <png>] [--pixels <n>] ${sourceUsage}`,
     跑: async (args, runRecord) => {
       const { p, w } = worldArgs(args, 5, QUERY_COMMANDS.slice!.用法);
       const axis = p.位置[1];

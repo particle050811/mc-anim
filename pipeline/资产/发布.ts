@@ -1,6 +1,6 @@
 // 挂 GitHub Release 发字节（用户 10-25「地形太大了 放 release」「应力转动所有素材都公开」，见 docs/决策/0006-挂Release发字节.md）：
 // <作品根>/随发布.toml 写 仓库、标签、段；anim assets pack 照它现算要发的字节（随仓库.ts 的 算随仓库，和随仓库发同一个集合）和这些段声明的地形包，
-// 在 <数据根>/cache/发布/ 打成 tar、写 <作品根>/发布锁.json；--上传 用 gh 建 Release、传还没传的附件。anim assets pull 按发布锁下载、核 sha、解进数据根。
+// 在 <数据根>/cache/发布/ 打成 tar、写 <作品根>/发布锁.json；--upload 用 gh 建 Release、传还没传的附件。anim assets pull 按发布锁下载、核 sha、解进数据根。
 // 字节在 私有/ 库、可见性不是私有的（用户 11-13 定全部公开，库不搬，docs/决策/0017-全部公开.md）也发：tar 里放在 私有/<sha 前两位>/<sha256>，锁记在 私有字节，pull 放回 私有/。
 // 附件名只用 ASCII（GitHub 会改掉非 ASCII 的附件名）、按内容取：字节 bytes-<sha 列表的 sha 前 12 位>.tar，地形 terrain-<版本>.tar。内容变了名字跟着变，
 // 旧附件留在 Release 上，和 store/ 一样只增不改；tar 每次打出来字节都不同（时间戳），所以发布锁里已有的同名附件不重打。
@@ -149,7 +149,7 @@ export const packRelease = async (c: CheckContext, releaseTable: ReleaseManifest
     if (!fs.existsSync(sourceDir)) throw new Error(`数据根没有地形包 ${pack}/${version}，这台机器打不了`);
     const actual = await packManifest(sourceDir);
     const v = terrainTable[pack]!;
-    if (actual.清单sha256 !== v.清单sha256) throw new Error(`地形包 ${pack}/${version} 和 assets/地形版本.json 记的清单指纹不一致，先 anim check --深`);
+    if (actual.清单sha256 !== v.清单sha256) throw new Error(`地形包 ${pack}/${version} 和 assets/地形版本.json 记的清单指纹不一致，先 anim check --deep`);
     const tarPath = path.join(dir, terrainAttachName);
     console.log(`打 ${terrainAttachName}：地形包 ${pack}，${actual.文件数} 个文件 ${(actual.大小 / 1e9).toFixed(2)} GB`);
     const fileNames = fs.readdirSync(sourceDir).sort();
@@ -159,7 +159,7 @@ export const packRelease = async (c: CheckContext, releaseTable: ReleaseManifest
   return { releaseLock: { 仓库: releaseTable.仓库, 标签: releaseTable.标签, 附件: attachments } satisfies ReleaseLock, newPacks, expected };
 };
 
-/** --上传：没有这个 Release 就建，再传 Release 上还没有的附件（本机 cache/发布/ 里要有） */
+/** --upload：没有这个 Release 就建，再传 Release 上还没有的附件（本机 cache/发布/ 里要有） */
 export const uploadRelease = async (releaseLock: ReleaseLock, dataRoot: string) => {
   const viewResult = tryRun(['gh', 'release', 'view', releaseLock.标签, '--repo', releaseLock.仓库, '--json', 'assets', '--jq', '.assets[].name']);
   if (viewResult.退出码 !== 0) {
@@ -190,7 +190,7 @@ const placeInLib = (sourcePath: string, dataRoot: string, s: string, storage: 's
   return true;
 };
 
-/** 先问一下附件在不在：Release 比发布锁旧（pack 了还没 --上传）时是 404，curl 的重试要耗好几分钟才报，也看不出原因。连不上这类返回 null，交给下载那边重试 */
+/** 先问一下附件在不在：Release 比发布锁旧（pack 了还没 --upload）时是 404，curl 的重试要耗好几分钟才报，也看不出原因。连不上这类返回 null，交给下载那边重试 */
 const attachmentNotUploaded = (url: string) =>
   new Promise<boolean>((resolve) => {
     execFile('curl', ['-sIL', '-o', os.devNull, '-w', '%{http_code}', '--connect-timeout', '20', '--max-time', '60', url], (err, stdout) => resolve(String(stdout).trim().endsWith('404')));
@@ -211,7 +211,7 @@ export const pullRelease = async (releaseLock: ReleaseLock, dataRoot: string, do
     const f = path.join(dir, a.名);
     if (!(fs.existsSync(f) && fs.statSync(f).size === a.大小 && (await streamSha256(f)) === a.sha256)) {
       const url = `${downloadRoot}/${releaseLock.仓库}/releases/download/${encodeURIComponent(releaseLock.标签)}/${encodeURIComponent(a.名)}`;
-      if (await attachmentNotUploaded(url)) throw new Error(`Release ${releaseLock.标签} 上没有 ${a.名}（${releaseLock.仓库}，HTTP 404）：发布锁比 Release 新，这份代码 pack 过但附件还没传。要在打包的那台机器上 anim assets pack --上传，传完才能用`);
+      if (await attachmentNotUploaded(url)) throw new Error(`Release ${releaseLock.标签} 上没有 ${a.名}（${releaseLock.仓库}，HTTP 404）：发布锁比 Release 新，这份代码 pack 过但附件还没传。要在打包的那台机器上 anim assets pack --upload，传完才能用`);
       console.log(`下 ${a.名}（${(a.大小 / 1e6).toFixed(0)} MB）`);
       const tmp = `${f}.下载中`;
       // -C - 断点续传：上回没下完的接着下。走代理时连接会半路断（Windows 上见过 schannel「server closed abruptly」），

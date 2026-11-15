@@ -1,12 +1,12 @@
-// anim verify [<选择器…>] [--渲] [--到预览 <主题>]：指纹和认可记录不一样的段抽帧比，超过阈值就要 accept。比的是切片（决策/0014：每段渲出来就是成片的一截，按输出帧）。
-//   变了的帧、要看一眼的帧出 旧|新|差 的并排图进预览（没给 --到预览 就新开一个「验收」），附 00-说明.md。
+// anim verify [<选择器…>] [--render] [--to-preview <主题>]：指纹和认可记录不一样的段抽帧比，超过阈值就要 accept。比的是切片（决策/0014：每段渲出来就是成片的一截，按输出帧）。
+//   变了的帧、要看一眼的帧出 旧|新|差 的并排图进预览（没给 --to-preview 就新开一个「验收」），附 00-说明.md。
 //   认可记录的尺寸、帧数和现在的切片对不上（CRF1 时代的 1440p、按编排帧率的帧数）：报「这段没有现行认可，要重新认可」，算不过，不比。
-// anim verify accept <段…> --理由 <…> [--渲]：把现在的切片记成认可版，写 <作品根>/认可/<平台>/<段键>.toml（进 Git）；一次可认可多段、共用一个理由，
+// anim verify accept <段…> --reason <…> [--render]：把现在的切片记成认可版，写 <作品根>/认可/<平台>/<段键>.toml（进 Git）；一次可认可多段、共用一个理由，
 //   但要逐段点名（一个选择器对上多段就拒，见 认可.ts 的 点名不唯一）。认可文件都写完再从这版的切片抽认可参考。
-// anim verify 补参考 [<选择器…>]：从认可那版的切片抽出认可参考，之后认可那版删了也能比像素。
-// anim verify 逐帧 <选择器…> [--帧 …] --存 <名> | --比 <名> [--留图 <目录>]：每帧 PNG 的 sha 存一份、再渲一次比，见 逐帧校验.ts。
+// anim verify backfill [<选择器…>]：从认可那版的切片抽出认可参考，之后认可那版删了也能比像素。
+// anim verify frames <选择器…> [--frames …] --save <名> | --compare <名> [--keep-images <目录>]：每帧 PNG 的 sha 存一份、再渲一次比，见 逐帧校验.ts。
 // 一律按视频级比；真要抽帧解码时才过放行闸（一次命令只过一次；指纹和认可版一样的段不解码、不等闸，用户 10-30 授权），
-// 缺切片加 --渲 时渲染照旧过渲染闸（和 anim film 同一条路，渲/渲段.ts）。指纹一样、但段签说同一指纹重渲过（签名和认可记录不一样，或切片大小改于和段签记的不一样）的照样比：
+// 缺切片加 --render 时渲染照旧过渲染闸（和 anim film 同一条路，渲/渲段.ts）。指纹一样、但段签说同一指纹重渲过（签名和认可记录不一样，或切片大小改于和段签记的不一样）的照样比：
 // 这时现在的切片不是认可那版，认可那版的像素只取认可参考，或段签证明是认可那版的切片，不拿现在的冒充。
 // 新这一版的签名读段签（pipeline/段签/，缺了从切片当场派生），哈希和认可版不一样的帧解切片取像素（用户 11-02 定的比法：比小块平均颜色，压缩噪声在门槛以下）；
 // 认可那版的像素按 认可参考 → 认可那版的切片 → 只比块均值 取。现在这个指纹的切片都没了、又要看像素，报要重渲。
@@ -38,7 +38,7 @@ const level = '视频' as const;
 
 type Prepared = SegArtifact & { 有: boolean; hasSegStamp: boolean };
 
-/** 每段现在的切片；缺的 --渲 就渲（和 anim film 同一条路），不渲就记下 */
+/** 每段现在的切片；缺的 --render 就渲（和 anim film 同一条路），不渲就记下 */
 const prepSlices = async (segments: SegInfo[], renderMissing: boolean, runRecord: RunRecord): Promise<Prepared[]> => {
   const allSegments = await loadAllSegments();
   const products = await segmentProducts(allSegments, segments, level);
@@ -67,7 +67,7 @@ const writePreviewNote = (previewDir: string, items: { 键: string; comparedWith
     `# anim verify 的并排图`,
     '',
     `${new Date().toISOString().slice(0, 16).replace('T', ' ')} UTC。每张图上排是 旧 | 新 | 差×4（各通道差的最大值乘 4），红框是平均差最大的那块；下排是红框附近放大 6 倍。`,
-    '文件名带「变了」的要看过、确认是要的改动再 `anim verify accept <段…> --理由 …`；带「看一眼」的没判失败（16×16 块平均差在看一眼的档里），只是给你看一眼。',
+    '文件名带「变了」的要看过、确认是要的改动再 `anim verify accept <段…> --reason …`；带「看一眼」的没判失败（16×16 块平均差在看一眼的档里），只是给你看一眼。',
     '没有认可那版像素、只比了块均值的（下面标「块均值」），图只有现在这一张。',
     '',
     ...items.flatMap((x) => [`## ${x.键}（和${x.comparedWith}比）`, '', ...x.帧.map((f) => `- 第 ${f.帧} 帧：${f.结论}${f.说明 ? `，${f.说明}` : ''}`), '']),
@@ -77,21 +77,21 @@ const writePreviewNote = (previewDir: string, items: { 键: string; comparedWith
   fs.writeFileSync(path.join(previewDir, '00-说明.md'), lines.join('\n'), 'utf8');
 };
 
-const perFrameNote = '--存 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --帧 是整段，不覆盖已有的）；--比 再渲一次、列出不同的帧，有不同退出码 1：照基准存的帧连着渲，给了 --帧 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--留图 给空目录，在 --存 时留全部 PNG，在 --比 时只留不同的帧。不写母版，不碰段签和认可';
+const perFrameNote = '--save 每帧 PNG 的 sha 写到 run/逐帧校验/<作品>/<名>/<段键>.tsv（不给 --frames 是整段，不覆盖已有的）；--compare 再渲一次、列出不同的帧，有不同退出码 1：照基准存的帧连着渲，给了 --frames 就渲到其中最后一帧为止（前面的帧不省，隔开渲比不了）。--keep-images 给空目录，在 --save 时留全部 PNG，在 --compare 时只留不同的帧。不写母版，不碰段签和认可';
 
 const verifyCmd: Command = {
-  用法: 'verify [<选择器…>] [--渲] [--到预览 <主题>]；verify accept <段…> --理由 <…> [--渲]；verify 补参考 [<选择器…>]；verify 逐帧 <选择器…> [--帧 <a-b|帧,帧>] --存 <名>|--比 <名> [--留图 <目录>]',
-  说明: `指纹变了的段抽帧和认可版比（比切片，按输出帧；--渲 先把缺的切片渲出来），超过阈值就要 anim verify accept；认可记录是旧档的（1440p、编排帧数）报要重新认可。逐帧：${perFrameNote}`,
+  用法: 'verify [<选择器…>] [--render] [--to-preview <主题>]；verify accept <段…> --reason <…> [--render]；verify backfill [<选择器…>]；verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名>|--compare <名> [--keep-images <目录>]',
+  说明: `指纹变了的段抽帧和认可版比（比切片，按输出帧；--render 先把缺的切片渲出来），超过阈值就要 anim verify accept；认可记录是旧档的（1440p、编排帧数）报要重新认可。frames：${perFrameNote}`,
   跑: async (args, runRecord) => {
     if (args[0] === 'accept') return acceptCmd.跑(args.slice(1), runRecord);
-    if (args[0] === '补参考') return backfillRef.跑(args.slice(1), runRecord);
-    if (args[0] === '逐帧') return perFrameCmd.跑(args.slice(1), runRecord);
-    const p = parseArgs(args, { 值: ['--到预览'], toggles: ['--渲'] });
+    if (args[0] === 'backfill') return backfillRef.跑(args.slice(1), runRecord);
+    if (args[0] === 'frames') return perFrameCmd.跑(args.slice(1), runRecord);
+    const p = parseArgs(args, { 值: ['--to-preview'], toggles: ['--render'] });
     const segments = p.位置.length ? await selectSegs(p.位置) : await loadAllSegments();
     const threshold = readThresholds();
-    const slices = await prepSlices(segments, p.toggles.has('--渲'), runRecord);
+    const slices = await prepSlices(segments, p.toggles.has('--render'), runRecord);
     const previewOpts = { 目录: null as string | null };
-    const getPreviewDir = () => (previewOpts.目录 ??= newPreviewDir(p.值['--到预览'] ?? '验收'));
+    const getPreviewDir = () => (previewOpts.目录 ??= newPreviewDir(p.值['--to-preview'] ?? '验收'));
     const previewItems: Parameters<typeof writePreviewNote>[1] = [];
     let failed = 0;
     let glanceCount = 0;
@@ -120,18 +120,18 @@ const verifyCmd: Command = {
       const fingerprint = x.画面指纹.指纹;
       if (!x.有 && !x.hasSegStamp) {
         failed++;
-        runRecord.log('错误', `${segKey}：没有现在指纹 ${fingerprint.slice(0, 16)} 的切片和段签（anim film ${segKey}，或加 --渲）`);
+        runRecord.log('错误', `${segKey}：没有现在指纹 ${fingerprint.slice(0, 16)} 的切片和段签（anim film ${segKey}，或加 --render）`);
         continue;
       }
       if (!approval) {
         failed++;
-        runRecord.log('错误', `${segKey}：还没认可过（看过切片后 anim verify accept ${segKey} --理由 …）`);
+        runRecord.log('错误', `${segKey}：还没认可过（看过切片后 anim verify accept ${segKey} --reason …）`);
         continue;
       }
       const legacyRecord = approvalStaleReason(approval, x.outputFrames);
       if (legacyRecord) {
         failed++;
-        runRecord.log('错误', `${segKey}：这段没有现行认可，要重新认可（${legacyRecord}）：看过切片后 anim verify accept ${segKey} --理由 …`);
+        runRecord.log('错误', `${segKey}：这段没有现行认可，要重新认可（${legacyRecord}）：看过切片后 anim verify accept ${segKey} --reason …`);
         continue;
       }
       const sameFingerprint = approval.指纹 === fingerprint;
@@ -152,10 +152,10 @@ const verifyCmd: Command = {
       const segStamp = await fetchSegStamp(x, { waitGate, runRecord });
       if (!segStamp) {
         failed++;
-        runRecord.log('错误', `${segKey}：没有段签、切片也没了：要重渲才能验收（anim film ${segKey} --重渲）`);
+        runRecord.log('错误', `${segKey}：没有段签、切片也没了：要重渲才能验收（anim film ${segKey} --rerender）`);
         continue;
       }
-      if (segStamp.沿用) console.log(`· ${segKey}：现在的指纹是 anim 认指纹 沿用 ${segStamp.沿用.自.slice(0, 16)} 的切片，签名、声音都是那一版的；要拿新代码的整段比，先 anim --低优先 film ${segKey} --重渲`);
+      if (segStamp.沿用) console.log(`· ${segKey}：现在的指纹是 anim reuse 沿用 ${segStamp.沿用.自.slice(0, 16)} 的切片，签名、声音都是那一版的；要拿新代码的整段比，先 anim --low-priority film ${segKey} --rerender`);
       const newMaster = await segStampSlice(segStamp, x);
       let r: ScanResult;
       try {
@@ -170,7 +170,7 @@ const verifyCmd: Command = {
       } catch (e) {
         if (!(e instanceof RefMismatchError) && !(e instanceof MissingMasterError)) throw e;
         failed++;
-        runRecord.log('错误', `${segKey}：${e.message}${e instanceof MissingMasterError ? `：要重渲才能验收（anim film ${segKey} --重渲）` : ''}`);
+        runRecord.log('错误', `${segKey}：${e.message}${e instanceof MissingMasterError ? `：要重渲才能验收（anim film ${segKey} --rerender）` : ''}`);
         continue;
       }
       logReport(segKey, `认可版（${approval.指纹.slice(0, 16)}，${approval.认可于}）`, r);
@@ -181,28 +181,28 @@ const verifyCmd: Command = {
       console.log(`变了、要看一眼的帧（旧|新|差 并排）在 ${previewOpts.目录}`);
     }
     if (glanceCount) console.log(`${glanceCount} 帧在看一眼的档里，不算不过`);
-    console.log(failed ? `\n${failed} 段没过：缺切片的先渲；旧档的、变了的看过画面、确认是要的改动，再 anim verify accept <段…> --理由 …` : `\n${segments.length} 段都过了`);
+    console.log(failed ? `\n${failed} 段没过：缺切片的先渲；旧档的、变了的看过画面、确认是要的改动，再 anim verify accept <段…> --reason …` : `\n${segments.length} 段都过了`);
     return failed ? 1 : 0;
   },
 };
 
 const acceptCmd: Command = {
-  用法: 'verify accept <段…> --理由 <…> [--渲]',
+  用法: 'verify accept <段…> --reason <…> [--render]',
   说明: '把现在的切片记成认可版（写 <作品根>/认可/<平台>/<段键>.toml）；一次可认可多段、共用一个理由，要逐段点名',
   跑: async (args, runRecord) => {
-    const p = parseArgs(args, { 值: ['--理由'], toggles: ['--渲'] });
-    if (!p.位置.length) throw new UsageError('要给段：anim verify accept <段…> --理由 …');
-    const reason = p.值['--理由']?.trim();
-    if (!reason) throw new UsageError('要写 --理由（这次画面为什么变、谁看过）');
+    const p = parseArgs(args, { 值: ['--reason'], toggles: ['--render'] });
+    if (!p.位置.length) throw new UsageError('要给段：anim verify accept <段…> --reason …');
+    const reason = p.值['--reason']?.trim();
+    if (!reason) throw new UsageError('要写 --reason（这次画面为什么变、谁看过）');
     const segments = await selectSegs(p.位置);
     const ambiguous = findAmbiguous(p.位置, segments, matchSelector);
     if (ambiguous.length) {
-      throw new UsageError(`认可要逐段点名：${ambiguous.map((y) => `「${y.selector}」对上了 ${y.段.length} 段`).join('、')}；都看过的话写 anim verify accept ${[...new Set(ambiguous.flatMap((y) => y.段))].join(' ')} --理由 …`);
+      throw new UsageError(`认可要逐段点名：${ambiguous.map((y) => `「${y.selector}」对上了 ${y.段.length} 段`).join('、')}；都看过的话写 anim verify accept ${[...new Set(ambiguous.flatMap((y) => y.段))].join(' ')} --reason …`);
     }
-    const slices = await prepSlices(segments, p.toggles.has('--渲'), runRecord);
+    const slices = await prepSlices(segments, p.toggles.has('--render'), runRecord);
     // 先查齐再写：有一段缺切片就一段都不认可
     const missing = slices.filter((x) => !x.有);
-    if (missing.length) throw new Error(`${missing.map((x) => `${x.段.键}（${x.画面指纹.指纹.slice(0, 16)}）`).join('、')} 没有现在指纹的切片：先 anim film ${missing.map((x) => x.段.键).join(' ')}，或加 --渲`);
+    if (missing.length) throw new Error(`${missing.map((x) => `${x.段.键}（${x.画面指纹.指纹.slice(0, 16)}）`).join('、')} 没有现在指纹的切片：先 anim film ${missing.map((x) => x.段.键).join(' ')}，或加 --render`);
     if (slices.length > 1) console.log(`== 认可 ${slices.length} 段：${slices.map((x) => x.段.键).join('、')}`);
     // 签名取自段签（和 扫母版 同一份；缺了从切片派生，要解码：整批过一次放行闸）
     const approvalPass = lazyPassGate();
@@ -211,7 +211,7 @@ const acceptCmd: Command = {
     for (const x of slices) {
       const segStamp = await fetchSegStamp(x, { waitGate: approvalPass, runRecord });
       // 认可参考要从这版的切片抽（段签不存像素）：段签记的那份切片不在就不认可，免得以后只能比块均值
-      if (!segStamp || !(await segStampSlice(segStamp, x))) throw new Error(`${x.段.键} 现在指纹的切片（${x.画面指纹.指纹.slice(0, 16)}）不在、或不是段签记的那份，认可参考抽不了：要重渲才能认可（anim film ${x.段.键} --重渲）`);
+      if (!segStamp || !(await segStampSlice(segStamp, x))) throw new Error(`${x.段.键} 现在指纹的切片（${x.画面指纹.指纹.slice(0, 16)}）不在、或不是段签记的那份，认可参考抽不了：要重渲才能认可（anim film ${x.段.键} --rerender）`);
       segStamps.push(segStamp);
     }
     const signatures: ScanResult['签名'][] = segStamps.map((g) => g.签名);
@@ -246,7 +246,7 @@ const acceptCmd: Command = {
         if (refParamsResult === '对不上' || refParamsResult === '没有来源') runRecord.log('警告', `${x.段.键} 的认可参考没备上（${refParamsResult}），这版的切片删了以后 verify 只能比块均值`);
         else if (refParamsResult !== '已有') runRecord.产物.push(referenceFile(approval, platformId()));
       } catch (e) {
-        runRecord.log('警告', `${x.段.键} 已认可，认可参考没备上（${(e as Error).message.split('\n')[0]}）；之后 anim verify 补参考 ${x.段.键}`);
+        runRecord.log('警告', `${x.段.键} 已认可，认可参考没备上（${(e as Error).message.split('\n')[0]}）；之后 anim verify backfill ${x.段.键}`);
       }
     }
     console.log('记得把认可文件和这次的改动一起提交');
@@ -254,7 +254,7 @@ const acceptCmd: Command = {
 };
 
 const backfillRef: Command = {
-  用法: 'verify 补参考 [<选择器…>]',
+  用法: 'verify backfill [<选择器…>]',
   说明: '给本平台的认可记录备认可参考（认可那版的抽样帧）：从段签证明是认可那版的切片抽，记下各帧 yuv sha 的旁记；不是现行认可的（尺寸和切片对不上）跳过；只新增文件',
   跑: async (args, runRecord) => {
     const p = parseArgs(args, {});
@@ -292,20 +292,20 @@ const backfillRef: Command = {
 };
 
 const perFrameCmd: Command = {
-  用法: 'verify 逐帧 <选择器…> [--帧 <a-b|帧,帧>] --存 <名>|--比 <名> [--留图 <目录>]',
+  用法: 'verify frames <选择器…> [--frames <a-b|帧,帧>] --save <名>|--compare <名> [--keep-images <目录>]',
   说明: perFrameNote,
   跑: async (args, runRecord) => {
-    const p = parseArgs(args, { 值: ['--帧', '--存', '--比', '--留图'] });
+    const p = parseArgs(args, { 值: ['--frames', '--save', '--compare', '--keep-images'] });
     if (!p.位置.length) throw new UsageError('要给选择器（段键、段名、编号、场键、章）');
-    const [saveName, compareName] = [p.值['--存'], p.值['--比']];
-    if ((saveName === undefined) === (compareName === undefined)) throw new UsageError('--存 <名> 和 --比 <名> 要给一个，只给一个');
+    const [saveName, compareName] = [p.值['--save'], p.值['--compare']];
+    if ((saveName === undefined) === (compareName === undefined)) throw new UsageError('--save <名> 和 --compare <名> 要给一个，只给一个');
     const checkName = (saveName ?? compareName)!;
     if (!isValidTopic(checkName)) throw new UsageError(`名字「${checkName}」不能当文件夹名（不能有 <>:"/\\|?* 和控制字符，不以点或空格开头结尾）`);
-    const frames = p.值['--帧'] ? parseFrames(p.值['--帧']) : null;
+    const frames = p.值['--frames'] ? parseFrames(p.值['--frames']) : null;
     const cues = await runCuesBeforeRender();
     const segments = await selectSegs(p.位置);
     checkSelectedSegCues(cues, segments);
-    return runPerFrame(segments, { checkMode: saveName !== undefined ? '存' : '比', 名: checkName, 帧: frames, keepDir: p.值['--留图'] ?? null, runRecord });
+    return runPerFrame(segments, { checkMode: saveName !== undefined ? '存' : '比', 名: checkName, 帧: frames, keepDir: p.值['--keep-images'] ?? null, runRecord });
   },
 };
 

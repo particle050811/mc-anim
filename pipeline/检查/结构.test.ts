@@ -37,7 +37,7 @@ describe('结构', () => {
       'pipeline/读.ts': "import { manifest } from '../作品/应力转动/清单.ts';\nimport 乙 from '../作品/应力转动/段/7-乙/段.ts';\nexport const n = [manifest, 乙];\n",
       '库/角色/甲.ts': "import { exception } from '../../engine/core/例外.ts';\nexport const 甲 = exception;\nexport const ns = 'http://www.w3.org/2000/svg';\n",
     });
-    expect((await runRule('结构', root)).violations).toEqual([]);
+    expect((await runRule('structure', root)).violations).toEqual([]);
   });
 
   it('段互引、反向分层、引核对、场引别的场、pipeline 引画面都拦', async () => {
@@ -52,7 +52,7 @@ describe('结构', () => {
       '作品/应力转动/场/7-场二/时间线.ts': "import { 布局 } from '../7-场一/布局.ts';\nexport const 起 = 布局;\n",
       'pipeline/读.ts': "import 画 from '../作品/应力转动/段/7-甲/画面.tsx';\nexport const n = 画;\n",
     });
-    const v = (await runRule('结构', root)).violations.join('\n');
+    const v = (await runRule('structure', root)).violations.join('\n');
     expect(v).toMatch(/段不许引用别的段：作品\/应力转动\/段\/7-乙\/画面.tsx → 作品\/应力转动\/段\/7-甲\/画面.tsx/);
     expect(v).toMatch(/分层方向反了：engine 不能引用 库/);
     expect(v).toMatch(/不许引用 核对\/：作品\/应力转动\/段\/7-甲\/编排.ts/);
@@ -69,10 +69,10 @@ describe('结构', () => {
       '库/空.ts': 'export const 空 = 1;\n',
       '作品/应力转动/段/7-乙/画面.tsx': "import 甲 from '../7-甲/画面.tsx';\nimport 图 from 'asset:不存在/某件';\nexport default () => [甲, 图];\n",
     };
-    const result = (await runRule('结构', makeRepo(base(), twoScenes, files))).violations.join('\n');
+    const result = (await runRule('structure', makeRepo(base(), twoScenes, files))).violations.join('\n');
     expect(result).toMatch(/打包失败，依赖图不全：库\/坏.ts:1/);
     expect(result).toMatch(/段不许引用别的段：作品\/应力转动\/段\/7-乙\/画面.tsx → 作品\/应力转动\/段\/7-甲\/画面.tsx/);
-    const report = (await runRule('资产', makeRepo(base(), twoScenes, files))).violations.join('\n');
+    const report = (await runRule('assets', makeRepo(base(), twoScenes, files))).violations.join('\n');
     expect(report).toMatch(/依赖图不全/);
     expect(report).toMatch(/asset:引用的「不存在\/某件」没在资产表登记/);
   });
@@ -82,14 +82,14 @@ describe('结构', () => {
       '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nimport { 帧 } from './帮.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 帧, 宽: 4, 高: 4, 地形: [] });\n",
       '作品/应力转动/段/7-甲/帮.ts': "import { interpolate } from 'remotion';\nimport 图 from 'asset:贴图/甲';\nexport const 帧 = 10;\nexport const x = [interpolate, 图];\n",
     });
-    const v = (await runRule('结构', root)).violations.join('\n');
+    const v = (await runRule('structure', root)).violations.join('\n');
     expect(v).toMatch(/纯模块的闭包里不能有 remotion：作品\/应力转动\/段\/7-甲\/段.ts → 作品\/应力转动\/段\/7-甲\/帮.ts → remotion/);
     expect(v).toMatch(/纯模块的闭包里不能有 asset:/);
   });
 
   it('渲染代码读时刻的 依据（点、下标、解构）要拦，透传和 交界.json 的不拦', async () => {
     const r = await runRule(
-      '结构',
+      'structure',
       makeRepo(base(), {
         '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
         '作品/应力转动/段/7-甲/画面.tsx': [
@@ -110,7 +110,7 @@ describe('结构', () => {
 
   it('渲染代码 import assets/地形版本.json 要拦', async () => {
     const r = await runRule(
-      '结构',
+      'structure',
       makeRepo(base(), {
         'assets/地形版本.json': JSON.stringify({ 包: {} }),
         '作品/应力转动/段/7-甲/段.ts': "import { defineSeg } from '@engine/段/段定义.ts';\nexport default defineSeg({ 场: '7-场一', 秒: 10, 宽: 4, 高: 4, 地形: [] });\n",
@@ -135,7 +135,7 @@ describe('结构', () => {
       ].join('\n'),
       '作品/应力转动/段/7-甲/图.png': Buffer.from([0x89, 0x50]),
     });
-    const v = (await runRule('结构', root)).violations;
+    const v = (await runRule('structure', root)).violations;
     expect(v.filter((x) => x.includes('getInputProps'))).toHaveLength(2); // import 和调用各一处，设置.ts 不算
     expect(v.join('\n')).toMatch(/画面.tsx:3 渲染代码里不许用 Math.random/);
     expect(v.join('\n')).toMatch(/画面.tsx:3 渲染代码里不许用 Date.now/);
@@ -159,7 +159,7 @@ describe('结构', () => {
       ].join('\n'),
     };
     for (const work of ['夹具甲', '夹具乙']) {
-      expect((await runRule('结构', makeRepo(twoWorks(), sharedRefs), { 作品: work })).violations).toEqual([]);
+      expect((await runRule('structure', makeRepo(twoWorks(), sharedRefs), { 作品: work })).violations).toEqual([]);
     }
   });
 
@@ -171,14 +171,14 @@ describe('结构', () => {
       '作品/夹具甲/核对/看看/画面.tsx': "import { 角色 } from '../../../夹具乙/角色.ts';\nexport default () => <div>{角色}</div>;\n",
       '作品/夹具乙/段/1-开场/画面.tsx': "import { 角色 } from '../../../夹具甲/角色.ts';\nexport default () => <div>{角色}</div>;\n",
     };
-    const violationText = (await runRule('结构', makeRepo(twoWorks(), mutualRefs), { 作品: '夹具甲' })).violations.join('\n');
+    const violationText = (await runRule('structure', makeRepo(twoWorks(), mutualRefs), { 作品: '夹具甲' })).violations.join('\n');
     expect(violationText).toMatch(/作品不许引用别的作品：作品\/夹具甲\/段\/1-开场\/画面.tsx → 作品\/夹具乙\/段\/1-开场\/画面.tsx/);
     expect(violationText).toMatch(/作品不许引用别的作品：作品\/夹具甲\/场\/1-场一\/时间线.ts → 作品\/夹具乙\/场\/1-场一\/末态.ts/);
     expect(violationText).toMatch(/作品不许引用别的作品：作品\/夹具甲\/角色.ts → 作品\/夹具乙\/角色.ts/);
     expect(violationText).toMatch(/作品不许引用别的作品：作品\/夹具甲\/核对\/看看\/画面.tsx → 作品\/夹具乙\/角色.ts/);
     expect(violationText).not.toMatch(/段不许引用别的段|场只许引用上一场/);
     expect(violationText).not.toMatch(/作品\/夹具乙\/段\/1-开场\/画面.tsx →/); // 乙自己的边归查乙时报
-    const secondViolations = (await runRule('结构', makeRepo(twoWorks(), mutualRefs), { 作品: '夹具乙' })).violations.join('\n');
+    const secondViolations = (await runRule('structure', makeRepo(twoWorks(), mutualRefs), { 作品: '夹具乙' })).violations.join('\n');
     expect(secondViolations).toMatch(/作品不许引用别的作品：作品\/夹具乙\/段\/1-开场\/画面.tsx → 作品\/夹具甲\/角色.ts/);
   });
 
@@ -276,7 +276,7 @@ describe('pipeline 渲染器统一入口', () => {
       'pipeline/深路径.cjs': `// ${esmPath}`,
       'pipeline/错误.test.cts': `vi.mock('${pkg}');\nvi.doMock('${pkg}');`,
     };
-    const violations = (await runRule('结构', makeRepo(base(), files))).violations;
+    const violations = (await runRule('structure', makeRepo(base(), files))).violations;
     expect(violations).toHaveLength(5);
     for (const [p, sourceText] of Object.entries(files)) {
       for (const q of checkRendererEntry(p, String(sourceText))) expect(violations).toContain(`${p}:${q.行} ${q.文本}`);
@@ -286,6 +286,6 @@ describe('pipeline 渲染器统一入口', () => {
       'pipeline/合法.ts': `export type { HeadlessBrowser } from '${pkg}';`,
       'pipeline/合法.test.ts': `vi.mock('./渲/渲染器.ts');`,
     };
-    expect((await runRule('结构', makeRepo(base(), validFiles))).violations).toEqual([]);
+    expect((await runRule('structure', makeRepo(base(), validFiles))).violations).toEqual([]);
   });
 });

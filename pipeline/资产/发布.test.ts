@@ -81,7 +81,7 @@ describe('挂 Release 发字节', () => {
     const savedNoProxy = process.env.NO_PROXY;
     process.env.NO_PROXY = '127.0.0.1';
     try {
-      await expect(pullRelease(releaseLock({ 附件: [releaseLock().附件[1]!] }), dataRoot, `http://127.0.0.1:${port}`)).rejects.toThrow(/Release assets-v1 上没有 terrain-abc123\.tar.*anim assets pack --上传/);
+      await expect(pullRelease(releaseLock({ 附件: [releaseLock().附件[1]!] }), dataRoot, `http://127.0.0.1:${port}`)).rejects.toThrow(/Release assets-v1 上没有 terrain-abc123\.tar.*anim assets pack --upload/);
       expect(requestLog).toEqual(['HEAD /a/b/releases/download/assets-v1/terrain-abc123.tar']);
       expect(fs.existsSync(path.join(dataRoot, 'terrain'))).toBe(false);
     } finally {

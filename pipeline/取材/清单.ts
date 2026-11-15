@@ -17,7 +17,7 @@ export type SourcingEntry = {
   前置: string[];
   要开游戏: boolean;
   待迁移?: string;
-  /** 步骤只是记录（网格头反填的范围，网格配方.ts）：锁里那一版重导对不上，anim extract 不跑，--只打印 照样列 */
+  /** 步骤只是记录（网格头反填的范围，网格配方.ts）：锁里那一版重导对不上，anim extract 不跑，--print-only 照样列 */
   不重导?: string;
   公开版?: string;
   /** 产物登记在这部作品的资产表：只在选了它时跑、查 */
@@ -26,14 +26,14 @@ export type SourcingEntry = {
   输入: Record<string, string>;
   产物: Record<string, string>;
   说明?: string;
-  /** --登记 写进资产表的可见性；不写时 公开版="提取" 的取「提取」，别的要写 */
+  /** --register 写进资产表的可见性；不写时 公开版="提取" 的取「提取」，别的要写 */
   可见性?: Visibility;
   /** 产物的许可取 jar 的哪几部分：数组 = 全部产物，表 = 按 id 第一段（类别）分别写；没写的按类别默认（许可.ts 默认部分） */
   许可部分?: LicensePart[] | Record<string, LicensePart[]>;
 };
 /**
  * 根：「到」相对哪个目录，游戏 = anim 配置 ANIM_GAME，mc资源 = ANIM_MC_ASSETS（资源索引在那），
- * 数据 = 数据根（ANIM_DATA；官方映射这类不许再分发、本机按「下载」自取的放 cache/映射/，anim extract --下载 取）。
+ * 数据 = 数据根（ANIM_DATA；官方映射这类不许再分发、本机按「下载」自取的放 cache/映射/，anim extract --download 取）。
  * 也认：「到」没有时依次再找的位置，写成「<根>:<相对路径>」（早先放在游戏目录里的照样认）
  */
 export const jarRootValues = ['游戏', 'mc资源', '数据'] as const;
@@ -117,19 +117,19 @@ export const readManifest = () => {
   return parseManifest(fs.readFileSync(path.join(dir, 'extract.toml'), 'utf8'), fs.readFileSync(path.join(dir, 'jars.toml'), 'utf8'), extraFiles);
 };
 
-/** 能直接跑的：有步骤、不用开游戏、不待迁移、不是不重导（--全部 就是这些） */
+/** 能直接跑的：有步骤、不用开游戏、不待迁移、不是不重导（--all 就是这些） */
 export const canRunDirectly = (e: SourcingEntry) => e.步骤.length > 0 && !e.要开游戏 && !e.待迁移 && !e.不重导;
 
 /** 条目属于所选作品（没写「作品」的各作品都算） */
 export const belongsToWork = (e: SourcingEntry, work: string) => e.作品 === undefined || e.作品 === work;
 
-/** 名称或组名 → 条目（去重、保持先后）；--全部 见 可直接跑，给了 作品 时不选写了别的作品的 */
+/** 名称或组名 → 条目（去重、保持先后）；--all 见 可直接跑，给了 作品 时不选写了别的作品的 */
 export const selectEntries = (q: SourcingManifest, names: readonly string[], all: boolean, work?: string): SourcingEntry[] => {
   const out: string[] = [];
   if (all) out.push(...[...q.entryMap.values()].filter((e) => canRunDirectly(e) && (work === undefined || belongsToWork(e, work))).map((e) => e.名称));
   for (const n of names) {
     const got = q.entryMap.has(n) ? [n] : q.组[n];
-    if (!got) throw new Error(`取材清单里没有「${n}」（条目或组）；anim extract --列出 看有哪些`);
+    if (!got) throw new Error(`取材清单里没有「${n}」（条目或组）；anim extract --list 看有哪些`);
     for (const k of got) if (!out.includes(k)) out.push(k);
   }
   return out.map((k) => {
@@ -140,8 +140,8 @@ export const selectEntries = (q: SourcingManifest, names: readonly string[], all
 };
 
 /**
- * 产物清单：这条配方按资产锁展开的产物（[{id, 文件}] 的 JSON 文件；--新 要的 id 也在里面），给按锁反推要导什么的脚本用（导出音效.py --按产物）。
- * 产物来源：脚本写的 JSON {文件: [用到的 jar 路径…]}（文件相对暂存目录），--登记 照它给每件产物记真正用到的 jar；不写就记配方「需要」的全部 jar
+ * 产物清单：这条配方按资产锁展开的产物（[{id, 文件}] 的 JSON 文件；--new 要的 id 也在里面），给按锁反推要导什么的脚本用（导出音效.py --按产物）。
+ * 产物来源：脚本写的 JSON {文件: [用到的 jar 路径…]}（文件相对暂存目录），--register 照它给每件产物记真正用到的 jar；不写就记配方「需要」的全部 jar
  */
 export type ExpandEnv = { jarPath: (id: string) => string; prismData: string; scriptDir: string; workRoot: string; python: string; mcai: string[]; 产物清单?: string; 产物来源?: string };
 
@@ -193,7 +193,7 @@ export const expandArtifacts = (outputTable: Record<string, string>, assetLock: 
   return { 对: pairs, 空: unmatched };
 };
 
-/** --登记 用：<id 目录>/* 再按暂存目录里实有的文件展开（新产物还不在锁里）；文件那边的 * 只匹配一层 */
+/** --register 用：<id 目录>/* 再按暂存目录里实有的文件展开（新产物还不在锁里）；文件那边的 * 只匹配一层 */
 export const expandArtifactsByFile = (outputTable: Record<string, string>, fileNames: readonly string[]): [string, string][] => {
   const pairs: [string, string][] = [];
   for (const [k, f] of Object.entries(outputTable)) {
@@ -211,7 +211,7 @@ export const expandArtifactsByFile = (outputTable: Record<string, string>, fileN
   return pairs.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 };
 
-/** --新：锁里还没有的 id 按产物表找文件（先找写死的那一项，再找 <id 目录>/*：文件把 * 换成 id 最后一段）；对不上任何一项的放进 不认 */
+/** --new：锁里还没有的 id 按产物表找文件（先找写死的那一项，再找 <id 目录>/*：文件把 * 换成 id 最后一段）；对不上任何一项的放进 不认 */
 export const expandArtifactsById = (outputTable: Record<string, string>, ids: readonly string[]): { 对: [string, string][]; unrecognized: string[] } => {
   const pairs: [string, string][] = [];
   const unrecognized: string[] = [];

@@ -32,7 +32,7 @@ const createDecoder = (m: SectionModel): SectionDecoder => {
     mem.set(raw, input);
     mem.fill(0, input + raw.length, input + raw.length + 16);
     const R = decode(input + h, len, T, W, tree, cm, runs, counts, values, lengths, nz, P, id.L, input + 6, M, F, scratch, m.classes, m.stride);
-    if (R < 0) throw new Error(`区段 ${id.L}/${id.i}/${id.j} 的编码流坏了（${len} 字节没有正好读完）：anim check --深 核对地形包`);
+    if (R < 0) throw new Error(`区段 ${id.L}/${id.i}/${id.j} 的编码流坏了（${len} 字节没有正好读完）：anim check --deep 核对地形包`);
     const ab = new ArrayBuffer((2 * P + 1156 + 2 * R) * 2), palette = new Uint16Array(ab, 0, 2 * P), runCounts = new Uint16Array(ab, 4 * P, 1156), paletteIndex = new Uint16Array(ab, 4 * P + 2312, R), runLengths = new Uint16Array(ab, 4 * P + 2312 + 2 * R, R);
     new Uint8Array(ab, 0, 4 * P).set(raw.subarray(6, h));
     runCounts.set(new Uint16Array(memory.buffer, counts, 1156));

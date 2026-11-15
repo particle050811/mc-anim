@@ -9,7 +9,7 @@ const measureFields = ['时长', '峰值', '响度'] as const;
 
 export const isAudioEntry = (e: LockEntry) => audioExtensions.has(e.后缀.toLowerCase());
 /** 还没量过的音频条目。有时长就算量过：量音频数 量得出时长才写，峰值、响度和它一起写；
- *  量过仍缺峰值（静音）、响度（太短）的重量也量不出，不再挑，免得 --检查 永远报能补、每次重量 */
+ *  量过仍缺峰值（静音）、响度（太短）的重量也量不出，不再挑，免得 --check 永远报能补、每次重量 */
 export const lacksAudioMetadata = (e: LockEntry) => isAudioEntry(e) && e.时长 === undefined;
 
 export type FillMeasureResult = {

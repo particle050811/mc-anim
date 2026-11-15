@@ -33,7 +33,7 @@ const cloneServer = (serverDir: string, destPath: string) => {
   }
 };
 
-/** 建新世界用的沙盒：只克隆服务端，存档路径给出来但还不存在（anim world new --沙盒 在里面建） */
+/** 建新世界用的沙盒：只克隆服务端，存档路径给出来但还不存在（anim world new --sandbox 在里面建） */
 export const makeNewWorldSandbox = (serverDir: string, saveName: string, displayName: string, root = dataPath('run', '沙盒')): Sandbox => {
   const dir = newSandboxDir(displayName, root);
   cloneServer(serverDir, path.join(dir, '服务端'));

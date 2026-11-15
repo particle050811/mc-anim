@@ -1,4 +1,4 @@
-// 试看光影用的替身：anim still、bench 加 --光影 时，打包把段里引的 engine/三渲二/画布.tsx 换成这个文件（pipeline/渲/光影试看.ts；这里引的原画布不换），
+// 试看光影用的替身：anim still、bench 加 --shading 时，打包把段里引的 engine/三渲二/画布.tsx 换成这个文件（pipeline/渲/光影试看.ts；这里引的原画布不换），
 // 光影的样式改从页面环境变量取（JSON，见 预设.ts 的 光影选项），「关」= 强制不开；场景给的 光影场 照用。只在试看的包里，正式段不引它。
 import React from 'react';
 import { ToonCanvas as BaseToonCanvas, type ToonCanvasParams } from '../画布.tsx';

@@ -16,7 +16,7 @@ minecraft/sounds.json、minecraft/sounds/<路径>.ogg 映射到 objects/<hash �
     <事件>（事件只有一个声音）或 <事件>.<序号>；第一段是给了 jar 的模组命名空间的算模组事件（create.cogs → create:cogs），
     别的算原版事件。反推不出的打到 stderr、不中断，anim extract 核对时会报缺。只导清单里的文件（同一事件别的序号不导）；命令行直接给的事件照旧全导。
   --来源：写 {输出文件（相对当前目录）: [字节取自的文件]}（anim extract 的 {产物来源}）：原版声音记资源索引 indexes/5.json，模组声音记那个 jar。
-    anim extract --登记 照它给每件记真正用到的 jar（模组事件引用原版声音的，字节取自资源索引，记资源索引）。已有的合并。
+    anim extract --register 照它给每件记真正用到的 jar（模组事件引用原版声音的，字节取自资源索引，记资源索引）。已有的合并。
 输出：
   <输出目录>/<事件名>.ogg（事件只有一个声音时）或 <事件名>.<序号>.ogg（序号从 1 起，照 sounds.json 里的先后；模组事件的文件名
   把「:」换成「.」，如 efn.parry.1.ogg），

@@ -60,7 +60,7 @@ def get_env() -> dict[str, Path]:
 
 
 def find_mapping(env: dict[str, Path]) -> Path | None:
-    # 官方映射不进仓库、不进资产库：anim extract --下载 放数据根 cache/映射/；早先临时下的 cache/动作翻译映射/、游戏目录 缓存/ 也认
+    # 官方映射不进仓库、不进资产库：anim extract --download 放数据根 cache/映射/；早先临时下的 cache/动作翻译映射/、游戏目录 缓存/ 也认
     for p in (
         env["数据"] / "cache/映射/client-1.20.1-mappings.txt",
         env["数据"] / "cache/动作翻译映射/client-1.20.1-mappings.txt",
@@ -397,7 +397,7 @@ def new_version(vanilla: RealRunEnv) -> RealRunEnv:
     env = get_env()
     jdk = next((Path(d) / "bin" for d in (os.environ.get("JAVA21_HOME", ""), "/opt/homebrew/opt/openjdk@21", "/usr/lib/jvm/java-21-openjdk") if d and (Path(d) / "bin/java").exists()), None)
     client = env["游戏"] / "缓存/client-1.21.11.jar"
-    # 1.21.11 的映射登记在 jars.toml（client-1.21.11-mappings），anim extract --下载 下到 cache/映射/
+    # 1.21.11 的映射登记在 jars.toml（client-1.21.11-mappings），anim extract --download 下到 cache/映射/
     mapping_path = env["数据"] / "cache/映射/client-1.21.11-mappings.txt"
     libs = lib_class_paths(env, "1.21.11")
     if jdk is None or not client.exists() or not mapping_path.exists() or libs is None:

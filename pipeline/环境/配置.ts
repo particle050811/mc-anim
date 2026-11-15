@@ -28,7 +28,7 @@ const personalRepo = (repoName: string) => path.join(os.homedir(), 'Developer', 
 // 顺序有意义：后面的默认值可以用前面已经取到的值
 const configItems = {
   数据根: { 变量: 'ANIM_DATA', 说明: 'Git 外的数据根（store、私有、terrain、cache、交付、run）', isPath: true, 默认: () => path.join(path.dirname(mainCheckout()), 'mc-anim-data') },
-  默认作品: { 变量: 'ANIM_WORK', 说明: '没给 --作品、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', isPath: false, 默认: () => '' },
+  默认作品: { 变量: 'ANIM_WORK', 说明: '没给 --work、当前目录也不在哪部作品里时用的作品（只有一部时不用写）', isPath: false, 默认: () => '' },
   游戏: { 变量: 'ANIM_GAME', 说明: '游戏环境（取材服务端、Prism 实例、jar 缓存）', isPath: true, 默认: (v) => path.join(v.数据根!, 'game') },
   java_home: { 变量: 'ANIM_JAVA_HOME', 说明: 'JDK 17（编译取材 mod、导出模型的 javap）；空就用 PATH 上的 java', isPath: true, 默认: () => '' },
   prism: { 变量: 'ANIM_PRISM', 说明: 'Prism Launcher 程序（anim mcai 起游戏用）；空就从 PATH 找', isPath: false, 默认: () => '' },
@@ -162,7 +162,7 @@ export const segStampDir = (segKey: string, fingerprint: string, work = workName
  * 抽样键见 验收/认可.ts，文件名跟着认可记录的哈希走，同一指纹重新 accept 不会撞上旧参考
  */
 export const approvRefFile = (segKey: string, fingerprint: string, sampleKey: string, hostPlatform: string, work = workName()) => workDataPath(['认可参考'], work, [hostPlatform, segKey, `${fingerprint.slice(0, 16)}-${sampleKey}.mkv`]);
-/** anim verify 逐帧 存的逐帧校验值：run/逐帧校验/<作品>/<名>/<段键>.tsv */
+/** anim verify frames 存的逐帧校验值：run/逐帧校验/<作品>/<名>/<段键>.tsv */
 export const frameCheckDir = (checkName: string, work = workName()) => workDataPath(['run', '逐帧校验'], work, [checkName]);
 /** 交付/<作品>/，下面是 <UTC 月日-时分>-<名>/ */
 export const deliveryRoot = (work = workName()) => workDataPath(['交付'], work, []);

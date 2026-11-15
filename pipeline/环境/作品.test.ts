@@ -43,7 +43,7 @@ describe('选作品', () => {
     ['乙', secondWork],
     ['丙', outsideDir],
   ]);
-  it('--作品 > 当前目录 > 默认作品', () => {
+  it('--work > 当前目录 > 默认作品', () => {
     expect(pickWork({ 参数: '乙', cwd: firstWork, 默认: '丙', 们: workRoots }).名).toBe('乙');
     expect(pickWork({ cwd: path.join(firstWork, '段'), 默认: '丙', 们: workRoots }).名).toBe('甲');
     expect(pickWork({ cwd: outsideDir, 默认: '甲', 们: workRoots }).名).toBe('丙');
@@ -54,11 +54,11 @@ describe('选作品', () => {
     expect(() => pickWork({ cwd: tempDir, 们: workRoots })).toThrow(/甲、乙、丙/);
     expect(() => pickWork({ 参数: '戊', 们: workRoots })).toThrow(/没有作品「戊」/);
   });
-  it('--作品 从参数里取走，-- 之后的不动', () => {
-    expect(parseWorkArg(['render', '--作品', '甲', '7-甲'])).toEqual({ 作品: '甲', rest: ['render', '7-甲'] });
-    expect(parseWorkArg(['--作品=乙', 'stale'])).toEqual({ 作品: '乙', rest: ['stale'] });
-    expect(parseWorkArg(['studio', '--', '--作品', 'x'])).toEqual({ rest: ['studio', '--', '--作品', 'x'] });
-    expect(() => parseWorkArg(['--作品'])).toThrow(/后面要跟作品名/);
+  it('--work 从参数里取走，-- 之后的不动', () => {
+    expect(parseWorkArg(['render', '--work', '甲', '7-甲'])).toEqual({ 作品: '甲', rest: ['render', '7-甲'] });
+    expect(parseWorkArg(['--work=乙', 'stale'])).toEqual({ 作品: '乙', rest: ['stale'] });
+    expect(parseWorkArg(['studio', '--', '--work', 'x'])).toEqual({ rest: ['studio', '--', '--work', 'x'] });
+    expect(() => parseWorkArg(['--work'])).toThrow(/后面要跟作品名/);
   });
   it('段全名 作品/段键', () => {
     expect(splitFullName('乙/7-甲')).toEqual({ 作品: '乙', 键: '7-甲' });

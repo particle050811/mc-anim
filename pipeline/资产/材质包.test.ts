@@ -114,7 +114,7 @@ describe('材质包覆盖层', () => {
     writeLock({ 包: [{ id: '材质包/某', sha256: 'd'.repeat(64) }], 覆盖: { '贴图/甲': { ...lockEntry('c'), 库: '私有' } } });
     expect(applyResourcePack(assetLock, workRoot, packSelection)).toEqual({ ...assetLock, '贴图/甲': { ...lockEntry('c'), 库: '私有' } });
     writeLock({ 包: [{ id: '材质包/某', sha256: 'e'.repeat(64) }], 覆盖: {} });
-    expect(() => applyResourcePack(assetLock, workRoot, packSelection)).toThrow(/重跑 anim assets 材质包/);
+    expect(() => applyResourcePack(assetLock, workRoot, packSelection)).toThrow(/重跑 anim assets packs/);
     writeLock({ 包: [{ id: '材质包/某', sha256: 'd'.repeat(64) }], 覆盖: { '贴图/丙': lockEntry('c') } });
     expect(() => applyResourcePack(assetLock, workRoot, packSelection)).toThrow(/作品锁里没有的 id/);
     writeLock({ 包: [{ id: '材质包/某', sha256: 'd'.repeat(64) }], 封顶: 16, 覆盖: {} });

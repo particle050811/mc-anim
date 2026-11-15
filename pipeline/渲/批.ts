@@ -1,5 +1,5 @@
-// anim 批：复用准备好的包；任务一行 <包键> <段> <帧串> <名> [留=全|帧,帧]。
-// 每项新浏览器是为了核对加载历史；显式 --保留浏览器 才跨项复用。PKGS 是包键到本地包目录的 JSON。
+// anim batch：复用准备好的包；任务一行 <包键> <段> <帧串> <名> [留=全|帧,帧]。
+// 每项新浏览器是为了核对加载历史；显式 --keep-browser 才跨项复用。PKGS 是包键到本地包目录的 JSON。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -13,10 +13,10 @@ import { renderParams, frameTimeoutMs } from './设置.ts';
 import { selectSegs } from '../清单/清单.ts';
 import { segRenderEnv, segTerrainNow } from './地形注入.ts';
 export const runBatch = async (args: string[]) => {
-    const p = parseArgs(args, { toggles: ['--保留浏览器'], 值: ['--连贯'] });
+    const p = parseArgs(args, { toggles: ['--keep-browser'], 值: ['--coherent'] });
     const [taskFile, outPath] = p.位置;
     if (!taskFile || !outPath || !process.env.PKGS)
-        throw new UsageError('批 需要任务文件、输出目录和 PKGS 包表');
+        throw new UsageError('batch 需要任务文件、输出目录和 PKGS 包表');
     fs.mkdirSync(outPath!, { recursive: true });
     const packPaths = JSON.parse(process.env.PKGS!) as Record<string, string>;
     const tasks = fs.readFileSync(taskFile!, 'utf8').split('\n').map((l) => l.trim()).filter((l) => l && !l.startsWith('#')).map((l) => {
@@ -38,7 +38,7 @@ export const runBatch = async (args: string[]) => {
     const compositionCache = new Map<string, Awaited<ReturnType<typeof getCompositions>>>();
     let browser: Awaited<ReturnType<typeof openBrowser>> | undefined;
     let failCount = 0;
-    const gate = openGateBatch({ 种: '批', 项数: tasks.length, 用途: process.env.ANIM_PURPOSE ?? '实验', ...(p.值['--连贯'] ? { 连贯: { 为什么: p.值['--连贯'] } } : {}) });
+    const gate = openGateBatch({ 种: '批', 项数: tasks.length, 用途: process.env.ANIM_PURPOSE ?? '实验', ...(p.值['--coherent'] ? { 连贯: { 为什么: p.值['--coherent'] } } : {}) });
     try {
         for (const t of tasks) {
             const frames = parseFrames(t.frameRange);
@@ -79,7 +79,7 @@ export const runBatch = async (args: string[]) => {
                     logLine(`${t.名}\t失败\t${(e as Error).message.slice(0, 300)}`);
                 }
                 finally {
-                    if (!p.toggles.has('--保留浏览器')) {
+                    if (!p.toggles.has('--keep-browser')) {
                         await browser!.close({ silent: true });
                         browser = undefined;
                     }
@@ -96,4 +96,4 @@ export const runBatch = async (args: string[]) => {
     console.log(`批完成，失败 ${failCount} 项`);
     return failCount ? 1 : 0;
 };
-export const batchCommands: Record<string, Command> = { 批: { 用法: '批 <任务文件> <输出目录> [--保留浏览器] [--连贯 <为什么>]', 说明: '预打包任务批；默认新浏览器，按累计持锁时间或指令让路；PKGS 给包表', 跑: runBatch } };
+export const batchCommands: Record<string, Command> = { batch: { 用法: 'batch <任务文件> <输出目录> [--keep-browser] [--coherent <为什么>]', 说明: '预打包任务批；默认新浏览器，按累计持锁时间或指令让路；PKGS 给包表', 跑: runBatch } };

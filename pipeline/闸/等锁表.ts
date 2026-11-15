@@ -1,5 +1,5 @@
-// anim 调度 等锁表：渲染锁按「主检出 / worktree × 种 × 低优先」分组的票数、等锁、占锁，和 worktree 静帧等锁的分位数。
-// 用来对比用户 11-06 定的让路做法（子 Agent 只出静帧，整段渲染由主 Agent 合并后 --低优先 排）改前改后，基线见 docs/决策/0012-调度.md「让路」。
+// anim sched lock-waits：渲染锁按「主检出 / worktree × 种 × 低优先」分组的票数、等锁、占锁，和 worktree 静帧等锁的分位数。
+// 用来对比用户 11-06 定的让路做法（子 Agent 只出静帧，整段渲染由主 Agent 合并后 --low-priority 排）改前改后，基线见 docs/决策/0012-调度.md「让路」。
 // 静帧等锁时锁在谁手里：按时间重叠归因到持锁票的分组。
 import type { SchedulerEvent } from './调度日志.ts';
 

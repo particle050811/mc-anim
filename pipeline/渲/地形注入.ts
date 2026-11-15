@@ -1,5 +1,5 @@
 // 把本段声明的地形包和版本传给页面（engine/voxel/区段包位置.ts 的唯一来源）：renderMedia、renderStill、renderFrames 都传 envVariables: 段渲染环境(键, 地形)。
-// anim film、still、bench、verify --渲 走这一处。用环境变量不用 inputProps：inputProps 整份进指纹、规范化设置 拒收不认识的键、每段 getCompositions 也得跟着传，
+// anim film、still、bench、verify --render 走这一处。用环境变量不用 inputProps：inputProps 整份进指纹、规范化设置 拒收不认识的键、每段 getCompositions 也得跟着传，
 // 而版本已经单独进指纹的地形项。读 Composition 列表的页面不传：列表阶段不该读任何包，读了就报错。
 import { terrainVersionEnv, terrainUsageSegEnv } from '../../engine/段/地形环境.ts';
 // 和 engine/core/试看.ts 的 试看环境名 同一个名字（pipeline 不 import 渲染代码）

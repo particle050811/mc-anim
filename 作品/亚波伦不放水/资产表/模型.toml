@@ -1,4 +1,4 @@
-# 资产表：模型。只有本作品用的资产登记在这里，锁是作品根的 资产锁/（anim --作品 亚波伦不放水 extract <配方> --登记 追加，不手改锁）。
+# 资产表：模型。只有本作品用的资产登记在这里，锁是作品根的 资产锁/（anim --work 亚波伦不放水 extract <配方> --register 追加，不手改锁）。
 # 字段和取值见 assets/README.md。
 
 [["资产"]]
@@ -23,7 +23,7 @@ id = "模型/法术/goety/BioMineModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/BioMineModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/BioMineModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/BlastFungusModel"
@@ -31,7 +31,7 @@ id = "模型/法术/goety/BlastFungusModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/BlastFungusModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/BlastFungusModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/CycloneModel"
@@ -39,7 +39,7 @@ id = "模型/法术/goety/CycloneModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/CycloneModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/CycloneModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/EarthFistModel"
@@ -47,7 +47,7 @@ id = "模型/法术/goety/EarthFistModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/EarthFistModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/EarthFistModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/EntangleVinesModel"
@@ -55,7 +55,7 @@ id = "模型/法术/goety/EntangleVinesModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/EntangleVinesModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/EntangleVinesModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/GulfTentacleModel"
@@ -63,7 +63,7 @@ id = "模型/法术/goety/GulfTentacleModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/GulfTentacleModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/GulfTentacleModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/HellBlastModel"
@@ -71,7 +71,7 @@ id = "模型/法术/goety/HellBlastModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/HellBlastModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/HellBlastModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/IceBouquetModel"
@@ -79,7 +79,7 @@ id = "模型/法术/goety/IceBouquetModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/IceBouquetModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/IceBouquetModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/IceChunkModel"
@@ -87,7 +87,7 @@ id = "模型/法术/goety/IceChunkModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/IceChunkModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/IceChunkModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/MasterFangModel"
@@ -95,7 +95,7 @@ id = "模型/法术/goety/MasterFangModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/MasterFangModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/MasterFangModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/MonolithModel"
@@ -103,7 +103,7 @@ id = "模型/法术/goety/MonolithModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/MonolithModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/MonolithModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/PoisonQuillModel"
@@ -111,7 +111,7 @@ id = "模型/法术/goety/PoisonQuillModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/PoisonQuillModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/PoisonQuillModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/PoisonQuillVineModel"
@@ -119,7 +119,7 @@ id = "模型/法术/goety/PoisonQuillVineModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/PoisonQuillVineModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/PoisonQuillVineModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/QuickGrowingVineModel"
@@ -127,7 +127,7 @@ id = "模型/法术/goety/QuickGrowingVineModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/QuickGrowingVineModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/QuickGrowingVineModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/ScatterMineModel"
@@ -135,7 +135,7 @@ id = "模型/法术/goety/ScatterMineModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/ScatterMineModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/ScatterMineModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/SmackStoneModel"
@@ -143,7 +143,7 @@ id = "模型/法术/goety/SmackStoneModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/SmackStoneModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/SmackStoneModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/SoulBoltModel"
@@ -151,7 +151,7 @@ id = "模型/法术/goety/SoulBoltModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/SoulBoltModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/SoulBoltModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/SpikeModel"
@@ -159,7 +159,7 @@ id = "模型/法术/goety/SpikeModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/SpikeModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/SpikeModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/TidalSurgeModel"
@@ -167,7 +167,7 @@ id = "模型/法术/goety/TidalSurgeModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/TidalSurgeModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/TidalSurgeModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/TridentStormModel"
@@ -175,7 +175,7 @@ id = "模型/法术/goety/TridentStormModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/TridentStormModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/TridentStormModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/ViciousPikeModel"
@@ -183,7 +183,7 @@ id = "模型/法术/goety/ViciousPikeModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/ViciousPikeModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/ViciousPikeModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/ViciousToothModel"
@@ -191,7 +191,7 @@ id = "模型/法术/goety/ViciousToothModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/ViciousToothModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/ViciousToothModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/VoidShockBombModel"
@@ -199,7 +199,7 @@ id = "模型/法术/goety/VoidShockBombModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/VoidShockBombModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/VoidShockBombModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/VoidShockModel"
@@ -207,7 +207,7 @@ id = "模型/法术/goety/VoidShockModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/VoidShockModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/VoidShockModel.json）"
 
 [["资产"]]
 id = "模型/法术/goety/VolcanoModel"
@@ -215,7 +215,7 @@ id = "模型/法术/goety/VolcanoModel"
 "来源" = "提取:亚波伦法术模型@154ae1f767f8"
 "许可" = "MIT"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/法术/goety/VolcanoModel.json）"
+"说明" = "anim extract --register 自动登记（src/模型/法术/goety/VolcanoModel.json）"
 
 [["资产"]]
 id = "模型/方块/黑暗祭坛"
@@ -223,7 +223,7 @@ id = "模型/方块/黑暗祭坛"
 "来源" = "提取:亚波伦黑暗祭坛@154ae1f767f8+56b71336d2b4"
 "许可" = "MIT AND LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/方块/黑暗祭坛.模型.json）"
+"说明" = "anim extract --register 自动登记（src/模型/方块/黑暗祭坛.模型.json）"
 
 [["资产"]]
 id = "模型/物品/断曜流光"
@@ -231,7 +231,7 @@ id = "模型/物品/断曜流光"
 "来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "发布"
-"说明" = "anim extract --登记 自动登记（src/模型/物品/断曜流光.模型.json）"
+"说明" = "anim extract --register 自动登记（src/模型/物品/断曜流光.模型.json）"
 
 [["资产"]]
 id = "模型/物品/断曜流光.旧版"
@@ -239,7 +239,7 @@ id = "模型/物品/断曜流光.旧版"
 "来源" = "提取:亚波伦史蒂夫装备@d7e53575be83"
 "许可" = "LicenseRef-All-Rights-Reserved"
 "可见性" = "发布"
-"说明" = "anim extract --登记 自动登记（src/模型/物品/断曜流光.旧版.模型.json）"
+"说明" = "anim extract --register 自动登记（src/模型/物品/断曜流光.旧版.模型.json）"
 
 [["资产"]]
 id = "模型/仪式/炼狱魔典"
@@ -247,4 +247,4 @@ id = "模型/仪式/炼狱魔典"
 "来源" = "提取:亚波伦安息仪式@154ae1f767f8+56b71336d2b4"
 "许可" = "MIT AND LicenseRef-Minecraft-EULA"
 "可见性" = "提取"
-"说明" = "anim extract --登记 自动登记（src/模型/仪式/炼狱魔典.模型.json）"
+"说明" = "anim extract --register 自动登记（src/模型/仪式/炼狱魔典.模型.json）"

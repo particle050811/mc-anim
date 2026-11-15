@@ -1,7 +1,7 @@
-// anim verify 逐帧：每帧 PNG 算 sha 存成一份有名字的记录（run/逐帧校验/<作品>/<名>/<段键>.tsv），之后再渲一次比，列出不同的帧。方便对比最终结果（用户 10-31 定）。
+// anim verify frames：每帧 PNG 算 sha 存成一份有名字的记录（run/逐帧校验/<作品>/<名>/<段键>.tsv），之后再渲一次比，列出不同的帧。方便对比最终结果（用户 10-31 定）。
 // 和 anim verify 的分工：verify 比认可版的抽样帧、有阈值、可 accept；这里每帧都比、按字节、没有阈值，不写母版，不碰段签和认可。
 // 全程只打包一次（开会话，用完删包），每段过一次渲染闸，并发 1；同一页面按帧号升序连着渲、声音开着，参数和切片那遍一样（带字幕、帧号是输出帧），走法和 renderMedia 出切片一样。
-// 同一批帧才能比：隔开的帧在同一页面连出，和连续渲或单帧出不保证相同（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。所以 --比 永远照基准存的帧渲，给了 --帧 也只是渲到那里为止，前面的帧不省。
+// 同一批帧才能比：隔开的帧在同一页面连出，和连续渲或单帧出不保证相同（docs/渲染性能.md「同一帧的像素取决于之前渲过哪些帧」）。所以 --compare 永远照基准存的帧渲，给了 --frames 也只是渲到那里为止，前面的帧不省。
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -33,15 +33,15 @@ const FIRST_FRAME_SEC = 15;
 export type FrameCheck = { sha: string; 字节: number };
 export type CheckRecord = { 段: string; 段帧数: number; 指纹: string; 提交: string; 帧: Map<number, FrameCheck> };
 
-/** --帧：a-b（含两头）或 帧,帧,帧 */
+/** --frames：a-b（含两头）或 帧,帧,帧 */
 export const parseFrames = (rangeText: string): number[] => {
   const rangeMatch = /^(\d+)-(\d+)$/.exec(rangeText);
   if (rangeMatch) {
     const [a, b] = [Number(rangeMatch[1]), Number(rangeMatch[2])];
-    if (a > b) throw new UsageError(`--帧 起点比终点大：${rangeText}`);
+    if (a > b) throw new UsageError(`--frames 起点比终点大：${rangeText}`);
     return Array.from({ length: b - a + 1 }, (_, i) => a + i);
   }
-  if (!/^\d+(,\d+)*$/.test(rangeText)) throw new UsageError(`--帧 写成 <起>-<止> 或 <帧>,<帧>：${rangeText}`);
+  if (!/^\d+(,\d+)*$/.test(rangeText)) throw new UsageError(`--frames 写成 <起>-<止> 或 <帧>,<帧>：${rangeText}`);
   return [...new Set(rangeText.split(',').map(Number))].sort((x, y) => x - y);
 };
 
@@ -89,9 +89,9 @@ export const readCheckRecord = (file: string): CheckRecord => {
 };
 
 /**
- * 这段要渲哪些帧（基准帧要升序）。比的时候只渲基准里有的帧，给了 --帧 就从基准第一帧渲到要的最后一帧：
+ * 这段要渲哪些帧（基准帧要升序）。比的时候只渲基准里有的帧，给了 --frames 就从基准第一帧渲到要的最后一帧：
  * 一帧的结果取决于同页面在它之前渲过什么，和它之后的无关（实测 6-斩娜迦 0-85 和整段的前 86 帧、30,85 和 30,85,140 字节相同）。
- * 超出 是这段没有的帧，基准没有 是给了 --帧、基准没存的帧。
+ * 超出 是这段没有的帧，基准没有 是给了 --frames、基准没存的帧。
  */
 export const pickRenderFrames = (frameCount: number, givenFrames: readonly number[] | null, baselineFrames: readonly number[] | null) => {
   const frames = givenFrames ?? baselineFrames ?? Array.from({ length: frameCount }, (_, i) => i);
@@ -147,7 +147,7 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: { checkMode: 
   for (const [i, s] of wantedSegs.entries()) {
     const file = checkFile(checkName, s.键);
     if (checkMode === '比' && !fs.existsSync(file)) {
-      addError(`${s.键}：「${checkName}」里没存过这段（${file}），先 anim verify 逐帧 ${s.键} --存 ${checkName}`);
+      addError(`${s.键}：「${checkName}」里没存过这段（${file}），先 anim verify frames ${s.键} --save ${checkName}`);
       continue;
     }
     const baseline = checkMode === '比' ? readCheckRecord(file) : null;
@@ -169,7 +169,7 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: { checkMode: 
   // 开跑前查：不覆盖，也不和上次留的混在一起；比的时候哪帧不同渲完才知道，按可能写的算
   if (o.keepDir) {
     const existingFiles = plans.flatMap((x) => x.帧.map((f) => stillFile(o.keepDir!, x.段.键, f))).filter((f) => fs.existsSync(f));
-    if (existingFiles.length) throw new UsageError(`--留图 ${o.keepDir} 里已经有 ${existingFiles.length} 张这次可能写的 PNG（${path.basename(existingFiles[0]!)} 等），不覆盖：换个空目录`);
+    if (existingFiles.length) throw new UsageError(`--keep-images ${o.keepDir} 里已经有 ${existingFiles.length} 张这次可能写的 PNG（${path.basename(existingFiles[0]!)} 等），不覆盖：换个空目录`);
     fs.mkdirSync(o.keepDir, { recursive: true });
   }
   if (plans.length) {
@@ -237,6 +237,6 @@ export const runPerFrame = async (segments: readonly SegInfo[], o: { checkMode: 
   if (o.keepDir && kept) console.log(`${checkMode === '比' ? '不同的帧' : 'PNG'}在 ${path.resolve(o.keepDir)}`);
   if (!plans.length && !failed) addError(`一段都没${checkMode}：选中的段本机都没有区段包`);
   const skipText = skipped.length ? `；跳过 ${skipped.join('、')}，没${checkMode}` : '';
-  console.log(failed ? `\n${failed} 处没过${skipText}` : checkMode === '比' ? `\n${plans.length} 段都相同${skipText}` : `\n${plans.length} 段存好了，比的时候 --比 ${checkName}${skipText}`);
+  console.log(failed ? `\n${failed} 处没过${skipText}` : checkMode === '比' ? `\n${plans.length} 段都相同${skipText}` : `\n${plans.length} 段存好了，比的时候 --compare ${checkName}${skipText}`);
   return failed ? 1 : 0;
 };

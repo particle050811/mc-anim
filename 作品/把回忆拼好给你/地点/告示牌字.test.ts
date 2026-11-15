@@ -20,6 +20,6 @@ describe('告示牌上的字', () => {
 
   it.skipIf(!hasTable)('文案里的字都在字形表里', () => {
     const pixelFont = makePixelFont(JSON.parse(fs.readFileSync(bytesPath(entry!), 'utf8')), '字体/把回忆拼好给你/告示牌字');
-    expect([...copyChars].filter((ch) => !pixelFont.hasGlyph(ch)), '文案改了要重取：anim --作品 把回忆拼好给你 extract 告示牌像素字').toEqual([]);
+    expect([...copyChars].filter((ch) => !pixelFont.hasGlyph(ch)), '文案改了要重取：anim --work 把回忆拼好给你 extract 告示牌像素字').toEqual([]);
   });
 });

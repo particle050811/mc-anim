@@ -1,6 +1,6 @@
 import { readModel, modelFileName, type SectionModel } from '../../../engine/voxel/区段模型.ts';
 // 查询（block、heightmap、map、slice）读方块的两种来源，接口一样：
-//   存档：区域源（默认套编辑层，--原样 不套），整列都有；
+//   存档：区域源（默认套编辑层，--raw 不套），整列都有；
 //   地形包：烘好的区段包第 0 级（engine/voxel/区段包.ts 的格式），只存了地表附近（k底 以下当实心、没存），看的是渲染实际拿到的方块。
 // 坐标一律是游戏坐标（x, y, z），y 朝上、z 朝南。
 import fs from 'node:fs';
@@ -111,7 +111,7 @@ export class PackBlockSource implements BlockSource {
     this.库 = voxelLib;
     this.description = description;
     this.packageInfo = JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as PackageInfo;
-    if (this.packageInfo.版本 !== voxelLib.sectionPack.formatVersion) throw new Error(`地形包是格式 ${this.packageInfo.版本}，只读格式 ${voxelLib.sectionPack.formatVersion}：anim assets pull，或 anim world 转码`);
+    if (this.packageInfo.版本 !== voxelLib.sectionPack.formatVersion) throw new Error(`地形包是格式 ${this.packageInfo.版本}，只读格式 ${voxelLib.sectionPack.formatVersion}：anim assets pull，或 anim world transcode`);
     this.模型 = readModel(fs.readFileSync(path.join(dir, modelFileName)));
   }
 

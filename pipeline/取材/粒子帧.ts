@@ -1,4 +1,4 @@
-// anim extract --粒子帧：照粒子定义（jar 里 assets/<命名空间>/particles/<名>.json）的 textures 顺序生成帧模块 <作品根>/粒子帧/<命名空间>/<名>.ts
+// anim extract --particle-frames：照粒子定义（jar 里 assets/<命名空间>/particles/<名>.json）的 textures 顺序生成帧模块 <作品根>/粒子帧/<命名空间>/<名>.ts
 // （定义登记在共用锁的放 库/粒子帧/），画面一行 `import animFrames from '…/粒子帧/goety/frost.ts'` 拿到排好序的 Png[]。
 // 为什么生成进 Git 的模块、不做 asset:粒子/… 虚拟模块：打包（webpack.ts，文本进全部段指纹）、指纹、检查、随仓库、缺字节都按「asset: = 锁里一件」认，
 // 虚拟模块要每处特判；生成的模块里只有普通的 asset:<贴图 id>，这些地方都不用动。anim check 核对生成的和定义、锁对得上（规则 资产）。
@@ -100,7 +100,7 @@ export const listParticles = (sourceTable: SourceTable): string[] =>
 export const particleFrameFile = (p: Particle, side: '共用' | '作品', codeRoot: string, workRoot: string) =>
   path.join(side === '作品' ? workRoot : path.join(codeRoot, '库'), '粒子帧', p.namespaceName, ...`${p.名}.ts`.split('/'));
 
-export const generatedHeader = '// anim extract --粒子帧 生成，别手改';
+export const generatedHeader = '// anim extract --particle-frames 生成，别手改';
 
 export const particleFrameText = (particleName: string, definitionId: string, definitionSha: string, frames: string[]): string => {
   const unique = [...new Set(frames)];
@@ -144,7 +144,7 @@ export const computeParticleFrames = (
     const p = parseParticleName(particleName);
     const particleFullName = `${p.namespaceName}:${p.名}`;
     const definitions = sourceTable.get(definitionPath(p)) ?? [];
-    if (!definitions.length) return { 粒子: particleFullName, 错: `定义没登记：在 sourcing/extract.toml 的粒子定义配方里加一步（拷jar文件.py 拷 ${definitionPath(p)}），再 anim extract <配方> --登记` };
+    if (!definitions.length) return { 粒子: particleFullName, 错: `定义没登记：在 sourcing/extract.toml 的粒子定义配方里加一步（拷jar文件.py 拷 ${definitionPath(p)}），再 anim extract <配方> --register` };
     if (definitions.length > 1) return { 粒子: particleFullName, 错: `定义登记了 ${definitions.length} 件：${definitions.join('、')}（只留一件）` };
     const definition = definitions[0]!;
     const side = assetLocks.作品[definition] ? '作品' : '共用';
@@ -201,7 +201,7 @@ export const checkParticleFrames = (codeRoot: string, workRoot: string, assetLoc
     const text = fs.readFileSync(f, 'utf8');
     const genHeader = readGeneratedHeader(text);
     if (!genHeader) {
-      issues.push([f, '粒子帧/ 下只放 anim extract --粒子帧 生成的模块（头认不出）']);
+      issues.push([f, '粒子帧/ 下只放 anim extract --particle-frames 生成的模块（头认不出）']);
       continue;
     }
     const lockEntry = assetLocks.共用[genHeader.definition] ?? assetLocks.作品[genHeader.definition];
@@ -210,7 +210,7 @@ export const checkParticleFrames = (codeRoot: string, workRoot: string, assetLoc
       continue;
     }
     if (lockEntry.sha256 !== genHeader.sha) {
-      issues.push([f, `定义 ${genHeader.definition} 换了字节（锁 ${lockEntry.sha256.slice(0, 12)}，生成时 ${genHeader.sha.slice(0, 12)}）：anim extract --粒子帧 重生成`]);
+      issues.push([f, `定义 ${genHeader.definition} 换了字节（锁 ${lockEntry.sha256.slice(0, 12)}，生成时 ${genHeader.sha.slice(0, 12)}）：anim extract --particle-frames 重生成`]);
       continue;
     }
     const r = computeParticleFrames(particleOfFile(f), assetLocks, sourceTable, codeRoot, workRoot, readText);
@@ -219,7 +219,7 @@ export const checkParticleFrames = (codeRoot: string, workRoot: string, assetLoc
       continue;
     }
     if (path.resolve(r.文件) !== path.resolve(f)) issues.push([f, `应该在 ${r.文件}`]);
-    else if (r.文本 !== text) issues.push([f, '和按现在的定义、配方、资产锁生成的不一样（手改了，或贴图对应的 id 变了）：anim extract --粒子帧 重生成']);
+    else if (r.文本 !== text) issues.push([f, '和按现在的定义、配方、资产锁生成的不一样（手改了，或贴图对应的 id 变了）：anim extract --particle-frames 重生成']);
   }
   return issues;
 };

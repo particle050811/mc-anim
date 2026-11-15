@@ -21,7 +21,7 @@ export type PackDecl = {
   登记: boolean;
 };
 /** 矩形写 两角，或 中心 加 半边；走廊写 折线、半宽，可选 去掉（已在别的矩形块里的区块不重复生成）；区块表写 文件（相对 sourcing/worlds/ 的 JSON，{"区块": [[cx, cz], …]}，
- *  程序算出来的散点区块，例：anim world 远景 地标 排的远处地标小块）。怎么算区块见 预生成/范围.ts */
+ *  程序算出来的散点区块，例：anim world far landmarks 排的远处地标小块）。怎么算区块见 预生成/范围.ts */
 export type PregenBox = {
   名: string;
   形状: '矩形' | '走廊' | '区块表';
@@ -207,7 +207,7 @@ export const readDecl = (worldName: string): WorldDecl => {
   return parseDecl(fs.readFileSync(f, 'utf8'), worldName, path.relative(codeRoot(), f));
 };
 
-/** 存档的世界目录：--存档 给了就用它，否则 <ANIM_GAME>/<服务端>/<存档> */
+/** 存档的世界目录：--save-dir 给了就用它，否则 <ANIM_GAME>/<服务端>/<存档> */
 export const saveDir = (w: WorldDecl, overrideDir?: string) => (overrideDir ? path.resolve(overrideDir) : path.isAbsolute(w.存档) ? w.存档 : path.join(config('游戏'), w.服务端, w.存档));
 export const regionDir = (w: WorldDecl, overrideDir?: string) => path.join(saveDir(w, overrideDir), dimensionRegionDir(w.维度));
 

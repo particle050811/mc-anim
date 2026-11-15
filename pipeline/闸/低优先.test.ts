@@ -62,7 +62,7 @@ it('低优先的批：有普通票在等，项间马上让开（不等满 120 �
   expect(await runWaiting(`${800000000000000 + Date.now() + 1}-${hostSlug}-${process.ppid}`)).toBe(true);
 });
 
-it('--低优先 是全局参数，-- 之后的不算', () => {
-  expect(takeLowPriorityArgs(['render', '--低优先', '2-合照'])).toEqual({ 低优先: true, rest: ['render', '2-合照'] });
-  expect(takeLowPriorityArgs(['mcai', '--', '--低优先'])).toEqual({ 低优先: false, rest: ['mcai', '--', '--低优先'] });
+it('--low-priority 是全局参数，-- 之后的不算', () => {
+  expect(takeLowPriorityArgs(['render', '--low-priority', '2-合照'])).toEqual({ 低优先: true, rest: ['render', '2-合照'] });
+  expect(takeLowPriorityArgs(['mcai', '--', '--low-priority'])).toEqual({ 低优先: false, rest: ['mcai', '--', '--low-priority'] });
 });

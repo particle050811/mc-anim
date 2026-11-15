@@ -1,4 +1,4 @@
-// anim extract --下载：jars.toml 里「根 = 数据」、写了「下载」和「sha256」的（官方映射这类不许再分发、本机自取的），按地址下到数据根并核 sha。
+// anim extract --download：jars.toml 里「根 = 数据」、写了「下载」和「sha256」的（官方映射这类不许再分发、本机自取的），按地址下到数据根并核 sha。
 // 只下这一类：游戏目录、mc资源里的 jar 是游戏和启动器装的，不归 anim 管。下载走 curl（跟系统代理环境变量），先写临时名、sha256（有 sha1 也核）对上才改名。
 import crypto from 'node:crypto';
 import fs from 'node:fs';

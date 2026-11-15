@@ -1,4 +1,4 @@
-// 把 argv 拼成能照抄进终端的一行，只给人看（--只打印、报错里的命令）；真跑一律数组参数、不经 shell（子进程.ts）。
+// 把 argv 拼成能照抄进终端的一行，只给人看（--print-only、报错里的命令）；真跑一律数组参数、不经 shell（子进程.ts）。
 // POSIX 用单引号；Windows 照 cmd 和 CommandLineToArgvW 的规矩用双引号（PowerShell 也认）。
 // 坑：cmd 里双引号挡不住 %变量%，PowerShell 里挡不住 $ 和 `；路径里很少有，不另处理。
 import { isWindows } from './配置.ts';
