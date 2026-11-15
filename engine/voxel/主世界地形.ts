@@ -274,8 +274,8 @@ export const buildOverworld = (imported: ImportedTerrain, grid: DistantGrid, sea
       if (!anyEmpty) return voxels;
       return mergeColumns(voxels, distantSection(grid, origin, section, (c) => emptyCols[c] === 1, correction), emptyCols);
     },
-    prefetch: options.补充 ? (qs) => {
-      const a = baseSource.prefetch?.(qs), b = options.补充!.来源.prefetch?.(qs);
+    prefetch: options.补充 ? (qs, 猜的) => {
+      const a = baseSource.prefetch?.(qs, 猜的), b = options.补充!.来源.prefetch?.(qs, 猜的);
       return a || b ? Promise.all([a, b]).then(() => undefined) : undefined;
     } : baseSource.prefetch,
     转交: true, // 导入的体素块（来源 转交）就地改完交出去，远景、并列都是新建的
