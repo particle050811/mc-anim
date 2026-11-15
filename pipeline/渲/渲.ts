@@ -13,6 +13,7 @@ import { 代码根, 相对代码根 } from '../环境/路径.ts';
 import { 作品名, 作品根 } from '../环境/作品.ts';
 import { webpack改写 } from '../资产/webpack.ts';
 import { 光影环境名, 套光影试看, type 光影配置 } from './光影试看.ts';
+import { 望远环境名, 套望远, type 望远配置 } from './望远.ts';
 import { 稳定缓存名 } from '../资产/缓存名.ts';
 import { 过渲染闸 } from '../闸/闸.ts';
 import { 数据根 } from '../环境/配置.ts';
@@ -37,8 +38,9 @@ import type { 渲染级别 } from '../../engine/段/设置值.ts';
 
 export const 渲染标签 = (键: string, 级别: 渲染级别) => `render:${作品名()}/${键}:${级别}`;
 
-/** 光影：换上光影试看画布（光影试看.ts，只给 still、bench） */
-export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`, o: { 光影?: boolean } = {}) => {
+/** 光影：换上光影试看画布（光影试看.ts，只给 still、bench）；望远：入口加上望远（望远.ts，只给 still） */
+export type 打包选项 = { 光影?: boolean; 望远?: boolean };
+export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名()}`, o: 打包选项 = {}) => {
   const 根 = 作品根();
   const 缺目录 = 缺的注册目录(根);
   if (缺目录.length) throw new Error(缺目录.map((d) => 缺目录提示(相对代码根(根), d)).join('\n'));
@@ -50,9 +52,11 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
   }
   记阶段(记录?.阶段, 标签, '备素材', t备, (Date.now() - t备) / 1000);
   const t0 = Date.now();
-  const 配包 = 稳定缓存名(补缺字节占位(o.光影 ? 套光影试看(webpack改写(根)) : webpack改写(根), 根));
+  const 入口 = path.join(作品根(), 'index.ts');
+  const 基 = o.光影 ? 套光影试看(webpack改写(根)) : webpack改写(根);
+  const 配包 = 稳定缓存名(补缺字节占位(o.望远 ? 套望远(基, 入口) : 基, 根));
   const serveUrl = await bundle({
-    entryPoint: path.join(作品根(), 'index.ts'),
+    entryPoint: 入口,
     rootDir: 代码根(),
     webpackOverride: async (config) => {
       const 包 = await 配包(config);
@@ -73,7 +77,7 @@ export const 打包 = async (记录?: 运行记录, 标签 = `会话:${作品名
 type 会话 = { serveUrl: string; browser: HeadlessBrowser; 参数: 渲染参数表; 组合: Awaited<ReturnType<typeof getCompositions>> };
 
 /** 打包、开浏览器、读 Composition 列表；fn 结束后关浏览器。渲染和编码降低优先级（nice 10），浏览器子进程跟着继承；会话期间不让电脑闲置睡眠 */
-export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: { 光影?: boolean } = {}): Promise<T> => {
+export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: 打包选项 = {}): Promise<T> => {
   const 撤防睡 = 防睡();
   try {
     return await 会话里(级别, fn, 记录, 打包选项);
@@ -82,7 +86,7 @@ export const 开会话 = async <T>(级别: 渲染级别, fn: (h: 会话) => Prom
   }
 };
 
-const 会话里 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: { 光影?: boolean } = {}): Promise<T> => {
+const 会话里 = async <T>(级别: 渲染级别, fn: (h: 会话) => Promise<T>, 记录?: 运行记录, 打包选项: 打包选项 = {}): Promise<T> => {
   try {
     os.setPriority(10);
   } catch {
@@ -250,11 +254,15 @@ export const 连出提醒 = (段键: string, 帧们: readonly number[], 逐帧?:
     : null;
 
 /** 静帧（PNG），给预览核对用。帧号重复的只出一次；返回的文件按给的帧号顺序 */
-/** 光影：每份配置各出一遍这几帧，文件名带「-光影-<名>」（光影试看.ts） */
-export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录, o: { 逐帧?: boolean; 光影?: 光影配置[] } = {}) => {
+/** 光影：每份配置各出一遍这几帧，文件名带「-光影-<名>」（光影试看.ts）；望远：每块矩形各出一遍，文件名带「-望远-<名>」（望远.ts）。两样不同时给 */
+export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染级别, 出到: string, 记录?: 运行记录, o: { 逐帧?: boolean; 光影?: 光影配置[]; 望远?: 望远配置[] } = {}) => {
   const 要出 = [...new Set(帧们)];
   const 提醒 = 连出提醒(s.键, 要出, o.逐帧);
   if (提醒) 记录?.记('警告', 提醒);
+  if (o.光影 && o.望远) throw new Error('--光影 和 --望远 不能同时给');
+  // 各出一遍的变体：页面环境变量和文件名后缀
+  const 变体: { 环境: Record<string, string>; 后缀: string }[] | undefined =
+    o.光影?.map((c) => ({ 环境: { [光影环境名]: c.值 }, 后缀: `-光影-${c.名}` })) ?? o.望远?.map((c) => ({ 环境: { [望远环境名]: c.值 }, 后缀: `-望远-${c.名}` }));
   await 照段材质包(作品根(), s.键, () => 开会话(级别, async (h) => {
     const 全部 = await 全部段();
     const composition = 找组合(h, s, 全部);
@@ -272,12 +280,11 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       const 等闸 = 记阶段(收, 标签, '等闸', 排队起, (t0 - 排队起) / 1000);
       const 明细 = new 明细收集(标签);
       const 环境 = { ...段渲染环境(s.键, 段现在的地形(s, 试看地形())), ...试看环境() };
-      if (!o.光影) await 明细.包(() => 出静帧们(带字幕, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境, 完成: (已出) => 明细.帧完成(已出) }));
+      if (!变体) await 明细.包(() => 出静帧们(带字幕, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境, 完成: (已出) => 明细.帧完成(已出) }));
       else {
-        const 们 = o.光影;
         await 明细.包(async () => {
-          for (const [i, c] of 们.entries())
-            await 出静帧们(带字幕, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境: { ...环境, [光影环境名]: c.值 }, 后缀: `-光影-${c.名}`, 完成: (已出) => 明细.帧完成(i * 要出.length + 已出) });
+          for (const [i, c] of 变体.entries())
+            await 出静帧们(带字幕, composition, s.键, 要出, 出到, { 逐帧: o.逐帧, 环境: { ...环境, ...c.环境 }, 后缀: c.后缀, 完成: (已出) => 明细.帧完成(i * 要出.length + 已出) });
         });
       }
       await 记已量帧(s.键, 要出);
@@ -285,6 +292,6 @@ export const 渲静帧 = async (s: 段信息, 帧们: number[], 级别: 渲染�
       await 明细.写出(收 ?? []);
       console.log(`${阶段小结([等闸, 出帧])}（${要出.length} 帧）`);
     }, undefined, {}, {种:'still',作品:作品名(),段:s.键,级别,帧数:要出.length,帧:要出.join(',').slice(0,60),用途:process.env.ANIM_PURPOSE??'核对'});
-  }, 记录, { 光影: !!o.光影 }));
-  return o.光影 ? o.光影.flatMap((c) => 要出.map((f) => 静帧文件(出到, s.键, f, `-光影-${c.名}`))) : 要出.map((f) => 静帧文件(出到, s.键, f));
+  }, 记录, { 光影: !!o.光影, 望远: !!o.望远 }));
+  return 变体 ? 变体.flatMap((c) => 要出.map((f) => 静帧文件(出到, s.键, f, c.后缀))) : 要出.map((f) => 静帧文件(出到, s.键, f));
 };
