@@ -7,8 +7,9 @@
 //   lib/体素/网格.ts    方块 → 几何（纯函数：面剔除、贪心合并、按朝向分组）
 //   lib/体素/材质.ts    three 的材质（原版贴图图集、镂空、染色）和只进阴影图的投影网格
 //   lib/体素/网格池.ts  几个 Web Worker 并行跑 网格.ts
-//   这里：每帧挑区段、交给网格池建网格并缓存（每块每级一次，跨帧复用；建好的区段网格另按世界键跨 WebGL 上下文留着，见 `kept`）、挑画哪几组朝向、画。
-// 投影（给了 `shadowLightDir` 时，暮色主光的地形软投影，见 lib/级联阴影.ts）：每块的方块另有一份只进阴影图、只画背光面的网格（lib/体素/材质.ts 的 `shadowMesh`），
+//   lib/体素/批绘制.ts  一类材质一个代理物体，这一类的区段由它一次画完（水类还是逐网格）
+//   这里：每帧挑区段、交给网格池建网格并缓存（每块每级一次，跨帧复用；建好的区段网格另按世界键跨 WebGL 上下文留着，见 `kept`）、挑画哪几组朝向、交给代理物体画。
+// 投影（给了 `shadowLightDir` 时，暮色主光的地形软投影，见 lib/级联阴影.ts）：方块另有一个只进阴影图的代理物体，只画背光面，
 // 挑区段时视野往背着光的方向多留 300 米：画面外、光源那边的块（树、山）也会把影子投进画面。
 import { useThree } from '@react-three/fiber';
 import React, { useEffect, useRef, useState } from 'react';
@@ -17,9 +18,10 @@ import * as THREE from 'three';
 import { newSurface } from './地表.ts';
 import { makeFrustumTest } from './视锥.ts';
 import type { V3 } from '../model/parts.tsx';
-import { shadowMesh, pickDirs, backlitDirs, faceGroupMesh, releaseVoxelMeshes, type VoxelMesh, type MaterialClass } from './材质.ts';
+import { pickDirs, backlitDirs, faceGroupMesh, releaseVoxelMeshes, voxelMaterial, type VoxelMesh, type MaterialClass } from './材质.ts';
+import { 建批项, 放批项, 清批绘制, 类批, 影材质, type 批项 } from './批绘制.ts';
 import { 清空容器池 } from './容器池.ts';
-import { visibleDirs, type SectionMesh } from './网格.ts';
+import { posScale, visibleDirs, type SectionMesh } from './网格.ts';
 import { buildMeshInPool } from './网格池.ts';
 import { pickSections, sectionKey, sectionBounds, type SectionId } from './区段.ts';
 import type { VoxelGrid, VoxelSource } from './生成.ts';
@@ -58,9 +60,10 @@ const trimKept = () => {
   }
 };
 
-// 投影：和 meshes 共用顶点的只进阴影图的网格（花草、水不投影）
-type Entry = { meshes: VoxelMesh[]; shadowMeshes: VoxelMesh[]; plants: VoxelMesh | null; box: number[]; faceCount: number; used: number; kept: Kept };
-type World = { cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number };
+// items：水以外各类的面（交给代理物体画），类号是 materialClasses 里的下标；casters：其中投影的（花草不投影）；water：水类的网格（逐网格画）
+type Entry = { items: [number, 批项][]; casters: 批项[]; water: VoxelMesh | null; plants: 批项 | null; box: number[]; faceCount: number; used: number; kept: Kept };
+// batches：各类的代理物体（下标同 materialClasses，水那一格空着）；shadowBatch：只进阴影图的
+type World = { cache: Map<string, Entry>; group: THREE.Group; clock: number; faceCount: number; batches: (类批 | null)[]; shadowBatch: 类批 };
 // 按渲染器分：three 网格的顶点在显存里，属于这个 WebGL 上下文（容器池.ts），换了上下文（拼段的下一截是新的 Canvas）要重建（区段网格还在 `kept` 里就从那里拿）
 const worlds = new WeakMap<THREE.WebGLRenderer, Map<string, World>>();
 // 还在后台建区段、这一帧画不全的体素世界：屏幕AO 看到不空就跳过这一次绘制（反正截图前建齐了还要再画一次），省掉一整遍画半截场景的 GPU 活
@@ -68,22 +71,28 @@ export const voxelsPending = new Set<object>();
 const probe = newSurface();
 
 // 区段直接用包里解出来的（没有这一块就是空的，见 体素来源.区段）
-const emptyEntry = (rec: Kept): Entry => ({ meshes: [], shadowMeshes: [], plants: null, box: [], faceCount: 0, used: 0, kept: rec });
+const emptyEntry = (rec: Kept): Entry => ({ items: [], casters: [], water: null, plants: null, box: [], faceCount: 0, used: 0, kept: rec });
 // 树叶：第 0 级照游戏「高品质」镂空，粗级照 Voxy 画成实心（区段出网格 的第二个参数 q.L >= 1）
 const meshToEntry = (ctx: WebGL2RenderingContext, sectionMesh: SectionMesh, voxels: Pick<VoxelGrid, '原点' | '格' | 'nz'>, section: SectionId, rec: Kept): Entry => {
   const [x0, y0, sizeM] = sectionBounds(section);
   const box = [x0, y0, voxels.原点[2], x0 + sizeM, y0 + sizeM, voxels.原点[2] + voxels.nz * voxels.格];
-  const meshes: VoxelMesh[] = [];
-  const shadowMeshes: VoxelMesh[] = [];
-  let plantMesh: VoxelMesh | null = null;
-  for (const materialClass of materialClasses) {
-    const mesh = faceGroupMesh(ctx, sectionMesh[materialClass], materialClass, voxels.原点, voxels.格, box);
-    if (!mesh) continue;
-    meshes.push(mesh);
-    if (materialClass === '花草') plantMesh = mesh;
-    if (materialClass !== '花草' && materialClass !== '水') shadowMeshes.push(shadowMesh(mesh));
-  }
-  return { meshes, shadowMeshes, plants: plantMesh, box, faceCount: sectionMesh.面数, used: 0, kept: rec };
+  const items: [number, 批项][] = [];
+  const casters: 批项[] = [];
+  let water: VoxelMesh | null = null;
+  let plants: 批项 | null = null;
+  materialClasses.forEach((materialClass, classNo) => {
+    const faces = sectionMesh[materialClass];
+    if (!faces.n) return;
+    if (materialClass === '水') {
+      water = faceGroupMesh(ctx, faces, materialClass, voxels.原点, voxels.格, box);
+      return;
+    }
+    const item = 建批项(ctx, faces, materialClass === '花草', voxels.原点, posScale / voxels.格, box);
+    items.push([classNo, item]);
+    if (materialClass === '花草') plants = item;
+    else casters.push(item);
+  });
+  return { items, casters, water, plants, box, faceCount: sectionMesh.面数, used: 0, kept: rec };
 };
 
 export type VoxelWorldProps = {
@@ -136,10 +145,14 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     canvas.addEventListener('webglcontextrestored', () => {
       newWorlds.clear();
       清空容器池(ctx);
+      清批绘制(ctx);
     });
   }
   let maybeWorld = glWorlds.get(worldKey);
-  if (!maybeWorld) glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0 }));
+  if (!maybeWorld) {
+    const batches = materialClasses.map((materialClass) => (materialClass === '水' ? null : new 类批(voxelMaterial(materialClass), false)));
+    glWorlds.set(worldKey, (maybeWorld = { cache: new Map(), group: new THREE.Group(), clock: 0, faceCount: 0, batches, shadowBatch: new 类批(影材质, true) }));
+  }
   const world = maybeWorld;
   const { cache, group } = world;
   // 有的镜头组件摆完没更新世界矩阵，不更新就要等下一次画图，挑区段会用上一帧的视野：硬切或隔帧出静帧时缺地形（用户 10-31 定修）
@@ -228,9 +241,14 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
       })().catch((err) => cancelRender(err));
     }
   }
-  // 不用 group.clear()：three 的 remove 对每个子物体 indexOf + splice，一帧上万个网格时是平方级
+  // 不用 group.clear()：three 的 remove 对每个子物体 indexOf + splice，水面多时是平方级
   for (const child of group.children) (child as { parent: THREE.Object3D | null }).parent = null;
   group.children.length = 0;
+  // 代理物体放在镜头附近的整数格点上（批绘制.ts 文件头）
+  const { batches, shadowBatch } = world;
+  const anchor = [Math.round(camPos[0]), Math.round(camPos[1]), Math.round(camPos[2])];
+  for (const batch of batches) batch?.清(anchor);
+  shadowBatch.清(anchor);
   const frameClock = world.clock;
   const keptStamp = ++keptClock;
   // 裙边（lib/体素/网格.ts 文件头）：这一侧同一级的邻居这一帧也在画，裙边就藏在它的地面底下，不画
@@ -250,23 +268,29 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
     const facingDirs = visibleDirs(entry.box, camPos, skirts);
     const allWithSkirts = [...allDirs, ...skirts]; // 裙边全画时也照邻居挑
     const farPlants = entry.plants !== null && distToBox(entry.box, camPos) > plantFarM;
-    for (const mesh of entry.meshes) {
-      const dirs = mesh.geometry.drawRange.count / 6 > drawAllMaxFaces ? facingDirs : allWithSkirts;
-      pickDirs(mesh, farPlants && mesh === entry.plants ? dirs.map((x, k) => x && k !== 6) : dirs);
-      if (mesh.visible) group.add(mesh);
+    for (const [classNo, item] of entry.items) {
+      const dirs = item.面 > drawAllMaxFaces ? facingDirs : allWithSkirts;
+      batches[classNo]!.加(item, farPlants && item === entry.plants ? dirs.map((x, k) => x && k !== 6) : dirs);
     }
-    if (backlit)
-      for (const mesh of entry.shadowMeshes) {
-        pickDirs(mesh, mesh.geometry.drawRange.count / 6 > drawAllMaxFaces ? backlit : allDirs);
-        if (mesh.visible) group.add(mesh);
-      }
+    if (entry.water) {
+      pickDirs(entry.water, entry.water.geometry.drawRange.count / 6 > drawAllMaxFaces ? facingDirs : allWithSkirts);
+      if (entry.water.visible) group.add(entry.water);
+    }
+    if (backlit) for (const item of entry.casters) shadowBatch.加(item, item.面 > drawAllMaxFaces ? backlit : allDirs);
   }
+  // 这一帧没有哪一类的面，那一类的材质就不在场景里（屏幕AO 按场景里有哪些材质定怎么画）
+  for (const batch of batches) if (batch?.项.length) group.add(batch);
+  if (shadowBatch.项.length) group.add(shadowBatch);
   // 这一帧用到的块不能被清掉
   if (world.faceCount > maxCachedFaces) {
     const all = [...cache.entries()].sort((a, b) => a[1].used - b[1].used);
     for (const [k, entry] of all) {
       if (world.faceCount <= maxCachedFaces * 0.8 || entry.used > frameClock) break;
-      releaseVoxelMeshes(ctx, entry.meshes, entry.shadowMeshes);
+      放批项(
+        ctx,
+        entry.items.map((x) => x[1]),
+      );
+      if (entry.water) releaseVoxelMeshes(ctx, [entry.water]);
       world.faceCount -= entry.faceCount;
       cache.delete(k);
     }
