@@ -1,0 +1,192 @@
+[
+  {
+    "场": "飞行",
+    "档": 21.5,
+    "参考": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/飞行.mkv",
+    "软件": "ffmpeg 9.0.2",
+    "度量": "4K VMAF v0.6.1 全96帧",
+    "A参数": [
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "18",
+      "-maxrate",
+      "40M",
+      "-bufsize",
+      "80M"
+    ],
+    "B参数": [
+      "-c:v",
+      "libx265",
+      "-preset",
+      "medium",
+      "-crf",
+      "21.5",
+      "-x265-params",
+      "pools=4:frame-threads=2:log-level=error",
+      "-tag:v",
+      "hvc1"
+    ],
+    "两组均用": [
+      "-pix_fmt",
+      "yuv420p",
+      "-colorspace",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-color_primaries",
+      "bt709"
+    ],
+    "试档VMAF": {
+      "23.0": 71.353575,
+      "22.3": 71.915037,
+      "21.5": 72.464224
+    },
+    "轮": [
+      {
+        "秒": 12.28,
+        "字节": 11876060,
+        "前后温度": [
+          69.6,
+          69.9
+        ],
+        "起UTC": "2026-11-15T02:27:40.385816+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-飞行-A1.mp4",
+        "轮": "A1"
+      },
+      {
+        "秒": 27.982,
+        "字节": 13183159,
+        "前后温度": [
+          70.9,
+          69.1
+        ],
+        "起UTC": "2026-11-15T02:27:53.044724+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-飞行-B1.mp4",
+        "轮": "B1"
+      },
+      {
+        "秒": 28.852,
+        "字节": 13183159,
+        "前后温度": [
+          69.7,
+          68.2
+        ],
+        "起UTC": "2026-11-15T02:28:21.386347+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-飞行-B2.mp4",
+        "轮": "B2"
+      },
+      {
+        "秒": 12.793,
+        "字节": 11876060,
+        "前后温度": [
+          68.1,
+          67.6
+        ],
+        "起UTC": "2026-11-15T02:28:50.598509+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-飞行-A2.mp4",
+        "轮": "A2"
+      }
+    ],
+    "VMAF": [
+      72.525028,
+      72.464224
+    ]
+  },
+  {
+    "场": "法术",
+    "档": 21.5,
+    "参考": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/法术.mkv",
+    "软件": "ffmpeg 9.0.2",
+    "度量": "4K VMAF v0.6.1 全96帧",
+    "A参数": [
+      "-c:v",
+      "libx264",
+      "-preset",
+      "medium",
+      "-crf",
+      "18",
+      "-maxrate",
+      "40M",
+      "-bufsize",
+      "80M"
+    ],
+    "B参数": [
+      "-c:v",
+      "libx265",
+      "-preset",
+      "medium",
+      "-crf",
+      "21.5",
+      "-x265-params",
+      "pools=4:frame-threads=2:log-level=error",
+      "-tag:v",
+      "hvc1"
+    ],
+    "两组均用": [
+      "-pix_fmt",
+      "yuv420p",
+      "-colorspace",
+      "bt709",
+      "-color_trc",
+      "bt709",
+      "-color_primaries",
+      "bt709"
+    ],
+    "试档VMAF": {
+      "21.5": 70.815052
+    },
+    "轮": [
+      {
+        "秒": 13.551,
+        "字节": 11982135,
+        "前后温度": [
+          66.4,
+          67.6
+        ],
+        "起UTC": "2026-11-15T02:30:11.651086+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-法术-A1.mp4",
+        "轮": "A1"
+      },
+      {
+        "秒": 35.754,
+        "字节": 14276343,
+        "前后温度": [
+          68.3,
+          67.4
+        ],
+        "起UTC": "2026-11-15T02:30:25.550103+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-法术-B1.mp4",
+        "轮": "B1"
+      },
+      {
+        "秒": 36.541,
+        "字节": 14276343,
+        "前后温度": [
+          67.6,
+          66.9
+        ],
+        "起UTC": "2026-11-15T02:31:01.667078+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-法术-B2.mp4",
+        "轮": "B2"
+      },
+      {
+        "秒": 13.615,
+        "字节": 11990405,
+        "前后温度": [
+          67.4,
+          68.2
+        ],
+        "起UTC": "2026-11-15T02:31:38.597951+00:00",
+        "文件": "/Users/particle/Developer/personal/mc-anim-wt/重打-astra/out/三轮/转码/等质/x265-法术-A2.mp4",
+        "轮": "A2"
+      }
+    ],
+    "VMAF": [
+      70.611187,
+      70.815052
+    ]
+  }
+]
