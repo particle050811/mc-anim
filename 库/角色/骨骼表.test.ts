@@ -50,15 +50,15 @@ describe('骨骼表正本', () => {
 
 describe('骨骼表正本和旧副本画出来一样', () => {
   it('2-空床 的 插骨（三种字段都插）', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/段/2-空床/编排.ts', '插骨');
+    const legacyFn = copyFn('作品/把回忆拼好给你/段/2-空床/编排.ts', 'lerpBonePose');
     for (const t of sampleTimes) expect(snapshot(legacyFn(first, secondBones, t))).toEqual(snapshot(lerpBonePose(first, secondBones, t)));
   });
   it('2-收集快乐 的 插骨（只插 rot）', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/段/2-收集快乐/编排.ts', '插骨');
+    const legacyFn = copyFn('作品/把回忆拼好给你/段/2-收集快乐/编排.ts', 'lerpBonePose');
     for (const t of sampleTimes) expect(snapshot(legacyFn(first, secondBones, t))).toEqual(snapshot(lerpBonePose(first, secondBones, t, ['rot'])));
   });
   it('2-末地 的 插骨（插 rot、pos，别的字段照抄 b）= 合并(a, b, 插骨 rot pos)', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', '插骨');
+    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', 'lerpBonePose');
     for (const t of sampleTimes) expect(snapshot(legacyFn(first, secondBones, t))).toEqual(snapshot(mergeSkeleton(first, secondBones, lerpBonePose(first, secondBones, t, ['rot', 'pos']))));
   });
   it('一镜到底 的 mixBones（只插 rot，别的字段照抄 from）= 合并(from, 插骨 rot)', () => {
@@ -66,7 +66,7 @@ describe('骨骼表正本和旧副本画出来一样', () => {
     for (const t of sampleTimes) expect(snapshot(legacyFn(first, secondBones, t))).toEqual(snapshot(mergeSkeleton(first, lerpBonePose(first, secondBones, t, ['rot']))));
   });
   it('魔法酒狐动作 的 合并', () => {
-    const legacyFn = copyFn('库/角色/魔法酒狐动作.ts', '合并');
+    const legacyFn = copyFn('库/角色/魔法酒狐动作.ts', 'merge');
     expect(legacyFn(first, secondBones, { head: { scale: 3 } })).toEqual(mergeSkeleton(first, secondBones, { head: { scale: 3 } }));
   });
 });

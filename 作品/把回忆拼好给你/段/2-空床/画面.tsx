@@ -20,7 +20,7 @@ import { shadingSceneAt, lightState, postGrade, LiYingState, herTone, outdoorSta
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { useCurrentFrame } from '../../当前帧.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, toSongFrame(0)));
 
@@ -64,7 +64,7 @@ const LogoffAfterimage: React.FC<{ f: number }> = ({ f }) => {
 };
 
 const picture: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const light = lightState(f);
   return (
     <>

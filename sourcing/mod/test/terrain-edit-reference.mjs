@@ -95,7 +95,7 @@ const points = JSON.parse(fs.readFileSync(path.join(caseDir, 'points.json'), 'ut
 }
 
 {
-  const { badCases } = JSON.parse(fs.readFileSync(path.join(caseDir, 'bad-cases.json'), 'utf8'))
+  const { 错例: badCases } = JSON.parse(fs.readFileSync(path.join(caseDir, 'bad-cases.json'), 'utf8'))
   let missed = 0
   for (const [caseName, j] of badCases) {
     try {

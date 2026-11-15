@@ -131,7 +131,7 @@ export const runCommandLine = async (argv: readonly string[], o: RouteOptions): 
     }
     if (debug && stack && (e instanceof WorkSelectError || e instanceof UsageError)) sink.error(stack);
     // 上面已打过，不经 记录.记 再打一遍；调用栈总记下
-    runRecord.事件.push({ 时间: utcTime(), 级别: '错误', 文本: errorMessage, ...(stack ? { callStack: stack } : {}) });
+    runRecord.事件.push({ 时间: utcTime(), 级别: '错误', 文本: errorMessage, ...(stack ? { 调用栈: stack } : {}) });
   }
   if(task)task.结束(code,undefined,errorText);
   else if (!c.noRecord) runRecord.结束(code);

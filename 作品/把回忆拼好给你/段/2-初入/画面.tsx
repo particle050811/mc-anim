@@ -24,7 +24,7 @@ import { gradeAt, drillDone, shotAt } from './编排.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { useCurrentFrame } from '../../当前帧.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const startFrame = segmentWindow('2-初入').起帧;
 const width = aspect.宽, height = aspect.高;
@@ -37,7 +37,7 @@ const chatLines = [{ text: 'Steve加入了游戏', color: yellow, startTick: 0 }
 const notDug = { dugCount: 0, dirtCovered: false };
 
 const picture: React.FC = () => {
-  const songFrame = startFrame + useCurrentFrame();
+  const songFrame = startFrame + use当前帧();
   const tone = gradeAt(songFrame);
   const sample = youAt(songFrame);
   const youPose = stevePose(sample.feet, sample.facing, { sec: sample.秒, limbSwing: sample.swing, stride: sample.stride, headPitch: sample.头 });

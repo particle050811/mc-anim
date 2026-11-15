@@ -33,23 +33,23 @@ const animations = parseAnimationFile({
       animation_length: 2,
       bones: { head: { rotation: { '0.0': [0, 0, 0], '2.0': [60, 0, 0] } } },
     },
-    stand: { loop: true, bones: { body: { position: [0, 2, 0] } } },
-    sit: { loop: true, bones: { body: { position: [0, -4, 0], rotation: [0, 0, 10] } } },
-    wave: {
+    站: { loop: true, bones: { body: { position: [0, 2, 0] } } },
+    坐: { loop: true, bones: { body: { position: [0, -4, 0], rotation: [0, 0, 10] } } },
+    挥手: {
       animation_length: 1,
       bones: { arm: { rotation: { '0.0': [-30, 0, 0], '1.0': [-90, 0, 0] } } },
     },
-    turnAround: { loop: true, bones: { body: { rotation: [0, 170, 0] } } },
-    turnAroundReverse: { loop: true, bones: { body: { rotation: [0, -170, 0] } } },
-    setVar: { loop: true, bones: { body: { position: ['v.height', 0, 0] } } },
-    delay: {
+    转身: { loop: true, bones: { body: { rotation: [0, 170, 0] } } },
+    反转身: { loop: true, bones: { body: { rotation: [0, -170, 0] } } },
+    设变量: { loop: true, bones: { body: { position: ['v.height', 0, 0] } } },
+    延迟: {
       loop: true,
       animation_length: 1,
       start_delay: 0.5,
       loop_delay: 0.25,
       bones: { a: { position: { '0.0': [0, 0, 0], '1.0': [8, 0, 0] } } },
     },
-    randomDelay: {
+    随机延迟: {
       loop: true,
       animation_length: 1,
       loop_delay: 'v.loops = (v.loops ?? 0) + 1; return v.loops;',
@@ -68,7 +68,7 @@ describe('基岩版控制器', () => {
     expect(typeof controller.states.default!.animations[0]!.weight).toBe('object');
     expect(controller.states.default!.transitions.map((t) => t.到)).toEqual(['grazing']);
     expect(controller.states.grazing!.transition).toBe(0);
-    expect(() => parseControllerFile({ animation_controllers: { c: { states: { default: { transitions: [{ missingState: '1' }] } } } } })).toThrow(/不存在/);
+    expect(() => parseControllerFile({ animation_controllers: { c: { states: { default: { transitions: [{ 没有: '1' }] } } } } })).toThrow(/不存在/);
   });
 
   // 第 1 秒开始吃草（只给一步），吃完 2 秒自己回 default
@@ -105,8 +105,8 @@ describe('基岩版控制器', () => {
         c: {
           initial_state: '坐',
           states: {
-            sit: { animations: ['坐'], transitions: [{ stand: 'q.life_time >= 1' }], blend_transition: 0.5, on_exit: 'v.stood = 1;' },
-            stand: { animations: ['站', '设变量'], on_entry: ['v.height = 3;'] },
+            坐: { animations: ['坐'], transitions: [{ 站: 'q.life_time >= 1' }], blend_transition: 0.5, on_exit: 'v.stood = 1;' },
+            站: { animations: ['站', '设变量'], on_entry: ['v.height = 3;'] },
           },
         },
       },
@@ -178,7 +178,7 @@ describe('start_delay、loop_delay', () => {
     expect(animProgress(a, 0.3, { 口径: 'TLM' }).时).toBeCloseTo(0.3, 12);
   });
   it('loop_delay 是 Molang 时每遍末求一次', () => {
-    const b = animations.randomDelay!;
+    const b = animations.随机延迟!;
     const variables = {};
     // 第 1 遍 [0,1)、等 1、第 2 遍 [2,3)、等 2、第 3 遍 [5,6)
     expect(animProgress(b, 1.5, { 环境: { 变量: variables } }).时).toBe(1);

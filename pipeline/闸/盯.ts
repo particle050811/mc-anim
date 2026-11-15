@@ -28,7 +28,7 @@ const watchedSessions = (e: SchedulerEnv) => {
 type WatchedSessions = ReturnType<typeof watchedSessions>;
 const initiatorSession = (x: unknown) => (x as { 发起?: { 会话?: string } } | undefined)?.发起?.会话;
 /** 此刻有任务在跑、持锁或排队的会话；人手起的、旧闸的没有会话，记成空串。 */
-const activeSessions = (s: SchedulerState) => new Set([...s.running.map(initiatorSession), ...s.lockHolders.filter(x => !x.死).map(initiatorSession), ...s.票.filter(t => !t.死).map(t => initiatorSession(t.ticketContent))].map(x => x ?? ''));
+const activeSessions = (s: SchedulerState) => new Set([...s.在跑.map(initiatorSession), ...s.持锁.filter(x => !x.死).map(initiatorSession), ...s.票.filter(t => !t.死).map(t => initiatorSession(t.内容))].map(x => x ?? ''));
 /**
  * 告警按归属分发（用户 11-15 定，此前每个会话都被别人的告警叫醒）：
  * 任务类只醒任务的主人；机器类（负载、压力、发热……）只醒此刻在机器上有活的会话，谁都没活就不醒；
@@ -110,7 +110,7 @@ export const watchSched = async (e: SchedulerEnv, o: {
                 continue;
             }
             const trialResult = tryLocked(cursorLock, e.localHost, () => {
-                const savedCursor = readJson<LogPosition>(cursorFile), cursor = typeof savedCursor?.offset === 'number' ? savedCursor : null;
+                const savedCursor = readJson<LogPosition>(cursorFile), cursor = typeof savedCursor?.偏移 === 'number' ? savedCursor : null;
                 const { 行: rows, endCursor } = readNewEvents(e.logDir, cursor);
                 let watchedCache: WatchedSessions | undefined, stopPos: LogPosition | null | undefined, prevCursor: LogPosition | null = cursor;
                 const unread: typeof rows = [];
@@ -130,7 +130,7 @@ export const watchSched = async (e: SchedulerEnv, o: {
                 // 没报的留在游标后面，下一只接着报；游标写坏了顶多重报，不能挡住这次叫醒。
                 // 停在第一件之前又没有游标（新会话首挂）就不写，下一轮照样按首挂回看。
                 const nextCursor = unreported.length ? batch.at(-1)!.到 : stopPos !== undefined ? stopPos : endCursor;
-                if (nextCursor && (nextCursor.月 !== cursor?.月 || nextCursor.offset !== cursor.offset))
+                if (nextCursor && (nextCursor.月 !== cursor?.月 || nextCursor.偏移 !== cursor.偏移))
                     promptOnly('盯游标', () => writeJson(cursorFile, nextCursor));
                 return { report: batch.map(r => r.事件), 余: unreported.map(r => r.事件) };
             });

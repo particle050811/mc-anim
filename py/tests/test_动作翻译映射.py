@@ -128,7 +128,7 @@ def test_proguard_names_revert_and_search_parent(client: Path) -> None:
     assert m.method_ref("java/lang/Math", "sin", "(D)D") == "sin"
 
 
-@pytest.mark.parametrize("名, 内容, 带client", [("tsrg", TSRG_V1, True), ("tsrg2-obf", TSRG2_OBF, True), ("tsrg2-官方", tsrg2_official, False), ("tsrg2-官方+client", tsrg2_official, True)])
+@pytest.mark.parametrize("table_name, content, with_client", [("tsrg", TSRG_V1, True), ("tsrg2-obf", TSRG2_OBF, True), ("tsrg2-官方", tsrg2_official, False), ("tsrg2-官方+client", tsrg2_official, True)])
 def test_srg_three_tables_revert_to_official(tmp_path: Path, client: Path, table_name: str, content: str, with_client: bool) -> None:
     t = tmp_path / f"{table_name}.tsrg"
     t.write_text(content, encoding="utf-8")

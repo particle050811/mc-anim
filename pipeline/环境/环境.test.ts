@@ -48,8 +48,8 @@ describe('资源读数', () => {
   });
 
   it('渲染放行只看空闲内存下限，交换区快满也放', () => {
-    const m = { 总: 100, free: 50, freePercent: 50, swapTotal: 100, swapUsed: 95 };
+    const m = { 总: 100, 空闲: 50, 空闲百分比: 50, 交换区总: 100, 交换区已用: 95 };
     expect(enoughMemory(m, 30)).toBe(true);
-    expect(enoughMemory({ ...m, freePercent: 20 }, 30)).toBe(false);
+    expect(enoughMemory({ ...m, 空闲百分比: 20 }, 30)).toBe(false);
   });
 });

@@ -101,7 +101,7 @@ describe('第 4 幕 轰炸', () => {
     const lastLandTime = Math.max(...Object.values(qiFangShot.ultimateLandTimes).map((x) => x!));
     const guardShotTimes = qiFangShot.hitEvents.filter((h) => h.id === 'prisma_beam').map((h) => h.秒);
     expect(guardShotTimes.every((x) => x < lastLandTime)).toBe(true);
-    expect(Object.keys(qiFangShot.cameraStart)).toEqual(['侧', '第一人称']);
+    expect(Object.keys(qiFangShot.cameraStart)).toEqual(['side', 'firstPerson']);
     expect(qiFangShot.totemSec - qiFangShot.actStart).toBeGreaterThan(qiFangShot.cameraStart.firstPerson + 0.2 - 1e-9);
     expect(qiFangShot.totemSec - qiFangShot.actStart + 2).toBeLessThan(qiFangShot.deathTime);
     console.log('大招第一下打到他（幕内秒）', Object.entries(qiFangShot.ultimateLandTimes).map(([id, s]) => `${id} ${s!.toFixed(2)}`).join('；'), `；图腾 ${(qiFangShot.totemSec - qiFangShot.actStart).toFixed(2)}；死 ${qiFangShot.deathTime.toFixed(2)}`);

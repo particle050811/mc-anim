@@ -24,7 +24,7 @@ it('SIGKILL 持有者 3 秒内回收，原持有者和崩溃只写一次',async(
 });
 it.each([['SIGTERM',143],['SIGHUP',129]] as const)('%s 清票放锁清临时文件并记耗时 %s',async(sig,code)=>{
   const {c,错误: stderrText}=await startChild();const task=JSON.parse(fs.readFileSync(path.join(dir,'渲染.lock.信息.json'),'utf8')).任务;
-  fs.mkdirSync(path.join(dir,'指令'),{recursive:true});fs.writeFileSync(path.join(dir,'指令',task+'.json'),JSON.stringify({action:'取消',reason:'测试不重发'}));
+  fs.mkdirSync(path.join(dir,'指令'),{recursive:true});fs.writeFileSync(path.join(dir,'指令',task+'.json'),JSON.stringify({动作:'取消',为什么:'测试不重发'}));
   const end=once(c,'exit');c.kill(sig);const [exitCode]=await end;expect(exitCode).toBe(code);
   expect(stderrText()).toContain('被调度取消：测试不重发，不要原样重发');
   expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(false);
@@ -35,7 +35,7 @@ it.each([['SIGTERM',143],['SIGHUP',129]] as const)('%s 清票放锁清临时文�
 });
 it('8 进程各 1000 行 O_APPEND 全部可解析',async()=>{
   const module=path.join(import.meta.dirname,'调度日志.ts');
-  await Promise.all(Array.from({length:8},async(_,i)=>{const c=spawn(process.execPath,['--input-type=module','-e',`import {记调度} from ${JSON.stringify(module)};for(let n=0;n<1000;n++)记调度(${JSON.stringify(dir)},'测试',{i:${i},n});`]);children.push(c);expect((await once(c,'exit'))[0]).toBe(0);}));
+  await Promise.all(Array.from({length:8},async(_,i)=>{const c=spawn(process.execPath,['--input-type=module','-e',`import {recordSchedulerEvent} from ${JSON.stringify(module)};for(let n=0;n<1000;n++)recordSchedulerEvent(${JSON.stringify(dir)},'测试',{i:${i},n});`]);children.push(c);expect((await once(c,'exit'))[0]).toBe(0);}));
   const rows=readSchedulerEvents(dir);expect(rows).toHaveLength(8000);expect(new Set(rows.map(x=>`${x.i}-${x.n}`)).size).toBe(8000);
 });
 it('白名单及命令遮密，不泄漏 token 类变量',()=>{

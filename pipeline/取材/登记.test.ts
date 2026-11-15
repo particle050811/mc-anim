@@ -57,7 +57,7 @@ describe('许可按 jar 继承', () => {
   it('结构化字段；旧的一句话写法当成没定', () => {
     expect(q.jars.get('机械')?.许可).toEqual({ 代码: 'MIT', 资源: 'LicenseRef-All-Rights-Reserved' });
     expect(q.jars.get('旧写法')?.许可).toEqual({ 原文: 'OSI' });
-    expect(() => readJarLicense({ artLicense: 'MIT' })).toThrow('美术');
+    expect(() => readJarLicense({ 美术: 'MIT' })).toThrow('美术');
   });
 
   it('按类别取部分（音效取声音，没写声音退回资源），几个 jar 用 AND 合起来、去重', () => {

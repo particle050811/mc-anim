@@ -42,5 +42,5 @@ packages:
   vitest@5.0.3:
     resolution: {integrity: sha512-x}
 `;
-  expect(Object.fromEntries(parsePnpmLock(lockText))).toEqual({ '@remotion/three': '4.0.537', gitPkg: '1.0.0', vitest: '5.0.3' });
+  expect(Object.fromEntries(parsePnpmLock(lockText))).toEqual({ '@remotion/three': '4.0.537', git包: '1.0.0', vitest: '5.0.3' });
 });

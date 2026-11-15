@@ -37,7 +37,7 @@ export const waitUntil = async (p: ParsedArgs, e: SchedulerEnv, o: {
         if (p.值['--文件'] && fs.existsSync(p.值['--文件']))
             return 0;
         if (p.值['--内存']) {
-            const n = (o.freeMemory ?? (() => readMemory()?.freePercent ?? null))();
+            const n = (o.freeMemory ?? (() => readMemory()?.空闲百分比 ?? null))();
             if (n !== null && n >= Number(p.值['--内存']))
                 return 0;
         }

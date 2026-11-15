@@ -8,10 +8,10 @@ import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
 import { TimeLagSplit } from '../../场/2-门口/时差分屏.tsx';
 import { frameWindow } from './窗口.ts';
-import { useCurrentFrame } from '../../当前帧.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const picture: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <AbsoluteFill style={{ background: '#000' }}>
       <TimeLagSplit 帧={frameWindow.起帧 + f} 种子={f} />

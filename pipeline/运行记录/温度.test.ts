@@ -30,10 +30,10 @@ it('复用机器采样时钟，开始、过程、结束与帧耗时同起点，�
   expect(vi.getTimerCount()).toBe(0);
   const { 文件: file, 明细: d } = await c.writeOut([], {}, dir);
   expect(tempReader).toHaveBeenCalledTimes(3);
-  expect(d.系统.map(s => [s.秒, s.timePoint, s.芯片最高温, s.发热等级])).toEqual([[0, '开始', 70, 0], [10, '采样', 91, 2], [12, '结束', 82, 1]]);
+  expect(d.系统.map(s => [s.秒, s.时点, s.芯片最高温, s.发热等级])).toEqual([[0, '开始', 70, 0], [10, '采样', 91, 2], [12, '结束', 82, 1]]);
   expect(d.帧.map(f => f.毫秒)).toEqual([10_000, 2000]);
-  expect(d.temperature).toEqual({ 开始: { 芯片最高温: 70, 发热等级: 0 }, 结束: { 芯片最高温: 82, 发热等级: 1 }, peak: { 芯片最高温: 91, 发热等级: 2 } });
-  expect(JSON.parse(fs.readFileSync(file!, 'utf8')).温度).toEqual(d.temperature);
+  expect(d.温度).toEqual({ 开始: { 芯片最高温: 70, 发热等级: 0 }, 结束: { 芯片最高温: 82, 发热等级: 1 }, 最高: { 芯片最高温: 91, 发热等级: 2 } });
+  expect(JSON.parse(fs.readFileSync(file!, 'utf8')).温度).toEqual(d.温度);
   for (const out of [detailReport(d), detailOverview([{ 明细: d }])]) expect(out).toContain('最高芯温 91.0°C，最高发热等级 2');
 });
 
@@ -41,8 +41,8 @@ it('不足一个周期的短渲染仍有开始结束，正常等级 0 不会消�
   const c = new DetailCollector('render:作/短渲:视频');
   await c.包(async () => { await vi.advanceTimersByTimeAsync(50); c.frameDone(1); });
   const { 明细: d } = await c.writeOut([], {}, dir);
-  expect(d.系统.map(s => [s.秒, s.timePoint])).toEqual([[0, '开始'], [0.05, '结束']]);
-  expect(d.temperature?.peak).toEqual({ 芯片最高温: 71, 发热等级: 0 });
+  expect(d.系统.map(s => [s.秒, s.时点])).toEqual([[0, '开始'], [0.05, '结束']]);
+  expect(d.温度?.最高).toEqual({ 芯片最高温: 71, 发热等级: 0 });
   expect(detailReport(d)).toContain('最高发热等级 0');
 });
 
@@ -56,7 +56,7 @@ it.each(['拒绝', '抛错'])('读数函数%s时渲染照常，null 不冒充零
   expect(d.帧).toHaveLength(1);
   expect(d.系统).toHaveLength(2);
   for (const s of d.系统) expect(s).toMatchObject({ 芯片最高温: null, 发热等级: null });
-  for (const x of Object.values(d.temperature!)) expect(x).toEqual({ 芯片最高温: null, 发热等级: null });
+  for (const x of Object.values(d.温度!)) expect(x).toEqual({ 芯片最高温: null, 发热等级: null });
   expect(detailReport(d)).not.toMatch(/最高芯温|最高发热等级/);
 });
 
@@ -65,10 +65,10 @@ it('一项缺失独立保留另一项；旧明细不伪造温度', async () => {
   const c = new DetailCollector('render:作/部分读数:视频');
   await c.包(async () => {});
   const { 明细: d } = await c.writeOut([], {}, dir);
-  expect(d.temperature?.peak).toEqual({ 芯片最高温: null, 发热等级: 2 });
+  expect(d.温度?.最高).toEqual({ 芯片最高温: null, 发热等级: 2 });
   expect(detailReport(d)).toContain('最高发热等级 2');
   expect(detailReport(d)).not.toContain('最高芯温');
-  delete d.temperature;
+  delete d.温度;
   expect(detailReport(d)).not.toMatch(/最高芯温|最高发热等级/);
 });
 
@@ -78,7 +78,7 @@ it('不收日志时不采样、不写温度，不把未采伪装成读不到', a
   const { 文件: file, 明细: d } = await c.writeOut([], {}, dir);
   expect(tempReader).not.toHaveBeenCalled();
   expect(d.系统).toEqual([]);
-  expect(d.temperature).toBeUndefined();
+  expect(d.温度).toBeUndefined();
   expect(JSON.parse(fs.readFileSync(file!, 'utf8'))).not.toHaveProperty('温度');
   expect(detailReport(d)).not.toMatch(/最高芯温|最高发热等级/);
 });

@@ -8,13 +8,13 @@ import { resolveSchedulerEnv } from './任务.ts';
 import { readCaller } from './发起者.ts';
 import { readSchedulerEvents } from './调度日志.ts';
 vi.mock('./机器.ts', async (actual) => ({ ...await actual<typeof import('./机器.ts')>(), readMachineSnapshot: vi.fn(), readMachineSnapshotParallel: vi.fn() }));
-const fakeMachine = (gate: number, thermalLevel: number): MachineSnapshot => ({ 负载: 1, 核: 10, 闸: gate, 压力: 1, free: 1e9, 压缩: 0, swap: 0, swapOut: 0, GPU: 0, 热: thermalLevel, 芯片最高温: 50, 发热等级: thermalLevel, disk: 1e11, orphans: 0, psOutput: '' });
+const fakeMachine = (gate: number, thermalLevel: number): MachineSnapshot => ({ 负载: 1, 核: 10, 闸: gate, 压力: 1, free: 1e9, 压缩: 0, swap: 0, 换出: 0, GPU: 0, 热: thermalLevel, 芯片最高温: 50, 发热等级: thermalLevel, 盘: 1e11, 孤儿: 0, 进程: '' });
 let dir: string;
 beforeEach(() => { vi.resetAllMocks(); dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-持锁监测-')); });
 afterEach(() => { vi.useRealTimers(); fs.rmSync(dir, { recursive: true, force: true }); });
 it('持锁 30 秒心跳必须现读，不能沿用领票快照，新的发热仍告警', async () => {
   let now = Date.now();
-  const e: GateEnv = { ...resolveSchedulerEnv({ lockDir: dir, caller: readCaller({}, [], dir, false) }), nowMs: () => now, memFloor: 30, readMemory: () => ({ 总: 100, free: 80, freePercent: 80, swapTotal: 0, swapUsed: 0 }), readPressure: () => 1, load1Min: () => 0, coreCount: () => 10, sleep: vi.fn(async () => {}), clearOrphans: () => [], readMachine: readMachineSnapshot };
+  const e: GateEnv = { ...resolveSchedulerEnv({ lockDir: dir, caller: readCaller({}, [], dir, false) }), nowMs: () => now, memFloor: 30, readMemory: () => ({ 总: 100, 空闲: 80, 空闲百分比: 80, 交换区总: 0, 交换区已用: 0 }), readPressure: () => 1, load1Min: () => 0, coreCount: () => 10, sleep: vi.fn(async () => {}), clearOrphans: () => [], readMachine: readMachineSnapshot };
   vi.mocked(readMachineSnapshotParallel).mockResolvedValue(fakeMachine(80, 0));
   vi.mocked(readMachineSnapshot).mockReturnValue(fakeMachine(45, 3));
   vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval'] });

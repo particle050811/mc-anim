@@ -13,21 +13,21 @@ export const sideNoteFile = (refFile: string) => `${refFile.replace(/\.mkv$/, ''
 
 export type Sidecar = {
   /** 哪条认可记录的参考（认可.ts 的 抽样键，和参考文件名里的一样）：参考和记录配错了核得出来 */
-  sampleKey: string;
+  抽样键: string;
   /** 参考里各帧是原片的第几帧，升序 */
   帧: number[];
   /** 各帧 yuv420p 原样的 sha256 */
   yuv: string[];
   /** 从哪份抽的（现在只有 切片） */
   来源: string;
-  masterByteSha: string | null;
-  recordedAt: string;
+  母版字节sha: string | null;
+  记于: string;
 };
 
 export const readSidecar = (refFile: string): Sidecar | null => {
   try {
     const j = JSON.parse(fs.readFileSync(sideNoteFile(refFile), 'utf8')) as Sidecar;
-    return typeof j.sampleKey === 'string' && Array.isArray(j.帧) && Array.isArray(j.yuv) && j.帧.length === j.yuv.length ? j : null;
+    return typeof j.抽样键 === 'string' && Array.isArray(j.帧) && Array.isArray(j.yuv) && j.帧.length === j.yuv.length ? j : null;
   } catch {
     return null;
   }
@@ -38,7 +38,7 @@ export async function* refPixels(refFile: string, approval: ApprovalRecord, want
   const frames = sampleFrames(approval.帧数, approval.间隔);
   const sideNote = readSidecar(refFile);
   if (!sideNote) throw new RefMismatchError(`认可参考 ${refFile} 没有旁记（换比法以前的老参考），删掉它再 anim verify 补参考`);
-  if ((sideNote.sampleKey !== sampleKey(approval) || sideNote.帧.join() !== frames.join())) throw new RefMismatchError(`认可参考 ${refFile} 的旁记不是这条认可记录的（删掉参考和旁记再 anim verify 补参考）`);
+  if ((sideNote.抽样键 !== sampleKey(approval) || sideNote.帧.join() !== frames.join())) throw new RefMismatchError(`认可参考 ${refFile} 的旁记不是这条认可记录的（删掉参考和旁记再 anim verify 补参考）`);
   const sidecarHashes = new Map(sideNote.帧.map((f, i) => [f, sideNote.yuv[i]!]));
   const yuvStream = sampledStream(refFile, frames, wantedFrames, approval.宽, approval.高, 'yuv420p');
   try {

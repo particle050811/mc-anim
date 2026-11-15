@@ -16,7 +16,7 @@ export const lineTablePath = (c: CheckContext) => c.workPath('台词.toml');
 export { textHash };
 
 export const subtitlePositions = ['下', '思索上'];
-export type LineEntry = { id: string; 角色: string; 文本: string; 念?: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; unused?: boolean };
+export type LineEntry = { id: string; 角色: string; 文本: string; 念?: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; 未用?: boolean };
 
 export const readLineTable = (c: CheckContext, report?: CheckReport): LineEntry[] | null => {
   const path = lineTablePath(c);
@@ -56,7 +56,7 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
     if (!m) report.错(`${displayName}：id 要是 <章>-<角色>-<短名>`, path);
     else if (m[2] !== t.角色) report.错(`${displayName}：id 里的角色「${m[2]}」和 角色 字段「${t.角色}」不一致`, path);
     for (const x of findOldNameClashes(oldName, t.id)) report.错(`${displayName} 撞了旧名表第 ${x.行} 行的旧名（${x.类别}）：旧名永不复用`, path);
-    if (t.unused !== undefined && typeof t.unused !== 'boolean') report.错(`${displayName}：未用 只能写 true 或 false`, path);
+    if (t.未用 !== undefined && typeof t.未用 !== 'boolean') report.错(`${displayName}：未用 只能写 true 或 false`, path);
     if (t.字幕位置 !== undefined && !subtitlePositions.includes(t.字幕位置)) report.错(`${displayName}：字幕位置 只能是 ${subtitlePositions.join('、')}（不写是 下）`, path);
     if (t.念 !== undefined && (typeof t.念 !== 'string' || !t.念)) {
       report.错(`${displayName}：念 要写非空的字（交给 TTS、对口型的字）`, path);
@@ -133,8 +133,8 @@ export const checkLines = async (c: CheckContext, report: CheckReport) => {
   }
   for (const [id, t] of entryMap) {
     const segNames = usedBy.get(id) ?? [];
-    if (t.unused && segNames.length) report.错(`台词「${id}」标了 未用，却被 ${segNames.join('、')} 用到`, path);
-    else if (!t.unused && segNames.length === 0) report.错(`台词「${id}」没有段用到（不用了就标 未用 = true，或删掉并记进旧名表的 已删台词）`, path);
+    if (t.未用 && segNames.length) report.错(`台词「${id}」标了 未用，却被 ${segNames.join('、')} 用到`, path);
+    else if (!t.未用 && segNames.length === 0) report.错(`台词「${id}」没有段用到（不用了就标 未用 = true，或删掉并记进旧名表的 已删台词）`, path);
     else if (segNames.length > 1) report.错(`台词「${id}」在 ${segNames.join('、')} 开口了 ${segNames.length} 次（每句恰好开口一次，接着放的后半截标 接上段）`, path);
   }
 };

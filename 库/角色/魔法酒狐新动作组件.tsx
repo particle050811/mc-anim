@@ -253,8 +253,8 @@ export const magicalWineFoxExBones = (p: MagicalWineFoxExProps): Record<string, 
   }
   for (const n of newSkeletonBoneNames) boneTable[n] = HIDE;
   if (motion.overlay.extraEyeRow) for (const n of ['mcanim右眼补', 'mcanim左眼补', 'ysmGlowmcanim右虹膜补', 'ysmGlowmcanim左虹膜补']) boneTable[n] = {};
-  if (motion.overlay.recognizeMouth) boneTable.mcanimRecognizeMouth = {};
-  if (motion.overlay.hissMouth) boneTable.mcanimHissMouth = {};
+  if (motion.overlay.recognizeMouth) boneTable.mcanim认出你嘴 = {};
+  if (motion.overlay.hissMouth) boneTable.mcanim哈气嘴 = {};
   return { ...boneTable, ...p.skeleton };
 };
 

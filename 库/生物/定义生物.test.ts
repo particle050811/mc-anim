@@ -15,7 +15,7 @@ const villager = defineCreature({
   variant: { 群系: ['平原', '沙漠'], profession: ['无业', '图书管理员'] },
   贴图: (v) => [baseTexByBiome[v.群系], professionLayer[v.profession]],
   动画: {
-    文件: { animations: { idle: { loop: true, animation_length: 2, bones: { body: { rotation: { '0': [0, 0, 0], '2': [10, 0, 0] } } } } } },
+    文件: { animations: { 待机: { loop: true, animation_length: 2, bones: { body: { rotation: { '0': [0, 0, 0], '2': [10, 0, 0] } } } } } },
     defaultLayers: [{ 名: '待机' }],
   },
 });

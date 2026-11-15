@@ -14,8 +14,8 @@ import { readSchedulerEvents } from './调度日志.ts';
 let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-thermal-gate-')); });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
-const fakeMachine = (thermalLevel: number | null = 0): MachineSnapshot => ({ 负载: 1, 核: 10, 闸: 80, 压力: 1, free: 1e9, 压缩: 0, swap: 0, swapOut: 0, GPU: 0, 热: thermalLevel, 芯片最高温: 83.2, 发热等级: thermalLevel, disk: 1e11, orphans: 0, psOutput: '' });
-const stateForLevel = (thermalLevel: number | null): SchedulerState => ({ 时: 0, 机: fakeMachine(thermalLevel), 票: [], lockHolders: [], running: [], recentEvents: [] });
+const fakeMachine = (thermalLevel: number | null = 0): MachineSnapshot => ({ 负载: 1, 核: 10, 闸: 80, 压力: 1, free: 1e9, 压缩: 0, swap: 0, 换出: 0, GPU: 0, 热: thermalLevel, 芯片最高温: 83.2, 发热等级: thermalLevel, 盘: 1e11, 孤儿: 0, 进程: '' });
+const stateForLevel = (thermalLevel: number | null): SchedulerState => ({ 时: 0, 机: fakeMachine(thermalLevel), 票: [], 持锁: [], 在跑: [], 最近: [] });
 
 it('一行和完整视图展示芯温和零级，缺读数不显示，旧快照仍能读', () => {
   for (const formatter of [oneLineStatus, renderView]) {
@@ -32,7 +32,7 @@ it.each([null, 0, 1, 2, 3, 4])('发热等级 %s：仅 ≥3 告警，温度高本
   const s = stateForLevel(thermalLevel); s.机.芯片最高温 = 110;
   const alerts = judgeAlerts(s, 0).filter(x => x.类 === '发热');
   expect(alerts).toHaveLength(thermalLevel !== null && thermalLevel >= 3 ? 1 : 0);
-  if (alerts.length) expect(alerts[0]).toMatchObject({ target: '机器', 阈值: 3, 值: thermalLevel });
+  if (alerts.length) expect(alerts[0]).toMatchObject({ 对象: '机器', 阈值: 3, 值: thermalLevel });
 });
 
 it('2 不叫醒，3 叫醒一次，重挂及升到 4 仍按现有公式去重', async () => {

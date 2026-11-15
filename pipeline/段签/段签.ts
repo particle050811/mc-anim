@@ -210,7 +210,7 @@ export const makeSegStamp = async (pictureMp4: string, soundSource: string | nul
     if (prevStamp && prevStamp.母版.字节sha !== master.字节sha) {
       check = compareSignatures(prevStamp.签名, signature);
       const storedAt = archiveOld(prevStamp, dir);
-      fs.appendFileSync(path.join(dir, historyFileName), JSON.stringify({ recordedAt: segStamp.派生于, prevByteSha: prevStamp.母版.字节sha, prevDerivedAt: prevStamp.派生于, newByteSha: master.字节sha, ...check, storedAt }) + '\n', 'utf8');
+      fs.appendFileSync(path.join(dir, historyFileName), JSON.stringify({ 记于: segStamp.派生于, 上次字节sha: prevStamp.母版.字节sha, 上次派生于: prevStamp.派生于, 这次字节sha: master.字节sha, ...check, 存于: storedAt }) + '\n', 'utf8');
     }
     if (soundRecord) fs.renameSync(soundTempFile!, path.join(dir, soundFileName));
     else fs.rmSync(path.join(dir, soundFileName), { force: true });

@@ -40,7 +40,7 @@ class ImageFlow(Backend):
         return []
 
     def _build_command(self, q: SynthRequest) -> list[str]:
-        p = self.backend_params(q)
+        p = self.参数(q)
         command = ['node', str(self._shell_path()), 'speak', '--text', q.念, '--model', str(p['模型']), '--voice_ref', q.参考音频, '--poll', str(p['等待秒'])]
         if q.语气参考:
             command += ['--emotion_ref', q.语气参考]
@@ -73,7 +73,7 @@ class ImageFlow(Backend):
         return f'image-flow 任务 {response["submit_id"]}'
 
     def _run(self, q: SynthRequest) -> dict:
-        r = subprocess.run(self._build_command(q), capture_output=True, text=True, encoding='utf-8', timeout=float(self.backend_params(q)['等待秒']) + 180)
+        r = subprocess.run(self._build_command(q), capture_output=True, text=True, encoding='utf-8', timeout=float(self.参数(q)['等待秒']) + 180)
         try:
             return json.loads(r.stdout)
         except json.JSONDecodeError:

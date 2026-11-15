@@ -128,7 +128,7 @@ describe('机位正本和旧副本对得上', () => {
   it('lerpCam（7-起疑、6-4-3）和 2-新世界 的 插机位 = 线性 插机位', () => {
     const doubtLerpCam = copyFn('作品/应力转动/段/7-起疑/编排.ts', 'lerpCam');
     const ancientCityLerp = copyFn('作品/应力转动/场/6-古城/6-4-3/编排/机位.ts', 'lerpCam', { extra: { lerpV } });
-    const newWorldInsertRig = copyFn('作品/把回忆拼好给你/场/2-新世界/编排.ts', '插机位');
+    const newWorldInsertRig = copyFn('作品/把回忆拼好给你/场/2-新世界/编排.ts', 'lerpRig');
     for (const k of [0, 0.3, 0.5, 1, 1.2]) {
       const nextCam = J.lerpRig(rigFirst, secondCam, k);
       for (const prevCam of [doubtLerpCam(rigFirst, secondCam, k), ancientCityLerp(rigFirst, secondCam, k)] as J.Cam[]) {

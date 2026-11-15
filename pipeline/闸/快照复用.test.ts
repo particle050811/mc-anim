@@ -11,8 +11,8 @@ import { readCaller } from './发起者.ts';
 import { tryAcquire, releaseLock } from './锁.ts';
 
 vi.mock('./机器.ts', async (actual) => ({ ...await actual<typeof import('./机器.ts')>(), readMachineSnapshot: vi.fn(), readMachineSnapshotParallel: vi.fn() }));
-const fakeMachine = (gate = 80, thermalLevel = 0): MachineSnapshot => ({ 负载: 1, 核: 10, 闸: gate, 压力: 1, free: 1e9, 压缩: 0, swap: 0, swapOut: 0, GPU: 0, 热: thermalLevel, 芯片最高温: 83.2, 发热等级: thermalLevel, disk: 1e11, orphans: 0, psOutput: '不进日志' });
-const makeMemory = (freePercent: number) => ({ 总: 100, free: freePercent, freePercent, swapTotal: 0, swapUsed: 0 });
+const fakeMachine = (gate = 80, thermalLevel = 0): MachineSnapshot => ({ 负载: 1, 核: 10, 闸: gate, 压力: 1, free: 1e9, 压缩: 0, swap: 0, 换出: 0, GPU: 0, 热: thermalLevel, 芯片最高温: 83.2, 发热等级: thermalLevel, 盘: 1e11, 孤儿: 0, 进程: '不进日志' });
+const makeMemory = (freePercent: number) => ({ 总: 100, 空闲: freePercent, 空闲百分比: freePercent, 交换区总: 0, 交换区已用: 0 });
 let dir: string;
 let e: GateEnv;
 beforeEach(() => {
@@ -37,11 +37,11 @@ it('无竞争：领票、监测和拿锁共用一次并行观测，不睡；放�
   for (const eventName of ['领票', '拿锁']) {
     const r = rows.find(x => x.事 === eventName)!;
     expect(r.机).toMatchObject({ 闸: 80, 芯片最高温: 83.2, 发热等级: 3 });
-    expect(r.队).toMatchObject({ queueDepth: 0, ahead: [] });
+    expect(r.队).toMatchObject({ 深度: 0, 前面: [] });
     expect(r.机).not.toHaveProperty('进程');
   }
   expect(rows.find(x => x.事 === '告警' && x.类 === '发热')).toBeDefined();
-  expect(rows.find(x => x.事 === '拿锁')).toMatchObject({ lockWaitSec: expect.any(Number), waitMemorySec: 0, overtakenCount: 0 });
+  expect(rows.find(x => x.事 === '拿锁')).toMatchObject({ 等锁秒: expect.any(Number), 等内存秒: 0, 被越次数: 0 });
   expect(rows.find(x => x.事 === '放锁')!.机).toMatchObject({ 闸: 45, 发热等级: 0 });
 });
 
@@ -56,7 +56,7 @@ it('观察快照不作准入：实时内存和压力各自挡住，监测到点�
   expect(readMachineSnapshotParallel).toHaveBeenCalledTimes(1 + Math.floor(8 / 3));
   expect(e.sleep).toHaveBeenCalledTimes(8);
   expect(readLogs().find(x => x.事 === '领票')!.机).toMatchObject({ 闸: 80 });
-  expect(readLogs().find(x => x.事 === '拿锁')).toMatchObject({ 机: { 闸: 45 }, waitMemorySec: 8 });
+  expect(readLogs().find(x => x.事 === '拿锁')).toMatchObject({ 机: { 闸: 45 }, 等内存秒: 8 });
 });
 
 it.each(['锁被占', '等内存', '放行间隔'] as const)('%s 60 轮：整机采样约每三轮一次，不随锁空或准入状态加采', async scenario => {
@@ -80,7 +80,7 @@ it.each(['锁被占', '等内存', '放行间隔'] as const)('%s 60 轮：整机
   expect(readMachineSnapshotParallel).toHaveBeenCalledTimes(21);
   // 只有等内存的起止另读整机快照；另外一次是放锁。第 60 轮拿锁复用到点快照。
   expect(readMachineSnapshot).toHaveBeenCalledTimes(scenario === '等内存' ? 3 : 1);
-  expect(readLogs().find(x => x.事 === '拿锁')).toMatchObject({ 机: { 闸: 80 }, lockWaitSec: 60, waitMemorySec: scenario === '等内存' ? 60 : 0 });
+  expect(readLogs().find(x => x.事 === '拿锁')).toMatchObject({ 机: { 闸: 80 }, 等锁秒: 60, 等内存秒: scenario === '等内存' ? 60 : 0 });
 });
 
 it('放行闸准入不读观测快照：实时内存不足或压力 4 都必须等内存', async () => {
@@ -91,8 +91,8 @@ it('放行闸准入不读观测快照：实时内存不足或压力 4 都必须�
   e.sleep = vi.fn(async () => { now += 3100; if (++loopCount > 2) throw Error('准入未恢复'); });
   await passGate(async () => { expect(loopCount).toBe(2); }, () => {}, e, { 种: 'voice' });
   expect(readMachineSnapshotParallel).toHaveBeenCalledTimes(3);
-  expect(readLogs().find(x => x.事 === '放行等起')).toMatchObject({ stuckOn: '内存', 机: { 闸: 29, 压力: 1 } });
-  expect(readLogs().find(x => x.事 === '拿锁')).toMatchObject({ waitMemorySec: 6.2 });
+  expect(readLogs().find(x => x.事 === '放行等起')).toMatchObject({ 卡在: '内存', 机: { 闸: 29, 压力: 1 } });
+  expect(readLogs().find(x => x.事 === '拿锁')).toMatchObject({ 等内存秒: 6.2 });
 });
 
 it('异步采样期间票被改到前面：采完重读队序，不拿旧队位抢锁', async () => {
@@ -115,7 +115,7 @@ it('异步采样期间票被改到前面：采完重读队序，不拿旧队位�
   });
   await passRenderGate(async () => { expect(e.sleep).toHaveBeenCalledOnce(); }, () => {}, e, { 种: 'render' });
   expect(readMachineSnapshotParallel).toHaveBeenCalledTimes(2);
-  expect(readLogs().find(x => x.事 === '领票')!.队).toMatchObject({ queueDepth: 0, ahead: [] });
+  expect(readLogs().find(x => x.事 === '领票')!.队).toMatchObject({ 深度: 0, 前面: [] });
 });
 
 it('并行探针失败不影响拿锁和收尾，下一张票会重新读', async () => {

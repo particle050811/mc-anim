@@ -33,7 +33,7 @@ export const ease = (t: number) => {
   const x = clamp01(t);
   return x * x * (3 - 2 * x);
 };
-const easeOutQuad = (t: number) => 1 - (1 - clamp01(t)) ** 2;
+const 缓出 = (t: number) => 1 - (1 - clamp01(t)) ** 2;
 /** 从 起 那一帧开始、秒 秒走完的进度：起那一帧已经走了一帧（原来走了 1/24 秒，用户 11-03「统统改成 60 帧」）；
  *  起 之前是 0（不提前动）。起 可以带小数（帧） */
 const progress = (frame: number, startFrame: number, durSec: number) => (frame < startFrame ? 0 : clamp01(((frame - startFrame) / fps + oneFrameSec) / durSec));
@@ -104,7 +104,7 @@ export const YouState = (frame: number): YouState => {
 
 // ---------- 魔法阵、光柱 ----------
 /** 魔法阵展开到多大（0～1） */
-export const circleSize = (frame: number) => (frame < eventFrame('阵起') ? 0 : easeOutQuad(progress(frame, eventFrame('阵起'), params.magicCircle.expandSec)));
+export const circleSize = (frame: number) => (frame < eventFrame('阵起') ? 0 : 缓出(progress(frame, eventFrame('阵起'), params.magicCircle.expandSec)));
 /** 魔法阵转了几度 */
 export const circleSpin = (frame: number) => songSec(frame) * params.magicCircle.turnsPerSec;
 /** 光柱顶（z，格）：光柱起 起从底往上冲，越冲越快，零点几秒冲出画面顶，拨 那一帧冲到 顶高（60 fps 下 拨 前一两帧已经到），之后停在那里 */
@@ -125,7 +125,7 @@ export const cloudDrift = (frame: number) => -frameToTick(frame) * params.cloudD
 export const holeRadius = (frame: number) => {
   if (frame < eventFrame('破云')) return 0;
   const { r1, r2 } = params.cloudHole;
-  if (frame < eventFrame('云洞开大')) return r1 * easeOutQuad(((frame - eventFrame('破云')) / fps + oneFrameSec) / ((eventFrame('云洞开大') - eventFrame('破云')) / fps + oneFrameSec));
+  if (frame < eventFrame('云洞开大')) return r1 * 缓出(((frame - eventFrame('破云')) / fps + oneFrameSec) / ((eventFrame('云洞开大') - eventFrame('破云')) / fps + oneFrameSec));
   return r1 * (r2 / r1) ** clamp01((frame - eventFrame('云洞开大')) / fps / ((shotEndFrame - eventFrame('云洞开大')) / fps - oneFrameSec));
 };
 /** 洞心：光柱（她站的地方） */

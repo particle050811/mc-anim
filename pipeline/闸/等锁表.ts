@@ -13,7 +13,7 @@ const groupName = (e: SchedulerEvent) => {
 export const lockWaitTable = (events: SchedulerEvent[], matches: (e: SchedulerEvent) => boolean) => {
   const ticketMap = new Map<string, TicketRow>();
   for (const e of events) {
-    if (e.lock !== '渲染' || typeof e.票 !== 'string' || !matches(e)) continue;
+    if (e.锁 !== '渲染' || typeof e.票 !== 'string' || !matches(e)) continue;
     const timeMs = Date.parse(e.时);
     if (e.事 === '领票') {
       const lockGroup = groupName(e);
@@ -26,12 +26,12 @@ export const lockWaitTable = (events: SchedulerEvent[], matches: (e: SchedulerEv
     }
   }
   const completed = [...ticketMap.values()].filter((x) => x.acquire !== undefined && x.放 !== undefined);
-  const groups: Record<string, { 票: number; waitHours: number; lockHours: number }> = {};
+  const groups: Record<string, { 票: number; 等锁时: number; 占锁时: number }> = {};
   for (const x of completed) {
-    const g = (groups[x.组] ??= { 票: 0, waitHours: 0, lockHours: 0 });
+    const g = (groups[x.组] ??= { 票: 0, 等锁时: 0, 占锁时: 0 });
     g.票++;
-    g.waitHours += x.等 / 3600;
-    g.lockHours += x.heldSec / 3600;
+    g.等锁时 += x.等 / 3600;
+    g.占锁时 += x.heldSec / 3600;
   }
   const stillWaits = completed.filter((x) => x.isWorktreeStill).map((x) => x.等).sort((a, b) => a - b);
   const quantile = (q: number) => (stillWaits.length ? stillWaits[Math.min(stillWaits.length - 1, Math.floor(stillWaits.length * q))]! : 0);
@@ -45,8 +45,8 @@ export const lockWaitTable = (events: SchedulerEvent[], matches: (e: SchedulerEv
   }
   const round2 = <T extends Record<string, number>>(o: T) => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, Math.round(v * 100) / 100]));
   return {
-    groups: Object.fromEntries(Object.entries(groups).sort((a, b) => b[1].lockHours - a[1].lockHours).map(([k, v]) => [k, round2(v)])),
-    worktreeStillWait: { 票: stillWaits.length, totalHours: Math.round((stillWaits.reduce((a, b) => a + b, 0) / 3600) * 100) / 100, medianSec: quantile(0.5), p90Sec: quantile(0.9), longestSec: stillWaits.at(-1) ?? 0 },
-    stillWaitHolders: round2(Object.fromEntries(Object.entries(stillBlockedHours).sort((a, b) => b[1] - a[1]))),
+    分组: Object.fromEntries(Object.entries(groups).sort((a, b) => b[1].占锁时 - a[1].占锁时).map(([k, v]) => [k, round2(v)])),
+    worktree静帧等锁: { 票: stillWaits.length, 合计时: Math.round((stillWaits.reduce((a, b) => a + b, 0) / 3600) * 100) / 100, 中位秒: quantile(0.5), p90秒: quantile(0.9), 最长秒: stillWaits.at(-1) ?? 0 },
+    静帧等锁时锁在谁手里: round2(Object.fromEntries(Object.entries(stillBlockedHours).sort((a, b) => b[1] - a[1]))),
   };
 };

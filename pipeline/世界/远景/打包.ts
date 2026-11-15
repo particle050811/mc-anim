@@ -12,7 +12,7 @@ import type { DistantTask } from './任务.ts';
 
 const noHeight = -32768;
 const recordBytes = 14;
-type SampleHeader = { blockNames: string[]; 群系名: string[]; 群系温度?: number[]; 层: { 名: string; step: number; 块边: number; n: number; tileCount: number }[]; 种子: string; 海平面: number };
+type SampleHeader = { 方块名: string[]; 群系名: string[]; 群系温度?: number[]; 层: { 名: string; step: number; 块边: number; n: number; 块数: number }[]; 种子: string; 海平面: number };
 
 export type DistantPackResult = { 文件: Record<string, Buffer>; pointCounts: Record<string, number>; 群系: string[]; surfaceBlocks: string[]; 范围: [number, number, number, number] };
 
@@ -55,7 +55,7 @@ export const packDistant = async (tasks: DistantTask[]): Promise<DistantPackResu
       const l = t.层.find((q) => q.名 === layerName);
       if (!l || !l.块.length) continue;
       const hl = sampleHeader.层.find((q) => q.名 === layerName)!;
-      if (hl.tileCount !== l.块.length || hl.step !== l.step || hl.块边 !== l.块边) throw new Error(`${t.出} 的 ${layerName} 层和任务对不上`);
+      if (hl.块数 !== l.块.length || hl.step !== l.step || hl.块边 !== l.块边) throw new Error(`${t.出} 的 ${layerName} 层和任务对不上`);
       const buf = fs.readFileSync(`${t.出}.${layerName}.bin`);
       const n = hl.n;
       if (buf.length !== l.块.length * n * n * recordBytes) throw new Error(`${t.出}.${layerName}.bin 长度不对`);
@@ -73,7 +73,7 @@ export const packDistant = async (tasks: DistantTask[]): Promise<DistantPackResu
   readLayer('粗', (x, z, v, o, sampleHeader) => {
     const k = ((z - Z0) / step) * nx + (x - X0) / step;
     heights[k] = ground(v, o, x, z);
-    surface[k] = blockIndex(sampleHeader.blockNames[v.getUint16(o + 2, true)]);
+    surface[k] = blockIndex(sampleHeader.方块名[v.getUint16(o + 2, true)]);
     biomeIndex[k] = biomeNames.indexOf(sampleHeader.群系名[v.getUint16(o + 4, true)]);
     crownTop[k] = v.getInt16(o + 8, true);
     crownBottom[k] = v.getInt16(o + 10, true);

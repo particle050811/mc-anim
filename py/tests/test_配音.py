@@ -42,7 +42,7 @@ def test_backend_only_image_flow_dry_run_no_network_or_model(tmp_path):
     q = _make_request(tmp_path)
     q.语气参考 = '/语气.wav'
     q.语气强度 = 0.65
-    q.backend_params = {'top_k': 20}
+    q.参数 = {'top_k': 20}
     backend = get_backend('image-flow', {'imgflow': str(tmp_path / '没有.mjs')})
     command = backend.map_descriptor(q)['命令']
     assert command[1:3] == ['speak', '--text'] and command[command.index('--voice_ref') + 1] == q.参考音频

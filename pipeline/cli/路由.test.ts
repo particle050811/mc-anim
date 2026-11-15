@@ -117,7 +117,7 @@ describe('跑命令行', () => {
     expect(await run(['用法'], commandTable)).toMatchObject({ code: 2, error: '要给 x\n用法：anim 用法 <x>' });
     const businessResult = await run(['业务'], commandTable);
     expect(businessResult).toMatchObject({ code: 1, error: '✗ 母版不在' });
-    expect(businessResult.records[0]!.事件[0]).toMatchObject({ 级别: '错误', 文本: '母版不在', callStack: expect.stringContaining('路由.test.ts') });
+    expect(businessResult.records[0]!.事件[0]).toMatchObject({ 级别: '错误', 文本: '母版不在', 调用栈: expect.stringContaining('路由.test.ts') });
     expect(businessResult.records[0]!.退出码).toBe(1);
     const crashRun = await run(['坏'], commandTable);
     expect(crashRun.code).toBe(1);

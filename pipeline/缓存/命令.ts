@@ -120,7 +120,7 @@ export const cacheCommands: Record<string, Command> = {
         await calc();
         return 0;
       }
-      const r = await passRenderGate(async () => runReclaim(await calc(), o),undefined,{}, {种:'cache gc',skipRender:true});
+      const r = await passRenderGate(async () => runReclaim(await calc(), o),undefined,{}, {种:'cache gc',不开渲染:true});
       console.log(`\n删了 ${r.deletedCount} 项 ${sizeText(r.deletedSize)}${r.cloneCount ? `，克隆 ${r.cloneCount} 个省 ${sizeText(r.cloneSavedBytes)}` : ''}${r.跳过.length ? `，跳过 ${r.跳过.length} 项（刚改过）` : ''}`);
       for (const x of r.跳过) runRecord.log('信息', `跳过 ${x}`);
       for (const x of r.failed) runRecord.log('错误', x);

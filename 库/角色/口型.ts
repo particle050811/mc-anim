@@ -24,7 +24,7 @@ const LEAD_S = 0.03; // 嘴比声音略早到位，看着才对得上
 
 type Cue = { id: string; 帧: number };
 /** 口型表：句 id → 嘴型关键帧 [文件里的秒, 嘴型]；台词表只用 角色、开口 */
-export type LipData = { 口型: Readonly<Record<string, { mouthKeys: [number, string][] }>>; 台词: Readonly<Record<string, { 角色: string; 开口: number }>> };
+export type LipData = { 口型: Readonly<Record<string, { 嘴: [number, string][] }>>; 台词: Readonly<Record<string, { 角色: string; 开口: number }>> };
 
 const mix = (a: Mouth, b: Mouth, k: number): Mouth => ({ open: a.open + (b.open - a.open) * k, width: a.width + (b.width - a.width) * k });
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
@@ -49,7 +49,7 @@ export const mouthAt = ({ 口型: cuesById, 台词: lines }: LipData, cues: read
     const entry = cuesById[id];
     if (!entry || lines[id].角色 !== role) continue;
     const t = (frame - lineFrame) / fps + lines[id].开口 + LEAD_S;
-    const keys = entry.mouthKeys;
+    const keys = entry.嘴;
     if (t < 0 || t >= keys[keys.length - 1][0] + CLOSE_S) continue;
     return sample(keys, t);
   }

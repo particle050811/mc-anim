@@ -13,7 +13,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { G4 } from '../../../地点/古城4x.tsx';
 import { vanilla, type BlockPos } from '../../../地点/古城4x/布局.ts';
 import blockDataJson from 'asset:碎块/镜头/6-4-6/振动方块';
-const blockData = blockDataJson as unknown as { sculkSensors: number[][]; sculkShrieker: number[][]; woolBlocks: number[][] };
+const blockData = blockDataJson as unknown as { 感测体: number[][]; 尖啸体: number[][]; 羊毛: number[][] };
 
 type VibrationEvent = { 名: string; t: number; p: V3 }; // p：场景坐标（脚底）
 export type Vibration = { from: V3; to: V3; t: number; 到: number; 收: string };
@@ -23,9 +23,9 @@ const cellCenter = ([x, y, z]: number[]): V3 => G4(x + 0.5, y + 0.5, z + 0.5);
 const dist = (a: V3, b: V3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 const toGame = (p: V3): V3 => [p[0] - 720, p[2] - 50, 240 - p[1]];
 
-const worldWool = new Set((blockData.woolBlocks as number[][]).map(posKey));
-export const sensorCells: BlockPos[] = blockData.sculkSensors as BlockPos[];
-export const shriekerCells: BlockPos[] = blockData.sculkShrieker as BlockPos[];
+const worldWool = new Set((blockData.羊毛 as number[][]).map(posKey));
+export const sensorCells: BlockPos[] = blockData.感测体 as BlockPos[];
+export const shriekerCells: BlockPos[] = blockData.尖啸体 as BlockPos[];
 // 两点（场景坐标）连线上有没有羊毛：两头取格心，0.02 格一步（同 工具/古城4x布局/方块.py 的 挡振动）
 const isOccluded = (start: V3, end: V3, placedWool: Set<string>) => {
   const startCell = toGame(start).map((v) => Math.floor(v) + 0.5);

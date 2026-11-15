@@ -26,14 +26,14 @@ it('低优先的票排在全部普通票后面（后领的普通票也在它前�
   expect(lowPriorityTicket.名.startsWith('8')).toBe(true);
   expect(isLowPriorityTicket(lowPriorityTicket)).toBe(true);
   expect(isLowPriorityTicket(normal)).toBe(false);
-  expect(listTickets(queue).map((t) => t.ticketContent?.任务)).toEqual(['普', '低']);
+  expect(listTickets(queue).map((t) => t.内容?.任务)).toEqual(['普', '低']);
   const lowSecond = claimTicket(queue, os.hostname(), makeTask('低二', true), Date.now());
   const lowRequeued = requeueTail(lowPriorityTicket);
   expect(isLowPriorityTicket(lowRequeued)).toBe(true);
   expect(lowRequeued.时间).toBeGreaterThan(lowSecond.时间);
   const normalRequeued = requeueTail(normal);
   expect(isLowPriorityTicket(normalRequeued)).toBe(false);
-  expect(listTickets(queue).map((t) => t.ticketContent?.任务)).toEqual(['普', '低二', '低']);
+  expect(listTickets(queue).map((t) => t.内容?.任务)).toEqual(['普', '低二', '低']);
 });
 
 it('低优先的批：有普通票在等，项间马上让开（不等满 120 秒）；只有别的低优先票在等时照 120 秒的老规矩', async () => {

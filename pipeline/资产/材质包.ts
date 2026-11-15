@@ -141,21 +141,21 @@ export const copyTextures = (sourcingTableText: string, lockedIds: Iterable<stri
 export type HealthCheck = { 名: string; pack_format: unknown; supported_formats: unknown; 统计: Record<string, number>; 例: Record<string, string[]> };
 export type RenderResult = {
   产物: { id: string; 文件: string; 换: number; 共: number }[];
-  atlasMissing: number;
-  atlasMismatched: { 名: string; 包: string; 原因: string }[];
-  singleMissing: string[];
-  singleVanillaUpscaled: string[];
-  singleMismatched: { id: string; 包: string; 原因: string }[];
-  atlasCell: Record<string, number>;
+  图集缺: number;
+  图集不合: { 名: string; 包: string; 原因: string }[];
+  单张缺: string[];
+  单张原版放大: string[];
+  单张不合: { id: string; 包: string; 原因: string }[];
+  图集格: Record<string, number>;
   缩放: Record<string, number>;
   各包贡献: Record<string, number>;
-  healthChecks: HealthCheck[];
+  体检: HealthCheck[];
   群系色?: { 改: number; 色图来自: string[]; 例: Record<string, [string, string]> };
 };
 
 const runImageRender = (request: object, outDir: string): RenderResult => {
   const f = path.join(outDir, '请求.json');
-  fs.writeFileSync(f, JSON.stringify({ ...request, outDir }));
+  fs.writeFileSync(f, JSON.stringify({ ...request, 出目录: outDir }));
   const scriptPath = path.join(codeRoot(), 'py', 'anim_py', '材质包覆盖.py');
   const env: NodeJS.ProcessEnv = { ...process.env, PYTHONIOENCODING: 'utf-8' };
   delete env.VIRTUAL_ENV;
@@ -191,7 +191,7 @@ export const buildResourcePackOverride = (workRoot: string, packSelection = read
   const blockTable = JSON.parse(fs.readFileSync(resolveAsset(blockTableId, assetLock).文件, 'utf8')) as { 贴图: string[] };
   const singleTextures = [...copyTextures(fs.readFileSync(path.join(codeRoot(), 'sourcing', 'extract.toml'), 'utf8'), Object.keys(assetLock))]
     .filter(([id, { packPath }]) => id in assetLock && id.startsWith('贴图/') && (uiReplaceable.has(id) || !noReplacePrefixes.some((q) => id.startsWith(q))) && packPath.startsWith(swappablePrefix) && !noSwapPrefixes.some((q) => packPath.startsWith(q)))
-    .map(([id, { packPath, 组: group }]) => ({ id, sourceImage: resolveAsset(id, assetLock).文件, packPath, 组: group, ...(originalSizeIds.has(id) ? { maxScale: 1 } : {}) }));
+    .map(([id, { packPath, 组: group }]) => ({ id, 原图: resolveAsset(id, assetLock).文件, 包内: packPath, 组: group, ...(originalSizeIds.has(id) ? { 倍上限: 1 } : {}) }));
   const artStylePath = path.join(workRoot, '画风.ts');
   const limit = maxUpscale(fs.existsSync(artStylePath) ? fs.readFileSync(artStylePath, 'utf8') : null, packSelection.封顶, packSelection.试验 ?? packSelection.分辨率);
   const jar = jarPath(readManifest(), vanillaJar);
@@ -200,12 +200,12 @@ export const buildResourcePackOverride = (workRoot: string, packSelection = read
   try {
     const rendered = runImageRender(
       {
-        packs: packs.map((p) => ({ zip: p.zip, 名: p.名 })),
-        vanillaJar: jar,
-        maxScale: limit.factor,
-        atlas: [{ id: atlasId, sourceImage: resolveAsset(atlasId, assetLock).文件, 贴图名: blockTable.贴图, 格: 16 }],
+        包们: packs.map((p) => ({ zip: p.zip, 名: p.名 })),
+        原版jar: jar,
+        倍上限: limit.factor,
+        图集: [{ id: atlasId, 原图: resolveAsset(atlasId, assetLock).文件, 贴图名: blockTable.贴图, 格: 16 }],
         单张: singleTextures,
-        群系: { id: biomeColorId, originalFile: resolveAsset(biomeColorId, assetLock).文件 },
+        群系: { id: biomeColorId, 原表: resolveAsset(biomeColorId, assetLock).文件 },
       },
       outDir,
     );
@@ -223,13 +223,13 @@ export const buildResourcePackOverride = (workRoot: string, packSelection = read
       覆盖: Object.fromEntries(Object.keys(overrides).sort().map((k) => [k, overrides[k]!])) as AssetLock,
       报告: {
         许可: Object.fromEntries(packs.map((p) => [p.id, `${p.许可}（${p.可见性}）`])),
-        分辨率: { 规则: limit.依据, 方块图集格: rendered.atlasCell[atlasId] ?? 16 },
-        方块图集: { 换: rendered.产物.find((x) => x.id === atlasId)?.换 ?? 0, 共: blockTable.贴图.length, 包里没有: rendered.atlasMissing, 不合: rendered.atlasMismatched.length },
-        单张: { 共: singleTextures.length, 换: rendered.产物.filter((x) => x.id !== atlasId && x.id !== biomeColorId && x.换 > 0).length, 包里没有: rendered.singleMissing.length, 包里没有但同组放大: rendered.singleVanillaUpscaled, 不合: rendered.singleMismatched },
+        分辨率: { 规则: limit.依据, 方块图集格: rendered.图集格[atlasId] ?? 16 },
+        方块图集: { 换: rendered.产物.find((x) => x.id === atlasId)?.换 ?? 0, 共: blockTable.贴图.length, 包里没有: rendered.图集缺, 不合: rendered.图集不合.length },
+        单张: { 共: singleTextures.length, 换: rendered.产物.filter((x) => x.id !== atlasId && x.id !== biomeColorId && x.换 > 0).length, 包里没有: rendered.单张缺.length, 包里没有但同组放大: rendered.单张原版放大, 不合: rendered.单张不合 },
         缩放: rendered.缩放,
         各包贡献: rendered.各包贡献,
         群系色: rendered.群系色 ?? null,
-        警告: warnings(rendered.healthChecks),
+        警告: warnings(rendered.体检),
       },
     };
     const lockFile = resourcePackLockPath(workRoot, packSelection);

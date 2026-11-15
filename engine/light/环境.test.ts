@@ -162,8 +162,8 @@ describe('定义环境：写错了加载时就报', () => {
     expect(() => defineEnvironment(overworldBase({ fog: { 种类: '指数平方', visibility: 0 } }))).toThrow(/能见度/);
   });
   it('自定配比不能是负的', () => {
-    expect(() => defineEnvironment(overworldBase({ lightSpec: { lightMix: { direct: 3, skylight: -1, ambient: 0, selfLight: 0 } } }))).toThrow(/配比.天光/);
-    expect(defineEnvironment(overworldBase({ lightSpec: { lightMix: { direct: 3, skylight: 1, ambient: 0, selfLight: 0 } } })).lightSpec).toHaveProperty('配比');
+    expect(() => defineEnvironment(overworldBase({ lightSpec: { lightMix: { direct: 3, skylight: -1, ambient: 0, selfLight: 0 } } }))).toThrow(/配比\.skylight/);
+    expect(defineEnvironment(overworldBase({ lightSpec: { lightMix: { direct: 3, skylight: 1, ambient: 0, selfLight: 0 } } })).lightSpec).toHaveProperty('lightMix');
     expect(() => defineEnvironment(overworldBase({ lightSpec: { tier: '傍晚' as never } }))).toThrow(/没有灯光档位「傍晚」/);
     expect(() => defineEnvironment(overworldBase({ 画法: '' }))).toThrow(/画法/);
     expect(() => defineEnvironment(overworldBase({ 画法: '../主世界' }))).toThrow(/画法/);
@@ -196,7 +196,7 @@ describe('关键帧：时刻、天气随帧变', () => {
   it('环境在：基础上换掉时刻、天气；没写的天气项沿用基础', () => {
     const e = envAtFrame(envTrack, 20);
     expect(e.gameTime).toBeCloseTo(11000 + (2000 * 20) / 48, 9);
-    expect(e.weather).toEqual({ rain: 1, thunder: 0 });
+    expect(e.weather).toEqual({ 雨: 1, 雷: 0 });
     expect(e.维度).toBe(overworld);
     const description = overworldBase();
     expect(envAtFrame(description, 5)).toBe(description);

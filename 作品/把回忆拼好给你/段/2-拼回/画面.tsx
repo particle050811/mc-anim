@@ -18,7 +18,7 @@ import { newIcon, oldIcon } from '../../场/2-选择世界/图标源.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { useCurrentFrame } from '../../当前帧.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const mainCutEvents = { ...mainCut15TailEvents, ...mainCutEndingEvents };
 const segMainCutEventFrames = (segKey: string) => segmentFrames(segmentWindow(segKey).起帧, mainCutEvents);
@@ -33,7 +33,7 @@ const grayGrade = { ...tone.grade, saturation: 0 };
 const fragmentGrade = { ...tone.grade, 暗角: 0, 颗粒: 0 };
 
 const picture: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const isColorBack = f >= events.片尾回色;
   const whiteFade = outroWhiteAt(f);
   const framing = endFraming(f);

@@ -13,7 +13,7 @@ process.env.ANIM_DATA = dataRoot;
 
 const fake = vi.hoisted(() => ({ segments: [] as unknown[], outputs: [] as unknown[] }));
 vi.mock('../渲/渲段.ts', () => ({ renderSegments: async () => fake.outputs }));
-vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<object>()), allSegments: async () => fake.segments }));
+vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<object>()), loadAllSegments: async () => fake.segments }));
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<object>()), workName: () => '测试' }));
 
 const { assembleFilm } = await import('./拼成片.ts');

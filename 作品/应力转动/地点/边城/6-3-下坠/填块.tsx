@@ -10,7 +10,7 @@ import { FPS, impactTime, segTable, physicalTime, impactSegFrame } from './时�
 import { blockMaterial, blockPngs, type BlockTextureName } from './竖井.tsx';
 import fillDataJson from 'asset:数据/镜头/6-3-下坠/竖井4x.填块';
 import { renderInput } from '@engine/core/渲染设置.ts';
-const fillData = fillDataJson as unknown as { originY: number; stoneSlabY: number; 格: (number | string)[][] };
+const fillData = fillDataJson as unknown as { 原点y: number; 石半砖y: number; 格: (number | string)[][] };
 
 // ---------- 锤底 ----------
 // 最先碰到方块的是锤头上压路机虚影的滚筒（锤竖直朝下、领在最前面），轴水平左右，所以最低点 = 滚筒中心往下一个半径，和 编排.ts 算撞击时刻的 `strikeDepth` 是同一个点。
@@ -80,8 +80,8 @@ const texByBlock: Record<string, { topTex: BlockTextureName; side: BlockTextureN
   'create:zinc_ore': { topTex: '锌矿石', side: '锌矿石' },
   'iceandfire:silver_ore': { topTex: '银矿石', side: '银矿石' },
 };
-export const SLAB_Y = fillData.stoneSlabY; // 城的石半砖（下半砖），高半格（老片场 73、新世界 135）
-export const ORIGIN_Y = fillData.originY; // 竖井网格原点的游戏 y（场景 z 0；= SLAB_Y − 10）
+export const SLAB_Y = fillData.石半砖y; // 城的石半砖（下半砖），高半格（老片场 73、新世界 135）
+export const ORIGIN_Y = fillData.原点y; // 竖井网格原点的游戏 y（场景 z 0；= SLAB_Y − 10）
 export type FillCell = { dx: number; dy: number; y: number; bottomZ: number; topZ: number; 方块: string; topTex: BlockTextureName; side: BlockTextureName; breakSec: number };
 let CELLS: FillCell[] | null = null;
 // 场景 z：竖井网格放在 z 0（= 游戏 y 原点y，见 竖井.tsx），格子底面 = y − 原点y

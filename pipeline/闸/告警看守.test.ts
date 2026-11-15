@@ -23,20 +23,20 @@ afterEach(async () => {
 });
 const makeInitiator = () => readCaller({ CLAUDE_CODE_SESSION_ID: 'sess0001' }, [], dir, false);
 const makeSchedEnv = (o: Partial<SchedulerEnv> = {}) => resolveSchedulerEnv({ lockDir: dir, localHost: os.hostname(), caller: makeInitiator(), ...o });
-const baseState = (timeMs = 1_000_000): SchedulerState => ({ 时: timeMs, 机: { 负载: 1, 核: 10, 闸: 40, 压力: 1, free: 1e9, 压缩: 1e9, swap: 0, swapOut: 0, GPU: 50, 热: 1, disk: 4e11, orphans: 0, psOutput: '' }, 票: [], lockHolders: [], running: [], recentEvents: [] });
-const Ticket = (ticketName: string, ticketContent: Partial<NonNullable<Ticket['ticketContent']>> = {}): Ticket => ({ 名: ticketName, 文件: '/q/渲染.排队/' + ticketName, pid: 7, 主机: 'h', 时间: 0, ticketContent: { v: 1, 任务: 'T1', 起: 0, 声明: { 种: 'render', 段: '6-斩娜迦' }, 发起: makeInitiator(), ...ticketContent } });
+const baseState = (timeMs = 1_000_000): SchedulerState => ({ 时: timeMs, 机: { 负载: 1, 核: 10, 闸: 40, 压力: 1, free: 1e9, 压缩: 1e9, swap: 0, 换出: 0, GPU: 50, 热: 1, 盘: 4e11, 孤儿: 0, 进程: '' }, 票: [], 持锁: [], 在跑: [], 最近: [] });
+const Ticket = (ticketName: string, ticketContent: Partial<NonNullable<Ticket['内容']>> = {}): Ticket => ({ 名: ticketName, 文件: '/q/渲染.排队/' + ticketName, pid: 7, 主机: 'h', 时间: 0, 内容: { v: 1, 任务: 'T1', 起: 0, 声明: { 种: 'render', 段: '6-斩娜迦' }, 发起: makeInitiator(), ...ticketContent } });
 const holdLock = (o: Partial<LockRecord> = {}): LockRecord => ({ pid: 9, 票: 'p1', 任务: 'R', 发起: makeInitiator(), 声明: { 种: 'render', 段: '第3段' }, 拿锁时: 0, 心跳: 1, 帧时: 0, 已出帧: 3, 总帧: 100, ...o });
 /** 按真实次序走一轮：先更新历史再判，记下通知过的。 */
 const watchStep = (h: MonitorHistory, s: SchedulerState) => {
   const n = updateHistory(s, h), a = judgeAlerts(s, s.时, undefined, n);
-  for (const x of a) { if (x.类 === '队深') n.highWater = Math.max(n.highWater, x.值); else n.dedupe[x.类 + ':' + x.target] = { 次数: x.次数, lastSeen: s.时 }; }
+  for (const x of a) { if (x.类 === '队深') n.高水位 = Math.max(n.高水位, x.值); else n.去重[x.类 + ':' + x.对象] = { 次数: x.次数, 末: s.时 }; }
   return [n, a.map(x => `${x.类}#${x.次数}`)] as const;
 };
 const stateWithMachine = (timeMs: number, overrides: Partial<SchedulerState['机']>) => { const s = baseState(timeMs); Object.assign(s.机, overrides); return s; };
 
 it('队列行的约几分只算自己这把锁和同队的票：放行票不等渲染', () => {
   const timeMs = 4_000_000, s = baseState(timeMs);
-  s.lockHolders = [holdLock({ lock: '渲染', 拿锁时: timeMs - 60_000, 声明: { 种: 'render', 预计秒: 3600 } })];
+  s.持锁 = [holdLock({ 锁: '渲染', 拿锁时: timeMs - 60_000, 声明: { 种: 'render', 预计秒: 3600 } })];
   s.票 = [{ ...Ticket('002-h-8', { 任务: 'R', 声明: { 种: 'still', 预计秒: 30 } }), pid: 8 }, { ...Ticket('003-h-9', { 任务: 'S', 声明: { 种: 'still', 预计秒: 30 } }), pid: 9 }, { ...Ticket('001-h-7', { 任务: 'P', 声明: { 种: 'voice', 预计秒: 30 } }), pid: 7, 文件: '/q/放行.排队/001-h-7' }];
   const lines = renderView(s).split('\n').filter(l => l.startsWith('排队'));
   expect(lines[0]).toContain('#8'); expect(lines[0]).toContain('约59.0分后');
@@ -51,7 +51,7 @@ describe('去重能复位', () => {
     [h, a] = watchStep(h, stateWithMachine(30_000, { 压力: 1 })); expect(a).toEqual([]);
     [h, a] = watchStep(h, stateWithMachine(60_000, { 压力: 4 })); expect(a).toEqual([]);
     for (let t = 90_000; t <= 390_000; t += 30_000) { [h, a] = watchStep(h, stateWithMachine(t, { 压力: 1 })); expect(a).toEqual([]); }
-    expect(h.dedupe).toEqual({});
+    expect(h.去重).toEqual({});
     [h, a] = watchStep(h, stateWithMachine(420_000, { 压力: 4 })); expect(a).toEqual(['内存压力#1']);
     [h, a] = watchStep(h, stateWithMachine(420_000 + 86_400_000, { 压力: 4 })); expect(a).toEqual(['内存压力#1']);
   });
@@ -74,7 +74,7 @@ describe('去重能复位', () => {
     expect(alarmKinds(stateWithMachine(0, { 压力: 4 }))).toEqual(['内存压力']);
     expect(alarmKinds(stateWithMachine(5_000, { 压力: 4 }))).toEqual([]);
     expect(alarmKinds(stateWithMachine(400_000, { 压力: 1 }))).toEqual([]);
-    expect(readMonitor(e).dedupe).toEqual({});
+    expect(readMonitor(e).去重).toEqual({});
     expect(alarmKinds(stateWithMachine(405_000, { 压力: 4 }))).toEqual(['内存压力']);
     expect(fs.existsSync(path.join(e.schedulerDir, '告警'))).toBe(false);
     fs.rmSync(path.join(e.schedulerDir, '监测.json'));
@@ -82,8 +82,8 @@ describe('去重能复位', () => {
     expect(readSchedulerEvents(e.logDir).filter(x => x.事 === '告警')).toHaveLength(3);
   });
   it('监测文件是旧格式（去重存数字）时按事件已结束处理', () => {
-    const h = { ...emptyHistory(), dedupe: { '内存压力:机器': 1 } } as unknown as MonitorHistory;
-    expect(updateHistory(stateWithMachine(0, { 压力: 4 }), h).dedupe).toEqual({});
+    const h = { ...emptyHistory(), 去重: { '内存压力:机器': 1 } } as unknown as MonitorHistory;
+    expect(updateHistory(stateWithMachine(0, { 压力: 4 }), h).去重).toEqual({});
   });
 });
 
@@ -92,7 +92,7 @@ describe('内存类只在闸兜不住时报（用户 11-14 定）', () => {
   const simulate = (minutes: number, pressureAt: (sec: number) => number, frameSpeedAt: (sec: number) => number, hasHolder = true) => {
     let h = emptyHistory(), frame = 0; const out: string[] = [];
     for (let t = 0; t <= minutes * 60_000; t += 30_000) {
-      const s = stateWithMachine(t, { 压力: pressureAt(t / 1000) }); if (hasHolder) s.lockHolders = [holdLock({ 已出帧: Math.floor(frame), 总帧: 1e6, 帧时: t })];
+      const s = stateWithMachine(t, { 压力: pressureAt(t / 1000) }); if (hasHolder) s.持锁 = [holdLock({ 已出帧: Math.floor(frame), 总帧: 1e6, 帧时: t })];
       const [n, a] = watchStep(h, s); h = n; out.push(...a); frame += frameSpeedAt(t / 1000) * 30;
     }
     return out;
@@ -103,13 +103,13 @@ describe('内存类只在闸兜不住时报（用户 11-14 定）', () => {
   it('压力 2 才出现不到 3 分钟：不报', () => { expect(simulate(12, t => t >= 600 ? 2 : 1, t => t < 600 ? 1 : 0.2)).toEqual([]); });
   it('压力 4：立刻报，不看帧速，没人渲也报', () => { expect(simulate(1, () => 4, () => 1, false)).toEqual(['内存压力#1']); });
   it('swap 3 分钟涨 1 GiB、压力 2，但没人变慢：不报', () => {
-    let h = emptyHistory(); const stateAt = (t: number, swap: number) => { const s = stateWithMachine(t, { 压力: 2, swap }); s.lockHolders = [holdLock({ 已出帧: t / 1000, 总帧: 1e6, 帧时: t })]; return s; };
+    let h = emptyHistory(); const stateAt = (t: number, swap: number) => { const s = stateWithMachine(t, { 压力: 2, swap }); s.持锁 = [holdLock({ 已出帧: t / 1000, 总帧: 1e6, 帧时: t })]; return s; };
     for (let t = 0; t <= 600_000; t += 30_000) h = updateHistory(stateAt(t, t >= 600_000 ? 2 ** 30 : 0), h);
     expect(judgeAlerts(stateAt(600_000, 2 ** 30), 600_000, undefined, h)).toEqual([]);
   });
   it('出帧样本约 25 秒一个、只留 15 分钟，持锁者走了就丢', () => {
     let h = emptyHistory();
-    for (let t = 0; t <= 1_200_000; t += 3_000) { const s = baseState(t); s.lockHolders = [holdLock({ 已出帧: t / 1000, 总帧: 1e6 })]; h = updateHistory(s, h); }
+    for (let t = 0; t <= 1_200_000; t += 3_000) { const s = baseState(t); s.持锁 = [holdLock({ 已出帧: t / 1000, 总帧: 1e6 })]; h = updateHistory(s, h); }
     const samples = Object.values(h.帧)[0]!; expect(samples.length).toBeLessThanOrEqual(37); expect(1_200_000 - samples[0]!.时).toBeLessThanOrEqual(900_000);
     expect(updateHistory(baseState(1_203_000), h).帧).toEqual({});
   });
@@ -118,13 +118,13 @@ describe('内存类只在闸兜不住时报（用户 11-14 定）', () => {
 describe('采样断档和读不到', () => {
   it('负载、孤儿隔 6 小时的两次采样不算持续', () => {
     const sixHoursMs = 6 * 3_600_000;
-    let h = updateHistory(stateWithMachine(0, { 负载: 30, orphans: 1 }), emptyHistory());
-    h = updateHistory(stateWithMachine(sixHoursMs, { 负载: 30, orphans: 1 }), h);
-    expect(h.loadStart).toBe(sixHoursMs); expect(h.orphanRounds).toBe(1);
-    expect(judgeAlerts(stateWithMachine(sixHoursMs, { 负载: 30, orphans: 1 }), sixHoursMs, undefined, h)).toEqual([]);
+    let h = updateHistory(stateWithMachine(0, { 负载: 30, 孤儿: 1 }), emptyHistory());
+    h = updateHistory(stateWithMachine(sixHoursMs, { 负载: 30, 孤儿: 1 }), h);
+    expect(h.负载起).toBe(sixHoursMs); expect(h.孤儿轮).toBe(1);
+    expect(judgeAlerts(stateWithMachine(sixHoursMs, { 负载: 30, 孤儿: 1 }), sixHoursMs, undefined, h)).toEqual([]);
   });
   it('持锁者 30 秒一采、定时器略晚，swap 增长照样判得到（压力 2、有人变慢时）', () => {
-    const startMs = 600_000, stateAt = (timeMs: number, frame: number, overrides: Partial<SchedulerState['机']>) => { const s = stateWithMachine(timeMs, overrides); s.lockHolders = [holdLock({ 已出帧: frame, 总帧: 1e5 })]; return s; };
+    const startMs = 600_000, stateAt = (timeMs: number, frame: number, overrides: Partial<SchedulerState['机']>) => { const s = stateWithMachine(timeMs, overrides); s.持锁 = [holdLock({ 已出帧: frame, 总帧: 1e5 })]; return s; };
     let h = emptyHistory();
     for (let t = 0; t <= startMs; t += 30_000) h = updateHistory(stateAt(t, t / 1000, { 压力: 2 }), h);
     for (let i = 1; i <= 7; i++) h = updateHistory(stateAt(startMs + i * 30_500, startMs / 1000, { 压力: 2, swap: i === 7 ? 2 ** 30 : 0 }), h);
@@ -133,16 +133,16 @@ describe('采样断档和读不到', () => {
   it('swap 读不到不入历史，恢复读数不算增长；负载、孤儿读不到不清零也不累加', () => {
     let h = updateHistory(stateWithMachine(0, { swap: null }), emptyHistory());
     expect(h.swap).toEqual([]);
-    h = updateHistory(stateWithMachine(175_000, { swap: 5 * 2 ** 30 }), { ...h, lastTime: 170_000 });
+    h = updateHistory(stateWithMachine(175_000, { swap: 5 * 2 ** 30 }), { ...h, 上次: 170_000 });
     expect(judgeAlerts(stateWithMachine(175_000, { swap: 5 * 2 ** 30 }), 175_000, undefined, h)).toEqual([]);
-    let g = updateHistory(stateWithMachine(0, { 负载: 30, orphans: 1 }), emptyHistory());
-    g = updateHistory(stateWithMachine(30_000, { 负载: null, orphans: null }), g);
-    expect([g.loadStart, g.orphanRounds]).toEqual([0, 1]);
-    g = updateHistory(stateWithMachine(60_000, { 负载: 30, orphans: 1 }), g);
-    expect([g.loadStart, g.orphanRounds]).toEqual([0, 2]);
+    let g = updateHistory(stateWithMachine(0, { 负载: 30, 孤儿: 1 }), emptyHistory());
+    g = updateHistory(stateWithMachine(30_000, { 负载: null, 孤儿: null }), g);
+    expect([g.负载起, g.孤儿轮]).toEqual([0, 1]);
+    g = updateHistory(stateWithMachine(60_000, { 负载: 30, 孤儿: 1 }), g);
+    expect([g.负载起, g.孤儿轮]).toEqual([0, 2]);
   });
   it('看 和 一行 把读不到的显示成 ?', () => {
-    const s = stateWithMachine(1_000_000, { 负载: null, orphans: null, swap: null });
+    const s = stateWithMachine(1_000_000, { 负载: null, 孤儿: null, swap: null });
     expect(oneLineStatus(s)).toContain('负载?/10');
     const view = renderView(s); expect(view).toContain('孤儿Chrome ?'); expect(view).toContain('swap?');
   });
@@ -157,36 +157,36 @@ describe('告警对象', () => {
     expect(watchStep(h, s2)[1]).toEqual([]);
   });
   it('已暂缓的票不告警、不算队深，到期没人处理的也不抢着报', () => {
-    const s = baseState(waitMs * 10); s.票 = [1, 2, 3, 4].map(i => Ticket('9' + i, { 任务: 'T' + i, deferredUntilMs: waitMs * 11 })); s.票[0]!.ticketContent!.waitMemStart = 0;
+    const s = baseState(waitMs * 10); s.票 = [1, 2, 3, 4].map(i => Ticket('9' + i, { 任务: 'T' + i, 暂缓至: waitMs * 11 })); s.票[0]!.内容!.等内存起 = 0;
     expect(judgeAlerts(s, s.时)).toEqual([]);
-    s.票[0]!.ticketContent!.deferredUntilMs = 1;
+    s.票[0]!.内容!.暂缓至 = 1;
     expect(judgeAlerts(s, s.时)).toEqual([]);
   });
   it('暂缓和恢复走真命令：恢复后等待重新起算', () => {
     const e = makeSchedEnv(), q = path.join(dir, '渲染.排队');
     const t = claimTicket(q, e.localHost, { 任务: 'T1', 起: 0, 心跳: 0, 发起: e.caller, 声明: { 种: 'still' }, 主机: e.localHost }, Date.now() - waitMs);
     const fakeMachine = () => baseState().机, readFakeState = () => readState(e, fakeMachine, false), makeParams = (value: Record<string, string>) => ({ 位置: [], 值: value, toggles: new Set<string>(), multiValue: {} });
-    expect(judgeAlerts(readFakeState(), Date.now()).map(x => `${x.类}:${x.target}`)).toEqual(['小任务等待:T1']);
+    expect(judgeAlerts(readFakeState(), Date.now()).map(x => `${x.类}:${x.对象}`)).toEqual(['小任务等待:T1']);
     changeScheduler('后', t.名, makeParams({ '--为什么': '让产出先' }), e, { 状态: readFakeState, 输出: () => {} });
     expect(judgeAlerts(readFakeState(), Date.now())).toEqual([]);
     const deferredName = listTickets(q)[0]!.名;
     changeScheduler('恢复', deferredName, makeParams({ '--为什么': '产出完了' }), e, { 状态: readFakeState, 输出: () => {} });
-    expect(listTickets(q)[0]!.ticketContent!.deferredUntilMs).toBeUndefined();
+    expect(listTickets(q)[0]!.内容!.暂缓至).toBeUndefined();
     expect(judgeAlerts(readFakeState(), Date.now())).toEqual([]);
   });
   it('多段 render：前一段的无帧告警不吞后面段', () => {
-    const timeA = 400_000, s1 = baseState(timeA); s1.lockHolders = [holdLock({ 拿锁时: timeA - 360_000, 帧时: timeA - 360_000 })];
+    const timeA = 400_000, s1 = baseState(timeA); s1.持锁 = [holdLock({ 拿锁时: timeA - 360_000, 帧时: timeA - 360_000 })];
     const [h, a1] = watchStep(emptyHistory(), s1); expect(a1).toEqual(['无帧#1']);
-    const timeB = timeA + 30_000, s2 = baseState(timeB); s2.lockHolders = [holdLock({ 票: 'p2', 声明: { 种: 'render', 段: '第17段' }, 拿锁时: timeB - 360_000, 帧时: timeB - 360_000 })];
+    const timeB = timeA + 30_000, s2 = baseState(timeB); s2.持锁 = [holdLock({ 票: 'p2', 声明: { 种: 'render', 段: '第17段' }, 拿锁时: timeB - 360_000, 帧时: timeB - 360_000 })];
     expect(watchStep(h, s2)[1]).toEqual(['无帧#1']);
   });
   it('没声明段的持锁按票区分', () => {
-    const timeMs = 400_000, ticketState = (ticketName: string) => { const s = baseState(timeMs); s.lockHolders = [holdLock({ 票: ticketName, 声明: { 种: '批' }, 拿锁时: timeMs - 360_000, 帧时: timeMs - 360_000 })]; return s; };
+    const timeMs = 400_000, ticketState = (ticketName: string) => { const s = baseState(timeMs); s.持锁 = [holdLock({ 票: ticketName, 声明: { 种: '批' }, 拿锁时: timeMs - 360_000, 帧时: timeMs - 360_000 })]; return s; };
     const [h, a] = watchStep(emptyHistory(), ticketState('a')); expect(a).toEqual(['无帧#1']);
     expect(watchStep(h, ticketState('b'))[1]).toEqual(['无帧#1']);
   });
   it('静帧 90 秒没出新帧就报，render 还是 5 分钟', () => {
-    const alarmsFor = (taskKind: string, sec: number) => { const s = baseState(sec * 1000 + 1); s.lockHolders = [holdLock({ 声明: { 种: taskKind, 段: '4-齐放' }, 拿锁时: 1, 帧时: 1, 已出帧: 0, 总帧: 1 })]; return judgeAlerts(s, s.时).map(x => x.类); };
+    const alarmsFor = (taskKind: string, sec: number) => { const s = baseState(sec * 1000 + 1); s.持锁 = [holdLock({ 声明: { 种: taskKind, 段: '4-齐放' }, 拿锁时: 1, 帧时: 1, 已出帧: 0, 总帧: 1 })]; return judgeAlerts(s, s.时).map(x => x.类); };
     expect(alarmsFor('still', 89)).toEqual([]);
     expect(alarmsFor('still', 91)).toEqual(['无帧']);
     expect(alarmsFor('render', 91)).toEqual([]);
@@ -198,7 +198,7 @@ describe('告警对象', () => {
     logEvent('t1', '720', '被杀', 300);
     expect(current('t1')).toBeUndefined();
     expect(current('t2', '721')).toBeUndefined();
-    expect(current('t2')).toMatchObject({ 类: '静帧重复失败', target: '4-齐放@720', 值: 2 });
+    expect(current('t2')).toMatchObject({ 类: '静帧重复失败', 对象: '4-齐放@720', 值: 2 });
     expect(readSchedulerEvents(logDir).filter(x => x.事 === '告警').length).toBe(1);
     logEvent('t2', '720', '被杀', 200); logEvent('t3', '720', '成', 100);
     expect(current('t4')).toBeUndefined();
@@ -214,7 +214,7 @@ describe('告警对象', () => {
     expect(judgeAlerts(s, s.时)).toEqual([]);
   });
   it('still 只有预计缺失才算小任务', () => {
-    const alarmsFor = (taskDecl: NonNullable<Ticket['ticketContent']>['声明'], waitSec: number) => { const s = baseState(waitSec * 1000); s.票 = [Ticket('a', { 声明: taskDecl })]; return judgeAlerts(s, s.时).map(x => x.类); };
+    const alarmsFor = (taskDecl: NonNullable<Ticket['内容']>['声明'], waitSec: number) => { const s = baseState(waitSec * 1000); s.票 = [Ticket('a', { 声明: taskDecl })]; return judgeAlerts(s, s.时).map(x => x.类); };
     expect(alarmsFor({ 种: 'still' }, 301)).toEqual(['小任务等待']);
     expect(alarmsFor({ 种: 'still', 预计秒: null }, 301)).toEqual(['小任务等待']);
     expect(alarmsFor({ 种: 'still', 预计秒: 300 }, 400)).toEqual([]);
@@ -226,7 +226,7 @@ describe('告警对象', () => {
 
 describe('盯', () => {
   /** 机器类告警只醒此刻有活的会话：默认让挂 盯 的会话自己有一个在跑的任务。 */
-  const hasActive = (...sessions: string[]) => { const s = baseState(Date.now()); s.running = sessions.map(k => ({ 任务: 'M-' + k, 起: 0, 心跳: 0, 发起: readCaller({ CLAUDE_CODE_SESSION_ID: k }, [], dir, false), 声明: { 种: 'render' }, 主机: 'h' })); return s; };
+  const hasActive = (...sessions: string[]) => { const s = baseState(Date.now()); s.在跑 = sessions.map(k => ({ 任务: 'M-' + k, 起: 0, 心跳: 0, 发起: readCaller({ CLAUDE_CODE_SESSION_ID: k }, [], dir, false), 声明: { 种: 'render' }, 主机: 'h' })); return s; };
   const runWatch = async (e: SchedulerEnv, o: Parameters<typeof watchSched>[1] = {}) => {
     const out: string[] = [];
     const code = await watchSched(e, { maxSec: 0.05, 读: () => hasActive(e.caller.会话), parentAlive: () => true, 输出: x => out.push(x), sleep: () => new Promise<void>(r => setTimeout(r, 10)), ...o });
@@ -234,11 +234,11 @@ describe('盯', () => {
   };
   /** 先挂一次定下游标，后面的事都算没挂时写入的。 */
   const pinCursor = async (e: SchedulerEnv) => { expect((await runWatch(e)).code).toBe(124); };
-  const recordAlert = (e: SchedulerEnv, alarmKind: string, timeMs = Date.now()) => recordSchedulerEvent(e.logDir, '告警', { 类: alarmKind, target: '机器', 次数: 1 }, timeMs);
+  const recordAlert = (e: SchedulerEnv, alarmKind: string, timeMs = Date.now()) => recordSchedulerEvent(e.logDir, '告警', { 类: alarmKind, 对象: '机器', 次数: 1 }, timeMs);
 
   it('告警被挤出尾部也不丢', async () => {
     const e = makeSchedEnv(); await pinCursor(e); recordAlert(e, '内存压力');
-    for (let i = 0; i < 60; i++) recordSchedulerEvent(e.logDir, '汇报', { observed: 'x'.repeat(900) });
+    for (let i = 0; i < 60; i++) recordSchedulerEvent(e.logDir, '汇报', { 看到: 'x'.repeat(900) });
     const r = await runWatch(e); expect(r.code).toBe(0); expect(r.out[0]).toContain('内存压力');
     expect((await runWatch(e)).code).toBe(124);
   });
@@ -254,7 +254,7 @@ describe('盯', () => {
     const e = makeSchedEnv(); recordAlert(e, 'a');
     const f = path.join(e.logDir, fs.readdirSync(e.logDir)[0]!), byteSize = fs.statSync(f).size;
     fs.appendFileSync(f, '{"事":"告');
-    const r = readNewEvents(e.logDir); expect(r.行).toHaveLength(1); expect(r.endCursor.offset).toBe(byteSize);
+    const r = readNewEvents(e.logDir); expect(r.行).toHaveLength(1); expect(r.endCursor.偏移).toBe(byteSize);
     expect(readNewEvents(e.logDir, r.endCursor).行).toHaveLength(0);
   });
   it('一轮多于 3 条：说还有几条和最重的，重挂接着报，一条不吞', async () => {
@@ -270,11 +270,11 @@ describe('盯', () => {
     recordSchedulerEvent(e.logDir, '任务起', { 任务: 'X' }); expect((await runWatch(e)).code).toBe(124);
     recordSchedulerEvent(e.logDir, '崩溃', { 任务: 'X', 发起: { pid: 123 }, 声明: { 段: '6-斩娜迦' } });
     expect((await runWatch(e)).out[0]).toContain('崩溃 #123 6-斩娜迦');
-    recordSchedulerEvent(e.logDir, '回收死锁', { 任务: 'Y', prevHolder: { pid: 123 } });
+    recordSchedulerEvent(e.logDir, '回收死锁', { 任务: 'Y', 原持有者: { pid: 123 } });
     expect((await runWatch(e)).out[0]).toContain('回收死锁 #123');
   });
   describe('按归属分发', () => {
-    const taskAlert = (e: SchedulerEnv, session: string) => recordSchedulerEvent(e.logDir, '告警', { 类: '排队长', target: 'T9', 次数: 1, pid: 9, 会话: session });
+    const taskAlert = (e: SchedulerEnv, session: string) => recordSchedulerEvent(e.logDir, '告警', { 类: '排队长', 对象: 'T9', 次数: 1, pid: 9, 会话: session });
     /** 让会话 k 看起来挂着 盯（本测试进程的 pid 是活的）。 */
     const addWatch = (e: SchedulerEnv, k: string) => { fs.mkdirSync(path.join(e.schedulerDir, '盯'), { recursive: true }); fs.writeFileSync(path.join(e.schedulerDir, '盯', `其他-${k}.json`), JSON.stringify({ pid: process.pid, 会话: k })); };
     const leftWatch = (e: SchedulerEnv, k: string, msAgo: number) => { fs.mkdirSync(e.schedulerDir, { recursive: true }); fs.writeFileSync(path.join(e.schedulerDir, `离盯-${k}.json`), JSON.stringify({ 时: Date.now() - msAgo })); };
@@ -301,7 +301,7 @@ describe('盯', () => {
     });
     it('回收死锁按原持有者的会话算，不按回收者', async () => {
       const e = makeSchedEnv(); await pinCursor(e); addWatch(e, 'other');
-      recordSchedulerEvent(e.logDir, '回收死锁', { 发起: { 会话: 'sess0001' }, prevHolder: { pid: 5, 发起: { 会话: 'other' } } }); expect((await runWatch(e)).code).toBe(124);
+      recordSchedulerEvent(e.logDir, '回收死锁', { 发起: { 会话: 'sess0001' }, 原持有者: { pid: 5, 发起: { 会话: 'other' } } }); expect((await runWatch(e)).code).toBe(124);
     });
     it('机器类：谁都没活不醒；只有别人有活且在盯不醒；自己有活醒', async () => {
       const e = makeSchedEnv(); await pinCursor(e); addWatch(e, 'other');
@@ -320,7 +320,7 @@ describe('盯', () => {
   });
   it('告警记下任务主人的会话：排队的取票上的发起者，持锁的取锁信息上的', () => {
     const s = baseState(10_000_000), otherInitiator = readCaller({ CLAUDE_CODE_SESSION_ID: 'other123' }, [], dir, false);
-    s.票 = [Ticket('001-h-7', { 起: 0, 发起: otherInitiator })]; s.lockHolders = [holdLock({ 拿锁时: 0, 帧时: 0, 发起: otherInitiator })];
+    s.票 = [Ticket('001-h-7', { 起: 0, 发起: otherInitiator })]; s.持锁 = [holdLock({ 拿锁时: 0, 帧时: 0, 发起: otherInitiator })];
     const a = judgeAlerts(s, s.时); expect(a.length).toBeGreaterThan(1);
     expect(a.every(x => x.会话 === 'other123')).toBe(true);
   });
@@ -369,11 +369,11 @@ describe('盯', () => {
     expect((await wakeRun).code).toBe(0);
   });
   it('看 的告警行带时间，被汇报挤过 16 KB 还在', () => {
-    const e = makeSchedEnv(), timeMs = Date.now(); recordSchedulerEvent(e.logDir, '告警', { 类: '内存压力', target: '机器', 次数: 1 }, timeMs);
-    for (let i = 0; i < 60; i++) recordSchedulerEvent(e.logDir, '汇报', { observed: 'x'.repeat(900) });
+    const e = makeSchedEnv(), timeMs = Date.now(); recordSchedulerEvent(e.logDir, '告警', { 类: '内存压力', 对象: '机器', 次数: 1 }, timeMs);
+    for (let i = 0; i < 60; i++) recordSchedulerEvent(e.logDir, '汇报', { 看到: 'x'.repeat(900) });
     const s = readState(e, () => baseState().机, false);
     expect(renderView(s)).toContain(`告警 ${new Date(timeMs).toISOString().slice(5, 19)}Z 内存压力 机器`);
-    expect(s.recentEvents.every(x => x.事 === '告警' || x.事 === '决定')).toBe(true);
+    expect(s.最近.every(x => x.事 === '告警' || x.事 === '决定')).toBe(true);
   });
   it('读调度 的尾部能跨月', () => {
     const e = makeSchedEnv(); recordSchedulerEvent(e.logDir, '甲', {}, Date.parse('2026-10-31T23:59:50Z')); recordSchedulerEvent(e.logDir, '乙', {}, Date.parse('2026-11-01T00:00:01Z'));
@@ -383,11 +383,11 @@ describe('盯', () => {
 
   const runSubWatch = (prefix: string) => {
     const modulePathLiteral = (n: string) => JSON.stringify(path.join(import.meta.dirname, n));
-    const scriptSource = `import {盯} from ${modulePathLiteral('盯.ts')};import {取调度环境} from ${modulePathLiteral('任务.ts')};import {读发起者} from ${modulePathLiteral('发起者.ts')};
-const e=取调度环境({锁目录:${JSON.stringify(dir)},发起者:读发起者({CLAUDE_CODE_SESSION_ID:'sess0001'},[],${JSON.stringify(dir)},false)});
+    const scriptSource = `import {watchSched} from ${modulePathLiteral('盯.ts')};import {resolveSchedulerEnv} from ${modulePathLiteral('任务.ts')};import {readCaller} from ${modulePathLiteral('发起者.ts')};
+const e=resolveSchedulerEnv({lockDir:${JSON.stringify(dir)},caller:readCaller({CLAUDE_CODE_SESSION_ID:'sess0001'},[],${JSON.stringify(dir)},false)});
 const 机={负载:1,核:10,闸:40,压力:1,free:1,压缩:1,swap:0,换出:0,GPU:1,热:1,盘:1,孤儿:0,进程:''};
 console.log('ready');
-process.exitCode=await 盯(e,{最长:4,父活:()=>true,读:()=>({时:Date.now(),机,持锁:[],票:[],在跑:[{任务:'M',起:0,心跳:0,发起:e.发起者,声明:{种:'render'},主机:'h'}],最近:[]}),睡:()=>new Promise(r=>setTimeout(r,20)),输出:s=>console.log(${JSON.stringify(prefix)}+s)});`;
+process.exitCode=await watchSched(e,{maxSec:4,parentAlive:()=>true,读:()=>({时:Date.now(),机,持锁:[],票:[],在跑:[{任务:'M',起:0,心跳:0,发起:e.caller,声明:{种:'render'},主机:'h'}],最近:[]}),sleep:()=>new Promise(r=>setTimeout(r,20)),输出:s=>console.log(${JSON.stringify(prefix)}+s)});`;
     const c = spawn(process.execPath, ['--input-type=module', '-e', scriptSource], { stdio: ['ignore', 'pipe', 'inherit'] });
     children.push(c);
     let out = ''; c.stdout!.on('data', d => { out += d; });

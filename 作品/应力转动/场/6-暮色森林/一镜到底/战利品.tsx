@@ -91,7 +91,7 @@ export const lootChests: ChestState[] = ORDER.flatMap((bossName) => {
   const cfg = lootTable[bossName];
   return cfg.chests.map((spec) => {
     // 心：箱子中心；冒、碎：矛尖走到哪里时冒出来、打掉（a，米）
-    const body = spec.bodyIndex === undefined ? undefined : pierce.body?.[spec.bodyIndex];
+    const body = spec.bodyIndex === undefined ? undefined : pierce.bodies?.[spec.bodyIndex];
     if (spec.bodyIndex !== undefined && !body) throw new Error(`${bossName} 的穿刺线没有 身[${spec.bodyIndex}]`);
     const noChest = cfg.chestWood === null;
     if (noChest && !body) throw new Error(`${bossName} 没有箱子，要给 身`);

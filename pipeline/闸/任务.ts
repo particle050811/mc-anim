@@ -20,14 +20,14 @@ export type TaskDecl = {
     预计秒?: number | null;
     用途?: string;
     项数?: number;
-    coherent?: {
-        reason: string;
+    连贯?: {
+        为什么: string;
     };
-    skipRender?: boolean;
+    不开渲染?: boolean;
     可让路?: boolean;
     /** anim --低优先（ANIM_PRIORITY=low）：票排在所有普通票后面，多段批有普通票在等就在项间让开 */
     低优先?: boolean;
-    needsLoad?: boolean;
+    需负载?: boolean;
 };
 export type SchedulerEnv = {
     lockDir: string;
@@ -69,11 +69,11 @@ const buildTask = (e: SchedulerEnv, taskDecl: TaskDecl, onEnd?: (exitCode: numbe
         ended = true;
         clearInterval(timer);
         undo();
-        const directive = readDirective(e, info.任务), cancel = directive?.action === '取消' ? directive : undefined, now = e.nowMs();
+        const directive = readDirective(e, info.任务), cancel = directive?.动作 === '取消' ? directive : undefined, now = e.nowMs();
         if (signal) {
             if (cancel)
-                console.error(`被调度取消：${cancel.reason}，不要原样重发`);
-            logEvent('被杀', { 信号: signal, 退出码: exitCode, reason: cancel?.reason, 票: info.票, 当时: info.当时 || '其他', 已跑秒: (now - info.起) / 1000, afterCancelSec: cancel?.时 ? (now - cancel.时) / 1000 : undefined, 机: { 负载: load1Min() } });
+                console.error(`被调度取消：${cancel.为什么}，不要原样重发`);
+            logEvent('被杀', { 信号: signal, 退出码: exitCode, 为什么: cancel?.为什么, 票: info.票, 当时: info.当时 || '其他', 已跑秒: (now - info.起) / 1000, 取消后秒: cancel?.时 ? (now - cancel.时) / 1000 : undefined, 机: { 负载: load1Min() } });
         }
         logEvent('任务止', { 票: info.票, 退出码: exitCode, 信号: signal, 错误: errorText, 秒: (now - info.起) / 1000 });
         promptOnly('耗时记录', () => {

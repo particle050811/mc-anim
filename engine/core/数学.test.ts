@@ -101,22 +101,22 @@ describe('数学正本和旧副本对得上', () => {
   const triples = [[0, 10, 0.25], [2, -4, 0.5], [1, 1, 0.3], [-3, 5, 1.5], [5, 7, -0.5]];
   it('lerp', () => {
     sameOutputs(M.lerp, copyFn('作品/应力转动/场/6-古城/6-4-1/编排.ts', 'lerp'), triples);
-    sameOutputs(M.lerp, copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', '插'), triples);
-    sameOutputs(M.lerp, copyFn('engine/三渲二/调子.ts', '插数'), triples);
+    sameOutputs(M.lerp, copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', 'lerp'), triples);
+    sameOutputs(M.lerp, copyFn('engine/三渲二/调子.ts', 'lerpNumber'), triples);
   });
   it('lerpV（三维副本）', () => {
     const argsList = [[[0, 1, 2], [10, -1, 4], 0.25], [[1, 2, 3], [3, 2, 1], 1.5]];
     sameOutputs(M.lerpV, copyFn('作品/应力转动/地点/边城/6-3-8/编排/工具.ts', 'lerp3'), argsList);
-    sameOutputs(M.lerpV, copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', '插3'), argsList);
+    sameOutputs(M.lerpV, copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', 'lerpVec3'), argsList);
   });
   it('clamp01', () => {
     const argsList = gridPoints(-1, 2, 12).map((x) => [x]);
     sameOutputs(M.clamp01, copyFn('engine/anim/anim.ts', 'clamp01'), argsList);
-    sameOutputs(M.clamp01, copyFn('库/角色/魔法酒狐动作.ts', '夹'), argsList);
+    sameOutputs(M.clamp01, copyFn('库/角色/魔法酒狐动作.ts', 'clamp01'), argsList);
   });
   it('smoothstep01：0～1 里和 ss、缓、smooth01 一样（有的副本不夹 t）', () => {
     sameOutputs(M.smoothstep01, copyFn('作品/应力转动/场/6-古城/6-4-1/编排.ts', 'ss'), unitGrid);
-    sameOutputs(M.smoothstep01, copyFn('作品/把回忆拼好给你/场/2-门口/归隐她.ts', '缓'), unitGrid);
+    sameOutputs(M.smoothstep01, copyFn('作品/把回忆拼好给你/场/2-门口/归隐她.ts', 'smoothstep'), unitGrid);
     sameOutputs(M.smoothstep01, copyFn('库/特效/气流.tsx', 'smooth01'), unitGrid);
     sameOutputs(M.smoothstep01, copyFn('engine/light/大气/云.ts', 'cubicSmooth'), unitGrid);
   });
@@ -129,7 +129,7 @@ describe('数学正本和旧副本对得上', () => {
   it('hermite：同参数顺序的、把回忆的 埃尔米特（切线按帧给、另传段长）', () => {
     const argsList = [[0, 1, 2, 0, 0.3], [1, -2, 4, 3, 0.75], [5, 0, -1, 0, 0.5]];
     sameOutputs(M.hermite, copyFn('engine/flight/真实飞行/弹簧.ts', 'hermite'), argsList);
-    const hermiteFn = copyFn('作品/把回忆拼好给你/场/2-海上/编排.ts', '埃尔米特') as (...a: number[]) => number;
+    const hermiteFn = copyFn('作品/把回忆拼好给你/场/2-海上/编排.ts', 'hermite') as (...a: number[]) => number;
     for (const [p0, p1, m0, m1, h, s] of [[0, 2, 1, 0, 3, 0.3], [1, 4, -2, 3, 1.5, 0.75]] as const)
       expect(hermiteFn(p0, p1, m0, m1, h, s)).toBeCloseTo(M.hermite(p0, m0 * h, p1, m1 * h, s), 12);
   });

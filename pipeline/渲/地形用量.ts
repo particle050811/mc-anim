@@ -96,7 +96,7 @@ export const startWholeMeasure = (segKey: string, fingerprint: string, work = wo
   pendingFingerprints.set(`${work}/${segKey}`, fingerprint);
 };
 
-const collectPageExpr = `JSON.stringify({ 段: window.process?.env?.[${JSON.stringify(terrainUsageSegEnv)}] ?? null, 包: Object.fromEntries([...(window.__地形用量 ?? new Map())].map(([名, v]) => [名, { 版本: v.版本, 区段: [...v.区段] }])) })`;
+const collectPageExpr = `JSON.stringify({ 段: window.process?.env?.[${JSON.stringify(terrainUsageSegEnv)}] ?? null, 包: Object.fromEntries([...(window.terrainUsage ?? new Map())].map(([名, v]) => [名, { 版本: v.版本, 区段: [...v.区段] }])) })`;
 
 /** 接到浏览器上：之后每个页面关掉前收走它的用量。读 Composition 列表的页面没传段名，不记 */
 export const collectTerrainUsage = (browser: HeadlessBrowser) =>

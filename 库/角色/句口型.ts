@@ -4,10 +4,10 @@ import { mouthAt, withTalkNod, type LipData } from './口型.ts';
 import type { LineCue } from '@engine/audio/台词句.ts';
 
 const buildLipData = (lineCues: readonly LineCue[]): LipData => {
-  const lip: Record<string, { mouthKeys: [number, string][] }> = {};
+  const lip: Record<string, { 嘴: [number, string][] }> = {};
   const lineStarts: Record<string, { 角色: string; 开口: number }> = {};
   for (const { 句: sentence } of lineCues) {
-    lip[sentence.id] = { mouthKeys: sentence.嘴 as [number, string][] };
+    lip[sentence.id] = { 嘴: sentence.嘴 as [number, string][] };
     lineStarts[sentence.id] = { 角色: sentence.角色, 开口: sentence.开口 };
   }
   return { 口型: lip, 台词: lineStarts };

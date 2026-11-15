@@ -84,8 +84,8 @@ export const LiYingWithBlade: React.FC<{ pose: FigurePose; bladeOn?: boolean; bl
 // 朝向（facing = 锁扣那面朝哪）从片场存档 片场-古城4x 的 region 文件离线读方块属性：工具/游戏取材/古城4x/读箱子朝向.py → 模型/场景/古城4x箱子.json
 //   （全是单箱；号 = 工具/游戏取材/古城4x/out/量测.json 的编号，即 00-说明.md、古城4x布局.ts 里的 #210 等）。
 export type AncientCity4xChest = { chestId: number; block: V3; facing: ChestFacing; 块: string };
-export const chests4x: AncientCity4xChest[] = (chestTable4x as unknown as { chestId: number; block: number[]; facing: string }[]).map((c) => ({
-  chestId: c.chestId,
+export const chests4x: AncientCity4xChest[] = (chestTable4x as unknown as { 号: number; block: number[]; facing: string }[]).map((c) => ({
+  chestId: c.号,
   block: c.block as V3,
   facing: c.facing as ChestFacing,
   块: partAt(c.block[0], c.block[2]) ?? '',

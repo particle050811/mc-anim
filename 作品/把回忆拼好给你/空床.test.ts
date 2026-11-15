@@ -164,7 +164,7 @@ describe('2-空床：第 12 句卧室整句一个镜头', () => {
     expect(firstStage!.y).toBeLessThan(thirdStage!.y);
     const doorBeam = params.windowLightLevels[4]!.find((b) => b.从 === '门')!;
     const doorMeasure = measure(doorBeam);
-    expect(doorMeasure.area.floor ?? 0).toBeGreaterThan(0.3);
+    expect(doorMeasure.area.地板 ?? 0).toBeGreaterThan(0.3);
     expect(doorMeasure.x).toBeLessThan(params.bedEdgeSeat[0]);
     // 光斑都在受光面里，不落进后墙的窗洞
     for (const tier of params.windowLightLevels)

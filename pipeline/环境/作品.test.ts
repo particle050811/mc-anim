@@ -20,10 +20,10 @@ afterAll(() => fs.rmSync(tempDir, { recursive: true }));
 
 describe('作品们', () => {
   it('作品/ 下有 清单.ts 的目录，加上 [works] 登记的外部目录', () => {
-    expect(Object.fromEntries(listWorks(repoRoot, { workC: outsideDir }))).toEqual({ firstWork, second: secondWork, workC: outsideDir });
+    expect(Object.fromEntries(listWorks(repoRoot, { 丙: outsideDir }))).toEqual({ 甲: firstWork, 乙: secondWork, 丙: outsideDir });
   });
   it('登记的目录没有 清单.ts 报错；名字只差大小写报错', () => {
-    expect(() => listWorks(repoRoot, { groupD: path.join(tempDir, '外面') })).toThrow(/没有 清单.ts/);
+    expect(() => listWorks(repoRoot, { 丁: path.join(tempDir, '外面') })).toThrow(/没有 清单.ts/);
     const caseDir = path.join(tempDir, '大小写');
     makeFixture(path.join(caseDir, '作品', 'ab'));
     expect(() => listWorks(caseDir, { AB: outsideDir })).toThrow(/只差大小写/);
@@ -32,7 +32,7 @@ describe('作品们', () => {
     const toml = path.join(tempDir, 'anim.local.toml');
     fs.writeFileSync(toml, 'work = "甲"\n\n[works]\n"私有丙" = "外面/私有丙"\n');
     const r = readConfig({}, toml);
-    expect(r.workPaths).toEqual({ siYouBing: outsideDir });
+    expect(r.workPaths).toEqual({ 私有丙: outsideDir });
     expect(r.值.默认作品!.值).toBe('甲');
   });
 });

@@ -27,7 +27,7 @@ class SynthRequest:
     语气参考: str = ''  # 情绪参考 wav（IndexTTS2 这类分开音色和语气的后端）
     语气强度: float | None = None
     角色: str = ''  # 台词.toml 的角色（按名字取音色的后端用）
-    backend_params: dict = field(default_factory=dict)  # 后端自己的参数，覆盖默认
+    参数: dict = field(default_factory=dict)  # 后端自己的参数，覆盖默认
 
 
 @dataclass
@@ -53,12 +53,12 @@ class Backend:
         """配置：后端的全局设置（程序目录、服务地址等，anim 从配置取了传进来），和 默认参数 合并"""
         self.backend_config = {**self.default_params, **(config or {})}
 
-    def backend_params(self, request: SynthRequest) -> dict:
-        return {**self.backend_config, **request.backend_params}
+    def 参数(self, request: SynthRequest) -> dict:
+        return {**self.backend_config, **request.参数}
 
     def record_params(self, request: SynthRequest) -> dict:
         """这个候选是用什么参数出的（写进候选旁的 .json，定稿时进资产表的 来源）"""
-        return {k: v for k, v in self.backend_params(request).items() if k not in self.local_keys}
+        return {k: v for k, v in self.参数(request).items() if k not in self.local_keys}
 
     def missing_items(self) -> list[str]:
         """跑不了的原因（程序、模型、密钥不在），空表示能跑；不联网、不加载模型"""
@@ -66,7 +66,7 @@ class Backend:
 
     def map_descriptor(self, request: SynthRequest) -> dict:
         """dry-run：要发出去或交给模型的东西（不含音频字节）"""
-        return {'后端': self.名, **asdict(request), '参数': self.backend_params(request)}
+        return {'后端': self.名, **asdict(request), '参数': self.参数(request)}
 
     def synthesize(self, requests: list[SynthRequest]) -> list[SynthResult]:
         raise NotImplementedError

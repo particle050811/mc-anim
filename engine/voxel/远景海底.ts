@@ -13,15 +13,15 @@ import { hash2, simplex2 } from '../core/噪声.ts';
 import raw from 'asset:数据/体素/远景海底';
 
 type SeabedStats = {
-  depthBands: number[];
-  群系: Record<string, { 级: { 档: ({ n: number; 实: [string, number][]; grass: [string, number][] } | null)[] }[]; grassHeights: ([string, number, number][] | null)[] }>;
+  深档: number[];
+  群系: Record<string, { 级: { 档: ({ n: number; 实: [string, number][]; 草: [string, number][] } | null)[] }[]; 草高: ([string, number, number][] | null)[] }>;
 };
 const stats = raw as unknown as SeabedStats;
-const depthBandCount = stats.depthBands.length + 1;
+const depthBandCount = stats.深档.length + 1;
 // 水深（米：水面 y 62 到海底最高实心方块 y 的格数）→ 档号
 export const seabedBand = (depthM: number) => {
   let k = 0;
-  while (k < stats.depthBands.length && depthM >= stats.depthBands[k]) k++;
+  while (k < stats.深档.length && depthM >= stats.深档[k]) k++;
   return k;
 };
 
@@ -46,7 +46,7 @@ const findEntry = (biome: string, level: number, k: number) => {
     const LL = level + dL, kk = k + dk;
     if (LL < 0 || LL >= biomeStats.级.length || kk < 0 || kk >= depthBandCount) continue;
     const entry = biomeStats.级[LL].档[kk];
-    if (entry) return { e: entry, plantHeights: biomeStats.grassHeights[kk] ?? biomeStats.grassHeights.find(Boolean) ?? [] };
+    if (entry) return { e: entry, plantHeights: biomeStats.草高[kk] ?? biomeStats.草高.find(Boolean) ?? [] };
   }
   return null;
 };

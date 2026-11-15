@@ -19,7 +19,7 @@ const renderCalls = vi.hoisted(() => [] as string[][]);
 
 vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<typeof import('../环境/作品.ts')>()), listWorks: () => new Map([['应力转动', workRoot]]), workRoot: () => workRoot }));
 const segmentInfo = { 键: '甲', segmentName: '甲', 章: 0, 编号: null, 段: { 帧数: 48, fps: 24, 宽: 320, 高: 180 } };
-vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), allSegments: async () => [segmentInfo], selectSegs: async () => [segmentInfo] }));
+vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), loadAllSegments: async () => [segmentInfo], selectSegs: async () => [segmentInfo] }));
 vi.mock('../闸/闸.ts', async (actual) => ({ ...(await actual<typeof import('../闸/闸.ts')>()), lazyPassGate: () => async () => {}, passGate: <T>(fn: () => Promise<T>) => fn(), passRenderGate: <T>(fn: () => Promise<T>) => fn() }));
 // 切片的路径、指纹照真的算法起名，指纹由 当前.指纹 定；测试的切片是 320×180 48 帧
 vi.mock('../渲/段产物.ts', async (importOriginal) => {

@@ -5,7 +5,7 @@ import { AbsoluteFill } from 'remotion';
 import { uiFontFamily } from '@库/界面/基础.tsx';
 import { legacyFrameSec } from '../分镜/时间.ts';
 import { lyricOpacity, type LyricStyle, type LyricLine } from './歌词.tsx';
-import { useCurrentFrame } from '../当前帧.ts';
+import { use当前帧 } from '../当前帧.ts';
 
 export type BottomLyricStyle = Omit<LyricStyle, 'topEdge'> & {
   /** 字的下沿离画面底几像素（页面像素） */
@@ -24,7 +24,7 @@ export const line15LyricStyle: BottomLyricStyle = {
 };
 
 export const bottomLyric: React.FC<{ lines: readonly LyricLine[]; 样式: BottomLyricStyle; 收?: number }> = ({ lines, 样式: bottomLyricStyle, 收: fadeOutFrame }) => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   const alpha = lyricOpacity(lines, f, bottomLyricStyle, fadeOutFrame);
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>

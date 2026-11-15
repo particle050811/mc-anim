@@ -33,7 +33,7 @@ const castleFlattenMask = castleFlattenMaskAsset as unknown as { x0: number; z0:
 const cloudCottageMesh = cloudCottageMeshAsset as unknown as MeshInfo;
 const yetiEdgeFix = yetiEdgeFixAsset as unknown as EdgeFixData;
 const nagaEdgeFix = nagaEdgeFixAsset as unknown as EdgeFixData;
-const nagaTakeoffHide = nagaTakeoffHideAsset as unknown as { hide: number[][] };
+const nagaTakeoffHide = nagaTakeoffHideAsset as unknown as { 藏: number[][] };
 
 // 区段包：另烘焙成 暮色放大-1752-扩展（npm run 导入:暮色放大1752扩展），预生成范围往四周补了一圈（工具/游戏取材/暮色范围.py），让一镜到底往前看 3 公里内都有地形；共用的 暮色放大-1752 不动
 export const twilightPackName = '暮色放大-1752-扩展';
@@ -61,7 +61,7 @@ export type Rect = [number, number, number, number];
 export type CutoutEntry = LandmarkCutout & { remainTop?: number };
 // `归边`（工具/地标巡检/归边.ts 量的）：`藏免` = 核心外、但树干在核心里的旧树的格（网格本地坐标，方块最小角），不藏；`藏加` = 核心里要藏的格（树干在核心外的新树伸进来的树冠）；
 // `挖加` = 核心外要挖的新世界的格（游戏坐标：树干在核心里、被挖掉的新树伸出去的树冠，和留下的旧树冠占的格）；`挖免` = 核心里不挖的格（游戏坐标，上面那些新树伸进来的树冠）
-type EdgeFixData = { hideExempt: number[][]; hideAdd: number[][]; digAdd: number[][]; digExempt: number[][] };
+type EdgeFixData = { 藏免: number[][]; 藏加: number[][]; 挖加: number[][]; 挖免: number[][] };
 type LandmarkDef = {
   说明: MeshInfo;
   newOrigin: V3;
@@ -116,7 +116,7 @@ export const landmarkDefs: Record<TwilightLandmarkName, LandmarkDef> = {
   // 代价：6-1-2 林道上往东看时右边墙外那棵浅色大树换成红干树（最多 4.9% 像素），6-1-1 进不了画。
   // 归边（10-07）：核心边切到的树整棵归一边（工具/地标巡检/归边.ts 娜迦庭院）；片场存档开助跑道时起跳区清过树冠，跨在框边上的 9 棵树被切成两半（用户 10-07 要整棵切），框外剩下的也藏掉（工具/地标巡检/娜迦起跳区整棵.ts），并进 `藏加`
   娜迦庭院: { 说明: nagaMesh, newOrigin: [-11191.5, 7, -887.5], 转: 0, ground: 7, core: [[-264.5, -112.5, -50.5, 50.5], [-50.5, -50.5, 50.5, 50.5]],
-    edgeFix: { ...nagaEdgeFix, hideAdd: [...nagaEdgeFix.hideAdd, ...nagaTakeoffHide.hide] } },
+    edgeFix: { ...nagaEdgeFix, 藏加: [...nagaEdgeFix.藏加, ...nagaTakeoffHide.藏] } },
   // 原点在旧塔中心，新塔中心 (−9017, 1031)。逆时针转 90°：巫妖房间西、南、东三面都贴着别的塔楼，只有本地北墙外是空的，只能从本地北进；
   // 转后本地北 = 世界西，由西往东穿（对应用户 10-05 红笔从巫妖怪塔往东偏南拉到九头蛇巢穴），不转要进塔前右转 57°、出塔后左转 73°。
   // 穿刺线在塔里重瞄成本地 195°（世界 105°）：体素扫过，185°～195° 只撞北墙、屋里、副楼三截，比 180° 还短，200° 起又多撞别的塔楼。代价：6-1-5 的碎块、孔道、镜头绕圈按 195° 重排（6-1-5/编排.ts）。

@@ -8,7 +8,7 @@ import type * as THREE from 'three';
 import { renderInput } from '../core/渲染设置.ts';
 
 // 比改前改后：--props='{"树叶透光":false}' 关掉
-const translucencyOff = (renderInput() as { leafTranslucency?: boolean }).leafTranslucency === false;
+const translucencyOff = (renderInput() as { 树叶透光?: boolean }).树叶透光 === false;
 
 export const translucencyStrength = 0.25;
 

@@ -62,16 +62,16 @@ describe('原版下落正本和旧副本对得上', () => {
     for (const h of fallHeights) expect(fallTime(h)).toBeCloseTo(landTick(h) / 20, 12);
   });
   it('2-末地 的 原版下落（掉了多少格）= −下落高度', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', '原版下落') as (k: number) => number;
+    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-末地/编排.ts', 'vanillaFall') as (k: number) => number;
     for (const k of [-1, 0, 0.5, 1, 2.25, 7, 19.9, 60]) expect(legacyFn(k)).toBeCloseTo(-fallHeightAtTick(k), 12);
   });
   it('2-第一晚 的 下落（默认从站着的速度开始）和 按刻取', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/段/2-第一晚/编排.ts', '下落', { standingVelY: vanillaMotion.standingVertSpeed }) as (h: number, v?: number) => number[];
+    const legacyFn = copyFn('作品/把回忆拼好给你/段/2-第一晚/编排.ts', 'dropPath', { standingVelY: vanillaMotion.standingVertSpeed }) as (h: number, v?: number) => number[];
     for (const h of fallHeights) {
       expect(legacyFn(h)).toEqual(fallTable(h, { initSpeed: vanillaMotion.standingVertSpeed }));
       expect(legacyFn(h, 0)).toEqual(fallTable(h));
     }
-    const legacyLookup = copyFn('作品/把回忆拼好给你/段/2-第一晚/编排.ts', '按刻取') as (curveTable: number[], k: number) => number;
+    const legacyLookup = copyFn('作品/把回忆拼好给你/段/2-第一晚/编排.ts', 'sampleByTick') as (curveTable: number[], k: number) => number;
     const curveTable = fallTable(5);
     for (const k of [-1, 0, 0.5, 3.3, 7, 100]) expect(legacyLookup(curveTable, k)).toBeCloseTo(sampleByTick(curveTable, k), 12);
   });

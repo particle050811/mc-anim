@@ -20,7 +20,7 @@ import raw from 'asset:模型/角色/恼鬼';
 import texVex from 'asset:贴图/角色/恼鬼/恼鬼';
 import texCharge from 'asset:贴图/角色/恼鬼/蓄力';
 
-const MODEL = (raw as unknown as { models: { vex: EntityModelData } }).models.vex;
+const MODEL = (raw as unknown as { models: { 恼鬼: EntityModelData } }).models.恼鬼;
 const TEX = { normal: png(texVex), charging: png(texCharge) };
 const DEG = Math.fround(0.017453292);
 

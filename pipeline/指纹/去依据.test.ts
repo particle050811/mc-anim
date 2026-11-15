@@ -11,12 +11,12 @@ const relPath = (p: string) => path.relative(codeRoot(), p).split(path.sep).join
 describe('去依据（文本）', () => {
   it('事件：只去说明文字，时刻留着', () => {
     expect(stripBasis(`const 表 = { 甲: { 在: { 秒: 42 }, 依据: "说明" } };`)).toBe(`const 表 = { 甲: { 在: { 秒: 42 } } };`);
-    expect(stripBasis(`const 表 = { 乙: { 在: { 接: "甲", 加秒: -1 / 20 }, 依据: "说明" } };`)).toBe(`const 表 = { 乙: { 在: { 接: "甲", 加秒: -1 / 20 } } };`);
+    expect(stripBasis(`const 表 = { 乙: { 在: { after: "甲", addSec: -1 / 20 }, 依据: "说明" } };`)).toBe(`const 表 = { 乙: { 在: { after: "甲", addSec: -1 / 20 } } };`);
   });
 
   it('段窗：起止和键留着', () => {
-    expect(stripBasis(`排段({ 名: "串", 段们: [{ 键: "2-甲", 起: { 秒: 1 }, 止: { 拍: 3 }, 依据: "说明" }, { 键: "2-乙", 止: { 帧数: 10 }, 依据: "说明" }, { 名: "丙", 止: "放完", 依据: "说明" }] });`)).toBe(
-      `排段({ 名: "串", 段们: [{ 键: "2-甲", 起: { 秒: 1 }, 止: { 拍: 3 } }, { 键: "2-乙", 止: { 帧数: 10 } }, { 名: "丙", 止: "放完" }] });`,
+    expect(stripBasis(`排段({ 名: "串", 段们: [{ 键: "2-甲", 起: { 秒: 1 }, 止: { beat: 3 }, 依据: "说明" }, { 键: "2-乙", 止: { 帧数: 10 }, 依据: "说明" }, { 名: "丙", 止: "放完", 依据: "说明" }] });`)).toBe(
+      `排段({ 名: "串", 段们: [{ 键: "2-甲", 起: { 秒: 1 }, 止: { beat: 3 } }, { 键: "2-乙", 止: { 帧数: 10 } }, { 名: "丙", 止: "放完" }] });`,
     );
   });
 
@@ -80,11 +80,11 @@ describe('去依据（模块哈希）', () => {
   const makeDefTableSource = (eventsText: string) => `const 定义 = { ${eventsText} } as const satisfies Record<string, { 在: object; 依据: string }>;\nexport default 定义;\n`;
 
   it('只改依据不变；改帧号、秒、接的事件都变', async () => {
-    const firstResult = await writeToml(makeDefTableSource(`甲: { 在: { 帧: 100 }, 依据: '第一版说明' }, 乙: { 在: { 接: '甲', 加秒: 1 }, 依据: '说明' }`));
-    expect(await writeToml(makeDefTableSource(`甲: { 在: { 帧: 100 }, 依据: '改过的说明' }, 乙: { 在: { 接: '甲', 加秒: 1 }, 依据: '也改了' }`))).toBe(firstResult);
-    expect(await writeToml(makeDefTableSource(`甲: { 在: { 帧: 101 }, 依据: '第一版说明' }, 乙: { 在: { 接: '甲', 加秒: 1 }, 依据: '说明' }`))).not.toBe(firstResult);
-    expect(await writeToml(makeDefTableSource(`甲: { 在: { 帧: 100 }, 依据: '第一版说明' }, 乙: { 在: { 接: '甲', 加秒: 2 }, 依据: '说明' }`))).not.toBe(firstResult);
-    expect(await writeToml(makeDefTableSource(`丙: { 在: { 帧: 100 }, 依据: '第一版说明' }, 乙: { 在: { 接: '丙', 加秒: 1 }, 依据: '说明' }`))).not.toBe(firstResult);
+    const firstResult = await writeToml(makeDefTableSource(`甲: { 在: { 帧: 100 }, 依据: '第一版说明' }, 乙: { 在: { after: '甲', addSec: 1 }, 依据: '说明' }`));
+    expect(await writeToml(makeDefTableSource(`甲: { 在: { 帧: 100 }, 依据: '改过的说明' }, 乙: { 在: { after: '甲', addSec: 1 }, 依据: '也改了' }`))).toBe(firstResult);
+    expect(await writeToml(makeDefTableSource(`甲: { 在: { 帧: 101 }, 依据: '第一版说明' }, 乙: { 在: { after: '甲', addSec: 1 }, 依据: '说明' }`))).not.toBe(firstResult);
+    expect(await writeToml(makeDefTableSource(`甲: { 在: { 帧: 100 }, 依据: '第一版说明' }, 乙: { 在: { after: '甲', addSec: 2 }, 依据: '说明' }`))).not.toBe(firstResult);
+    expect(await writeToml(makeDefTableSource(`丙: { 在: { 帧: 100 }, 依据: '第一版说明' }, 乙: { 在: { after: '丙', addSec: 1 }, 依据: '说明' }`))).not.toBe(firstResult);
   });
 
   it('表里各事件之间的注释（esbuild 不去）改了不变', async () => {
@@ -101,7 +101,7 @@ describe('去依据（模块哈希）', () => {
     const storyboardDir = path.join(codeRoot(), '作品/把回忆拼好给你/分镜');
     const allText = fs.readdirSync(storyboardDir).filter((f) => f.endsWith('.ts')).sort().map((f) => fs.readFileSync(path.join(storyboardDir, f), 'utf8')).join('\n');
     const strippedText = stripBasis(allText.replace(/ as const satisfies [^;]+;/g, ';'));
-    expect(strippedText).toContain('依据: 表[名].依据');
+    expect(strippedText).toContain('依据: eventTable[eventName].依据');
     expect(strippedText).toContain('依据: d.依据');
     // 进哈希的文本里，除了类型声明和透传，再没有写死的依据
     const remaining = [...strippedText.matchAll(/依据: ['"`]/g)];

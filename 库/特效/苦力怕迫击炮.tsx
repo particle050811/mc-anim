@@ -25,7 +25,7 @@ import blastwave6Png from 'asset:贴图/特效/杂项粒子/blastwave_6';
 import blastwave7Png from 'asset:贴图/特效/杂项粒子/blastwave_7';
 import blastwave8Png from 'asset:贴图/特效/杂项粒子/blastwave_8';
 
-const DATA = (raw as unknown as { models: { creeperHead: EntityModelData } }).models.creeperHead;
+const DATA = (raw as unknown as { models: { 苦力怕头: EntityModelData } }).models.苦力怕头;
 const BW = pngDir(assetDir({ './blastwave_1.png': blastwave1Png, './blastwave_2.png': blastwave2Png, './blastwave_3.png': blastwave3Png, './blastwave_4.png': blastwave4Png, './blastwave_5.png': blastwave5Png, './blastwave_6.png': blastwave6Png, './blastwave_7.png': blastwave7Png, './blastwave_8.png': blastwave8Png }));
 
 export const LOB = { halfWidth: 0.25, gravity: 0.05, blastRadius: 5, shockwaveSize: 5 * 1.2, shockwaveLifeTicks: 8 };

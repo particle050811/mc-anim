@@ -70,7 +70,7 @@ def test_frost_nova_is_vanilla_flame_particle(translate):
         assert got == pytest.approx(1 - ((age + fraction) / lifetime) ** 2 * 0.5, rel=1e-6)
 
 
-@pytest.mark.parametrize("provider, 有色", [("FireParticle$ReversibleProvider", False), ("FireParticle$ColorProvider", True)])
+@pytest.mark.parametrize("provider, colored", [("FireParticle$ReversibleProvider", False), ("FireParticle$ColorProvider", True)])
 def test_big_fire_cloud_is_fire_particle(translate, provider, colored):
     p = translate(f"com/Polarice3/Goety/client/particles/{provider}")
     s = p["摘要"]

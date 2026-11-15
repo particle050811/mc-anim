@@ -9,7 +9,7 @@ export type SchedulerEvent = {
     事: string;
     任务?: string;
     票?: string;
-    lock?: string;
+    锁?: string;
     主机: string;
     [k: string]: unknown;
 };
@@ -19,9 +19,9 @@ const shortInitiator = (x: unknown) => { const { 来源: source, 会话: session
 const truncateBytes = (s: string, n: number) => Buffer.byteLength(s) <= n ? s : Buffer.from(s).subarray(0, n).toString('utf8').replace(/\uFFFD+$/, '') + '…';
 /** 按丢失的代价从小到大退。决定、为什么、谁 是这条日志存在的理由，只收缩不删。 */
 const compactLine = (record: SchedulerEvent): SchedulerEvent => {
-    const a: SchedulerEvent = { ...record, 截断: true }, seen = a.看到 as { manualNote?: string; 摘要?: string } | string | undefined;
+    const a: SchedulerEvent = { ...record, 截断: true }, seen = a.看到 as { 人工?: string; 摘要?: string } | string | undefined;
     if (seen && typeof seen === 'object')
-        a.看到 = [seen.manualNote, seen.摘要].filter(Boolean).join('；');
+        a.看到 = [seen.人工, seen.摘要].filter(Boolean).join('；');
     delete a.队;
     delete a.机;
     if (fitsLimit(a))
@@ -113,22 +113,22 @@ export const readSchedulerEvents = (schedDir: string, tailBytes?: number): Sched
 /** UTC 月文件名和字节偏移，跨月、尾部滑出都不丢。 */
 export type LogPosition = {
     月: string;
-    offset: number;
+    偏移: number;
 };
 /** 从位置读到末尾，只吃整行（末行可能还在写）。每行带读完它的位置，调用方可以只把报过的算已读。 */
 export const readNewEvents = (schedDir: string, fromCursor?: LogPosition | null) => {
     const rows: { 事件: SchedulerEvent; 到: LogPosition }[] = [];
-    let endCursor: LogPosition = fromCursor ?? { 月: '', offset: 0 };
+    let endCursor: LogPosition = fromCursor ?? { 月: '', 偏移: 0 };
     for (const name of monthFiles(schedDir)) {
         const month = name.slice(0, 7);
         if (fromCursor && month < fromCursor.月)
             continue;
         let startOffset = 0;
-        const b = readBytes(path.join(schedDir, name), size => (startOffset = fromCursor?.月 === month && fromCursor.offset <= size ? fromCursor.offset : 0));
+        const b = readBytes(path.join(schedDir, name), size => (startOffset = fromCursor?.月 === month && fromCursor.偏移 <= size ? fromCursor.偏移 : 0));
         if (!b)
             continue;
         for (let lineStart = 0, lineEnd = b.indexOf(10); lineEnd >= 0; lineStart = lineEnd + 1, lineEnd = b.indexOf(10, lineStart)) {
-            endCursor = { 月: month, offset: startOffset + lineEnd + 1 };
+            endCursor = { 月: month, 偏移: startOffset + lineEnd + 1 };
             try {
                 rows.push({ 事件: JSON.parse(b.toString('utf8', lineStart, lineEnd)), 到: endCursor });
             }

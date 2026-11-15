@@ -14,8 +14,8 @@ import { renderInput } from '../core/渲染设置.ts';
 // 挂了 <PostFx /> 的画布：屏幕 AO 的离屏图跟着换成半精度（lib/体素/屏幕AO.tsx），亮部不在那一步被量化成 8 位
 export const postFxRenderers = new WeakSet<THREE.WebGLRenderer>();
 
-const inputOverrides = renderInput() as { withPost?: boolean };
-export const postFxEnabled = inputOverrides.withPost !== false;
+const inputOverrides = renderInput() as { 后期?: boolean };
+export const postFxEnabled = inputOverrides.后期 !== false;
 
 const VS = /* glsl */ `
 varying vec2 vUv;

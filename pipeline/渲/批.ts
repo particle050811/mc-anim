@@ -38,7 +38,7 @@ export const runBatch = async (args: string[]) => {
     const compositionCache = new Map<string, Awaited<ReturnType<typeof getCompositions>>>();
     let browser: Awaited<ReturnType<typeof openBrowser>> | undefined;
     let failCount = 0;
-    const gate = openGateBatch({ 种: '批', 项数: tasks.length, 用途: process.env.ANIM_PURPOSE ?? '实验', ...(p.值['--连贯'] ? { coherent: { reason: p.值['--连贯'] } } : {}) });
+    const gate = openGateBatch({ 种: '批', 项数: tasks.length, 用途: process.env.ANIM_PURPOSE ?? '实验', ...(p.值['--连贯'] ? { 连贯: { 为什么: p.值['--连贯'] } } : {}) });
     try {
         for (const t of tasks) {
             const frames = parseFrames(t.frameRange);

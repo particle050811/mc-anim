@@ -128,9 +128,9 @@ describe('炸掉一角的屋子（种子 91）', () => {
 
   it('屋子的格同 地点/门口小木屋.tsx（那边带组件、引不了，读源码对）；后墙补过的那块是 i 1～2、k 0～2', () => {
     const sourceText = readFileSync(fileURLToPath(new URL('./地点/门口小木屋.tsx', import.meta.url)), 'utf8');
-    expect(sourceText).toContain(`西墙: ${cabin.westWall}, 东墙: ${cabin.eastWall}, 后墙: ${cabin.backWall}`);
-    expect(sourceText).toContain('const 补墙 = { i: [1, 2], k: [0, 2] } as const;');
-    expect(sourceText).toContain(`箱子: [${chestCell[0]}, ${chestCell[1] + 0.5}, ${chestCell[2]}]`);
+    expect(sourceText).toContain(`westWall: ${cabin.westWall}, eastWall: ${cabin.eastWall}, backWall: ${cabin.backWall}`);
+    expect(sourceText).toContain('const wallPatch = { i: [1, 2], k: [0, 2] } as const;');
+    expect(sourceText).toContain(`chest: [${chestCell[0]}, ${chestCell[1] + 0.5}, ${chestCell[2]}]`);
   });
 
   it('箱子炸没了，掉出箱子本身；门也炸没了（方块拼搭 画不了箱子、门不掉图标，画面不另画这两样）', () => {

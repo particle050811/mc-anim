@@ -447,17 +447,17 @@ def read_pose(lines: list[str], i: int) -> tuple[dict, int]:
     return out, i + 1
 
 
-@pytest.mark.parametrize("名", list(creatures))
+@pytest.mark.parametrize("creature_name", list(creatures))
 def test_vanilla_creature_bitwise_equal_jvm(vanilla: RealRunEnv, creature_name: str) -> None:
     compare_to_real(vanilla, creature_name, creatures[creature_name])
 
 
-@pytest.mark.parametrize("名", list(mod_creatures))
+@pytest.mark.parametrize("creature_name", list(mod_creatures))
 def test_mod_creature_bitwise_equal_jvm(twilight: RealRunEnv, creature_name: str) -> None:
     compare_to_real(twilight, creature_name, mod_creatures[creature_name])
 
 
-@pytest.mark.parametrize("名", list(new_version_creatures))
+@pytest.mark.parametrize("creature_name", list(new_version_creatures))
 def test_new_version_render_entry_bitwise_equal_jvm(new_version: RealRunEnv, creature_name: str) -> None:
     compare_to_real(new_version, creature_name, new_version_creatures[creature_name])
 

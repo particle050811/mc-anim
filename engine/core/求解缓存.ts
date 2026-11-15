@@ -64,7 +64,7 @@ const decode = (s: string) =>
   });
 
 const cacheEnabled = typeof window !== 'undefined' && canFetchSync && !getRemotionEnvironment().isStudio;
-const pendingWrites: Record<string, string> = cacheEnabled ? ((window as unknown as { pendingCacheWrites?: Record<string, string> }).pendingCacheWrites ??= {}) : {};
+const pendingWrites: Record<string, string> = cacheEnabled ? ((window as unknown as { __求解缓存待写?: Record<string, string> }).__求解缓存待写 ??= {}) : {};
 
 // 层：这个缓存是什么（写进文件里，查问题用）；键部件：各层的键（代码层的指纹放第一个；拿不到指纹就不用缓存，照常算）
 export const cachedSolve = <Result>(layer: string, keyParts: unknown[], compute: () => Result): Result => {

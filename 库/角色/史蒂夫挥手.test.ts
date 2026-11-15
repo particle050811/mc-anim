@@ -62,15 +62,15 @@ describe('原版挥手正本和旧副本对得上', () => {
     }
   });
   it('2-祭坛 的 挥手部件（身子 yRot 是设成 body.yRot：底子的 yRot 为 0 时一样）', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-祭坛/人物.tsx', '挥手部件');
+    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-祭坛/人物.tsx', 'waveParts');
     for (const t of sampleTimes) expectNear(legacyFn(basePoses(), t), waveParts(basePoses(), t));
   });
   it('2-第一晚 的 挥手部件（自己调 steveParts）', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-第一晚/史蒂夫.tsx', '挥手部件', { steveParts: () => basePoses() });
+    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-第一晚/史蒂夫.tsx', 'waveParts', { steveParts: () => basePoses() });
     for (const t of sampleTimes) expectNear(legacyFn(null, t), waveParts(basePoses(), t));
   });
   it('2-末地 的 叠挥手（原地改部件表）', () => {
-    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-末地/角色.tsx', '叠挥手');
+    const legacyFn = copyFn('作品/把回忆拼好给你/场/2-末地/角色.tsx', 'addWave');
     for (const t of sampleTimes) {
       const p = basePoses();
       legacyFn(p, t);

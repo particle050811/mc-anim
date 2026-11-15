@@ -67,7 +67,7 @@ export const prepareRef = async (approval: ApprovalRecord, hostPlatform: string)
     const yuv: string[] = [];
     for await (const y of sampledStream(tmp, frames, frames, approval.宽, approval.高, 'yuv420p')) yuv.push(sha(y));
     if (yuv.length !== frames.length) return '对不上';
-    writeSidecar(refPath, { sampleKey: sampleKey(approval), 帧: frames, yuv, 来源: '切片', masterByteSha: master.字节sha, recordedAt: new Date().toISOString() });
+    writeSidecar(refPath, { 抽样键: sampleKey(approval), 帧: frames, yuv, 来源: '切片', 母版字节sha: master.字节sha, 记于: new Date().toISOString() });
     fs.renameSync(tmp, refPath);
     return '从切片';
   } finally {

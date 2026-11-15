@@ -7,7 +7,7 @@ import { recordSchedulerEvent, readSchedulerEvents, type SchedulerEvent } from '
 import { tryLocked, lockPath } from './锁.ts';
 export type Alert = {
     类: string;
-    target: string;
+    对象: string;
     值: number;
     阈值: number;
     次数: number;
@@ -34,7 +34,7 @@ const resetMs = 300_000;
  */
 const slowWindowMs = 180_000, baselineWindowMs = 900_000, baselineMinMs = 300_000, frameSampleIntervalMs = 25_000;
 type FrameSample = { 时: number; 帧: number };
-const lockTarget = (x: SchedulerState['lockHolders'][number]) => `${x.任务}/${x.声明.段 ?? x.票}`;
+const lockTarget = (x: SchedulerState['持锁'][number]) => `${x.任务}/${x.声明.段 ?? x.票}`;
 /** 近 3 分钟帧速 / 之前帧速；样本不够返回 null。 */
 export const frameRateRatio = (frameSamples: FrameSample[], now: number): number | null => {
     const nearestSample = frameSamples.findLast(x => now - x.时 >= slowWindowMs), latest = frameSamples.at(-1), baseSample = frameSamples.find(x => now - x.时 <= baselineWindowMs);
@@ -43,44 +43,44 @@ export const frameRateRatio = (frameSamples: FrameSample[], now: number): number
     const before = (nearestSample.帧 - baseSample.帧) / (nearestSample.时 - baseSample.时), lateSlope = (latest.帧 - nearestSample.帧) / (latest.时 - nearestSample.时);
     return before > 0 ? lateSlope / before : null;
 };
-const anyJobSlowing = (s: SchedulerState, h: MonitorHistory) => s.lockHolders.some(x => !x.死 && x.总帧 && x.已出帧 < x.总帧 && (frameRateRatio(h.帧[lockTarget(x)] ?? [], s.时) ?? 1) < 0.5);
+const anyJobSlowing = (s: SchedulerState, h: MonitorHistory) => s.持锁.some(x => !x.死 && x.总帧 && x.已出帧 < x.总帧 && (frameRateRatio(h.帧[lockTarget(x)] ?? [], s.时) ?? 1) < 0.5);
 export type MonitorHistory = {
-    lastTime?: number;
-    loadStart?: number;
+    上次?: number;
+    负载起?: number;
     /** 压力连续至少 2 的起点 */
-    pressureStartMs?: number;
+    压力起?: number;
     /** 持锁者出帧样本，约 25 秒一个、留 15 分钟，按持锁对象分 */
     帧: Record<string, FrameSample[]>;
     swap: {
         时: number;
-        amount: number;
+        量: number;
     }[];
-    orphanRounds: number;
-    highWater: number;
+    孤儿轮: number;
+    高水位: number;
     /** 进行中的事件：已通知到第几次、条件最后一次成立的时刻。 */
-    dedupe: Record<string, {
+    去重: Record<string, {
         次数: number;
-        lastSeen: number;
+        末: number;
     }>;
 };
-export const emptyHistory = (): MonitorHistory => ({ swap: [], 帧: {}, orphanRounds: 0, highWater: 0, dedupe: {} });
-const alertKey = (a: Alert) => a.类 + ':' + a.target;
+export const emptyHistory = (): MonitorHistory => ({ swap: [], 帧: {}, 孤儿轮: 0, 高水位: 0, 去重: {} });
+const alertKey = (a: Alert) => a.类 + ':' + a.对象;
 /** 暂缓是主 Agent 的决定，不是卡住；到期后票主人重置等待起点，别的进程可能先看到过期的暂缓至，所以不比时刻。死票没人在等。 */
-const isWaiting = (t: Ticket) => !t.ticketContent?.deferredUntilMs && !t.死;
+const isWaiting = (t: Ticket) => !t.内容?.暂缓至 && !t.死;
 /** 此刻成立的全部条件，不管通知过没有。 */
 const judgeConditions = (s: SchedulerState, now: number, thresholds: typeof defaultThresholds, h: MonitorHistory): Alert[] => {
     const out: Alert[] = [];
     const addAlert = (alarmKind: string, target: string, value: number, threshold: number, extra: Pick<Alert, 'pid' | '段' | '票' | '会话'> = {}) => { if (value >= threshold)
-        out.push({ 类: alarmKind, target, 值: value, 阈值: threshold, 次数: Math.min(3, 1 + Math.floor(Math.log2(Math.max(1, value / threshold)))), ...extra }); };
+        out.push({ 类: alarmKind, 对象: target, 值: value, 阈值: threshold, 次数: Math.min(3, 1 + Math.floor(Math.log2(Math.max(1, value / threshold)))), ...extra }); };
     const waiting = s.票.filter(isWaiting);
     // 低优先的票本来就排在别人后面、只用空闲，等得久不告警、不算队深（用户 11-06 定的让路做法，11-14 定扩到全部排队类）
-    const normal = waiting.filter(t => !t.ticketContent?.声明?.低优先);
+    const normal = waiting.filter(t => !t.内容?.声明?.低优先);
     for (const t of normal) {
-        const c = t.ticketContent, waitSec = (now - (c?.起 ?? t.时间)) / 1000, d = c?.声明, estimatedSec = d?.预计秒 ?? null;
+        const c = t.内容, waitSec = (now - (c?.起 ?? t.时间)) / 1000, d = c?.声明, estimatedSec = d?.预计秒 ?? null;
         // 改序会换票名，对象用任务 id（旧票不能改序，没有任务 id）。
         const target = c?.任务 ?? t.名, extra = { pid: t.pid, 段: d?.段, 票: t.名, 会话: c?.发起.会话 };
-        if (c?.waitMemStart !== undefined)
-            addAlert('等内存', target, (now - c.waitMemStart) / 1000, thresholds.memory, extra);
+        if (c?.等内存起 !== undefined)
+            addAlert('等内存', target, (now - c.等内存起) / 1000, thresholds.memory, extra);
         if (estimatedSec === null ? d?.种 === 'still' : estimatedSec <= 60)
             addAlert('小任务等待', target, waitSec, thresholds.smallTask, extra);
         addAlert('排队长', target, waitSec, Math.max(thresholds.anyTaskSec, 3 * (estimatedSec ?? 0)), extra);
@@ -88,8 +88,8 @@ const judgeConditions = (s: SchedulerState, now: number, thresholds: typeof defa
             addAlert('重任务等待', target, waitSec, 600, extra);
     }
     if (normal.length >= thresholds.queueDepth)
-        out.push({ 类: '队深', target: '全局', 值: normal.length, 阈值: thresholds.queueDepth, 次数: 1 });
-    for (const x of s.lockHolders) {
+        out.push({ 类: '队深', 对象: '全局', 值: normal.length, 阈值: thresholds.queueDepth, 次数: 1 });
+    for (const x of s.持锁) {
         // 一次 film 多段共用一个任务，只用任务 id 时后面段的卡死会被前面段的告警吞掉。
         const target = `${x.任务}/${x.声明.段 ?? x.票}`, extra = { pid: x.pid, 段: x.声明.段, 票: x.票, 会话: x.发起.会话 };
         if (x.死) {
@@ -100,57 +100,57 @@ const judgeConditions = (s: SchedulerState, now: number, thresholds: typeof defa
         addAlert('持锁超时', target, heldSec, estimatedSec ? Math.max(3 * estimatedSec, estimatedSec + 600) : 1800, extra);
         if (x.心跳 && x.总帧 && x.已出帧 < x.总帧)
             addAlert('无帧', target, (now - x.帧时) / 1000, x.声明.种 === 'still' ? thresholds.stillNoFrameSec : thresholds.noFrameSec, extra);
-        if (x.声明.coherent && waiting.some(t => now - (t.ticketContent?.起 ?? t.时间) > 300000))
+        if (x.声明.连贯 && waiting.some(t => now - (t.内容?.起 ?? t.时间) > 300000))
             addAlert('连贯批', target, heldSec, thresholds.batch, extra);
     }
-    if (h.loadStart !== undefined)
-        addAlert('负载', '机器', (now - h.loadStart) / 1000, thresholds.负载);
+    if (h.负载起 !== undefined)
+        addAlert('负载', '机器', (now - h.负载起) / 1000, thresholds.负载);
     const pressure = s.机.压力 ?? 0, isSlow = pressure >= 2 && anyJobSlowing(s, h);
-    if (pressure >= 4 || (isSlow && h.pressureStartMs !== undefined && now - h.pressureStartMs >= slowWindowMs))
+    if (pressure >= 4 || (isSlow && h.压力起 !== undefined && now - h.压力起 >= slowWindowMs))
         addAlert('内存压力', '机器', pressure, pressure >= 4 ? 4 : 2);
     if (s.机.发热等级 != null)
         addAlert('发热', '机器', s.机.发热等级, thresholds.heatLimit);
     const old = h.swap.findLast(x => now - x.时 >= 170000);
     if (old && s.机.swap !== null && isSlow)
-        addAlert('swap增长', '机器', s.机.swap - old.amount, 2 ** 30);
-    addAlert('孤儿Chrome', '机器', h.orphanRounds, 2);
+        addAlert('swap增长', '机器', s.机.swap - old.量, 2 ** 30);
+    addAlert('孤儿Chrome', '机器', h.孤儿轮, 2);
     return out;
 };
 export const updateHistory = (s: SchedulerState, h: MonitorHistory, thresholds = defaultThresholds): MonitorHistory => {
-    const hasGap = h.lastTime !== undefined && s.时 - h.lastTime > gapMs, { 负载: load, 核: cores, orphans, swap, 压力: pressure } = s.机;
-    const prevLoadStart = hasGap ? undefined : h.loadStart, prevOrphanRounds = hasGap ? 0 : h.orphanRounds, prevPressureStartMs = hasGap ? undefined : h.pressureStartMs;
+    const hasGap = h.上次 !== undefined && s.时 - h.上次 > gapMs, { 负载: load, 核: cores, 孤儿: orphans, swap, 压力: pressure } = s.机;
+    const prevLoadStart = hasGap ? undefined : h.负载起, prevOrphanRounds = hasGap ? 0 : h.孤儿轮, prevPressureStartMs = hasGap ? undefined : h.压力起;
     const frameSamples: MonitorHistory['帧'] = {};
-    for (const x of s.lockHolders) {
+    for (const x of s.持锁) {
         if (x.死 || !x.总帧)
             continue;
         const k = lockTarget(x), prevSamples = hasGap ? [] : (h.帧?.[k] ?? []).filter(y => s.时 - y.时 <= baselineWindowMs), lastSample = prevSamples.at(-1);
         frameSamples[k] = !lastSample || s.时 - lastSample.时 >= frameSampleIntervalMs ? [...prevSamples, { 时: s.时, 帧: x.已出帧 }] : prevSamples;
     }
-    const n: MonitorHistory = { lastTime: s.时,
+    const n: MonitorHistory = { 上次: s.时,
         // 读不到时不下结论：既不算过载，也不算恢复。
-        loadStart: load === null ? prevLoadStart : load > cores * 2 ? (prevLoadStart ?? s.时) : undefined,
-        pressureStartMs: pressure === null ? prevPressureStartMs : pressure >= 2 ? (prevPressureStartMs ?? s.时) : undefined,
+        负载起: load === null ? prevLoadStart : load > cores * 2 ? (prevLoadStart ?? s.时) : undefined,
+        压力起: pressure === null ? prevPressureStartMs : pressure >= 2 ? (prevPressureStartMs ?? s.时) : undefined,
         帧: frameSamples,
-        orphanRounds: orphans === null ? prevOrphanRounds : orphans ? prevOrphanRounds + 1 : 0,
+        孤儿轮: orphans === null ? prevOrphanRounds : orphans ? prevOrphanRounds + 1 : 0,
         // 比 3 分钟多留 30 秒：持锁者 30 秒一采，定时器稍晚就会挤掉 180 秒前那个样本，再也凑不够窗口。
-        swap: [...(hasGap ? [] : h.swap.filter(x => s.时 - x.时 <= 210000)), ...(swap === null ? [] : [{ 时: s.时, amount: swap }])],
-        highWater: s.票.some(isWaiting) ? h.highWater : 0, dedupe: {} };
+        swap: [...(hasGap ? [] : h.swap.filter(x => s.时 - x.时 <= 210000)), ...(swap === null ? [] : [{ 时: s.时, 量: swap }])],
+        高水位: s.票.some(isWaiting) ? h.高水位 : 0, 去重: {} };
     const established = new Set(judgeConditions(s, s.时, thresholds, n).map(alertKey));
-    for (const [k, v] of Object.entries(h.dedupe))
+    for (const [k, v] of Object.entries(h.去重))
         // 这么久没见它成立（消失了，或这段时间没人采样）就算结束，此刻再成立是新事件。
-        if (s.时 - v.lastSeen < resetMs)
-            n.dedupe[k] = established.has(k) ? { ...v, lastSeen: s.时 } : v;
+        if (s.时 - v.末 < resetMs)
+            n.去重[k] = established.has(k) ? { ...v, 末: s.时 } : v;
     return n;
 };
 /** 历史、时间与阈值由调用者提供。 */
-export const judgeAlerts = (s: SchedulerState, now: number, thresholds = defaultThresholds, h: MonitorHistory = emptyHistory()): Alert[] => judgeConditions(s, now, thresholds, h).filter(a => a.类 === '队深' ? a.值 > h.highWater : a.次数 > (h.dedupe[alertKey(a)]?.次数 ?? 0));
+export const judgeAlerts = (s: SchedulerState, now: number, thresholds = defaultThresholds, h: MonitorHistory = emptyHistory()): Alert[] => judgeConditions(s, now, thresholds, h).filter(a => a.类 === '队深' ? a.值 > h.高水位 : a.次数 > (h.去重[alertKey(a)]?.次数 ?? 0));
 export const recordAlerts = (e: SchedulerEnv, s: SchedulerState, h: MonitorHistory, alarms: Alert[]) => {
     for (const a of alarms) {
         if (a.类 === '队深')
-            h.highWater = Math.max(h.highWater, a.值);
+            h.高水位 = Math.max(h.高水位, a.值);
         else
-            h.dedupe[alertKey(a)] = { 次数: a.次数, lastSeen: s.时 };
-        recordSchedulerEvent(e.logDir, '告警', { ...a, 机: { ...s.机, psOutput: undefined } }, s.时);
+            h.去重[alertKey(a)] = { 次数: a.次数, 末: s.时 };
+        recordSchedulerEvent(e.logDir, '告警', { ...a, 机: { ...s.机, 进程: undefined } }, s.时);
     }
     promptOnly('告警记录', () => writeJson(path.join(e.schedulerDir, '监测.json'), h));
     return alarms;
@@ -166,7 +166,7 @@ type StillDecl = { 种?: string; 作品?: string; 段?: string; 帧?: string };
  * 同一个工作区、同一段、同一批帧的静帧连着没出来（超时被杀、异常），第二次起就报：每次重来都是新任务新票，
  * 按任务去重的告警看不出「同一件事又失败了」（用户 11-10 定加）。事件 = 这次的 放锁，结果不是 成。返回报了的告警。
  */
-export const reportRepeatedStillFail = (reportRepeatedStillFail: string, current: { 声明: StillDecl; 工作区?: string; 任务: string; pid?: number; 会话?: string }, now: number, previous: SchedulerEvent[] = readSchedulerEvents(reportRepeatedStillFail, 512 * 1024), windowSec = defaultThresholds.repeatFailWindowSec): Alert | undefined => {
+export const reportRepeatedStillFail = (logDir: string, current: { 声明: StillDecl; 工作区?: string; 任务: string; pid?: number; 会话?: string }, now: number, previous: SchedulerEvent[] = readSchedulerEvents(logDir, 512 * 1024), windowSec = defaultThresholds.repeatFailWindowSec): Alert | undefined => {
     const d = current.声明;
     if (d.种 !== 'still' || !d.段)
         return;
@@ -185,7 +185,7 @@ export const reportRepeatedStillFail = (reportRepeatedStillFail: string, current
     const retryLevel = [2, 4, 8].indexOf(consecutiveFails) + 1;
     if (!retryLevel)
         return;
-    const a: Alert = { 类: '静帧重复失败', target: `${d.段}@${d.帧 ?? '?'}`, 值: consecutiveFails, 阈值: 2, 次数: retryLevel, pid: current.pid, 段: d.段, 会话: current.会话 };
-    recordSchedulerEvent(reportRepeatedStillFail, '告警', { ...a }, now);
+    const a: Alert = { 类: '静帧重复失败', 对象: `${d.段}@${d.帧 ?? '?'}`, 值: consecutiveFails, 阈值: 2, 次数: retryLevel, pid: current.pid, 段: d.段, 会话: current.会话 };
+    recordSchedulerEvent(logDir, '告警', { ...a }, now);
     return a;
 };

@@ -108,11 +108,11 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
     if (typeof dimension !== 'string' || !dimension.includes(':')) throw fileError('维度 要写成 命名空间:名字');
     if (typeof d.服务端 !== 'string') throw fileError('要写 服务端（游戏环境 ANIM_GAME 下的服务端目录名）');
     const knownDim = knownDims[dimension];
-    const bake = (d.bake ?? {}) as Record<string, unknown>;
-    const packDimension = typeof bake.packDimension === 'string' ? bake.packDimension : knownDim?.packDimension;
+    const bake = (d.烘焙 ?? {}) as Record<string, unknown>;
+    const packDimension = typeof bake.包维度 === 'string' ? bake.包维度 : knownDim?.packDimension;
     if (!packDimension) throw fileError(`维度 ${dimension} 不认识，要在 [烘焙] 写 包维度（包.json 的 维度）`);
-    if (bake.fullHeight !== undefined && typeof bake.fullHeight !== 'boolean') throw fileError('烘焙.全高 要写 true 或 false');
-    const fullHeight = typeof bake.fullHeight === 'boolean' ? bake.fullHeight : (knownDim?.fullHeight ?? false);
+    if (bake.全高 !== undefined && typeof bake.全高 !== 'boolean') throw fileError('烘焙.全高 要写 true 或 false');
+    const fullHeight = typeof bake.全高 === 'boolean' ? bake.全高 : (knownDim?.fullHeight ?? false);
     const parseOrigin = (v: unknown, fieldName: string): [number, number, number] | undefined => {
       if (v === undefined) return undefined;
       if (!Array.isArray(v) || v.length !== 3 || !v.every(Number.isInteger)) throw fileError(`${fieldName} 要写 [ox, oy, oz] 三个整数`);
@@ -120,7 +120,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       return [v[0], v[1], v[2]];
     };
     const defaultOrigin = parseOrigin(bake.原点, '烘焙.原点');
-    if (bake.fillBlock !== undefined && (typeof bake.fillBlock !== 'string' || !bake.fillBlock.includes(':'))) throw fileError('烘焙.填充 要写方块状态（命名空间:名字）');
+    if (bake.填充 !== undefined && (typeof bake.填充 !== 'string' || !bake.填充.includes(':'))) throw fileError('烘焙.填充 要写方块状态（命名空间:名字）');
     const preserve = ((bake.保真 ?? []) as Record<string, unknown>[]).map((k, i) => {
       const where = `烘焙.保真 第 ${i + 1} 个`;
       if (typeof k.名 !== 'string' || !k.名) throw fileError(`${where} 要写 名`);
@@ -133,7 +133,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       const origin = parseOrigin(b.原点, `包 ${b.名} 的 原点`) ?? defaultOrigin;
       if (!origin) throw fileError(`包 ${b.名} 没有原点（写在 [烘焙] 原点 或包里）`);
       if (knownDim && origin[1] !== knownDim.oy) throw fileError(`包 ${b.名} 的 oy 是 ${origin[1]}，${dimension} 一律 ${knownDim.oy}（engine 按这个换竖直坐标）`);
-      return { 名: b.名, 区域: parseRegion(b.区域, `包 ${b.名} 的 区域`), 原点: origin, 来源: typeof b.来源 === 'string' ? b.来源 : undefined, applyEdits: b.applyEdits !== false, 登记: b.登记 !== false };
+      return { 名: b.名, 区域: parseRegion(b.区域, `包 ${b.名} 的 区域`), 原点: origin, 来源: typeof b.来源 === 'string' ? b.来源 : undefined, applyEdits: b.套编辑 !== false, 登记: b.登记 !== false };
     });
     const dupNames = packs.map((b) => b.名).filter((n, i, a) => a.indexOf(n) !== i);
     if (dupNames.length) throw fileError(`包重名：${dupNames.join('、')}`);
@@ -184,7 +184,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       packDimension,
       fullHeight,
       种子: d.种子 === undefined ? undefined : String(d.种子),
-      worldType: typeof d.worldType === 'string' ? d.worldType : 'minecraft:normal',
+      worldType: typeof d.世界类型 === 'string' ? d.世界类型 : 'minecraft:normal',
       生成结构: d.生成结构 !== false,
       Forge: typeof d.Forge === 'string' ? d.Forge : undefined,
       模组: stringList(d.模组, '模组'),
@@ -193,7 +193,7 @@ export const parseDecl = (text: string, worldName: string, fileName = `${worldNa
       预生成: { 区域文件范围: parseRegion(pregen.区域文件范围, '预生成.区域文件范围'), 区块数: typeof pregen.区块数 === 'number' ? pregen.区块数 : undefined, 块: chunks },
       包: packs,
       远景: farTerrain,
-      visible: { fillBlock: typeof bake.fillBlock === 'string' ? bake.fillBlock : 'minecraft:stone', 保真: preserve },
+      visible: { fillBlock: typeof bake.填充 === 'string' ? bake.填充 : 'minecraft:stone', 保真: preserve },
     };
   } catch (e) {
     if ((e as Error).message.startsWith(fileName)) throw e;

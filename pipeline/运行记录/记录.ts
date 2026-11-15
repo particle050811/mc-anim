@@ -48,7 +48,7 @@ export const estimateTiming = (label: string, timingFile = timingLogPath()): num
   return secLines.length ? secLines[Math.floor(secLines.length / 2)]! : null;
 };
 
-export type RunEvent = { 时间: string; 级别: '信息' | '警告' | '错误'; 文本: string; /** 命令抛出的错（cli/路由.ts）：屏幕上不一定打，这里总记 */ callStack?: string };
+export type RunEvent = { 时间: string; 级别: '信息' | '警告' | '错误'; 文本: string; /** 命令抛出的错（cli/路由.ts）：屏幕上不一定打，这里总记 */ 调用栈?: string };
 
 export class RunRecord {
   任务?: string;

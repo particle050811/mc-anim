@@ -468,7 +468,7 @@ describe('声音', () => {
   it('纸声最响那一下在纸飘下、取出声在取照、铃声起音不晚于挂铃', () => {
     const startFrames = Object.fromEntries(line14Sounds.map((s) => [s.名, s.起帧]));
     expect(startFrames.纸飘下! + Math.round(paperSounds[1]!.peakSec * fps)).toBe(events.纸飘下.帧);
-    expect(startFrames.glowFrameOut).toBe(events.取照.帧);
+    expect(startFrames.荧光框取出).toBe(events.取照.帧);
     expect(startFrames.挂铃).toBeLessThanOrEqual(events.挂铃.帧);
   });
 });

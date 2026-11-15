@@ -31,7 +31,7 @@ export const sourcingCommands: Record<string, Command> = {
       const argv = args.length ? [...args] : ['--help'];
       const runMcai = () => runForeground([...mcaiCommand(), ...argv], { env: mcaiEnv() });
       if (!needsGate(argv)) return runMcai();
-      const code = await (argv[0] === 'game' ? passRenderGate(runMcai,undefined,{}, {种:'mcai game start',needsLoad:true}) : passGate(runMcai,undefined,{}, {种:'mcai build'}));
+      const code = await (argv[0] === 'game' ? passRenderGate(runMcai,undefined,{}, {种:'mcai game start',需负载:true}) : passGate(runMcai,undefined,{}, {种:'mcai build'}));
       runRecord.log('信息', `mcai ${argv.join(' ')} 退出码 ${code}`);
       return code;
     },

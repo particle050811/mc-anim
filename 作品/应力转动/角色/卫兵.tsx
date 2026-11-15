@@ -125,7 +125,7 @@ export const Guard: React.FC<{ sec: number; headPitch?: number; headYaw?: number
     pose.right_arm = { rot: rightArm, offset: pose.right_arm.offset };
     pose.right_sleeve = pose.right_arm;
   }
-  const glint = { tex: TEX.enchantGlint, 秒: glintSec ?? sec };
+  const glint = { tex: TEX.附魔光泽, 秒: glintSec ?? sec };
   const skin = SKINS[((Math.round(skinIndex) % SKINS.length) + SKINS.length) % SKINS.length];
   const crouchAmt = Math.min(1, Math.max(0, crouch));
   if (crouchAmt > 0) {
@@ -158,8 +158,8 @@ export const Guard: React.FC<{ sec: number; headPitch?: number; headYaw?: number
     <group scale={GUARD.scale}>
       <EntityModel model={MODELS.宽} tex={skin} pose={pose} attach={attach} />
       {/* 头盔、胸甲、靴子：外层模型；护腿：内层模型的身子和两腿；四件都附魔，各叠一层光泽 */}
-      <EntityModel model={MODELS.外甲} tex={TEX.diamondArmor1} pose={pose} glint={glint} />
-      <EntityModel model={MODELS.内甲} tex={TEX.diamondArmor2} pose={{ ...pose, head: { hide: true }, hat: { hide: true }, right_arm: { hide: true }, left_arm: { hide: true } }} glint={glint} />
+      <EntityModel model={MODELS.外甲} tex={TEX.钻石甲1} pose={pose} glint={glint} />
+      <EntityModel model={MODELS.内甲} tex={TEX.钻石甲2} pose={{ ...pose, head: { hide: true }, hat: { hide: true }, right_arm: { hide: true }, left_arm: { hide: true } }} glint={glint} />
       <EntityModel model={CAPE} tex={TEX.披风} pose={cape} />
     </group>
     </group>

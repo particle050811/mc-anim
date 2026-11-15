@@ -38,9 +38,9 @@ const localSettings = (): Record<string, Record<string, unknown>> => ({
   'image-flow': { imgflow: config('image_flow') },
 });
 /** 后端的设置：本机设置，再盖上 台词.toml 的 [配音.后端参数.<后端>] */
-const backendConfig = (workLineTable: WorkLines | null, backendName: string): Record<string, unknown> => ({ ...(localSettings()[backendName] ?? {}), ...(workLineTable?.配音.backendParams[backendName] ?? {}) });
+const backendConfig = (workLineTable: WorkLines | null, backendName: string): Record<string, unknown> => ({ ...(localSettings()[backendName] ?? {}), ...(workLineTable?.配音.后端参数[backendName] ?? {}) });
 
-type BackendInfo = { 名: string; 说明: string; isLocal: boolean; cloud: boolean; paid: boolean; missing: string[] };
+type BackendInfo = { 名: string; 说明: string; 本机: boolean; 云端: boolean; 付费: boolean; 缺: string[] };
 
 // ---------- lip：字 → 嘴 → 句模块 ----------
 
@@ -120,7 +120,7 @@ const verifyLines = async (workLineTable: WorkLines, lines: VoiceLineRow[]): Pro
 
 // ---------- review ----------
 
-type ReviewItemInfo = { 名: string; 说明: string; cloud: boolean; paid: boolean; 默认: boolean; missing: string[] };
+type ReviewItemInfo = { 名: string; 说明: string; 云端: boolean; 付费: boolean; 默认: boolean; 缺: string[] };
 
 /** 复核这几句的全部候选（现成品一起量，当对照）：结果并进候选旁的 .json，每句写 <候选目录>/复核.md。项们空 = 默认的本机项 */
 const runReview = async (workLineTable: WorkLines, lines: VoiceLineRow[], o: { itemNames: string[]; describeOnly: boolean; allowPaid: boolean }) => {
@@ -128,7 +128,7 @@ const runReview = async (workLineTable: WorkLines, lines: VoiceLineRow[], o: { i
   for (const itemName of o.itemNames) {
     const reviewItem = infoList.find((x) => x.名 === itemName);
     if (!reviewItem) throw new UsageError(`没有复核项「${itemName}」，有：${infoList.map((x) => x.名).join('、')}`);
-    if (reviewItem.paid && !o.describeOnly && !o.allowPaid) throw new UsageError(`复核项 ${itemName} 按次收费、要把候选音频发到外部服务，确实要用加 --允许付费（先 --dry-run 看要发什么）`);
+    if (reviewItem.付费 && !o.describeOnly && !o.allowPaid) throw new UsageError(`复核项 ${itemName} 按次收费、要把候选音频发到外部服务，确实要用加 --允许付费（先 --dry-run 看要发什么）`);
   }
   const assetLock = readBothLocks();
   const reviewRequests: ReviewRequest[] = [];
@@ -148,18 +148,18 @@ const runReview = async (workLineTable: WorkLines, lines: VoiceLineRow[], o: { i
       console.log(`${line.id}：${(e as Error).message}，音色项跳过`);
     }
     for (const wav of [...candidateFiles, ...(compareFile && fs.existsSync(compareFile) ? [compareFile] : [])]) {
-      reviewRequests.push({ wav, id: line.id, 念: spokenTextOf(line), 语言: line.语言 ?? '中文', 语气: line.语气 ?? '', refAudio: refAudio });
+      reviewRequests.push({ wav, id: line.id, 念: spokenTextOf(line), 语言: line.语言 ?? '中文', 语气: line.语气 ?? '', 参考音频: refAudio });
     }
     reviewItems.push({ 行: line, candidateFiles, ...(compareFile && fs.existsSync(compareFile) ? { compareFile } : {}) });
   }
   if (!reviewRequests.length) return 0;
   // 音色要加载 Resemblyzer（torch，CPU）：和对齐一样过放行闸
-  const runReview = () => runVoicePy<ReviewReply>('复核', { 项: o.itemNames, requests: reviewRequests, describeOnly: o.describeOnly }, [reviewGroup]);
+  const runReview = () => runVoicePy<ReviewReply>('复核', { 项: o.itemNames, 请求: reviewRequests, 只描述: o.describeOnly }, [reviewGroup]);
   const reply = o.describeOnly ? await runReview() : await passGate(runReview);
   if (o.describeOnly) {
     for (const [itemName, r] of Object.entries(reply)) {
-      console.log(JSON.stringify(r.description, null, 1));
-      console.log(`dry-run：复核项 ${itemName}，${reviewRequests.length} 个 wav，没跑。${r.missing?.length ? `真跑前要补：${r.missing.join('；')}` : '这台机器上能跑'}`);
+      console.log(JSON.stringify(r.描述, null, 1));
+      console.log(`dry-run：复核项 ${itemName}，${reviewRequests.length} 个 wav，没跑。${r.缺?.length ? `真跑前要补：${r.缺.join('；')}` : '这台机器上能跑'}`);
     }
     return 0;
   }
@@ -198,9 +198,9 @@ const generate = async (workLineTable: WorkLines, lines: VoiceLineRow[], p: Retu
   }, assetLock, { dataRoot: dataRoot(), 作品: workName() });
   if (p.toggles.has('--dry-run')) {
     for (const [backendName, { requests }] of batches) {
-      const d = await runVoicePy<{ missing: string[]; description: unknown[] }>('合成', { 后端: backendName, config: backendConfig(workLineTable, backendName), requests, describeOnly: true });
-      for (const x of d.description) console.log(JSON.stringify(x, null, 1));
-      console.log(`dry-run：${backendName} ${requests.length} 个候选，没合成。${d.missing.length ? `真跑前要补：${d.missing.join('；')}` : '这台机器上能跑'}`);
+      const d = await runVoicePy<{ 缺: string[]; 描述: unknown[] }>('合成', { 后端: backendName, 配置: backendConfig(workLineTable, backendName), 请求: requests, 只描述: true });
+      for (const x of d.描述) console.log(JSON.stringify(x, null, 1));
+      console.log(`dry-run：${backendName} ${requests.length} 个候选，没合成。${d.缺.length ? `真跑前要补：${d.缺.join('；')}` : '这台机器上能跑'}`);
     }
     return 0;
   }
@@ -208,25 +208,25 @@ const generate = async (workLineTable: WorkLines, lines: VoiceLineRow[], p: Retu
   const toRun: { backendName: string; config: Record<string, unknown>; isLocal: boolean }[] = [];
   for (const backendName of batches.keys()) {
     const backendCfg = backendConfig(workLineTable, backendName);
-    const backendInfo = (await runVoicePy<BackendInfo[]>('后端', { config: { [backendName]: backendCfg } })).find((b) => b.名 === backendName);
+    const backendInfo = (await runVoicePy<BackendInfo[]>('后端', { 配置: { [backendName]: backendCfg } })).find((b) => b.名 === backendName);
     if (!backendInfo) throw new UsageError(`没有 TTS 后端「${backendName}」（anim voice backends 看有哪些）`);
-    if (backendInfo.paid && !p.toggles.has('--允许付费')) throw new UsageError(`${backendName} 按次收费，确实要用加 --允许付费（先 --dry-run 看请求）`);
-    if (backendInfo.cloud && !p.toggles.has('--允许云端') && !p.toggles.has('--允许付费')) throw new UsageError(`${backendName} 要把参考音频和台词发到外部服务，确实要用加 --允许云端`);
-    if (backendInfo.missing.length) throw new Error(`${backendName} 在这台机器上跑不了：${backendInfo.missing.join('；')}`);
-    toRun.push({ backendName, config: backendCfg, isLocal: backendInfo.isLocal });
+    if (backendInfo.付费 && !p.toggles.has('--允许付费')) throw new UsageError(`${backendName} 按次收费，确实要用加 --允许付费（先 --dry-run 看请求）`);
+    if (backendInfo.云端 && !p.toggles.has('--允许云端') && !p.toggles.has('--允许付费')) throw new UsageError(`${backendName} 要把参考音频和台词发到外部服务，确实要用加 --允许云端`);
+    if (backendInfo.缺.length) throw new Error(`${backendName} 在这台机器上跑不了：${backendInfo.缺.join('；')}`);
+    toRun.push({ backendName, config: backendCfg, isLocal: backendInfo.本机 });
   }
   let bad = 0;
   for (const { backendName, config, isLocal } of toRun) {
     const { requests, notes } = batches.get(backendName)!;
-    const runGen = () => runVoicePy<{ id: string; 种子: number; 输出: string; success: boolean; 说明: string; 参数: Record<string, unknown> }[]>('合成', { 后端: backendName, config: config, requests });
+    const runGen = () => runVoicePy<{ id: string; 种子: number; 输出: string; 成功: boolean; 说明: string; 参数: Record<string, unknown> }[]>('合成', { 后端: backendName, 配置: config, 请求: requests });
     // 本机模型吃 GPU 和十几 GB 统一内存，和渲染一样排队；云端的不占本机
     const results = isLocal ? await passRenderGate(runGen) : await runGen();
     for (const r of results) {
       const note = notes.get(r.输出);
-      if (r.success && note) fs.writeFileSync(r.输出.replace(/\.wav$/i, '.json'), JSON.stringify({ ...note, 参数: r.参数 }, null, 1) + '\n');
-      if (r.success) runRecord.产物.push(r.输出);
+      if (r.成功 && note) fs.writeFileSync(r.输出.replace(/\.wav$/i, '.json'), JSON.stringify({ ...note, 参数: r.参数 }, null, 1) + '\n');
+      if (r.成功) runRecord.产物.push(r.输出);
       else bad++;
-      console.log(`${r.id} 种子 ${r.种子}（${backendName}）：${r.success ? r.输出 : '失败'}${r.说明 ? `（${r.说明}）` : ''}`);
+      console.log(`${r.id} 种子 ${r.种子}（${backendName}）：${r.成功 ? r.输出 : '失败'}${r.说明 ? `（${r.说明}）` : ''}`);
     }
   }
   if (runRecord.产物.length && !p.toggles.has('--不复核')) {
@@ -297,11 +297,11 @@ export const voiceCommands: Record<string, Command> = {
       if (action === 'backends') {
         const workLineTable = readWorkLines(linesFile());
         // Python 那边列出登记了的全部后端；这里只给有设置的那几个传设置
-        const backendNames = new Set([...Object.keys(localSettings()), ...Object.keys(workLineTable?.配音.backendParams ?? {})]);
-        const backendInfos = await runVoicePy<BackendInfo[]>('后端', { config: Object.fromEntries([...backendNames].map((n) => [n, backendConfig(workLineTable, n)])) });
+        const backendNames = new Set([...Object.keys(localSettings()), ...Object.keys(workLineTable?.配音.后端参数 ?? {})]);
+        const backendInfos = await runVoicePy<BackendInfo[]>('后端', { 配置: Object.fromEntries([...backendNames].map((n) => [n, backendConfig(workLineTable, n)])) });
         for (const b of backendInfos) {
-          const flagText = [b.isLocal ? '本机' : '', b.cloud ? '云端' : '', b.paid ? '付费' : ''].filter(Boolean).join('、');
-          console.log(`${b.名}${workLineTable?.配音.后端 === b.名 ? '（本作品默认）' : ''}  [${flagText}]  ${b.说明}\n    ${b.missing.length ? '缺：' + b.missing.join('；') : '能跑'}`);
+          const flagText = [b.本机 ? '本机' : '', b.云端 ? '云端' : '', b.付费 ? '付费' : ''].filter(Boolean).join('、');
+          console.log(`${b.名}${workLineTable?.配音.后端 === b.名 ? '（本作品默认）' : ''}  [${flagText}]  ${b.说明}\n    ${b.缺.length ? '缺：' + b.缺.join('；') : '能跑'}`);
         }
         return 0;
       }

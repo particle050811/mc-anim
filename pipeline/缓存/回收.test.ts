@@ -307,7 +307,7 @@ describe('地形暂存', () => {
     writeFile('run/暂存/terrain/丁.写入.lock', '999999999\n');
     const r = planStaging(scanStaging(path.join(root, 'run', '暂存', 'terrain'), '本机'), now);
     const reasonsByName = Object.fromEntries(r.map((e) => [e.名, e.理由.map((x) => x.类).join(',')]));
-    expect(reasonsByName).toEqual({ first: '', second: '在用', recent: '近期', groupD: '' });
+    expect(reasonsByName).toEqual({ 甲: '', 乙: '在用', 丙: '近期', 丁: '' });
   });
 });
 

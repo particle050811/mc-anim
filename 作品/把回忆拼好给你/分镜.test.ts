@@ -159,7 +159,7 @@ describe('排段', () => {
   });
 
   it('接成环报错', () => {
-    const eventTable = { first: { 在: { after: '乙', addSec: 1 }, 依据: '' }, second: { 在: { after: '甲', addSec: 1 }, 依据: '' } };
+    const eventTable = { 甲: { 在: { after: '乙', addSec: 1 }, 依据: '' }, 乙: { 在: { after: '甲', addSec: 1 }, 依据: '' } };
     expect(() => arrangeSegs({ 名: '环', 时长: duration, segments: [{ 键: '1-一', 起: { after: '甲', addSec: 0 }, 止: '放完', 依据: '' }] }, eventTable)).toThrow(/环/);
   });
 });

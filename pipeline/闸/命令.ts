@@ -51,8 +51,8 @@ export const runScheduler = async (args: string[], env?: SchedulerEnv, output: (
     if (cmd === '看') {
         const machine = await readMachineSnapshotParallel();
         const s = readState(e, () => machine);
-        recordSchedulerEvent(e.logDir,'汇报',{发起:e.caller,observed:oneLineStatus(s)},s.时);
-        output(p.toggles.has('--json') ? JSON.stringify({ ...s, 机: { ...s.机, psOutput: undefined } }) : p.toggles.has('--一行') ? oneLineStatus(s) : renderView(s));
+        recordSchedulerEvent(e.logDir,'汇报',{发起:e.caller,看到:oneLineStatus(s)},s.时);
+        output(p.toggles.has('--json') ? JSON.stringify({ ...s, 机: { ...s.机, 进程: undefined } }) : p.toggles.has('--一行') ? oneLineStatus(s) : renderView(s));
         return 0;
     }
     if (cmd === '预计') {
@@ -64,7 +64,7 @@ export const runScheduler = async (args: string[], env?: SchedulerEnv, output: (
         const segments=await selectSegs(rest),s=readState(e),runDir=path.dirname(e.logDir),level=p.值['--级别']??'视频',aheadWait=waitAhead(queueOccupancy(s,'渲染'),s.时);
         // 渲段的明细按切片的输出帧记，预计也按输出帧数算
         const outputFrames=(t:(typeof segments)[number])=>segFrameCount(t.段,filmProfile().fps);
-        output(JSON.stringify({aheadApproxSec:aheadWait.秒,unknownLowerBound:aheadWait.unresolved,级别: level,段:segments.map(t=>({段:t.键,renderPureSec:estimate({种:'render',段:t.键,帧数:outputFrames(t),级别: level},runDir),stillOneFrameSec:estimate({种:'still',段:t.键,帧数:1,级别: level},runDir)})),说明:'未知显示 null；无预计的票按 23 秒下界，不承诺完成时刻'}));
+        output(JSON.stringify({前方约秒:aheadWait.秒,未知按下界:aheadWait.unresolved,级别: level,段:segments.map(t=>({段:t.键,render纯跑秒:estimate({种:'render',段:t.键,帧数:outputFrames(t),级别: level},runDir),still一帧秒:estimate({种:'still',段:t.键,帧数:1,级别: level},runDir)})),说明:'未知显示 null；无预计的票按 23 秒下界，不承诺完成时刻'}));
         return 0;
     }
     if (cmd === '盯') {
@@ -83,7 +83,7 @@ export const runScheduler = async (args: string[], env?: SchedulerEnv, output: (
         }
         // 先认领崩溃再读；当前持锁读现状，日志回放不知道旧闸，也可能还没人发现持锁者死了。
         cleanCrashed(e);
-        output(JSON.stringify({ ...review(readSchedulerEvents(e.logDir), { matches, now }), currentHolds: inWindow(now) ? readOccupancy(e).lockHolders.filter(x => !x.死) : [] }, null, 2));
+        output(JSON.stringify({ ...review(readSchedulerEvents(e.logDir), { matches, now }), 当前持锁: inWindow(now) ? readOccupancy(e).持锁.filter(x => !x.死) : [] }, null, 2));
         return 0;
     }
     throw new UsageError(`不认识的调度命令 ${cmd}`);

@@ -29,7 +29,7 @@ import type { ParticleSpawn } from '../特效/原版粒子.tsx';
 import raw from 'asset:模型/角色/幽灵马';
 import tex from 'asset:贴图/角色/幽灵马';
 
-const MODEL = (raw as unknown as { models: { spectralHorse: EntityModelData } }).models.spectralHorse;
+const MODEL = (raw as unknown as { models: { 幽灵马: EntityModelData } }).models.幽灵马;
 const TEX = png(tex);
 const DEG = Math.fround(0.017453292);
 

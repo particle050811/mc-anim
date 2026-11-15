@@ -53,7 +53,7 @@ def hex_to_float(h: str) -> float:
 
 
 @pytest.fixture(scope="module")
-def compiled_jar_and_jdk(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
+def compiled(tmp_path_factory: pytest.TempPathFactory) -> tuple[Path, Path]:
     jdk = _jdk()
     if jdk is None:
         pytest.skip("没有 JDK（javac）")

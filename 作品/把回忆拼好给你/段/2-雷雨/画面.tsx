@@ -7,12 +7,12 @@ import { StormPicture } from '../../场/2-雷雨/画面.tsx';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { useCurrentFrame } from '../../当前帧.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const startFrame = segmentWindow('2-雷雨').起帧;
 
 const picture: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <>
       {/* 光影照 默认.ts 的 光影段 */}

@@ -37,7 +37,7 @@ export class ShadingPreviewPlugin {
     });
   }
   toJSON() {
-    return { plugin: 'anim-光影试看' };
+    return { 插件: 'anim-光影试看' };
   }
 }
 

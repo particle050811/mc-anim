@@ -6,16 +6,16 @@ import {
 const animFile = {
   format_version: '1.8.0',
   animations: {
-    constant: { loop: true, bones: { a: { rotation: [10, 20, 30], scale: 0.5, position: ['q.anim_time * 2', 0, 0] } } },
-    linear: {
+    常量: { loop: true, bones: { a: { rotation: [10, 20, 30], scale: 0.5, position: ['q.anim_time * 2', 0, 0] } } },
+    线性: {
       loop: true,
       animation_length: 2,
       bones: { a: { rotation: { '0.0': [0, 0, 0], '1.0': [10, 0, 0], '2.0': [0, 0, 0] } } },
     },
-    jump: {
+    跳变: {
       bones: { a: { position: { '0.0': [0, 0, 0], '1.0': { pre: [1, 1, 1], post: [5, 5, 5] }, '2.0': [5, 5, 5] } } },
     },
-    curve: {
+    曲线: {
       loop: 'hold_on_last_frame',
       bones: {
         a: {
@@ -28,18 +28,18 @@ const animFile = {
         },
       },
     },
-    easing: {
+    缓动: {
       animation_length: 1,
       bones: { a: { position: { '0': [0, 0, 0], '1': { vector: [4, 0, 0], easing: 'easeInQuad' } } } },
     },
-    timeline: {
+    时间线: {
       loop: true,
       animation_length: 0.5,
       timeline: { '0.0': 'v.n = (v.n ?? 0) + 1;', '0.25': ['v.m = 7;'] },
       bones: {},
     },
-    fastForward: { loop: true, animation_length: 10, anim_time_update: 'q.anim_time + q.delta_time * 2', bones: {} },
-    weight: { blend_weight: 'v.w', bones: {} },
+    快放: { loop: true, animation_length: 10, anim_time_update: 'q.anim_time + q.delta_time * 2', bones: {} },
+    权重: { blend_weight: 'v.w', bones: {} },
   },
 };
 const A = parseAnimationFile(animFile);
@@ -51,18 +51,18 @@ describe('解析', () => {
     expect(A.常量!.skeleton.a!.rotation!).toHaveLength(1);
     expect(A.常量!.skeleton.a!.scale![0]!.前).toEqual([0.5, 0.5, 0.5]);
     expect(typeof A.常量!.skeleton.a!.position![0]!.前[0]).toBe('object');
-    expect(A.jump!.skeleton.a!.position![1]!.前).toEqual([1, 1, 1]);
-    expect(A.jump!.skeleton.a!.position![1]!.后).toEqual([5, 5, 5]);
+    expect(A.跳变!.skeleton.a!.position![1]!.前).toEqual([1, 1, 1]);
+    expect(A.跳变!.skeleton.a!.position![1]!.后).toEqual([5, 5, 5]);
     expect(A.曲线!.循环).toBe('hold');
     expect(A.缓动!.skeleton.a!.position![1]!.easing).toEqual({ 名: 'easeInQuad', 参数: undefined });
   });
 
   it('长度：写了照写的；TLM 没写取倒数第二个关键帧，通用取最后一个；只有 0 秒帧是无限长', () => {
     expect(defaultProfile).toBe('通用');
-    expect(animLength(A.jump!)).toBe(2);
+    expect(animLength(A.跳变!)).toBe(2);
     expect(animLength(A.线性!)).toBe(2);
-    expect(animLength(A.jump!, 'TLM')).toBe(1);
-    expect(animLength(A.jump!, '通用')).toBe(2);
+    expect(animLength(A.跳变!, 'TLM')).toBe(1);
+    expect(animLength(A.跳变!, '通用')).toBe(2);
     expect(animLength(A.常量!)).toBe(Infinity);
   });
 });
@@ -95,8 +95,8 @@ describe('取样（TLM 口径）', () => {
   });
 
   it('once 和 TLM 的 hold 到头都停；通用的 hold 停在末帧', () => {
-    expect(animTime(A.jump!, 1.2, 'TLM')).toEqual({ 时: 1, stopped: true });
-    expect(sampleAnim(A.jump!, 1.2, TLM).skeleton).toEqual({});
+    expect(animTime(A.跳变!, 1.2, 'TLM')).toEqual({ 时: 1, stopped: true });
+    expect(sampleAnim(A.跳变!, 1.2, TLM).skeleton).toEqual({});
     expect(animTime(A.曲线!, 5, 'TLM').stopped).toBe(true);
     expect(animTime(A.曲线!, 5, '通用')).toEqual({ 时: 3, stopped: false });
   });
@@ -141,7 +141,7 @@ describe('逐步推进', () => {
   });
 
   it('anim_time_update 改动画时间的走法', () => {
-    expect(playTo(A.fastForward!, 1, 0.25).时).toBeCloseTo(2, 12);
+    expect(playTo(A.快放!, 1, 0.25).时).toBeCloseTo(2, 12);
   });
 });
 

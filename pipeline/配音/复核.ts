@@ -6,9 +6,9 @@ import path from 'node:path';
 /** 一项复核的结果，形状由 Python 那边的项决定；报告只认下面这几个键 */
 export type ReviewResult = Record<string, unknown>;
 export type ReviewItem = { 名: string; wav: string; 复核: Record<string, ReviewResult> };
-export type ReviewRequest = { wav: string; id: string; 念: string; 语言: string; 语气: string; refAudio: string };
+export type ReviewRequest = { wav: string; id: string; 念: string; 语言: string; 语气: string; 参考音频: string };
 /** Python 复核 动作的返回：每项要么有 结果（和请求一一对应），要么 缺 */
-export type ReviewReply = Record<string, { 结果?: ReviewResult[]; missing?: string[]; description?: unknown }>;
+export type ReviewReply = Record<string, { 结果?: ReviewResult[]; 缺?: string[]; 描述?: unknown }>;
 
 /** 一句的候选：候选目录下的 wav，不含 use 出的 成品-*.wav，按文件名排 */
 export const listCandidates = (dir: string): string[] =>
@@ -19,7 +19,7 @@ export const unpackReply = (requests: readonly ReviewRequest[], reply: ReviewRep
   const m = new Map<string, Record<string, ReviewResult>>(requests.map((q) => [q.wav, {}]));
   for (const [checkItem, r] of Object.entries(reply)) {
     if (r.结果 && r.结果.length !== requests.length) throw new Error(`复核项 ${checkItem} 返回 ${r.结果.length} 条，请求 ${requests.length} 条`);
-    requests.forEach((q, i) => (m.get(q.wav)![checkItem] = r.结果 ? r.结果[i]! : { 缺: r.missing ?? [] }));
+    requests.forEach((q, i) => (m.get(q.wav)![checkItem] = r.结果 ? r.结果[i]! : { 缺: r.缺 ?? [] }));
   }
   return m;
 };

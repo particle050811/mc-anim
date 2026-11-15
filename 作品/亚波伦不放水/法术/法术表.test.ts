@@ -18,9 +18,9 @@ describe('法术表', () => {
   });
 
   it('各类数量', () => {
-    expect(countByKind()).toEqual({ hasPicture: 71, utility: 19, summon: 25, hollow: 5, pending: 13 });
-    expect(countByKind('本体')).toEqual({ hasPicture: 68, utility: 19, summon: 24, hollow: 0, pending: 13 });
-    expect(countByKind('启示录')).toEqual({ hasPicture: 3, utility: 0, summon: 1, hollow: 5, pending: 0 });
+    expect(countByKind()).toEqual({ 有画面: 71, 功能: 19, 召唤: 25, 空壳: 5, 待定: 13 });
+    expect(countByKind('本体')).toEqual({ 有画面: 68, 功能: 19, 召唤: 24, 空壳: 0, 待定: 13 });
+    expect(countByKind('启示录')).toEqual({ 有画面: 3, 功能: 0, 召唤: 1, 空壳: 5, 待定: 0 });
   });
 
   it('齐放名单只收有画面的，待定的不进', () => {

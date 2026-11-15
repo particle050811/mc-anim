@@ -9,7 +9,7 @@ import type { V3 } from '@engine/model/parts.tsx';
 import { toScene } from '../../../地点/古城4x/6-4-1/古城戏.ts';
 import { chest742, huangPanPortal741 } from '../../../地点/古城4x/布局.ts';
 import heightsJson from 'asset:数据/镜头/7-4-1/高度';
-const heights = heightsJson as unknown as { 步: number; horse: number[]; 监守者: number[] };
+const heights = heightsJson as unknown as { 步: number; 马: number[]; 监守者: number[] };
 
 export const FPS = 24;
 export const relY = (rel: number) => rel - 51;
@@ -132,7 +132,7 @@ const smoothTable = (table: number[], step: number, reach: number, radius: numbe
     return sum / (n + 1);
   };
 };
-const horseRelTable = smoothTable(heights.horse, heights.步, 0.75, 0.75, horseLoop.len);
+const horseRelTable = smoothTable(heights.马, heights.步, 0.75, 0.75, horseLoop.len);
 export const wardenRelAt = smoothTable(heights.监守者, heights.步, 1.5, 0.8, wardenLoop.len);
 const wrap = (s: number, len: number) => ((s % len) + len) % len;
 // 马脚底 rel：跳的那两截按抛物线（最高点在两头之间按高低差摆），其余查表

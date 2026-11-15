@@ -22,7 +22,7 @@ const frameWaitMinMs = 20;
 export type FrameRecord = { 帧: number; 毫秒: number; 等?: Record<string, number> };
 export type WaitStat = { 标签: string; 次: number; 总毫秒: number; 最大毫秒: number };
 type SamplePoint = '开始' | '采样' | '结束';
-export type SystemSample = Partial<TempReading> & { timePoint?: SamplePoint; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
+export type SystemSample = Partial<TempReading> & { 时点?: SamplePoint; 闸?:number|null; 压力?:number|null; 秒: number; 负载: number; 空闲内存GB: number; 换出GB: number | null; 子进程内存GB: number | null; 子进程CPU: number | null };
 export type DetailSummary = { 帧数: number; 首帧毫秒: number; 中位毫秒: number; P90毫秒: number; P99毫秒: number; 最慢帧: { 帧: number; 毫秒: number }[] };
 export type RenderDetail = {
   票?: string;
@@ -37,7 +37,7 @@ export type RenderDetail = {
   等待: WaitStat[];
   阶段: StageRecord[];
   系统: SystemSample[];
-  temperature?: { 开始: TempReading; 结束: TempReading; peak: TempReading };
+  温度?: { 开始: TempReading; 结束: TempReading; 最高: TempReading };
   帧: FrameRecord[];
 };
 
@@ -121,23 +121,23 @@ const takeSample = async (startMs: number, timePoint: SamplePoint): Promise<Syst
   const memory=readMemory();
   const descendants = ps ? sumDescendants(ps, process.pid) : null;
   return {
-    秒: sec, timePoint, ...temperature,
+    秒: sec, 时点: timePoint, ...temperature,
     负载: Number(os.loadavg()[0]!.toFixed(1)),
-    空闲内存GB: Number(((memory?.free ?? os.freemem()) / 1024 ** 3).toFixed(1)),
-    闸:memory?.freePercent??null,压力:readPressure(),
+    空闲内存GB: Number(((memory?.空闲 ?? os.freemem()) / 1024 ** 3).toFixed(1)),
+    闸:memory?.空闲百分比??null,压力:readPressure(),
     换出GB: swapOut ? parseSwapOut(swapOut) : null,
     子进程内存GB: descendants?.memoryGb ?? null,
     子进程CPU: descendants?.CPU ?? null,
   };
 };
 
-const tempSummary = (systemSamples: readonly SystemSample[]): NonNullable<RenderDetail['temperature']> => {
+const tempSummary = (systemSamples: readonly SystemSample[]): NonNullable<RenderDetail['温度']> => {
   const toReading = (s?: SystemSample): TempReading => ({ 芯片最高温: s?.芯片最高温 ?? null, 发热等级: s?.发热等级 ?? null });
   const peakOf = (propKey: keyof TempReading) => {
     const values = systemSamples.flatMap(s => s[propKey] == null ? [] : [s[propKey]!]);
     return values.length ? Math.max(...values) : null;
   };
-  return { 开始: toReading(systemSamples.find(s => s.timePoint === '开始')), 结束: toReading(systemSamples.findLast(s => s.timePoint === '结束')), peak: { 芯片最高温: peakOf('芯片最高温'), 发热等级: peakOf('发热等级') } };
+  return { 开始: toReading(systemSamples.find(s => s.时点 === '开始')), 结束: toReading(systemSamples.findLast(s => s.时点 === '结束')), 最高: { 芯片最高温: peakOf('芯片最高温'), 发热等级: peakOf('发热等级') } };
 };
 
 /** 一次渲染的收集器：包住 renderMedia（把 verbose 日志收走不刷屏），onProgress 传进去，完了 写出 */
@@ -230,7 +230,7 @@ export class DetailCollector {
       等待: [...this.等待.values()].sort((a, b) => b.总毫秒 - a.总毫秒),
       阶段: stages.filter((r) => r.标签 === this.标签),
       系统: this.系统.sort((a, b) => a.秒 - b.秒),
-      temperature: this.系统.length ? tempSummary(this.系统) : undefined,
+      温度: this.系统.length ? tempSummary(this.系统) : undefined,
       帧: this.frameRecords,
     };
     try {
@@ -276,7 +276,7 @@ export const readDetailList = (o: { contains?: string; 最多?: number; 目录?:
 const fmtSec = (milliseconds: number) => `${(milliseconds / 1000).toFixed(1)} 秒`;
 
 const tempReport = (d: RenderDetail) => {
-  const t = d.temperature?.peak;
+  const t = d.温度?.最高;
   return [t?.芯片最高温 == null ? '' : `最高芯温 ${t.芯片最高温.toFixed(1)}°C`, t?.发热等级 == null ? '' : `最高发热等级 ${t.发热等级}`].filter(Boolean).join('，');
 };
 

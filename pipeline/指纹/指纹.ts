@@ -31,7 +31,7 @@ export type FingerprintItem = {
   打包规则: Record<string, string>;
   平台: string;
   私有配乐?: Record<string, string>;
-  missingBytes?: string[];
+  缺字节?: string[];
 };
 export type SegFingerprint = { 段: string; 指纹: string; 算法: typeof MERKLE_ALGORITHM; 项: FingerprintItem; 明细: MerkleDetail };
 export { lockedVersion };
@@ -123,7 +123,7 @@ const computeGroupFingerprints = async (tasks: readonly FingerprintTask[]): Prom
       if (Object.keys(music).length) fingerprintItems.私有配乐 = music;
     }
     const missing = Object.keys(detail.资产).filter((id) => lockMissing.has(id)).sort();
-    if (missing.length) fingerprintItems.missingBytes = missing;
+    if (missing.length) fingerprintItems.缺字节 = missing;
     return { 段: s.键, 指纹: sha(stableJson(fingerprintItems)), 算法: MERKLE_ALGORITHM, 项: fingerprintItems, 明细: detail };
   });
 };
@@ -161,6 +161,6 @@ export const fingerprintDiff = (oldFingerprint: Pick<SegFingerprint, '项'> & { 
   if (oldFingerprint.项.平台 !== newFingerprint.项.平台) diffs.push(`平台 ${oldFingerprint.项.平台} → ${newFingerprint.项.平台}`);
   compareTable('私有配乐', oldFingerprint.项.私有配乐 ?? {}, newFingerprint.项.私有配乐 ?? {});
   const missingTable = (x?: string[]) => Object.fromEntries((x ?? []).map((id) => [id, '缺字节']));
-  compareTable('缺字节', missingTable(oldFingerprint.项.missingBytes), missingTable(newFingerprint.项.missingBytes));
+  compareTable('缺字节', missingTable(oldFingerprint.项.缺字节), missingTable(newFingerprint.项.缺字节));
   return diffs;
 };

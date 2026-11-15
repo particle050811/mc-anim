@@ -8,14 +8,14 @@ afterEach(() => {
 
 describe('packDir 只认本页拿到的版本表', () => {
   it('声明的包拼出路径；换了表跟着换', () => {
-    process.env[terrainVersionEnv] = JSON.stringify({ first: 'v1' });
+    process.env[terrainVersionEnv] = JSON.stringify({ 甲: 'v1' });
     expect(packDir('甲')).toBe('terrain/甲/v1');
-    process.env[terrainVersionEnv] = JSON.stringify({ first: 'v2' });
+    process.env[terrainVersionEnv] = JSON.stringify({ 甲: 'v2' });
     expect(packDir('甲')).toBe('terrain/甲/v2');
   });
 
   it('读没声明的包报错，说得出声明了哪些，不退回全表', () => {
-    process.env[terrainVersionEnv] = JSON.stringify({ first: 'v1', second: 'v2' });
+    process.env[terrainVersionEnv] = JSON.stringify({ 甲: 'v1', 乙: 'v2' });
     expect(() => packDir('丙')).toThrow(/没声明的区段包 丙.*甲、乙/);
     process.env[terrainVersionEnv] = '{}';
     expect(() => packDir('甲')).toThrow(/没声明的区段包 甲.*无/);

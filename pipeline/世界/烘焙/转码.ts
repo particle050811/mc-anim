@@ -49,7 +49,7 @@ const sumResults = (results: TranscodeResult[]) => {
 };
 
 /** 包.json 的 可见：做过可见变换的包记着按什么做的（可见.ts 的 可见记录）；没有 = 原样 */
-export const readVisibleRecord = (dir: string) => (JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as { visible?: VisibleRecord }).visible ?? null;
+export const readVisibleRecord = (dir: string) => (JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')) as { 可见?: VisibleRecord }).可见 ?? null;
 
 /** 旧目录（格式 1、2、3）→ 新目录（现行格式）：块文件、包.json、缺失.tsv。给了 可见 就过可见变换，训练也拿变换后的格子学，包.json 记下 可见 */
 export const transcodeDir = async (oldDir: string, newDir: string, threads: number, onProgress: (done: number, total: number) => void = () => {}, visible: VisibleSettings | null = null) => {
@@ -67,8 +67,8 @@ export const transcodeDir = async (oldDir: string, newDir: string, threads: numb
   fs.writeFileSync(path.join(newDir, modelFileName), modelTable);
   const trainSec = (performance.now() - t0) / 1000, t1 = performance.now();
   const result = sumResults(await runWorkers(blockFiles(oldDir).map((fileName) => ({ action: '转' as const, oldDir, 新: newDir, 名: fileName, visible })), threads, onProgress));
-  const info = JSON.parse(fs.readFileSync(path.join(oldDir, '包.json'), 'utf8')) as { 版本: number; visible?: VisibleRecord };
-  fs.writeFileSync(path.join(newDir, '包.json'), JSON.stringify({ ...info, 版本: voxelLib.sectionPack.formatVersion, ...(visible ? { visible: toRecord(visible) } : {}) }));
+  const info = JSON.parse(fs.readFileSync(path.join(oldDir, '包.json'), 'utf8')) as { 版本: number; 可见?: VisibleRecord };
+  fs.writeFileSync(path.join(newDir, '包.json'), JSON.stringify({ ...info, 版本: voxelLib.sectionPack.formatVersion, ...(visible ? { 可见: toRecord(visible) } : {}) }));
   fs.copyFileSync(path.join(oldDir, '缺失.tsv'), path.join(newDir, '缺失.tsv'));
   return { ...training, 训练秒: trainSec, transcodeSec: (performance.now() - t1) / 1000, modelBytesCount: modelTable.length, modelClassCount: sectionModel.classes, transformCounts: result };
 };
@@ -79,7 +79,7 @@ export const compareDirPerCell = async (oldDir: string, newDir: string, threads:
   if (!fs.readFileSync(path.join(oldDir, '缺失.tsv')).equals(fs.readFileSync(path.join(newDir, '缺失.tsv')))) throw new Error('缺失.tsv 不一样');
   const blockFileNames = blockFiles(oldDir);
   if (JSON.stringify(blockFiles(newDir)) !== JSON.stringify(blockFileNames)) throw new Error('两边的块文件不一样');
-  const readPack = (d: string) => ({ ...(JSON.parse(fs.readFileSync(path.join(d, '包.json'), 'utf8')) as object), 版本: 0, visible: null });
+  const readPack = (d: string) => ({ ...(JSON.parse(fs.readFileSync(path.join(d, '包.json'), 'utf8')) as object), 版本: 0, 可见: null });
   if (JSON.stringify(readPack(oldDir)) !== JSON.stringify(readPack(newDir))) throw new Error('包.json 除版本、可见外不一样');
   if (visible && JSON.stringify(readVisibleRecord(newDir)) !== JSON.stringify(toRecord(visible))) throw new Error('新包 包.json 的 可见 和这次的设置不一样');
   return sumResults(await runWorkers(blockFileNames.map((fileName) => ({ action: '比' as const, oldDir, 新: newDir, 名: fileName, visible })), threads, onProgress));

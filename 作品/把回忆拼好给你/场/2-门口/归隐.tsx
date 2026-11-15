@@ -187,11 +187,11 @@ export const RetreatPicture: React.FC<RetreatPictureProps> = ({ 帧: frame, outl
   const withGrade = (t: Grade, content: React.ReactNode) => (withPost ? <FilmPost grade={gradeOnly(t)}>{content}</FilmPost> : content);
   // 整页质感：分屏时两边的暗角、颗粒取平均，合屏时插到她那边的（合屏到位那一帧同 2-摇铃 的一层整片后期）
   const k = mergeProgress(sec);
-  const lerp = (a: number, b: number) => a + (b - a) * k;
+  const 插 = (a: number, b: number) => a + (b - a) * k;
   const finishGrade: Grade = {
     ...neutralGrade,
-    暗角: lerp((palette.现实.grade.暗角 + leftTone.grade.暗角) / 2, leftTone.grade.暗角),
-    颗粒: lerp((palette.现实.grade.颗粒 + leftTone.grade.颗粒) / 2, leftTone.grade.颗粒),
+    暗角: 插((palette.现实.grade.暗角 + leftTone.grade.暗角) / 2, leftTone.grade.暗角),
+    颗粒: 插((palette.现实.grade.颗粒 + leftTone.grade.颗粒) / 2, leftTone.grade.颗粒),
   };
   const pageView = (
     <div style={{ position: 'absolute', inset: 0, background: '#000' }}>

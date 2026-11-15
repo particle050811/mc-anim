@@ -17,12 +17,12 @@ describe('骨骼矩阵', () => {
     expect(transformPoint(skeletonMatrix(bedrockModel, '右手'))).toEqual([5 / 16, 0, 12 / 16]);
   });
   it('rot.x 负 = 手臂往前抬：右臂抬 90 度，手到了肩前方（场景 +Y 是正面）', () => {
-    expect(transformPoint(skeletonMatrix(bedrockModel, '右手', { rightArm: { rot: [-90, 0, 0] } }))).toEqual([5 / 16, 10 / 16, 22 / 16]);
+    expect(transformPoint(skeletonMatrix(bedrockModel, '右手', { 右臂: { rot: [-90, 0, 0] } }))).toEqual([5 / 16, 10 / 16, 22 / 16]);
   });
   it('缩放、pos（x 取负）和父骨骼的转动都算进去', () => {
-    expect(transformPoint(skeletonMatrix(bedrockModel, '右手', { body: { pos: [2, 1, 0] } }, 0.5 / 16))).toEqual([(5 - 2) / 32, 0, 13 / 32]);
+    expect(transformPoint(skeletonMatrix(bedrockModel, '右手', { 身: { pos: [2, 1, 0] } }, 0.5 / 16))).toEqual([(5 - 2) / 32, 0, 13 / 32]);
     // 身子绕竖轴往右转 90 度（rot.y 正）：右手从 +X 转到身后（−Y）
-    expect(transformPoint(skeletonMatrix(bedrockModel, '右手', { body: { rot: [0, 90, 0] } }))).toEqual([0, -5 / 16, 12 / 16]);
+    expect(transformPoint(skeletonMatrix(bedrockModel, '右手', { 身: { rot: [0, 90, 0] } }))).toEqual([0, -5 / 16, 12 / 16]);
   });
   it('没有的骨骼报错', () => {
     expect(() => skeletonMatrix(bedrockModel, '尾巴')).toThrow('没有骨骼');

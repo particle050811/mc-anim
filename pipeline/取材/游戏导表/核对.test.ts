@@ -61,21 +61,21 @@ describe('方块表核对', () => {
         'minecraft:bars': [1, null, 0],
         'minecraft:uv': [1, null, 0],
       },
-      extras: { notDrawn: [] },
+      附加: { 不画: [] },
     };
     const r = checkBlocks(exported, handWritten);
     expect(r.对上).toBe(6);
-    expect(r.面.geometryMicro).toBe(1); // bars：防 z 冲突的小偏移
-    expect(r.面.uvOnlyCount).toBe(1);
-    expect(r.面.consistentCount).toBe(2); // stone 只差起头角；grass 面一样、标志和染色不同
-    expect(r.面.textureDiff).toBe(1); // dirt：手写写成了 stone
-    expect(r.面.geometryDiff).toBe(1); // slab
-    expect(r.onlyHandWrittenBlocks).toEqual(['minecraft:gone']);
-    expect(r.flagDiff['类']).toEqual({ 数: 1, combos: { 'cutout→translucent': 1 }, 例: ['minecraft:grass'] });
-    expect(r.tintDiff.combos).toEqual({ 'grass→#123456': 1 });
-    expect(r.extraStates.数).toBe(2);
-    expect(r.extraStates.byNamespace).toEqual({ minecraft: 1, mymod: 1 });
-    expect(r.onlyExportedBlocks.例).toEqual(['mymod:thing']);
+    expect(r.面.几何微差).toBe(1); // bars：防 z 冲突的小偏移
+    expect(r.面.只差uv).toBe(1);
+    expect(r.面.一致).toBe(2); // stone 只差起头角；grass 面一样、标志和染色不同
+    expect(r.面.贴图不同).toBe(1); // dirt：手写写成了 stone
+    expect(r.面.几何不同).toBe(1); // slab
+    expect(r.只在手写的方块).toEqual(['minecraft:gone']);
+    expect(r.标志不同['类']).toEqual({ 数: 1, 组合: { 'cutout→translucent': 1 }, 例: ['minecraft:grass'] });
+    expect(r.染色不同.组合).toEqual({ 'grass→#123456': 1 });
+    expect(r.多出的状态.数).toBe(2);
+    expect(r.多出的状态.按命名空间).toEqual({ minecraft: 1, mymod: 1 });
+    expect(r.只在导出的方块.例).toEqual(['mymod:thing']);
     expect(reportText(undefined, r)).toContain('面：一致 2');
   });
 });
@@ -89,7 +89,7 @@ describe('群系色核对', () => {
     },
   };
   const exported: BiomeTable = {
-    samplePoints: [[0, 0], [100, 100]],
+    采样点: [[0, 0], [100, 100]],
     群系: {
       'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' },
       'minecraft:swamp': { 草: '#6a7039', 叶: '#6a7039', 水: '#617b64', 草修饰: 'swamp', 采样: { 草: ['#4c763c', '#6a7039'] } },
@@ -98,14 +98,14 @@ describe('群系色核对', () => {
   };
   it('定值、修饰、只在一边', () => {
     const r = checkBiomes(exported, handWritten);
-    expect(r.onlyExported).toEqual(['new:only']);
-    expect(r.onlyHandWritten).toEqual(['old:only']);
-    expect(r.constantDiff).toEqual([]);
-    expect(r.modifierDiff).toEqual([]);
+    expect(r.只在导出).toEqual(['new:only']);
+    expect(r.只在手写).toEqual(['old:only']);
+    expect(r.定值不同).toEqual([]);
+    expect(r.修饰不同).toEqual([]);
   });
   it('现行规则在采样点上和游戏比', () => {
     const colorRule = { grass: (b: string, x: number) => (b === 'minecraft:swamp' && x === 0 ? 0x4c763c : b === 'minecraft:swamp' ? 0x000001 : 0x91bd59), foliage: (b: string) => (b === 'minecraft:swamp' ? 0x6a7039 : 0x77ab2f), 水: (b: string) => (b === 'minecraft:swamp' ? 0x617b64 : 0x3f76e4) };
     const r = checkBiomes(exported, handWritten, colorRule);
-    expect(r.ruleChecks).toEqual([{ 群系: 'minecraft:swamp', 项: '草', pointCount: 2, 不同: 1, 例: [{ x: 100, z: 100, 规则: '#000001', gameColor: '#6a7039' }] }]);
+    expect(r.规则核对).toEqual([{ 群系: 'minecraft:swamp', 项: '草', 点数: 2, 不同: 1, 例: [{ x: 100, z: 100, 规则: '#000001', 游戏: '#6a7039' }] }]);
   });
 });

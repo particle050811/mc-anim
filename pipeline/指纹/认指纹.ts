@@ -45,7 +45,7 @@ export const stillCannotProve = (oldItem: FingerprintItem, newItem: FingerprintI
   if (stableJson(oldItem.私有配乐 ?? {}) !== stableJson(newItem.私有配乐 ?? {})) blockers.push('私有配乐变了：只影响声音，静帧证明不了');
   const ogg = 'pipeline/资产/ogg解码.cjs';
   if (oldItem.打包规则?.[ogg] !== newItem.打包规则?.[ogg]) blockers.push(`打包规则 ${ogg} 变了：只影响声音，静帧证明不了`);
-  if (newItem.missingBytes?.length) blockers.push(`新指纹里记了缺字节 ${newItem.missingBytes.length} 件（打进的是占位，先 anim assets seed / pull）`);
+  if (newItem.缺字节?.length) blockers.push(`新指纹里记了缺字节 ${newItem.缺字节.length} 件（打进的是占位，先 anim assets seed / pull）`);
   return blockers;
 };
 
@@ -189,7 +189,7 @@ export const registerReuse = (segKey: string, oldVersion: OldVersion, newFingerp
     const reuse: ReuseRecord = { 自: oldVersion.指纹, 原渲: oldVersion.segStamp.沿用?.原渲 ?? oldVersion.指纹, 理由: info.理由, 帧: [...info.帧], 比法: compareMethod, 于: atIso, 提交: info.提交 };
     const soundSource = soundClone ? { ...oldVersion.segStamp.声音源!, 改于: fs.statSync(soundClone.tempPath).mtimeMs } : { ...oldVersion.segStamp.声音源!, 改于: fs.statSync(soundPath).mtimeMs };
     const segStamp: SegStamp = { ...oldVersion.segStamp, 版本: 3, 作品: work, 段: segKey, 指纹: fingerprint, 声音指纹: newFingerprints.声音指纹.指纹, 级别: info.级别, 母版: { ...oldVersion.segStamp.母版, 改于: fs.statSync(masterClone.tempPath).mtimeMs }, 声音源: soundSource, 声音: soundRecord, 沿用: reuse };
-    fs.appendFileSync(path.join(stampDir, historyFileName), JSON.stringify({ recordedAt: atIso, 沿用: true, 自: oldVersion.指纹, 原渲: reuse.原渲, 字节sha: segStamp.母版.字节sha, 帧: reuse.帧, 理由: info.理由, copyHow: masterClone.copyHow }) + '\n', 'utf8');
+    fs.appendFileSync(path.join(stampDir, historyFileName), JSON.stringify({ 记于: atIso, 沿用: true, 自: oldVersion.指纹, 原渲: reuse.原渲, 字节sha: segStamp.母版.字节sha, 帧: reuse.帧, 理由: info.理由, 怎么复制: masterClone.copyHow }) + '\n', 'utf8');
     atomicWrite(path.join(stampDir, stampFileName), JSON.stringify(segStamp, null, 1) + '\n');
     writeFingerprint(newFingerprints.画面指纹, masterDir(segKey, work));
     writeFingerprint(newFingerprints.声音指纹, masterDir(segKey, work));

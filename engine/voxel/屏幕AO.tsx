@@ -314,13 +314,13 @@ void main() {
 }`;
 
 // 比改前改后用：渲染输入给 `光栅深度: false`，第 1 遍退回片元写对数深度；`三遍离屏: false`，第 2、3 遍照旧上画布
-const rasterDepthOff = (renderInput() as { rasterDepth?: boolean }).rasterDepth === false;
-const offscreenOff = (renderInput() as { threePassOffscreen?: boolean }).threePassOffscreen === false;
+const rasterDepthOff = (renderInput() as { 光栅深度?: boolean }).光栅深度 === false;
+const offscreenOff = (renderInput() as { 三遍离屏?: boolean }).三遍离屏 === false;
 const warned = new WeakSet<object>();
 type ClipControl = { clipControlEXT: (origin: number, depth: number) => void; LOWER_LEFT_EXT: number; ZERO_TO_ONE_EXT: number; NEGATIVE_ONE_TO_ONE_EXT: number };
 
 // 第 1 遍藏起来、留到第 3 遍画的：三维画布本来就按半透明另排一队的（transparent）、不是普通混合的（加色的特效之类）、标了不挡的
-const aoDisabled = (renderInput() as { screenAo?: boolean }).screenAo === false;
+const aoDisabled = (renderInput() as { 屏幕AO?: boolean }).屏幕AO === false;
 const drawLater = (m: THREE.Material) => m.transparent || m.blending !== THREE.NormalBlending || m.userData.screenAo === '不挡';
 
 type SavedMaterial = { m: THREE.Material; visible: boolean; blending: THREE.Blending; src: THREE.BlendingSrcFactor; dst: THREE.BlendingDstFactor; srcA: THREE.BlendingSrcFactor | null; dstA: THREE.BlendingDstFactor | null; depthFunc: THREE.DepthModes; offsetFactor: number; raster: boolean };

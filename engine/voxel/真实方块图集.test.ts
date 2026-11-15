@@ -32,7 +32,7 @@ const toDataUri = (t: { w: number; h: number; px: Uint8Array }) => `data:image/p
 
 // 材质.ts 经 网格.ts 引到方块表、群系色：给最小的表
 vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: { 贴图: ['test:block/stone'], 面组: [], 方块: {} } }));
-vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { 群系: { 'minecraft:plains': { grass: '#91bd59', foliage: '#77ab2f', 水: '#3f76e4' } } } }));
+vi.mock('asset:数据/场景/关键帧/群系色', () => ({ default: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } } }));
 
 const load = async (t: { w: number; h: number; px: Uint8Array }) => {
   vi.resetModules();

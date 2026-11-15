@@ -46,9 +46,9 @@ export const sensorParams = {
 const TENDRIL_TEX = new Set(modelData.textures.map((t, i) => (t.key.includes('tendril') ? i : -1)).filter((i) => i >= 0));
 const D_BODY: BlockModelData = {
   ...modelData,
-  parts: { 底座: { color: modelData.parts.inactive.color, quads: modelData.parts.inactive.quads.filter((q) => !TENDRIL_TEX.has(q[0])) } },
+  parts: { 底座: { color: modelData.parts.不活跃.color, quads: modelData.parts.不活跃.quads.filter((q) => !TENDRIL_TEX.has(q[0])) } },
 };
-const TENDRIL_QUADS = modelData.parts.inactive.quads.filter((q) => TENDRIL_TEX.has(q[0]));
+const TENDRIL_QUADS = modelData.parts.不活跃.quads.filter((q) => TENDRIL_TEX.has(q[0]));
 
 // 触须的几何：照 方块模型.tsx 的面片格式（原点在方块中心），贴图坐标就是一帧 16×16 里的位置
 const CENTER = [0.5, -0.5, 0.5];

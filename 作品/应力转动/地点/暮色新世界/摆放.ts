@@ -135,7 +135,7 @@ function coreCutouts(name: TwilightLandmarkName): LandmarkCutout[] {
   const bottomY = def.cutFloorY ?? meshBottomY(name);
   const coreRanges = def.core!.map((c) => columnRange(name, c));
   const inCore = (x: number, z: number) => coreRanges.some(([x0, z0, x1, z1]) => x >= x0 && x <= x1 && z >= z0 && z <= z1);
-  const exempt = groupByColumn(def.edgeFix.digExempt, 0, 1, 2);
+  const exempt = groupByColumn(def.edgeFix.挖免, 0, 1, 2);
   const [X0, Z0, X1, Z1] = [Math.min(...coreRanges.map((r) => r[0])), Math.min(...coreRanges.map((r) => r[1])), Math.max(...coreRanges.map((r) => r[2])), Math.max(...coreRanges.map((r) => r[3]))];
   return mergeBoxes(X0, X1 + 1, Z0, Z1 + 1, (x, z) => (inCore(x, z) ? subtractPoints(bottomY, 401, exempt.get(`${x},${z}`)) : null)).flatMap(([x0, z0, x1, z1, intervals]) =>
     intervals.map(([lo, hi]) => ({ from: [x0, lo, z0], to: [x1 - 1, hi - 1, z1 - 1] })),
@@ -144,9 +144,9 @@ function coreCutouts(name: TwilightLandmarkName): LandmarkCutout[] {
 // 归边要另挖的格（游戏坐标）：按列连段，再按同一行相邻、段一样的并盒
 function edgeFixExtraCutouts(name: TwilightLandmarkName): LandmarkCutout[] {
   const edgeFix = landmarkDefs[name].edgeFix;
-  if (!edgeFix?.digAdd.length) return [];
-  const byColumn = groupByColumn(edgeFix.digAdd, 0, 1, 2);
-  const xs = edgeFix.digAdd.map((c) => c[0]), zs = edgeFix.digAdd.map((c) => c[2]);
+  if (!edgeFix?.挖加.length) return [];
+  const byColumn = groupByColumn(edgeFix.挖加, 0, 1, 2);
+  const xs = edgeFix.挖加.map((c) => c[0]), zs = edgeFix.挖加.map((c) => c[2]);
   return mergeBoxes(Math.min(...xs), Math.max(...xs) + 1, Math.min(...zs), Math.max(...zs) + 1, (x, z) => {
     const column = byColumn.get(`${x},${z}`);
     return column ? pointsToRuns(column) : null;
@@ -205,8 +205,8 @@ export const landmarkHideOutsideCore = Object.fromEntries(
     if (!def.core) return [name, []];
     const [X0, Y0, X1, Y1] = meshRect(name);
     const inCore = (x: number, y: number) => def.core!.some(([cx0, cy0, cx1, cy1]) => x > cx0 && x < cx1 && y > cy0 && y < cy1);
-    const exempt = def.edgeFix && groupByColumn(def.edgeFix.hideExempt, 0, 2, 1);
-    const extraHide = def.edgeFix && groupByColumn(def.edgeFix.hideAdd, 0, 2, 1);
+    const exempt = def.edgeFix && groupByColumn(def.edgeFix.藏免, 0, 2, 1);
+    const extraHide = def.edgeFix && groupByColumn(def.edgeFix.藏加, 0, 2, 1);
     const boxes = mergeBoxes(X0, X1, Y0, Y1, (x, y) => {
       if (!inCore(x + 0.5, y + 0.5)) return subtractPoints(-1e4, 1e4, exempt?.get(`${x},${y}`));
       const column = extraHide?.get(`${x},${y}`);

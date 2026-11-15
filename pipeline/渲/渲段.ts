@@ -72,7 +72,7 @@ export const renderSegments = async (allSegments: readonly SegInfo[], selected: 
   const toClean = cachedOutputs.filter((r) => hasOldToDelete('母版', r.段.键, level, currentFingerprints(r)));
   if (toClean.length) await measureStage(opts.runRecord.阶段, totalLabel, '清旧', () => passRenderGate(async () => {
     for (const r of toClean) deleteOld('母版', r.段.键, level, currentFingerprints(r), { runRecord: opts.runRecord });
-  }, undefined, {}, { 种: '清命中的旧', skipRender: true }));
+  }, undefined, {}, { 种: '清命中的旧', 不开渲染: true }));
   if (!toRender.length) return outputs;
 
   const estimates = toRender.map((r) => estimateTiming(renderLabel(r.段.键, level)));

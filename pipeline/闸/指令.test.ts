@@ -15,7 +15,7 @@ import {judgeAlerts} from './告警.ts';
 import {writeDirective,routeYield,directiveFile,orderFile} from './指令.ts';
 import {spawn,spawnSync} from 'node:child_process';
 let dir:string;beforeEach(()=>{dir=fs.mkdtempSync(path.join(os.tmpdir(),'anim-指令-'));});afterEach(()=>fs.rmSync(dir,{recursive:true,force:true}));
-const fakeMachine=()=>({负载:0,核:10,闸:10,压力:1,free:0,压缩:0,swap:0,swapOut:0,GPU:0,热:0,disk:1e10,orphans:0,psOutput:''});
+const fakeMachine=()=>({负载:0,核:10,闸:10,压力:1,free:0,压缩:0,swap:0,换出:0,GPU:0,热:0,盘:1e10,孤儿:0,进程:''});
 const parseParams=(xs:string[]=[])=>parseArgs(xs,{值:['--为什么','--分钟','--pid','--文件','--内存','--最长','--让路'],toggles:['--强','--原序','--杀持锁','--闸空','--撤']});
 const setup=()=>{const e=resolveSchedulerEnv({lockDir:dir});const task={任务:'task',起:Date.now(),心跳:Date.now(),主机:e.localHost,发起:readCaller({},[],dir,false),声明:{种:'still'}};const t=claimTicket(path.join(dir,'渲染.排队'),e.localHost,task,Date.now());return {e,t};};
 it('先后恢复放行取消都写决定+快照，缺原因用法错；旧票拒绝改名',()=>{
@@ -27,14 +27,14 @@ it('先后恢复放行取消都写决定+快照，缺原因用法错；旧票拒
 });
 it('放行只这一张越队且不删除前面的真活票',async()=>{
   const {e,t}=setup();const old=t.名.replace(/-\d+$/,`-${process.ppid}`);fs.renameSync(t.文件,path.join(path.dirname(t.文件),old));
-  const startMs=performance.now();await passRenderGate(async()=>{},()=>{}, {...e,readMemory:()=>({总:100,free:5,freePercent:5,swapTotal:0,swapUsed:0}),readPressure:()=>1,sleep:async()=>{
+  const startMs=performance.now();await passRenderGate(async()=>{},()=>{}, {...e,readMemory:()=>({总:100,空闲:5,空闲百分比:5,交换区总:0,交换区已用:0}),readPressure:()=>1,sleep:async()=>{
     const mine=listTickets(path.join(dir,'渲染.排队')).find(x=>x.pid===process.pid)!;
     changeScheduler('放行',mine.名,parseParams(['--为什么','低峰值']),e,{状态:()=>readState(e,fakeMachine,false),输出:()=>{}});
   }});expect(performance.now()-startMs).toBeLessThan(3000);expect(fs.existsSync(path.join(path.dirname(t.文件),old))).toBe(true);
 });
 it('暂缓到期回队尾而不是原位',async()=>{
   let now=Date.now(),loopCount=0;const e=resolveSchedulerEnv({lockDir:dir,nowMs:()=>now});
-  await passRenderGate(async()=>{},()=>{}, {...e,memFloor:30,readMemory:()=>loopCount>1?null:{总:100,free:1,freePercent:1,swapTotal:0,swapUsed:0},readPressure:()=>1,sleep:async()=>{
+  await passRenderGate(async()=>{},()=>{}, {...e,memFloor:30,readMemory:()=>loopCount>1?null:{总:100,空闲:1,空闲百分比:1,交换区总:0,交换区已用:0},readPressure:()=>1,sleep:async()=>{
     loopCount++;const t=listTickets(path.join(dir,'渲染.排队'))[0]!;
     if(loopCount===1){changeScheduler('后',t.名,parseParams(['--为什么','暂缓','--分钟','0.001']),e,{状态:()=>readState(e,fakeMachine,false),输出:()=>{}});}
     now+=1000;
@@ -44,7 +44,7 @@ it('让路不中断当前段，下一张票暂缓；路令排队返回 75',async
   let now=Date.now(),sleepCount=0;const e=resolveSchedulerEnv({lockDir:dir,nowMs:()=>now}),task=openTask(e,{种:'render'});
   const env={...e,readMemory:()=>null,readPressure:()=>1,sleep:async()=>{sleepCount++;now+=60_000;}};
   await passRenderGate(async()=>{
-    const s=readState(e,fakeMachine,false);changeScheduler('让路',s.lockHolders[0]!.票,parseParams(['--为什么','产出优先','--分钟','1']),e,{状态:()=>s,输出:()=>{}});
+    const s=readState(e,fakeMachine,false);changeScheduler('让路',s.持锁[0]!.票,parseParams(['--为什么','产出优先','--分钟','1']),e,{状态:()=>s,输出:()=>{}});
     expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(true);
   },()=>{},env,{种:'render',可让路:true});
   await passRenderGate(async()=>{},()=>{},env);expect(sleepCount).toBeGreaterThan(0);task.结束();
@@ -59,7 +59,7 @@ it('等闸空连续30秒，不被段间假空骗过；内存到点124',async()=>
 });
 it('票已被持有者删掉时改序报错：不复活、不写决定',()=>{
   const {e,t}=setup(),snapshot=readState(e,fakeMachine,false);
-  snapshot.票[0]!.ticketContent!.deferredUntilMs=Date.now()+60_000;
+  snapshot.票[0]!.内容!.暂缓至=Date.now()+60_000;
   fs.rmSync(t.文件);
   for(const cmd of ['先','后','恢复'])expect(()=>changeScheduler(cmd,t.名,parseParams(['--为什么','测试']),e,{状态:()=>snapshot,输出:()=>{}})).toThrow('已不在');
   expect(listTickets(path.join(dir,'渲染.排队'))).toHaveLength(0);
@@ -70,12 +70,12 @@ it('后 先改名再写内容；写票不复活旧路径',()=>{
   changeScheduler('后',t.名,parseParams(['--为什么','测试']),e,{状态:()=>readState(e,fakeMachine,false),输出:x=>{newName=x;}});
   expect(fs.existsSync(t.文件)).toBe(false);
   const q=listTickets(path.join(dir,'渲染.排队'));
-  expect(q.map(x=>x.名)).toEqual([newName]);expect(q[0]!.ticketContent!.deferredUntilMs).toBeGreaterThan(Date.now());expect(q[0]!.ticketContent!.origOrder).toBe(String(t.时间));
+  expect(q.map(x=>x.名)).toEqual([newName]);expect(q[0]!.内容!.暂缓至).toBeGreaterThan(Date.now());expect(q[0]!.内容!.原序).toBe(String(t.时间));
   writeTicket(t);expect(fs.existsSync(t.文件)).toBe(false);
 });
 
 const queue=()=>path.join(dir,'渲染.排队');
-const makeMemory=(n:number)=>({总:100,free:n,freePercent:n,swapTotal:0,swapUsed:0});
+const makeMemory=(n:number)=>({总:100,空闲:n,空闲百分比:n,交换区总:0,交换区已用:0});
 const leaveTicket=(e:ReturnType<typeof resolveSchedulerEnv>,pid:number,task='别人的')=>{fs.mkdirSync(queue(),{recursive:true});const ticketName=`${String(Date.now()).padStart(15,'0')}-${hostSlug(e.localHost)}-${pid}`;fs.writeFileSync(path.join(queue(),ticketName),JSON.stringify({v:1,任务: task,起:Date.now(),发起:readCaller({},[],dir,false),声明:{种:'still',段:'甲段'}}));return ticketName;};
 const releaseLock=(pid:number,acquiredAt=Date.now())=>{fs.writeFileSync(path.join(dir,'渲染.lock'),`${pid}\n`);fs.writeFileSync(path.join(dir,'渲染.lock.信息.json'),JSON.stringify({pid,票:'锁票',任务:'持锁的',发起:{...readCaller({},[],dir,false),pid},声明:{种:'render',段:'乙段'},拿锁时: acquiredAt,心跳:Date.now(),帧时:Date.now(),已出帧:0}));};
 const deadPid=99999997;
@@ -114,7 +114,7 @@ it('放行到期作废：写事件一次、回到内存判断',async()=>{
 });
 it('拿锁后用掉放行时不删别的指令：让路还要留给下一段',async()=>{
   const e=resolveSchedulerEnv({lockDir:dir});let task='';
-  await passRenderGate(async()=>{task=readState(e,fakeMachine,false).lockHolders[0]!.任务;writeDirective(e,task,{action:'让路',reason:'下一段再说',时:Date.now(),untilMs:Date.now()+60_000,票:'旧票',任务: task});
+  await passRenderGate(async()=>{task=readState(e,fakeMachine,false).持锁[0]!.任务;writeDirective(e,task,{动作:'让路',为什么:'下一段再说',时:Date.now(),至:Date.now()+60_000,票:'旧票',任务: task});
     expect(fs.existsSync(directiveFile(e,task))).toBe(true);},()=>{}, {...e,readMemory:()=>null,readPressure:()=>1},{种:'render',可让路:true});
 });
 it('只有在跑登记、没有票和锁的任务不算目标',()=>{
@@ -149,7 +149,7 @@ it.skipIf(process.platform==='win32')('取消：pid 已换人（真进程，启�
     fs.rmSync(f);
     // 锁也老了：算死，排队的下一个回收；复用它的进程不受影响。
     releaseLock(c.pid!,Date.now()-3600_000);const oldDate=new Date(Date.now()-3600_000);fs.utimesSync(path.join(dir,'渲染.lock'),oldDate,oldDate);
-    expect(readState(e,fakeMachine,false).lockHolders[0]!.死).toBe(true);
+    expect(readState(e,fakeMachine,false).持锁[0]!.死).toBe(true);
     changeScheduler('取消',`#${c.pid}`,parseParams(['--为什么','超时了','--杀持锁']),e,o);expect(lines.at(-1)).toContain('进程已不在');
     await passRenderGate(async()=>{},()=>{},{...e,readMemory:()=>null,readPressure:()=>1,readMachine:fakeMachine,clearOrphans:()=>[]},{种:'still'});
     expect(fs.existsSync(path.join(dir,'渲染.lock'))).toBe(false);expect(readSchedulerEvents(e.logDir).some(x=>x.事==='回收死锁')).toBe(true);
@@ -180,11 +180,11 @@ it('改序用改名后重读的内容：快照之后票主人写的 等内存起
   const {e,t}=setup(),o=(snapshot:ReturnType<typeof readState>)=>({状态:()=>snapshot,输出:()=>{}});
   for(const cmd of ['先','后']){
     const ticket=listTickets(queue())[0]!;
-    delete ticket.ticketContent!.stuckOn;delete ticket.ticketContent!.waitMemStart;writeTicket(ticket);
+    delete ticket.内容!.卡在;delete ticket.内容!.等内存起;writeTicket(ticket);
     const snapshot=readState(e,fakeMachine,false);
-    ticket.ticketContent!.stuckOn='内存';ticket.ticketContent!.waitMemStart=123;writeTicket(ticket);
+    ticket.内容!.卡在='内存';ticket.内容!.等内存起=123;writeTicket(ticket);
     changeScheduler(cmd,ticket.名,parseParams(['--为什么','调']),e,o(snapshot));
-    expect(listTickets(queue())[0]!.ticketContent).toMatchObject({stuckOn:'内存',waitMemStart:123});
+    expect(listTickets(queue())[0]!.内容).toMatchObject({卡在:'内存',等内存起:123});
   }
   expect(t.名).not.toBe(listTickets(queue())[0]!.名);
 });
@@ -214,14 +214,14 @@ it('写全名取消持锁者的残留票也要 --杀持锁；死目标不接受�
 });
 it('读路径：死票死锁单独标记、不算占用、不当排队告警；异机锁不算死',async()=>{
   const e=resolveSchedulerEnv({lockDir:dir});leaveTicket(e,deadPid);releaseLock(deadPid+1);
-  const s=readState(e,fakeMachine,false);expect(s.票[0]!.死).toBe(true);expect(s.lockHolders[0]!.死).toBe(true);
+  const s=readState(e,fakeMachine,false);expect(s.票[0]!.死).toBe(true);expect(s.持锁[0]!.死).toBe(true);
   expect(oneLineStatus(s)).toContain(`持锁#${deadPid+1}死 排队0 死票1`);
   const view=renderView(s);expect(view).toContain(`持锁 #${deadPid+1} 死 render`);expect(view).toContain(`排队1 #${deadPid} 死 等`);expect(view).toContain(' still');
   const alarmKinds=judgeAlerts(s,s.时+3600_000).map(x=>x.类);expect(alarmKinds).toContain('持锁者死');expect(alarmKinds).not.toContain('排队长');expect(alarmKinds).not.toContain('小任务等待');
   let now=0;const schedClock=resolveSchedulerEnv({lockDir:dir,nowMs:()=>now}),hint=vi.fn();
   expect(await waitUntil(parseParams(['--闸空','--最长','90']),schedClock,{sleep:async ms=>{now+=ms;},提示: hint})).toBe(0);expect(now).toBe(30_000);expect(hint).not.toHaveBeenCalled();
   fs.writeFileSync(path.join(dir,`渲染.lock.${deadPid+1}.主机`),'另一台\n');
-  expect(readState(e,fakeMachine,false).lockHolders[0]!.死).toBe(false);
+  expect(readState(e,fakeMachine,false).持锁[0]!.死).toBe(false);
 });
 it('等闸空到点说卡在谁',async()=>{
   let now=0;const e=resolveSchedulerEnv({lockDir:dir,nowMs:()=>now}),messages:string[]=[],sleep=async(ms:number)=>{now+=ms;};
@@ -232,13 +232,13 @@ it('等闸空到点说卡在谁',async()=>{
 });
 it('批按项数算可让路：一项的直说不能让路，多项的能让',async()=>{
   const e={...resolveSchedulerEnv({lockDir:dir}),readMemory:()=>null,readPressure:()=>1};
-  const tryItems=async(itemCount:number)=>{const gate=openGateBatch({项数: itemCount},e);try{await gate.runTask({},async()=>{const s=readState(e,fakeMachine,false);changeScheduler('让路',s.lockHolders[0]!.票,parseParams(['--为什么','产出优先']),e,{状态:()=>s,输出:()=>{}});});}finally{gate.结束();}};
+  const tryItems=async(itemCount:number)=>{const gate=openGateBatch({项数: itemCount},e);try{await gate.runTask({},async()=>{const s=readState(e,fakeMachine,false);changeScheduler('让路',s.持锁[0]!.票,parseParams(['--为什么','产出优先']),e,{状态:()=>s,输出:()=>{}});});}finally{gate.结束();}};
   await expect(tryItems(1)).rejects.toThrow('不能让路');await expect(tryItems(2)).resolves.toBeUndefined();
 });
 it('路令看动作字段不猜文本，能撤；撤了同路照常拿锁',async()=>{
   const e=resolveSchedulerEnv({lockDir:dir}),route={...e,caller:{...e.caller,路:'一路'}},lines:string[]=[],o=(x:string)=>{lines.push(x);};
   for(const a of [[],['一路'],['一路','让路'],['一路','--让路','x','--撤']])expect(()=>orderCommand(a.filter(x=>!x.startsWith('--')&&x!=='x'),parseParams(a.filter(x=>x.startsWith('--')||x==='x')),route,o)).toThrow('用法');
-  fs.mkdirSync(path.dirname(orderFile(e,'一路')),{recursive:true});fs.writeFileSync(orderFile(e,'一路'),JSON.stringify({order:'请让路',untilMs:Date.now()+60_000}));expect(routeYield(route)).toBeNull();
+  fs.mkdirSync(path.dirname(orderFile(e,'一路')),{recursive:true});fs.writeFileSync(orderFile(e,'一路'),JSON.stringify({order:'请让路',至:Date.now()+60_000}));expect(routeYield(route)).toBeNull();
   orderCommand(['一路'],parseParams(['--让路','不用猜']),route,o);expect(routeYield(route)).toBe('不用猜');
   orderCommand(['一路'],parseParams(['--撤']),route,o);expect(routeYield(route)).toBeNull();expect(lines[1]).toContain('已撤');
   orderCommand(['一路'],parseParams(['--撤']),route,o);expect(lines[2]).toContain('无事可撤');
@@ -256,7 +256,7 @@ it('恢复：--原序 没有原序报错、没暂缓的不动；先和后都能�
   const e=resolveSchedulerEnv({lockDir:dir}),o={状态:()=>readState(e,fakeMachine,false),输出:()=>{}};
   const makeTask=(n:string)=>({任务:n,起:Date.now(),心跳:Date.now(),主机:e.localHost,发起:readCaller({},[],dir,false),声明:{种:'still'}});
   for(const n of ['A','B','C'])claimTicket(queue(),e.localHost,makeTask(n),Date.now());
-  const queueOrderIndex=()=>listTickets(queue()).map(x=>x.ticketContent!.任务),ticketNameOf=(n:string)=>listTickets(queue()).find(x=>x.ticketContent!.任务===n)!.名;
+  const queueOrderIndex=()=>listTickets(queue()).map(x=>x.内容!.任务),ticketNameOf=(n:string)=>listTickets(queue()).find(x=>x.内容!.任务===n)!.名;
   expect(()=>changeScheduler('恢复',ticketNameOf('B'),parseParams(['--为什么','x','--原序']),e,o)).toThrow('没有原序');
   expect(()=>changeScheduler('恢复',ticketNameOf('A'),parseParams(['--为什么','x']),e,o)).toThrow('没在暂缓');
   expect(queueOrderIndex()).toEqual(['A','B','C']);expect(listDecisions(e)).toHaveLength(0);
@@ -275,7 +275,7 @@ it('快路径的全局参数和帮助走完整路由，和别的命令一致',()
   const routeResult=runSched('不存在的动作','--调试');expect(routeResult.status).toBe(2);expect(routeResult.stderr).toContain('用法：anim 调度');
 },120_000);
 it('领票打印前面几张和约几分；没人挡不打印；暂缓提示带原因',async()=>{
-  const e=resolveSchedulerEnv({lockDir:dir}),queue=path.join(dir,'渲染.排队'),makeMemory=()=>({总:100,free:80,freePercent:80,swapTotal:0,swapUsed:0});
+  const e=resolveSchedulerEnv({lockDir:dir}),queue=path.join(dir,'渲染.排队'),makeMemory=()=>({总:100,空闲:80,空闲百分比:80,交换区总:0,交换区已用:0});
   const schedEnv={...e,readMemory:makeMemory,readPressure:()=>1,readMachine:fakeMachine,clearOrphans:()=>[]};
   const messages:string[]=[];await passRenderGate(async()=>{},s=>messages.push(s),schedEnv);expect(messages.join()).not.toContain('前面');
   const first=claimTicket(queue,e.localHost,{任务:'前',起:Date.now(),心跳:Date.now(),主机:e.localHost,发起:readCaller({},[],dir,false),声明:{种:'still',预计秒:90}},Date.now());

@@ -56,7 +56,7 @@ describe('坐标正本和旧副本对得上', () => {
   });
   it('fromMc（库/生物/九头蛇.tsx）= 不带原点的 游戏到场景；Z朝上转three（库/界面/投影.ts）= 不带原点的 场景到游戏', () => {
     const fromMc = copyFn('库/生物/九头蛇.tsx', 'fromMc');
-    const convert = copyFn('库/界面/投影.ts', 'Z朝上转three');
+    const convert = copyFn('库/界面/投影.ts', 'zUpToThree');
     for (const p of points) {
       expectNear(fromMc(p) as number[], C.gameToScene(p));
       expectNear(convert(p) as number[], C.sceneToGame(p));

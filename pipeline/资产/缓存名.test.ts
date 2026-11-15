@@ -25,7 +25,7 @@ afterAll(() => fs.rmSync(tempDir, { recursive: true, force: true }));
 
 const workRoot = path.join(tempDir, '作品');
 fs.mkdirSync(workRoot, { recursive: true });
-fs.writeFileSync(path.join(workRoot, '清单.ts'), "export const 求解入口 = { 测试求解: '求解.ts' };\n");
+fs.writeFileSync(path.join(workRoot, '清单.ts'), "export const solveEntries = { 测试求解: '求解.ts' };\n");
 const writeSolveFile = (n: number) => fs.writeFileSync(path.join(workRoot, '求解.ts'), `export const 解 = ${n};\n`);
 const bytesLockEntry = (fileName: string, content: string) => {
   const f = path.join(tempDir, fileName);
@@ -104,7 +104,7 @@ describe('同一个持久缓存目录', () => {
     const secondPack = await bundleOut('出二');
     const [secondItem, , solverSecond] = value(secondPack.产物);
     expect(secondItem).toEqual({ 值: 2 });
-    expect(solverSecond.testSolve).not.toBe(solverFirst.testSolve);
+    expect(solverSecond.测试求解).not.toBe(solverFirst.测试求解);
     // 缓存确实在用：没变的模块这次没重编
     expect(secondPack.compiled.some((n) => n.includes('不变.js'))).toBe(false);
   });

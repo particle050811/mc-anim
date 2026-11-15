@@ -27,7 +27,7 @@ const mockTable = vi.hoisted(() => {
         'test:water': [3, 'water', 4],
       },
     },
-    群系色: { 群系: { 'minecraft:plains': { grass: '#91bd59', foliage: '#77ab2f', 水: '#3f76e4' } } },
+    群系色: { 群系: { 'minecraft:plains': { 草: '#91bd59', 叶: '#77ab2f', 水: '#3f76e4' } } },
   };
 });
 vi.mock('asset:数据/场景/关键帧/方块表', () => ({ default: mockTable.blockTable }));

@@ -9,7 +9,7 @@ import type { SegFingerprint } from '../指纹/指纹.ts';
 import type { KeepSet } from './回收.ts';
 
 /** 缺字节时打进包的是占位，出片会先补字节再算指纹，这里没补，算出来的和渲染时的对不上 */
-const untrustedReason = (fp: SegFingerprint) => (fp.项.missingBytes?.length ? `指纹里记了缺字节 ${fp.项.missingBytes.length} 件（先 anim assets seed / pull）` : null);
+const untrustedReason = (fp: SegFingerprint) => (fp.项.缺字节?.length ? `指纹里记了缺字节 ${fp.项.缺字节.length} 件（先 anim assets seed / pull）` : null);
 
 /** 作品 的各段在各渲染级别下的当前切片进保留集；算的时候临时切到这部作品，算完切回去 */
 export const addCurrentFingerprints = async (keep: KeepSet, work: string, warn: (s: string) => void = () => {}, onProgress: (s: string) => void = () => {}) => {

@@ -151,4 +151,4 @@ const eventSecAt = <K extends string>(timeline: { 场: string; 事件: Readonly<
 };
 
 /** 是不是段框架做的段（pipeline 按这个决定要不要给它生成声音表、地址表）：窗口段这类工厂做的（写 框架 字段），或 定义段 手写了声音 cue 的 */
-export const isFrameworkSeg = (seg: SegmentDef): boolean => typeof (seg as { isFrameworkSeg?: unknown }).isFrameworkSeg === 'string' || Boolean(seg.声音?.length);
+export const isFrameworkSeg = (seg: SegmentDef): boolean => typeof (seg as { framework?: unknown }).framework === 'string' || Boolean(seg.声音?.length);

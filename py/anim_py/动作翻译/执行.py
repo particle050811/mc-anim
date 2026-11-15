@@ -167,7 +167,7 @@ class Frame:
 @dataclass
 class MethodCode:
     类: ClassFile
-    method_ref: method_ref
+    method_ref: Method
     instructions: dict
     _join_points: dict | None = None
 
@@ -1591,17 +1591,17 @@ class Translator(LibrarySim):
             t = primitive_type(p)
             args.append(self.const_node(t, 0) if t else Opaque(f"构造参数 {p}"))
         _, state = self.run_method(c, ctor, args, HeapState())
-        for (k, field), v in state.heap.items():
+        for (k, field_name), v in state.heap.items():
             if k != ("模型",):
                 continue
             if isinstance(v, (Part, Array, Opaque, Closure, JavaObject)) or v is None:
-                self.struct_fields[field] = v
+                self.struct_fields[field_name] = v
             elif isinstance(v, N) and self.g.is_constant(v.id):
-                desc = self._model_field_descriptor(field)
+                desc = self._model_field_descriptor(field_name)
                 val = self.g.constant_of(v.id)
                 if desc.startswith("L") and self.is_enum(desc[1:-1]):
                     val = self.enum_constants(desc[1:-1])[val]
-                self.field_defaults[field] = val
+                self.field_defaults[field_name] = val
         self.heap_after_ctor = {k: v for k, v in state.heap.items() if k[0] != ("模型",)}
 
     def translate(self, with_prepare: bool = True) -> dict:
@@ -1657,12 +1657,12 @@ class Translator(LibrarySim):
     def export_graph(self, state: HeapState, methods: list[str]) -> dict:
         outs: dict[str, dict[str, int]] = {}
         roots: list[int] = []
-        for (k, field), v in sorted(state.heap.items(), key=lambda kv: (str(kv[0][0]), kv[0][1])):
-            if k[0] != "部件" or field not in pose_fields:
+        for (k, field_name), v in sorted(state.heap.items(), key=lambda kv: (str(kv[0][0]), kv[0][1])):
+            if k[0] != "部件" or field_name not in pose_fields:
                 continue
             if not isinstance(v, N):
-                raise Unsupported(f"部件 {k[1]}.{field} 的值不是数：{v!r}")
-            outs.setdefault(k[1], {})[field] = v.id
+                raise Unsupported(f"部件 {k[1]}.{field_name} 的值不是数：{v!r}")
+            outs.setdefault(k[1], {})[field_name] = v.id
             roots.append(v.id)
         nodes, new_ids = self.g.export_graph(roots)
         outputs = {p: {f: new_ids[i] for f, i in fs.items()} for p, fs in outs.items()}

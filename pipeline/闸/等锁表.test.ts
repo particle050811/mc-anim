@@ -4,7 +4,7 @@ import type { SchedulerEvent } from './调度日志.ts';
 
 const isoAt = (sec: number) => new Date(Date.UTC(2026, 10, 7) + sec * 1000).toISOString();
 const ticketEvents = (ticket: string, cwd: string, taskKind: string, arriveTime: number, acquire: number, releaseSec: number, lowPriority = false): SchedulerEvent[] => {
-  const base = { 票: ticket, lock: '渲染', 主机: 'h', 发起: { cwd }, 声明: { 种: taskKind, ...(lowPriority ? { 低优先: lowPriority } : {}) }, v: 1 };
+  const base = { 票: ticket, 锁: '渲染', 主机: 'h', 发起: { cwd }, 声明: { 种: taskKind, ...(lowPriority ? { 低优先: lowPriority } : {}) }, v: 1 };
   return [
     { ...base, 事: '领票', 时: isoAt(arriveTime) },
     { ...base, 事: '拿锁', 时: isoAt(acquire), 等锁秒: acquire - arriveTime },
@@ -21,8 +21,8 @@ it('按 主检出/worktree × 种 × 低优先 分组；worktree 静帧等锁的
     ],
     () => true,
   );
-  expect(Object.keys(r.groups)).toEqual(['主检出 render 低优先', 'worktree still']);
-  expect(r.groups['worktree still']).toEqual({ 票: 2, waitHours: 0.03, lockHours: 0 });
-  expect(r.worktreeStillWait).toMatchObject({ 票: 2, longestSec: 90 });
-  expect(r.stillWaitHolders).toEqual({ '主检出 render 低优先': 0.03 });
+  expect(Object.keys(r.分组)).toEqual(['主检出 render 低优先', 'worktree still']);
+  expect(r.分组['worktree still']).toEqual({ 票: 2, 等锁时: 0.03, 占锁时: 0 });
+  expect(r.worktree静帧等锁).toMatchObject({ 票: 2, 最长秒: 90 });
+  expect(r.静帧等锁时锁在谁手里).toEqual({ '主检出 render 低优先': 0.03 });
 });

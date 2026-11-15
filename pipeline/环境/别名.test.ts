@@ -17,7 +17,7 @@ const targetFile = 'engine/core/资产目录.ts';
 /** 在仓库外的临时目录造一个引用 @engine/ 的文件（模拟放在仓库外的作品） */
 const makeExternalFile = () => {
   const d = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'anim-别名-')));
-  fs.writeFileSync(path.join(d, '甲.ts'), `import { 资产目录 } from '@engine/core/资产目录.ts';\nexport default 资产目录({ b: 2, a: 1 }).keys();\n`);
+  fs.writeFileSync(path.join(d, '甲.ts'), `import { assetDir } from '@engine/core/资产目录.ts';\nexport default assetDir({ b: 2, a: 1 }).keys();\n`);
   return d;
 };
 

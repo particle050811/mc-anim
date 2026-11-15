@@ -26,39 +26,39 @@ const fileUrl = (relPath: string) => JSON.stringify(pathToFileURL(path.join(impo
 
 // 子进程里跑：烘两次（第二次换个输出目录），比目录指纹；套编辑后的存档和包逐列比最高的方块
 const makeScript = (worldDir: string, outDir: string) => `
-import { 载入体素库 } from ${fileUrl('../体素库.ts')};
-import { 烘焙 } from ${fileUrl('./烘焙.ts')};
-import { 区域源 } from ${fileUrl('../区域源.ts')};
-import { 解析编辑 } from ${fileUrl('../编辑/编辑文件.ts')};
-import { 编辑套用器 } from ${fileUrl('../编辑/套用.ts')};
-import { 目录指纹 } from ${fileUrl('../版本.ts')};
-import { 块文件们, 块里的区段, 块号, 编格式1区段 } from ${fileUrl('./读区段.ts')};
-import { 转码目录, 逐格比目录 } from ${fileUrl('./转码.ts')};
-import { 包方块源, 存档方块源 } from ${fileUrl('../查询/源.ts')};
+import { loadVoxelLib } from ${fileUrl('../体素库.ts')};
+import { bake } from ${fileUrl('./烘焙.ts')};
+import { RegionSource } from ${fileUrl('../区域源.ts')};
+import { parseEdits } from ${fileUrl('../编辑/编辑文件.ts')};
+import { EditApplier } from ${fileUrl('../编辑/套用.ts')};
+import { dirFingerprint } from ${fileUrl('../版本.ts')};
+import { blockFiles, sectionsInBlock, blockCoordsFromName, encodeFormat1Section } from ${fileUrl('./读区段.ts')};
+import { transcodeDir, compareDirPerCell } from ${fileUrl('./转码.ts')};
+import { PackBlockSource, SaveBlockSource } from ${fileUrl('../查询/源.ts')};
 import fs from 'node:fs';
 import path from 'node:path';
-const 库 = await 载入体素库();
-const 编辑 = 解析编辑('[["步"]]\\n"命令" = ["setblock 5 70 5 minecraft:glass", "fill 20 61 2 22 63 4 minecraft:oak_planks"]', '/x/测.编辑.toml', 库.知识, () => { throw new Error('没有结构'); });
+const 库 = await loadVoxelLib();
+const 编辑 = parseEdits('[["步"]]\\n"命令" = ["setblock 5 70 5 minecraft:glass", "fill 20 61 2 22 63 4 minecraft:oak_planks"]', '/x/测.编辑.toml', 库.knowledge, () => { throw new Error('没有结构'); });
 const 区目录 = path.join(${JSON.stringify(worldDir)}, 'region');
 const 源们 = () => {
-  const 器 = new 编辑套用器(编辑, new 区域源(区目录, '1', null));
-  return new 区域源(区目录, '1', null, (r) => 器.套(r));
+  const 器 = new EditApplier(编辑, new RegionSource(区目录, '1', null));
+  return new RegionSource(区目录, '1', null, (r) => 器.applyEdits(r));
 };
 const 版本们 = [];
 for (const 名 of ['a', 'b']) {
   const 出 = path.join(${JSON.stringify(outDir)}, 名);
   fs.mkdirSync(出, { recursive: true });
   const 源 = 源们();
-  await 烘焙({ 区域们: [[0, 0]], 取区域: (rx, rz) => 源.区域(rx, rz), 维度: '主世界', 原点: [0, 64, 0], 输出: 出, 库 });
-  版本们.push(目录指纹(出));
+  await bake({ regions: [[0, 0]], getRegion: (rx, rz) => 源.区域(rx, rz), 维度: '主世界', 原点: [0, 64, 0], 输出: 出, 库 });
+  版本们.push(dirFingerprint(出));
 }
-const 存 = new 存档方块源(源们(), '存档');
-const 包 = new 包方块源(path.join(${JSON.stringify(outDir)}, 'a'), 库, '包');
+const 存 = new SaveBlockSource(源们(), '存档');
+const 包 = new PackBlockSource(path.join(${JSON.stringify(outDir)}, 'a'), 库, '包');
 const 不同 = [];
 let 比了 = 0;
 for (let z = 0; z < 16; z++)
   for (let x = 0; x < 32; x++) {
-    const a = 存.顶(x, z), b = 包.顶(x, z);
+    const a = 存.topBlockAt(x, z), b = 包.topBlockAt(x, z);
     比了++;
     if (a?.y !== b?.y || a?.状态 !== b?.状态) 不同.push([x, z, a, b]);
   }
@@ -66,23 +66,23 @@ for (let z = 0; z < 16; z++)
 // 把烘出来的包倒成格式 1（旧包的样子），转码回来要和直接烘的字节相同；改掉一格，逐格比要报出来
 const 写旧包 = (源, 目标, 改一格) => {
   fs.mkdirSync(目标, { recursive: true });
-  for (const 名 of 块文件们(源)) {
-    const 索引 = new Uint32Array(2 * 库.区段包.tileEntryCount), 段们 = [];
-    let off = 库.区段包.tileHeaderLen, 改了 = false;
-    for (const s of 块里的区段(库, path.join(源, 名))) {
+  for (const 名 of blockFiles(源)) {
+    const 索引 = new Uint32Array(2 * 库.sectionPack.tileEntryCount), 段们 = [];
+    let off = 库.sectionPack.tileHeaderLen, 改了 = false;
+    for (const s of sectionsInBlock(库, path.join(源, 名))) {
       const d = s.取();
       if (改一格 && !改了 && d.palette.length > 2) {
         d.paletteIndex[0] = d.paletteIndex[0] === 1 ? 0 : 1;
         改了 = true;
       }
-      const gz = 编格式1区段(d);
+      const gz = encodeFormat1Section(d);
       索引[2 * s.slot] = off;
       索引[2 * s.slot + 1] = gz.length;
       off += gz.length;
       段们.push(gz);
     }
-    const [ti, tj] = 块号(名);
-    const 头 = 库.区段包.encodeTileHeader(ti, tj, 索引);
+    const [ti, tj] = blockCoordsFromName(名);
+    const 头 = 库.sectionPack.encodeTileHeader(ti, tj, 索引);
     new DataView(头.buffer).setUint32(4, 1, true);
     fs.writeFileSync(path.join(目标, 名), Buffer.concat([头, ...段们]));
   }
@@ -92,16 +92,16 @@ const 写旧包 = (源, 目标, 改一格) => {
 const 根 = ${JSON.stringify(outDir)};
 写旧包(path.join(根, 'a'), path.join(根, '旧'), false);
 fs.mkdirSync(path.join(根, '转'));
-await 转码目录(path.join(根, '旧'), path.join(根, '转'), 1);
-const 转版本 = 目录指纹(path.join(根, '转'));
+await transcodeDir(path.join(根, '旧'), path.join(根, '转'), 1);
+const 转版本 = dirFingerprint(path.join(根, '转'));
 fs.mkdirSync(path.join(根, '重转'));
-await 转码目录(path.join(根, '旧'), path.join(根, '重转'), 2);
-const 重转版本 = 目录指纹(path.join(根, '重转'));
+await transcodeDir(path.join(根, '旧'), path.join(根, '重转'), 2);
+const 重转版本 = dirFingerprint(path.join(根, '重转'));
 const 模型大小 = fs.statSync(path.join(根, 'a', '模型.bin')).size;
-const 逐格 = await 逐格比目录(path.join(根, '旧'), path.join(根, '转'), 1);
+const 逐格 = await compareDirPerCell(path.join(根, '旧'), path.join(根, '转'), 1);
 写旧包(path.join(根, 'a'), path.join(根, '坏'), true);
-const 比坏 = await 逐格比目录(path.join(根, '坏'), path.join(根, '转'), 1).then(() => '没报', (e) => e.message);
-console.log(JSON.stringify({ 版本们, 比了, 不同: 不同.slice(0, 5), 玻璃: 包.顶(5, 5), 木板: 包.顶(21, 3), 空: 包.列(40, 3), 转版本, 重转版本, 模型大小, 逐格, 比坏 }));
+const 比坏 = await compareDirPerCell(path.join(根, '坏'), path.join(根, '转'), 1).then(() => '没报', (e) => e.message);
+console.log(JSON.stringify({ versions: 版本们, compared: 比了, 不同: 不同.slice(0, 5), glassSample: 包.topBlockAt(5, 5), plankSample: 包.topBlockAt(21, 3), 空: 包.列(40, 3), convertedVersion: 转版本, reconvertedVersion: 重转版本, modelSize: 模型大小, perCellResult: 逐格, mismatchMessage: 比坏 }));
 `;
 
 describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字节）', () => {
@@ -136,23 +136,23 @@ describe.skipIf(!hasBytes)('烘焙（端到端，要数据根里的方块表字�
 
 // 有顶的维度（下界）：同一个存档不开、开 全高 各烘一次，逐列看存下了哪几段
 const fullHeightScript = (worldDir: string, outDir: string) => `
-import { 载入体素库 } from ${fileUrl('../体素库.ts')};
-import { 烘焙 } from ${fileUrl('./烘焙.ts')};
-import { 区域源 } from ${fileUrl('../区域源.ts')};
-import { 目录指纹 } from ${fileUrl('../版本.ts')};
-import { 包方块源 } from ${fileUrl('../查询/源.ts')};
+import { loadVoxelLib } from ${fileUrl('../体素库.ts')};
+import { bake } from ${fileUrl('./烘焙.ts')};
+import { RegionSource } from ${fileUrl('../区域源.ts')};
+import { dirFingerprint } from ${fileUrl('../版本.ts')};
+import { PackBlockSource } from ${fileUrl('../查询/源.ts')};
 import fs from 'node:fs';
 import path from 'node:path';
-const 库 = await 载入体素库();
+const 库 = await loadVoxelLib();
 const 区目录 = path.join(${JSON.stringify(worldDir)}, 'region');
 const 出 = {};
 for (const [名, 全高] of [['露天', undefined], ['露天2', false], ['全高', true], ['全高2', true]]) {
   const dir = path.join(${JSON.stringify(outDir)}, 名);
   fs.mkdirSync(dir, { recursive: true });
-  const 源 = new 区域源(区目录, '1', null);
-  await 烘焙({ 区域们: [[0, 0]], 取区域: (rx, rz) => 源.区域(rx, rz), 维度: '下界', 原点: [0, 0, 0], 全高, 输出: dir, 库 });
-  const 包 = new 包方块源(dir, 库, 名);
-  出[名] = { 版本: 目录指纹(dir), 海: 包.列(5, 5), 洞: 包.列(20, 5) };
+  const 源 = new RegionSource(区目录, '1', null);
+  await bake({ regions: [[0, 0]], getRegion: (rx, rz) => 源.区域(rx, rz), 维度: '下界', 原点: [0, 0, 0], fullHeight: 全高, 输出: dir, 库 });
+  const 包 = new PackBlockSource(dir, 库, 名);
+  出[名] = { 版本: dirFingerprint(dir), 海: 包.列(5, 5), caveColumn: 包.列(20, 5) };
 }
 console.log(JSON.stringify(出));
 `;
@@ -177,22 +177,22 @@ describe.skipIf(!hasBytes)('烘焙 全高（有顶的维度）', () => {
     expect(r.status, r.stderr).toBe(0);
     type Column = { yBottom: number; yTop: number; 段: { bottom: number; topY: number; 状态: string | null }[] } | null;
     const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as Record<string, { 版本: string; 海: Column; caveColumn: Column }>;
-    expect(o.openAir2!.版本).toBe(o.openAir!.版本);
-    expect(o.fullHeight2!.版本).toBe(o.fullHeight!.版本);
-    expect(o.fullHeight!.版本).not.toBe(o.openAir!.版本);
+    expect(o.露天2!.版本).toBe(o.露天!.版本);
+    expect(o.全高2!.版本).toBe(o.全高!.版本);
+    expect(o.全高!.版本).not.toBe(o.露天!.版本);
     // 不开：地表 = 基岩顶（y 128），只留它下面 4 格
-    expect(o.openAir!.海!.yBottom).toBe(124);
-    expect(o.openAir!.海!.段.some((s) => s.状态?.startsWith('minecraft:lava'))).toBe(false);
+    expect(o.露天!.海!.yBottom).toBe(124);
+    expect(o.露天!.海!.段.some((s) => s.状态?.startsWith('minecraft:lava'))).toBe(false);
     // 开：整个区段从最低的空当（熔岩底 y 10）往下 4 格起存；熔岩、空腔、基岩顶都在
     const segTuples = (c: Column) => c!.段.map((s) => [s.状态, s.bottom, s.topY]);
-    expect(o.fullHeight!.海!.yBottom).toBe(6);
-    expect(segTuples(o.fullHeight!.海)).toEqual([
+    expect(o.全高!.海!.yBottom).toBe(6);
+    expect(segTuples(o.全高!.海)).toEqual([
       ['minecraft:bedrock', 120, 127],
       ['minecraft:air', 32, 119],
       ['minecraft:lava[level=0]', 10, 31],
       ['minecraft:netherrack', 6, 9],
     ]);
-    expect(segTuples(o.fullHeight!.caveColumn)).toEqual([
+    expect(segTuples(o.全高!.caveColumn)).toEqual([
       ['minecraft:bedrock', 120, 127],
       ['minecraft:netherrack', 60, 119],
       ['minecraft:air', 40, 59],
@@ -203,32 +203,32 @@ describe.skipIf(!hasBytes)('烘焙 全高（有顶的维度）', () => {
 
 // 可见变换：不做、做、保真盒罩住 各烘一次，再把不做的那份 转码 做上，比目录指纹和几列
 const visibleScript = (world: string, outDir: string) => `
-import { 载入体素库 } from ${fileUrl('../体素库.ts')};
-import { 烘焙 } from ${fileUrl('./烘焙.ts')};
-import { 区域源 } from ${fileUrl('../区域源.ts')};
-import { 目录指纹 } from ${fileUrl('../版本.ts')};
-import { 转码目录, 逐格比目录 } from ${fileUrl('./转码.ts')};
-import { 包方块源 } from ${fileUrl('../查询/源.ts')};
+import { loadVoxelLib } from ${fileUrl('../体素库.ts')};
+import { bake } from ${fileUrl('./烘焙.ts')};
+import { RegionSource } from ${fileUrl('../区域源.ts')};
+import { dirFingerprint } from ${fileUrl('../版本.ts')};
+import { transcodeDir, compareDirPerCell } from ${fileUrl('./转码.ts')};
+import { PackBlockSource } from ${fileUrl('../查询/源.ts')};
 import fs from 'node:fs';
 import path from 'node:path';
-const 库 = await 载入体素库();
+const 库 = await loadVoxelLib();
 const 区目录 = path.join(${JSON.stringify(world)}, 'region'), 根 = ${JSON.stringify(outDir)};
-const 远 = { 填充: 'minecraft:stone', 保真: [[1000, 1000, 1001, 1001]] }, 罩 = { 填充: 'minecraft:stone', 保真: [[9, 9, 9, 9]] };
+const 远 = { fillBlock: 'minecraft:stone', 保真: [[1000, 1000, 1001, 1001]] }, 罩 = { fillBlock: 'minecraft:stone', 保真: [[9, 9, 9, 9]] };
 const 出 = {};
 for (const [名, 可见] of [['原样', null], ['做', 远], ['罩住', 罩]]) {
   const dir = path.join(根, 名);
   fs.mkdirSync(dir, { recursive: true });
-  const 源 = new 区域源(区目录, '1', null);
-  await 烘焙({ 区域们: [[0, 0]], 取区域: (rx, rz) => 源.区域(rx, rz), 维度: '主世界', 原点: [0, 64, 0], 输出: dir, 库, 可见 });
-  const 包 = new 包方块源(dir, 库, 名);
-  出[名] = { 版本: 目录指纹(dir), 腔: 包.列(9, 9), 地: 包.列(20, 5), 可见: JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')).可见 ?? null };
+  const 源 = new RegionSource(区目录, '1', null);
+  await bake({ regions: [[0, 0]], getRegion: (rx, rz) => 源.区域(rx, rz), 维度: '主世界', 原点: [0, 64, 0], 输出: dir, 库, visible: 可见 });
+  const 包 = new PackBlockSource(dir, 库, 名);
+  出[名] = { 版本: dirFingerprint(dir), cavity: 包.列(9, 9), ground: 包.列(20, 5), visible: JSON.parse(fs.readFileSync(path.join(dir, '包.json'), 'utf8')).可见 ?? null };
 }
 fs.mkdirSync(path.join(根, '后做'));
-const 变换 = (await 转码目录(path.join(根, '原样'), path.join(根, '后做'), 2, undefined, 远)).变换;
-出.后做 = 目录指纹(path.join(根, '后做'));
-出.逐格 = await 逐格比目录(path.join(根, '原样'), path.join(根, '做'), 1, undefined, 远);
-出.变换 = 变换;
-出.设置不符 = await 逐格比目录(path.join(根, '原样'), path.join(根, '做'), 1, undefined, 罩).then(() => '没报', (e) => e.message);
+const 变换 = (await transcodeDir(path.join(根, '原样'), path.join(根, '后做'), 2, undefined, 远)).transformCounts;
+出.laterVersion = dirFingerprint(path.join(根, '后做'));
+出.perCellResult = await compareDirPerCell(path.join(根, '原样'), path.join(根, '做'), 1, undefined, 远);
+出.transformCounts = 变换;
+出.settingMismatch = await compareDirPerCell(path.join(根, '原样'), path.join(根, '做'), 1, undefined, 罩).then(() => '没报', (e) => e.message);
 console.log(JSON.stringify(出));
 `;
 
@@ -247,22 +247,22 @@ describe.skipIf(!hasBytes)('烘焙 可见变换', () => {
     expect(r.status, r.stderr).toBe(0);
     type Column = { 段: { bottom: number; topY: number; 状态: string | null }[] } | null;
     type Pack = { 版本: string; cavity: Column; ground: Column; visible: unknown };
-    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { 原样: Pack; built: Pack; covered: Pack; laterVersion: string; perCellResult: Record<string, number>; transformCounts: Record<string, number>; settingMismatch: string };
+    const o = JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { 原样: Pack; 做: Pack; 罩住: Pack; laterVersion: string; perCellResult: Record<string, number>; transformCounts: Record<string, number>; settingMismatch: string };
     const segTuples = (c: Column) => c!.段.filter((s) => s.状态 !== 'minecraft:air').map((s) => [s.状态, s.bottom, s.topY]);
-    expect(o.laterVersion).toBe(o.built.版本); // 烘焙、转码同一条路
-    expect(o.built.版本).not.toBe(o.原样.版本);
-    expect(o.built.visible).toEqual({ fillBlock: 'minecraft:stone', 保真: [[1000, 1000, 1001, 1001]] });
+    expect(o.laterVersion).toBe(o.做.版本); // 烘焙、转码同一条路
+    expect(o.做.版本).not.toBe(o.原样.版本);
+    expect(o.做.visible).toEqual({ 填充: 'minecraft:stone', 保真: [[1000, 1000, 1001, 1001]] });
     expect(o.原样.visible).toBeNull();
     // 包只存到地表往下 3 格（y 57），腔贴着最下一层（再往下当实心）。原样：腔在；做了：腔填实，草下面埋住的泥土换石头，草不动
     const grass = ['minecraft:grass_block[snowy=false]', 60, 60];
     expect(segTuples(o.原样.cavity)).toEqual([grass, ['minecraft:dirt', 59, 59]]);
     expect(segTuples(o.原样.ground)).toEqual([grass, ['minecraft:dirt', 57, 59]]);
-    expect(segTuples(o.built.cavity)).toEqual([grass, ['minecraft:stone', 57, 59]]);
-    expect(segTuples(o.built.ground)).toEqual([grass, ['minecraft:stone', 57, 59]]);
+    expect(segTuples(o.做.cavity)).toEqual([grass, ['minecraft:stone', 57, 59]]);
+    expect(segTuples(o.做.ground)).toEqual([grass, ['minecraft:stone', 57, 59]]);
     // 保真盒碰到这个区段，整块原样（各级都是）
-    expect(segTuples(o.covered.cavity)).toEqual(segTuples(o.原样.cavity));
-    expect(segTuples(o.covered.ground)).toEqual(segTuples(o.原样.ground));
-    expect(o.transformCounts.填).toBe(9 * 2);
+    expect(segTuples(o.罩住.cavity)).toEqual(segTuples(o.原样.cavity));
+    expect(segTuples(o.罩住.ground)).toEqual(segTuples(o.原样.ground));
+    expect(o.transformCounts.filledCount).toBe(9 * 2);
     expect(o.transformCounts.buriedCount).toBeGreaterThan(0);
     expect(o.perCellResult.changedSectionCount).toBeGreaterThan(0);
     expect(o.perCellResult.meshCheckCount).toBe(o.perCellResult.changedSectionCount);

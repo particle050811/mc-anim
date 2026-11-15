@@ -6,13 +6,13 @@ import { codeRoot } from '../环境/路径.ts';
 import { pypinyinVersion, reviewGroup, voicePyCommand } from './python.ts';
 import { listCandidates, reviewReportText, writeCandidateNote, unpackReply, type ReviewRequest } from './复核.ts';
 
-const makeRequest = (wav: string): ReviewRequest => ({ wav, id: '7-黄叛-受死', 念: '怪物受死！', 语言: '中文', 语气: '怒喝', refAudio: '/参考.wav' });
+const makeRequest = (wav: string): ReviewRequest => ({ wav, id: '7-黄叛-受死', 念: '怪物受死！', 语言: '中文', 语气: '怒喝', 参考音频: '/参考.wav' });
 
 describe('配音复核', () => {
   it('回包按请求拆回每个 wav；缺东西的项记 缺；条数对不上就报错', () => {
     const qs = [makeRequest('/a.wav'), makeRequest('/b.wav')];
-    const m = unpackReply(qs, { 起伏: { 结果: [{ 音高跨度st: 10 }, { 音高跨度st: 3 }] }, 听写: { missing: ['还没接'] } });
-    expect(m.get('/b.wav')).toEqual({ 起伏: { 音高跨度st: 3 }, 听写: { missing: ['还没接'] } });
+    const m = unpackReply(qs, { 起伏: { 结果: [{ 音高跨度st: 10 }, { 音高跨度st: 3 }] }, 听写: { 缺: ['还没接'] } });
+    expect(m.get('/b.wav')).toEqual({ 起伏: { 音高跨度st: 3 }, 听写: { 缺: ['还没接'] } });
     expect(() => unpackReply(qs, { 起伏: { 结果: [{}] } })).toThrow(/返回 1 条，请求 2 条/);
   });
 

@@ -67,7 +67,7 @@ const OrthoRig: React.FC<{ 眼: V3; 看: V3 }> = ({ 眼: eye, 看: lookAt }) => 
 const setupView = (v: View) => {
   const liYing = v.cameraRig === '封面' ? { ...standPose(originPos), yaw: magicalWineFoxTurnTo(originPos, coverEye, 50, '左').yaw } : { ...standPose(originPos), yaw: 180 };
   const display = v.handheldDisplay ? DISPLAY.handheld.thirdperson_righthand : undefined;
-  const holdFlowerProps = (facing?: HeldItem['facing']): Partial<MagicalWineFoxExProps> => (v.holdFlower ? { [v.leftHand ? '左手' : '右手']: { item: <MoonBellLily />, display, facing } } : {});
+  const holdFlowerProps = (facing?: HeldItem['facing']): Partial<MagicalWineFoxExProps> => (v.holdFlower ? { [v.leftHand ? 'leftHand' : 'rightHand']: { item: <MoonBellLily />, display, facing } } : {});
   const bottomProps: MagicalWineFoxExProps = { pose: liYing, stancePose: v.stancePose, expression: v.expression, blink: v.blink, 秒: v.秒, 看: Array.isArray(v.看) ? v.看 : undefined, ...holdFlowerProps() };
   const bones = magicalWineFoxExBones(bottomProps);
   const headPos = addVec(magicalWineFoxBoneAt(liYing, bones, 'Head'), [0, 0, 0.12]);

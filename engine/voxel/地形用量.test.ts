@@ -12,7 +12,7 @@ afterEach(() => {
 
 describe('地形用量', () => {
   it('传了段名才记；读过的包和区段都在，没读的包不在', () => {
-    process.env[terrainVersionEnv] = JSON.stringify({ first: 'v1', second: 'v2' });
+    process.env[terrainVersionEnv] = JSON.stringify({ 甲: 'v1', 乙: 'v2' });
     packDir('甲');
     recordSectionRead('甲', ['0|1|2']);
     expect(g.terrainUsage).toBeUndefined();

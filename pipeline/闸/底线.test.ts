@@ -12,7 +12,7 @@ import { tryAcquire, releaseLock } from './锁.ts';
 let dir: string;
 beforeEach(() => { dir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-底线-')); });
 afterEach(() => { fs.rmSync(dir, {recursive:true, force:true}); delete process.env[ancestorLockEnv]; });
-const makeMemory = (n: number) => ({总:100,free:n,freePercent:n,swapTotal:0,swapUsed:0});
+const makeMemory = (n: number) => ({总:100,空闲:n,空闲百分比:n,交换区总:0,交换区已用:0});
 it('低内存无锁但有活票；3 分钟告警；压力 4 只有强放行；下一张不继承', async () => {
   let now = Date.now(), pressure = 1, loopCount = 0, prevName = '', task = '', checkNext = false;
   const hints: string[] = [];
@@ -27,7 +27,7 @@ it('低内存无锁但有活票；3 分钟告警；压力 4 只有强放行；�
       if (loopCount>=4) {
         task=JSON.parse(fs.readFileSync(path.join(dir,'渲染.排队',prevName),'utf8')).任务;
         fs.mkdirSync(path.join(dir,'指令'),{recursive:true});
-        fs.writeFileSync(path.join(dir,'指令',task+'.json'),JSON.stringify({action:'放行',强:loopCount>=5,untilMs:now+60_000,reason:'测试'}));
+        fs.writeFileSync(path.join(dir,'指令',task+'.json'),JSON.stringify({动作:'放行',强:loopCount>=5,至:now+60_000,为什么:'测试'}));
       }
     }};
   await passRenderGate(async()=>{},s=>hints.push(s),e);
@@ -45,7 +45,7 @@ it('同进程嵌套和祖先持锁都立即拒绝', async()=>{
   await expect(passRenderGate(async()=>{},()=>{},e)).rejects.toThrow(`祖先 pid ${process.ppid}`);
 });
 it('只动文件不判内存和压力', async()=>{
-  await passRenderGate(async()=>{},()=>{}, {lockDir:dir,localHost:os.hostname(),readMemory:()=>makeMemory(0),readPressure:()=>4}, {skipRender:true});
+  await passRenderGate(async()=>{},()=>{}, {lockDir:dir,localHost:os.hostname(),readMemory:()=>makeMemory(0),readPressure:()=>4}, {不开渲染:true});
 });
 it('冻结旧轮到我和试拿认新票 JSON、纯 pid 锁及尾部暂缓票',()=>{
   const q=path.join(dir,'渲染.排队');fs.mkdirSync(q);
@@ -105,19 +105,19 @@ it('锁在活进程手里不算等内存：票不写字段、不告警；锁空�
     loopCount++;
     const c = readTicketContent();
     if (loopCount <= 5) {
-      expect(c.waitMemStart).toBeUndefined();
+      expect(c.等内存起).toBeUndefined();
       expect(c.卡在).toBeUndefined();
       expect(hasAlarm()).toBe(false);
       expect(eventsNamed('告警').filter(x => x.类 === '等内存')).toEqual([]);
     }
     if (loopCount === 5) fs.rmSync(lockPath());
     if (loopCount === 6) {
-      expect(c.waitMemStart).toBe(now);
+      expect(c.等内存起).toBe(now);
       expect(c.卡在).toBe('内存');
       fs.writeFileSync(lockPath(), `${process.ppid}\n`);
     }
     if (loopCount === 7) {
-      expect(c.waitMemStart).toBeUndefined();
+      expect(c.等内存起).toBeUndefined();
       expect(c.卡在).toBeUndefined();
       fs.rmSync(lockPath());
     }
@@ -137,10 +137,10 @@ it('票被旧内容盖掉，票主人下一轮补回；旧内容写回的残留�
   const editTicket = (mutate: (c: Record<string, unknown>) => void) => { const c = readTicketContent(); mutate(c); fs.writeFileSync(path.join(dir, '渲染.排队', ticketFiles()[0]!), JSON.stringify(c)); };
   await passRenderGate(async () => {}, () => {}, { ...baseEnv(), readMemory: () => makeMemory(free), sleep: async () => {
     loopCount++;
-    if (loopCount === 1) { startMs = readTicketContent().waitMemStart; expect(startMs).toBeGreaterThan(0); editTicket(c => { delete c.waitMemStart; delete c.卡在; }); }
-    if (loopCount === 2) { expect(readTicketContent()).toMatchObject({ waitMemStart: startMs, stuckOn: '内存' }); fs.writeFileSync(lockPath(), `${process.ppid}\n`); }
-    if (loopCount === 3) { expect(readTicketContent().卡在).toBeUndefined(); editTicket(c => { c.waitMemStart = 1; c.卡在 = '内存'; }); }
-    if (loopCount === 4) { expect(readTicketContent().卡在).toBeUndefined(); expect(readTicketContent().waitMemStart).toBeUndefined(); fs.rmSync(lockPath()); free = 80; }
+    if (loopCount === 1) { startMs = readTicketContent().等内存起; expect(startMs).toBeGreaterThan(0); editTicket(c => { delete c.等内存起; delete c.卡在; }); }
+    if (loopCount === 2) { expect(readTicketContent()).toMatchObject({ 等内存起: startMs, 卡在: '内存' }); fs.writeFileSync(lockPath(), `${process.ppid}\n`); }
+    if (loopCount === 3) { expect(readTicketContent().卡在).toBeUndefined(); editTicket(c => { c.等内存起 = 1; c.卡在 = '内存'; }); }
+    if (loopCount === 4) { expect(readTicketContent().卡在).toBeUndefined(); expect(readTicketContent().等内存起).toBeUndefined(); fs.rmSync(lockPath()); free = 80; }
   } }, { 种: 'still' });
   expect(loopCount).toBe(4);
 });
@@ -151,8 +151,8 @@ it('放行闸的票态同样补回，等内存秒按原起点算', async () => {
   await passGate(async () => {}, () => {}, { ...baseEnv(), nowMs: () => now, coreCount: () => 10, load1Min: () => 0, readMemory: () => makeMemory(loopCount < 2 ? 10 : 80), sleep: async () => {
     loopCount++;
     const [f, c] = readFirstQueued();
-    if (loopCount === 1) { startMs = c.waitMemStart; expect(startMs).toBe(now); delete c.waitMemStart; delete c.卡在; fs.writeFileSync(f, JSON.stringify(c)); now += 60_000; }
-    if (loopCount === 2) expect(c).toMatchObject({ waitMemStart: startMs, stuckOn: '内存' });
+    if (loopCount === 1) { startMs = c.等内存起; expect(startMs).toBe(now); delete c.等内存起; delete c.卡在; fs.writeFileSync(f, JSON.stringify(c)); now += 60_000; }
+    if (loopCount === 2) expect(c).toMatchObject({ 等内存起: startMs, 卡在: '内存' });
   } }, { 种: 'voice' });
   expect(eventsNamed('等内存起')).toHaveLength(1);
   expect(eventsNamed('等内存止')).toMatchObject([{ 秒: 60 }]);
@@ -207,7 +207,7 @@ it('拿到锁后抛错也放锁、删票、交棒', async () => {
 });
 
 it('本机名跟配置走：ANIM_HOST 同时进环境和日志', () => {
-  const testDir = import.meta.dirname, scriptSource = `import {取调度环境} from ${JSON.stringify(path.join(testDir, '任务.ts'))};import {记调度,读调度} from ${JSON.stringify(path.join(testDir, '调度日志.ts'))};const d=${JSON.stringify(dir)};记调度(d,'测',{});console.log(取调度环境({锁目录:d}).本机,读调度(d)[0].主机);`;
+  const testDir = import.meta.dirname, scriptSource = `import {resolveSchedulerEnv} from ${JSON.stringify(path.join(testDir, '任务.ts'))};import {recordSchedulerEvent,readSchedulerEvents} from ${JSON.stringify(path.join(testDir, '调度日志.ts'))};const d=${JSON.stringify(dir)};recordSchedulerEvent(d,'测',{});console.log(resolveSchedulerEnv({lockDir:d}).localHost,readSchedulerEvents(d)[0].主机);`;
   const out = execFileSync(process.execPath, ['--input-type=module', '-e', scriptSource], { encoding: 'utf8', env: { ...process.env, ANIM_HOST: '测试机' } });
   expect(out.trim()).toBe('测试机 测试机');
 });

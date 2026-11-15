@@ -33,7 +33,7 @@ describe('窗口段：段.ts 里不写段键、段长、画幅', () => {
       声音: ({ 放: play, 说: say, 事件: events }) => [play('音效/门', events.开门), say('9-甲-你好', events.进门 + 0.02)],
     });
     expect(seg).toMatchObject({ 场: '9-试场', 秒: 2, 宽: 1280, 高: 720, 地形: [], sceneWindow: { startSec: 1, endSec: 3 }, framework: '窗口段' });
-    expect(seg.eventSec).toEqual({ doorOpen: 0, enterDoor: 0.5, doorClose: 2 });
+    expect(seg.eventSec).toEqual({ 开门: 0, 进门: 0.5, 关门: 2 });
     expect(seg.声音).toEqual([
       { 秒: 0, 资产: '音效/门', 名: '门', 长秒: 0.5 },
       { 秒: 0.52, 台词: '9-甲-你好' },

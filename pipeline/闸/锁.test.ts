@@ -46,7 +46,7 @@ const spawnLockHolder = (cmd: string, args: string[], env: NodeJS.ProcessEnv = {
   });
 
 const spawnNodeLockHolder = (f: string) =>
-  spawnLockHolder(process.execPath, ['--input-type=module', '-e', `import {试拿} from ${JSON.stringify(lockModule)}; console.log(试拿(${JSON.stringify(f)}, ${JSON.stringify(localHost)})); setInterval(() => {}, 1000);`]);
+  spawnLockHolder(process.execPath, ['--input-type=module', '-e', `import {tryAcquire} from ${JSON.stringify(lockModule)}; console.log(tryAcquire(${JSON.stringify(f)}, ${JSON.stringify(localHost)})); setInterval(() => {}, 1000);`]);
 
 
 describe('锁协议', () => {
@@ -110,7 +110,7 @@ describe('pid 被复用', () => {
       reclaimDeadLock(file, localHost, p => reclaimed.push(p));
       expect(fs.existsSync(file)).toBe(false);
       expect(reclaimed).toEqual([c.pid]);
-      const ticketFile = path.join(dir, '票'), ticket = { 名: '票', 文件: ticketFile, pid: c.pid!, 主机: hostSlug(localHost), 时间: 0, ticketContent: null };
+      const ticketFile = path.join(dir, '票'), ticket = { 名: '票', 文件: ticketFile, pid: c.pid!, 主机: hostSlug(localHost), 时间: 0, 内容: null };
       fs.writeFileSync(ticketFile, '');
       expect(ticketAlive(ticket, localHost)).toBe(true);
       fs.utimesSync(ticketFile, tenMinutesAgo(), tenMinutesAgo());

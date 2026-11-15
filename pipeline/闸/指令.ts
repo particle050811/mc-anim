@@ -3,10 +3,10 @@ import path from 'node:path';
 import { readJson, writeJson, promptOnly } from './文件.ts';
 import type { SchedulerEnv } from './任务.ts';
 export type Directive = {
-    action: string;
-    reason: string;
+    动作: string;
+    为什么: string;
     时: number;
-    untilMs?: number;
+    至?: number;
     强?: boolean;
     票?: string;
     任务?: string;
@@ -16,18 +16,18 @@ export const readDirective = (e: SchedulerEnv, id: string) => readJson<Directive
 export const writeDirective = (e: SchedulerEnv, id: string, c: Directive) => writeJson(directiveFile(e, id), c);
 export const deleteDirective = (e: SchedulerEnv, id: string) => promptOnly('指令文件', () => fs.rmSync(directiveFile(e, id), { force: true }));
 /** 放行授权按任务 id 存（票会改名）；过了期不再算数：当时看的内存读数已经过时。 */
-export const getPassGrant = (e: SchedulerEnv, task: string) => { const c = readDirective(e, task); return c?.action === '放行' && (c.untilMs ?? 0) > e.nowMs() ? c : null; };
+export const getPassGrant = (e: SchedulerEnv, task: string) => { const c = readDirective(e, task); return c?.动作 === '放行' && (c.至 ?? 0) > e.nowMs() ? c : null; };
 /** 同一文件也放让路和取消，用掉授权不能把它们一起删了。 */
-export const consumePassGrant = (e: SchedulerEnv, task: string) => { if (readDirective(e, task)?.action === '放行')
+export const consumePassGrant = (e: SchedulerEnv, task: string) => { if (readDirective(e, task)?.动作 === '放行')
     deleteDirective(e, task); };
 export const orderFile = (e: SchedulerEnv, lane: string) => path.join(e.schedulerDir, '令', encodeURIComponent(lane));
 export const routeYield = (e: SchedulerEnv) => {
     const x = readJson<{
-        action: string;
-        reason: string;
-        untilMs: number;
+        动作: string;
+        为什么: string;
+        至: number;
     }>(orderFile(e, e.caller.路));
-    return e.caller.路 && x?.action === '让路' && x.untilMs > e.nowMs() ? x.reason : null;
+    return e.caller.路 && x?.动作 === '让路' && x.至 > e.nowMs() ? x.为什么 : null;
 };
 export const yieldExitCode = 75;
 export class SchedYieldError extends Error {

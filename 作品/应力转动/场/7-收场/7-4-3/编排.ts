@@ -20,7 +20,7 @@ import { borderTownPos } from '../../../地点/主世界116.ts';
 import { charPos, closedBookBox, guiPixel, pageCharCount, pageHeight, pageWidth, type BookPage } from '@库/物品/书.tsx';
 import bookPageJson from 'asset:数据/镜头/7-4-3/书页.字';
 import { pitCam } from './坑口.ts';
-const bookPageData = bookPageJson as unknown as { pages: string[][]; pageNumber: string; digits: string };
+const bookPageData = bookPageJson as unknown as { 页: string[][]; 页码: string; 数字: string };
 
 export const FPS = 24;
 export const shot1End = 78; // 坑口 3.25 秒
@@ -32,10 +32,10 @@ export const roomToWorld = (localPos: number[]): V3 => {
 };
 
 // ---------- 书 ----------
-const pageNumFmt = bookPageData.pageNumber;
+const pageNumFmt = bookPageData.页码;
 export const bookPages: [BookPage, BookPage] = [
-  { lines: bookPageData.pages[0], pageNo: 1, pageTotal: 2, pageNumFormat: pageNumFmt },
-  { lines: bookPageData.pages[1], pageNo: 2, pageTotal: 2, pageNumFormat: pageNumFmt },
+  { lines: bookPageData.页[0], pageNo: 1, pageTotal: 2, pageNumFormat: pageNumFmt },
+  { lines: bookPageData.页[1], pageNo: 2, pageTotal: 2, pageNumFormat: pageNumFmt },
 ];
 // 书摊在桌上：书脊中点（本地），书的上边朝西（离刘心忠远的那头，他坐在东边看是正的）：书模型的 +Y 是上边，画的时候绕 z 转 `bookYaw`。右页在北、左页在南。
 // 书的近边（东）在 x 6.68，正好是刘心忠坐着手够得着、胳膊又不压到书的地方（见下面「刘心忠」）；远边离卫兵近，递书时卫兵够得着

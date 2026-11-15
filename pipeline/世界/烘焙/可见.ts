@@ -20,10 +20,10 @@ export type PreserveBox = [number, number, number, number];
 /** 世界声明给的变换设置；填充 是换进去的整格方块（默认 minecraft:stone，下界没有石头要另写） */
 export type VisibleSettings = { fillBlock: string; 保真: PreserveBox[] };
 /** 记进 包.json 的 可见：包按它做过变换。保真 排好序，名字不记（改名字不该变包版本） */
-export type VisibleRecord = { fillBlock: string; 保真: PreserveBox[] };
-export const toRecord = (s: VisibleSettings): VisibleRecord => ({ fillBlock: s.fillBlock, 保真: [...s.保真].sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || a[3] - b[3]) });
+export type VisibleRecord = { 填充: string; 保真: PreserveBox[] };
+export const toRecord = (s: VisibleSettings): VisibleRecord => ({ 填充: s.fillBlock, 保真: [...s.保真].sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2] || a[3] - b[3]) });
 /** 记录 a 是不是盖住了 b 的全部保真盒（同填充） */
-export const recordCovers = (a: VisibleRecord, b: VisibleRecord) => a.fillBlock === b.fillBlock && b.保真.every((x) => a.保真.some((y) => y.join() === x.join()));
+export const recordCovers = (a: VisibleRecord, b: VisibleRecord) => a.填充 === b.填充 && b.保真.every((x) => a.保真.some((y) => y.join() === x.join()));
 
 /** 可改的区段格子：色板可以加项；满[p] = 色板第 p 项是不是整格；石 = 填充方块的色板号。宽：窗口每边几列，不写是 34（原型拼大区段时用） */
 export type CellGrid = { id: { L: number; i: number; j: number }; kBottom: number; nz: number; cm: Uint16Array; palette: number[]; fullMask: Uint8Array; stone: number; 宽?: number };

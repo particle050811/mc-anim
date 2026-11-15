@@ -143,9 +143,9 @@ describe('段签', () => {
     expect(historyLines.map((x) => x.结论)).toEqual([a.自查!.结论, '漂移']);
     // 重渲前的两套原样挪进 历史/，现在的是后半变那份
     const history = readSegStampHistory('核对-重渲', fp);
-    expect(history.map((h) => h.segStamp.母版.字节sha).sort()).toEqual([historyLines[0].prevByteSha, historyLines[1].prevByteSha].sort());
+    expect(history.map((h) => h.segStamp.母版.字节sha).sort()).toEqual([historyLines[0].上次字节sha, historyLines[1].上次字节sha].sort());
     for (const h of history) expect(fs.readdirSync(h.目录).sort()).toEqual(['声音.flac', '签.json']);
-    expect(historyLines.map((x) => x.storedAt)).toEqual(historyLines.map((x) => `历史/${x.prevByteSha.slice(0, 16)}`));
+    expect(historyLines.map((x) => x.存于)).toEqual(historyLines.map((x) => `历史/${x.上次字节sha.slice(0, 16)}`));
     expect(readSegStamp('核对-重渲', fp)!.母版.字节sha).toBe(await fileSha(copyPath));
   });
 
@@ -207,7 +207,7 @@ describe('认可参考', () => {
     expect(await prepareRef(approval, 'test')).toBe('已有');
     const refFile = referenceFile(approval, 'test');
     const sideNote = readSidecar(refFile)!;
-    expect(sideNote).toMatchObject({ 帧: [0, 24, 47], 来源: '切片', masterByteSha: await fileSha(pictureMp4) });
+    expect(sideNote).toMatchObject({ 帧: [0, 24, 47], 来源: '切片', 母版字节sha: await fileSha(pictureMp4) });
     expect(fs.readdirSync(path.dirname(refFile)).filter((n) => n.includes('写入中'))).toEqual([]);
     const refFrames = await collectChunks(refPixels(refFile, approval, [0, 24, 47]));
     const slicedFrames = await collectChunks(masterPixels(pictureMp4, [0, 24, 47], 64, 36));

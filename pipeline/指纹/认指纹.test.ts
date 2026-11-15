@@ -87,7 +87,7 @@ describe('静帧证明不了', () => {
     expect(stillCannotProve(makeFingerprintItems(), makeFingerprintItems({ 渲染设置: { ...makeFingerprintItems().渲染设置, crf: 2 } }))[0]).toContain('crf');
     expect(stillCannotProve(makeFingerprintItems(), makeFingerprintItems({ 私有配乐: { musicA: 'sha' } }))[0]).toContain('私有配乐');
     expect(stillCannotProve(makeFingerprintItems(), makeFingerprintItems({ 打包规则: { ...makeFingerprintItems().打包规则, 'pipeline/资产/ogg解码.cjs': 'o2' } }))[0]).toContain('ogg解码');
-    expect(stillCannotProve(makeFingerprintItems(), makeFingerprintItems({ missingBytes: ['甲'] }))[0]).toContain('缺字节');
+    expect(stillCannotProve(makeFingerprintItems(), makeFingerprintItems({ 缺字节: ['甲'] }))[0]).toContain('缺字节');
   });
 });
 

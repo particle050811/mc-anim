@@ -22,7 +22,7 @@ vi.mock('../环境/作品.ts', async (actual) => ({ ...(await actual<typeof impo
 vi.mock('../渲/段产物.ts', () => ({
   segmentProducts: async (allFlag: unknown, segments: { 键: string; 段: { 帧数: number } }[]) => segments.map((s) => ({ 段: s, 画面指纹: { 段: s.键, 指纹: fake.指纹, 项: { 地形: {} } }, outputFrames: s.段.帧数, 参数: {} })),
 }));
-vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), allSegments: async () => [] }));
+vi.mock('../清单/清单.ts', async (actual) => ({ ...(await actual<typeof import('../清单/清单.ts')>()), loadAllSegments: async () => [] }));
 vi.mock('../闸/闸.ts', async (actual) => ({ ...(await actual<typeof import('../闸/闸.ts')>()), passRenderGate: <T>(fn: () => Promise<T>) => (fake.闸++, fn()) }));
 vi.mock('../资产/随仓库.ts', () => ({ fillBytesAndReport: () => {} }));
 vi.mock('../渲/求解缓存收集.ts', () => ({ waitSolveCacheWrites: async () => {}, collectSolveCache: () => {} }));

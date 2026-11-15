@@ -36,7 +36,7 @@ describe('动画姿势', () => {
   const animFile = parseAnimationFile({
     animations: {
       走: { loop: true, animation_length: 2, bones: { head: { rotation: { '0': [0, 0, 0], '2': [20, 0, 0] } } } },
-      nod: { loop: true, bones: { head: { rotation: [5, 0, 0] } } },
+      点头: { loop: true, bones: { head: { rotation: [5, 0, 0] } } },
     },
   });
 
@@ -53,7 +53,7 @@ describe('动画姿势', () => {
   it('没给变量表时每帧一张新表：通道里的赋值不报错，后面的层读得到；q.life_time 默认是 秒', () => {
     const script = parseAnimationFile({
       animations: {
-        calc: { loop: true, bones: { head: { position: ['v.h = 3; return v.h;', 'q.life_time', 0] } } },
+        算: { loop: true, bones: { head: { position: ['v.h = 3; return v.h;', 'q.life_time', 0] } } },
         读: { loop: true, bones: { body: { position: ['v.h * 2', 0, 0] } } },
       },
     });
@@ -66,8 +66,8 @@ describe('动画姿势', () => {
   it('通用口径乘 blend_weight，TLM 不读', () => {
     const weighted = parseAnimationFile({
       animations: {
-        bottom: { loop: true, bones: { head: { rotation: [10, 0, 0] } } },
-        halfBlend: { loop: true, blend_weight: 'v.w', bones: { head: { rotation: [20, 0, 0] } } },
+        底: { loop: true, bones: { head: { rotation: [10, 0, 0] } } },
+        半: { loop: true, blend_weight: 'v.w', bones: { head: { rotation: [20, 0, 0] } } },
       },
     });
     const env = { 变量: { w: 0.5 } };

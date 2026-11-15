@@ -15,7 +15,7 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
-const memoryReading = (freePercent: number): MemReading => ({ 总: 100, free: freePercent, freePercent, swapTotal: 0, swapUsed: 0 });
+const memoryReading = (freePercent: number): MemReading => ({ 总: 100, 空闲: freePercent, 空闲百分比: freePercent, 交换区总: 0, 交换区已用: 0 });
 
 /** 假环境：睡就是把时钟往前拨；读数按序列给，给完了停在最后一个 */
 const fakeEnv = (o: { memory?: (MemReading | null)[]; 负载?: (number | null)[]; 起?: number } = {}) => {

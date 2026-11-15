@@ -10,7 +10,7 @@ import type { SegInfo } from '../清单/清单.ts';
 import type { LineLanding } from './字幕.ts';
 import { breakScreens, type SubtitlePosition } from './字幕卡.ts';
 
-export type LineEntry = { id: string; 角色: string; 文本: string; 配音?: string; 开口?: number; 字幕位置?: SubtitlePosition; unused?: boolean };
+export type LineEntry = { id: string; 角色: string; 文本: string; 配音?: string; 开口?: number; 字幕位置?: SubtitlePosition; 未用?: boolean };
 export type ClausePosition = { 段: SegInfo; 全片起帧: number };
 type SegSoundInput = Pick<SegmentDef, '声音' | '秒'>;
 

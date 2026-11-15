@@ -10,12 +10,12 @@ import { mainCutLyricLine } from '../../界面/符文歌词数据.ts';
 import { definePicture } from '@engine/段/段画面.tsx';
 import seg, { frameWindow } from './段.ts';
 import soundUrl from './声音地址.生成.ts';
-import { useCurrentFrame } from '../../当前帧.ts';
+import { use当前帧 } from '../../当前帧.ts';
 
 const lyricLines = Array.from({ length: 15 }, (_, i) => mainCutLyricLine(i + 1, frameWindow.起帧));
 
 const picture: React.FC = () => {
-  const f = useCurrentFrame();
+  const f = use当前帧();
   return (
     <>
       <FilmPost grade={line8Tone.grade} 种子={frameWindow.起帧 + f}>

@@ -11,8 +11,8 @@ export const voidFlashShocks = (from: Vec3, target: Vec3, seed: number, highSpee
   const { trajectory, arriveTick } = voidFlashBombPath(from, target, highSpeed);
   const landing = trajectory(arriveTick);
   const r = mulberry32(seed * 43 + 5);
-  const randInt = (a: number, b: number) => a + Math.floor(r() * (b - a + 1));
-  return Array.from({ length: 8 }, (_, i) => ({ launchTick: arriveTick, spawnPos: landing, hoverPos: [landing[0] + randInt(-3, 3), landing[1] + randInt(-3, 3), landing[2] + randInt(3, 6)] as const, lockTick: 40 + i * 5 }));
+  const 整 = (a: number, b: number) => a + Math.floor(r() * (b - a + 1));
+  return Array.from({ length: 8 }, (_, i) => ({ launchTick: arriveTick, spawnPos: landing, hoverPos: [landing[0] + 整(-3, 3), landing[1] + 整(-3, 3), landing[2] + 整(3, 6)] as const, lockTick: 40 + i * 5 }));
 };
 
 const duration = (from: Vec3, target: Vec3, options?: SpellOptions) => {

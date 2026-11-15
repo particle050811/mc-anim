@@ -11,7 +11,7 @@ const sourceTiers = () => {
   const presetsSource = sourceText.slice(sourceText.indexOf('const presets'), sourceText.indexOf('};', sourceText.indexOf('const presets')));
   const out: Record<string, Record<string, number>> = {};
   for (const m of presetsSource.matchAll(/^\s*([一-鿿]+): \{([^}]*)\},/gm)) {
-    out[m[1]!] = Object.fromEntries([...m[2]!.matchAll(/([一-鿿]+): ([\d.]+)/g)].map((x) => [x[1]!, Number(x[2])]));
+    out[m[1]!] = Object.fromEntries([...m[2]!.matchAll(/([A-Za-z]+): ([\d.]+)/g)].map((x) => [x[1]!, Number(x[2])]));
   }
   return out;
 };

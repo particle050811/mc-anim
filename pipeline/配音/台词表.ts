@@ -18,12 +18,12 @@ export type VoiceLineRow = Omit<LineEntry, '口型手修'> & {
   口型手修?: LipManual;
   合成?: SynthSettings;
 };
-export type VoiceSettings = { 后端: string; 种子: number[]; 目标响度: number; 峰值上限: number; 许可: string; 可见性: string; backendParams: Record<string, Record<string, unknown>> };
+export type VoiceSettings = { 后端: string; 种子: number[]; 目标响度: number; 峰值上限: number; 许可: string; 可见性: string; 后端参数: Record<string, Record<string, unknown>> };
 export type Timbre = { 参考: string; 逐字稿: string };
 export type WorkLines = { 台词: VoiceLineRow[]; 配音: VoiceSettings; 音色: Record<string, Timbre> };
 
 // 用户 10-31 定：统一默认 IndexTTS2 云端（本机模型占内存太多），调模型的事交给 image-flow（docs/决策/0009）
-export const defaultVoice: VoiceSettings = { 后端: 'image-flow', 种子: [1234, 20261010, 7, 42], 目标响度: -18, 峰值上限: -1.5, 许可: 'LicenseRef-待定', 可见性: '私有', backendParams: {} };
+export const defaultVoice: VoiceSettings = { 后端: 'image-flow', 种子: [1234, 20261010, 7, 42], 目标响度: -18, 峰值上限: -1.5, 许可: 'LicenseRef-待定', 可见性: '私有', 后端参数: {} };
 
 /** 字的 sha256 前 12 位 */
 export const textHash = (text: string) => crypto.createHash('sha256').update(text, 'utf8').digest('hex').slice(0, 12);

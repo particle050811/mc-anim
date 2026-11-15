@@ -144,7 +144,7 @@ export const HissingWineFox: React.FC<HissingWineFoxProps> = ({ bigMouth = true,
   if (!hissMouth && !puffTail) return <MagicalWineFoxEx {...p} />;
   const boneTable = magicalWineFoxExBones(p);
   // 哈气的脸：原来的哈气嘴、两只眼睛（眼皮连同下面挂的虹膜、高光）都藏掉，换成 嘴模型 里的大嘴和眯眼
-  const skeletonOverride = { ...p.skeleton, ...(hissMouth ? { mcanimHissMouth: hiddenPose, RightEyelid: hiddenPose, LeftEyelid: hiddenPose } : {}), ...(puffTail ? { Tail: hiddenPose } : {}) };
+  const skeletonOverride = { ...p.skeleton, ...(hissMouth ? { mcanim哈气嘴: hiddenPose, RightEyelid: hiddenPose, LeftEyelid: hiddenPose } : {}), ...(puffTail ? { Tail: hiddenPose } : {}) };
   return (
     <>
       <MagicalWineFoxEx {...p} skeleton={skeletonOverride} />
