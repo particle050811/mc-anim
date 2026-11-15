@@ -204,7 +204,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
   const sy = lh ? (-shadowLightDir![1] / lh) * shadowMarginM : 0;
   const backlit = shadowLightDir ? backlitDirs(shadowLightDir) : null;
   const pixelAngle = (camera.fov * Math.PI) / 180 / size.height;
-  const pick = (test: ReturnType<typeof makeFrustumTest>, center: number[], angle = pixelAngle): SectionId[] =>
+  const 挑这帧 = (test: ReturnType<typeof makeFrustumTest>, center: number[], angle = pixelAngle): SectionId[] =>
     pickSections({
       camPos: center,
       pixelAngle: angle,
@@ -216,7 +216,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
         return probe.z + probe.crown + 5;
       },
     });
-  const list = pick(inView, camPos);
+  const list = 挑这帧(inView, camPos);
   // 最近三个镜头位姿（预取下一帧用）：同一帧重画几次位姿不变，不算新的
   camera.matrixWorld.decompose(_位, _向, _缩);
   if (!world.本 || !world.本.位.equals(_位) || !world.本.向.equals(_向) || world.本.心.some((v, i) => v !== camPos[i]) || !world.本.投.equals(camera.projectionMatrix)) {
@@ -400,7 +400,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ 键: worldKey, 来源: s
       预测机.position.set(下((p) => p.位.x), 下((p) => p.位.y), 下((p) => p.位.z));
       预测机.quaternion.copy(本.向).multiply(_向.copy(上.向).invert()).multiply(本.向).normalize();
       预测机.updateMatrixWorld();
-      const 要 = pick(
+      const 要 = 挑这帧(
         makeFrustumTest(预测机),
         本.心.map((_, i) => 下((p) => p.心[i]!)),
         下((p) => p.像素角),
