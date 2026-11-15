@@ -6,6 +6,8 @@ import { 查区段模型登记 } from '../区段模型登记.ts';
 import { 读内容 } from '../内容.ts';
 import { 代码后缀, 是渲染代码, 是纯模块, 是测试或声明, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 点路径, 行号, 解析, 遍历, ts } from '../语法.ts';
+import { 依据键 } from '../../指纹/去依据.ts';
+import type * as 资产目录模块 from '../../../engine/core/资产目录.ts';
 
 type 层名 = 'engine' | '库' | '作品公共' | '场' | '段' | '注册' | '核对' | 'pipeline' | '其他';
 type 层 = { 名: 层名; 键?: string };
@@ -137,11 +139,12 @@ export const 写死了 = (s: string, 本机名 = os.hostname()): string | null =
 };
 
 // 资产目录({ './a.png': 资_0 }) 的键只是查表用的名字（和 webpackContext 的键同形，见 engine/core/资产目录.ts），不是要加载的路径
+const 资产目录名: keyof typeof 资产目录模块 = '资产目录';
 const 是资产目录键 = (n: ts.Node) => {
   const 属性 = n.parent;
   if (!ts.isPropertyAssignment(属性) || 属性.name !== n || !ts.isObjectLiteralExpression(属性.parent)) return false;
   const 调用 = 属性.parent.parent;
-  return ts.isCallExpression(调用) && ts.isIdentifier(调用.expression) && 调用.expression.text === '资产目录';
+  return ts.isCallExpression(调用) && ts.isIdentifier(调用.expression) && 调用.expression.text === 资产目录名;
 };
 
 /** 交界.json 自己的 依据 字段（粗高度指纹，真的要读），不是时刻的说明 */
@@ -149,13 +152,13 @@ const 依据可读 = new Set(['engine/voxel/主世界地形.ts']);
 /** 依据: x.依据、依据: x.依据 ?? ''：解事件、排段 一路往下传，不算读 */
 const 是透传依据 = (n: ts.Node) => {
   const 上 = ts.isBinaryExpression(n.parent) && n.parent.left === n ? n.parent.parent : n.parent;
-  return ts.isPropertyAssignment(上) && 上.name.getText() === '依据';
+  return ts.isPropertyAssignment(上) && 上.name.getText() === 依据键;
 };
 /** 指纹不算时刻的 依据（指纹/去依据.ts），渲染代码读了它，改字就会改画面、段却不过期 */
 const 读依据 = (n: ts.Node) =>
-  (ts.isPropertyAccessExpression(n) && n.name.text === '依据' && !是透传依据(n)) ||
-  (ts.isElementAccessExpression(n) && ts.isStringLiteralLike(n.argumentExpression) && n.argumentExpression.text === '依据') ||
-  (ts.isBindingElement(n) && (n.propertyName ?? n.name).getText() === '依据');
+  (ts.isPropertyAccessExpression(n) && n.name.text === 依据键 && !是透传依据(n)) ||
+  (ts.isElementAccessExpression(n) && ts.isStringLiteralLike(n.argumentExpression) && n.argumentExpression.text === 依据键) ||
+  (ts.isBindingElement(n) && (n.propertyName ?? n.name).getText() === 依据键);
 
 export const 查代码 = (c: 检查上下文, 报: 报告, 本机名 = os.hostname()) => {
   for (const p of c.本作品文件()) {

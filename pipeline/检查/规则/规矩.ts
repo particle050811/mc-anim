@@ -9,6 +9,8 @@ import { 读内容 } from '../内容.ts';
 import { 配置 } from '../../环境/配置.ts';
 import { 代码后缀, 是渲染代码, type 报告, type 检查上下文 } from '../上下文.ts';
 import { 声明的名字, 字面值, 属性名, 行号, 解析, 遍历, ts } from '../语法.ts';
+import type * as 例外模块类型 from '../../../engine/core/例外.ts';
+import type { 例外依据 } from '../../../engine/core/例外.ts';
 
 export const 规矩表路径 = (c: 检查上下文) => c.作品路径('规矩.toml');
 const 落点顶层 = ['engine', '库', '作品', 'pipeline', 'sourcing', 'py', 'assets', 'rules', 'docs', 'verify'];
@@ -22,6 +24,10 @@ const 键 = (规矩: string, x: { 段?: string; 场?: string }) => `${规矩}|${
 const 对象 = (x: { 段?: string; 场?: string }) => (x.段 !== undefined ? `段 ${x.段}` : `场 ${x.场}`);
 
 const 例外模块 = 'engine/core/例外';
+// 认 例外(…) 调用和它第三个参数的键：名字按模块的导出、类型的键查（tsc 查、改名工具并组）；只 import 类型，pipeline 不多引非纯模块
+const 例外名: keyof typeof 例外模块类型 = '例外';
+type 依据各键 = (例外依据 extends unknown ? (x: 例外依据) => void : never) extends (x: infer I) => void ? I : never;
+const 段键: keyof 依据各键 = '段';
 /** 搬家 R2-A 暂放在 作品/<名>/地点/<地点>/<旧目录>/ 的剧情编排（docs/迁移.md 差异表）：拆回 场/ 之前，例外 也可以写在这里 */
 const R2暂放 = /^作品\/[^/]+\/地点\/[^/]+\/\d+-[^/]+\//;
 /** import/export 的模块是不是 engine/core/例外(.ts)：认相对路径和 @engine/ */
@@ -40,7 +46,7 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
   for (const p of c.本作品文件()) {
     if (!是渲染代码(p) || !代码后缀.test(p) || p === `${例外模块}.ts`) continue;
     const 源 = c.读(p);
-    if (!源.includes('例外')) continue;
+    if (!源.includes(例外名)) continue;
     const sf = 解析(p, 源);
     for (const s of sf.statements) {
       if (ts.isImportDeclaration(s) && 指向例外模块(p, s.moduleSpecifier)) {
@@ -51,7 +57,7 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
       if (ts.isExportDeclaration(s) && 指向例外模块(p, s.moduleSpecifier)) 报.错(`不许转出 ${例外模块}.ts：用到的文件直接 import { 例外 }`, p, 行号(sf, s));
     }
     遍历(sf, (n) => {
-      if (ts.isIdentifier(n) && n.text === '例外') {
+      if (ts.isIdentifier(n) && n.text === 例外名) {
         const 父 = n.parent;
         const 是调用 = (ts.isCallExpression(父) && 父.expression === n) || (ts.isPropertyAccessExpression(父) && 父.name === n && ts.isCallExpression(父.parent) && 父.parent.expression === 父);
         const 只是名字 =
@@ -65,18 +71,18 @@ export const 找代码例外 = (c: 检查上下文, 报: 报告): 代码例外[]
       }
       if (!ts.isCallExpression(n)) return;
       const 名 = ts.isIdentifier(n.expression) ? n.expression.text : ts.isPropertyAccessExpression(n.expression) ? n.expression.name.text : undefined;
-      if (名 !== '例外') return;
+      if (名 !== 例外名) return;
       const 行 = 行号(sf, n);
       const [a, b, d] = n.arguments;
       const 规矩 = 字面值(a);
-      const 依据: Record<string, unknown> = {};
+      const 依据: { -readonly [K in keyof 依据各键]?: unknown } & Record<string, unknown> = {};
       let 段数组 = false;
       if (d && ts.isObjectLiteralExpression(d)) {
         for (const q of d.properties) {
           if (!ts.isPropertyAssignment(q) || !属性名(q.name)) continue;
           const 值 = q.initializer;
           // 段 可以是几个段键的字面量数组
-          if (属性名(q.name) === '段' && ts.isArrayLiteralExpression(值)) {
+          if (属性名(q.name) === 段键 && ts.isArrayLiteralExpression(值)) {
             const 们 = 值.elements.map((e) => 字面值(e));
             段数组 = true;
             依据.段 = 们.length && 们.every((x) => typeof x === 'string') ? 们 : undefined;

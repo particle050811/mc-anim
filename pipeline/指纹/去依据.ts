@@ -6,10 +6,26 @@
 // esbuild 规范化后对象字面量里的注释还留着（分镜表里各事件之间写满了注释，10-31 查 12 个提交里 3 个只改了这种注释）。有这种条目的模块顺手把注释也去掉；
 // 别的模块不动：全仓库一起去，所有带这种注释的模块哈希都变，全片白白过期。
 import ts from 'typescript';
+import type { 基本时刻, 事件定义, 串段定义, 窗口止 } from '../../engine/段/时间线.ts';
+import type { 歌时刻 } from '../../engine/段/歌网格.ts';
+import type { 时刻 as 分镜时刻, 事件定义 as 分镜事件定义, 段窗口定义 as 分镜段窗 } from '../../作品/把回忆拼好给你/分镜/时间.ts';
 
-const 依据键 = '依据';
-const 时刻键 = new Set(['秒', '帧', '拍', '小节', '句', '点', '接', '加秒', '加帧']);
-const 段窗键 = new Set(['键', '名', '起', '止', 依据键]);
+// 认形状用的键从类型取，不写死：字段改名、加减键时 tsc 逼着这里跟上，改名工具（pipeline/改名）也会把这里的键并进字段那一组
+type 并<U> = (U extends unknown ? (x: U) => void : never) extends (x: infer I) => void ? I : never;
+/** 联合类型各支的键合起来，一个键一项；少写、多写、写错都编译不过 */
+type 键表<T> = { readonly [K in keyof 并<T>]-?: true };
+const 时刻键表: 键表<基本时刻 | 歌时刻 | 分镜时刻> = { 秒: true, 帧: true, 接: true, 加秒: true, 加帧: true, 拍: true, 小节: true, 句: true, 点: true };
+const 段窗键表: 键表<串段定义 | 分镜段窗> = { 名: true, 键: true, 起: true, 止: true, 依据: true };
+const 帧数止键表: 键表<Exclude<窗口止, 基本时刻 | string>> = { 帧数: true };
+export const 依据键: keyof 事件定义 & keyof 分镜事件定义 & keyof 串段定义 = '依据';
+const 在键: keyof 事件定义 & keyof 分镜事件定义 = '在';
+const 段键键: keyof 分镜段窗 = '键';
+const 段名键: keyof 串段定义 = '名';
+const 起键: keyof 串段定义 & keyof 分镜段窗 = '起';
+const 止键: keyof 串段定义 & keyof 分镜段窗 = '止';
+const 时刻键 = new Set(Object.keys(时刻键表));
+const 段窗键 = new Set(Object.keys(段窗键表));
+const 帧数止键 = new Set(Object.keys(帧数止键表));
 
 const 键名 = (p: ts.ObjectLiteralElementLike) => (ts.isPropertyAssignment(p) && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name)) ? p.name.text : null);
 
@@ -22,12 +38,12 @@ const 是时刻条目 = (o: ts.ObjectLiteralExpression): boolean => {
   const 依据 = 值(o, 依据键);
   if (!依据 || !ts.isStringLiteralLike(依据)) return false;
   const 名们 = o.properties.map(键名);
-  if (名们.length === 2 && 值(o, '在') && 是时刻(值(o, '在')!)) return true;
-  if (!全在(o, 段窗键) || !(值(o, '键') || 值(o, '名')) || new Set(名们).size !== 名们.length) return false;
-  const 止 = 值(o, '止');
-  const 起 = 值(o, '起');
+  if (名们.length === 2 && 值(o, 在键) && 是时刻(值(o, 在键)!)) return true;
+  if (!全在(o, 段窗键) || !(值(o, 段键键) || 值(o, 段名键)) || new Set(名们).size !== 名们.length) return false;
+  const 止 = 值(o, 止键);
+  const 起 = 值(o, 起键);
   if (!止 || (起 && !是时刻(起))) return false;
-  return ts.isStringLiteralLike(止) || 是时刻(止) || (ts.isObjectLiteralExpression(止) && 全在(止, new Set(['帧数'])));
+  return ts.isStringLiteralLike(止) || 是时刻(止) || (ts.isObjectLiteralExpression(止) && 全在(止, 帧数止键));
 };
 
 /** 文本里的注释区间。每个 token 前后都问一遍，不靠扫描器猜正则和除号 */
