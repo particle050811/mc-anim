@@ -87,7 +87,7 @@ export const 留出集 = (包: 包) => {
 };
 
 /** 可改的区段格子：cm[c·nz + k]（c = y·34 + x，k 从下往上），色板可以加项 */
-export type 格子 = { id: 区段号; kBottom: number; nz: number; cm: Uint16Array; 色板: number[]; 满: Uint8Array; 石: number };
+export type 格子 = { id: 区段号; kBottom: number; nz: number; cm: Uint16Array; 色板: number[]; 满: Uint8Array; 石: number; /** 窗口每边几列，不写是 34；拼大.ts 拼出来的是 66 */ 宽?: number };
 export const 成格子 = (包: 包, d: SectionData): 格子 => {
   const 色板 = Array.from(d.palette);
   let 石 = -1;

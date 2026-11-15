@@ -1,6 +1,6 @@
 // 抽样实测：每种变换和叠加的体积、网格核对、解码耗时。只读包、只抽样，单线程；用 nice -n 19 跑。
-//   node wasm/实验/地形可见/量.ts <包名> [--集 <每行一个 L/i/j 的文件>] [--不计时] > 结果.json
-// 不给 --集 就用和 wasm/实验/测地形.mjs 同一个留出集（种子 31841，按 L 分层）。
+//   node wasm/实验/地形可见/量.ts <包名> [--集 <每行一个 L/i/j 的文件>] [--保真 <保真范围.ts 出的清单>] [--不计时] > 结果.json
+// 不给 --集 就用和 wasm/实验/测地形.mjs 同一个留出集（种子 31841，按 L 分层）。--保真 里的区段各方案都原样不动，加权时全包的保真字节按 100% 算。
 import fs from 'node:fs';
 import os from 'node:os';
 import { 载入, 开包, 留出集, 成格子, 抄, 成区段, 压, 键, terrain根, 边, type 格子, type 区段项 } from './公共.ts';
@@ -15,6 +15,10 @@ let 测: 区段项[];
 const 集文件 = 取参('--集');
 if (集文件) 测 = fs.readFileSync(集文件, 'utf8').split('\n').map((l) => l.trim().split(/\s+/)[0]!).filter(Boolean).map((k) => { const s = 包.查.get(k); if (!s) throw new Error(`包里没有区段 ${k}`); return s; });
 else 测 = 留出集(包).测;
+const 保真文件 = 取参('--保真'), 保真 = new Set(保真文件 ? fs.readFileSync(保真文件, 'utf8').split('\n').filter(Boolean) : []);
+const 全包保真级字节 = Array.from({ length: 7 }, () => 0);
+for (const k of 保真) 全包保真级字节[+k.split('/')[0]!]! += 包.查.get(k)!.len;
+let 样本里保真的段 = 0;
 
 const 方案 = ['原样', '1埋格', '3封腔', '1+3', '2定底', '1+2+3', '上界1+3', '上界1+2+3'] as const;
 type 方案名 = (typeof 方案)[number];
@@ -34,7 +38,9 @@ const 流: Record<方案名, Uint8Array[]> = Object.fromEntries(方案.map((k) =
 
 const 起 = performance.now();
 for (const s of 测) {
-  const raw = 包.读(s), d = 环.库.区段解码.解区段(raw, s.id, 包.模型), g0 = 成格子(包, d), st = 级[s.id.L]!;
+  const raw = 包.读(s);
+  if (保真.has(键(s.id))) { 样本里保真的段++; for (const 名 of 方案) 流[名].push(raw); continue; }
+  const d = 环.库.区段解码.解区段(raw, s.id, 包.模型), g0 = 成格子(包, d), st = 级[s.id.L]!;
   st.段++; st.格 += g0.cm.length;
   const 出 = (名: 方案名, g: 格子, 换: number) => { const b = 压(环, 成区段(g), 包.模型); st.字节[名] += b.length; st.换格[名] += 换; 流[名].push(b); return b; };
   const 原压 = 出('原样', g0, 0);
@@ -113,12 +119,12 @@ if (!参.includes('--不计时')) for (const 名 of ['1埋格', '1+3', '1+2+3'] 
 const 合计 = 零(), 样本字节 = 零();
 for (const 名 of 方案) for (let L = 0; L < 7; L++) {
   样本字节[名] += 级[L]!.字节[名];
-  if (级[L]!.段) 合计[名] += 全包级字节[L]! * 级[L]!.字节[名] / 级[L]!.字节.原样;
+  if (级[L]!.段) 合计[名] += 全包保真级字节[L]! + (全包级字节[L]! - 全包保真级字节[L]!) * 级[L]!.字节[名] / 级[L]!.字节.原样;
 }
 const 全包区段字节 = 全包级字节.reduce((a, b) => a + b, 0);
 console.log(JSON.stringify({
   包: 包名, 集: 集文件 ?? '留出集', 段数: 测.length, 负载: os.loadavg(), 变换秒,
-  全包: { 级字节: 全包级字节, 级段数: 全包级段数, 区段字节: 全包区段字节 },
+  全包: { 级字节: 全包级字节, 级段数: 全包级段数, 区段字节: 全包区段字节, 保真级字节: 全包保真级字节 }, 保真: 保真文件 ?? null, 样本里保真的段,
   样本字节, 样本比: Object.fromEntries(方案.map((k) => [k, 样本字节[k] / 样本字节.原样])),
   加权估计比: 集文件 ? undefined : Object.fromEntries(方案.map((k) => [k, 合计[k] / 全包区段字节])),
   级: 级.map((x, L) => ({ L, ...x, 比: Object.fromEntries(方案.map((k) => [k, x.段 ? x.字节[k] / x.字节.原样 : null])) })),

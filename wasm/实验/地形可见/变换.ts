@@ -2,6 +2,7 @@
 // 「可动的列」默认只有 x、y ∈ [2, 31]：第 1、32 列是核心的边，网格给它们出裙边（网格.ts 的 isSkirt），连整格被埋的也出面；第 0、33 列是相邻区段的格，
 // 在邻段里也是核心的边。所以这四圈一格不动，同一格在两个区段里的两份抄本也就始终一样。
 import { 边, 列数, type 格子 } from './公共.ts';
+const 窗边 = 边;
 
 export type 范围 = { lo: number; hi: number }; // 可动的列：x、y ∈ [lo, hi]
 export const 留裙边: 范围 = { lo: 2, hi: 边 - 3 };
@@ -10,7 +11,8 @@ export const 全窗口: 范围 = { lo: 0, hi: 边 - 1 };
 
 /** 变换 1：整格不透明、六个邻格也都整格不透明的格换石头。最下一格的下面按网格.ts 当石头，最上一格的上面是空气。返回换了几格 */
 export const 埋格换石 = (g: 格子, 范: 范围 = 留裙边): number => {
-  const { nz, cm, 满, 石 } = g, 行 = 边 * nz;
+  const { nz, cm, 满, 石 } = g, 边 = g.宽 ?? 窗边, 行 = 边 * nz;
+  if (g.宽 && 范 === 留裙边) 范 = { lo: 2, hi: 边 - 3 };
   const 改: number[] = [];
   for (let y = 范.lo; y <= 范.hi; y++) for (let x = 范.lo; x <= 范.hi; x++) {
     const base = (y * 边 + x) * nz;
@@ -28,7 +30,7 @@ export const 埋格换石 = (g: 格子, 范: 范围 = 留裙边): number => {
 /** 和露天连通的非整格（空气、水、叶子、玻璃、花草、半砖……）：六邻连通，不设最小口径。
  *  种子：最上一层的非整格（再往上是空气）；x 或 y 离窗口边不到 种子圈 列的非整格（窗口外不知道，当连通）。种子圈 0 = 只从顶上找（「确定露天」） */
 export const 露天连通 = (g: 格子, 种子圈: number): Uint8Array => {
-  const { nz, cm, 满 } = g, 行 = 边 * nz, 开 = new Uint8Array(cm.length);
+  const { nz, cm, 满 } = g, 边 = g.宽 ?? 窗边, 列数 = 边 * 边, 行 = 边 * nz, 开 = new Uint8Array(cm.length);
   const 栈 = new Int32Array(cm.length);
   let n = 0;
   const 进 = (at: number) => { if (!开[at] && !满[cm[at]!]) { 开[at] = 1; 栈[n++] = at; } };
