@@ -3,7 +3,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { listWorks, parseWorkArg, splitFullName, pickWork } from './作品.ts';
-import { deliveryRoot, masterDir, readConfig } from './配置.ts';
+import { deliveryRoot, masterDir } from './作品数据.ts';
+import { readConfig } from './配置.ts';
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'anim-作品-'));
 const makeFixture = (dir: string) => {

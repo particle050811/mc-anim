@@ -7,7 +7,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
-import { masterDir, dataRoot } from '../环境/配置.ts';
+import { masterDir } from '../环境/作品数据.ts';
+import { dataRoot } from '../环境/配置.ts';
 import { workName, workRoot } from '../环境/作品.ts';
 import type { SegInfo } from '../清单/清单.ts';
 import { fillBytesAndReport } from '../资产/随仓库.ts';

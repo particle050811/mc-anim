@@ -10,13 +10,12 @@ import type { CheckReport, CheckContext } from '../上下文.ts';
 import type { AssetLock } from '../../资产/资产锁.ts';
 import { writeSentenceText, parseSentenceModule } from '../../配音/句模块.ts';
 import { sentenceModuleIssues } from '../../配音/配音.ts';
-import { textHash, voiceTextHash } from '../../配音/台词表.ts';
+import { textHash, voiceTextHash, type LineEntry } from '../../配音/台词表.ts';
 
 export const lineTablePath = (c: CheckContext) => c.workPath('台词.toml');
 export { textHash };
 
 export const subtitlePositions = ['下', '思索上'];
-export type LineEntry = { id: string; 角色: string; 文本: string; 念?: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; 未用?: boolean };
 
 export const readLineTable = (c: CheckContext, report?: CheckReport): LineEntry[] | null => {
   const path = lineTablePath(c);

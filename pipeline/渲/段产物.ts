@@ -6,7 +6,7 @@ import path from 'node:path';
 import { filmStartFrameTable } from '../../engine/段/出帧.ts';
 import { segFrameCount } from '../../engine/段/段定义.ts';
 import type { RenderLevel } from '../../engine/段/设置值.ts';
-import { masterDir } from '../环境/配置.ts';
+import { masterDir } from '../环境/作品数据.ts';
 import { computeSegFingerprints, stableJson, type SegFingerprint, type FingerprintItem } from '../指纹/指纹.ts';
 import type { SegInfo } from '../清单/清单.ts';
 import { placeFilmSubtitles, segmentSubtitleCard } from '../合成/段字幕.ts';

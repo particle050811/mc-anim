@@ -4,7 +4,8 @@
 // 在渲染闸里跑，别人刚渲好的切片靠 .用过 挡（渲段 先记 .用过 再改名）。
 // 只有主检出才删：worktree 里渲的是没合并的改动，「旧」指纹很可能还是 main 的当前指纹（这边算不出），认可记录也是分支上的。worktree 只新增，合并后主检出第一次出这段（命中也算）或 gc 再清。
 import fs from 'node:fs';
-import { dataRoot, dataPath, masterDir, approvRefFile } from '../环境/配置.ts';
+import { masterDir, approvRefFile } from '../环境/作品数据.ts';
+import { dataRoot, dataPath } from '../环境/配置.ts';
 import { listWorks, workName } from '../环境/作品.ts';
 import { inMainCheckout } from '../环境/路径.ts';
 import type { RunRecord } from '../运行记录/记录.ts';

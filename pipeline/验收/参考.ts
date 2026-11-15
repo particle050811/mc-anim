@@ -5,7 +5,8 @@
 // 抽之前核对切片就是认可那一版：认可那版指纹的段签（现在的，或重渲前挪进 历史/ 的）签名和认可记录是同一版，切片又正是那份段签记的。
 import fs from 'node:fs';
 import path from 'node:path';
-import { config, approvRefFile } from '../环境/配置.ts';
+import { approvRefFile } from '../环境/作品数据.ts';
+import { config } from '../环境/配置.ts';
 import { lowPriority, runCmd } from '../环境/子进程.ts';
 import { videoInfo } from '../渲/探测.ts';
 import { segPicturePath } from '../渲/段产物.ts';

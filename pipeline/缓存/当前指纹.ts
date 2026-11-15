@@ -2,7 +2,8 @@
 // 算不出的（清单读不出、某段打包失败、指纹里记了缺字节）就整个目录留下：宁可少省，不删掉还要用的。
 import { loadAllSegments, type SegInfo } from '../清单/清单.ts';
 import { segmentProducts, type SegArtifact } from '../渲/段产物.ts';
-import { masterDir, dataPath } from '../环境/配置.ts';
+import { masterDir } from '../环境/作品数据.ts';
+import { dataPath } from '../环境/配置.ts';
 import { setSpecifiedWork, getSpecifiedWork } from '../环境/作品.ts';
 import { renderLevels, type RenderLevel } from '../../engine/段/设置值.ts';
 import type { SegFingerprint } from '../指纹/指纹.ts';

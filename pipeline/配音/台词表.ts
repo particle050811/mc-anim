@@ -3,8 +3,9 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { parse } from 'smol-toml';
-import type { LineEntry } from '../检查/规则/台词.ts';
 
+/** 台词.toml 的一行里 anim check、配音链都认的几项 */
+export type LineEntry = { id: string; 角色: string; 文本: string; 念?: string; 配音?: string; 开口?: number; 字幕位置?: string; 文本哈希?: string; 成品sha?: string; 口型?: { 成品sha?: string }; 口型手修?: { 成品sha?: string }; 未用?: boolean };
 export type LipManual = { 成品sha?: string; 字?: [string, number, number][]; 注?: string };
 /** 一句的合成设置（都可选，覆盖 [配音] 和 [音色.<角色>]）。念：只交给 TTS 的字，和对口型的 念 不同时写（如数字写成读法，口型手修 却按字面标的） */
 export type SynthSettings = { 后端?: string; 念?: string; 参考?: string; 逐字稿?: string; 种子?: number[]; 语气参考?: string; 强度?: number; 不裁?: boolean; 参数?: Record<string, unknown> };
