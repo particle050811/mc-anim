@@ -1,5 +1,5 @@
 // 列段：存档（.mca）和区段包之间的中间格式，一个区域文件 r.<rx>.<rz>.mca（512 × 512 列）对应一份。照搬旧项目 工具/导入/列段.ts（格式版本 2），
-// 字节不变：旧缓存、旧工具读得了新写的，反之亦然。坐标全是游戏坐标（y 朝上、z 朝南），换成场景坐标是烘焙的事。
+// 字节不变：旧缓存、旧工具读得了新写的，反之亦然（所以表 JSON 的键照旧是中文，盘键迁移不动它）。坐标全是游戏坐标（y 朝上、z 朝南），换成场景坐标是烘焙的事。
 // 按列存：每列从最高一格（y顶）往下到最低一格（y底），相邻两格方块状态和群系都一样就并成一段；空气也成段（只存实心的话分不清洞口和地底），
 // 所以一列的各段首尾相接正好盖满 [y底, y顶]，每段只记底。
 //
@@ -37,7 +37,7 @@ export const encodeColumnSegments = (region: ColumnSegmentRegion): Buffer => {
   if (region.biomeTable.length > 256) throw new Error(`r.${region.rx}.${region.rz} 群系超过 256 种，群系号放不进 u8`);
   if (region.stateTable.length > 65536) throw new Error(`r.${region.rx}.${region.rz} 方块状态超过 65536 种，放不进 u16`);
   const runCount = region.state.length;
-  const tableJson = Buffer.from(JSON.stringify({ state: region.stateTable, biome: region.biomeTable, seed: region.seed }), 'utf8');
+  const tableJson = Buffer.from(JSON.stringify({ 状态: region.stateTable, 群系: region.biomeTable, 种子: region.seed }), 'utf8');
   const tableBytes = (tableJson.length + 3) & ~3;
   const buf = Buffer.alloc(HEADER_LENGTH + tableBytes + REGION_COLUMN_COUNT * 2 + runCount * 5, 0x20);
   buf.writeUInt32LE(magic, 0);
@@ -72,7 +72,7 @@ export const decodeColumnSegments = (gz: Uint8Array): UnpackedColumnSegmentRegio
   if (dv.getUint32(0, true) !== magic || dv.getUint32(4, true) !== FORMAT_VERSION) throw new Error('不是版本 2 的列段文件');
   const runCount = dv.getUint32(24, true);
   const tableBytes = dv.getUint32(28, true);
-  const table = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, HEADER_LENGTH, tableBytes))) as { state: string[]; biome: string[]; seed: string };
+  const table = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, HEADER_LENGTH, tableBytes))) as { 状态: string[]; 群系: string[]; 种子: string };
   let offset = HEADER_LENGTH + tableBytes;
   const segRunCounts = new Uint16Array(ab, offset, REGION_COLUMN_COUNT);
   offset += REGION_COLUMN_COUNT * 2;
@@ -81,7 +81,7 @@ export const decodeColumnSegments = (gz: Uint8Array): UnpackedColumnSegmentRegio
   const bottom = new Int16Array(ab, offset, runCount);
   offset += runCount * 2;
   const biomeIds = new Uint8Array(ab, offset, runCount);
-  return { rx: dv.getInt32(8, true), rz: dv.getInt32(12, true), yBottom: dv.getInt32(16, true), yTop: dv.getInt32(20, true), stateTable: table.state, biomeTable: table.biome, seed: table.seed, 段数: segRunCounts, state: stateIds, bottom, biome: biomeIds, runStarts: startTable(segRunCounts) };
+  return { rx: dv.getInt32(8, true), rz: dv.getInt32(12, true), yBottom: dv.getInt32(16, true), yTop: dv.getInt32(20, true), stateTable: table.状态, biomeTable: table.群系, seed: table.种子, 段数: segRunCounts, state: stateIds, bottom, biome: biomeIds, runStarts: startTable(segRunCounts) };
 };
 
 /** 游戏坐标 (x, z) 在区域里的列号 */
