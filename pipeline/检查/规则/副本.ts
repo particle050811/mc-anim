@@ -134,7 +134,7 @@ const baseline = (c: CheckContext): { 表: string; canonicalIds: Set<string> | n
   }
 };
 
-const refSnippet = (z: CanonicalItem) => `import { ${z.exportName} } from '${z.位置.replace(/^engine\//, '@engine/').replace(/^库\//, '@lib/')}'`;
+const refSnippet = (z: CanonicalItem) => `import { ${z.exportName} } from '${z.位置.replace(/^engine\//, '@engine/').replace(/^库\//, '@库/')}'`;
 const describeSpots = (spots: Spot[]) => spots.map((x) => `第 ${x.行} 行${x.name ? ` ${x.name}` : ''}（${x.matchBy}）`).join('、');
 
 export const copyRule = async (c: CheckContext, report: CheckReport) => {
