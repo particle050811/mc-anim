@@ -1,4 +1,4 @@
-// 6-4-9 Warden：全部时间轴和机位，纯函数，输入段内秒 t（0 起；第 7 章还在用的帧号接口见文件末）。场景、站位同 6-4-8（../古城4x布局.ts 的场子、../6-4-8/编排.ts、../6-4-8/二人.ts）；机位按监守者自己的朝向取（前、右、离地，见 `wardenLocal`），监守者面朝东、二人在它东边。
+// 6-4-9 Warden：全部时间轴和机位，纯函数，输入段内秒 t（0 起）。场景、站位同 6-4-8（../古城4x布局.ts 的场子、../6-4-8/编排.ts、../6-4-8/二人.ts）；机位按监守者自己的朝向取（前、右、离地，见 `wardenLocal`），监守者面朝东、二人在它东边。
 // 用户 10-19 嫌原来八镜 11 秒「完全是站桩展示」：缩到 6 秒，监守者特写只留三个（大口、心脏、触角），各零点几秒；二人一直在动（举着家伙一小步一小步横挪、各往外绕着逼近找位置），
 //   吼的起势直接切到吼声出来那一刻的全景，全景不等吼完（吼到一半接 7-1-1，7-1/戏/监守者.ts 接着放吼叫动画、7-1/声音.tsx 接着放吼声）。
 // 振动、怒气照原版（`VibrationSystem`、`Warden`）：脚步落地那刻发出，按 1 格/刻（取整）飞到监守者眼睛（离地 2.5）；听到一下以后 40 刻（`VIBRATION_COOLDOWN`）不再听，冷却里的脚步不算；
@@ -64,9 +64,8 @@ const heardFrom = (steps: Step[]) => {
 };
 const approachHeard = heardFrom([...approachSteps('刘'), ...approachSteps('黄')]);
 // 第三下（本段第二下）听到后 5 刻起吼，第 25 刻（1.25 秒）出声、往前一扑
-// 往上取整到 1/24 秒的格暂时留着：去掉（真值 3.7667 秒本来就在 1/60 秒上）吼、全景切点、段尾都提前 1/40 秒，6-贪功钻出Warden 段长和吼声 cue 跟着改，
-// 第 7 章 7-1 按帧接的 `END` 也从 145 帧变 144 帧，要等第 7 章改按秒、用户定了再动
-export const roarStart = Math.ceil((approachHeard[1] + 5 / 20) * 24 - 1e-9) / 24;
+// 用真值（3.7667 秒，本来就在 1/60 秒上）：原来往上取整到 1/24 秒的格，吼、全景切点、段尾都晚 1/40 秒（用户 11-16 定不留 1/24 秒的格）
+export const roarStart = snapSec(approachHeard[1] + 5 / 20);
 export const roarSoundSec = roarStart + 1.25;
 
 // ---------- 镜头切点（秒） ----------
@@ -79,7 +78,8 @@ const shotTendrilEnd = roarStart + 1 / 4;
 export const wideStart = roarSoundSec;
 // 全景 1 秒（吼到 2.25 秒），7-1-1 接着吼完
 export const durationSec = wideStart + 1;
-const lastSec = durationSec - 1 / 24; // 末帧（原来按 1/24 秒一格）
+// 末帧：7-1 从这一刻接着演（7-1/几何.ts、7-1/戏.ts、7-1/戏/公用.ts）
+export const lastSec = durationSec - 1 / 60;
 
 // 吼声一到压低身子往后退一步（0.3 秒）。压低是潜行（isSteppingCarefully），原版潜行走路不发振动（Entity.move 的 STEP 事件），这一步监守者听不到、也不放脚步声
 const blastSteps = {
@@ -292,12 +292,3 @@ export const camera = (t: number): Cam => {
   if (shot.cam) return shot.cam(t);
   return { pos: sampleV(shot.pos!, t) as V3, tgt: sampleV(shot.tgt!, t) as V3, lens: sample(shot.lens!, t) };
 };
-
-// ---------- 第 7 章还按 1/24 秒一格的帧号取（7-1/几何.ts、7-1/戏.ts、7-1/戏/公用.ts），等第 7 章改按秒后删 ----------
-export const PER_SEC_7 = 24;
-export const END = Math.round(durationSec * PER_SEC_7);
-export const pursuers = (f: number) => pursuersAt(f / PER_SEC_7);
-export const warden = (f: number) => wardenAt(f / PER_SEC_7);
-export const bowAt = (f: number) => bowTextureAt(f / PER_SEC_7);
-export const gameSecAt = (f: number) => gameClock(f / PER_SEC_7);
-export const roarAnimSec = (f: number) => roarAnimAt(f / PER_SEC_7);

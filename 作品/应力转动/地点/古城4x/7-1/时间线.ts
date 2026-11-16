@@ -1,4 +1,4 @@
-// 第 7 章第 1 场「黑暗监守」的整场时间线：七段是同一条连续时间轴（t，秒）上前后相接的七截。t = 0 是 6-4-9 末帧，7-1-1 从它的下一格（t = 1 / 6-4-9 的 FPS）演起。
+// 第 7 章第 1 场「黑暗监守」的整场时间线：七段是同一条连续时间轴（t，秒）上前后相接的七截。t = 0 是 6-4-9 末帧，7-1-1 从它的下一帧（t = 1/60）演起。
 // 段界放在切镜头的那一刻（落到帧上，见 段界.ts），一个镜头不拆进两段；后一段从前一段末帧的下一帧演起（写法同 ../7-3/时间线.ts）。段内时间一律是秒。
 // 人物、监守者、恼鬼、箭的状态全是 t 的函数（戏.ts），各段只管机位和声音。
 // 二人全程强者跳（../古城4x布局.ts 的 强者跳、闪避跳，落脚点在 七一）；监守者 60 米/秒（用户 10-18 定的古城基准速度，比人快一倍），循着振动追，攻击冷却照原版 18 刻；
@@ -7,8 +7,8 @@
 import lineTableJson from 'asset:数据/配音/台词表';
 import { elite, eliteLeap } from '../布局.ts';
 import * as geom from './几何.ts';
-import { PER_SEC_7 as fps649 } from '../6-4-9/编排.ts';
 import { sceneFrames } from './段界.ts';
+import { segFps } from '@engine/段/段定义.ts';
 
 const leapOf = (a: number[], b: number[], apex: number) => eliteLeap(a as [number, number, number], b as [number, number, number], apex);
 const travel = (a: number[], b: number[]) => geom.wardenTravelSec(geom.flatDist(a as [number, number, number], b as [number, number, number]));
@@ -95,7 +95,7 @@ export const huangFollowArrowHitTs = [shieldSwingTs[1] + 0.1, shieldSwingTs[1] +
 // 7-1-6 原来先有一镜黄叛越肩射火把、照出羊毛（「羊毛……？！」「刘兄，快到羊毛上逃！」），用户 10-19 删了这两句和这一镜：
 //   后面是追逐，上羊毛躲不掉它。剧情时间轴不动（7-2-1 按它远望第 1 场），只把 7-1-5 末到刘心忠快落到 C2 那一截跳过去不演（`skipTo`）。
 const cutTs = {
-  '7-1-1': 1 / fps649, // 6-4-9 末帧的下一格：6-4-9 还是一格一格的编排，等它改成秒再跟
+  '7-1-1': 1 / segFps, // 6-4-9 末帧的下一帧（原来是下一格 1/24 秒，用户 11-16 定不留 1/24 秒的格）
   '7-1-2': wardenStepT + 0.03,
   '7-1-3': firstVexSwingT - 0.45,
   '7-1-4': impossibleT + 0.45,

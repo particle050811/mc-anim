@@ -9,7 +9,7 @@ export const pulseWindow = (t: number, a: number, b: number, rampIn = 0.2, rampO
 export const yawFromTo = (from: number[], to: number[]) => yawTo(to[0] - from[0], to[1] - from[1]);
 export const elevationDeg = (from: number[], to: number[]) => (Math.atan2(to[2] - from[2], Math.hypot(to[0] - from[0], to[1] - from[1])) * 180) / Math.PI;
 export const groundZ = geom.floorZ;
-export const gameSec = (t: number) => K649.gameSecAt(geom.handoffFrame649) + t;
+export const gameSec = (t: number) => K649.gameClock(geom.handoffSec649) + t;
 // 6-4-9 末帧以后的场时刻 t 照 6-4-9 接着演的：吼叫动画（吼到一半切过来）、二人的姿势（顶着吼声压低、吼完起来、喘气）
-export const roarAnimSec = (t: number) => K649.roarAnimSec(geom.handoffFrame649 + t * K649.PER_SEC_7);
-export const pursuersAfter649 = (t: number) => K649.pursuers(geom.handoffFrame649 + t * K649.PER_SEC_7);
+export const roarAnimSec = (t: number) => K649.roarAnimAt(geom.handoffSec649 + t);
+export const pursuersAfter649 = (t: number) => K649.pursuersAt(geom.handoffSec649 + t);
