@@ -143,7 +143,8 @@ const predictCamera = new THREE.PerspectiveCamera();
 // 放行一帧后按航线算往后 1～`aheadFrames` 帧，把那几帧要新建的区段先取、先建好网格放进 `kept`；不越过这一截的末尾（切到下一截是新的画布、新的航线）。
 // 和预取下一帧一样只动 `kept`：每帧画出来的只取决于这一帧自己。
 // 往后看几帧：一帧新进视野的区段取、解、建网格要 100～500 ms（飞越俯冲、穿塔加速），和一帧的出图时间差不多，提前两三帧就够把等的藏进前几帧的出图里；
-// 再远只是多压内存（备好没用上的占着 `kept`）。块数另按 `预取最多块` 封顶（同时压在内存里的体素块有个数），超了就只备到前一帧。
+// 再远只是多压内存（备好没用上的占着 `kept`）。块数另按 `预取最多块` 封顶（同时压在内存里的体素块有个数），超了就只备到前一帧；
+// 最近一批不封顶：那一帧到时候反正要取这么多块，早取不多压内存（穿塔 649 帧一下进来 189 块，封顶时这一帧照旧要等近两秒）。
 const aheadFrames = 4;
 export type LookaheadView = (dtSec: number, camera: THREE.PerspectiveCamera) => number[] | null;
 type Lookahead = { view: LookaheadView; frameSec: number; secLeft: number };
@@ -420,7 +421,7 @@ export const VoxelWorld: React.FC<VoxelWorldProps> = ({ key: worldKey, source: s
           const toPrefetch = pickThisFrame(makeFrustumTest(aheadCamera), center, (aheadCamera.fov * Math.PI) / 180 / size.height).filter(
             (q) => !cache.has(sectionKey(q)) && !kept.has(keptKey(worldKey, q)) && !prefetchInFlight.has(keptKey(worldKey, q)),
           );
-          if (total + toPrefetch.length > prefetchMaxSections) break;
+          if (total && total + toPrefetch.length > prefetchMaxSections) break;
           total += toPrefetch.length;
           // 一帧一批：近的先取齐先建好（工人按先后排），下一帧要的不用等后面几帧的
           if (toPrefetch.length) prefetch(worldKey, source, toPrefetch, keptClock + k);
