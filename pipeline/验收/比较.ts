@@ -24,7 +24,7 @@ export const readThresholds = (file = thresholdFile()): Threshold => {
 // ---------- YUV → RGB ----------
 
 /**
- * 换算的名字，写进认可记录（"换算"）。BT.601 有限范围（这批母版 color_space 没标、color_range tv，swscale 默认也按 601 换），
+ * 换算的名字，写进认可记录（"conversion"）。BT.601 有限范围（这批母版 color_space 没标、color_range tv，swscale 默认也按 601 换），
  * 系数 Q16 定点、四舍五入、截到 0～255；色度 2×2 共用一个样本（最近邻，和 swscale 不缩放时一样）。改公式就要换名字
  */
 export const conversion = 'yuv420p bt601 tv q16 色度最近邻 v1';
