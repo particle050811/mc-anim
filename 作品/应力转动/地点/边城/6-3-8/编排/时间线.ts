@@ -4,6 +4,7 @@ import { impactTime, impactSegSec, segSpan } from '../../6-3-下坠/时间线.ts
 import { ticksToSurface } from './落水.ts';
 import { chaseSpeed } from '../../../古城4x/布局/强者.ts';
 import { RAMP_SEC } from '@库/角色/跑步.ts';
+import { segFps } from '@engine/段/段定义.ts';
 
 // ---------- 台词 ----------
 // 只剩黄叛一句「上次抢劫我们城市的家伙又来了，我们快追！」（用户 10-12 删了别的台词，id 沿用 6-3-8-黄叛-又出现了）。
@@ -27,10 +28,10 @@ export const cues = (() => {
   const liuTakeoff = huangDone - 0.1;
   const huangTakeoff = huangDone + 0.2;
   // 跳下镜演到黄叛跳到最高点（两人都离开了走道），落水镜从刘心忠落水前 0.08 秒起：掉 28 米那一截不演（用户 10-19：「没有必要看从 28 米掉下来的一镜到底的镜头
-  // 直接跳下镜头和落水镜头不就好了」）。两人起跳竖直速度 0.42，同 编排/二人.ts。两个切点取整到 1/24 秒的格，机位按它换镜不差半格
-  const onFrame = (s: number) => Math.round(s * 24) / 24;
-  const jumpCut = onFrame(huangTakeoff + 0.33);
-  const splashShot = onFrame(liuTakeoff + ticksToSurface(0.42) / 20 - 0.08);
+  // 直接跳下镜头和落水镜头不就好了」）。两人起跳竖直速度 0.42，同 编排/二人.ts。两个切点对到 1/60 秒的输出帧上，机位按它换镜不差半帧（用户 11-15 定：对到 60 帧上，允许差 1/120 秒）
+  const onOutputFrame = (s: number) => Math.round(s * segFps) / segFps;
+  const jumpCut = onOutputFrame(huangTakeoff + 0.33);
+  const splashShot = onOutputFrame(liuTakeoff + ticksToSurface(0.42) / 20 - 0.08);
   const cutToPit = huangTakeoff + 3.18; // 刘心忠上路后 0.18 秒、黄叛在池沿上；卫兵都已落水（落水时刻用 工具/追兵/时刻.ts 核对）
   // 坑口（精英 30、卫兵 20 米/秒）：切过去时刘心忠离起跳点 15 米，0.3 秒全速、`RAMP_SEC` 刹住起跳（见 编排/二人.ts）；黄叛出池晚 0.3 秒、路多 1.7 米，晚 0.35 秒起跳。
   // 卫兵慢、出池又晚，切过去时跑在最前的也在黄叛身后 5 米上下，第一个到坑口就在黄叛起跳后 1.1 秒；之后陆续围上来（卫兵到的先后见 编排/卫兵.ts），到最后一个蹲下看井留 1.85 秒

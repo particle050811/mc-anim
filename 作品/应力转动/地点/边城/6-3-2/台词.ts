@@ -71,8 +71,8 @@ export const voiceStart = 1.25; // 思索场景时间
 export const uiClose = voiceStart + activeLine.end + 0.6; // 思索场景时间
 export const uiFade = 0.5;
 export const pushLead = 1;
-// 段长（秒，段首到末帧）：取整到 1/24 秒的格
-export const segmentSpanSec = Math.round((uiOpen + uiClose + uiFade + pushLead) * 24) / 24;
+// 段长（秒，段首到末帧）：开界面 + 界面开着 + 淡出 + 推近，不取整（用户 11-15 定：取到 1/24 秒格上的去掉，最多差 1/120 秒）
+export const segmentSpanSec = uiOpen + uiClose + uiFade + pushLead;
 export const matchSec = segmentSpanSec - uiOpen; // 本段末帧的思索场景时间
 // 每段说明框出现的思索场景时间 = 开口 + 拍
 export const calloutBeats = activeLine.wordTimes.map((x) => voiceStart + x);
